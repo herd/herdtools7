@@ -130,6 +130,7 @@ let alloc = ref Alloc.Dynamic
 let doublealloc = ref false
 let noalign = ref None
 let speedcheck = ref Speedcheck.NoSpeed
+let makevar = ref []
 let gcc = ref "gcc"
 let c11 = ref false
 let c11_fence = ref false
@@ -171,6 +172,7 @@ let morearch = ref MoreArch.No
 let carch = ref None
 let mode = ref Mode.Std
 let usearch = ref UseArch.Trad
+let precision = ref false
 let variant = ref (fun _ -> false)
 
 (* Arch dependent options *)

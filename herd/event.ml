@@ -75,13 +75,15 @@ val same_instance : event -> event -> bool
   val is_mem_load : event ->  bool
   val is_additional_mem_load : event ->  bool (* trylock... *)
   val is_mem : event -> bool
+(* Page table access *)
+  val is_pt : event -> bool
 (* Tag memory access *)
   val is_tag : event -> bool
+  val is_mem_physical : event -> bool
 (* includes additional memory events,  eg lock, unlocks... *)
   val is_additional_mem : event -> bool
 (* Specific memory property examination *)
   val is_atomic : event -> bool
-  val is_fault : event -> bool
   val to_fault : event -> A.fault option
   val is_amo : event -> bool
   val get_mem_dir : event -> Dir.dirn
@@ -258,14 +260,15 @@ val same_instance : event -> event -> bool
 (* Convenience on locations *)
 (****************************)
 
-  val location_compare : event -> event -> int
   val same_location : event -> event -> bool
+  val same_location_with_faults : event -> event -> bool
   val same_value : event -> event -> bool
-  val is_visible_location : A.location -> bool
+(*  val is_visible_location : A.location -> bool *)
 
 (********************************)
 (* Event structure output ports *)
 (********************************)
+  val debug_output : out_channel -> event_structure -> unit
   val get_output : event_structure -> event_set
 
 (********************************)
@@ -297,8 +300,16 @@ val same_instance : event -> event -> bool
   val (=**=) :
       event_structure -> event_structure -> event_structure option
 
-(* similar, additionally avoid some evts in target links *)
+(* Identical, keep first event structure output as output... *)
+  val (=*$$=) :
+      event_structure -> event_structure -> event_structure option
+
+  (* similar, additionally avoid some evts in target links *)
   val bind_ctrl_avoid : event_set ->  event_structure -> event_structure -> event_structure option
+
+  (* compose three structures s1 s2 and s3 with s1-ctrl->s3 and s2-data->s3 *)
+  val bind_ctrl_data :
+    event_structure -> event_structure -> event_structure -> event_structure
 
 (* check memory tags *)
   val check_tags :
@@ -387,6 +398,7 @@ val same_instance : event -> event -> bool
 end
 
 module type Config = sig
+  val debug : Debug_herd.t
   val variant : Variant.t -> bool
 end
 
@@ -398,8 +410,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     module A = AI
     module V = AI.V
 
+    let dbg = C.debug.Debug_herd.monad
     let do_deps = C.variant Variant.Deps
-
+    let kvm = C.variant Variant.Kvm
+    let is_branching = kvm && C.variant Variant.PteBranch
     type eiid = int
     type subid = int
 
@@ -455,24 +469,26 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     | Some (A.Location_global a) -> Some a
     | _ -> None
 
-    let location_compare e1 e2 = match location_of e1,location_of e2 with
-    | Some loc1,Some loc2 -> A.location_compare loc1 loc2
-    | _,_ -> assert false
-
 (* Visible locations *)
+(*
     let is_visible_location  = function
       | A.Location_global _ -> true
       | A.Location_reg _ -> false
+*)
+    let same_location e1 e2 = match location_of e1,location_of e2 with
+    | (None,_)|(_,None) -> false
+    | Some loc1,Some loc2 -> A.location_compare loc1 loc2 = 0
 
-    let same_location e1 e2 =
-      if (location_of e1 = None || location_of e2 = None) then
-        false
-      else
-        location_compare e1 e2 = 0
+    let same_location_with_faults e1 e2 = match location_of e1,location_of e2 with
+    | (None,_)|(_,None) -> false
+    | Some loc1,Some loc2 ->
+        if Act.is_fault e1.action || Act.is_fault e2.action then
+          A.same_base_virt loc1 loc2
+        else  A.location_compare loc1 loc2 = 0
 
     let same_value e1 e2 = match value_of e1, value_of e2 with
     | Some v1,Some v2 -> V.compare v1 v2 = 0
-    | _,_ -> assert false
+    | _,_ -> false
 
     let proc_of e = match e.iiid with
     | Some i -> Some i.A.proc
@@ -513,13 +529,12 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let is_mem_load e = Act.is_mem_load e.action
     let is_additional_mem_load e = Act.is_additional_mem_load e.action
     let is_mem e = Act.is_mem e.action
+    let is_pt e = Act.is_pt e.action
     let is_tag e = Act.is_tag e.action
+    let is_mem_physical e =  Act.is_mem_physical e.action
     let is_additional_mem e = Act.is_additional_mem e.action
     let is_atomic e = Act.is_atomic e.action
     let to_fault e = Act.to_fault e.action
-    let is_fault e = match Act.to_fault e.action with
-    | None -> false
-    | Some _ -> true
     let is_amo e = match e.iiid with
     | Some {A.inst=i; _} when A.is_amo i -> Act.is_mem_store e.action
     | _ -> false
@@ -816,6 +831,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
             (fun (e1,_) -> e.eiid <> e1.eiid) intra_causality)
         es.events
 
+    let maximal_commits es = EventSet.filter is_commit (maximals es)
+
     let maximals_data es =
       let intra_causality = es.intra_causality_data in
       EventSet.filter
@@ -827,6 +844,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let get_output es = match es.output with
     | None -> maximals_data es
     | Some o -> o
+
+    let debug_output chan es = match es.output with
+    | None -> fprintf chan "-%a" debug_events (get_output es)
+    | Some es -> debug_events chan es
 
 
 (**********************************)
@@ -846,6 +867,28 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         Some (EventSet.union (maximals_data es1) o2)
     | Some o1,None ->
         Some (EventSet.union o1 (maximals_data es2))
+
+    let debug_opt dbg chan = function
+      | None -> fprintf chan "None"
+      | Some e -> dbg chan e
+
+    let sequence_data_output es1 es2 =
+      if dbg then eprintf "Seq %a %a ->" debug_output es1 debug_output es2 ;
+      let r =  match es1.output,es2.output with
+      | __,(Some _ as out) -> out
+      | None,None -> None
+      | Some out,None ->
+          (* Tricky case, when get_output is empty,
+             None would mean loosing the explicit output
+             and re-including maximal elts *)
+          let out2 = get_output es2 in
+          if EventSet.is_empty out2 then Some out
+          else Some out2 in
+      if dbg then eprintf " %a\n" (debug_opt debug_events) r ;
+      r
+
+(* In all circontances es1 output must be discarded *)
+    let sequence_control_output _es1 es2 = Some (get_output es2)
 
 (* Sequential composition *)
 
@@ -992,13 +1035,20 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         aligned = List.append es1.aligned es2.aligned;}
 
     let (=*$=) =
-      check_disjoint (data_comp minimals_data (fun _ es -> es.output))
+      check_disjoint (data_comp minimals_data sequence_data_output)
 
     let (=$$=) =
-      check_disjoint (data_comp minimals_data (fun es _ -> Some (get_output es)))
+      let out es1 es2 =
+        let out = get_output es1 in
+        if dbg then
+          eprintf "SeqFirst %a %a -> %a\n"  debug_output es1 debug_output es2 debug_events out ;
+        Some out in
+      check_disjoint (data_comp minimals_data out)
+
 
 (* Composition with intra_causality_control from first to second *)
-    let control_comp mini_loc es1 es2 =
+
+    let control_comp mini_loc mkOut es1 es2 =
       { procs = [] ;
         events =  EventSet.union es1.events es2.events;
         speculated = speculated_union es1 es2;
@@ -1008,16 +1058,30 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         intra_causality_control = EventRel.union
           (EventRel.union es1.intra_causality_control
              es2.intra_causality_control)
-          (EventRel.cartesian (maximals es1) (mini_loc es2));
+          (EventRel.cartesian (get_output es1) (mini_loc es2));
         control = EventRel.union es1.control es2.control;
         data_ports = EventSet.union es1.data_ports es2.data_ports;
         success_ports = EventSet.union es1.success_ports es2.success_ports;
-        output = union_output es1 es2;
+        output = mkOut es1 es2;
         sca = EventSetSet.union es1.sca es2.sca;
         mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses;
         aligned = List.append es1.aligned es2.aligned;}
 
-    let (=**=) = check_disjoint (control_comp minimals)
+(* Standard *)
+    let (=**=) = check_disjoint (control_comp minimals sequence_control_output)
+
+(* Variant that set output on first argumet *)
+    let (=*$$=) =
+      let out es1 es2 =
+        let out = get_output es1 in
+        if dbg then
+          eprintf "CtrlFirst %a %a -> %a\n"  debug_output es1 debug_output es2 debug_events out ;
+        Some out in
+      check_disjoint (control_comp minimals_data out)
+
+(* Variant that removes some es2 input from iico_ctrl targets *)
+    let bind_ctrl_avoid aset es1 es2 =
+      Some (control_comp (minimals_avoid aset) sequence_control_output es1 es2)
 
     let po_union4 =
       if do_deps then
@@ -1027,9 +1091,6 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           (EventSet.union4 r1 r2 r3 r4, EventRel.union4 e1 e2 e3 e4)
       else fun es _ _ _ -> es.po
 
-    let bind_ctrl_avoid aset es1 es2 =
-      Some (control_comp (minimals_avoid aset) es1 es2)
-
     let po_union3 =
       if do_deps then
         fun es1 es2 es3 ->
@@ -1037,6 +1098,61 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           (EventSet.union3 r1 r2 r3, EventRel.union3 e1 e2 e3)
       else
         fun es _ _ -> es.po
+
+    let union3 es1 es2 es3 =
+      { procs = [];
+        events = EventSet.union3 es1.events es2.events es3.events;
+        speculated =
+          begin
+            if do_deps then
+              EventSet.union3 es1.speculated es2.speculated es3.speculated
+            else es1.speculated
+          end;
+        po = po_union3 es1 es2 es3;
+       intra_causality_data =
+         EventRel.union3
+           es1.intra_causality_data
+           es2.intra_causality_data
+           es3.intra_causality_data;
+       intra_causality_control =
+         EventRel.union3
+           es1.intra_causality_control
+           es2.intra_causality_control
+           es3.intra_causality_control;
+       control =
+         EventRel.union3 es1.control es2.control es3.control;
+       data_ports =
+         EventSet.union3 es1.data_ports es2.data_ports es3.data_ports;
+       success_ports =
+         EventSet.union3
+           es1.success_ports es2.success_ports es3.success_ports;
+       output = None;
+       sca = EventSetSet.union3 es1.sca es2.sca es3.sca;
+       mem_accesses =
+         EventSet.union3
+           es1.mem_accesses
+           es2.mem_accesses
+           es3.mem_accesses;
+       aligned = es1.aligned @ es2.aligned @ es3.aligned;
+      }
+
+(*  Build es1 -ctrl-> es3 <-data- es2 monad.
+    Notice the contrasts in output definition of es1 and es2
+    (maximals_commits vs. get_output) *)
+
+    let bind_ctrl_data es1 es2 es3 =
+      let input_es3 = minimals es3 in
+      let r = union3 es1 es2 es3 in
+      { r with
+        intra_causality_data =
+          EventRel.union r.intra_causality_data
+            (EventRel.cartesian
+               (EventSet.union (get_output es1) (get_output es2)) input_es3);
+       intra_causality_control =
+         EventRel.union
+           r.intra_causality_control
+           (EventRel.cartesian (maximal_commits es1) input_es3);
+       output = sequence_data_output es2 es3; }
 
 (* Specific composition for checking tags *)
     let check_tags a rtag commit =
@@ -1128,8 +1244,12 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 (* If swp then add ctrl dependency from rmem to wmem, else (amo) add data dependency *)
     let swp_or_amo op rloc rmem rreg wmem wreg =
       let is_amo = Misc.is_some op in
-      let outrmem = maximals rmem and outrreg = maximals rreg and outrloc = maximals rloc
-      and inwmem = minimals wmem and inwreg = minimals wreg and inrmem = minimals rmem in
+      let outrmem = maximals rmem
+      and outrreg = maximals rreg
+      and inwmem = minimals wmem
+      and inwreg = minimals wreg
+      and inrmem = minimals rmem in
+      let inmem = EventSet.union inrmem inwmem in
       let mem2mem = EventRel.cartesian outrmem inwmem in
       { procs = [] ;
         events = EventSet.union5
@@ -1151,7 +1271,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
            EventRel.cartesian outrmem inwreg;
            if is_amo then mem2mem else EventRel.empty;
            EventRel.cartesian outrreg inwmem;
-           EventRel.cartesian outrloc (EventSet.union inrmem inwmem)];
+           EventRel.cartesian (get_output rloc) inmem];
         intra_causality_control =
         EventRel.unions
           [EventRel.unions
@@ -1159,7 +1279,12 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
               rmem.intra_causality_control;rreg.intra_causality_control;
               wmem.intra_causality_control;wreg.intra_causality_control;];
            if is_amo then EventRel.empty else mem2mem;
-           EventRel.cartesian outrreg inwreg;];
+           EventRel.cartesian outrreg inwreg;
+           if is_branching then
+ (* Notice difference with data composition:
+    take maximal evts from rloc, regardless of explicit output *)
+             EventRel.cartesian (maximal_commits rloc) inmem
+           else EventRel.empty;];
         control =
         EventRel.union5 rloc.control rmem.control rreg.control wmem.control wreg.control;
         data_ports =
@@ -1525,7 +1650,6 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       and in_wres = minimals wres
       and in_wresult = minimals wresult
       and out_data = maximals data
-      and out_addr = maximals addr
       and out_resa = maximals resa in
       { procs = [];
         events =
@@ -1547,21 +1671,28 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
            EventRel.union3 wres.intra_causality_data
              wresult.intra_causality_data wmem.intra_causality_data;
            EventRel.cartesian
-             (EventSet.union out_addr out_resa)
-             (EventSet.union3 in_wmem in_wres
+             (get_output addr)
+             (EventSet.union in_wmem
                 (if (C.variant Variant.FullScDepend || success) && dep_sc_result
                 then in_wresult else EventSet.empty));
            EventRel.cartesian out_data
              (if C.variant Variant.Success || not (C.variant Variant.FullScDepend) then in_wmem else
              EventSet.union in_wresult in_wmem); ];
         intra_causality_control =
-        EventRel.union3
-          (if dep_on_write then EventRel.cartesian out_wmem in_wresult
-          else EventRel.empty)
-          (EventRel.union3 resa.intra_causality_control
-             data.intra_causality_control addr.intra_causality_control)
-          (EventRel.union3 wres.intra_causality_control
-             wresult.intra_causality_control wmem.control);
+          EventRel.union5
+            (EventRel.cartesian out_resa in_wres)
+            (EventRel.cartesian
+               (EventSet.union
+                  out_resa
+                  (if is_branching then maximal_commits addr
+                   else maximals addr))
+               in_wmem)
+            (if dep_on_write then EventRel.cartesian out_wmem in_wresult
+             else EventRel.empty)
+            (EventRel.union3 resa.intra_causality_control
+               data.intra_causality_control addr.intra_causality_control)
+            (EventRel.union3 wres.intra_causality_control
+               wresult.intra_causality_control wmem.control);
         control =
         EventRel.union
           (EventRel.union3 resa.control data.control addr.control)

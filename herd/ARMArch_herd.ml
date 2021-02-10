@@ -25,11 +25,15 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     type lannot = bool (* atomicity *)
     let get_machsize _ = V.Cst.Scalar.machsize (* No mixed size instruction *)
-
     let empty_annot = false
+
+    include Explicit.No
+
 
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
     let is_atomic annot = annot
+    let is_explicit annot = annot
+    let is_not_explicit annot = annot
 
     let barrier_sets =
       [
@@ -57,6 +61,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
         -> None
       | I_LDR _ | I_LDREX _ | I_LDR3 _ | I_STR _ | I_STREX _ | I_STR3 _
         -> Some MachSize.Word
+
+    include NoLevelNorTLBI
 
     include ArchExtra_herd.Make(C)
         (struct

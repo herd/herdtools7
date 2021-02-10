@@ -15,11 +15,13 @@
 (****************************************************************************)
 
 module type Config = sig
+  val verbose : int
   val word : Word.t
   val memory : Memory.t
   val cautious : bool
   val asmcomment : string option
   val hexa : bool
+  val mode : Mode.t
 end
 
 module Make(V:Constant.S)(C:Config) =
@@ -35,8 +37,12 @@ module Make(V:Constant.S)(C:Config) =
       | A.I_RET None -> true
       | _ -> false
 
+    let is_nop = function
+      | A.I_NOP -> true
+      | _ -> false
+
 (* No addresses in code *)
-    let extract_addrs _ins = StringSet.empty
+    let extract_addrs _ins = Global_litmus.Set.empty
 
     let stable_regs _ins = match _ins with
     | I_LD1M (rs,_,_)
@@ -353,65 +359,84 @@ module Make(V:Constant.S)(C:Config) =
     | _,RV (V128,_) -> assert false
 
 
+    let zr v = match v with
+    | V32 -> "wzr"
+    | V64 -> "xzr"
+    | V128 -> assert false
+
+    let fmt v = match v with
+    | V32 -> fun s -> "^w" ^ s
+    | V64 -> fun s -> "^" ^ s
+    | V128 -> assert false
+
+    let str_arg1 vA rA = match rA with
+    | ZR -> [],zr vA ,"^i0"
+    | _  -> [rA],fmt vA "i0","^i1"
+
+    let str_arg2 vA rA vC rC = match rA,rC with
+    | ZR,ZR -> [],zr vA,"^i0",[],zr vC
+    | ZR,_  -> [],zr vA,"^i0",[rC],fmt vC "i1"
+    | _,ZR  -> [rA],fmt vA "i0","^i1",[],zr vC
+    | _,_   -> [rA],fmt vA "i0","^i1",[rC],fmt vC "i2"
+
     let store memo v rA rB kr = match v,kr with
     | V32,K 0 ->
+        let rA,fA,fB = str_arg1 V32 rA in
         { empty_ins with
-          memo=memo ^ " ^wi0,[^i1]";
-          inputs=[rA;rB]; reg_env=[rB,voidstar;rA,word;]; }
+          memo=memo ^ " " ^ fA ^",["^fB^"]";
+          inputs=rA@[rB;]; reg_env=[rB,voidstar]@add_w rA; }
     | V32,K k ->
+        let rA,fA,fB = str_arg1 V32 rA in
         { empty_ins with
-          memo=memo ^ sprintf " ^wi0,[^i1,#%i]" k;
-          inputs=[rA;rB]; reg_env=[rB,voidstar;rA,word;]; }
+          memo=memo ^ sprintf " %s,[%s,#%i]" fA fB k;
+          inputs=rA@[rB]; reg_env=[rB,voidstar;]@add_w rA; }
     | V32,RV (V32,rC) ->
-        let rC,fC = match rC with
-        | ZR -> [],"wzr"
-        | _  -> [rC],"^wi2" in
+        let rA,fA,fB,rC,fC = str_arg2 V32 rA V32 rC in
         { empty_ins with
-          memo=memo^ sprintf " ^wi0,[^i1,%s,sxtw]" fC;
-          inputs=[rA; rB;]@rC; reg_env=add_w rC@[rB,voidstar; rA,word;]; }
+          memo=memo^ sprintf " %s,[%s,%s,sxtw]" fA fB fC;
+          inputs=rA@[rB;]@rC; reg_env=add_w rC@[rB,voidstar]@add_w rA; }
     | V64,K 0 ->
+        let rA,fA,fB = str_arg1 V64 rA in
         { empty_ins with
-          memo=memo ^ " ^i0,[^i1]";
-          inputs=[rA;rB]; reg_env=[rB,voidstar; rA,quad;]; }
+          memo=memo ^ sprintf " %s,[%s]" fA fB;
+          inputs=rA@[rB]; reg_env=[rB,voidstar;]@add_q  rA; }
     | V64,K k ->
+        let rA,fA,fB = str_arg1 V64 rA in
         { empty_ins with
-          memo=memo ^ sprintf " ^i0,[^i1,#%i]" k;
-          inputs=[rA;rB]; reg_env=[rB,voidstar; rA,quad;]; }
+          memo=memo ^ sprintf " %s,[%s,#%i]" fA fB k;
+          inputs=rA@[rB]; reg_env=[rB,voidstar;]@add_q  rA; }
     | V64,RV (V64,rC) ->
-        let rC,fC = match rC with
-        | ZR -> [],"xzr"
-        | _  -> [rC],"^i2" in
+        let rA,fA,fB,rC,fC = str_arg2 V64 rA V64 rC in
         { empty_ins with
-          memo=memo ^ sprintf " ^i0,[^i1,%s]" fC;
-          inputs=[rA; rB;]@rC; reg_env=add_q rC@[rB,voidstar; rA,quad;]; }
+          memo=memo ^ sprintf " %s,[%s,%s]" fA fB fC;
+          inputs=rA@[rB;]@rC; reg_env=add_q rC@[rB,voidstar;]@add_q rA; }
     | V64,RV (V32,rC) ->
-        let rC,fC = match rC with
-        | ZR -> [],"wzr"
-        | _  -> [rC],"^wi2" in
+        let rA,fA,fB,rC,fC = str_arg2 V64 rA V32 rC in
         { empty_ins with
-          memo=memo ^ sprintf " ^i0,[^i1,%s,sxtw]" fC;
-          inputs=[rA; rB;]@rC; reg_env=add_w rC@[rB,voidstar; rA,quad;]; }
+          memo=memo ^ sprintf " %s,[%s,%s,sxtw]" fA fB fC;
+          inputs=rA@[rB;]@rC; reg_env=add_w rC@[rB,voidstar;]@add_q rA; }
     | V32,RV (V64,rC) ->
-        let rC,fC = match rC with
-        | ZR -> [],"xzr"
-        | _  -> [rC],"^i2" in
+        let rA,fA,fB,rC,fC = str_arg2 V32 rA V64 rC in
         { empty_ins with
-          memo=memo ^ sprintf " ^wi0,[^i1,%s]" fC;
-          inputs=[rA; rB;]@rC; reg_env=add_q rC@[rB,voidstar; rA,word;]; }
+          memo=memo ^ sprintf " %s,[%s,%s]" fA fB fC;
+          inputs=rA@[rB;]@rC; reg_env=add_q rC@[rB,voidstar;]@add_w  rA; }
     | V128,_
-    | _,RV (V128,_) -> assert false
+    | _,RV (V128,_) ->
+        assert false
 
     let stxr memo v r1 r2 r3 = match v with
     | V32 ->
+        let r2,f2,f3 = str_arg1 V32 r2 in
         { empty_ins with
-          memo = sprintf "%s ^wo0,^wi0,[^i1]" memo ;
-          inputs = [r2;r3;];
-          outputs = [r1;]; reg_env=[r3,voidstar; r1,word; r2,word; ]; }
+          memo = sprintf "%s ^wo0,%s,[%s]" memo f2 f3 ;
+          inputs = r2@[r3;];
+          outputs = [r1;]; reg_env=[r3,voidstar; r1,word;]@add_w r2; }
     | V64 ->
+        let r2,f2,f3 = str_arg1 V64 r2 in
         { empty_ins with
-          memo = sprintf "%s ^wo0,^i0,[^i1]" memo ;
-          inputs = [r2;r3;];
-          outputs = [r1;]; reg_env=[r3,voidstar; r2,quad; r1,word; ]}
+          memo = sprintf "%s ^wo0,%s,[%s]" memo f2 f3;
+          inputs = r2@[r3;];
+          outputs = [r1;]; reg_env=[r3,voidstar; r1,word;]@add_q r2}
     | V128 -> assert false
 
 (* Neon Extension Load and Store *)
@@ -1062,11 +1087,35 @@ module Make(V:Constant.S)(C:Config) =
       { empty_ins with memo = Misc.lowercase (A.pp_barrier f); }
 
     let cache memo r =
-      let r,f = arg1 "xzr" (fun s -> "^i"^s) r in
-      { empty_ins with memo = memo ^ "," ^ f; inputs=r; reg_env=add_v r; }
+      match r with
+      | ZR ->
+          { empty_ins with memo; }
+      | _ ->
+          let r,f = arg1 "xzr" (fun s -> "^i"^s) r in
+          { empty_ins with memo = memo ^ "," ^ f; inputs=r; reg_env=add_v r; }
+
+    let tlbi op r =
+      let op = Misc.lowercase  (TLBI.pp_op op) in
+      match r with
+      | ZR ->
+          { empty_ins with memo = sprintf "tlbi %s" op; inputs=[]; reg_env=[]; }
+      | r ->
+          { empty_ins with memo = sprintf "tlbi %s,^i0" op; inputs=[r]; reg_env=add_v [r]; }
 
 (* Not that useful *)
     let emit_loop _k = assert false
+
+    let user_mode =
+      let ins =
+        ["msr sp_el0,%[sp_usr]";
+         "adr %[tr0],9f";
+         "msr elr_el1,%[tr0]";
+         "msr spsr_el1,xzr";
+         "eret";
+         "9:"] in
+      List.map (fun s -> { empty_ins with memo=s;}) ins
+
+    let kernel_mode = [{ empty_ins with memo="svc #471"}]
 
     let compile_ins tr_lab ins k = match ins with
     | I_NOP -> { empty_ins with memo = "nop"; }::k
@@ -1213,6 +1262,8 @@ module Make(V:Constant.S)(C:Config) =
         cache (sprintf "ic %s" (Misc.lowercase (IC.pp_op op))) r::k
     | I_DC (op,r) ->
         cache (sprintf "dc %s" (Misc.lowercase (DC.pp_op op))) r::k
+    | I_TLBI (op,r) ->
+        tlbi op r::k
     | I_MRS (r,sr) ->
         let r,f = arg1 "xzr" (fun s -> "^o"^s) r in
         let memo =

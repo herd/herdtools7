@@ -21,6 +21,7 @@ type t = {
     lexer : bool ;
     top : bool ;
     mem : bool ;
+    monad : bool ;
     barrier : bool ;
     res : bool ;
     rfm : bool ;
@@ -35,6 +36,7 @@ let tags =
   "lexer";
   "top";
   "mem";
+  "monad";
   "barrier"; "model"; (* handier synonymous *)
   "res";
   "rfm";
@@ -49,6 +51,7 @@ let none =
    lexer = false ;
    top = false ;
    mem = false ;
+   monad = false ;
    barrier = false ;
    res = false ;
    rfm = false ;
@@ -62,6 +65,7 @@ let parse t tag = match tag with
   | "lexer" -> Some { t with lexer = true; }
   | "top" -> Some { t with top = true; }
   | "mem" -> Some { t with mem = true; }
+  | "monad" -> Some { t with monad = true; }
   | "barrier"|"model" -> Some { t with barrier = true; }
   | "res" -> Some { t with res = true; }
   | "rfm" -> Some { t with rfm = true; }

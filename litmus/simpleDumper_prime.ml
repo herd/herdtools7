@@ -22,6 +22,9 @@ module type I = sig
 
   module P : PseudoAbstract.S
 
+  type v
+  val dump_v : v -> string
+
   type state
   val dump_state :state -> string
 
@@ -36,46 +39,27 @@ end
 module Make(I:I) : sig
   val dump : out_channel ->
     Name.t ->
-    (I.state, I.P.code list, I.prop, I.location)
+    (I.state, I.P.code list, I.prop, I.location,I.v)
         MiscParser.result
       -> unit
   val dump_info : out_channel ->
     Name.t ->
-    (I.state, I.P.code list, I.prop, I.location)
+    (I.state, I.P.code list, I.prop, I.location,I.v)
         MiscParser.result
       -> unit
   val lines :
       Name.t ->
-        (I.state, I.P.code list, I.prop, I.location)
+        (I.state, I.P.code list, I.prop, I.location,I.v)
           MiscParser.result
       -> string list
 end = struct
   open Printf
   open I
 
-(*
-    let prog chan prog =
-    let pp = List.map I.P.dump_prog prog in
-    Misc.pp_prog chan pp
-*)
-(*
-    dump_procs chan prog ;
-    iter_prog (dump_ios chan)
-      (List.map snd prog)
-*)
   open MiscParser
 
-  let dump_rloc = ConstrGen.dump_rloc I.dump_location
-
-  let dump_loc_type (rloc,t) = match t with
-  | TyDef -> dump_rloc rloc ^";"
-  | TyDefPointer -> dump_rloc rloc ^"*;"
-  | Ty t -> sprintf "%s %s;" (dump_rloc rloc) t
-  | Pointer t -> sprintf "%s %s*;" (dump_rloc rloc) t
-  | TyArray _|Atomic _ -> assert false (* No arrays nor atomics in locations *)
-  let dump_locations env =
-    let pp = List.map dump_loc_type env in
-    String.concat " " pp
+  let dump_locations locs =
+    DumpUtils.dump_locations I.dump_location I.dump_v locs
 
   let do_dump withinfo chan doc t =
     fprintf chan "%s %s\n" (Archs.pp A.arch) doc.Name.name ;

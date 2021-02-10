@@ -21,14 +21,17 @@ module type I = sig
   type arch_global
   val pp_global : arch_global -> string
   val global_compare : arch_global -> arch_global -> int
-  val same_base : arch_global -> arch_global -> bool
+(* Identifiers in faults are considered identical *)
+  val same_id_fault : arch_global -> arch_global -> bool
 end
 
 type 'loc atom =  (Proc.t * Label.t option) * 'loc
 
 val pp_fatom : ('loc -> string) -> 'loc atom -> string
 
+val atom_compare : ('loc -> 'loc -> int) -> 'loc atom -> 'loc atom -> int
 
+val map_value : ('v -> 'w) -> 'v atom -> 'w atom
 
 module type S = sig
 
@@ -42,6 +45,8 @@ module type S = sig
   type fatom = loc_global atom
   val check_one_fatom : fault -> fatom -> bool
   val check_fatom : FaultSet.t -> fatom -> bool
+
+  module FaultAtomSet : MySet.S with type elt = fatom
 
 end
 

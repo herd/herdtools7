@@ -49,11 +49,13 @@ module Top
             module A = A
             type prog =  (MiscParser.proc * A.pseudo list) list
 
+            type v = ParsedConstant.v
+            let dump_v = ParsedConstant.pp_v
+
             let dump_loc = MiscParser.dump_location
             let dump_reg r = r
 
-            let dump_state_atom dump_loc a =
-              MiscParser.dump_state_atom dump_loc ParsedConstant.pp_v a
+            let dump_state_atom dump_loc a = MiscParser.dump_state_atom dump_loc dump_v a
 
             type state = MiscParser.state
 
@@ -93,7 +95,7 @@ module Top
                           MiscParser.location_compare loc loc0 = 0)
                         global_st
                     then k
-                    else (loc,(MiscParser.TyDef,ParsedConstant.intToV 0))::k)
+                    else (loc,(TestType.TyDef,ParsedConstant.intToV 0))::k)
                   gs [] in
               let st = global_st @ zeros in
               String.concat " "

@@ -31,6 +31,7 @@ module Make
     let morello = O.variant Variant.Morello
     let mixed = O.variant Variant.Mixed || morello
     let memtag = O.variant Variant.MemTag
+    let kvm = O.variant Variant.Kvm
 
     let bell_fname =  Misc.app_opt (fun (x,_) -> x) O.bell_model_info
     let bell_info = Misc.app_opt (fun (_,x) -> x) O.bell_model_info
@@ -113,6 +114,23 @@ module Make
       let same_value e1 e2 = match S.E.value_of e1,S.E.value_of e2 with
       | Some v1,Some v2 -> S.A.V.compare v1 v2 = 0
       | _ -> false
+
+      let same_oa e1 e2 = match S.E.value_of e1,S.E.value_of e2 with
+        | Some (S.A.V.Val c1),Some (S.A.V.Val c2) -> Constant.same_oa c1 c2
+        | _ -> false
+
+      let writable2 =
+        let writable ha hd e = match S.E.value_of e with
+          | Some (S.A.V.Val c) -> Constant.writable ha hd c
+          | _ -> false in
+        fun e1 e2 ->
+        let p = S.E.proc_of e1 in
+        match p with
+        | None -> Warn.user_error "Init write as first argument of writable2"
+        | Some p ->
+            let open DirtyBit in
+            let ha = O.dirty.ha p and hd = O.dirty.hd p in
+            writable ha hd e1 || writable ha hd e2
 
     end
 
@@ -227,7 +245,9 @@ module Make
                ("ctrl", lazy (Lazy.force pr).S.ctrl)::k)
              ["id",id;
               "loc", lazy begin
-                E.EventRel.restrict_rel E.same_location (Lazy.force unv)
+                E.EventRel.restrict_rel
+                  E.same_location_with_faults
+                  (Lazy.force unv)
               end;
               "int",lazy begin
                 E.EventRel.restrict_rel E.same_proc_not_init (Lazy.force unv)
@@ -289,13 +309,66 @@ module Make
                  "PoD", E.is_pod;
                  "F", E.is_barrier;
                  "DATA", is_data_port;
-                 "NDATA", (fun e -> not (is_data_port e)); ])) in
+                 "NDATA", (fun e -> not (is_data_port e));])) in
+      let m =
+        if kvm then begin
+            let impl_pte_reads =
+              E.EventSet.filter
+                (fun e -> E.Act.is_implicit_pte_read e.E.action)
+                (Lazy.force mem_evts) in
+            let evts_map =
+              E.EventSet.fold
+                (fun e evts_map ->
+                  let pteval_v = E.read_of e in
+                  let attrs =
+                    let open Constant in
+                    match pteval_v with
+                    | Some (S.A.V.Val (PteVal v)) ->
+                        PTEVal.Attrs.as_list v.PTEVal.attrs
+                    | _ -> assert false in
+                  List.fold_right
+                    (fun attr evts_map ->
+                      let evts_w_attr =
+                        StringMap.safe_find E.EventSet.empty attr evts_map in
+                      let evts_w_attr = E.EventSet.add e evts_w_attr in
+                      let evts_map = StringMap.add attr evts_w_attr evts_map in
+                      evts_map) attrs evts_map)
+                impl_pte_reads StringMap.empty in
+            I.add_sets m
+              (StringMap.fold
+                 (fun k v l -> ("PTE" ^ k, lazy v) :: l) evts_map [])
+          end else m in
       let m =
         I.add_sets m
           (List.map
              (fun (k,a) ->
                k,lazy (E.EventSet.filter (fun e -> a e.E.action) evts))
              E.Act.arch_sets) in
+    let m = (* To be deprecated *)
+      if kvm then
+          let mevt = match I.get_set m "M" with
+            | Some mevt -> mevt
+            | None -> (* Must exists *) assert false in
+          I.add_sets m
+            (List.map
+               (fun (k,a) ->
+                 k,lazy begin
+                   let open DirtyBit in
+                   let tr_proc proc =
+                     let my_ha () = O.dirty.ha proc
+                     and my_hd () = O.dirty.hd proc in
+                     { my_ha; my_hd; } in
+                   E.EventSet.filter
+                     (fun e ->
+                       begin match E.proc_of e with
+                       | Some proc -> a (tr_proc proc) e.E.action
+                       (* Init writes excluded as no proc for them *)
+                       | None -> false
+                       end)
+                     (Lazy.force mevt)
+                 end)
+               E.Act.arch_dirty)
+        else m in
 (* Define empty fence relation
    (for the few models that apply to several archs) *)
       let m = I.add_rels m
@@ -306,13 +379,14 @@ module Make
            "membar.sys",lazy E.EventRel.empty;
          ] in
 (* Override arch specific fences *)
+
       let m =
         I.add_rels m
           (List.map
              (fun (k,p) ->
-               let pred e = p e.E.action in
-               k,lazy (U.po_fence_po conc.S.po pred))
-             E.Act.arch_fences) in
+               let pred (e1,e2) = p e1.E.action e2.E.action in
+               k,lazy (E.EventRel.filter pred (Lazy.force unv)))
+             E.Act.arch_rels) in
 (* Event sets from proc info *)
       let m = match test.Test_herd.proc_info with
       | [] -> m

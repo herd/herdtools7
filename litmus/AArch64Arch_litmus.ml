@@ -21,6 +21,9 @@ let comment = "#"
 module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
 
   include AArch64Base
+
+  let features = [is_atomic,"atomic"]
+
   module V = V
 
   let tab = Hashtbl.create 17
@@ -66,7 +69,16 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
           | (Pointer _,Base "int")  ->
               true
           | _ -> false
+        let warn t1 t2 =
+          let open CType in
+          match t1,t2 with
+          | Base ("int"|"int32_t"|"uint32_t"),
+            Base ("int"|"int32_t"|"uint32_t") -> false
+          | (Base "int",_)|(_,Base "int") -> true
+          | _ -> false
+
       end)
 
       let nop = I_NOP
+
 end

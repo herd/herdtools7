@@ -16,8 +16,12 @@
 
 module type Arch = sig
   module V : Constant.S
+
   type location
   module LocSet : MySet.S with type elt = location
+
+  type rlocation = location ConstrGen.rloc
+  module RLocSet : MySet.S with type elt = rlocation
 end
 
 module type S = sig
@@ -29,35 +33,42 @@ module type S = sig
 (* List of read locations *)
   val locations : cond -> LocSet.t
   val locations_prop : prop -> LocSet.t
+  val rlocations : cond -> RLocSet.t
+  val rlocations_prop : prop -> RLocSet.t
 
 (* List locations that appears as  values *)
   val location_values : cond -> string list
   val location_values_prop : prop -> string list
+
+(* All faults *)
+  val get_faults : cond -> V.v Fault.atom list
+
 end
 
 open ConstrGen
 
 module Make(A : Arch) : S with
 module V = A.V and
-type location = A.location and module LocSet = A.LocSet =
+type location = A.location and module LocSet = A.LocSet and
+module RLocSet = A.RLocSet =
   struct
     open Constant
 
     module V = A.V
     type location = A.location
     module LocSet = A.LocSet
+                   
+    type rlocation = location ConstrGen.rloc
+    module RLocSet = A.RLocSet
 
     type prop = (location,V.v) ConstrGen.prop
     type cond = prop ConstrGen.constr
 
     let locations_atom a r =
       match a with
-      | LV (loc,_) -> LocSet.add (loc_of_rloc loc) r
+      | LV (loc,_) -> LocSet.add (ConstrGen.loc_of_rloc loc) r
       | LL (loc1,loc2) -> LocSet.add loc1 (LocSet.add loc2 r)
-      | FF f ->
-          Warn.warn_always "Ignoring fault %s"
-            (Fault.pp_fatom V.pp_v f) ;
-          r
+      | FF _ -> r
 
     let locations (c:cond) =
       let locs = fold_constr locations_atom c LocSet.empty in
@@ -65,21 +76,34 @@ type location = A.location and module LocSet = A.LocSet =
 
     let locations_prop p = fold_prop locations_atom p LocSet.empty
 
+    let add_loc_as_rloc  loc = RLocSet.add(ConstrGen.Loc loc)
+                    
+    let rlocations_atom a r =
+      match a with
+      | LV (loc,_) -> RLocSet.add loc r
+      | LL (loc1,loc2) ->
+          add_loc_as_rloc loc1 (add_loc_as_rloc loc2 r)
+      | FF _ -> r
+
+    let rlocations (c:cond) =
+      let locs = fold_constr rlocations_atom c RLocSet.empty in
+      locs
+
+    let rlocations_prop p = fold_prop rlocations_atom p RLocSet.empty
+
     module Strings = StringSet
 
     let atom_values a k =
       let open ConstrGen in
       match a with
       | LV (_,v) ->
-          begin
             let rec f v k = match v with
-            | Symbolic {name=s;offset=0;tag=None;_} -> Strings.add s k
-            | Concrete _ -> k
+            | Symbolic (Virtual {name=s;offset=0;tag=None;_}) -> Strings.add s k
+            | Concrete _|PteVal _ -> k
             | ConcreteVector (_,vs) ->
-                List.fold_right (fun v k -> f v k) vs k
+                List.fold_right f vs k
             | Label _|Symbolic _|Tag _ -> assert false in
             f v k
-          end
       | LL _|FF _ -> k
 
     let location_values c =
@@ -90,5 +114,19 @@ type location = A.location and module LocSet = A.LocSet =
       let locs =  fold_prop atom_values p Strings.empty in
       Strings.elements locs
 
+    module F = struct
+      type t = A.V.v Fault.atom
+      let compare = Fault.atom_compare A.V.compare
+    end
+
+    module FSet = MySet.Make(F)
+
+    let add_fault a k = match a with
+    | LV _|LL _ -> k
+    | FF a -> FSet.add a k
+
+    let get_faults c =
+      let fs = fold_constr add_fault c FSet.empty in
+      FSet.elements fs
 
   end

@@ -26,6 +26,7 @@ type op =
   | SetValue | CapaSub | CapaSubs | CapaSetTag | Unseal
   | ShiftLeft
   | ShiftRight
+  | Lsr
   | Lt | Gt | Eq | Ne
   | Le | Ge
   | Max | Min
@@ -59,6 +60,7 @@ let pp_op o =
   | Unseal -> "(unseal)"
   | ShiftLeft -> "<<<" (* In Java ?? *)
   | ShiftRight -> ">>>"
+  | Lsr -> ">>>"
   | Eq -> "=="
   | Lt -> "<"
   | Gt -> ">"
@@ -103,6 +105,18 @@ type op1 =
   | CapaGetTag
   | CheckSealed
   | CapaStrip
+  | TLBLoc (* get TLB entry from location *)
+  | PTELoc (* get PTE entry from location *)
+  | AF (* get AF from PTE entry *)
+  | SetAF (* set AF to 1 in PTE entry *)
+  | DB (* get DB from PTE entry *)
+  | SetDB (* set DB to 1 in PTE entry *)
+  | DBM (* get DBM from PTE entry *)
+  | Valid (* get Valid bit from PTE entry *)
+  | EL0 (* get EL0 bit from PTE entry *)
+  | OA (* get OA from PTE entry *)
+  | IsVirtual (* Detect virtual addresses *)
+
 
 let pp_op1 hexa o = match o with
 | Not -> "!"
@@ -124,6 +138,18 @@ let pp_op1 hexa o = match o with
 | CapaGetTag -> "capagettag"
 | CheckSealed -> "checksealed"
 | CapaStrip -> "capastrip"
+| TLBLoc -> "TLBloc"
+| PTELoc -> "PTEloc"
+| IsVirtual -> "IsVirtual"
+| AF -> "AF"
+| SetAF -> "SetAF"
+| DB -> "DB"
+| SetDB -> "SetDB"
+| DBM -> "DBM"
+| Valid -> "Valid"
+| EL0 -> "EL0"
+| OA -> "OA"
+
 (***********)
 
 type op3 = If

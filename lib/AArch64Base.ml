@@ -290,12 +290,14 @@ let symb_reg_name = function
   | _ -> None
 
 let symb_reg r =  Symbolic_reg r
+let typeof _ = assert false
 
 (************)
 (* Barriers *)
 (************)
 
 type mBReqDomain = NSH | ISH | OSH | SY
+let mBReqDomain_list = [SY; OSH; ISH; NSH]
 
 let fold_domain f k =
   let k = f SY k in
@@ -339,17 +341,9 @@ let fold_barrier_option more f k =
     fold_type (fun t k -> f SY t k) k
 
 let do_fold_dmb_dsb more f k =
-  let k =
-    fold_barrier_option more
-      (fun d t k -> f (DMB (d,t)) k)
-      k in
-  if more then
-    let k =
-      fold_barrier_option more
-        (fun d t k -> f (DSB (d,t)) k)
-        k in
+  fold_barrier_option more
+    (fun d t k -> f (DMB (d,t)) (f (DSB (d,t)) k))
     k
-  else k
 
 let fold_barrier more f k =
   let k = do_fold_dmb_dsb more f k in
@@ -421,6 +415,134 @@ module DC = struct
     pp_funct op.funct ^
     pp_typ op.typ ^
     pp_point op.point
+
+  let sw op = match op.typ with | SW -> true | _ -> false
+  let ci op = match op.funct with | CI -> true | _ -> false
+  let c op = match op.funct with | C -> true | _ -> false
+  let i op = match op.funct with | I -> true | _ -> false
+end
+
+type level = |E0 |E1 |E2 |E3
+
+let levels  = [E0;E1;E2;E3;]
+
+let pp_level = function
+    | E0 -> "E0"
+    | E1 -> "E1"
+    | E2 -> "E2"
+    | E3 -> "E3"
+
+let fold_EL f k = 
+  let k = f E0 k in
+  let k = f E1 k in
+  let k = f E2 k in
+  let k = f E3 k in
+  k
+
+module TLBI = struct
+
+  type typ =
+    | ALL (*all translations at level *)
+    | VMALL (*all stage 1 translations, current VMID *)
+    | VMALLS12 (*all stage 1 & 2 translations, current VMID *)
+    | ASID (*translations matching ASID *)
+    | VA (*translations matching VA and ASID *)
+    | VAL (*last-level translations matching VA and ASID *)
+    | VAA (*translations matching VA, all ASIDs *)
+    | VAAL (*last-level translations matching VA, all ASIDs *)
+    | IPAS2 (*stage 2 translations matching IPA, current VMID *)
+    | IPAS2L (*last-level stage 2 translations matching IPA, current VMID *)
+
+  let pp_typ = function
+    | ALL -> "ALL"
+    | VMALL -> "VMALL"
+    | VMALLS12 -> "VMALLS12"
+    | ASID -> "ASID"
+    | VA -> "VA"
+    | VAL -> "VAL"
+    | VAA -> "VAA"
+    | VAAL -> "VAAL"
+    | IPAS2 -> "IPAS2"
+    | IPAS2L -> "IPAS2L"
+
+  let fold_typ f k =
+    let k = f ALL k in
+    let k = f VMALL k in
+    let k = f VMALLS12 k in
+    let k = f ASID k in
+    let k = f VA k in
+    let k = f VAL k in
+    let k = f VAA k in
+    let k = f IPAS2 k in
+    let k = f IPAS2L k
+    in k
+
+  type domain = | IS | No
+
+  let pp_domain = function
+    | IS -> "IS"
+    | No -> ""
+
+let fold_domain f k =
+  let k = f IS k in
+  let k = f No k
+  in k
+
+  type op = { typ:typ; level:level; domain:domain; }
+
+  let alle1is = { typ=ALL; level=E1; domain=IS; }
+  let alle2is = { typ=ALL; level=E2; domain=IS; }
+
+  let level_list = [ E0; E1; E2; E3 ]
+
+  let typ_list = [ ALL; VMALL; VMALLS12; ASID; VA; VAL; VAA; VAAL; IPAS2; IPAS2L ]
+
+  let domain_list = [ IS; No ]
+
+  let rec fold_from_list xs f k = match xs with
+  | [] -> k
+  | x::xs -> fold_from_list xs f (f x k)
+
+  let full_fold_op f k =
+    fold_from_list
+      typ_list
+      (fun typ k ->
+        fold_from_list level_list
+          (fun level k ->
+            fold_from_list domain_list
+              (fun domain k -> f {typ; level; domain; } k)
+              k)
+          k)
+      k
+
+  let fold_op f k =
+    let k = f  {typ=VMALL; level=E1; domain=IS;} k in
+    f {typ=VAA; level=E1; domain=IS; } k
+
+  let pp_op { typ; level; domain; } =
+    sprintf "%s%s%s" (pp_typ typ) (pp_level level) (pp_domain domain)
+
+  let short_pp_op = function
+    | {typ=VMALL; level=E1; domain=IS} -> "VMALL"
+    | {typ=VAA; level=E1; domain=IS} -> ""
+    | op -> pp_op op
+
+  let is_at_level lvl op =  op.level = lvl
+
+  let inv_all op = match op.typ with
+    | ALL
+    | VMALL
+    | VMALLS12
+        -> true
+    | ASID
+    | VA
+    | VAL
+    | VAA
+    | VAAL
+    | IPAS2
+    | IPAS2L
+      -> false
+
 end
 
 (********************)
@@ -457,11 +579,13 @@ let inverse_cond = function
   | GE -> GT
   | GT -> LE
 
-type op = ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | EOR | ASR
+type op =
+  ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | EOR | ASR | LSR | LSL | BICS | BIC
 type gc = CFHI | GCFLGS | GCPERM | GCSEAL | GCTAG | GCTYPE | GCVALUE
 type sc = CLRPERM | CTHI | SCFLGS | SCTAG | SCVALUE
 type variant = V32 | V64 | V128
 type simd_variant = VSIMD8 | VSIMD16 | VSIMD32 | VSIMD64 | VSIMD128
+
 
 let pp_variant = function
   | V32 -> "V32"
@@ -684,6 +808,7 @@ type 'k kinstruction =
 (* Cache maintenance *)
   | I_IC of IC.op * reg
   | I_DC of DC.op * reg
+  | I_TLBI of TLBI.op * reg
 (* Read system register *)
   | I_MRS of reg * sysreg
 (* Memory Tagging *)
@@ -741,6 +866,10 @@ let pp_op = function
   | AND  -> "AND"
   | ANDS -> "ANDS"
   | ASR  -> "ASR"
+  | LSR  -> "LSR"
+  | LSL  -> "LSL"
+  | BICS -> "BICS"
+  | BIC -> "BIC"
 
 let pp_sc = function
   | CLRPERM -> "CLRPERM"
@@ -1143,6 +1272,10 @@ let do_pp_instruction m =
       sprintf "IC %s,%s" (IC.pp_op op) (pp_xreg r)
   | I_DC (op,r) ->
       sprintf "DC %s,%s" (DC.pp_op op) (pp_xreg r)
+  | I_TLBI (op,ZR)->
+      sprintf "TLBI %s" (TLBI.pp_op op)
+  | I_TLBI (op,r)->
+      sprintf "TLBI %s,%s" (TLBI.pp_op op) (pp_xreg r)
 (* Read System register *)
   | I_MRS (r,sr) ->
       sprintf "MRS %s,%s" (pp_xreg r) (pp_sysreg sr)
@@ -1201,6 +1334,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_TBNZ (_,r,_,_) | I_TBZ (_,r,_,_)
   | I_CHKSLD r | I_CHKTGD r
   | I_MOVI_V (r,_,_) | I_MOVI_S (_,r,_)
+  | I_TLBI (_,r)
     -> fold_reg r c
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
@@ -1474,6 +1608,8 @@ let map_regs f_reg f_symb =
       I_IC (op,map_reg r)
   | I_DC (op,r) ->
       I_DC (op,map_reg r)
+  | I_TLBI (op,r) ->
+      I_TLBI (op,map_reg r)
 (* Read system register *)
   | I_MRS (r,sr) ->
       I_MRS (map_reg r,sr)
@@ -1540,6 +1676,7 @@ let get_next = function
   | I_RBIT _
   | I_IC _
   | I_DC _
+  | I_TLBI _
   | I_MRS _
   | I_STG _| I_STZG _|I_LDG _
   | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
@@ -1615,6 +1752,7 @@ include Pseudo.Make
         | I_RBIT _
         | I_IC _
         | I_DC _
+        | I_TLBI _
         | I_MRS _
         | I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _|I_CPYTYPE _
         | I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|I_SEAL _|I_STCT _
@@ -1703,11 +1841,12 @@ include Pseudo.Make
         | I_LDR _ | I_LDAR _ | I_LDARBH _ | I_LDUR _
         | I_STR _ | I_STLR _ | I_STLRBH _ | I_STXR _
         | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
-        | I_STG _ | I_LDG _
+        | I_STG _ | I_LDG _ 
         | I_LDR_SIMD _ | I_STR_SIMD _
         | I_LD1 _ | I_LD1R _
         | I_ST1 _
         | I_LDUR_SIMD _ | I_STUR_SIMD _
+        | I_TLBI (_,_)
           -> 1
         | I_LDP _|I_STP _
         | I_CAS _ | I_CASBH _
@@ -1747,6 +1886,7 @@ include Pseudo.Make
         | I_CSEL _
         | I_ADDR _
         | I_RBIT _
+(*        | I_TLBI (_,ZR) *)
         | I_MRS _
         | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _
         | I_CLRTAG _|I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_SC _|I_SEAL _
@@ -1791,6 +1931,13 @@ include Pseudo.Make
         | I_ADDR (r,lbl) -> I_ADDR (r, f lbl)
         | ins -> ins
     end)
+
+(* Atomic-modify instruction *)
+let is_atomic = function
+  | I_CAS _ | I_CASBH _ | I_SWP _ | I_SWPBH _
+  | I_LDOP _ | I_LDOPBH _ | I_STOP _ | I_STOPBH _
+      -> true
+  | _ -> false
 
 let get_macro _name = raise Not_found
 

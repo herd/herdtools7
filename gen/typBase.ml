@@ -19,7 +19,8 @@
 open MachSize
 
 type sgn = Signed | Unsigned
-type t =   Int | Std of sgn * MachSize.sz
+
+type t =   Int | Std of sgn * MachSize.sz | Pteval
 
 let tags =
   ["int";
@@ -56,14 +57,20 @@ let pp = function
 | Std (Unsigned,Quad) ->  "uint64_t"
 | Std (Signed,S128) ->  "int128_t"
 | Std (Unsigned,S128) ->  "uint128_t"
+| Pteval -> "pteval_t"
 
 
 let default = Int
-
 let is_default = function
   | Int -> true
+  | _ -> false
+
+let pteval_t = Pteval
+let is_pteval_t = function
+  | Pteval -> true
   | _ -> false
 
 let get_size = function
   | Int -> Word
   | Std (_,sz) -> sz
+  | Pteval -> Quad

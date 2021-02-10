@@ -30,10 +30,12 @@ type t =
   | NoVolatile
 (* Morello C64 instruction set *)
   | Morello
+(* Explicit virtual memory *)
+  | KVM
 
 let tags =
  ["AsAmo";"ConstsInInit";"Mixed";"FullMixed";"Self"; "MemTag";
-  "NoVolatile"; "Morello"; ]
+  "NoVolatile"; "Morello"; "kvm"; ]
 
 let parse tag = match Misc.lowercase tag with
 | "asamo" -> Some AsAmo
@@ -44,6 +46,7 @@ let parse tag = match Misc.lowercase tag with
 | "memtag" -> Some MemTag
 | "novolatile" -> Some NoVolatile
 | "morello" -> Some Morello
+| "kvm" -> Some KVM
 | _ -> None
 
 let pp = function
@@ -55,3 +58,5 @@ let pp = function
   | MemTag -> "MemTag"
   | NoVolatile -> "NoVolatile"
   | Morello -> "Morello"
+  | KVM -> "kvm"
+

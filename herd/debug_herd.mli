@@ -21,6 +21,7 @@ type t = {
   lexer : bool ;
   top : bool ;
   mem : bool ;
+  monad : bool ;
   barrier : bool ;
   res : bool ;
   rfm : bool  ;

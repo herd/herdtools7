@@ -81,8 +81,8 @@ type info = (string * string) list
 (* Name of plain accesses *)
 val plain : string
 
-(* Memory bank (for MTE)  *)
-type bank = Ord | Tag | CapaTag | CapaSeal
+(* Memory bank (for MTE, KVM)  *)
+type bank = Ord | Tag | CapaTag | CapaSeal | Pte
 
 val pp_bank : bank -> string
 

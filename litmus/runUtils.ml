@@ -48,6 +48,7 @@ end
 
 module Make(O:Config) =
 struct
+
 (* Check dontrun file *)
 let file_base doc =
   let base = Filename.basename doc.Name.file in

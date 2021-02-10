@@ -53,6 +53,10 @@ external int_compare : int -> int -> int = "caml_int_compare"
 let int_eq (x:int) (y:int) = x == y
 let string_eq (s1:string) (s2:string) = (=) s1 s2
 
+let bool_eq b1 b2 = match b1,b2 with
+| (true,true)|(false,false) -> true
+| (false,true)|(true,false) -> false
+
 external identity : 'a -> 'a = "%identity"
 
 let ing _ = ()
@@ -75,6 +79,10 @@ let as_some = function
 let proj_opt default = function
   | None -> default
   | Some x -> x
+
+let seq_opt f = function
+  | Some x -> f x
+  | None -> None
 
 let app_opt f = function
   | None -> None
@@ -141,6 +149,21 @@ let pair_compare cmpx cmpy (x1,y1) (x2,y2) =
   match cmpx x1 x2 with
   | 0 -> cmpy y1 y2
   | r -> r
+
+let rec list_compare cmp xs ys = match xs,ys with
+  | [],[] -> 0
+  | [],_::_ -> -1
+  | _::_,[] -> 1
+  | x::xs,y::ys ->
+      begin match cmp x y with
+      | 0 -> list_compare cmp xs ys
+      | r -> r
+      end
+
+let rec list_eq eq xs ys = match xs,ys with
+  | [],[] -> true
+  | ([],_::_)|(_::_,[]) -> false
+  | x::xs,y::ys -> eq x y && list_eq eq xs ys
 
 (* Avoid String.lowercase warning *)
 let char_lowercase = function
@@ -282,6 +305,10 @@ let fold_bool f k =  f true (f false k)
 (******************)
 (* List utilities *)
 (******************)
+let nilp = function
+  | [] -> true
+  | _::_ -> false
+
 let consp = function
   | [] -> false
   | _::_ -> true
@@ -328,16 +355,6 @@ let rec map3 f xs ys zs = match xs,ys,zs with
     f x y z::map3 f xs ys zs
 | _,_,_ -> assert false
 
-let rec list_compare cmp xs ys = match xs,ys with
-| [],[] -> 0
-| [],_::_ -> -1
-| _::_,[] -> 1
-| x::xs,y::ys ->
-    begin match cmp x y with
-    | 0 -> list_compare cmp xs ys
-    | r -> r
-    end
-
 let rem_dups is_same =
   let rec rem_rec prev = function
     | [] -> []
@@ -378,6 +395,41 @@ let nsplit n xs =
       do_rec xs yss in
   let yss = do_rec xs (replicate n []) in
   List.map List.rev yss
+
+let rec group same xs = match xs with
+| [] -> []
+| x::xs ->
+    let xx,xs = List.partition (same x) xs in
+    (x::xx)::group same xs
+
+let group_iter same do_it xs =
+  let xss = group same xs in
+  List.iter
+    (fun xs -> match xs with
+    | [] -> assert false
+    | x::_ -> do_it x xs)
+    xss
+
+let group_iteri same do_it xs =
+  let xss = group same xs in
+  List.iteri
+    (fun k xs -> match xs with
+    | [] -> assert false
+    | x::_ -> do_it k x xs)
+    xss
+
+(* Check f yield eq results on a list, and returns the result  *)
+
+let check_same eq f xs =
+  try
+    List.fold_left
+      (fun prev x -> match prev with
+      | None -> Some (f x)
+      | Some y0 ->
+          if eq y0 (f x) then prev
+          else raise Exit)
+      None xs
+  with Exit -> None
 
 (* Bool's *)
 
@@ -702,11 +754,81 @@ let clean_name n =
 (* Test name *)
 (*************)
 
-let add_atag = sprintf "%s.atag"
-and check_atag s = Filename.check_suffix s ".atag"
-
 let add_ctag = sprintf "%s.ctag"
 and check_ctag s = Filename.check_suffix s ".ctag"
 let tr_ctag s =
   assert (check_ctag s) ;
   String.sub s 0 (String.length s - 5)
+
+let add_atag = sprintf "%s.atag"
+and check_atag s = Filename.check_suffix s ".atag"
+
+let tr_atag s =
+  if check_atag s then
+    Some (Filename.chop_suffix s ".atag")
+  else None
+
+let is_prefix prf =
+  let prf_len = String.length prf in
+  fun s ->
+    let len = String.length s in
+    len > prf_len && string_eq prf (String.sub s 0 prf_len )
+
+let do_tr prf =
+  let prf_len = String.length prf in
+    (*Printf.printf "prf: %s\n" prf;*)
+  fun s ->
+    let len = String.length s in
+    (*Printf.printf "s: %s\n" s;*)
+    if is_prefix prf s then
+      let news = (String.sub s prf_len (len-prf_len)) in
+      (*Printf.printf "news: %s\n" news;*)
+      Some news 
+    else 
+      (*Printf.printf "notnews: %s\n" s;*)
+      None
+
+let add_pte = sprintf "pte_%s"
+let tr_pte = do_tr "pte_"
+let is_pte = is_prefix "pte_"
+
+let add_tlb = sprintf "tlb_%s"
+
+let add_af = sprintf "af_%s"
+let tr_af = do_tr "af_"
+
+let add_db = sprintf "db_%s"
+let tr_db = do_tr "db_"
+
+let add_dbm = sprintf "dbm_%s"
+let tr_dbm = do_tr "dbm_"
+
+let add_physical s = sprintf "phy_%s" s
+let tr_physical = do_tr "phy_"
+
+let add_valid = sprintf "valid_%s"
+let add_oa = sprintf "oa_%s"
+
+(******************)
+(* Hash utilities *)
+(******************)
+let  mix a b c =
+  let a = a-b in let a = a-c in
+  let a = a lxor (c lsr 13) in
+  let b = b-c in let b = b-a in
+  let b = b lxor (a lsl 8) in
+  let c = c-a in let c = c-b in
+  let c = c lxor (b lsr 13) in
+  let a = a-b in let a = a-c in
+  let a = a lxor (c lsr 12) in 
+  let b = b-c in let b = b-a in
+  let b = b lxor (a lsl 16) in
+  let c = c-a in let c = c-b in
+  let c = c lxor (c lsr 5) in
+  let a = a-b in let a = a-c in
+  let a = a lxor (c lsl 3) in
+  let b = b-c in let b = b-a in
+  let b = b lxor (a lsl 10) in
+  let c = c-a in let c = c-b in
+  let c = c lxor (c lsr  15) in
+  c

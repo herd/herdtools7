@@ -76,8 +76,11 @@ struct
   let collect_constr = ConstrGen.fold_constr collect_atom
 
   let collect_locs =
-    List.fold_right (fun (loc,_) -> collect_rloc loc)
-
+    let open LocationsItem in
+    List.fold_right
+      (fun i -> match i with
+      | Loc (l,_) -> ConstrGen.fold_rloc collect_location l
+      | Fault (_,x) -> collect_location (A.Location_global x))
 
 (***************************)
 (* Alpha conversion proper *)
@@ -117,7 +120,11 @@ struct
   let alpha_state f = List.map (alpha_state_atom f)
 
   let alpha_locations f =
-    List.map (fun (rloc,t) -> alpha_rloc f rloc,t)
+    let open LocationsItem in
+    List.map
+      (function
+        | Loc (x,t) -> Loc (alpha_rloc f x,t)
+        | Fault (_,x) as a -> ignore (Constant.check_sym x); a)
 
   let alpha_constr f = ConstrGen.map_constr (alpha_atom f)
 
@@ -177,20 +184,30 @@ struct
 
     let nolabel_value () = Warn.user_error "No label value for %s" Sys.argv.(0)
     let notag_value () = Warn.user_error "No tag value for %s" Sys.argv.(0)
+    let nopte_value () = Warn.user_error "No pteval_t value for %s" Sys.argv.(0)
 
     let collect_value f v k = match v with
-    | Symbolic {name=s;_} -> f s k
+    | Symbolic (Virtual {name=s;_}|System ((PTE|PTE2),s))
+      -> f s k
     | Concrete _ -> k
     | ConcreteVector _ -> k
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
+    | PteVal _ -> nopte_value ()
+    | Symbolic (Physical _|System ((TLB|TAG),_)) -> assert false
+
 
     let map_value f v = match v with
-    | Symbolic ({name=s;_} as sym) -> Symbolic {sym with name=f s}
+    | Symbolic (Virtual sym) -> Symbolic (Virtual {sym with name=sym.name; })
+    | Symbolic (System (PTE,s)) ->  Symbolic (System (PTE,f s))
+    | Symbolic (System (PTE2,s)) ->  Symbolic (System (PTE2,f s))
     | Concrete _ -> v
     | ConcreteVector _ -> v
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
+    | PteVal _ -> nopte_value ()
+    | Symbolic (Physical _|System ((TLB|TAG),_)) -> assert false
+
 
     let collect_pseudo f =
       A.pseudo_fold
@@ -256,11 +273,14 @@ struct
 
     let map_constr f = ConstrGen.map_constr (map_atom f)
 
-    let collect_locs f =
-      List.fold_right (fun (loc,_) -> collect_rloc f loc)
+    let collect_locs f = LocationsItem.fold_locs (collect_location f)
 
     let map_locs f =
-      List.map (fun (loc,t) -> my_map_rloc f loc,t)
+      let open LocationsItem in
+      List.map
+        (function
+          | Loc (x,t) -> Loc (my_map_rloc f x,t)
+          | Fault (p,x)-> Fault (p,map_global f x))
 
     module StringSet = MySet.Make(String)
 

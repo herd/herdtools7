@@ -30,6 +30,9 @@ module Make(V:Constant.S)(C:Config) =
     open Printf
 
     let is_ret _ = assert false
+    and is_nop = function
+      | A.Pnop -> true
+      | _ -> false
 
 (* Ready for template compilation *)
     let op3regs memo set rD rA rB =
@@ -216,6 +219,8 @@ module Make(V:Constant.S)(C:Config) =
           cmpwi loop_idx 0;
           bcc tr_nolab Gt lbl1; ]
 
+    let user_mode = [] and kernel_mode = []
+
     let do_compile_ins tr_lab ins k = match tr_ins ins with
     | Pnop -> { empty_ins with memo="nop"; }::k
     | Pmr (rD,rS) -> mr rD rS::k
@@ -391,7 +396,7 @@ module Make(V:Constant.S)(C:Config) =
             { empty_ins with memo = ".long 0x00000200"; }::k
         | _ -> k )
 
-    let extract_addrs _ins = StringSet.empty
+    let extract_addrs _ins = Global_litmus.Set.empty
 
     let stable_regs ins = match ins with
     | Pstmw (r1,_,_)

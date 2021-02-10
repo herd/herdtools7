@@ -60,7 +60,7 @@ include "aarch64fences.cat"
 
 (*
  * Include aarch64deps.cat to define dependencies.
- *)
+*)
 include "aarch64deps.cat"
 
 (* Show relations in generated diagrams *)
@@ -119,7 +119,7 @@ let aob = rmw
 	| [range(rmw)]; lrs; [A | Q]
 
 (* Barrier-ordered-before *)
-let bob = po; [dmb.full]; po
+let bob = po; [dmb.full]; po 
         | po; ([A];amo;[L]); po
 	| [L]; po; [A]
 	| [R\NoRet]; po; [dmb.ld]; po
@@ -144,7 +144,7 @@ let rec ob = obs; si
 	| ob; ob
 
 (* Tag-location-ordered *)
-let tlo = [R & T]; tob; loc; tob^-1; [R & T]
+let tlo = [R & T]; intrinsic; loc; intrinsic^-1; [R & T]
 
 (* Internal visibility requirement *)
 let po-loc =

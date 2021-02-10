@@ -83,6 +83,7 @@ val alloc : Alloc.t ref
 val doublealloc : bool ref
 val noalign : Align.t option ref
 val speedcheck : Speedcheck.t ref
+val makevar : string list ref
 val gcc : string ref
 val c11 : bool ref
 val c11_fence : bool ref
@@ -119,6 +120,7 @@ val cacheflush : bool ref
 val carch : Archs.System.t option ref
 val mode : Mode.t ref
 val usearch : UseArch.t ref
+val precision : bool ref
 val variant : (Variant_litmus.t -> bool) ref
 
 (* Arch dependent option *)

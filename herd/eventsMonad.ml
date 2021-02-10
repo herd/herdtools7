@@ -29,6 +29,8 @@ module Make (C:Config)
 and type evt_struct = E.event_structure) =
   struct
 
+    open Printf
+
     module A = A
     module E = E
     module V = A.V
@@ -40,6 +42,7 @@ and type evt_struct = E.event_structure) =
         (A)
 
     let dbg = C.debug.Debug_herd.mem
+    let dbg_monad = C.debug.Debug_herd.monad
     let do_deps = C.variant Variant.Deps
 
 (* LM Use lists for polymorphism.
@@ -72,6 +75,11 @@ and type evt_struct = E.event_structure) =
 
       let fold f xs y0 =
         List.fold_left (fun x y -> f y x) y0 xs
+
+      let foldfold f xs ys z0 =
+        List.fold_left
+          (fun z x -> List.fold_left (fun z y -> f x y z) z ys)
+          z0 xs
 
       let union = (@)
 
@@ -134,17 +142,40 @@ Monad type:
       fun eiid_next ->
         eiid_next, (Evt.singleton (v, [], E.empty_event_structure), None)
 
-(* Delay incompatible with speculation *)
-    let delay
-        = fun (m:'a t) (eiid:eid) ->
-          let eiid,(mact,_) = m eiid in
-          let delayed = fun v es eiid -> eiid,(Evt.singleton (v,[],es),None) in
-          let f = fun (v,cl,es) -> ((v,delayed v es),cl,E.empty_event_structure) in
-          eiid,(Evt.map f mact,None)
+(* This very special combinator permits to get monad m's result,
+   while postponing the usaga of corresponding event structure.
+   It proves convenient to express complex dependencies.
+   Not compatible with speculation *)
+
+    let delay_kont
+        = fun tag (m:'a t) kont (eiid:eid) ->
+          let eiid,(acts,specs) = m eiid in
+          assert (specs=None) ;
+          let eiid,acts =
+            Evt.fold
+              (fun (v,cls,es) (eiid,acts) ->
+                if dbg_monad then begin
+                    eprintf "Delay %s output is %a\n" tag E.debug_output es
+                  end ;
+               let delayed : 'a t =
+                  fun eiid -> eiid,(Evt.singleton (v,[],es),None) in
+                let eiid,(acts2,specs) = kont v delayed eiid in
+                assert (specs=None) ;
+                let acts =
+                  Evt.fold
+                    (fun (v,cls2,es) acts -> Evt.add (v,cls@cls2,es) acts)
+                    acts2 acts in
+                eiid,acts)
+              acts (eiid,Evt.empty) in
+          eiid,(acts,None)
+
+    let delay (m:'a t) eiid =
+      delay_kont "delay" m (fun v delayed -> unitT (v,delayed)) eiid
 
     let (=**=) = E.(=**=)
     let (=*$=) = E.(=*$=)
     let (=$$=) = E.(=$$=)
+    let (=*$$=) = E.(=*$$=)
     let (+|+) = E.(+|+)
     let (=|=) = E.para_comp true
 
@@ -183,9 +214,11 @@ Monad type:
     let (>>==) : 'a t -> ('a -> 'b t) -> ('b) t
         = fun s f -> data_comp (=$$=) s f
 
-(* Bind the result *)
     let (>>*=) : 'a t -> ('a -> 'b t) -> ('b) t
-        = fun s f -> data_comp (=**=) s f
+      = fun s f -> data_comp (=**=) s f
+
+    let (>>*==) : 'a t -> ('a -> 'b t) -> ('b) t
+        = fun s f -> data_comp (=*$$=) s f
 
     let bind_ctrl_avoid ma s f = fun eiid ->
       let eiid,(mact,spec) = ma eiid in
@@ -194,8 +227,31 @@ Monad type:
       assert (cl=[]) ;
       data_comp (E.bind_ctrl_avoid es.E.events) s f eiid
 
+(* Triple composition *)
+    let comp_comp comp_str m1 m2 m3 eiid =
+      let eiid,(acts1,spec1) = m1 eiid in
+      let eiid,(acts2,spec2) = m2 eiid in
+      assert (spec1=None); assert (spec2=None);
+      let eiid,acts =
+        Evt.foldfold
+          (fun (v1,cl1,es1) (v2,cl2,es2) (eiid,acts) ->
+            let eiid,(acts3,spec3) = m3 v1 v2 eiid in
+            assert (spec3=None) ;
+            let acts =
+              Evt.fold
+                (fun (v3,cl3,es3) acts ->
+                  let es = comp_str es1 es2 es3 in
+                  Evt.add (v3,cl1@cl2@cl3,es) acts)
+                acts3 acts in
+            eiid,acts)
+          acts1 acts2 (eiid,Evt.empty) in
+      eiid,(acts,None)
+
+    let bind_ctrl_data m1 m2 m3 eiid =
+      comp_comp E.bind_ctrl_data m1 m2 m3 eiid
+
 (* Tag check combinator *)
-    let check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v -> 'v t) -> 'x t -> 'v t
+    let check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v t) -> 'x t -> 'v t
         = fun ma rtag comp commit ->
           fun (eiid:eid) ->
             let eiid,(aact) = ma eiid in
@@ -204,7 +260,7 @@ Monad type:
             let eiid,commitact = commit eiid in
             let tag,rtagcl,rtages = Evt.as_singleton_nospecul rtagact
             and _,commitcl,commites = Evt.as_singleton_nospecul commitact in
-            let eiid,compact = comp a tag eiid in
+            let eiid,compact = comp tag eiid in
             let vcomp,compcl,_ = Evt.as_singleton_nospecul compact in
             let es = E.check_tags aes rtages commites in
             eiid,(Evt.singleton (vcomp,acl@rtagcl@commitcl@compcl,es),None)
@@ -231,24 +287,30 @@ Monad type:
       ('loc -> A.V.v t) -> A.V.v t -> ('loc -> A.V.v -> unit t) -> (A.V.v -> unit t)
         -> unit t  = fun op rloc rmem rreg wmem wreg ->
           fun eiid ->
-        let eiid,locm = rloc eiid in
-        let eiid,expm = rreg eiid in
-        let (loc,vlcloc,esloc) =  Evt.as_singleton_nospecul locm
-        and (v,vclexp,esexp) = Evt.as_singleton_nospecul expm in
-        let eiid,rmemm = rmem loc eiid in
-        let r = match op with None -> v | Some _ -> V.fresh_var () in
-        let eiid,wmemm = wmem loc r eiid in
-        let w,vclrmem,esrmem =  Evt.as_singleton_nospecul rmemm
-        and (),vclwmem,eswmem = Evt.as_singleton_nospecul wmemm in
-        let vlop =
-          match op with
-          | None -> Misc.identity
-          | Some op -> fun k -> VC.Assign (r,VC.Binop (op,w,v))::k in
-        let eiid,wreg = wreg w eiid in
-        let (),vclwreg,eswreg = Evt.as_singleton_nospecul wreg in
-        let es = E.swp_or_amo op esloc esrmem esexp eswmem eswreg in
-        eiid,
-        (Evt.singleton ((),vlop (vlcloc@vclexp@vclrmem@vclwmem@vclwreg),es), None)
+        let eiid,(locm,spec) = rloc eiid in
+        assert (spec=None) ;
+        let eiid,acts =
+          Evt.fold
+            (fun (loc,vlcloc,esloc) (eiid,acts) ->
+              let eiid,expm = rreg eiid in
+              let  (v,vclexp,esexp) = Evt.as_singleton_nospecul expm in
+              let eiid,rmemm = rmem loc eiid in
+              let r = match op with None -> v | Some _ -> V.fresh_var () in
+              let eiid,wmemm = wmem loc r eiid in
+              let w,vclrmem,esrmem =  Evt.as_singleton_nospecul rmemm
+              and (),vclwmem,eswmem = Evt.as_singleton_nospecul wmemm in
+              let vlop =
+                match op with
+                | None -> Misc.identity
+                | Some op -> fun k -> VC.Assign (r,VC.Binop (op,w,v))::k in
+              let eiid,wreg = wreg w eiid in
+              let (),vclwreg,eswreg = Evt.as_singleton_nospecul wreg in
+              let es = E.swp_or_amo op esloc esrmem esexp eswmem eswreg in
+              let act = (),vlop (vlcloc@vclexp@vclrmem@vclwmem@vclwreg),es in
+              eiid,Evt.add act acts)
+            locm (eiid,Evt.empty) in
+        eiid,(acts,None)
+
     let swp rloc rmem rreg wmem wreg = swp_or_amo None rloc rmem rreg wmem wreg
     let amo_strict op rloc rmem rreg wmem wreg = swp_or_amo (Some op) rloc rmem rreg wmem wreg
 
@@ -426,22 +488,28 @@ Monad type:
       let eiid,read_rn = read_rn eiid in
       let eiid,read_rs = read_rs eiid in
       let eiid,read_rt = read_rt eiid in
-      let a,cl_a,es_rn = Evt.as_singleton_nospecul read_rn
-      and cv,cl_cv,es_rs = Evt.as_singleton_nospecul read_rs
+      let cv,cl_cv,es_rs = Evt.as_singleton_nospecul read_rs
       and nv,cl_nv,es_rt = Evt.as_singleton_nospecul read_rt in
-      let eiid,read_mem = read_mem a eiid in
-      let eiid,write_mem = write_mem a nv eiid in
-      let ov,cl_rm,es_rm = Evt.as_singleton_nospecul read_mem
-      and (),cl_wm,es_wm= Evt.as_singleton_nospecul write_mem in
-      let eiid,write_rs = write_rs ov eiid in
-      let (),cl_wrs,es_wrs = Evt.as_singleton_nospecul write_rs in
-      let eiid,eqm = req ov cv eiid in
-      let (),cl_eq,eseq =  Evt.as_singleton_nospecul eqm in
-      assert (E.is_empty_event_structure eseq) ;
-      let es =
-        E.aarch64_cas_ok es_rn es_rs es_rt es_wrs es_rm es_wm in
-      let cls = cl_a@cl_cv@cl_nv@cl_rm@cl_wm@cl_wrs@cl_eq  in
-      eiid,(Evt.singleton ((),cls,es), None)
+      let acts_rn,spec = read_rn in
+      assert (spec=None) ;
+      let eiid,acts =
+        Evt.fold
+          (fun (a,cl_a,es_rn) (eiid,acts) ->
+            let eiid,read_mem = read_mem a eiid in
+            let eiid,write_mem = write_mem a nv eiid in
+            let ov,cl_rm,es_rm = Evt.as_singleton_nospecul read_mem
+            and (),cl_wm,es_wm= Evt.as_singleton_nospecul write_mem in
+            let eiid,write_rs = write_rs ov eiid in
+            let (),cl_wrs,es_wrs = Evt.as_singleton_nospecul write_rs in
+            let eiid,eqm = req ov cv eiid in
+            let (),cl_eq,eseq =  Evt.as_singleton_nospecul eqm in
+            assert (E.is_empty_event_structure eseq) ;
+            let es =
+              E.aarch64_cas_ok es_rn es_rs es_rt es_wrs es_rm es_wm in
+            let cls = cl_a@cl_cv@cl_nv@cl_rm@cl_wm@cl_wrs@cl_eq  in
+            eiid,Evt.add ((),cls,es) acts)
+          acts_rn (eiid,Evt.empty) in
+      eiid,(acts, None)
 
 (* Temporary morello variation of CAS *)
     let aarch64_cas_ok_morello
@@ -671,7 +739,18 @@ Monad type:
       if do_deps then speculPredT v pod m1 m2
       else pod >>= fun () -> choiceT v m1 m2
 
-    let (|*|) : unit code -> unit code -> unit code
+    let discard_false sact =
+      List.fold_right
+        (fun (b,vcl,evt) k -> if b then ((),vcl,evt)::k else k)
+        sact []
+
+    let discard_false_opt = function
+      | None -> None
+      | Some sact -> match discard_false sact with
+        | [] -> None
+        | sact -> Some sact
+
+    let (|*|) : bool code -> unit code -> unit code
         = fun s1 s2 ->
           fun (poi,eiid) ->
             let ((_,eiid), (s1act,spec1)) = s1 (poi,eiid) in
@@ -680,17 +759,20 @@ Monad type:
             let s2lst = Evt.elements s2act in
             let s3act =
               List.fold_left
-                (fun acc (_,vcla,evta) ->
-                  List.fold_left
-                    (fun acc (_,vclb,evtb) ->
-                      match evta +|+ evtb with
-                      | Some evtc -> Evt.add ((), vcla@vclb, evtc) acc
-                      | None      -> acc)
-                    acc s2lst)
+                (fun acc (va,vcla,evta) ->
+                  if va then
+                    List.fold_left
+                      (fun acc (_,vclb,evtb) ->
+                        match evta +|+ evtb with
+                        | Some evtc -> Evt.add ((), vcla@vclb, evtc) acc
+                        | None      -> acc)
+                      acc s2lst
+                  else acc)
                 Evt.empty s1lst in
             let spec3 = None in
             let pair = begin
-              if Evt.is_empty s2act then (s1act,spec1)
+              if Evt.is_empty s2act then
+                (discard_false s1act,discard_false_opt spec1)
               else if Evt.is_empty s1act then (s2act,spec2)
               else (s3act,spec3)
             end
@@ -708,21 +790,26 @@ Monad type:
 
 
 (* ordinary combination, not much to say *)
-    let other_combi (_,vcl1,es1) (v2,vcl2,es2) k =
-      let es = E.inst_code_comp es1 es2 in
-      Evt.add (v2,vcl1@vcl2,es) k
 
-    let other_combi_spec (_,vcl1,es1) (v2,vcl2,es2) (_,vcl3,es3) k =
-      let es = E.inst_code_comp_spec es1 es2 es3 in
-      Evt.add (v2,vcl1@vcl2@vcl3,es) k
+    let other_combi ok (_,vcl1,es1) (v2,vcl2,es2) k =
+      if ok v2 then
+        let es = E.inst_code_comp es1 es2 in
+        Evt.add (v2,vcl1@vcl2,es) k
+      else k
+
+    let other_combi_spec ok (_,vcl1,es1) (v2,vcl2,es2) (_,vcl3,es3) k =
+      if ok v2 then
+        let es = E.inst_code_comp_spec es1 es2 es3 in
+        Evt.add (v2,vcl1@vcl2@vcl3,es) k
+      else k
 
 
 (* Ordinary instr + code compostion. Notice: no causality from s to f v1 *)
 
     let comb_instr_code
-        : (poi -> (poi * 'a) t) -> ('a -> 'b code) -> 'b code
+        : ('b -> bool) -> (poi -> (poi * 'a) t) -> ('a -> 'b code) -> 'b code
             =
-          fun s f (poi,eiid) ->
+          fun ok s f (poi,eiid) ->
             let ({id=eiid;_},(acts1,spec1)) = s poi {id=eiid; sub=0;} in
             assert (spec1 = None) ;
             let poi,acts =
@@ -733,8 +820,10 @@ Monad type:
                   let acts =
                     Evt.fold
                       (fun (v2,vcl2,es2) acts ->
-                        let es = E.inst_code_comp es1 es2 in
-                        Evt.add (v2,vcl2@vcl1,es) acts)
+                        if ok v2 then
+                          let es = E.inst_code_comp es1 es2 in
+                          Evt.add (v2,vcl2@vcl1,es) acts
+                        else acts)
                       acts2 acts in
                   (max po2 po,eiid),acts)
                 acts1 ((0,eiid),Evt.empty) in
@@ -745,9 +834,9 @@ Monad type:
     let not_speculated es = E.EventSet.is_empty es.E.speculated
 
     let comb_instr_code_deps
-        : (poi -> (poi * 'a) t) -> ('a -> 'b code) -> 'b code
+        : ('b -> bool) -> (poi -> (poi * 'a) t) -> ('a -> 'b code) -> 'b code
             =
-          fun s f -> fun (poi,eiid) ->
+          fun ok s f -> fun (poi,eiid) ->
             let ({id=eiid;_}, (sact,spec)) = s poi {id=eiid;sub=0} in
             (* We check that all semantics for "s" (instruction)
                1. Yield the same value,
@@ -759,38 +848,40 @@ Monad type:
                   v1 = v2 && not_speculated es1 = not_speculated es2) sact in
             if not_speculated es1 then
               let poi,(b_setact,bspec) = f v1 (poi,eiid) in
-              let k = fold2_ess other_combi sact b_setact in
+              let k = fold2_ess (other_combi ok) sact b_setact in
               let spec = match spec,bspec with
               | None, None -> None
               | None, Some spec2 ->
                   let spec1 = do_speculates sact in
-                  Some (fold2_ess other_combi spec1 spec2)
+                  Some (fold2_ess (other_combi ok) spec1 spec2)
               | Some spec1,None ->
                   let spec2 = do_speculates b_setact in
-                  Some (fold2_ess other_combi spec1 spec2)
+                  Some (fold2_ess (other_combi ok) spec1 spec2)
               | Some spec1,Some spec2 ->
-                  Some (fold2_ess other_combi spec1 spec2) in
+                  Some (fold2_ess (other_combi ok) spec1 spec2) in
               (poi,(k,spec))
             else
               let poi,(b_setact,bspec) = f v1 (poi,eiid) in
               let poi,(c_setact,cspec) = f v1 poi in
               let k =
-                fold3_ess other_combi_spec sact b_setact c_setact in
+                fold3_ess (other_combi_spec ok) sact b_setact c_setact in
               let spec = match spec,bspec,cspec with
               | Some spec1,None,None ->
                   let spec2 = do_speculates b_setact
                   and spec3 = do_speculates c_setact in
-                  Some (fold3_ess other_combi_spec spec1 spec2 spec3)
+                  Some (fold3_ess (other_combi_spec ok) spec1 spec2 spec3)
               | Some spec1,Some spec2,Some spec3 ->
-                  Some (fold3_ess other_combi_spec spec1 spec2 spec3)
+                  Some (fold3_ess (other_combi_spec ok) spec1 spec2 spec3)
               | _ ->
                   Warn.fatal "Inconsistent speculation in (<<<)" in
               poi,(k,spec)
 
-(* Actual instr + code combinatioj depends upon deps mode *)
+(* Actual instr + code combination depends upon deps mode *)
+    let add_instr ok s f =
+      if do_deps then comb_instr_code_deps ok s f
+      else comb_instr_code ok s f
 
-let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
-
+    let (>>>) s f = add_instr (fun _ -> true) s f
 
 (* For combining conditions and branches of an if, as above + instruction dependencies *)
     let (>>>>) s f = fun eiid ->
@@ -958,6 +1049,7 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
 
       let memtag = C.variant Variant.MemTag
       let morello = C.variant Variant.Morello
+      let kvm = C.variant Variant.Kvm
 
       module AM = A.Mixed(SZ)
 
@@ -1065,7 +1157,17 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
           let st = make_mixed es e_full in
           make_one_monad () (a_eqs@v_eqs) st eiid
 
-      let is_tagloc a = A.V.check_atag a
+      let is_tagloc a =
+        let open Constant in
+        match a with
+        | V.Val (Symbolic (System (TAG,_))) -> true
+        | _ -> false
+
+      let is_pteloc a =
+        let open Constant in
+        match a with
+        | V.Val (Symbolic (System (PTE,_))) -> true
+        | _ -> false
 
       let add_inittags env =
         let glob,tag =
@@ -1080,9 +1182,18 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
         let env =
           List.fold_left
             (fun env a ->
-              let atag =  V.op1 Op.TagLoc a in
-              if A.VSet.mem atag tag_set then env
-              else (A.Location_global atag,A.V.Val (Constant.default_tag))::env)
+              if not (is_pteloc a) then
+              begin
+                let atag =  V.op1 Op.TagLoc a in
+                if A.VSet.mem atag tag_set then env
+                else begin
+                  if dbg then
+                    eprintf "Tag %s for %s defaulting\n"
+                      (A.V.pp_v atag) (A.V.pp_v a) ;
+                  (A.Location_global atag,A.V.Val (Constant.default_tag))::env
+                end
+              end
+              else env)
             env glob in
         env
 
@@ -1091,22 +1202,109 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
         let open Constant in
         bump_eid eiid,
         { E.eiid = eiid.id; E.subid=eiid.sub; E.iiid = None;
-          E.action = E.Act.mk_init_write (A.Location_global
-            (A.V.Val (Symbolic
-            {default_symbolic_data with name=Misc.add_ctag s})))
-            def_size v; }
+          E.action =
+            E.Act.mk_init_write
+              (A.of_symbolic_data
+                 {default_symbolic_data with name=Misc.add_ctag s})
+              def_size v; }
+
+      let debug_env env =
+        String.concat ", "
+          (List.map
+             (fun (loc,v) -> sprintf "%s -> %s" (A.pp_location loc) (A.V.pp_v v))
+             env)
+
+      let val_of_pteval p = V.Val (Constant.PteVal p)
+
+      let default_pteval s = val_of_pteval (PTEVal.default s)
+      and pteval_of_pte s = val_of_pteval (PTEVal.of_pte s)
+
+      let expand_pteval loc v =
+        let open Constant in
+        match v with
+        | V.Val (Symbolic (Physical (s,_))) -> default_pteval s
+        | V.Val (PteVal _) -> v
+        | _ ->
+            Warn.user_error
+              "Cannot initialize %s with %s"
+              (A.pp_location loc ) (A.V.pp C.hexa v)
+
+      let extract_virtual_pte env =
+        let open Constant in
+        List.fold_right
+          (fun (loc,v as bd) (env,(virt,pte as maps)) ->
+            match loc with
+            | A.Location_global
+              (V.Val
+                 (Symbolic (Virtual {name=s; tag=None; offset=0}))) ->
+                env,(StringMap.add s v virt,pte)
+            | A.Location_global (V.Val (Symbolic (System (PTE,s)))) ->
+                let v = expand_pteval loc v in
+                (loc,v)::env,(virt,StringSet.add s pte)
+            | A.Location_global (V.Val (Symbolic (Physical _|Virtual _))) ->
+                Warn.user_error "herd cannot handle initialisation of '%s'"
+                  (A.pp_location loc)
+            | _ -> bd::env,maps)
+          env ([],(StringMap.empty,StringSet.empty))
+
+      let pte_loc s =
+        let open Constant in
+        A.Location_global (V.Val (Symbolic (System (PTE,s))))
+
+      let pte2_loc s =
+        let open Constant in
+        A.Location_global (V.Val (Symbolic (System (PTE2,s))))
+
+      let phy_loc s =
+        let open Constant in
+        A.Location_global (V.Val (Symbolic (Physical (s,0))))
+
+      let add_initpte =
+        let open Constant in
+        fun env ->
+          (* Collect virtual initialisations and explicit pte initialisations *)
+          let env,(virt,pte) = extract_virtual_pte env in
+          (* Initialise physical locations *)
+          let env =
+            StringMap.fold
+              (fun s v env -> (phy_loc s,v)::env)
+              virt env in
+          (* Add default initialisation of pte, when appropriate *)
+          let env =
+            StringMap.fold
+              (fun s _ env ->
+                if StringSet.mem s pte then env
+                else (pte_loc s,default_pteval s)::env)
+              virt env in
+          let env =
+            if C.variant Variant.PTE2 then
+              List.fold_right
+                (fun (loc,_ as bd) env -> match loc with
+                | A.Location_global (V.Val (Symbolic (System (PTE,s))))
+                  ->
+                  bd::(pte2_loc s,pteval_of_pte s)::env
+               | _ -> bd::env)
+                env []
+            else env in
+          env
+
+      let debug_add_initpte env =
+        let r = add_initpte env in
+        eprintf "Complete pte initialisation:\n[%s] -> [%s]\n" (debug_env env) (debug_env r) ;
+        r
+
 
       let initwrites_non_mixed env size_env =
+        let env =
+          if kvm then (if dbg then debug_add_initpte else add_initpte) env
+          else env in
         fun eiid ->
           let eiid,es =
             List.fold_left
               (fun (eiid,es) (loc,v) ->
                 let sz =
-                  match loc with
-                  | A.Location_global
-                    (A.V.Val
-                       (Constant.Symbolic
-                          {Constant.name=s; _}))
+                  match A.symbolic_data loc with
+                  | Some  {Constant.name=s; _}
                         when not (Misc.check_atag s) ->
 (* Notice that size does not depend upon offset.
    That is, all addresses with the same base
@@ -1116,9 +1314,8 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
                 let eiid,ew =
                   make_one_init_event
                     (E.Act.mk_init_write loc sz v) eiid in
-                match A.global loc with
-                | Some (A.V.Val (Constant.Symbolic
-                  {Constant.name=s;Constant.offset=0;_})) ->
+                match A.symbolic_data loc with
+                | Some {Constant.name=s; offset=0;_} ->
                     let eiid,ews =
                       if morello then
                         let eiid,em =
@@ -1130,9 +1327,10 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
                 | _ -> (eiid,ew::es))
               (eiid,[]) env in
           let es = E.EventSet.of_list es in
-          if dbg then begin
-              Printf.eprintf "Init writes %a\n" E.debug_events es
-          end ;
+          if dbg then
+            begin
+              eprintf "Init writes %a\n" E.debug_events es
+            end ;
           make_one_monad () [] (do_trivial es) eiid
 
       let debug_env env =
@@ -1143,62 +1341,66 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
 
       let initwrites_mixed env size_env =
         if dbg then begin
-          Printf.eprintf "Env is: [%s]\n" (debug_env env)
-        end ;
+            eprintf "Env is: [%s]\n" (debug_env env)
+          end ;
         fun eiid ->
-          try
-            let eiid,es,sca =
-              List.fold_left
-                (fun (eiid,es,sca) (loc,v) ->
-                  let open Constant in
-                  match A.global loc with
-                  | Some
-                      (A.V.Val (Symbolic {name=s;offset=0;_}) as a)
+        try
+          let eiid,es,sca =
+            List.fold_left
+              (fun (eiid,es,sca) (loc,v) ->
+                let open Constant in
+                match loc with
+                | A.Location_global
+                  (A.V.Val
+                     (Symbolic
+                        (Virtual
+                           {name=s;offset=0;_})) as a)
                       when not (Misc.check_atag s) ->
- (* Suffix encoding of tag addresses, sufficient for now *)
-                        let sz = A.look_size size_env s in
-                        let ds = AM.explode sz v
-                        and eas = AM.byte_eas sz a in
-                        let eiid,ews =
-                          List.fold_left2
-                            (fun (eiid,ews) a d ->
-                              let eiid,ew =
-                                make_one_init_event
-                                  (E.Act.mk_init_write
-                                     (A.Location_global a) SZ.byte d)
-                                eiid in
-                              eiid,ew::ews)
-                            (eiid,[]) eas ds in
-                        let eiid,ews =
-                          if morello then
-                            let eiid,em =
-                              morello_init_tag
-                                s (A.V.op1 Op.CapaGetTag v)
-                                eiid in
-                            eiid,em::ews
-                          else eiid,ews in
-                        eiid,ews@es,
-                        E.EventSetSet.add (E.EventSet.of_list ews) sca
-                  | _ ->
-                      let eiid,ew =
-                        make_one_init_event
-                         (E.Act.mk_init_write loc def_size v) eiid in
-                      eiid,ew::es,
-                      E.EventSetSet.add (E.EventSet.singleton ew) sca)
-                (eiid,[],E.EventSetSet.empty) env in
-            let es = E.EventSet.of_list es in
-            if dbg then begin
-              Printf.eprintf "Init writes %a\n" E.debug_events es
+                    (* Suffix encoding of tag addresses, sufficient for now *)
+                    let sz = A.look_size size_env s in
+                    let ds = AM.explode sz v
+                    and eas = AM.byte_eas sz a in
+                    let eiid,ews =
+                      List.fold_left2
+                        (fun (eiid,ews) a d ->
+                          let eiid,ew =
+                            make_one_init_event
+                              (E.Act.mk_init_write
+                                 (A.Location_global a) SZ.byte d)
+                              eiid in
+                          eiid,ew::ews)
+                        (eiid,[]) eas ds in
+                    let eiid,ews =
+                      if morello then
+                        let eiid,em =
+                          morello_init_tag
+                            s (A.V.op1 Op.CapaGetTag v)
+                            eiid in
+                        eiid,em::ews
+                      else eiid,ews in
+                    eiid,ews@es,
+                    E.EventSetSet.add (E.EventSet.of_list ews) sca
+                | _ ->
+                    let eiid,ew =
+                      make_one_init_event
+                        (E.Act.mk_init_write loc def_size v) eiid in
+                    eiid,ew::es,
+                    E.EventSetSet.add (E.EventSet.singleton ew) sca)
+              (eiid,[],E.EventSetSet.empty) env in
+          let es = E.EventSet.of_list es in
+          if dbg then begin
+              eprintf "Init writes %a\n" E.debug_events es
             end ;
-            let st = do_trivial es in
-            let st = { st with E.sca; } in
-            make_one_monad () [] st eiid
-          with
-          | V.Undetermined -> assert false
+          let st = do_trivial es in
+          let st = { st with E.sca; } in
+          make_one_monad () [] st eiid
+        with
+        | V.Undetermined -> assert false
 
       let do_initwrites env =
         let env = if memtag then add_inittags env else env in
-        (if A.is_mixed then initwrites_mixed else initwrites_non_mixed) env
+        (if A.is_mixed then initwrites_mixed
+        else initwrites_non_mixed) env
 
       let t2code : 'a t -> 'a code
           = fun m -> fun (poi,eiid) ->
@@ -1254,9 +1456,9 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
 
     let eqT : V.v -> V.v -> unit t = assign
 
+    let tooFar _msg v = unitT v
+    let tooFarcode _msg v = unitcodeT v
 
-    let tooFar _msg = zeroT
-    let tooFarcode _msg = zerocodeT
 
     type evt_struct = E.event_structure
     type output = VC.cnstrnts * evt_struct

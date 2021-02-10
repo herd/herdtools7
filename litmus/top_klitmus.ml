@@ -151,10 +151,10 @@ module Top(O:Config)(Tar:Tar.S) = struct
               let rec f c = match c with
               | Concrete i ->  Concrete (V.Scalar.of_string i)
               | ConcreteVector (sz,vs) -> ConcreteVector (sz, List.map f vs)
-              | Symbolic _|Label _|Tag _ as sym -> sym in
-              f c
-            type global = string
-            let maybevToGlobal = ParsedConstant.vToName
+              | Symbolic _|Label _|Tag _|PteVal _ as sym -> sym in
+                f c
+            type global = Global_litmus.t
+            let maybevToGlobal = A.tr_global
           end)
 
       let allocate fname src =
@@ -195,8 +195,10 @@ module Top(O:Config)(Tar:Tar.S) = struct
     end
     module Pseudo =
       struct
+        type ins
         include DumpCAst
         let find_offset _ _ _ =  Warn.user_error "No label value in C"
+        let code_exists _ _ = false
       end
     module Lang = CLang.Make(CLang.DefaultConfig)
         (struct
@@ -281,13 +283,6 @@ module Top(O:Config)(Tar:Tar.S) = struct
         Out.f "ccflags-y += %s"
           (String.concat " "
              ("-std=gnu99"::"-Wno-declaration-after-statement"::O.ccopts)) ;
-        Out.o "ifneq (\"$(wildcard /lib/modules/$(shell uname -r)/build/include/linux/proc_fs.h)\",\"\")" ;
-        Out.o "ifneq ($(shell grep proc_ops /lib/modules/$(shell uname -r)/build/include/linux/proc_fs.h | wc -l),0)" ;
-        Out.o "ccflags-y += -DKLITMUS_HAVE_STRUCT_PROC_OPS" ;
-        Out.o "endif" ;
-        Out.o "else" ;
-        Out.o "$(error kernel header include/linux/proc_fs.h for $(shell uname -r) not found)" ;
-        Out.o "endif" ;
         List.iter (fun (src,_) -> Out.f "obj-m += %s.o" src) srcs ;
         Out.o "" ;
         Out.o "all:" ;

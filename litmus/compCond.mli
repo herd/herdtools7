@@ -22,13 +22,13 @@ module Make: functor (O:Indent.S) -> functor (I:CompCondUtils.I) ->
             (I.Loc.t -> string * bool) -> (* For types *)
               I.C.prop -> unit
 
-    val fundef :
-        (I.Loc.t -> string * bool) -> (* For types *)
-          I.C.cond -> unit
+      val fundef :
+          (I.Loc.t -> string * bool) -> (* For types *)
+            I.C.cond -> unit
 
-    val fundef_onlog_prop : string -> I.C.prop -> unit
+      val fundef_onlog_prop : string -> I.C.prop -> unit
 
-    val fundef_onlog : I.C.cond -> unit
+      val fundef_onlog : I.C.cond -> unit
 
     val funcall_prop :
         string -> I.C.prop ->

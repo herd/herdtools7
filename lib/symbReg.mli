@@ -21,6 +21,7 @@ module type Arch = sig
 
 (* Values and global locations and their creators *)
   type v
+
   val maybevToV : MiscParser.maybev -> v
   type global
   val maybevToGlobal : MiscParser.maybev -> global
@@ -29,7 +30,6 @@ module type Arch = sig
   type location =
     | Location_global of global
     | Location_reg of int * reg
-
 end
 
 module Make(A:Arch) : sig

@@ -70,7 +70,8 @@ let read_cfg name =
   with
   | Arg.Bad msg
   | LexConf_litmus.Error msg ->
-     Warn.fatal "Bad configuration file: %s" msg
+      Printf.eprintf "Bad configuration file: %s" msg ;
+      exit 2
 
 
 (* Legal C symbol *)
@@ -98,8 +99,10 @@ let tr_symbol name =
     end in
   do_rec 0
 
-let as_symbol t =
-  let name = t.Name.name in
+let name_as_symbol name =
   let sym = tr_symbol name in
   if start_with_letter name then sym
   else "X" ^ sym
+
+let as_symbol t = name_as_symbol t.Name.name
+

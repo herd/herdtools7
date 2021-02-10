@@ -41,9 +41,20 @@ module type S = sig
   val pp_location : location -> string
   val location_compare : location -> location -> int
 
+  module LocSet : MySet.S with type elt = location
   module LocMap : MyMap.S with type key = location
+
 (* Initial states *)
-  type init = (location * string option) list
+  type initval = S of string | P of PTEVal.t
+  val pp_initval : initval -> string
+  val initval_eq : initval -> initval -> bool
+
+
+  type init = (location * initval option) list
+
+(* complete init with necessary information *)
+  val complete_init : init -> init
+
 
 (***********************)
 (* Register allocation *)
@@ -90,17 +101,72 @@ with type arch_reg = I.arch_reg and type special = I.special
       end
   | Loc loc1,Loc loc2 -> compare loc1 loc2
 
-  module LocMap =
-    MyMap.Make
-      (struct
-        type t = location
-        let compare = location_compare
-      end)
+  module LocOrd = struct
+    type t = location
+    let compare = location_compare
+  end
+
+  module LocSet = MySet.Make(LocOrd)
+  module LocMap = MyMap.Make(LocOrd)
 
   let of_loc loc = Loc (Code.as_data loc)
   let of_reg p r = Reg (p,r)
 
-  type init = (location * string option) list
+  type initval = S of string | P of PTEVal.t
+  let pp_initval = function
+    | S v ->  v
+    | P p -> PTEVal.pp p
+
+  let initval_eq v1 v2 = match v1,v2 with
+  | S s1,S s2 -> Misc.string_eq s1 s2
+  | P p1,P p2 -> PTEVal.compare p1 p2 = 0
+  | (S _,P _)|(P _,S _) -> false
+
+  type init = (location * initval option) list
+
+  let as_virtual s = match Misc.tr_pte s with
+  | Some _ -> None
+  | None ->
+      if LexScan.is_num s then None else Some s
+
+  let refers_virtual s = match Misc.tr_pte s with
+  | Some _ as r -> r
+  | None -> match Misc.tr_physical s with
+    | Some _ as r -> r
+    | None -> None
+
+  let add_some x xs = match x with
+  | None -> xs
+  | Some x -> StringSet.add x xs
+
+  let complete_init i =
+    let already_here =
+      List.fold_left
+        (fun k (loc,v) ->
+          let k = match loc with
+          | Loc s -> add_some (as_virtual s) k
+          | Reg _  -> k in
+          let k = match v with
+          | Some (S s) -> add_some (as_virtual s) k
+          | _ -> k in
+          k)
+        StringSet.empty i in
+    let refer =
+      List.fold_left
+        (fun k (loc,v) ->
+          let k = match loc with
+          | Loc s -> add_some (refers_virtual s) k
+          | Reg _ -> k in
+          let k = match v with
+          | Some (S s) -> add_some (refers_virtual s) k
+          | Some (P p) -> add_some (refers_virtual p.PTEVal.oa) k
+          | None -> k in
+          k)
+        StringSet.empty i in
+    StringSet.fold
+      (fun x i -> (Loc x,None)::i)
+      (StringSet.diff refer already_here)
+      i
 
   type st =
       { regs : arch_reg list ;

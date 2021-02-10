@@ -13,11 +13,13 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
-
 (** Parsable dump *)
 
 module type I = sig
   module A : ArchBase.S
+
+  type v
+  val dump_v : v -> string
 
   type state
   val dump_state : state -> string
@@ -43,17 +45,17 @@ end
 module Make(Out:Out)(I:I) : sig
   val dump : Out.t ->
     Name.t ->
-    (I.state, (MiscParser.proc * I.A.pseudo list) list, I.prop, I.location)
+    (I.state, (MiscParser.proc * I.A.pseudo list) list, I.prop, I.location,I.v)
         MiscParser.result
       -> unit
   val dump_info : Out.t ->
     Name.t ->
-    (I.state, (MiscParser.proc * I.A.pseudo list) list, I.prop, I.location)
+    (I.state, (MiscParser.proc * I.A.pseudo list) list, I.prop, I.location,I.v)
         MiscParser.result
       -> unit
   val lines :
       Name.t ->
-        (I.state, (MiscParser.proc * I.A.pseudo list) list, I.prop, I.location)
+        (I.state, (MiscParser.proc * I.A.pseudo list) list, I.prop, I.location,I.v)
           MiscParser.result
       -> string list
 end = struct
@@ -99,9 +101,7 @@ end = struct
     prog chan t.prog ;
     Out.fprintf chan "\n" ;
     let locs =
-      DumpUtils.dump_locations
-        (ConstrGen.dump_rloc I.dump_location)
-        t.locations in
+      DumpUtils.dump_locations I.dump_location I.dump_v t.locations in
     if locs <> "" then Out.fprintf chan "%s\n" locs ;
     begin match t.filter with
     | None -> ()
@@ -140,8 +140,7 @@ end = struct
       match t.locations with
       | [] -> k
       | locs ->
-          DumpUtils.dump_locations
-            (ConstrGen.dump_rloc I.dump_location) locs::k
+          DumpUtils.dump_locations I.dump_location I.dump_v locs::k
     end @@
     [I.dump_constr t.condition]
 end

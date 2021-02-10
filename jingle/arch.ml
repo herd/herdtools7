@@ -27,7 +27,7 @@ module type Dumper = sig
     val dump_info :
       out_channel -> Name.t ->
       (MiscParser.state, (MiscParser.proc * pseudo list) list,
-       MiscParser.prop, MiscParser.location)
+       MiscParser.prop, MiscParser.location,MiscParser.maybev)
         MiscParser.result
       -> unit
 end
@@ -307,7 +307,7 @@ module MakeParser
 
   type parsedPseudo = A.parsedPseudo
   let instr_from_string s =
-    GenParser.call_parser "themes" (Lexing.from_string s)
+    GenParserUtils.call_parser "themes" (Lexing.from_string s)
                           P.lexer P.instr_parser
 
 end
@@ -376,10 +376,13 @@ module DefaultDumper(A:ArchBase.S) = struct
       (struct
         module A = A
 
+        type v = ParsedConstant.v
+        let dump_v = ParsedConstant.pp_v
+
         let dump_loc = MiscParser.dump_location
 
         let dump_state_atom a =
-          MiscParser.dump_state_atom dump_loc ParsedConstant.pp_v a
+          MiscParser.dump_state_atom dump_loc dump_v a
 
         type state = MiscParser.state
 
@@ -388,7 +391,6 @@ module DefaultDumper(A:ArchBase.S) = struct
             (List.map
                (fun a -> sprintf "%s;" (dump_state_atom a))
                st)
-
 
         type prop = MiscParser.prop
 

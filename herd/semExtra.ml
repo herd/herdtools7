@@ -18,8 +18,10 @@
 
 (* Some configuration *)
 module type Config = sig
+  val verbose : int
   val optace : bool
   val debug : Debug_herd.t
+  val precision : bool
   val variant : Variant.t -> bool
   val endian : Endian.t option
   module PC : PrettyConf.S
@@ -58,7 +60,7 @@ module type S = sig
   type test =
       (program, nice_prog, start_points,
        state, A.size_env, A.type_env,
-       prop, location, A.RLocSet.t) Test_herd.t
+       prop, location, A.RLocSet.t, A.FaultAtomSet.t) Test_herd.t
 
   val size_env : test -> A.size_env
   val type_env : test -> A.type_env
@@ -69,7 +71,7 @@ module type S = sig
   val observed_rlocations : test -> rloc_set
   val observed_locations : test -> loc_set
   val displayed_rlocations : test -> rloc_set
-  val is_non_mixed_symbol : test -> Constant.symbolic_data -> bool
+  val is_non_mixed_symbol : test -> Constant.symbol -> bool
 
   type event = E.event
   type event_structure = E.event_structure
@@ -221,9 +223,9 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
 
     type proc_info = Test_herd.proc_info
     type test =
-      (program, nice_prog, start_points,
-       state, A.size_env, A.type_env,
-       prop, location, A.RLocSet.t) Test_herd.t
+      (program, nice_prog, start_points, state,
+       A.size_env, A.type_env,
+       prop, location, A.RLocSet.t, A.FaultAtomSet.t) Test_herd.t
 
     let size_env t =  t.Test_herd.size_env
     and type_env t = t.Test_herd.type_env
@@ -251,24 +253,35 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
 
     let displayed_rlocations t = t.Test_herd.displayed
 
-    let is_non_mixed_symbol test sym =
-      let open Constant in
-      match sym.offset with
+    let is_non_mixed_offset test s o = match o with
       | 0 -> true
-      | o ->
+      | _ ->
           o > 0 &&
             begin
-              let sym0 = { sym with offset = 0; } in
-              let loc0 = A.Location_global (A.V.Val (Symbolic sym0)) in
+              let sym0 = Constant.mk_sym_virtual s in
+              let loc0 = A.Location_global (A.V.Val sym0) in
               let t = A.look_type (type_env test) loc0 in
-              let open MiscParser in
+              let open TestType in
               match t with
               | TyArray (t,sz) ->
                   let sz_elt = MachSize.nbytes (A.size_of_t t) in
                   o mod sz_elt = 0 && o < sz*sz_elt
               | _ -> false
             end
+          
+      
+    let is_non_mixed_symbol_virtual test sym =
+      let open Constant in
+      match sym.offset with
+      | 0 -> true
+      | o -> is_non_mixed_offset test sym.name o
 
+    let is_non_mixed_symbol test sym =
+      let open Constant in
+      match sym with
+      | Virtual sd -> is_non_mixed_symbol_virtual test sd
+      | Physical (s,o) -> is_non_mixed_offset test s o
+      | System ((PTE|PTE2|TLB|TAG),_)  -> true
 
     type event = E.event
 
@@ -430,6 +443,7 @@ type concrete =
 
 module ConfigToArchConfig(C:Config) : ArchExtra_herd.Config =
   struct
+    let verbose = C.verbose
     let texmacros = C.PC.texmacros
     let hexa = C.PC.hexa
     let brackets = C.PC.brackets

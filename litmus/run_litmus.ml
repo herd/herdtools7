@@ -46,15 +46,15 @@ module Make(O:Config)(Tar:Tar.S)(D:Test) =
       sprintf "%s %s" O.gcc gcc_opts
 
     let compile_test name source =
-      let sX = MyName.outname name ".exe" in
+      let sX = MyName.outname name (Mode.exe O.mode) in
       if not O.is_out then begin
         let sX = Tar.outname sX in
         let source = Tar.outname source in
         let utils =
           let k = match O.mode with
-          | Mode.Std -> ["outs.c";]
-          | Mode.PreSi -> ["litmus_io.c"] in
-          let k = "litmus_rand.c"::k in
+          | Mode.Std -> ["litmus_rand.c"; "outs.c";]
+          | Mode.PreSi -> ["litmus_rand.c"; "litmus_io.c";]
+          | Mode.Kvm -> []  in
           let utils =
             match O.affinity with
             | Affinity.No -> "utils.c"::k
@@ -88,7 +88,10 @@ module Make(O:Config)(Tar:Tar.S)(D:Test) =
       let sS = MyName.outname name ".s" in
       if O.is_out then
         let sS = MyName.outname name ".t" in
-        let com = sprintf "cat %s" sS in
+        let com =
+          match O.mode with
+          | Mode.Kvm -> sprintf "cat ${TDIR}/%s" sS
+          | Mode.Std|Mode.PreSi -> sprintf "cat %s" sS in
         output_line chan com
       else begin
         let source = Tar.outname source in
@@ -109,7 +112,7 @@ module Make(O:Config)(Tar:Tar.S)(D:Test) =
         let com =
           match O.crossrun with
           | Crossrun.No -> sprintf "%s %s" exe opts
-          | Crossrun.Adb ->  sprintf "dorun %s %s" exe opts
+          | Crossrun.Adb|Crossrun.Kvm _ ->  sprintf "dorun %s %s" exe opts
           | Crossrun.Qemu _ ->  sprintf "$QEMU %s %s" exe opts
           | Crossrun.Host _h ->
               let scp = sprintf "doscp %s" exe in

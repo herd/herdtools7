@@ -21,6 +21,9 @@ module type I = sig
   module A : ArchBase.S
   type prog =  (MiscParser.proc * A.pseudo list) list
 
+  type v
+  val dump_v : v -> string
+
   type state
   val dump_global_state : prog -> state -> string
   val dump_proc_state : int -> A.pseudo list -> state -> string option
@@ -38,12 +41,11 @@ module Make(I:I) : sig
   type prog =  (MiscParser.proc * I.A.pseudo list) list
   val dump : out_channel ->
     Name.t ->
-      (I.state, prog, I.prop, I.location)  MiscParser.result
+      (I.state, prog, I.prop, I.location, I.v)  MiscParser.result
       -> unit
   val dump_info : out_channel ->
     Name.t ->
-    (I.state, prog, I.prop, I.location)
-        MiscParser.result
+      (I.state, prog, I.prop, I.location, I.v) MiscParser.result
       -> unit
 end = struct
   open Printf
@@ -78,15 +80,15 @@ end = struct
     | doc -> fprintf chan "\"%s\"\n" doc
     end ;
     if withinfo then begin
-    dump_sep chan "Info" ;
-      List.iter
-        (fun (k,i) -> fprintf chan "%s=%s\n" k i)
-        t.info
-    end ;
-(* Start *)
+        dump_sep chan "Info" ;
+        List.iter
+          (fun (k,i) -> fprintf chan "%s=%s\n" k i)
+          t.info
+      end ;
+    (* Start *)
     dump_sep chan "Start" ;
     fprintf chan "%s\n" (dump_global_state  t.prog t.init) ;
-(* Procs *)
+    (* Procs *)
     let prog = t.prog in
     List.iter
       (fun ((p,_) as proc,code) ->
@@ -107,23 +109,28 @@ end = struct
         dump_sep chan "Scope" ;
         fprintf chan "%s" (BellInfo.pp bi)
     end ;
-(* Conditions *)
+    (* Conditions *)
     dump_sep chan "Check" ;
     begin match t.locations with
     | [] -> ()
     | locs ->
         fprintf chan "locations [" ;
+        let open LocationsItem in
         List.iter
-          (fun (loc,t) -> match t with
-          | MiscParser.TyDef  ->
-              fprintf chan "%s; " (dump_rloc loc)
-          | MiscParser.TyDefPointer ->
-              fprintf chan "%s*; "(dump_rloc loc)
-          | MiscParser.Ty t ->
-              fprintf chan "%s %s; " (dump_rloc loc) t
-          | MiscParser.Pointer t ->
-              fprintf chan "%s %s*; " (dump_rloc loc) t
-          |  MiscParser.TyArray _|MiscParser.Atomic _ -> assert false)
+          (function
+           | Loc (loc,t) ->
+               begin match t with
+               | TestType.TyDef  ->
+                   fprintf chan "%s; " (dump_rloc loc)
+               | TestType.TyDefPointer ->
+                   fprintf chan "%s*; "(dump_rloc loc)
+               | TestType.Ty t ->
+                   fprintf chan "%s %s; " (dump_rloc loc) t
+               | TestType.Pointer t ->
+                   fprintf chan "%s %s*; " (dump_rloc loc) t
+               |  TestType.TyArray _|TestType.Atomic _ -> assert false
+               end
+           | Fault f -> fprintf chan "%s; " (Fault.pp_fatom I.dump_v f))
           locs ;
         fprintf chan "]\n"
     end ;

@@ -18,4 +18,5 @@ exception Error
 
 val ints : string -> int list
 val strings : string -> string list
+val strings_spaces : string -> string list
 val pp_ints : int list -> string

@@ -65,6 +65,7 @@ module Make
       let kind = true
       let hexa = Cfg.hexa
       let exit_cond = false
+      let have_fault_handler = false
     end
 
     module U = SkelUtil.Make(UCfg)(P)(A)(T)
@@ -76,25 +77,26 @@ module Make
         (fun (proc,(_,(outs,_))) -> iter_outs f proc outs)
         test.T.code
 
-    let dump_loc_name loc =  match loc with
-    | A.Location_reg (proc,reg) -> A.Out.dump_out_reg proc reg
-    | A.Location_global s -> s
+    let dump_rloc_name = A.dump_rloc_tag
 
     module DC =
       CompCond.Make(O)
         (struct
           let with_ok = false
           module C = T.C
+          let dump_value _loc (* ignored, see preSi.ml *) = C.V.pp O.hexa
           module Loc = struct
-            type t = A.location
-            let compare = A.location_compare
-            let dump loc = "_" ^ dump_loc_name loc
+            type location = A.location
+            type t = A.rlocation
+            let compare = A.rlocation_compare
+            let dump loc = "_" ^ dump_rloc_name loc
+            let dump_fatom d a = "_" ^ SkelUtil.dump_fatom_tag d a
           end
         end)
 
     let do_dump_cond_fun env cond =
       let find_type loc =
-        let t = match CType.strip_atomic (U.find_type loc env) with
+        let t = match CType.strip_atomic (U.find_rloc_type loc env) with
         | CType.Base "atomic_t" ->  CType.Base "int"
         | t -> t in
         CType.dump (CType.strip_atomic t),CType.is_ptr t in
@@ -109,7 +111,7 @@ module Make
     | None -> ()
     | Some f ->
         let find_type loc =
-          let t = U.find_type loc env in
+          let t = U.find_rloc_type loc env in
           CType.dump (CType.strip_atomic t),CType.is_ptr t in
         DC.fundef_prop "filter_cond" find_type f
 
@@ -132,7 +134,8 @@ module Make
 (********)
 (* Outs *)
 (********)
-    let dump_loc_idx loc = sprintf "%s_f" (dump_loc_name loc)
+
+    let dump_rloc_idx loc = sprintf "%s_f" (dump_rloc_name loc)
 
     let fmt_outcome test locs env =
       U.fmt_outcome test
@@ -160,15 +163,15 @@ module Make
       let outs = U.get_displayed_locs test in
       let nitems =
         let map =
-          A.LocSet.fold
+          A.RLocSet.fold
             (fun loc ->
-              A.LocMap.add loc (SkelUtil.nitems (U.find_type loc env)))
-            outs A.LocMap.empty in
+              A.RLocMap.add loc (SkelUtil.nitems (U.find_rloc_type loc env)))
+            outs A.RLocMap.empty in
         fun loc ->
-          try A.LocMap.find loc map
+          try A.RLocMap.find loc map
           with Not_found -> assert false in
       let nouts =
-        A.LocSet.fold
+        A.RLocSet.fold
           (fun loc k -> nitems loc + k)
           outs 0 in
 
@@ -176,9 +179,9 @@ module Make
       O.o "typedef u64 outcome_t[NOUTS];" ;
       O.o "" ;
       let _ =
-        A.LocSet.fold
+        A.RLocSet.fold
           (fun loc pos ->
-            O.f "static const int %s = %i ;" (dump_loc_idx loc) pos ;
+            O.f "static const int %s = %i ;" (dump_rloc_idx loc) pos ;
             pos+nitems loc)
           outs 0 in
       O.o "" ;
@@ -206,15 +209,15 @@ module Make
             tst ^ " ? '*' : ':'")::
            (List.map
               (fun loc ->
-                let sloc = dump_loc_name loc in
-                match U.find_type loc env with
+                let sloc = dump_rloc_name loc in
+                match U.find_rloc_type loc env with
                 | CType.Pointer _ ->
                     sprintf "pretty_addr[(int)o[%s_f]]" sloc
                 | CType.Base "atomic_t" ->
                      sprintf "(int)o[%s_f]" sloc
                 | CType.Array _ -> assert false
                 | t -> sprintf "(%s)o[%s_f]" (CType.dump t) sloc)
-              (A.LocSet.elements outs))) in
+              (A.RLocSet.elements outs))) in
       O.fiii "seq_printf(m,%s,%s);" fmt args ;
       O.oii "} else {" ;
       O.oiii "do_dump_outs(m,p->down,o,sz-1);" ;
@@ -296,11 +299,11 @@ module Make
        | ConcreteVector (_,vs)->
           let pp_vs = List.map dump_a_v vs in
           sprintf "{%s}" (String.concat "," pp_vs) (* list initializer syntax *)
-      | Symbolic {name=s;tag=None;cap=0;offset=0;_}-> dump_a_addr s
+      | Symbolic (Virtual {name=s;tag=None;cap=0;offset=0;_})-> dump_a_addr s
       | Label _ ->
           Warn.user_error "No label value for klitmus"
-      | Symbolic _|Tag _ ->
-          Warn.user_error "No tag nor indexed access for klitmus"
+      | Symbolic _|Tag _| PteVal _ ->
+          Warn.user_error "No tag, indexed access, nor pteval for klitmus"
 
     let dump_ctx env test =
       O.o "/****************/" ;
@@ -438,7 +441,7 @@ module Make
       O.oi "for (int _i = 0 ; _i < sz ; _i++) {" ;
       List.iter
         (fun (s,_) ->
-          let loc = A.Location_global s in
+          let loc = A.location_of_addr s in
           let v = A.find_in_state loc test.T.init in
           let ty = U.find_type loc env in
           match ty with
@@ -505,20 +508,15 @@ let dump_threads _tname env test =
   O.o "/***************/" ;
   O.o "" ;
   let global_env = U.select_global env in
-  let glob =
-    let global =
-      List.map (fun (x,ty) -> x,CType.strip_volatile ty) global_env
-    and aligned =
-      if List.exists (fun (a,_) -> U.is_aligned a env) test.T.globals then
-        Warn.fatal "align feature not available in klitmus" ;
-      [] in
-    let open Lang in
-    { global; aligned; volatile=[]; } in
+  let global_env =
+    List.map
+      (fun (x,ty) -> x,CType.strip_volatile ty)
+      global_env in
   List.iter
     (fun (proc,(out,(_outregs,envVolatile))) ->
       let myenv = U.select_proc proc env in
-      let glob = { glob with Lang.volatile=envVolatile; } in
-      Lang.dump_fun O.out myenv glob proc out ;
+      Lang.dump_fun O.out Template.no_extra_args
+        myenv global_env envVolatile proc out ;
       O.f "static int thread%i(void *_p) {" proc ;
       O.oi "ctx_t *_a = (ctx_t *)_p;" ;
       O.o "" ;
@@ -537,8 +535,8 @@ let dump_threads _tname env test =
           sprintf "%s %% %s" idx spinsize
       | Some _|None -> idx in
       Lang.dump_call (LangUtils.code_fun proc)
-        tr_idx O.out (Indent.as_string indent3)
-        myenv glob proc out ;
+        [] tr_idx O.out (Indent.as_string indent3)
+        myenv global_env envVolatile proc out ;
       O.oii "}" ;
       O.oi "}" ;
       O.oi "atomic_inc(&done);" ;
@@ -595,29 +593,29 @@ let dump_zyva tname env test =
   O.oii "for (int _ni = 0 ; _ni < ninst ; _ni++) {" ;
   O.oiii "ctx_t *_a = c[_ni];" ;
   O.oiii "for (int _i = 0 ; _i < size ; _i++) {" ;
-  let dump_a_loc loc =
-    match U.find_type loc env with
+  let dump_a_rloc loc =
+    match U.find_rloc_type loc env with
     | CType.Base "atomic_t" ->
-        sprintf "atomic_read(&_a->%s[_i])"  (dump_loc_name loc)
+        sprintf "atomic_read(&_a->%s[_i])"  (dump_rloc_name loc)
     | _ ->
-        sprintf "_a->%s[_i]" (dump_loc_name loc) in
+        sprintf "_a->%s[_i]" (dump_rloc_name loc) in
   O.oiv "outcome_t _o;" ;
   O.oiv "int _cond;" ;
   begin match test.T.filter with
   | None -> ()
   | Some f ->
       O.fiv "if (!%s) continue;"
-        (DC.funcall_prop "filter_cond" f dump_a_loc dump_a_addr)
+        (DC.funcall_prop "filter_cond" f dump_a_rloc dump_a_addr)
   end ;
   O.fiv "_cond = %s;"
-    (dump_cond_fun_call test dump_a_loc dump_a_addr)  ;
+    (dump_cond_fun_call test dump_a_rloc dump_a_addr)  ;
   let locs = U.get_displayed_locs test in
-  A.LocSet.iter
+  A.RLocSet.iter
     (fun loc ->
       O.fiv "_o[%s] = %s;"
-        (dump_loc_idx loc)
-        (let sloc = dump_a_loc loc in
-        if U.is_ptr loc env then sprintf "idx_addr(_a,_i,%s)" sloc
+        (dump_rloc_idx loc)
+        (let sloc = dump_a_rloc loc in
+        if U.is_rloc_ptr loc env then sprintf "idx_addr(_a,_i,%s)" sloc
         else sloc))
     locs ;
   O.oiv "outs = add_outcome_outs(outs,_o,_cond);" ;
@@ -698,22 +696,13 @@ let dump_proc tname _test =
   O.oi "return single_open(fp,litmus_proc_show,NULL);" ;
   O.o "}" ;
   O.o "" ;
-  O.o "#if defined(KLITMUS_HAVE_STRUCT_PROC_OPS)" ;
-  O.o "static const struct proc_ops litmus_proc_ops = {" ;
-  O.oi ".proc_open    = litmus_proc_open," ;
-  O.oi ".proc_read    = seq_read," ;
-  O.oi ".proc_lseek   = seq_lseek," ;
-  O.oi ".proc_release = single_release," ;
-  O.o "};" ;
-  O.o "#else" ;
-  O.o "static const struct file_operations litmus_proc_ops = {" ;
+  O.o "static const struct file_operations litmus_proc_fops = {" ;
   O.oi ".owner   = THIS_MODULE," ;
   O.oi ".open    = litmus_proc_open," ;
   O.oi ".read    = seq_read," ;
   O.oi ".llseek   = seq_lseek," ;
   O.oi ".release = single_release," ;
   O.o "};" ;
-  O.o "#endif" ;
   O.o ""
 
 (**************************)
@@ -724,7 +713,7 @@ let dump_init_exit _test =
   O.o "static int __init" ;
   O.o "litmus_init(void) {" ;
   O.oi "int err=0;" ;
-  O.oi "struct proc_dir_entry *litmus_pde = proc_create(\"litmus\",0,NULL,&litmus_proc_ops);" ;
+  O.oi "struct proc_dir_entry *litmus_pde = proc_create(\"litmus\",0,NULL,&litmus_proc_fops);" ;
   O.oi "if (litmus_pde == NULL) { return -ENOMEM; }" ;
   O.oi "stride = stride == 0 ? 1 : stride;" ;
   O.oi "nonline = num_online_cpus ();" ;

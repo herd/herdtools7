@@ -41,6 +41,8 @@ module X =
           V.compare v w = 0
         with Not_found -> assert false
       let state_eqloc _ _ _ = assert false
+      let state_fault _env _f = assert false
+
     end)
 
 let rec collect p m = match p with

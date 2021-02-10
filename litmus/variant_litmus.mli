@@ -16,10 +16,12 @@
 
 type t =
   | Self (* Self modifying code *)
+  | Precise (* Precise exception in kvm mode, ie jump to end of thread code in case of exception *)
+  | Imprecise (* Standard mode, will try access (twice) *)
 
 val tags : string list
 val parse : string -> t option
 val pp : t -> string
 val ok : t -> Archs.t -> bool
 val compare : t -> t -> int
-val setnow : t -> bool
+val set_precision : bool ref -> t -> bool

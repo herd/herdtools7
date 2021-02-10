@@ -16,10 +16,16 @@
 (****************************************************************************)
 
 module A = AArch64Base
-
 (* In such a case extension is mandatatory *)
 let check_noext = function
   | A.RV (A.V32,_) -> raise Parsing.Parse_error
+  | _ -> ()
+
+(* No constant third argument for those *)       
+let check_op3 op kr =
+  check_noext kr ;
+  match op,kr with
+  |(A.BIC|A.BICS),A.K _ -> raise Parsing.Parse_error
   | _ -> ()
 %}
 
@@ -98,9 +104,10 @@ let check_noext = function
 %token LDUMINB LDUMINAB LDUMINLB LDUMINALB
 %token STUMIN STUMINL STUMINH STUMINLH STUMINB STUMINLB
 */
-%token IC DC IVAU
+%token IC DC IVAU TLBI
 %token <AArch64Base.IC.op> IC_OP
 %token <AArch64Base.DC.op> DC_OP
+%token <AArch64Base.TLBI.op> TLBI_OP
 %token <AArch64Base.sysreg> SYSREG
 %token MRS TST RBIT
 %token STG STZG LDG
@@ -950,17 +957,19 @@ instr:
   { A.I_ADDR ($2,$4) }
 | SXTW xreg COMMA wreg
   { A.I_SXTW ($2,$4) }
-/* Special handling for ASR operation */
+/* Special handling for ASR/LSL/LSR operation */
 | ASR xreg COMMA xreg COMMA kr
   { A.I_OP3 (A.V64, AArch64Base.ASR, $2, $4, $6, A.S_NOEXT) }
+| LSL xreg COMMA xreg COMMA kr
+  { A.I_OP3 (A.V64, AArch64Base.LSL, $2, $4, $6, A.S_NOEXT) }
+| LSR xreg COMMA xreg COMMA kr
+  { A.I_OP3 (A.V64, AArch64Base.LSR, $2, $4, $6, A.S_NOEXT) }
 | OP xreg COMMA xreg COMMA kr
-  { check_noext $6 ; A.I_OP3 (A.V64,$1,$2,$4,$6, A.S_NOEXT) }
+  { check_op3 $1 $6 ; A.I_OP3 (A.V64,$1,$2,$4,$6, A.S_NOEXT) }
 | OP xreg COMMA xreg COMMA kr COMMA shift
-  { A.I_OP3 (A.V64,$1,$2,$4,$6, $8) }
+  { check_op3 $1 $6 ; A.I_OP3 (A.V64,$1,$2,$4,$6, $8) }
 | OP wreg COMMA wreg COMMA kwr
-  { A.I_OP3 (A.V32,$1,$2,$4,$6, A.S_NOEXT) }
-| OP wreg COMMA wreg COMMA kwr COMMA shift
-  { A.I_OP3 (A.V32,$1,$2,$4,$6, $8) }
+  { check_op3 $1 $6 ; A.I_OP3 (A.V32,$1,$2,$4,$6, A.S_NOEXT) }
 | ADD xreg COMMA xreg COMMA kr
   { check_noext $6; A.I_OP3 (A.V64,A.ADD,$2,$4,$6, A.S_NOEXT) }
 | ADD xreg COMMA xreg COMMA kr COMMA shift
@@ -991,6 +1000,8 @@ instr:
   { A.I_OP3 (A.V32,A.SUBS,$2,$4,$6, $8) }
 | SUBS xreg COMMA creg COMMA creg
   { A.I_OP3 (A.V128,A.SUBS,$2,$4,A.RV (A.V128,$6), A.S_NOEXT) }
+| OP wreg COMMA wreg COMMA kwr COMMA shift
+  { check_op3 $1 $6 ; A.I_OP3 (A.V32,$1,$2,$4,$6,$8) }
 | CMP wreg COMMA kwr
   { A.I_OP3 (A.V32,A.SUBS,A.ZR,$2,$4, A.S_NOEXT) }
 | CMP xreg COMMA kr
@@ -1067,6 +1078,8 @@ instr:
 | ISB
   { A.I_FENCE A.ISB }
 /* Cache Maintenance */
+| IC IC_OP
+  { A.I_IC ($2,A.ZR) }
 | IC IC_OP COMMA xreg
   { A.I_IC ($2,$4) }
 | IC IVAU COMMA xreg
@@ -1075,6 +1088,11 @@ instr:
   { A.I_DC (A.DC.({ funct=I; typ=VA; point=U; }),$4) }
 | DC DC_OP COMMA xreg
   { A.I_DC ($2,$4) }
+| TLBI TLBI_OP
+  { A.I_TLBI ($2, A.ZR) }
+| TLBI TLBI_OP COMMA xreg
+  { A.I_TLBI ($2, $4) }
+
 /* System register */
 | MRS xreg COMMA SYSREG
   { A.I_MRS ($2,$4) }

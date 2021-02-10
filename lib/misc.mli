@@ -47,6 +47,7 @@ val polymorphic_compare : 'a -> 'a -> int
 external int_compare : int -> int -> int = "caml_int_compare"
 val int_eq : int -> int -> bool
 val string_eq : string -> string -> bool
+val bool_eq : bool -> bool -> bool
 
 external identity : 'a -> 'a = "%identity"
 (* ignore argument(s) *)
@@ -59,6 +60,7 @@ val is_none : 'a option -> bool
 val is_some : 'a option -> bool
 val as_some : 'a option -> 'a
 val proj_opt : 'a -> 'a option -> 'a
+val seq_opt : ('a -> 'b option) -> 'a option -> 'b option
 val app_opt : ('a -> 'b) -> 'a option -> 'b option
 val check_opt : ('a -> unit) -> 'a option -> unit
 val snd_opt : ('a * 'b) option -> 'b option
@@ -75,6 +77,8 @@ val opt_compare : ('a -> 'a -> int) -> 'a option -> 'a option -> int
 val opt_eq : ('a -> 'a -> bool) -> 'a option -> 'a option -> bool
 val pair_compare :
     ('a -> 'a -> int) -> ('b -> 'b -> int) -> 'a * 'b -> 'a * 'b -> int
+val list_compare : ('a -> 'a -> int) -> 'a list -> 'a list -> int
+val list_eq : ('a -> 'a -> bool) -> 'a list -> 'a list -> bool
 
 val char_uppercase : char -> char
 val lowercase : string -> string
@@ -100,6 +104,7 @@ val fold_bool : (bool -> 'a -> 'a) -> 'a -> 'a
 
 
 (* Some useful function on lists *)
+val nilp : 'a list -> bool
 val consp : 'a list -> bool
 val cons : 'a -> 'a list -> 'a list
 val last : 'a list -> 'a
@@ -115,7 +120,6 @@ val rev_filter : ('a -> bool) -> 'a list -> 'a list
 val map3 :
     ('a -> 'b -> 'c -> 'd) ->
       'a list -> 'b list -> 'c list -> 'd list
-val list_compare : ('a -> 'a -> int) -> 'a list -> 'a list -> int
 
 (* strict version of List.for_all *)
 val for_all_strict : ('a -> bool) -> 'a list -> bool
@@ -129,6 +133,14 @@ val nsplit : int -> 'a list -> 'a list list
 (* Remove duplicates, according to equality function,
    WARNING, correct only when duplicates are in sequence *)
 val rem_dups : ('a -> 'a -> bool) -> 'a list -> 'a list
+
+(* group elements, quadratic *)
+val group : ('a -> 'a -> bool) -> 'a list -> 'a list list
+val group_iter : ('a -> 'a -> bool) -> ('a -> 'a list -> unit) -> 'a list -> unit
+val group_iteri : ('a -> 'a -> bool) -> (int -> 'a -> 'a list -> unit) -> 'a list -> unit
+
+(* Check that f yields the same result on all list elements *)
+val check_same : ('a -> 'a -> bool) -> ('b -> 'a) -> 'b list -> 'a option
 
 (* Lift boolean connectors to predicates *)
 val (|||) : ('a -> bool) -> ('a -> bool) -> 'a -> bool
@@ -251,15 +263,39 @@ val clean_name : string -> string
 (* Tag names *)
 (*************)
 
-(* Tag names abstract tags locations in memory.
-   For location x, tag location is x.atag *)
-
-val add_atag : string -> string
-val check_atag : string -> bool
-
 (* Tag names capability tags locations in memory.
    For location x, tag location is x.ctag *)
 
 val add_ctag : string -> string
 val check_ctag : string -> bool
 val tr_ctag : string -> string
+
+(* Tag names abstract tags locations in memory.
+   For location x, tag location is x.atag *)
+
+val add_atag : string -> string
+val check_atag : string -> bool
+val tr_atag : string -> string option
+
+val add_pte : string -> string
+val tr_pte : string ->  string option
+val is_pte : string -> bool
+val add_tlb : string -> string
+val add_af : string -> string
+val tr_af : string ->  string option
+val add_db : string -> string
+val tr_db : string ->  string option
+val add_dbm : string -> string
+val tr_dbm : string ->  string option
+val add_valid : string -> string
+val add_oa : string -> string
+
+val add_physical : string -> string
+val tr_physical : string -> string option
+
+(******************)
+(* Hash utilities *)
+(******************)
+
+val mix : int -> int -> int -> int
+

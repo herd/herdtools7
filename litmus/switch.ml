@@ -137,11 +137,11 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
     | Concrete i ->
         let vs = try M.find loc m with Not_found -> ScalarSet.empty in
         M.add loc (ScalarSet.add i vs) m
-    | Symbolic _|Label _|Tag _|ConcreteVector _ -> raise Cannot
+    | ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _ -> raise Cannot
+
 
     let rec collect m = function
-      | Atom (LV (Loc loc,v)) -> add loc v m
-      | Atom (LV (Deref _,_)) -> raise Cannot (* Can do better? *)
+      | Atom (LV (loc,v)) -> add loc v m
       | Atom (LL _|FF _) -> raise Cannot
       | Not p -> collect m p
       | And ps|Or ps -> List.fold_left collect m ps
@@ -199,7 +199,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
 
     let eval atom  =
       let rec eval_rec p = match p with
-      | Atom (LV (Loc loc0,Concrete v0)) ->
+      | Atom (LV (loc0,Concrete v0)) ->
           begin match atom loc0 v0 with
           | None -> p
           | Some b -> if b then And [] else Or []

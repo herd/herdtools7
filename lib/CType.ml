@@ -29,7 +29,10 @@ type t =
 let voidstar = Pointer (Base "void")
 let word = Base "int"
 let quad = Base "int64_t"
-let int128 = Array ("int",4)
+let int128 = Array ("int",4) (* Why not Base "int128_t"? *)
+let pteval = Base "pteval_t"
+let pte = Pointer pteval
+
 
 let rec  dump = function
   | Base s -> s
@@ -53,8 +56,8 @@ type fmt = Direct of string | Macro of string
 
 let fmt10 = function
   | "atomic_t"
-  | "int"|"char" ->  Some (Direct "i")
-  | "long" -> Some (Direct "li")
+  | "int"|"char" ->  Some (Direct "d")
+  | "long" -> Some (Direct "ld")
   | "int8_t" -> Some (Macro  "PRIi8")
   | "uint8_t" -> Some (Macro  "PRIu8")
   | "int16_t" -> Some (Macro  "PRIi16")
@@ -89,6 +92,11 @@ let rec is_ptr =  function
   | Pointer _ -> true
   | Atomic t|Volatile t -> is_ptr t
   | _ -> false
+
+let rec is_pte t = match t with
+| Base "pteval_t" -> true
+| Atomic t|Volatile t -> is_pte t
+| _ -> false
 
 let rec is_array = function
   | Array _ -> true
@@ -138,3 +146,7 @@ let same_base t0 t1 = match t0,t1 with
 | _,_ -> false
 
 let type_for_align i = Array ("uint8_t",i)
+
+let element_type = function
+  | Array (b,_) -> Base b
+  | t -> Warn.fatal "Array type expected, found %s" (dump t)

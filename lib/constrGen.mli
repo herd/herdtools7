@@ -27,11 +27,15 @@ val dump_rloc : ('loc -> string) -> 'loc rloc -> string
 
 val compare_rloc : ('loc -> 'loc -> int) -> 'loc rloc -> 'loc rloc -> int
 
+val rloc_of_loc : 'loc -> 'loc rloc
 val loc_of_rloc : 'loc rloc -> 'loc
 
 val map_rloc : ('a -> 'b) -> 'a rloc -> 'b rloc
 
 val fold_rloc : ('loc -> 'b -> 'c) -> 'loc rloc -> 'b -> 'c
+
+val match_rloc :
+  ('loc -> 'r) -> ('loc -> int -> 'r) -> 'loc rloc -> 'r
 
 (* Type of propositions and constraint *)
 type ('loc,'v) atom =

@@ -22,9 +22,12 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
     open Printf
 
     let is_ret _ = assert false
+    and is_nop = function
+      | A.INop -> true
+      | _ -> false
 
 (* No addresses in code *)
-    let extract_addrs _ins = StringSet.empty
+    let extract_addrs _ins = Global_litmus.Set.empty
     let stable_regs _ins = A.RegSet.empty
 
 (************************)
@@ -63,6 +66,8 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
         inputs=r2r3; outputs=r1; }
 
     let emit_loop _ins = assert false
+
+    let user_mode = [] and kernel_mode = []
 
     let compile_ins tr_lab ins k = match ins with
     | A.INop -> { empty_ins with memo="nop"; }::k

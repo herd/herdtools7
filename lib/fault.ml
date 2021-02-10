@@ -21,7 +21,7 @@ module type I = sig
   type arch_global
   val pp_global : arch_global -> string
   val global_compare : arch_global -> arch_global -> int
-  val same_base : arch_global -> arch_global -> bool
+  val same_id_fault : arch_global -> arch_global -> bool
 end
 
 type 'loc atom =  (Proc.t * Label.t option) * 'loc
@@ -36,17 +36,29 @@ let pp_fatom pp_loc =
     | Some lbl -> sprintf "%s:%s" (Proc.pp p) (Label.pp lbl))
     pp_loc
 
+let atom_compare compare ((p1,lbl1),v1) ((p2,lbl2),v2) = match Proc.compare p1 p2 with
+| 0 ->
+    begin match Misc.opt_compare String.compare lbl1 lbl2 with
+    | 0 -> compare v1 v2
+    | r -> r
+    end
+| r -> r
+
+let map_value f (p,v) = (p,f v)
+
 module type S = sig
+
   type loc_global
+
   type fault = (Proc.t * Label.Set.t) * loc_global * string option
-
   val pp_fault : fault -> string
-
   module FaultSet : MySet.S with type elt = fault
 
   type fatom = loc_global atom
   val check_one_fatom : fault -> fatom -> bool
   val check_fatom : FaultSet.t -> fatom -> bool
+  module FaultAtomSet : MySet.S with type elt = fatom
+
 end
 
 module Make(A:I) =
@@ -63,11 +75,12 @@ module Make(A:I) =
           (Label.Set.pp_str "," Label.pp lbl)
 
 
-    let pp_fault (lbl,x,msg) =
-      sprintf "Fault(%s,%s,%s)"
-        (pp_lbl lbl)
-        (A.pp_global x)
-        (Misc.proj_opt "None" msg)
+    let pp_fault (lbl,x,msg) = match msg with
+    | Some msg ->
+        sprintf "Fault(%s,%s,%s)" (pp_lbl lbl) (A.pp_global x) msg
+    | None ->
+        sprintf "Fault(%s,%s)" (pp_lbl lbl) (A.pp_global x)
+          
 
     let compare_lbl (p1,lbl1) (p2,lbl2) = match Proc.compare p1 p2 with
     | 0 -> Label.Set.compare lbl1 lbl2
@@ -92,7 +105,7 @@ module Make(A:I) =
 
     let check_one_fatom ((p0,lbls0),x0,_)  ((p,lblo),x) =
       Proc.compare p p0 = 0 &&
-      A.same_base x x0 &&
+      A.same_id_fault x x0 &&
       begin match lblo with
       | None -> true
       | Some lbl -> Label.Set.mem lbl lbls0
@@ -102,4 +115,18 @@ module Make(A:I) =
       FaultSet.exists
         (fun flt -> check_one_fatom flt a)
         flts
+
+    module FaultAtomSet =
+      MySet.Make
+        (struct
+          type t = fatom
+          let compare ((p0,lbl0),x0)  ((p1,lbl1),x1) =
+            match Proc.compare p0 p1 with
+            | 0 ->
+                begin match Misc.opt_compare Label.compare lbl0 lbl1 with
+                | 0 -> A.global_compare x0 x1
+                | r -> r
+                end
+            | r -> r
+        end)
   end

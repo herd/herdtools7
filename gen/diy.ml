@@ -237,6 +237,7 @@ let () =
     let neg = !Config.neg
     let cpp = cpp
     let scope = !scope
+    let info = !Config.info
     let docheck = !Config.docheck
     let typ = !Config.typ
     let hexa = !Config.hexa

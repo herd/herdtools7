@@ -68,7 +68,7 @@ end
 module type S = sig
   val parse : in_channel -> Splitter.result ->
     (MiscParser.state, string CAst.t list,
-     MiscParser.prop, MiscParser.location) MiscParser.result
+     MiscParser.prop, MiscParser.location,MiscParser.maybev) MiscParser.result
 end
 
 
@@ -110,40 +110,11 @@ let check_procs prog =
     procs ;
   procs
 
-let check_loc procs loc = match loc with
-| MiscParser.Location_reg (p,_) ->
-    if not (List.mem p procs) then
-      Warn.fatal "Bad process P%i" p
-| _ -> ()
-
-let check_atom procs a =
-  let open ConstrGen in
-  match a with
-  | LV (loc,_) -> check_loc procs (loc_of_rloc loc)
-  | LL (l1,l2) -> check_loc procs l1 ; check_loc procs l2
-  | FF _ -> ()
-
-let check_regs procs init locs final =
-  List.iter (fun (loc,_) -> check_loc procs  loc) init ;
-  List.iter (fun (loc,_) -> check_loc procs (ConstrGen.loc_of_rloc loc)) locs ;
-  ConstrGen.fold_constr (fun a () -> check_atom procs a) final ()
-
+let check_regs = GenParserUtils.check_regs
 
 (***********)
 (* Parsing *)
 (***********)
-
-(* Extract locations from condition *)
-let get_locs_atom a =
-  let open ConstrGen in
-  let open MiscParser in
-  match a with
-  | LV (loc,_) -> LocSet.add (loc_of_rloc loc)
-  | LL (loc1,loc2) ->
-      (fun k -> LocSet.add loc1 (LocSet.add loc2 k))
-  | FF (_,x) -> LocSet.add (MiscParser.Location_global x)
-
-let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
 
 (* Lexers *)
     module LexConfig = struct let debug = O.debuglexer end
@@ -178,11 +149,7 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
         call_parser_loc "final"
           chan constr_loc SL.token StateParser.constraints in
       check_regs procs init locs final ;
-      let all_locs =
-        MiscParser.LocSet.union
-          (MiscParser.LocSet.of_list
-             (List.map (fun (rloc,_) -> ConstrGen.loc_of_rloc rloc) locs))
-          (get_locs final) in
+      let all_locs = GenParserUtils.get_visible_locs locs final in
       let parsed =
         {
          MiscParser.info; init; prog = prog;

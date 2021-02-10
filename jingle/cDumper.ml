@@ -111,13 +111,14 @@ let list_loc prog =
   in
   LocSet.elements (List.fold_left ins LocSet.empty prog)
 
-let get_params init i =
-  List.fold_left
-    (fun a ->
+let get_params init i = 
+  let open Constant in
+  List.fold_left 
+    (fun a -> 
      function
      | (MiscParser.Location_reg(p,_),
-   (_,Constant.Symbolic {Constant.name=s;_})) when i = p ->
-	{ CAst.param_ty = CType.(Volatile (Base "int"));
+	(_,Symbolic (Virtual {name=s;_}))) when i = p ->
+	{ CAst.param_ty = CType.Volatile CType.word;
 	  CAst.param_name = s }::a
      | _ -> a
     ) [] init
@@ -176,7 +177,7 @@ let do_dump withinfo chan doc t =
   prog chan (code t.MiscParser.init t.MiscParser.prog) ;
   let locs =
     DumpUtils.dump_locations
-      (ConstrGen.dump_rloc dump_location) t.MiscParser.locations in
+      dump_location ParsedConstant.pp_v t.MiscParser.locations in
   if locs <> "" then fprintf chan "%s\n" locs ;
   begin match t.MiscParser.extra_data with
 	| MiscParser.NoExtra|MiscParser.CExtra _ -> ()

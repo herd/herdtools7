@@ -17,25 +17,6 @@
 (******************************)
 (* A 'generic' parsing module *)
 (******************************)
-open Lexing
-
-let call_parser name lexbuf lex parse =
-  try parse lex lexbuf
-  with
-  | LexMisc.Error (msg,pos) ->
-      Warn.user_error "%s: Lex error %s (in %s)" (Pos.str_pos pos) msg name
-  | Parsing.Parse_error ->
-      let lxm = lexeme lexbuf
-      and start_loc = lexeme_start_p lexbuf
-      and end_loc = lexeme_end_p lexbuf in
-      Warn.user_error "%s: unexpected '%s' (in %s)" (Pos.str_pos2 (start_loc, end_loc)) lxm name
-  | e ->
-      Printf.eprintf
-        "%a: Uncaught exception %s (in %s)\n"
-        Pos.pp_pos lexbuf.lex_curr_p
-        (Printexc.to_string e) name ;
-      assert false
-
 
 (* Configuration, to change kinds and condition *)
 module type Config = sig
@@ -85,6 +66,8 @@ module Make
     type prog = (MiscParser.proc * pseudo list) list
     type locations = MiscParser.LocSet.t
 
+    let call_parser = GenParserUtils.call_parser
+    module U = GenParserUtils
 
 (*
   Transpose the instructions:
@@ -104,32 +87,14 @@ module Make
 (* Various basic checks *)
 (************************)
 
-let check_procs procs =
-  Misc.iteri
-    (fun k (p,_) ->
-      if k <> p then
-        Warn.fatal "Processes must be P0, P1, ...")
-    procs
+    let check_procs procs =
+      Misc.iteri
+        (fun k (p,_) ->
+          if k <> p then
+            Warn.fatal "Processes must be P0, P1, ...")
+        procs
 
-let check_loc procs loc = match loc with
-| MiscParser.Location_reg (p,_) ->
-    if not (List.mem p procs) then
-      Warn.fatal "Bad process P%i" p
-| _ -> ()
-
-let check_atom procs a =
-  let open ConstrGen in
-  match a with
-  | LV (rloc,_) -> check_loc procs (loc_of_rloc rloc)
-  | LL (l1,l2) -> check_loc procs l1 ; check_loc procs l2
-  | FF _       -> () (* Checks does no apply to global location *)
-
- let check_regs procs init locs final =
-   let procs = List.map fst procs in
-   List.iter (fun (loc,_) -> check_loc procs  loc) init ;
-   List.iter
-     (fun (loc,_) -> check_loc procs  (ConstrGen.loc_of_rloc loc)) locs ;
-   ConstrGen.fold_constr (fun a () -> check_atom procs a) final ()
+ let check_regs procs = U.check_regs (List.map fst procs)
 
 (*******************)
 (* Macro expansion *)
@@ -157,20 +122,6 @@ let check_atom procs a =
 (***********)
 (* Parsing *)
 (***********)
-
-(* Extract locations from condition *)
-
-    let get_locs_atom a =
-      let open ConstrGen in
-      let open MiscParser in
-      match a with
-      | LV (loc,_) -> RLocSet.add loc
-      | LL (loc1,loc2) ->
-          (fun k -> RLocSet.add (Loc loc1) (RLocSet.add (Loc loc2) k))
-      | FF (_,x) -> RLocSet.add (Loc (MiscParser.Location_global x))
-
-    let get_locs c =
-      ConstrGen.fold_constr get_locs_atom c MiscParser.RLocSet.empty
 
 (* Lexers *)
     module LexConfig = struct let debug = O.debuglexer end
@@ -204,6 +155,7 @@ let check_atom procs a =
       let init =
         I.call_parser_loc "init"
           chan init_loc SL.token StateParser.init in
+      MiscParser.check_env_for_dups init ;
       let procs,prog,extra_data =
         I.call_parser_loc "prog" chan prog_loc L.lexer L.parser in
       check_procs procs ;
@@ -214,11 +166,7 @@ let check_atom procs a =
         I.call_parser_loc "final"
           chan constr_loc SL.token StateParser.constraints in
       check_regs procs init locs final ;
-      let all_locs =
-        MiscParser.RLocSet.union
-          (MiscParser.RLocSet.of_list
-             (List.map (fun (rloc,_) -> rloc) locs))
-          (get_locs final) in
+      let all_locs = U.get_visible_locs locs final in
       let parsed =
         {
          MiscParser.info; init; prog = prog;

@@ -1,0 +1,10 @@
+AArch64 STRaf0
+{
+pte_x=(oa:phy_y,af:0);
+0:X2=x;
+0:X1=1;
+}
+P0         ;
+L0:STR X1,[X2];
+locations[0:X2;]
+forall(fault(P0:L0,x))

@@ -56,6 +56,10 @@ type reg =
   | Internal of int
   | Flag of flag
 
+let copy_part r1 r2 = match r1,r2 with
+| Ireg (_,p),Ireg (r,_) -> Ireg (r,p)
+| _,_ -> r2
+
 let loop_idx = Internal 0
 let sig_cell = "sig_cell"
 
@@ -206,6 +210,16 @@ let symb_reg_name = function
   | _ -> None
 
 let symb_reg r = Symbolic_reg r
+
+let reg_size_to_uint = function
+  | R8bL | R8bH -> "uint8_t"
+  | R16b -> "uint16_t"
+  | R32b -> "uint32_t"
+  | R64b -> "uint64_t"
+
+let typeof = function
+  | Ireg (_, t) -> CType.Base (reg_size_to_uint t)
+  | _ -> CType.Base "int"
 
 let change_size_reg r sz = match r with
   | Ireg (b, _) -> Ireg (b, sz)
@@ -528,6 +542,8 @@ let rec fold_regs (f_reg,f_sreg) =
                | I_MOVNTDQA (xmm,effaddr) -> fold_effaddr (fold_xmm c xmm) effaddr
 
 let rec map_regs f_reg f_symb =
+
+  let f_reg r = copy_part r (f_reg r) in
 
   let map_reg reg = match reg with
   | RIP | Ireg _ | Flag _ | Internal _ | XMM _ -> f_reg reg

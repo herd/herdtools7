@@ -65,7 +65,12 @@ let opts =
    argfloato "-timelimit" Option.timelimit "bound on runtime (presi only)" ;
 
 (* Modes *)
-   begin let module P = ParseTag.MakeS(Variant_litmus) in
+   begin
+     let module Opt = struct
+       include Variant_litmus
+       let setnow tag = set_precision precision tag 
+     end in
+     let module P = ParseTag.MakeS(Opt) in
    P.parse "-variant" Option.variant "select a variation" end ;
    begin let module P = ParseTag.Make(Barrier) in
    P.parse "-barrier" Option.barrier "set type of barriers" end ;
@@ -153,6 +158,8 @@ let opts =
      (get_gccopts `ARM)
      (get_gccopts `C)
    end ;
+   argstring_withfun "-makevar" (fun arg -> makevar := !makevar @ [arg])
+     "<line> add line at beginning of Makefile" ;
    argstring "-gcc" Option.gcc "<name> name of gcc" ;
    argbool "-c11" Option.c11 "enable the C11 standard";
    argbool "-c11_fence" Option.c11_fence "enable the C11 standard";
@@ -288,6 +295,7 @@ let () =
       let xy = !xy
       let pldw = !pldw
       let cacheflush = !cacheflush
+      let makevar = !makevar
       let gcc = !gcc
       let c11 = !c11
       let c11_fence =
@@ -298,13 +306,17 @@ let () =
       let stdio = match !stdio with
       | None ->
           begin match !mode with
-          | Mode.Std -> true
+          | Mode.Std|Mode.Kvm -> true
           | Mode.PreSi -> false
           end
       | Some b -> b
       let ascall = !ascall
+      let precision = !precision
       let variant = !variant
-      let crossrun = !crossrun
+      let crossrun = match !mode,!crossrun with
+      | Mode.Kvm,Crossrun.Qemu s -> Crossrun.Kvm s
+      | Mode.Kvm,_ -> Crossrun.Kvm "./arm-run"
+      | (Mode.Std|Mode.PreSi),cr -> cr
       let adbdir = !adbdir
       let driver = !driver
       let exit_cond = !exit_cond
@@ -315,6 +327,7 @@ let () =
       let affinity = match !mode with
       | Mode.Std -> !affinity
       | Mode.PreSi -> Affinity.Scan
+      | Mode.Kvm -> Affinity.No
       let logicalprocs = !logicalprocs
       let linkopt = !linkopt
       let barrier = !barrier

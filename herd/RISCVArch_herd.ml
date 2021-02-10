@@ -40,9 +40,13 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let get_machsize _ = V.Cst.Scalar.machsize (* TODO, consider machsizes *)
     let empty_annot = P Rlx
 
+    include Explicit.No
+
     let is_atomic = function
     | X _ -> true
     | P _ -> false
+    let is_explicit = function | _ -> true
+    let is_not_explicit = function | _ -> false
 
     let is_acquire = function
       | X Acq|P Acq -> true
@@ -102,6 +106,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | LoadReserve (w,_,_,_) | StoreConditional (w,_,_,_,_)
       | Amo (_,w,_,_,_,_)
         -> Some (tr_width w)
+
+    include  NoLevelNorTLBI
 
     include ArchExtra_herd.Make(C)
         (struct

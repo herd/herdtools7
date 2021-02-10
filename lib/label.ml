@@ -20,6 +20,8 @@ type t = string
 
 let pp = Misc.identity
 
+let compare = String.compare
+
 let lab_count = ref 0
 
 let reset () = lab_count := 0

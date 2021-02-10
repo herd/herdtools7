@@ -27,6 +27,9 @@ typedef struct {
 #ifdef SOME_VARS
   vars_t v;
 #endif
+#ifdef SEE_FAULTS
+  see_fault_t f;
+#endif
 #ifdef HAVE_TIMEBASE
   tb_t next_tb;
 #endif
@@ -41,6 +44,11 @@ static void instance_init (ctx_t *p, int id, intmax_t *mem) {
   p->mem = mem ;
   hash_init(&p->t) ;
   barrier_init(&p->b,N) ;
+#ifdef KVM
+#ifdef SOME_VARS
+  vars_init(&p->v,mem);
+#endif
+#endif
 }
 
 /******************/
@@ -56,15 +64,18 @@ typedef struct global_t {
   /* Command-line parameter */
   param_t *param ;
   parse_param_t *parse ;
+#ifdef KVM
+  int volatile over;
+#endif
   /* Topology */
-  int *inst, *role ;  
-  char **group ;
+  const int *inst, *role ;
+  const char **group ;
   /* memory */
   intmax_t *mem ;
   /* Cache control */
 #ifdef ACTIVE
   active_t *active;
-#endif  
+#endif
   /* Runtime control */
   int verbose ;
   int size,nruns,nexe,noccs ;
@@ -84,7 +95,11 @@ typedef struct global_t {
 } global_t ;
 
 static global_t global  =
-  { &param, &parse[0], inst, role, group, mem,
+  { &param, &parse[0],
+#ifdef KVM
+    0,
+#endif
+    inst, role, group, mem,
 #ifdef ACTIVE
     active,
 #endif
@@ -122,7 +137,7 @@ static void init_global(global_t *g,int id) {
 typedef struct {
   int id ;
   st_t seed ;
-  int role ;
+  int role,inst ;
   ctx_t *ctx ;
 #ifdef ACTIVE
   active_t *act;
@@ -135,8 +150,22 @@ static void set_role(global_t *g,thread_ctx_t *c,int part) {
   int idx = SCANLINE*part+c->id ;
   int inst = g->inst[idx] ;
   if (0 <= inst && inst < g->nexe) {
+    c->inst = inst ;
     c->ctx = &g->ctx[inst] ;
     c->role = g->role[idx] ;
+#ifdef KVM
+    set_feature(c->role) ;
+#ifdef HAVE_FAULT_HANDLER
+    whoami[c->id].instance = inst ;
+    whoami[c->id].proc = c->role ;
+#ifdef SEE_FAULTS
+    if (c->role == 0) {
+      vars_ptr[inst] = &c->ctx->v;
+      see_fault[inst] = &c->ctx->f;
+    }
+#endif
+#endif
+#endif
 #ifdef ACTIVE
     c->act = &g->active[part] ;
 #endif

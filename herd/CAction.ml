@@ -169,11 +169,22 @@ end = struct
   | RMW (A.Location_global _,_,_,_,_) -> true
   | _ -> false
 
+  let is_pt _ = false
   let is_tag _ = false
+
+  let is_mem_physical a = let open Constant in match a with
+  | Access (_,A.Location_global (V.Val (Symbolic (Physical _))),_,_,_,_)
+  | RMW (A.Location_global (V.Val (Symbolic (Physical _))),_,_,_,_) -> true
+  | _ -> false
 
   let is_additional_mem a = match a with
   | Lock _|Unlock _|TryLock _|ReadLock _ -> true
   | _ -> false
+
+  let is_PA_val _ = false
+
+  (* Unimplemented *)
+  let is_implicit_pte_read _ = assert false
 
         (* The following definition of is_atomic
            is quite arbitrary. *)
@@ -188,6 +199,8 @@ end = struct
   let is_atomic = function
     | Access (_,A.Location_global _,_,_,at,_) -> at
     | _ -> false
+  
+  let is_fault _ = false
 
   let to_fault _ = None
 
@@ -211,7 +224,6 @@ end = struct
   let is_reg a (p:int) = match a with
   | Access (_,A.Location_reg (q,_),_,_,_,_) -> p = q
   | _ -> false
-
 
 (* Store/Load anywhere *)
   let is_store a = match a with
@@ -335,7 +347,8 @@ end = struct
     | _ -> false)
   ]
 
-  let arch_fences = []
+  let arch_rels = []
+  and arch_dirty = []
 
   let is_isync _ = raise Misc.NoIsync
   let pp_isync = "???"

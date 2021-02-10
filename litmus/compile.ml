@@ -18,6 +18,8 @@ module type Config = sig
   val numeric_labels : bool
   val timeloop : int
   val barrier : Barrier.t
+  val mode : Mode.t
+  val precision : bool
   val variant : Variant_litmus.t -> bool
 end
 
@@ -25,6 +27,8 @@ module Default = struct
   let numeric_labels = false
   let timeloop = 0
   let barrier = Barrier.UserFence
+  let mode = Mode.Std
+  let precision = false
   let variant _ = false
 end
 
@@ -39,29 +43,32 @@ module Generic (A : Arch_litmus.Base)
     (C:Constr.S
     with type location = A.location and module LocSet = A.LocSet) = struct
 
+      module G = Global_litmus
       open CType
 
       let base =  A.base_type
       let pointer = CType.Pointer base
       let code_pointer = Pointer (Base "ins_t")
       let tag = Base "tag_t"
-      let array_ty sz = CType.Array ("int", sz)
-        (* is it right to assume int as the base type?*)
+      let base_array sz = CType.Array ("int", sz)
+      let pteval_t = Base "pteval_t"
 
       let typeof = function
         | Constant.Concrete _ -> base
-        | Constant.ConcreteVector (sz,_) -> array_ty sz
+        | Constant.ConcreteVector (sz,_) -> base_array sz
         | Constant.Symbolic _ -> pointer
         | Constant.Label _ -> code_pointer
         | Constant.Tag _ -> tag
+        | Constant.PteVal _ -> pteval_t
 
-      let misc_to_c  = function
-        | MiscParser.TyDef -> base
-        | MiscParser.TyDefPointer  -> pointer
-        | MiscParser.Ty t -> Base t
-        | MiscParser.Atomic t -> Atomic (Base t)
-        | MiscParser.Pointer t -> Pointer (Base t)
-        | MiscParser.TyArray (t,sz) -> Array (t,sz)
+      let misc_to_c loc = function
+        | TestType.TyDef when A.is_pte_loc loc -> pteval_t
+        | TestType.TyDef -> base
+        | TestType.TyDefPointer  -> pointer
+        | TestType.Ty t -> Base t
+        | TestType.Atomic t -> Atomic (Base t)
+        | TestType.Pointer t -> Pointer (Base t)
+        | TestType.TyArray (t,sz) -> Array (t,sz)
 
       let type_in_init p reg =
         let rec find_rec = function
@@ -104,12 +111,12 @@ module Generic (A : Arch_litmus.Base)
                 (fun (loc,t) k -> match loc with
                 | A.Location_reg (q,r) when p=q && A.reg_compare reg r = 0 ->
                     begin match t with
-                    | MiscParser.TyDef -> None
-                    | MiscParser.TyDefPointer -> Some pointer
-                    | MiscParser.Ty s -> Some (Base s)
-                    | MiscParser.Atomic s -> Some (Atomic (Base s))
-                    | MiscParser.Pointer s -> Some (Pointer (Base s))
-                    | MiscParser.TyArray _ -> assert false (* No array register *)
+                    | TestType.TyDef -> None
+                    | TestType.TyDefPointer -> Some pointer
+                    | TestType.Ty s -> Some (Base s)
+                    | TestType.Atomic s -> Some (Atomic (Base s))
+                    | TestType.Pointer s -> Some (Pointer (Base s))
+                    | TestType.TyArray _ -> assert false (* No array register *)
                     end
                 | _ -> k)
                 flocs
@@ -119,7 +126,7 @@ module Generic (A : Arch_litmus.Base)
       let add_addr_type a ty env =
 (*      Printf.eprintf "Type %s : %s\n"  a (CType.dump ty) ; *)
         try
-          let tz = StringMap.find a env in
+          let tz = G.Map.find a env in
           match ty,tz with
           | (Pointer (Base s1), Pointer (Base s2))
           | (Atomic (Base s1), Atomic (Base s2))
@@ -128,9 +135,9 @@ module Generic (A : Arch_litmus.Base)
           | _,_ (* (Pointer _|Base _),(Pointer _|Base _) *) ->
               Warn.fatal
                 "Type mismatch detected on location %s, required %s vs. found %s"
-                a (dump ty) (dump tz)
+                (Global_litmus.pp a) (dump ty) (dump tz)
         with
-          Not_found -> StringMap.add a ty env
+          Not_found -> G.Map.add a ty env
 
 (********************)
 (* Complete typing  *)
@@ -158,19 +165,18 @@ module Generic (A : Arch_litmus.Base)
 
 (* locations, default and explicit types *)
       let type_locations flocs env =
+        let open LocationsItem in
         List.fold_left
-          (fun env (rloc,t) ->
-            let open ConstrGen in
-            match rloc with
-            | Loc loc ->
-                begin try
-                    ignore (A.LocMap.find loc env) ; env
-                  with
-                  | Not_found ->
-                      A.LocMap.add loc (misc_to_c t) env
-                end
-            | Deref _ ->
-                prerr_endline "TODO" ; assert false)
+          (fun env i -> match i with
+          | Loc (ConstrGen.Loc loc,t) ->              
+              begin try
+                ignore (A.LocMap.find loc env) ; env
+              with
+              | Not_found ->
+                  A.LocMap.add loc (misc_to_c loc t) env
+              end
+          | Loc (ConstrGen.Deref _,_)
+          | Fault _ -> env)
           env flocs
 
 (* init, default and explicit types *)
@@ -179,27 +185,28 @@ module Generic (A : Arch_litmus.Base)
       let type_init init env =
         List.fold_left
           (fun env (loc,(t,v)) -> match t with
-          | MiscParser.TyDef ->
+          | TestType.TyDef ->
               begin try
                 ignore (A.LocMap.find loc env) ;
                 env
               with Not_found ->
                 A.LocMap.add loc (typeof v) env
               end
-          | _ -> A.LocMap.add loc (misc_to_c t) env)
+          | _ -> A.LocMap.add loc (misc_to_c loc t) env)
           env init
 
       let type_init_values init env =
+        let open Constant in
         List.fold_left
           (fun env (loc,(t,v)) -> match loc,v with
           | _,Constant.Concrete _ -> env
-          | A.Location_global _,Constant.Symbolic {Constant.name=s;_} ->
-              let a = A.Location_global s in
+          | A.Location_global _,Symbolic s ->
+              let a = A.Location_global (G.tr_symbol s) in
               begin try
                 ignore (A.LocMap.find a env) ;
                 env
               with Not_found ->
-                let open MiscParser in
+                let open TestType in
                 let tv = match t with
                 | TyDefPointer|TyDef -> TyDef
                 | Pointer s -> Ty s
@@ -207,7 +214,7 @@ module Generic (A : Arch_litmus.Base)
                     Warn.user_error
                       "variable %s should be of pointer type"
                       (A.pp_location loc) in
-                A.LocMap.add a (misc_to_c tv) env
+                A.LocMap.add a (misc_to_c a tv) env
               end
           | _,_ -> env)
           env init
@@ -260,8 +267,7 @@ module Generic (A : Arch_litmus.Base)
       let observed final locs =
         A.LocSet.union
           (C.locations final)
-          (A.LocSet.of_list
-             (List.map observed_in_rloc locs))
+          (LocationsItem.fold_locs A.LocSet.add locs A.LocSet.empty)
 
       let all_observed final filter locs =
         let obs = observed final locs in
@@ -274,7 +280,7 @@ module Make
     (O:Config)
     (A:Arch_litmus.S)
     (T:Test_litmus.S with
-     module A.V = A.V and
+module A.V = A.V and
 type A.reg = A.reg and
 type A.location = A.location and
 module A.LocSet = A.LocSet and
@@ -287,7 +293,14 @@ type P.code = MiscParser.proc * A.pseudo list)
     open Constant
 
     let do_self = O.variant Variant_litmus.Self
+    and do_precise = O.precision
+    let is_pte =
+      let open Mode in
+      match O.mode with
+      | Std|PreSi -> false
+      | Kvm -> true
 
+    module G = Global_litmus
     module A = A
     module V = A.V
     module Constr = T.C
@@ -301,14 +314,14 @@ type P.code = MiscParser.proc * A.pseudo list)
     | A.Symbolic _ (*no symbolic in litmus *)
     | A.Macro (_,_) -> assert false
 
-    let extract_pseudo = do_extract_pseudo StringSet.empty C.extract_addrs
+    let extract_pseudo = do_extract_pseudo G.Set.empty C.extract_addrs
 
     let extract_addrs code =
       List.fold_right
         (fun ins env ->
-          StringSet.union (extract_pseudo ins) env)
+          G.Set.union (extract_pseudo ins) env)
         code
-        StringSet.empty
+        G.Set.empty
 
     let stable_regs code =
       List.fold_right
@@ -360,6 +373,7 @@ type P.code = MiscParser.proc * A.pseudo list)
     let count_ret =
       if do_self then fun code -> count_ins C.is_ret code else fun _ -> 0
 
+    let count_nop = count_ins C.is_nop
 
 (****************)
 (* Compile code *)
@@ -382,8 +396,8 @@ type P.code = MiscParser.proc * A.pseudo list)
 
     let as_int = function
       | Concrete i -> i
-      | Symbolic _|Label _|Tag _|ConcreteVector _ -> raise CannotIntern
-
+      | ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _
+        -> raise CannotIntern
 
     let compile_pseudo_code code k =
       let m =
@@ -416,7 +430,7 @@ type P.code = MiscParser.proc * A.pseudo list)
             ins @ k in
       do_rec StringSet.empty code
 
-    let compile_code code =
+    let compile_code user code =
       let code = compile_pseudo_code code [] in
       let code =
         if O.timeloop > 0 then C.emit_loop code
@@ -424,8 +438,8 @@ type P.code = MiscParser.proc * A.pseudo list)
       let code = match O.barrier with
       | Barrier.TimeBase -> (* C.emit_tb_wait *) code
       | _ -> code  in
-
-      code
+      if user then C.user_mode@code@C.kernel_mode
+      else code
 
 
     module RegSet = A.RegSet
@@ -497,9 +511,12 @@ type P.code = MiscParser.proc * A.pseudo list)
     let comp_initset proc initenv code inputs_final =
       let reg_set  = comp_fix code inputs_final in
       let reg_set =
-        if do_self || A.arch = `X86_64 then (* Bypass livein analysis for X64 arch *)
+        (* Bypass livein analysis for X64 arch, kvm and self mode as register must
+           be initialized in all those situations, due to partial writes,
+           code modification and faults *)
+        if do_self || is_pte || A.arch = `X86_64 then
           RegSet.union
-            reg_set
+            (if is_pte then RegSet.union inputs_final reg_set else reg_set)
             (RegSet.of_list
                (List.fold_left
                   (fun k (r,_) -> match A.of_proc proc r with
@@ -519,19 +536,29 @@ type P.code = MiscParser.proc * A.pseudo list)
 
     let compile_final _proc observed = RegSet.elements observed
 
-    let mk_templates ty_env name stable_info init code observed =
+    let mk_templates procs_user ty_env name stable_info init code observed =
       let outs =
         List.map
           (fun (proc,code) ->
             let nrets = count_ret code in
+            let nnops = count_nop code in
             let addrs = extract_addrs code in
             let stable = stable_regs code in
-            let code = compile_code code in
-            proc,addrs,stable,code,nrets)
+            let code =
+              compile_code
+                (List.exists (Proc.equal proc) procs_user) code in
+            proc,addrs,stable,code,nrets,nnops)
           code in
       let pecs = outs in
       List.map
-        (fun (proc,addrs,stable,code,nrets) ->
+        (fun (proc,addrs,stable,code,nrets,nnops) ->
+          let addrs,ptes =
+            G.Set.fold
+              (fun s (a,p) -> match s with
+              | G.Addr s -> StringSet.add s a,p
+              | G.Pte s -> a,StringSet.add s p
+              | G.Phy _ -> assert false)
+              addrs (StringSet.empty,StringSet.empty) in
           let all_clobbers =
             List.fold_left
               (fun k i -> match i.A.Out.clobbers with
@@ -556,10 +583,11 @@ type P.code = MiscParser.proc * A.pseudo list)
           let t =
             { init = compile_init proc init observed_proc code ;
               addrs = StringSet.elements addrs ;
+              ptes = StringSet.elements ptes ;
               stable = [];
               final = compile_final proc observed_proc;
               all_clobbers;
-              code = code; name=name; nrets;
+              code = code; name=name; nrets; nnops;
               ty_env = my_ty_env;
             } in
           { t with stable = A.RegSet.elements (A.RegSet.inter (A.RegSet.union stable stable_info) (A.Out.all_regs t)) ; })
@@ -577,17 +605,18 @@ type P.code = MiscParser.proc * A.pseudo list)
 (* First from typing env, this catches all globals listed in init,final,flocs *)
         A.LocMap.fold
           (fun loc t k -> match loc with
-          | A.Location_global a -> StringMap.add a t k
+          | A.Location_global a -> G.Map.add a t k
           | _ -> k)
-          env StringMap.empty in
+          env G.Map.empty in
 (* Then extract types from code, notice that env types have precedence *)
       let env =
         List.fold_right
           (fun (_,t) ->
             List.fold_right
               (fun a env ->
+                let a = G.Addr a in
                 try
-                  ignore (StringMap.find a env) ; env
+                  ignore (G.Map.find a env) ; env
                 with Not_found ->
                   Generic.add_addr_type a base env)
               t.addrs)
@@ -598,18 +627,23 @@ type P.code = MiscParser.proc * A.pseudo list)
         List.fold_right
           (fun (_,(t,v)) env ->
             match t,v with
-            | (MiscParser.TyDef|MiscParser.TyDefPointer),
-              Constant.Symbolic {Constant.name=a;_} ->
+            | (TestType.TyDef|TestType.TyDefPointer),
+              Constant.Symbolic s ->
+                let a = G.tr_symbol s in
                 begin try
-                  let _ = StringMap.find a env in
+                  let _ = G.Map.find a env in
                   env
-                with Not_found  ->
-                  StringMap.add a Generic.base env
+                  with Not_found  ->
+                    let t = match t with
+                    | TestType.TyDef -> Generic.base
+                    | TestType.TyDefPointer -> Generic.pointer
+                    | _ -> assert false in
+                  G.Map.add a t env
                 end
             | _ -> env)
           init env in
-      StringMap.fold
-        (fun a ty k -> (a,ty)::k)
+      G.Map.fold
+        (fun a ty k -> match a with G.Addr a -> (a,ty)::k | G.Pte _| G.Phy _ -> k)
         env []
 
     let type_out env p t =
@@ -629,7 +663,8 @@ type P.code = MiscParser.proc * A.pseudo list)
             prog = code;
             condition = final;
             filter ;
-            locations = locs ; _
+            locations = locs ;
+            extra_data ;_
           } = t in
       let initenv = List.map (fun (loc,(_,v)) -> loc,v) init in
       let observed = Generic.all_observed final filter locs in
@@ -645,8 +680,14 @@ type P.code = MiscParser.proc * A.pseudo list)
       let ty_env = ty_env1,ty_env2 in
       let code = List.map (fun ((p,_),c) -> p,c) code in
       let code =
-        if do_self then
-          List.map (fun (p,c) -> p,A.Instruction A.nop::c) code
+        if do_self || is_pte then
+          let do_append_nop = is_pte && do_precise in
+          List.map (fun (p,c) ->
+            let nop = A.Instruction A.nop in
+            let c = A.Instruction A.nop::c in
+            let c =
+              if do_append_nop then c@[nop] else c in
+            p,c) code
         else code in
       let stable_info = match MiscParser.get_info  t MiscParser.stable_key with
       | None -> A.RegSet.empty
@@ -659,26 +700,28 @@ type P.code = MiscParser.proc * A.pseudo list)
               | Some r -> r::k)
               [] rs in
           A.RegSet.of_list rs in
-      let code = mk_templates ty_env1 name stable_info initenv code observed in
+      let procs_user = ProcsUser.get info in
+      let code =
+        mk_templates
+          procs_user ty_env1 name stable_info initenv code observed in
+      let bellinfo =
+        let open MiscParser in
+        match extra_data with
+        | NoExtra|CExtra _ -> None
+        | BellExtra i -> Some i in
       let code_typed = type_outs ty_env1 code in
-      let flocs =
-        let open ConstrGen in
-        List.map
-          (fun (rloc,_) ->
-            match rloc with
-            | Loc loc -> loc
-            | Deref _ -> prerr_endline "TODO" ; assert false)
-          locs in
-      { T.init = initenv ;
+      let flocs,ffaults = LocationsItem.locs_and_faults locs in
+        { T.init = initenv ;
           info = info;
           code = code_typed;
           condition = final;
           filter = filter;
           globals = comp_globals ty_env1 init code;
-          flocs;
+          flocs; ffaults;
           global_code = [];
           src = t;
           type_env = ty_env;
+          bellinfo;
         }
 
   end

@@ -52,6 +52,8 @@ module type SimplifiedSem = sig
     val event_compare : event -> event -> int
     val pp_eiid : event -> string
     val pp_instance : event -> string
+    val is_store : event -> bool
+    val is_pt : event -> bool
 
     module EventSet : MySet.S
     with type elt = event
@@ -88,6 +90,8 @@ module Make
             S.event_set (* labelled fence(s) *) ->
               S.event_rel (* localised fence relation *)
       val same_value : S.event -> S.event -> bool
+      val same_oa : S.event -> S.event -> bool
+      val writable2 : S.event -> S.event -> bool
     end)
     :
     sig
@@ -105,6 +109,7 @@ module Make
       val init_env_empty : init_env
       val add_rels : init_env -> S.event_rel Lazy.t Misc.Simple.bds -> init_env
       val add_sets : init_env -> S.event_set Lazy.t Misc.Simple.bds -> init_env
+      val get_set : init_env -> string -> S.event_set Lazy.t option
 
 (* Subset of interpreter state used by the caller *)
       type st_out = {
@@ -513,6 +518,14 @@ module Make
 
     and add_sets (sets,rels) bds = (bds@sets,rels)
 
+    let get_set (sets,_) key =
+      let rec f_rec = function
+        | [] -> None
+        | (k,v)::sets ->
+            if Misc.string_eq key k then Some v
+            else f_rec sets in
+      f_rec sets
+
 (* Go on *)
     let add_vals mk =
       List.fold_right (fun (k,v) -> StringMap.add k (mk v))
@@ -750,6 +763,7 @@ module Make
 
 
 (* Get an expression location *)
+
     let get_loc = function
       | Konst (loc,_)
       | AST.Tag (loc,_)
@@ -1126,10 +1140,32 @@ module Make
         V.Rel r
     | _ -> arg_mismatch ()
 
+    and check_two pred arg = match arg with
+      | V.Tuple [V.Set ws; V.Rel prec; ] ->
+          let m = E.EventRel.M.to_map prec in
+          let ws =
+            E.EventSet.filter
+              (fun w ->
+                E.is_store w && E.is_pt w &&
+                begin
+                  match E.EventSet.as_singleton (E.EventRel.M.succs w m) with
+                  | Some p -> pred w p
+ (* w does not qualify when zero of two or more prec-related events *)
+                  | None -> false
+                end)
+              ws in
+          V.Set ws
+      | _ -> arg_mismatch ()
+
+    let oa_changes = check_two (fun w p -> not (U.same_oa w p))
+    and at_least_one_writable = check_two U.writable2
+
     let add_primitives ks m =
       add_prims m
         [
-         "different-values",different_values;
+          "at-least-one-writable",at_least_one_writable;
+          "oa-changes",oa_changes;
+          "different-values",different_values;
          "fromto",fromto ks;
          "classes-loc",partition;
          "classes",classes;

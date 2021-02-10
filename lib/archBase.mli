@@ -34,6 +34,7 @@ module type S = sig
   val reg_compare : reg -> reg -> int
   val symb_reg_name : reg -> string option
   val symb_reg : string -> reg
+  val typeof : reg -> CType.t
 
   type barrier
   val pp_barrier            : barrier -> string
@@ -73,10 +74,6 @@ module type S = sig
   (* Normalize instruction (for hashes) *)
   val norm_ins : instruction -> instruction
 
-(* LM: Was not used, delete
-  (* Recognise store, data read from register r *)
-  val is_data : reg -> instruction -> bool
-*)
 
   (* Instruction continuation *)
   val get_next : instruction -> Label.next list

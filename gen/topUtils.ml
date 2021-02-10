@@ -40,6 +40,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 (* Misc *)
     val comp_loc_writes : C.C.node -> StringSet.t
     val comp_atoms : C.C.node -> StringSet.t
+    val find_next_pte_write : C.C.node -> C.C.node option
     val check_here : C.C.node -> bool
     val do_poll : C.C.node -> bool
     val fetch_val : C.C.node -> Code.v
@@ -251,16 +252,36 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         k in
       do_rec n0
 
-(* insert local check *)
+(* Worth inserting local check *)
+    let find_next_pte_write n =
+      let loc = n.C.C.evt.C.C.loc  in
+      try
+        let r =
+          C.C.find_node
+            (fun m ->
+              let e = m.C.C.evt in
+              if Code.loc_eq loc e.C.C.loc then match e.C.C.dir,e.C.C.bank with
+              | Some W,Pte -> true
+              | _,_ -> false
+              else raise Not_found)
+            n.C.C.next in
+        Some r
+      with Not_found -> None
 
     let is_load_init e = e.C.C.dir = Some R && e.C.C.v = 0
 
-    let check_here n = match n.C.C.edge.C.E.edge with
-    | C.E.Ws Ext
-    | C.E.Fr Ext
-    | C.E.Leave (CFr|CWs)
-    | C.E.Back(CFr|CWs)  -> not (is_load_init n.C.C.evt)
-    | _ -> false
+    let check_edge = function
+      | C.E.Ws Ext
+      | C.E.Fr Ext
+      | C.E.Leave (CFr|CWs)
+      | C.E.Back(CFr|CWs)  -> true
+      | _-> false
+
+    let check_here n = match n.C.C.evt.C.C.bank with
+    | Pte ->
+        Misc.is_some (find_next_pte_write n)
+    | Ord|Tag|CapaTag|CapaSeal ->
+        check_edge n.C.C.edge.C.E.edge && not (is_load_init n.C.C.evt)
 
 (* Poll for value is possible *)
     let do_poll n =

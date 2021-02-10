@@ -43,12 +43,22 @@ type t =
 (* Branch speculation+ cat computation of dependencies *)
   | Deps
   | Instances (* Compute dependencies on instruction instances *)
-
+  | Kvm
+  | ETS
+(* Insert branching event between pte read and accesses *)
+  | PteBranch
+(* Pte-Squared: all accesses through page table, including PT accesses *)
+  | PTE2
+(* Perform experiment *)
+  | Exp
+  
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
    "mixed";"dontcheckmixed";"weakpredicated"; "memtag";
-   "tagcheckprecise"; "tagcheckunprecise"; "toofar"; "morello"; "deps"; "instances"; ]
+   "tagcheckprecise"; "tagcheckunprecise"; "precise"; "imprecise";
+   "toofar"; "deps"; "morello"; "instances"; "ptebranch"; "pte2"; "pte-squared";
+   "exp"; ]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -68,11 +78,16 @@ let parse s = match Misc.lowercase s with
 | "notweakpredicated"|"notweakpred" -> Some NotWeakPredicated
 | "tagmem"|"memtag" -> Some MemTag
 | "tagcheckprecise"|"precise" -> Some TagCheckPrecise
-| "tagcheckunprecise"|"unprecise" -> Some TagCheckUnprecise
+| "tagcheckimprecise"|"imprecise" -> Some TagCheckUnprecise
 | "toofar" -> Some TooFar
 | "morello" -> Some Morello
 | "deps" -> Some Deps
 | "instances"|"instance" -> Some Instances
+| "kvm" -> Some Kvm
+| "ets" -> Some ETS
+| "ptebranch"|"branch" -> Some PteBranch
+| "pte2" | "pte-squared" -> Some PTE2
+| "exp" -> Some Exp
 | _ -> None
 
 let pp = function
@@ -93,11 +108,16 @@ let pp = function
   | NotWeakPredicated -> "NotWeakPredicated"
   | MemTag -> "memtag"
   | TagCheckPrecise -> "TagCheckPrecise"
-  | TagCheckUnprecise -> "TagCheckUnprecise"
+  | TagCheckUnprecise -> "TagCheckImprecise"
   | TooFar -> "TooFar"
   | Morello -> "Morello"
   | Deps -> "Deps"
   | Instances -> "Instances"
+  | Kvm -> "kvm" 
+  | ETS -> "ets"
+  | PteBranch -> "PteBranch"
+  | PTE2 -> "pte-squared"
+  | Exp -> "exp"
 
 let compare = compare
 
@@ -113,3 +133,13 @@ let get_default a = function
       | _ -> true
       end
   | v -> Warn.fatal "No default for variant %s" (pp v)
+
+let set_precision r tag = 
+    try
+      r :=
+        (match tag with
+        | TagCheckPrecise -> true
+        | TagCheckUnprecise -> false
+        | _ -> raise Exit) ;
+      true
+    with Exit -> false

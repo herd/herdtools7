@@ -22,18 +22,20 @@ module type I = sig
   module C : Constr.S with
   module V = A.V and
   type location = A.location and
-  module LocSet = A.LocSet
+  module LocSet = A.LocSet (* and
+  type rlocation = A.location ConstrGen.rloc and
+  module RLocSet = A.RLocSet *)
   module P : PseudoAbstract.S
 end
 
 module Make(I:I) : sig
   type code =  I.P.code list
-  type test =  (I.A.fullstate, code, I.C.prop, I.A.location)  MiscParser.result
+  type test =  (I.A.fullstate, code, I.C.prop, I.A.location, I.A.V.v)  MiscParser.result
   val dump : out_channel -> Name.t -> test -> unit
   val lines : Name.t -> test -> string list
 end = struct
   type code =  I.P.code list
-  type test =  (I.A.fullstate, code, I.C.prop, I.A.location)  MiscParser.result
+  type test =  (I.A.fullstate, code, I.C.prop, I.A.location, I.A.V.v)  MiscParser.result
   include SimpleDumper_prime.Make
       (struct
         open Printf
@@ -42,10 +44,11 @@ end = struct
 
         module P = I.P
 
-        let dump_init_val = A.V.pp I.hexa
+        type v = A.V.v
+        let dump_v = A.V.pp I.hexa
 
         let dump_state_atom =
-          MiscParser.dump_state_atom A.pp_location dump_init_val
+          MiscParser.dump_state_atom A.pp_location dump_v
 
         type state = A.fullstate
 
@@ -58,7 +61,7 @@ end = struct
         type prop = I.C.prop
 
         let dump_atom a =
-          ConstrGen.dump_atom A.pp_location A.pp_rval (A.V.pp I.hexa) a
+          ConstrGen.dump_atom A.pp_location A.pp_rval dump_v a
 
         let dump_prop = ConstrGen.prop_to_string dump_atom
         let dump_constr = ConstrGen.constraints_to_string dump_atom

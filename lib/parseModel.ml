@@ -66,7 +66,7 @@ module Make(O:Config) = struct
   let do_parse fname chan =
     let buff,lexbuf = mk_lexbuf chan in
     lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname=fname;};
-    let model = GenParser.call_parser "model" lexbuf ML.token
+    let model = GenParserUtils.call_parser "model" lexbuf ML.token
         ModelParser.main in
     let pp = Buffer.contents buff in
     let opts,txt,code = model in

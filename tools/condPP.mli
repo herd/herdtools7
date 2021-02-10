@@ -15,8 +15,10 @@
 (****************************************************************************)
 
 type bd = string * string
-type bds = bd list
+type fault = string
+type bds = bd list * fault list * fault list
 type cnf = bds list
+
 
 val pp_simple : cnf -> string
 val pp_opt : cnf -> string

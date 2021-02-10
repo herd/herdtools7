@@ -28,7 +28,9 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       | Int | Std (_,Word) -> Word
       | Std (_,Short) -> Short
       | Std (_,Byte) -> Byte
-      | Std (_,S128) -> assert false
+      | Std (_,S128) | Pteval
+        -> assert false
+
 
     let size_to_inst_size =
       let open X86_64Base in
@@ -368,9 +370,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     let emit_rmw_dep () =  emit_exch_dep
 
-    let emit_fence _ _ _ f = [X86_64.Instruction (I_FENCE f)]
-
-    let full_emit_fence = GenUtils.to_full emit_fence
+    let emit_fence st _ init _ f = init,[X86_64.Instruction (I_FENCE f)],st
 
     let stronger_fence = MFENCE
 

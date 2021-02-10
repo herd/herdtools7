@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make(O:sig val memory : Memory.t val hexa : bool end) = struct
+module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) = struct
   module V = Int32Constant
 
   module type SmallBase = sig
@@ -25,7 +25,6 @@ module Make(O:sig val memory : Memory.t val hexa : bool end) = struct
   end
 
   include (CBase : SmallBase)
-
   module RegSet = StringSet
   module RegMap = StringMap
 
@@ -33,28 +32,36 @@ module Make(O:sig val memory : Memory.t val hexa : bool end) = struct
     let open Constant in
     function
       | Concrete i -> "addr_" ^ V.Scalar.pp O.hexa i
-      | Symbolic {name=s;tag=None;cap=0;_} -> s
-      | Label _|Symbolic _|Tag _|ConcreteVector _ -> assert false
+      | Symbolic (Virtual {name=s; tag=None; cap=0;_ })-> s
+      | Label _|Symbolic _|Tag _|ConcreteVector _| PteVal _ -> assert false
 
   module Internal = struct
     type arch_reg = reg
     let pp_reg x = x
     let reg_compare = String.compare
-
-    type arch_global = string
-    let pp_global x = x
-    let global_compare = String.compare
+    module G = Global_litmus
+    type arch_global = G.t
+    let pp_global = G.pp
+    let global_compare = G.compare
 
     let arch = `C
   end
 
   include Location.Make(Internal)
 
+  let is_pte_loc _ = false
   let parse_reg x = Some x
   let reg_compare = Internal.reg_compare
 
   type state = (location * V.v) list
-  type fullstate = (location * (MiscParser.run_type * V.v)) list
+
+  let debug_state st =
+    String.concat " "
+      (List.map
+         (fun (loc,v) -> Printf.sprintf "<%s -> %s>" (pp_location loc) (V.pp_v v))
+         st)
+
+  type fullstate = (location * (TestType.t * V.v)) list
 
   module Out = struct
     module V = V
@@ -63,6 +70,10 @@ module Make(O:sig val memory : Memory.t val hexa : bool end) = struct
 
     let dump_init_val = dump_v
   end
+
+  let dump_loc_tag _loc = assert false
+  let dump_rloc_tag _loc = assert false
+  let location_of_addr a = Location_global (Global_litmus.Addr a)
 
   let arch = Internal.arch
 
@@ -80,4 +91,5 @@ module Make(O:sig val memory : Memory.t val hexa : bool end) = struct
     | [] -> 0
 
   let typeof _ = assert false
+  let features = []
 end

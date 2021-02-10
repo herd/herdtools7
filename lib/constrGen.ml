@@ -32,6 +32,8 @@ let compare_rloc loc_compare r1 r2 = match r1,r2 with
   | Loc _,Deref _ -> -1
   | Deref _,Loc _ -> +1
 
+let rloc_of_loc loc = Loc loc
+
 let loc_of_rloc = function
   | Loc loc|Deref (loc,_) -> loc
 
@@ -40,6 +42,10 @@ let map_rloc f = function
   | Deref (loc,i) -> Deref (f loc,i)
 
 let fold_rloc f rl k = f (loc_of_rloc rl) k
+
+let match_rloc f g = function
+  | Loc loc -> f loc
+  | Deref (loc,i) -> g loc i
 
 type ('loc,'v) atom =
   | LV of 'loc rloc * 'v

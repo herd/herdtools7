@@ -28,6 +28,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
 
   module V = V
 
+  include NoLevelNorTLBI
+
   include ArchExtra_herd.Make(C)
       (struct
         module V = V

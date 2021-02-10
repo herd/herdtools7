@@ -138,6 +138,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         (* default is checking *)
     let check_mixed =  not (C.variant Variant.DontCheckMixed)
     let do_deps = C.variant Variant.Deps
+    let kvm = C.variant Variant.Kvm
 
 (*****************************)
 (* Event structure generator *)
@@ -196,29 +197,35 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
          loop_present : bool ;
        }
 
-(* All locations from init state, a bit contrieved *)
+(* All (virtual) locations from init state *)
+
     let get_all_locs_init init =
       let locs =
         List.fold_left
           (fun locs (loc,v) ->
             let locs =
               match loc with
-              | A.Location_global _ -> loc::locs
+              | A.Location_global _
+                -> loc::locs
               | A.Location_reg _ -> locs in
-            let locs = match v with
-            | A.V.Val (Constant.Symbolic {Constant.name=s;_}) ->
-                A.Location_global (A.V.Val (Constant.mk_sym s))::locs
-            | _ -> locs in
+            let locs =
+              match A.V.as_virtual v with
+              | Some s ->
+                  let sym = Constant.mk_sym_virtual s in
+                  A.Location_global (A.V.Val sym)::locs
+              | None -> locs in
             locs)
           [] (A.state_to_list init) in
       A.LocSet.of_list locs
+
+(* All (virtual) memory locations reachable by a test *)
 
     let get_all_mem_locs test =
       let locs_final =
         A.LocSet.filter
           (function
-            | A.Location_global _ -> true
-            | A.Location_reg _ -> false)
+           | A.Location_global _ -> true
+           | A.Location_reg _ -> false)
           (S.observed_locations test)
       and locs_init = get_all_locs_init test.Test_herd.init_state in
       let locs = A.LocSet.union locs_final locs_init in
@@ -230,7 +237,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                 A.fold_addrs
                   (fun x ->
                     let loc = A.maybev_to_location x in
-                    A.LocSet.add loc)
+                    match loc with
+                    | A.Location_global _ -> A.LocSet.add loc
+                    | _ -> fun locs -> locs)
                   locs ins)
               locs code)
           locs
@@ -288,7 +297,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             Some (tgt,seen)
         in if dbg then eprintf "fetch: %s %s\n" lbl (match r with None -> "None" | Some _ -> "Some"); r in
 
-      let rec add_next_instr proc seen addr inst nexts =
+      let rec add_next_instr re_exec proc seen addr inst nexts =
         let wrap poi =
           (let ii =
             { A.program_order_index = poi;
@@ -296,20 +305,26 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
               labels = labels_of_instr addr; }
           in SM.build_semantics ii) in
         wrap >>> fun branch ->
-          next_instr proc seen addr nexts branch
+          next_instr re_exec inst proc seen addr nexts branch
 
       and add_code proc seen nexts = match nexts with
-      | [] -> EM.unitcodeT ()
+      | [] -> EM.unitcodeT true
       | (addr,inst)::nexts ->
-          add_next_instr proc seen addr inst nexts
+          add_next_instr false proc seen addr inst nexts
 
       and add_lbl proc seen addr_jmp lbl =
         match fetch_code seen addr_jmp lbl with
-        | None -> tooFar := true ; EM.tooFarcode lbl
+        | None -> tooFar := true ; EM.tooFarcode lbl true
         | Some (code,seen) -> add_code proc seen code
 
-      and next_instr proc seen addr nexts b = match b with
-      | S.B.Exit -> tooFar := true ; EM.unitcodeT ()
+      and next_instr re_exec inst proc seen addr nexts b = match b with
+      | S.B.Exit -> tooFar := true ; EM.unitcodeT true
+      | S.B.ReExec ->
+          if re_exec then begin
+            tooFar := true ;
+            EM.unitcodeT false
+          end else
+            add_next_instr true proc seen addr inst nexts
       | S.B.Next -> add_code proc seen nexts
       | S.B.Jump lbl ->
           add_lbl proc seen addr lbl
@@ -318,6 +333,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             (add_lbl proc seen addr lbl)
             (add_code proc seen nexts) in
 
+(* Code monad returns a boolean. When false the code must be discarded.
+   See also add_instr in eventsMonad.ml *)
       let jump_start proc code =
         add_code proc Imap.empty code in
 
@@ -346,7 +363,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           W.warn "%i abstract event structures\n%!" i ;
           []
       | (vcl,es)::xs ->
-          let es = relabel es in
+          let es = if C.debug.Debug_herd.monad then es else relabel es in
           let es =
             { es with E.procs = procs; E.po = if do_deps then transitive_po es else es.E.po } in
           (i,vcl,es)::index xs (i+1) in
@@ -642,26 +659,28 @@ let match_reg_events es =
 (* Check for loads that cannot feed on some write *)
       if not do_deps then begin
         List.iter
-        (fun (load,stores) -> match stores with
-        | [] ->
-            begin match E.location_of load with
-            | Some
-              (A.Location_global
-                 (V.Val (Constant.Symbolic sym)) as loc) ->
-                if
-                  not (S.is_non_mixed_symbol test sym)
-                then
-                  Warn.fatal "read on location %s does not match any write"
-                    (A.pp_location loc)
-                else if check_mixed then
-                  Warn.user_error
-                    "Illegal mixed-size test on symbol %s"
-                    (A.pp_location loc)
-            | _ -> assert false
-            end
-        | _::_ -> ())
-        m
-      end ;
+          (fun (load,stores) ->
+            match stores with
+            | [] ->
+                begin match E.location_of load with
+                | Some loc ->
+                    begin match A.symbol loc with
+                    | Some sym ->
+                        if S.is_non_mixed_symbol test sym then
+                          Warn.fatal
+                            "read on location %s does not match any write"
+                        (A.pp_location loc)
+                        else if check_mixed then
+                          Warn.user_error
+                            "Illegal mixed-size test on symbol %s"
+                            (A.pp_location loc)
+                    | _ -> assert false
+                    end
+                | _ -> assert false
+                end
+            | _::_ -> ())
+          m
+        end ;
       m
 
 (* Add memory events to rfmap *)
@@ -775,31 +794,30 @@ let match_reg_events es =
 
     exception CannotSca
 
-(* Various utilities on symbolic addresses as locatiosn *)
+(* Various utilities on symbolic addresses as locations *)
     let get_base a =
-      let open Constant in match A.global a with
-      | Some (V.Val (Symbolic ({name=s;_}as sym))) when Misc.check_ctag s ->
-          A.Location_global (V.Val (Symbolic ({sym with name=Misc.tr_ctag s;offset=0})))
-      | Some (V.Val (Symbolic s)) ->
-          A.Location_global (V.Val (Symbolic {s with offset=0}))
+      let open Constant in
+      match A.symbolic_data a with
+      | Some ({name=s;_} as sym) ->
+          let s = if Misc.check_ctag s then Misc.tr_ctag s else s in
+          A.of_symbolic_data {sym with name=s; offset=0;}
       | _ -> raise CannotSca
 
 (* Sort same_base *)
     let compare_index e1 e2 =
       let open Constant in
-      match E.global_loc_of e1, E.global_loc_of e2 with
-      | Some (V.Val (Symbolic {name=s1;offset=i1;_})),
-        Some (V.Val (Symbolic {name=s2;offset=i2;_})) when  Misc.string_eq s1 s2 ->
+      let loc1 = E.location_of e1 and loc2 = E.location_of e1 in
+      match Misc.seq_opt A.symbolic_data loc1,
+            Misc.seq_opt A.symbolic_data loc2
+      with
+      | Some {name=s1;offset=i1;_},Some {name=s2;offset=i2;_}
+            when  Misc.string_eq s1 s2 ->
           Misc.int_compare i1 i2
-      | Some (V.Val (Symbolic {name=s1;_})),
-        Some (V.Val (Symbolic {name=s2;_})) when (morello && Misc.check_ctag s1
-          && Misc.string_eq (Misc.tr_ctag s1) s2) -> 1
-      | Some (V.Val (Symbolic {name=s1;_})),
-        Some (V.Val (Symbolic {name=s2;_})) when (morello && Misc.check_ctag s2
-          && Misc.string_eq s1 (Misc.tr_ctag s2)) -> -1
-      | Some (V.Val (Symbolic {name=s1;_})),
-        Some (V.Val (Symbolic {name=s2;_})) when (morello && Misc.check_ctag s1
-        && Misc.check_ctag s2 && Misc.string_eq s1 s2) -> 0
+      | Some {name=s1;_},Some {name=s2;_} when morello ->
+          if Misc.check_ctag s1 && Misc.string_eq (Misc.tr_ctag s1) s2 then 1
+          else if Misc.check_ctag s2 && Misc.string_eq s1 (Misc.tr_ctag s2) then -1
+          else if Misc.check_ctag s1 && Misc.check_ctag s2 && Misc.string_eq s1 s2 then 0
+          else raise CannotSca
       | _,_ -> raise CannotSca
 
     let sort_same_base es = List.sort compare_index es
@@ -878,8 +896,9 @@ let match_reg_events es =
       | e::_ -> e
       | [] -> assert false in
       let s,idx= match  E.global_loc_of fst with
-      |  Some (V.Val (Symbolic {name=s;offset=i;_})) ->
-          (if morello && Misc.check_ctag s then Misc.tr_ctag s else s),i
+      |  Some (V.Val (Symbolic (Virtual {name=s; offset=i;_})))
+         ->
+           (if morello && Misc.check_ctag s then Misc.tr_ctag s else s),i
       | _ -> raise CannotSca in
       let sz = List.length sca*byte_sz in
       is_spec es fst,E.get_mem_dir fst,s,idx,sz,sca
@@ -1064,16 +1083,27 @@ let match_reg_events es =
 (***************************)
 
 (* final state *)
+    let tr_physical =
+      let open Constant in
+      if kvm then
+        (function
+         | A.Location_global (V.Val (Symbolic (Physical (s,idx)))) ->
+             let sym = { default_symbolic_data with name=s; offset=idx; } in
+             A.of_symbolic_data sym
+         | loc -> loc)
+      else
+        Misc.identity
+
     let compute_final_state test rfm es =
       let st =
         S.RFMap.fold
           (fun wt rf k -> match wt,rf with
           | S.Final loc,S.Store ew ->
-              A.state_add k loc (get_written ew)
+              A.state_add k (tr_physical loc) (get_written ew)
           | _,_ -> k)
           rfm test.Test_herd.init_state in
       st,
-      if memtag || morello then
+      if memtag || morello || kvm  then
         E.EventSet.fold
           (fun e k -> match E.to_fault e with
           | Some f -> A.FaultSet.add f k
@@ -1185,6 +1215,21 @@ let match_reg_events es =
                 k ws)
         loc_stores E.EventRel.empty
 
+    let keep_observed_loc =
+      if kvm then
+        let open Constant in
+        fun loc -> match loc with
+        | A.Location_global (V.Val (Symbolic (Physical _ as sym1))) ->
+            let p oloc = match oloc with
+            | A.Location_global (V.Val (Symbolic sym2)) ->
+                Constant.virt_match_phy sym2 sym1
+            | _ -> false in
+            A.LocSet.exists p
+        | _ -> A.LocSet.mem loc
+      else A.LocSet.mem
+
+    let pp_locations = A.LocSet.pp_str " " A.pp_location
+
     let all_finals_non_mixed test es =
       let loc_stores = U.remove_spec_from_map es (U.collect_mem_stores es) in
       let loc_stores =
@@ -1194,33 +1239,44 @@ let match_reg_events es =
             if mixed then
               let senv = S.size_env test in
               A.LocSet.map_union
-                (fun loc -> match loc with
-                | A.Location_global a ->
-                    let eas = AM.byte_eas (A.look_size senv (A.V.as_symbol a)) a in
-                    A.LocSet.of_list
-                      (List.map (fun a -> A.Location_global a) eas)
-                | _ -> A.LocSet.singleton loc)
+                (fun loc ->
+                  let open Constant in
+                  match loc with
+                  | A.Location_global
+                    (V.Val (Symbolic (Virtual {name=s;_})) as a)
+                    ->
+                      let eas = AM.byte_eas (A.look_size senv s) a in
+                      A.LocSet.of_list
+                        (List.map (fun a -> A.Location_global a) eas)
+                  | _ -> A.LocSet.singleton loc)
                 locs
             else if morello then
               A.LocSet.map_union
-                (fun loc -> match loc with
-                | A.Location_global (A.V.Val (Constant.Symbolic ({Constant.offset=0;Constant.name=s;_} as sym))) ->
-                    A.LocSet.of_list (A.Location_global (A.V.Val
-                      (Constant.Symbolic {sym with Constant.name=Misc.add_ctag s}))::[loc])
-                | _ -> A.LocSet.singleton loc)
+                (fun loc ->
+                  let open Constant in
+                  match loc with
+                  | A.Location_global
+                    (A.V.Val
+                       (Symbolic
+                          (Virtual ({name=s; offset=0; _} as sym))))
+                        ->
+                        A.LocSet.add
+                          (A.of_symbolic_data {sym with name=Misc.add_ctag s})
+                          (A.LocSet.singleton loc)
+                    | _ -> A.LocSet.singleton loc)
                 locs
             else locs in
-          if false then begin
-            eprintf "Observed locs: {%s}\n"
-              (A.LocSet.pp_str "," A.pp_location   observed_locs)
+          if C.debug.Debug_herd.mem then begin
+            eprintf "Observed locs: {%s}\n" (pp_locations observed_locs)
           end ;
           U.LocEnv.fold
             (fun loc ws k ->
-              if A.LocSet.mem loc observed_locs then
+              if keep_observed_loc loc observed_locs then
                 U.LocEnv.add loc ws k
               else k)
             loc_stores U.LocEnv.empty
         else loc_stores in
+
       let possible_finals =
         if C.optace then
           U.LocEnv.fold
@@ -1258,10 +1314,10 @@ let match_reg_events es =
 
           let compare_index idx e =
             let open Constant in
-            match E.global_loc_of e with
-            | Some (V.Val (Symbolic {name=s;_})) when Misc.check_ctag s ->
-                Misc.int_compare idx max_int
-            | Some (V.Val (Symbolic {offset=i;_})) -> Misc.int_compare idx i
+            match Misc.seq_opt A.symbolic_data (E.location_of e) with
+            | Some {name=s; offset=i; _} ->
+                if Misc.check_ctag s then  Misc.int_compare idx max_int (* always -1 ??? *)
+                else  Misc.int_compare idx i
             | _ -> assert false
 
           let debug_read out = fprintf out "%i"
@@ -1279,7 +1335,7 @@ let match_reg_events es =
             if E.is_store e && not (E.EventSet.mem e es.E.speculated) then match E.location_of e with
             | Some a ->
                 let a = get_base a in
-                if A.LocSet.mem a locs then
+                if keep_observed_loc a locs then
                   let old = A.LocMap.safe_find [] a k in
                   A.LocMap.add a (sort_same_base (E.EventSet.elements sca)::old) k
                 else k
@@ -1332,6 +1388,17 @@ let match_reg_events es =
       let atomic_load_store = make_atomic_load_store es in
 (* Now generate final stores *)
       let possible_finals = all_finals test es in
+      if C.debug.Debug_herd.mem then begin
+        eprintf "Possible finals:\n" ;
+        List.iter
+          (fun wss ->
+            (List.iter
+               (fun ws ->
+                 List.iter (eprintf " %a" E.debug_event) ws)
+               wss ;
+             eprintf "\n"))
+          possible_finals
+      end ;
 (* Add final loads from init for all locations, cleaner *)
       let loc_stores = U.collect_stores es
       and loc_loads = U.collect_loads es in
@@ -1363,12 +1430,17 @@ let match_reg_events es =
         Misc.fold_cross
           possible_finals
           (fun ws res ->
+
             if C.debug.Debug_herd.mem then begin
               eprintf "Finals:" ;
               List.iter
-                (fun es -> List.iter (fun e -> eprintf " %a"  E.debug_event e) es ; eprintf "\n") ws ;
-              eprintf "END\n"
+                (fun ws ->
+                  List.iter
+                    (fun e -> eprintf " %a"  E.debug_event e) ws)
+                ws ;
+              eprintf "\n";
             end ;
+
             let rfm =
               fold_left_left
                 (fun k w ->
@@ -1466,29 +1538,26 @@ let match_reg_events es =
         let loc_mems = U.collect_mem_non_init es in
         U.LocEnv.iter
           (fun loc evts ->
+            let open Constant in
             begin match loc with
-            | A.Location_global (V.Val (Constant.Symbolic sym)) ->
-                if not (S.is_non_mixed_symbol test sym) then
-                  Warn.user_error "Illegal mixed-size test on symbol %s"
-                    (A.pp_location loc)
+            | A.Location_global (V.Val (Symbolic sym))
+                  when not (S.is_non_mixed_symbol test sym) ->
+                Warn.user_error "Illegal mixed-size test on symbol %s"
+                  (A.pp_location loc)
             | _ -> ()
             end ;
-            (* hum TODO, init write size should be depend upon declaration and be checked *)
-            if check_mixed then begin
-              let evts =
-                List.filter (fun e -> not (E.is_mem_store_init e))evts in
-              match evts with
-              | [] -> ()
-              | e0::es ->
-                  let sz0 = E.get_mem_size e0 in
-                  List.iter
-                    (fun e ->
-                      if sz0 <> E.get_mem_size e then
-                        Warn.user_error "Illegal mixed-size test")
-                    es
+            begin match evts with
+            | [] -> ()
+            | e0::es ->
+                let sz0 = E.get_mem_size e0 in
+                List.iter
+                  (fun e ->
+                    if sz0 <> E.get_mem_size e then
+                      Warn.user_error "Illegal mixed-size test")
+                  es
             end)
           loc_mems
-      end
+        end
 
      let check_event_aligned test e =
        let a = Misc.as_some (E.global_loc_of e) in

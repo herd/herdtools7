@@ -67,7 +67,7 @@ module Make(O:LexUtils.Config) =
 
     let parse_one s m =
       let to_add =
-        GenParser.call_parser
+        GenParserUtils.call_parser
           "_none_" (Lexing.from_string s) Lexer.token do_parse in
       List.fold_right
         (fun (n,al) -> BellModel.add_event_dec n al)

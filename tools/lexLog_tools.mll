@@ -33,10 +33,11 @@ open LexMisc
 open Printf
 open LogState
 module LS = LogState.Make(O)
+module StateLex=StateLexer.Make(struct let debug=false end)
 
 let c_init = 100
 let count = ref 0
-let poolize loc v = HashedPair.as_hashed loc v
+let poolize loc v = HashedBinding.as_hashed loc v
 let no_wits = Int64.zero,Int64.zero
 let no_topos = []
 let no_cond = None
@@ -68,6 +69,34 @@ let to_hex =
 
 let to_xxx = if O.hexa then to_hex else to_dec
 
+let norm_pteval s =
+  let lex = Lexing.from_string s in
+  try
+    let p0 = StateParser.pteval StateLex.token lex in
+    PTEVal.pp p0
+  with
+  | LexMisc.Error _
+  | Parsing.Parse_error
+    -> assert false
+
+(* Notice about normalisation of values
+ + A leading left parenthesis unambiguously specifies a pteval.
+   Normalisation originates from old logs being different from new ones.
+ + A leading decimal digit unambiguously specifies an integer value.
+   Normalisation originates from decimal and hexadecimal integers occuring
+   in logs.
+ + Other values need not being normalised
+ *)
+
+let norm_value s =
+  assert (String.length s > 0) ;
+  match s.[0] with
+  | '(' -> norm_pteval s
+  | '0'..'9' -> to_xxx s
+  | _ ->  s
+
+let to_proc s = try int_of_string s with _ -> assert false
+
 let nstates_limit = 1024
 }
 
@@ -76,8 +105,11 @@ let num = digit+
 let hexa = ['0'-'9' 'a'-'f' 'A'-'F' ]
 let hexanum = "0x" hexa+
 let set = '{' (' '|','|('-'?(num|hexanum)))* '}'
+let pteval = '(' [^')''\n''\r']+ ')'
 let alpha = [ 'a'-'z' 'A'-'Z']
-let name = alpha (alpha|digit| '.'|'_')*
+let name = alpha (alpha|digit|'_'| '.')*
+let label = 'L' (alpha|digit)+
+let fault = (['f''F'] "ault")
 let reg = name
 let loc = name | ('$' (alpha+|digit+))
 let blank = [' ' '\t']
@@ -136,22 +168,33 @@ and pstate = parse
 and plines nk k = parse
 | ((num as c) blank* (":>"|"*>"))?
     { if O.acceptBig || nk <= nstates_limit then
-        let line = pline [] lexbuf in
+        let bds,fs,abs = pline [] [] [] lexbuf in
         let st =
           { p_noccs =
             begin match c with
             | None -> Int64.one
             | Some s -> Int64.of_string s
             end ;
-            p_st = LS.as_st_concrete line } in
+            p_st = LS.as_st_concrete bds fs abs} in
         plines (nk+1) (st::k) lexbuf
     else begin
       skip_pline lexbuf ;
       plines (nk+1) k lexbuf
     end }
-|  ("Loop" blank+ as loop)?
+| blank* nl
+  { incr_lineno lexbuf ;
+    let st = {
+      p_noccs = Int64.one;
+      p_st = LS.as_st_concrete [] [] []
+    } in
+    plines (nk+1) (st::k) lexbuf
+  }
+| ("Loop" blank+ as loop)?
    (((validation as ok) ([^'\r''\n']*))
-|("" as ok))  nl  (* missing validation result, from some litmus logs *)
+(* Alternative below deleted as there is an ambiguity with empty output,
+   expecting old logs not to show up anymore . *)
+(* | ("" as ok)  nl   missing validation result, from some litmus logs  *)
+)
     { incr_lineno lexbuf ;
       let ok = match ok with
       | "Succeeded"|"Ok" -> Ok
@@ -170,16 +213,28 @@ and skip_empty_lines = parse
 | blank*  nl  { incr_lineno lexbuf ; skip_empty_lines lexbuf }
 | "" { () }
 
-and pline k = parse
+and pline bds fs abs = parse
 | blank*
  ((num ':' reg as loc)|(('['?) (loc as loc) ( ']'?))|(loc '[' num ']' as loc))
-    blank* '=' blank* (('-' ? (num|hexanum))|(name(':'name)?)|set as v)
+    blank* '=' blank* (('-' ? (num|hexanum))|(name(':'name)?)|set|pteval as v)
     blank* ';'
     {
-     let v = to_xxx v in  (* Translate to decimal *)
+     let v = norm_value v in  (* Translate to decimal *)
      let p = poolize loc v in
-     pline (p::k) lexbuf }
-| blank* ('#' [^'\n']*)?  nl  { incr_lineno lexbuf ; k }
+     pline (p::bds) fs abs lexbuf }
+| blank* fault blank* '(' blank* ('P'? (num as proc)) (':' (label as lbl))? blank* ','
+    (loc as loc) blank* ')' blank* ';'
+    {
+     let f = (to_proc proc,lbl),loc in
+     let f = HashedFault.as_hashed f in
+     pline bds (f::fs) abs lexbuf }
+| blank* '~' fault blank* '(' blank* ('P'? (num as proc)) (':' (label as lbl))? blank* ','
+    (loc as loc) blank* ')' blank* ';'
+    {
+     let f = (to_proc proc,lbl),loc in
+     let f = HashedFault.as_hashed f in
+     pline bds fs (f::abs) lexbuf }
+| blank* ('#' [^'\n']*)?  nl  { incr_lineno lexbuf ; bds,fs,abs }
 | "" { error "pline" lexbuf }
 
 and skip_pline = parse
@@ -187,6 +242,8 @@ and skip_pline = parse
  ((num ':' reg)|(('['?) (loc) ( ']'?))|(loc '[' num ']'))
     blank* '=' blank* (('-' ? (num|hexanum))|name|set)
     blank* ';'
+| blank* fault blank* '(' blank* ('P'? num) ':' label blank* ','
+    loc blank* ')' blank* ';'
     { skip_pline lexbuf }
 | blank* ('#' [^'\n']*)?  nl  { incr_lineno lexbuf }
 | "" { error "skip_pline" lexbuf }
@@ -203,7 +260,7 @@ and pwitnesses = parse
 
 and pcond = parse
 | blank*  nl
-| "Bad executions" [^'\n''\r']* nl
+| ("Bad executions"|"Flag ") [^'\n''\r']* nl
   { incr_lineno lexbuf ; pcond lexbuf }
 | "Condition" blank+
   ([^'\r''\n']+ as c)  nl
@@ -283,8 +340,8 @@ and sstate = parse
 
 and slines k = parse
 | ((num) blank* (":>"|"*>"))?
-    { let line = pline [] lexbuf in
-      let st = LS.as_st_concrete line in
+    { let bds,fs,abs = pline [] [] [] lexbuf in
+      let st = LS.as_st_concrete bds fs abs in
       slines (st::k) lexbuf }
 |  ("Loop" blank+ )?
    ((validation ([^'\r''\n']*))

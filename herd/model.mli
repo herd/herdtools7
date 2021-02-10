@@ -54,6 +54,7 @@ module type Config = sig
   val optace : bool
   val libfind : string -> string
   val variant : Variant.t -> bool
+  val dirty : DirtyBit.t
 end
 
 (* Defaults *)

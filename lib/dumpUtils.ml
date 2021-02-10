@@ -15,18 +15,23 @@
 (****************************************************************************)
 
 open Printf
-open MiscParser
-
-
-let dump_locations dump_location env = match env with
+let dump_locations dump_location dump_v env = match env with
 | [] -> ""
 | _::_ ->
-    let dump_loc_type (loc,t) = match t with
+    let open TestType in
+    let dump_location = ConstrGen.dump_rloc dump_location in
+    let dump_loc_type loc t = match t with
     | TyDef -> dump_location loc ^";"
     | TyDefPointer -> dump_location loc ^"*;"
     | Ty t -> sprintf "%s %s;" (dump_location loc) t
     | Pointer t -> sprintf "%s %s*;" (dump_location loc) t
-    | TyArray _|Atomic _ -> assert false (* No arrays nor atomics here *) in
-    let pp = List.map dump_loc_type env in
+    | TyArray _|Atomic _ -> assert false (* No arrays nor atomics here *)
+    and dump_fault f = sprintf "%s;" (Fault.pp_fatom dump_v f) in
+    let dump_item i =
+      let open LocationsItem in
+      match i with
+      | Loc (loc,t) -> dump_loc_type loc t
+      | Fault f -> dump_fault f in
+    let pp = List.map dump_item env in
     let pp = String.concat " " pp in
     sprintf "locations [%s]" pp

@@ -30,6 +30,7 @@ module type Config = sig
   val overload : int option
   val cpp : bool
   val scope : Scope.t
+  val info : MiscParser.info
 end
 
 module Make(Config:Config)(T:Builder.S)
@@ -315,7 +316,7 @@ module Make(Config:Config)(T:Builder.S)
             n,res.env in
         let cy = T.E.pp_edges cycle.norm in
         let info,relaxed = mk_info cycle.norm in
-        let info = ("Cycle",cy)::info in
+        let info = Config.info@("Cycle",cy)::info in
 
         match Config.scope with
         | Scope.No ->

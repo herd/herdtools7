@@ -17,13 +17,17 @@
 (* Input signature for CompCond.Make and Switch.Make *)
 
 module type X = sig
-  type t
+  type location
+  type t = location ConstrGen.rloc
   val compare : t -> t -> int
   val dump : t -> string
+  val dump_fatom : ('v -> string) -> 'v Fault.atom -> string
 end
 
 module type I = sig
   val with_ok : bool
   module C : Constr.S
-  module Loc : X with type  t = C.location
+  (* When present the first, location, argument allows retrieving type *)
+  val dump_value : C.location option -> C.V.v -> string
+  module Loc : X with type  location = C.location
 end

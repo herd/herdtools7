@@ -90,6 +90,8 @@ module Make
     and module RegMap = T.A.RegMap) : sig
       val dump : Name.t -> T.t -> unit
     end = struct
+
+      module G = Global_litmus
       module C = T.C
       open Constant
       open CType
@@ -125,8 +127,6 @@ module Make
       let do_staticNpl =
         match Cfg.preload with StaticNPL _ -> true
         | CustomPL|NoPL|RandomPL|StaticPL -> false
-
-      let ws = Cfg.word
 
       open Barrier
       let barrier =  Cfg.barrier
@@ -264,12 +264,23 @@ module Make
 
 
 (* Utilities *)
-      module U = SkelUtil.Make(Cfg)(P)(A)(T)
+      module UCfg = struct
+        let memory = Cfg.memory
+        let preload = Cfg.preload
+        let mode = Cfg.mode
+        let kind = Cfg.kind
+        let hexa = Cfg.hexa
+        let exit_cond = Cfg.exit_cond
+        let have_fault_handler = false
+      end
+
+      module U = SkelUtil.Make(UCfg)(P)(A)(T)
       module EPF =
         DoEmitPrintf.Make
           (struct
             let emitprintf = Cfg.stdio
             let ctr = Fmt.I64
+            let no_file = false
           end)(O)
       module UD = U.Dump(O)(EPF)
 
@@ -279,7 +290,6 @@ module Make
         ObjUtil.Insert
           (struct
             let sysarch = Cfg.sysarch
-            let word = ws
           end)
 
 (* Location utilities *)
@@ -293,30 +303,33 @@ module Make
               else find_rec (k+1) ws in
         find_rec 0
 
-      let find_global_init a t =
-        A.find_in_state (A.Location_global a) t.T.init
+      let find_global_init a t = A.find_in_state (A.location_of_addr a) t.T.init
 
       let have_stabilized_globals t =
         not (StringSet.is_empty (U.get_stabilized t))
 
-
-      let dump_loc_name loc =  match loc with
-      | A.Location_reg (proc,reg) -> A.Out.dump_out_reg proc reg
-      | A.Location_global s -> s
-
-      let dump_loc_copy loc = "_" ^ dump_loc_name loc ^ "_i"
-      let dump_loc_param loc = "_" ^ dump_loc_name loc
+      let dump_loc_copy rloc = "_" ^ A.dump_loc_tag rloc ^ "_i"
+      let dump_rloc_copy rloc = "_" ^ A.dump_rloc_tag rloc ^ "_i"
+      let dump_rloc_param rloc = "_" ^ A.dump_rloc_tag rloc
 
       let dump_ctx_loc pref loc = match loc with
       | A.Location_reg (proc,reg) ->
           sprintf "%s%s[_i]" pref (A.Out.dump_out_reg  proc reg)
-      | A.Location_global s ->
+      | A.Location_global (G.Addr s) ->
           begin match memory with
           | Direct ->
               sprintf "%s%s[_i]" pref s
           | Indirect ->
               sprintf "*(%s%s[_i])" pref s
           end
+      | A.Location_global (G.Pte _|G.Phy _)
+        -> assert false
+
+      let dump_ctx_rloc pref =
+        ConstrGen.match_rloc
+          (dump_ctx_loc pref)
+          (fun loc i ->
+            sprintf "%s[%d]" (dump_ctx_loc pref loc) i)
 
       let dump_loc = dump_ctx_loc ""
 
@@ -339,13 +352,11 @@ module Make
       | Indirect -> sprintf "_a->%s[_i]"
 
 (* Right value, casted if pointer *)
-      let rec dump_a_v_casted = function
+      let dump_a_v_casted = function
         | Concrete i ->  A.V.Scalar.pp  Cfg.hexa i
-        | ConcreteVector (_,vs)->
-            let pp_vs = List.map dump_a_v_casted vs in
-            sprintf "{%s}" (String.concat "," pp_vs) (* list initializer syntax *)
-        | Symbolic {name=s;tag=None;cap=0;_} -> sprintf "((int *)%s)" (dump_a_addr s)
-        | Symbolic _|Label _|Tag _ -> assert false
+        | Symbolic (Virtual {name=s;tag=None; offset=0;_}) ->
+            sprintf "((int *)%s)" (dump_a_addr s)
+        | ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _ -> assert false
 
 (* Dump left & right values when context is available *)
 
@@ -652,6 +663,10 @@ module Make
           O.o ""
         end ;
         if do_self then begin
+          Insert.insert O.o "instruction.h" ;
+          O.o "" ;
+          Insert.insert O.o "getnop.c" ;
+          O.o "" ;
           Insert.insert O.o "self.c"
         end
 (* All of them *)
@@ -683,6 +698,7 @@ module Make
               let nsockets = Cfg.nsockets
               let smtmode = Cfg.smtmode
               let mode = Mode.Std
+              let is_active = true
             end) (O) in
         Topo.dump_alloc []
 
@@ -745,12 +761,14 @@ module Make
                     end ;
                     if Cfg.cautious then
                       List.fold_right
-                        (fun (loc,v) k -> match loc,v with
-                        | A.Location_reg(p,_),Symbolic {name=s;_} when s = a ->
-                            let cpy = A.Out.addr_cpy_name a p in
-                            O.fi "%s* *%s ;" (CType.dump t) cpy ;
-                            (cpy,a)::k
-                        | _,_ -> k)
+                        (fun (loc,v) k ->
+                          match loc,v with
+                          | A.Location_reg(p,_),
+                            Symbolic (Virtual {name=s;_}) when s = a ->
+                              let cpy = A.Out.addr_cpy_name a p in
+                              O.fi "%s* *%s ;" (CType.dump t) cpy ;
+                              (cpy,a)::k
+                          | _,_ -> k)
                         test.T.init k
                     else k)
                 test.T.globals [] in
@@ -779,8 +797,8 @@ module Make
                 if Cfg.cautious then
                   List.iter
                     (fun (loc,v) -> match loc,v with
-                    | A.Location_reg(p,_),Symbolic {name=s;_}
-                      when Misc.string_eq s a ->
+                    | A.Location_reg(p,_),Symbolic (Virtual {name=s;_})
+                          when Misc.string_eq s a ->
                         let cpy = A.Out.addr_cpy_name a p in
                         O.f "static %s* %s[SIZE_OF_ALLOC];"
                           (CType.dump t) cpy ;
@@ -843,28 +861,31 @@ module Make
           (struct
             let with_ok = true
             module C = C
+ (* Location argument ignored, may be useful for null pointer.
+    See preSi.ml for location argument usage *)
+            let dump_value _loc = C.V.pp O.hexa
             module Loc = struct
-              type t = A.location
-              let compare = A.location_compare
-              let dump = dump_loc_param
+              type location = A.location
+              type t = A.rlocation
+              let compare = A.rlocation_compare
+              let dump = dump_rloc_param
+              let dump_fatom d a = SkelUtil.dump_fatom_tag d a
             end
           end)
 
+      let find_rloc_type env loc =
+        let t = U.find_rloc_type loc env in
+        CType.dump (CType.strip_atomic t),CType.is_ptr t        
+
       let do_dump_cond_fun env cond =
-        let find_type loc =
-          let t = U.find_type loc env in
-          CType.dump (CType.strip_atomic t),CType.is_ptr t in
-        DC.fundef find_type cond
+        DC.fundef (find_rloc_type env) cond
 
       let dump_cond_fun env test = do_dump_cond_fun env test.T.condition
 
       let dump_filter env test = match test.T.filter with
       | None -> ()
       | Some f ->
-          let find_type loc =
-            let t = U.find_type loc env in
-            CType.dump (CType.strip_atomic t),CType.is_ptr t in
-          DC.fundef_prop "filter_cond" find_type f
+          DC.fundef_prop "filter_cond" (find_rloc_type env) f
 
       let dump_cond_fun_call test dump_loc dump_val =
         DC.funcall test.T.condition dump_loc dump_val
@@ -907,25 +928,26 @@ module Make
         let outs = U.get_displayed_locs test in
         let nitems =
           let map =
-            A.LocSet.fold
-              (fun loc ->
-                A.LocMap.add loc (SkelUtil.nitems (U.find_type loc env)))
-              outs A.LocMap.empty in
+            A.RLocSet.fold
+              (fun rloc ->
+                A.RLocMap.add rloc
+                  (SkelUtil.nitems (U.find_rloc_type rloc env)))
+              outs A.RLocMap.empty in
           fun loc ->
-            try A.LocMap.find loc map
+            try A.RLocMap.find loc map
             with Not_found -> assert false in
         let nouts =
-          A.LocSet.fold
-            (fun loc k -> nitems loc + k)
+          A.RLocSet.fold
+            (fun rloc k -> nitems rloc + k)
             outs 0 in
         O.f "#define NOUTS %i" nouts ;
         O.o "typedef intmax_t outcome_t[NOUTS];" ;
         O.o "" ;
         let _ =
-          A.LocSet.fold
-            (fun loc pos ->
-              O.f "static const int %s_f = %i ;" (dump_loc_name loc) pos ;
-              pos+nitems loc)
+          A.RLocSet.fold
+            (fun rloc pos ->
+              O.f "static const int %s_f = %i ;" (A.dump_rloc_tag rloc) pos ;
+              pos+nitems rloc)
             outs 0 in
         O.o "" ;
 (* Constant wrappers *)
@@ -1022,19 +1044,21 @@ module Make
              (if ConstrGen.is_true test.T.condition then "':'"
              else "show ? '*' : ':'")::
              List.map
-               (fun loc ->
-                 let sloc = dump_loc_name loc in
-                 match U.find_type loc env with
+               (fun rloc ->
+                 let sloc = A.dump_rloc_tag rloc in
+                 match U.find_rloc_type rloc env with
                  | Pointer _ -> sprintf "pretty_addr[o[%s_f]]" sloc
                  | Array (t,sz) ->
                      let rec pp_rec k =
                        if k >= sz then []
                        else sprintf "(%s)o[%s_f+%i]"
-                           (CType.dump (register_type loc (CType.Base t)))
+                           (CType.dump (register_type rloc (CType.Base t)))
                            sloc k::pp_rec (k+1) in
                      String.concat "," (pp_rec 0)
-                 | t -> sprintf "(%s)o[%s_f]" (CType.dump (register_type loc t)) sloc)
-               (A.LocSet.elements outs)) in
+                 | t ->
+                     sprintf "(%s)o[%s_f]"
+                       (CType.dump (register_type rloc t)) sloc)
+               (A.RLocSet.elements outs)) in
         O.fi "fprintf(fhist,%s,%s);" fmt args ;
         O.o "}" ;
         O.o "" ;
@@ -1070,10 +1094,10 @@ module Make
               O.oi "po_t *s_or;" ;
               StringSet.iter
                 (fun a ->
-                  let loc = A.Location_global a in
+                  let loc = A.location_of_addr a in
                   O.fi "%s* cpy_%s[N] ;"
                     (dump_global_type a (U.find_type loc env))
-                    (dump_loc_name loc))
+                    (A.dump_loc_tag loc))
                 locs
             end
           end
@@ -1084,9 +1108,9 @@ module Make
           let locs = U.get_stabilized test in
           StringSet.iter
             (fun a ->
-              let loc = A.Location_global a in
+              let loc = A.location_of_addr a in
               O.f "static %s cpy_%s[N*SIZE_OF_MEM];"
-                (dump_global_type a (U.find_type loc env)) (dump_loc_name loc))
+                (dump_global_type a (U.find_type loc env)) (A.dump_loc_tag loc))
             locs
         end
 
@@ -1201,9 +1225,9 @@ module Make
               O.fi "int size_of_test = _a->_p->size_of_test;" ;
               O.f "" ;
               StringSet.iter
-                (fun loc ->
-                  let loc = A.Location_global loc in
-                  let a = dump_loc_name loc
+                (fun a ->
+                  let loc = A.location_of_addr a in
+                  let a = A.dump_loc_tag loc
                   and t = U.find_type loc env in
                   O.fi "%s%s *%s = _a->%s;" (dump_global_type a t)
                     indirect_star a a ;
@@ -1215,19 +1239,19 @@ module Make
               loop_test_prelude indent2 "" ;
               StringSet.iter
                 (fun loc ->
-                  let loc = A.Location_global loc in
+                  let loc = A.Location_global (G.Addr loc) in
                   let t = U.find_type loc env in
                   match t with
                   | Array (t,sz) ->
                       let ins =
                         do_copy (Base t)
-                          (sprintf "cpy_%s[_id][_i][_j]" (dump_loc_name loc))
+                          (sprintf "cpy_%s[_id][_i][_j]" (A.dump_loc_tag loc))
                           (sprintf "(%s)[_j]" (dump_loc loc)) in
                       O.fiii "for (int _j = 0 ; _j < %i ; _j++) %s;" sz ins
                   | _ ->
                       let ins =
                         do_copy t
-                          (sprintf "cpy_%s[_id][_i]" (dump_loc_name loc))
+                          (sprintf "cpy_%s[_id][_i]" (A.dump_loc_tag loc))
                           (dump_loc loc) in
                       O.fiii "%s;" ins)
                 locs ;
@@ -1239,8 +1263,8 @@ module Make
               O.fii "for (int _i = size_of_test-1 ; _i >= 0 && !_found ; _i--) {" ;
               StringSet.iter
                 (fun loc ->
-                  let loc = A.Location_global loc in
-                  let a = dump_loc_name loc in
+                  let loc = A.location_of_addr loc in
+                  let a = A.dump_loc_tag loc in
                   let t = U.find_type loc env in
                   let do_load = match t with
                   | Array (t,_) ->
@@ -1336,16 +1360,11 @@ module Make
             O.fx indent "_a->%s = %s(_a->%s,sizeof(*_a->%s));" a alg a a
         in
         if do_self then begin
-          O.o "static size_t find_ins(ins_t opcode,ins_t *p,int skip) {" ;
-          O.oi "ins_t *q = p;" ;
+          ObjUtil.insert_lib_file O.o "_find_ins.c" ;
           O.o "" ;
-          O.oi "for  ( ; *q != opcode || (skip-- > 0); q++);" ;
-          O.oi "return q-p+1;" ;
-          O.o "}" ;
+          O.o "static size_t code_size(ins_t *p,int skip) { return find_ins(getret(),p,skip)+1; }" ;
           O.o "" ;
-          O.o "static size_t code_size(ins_t *p,int skip) { return find_ins(getret(),p,skip); }" ;
-          O.o "" ;
-          O.o "static size_t prelude_size(ins_t *p) { return find_ins(getnop(),p,0); }" ;
+          O.o "static size_t prelude_size(ins_t *p) { return find_ins(getnop(),p,0)+1; }" ;
           O.o ""
         end ;
         O.f "static void init(ctx_t *_a%s) {"
@@ -1437,14 +1456,14 @@ module Make
             loop_proc_prelude indent ;
             StringSet.iter
               (fun loc ->
-                let loc = A.Location_global loc in
+                let loc = A.location_of_addr loc in
                 if do_staticalloc then
-                  let loc = dump_loc_name loc in
+                  let loc = A.dump_loc_tag loc in
                   O.fx indent2
                     "_a->cpy_%s[_p] = &cpy_%s[(N*id+_p)*size_of_test];"
                     loc loc
                 else
-                  malloc indent2 (sprintf "cpy_%s[_p]" (dump_loc_name loc)))
+                  malloc indent2 (sprintf "cpy_%s[_p]" (A.dump_loc_tag loc)))
               locs ;
             loop_proc_postlude indent
           end
@@ -1537,8 +1556,8 @@ module Make
               loop_proc_prelude indent ;
               StringSet.iter
                 (fun loc ->
-                  let loc = A.Location_global loc in
-                  nop_or_free indent2 (sprintf "cpy_%s[_p]" (dump_loc_name loc)))
+                  let loc = A.location_of_addr loc in
+                  nop_or_free indent2 (sprintf "cpy_%s[_p]" (A.dump_loc_tag loc)))
                 locs ;
               loop_proc_postlude indent
             end
@@ -1583,7 +1602,7 @@ module Make
         loop_test_prelude indent "_a->_p->" ;
         List.iter
           (fun (a,t) ->
-            let v = A.find_in_state (A.Location_global a) test.T.init in
+            let v = A.find_in_state (A.location_of_addr a) test.T.init in
             if Cfg.cautious then O.oii "mcautious();" ;
             try
               let ins =
@@ -1709,12 +1728,7 @@ module Make
           begin match lbls with
           | [] -> ()
           | _::_ ->
-              let find p lbl =
-                try
-                  T.find_offset src.MiscParser.prog p lbl
-                with Not_found ->
-                  let v = Constant.Label (p,lbl) in
-                  Warn.user_error "Non-existant label %s" (A.V.pp_v v) in
+              let find p lbl = U.find_label_offset p lbl test in
               List.iter
                 (fun (p,lbl) ->
                   let off = find p lbl in
@@ -1731,17 +1745,17 @@ module Make
             | _ ->  ())
             test.T.src.MiscParser.init
         end ;
-        let aligned = List.filter (fun (a,_) -> U.is_aligned a env) test.T.globals
-        and global = U.select_global env in
-        let glob =
-          let open Lang in
-          { global; aligned; volatile=[]; } in
+        let aligned_env =
+          List.filter
+            (fun (a,_) -> U.is_aligned a env)
+            test.T.globals in
         List.iter
           (fun (proc,(out,(outregs,envVolatile))) ->
-            let myenv = U.select_proc proc env in
-            let glob = { glob with Lang.volatile=envVolatile; } in
+            let myenv = U.select_proc proc env
+            and global_env = U.select_global env in
             if do_ascall then begin
-              Lang.dump_fun O.out myenv glob proc out
+                Lang.dump_fun O.out
+                  Template.no_extra_args myenv global_env envVolatile proc out
             end ;
             let  do_collect =  do_collect_local && (do_safer || proc=0) in
             O.f "static void *P%i(void *_vb) {" proc ;
@@ -1787,7 +1801,7 @@ module Make
             begin if Stride.some stride then
               O.oi "int _stride = _a->_p->stride;"
             end ;
-            let addrs = A.Out.get_addrs out in
+            let addrs = A.Out.get_addrs_only out in
             (*
               List.iter
               (fun a ->
@@ -1947,8 +1961,8 @@ module Make
               let f_id =
                 if do_self then LangUtils.code_fun_cpy proc else
                 LangUtils.code_fun proc in
-              Lang.dump_call f_id (fun _ s -> s) else Lang.dump)
-              O.out (Indent.as_string iloop) myenv glob proc out ;
+              Lang.dump_call f_id [] (fun _ s -> s) else Lang.dump)
+              O.out (Indent.as_string iloop) myenv aligned_env envVolatile proc out ;
             if do_verbose_barrier && have_timebase  then begin
               if do_timebase then begin
                 O.fx iloop "_a->tb_delta[%i][_i] = _delta;" proc ;
@@ -1959,24 +1973,24 @@ module Make
             end ;
 
             if do_collect then begin
-              let locs = U.get_displayed_locs test in
+              let rlocs = U.get_displayed_locs test in
               O.fx iloop "barrier_wait(barrier);" ;
               O.fx iloop "int cond = final_ok(%s);"
                 (dump_cond_fun_call test
-                   (dump_ctx_loc "_a->") dump_a_addr) ;
+                   (dump_ctx_rloc "_a->") dump_a_addr) ;
               O.ox iloop "if (cond) { hist->n_pos++; } else { hist->n_neg++; }" ;
 
               (* My own private outcome collection *)
               O.fx iloop "outcome_t _o;" ;
-              A.LocSet.iter
-                (fun loc ->
+              A.RLocSet.iter
+                (fun rloc ->
                   O.fx iloop "_o[%s_f] = %s;"
-                    (dump_loc_name loc)
-                    (let sloc =  dump_ctx_loc "_a->" loc in
-                    match U.is_ptr loc env with
+                    (A.dump_rloc_tag rloc)
+                    (let sloc =  dump_ctx_rloc "_a->" rloc in
+                    match U.is_rloc_ptr rloc env with
                     | false -> sloc
                     | true -> sprintf "idx_addr(_a,_i,%s)" sloc))
-                locs ;
+                rlocs ;
               O.ox iloop "add_outcome(hist,1,_o,cond);" ;
               if do_verbose_barrier_local && proc = 0 then begin
                 O.ox iloop "if (_a->_p->verbose_barrier) {" ;
@@ -2185,27 +2199,32 @@ module Make
         if do_collect_after then begin
           O.oii "/* Log final states */" ;
           loop_test_prelude indent2 "_b->" ;
-          let locs = U.get_observed_locs test in
+          let rlocs = U.get_observed_locs test in
           let loc_arrays =
-            A.LocSet.fold
-              (fun loc k -> match loc with
-              | A.Location_global s ->
-                  let t = U.find_type loc env in
-                  let t = CType.strip_attributes t in
-                  begin match t with
-                  | CType.Array _ ->  StringSet.add s  k
-                  | _ -> k
-                  end
-              | A.Location_reg _ -> k)
-              locs StringSet.empty in
+            A.RLocSet.fold
+              (fun rloc k ->
+                ConstrGen.match_rloc
+                  (function 
+                   | A.Location_global (G.Addr s) ->
+                       let t = U.find_rloc_type rloc env in
+                       let t = CType.strip_attributes t in
+                       begin match t with
+                       | CType.Array _ ->  StringSet.add s  k
+                       | _ -> k
+                       end
+                   | A.Location_reg _
+                   | A.Location_global (G.Pte _|G.Phy _)  -> k)
+                  (fun _ _ -> k)
+                  rloc)
+              rlocs StringSet.empty in
 (* Make copies of final locations *)
-          if Cfg.cautious && not (A.LocSet.is_empty locs) then begin
+          if Cfg.cautious && not (A.RLocSet.is_empty rlocs) then begin
             O.oiii "mcautious();"
           end ;
           (* Arrays first (because of deref just below) *)
           StringSet.iter
             (fun s ->
-              let loc = A.Location_global s in
+              let loc = A.location_of_addr s in
               match  CType.strip_attributes (U.find_type loc env) with
               | CType.Array (t,_) ->
                   O.fiii "%s *%s = %s;"
@@ -2217,29 +2236,32 @@ module Make
                     s (CType.dump t))
             loc_arrays ;
           (* Rest of locs *)
-          A.LocSet.iter
-            (fun loc ->
-              let t = U.find_type loc env in
+          A.RLocSet.iter
+            (fun rloc ->
+              let t = U.find_rloc_type rloc env in
               let t = CType.strip_attributes t in
-              begin match t,loc with
+              begin match t,rloc with
               | CType.Array _,_ ->
-                O.fiii "%s %s;" (CType.dump t) (dump_loc_copy loc) ;
-                O.fiii "memcpy(%s,%s, sizeof(%s));" (dump_loc_copy loc) (dump_ctx_loc "ctx." loc) (CType.dump t)
-              | _,A.Location_global a when U.is_aligned a env ->
+                  O.fiii "%s %s;" (CType.dump t) (dump_rloc_copy rloc) ;
+                  O.fiii "memcpy(%s,%s, sizeof(%s));"
+                    (dump_rloc_copy rloc) (dump_ctx_rloc "ctx." rloc)
+                    (CType.dump t)
+              | _,ConstrGen.Loc (A.Location_global (G.Addr a))
+                    when U.is_aligned a env ->
                   let _ptr = sprintf "_%s_ptr" a in
                   let pp_t = CType.dump t in
                   O.fiii "%s *%s = (%s *)&%s;"
-                    pp_t _ptr pp_t (dump_ctx_loc "ctx." loc) ;
-                  O.fiii "%s %s = *%s;" pp_t (dump_loc_copy loc) _ptr
+                    pp_t _ptr pp_t (dump_ctx_rloc "ctx." rloc) ;
+                  O.fiii "%s %s = *%s;" pp_t (dump_rloc_copy rloc) _ptr
               | _ ->
                   O.fiii "%s %s = %s;"
                     (CType.dump t)
-                    (dump_loc_copy loc)
-                    (let loc =  dump_ctx_loc "ctx." loc in
+                    (dump_rloc_copy rloc)
+                    (let loc =  dump_ctx_rloc "ctx." rloc in
                     U.do_load t loc)
               end ;
               if Cfg.cautious then O.oiii "mcautious();")
-            locs ;
+            rlocs ;
           O.oiii "outcome_t o;" ;
           O.oiii "int cond;" ;
           O.o "" ;
@@ -2248,27 +2270,27 @@ module Make
             let locs =  U.get_stabilized test in
             StringSet.iter
               (fun loc ->
-                let loc = A.Location_global loc in
+                let loc = A.location_of_addr loc in
                 let t = U.find_type loc env in
                 loop_proc_prelude indent3 ;
                 let pp_test i e1 e2 =
                   O.fx i
                     "if (%s != %s) fatal(\"%s, global %s unstabilized\") ;"
                     e1 e2
-                    (doc.Name.name)  (dump_loc_name loc) in
+                    (doc.Name.name)  (A.dump_loc_tag loc) in
                 begin match t with
                 | Array (t,sz) ->
                     O.fiv "for (int _j = 0 ; _j < %i ; _j++) {" sz ;
                     pp_test indent5
                       (sprintf "%s[_j]" (dump_loc_copy loc))
                       (U.do_load (Base t)
-                         (sprintf "ctx.cpy_%s[_p][_i][_j]" (dump_loc_name loc))) ;
+                         (sprintf "ctx.cpy_%s[_p][_i][_j]" (A.dump_loc_tag loc))) ;
                     O.fiv "}"
                 | _ ->
                     pp_test indent4
                       (dump_loc_copy loc)
                       (U.do_load t
-                         (sprintf "ctx.cpy_%s[_p][_i]" (dump_loc_name loc)))
+                         (sprintf "ctx.cpy_%s[_p][_i]" (A.dump_loc_tag loc)))
                 end ;
                 loop_proc_postlude indent3)
               locs ;
@@ -2286,30 +2308,32 @@ module Make
             | None -> indent3
             | Some f ->
                 O.fiii "if (%s) {"
-                  (DC.funcall_prop "filter_cond" f dump_loc_copy dump_ctx_addr) ;
+                  (DC.funcall_prop
+                     "filter_cond" f dump_rloc_copy dump_ctx_addr) ;
                 indent4 in
 (* Compute final condition *)
           O.fx indent "cond = final_ok(%s);"
-            (dump_cond_fun_call test dump_loc_copy dump_ctx_addr) ;
+            (dump_cond_fun_call test dump_rloc_copy dump_ctx_addr) ;
 (* Save outcome *)
-          A.LocSet.iter
-            (fun loc ->
-              let t = CType.strip_attributes (U.find_type loc env) in
+          A.RLocSet.iter
+            (fun rloc ->
+              let t = CType.strip_attributes (U.find_rloc_type rloc env) in
               match t with
               | Array (_,sz) ->
                   let ins =
                     sprintf
                       "o[%s_f+_j] = %s[_j]"
-                      (dump_loc_name loc)
-                      (dump_loc_copy loc) in
-                  O.fx indent "for (int _j = 0 ; _j < %i ; _j++) %s;" sz ins
+                      (A.dump_rloc_tag rloc)
+                      (dump_rloc_copy rloc) in
+                  O.fx indent "for (int _j = 0 ; _j < %i ; _j++) %s;"
+                    sz ins
               | _ ->
                   O.fx indent "o[%s_f] = %s;"
-                    (dump_loc_name loc)
+                    (A.dump_rloc_tag rloc)
                     (if CType.is_ptr t then
-                      sprintf "idx_addr(&ctx,_i,%s)" (dump_loc_copy loc)
+                      sprintf "idx_addr(&ctx,_i,%s)" (dump_rloc_copy rloc)
                     else
-                      dump_loc_copy loc))
+                      dump_rloc_copy rloc))
             (U.get_displayed_locs test) ;
           O.ox indent "add_outcome(hist,1,o,cond);" ;
           if mk_dsa test then begin
@@ -2835,7 +2859,7 @@ module Make
         if do_custom then begin
           List.iter
             (fun (i,(out,_)) ->
-              let addrs = A.Out.get_addrs out in
+              let addrs = A.Out.get_addrs_only out in
               O.fi "prfone_t _prf_t_%i[] = { %s };" i
                 (String.concat ", "
                    (List.map

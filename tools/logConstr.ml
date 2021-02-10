@@ -31,7 +31,7 @@ let rec tr_v v =
   match v with
   | Concrete i -> Concrete (Int64.of_string i)
   | ConcreteVector (sz,vs) -> ConcreteVector (sz,List.map tr_v vs)
-  | Symbolic _|Label _|Tag _ as sym -> sym
+  | Symbolic _|Label _|Tag _|PteVal _ as sym -> sym
 
 let tr_atom = function
   | LV(loc,v) ->  LV(loc,tr_v v)
@@ -90,8 +90,7 @@ let parse_observed s =
     let locs,c = StateParser.main_loc_constr SL.token lxb in
     Some
       (LocSet.union
-         (LocSet.of_list
-            (List.map (fun (rloc,_) -> ConstrGen.loc_of_rloc rloc) locs))
+         (LocationsItem.fold_locs LocSet.add locs LocSet.empty)
          (get_locs c))
   with
   | Parsing.Parse_error
@@ -106,18 +105,7 @@ let parse_locs_cond lxb =
   | LexMisc.Error _ -> None
 
 
-let parse_locs s =
-  try
-    let lxb = Lexing.from_string s in
-    let locs,cstr = StateParser.main_loc_constr SL.token lxb in
-    Some
-      (LocSet.union
-         (LocSet.of_list
-            (List.map (fun (rl,_) -> ConstrGen.loc_of_rloc rl) locs))
-         (get_locs cstr))
-  with
-  | Parsing.Parse_error
-  | LexMisc.Error _ -> None
+let parse_locs s = parse_observed s (* Why a second fuction ? *)
 
 let parse_filter lxb =
    try
@@ -137,6 +125,7 @@ module type I = sig
 
   val state_mem : state -> MiscParser.location -> V.v -> bool
   val state_eqloc : state -> MiscParser.location -> MiscParser.location -> bool
+  val state_fault : state -> V.v Fault.atom -> bool
 end
 
 module Make(I:I) : sig
@@ -166,7 +155,7 @@ end  =
         prerr_endline "TODO" ;
         assert false
     | Atom (LL (l1,l2)) -> I.state_eqloc state l1 l2
-    | Atom (FF _) -> Warn.fatal "No fault in LogConstr proposition"
+    | Atom (FF f) -> I.state_fault state f
     | Not p -> not (check_prop p state)
     | And ps -> List.for_all (fun p -> check_prop p state) ps
     | Or ps -> List.exists (fun p -> check_prop p state) ps

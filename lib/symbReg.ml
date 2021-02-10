@@ -34,6 +34,7 @@ module type Arch = sig
 
 (* Values and global locations and their creators *)
   type v
+
   val maybevToV : MiscParser.maybev -> v
   type global
   val maybevToGlobal : MiscParser.maybev -> global
@@ -42,7 +43,6 @@ module type Arch = sig
   type location =
     | Location_global of global
     | Location_reg of int * reg
-
 end
 
 module Make (A:Arch) : S
@@ -79,8 +79,15 @@ and type pseudo = A.pseudo
 
   let finish_state f_reg = List.map (finish_state_atom f_reg)
 
-  let finish_rvals f_reg =
-    List.map (fun (loc,t) -> finish_rval f_reg loc,t)
+  let finish_location_item f =
+    let open LocationsItem in
+    function
+    | Loc (loc,t) -> Loc (ConstrGen.map_rloc f loc,t)
+    | Fault v -> Fault (Fault.map_value A.maybevToV v)
+
+  let finish_locations f_reg =
+    List.map (finish_location_item (finish_location f_reg))
+
 
   let finish_atom f_reg a =
     let open ConstrGen in
@@ -164,7 +171,7 @@ and type pseudo = A.pseudo
 
   let collect_constr = ConstrGen.fold_constr collect_atom
 
-  let collect_rlocs = List.fold_right (fun (loc,_) -> collect_rloc loc)
+  let collect_locs locs = LocationsItem.fold_locs collect_location locs 
 
 (*********************************************)
 (* Here we go: collect, allocate, substitute *)
@@ -187,7 +194,7 @@ and type pseudo = A.pseudo
     let regs,symbs =
       collect_filter test.filter
       (collect_constr final
-         (collect_rlocs locs
+         (collect_locs locs
 	    (collect_state initial
 	       (ProcRegSet.empty,StringSet.empty))))
     in
@@ -263,7 +270,6 @@ and type pseudo = A.pseudo
       prog = prog;
       filter = finish_filter replace filter;
       condition = finish_constr replace final;
-      locations = finish_rvals replace locs;
+      locations = finish_locations replace locs;
     }
-
 end

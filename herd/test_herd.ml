@@ -16,7 +16,10 @@
 
 type proc_info = (string * int list) list
 
-type ('prog,'nice_prog,'start,'state,'size_env, 'type_env, 'prop,'loc,'locset) t =
+type
+  ('prog,'nice_prog,'start,'state,
+   'size_env, 'type_env,
+   'prop,'loc,'locset,'fset) t =
     {
      arch : Archs.t ;
      name : Name.t ;
@@ -29,6 +32,7 @@ type ('prog,'nice_prog,'start,'state,'size_env, 'type_env, 'prop,'loc,'locset) t
      filter : 'prop option ;
      cond : 'prop ConstrGen.constr ;
      flocs : 'loc ConstrGen.rloc list ;
+     ffaults: 'fset;
      observed : 'locset ;
      displayed : 'locset ;
      extra_data : MiscParser.extra_data ;
@@ -55,8 +59,10 @@ module Make(A:Arch_herd.S) =
   struct
 
     type result =
-        (A.program, A.nice_prog, A.start_points,
-         A.state, A.size_env, A.type_env, A.prop, A.location, A.RLocSet.t) t
+      (A.program, A.nice_prog, A.start_points, A.state,
+       A.size_env, A.type_env,
+       A.prop, A.location, A.RLocSet.t,A.FaultAtomSet.t) t
+
 
 (* Symb register allocation is external, since litmus needs it *)
     module ArchAlloc = struct
@@ -80,6 +86,13 @@ module Make(A:Arch_herd.S) =
       | LV (loc,_v) -> A.RLocSet.add loc r
       | LL (l1,l2) -> A.RLocSet.add (Loc l1) (A.RLocSet.add (Loc l2) r)
       | FF _ ->  r
+
+    let collect_atom_fault a r =
+      let open ConstrGen in
+      match a with
+      | (LV _|LL _) -> r
+      | FF f -> f::r
+
 
 (* Mem size access *)
     let mem_access_size_of_code sz code =
@@ -111,18 +124,19 @@ module Make(A:Arch_herd.S) =
          } = t in
 
       let prog,starts = Load.load nice_prog in
-      let flocs = List.map fst locs in
       let init_state = A.build_state init in
-      (* init_state contains vector size metadata, add it to final constrs*)
-      (* Needed so we can align a scaled access according to size of the type *)
       let type_env = A.build_type_env init in
-      let displayed = (* Luc: Doubt purpose of displayed ? *)
-        let flocs = A.RLocSet.of_list flocs in
+      let flocs,ffaults = LocationsItem.locs_and_faults locs in
+      let displayed =
+        let flocs = A.RLocSet.of_list flocs in        
         ConstrGen.fold_constr collect_atom final flocs in
       let observed = match filter with
       | None -> displayed
       | Some filter ->
           ConstrGen.fold_prop collect_atom filter displayed in
+      let ffaults =
+        A.FaultAtomSet.of_list
+          (ConstrGen.fold_constr collect_atom_fault final ffaults) in
       let proc_info =
         let m =
           List.fold_left
@@ -146,7 +160,7 @@ module Make(A:Arch_herd.S) =
        init_state = init_state ;
        filter = filter ;
        cond = final ;
-       flocs = flocs ;
+       flocs = flocs ; ffaults;
        observed = observed ;
        displayed = displayed ;
        extra_data = extra_data ;
@@ -180,8 +194,9 @@ module Make(A:Arch_herd.S) =
        type_env = A.type_env_empty ;
        filter = None ;
        cond = fake_constr ;
-       flocs = [] ;
-       observed = A.RLocSet.empty; displayed = A.RLocSet.empty;
+       flocs = [] ; ffaults = A.FaultAtomSet.empty;
+       observed = A.RLocSet.empty;
+       displayed = A.RLocSet.empty;
        extra_data = MiscParser.empty_extra;
        access_size = [];
        proc_info = [];

@@ -34,13 +34,13 @@ with type v = A.V.v and type location = A.location
    type location = A.location
    type ('loc,'v) t = ('loc,'v, string CAst.t) MiscParser.r4
 
-   let maybevToV mv =
+   let maybevToV =
      let open Constant in
      let rec f mv = match mv with
-     | Symbolic _|Label _|Tag _ as sym -> sym
+     | Symbolic _|Label _|Tag _|PteVal _ as sym -> sym
      | Concrete s -> Concrete (A.V.Scalar.of_string s)
      | ConcreteVector (sz,vs) -> ConcreteVector (sz,List.map f vs) in
-     f mv
+     f
 
 (******************************************************)
 (* All those to substitute symbolic regs by real ones *)
@@ -52,8 +52,10 @@ with type v = A.V.v and type location = A.location
 
   let finish_reg = get_reg
 
+  let finish_global a = Global_litmus.Addr (ParsedConstant.pp_v a)
+
   let finish_location f_reg loc = match loc with
-  | Location_global m -> A.Location_global (ParsedConstant.vToName m)
+  | Location_global m -> A.Location_global (finish_global m)
   | Location_reg (i,r) -> A.Location_reg (i,finish_reg r)
   | Location_sreg reg  ->
       let p,r = f_reg reg in A.Location_reg (p,r)
@@ -66,14 +68,18 @@ with type v = A.V.v and type location = A.location
   let finish_state f_reg = List.map (finish_state_atom f_reg)
 
   let finish_locations f_reg =
-    List.map (fun (loc,t) -> finish_rloc f_reg loc,t)
+    let open LocationsItem in
+    List.map
+      (function
+        | Loc (loc,t) -> Loc (finish_rloc f_reg loc,t)
+        | Fault f -> Fault (Fault.map_value maybevToV f))
 
   let finish_atom f_reg a =
     let open ConstrGen in
     match a with
     | LV (loc,v) -> LV (finish_rloc f_reg loc, maybevToV v)
     | LL (l1,l2) -> LL (finish_location f_reg l1,finish_location f_reg l2)
-    | FF (p,x) -> FF (p,maybevToV x)
+    | FF f -> FF (Fault.map_value maybevToV f)
 
    let finish_prop f_reg = ConstrGen.map_prop (finish_atom f_reg)
    let finish_constr f_reg = ConstrGen.map_constr (finish_atom f_reg)
@@ -122,11 +128,9 @@ with type v = A.V.v and type location = A.location
         fun c -> collect_location loc1 (collect_location loc2 c)
     | FF (_,x) -> collect_location (MiscParser.Location_global x)
 
- let collect_constr = ConstrGen.fold_constr collect_atom
+   let collect_constr = ConstrGen.fold_constr collect_atom
 
- let collect_locs =
-   List.fold_right
-     (fun (rloc,_) -> collect_rloc rloc)
+   let collect_locs = LocationsItem.fold_locs collect_location
 
 (*********************************************)
 (* Here we go: collect, allocate, substitute *)

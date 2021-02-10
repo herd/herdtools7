@@ -40,12 +40,20 @@ module type S =
     val zerocodeT        : 'a code
     val unitT        : 'a -> 'a t
     val unitcodeT        : 'a -> 'a code
+    val delay_kont : string -> 'a t -> ('a ->  'a t -> 'b t) -> 'b t
     val delay : 'a t -> ('a * 'a t) t
+
     val (>>=) : 'a t -> ('a -> 'b t) -> ('b) t
     val (>>==) : 'a t -> ('a -> 'b t) -> ('b) t (* Output event stay in first arg *)
     val (>>*=) : 'a t -> ('a -> 'b t) -> ('b) t
+    val (>>*==) : 'a t -> ('a -> 'b t) -> ('b) t (* Output event stay in first argument *)
+    (* Control composition, avoid events from first argument) *)
     val bind_ctrl_avoid : 'c t -> 'a t -> ('a -> 'b t) -> 'b t
-    val check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v -> 'v t) -> 'x t -> 'v t
+
+    (* Hybrid composition m1 m2 m3, m1 -ctrl-> m3 and m2 -data-> m3 *)
+    val bind_ctrl_data : 'a t -> 'b t -> ('a -> 'b -> 'c t) -> 'c t
+
+    val check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v t) -> 'x t -> 'v t
     val exch : 'a t -> 'a t -> ('a -> 'b t) ->  ('a -> 'c t) ->  ('b * 'c) t
 
 (*
@@ -112,6 +120,9 @@ module type S =
     val stu : 'a t -> 'a t -> ('a -> unit t) -> (('a * 'a) -> unit t) -> unit t
     val cseq : 'a t -> ('a -> 'b t) -> 'b t
     type poi = int
+
+    val add_instr :
+        ('b -> bool) -> (poi -> (poi * 'a) t) -> ('a -> 'b code) -> 'b code
     val (>>>) : (poi -> (poi * 'a) t) -> ('a -> 'b code) -> 'b code
     val (>>>>) : 'a t -> ('a -> 'b t) -> 'b t
 
@@ -119,7 +130,7 @@ module type S =
     val (>>|) : 'a t -> 'b t -> ('a * 'b)  t
 
     val (>>::) : 'a t -> 'a list t -> 'a list t
-    val (|*|)   : unit code -> unit code -> unit code   (* Cross product *)
+    val (|*|)   : bool code -> unit code -> unit code   (* Cross product *)
 (*    val lockT : 'a t -> 'a t *)
     val forceT : 'a -> 'b t -> 'a t
     val (>>!) : 'a t -> 'b -> 'b t
@@ -133,11 +144,11 @@ module type S =
 
     val altT : 'a t -> 'a t -> 'a t
 
-    val tooFar : string -> unit t
-    val tooFarcode : string -> 'a code
+    val tooFar : string -> 'a -> 'a t
+    val tooFarcode : string -> 'a -> 'a code
 
     (**********************************************************)
-    (* A few action instruction insance -> monad constructors *)
+    (* A few action instruction instance -> monad constructors *)
     (**********************************************************)
     val mk_singleton_es : E.action -> A.inst_instance_id -> unit t
     val mk_singleton_es_success : E.action -> A.inst_instance_id -> unit t
@@ -147,6 +158,12 @@ module type S =
     (****************)
     (* Basic monads *)
     (****************)
+
+        (* read_loc is_data mk_action loc ii
+           for each value v that could be read,
+           make an event structure comprising a single event with
+           instruction id "ii", and action "mk_action v loc".
+           is_data charaterizes the data port of a store *)
 
     (* Read, the first, boolean, argument identifies a store data port *)
     val read_loc : bool -> (A.location -> A.V.v -> E.action) ->

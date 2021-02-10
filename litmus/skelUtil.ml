@@ -23,6 +23,7 @@ module type Config = sig
   val kind : bool
   val hexa : bool
   val exit_cond : bool
+  val have_fault_handler : bool
 end
 
 type stat =
@@ -31,11 +32,14 @@ type stat =
       max : string; tag : string;
       process : string -> string; }
 
-let type_name loc = Printf.sprintf "%s_t" loc
+module G = Global_litmus
+
+let type_name loc =  Printf.sprintf "%s_t" loc
+
 let pp_global_env ge =
   String.concat ","
     (List.map
-       (fun (x,t) -> sprintf "<%s,%s>" x (CType.dump t))
+       (fun (x,t) -> sprintf "<%s,%s>" (G.pp x) (CType.dump t))
        ge)
 
 open CType
@@ -50,7 +54,23 @@ let rec nitems t = match t with
 | Volatile t|Atomic t -> nitems t
 | Base _|Pointer _ -> 1
 
+let dump_fatom_tag d ((p,lbl),v) =
+  sprintf "fault_P%d%s_%s" p (match lbl with None -> "" | Some lbl -> "_" ^ lbl) (d v)
 
+let dump_pteval_flags s p =
+  if PTEVal.is_default p then s
+  else
+    let open PTEVal in
+    let add b s k = if b<>0 then s::k else k in
+    let msk =
+      add p.el0 "msk_el0"
+        (add p.valid "msk_valid"
+           (add p.af "msk_af"
+              (add p.dbm "msk_dbm"
+                 (add p.db "msk_db" [])))) in
+    let msk = String.concat "|" msk in
+    sprintf "litmus_set_pte_flags(%s,%s)" s msk
+    
 (* Skeleton utilities, useful for Skel and PreSi *)
 
 module Make
@@ -68,26 +88,44 @@ module Make
       val pp_env : env -> string
       val build_env : T.t -> env
       val find_type : A.location -> env -> CType.t
+      val find_rloc_type : A.rlocation -> env -> CType.t
       val find_type_align : string -> env -> CType.t option
       val is_aligned : string -> env -> bool
       val dump_mem_type : string -> CType.t -> env -> string
 
       val select_proc : int -> env -> CType.t A.RegMap.t
-      val select_global : env -> (A.loc_global * CType.t) list
-      val select_aligned : env -> (A.loc_global * CType.t) list
+      val select_global : env -> (string * CType.t) list
+      val select_aligned : env -> (string * CType.t) list
 
-(* Some dumping stuff *)
-      val register_type : A.location ->  CType.t -> CType.t
-      val fmt_outcome : T.t -> (CType.base -> string) -> A.LocSet.t -> env -> string
+(* Some dump`ing stuff *)
+      val cast_reg_type : A.location -> string
+      val register_type : 'loc ->  CType.t -> CType.t
+      val fmt_outcome_as_list :
+        T.t -> (CType.base -> string) -> A.RLocSet.t -> env
+        -> (string * string list) list
+      val fmt_outcome : T.t -> (CType.base -> string) -> A.RLocSet.t -> env -> string
+      val fmt_faults : A.V.v Fault.atom list -> string
 
+(* Globals *)
+      exception NotGlobal
+      val tr_global : A.rlocation -> Global_litmus.displayed
+        
 (* Locations *)
-      val get_displayed_locs : T.t -> A.LocSet.t
-      val get_displayed_globals : T.t -> StringSet.t
-      val get_observed_locs : T.t -> A.LocSet.t
-      val get_observed_globals : T.t -> StringSet.t
+      val get_displayed_locs : T.t -> A.RLocSet.t
+      val get_displayed_globals : T.t -> Global_litmus.DisplayedSet.t
+      val get_displayed_ptes : T.t -> StringSet.t
+      val get_observed_locs : T.t -> A.RLocSet.t
+      val get_observed_globals : T.t -> Global_litmus.DisplayedSet.t
       val get_stabilized : T.t -> StringSet.t
       val is_ptr : A.location -> env -> bool
+      val is_rloc_ptr : A.rlocation -> env -> bool
       val ptr_in_outs : env -> T.t -> bool
+      val is_pte : A.location -> env -> bool
+      val is_rloc_pte : A.rlocation -> env -> bool
+      val pte_in_outs : env -> T.t -> bool
+      val ptr_pte_in_outs : env -> T.t -> bool
+      val get_faults : T.t -> A.V.v Fault.atom list
+      val find_label_offset : Proc.t -> string -> T.t -> int
 
 (* Instructions *)
       val do_store : CType.t -> string -> string -> string
@@ -110,6 +148,11 @@ module Make
               stat list -> unit
       end
     end = struct
+
+      let dbg = false
+
+      module G = Global_litmus
+
 (* Info *)
       let get_info key test =
         try Some (List.assoc key test.T.info)
@@ -131,37 +174,47 @@ module Make
 
       let build_env test = test.T.type_env
 (*
-        let m =
+  let m =
 
-*)
+ *)
 
-        (*
-        let e = A.LocMap.empty in
-        let e =
-          List.fold_left
+          (*
+            let e = A.LocMap.empty in
+            let e =
+            List.fold_left
             (fun e (s,t) ->
 (*              eprintf "BUILD %s <%s>\n" s (CType.dump t) ; *)
-              A.LocMap.add (A.Location_global s) t e)
+            A.LocMap.add (A.Location_global s) t e)
             e test.T.globals in
-        let e =
-          List.fold_left
+            let e =
+            List.fold_left
             (fun e (proc,(_,(outs, _))) ->
-              List.fold_left
-                (fun e  (reg,t) ->
-                  A.LocMap.add (A.Location_reg (proc,reg)) t e)
-                e outs)
+            List.fold_left
+            (fun e  (reg,t) ->
+            A.LocMap.add (A.Location_reg (proc,reg)) t e)
+            e outs)
             e test.T.code in
-        let pp = A.LocMap.fold
-          (fun loc t k ->
+            let pp = A.LocMap.fold
+            (fun loc t k ->
             sprintf "%s -> %s" (A.pp_location loc) (CType.dump t)::k)
             e [] in
-        eprintf "Env: {%s}\n" (String.concat "; " pp) ;
-        e
-*)
+            eprintf "Env: {%s}\n" (String.concat "; " pp) ;
+            e
+           *)
 
       let find_type loc (env,_) =
         try A.LocMap.find loc env
         with Not_found -> Compile.base
+
+      let find_rloc_type rloc (env,_ as p) =
+        let open ConstrGen in
+        match rloc with
+        | Loc loc -> find_type loc p
+        | Deref (loc,_) ->
+            begin
+              try CType.element_type (A.LocMap.find loc env)
+              with Not_found -> Compile.base
+            end      
 
       let is_aligned loc (_,env) =
         try ignore (StringMap.find loc env) ; true with Not_found -> false
@@ -187,7 +240,7 @@ module Make
         select_types_reg
           (function
             | A.Location_reg (q,reg) when p = q -> Some reg
-            | A.Location_global _ | A.Location_reg _ -> None)
+            | A.Location_global _ | A.Location_reg _  -> None)
           env
 
       let select_types f (env,_) =
@@ -200,81 +253,176 @@ module Make
       let select_global env =
         select_types
           (function
-            | A.Location_reg _ -> None
-            | A.Location_global loc -> Some loc)
+            | A.Location_reg _|A.Location_global (G.Pte _|G.Phy _) -> None
+            | A.Location_global (G.Addr a) -> Some a)
           env
 
       let select_aligned env =
         select_types
           (function
-            | A.Location_reg _ -> None
-            | A.Location_global loc ->
+            | A.Location_reg _|A.Location_global (G.Pte _|G.Phy _) -> None
+            | A.Location_global (G.Addr loc) ->
                 if is_aligned loc env then Some loc else None)
           env
 
 (* Format stuff *)
+      let cast_reg_type loc =
+        if A.arch = `X86_64 then
+          match loc with
+          | A.Location_reg (_,r) -> "(" ^ CType.dump (A.typeof r) ^ ")"
+          | _ -> ""
+        else ""
+
       let tr_out test = OutMapping.info_to_tr test.T.info
 
       let pp_loc tr_out loc =  match loc with
-      | A.Location_reg (proc,reg) -> tr_out (sprintf "%i:%s" proc (A.pp_reg reg))
-      | A.Location_global s -> sprintf "%s" s
+      | A.Location_reg (proc,reg) -> tr_out (sprintf "%d:%s" proc (A.pp_reg reg))
+      | A.Location_global s -> G.pp s
+
+      let pp_rloc tr_out rloc =
+        let open ConstrGen in
+        match rloc with
+        | Loc loc -> pp_loc tr_out loc
+        | Deref (loc,i) -> sprintf "%s[%d]" (pp_loc tr_out loc) i
 
       let register_type _loc t = t (* Systematically follow given type *)
 
-      let fmt_outcome test pp_fmt_base locs env =
+      let fmt_outcome_as_list test pp_fmt_base rlocs env =
         let tr_out = tr_out test in
         let rec pp_fmt t = match t with
-        | CType.Pointer _ -> "%s"
-        | CType.Base t -> pp_fmt_base t
+        | CType.Pointer _ -> ["%s"]
+        | CType.Base "pteval_t" ->
+            ["("; "oa:%s";  ", af:%d"; ", db:%d";
+             ", dbm:%d"; ", valid:%d"; ", el0:%d"; ")"]
+        | CType.Base t -> [pp_fmt_base t]
         | CType.Atomic t|CType.Volatile t -> pp_fmt t
         | CType.Array (t,sz) ->
             let fmt_elt = pp_fmt_base t in
             let fmts = Misc.replicate sz fmt_elt in
             let fmt = String.concat "," fmts in
-            sprintf "{%s}" fmt in
+            [sprintf "{%s}" fmt] in
+        A.RLocSet.map_list
+          (fun rloc ->
+            let pp1 = pp_rloc tr_out rloc
+            and pp2 = pp_fmt (register_type rloc (find_rloc_type rloc env)) in
+            (pp1,pp2))
+         rlocs
 
-        A.LocSet.pp_str " "
-          (fun loc ->
-            sprintf "%s=%s;"
-              (pp_loc tr_out loc)
-              (pp_fmt (register_type loc (find_type loc env))))
-          locs
+      let fmt_outcome test pp_fmt_base locs env =
+        let pps = fmt_outcome_as_list test pp_fmt_base locs env in
+        String.concat " "
+          (List.map
+             (fun (p1,p2) -> sprintf "%s=%s;" p1 (String.concat "" p2))
+             pps) 
+
+      let fmt_faults fs =
+        String.concat ""
+          (List.map
+             (fun f -> sprintf " %s%s;" "%s" (Fault.pp_fatom A.V.pp_v f))
+             fs)
 
 (* Locations *)
       let get_displayed_locs t =
-        A.LocSet.union
-          (T.C.locations t.T.condition)
-          (A.LocSet.of_list t.T.flocs)
+        A.RLocSet.union
+          (T.C.rlocations t.T.condition)
+          (A.RLocSet.of_list t.T.flocs)
 
-      let filter_globals locs =
-        A.LocSet.fold
-          (fun a k -> match a with
-          | A.Location_global a -> StringSet.add a k
-          | A.Location_reg _ -> k)
+      exception NotGlobal
+
+      let tr_global =                         
+        let open ConstrGen in
+        function
+        | Loc (A.Location_global (G.Addr a)) -> Loc a
+        | Deref (A.Location_global (G.Addr a),k) -> Deref (a,k)
+        | _ -> raise NotGlobal
+
+      let filter_globals rlocs =
+        A.RLocSet.fold
+          (fun a k ->
+            try G.DisplayedSet.add (tr_global a) k
+            with NotGlobal -> k)
+          rlocs G.DisplayedSet.empty
+
+      let filter_ptes locs =
+        A.RLocSet.fold
+          (fun a k -> match ConstrGen.loc_of_rloc a with
+          | A.Location_global (G.Pte a) ->  StringSet.add a k
+          | A.Location_reg _
+          | A.Location_global (G.Phy _|G.Addr _)
+            -> k)
           locs StringSet.empty
 
       let get_displayed_globals t = filter_globals (get_displayed_locs t)
+
+      let get_displayed_ptes t = filter_ptes (get_displayed_locs t)
 
       let get_observed_locs t =
         let locs =  get_displayed_locs t in
         match t.T.filter with
         | None ->  get_displayed_locs t
         | Some filter ->
-            A.LocSet.union locs (T.C.locations_prop filter)
-
+            A.RLocSet.union locs (T.C.rlocations_prop filter)
+          
       let get_observed_globals t =  filter_globals (get_observed_locs t)
 
       let get_stabilized t =
+        let rlocs = get_observed_globals t in        
         let env = build_env t in
-        StringSet.filter
-          (fun loc -> not (is_aligned loc env))
-          (get_observed_globals t)
+        G.DisplayedSet.fold
+          (fun a k ->
+            let open ConstrGen in
+            match a with
+            | Loc a when not (is_aligned a env) ->
+                StringSet.add a k
+            | Loc _|Deref _ -> k)
+          rlocs StringSet.empty
 
-      let is_ptr loc env = CType.is_ptr (find_type loc env)
+      let is_ptr loc env  =
+        let t = find_type loc env in
+        CType.is_ptr t
+
+      let is_rloc_ptr loc env  =
+        let t = find_rloc_type loc env in
+        CType.is_ptr t
 
       let ptr_in_outs env test =
         let locs = get_displayed_locs test in
-        A.LocSet.exists (fun loc ->is_ptr loc env ) locs
+        if dbg then Printf.eprintf "locs={%s}\n" (A.RLocSet.pp_str "," A.pp_rlocation locs) ;
+        A.RLocSet.exists
+          (fun loc -> is_rloc_ptr loc env) locs
+
+      let is_pte loc env =
+        let t = find_type loc env in
+        CType.is_pte t
+
+      let is_rloc_pte loc env =
+        let t = find_rloc_type loc env in
+        CType.is_pte t
+
+      let pte_in_outs env test =
+        let locs = get_displayed_locs test in
+        A.RLocSet.exists (fun loc -> is_rloc_pte loc env) locs
+
+      let is_ptr_pte loc env =
+        let loc = ConstrGen.loc_of_rloc loc in
+        let t = find_type loc env in
+        CType.is_ptr t || CType.is_pte t
+
+      let ptr_pte_in_outs env test =
+        let locs = get_displayed_locs test in
+        A.RLocSet.exists (fun loc ->is_ptr_pte loc env) locs
+
+      let get_faults test =        
+        let inc = T.C.get_faults test.T.condition
+        and inf = test.T.ffaults in
+        inc@inf
+
+      let find_label_offset p lbl test =
+        try
+          T.find_offset test.T.src.MiscParser.prog p lbl
+        with Not_found ->
+          let v = Constant.Label (p,lbl) in
+          Warn.user_error "Non-existant label %s" (A.V.pp_v v)
 
 (* Instructions *)
       let do_store t loc v =
@@ -315,7 +463,7 @@ module Make
           List.iter
             (fun (s,t) -> match t with
             | CType.Array (t,sz) ->
-                O.f "typedef %s %s[%i];" t (type_name s) sz
+                O.f "typedef %s %s[%d];" t (type_name s) sz
             | _ ->
                 begin match do_find_type_align s env with
                 | None -> ()
@@ -358,9 +506,12 @@ module Make
 (* Postlude *)
 
         let pp_nstates nstates =
-          EPF.fi "Histogram (%i states)\n" [nstates]
+          EPF.fi "Histogram (%d states)\n" [nstates]
 
         let cstring s = sprintf "%S" s
+        let show_stats = match Cfg.mode with
+        | Mode.Kvm -> false
+        | Mode.Std|Mode.PreSi -> true
 
         let postlude doc test affi show_topos stats =
           let t = if Cfg.exit_cond then "int" else "void" in
@@ -370,7 +521,10 @@ module Make
           | Mode.Std ->
               O.f "static %s postlude(FILE *out,cmd_t *cmd,hist_t *hist,count_t p_true,count_t p_false,tsc_t total) {" t
           | Mode.PreSi ->
-              O.f "static %s postlude(FILE *out,global_t *g,count_t p_true,count_t p_false,tsc_t total) {" t ;
+              O.f "static %s postl sude(FILE *out,global_t *g,count_t p_true,count_t p_false,tsc_t total) {" t ;
+              O.oi "hash_t *hash = &g->hash ;"
+          | Mode.Kvm ->
+              O.f "static %s postlude(global_t *g,count_t p_true,count_t p_false,tsc_t total) {" t ;
               O.oi "hash_t *hash = &g->hash ;"
           end ;
 (* Print header *)
@@ -391,6 +545,10 @@ module Make
           | Mode.PreSi ->
               pp_nstates "hash->nhash" ;
               O.oi "pp_hash(out,hash,g->verbose > 1,g->group);"
+          | Mode.Kvm ->
+              pp_nstates "hash->nhash" ;
+              O.oi "pp_hash(hash,g->verbose > 1,g->group);" ;
+              ()
           end ;
 (* Print condition and witnesses *)
           let pp_cond = sprintf "\"%s\"" (String.escaped (pp_cond test)) in
@@ -443,7 +601,7 @@ module Make
                   O.fi "fprintf(out,\"%s\",\"%s\",\"%s\");" fmt "Prefetch" prf
               | NoPL|RandomPL -> ()
               end
-          | Mode.PreSi -> ()
+          | Mode.Kvm|Mode.PreSi -> ()
           end ;
 (* Affinity info, as computed *)
           begin match Cfg.mode with
@@ -456,7 +614,7 @@ module Make
                   O.oi "}"
               | None -> ()
               end
-          | Mode.PreSi -> ()
+          | Mode.Kvm|Mode.PreSi -> ()
           end ;
 (* Observation summary *)
           O.fi
@@ -479,67 +637,79 @@ module Make
           EPF.fi fmt [obs;"cond_true";"cond_false";] ;
 (* Parameter sumaries,
    meaningful only when 'remarkable outcomes are present *)
-          O.oi "if (p_true > 0) {" ;
+          if show_stats then begin
+            O.oi "if (p_true > 0) {" ;
 (* Topologies sumaries *)
-          begin match Cfg.mode with
-          | Mode.Std ->
-              if show_topos then begin
-                O.oii "if (cmd->aff_mode == aff_scan) {" ;
-                O.oiii "for (int k = 0 ; k < SCANSZ ; k++) {" ;
-                O.oiv "count_t c = ngroups[k];" ;
-                let fmt = "\"Topology %-6\" PCTR\":> %s\\n\"" in
-                O.fiv "if ((c*100)/p_true > ENOUGH) { printf(%s,c,group[k]); }" fmt ;
+            begin match Cfg.mode with
+            | Mode.Std ->
+                if show_topos then begin
+                  O.oii "if (cmd->aff_mode == aff_scan) {" ;
+                  O.oiii "for (int k = 0 ; k < SCANSZ ; k++) {" ;
+                  O.oiv "count_t c = ngroups[k];" ;
+                  let fmt = "\"Topology %-6\" PCTR\":> %s\\n\"" in
+                  O.fiv "if ((c*100)/p_true > ENOUGH) { printf(%s,c,group[k]); }" fmt ;
+                  O.oiii "}" ;
+                  O.oii "} else if (cmd->aff_mode == aff_topo) {"  ;
+                  O.oiii "printf(\"Topology %-6\" PCTR \":> %s\\n\",ngroups[0],cmd->aff_topo);" ;
+                  O.oii "}"
+                end
+            | Mode.Kvm|Mode.PreSi ->
+                O.oii "count_t *ngroups = &g->stats.groups[0];" ;
+                O.oii "for (int k = 0 ; k < SCANSZ ; k++) {" ;
+                O.oiii "count_t c = ngroups[k];" ;
+                O.oiii "if ((g->verbose > 1 && c > 0) || (c*100)/p_true > ENOUGH) {" ;
+                let fmt = "Topology %-6PCTR:> part=%d %s\n" in
+                EPF.fiv fmt ["c";"k";"g->group[k]"] ;
                 O.oiii "}" ;
-                O.oii "} else if (cmd->aff_mode == aff_topo) {"  ;
-                O.oiii "printf(\"Topology %-6\" PCTR \":> %s\\n\",ngroups[0],cmd->aff_topo);" ;
                 O.oii "}"
-              end
-          | Mode.PreSi ->
-              O.oii "count_t *ngroups = &g->stats.groups[0];" ;
-              O.oii "for (int k = 0 ; k < SCANSZ ; k++) {" ;
-              O.oiii "count_t c = ngroups[k];" ;
-              O.oiii "if ((g->verbose > 1 && c > 0) || (c*100)/p_true > ENOUGH) {" ;
-              let fmt = "Topology %-6PCTR:> part=%i %s\n" in
-              EPF.fiv fmt ["c";"k";"g->group[k]"] ;
-              O.oiii "}" ;
-              O.oii "}"
-          end ;
+            end ;
 (* Other stats *)
-          List.iter
-            (fun {tags; name; max; tag; process; } ->
-              let ks = Misc.interval 0 (List.length tags) in
-              let rec loop_rec i = function
-                | [] ->
-                    O.fx i "{" ;
-                    let j = Indent.tab i in
-                    O.fx j "count_t c = g->stats.%s%s;" name
-                      (String.concat ""
-                         (List.map (sprintf "[k%i]") ks))  ;
-                    let fmt =
-                      sprintf "%s %%-6PCTR:> {%s}\n"
-                        tag
-                        (String.concat ", "
-                           (List.map (sprintf "%s=%%i") tags))
-                    and args =
-                      List.map
-                        (fun k -> process (sprintf "k%i" k))
-                        ks in
-                    O.fx j "if ((g->verbose > 1 && c > 0) || (c*100)/p_true >= ENOUGH) {" ;
-                    EPF.fx (Indent.tab j) fmt ("c"::args) ;
-                    O.fx j "}" ;
-                    O.fx i "}"
-                | k::ks ->
-                    let i = Indent.tab i in
-                    O.fx i "for (int k%i = 0 ; k%i < %s; k%i++)"
-                      k k max k ;
-                    loop_rec i ks in
-              loop_rec Indent.indent ks)
-            stats ;
-          O.oi "}" ;
+            List.iter
+              (fun {tags; name; max; tag; process; } ->
+                let ks = Misc.interval 0 (List.length tags) in
+                let rec loop_rec i = function
+                  | [] ->
+                      O.fx i "{" ;
+                      let j = Indent.tab i in
+                      O.fx j "count_t c = g->stats.%s%s;" name
+                        (String.concat ""
+                           (List.map (sprintf "[k%i]") ks))  ;
+                      let fmt =
+                        sprintf "%s %%-6PCTR:> {%s}\n"
+                          tag
+                          (String.concat ", "
+                             (List.map (sprintf "%s=%%d") tags))
+                      and args =
+                        List.map
+                          (fun k -> process (sprintf "k%i" k))
+                          ks in
+                      O.fx j "if ((g->verbose > 1 && c > 0) || (c*100)/p_true >= ENOUGH) {" ;
+                      EPF.fx (Indent.tab j) fmt ("c"::args) ;
+                      O.fx j "}" ;
+                      O.fx i "}"
+                  | k::ks ->
+                      let i = Indent.tab i in
+                      O.fx i "for (int k%i = 0 ; k%i < %s; k%i++)"
+                        k k max k ;
+                      loop_rec i ks in
+                loop_rec Indent.indent ks)
+              stats ;
+            O.oi "}" ;
+            ()
+          end ;
 (* Show running time *)
-          let fmt = sprintf "Time %s %%f\n"  doc.Name.name in
-          EPF.fi fmt ["total / 1000000.0"] ;
-          O.oi "fflush(out);" ;
+          begin match Cfg.mode with
+          | Mode.Std|Mode.PreSi ->
+              let fmt = sprintf "Time %s %%f\n"  doc.Name.name in
+              EPF.fi fmt ["total / 1000000.0"] ;
+              O.oi "fflush(out);"
+          | Mode.Kvm ->
+              if Cfg.have_fault_handler then O.oi "pp_faults();" ;
+              let s = sprintf "Time %s "  doc.Name.name in
+              O.fi "puts(%S);" s ;
+              O.oi "emit_double(tsc_millions(total));" ;
+              O.oi "puts(\"\\n\");"
+          end ;
           if Cfg.exit_cond then O.oi "return cond;" ;
           O.o "}" ;
           O.o "" ;

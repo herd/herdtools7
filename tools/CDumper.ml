@@ -87,8 +87,7 @@ end = struct
           t.prog pss
     | _ -> ()
     end ;
-    let locs =
-      DumpUtils.dump_locations (ConstrGen.dump_rloc dump_loc) t.locations in
+    let locs = DumpUtils.dump_locations dump_loc ParsedConstant.pp_v t.locations in
     if locs <> "" then Out.fprintf chan "%s\n" locs ;
     begin match t.filter with
     | None -> ()

@@ -36,7 +36,7 @@ module Make(O:Config)(A:Arch_tools.S) =
          arch : Archs.t ;
          name : Name.t ;
          prog : (MiscParser.proc * A.pseudo list) list ;
-         init : (A.location * (MiscParser.run_type * A.v)) list ;
+         init : (A.location * (TestType.t * A.v)) list ;
          constr : (A.location, A.v) ConstrGen.prop ConstrGen.constr ;
        }
 
@@ -231,7 +231,7 @@ module Make(O:Config)(A:Arch_tools.S) =
     let pp_asm_v v = pp_asm (pp_v v)
 
     let pp_initial_state sc =
-      let open MiscParser in
+      let open TestType in
       "\\begin{tabular}[t]{|l|}\n\\hline\n"
       ^ "Initial state\\\\ \\hline \n"
       ^ pp_nice_state sc ""

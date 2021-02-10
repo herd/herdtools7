@@ -17,10 +17,13 @@
 open Printf
 
 module Make(Cst:Constant.S) = struct
+
   module Cst = Cst
+
   module Scalar = Cst.Scalar
 
   open Constant
+  open PTEVal
 
   type csym = int
 
@@ -71,13 +74,13 @@ module Make(Cst:Constant.S) = struct
   and nameToV s = Val (Cst.nameToV s)
   and cstToV cst = Val cst
 
-  let maybevToV m =
-    let rec tr m = match m with
-    | Symbolic _ | Label _ | Tag _ as _m -> _m
+  let rec tr_cst c = match c with
+    | Symbolic _ | Label _ | Tag _ | PteVal _ as m -> m
     | Concrete s -> Concrete (Scalar.of_string s)
-    | ConcreteVector (sz, mvs) ->
-      ConcreteVector (sz, List.map tr mvs) in
-    Val (tr m) (* does OCaml have fancy combinators like <$> for this *)
+    | ConcreteVector (sz,ms) -> ConcreteVector (sz,List.map tr_cst ms)
+
+  let maybevToV c = Val (tr_cst c)
+
 
   let as_symbol = function
     | Val v -> Cst.vToName v
@@ -93,6 +96,7 @@ module Make(Cst:Constant.S) = struct
 (************************************)
 
 (* generic *)
+
   exception Undetermined
 
   let is_zero v = match v with
@@ -107,8 +111,8 @@ module Make(Cst:Constant.S) = struct
 
   let bit_at k = function
     | Val (Concrete v) -> Val (Concrete (Cst.Scalar.bit_at k v))
-    | Val (Symbolic _|Label _|Tag _| ConcreteVector _ as x) ->
-      Warn.user_error "Illegal operation on %s" (Cst.pp_v x)
+    | Val (ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _ as x) ->
+        Warn.user_error "Illegal operation on %s" (Cst.pp_v x)
     | Var _ -> raise Undetermined
 
   let bin_to_capa c =
@@ -123,11 +127,11 @@ module Make(Cst:Constant.S) = struct
      Symbolic -> Symbolic *)
   let unop op_op op v1 = match v1 with
     | Val (Concrete i1) -> Val (Concrete (op i1))
-    | Val (Symbolic ({cap=c;_} as s)) ->
-      Val (Symbolic {s with cap=capa_to_bin (op (bin_to_capa c))})
-    | Val (Label _|Tag _|ConcreteVector _ as x) ->
-      Warn.user_error "Illegal operation %s on %s"
-        (Op.pp_op1 true op_op) (Cst.pp_v x)
+    | Val (Symbolic (Virtual ({cap=c;_} as s))) ->
+        Val (Symbolic (Virtual {s with cap=capa_to_bin (op (bin_to_capa c))}))
+    | Val (ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _ as x) ->
+        Warn.user_error "Illegal operation %s on %s"
+          (Op.pp_op1 true op_op) (Cst.pp_v x)
     | Var _ -> raise Undetermined
 
   (* Concrete -> Concrete
@@ -135,7 +139,7 @@ module Make(Cst:Constant.S) = struct
   let unop_c op_op op v = match v with
     | Val (Concrete i) ->
         Val (Concrete (op i))
-    | Val (Symbolic {cap=c;_}) ->
+    | Val (Symbolic (Virtual {cap=c;_})) ->
         Val (Concrete (op (bin_to_capa c)))
     | Val cst ->
         Warn.user_error "Illegal operation %s on %s"
@@ -145,12 +149,10 @@ module Make(Cst:Constant.S) = struct
   (* Concrete,Concrete -> Concrete *)
   let binop op_op op v1 v2 = match v1,v2 with
   | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
-  | (Val (Concrete _),Val (Symbolic _|Label _|Tag _|ConcreteVector _))
-  | (Val (Symbolic _|Label _|Tag _|ConcreteVector _),Val (Concrete _))
-  | (Val (Symbolic _|Label _|Tag _|ConcreteVector _),Val (Symbolic _|Label _|Tag _|ConcreteVector _)) ->
+  | Val c1,Val c2 ->
       Warn.user_error
         "Illegal operation %s on constants %s and %s"
-        (Op.pp_op op_op) (pp_v v1) (pp_v v2)
+        (Op.pp_op op_op) (Cst.pp_v c1) (Cst.pp_v c2)
   | (Var _,_)|(_,Var _)
     -> raise Undetermined
 
@@ -158,8 +160,8 @@ module Make(Cst:Constant.S) = struct
      Symbolic,Concrete -> Symbolic *)
   let binop_cs_c op_op op v1 v2 = match v1,v2 with
   | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
-  | (Val (Symbolic ({cap=c;_} as s)),Val (Concrete i)) ->
-          Val (Symbolic ({s with cap=capa_to_bin (op (bin_to_capa c) i)}))
+  | (Val (Symbolic (Virtual ({cap=c;_} as s))),Val (Concrete i)) ->
+      Val (Symbolic (Virtual {s with cap=capa_to_bin (op (bin_to_capa c) i)}))
   | Val cst1,Val cst2 ->
         Warn.user_error "Illegal operation %s on %s and %s"
           (Op.pp_op op_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
@@ -170,7 +172,7 @@ module Make(Cst:Constant.S) = struct
      Concrete,Symbolic -> Concrete *)
   let binop_c_cs op_op op v1 v2 = match v1,v2 with
   | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
-  | (Val (Concrete i),Val (Symbolic {cap=c;_})) ->
+  | (Val (Concrete i),Val (Symbolic (Virtual {cap=c;_}))) ->
       Val (Concrete (op i (bin_to_capa c)))
   | Val cst1,Val cst2 ->
         Warn.user_error "Illegal operation %s on %s and %s"
@@ -182,14 +184,18 @@ module Make(Cst:Constant.S) = struct
      Concrete,Symbolic -> Concrete
      Symbolic,Concrete -> Symbolic
      Symbolic,Symbolic -> Symbolic *)
+  let mk_val_virtual s = Val (Symbolic (Virtual s))
+
   let binop_cs_cs op_op op v1 v2 = match v1,v2 with
   | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
-  | (Val (Concrete i),Val (Symbolic {cap=c;_})) ->
+  | (Val (Concrete i),Val (Symbolic (Virtual {cap=c;_}))) ->
       Val (Concrete (op i (bin_to_capa c)))
-  | (Val (Symbolic ({cap=c;_} as s)),Val (Concrete i)) ->
-      Val (Symbolic {s with cap=capa_to_bin (op (bin_to_capa c) i)})
-  | (Val (Symbolic ({cap=c1;_} as s)),Val (Symbolic {cap=c2;_})) ->
-      Val (Symbolic {s with cap=capa_to_bin (op (bin_to_capa c1) (bin_to_capa c2))})
+  | (Val (Symbolic (Virtual ({cap=c;_} as s))),Val (Concrete i)) ->
+      mk_val_virtual {s with cap=capa_to_bin (op (bin_to_capa c) i)}
+  | (Val (Symbolic (Virtual ({cap=c1;_} as s))),
+     Val (Symbolic (Virtual {cap=c2;_}))) ->
+      mk_val_virtual
+        {s with cap=capa_to_bin (op (bin_to_capa c1) (bin_to_capa c2))}
   | Val cst1,Val cst2 ->
         Warn.user_error "Illegal operation %s on %s and %s"
           (Op.pp_op op_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
@@ -202,11 +208,11 @@ module Make(Cst:Constant.S) = struct
      Symbolic,Symbolic -> Concrete *)
   let binop_cs_cs_c op_op op v1 v2 = match v1,v2 with
   | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
-  | (Val (Concrete i),Val (Symbolic {cap=c;_})) ->
+  | (Val (Concrete i),Val (Symbolic (Virtual {cap=c;_}))) ->
       Val (Concrete (op i (bin_to_capa c)))
-  | (Val (Symbolic {cap=c;_}),Val (Concrete i)) ->
+  | (Val (Symbolic (Virtual {cap=c;_})),Val (Concrete i)) ->
       Val (Concrete (op (bin_to_capa c) i))
-  | (Val (Symbolic {cap=c1;_}),Val (Symbolic {cap=c2;_})) ->
+  | (Val (Symbolic (Virtual {cap=c1;_})),Val (Symbolic (Virtual {cap=c2;_}))) ->
       Val (Concrete (op (bin_to_capa c1) (bin_to_capa c2)))
   | Val cst1,Val cst2 ->
         Warn.user_error "Illegal operation %s on %s and %s"
@@ -221,20 +227,30 @@ module Make(Cst:Constant.S) = struct
     if protect_is is_zero v1 then v2
     else if protect_is is_zero v2 then v1
     else match v1,v2 with
-    | (Val (Concrete i1),Val (Symbolic ({offset=i2;_} as sym)))
-    | (Val (Symbolic ({offset=i2;_} as sym)),Val (Concrete i1)) ->
+    | (Val (Concrete i1),Val (Symbolic (Virtual ({offset=i2;_} as sym))))
+    | (Val (Symbolic (Virtual ({offset=i2;_} as sym))),Val (Concrete i1)) ->
         let i1 = Scalar.to_int i1 in
-        Val (Symbolic {sym with offset=i1+i2})
+        Val (Symbolic (Virtual {sym with offset=i1+i2}))
+    | (Val (Concrete i1),Val (Symbolic (Physical (s,i2))))
+    | (Val (Symbolic (Physical (s,i2))),Val (Concrete i1)) ->
+        let i1 = Scalar.to_int i1 in
+        Val (Symbolic (Physical (s,i1+i2)))
     | _,_ -> (* General case *)
-    binop Op.Add Scalar.add v1 v2
+        binop Op.Add Scalar.add v1 v2
 
   and sub v1 v2 = (* Used for comparison for by some arch, so let us compare *)
     match v1,v2 with
     | (Val (Tag _),Val (Tag _))
     | (Val (Symbolic _),Val (Symbolic _))
     | (Val (Label _),Val (Label _))
+    | (Val (PteVal _),Val (PteVal _))
       ->
         Val (Concrete (Scalar.of_int (compare  v1 v2)))
+    (* 0 is sometime used as invalid PTE *)
+    | (Val (PteVal _),Val cst)
+    | (Val cst,Val (PteVal _))
+        when Cst.eq cst Cst.zero ->
+          Val (Cst.one)
     | _,_
       ->
         binop Op.Sub Scalar.sub v1 v2
@@ -242,19 +258,50 @@ module Make(Cst:Constant.S) = struct
 
   and add_konst k v = match v with
   | Val (Concrete v) -> Val (Concrete (Scalar.addk v k))
-  | Val (Symbolic ({offset=i;_} as s)) ->
-    Val (Symbolic {s with offset=i+k})
-  | Val (Label _|Tag _|ConcreteVector _) ->
-      Warn.user_error "Illegal addition on constants %s" (pp_v v)
+  | Val (Symbolic (Virtual ({offset=i;_} as s))) ->
+    Val (Symbolic (Virtual {s with offset=i+k}))
+  | Val (Symbolic (Physical (s,i))) -> Val (Symbolic (Physical (s,i+k)))
+  | Val (ConcreteVector _|Symbolic (System _)|Label _|Tag _|PteVal _ as c) ->
+      Warn.user_error "Illegal addition on constants %s" (Cst.pp_v c)
   | Var _ -> raise Undetermined
 
   and orop v1 v2 =
     if protect_is is_zero v1 then v2
     else if protect_is is_zero v2 then v1
-    else match v1,v2 with
-    | (Val (Symbolic _),Val (Symbolic _)) -> Warn.user_error "Illegal | on %s and %s" (pp_v v1) (pp_v v2)
-    | (Val (Concrete _),Val (Symbolic _)) -> binop_cs_cs Op.Or Scalar.logor v2 v1
-    | _ -> binop_cs_cs Op.Or Scalar.logor v1 v2
+    else
+      match v1,v2 with
+      | (Val (Symbolic _),Val (Symbolic _))
+           -> Warn.user_error "Illegal | on %s and %s" (pp_v v1) (pp_v v2)
+      | (Val (Concrete _),Val (Symbolic _)) ->
+          binop_cs_cs Op.Or Scalar.logor v2 v1
+      | Val (PteVal p),Val (Concrete v) ->
+          (* Machine level mask operation on pteval's AArch64 specific *)
+          let msg =
+            sprintf
+              "Illegal operation %s on constants %s and %s"
+              (Op.pp_op Op.Or) (pp_v v1) (pp_v v2) in
+          let p =
+            if Scalar.compare v (Scalar.one) = 0 then
+              { p with PTEVal.valid=1; }
+            else if
+              let scalar_db = Scalar.shift_left Scalar.one 7 in
+              Scalar.compare v scalar_db = 0
+            then
+              { p with PTEVal.db=0; }
+            else if
+              let scalar_af = Scalar.shift_left Scalar.one 10 in
+              Scalar.compare v scalar_af = 0
+            then
+              { p with PTEVal.af=1; }
+            else if
+              let scalar_dbm = Scalar.shift_left Scalar.one 51 in
+              Scalar.compare v scalar_dbm = 0
+            then
+              { p with PTEVal.dbm=1; }
+            else
+              Warn.user_error "%s" msg in
+          raise (Cst.Result (`AArch64,PteVal p,msg))
+      | _ -> binop_cs_cs Op.Or Scalar.logor v1 v2
 
   and xor v1 v2 =
     if compare v1 v2 = 0 then zero else
@@ -263,6 +310,50 @@ module Make(Cst:Constant.S) = struct
   and maskop op sz v = match v with
   | Val (Tag _) -> v (* tags are small enough for any mask be idempotent *)
   | _ ->  unop op (Scalar.mask sz) v
+
+  and shift_right_logical v1 v2 = match v1,v2 with
+  | Val (Symbolic (Virtual {name=s;_})),Val (Concrete v) when
+      Scalar.compare v (Scalar.of_int 12) = 0 ->
+        let msg =
+          sprintf
+            "Illegal operation %s on constants %s and %s"
+            (Op.pp_op Op.Lsr) (pp_v v1) (pp_v v2) in
+        (* Beware: AArch64 only, otherwise a fatal error. *)
+        raise (Cst.Result (`AArch64,Symbolic (System (TLB,s)),msg))
+  | _,_ ->
+      binop Op.Lsr (fun x y -> Scalar.shift_right_logical x (Scalar.to_int y))
+        v1 v2
+
+  and andnot2 v1 v2 = match v1,v2 with
+  | Val (PteVal p),Val (Concrete v) ->
+        let msg =
+          sprintf
+            "Illegal operation %s on constants %s and %s"
+            (Op.pp_op Op.AndNot2) (pp_v v1) (pp_v v2) in
+        let p =
+           if Scalar.compare v (Scalar.one) = 0 then
+             { p with PTEVal.valid=0; }
+           else if
+             let scalar_db = Scalar.shift_left Scalar.one 7 in
+             Scalar.compare v scalar_db = 0
+           then
+             { p with PTEVal.db=1; }
+           else if
+             let scalar_af = Scalar.shift_left Scalar.one 10 in
+             Scalar.compare v scalar_af = 0
+           then
+             { p with PTEVal.af=0; }
+           else if
+             let scalar_dbm = Scalar.shift_left Scalar.one 51 in
+             Scalar.compare v scalar_dbm = 0
+           then
+             { p with PTEVal.dbm=0; }
+           else
+             Warn.user_error "%s" msg in
+        raise (Cst.Result (`AArch64,PteVal p,msg))
+  | _,_ ->
+      binop Op.AndNot2
+        (fun x1 x2 -> Scalar.logand x1 (Scalar.lognot x2)) v1 v2
 
   let bool_to_v f v1 v2 = match f v1 v2 with
   | false -> zero
@@ -308,14 +399,14 @@ module Make(Cst:Constant.S) = struct
     let rec pow a = function (* Why Ocaml hasn't pow function in it's standard library ??? *)
       | 0 -> 1 | 1 -> a
       | n ->
-         let b = pow a (n / 2) in
-         b * b * (if n mod 2 = 0 then 1 else a) in
+          let b = pow a (n / 2) in
+          b * b * (if n mod 2 = 0 then 1 else a) in
     Scalar.shift_left (Scalar.of_int ((pow 2 nbBits) - 1)) k
 
 (* Ops on tagged locations *)
   let settag v1 v2 = match v1,v2 with
-  | Val Symbolic s,Val (Tag t) ->
-    Val (Symbolic {s with tag=Some t})
+  | Val (Symbolic (Virtual s)),Val (Tag t) ->
+    Val (Symbolic (Virtual {s with tag=Some t}))
   | Val cst1,Val cst2 ->
       Warn.user_error "Illegal settag on %s and %s"
         (Cst.pp_v cst1)  (Cst.pp_v cst2)
@@ -323,36 +414,37 @@ module Make(Cst:Constant.S) = struct
       raise Undetermined
 
   let op_tagged op_op op v = match v with
-  |  Val (Symbolic ({offset=o;_} as a)) -> Val (op a o)
-  |  Val (Concrete _|Label _|Tag _|ConcreteVector _) ->
-      Warn.user_error "Illegal %s on %s" op_op (pp_v v)
+  |  Val (Symbolic (Virtual ({offset=o;_} as a))) -> Val (op a o)
+  |  Val (Symbolic (Physical _|System _)
+          |Concrete _|Label _|Tag _|ConcreteVector _|PteVal _)
+     -> Warn.user_error "Illegal tagged operation %s on %s" op_op (pp_v v)
   | Var _ -> raise Undetermined
 
   (*  Returns the location of the tag associated to a location *)
   let op_tagloc f {name=a;_} _ =
-    Symbolic {default_symbolic_data with name=f a}
-  let tagloc = op_tagged "tagloc" (op_tagloc Misc.add_atag)
+    Symbolic (Virtual {default_symbolic_data with name=f a})
   let capatagloc = op_tagged "capatagloc" (op_tagloc Misc.add_ctag)
 
-  let get_sym = function
-    | Val (Symbolic {name=s;_}) -> s
-    | Var _|Val (Concrete _|Label _|Tag _|ConcreteVector _) ->
-        Warn.fatal "Illegal get_sym" (* NB: not an user error *)
-
-  let get_vec = function
-    | Val (ConcreteVector (_,_) as vs) -> vs
-    | Var _|Val (Concrete _|Label _|Tag _|Symbolic _) ->
-        Warn.fatal "Illegal get_vec" (* NB: not an user error *)
+  let tagloc v =  match v with
+  | Val (Symbolic (Virtual {name=a;_}|Physical (a,_))) ->
+       Val (Symbolic (System (TAG,a)))
+  | Val (Concrete _|ConcreteVector _|Symbolic (System _)|Label _|Tag _|PteVal _) ->
+      Warn.user_error "Illegal tagloc on %s" (pp_v v)
+  | Var _ -> raise Undetermined
 
   let check_atag = function
-    | Val (Symbolic {name=s;_}) -> Misc.check_atag s
-    | Var _|Val (Concrete _|Label _|Tag _|ConcreteVector _) ->
+    | Val (Symbolic (Virtual {name=s;_})) -> Misc.check_atag s
+    | Var _
+    | Val (Symbolic (System _|Physical _)
+           | Concrete _|Label _|Tag _|ConcreteVector _|PteVal _) ->
         Warn.fatal "Illegal check_atag" (* NB: not an user error *)
 
   let check_ctag = function
-    | Val (Symbolic {name=s;_}) -> Misc.check_ctag s
-    | Var _|Val (Concrete _|ConcreteVector _|Label _|Tag _) ->
-        Warn.fatal "Illegal check_mtag" (* NB: not an user error *)
+    | Val (Symbolic (Virtual {name=s;_})) -> Misc.check_ctag s
+    | Var _
+    | Val (Symbolic (Physical _|System _)
+           |Concrete _|ConcreteVector _|Label _|Tag _|PteVal _) ->
+        Warn.fatal "Illegal check_ctag" (* NB: not an user error *)
 
   (* Decompose tagged locations *)
   let op_tagextract {tag=t;_} _ = match t with
@@ -360,9 +452,67 @@ module Make(Cst:Constant.S) = struct
   | None -> Constant.default_tag
 
   let tagextract v = op_tagged "tagextract" op_tagextract v
+
   let op_locextract {name=a;cap=c;_} o =
-    Symbolic {default_symbolic_data with name=a;cap=c;offset=o}
+    Symbolic (Virtual {default_symbolic_data with name=a;cap=c;offset=o})
   let locextract v = op_tagged "locextract" op_locextract v
+
+  let op_pte_tlb op_op op v = match v with
+  |  Val (Symbolic (Virtual s)) -> Val (op s)
+  |  Val (Concrete _|ConcreteVector _|Label _|Tag _|Symbolic _|PteVal _) ->
+      Warn.user_error "Illegal %s on %s" op_op (pp_v v)
+  | Var _ -> raise Undetermined
+
+  let pteloc v = match v with
+  | Val (Symbolic (Virtual {name=a;_})) -> Val (Symbolic (System (PTE,a)))
+  | Val (Symbolic (System (PTE,a))) -> Val (Symbolic (System (PTE2,a)))
+  | Val (Concrete _|ConcreteVector _|Label _|Tag _|Symbolic _|PteVal _) ->
+      Warn.user_error "Illegal pteloc on %s" (pp_v v)
+  | Var _ -> raise Undetermined
+
+  let op_pte_val op_op op v = match v with
+  | Val (PteVal a) -> Val (op a)
+  | Var _ -> raise Undetermined
+  | _ -> Warn.user_error "Illegal pte operation %s on %s" op_op (pp_v v)
+
+  let op_afloc a = Cst.intToV a.af
+  let afloc = op_pte_val "afloc" op_afloc 
+
+  let op_set_pteval op op_op v = match v with
+    | Val (PteVal pte_v) -> Val (PteVal (op pte_v))
+    | Var _ -> raise Undetermined
+    | _ -> Warn.user_error "Illegal %s on %s" op_op (pp_v v)
+
+  let setaf = op_set_pteval (fun v -> { v with af = 1}) "setaf"
+
+  let op_dbloc a = Cst.intToV a.db 
+  let dbloc = op_pte_val "dbloc" op_dbloc
+  let setdb = op_set_pteval (fun v ->  {v with db = 1}) "setdb"
+
+  let op_dbmloc a = Cst.intToV a.dbm
+  let dbmloc = op_pte_val "dbmloc" op_dbmloc
+
+  let op_validloc a = Cst.intToV a.valid
+  let validloc = op_pte_val "validloc" op_validloc
+
+  let op_el0loc a = Cst.intToV a.el0
+  let el0loc = op_pte_val "el0loc" op_el0loc
+
+  let op_oaloc a = Cst.nameToV a.oa
+  let oaloc = op_pte_val "oaloc" op_oaloc
+
+  let op_tlbloc {name=a;_} = Symbolic (System (TLB,a))
+  let tlbloc = op_pte_tlb "tlbloc" op_tlbloc
+
+  let is_virtual v = match v with
+  | Val c -> Constant.is_virtual c
+  | Var _ -> raise Undetermined
+
+  let as_virtual v = match v with
+  | Val c -> Constant.as_virtual c
+  | Var _ -> raise Undetermined
+  let is_virtual_v v =  if is_virtual v then one else zero
+
 
   let andnot x1 x2 =
     Scalar.logand x1 (Scalar.lognot x2)
@@ -459,12 +609,12 @@ module Make(Cst:Constant.S) = struct
     Scalar.set_tag (Scalar.get_tag c && not tagclear) result
 
   let capaadd v1 v2 = match v1,v2 with
-    | (Val (Symbolic ({cap=c;offset=o;_} as s)),Val (Concrete i)) ->
+    | (Val (Symbolic (Virtual ({cap=c;offset=o;_} as s))),Val (Concrete i)) ->
         let i = Scalar.to_int i in
         let c = bin_to_capa c in
         let tagclear = cap_is_sealed c in
         let c = Scalar.set_tag (Scalar.get_tag c && not tagclear) c in
-        Val (Symbolic {s with cap=capa_to_bin c;offset=o+i})
+        mk_val_virtual {s with cap=capa_to_bin c;offset=o+i}
     | (Val (Concrete c)),(Val (Concrete increment)) -> (* General case *)
         let result = Scalar.logor (hi64 c) (lo64 (Scalar.add c increment)) in
         (* NB: bounds check skipped *)
@@ -550,7 +700,7 @@ module Make(Cst:Constant.S) = struct
     Scalar.set_tag (Scalar.get_tag v1 && not tagclear) result
 
   let setvalue v1 v2 = match v1,v2 with
-    | (Val (Symbolic {cap=c;_}),Val (Concrete i)) ->
+    | (Val (Symbolic (Virtual {cap=c;_})),Val (Concrete i)) ->
         let c = bin_to_capa c in
         Val (Concrete (do_setvalue c i))
     | (Val (Concrete i1)),(Val (Concrete i2)) ->
@@ -584,46 +734,57 @@ module Make(Cst:Constant.S) = struct
     else v1
 
   let capastrip v = match v with
-  | Val (Symbolic s) -> Val (Symbolic {s with cap=0})
+  | Val (Symbolic (Virtual s)) -> mk_val_virtual {s with cap=0}
   | Val cst -> Warn.user_error "Illegal capastrip on %s" (Cst.pp_v cst)
   | Var _ -> raise Undetermined
 
   let op1 op =
     let open! Scalar in
     match op with
-  | Not -> unop op (fun v -> bool_to_scalar (not (scalar_to_bool v)))
-  | SetBit k ->
-      unop op (fun s -> logor (mask_one k) s)
-  | UnSetBit k ->
-      unop op
-        (fun s -> logand (lognot (mask_one k)) s)
-  | ReadBit k ->
-      unop op
-        (fun s ->
-          bool_to_scalar (Scalar.compare (logand (mask_one k) s) zero <> 0))
-  | LogicalRightShift 0
-  | LeftShift 0
-  | AddK 0 -> fun s -> s
-  | LeftShift k ->
-      unop  op (fun s -> Scalar.shift_left s k)
-  | LogicalRightShift k ->
-      unop_c op (fun s -> Scalar.shift_right_logical s k)
-  | SignExtendWord _ ->
-      Warn.fatal "sxtw op not implemented yet"
-  | AddK k -> add_konst k
-  | AndK k -> unop op (fun s -> Scalar.logand s (Scalar.of_string k))
-  | Mask sz -> maskop op sz
-  | Inv -> unop op Scalar.lognot
-  | TagLoc -> tagloc
-  | CapaTagLoc -> capatagloc
-  | TagExtract -> tagextract
-  | LocExtract -> locextract
-  | UnSetXBits (nb, k) ->
-      unop op
-        (fun s -> logand (lognot (mask_many nb k)) s)
-  | CapaGetTag -> unop_c op (fun s -> bool_to_scalar (Scalar.get_tag s))
-  | CheckSealed -> unop_c op (fun s -> Scalar.logand (Scalar.shift_right_logical s 95) (ones 15))
-  | CapaStrip -> capastrip
+    | Not -> unop op (fun v -> bool_to_scalar (not (scalar_to_bool v)))
+    | SetBit k ->
+        unop op (fun s -> logor (mask_one k) s)
+    | UnSetBit k ->
+        unop op
+          (fun s -> logand (lognot (mask_one k)) s)
+    | ReadBit k ->
+        unop op
+          (fun s ->
+            bool_to_scalar (Scalar.compare (logand (mask_one k) s) zero <> 0))
+    | LogicalRightShift 0
+    | LeftShift 0
+    | AddK 0 -> fun s -> s
+    | LeftShift k ->
+        unop  op (fun s -> Scalar.shift_left s k)
+    | LogicalRightShift k ->
+        unop op (fun s -> Scalar.shift_right_logical s k)
+    | SignExtendWord _ ->
+        Warn.fatal "sxtw op not implemented yet"
+    | AddK k -> add_konst k
+    | AndK k -> unop op (fun s -> Scalar.logand s (Scalar.of_string k))
+    | Mask sz -> maskop op sz
+    | Inv -> unop op Scalar.lognot
+    | TagLoc -> tagloc
+    | CapaTagLoc -> capatagloc
+    | TagExtract -> tagextract
+    | LocExtract -> locextract
+    | UnSetXBits (nb, k) ->
+        unop op
+          (fun s -> logand (lognot (mask_many nb k)) s)
+    | CapaGetTag -> unop_c op (fun s -> bool_to_scalar (Scalar.get_tag s))
+    | CheckSealed -> unop_c op (fun s -> Scalar.logand (Scalar.shift_right_logical s 95) (ones 15))
+    | CapaStrip -> capastrip
+    | TLBLoc -> tlbloc
+    | PTELoc -> pteloc
+    | IsVirtual -> is_virtual_v
+    | AF -> afloc 
+    | SetAF -> setaf 
+    | DB -> dbloc 
+    | SetDB -> setdb 
+    | DBM -> dbmloc
+    | Valid -> validloc
+    | EL0 -> el0loc
+    | OA -> oaloc  
 
   let op op = match op with
   | Add -> add
@@ -649,11 +810,13 @@ module Make(Cst:Constant.S) = struct
   | Or -> orop
   | Xor -> xor
   | Nor -> binop op (fun x1 x2 -> Scalar.lognot (Scalar.logor x1 x2))
-  | AndNot2 -> binop op andnot
+  | AndNot2 -> andnot2
   | ShiftRight ->
       binop op (fun x y -> Scalar.shift_right_logical x (Scalar.to_int y))
   | ShiftLeft ->
       binop op (fun x y -> Scalar.shift_left x (Scalar.to_int y))
+  | Lsr ->
+      shift_right_logical
   | Lt -> lt
   | Gt -> gt
   | Eq -> eq
@@ -673,7 +836,7 @@ module Make(Cst:Constant.S) = struct
 
   let op3 If v1 v2 v3 = match v1 with
   | Val (Concrete x) -> if scalar_to_bool x then v2 else v3
-  | Val (Symbolic _ |Label _|Tag _|ConcreteVector _ as s) ->
+  | Val (ConcreteVector _|Symbolic _ |Label _|Tag _ | PteVal _ as s) ->
       Warn.user_error "illegal if on symbolic constant %s" (Cst.pp_v s)
   | Var _ -> raise Undetermined
 

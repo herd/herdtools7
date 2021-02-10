@@ -57,9 +57,12 @@ module Top(O:Config)(Out:OutTests.S) = struct
   open CBase
 
 (* Collect locations *)
-  let collect_ra xs = function
-    | Abs (Constant.Symbolic {Constant.name=s;_}) -> StringSet.add s xs
-    | _ -> xs
+  let collect_ra xs =
+    let open Constant in
+    function
+      | Abs s -> StringSet.add s xs
+      | _ -> xs
+
 
   let collect_addr xs = function
     | Addr_op_atom ra
@@ -79,8 +82,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
 
   let tr_ra = function
     | Rega r -> LoadReg (tr_reg r)
-    | Abs (Constant.Symbolic {Constant.name=s;_}) -> LoadReg s
-    | _ -> assert false
+    | Abs s -> LoadReg s
 
   let do_tr_addr = function
     | Addr_op_atom ra -> tr_ra ra

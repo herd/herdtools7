@@ -107,14 +107,30 @@ end = struct
   | Access (_,A.Location_global _,_,_,_,_)   -> true
   | _ -> false
 
+  let is_pt a = match a with
+    | Access (_,A.Location_global (A.V.Val c),_,_,_,_)   ->
+        Constant.is_pt c
+    | _ -> false
+
 (* None of those below *)
   let is_tag _ = false
+  let is_mem_physical a = let open Constant in match a with
+  | Access (_,A.Location_global (V.Val (Symbolic (Physical _))),_,_,_,_)   -> true
+  | _ -> false
+
   let is_additional_mem _ = false
+
+  let is_PA_val _ = false
+
+  (* Unimplemented *)
+  let is_implicit_pte_read _ = assert false
 
   let is_atomic a = match a with
   | Access (_,_,_,true,_,_) ->
       assert (is_mem a); true
   | _ -> false
+
+  let is_fault _ = false
 
   let to_fault _ = None
 
@@ -149,8 +165,6 @@ end = struct
   let is_load a = match a with
   | Access (R,_,_,_,_,_) -> true
   | _ -> false
-
-
 
   let is_reg_any a = match a with
   | Access (_,A.Location_reg _,_,_,_,_) -> true
@@ -237,7 +251,7 @@ end = struct
      "RMW",is_atomic;
      "Ftotal",is_total_barrier;]
 
-  let arch_fences = []
-
+  let arch_rels = []
+  let arch_dirty = []
 
 end

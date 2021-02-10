@@ -30,6 +30,8 @@ type t =
   | NoVolatile
 (* Morello C64 instruction set *)
   | Morello
+(* Explicit virtual memory *)
+  | KVM
 
 val tags : string list
 

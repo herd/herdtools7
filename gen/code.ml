@@ -125,13 +125,14 @@ type info = (string * string) list
 let plain = "Na"
 
 (* Memory Space *)
-type bank = Ord | Tag | CapaTag | CapaSeal
+type bank = Ord | Tag | CapaTag | CapaSeal | Pte
 
 let pp_bank = function
   | Ord -> "Ord"
   | Tag -> "Tag"
   | CapaTag -> "CapaTag"
   | CapaSeal -> "CapaSeal"
+  | Pte -> "Pte"
 
 let tag_of_int  = function
   | 0 -> "green"

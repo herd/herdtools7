@@ -32,25 +32,38 @@ module type Base = sig
   module RegMap : MyMap.S with type key = reg
 
   include Location.S
-  with type loc_reg = reg and
-  type loc_global = string
 
-  val vToName : V.v -> loc_global
+  with type loc_reg = reg and
+  type loc_global = Global_litmus.t
+
+  val is_pte_loc : location -> bool
+  val location_of_addr : string -> location
+
 
   val parse_reg : string -> reg option
   val reg_compare : reg -> reg -> int
 
   type state = (location * V.v) list
-  type fullstate = (location * (MiscParser.run_type * V.v)) list
+
+  val debug_state : state -> string
+
+  type fullstate = (location * (TestType.t * V.v)) list
 
   module Out : Target.S
   with type arch_reg = reg (* Out abstracted *)
   and module V = V
 
+  val dump_loc_tag : location -> string
+  val dump_rloc_tag : rlocation -> string
+
   val arch : Archs.t
 
   val find_in_state : location -> state -> V.v
   val pp_reg : reg -> string
+
+  val typeof : reg -> CType.t
+
+  val features : ((instruction -> bool) * string) list
 
 end
 
@@ -65,7 +78,7 @@ module type K = sig
   type loc_global = string
 
   type state = (location * V.v) list
-  type fullstate = (location * (MiscParser.run_type * V.v)) list
+  type fullstate = (location * (TestType.t * V.v)) list
 
   module Out : Target.S
   with type arch_reg = reg (* Out abstracted *)
@@ -86,5 +99,7 @@ module type S =
     include ArchExtra_litmus.S with module I.V = V
     and type I.arch_reg = reg
 
+    val features : ((instruction -> bool) * string) list
     val nop : instruction
+
   end

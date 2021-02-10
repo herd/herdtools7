@@ -38,6 +38,8 @@ module Make
          let fullmixed = C.moreedges
        end)
 
+   let set_pteval _ p _ = p
+
 (*********)
 (* Atoms *)
 (*********)

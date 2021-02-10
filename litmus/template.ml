@@ -32,17 +32,26 @@ end
 exception Error of string
 
 module type Config = sig
+  val verbose : int
   val memory : Memory.t
   val cautious : bool
   val hexa : bool
+  val mode : Mode.t
 end
 
 module DefaultConfig = struct
+  let verbose = 0
   let memory = Memory.Direct
   let cautious = false
   let hexa = false
+  let mode = Mode.Std
 end
 
+type extra_args =
+  { trashed: string list;
+    inputs: ((CType.t * string) * (string * string)) list; }
+
+let no_extra_args = { trashed=[]; inputs=[];}
 
 module type S = sig
   module V : Constant.S
@@ -67,17 +76,22 @@ module type S = sig
   type t = {
       init : (arch_reg * V.v) list ;
       addrs : string list ; (* addesses in code (eg X86) *)
+      ptes : string list ;  (* pte in code (eg X86) *)
       stable : arch_reg list; (* stable registers, ie must be self-allocated by gcc *)
       final : arch_reg list ;
       code : ins list;
       name : Name.t ;
       all_clobbers : arch_reg list;
       nrets : int ; (* number of return instruction in code *)
+      nnops : int ; (* number of nop instruction in code *)
       ty_env :  (arch_reg * CType.t) list ;
     }
 
   val get_nrets : t -> int
-  val get_addrs : t -> string list
+  val get_nnops : t -> int
+  val get_addrs_only : t -> string list
+  val get_phys_only : t -> string list
+  val get_addrs : t -> string list * string list (* addresses X ptes *)
   val get_labels : t -> (int * string) list
   val fmt_reg : arch_reg -> string
   val dump_label : string -> string
@@ -102,7 +116,9 @@ module type S = sig
   val all_regs : t -> RegSet.t
   val trashed_regs : t -> RegSet.t
   val get_reg_env :
-      (CType.t -> CType.t -> bool) -> t -> CType.t RegMap.t
+      (CType.t -> CType.t -> bool)-> (* fail *)
+        (CType.t -> CType.t -> bool)->  (* warn *)
+          t -> CType.t RegMap.t
 end
 
 module Make(O:Config)(A:I) =
@@ -138,19 +154,21 @@ module Make(O:Config)(A:I) =
     type t = {
         init : (arch_reg * V.v) list ;
         addrs : string list ;
+        ptes : string list ;
         stable : arch_reg list;
         final : arch_reg list ;
         code : ins list;
         name : Name.t ;
         all_clobbers : arch_reg list;
-        nrets : int ;
+        nrets : int ; nnops : int ;
         ty_env :  (arch_reg * CType.t) list ;
       }
 
 
     let get_nrets t = t.nrets
+    and get_nnops t = t.nnops
 
-    let get_addrs { init=init; addrs=addrs; _ } =
+    let get_gen tr init addrs =
       let set =
         StringSet.union
           (StringSet.of_list addrs)
@@ -158,13 +176,41 @@ module Make(O:Config)(A:I) =
              (List.fold_left
                 (fun k (_,v) ->
                   let rec f v k = match v with
-                  | Symbolic {Constant.name=s;_} -> s::k
+                  | Symbolic sym ->                      
+                      begin match tr sym with
+                      | Some s -> s::k
+                      | None -> k
+                      end
                   | ConcreteVector (_,vs) ->
-                      List.fold_right (fun v k -> f v k) vs k
-                  | Concrete _|Label _|Tag _ -> k in
+                      List.fold_right f vs k
+                  | Concrete _|Label _|Tag _|PteVal _ -> k in
                   f v k)
                 [] init)) in
       StringSet.elements set
+
+    let get_addrs_only {init; addrs; _} =
+      get_gen
+        (function
+          | Virtual {Constant.name=s;_} -> Some s
+          | _ -> None)
+        init addrs
+
+    let get_ptes_only {init; ptes; _} =
+      get_gen
+        (function
+          | System (PTE,s) -> Some s
+          | _ -> None)
+        init ptes
+
+    let get_phys_only {init; _} =
+      get_gen
+        (function
+          | Physical (s,_) -> Some s
+          | _ -> None)
+        init []
+
+    let get_addrs t =
+      get_addrs_only t,get_ptes_only t
 
     let get_labels { init; _} =
       List.fold_left
@@ -172,8 +218,8 @@ module Make(O:Config)(A:I) =
           let rec f v k = match v with
           | Label (p,s) -> (p,s)::k
           | ConcreteVector (_,vs) ->
-              List.fold_right (fun v k -> f v k) vs k
-          | Concrete _|Symbolic _|Tag _ -> k
+              List.fold_right f vs k
+          | Concrete _|Symbolic _|Tag _|PteVal _ -> k
           in f v k)
         [] init
 
@@ -229,7 +275,6 @@ module Make(O:Config)(A:I) =
 
     let compile_presi_out_ptr_reg proc reg =
       OutUtils.fmt_presi_ptr_index (dump_out_reg proc reg)
-
 
     let get_reg k rs =
       try List.nth rs k
@@ -327,7 +372,7 @@ module Make(O:Config)(A:I) =
            (RegSet.of_list t.final)
            (RegSet.of_list t.stable))
 
-    let get_reg_env error tst =
+    let get_reg_env error warn tst =
       let m =
         List.fold_left (fun m (r,t) -> RegMap.add r t m)
           RegMap.empty tst.ty_env in
@@ -349,9 +394,7 @@ module Make(O:Config)(A:I) =
                       | CType.Array _ -> CType.debug t
                       | _ -> CType.dump t)
                   end else
-                    if not
-                        ((CType.is_ptr t0 && CType.is_ptr t) ||
-                        CType.same_base t0 t)
+                    if warn t0 t
                     then
                         Warn.warn_always
                       "File \"%s\" Register %s has different types: <%s> and <%s>"

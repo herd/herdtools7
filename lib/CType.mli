@@ -30,6 +30,7 @@ val voidstar : t
 val word : t
 val quad : t
 val int128 : t
+val pte : t
 
 val dump : t -> string
 val debug : t -> string
@@ -39,6 +40,7 @@ type fmt = Direct of string | Macro of string
 val get_fmt : bool (* hexa *) -> base -> fmt option
 
 val is_ptr : t -> bool
+val is_pte : t -> bool
 val is_array : t -> bool
 val is_atomic : t -> bool
 val strip_atomic : t -> t
@@ -50,3 +52,6 @@ val is_ptr_to_atomic : t -> bool
 val same_base : t -> t -> bool
 
 val type_for_align : int -> t
+
+(* Type of array elements, fails if argument is not an array type *)
+val element_type : t -> t

@@ -28,11 +28,16 @@ let fmt_prelude p = sprintf "prelude%i" p
 let fmt_code_size p = sprintf "code%i_sz" p
 let fmt_lbl_offset p lbl  = sprintf "off_P%i_%s" p lbl
 let fmt_lbl_var p lbl = sprintf "P%i_%s" p lbl
+let fmt_pte_tag x = Misc.add_pte x
+let fmt_pte_kvm x = sprintf "_vars->%s" (fmt_pte_tag x)
+let fmt_phy_tag x = "saved_" ^ Misc.add_pte x
+let fmt_phy_kvm x = sprintf "_vars->%s" (fmt_phy_tag x)
 
 (* Value (address) output *)
 module type Config = sig
   val memory : Memory.t
   val hexa : bool
+  val mode : Mode.t
 end
 
 module DefaultConfig = struct
@@ -48,13 +53,24 @@ module Make(O:Config)(V:Constant.S) = struct
   | Direct -> sprintf "&_a->%s[_i]" a
   | Indirect -> sprintf "_a->%s[_i]" a
 
-  let dump_v v = match v with
+  let dump_v_std v = match v with
   | Concrete _ -> V.pp O.hexa v
-  | Symbolic {name=a;tag=None;cap=0;offset=0;_} -> dump_addr a
+  | Symbolic (Virtual {name=a;tag=None;cap=0;offset=0;}) -> dump_addr a
   | ConcreteVector _ -> V.pp O.hexa v
   | Tag _
   | Symbolic _
-  | Label _ -> assert false
+  | Label _
+  | PteVal _
+    -> assert false
+
+  let dump_v_kvm v = match v with
+  | Symbolic (System (PTE,a)) -> sprintf "_vars->%s" (Misc.add_pte a)
+  | Symbolic (Physical (a,0)) -> sprintf "_vars->saved_%s" (Misc.add_pte a)
+  | _ -> V.pp_v v
+
+  let dump_v = match O. mode with
+  | Mode.Std -> dump_v_std
+  | Mode.PreSi|Mode.Kvm -> dump_v_kvm
 
   let addr_cpy_name s p = sprintf "_addr_%s_%i" s p
 end

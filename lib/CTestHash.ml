@@ -49,8 +49,10 @@ module Make(P:Input)
 
 (* Observed locations digest *)
       let digest_observed locs =
-        let locs = MiscParser.LocSet.elements locs in
-        let pp = String.concat "; " (List.map dump_location locs) in
+        let locs = MiscParser.RLocSet.elements locs in
+        let pp =
+          String.concat "; "
+            (List.map (ConstrGen.dump_rloc dump_location) locs) in
         debug "LOCS" pp ;
         Digest.string pp
 

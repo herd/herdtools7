@@ -126,7 +126,10 @@ module type S =  sig
   val sequence : t-> t -> t
   val sequences : t list -> t
 
-(* Equivalence classes, applies to equivalence relations only (unchecked) *)
+(* Equivalence classes, applies to any relation.
+   Behaves as if the argument relation r is first
+   transformed into `(r | r^-1)*`.
+*)
   val classes : t -> Elts.t list
 
 (* strata ie sets of nodes by increasing distance *)
@@ -278,6 +281,11 @@ and module Elts = MySet.Make(O) =
           r ME.empty
 
       let to_map r = to_map_ok (fun _ _ -> true) r
+
+      let to_sym_map r =
+        fold
+          (fun (e1,e2) m -> add e1 e2 (add e2 e1 m))
+          r ME.empty
 
       let of_map m =
         let xs =
@@ -685,7 +693,7 @@ and module Elts = MySet.Make(O) =
     | _ -> sequences (seq_rec rs)
 
 (* Equivalence classes *)
-    let classes r = M.cc (M.to_map r)
+    let classes r = M.cc (M.to_sym_map r)
 
 (**********)
 (* Strata *)

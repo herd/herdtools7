@@ -52,10 +52,12 @@ module type CommonConfig = sig
   val driver : Driver.t
   val crossrun : Crossrun.t
   val adbdir : string
+  val makevar : string list
   val gcc : string
   val c11 : bool
   val c11_fence : bool
   val ascall : bool
+  val precision : bool
   val variant : Variant_litmus.t -> bool
   val stdio : bool
   val xy : bool
@@ -112,24 +114,18 @@ module type Config = sig
   val noccs : int
   val timelimit : float option
   val check_nstates : string -> int option
+  val precision : bool
   (* End of additions *)
   include Skel.Config
   include Run_litmus.Config
   val limit : bool
   val sysarch : Archs.System.t
+  val word : Word.t
 end
 
 module Top (OT:TopConfig) (Tar:Tar.S) : sig
   val from_files : string list -> unit
 end = struct
-
-  let check_variant v a =
-    if OT.variant v && not (Variant_litmus.ok v a) then
-      Warn.user_error
-        "variant %s does not apply to arch %s"
-        (Variant_litmus.pp v)
-        (Archs.pp a)
-
 
   (************************************************************)
   (* Some configuration dependent stuff, to be performed once *)
@@ -161,7 +157,7 @@ end = struct
             with type arch_reg = A'.Out.arch_reg
              and type t = A'.Out.t
              and module RegMap = A'.RegMap)
-           (Pseudo:PseudoAbstract.S) =
+           (Pseudo:PseudoAbstract.S with type ins = A'.instruction) =
     struct
       module T = Test_litmus.Make(O)(A')(Pseudo)
       module R = Run_litmus.Make(O)(Tar)(T.D)
@@ -203,16 +199,35 @@ end = struct
               let dump =
                 match OT.mode with
                 | Mode.Std ->
-                   let module S = Skel.Make(O)(Pseudo)(A')(T)(Out)(Lang) in
-                   S.dump
-                | Mode.PreSi ->
-                   let module S = PreSi.Make(O)(Pseudo)(A')(T)(Out)(Lang) in
-                   S.dump in
+                    let module S = Skel.Make(O)(Pseudo)(A')(T)(Out)(Lang) in
+                    S.dump
+                | Mode.PreSi|Mode.Kvm ->
+                    let module O =
+                      struct
+                        include O
+                        let is_kvm = match OT.mode with
+                        | Mode.Kvm -> true
+                        | Mode.PreSi -> false
+                        | Mode.Std -> assert false
+                        let is_tb = match OT.barrier with
+                        | Barrier.TimeBase  -> true
+                        | _ -> false
+                      end  in
+                    let module S = PreSi.Make(O)(Pseudo)(A')(T)(Out)(Lang) in
+                    S.dump in
               dump doc compiled)
             outname
         with e ->
           begin try Sys.remove outname with _ -> () end ;
           raise e
+
+      let check_variant v a =
+        if O.variant v && not (Variant_litmus.ok v a) then
+          Warn.user_error
+            "variant %s does not apply to arch %s"
+            (Variant_litmus.pp v)
+            (Archs.pp a)
+
 
       let limit_ok nprocs = match O.avail with
         | None|Some 0 -> true
@@ -225,7 +240,6 @@ end = struct
              Warn.warn_always
                "%stest with more threads (%i) than available (%i) is compiled"
                (Pos.str_pos0 name.Name.file) nprocs navail
-
       let compile
             parse count_procs compile allocate
             cycles hash_env
@@ -253,17 +267,14 @@ end = struct
                 dump source doc compiled;
                 if not OT.is_out then begin
                     let _utils =
-                      let module O = struct
-                          include OT
-                          let arch = A'.arch
-                        end in
                       let module OO = struct
-                          include O
-                          let cached =
-                            match threadstyle with
-                            | ThreadStyle.Cached -> true
-                            | _ -> false
-                        end in
+                        include OT
+                        let arch = A'.arch
+                        let cached =
+                          match threadstyle with
+                          | ThreadStyle.Cached -> true
+                          | _ -> false
+                      end in
                       let module Obj = ObjUtil.Make(OO)(Tar) in
                       Obj.dump () in
                     ()
@@ -303,12 +314,12 @@ end = struct
         let maybevToV c =
           let open Constant in
           let rec f c = match c with
-          | Tag _|Symbolic _|Label _ as sym -> sym
+          | Tag _|Symbolic _|Label _|PteVal _ as sym -> sym
           | Concrete i -> Concrete (A.V.Scalar.of_string i)
           | ConcreteVector (sz,vs) -> ConcreteVector (sz, List.map f vs) in
           f c
-        type global = string
-        let maybevToGlobal = ParsedConstant.vToName
+        type global = Global_litmus.t
+        let maybevToGlobal = A.tr_global
       end
 
       let compile =
@@ -334,8 +345,10 @@ end = struct
 
       module Pseudo =
         struct
+          type ins = A'.instruction
           include DumpCAst
           let find_offset _ _ _ = Warn.user_error "No label value in C"
+          let code_exists _ _ = assert false
         end
 
       module Lang =
@@ -382,6 +395,16 @@ end = struct
       SP.split name in_chan in
     let tname = splitted.Splitter.name.Name.name in
     if OT.check_name tname then begin
+        (* Read variant field in test *)
+        let module TestConf =
+          TestVariant.Make
+            (struct
+              module Opt = Variant_litmus
+              let set_precision = Variant_litmus.set_precision
+              let info = splitted.Splitter.info
+              let precision = OT.precision
+              let variant = OT.variant
+            end) in
         (* Then call appropriate compiler, depending upon arch *)
         let opt = OT.mkopt (Option.get_default arch) in
         let word = Option.get_word opt in
@@ -393,28 +416,33 @@ end = struct
           end in
         (* Compile configuration, must also be used to configure arch modules *)
         let module OC = struct
-            let word = word
-            let syncmacro =OT.syncmacro
-            let syncconst = OT.syncconst
-            let memory = OT.memory
-            let morearch = OT.morearch
-            let cautious = OT.cautious
-            let asmcomment = OT.asmcomment
-            let hexa = OT.hexa
+          let verbose = OT.verbose
+          let word = word
+          let syncmacro =OT.syncmacro
+          let syncconst = OT.syncconst
+          let memory = OT.memory
+          let morearch = OT.morearch
+          let cautious = OT.cautious
+          let asmcomment = OT.asmcomment
+          let hexa = OT.hexa
+          let mode = OT.mode
+        end in
+        let module Cfg = struct
+          include OT
+          let precision = TestConf.precision
+          let variant = TestConf.variant
+          include ODep
+          let debuglexer = debuglexer
+          let sysarch =
+            match Archs.get_sysarch arch  OT.carch with
+            | Some a -> a
+            | None -> begin match arch with
+              | `C ->
+                  Warn.fatal "Test %s not performed because -carch is not given but required while using C arch" tname
+              | _ ->
+                Warn.fatal "no support for arch '%s'" (Archs.pp arch)
+            end
           end in
-        let module OX = struct
-            include OT
-            include ODep
-            let debuglexer = debuglexer
-            let sysarch = match arch with
-              | #Archs.System.t as a -> a
-              | (`CPP|`LISA) -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
-              | `C -> begin match OT.carch with
-                      | Some a -> a
-                      | None  -> Warn.fatal "Test %s not performed because -carch is not given but required while using C arch" tname
-                      end
-          end in
-        let module Cfg = OX in
         let aux = function
           | `PPC ->
              begin match OT.usearch with
@@ -548,7 +576,7 @@ end = struct
                  let comment =  match OT.asmcomment with
                    | Some c -> c
                    | None ->
-                      begin match OX.sysarch with
+                      begin match Cfg.sysarch with
                       | `PPC -> PPCArch_litmus.comment
                       | `X86 -> X86Arch_litmus.comment
                       | `X86_64 -> X86_64Arch_litmus.comment

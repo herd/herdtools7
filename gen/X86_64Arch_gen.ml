@@ -135,6 +135,8 @@ module Make
       | Some ((Plain|Atomic|NonTemporal),Some (sz, o)) ->
           ValsMixed.extract_value v sz o
 
+      let set_pteval _ p _ = p
+
             (**********)
             (* Fences *)
             (**********)

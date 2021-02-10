@@ -22,12 +22,13 @@ module type S = sig
   module A : Arch_litmus.Base
   module C : Constr.S with
   module V = A.V and
-  type location = A.location and module LocSet = A.LocSet
+  type location = A.location and module LocSet = A.LocSet and
+  module RLocSet = A.RLocSet
   module P : PseudoAbstract.S
 
   type src =
-    ((A.location * (MiscParser.run_type * A.V.v)) list, P.code list,
-          C.prop, A.location)
+    ((A.location * (TestType.t * A.V.v)) list, P.code list,
+          C.prop, A.location, A.V.v)
          MiscParser.result
 
   type 'a type_env = ('a * CType.t) list
@@ -40,10 +41,12 @@ module type S = sig
       condition : C.cond ;
       filter : C.prop option ;
       globals : string type_env ;
-      flocs : A.location list ;
+      flocs : A.location ConstrGen.rloc list ;
+      ffaults : A.V.v Fault.atom list;
       global_code : string list;
       src : src ;
-      type_env : CType.t A.LocMap.t * CType.t StringMap.t ;  }
+      type_env : CType.t A.LocMap.t * CType.t StringMap.t ;
+      bellinfo : BellInfo.test option ; }
 
   val find_our_constraint : t -> C.cond
   val get_nprocs : t -> int
@@ -59,6 +62,7 @@ module type S = sig
       end)
 
   val find_offset : P.code list -> int -> string -> int
+  val code_exists : (P.ins -> bool) -> t -> bool
 end
 
 
@@ -72,8 +76,8 @@ struct
 
   type 'a type_env = ('a * CType.t) list
   type src =
-    ((A.location * (MiscParser.run_type * A.V.v)) list, P.code list,
-          C.prop, A.location)
+    ((A.location * (TestType.t * A.V.v)) list, P.code list,
+          C.prop, A.location,A.V.v)
          MiscParser.result
 
   type env_volatile = string list
@@ -84,11 +88,13 @@ struct
       code : (int * (A.Out.t * (A.reg type_env * env_volatile))) list ;
       condition : C.cond ;
       filter : C.prop option ;
-      globals : string type_env ;
-      flocs : A.location list ;
+      globals : string type_env ; (* Virtual addresses only *)
+      flocs : A.location ConstrGen.rloc list ;
+      ffaults : A.V.v Fault.atom list;
       global_code : string list;
       src : src ;
-      type_env : CType.t A.LocMap.t * CType.t StringMap.t ; }
+      type_env : CType.t A.LocMap.t * CType.t StringMap.t ;
+      bellinfo : BellInfo.test option ; }
 
   let find_our_constraint test = test.condition
 
@@ -102,5 +108,10 @@ struct
         module C = C
         module P = P
       end)
+
   let find_offset code p lbl = P.find_offset code p lbl
+  let code_exists p t =
+    let src = t.src in
+    let code = src.MiscParser.prog in
+    List.exists (P.code_exists p) code
 end

@@ -20,7 +20,7 @@ exception Error
 
 let blank = [' ''\n''\r''\t']
 let digit = ['0'-'9']
-
+let printable = ['0'-'9''a'-'z''A'-'Z'':']
 rule main = parse
 | ',' | blank+  { main lexbuf }
 | digit+ as lxm { int_of_string lxm :: main lexbuf }
@@ -33,10 +33,17 @@ and strings = parse
 | eof { [] }
 | "" { raise Error }
 
+and strings_spaces = parse
+| (','|blank)+ { strings_spaces lexbuf }
+| printable+ as lxm { lxm :: strings_spaces lexbuf }
+| eof { [] }
+| "" { raise Error }
+
 {
 
 let ints s = main (Lexing.from_string s)
 let strings s = strings (Lexing.from_string s)
+let strings_spaces s = strings_spaces (Lexing.from_string s)
 
 let pp_ints xs = String.concat "," (List.map string_of_int xs)
 

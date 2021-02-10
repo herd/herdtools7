@@ -19,6 +19,7 @@ module type Config = sig
   val cond : Config.cond
   val optcond : bool
   val hexa : bool
+  val variant : Variant_gen.t -> bool
 end
 
 module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
@@ -30,9 +31,12 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 (* Add an observation to fenv *)
     val add_final_v :
         Code.proc -> C.A.arch_reg -> IntSet.t -> fenv -> fenv
+    val add_final_pte :
+        Code.proc -> C.A.arch_reg -> PTEVal.t -> fenv -> fenv
     val add_final_loc :
         Code.proc -> C.A.arch_reg -> string -> fenv -> fenv
     val cons_int :   C.A.location -> int -> fenv -> fenv
+    val cons_pteval :   C.A.location -> PTEVal.t -> fenv -> fenv
     val cons_int_set :  (C.A.location * IntSet.t) -> fenv -> fenv
     val add_int_sets : fenv -> (C.A.location * IntSet.t) list -> fenv
     val add_final :
@@ -48,9 +52,18 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     val dump_final : out_channel ->  final -> unit
 
+(* Complement init environemt *)
+    val extract_ptes : fenv -> C.A.location list
+
   end = functor (O:Config) -> functor (C:ArchRun.S) ->
   struct
-    type v = I of int | S of string
+
+    let do_kvm = O.variant Variant_gen.KVM
+
+    type v = I of int | S of string | P of PTEVal.t
+    let pte_def = P (PTEVal.default "*")
+    let () = ignore pte_def
+
     module VSet =
       MySet.Make
         (struct
@@ -59,8 +72,13 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           let compare v1 v2 = match v1,v2 with
           | I i1,I i2 -> compare i1 i2
           | S s1,S s2 -> String.compare s1 s2
-          | S _,I _ -> -1
-          | I _,S _ -> +1
+          | P p1,P p2 -> PTEVal.compare p1 p2
+          | ((P _|S _),I _)
+          | (P _,S _)
+            -> -1
+          | (I _,(S _|P _))
+          | (S _,P _)
+            -> +1
         end)
     type vset = VSet.t
     type fenv = (C.A.location * vset) list
@@ -93,10 +111,14 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     let add_final_v p r v finals = (C.A.of_reg p r,intset2vset v)::finals
 
+    let add_final_pte p r v finals = (C.A.of_reg p r,VSet.singleton (P v))::finals
+
     let add_final_loc p r v finals =
       (C.A.of_reg p r,VSet.singleton (S v))::finals
 
-    let cons_int loc i fs= (loc,VSet.singleton (I i))::fs
+    let cons_int loc i fs = (loc,VSet.singleton (I i))::fs
+
+    let cons_pteval loc p fs = (loc,VSet.singleton (P p))::fs
 
     let cons_int_set (l,is) fs = (l,intset2vset is)::fs
 
@@ -118,13 +140,15 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                 Some (I evt.C.C.v)
             | Code.Tag ->
                 Some (S (Code.add_tag (Code.as_data evt.C.C.loc) evt.C.C.v))
+            | Code.Pte ->
+                Some (P evt.C.C.pte)
             end
         | Some Code.W -> assert (evt.C.C.bank = Code.Ord || evt.C.C.bank = Code.CapaSeal) ; Some (I (prev_value evt.C.C.v))
         | None|Some Code.J -> None in
         if show_in_cond n then match v with
         | Some v ->
             C.C.EventMap.add n.C.C.evt (C.A.of_reg p r) m,
-             (C.A.of_reg p r,VSet.singleton v)::fs
+            (C.A.of_reg p r,VSet.singleton v)::fs
         | None -> finals
         else finals
     | None -> finals
@@ -152,6 +176,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           if O.hexa then sprintf "0x%x" i
           else sprintf "%i" i
       | S s -> s
+      | P p -> PTEVal.pp p
 
     let dump_atom r v = sprintf "%s=%s" (C.A.pp_location r) (dump_val v)
 
@@ -170,41 +195,71 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                  sprintf "(%s)" pp)
            fs)
 
-    let dump_flts flts =
-      let pp =
-        List.map
-          (fun (p,xs) ->
-            StringSet.pp_str " \\/ " (fun x -> sprintf "fault(%s,%s)" (Proc.pp p) x) xs)
-          flts in
-      let pp = String.concat " \\/ " pp in
-      match flts with
-      | [] -> ""
-      | [_,xs] when StringSet.is_singleton xs -> "~" ^ pp
-      | _ -> sprintf "~(%s)" pp
+    let dump_one_flt p x =  sprintf "fault (%s,%s)" (Proc.pp p) x
 
-    let dump_final chan (f,flts) = match f with
-    | Exists fs ->
-        let ppfs = dump_state fs
-        and ppflts = dump_flts flts in
-        let cc = match ppfs,ppflts with
-        | "","" -> ""
-        | "",_ -> ppflts
-        | _,"" -> sprintf "(%s)" ppfs
-        | _,_ -> sprintf "(%s) /\\ %s" ppfs ppflts in
-        if cc <> "" then
-          fprintf chan "%sexists %s\n" (if !Config.neg then "~" else "") cc
-    | Forall ffs ->
-        fprintf chan "forall\n" ;
-        fprintf chan "%s%s\n" (Run.dump_cond ffs)
-          (match dump_flts flts with
-          | "" -> ""
-          | pp -> " /\\ "^pp)
-    | Locations locs ->
-        fprintf chan "locations [%s]\n"
-          (String.concat ""
-             (List.map (fun loc -> sprintf "%s;" (C.A.pp_location loc)) locs)) ;
-        begin match dump_flts flts with
-        | "" -> ()
-        | pp -> fprintf chan "forall %s\n" pp
-        end
+    let dump_flt sep (p,xs) = StringSet.pp_str sep (dump_one_flt p) xs
+
+    let dump_flts =
+      if do_kvm then fun _ ->   ""
+      else fun flts ->
+        let pp = List.map (dump_flt " \\/ ") flts in
+        let pp = String.concat " \\/ " pp in
+        match flts with
+        | [] -> ""
+        | [_,xs] when StringSet.is_singleton xs -> "~" ^ pp
+        | _ -> sprintf "~(%s)" pp
+
+    let dump_locations chan = function
+      | [] -> ()
+      | locs -> fprintf chan "locations [%s]\n" (String.concat " " locs)
+
+    let dump_final chan (f,flts) =
+      let loc_flts =
+        if do_kvm then
+          List.fold_right
+            (fun (p,xs) ->
+              StringSet.fold
+                (fun x k -> sprintf "%s;" (dump_one_flt p x)::k)
+                xs)
+            flts []
+        else [] in
+      match f with
+      | Exists fs ->
+          dump_locations chan loc_flts ;
+          let ppfs = dump_state fs
+          and ppflts = dump_flts flts in
+          let cc = match ppfs,ppflts with
+          | "","" -> ""
+          | "",_ -> ppflts
+          | _,"" -> sprintf "(%s)" ppfs
+          | _,_ -> sprintf "(%s) /\\ %s" ppfs ppflts in
+          if cc <> "" then
+            fprintf chan "%sexists %s\n" (if !Config.neg then "~" else "") cc
+      | Forall ffs ->
+          dump_locations chan loc_flts ;
+          fprintf chan "forall\n" ;
+          fprintf chan "%s%s\n" (Run.dump_cond ffs)
+            (match dump_flts flts with
+            | "" -> ""
+            | pp -> " /\\ "^pp)
+      | Locations locs ->
+          dump_locations chan           
+            (List.fold_right
+               (fun loc k -> sprintf "%s;" (C.A.pp_location loc)::k)
+               locs loc_flts) ;
+          begin match dump_flts flts with
+          | "" -> ()
+          | pp -> if not do_kvm then fprintf chan "forall %s\n" pp
+          end
+
+(* Extract ptes *)
+    let extract_ptes =
+      List.fold_left
+        (fun k (loc,vset) ->
+          if
+            VSet.exists (function | P _ -> true | (I _|S _) -> false)
+              vset then
+            loc::k
+          else k)
+        []
   end

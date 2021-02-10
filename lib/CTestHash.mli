@@ -25,5 +25,5 @@ module type Input = sig
 end
 
 module Make(P:Input) : sig
-  val digest : MiscParser.state -> P.code list -> MiscParser.LocSet.t -> string
+  val digest : MiscParser.state -> P.code list -> MiscParser.RLocSet.t -> string
 end

@@ -56,6 +56,7 @@ module Make(O:Config)(M:XXXMem.S) =
     let memtag = O.variant Variant.MemTag
     let morello = O.variant Variant.Morello
     let showtoofar = O.variant Variant.TooFar
+    let kvm = O.variant Variant.Kvm
 
 (* Utilities *)
     open Restrict
@@ -223,12 +224,6 @@ module Make(O:Config)(M:XXXMem.S) =
       and loads = S.E.mem_loads_of es.S.E.events in
       S.E.EventSet.subset loads obs
 
-    let collect_atom_fault a r =
-      let open ConstrGen in
-      match a with
-      | (LV _|LL _) -> r
-      | FF f -> f::r
-
 (* Called by model simulator in case of success *)
     let model_kont loop ochan test do_restrict cstr =
 
@@ -351,13 +346,11 @@ module Make(O:Config)(M:XXXMem.S) =
       let cstr = T.find_our_constraint test in
 
       let restrict_faults =
-        if memtag || morello then
-          let faults_in_cond =
-            ConstrGen.fold_constr collect_atom_fault cstr [] in
+        if memtag || morello || kvm then
           A.FaultSet.filter
             (fun flt ->
-              List.exists
-                (fun f -> A.check_one_fatom flt f) faults_in_cond)
+              A.FaultAtomSet.exists
+                (fun f -> A.check_one_fatom flt f) test.Test_herd.ffaults)
         else fun _ -> A.FaultSet.empty in
 
       let final_state_restrict_locs test fsc =
@@ -460,7 +453,7 @@ module Make(O:Config)(M:XXXMem.S) =
         A.StateSet.pp stdout ""
           (fun chan st ->
             fprintf chan "%s\n"
-              (A.do_dump_final_state tr_out st))
+              (A.do_dump_final_state test.Test_herd.ffaults tr_out st))
           finals ;
 (* Condition result *)
         let ok = check_cond test c in

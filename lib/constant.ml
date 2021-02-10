@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Printf
+
 (** Constants in code *)
 
 (*Metadata for when  a constant is a vector element *)
@@ -24,8 +26,11 @@ type tag = string option
 type cap = int
 type offset = int
 
+let compare_tag = Misc.opt_compare String.compare
+
 (* Symbolic location metadata*)
 (* Memory cell, with optional tag, capability<128:95>,optional vector metadata, and offset *)
+
 type symbolic_data =
   {
    name : string ;
@@ -33,13 +38,6 @@ type symbolic_data =
    cap : cap ;
    offset : offset ;
   }
-
-type 'scalar t =
-  | Concrete of 'scalar
-  | Symbolic  of symbolic_data
-  | ConcreteVector of int * 'scalar t list
-  | Label of Proc.t * string     (* In code *)
-  | Tag of string
 
 let default_symbolic_data =
   {
@@ -49,37 +47,176 @@ let default_symbolic_data =
    offset = 0 ;
   }
 
-let mk_sym s = Symbolic {default_symbolic_data with name=s }
+let pp_symbolic_data {name=s; tag=t; cap=c; _} = match t,c with
+  | None, 0 -> s
+  | None, _ -> sprintf "%#x:%s:%i" ((c land 0x1ffffffff) lsl 3) s (c lsr 33)
+  | Some t, 0 -> sprintf "%s:%s" s t
+  | Some t, _ ->
+      sprintf "%#x:%s:%i:%s" ((c land 0x1ffffffff) lsl 3) s (c lsr 33) t
 
-and get_sym = function
-  | Symbolic s -> s.name
-  | Concrete _|Label _| Tag _ | ConcreteVector _ -> assert false
+let compare_symbolic_data s1 s2 =
+  begin match String.compare s1.name s2.name with
+  | 0 ->
+      begin match compare_tag s1.tag s2.tag with
+      | 0 ->
+          begin match Misc.int_compare s1.cap s2.cap with
+          | 0 -> Misc.int_compare s1.offset s2.offset
+          | r -> r
+          end
+      | r -> r
+      end
+  | r -> r
+  end
+
+let symbolic_data_eq s1 s2 =
+  Misc.string_eq s1.name s2.name
+  && Misc.opt_eq Misc.string_eq s1.tag s2.tag
+  && Misc.int_eq s1.cap s2.cap
+  && Misc.int_eq s1.offset s2.offset
+
+type syskind = PTE|PTE2|TLB|TAG
+
+type symbol =
+  | Virtual of symbolic_data
+  | Physical of string * int                  (* symbol, index *)
+  | System of (syskind * string)              (* System memory *)
+
+let pp_index base o = match o with
+| 0 -> base
+| i -> sprintf "%s+%i" base i
+
+let pp_symbol = function
+  | Virtual s -> pp_index (pp_symbolic_data s) s.offset
+  | Physical (s,o) -> pp_index (Misc.add_physical s) o
+  | System (TLB,s) -> Misc.add_tlb s
+  | System (PTE,s) -> Misc.add_pte s
+  | System (PTE2,s) -> Misc.add_pte (Misc.add_pte s)
+  | System (TAG,s) -> Misc.add_atag s
+
+let compare_symbol sym1 sym2 = match sym1,sym2 with
+| Virtual s1,Virtual s2 -> compare_symbolic_data s1 s2
+| Physical (s1,o1),Physical (s2,o2) ->
+    begin match String.compare s1 s2 with
+    | 0 -> Misc.int_compare o1 o2
+    | r -> r
+    end
+| System (t1,s1),System (t2,s2) ->
+    begin match compare t1 t2 with
+    | 0 -> String.compare s1 s2
+    | r -> r
+    end
+| (Virtual _,(Physical _|System _ ))
+| (Physical _,System _) -> -1
+| ((Physical _|System _),Virtual _)
+| (System _,Physical _) -> 1
+
+let symbol_eq s1 s2 = match s1,s2 with
+  | Virtual s1,Virtual s2 -> symbolic_data_eq s1 s2
+  | Physical (s1,o1),Physical (s2,o2) ->
+      Misc.string_eq s1 s2 && Misc.int_eq o1 o2
+  | System (k1,s1),System (k2,s2) ->
+      k1=k2 && Misc.string_eq s1 s2
+  | (Virtual _,(Physical _|System _))
+  | (Physical _,(Virtual _|System _))
+  | (System _,(Virtual _|Physical _))
+    -> false
+     
+let as_address = function
+  | Virtual {name=s; offset=0;_} -> s
+  | sym -> Warn.fatal "symbol '%s' is not an address" (pp_symbol sym)
+
+let virt_match_phy s1 s2 = match s1,s2 with
+| Virtual {name=s1; offset=i1;_},Physical (s2,i2) ->
+    Misc.string_eq s1 s2 && Misc.int_eq i1 i2
+| _,_ -> false
+
+module SC = struct
+  type t = symbol
+  let compare = compare_symbol
+end
+
+module SymbolSet = MySet.Make(SC)
+module SymbolMap = MyMap.Make(SC)
+
+type 'scalar t =
+  | Concrete of 'scalar
+  | ConcreteVector of int * 'scalar t list
+  | Symbolic  of symbol
+  | Label of Proc.t * string     (* In code *)
+  | Tag of string
+  | PteVal of PTEVal.t
+
+let do_mk_virtual s = Virtual { default_symbolic_data with name=s; }
+
+let do_mk_sym sym = match Misc.tr_pte sym with
+| Some s -> System (PTE,s)
+| None -> match Misc.tr_atag sym with
+  | Some s -> System (TAG,s)
+  | None -> match Misc.tr_physical sym with
+    | Some s -> Physical (s,0)
+    | None -> do_mk_virtual sym
+
+let mk_sym_virtual s = Symbolic (do_mk_virtual s)
+let mk_sym s = Symbolic (do_mk_sym s)
 
 let mk_vec sz v =
   assert (sz == (List.length v));
   ConcreteVector (sz, v)
 
-let mk_replicate sz v =
-  ConcreteVector (sz, Misc.replicate sz v)
+let mk_replicate sz v = ConcreteVector (sz, Misc.replicate sz v)
+
 
 let is_symbol = function
   | Symbolic _ -> true
-  | Concrete _|ConcreteVector _| Label _| Tag _ -> false
+  | Concrete _|ConcreteVector _| Label _| Tag _ | PteVal _ -> false
 
-(* idx into array, check idx aligned to prim-size ps*)
-(* and idx is less than total array size ts*)
-(* this is not the same as herd mixed mode which may not align exactly to the size of the prim-type -> this is used for non-mixed mode too*)
-let is_aligned_to_vec (ps,ts) idx =
-  if idx > 0 then
-    (ps >= idx && (ps mod idx = 0) && idx < (ts*ps))
-    || ((idx mod ps = 0) && idx < (ts*ps))
-  else idx=0
+                                                            
+let is_non_mixed_symbol = function
+  | Virtual {offset=idx;_}
+  | Physical (_,idx) -> idx=0
+  | System _ -> true
 
 let default_tag = Tag "green"
 
 let check_sym v =  match v with
-| Concrete _|ConcreteVector (_,_) ->  assert false
 | Symbolic _|Label _|Tag _ as sym -> sym
+| Concrete _|ConcreteVector (_,_)|PteVal _ ->  assert false
+
+let is_virtual v = match v with
+| Symbolic (Virtual _) -> true
+| _ -> false
+
+let as_virtual v = match v with
+| Symbolic (Virtual {name=s;_}) -> Some s
+| _ -> None
+
+let as_symbol = function
+  | Symbolic sym -> Some sym
+  | _ -> None
+       
+let as_symbolic_data =function
+| Symbolic (Virtual sym) -> Some sym
+| _ -> None
+
+let of_symbolic_data sym = Symbolic (Virtual sym)
+
+let is_pt v = match v with
+| Symbolic (System (PTE,_)) -> true
+| _ -> false
+
+let same_oa v1 v2 =
+  let open PTEVal in
+  match v1,v2 with
+  | PteVal p1,PteVal p2 ->  Misc.string_eq p1.oa p2.oa
+  | _ -> false
+
+let writable ha hd v =
+  let open PTEVal in
+  match v with
+  | PteVal p ->
+      (p.af=1 || ha) && (* access allowed *)
+      (p.db=1 || (p.dbm=1 && hd)) (* write allowed *)
+  | _ -> false
 
 module type S =  sig
 
@@ -96,4 +233,6 @@ module type S =  sig
   val compare : v -> v -> int
   val eq : v -> v -> bool
   val vToName : v -> string
+
+  exception Result of Archs.t * v * string
 end

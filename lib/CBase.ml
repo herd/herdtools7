@@ -35,6 +35,8 @@ let symb_reg_name r =
   | _ -> None
 
 let symb_reg r = sprintf "%%%s" r
+let typeof _ = assert false
+
 type 's t_reg =
   | T of 's Constant.t
   | Reg of reg
@@ -244,9 +246,9 @@ include Pseudo.Make
       let rec parsed_expr_tr =
         let open Constant in
         function
-          | Const(Concrete _) | Const(ConcreteVector (_,_)) as k -> k
-          | Const (Symbolic _|Label _|Tag _) ->
-              Warn.fatal "No constant variable allowed"
+          | Const(Concrete _|ConcreteVector _) as k -> k
+          | Const (Symbolic _|Label _|Tag _|PteVal _ as v) ->
+              Warn.fatal "No constant '%s' allowed" (ParsedConstant.pp_v v)
           | LoadReg _ as l -> l
           | LoadMem (l,mo) ->
               LoadMem (parsed_expr_tr l,mo)

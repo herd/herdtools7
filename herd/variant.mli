@@ -41,6 +41,14 @@ type t =
 (* Branch speculation+ cat computation of dependencies *)
   | Deps
   | Instances (* Compute dependencies on instruction instances *)
+  | Kvm
+  | ETS 
+(* Insert branching event between pte read and accesses *)
+  | PteBranch
+(* Pte-Squared: all accesses through page table, including PT accesses *)
+  | PTE2
+(* Perform experiment *)
+  | Exp
 
 val compare : t -> t -> int
 val tags : string list
@@ -49,3 +57,6 @@ val pp : t -> string
 
 (* switch variant that flips an arch-dependent, default value *)
 val get_default :  Archs.t -> t -> bool
+
+(* set precision *)
+val set_precision : bool ref -> t -> bool

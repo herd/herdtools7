@@ -32,6 +32,8 @@ module Make
 let do_self = C.variant Variant_gen.Self
 let do_tag = C.variant Variant_gen.MemTag
 let do_morello = C.variant Variant_gen.Morello
+let do_kvm = C.variant Variant_gen.KVM
+
 open Code
 open Printf
 
@@ -53,10 +55,17 @@ module Mixed =
 (* AArch64 has more atoms that others *)
 let bellatom = false
 type atom_rw =  PP | PL | AP | AL
-type atom_acc_opt = Capability
-type atom_acc = Plain of atom_acc_opt option | Acq of atom_acc_opt option
-  | AcqPc of atom_acc_opt option | Rel of atom_acc_opt option
-  | Atomic of atom_rw | Tag | CapaTag | CapaSeal
+type capa = Capability
+type capa_opt = capa option
+type w_pte = AF | DB | OA | DBM | VALID
+type atom_pte =
+  | Read|ReadAcq|ReadAcqPc
+  | Set of w_pte
+  | SetRel of w_pte
+type atom_acc =
+  | Plain of capa_opt | Acq of capa_opt | AcqPc of capa_opt | Rel of capa_opt
+  | Atomic of atom_rw | Tag | CapaTag | CapaSeal | Pte of atom_pte
+
 type atom = atom_acc * MachMixed.t option
 
 let default_atom = Atomic PP,None
@@ -65,6 +74,8 @@ let applies_atom (a,_) d = match a,d with
 | Acq _,R
 | AcqPc _,R
 | Rel _,W
+| Pte (Read|ReadAcq|ReadAcqPc),R
+| Pte (Set _|SetRel _),W
 | (Plain _|Atomic _|Tag|CapaTag|CapaSeal),(R|W)
   -> true
 | _ -> false
@@ -83,6 +94,20 @@ let applies_atom (a,_) d = match a,d with
      | None -> ""
      | Some Capability -> "c"
 
+   let pp_w_pte = function
+     | AF -> "AF"
+     | DB -> "DB"
+     | DBM -> "DBM"
+     | VALID -> "VA"
+     | OA -> "OA"
+
+   let pp_atom_pte = function
+     | Read -> ""
+     | ReadAcq -> "A"
+     | ReadAcqPc -> "Q"
+     | Set set -> pp_w_pte set
+     | SetRel set -> pp_w_pte set ^"L"
+
    let pp_atom_acc = function
      | Atomic rw -> sprintf "X%s" (pp_atom_rw rw)
      | Rel o -> sprintf "L%s" (pp_opt o)
@@ -92,6 +117,7 @@ let applies_atom (a,_) d = match a,d with
      | Tag -> "T"
      | CapaTag -> "Ct"
      | CapaSeal -> "Cs"
+     | Pte p -> sprintf "Pte%s" (pp_atom_pte p)
 
    let pp_atom (a,m) = match a with
    | Plain o ->
@@ -119,6 +145,13 @@ let applies_atom (a,_) d = match a,d with
        (fun m r -> f (Plain None,Some m) r)
        r
 
+   let fold_pte f r =
+     if do_kvm then
+       let g field r = f (Set field) (f (SetRel field) r) in
+       let r = g AF (g DB (g DBM (g VALID (g OA r)))) in
+       f Read (f ReadAcq (f ReadAcqPc r))
+     else r
+
    let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
 
    let fold_tag =
@@ -129,41 +162,88 @@ let applies_atom (a,_) d = match a,d with
      if do_morello then fun f r -> f CapaSeal (f CapaTag r)
      else fun _f r -> r
 
-   let fold_acc f r =
-     fold_morello f (
-     fold_tag f (
-     f (Plain (Some Capability)) (
-     f (Acq (Some Capability)) (
-     f (Acq None) (
-     f (AcqPc (Some Capability)) (
-     f (AcqPc None) (
-     f (Rel (Some Capability)) (
-     f (Rel None) (
-     fold_atom_rw (fun rw -> f (Atomic rw)) r)
-     ))))))))
+   let fold_acc_opt o f r =
+     let r = f (Acq o) r in
+     let r = f (AcqPc o) r in
+     let r = f (Rel o) r in
+     r
+     
+   let fold_acc mixed f r =
+     let r = if mixed then r else fold_pte (fun p r -> f (Pte p) r) r in
+     let r = fold_morello f r in
+     let r = fold_tag f r in
+     let r = fold_acc_opt None f r in
+     let r =
+       if do_morello then
+         let r = f (Plain (Some Capability)) r in
+         let r = fold_acc_opt (Some Capability) f r in
+         r
+       else r in
+     let r = fold_atom_rw (fun rw -> f (Atomic rw)) r in
+     r
 
-   let fold_non_mixed f r = fold_acc (fun acc r -> f (acc,None) r) r
+   let fold_non_mixed f r = fold_acc false (fun acc r -> f (acc,None) r) r
 
    let fold_atom f r =
-     fold_acc
-       (fun acc r ->
-         Mixed.fold_mixed
-           (fun m r -> f (acc,Some m) r)
-           (f (acc,None) r))
+     let r = fold_non_mixed f r in
+     fold_acc true
+       (fun acc r -> Mixed.fold_mixed (fun m r -> f (acc,Some m) r) r)
        (fold_mixed f r)
 
    let worth_final (a,_) = match a with
      | Atomic _ -> true
-     | Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal -> false
+     | Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal|Pte _ -> false
+
 
 
    let varatom_dir _d f r = f None r
 
    let merge_atoms a1 a2 = match a1,a2 with
-   | ((Plain None,sz),(a,None))
-   | ((a,None),(Plain None,sz)) -> Some (a,sz)
-   | ((a1,None),(a2,sz))
-   | ((a1,sz),(a2,None)) when a1=a2 -> Some (a1,sz)
+(* Eat Plain *)
+   | ((Plain None,None),a)
+   | (a,(Plain None,None)) ->
+       Some a
+(* Add size to ordinary annotations *)
+   | ((Plain None,(Some _ as sz)),
+      ((Acq None|AcqPc None|Rel None|Atomic _ as a),None))
+   | (((Acq None|AcqPc None|Rel None|Atomic _ as a),None),
+      (Plain None,(Some _ as sz)))
+     -> Some (a,sz)
+(* No sizes for Pte and tags *)
+   | (((Pte _|Tag),_),(_,Some _))
+   | ((_,Some _),((Pte _|Tag),_)) ->
+       None
+(* Merge Pte *)
+   | ((Pte (Read|ReadAcq),None),((Pte ReadAcq|Acq None),None))
+   | (((Acq None|Pte ReadAcq),None),(Pte (Read|ReadAcq),None))
+       -> Some (Pte ReadAcq,None)
+   | ((Pte (Read|ReadAcqPc),None),((Pte ReadAcqPc|AcqPc None),None))
+   | (((Pte ReadAcqPc|AcqPc None),None),(Pte (Read|ReadAcqPc),None))
+       -> Some (Pte ReadAcqPc,None)
+   | ((Pte (Set set|SetRel set),None),(Rel None,None))
+   | ((Rel None,None),(Pte (Set set|SetRel set),None))
+       -> Some (Pte (SetRel set),None)
+   | ((Pte (Set set1),None),(Pte (SetRel set2),None))
+   | ((Pte (SetRel set1),None),(Pte (Set set2),None))
+       when set1=set2 ->
+         Some (Pte (SetRel set1),None)
+(* Add size when (ordinary) annotation equal *)
+   | ((Acq None as a,None),(Acq None,(Some _ as sz)))
+   | ((Acq None as a,(Some _ as sz)),(Acq None,None))
+   | ((AcqPc None as a,None),(AcqPc None,(Some _ as sz)))
+   | ((AcqPc None as a,(Some _ as sz)),(AcqPc None,None))
+   | ((Rel None as a,None),(Rel None,(Some _ as sz)))
+   | ((Rel None as a,(Some _ as sz)),(Rel None,None))
+   | ((Atomic PP as a,None),(Atomic PP,(Some _ as sz)))
+   | ((Atomic PP as a,(Some _ as sz)),(Atomic PP,None))
+   | ((Atomic AP as a,None),(Atomic AP,(Some _ as sz)))
+   | ((Atomic AP as a,(Some _ as sz)),(Atomic AP,None))
+   | ((Atomic PL as a,None),(Atomic PL,(Some _ as sz)))
+   | ((Atomic PL as a,(Some _ as sz)),(Atomic PL,None))
+   | ((Atomic AL as a,None),(Atomic AL,(Some _ as sz)))
+   | ((Atomic AL as a,(Some _ as sz)),(Atomic AL,None))
+     -> Some (a,sz)
+(* Remove plain when size equal *)
    | ((Plain None,sz1),(a,sz2))
    | ((a,sz1),(Plain None,sz2)) when sz1=sz2 -> Some (a,sz1)
    | _,_ ->
@@ -171,13 +251,13 @@ let applies_atom (a,_) d = match a,d with
 
    let atom_to_bank = function
    | Tag,None -> Code.Tag
-   | Tag,Some _ -> assert false
+   | Pte _,None -> Code.Pte
    | CapaTag,None -> Code.CapaTag
-   | CapaTag,Some _ -> assert false
    | CapaSeal,None -> Code.CapaSeal
-   | CapaSeal,Some _ -> assert false
+   | (Tag|CapaTag|CapaSeal|Pte _),Some _ -> assert false
    | (Plain _|Acq _|AcqPc _|Rel _|Atomic (PP|PL|AP|AL)),_
       -> Code.Ord
+
 
 (**************)
 (* Mixed size *)
@@ -194,15 +274,40 @@ let applies_atom (a,_) d = match a,d with
        end)
 
 let overwrite_value v ao w = match ao with
-| None| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal),None)
+| None
+| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal|Pte _),None)
   -> w (* total overwrite *)
-| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal),Some (sz,o)) ->
+| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _),Some (sz,o)) ->
     ValsMixed.overwrite_value v sz o w
+| Some ((Tag|CapaTag|CapaSeal|Pte _),Some _) ->
+    assert false
 
  let extract_value v ao = match ao with
-  | None| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal),None) -> v
+  | None
+  | Some
+      ((Atomic _|Acq _|AcqPc _|Rel _|Plain _
+        |Tag|CapaTag|CapaSeal|Pte _),None) -> v
   | Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal),Some (sz,o)) ->
       ValsMixed.extract_value v sz o
+  | Some (Pte _,Some _) -> assert false
+
+  let do_setpteval a f p =
+    let open PTEVal in
+    let f = match f with
+    | Set f|SetRel f -> f
+    | Read|ReadAcq|ReadAcqPc ->
+        Warn.user_error "Atom %s is not a pteval write" (pp_atom a) in
+    match f with
+    | AF -> fun _loc -> { p with af = 1-p.af; }
+    | DB -> fun _loc -> { p with db = 1-p.db; }
+    | DBM -> fun _loc -> { p with dbm = 1-p.dbm; }
+    | VALID -> fun _loc -> { p with valid = 1-p.valid; }
+    | OA -> fun loc -> PTEVal.set_oa p (loc ())
+
+   let set_pteval a p =
+     match a with
+     | Pte f,None -> do_setpteval a f p
+     | _ -> Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
 
 (* End of atoms *)
 
@@ -212,45 +317,79 @@ let overwrite_value v ao w = match ao with
 type strength = Strong | Weak
 let fold_strength f r = f Strong (f Weak r)
 
-type fence = | Barrier of barrier | CacheSync of strength * bool
+type fence = | Barrier of barrier | CacheSync of strength * bool |
+               Shootdown of mBReqDomain * TLBI.op
 
 let is_isync = function
   | Barrier ISB -> true
   | _ -> false
 
 let compare_fence b1 b2 = match b1,b2 with
-| Barrier _,CacheSync _ -> -1
+| (Barrier _,(CacheSync _|Shootdown _))
+| (CacheSync _,Shootdown _)
+  -> -1
+| Barrier b1,Barrier b2 -> barrier_compare b1 b2
 | CacheSync (s1,b1) ,CacheSync (s2,b2)->
     begin match compare b1 b2 with
    | 0 -> compare s1 s2
    | r -> r
     end
-| Barrier b1,Barrier b2 -> barrier_compare b1 b2
-| CacheSync _,Barrier _ -> +1
+| Shootdown (dom1,op1),Shootdown (dom2,op2) ->
+    begin match compare dom1 dom2 with
+   | 0 -> compare op1 op2
+   | r -> r
+    end
+| (Shootdown _,(Barrier _|CacheSync _))
+| (CacheSync _,Barrier _)
+ -> +1
 
 
 let default = Barrier (DMB (SY,FULL))
 let strong = default
+
+let add_dot f x = match f x with
+| "" -> ""
+| s -> "." ^ s
 
 let pp_fence f = match f with
 | Barrier f -> do_pp_barrier "." f
 | CacheSync (s,isb) -> sprintf "CacheSync%s%s"
       (match s with Strong -> "Strong" | Weak -> "")
       (if isb then "Isb" else "")
+| Shootdown (d,op) ->
+    sprintf "TLBI%s%s"
+      (add_dot TLBI.short_pp_op op) (add_dot pp_domain d)
 
 let fold_cumul_fences f k =
    do_fold_dmb_dsb C.moreedges (fun b k -> f (Barrier b) k) k
 
-let fold_all_fences f k =
-  fold_barrier  C.moreedges (fun b k -> f (Barrier b) k)
-    (if do_self then
-      Misc.fold_bool
-        (fun b k ->
-          fold_strength
-            (fun s k -> f (CacheSync (s,b)) k)
-            k)
+let fold_shootdown =
+  if do_kvm then
+    let fold_domain =
+      if C.moreedges then fold_domain
+      else fun f k -> f ISH k
+    and fold_op =
+      if C.moreedges then TLBI.full_fold_op
+      else TLBI.fold_op in
+    fun f k ->
+      fold_op
+        (fun op k ->
+          fold_domain (fun d k -> f (Shootdown(d,op)) k) k)
         k
-    else k)
+  else fun _f k -> k
+
+let fold_cachesync =
+  if do_self then
+    fun f ->
+      Misc.fold_bool
+        (fun b k -> fold_strength (fun s k -> f (CacheSync (s,b)) k) k)
+  else fun _ k -> k
+
+let fold_all_fences f k =
+  let k = fold_shootdown f k in
+  let k = fold_cachesync f k in
+  fold_barrier C.moreedges (fun b k -> f (Barrier b) k) k
+
 
 let fold_some_fences f k =
   let f = fun b k -> f (Barrier b) k in
@@ -268,6 +407,7 @@ let orders f d1 d2 = match f,d1,d2 with
 | Barrier (DSB (_,LD)|DMB (_,LD)),Code.R,(W|Code.R) -> true
 | Barrier (DSB (_,LD)|DMB (_,LD)),_,_ -> false
 | CacheSync _,_,_ -> true
+| Shootdown _,_,_ -> false
 
 let var_fence f r = f default r
 

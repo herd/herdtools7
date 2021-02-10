@@ -60,7 +60,7 @@ module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
 
   let add_init_check chk p o init =
     match chk,o with
-    | true,Some r -> (A.Reg (p,r),Some "-1")::init
+    | true,Some r -> (A.Reg (p,r),Some (A.S "-1"))::init
     | _,_ -> init
 
   type test =
@@ -206,13 +206,15 @@ let get_fence n =
             (fun is ->
               pref
                 (List.fold_right
-                   (fun f is -> Comp.emit_fence p init n f@is)
+                   (fun f is -> let _,cs,_ = Comp.emit_fence st p init n f 
+                   in cs@is)
                    fs is))
             chk loc_writes st p ro_prev init ns
       | E.Insert f ->
           let init,is,finals,st =
             compile_proc pref chk loc_writes st p ro_prev init ns in
-          init,Comp.emit_fence p init n f@is,finals,st
+          let init,cs,st = Comp.emit_fence st p init n f in 
+          init,cs@is,finals,st
       | _ ->
           let o,init,i,st = emit_access ro_prev st p init n in
           let nchk,add_check =
@@ -227,16 +229,20 @@ let get_fence n =
               init ns in
           let init,cf,st =
             match get_fence n with
-            | Some fe -> Comp.full_emit_fence st p init n fe
+            | Some fe -> Comp.emit_fence st p init n fe
             | None -> init,[],st in
           add_init_check chk p o init,
           i@
           mk_c (cf@is),
           (match n.C.evt.C.loc with
           | Data loc ->
-              if StringSet.mem loc loc_writes  && not (U.do_poll n) then
+              let call_add =
+                StringSet.mem loc loc_writes  && not (U.do_poll n) in
+              if call_add then
                 F.add_final p o n finals
-              else finals
+              else begin
+                finals
+              end
           | Code _ ->
               begin match o with
               | None   -> finals (* Code write *)
@@ -269,7 +275,7 @@ let rec fenced_observer st p i x = function
   | [v] -> last_observation st p i x v
   | v::vs ->
       let r,i,c,st = Comp.emit_obs Ord st p i x in
-      let f = Comp.emit_fence p i C.nil Comp.stronger_fence in
+      let i,f,st = Comp.emit_fence st p i C.nil Comp.stronger_fence in
       let i,cs,fs = fenced_observer st p i x vs in
       i,c@f@cs,F.add_final_v p r v fs
 
@@ -476,15 +482,35 @@ let max_set = IntSet.max_elt
     | Straight ->
         let i,c,f,st = do_add_load st p i f x v in
         i,code@c,f,st
-    | Config.Fenced ->
+    |  Config.Fenced ->
         let i,c,f,st = do_add_load st p i f x v in
-        let c = Comp.emit_fence p i C.nil Comp.stronger_fence@c in
+        let i,c',st = Comp.emit_fence st p i C.nil Comp.stronger_fence in
+        let c = c'@c in
         i,code@c,f,st
     | Loop ->
         let i,c,f,st = do_add_loop st p i f x prev_v v in
         i,code@c,f,st
 
-  let add_co_local_check lsts ns st p i code f =
+  let do_add_local_check_pte avoid st p i code f n x =
+    if StringSet.mem (Misc.add_pte x) avoid then i,code,f,st
+    else match U.find_next_pte_write n with
+    | None -> assert false (* As U.check_here n returned true *)
+    | Some nxt ->
+        let v = nxt.C.evt.C.pte in
+        let r,i,c,st = Comp.emit_obs Pte st p i x in
+        i,code@c,F.add_final_pte p r v f,st
+
+  let add_co_local_check_pte avoid ns st p i code f =
+    let lst = Misc.last ns in
+    if U.check_here lst then
+      match lst.C.evt.C.loc,lst.C.evt.C.bank with
+      | Data x,Pte ->
+          do_add_local_check_pte avoid st p i code f lst x
+      | _ -> i,code,f,st
+    else
+      i,code,f,st
+
+  let add_co_local_check avoid_ptes lsts ns st p i code f =
     let lst = Misc.last ns in
     if U.check_here lst then
       match lst.C.evt.C.loc,lst.C.evt.C.bank with
@@ -511,7 +537,9 @@ let max_set = IntSet.max_elt
           let v = lst.C.next.C.evt.C.v in
           let r,i,c,st = Comp.emit_obs CapaSeal st p i x in
           i,code@c,F.add_final_loc p r (Code.add_capability x v) f,st
-      | Code _,_ -> i,code,f,st
+      | Data x,Pte ->
+          do_add_local_check_pte avoid_ptes st p i code f lst x
+      | Code _,_ -> i,code,f,st            
     else i,code,f,st
 
 (******************************************)
@@ -537,6 +565,7 @@ let max_set = IntSet.max_elt
 
   let do_memtag = O.variant Variant_gen.MemTag
   let do_morello = O.variant Variant_gen.Morello
+  let do_kvm = O.variant Variant_gen.KVM
 
   let compile_cycle ok n =
     let open Config in
@@ -546,6 +575,8 @@ let max_set = IntSet.max_elt
     let cos0 = C.coherence n in
     let lsts = U.last_map cos0 in
     let cos = U.compute_cos cos0 in
+    let last_ptes = if do_kvm then C.last_ptes n else [] in
+    let no_local_ptes = StringSet.of_list (List.map fst last_ptes) in
     if O.verbose > 1 then U.pp_coherence cos0 ;
     let loc_writes = U.comp_loc_writes n in
 
@@ -564,8 +595,9 @@ let max_set = IntSet.max_elt
             | Unicond -> i,c,f,st
             | Cycle|Observe ->
                 match O.do_observers with
-                | Local -> add_co_local_check lsts n st p i c f
-                | Avoid|Accept|Enforce|Three|Four|Infinity -> i,c,f,st in
+                | Local -> add_co_local_check no_local_ptes lsts n st p i c f
+                | Avoid|Accept|Enforce|Three|Four|Infinity ->
+                    add_co_local_check_pte no_local_ptes n st p i c f in
           let i,c,st = Comp.postlude st p i c in
           let foks = gather_final_oks p (A.current_label st) in
           let i,cs,(ms,fs),ios = do_rec (p+1) i ns in
@@ -593,11 +625,11 @@ let max_set = IntSet.max_elt
               if
                 List.exists
                   (function
-                    | (_,Some loc) -> (loc:string) = Code.ok_str
-                    | (_,None) -> false)
+                    | (_,Some (A.S loc)) -> (loc:string) = Code.ok_str
+                    | (_,(Some (A.P _)|None)) -> false)
                   i
               then
-                (A.Loc Code.ok_str,Some "1")::i,obsc@cs,
+                (A.Loc Code.ok_str,Some (A.S "1"))::i,obsc@cs,
                 (m,F.cons_int_set
                    (A.Loc Code.ok_str,IntSet.singleton 1) f@fs),ios
               else
@@ -605,8 +637,12 @@ let max_set = IntSet.max_elt
             else Warn.fatal "Last minute check"
           else  Warn.fatal "Too many procs" in
         let env =
+          let ptes = A.LocSet.of_list (F.extract_ptes f) in
           List.fold_left
-            (fun m (loc,_) -> A.LocMap.add loc O.typ m)
+            (fun m (loc,_) ->
+              let t =
+                if A.LocSet.mem loc ptes then TypBase.pteval_t else O.typ in
+              A.LocMap.add loc t m)
             A.LocMap.empty f in
         let globals = C.get_globals n in
         let typ = if do_morello
@@ -651,8 +687,23 @@ let max_set = IntSet.max_elt
               StringSet.of_list ts in
             let flts = List.mapi (fun i ns -> i,tagchange ns) splitted in
             List.filter (fun (_,xs) -> not (StringSet.is_empty xs)) flts
+          else if do_kvm then
+            let get_locs ns =
+              let xs =
+                List.fold_left
+                  (fun k n ->
+                    let e = n.C.evt in
+                    match e.C.loc,e.C.bank with
+                    | Data x,Ord -> x::k
+                    | _ -> k)
+                  [] ns in
+              StringSet.of_list xs in
+            let flts = List.mapi (fun i ns -> i,get_locs ns) splitted in
+            List.filter (fun (_,xs) -> not (StringSet.is_empty xs)) flts
           else [] in
         let f =
+          List.fold_left (fun f (x,p) -> F.cons_pteval (A.Loc x) p f) f last_ptes in
+        let fc =
           match O.cond with
           | Unicond ->
               let evts =
@@ -662,7 +713,8 @@ let max_set = IntSet.max_elt
               F.run evts m
           | Cycle -> F.check f
           | Observe -> F.observe f in
-        (i,c,f flts,env),
+        let i = if do_kvm then A.complete_init i else i in
+        (i,c,fc flts,env),
         (U.compile_prefetch_ios (List.length obsc) ios,
          U.compile_coms splitted)
 
@@ -707,7 +759,7 @@ let dump_init chan inits env =
         if p <> q then fprintf chan "\n" else fprintf chan " " ;
         fprintf chan "%s%s;" (A.pp_location left)
           (match loc with
-          | Some loc -> sprintf "=%s" loc
+          | Some v -> sprintf "=%s" (A.pp_initval v)
           | None -> "") ;
         p_rec p rem in
   p_rec (-1) inits
@@ -742,9 +794,11 @@ let fmt_cols =
   let dump_test_channel chan t =
     fprintf chan "%s %s\n" (Archs.pp A.arch) t.name ;
     if t.com <>  "" then fprintf chan "\"%s\"\n" t.com ;
+    let info =
+      if do_kvm then ("Variant","precise")::t.info else t.info in
     List.iter
       (fun (k,v) -> fprintf chan "%s=%s\n" k v)
-      t.info ;
+      info ;
     Hint.dump O.hout t.name t.info ;
     dump_init chan t.init t.env ;
     dump_code chan t.prog ;
@@ -772,15 +826,15 @@ let fmt_cols =
 let tr_labs m env =
   List.map
     (fun bd -> match bd with
-      | (loc,Some v) ->
+      | (loc,Some (A.S v)) ->
           begin try
             let v =
               let p = StringMap.find v m in
               sprintf "%s:%s" (pp_proc p) v in
-            loc,Some v
+            loc,Some (A.S v)
           with Not_found -> bd
           end
-      | (_,None) as bd -> bd)
+      | (_,(Some (A.P _)|None)) as bd -> bd)
     env
 
 let do_self =  O.variant Variant_gen.Self

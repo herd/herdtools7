@@ -24,13 +24,13 @@ end =
     | A.Location_reg (i,r) -> A.Location_reg (p.(i),r)
     | A.Location_global _ -> loc
 
+    let perm_rloc p = ConstrGen.map_rloc (perm_location p)
+                        
     let perm_state_atom p (loc,v) = perm_location p loc,v
 
     let perm_state p = List.map (perm_state_atom p)
 
-    let perm_rloc p = ConstrGen.map_rloc (perm_location p)
-
-    let perm_locations p = List.map (fun (rloc,v) -> perm_rloc p rloc,v)
+    let perm_locations p = LocationsItem.map_locs (perm_location p)
 
     let perm_atom p a = match a with
     | LV (loc,v) -> LV (perm_rloc p loc,v)

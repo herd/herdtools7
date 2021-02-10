@@ -70,6 +70,10 @@ module type S = sig
   include Location.S
   with type loc_reg := I.arch_reg and type loc_global := v
 
+  val symbol : location -> Constant.symbol option
+  val symbolic_data : location -> Constant.symbolic_data option
+  val of_symbolic_data : Constant.symbolic_data -> location
+    
 (* Extra for locations *)
   val maybev_to_location : MiscParser.maybev -> location
   val do_dump_location : (string -> string) -> location -> string
@@ -78,6 +82,8 @@ module type S = sig
   val undetermined_vars_in_loc : location -> v option
   val simplify_vars_in_loc : I.V.solution ->  location -> location
   val map_loc : (v -> v) -> location -> location
+
+  val same_base_virt : location -> location -> bool
 
 (**********)
 (* Faults *)
@@ -97,15 +103,12 @@ module type S = sig
       state -> string (* delim, as in String.concat  *)
         -> (location -> v -> string) -> string
 
-  val build_state : (location * (MiscParser.run_type * v)) list -> state
+  val build_state : (location * (TestType.t * v)) list -> state
   val build_concrete_state : (location * int) list -> state
 
-(* Fails with user error when t is not an array type or in case of
-   out-of-bound access *)
-  val scale_array_reference : MiscParser.run_type -> location -> int -> location
-(* This symbol is legal in non-mixed-size mode.
-   That is, internal offset is null
-    or symbol is an  aligned array cell access. *)
+(* Fails with user error when t is not an array type
+   or in case of out-of-bound access *)
+  val scale_array_reference : TestType.t -> location -> int -> location
 
   val state_is_empty : state -> bool
   val state_add : state -> location -> v -> state
@@ -127,24 +130,26 @@ module type S = sig
 
   type size_env
   val size_env_empty : size_env
-  val build_size_env : (location * (MiscParser.run_type * 'v)) list -> size_env
+  val build_size_env : (location * (TestType.t * 'v)) list -> size_env
   val look_size : size_env -> string -> MachSize.sz
   val look_size_location : size_env -> location -> MachSize.sz
 
   type type_env
   val type_env_empty : type_env
-  val build_type_env : (location * (MiscParser.run_type * 'v)) list -> type_env
-  val look_type : type_env -> location -> MiscParser.run_type
+  val build_type_env : (location * (TestType.t * 'v)) list -> type_env
+  val look_type : type_env -> location -> TestType.t
   val loc_of_rloc : type_env -> rlocation -> location
 
-  (* Final states and sets of  *)
+  (* Final state, our outcome *)
   type rstate
   val rstate_to_list : rstate -> (rlocation * v) list
   val rstate_filter : (rlocation -> bool) -> rstate -> rstate
 
   type final_state = rstate * FaultSet.t
-  val do_dump_final_state : (string -> string) -> final_state -> string
+  val do_dump_final_state :
+    FaultAtomSet.t -> (string -> string) -> final_state -> string
 
+  (* Set of final states *)  
   module StateSet : MySet.S with type elt = final_state
 
 (*****************************************)
@@ -203,6 +208,7 @@ module type S = sig
 end
 
 module type Config = sig
+  val verbose : int
   val texmacros : bool
   val hexa : bool
   val brackets : bool
@@ -266,13 +272,24 @@ module Make(C:Config) (I:I) : S with module I = I
           type arch_global = v
           let pp_global = pp_global
           let global_compare = I.V.compare
-          let same_base g1 g2 =
-            let b1 = I.V.get_sym g1
-            and b2 = I.V.get_sym g2 in
-            Misc.string_eq b1 b2
         end
 
       include Location.Make (LocArg)
+
+      let symbol loc =
+        let open Constant in
+        match global loc with
+        | Some (I.V.Val (Symbolic sym)) -> Some sym
+        | _ -> None
+
+      let symbolic_data loc =
+        let open Constant in
+        match global loc with
+        | Some (I.V.Val (Symbolic (Virtual sym))) -> Some sym
+        | _ -> None
+
+      let of_symbolic_data s =
+        Location_global (I.V.Val (Constant.of_symbolic_data s))
 
       let maybev_to_location v = Location_global (I.V.maybevToV v)
 
@@ -311,10 +328,44 @@ module Make(C:Config) (I:I) : S with module I = I
       | Location_reg _ -> loc
       | Location_global a -> Location_global (fv a)
 
+
 (*********)
 (* Fault *)
 (*********)
-      include Fault.Make(LocArg)
+      module FaultArg = struct
+        include LocArg
+        open Constant
+
+        let same_sym_fault sym1 sym2 = match sym1,sym2 with
+          |(Virtual {name=s1;_},Virtual {name=s2;_})
+          | (System (PTE,s1),System (PTE,s2))
+           -> Misc.string_eq s1 s2
+          | (Virtual _,System (PTE,_))
+          | (System (PTE,_),Virtual _)
+            -> false
+          | _,_ ->
+              Warn.fatal
+                "Illegal id (%s or %s) in fault"
+                (pp_symbol sym1) (pp_symbol sym2)
+
+        let same_id_fault v1 v2 = match v1,v2 with
+          | I.V.Val (Symbolic sym1),I.V.Val (Symbolic sym2)
+            -> same_sym_fault sym1 sym2
+          | _,_
+            ->
+              Warn.fatal
+                "Illegal value (%s or %s) in fault"
+                (I.V.pp_v v1) (I.V.pp_v v2)
+      end
+
+      include Fault.Make(FaultArg)
+
+      let same_base_virt loc1 loc2 =
+        let open Constant in
+        match loc1,loc2 with
+        | Location_global v1,Location_global v2
+          -> FaultArg.same_id_fault v1 v2
+        |  _,_ -> false
 
 (************************)
 (* Mixed size utilities *)
@@ -365,13 +416,13 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let dump_state st = do_dump_state Misc.identity st
 
-      let size_of_t = MiscParser.size_of I.V.Cst.Scalar.machsize
+      let size_of_t = TestType.size_of I.V.Cst.Scalar.machsize
 
       let build_state bds =
         List.fold_left
           (fun st (loc,(t,v)) ->
             match t with
-            | MiscParser.TyArray (array_prim,total_size) -> begin
+            | TestType.TyArray (array_prim,total_size) -> begin
               (* we expand v[3] = {a,b,c} into v+0 = a; v+1 = b; v+2 = c*)
               (* where 1 is the sizeof the underlying primitive type *)
               (* e.g uint64_t -> 8 bytes, so the above is v, v+8, v+16 *)
@@ -386,18 +437,15 @@ module Make(C:Config) (I:I) : S with module I = I
               let nbytes = MachSize.nbytes prim_sz in
               let vs = List.mapi
                 (fun i v ->
-                  let open Constant in
                   let s = I.V.pp false locval in
                   let tag = None in
                   let cap = 0 in
                   let sym_data =
-                    { name=s ;
+                    { Constant.name=s ;
                       tag=tag ;
                       cap=cap ;
                       offset=i*nbytes} in
-                  Location_global
-                    (I.V.Val (Symbolic sym_data)),
-                  (MiscParser.Ty array_prim,I.V.cstToV v))
+                  of_symbolic_data sym_data,(TestType.Ty array_prim,I.V.cstToV v))
                 vs in
               List.fold_left
                 (fun st (loc,(_,v))-> state_add_if_undefined st loc v)
@@ -422,7 +470,7 @@ module Make(C:Config) (I:I) : S with module I = I
       (* in case of out of bounds access.                       *)
       let scale_array_reference t loc os =
         let sz_elt,n_elts =
-          let open MiscParser in
+          let open TestType in
           match t with
           | TyArray (t,sz) -> size_of_t t,sz
           | TyDefPointer -> MachSize.Word,1
@@ -430,25 +478,33 @@ module Make(C:Config) (I:I) : S with module I = I
           | _ ->
               Warn.user_error
                 "Location %s of type %s is used as an array"
-                (pp_location loc) (MiscParser.pp_run_type t) in
+                (pp_location loc) (TestType.pp t) in
         if os < 0 || os >= n_elts then
           Warn.user_error
             "Out of bounds access on array %s" (pp_location loc) ;
         if os = 0 then loc
         else
-          match loc with
-          | Location_global (I.V.Val (Constant.Symbolic s)) ->
+          match symbolic_data loc with
+          | Some s ->
               let s =
                 { s with Constant.offset = MachSize.nbytes sz_elt * os} in
-              Location_global (I.V.Val (Constant.Symbolic s))
+              of_symbolic_data s
           | _ -> (* Excluded by parsing *)
-              Warn.fatal "Location %s is ot global" (pp_location loc)
+              Warn.fatal "Location %s is not global" (pp_location loc)
 
 (* To get protection against wandering undetermined locations,
    all loads from state are by this function *)
       exception LocUndetermined
 
-      let get_in_state loc st = State.safe_find I.V.zero loc st
+      let get_in_state loc st =
+        try State.find loc st
+        with Not_found ->
+          let open Constant in
+          match loc with
+          | Location_global (I.V.Val (Symbolic (System (PTE,s)))) ->
+              I.V.Val (PteVal (PTEVal.default s))
+          | _ -> I.V.zero
+
       let get_of_val st a = State.safe_find I.V.zero (Location_global a) st
 
       let look_address_in_state st loc =
@@ -463,50 +519,44 @@ module Make(C:Config) (I:I) : S with module I = I
 
       type size_env = MachSize.sz StringMap.t
 
+      let size_env_empty = StringMap.empty
+
       let look_size env s = StringMap.safe_find MachSize.Word s env
 
       let look_size_location env loc =
-        let open Constant in
-        match global loc with
-        | Some (I.V.Val (Symbolic {name=s;offset=0;_})) -> look_size env s
+        match symbolic_data loc with
+        | Some {Constant.name=s; offset=0;_} -> look_size env s
         | _ -> assert false
 
-      let size_env_empty = StringMap.empty
-
-      let misc_to_size ty =
-        let maximal = I.V.Cst.Scalar.machsize in
+      let misc_to_size ty  =
+        let open TestType in
         match ty with
-        | MiscParser.TyDef ->
-            MiscParser.size_of maximal "int"
-        | MiscParser.Ty t|MiscParser.Atomic t
-        | MiscParser.TyArray (t,_)
-          ->
-            MiscParser.size_of maximal t
-        | MiscParser.Pointer _| MiscParser.TyDefPointer ->
-            maximal
+        | TyDef -> size_of_t "int"
+        | Ty t|Atomic t|TyArray (t,_) -> size_of_t t
+        | Pointer _ | TyDefPointer ->
+            I.V.Cst.Scalar.machsize
 
       let build_size_env bds =
         List.fold_left
           (fun m (loc,(t,_)) ->
             match loc with
             | Location_global a ->
-                StringMap.add (I.V.as_symbol a) (misc_to_size t) m
+                StringMap.add
+                  (I.V.as_symbol a) (misc_to_size t) m
             | _ -> m)
           size_env_empty bds
 
       (* Types *)
+      type type_env = TestType.t LocMap.t
 
-      type type_env = MiscParser.run_type LocMap.t
-
-      let type_env_empty = LocMap.empty
+      let type_env_empty = LocMap.empty          
 
       let build_type_env bds =
         List.fold_left
           (fun m (loc,(t,_)) -> LocMap.add loc t m)
           type_env_empty bds
 
-      let look_type m loc =
-        LocMap.safe_find MiscParser.TyDef loc m
+      let look_type m loc = LocMap.safe_find TestType.TyDef loc m
 
       let loc_of_rloc tenv =
         let open ConstrGen in
@@ -541,11 +591,25 @@ module Make(C:Config) (I:I) : S with module I = I
             ConstrGen.dump_rloc (do_dump_location tr) l ^
               "=" ^ I.V.pp C.hexa v ^";")
 
-      let do_dump_final_state tr (st,flts) =
+      let do_dump_final_state fobs tr (st,flts) =
         let pp_st = do_dump_rstate tr st in
-        if FaultSet.is_empty flts then pp_st
+        if FaultSet.is_empty flts && FaultAtomSet.is_empty fobs then pp_st
         else
-          pp_st ^ " " ^ FaultSet.pp_str " " (fun f -> pp_fault f ^ ";") flts
+          let noflts =
+            FaultAtomSet.fold
+              (fun ((p,lab),loc as fa) k ->
+                if
+                  FaultSet.exists (fun f -> check_one_fatom f fa) flts
+                then k
+                else
+                  let tr_lab = match lab with
+                    | None -> Label.Set.empty
+                    | Some lab -> Label.Set.singleton lab in
+                  (" ~"^pp_fault (((p,tr_lab),loc,None))^";")::k)
+              fobs [] in
+          pp_st ^ " " ^
+          FaultSet.pp_str " " (fun f -> pp_fault f ^ ";") flts ^
+          String.concat "" noflts
 
       module StateSet =
         MySet.Make
@@ -640,8 +704,10 @@ module Make(C:Config) (I:I) : S with module I = I
               raise LocUndetermined
           | None ->
               let open Constant in
-              match global loc with
-              | Some (I.V.Val (Symbolic {name=s;offset=0;_}) as a)   ->
+              match loc with
+              | Location_global
+                (I.V.Val (Symbolic (Virtual {name=s; offset=0;_})) as a)
+                ->
                   let sz = look_size senv s in
                   let eas = byte_eas sz a in
                   let vs = List.map (get_of_val st) eas in

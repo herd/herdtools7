@@ -15,10 +15,15 @@
 (****************************************************************************)
 
 module Make
-    (C:sig include Sem.Config val precision : bool end)
+    (TopConf:sig
+      module C : Sem.Config
+      val dirty : DirtyBit.t
+      val procs_user : Proc.t list
+    end)
     (V:Value.S)
     =
   struct
+    module C = TopConf.C
     module ConfLoc = SemExtra.ConfigToArchConfig(C)
     module AArch64 = AArch64Arch_herd.Make(ConfLoc)(V)
 
@@ -29,6 +34,19 @@ module Make
     let memtag = C.variant Variant.MemTag
     let morello = C.variant Variant.Morello
     let is_deps = C.variant Variant.Deps
+    let kvm = C.variant Variant.Kvm
+    let is_branching = kvm && C.variant Variant.PteBranch
+    let pte2 = kvm && C.variant Variant.PTE2
+
+    let check_memtag ins =
+      if not memtag then
+        Warn.user_error "%s without -variant memtag" ins
+
+    let check_morello ii =
+      if not morello then
+        Warn.user_error
+          "morello instruction %s require -variant morello"
+          (AArch64.dump_instruction ii.A.inst)
 
 (* Barrier pretty print *)
     let barriers =
@@ -42,7 +60,10 @@ module Make
 
     let atomic_pair_allowed _ _ = true
 
-(* Semantics proper *)
+    let quad = MachSize.Quad (* This machine natural size *)
+    and aexp = AArch64.Exp    (* Explicit accesses *)
+
+    (* Semantics proper *)
     module Mixed(SZ:ByteSize.S) = struct
 
       module Mixed = M.Mixed(SZ)
@@ -50,6 +71,7 @@ module Make
       let (>>=) = M.(>>=)
       let (>>==) = M.(>>==)
       let (>>*=) = M.(>>*=)
+      let (>>*==) = M.(>>*==)
       let (>>|) = M.(>>|)
       let (>>!) = M.(>>!)
       let (>>::) = M.(>>::)
@@ -62,26 +84,39 @@ module Make
         | V64 -> fun v -> M.op1 (Op.Mask MachSize.Quad) v >>= m
         | V128 -> m
 
+      let is_zero v = M.op Op.Eq v V.zero
+      and is_not_zero v = M.op Op.Ne v V.zero
+
+(* Ordinary access action *)
+      let access_anexp anexp d loc v ac =
+        Act.Access (d,loc,v,AArch64.N,anexp,quad,ac)
+      let access_ord d loc v ac = access_anexp aexp d loc v ac
 
 (* Basic read, from register *)
-      let mk_read sz an loc v = Act.Access (Dir.R, loc, v, an, sz)
-      let mk_read_std = mk_read MachSize.Quad AArch64.N
+      let mk_read sz an anexp loc v =
+        let ac = Act.access_of_location_std loc in
+        Act.Access (Dir.R, loc, v, an, anexp, sz, ac)
+
+      let mk_read_std = mk_read quad AArch64.N
+
       let mk_fault a ii msg =
         M.mk_singleton_es (Act.Fault (ii,A.Location_global a,msg)) ii
 
-      let read_loc v is_data = M.read_loc is_data (mk_read v AArch64.N)
+      let read_loc v is_data = M.read_loc is_data (mk_read v AArch64.N aexp)
 
       let read_reg is_data r ii = match r with
       | AArch64.ZR -> M.unitT V.zero
       | _ ->
-          M.read_loc is_data (mk_read MachSize.Quad AArch64.N) (A.Location_reg (ii.A.proc,r)) ii
+          M.read_loc is_data (mk_read quad AArch64.N aexp) (A.Location_reg (ii.A.proc,r)) ii
 
       let read_reg_morello is_data r ii =
         if not morello then Warn.user_error "capabilities require -variant morello" ;
         match r with
         | AArch64.ZR -> M.unitT V.zero
         | _ ->
-            M.read_loc is_data (mk_read MachSize.S128 AArch64.N) (A.Location_reg (ii.A.proc,r)) ii
+            M.read_loc is_data
+              (mk_read MachSize.S128 AArch64.N aexp)
+              (A.Location_reg (ii.A.proc,r)) ii
 
       let read_reg_sz sz is_data r ii = match sz with
       | MachSize.S128 -> read_reg_morello is_data r ii
@@ -89,27 +124,27 @@ module Make
       | MachSize.Quad|MachSize.Word|MachSize.Short|MachSize.Byte ->
           read_reg is_data r ii >>= fun v -> M.op1 (Op.Mask sz) v
 
-      let read_reg_ord = read_reg_sz MachSize.Quad false
+      let read_reg_ord = read_reg_sz quad false
       let read_reg_ord_sz sz = read_reg_sz sz false
       let read_reg_data sz = read_reg_sz sz true
       let read_reg_tag is_data =  read_reg is_data
 
 (* Basic write, to register  *)
-
-      let mk_write sz an v loc = Act.Access (Dir.W, loc, v, an, sz)
+      let mk_write sz an anexp ac v loc =
+        Act.Access (Dir.W, loc, v, an, anexp, sz, ac)
 
       let write_reg r v ii = match r with
       | AArch64.ZR -> M.unitT ()
       | _ ->
           M.write_loc
-            (mk_write MachSize.Quad AArch64.N v)
+            (mk_write quad AArch64.N aexp Act.A_REG v)
             (A.Location_reg (ii.A.proc,r)) ii
 
       let write_reg_morello r v ii =
         if not morello then
           Warn.user_error "capabilities require -variant morello" ;
         M.write_loc
-          (mk_write MachSize.S128 AArch64.N v)
+          (mk_write MachSize.S128  AArch64.N aexp Act.A_REG v)
           (A.Location_reg (ii.A.proc,r)) ii
 
       let write_reg_sz sz r v ii = match r with
@@ -131,138 +166,387 @@ module Make
 (* Fence *)
       let create_barrier b ii = M.mk_singleton_es (Act.Barrier b) ii
 
+(* Page tables and TLBs *)
+      let inv_loc op loc ii =
+        let oloc = if A.TLBI.inv_all op then None else Some loc in
+        M.mk_singleton_es (Act.Inv (op,oloc)) ii
+
+(* Data cache operations *)
+      let dc_loc op loc ii =
+        let oloc = if AArch64Base.DC.sw op then None else Some loc in
+        M.mk_singleton_es (Act.DC (op,oloc)) ii
+
+
 (******************)
 (* Memory Tagging *)
 (******************)
+
 
 (* Decompose tagged location *)
       let tag_extract a = M.op1 Op.TagExtract a
       let loc_extract a = M.op1 Op.LocExtract a
 
-
 (*  Low level tag access *)
       let do_read_tag a ii =
-        M.read_loc false (fun loc v -> Act.TagAccess (Dir.R,loc,v))
+        M.read_loc false
+          (fun loc v -> access_ord Dir.R loc v Act.A_TAG)
+          (A.Location_global a) ii
+      and do_read_tag_nexp a ii =
+        M.read_loc false
+          (fun loc v -> access_anexp AArch64.nexp_annot Dir.R loc v Act.A_TAG)
           (A.Location_global a) ii
       and do_write_tag a v ii =
         let loc = A.Location_global a in
-        M.mk_singleton_es (Act.TagAccess (Dir.W,loc,v)) ii
+        M.mk_singleton_es
+          (access_ord Dir.W loc v Act.A_TAG)
+          ii
 
       let do_read_morello_tag a ii =
         M.add_atomic_tag_read (M.unitT M.A.V.one) a
-          (fun loc v -> Act.TagAccess (Dir.R,loc,v)) ii >>= fun tagged ->
+          (fun loc v -> Act.tag_access quad Dir.R loc v) ii >>= fun tagged ->
           M.op1 Op.CapaGetTag tagged
       and do_write_morello_tag a v ii =
         M.add_atomic_tag_write (M.unitT ()) a v
-          (fun loc v -> Act.TagAccess (Dir.W,loc,v)) ii
+          (fun loc v -> Act.tag_access quad Dir.W loc v) ii
 
 (* Read tag from memory *)
       let read_tag_mem a ii =
-        M.op1 Op.TagLoc a >>= fun atag ->
-          M.read_loc false (fun loc v -> Act.TagAccess (Dir.R,loc,v))
-            (A.Location_global atag) ii
-
-
-(* For checking tags *)
-      let get_both_tags a ii = tag_extract a >>| read_tag_mem a ii
-      let do_check atag patag = M.op Op.Eq patag atag
+        M.op1 Op.TagLoc a >>= fun atag -> do_read_tag_nexp atag ii
 
 (*******************)
 (* Memory accesses *)
 (*******************)
 
+(* Tag checking, MTE *)
 
-(*
-  Implementation of accesses depends upon the appropriate variants,
-  NB: for now, mixed and memtag do not combine.
- *)
-
-(* Read *)
-      let check_tags a ii m1 m2 =
-        get_both_tags a ii >>= fun (atag,patag) ->
-        do_check atag patag  >>= fun cond ->
-        commit_pred ii >>*= fun () ->
-        M.choiceT cond m1 m2
-
-      let delayed_check_tags ma mavoid ii m1 m2 =
-        let (++) = M.bind_ctrl_avoid mavoid in
+      let delayed_check_tags a_virt ma ii m1 m2 =
+        let (++) = M.bind_ctrl_avoid ma in
         M.check_tags
           ma (fun a -> read_tag_mem a ii)
-          (fun a tag1 -> tag_extract a  >>= fun tag2 -> M.op Op.Eq tag1 tag2)
+          (fun tag1 -> tag_extract a_virt  >>= fun tag2 -> M.op Op.Eq tag1 tag2)
           (commit_pred ii)  ++ fun cond ->  M.choiceT cond m1 m2
 
-      let do_checked_read sz an rd a ii =
-        check_tags a ii
-          (loc_extract a >>= fun a ->
-           M.read_loc false (mk_read sz an) (A.Location_global a) ii >>= fun v ->
-           write_reg_sz sz rd v ii >>! B.Next)
-          (mk_fault a ii (Some "MTE read") >>! B.Exit)
+(* Tag checking Morello *)
+      let do_append_commit ma ii =
+        ma >>== fun a -> commit_pred ii >>= fun () -> M.unitT a
 
-      let check_morello_tag ma mavoid ii mok mfault =
-        let (++) = M.bind_ctrl_avoid mavoid in
-        (ma >>= fun a -> M.op1 Op.CapaGetTag a >>= fun x ->
-          M.op Op.Ne x V.zero >>= fun cond ->
-          commit_pred ii >>! cond) ++ fun cond ->
-            M.choiceT cond mok mfault
+      let mzero = M.unitT M.A.V.zero
 
-      let check_morello_sealed ma mavoid ii mok mfault =
-        let (++) = M.bind_ctrl_avoid mavoid in
-        (ma >>= fun a -> M.op1 Op.CheckSealed a >>= fun x ->
-          M.op Op.Ne x V.zero >>= fun cond ->
-          commit_pred ii >>! cond) ++ fun cond ->
-            M.choiceT cond mfault mok
+      let check_morello_tag a ma mv mok mfault =
+        M.op1 Op.CapaGetTag a >>= fun x ->
+        M.op Op.Ne x V.zero >>= fun cond ->
+        M.choiceT cond (mok ma mv) (mfault ma mzero)
 
-      let check_morello_perms ma mv mavoid perms ii mok mfault =
-        let mv = if String.contains perms 'w' && String.contains perms 'c'
-          then mv else M.unitT M.A.V.zero in
-        let (++) = M.bind_ctrl_avoid mavoid in
-        (ma >>| mv >>= fun (a,v) ->
-          M.op (Op.CheckPerms perms) a v >>= fun cond ->
-          commit_pred ii >>! cond) ++ fun cond ->
-            M.choiceT cond mok mfault
+      let check_morello_sealed a ma mv  mok mfault =
+        M.op1 Op.CheckSealed a >>= fun x ->
+        M.op Op.Ne x V.zero >>= fun cond ->
+        M.choiceT cond (mfault ma mzero) (mok ma mv)
+
+ (* Semantics has changed, no ctrl-dep on mv *)
+      let check_morello_perms a ma mv perms mok mfault =
+        M.delay_kont "morello_perms"
+          mv
+          (fun v mv ->
+            let v =
+              if String.contains perms 'w' && String.contains perms 'c'
+              then v else M.A.V.zero in
+            M.op (Op.CheckPerms perms) a v >>= fun cond ->
+            M.choiceT cond (mok ma mv) (mfault ma mv))
 
       let process_read_capability sz a m ii =
         match sz with
-        | MachSize.S128 -> (M.op1 Op.CapaStrip a >>= fun a ->
-          M.add_atomic_tag_read (m a) a (fun loc v -> Act.TagAccess (Dir.R,loc,v)) ii) >>= fun v ->
-          M.op Op.SquashMutable a v
+        | MachSize.S128 ->
+            (M.op1 Op.CapaStrip a >>= fun a ->
+             M.add_atomic_tag_read (m a) a
+               (fun loc v -> Act.tag_access quad Dir.R loc v) ii)
+            >>= fun v -> M.op Op.SquashMutable a v
         | _ -> M.op1 Op.CapaStrip a >>= fun a -> m a >>= fun v -> M.op Op.CapaSetTag v V.zero
 
-(* Old read_mem that returns value read *)
-      let do_read_mem sz an a ii =
-        let m a = if mixed then begin
-            Mixed.read_mixed false sz (fun sz -> mk_read sz an) a ii
-          end else
-            M.read_loc false (mk_read sz an) (A.Location_global a) ii in
-        if morello
-          then process_read_capability sz a m ii
-          else m a
+(****************)
+(* PTW checking *)
+(****************)
 
-      let read_mem_and_write_reg sz an rd a ii =
-        do_read_mem sz an a ii >>= fun v ->  write_reg_sz_non_mixed sz rd v ii
+      open Constant
 
-      let read_mem sz = read_mem_and_write_reg sz AArch64.N
-      let read_mem_acquire sz = read_mem_and_write_reg sz AArch64.A
-      let read_mem_acquire_pc sz = read_mem_and_write_reg sz AArch64.Q
-      let read_mem_noreturn sz = read_mem_and_write_reg sz AArch64.NoRet
+(* Group pteval components together *)
 
-      let read_mem_reserve sz an rd a ii =
-        (if morello then M.op1 Op.CapaStrip a else M.unitT a) >>= fun resa ->
-        (write_reg AArch64.ResAddr resa ii >>| read_mem_and_write_reg sz an rd a ii) >>! ()
+      type ipte =
+          { pte_v:V.v; oa_v:V.v; af_v:V.v;
+            db_v:V.v; dbm_v:V.v; valid_v:V.v;
+            el0_v:V.v; }
+
+      let extract_af v = M.op1 Op.AF v
+      let extract_db v = M.op1 Op.DB v
+      let extract_dbm v = M.op1 Op.DBM v
+      let extract_valid v = M.op1 Op.Valid v
+      let extract_el0 v = M.op1 Op.EL0 v
+      let extract_oa v = M.op1 Op.OA v
+
+      let mextract_whole_pte_val an nexp a_pte ii =
+        (M.read_loc false
+           (fun loc v ->
+             Act.Access (Dir.R,loc,v,an,nexp,quad,Act.A_PTE))
+           (A.Location_global a_pte) ii)
+
+      and write_whole_pte_val an explicit a_pte v ii =
+        M.write_loc
+          (mk_write quad an explicit Act.A_PTE v)
+          (A.Location_global a_pte) ii
+
+
+      let op_of_set = function
+        | AArch64.AF -> Op.SetAF
+        | AArch64.DB -> Op.SetDB
+        | AArch64.Other -> assert false
+
+      let test_and_set_bit cond set a_pte ii =
+        let nexp = AArch64.NExp set in
+        mextract_whole_pte_val AArch64.X nexp a_pte ii >>= fun pte_v ->
+        cond pte_v >>*= fun c ->
+        M.choiceT c
+            (M.op1 (op_of_set set) pte_v >>= fun v ->
+             write_whole_pte_val AArch64.X nexp a_pte v ii)
+            (M.unitT ())
+
+      let bit_is_zero op v = M.op1 op v >>= is_zero
+      let bit_is_not_zero op v = M.op1 op v >>= is_not_zero
+      let m_op op m1 m2 = (m1 >>| m2) >>= fun (v1,v2) -> M.op op v1 v2
+
+      let test_and_set_af =
+        test_and_set_bit
+          (fun v ->
+            m_op Op.And
+              (bit_is_zero Op.AF v) (bit_is_not_zero Op.Valid v))
+          AArch64.AF
+
+      and test_and_set_db =
+        test_and_set_bit
+          (fun v ->
+            m_op Op.And
+              (bit_is_zero Op.DB v) (bit_is_not_zero Op.Valid v))
+          AArch64.DB
+        
+      let mextract_pte_vals pte_v =
+        (extract_oa pte_v >>|
+        extract_el0 pte_v >>|
+        extract_valid pte_v >>|
+        extract_af pte_v >>|
+        extract_db pte_v >>|
+        extract_dbm pte_v) >>=
+        (fun (((((oa_v,el0_v),valid_v),af_v),db_v),dbm_v) ->
+          M.unitT {pte_v; oa_v; af_v; db_v; dbm_v; valid_v; el0_v;})
+
+      let get_oa mpte = mpte >>= fun p -> M.unitT p.oa_v
+
+(******************)
+(* Checking flags *)
+(******************)
+
+(* With choice operator *)
+      let do_check_cond m m_cond k1 k2 =
+        M.delay_kont "1"
+          (m >>= fun pte_v -> m_cond pte_v >>= fun c -> M.unitT (c,pte_v))
+          (fun (c,pte_v) m ->
+            let m = m >>= fun _ -> M.unitT pte_v in
+            M.choiceT c (k1 m) (k2 m))
+
+        (* Summary of access flag and dirty bit management.
+
+          * Without HW-management (on old CPUs, or where TCR_ELx.{HA,HD} == {0,0}):
+
+          A load/store to x where pte_x has the access flag clear will raise a
+          permission fault
+
+          A store to x where pte_x has the dirty bit clear will raise
+          a permission fault
+
+          and SW is expected to deal with this by updating the translation tables with
+          explicit stores or atomics
+
+          * With HW management (i.e. when ARMv8.1-TTHM is implemented) where TCR_ELx.HA = 1:
+          A load/store to x where pte_x has the access flag clear results in the MMU
+          updating the translation table entry to set the access flag, and continuing
+          without a fault.
+
+          A store where pte_x has the dirty bit clear will raise a permission fault.
+
+          * With HW management (i.e. when ARMv8.1-TTHM is implemented) where TCR_ELx.{HA,HD} == {1,1}:
+          A load/store to x where pte_x has the access flag clear results in the
+          MMU updating the translation table entry to set the access flag, and continuing
+          without a fault.
+
+          A store to x where pte_x has the dirty bit clear and also has DBM clear
+          will raise a permission fault
+
+          A store to x where pte_x has the dirty bit clear and has DBM set results in the
+          MMU updating the translation table entry to set the dirty bit, and continuing
+          without a fault.
+
+          Notice: The dirty bit correspond to HW level write permission in PTE's.
+          Hence, in simple (stage 1) case, we have AP[2] == 0b1 for clean,
+          and AP[2] == 0b0 for dirty, with AP[2] == 0b0 being more directly "writable".
+
+         *)
+
+      let check_ptw proc dir a_virt ma an ii mdirect mok mfault =
+
+        let is_el0  = List.exists (Proc.equal proc) TopConf.procs_user in
+        let check_el0 m =
+          if is_el0 then
+               fun pte_v -> m_op Op.Or (is_zero pte_v.el0_v) (m pte_v)
+             else m in
+
+        let open DirtyBit in
+        let tthm = TopConf.dirty.tthm proc
+        and ha = TopConf.dirty.ha proc
+        and hd = TopConf.dirty.hd proc in
+        let ha = ha || hd in (* As far as we know hd => ha *)
+(* Perform PTE update, when told to do so *)
+        let setbits_get_oa a_pte m =
+          m >>*== fun pte_v ->
+           (* >>== is important, as the test and set below
+              is performed 'on the side ' *)
+            begin if hd && dir = Dir.W then
+              is_zero pte_v.db_v >>= fun c ->
+              M.choiceT c
+                  (test_and_set_db a_pte ii)
+                  (M.unitT ())
+            else M.unitT ()
+            end >>| M.unitT pte_v.oa_v >>= fun (_,oa) -> M.unitT oa in
+        let mfault m _a = mfault (get_oa m) a_virt
+        and mok a_pte m a = mok (setbits_get_oa a_pte m) a in
+
+
+(* Action on case of page table access.
+   Delay is used so as to have correct dependencies,
+   getting content of PTE by anticipation. *)
+        let mvirt = begin
+          M.delay_kont "3"
+            begin
+              let get_a_pte = ma >>= fun _ -> M.op1 Op.PTELoc a_virt
+              and test_and_set_af a_pte =
+                if tthm && ha then
+                  test_and_set_af a_pte ii >>! a_pte
+                else M.unitT a_pte in
+              (get_a_pte >>== test_and_set_af) >>= fun a_pte ->
+              mextract_whole_pte_val
+                an AArch64.nexp_annot a_pte ii >>= fun pte_v ->
+              (mextract_pte_vals pte_v) >>= fun pte_v -> M.unitT (pte_v,a_pte)
+            end
+          (fun (pte_v,a_pte) ma -> (* now we have PTE content *)
+            (* Monad will carry changing internal pte value *)
+            let ma = ma >>= fun (pte_v,_) -> M.unitT pte_v in
+            (* wrapping of success/failure continuations,
+               only pte value may have changed *)
+            let mok ma =
+              mok a_pte ma
+                (if pte2 then a_virt else pte_v.oa_v)
+            and mno ma =  mfault ma a_virt in
+            let check_cond cond =
+              do_check_cond ma (check_el0 cond) mno mok in
+
+            if (not tthm || (tthm && (not ha && not hd))) then
+            (* No HW management *)
+              let cond_R pte_v =
+                m_op Op.Or (is_zero pte_v.valid_v) (is_zero pte_v.af_v) in
+              let cond = match dir with (* No mercy, check all flags *)
+              | Dir.R -> cond_R
+              | Dir.W ->
+                  fun pte_v ->
+                    m_op Op.Or (cond_R pte_v) (is_zero pte_v.db_v) in
+              check_cond cond
+            else if (tthm && ha && not hd) then (* HW managment of AF *)
+              let cond = match dir with (* Do not check AF *)
+              | Dir.R -> fun pte_v -> is_zero pte_v.valid_v
+              | Dir.W ->
+                  fun pte_v ->
+                    m_op Op.Or (is_zero pte_v.valid_v) (is_zero pte_v.db_v) in
+              check_cond cond
+            else (* HW management of AF and DB *)
+              let cond = match dir with (* Do not check AF *)
+              | Dir.R -> fun pte_v -> is_zero pte_v.valid_v
+              | Dir.W ->
+(* Check DB when dirty bit management disabled for this page *)
+                  fun pte_v ->
+                    m_op Op.Or
+                      (is_zero pte_v.valid_v)
+                      (m_op Op.And
+                         (is_zero pte_v.db_v) (is_zero pte_v.dbm_v)) in
+              check_cond cond)
+          end in
+        if pte2 then  mvirt
+        else
+          M.op1 Op.IsVirtual a_virt >>= fun cond ->
+          M.choiceT cond mvirt mdirect
+
+(* Read memory, return value read *)
+      let do_read_mem_ret sz an anexp ac a ii =
+        let m a =
+          if mixed then begin
+              Mixed.read_mixed false sz (fun sz -> mk_read sz an anexp) a ii
+            end else begin
+              let mk_act loc v =  Act.Access (Dir.R,loc,v,an,anexp,sz,ac) in
+              let loc = A.Location_global a in
+              M.read_loc false mk_act loc ii
+            end in
+        if morello then process_read_capability sz a m ii
+        else m a
+
+(* Save value read in register rd *)
+      let do_read_mem sz an anexp ac rd a ii =
+        do_read_mem_ret sz an anexp ac a ii >>=
+        fun v -> write_reg_sz_non_mixed sz rd v ii >>! B.Next
+
+      let read_mem sz = do_read_mem sz AArch64.N
+      let read_mem_acquire sz = do_read_mem sz AArch64.A
+      let read_mem_acquire_pc sz = do_read_mem sz AArch64.Q
+      let read_mem_noreturn sz = do_read_mem sz AArch64.NoRet
+
+      let read_mem_reserve sz an anexp ac rd a ii =
+        let m a = 
+          (write_reg AArch64.ResAddr a ii
+           >>| do_read_mem sz an anexp ac rd a ii)
+          >>= fun ((),b) -> M.unitT b in
+        if morello then
+          M.op1 Op.CapaStrip a >>= m
+        else
+          m a
+
+      (* Post-Indexed load immediate *)
+      let read_mem_postindexed sz an anexp ac rd rs k a ii =
+        let m a =
+          begin
+            (M.add a (V.intToV k) >>= fun b -> write_reg rs b ii)
+            >>| do_read_mem sz an anexp ac rd a ii
+          end >>= fun ((),r) -> M.unitT r in
+        if morello then
+          M.op1 Op.CapaStrip a >>= m
+        else
+          m a
 
 
 (* Write *)
-      let do_write_mem sz an a v ii =
-        let write a =
-          if mixed then begin
-              Mixed.write_mixed sz
-                (fun sz a v -> mk_write sz an v a) a v ii
+      let check_mixed_write_mem sz an anexp ac a v ii =
+        if mixed then begin
+            Mixed.write_mixed sz
+              (fun sz loc v -> mk_write sz an anexp ac v loc)
+              a v ii
           end else
-            M.write_loc (mk_write sz an v) (A.Location_global a) ii in
+          M.write_loc
+            (mk_write sz an anexp ac v) (A.Location_global a) ii
+
+      let check_morello_for_write m a v ii =
         if morello then
           M.op1 Op.CapaStrip a >>| M.op1 Op.CapaGetTag v >>= fun (a,tag) ->
-          M.add_atomic_tag_write (write a) a tag (fun loc v -> Act.TagAccess (Dir.W,loc,v)) ii
-        else write a
+          M.add_atomic_tag_write (m a) a tag
+            (fun loc v -> Act.tag_access quad Dir.W loc v) ii
+        else m a
+        
+      let do_write_mem sz an anexp ac a v ii =
+        check_morello_for_write
+          (fun a -> check_mixed_write_mem sz an anexp ac a v ii)
+          a v ii
+
 
       let write_mem sz = do_write_mem sz AArch64.N
       let write_mem_release sz = do_write_mem sz AArch64.L
@@ -270,20 +554,14 @@ module Make
       let write_mem_amo_release sz = do_write_mem sz AArch64.XL
 
 (* Write atomic *)
-      let write_mem_atomic an sz a v resa ii =
-        let write a =
-          if mixed then begin
-            (M. assign a resa >>|
-               Mixed.write_mixed sz
-                 (fun sz a v -> mk_write sz an v a)  a v ii) >>! ()
-          end else
-            let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
-            M.mk_singleton_es_eq
-              (Act.Access (Dir.W, A.Location_global a, v,an, sz)) eq ii in
-        if morello then M.op1 Op.CapaStrip a >>| M.op1 Op.CapaGetTag v >>= fun (a,tag) ->
-          M.add_atomic_tag_write (write a) a tag (fun loc v -> Act.TagAccess (Dir.W,loc,v)) ii
-        else write a
-
+      let write_mem_atomic sz an anexp ac a v resa ii =
+        check_morello_for_write
+          (fun a ->
+            (M.assign a resa
+             >>| check_mixed_write_mem sz an anexp ac a v ii)
+            >>! ())
+        a v ii
+        
       let flip_flag v = M.op Op.Xor v V.one
       let is_zero v = M.op Op.Eq v V.zero
       let is_not_zero v = M.op Op.Ne v V.zero
@@ -300,11 +578,163 @@ module Make
         | AArch64.LE -> is_le
         | AArch64.LT -> is_lt
 
+(* Page tables and TLBs *)
+      let do_inv op a ii = inv_loc op (A.Location_global a) ii
+
+(* Data cache operations *)
+      let do_dc op a ii = dc_loc op (A.Location_global a) ii
+
+(***************************)
+(* Various lift functions. *)
+(***************************)
+
+(*
+  Those fonction take genric 'mop' memory operations,
+  and change their behaviour according to variants.
+  Most lift function introduce validity checks on
+  addresses. Thus the resulting monads will possess
+  extra dependencies w.r.t thes imple case.
+ *)
+      let lift_memtag_phy mop a_virt ma ii =
+        M.delay_kont "4" ma
+          (fun _ ma ->
+            let mm = mop Act.A_PHY ma in
+            delayed_check_tags a_virt ma ii
+              (mm  >>! B.Next)
+              (let mfault = mk_fault a_virt ii None in
+              if C.precision then  mfault >>! B.Exit
+              else (mfault >>| mm) >>! B.Next))
+
+      let lift_memtag_virt mop ma ii =
+        M.delay_kont "5" ma
+          (fun a_virt ma  ->
+            let mm = mop Act.A_VIR (ma >>= fun a -> loc_extract a) in
+            delayed_check_tags a_virt ma ii
+              (mm  >>! B.Next)
+              (let mfault = ma >>= fun a -> mk_fault a ii None in
+              if C.precision then  mfault >>! B.Exit
+              else (mfault >>| mm) >>! B.Next))
+
+      let append_commit ma ii =
+        if is_branching then do_append_commit ma ii else ma
+
+      let do_insert_commit m1 m2 ii =
+        m1 >>= fun a -> commit_pred ii >>*== fun _ -> m2 a
+
+      let insert_commit m1 m2 ii =
+        if is_branching || morello then do_insert_commit m1 m2 ii
+        else m1 >>= m2
+
+      let lift_kvm dir mop ma an ii mphy =
+        let mfault ma a =
+          do_insert_commit ma (fun _ -> mk_fault a ii None) ii
+          >>! if C.precision then B.Exit else B.ReExec in
+        let maccess a ma =
+          check_ptw ii.AArch64.proc dir a ma an ii
+            (mop Act.A_PTE ma >>! B.Next)
+            mphy
+            mfault in
+        M.delay_kont "6" ma
+          (if pte2 then maccess
+           else
+             fun a ma ->
+             match Act.access_of_location_std (A.Location_global a) with
+             | Act.A_VIR -> maccess a ma
+             | ac -> mop ac ma >>! B.Next)
+
+      let lift_morello mop perms ma mv ii =
+        let mfault msg ma mv = 
+          do_insert_commit
+            (ma >>| mv)
+            (fun (a,_v) -> mk_fault a ii (Some msg)) ii  >>! B.Exit in
+        M.delay_kont "morello" ma
+          (fun a ma ->
+            (* Notice: virtual access only, beaause morello # kvm *)
+            let mok ma mv = mop Act.A_VIR ma mv in
+            check_morello_tag a ma mv
+              (fun ma mv ->
+                check_morello_sealed a ma mv
+                  (fun ma mv ->
+                    check_morello_perms a ma mv perms
+                      (fun ma mv -> mok ma mv >>! B.Next)
+                      (mfault "CapPerms"))
+                  (mfault "CapSeal"))
+              (mfault "CapTag"))
+
+(* Main choice between supported variants, notice:
+   + memtag and kvm can be combined, other variants cannot.
+   + mv abstracted for morello sake only
+   + ma abstracted for all variants
+ *)
+                          
+      let to_perms str sz = str ^ if sz = MachSize.S128 then "_c" else ""
+
+      let apply_mv mop mv = fun ac ma -> mop ac ma mv
+
+      let lift_memop dir mop perms ma mv an ii =
+        if morello then
+          lift_morello mop perms ma mv ii
+        else
+          let mop = apply_mv mop mv in          
+          if memtag then
+            begin
+              if kvm then
+                let mphy = (fun ma a -> lift_memtag_phy mop a ma ii) in
+                lift_kvm dir mop ma an ii mphy
+              else lift_memtag_virt mop ma ii
+            end
+          else if kvm then
+            let mphy =
+              if pte2 then
+                fun ma a_virt ->
+                M.op1 Op.IsVirtual a_virt >>= fun c ->
+                M.choiceT c
+                  (mop Act.A_PHY ma) (mop Act.A_PHY_PTE ma) >>! B.Next
+              else
+                fun ma _a -> mop Act.A_PHY ma >>! B.Next in
+            lift_kvm dir mop ma an ii mphy
+        else
+          mop Act.A_VIR ma >>! B.Next
+
+(* Generic load *)
+      let do_ldr sz an mop ma ii =
+        lift_memop Dir.R
+          (fun ac ma _mv -> (* value fake here *)
+              insert_commit ma (mop ac) ii)
+          (to_perms "r" sz)
+          ma mzero an ii
+
+(* Generic store *)
+      let do_str sz an ma mv ii =
+        lift_memop Dir.W
+          (fun ac ma mv ->
+            if is_branching then (* additional ctrl dep on address *)
+              M.bind_ctrl_data (append_commit ma ii) mv
+                (fun a v ->
+                  do_write_mem sz an aexp ac a v ii)
+            else if morello then
+              (* additional ctrl dep on address and data *)
+              do_insert_commit (ma >>| mv)
+                (fun (a,v) -> do_write_mem sz an aexp ac a v ii)
+                ii
+            else
+              (ma >>| mv) >>= fun (a,v) ->
+              do_write_mem sz an aexp ac a v ii)
+          (to_perms "w" sz) ma mv an ii
+
 (***********************)
 (* Memory instructions *)
 (***********************)
 
-      (* Apply a shift as monadic op *)
+(* compute sign extension (32 -> 64 bits) *)
+      let sxtw_op v =
+        let m = V.op1 (Op.LeftShift 31) V.one in
+        M.op Op.Xor v m
+        >>= fun v -> M.op Op.Sub v m        
+
+      let uxtw_op = M.op1 (Op.AndK "0xffffffff")
+                         
+(* Apply a shift as monadic op *)
       let shift s =
         let open AArch64Base in
         match s with
@@ -312,107 +742,206 @@ module Make
           | S_LSL(n)  -> fun x -> M.op (Op.ShiftLeft) x (V.intToV n)
           | S_LSR(n)  -> fun x -> M.op (Op.ShiftRight) x (V.intToV n)
           | S_ASR(n)  -> fun x -> M.op (Op.ASR) x (V.intToV n)
-          | S_SXTW -> fun x ->
-            let m = V.op1 (Op.LeftShift 31) V.one in
-            M.op Op.Xor x m
-            >>= fun v -> M.op Op.Sub v m
-          | S_UXTW->
-            Warn.fatal "UXTW barrel shift not supported yet"
-          | S_MSL(_)  -> Warn.fatal "Neon instructions are not currently supported"
+          | S_SXTW -> sxtw_op
+          | S_UXTW -> uxtw_op
+          | S_MSL(_)  ->
+              Warn.fatal "Neon instructions are not currently supported"
 
+(* Complete effective adress computation *)
       let get_ea rs kr s ii =
-      let open AArch64Base in
-      match kr, s with
-      | K 0, S_NOEXT -> (* Immediate with no shift*)
-          read_reg_ord rs ii
-      | K k, s -> (* Immediate with offset, with shift *)
-          read_reg_ord rs ii
-          >>= fun v -> shift s (V.intToV k)
-          >>= M.add v
-      | RV(_,r), S_NOEXT -> (* register, no shift *)
-          (read_reg_ord rs ii >>| read_reg_ord r ii)
-          >>= fun (v1,v2) -> M.add v2 v1
-      | RV(_,r), s -> (* register, with shift *)
-          (read_reg_ord rs ii >>| read_reg_ord r ii)
-          >>= fun (v1,v2) -> shift s v2
-          >>= fun v2 -> M.add v1 v2
+        let open AArch64Base in
+        match kr, s with
+        | K 0, S_NOEXT -> (* Immediate with no shift*)
+            read_reg_ord rs ii
+        | K k, s -> (* Immediate with offset, with shift *)
+            read_reg_ord rs ii
+            >>= fun v -> shift s (V.intToV k)
+            >>= M.add v
+        | RV(_,r), S_NOEXT -> (* register, no shift *)
+            (read_reg_ord rs ii >>| read_reg_ord r ii)
+            >>= fun (v1,v2) -> M.add v2 v1
+        | RV(_,r), s -> (* register, with shift *)
+            (read_reg_ord rs ii >>| read_reg_ord r ii)
+            >>= fun (v1,v2) -> shift s v2
+            >>= fun v2 -> M.add v1 v2
 
-      let lift_memop mv mop perms ma ii =
-        if memtag then
-          M.delay ma >>| M.delay mv >>= fun ((_,ma),(_,mv)) ->
-          let mm = mop (ma >>= fun a -> loc_extract a) mv in
-          delayed_check_tags ma (ma >>| mv) ii
-            (mm >>! B.Next)
-            (let mfault = ma >>= fun a -> mk_fault a ii (Some "MTE lift_memop") in
-            if C.precision then mfault >>| mv >>! B.Exit
-            else (mfault >>| mm) >>! B.Next)
-        else if morello then
-          M.delay ma >>| M.delay mv >>= fun ((_,ma),(_,mv)) ->
-          let mfault msg = (ma >>= fun a -> mk_fault a ii msg) >>| mv >>! B.Exit in
-          let mm = mop ma mv in
-          check_morello_tag ma (ma >>| mv) ii
-            (check_morello_sealed ma (ma >>| mv) ii
-              (check_morello_perms ma mv (ma >>| mv) perms ii
-                (mm >>! B.Next)
-                (mfault (Some "CapPerms")))
-              (mfault (Some "CapSeal")))
-            (mfault (Some "CapTag"))
-        else
-          mop ma mv >>! B.Next
+      let get_ea_noext rs kr ii = get_ea rs kr AArch64.S_NOEXT ii
 
-      let to_perms str sz = str ^ if sz = MachSize.S128 then "_c" else ""
-
-      let do_str sz an rs ma ii =
-        lift_memop
-          (read_reg_data sz rs ii)
-          (fun ma mv -> ma >>| mv >>= fun (a,v) ->
-            do_write_mem sz an a v ii)
-          (to_perms "w" sz)
-          ma ii
-
-      let do_ldr sz rd rs kr s ii =
-        lift_memop
-          (M.unitT M.A.V.zero)
-          (fun ma _ -> ma >>= fun a ->
-           do_read_mem sz AArch64.N a ii >>= fun v ->
-           write_reg_sz_non_mixed sz rd v ii )
-          (to_perms "r" sz)
+      let ldr sz rd rs kr s ii = (* load *)
+        do_ldr sz AArch64.N
+          (fun ac a -> do_read_mem sz AArch64.N aexp ac rd a ii)
           (get_ea rs kr s ii) ii
-
-      (* Post-Indexed load immediate *)
-      let ldr_p sz rd rs k ii =
-        assert (k >= -256 && k <= 255);
-          (read_reg_ord rs ii)
-          >>= fun a1 ->
-              (read_mem sz rd a1 ii)
-              >>|
-              (M.add a1 (V.intToV k)
-                >>= fun v -> write_reg rs v ii)
-          >>! B.Next
-
-      and str sz rs rd kr ii = do_str sz AArch64.N rs (get_ea rd kr AArch64.S_NOEXT ii) ii
-
-      and stlr sz rs rd ii = do_str sz AArch64.L rs (read_reg_ord rd ii) ii
-
-      and ldr = do_ldr
 
       and ldar sz t rd rs ii =
         let open AArch64 in
-        lift_memop
-          (M.unitT M.A.V.zero)
-          (fun ma _ ->
-            ma >>= fun a ->
+        let an = match t with
+        | XX -> AArch64.X
+        | AA -> AArch64.A
+        | AX -> AArch64.XA
+        | AQ -> AArch64.Q in
+        do_ldr sz an
+          (fun ac a ->
+            let read =
               match t with
-              | XX ->
-                  read_mem_reserve sz AArch64.X rd a ii
-              | AA ->
-                  read_mem_acquire sz rd a ii
-              | AX ->
-                  read_mem_reserve sz AArch64.XA rd a ii
-              | AQ ->
-                  read_mem_acquire_pc sz rd a ii)
-          (to_perms "r" sz)
+              | XX -> read_mem_reserve sz AArch64.X
+              | AA -> read_mem_acquire sz
+              | AX -> read_mem_reserve sz AArch64.XA
+              | AQ -> read_mem_acquire_pc sz in
+            read aexp ac rd a ii)
+          (read_reg_ord rs ii)  ii 
+
+      and ldr_p sz rd rs k ii = (* load post-index *)
+        do_ldr sz AArch64.N
+          (fun ac a -> 
+            read_mem_postindexed sz AArch64.N aexp ac rd rs k a ii)
           (read_reg_ord rs ii) ii
+        
+      and str sz rs rd kr ii =
+        do_str sz AArch64.N
+          (get_ea_noext rd kr ii) (read_reg_data sz rs ii) ii
+
+      and stlr sz rs rd ii =
+        do_str sz AArch64.L
+          (read_reg_ord rd ii) (read_reg_data sz rs ii) ii
+
+      and stxr sz t rr rs rd ii =
+        let open AArch64Base in
+        let an = match t with
+        | YY -> AArch64.X
+        | LY -> AArch64.XL in
+        lift_memop Dir.W
+          (fun ac ma mv ->
+            M.riscv_store_conditional
+              (read_reg_ord ResAddr ii)
+              mv
+              (append_commit ma ii)
+              (write_reg ResAddr V.zero ii)
+              (fun v -> write_reg rr v ii)
+              (fun ea resa v ->
+                write_mem_atomic sz an aexp ac ea v resa ii))
+          (to_perms "w" sz)
+          (read_reg_ord rd ii)
+          (read_reg_data sz rs ii) an ii
+
+(* AMO instructions *)          
+      let rmw_amo_read sz rmw =
+        let open AArch64 in
+        match rmw with
+        | RMW_A|RMW_AL -> do_read_mem_ret sz XA Exp
+        | RMW_L|RMW_P  -> do_read_mem_ret sz X Exp
+
+      and rmw_amo_write sz rmw =
+        let open AArch64 in
+        match rmw with
+        | RMW_L|RMW_AL -> do_write_mem sz XL Exp
+        | RMW_P|RMW_A  -> do_write_mem sz X Exp
+
+      let rmw_to_read rmw =
+        let open AArch64 in
+        match rmw with
+        | RMW_P | RMW_L -> N
+        | RMW_A | RMW_AL -> A
+                
+      let swp sz rmw r1 r2 r3 ii =
+        lift_memop Dir.W (* swp is a write for the purpose of DB *)
+          (fun ac ma mv ->
+            let r2 = mv
+            and w2 v = write_reg_sz_non_mixed sz r2 v ii
+            and r1 a = rmw_amo_read sz rmw ac a ii
+            and w1 a v = rmw_amo_write sz rmw ac a v ii in
+            M.swp (append_commit ma ii) r1 r2 w1 w2)
+          (to_perms "rw" sz)
+          (read_reg_ord r3 ii)
+          (read_reg_data sz r1 ii)
+          (rmw_to_read rmw)
+          ii
+
+      let cas sz rmw rs rt rn ii =
+        let an = rmw_to_read rmw in
+        let read_rs = read_reg_data sz rs ii
+        and write_rs v = write_reg_sz_non_mixed sz rs v ii in
+        lift_memop Dir.W
+           (* mv is read new value from reg, not important
+              as this code is not executed in morello mode *)
+          (fun ac ma mv ->
+            let open AArch64 in
+             M.altT
+              (let read_mem a = do_read_mem_ret sz an aexp ac a ii in
+               M.aarch64_cas_no ma mv write_rs read_mem M.neqT)
+              (let read_rt = mv
+               and read_mem a = rmw_amo_read sz rmw ac a ii
+               and write_mem a v = rmw_amo_write sz rmw ac a v ii in
+               M.aarch64_cas_ok
+                 (append_commit ma ii) read_rs read_rt write_rs
+                 read_mem write_mem M.eqT))
+          (to_perms "rw" sz) (read_reg_ord rn ii) (read_reg_data sz rt ii)
+        an ii
+
+      (* Temporary morello variation of CAS *)
+      let cas_morello sz rmw rs rt rn ii =
+        (* As morello and kvm are incompatible, all accesses are virtual *)
+        lift_morello
+          (fun ac ma mv ->
+            let open AArch64 in
+            let read_mem sz = rmw_amo_read sz rmw in
+            let mrs = read_reg_data sz rs ii in
+            let mrt = mv in
+            M.delay ma >>| M.delay mrs >>| M.delay mrt
+            >>= fun (((_,ma),(_,mrs)),(_,mrt)) ->
+            let muncond = ma >>| mrs >>| mrt in
+            let mmem = ma >>= fun a -> read_mem sz ac a ii in
+            let write_rs mv =
+              mv >>= fun v -> write_reg_sz_non_mixed sz rs v ii in
+            let branch = fun mrs mmem mavoid m1 m2 ->
+              let (++) = M.bind_ctrl_avoid mavoid in
+              (mrs >>| mmem >>= fun (rs,mem) -> (M.op Op.Eq rs mem) >>= fun cond ->
+                commit_pred ii >>! cond) ++ fun cond ->
+                  M.choiceT cond m1 m2 in
+            let mop = fun ma mv mmem ->
+              let write_mem a v = rmw_amo_write sz rmw ac a v ii in
+              M.aarch64_cas_ok_morello ma mv mmem write_mem in
+            M.delay mmem >>= fun (_,mmem) ->
+            branch mrs mmem (muncond >>| mmem)
+              (mop ma mrt mmem)
+              (mrt >>! ())
+            >>| write_rs mmem)
+          (to_perms "rw" sz)
+          (read_reg_ord rn ii)
+          (read_reg_data sz rt ii)
+          ii
+
+      let ldop op sz rmw rs rt rn ii =
+        let open AArch64 in
+        let an = rmw_to_read rmw in
+        lift_memop Dir.W
+          (fun ac ma mv ->
+            let noret = match rt with | ZR -> true | _ -> false in
+            let op = match op with
+            | A_ADD -> Op.Add
+            | A_EOR -> Op.Xor
+            | A_SET -> Op.Or
+            | A_CLR -> Op.AndNot2
+            | A_SMAX -> Op.Max
+            | A_SMIN -> Op.Min in
+            let read_mem =
+              if noret then fun sz -> do_read_mem_ret sz NoRet Exp ac
+              else fun sz -> rmw_amo_read sz rmw ac
+            and write_mem = fun sz -> rmw_amo_write sz rmw ac in
+            M.amo_strict op
+              (append_commit ma ii)
+              (fun a -> read_mem sz a ii) mv
+              (fun a v -> write_mem sz a v ii)
+              (fun w ->
+                if noret then M.unitT ()
+                else write_reg_sz_non_mixed sz rt w ii))
+          (to_perms "rw" sz)
+          (read_reg_ord rn ii)
+          (read_reg_data sz rs ii)
+          an ii
+
+(******************************)
+(* Move constant instructions *)
+(******************************)
 
       let movz sz rd k os ii =
         let open AArch64Base in
@@ -460,148 +989,17 @@ module Make
           >>= (fun v -> write_reg rd v ii)
           >>! B.Next
 
-      and stxr sz t rr rs rd ii =
-        let open AArch64Base in
-        lift_memop
-         (read_reg_data sz rs ii)
-         (fun ma mv ->
-           M.riscv_store_conditional
-             (read_reg_ord ResAddr ii)
-             mv
-             ma
-             (write_reg ResAddr V.zero ii)
-             (fun v -> write_reg rr v ii)
-             (fun ea resa v -> match t with
-             | YY -> write_mem_atomic AArch64.X sz ea v resa ii
-             | LY -> write_mem_atomic AArch64.XL sz ea v resa ii))
-          (to_perms "w" sz)
-          (read_reg_ord rd ii)
-          ii
-
       let csel_op op v =
-        let open AArch64Base in  match op with
+        let open AArch64Base in
+        match op with
         | Cpy -> M.unitT v
         | Inc -> M.op Op.Add v V.one
         | Neg -> M.op Op.Sub V.zero v
         | Inv -> M.op1 Op.Inv v
 
-      let rmw_amo_read rmw sz = let open AArch64 in match rmw with
-      | RMW_A|RMW_AL -> do_read_mem sz XA
-      | RMW_L|RMW_P  -> do_read_mem sz X
-
-      and rmw_amo_write rmw sz = let open AArch64 in match rmw with
-      | RMW_L|RMW_AL -> do_write_mem sz XL
-      | RMW_P|RMW_A  -> do_write_mem sz X
-
-      let swp sz rmw r1 r2 r3 ii =
-        let open AArch64Base in
-        match r2 with
-        | ZR ->
-            let write_mem = match rmw with
-            | RMW_L|RMW_AL -> write_mem_release
-            | RMW_P|RMW_A  -> write_mem in
-            lift_memop
-              (read_reg_data sz r1 ii)
-              (fun ma mv ->
-                (mv >>| ma) >>= fun (v,a) ->
-                 write_mem sz a v ii)
-              (to_perms "rw" sz)
-              (read_reg_ord r3 ii)
-              ii
-        |  _ ->
-            let read_mem = rmw_amo_read rmw
-            and write_mem =  rmw_amo_write rmw in
-            lift_memop
-              (read_reg_data sz r1 ii)
-              (fun ma mv ->
-                let r2 = mv
-                and w2 v = write_reg r2 v ii (* no sz since alread masked *)
-                and r1 a = read_mem sz a ii
-                and w1 a v = write_mem sz a v ii in
-                M.swp ma r1 r2 w1 w2)
-              (to_perms "rw" sz)
-              (read_reg_ord r3 ii)
-              ii
-
-      let cas sz rmw rs rt rn ii =
-        let read_rs = read_reg_data sz rs ii
-        and write_rs v =
-          write_reg_sz_non_mixed sz rs v ii in  (* no sz, argument masked *)
-        lift_memop
-          (read_reg_data sz rt ii)
-          (fun ma mv ->
-            let open AArch64 in
-             M.altT
-              (let read_mem a = match rmw with
-               | RMW_A|RMW_AL -> do_read_mem sz A a ii
-               | RMW_L|RMW_P  -> do_read_mem sz N a ii in
-               M.aarch64_cas_no ma read_rs write_rs read_mem M.neqT)
-              (let read_rt = mv
-              and read_mem a = rmw_amo_read rmw sz  a ii
-              and write_mem a v = rmw_amo_write rmw sz a v ii in
-              M.aarch64_cas_ok
-                ma read_rs read_rt write_rs read_mem write_mem M.eqT))
-          (to_perms "rw" sz)
-          (read_reg_ord rn ii)
-          ii
-
-      (* Temporary morello variation of CAS *)
-      let cas_morello sz rmw rs rt rn ii =
-        lift_memop
-          (read_reg_data sz rt ii)
-          (fun ma mv ->
-            let open AArch64 in
-            let read_mem sz = match rmw with
-            | RMW_A|RMW_AL -> do_read_mem sz XA
-            | RMW_L|RMW_P  -> do_read_mem sz X in
-            let mrs = read_reg_data sz rs ii in
-            let mrt = mv in
-            M.delay ma >>| M.delay mrs >>| M.delay mrt >>= fun (((_,ma),(_,mrs)),(_,mrt)) ->
-            let muncond = ma >>| mrs >>| mrt in
-            let mmem = ma >>= fun a -> read_mem sz a ii in
-            let write_rs mv = mv >>= fun v -> write_reg_sz_non_mixed sz rs v ii in
-            let branch = fun mrs mmem mavoid m1 m2 ->
-              let (++) = M.bind_ctrl_avoid mavoid in
-              (mrs >>| mmem >>= fun (rs,mem) -> (M.op Op.Eq rs mem) >>= fun cond ->
-                commit_pred ii >>! cond) ++ fun cond ->
-                  M.choiceT cond m1 m2 in
-            let mop = fun ma mv mmem ->
-              let write_mem a v = rmw_amo_write rmw sz a v ii in
-              M.aarch64_cas_ok_morello ma mv mmem write_mem in
-            M.delay mmem >>= fun (_,mmem) ->
-            branch mrs mmem (muncond >>| mmem)
-              (mop ma mrt mmem)
-              (mrt >>! ())
-            >>| write_rs mmem)
-          (to_perms "rw" sz)
-          (read_reg_ord rn ii)
-          ii
-
-      let ldop op sz rmw rs rt rn ii =
-        lift_memop
-          (read_reg_data sz rs ii)
-          (fun ma mv ->
-            let open AArch64 in
-            let noret = match rt with | ZR -> true | _ -> false in
-            let op = match op with
-            | A_ADD -> Op.Add
-            | A_EOR -> Op.Xor
-            | A_SET -> Op.Or
-            | A_CLR -> Op.AndNot2
-            | A_SMAX -> Op.Max
-            | A_SMIN -> Op.Min in
-            let read_mem =
-              if noret then fun sz -> do_read_mem sz NoRet else rmw_amo_read rmw
-            and write_mem = rmw_amo_write rmw in
-            M.amo_strict op
-              ma
-              (fun a -> read_mem sz a ii) mv
-              (fun a v -> write_mem sz a v ii)
-              (fun w ->if noret then M.unitT () else write_reg_sz_non_mixed sz rt w ii))
-          (to_perms "rw" sz)
-          (read_reg_ord rn ii)
-          ii
-
+(********************)
+(* Main entry point *)
+(********************)
       let build_semantics ii =
         M.addT (A.next_po_index ii.A.program_order_index)
           AArch64Base.(
@@ -648,6 +1046,7 @@ module Make
             let sz = bh_to_sz bh in
             ldr sz rd rs kr S_NOEXT ii
         | I_LDR_P(var,rd,rs,k) ->
+            assert (k >= -256 && k <= 255);
             let sz = tr_variant var in
             ldr_p sz rd rs k ii
         | I_LDUR(var,rd,rs,k) ->
@@ -674,31 +1073,31 @@ module Make
             stlr (bh_to_sz bh) rs rd ii
 
         | I_STZG(rt,rn,kr) ->
-            if not memtag then Warn.user_error "STZG without -variant memtag" ;
+            check_memtag "STZG" ;
             begin
               (read_reg_data MachSize.Quad rt ii >>= tag_extract) >>|
               get_ea rn kr AArch64.S_NOEXT ii
             end >>= fun (v,a) ->
-            (M.op1 Op.TagLoc a >>| loc_extract a) >>= fun (atag,loc) ->
-            (do_write_tag atag v ii >>| do_write_mem MachSize.Quad AArch64.N loc V.zero ii) >>! B.Next
+              (M.op1 Op.TagLoc a >>| loc_extract a) >>= fun (atag,loc) ->
+                (do_write_tag atag v ii >>| do_write_mem quad AArch64.N aexp Act.A_VIR loc V.zero ii) >>! B.Next
 
         | I_STG(rt,rn,kr) ->
-            if not memtag then Warn.user_error "STG without -variant memtag" ;
+            check_memtag "STG" ;
             begin
-              (read_reg_data MachSize.Quad rt ii >>= tag_extract) >>|
+              (read_reg_data quad rt ii >>= tag_extract) >>|
               get_ea rn kr S_NOEXT ii
             end >>= fun (v,a) ->
-            M.op1 Op.TagLoc a  >>= fun a ->
-            do_write_tag a v ii >>! B.Next
+              M.op1 Op.TagLoc a  >>= fun a ->
+                do_write_tag a v ii >>! B.Next
 
         | I_LDG (rt,rn,kr) ->
-            if not memtag then Warn.user_error "LDG without -variant memtag" ;
+            check_memtag "LDG" ;
             get_ea rn kr S_NOEXT ii  >>=
             fun a -> M.op1 Op.TagLoc a >>=
-            fun atag -> do_read_tag atag ii
-            >>= fun tag ->
-            M.op Op.SetTag a tag >>= fun v ->
-            write_reg rt v ii >>! B.Next
+              fun atag -> do_read_tag atag ii
+                  >>= fun tag ->
+                    M.op Op.SetTag a tag >>= fun v ->
+                      write_reg rt v ii >>! B.Next
 
         | I_STXR(var,t,rr,rs,rd) ->
             stxr (tr_variant var) t rr rs rd ii
@@ -707,19 +1106,19 @@ module Make
 
         (* Morello instructions *)
         | I_ALIGND(rd,rn,kr) ->
-            if not morello then Warn.user_error "morello instructions require -variant morello" ;
+            check_morello ii ;
             (read_reg_ord_sz MachSize.S128 rn ii >>= match kr with
             | K k -> fun v -> M.op Op.Alignd v (V.intToV k)
             | _ -> assert false
             ) >>= fun v -> write_reg_sz MachSize.S128 rd v ii >>! B.Next
         | I_ALIGNU(rd,rn,kr) ->
-            if not morello then Warn.user_error "morello instructions require -variant morello" ;
+            check_morello ii ;
             (read_reg_ord_sz MachSize.S128 rn ii >>= match kr with
             | K k -> fun v -> M.op Op.Alignu v (V.intToV k)
             | _ -> assert false
             ) >>= fun v -> write_reg_sz MachSize.S128 rd v ii >>! B.Next
         | I_BUILD(rd,rn,rm) ->
-            if not morello then Warn.user_error "morello instructions require -variant morello" ;
+            check_morello ii ;
             begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
@@ -727,7 +1126,7 @@ module Make
             M.op Op.Build a b >>= fun v ->
             write_reg_sz MachSize.S128 rd v ii >>! B.Next
         | I_CHKEQ(rn,rm) ->
-            if not morello then Warn.user_error "morello instructions require -variant morello" ;
+            check_morello ii ;
             begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
@@ -735,35 +1134,35 @@ module Make
             M.op Op.Eq v1 v2 >>= fun v -> M.op1 (Op.LeftShift 2) v >>= fun v ->
             write_reg NZP v ii >>! B.Next
         | I_CHKSLD(rn) ->
-            if not morello then Warn.user_error "morello instructions require -variant morello" ;
+            check_morello ii ;
             read_reg_ord_sz MachSize.S128 rn ii >>= fun v ->
             M.op1 Op.CheckSealed v >>= fun v -> write_reg NZP v ii >>! B.Next
         | I_CHKTGD(rn) ->
-            if not morello then Warn.user_error "morello instructions require -variant morello" ;
+            check_morello ii ;
             read_reg_ord_sz MachSize.S128 rn ii >>= fun v ->
             M.op1 Op.CapaGetTag v >>= fun v -> M.op1 (Op.LeftShift 1) v >>= fun v ->
             write_reg NZP v ii >>! B.Next
         | I_CLRTAG(rd,rn) ->
-            if not morello then Warn.user_error "morello instructions require -variant morello" ;
+            check_morello ii ;
             read_reg_ord_sz MachSize.S128 rn ii >>= fun (v) ->
             M.op Op.CapaSetTag v V.zero >>= fun v ->
             write_reg_sz MachSize.S128 rd v ii >>! B.Next
         | I_CPYTYPE(rd,rn,rm) ->
-            if not morello then Warn.user_error "morello instructions require -variant morello" ;
+            check_morello ii ;
             begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
             end >>= fun (v1,v2) -> M.op Op.CpyType v1 v2 >>= fun v ->
             write_reg_sz MachSize.S128 rd v ii >>! B.Next
         | I_CPYVALUE(rd,rn,rm) ->
-            if not morello then Warn.user_error "morello instructions require -variant morello" ;
+            check_morello ii ;
             begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
             end >>= fun (v1,v2) -> M.op Op.SetValue v1 v2 >>= fun v ->
             write_reg_sz MachSize.S128 rd v ii >>! B.Next
         | I_CSEAL(rd,rn,rm) ->
-            if not morello then Warn.user_error "morello instructions require -variant morello" ;
+            check_morello ii ;
             begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
@@ -773,7 +1172,7 @@ module Make
             (* TODO: PSTATE overflow flag would need to be conditionally set *)
             write_reg NZP M.A.V.zero ii >>! B.Next
         | I_GC(op,rd,rn) ->
-            if not morello then Warn.user_error "morello instructions require -variant morello" ;
+            check_morello ii ;
             read_reg_ord_sz MachSize.S128 rn ii >>= begin fun c -> match op with
             | CFHI -> M.op1 (Op.LogicalRightShift 64) c
             | GCFLGS -> M.op1 (Op.AndK "0xff00000000000000") c
@@ -786,7 +1185,7 @@ module Make
             | GCVALUE -> M.op1 (Op.Mask MachSize.Quad) c
             end >>= fun v -> write_reg_sz MachSize.Quad rd v ii >>! B.Next
         | I_SC(op,rd,rn,rm) ->
-            if not morello then Warn.user_error "morello instructions require -variant morello" ;
+            check_morello ii ;
             begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.Quad rm ii
@@ -805,7 +1204,7 @@ module Make
             end >>= fun v ->
             write_reg_sz MachSize.S128 rd v ii >>! B.Next
         | I_SEAL(rd,rn,rm) ->
-            if not morello then Warn.user_error "morello instructions require -variant morello" ;
+            check_morello ii ;
             begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
@@ -813,31 +1212,40 @@ module Make
             M.op Op.Seal a b >>= fun v ->
             write_reg_sz MachSize.S128 rd v ii >>! B.Next
         | I_STCT(rt,rn) ->
-            if not morello then Warn.user_error "morello instructions require -variant morello" ;
+            check_morello ii ;
             (* NB: only 1 access implemented out of the 4 *)
-            lift_memop
-              (read_reg_data MachSize.Quad rt ii)
-              (fun ma mv -> ma >>| mv >>= fun (a,v) ->
-                do_write_morello_tag a v ii >>! B.Next)
+            lift_morello
+              (fun _ac ma mv ->
+                do_insert_commit
+                  (ma >>| mv)
+                  (fun (a,v) -> do_write_morello_tag a v ii >>! B.Next)
+                  ii)
               (to_perms "tw" MachSize.S128)
-              (get_ea rn (AArch64.K 0) AArch64.S_NOEXT ii)
+              (read_reg_ord rn ii)
+              (read_reg_data MachSize.Quad rt ii)
               ii
         | I_LDCT(rt,rn) ->
-            if not morello then Warn.user_error "morello instructions require -variant morello" ;
+            check_morello ii ;
             (* NB: only 1 access implemented out of the 4 *)
-            lift_memop
-              (M.unitT M.A.V.zero)
-              (fun ma _ -> ma >>= fun a ->
-                M.op (Op.CheckPerms "tr_c") a M.A.V.zero >>= fun v ->
-                M.choiceT v
-                  (do_read_morello_tag a ii)
-                  (M.unitT M.A.V.zero)
-                >>= fun tag -> write_reg_sz MachSize.Quad rt tag ii >>! B.Next)
+            lift_morello
+              (fun _ac ma _mv ->
+                M.delay_kont "LDCT" ma
+                  (fun _a ma ->
+                    do_insert_commit ma
+                      (fun a -> (* Why cheeck permissions again ? *)
+                        M.op (Op.CheckPerms "tr_c") a M.A.V.zero >>= fun v ->
+                        M.choiceT v
+                          (do_read_morello_tag a ii)
+                          mzero
+                        >>= fun tag ->
+                        write_reg_sz quad rt tag ii >>! B.Next)
+                      ii))
               (to_perms "r" MachSize.S128)
-              (get_ea rn (AArch64.K 0) AArch64.S_NOEXT ii)
+              (read_reg_ord rn ii)
+              mzero
               ii
         | I_UNSEAL(rd,rn,rm) ->
-            if not morello then Warn.user_error "morello instructions require -variant morello" ;
+            check_morello ii ;
             begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
@@ -847,16 +1255,13 @@ module Make
 
         (* Operations *)
         | I_MOV(var,r,K k) ->
-            (* Masking assumed to be useless, given k size. Hence _sz ignored *)
             (mask32 var
-              (fun k -> write_reg r k ii)
-              (V.intToV k))
+               (fun k -> write_reg r k ii)
+               (V.intToV k))
               >>! B.Next
-
         | I_MOV(var,r1,RV (_,r2)) ->
             let sz = tr_variant var in
             read_reg_ord_sz sz r2 ii >>= fun v -> write_reg r1 v ii >>! B.Next
-
         | I_MOVZ(var,rd,k,os) ->
             movz var rd k os ii
         | I_MOVK(var,rd,k,os) ->
@@ -865,12 +1270,8 @@ module Make
         | I_ADDR (r,lbl) ->
             write_reg r (V.nameToV lbl) ii >>! B.Next
         | I_SXTW(rd,rs) ->
-            let m = V.op1 (Op.LeftShift 31) V.one in
             (read_reg_ord_sz MachSize.Word rs ii) >>=
-            fun v -> (* Encode sign extension 32 -> 64 *)
-              M.op Op.Xor v m >>=
-              fun x -> M.op Op.Sub x m >>=
-                fun v -> write_reg rd v ii >>! B.Next
+             sxtw_op >>= fun v -> write_reg rd v ii >>! B.Next 
 
         | I_OP3(ty,op,rd,rn,kr,os) ->
             let sz = tr_variant ty in
@@ -909,57 +1310,66 @@ module Make
                 (* Keep sharing here, otherwise performance penalty on address
                    dependency by r^r in mixed size mode *)
                 read_reg_ord_sz sz rn ii >>= fun v1 ->
-                (* if present, apply an optional inline barrel shift *)
-                begin match os with
-                | S_NOEXT    -> M.unitT (v1,v1)
-                | s -> check_and_shift op ty s v1
-                       >>= fun v2 -> M.unitT (v1,v2)
-                end
+                  (* if present, apply an optional inline barrel shift *)
+                  begin match os with
+                  | S_NOEXT -> M.unitT (v1,v1)
+                  | s ->
+                      check_and_shift op ty s v1
+                      >>= fun v2 -> M.unitT (v1,v2)
+                  end
             | RV (_,r) -> (* register variant *)
                 (* no sharing, we optionally shift v2 and return the pair *)
                 read_reg_ord_sz sz rn ii  >>| read_reg_ord_sz sz r ii
-                (* if present, apply an optional inline barrel shift *)
-                >>= fun (v1,v2) ->
-                begin match os with
-                | S_NOEXT -> M.unitT (v1,v2)
-                | s -> check_and_shift op ty s v2
-                       >>= fun v2 -> M.unitT(v1,v2)
-                end
-            | K k -> (* immediate  *)
-                read_reg_ord_sz sz rn ii >>|
-                begin match os with
-                | S_NOEXT -> M.unitT (V.intToV k)
-                | s -> check_and_shift op ty s (V.intToV k)
-                end
+                  (* if present, apply an optional inline barrel shift *)
+                  >>= fun (v1,v2) ->
+                    begin match os with
+                    | S_NOEXT -> M.unitT (v1,v2)
+                    | s -> check_and_shift op ty s v2
+                          >>= fun v2 -> M.unitT(v1,v2)
+                    end
+              | K k -> (* immediate  *)
+                  read_reg_ord_sz sz rn ii >>|
+                  begin match os with
+                  | S_NOEXT -> M.unitT (V.intToV k)
+                  | s -> check_and_shift op ty s (V.intToV k)
+                  end
             end
-              >>=
-            begin match ty with
-            | V128 ->
-              if not morello then Warn.user_error "morello instructions require -variant morello" ;
-              begin match op with
-              | ADD -> fun (v1,v2) -> M.op Op.CapaAdd v1 v2
-              | SUB -> fun (v1,v2) -> M.op Op.CapaSub v1 v2
-              | SUBS -> fun (v1,v2) -> M.op Op.CapaSubs v1 v2
-              | _ -> assert false
-            end
-            | _ -> begin match op with
-              | ADD|ADDS -> fun (v1,v2) -> M.add v1 v2
-              | EOR -> fun (v1,v2) -> M.op Op.Xor v1 v2
-              | ORR -> fun (v1,v2) -> M.op Op.Or v1 v2
-              | SUB|SUBS -> fun (v1,v2) -> M.op Op.Sub v1 v2
-              | AND|ANDS -> fun (v1,v2) -> M.op Op.And v1 v2
-              | ASR -> fun (v1, v2) -> M.op Op.ASR v1 v2
-              end
-            end
-             >>=
-            (let m =  (fun v ->
-              (write_reg rd v ii) >>|
-              (match op with
-              | ADDS|SUBS|ANDS -> is_zero v >>= fun v -> write_reg NZP v ii
-              | ADD|EOR|ORR|AND|SUB|ASR -> M.unitT ())) in
-            mask32 ty m) >>!
-            B.Next
-              (* Barrier *)
+            >>=
+              begin match ty with
+              | V128 ->
+                  check_morello ii ;
+                  begin match op with
+                  | ADD -> fun (v1,v2) -> M.op Op.CapaAdd v1 v2
+                  | SUB -> fun (v1,v2) -> M.op Op.CapaSub v1 v2
+                  | SUBS -> fun (v1,v2) -> M.op Op.CapaSubs v1 v2
+                  | _ ->
+                      Warn.fatal
+                        "Operation '%s' is not available in morello mode"
+                        (AArch64.pp_op op)
+                  end
+              | _ ->
+                  begin match op with
+                  | ADD|ADDS -> fun (v1,v2) -> M.add v1 v2
+                  | EOR -> fun (v1,v2) -> M.op Op.Xor v1 v2
+                  | ORR -> fun (v1,v2) -> M.op Op.Or v1 v2
+                  | SUB|SUBS -> fun (v1,v2) -> M.op Op.Sub v1 v2
+                  | AND|ANDS -> fun (v1,v2) -> M.op Op.And v1 v2
+                  | ASR -> fun (v1, v2) -> M.op Op.ASR v1 v2
+                  | LSR -> fun (v1,v2) -> M.op Op.Lsr v1 v2
+                  | LSL -> fun (v1,v2) -> M.op Op.ShiftLeft v1 v2
+                  | BIC|BICS -> fun (v1,v2) -> M.op Op.AndNot2 v1 v2
+                  end
+              end >>=
+              (let m v =
+                 (write_reg rd v ii) >>|
+                   (match op with
+                    | ADDS|SUBS|ANDS|BICS
+                      -> is_zero v >>= fun v -> write_reg NZP v ii
+                    | ADD|EOR|ORR|AND|SUB|ASR|LSR|LSL|BIC
+                      -> M.unitT ()) in
+               mask32 ty m) >>! B.Next
+
+      (* Barrier *)
         | I_FENCE b ->
             (create_barrier b ii) >>! B.Next
               (* Conditional selection *)
@@ -969,23 +1379,23 @@ module Make
             | Cpy -> fun m -> m
             | Inc|Inv|Neg -> mask32 var in
             if not (C.variant Variant.NotWeakPredicated) then
-              read_reg_ord NZP ii >>= tr_cond c >>*= fun v ->
-                (*commit_bcc ii >>= fun () ->*)
+              read_reg_ord NZP ii >>= tr_cond c >>= fun v ->
                 M.choiceT v
                   (read_reg_data sz r2 ii >>= fun v -> write_reg r1 v ii)
                   (read_reg_data sz r3 ii >>=
-                   csel_op op >>= mask (fun v ->  write_reg r1 v ii))
-                  >>! B.Next
+                     csel_op op >>= mask (fun v ->  write_reg r1 v ii))
+                >>! B.Next
             else
               begin
                 (read_reg_ord NZP ii >>= tr_cond c) >>|  read_reg_data sz r2 ii >>| read_reg_data sz r3 ii
               end >>= fun ((v,v2),v3) ->
-                M.condPredT v
-                  (M.unitT ())
-                  (write_reg r1 v2 ii)
-                  (csel_op op v3 >>= mask (fun v ->  write_reg r1 v ii))
-                >>! B.Next
-(* Swap *)
+              M.condPredT v
+                (M.unitT ())
+                (write_reg r1 v2 ii)
+                (csel_op op v3 >>= mask (fun v ->  write_reg r1 v ii))
+                  >>! B.Next
+
+        (* Swap *)
         | I_SWP (v,rmw,r1,r2,r3) -> swp (tr_variant v) rmw r1 r2 r3 ii >>! B.Next
         | I_SWPBH (v,rmw,r1,r2,r3) -> swp (bh_to_sz v) rmw r1 r2 r3 ii >>! B.Next
 (* Compare & Swap *)
@@ -1006,10 +1416,17 @@ module Make
             ldop op (bh_to_sz v) (w_to_rmw w) rs ZR rn ii >>! B.Next
         | I_LDOPBH (op,v,rmw,rs,rt,rn) ->
             ldop op (bh_to_sz v) rmw rs rt rn ii >>! B.Next
+(* Page tables and TLBs *)
+        | I_TLBI (op, rd) ->
+            read_reg_ord rd ii >>= fun a ->
+              do_inv op a ii >>! B.Next
+(* Data cache instructions *)
+        | I_DC (op,rd) -> read_reg_ord rd ii >>= fun a ->
+            do_dc op a ii >>! B.Next
 (*  Cannot handle *)
-        | (I_RBIT _|I_MRS _|I_LDP _|I_STP _|I_IC _|I_DC _|I_BL _|I_BLR _|I_BR _|I_RET _) as i ->
-            Warn.fatal "illegal instruction: %s"
-              (AArch64.dump_instruction i)
+        | (I_RBIT _|I_MRS _|I_LDP _|I_STP _|I_IC _
+        | I_BL _|I_BLR _|I_BR _|I_RET _) as i ->
+            Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
         | I_LD1 _ | I_LD1M _ | I_LD1R _ | I_LD2 _ | I_LD2M _ | I_LD2R _
         | I_LD3 _ | I_LD3M _ | I_LD3R _ | I_LD4 _ | I_LD4M _ | I_LD4R _
         | I_LDP_SIMD _ | I_LDP_P_SIMD _ | I_LDR_SIMD _ | I_LDR_P_SIMD _ | I_LDUR_SIMD _
@@ -1017,7 +1434,7 @@ module Make
         | I_STP_SIMD _ | I_STP_P_SIMD _ | I_STR_SIMD _ | I_STR_P_SIMD _ | I_STUR_SIMD _
         | I_MOV_S _ | I_MOV_V _ | I_MOV_VE _ | I_MOV_TG _ | I_MOV_FG _ | I_MOVI_S _ | I_MOVI_V _
         | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _ ->
-          Warn.fatal "Neon instructions are not currently supported"
-       )
+            Warn.fatal "Neon instructions are not currently supported"
+        )
     end
-end
+  end

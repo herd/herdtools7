@@ -16,19 +16,31 @@
 (****************************************************************************)
 
 open Constant
+open TestType
+open LocationsItem
 open MiscParser
 open ConstrGen
+
 let mk_sym_tag s t =
-  Symbolic {default_symbolic_data with name=s;tag=Some t;}
+  Symbolic (Virtual {default_symbolic_data with name=s;tag=Some t;})
+
 let mk_sym_morello p s t =
   let p_int = (Misc.string_as_int p) in
   if p_int land 0x7 <> 0 || p_int >= 1 lsl 36
     then Printf.eprintf "Warning: incorrect address encoding: %#x\n" p_int ;
   let truncated_perms = p_int lsr 3 in
   let tag = if Misc.string_as_int t <> 0 then 1 else 0 in
-  Symbolic {default_symbolic_data with name=s;cap=truncated_perms lor (tag lsl 33)}
-let mk_sym_with_index s i = Symbolic
-  {default_symbolic_data with name=s; offset=Misc.string_as_int i}
+  Symbolic
+    (Virtual
+       {default_symbolic_data
+       with name=s;cap=truncated_perms lor (tag lsl 33)})
+
+let mk_sym_with_index s i =
+  Symbolic
+    (Virtual
+       {default_symbolic_data
+       with name=s; offset=Misc.string_as_int i})
+
 let mk_lab p s = Label (p,s)
 %}
 
@@ -46,6 +58,7 @@ let mk_lab p s = Label (p,s)
 %token LBRK RBRK LPAR RPAR LCURLY RCURLY SEMI COLON AMPER COMMA
 %token ATOMIC
 %token ATOMICINIT
+%token ATTRS
 
 %token PTX_REG_DEC
 %token <string> PTX_REG_TYPE
@@ -55,20 +68,20 @@ let mk_lab p s = Label (p,s)
 %right IMPLIES
 %nonassoc NOT
 
+%type <PTEVal.t> pteval
+%start pteval
 %type <MiscParser.state> init
 %start init
 %type <MiscParser.location> main_location
 %start main_location
-%type <(MiscParser.location ConstrGen.rloc * MiscParser.run_type) list * MiscParser.prop option * MiscParser.constr * (string * MiscParser.quantifier) list> constraints
+%type < (MiscParser.location,MiscParser.maybev) LocationsItem.t list * MiscParser.prop option * MiscParser.constr * (string * MiscParser.quantifier) list> constraints
 %start constraints
 %type  <MiscParser.constr> main_constr
 %start main_constr
 %type  <MiscParser.constr> skip_loc_constr
 %start skip_loc_constr
-%type  <(MiscParser.location ConstrGen.rloc * MiscParser.run_type) list * MiscParser.constr> main_loc_constr
+%type  <(MiscParser.location,MiscParser.maybev) LocationsItem.t list * MiscParser.constr> main_loc_constr
 %start main_loc_constr
-%type <MiscParser.location list> main_locs
-%start main_locs
 %type <MiscParser.prop option> main_filter
 %start main_filter
 %%
@@ -89,9 +102,21 @@ location_global:
 | NUM COLON NAME COLON NUM {mk_sym_morello $1 $3 $5}
 | NAME COLON NUM { mk_sym_morello "0" $1 $3 }
 
+name_or_num:
+| NAME { $1 }
+| NUM { $1 }
+
+maybev_prop:
+| separated_pair(NAME, COLON, name_or_num) { PTEVal.KV $1 }
+| ATTRS COLON LPAR separated_nonempty_list(COMMA, NAME) RPAR { PTEVal.Attrs $4 }
+
+pteval:
+| LPAR separated_nonempty_list(COMMA, maybev_prop) RPAR
+    { PTEVal.of_list0 $2 }
+
 maybev_notag:
-| location_global { $1 }
 | NUM  { Concrete $1 }
+| location_global { $1 }
 /* conflicts with location_reg:
 | NUM COLON NAME { mk_sym_morello $1 $3 "0" }
 */
@@ -167,6 +192,8 @@ atom_init:
 | NAME STAR location EQUAL amperopt maybev { ($3,(Pointer $1,$6))}
 | STAR location { ($2,(TyDefPointer,ParsedConstant.zero))}
 | STAR location EQUAL amperopt maybev { ($2,(TyDefPointer,$5))}
+| location EQUAL LPAR separated_nonempty_list(COMMA, maybev_prop) RPAR 
+  { ($1,(Ty "pteval_t", mk_pte_val $1 $4)) }
 
 amperopt:
 | AMPER { () }
@@ -188,17 +215,20 @@ rloc_typ:
 | rloc NAME { ($1, Ty $2) }
 | rloc NAME STAR { ($1, Pointer $2) }
 
-main_locs:
-| ls = list(location)  EOF { ls }
+fault: FAULT LPAR lbl COMMA NAME RPAR { ($3,mk_sym $5) }
 
-rloc_semi_list:
-| {[]}
-| SEMI {[]}
-| rloc_typ {$1::[]}
-| rloc_typ SEMI rloc_semi_list  {$1::$3}
+loc_item:
+| rloc_typ { let a,t = $1 in LocationsItem.Loc (a,t) }
+| fault {  Fault $1 }
+
+loc_items:
+| loc_item {$1::[]}
+| loc_item SEMI {$1::[]}
+| loc_item SEMI loc_items  {$1::$3}
 
 locations:
-|  LOCATIONS LBRK rloc_semi_list RBRK { $3 }
+| LOCATIONS LBRK loc_items RBRK { $3 }
+| LOCATIONS LBRK RBRK { [] }
 | { [] }
 
 filter:
@@ -275,7 +305,7 @@ lbl:
 | PROC COLON NAME { ($1,Some $3) }
 
 rloc:
-| location { Loc $1 }
+| location { ConstrGen.Loc $1 }
 | locindex { $1 }
 
 locindex:
@@ -304,7 +334,9 @@ atom_prop:
       Not (Atom (LV (Loc $1,vec))) }
 | location EQUAL location_deref {Atom (LL ($1,$3))}
 | location EQUALEQUAL location_deref {Atom (LL ($1,$3))}
-| FAULT LPAR lbl COMMA NAME RPAR { Atom (FF ($3,mk_sym $5)) }
+| fault { Atom (FF $1) }
+| location EQUAL LPAR separated_nonempty_list(COMMA, maybev_prop) RPAR
+  { Atom (LV (Loc $1, mk_pte_val $1 $4)) }
 
 prop:
 | TRUE

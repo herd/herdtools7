@@ -91,7 +91,7 @@ let get_arch =
                                         (CArch_jingle)(CLexParse)
                  type parsedPseudo = CArch_jingle.parsedPseudo
                  let instr_from_string s =
-                   CGenParser_lib.call_parser "themes" (Lexing.from_string s)
+                   GenParserUtils.call_parser "themes" (Lexing.from_string s)
                                          CLexParse.deep_lexer
                                          CLexParse.instr_parser
                end

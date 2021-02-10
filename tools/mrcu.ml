@@ -134,10 +134,10 @@ module Top
       let fence = Pfence (Fence (["mb"],None))
 
       let store_release x v =
-        Pst  (Addr_op_atom (Abs (ParsedConstant.nameToV x)),Imm v,["release"])
+        Pst  (Addr_op_atom (Abs x),Imm v,["release"])
 
       let read_acquire r x =
-        Pld (r,Addr_op_atom (Abs (ParsedConstant.nameToV x)),["acquire"])
+        Pld (r,Addr_op_atom (Abs x),["acquire"])
 
       let set r = Pmov (r,RAI (IAR_imm 1))
 

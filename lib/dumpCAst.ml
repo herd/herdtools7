@@ -14,7 +14,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-
 type code = string CAst.t
 
 let dump_prog cfun =

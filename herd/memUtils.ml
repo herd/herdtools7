@@ -526,10 +526,12 @@ let lift_proc_info i evts =
   let is_aligned sz e =
     let a = Misc.as_some (E.global_loc_of e)
     and sz_e = E.get_mem_size e in
+    let open Constant in
     match a with
-    | A.V.Val (Constant.Symbolic {Constant.name=s;Constant.offset=idx;_}) ->
-        let sz_s =
-          A.look_size sz s in
+    | A.V.Val
+      (Symbolic (Virtual {Constant.name=s;Constant.offset=idx;_}))
+      ->
+        let sz_s = A.look_size sz s in
         List.exists (Misc.int_eq idx) (MachSize.get_off sz_s sz_e)
     | _ -> assert false
 

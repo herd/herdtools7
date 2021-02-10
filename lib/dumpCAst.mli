@@ -16,7 +16,6 @@
 
 
 (* Dumping litmus-style internal representation of C code *)
-
 type code = string CAst.t
 
 val dump_prog_lines :  code list -> string list

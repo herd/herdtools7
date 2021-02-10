@@ -17,17 +17,21 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
   struct
     include AArch64Base
 
+    let is_kvm = C.variant Variant.Kvm
+
     let is_amo _ = false
     let pp_barrier_short = pp_barrier
     let reject_mixed = true
 
     type annot = A | XA | L | XL | X | N | Q | NoRet | T | S
+    type nexp =  AF|DB|Other
+    type explicit = Exp | NExp of nexp
     type lannot = annot
 
     let empty_annot = N
     let tag_annot = T
-
-    let wrap_is is_fun a = is_fun a
+    let exp_annot = Exp
+    let nexp_annot = NExp Other
 
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
@@ -39,7 +43,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | XA | XL | X | NoRet -> true
       | _ -> false
 
-    let is_atomic = wrap_is _is_atomic
+    let is_atomic = _is_atomic
 
     let is_noreturn = function
       | NoRet -> true
@@ -61,6 +65,19 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | T -> true
       | _ -> false
 
+    let is_explicit = function
+      | Exp -> true
+      | _ -> false
+    and is_not_explicit = function
+      | NExp _-> true
+      | _ -> false
+    and is_af = function (* Setting of access flag *)
+      | NExp AF-> true
+      | _ -> false
+    and is_db = function (* Setting of dirty bit flag *)
+      | NExp DB -> true
+      | _ -> false
+
     let barrier_sets =
       do_fold_dmb_dsb true
         (fun b k ->
@@ -70,12 +87,19 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     let annot_sets = [
       "X", is_atomic;
-      "A",  wrap_is is_acquire;
-      "Q",  wrap_is is_acquire_pc;
-      "L",  wrap_is is_release;
-      "NoRet", wrap_is is_noreturn;
-      "T", wrap_is is_tag;
+      "A",  is_acquire;
+      "Q",  is_acquire_pc;
+      "L",  is_release;
+      "NoRet", is_noreturn;
+      "T", is_tag;
       "S", is_speculated;
+    ]
+
+    let explicit_sets = [
+      "Exp", is_explicit;
+      "NExp", is_not_explicit;
+      "AF", is_af;
+      "DB", is_db;
     ]
 
     let is_isync = is_barrier ISB
@@ -93,6 +117,11 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | T -> "Tag"
       | S -> "^s"
 
+    let pp_explicit = function
+      | Exp -> if is_kvm && C.verbose > 2 then "Exp" else ""
+      | NExp Other-> "NExp"
+      | NExp AF-> "NExpAF"
+      | NExp DB-> "NExpDB"
     module V = V
 
     let mem_access_size = function
@@ -119,6 +148,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | I_CLRTAG _|I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SEAL _
       | I_STCT _|I_UNSEAL _
       | I_SC _
+      | I_TLBI (_,_)
           -> None
       | I_LD1 _ | I_LD1M _ | I_LD1R _ | I_LD2 _ | I_LD2M _ | I_LD2R _
       | I_LD3 _ | I_LD3M _ | I_LD3R _ | I_LD4 _ | I_LD4M _ | I_LD4R _

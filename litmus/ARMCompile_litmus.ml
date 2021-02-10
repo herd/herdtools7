@@ -27,9 +27,12 @@ module Make(V:Constant.S)(C:Config) =
     open Printf
 
     let is_ret _ = assert false
+    and is_nop = function
+      | A.I_NOP -> true
+      | _ -> false
 
 (* No addresses in code *)
-    let extract_addrs _ins = StringSet.empty
+    let extract_addrs _ins = Global_litmus.Set.empty
 
     let stable_regs _ins = A.RegSet.empty
 
@@ -203,6 +206,8 @@ module Make(V:Constant.S)(C:Config) =
     let emit_barrier memo o =
       let memo = sprintf "%s %s" memo (emit_opt o) in
       { empty_ins with memo =memo; }
+
+    let user_mode = [] and kernel_mode = []
 
     let compile_ins tr_lab ins k = match ins with
     | I_NOP -> { empty_ins with memo = "nop"; }::k

@@ -32,7 +32,8 @@ module type S = sig
         rmw : bool ;
         cell : v ;
         bank : Code.bank ;
-        idx : int ; }
+        idx : int ;
+        pte : PTEVal.t ; }
 
   val evt_null : event
   val make_wsi : int -> Code.loc -> event
@@ -85,6 +86,8 @@ module type S = sig
 
 (* Return coherence orders *)
   val coherence : node -> (string * (node * IntSet.t) list list) list
+(* Return last pteval in pte accesses coherence *)
+  val last_ptes : node -> (string * PTEVal.t) list
 (* All locations *)
   val get_globals : node -> string list
 (* All (modified) code labels *)
@@ -110,6 +113,8 @@ module Make (O:Config) (E:Edge.S) :
   let dbg = false
   let do_memtag = O.variant Variant_gen.MemTag
   let do_morello = O.variant Variant_gen.Morello
+  let do_kvm = O.variant Variant_gen.KVM
+
   type fence = E.fence
   type edge = E.edge
   type atom = E.atom
@@ -124,13 +129,17 @@ module Make (O:Config) (E:Edge.S) :
         rmw : bool ;
         cell : v ; (* value of cell at node... *)
         bank : Code.bank ;
-        idx : int ; }
+        idx : int ;
+        pte : PTEVal.t ; }
+
+  let pte_default = PTEVal.default "*"
 
   let evt_null =
     { loc=Code.loc_none ; ord=0; tag=0;
       ctag=0; cseal=0; dep=0;
       v=(-1) ; dir=None; proc=(-1); atom=None; rmw=false;
-      cell=(-1); bank=Code.Ord; idx=(-1); }
+      cell=(-1); bank=Code.Ord; idx=(-1);
+      pte=pte_default; }
 
   let make_wsi idx loc = { evt_null with dir=Some W ; loc=loc; idx=idx; v=0;}
 
@@ -169,18 +178,17 @@ module Make (O:Config) (E:Edge.S) :
     else fun _ -> ""
 
   let debug_evt e =
-    if O.hexa then
-      sprintf "%s%s %s 0x%x%s%s"
-        (debug_dir e.dir)
-        (debug_atom e.atom)
-        (Code.pp_loc e.loc)
-        e.v (debug_tag e) (debug_morello e)
-    else
-      sprintf "%s%s %s %i%s%s"
-        (debug_dir e.dir)
-        (debug_atom e.atom)
-        (Code.pp_loc e.loc) e.v
-        (debug_tag e) (debug_morello e)
+    let pp_v =
+      match e.bank with
+      | Pte -> PTEVal.pp e.pte
+      | (Ord|Tag|CapaTag|CapaSeal) ->
+          if O.hexa then sprintf "0x%x" e.v
+          else sprintf "%i" e.v in
+    sprintf "%s%s %s %s%s%s"
+      (debug_dir e.dir)
+      (debug_atom e.atom)
+      (Code.pp_loc e.loc)
+      pp_v (debug_tag e) (debug_morello e)
 
   let debug_edge = E.pp_edge
 
@@ -329,7 +337,7 @@ let find_real_edge_prev = find_edge_prev is_real_edge
 
 module Env = Map.Make(String)
 
-let locs =
+let locs,next_x =
   let t = Array.make 26 "" in
   t.(0) <- "x" ;
   t.(1) <- "y" ;
@@ -337,7 +345,7 @@ let locs =
   for k=0 to (26-3)-1 do
     t.(k+3) <- String.make 1 (Char.chr (Char.code 'a' + k))
   done ;
-  t
+  t,t.(1)
 
 let locs_len = Array.length locs
 
@@ -368,12 +376,17 @@ let start_co _ = co_st_1
 let get_co st bank =
   try CoSt.find bank st with Not_found -> assert false
 
-let set_co st bank v = CoSt.add bank v st
+let set_co st bank v = match bank with
+| Pte -> st
+| _  -> CoSt.add bank v st
 
 let next_co st bank =
   let v = get_co st bank in
   CoSt.add bank (v+1) st
 
+let pte_val_init loc = match loc with
+| Code.Data loc when do_kvm -> PTEVal.default loc
+| _ -> pte_default
 
 (****************************)
 (* Add events in edge cycle *)
@@ -586,7 +599,7 @@ let set_same_loc st n0 =
     let e = { e with cell=E.overwrite_value old e.atom e.v} in
     n.evt <- e
 
-  let rec do_set_write_val old next = function
+  let rec do_set_write_val old next pte_val = function
     | [] -> ()
     | n::ns ->
         begin if Code.is_data n.evt.loc then
@@ -614,23 +627,47 @@ let set_same_loc st n0 =
                     set_cell n (get_co old Ord) ;
                     do_set_write_val
                       (set_co old bank n.evt.cell)
-                      (if E.is_node n.edge.E.edge then next else next_co next Ord) ns
-                | Tag | CapaTag | CapaSeal ->
-                    let v = get_co next bank in
+                      (if E.is_node n.edge.E.edge then next
+                       else next_co next Ord)
+                      pte_val ns
+                | Tag|CapaTag|CapaSeal ->
+                    let v =  get_co next Tag in
                     n.evt <- { n.evt with v = v; } ;
                     do_set_write_val (set_co old bank v)
-                      (next_co next bank) ns
+                      (next_co next bank) pte_val ns
+                | Pte ->
+                    let pte_val =
+                      if do_kvm then begin
+                        let next_loc () =
+                          match n.evt.loc with
+                          | Code.Data x ->
+                              begin try
+                                let m =
+                                  find_node
+                                    (fun m -> match m.evt.loc with
+                                    | Code.Data y -> not (Misc.string_eq x y)
+                                    | _-> false) n in
+                                Code.as_data m.evt.loc
+                              with Not_found -> next_x end
+                          | Code.Code _ -> assert false in
+                        E.set_pteval n.evt.atom pte_val next_loc
+                      end else pte_val in
+                    n.evt <- { n.evt with pte = pte_val; } ;
+                    do_set_write_val old next pte_val ns
                 end
             | Code _ ->
-                do_set_write_val old next ns
+                do_set_write_val old next pte_val ns
             end
-        | (Some R) | Some J |None ->  do_set_write_val old next ns
+        | (Some R) | Some J |None ->  do_set_write_val old next pte_val ns
         end
 
   let set_all_write_val nss =
     List.iter
-      (fun ns ->
-        do_set_write_val co_st_0 (start_co ns) ns)
+      (fun ns -> match ns with
+      | [] -> ()
+      | n::_ ->
+          do_set_write_val
+            co_st_0 (start_co ns) (pte_val_init n.evt.loc) ns)
       nss
 
   let set_write_v n =
@@ -682,28 +719,40 @@ let set_read_v n cell =
 
 let do_set_read_v =
 
-  let rec do_rec st cell  = function
-    | [] -> cell
+  let rec do_rec st cell pte_cell = function
+    | [] -> cell,pte_cell
     | n::ns ->
         begin match n.evt.dir with
         | Some R ->
             begin match  n.evt.bank with
             | Ord ->
                 set_read_v n cell
-            | b ->
-                n.evt <- { n.evt with v = get_co st b; }
+            | Tag|CapaTag|CapaSeal as bank ->
+                n.evt <- { n.evt with v = get_co st bank; }
+            | Pte ->
+                n.evt <- { n.evt with pte =  pte_cell; }
             end ;
-            do_rec st cell ns
+            do_rec st cell pte_cell ns
         | Some W ->
             let st = set_co st n.evt.bank n.evt.v in
+            let bank = n.evt.bank in
             do_rec st
-              (match n.evt.bank with | Ord -> n.evt.cell | Tag | CapaTag
-                | CapaSeal -> cell)
+              (match bank with
+               | Ord -> n.evt.cell
+               | Tag|CapaTag|CapaSeal|Pte -> cell)
+              (match bank with
+               | Ord|Tag|CapaTag|CapaSeal -> pte_cell
+               | Pte -> n.evt.pte)
               ns
         | None | Some J ->
-            do_rec st cell ns
+            do_rec st cell pte_cell ns
         end in
-  do_rec co_st_0 0
+  fun ns -> match ns with
+  | []   -> assert false
+  | n::_ ->
+      do_rec co_st_0 0
+        (pte_val_init n.evt.loc)
+        ns
 
 let set_read_v nss =
   List.fold_right
@@ -755,7 +804,7 @@ let finish n =
     eprintf "FINAL VALUES [%s]\n"
       (String.concat ","
          (List.map
-            (fun (loc,v) -> sprintf "%s -> 0x%x"
+            (fun (loc,(v,_pte)) -> sprintf "%s -> 0x%x"
                 (Code.pp_loc loc) v) vs))
   end ;
   if O.variant Variant_gen.Self then check_fetch n ;
@@ -938,7 +987,7 @@ let rec group_rec x ns = function
     do_rec n
 
 
-  let get_ord_writes n =
+  let do_get_writes bank n =
     let rec do_rec m =
       let k =
         if m.next == n then []
@@ -948,12 +997,14 @@ let rec group_rec x ns = function
       | Some W ->
           if
             E.is_node m.edge.E.edge ||
-            m.evt.bank <> Code.Ord
+            m.evt.bank <> bank
           then k else (e.loc,m)::k
       | None| Some R | Some J -> k in
       k in
-
     do_rec n
+
+  let get_ord_writes = do_get_writes Code.Ord
+  let get_pte_writes = do_get_writes Code.Pte
 
   let get_observers n =
     let e = n.evt in
@@ -972,7 +1023,7 @@ let rec group_rec x ns = function
 (*
         List.iter
           (fun (loc,n) ->
-            eprintf "LOC=%s, node=%a\n" loc debug_node n)
+            eprintf "LOC=%s, node=%a\n" (Code.pp_loc loc) debug_node n)
           ws ;
 *)
         let r = by_loc ws in
@@ -1004,6 +1055,20 @@ let rec group_rec x ns = function
               ns)::k
         | Code _ ->  k)
       r []
+
+  let last_ptes n =
+    match find_change n with
+    | Some n ->
+        let ws = get_pte_writes n in
+        let r = by_loc ws in
+        List.fold_right
+          (fun (loc,ns) k -> match List.flatten ns with
+          | []|[_]|_::_::_::_ -> k
+          | [_;n;] ->
+              let p = n.evt.pte in
+              (Misc.add_pte (Code.as_data loc),p)::k)
+          r []
+    | None ->  []
 
 (* Get all shared locations/labels *)
 

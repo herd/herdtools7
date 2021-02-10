@@ -88,6 +88,8 @@ module RLocSet =
       let compare = ConstrGen.compare_rloc location_compare
     end)
 
+type locations = (location,maybev) LocationsItem.t list
+
 type prop = (location, maybev) ConstrGen.prop
 type constr = prop ConstrGen.constr
 type quantifier = ConstrGen.kind
@@ -104,57 +106,58 @@ let pp_outcome o =
   String.concat " "
     (List.map (fun a -> sprintf "%s;" (pp_atom a)) o)
 
-type run_type =
-  | TyDef | TyDefPointer
-  | Ty of string | Pointer of string
-  | TyArray of string * int
-  | Atomic of string
+type state = (location * (TestType.t * maybev)) list
 
-let pp_run_type = function
-  | TyDef -> "TyDef"
-  | TyDefPointer -> "TyDefPointer"
-  | Ty s -> sprintf "Ty<%s>" s
-  | Atomic s -> sprintf "Atomic<%s>" s
-  | Pointer s -> sprintf "Pointer<%s>" s
-  | TyArray (s,sz) -> sprintf "TyArray<%s,%i>" s sz
+(* Check that initialisations are unique *)
 
-let is_array = function
-  | TyArray _ -> true
-  | _       -> false
+let check_env_for_dups env =
+  let bad,_ =
+    List.fold_left
+      (fun (bad,seen) (loc,_) ->
+        if LocSet.mem loc seen then LocSet.add loc bad,seen
+        else bad,LocSet.add loc seen)
+      (LocSet.empty,LocSet.empty)
+      env in
+  if not (LocSet.is_empty bad) then begin
+    match LocSet.as_singleton bad with
+    | Some loc ->
+        Warn.user_error
+          "Location %s is initialized more than once"
+          (dump_location loc)
+    | None ->
+        Warn.user_error
+          "Locations {%s} are initialized more than once"
+          (LocSet.pp_str "," dump_location bad)
+  end
 
-let get_array_primitive_ty = function
-  | TyArray (ty,_) -> ty
-  | _ -> assert false
+let mk_pte_val pte l =
+  let open Constant in
+  let s = match pte with
+  | Location_global (Symbolic (System (PTE,s))) -> s
+  | Location_global (Symbolic (Virtual {tag;offset;_})) ->
+    assert (offset = 0) ;
+    assert (Misc.is_none tag) ;
+    ""
+  | Location_reg _ -> ""
+  | _ -> Warn.user_error "Expected a PTE or a register" in
+  let v = PTEVal.of_list s l in
+  PteVal v
 
-type state = (location * (run_type * maybev)) list
-
-
-let dump_state_atom dump_loc dump_val (loc,(t,v)) = match t with
-| TyDef ->
-    sprintf "%s=%s" (dump_loc loc) (dump_val v)
-| TyDefPointer ->
-    sprintf "*%s=%s" (dump_loc loc) (dump_val v)
-| Ty t ->
-    sprintf "%s %s=%s" t (dump_loc loc) (dump_val v)
-| Atomic t ->
-    sprintf "_Atomic %s %s=%s" t (dump_loc loc) (dump_val v)
-| Pointer t ->
-    sprintf "%s *%s=%s" t (dump_loc loc) (dump_val v)
-| TyArray (t,sz) ->
-    sprintf "%s %s[%i]" t (dump_loc loc) sz
-
-(* Simplified typing, size only, integer types only *)
-let size_of maximal = function
-| "atomic_t"
-| "int"|"long"
-| "int32_t"
-| "uint32_t" ->  MachSize.Word
-| "char"|"int8_t" |"uint8_t" -> MachSize.Byte
-| "short" | "int16_t" | "uint16_t" -> MachSize.Short
-| "int64_t" | "uint64_t" -> MachSize.Quad
-| "int128_t" | "uint128_t" -> MachSize.S128
-| "intptr_t" | "uintptr_t" -> maximal (* Maximal size = ptr size *)
-| t -> Warn.fatal "Cannot find the size of type %s" t
+let dump_state_atom dump_loc dump_val (loc,(t,v)) =
+  let open TestType in
+  match t with
+  | TyDef ->
+      sprintf "%s=%s" (dump_loc loc) (dump_val v)
+  | TyDefPointer ->
+      sprintf "*%s=%s" (dump_loc loc) (dump_val v)
+  | Ty t ->
+      sprintf "%s %s=%s" t (dump_loc loc) (dump_val v)
+  | Atomic t ->
+      sprintf "_Atomic %s %s=%s" t (dump_loc loc) (dump_val v)
+  | Pointer t ->
+      sprintf "%s *%s=%s" t (dump_loc loc) (dump_val v)
+  | TyArray (t,sz) ->
+      sprintf "%s %s[%i]" t (dump_loc loc) sz
 
 (* Packed result *)
 type info = (string * string) list
@@ -168,31 +171,31 @@ type extra_data =
 
 let empty_extra = NoExtra
 
-type ('i, 'p, 'prop, 'loc) result =
+type ('i, 'p, 'prop, 'loc, 'v) result =
     { info : info ;
       init : 'i ;
       prog : 'p ;
       filter : 'prop option ;
       condition : 'prop ConstrGen.constr ;
-      locations : ('loc ConstrGen.rloc * run_type) list ;
+      locations : ('loc,'v) LocationsItem.t list ;
       extra_data : extra_data ;
 }
 
 (* Easier to handle *)
 type ('loc,'v,'ins) r3 =
-      (('loc * (run_type * 'v)) list,
+      (('loc * (TestType.t * 'v)) list,
        (proc * 'ins list) list,
        ('loc, 'v) ConstrGen.prop,
-       'loc) result
+       'loc, 'v) result
 
 type ('loc,'v,'code) r4 =
-      (('loc * (run_type * 'v)) list,
+      (('loc * (TestType.t * 'v)) list,
        'code list,
        ('loc, 'v) ConstrGen.prop,
-       'loc) result
+       'loc, 'v) result
 
 (* Result of generic parsing *)
-type 'pseudo t = (state, (proc * 'pseudo list) list, prop, location) result
+type 'pseudo t = (state, (proc * 'pseudo list) list, prop, location, maybev) result
 
 (* Add empty GPU/Bell info to machine parsers *)
 
@@ -204,21 +207,30 @@ let mach2generic parser lexer buff =
 let hash_key =  "Hash"
 and stable_key = "Stable"
 and align_key = "Align"
+and tthm_key = "TTHM"
+and variant_key = "Variant"
+and user_key = "user"
+and el0_key = "el0"
+let low_hash = "hash"
+
+let get_info_on_info key =
+  let key = Misc.lowercase key in
+  let rec find = function
+    | [] -> None
+    | (k,v)::rem ->
+        if Misc.string_eq (Misc.lowercase k) key then Some v
+        else find rem in
+  find
 
 (* get hash from info fields *)
-
-
-let get_hash p =
-  try Some (List.assoc hash_key p.info)
-  with Not_found -> None
+let get_hash p = get_info_on_info hash_key p.info
 
 let rec set_hash_rec h = function
   | [] -> [hash_key,h]
-  | ("Hash" as k,_)::rem -> (k,h)::rem
+  | (k,_)::rem when Misc.string_eq (Misc.lowercase k) low_hash -> (k,h)::rem
   | p::rem -> p::set_hash_rec h rem
 
 let set_hash p h = { p with info = set_hash_rec  h p.info; }
 
-let get_info p key =
-  try Some (List.assoc key p.info)
-  with Not_found -> None
+
+let get_info p key = get_info_on_info key p.info

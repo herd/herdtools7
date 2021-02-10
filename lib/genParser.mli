@@ -16,10 +16,6 @@
 
 (** A 'generic' parsing module for herd/litmus/tools files *)
 
-(* Wapper (takes care of parsing exceptions *)
-val call_parser :
-    string -> Lexing.lexbuf -> 'a -> ('a -> Lexing.lexbuf -> 'b) -> 'b
-
 (* Configuration, to change kind, condition and rename *)
 module type Config = sig
   val debuglexer : bool

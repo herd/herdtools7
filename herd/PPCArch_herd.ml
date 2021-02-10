@@ -47,6 +47,8 @@ module Make (C:Arch_herd.Config) (V:Value.S)
     let pp_annot annot =
       if annot then "*" else ""
 
+    include Explicit.No
+
 (* Now global locations, that include reservations *)
     module V = V
 
@@ -66,6 +68,9 @@ module Make (C:Arch_herd.Config) (V:Value.S)
       | Pload (sz,_,_,_) | Ploadx (sz,_,_,_)
       | Pstore (sz,_,_,_) | Pstorex (sz,_,_,_)
         -> Some sz
+
+    include NoLevelNorTLBI
+
     include ArchExtra_herd.Make(C)
         (struct
           module V = V

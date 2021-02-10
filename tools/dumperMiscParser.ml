@@ -31,10 +31,13 @@ end = struct
 
         module A = A
 
+        type v = MiscParser.maybev
+        let dump_v = ParsedConstant.pp Opt.hexa
+
         let dump_loc = MiscParser.dump_location
 
         let dump_state_atom a =
-          MiscParser.dump_state_atom dump_loc (ParsedConstant.pp Opt.hexa) a
+          MiscParser.dump_state_atom dump_loc dump_v  a
 
         type state = MiscParser.state
 

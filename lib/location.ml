@@ -55,6 +55,8 @@ module Make(A:I) : S
 with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
   struct
 
+    open Printf
+
     type loc_reg = A.arch_reg
     type loc_global = A.arch_global
 
@@ -80,13 +82,14 @@ with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
 
     let pp_rval l = match l with
     | Location_reg (proc,r) -> string_of_int proc ^ ":" ^ A.pp_reg r
-    | Location_global a -> Printf.sprintf "*%s" (A.pp_global a)
+    | Location_global a -> sprintf "*%s" (A.pp_global a)
 
 (*
   The following compare  comes from ancient code
   that used that order to pretty print states.
   I guess I can use it for ordering keys in maps
- *)
+*)
+
     let location_compare l1 l2 = match l1,l2 with
     | Location_reg (p1,r1), Location_reg (p2,r2) ->
         begin match Misc.int_compare p1 p2 with
@@ -96,7 +99,6 @@ with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
     | Location_global a1, Location_global a2 -> A.global_compare a1 a2
     | Location_reg _, (Location_global _) -> -1
     | (Location_global _), Location_reg _ -> 1
-
 
     module OL = struct
       type t = location

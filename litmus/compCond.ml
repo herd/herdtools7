@@ -16,7 +16,6 @@
 
 module Make (O:Indent.S) (I:CompCondUtils.I) :
     sig
-
       val fundef_prop :
           string ->
             (I.Loc.t -> string * bool) -> (* For types *)
@@ -44,24 +43,31 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
       module S = Switch.Make(O)(I)
       module V = I.C.V
 
-      let dump_v v = V.pp O.hexa v
+      let dump_v v = I.dump_value v
+      let dump_loc loc = I.Loc.dump (ConstrGen.Loc loc)
 
       let dump_vec loc vs =
         let mk_elem_check i v =
-          "(" ^ (dump_rloc I.Loc.dump loc) ^ " ["^ string_of_int i ^ "] == "^ (dump_v v) ^")"
+          "(" ^ (I.Loc.dump loc) ^
+            " ["^ string_of_int i ^ "] == "^ (dump_v None v) ^")"
         in
-        String.concat " && " (List.mapi (mk_elem_check) vs)
+        String.concat " && " (List.mapi mk_elem_check vs)
 
       let dump  =
         let rec dump_prop p = match p with
         | Atom (LV (loc,v)) ->
-          (match v with
-          | Constant.ConcreteVector (_,vs) -> O.fprintf "%s" (dump_vec loc vs)
-          | _ -> O.fprintf "%s == %s" (dump_rloc I.Loc.dump loc) (dump_v v))
+            begin match v with
+            | Constant.ConcreteVector (_,vs) ->
+                O.fprintf "(%s)" (dump_vec loc vs)
+            | _ ->
+                O.fprintf "%s == %s"
+                  (I.Loc.dump loc)
+                  (dump_v (Some (ConstrGen.loc_of_rloc loc)) v)
+            end
         | Atom (LL (loc1,loc2)) ->
-            O.fprintf"%s == %s" (I.Loc.dump loc1) (I.Loc.dump loc2)
-        | Atom (FF _) ->
-            Warn.fatal "No fault in litmus conditions"
+            O.fprintf"%s == %s" (dump_loc loc1) (dump_loc loc2)
+        | Atom (FF f) ->
+            O.fprintf "%s" (I.Loc.dump_fatom (V.pp O.hexa) f)
         | Not p ->
             O.output "!(" ;
             dump_prop p ;
@@ -109,20 +115,20 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
         ()
 
       let fundef_prop fname find_type p =
-        let locs = I.C.locations_prop p in
+        let rlocs = I.C.rlocations_prop p in
         let plocs =
-          I.C.LocSet.map_list
-            (fun loc ->
-              let t,is_ptr = find_type loc in
-              sprintf "%s %s" t (I.Loc.dump loc),is_ptr)
-            locs in
+          I.C.RLocSet.map_list
+            (fun rloc ->
+              let t,is_ptr = find_type rloc in
+              sprintf "%s %s" t (I.Loc.dump rloc),is_ptr)
+            rlocs in
         let plocs,is_ptr = List.split plocs in
         let is_ptr = List.exists (fun b -> b) is_ptr in
         let vals = I.C.location_values_prop p in
         let pvals =
           List.map
             (fun loc -> sprintf
-                "void *%s" (dump_v (Constant.mk_sym loc)))
+                "void *%s" (dump_v None (Constant.mk_sym loc)))
             vals in
         let is_ptr = is_ptr || Misc.consp pvals in
         let formals =
@@ -169,8 +175,8 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
         ()
 
       let funcall_prop fname  prop dump_loc dump_val =
-        let locs = I.C.locations_prop prop in
-        let plocs = I.C.LocSet.map_list dump_loc locs in
+        let rlocs = I.C.rlocations_prop prop in
+        let plocs = I.C.RLocSet.map_list dump_loc rlocs in
         let vals = I.C.location_values_prop prop in
         let pvals = List.map dump_val vals in
         sprintf "%s(%s)" fname (String.concat "," (plocs@pvals))

@@ -45,6 +45,8 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
 
     let annot_sets = ["X",is_atomic]
 
+    include Explicit.No
+
     let is_isync _ = false
     let pp_isync = "???"
 
@@ -54,6 +56,9 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
 
 (* Technically wrong, but it does not matter as there is no mixed-size *)
     let mem_access_size _ = None
+
+
+    include NoLevelNorTLBI
 
     include ArchExtra_herd.Make
         (C)(struct
