@@ -806,7 +806,7 @@ let match_reg_events es =
 (* Sort same_base *)
     let compare_index e1 e2 =
       let open Constant in
-      let loc1 = E.location_of e1 and loc2 = E.location_of e1 in
+      let loc1 = E.location_of e1 and loc2 = E.location_of e2 in
       match Misc.seq_opt A.symbolic_data loc1,
             Misc.seq_opt A.symbolic_data loc2
       with
