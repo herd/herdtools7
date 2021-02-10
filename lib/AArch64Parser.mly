@@ -16,14 +16,9 @@
 (****************************************************************************)
 
 module A = AArch64Base
-(* In such a case extension is mandatatory *)
-let check_noext = function
-  | A.RV (A.V32,_) -> raise Parsing.Parse_error
-  | _ -> ()
 
 (* No constant third argument for those *)       
 let check_op3 op kr =
-  check_noext kr ;
   match op,kr with
   |(A.BIC|A.BICS),A.K _ -> raise Parsing.Parse_error
   | _ -> ()
@@ -275,6 +270,10 @@ kwr:
 | k { A.K $1 }
 | wreg { A.RV (A.V32,$1) }
 
+kxr:
+| k { A.K $1 }
+| xreg { A.RV (A.V64,$1) }
+
 shift:
 | LSL NUM  { A.S_LSL(MetaConst.Int $2)  }
 | LSR NUM  { A.S_LSR(MetaConst.Int $2)  }
@@ -282,10 +281,6 @@ shift:
 | MSL NUM  { A.S_MSL(MetaConst.Int $2)  }
 | SXTW { A.S_SXTW }
 | UXTW { A.S_UXTW }
-
-kxr:
-| k { A.K $1 }
-| xreg { A.RV (A.V64,$1) }
 
 zeroopt:
 | { () }
@@ -964,14 +959,14 @@ instr:
   { A.I_OP3 (A.V64, AArch64Base.LSL, $2, $4, $6, A.S_NOEXT) }
 | LSR xreg COMMA xreg COMMA kr
   { A.I_OP3 (A.V64, AArch64Base.LSR, $2, $4, $6, A.S_NOEXT) }
-| OP xreg COMMA xreg COMMA kr
+| OP xreg COMMA xreg COMMA kxr
   { check_op3 $1 $6 ; A.I_OP3 (A.V64,$1,$2,$4,$6, A.S_NOEXT) }
 | OP xreg COMMA xreg COMMA kr COMMA shift
   { check_op3 $1 $6 ; A.I_OP3 (A.V64,$1,$2,$4,$6, $8) }
 | OP wreg COMMA wreg COMMA kwr
   { check_op3 $1 $6 ; A.I_OP3 (A.V32,$1,$2,$4,$6, A.S_NOEXT) }
-| ADD xreg COMMA xreg COMMA kr
-  { check_noext $6; A.I_OP3 (A.V64,A.ADD,$2,$4,$6, A.S_NOEXT) }
+| ADD xreg COMMA xreg COMMA kxr
+  { A.I_OP3 (A.V64,A.ADD,$2,$4,$6, A.S_NOEXT) }
 | ADD xreg COMMA xreg COMMA kr COMMA shift
   { A.I_OP3 (A.V64,A.ADD,$2,$4,$6, $8) }
 | ADD wreg COMMA wreg COMMA kwr
@@ -980,8 +975,8 @@ instr:
   { A.I_OP3 (A.V32,A.ADD,$2,$4,$6, $8) }
 | ADD creg COMMA creg COMMA kxr
   { A.I_OP3 (A.V128,A.ADD,$2,$4,$6, A.S_NOEXT) }
-| SUB xreg COMMA xreg COMMA kr
-  { check_noext $6; A.I_OP3 (A.V64,A.SUB,$2,$4,$6, A.S_NOEXT) }
+| SUB xreg COMMA xreg COMMA kxr
+  { A.I_OP3 (A.V64,A.SUB,$2,$4,$6, A.S_NOEXT) }
 | SUB xreg COMMA xreg COMMA kr COMMA shift
   { A.I_OP3 (A.V64,A.SUB,$2,$4,$6, $8) }
 | SUB wreg COMMA wreg COMMA kwr
@@ -990,8 +985,8 @@ instr:
     { A.I_OP3 (A.V32,A.SUB,$2,$4,$6, $8) }
 | SUB creg COMMA creg COMMA k
   { A.I_OP3 (A.V128,A.SUB,$2,$4,A.K $6, A.S_NOEXT) }
-| SUBS xreg COMMA xreg COMMA kr
-  { check_noext $6; A.I_OP3 (A.V64,A.SUBS,$2,$4,$6, A.S_NOEXT) }
+| SUBS xreg COMMA xreg COMMA kxr
+  { A.I_OP3 (A.V64,A.SUBS,$2,$4,$6, A.S_NOEXT) }
 | SUBS xreg COMMA xreg COMMA kr COMMA shift
   { A.I_OP3 (A.V64,A.SUBS,$2,$4,$6, $8) }
 | SUBS wreg COMMA wreg COMMA kwr
