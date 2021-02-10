@@ -222,8 +222,11 @@ and pline bds fs abs = parse
      let v = norm_value v in  (* Translate to decimal *)
      let p = poolize loc v in
      pline (p::bds) fs abs lexbuf }
-| blank* fault blank* '(' blank* ('P'? (num as proc)) (':' (label as lbl))? blank* ','
-    (loc as loc) blank* ')' blank* ';'
+| blank* fault blank*
+    '(' blank* ('P'? (num as proc)) (':' (label as lbl))? blank* ','
+     (loc as loc) (':' alpha+)? blank* (* skip optional tag *)
+      (',' [^')']*)?  (* skip optional comment *)
+      ')' blank* ';'
     {
      let f = (to_proc proc,lbl),loc in
      let f = HashedFault.as_hashed f in
