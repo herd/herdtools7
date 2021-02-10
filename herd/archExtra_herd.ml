@@ -341,10 +341,14 @@ module Make(C:Config) (I:I) : S with module I = I
           | (System (PTE,s1),System (PTE,s2))
           | (System (TAG,s1),System (TAG,s2))
            -> Misc.string_eq s1 s2
-          | (Virtual _,System ((PTE|TAG),_))
-          | (System ((PTE|TAG),_),Virtual _)
-          | (System (PTE,_),System (TAG,_))
-          | (System (TAG,_),System (PTE,_))
+          | (Virtual _,(System ((PTE|TAG|TLB),_)|Physical _))
+          | ((Physical _|System ((PTE|TAG|TLB),_)),Virtual _)
+          | (System (PTE,_),System ((TAG|TLB),_))
+          | (System ((TAG|TLB),_),System (PTE,_))
+          | (System (TLB,_),System (TAG,_))
+          | (System (TAG,_),System (TLB,_))
+          | (Physical _,System ((TAG|PTE|TLB),_))
+          | (System ((TAG|PTE|TLB),_),Physical _)
             -> false
           | _,_ ->
               Warn.fatal
@@ -542,10 +546,9 @@ module Make(C:Config) (I:I) : S with module I = I
       let build_size_env bds =
         List.fold_left
           (fun m (loc,(t,_)) ->
-            match loc with
-            | Location_global a ->
-                StringMap.add
-                  (I.V.as_symbol a) (misc_to_size t) m
+            match symbolic_data loc with
+            | Some sym ->
+                StringMap.add sym.Constant.name (misc_to_size t) m
             | _ -> m)
           size_env_empty bds
 

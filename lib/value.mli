@@ -72,7 +72,6 @@ module type S =
 
       val is_zero : v -> bool
       val is_one : v -> bool
-      val check_atag : v -> bool
       val check_ctag : v -> bool
       val is_virtual : v -> bool
       val as_virtual : v -> string option

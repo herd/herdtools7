@@ -432,18 +432,11 @@ module Make(Cst:Constant.S) = struct
       Warn.user_error "Illegal tagloc on %s" (pp_v v)
   | Var _ -> raise Undetermined
 
-  let check_atag = function
-    | Val (Symbolic (Virtual {name=s;_})) -> Misc.check_atag s
-    | Var _
-    | Val (Symbolic (System _|Physical _)
-           | Concrete _|Label _|Tag _|ConcreteVector _|PteVal _) ->
-        Warn.fatal "Illegal check_atag" (* NB: not an user error *)
-
   let check_ctag = function
     | Val (Symbolic (Virtual {name=s;_})) -> Misc.check_ctag s
+    | Val (Symbolic (Physical _|System _)) -> false
     | Var _
-    | Val (Symbolic (Physical _|System _)
-           |Concrete _|ConcreteVector _|Label _|Tag _|PteVal _) ->
+    | Val (Concrete _|ConcreteVector _|Label _|Tag _|PteVal _) ->
         Warn.fatal "Illegal check_ctag" (* NB: not an user error *)
 
   (* Decompose tagged locations *)
