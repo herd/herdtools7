@@ -83,7 +83,7 @@ end = struct
     begin match t.locations with
     | [] -> ()
     | locs ->
-        fprintf chan "locations [%s]\n" (dump_locations locs)
+        fprintf chan "%s\n" (dump_locations locs)
     end ;
     fprintf chan "%s\n" (I.dump_constr t.condition) ;
     ()
@@ -111,7 +111,7 @@ end = struct
       match t.locations with
       | [] -> k
       | locs ->
-        sprintf "locations [%s]" (dump_locations locs)::k
+        dump_locations locs::k
     end @@
     [I.dump_constr t.condition]
 end

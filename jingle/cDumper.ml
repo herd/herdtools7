@@ -189,31 +189,3 @@ let do_dump withinfo chan doc t =
 
 let dump chan = do_dump false chan
 let dump_info chan = do_dump true chan
-
-let (@@) f k = f k
-(*
-let lines doc t =
-  begin fun k -> sprintf "%s %s" (Archs.pp arch) doc.Name.name :: k
-  end @@
-  begin fun k -> match doc.Name.doc with
-		   | "" -> k
-		   | doc -> sprintf "\"%s\"" doc :: k
-  end @@
-  begin fun k ->  sprintf "{%s}" (dump_state  t.MiscParser.init) :: k
-  end @@
-  begin
-    fun k ->
-    let pp = List.map fmt_col t.MiscParser.prog in
-    let pp = Misc.lines_of_prog pp in
-    let pp = List.map (sprintf "%s;") pp in
-    pp @ ""::k
-  end @@
-  begin fun k ->
-	match t.MiscParser.locations with
-		| [] -> k
-		| locs ->
-		   DumpUtils.dump_locations dump_location locs::k
-  end @@
-    [dump_constr t.MiscParser.condition]
-
- *)
