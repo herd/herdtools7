@@ -216,8 +216,6 @@ module Uint128 = struct
     else
       Uint64.shift_left (snd a) (by-64), Uint64.zero
 
-  let shift_right _a _by = failwith "not implemented: shift_right"
-
   let shift_right_logical a by =
     if by < 0 then
       invalid_arg (Printf.sprintf "shift_right by negative: %i" by)
@@ -234,6 +232,20 @@ module Uint128 = struct
       Uint64.shift_right_logical (fst a) by, lower
     else
       Uint64.zero, Uint64.shift_right_logical (fst a) (by-64)
+
+  let shift_right a by =
+    let upper_bit = shift_left one (num_bits - 1) in
+    let has_msb = logand a upper_bit = upper_bit in
+    let rest = shift_right_logical a by in
+    if has_msb then
+      let rec upper_bits acc n =
+        match n with
+        | 0 -> acc
+        | n -> upper_bits (logor upper_bit (shift_right_logical acc 1)) (n-1)
+      in
+      logor rest (upper_bits upper_bit by)
+    else
+      rest
 
   let leading_zeros a =
     match a with
