@@ -1,12 +1,12 @@
 Test LB+dmb.sy+data Allowed
 States 3
-0:X0=0; 1:X0=0;
-0:X0=0; 1:X0=1;
-0:X0=1; 1:X0=0;
+0:X1=0; 1:X1=0;
+0:X1=0; 1:X1=1;
+0:X1=1; 1:X1=0;
 No
 Witnesses
 Positive: 0 Negative: 3
-Condition exists (0:X0=1 /\ 1:X0=1)
+Condition exists (0:X1=1 /\ 1:X1=1)
 Observation LB+dmb.sy+data Never 0 3
-Hash=a8ba120332793078f3da72029529493b
+Hash=f99a78ed66f290e9ac8e924fec4b9427
 

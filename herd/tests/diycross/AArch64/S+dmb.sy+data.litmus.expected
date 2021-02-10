@@ -1,12 +1,12 @@
 Test S+dmb.sy+data Allowed
 States 3
-1:X0=0; x=1;
-1:X0=0; x=2;
-1:X0=1; x=1;
+1:X1=0; x=1;
+1:X1=0; x=2;
+1:X1=1; x=1;
 No
 Witnesses
 Positive: 0 Negative: 3
-Condition exists (x=2 /\ 1:X0=1)
+Condition exists (x=2 /\ 1:X1=1)
 Observation S+dmb.sy+data Never 0 3
-Hash=e8e69a7e825cc38617d9b5cf47f12048
+Hash=5f7433ab67b974a2b8b770016ff25387
 

@@ -1,13 +1,13 @@
 Test R+dmb.sy+po Allowed
 States 4
-1:X2=0; y=1;
-1:X2=0; y=2;
-1:X2=1; y=1;
-1:X2=1; y=2;
+1:X3=0; y=1;
+1:X3=0; y=2;
+1:X3=1; y=1;
+1:X3=1; y=2;
 Ok
 Witnesses
 Positive: 1 Negative: 3
-Condition exists (y=2 /\ 1:X2=0)
+Condition exists (y=2 /\ 1:X3=0)
 Observation R+dmb.sy+po Sometimes 1 3
-Hash=3814bb855fe3c41615f97f5306827907
+Hash=0e843011df9fd5cccf3979cd65b81870
 

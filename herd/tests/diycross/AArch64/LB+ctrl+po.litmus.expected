@@ -1,13 +1,13 @@
 Test LB+ctrl+po Allowed
 States 4
-0:X0=0; 1:X0=0;
-0:X0=0; 1:X0=1;
-0:X0=1; 1:X0=0;
-0:X0=1; 1:X0=1;
+0:X1=0; 1:X1=0;
+0:X1=0; 1:X1=1;
+0:X1=1; 1:X1=0;
+0:X1=1; 1:X1=1;
 Ok
 Witnesses
 Positive: 1 Negative: 3
-Condition exists (0:X0=1 /\ 1:X0=1)
+Condition exists (0:X1=1 /\ 1:X1=1)
 Observation LB+ctrl+po Sometimes 1 3
-Hash=404c27451a6d36998d635b18a854f131
+Hash=5974994699c94e5618796424ee2f56b5
 

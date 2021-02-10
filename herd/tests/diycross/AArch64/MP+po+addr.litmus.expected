@@ -1,13 +1,13 @@
 Test MP+po+addr Allowed
 States 4
-1:X0=0; 1:X3=0;
-1:X0=0; 1:X3=1;
-1:X0=1; 1:X3=0;
-1:X0=1; 1:X3=1;
+1:X1=0; 1:X3=0;
+1:X1=0; 1:X3=1;
+1:X1=1; 1:X3=0;
+1:X1=1; 1:X3=1;
 Ok
 Witnesses
 Positive: 1 Negative: 3
-Condition exists (1:X0=1 /\ 1:X3=0)
+Condition exists (1:X1=1 /\ 1:X3=0)
 Observation MP+po+addr Sometimes 1 3
-Hash=9e94c2c82855aab757088bf83d7a2eca
+Hash=d3eb85363c83e07602100a601b1d5146
 

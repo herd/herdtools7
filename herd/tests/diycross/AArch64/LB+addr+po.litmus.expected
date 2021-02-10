@@ -1,13 +1,13 @@
 Test LB+addr+po Allowed
 States 4
-0:X0=0; 1:X0=0;
-0:X0=0; 1:X0=1;
-0:X0=1; 1:X0=0;
-0:X0=1; 1:X0=1;
+0:X1=0; 1:X1=0;
+0:X1=0; 1:X1=1;
+0:X1=1; 1:X1=0;
+0:X1=1; 1:X1=1;
 Ok
 Witnesses
 Positive: 1 Negative: 3
-Condition exists (0:X0=1 /\ 1:X0=1)
+Condition exists (0:X1=1 /\ 1:X1=1)
 Observation LB+addr+po Sometimes 1 3
-Hash=e9d156d9a67af36131db1a2e212783f0
+Hash=9b7edf393c9b4fda2a8a1ba336a86817
 

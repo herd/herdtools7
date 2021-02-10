@@ -1,12 +1,12 @@
 Test SB+dmb.sys Allowed
 States 3
-0:X2=0; 1:X2=1;
-0:X2=1; 1:X2=0;
-0:X2=1; 1:X2=1;
+0:X3=0; 1:X3=1;
+0:X3=1; 1:X3=0;
+0:X3=1; 1:X3=1;
 No
 Witnesses
 Positive: 0 Negative: 3
-Condition exists (0:X2=0 /\ 1:X2=0)
+Condition exists (0:X3=0 /\ 1:X3=0)
 Observation SB+dmb.sys Never 0 3
-Hash=38b65863d32068bb3325505c2570bcef
+Hash=c6a533fb255005c1a89998321e552a86
 

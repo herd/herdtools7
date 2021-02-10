@@ -1,13 +1,13 @@
 Test MP+po+ctrlisb Allowed
 States 4
-1:X0=0; 1:X2=0;
-1:X0=0; 1:X2=1;
-1:X0=1; 1:X2=0;
-1:X0=1; 1:X2=1;
+1:X1=0; 1:X3=0;
+1:X1=0; 1:X3=1;
+1:X1=1; 1:X3=0;
+1:X1=1; 1:X3=1;
 Ok
 Witnesses
 Positive: 1 Negative: 3
-Condition exists (1:X0=1 /\ 1:X2=0)
+Condition exists (1:X1=1 /\ 1:X3=0)
 Observation MP+po+ctrlisb Sometimes 1 3
-Hash=bc1eb3954ddd25a52d036b56b3240fd9
+Hash=1061edabaf9b0c0b10ac078e284920be
 

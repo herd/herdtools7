@@ -1,13 +1,13 @@
 Test LB+data+po Allowed
 States 4
-0:X0=0; 1:X0=0;
-0:X0=0; 1:X0=1;
-0:X0=1; 1:X0=0;
-0:X0=1; 1:X0=1;
+0:X1=0; 1:X1=0;
+0:X1=0; 1:X1=1;
+0:X1=1; 1:X1=0;
+0:X1=1; 1:X1=1;
 Ok
 Witnesses
 Positive: 1 Negative: 3
-Condition exists (0:X0=1 /\ 1:X0=1)
+Condition exists (0:X1=1 /\ 1:X1=1)
 Observation LB+data+po Sometimes 1 3
-Hash=186bb380ec9146e7b6efad21c3a0e85a
+Hash=f9b33b785d9c4aed6b99cac41bf52cba
 

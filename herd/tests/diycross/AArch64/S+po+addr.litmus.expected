@@ -1,13 +1,13 @@
 Test S+po+addr Allowed
 States 4
-1:X0=0; x=1;
-1:X0=0; x=2;
-1:X0=1; x=1;
-1:X0=1; x=2;
+1:X1=0; x=1;
+1:X1=0; x=2;
+1:X1=1; x=1;
+1:X1=1; x=2;
 Ok
 Witnesses
 Positive: 1 Negative: 3
-Condition exists (x=2 /\ 1:X0=1)
+Condition exists (x=2 /\ 1:X1=1)
 Observation S+po+addr Sometimes 1 3
-Hash=f1fa5d71f4cde5415b13edb4b06fac41
+Hash=ecfa56f99b5ed89a5b907848e37edfa9
 
