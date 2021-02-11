@@ -5,3 +5,8 @@ S+dmb.stTT+data Allowed
 S+dmb.stTT+ctrl Allowed
 S+dmb.stTT+rel Allowed
 R+dmb.stTT+rel-acq Allowed
+LDR-STZG1 Allowed
+LDR-STZG2 Allowed
+coWR-mte Forbidden
+Wt+RtWtRt Forbidden
+RtWtRt+WztWzt Forbidden
