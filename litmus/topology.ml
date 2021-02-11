@@ -19,6 +19,7 @@
 
 module type Config = sig
   val verbose : int
+  val name : Name.t
   val nthreads : int
   val avail : int
   val smt : int
@@ -36,6 +37,19 @@ end = struct
   open Cfg
   open Printf
 
+let () =
+  if verbose > 0 && smtmode = Smt.No then
+    Warn.warn_always
+      "%s smtmode not specified, defaulting to static thread allocation"
+      (Pos.str_pos0 name.Name.file)
+
+(* Get reasonable default values when topology is not specified *)
+  let set_ifnone def x =  match smtmode with
+    | Smt.No -> def
+    | Smt.Seq|Smt.End -> x
+
+  let smt = set_ifnone 1 smt
+  let nsockets = set_ifnone 1 nsockets
   let ncores = avail / smt
   let cores_in_sock = ncores / nsockets
   let ninst =  avail / nthreads
@@ -51,9 +65,9 @@ end = struct
           (fun i ->
             Array.init smt
               (match smtmode with
-              | Smt.Seq ->  fun j -> cores_in_sock * smt * s + smt*i + j
-              | Smt.End ->  fun j -> i + cores_in_sock * s + ncores * j
-              | Smt.No -> Warn.fatal "smtmode must be specified")))
+              | Smt.Seq|Smt.No ->  fun j -> cores_in_sock * smt * s + smt*i + j
+              | Smt.End ->  fun j -> i + cores_in_sock * s + ncores * j)))
+
 
 
   let pp_ints = pp_t (sprintf "%i")
@@ -233,12 +247,12 @@ end = struct
       if k >= ninst then []
       else try
         let next,inst = alloc_instance_hard next gss in
-        if verbose > 1 then eprintf "Instance: %s\n"
+        if verbose > 2 then eprintf "Instance: %s\n"
           (String.concat ","
              (List.map (fun (i,j) -> sprintf "%i-%i" i j) inst)) ;
         inst::alloc_rec next (shuffle_gss gss) (k+1)
       with Exit ->
-        if verbose > 1 then eprintf "Failure, instance %i\n" k ;
+        if verbose > 2 then eprintf "Failure, instance %i\n" k ;
         [] in
     let r = alloc_rec (alloc_next ()) (sort_length gss) 0 in
     let cpu = Array.make (ninst*nthreads) (-1) in
@@ -256,7 +270,7 @@ end = struct
 let part pp_part maxelt maxpart k r =
   let rec p_rec r cp p = function
     | [] ->
-        if verbose > 0 then eprintf "%s\n" (pp_part p) ;
+        if verbose > 1 then eprintf "%s\n" (pp_part p) ;
         k r p
     | x::xs ->
         let r =
@@ -427,5 +441,5 @@ let part pp_part maxelt maxpart k r =
   let dump_alloc vss = match Cfg.mode with
   | Mode.Std -> dump_alloc_gen std_kont std_handle
   | Mode.PreSi|Mode.Kvm -> dump_alloc_gen presi_kont (presi_handle vss)
-    
-end 
+
+end

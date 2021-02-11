@@ -19,7 +19,7 @@
 #include <stdint.h>
 #include "platform_io.h"
 
-void emit_string(FILE *out,char *s) ;
+void emit_string(FILE *out,const char *s) ;
 
 void emit_int_uns(FILE *out,unsigned int x) ;
 void emit_int_hex(FILE *out,unsigned int x) ;

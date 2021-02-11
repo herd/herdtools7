@@ -449,12 +449,13 @@ module Make
           (fun (_,(out,_)) -> fst (A.Out.get_addrs out))
           test.T.code
 
-      let dump_topology test =
+      let dump_topology doc test =
         let n = T.get_nprocs test in
         let module Topo =
           Topology.Make
             (struct
               let verbose = Cfg.verbose
+              let name = doc
               let nthreads = n
               let avail = match Cfg.avail with
               | None -> 0
@@ -1178,7 +1179,7 @@ module Make
           if proc <> 0 then
             O.fii "_delay += (_p->d%i - (NSTEPS-1)/2)*STEP;" proc
         end ;
-        (* Initialize them*)
+        (* Initialize them *)
         List.iter
           (fun a ->
             let at =  find_addr_type a env in
@@ -1208,7 +1209,7 @@ module Make
                             | w::ws -> pp_const w,ws in
                           O.fii "%s;"
                             (U.do_store (Base t) (sprintf "%s[%d]" a k) w) ;
-                          init_rec (k+1) ws                          
+                          init_rec (k+1) ws
                         end in
                     init_rec 0 ws
                 | _ ->
@@ -1449,7 +1450,8 @@ module Make
                 let t =  match t with
                 | Array (t,_) -> t
                 | _ -> CType.dump t in
-                let vopt = if Cfg.is_kvm then "" else "volatile " in
+                let vopt =
+                  if do_ascall || Cfg.is_kvm then "" else "volatile" in
                 O.fi "%s %s*%s = (%s %s*)_vars->%s;" t vopt a t vopt a)
               globs ;
             ()
@@ -1818,6 +1820,17 @@ module Make
 (* Entry point *)
 (***************)
       let dump doc test =
+        let avail = match Cfg.avail with
+          | None -> 0
+          | Some a -> a
+        and n = T.get_nprocs test in
+        if n > avail then begin
+            let pp_avail =
+              Misc.app_opt_def "unspecified" (sprintf "%d") Cfg.avail in
+            Warn.user_error
+              "Cannot run test %s with %d threads on %s available cores"
+              doc.Name.name n pp_avail
+          end ;
         let db = DirtyBit.get test.T.info
         and procs_user = ProcsUser.get test.T.info in
         ObjUtil.insert_lib_file O.o "header.txt" ;
@@ -1827,7 +1840,7 @@ module Make
         dump_mbar_def () ;
         dump_cache_def () ;
         dump_barrier_def () ;
-        dump_topology test ;
+        dump_topology doc test ;
         dump_user_stacks procs_user ;
         let env = U.build_env test in
         let stats = get_stats test in
