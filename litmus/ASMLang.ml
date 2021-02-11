@@ -427,7 +427,7 @@ module RegMap = A.RegMap)
           (String.concat " " pp)
 
 
-      let dump chan indent env globEnv _volatileEnv proc t =
+      let dump chan indent env (globEnv,_) _volatileEnv proc t =
 
         if debug then debug_globEnv globEnv ;
 
@@ -606,7 +606,7 @@ module RegMap = A.RegMap)
         | Kvm|PreSi -> compile_out_reg_call_kvm env
 
       let dump_call f_id args0
-            _tr_idx chan indent env alignedEnv _volatileEnv proc t =
+            _tr_idx chan indent env (_,alignedEnv) _volatileEnv proc t =
         let labels = List.map compile_label_call (Tmpl.get_labels t) in
         let addrs_proc,ptes = Tmpl.get_addrs t
         and phys = Tmpl.get_phys_only t in

@@ -59,6 +59,7 @@ module type CommonConfig = sig
   val ascall : bool
   val precision : bool
   val variant : Variant_litmus.t -> bool
+  val nocatch : bool
   val stdio : bool
   val xy : bool
   val pldw : bool
@@ -159,6 +160,7 @@ end = struct
              and module RegMap = A'.RegMap)
            (Pseudo:PseudoAbstract.S with type ins = A'.instruction) =
     struct
+
       module T = Test_litmus.Make(O)(A')(Pseudo)
       module R = Run_litmus.Make(O)(Tar)(T.D)
       module H = LitmusUtils.Hash(O)
@@ -287,7 +289,7 @@ end = struct
                   (Pos.str_pos0 doc.Name.file) cause ;
                 Absent A'.arch
               end
-          end with e -> Interrupted (A'.arch,e)
+          end with e -> if OT.nocatch then raise e ; Interrupted (A'.arch,e)
     end
 
 

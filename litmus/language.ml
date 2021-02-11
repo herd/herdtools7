@@ -37,7 +37,7 @@ module type S = sig
     out_channel ->
     string ->
     CType.t RegMap.t ->
-    (string * CType.t) list ->
+    ((string * CType.t) list * (string * CType.t) list) ->
     string list ->
     int ->
     t ->
@@ -48,7 +48,7 @@ module type S = sig
     out_channel ->
     string ->
     CType.t RegMap.t ->
-    (string * CType.t) list ->
+    ((string * CType.t) list * (string * CType.t) list) ->
     string list ->
     int ->
     t ->

@@ -536,7 +536,7 @@ let dump_threads _tname env test =
       | Some _|None -> idx in
       Lang.dump_call (LangUtils.code_fun proc)
         [] tr_idx O.out (Indent.as_string indent3)
-        myenv global_env envVolatile proc out ;
+        myenv (global_env,[]) envVolatile proc out ;
       O.oii "}" ;
       O.oi "}" ;
       O.oi "atomic_inc(&done);" ;

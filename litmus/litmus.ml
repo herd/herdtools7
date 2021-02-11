@@ -313,6 +313,7 @@ let () =
       let ascall = !ascall
       let precision = !precision
       let variant = !variant
+      let nocatch = false
       let crossrun = match !mode,!crossrun with
       | Mode.Kvm,Crossrun.Qemu s -> Crossrun.Kvm s
       | Mode.Kvm,_ -> Crossrun.Kvm "./arm-run"
@@ -374,6 +375,8 @@ let () =
     | Misc.UserError msg ->
         eprintf "User error: %s\n%!" msg ;
         exit 2
+        (*
     | Misc.Fatal msg ->
         eprintf "Fatal error: %s\n%!" msg ;
         exit 2
+         *)

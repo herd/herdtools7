@@ -52,6 +52,7 @@ module type CommonConfig = sig
   val ascall : bool
   val precision : bool
   val variant : Variant_litmus.t -> bool
+  val nocatch : bool
   val stdio : bool
   val xy : bool
   val pldw : bool

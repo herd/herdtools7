@@ -71,8 +71,20 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
     let dump_init_val = dump_v
   end
 
-  let dump_loc_tag _loc = assert false
-  let dump_rloc_tag _loc = assert false
+  let dump_loc_tag loc =
+    let module G = Global_litmus in
+    match loc with
+    | Location_reg (proc,reg) -> Out.dump_out_reg proc reg
+    | Location_global (G.Addr s) -> s
+    | Location_global (G.Pte s) -> Printf.sprintf "pte_%s" s
+    | Location_global (G.Phy _)
+      -> assert false
+
+  let dump_rloc_tag =
+    ConstrGen.match_rloc
+      dump_loc_tag
+      (fun loc i -> Printf.sprintf "%s__%02d" (dump_loc_tag loc) i)
+
   let location_of_addr a = Location_global (Global_litmus.Addr a)
 
   let arch = Internal.arch

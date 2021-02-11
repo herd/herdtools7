@@ -36,7 +36,11 @@ module type Extra = sig
 end
 
 module Make(C:Config)(E:Extra) = struct
+
+  let dbg = false
+
   open Printf
+
   module W = Warn.Make(E)
 
   type arch_reg = string
@@ -82,15 +86,19 @@ module Make(C:Config)(E:Extra) = struct
     and ty = out_type env x in
     sprintf "%s*" (CType.dump ty),outname
 
+  let pp_env env =
+    String.concat "; "
+      (List.map
+         (fun (x,ty) -> sprintf "%s -> %s" x (CType.debug ty))
+         env)
+
   let dump_fun chan _args0 env globEnv _envVolatile proc t =
-(*
-  let pp_env =
-  String.concat "; "
-  (List.map
-  (fun (x,ty) -> sprintf "%s -> %s" x (CType.debug ty))
-  globEnv) in
-  eprintf "FUN: [%s]\n%!" pp_env ;
- *)
+    if dbg then
+      begin
+        let pp = pp_env globEnv in
+        eprintf "FUN: [%s]\n%!" pp
+      end ;
+
     let out fmt = fprintf chan fmt in
     let input_defs =
       List.map (dump_global_def globEnv) t.CTarget.inputs
@@ -119,7 +127,14 @@ module Make(C:Config)(E:Extra) = struct
     out "}\n\n"
 
 
-  let dump_call f_id args0 tr_idx chan indent _env globEnv _envVolatile proc t =
+  let dump_call f_id args0 tr_idx chan indent _env (globEnv,_) _envVolatile proc t =
+
+    if dbg then
+      begin
+        let pp = pp_env globEnv in
+        eprintf "CALL: [%s]\n%!" pp
+      end ;
+
     let is_array_of a =
       try  match List.assoc a globEnv with
       | CType.Array (t,_) -> Some t
@@ -149,7 +164,7 @@ module Make(C:Config)(E:Extra) = struct
           LangUtils.dump_code_call chan indent f_id args
 
 
-  let dump chan indent env globEnv _envVolatile proc t =
+  let dump chan indent env (globEnv,_) _envVolatile proc t =
     let out x = fprintf chan x in
     out "%sdo {\n" indent;
     begin

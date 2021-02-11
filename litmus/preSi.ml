@@ -334,23 +334,25 @@ module Make
           O.oi "atomic_inc_fetch(&nfaults[w->proc]);" ;
           O.o "}" ;
           O.o ""
-        end ;
-        Insert.insert O.o "kvm_fault_handler.c" ;
-        O.o "" ;
-        O.o "static void pp_faults(void) {" ;
-        O.oi "count_t total=0;" ;
-        O.oi "for (int k=0 ; k < NTHREADS; k++) { total += nfaults[k]; }" ;
-        O.oi "if (total > 0) {" ;
-        O.fii "printf(\"Faults %s %%\"PCTR\"\",total);"  doc.Name.name ;
-        O.oii "for (int k = 0 ; k < NTHREADS ; k++) {" ;
-        O.oiii "count_t c = nfaults[k];" ;
-        let fmt = " P%d:%\"PCTR\"" in
-        O.fiii "if (c > 0) printf(\"%s\",k,c);" fmt;
-        O.oii "}" ;
-        O.oii "printf(\"\\n\");" ;
-        O.oi "}" ;
-        O.o "}" ;
-        O.o ""
+          end ;
+        if Cfg.is_kvm then begin
+            Insert.insert O.o "kvm_fault_handler.c" ;
+            O.o "" ;
+            O.o "static void pp_faults(void) {" ;
+            O.oi "count_t total=0;" ;
+            O.oi "for (int k=0 ; k < NTHREADS; k++) { total += nfaults[k]; }" ;
+            O.oi "if (total > 0) {" ;
+            O.fii "printf(\"Faults %s %%\"PCTR\"\",total);"  doc.Name.name ;
+            O.oii "for (int k = 0 ; k < NTHREADS ; k++) {" ;
+            O.oiii "count_t c = nfaults[k];" ;
+            let fmt = " P%d:%\"PCTR\"" in
+            O.fiii "if (c > 0) printf(\"%s\",k,c);" fmt;
+            O.oii "}" ;
+            O.oii "printf(\"\\n\");" ;
+            O.oi "}" ;
+            O.o "}" ;
+            O.o ""
+          end
 
 (* User mode *)
       let dump_user_stacks procs_user = match procs_user with
@@ -1297,11 +1299,11 @@ module Make
               (if user_mode then ["_c->id"] else [])
               (fun _ s -> s)
               O.out (Indent.as_string Indent.indent2)
-            my_regs global_env envVolatile proc out
+            my_regs (global_env,[]) envVolatile proc out
         end else begin
           Lang.dump
             O.out (Indent.as_string Indent.indent2)
-            my_regs global_env envVolatile proc out
+            my_regs (global_env,[]) envVolatile proc out
         end ;
 (* Collect faults *)
         if Cfg.is_kvm then begin

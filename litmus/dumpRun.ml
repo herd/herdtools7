@@ -40,6 +40,7 @@ module type Config = sig
   include RunUtils.CommonConfig
   val mkopt : Option.opt -> Option.opt
   val variant : Variant_litmus.t -> bool
+  val nocatch : bool
 end
 
 module type OneTest = sig
@@ -170,7 +171,10 @@ let run_tests names out_chan =
       (fun name (a0,docs,srcs,cycles,hash_env) ->
         let ans =
           try CT.from_file cycles hash_env name out_chan
-          with e ->  Interrupted (a0,e) in
+          with
+          | e ->
+              if Cfg.nocatch then raise e ;
+              Interrupted (a0,e) in
         match ans with
         | Completed (a,doc,src,cycles,hash_env) ->
             begin match exp with
@@ -187,6 +191,7 @@ let run_tests names out_chan =
                 eprintf "%a %s\n%!" Pos.pp_pos0 name msg ;
                 msg
             | e ->
+                if Cfg.nocatch then raise e ;
                 let msg = sprintf "exception %s"  (Printexc.to_string e) in
                 eprintf "%a %s\n%!" Pos.pp_pos0 name msg ;
                 msg in
