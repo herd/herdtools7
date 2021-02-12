@@ -1,7 +1,7 @@
 AArch64 A90
 (* Tests movk, 64-bit, LSL 0 (noop) *)
 
-{ 0:X0=65536; }
+{ uint64_t 0:X0=65536; }
 
 P0;
 MOVK X0, #1, LSL #0;

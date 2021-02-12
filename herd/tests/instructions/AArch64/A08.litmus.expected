@@ -1,10 +1,10 @@
 Test A8 Allowed
 States 1
-0:X0=0; 0:X1=x+44;
+0:X0=1; 0:X1=x;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition exists (0:X0=0 /\ not (0:X1=x))
+Condition exists (0:X0=1 /\ 0:X1=x)
 Observation A8 Always 1 0
-Hash=d1591baf0ba882a97685e1fa37c64e74
+Hash=e5aa271b69d99c8a02af8f2d7c973f98
 

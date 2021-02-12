@@ -1,7 +1,7 @@
 AArch64 A57
 (* Tests movz, 64-bit, LSL 32 *)
 
-{ 0:X0=0; }
+{ uint64_t 0:X0=0; }
 
 P0;
 MOVZ X0, #42, LSL #32;

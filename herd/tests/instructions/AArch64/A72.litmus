@@ -1,7 +1,7 @@
 AArch64 A72
 (* Tests adds (shifted register), left shift by 4 *)
 
-{ 0:X0=42; 0:X1=1; }
+{ uint64_t 0:X0=42; uint64_t 0:X1=1; }
 
 P0;
 ADDS X0, X0, X1, lsl #4;

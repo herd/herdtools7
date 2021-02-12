@@ -1,7 +1,7 @@
 AArch64 A67
 (* Tests adds (immediate), no shift *)
 
-{ 0:X0=42; }
+{ uint64_t 0:X0=42; }
 
 P0;
 ADDS X0, X0, #1;

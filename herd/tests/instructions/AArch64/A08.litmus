@@ -1,9 +1,10 @@
 AArch64 A8
 (* Tests load immediate, post-indexed, symbolic location *)
-{ 0:x1=x;}
+{ uint64_t x=1; 0:x1=x; uint64_t 0:X0; }
 
 P0;
   LDR X0, [X1], #44;
+  ADD X1,X1,#-44    ;
 
-exists (0:X0=0 /\ 0:X1!=x)
+exists (0:X0=1 /\ 0:X1=x)
 (* See test A9 for a variant that uses a concrete address*)

@@ -1,7 +1,7 @@
 AArch64 A52
 (* Tests movz, 64-bit, no shift *)
 
-{ 0:X0=0; }
+{ uint64_t 0:X0=0; }
 
 P0;
 MOVZ X0, #42;
