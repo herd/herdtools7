@@ -1379,7 +1379,7 @@ module Make
             | Cpy -> fun m -> m
             | Inc|Inv|Neg -> mask32 var in
             if not (C.variant Variant.NotWeakPredicated) then
-              read_reg_ord NZP ii >>= tr_cond c >>= fun v ->
+              read_reg_ord NZP ii >>= tr_cond c >>*= fun v ->
                 M.choiceT v
                   (read_reg_data sz r2 ii >>= fun v -> write_reg r1 v ii)
                   (read_reg_data sz r3 ii >>=
