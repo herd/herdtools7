@@ -1,10 +1,14 @@
 AArch64 A93
 (* Tests movk, 64-bit, LSL 32 *)
 
-{ 0:X0=8589934592; }
+{ uint64_t 0:X0=0x2000200020002; uint64_t 0:X1;}
 
 P0;
+MOVK X0, #1         ;
 MOVK X0, #1, LSL #32;
-
-exists (0:X0=12884901888)
+MOV X1,X0           ;
+MOVK X0, #1, LSL #16;
+MOVK X0, #1, LSL #48;
+locations [0:X1;]
+exists (0:X0=0x1000100010001 /\ 0:X1=0x2000100020001)
 

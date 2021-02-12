@@ -1,10 +1,14 @@
 AArch64 A91
-(* Tests movk, 32-bit, LSL 16 *)
+(* Tests movk 32 bits, all possible shift arguments *)
 
-{ 0:X0=131072; }
+{ 0:X0=0x20002; }
 
 P0;
-MOVK W0, #1, LSL #16;
-
-exists (0:X0=196608)
+MOV W1,W0            ;
+MOV W2,W0            ;
+MOVK W0, #1, LSL #0  ;
+MOVK W1, #1, LSL #16 ;
+MOVK W2, #1          ;
+locations [0:X0; 0:X1;0:X2;]
+exists (0:X0=0x20001 /\ 0:X1=0x10002 /\ 0:X2=0x20001)
 

@@ -1,10 +1,10 @@
 Test A91 Allowed
 States 1
-0:X0=196608;
+0:X0=131073; 0:X1=65538; 0:X2=131073;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition exists (0:X0=196608)
+Condition exists (0:X0=131073 /\ 0:X1=65538 /\ 0:X2=131073)
 Observation A91 Always 1 0
-Hash=52b6fc4cba6308b913116525a1cd8152
+Hash=2a1f402d26f9b2377e76c626e65d2456
 
