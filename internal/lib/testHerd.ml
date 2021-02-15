@@ -98,7 +98,7 @@ let herd_output_matches_expected herd libdir litmus expected expected_failure =
     | _,_ -> (* Herd returned both output and errors *)
       Printf.printf "Failed %s : %s and %s exist, only one expected\n" litmus expected expected_failure ; false
   with
-    Command.Error msg -> Printf.printf "Failed %s : %s \n" litmus msg ; false
+    Command.Error e -> Printf.printf "Failed %s : %s \n" litmus (Command.string_of_error e) ; false
 
 
 let is_litmus path = Filename.check_suffix path ".litmus"

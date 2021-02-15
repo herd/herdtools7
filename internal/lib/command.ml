@@ -19,12 +19,29 @@
 module Fun = Base.Fun
 module Option = Base.Option
 
-exception Error of string
+type error = {
+  binary : string ;
+  args   : string list ;
+  status : Unix.process_status ;
+}
+
+exception Error of error
 
 let command bin args =
   match args with
   | [] -> (Filename.quote bin)
   | _ -> Printf.sprintf "%s %s" (Filename.quote bin) (String.concat " " (List.map Filename.quote args))
+
+
+let string_of_process_status = function
+  | Unix.WEXITED n -> Printf.sprintf "returned error code %i" n
+  | Unix.WSIGNALED n -> Printf.sprintf "killed by signal %i" n
+  | Unix.WSTOPPED n -> Printf.sprintf "stopped by signal %i" n
+
+let string_of_error { binary = bin ; args = args ; status = s } =
+  Printf.sprintf "Process %s (command: %s)"
+    (string_of_process_status s)
+    (command bin args)
 
 
 let run ?stdin:in_f ?stdout:out_f ?stderr:err_f bin args =
@@ -83,6 +100,5 @@ let run ?stdin:in_f ?stdout:out_f ?stderr:err_f bin args =
   let _, status = Unix.waitpid [] pid in
   match status with
   | Unix.WEXITED 0 -> ()
-  | Unix.WEXITED n -> raise (Error (Printf.sprintf "Process returned error code %i" n))
-  | Unix.WSIGNALED n -> raise (Error (Printf.sprintf "Process was killed by signal %i" n))
-  | Unix.WSTOPPED n -> raise (Error (Printf.sprintf "Process was stopped by signal %i" n))
+  | status ->
+      raise (Error { binary = bin ; args = args ; status = status })

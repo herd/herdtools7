@@ -16,7 +16,17 @@
 
 (** Utilities for running commands. *)
 
-exception Error of string
+type error = {
+  binary : string ;
+  args   : string list ;
+  status : Unix.process_status ;
+}
+
+exception Error of error
+
+(** [string_of_error e] returns a human-readable representation of an error
+ *  [e]. *)
+val string_of_error : error -> string
 
 (** [command bin args] returns a fully escaped command line for running the
  *  binary [bin] with arguments [args]. *)

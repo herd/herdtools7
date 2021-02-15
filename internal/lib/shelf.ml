@@ -81,7 +81,11 @@ let list_of_file path key =
   in
   let lines = ref [] in
   let read_lines c = lines := Channel.read_lines c in
-  Command.run ~stdin:script ~stdout:read_lines "python" [] ;
+  begin try
+    Command.run ~stdin:script ~stdout:read_lines "python" []
+  with
+    Command.Error e -> failwith (Command.string_of_error e)
+  end ;
   (* Sorted for stability / comparability. *)
   List.sort String.compare !lines
 
