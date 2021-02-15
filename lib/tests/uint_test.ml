@@ -304,6 +304,26 @@ let tests = [
     ) tests
   );
 
+  "Uint.Uint128.shift_right", (fun () ->
+    let open Uint in
+    let tests = [
+      "0x0", 3, "0x0" ;
+      "0x78", 3, "0xF" ;
+      "0x123456789ABCDEF000", 12, "0x123456789ABCDEF" ;
+      "0xA0000000000000123456789ABCDEF000", 12, "0xFFFA0000000000000123456789ABCDEF" ;
+    ] in
+
+    List.iter (fun (bits, shift, expected_bits) ->
+      let got = Uint128.shift_right (Uint128.of_string bits) shift in
+      let expected = Uint128.of_string expected_bits in
+      if Uint128.compare got expected <> 0 then
+        Test.fail (Printf.sprintf "%s: expected %s, got %s"
+          bits
+          (Uint128.to_string_hex expected)
+          (Uint128.to_string_hex got))
+    ) tests
+  );
+
   "Uint.Uint128.add", (fun () ->
     let open Uint in
     let tests = [
