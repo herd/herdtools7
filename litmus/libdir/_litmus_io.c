@@ -15,7 +15,7 @@
 /****************************************************************************/
 #include "litmus_io.h"
 
-void emit_string(FILE *out,char *s) {
+void emit_string(FILE *out,const char *s) {
   char c ;
   while ((c = *s++)) emit_char(out,c);
 }

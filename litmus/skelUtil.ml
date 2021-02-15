@@ -521,7 +521,7 @@ module Make
           | Mode.Std ->
               O.f "static %s postlude(FILE *out,cmd_t *cmd,hist_t *hist,count_t p_true,count_t p_false,tsc_t total) {" t
           | Mode.PreSi ->
-              O.f "static %s postl sude(FILE *out,global_t *g,count_t p_true,count_t p_false,tsc_t total) {" t ;
+              O.f "static %s postlude(FILE *out,global_t *g,count_t p_true,count_t p_false,tsc_t total) {" t ;
               O.oi "hash_t *hash = &g->hash ;"
           | Mode.Kvm ->
               O.f "static %s postlude(global_t *g,count_t p_true,count_t p_false,tsc_t total) {" t ;

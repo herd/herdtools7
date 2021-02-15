@@ -683,12 +683,13 @@ module Make
 (* Topology *)
 
 
-      let dump_topology test =
+      let dump_topology doc test =
         let n = T.get_nprocs test in
         let module Topo =
           Topology.Make
             (struct
               let verbose = Cfg.verbose
+              let name = doc
               let nthreads = n
               let avail = match Cfg.avail with
               | None -> 0
@@ -2953,7 +2954,7 @@ module Make
         dump_header test ;
         dump_read_timebase () ;
         dump_threads test ;
-        if mk_dsa test then dump_topology test ;
+        if mk_dsa test then dump_topology doc test ;
         let cpys = dump_def_ctx env test in
         dump_filter env test ;
         dump_cond_fun env test ;

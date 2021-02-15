@@ -37,7 +37,7 @@ typedef struct {
 #ifdef KVM
 static void pp_hash(hash_t *t,int verbose,const char **group) {
 #else
-static void pp_hash(FILE *fp,hash_t *t,int verbose,constchar **group) {
+static void pp_hash(FILE *fp,hash_t *t,int verbose,const char **group) {
 #endif
   for (int k = 0 ; k < HASHSZ ; k++) {
     entry_t *p = t->t+k ;
