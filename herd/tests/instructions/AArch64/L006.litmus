@@ -3,9 +3,10 @@ AArch64 L006
 int x=2;
 int *p=&x;
 0:X2=p;
-int64_t y=3;
+int64_t y=-1;
 int64_t *q=&y;
 0:X6=q;
+int64_t 0:X1; (* This declaration commandes the printing of 0:X1 below *)
 }
 
  P0          ;
@@ -14,4 +15,4 @@ int64_t *q=&y;
  LDR X4,[X6] ;
  LDR X1,[X4] ;
 
-forall (0:X0=2 /\ 0:X1=3)
+forall (0:X0=2 /\ 0:X1=-1)

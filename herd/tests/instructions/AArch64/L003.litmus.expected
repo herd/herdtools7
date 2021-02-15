@@ -1,10 +1,10 @@
-Test CSINV Required
+Test L003 Required
 States 1
 0:X1=1; 0:X3=4294967295;
 Ok
 Witnesses
 Positive: 1 Negative: 0
 Condition forall (true)
-Observation CSINV Always 1 0
-Hash=d52cda97deee5b210ceae055e2bda097
+Observation L003 Always 1 0
+Hash=7dd566bd562eee46c4e50e833e382f10
 

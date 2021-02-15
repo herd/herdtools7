@@ -1,10 +1,10 @@
 Test L006 Required
 States 1
-0:X0=2; 0:X1=3;
+0:X0=2; 0:X1=-1;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (0:X0=2 /\ 0:X1=3)
+Condition forall (0:X0=2 /\ 0:X1=-1)
 Observation L006 Always 1 0
-Hash=b77677b1c56acd8e1f4f4f944aa294c2
+Hash=474f64303d6a7e978395a5a56d2d6af9
 

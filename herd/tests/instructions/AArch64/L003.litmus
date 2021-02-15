@@ -1,8 +1,10 @@
-AArch64 CSINV
-
+AArch64 L003
+(* Test CSINV *)
 {
 0:X0=1;
 0:X2=0;
+uint32_t 0:X1;
+uint32_t 0:X3;
 }
  P0                 ;
  CMP W0,W0          ;
