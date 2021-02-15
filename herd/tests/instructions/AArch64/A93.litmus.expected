@@ -1,10 +1,10 @@
 Test A93 Allowed
 States 1
-0:X0=12884901888;
+0:X0=281479271743489; 0:X1=562954248519681;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition exists (0:X0=12884901888)
+Condition exists (0:X0=281479271743489 /\ 0:X1=562954248519681)
 Observation A93 Always 1 0
-Hash=a0a635ad1cdd3c6247c74bc6470c7b54
+Hash=9a54718529cc132f96e50096c66ccc39
 

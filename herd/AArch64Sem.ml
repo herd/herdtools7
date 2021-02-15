@@ -960,31 +960,34 @@ module Make
         end
           >>= (fun v -> write_reg rd v ii)
           >>! B.Next
-
-      let movk sz rd k os ii =
+      let m_movk msk v1 v2 =
+        M.op Op.AndNot2 v2 msk >>= M.op Op.Or v1
+        
+      let movk var rd k os ii =
         let open AArch64Base in
+        let msk =
+          let v = V.op1 (Op.LeftShift 16) V.one in
+          V.op Op.Sub v V.one in
         assert (MachSize.is_imm16 k);
-        begin match sz, os with
+        let sz = tr_variant var in
+        begin match var, os with
         | V32, S_NOEXT | V64, S_NOEXT ->
-          let sz = tr_variant sz in
-          (read_reg_data sz rd ii)
-          >>= fun v2 -> M.op Op.Or v2 (V.intToV k)
+            read_reg_data sz rd ii >>= m_movk msk (V.intToV k)
         | V32, S_LSL(0|16 as s)
         | V64, S_LSL((0|16|32|48 as s)) ->
-          let v1 = V.op1 (Op.LeftShift s) (V.intToV k) in
-          let sz = tr_variant sz in
-          (read_reg_data sz rd ii)
-          >>= fun v2 -> M.op Op.Or v2 v1
+            let msk = V.op1 (Op.LeftShift s) msk in
+            let v1 = V.op1 (Op.LeftShift s) (V.intToV k) in
+            read_reg_data sz rd ii >>= m_movk msk v1
         | _, S_LSL(n) ->
           Warn.fatal
             "illegal shift immediate %d in %s instruction movk"
             n
-            (pp_variant sz)
+            (pp_variant var)
         | _, s ->
           Warn.fatal
             "illegal shift operand %s in %s instruction movk"
             (pp_barrel_shift "," s pp_imm)
-            (pp_variant sz)
+            (pp_variant var)
         end
           >>= (fun v -> write_reg rd v ii)
           >>! B.Next

@@ -926,7 +926,7 @@ module Make(V:Constant.S)(C:Config) =
         reg_env = (rn,voidstar)::add_type t rs;}
 
 (* Arithmetic *)
-    let movk v r k =
+    let mov_const v r k =
       let memo =
         sprintf
           (match v with
@@ -962,33 +962,36 @@ module Make(V:Constant.S)(C:Config) =
           inputs = r2; outputs=r1; reg_env=add_q (r1@r2);}
     | V128 -> assert false
 
-    let do_movz memo v rd k os = match v, k, os with
+    (* First 'fi' argument computes inputs from outputs *)
+    let do_movz fi memo v rd k os =
+      match v, k, os with
     | V32, k, S_LSL(s) ->
         let r1,f1 = arg1 "wzr" (fun s -> "^wo"^s) rd in
         { empty_ins with
           memo=sprintf "%s %s, #%d, %s" memo f1 k (pp_shifter (S_LSL s));
-          outputs=r1; reg_env=add_w r1;}
+          inputs=fi r1; outputs=r1; reg_env=add_w r1;}
     | V32,  k, S_NOEXT ->
         let r1,f1 = arg1 "wzr" (fun s -> "^wo"^s) rd in
         { empty_ins with
           memo=sprintf "%s %s, #%d" memo f1 k;
-          outputs=r1; reg_env=add_w r1;}
+          inputs=fi r1; outputs=r1; reg_env=add_w r1;}
     | V64, k, S_LSL(s) ->
         let r1,f1 = arg1 "xzr" (fun s -> "^o"^s) rd in
         { empty_ins with
           memo=sprintf "%s %s, #%d, %s" memo f1 k (pp_shifter (S_LSL s));
-          outputs=r1; reg_env=add_q r1;}
+          inputs=fi r1; outputs=r1; reg_env=add_q r1;}
     | V64, k, S_NOEXT ->
         let r1,f1 = arg1 "xzr" (fun s -> "^o"^s) rd in
         { empty_ins with
           memo=sprintf "%s %s, #%d" memo f1 k;
-          outputs=r1; reg_env=add_q r1;}
+          inputs=fi r1; outputs=r1; reg_env=add_q r1;}
     | _ -> Warn.fatal "Illegal form of %s instruction" memo
 
     let movr = do_movr "mov"
-    and movz = do_movz "movz"
-    and movk' = do_movz "movk"
     and rbit = do_movr "rbit"
+    and movz = do_movz (fun _ -> []) (* No input *) "movz"
+    and movk = do_movz Misc.identity (* Part of register preserved *) "movk"
+
 
     let sxtw r1 r2 =
       { empty_ins with
@@ -1204,10 +1207,10 @@ module Make(V:Constant.S)(C:Config) =
     | I_ADD_SIMD (r1,r2,r3) -> add_simd r1 r2 r3::k
     | I_ADD_SIMD_S (r1,r2,r3) -> add_simd_s r1 r2 r3::k
 (* Arithmetic *)
-    | I_MOV (v,r,K i) ->  movk v r i::k
+    | I_MOV (v,r,K i) ->  mov_const v r i::k
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k
     | I_MOVZ (v,rd,i,os) -> movz v rd i os::k
-    | I_MOVK (v,rd,i,os) -> movk' v rd i os::k
+    | I_MOVK (v,rd,i,os) -> movk  v rd i os::k
     | I_ADDR (r,lbl) -> adr tr_lab r lbl::k
     | I_RBIT (v,rd,rs) -> rbit v rd rs::k
     | I_SXTW (r1,r2) -> sxtw r1 r2::k
