@@ -1,7 +1,7 @@
 AArch64 A129
 (* tests accessing a location within the array, but offset *)
 (* symbolic locations *)
-{ 0:X2 = v; int64_t v[2] = {1, 2}; }
+{ int64_t 0:X0; 0:X2 = v; int64_t v[2] = {1, 2}; }
 
 P0;
   LDR X0, [X2, #8];
