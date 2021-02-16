@@ -1,7 +1,7 @@
 AArch64 A65
 (* Tests asr (register), reg shift of 1 *)
 
-{ 0:X0=64; 0:X1=1 }
+{ int64_t 0:X0=64; uint64_t 0:X1=1; }
 
 P0;
 ASR X0, X0, X1;

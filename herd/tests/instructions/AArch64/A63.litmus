@@ -1,7 +1,7 @@
 AArch64 A63
 (* Tests asr (immediate), no shift *)
 
-{ 0:X0=1; }
+{ uint64_t 0:X0=1; }
 
 P0;
 ASR X0, X0, #0;

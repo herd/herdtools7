@@ -4,7 +4,7 @@ AArch64 A175
 (* This should fail as v[3] = 3 is not allowed in init *)
 
 
-{ 0:X0=42; 0:X2 = v; int64_t v[2] = {1, 2}; v[3] = 3 }
+{ uint64_t 0:X0=42; 0:X2 = v; int64_t v[2] = {1, 2}; v[3] = 3 }
 
 P0;
   STR X0, [X2, #16];

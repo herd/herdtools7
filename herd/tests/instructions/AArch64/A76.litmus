@@ -1,7 +1,7 @@
 AArch64 A76
 (* Tests adds (shifted register), arith right shift by 2 *)
 
-{ 0:X0=42; 0:X1=32; }
+{ uint64_t 0:X0=42; uint64_t 0:X1=32; }
 
 P0;
 ADDS X0, X0, X1, asr #2;

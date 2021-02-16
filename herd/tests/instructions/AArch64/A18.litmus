@@ -1,6 +1,6 @@
 AArch64 A18
 (* Tests unscaled load, given a symbolic location, no offset*)
-{ int64_t x; 0:X1=x;}
+{ int64_t x; 0:X1=x; uint64_t 0:X0; }
 
 P0;
   LDUR X0, [X1];

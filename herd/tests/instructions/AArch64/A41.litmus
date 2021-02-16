@@ -1,7 +1,7 @@
 AArch64 A41
 (* Tests test bit not zero *)
 
-{ 0:X0=2 }
+{ uint64_t 0:X0=2; uint64_t 0:X1; }
 
 P0;
   TBNZ X0, #1, foo;

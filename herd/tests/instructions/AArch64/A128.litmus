@@ -1,6 +1,6 @@
 AArch64 A128
 (* Tests accessing a location - symbolic location in vector *)
-{  0:X2=v; int64_t v[2] = {22,44}}
+{  int64_t 0:X0; 0:X2=v; int64_t v[2] = {22,44}; }
 
 P0;
   LDR X0, [X2];

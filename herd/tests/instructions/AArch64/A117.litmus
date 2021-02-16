@@ -5,7 +5,7 @@ AArch64 A117
 
 P0;
   B foo;
-  ADD X0, X0, #1;
+  ADD W0, W0, #1;
   foo: NOP;
 
 forall (0:X0=1)

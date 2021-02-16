@@ -1,6 +1,6 @@
 AArch64 A4
 (* Tests load immediate, no offset, from location *)
-{ 0:X1=x }
+{ uint64_t 0:X0; 0:X1=x; uint64_t x;}
 
 P0;
   LDR X0, [X1];

@@ -1,10 +1,11 @@
-AArch64 CSNEG
+AArch64 L004
+(* Tests CSNEG *)
 
 {
-uint64_t 0:X0=1;
-uint64_t 0:X2=2;
-uint64_t 0:X1;
-uint64_t 0:X3;
+int64_t 0:X0=1;
+int64_t 0:X2=2;
+int64_t 0:X1;
+int64_t 0:X3;
 }
  P0                 ;
  CMP X0,X0          ;

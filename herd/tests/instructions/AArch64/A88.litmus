@@ -1,7 +1,7 @@
 AArch64 A88
 (* Tests movk, 64-bit, no shift *)
 
-{ 0:X0=65536; }
+{ uint64_t 0:X0=65536; }
 
 P0;
 MOVK X0, #1;

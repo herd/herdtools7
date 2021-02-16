@@ -4,8 +4,8 @@ AArch64 A121
  { 0:X0=1; }
 
 P0;
-  CBNZ X0, foo;
-  ADD X0, X0, #1;
+  CBNZ W0, foo;
+  ADD W0, W0, #1;
   foo: NOP;
 
 forall (0:X0=1)
