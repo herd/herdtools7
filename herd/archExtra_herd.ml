@@ -139,6 +139,8 @@ module type S = sig
   val build_type_env : (location * (TestType.t * 'v)) list -> type_env
   val look_type : type_env -> location -> TestType.t
   val loc_of_rloc : type_env -> rlocation -> location
+(* Expand array rlocation to locations of its elements *)
+  val locs_of_rloc : type_env -> rlocation -> location list
 
   (* Final state, our outcome *)
   type rstate
@@ -476,17 +478,23 @@ module Make(C:Config) (I:I) : S with module I = I
       (* This function scales the offset from type information, *)
       (* Raises User_error, if not an array or pointer type or  *)
       (* in case of out of bounds access.                       *)
+
+      let size_of_array t =
+        let open TestType in
+        match t with
+        | TyArray (t,sz) -> Some (size_of_t t,sz)
+        | TyDefPointer -> Some (MachSize.Word,1)
+        | Pointer t -> Some (size_of_t t,1)
+        | _ -> None
+
       let scale_array_reference t loc os =
         let sz_elt,n_elts =
-          let open TestType in
-          match t with
-          | TyArray (t,sz) -> size_of_t t,sz
-          | TyDefPointer -> MachSize.Word,1
-          | Pointer t -> size_of_t t,1
-          | _ ->
-              Warn.user_error
-                "Location %s of type %s is used as an array"
-                (pp_location loc) (TestType.pp t) in
+          match size_of_array t with
+          | Some (a,b) -> (a,b)
+          | None ->
+             Warn.user_error
+               "Location %s of type %s is used as an array"
+               (pp_location loc) (TestType.pp t) in
         if os < 0 || os >= n_elts then
           Warn.user_error
             "Out of bounds access on array %s" (pp_location loc) ;
@@ -580,6 +588,25 @@ module Make(C:Config) (I:I) : S with module I = I
         | Deref (loc,o) ->
             let t = look_type tenv loc in
             scale_array_reference t loc o
+
+    let locs_of_rloc tenv rloc =
+      let open ConstrGen in
+      match rloc with
+      | Loc loc ->
+         begin
+           let t = look_type tenv loc in
+           match t with
+           | TestType.TyArray (_,sz) ->
+              let rec do_rec o =
+                if o >= sz then []
+                else
+                 scale_array_reference t loc o::do_rec (o+1) in
+              do_rec 0
+           | _ -> [loc]
+         end
+      | Deref (loc,o) ->
+          let t = look_type tenv loc in
+          [scale_array_reference t loc o]
 
       (* Final (include faults) *)
       module RState = RLocMap
@@ -777,10 +804,23 @@ module Make(C:Config) (I:I) : S with module I = I
           else locs
 
         let state_restrict_locs_non_mixed keep_regs locs tenv _ st =
-          let loc_of_rloc = loc_of_rloc tenv in
+          let locs_of_rloc = locs_of_rloc tenv in
           RLocSet.fold
-            (fun loc r ->
-              RState.add loc (look_address_in_state st (loc_of_rloc loc)) r)
+            (fun rloc r ->
+              match locs_of_rloc rloc with
+              | [loc] -> RState.add rloc (look_address_in_state st loc) r
+              | locs ->
+                 let cs =
+                   List.map
+                     (fun loc ->
+                       match look_address_in_state st loc with
+                       | I.V.Val c -> c
+                       | _ -> Warn.fatal "Non constant value in vector")
+                     locs in
+                 RState.add
+                   rloc
+                   (I.V.Val (Constant.ConcreteVector (List.length cs,cs)))
+                   r)
             (add_reg_locs keep_regs st locs) RState.empty
 
         let state_restrict_locs_mixed keep_regs locs tenv senv st =
