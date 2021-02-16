@@ -147,9 +147,10 @@ module type S = sig
 
   type final_state = rstate * FaultSet.t
   val do_dump_final_state :
-    FaultAtomSet.t -> (string -> string) -> final_state -> string
+    type_env -> FaultAtomSet.t ->
+    (string -> string) -> final_state -> string
 
-  (* Set of final states *)  
+  (* Set of final states *)
   module StateSet : MySet.S with type elt = final_state
 
 (*****************************************)
@@ -555,7 +556,7 @@ module Make(C:Config) (I:I) : S with module I = I
       (* Types *)
       type type_env = TestType.t LocMap.t
 
-      let type_env_empty = LocMap.empty          
+      let type_env_empty = LocMap.empty
 
       let build_type_env bds =
         List.fold_left
@@ -563,6 +564,14 @@ module Make(C:Config) (I:I) : S with module I = I
           type_env_empty bds
 
       let look_type m loc = LocMap.safe_find TestType.TyDef loc m
+
+      let look_rloc_type m rloc =
+        let open ConstrGen in
+        match rloc with
+        | Loc loc -> look_type m loc
+        | Deref (loc,_) ->
+           let t = look_type m loc in
+           TestType.Ty (TestType.get_array_primitive_ty t)
 
       let loc_of_rloc tenv =
         let open ConstrGen in
@@ -591,14 +600,24 @@ module Make(C:Config) (I:I) : S with module I = I
             st [] in
         String.concat delim  (List.rev bds)
 
-      let do_dump_rstate tr st =
+      let sxt_v sz v = I.V.op1 (Op.Sxt sz) v
+
+      let do_dump_rstate tenv tr st =
         pp_nice_rstate st " "
           (fun l v ->
+            let t = look_rloc_type tenv l in
+            let v =
+              try begin match t with
+              | TestType.Ty b ->
+                 let sz = size_of_t b in
+                 sxt_v sz v
+              | _ -> v
+                  end with Misc.Fatal _ -> v in
             ConstrGen.dump_rloc (do_dump_location tr) l ^
               "=" ^ I.V.pp C.hexa v ^";")
 
-      let do_dump_final_state fobs tr (st,flts) =
-        let pp_st = do_dump_rstate tr st in
+      let do_dump_final_state tenv fobs tr (st,flts) =
+        let pp_st = do_dump_rstate tenv tr st in
         if FaultSet.is_empty flts && FaultAtomSet.is_empty fobs then pp_st
         else
           let noflts =

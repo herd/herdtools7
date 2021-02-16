@@ -726,14 +726,11 @@ module Make
 (* Memory instructions *)
 (***********************)
 
-(* compute sign extension (32 -> 64 bits) *)
-      let sxtw_op v =
-        let m = V.op1 (Op.LeftShift 31) V.one in
-        M.op Op.Xor v m
-        >>= fun v -> M.op Op.Sub v m        
+(* compute signed and unsized extension (32 -> 64 bits) *)
+      let sxtw_op = M.op1 (Op.Sxt MachSize.Word)
 
-      let uxtw_op = M.op1 (Op.AndK "0xffffffff")
-                         
+      and uxtw_op = M.op1 (Op.Mask MachSize.Word)
+
 (* Apply a shift as monadic op *)
       let shift s =
         let open AArch64Base in

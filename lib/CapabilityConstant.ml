@@ -75,6 +75,14 @@ module CapabilityScalar = struct
 
   let get_tag (t,_) = t
   let set_tag t (_,x) = t, x
+
+  let sxt sz v = match sz with
+    | MachSize.S128 -> v
+    | _ ->
+      let t,v = mask sz v in
+      let nb = MachSize.nbits sz in
+      let m = Uint128.shift_left Uint128.one (nb-1) in
+      t,Uint128.sub (Uint128.logxor v m) m
 end
 
 include SymbConstant.Make(CapabilityScalar)
