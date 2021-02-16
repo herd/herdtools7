@@ -56,6 +56,21 @@ let to_ocaml_string shelf = OcamlString.record [
   "compatibilities",     StringListOption.to_ocaml_string  shelf.compatibilities ;
 ]
 
+let python = lazy
+  begin
+    let exists p =
+      let dev_null ch = ignore (Channel.read_lines ch) in
+      try
+        Command.run ~stdout:dev_null ~stderr:dev_null p ["--version"] ;
+        true
+      with
+        Command.Error _ -> false
+    in
+    match List.find_opt exists ["python"; "python3"] with
+    | Some p -> p
+    | None -> failwith "Could not find either python or python3"
+  end
+
 let list_of_file path key =
   (* Shelf files are executable Python code, so this Python script imports the
    * shelf.py file, then prints the given global variables. *)
@@ -81,7 +96,11 @@ let list_of_file path key =
   in
   let lines = ref [] in
   let read_lines c = lines := Channel.read_lines c in
-  Command.run ~stdin:script ~stdout:read_lines "python" [] ;
+  begin try
+    Command.run ~stdin:script ~stdout:read_lines (Lazy.force python) []
+  with
+    Command.Error e -> failwith (Command.string_of_error e)
+  end ;
   (* Sorted for stability / comparability. *)
   List.sort String.compare !lines
 
