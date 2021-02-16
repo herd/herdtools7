@@ -610,7 +610,8 @@ module Make(C:Config) (I:I) : S with module I = I
               try begin match t with
               | TestType.Ty b ->
                  let sz = size_of_t b in
-                 sxt_v sz v
+                 if TestType.is_signed b then sxt_v sz v
+                 else I.V.op1 (Op.Mask sz) v
               | _ -> v
                   end with Misc.Fatal _ -> v in
             ConstrGen.dump_rloc (do_dump_location tr) l ^

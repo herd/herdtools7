@@ -57,3 +57,13 @@ let size_of maximal = function
 | "intptr_t" | "uintptr_t" | "pteval_t"
   -> maximal (* Maximal size = ptr size *)
 | t -> Warn.fatal "Cannot find the size of type %s" t
+
+let is_signed = function
+| "int"|"long"
+| "int32_t"
+| "char"|"int8_t"
+| "short"|"int16_t"
+| "int64_t"
+| "int128_t"
+| "intptr_t" -> true
+| _ -> false
