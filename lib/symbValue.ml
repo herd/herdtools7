@@ -123,12 +123,9 @@ module Make(Cst:Constant.S) = struct
     let tag = if Scalar.get_tag a then 0x200000000 else 0 in
     Scalar.to_int (Scalar.shift_right_logical a 95) lor tag
 
-  (* Concrete -> Concrete
-     Symbolic -> Symbolic *)
   let unop op_op op v1 = match v1 with
-    | Val (Concrete i1) -> Val (Concrete (op i1))
-    | Val (Symbolic (Virtual ({cap=c;_} as s))) ->
-        Val (Symbolic (Virtual {s with cap=capa_to_bin (op (bin_to_capa c))}))
+    | Val (Concrete i1) ->
+        Val (Concrete (op i1))
     | Val (ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _ as x) ->
         Warn.user_error "Illegal operation %s on %s"
           (Op.pp_op1 true op_op) (Cst.pp_v x)
