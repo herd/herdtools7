@@ -16,48 +16,64 @@
 
 (* Utilities for running Herd binaries in tests. *)
 
-(** [herd_command ?bell ?cat ?variants herd libdir litmuses] returns the command line that [run_herd]
-  * would run. *)
-val herd_command :
-  ?bell:string ->
-  ?cat:string ->
-  ?variants:string list ->
-    string -> string -> string list -> string
+type path = string
 
 type stdout_lines = string list
 type stderr_lines = string list
 
-(** [run_herd ?bell ?cat ?variants herd libdir litmuses] runs the binary [herd]
-  * with a custom [libdir] on a [litmuses] files, and returns the stdout with
-  * unstable lines removed (e.g. Time) and stderr. Paths to cat & bell files,
-  * as well as variants, can also be passed in. *)
-val run_herd :
-  ?bell:string ->
-  ?cat:string ->
-  ?variants:string list ->
-    string -> string -> string list -> stdout_lines * stdout_lines
+(** [herd_command ~bell ~cat ~conf ~variants ~libdir herd litmuses] returns the
+ *  command line that [run_herd] would run. *)
+val herd_command :
+  bell     : path option ->
+  cat      : path option ->
+  conf     : path option ->
+  variants : string list ->
+  libdir   : path ->
+    path -> path list -> string
 
-(** [herd_output_matches_expected herd libdir litmus expected expected_failure] runs the binary
-  * [herd] with a custom [libdir] on a [litmus] file, and compares the output
-  * with an [expected] file. If the run writes to stderr then we check [expected_failure].
-  * If the contents of [expected_failure] match then it is an expected failure, otherwise
-  * it is an unexpected failure and will raise an Error. *)
-val herd_output_matches_expected : string -> string -> string -> string -> string -> bool
+(** [run_herd ~bell ~cat ~conf ~variants ~libdir herd litmuses] runs the
+ *  binary [herd] with a custom [libdir] on list of litmus files [litmuses],
+ *  and returns the stdout with unstable lines removed (e.g. Time) and stderr.
+ *  Paths to [cat], [bell], and [conf] files, as well as [variants], can also
+ *  be passed in. *)
+val run_herd :
+  bell     : path option ->
+  cat      : path option ->
+  conf     : path option ->
+  variants : string list ->
+  libdir   : path ->
+    path -> path list -> stdout_lines * stdout_lines
+
+(** [herd_output_matches_expected ~bell ~cat ~conf ~variants ~libdir herd
+ *  litmus expected expected_failure] runs the binary [herd] with a custom
+ *  [libdir] on a [litmus] file, and compares the output with an [expected]
+ *  file. If the run writes to stderr then we check [expected_failure]. If the
+ *  contents of [expected_failure] match then it is an expected failure,
+ *  otherwise it is an unexpected failure and will raise an Error.
+ *  Paths to [cat], [bell], and [conf] files, as well as [variants], can also
+ *  be passed in. *)
+val herd_output_matches_expected :
+  bell     : path option ->
+  cat      : path option ->
+  conf     : path option ->
+  variants : string list ->
+  libdir   : path ->
+    path -> path -> path -> path -> bool
 
 (** [is_litmus filename] returns whether the [filename] is a .litmus file. *)
-val is_litmus : string -> bool
+val is_litmus : path -> bool
 
 (** [is_expected filename] returns whether [filename] is a .litmus.expected file. *)
-val is_expected : string -> bool
+val is_expected : path -> bool
 
 (** [expected_of_litmus filename] returns the .litmus.expected name for a given .litmus [filename]. *)
-val expected_of_litmus : string -> string
+val expected_of_litmus : path -> path
 
 (** [litmus_of_expected filename] returns the .litmus name for a given .litmus.expected [filename]. *)
-val litmus_of_expected : string -> string
+val litmus_of_expected : path -> path
 
 (** [expected_failure_of_litmus filename] returns the .litmus.expected-failure name for a given .litmus [filename]. *)
-val expected_failure_of_litmus : string -> string
+val expected_failure_of_litmus : path -> path
 
 (** [litmus_of_expected_failure filename] returns the .litmus name for a given .litmus.expected-failure [filename]. *)
-val litmus_of_expected_failure : string -> string
+val litmus_of_expected_failure : path -> path

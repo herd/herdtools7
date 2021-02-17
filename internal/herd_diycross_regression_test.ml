@@ -17,6 +17,25 @@
 (** A tool that generates regression tests for herd7 using diycross7, comparing
  *  the output against .expected files. *)
 
+
+(* Flags. *)
+
+type path = string
+
+type flags = {
+  herd         : path ;
+  libdir       : path ;
+  diycross     : path ;
+  expected_dir : path ;
+  arch         : string ;
+  relaxlists   : string list ;
+  variants     : string list ;
+  conf         : path option ;
+}
+
+
+(* Utilities. *)
+
 let list_dir dir = List.sort String.compare (Array.to_list (Sys.readdir dir))
 let concat_dir dir names = List.map (Filename.concat dir) names
 
@@ -32,15 +51,6 @@ let diycross_args libdir arch relaxlists out_dir =
 
 (* Commands *)
 
-type flags = {
-  herd : string ;
-  diycross : string ;
-  libdir : string ;
-  expected_dir : string ;
-  arch : string ;
-  relaxlists : string list
-}
-
 let show_tests flags =
   let tmp_dir = Filesystem.new_temp_dir () in
   let args = diycross_args flags.libdir flags.arch flags.relaxlists tmp_dir in
@@ -48,8 +58,14 @@ let show_tests flags =
   let litmuses = List.filter TestHerd.is_litmus (list_dir tmp_dir) in
 
   let litmus_paths = concat_dir tmp_dir litmuses in
-  let commands = List.map (fun l -> TestHerd.herd_command flags.herd flags.libdir [l]) litmus_paths in
-  Channel.write_lines stdout commands
+  let command_of_litmus l =
+    TestHerd.herd_command ~bell:None ~cat:None
+      ~conf:flags.conf
+      ~variants:flags.variants
+      ~libdir:flags.libdir
+      flags.herd [l]
+  in
+  Channel.write_lines stdout (List.map command_of_litmus litmus_paths)
 
 
 let run_tests flags =
@@ -79,7 +95,12 @@ let run_tests flags =
     (List.map TestHerd.expected_of_litmus in_both)
   in
   let results = List.map
-    (fun (l, e) -> TestHerd.herd_output_matches_expected flags.herd flags.libdir l e "")
+    (fun (l, e) ->
+      TestHerd.herd_output_matches_expected ~bell:None ~cat:None
+        ~conf:flags.conf
+        ~variants:flags.variants
+        ~libdir:flags.libdir
+        flags.herd l e "")
     (List.combine litmus_paths expected_paths)
   in
   let passed x = x in
@@ -112,7 +133,14 @@ let promote_tests flags =
   let litmus_paths = concat_dir tmp_dir litmuses in
   let expected_paths = concat_dir flags.expected_dir expecteds in
 
-  let outputs = List.map (fun l -> TestHerd.run_herd flags.herd flags.libdir [l]) litmus_paths in
+  let output_of_litmus l =
+    TestHerd.run_herd ~bell:None ~cat:None
+      ~conf:flags.conf
+      ~variants:flags.variants
+      ~libdir:flags.libdir
+      flags.herd [l]
+  in
+  let outputs = List.map output_of_litmus litmus_paths in
   let write_file (path, (lines,_)) =
     Filesystem.write_file path (fun o -> Channel.write_lines o lines) in
   List.combine expected_paths outputs |> List.iter write_file ;
@@ -120,41 +148,73 @@ let promote_tests flags =
 
 
 let usage = String.concat "\n" [
-  Printf.sprintf "Usage: %s [opts] (show|test|promote)" Sys.argv.(0) ;
+  Printf.sprintf "Usage: %s [options] (show|test|promote)" (Filename.basename Sys.argv.(0)) ;
   "" ;
-  " show     Print the diycross7 and herd7 commands that would be run." ;
-  " test     Compare the output of running herd7 on generated diycross7 tests against .expected files." ;
-  " promote  Update .expected files to the output of herd7." ;
+  "Commands:" ;
+  "  show     Print the diycross7 and herd7 commands that would be run." ;
+  "  test     Compare the output of running herd7 on generated diycross7 tests against .expected files." ;
+  "  promote  Update .expected files to the output of herd7." ;
+  "" ;
+  "Options:" ;
 ]
 
 let () =
-  let flags = ref {
-    herd = "" ;
-    diycross = "" ;
-    libdir = "" ;
-    expected_dir = "" ;
-    arch = "" ;
-    relaxlists = []
-  } in
+  (* Required arguments. *)
+  let herd = ref "" in
+  let libdir = ref "" in
+  let diycross = ref "" in
+  let expected_dir = ref "" in
+  let arch = ref "" in
+  let relaxlists = ref [] in
+
+  (* Optional arguments. *)
+  let conf = ref None in
+  let variants = ref [] in
+
   let anon_args = ref [] in
-  Arg.parse [
-    ("-herd-path", Arg.String (fun p -> flags := {!flags with herd = p}), "path to herd binary") ;
-    ("-diycross-path", Arg.String (fun p -> flags := {!flags with diycross = p}), "path to diycross binary") ;
-    ("-libdir-path", Arg.String (fun p -> flags := {!flags with libdir = p}), "path to herd libdir") ;
-    ("-expected-dir", Arg.String (fun p -> flags := {!flags with expected_dir = p}), "path to directory of .expected files to test against") ;
-    ("-arch", Arg.String (fun a -> flags := {!flags with arch = a}), "arch to test") ;
-    ("-relaxlist", Arg.String (fun s -> flags := {!flags with relaxlists = (s :: !flags.relaxlists)}), "relaxlist to cross-product (specify multiple times)") ;
-  ] (fun a -> anon_args := a :: !anon_args) usage ;
-  if (List.exists (fun a -> a = "") [!flags.herd; !flags.diycross; !flags.libdir; !flags.expected_dir; !flags.arch]) then begin
-    Printf.printf "A flag is missing!\n" ;
-    exit 1
-  end ;
-  if (List.length !flags.relaxlists) = 0 then begin
-    Printf.printf "Must provide at least one -relaxlist.\n" ;
-    exit 1
-  end ;
+  let options = [
+    Args.is_file ("-herd-path",     Arg.Set_string herd,           "path to herd binary") ;
+    Args.is_dir  ("-libdir-path",   Arg.Set_string libdir,         "path to herd libdir") ;
+    Args.is_file ("-diycross-path", Arg.Set_string diycross,       "path to diycross binary") ;
+    Args.is_dir  ("-expected-dir",  Arg.Set_string expected_dir,   "path to directory of .expected files to test against") ;
+                  "-arch",          Arg.Set_string arch,           "arch to test" ;
+                  "-relaxlist",     Args.append_string relaxlists, "relaxlist to cross-product (specify multiple times)" ;
+    Args.is_file ("-conf",          Args.set_string_option conf,   "path to config file to pass to herd7") ;
+                  "-variant",       Args.append_string variants,   "variant to pass to herd7" ;
+  ] in
+  Arg.parse options (fun a -> anon_args := a :: !anon_args) usage ;
+
+  let exit_with_error msg =
+    Printf.printf "%s: %s.\n" Sys.argv.(0) msg ;
+    Arg.usage options usage ;
+    exit 2
+  in
+
+  if !herd = "" then
+    exit_with_error "Must set -herd-path" ;
+  if !libdir = "" then
+    exit_with_error "Must set -libdir-path" ;
+  if !diycross = "" then
+    exit_with_error "Must set -diycross-path" ;
+  if !expected_dir = "" then
+    exit_with_error "Must set -expected-dir" ;
+  if !arch = "" then
+    exit_with_error "Must set -arch" ;
+  if List.length !relaxlists = 0 then
+    exit_with_error "Must provide at least one -relaxlist" ;
+
+  let flags = {
+    herd = !herd ;
+    libdir = !libdir ;
+    diycross = !diycross ;
+    expected_dir = !expected_dir ;
+    arch = !arch ;
+    relaxlists = !relaxlists ;
+    conf = !conf ;
+    variants = !variants ;
+  } in
   match !anon_args with
-  | "show" :: [] -> show_tests !flags
-  | "test" :: [] -> run_tests !flags
-  | "promote" :: [] -> promote_tests !flags
-  | _ -> Printf.printf "%s\n" usage ; exit 1
+  | "show" :: [] -> show_tests flags
+  | "test" :: [] -> run_tests flags
+  | "promote" :: [] -> promote_tests flags
+  | _ -> exit_with_error "Must provide one command of: show, test, promote"

@@ -67,6 +67,9 @@ module Option : sig
   (** [value o ~default] is [v] if [o] is [Some v] and [default] otherwise. *)
   val value : 'a option -> default:'a -> 'a
 
+  (** [map f o] is [None] if [o] is [None] and [Some (f v)] if [o] is [Some v]. *)
+  val map : ('a -> 'b) -> 'a option -> 'b option
+
   (** [is_none o] is [true] iff [o] is [None]. *)
   val is_none : 'a option -> bool
 
