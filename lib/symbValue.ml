@@ -115,14 +115,6 @@ module Make(Cst:Constant.S) = struct
         Warn.user_error "Illegal operation on %s" (Cst.pp_v x)
     | Var _ -> raise Undetermined
 
-  let bin_to_capa c =
-    let tag = c land 0x200000000 <> 0 in
-    Scalar.set_tag tag (Scalar.shift_left (Scalar.of_int c) 95)
-
-  let capa_to_bin a =
-    let tag = if Scalar.get_tag a then 0x200000000 else 0 in
-    Scalar.to_int (Scalar.shift_right_logical a 95) lor tag
-
   let unop op_op op v1 = match v1 with
     | Val (Concrete i1) ->
         Val (Concrete (op i1))
@@ -130,6 +122,28 @@ module Make(Cst:Constant.S) = struct
         Warn.user_error "Illegal operation %s on %s"
           (Op.pp_op1 true op_op) (Cst.pp_v x)
     | Var _ -> raise Undetermined
+
+  let binop op_op op v1 v2 = match v1,v2 with
+  | Val (Concrete i1), Val (Concrete i2) ->
+      Val (Concrete (op i1 i2))
+  | Val c1, Val c2 ->
+      Warn.user_error
+        "Illegal operation %s on constants %s and %s"
+        (Op.pp_op op_op) (Cst.pp_v c1) (Cst.pp_v c2)
+  | (Var _,_)|(_,Var _)
+    -> raise Undetermined
+
+  (* Morello operators. *)
+  (* NB: These may perform arithmetic on the capability of a Symbolic Virtual
+   *     value, instead of the value itself. *)
+
+  let bin_to_capa c =
+    let tag = c land 0x200000000 <> 0 in
+    Scalar.set_tag tag (Scalar.shift_left (Scalar.of_int c) 95)
+
+  let capa_to_bin a =
+    let tag = if Scalar.get_tag a then 0x200000000 else 0 in
+    Scalar.to_int (Scalar.shift_right_logical a 95) lor tag
 
   (* Concrete -> Concrete
      Symbolic -> Concrete *)
@@ -142,16 +156,6 @@ module Make(Cst:Constant.S) = struct
         Warn.user_error "Illegal operation %s on %s"
           (Op.pp_op1 true op_op) (Cst.pp_v cst)
     | Var _ -> raise Undetermined
-
-  (* Concrete,Concrete -> Concrete *)
-  let binop op_op op v1 v2 = match v1,v2 with
-  | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
-  | Val c1,Val c2 ->
-      Warn.user_error
-        "Illegal operation %s on constants %s and %s"
-        (Op.pp_op op_op) (Cst.pp_v c1) (Cst.pp_v c2)
-  | (Var _,_)|(_,Var _)
-    -> raise Undetermined
 
   (* Concrete,Concrete -> Concrete
      Symbolic,Concrete -> Symbolic *)
@@ -177,12 +181,12 @@ module Make(Cst:Constant.S) = struct
   | (Var _,_)|(_,Var _)
     -> raise Undetermined
 
+  let mk_val_virtual s = Val (Symbolic (Virtual s))
+
   (* Concrete,Concrete -> Concrete
      Concrete,Symbolic -> Concrete
      Symbolic,Concrete -> Symbolic
      Symbolic,Symbolic -> Symbolic *)
-  let mk_val_virtual s = Val (Symbolic (Virtual s))
-
   let binop_cs_cs op_op op v1 v2 = match v1,v2 with
   | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
   | (Val (Concrete i),Val (Symbolic (Virtual {cap=c;_}))) ->
