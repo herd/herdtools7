@@ -277,6 +277,6 @@ double tsc_ratio(tsc_t t1, tsc_t t2) ;
 double tsc_millions(tsc_t t) ;
 
 /* String utilities */
-int find_string(char *t[],int sz,char *s) ;
+int find_string(const char *t[],int sz,const char *s) ;
 
 #endif

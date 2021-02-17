@@ -1329,7 +1329,7 @@ double tsc_millions(tsc_t t) {
 /* String handling */
 /*******************/
 
-int find_string(char *t[], int sz, char *s) {
+int find_string(const char *t[], int sz, const char *s) {
   for (int k = 0 ; k < sz ; k++) {
     if (strcmp(t[k],s) == 0) return k ;
   }

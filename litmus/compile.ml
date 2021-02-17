@@ -153,9 +153,7 @@ module Generic (A : Arch_litmus.Base)
               ignore (A.LocMap.find loc env) ;
               env
             with Not_found ->  A.LocMap.add loc (typeof v) env end
-        | LV (Deref _,_) ->
-            prerr_endline "TODO" ;
-            assert false
+        | LV (Deref _,_)
         | LL _|FF _ -> env
 
       let type_final final env =
@@ -168,7 +166,7 @@ module Generic (A : Arch_litmus.Base)
         let open LocationsItem in
         List.fold_left
           (fun env i -> match i with
-          | Loc (ConstrGen.Loc loc,t) ->              
+          | Loc (ConstrGen.Loc loc,t) ->
               begin try
                 ignore (A.LocMap.find loc env) ; env
               with

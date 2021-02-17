@@ -1139,6 +1139,14 @@ module Make
             procs_user env (proc,(out,(_outregs,envVolatile)))  =
         let myenv = U.select_proc proc env
         and global_env = U.select_global env in
+        let global_env =
+          List.map (* Array -> pointer to first element *)
+            (fun (loc,t) ->
+              let t =
+                let open CType in
+                match t with | Array (b,_) -> Base b | _ -> t in
+              loc,t)
+            global_env in
         let args0 =
           let open Template in
           if List.exists (Proc.equal proc) procs_user then
@@ -1357,9 +1365,16 @@ module Make
               | _ ->
                   let lhs =
                     (if U.is_rloc_ptr loc env then
-                       OutUtils.fmt_presi_ptr_index                    
-                     else OutUtils.fmt_presi_index) tag in
-                  O.fii "%s = *%s;" lhs tag)
+                       OutUtils.fmt_presi_ptr_index
+                     else OutUtils.fmt_presi_index) tag
+                    and rhs =
+                      let open ConstrGen in
+                      match loc with
+                      | Deref (v,i) ->
+                         sprintf "%s[%d]" (A.dump_loc_tag v) i
+                      | _ -> "*"^tag in
+
+                  O.fii "%s = %s;" lhs rhs)
             to_collect
         end ;
         if not (StringSet.is_empty ptes && G.DisplayedSet.is_empty globs) then

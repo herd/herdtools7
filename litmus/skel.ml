@@ -351,12 +351,18 @@ module Make
       | Direct -> sprintf "&(_a->%s[_i])"
       | Indirect -> sprintf "_a->%s[_i]"
 
-(* Right value, casted if pointer *)
-      let dump_a_v_casted = function
+(* Right value, all cases *)
+      let rec dump_a_v = function
         | Concrete i ->  A.V.Scalar.pp  Cfg.hexa i
         | Symbolic (Virtual {name=s;tag=None; offset=0;_}) ->
-            sprintf "((int *)%s)" (dump_a_addr s)
-        | ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _ -> assert false
+            dump_a_addr s
+        | ConcreteVector (_,vs) ->
+           let pps =
+             List.map
+               (fun v -> sprintf "%s," (dump_a_v v))
+               vs in
+           sprintf "{%s}" (String.concat "" pps)
+        | Symbolic _|Label _|Tag _|PteVal _ -> assert false
 
 (* Dump left & right values when context is available *)
 
@@ -1160,7 +1166,7 @@ module Make
             | (Indirect,Pointer _) ->
                 let load = U.do_load t (wrap addr) in
                 sprintf "%s != %s"
-                  load (dump_a_v_casted v)
+                  load (dump_a_v v)
             | Indirect,_ ->
                 let load = U.do_load t (wrap addr) in
                 sprintf "%s != %s" load (A.Out.dump_v v)
@@ -1171,12 +1177,14 @@ module Make
             | (Direct,_) ->
                 let load = U.do_load t (wrap addr) in
                 sprintf "%s != %s"
-                  load (dump_a_v_casted v) in
+                  load (dump_a_v v) in
           List.iter
             (fun (s,t as x) -> match t with
             | Base "mtx_t" -> ()
             | Array (_,sz) ->
-                O.fii "%s %s_values = %s;" (SkelUtil.type_name s) s (dump_a_v_casted (find_global_init s test));
+                O.fii "%s %s_values = %s;"
+                  (SkelUtil.type_name s) s
+                  (dump_a_v (find_global_init s test));
                 O.fii "for (int _j = 0 ; _j < %i ; _j++) {" sz ;
                 O.fiii "if (%s%s) fatal(\"%s, check_globals failed\");"
                   (if do_randompl then "rand_bit(&(_a->seed)) && " else "")
@@ -1614,7 +1622,7 @@ module Make
                 | Base "mtx_t" -> raise Exit
                 | CType.Array (_,sz) ->
                     let pp_a = tag a
-                    and pp_v = dump_a_v_casted v in
+                    and pp_v = dump_a_v v in
                     O.fii "%s %s_values = %s;" (SkelUtil.type_name a) a pp_v;
                     let ins =
                       U.do_store t
@@ -1625,10 +1633,10 @@ module Make
                       let tp = sprintf "_%s_ptr" a in
                       let pp_t = CType.dump t in
                       sprintf "%s *%s = (%s *)%s; *%s = (%s)%s"
-                        pp_t tp pp_t (dump_a_addr a) tp pp_t (dump_a_v_casted v)
+                        pp_t tp pp_t (dump_a_addr a) tp pp_t (dump_a_v v)
                     else
                       U.do_store t
-                        (dump_a_leftval a) (dump_a_v_casted v)
+                        (dump_a_leftval a) (dump_a_v v)
                 end in
               O.fii "%s;" ins
             with Exit -> ())
