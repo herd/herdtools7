@@ -311,6 +311,8 @@ module Make(Cst:Constant.S) = struct
   | Val (Tag _) -> v (* tags are small enough for any mask be idempotent *)
   | _ ->  unop op (Scalar.mask sz) v
 
+  and sxtop op sz v = unop op (Scalar.sxt sz) v
+
   and shift_right_logical v1 v2 = match v1,v2 with
   | Val (Symbolic (Virtual {name=s;_})),Val (Concrete v) when
       Scalar.compare v (Scalar.of_int 12) = 0 ->
@@ -504,8 +506,8 @@ module Make(Cst:Constant.S) = struct
   let as_virtual v = match v with
   | Val c -> Constant.as_virtual c
   | Var _ -> raise Undetermined
-  let is_virtual_v v =  if is_virtual v then one else zero
 
+  let is_virtual_v v =  if is_virtual v then one else zero
 
   let andnot x1 x2 =
     Scalar.logand x1 (Scalar.lognot x2)
@@ -751,11 +753,10 @@ module Make(Cst:Constant.S) = struct
         unop  op (fun s -> Scalar.shift_left s k)
     | LogicalRightShift k ->
         unop op (fun s -> Scalar.shift_right_logical s k)
-    | SignExtendWord _ ->
-        Warn.fatal "sxtw op not implemented yet"
     | AddK k -> add_konst k
     | AndK k -> unop op (fun s -> Scalar.logand s (Scalar.of_string k))
     | Mask sz -> maskop op sz
+    | Sxt sz -> sxtop op sz
     | Inv -> unop op Scalar.lognot
     | TagLoc -> tagloc
     | CapaTagLoc -> capatagloc

@@ -1,0 +1,10 @@
+Test L011 Required
+States 1
+0:X1=-1; 0:X3=65534; 0:X5=-16;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (true)
+Observation L011 Always 1 0
+Hash=caaab570971f758d0730f0cb4ab42d45
+

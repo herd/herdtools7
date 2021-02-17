@@ -47,6 +47,8 @@ module type S = sig
   val lt : t -> t -> bool
   val le : t -> t -> bool
   val mask : MachSize.sz -> t -> t
+(* Sign extension to size of t *)
+  val sxt : MachSize.sz -> t -> t
   val get_tag : t -> bool
   val set_tag : bool -> t -> t
 end

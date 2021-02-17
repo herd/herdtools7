@@ -69,6 +69,9 @@ module type S = sig
   type loc_set = A.LocSet.t
   type rloc_set = A.RLocSet.t
   val observed_rlocations : test -> rloc_set
+
+(* Notice, array rlocations  are expanded to the locations of
+   their elements *)
   val observed_locations : test -> loc_set
   val displayed_rlocations : test -> rloc_set
   val is_non_mixed_symbol : test -> Constant.symbol -> bool
@@ -234,17 +237,13 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     type loc_set = A.LocSet.t
     type rloc_set = A.RLocSet.t
 
-    let loc_of_rloc test =
-      let open ConstrGen in
-      function
-      | Loc loc -> loc
-      | Deref (loc,o) ->
-          let t = A.look_type (type_env test) loc in
-          A.scale_array_reference t loc o
+    let loc_of_rloc test rloc k =
+      let locs = A.locs_of_rloc (type_env test) rloc in
+      A.LocSet.union (A.LocSet.of_list locs) k
 
     let locs_of_rlocs test rlocs =
       A.RLocSet.fold
-        (fun rloc k -> A.LocSet.add (loc_of_rloc test rloc) k)
+        (fun rloc k -> loc_of_rloc test rloc k)
         rlocs A.LocSet.empty
 
     let observed_rlocations t = t.Test_herd.observed
@@ -268,8 +267,6 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
                   o mod sz_elt = 0 && o < sz*sz_elt
               | _ -> false
             end
-          
-      
     let is_non_mixed_symbol_virtual test sym =
       let open Constant in
       match sym.offset with

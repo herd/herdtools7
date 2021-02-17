@@ -31,14 +31,18 @@ let pp = function
   | Atomic s -> sprintf "Atomic<%s>" s
   | Pointer s -> sprintf "Pointer<%s>" s
   | TyArray (s,sz) -> sprintf "TyArray<%s,%i>" s sz
-                    
+
 let is_array = function
   | TyArray _ -> true
   | _       -> false
 
 let get_array_primitive_ty = function
-  | TyArray (ty,_) -> ty
-  | _ -> assert false
+  | TyArray (ty,_)
+  | Pointer ty
+    ->  ty
+  | TyDef -> "int"
+  | t ->
+     Warn.user_error "Array of pointer type expected, found %s" (pp t)
 
 (* Simplified typing, size only, integer types only *)
 let size_of maximal = function
@@ -53,3 +57,13 @@ let size_of maximal = function
 | "intptr_t" | "uintptr_t" | "pteval_t"
   -> maximal (* Maximal size = ptr size *)
 | t -> Warn.fatal "Cannot find the size of type %s" t
+
+let is_signed = function
+| "int"|"long"
+| "int32_t"
+| "char"|"int8_t"
+| "short"|"int16_t"
+| "int64_t"
+| "int128_t"
+| "intptr_t" -> true
+| _ -> false

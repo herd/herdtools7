@@ -139,6 +139,8 @@ module type S = sig
   val build_type_env : (location * (TestType.t * 'v)) list -> type_env
   val look_type : type_env -> location -> TestType.t
   val loc_of_rloc : type_env -> rlocation -> location
+(* Expand array rlocation to locations of its elements *)
+  val locs_of_rloc : type_env -> rlocation -> location list
 
   (* Final state, our outcome *)
   type rstate
@@ -147,9 +149,10 @@ module type S = sig
 
   type final_state = rstate * FaultSet.t
   val do_dump_final_state :
-    FaultAtomSet.t -> (string -> string) -> final_state -> string
+    type_env -> FaultAtomSet.t ->
+    (string -> string) -> final_state -> string
 
-  (* Set of final states *)  
+  (* Set of final states *)
   module StateSet : MySet.S with type elt = final_state
 
 (*****************************************)
@@ -475,17 +478,23 @@ module Make(C:Config) (I:I) : S with module I = I
       (* This function scales the offset from type information, *)
       (* Raises User_error, if not an array or pointer type or  *)
       (* in case of out of bounds access.                       *)
+
+      let size_of_array t =
+        let open TestType in
+        match t with
+        | TyArray (t,sz) -> Some (size_of_t t,sz)
+        | TyDefPointer -> Some (MachSize.Word,1)
+        | Pointer t -> Some (size_of_t t,1)
+        | _ -> None
+
       let scale_array_reference t loc os =
         let sz_elt,n_elts =
-          let open TestType in
-          match t with
-          | TyArray (t,sz) -> size_of_t t,sz
-          | TyDefPointer -> MachSize.Word,1
-          | Pointer t -> size_of_t t,1
-          | _ ->
-              Warn.user_error
-                "Location %s of type %s is used as an array"
-                (pp_location loc) (TestType.pp t) in
+          match size_of_array t with
+          | Some (a,b) -> (a,b)
+          | None ->
+             Warn.user_error
+               "Location %s of type %s is used as an array"
+               (pp_location loc) (TestType.pp t) in
         if os < 0 || os >= n_elts then
           Warn.user_error
             "Out of bounds access on array %s" (pp_location loc) ;
@@ -555,7 +564,7 @@ module Make(C:Config) (I:I) : S with module I = I
       (* Types *)
       type type_env = TestType.t LocMap.t
 
-      let type_env_empty = LocMap.empty          
+      let type_env_empty = LocMap.empty
 
       let build_type_env bds =
         List.fold_left
@@ -564,6 +573,14 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let look_type m loc = LocMap.safe_find TestType.TyDef loc m
 
+      let look_rloc_type m rloc =
+        let open ConstrGen in
+        match rloc with
+        | Loc loc -> look_type m loc
+        | Deref (loc,_) ->
+           let t = look_type m loc in
+           TestType.Ty (TestType.get_array_primitive_ty t)
+
       let loc_of_rloc tenv =
         let open ConstrGen in
         function
@@ -571,6 +588,25 @@ module Make(C:Config) (I:I) : S with module I = I
         | Deref (loc,o) ->
             let t = look_type tenv loc in
             scale_array_reference t loc o
+
+    let locs_of_rloc tenv rloc =
+      let open ConstrGen in
+      match rloc with
+      | Loc loc ->
+         begin
+           let t = look_type tenv loc in
+           match t with
+           | TestType.TyArray (_,sz) ->
+              let rec do_rec o =
+                if o >= sz then []
+                else
+                 scale_array_reference t loc o::do_rec (o+1) in
+              do_rec 0
+           | _ -> [loc]
+         end
+      | Deref (loc,o) ->
+          let t = look_type tenv loc in
+          [scale_array_reference t loc o]
 
       (* Final (include faults) *)
       module RState = RLocMap
@@ -591,14 +627,25 @@ module Make(C:Config) (I:I) : S with module I = I
             st [] in
         String.concat delim  (List.rev bds)
 
-      let do_dump_rstate tr st =
+      let sxt_v sz v = I.V.op1 (Op.Sxt sz) v
+
+      let do_dump_rstate tenv tr st =
         pp_nice_rstate st " "
           (fun l v ->
+            let t = look_rloc_type tenv l in
+            let v =
+              try begin match t with
+              | TestType.Ty b ->
+                 let sz = size_of_t b in
+                 if TestType.is_signed b then sxt_v sz v
+                 else I.V.op1 (Op.Mask sz) v
+              | _ -> v
+                  end with Misc.Fatal _ -> v in
             ConstrGen.dump_rloc (do_dump_location tr) l ^
               "=" ^ I.V.pp C.hexa v ^";")
 
-      let do_dump_final_state fobs tr (st,flts) =
-        let pp_st = do_dump_rstate tr st in
+      let do_dump_final_state tenv fobs tr (st,flts) =
+        let pp_st = do_dump_rstate tenv tr st in
         if FaultSet.is_empty flts && FaultAtomSet.is_empty fobs then pp_st
         else
           let noflts =
@@ -757,10 +804,23 @@ module Make(C:Config) (I:I) : S with module I = I
           else locs
 
         let state_restrict_locs_non_mixed keep_regs locs tenv _ st =
-          let loc_of_rloc = loc_of_rloc tenv in
+          let locs_of_rloc = locs_of_rloc tenv in
           RLocSet.fold
-            (fun loc r ->
-              RState.add loc (look_address_in_state st (loc_of_rloc loc)) r)
+            (fun rloc r ->
+              match locs_of_rloc rloc with
+              | [loc] -> RState.add rloc (look_address_in_state st loc) r
+              | locs ->
+                 let cs =
+                   List.map
+                     (fun loc ->
+                       match look_address_in_state st loc with
+                       | I.V.Val c -> c
+                       | _ -> Warn.fatal "Non constant value in vector")
+                     locs in
+                 RState.add
+                   rloc
+                   (I.V.Val (Constant.ConcreteVector (List.length cs,cs)))
+                   r)
             (add_reg_locs keep_regs st locs) RState.empty
 
         let state_restrict_locs_mixed keep_regs locs tenv senv st =

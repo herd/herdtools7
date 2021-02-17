@@ -56,10 +56,10 @@ type op1 =
   | ReadBit of int
   | LeftShift of int
   | LogicalRightShift of int
-  | SignExtendWord of int
   | AddK of int
   | AndK of string
   | Mask of MachSize.sz
+  | Sxt of MachSize.sz (* Sign extension *)
   | Inv          (* Logical not or inverse *)
   | TagLoc       (* Get tag memory location from location *)
   | CapaTagLoc

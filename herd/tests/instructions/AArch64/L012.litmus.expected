@@ -1,0 +1,10 @@
+Test L012 Required
+States 1
+v={3,2,1};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (true)
+Observation L012 Always 1 0
+Hash=f0b0d81e632ea180c4605e1e7620937b
+

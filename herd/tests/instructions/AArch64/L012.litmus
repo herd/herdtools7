@@ -1,0 +1,11 @@
+AArch64 L012
+{
+int v[3] = { 1,2,3 };
+0:X2=v;
+}
+  P0 ;
+LDR W0,[X2]    ;
+LDR W1,[X2,#8] ;
+STR W0,[X2,#8] ;
+STR W1,[X2]    ;
+locations [v;]

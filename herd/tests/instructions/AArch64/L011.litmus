@@ -1,0 +1,14 @@
+AArch64 L011
+{
+int8_t x=-1;
+int16_t y=-2;
+int32_t z=-16;
+0:X2=x; int8_t 0:X1;
+0:X4=y; int32_t 0:X3;
+0:X6=z; int32_t 0:X5;
+}
+  P0         ;
+LDRB W1,[X2] ;
+LDRH W3,[X4] ;
+LDR  W5,[X6] ; 
+locations [0:X1;0:X3;0:X5;]

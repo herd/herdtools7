@@ -46,6 +46,8 @@ module StringScalar = struct
   let le = op2 "(<=)"
   let mask sz = op1 (Op.pp_op1 false (Op.Mask sz))
 
+  let sxt sz v = op1 (Printf.sprintf "sxt(%s)" (MachSize.pp sz)) v
+
   let get_tag _ = assert false
   let set_tag _ = assert false
 end
