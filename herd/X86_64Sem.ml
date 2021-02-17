@@ -69,7 +69,7 @@ module Make (C:Sem.Config)(V : Value.S)
         | X86_64.R8bL -> fun v -> M.op1 (Op.UnSetXBits (56, 8)) v
         | X86_64.R16b -> fun v -> M.op1 (Op.UnSetXBits (48, 16)) v
         | X86_64.R32b -> fun v -> M.op1 (Op.UnSetXBits (32, 32)) v
-        | X86_64.R64b -> fun v -> M.op1 (Op.UnSetXBits (0, 0)) v
+        | X86_64.R64b -> M.unitT
 
       let inst_size_to_reg_size = function
         | X86_64.I8b  -> X86_64.R8bL
@@ -108,11 +108,13 @@ module Make (C:Sem.Config)(V : Value.S)
         match loc with
         | A.Location_global l -> read_mem sz data locked l ii
         | A.Location_reg (_, reg) -> read_reg data reg ii
-        end >>= mask_from_reg_part (if data
-                                    then (inst_size_to_reg_size (get_inst_size ii.X86_64.inst))
-                                    else X86_64.R64b)
+        end >>= mask_from_reg_part
+                  (if data
+                   then (inst_size_to_reg_size (get_inst_size ii.X86_64.inst))
+                   else X86_64.R64b)
 
-      let read_loc_atomic sz is_d loc ii = read_loc_gen sz is_d (is_global loc) loc ii
+      let read_loc_atomic sz is_d loc ii =
+        read_loc_gen sz is_d (is_global loc) loc ii
 
       let mk_write sz an loc v =
         let ac = Act.access_of_location_std loc in
@@ -139,8 +141,8 @@ module Make (C:Sem.Config)(V : Value.S)
           | X86_64.R8bH -> fun a -> M.op1 (Op.UnSetXBits (8, 8)) a
           | X86_64.R8bL -> fun a -> M.op1 (Op.UnSetXBits (8, 0)) a
           | X86_64.R16b -> fun a -> M.op1 (Op.UnSetXBits (16, 0)) a
-          | X86_64.R32b -> fun a -> M.op1 (Op.UnSetXBits (64, 0)) a
-          | X86_64.R64b -> fun a -> M.op1 (Op.UnSetXBits (64, 0)) a
+          | X86_64.R32b
+          | X86_64.R64b -> fun _a -> M.unitT V.zero
         in
         match r with
         | X86_64.Ireg (_, p) ->
@@ -227,7 +229,13 @@ module Make (C:Sem.Config)(V : Value.S)
               (write_loc_gen sz locked loc_ra v_ea ii))
                      >>! B.Next
 
-      let do_op sz locked o ea op ii =
+      let do_op sz locked x86_op ea op ii =
+        let module A = X86_64 in
+        let o = match x86_op with
+          | A.I_ADD -> Op.Add
+          | A.I_XOR -> Op.Xor
+          | A.I_OR  -> Op.Or
+          | (A.I_MOV|A.I_CMP) -> assert false in
         (lval_ea ea ii >>=
            fun loc ->
            M.addT loc (read_loc_gen sz true locked loc ii) >>| rval_op sz locked op ii)
@@ -252,15 +260,15 @@ module Make (C:Sem.Config)(V : Value.S)
              (lval_ea ea ii >>| rval_op sz locked op ii) >>=
                fun (loc,v_op) ->
                write_loc_gen sz locked loc v_op ii >>! B.Next
-(* TODO add NTI annottation, at movnti is an ordinary store *)
+(* TODO add NTI annotation, at movnti is an ordinary store *)
           | X86_64.I_MOVNTI (sz,ea,r) ->
               let sz = inst_size_to_mach_size sz in
               (lval_ea ea ii >>| read_reg true r ii) >>=
               fun (loc,v) ->
               write_loc_gen sz locked loc v ii >>! B.Next
-          | X86_64.I_EFF_OP (_, sz, ea, op) ->
+          | X86_64.I_EFF_OP (x86_op, sz, ea, op) ->
              let sz = inst_size_to_mach_size sz in
-             do_op sz locked Op.Xor ea op ii (* Problem, it's not always xor but the parameter of I_EFF_OP *)
+             do_op sz locked x86_op ea op ii (* Problem, it's not always xor but the parameter of I_EFF_OP *)
           | X86_64.I_EFF (X86_64.I_SETNB, sz, ea) ->
              let sz = inst_size_to_mach_size sz in
              (lval_ea ea ii >>| read_reg false (X86_64.Flag X86_64.CF) ii) >>=

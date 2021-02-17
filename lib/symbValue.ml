@@ -382,9 +382,13 @@ module Make(Cst:Constant.S) = struct
 
   let ne v1 v2 = if is_zero (eq v1 v2) then one else zero
 
-  let lt =
-    binop Op.Lt
-      (fun s1 s2 -> bool_to_scalar (Scalar.lt s1 s2))
+  let lt v1 v2 = match v1,v2 with
+(* Need to compare symbols to zero, for setting X86_64 flags *)
+    | Val (Symbolic _),Val c when Cst.eq c Cst.zero -> zero
+    | Val c,Val (Symbolic _) when Cst.eq c Cst.zero -> one
+    | _,_ ->
+       binop Op.Lt
+         (fun s1 s2 -> bool_to_scalar (Scalar.lt s1 s2)) v1 v2
 
   let gt v1 v2 = lt v2 v1
 
