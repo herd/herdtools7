@@ -137,11 +137,11 @@ module Make(Cst:Constant.S) = struct
   (* NB: These may perform arithmetic on the capability of a Symbolic Virtual
    *     value, instead of the value itself. *)
 
-  let bin_to_capa c =
+  let scalar_of_cap c =
     let tag = c land 0x200000000 <> 0 in
     Scalar.set_tag tag (Scalar.shift_left (Scalar.of_int c) 95)
 
-  let capa_to_bin a =
+  let cap_of_scalar a =
     let tag = if Scalar.get_tag a then 0x200000000 else 0 in
     Scalar.to_int (Scalar.shift_right_logical a 95) lor tag
 
@@ -151,7 +151,7 @@ module Make(Cst:Constant.S) = struct
     | Val (Concrete i) ->
         Val (Concrete (op i))
     | Val (Symbolic (Virtual {cap=c;_})) ->
-        Val (Concrete (op (bin_to_capa c)))
+        Val (Concrete (op (scalar_of_cap c)))
     | Val cst ->
         Warn.user_error "Illegal operation %s on %s"
           (Op.pp_op1 true op_op) (Cst.pp_v cst)
@@ -162,7 +162,7 @@ module Make(Cst:Constant.S) = struct
   let binop_cs_c op_op op v1 v2 = match v1,v2 with
   | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
   | (Val (Symbolic (Virtual ({cap=c;_} as s))),Val (Concrete i)) ->
-      Val (Symbolic (Virtual {s with cap=capa_to_bin (op (bin_to_capa c) i)}))
+      Val (Symbolic (Virtual {s with cap=cap_of_scalar (op (scalar_of_cap c) i)}))
   | Val cst1,Val cst2 ->
         Warn.user_error "Illegal operation %s on %s and %s"
           (Op.pp_op op_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
@@ -174,7 +174,7 @@ module Make(Cst:Constant.S) = struct
   let binop_c_cs op_op op v1 v2 = match v1,v2 with
   | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
   | (Val (Concrete i),Val (Symbolic (Virtual {cap=c;_}))) ->
-      Val (Concrete (op i (bin_to_capa c)))
+      Val (Concrete (op i (scalar_of_cap c)))
   | Val cst1,Val cst2 ->
         Warn.user_error "Illegal operation %s on %s and %s"
           (Op.pp_op op_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
@@ -190,13 +190,13 @@ module Make(Cst:Constant.S) = struct
   let binop_cs_cs op_op op v1 v2 = match v1,v2 with
   | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
   | (Val (Concrete i),Val (Symbolic (Virtual {cap=c;_}))) ->
-      Val (Concrete (op i (bin_to_capa c)))
+      Val (Concrete (op i (scalar_of_cap c)))
   | (Val (Symbolic (Virtual ({cap=c;_} as s))),Val (Concrete i)) ->
-      mk_val_virtual {s with cap=capa_to_bin (op (bin_to_capa c) i)}
+      mk_val_virtual {s with cap=cap_of_scalar (op (scalar_of_cap c) i)}
   | (Val (Symbolic (Virtual ({cap=c1;_} as s))),
      Val (Symbolic (Virtual {cap=c2;_}))) ->
       mk_val_virtual
-        {s with cap=capa_to_bin (op (bin_to_capa c1) (bin_to_capa c2))}
+        {s with cap=cap_of_scalar (op (scalar_of_cap c1) (scalar_of_cap c2))}
   | Val cst1,Val cst2 ->
         Warn.user_error "Illegal operation %s on %s and %s"
           (Op.pp_op op_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
@@ -210,11 +210,11 @@ module Make(Cst:Constant.S) = struct
   let binop_cs_cs_c op_op op v1 v2 = match v1,v2 with
   | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
   | (Val (Concrete i),Val (Symbolic (Virtual {cap=c;_}))) ->
-      Val (Concrete (op i (bin_to_capa c)))
+      Val (Concrete (op i (scalar_of_cap c)))
   | (Val (Symbolic (Virtual {cap=c;_})),Val (Concrete i)) ->
-      Val (Concrete (op (bin_to_capa c) i))
+      Val (Concrete (op (scalar_of_cap c) i))
   | (Val (Symbolic (Virtual {cap=c1;_})),Val (Symbolic (Virtual {cap=c2;_}))) ->
-      Val (Concrete (op (bin_to_capa c1) (bin_to_capa c2)))
+      Val (Concrete (op (scalar_of_cap c1) (scalar_of_cap c2)))
   | Val cst1,Val cst2 ->
         Warn.user_error "Illegal operation %s on %s and %s"
           (Op.pp_op op_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
@@ -611,10 +611,10 @@ module Make(Cst:Constant.S) = struct
   let capaadd v1 v2 = match v1,v2 with
     | (Val (Symbolic (Virtual ({cap=c;offset=o;_} as s))),Val (Concrete i)) ->
         let i = Scalar.to_int i in
-        let c = bin_to_capa c in
+        let c = scalar_of_cap c in
         let tagclear = cap_is_sealed c in
         let c = Scalar.set_tag (Scalar.get_tag c && not tagclear) c in
-        mk_val_virtual {s with cap=capa_to_bin c;offset=o+i}
+        mk_val_virtual {s with cap=cap_of_scalar c;offset=o+i}
     | (Val (Concrete c)),(Val (Concrete increment)) -> (* General case *)
         let result = Scalar.logor (hi64 c) (lo64 (Scalar.add c increment)) in
         (* NB: bounds check skipped *)
@@ -701,7 +701,7 @@ module Make(Cst:Constant.S) = struct
 
   let setvalue v1 v2 = match v1,v2 with
     | (Val (Symbolic (Virtual {cap=c;_})),Val (Concrete i)) ->
-        let c = bin_to_capa c in
+        let c = scalar_of_cap c in
         Val (Concrete (do_setvalue c i))
     | (Val (Concrete i1)),(Val (Concrete i2)) ->
         Val (Concrete (do_setvalue i1 i2))
