@@ -131,7 +131,7 @@ let symb_reg_name = function
   | _ -> None
 
 let symb_reg r = Symbolic_reg r
-let typeof _ = assert false
+let type_reg _ = base_type
 
 let pp_ireg r =
   try List.assoc r iregs with

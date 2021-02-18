@@ -290,7 +290,13 @@ let symb_reg_name = function
   | _ -> None
 
 let symb_reg r =  Symbolic_reg r
-let typeof _ = assert false
+
+let type_reg r =
+  let open CType in
+  match r with
+  | Vreg  (_,(n_elt,sz)) -> Array (TestType.tr_nbits sz,n_elt)
+  | _ -> Base "int"
+
 
 (************)
 (* Barriers *)

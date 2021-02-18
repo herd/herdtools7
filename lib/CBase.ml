@@ -35,7 +35,7 @@ let symb_reg_name r =
   | _ -> None
 
 let symb_reg r = sprintf "%%%s" r
-let typeof _ = assert false
+let type_reg _ = base_type
 
 type 's t_reg =
   | T of 's Constant.t

@@ -102,6 +102,7 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
     | CAst.Global _::xs -> count_procs xs
     | [] -> 0
 
-  let typeof _ = assert false
+  let type_reg r = CBase.type_reg r
+
   let features = []
 end
