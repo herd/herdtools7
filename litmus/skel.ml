@@ -1243,7 +1243,7 @@ module Make
                   O.fi "%s **cpy_%s = _a->cpy_%s;" (dump_global_type a t) a a)
                 locs ;
               O.f "" ;
-              O.fi "pb_wait(_a->fst_barrier); " ;
+              O.fi "pb_wait(_a->fst_barrier);" ;
               O.fi "for ( ; ; ) {" ;
               loop_test_prelude indent2 "" ;
               StringSet.iter
@@ -2209,52 +2209,20 @@ module Make
           O.oii "/* Log final states */" ;
           loop_test_prelude indent2 "_b->" ;
           let rlocs = U.get_observed_locs test in
-          let loc_arrays =
-            A.RLocSet.fold
-              (fun rloc k ->
-                ConstrGen.match_rloc
-                  (function 
-                   | A.Location_global (G.Addr s) ->
-                       let t = U.find_rloc_type rloc env in
-                       let t = CType.strip_attributes t in
-                       begin match t with
-                       | CType.Array _ ->  StringSet.add s  k
-                       | _ -> k
-                       end
-                   | A.Location_reg _
-                   | A.Location_global (G.Pte _|G.Phy _)  -> k)
-                  (fun _ _ -> k)
-                  rloc)
-              rlocs StringSet.empty in
 (* Make copies of final locations *)
           if Cfg.cautious && not (A.RLocSet.is_empty rlocs) then begin
             O.oiii "mcautious();"
           end ;
-          (* Arrays first (because of deref just below) *)
-          StringSet.iter
-            (fun s ->
-              let loc = A.location_of_addr s in
-              match  CType.strip_attributes (U.find_type loc env) with
-              | CType.Array (t,_) ->
-                  O.fiii "%s *%s = %s;"
-                    t
-                    (dump_loc_copy loc)
-                    (U.do_load (CType.Base t) (dump_ctx_loc "ctx." loc))
-              | t ->
-                  Warn.user_error "array type expected for '%s', type %s found"
-                    s (CType.dump t))
-            loc_arrays ;
-          (* Rest of locs *)
           A.RLocSet.iter
             (fun rloc ->
               let t = U.find_rloc_type rloc env in
               let t = CType.strip_attributes t in
               begin match t,rloc with
-              | CType.Array _,_ ->
-                  O.fiii "%s %s;" (CType.dump t) (dump_rloc_copy rloc) ;
-                  O.fiii "memcpy(%s,%s, sizeof(%s));"
-                    (dump_rloc_copy rloc) (dump_ctx_rloc "ctx." rloc)
-                    (CType.dump t)
+              | CType.Array (t,_),_ ->
+                  O.fiii "%s *%s = %s;"
+                    t
+                    (dump_rloc_copy rloc)
+                    (U.do_load (CType.Base t) (dump_ctx_rloc "ctx." rloc))
               | _,ConstrGen.Loc (A.Location_global (G.Addr a))
                     when U.is_aligned a env ->
                   let _ptr = sprintf "_%s_ptr" a in
@@ -2308,7 +2276,7 @@ module Make
           List.iter
             (fun (cpy,loc) ->
               O.fiii
-                "if (ctx.%s[_i] != ctx.%s[_i]) fatal(\"%s, address copy %s is wrong\") ; "
+                "if (ctx.%s[_i] != ctx.%s[_i]) fatal(\"%s, address copy %s is wrong\");"
                 cpy loc doc.Name.name cpy)
             cpys ;
 (* Check filter *)
@@ -2713,7 +2681,7 @@ module Make
         O.oi "for (int k=0 ; k < n_exe ; k++) {" ;
         O.oii "zyva_t *p = &zarg[k];" ;
         O.oii "p->_p = &prm;" ;
-        O.oii "p->p_mutex = p_mutex; p->p_barrier = p_barrier; " ;
+        O.oii "p->p_mutex = p_mutex; p->p_barrier = p_barrier;" ;
         if do_prealloc then begin
           O.oii "p->ctx._p = &prm;" ;
           if Cfg.doublealloc then O.oi "init(&p->ctx); finalize(&p->ctx);" ;
