@@ -16,6 +16,8 @@
 
 (** A tool that runs regression tests of herd7, against .expected files. *)
 
+module Fun = Base.Fun
+
 
 (* Flags. *)
 
@@ -32,17 +34,67 @@ type flags = {
 
 (* Utilities. *)
 
-let litmuses_of_dir dir =
-  let all_files = Array.to_list (Sys.readdir dir) in
-  let only_litmus = List.filter TestHerd.is_litmus all_files in
-  let full_paths = List.map (Filename.concat dir) only_litmus in
-  List.sort String.compare full_paths
+let litmuses_to_sort = 1000
+
+(** [for_each_litmus_in_dir dir f] applies [f] to each .litmus file in [dir].
+ *  It reads [litmuses_to_sort] entries first and sorts them before applying [f],
+ *  then applies [f] to entries in an undefined order after that.
+ *  This is to balance readability of test output in `make test`,
+ *  while allowing the tool to scale to arbitrarily large directories. *)
+let for_each_litmus_in_dir dir f =
+  let handle = Unix.opendir dir in
+  let readdir () =
+    try Some (Unix.readdir handle)
+    with End_of_file -> None
+  in
+  let rec next_litmus () =
+    match readdir () with
+    | Some name ->
+        if TestHerd.is_litmus name then
+          Some name
+        else
+          next_litmus ()
+    | None ->
+        None
+  in
+  let rec first_n_litmuses n acc =
+    if n = 0 then
+      acc
+    else
+      match next_litmus () with
+      | Some litmus -> first_n_litmuses (n-1) (litmus :: acc)
+      | None -> acc
+  in
+  let rec for_each_remaining_litmus f =
+    match next_litmus () with
+    | Some litmus ->
+        f (Filename.concat dir litmus) ;
+        for_each_remaining_litmus f
+    | None ->
+        ()
+  in
+  Fun.protect
+    ~finally:(fun () -> Unix.closedir handle)
+    (fun () ->
+      first_n_litmuses litmuses_to_sort []
+        |> List.sort String.compare
+        |> List.map (Filename.concat dir)
+        |> List.iter f ;
+
+      for_each_remaining_litmus f
+    )
+
+let remove_if_exists path =
+  if Sys.file_exists path then
+    Sys.remove path
+
+let write_file path lines =
+  Filesystem.write_file path (fun o -> Channel.write_lines o lines)
 
 
 (* Commands. *)
 
 let show_tests flags =
-  let litmuses = litmuses_of_dir flags.litmus_dir in
   let command_of_litmus l =
     TestHerd.herd_command ~bell:None ~cat:None
       ~conf:flags.conf
@@ -50,30 +102,32 @@ let show_tests flags =
       ~libdir:flags.libdir
       flags.herd [l]
   in
-  let commands = List.map command_of_litmus litmuses in
-  Channel.write_lines stdout commands
+  for_each_litmus_in_dir flags.litmus_dir (fun l ->
+    command_of_litmus l |> print_string ;
+    print_char '\n'
+  )
 
 let run_tests flags =
-  let litmuses = litmuses_of_dir flags.litmus_dir in
-  let expecteds = List.map TestHerd.expected_of_litmus litmuses in
-  let expected_failures = List.map TestHerd.expected_failure_of_litmus litmuses in
-  let results = List.map
-   (fun ((l, e), f) ->
-     TestHerd.herd_output_matches_expected ~bell:None ~cat:None
+  let test_passes l =
+    TestHerd.herd_output_matches_expected ~bell:None ~cat:None
       ~conf:flags.conf
       ~variants:flags.variants
       ~libdir:flags.libdir
-      flags.herd l e f)
-   (List.combine (List.combine litmuses expecteds) expected_failures)
+      flags.herd l
+      (TestHerd.expected_of_litmus l)
+      (TestHerd.expected_failure_of_litmus l)
   in
-  let failed r = not r in
-  if List.exists failed results then begin
+  let everything_passed = ref true in
+  for_each_litmus_in_dir flags.litmus_dir (fun l ->
+    if not (test_passes l) then
+      everything_passed := false
+  ) ;
+  if not !everything_passed then begin
     Printf.printf "Some tests had errors\n" ;
     exit 1
   end
 
 let promote_tests flags =
-  let litmuses = litmuses_of_dir flags.litmus_dir in
   let output_of_litmus l =
     TestHerd.run_herd ~bell:None ~cat:None
       ~conf:flags.conf
@@ -81,17 +135,33 @@ let promote_tests flags =
       ~libdir:flags.libdir
       flags.herd [l]
   in
-  let outputs = List.map output_of_litmus litmuses in
-  let expecteds = List.map TestHerd.expected_of_litmus litmuses in
-  let expected_failures = List.map TestHerd.expected_failure_of_litmus litmuses in
-  let write_file (path, (lines,_)) =
-    Filesystem.write_file path (fun o -> Channel.write_lines o lines) in
-  let write_err_file (path, (_,err_lines)) =
-    Filesystem.write_file path (fun o -> Channel.write_lines o err_lines) in
-  let not_empty xs = List.length xs > 0
-  in
-  List.combine expecteds outputs |> List.filter (fun (_,(stdout,_)) -> not_empty stdout) |> List.iter write_file ;
-  List.combine expected_failures outputs |> List.filter (fun (_,(_,stderr)) -> not_empty stderr) |> List.iter write_err_file
+  let everything_ok = ref true in
+  for_each_litmus_in_dir flags.litmus_dir (fun l ->
+    let expected = TestHerd.expected_of_litmus l in
+    let expected_failure = TestHerd.expected_failure_of_litmus l in
+
+    match output_of_litmus l with
+    | [], [] ->
+        Printf.printf "Failed %s : Returned neither stdout nor stderr\n" l ;
+        everything_ok := false
+
+    | out, [] ->
+        remove_if_exists expected_failure ;
+        write_file expected out
+
+    | [], err ->
+        remove_if_exists expected ;
+        write_file expected_failure err
+
+    | _, _ ->
+        Printf.printf "Failed %s : Returned both stdout and stderr\n" l ;
+        everything_ok := false
+  ) ;
+  if not !everything_ok then begin
+    Printf.printf "Some tests had errors\n" ;
+    exit 1
+  end
+
 
 let usage = String.concat "\n" [
   Printf.sprintf "Usage: %s [options] (show|test|promote)" (Filename.basename Sys.argv.(0)) ;
