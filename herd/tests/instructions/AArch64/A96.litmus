@@ -1,0 +1,9 @@
+AArch64 A96
+(* Tests asr (immediate), negative initial value, right shift by 2 *)
+
+{ int64_t 0:X0 = -256; }
+
+P0;
+ASR X0, X0, #2;
+
+exists (0:X0=-64)
