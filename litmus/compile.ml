@@ -63,7 +63,11 @@ module Generic (A : Arch_litmus.Base)
 
       let misc_to_c loc = function
         | TestType.TyDef when A.is_pte_loc loc -> pteval_t
-        | TestType.TyDef -> base
+        | TestType.TyDef ->
+           begin match loc with
+           | A.Location_reg (_,r) -> A.type_reg r
+           | A.Location_global _  -> base
+           end
         | TestType.TyDefPointer  -> pointer
         | TestType.Ty t -> Base t
         | TestType.Atomic t -> Atomic (Base t)

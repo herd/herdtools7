@@ -67,3 +67,11 @@ let is_signed = function
 | "int128_t"
 | "intptr_t" -> true
 | _ -> false
+
+let tr_nbits = function
+| 8 -> "uint8_t"
+| 16 -> "uint16_t"
+| 32 -> "int"
+| 64 -> "uint64_t"
+| n -> Warn.fatal "No type for %d bits" n
+

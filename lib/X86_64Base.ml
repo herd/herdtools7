@@ -217,7 +217,7 @@ let reg_size_to_uint = function
   | R32b -> "uint32_t"
   | R64b -> "uint64_t"
 
-let typeof = function
+let type_reg = function
   | Ireg (_, t) -> CType.Base (reg_size_to_uint t)
   | _ -> CType.Base "int"
 
