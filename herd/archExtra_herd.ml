@@ -73,7 +73,7 @@ module type S = sig
   val symbol : location -> Constant.symbol option
   val symbolic_data : location -> Constant.symbolic_data option
   val of_symbolic_data : Constant.symbolic_data -> location
-    
+
 (* Extra for locations *)
   val maybev_to_location : MiscParser.maybev -> location
   val do_dump_location : (string -> string) -> location -> string
@@ -759,7 +759,7 @@ module Make(C:Config) (I:I) : S with module I = I
               let open Constant in
               match loc with
               | Location_global
-                (I.V.Val (Symbolic (Virtual {name=s; offset=0;_})) as a)
+                (I.V.Val (Symbolic (Virtual {name=s; offset=_;_})) as a)
                 ->
                   let sz = look_size senv s in
                   let eas = byte_eas sz a in

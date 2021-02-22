@@ -146,6 +146,6 @@ NOTICE: The generator takes care of placing stores to final state
   val compute_pco : S.rfmap -> S.event_rel -> S.event_rel option
 
 (* Alignment check *)
-val is_aligned : S.A.size_env -> S.event -> bool
+val is_aligned : S.A.type_env -> S.A.size_env -> S.event -> bool
 
 end

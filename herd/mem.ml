@@ -1561,7 +1561,7 @@ let match_reg_events es =
 
      let check_event_aligned test e =
        let a = Misc.as_some (E.global_loc_of e) in
-       if not (U.is_aligned (S.size_env test) e) then begin
+       if not (U.is_aligned (S.type_env test) (S.size_env test) e) then begin
          if dbg then eprintf "UNALIGNED: %s\n" (E.pp_action e);
          Warn.user_error "Unaligned or out-of-bound access: %s"
            (A.V.pp_v a)
