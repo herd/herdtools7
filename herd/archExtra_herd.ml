@@ -734,7 +734,7 @@ module Make(C:Config) (I:I) : S with module I = I
 
         let explode sz v =
           let rec do_rec k v =
-            if k <= 1 then [v]
+            if k <= 1 then [I.V.op1 (Op.AndK mask) v]
             else
               let d = I.V.op1 (Op.AndK mask) v
               and w = I.V.op1 (Op.LogicalRightShift nshift) v in
