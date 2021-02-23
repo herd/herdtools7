@@ -610,7 +610,7 @@ module Make
             O.o "" ;
 (* Pretty-print indices *)
             if some_ptr then begin
-              O.f "static char *pretty_addr[%s+1] = {\"0\",%s};"
+              O.f "static const char *pretty_addr[%s+1] = {\"0\",%s};"
                 (if Cfg.is_kvm then "(2*NVARS)" else "NVARS")
                 (String.concat ""
                    (List.map (fun (s,_) ->
@@ -642,7 +642,7 @@ module Make
           O.oi "else return NVARS;" ;
           O.o "}" ;
           O.o "" ;
-          O.f "static char *pretty_addr_physical[NVARS+1] = {%s,\"???\"};"
+          O.f "static const char *pretty_addr_physical[NVARS+1] = {%s,\"???\"};"
             (String.concat ","
                (List.map
                   (fun (s,_) -> sprintf "\"%s\"" (Misc.add_physical s))
