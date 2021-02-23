@@ -1,9 +1,10 @@
 Test A139 Allowed
-States 0
-No
+States 1
+0:X0=42;
+Ok
 Witnesses
-Positive: 0 Negative: 0
+Positive: 1 Negative: 0
 Condition exists (0:X0=42)
-Observation A139 Never 0 0
-Hash=ded8edfb3172de2fb6b478285dda7ccc
+Observation A139 Always 1 0
+Hash=8d2d1fb0349616ea4cdfe8efda193979
 
