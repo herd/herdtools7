@@ -310,8 +310,9 @@ module Make(Cst:Constant.S) = struct
     if compare v1 v2 = 0 then zero else
     binop Op.Xor (Scalar.logxor) v1 v2
 
-  and maskop op sz v = match v with
-  | Val (Tag _) -> v (* tags are small enough for any mask be idempotent *)
+  and maskop op sz v = match v,sz with
+  | Val (Tag _),_ -> v (* tags are small enough for any mask be idempotent *)
+  | Val (PteVal _),MachSize.Quad -> v (* AArch64 specific *)
   | _ ->  unop op (Scalar.mask sz) v
 
   and sxtop op sz v = unop op (Scalar.sxt sz) v
