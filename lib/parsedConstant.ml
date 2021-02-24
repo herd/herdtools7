@@ -22,8 +22,12 @@ module StringScalar = struct
 
   let of_string s = s
   let compare = String.compare
+
   let to_int k = int_of_string k
   let of_int i = Printf.sprintf "%i" i
+  let to_int64 = Int64.of_string
+  let of_int64 = Int64.to_string
+
   let pp _ s = s
 
   let op1 name  _ = Warn.fatal "unary operation '%s' on parsed constant" name

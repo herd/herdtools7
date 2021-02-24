@@ -25,8 +25,12 @@ module type S = sig
 
   val of_string : string -> t
   val pp : bool -> t -> string
+
   val of_int : int -> t
   val to_int : t -> int (* Hum *)
+
+  val of_int64 : int64 -> t
+  val to_int64 : t -> int64 (* Hum *)
 
   val compare : t -> t -> int
 

@@ -138,12 +138,14 @@ module Make(Cst:Constant.S) = struct
    *     value, instead of the value itself. *)
 
   let scalar_of_cap c =
-    let tag = c land 0x200000000 <> 0 in
-    Scalar.set_tag tag (Scalar.shift_left (Scalar.of_int c) 95)
+    let tag = not (Int64.equal (Int64.logand c 0x200000000L) 0L) in
+    Scalar.set_tag tag (Scalar.shift_left (Scalar.of_int64 c) 95)
 
   let cap_of_scalar a =
-    let tag = if Scalar.get_tag a then 0x200000000 else 0 in
-    Scalar.to_int (Scalar.shift_right_logical a 95) lor tag
+    let tag = if Scalar.get_tag a then 0x200000000L else 0L in
+    Int64.logor
+      (Scalar.to_int64 (Scalar.shift_right_logical a 95))
+      tag
 
   (* Concrete -> Concrete
      Symbolic -> Concrete *)
@@ -738,7 +740,7 @@ module Make(Cst:Constant.S) = struct
     else v1
 
   let capastrip v = match v with
-  | Val (Symbolic (Virtual s)) -> mk_val_virtual {s with cap=0}
+  | Val (Symbolic (Virtual s)) -> mk_val_virtual {s with cap=0L}
   | Val cst -> Warn.user_error "Illegal capastrip on %s" (Cst.pp_v cst)
   | Var _ -> raise Undetermined
 

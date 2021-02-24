@@ -347,6 +347,14 @@ module Uint128 = struct
     else
       Uint64.zero, Uint64.of_int i
 
+  let to_int64 (_,lo) = lo
+
+  let of_int64 i =
+    let hi =
+      if Int64.compare i 0L < 0 then Uint64.max_int else Uint64.zero in
+    hi,i
+
+
   let to_string a =
     let ten = of_int 10 in
     let string_of_digit q =

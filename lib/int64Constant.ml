@@ -49,6 +49,9 @@ module Int64Scalar = struct
        let m = shift_left one (nb-1) in
        sub (logxor v m) m
 
+  let of_int64 = Misc.identity
+  let to_int64 = Misc.identity
+
   let get_tag _ = assert false
   let set_tag _ = assert false
 end

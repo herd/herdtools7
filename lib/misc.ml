@@ -272,6 +272,7 @@ let pos_of_string s =
 (***************)
 
 let string_as_int s = try int_of_string s with Failure _ -> assert false
+let string_as_int64 s = try Int64.of_string s with Failure _ -> assert false
 
 let string_of_intkm s =
   let len = String.length s in

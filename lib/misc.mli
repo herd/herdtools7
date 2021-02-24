@@ -93,6 +93,7 @@ val pos_of_string : string -> (float * float) option
 
 (* Generalize int parsing *)
 val string_as_int : string -> int
+val string_as_int64 : string -> Int64.t
 val string_of_intkm : string -> int option
 val explode : string -> char list
 

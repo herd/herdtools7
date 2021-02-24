@@ -41,7 +41,7 @@ let as_addr = function
 let tr_symbol =
   let open Constant in
   function
-    | Virtual {name=s; tag=None; cap=0; offset=0;} -> Addr s
+    | Virtual {name=s; tag=None; cap=0L; offset=0;} -> Addr s
     | Physical (s,0) -> Phy s
     | System (PTE,s) -> Pte s
     | c ->  Warn.fatal "litmus cannot handle symbol '%s'" (pp_symbol c)

@@ -25,15 +25,20 @@ let mk_sym_tag s t =
   Symbolic (Virtual {default_symbolic_data with name=s;tag=Some t;})
 
 let mk_sym_morello p s t =
-  let p_int = (Misc.string_as_int p) in
-  if p_int land 0x7 <> 0 || p_int >= 1 lsl 36
-    then Printf.eprintf "Warning: incorrect address encoding: %#x\n" p_int ;
-  let truncated_perms = p_int lsr 3 in
-  let tag = if Misc.string_as_int t <> 0 then 1 else 0 in
+  let p_int = Misc.string_as_int64 p in
+  if
+    not (Int64.equal (Int64.logand p_int 0x7L) 0L)
+    || Int64.compare p_int (Int64.shift_left 1L 36) >= 0
+    || Int64.compare p_int 0L < 0
+    then Printf.eprintf "Warning: incorrect address encoding: %#Lx\n" p_int ;
+  let truncated_perms = Int64.shift_right_logical p_int 3 in
+  let tag = if Misc.string_as_int t <> 0 then 1L else 0L in
   Symbolic
     (Virtual
        {default_symbolic_data
-       with name=s;cap=truncated_perms lor (tag lsl 33)})
+       with
+       name=s;
+       cap=Int64.logor truncated_perms (Int64.shift_left tag 33); })
 
 let mk_sym_with_index s i =
   Symbolic

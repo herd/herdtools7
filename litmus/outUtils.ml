@@ -55,7 +55,7 @@ module Make(O:Config)(V:Constant.S) = struct
 
   let dump_v_std v = match v with
   | Concrete _ -> V.pp O.hexa v
-  | Symbolic (Virtual {name=a;tag=None;cap=0;offset=0;}) -> dump_addr a
+  | Symbolic (Virtual {name=a;tag=None;cap=0L;offset=0;}) -> dump_addr a
   | ConcreteVector _ -> V.pp O.hexa v
   | Tag _
   | Symbolic _

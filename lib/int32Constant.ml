@@ -51,6 +51,9 @@ module Int32Scalar = struct
        let m = shift_left one (nb-1) in
        sub (logxor v m) m
 
+  let of_int64 _ = assert false
+  let to_int64 _ = assert false
+
   let get_tag _ = assert false
   let set_tag _ = assert false
 end
