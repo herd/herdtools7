@@ -1354,7 +1354,7 @@ Monad type:
                   (A.V.Val
                      (Symbolic
                         (Virtual
-                           {name=s;offset=0;_})) as a)
+                           {name=s;offset=_;_})) as a)
                       when not (Misc.check_atag s) ->
                     (* Suffix encoding of tag addresses, sufficient for now *)
                     let sz = A.look_size size_env s in

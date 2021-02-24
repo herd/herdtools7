@@ -219,7 +219,7 @@ module Make
           let rs =
             List.map
               (fun (mem,sca) ->
-                 if U.is_aligned (S.size_env test) mem then
+                 if U.is_aligned (S.type_env test) (S.size_env test) mem then
                    calc_si (E.EventSetSet.singleton sca)
                  else
                    E.EventRel.empty)

@@ -523,16 +523,27 @@ let lift_proc_info i evts =
       m LocEnv.empty
 
 (* Alignment check *)
-  let is_aligned sz e =
-    let a = Misc.as_some (E.global_loc_of e)
+  let is_aligned tenv senv e =
+    let loc = Misc.as_some (E.location_of e) in
+    let si = Misc.as_some (S.A.symbolic_data loc) in
+    let loc0 = S.A.of_symbolic_data {si with Constant.offset=0;} in
+    let t = S.A.look_type tenv loc0 in
+    let open TestType in
+    let array_sz =
+      match t with
+      | TyArray (_,sz) -> sz
+      | _ -> 1
     and sz_e = E.get_mem_size e in
     let open Constant in
-    match a with
-    | A.V.Val
-      (Symbolic (Virtual {Constant.name=s;Constant.offset=idx;_}))
+    match si with
+    | {name=s; Constant.offset=idx;_}
       ->
-        let sz_s = A.look_size sz s in
-        List.exists (Misc.int_eq idx) (MachSize.get_off sz_s sz_e)
-    | _ -> assert false
+        let sz_s = A.look_size senv s in
+        let nbytes_s = MachSize.nbytes sz_s in
+        let ncell = idx / nbytes_s and idx0 = idx mod nbytes_s in
+(*        Printf.eprintf "idx=%d, ncell=%d, idx0=%d, array_sz=%d\n"
+          idx ncell idx0 array_sz ; *)
+        0 <= ncell && ncell < array_sz &&
+        List.exists (Misc.int_eq idx0) (MachSize.get_off sz_s sz_e)
 
 end

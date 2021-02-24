@@ -795,6 +795,7 @@ let match_reg_events es =
     exception CannotSca
 
 (* Various utilities on symbolic addresses as locations *)
+    (* Absolute base of indexed symbol (i.e. array address) *)
     let get_base a =
       let open Constant in
       match A.symbolic_data a with
@@ -802,6 +803,17 @@ let match_reg_events es =
           let s = if Misc.check_ctag s then Misc.tr_ctag s else s in
           A.of_symbolic_data {sym with name=s; offset=0;}
       | _ -> raise CannotSca
+
+    (* Base of indexed symbol (i.e. array cell address) *)
+    let get_cell_base nb a =
+      let open Constant in
+      match A.symbolic_data a with
+      | Some ({name=s;offset=o} as sym) ->
+          let s = if Misc.check_ctag s then Misc.tr_ctag s else s in
+          let o = (o / nb) * nb in
+          A.of_symbolic_data {sym with name=s; offset=o;}
+      | _ -> raise CannotSca
+
 
 (* Sort same_base *)
     let compare_index e1 e2 =
@@ -831,7 +843,7 @@ let match_reg_events es =
           val debug_read : out_channel -> read -> unit
         end) = struct
 
-          let _debug_reads out es = Misc.pp_list out " " R.debug_read es
+          let debug_reads out es = Misc.pp_list out " " R.debug_read es
 
           let rec inter rs0 ws0 = match rs0 with
           | [] -> [],[]
@@ -851,9 +863,13 @@ let match_reg_events es =
           end
 
           let rec all_ws rs ws wss =
-(*      eprintf "Trying [%a] on [%a]\n" debug_reads rs debug_events ws ; *)
+            if dbg then
+              eprintf "Trying [%a] on [%a]\n"
+                debug_reads rs debug_events ws ;
             let rs_diff,ws_inter = inter rs ws in
-(*      eprintf "Found [%a] (remains [%a])\n" debug_events ws_inter debug_reads rs_diff ; *)
+            if dbg then
+              eprintf "Found [%a] (remains [%a])\n"
+                debug_events ws_inter debug_reads rs_diff ;
             match ws_inter with
             | [] -> next_all_ws rs wss
             | _  ->
@@ -1334,7 +1350,14 @@ let match_reg_events es =
             let e = E.EventSet.choose sca in
             if E.is_store e && not (E.EventSet.mem e es.E.speculated) then match E.location_of e with
             | Some a ->
-                let a = get_base a in
+                let a0 = get_base a in
+                let t = A.look_type (S.type_env test) a0 in
+                let a =
+                  match t with
+                  | TestType.TyArray (base,_) ->
+                     let nb = MachSize.nbytes (A.size_of_t base) in
+                     get_cell_base nb a
+                  | _ -> a0 in
                 if keep_observed_loc a locs then
                   let old = A.LocMap.safe_find [] a k in
                   A.LocMap.add a (sort_same_base (E.EventSet.elements sca)::old) k
@@ -1347,8 +1370,9 @@ let match_reg_events es =
           (fun loc wss k ->
             let wss = List.sort compare_len (List.map sort_same_base wss)
             and rs =
-              let senv = S.size_env test in
-              AM.byte_indices (A.look_size_location senv loc) in
+              let senv = S.size_env test
+              and o = Misc.as_some (A.offset loc) in
+              AM.byte_indices o (A.look_size_location senv loc) in
             let rs = if morello then rs@[max_int] else rs in
             MatchFinal.find_rfs_sca (A.pp_location loc) rs wss::k)
           loc_wss [] in
@@ -1356,7 +1380,7 @@ let match_reg_events es =
       if C.debug.Debug_herd.solver && Misc.consp wsss then begin
         eprintf "+++++++++ possible finals ++++++++++++++\n" ;
         List.iter
-          (fun (wss) ->
+          (fun wss ->
             List.iter
               (fun ws ->  eprintf "[%a]\n" debug_events ws)
               wss ;
@@ -1561,7 +1585,7 @@ let match_reg_events es =
 
      let check_event_aligned test e =
        let a = Misc.as_some (E.global_loc_of e) in
-       if not (U.is_aligned (S.size_env test) e) then begin
+       if not (U.is_aligned (S.type_env test) (S.size_env test) e) then begin
          if dbg then eprintf "UNALIGNED: %s\n" (E.pp_action e);
          Warn.user_error "Unaligned or out-of-bound access: %s"
            (A.V.pp_v a)

@@ -71,9 +71,10 @@ module type S = sig
   with type loc_reg := I.arch_reg and type loc_global := v
 
   val symbol : location -> Constant.symbol option
+  val offset : location -> int option
   val symbolic_data : location -> Constant.symbolic_data option
   val of_symbolic_data : Constant.symbolic_data -> location
-    
+
 (* Extra for locations *)
   val maybev_to_location : MiscParser.maybev -> location
   val do_dump_location : (string -> string) -> location -> string
@@ -164,9 +165,10 @@ module type S = sig
     val mask : string
     val nshift : int
     val nsz : MachSize.sz -> int
-        (* decompose effective address increasimg order *)
-    val byte_indices :  MachSize.sz -> int list
-        (* decompose effective address increasimg order, endianess order *)
+    (* decompose effective address increasing order,
+       first arg is starting offset *)
+    val byte_indices :  int -> MachSize.sz -> int list
+    (* decompose effective address increasing order, endianess order *)
     val byte_eas :  MachSize.sz -> v -> v list
     val explode : MachSize.sz -> v ->  v list
     val recompose : v list -> v
@@ -284,6 +286,14 @@ module Make(C:Config) (I:I) : S with module I = I
         match global loc with
         | Some (I.V.Val (Symbolic sym)) -> Some sym
         | _ -> None
+
+      let offset loc =
+        let open Constant in
+        match symbol loc with
+        | Some (Virtual si) -> Some si.offset
+        | Some (Physical (_,o)) -> Some o
+        | Some _ -> Some 0
+        | None -> None
 
       let symbolic_data loc =
         let open Constant in
@@ -540,7 +550,7 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let look_size_location env loc =
         match symbolic_data loc with
-        | Some {Constant.name=s; offset=0;_} -> look_size env s
+        | Some {Constant.name=s;_} -> look_size env s
         | _ -> assert false
 
       let misc_to_size ty  =
@@ -706,15 +716,15 @@ module Make(C:Config) (I:I) : S with module I = I
           assert (n mod byte_sz = 0) ;
           n / byte_sz
 
-        let byte_indices sz =
+        let byte_indices o sz =
           let kmax = nsz sz in
           let rec do_rec k =
             if k >= kmax then []
             else
               let ds = do_rec (k+1) in
               let d = k*byte_sz in
-              d::ds in
-          0::do_rec 1
+              o+d::ds in
+          o::do_rec 1
 
         let byte_eas_incr sz a =
           let kmax = nsz sz in
@@ -760,7 +770,7 @@ module Make(C:Config) (I:I) : S with module I = I
               let open Constant in
               match loc with
               | Location_global
-                (I.V.Val (Symbolic (Virtual {name=s; offset=0;_})) as a)
+                (I.V.Val (Symbolic (Virtual {name=s; offset=_;_})) as a)
                 ->
                   let sz = look_size senv s in
                   let eas = byte_eas sz a in
@@ -804,17 +814,17 @@ module Make(C:Config) (I:I) : S with module I = I
             RLocSet.union (reg_rlocs st) locs
           else locs
 
-        let state_restrict_locs_non_mixed keep_regs locs tenv _ st =
+        let do_state_restrict look keep_regs locs tenv st =
           let locs_of_rloc = locs_of_rloc tenv in
           RLocSet.fold
             (fun rloc r ->
               match locs_of_rloc rloc with
-              | [loc] -> RState.add rloc (look_address_in_state st loc) r
+              | [loc] -> RState.add rloc (look st loc) r
               | locs ->
                  let cs =
                    List.map
                      (fun loc ->
-                       match look_address_in_state st loc with
+                       match look st loc with
                        | I.V.Val c -> c
                        | _ -> Warn.fatal "Non constant value in vector")
                      locs in
@@ -824,13 +834,12 @@ module Make(C:Config) (I:I) : S with module I = I
                    r)
             (add_reg_locs keep_regs st locs) RState.empty
 
+
+        let state_restrict_locs_non_mixed keep_regs locs tenv _ st =
+          do_state_restrict look_address_in_state keep_regs locs tenv st
+
         let state_restrict_locs_mixed keep_regs locs tenv senv st =
-          let loc_of_rloc = loc_of_rloc tenv in
-          RLocSet.fold
-            (fun loc r ->
-              RState.add
-                loc (look_in_state_mixed senv st (loc_of_rloc loc)) r)
-            (add_reg_locs keep_regs st locs) RState.empty
+          do_state_restrict (look_in_state_mixed senv) keep_regs locs tenv st
 
         let state_restrict_locs  =
           if is_mixed || morello then state_restrict_locs_mixed
