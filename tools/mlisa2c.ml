@@ -58,7 +58,6 @@ module Top(O:Config)(Out:OutTests.S) = struct
 
 (* Collect locations *)
   let collect_ra xs =
-    let open Constant in
     function
       | Abs s -> StringSet.add s xs
       | _ -> xs

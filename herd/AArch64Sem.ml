@@ -266,8 +266,6 @@ module Make
 (* PTW checking *)
 (****************)
 
-      open Constant
-
 (* Group pteval components together *)
 
       type ipte =
@@ -861,7 +859,6 @@ module Make
            (* mv is read new value from reg, not important
               as this code is not executed in morello mode *)
           (fun ac ma mv ->
-            let open AArch64 in
             let ma = append_commit ma ii in
              M.altT
               (let read_mem a = do_read_mem_ret sz an aexp ac a ii in
@@ -879,7 +876,6 @@ module Make
         (* As morello and kvm are incompatible, all accesses are virtual *)
         lift_morello
           (fun ac ma mv ->
-            let open AArch64 in
             let read_mem sz = rmw_amo_read sz rmw in
             let mrs = read_reg_data sz rs ii in
             let mrt = mv in

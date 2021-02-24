@@ -60,7 +60,6 @@ module Make(V:Constant.S) =
 (* Compilation (to kernel C) *)
 (*****************************)
     let compile_iar =
-      let open Constant in
       function
         | IAR_imm i -> sprintf "%i" i,[]
         | IAR_roa (Rega r) -> reg_to_string r,[r]
@@ -77,7 +76,6 @@ module Make(V:Constant.S) =
       | Some (Regi _)|None  -> voidstar
 
     let compile_addr_op vo =
-      let open Constant in
       function
         | Addr_op_atom (Abs s) -> s,[],[]
         | Addr_op_atom (Rega r) -> reg_to_string r,[r;],[r,type_vo vo]
@@ -92,7 +90,6 @@ module Make(V:Constant.S) =
     and kernel_mode = []
 
     let compile_ins tr_lab ins k =
-    let open Constant in
     match ins with
     | Pld (r,a,["once"]) ->
         let m,i,tenv = compile_addr_op None a in

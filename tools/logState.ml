@@ -344,7 +344,6 @@ let compare_state same st1 st2 =
 (* Betweenn two equal states, select the one with explicit absent faults *) 
 let select_absent st1 st2 =
   let open HashedState in
-  let open Hashcons in
   let open HashedFaults in
   match
     (as_t st1.p_st).S.a.Hashcons.node,

@@ -1236,7 +1236,7 @@ Monad type:
             match loc with
             | A.Location_global
               (V.Val
-                 (Symbolic (Virtual {name=s; tag=None; offset=0}))) ->
+                 (Symbolic (Virtual {name=s; tag=None; offset=0;_}))) ->
                 env,(StringMap.add s v virt,pte)
             | A.Location_global (V.Val (Symbolic (System (PTE,s)))) ->
                 let v = expand_pteval loc v in

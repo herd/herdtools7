@@ -371,7 +371,6 @@ module Make(C:Config) (I:I) : S with module I = I
       include Fault.Make(FaultArg)
 
       let same_base_virt loc1 loc2 =
-        let open Constant in
         match loc1,loc2 with
         | Location_global v1,Location_global v2
           -> FaultArg.same_id_fault v1 v2

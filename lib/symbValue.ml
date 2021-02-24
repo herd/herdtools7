@@ -246,8 +246,11 @@ module Make(Cst:Constant.S) = struct
     | (Val (PteVal _),Val (PteVal _))
       ->
         Val (Concrete (Scalar.of_int (compare  v1 v2)))
-    (* 0 is sometime used as invalid PTE *)
+    (* 0 is sometime used as invalid PTE, no orpat because warning 57
+       cannot be disabled in some versions ?  *)
     | (Val (PteVal _),Val cst)
+        when Cst.eq cst Cst.zero ->
+          Val (Cst.one)
     | (Val cst,Val (PteVal _))
         when Cst.eq cst Cst.zero ->
           Val (Cst.one)

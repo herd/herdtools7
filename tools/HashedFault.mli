@@ -16,8 +16,6 @@
 
 include (Hashcons.S with type key = Proc.t * HashedStringOpt.t * HashedString.t)
 
-open Hashcons
-
 val as_hashed  : Fault_tools.t -> node
 val as_t :  node -> Fault_tools.t
 val as_hash :  node -> int
