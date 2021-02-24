@@ -78,7 +78,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | S128 -> V128
 
     let mov r i = I_MOV (vloc,r,K i)
-    let mov_mixed sz r i = let v = sz2v sz in I_MOV (v,r,i)
+
+    let mov_mixed sz r i =
+      let sz =
+        let open MachSize in
+        match sz with
+        | S128 -> Quad (* MOV C?,#X is not recognized *)
+        | Byte|Short|Word|Quad -> sz in
+      let v = sz2v sz in I_MOV (v,r,i)
+
     let mov_reg_addr r1 r2 =  I_MOV (V64,r1,RV (V64,r2))
     let mov_reg r1 r2 = I_MOV (vloc,r1,RV (vloc,r2))
     let mov_reg_mixed sz r1 r2 = let v = sz2v sz in I_MOV (v,r1,RV (v,r2))
