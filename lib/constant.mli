@@ -17,7 +17,7 @@
 (** Constants, both symbolic (ie addresses) and concrete (eg integers)  *)
 
 type tag = string option
-type cap = int
+type cap = Int64.t
 type offset = int
 
 (* Symbolic location metadata*)

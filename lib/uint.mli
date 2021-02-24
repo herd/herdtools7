@@ -96,6 +96,8 @@ module Uint128 : sig
 
   include S with type t := t
 
+  val to_int64 : t -> Int64.t
+  val of_int64 : Int64.t -> t
   val of_uint64 : Uint64.t -> t
   val of_uint32 : Uint32.t -> t
   val of_uint16 : Uint16.t -> t

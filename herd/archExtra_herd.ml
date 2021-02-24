@@ -458,7 +458,7 @@ module Make(C:Config) (I:I) : S with module I = I
                 (fun i v ->
                   let s = I.V.pp false locval in
                   let tag = None in
-                  let cap = 0 in
+                  let cap = 0L in
                   let sym_data =
                     { Constant.name=s ;
                       tag=tag ;

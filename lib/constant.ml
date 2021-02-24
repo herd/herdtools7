@@ -23,7 +23,7 @@ open Printf
 (*needed for is-non-mixed-symbol and global vectors *)
 
 type tag = string option
-type cap = int
+type cap = Int64.t
 type offset = int
 
 let compare_tag = Misc.opt_compare String.compare
@@ -43,23 +43,27 @@ let default_symbolic_data =
   {
    name = "" ;
    tag = None ;
-   cap = 0 ;
+   cap = 0x0L ;
    offset = 0 ;
   }
 
+let capa_low c = Int64.shift_left (Int64.logand c 0x1ffffffffL)  3
+and capa_high c = Int64.shift_right_logical c 33
 let pp_symbolic_data {name=s; tag=t; cap=c; _} = match t,c with
-  | None, 0 -> s
-  | None, _ -> sprintf "%#x:%s:%i" ((c land 0x1ffffffff) lsl 3) s (c lsr 33)
-  | Some t, 0 -> sprintf "%s:%s" s t
+  | None, 0L -> s
+  | None, _ ->
+     sprintf "%#Lx:%s:%Li" (capa_low c) s (capa_high c)
+
+  | Some t, 0L -> sprintf "%s:%s" s t
   | Some t, _ ->
-      sprintf "%#x:%s:%i:%s" ((c land 0x1ffffffff) lsl 3) s (c lsr 33) t
+      sprintf "%#Lx:%s:%Li:%s" (capa_low c) s (capa_high c) t
 
 let compare_symbolic_data s1 s2 =
   begin match String.compare s1.name s2.name with
   | 0 ->
       begin match compare_tag s1.tag s2.tag with
       | 0 ->
-          begin match Misc.int_compare s1.cap s2.cap with
+          begin match Int64.compare s1.cap s2.cap with
           | 0 -> Misc.int_compare s1.offset s2.offset
           | r -> r
           end
@@ -71,7 +75,7 @@ let compare_symbolic_data s1 s2 =
 let symbolic_data_eq s1 s2 =
   Misc.string_eq s1.name s2.name
   && Misc.opt_eq Misc.string_eq s1.tag s2.tag
-  && Misc.int_eq s1.cap s2.cap
+  && Int64.equal s1.cap s2.cap
   && Misc.int_eq s1.offset s2.offset
 
 type syskind = PTE|PTE2|TLB|TAG
@@ -120,7 +124,7 @@ let symbol_eq s1 s2 = match s1,s2 with
   | (Physical _,(Virtual _|System _))
   | (System _,(Virtual _|Physical _))
     -> false
-     
+
 let as_address = function
   | Virtual {name=s; offset=0;_} -> s
   | sym -> Warn.fatal "symbol '%s' is not an address" (pp_symbol sym)
@@ -170,7 +174,6 @@ let is_symbol = function
   | Symbolic _ -> true
   | Concrete _|ConcreteVector _| Label _| Tag _ | PteVal _ -> false
 
-                                                            
 let is_non_mixed_symbol = function
   | Virtual {offset=idx;_}
   | Physical (_,idx) -> idx=0
