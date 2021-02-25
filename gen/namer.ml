@@ -84,9 +84,11 @@ module Make
        | None,None -> ""
        | _ -> sprintf "%s%s" (atom_name a1) (atom_name a2)
 
-       let one_name e = match edge_name e.edge with
+       let one_name is_last e = match edge_name e.edge with
        | Some n ->
-           Some (sprintf "%s%s" n (atoms_name e.a1 e.a2))
+          let d =
+            if is_last then "" else Code.pp_extr (E.dir_tgt e) in
+          Some (sprintf "%s%s%s" n d (atoms_name e.a1 e.a2))
        | None -> None
 
 
@@ -158,12 +160,15 @@ module Make
          let xs =
            List.map
              (fun es ->
-               String.concat "-"
-                 (List.map
-                    (fun e -> match one_name e with
-                    | Some s -> s
-                    | None -> Warn.fatal "Namer failure")
-                    es))
+               let rec pp = function
+                 | [] -> []
+                 | e::es ->
+                    let is_last = Misc.nilp es in
+                    begin match one_name is_last e with
+                    | Some s -> s::pp es
+                    | None -> Warn.fatal "Namer failiure"
+                    end  in
+               String.concat "-" (pp es))
              xss in
          xs
 
