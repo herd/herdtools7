@@ -90,6 +90,10 @@ module Make(O:Config) (M:Builder.S) =
 
     let dump =
       let module Normer = Normaliser.Make(O)(M.E) in
+      let add_suffix = match  O.sufname with
+        | None -> fun n -> n
+        | Some s -> fun n -> n ^ s
+      in
       if O.norm then
         let module Namer = Namer.Make(M.A)(M.E) in
         fun _name es ->
@@ -97,7 +101,7 @@ module Make(O:Config) (M:Builder.S) =
           let es,_ = M.C.resolve_edges es in
           let base,es,nprocs = Normer.normalise_family es in
           let scope = get_scope nprocs in
-          let name = Namer.mk_name base ?scope es in
+          let name = add_suffix (Namer.mk_name base ?scope es) in
           dump_file name ?scope es
       else
         fun name es ->
@@ -106,7 +110,7 @@ module Make(O:Config) (M:Builder.S) =
           let scope =  get_scope nprocs in
           match name with
           | None -> dump_stdout ?scope (M.E.resolve_edges es)
-          | Some name -> dump_file name ?scope (M.E.resolve_edges es)
+          | Some name -> let name = add_suffix name in  dump_file name ?scope (M.E.resolve_edges es)
 
     module P = LineUtils.Make(M.E)
 
