@@ -180,7 +180,7 @@ let exec_conf s =
   ()
 
 let speclist =
-  Config.speclist @ [Config.varatomspec]
+  Config.speclist () @ [Config.varatomspec]
 
 let () =
   Arg.parse speclist get_arg Config.usage_msg;

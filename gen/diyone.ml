@@ -23,7 +23,7 @@ let () = Config.nprocs := 1000
 let () = Config.numeric := true
 
 let opts =
-  Config.common_specs @
+  Config.common_specs () @
   ("-num", Arg.Bool (fun b -> Config.numeric := b),
    sprintf "<bool> use numeric names, default %b" !Config.numeric)::
   ("-norm",Arg.Set norm," find a normalised name for me")::

@@ -129,7 +129,7 @@ let parse_cumul = function
 
 (* Helpers *)
 
-let common_specs =
+let common_specs () =
   ("-v", Arg.Unit (fun () -> incr verbose),"  be verbose")::
   ("-version", Arg.Unit (fun () -> print_endline Version.version ; exit 0),
    " show version number and exit")::
@@ -149,7 +149,6 @@ let common_specs =
   ("-bell",
    Arg.String (fun f -> arch := Archs.lisa ; bell := Some f),
    "<name> read bell file <name>, implies -arch LISA")::
-
   Util.parse_tag
     "-scopes"
     (fun tag -> match Scope.parse tag with
@@ -240,8 +239,8 @@ let common_specs =
 
 let numeric = ref true
 
-let speclist =
-  common_specs @
+let speclist () =
+  common_specs () @
   ("-num", Arg.Bool (fun b -> numeric := b),
    sprintf "<bool> use numeric names (default %b)" !numeric)::
    ("-mode", Arg.String (fun s -> mode := parse_mode s),
@@ -287,7 +286,7 @@ let varatomspec =
 let prog = if Array.length Sys.argv > 0 then Sys.argv.(0) else "XXX"
 let baseprog = sprintf "%s (version %s)" (Filename.basename prog) (Version.version)
 
-let usage_msg = "Usage: " ^ prog ^   "[options]*"
+let usage_msg = "Usage: " ^ prog ^   " [options]*"
 
 let read_no fname =
   try
