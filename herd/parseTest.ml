@@ -303,7 +303,12 @@ module Top (Conf:Config) = struct
             let lexer = Lexer.token
             let parser = (*MiscParser.mach2generic*) AArch64Parser.main
           end in
-          let module AArch64S = AArch64Sem.Make(Conf)(UInt128Value) in
+          let module AArch64SemConf = struct
+            module C = Conf
+            let dirty = ModelConfig.dirty
+            let procs_user = ProcsUser.get splitted.Splitter.info
+          end in
+          let module AArch64S = AArch64Sem.Make(AArch64SemConf)(UInt128Value) in
           let module AArch64Barrier = struct
             type a = AArch64.barrier
             type b =

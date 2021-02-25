@@ -40,6 +40,14 @@ module UInt128Scalar = struct
     | Quad -> fun v -> Uint128.logand v (Uint128.of_uint64 Uint64.max_int)
     | S128 -> fun v -> v
 
+  let sxt sz v = match sz with
+  | MachSize.S128 -> v
+  | _ ->
+    let v = mask sz v in
+    let nb = MachSize.nbits sz in
+    let m = Uint128.shift_left Uint128.one (nb-1) in
+    Uint128.sub (Uint128.logxor v m) m
+
   let get_tag _ = assert false
   let set_tag _ = assert false
 end

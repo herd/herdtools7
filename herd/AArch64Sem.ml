@@ -130,7 +130,7 @@ module Make
         | AArch64Base.Vreg(vr',_) -> (AArch64Base.SIMDreg vr') 
         | _ -> assert false in
           let location = A.Location_reg (ii.A.proc,vr) in
-          M.read_loc is_data (mk_read MachSize.S128 AArch64.N) location ii
+          M.read_loc is_data (mk_read MachSize.S128 AArch64.N aexp) location ii
 
       let neon_getlane cur_val idx esize =
         let mask = V.op1 (Op.LeftShift (idx*esize)) (AArch64.neon_mask esize) in
@@ -195,7 +195,7 @@ module Make
           (* Clear unused register bits (zero extend) *)
           M.op1 (Op.Mask sz) v >>= fun v ->
           let location = A.Location_reg (ii.A.proc,vr) in
-          M.write_loc (mk_write MachSize.S128 AArch64.N v) location ii
+          M.write_loc (mk_write MachSize.S128 AArch64.N aexp Act.A_REG v) location ii
 
       let write_reg_neon = write_reg_neon_sz MachSize.S128
 
@@ -1046,18 +1046,18 @@ module Make
 
       (* Neon extension *)
       let simd_ldr sz addr rd ii =
-        do_read_mem sz AArch64.N addr ii >>= fun v ->
+        do_read_mem_ret sz AArch64.N aexp Act.A_VIR addr ii >>= fun v ->
         write_reg_neon_sz sz rd v ii >>! B.Next
 
       let simd_str sz rs rd kr s ii =
         get_ea rs kr s ii >>|
         read_reg_neon true rd ii >>= fun (addr,v) ->
-        write_mem sz addr v ii >>! B.Next
+        write_mem sz aexp Act.A_VIR addr v ii >>! B.Next
 
       let simd_str_p sz rs rd k ii = 
         read_reg_ord rs ii >>|
         read_reg_neon true rd ii >>= fun (addr,v) ->
-        write_mem sz addr v ii >>|
+        write_mem sz aexp Act.A_VIR addr v ii >>|
         post_kr rs addr k ii >>! B.Next
         
       let simd_ldp var addr1 rd1 rd2 ii = 
@@ -1072,12 +1072,12 @@ module Make
         let open AArch64Base in
         let access_size = tr_simd_variant var in
         (read_reg_neon true rd1 ii >>= fun v1 ->
-        write_mem access_size addr1 v1 ii)
+        write_mem access_size aexp Act.A_VIR addr1 v1 ii)
         >>|
         (neon_sz_k var >>= fun os ->
         M.add addr1 os >>|
         read_reg_neon true rd2 ii >>= fun (addr2,v2) ->
-        write_mem access_size addr2 v2 ii) >>! B.Next
+        write_mem access_size aexp Act.A_VIR addr2 v2 ii) >>! B.Next
 
       let movi_v r k shift ii =
         let open AArch64Base in
@@ -1188,20 +1188,20 @@ module Make
         | Neg -> M.op Op.Sub V.zero v
         | Inv -> M.op1 Op.Inv v
 
-      let load_elem sz r i addr ii =
+      let load_elem sz i r addr ii =
         let access_size = AArch64.simd_mem_access_size [r] in
-        do_read_mem access_size AArch64.N addr ii >>= fun v ->
+        do_read_mem_ret access_size AArch64.N aexp Act.A_VIR addr ii >>= fun v ->
         write_reg_neon_elem sz r i v ii
 
       let load_elem_rep sz r addr ii =
         let access_size = AArch64.simd_mem_access_size [r] in
-        do_read_mem access_size AArch64.N addr ii >>= fun v ->
+        do_read_mem_ret access_size AArch64.N aexp Act.A_VIR addr ii >>= fun v ->
         write_reg_neon_rep sz r v ii
 
       let store_elem i r addr ii =
         let access_size = AArch64.simd_mem_access_size [r] in
         read_reg_neon_elem true r i ii >>= fun v ->
-        write_mem access_size addr v ii
+        write_mem access_size aexp Act.A_VIR addr v ii
 
      (* Single structure memory access *)
       let mem_ss memop addr rs ii =
