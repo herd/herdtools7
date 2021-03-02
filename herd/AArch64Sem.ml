@@ -323,7 +323,7 @@ module Make
             m_op Op.And
               (bit_is_zero Op.DB v) (bit_is_not_zero Op.Valid v))
           AArch64.DB
-        
+
       let mextract_pte_vals pte_v =
         (extract_oa pte_v >>|
         extract_el0 pte_v >>|
@@ -698,7 +698,10 @@ module Make
       let do_ldr sz an mop ma ii =
         lift_memop Dir.R
           (fun ac ma _mv -> (* value fake here *)
-              insert_commit ma (mop ac) ii)
+            if Act.is_physical ac then
+              insert_commit ma (mop ac) ii
+            else
+              ma >>= mop ac)
           (to_perms "r" sz)
           ma mzero an ii
 
@@ -706,7 +709,8 @@ module Make
       let do_str sz an ma mv ii =
         lift_memop Dir.W
           (fun ac ma mv ->
-            if is_branching then (* additional ctrl dep on address *)
+            if is_branching && Act.is_physical ac then
+              (* additional ctrl dep on address *)
               M.bind_ctrl_data (append_commit ma ii) mv
                 (fun a v ->
                   do_write_mem sz an aexp ac a v ii)
@@ -836,7 +840,7 @@ module Make
         match rmw with
         | RMW_P | RMW_L -> N
         | RMW_A | RMW_AL -> A
-                
+
       let swp sz rmw r1 r2 r3 ii =
         lift_memop Dir.W (* swp is a write for the purpose of DB *)
           (fun ac ma mv ->
@@ -844,7 +848,7 @@ module Make
             and w2 v = write_reg_sz_non_mixed sz r2 v ii
             and r1 a = rmw_amo_read sz rmw ac a ii
             and w1 a v = rmw_amo_write sz rmw ac a v ii in
-            M.swp (append_commit ma ii) r1 r2 w1 w2)
+            M.swp (Act.is_physical ac) (append_commit ma ii) r1 r2 w1 w2)
           (to_perms "rw" sz)
           (read_reg_ord r3 ii)
           (read_reg_data sz r1 ii)
@@ -920,7 +924,7 @@ module Make
               if noret then fun sz -> do_read_mem_ret sz NoRet Exp ac
               else fun sz -> rmw_amo_read sz rmw ac
             and write_mem = fun sz -> rmw_amo_write sz rmw ac in
-            M.amo_strict op
+            M.amo_strict (Act.is_physical ac) op
               (append_commit ma ii)
               (fun a -> read_mem sz a ii) mv
               (fun a v -> write_mem sz a v ii)

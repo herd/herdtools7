@@ -64,13 +64,15 @@ module type S =
   from read_register to write_register.
   The dependency from read_mem to write_mem is iico_ctrl for swp
   and iico_data for amo_strict.
+
+  First bool argument <=> physical access.
 *)
-    val swp : ('loc t) ->
+    val swp : bool -> ('loc t) ->
       ('loc -> A.V.v t) -> A.V.v t (* read reg *) ->
         ('loc -> A.V.v -> unit t) ->  (A.V.v -> unit t) (* Write reg *)
           -> unit t
 
-    val amo_strict : Op.op -> ('loc t) ->
+    val amo_strict : bool -> Op.op -> ('loc t) ->
       ('loc -> A.V.v t) -> A.V.v t (* read reg *) ->
         ('loc -> A.V.v -> unit t) ->  (A.V.v -> unit t) (* Write reg *)
           -> unit t

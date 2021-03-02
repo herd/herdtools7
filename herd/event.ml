@@ -325,7 +325,9 @@ val same_instance : event -> event -> bool
      event_structure -> event_structure ->
      event_structure
 
-  val swp_or_amo : 'op option -> (* When None this is a swp, otherwise amo *)
+  val swp_or_amo :
+    bool -> (* Physical memory access *)
+    'op option -> (* When None this is a swp, otherwise amo *)
      event_structure -> event_structure ->
      event_structure -> event_structure ->
      event_structure -> event_structure
@@ -1241,8 +1243,12 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       and r4,e4 = es4.po and r5,e5 = es5.po in
       (EventSet.union5 r1 r2 r3 r4 r5, EventRel.union5 e1 e2 e3 e4 e5)
 
-(* If swp then add ctrl dependency from rmem to wmem, else (amo) add data dependency *)
-    let swp_or_amo op rloc rmem rreg wmem wreg =
+(* Notice
+  If swp then add ctrl dependency from rmem to wmem,
+  else (amo) add data dependency
+  If physical and branching add dependencies *)
+
+    let swp_or_amo physical op rloc rmem rreg wmem wreg =
       let is_amo = Misc.is_some op in
       let outrmem = maximals rmem
       and outrreg = maximals rreg
@@ -1280,7 +1286,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
               wmem.intra_causality_control;wreg.intra_causality_control;];
            if is_amo then EventRel.empty else mem2mem;
            EventRel.cartesian outrreg inwreg;
-           if is_branching then
+           if physical && is_branching then
  (* Notice difference with data composition:
     take maximal evts from rloc, regardless of explicit output *)
              EventRel.cartesian (maximal_commits rloc) inmem

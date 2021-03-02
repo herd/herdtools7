@@ -42,6 +42,8 @@ module Make (C:Config) (A : A) : sig
 
   type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_TLB | A_TAG | A_PHY_PTE
 
+  val is_physical : access_t -> bool
+
   type action =
     | Access of Dir.dirn * A.location * A.V.v * A.lannot * A.explicit * MachSize.sz * access_t
     | Barrier of A.barrier
@@ -74,6 +76,10 @@ end = struct
   let kvm = C.variant Variant.Kvm
 
   type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_TLB | A_TAG | A_PHY_PTE
+
+  let is_physical = function
+    | A_PHY|A_PHY_PTE -> true
+    | A_REG|A_VIR|A_PTE|A_TLB|A_TAG -> false
 
   let access_of_constant cst =
     let open Constant in
