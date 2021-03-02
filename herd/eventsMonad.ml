@@ -460,6 +460,7 @@ Monad type:
 
 (* AArch64 failed cas *)
     let aarch64_cas_no
+        (is_physical:bool)
         (read_rn:'loc t) (read_rs:'v t)
         (write_rs:'v-> unit t)
         (read_mem: 'loc -> 'v t)
@@ -477,12 +478,13 @@ Monad type:
       let (),cl_ne,eseq =  Evt.as_singleton_nospecul nem in
       assert (E.is_empty_event_structure eseq) ;
       let es =
-        E.aarch64_cas_no es_rn es_rs es_wrs es_rm in
+        E.aarch64_cas_no is_physical es_rn es_rs es_wrs es_rm in
       let cls = cl_a@cl_cv@cl_rm@cl_wrs@cl_ne  in
       eiid,(Evt.singleton ((),cls,es), None)
 
 (* AArch64 successful cas *)
     let aarch64_cas_ok
+        (is_physical:bool)
         (read_rn:'loc t) (read_rs:'v t) (read_rt: 'v t)
         (write_rs:'v-> unit t)
         (read_mem: 'loc -> 'v t) (write_mem: 'loc -> 'v -> unit t)
@@ -508,7 +510,7 @@ Monad type:
             let (),cl_eq,eseq =  Evt.as_singleton_nospecul eqm in
             assert (E.is_empty_event_structure eseq) ;
             let es =
-              E.aarch64_cas_ok es_rn es_rs es_rt es_wrs es_rm es_wm in
+              E.aarch64_cas_ok is_physical es_rn es_rs es_rt es_wrs es_rm es_wm in
             let cls = cl_a@cl_cv@cl_nv@cl_rm@cl_wm@cl_wrs@cl_eq  in
             eiid,Evt.add ((),cls,es) acts)
           acts_rn (eiid,Evt.empty) in
