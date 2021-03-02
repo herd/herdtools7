@@ -413,7 +413,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let dbg = C.debug.Debug_herd.monad
     let do_deps = C.variant Variant.Deps
     let kvm = C.variant Variant.Kvm
-    let is_branching = kvm && C.variant Variant.PteBranch
+    let is_branching = kvm && not (C.variant Variant.NoPteBranch)
     type eiid = int
     type subid = int
 

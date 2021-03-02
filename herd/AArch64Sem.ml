@@ -35,7 +35,7 @@ module Make
     let morello = C.variant Variant.Morello
     let is_deps = C.variant Variant.Deps
     let kvm = C.variant Variant.Kvm
-    let is_branching = kvm && C.variant Variant.PteBranch
+    let is_branching = kvm && not (C.variant Variant.NoPteBranch)
     let pte2 = kvm && C.variant Variant.PTE2
 
     let check_memtag ins =
@@ -625,7 +625,7 @@ module Make
 
       let lift_kvm dir mop ma an ii mphy =
         let mfault ma a =
-          do_insert_commit ma (fun _ -> mk_fault a ii None) ii
+          insert_commit ma (fun _ -> mk_fault a ii None) ii
           >>! if C.precision then B.Exit else B.ReExec in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir a ma an ii

@@ -45,19 +45,19 @@ type t =
   | Instances (* Compute dependencies on instruction instances *)
   | Kvm
   | ETS
-(* Insert branching event between pte read and accesses *)
-  | PteBranch
+(* Do not insert branching event between pte read and accesses *)
+  | NoPteBranch
 (* Pte-Squared: all accesses through page table, including PT accesses *)
   | PTE2
 (* Perform experiment *)
   | Exp
-  
+
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
    "mixed";"dontcheckmixed";"weakpredicated"; "memtag";
    "tagcheckprecise"; "tagcheckunprecise"; "precise"; "imprecise";
-   "toofar"; "deps"; "morello"; "instances"; "ptebranch"; "pte2"; "pte-squared";
+   "toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2"; "pte-squared";
    "exp"; ]
 
 let parse s = match Misc.lowercase s with
@@ -85,7 +85,7 @@ let parse s = match Misc.lowercase s with
 | "instances"|"instance" -> Some Instances
 | "kvm" -> Some Kvm
 | "ets" -> Some ETS
-| "ptebranch"|"branch" -> Some PteBranch
+| "noptebranch"|"nobranch" -> Some NoPteBranch
 | "pte2" | "pte-squared" -> Some PTE2
 | "exp" -> Some Exp
 | _ -> None
@@ -115,7 +115,7 @@ let pp = function
   | Instances -> "Instances"
   | Kvm -> "kvm" 
   | ETS -> "ets"
-  | PteBranch -> "PteBranch"
+  | NoPteBranch -> "NoPteBranch"
   | PTE2 -> "pte-squared"
   | Exp -> "exp"
 
