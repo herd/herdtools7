@@ -165,6 +165,8 @@ module Uint64 = struct
   let to_int = Int64.to_int
   let of_int = Int64.of_int
 
+  let of_int64 i = i
+
   let to_string a = Printf.sprintf "%Lu" a
   let to_string_hex a = Printf.sprintf "0x%Lx" a
 

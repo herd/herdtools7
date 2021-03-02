@@ -89,7 +89,13 @@ module Uint32 : sig
   val max_int : t
 end
 
-module Uint64 : S
+module Uint64 : sig
+  type t
+
+  include S with type t := t
+
+  val of_int64 : int64 -> t
+end
 
 module Uint128 : sig
   type t

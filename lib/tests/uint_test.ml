@@ -83,10 +83,10 @@ let tests = [
     let tests = [
       Uint64.one, Uint64.one, Uint64.one ;
       Uint64.one, Uint64.zero, Uint64.zero ;
-      Uint64.of_int 123456789, Uint64.of_int 847, Uint64.of_int 104567900283 ;
-      Uint64.of_int 123456789, Uint64.of_int 847, Uint64.of_int 104567900283 ;
-      Uint64.of_int 3, Uint64.of_string "6148914691236517205", Uint64.max_int ;
-      Uint64.of_int 2, Uint64.of_string "9223372036854775807", Uint64.sub Uint64.max_int Uint64.one ;
+      Uint64.of_int64 123456789L, Uint64.of_int64 847L, Uint64.of_int64 104567900283L ;
+      Uint64.of_int64 123456789L, Uint64.of_int64 847L, Uint64.of_int64 104567900283L ;
+      Uint64.of_int64 3L, Uint64.of_string "6148914691236517205", Uint64.max_int ;
+      Uint64.of_int64 2L, Uint64.of_string "9223372036854775807", Uint64.sub Uint64.max_int Uint64.one ;
     ] in
 
     List.iter (fun (a, b, expected) ->
@@ -104,12 +104,12 @@ let tests = [
     let open Uint in
     let tests = [
       Uint64.one, Uint64.one, Uint64.one ;
-      Uint64.of_int 123456789, Uint64.of_int 847, Uint64.of_int 145757 ;
-      Uint64.of_int 123456789, Uint64.max_int, Uint64.zero ;
+      Uint64.of_int64 123456789L, Uint64.of_int64 847L, Uint64.of_int64 145757L ;
+      Uint64.of_int64 123456789L, Uint64.max_int, Uint64.zero ;
       Uint64.max_int, Uint64.max_int, Uint64.one ;
-      Uint64.max_int, Uint64.of_int 3, Uint64.of_string "6148914691236517205" ;
-      Uint64.max_int, Uint64.of_int 2, Uint64.of_string "9223372036854775807" ;
-      Uint64.of_int 0x123456789ABCEDF, Uint64.of_int 10 , Uint64.of_int 8198552921648713 ;
+      Uint64.max_int, Uint64.of_int64 3L, Uint64.of_string "6148914691236517205" ;
+      Uint64.max_int, Uint64.of_int64 2L, Uint64.of_string "9223372036854775807" ;
+      Uint64.of_int64 0x123456789ABCEDFL, Uint64.of_int64 10L , Uint64.of_int64 8198552921648713L ;
     ] in
 
     List.iter (fun (a, b, expected) ->
@@ -127,11 +127,11 @@ let tests = [
     let open Uint in
     let tests = [
       Uint64.one, Uint64.one, Uint64.zero ;
-      Uint64.of_int 123456789, Uint64.of_int 847, Uint64.of_int 610 ;
-      Uint64.of_int 123456789, Uint64.max_int, Uint64.of_int 123456789 ;
+      Uint64.of_int64 123456789L, Uint64.of_int64 847L, Uint64.of_int64 610L ;
+      Uint64.of_int64 123456789L, Uint64.max_int, Uint64.of_int64 123456789L ;
       Uint64.max_int, Uint64.max_int, Uint64.zero ;
-      Uint64.max_int, Uint64.of_int 3, Uint64.zero ;
-      Uint64.max_int, Uint64.of_int 2, Uint64.of_int 1 ;
+      Uint64.max_int, Uint64.of_int64 3L, Uint64.zero ;
+      Uint64.max_int, Uint64.of_int64 2L, Uint64.of_int64 1L ;
     ] in
 
     List.iter (fun (a, b, expected) ->
@@ -369,9 +369,9 @@ let tests = [
     let open Uint in
     let tests = [
       Uint128.one, Uint128.one, Uint128.one ;
-      Uint128.of_int 15, Uint128.of_int 10, Uint128.of_int 150 ;
-      Uint128.of_int 123456789, Uint128.zero, Uint128.zero ;
-      Uint128.of_int 123456789, Uint128.of_int 847, Uint128.of_int 0x1858bb887b ;
+      Uint128.of_int64 15L, Uint128.of_int64 10L, Uint128.of_int64 150L ;
+      Uint128.of_int64 123456789L, Uint128.zero, Uint128.zero ;
+      Uint128.of_int64 123456789L, Uint128.of_int64 847L, Uint128.of_int64 0x1858bb887bL ;
       Uint128.of_string "0x7FFFFFFFFFF000000000000FFFFFFFFF", Uint128.of_string "0x123456789ABDCDEF123456789ABCEDF1", Uint128.of_string "0xb21edca9a977999a999a88976543120f" ;
     ] in
 
@@ -390,15 +390,15 @@ let tests = [
     let open Uint in
     let tests = [
       Uint128.one, Uint128.one, Uint128.one ;
-      Uint128.of_int 15, Uint128.of_int 10, Uint128.of_int 1 ;
-      Uint128.of_int 123456789, Uint128.max_int, Uint128.zero ;
-      Uint128.of_int 123456789, Uint128.of_int 847, Uint128.of_int 145757 ;
+      Uint128.of_int64 15L, Uint128.of_int64 10L, Uint128.of_int64 1L ;
+      Uint128.of_int64 123456789L, Uint128.max_int, Uint128.zero ;
+      Uint128.of_int64 123456789L, Uint128.of_int64 847L, Uint128.of_int64 145757L ;
       Uint128.of_string "0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", Uint128.of_string "0xAFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", Uint128.zero ;
       Uint128.of_string "0xAFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", Uint128.of_string "0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", Uint128.one ;
       Uint128.max_int, Uint128.max_int, Uint128.one ;
       Uint128.of_string "0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", Uint128.of_string "0x123456789ABCEDF", Uint128.of_string "0x707fffffffffa3b770" ;
-      Uint128.max_int, Uint128.of_int 2, Uint128.of_string "0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" ;
-      Uint128.max_int, Uint128.of_int 3, Uint128.of_string "0x55555555555555555555555555555555" ;
+      Uint128.max_int, Uint128.of_int64 2L, Uint128.of_string "0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" ;
+      Uint128.max_int, Uint128.of_int64 3L, Uint128.of_string "0x55555555555555555555555555555555" ;
     ] in
 
     List.iter (fun (a, b, expected) ->
@@ -416,13 +416,13 @@ let tests = [
     let open Uint in
     let tests = [
       Uint128.one, Uint128.one, Uint128.zero ;
-      Uint128.of_int 123456789, Uint128.of_int 847, Uint128.of_int 610 ;
-      Uint128.of_int 123456789, Uint128.max_int, Uint128.of_int 123456789 ;
+      Uint128.of_int64 123456789L, Uint128.of_int64 847L, Uint128.of_int64 610L ;
+      Uint128.of_int64 123456789L, Uint128.max_int, Uint128.of_int64 123456789L ;
       Uint128.max_int, Uint128.max_int, Uint128.zero ;
       Uint128.one, Uint128.max_int, Uint128.one ;
       Uint128.max_int, Uint128.of_string "0x3", Uint128.zero ;
       Uint128.max_int, Uint128.of_string "0x2", Uint128.one ;
-      Uint128.of_int 15, Uint128.of_int 10, Uint128.of_int 5 ;
+      Uint128.of_int64 15L, Uint128.of_int64 10L, Uint128.of_int64 5L ;
     ] in
 
     List.iter (fun (a, b, expected) ->
@@ -483,17 +483,17 @@ let tests = [
   "Uint.Uint128.of_int", (fun () ->
     let open Uint in
     let tests = [
-      0, Uint128.of_string "0x0" ;
-      1, Uint128.of_string "0x1" ;
-      123456789, Uint128.of_string "0x75BCD15" ;
-      -1, Uint128.of_string "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" ;
-      -123456789, Uint128.of_string "0xFFFFFFFFFFFFFFFFFFFFFFFFF8A432EB" ;
+      0L, Uint128.of_string "0x0" ;
+      1L, Uint128.of_string "0x1" ;
+      123456789L, Uint128.of_string "0x75BCD15" ;
+      -1L, Uint128.of_string "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" ;
+      -123456789L, Uint128.of_string "0xFFFFFFFFFFFFFFFFFFFFFFFFF8A432EB" ;
     ] in
 
     List.iter (fun (i, expected) ->
-      let got = Uint128.of_int i in
+      let got = Uint128.of_int64 i in
       if Uint128.compare got expected <> 0 then
-        Test.fail (Printf.sprintf "%i: expected %s, got %s"
+        Test.fail (Printf.sprintf "%Li: expected %s, got %s"
           i
           (Uint128.to_string_hex expected)
           (Uint128.to_string_hex got))
@@ -505,8 +505,8 @@ let tests = [
     let tests = [
       Uint128.zero, "0" ;
       Uint128.one , "1" ;
-      Uint128.of_int 10, "10" ;
-      Uint128.of_int 15, "15" ;
+      Uint128.of_int64 10L, "10" ;
+      Uint128.of_int64 15L, "15" ;
       Uint128.of_string "0x8" , "8" ;
       Uint128.of_string "0xF" , "15" ;
       Uint128.of_string "0xFF" , "255" ;
@@ -551,9 +551,9 @@ let tests = [
     let tests = [
       "0", Uint128.zero ;
       "1", Uint128.one ;
-      "123456789123456789", Uint128.of_int 123456789123456789 ;
+      "123456789123456789", Uint128.of_int64 123456789123456789L ;
       "123456789123456789123456789", Uint128.of_string "0x661efdf2e3b19f7c045f15" ;
-      "12345", Uint128.of_int 12345 ;
+      "12345", Uint128.of_int64 12345L ;
       "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", Uint128.max_int ;
       "340282366920938463463374607431768211455", Uint128.max_int ;
     ] in
