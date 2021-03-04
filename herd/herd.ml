@@ -666,7 +666,7 @@ let () =
         | Misc.Fatal msg ->
             Warn.warn_always "%a: %s" Pos.pp_pos0 name msg ;
              check_exit seen
-        | Misc.UserError msg | Op.Illegal (_,msg) ->
+        | Misc.UserError msg ->
             begin if check_pos0 msg then
               Warn.warn_always "%s (User error)" msg
             else

@@ -736,11 +736,8 @@ let match_reg_events es =
                 let es = E.simplify_vars_in_event_structure sol es
                 and rfm = S.simplify_vars_in_rfmap sol rfm in
                 kont es rfm cs res
-          with (* First legitimately discard failing candidates *)
-          | Contradiction -> res  (* May be raised by add_mem_eqs *)
-          | Op.Illegal (Op.Op1 (Op.Mask _),_)  ->
-             res (* May result from wrong rf choice *)
-          | e -> (* Remaining cases are errors *)
+          with Contradiction -> res  (* can be raised by add_mem_eqs *)
+          | e ->
               if C.debug.Debug_herd.top then begin
                 eprintf "Exception: %s\n%!" (Printexc.to_string e) ;
                 let module PP = Pretty.Make(S) in
