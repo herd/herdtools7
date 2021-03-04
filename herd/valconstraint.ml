@@ -43,6 +43,7 @@ module type S = sig
   type cnstrnt =
     | Assign of atom * rvalue
     | Unroll of string (* unrolling stopped *)
+    | Failed of exn (* Delay exceptions *)
 
   type cnstrnts = cnstrnt list
   val pp_cnstrnts : cnstrnt list -> string
@@ -98,6 +99,7 @@ and type state = A.state =
     type cnstrnt =
       | Assign of V.v * rvalue
       | Unroll of string
+      | Failed of exn
 
     type cnstrnts = cnstrnt list
 
@@ -119,6 +121,7 @@ and type state = A.state =
       | Assign (v,rval) ->
 	  (V.pp C.hexa v) ^ ":=" ^(pp_rvalue rval)
       | Unroll msg -> "Unroll "^msg
+      | Failed e  -> sprintf "Failed %s" (Printexc.to_string e)
 
     let pp_cnstrnts lst =
       String.concat "\n"
@@ -190,7 +193,7 @@ and type state = A.state =
     let add_vars_cn t cn = match cn with
     | Assign (v,e) ->
         add_vars_expr (add_var t v) e
-    | Unroll _ -> t
+    | Unroll _|Failed _ -> t
 
     let add_vars_cns cns = List.fold_left add_vars_cn (Part.create ()) cns
 
@@ -223,7 +226,7 @@ and type state = A.state =
         let v = subst_atom m v
         and e = subst_expr m e in
         Assign (v,e)::k
-    | Unroll _ -> cn::k
+    | Unroll _|Failed _ -> cn::k
 
     let subst_cns soln cns = List.fold_right (subst_cn soln) cns []
 
@@ -270,18 +273,29 @@ and type state = A.state =
 
     let check_true_false cn k = match cn with
     | Assign (v,e) ->
-	let e = mk_atom_from_expr e in
-	begin match e with
-	| Atom w ->
-	    if V.is_var_determined v && V.is_var_determined w then
-	      if V.compare v w = 0 then k
-	      else raise Contradiction
-	    else
-	      Assign (v,e)::k
-	| ReadInit _
-	| Unop _|Binop _|Terop _ -> Assign (v,e)::k
-	end
-    | Unroll _ -> cn::k
+       begin
+         try
+	   let e = mk_atom_from_expr e in
+	   begin match e with
+	   | Atom w ->
+	      if V.is_var_determined v && V.is_var_determined w then
+	        if V.compare v w = 0 then k
+	        else raise Contradiction
+	      else
+	        Assign (v,e)::k
+	   | ReadInit _
+	     | Unop _|Binop _|Terop _ -> Assign (v,e)::k
+	   end
+         (* Delay failure to preserve potential contradiction *)
+         with
+         | Contradiction -> raise Contradiction
+         | e ->
+            if C.debug then
+              eprintf "Delaying exception in solver: %s\n"
+                (Printexc.to_string e) ;
+            Failed e::k
+       end
+    | Unroll _|Failed _ -> cn::k
 
     let check_true_false_constraints cns =
       List.fold_right check_true_false cns []
@@ -301,7 +315,7 @@ and type state = A.state =
 	  let v = simplify_vars_in_atom soln v in
 	  let rval = simplify_vars_in_expr soln rval in
 	  Assign (v,rval)
-      | Unroll _ -> cn
+      | Unroll _|Failed _ -> cn
 
 
     let simplify_vars_in_cnstrnts soln cs =
@@ -322,7 +336,7 @@ and type state = A.state =
     | Assign (V.Var _,Atom (V.Var _))
     (* can occur in spite of variable normalization (ternary if) *)
     | Assign (_,(Unop _|Binop _|Terop _|ReadInit _)) -> empty
-    | Unroll _ -> empty
+    | Unroll _|Failed _ -> empty
 
 (* merge of solutions, with consistency check *)
     let merge sol1 sol2 =
@@ -342,6 +356,17 @@ let solve_cnstrnts =
     (fun solns cnstr -> merge (solve_cnstrnt cnstr) solns)
     V.Solution.empty
 
+(************************)
+(* Raise exceptions now *)
+(************************)
+
+let check_failed cns =
+  List.iter
+    (function
+     | Failed e -> raise e
+     | Assign _|Unroll _ -> ())
+  cns
+
 (*******************************)
 (* Iterate basic solving steps *)
 (*******************************)
@@ -354,9 +379,10 @@ let solve_cnstrnts =
       let cns = check_true_false_constraints cns in
       (* Phase 2, orient constraints S := cst / cst := S *)
       let solns = solve_cnstrnts cns in
-      if V.Solution.is_empty solns then
+      if V.Solution.is_empty solns then begin
+        check_failed cns ;
 	solns_final,cns
-      else
+      end else
 	(* Phase 3, and iteration *)
 	let cns =  simplify_vars_in_cnstrnts solns cns
 	and solns_final = compose_sols solns solns_final in

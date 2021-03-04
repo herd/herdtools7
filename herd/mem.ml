@@ -736,7 +736,8 @@ let match_reg_events es =
                 let es = E.simplify_vars_in_event_structure sol es
                 and rfm = S.simplify_vars_in_rfmap sol rfm in
                 kont es rfm cs res
-          with Contradiction -> res  (* can be raised by add_mem_eqs *)
+          with
+          | Contradiction -> res  (* May also be raised by add_mem_eqs *)
           | e ->
               if C.debug.Debug_herd.top then begin
                 eprintf "Exception: %s\n%!" (Printexc.to_string e) ;
@@ -761,6 +762,8 @@ let match_reg_events es =
               Warn.warn_always
                 "unrolling too deep at label: %s" lbl;
               true
+          | VC.Failed _ -> (* Should not be here, eaten in solver *)
+             assert false
           | VC.Assign _ -> false)
           cs in
       if unroll_only then
