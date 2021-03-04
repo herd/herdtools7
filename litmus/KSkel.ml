@@ -680,6 +680,7 @@ let dump_zyva tname env test =
 (**********)
 (* ProcFs *)
 (**********)
+
 let dump_proc tname _test =
   let tname = String.escaped tname in
   O.o "static int\nlitmus_proc_show(struct seq_file *m,void *v) {" ;
@@ -692,6 +693,7 @@ let dump_proc tname _test =
   O.oi "}" ;
   O.o "}" ;
   O.o "" ;
+  O.o "#ifndef HAVE_PROC_CREATE_SINGLE" ;
   O.o "static int\nlitmus_proc_open(struct inode *inode,struct file *fp) {" ;
   O.oi "return single_open(fp,litmus_proc_show,NULL);" ;
   O.o "}" ;
@@ -703,7 +705,9 @@ let dump_proc tname _test =
   O.oi ".llseek   = seq_lseek," ;
   O.oi ".release = single_release," ;
   O.o "};" ;
-  O.o ""
+  O.o "#endif" ;
+  O.o "" ;
+  ()
 
 (**************************)
 (* Init, Exit and friends *)
@@ -713,7 +717,11 @@ let dump_init_exit _test =
   O.o "static int __init" ;
   O.o "litmus_init(void) {" ;
   O.oi "int err=0;" ;
+  O.o "#ifdef HAVE_PROC_CREATE_SINGLE" ;
+  O.oi "struct proc_dir_entry *litmus_pde = proc_create_single(\"litmus\",0,NULL,litmus_proc_show);" ;
+  O.o "#else" ;
   O.oi "struct proc_dir_entry *litmus_pde = proc_create(\"litmus\",0,NULL,&litmus_proc_fops);" ;
+  O.o "#endif" ;
   O.oi "if (litmus_pde == NULL) { return -ENOMEM; }" ;
   O.oi "stride = stride == 0 ? 1 : stride;" ;
   O.oi "nonline = num_online_cpus ();" ;
@@ -762,8 +770,8 @@ let dump_init_exit _test =
   O.o "MODULE_LICENSE(\"GPL\");" ;
   O.o "MODULE_AUTHOR(\"Luc\");" ;
   O.o "MODULE_DESCRIPTION(\"Litmus module\");" ;
+  O.o "" ;
   ()
-
 
 
 let dump name test =

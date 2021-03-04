@@ -1,3 +1,4 @@
+#include <linux/version.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -12,6 +13,10 @@
 #include <linux/wait.h>
 #include <linux/slab.h>
 #include <linux/random.h>
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,18,0)
+#define HAVE_PROC_CREATE_SINGLE
+#endif
 
 typedef u64 count_t;
 #define PCTR "llu"
