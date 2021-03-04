@@ -139,6 +139,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     let check_mixed =  not (C.variant Variant.DontCheckMixed)
     let do_deps = C.variant Variant.Deps
     let kvm = C.variant Variant.Kvm
+    let rf_by_size = true
 
 (*****************************)
 (* Event structure generator *)
@@ -535,7 +536,10 @@ let match_reg_events es =
         match ov1,ov2 with
         | None,None -> E.same_location e1 e2
         | (Some _,None)|(None,Some _)
-        | (Some _,Some _) -> true
+        | (Some _,Some _) ->
+           if rf_by_size then
+             E.get_mem_size e1 = E.get_mem_size e2
+           else true
       end
 
 (* Add a constraint for a store/load match *)
@@ -738,7 +742,8 @@ let match_reg_events es =
                 kont es rfm cs res
           with (* First legitimately discard failing candidates *)
           | Contradiction -> res  (* May be raised by add_mem_eqs *)
-          | Op.Illegal (Op.Op1 (Op.Mask _),msg)  ->
+          | Op.Illegal (Op.Op1 (Op.Mask _),msg) when not rf_by_size ->
+ (* if unknown addresses matched by size, this is an error *)
              let discard = (* If at least one loc undetermined, discard *)
                let is_var = function
                  | A.V.Var _ -> true
