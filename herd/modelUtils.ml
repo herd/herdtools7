@@ -33,8 +33,11 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
 (*******************************************)
 (* Complete re-computation of dependencies *)
 (*******************************************)
+  let seq_or_id r1 r2 = S.union (S.seq r1 r2) r2
+
   let evt_relevant x =
-    E.is_mem x || E.is_commit x || E.is_barrier x || E.is_additional_mem x || E.is_pod x
+    E.is_mem x || E.is_commit x || E.is_barrier x
+    || E.is_additional_mem x || E.is_pod x
 
   let is_mem_load_total e =
     (is_mem_kvm e && E.is_load e) || E.is_additional_mem_load e
@@ -77,6 +80,8 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
     let iico_rmw =
       E.EventRel.inter conc.S.atomic_load_store
         conc.S.str.E.intra_causality_data in
+    let iico_from_mem_load = (* First step of dependencies *)
+      E.EventRel.restrict_domain is_mem_load_total iico in
     let dd_pre =
 (* Most dependencies start with a mem load, a few with a mem store + ctrl
    RISCV *)
@@ -84,7 +89,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
         (E.EventRel.union
            (E.EventRel.restrict_domain E.is_mem_store
               conc.S.str.E.intra_causality_control)
-           (E.EventRel.restrict_domain is_mem_load_total iico))
+           iico_from_mem_load)
         dd_inside in
     let data_dep =
 (* Data deps are (1) dd to commits (2) data deps to stores *)
@@ -125,10 +130,15 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
     let ctrl_dep =
       (* All dependencies, including to reg loads *)
       let dd = S.union3 dd_pre addr_dep data_dep in
+      let control_from_load =
+        E.EventRel.restrict_domain E.is_load conc.S.str.E.control in
+      let ddplus =
+        S.seq iico_from_mem_load
+          (S.tr (S.union dd_inside control_from_load)) in
       S.restrict
         (fun e -> is_mem_load_total e || E.is_mem_store e)
         evt_relevant
-        (S.union (S.seq dd ctrl) ctrl_three) in
+        (S.union (S.seq dd ctrl) (seq_or_id ddplus control_from_load)) in
     let po =
       S.restrict evt_relevant evt_relevant po in
     let data_commit =
