@@ -282,10 +282,10 @@ Monad type:
             eiid,(Evt.singleton((vwx,vwy),vclrx@vclry@vclwx@vclwy,es),None)
 
 (* Exchange combination *)
-
-    let swp_or_amo : Op.op option -> ('loc t) ->
+(* NB: first boolean -> physical memory access *)
+    let swp_or_amo : bool -> Op.op option -> ('loc t) ->
       ('loc -> A.V.v t) -> A.V.v t -> ('loc -> A.V.v -> unit t) -> (A.V.v -> unit t)
-        -> unit t  = fun op rloc rmem rreg wmem wreg ->
+        -> unit t  = fun is_phy op rloc rmem rreg wmem wreg ->
           fun eiid ->
         let eiid,(locm,spec) = rloc eiid in
         assert (spec=None) ;
@@ -305,14 +305,17 @@ Monad type:
                 | Some op -> fun k -> VC.Assign (r,VC.Binop (op,w,v))::k in
               let eiid,wreg = wreg w eiid in
               let (),vclwreg,eswreg = Evt.as_singleton_nospecul wreg in
-              let es = E.swp_or_amo op esloc esrmem esexp eswmem eswreg in
+              let es =
+                E.swp_or_amo is_phy op esloc esrmem esexp eswmem eswreg in
               let act = (),vlop (vlcloc@vclexp@vclrmem@vclwmem@vclwreg),es in
               eiid,Evt.add act acts)
             locm (eiid,Evt.empty) in
         eiid,(acts,None)
 
-    let swp rloc rmem rreg wmem wreg = swp_or_amo None rloc rmem rreg wmem wreg
-    let amo_strict op rloc rmem rreg wmem wreg = swp_or_amo (Some op) rloc rmem rreg wmem wreg
+    let swp is_phy rloc rmem rreg wmem wreg =
+      swp_or_amo is_phy None rloc rmem rreg wmem wreg
+    let amo_strict is_phy op rloc rmem rreg wmem wreg =
+      swp_or_amo is_phy (Some op) rloc rmem rreg wmem wreg
 
 (* linux exchange *)
     let linux_exch : 'loc t -> 'v t -> ('loc -> 'w t) -> ('loc -> 'v -> unit t) -> 'w t = fun rloc rexpr rmem wmem ->
@@ -457,6 +460,7 @@ Monad type:
 
 (* AArch64 failed cas *)
     let aarch64_cas_no
+        (is_physical:bool)
         (read_rn:'loc t) (read_rs:'v t)
         (write_rs:'v-> unit t)
         (read_mem: 'loc -> 'v t)
@@ -474,12 +478,13 @@ Monad type:
       let (),cl_ne,eseq =  Evt.as_singleton_nospecul nem in
       assert (E.is_empty_event_structure eseq) ;
       let es =
-        E.aarch64_cas_no es_rn es_rs es_wrs es_rm in
+        E.aarch64_cas_no is_physical es_rn es_rs es_wrs es_rm in
       let cls = cl_a@cl_cv@cl_rm@cl_wrs@cl_ne  in
       eiid,(Evt.singleton ((),cls,es), None)
 
 (* AArch64 successful cas *)
     let aarch64_cas_ok
+        (is_physical:bool)
         (read_rn:'loc t) (read_rs:'v t) (read_rt: 'v t)
         (write_rs:'v-> unit t)
         (read_mem: 'loc -> 'v t) (write_mem: 'loc -> 'v -> unit t)
@@ -505,7 +510,7 @@ Monad type:
             let (),cl_eq,eseq =  Evt.as_singleton_nospecul eqm in
             assert (E.is_empty_event_structure eseq) ;
             let es =
-              E.aarch64_cas_ok es_rn es_rs es_rt es_wrs es_rm es_wm in
+              E.aarch64_cas_ok is_physical es_rn es_rs es_rt es_wrs es_rm es_wm in
             let cls = cl_a@cl_cv@cl_nv@cl_rm@cl_wm@cl_wrs@cl_eq  in
             eiid,Evt.add ((),cls,es) acts)
           acts_rn (eiid,Evt.empty) in

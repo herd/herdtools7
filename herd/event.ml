@@ -325,7 +325,9 @@ val same_instance : event -> event -> bool
      event_structure -> event_structure ->
      event_structure
 
-  val swp_or_amo : 'op option -> (* When None this is a swp, otherwise amo *)
+  val swp_or_amo :
+    bool -> (* Physical memory access *)
+    'op option -> (* When None this is a swp, otherwise amo *)
      event_structure -> event_structure ->
      event_structure -> event_structure ->
      event_structure -> event_structure
@@ -361,13 +363,15 @@ val same_instance : event -> event -> bool
             event_structure
 
   val aarch64_cas_no :
-            event_structure -> event_structure -> event_structure ->
-            event_structure ->  event_structure
+    bool -> (* Physical memory access *)
+    event_structure -> event_structure -> event_structure ->
+    event_structure ->  event_structure
 
   val aarch64_cas_ok :
-        event_structure -> event_structure -> event_structure ->
-          event_structure ->  event_structure ->  event_structure ->
-            event_structure
+    bool -> (* Physical memory access *)
+    event_structure -> event_structure -> event_structure ->
+    event_structure ->  event_structure ->  event_structure ->
+    event_structure
 
   val aarch64_cas_ok_morello :
         event_structure -> event_structure -> event_structure ->
@@ -1241,8 +1245,12 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       and r4,e4 = es4.po and r5,e5 = es5.po in
       (EventSet.union5 r1 r2 r3 r4 r5, EventRel.union5 e1 e2 e3 e4 e5)
 
-(* If swp then add ctrl dependency from rmem to wmem, else (amo) add data dependency *)
-    let swp_or_amo op rloc rmem rreg wmem wreg =
+(* Notice
+  If swp then add ctrl dependency from rmem to wmem,
+  else (amo) add data dependency
+  If physical and branching add dependencies *)
+
+    let swp_or_amo physical op rloc rmem rreg wmem wreg =
       let is_amo = Misc.is_some op in
       let outrmem = maximals rmem
       and outrreg = maximals rreg
@@ -1280,7 +1288,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
               wmem.intra_causality_control;wreg.intra_causality_control;];
            if is_amo then EventRel.empty else mem2mem;
            EventRel.cartesian outrreg inwreg;
-           if is_branching then
+           if physical && is_branching then
  (* Notice difference with data composition:
     take maximal evts from rloc, regardless of explicit output *)
              EventRel.cartesian (maximal_commits rloc) inmem
@@ -1726,9 +1734,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
                                        (wmem.aligned) ;}
 
 (* AArch64 CAS, failure *)
-    let aarch64_cas_no rn rs wrs rm =
-      let output_rn = maximals rn
-      and output_rs = maximals rs
+    let aarch64_cas_no is_phy rn rs wrs rm =
+      let output_rs = maximals rs
       and output_rm = maximals rm
       and input_wrs = minimals wrs
       and input_rm = minimals rm in
@@ -1750,14 +1757,18 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
              wrs.intra_causality_data
              rm.intra_causality_data)
           (EventRel.union
-             (EventRel.cartesian output_rn input_rm)    (* D1 *)
-             (EventRel.cartesian output_rm input_wrs)); (* Df1 *)
+             (EventRel.cartesian (get_output rn) input_rm) (* D1 *)
+             (EventRel.cartesian output_rm input_wrs));    (* Df1 *)
         intra_causality_control =
-        EventRel.union6
-          rn.intra_causality_control rs.intra_causality_control
-          wrs.intra_causality_control rm.intra_causality_control
-          (EventRel.cartesian output_rs input_wrs)      (* C1 *)
-          (EventRel.cartesian output_rm input_wrs);     (* C2 *)
+          (if is_branching && is_phy then
+             EventRel.union
+               (EventRel.cartesian (maximal_commits rn) input_rm)
+           else Misc.identity)
+            (EventRel.union6
+               rn.intra_causality_control rs.intra_causality_control
+               wrs.intra_causality_control rm.intra_causality_control
+               (EventRel.cartesian output_rs input_wrs)      (* C1 *)
+               (EventRel.cartesian output_rm input_wrs));    (* C2 *)
         control =
         EventRel.union4 rn.control rs.control rm.control wrs.control;
         data_ports =
@@ -1780,9 +1791,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       }
 
 (* AArch64 CAS, success *)
-    let aarch64_cas_ok rn rs rt wrs rm wm =
-      let output_rn = maximals rn
-      and output_rs = maximals rs
+    let aarch64_cas_ok is_phy rn rs rt wrs rm wm =
+      let output_rs = maximals rs
       and output_rm = maximals rm
       and input_wrs = minimals wrs
       and input_rm = minimals rm
@@ -1810,10 +1820,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
              rm.intra_causality_data
              wm.intra_causality_data)
           (EventRel.union4
-             (EventRel.cartesian output_rn input_rm)       (* D1 *)
-             (EventRel.cartesian output_rs input_wrs)      (* Ds1 *)
-             (EventRel.cartesian output_rn input_wm)       (* Ds2 *)      
-             (EventRel.cartesian (maximals rt) input_wm)); (* Ds3 *)
+             (EventRel.cartesian (get_output rn) input_rm)    (* D1 *)
+             (EventRel.cartesian output_rs input_wrs)         (* Ds1 *)
+             (EventRel.cartesian (get_output rn) input_wm)    (* Ds2 *)
+             (EventRel.cartesian (maximals rt) input_wm));    (* Ds3 *)
         intra_causality_control =
         EventRel.union
           (EventRel.union6
@@ -1823,10 +1833,14 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
              wrs.intra_causality_control
              rm.intra_causality_control
              wm.intra_causality_control)
-          (EventRel.union4
+          (EventRel.union5
+             (if is_branching && is_phy then
+                EventRel.cartesian (maximal_commits rn)
+                  (EventSet.union input_rm input_wm)
+              else EventRel.empty)
              (EventRel.cartesian output_rs input_wrs)  (* C1 *)
              (EventRel.cartesian output_rm input_wrs)  (* C2 *)
-             (EventRel.cartesian output_rs input_wm)   (* Cs1 *) 
+             (EventRel.cartesian output_rs input_wm)   (* Cs1 *)
              (EventRel.cartesian output_rm input_wm)); (* Cs2 *)
         control =
         (EventRel.union6
