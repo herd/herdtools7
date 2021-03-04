@@ -738,8 +738,30 @@ let match_reg_events es =
                 kont es rfm cs res
           with (* First legitimately discard failing candidates *)
           | Contradiction -> res  (* May be raised by add_mem_eqs *)
-          | Op.Illegal (Op.Op1 (Op.Mask _),_)  ->
-             res (* May result from wrong rf choice *)
+          | Op.Illegal (Op.Op1 (Op.Mask _),msg)  ->
+             let discard = (* If at least one loc undetermined, discard *)
+               let is_var = function
+                 | A.V.Var _ -> true
+                 | A.V.Val _ -> false in
+               List.exists
+                 (fun e -> is_var (get_loc_as_value e))
+                 loads
+               ||
+                 List.exists
+                   (fun s ->
+                     match s with
+                     | Some S.Init|None -> false
+                     | Some (S.Store e) -> is_var (get_loc_as_value e))
+                   stores in
+             if C.debug.Debug_herd.solver then begin
+                 eprintf "%s illegal operation: %s\n%!"
+                   (if discard then "Discarding" else "Reraising") msg ;
+                 let module PP = Pretty.Make(S) in
+                 let rfm = add_some_mem loads stores rfm in
+                 PP.show_es_rfm test es rfm
+              end ;
+             if discard then res (* May result from wrong rf choice *)
+             else Warn.user_error "%s" msg (* Does steem from user error *)
           | e -> (* Remaining cases are errors *)
               if C.debug.Debug_herd.top then begin
                 eprintf "Exception: %s\n%!" (Printexc.to_string e) ;
