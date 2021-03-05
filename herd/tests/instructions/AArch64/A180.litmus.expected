@@ -1,0 +1,10 @@
+Test A180 Required
+States 1
+0:X0=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=2)
+Observation A180 Always 1 0
+Hash=2a5b695ffe83e16f770c91d384c0f8ba
+

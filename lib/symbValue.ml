@@ -119,9 +119,8 @@ module Make(Cst:Constant.S) = struct
     | Val (Concrete i1) ->
         Val (Concrete (op i1))
     | Val (ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _ as x) ->
-       let pp = Op.pp_op1 true op_op in
-        Op.illegal  (Op.Op1 op_op) "Illegal operation %s on %s"
-          pp (Cst.pp_v x)
+        Warn.user_error "Illegal operation %s on %s"
+          (Op.pp_op1 true op_op) (Cst.pp_v x)
     | Var _ -> raise Undetermined
 
   let binop op_op op v1 v2 = match v1,v2 with

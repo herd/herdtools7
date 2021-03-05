@@ -1,0 +1,16 @@
+AArch64 A180
+(*
+Test A176 + indirection, should work
+*)
+
+{
+  uint64_t x = 0x0000000100000002;
+  uint64_t *p = &x;
+  0:X2=p;
+}
+
+P0;
+  LDR X2,[X2] ;
+  LDR W0,[X2] ;
+forall (0:X0=2)
+

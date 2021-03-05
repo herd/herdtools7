@@ -487,6 +487,12 @@ let match_reg_events es =
       else
         VC.Assign (v1, VC.Atom v2)::eqs
 
+    let pp_nosol lvl test es rfm =
+      let module PP = Pretty.Make(S) in
+      eprintf "No solution at %s level\n%!" lvl;
+      PP.show_es_rfm test es rfm ;
+      ()
+
     let solve_regs test es csn =
       let rfm = match_reg_events es in
       let csn =
@@ -501,12 +507,9 @@ let match_reg_events es =
           rfm csn in
       match VC.solve csn with
       | VC.NoSolns ->
-          if C.debug.Debug_herd.solver then begin
-            let module PP = Pretty.Make(S) in
-            prerr_endline "No solution at register level";
-            PP.show_es_rfm test es rfm ;
-          end ;
-          None
+         if C.debug.Debug_herd.solver then
+           pp_nosol "register" test es rfm ;
+         None
       | VC.Maybe (sol,csn) ->
           Some
             (E.simplify_vars_in_event_structure sol es,
@@ -728,7 +731,12 @@ let match_reg_events es =
             if dbg then eprintf "\n%!" ;
             (* And solve *)
             match VC.solve cns with
-            | VC.NoSolns -> res
+            | VC.NoSolns ->
+               if C.debug.Debug_herd.solver then begin
+                 let rfm = add_some_mem loads stores rfm in
+                 pp_nosol "memory" test es rfm
+               end ;
+               res
             | VC.Maybe (sol,cs) ->
                 (* Time to complete rfmap *)
                 let rfm = add_some_mem loads stores rfm in
@@ -736,11 +744,15 @@ let match_reg_events es =
                 let es = E.simplify_vars_in_event_structure sol es
                 and rfm = S.simplify_vars_in_rfmap sol rfm in
                 kont es rfm cs res
-          with (* First legitimately discard failing candidates *)
-          | Contradiction -> res  (* May be raised by add_mem_eqs *)
-          | Op.Illegal (Op.Op1 (Op.Mask _),_)  ->
-             res (* May result from wrong rf choice *)
-          | e -> (* Remaining cases are errors *)
+          with
+          | Contradiction ->  (* May  be raised by add_mem_eqs *)
+             if C.debug.Debug_herd.solver then
+               begin
+                 let rfm = add_some_mem loads stores rfm in
+                 pp_nosol "memory" test es rfm
+               end ;
+             res
+          | e ->
               if C.debug.Debug_herd.top then begin
                 eprintf "Exception: %s\n%!" (Printexc.to_string e) ;
                 let module PP = Pretty.Make(S) in
@@ -764,6 +776,8 @@ let match_reg_events es =
               Warn.warn_always
                 "unrolling too deep at label: %s" lbl;
               true
+          | VC.Failed _ -> (* Should not be here, eaten in solver *)
+             assert false
           | VC.Assign _ -> false)
           cs in
       if unroll_only then

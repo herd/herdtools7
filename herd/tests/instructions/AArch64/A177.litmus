@@ -1,0 +1,11 @@
+AArch64 A177
+{
+  int *p = &x;
+  int x=1;
+  0:X2=p;
+}
+
+P0;
+  LDR W0,[X2];
+locations [0:X0;]
+

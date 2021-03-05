@@ -156,15 +156,3 @@ type op3 = If
 
 let pp_op3 o s1 s2 s3 = match o with
 | If -> sprintf "%s ? %s : %s" s1 s2 s3
-
-(***********************************)
-(* Specific "Illegal Op" exception *)
-(***********************************)
-
-type any_op = Op1 of op1 | Op of op | Op3 of op3
-
-exception Illegal of any_op * string
-
-let illegal op fmt =
-  ksprintf (fun msg -> raise (Illegal (op,msg)))  fmt
-

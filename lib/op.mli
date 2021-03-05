@@ -90,13 +90,3 @@ val pp_op1 : bool -> op1 -> string
 type op3 = If
 
 val pp_op3 : op3 -> string -> string -> string ->  string
-
-(***********************************)
-(* Specific "Illegal Op" exception *)
-(***********************************)
-
-type any_op = Op1 of op1 | Op of op | Op3 of op3
-
-exception Illegal of any_op * string
-
-val illegal : any_op -> ('a , unit, string, 'b) format4 -> 'a
