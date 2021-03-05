@@ -487,6 +487,12 @@ let match_reg_events es =
       else
         VC.Assign (v1, VC.Atom v2)::eqs
 
+    let pp_nosol lvl test es rfm =
+      let module PP = Pretty.Make(S) in
+      eprintf "No solution at %s level\n%!" lvl;
+      PP.show_es_rfm test es rfm ;
+      ()
+
     let solve_regs test es csn =
       let rfm = match_reg_events es in
       let csn =
@@ -501,12 +507,9 @@ let match_reg_events es =
           rfm csn in
       match VC.solve csn with
       | VC.NoSolns ->
-          if C.debug.Debug_herd.solver then begin
-            let module PP = Pretty.Make(S) in
-            prerr_endline "No solution at register level";
-            PP.show_es_rfm test es rfm ;
-          end ;
-          None
+         if C.debug.Debug_herd.solver then
+           pp_nosol "register" test es rfm ;
+         None
       | VC.Maybe (sol,csn) ->
           Some
             (E.simplify_vars_in_event_structure sol es,
@@ -728,7 +731,12 @@ let match_reg_events es =
             if dbg then eprintf "\n%!" ;
             (* And solve *)
             match VC.solve cns with
-            | VC.NoSolns -> res
+            | VC.NoSolns ->
+               if C.debug.Debug_herd.solver then begin
+                 let rfm = add_some_mem loads stores rfm in
+                 pp_nosol "memory" test es rfm
+               end ;
+               res
             | VC.Maybe (sol,cs) ->
                 (* Time to complete rfmap *)
                 let rfm = add_some_mem loads stores rfm in
@@ -737,7 +745,13 @@ let match_reg_events es =
                 and rfm = S.simplify_vars_in_rfmap sol rfm in
                 kont es rfm cs res
           with
-          | Contradiction -> res  (* May also be raised by add_mem_eqs *)
+          | Contradiction ->  (* May  be raised by add_mem_eqs *)
+             if C.debug.Debug_herd.solver then
+               begin
+                 let rfm = add_some_mem loads stores rfm in
+                 pp_nosol "memory" test es rfm
+               end ;
+             res
           | e ->
               if C.debug.Debug_herd.top then begin
                 eprintf "Exception: %s\n%!" (Printexc.to_string e) ;
