@@ -1,0 +1,11 @@
+Test A181 Allowed
+States 2
+0:X0=1;
+0:X0=2;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (0:X0=1)
+Observation A181 Sometimes 1 1
+Hash=e6a2f1a84abc84eac6474de173a96510
+

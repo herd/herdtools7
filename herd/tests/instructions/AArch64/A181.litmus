@@ -1,0 +1,20 @@
+AArch64 A181
+(*
+Test A176 + indirection, should work
+*)
+q
+{
+  int y = 1;
+  uint64_t x = 0x0000000100000002;
+  uint64_t *p = &x;
+  uint64_t *q = p;
+  0:X2=p;
+  1:X2=q;
+  1:X0=y;
+}
+
+ P0          | P1          ;
+ LDR X2,[X2] | LDR X4,[X2] ;
+ LDR W0,[X2] | STR X0,[X4] ;
+exists (0:X0=1)
+

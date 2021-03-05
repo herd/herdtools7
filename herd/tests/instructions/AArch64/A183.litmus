@@ -1,0 +1,17 @@
+AArch64 A183
+(*
+  Complex indrect store/load, should fail
+*)
+q
+{
+  int x[2] = {1,1};
+  int *p = &x;
+  0:X2=p; 1:X2=p; 1:X4=x; 2:X2=p;
+}
+
+ P0          | P1           | P2          ;
+ LDR X2,[X2] | ADD X4,X4,#4 | LDR X2,[X2] ;
+ MOV W0,#2   | STR X4,[X2]  | LDR W0,[X2] ;
+ STR W0,[X2] | STR X2,[X2]  |             ;
+locations [x;2:X0;]
+

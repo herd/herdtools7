@@ -1,0 +1,15 @@
+AArch64 A178
+(* Combine illegal load of address in 32bits register
+   and indirect access. Should fail *)
+{
+  int *p = &x;
+  int x=1;
+  0:X2=p;
+  1:X2=p;
+}
+
+  P0         | P1          ;
+ LDR X0,[X2] | LDR W0,[X2] ;
+ LDR W1,[X0] |             ;
+locations [0:X0; 0:X1;]
+

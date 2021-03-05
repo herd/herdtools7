@@ -1,0 +1,13 @@
+Test A182 Required
+States 4
+2:X0=1; x={1,2};
+2:X0=1; x={2,1};
+2:X0=2; x={1,2};
+2:X0=2; x={2,1};
+Ok
+Witnesses
+Positive: 6 Negative: 0
+Condition forall (true)
+Observation A182 Always 6 0
+Hash=fda1400634ecec2e31432cf26175326e
+

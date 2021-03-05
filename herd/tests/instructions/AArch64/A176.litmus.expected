@@ -1,0 +1,10 @@
+Test A176 Required
+States 1
+0:X0=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=2)
+Observation A176 Always 1 0
+Hash=d37c9375e376d5c07b9b6cb64acf3480
+
