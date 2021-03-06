@@ -510,11 +510,13 @@ module Make
         else
           m a
 
-      (* Post-Indexed load immediate *)
-      let read_mem_postindexed sz an anexp ac rd rs k a ii =
+      (* Post-Indexed load immediate.
+         Note: a (effective address) can be physical address,
+         while postindex must apply to virtual address. *)
+      let read_mem_postindexed a_virt sz an anexp ac rd rs k a ii =
         let m a =
           begin
-            (M.add a (V.intToV k) >>= fun b -> write_reg rs b ii)
+            (M.add a_virt (V.intToV k) >>= fun b -> write_reg rs b ii)
             >>| do_read_mem sz an anexp ac rd a ii
           end >>= fun ((),r) -> M.unitT r in
         if morello then
@@ -539,7 +541,7 @@ module Make
           M.add_atomic_tag_write (m a) a tag
             (fun loc v -> Act.tag_access quad Dir.W loc v) ii
         else m a
-        
+
       let do_write_mem sz an anexp ac a v ii =
         check_morello_for_write
           (fun a -> check_mixed_write_mem sz an anexp ac a v ii)
@@ -559,7 +561,7 @@ module Make
              >>| check_mixed_write_mem sz an anexp ac a v ii)
             >>! ())
         a v ii
-        
+
       let flip_flag v = M.op Op.Xor v V.one
       let is_zero v = M.op Op.Eq v V.zero
       let is_not_zero v = M.op Op.Ne v V.zero
@@ -787,14 +789,17 @@ module Make
               | AX -> read_mem_reserve sz AArch64.XA
               | AQ -> read_mem_acquire_pc sz in
             read aexp ac rd a ii)
-          (read_reg_ord rs ii)  ii 
+          (read_reg_ord rs ii)  ii
 
       and ldr_p sz rd rs k ii = (* load post-index *)
-        do_ldr sz AArch64.N
-          (fun ac a -> 
-            read_mem_postindexed sz AArch64.N aexp ac rd rs k a ii)
-          (read_reg_ord rs ii) ii
-        
+        M.delay_kont "ldr_p"
+          (read_reg_ord rs ii)
+          (fun a_virt ma ->
+            do_ldr sz AArch64.N
+              (fun ac a ->
+                read_mem_postindexed a_virt sz AArch64.N aexp ac rd rs k a ii)
+              ma ii)
+
       and str sz rs rd kr ii =
         do_str sz AArch64.N
           (get_ea_noext rd kr ii) (read_reg_data sz rs ii) ii
