@@ -293,10 +293,18 @@ let opts =
       !toexists;
   ]
 
+let usage = String.concat "\n" [
+  Printf.sprintf "Usage: %s [options] [<path/to/test> ...]" nprog ;
+  "" ;
+  "Update the condition of one or more litmus test files." ;
+  "" ;
+  "Options:" ;
+]
+
 let () =
   Arg.parse opts
     (fun a -> args := a :: !args)
-    (sprintf "Usage %s [options] [test]*" prog)
+    usage
 
 (* Read names *)
 module Check =
