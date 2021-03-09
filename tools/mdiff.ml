@@ -49,7 +49,7 @@ let options =
   ]
 
 let prog =
-  if Array.length Sys.argv > 0 then Sys.argv.(0)
+  if Array.length Sys.argv > 0 then (Filename.basename Sys.argv.(0))
   else "mdiff"
 
 type act = Diff | Inter
@@ -63,12 +63,18 @@ let act =
   | "minter"|"minter7" -> Inter
   | _ -> assert false
 
+let usage = String.concat "\n" [
+  Printf.sprintf "Usage: %s [options] <path/to/log-1> <path/to/log-2>" prog ;
+  "" ;
+  "List the differing observed states for each test within 2 log files." ;
+  "" ;
+  "Options:" ;
+]
+
 let () =
   Arg.parse options
     (fun s -> logs := !logs @ [s])
-    (sprintf "Usage %s [options]* log1 log2
-log1 log2 are log file names.
-Options are:" prog)
+    usage
 
 let excl = !excl
 let select = !select
