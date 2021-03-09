@@ -254,6 +254,16 @@ let pp_mode = function
 
 let set_mode tag = mode := parse_mode tag
 
+let usage = String.concat "\n" [
+  Printf.sprintf "Usage: %s [options] [<token> ...]" (Filename.basename Sys.argv.(0)) ;
+  "" ;
+  "Apply a command to every non-option token on the command-line. If none are" ;
+  "provided, tokens are read from stdin. Tokens that start with `@` are" ;
+  "interpreted as filepaths, and the lines of the file are read as tokens." ;
+  "" ;
+  "Options:" ;
+]
+
 let () =
   Arg.parse
     ["-v", Arg.Unit (fun () -> incr verbose)," be verbose";
@@ -266,7 +276,7 @@ let () =
      sprintf
        "(buff|file) use either internal buffers or files for comunication, default %s" (pp_mode !mode);]
     (fun arg -> args := arg :: !args)
-    ""
+    usage
 
 let names = !args
 
