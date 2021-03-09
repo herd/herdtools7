@@ -39,4 +39,3 @@ exit 0
 
 opam publish herdtools7.opam
 trap "rm -r herdtools7.$VERSION" EXIT
-

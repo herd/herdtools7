@@ -15,7 +15,6 @@ repos:
           (?x)(
             # Currently un-fixed directories & files.
             ^(
-              .gitattributes|
               catalogue/|
               doc/|
               gen/|
@@ -25,7 +24,6 @@ repos:
               jingle/|
               lib/|
               litmus/|
-              publish.sh|
               tools/
             )|
 
