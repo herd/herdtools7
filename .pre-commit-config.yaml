@@ -9,6 +9,40 @@ repos:
     -   id: check-yaml
     -   id: mixed-line-ending
 
+    -   id: end-of-file-fixer
+        # `(?x)` enables multi-line regexps: https://docs.python.org/3/library/re.html#re.X.
+        exclude: |
+          (?x)(
+            # Currently un-fixed directories & files.
+            ^(
+              .gitattributes|
+              catalogue/|
+              doc/|
+              gen/|
+              herd/|
+              herd-www/|
+              internal/|
+              jingle/|
+              lib/|
+              litmus/|
+              publish.sh|
+              tools/
+            )|
+
+            # Vendored files for the Herd web interface.
+            ^herd-www/www/(
+              ace/|
+              BS/|
+              FileSaver.min.js|
+              fonts/|
+              viz.js|
+              whhg-font/
+            )|
+
+            # Expected files should be left verbatim.
+            \.expected(-failure)?$
+          )
+
 -   repo: local
     hooks:
     -   id: make-test
