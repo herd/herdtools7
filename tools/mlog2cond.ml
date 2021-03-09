@@ -47,15 +47,22 @@ let options =
   ]
 
 let prog =
-  if Array.length Sys.argv > 0 then Sys.argv.(0)
+  if Array.length Sys.argv > 0 then (Filename.basename Sys.argv.(0))
   else "mlog2cond"
+
+let usage = String.concat "\n" [
+  Printf.sprintf "Usage: %s [options] [path/to/log]" prog ;
+  "" ;
+  "Extract the condition from a single log file. If one is not provided on the" ;
+  "command-line, it will be read from stdin." ;
+  "" ;
+  "Options:" ;
+]
 
 let () =
   Arg.parse options
     (fun s -> logs := !logs @ [s])
-    (sprintf "Usage %s [options]* [log]
-log is a log file names.
-Options are:" prog)
+    usage
 
 let verbose = !verbose
 let hexa = !hexa
