@@ -349,21 +349,28 @@ module Make(C:Config) (I:I) : S with module I = I
         include LocArg
         open Constant
 
+(* Compare id in fault and other id, at least one id must be allowed in fault *)
         let same_sym_fault sym1 sym2 = match sym1,sym2 with
+(* Both ids allowed in fault, compare *)
           |(Virtual {name=s1;_},Virtual {name=s2;_})
           | (System (PTE,s1),System (PTE,s2))
           | (System (TAG,s1),System (TAG,s2))
            -> Misc.string_eq s1 s2
-          | (Virtual _,(System ((PTE|TAG|TLB),_)|Physical _))
-          | ((Physical _|System ((PTE|TAG|TLB),_)),Virtual _)
-          | (System (PTE,_),System ((TAG|TLB),_))
-          | (System ((TAG|TLB),_),System (PTE,_))
-          | (System (TLB,_),System (TAG,_))
-          | (System (TAG,_),System (TLB,_))
-          | (Physical _,System ((TAG|PTE|TLB),_))
-          | (System ((TAG|PTE|TLB),_),Physical _)
+(* One id allowed, the other on forbidden, do not match *)
+          | (Virtual _,(System ((PTE|TAG|TLB|PTE2),_)|Physical _))
+          | ((Physical _|System ((PTE|TAG|TLB|PTE2),_)),Virtual _)
+          | (System (PTE,_),System ((TAG|TLB|PTE2),_))
+          | (System ((TAG|TLB|PTE2),_),System (PTE,_))
+          | (System ((TLB|PTE2),_),System (TAG,_))
+          | (System (TAG,_),System ((TLB|PTE2),_))
+          | (Physical _,System ((TAG|PTE),_))
+          | (System ((TAG|PTE),_),Physical _)
             -> false
-          | _,_ ->
+(* Both forbidden, failure *)
+          | (Physical _|System (TLB,_)),(Physical _|System ((TLB|PTE2),_))
+          | ((System ((PTE2),_)),System (TLB,_))
+          | (System (PTE2,_),(Physical _|System (PTE2,_)))
+            ->
               Warn.fatal
                 "Illegal id (%s or %s) in fault"
                 (pp_symbol sym1) (pp_symbol sym2)
