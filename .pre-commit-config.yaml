@@ -15,7 +15,6 @@ repos:
           (?x)(
             # Currently un-fixed directories & files.
             ^(
-              gen/|
               herd/|
               herd-www/|
               internal/|
