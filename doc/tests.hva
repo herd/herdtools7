@@ -81,4 +81,3 @@ tests by batch:
 \newcommand{\mysection}[2]{\@mysec{section}{#1}{#2}}
 \newcommand{\mysubsection}[2]{\@mysec{subsection}{#1}{#2}}
 \newcommand{\mysubsubsection}[2]{\@mysec{subsubsection}{#1}{#2}}
-
