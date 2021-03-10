@@ -15,4 +15,3 @@ AArch64 A179
  LDR X0,[X2] | STR X1,[X2] | STR X2,[X2] ;
  LDR W1,[X0] |             |             ;
 locations [0:X0; 0:X1;]
-

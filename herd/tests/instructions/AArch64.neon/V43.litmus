@@ -14,4 +14,3 @@ uint32_t y; uint32_t z;
  STR S0, [X1]           ;
  STR S1, [X2]           ;
  forall (0:X0!=x /\ y=1 /\ z=2)
-

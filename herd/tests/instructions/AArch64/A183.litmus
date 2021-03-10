@@ -14,4 +14,3 @@ q
  MOV W0,#2   | STR X4,[X2]  | LDR W0,[X2] ;
  STR W0,[X2] | STR X2,[X2]  |             ;
 locations [x;2:X0;]
-

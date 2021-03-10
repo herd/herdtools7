@@ -12,4 +12,3 @@ rcu_read_lock() { __fence{rcu-lock}; }
 rcu_read_unlock() { __fence{rcu-unlock};}
 synchronize_rcu() { __fence{sync-rcu}; }
 synchronize_rcu_expedited() { __fence{sync-rcu}; }
-
