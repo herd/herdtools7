@@ -48,6 +48,10 @@ type t = {
 let prot_default =  { oa=""; valid=1; af=1; db=1; dbm=0; el0=1; attrs=Attrs.default; }
 let default s = { prot_default with  oa=Misc.add_physical s; }
 
+(* Page table entries for pointers into the page table
+   have el0 flag unset. Namely, page table access from
+   EL0 is disallowed. This correspond to expected behaviour:
+   user code cannot access the page table. *)
 let of_pte s = { prot_default with  oa=Misc.add_pte s; el0=0; }
 
 let pp_field ok pp eq ac p k =

@@ -479,6 +479,8 @@ module Make
         else
           M.op1 Op.IsVirtual a_virt >>= fun cond ->
           M.choiceT cond mvirt
+            (* Non-virtual accesses are disallowed from EL0.
+               For instance, user code cannot access the page table. *)
             (if is_el0 then mk_pte_fault ma ii
              else mdirect)
 
@@ -644,8 +646,7 @@ module Make
            else
              fun a ma ->
              match Act.access_of_location_std (A.Location_global a) with
-             | Act.A_VIR -> maccess a ma
-             | Act.A_PTE -> mk_pte_fault ma ii
+             | Act.A_VIR|Act.A_PTE -> maccess a ma
              | ac -> mop ac ma >>! B.Next)
 
       let lift_morello mop perms ma mv ii =
