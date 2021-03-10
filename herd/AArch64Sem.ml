@@ -102,6 +102,10 @@ module Make
       let mk_fault a ii msg =
         M.mk_singleton_es (Act.Fault (ii,A.Location_global a,msg)) ii
 
+      let mk_pte_fault ma ii =
+        ma >>= fun a ->
+        mk_fault a ii (Some "EL0") >>! B.Exit
+
       let read_loc v is_data = M.read_loc is_data (mk_read v AArch64.N aexp)
 
       let read_reg is_data r ii = match r with
@@ -431,14 +435,13 @@ module Make
                 an AArch64.nexp_annot a_pte ii >>= fun pte_v ->
               (mextract_pte_vals pte_v) >>= fun pte_v -> M.unitT (pte_v,a_pte)
             end
-          (fun (pte_v,a_pte) ma -> (* now we have PTE content *)
+          (fun (_,a_pte) ma -> (* now we have PTE content *)
             (* Monad will carry changing internal pte value *)
             let ma = ma >>= fun (pte_v,_) -> M.unitT pte_v in
             (* wrapping of success/failure continuations,
                only pte value may have changed *)
-            let mok ma =
-              mok a_pte ma
-                (if pte2 then a_virt else pte_v.oa_v)
+            let mok ma = mok a_pte ma a_virt
+(* a_virt was (if pte2 then a_virt else pte_v.oa_v), why? *)
             and mno ma =  mfault ma a_virt in
             let check_cond cond =
               do_check_cond ma (check_el0 cond) mno mok in
@@ -475,7 +478,9 @@ module Make
         if pte2 then  mvirt
         else
           M.op1 Op.IsVirtual a_virt >>= fun cond ->
-          M.choiceT cond mvirt mdirect
+          M.choiceT cond mvirt
+            (if is_el0 then mk_pte_fault ma ii
+             else mdirect)
 
 (* Read memory, return value read *)
       let do_read_mem_ret sz an anexp ac a ii =
@@ -593,7 +598,7 @@ module Make
   and change their behaviour according to variants.
   Most lift function introduce validity checks on
   addresses. Thus the resulting monads will possess
-  extra dependencies w.r.t thes imple case.
+  extra dependencies w.r.t the simple case.
  *)
       let lift_memtag_phy mop a_virt ma ii =
         M.delay_kont "4" ma
@@ -640,10 +645,11 @@ module Make
              fun a ma ->
              match Act.access_of_location_std (A.Location_global a) with
              | Act.A_VIR -> maccess a ma
+             | Act.A_PTE -> mk_pte_fault ma ii
              | ac -> mop ac ma >>! B.Next)
 
       let lift_morello mop perms ma mv ii =
-        let mfault msg ma mv = 
+        let mfault msg ma mv =
           do_insert_commit
             (ma >>| mv)
             (fun (a,_v) -> mk_fault a ii (Some msg)) ii  >>! B.Exit in
@@ -666,7 +672,7 @@ module Make
    + mv abstracted for morello sake only
    + ma abstracted for all variants
  *)
-                          
+
       let to_perms str sz = str ^ if sz = MachSize.S128 then "_c" else ""
 
       let apply_mv mop mv = fun ac ma -> mop ac ma mv
@@ -675,7 +681,7 @@ module Make
         if morello then
           lift_morello mop perms ma mv ii
         else
-          let mop = apply_mv mop mv in          
+          let mop = apply_mv mop mv in
           if memtag then
             begin
               if kvm then
