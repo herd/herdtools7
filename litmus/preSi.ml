@@ -392,8 +392,10 @@ module Make
             | `X86_64
             | `ARM
             | `MIPS
-            | `AArch64 ->
-                sprintf "barrier%s.c" lab_ext
+            | `AArch64
+            | `RISCV
+              ->
+               sprintf "barrier%s.c" lab_ext
             | _ -> assert false in
         Insert.insert O.o (fname Cfg.sysarch)
 
