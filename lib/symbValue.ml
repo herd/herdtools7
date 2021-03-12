@@ -476,13 +476,20 @@ module Make(Cst:Constant.S) = struct
       Warn.user_error "Illegal pteloc on %s" (pp_v v)
   | Var _ -> raise Undetermined
 
+  let offset v = match v with
+  | Val (Symbolic (Virtual {offset=o;_}|Physical (_,o))) -> intToV o
+  | Val (Symbolic (System ((PTE|PTE2|TLB|TAG),_))) -> zero
+  | Val (Concrete _|ConcreteVector _|Label _|Tag _|PteVal _) ->
+      Warn.user_error "Illegal offset on %s" (pp_v v)
+  | Var _ -> raise Undetermined
+
   let op_pte_val op_op op v = match v with
   | Val (PteVal a) -> Val (op a)
   | Var _ -> raise Undetermined
   | _ -> Warn.user_error "Illegal pte operation %s on %s" op_op (pp_v v)
 
   let op_afloc a = Cst.intToV a.af
-  let afloc = op_pte_val "afloc" op_afloc 
+  let afloc = op_pte_val "afloc" op_afloc
 
   let op_set_pteval op op_op v = match v with
     | Val (PteVal pte_v) -> Val (PteVal (op pte_v))
@@ -491,7 +498,7 @@ module Make(Cst:Constant.S) = struct
 
   let setaf = op_set_pteval (fun v -> { v with af = 1}) "setaf"
 
-  let op_dbloc a = Cst.intToV a.db 
+  let op_dbloc a = Cst.intToV a.db
   let dbloc = op_pte_val "dbloc" op_dbloc
   let setdb = op_set_pteval (fun v ->  {v with db = 1}) "setdb"
 
@@ -781,6 +788,7 @@ module Make(Cst:Constant.S) = struct
     | CapaStrip -> capastrip
     | TLBLoc -> tlbloc
     | PTELoc -> pteloc
+    | Offset -> offset
     | IsVirtual -> is_virtual_v
     | AF -> afloc 
     | SetAF -> setaf 

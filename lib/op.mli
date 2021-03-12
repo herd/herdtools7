@@ -71,6 +71,7 @@ type op1 =
   | CapaStrip
   | TLBLoc (* get TLB entry from location *)
   | PTELoc (* get PTE entry from location *)
+  | Offset (* get offset from base (symbolic) location *)
   | AF (* get AF from PTE entry *)
   | SetAF (* set AF to 1 in PTE entry *)
   | DB (* get DB from PTE entry *)
