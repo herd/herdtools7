@@ -338,7 +338,9 @@ module Make
         (fun (((((oa_v,el0_v),valid_v),af_v),db_v),dbm_v) ->
           M.unitT {pte_v; oa_v; af_v; db_v; dbm_v; valid_v; el0_v;})
 
-      let get_oa mpte = mpte >>= fun p -> M.unitT p.oa_v
+      let get_oa a_virt mpte =
+        (M.op1 Op.Offset a_virt >>| mpte)
+        >>= fun (o,p) -> M.add p.oa_v o
 
 (******************)
 (* Checking flags *)
@@ -414,8 +416,10 @@ module Make
                   (test_and_set_db a_pte ii)
                   (M.unitT ())
             else M.unitT ()
-            end >>| M.unitT pte_v.oa_v >>= fun (_,oa) -> M.unitT oa in
-        let mfault m _a = mfault (get_oa m) a_virt
+            end
+            >>| (M.op1 Op.Offset a_virt >>= M.add pte_v.oa_v)
+            >>= fun (_,oa) -> M.unitT oa in
+        let mfault m _a = mfault (get_oa a_virt m) a_virt
         and mok a_pte m a = mok (setbits_get_oa a_pte m) a in
 
 
