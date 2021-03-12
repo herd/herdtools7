@@ -1234,24 +1234,6 @@ Monad type:
               "Cannot initialize %s with %s"
               (A.pp_location loc ) (A.V.pp C.hexa v)
 
-      let extract_virtual_pte env =
-        let open Constant in
-        List.fold_right
-          (fun (loc,v as bd) (env,(virt,pte as maps)) ->
-            match loc with
-            | A.Location_global
-              (V.Val
-                 (Symbolic (Virtual {name=s; tag=None; offset=0;_}))) ->
-                env,(StringMap.add s v virt,pte)
-            | A.Location_global (V.Val (Symbolic (System (PTE,s)))) ->
-                let v = expand_pteval loc v in
-                (loc,v)::env,(virt,StringSet.add s pte)
-            | A.Location_global (V.Val (Symbolic (Physical _|Virtual _))) ->
-                Warn.user_error "herd cannot handle initialisation of '%s'"
-                  (A.pp_location loc)
-            | _ -> bd::env,maps)
-          env ([],(StringMap.empty,StringSet.empty))
-
       let pte_loc s =
         let open Constant in
         A.Location_global (V.Val (Symbolic (System (PTE,s))))
@@ -1260,24 +1242,39 @@ Monad type:
         let open Constant in
         A.Location_global (V.Val (Symbolic (System (PTE2,s))))
 
-      let phy_loc s =
+      let phy_loc s o =
         let open Constant in
-        A.Location_global (V.Val (Symbolic (Physical (s,0))))
+        A.Location_global (V.Val (Symbolic (Physical (s,o))))
+
+      let extract_virtual_pte env =
+        let open Constant in
+        List.fold_right
+          (fun (loc,v as bd) (env,(virt,pte as maps)) ->
+            match loc with
+            | A.Location_global
+              (V.Val
+                 (Symbolic (Virtual {name=s; tag=None; offset=o;_}))) ->
+               (phy_loc s o,v)::env,
+               (StringSet.add s virt,pte)
+            | A.Location_global (V.Val (Symbolic (System (PTE,s)))) ->
+                let v = expand_pteval loc v in
+                (loc,v)::env,(virt,StringSet.add s pte)
+            | A.Location_global (V.Val (Symbolic (Physical _|Virtual _))) ->
+                Warn.user_error "herd cannot handle initialisation of '%s'"
+                  (A.pp_location loc)
+            | _ -> bd::env,maps)
+          env ([],(StringSet.empty,StringSet.empty))
+
 
       let add_initpte =
         let open Constant in
         fun env ->
           (* Collect virtual initialisations and explicit pte initialisations *)
           let env,(virt,pte) = extract_virtual_pte env in
-          (* Initialise physical locations *)
-          let env =
-            StringMap.fold
-              (fun s v env -> (phy_loc s,v)::env)
-              virt env in
           (* Add default initialisation of pte, when appropriate *)
           let env =
-            StringMap.fold
-              (fun s _ env ->
+            StringSet.fold
+              (fun s env ->
                 if StringSet.mem s pte then env
                 else (pte_loc s,default_pteval s)::env)
               virt env in
