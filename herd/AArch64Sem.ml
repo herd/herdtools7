@@ -174,7 +174,7 @@ module Make
 
       let neon_setlane old_val idx esize v =
         let mask = V.op1 (Op.LeftShift (idx*esize)) (AArch64.neon_mask esize) in
-        let invert = V.op1 Op.LogicalNot mask in
+        let invert = V.op1 Op.Inv mask in
         M.op1 (Op.LeftShift (idx*esize)) v >>= fun new_val ->
         M.op Op.And invert old_val >>|
         M.op Op.And mask new_val >>= fun (v1,v2) ->
