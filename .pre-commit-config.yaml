@@ -15,7 +15,6 @@ repos:
           (?x)(
             # Currently un-fixed directories & files.
             ^(
-              internal/|
               jingle/|
               lib/|
               litmus/|
