@@ -29,4 +29,3 @@ asm __volatile__ (
   r |= ((tb_t)r1) << 32;
   return r;
 }
-

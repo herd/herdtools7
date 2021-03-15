@@ -73,4 +73,3 @@ void force_one_affinity(int cpu, int a, int verbose, char *name) {
     } while (r < 0) ;
   }  
 }
-

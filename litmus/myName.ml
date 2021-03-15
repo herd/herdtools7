@@ -105,4 +105,3 @@ let name_as_symbol name =
   else "X" ^ sym
 
 let as_symbol t = name_as_symbol t.Name.name
-

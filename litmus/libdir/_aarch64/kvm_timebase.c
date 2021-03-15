@@ -17,7 +17,3 @@
 inline static tb_t read_timebase(void) {
   return read_sysreg(cntpct_el0) ;
 }
-
-
-
-

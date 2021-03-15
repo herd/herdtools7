@@ -53,4 +53,3 @@ static void barrier_wait(sense_t *p) {
     : [ms] "r" (sense), [s] "m" (p->sense), [c] "m" (p->c), [np] "m" (p->n)
     : "memory") ;
 }
-

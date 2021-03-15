@@ -11,4 +11,3 @@ static inline void barrier_wait(int id,int i,int *b) {
     }
   }
 }
-
