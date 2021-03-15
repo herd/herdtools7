@@ -32,4 +32,3 @@ val size_of : MachSize.sz -> string -> MachSize.sz
 val is_signed : string -> bool
 
 val tr_nbits : int -> string
-

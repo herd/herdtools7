@@ -74,4 +74,3 @@ let tr_nbits = function
 | 32 -> "int"
 | 64 -> "uint64_t"
 | n -> Warn.fatal "No type for %d bits" n
-
