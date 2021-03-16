@@ -540,10 +540,15 @@ let lift_proc_info i evts =
       ->
         let sz_s = A.look_size senv s in
         let nbytes_s = MachSize.nbytes sz_s in
-        let ncell = idx / nbytes_s and idx0 = idx mod nbytes_s in
-(*        Printf.eprintf "idx=%d, ncell=%d, idx0=%d, array_sz=%d\n"
-          idx ncell idx0 array_sz ; *)
-        0 <= ncell && ncell < array_sz &&
-        List.exists (Misc.int_eq idx0) (MachSize.get_off sz_s sz_e)
-
+        if MachSize.less_than_or_equal sz_e sz_s then begin
+          let ncell = idx / nbytes_s and idx0 = idx mod nbytes_s in
+          0 <= ncell && ncell < array_sz
+          &&  List.exists (Misc.int_eq idx0) (MachSize.get_off sz_s sz_e)
+        end else begin
+            idx >= 0 &&
+            (let nbytes_e = MachSize.nbytes sz_e in
+             idx mod nbytes_e = 0 &&
+             (let idx_max = idx/nbytes_s + (nbytes_e/nbytes_s) in
+             idx_max <= array_sz))
+        end
 end

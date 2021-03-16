@@ -1608,6 +1608,11 @@ let match_reg_events es =
            (A.V.pp_v a)
        end
 
+(* Check alignement in the mixed-size case.
+   Check is performed on original memory accesses,
+   not on splitted sub-events. Checking sub-events would
+   be too permissive, as easily shown by splitting accesses
+   into byte accesses. *)
     let check_aligned test es =
       E.EventSet.iter
         (fun e -> check_event_aligned test e)
