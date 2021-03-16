@@ -677,7 +677,9 @@ let match_reg_events es =
                           Warn.user_error
                             "Illegal mixed-size test on symbol %s"
                             (A.pp_location loc)
-                    | _ -> assert false
+                    | None ->
+                       Warn.fatal "Non symbolic location: '%s'\n"
+                         (A.pp_location loc)
                     end
                 | _ -> assert false
                 end
@@ -821,17 +823,6 @@ let match_reg_events es =
           A.of_symbolic_data {sym with name=s; offset=0;}
       | _ -> raise CannotSca
 
-    (* Base of indexed symbol (i.e. array cell address) *)
-    let get_cell_base nb a =
-      let open Constant in
-      match A.symbolic_data a with
-      | Some ({name=s;offset=o} as sym) ->
-          let s = if Misc.check_ctag s then Misc.tr_ctag s else s in
-          let o = (o / nb) * nb in
-          A.of_symbolic_data {sym with name=s; offset=o;}
-      | _ -> raise CannotSca
-
-
 (* Sort same_base *)
     let compare_index e1 e2 =
       let open Constant in
@@ -968,21 +959,6 @@ let match_reg_events es =
                 ws in
             x,rs,List.map (fun (_,_,_,ws) -> ws) ws)
           rs in
-(*
-  eprintf "+++++++++++++++++++++++\n" ;
-  List.iter
-  (fun (rs,wss) ->
-  List.iter (eprintf "%a " E.debug_event) rs ;
-  eprintf "->\n" ;
-  List.iter
-  (fun ws ->
-  eprintf "    [" ;
-  List.iter (fun w -> eprintf "%a; " E.debug_event w) ws ;
-  eprintf "]\n")
-  wss ;
-  eprintf "\n")
-  ms ; flush stderr ;
- *)
       let ms =
         List.map
           (fun (x,rs,wss) -> rs,MatchRf.find_rfs_sca x rs wss)
@@ -1063,7 +1039,8 @@ let match_reg_events es =
         if mixed && not C.debug.Debug_herd.mixed then solve_mem_mixed test es rfm cns kont res
         else solve_mem_non_mixed  test es rfm cns kont res
       with
-      | CannotSca -> solve_mem_non_mixed test es rfm cns kont res
+      | CannotSca ->
+         solve_mem_non_mixed test es rfm cns kont res
 
 
 (*************************************)
@@ -1371,9 +1348,7 @@ let match_reg_events es =
                 let t = A.look_type (S.type_env test) a0 in
                 let a =
                   match t with
-                  | TestType.TyArray (base,_) ->
-                     let nb = MachSize.nbytes (A.size_of_t base) in
-                     get_cell_base nb a
+                  | TestType.TyArray _ -> raise CannotSca
                   | _ -> a0 in
                 if keep_observed_loc a locs then
                   let old = A.LocMap.safe_find [] a k in
