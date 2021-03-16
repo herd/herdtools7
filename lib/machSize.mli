@@ -32,8 +32,11 @@ val get_off : sz -> sz -> int list
 (* All valid offsets for sz2 in sz1, reduced list *)
 val get_off_reduced : sz -> sz -> int list
 
-(* Smaller of two *)
 val compare : sz -> sz -> int
+
+(* Smaller of two *)
+val less_than_or_equal : sz -> sz -> bool
+
 module Set : MySet.S with type elt = sz
 
 val min : sz -> sz -> sz
