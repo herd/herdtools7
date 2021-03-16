@@ -1,0 +1,10 @@
+Test V34 Required
+States 1
+0:V0.4S={22,0,0,0};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:V0.4S={22,0,0,0})
+Observation V34 Always 1 0
+Hash=18ad18350b76783bb8c477e0b66d1722
+

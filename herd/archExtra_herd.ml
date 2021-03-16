@@ -24,6 +24,7 @@ module type I = sig
   type arch_reg
   val pp_reg : arch_reg -> string
   val reg_compare : arch_reg -> arch_reg -> int
+  val get_val : arch_reg -> V.v -> V.v
 
   type arch_instruction
 
@@ -436,9 +437,13 @@ module Make(C:Config) (I:I) : S with module I = I
         pp_nice_state st " "
           (fun l v -> pp_location l ^ pp_equal ^ I.V.pp C.hexa v ^";")
 
+      let get_val loc v = match loc with
+      | Location_reg (_,reg) -> I.get_val reg v
+      | _ -> v
+
       let do_dump_state tr st =
         pp_nice_state st " "
-          (fun l v -> do_dump_location tr l ^ "=" ^ I.V.pp C.hexa v ^";")
+          (fun l v -> do_dump_location tr l ^ "=" ^ I.V.pp C.hexa (get_val l v) ^";")
 
       let dump_state st = do_dump_state Misc.identity st
 
@@ -529,7 +534,7 @@ module Make(C:Config) (I:I) : S with module I = I
       exception LocUndetermined
 
       let get_in_state loc st =
-        try State.find loc st
+        try get_val loc (State.find loc st)
         with Not_found ->
           let open Constant in
           match loc with

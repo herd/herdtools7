@@ -1,0 +1,13 @@
+AArch64 V11
+(* Tests store immediate, post-indexed *)
+{
+uint8_t a=1; uint8_t x[2];
+0:X0=a;
+0:X1=x;
+}
+
+ P0                 ;
+ LDR B0, [X0]       ;
+ STR B0, [X1], #1   ;
+ STR B0, [X1]       ;
+ forall (x[0]=1 /\ x[1]=1)

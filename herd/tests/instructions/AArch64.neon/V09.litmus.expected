@@ -1,0 +1,10 @@
+Test V09 Required
+States 1
+x[0]=1; x[1]=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x[0]=1 /\ x[1]=1)
+Observation V09 Always 1 0
+Hash=1e281d8019b889f9038b1947983be351
+

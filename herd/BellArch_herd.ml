@@ -45,5 +45,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
           | Pfence(Fence(_,ft)) -> ft
           | _ -> None
 
+        let get_val _ v = v
+
       end)
   end

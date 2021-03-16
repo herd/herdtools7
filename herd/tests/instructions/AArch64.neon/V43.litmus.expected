@@ -1,0 +1,10 @@
+Test V43 Required
+States 1
+0:X0=x+4; y=1; z=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (not (0:X0=x) /\ y=1 /\ z=2)
+Observation V43 Always 1 0
+Hash=b377a45637f6673550e8c472e692f5de
+

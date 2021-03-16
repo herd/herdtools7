@@ -1,0 +1,10 @@
+Test V08 Required
+States 1
+y=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (y=1)
+Observation V08 Always 1 0
+Hash=8aad4753b4fbb90fcb565ce80b183e71
+

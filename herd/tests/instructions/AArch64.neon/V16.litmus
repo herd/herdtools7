@@ -1,0 +1,14 @@
+AArch64 V16
+(* Tests MOVI 64-bit variant *)
+{
+uint8_t x; uint8_t y; uint8_t z; uint8_t a;
+0:X0=x;0:X1=y;0:X2=z;0:X3=a;
+}
+
+ P0                     ;
+ MOVI V0.2D,#255        ;
+ ST1 {V0.B}[0], [X0]    ;
+ ST1 {V0.B}[1], [X1]    ;
+ ST1 {V0.B}[8], [X2]    ;
+ ST1 {V0.B}[9], [X3]    ;
+ forall (x=255 /\ y=0 /\ z=255 /\ a=0)

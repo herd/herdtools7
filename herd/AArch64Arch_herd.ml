@@ -124,6 +124,34 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | NExp DB-> "NExpDB"
     module V = V
 
+    let neon_mask esize =
+      let mask = match esize with
+      | 8 -> "0xff"
+      | 16 -> "0xffff"
+      | 32 -> "0xffffffff"
+      | 64 -> "0xffffffffffffffff"
+      | _ -> assert false in
+      V.stringToV mask
+
+    let neon_getlane cur_val esize idx =
+      let mask = V.op1 (Op.LeftShift (idx*esize)) (neon_mask esize) in
+      let masked_val = V.op Op.And mask cur_val in
+      V.op1 (Op.LogicalRightShift (idx*esize)) masked_val
+
+    let neon_getvec nelem esize v =
+      let get_concrete v = match v with
+      | V.Val c -> c
+      | _ -> assert false in
+      let vs = List.map get_concrete (List.init nelem (neon_getlane v esize)) in
+      V.Val (Constant.ConcreteVector(nelem, vs))
+
+    let simd_mem_access_size rs = match List.hd rs with
+    | Vreg (_,(_,8)) -> MachSize.Byte
+    | Vreg (_,(_,16)) -> MachSize.Short
+    | Vreg (_,(_,32)) -> MachSize.Word
+    | Vreg (_,(_,64)) -> MachSize.Quad
+    | _ -> assert false (* Unsupported arrangement specifier *)
+
     let mem_access_size = function
       | I_LDR (v,_,_,_,_) | I_LDP (_,v,_,_,_,_)
       | I_LDUR (v,_,_,_)  | I_LDR_P(v,_,_,_)
@@ -132,6 +160,22 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | I_CAS (v,_,_,_,_) | I_SWP (v,_,_,_,_)
       | I_LDOP (_,v,_,_,_,_) | I_STOP (_,v,_,_,_) ->
           Some (tr_variant v)
+      | I_LDR_SIMD (v,_,_,_,_) | I_LDR_P_SIMD (v,_,_,_)
+      | I_LDP_SIMD (_,v,_,_,_,_) | I_LDP_P_SIMD (_,v,_,_,_,_)
+      | I_STR_SIMD (v,_,_,_,_) | I_STR_P_SIMD (v,_,_,_)
+      | I_STP_SIMD (_,v,_,_,_,_) | I_STP_P_SIMD (_,v,_,_,_,_)
+      | I_LDUR_SIMD (v,_,_,_) | I_STUR_SIMD (v,_,_,_) ->
+          Some (tr_simd_variant v)
+      | I_LD1 (r,_,_,_) | I_LD1R (r,_,_) | I_ST1 (r,_,_,_) ->
+          Some (simd_mem_access_size [r])
+      | I_LD1M (rs,_,_) | I_ST1M (rs,_,_)
+      | I_LD2 (rs,_,_,_) | I_LD2R (rs,_,_) | I_ST2 (rs,_,_,_)
+      | I_LD2M (rs,_,_) | I_ST2M (rs,_,_)
+      | I_LD3 (rs,_,_,_) | I_LD3R (rs,_,_) | I_ST3 (rs,_,_,_)
+      | I_LD3M (rs,_,_) | I_ST3M (rs,_,_)
+      | I_LD4 (rs,_,_,_) | I_LD4R (rs,_,_) | I_ST4 (rs,_,_,_)
+      | I_LD4M (rs,_,_) | I_ST4M (rs,_,_) ->
+          Some (simd_mem_access_size rs)
       | I_LDRBH (v,_,_,_) | I_LDARBH (v,_,_,_)
       | I_STRBH (v,_,_,_) | I_STLRBH (v,_,_) | I_STXRBH (v,_,_,_,_)
       | I_CASBH (v,_,_,_,_) | I_SWPBH (v,_,_,_,_)
@@ -149,15 +193,10 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | I_STCT _|I_UNSEAL _
       | I_SC _
       | I_TLBI (_,_)
+      | I_MOV_V _ | I_MOV_VE _ | I_MOV_S _ | I_MOV_TG _ | I_MOV_FG _
+      | I_MOVI_S _ | I_MOVI_V _
+      | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
           -> None
-      | I_LD1 _ | I_LD1M _ | I_LD1R _ | I_LD2 _ | I_LD2M _ | I_LD2R _
-      | I_LD3 _ | I_LD3M _ | I_LD3R _ | I_LD4 _ | I_LD4M _ | I_LD4R _
-      | I_LDP_SIMD _ | I_LDP_P_SIMD _ | I_LDR_SIMD _ | I_LDR_P_SIMD _ | I_LDUR_SIMD _
-      | I_ST1 _ | I_ST1M _ | I_ST2 _ | I_ST2M _ | I_ST3 _ | I_ST3M _ | I_ST4 _ | I_ST4M _
-      | I_STP_SIMD _ | I_STP_P_SIMD _ | I_STR_SIMD _ | I_STR_P_SIMD _ | I_STUR_SIMD _
-      | I_MOV_S _ | I_MOV_V _ | I_MOV_VE _ | I_MOV_TG _ | I_MOV_FG _ | I_MOVI_S _ | I_MOVI_V _
-      | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _ ->
-          Warn.fatal "Neon instructions are not currently supported"
 
     include ArchExtra_herd.Make(C)
         (struct
@@ -170,6 +209,10 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
           type arch_instruction = instruction
           let fromto_of_instr _ = None
+
+          let get_val reg v = match reg with
+          | AArch64Base.Vreg(_,(nelem,esize)) -> neon_getvec nelem esize v
+          | _ -> v
 
         end)
 

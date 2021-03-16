@@ -1,0 +1,10 @@
+Test V14 Required
+States 1
+x=1; y=1; z=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x=1 /\ y=1 /\ z=0)
+Observation V14 Always 1 0
+Hash=b480c51a41848ef4a92be165ad9b032f
+

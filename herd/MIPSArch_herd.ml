@@ -59,6 +59,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 	  type arch_instruction = instruction
           let fromto_of_instr _ = None
 
+      let get_val _ v = v
+
 	end)
 
   end

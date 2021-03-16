@@ -1,0 +1,10 @@
+Test V21 Required
+States 1
+x=1; y=1; z=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x=1 /\ y=1 /\ z=0)
+Observation V21 Always 1 0
+Hash=05146534366d427476fe882231ac3799
+

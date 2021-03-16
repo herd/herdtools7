@@ -1,0 +1,16 @@
+AArch64 V41
+(* Tests LDP - load pair without offset *)
+{
+uint32_t x[2];
+uint32_t y; uint32_t z;
+0:X0=x; 0:X1=y; 0:X2=z;
+0:X3=1; 0:X4=2;
+}
+
+ P0                     ;
+ STR W3, [X0]           ;
+ STR W4, [X0, #4]       ;
+ LDP S0, S1, [X0]       ;
+ STR S0, [X1]           ;
+ STR S1, [X2]           ;
+ forall (y=1 /\ z=2)

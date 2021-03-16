@@ -1,0 +1,12 @@
+AArch64 V04
+(* Tests LD1 multiple structure *)
+{
+uint8_t x[8]={255,255,0,0,0,0,0,0};
+uint8_t y; uint8_t z;
+0:X0=x; 0:X1=y; 0:X2=z;
+}
+ P0                 ;
+ LD1 {V0.8B},[X0]    ;
+ ST1 {V0.B}[0],[X1] ;
+ ST1 {V0.B}[1],[X2] ;
+forall(y=255 /\ z=255)

@@ -1,0 +1,10 @@
+Test V45 Required
+States 1
+0:X0=x+-8; x={254,255}; y=255;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x=254 /\ y=255 /\ not (0:X0=x))
+Observation V45 Always 1 0
+Hash=67a095552f8fca01bbb8e74c11bca4ce
+

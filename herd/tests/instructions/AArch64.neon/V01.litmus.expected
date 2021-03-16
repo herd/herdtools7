@@ -1,0 +1,10 @@
+Test V01 Required
+States 1
+y=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (y=1)
+Observation V01 Always 1 0
+Hash=9ec259d1bca8391f70cffb88eeb18d36
+
