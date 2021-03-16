@@ -1,0 +1,14 @@
+AArch64 M000
+(* Does not work yet without option -debug mixed... *)
+{
+uint8_t t[4];
+0:X2=t;
+}
+  P0             ;
+ MOV W0,#1       ;
+ STRB W0,[X2]    ;
+ MOV W0,#2       ;
+ STRH W0,[X2,#2] ;
+ LDR W1,[X2]     ;
+locations [t;]
+forall t[0]=1 /\ t[1]=0 /\ t[2]=2 /\ 0:X1=0x20001
