@@ -7,7 +7,6 @@ bells = [
 ]
 
 cats = [
-    "cats/anarchy.cat",
     "cats/x86.cat",
     "cats/arm.cat",
     "cats/ptx.cat",
