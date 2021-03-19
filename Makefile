@@ -90,6 +90,17 @@ test::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 instructions tests: OK"
 
+test:: test.mixed
+test.mixed:
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64.mixed \
+		-conf ./herd/tests/instructions/AArch64.mixed/mixed.cfg \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 mixed instructions tests: OK"
+
 test::
 	@ echo
 	$(HERD_REGRESSION_TEST) \

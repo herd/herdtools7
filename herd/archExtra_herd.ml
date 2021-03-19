@@ -108,10 +108,6 @@ module type S = sig
   val build_state : (location * (TestType.t * v)) list -> state
   val build_concrete_state : (location * int) list -> state
 
-(* Fails with user error when t is not an array type
-   or in case of out-of-bound access *)
-  val scale_array_reference : TestType.t -> location -> int -> location
-
   val state_is_empty : state -> bool
   val state_add : state -> location -> v -> state
   val state_add_if_undefined  : state -> location -> v -> state
@@ -507,7 +503,8 @@ module Make(C:Config) (I:I) : S with module I = I
         | TyDefPointer -> Some (MachSize.Word,1)
         | Pointer t -> Some (size_of_t t,1)
         | _ -> None
-
+(* Fails with user error when t is not an array type
+   or in case of out-of-bound access *)
       let scale_array_reference t loc os =
         let sz_elt,n_elts =
           match size_of_array t with

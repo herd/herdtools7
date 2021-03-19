@@ -1,10 +1,10 @@
 Test M000 Required
 States 1
-0:X1=131073; t={1,0,2,0}; t[0]=1; t[1]=0; t[2]=2;
+0:X1=0x20001; t={0x1,0x0,0x2,0x0}; t[0]=0x1; t[1]=0x0; t[2]=0x2;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (t[0]=1 /\ t[1]=0 /\ t[2]=2 /\ 0:X1=131073)
+Condition forall (t[0]=0x1 /\ t[1]=0x0 /\ t[2]=0x2 /\ 0:X1=0x20001)
 Observation M000 Always 1 0
 Hash=17fa4fc37961f227ee4fd9d6623a3757
 
