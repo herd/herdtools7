@@ -25,6 +25,7 @@ val next_label : string -> t
 
 val fail : int -> int -> t
 val exit : int -> int -> t
+val last : int -> t
 
 type next = Any | Next | To of t
 

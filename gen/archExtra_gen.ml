@@ -74,6 +74,10 @@ module type S = sig
 
   type special
   val alloc_special : st -> special * st
+
+  val ok_reg : st -> arch_reg * st
+  val next_ok : st -> st
+  val get_noks : st -> int
 end
 
 module Make(I:I) : S
@@ -172,13 +176,16 @@ with type arch_reg = I.arch_reg and type special = I.special
       { regs : arch_reg list ;
         map  : arch_reg StringMap.t ;
         label : int ;
-        specials : I.special list ; }
+        specials : I.special list ;
+        noks : int ; }
+
 
   let st0 =
     { regs = I.free_registers;
       map = StringMap.empty;
       label = 0;
-      specials = I.specials; }
+      specials = I.specials;
+      noks = 0; }
 
   let alloc_reg st = match st.regs with
     | [] -> Warn.fatal "No more registers"
@@ -210,4 +217,8 @@ with type arch_reg = I.arch_reg and type special = I.special
   let alloc_special st = match st.specials with
   | [] -> Warn.fatal "No more special registers"
   | r::rs -> r,{ st with specials = rs; }
+
+  let ok_reg st = alloc_trashed_reg "ok" st
+  let next_ok st = { st with noks = st.noks+1; }
+  let get_noks st = st.noks
 end
