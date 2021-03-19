@@ -19,4 +19,3 @@ type t = (Proc.t * string option) * string
 val equal : t -> t -> bool
 
 val pp : t -> string
-

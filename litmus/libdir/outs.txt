@@ -89,4 +89,3 @@ static count_t cnstates(outs_t *p) {
 }
 
 static count_t count_nstates(outs_t *p) { return count_scan(cnstates,p); }
-

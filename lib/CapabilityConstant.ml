@@ -89,4 +89,3 @@ module CapabilityScalar = struct
 end
 
 include SymbConstant.Make(CapabilityScalar)
-

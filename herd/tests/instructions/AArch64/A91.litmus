@@ -11,4 +11,3 @@ MOVK W1, #1, LSL #16 ;
 MOVK W2, #1          ;
 locations [0:X0; 0:X1;0:X2;]
 exists (0:X0=0x20001 /\ 0:X1=0x10002 /\ 0:X2=0x20001)
-

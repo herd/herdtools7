@@ -7,4 +7,3 @@ AArch64 L008
  LDR W1,[X2,#4] ;
 locations [0:X0;0:X1;]
 forall (v[0]=1 /\ v[1]=2)
-

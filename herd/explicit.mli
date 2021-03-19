@@ -26,4 +26,3 @@ module type S = sig
 end
 
 module No : S with type explicit=unit
-

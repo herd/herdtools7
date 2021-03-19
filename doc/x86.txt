@@ -38,5 +38,3 @@ If the machine has 2 cores, try:
 
 If you are lucky, you should see that Rfi and PodWR are
 relaxed by your x86 machine.
-
-

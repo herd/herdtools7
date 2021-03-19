@@ -17,4 +17,3 @@ q
  LDR X2,[X2] | LDR X4,[X2] ;
  LDR W0,[X2] | STR X0,[X4] ;
 exists (0:X0=1)
-

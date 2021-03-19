@@ -22,7 +22,3 @@ uint64_t gettimeofday(void) {
   uint64_t freq =  get_cntfrq() ;
   return (cycles * 1000000UL)/freq ;
 }
-
-
-
-

@@ -59,4 +59,3 @@ let pp = function
   | NoVolatile -> "NoVolatile"
   | Morello -> "Morello"
   | KVM -> "kvm"
-

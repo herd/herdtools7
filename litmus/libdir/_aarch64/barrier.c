@@ -102,4 +102,3 @@ static void barrier_wait(sense_t *p) {
   }
 }
 #endif
-

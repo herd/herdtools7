@@ -6,4 +6,3 @@ AArch64 L010
  LDR W0, [X2]  | ADD X2,X2,#8  ;
                | LDR W0,[X2]   ;
 forall (0:X0 = 1 /\ 1:X0=3)
-

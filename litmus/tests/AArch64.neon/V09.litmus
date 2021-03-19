@@ -9,4 +9,3 @@ int16_t x=1;
  LDR B0, [X0], #1   ;
  STR B0, [X0]       ;
 forall (x=257)
-
