@@ -27,6 +27,39 @@ repos:
             \.expected(-failure)?$
           )
 
+    -   id: trailing-whitespace
+        # `(?x)` enables multi-line regexps: https://docs.python.org/3/library/re.html#re.X.
+        exclude: |
+          (?x)(
+            # Currently un-fixed directories & files.
+            ^(
+              LICENSE.txt|
+              catalogue/|
+              doc/|
+              gen/|
+              herd-www/|
+              herd/|
+              internal/|
+              jingle/|
+              lib/|
+              litmus/|
+              tools/
+            )|
+
+            # Vendored files for the Herd web interface.
+            ^herd-www/www/(
+              ace/|
+              BS/|
+              FileSaver.min.js|
+              fonts/|
+              viz.js|
+              whhg-font/
+            )|
+
+            # Expected files should be left verbatim.
+            \.expected(-failure)?$
+          )
+
 -   repo: local
     hooks:
     -   id: make-test
