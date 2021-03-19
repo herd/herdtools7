@@ -29,6 +29,7 @@ val loc_none : loc
 val ok_str : string
 val ok : loc
 val myok : int -> int -> loc
+val myok_proc : int -> loc
 
 
 

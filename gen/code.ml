@@ -55,6 +55,7 @@ let ok_str = "ok"
 let ok = Data ok_str
 
 let myok p n = Data (Printf.sprintf "ok%i%i" p n)
+let myok_proc p = Data (Printf.sprintf "ok%i" p)
 
 type v = int
 type proc = Proc.t
