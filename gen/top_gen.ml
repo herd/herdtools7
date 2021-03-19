@@ -727,31 +727,43 @@ let pp_pointer t =
 
 let dump_init chan inits env =
   fprintf chan "{" ;
+  let rec p_rec seen q = function
+      | [] -> seen
+      | (left,loc)::rem ->
+         let t = A.LocMap.find_opt left env in
+         let p = get_proc left in
+         if p <> q then fprintf chan "\n" else fprintf chan " " ;
+         fprintf chan "%s%s%s;"
+           (match t with
+            | None -> ""
+            | Some t -> TypBase.pp t ^ " ")
+           (A.pp_location left)
+           (match loc with
+            | Some v -> sprintf "=%s" (A.pp_initval v)
+            | None -> "") ;
+         let seen = match t with
+           | None -> seen
+           | Some _ -> A.LocSet.add left seen in
+         p_rec seen p rem in
+  let seen = p_rec A.LocSet.empty (-1) inits in
   let pp =
     A.LocMap.fold
       (fun loc t k ->
-      let open TypBase in
-      let open MachSize in
-      match t with
-      | Int|Std (Signed,Word) -> k
-      | _ -> sprintf "%s %s;" (TypBase.pp t) (A.pp_location loc)::k)
+        if A.LocSet.mem loc seen then k
+        else
+          let open TypBase in
+          let open MachSize in
+          match t with
+          | Int|Std (Signed,Word) -> k
+          | _ -> sprintf "%s %s;" (TypBase.pp t) (A.pp_location loc)::k)
       env [] in
   begin match pp with
   | [] -> ()
   | _::_ ->
-      fprintf chan "\n%s\n" (String.concat " " pp)
+     fprintf chan "\n%s\n" (String.concat " " pp)
   end ;
-  let rec p_rec q = function
-    | [] -> fprintf chan "\n}\n"
-    | (left,loc)::rem ->
-        let p = get_proc left in
-        if p <> q then fprintf chan "\n" else fprintf chan " " ;
-        fprintf chan "%s%s;" (A.pp_location left)
-          (match loc with
-          | Some v -> sprintf "=%s" (A.pp_initval v)
-          | None -> "") ;
-        p_rec p rem in
-  p_rec (-1) inits
+  fprintf chan "}\n" ;
+  ()
 
 
 let rec dump_pseudo = function
