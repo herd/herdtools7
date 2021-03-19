@@ -539,7 +539,7 @@ let max_set = IntSet.max_elt
           i,code@c,F.add_final_loc p r (Code.add_capability x v) f,st
       | Data x,Pte ->
           do_add_local_check_pte avoid_ptes st p i code f lst x
-      | Code _,_ -> i,code,f,st            
+      | Code _,_ -> i,code,f,st
     else i,code,f,st
 
 (******************************************)
@@ -554,14 +554,19 @@ let max_set = IntSet.max_elt
     in
     do_rec lab []
 
-  let gather_final_oks p lab =
+  let gather_final_oks p st lab =
+    let npairs = A.get_noks st in
+    let k =
+      if npairs > 0 then
+        [A.Loc (as_data (Code.myok_proc p)),IntSet.singleton npairs]
+      else [] in
     let oks = list_of_init_ok_locs p lab in
     let rec do_rec oks k =
       match oks with
       | [] -> k
       | ok::oks -> let k' = (ok,IntSet.singleton 1)::k
       in do_rec oks k'
-    in do_rec oks []
+    in do_rec oks k
 
   let do_memtag = O.variant Variant_gen.MemTag
   let do_morello = O.variant Variant_gen.Morello
@@ -599,7 +604,7 @@ let max_set = IntSet.max_elt
                 | Avoid|Accept|Enforce|Three|Four|Infinity ->
                     add_co_local_check_pte no_local_ptes n st p i c f in
           let i,c,st = Comp.postlude st p i c in
-          let foks = gather_final_oks p (A.current_label st) in
+          let foks = gather_final_oks p st (A.current_label st) in
           let i,cs,(ms,fs),ios = do_rec (p+1) i ns in
           let io = U.io_of_thread n in
           i,c::cs,(C.union_map m ms,F.add_int_sets (f@fs) foks),io::ios in
