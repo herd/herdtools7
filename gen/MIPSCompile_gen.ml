@@ -31,12 +31,13 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
 
 (* Utilities *)
-    let _next_reg x = MIPS.alloc_reg x
 
     let li r v =
       if (v < 0 || v > 0xffff) then
         Warn.fatal "MIPS generator cannot handle constant %i\n" v ;
       OPI (OR,r,MIPS.r0,v)
+
+    let inc r = OPI (ADD,r,r,1)
 
     let mv r1 r2 = OP (OR,r1,MIPS.r0,r2)
 
@@ -69,19 +70,26 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let emit_unroll_pair u p st r1 r2 addr =
       if u <= 0 then
         lift_code (atom r1 r2 addr []),st
-      else if u = 1 then
-        lift_code (atom r1 r2 addr [BC (EQ,tmp2,r0,Label.fail p (current_label st));]),
-      next_label_st st
+      else
+        let ok,st  = A.ok_reg st in
+        if u = 1 then
+          lift_code
+            (atom r1 r2 addr
+               [BC (EQ,tmp2,r0,Label.last p);
+                inc ok;]),
+          A.next_ok st
       else
         let out = Label.next_label "Go" in
         let rec do_rec = function
           | 1 ->
-            atom r1 r2 addr [BC (EQ,tmp2,r0,Label.fail p (current_label st));]
+             lift_code
+                (atom r1 r2 addr [BC (EQ,tmp2,r0,Label.last p)])@
+              [Label (out,Nop);Instruction (inc ok)]
           | u ->
-              atom r1 r2 addr
-                (BC (NE,tmp2,r0,out)::do_rec (u-1)) in
-        lift_code (do_rec u)@[Label (out,Nop)],
-        next_label_st st
+              lift_code
+                (atom r1 r2 addr [BC (NE,tmp2,r0,out)])@
+              do_rec (u-1) in
+        do_rec u,A.next_ok st
 
     let emit_pair = match Cfg.unrollatomic with
     | None -> emit_loop_pair
@@ -103,14 +111,14 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let _branch_eq r i lab k = do_branch MIPS.EQ r i lab k
 
     let emit_load st p init x =
-      let rA,st = _next_reg st in
+      let rA,st = A.alloc_reg st in
       let rB,init,st = U.next_init st p init x in
       rA,init,lift_code [LW (rA,0,rB)],st
 
     let emit_obs _ = emit_load
 
     let emit_obs_not_zero st p init x =
-      let rA,st = _next_reg st in
+      let rA,st = A.alloc_reg st in
       let rB,init,st = U.next_init st p init x in
       let lab = Label.next_label "L" in
       rA,init,
@@ -120,7 +128,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       st
 
     let emit_load_one st p init x =
-      let rA,st = _next_reg st in
+      let rA,st = A.alloc_reg st in
       let rB,init,st = U.next_init st p init x in
       let lab = Label.next_label "L" in
       rA,init,
@@ -129,8 +137,8 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       st
 
     let emit_load_not st p init x bne =
-      let rA,st = _next_reg st in
-      let rC,st = _next_reg st in
+      let rA,st = A.alloc_reg st in
+      let rC,st = A.alloc_reg st in
       let rB,init,st = U.next_init st p init x in
       let lab = Label.next_label "L" in
       let out = Label.next_label "L" in
@@ -153,7 +161,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
         (fun r lab k -> branch_neq r v lab k)
 
     let emit_load_idx st p init x idx =
-      let rA,st = _next_reg st in
+      let rA,st = A.alloc_reg st in
       let rB,init,st = U.next_init st p init x in
       rA,init,lift_code [OP (ADDU,tmp1,idx,rB);LW (rA,0,tmp1)],st
 
@@ -185,7 +193,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 (* FNO *)
 
     let emit_ll_reg st _p init rB =
-      let rA,st = _next_reg st in
+      let rA,st = A.alloc_reg st in
       rA,init,lift_code [LL (rA,0,rB)],st
 
     let emit_ll st p init x =
@@ -193,13 +201,13 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       emit_ll_reg st p init rB
 
     let emit_ll_idx st p init x idx =
-      let rA,st = _next_reg st in
+      let rA,st = A.alloc_reg st in
       let rB,init,st = U.next_init st p init x in
       rA,init,
       lift_code [OP (ADDU,tmp1,idx,rB); LL (rA,0,tmp1)],st
 
     let do_emit_fno st p init rA =
-      let rR,st = _next_reg st in
+      let rR,st = A.alloc_reg st in
       let cs,st = emit_pair p st rR rR rA in
       rR,init,cs,st
 
@@ -217,7 +225,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 (* STA *)
 
     let do_emit_sta st p init rA rW =
-      let rR,st = _next_reg st in
+      let rR,st = A.alloc_reg st in
       let cs,st = emit_pair p st rR rW rA in
       Some rR,init,cs,st
 
@@ -271,7 +279,7 @@ let emit_joker st init = None,init,[],st
 
     let emit_exch st p init er ew =
       let rA,init,st = U.next_init st p init (Code.as_data er.loc) in
-      let rR,st = _next_reg st in
+      let rR,st = A.alloc_reg st in
       let rW,init,csv,st = U.emit_mov st p init ew.v in
       let cs,st = emit_pair p st rR rW rA in
       rR,init,csv@cs,st
@@ -281,7 +289,7 @@ let emit_joker st init = None,init,[],st
       Some rR,init,cs,st
 
     let emit_access_dep_addr st p init e  r1 =
-      let r2,st = _next_reg st in
+      let r2,st = A.alloc_reg st in
       let c =  OP (XOR,r2,r1,r1) in
       match e.dir,e.loc  with
       | None,_ -> Warn.fatal "TODO"
@@ -310,7 +318,7 @@ let emit_joker st init = None,init,[],st
 
     let emit_exch_dep_addr st p init er ew rd =
       let rA,init,st = U.next_init st p init (as_data er.loc) in
-      let rR,st = _next_reg st in
+      let rR,st = A.alloc_reg st in
       let rW,init,csv,st = U.emit_mov st p init ew.v in
       let cs,st = emit_pair p st rR rW tmp1 in
       rR,init,
@@ -325,7 +333,7 @@ let emit_joker st init = None,init,[],st
       | None,_ -> Warn.fatal "TODO"
       | Some R,_ -> Warn.fatal "data dependency to load"
       | Some W,Data loc ->
-          let r2,st = _next_reg st in
+          let r2,st = A.alloc_reg st in
           let cs2 =
             [Instruction (OP (XOR,r2,r1,r1)) ;
              Instruction (OPI (ADDU,r2,r2,e.v)) ; ] in
@@ -380,9 +388,9 @@ let emit_joker st init = None,init,[],st
 
 (* Check load *)
     let do_check_load p st r e =
-      let lab = Label.exit p (current_label st) in
-      (fun k -> lift_code (branch_neq r e.v lab [])@k),
-      next_label_st st
+      let ok,st = A.ok_reg st in
+      (fun k -> lift_code (branch_neq r e.v (Label.last p) [inc ok])@k),
+      A.next_ok st
 
     let check_load  p r e init st =
       let cs,st = do_check_load p st r e in
@@ -390,45 +398,7 @@ let emit_joker st init = None,init,[],st
 
 (* Postlude *)
 
-    let list_of_fail_labels p st =
-      let rec do_rec i k =
-        match i with
-        | 0 -> k
-        | n -> let k' = Instruction (B (Label.exit p n))::
-                        Label (Label.fail p n,Nop)::k
-               in do_rec (i-1) k'
-      in
-    do_rec (current_label st) []
-
-    let list_of_exit_labels p st =
-      let rec do_rec i k =
-        match i with
-        | 0 -> k
-        | n -> let k' = Label (Label.exit p n,Nop)::k
-               in do_rec (i-1) k'
-      in
-    do_rec (current_label st) []
-
-   let does_fail p st =
-     let l = list_of_fail_labels p st in
-     match l with [] -> false | _ -> true
-
-   let does_exit p st =
-     let l = list_of_exit_labels p st in
-     match l with [] -> false | _ -> true
-
-    let postlude st p init cs =
-      if does_fail p st then
-        let init,okcs,st = emit_store st p init (as_data Code.ok) 0 in
-        init,
-        cs@
-        (list_of_fail_labels p st)@
-        okcs@
-        (list_of_exit_labels p st),
-        st
-      else if does_exit p st then
-        init,cs@(list_of_exit_labels p st),st
-      else init,cs,st
+    let postlude = mk_postlude emit_store_reg
 
     let get_xstore_results _ = []
 
