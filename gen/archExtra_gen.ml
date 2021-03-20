@@ -67,11 +67,6 @@ module type S = sig
   val alloc_trashed_reg : string -> st -> arch_reg * st
   val alloc_loop_idx : string -> st -> arch_reg * st
 
-  val current_label : st -> int
-  val next_label : st -> int
-
-  val next_label_st : st -> st
-
   type special
   val alloc_special : st -> special * st
 
@@ -175,7 +170,6 @@ with type arch_reg = I.arch_reg and type special = I.special
   type st =
       { regs : arch_reg list ;
         map  : arch_reg StringMap.t ;
-        label : int ;
         specials : I.special list ;
         noks : int ; }
 
@@ -183,7 +177,6 @@ with type arch_reg = I.arch_reg and type special = I.special
   let st0 =
     { regs = I.free_registers;
       map = StringMap.empty;
-      label = 0;
       specials = I.specials;
       noks = 0; }
 
@@ -208,10 +201,6 @@ with type arch_reg = I.arch_reg and type special = I.special
 
   let alloc_trashed_reg k st = do_alloc_trashed_reg alloc_reg k st
   and alloc_loop_idx k st = do_alloc_trashed_reg alloc_last_reg k st
-
-  let current_label st = st.label
-  let next_label st = st.label+1
-  let next_label_st st = { st with label = st.label+1; }
 
   type special = I.special
   let alloc_special st = match st.specials with
