@@ -55,7 +55,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       match Cfg.typ with
       | Std (_,MachSize.Quad) -> AV.Double
       | Int |Std (_,(Word|Short|Byte)) -> AV.Word
-      | Pteval                                        
+      | Pteval
       | Std (_,MachSize.S128) -> assert false
 
     let bne r1 r2 lab =  AV.Bcc (AV.NE,r1,r2,lab)
@@ -70,6 +70,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     let addiw r1 r2 k = AV.OpIW (AV.ADDIW,r1,r2,k)
     let subiw r1 r2 k = addiw r1 r2 (-k)
     let addi r1 r2 k = AV.OpI (AV.ADDI,r1,r2,k)
+    let incr r = addi r r 1
     let _subi r1 r2 k = addi r1 r2 (-k)
 
     let amoswap mo r1 r2 r3 = AV.Amo (AV.AMOSWAP,wloc,mo,r1,r2,r3)
@@ -284,10 +285,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       cs,st
 
     let emit_one_pair mo1 mo2 p st r rR rW rA k =
+      let ok,st = A.ok_reg st in
       Instruction (lr mo1 rR rA)::
       Instruction (sc mo2 r rW rA)::
-      Instruction (cbnz r (Label.fail p (current_label st)))::k,
-      next_label_st st
+      Instruction (cbnz r (Label.last p))::
+      k (Instruction (incr ok)),
+      A.next_ok st
 
     let emit_unroll_pair u mo1 mo2 p st rR rW rA =
       if u <= 0 then
@@ -295,21 +298,23 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
         lift_code [lr mo1 rR rA; sc mo2 r rW rA;],st
       else if u = 1 then
         let r,st = tempo1 st in
-        emit_one_pair mo1 mo2 p st r rR rW rA []
+        emit_one_pair mo1 mo2 p st r rR rW rA (fun i -> [i])
       else
         let r,st = tempo1 st in
         let out = Label.next_label "Go" in
         let rec do_rec = function
           | 1 ->
-              let cs,_ = emit_one_pair
-                mo1 mo2 p st r rR rW rA [Label (out,Nop)] in
-              cs
+              let cs,st = emit_one_pair
+                mo1 mo2 p st r rR rW rA
+                (fun i -> [Label (out,Nop);i]) in
+              cs,st
           | u ->
-              (Instruction (lr mo1 rR rA)::
-              Instruction (sc mo2 r rW rA)::
-              Instruction (cbz r out)::
-              do_rec (u-1)) in
-        do_rec u,st
+             let cs,st = do_rec (u-1) in
+             Instruction (lr mo1 rR rA)::
+             Instruction (sc mo2 r rW rA)::
+             Instruction (cbz r out)::cs,
+             st in
+        do_rec u
 
     let emit_pair = match Cfg.unrollatomic with
     | None -> emit_loop_pair
@@ -549,54 +554,21 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       Some r,init,cs,st
 
     let check_load p r e init st =
-      let lab = Label.exit p (current_label st) in
-      let st = next_label_st st in
+      let ok,st = A.ok_reg st in
       let rI,init,ci,st = U.emit_mov st p init e.v in
-      init,(fun k -> ci@(Instruction (bne r rI lab))::k),st
+      init,
+      (fun k ->
+        ci@
+        (Instruction (bne r rI (Label.last p))::
+        Instruction (incr ok)::k)),
+      A.next_ok st
 
 (* Postlude *)
 
-    let list_of_fail_labels p st =
-      let rec do_rec i k =
-        match i with
-        | 0 -> k
-        | n -> let k' = Instruction (RISCV.J (Label.exit p n))::
-                        Label (Label.fail p n,Nop)::k
-               in do_rec (i-1) k'
-      in
-    do_rec (current_label st) []
-
-    let list_of_exit_labels p st =
-      let rec do_rec i k =
-        match i with
-        | 0 -> k
-        | n -> let k' = Label (Label.exit p n,Nop)::k
-               in do_rec (i-1) k'
-      in
-    do_rec (current_label st) []
-
-   let does_fail p st =
-     let l = list_of_fail_labels p st in
-     match l with [] -> false | _ -> true
-
-   let does_exit p st =
-     let l = list_of_exit_labels p st in
-     match l with [] -> false | _ -> true
-
-   let postlude st p init cs =
-      if does_fail p st then
-        let init,okcs,st = STORE.emit_store AV.Rlx st p init Code.ok_str 0 in
-        init,
-        cs@
-        (list_of_fail_labels p st)@
-        okcs@
-        (list_of_exit_labels p st),
-        st
-      else if does_exit p st then
-        init,cs@(list_of_exit_labels p st),st
-      else
-        init,cs,st
-
+   let postlude =
+     mk_postlude
+       (fun st p init loc r ->
+         STORE.emit_store_reg AV.Rlx st p init loc r)
 
     let get_strx_result k = function
       | StoreConditional (_,_,r,_,_)  -> r::k
