@@ -31,10 +31,16 @@ struct
 
   let next_reg x = alloc_reg x
 
+
   let emit_store addr v =
     I_MOV
       (Effaddr_rm32 (Rm32_abs (ParsedConstant.nameToV addr)),
        Operand_immediate v)
+
+  let emit_store_reg addr r =
+    I_MOV
+      (Effaddr_rm32 (Rm32_abs (ParsedConstant.nameToV addr)),
+       Operand_effaddr (Effaddr_rm32 (Rm32_reg r)))
 
 
   let emit_sta addr r v =
@@ -138,44 +144,30 @@ struct
     let rR,init,cs,st = emit_exch st p init er ew in
     Some rR,init,cs,st
 
-(*
-  let emit_access_dep st p init e r1 =
-    let r2,st = next_reg st in
-    let init = (Reg (p,r2),e.loc)::init in
-    let r3,st = next_reg st in
-    let c =
-      [emit_move r3 r1 ;
-       emit_xor r3 r3 ;
-       emit_add r2 r3 ;] in
-    match e.dir with
-  | R ->
-      let rA,st = next_reg st in
-      Some rA,init,c@[emit_load_ind r2 rA],st
-  | W ->
-      None,init,c@[emit_store_ind r2 e.v],st
-*)
-
   let emit_access_dep _st _p _init _e _r1 =
     Warn.fatal "Dependent access is irrelevant for X86"
 
   let emit_exch_dep _st =
     Warn.fatal "Dependent access is irrelevant for X86"
 
-  let emit_rmw_dep () =  emit_exch_dep
+  let emit_rmw_dep () = emit_exch_dep
 
-  let emit_fence st _ init _ f = match f with 
+  let emit_fence st _ init _ f = match f with
     | MFence -> init,[X86.Instruction I_MFENCE],st
 
   let stronger_fence = MFence
 
+  let emit_inc r = I_INC (Effaddr_rm32 (Rm32_reg r))
+
 (* Check load *)
   let do_check_load p st r e =
-    let lab = Label.exit p (current_label st) in
+    let ok,st = A.ok_reg st in
     (fun k ->
       Instruction (emit_cmp_int_ins r e.C.v)::
-      Instruction (emit_jne_ins lab)::
+      Instruction (emit_jne_ins (Label.last p))::
+      Instruction (emit_inc ok)::
       k),
-    next_label_st st
+    A.next_ok st
 
   let check_load  p r e init st =
     let cs,st = do_check_load p st r e in
@@ -183,29 +175,9 @@ struct
 
 (* Postlude *)
 
-  let does_jump lab cs =
-      List.exists
-        (fun i -> match i with
-        | Instruction (I_JMP lab0|I_JCC (_,lab0)) ->
-            (lab0:string) = lab
-        | _ -> false)
-        cs
-
-  let does_exit p cs st =  does_jump (Label.exit p (current_label st)) cs
-
-    let list_of_exit_labels p st =
-      let rec do_rec i k =
-        match i with
-        | 0 -> k
-        | n -> let k' = Label (Label.exit p n,Nop)::k
-               in do_rec (i-1) k'
-      in
-    do_rec (current_label st) []
-
-  let postlude st p init cs =
-    if does_exit p cs st then
-      init,cs@(list_of_exit_labels p st),st
-    else init,cs,st
+  let postlude =
+    mk_postlude
+      (fun st _p init loc r -> init,[Instruction (emit_store_reg loc r)],st)
 
   let get_xstore_results _ = []
 
