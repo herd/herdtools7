@@ -570,7 +570,7 @@ let max_set = IntSet.max_elt
     let loc_writes = U.comp_loc_writes n in
 
     let rec do_rec p i = function
-      | [] -> List.rev i,[],(C.EventMap.empty,[]),[]
+      | [] -> List.rev i,[],(C.EventMap.empty,[]),[],A.LocMap.empty
       | n::ns ->
           let i,c,(m,f),st =
             compile_proc Misc.identity false loc_writes A.st0 p No i n in
@@ -588,10 +588,22 @@ let max_set = IntSet.max_elt
                 | Avoid|Accept|Enforce|Three|Four|Infinity ->
                     add_co_local_check_pte no_local_ptes n st p i c f in
           let i,c,st = Comp.postlude st p i c in
+          let env_p = A.get_env st in
           let foks = gather_final_oks p st in
-          let i,cs,(ms,fs),ios = do_rec (p+1) i ns in
+          let i,cs,(ms,fs),ios,env = do_rec (p+1) i ns in
           let io = U.io_of_thread n in
-          i,c::cs,(C.union_map m ms,F.add_int_sets (f@fs) foks),io::ios in
+          i,c::cs,
+          (C.union_map m ms,F.add_int_sets (f@fs) foks),
+          io::ios,
+          A.LocMap.union_std
+            (fun loc t1 t2 ->
+               if TypBase.equal t1 t2 then Some t1
+               else
+                 Warn.fatal
+                   "Location %s defined with contradictory types %s and %s"
+                   (A.pp_location loc)
+                   (TypBase.pp t1) (TypBase.pp t2))
+          env_p env in
     let i,obsc,f =
       match O.cond with
       | Unicond -> [],[],[]
@@ -602,7 +614,7 @@ let max_set = IntSet.max_elt
     | [],_ -> Warn.fatal "No proc"
 (*    | [_],Cycle -> Warn.fatal "One proc" *)
     | _,_ ->
-        let i,c,(m,f),ios =
+        let i,c,(m,f),ios,env =
           if
             let len =  List.length splitted in
             O.nprocs <= 0 ||
@@ -610,29 +622,23 @@ let max_set = IntSet.max_elt
           then
             let ess = List.map (List.map (fun n -> n.C.edge)) splitted in
             if ok ess then
-              let i,cs,(m,fs),ios = do_rec (List.length obsc) i splitted in
-              if
-                List.exists
-                  (function
-                    | (_,Some (A.S loc)) -> (loc:string) = Code.ok_str
-                    | (_,(Some (A.P _)|None)) -> false)
-                  i
-              then
-                (A.Loc Code.ok_str,Some (A.S "1"))::i,obsc@cs,
-                (m,F.cons_int_set
-                   (A.Loc Code.ok_str,IntSet.singleton 1) f@fs),ios
-              else
-                i,obsc@cs,(m,f@fs),ios
+              let i,cs,(m,fs),ios,env =
+                do_rec (List.length obsc) i splitted in
+              i,obsc@cs,(m,f@fs),ios,env
             else Warn.fatal "Last minute check"
           else  Warn.fatal "Too many procs" in
         let env =
           let ptes = A.LocSet.of_list (F.extract_ptes f) in
           List.fold_left
             (fun m (loc,_) ->
-              let t =
-                if A.LocSet.mem loc ptes then TypBase.pteval_t else O.typ in
-              A.LocMap.add loc t m)
-            A.LocMap.empty f in
+              try
+                (* Do not override previous typing bindings *)
+                ignore (A.LocMap.find loc m); m
+              with Not_found ->
+                let t =
+                  if A.LocSet.mem loc ptes then TypBase.pteval_t else O.typ in
+                A.LocMap.add loc t m)
+            env f in
         let globals = C.get_globals n in
         let typ = if do_morello
           then TypBase.Std (TypBase.Unsigned,MachSize.S128)

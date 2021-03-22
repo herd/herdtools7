@@ -69,17 +69,19 @@ module Make(C:Config) (A:Arch_gen.S) = struct
   module C = Cycle.Make(Conf)(E)
 (* Big constant *)
   let kbig = 128
-
 (* Postlude *)
 
   let mk_postlude emit_store_reg st p init cs =
     if A.get_noks st > 0  then
       let ok,st = A.ok_reg st in
+(* Add explict `int` type for `ok<n>` variables *)
       let ok_loc = Code.as_data (Code.myok_proc p) in
+      let st = A.add_type (A.Loc ok_loc) TypBase.Int st in
       let init,cs_store,st = emit_store_reg st p init ok_loc ok in
       let csok = A.Label (Label.last p,A.Nop)::cs_store in
-(* Explicit initialisation implies int type *)
+(* Add explict initialvalue of zero for `ok<n>` variables *)
       (A.Loc ok_loc,Some (A.S "0"))::init,cs@csok,st
     else
       init,cs,st
+
 end
