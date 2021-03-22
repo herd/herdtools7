@@ -97,6 +97,10 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
                 Effaddr_rm64 (Rm64_reg r1),
                 Operand_effaddr (Effaddr_rm64 (Rm64_reg r2)))
 
+    let emit_inc sz r =
+      let r = change_size_reg r (size_to_reg_size sz) in
+      I_EFF (I_INC,size_to_inst_size sz,Effaddr_rm64 (Rm64_reg r))
+
     module Extra = struct
       let use_symbolic = false
       type reg = X86_64.reg
@@ -125,6 +129,18 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let emit_store_nti_ins_reg sz o rB rC =
       I_MOVNTI (sz,Effaddr_rm64 (Rm64_deref (rB,o)),rC)
 
+
+    let emit_store_mixed_reg sz o st p init addr rC =
+      let isz = size_to_inst_size sz in
+      let rB,init,st =
+        if o <> 0 then
+          let r,i,s = U.next_init st p init addr in
+          let r = change_size_reg r R64b in
+          Rm64_deref (r,o),i,s
+        else
+          Rm64_abs (ParsedConstant.nameToV addr),init,st in
+      let rC = change_size_reg rC (size_to_reg_size sz) in
+      init,pseudo [emit_store_ins_reg isz o rB rC],st
 
     let emit_store_mixed sz o st p init addr v =
       let isz = size_to_inst_size sz in
@@ -376,12 +392,13 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     (* Check load *)
     let do_check_load p st r e =
-      let lab = Label.exit p (current_label st) in
+      let ok,st = A.ok_reg st in
       (fun k ->
         Instruction (emit_cmp_int_ins r e.C.v)::
-          Instruction (emit_jne_ins lab)::
-            k),
-      next_label_st st
+        Instruction (emit_jne_ins (Label.last p))::
+        Instruction (emit_inc Word ok)::
+        k),
+      A.next_ok st
 
     let check_load  p r e init st =
       let cs,st = do_check_load p st r e in
@@ -389,29 +406,10 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     (* Postlude *)
 
-    let does_jump lab cs =
-      List.exists
-        (fun i -> match i with
-                  | Instruction (I_JMP lab0|I_JCC (_,lab0)) ->
-                     (lab0:string) = lab
-                  | _ -> false)
-        cs
-
-    let does_exit p cs st =  does_jump (Label.exit p (current_label st)) cs
-
-    let list_of_exit_labels p st =
-      let rec do_rec i k =
-        match i with
-        | 0 -> k
-        | n -> let k' = Label (Label.exit p n,Nop)::k
-               in do_rec (i-1) k'
-      in
-      do_rec (current_label st) []
-
-    let postlude st p init cs =
-      if does_exit p cs st then
-        init,cs@(list_of_exit_labels p st),st
-      else init,cs,st
+    let postlude =
+      mk_postlude
+        (fun st p init loc r ->
+          emit_store_mixed_reg Word 0 st p init loc r)
 
     let get_xstore_results _ = []
 

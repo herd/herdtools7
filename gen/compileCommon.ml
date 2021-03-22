@@ -43,6 +43,7 @@ module type S = sig
   and type edge = E.edge
 
   module C : Cycle.S with type fence = A.fence and type edge=E.edge and type atom = A.atom
+
 end
 
 module Make(C:Config) (A:Arch_gen.S) = struct
@@ -68,4 +69,17 @@ module Make(C:Config) (A:Arch_gen.S) = struct
   module C = Cycle.Make(Conf)(E)
 (* Big constant *)
   let kbig = 128
+
+(* Postlude *)
+
+  let mk_postlude emit_store_reg st p init cs =
+    if A.get_noks st > 0  then
+      let ok,st = A.ok_reg st in
+      let ok_loc = Code.as_data (Code.myok_proc p) in
+      let init,cs_store,st = emit_store_reg st p init ok_loc ok in
+      let csok = A.Label (Label.last p,A.Nop)::cs_store in
+(* Explicit initialisation implies int type *)
+      (A.Loc ok_loc,Some (A.S "0"))::init,cs@csok,st
+    else
+      init,cs,st
 end

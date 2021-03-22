@@ -65,6 +65,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
          I_BNE (lab);
        ],st
 
+    let emit_one_pair p st r1 r2 addr k =
+      let ok,st = A.ok_reg st in
+        (lift_code
+          [I_LDREX (r1,addr);
+           I_STREX (tempo2,r2,addr,AL);
+           I_CMPI (tempo2,0);
+           I_BNE (Label.last p);])
+        @k [Instruction (I_ADD (DontSetFlags,ok,ok,1));],
+        A.next_ok st
+
     let emit_unroll_pair u p st r1 r2 addr =
       if u <= 0 then
         lift_code
@@ -72,28 +82,20 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
            I_STREX (tempo2,r2,addr,AL);],
         st
       else if u = 1 then
-        lift_code
-          [I_LDREX (r1,addr);
-           I_STREX (tempo2,r2,addr,AL);
-           I_CMPI (tempo2,0);
-           I_BNE (Label.fail p (current_label st));],
-        next_label_st st
+        emit_one_pair p st r1 r2 addr Misc.identity
       else
         let out = Label.next_label "Go" in
         let rec do_rec = function
           | 1 ->
-              [I_LDREX (r1,addr);
+             emit_one_pair p st r1 r2 addr (fun k -> Label (out,Nop)::k)
+          | u ->
+             let cs,st = do_rec (u-1) in
+             lift_code
+               [I_LDREX (r1,addr);
                I_STREX (tempo2,r2,addr,AL);
                I_CMPI (tempo2,0);
-               I_BNE (Label.fail p (current_label st));]
-          | u ->
-              I_LDREX (r1,addr)::
-              I_STREX (tempo2,r2,addr,AL)::
-              I_CMPI (tempo2,0)::
-              I_BEQ (out)::
-              do_rec (u-1) in
-        lift_code (do_rec u)@[Label (out,Nop)],
-        next_label_st st
+               I_BEQ out;]@cs,st in
+        do_rec u
 
     let emit_pair = match Cfg.unrollatomic with
     | None -> emit_loop_pair
@@ -179,13 +181,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       init,csi@cs,st
 
     let emit_one_strex_reg st p init rA v =
+      let ok,st = A.ok_reg st in
       let rV,init,csi,st = U.emit_mov st p init v in
       init,
       csi@lift_code
         [I_STREX (tempo2,rV,rA,AL);
          I_CMPI (tempo2,0);
-         I_BNE (Label.fail p (current_label st));],
-      next_label_st st
+         I_BNE (Label.last p);
+         I_ADD (DontSetFlags,ok,ok,1);],
+      A.next_ok st
 
     let emit_ldrex_reg st _p init rB =
       let rA,st = next_reg st in
@@ -392,58 +396,21 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let stronger_fence = DMB SY
 
     let do_check_load p st r e =
-      let lab = Label.exit p (current_label st) in
+      let ok,st = A.ok_reg st in
       (fun k ->
         Instruction (I_CMPI (r,e.v))::
-        Instruction (I_BNE lab)::
+        Instruction (I_BNE (Label.last p))::
+        Instruction (I_ADD (DontSetFlags,ok,ok,1))::
         k),
-      next_label_st st
+      A.next_ok st
 
-    let check_load  p r e init st =
+    let check_load p r e init st =
       let cs,st = do_check_load p st r e in
       init,cs,st
 
 (* Postlude *)
 
-    let list_of_fail_labels p st =
-      let rec do_rec i k =
-        match i with
-        | 0 -> k
-        | n -> let k' = Instruction (I_B (Label.exit p n))::
-                        Label (Label.fail p n,Nop)::k
-               in do_rec (i-1) k'
-      in
-    do_rec (current_label st) []
-
-    let list_of_exit_labels p st =
-      let rec do_rec i k =
-        match i with
-        | 0 -> k
-        | n -> let k' = Label (Label.exit p n,Nop)::k
-               in do_rec (i-1) k'
-      in
-    do_rec (current_label st) []
-
-   let does_fail p st =
-     let l = list_of_fail_labels p st in
-     match l with [] -> false | _ -> true
-
-   let does_exit p st =
-     let l = list_of_exit_labels p st in
-     match l with [] -> false | _ -> true
-
-    let postlude st p init cs =
-      if does_fail p st then
-        let init,okcs,st = emit_store st p init (as_data Code.ok) 0 in
-        init,
-        cs@
-        (list_of_fail_labels p st)@
-        okcs@
-        (list_of_exit_labels p st),
-        st
-      else if does_exit p st then
-        init,cs@(list_of_exit_labels p st),st
-      else init,cs,st
+    let postlude = mk_postlude emit_store_reg
 
     let get_xstore_results _ = []
 

@@ -31,8 +31,7 @@ let next_label s =
   incr lab_count ;
   sprintf "%s%02i" s x
 
-let fail p i = sprintf "Fail%i%i" p i
-and exit p i = sprintf "Exit%i%i" p i
+let last p = sprintf "End%i" p
 
 type next = Any | Next | To of t
 

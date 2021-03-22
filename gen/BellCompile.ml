@@ -64,14 +64,7 @@ module Make(Cfg:Config)(BO:BellArch_gen.Config) : XXXCompile_gen.S =
     let addk r1 r2 k = mov r1 (OP (Add,IAR_roa (Rega r2),IAR_imm k))
     let andk r1 r2 k = mov r1 (OP (And,IAR_roa (Rega r2),IAR_imm k))
     let branchcc reg lab = Pbranch (Some reg,lab,[])
-
-
-(*    let addi r1 r2 i = Add(r1,IAR_roa (Rega r2),IAR_imm i)
-    let subi r1 r2 i = Add(r1,IAR_roa (Rega r2),IAR_imm (-i))
-    let xor r1 r2 r3 = Xor(r1,IAR_roa (Rega r2),IAR_roa (Rega r3))
-
-    let exch_tagged r x v a =
-      Prmw2_op (r,Abs (Constant.Symbolic x),Imm v,RMWExch,a) *)
+    let inc r = Pmov (r,OP (Add,IAR_roa (Rega r),IAR_imm 1))
 
 (**********)
 (* Export *)
@@ -259,93 +252,46 @@ let emit_rmw _ = assert false
     | Some J,Data _ -> emit_joker st init
     | _,Code _ -> Warn.fatal "No code location for Bell"
 
-let emit_access_ctrl st p init e r1 v1 =
-  if Cfg.realdep then
-    let lab =  Label.exit p (current_label st) in
-    let st = next_label_st st in
-    let rd,st = next_reg st in
-    let c =
-       [Instruction (movne rd r1 v1) ;
-       Instruction (branchcc rd lab) ;] in
-    let ropt,init,cs,st = emit_access st p init e in
-    ropt,init,c@cs,st
-  else
-    let lab = Label.next_label "LC" in
-    let rd,st = next_reg st in
-    let c =
-      [Instruction (moveq rd r1 0) ;
-       Instruction (branchcc rd lab) ;
-       Label (lab,Nop);] in
-    let ropt,init,cs,st = emit_access st p init e in
-    ropt,init,c@cs,st
+    let emit_access_ctrl st p init e r1 v1 =
+      if Cfg.realdep then
+        let lab =  Label.last p in
+        let ok,st = A.ok_reg st in
+        let st = A.next_ok st in
+        let rd,st = next_reg st in
+        let c =
+          [Instruction (movne rd r1 v1) ;
+           Instruction (branchcc rd lab) ;
+           Instruction (inc ok);] in
+        let ropt,init,cs,st = emit_access st p init e in
+        ropt,init,c@cs,st
+      else
+        let lab = Label.next_label "LC" in
+        let rd,st = next_reg st in
+        let c =
+          [Instruction (moveq rd r1 0) ;
+           Instruction (branchcc rd lab) ;
+           Label (lab,Nop);] in
+        let ropt,init,cs,st = emit_access st p init e in
+        ropt,init,c@cs,st
 
-let emit_access_dep  st p init e dp r1 n1 =
-  let v1 = n1.C.evt.C.v in
-  match dp with
-  | ADDR -> emit_access_dep_addr st p init e r1
-  | DATA -> emit_access_dep_data st p init e r1
-  | CTRL -> emit_access_ctrl st p init e r1 v1
+    let emit_access_dep  st p init e dp r1 n1 =
+      let v1 = n1.C.evt.C.v in
+      match dp with
+      | ADDR -> emit_access_dep_addr st p init e r1
+      | DATA -> emit_access_dep_data st p init e r1
+      | CTRL -> emit_access_ctrl st p init e r1 v1
 
-let emit_rmw_dep _ = assert false
-
-(*jade: ca me parait un peu fort d'avoir ca required non?*)
-
-(*    let emit_access_dep_addr st p init e  rd =
-      let r2,st = next_reg st in
-      let c =  xor r2 rd rd in
-      match e.dir,e.atom with
-      | R,None ->
-          let r,init,cs,st = emit_load_idx st p init e.loc r2 in
-          Some r,init, Instruction c::cs,st
-      | R,Some a ->
-          let r,init,cs,st = emit_load_idx_tagged st p init e.loc r2 a in
-          Some r,init, Instruction c::cs,st
-      | W,None ->
-          let init,cs,st = emit_store_idx st p init e.loc e.v r2 in
-          None,init, Instruction c::cs,st
-      | W,Some a ->
-          let init,cs,st = emit_store_idx_tagged st p init e.loc e.v r2 a in
-          None,init, Instruction c::cs,st
-
-    let emit_access_dep_data st p init e  r1 =
-      match e.dir with
-      | R -> Warn.fatal "data dependency to load"
-      | W ->
-          let r2,st = next_reg st in
-          let cs2 =
-            [Instruction (xor r2 r1 r1) ;
-             Instruction (addi r2 r2 e.v) ; ] in
-          begin match e.atom with
-          | None ->
-              let init,cs,st = emit_store_reg st p init e.loc r2 in
-              None,init,cs2@cs,st
-          | Some a ->
-              let init,cs,st = emit_store_reg_tagged st p init e.loc r2 a in
-              None,init,cs2@cs,st
-          end
-
-    let emit_access_ctrl st p init e r1 =
-      let lab = Label.next_label "LC" in
-      let c =
-        [Instruction (bcci Eq r1 0 lab); Label (lab,Nop);] in
-      let ropt,init,cs,st = emit_access st p init e in
-      ropt,init,c@cs,st
-
-    let emit_access_dep st p init e dp r1 = match dp with
-    | ADDR -> emit_access_dep_addr st p init e r1
-    | DATA -> emit_access_dep_data st p init e r1
-    | CTRL -> emit_access_ctrl st p init e r1
-
-
-    let emit_exch_dep _ = assert false *)
+    let emit_rmw_dep _ = assert false
 
 (* Check load *)
+
     let do_check_load p st r e =
-      let lab = Label.exit p (current_label st) in
+      let ok,st = A.ok_reg st in
       (fun k ->
         Instruction (movne tempo1 r e.v)::
-        Instruction (branchcc tempo1 lab)::k),
-        next_label_st st
+        Instruction (branchcc tempo1 (Label.last p))::
+        Instruction (inc ok)::k),
+      A.next_ok st
 
     let check_load  p r e init st =
       let cs,st = do_check_load p st r e in
@@ -353,29 +299,7 @@ let emit_rmw_dep _ = assert false
 
 (* Postlude for adding exit label *)
 
-    let does_jump lab cs =
-      List.exists
-        (fun i -> match i with
-        | Instruction (Pbranch (_,lab0,_)) ->
-            (lab0:string) = lab
-        | _ -> false)
-        cs
-
-    let does_exit p cs st = does_jump (Label.exit p (current_label st)) cs
-
-    let list_of_exit_labels p st =
-      let rec do_rec i k =
-        match i with
-        | 0 -> k
-        | n -> let k' = Label (Label.exit p n,Nop)::k
-               in do_rec (i-1) k'
-      in
-    do_rec (current_label st) []
-
-    let postlude st p init cs =
-      if does_exit p cs st then
-       init,cs@(list_of_exit_labels p st),st
-      else init,cs,st
+    let postlude = mk_postlude emit_store_reg
 
     let get_xstore_results _ = []
 
