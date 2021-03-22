@@ -33,6 +33,7 @@ val get_off : sz -> sz -> int list
 val get_off_reduced : sz -> sz -> int list
 
 val compare : sz -> sz -> int
+val equal : sz -> sz -> bool
 
 (* Smaller of two *)
 val less_than_or_equal : sz -> sz -> bool
