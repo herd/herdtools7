@@ -159,6 +159,8 @@ let compare sz1 sz2 = match sz1,sz2 with
 | (S128,Quad)
     -> 1
 
+let equal sz1 sz2 = compare sz1 sz2 = 0
+
 let less_than_or_equal sz1 sz2 = compare sz1 sz2 <= 0
 
 module Set =
