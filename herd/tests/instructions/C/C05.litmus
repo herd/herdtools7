@@ -1,0 +1,12 @@
+C C05
+Variant=S128
+
+{
+__int128_t x=1;
+}
+
+P0 (__int128_t *x) {
+ *x = 0;
+}
+
+forall ([x]=0)

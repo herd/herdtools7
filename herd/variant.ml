@@ -78,6 +78,8 @@ type t =
   | T of int
 (* ASL processing *)
   | ASL
+(* Signed Int128 types *)
+  | S128
 
 
 let tags =
@@ -87,7 +89,7 @@ let tags =
     Precision.tags @
    ["toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
-   "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"; "asl"]
+   "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"; "asl"; "S128"]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -128,6 +130,7 @@ let parse s = match Misc.lowercase s with
 | "cos-opt" -> Some CosOpt
 | "test" -> Some Test
 | "asl" -> Some ASL
+| "s128" -> Some S128
 | s ->
    begin
      match Precision.parse s with
@@ -184,6 +187,7 @@ let pp = function
   | Test -> "test"
   | T n -> Printf.sprintf "T%02i" n
   | ASL -> "ASL"
+  | S128 -> "S128"
 
 let compare = compare
 let equal v1 v2 = compare v1 v2 = 0

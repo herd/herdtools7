@@ -38,6 +38,8 @@ let tr_name s = match s with
 | "uint32_t"
 | "int64_t"
 | "uint64_t"
+| "__int128_t" (* this is the syntax of this type in llvm and gcc *)
+| "__uint128_t" (* same here*)
 | "intptr_t"
 | "uintptr_t"
 (* Mutexes *)
@@ -96,7 +98,7 @@ let tr_name s = match s with
 
 let digit = ['0'-'9']
 let alpha = ['a'-'z' 'A'-'Z']
-let name = (alpha | '_') (alpha|digit|'_')*
+let name = (alpha | '_')+ (alpha|digit|'_')*
 let num = digit+
 
 rule token deep = parse

@@ -1,0 +1,10 @@
+Test C05 Required
+States 1
+[x]=0x0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([x]=0x0)
+Observation C05 Always 1 0
+Hash=db772c002d727bd43e0889f42282f9f6
+

@@ -76,6 +76,8 @@ type t =
   | T of int
 (* ASL Processing *)
   | ASL
+(* Signed Int128 types *)
+  | S128
 
 val compare : t -> t -> int
 val equal : t -> t -> bool

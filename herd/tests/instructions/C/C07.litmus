@@ -1,0 +1,10 @@
+C C07
+
+Variant=S128
+{}
+
+P0 (int128_t *x) {
+  int128_t r0 = *x;
+}
+
+forall 0:r0 = 0

@@ -14,63 +14,50 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Unsigned integer types in pure OCaml. *)
+(** Signed 128-bit integer types in pure OCaml. *)
 
-module type S = sig
-  type t
+module Int128 = struct
+  include BaseUint128
 
-  val num_bits : int
+  let max_int = Int64.max_int,BaseUint64.max_int
 
-  val zero : t
-  val one : t
-  val max_int : t
+  let chsgn a = add (lognot a) one
 
-  val add : t -> t -> t
-  val sub : t -> t -> t
-  val mul : t -> t -> t
-  val div : t -> t -> t
-  val rem : t -> t -> t
+  let minus_one = chsgn one
 
-  val pred : t -> t
-  val succ : t -> t
+  let is_neg (ah,_) = BaseUint64.has_top_bit_set ah
 
-  val logand : t -> t -> t
-  val logor : t -> t -> t
-  val logxor : t -> t -> t
-  val lognot : t -> t
+  let compare a b =
+    match is_neg a,is_neg b with
+    | true,true -> compare b a
+    | false,false -> compare a b
+    | true,false -> -1
+    | false,true -> +1
 
-  val shift_left : t -> int -> t
-  val shift_right : t -> int -> t
-  val shift_right_logical : t -> int -> t
+  let div_and_rem a b =
+    if is_neg b then raise (Failure "division by negative number")
+    else if is_neg a then
+(* Signed euclidian division, with remainder in [0..b) *)
+      let a = chsgn a in
+      let q,r = div_and_rem a b in
+      if equal r zero then chsgn q,r
+      else chsgn (succ q),sub b r
+    else div_and_rem a b
 
-  val leading_zeros : t -> int
+  let div a b =
+    let q,_ = div_and_rem a b in q
 
-  val compare : t -> t -> int
-  val equal : t -> t -> bool
+  let rem a b =
+    let _,r = div_and_rem a b in r
 
-  val to_int : t -> int
-  val of_int : int -> t
+  let to_string a =
+    if is_neg a then "-" ^ to_string (chsgn a)
+    else to_string a
 
-  val to_string : t -> string
-  val to_string_hex : t -> string
-  val of_string : string -> t
+  let of_string raw =
+    let len = String.length raw in
+    if len > 0 && raw.[0] = '-' then
+      chsgn (of_string (String.sub raw 1 (len-1)))
+    else of_string raw
+
 end
-
-module Uint8 = struct
-  type t = Int64.t
-  let max_int = 0xFFL
-end
-
-module Uint16 = struct
-  type t = Int64.t
-  let max_int = 0xFFFFL
-end
-
-module Uint32 = struct
-  type t = Int64.t
-  let max_int = 0xFFFFFFFFL
-end
-
-module Uint64 = BaseUint64
-
-module Uint128 = BaseUint128
