@@ -1,0 +1,10 @@
+Test L013 Required
+States 1
+t={2,1};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (t={2,1})
+Observation L013 Always 1 0
+Hash=7a6210acffbac9e1f9750c61aac8f1cb
+
