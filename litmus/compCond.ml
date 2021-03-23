@@ -49,7 +49,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
       let dump_vec loc vs =
         let mk_elem_check i v =
           "(" ^ (I.Loc.dump loc) ^
-            " ["^ string_of_int i ^ "] == "^ (dump_v None v) ^")"
+            "["^ string_of_int i ^ "] == "^ (dump_v None v) ^")"
         in
         String.concat " && " (List.mapi mk_elem_check vs)
 
