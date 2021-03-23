@@ -1,0 +1,11 @@
+AArch64 M001
+(* Test elementary size computation (also scanning initialisations) *)
+{
+uint8_t t[4]={ 0,0,0,0 };
+0:X2=t;
+}
+  P0          ;
+SUB W0,WZR,#1 ;
+STR W0,[X2]   ;
+locations [t;]
+
