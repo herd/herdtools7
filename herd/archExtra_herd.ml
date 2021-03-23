@@ -125,6 +125,7 @@ module type S = sig
 (****************)
 
   val size_of_t : string -> MachSize.sz
+  val mem_access_size_of_t : TestType.t -> MachSize.sz
 
   type size_env
   val size_env_empty : size_env
@@ -445,6 +446,13 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let size_of_t = TestType.size_of I.V.Cst.Scalar.machsize
 
+      let mem_access_size_of_t t =
+        let open TestType in
+        match t with
+        | Atomic b|Ty b|TyArray (b,_) -> size_of_t b
+        | TyDef -> size_of_t TestType.default
+        | TyDefPointer|Pointer _ -> I.V.Cst.Scalar.machsize
+
       let build_state bds =
         List.fold_left
           (fun st (loc,(t,v)) ->
@@ -562,20 +570,12 @@ module Make(C:Config) (I:I) : S with module I = I
         | Some {Constant.name=s;_} -> look_size env s
         | _ -> assert false
 
-      let misc_to_size ty  =
-        let open TestType in
-        match ty with
-        | TyDef -> size_of_t "int"
-        | Ty t|Atomic t|TyArray (t,_) -> size_of_t t
-        | Pointer _ | TyDefPointer ->
-            I.V.Cst.Scalar.machsize
-
       let build_size_env bds =
         List.fold_left
           (fun m (loc,(t,_)) ->
             match symbolic_data loc with
             | Some sym ->
-                StringMap.add sym.Constant.name (misc_to_size t) m
+                StringMap.add sym.Constant.name (mem_access_size_of_t t) m
             | _ -> m)
           size_env_empty bds
 
