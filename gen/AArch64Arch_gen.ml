@@ -265,8 +265,9 @@ let applies_atom (a,_) d = match a,d with
    | Pte _,None -> Code.Pte
    | CapaTag,None -> Code.CapaTag
    | CapaSeal,None -> Code.CapaSeal
+   | Neon _,None -> Code.VecReg
    | (Tag|CapaTag|CapaSeal|Pte _|Neon _),Some _ -> assert false
-   | (Plain _|Acq _|AcqPc _|Rel _|Atomic (PP|PL|AP|AL)|Neon _),_
+   | (Plain _|Acq _|AcqPc _|Rel _|Atomic (PP|PL|AP|AL)),_
       -> Code.Ord
 
 
