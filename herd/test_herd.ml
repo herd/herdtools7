@@ -94,7 +94,20 @@ module Make(A:Arch_herd.S) =
       | FF f -> f::r
 
 
+(*******************)
 (* Mem size access *)
+(*******************)
+
+(* From init *)
+    let mem_access_size_init init =
+      let szs =
+        List.fold_left
+          (fun k (_,(t,_)) ->
+            A.mem_access_size_of_t t::k)
+          [] init in
+      MachSize.Set.of_list szs
+
+(* From code *)
     let mem_access_size_of_code sz code =
       List.fold_left
         (A.pseudo_fold
@@ -105,11 +118,22 @@ module Make(A:Arch_herd.S) =
         code
 
     let mem_access_size_prog p =
-      let s =
-        List.fold_left
-          (fun sz (_,code) -> mem_access_size_of_code sz code)
-          MachSize.Set.empty p in
-      MachSize.Set.elements s
+      List.fold_left
+        (fun sz (_,code) -> mem_access_size_of_code sz code)
+        MachSize.Set.empty p
+
+      let mem_access_size init prog =
+        if A.is_mixed then (* Useful for mixed-size only *)
+          let szs =
+            MachSize.Set.union
+              (mem_access_size_init init)
+              (mem_access_size_prog prog) in
+          MachSize.Set.elements szs
+        else []
+
+(***************)
+(* Entry point *)
+(***************)
 
     let build name t =
       let t = Alloc.allocate_regs t in
@@ -128,7 +152,7 @@ module Make(A:Arch_herd.S) =
       let type_env = A.build_type_env init in
       let flocs,ffaults = LocationsItem.locs_and_faults locs in
       let displayed =
-        let flocs = A.RLocSet.of_list flocs in        
+        let flocs = A.RLocSet.of_list flocs in
         ConstrGen.fold_constr collect_atom final flocs in
       let observed = match filter with
       | None -> displayed
@@ -166,7 +190,7 @@ module Make(A:Arch_herd.S) =
        extra_data = extra_data ;
        size_env = A.build_size_env init ;
        type_env;
-       access_size = mem_access_size_prog nice_prog ;
+       access_size = mem_access_size init nice_prog ;
        proc_info;
      }
 
