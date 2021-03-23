@@ -882,7 +882,10 @@ module Make
 
       let find_rloc_type env loc =
         let t = U.find_rloc_type loc env in
-        CType.dump (CType.strip_atomic t),CType.is_ptr t        
+        let u = match CType.strip_atomic t with
+          | CType.Array (b,_) -> CType.Pointer (CType.Base b)
+          | u -> u in
+        CType.dump u,CType.is_ptr t
 
       let do_dump_cond_fun env cond =
         DC.fundef (find_rloc_type env) cond
