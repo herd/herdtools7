@@ -133,8 +133,9 @@ module Make (C:Config) (A : Arch_herd.S) :
 
           let check_prop p tenv senv (state,flts) =
             let look_rloc rloc =
-              let loc = A.loc_of_rloc tenv rloc in
-              AM.look_in_state senv state loc in
+              A.val_of_rloc
+                (AM.look_in_state senv state)
+                tenv rloc in
             do_check_prop look_rloc flts p
 
           let check_prop_rlocs p (state,flts) =
