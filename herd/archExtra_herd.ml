@@ -139,6 +139,8 @@ module type S = sig
   val loc_of_rloc : type_env -> rlocation -> location
 (* Expand array rlocation to locations of its elements *)
   val locs_of_rloc : type_env -> rlocation -> location list
+(* Combine rlocs_of_rloc and value extraction from memory *)
+  val val_of_rloc : (location -> v) -> type_env -> rlocation -> v
 
   (* Final state, our outcome *)
   type rstate
@@ -626,6 +628,20 @@ module Make(C:Config) (I:I) : S with module I = I
           let t = look_type tenv loc in
           [scale_array_reference t loc o]
 
+    let val_of_rloc look tenv rloc =
+      match locs_of_rloc tenv rloc with
+      | [loc] -> look loc
+      | locs ->
+         let cs =
+           List.map
+             (fun loc ->
+               match look loc with
+               | I.V.Val c -> c
+               | _ -> Warn.fatal "Non constant value in vector")
+             locs in
+         I.V.Val (Constant.ConcreteVector (List.length cs,cs))
+
+
       (* Final (include faults) *)
       module RState = RLocMap
 
@@ -824,23 +840,10 @@ module Make(C:Config) (I:I) : S with module I = I
           else locs
 
         let do_state_restrict look keep_regs locs tenv st =
-          let locs_of_rloc = locs_of_rloc tenv in
           RLocSet.fold
             (fun rloc r ->
-              match locs_of_rloc rloc with
-              | [loc] -> RState.add rloc (look st loc) r
-              | locs ->
-                 let cs =
-                   List.map
-                     (fun loc ->
-                       match look st loc with
-                       | I.V.Val c -> c
-                       | _ -> Warn.fatal "Non constant value in vector")
-                     locs in
-                 RState.add
-                   rloc
-                   (I.V.Val (Constant.ConcreteVector (List.length cs,cs)))
-                   r)
+              let v = val_of_rloc (look st) tenv rloc in
+              RState.add rloc v r)
             (add_reg_locs keep_regs st locs) RState.empty
 
 
