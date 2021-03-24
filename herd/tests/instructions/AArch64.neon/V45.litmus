@@ -11,4 +11,5 @@ uint64_t x[2];
  STP D0, D1, [X0], #-8   ;
  LDR D2, [X0, #16]       ;
  STR D2, [X1]            ;
- forall (x=254 /\ y=255 /\ 0:X0!=x)
+ ADD X0,X0,#8            ; (* For litmus *)
+ forall (x={254,255} /\ y=255 /\ 0:X0=x)

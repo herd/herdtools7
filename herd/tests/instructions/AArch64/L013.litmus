@@ -1,0 +1,12 @@
+AArch64 L013
+{
+int t[2]={1,2};
+0:X2=t;
+}
+
+  P0           ;
+LDR W0,[X2,#0] ;
+LDR W1,[X2,#4] ;
+STR W0,[X2,#4] ;
+STR W1,[X2,#0] ;
+forall t={2,1}
