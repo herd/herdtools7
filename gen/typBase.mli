@@ -25,6 +25,8 @@ val parse : string -> t option
 
 val pp : t -> string
 
+val equal : t -> t -> bool
+
 val default : t
 val is_default : t -> bool
 

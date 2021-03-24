@@ -73,6 +73,10 @@ module type S = sig
   val ok_reg : st -> arch_reg * st
   val next_ok : st -> st
   val get_noks : st -> int
+
+  val add_type : location -> TypBase.t -> st -> st
+  val get_env : st -> TypBase.t LocMap.t
+
 end
 
 module Make(I:I) : S
@@ -171,14 +175,15 @@ with type arch_reg = I.arch_reg and type special = I.special
       { regs : arch_reg list ;
         map  : arch_reg StringMap.t ;
         specials : I.special list ;
-        noks : int ; }
-
+        noks : int ;
+        env : TypBase.t LocMap.t ; }
 
   let st0 =
     { regs = I.free_registers;
       map = StringMap.empty;
       specials = I.specials;
-      noks = 0; }
+      noks = 0;
+      env = LocMap.empty; }
 
   let alloc_reg st = match st.regs with
     | [] -> Warn.fatal "No more registers"
@@ -210,4 +215,8 @@ with type arch_reg = I.arch_reg and type special = I.special
   let ok_reg st = alloc_trashed_reg "ok" st
   let next_ok st = { st with noks = st.noks+1; }
   let get_noks st = st.noks
+
+  let add_type loc t st = { st with env = LocMap.add loc t st.env; }
+  let get_env st = st.env
+
 end

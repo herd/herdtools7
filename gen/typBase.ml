@@ -60,6 +60,26 @@ let pp = function
 | Pteval -> "pteval_t"
 
 
+let sign_equal s1 s2 = match s1,s2 with
+| (Unsigned,Unsigned)
+| (Signed,Signed)
+  -> true
+| (Unsigned,Signed)
+| (Signed,Unsigned)
+  -> false
+
+let equal t1 t2 = match t1,t2 with
+| (Int,Int)
+| (Pteval,Pteval)
+  -> true
+| (Std (s1,sz1),Std (s2,sz2))
+  -> sign_equal s1 s2 && MachSize.equal sz1 sz2
+| ((Int|Pteval),Std _)
+| (Std _,(Int|Pteval))
+| (Int,Pteval)
+| (Pteval,Int)
+  -> false
+
 let default = Int
 let is_default = function
   | Int -> true
