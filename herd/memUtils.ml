@@ -534,9 +534,8 @@ let lift_proc_info i evts =
       | TyArray (_,sz) -> sz
       | _ -> 1
     and sz_e = E.get_mem_size e in
-    let open Constant in
     match si with
-    | {name=s; Constant.offset=idx;_}
+    | {Constant.name=s; offset=idx;_}
       ->
         let sz_s = A.look_size senv s in
         let nbytes_s = MachSize.nbytes sz_s in
