@@ -22,6 +22,9 @@ type t =
   | TyArray of string * int
   | Atomic of string
 
+(* Default base type (i.e. int) *)
+val default : string
+
 val pp : t -> string
 
 val is_array : t -> bool

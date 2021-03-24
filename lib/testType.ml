@@ -24,6 +24,8 @@ type t =
   | TyArray of string * int
   | Atomic of string
 
+let default = "int"
+
 let pp = function
   | TyDef -> "TyDef"
   | TyDefPointer -> "TyDefPointer"
