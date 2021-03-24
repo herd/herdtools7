@@ -675,7 +675,7 @@ let match_reg_events es =
                         (A.pp_location loc)
                         else if check_mixed then
                           Warn.user_error
-                            "Illegal mixed-size test on symbol %s"
+                            "mixed-size test rejected (symbol %s), consider option -variant mixed"
                             (A.pp_location loc)
                     | None ->
                        Warn.fatal "Non symbolic location: '%s'\n"
@@ -1550,7 +1550,7 @@ let match_reg_events es =
 
     let check_sizes test es =
       if check_mixed then begin
-        (* No need to check initial writes, correct by construction. *)  
+        (* No need to check initial writes, correct by construction. *)
         let loc_mems = U.collect_mem_non_init es in
         U.LocEnv.iter
           (fun loc evts ->
@@ -1558,7 +1558,7 @@ let match_reg_events es =
             begin match loc with
             | A.Location_global (V.Val (Symbolic sym))
                   when not (S.is_non_mixed_symbol test sym) ->
-                Warn.user_error "Illegal mixed-size test on symbol %s"
+                Warn.user_error "mixed-size test rejected (symbol %s), consider option -variant mixed"
                   (A.pp_location loc)
             | _ -> ()
             end ;
