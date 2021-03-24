@@ -142,7 +142,12 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       let get_concrete v = match v with
       | V.Val c -> c
       | _ -> assert false in
-      let vs = List.map get_concrete (List.init nelem (neon_getlane v esize)) in
+      let rec get_rec idx  =
+        if idx < nelem then
+          get_concrete (neon_getlane v esize idx)::
+            get_rec (idx+1)
+        else [] in
+      let vs = get_rec 0 in
       V.Val (Constant.ConcreteVector(nelem, vs))
 
     let simd_mem_access_size rs = match List.hd rs with
