@@ -1314,6 +1314,7 @@ Monad type:
                       A.look_size size_env s
                   | _ -> def_size in
                 let eiid,ew =
+                  let v = A.V.map_scalar (A.V.Cst.Scalar.mask sz) v in
                   make_one_init_event
                     (E.Act.mk_init_write loc sz v) eiid in
                 match A.symbolic_data loc with
