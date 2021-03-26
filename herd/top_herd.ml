@@ -84,7 +84,7 @@ module Make(O:Config)(M:XXXMem.S) =
       fun sts ->
         A.StateSet.fold
           (fun st n ->
-            if CM.check_prop_rlocs p st then n+1 else n)
+            if CM.check_prop_rlocs p (S.type_env test) st then n+1 else n)
           sts 0
 
 (* Test result *)

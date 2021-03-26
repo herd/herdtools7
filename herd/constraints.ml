@@ -45,7 +45,7 @@ module type S = sig
     val check_prop :
       prop -> A.type_env -> A.size_env
       -> A.state * A.FaultSet.t -> bool
-    val check_prop_rlocs : prop -> final_state -> bool
+    val check_prop_rlocs : prop -> A.type_env -> final_state -> bool
   end
 
 (* Build a new constraint thar checks State membership *)
@@ -70,6 +70,9 @@ module Make (C:Config) (A : Arch_herd.S) :
     S with module A = A
         =
       struct
+
+        let dbg = false
+
         module A = A
         type final_state = A.rstate * A.FaultSet.t
 
@@ -113,14 +116,20 @@ module Make (C:Config) (A : Arch_herd.S) :
         module Mixed (SZ : ByteSize.S) = struct
           module AM = A.Mixed(SZ)
 
-          let do_check_prop look_rloc flts =
+          let do_check_prop look_type look_val flts =
             let rec do_rec = function
               | Atom (LV (rloc,v)) ->
-                  let w = look_rloc rloc in
+                 let t = look_type rloc in
+                 let w = look_val rloc
+                 and v = A.mask_type t v in
+                 if dbg then
+                   Printf.eprintf "Loc:(%s:%s) -> %s = %s\n"
+                     (A.pp_rlocation rloc) (TestType.pp t)
+                     (A.V.pp_v w) (A.V.pp_v v) ;
                   A.V.compare v w = 0
               | Atom (LL (l1,l2)) ->
-                  let v1 = look_rloc (Loc l1)
-                  and v2 = look_rloc (Loc l2) in
+                  let v1 = look_val (Loc l1)
+                  and v2 = look_val (Loc l2) in
                   A.V.compare v1 v2 = 0
               | Atom (FF f) -> A.check_fatom flts f
               | Not p -> not (do_rec p)
@@ -132,16 +141,16 @@ module Make (C:Config) (A : Arch_herd.S) :
               try do_rec p with A.LocUndetermined -> assert false
 
           let check_prop p tenv senv (state,flts) =
-            let look_rloc rloc =
+            let look_val rloc =
               A.val_of_rloc
                 (AM.look_in_state senv state)
                 tenv rloc in
-            do_check_prop look_rloc flts p
+            do_check_prop (A.look_rloc_type tenv) look_val flts p
 
-          let check_prop_rlocs p (state,flts) =
-            let look_rloc rloc =
+          let check_prop_rlocs p tenv (state,flts) =
+            let look_val rloc =
               AM.look_in_state_rlocs state rloc in
-            do_check_prop look_rloc flts p
+            do_check_prop (A.look_rloc_type tenv) look_val flts p
 
         end
 
