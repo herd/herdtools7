@@ -61,10 +61,13 @@ module CapabilityScalar = struct
   | _ -> false, Uint128.add x (Uint128.of_int k)
 
   let machsize = MachSize.S128
+
   let pp hexa (t,v) =
     Printf.sprintf "%s%s"
       (if hexa then (Uint128.to_string_hex v) else (Uint128.to_string v))
       (if t then ":1" else "")
+  let pp_unsigned = pp (* Hum *)
+
   let lt v1 v2 = compare v1 v2 < 0
   let le v1 v2 = compare v1 v2 <= 0
   let mask sz =

@@ -28,6 +28,8 @@ module UInt128Scalar = struct
   let machsize = MachSize.S128
   let pp hexa v =
     Printf.sprintf "%s" (if hexa then (Uint128.to_string_hex v) else (Uint128.to_string v))
+  let pp_unsigned = pp (* Hum *)
+
   let lt v1 v2 = compare v1 v2 < 0
   let le v1 v2 = compare v1 v2 <= 0
   let bit_at k v = Uint128.logand v (Uint128.shift_left Uint128.one k)

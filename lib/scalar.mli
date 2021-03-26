@@ -25,6 +25,7 @@ module type S = sig
 
   val of_string : string -> t
   val pp : bool -> t -> string
+  val pp_unsigned : bool -> t -> string
 
   val of_int : int -> t
   val to_int : t -> int (* Hum *)
