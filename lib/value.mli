@@ -89,4 +89,8 @@ module type S =
       val is_var_determined : v -> bool
       val determined_val : v -> Cst.v option
       val simplify_var : solution -> v -> v
+
+(* Convenience, will do nothing if 'v' argument not adequate *)
+      val map_const : (Cst.v -> Cst.v) -> v -> v
+      val map_scalar : (Cst.Scalar.t -> Cst.Scalar.t) -> v -> v
     end

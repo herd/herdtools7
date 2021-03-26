@@ -150,6 +150,19 @@ type 'scalar t =
   | Tag of string
   | PteVal of PTEVal.t
 
+let _debug = function
+| Concrete _ -> "Concrete _"
+| ConcreteVector (sz,_) -> sprintf "ConcreteVector (%d,_)" sz
+| Symbolic sym -> sprintf "Symbol %s" (pp_symbol sym)
+| Label (p,s) -> sprintf "Label (%s,%s)" (Proc.pp p) s
+| Tag s -> sprintf "Tag %s" s
+| PteVal p -> sprintf "PteVal %s" (PTEVal.pp p)
+
+let rec map_scalar f = function
+| Concrete  s -> Concrete (f s)
+| ConcreteVector (sz,cs) -> ConcreteVector (sz,List.map (map_scalar f) cs)
+| (Symbolic _|Label _ |Tag _|PteVal _) as c -> c
+
 let do_mk_virtual s = Virtual { default_symbolic_data with name=s; }
 
 let do_mk_sym sym = match Misc.tr_pte sym with
@@ -168,7 +181,6 @@ let mk_vec sz v =
   ConcreteVector (sz, v)
 
 let mk_replicate sz v = ConcreteVector (sz, Misc.replicate sz v)
-
 
 let is_symbol = function
   | Symbolic _ -> true

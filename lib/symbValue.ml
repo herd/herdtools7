@@ -883,4 +883,12 @@ module Make(Cst:Constant.S) = struct
   | Val _ -> v
   | Var x ->  try Solution.find  x soln with Not_found -> v
 
+(* Convenience *)
+
+  let map_const f v =
+    match v with
+    | Var _ -> v
+    | Val c -> Val (f c)
+
+  let map_scalar f = map_const (Constant.map_scalar f)
 end

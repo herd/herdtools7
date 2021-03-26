@@ -69,10 +69,14 @@ type 'scalar t =
   | Tag of string
   | PteVal of PTEVal.t
 
+(* Do nothing on non-scalar *)
+val map_scalar : ('scalar -> 'scalar) -> 'scalar t -> 'scalar t
+
 val mk_sym_virtual : string -> 'scalar t
 val mk_sym : string -> 'scalar t
 val mk_vec : int -> 'scalar t list -> 'scalar t
 val mk_replicate : int -> 'scalar t -> 'scalar t
+
 val is_symbol : 'scalar t -> bool
 val is_non_mixed_symbol : symbol -> bool
 
