@@ -455,6 +455,12 @@ module Make(C:Config) (I:I) : S with module I = I
         | TyDef -> size_of_t TestType.default
         | TyDefPointer|Pointer _ -> I.V.Cst.Scalar.machsize
 
+      let signed_of_t t =
+        let open TestType in
+        match t with
+        | Atomic b|Ty b|TyArray (b,_) -> is_signed b
+        | TyDef|TyDefPointer|Pointer _ -> false
+
       let build_state bds =
         List.fold_left
           (fun st (loc,(t,v)) ->
@@ -661,24 +667,39 @@ module Make(C:Config) (I:I) : S with module I = I
             st [] in
         String.concat delim  (List.rev bds)
 
-      let sxt_v sz v = I.V.op1 (Op.Sxt sz) v
+
+      (* Scalar are always for the same effective type,
+         (V.Cst.Scalar.t). For printing a scalar of "external"
+         type t, the value itself is changed, masking for unsigned
+         types, sign extension for signed types *)
+
+      let cast_for_pp_with_base b sc =
+        let sz = size_of_t b in
+        if sz = I.V.Cst.Scalar.machsize then sc
+        else if TestType.is_signed b then I.V.Cst.Scalar.sxt sz sc
+        else I.V.Cst.Scalar.mask sz sc
+
+      let cast_for_pp_with_type t =
+        let open TestType in
+        match t with
+        | Atomic b|Ty b|TyArray (b,_) -> cast_for_pp_with_base b
+        | TyDef -> cast_for_pp_with_base TestType.default
+        | Pointer _|TyDefPointer -> Misc.identity
+
+      let pp_typed t v =
+        let max_unsigned =
+          MachSize.equal (mem_access_size_of_t t) I.V.Cst.Scalar.machsize
+          && not (signed_of_t t) in
+        let v = I.V.map_scalar (cast_for_pp_with_type t) v in
+        if max_unsigned then I.V.pp_unsigned C.hexa v
+        else I.V.pp C.hexa v
 
       let do_dump_rstate tenv tr st =
         pp_nice_rstate st " "
           (fun l v ->
             let t = look_rloc_type tenv l in
-            let v =
-              try begin match t with
-              | TestType.Ty b ->
-                 let sz = size_of_t b in
-                 if sz = I.V.Cst.Scalar.machsize then
-                   v (* pteval's should be handled be here *)
-                 else if TestType.is_signed b then sxt_v sz v
-                 else I.V.op1 (Op.Mask sz) v
-              | _ -> v
-                  end with Misc.Fatal _ -> v in
             ConstrGen.dump_rloc (do_dump_location tr) l ^
-              "=" ^ I.V.pp C.hexa v ^";")
+              "=" ^ pp_typed t v ^";")
 
       let do_dump_final_state tenv fobs tr (st,flts) =
         let pp_st = do_dump_rstate tenv tr st in
