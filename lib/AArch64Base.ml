@@ -873,7 +873,7 @@ let pp_op = function
   | ADDS -> "ADDS"
   | EOR  -> "EOR"
   | ORR  -> "ORR"
-  | SUB  -> "SUBS"
+  | SUB  -> "SUB"
   | SUBS -> "SUBS"
   | AND  -> "AND"
   | ANDS -> "ANDS"
