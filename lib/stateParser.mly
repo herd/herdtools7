@@ -197,7 +197,7 @@ atom_init:
 | NAME STAR location EQUAL amperopt maybev { ($3,(Pointer $1,$6))}
 | STAR location { ($2,(TyDefPointer,ParsedConstant.zero))}
 | STAR location EQUAL amperopt maybev { ($2,(TyDefPointer,$5))}
-| location EQUAL LPAR separated_nonempty_list(COMMA, maybev_prop) RPAR 
+| location EQUAL LPAR separated_nonempty_list(COMMA, maybev_prop) RPAR
   { ($1,(Ty "pteval_t", mk_pte_val $1 $4)) }
 
 amperopt:

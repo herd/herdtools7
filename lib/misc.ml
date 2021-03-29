@@ -784,8 +784,8 @@ let do_tr prf =
     if is_prefix prf s then
       let news = (String.sub s prf_len (len-prf_len)) in
       (*Printf.printf "news: %s\n" news;*)
-      Some news 
-    else 
+      Some news
+    else
       (*Printf.printf "notnews: %s\n" s;*)
       None
 
@@ -821,7 +821,7 @@ let  mix a b c =
   let c = c-a in let c = c-b in
   let c = c lxor (b lsr 13) in
   let a = a-b in let a = a-c in
-  let a = a lxor (c lsr 12) in 
+  let a = a lxor (c lsr 12) in
   let b = b-c in let b = b-a in
   let b = b lxor (a lsl 16) in
   let c = c-a in let c = c-b in

@@ -17,7 +17,7 @@
 {
  type t =
     {
-     tthm : Proc.t -> bool; 
+     tthm : Proc.t -> bool;
      ha : Proc.t -> bool;
      hd : Proc.t -> bool;
      some_ha : bool;
@@ -82,7 +82,7 @@ let get info =
         if List.exists (function None,(HA|HD) -> true | _ -> false) has then
           fun _ -> true
         else
-          let xs = 
+          let xs =
             filter_opt
               (function (Some _ as p,(HA|HD)) -> p | _ -> None)
               has in
@@ -91,7 +91,7 @@ let get info =
         if List.exists (function None,HD -> true | _ -> false) hds then
           fun _ -> true
         else
-          let xs = 
+          let xs =
             filter_opt
               (function (Some _ as p,HD) -> p | _ -> None)
               hds in
