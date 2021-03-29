@@ -10,7 +10,7 @@
 %    syntax definitions (environment 'syntax')
 %   - References are introduced everywhere else
 %
-% For pure typesetting effect without links (eg. to typeset 'e' as 'expr') 
+% For pure typesetting effect without links (eg. to typeset 'e' as 'expr')
 % use the \nt command (eg. \nt{e}).
 % In syntax definitions, the tool 'transf' translates @word@ into \nt{word}.
 %

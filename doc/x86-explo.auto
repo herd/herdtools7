@@ -1,5 +1,5 @@
-arch = X86 
+arch = X86
 mode = explo
-output = conti 
+output = conti
 litmus_opts = -mach conti -limit true
 mach = local

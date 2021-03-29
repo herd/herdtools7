@@ -1,5 +1,5 @@
 This is a simple example of diy/litmus usage for an x86 machine.
-The example  is described in diy manual 
+The example  is described in diy manual
 <http://diy.inria.fr/doc/gen.html#test2>
 
 ** Compile and install diy and litmus (cf. ../INSTALL.txt),

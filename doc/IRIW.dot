@@ -1,9 +1,9 @@
 digraph G {
 
 splines=true;
- 
+
 overlap=scale;
- 
+
 margin="0.0";
 
 pad="0.2";
@@ -13,18 +13,18 @@ margin="0.0";
 fontname="Arial";
 
 /* legend */
-fontsize=8 label="Test IRIW "; 
+fontsize=8 label="Test IRIW ";
 
 
 /* the unlocked events */
- proc0_label_node [ shape=plaintext,fontsize=8,label = "Thread 0",pos="1.000000,0.500000!" ][fixedsize="true"][width=0.45][height=0.1]; 
+ proc0_label_node [ shape=plaintext,fontsize=8,label = "Thread 0",pos="1.000000,0.500000!" ][fixedsize="true"][width=0.45][height=0.1];
 eiid0 [shape=plaintext ,fontsize=8 ] [color=blue] [rank=sink] [label="a: W[x]=1" pos="1.000000,0.350000!"][fixedsize="true"][width=0.45][height=0.1];
- proc1_label_node [ shape=plaintext,fontsize=8,label = "Thread 1",pos="1.700000,0.500000!" ][fixedsize="true"][width=0.45][height=0.1]; 
+ proc1_label_node [ shape=plaintext,fontsize=8,label = "Thread 1",pos="1.700000,0.500000!" ][fixedsize="true"][width=0.45][height=0.1];
 eiid1 [shape=plaintext ,fontsize=8 ] [color=blue] [rank=sink] [label="b: R[x]=1" pos="1.700000,0.350000!"][fixedsize="true"][width=0.45][height=0.1];
 eiid2 [shape=plaintext ,fontsize=8 ] [color=blue] [rank=sink] [label="c: R[y]=0" pos="1.700000,0.000000!"][fixedsize="true"][width=0.45][height=0.1];
- proc2_label_node [ shape=plaintext,fontsize=8,label = "Thread 2",pos="2.400000,0.500000!" ][fixedsize="true"][width=0.45][height=0.1]; 
+ proc2_label_node [ shape=plaintext,fontsize=8,label = "Thread 2",pos="2.400000,0.500000!" ][fixedsize="true"][width=0.45][height=0.1];
 eiid3 [shape=plaintext ,fontsize=8 ] [color=blue] [rank=sink] [label="d: W[y]=1" pos="2.400000,0.350000!"][fixedsize="true"][width=0.45][height=0.1];
- proc3_label_node [ shape=plaintext,fontsize=8,label = "Thread 3",pos="3.100000,0.500000!" ][fixedsize="true"][width=0.45][height=0.1]; 
+ proc3_label_node [ shape=plaintext,fontsize=8,label = "Thread 3",pos="3.100000,0.500000!" ][fixedsize="true"][width=0.45][height=0.1];
 eiid4 [shape=plaintext ,fontsize=8 ] [color=blue] [rank=sink] [label="e: R[y]=1" pos="3.100000,0.350000!"][fixedsize="true"][width=0.45][height=0.1];
 eiid5 [shape=plaintext ,fontsize=8 ] [color=blue] [rank=sink] [label="f: R[x]=0" pos="3.100000,0.000000!"][fixedsize="true"][width=0.45][height=0.1];
 
