@@ -32,7 +32,7 @@ let compare xs ys =
 
 let to_string ks =
   let max a b = if a > b then a else b in
-  let rec max_len ks acc = 
+  let rec max_len ks acc =
     match ks with
     | [] -> acc
     | (name, _) :: ks -> max_len ks (max (String.length name) acc)
