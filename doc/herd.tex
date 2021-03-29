@@ -130,7 +130,7 @@ as the program order on memory events minus write-to-read pairs.
 
 We run \atest{SB} on top of the tentative TSO model:
 \begin{verbatim}
-% herd7 -model tso-00.cat SB.litmus 
+% herd7 -model tso-00.cat SB.litmus
 Test SB Allowed
 States 4
 0:EAX=0; 1:EAX=0;
@@ -170,7 +170,7 @@ being  satisfied from local stores.
 As can be seen by running the test on top of the \afile{tso-00.cat}
 model, the target execution is forbidden:
 \begin{verbatim}
-% herd7 -model tso-00.cat SB+rfi-pos.litmus 
+% herd7 -model tso-00.cat SB+rfi-pos.litmus
 Test SB+rfi-pos Allowed
 States 15
 0:EAX=0; 0:EBX=0; 1:EAX=0; 1:EBX=0;
@@ -285,7 +285,7 @@ as \verb+po & loc+), we further require the acyclicity
 of the relation \verb+po-loc|fr|rf|co+.
 In the TSO case, the \textsc{uniproc}~check can be
 somehow simplified by considering only
-the cycles in \verb+po-loc|fr|rf|co+ that 
+the cycles in \verb+po-loc|fr|rf|co+ that
 are not already rejected by the main check of the model.
 This amounts to design specific checks for the two relations that are
 not global in TSO: \verb+rfi+ and \verb+po & (W*R)+.
@@ -549,14 +549,14 @@ let allCoX = map makeCoX (partition(W))
 \end{verbatim}
 Notice that \texttt{allCoX} is a set of sets of relations,
 each element being the set of all possible coherence orders
-for a specific~$x$.  
+for a specific~$x$.
 
 We still need to generate all possible \texttt{co} relations,
 that is all unions of the possible coherence orders for
 all locations~$x$.  It can be done by another \cat{} function:
 \texttt{cross}, which takes a set of sets $S = \{S_1, S_2, \ldots, S_n\}$ as
 argument and returns all possible unions built by picking elements from each of
-the $S_i$: 
+the $S_i$:
 $$
 \left\{\, e_1 \cup e_2 \cup \cdots \cup e_n \mid
 e_1 \in S_1, e_2 \in S_2, \ldots, e_n \in S_n \,\right\}
@@ -581,7 +581,7 @@ given a set $S = \{ e_1, e_2, \ldots, e_n\}$, an initial value~$y_0$
 and a function $f$~that takes a pair $(e,y)$ as argument,
 \texttt{fold} computes:
 $$
-f (e_{i_1},f (e_{i_2}, \ldots, f(e_{i_n},y_0)))  
+f (e_{i_1},f (e_{i_2}, \ldots, f(e_{i_n},y_0)))
 $$
 where $i_1, i_2, \ldots, i_n$ defines a permutation
 of the indices $1, 2, \ldots, n$.
@@ -614,7 +614,7 @@ let rec cross S = match S with
       fold
         (fun (e1,r) -> map (fun t -> e1 | t) ts | r)
         (S1,{})
-  end      
+  end
 \end{verbatim}
 The function~\texttt{cross} is a recursive function over a set (of sets).
 Its code follows the inductive definition given above.
@@ -1128,7 +1128,7 @@ fun (a,b) -> (a\b)|(b\a)
 \end{verbatim}
 
 Functions have the usual static scoping semantics:
-variables that appear free in function bodies 
+variables that appear free in function bodies
 (\synt{\NT{expr}} above) are bound to
 the value of such free variable at function creation time.
 As a result one may also write the symmetric difference function
@@ -1140,7 +1140,7 @@ fun a -> fun b -> (a\b)|(b\a)
 \subsubsection*{\label{bindings}Local bindings}
 The local binding construct
 \synt{\T{let} \boption{} \T{rec} \eoption{} \nt{bindings} \T{in} \NT{expr}}
-binds the names defined by \nt{bindings} 
+binds the names defined by \nt{bindings}
 for evaluating the expression \NT{expr}.
 Both non-recursive and recursive bindings are allowed.
 The function binding
@@ -1247,7 +1247,7 @@ checking a condition, and specifying relations that are shown in pictures.
 \alt \T{forall} \NT{id} \T{in} \NT{expr} \T{do} \brepet{} \NT{instruction} \erepet \T{end}
 \alt \T{with} \NT{id} \T{from} \NT{expr}
 \alt \T{include} \nt{string}
-\alt \T{if} \T{variant} \nt{string}  \brepet \NT{instruction} \erepet \boption \T{else} \brepet \NT{instruction} \erepet \eoption \T{end} 
+\alt \T{if} \T{variant} \nt{string}  \brepet \NT{instruction} \erepet \boption \T{else} \brepet \NT{instruction} \erepet \eoption \T{end}
 \sep
 \NT{check} \is \NT{checkname} \orelse \T{\textasciitilde} \NT{checkname}
 \sep
@@ -1387,7 +1387,7 @@ Hence  \synt{\T{show} \nt{id}} can be viewed as a shorthand
 for \synt{\T{show} \nt{id} \T{as} \nt{id}}
 
 \subsubsection*{Iteration over sets}
-The \T{forall} iteration construct 
+The \T{forall} iteration construct
 permits the iteration of checks (in fact of any kind of instructions)
 over a set. Syntax is:
 \begin{center}
@@ -1474,7 +1474,7 @@ An {\tt enum scopes} declaration must be paired with two functions {\tt narrower
 enum scopes = 'discography || 'I || 'II || 'III || 'IV
 
 let narrower(t) = match t with
-  || 'discography -> {'I, 'II, 'III, 'IV} 
+  || 'discography -> {'I, 'II, 'III, 'IV}
 end
 
 let wider(t) = match t with
@@ -1500,18 +1500,18 @@ The construct :
 \end{center}
 
 takes the identifier of a pre-defined set and a possibly empty, square bracketed
-list of tags. 
+list of tags.
 
 %jade@Luc: du coup il faudrait peut etre les distinguer dans la def des
 %expressions?
 The primitive {\tt tag2instrs} yields, given a tag {\tt 't}, the set of
 instructions bearing the annotation {\tt t} that was previously declared in an
 enumeration type.
-%\fixme{jade: enumeration type? c'est comme ca que ca se dit?} 
+%\fixme{jade: enumeration type? c'est comme ca que ca se dit?}
 
 The primitive {\tt tag2scope} yields, given a tag {\tt 't}, the relation
-between instructions TODO  
- 
+between instructions TODO
+
 \subsection{\label{language:model}Models}
 \begin{syntax}
 \NT{model} \is \boption \NT{id} \eoption \boption \NT{model-comment} \eoption \brepet \NT{instruction} \erepet
@@ -1767,7 +1767,7 @@ the outcomes of the given checks. For the option to operate, checks must
 be named in the model file with the \texttt{as }\textit{name} construct --
 see Sec.~\ref{name:check:def}.
 Notice that the arguments to \opt{-skipcheck} options cumulate.
-That is, ``\opt{-skipcheck }\textit{name}$_1$ \opt{-skipcheck }\textit{name}$_2$'' acts like ``\opt{-skipcheck }\textit{name}$_1$\texttt{,}\textit{name}$_2$''. 
+That is, ``\opt{-skipcheck }\textit{name}$_1$ \opt{-skipcheck }\textit{name}$_2$'' acts like ``\opt{-skipcheck }\textit{name}$_1$\texttt{,}\textit{name}$_2$''.
 
 \item [{\tt -strictskip <bool>}] Setting this option (\opt{-strictskip true}),
 will change the behaviour of the previous option \opt{-skipcheck}:
@@ -1832,7 +1832,7 @@ Those options intentionally omit some of the final states that \herd{} would
 normally generate.
 
 \begin{description}
-\item[{\tt -speedcheck (false|true|fast)}] 
+\item[{\tt -speedcheck (false|true|fast)}]
 \aname{speedcheck:opt}{When} enabled by \opt{-speedcheck true}
 or \opt{-speedcheck fast}, attempt to settle the test condition.
 That is, \herd{} will
@@ -2098,7 +2098,7 @@ while compiling~\herd.
 %\subsection{Additional command line options}
 %
 %\begin{description}
-%\item[{\tt \aname{opt:dumplem}{-dumplem}}] Convert the given herd model to Lem format, and exit. The resultant Lem file is generated on {\tt stdout}. 
+%\item[{\tt \aname{opt:dumplem}{-dumplem}}] Convert the given herd model to Lem format, and exit. The resultant Lem file is generated on {\tt stdout}.
 %\begin{quote}\emph{Note.} It is necessary to provide a litmus test when invoking \herd{} in this way, even though the litmus test will not be examined. This is due to a minor technical problem.\end{quote}
 %\end{description}
 %
@@ -2133,7 +2133,7 @@ while compiling~\herd.
 %
 %\begin{center}
 %\begin{tabular}{ll}
-%value of $s$ & description (in OpenCL terminology) \\ 
+%value of $s$ & description (in OpenCL terminology) \\
 %\hline
 %{\tt wi}, {\tt thread} & work-item \\
 %{\tt sg}, {\tt warp} & sub-group \\
@@ -2199,9 +2199,9 @@ while compiling~\herd.
 %\begin{idtable}
 %{\tt gF} & global fences & the set of all global fences \\
 %{\tt lF} & local fences & the set of all local fences \\
-%{\tt wi} & work-item scope & events with ``work-item'' memory-scope \\ 
-%{\tt sg} & sub-group scope & events with ``sub-group'' memory-scope \\ 
-%{\tt wg} & work-group scope & events with ``work-group'' memory-scope \\ 
-%{\tt dev} & device scope & events with ``device'' memory-scope \\ 
-%{\tt all\_dev} & all-devices scope & events with ``all\_svn\_devices'' memory-scope \\ 
+%{\tt wi} & work-item scope & events with ``work-item'' memory-scope \\
+%{\tt sg} & sub-group scope & events with ``sub-group'' memory-scope \\
+%{\tt wg} & work-group scope & events with ``work-group'' memory-scope \\
+%{\tt dev} & device scope & events with ``device'' memory-scope \\
+%{\tt all\_dev} & all-devices scope & events with ``all\_svn\_devices'' memory-scope \\
 %\end{idtable}

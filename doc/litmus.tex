@@ -140,7 +140,7 @@ which can be run directly, for a less verbose output.
 To compile the two tests together,
 we can give two file names as arguments to litmus:
 \begin{verbatim}
-$ litmus7 -o /tmp/a.tar -os mac SB-PPC.litmus STFW-PPC.litmus 
+$ litmus7 -o /tmp/a.tar -os mac SB-PPC.litmus STFW-PPC.litmus
 \end{verbatim}
 Or, more conveniently, list the litmus sources in a file whose
 name starts with \file{@}:
@@ -207,7 +207,7 @@ designed to run on $t$ threads \P{0},\ldots, \P{t-1}.
 The structure of the executable \file{a.exe} that performs
 the experiment is as follows:
 \begin{itemize}
-\item \label{defn}\label{defa}So as to benefit from parallelism, 
+\item \label{defn}\label{defa}So as to benefit from parallelism,
 we run $n = \max(1,a/t)$ (integer division)
 tests concurrently on a machine where $a$~logical processors are available.
 \item \label{defr}Each of these (identical)
@@ -478,7 +478,7 @@ One may change the affinity increment with the command line option
 \texttt{-i} of executable files. For instance, one binds the test threads
 to logical processors $0$, $2$, $4$ and~$6$ as follows:
 \begin{verbatim}
-vargas% ./ppc-iriw-lwsync.exe -i 2 
+vargas% ./ppc-iriw-lwsync.exe -i 2
 Test ppc-iriw-lwsync Allowed
 Histogram (15 states)
 160629:>1:r1=0; 1:r3=0; 3:r1=0; 3:r3=0;
@@ -754,7 +754,7 @@ power7% make
 power7% ./IRIW+lwsyncs.exe -v
 ./IRIW+lwsyncs.exe  -v
 IRIW+lwsyncs: n=1, r=1000, s=1000, +rm, +ca, p='0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31'
-thread allocation: 
+thread allocation:
 [23,22,3,2] {5,5,0,0}
 \end{verbatim}
 Option \texttt{-v} instructs the executable to show settings of the test harness: we see that one instance of the test is run (\texttt{n=1}),
@@ -844,9 +844,9 @@ Specifying \opt{-v} is a convenient way to look at the default of options.
 \item[{\tt -a <n>}] Run maximal number of tests concurrently for $n$~available
 logical processors --- parameter~$a$ in Sec.~\ref{defa}.
 Notice that if affinity control is enabled (see below), \opt{-a 0} will
-set parameter~$a$ to the number of logical processors effectively available. 
+set parameter~$a$ to the number of logical processors effectively available.
 \item[{\tt -n <n>}] Run $n$~tests concurrently --- parameter~$n$
-in Sec.~\ref{defn}. 
+in Sec.~\ref{defn}.
 \item[{\tt -r <n>}] Perform $n$ runs --- parameter~$r$ in Sec.~\ref{defr}.
 \item[{\tt -fr <f>}] Multiply~$r$ by~$f$ ($f$~is a floating point number).
 \item[{\tt -s <n>}] Size of a run --- parameter~$s$ in Sec.~\ref{defs}.
@@ -919,7 +919,7 @@ $P = p_0, p_1, \ldots, p_{A-1}$ and an increment~$i$.
 The first processor allocated is $p_0$, then $p_i$, then $p_{2i}$ etc,
 Indices in the sequence~$P$ are reduced modulo $A$ so as to wrap around.
 The starting index of the allocation sequence (initially $0$) is recorded,
-and coincidence with the index of the next processor to be 
+and coincidence with the index of the next processor to be
 allocated is checked.
 When coincidence occurs, a new index is computed, as the previous
 starting index plus one, which also becomes the new starting index.
@@ -1166,7 +1166,7 @@ More generally, having each thread of the test
 it reads with its second instruction would favor reading the initial value
 of these locations,
 and thus validating
-the final condition of the test 
+the final condition of the test
 ``\verb+(0:EAX=0 /\ 1:EAX=0 /\ 2:EAX=0 /\ 3:EAX=0 /\ 4:EAX=0 /\ 5:EAX=0)+''.
 
 Notice that those locations can be found by looking
@@ -1174,7 +1174,7 @@ at the \ahref{6.SB.litmus}{test code}
 or at the \ahref{6.SB.png}{diagram} of the target execution.
 Let us have a try:
 \begin{verbatim}
-./6.SB.exe -prf 0:y=T,1:z=T,2:a=T,3:b=T,4:c=T,5:x=T               
+./6.SB.exe -prf 0:y=T,1:z=T,2:a=T,3:b=T,4:c=T,5:x=T
 Test 6.SB Allowed
 Histogram (63 states)
 10    *>0:EAX=0; 1:EAX=0; 2:EAX=0; 3:EAX=0; 4:EAX=0; 5:EAX=0;
@@ -1251,9 +1251,9 @@ accelerating entry accesses and delaying exit accesses:
 6.SB Prefetch=0:x=W,0:y=F,1:y=W,1:z=F,2:a=F,2:z=W,3:a=W,3:b=F,4:b=W,4:c=F,5:c=W,5:x=F
 % litmus7 -mem indirect -preload custom -hints map.txt -o R 6.SB.litmus
 % cd R
-% make 
+% make
 ...
-% ./6.SB.exe 
+% ./6.SB.exe
 Test 6.SB Allowed
 Histogram (63 states)
 24    *>0:EAX=0; 1:EAX=0; 2:EAX=0; 3:EAX=0; 4:EAX=0; 5:EAX=0;
@@ -1535,7 +1535,7 @@ More specifically the test harness checks for the stabilisation of
 memory locations after a test round in the ``\texttt{all}'' and
 ``\texttt{write}'' mode, while
 the initial values of memory locations are checked in ``\texttt{all}'' mode.
-\item[{\tt -speedcheck (no|some|all)}] 
+\item[{\tt -speedcheck (no|some|all)}]
 Quick condition check mode,
 default is ``\texttt{no}''.
 In mode ``\texttt{some}'', test executable will stop as soon as its
@@ -1837,7 +1837,7 @@ One then run the test. This step must be performed with root
 privileges, and requires the \texttt{insmod} and \texttt{rmmod}
 commands to be installed. We get:
 \begin{verbatim}
-% sudo sh run.sh 
+% sudo sh run.sh
 Fri Aug 18 16:37:43 CEST 2017
 Compilation command: klitmus7 -o X.tar SB+onces.litmus
 OPT=

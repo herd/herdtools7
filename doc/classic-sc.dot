@@ -1,11 +1,11 @@
 digraph G {
 
 splines=true;
- 
+
 overlap=scale;
- 
+
 compound=true;
- 
+
 
 /* the unlocked events */
 eiid0 [shape=plaintext  ] [color=blue] [rank=sink] [label="(a) Wy1" ];

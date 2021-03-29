@@ -104,7 +104,7 @@ CoRWR.dot: CoRWR.litmus tso-01.cat
 
 MOREAPOIL=-fontsize 10 -edgeattr prop,color,blueviolet
 IRIW+lwsyncs+APOIL.dot: IRIW+lwsyncs.litmus
-	$(HERD)  -suffix +APOIL -conf apoil.cfg $(MOREAPOIL) -doshow prop -show prop -o . $< > /dev/null	
+	$(HERD)  -suffix +APOIL -conf apoil.cfg $(MOREAPOIL) -doshow prop -show prop -o . $< > /dev/null
 
 IRIW+syncs+APOIL.dot: IRIW+syncs.litmus
 	$(HERD)  -suffix +APOIL -through invalid -conf apoil.cfg  $(MOREAPOIL) -doshow prop -show prop -o . $< > /dev/null
@@ -276,7 +276,7 @@ html/index.html: html html/diy.html $(TSTX86) $(TSTPPC) $(TSTARM) $(TSTCO) $(CAT
 
 html/tst-x86.tar: html tst-x86.tar
 	cp tst-x86.tar html/tst-x86.tar
- 
+
 html/tst-x86: html tst-x86.tar
 	( cd html && tar xf ../tst-x86.tar )
 
