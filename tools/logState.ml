@@ -341,7 +341,7 @@ let compare_state same st1 st2 =
       | r -> r
       end
   | r -> r
-(* Betweenn two equal states, select the one with explicit absent faults *) 
+(* Betweenn two equal states, select the one with explicit absent faults *)
 let select_absent st1 st2 =
   let open HashedState in
   let open HashedFaults in
