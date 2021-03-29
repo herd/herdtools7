@@ -206,14 +206,14 @@ let get_fence n =
             (fun is ->
               pref
                 (List.fold_right
-                   (fun f is -> let _,cs,_ = Comp.emit_fence st p init n f 
+                   (fun f is -> let _,cs,_ = Comp.emit_fence st p init n f
                    in cs@is)
                    fs is))
             chk loc_writes st p ro_prev init ns
       | E.Insert f ->
           let init,is,finals,st =
             compile_proc pref chk loc_writes st p ro_prev init ns in
-          let init,cs,st = Comp.emit_fence st p init n f in 
+          let init,cs,st = Comp.emit_fence st p init n f in
           init,cs@is,finals,st
       | _ ->
           let o,init,i,st = emit_access ro_prev st p init n in
