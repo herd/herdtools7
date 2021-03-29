@@ -26,20 +26,20 @@ C to AArch64
   -> "LDAR %x,[%y]"
 
 "atomic_store(%y,%x);" -> "STLR %x,[%y]"
-  
+
 "atomic_store_explicit(%y,%x,memory_order_relaxed);"
   -> "STR %x,[%y]"
-  
+
 "atomic_store_explicit(%y,%x,memory_order_release);"
   -> "STLR %x,[%y]"
 
 "atomic_store(%y,constvar:c);" -> "MOV %tmp,&c;
 			          STLR %tmp,[%y]"
-  
+
 "atomic_store_explicit(%y,constvar:c,memory_order_relaxed);"
   -> "MOV %tmp,&c;
       STR %tmp,[%y]"
-  
+
 "atomic_store_explicit(%y,constvar:c,memory_order_release);"
   -> "MOV %tmp,&c;
       STLR %tmp,[%y]"

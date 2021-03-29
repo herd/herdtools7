@@ -111,10 +111,10 @@ let list_loc prog =
   in
   LocSet.elements (List.fold_left ins LocSet.empty prog)
 
-let get_params init i = 
+let get_params init i =
   let open Constant in
-  List.fold_left 
-    (fun a -> 
+  List.fold_left
+    (fun a ->
      function
      | (MiscParser.Location_reg(p,_),
 	(_,Symbolic (Virtual {name=s;_}))) when i = p ->
