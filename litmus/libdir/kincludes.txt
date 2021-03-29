@@ -53,7 +53,7 @@ do {                                                                    \
 #define xchg_release(x,v) xchg(x,v)
 #endif
 
-#ifndef lockless_dereference 
+#ifndef lockless_dereference
 #define lockless_dereference(p)                                         \
 ({                                                                      \
         typeof(p) ____p1 = READ_ONCE(p);                                \

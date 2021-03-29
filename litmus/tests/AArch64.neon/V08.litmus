@@ -1,6 +1,6 @@
 AArch64 V08
 (* Tests load / store immediate, no offset *)
-{ 
+{
 x=1;
 0:X0=x; 0:X1=y
 }

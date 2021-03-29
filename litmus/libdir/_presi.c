@@ -66,7 +66,7 @@ void *do_align(void *p,size_t sz) {
 /* Artithmetic  */
 static long my_add (long x, long y) {
   long r = x+y ;
-  if (r < x || r < y) { errno = ERANGE ; fatal("overflow") ; } 
+  if (r < x || r < y) { errno = ERANGE ; fatal("overflow") ; }
   return r ;
 }
 
@@ -159,7 +159,7 @@ inline static uint32_t unlocked_rand(st_t *st)  {
 int rand_bit(st_t *st)  {
   uint32_t r = unlocked_rand(st) ;
   r &= 1 ;
-  return r ; 
+  return r ;
 }
 
 static const uint32_t r_max = UINT32_MAX ;
@@ -207,7 +207,7 @@ tsc_t timeofday(void) { return gettimeofday(); }
 
 tsc_t timeofday(void) {
   struct timeval tv ;
-  if (gettimeofday(&tv,NULL)) errexit("gettimeoday",errno) ;  
+  if (gettimeofday(&tv,NULL)) errexit("gettimeoday",errno) ;
   return tv.tv_sec * ((tsc_t)1000000) + tv.tv_usec ;
 }
 #endif

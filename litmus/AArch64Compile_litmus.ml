@@ -91,7 +91,7 @@ module Make(V:Constant.S)(C:Config) =
     let default_shift = function
       | RV (V32,_) -> S_SXTW
       | _ -> S_NOEXT
-            
+
 (************************)
 (* Template compilation *)
 (************************)

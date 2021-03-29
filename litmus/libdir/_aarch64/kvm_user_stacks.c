@@ -5,7 +5,7 @@
 #define USER_MODE 1
 
 void back_to_el1(struct pt_regs *regs,unsigned int esr) {
-  regs->pstate |= 0b0101;  
+  regs->pstate |= 0b0101;
 }
 
 static uint64_t user_stack[AVAIL];

@@ -67,7 +67,7 @@ static count_t count_scan(cfun *f,outs_t *p) {
     }
   }
   return r ;
-} 
+}
 
 static count_t cshow(outs_t *p) {
   if (p->show) return p->c ;

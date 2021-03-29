@@ -36,7 +36,7 @@ static int N(char *dst,int idx,T x) {\
   }\
   return n ;\
 }
-  
+
 TRU(tr_int_uns,unsigned int)
 TRU(tr_int32_uns,uint32_t)
 TRU(tr_int64_uns,uint64_t)

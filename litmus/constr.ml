@@ -57,7 +57,7 @@ module RLocSet = A.RLocSet =
     module V = A.V
     type location = A.location
     module LocSet = A.LocSet
-                   
+
     type rlocation = location ConstrGen.rloc
     module RLocSet = A.RLocSet
 
@@ -77,7 +77,7 @@ module RLocSet = A.RLocSet =
     let locations_prop p = fold_prop locations_atom p LocSet.empty
 
     let add_loc_as_rloc  loc = RLocSet.add(ConstrGen.Loc loc)
-                    
+
     let rlocations_atom a r =
       match a with
       | LV (loc,_) -> RLocSet.add loc r

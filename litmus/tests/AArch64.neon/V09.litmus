@@ -1,6 +1,6 @@
 AArch64 V09
 (* Tests load immediate, post-indexed *)
-{ 
+{
 int16_t x=1;
 0:X0=x; 0:X1=y;
 }

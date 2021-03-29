@@ -38,7 +38,7 @@ let ok v a = match v,a with
 | Self,`AArch64 -> true
 | _,_ -> false
 
-let set_precision r tag = 
+let set_precision r tag =
     try
       r :=
         (match tag with

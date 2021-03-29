@@ -55,7 +55,7 @@ module type S = sig
 (* Normalised tag for symbols *)
   val dump_loc_tag : location -> string
   val dump_rloc_tag : rlocation -> string
-    
+
   module MapValue : MyMap.S with type key = I.V.v
 
 (* A bit of state handling *)
@@ -112,7 +112,7 @@ module Make(O:Config)(I:I) : S with module I = I
     | Location_global (Global_litmus.Pte _) -> true
     | _ -> false
 
-  let tr_global (c:ParsedConstant.v) = 
+  let tr_global (c:ParsedConstant.v) =
     let open Constant in
     match c with
     | Symbolic sym -> Global_litmus.tr_symbol sym

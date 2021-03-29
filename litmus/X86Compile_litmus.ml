@@ -32,7 +32,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
 (***************************************************)
 (* Extract explicit [symbolic] addresses from code *)
 (***************************************************)
-    module G = Global_litmus      
+    module G = Global_litmus
 
     let internal_addr name = match name with
     | G.Addr n -> Misc.string_eq n sig_cell
