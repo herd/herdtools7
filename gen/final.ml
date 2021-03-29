@@ -243,7 +243,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
             | "" -> ""
             | pp -> " /\\ "^pp)
       | Locations locs ->
-          dump_locations chan           
+          dump_locations chan
             (List.fold_right
                (fun loc k -> sprintf "%s;" (C.A.pp_location loc)::k)
                locs loc_flts) ;

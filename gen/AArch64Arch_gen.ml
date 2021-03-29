@@ -167,7 +167,7 @@ let applies_atom (a,_) d = match a,d with
      let r = f (AcqPc o) r in
      let r = f (Rel o) r in
      r
-     
+
    let fold_acc mixed f r =
      let r = if mixed then r else fold_pte (fun p r -> f (Pte p) r) r in
      let r = fold_morello f r in
