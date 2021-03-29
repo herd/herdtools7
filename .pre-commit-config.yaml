@@ -33,7 +33,6 @@ repos:
           (?x)(
             # Currently un-fixed directories & files.
             ^(
-              catalogue/|
               doc/|
               gen/|
               herd-www/|

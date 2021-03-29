@@ -4,10 +4,10 @@
   v8
 
 - C11:
-  POPL 15 
+  POPL 15
 
 - HSA:
-  n modeles 
+  n modeles
 
 - Java:
   . well-formed def from Aspinall et Sevcik
@@ -29,7 +29,7 @@
   version from paper
   + lwarx/stwcx
 
-- ptx: 
+- ptx:
   ASPLOS 15
 
 - Release Consistency: RCpc, RCsc

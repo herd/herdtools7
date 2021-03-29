@@ -27,7 +27,7 @@ list of models to catalogue + pending todos for each:
     litmus tests, campaign (need v8 chips, v8 front end or bell)
 
   . to complete:
-    shelf   
+    shelf
 
   . to revisit entirely with std lib and new syntax and bell (v8, ldrex/strex)
 
@@ -53,7 +53,7 @@ list of models to catalogue + pending todos for each:
   . missing:
     cfg(s)
     figures in illus files
-    
+
   . to complete:
     shelf
 
@@ -74,8 +74,8 @@ list of models to catalogue + pending todos for each:
   . missing:
     cfg(s)
     observed/allowed
-    litmus tests 
-    
+    litmus tests
+
   . to complete:
     shelf
 

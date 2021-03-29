@@ -21,7 +21,7 @@ def path_of_variant(test):
   return os.path.join(VARIANTS_DIR, test)
 
 def check(test, RF, SC, RS, ST, args):
-  cmd = [ "./genmodel.py", 
+  cmd = [ "./genmodel.py",
           "--RF", RF,
           "--SC", SC,
           "--RS", RS,
@@ -30,7 +30,7 @@ def check(test, RF, SC, RS, ST, args):
           test ] + args.herdflags
   if args.herd7:
     cmd = [cmd[0]] + [ '--input', 'c11.cat7-template', '--herd7' ] + cmd[1:]
-  if VERBOSE: print(cmd) 
+  if VERBOSE: print(cmd)
   out = subprocess.check_output(cmd)
   return out
 
@@ -92,7 +92,7 @@ def regression(args):
   expectPass(path_of_test("cyc.litmus"), *std)
   expectFail(path_of_test("seq.litmus"), *std)
   expectPass(path_of_test("seq2.litmus"), *std)
-  
+
   # Section 3
   # Strengthening is Unsound
   expectFail(path_of_test("strengthen.litmus"), *std)
@@ -103,7 +103,7 @@ def regression(args):
   # Expression Linearisation is Unsound
   expectFail(path_of_test("linearisation.litmus"), *std)
   expectPass(path_of_test("linearisation2.litmus"), *std)
-  
+
   # Section 4
   # Resolving Causality Cycles and the ConsRFna Axiom
   # Naive Fix
@@ -121,7 +121,7 @@ def regression(args):
   expectPass(path_of_test("rseq_weak2.litmus"), *std)
   expectPass(path_of_test("rseq_weak.litmus"), *rseq)
   expectPass(path_of_test("rseq_weak2.litmus"), *rseq)
-  
+
   if args.skip_variants:
     # Appendix A
     if args.skip_non_std_appendixA: models = [std]
@@ -147,13 +147,13 @@ def regression(args):
       expectRace(path_of_test("a8_reorder.litmus"), *m)
       expectPass(path_of_test("a9.litmus"), *m)
       expectRace(path_of_test("a9_reorder.litmus"), *m)
-  
+
     # Appendix B
     expectFail(path_of_test("b.litmus"), *arf)
     expectPass(path_of_test("b_reorder.litmus"), *arf)
   else:
     variants(args)
-  
+
   # Appendix C
   expectFail(path_of_test("c.litmus"), *arfna)
   expectRace(path_of_test("c_reorder.litmus"), *arfna)

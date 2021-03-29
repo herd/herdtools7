@@ -30,7 +30,7 @@ campaign = [
 
 references = [
     {
-        "title": 
+        "title":
         "Herding Cats: Modelling, Simulation, Testing, and Data-mining for Weak Memory",
         "authors":
         "Jade Alglave, Luc Maranget and Michael Tautschnig",

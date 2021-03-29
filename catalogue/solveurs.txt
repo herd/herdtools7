@@ -6,7 +6,7 @@ notes sur les solveurs.
   voudrait savoir si ces deux fichiers definissent le meme modele; par exemple
   on a le modele ARM du papier des chats d'une part, et d'autre part une
   reformulation que l'on pense meilleure, et on aimerait savoir assez vite si la
-  reformulation est differente ou non. 
+  reformulation est differente ou non.
 
 - ce qu'on voudrait: un outil qui etant donne deux modeles (c'est a dire deux
   paires (bell,cat)) nous donne des litmus tests qui ont des executions
@@ -31,4 +31,4 @@ notes sur les solveurs.
 
 - comment: il nous faut trouver une traduction des fichiers bell+cat vers une
   logique idoine comprise par le solver de notre choix. premier probleme:
-  est-ce qu'il faut une traduction par solver? 
+  est-ce qu'il faut une traduction par solver?
