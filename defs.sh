@@ -10,6 +10,13 @@ binaries_of_dune () {
   done
 }
 
+# List all dune files in the project, excluding duplicates in _build.
+all_dune_files () {
+  find . \
+    -path ./_build -prune -false -o \
+    -name 'dune'
+}
+
 HERD="$(binaries_of_dune executables herd/dune)"
 LITMUS="$(binaries_of_dune executables litmus/dune)"
 TOOLS="$(binaries_of_dune executables tools/dune)"
@@ -21,7 +28,7 @@ NATIVE="$HERD $LITMUS $TOOLS $GEN $JINGLE"
 # Internal-only, not installed.
 INTERNAL="$(binaries_of_dune executables internal/dune)"
 
-TESTS="$(find . -name 'dune' | while read f; do binaries_of_dune tests "${f}"; done)"
+TESTS="$(all_dune_files | while read f; do binaries_of_dune tests "${f}"; done)"
 
 mk_exe () {
   D=$1
