@@ -1,0 +1,20 @@
+AArch64 L014
+{
+x=0;
+0:X2=x;
+int64_t 0:X4;
+int32_t u[2]={-1,-1};
+uint8_t v[2]={-1,-1};
+0:X6=v;
+}
+
+  P0           ;
+MOV W0,#1      ;
+SUB W0,WZR,W0  ;
+STR W0,[X2]    ;
+SXTW X4,W0     ;
+MOV W3,#2      ;
+SUB W3,WZR,W3  ;
+STRB W3,[X6]   ;
+locations [x;0:X0;0:X4;u;v[0]]
+forall (0:X4=-1 /\ x=-1 /\ u[0]=4294967295 /\ v[1]=-1)
