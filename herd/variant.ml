@@ -116,7 +116,7 @@ let pp = function
   | Neon -> "Neon"
   | Deps -> "Deps"
   | Instances -> "Instances"
-  | Kvm -> "kvm" 
+  | Kvm -> "kvm"
   | ETS -> "ets"
   | NoPteBranch -> "NoPteBranch"
   | PTE2 -> "pte-squared"
@@ -137,7 +137,7 @@ let get_default a = function
       end
   | v -> Warn.fatal "No default for variant %s" (pp v)
 
-let set_precision r tag = 
+let set_precision r tag =
     try
       r :=
         (match tag with

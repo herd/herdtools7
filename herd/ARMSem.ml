@@ -123,7 +123,7 @@ module Make (C:Sem.Config)(V:Value.S)
       let checkZ op c ii = match c with
       | ARM.AL -> op ii >>! B.Next
       | ARM.NE ->
-          check_flag_op 
+          check_flag_op
             (fun ii -> read_reg_ord ARM.Z ii >>= flip_flag) op ii
       | ARM.EQ ->
           check_flag_op (read_reg_ord ARM.Z) op ii

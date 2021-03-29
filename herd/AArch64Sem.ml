@@ -598,7 +598,7 @@ module Make
       let read_mem_noreturn sz = do_read_mem sz AArch64.NoRet
 
       let read_mem_reserve sz an anexp ac rd a ii =
-        let m a = 
+        let m a =
           (write_reg AArch64.ResAddr a ii
            >>| do_read_mem sz an anexp ac rd a ii)
           >>= fun ((),b) -> M.unitT b in
@@ -934,7 +934,7 @@ module Make
           (read_reg_ord rd ii)
           (read_reg_data sz rs ii) an ii
 
-(* AMO instructions *)          
+(* AMO instructions *)
       let rmw_amo_read sz rmw =
         let open AArch64 in
         match rmw with
@@ -1155,7 +1155,7 @@ module Make
           >>! B.Next
       let m_movk msk v1 v2 =
         M.op Op.AndNot2 v2 msk >>= M.op Op.Or v1
-        
+
       let movk var rd k os ii =
         let open AArch64Base in
         let msk =
@@ -1624,7 +1624,7 @@ module Make
             write_reg r (V.nameToV lbl) ii >>! B.Next
         | I_SXTW(rd,rs) ->
             (read_reg_ord_sz MachSize.Word rs ii) >>=
-             sxtw_op >>= fun v -> write_reg rd v ii >>! B.Next 
+             sxtw_op >>= fun v -> write_reg rd v ii >>! B.Next
 
         | I_OP3(ty,op,rd,rn,kr,os) ->
             let sz = tr_variant ty in

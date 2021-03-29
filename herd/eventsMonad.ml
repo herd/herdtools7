@@ -941,7 +941,7 @@ Monad type:
     let make_one_event_structure_data is_data =
       if is_data then
         fun a ii -> make_one_event_structure a ii -- add_data_ports
-      else 
+      else
         make_one_event_structure
 
     (* Add return value and equation to monad *)

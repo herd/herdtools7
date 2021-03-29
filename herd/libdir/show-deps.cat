@@ -1,6 +1,6 @@
 (* Show dependencies *)
 show data,addr
-(* Show of control dependencies is restricted, so as not to clobber diagrams *) 
+(* Show of control dependencies is restricted, so as not to clobber diagrams *)
 let ctrlisb = try ctrl;[ISB];po;[M] with 0
 show ctrlisb
 show (ctrl;[M]) \ ctrlisb as ctrl

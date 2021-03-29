@@ -57,7 +57,7 @@ module Make (C:Config) (A : A) : sig
 (* TLB Invalidate event, operation (for print and level), address, if any.
    No adresss means complete invalidation at level *)
     | Inv of A.TLBI.op * A.location option
-(* Data cache operation event *)    
+(* Data cache operation event *)
     | DC of AArch64Base.DC.op * A.location option
 
   val tag_access :
@@ -262,15 +262,15 @@ end = struct
     | DC _ -> true
     | Access _|Amo _|Commit _|Barrier _ | Fault _ | TooFar | Inv _ -> false
 
-  let is_ci = function 
+  let is_ci = function
     | DC(op,_) as a -> is_dc a && AArch64Base.DC.ci op
     | _ -> false
 
-  let is_c = function 
+  let is_c = function
     | DC(op,_) as a -> is_dc a && AArch64Base.DC.c op
     | _ -> false
 
-  let is_i = function 
+  let is_i = function
     | DC(op,_) as a -> is_dc a && AArch64Base.DC.i op
     | _ -> false
 

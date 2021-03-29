@@ -27,7 +27,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let get_machsize _ = V.Cst.Scalar.machsize
 
     let empty_annot = false
-    let is_atomic annot = annot 
+    let is_atomic annot = annot
 
     let barrier_sets = ["SYNC",(function Sync -> true);]
     let annot_sets = ["X", is_atomic]

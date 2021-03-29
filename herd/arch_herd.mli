@@ -38,8 +38,8 @@ module type S =
     val levels : level list
     val pp_level : level -> string
 
-    module TLBI : 
-    sig 
+    module TLBI :
+    sig
       type op
       val pp_op : op -> string
       val is_at_level : level -> op -> bool

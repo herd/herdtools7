@@ -144,7 +144,7 @@ module Top (Conf:Config) = struct
         let precision = TestConf.precision
         let variant = TestConf.variant
       end in
-(* Get arch *)      
+(* Get arch *)
       let arch = splitted.Splitter.arch in
 (* Now, we have the architecture, call specific parsers
    generically. *)
