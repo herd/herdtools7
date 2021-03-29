@@ -52,7 +52,7 @@ def main(argv=None):
         lib = lib.replace('"', '')
         try: # open library and process lines
           with open(lib, "r") as libinput:
-            # deliberately skip first two lines 
+            # deliberately skip first two lines
             next(libinput)
             next(libinput)
             process(libinput)

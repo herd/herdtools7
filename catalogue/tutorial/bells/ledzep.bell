@@ -1,6 +1,6 @@
 "hey hey mama"
 
-enum Led = 'z || 'e || 'p 
+enum Led = 'z || 'e || 'p
 instructions W[{'z}]
 instructions R[{'e,'p}]
 

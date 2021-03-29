@@ -8,6 +8,6 @@ cfgs = [
     "cfgs/linux-kernel.cfg"
 ]
 
-illustrative_tests = [    
+illustrative_tests = [
     "tests/MP+relacq.litmus"
 ]

@@ -9,7 +9,7 @@ cfgs = [
     "cfgs/new-web.cfg"
 ]
 
-illustrative_tests = [    
+illustrative_tests = [
     "tests/SB.litmus",
     "tests/SB+rfi-pos.litmus",
     "tests/SB+mfence+po.litmus",

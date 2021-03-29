@@ -12,7 +12,7 @@ let sb = singlestep(po) (* except po is a total per-thread order *)
 let mo = co
 let C = rmw
 let scTotal = (po | rf | mo)+ & (sc*sc)
-acyclic scTotal 
+acyclic scTotal
 (*call total(scTotal, sc)*)
 
 (* --------------------------------------------------------------------------*)
@@ -59,7 +59,7 @@ let swCase3 = rseq; rf; (sb+ & ( _ * isfence ))
 (* a = Fence and b = Fence *)
 let swCase4 = (( isfence * _ ) & sb+); rseq; rf; (sb+ & ( _ * isfence ))
 
-(* Instead we use a generalised relation equivalent to 
+(* Instead we use a generalised relation equivalent to
    (swCase1 | swCase2 | swCase3 | swCase4 ) *)
 let fenceSB = ( isfence * _ ) & sb+
 let sbFence = sb+ & ( _ * isfence )

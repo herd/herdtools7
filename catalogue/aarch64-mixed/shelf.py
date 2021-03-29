@@ -10,7 +10,7 @@ cfgs = [
     "cfgs/web-mixed.cfg",
 ]
 
-illustrative_tests = [    
+illustrative_tests = [
     "tests/MP-Koeln.litmus",
     "tests/LB+dmb.sy+data-wsi-wsi+MIXED+H.litmus",
     "tests/MP+HAmo+BAcqAmo.litmus",

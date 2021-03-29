@@ -5,7 +5,7 @@ enum scopes = 'cta || 'gpu || 'system
 let narrower(s) = match s with
   || 'system -> 'gpu
   || 'gpu -> 'cta
-end 
+end
 
 let wider(s) = match s with
   || 'gpu -> 'system

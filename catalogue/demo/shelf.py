@@ -19,7 +19,7 @@ cfgs = [
 ]
 
 illustrative_tests = \
-  glob.glob("tests/*.litmus") 
+  glob.glob("tests/*.litmus")
 
 x86_tests = \
   glob.glob("tests/*-x86*.litmus")

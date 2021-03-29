@@ -27,8 +27,8 @@ experimental campaign:
 tests/campaign/template1-tests.tar
 tests/campaign/template2-tests.tar
 
-source: 
-Heterogeneous-race-free memory models 
+source:
+Heterogeneous-race-free memory models
 
 and:
 HRF-Relaxed: Adapting HRF to the complexities of industrial heterogeneous
@@ -42,18 +42,18 @@ and:
 Benedict R. Gaster, Derek Hower, and Lee Howes
 
 downloaded from:
-http://research.cs.wisc.edu/multifacet/papers/asplos14_hrf_updated.pdf 
+http://research.cs.wisc.edu/multifacet/papers/asplos14_hrf_updated.pdf
 
 and:
 http://benedictgaster.org/wp-content/uploads/2014/10/hrf-relaxed-technical-report.pdf
 
-on: 
-Monday 19 January 2015 
+on:
+Monday 19 January 2015
 
 -------------------------------------------------------------------------------
 
 model(s) as appear in the paper can be found on:
 page 4, column 2 for hrfd.cat and hrfi.cat
 page 12 and page 13, top for hrfdr.cat and hrfir.cat
-  
+
 notes:

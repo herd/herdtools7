@@ -13,13 +13,13 @@ notes sur les oracles.
     nom du test | oracle
 
     par exemple:
-  
+
     mp          | Ok
     mp+dmb+addr | No
 
     les reponses donnees par l'oracle doivent range over les reponses donnees par herd, c'est a dire:
 
-    Ok, No 
+    Ok, No
     + des noms donnes aux checks prefixes par 'flag' dans le cat file; par
     exemple:
 
@@ -46,7 +46,7 @@ Racy)
     . perfect fit: memes reponses sur tous les tests, i.e. sound w.r.t.
 Answer1, Answer2 etc
 
-- comment faire: 
+- comment faire:
 
   . une test base, par exemple: catalogue/herding-cats/ppc/tests
   . un oracle file, par exemple: catalogue/herding-cats/ppc/tests/ppc-hardware.spec
