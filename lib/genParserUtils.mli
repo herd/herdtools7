@@ -20,7 +20,7 @@ val call_parser :
     string -> Lexing.lexbuf -> 'a -> ('a -> Lexing.lexbuf -> 'b) -> 'b
 
 val check_regs :
-  Proc.t list -> MiscParser.state -> MiscParser.locations ->  
+  Proc.t list -> MiscParser.state -> MiscParser.locations ->
   MiscParser.constr -> unit
 
 val get_visible_locs :

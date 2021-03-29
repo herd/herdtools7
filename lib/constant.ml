@@ -208,7 +208,7 @@ let as_virtual v = match v with
 let as_symbol = function
   | Symbolic sym -> Some sym
   | _ -> None
-       
+
 let as_symbolic_data =function
 | Symbolic (Virtual sym) -> Some sym
 | _ -> None

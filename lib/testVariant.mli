@@ -16,7 +16,7 @@
 
 (** Parse in-test variant info *)
 
-module Make : functor 
+module Make : functor
   (Var:sig
       module Opt:sig
         include ParseTag.Opt

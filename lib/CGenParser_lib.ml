@@ -79,7 +79,7 @@ module Make
     type locations = MiscParser.LocSet.t
 
 (****************)
-(* Basic Checks *)                   
+(* Basic Checks *)
 (****************)
     module U = GenParserUtils
     let call_parser = U.call_parser

@@ -97,7 +97,7 @@ val is_pt : 'a t -> bool
    At the moment pteval are arch-independant. *)
 val same_oa : 'a t -> 'a t -> bool
 val writable : bool -> bool -> 'a t -> bool
-  
+
 module type S =  sig
 
   module Scalar : Scalar.S

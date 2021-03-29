@@ -80,7 +80,7 @@ module Make(A:I) =
         sprintf "Fault(%s,%s,%s)" (pp_lbl lbl) (A.pp_global x) msg
     | None ->
         sprintf "Fault(%s,%s)" (pp_lbl lbl) (A.pp_global x)
-          
+
 
     let compare_lbl (p1,lbl1) (p2,lbl2) = match Proc.compare p1 p2 with
     | 0 -> Label.Set.compare lbl1 lbl2

@@ -16,7 +16,7 @@
 
 type t =
     {
-     tthm : Proc.t -> bool; 
+     tthm : Proc.t -> bool;
      ha : Proc.t -> bool;
      hd : Proc.t -> bool;
      some_ha : bool;
@@ -26,4 +26,3 @@ type t =
 type my_t = { my_ha : unit -> bool; my_hd : unit -> bool; }
 
 val get : MiscParser.info -> t
- 

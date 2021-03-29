@@ -363,7 +363,7 @@ let do_fold_addrs f =
   | Prmw (_,op,x,_) -> fold_op op (fold_ao x c)
   | Pmov (_,op) -> fold_op op c
 
-let fold_addrs f i = do_fold_addrs (fun s -> f (ParsedConstant.nameToV s)) i 
+let fold_addrs f i = do_fold_addrs (fun s -> f (ParsedConstant.nameToV s)) i
 let dump_instruction i = do_dump_instruction (sprintf "%i") i
 let dump_parsedInstruction i = do_dump_instruction MetaConst.pp i
 

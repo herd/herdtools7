@@ -792,14 +792,14 @@ module Make(Cst:Constant.S) = struct
     | PTELoc -> pteloc
     | Offset -> offset
     | IsVirtual -> is_virtual_v
-    | AF -> afloc 
-    | SetAF -> setaf 
-    | DB -> dbloc 
-    | SetDB -> setdb 
+    | AF -> afloc
+    | SetAF -> setaf
+    | DB -> dbloc
+    | SetDB -> setdb
     | DBM -> dbmloc
     | Valid -> validloc
     | EL0 -> el0loc
-    | OA -> oaloc  
+    | OA -> oaloc
 
   let op op = match op with
   | Add -> add

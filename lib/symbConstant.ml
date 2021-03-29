@@ -67,7 +67,7 @@ module Make(Scalar:Scalar.S) = struct
   | (Symbolic _,(ConcreteVector _|Concrete _))
   | (ConcreteVector _,Concrete _)
     -> 1
-                         
+
   let rec eq c1 c2 = match c1,c2 with
   | Concrete i1, Concrete i2 -> Scalar.compare i1 i2 = 0
   | ConcreteVector (_,v1), ConcreteVector (_,v2) ->

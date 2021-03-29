@@ -438,7 +438,7 @@ let pp_level = function
     | E2 -> "E2"
     | E3 -> "E3"
 
-let fold_EL f k = 
+let fold_EL f k =
   let k = f E0 k in
   let k = f E1 k in
   let k = f E2 k in
@@ -1853,7 +1853,7 @@ include Pseudo.Make
         | I_LDR _ | I_LDAR _ | I_LDARBH _ | I_LDUR _
         | I_STR _ | I_STLR _ | I_STLRBH _ | I_STXR _
         | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
-        | I_STG _ | I_LDG _ 
+        | I_STG _ | I_LDG _
         | I_LDR_SIMD _ | I_STR_SIMD _
         | I_LD1 _ | I_LD1R _
         | I_ST1 _

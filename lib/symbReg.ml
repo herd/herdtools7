@@ -171,7 +171,7 @@ and type pseudo = A.pseudo
 
   let collect_constr = ConstrGen.fold_constr collect_atom
 
-  let collect_locs locs = LocationsItem.fold_locs collect_location locs 
+  let collect_locs locs = LocationsItem.fold_locs collect_location locs
 
 (*********************************************)
 (* Here we go: collect, allocate, substitute *)

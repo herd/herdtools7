@@ -17,7 +17,7 @@
 
 module A = AArch64Base
 
-(* No constant third argument for those *)       
+(* No constant third argument for those *)
 let check_op3 op kr =
   match op,kr with
   |(A.BIC|A.BICS),A.K _ -> raise Parsing.Parse_error
