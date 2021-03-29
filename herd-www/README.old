@@ -44,7 +44,7 @@ opam install ocamlbuild js_of_ocaml js_of_ocaml-ppx
 2. run make
 
 == TODO ==
- 
+
 - changer le display des evts e.g. W() x 1 -> W[] x 1
 - les show et le co sont tous les deux en marron par defaut; il faudrait peut
   etre changer la couleur par defaut du co (bleu) et garder marron pour les
