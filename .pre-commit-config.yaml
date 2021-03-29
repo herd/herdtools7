@@ -31,11 +31,6 @@ repos:
         # `(?x)` enables multi-line regexps: https://docs.python.org/3/library/re.html#re.X.
         exclude: |
           (?x)(
-            # Currently un-fixed directories & files.
-            ^(
-              tools/
-            )|
-
             # Vendored files for the Herd web interface.
             ^herd-www/www/(
               ace/|

@@ -21,7 +21,7 @@ module Make :
         type elt_hashed = elt Hashcons.hash_consed
 
         type t = t_node Hashcons.hash_consed
-        and t_node = 
+        and t_node =
           | Nil
           | Cons of elt_hashed * t
 

@@ -39,7 +39,7 @@ let as_t h =
   ((p,HashedStringOpt.as_t hlab),HashedString.as_t hx)
 
 let as_hash h = h.Hashcons.hkey
-    
+
 let compare h1 h2 =
   let p1,lab1,x1 = as_tt h1
   and p2,lab2,x2 = as_tt h2 in

@@ -25,7 +25,7 @@ end =
     | A.Location_global _ -> loc
 
     let perm_rloc p = ConstrGen.map_rloc (perm_location p)
-                        
+
     let perm_state_atom p (loc,v) = perm_location p loc,v
 
     let perm_state p = List.map (perm_state_atom p)
