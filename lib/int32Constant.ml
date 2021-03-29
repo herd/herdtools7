@@ -25,8 +25,13 @@ module Int32Scalar = struct
   | _ -> add x (of_int k)
 
   let machsize = MachSize.Word
+
   let pp hexa v =
     Printf.sprintf (if hexa then "0x%lx" else "%li") v
+
+  let pp_unsigned hexa v =
+    Printf.sprintf (if hexa then "0x%lx" else "%lu") v
+
   let lt v1 v2 = compare v1 v2 < 0
   let le v1 v2 = compare v1 v2 <= 0
 

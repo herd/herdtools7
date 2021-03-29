@@ -29,6 +29,7 @@ module StringScalar = struct
   let of_int64 = Int64.to_string
 
   let pp _ s = s
+  let pp_unsigned _ s = s
 
   let op1 name  _ = Warn.fatal "unary operation '%s' on parsed constant" name
   let op2 name _ _ = Warn.fatal "binary operation '%s' on parsed constant" name

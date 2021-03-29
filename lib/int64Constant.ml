@@ -25,8 +25,13 @@ module Int64Scalar = struct
   | _ -> add x (of_int k)
 
   let machsize = MachSize.Quad
+
   let pp hexa v =
     Printf.sprintf (if hexa then "0x%Lx" else "%Li") v
+
+  let pp_unsigned hexa v =
+    Printf.sprintf (if hexa then "0x%Lx" else "%Lu") v
+
   let lt v1 v2 = compare v1 v2 < 0
   let le v1 v2 = compare v1 v2 <= 0
   let bit_at k v = Int64.logand v (Int64.shift_left Int64.one k)

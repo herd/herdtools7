@@ -48,14 +48,15 @@ module Make(Cst:Constant.S) = struct
     | Var v -> Some v
     | Val _ -> None
 
-  let pp hexa v =  match v with
+  let do_pp pp_val = function
   | Var s -> pp_csym s
-  | Val x -> Cst.pp hexa x
+  | Val x -> pp_val x
 
+  let pp hexa = do_pp (Cst.pp hexa)
 
-  let pp_v v =  match v with
-  | Var s -> pp_csym s
-  | Val x -> Cst.pp_v x
+  let pp_unsigned hexa = do_pp (Cst.pp_unsigned hexa)
+
+  let pp_v =  do_pp Cst.pp_v
 
   let equalityPossible v1 v2 =
     match (v1,v2) with
@@ -883,4 +884,12 @@ module Make(Cst:Constant.S) = struct
   | Val _ -> v
   | Var x ->  try Solution.find  x soln with Not_found -> v
 
+(* Convenience *)
+
+  let map_const f v =
+    match v with
+    | Var _ -> v
+    | Val c -> Val (f c)
+
+  let map_scalar f = map_const (Constant.map_scalar f)
 end
