@@ -31,7 +31,7 @@ static void barrier_init (sense_t *p,int n) {
 static void barrier_wait(sense_t *p) {
   int sense = p->sense ;
   int r1,r3;
-asm __volatile__ (  
+asm __volatile__ (
 "dmb\n\t"
 "0:\n\t"
 "ldrex %[r1],[%[c]]\n\t"

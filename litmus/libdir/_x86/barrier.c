@@ -23,7 +23,7 @@ typedef struct {
 } sense_t ;
 
 
-static void barrier_init(sense_t *p, int n) {  
+static void barrier_init(sense_t *p, int n) {
   p->n = p->c = n ;
   p->sense = 0 ;
 }

@@ -19,7 +19,7 @@
 #include "affinity.h"
 
 #if 0
-static void pp_set(FILE *fp, cpus_t *p) {  
+static void pp_set(FILE *fp, cpus_t *p) {
   for (int k = 0 ; k < p->sz ; k++) {
     fprintf(fp," %i", p->cpu[k]) ;
   }
@@ -61,7 +61,7 @@ void write_one_affinity(int a) {
     if (bindprocessor(BINDTHREAD, tid, a) < 0) {
       fatal("bindprocessor") ;
     }
-  }  
+  }
 }
 
 void force_one_affinity(int cpu, int a, int verbose, char *name) {
@@ -71,5 +71,5 @@ void force_one_affinity(int cpu, int a, int verbose, char *name) {
     do {
       r = bindprocessor(BINDTHREAD, tid, a) ;
     } while (r < 0) ;
-  }  
+  }
 }

@@ -27,8 +27,8 @@ cpus_t *read_affinity(void) {
   cpuset_t mask;
   int sz = 0 ;
   int res = pthread_getaffinity_np(pthread_self(), sizeof(mask), &mask) ;
-  
-  if (res != 0) { 
+
+  if (res != 0) {
     errexit("pthread_getaffinity_np",res);
   }
   for (int p=0 ; p <  CPU_SETSIZE ; p++) {
@@ -90,7 +90,7 @@ cpus_t *read_force_affinity(int n_avail, int verbose) {
 /* Enforcing processor affinity.
    Notice that logical processor numbers may be negative.
    In that case, affinity setting is ignored */
- 
+
 
 void write_affinity(cpus_t *p) {
   cpuset_t mask;

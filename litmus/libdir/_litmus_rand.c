@@ -49,7 +49,7 @@ inline static uint32_t unlocked_rand(st_t *st)  {
 int rand_bit(st_t *st)  {
   uint32_t r = unlocked_rand(st) ;
   r &= 1 ;
-  return r ; 
+  return r ;
 }
 
 static const uint32_t r_max = UINT32_MAX ;

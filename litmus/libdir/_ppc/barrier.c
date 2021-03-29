@@ -31,7 +31,7 @@ static void barrier_init (sense_t *p, int n) {
 static void barrier_wait(sense_t *p) {
   int sense = p->sense ;
   int r1;
-asm __volatile__ (  
+asm __volatile__ (
 "sync\n\t"
 "0:\n\t"
 "lwarx %[r1],0,%[c]\n\t"

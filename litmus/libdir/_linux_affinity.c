@@ -92,7 +92,7 @@ cpus_t *read_force_affinity(int n_avail, int verbose) {
 /* Enforcing processor affinity.
    Notice that logical processor numbers may be negative.
    In that case, affinity setting is ignored */
- 
+
 
 void write_affinity(cpus_t *p) {
   cpu_set_t mask;

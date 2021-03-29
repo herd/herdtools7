@@ -29,7 +29,7 @@ static void barrier_init (sense_t *p) {
 
 static void barrier_wait(sense_t *p, int *mySense) {
   int r1,r2;
-asm __volatile__ (  
+asm __volatile__ (
 "sync\n\t"
 "lwz %[r2],0(%[ms])\n\t"
 "sync\n\t"

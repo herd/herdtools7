@@ -176,7 +176,7 @@ module Make(O:Config)(A:I) =
              (List.fold_left
                 (fun k (_,v) ->
                   let rec f v k = match v with
-                  | Symbolic sym ->                      
+                  | Symbolic sym ->
                       begin match tr sym with
                       | Some s -> s::k
                       | None -> k

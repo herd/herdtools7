@@ -319,7 +319,7 @@ module Make
         String.concat " "
           (List.map
              (fun (p1,p2) -> sprintf "%s=%s;" p1 (String.concat "" p2))
-             pps) 
+             pps)
 
       let fmt_faults fs =
         String.concat ""
@@ -335,7 +335,7 @@ module Make
 
       exception NotGlobal
 
-      let tr_global =                         
+      let tr_global =
         let open ConstrGen in
         function
         | Loc (A.Location_global (G.Addr a)) -> Loc a
@@ -368,11 +368,11 @@ module Make
         | None ->  get_displayed_locs t
         | Some filter ->
             A.RLocSet.union locs (T.C.rlocations_prop filter)
-          
+
       let get_observed_globals t =  filter_globals (get_observed_locs t)
 
       let get_stabilized t =
-        let rlocs = get_observed_globals t in        
+        let rlocs = get_observed_globals t in
         let env = build_env t in
         G.DisplayedSet.fold
           (fun a k ->
@@ -418,7 +418,7 @@ module Make
         let locs = get_displayed_locs test in
         A.RLocSet.exists (fun loc ->is_ptr_pte loc env) locs
 
-      let get_faults test =        
+      let get_faults test =
         let inc = T.C.get_faults test.T.condition
         and inf = test.T.ffaults in
         inc@inf
