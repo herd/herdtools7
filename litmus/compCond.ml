@@ -14,34 +14,27 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make (O:Indent.S) (I:CompCondUtils.I) :
-    sig
-      val fundef_prop :
-          string ->
-            (I.Loc.t -> string * bool) -> (* For types *)
-              I.C.prop -> unit
-
-      val fundef :
-          (I.Loc.t -> string * bool) -> (* For types *)
-            I.C.cond -> unit
-
-      val fundef_onlog_prop : string -> I.C.prop -> unit
-
-      val fundef_onlog : I.C.cond -> unit
-
-      val funcall_prop :
-        string -> I.C.prop ->
-          (I.Loc.t -> string) -> (string -> string) -> string
-
-      val funcall :
-          I.C.cond ->
-            (I.Loc.t -> string) -> (string -> string) -> string
-    end = struct
+module Make (O:Indent.S) (I:CompCondUtils.I) =
+ struct
       open Printf
       open ConstrGen
 
       module S = Switch.Make(O)(I)
       module V = I.C.V
+
+      (* Convert unsigned constants to match the type of scrutinized
+         variable.
+         This avoid untimely consequences of C 'integer promotion'. *)
+
+      let cast_prop cast =
+        ConstrGen.map_prop
+        (function
+         | LV (loc,v) -> LV (loc,cast loc v)
+         | LL _|FF _ as a -> a)
+
+      (* Simply print proposition, when optimized
+         printing as a cascade of switch constructs
+         has failed *)
 
       let dump_v v = I.dump_value v
       let dump_loc loc = I.Loc.dump (ConstrGen.Loc loc)
@@ -99,9 +92,11 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
             () in
         dump_prop
 
+      (* Conventional names *)
       let funname = "final_cond"
       let funname_ok = "final_ok"
 
+      (* Check condition *)
       let dump_ok cond =
         O.f "inline static int %s(int cond) {"  funname_ok ;
         O.fi
@@ -114,7 +109,11 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
         O.o "" ;
         ()
 
-      let fundef_prop fname find_type p =
+      (* Check proposition, standard case:
+          locations accessible as arguments. *)
+
+      let fundef_prop fname cast find_type p =
+        let p = cast_prop cast p in
         let rlocs = I.C.rlocations_prop p in
         let plocs =
           I.C.RLocSet.map_list
@@ -150,12 +149,16 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
         O.o "" ;
         ()
 
-      let fundef find_type cond =
-        fundef_prop funname find_type (ConstrGen.prop_of cond) ;
+      let fundef cast find_type cond =
+        fundef_prop funname cast find_type (ConstrGen.prop_of cond) ;
         if I.with_ok then dump_ok cond ;
         ()
 
-      let fundef_onlog_prop fname p =
+      (* Check proposition, presi case:
+         all locations acccessible from a 'log_t' struct *)
+
+      let fundef_onlog_prop fname cast p =
+        let p = cast_prop cast p in
         O.f "inline static int %s(log_t *p) {" fname ;
         begin try
           let switch_tree = S.compile p in
@@ -169,10 +172,12 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
         O.o "" ;
         ()
 
-      let fundef_onlog cond =
-        fundef_onlog_prop funname (ConstrGen.prop_of cond) ;
+      let fundef_onlog cast cond =
+        fundef_onlog_prop funname cast (ConstrGen.prop_of cond) ;
         dump_ok cond ;
         ()
+
+      (* Call check functions *)
 
       let funcall_prop fname  prop dump_loc dump_val =
         let rlocs = I.C.rlocations_prop prop in

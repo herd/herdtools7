@@ -16,26 +16,27 @@
 
 module Make: functor (O:Indent.S) -> functor (I:CompCondUtils.I) ->
   sig
+    val fundef_prop :
+      string ->
+      (I.Loc.t -> I.C.V.v -> I.C.V.v) ->
+      (I.Loc.t -> string * bool) -> (* For types *)
+      I.C.prop -> unit
 
-      val fundef_prop :
-          string ->
-            (I.Loc.t -> string * bool) -> (* For types *)
-              I.C.prop -> unit
+    val fundef :
+      (I.Loc.t -> I.C.V.v -> I.C.V.v) ->
+      (I.Loc.t -> string * bool) -> (* For types *)
+      I.C.cond -> unit
 
-      val fundef :
-          (I.Loc.t -> string * bool) -> (* For types *)
-            I.C.cond -> unit
+    val fundef_onlog_prop :
+      string -> (I.Loc.t -> I.C.V.v -> I.C.V.v) -> I.C.prop -> unit
 
-      val fundef_onlog_prop : string -> I.C.prop -> unit
-
-      val fundef_onlog : I.C.cond -> unit
+    val fundef_onlog : (I.Loc.t -> I.C.V.v -> I.C.V.v) -> I.C.cond -> unit
 
     val funcall_prop :
-        string -> I.C.prop ->
-          (I.Loc.t -> string) -> (string -> string) -> string
+      string -> I.C.prop ->
+      (I.Loc.t -> string) -> (string -> string) -> string
 
     val funcall :
-        I.C.cond ->
-          (I.Loc.t -> string) -> (string -> string) -> string
-
+      I.C.cond ->
+      (I.Loc.t -> string) -> (string -> string) -> string
   end

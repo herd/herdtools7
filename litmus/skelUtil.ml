@@ -70,7 +70,7 @@ let dump_pteval_flags s p =
                  (add p.db "msk_db" [])))) in
     let msk = String.concat "|" msk in
     sprintf "litmus_set_pte_flags(%s,%s)" s msk
-    
+
 (* Skeleton utilities, useful for Skel and PreSi *)
 
 module Make
@@ -89,6 +89,8 @@ module Make
       val build_env : T.t -> env
       val find_type : A.location -> env -> CType.t
       val find_rloc_type : A.rlocation -> env -> CType.t
+      (* Convert constant to match location type *)
+      val cast_constant : env -> A.rlocation -> A.V.v -> A.V.v
       val find_type_align : string -> env -> CType.t option
       val is_aligned : string -> env -> bool
       val dump_mem_type : string -> CType.t -> env -> string
@@ -108,7 +110,7 @@ module Make
 (* Globals *)
       exception NotGlobal
       val tr_global : A.rlocation -> Global_litmus.displayed
-        
+
 (* Locations *)
       val get_displayed_locs : T.t -> A.RLocSet.t
       val get_displayed_globals : T.t -> Global_litmus.DisplayedSet.t
@@ -213,7 +215,19 @@ module Make
             begin
               try CType.element_type (A.LocMap.find loc env)
               with Not_found -> Compile.base
-            end      
+            end
+
+      let do_mask tr sz v = match sz with
+        | None -> v
+        | Some sz ->
+           Constant.map_scalar (tr sz) v
+
+      let cast_constant env loc v =
+        let t = find_rloc_type loc env in
+        do_mask
+          (if CType.signed t then A.V.Scalar.sxt else A.V.Scalar.mask)
+          (CType.base_size t)
+          v
 
       let is_aligned loc (_,env) =
         try ignore (StringMap.find loc env) ; true with Not_found -> false
