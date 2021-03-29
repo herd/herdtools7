@@ -17,9 +17,11 @@
 let tests = [
   "Sexp.of_dune_file", (fun () ->
     let dune o =
-      Printf.fprintf o "(tests" ;
-      Printf.fprintf o "  (names a_test b_test)" ;
-      Printf.fprintf o "  (libraries lib))" ;
+      Printf.fprintf o "; comment\n" ;
+      Printf.fprintf o "(tests;comment\n" ;
+      Printf.fprintf o "  (names a_test b_test)\n" ;
+      Printf.fprintf o "  (libraries lib))\n" ;
+      Printf.fprintf o "; trailing comment" ;
       close_out o
     in
 
