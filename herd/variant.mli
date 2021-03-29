@@ -43,7 +43,7 @@ type t =
   | Deps
   | Instances (* Compute dependencies on instruction instances *)
   | Kvm
-  | ETS 
+  | ETS
 (* Do not insert branching event between pte read and accesses *)
   | NoPteBranch
 (* Pte-Squared: all accesses through page table, including PT accesses *)

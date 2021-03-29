@@ -10,5 +10,5 @@ int32_t z=-16;
   P0         ;
 LDRB W1,[X2] ;
 LDRH W3,[X4] ;
-LDR  W5,[X6] ; 
+LDR  W5,[X6] ;
 locations [0:X1;0:X3;0:X5;]

@@ -214,9 +214,9 @@ Definition rel_incl (A:Type) (r1 r2 : Rln A) : Prop :=
   forall x y, r1 x y -> r2 x y.
 Definition rel_equal (r1 r2 : Rln Event) : Prop :=
   rel_incl r1 r2 /\ rel_incl r2 r1.
-Definition rel_seq (r1 r2 : Rln Event) : Rln Event := 
+Definition rel_seq (r1 r2 : Rln Event) : Rln Event :=
   fun e1 e2 => exists e, r1 e1 e /\ r2 e e2.
-Definition rel_union (r1 r2 : Rln Event) : Rln Event := 
+Definition rel_union (r1 r2 : Rln Event) : Rln Event :=
   fun e1 e2 => r1 e1 e2 \/ r2 e1 e2.
 Definition maybe r : Rln Event :=
   fun e1 e2 => e1 = e2 \/ r e1 e2.
@@ -231,7 +231,7 @@ Definition classes (A:Type) (r:Rln A) : set (Class A) :=
   fun c => exists x, c = class_of r x.
 
 Definition lift (A:Type) (C:set (Class A)) (r:Rln A) : Rln (Class A) :=
-  fun c1 => fun c2 => 
+  fun c1 => fun c2 =>
     C c1 /\ C c2 /\ exists e1, exists e2, c1 e1 /\ c2 e2 /\ r e1 e2.
 Definition delift (A:Type) (C : set (Class A)) (rC : Rln (Class A)) : Rln A :=
   fun e1 => fun e2 =>
@@ -249,7 +249,7 @@ intros H12 H23; induction H12.
   apply _trans with e; auto.
 Qed.
 
-Lemma seq_tc_reorg (r1 r2 : Rln Event) x y : 
+Lemma seq_tc_reorg (r1 r2 : Rln Event) x y :
   rel_seq r1 (rel_seq r2 r1) x y ->
   rel_seq (transitive_closure (rel_seq r1 r2)) r1 x y.
 Proof.
@@ -258,7 +258,7 @@ Qed.
 
 Lemma tc_seq_inv (r1 r2: Rln Event) x z :
   transitive_closure (rel_seq (maybe r1) r2) x z ->
-  exists y1, exists y2, (maybe r1) x y1 /\ 
+  exists y1, exists y2, (maybe r1) x y1 /\
                         transitive_closure (rel_seq r2 (maybe r1)) y1 y2 /\
                         (maybe r2) y2 z.
 Proof.
@@ -269,7 +269,7 @@ intro Hxz; induction Hxz. Focus 2.
 
   destruct H as [y1 [H1y1 Hy12]]; exists y1; exists e2; split; auto; split; [apply _base; exists e2; split; auto; left|left]; auto.
 Qed.
-    
+
 Lemma tc_seq_left (r1 r2 : Rln Event) x y z :
   transitive r1 ->
   r1 x y ->
@@ -283,7 +283,7 @@ intros Htr1 Hxy Hyz; induction Hyz. Focus 2.
   apply _base; destruct H as [e' [H1' H'2]]; exists e'; split; auto; apply Htr1 with e1; auto.
 Qed.
 
-Lemma tc_seq_right (r1 r2 : Rln Event) x y z : 
+Lemma tc_seq_right (r1 r2 : Rln Event) x y z :
   transitive r2 ->
   transitive_closure (rel_seq r1 r2) x y ->
   r2 y z ->
@@ -295,7 +295,7 @@ intros Htr2 Hxy Hyz; induction Hxy. Focus 2.
   apply _base; destruct H as [x [H1x Hx2]]; exists x; split; auto; apply Htr2 with e2; auto.
 Qed.
 
-Lemma seq_tc_reorg2 (r1 r2 : Rln Event) x y z : 
+Lemma seq_tc_reorg2 (r1 r2 : Rln Event) x y z :
   transitive r1 ->
   rel_seq r1 (rel_seq r2 r1) x y ->
   rel_seq (transitive_closure (rel_seq r1 r2)) r1 y z ->
@@ -304,7 +304,7 @@ Proof.
 intros Htr1 [e1 [Hx1 [e2 [H12 H2y]]]]; intros [e3 [Hy3 H3z]]; exists e3; split; auto;
 apply tc_trans with e2; auto.
   apply _base; exists e1; auto.
-  apply tc_seq_left with y; auto. 
+  apply tc_seq_left with y; auto.
 Qed.
 
 Lemma tc_seq_incl (r r1 r2 : Rln Event) x y :
@@ -314,10 +314,10 @@ Lemma tc_seq_incl (r r1 r2 : Rln Event) x y :
 Proof.
 intros Hincl [e [Hxe Hey]]; exists e; split; auto; clear Hey; induction Hxe.
   apply _base; apply Hincl; auto.
-  apply _trans with e; auto. 
+  apply _trans with e; auto.
 Qed.
 
-Lemma tc_seq_reorg (r1 r2 : Rln Event) x y z : 
+Lemma tc_seq_reorg (r1 r2 : Rln Event) x y z :
   transitive r1 ->
   transitive_closure (rel_seq r1 (rel_seq r2 r1)) x y ->
   r1 y z ->
@@ -350,7 +350,7 @@ Proof.
 intros Hincl x y Hxy; induction Hxy.
   apply _base; apply Hincl; auto.
   apply _trans with e; auto.
-Qed. 
+Qed.
 
 Lemma seq_tc_seq r1 r2 e1 e2 x y :
   transitive r2 ->
@@ -362,7 +362,7 @@ Proof.
 intros Htr2 H12 H2x Hxy.
 inversion H2x as [Heq2x | Hs2x]; clear H2x.
   rewrite Heq2x in H12; apply tc_seq_right with x; auto.
-  apply tc_trans with e2; auto; apply _base; destruct Hs2x as [e [H2e Hex]]; 
+  apply tc_trans with e2; auto; apply _base; destruct Hs2x as [e [H2e Hex]];
   exists e; split; auto; apply Htr2 with x; auto.
 Qed.
 
@@ -371,7 +371,7 @@ Qed.
 Definition partial_order (A:Type) (r:Rln A) (xs:set A) : Prop :=
   Included _(Union _ (dom r) (ran r)) xs /\ (* If an event is in the relation, then it's also in the set *)
   transitive r /\ (* Transitivity *)
-  (forall x, ~(r x x)). (* Irreflexivity *) 
+  (forall x, ~(r x x)). (* Irreflexivity *)
 Ltac destruct_part H := destruct H as [Hinc [Htrans Hirr]].
 
 Definition linear_strict_order (A : Type) (r : Rln A) (xs : set A) : Prop :=
@@ -451,14 +451,14 @@ Definition po_loc (E : set Event) (e1 e2 : Event) : Prop := po E e1 e2 /\ loc e1
 Definition rf (E : set Event) (e1 e2 : Event) : Prop :=
   is_write e1 /\ is_read e2 /\ loc e1 = loc e2 /\ val e1 = val e2 /\ E e1 /\ E e2.
 Ltac destruct_rf H := destruct H as [Hisw [Hisr [Hloceq [Hvaleq [Hinw Hinr]]]]].
-Definition pre_co (E : set Event) (e1 e2 : Event) : Prop := 
+Definition pre_co (E : set Event) (e1 e2 : Event) : Prop :=
   is_write e1 /\ is_write e2 /\ loc e1 = loc e2 /\ E e1 /\ E e2.
 Definition fr (E : set Event) (co : set Event -> Rln Event) (e1 e2 : Event) : Prop :=
   exists w, is_write w /\ rf E w e1 /\ co E w e2.
 
 Definition rf_well_formed (E : set Event) : Prop :=
   partial_order (rf E) E /\
-  forall (r : Event), is_read r -> 
+  forall (r : Event), is_read r ->
     (exists w, rf E w r) /\
     (forall w1 w2, rf E w1 r -> rf E w2 r -> w1 = w2).
 Ltac destruct_rf_wf H := destruct H as [Hpart_rf Hex_uni].
@@ -468,7 +468,7 @@ Definition is_write_same_loc (l : Location) (e : Event) : Prop :=
 
 Definition co_well_formed (E : set Event) (co : set Event -> Rln Event) : Prop :=
   (rel_incl (co E) (pre_co E)) /\
-  (forall (l : Location), 
+  (forall (l : Location),
     linear_strict_order (co E) (Intersection _ E (is_write_same_loc l))).
 
 Definition rfi (E : set Event) (e1 e2 : Event) : Prop := rf E e1 e2 /\ internal E e1 e2.
@@ -499,13 +499,13 @@ Definition frrfi E (co : set Event -> Rln Event) (e1 e2 : Event) :=
 Definition frerf E (co : set Event -> Rln Event) (e1 e2 : Event) :=
   exists e, fre E co e1 e /\ rf E e e2.
 
-Definition complus E (co : set Event -> Rln Event) e1 e2 := 
-  rf E e1 e2 \/ co E e1 e2 \/ fr E co e1 e2 \/ 
+Definition complus E (co : set Event -> Rln Event) e1 e2 :=
+  rf E e1 e2 \/ co E e1 e2 \/ fr E co e1 e2 \/
   rel_seq (co E) (rf E) e1 e2 \/ rel_seq (fr E co) (rf E) e1 e2.
 
 Definition ER E := ran (rfe E).
 Definition IR E := ran(rfi E).
-Definition M E := fun e => E e /\ (is_write e \/ is_read e). 
+Definition M E := fun e => E e /\ (is_write e \/ is_read e).
 
 Definition si_well_formed (E:set Event) (si:Rln Event) :=
   (forall x, dom si x -> M E x) /\
@@ -518,11 +518,11 @@ Definition si_well_formed (E:set Event) (si:Rln Event) :=
 Ltac destruct_siwf H := destruct H as [Hdom [Hran [Hrefl [Hsym [Htrans [Hw Hr]]]]]].
 
 Definition scaob E si e1 e2 := si E e1 e2 /\ ER E e1 /\ IR E e2.
-Definition rfisw E si := 
+Definition rfisw E si :=
   fun r1 => fun r2 => exists w1, exists w2, rfi E w1 r1 /\ rfi E w2 r2 /\ si E w1 w2.
 
-Definition erln E si := 
-  fun e1 => fun e2 => M E e1 /\ M E e2 /\ si E e1 e2 /\ 
+Definition erln E si :=
+  fun e1 => fun e2 => M E e1 /\ M E e2 /\ si E e1 e2 /\
     ((is_write e1 /\ is_write e2) \/ (ER E e1 /\ ER E e2) \/ (rfisw E si e1 e2)).
 Definition MemC E si := classes (erln E si).
 
@@ -546,10 +546,10 @@ Qed.
 
 Lemma int_ext_contrad E e1 e2 :
   internal E e1 e2 ->
-  external E e1 e2 -> 
+  external E e1 e2 ->
   False.
 Proof.
-intros Hint Hext; apply Hext; auto. 
+intros Hint Hext; apply Hext; auto.
 Qed.
 
 Lemma internal_trans E x y z :
@@ -733,7 +733,7 @@ Lemma rf_fr_is_co E co e1 e2 e3 :
 Proof.
 intros [? Hr] Hrf12 [w [Hw [Hrfw2 Hco]]].
 generalize (ran_rf_is_read Hrf12); intro Hr2;
-generalize (Hr e2 Hr2); intros [? Huni]; 
+generalize (Hr e2 Hr2); intros [? Huni];
 generalize (Huni e1 w Hrf12 Hrfw2); intro Heq; rewrite <- Heq in Hco; auto.
 Qed.
 
@@ -741,7 +741,7 @@ Lemma co_trans E co e1 e2 e3 :
   co_well_formed E co ->
   co E e1 e2 -> co E e2 e3 -> co E e1 e3.
 Proof.
-intros Hcowf H12 H23; 
+intros Hcowf H12 H23;
 generalize (co_implies_same_loc e1 e2 Hcowf H12); intro Hl12;
 generalize (co_implies_same_loc e2 e3 Hcowf H23); intro Hl23.
 destruct Hcowf as [Hincl Hlin];
@@ -776,10 +776,10 @@ Qed.
 
 Lemma rf_complus_in_complus E co e1 e2 e3 :
   rf_well_formed E ->
-  co_well_formed E co -> 
+  co_well_formed E co ->
   rf E e1 e2 -> complus E co e2 e3 -> complus E co e1 e3.
 Proof.
-intros Hrfwf [Hincl ?] Hrf12 [Hrf23 | [Hco23 | [Hfr23 | [Hcorf23 | Hfrrf23]]]]. 
+intros Hrfwf [Hincl ?] Hrf12 [Hrf23 | [Hco23 | [Hfr23 | [Hcorf23 | Hfrrf23]]]].
   assert False as Ht.
     destruct Hrf12 as [? [Hr2 ?]]; destruct Hrf23 as [Hw2 ?]; apply (read_write_contrad e2 Hr2 Hw2).
   inversion Ht.
@@ -789,7 +789,7 @@ intros Hrfwf [Hincl ?] Hrf12 [Hrf23 | [Hco23 | [Hfr23 | [Hcorf23 | Hfrrf23]]]].
   inversion Ht.
   right; left; apply rf_fr_is_co with e2; auto.
   assert False as Ht.
-    destruct Hrf12 as [? [Hr2 ?]]; destruct Hcorf23 as [e [Hco Hrf]]; 
+    destruct Hrf12 as [? [Hr2 ?]]; destruct Hcorf23 as [e [Hco Hrf]];
     generalize (Hincl e2 e Hco); intro Hpco.
     destruct Hpco as [Hw2 ?]; apply (read_write_contrad e2 Hr2 Hw2).
   inversion Ht.
@@ -809,7 +809,7 @@ intros Hcowf Hco12 [Hrf23 | [Hco23 | [Hfr23 | [Hcorf23 | Hfrrf23]]]].
   inversion Ht.
   right; right; right; left; destruct Hcorf23 as [e [Hcoe2e Hrfee3]]; exists e; split; auto; apply co_trans with e2; auto.
   assert False as Ht.
-    destruct Hfrrf23 as [e [Hfr Hrf]].  
+    destruct Hfrrf23 as [e [Hfr Hrf]].
     generalize (ran_co_is_write e1 e2 Hcowf Hco12); intro Hw2; generalize (dom_fr_is_read Hfr); intro Hr2.
     apply (read_write_contrad e2 Hr2 Hw2).
   inversion Ht.
@@ -850,7 +850,7 @@ inversion Hxy as [Heqxy | Hmcpxy]; clear Hxy; inversion Hyz as [Heqyz | Hmcpyz];
     apply co_complus_in_complus with y; auto.
     apply fr_complus_in_complus with y; auto.
     apply co_complus_in_complus with e; auto; apply rf_complus_in_complus with y; auto.
-    apply fr_complus_in_complus with e; auto; apply rf_complus_in_complus with y; auto.    
+    apply fr_complus_in_complus with e; auto; apply rf_complus_in_complus with y; auto.
 Qed.
 
 Lemma complus_irr E co x :
@@ -863,11 +863,11 @@ intros Hrfwf Hcowf; generalize Hcowf; intros [? Hlin]; intros [Hrf | [Hco | [Hfr
   generalize (Hlin (loc x)); clear Hlin; intro Hlin; destruct_lin Hlin; destruct_part Hpart; generalize Hco; apply Hirr; auto.
   destruct Hfr as [w [Hw [Hrf Hco]]]; apply (read_write_contrad x); [apply ran_rf_is_read with E w | apply ran_co_is_write with E co w]; auto.
   destruct Hcorf as [e [Hco Hrf]]; apply (read_write_contrad x); [apply ran_rf_is_read with E e | apply dom_co_is_write with E co e]; auto.
-  destruct Hfrrf as [w [[w' [Hw' [Hrf' Hco]]] Hrf]]. 
-    generalize (ran_rf_is_read Hrf'); intro Hrx; destruct_rf_wf Hrfwf; 
+  destruct Hfrrf as [w [[w' [Hw' [Hrf' Hco]]] Hrf]].
+    generalize (ran_rf_is_read Hrf'); intro Hrx; destruct_rf_wf Hrfwf;
     generalize (Hex_uni x Hrx); intros [_ Huni]; generalize (Huni w' w Hrf' Hrf);
-    intro Heq; rewrite Heq in Hco; generalize (Hlin (loc w')); clear Hlin; 
-    intro Hlin; destruct_lin Hlin; destruct_part Hpart; generalize Hco; 
+    intro Heq; rewrite Heq in Hco; generalize (Hlin (loc w')); clear Hlin;
+    intro Hlin; destruct_lin Hlin; destruct_part Hpart; generalize Hco;
     apply Hirr; auto.
 Qed.
 
@@ -914,11 +914,11 @@ Definition external_visibility (E : set Event) (co : set Event -> Rln Event) (si
 
 (** Well-formed lob: a relation lob over a set of events E is well-formed when:
     - lob is irreflexive
-    - lob is transitive 
+    - lob is transitive
     - lob starts with a read or write memory event
-    - lob is included in po 
+    - lob is included in po
     - lob; erln is included in lob
-    - lob; scaob is included in lob 
+    - lob; scaob is included in lob
     - scaob; lob is included in lob*)
 
 Definition lob_well_formed (E:set Event) (si lob : set Event -> Rln Event) :=
@@ -928,11 +928,11 @@ Definition lob_well_formed (E:set Event) (si lob : set Event -> Rln Event) :=
   rel_incl (lob E) (po E) /\
   rel_incl (rel_seq (lob E) (erln E si)) (lob E) /\
   rel_incl (rel_seq (lob E) (scaob E si)) (lob E) /\
-  rel_incl (rel_seq (scaob E si) (lob E)) (lob E).   
+  rel_incl (rel_seq (scaob E si) (lob E)) (lob E).
 Ltac destruct_lob_wf H := destruct H as [Hirr_lob [Htrans_lob [Hdom_lob [Hincl_po [Hlob_erln [Hlob_scaob Hscaob_lob]]]]]].
 
 (** ** ARMv8: Lemmas *)
-Lemma obs_in_mop (E : set Event) (co : set Event -> Rln Event) (e1 e2 : Event) : 
+Lemma obs_in_mop (E : set Event) (co : set Event -> Rln Event) (e1 e2 : Event) :
   obs E co e1 e2 ->
   maybe (obsplus E co) e1 e2.
 Proof.
@@ -945,7 +945,7 @@ Lemma obsplus_dec E co e1 e2 :
   transitive_closure (obs E co) e1 e2 ->
   rfe E e1 e2 \/ co E e1 e2 \/ fr E co e1 e2 \/ corfe E co e1 e2 \/ frrfe E co e1 e2.
 Proof.
-intros Hrfwf Hcowf H12; generalize Hcowf; intros [Hincl Hcolin]; 
+intros Hrfwf Hcowf H12; generalize Hcowf; intros [Hincl Hcolin];
   induction H12 as [e1 e2 Hb | e1 e2 e H1e He2].
   inversion Hb as [Hrfe | [Hco | Hfr]]; auto.
   inversion H1e as [Hrfe1e | [Hco1e | Hfr1e]];
@@ -955,9 +955,9 @@ intros Hrfwf Hcowf H12; generalize Hcowf; intros [Hincl Hcolin];
   generalize (Hincl e e2 Hcoe2); intro Hpcoe2;
   destruct Hrfe1e as [[? [Hre ?]] ?]; destruct Hpcoe2 as [Hwe ?]; generalize (read_write_contrad e Hre Hwe); intro Ht; inversion Ht.
   destruct Hrfe1e as [? ?]; right; left; apply rf_fr_is_co with e; auto.
-  destruct Hrfe1e as [[? [Hre ?]] ?]; destruct Hcorfee2 as [w [Hcoew Hrfe]]; 
+  destruct Hrfe1e as [[? [Hre ?]] ?]; destruct Hcorfee2 as [w [Hcoew Hrfe]];
   generalize (Hincl e w Hcoew); intro Hpcoew;
-  destruct Hpcoew as [Hwe ?]; 
+  destruct Hpcoew as [Hwe ?];
     generalize (read_write_contrad e Hre Hwe); intro Ht; inversion Ht.
   destruct Hrfe1e as [? ?]; destruct Hfrrfee2 as [w [Hfrew Hrfw2]]; right; right; right; left; exists w; split; auto; apply rf_fr_is_co with e; auto.
   right; right; right; left; exists e; split; auto.
@@ -965,13 +965,13 @@ intros Hrfwf Hcowf H12; generalize Hcowf; intros [Hincl Hcolin];
   generalize (Hincl e1 e Hco1e); intro Hpco1e;
   destruct Hpco1e as [? [Hwe ?]]; destruct Hfre2 as [? [? [[? [Hre ?]] ?]]]; generalize (read_write_contrad e Hre Hwe); intro Ht; inversion Ht.
   destruct Hcorfee2 as [w [Hcoew Hrfw2]]; right; right; right; left; exists w; split; auto; apply co_trans with e; auto.
-  destruct Hfrrfee2 as [w [Hfrew Hrfw2]]; 
+  destruct Hfrrfee2 as [w [Hfrew Hrfw2]];
     generalize (dom_fr_is_read Hfrew); intro Hre; generalize (ran_co_is_write e1 e Hcowf Hco1e); intro Hwe; generalize (read_write_contrad e Hre Hwe); intro Ht; inversion Ht.
   right; right; right; right; exists e; split; auto.
   right; right; left; apply fr_co_is_fr with e; auto.
 
   destruct Hfr1e as [? [? [? Hco]]]; generalize (Hincl x e Hco); intros [? [Hwe ?]];
-  destruct Hfre2 as [? [? [[? [Hre ?]] ?]]]; generalize (read_write_contrad e Hre Hwe); intro Ht; inversion Ht.   
+  destruct Hfre2 as [? [? [[? [Hre ?]] ?]]]; generalize (read_write_contrad e Hre Hwe); intro Ht; inversion Ht.
   destruct Hcorfee2 as [w [Hcoew Hrfewe2]]; right; right; right; right; exists w; split; auto; apply fr_co_is_fr with e; auto.
   destruct Hfrrfee2 as [w [Hfrew Hrfewe2]]; generalize (dom_fr_is_read Hfrew); intro Hre; generalize (ran_fr_is_write Hcowf Hfr1e); intro Hwe;
   generalize (read_write_contrad e Hre Hwe); intro Ht; inversion Ht.
@@ -983,7 +983,7 @@ Lemma op_trans E co e1 e2 e3 :
   (obsplus E co) e1 e3.
 Proof.
 intros H12 H23; apply tc_trans with e2; auto.
-Qed.   
+Qed.
 
 Lemma mop_trans E co e1 e2 e3 :
   maybe (obsplus E co) e1 e2 ->
@@ -1007,8 +1007,8 @@ intros Hrfwf Hcowf Hxy; generalize (obsplus_dec Hrfwf Hcowf Hxy); intros [[Hrf ?
   apply _base; left; auto.
   apply _base; right; left; auto.
   apply _base; right; right; left; auto.
-  apply _trans with z; [right |]; left; auto. 
-  apply _trans with z; [right; right |]; left; auto. 
+  apply _trans with z; [right |]; left; auto.
+  apply _trans with z; [right; right |]; left; auto.
 Qed.
 
 Lemma posRW_is_fri E co x y :
@@ -1020,7 +1020,7 @@ Lemma posRW_is_fri E co x y :
   fri E co x y.
 Proof.
 intros Hrfwf [? Hlin] Hintv Hrx Hwy Hpoxy Hlocxy; split.
-  destruct_rf_wf Hrfwf; generalize (Hex_uni x Hrx); clear Hex_uni; intros [[w Hrf] Huni]; 
+  destruct_rf_wf Hrfwf; generalize (Hex_uni x Hrx); clear Hex_uni; intros [[w Hrf] Huni];
   exists w; split; [apply dom_rf_is_write with E x | split]; auto.
 
   generalize (Hlin (loc x)); clear Hlin; intro Hlin; destruct_lin Hlin.
@@ -1045,7 +1045,7 @@ Lemma posWW_is_coi E co w w' :
   internal_visibility E co ->
   is_write w ->
   is_write w' ->
-  po E w w' -> 
+  po E w w' ->
   loc w = loc w' ->
   co E w w'.
 Proof.
@@ -1062,7 +1062,7 @@ generalize (Htot w w' Hd Hw Hw'); intros [|Hw'w]; auto.
 assert False as Ht.
   apply Hintv; exists w; apply _trans with w'; [right; right; right; split|apply _base]; auto.
 inversion Ht.
-Qed. 
+Qed.
 
 Lemma rfi_implies_po E co w r :
   internal_visibility E co ->
@@ -1100,7 +1100,7 @@ Lemma co_order_incl (E : set Event) (co : set Event -> Rln Event) (r o : Rln Eve
   rel_incl (co E) r ->
   rel_incl (co E) (order_to_co E o).
 Proof.
-intros Hcowf Hlin Hcor; generalize (lin_ext_prop E r o); 
+intros Hcowf Hlin Hcor; generalize (lin_ext_prop E r o);
   intros [Himpl _]; generalize (Himpl Hlin); clear Himpl; intros [Hincl Hlso]; intros x y Hxy.
 split.
   apply dom_co_in_evts with co y; auto.
@@ -1117,7 +1117,7 @@ Lemma co_corder_incl (E : set Event) (co : set Event -> Rln Event) (C : set (Cla
   rel_incl (co E) (delift C o) ->
   rel_incl (co E) (order_to_co E (delift C o)).
 Proof.
-intros Hcowf Hlin Hcor; generalize (clin_ext_prop C (lift C r) o); 
+intros Hcowf Hlin Hcor; generalize (clin_ext_prop C (lift C r) o);
   intros [Himpl _]; generalize (Himpl Hlin); clear Himpl; intros [Hincl Hlso]; intros x y Hxy.
 split.
   apply dom_co_in_evts with co y; auto.
@@ -1140,7 +1140,7 @@ apply Htot; auto.
   apply fr_implies_diff with E co; auto.
   apply dom_fr_in_evts with co e2; auto.
   apply ran_fr_in_evts with co e1; auto.
-Qed. 
+Qed.
 
 Definition equiv_rel (A:Type) (eqr:Rln A) :=
   (forall x, eqr x x) /\
@@ -1162,10 +1162,10 @@ Lemma class_of_refl (A:Type) (eqr:Rln A) x :
 Proof.
 intros Heqr; destruct_eqrln Heqr; apply Hrefl.
 Qed.
-      
+
 Lemma ran_of_rfe_si_is_read E si x y z :
   si_well_formed E (si E) ->
-  rfe E x y -> 
+  rfe E x y ->
   si E y z ->
   is_read z.
 Proof.
@@ -1176,7 +1176,7 @@ Qed.
 
 Lemma read_is_ER_or_IR E x :
   rf_well_formed E ->
-  is_read x -> 
+  is_read x ->
   ER E x \/ IR E x.
 Proof.
 intros Hrfwf Hr; destruct_rf_wf Hrfwf;
@@ -1185,13 +1185,13 @@ assert (E w) as HEw.
   apply dom_rf_in_evts with x; auto.
 assert (E x) as HEx.
   apply ran_rf_in_evts with w; auto.
-generalize (int_or_ext E w x HEw HEx); intros [Hint | Hext]; 
+generalize (int_or_ext E w x HEw HEx); intros [Hint | Hext];
   [right | left]; exists w; split; auto.
 Qed.
 
 Lemma equiv_elts_have_equal_classes (A:Type) (eqr:Rln A) x y :
   equiv_rel eqr ->
-  eqr x y -> 
+  eqr x y ->
   class_of eqr x = class_of eqr y.
 Proof.
 intros Hequivr Hxy; unfold class_of; destruct_eqrln Hequivr;
@@ -1233,16 +1233,16 @@ generalize (obsplus_dec Hrfwf Hcowf Hxe); intros [Hrfe | [Hco | [Hfr | [Hcorfe |
     assert (ER E e) as HERe.
       exists x; auto.
     assert (ER E y \/ IR E y) as Hory.
-      apply read_is_ER_or_IR; auto; 
+      apply read_is_ER_or_IR; auto;
       apply ran_of_rfe_si_is_read with E si x e; auto.
     inversion Hory as [HERy | HIRy]; clear Hory.
 
       assert (class_of eqr e = class_of eqr y) as Hceqey.
         clear Htrans; destruct_siwf Hsiwf.
-        apply equiv_elts_have_equal_classes; auto; 
-        rewrite <- Heqr; auto; split; auto; 
+        apply equiv_elts_have_equal_classes; auto;
+        rewrite <- Heqr; auto; split; auto;
           [apply Hdom; exists y | split; [apply Hran; exists e|]]; auto.
-        
+
       rewrite <- Hceqey; auto.
 
       apply Htrans with (class_of eqr e); auto; apply Hincl; auto;
@@ -1256,12 +1256,12 @@ generalize (obsplus_dec Hrfwf Hcowf Hxe); intros [Hrfe | [Hco | [Hfr | [Hcorfe |
 
     assert (is_write e /\ is_write y) as Hww.
       generalize (ran_co_is_write x e Hcowf Hco); intro Hwe.
-      split; [| clear Htrans; destruct_siwf Hsiwf; apply Hw with e]; auto. 
+      split; [| clear Htrans; destruct_siwf Hsiwf; apply Hw with e]; auto.
 
     assert (class_of eqr e = class_of eqr y) as Hceqey.
       clear Htrans; destruct_siwf Hsiwf.
-      apply equiv_elts_have_equal_classes; auto; 
-      rewrite <- Heqr; auto; split; auto; 
+      apply equiv_elts_have_equal_classes; auto;
+      rewrite <- Heqr; auto; split; auto;
         [apply Hdom; exists y | split; [apply Hran; exists e|]]; auto.
 
     rewrite <- Hceqey; auto.
@@ -1273,18 +1273,18 @@ generalize (obsplus_dec Hrfwf Hcowf Hxe); intros [Hrfe | [Hco | [Hfr | [Hcorfe |
 
     assert (is_write e /\ is_write y) as Hww.
       generalize (ran_fr_is_write Hcowf Hfr); intro Hwe.
-      split; [| clear Htrans; destruct_siwf Hsiwf; apply Hw with e]; auto. 
+      split; [| clear Htrans; destruct_siwf Hsiwf; apply Hw with e]; auto.
 
     assert (class_of eqr e = class_of eqr y) as Hceqey.
       clear Htrans; destruct_siwf Hsiwf.
-      apply equiv_elts_have_equal_classes; auto; 
-      rewrite <- Heqr; auto; split; auto; 
+      apply equiv_elts_have_equal_classes; auto;
+      rewrite <- Heqr; auto; split; auto;
         [apply Hdom; exists y | split; [apply Hran; exists e|]]; auto.
 
     rewrite <- Hceqey; auto.
 
     (*x -co;rfe-> e -si- y*)
-    destruct Hcorfe as [x' [Hco Hrfe]]; 
+    destruct Hcorfe as [x' [Hco Hrfe]];
     generalize (class_of_in_classes x' Hequivr HC); intro Hinx';
     generalize (class_of_refl x' Hequivr); intro Hreflx';
     apply Htrans with (class_of eqr x').
@@ -1300,14 +1300,14 @@ generalize (obsplus_dec Hrfwf Hcowf Hxe); intros [Hrfe | [Hco | [Hfr | [Hcorfe |
     assert (ER E e) as HERe.
       exists x'; auto.
     assert (ER E y \/ IR E y) as Hory.
-      apply read_is_ER_or_IR; auto; 
+      apply read_is_ER_or_IR; auto;
       apply ran_of_rfe_si_is_read with E si x' e; auto.
     inversion Hory as [HERy | HIRy]; clear Hory.
 
       assert (class_of eqr e = class_of eqr y) as Hceqey.
         clear Htrans; destruct_siwf Hsiwf.
-        apply equiv_elts_have_equal_classes; auto; 
-        rewrite <- Heqr; auto; split; auto; 
+        apply equiv_elts_have_equal_classes; auto;
+        rewrite <- Heqr; auto; split; auto;
         [apply Hdom; exists y | split; [apply Hran; exists e|]]; auto.
 
       rewrite <- Hceqey; auto.
@@ -1317,7 +1317,7 @@ generalize (obsplus_dec Hrfwf Hcowf Hxe); intros [Hrfe | [Hco | [Hfr | [Hcorfe |
       apply Hscaobincl; split; auto.
 
     (*x -fr;rfe-> e -si- y*)
-    destruct Hfrrfe as [x' [Hfr Hrfe]]; 
+    destruct Hfrrfe as [x' [Hfr Hrfe]];
     generalize (class_of_in_classes x' Hequivr HC); intro Hinx';
     generalize (class_of_refl x' Hequivr); intro Hreflx';
     apply Htrans with (class_of eqr x').
@@ -1333,14 +1333,14 @@ generalize (obsplus_dec Hrfwf Hcowf Hxe); intros [Hrfe | [Hco | [Hfr | [Hcorfe |
     assert (ER E e) as HERe.
       exists x'; auto.
     assert (ER E y \/ IR E y) as Hory.
-      apply read_is_ER_or_IR; auto; 
+      apply read_is_ER_or_IR; auto;
       apply ran_of_rfe_si_is_read with E si x' e; auto.
     inversion Hory as [HERy | HIRy]; clear Hory.
 
       assert (class_of eqr e = class_of eqr y) as Hceqey.
         clear Htrans; destruct_siwf Hsiwf.
-        apply equiv_elts_have_equal_classes; auto; 
-        rewrite <- Heqr; auto; split; auto; 
+        apply equiv_elts_have_equal_classes; auto;
+        rewrite <- Heqr; auto; split; auto;
         [apply Hdom; exists y | split; [apply Hran; exists e|]]; auto.
 
       rewrite <- Hceqey; auto.
@@ -1366,7 +1366,7 @@ Lemma tc_obsp_si_in_order E co si r eqr C o x y :
   o (class_of eqr x) (class_of eqr y).
 Proof.
 intros Heqr Hequivr HC Hsiwf Hrfwf Hcowf Hlin Hrfeincl Hcoincl Hfrincl Hscaobincl Htc; auto.
-induction Htc as [x e Hb | x y e Hb]; 
+induction Htc as [x e Hb | x y e Hb];
 generalize (obsp_si_in_order Heqr Hequivr HC Hsiwf Hrfwf Hcowf Hlin Hrfeincl Hcoincl Hfrincl Hscaobincl Hb); auto;
 intros Hoxe; generalize (clin_ext_prop C (lift C r) o); intros [Himpl _];
 generalize (Himpl Hlin); clear Himpl; intros [Hincl Hlso]; destruct_lin Hlso; destruct_part Hpart;
@@ -1392,7 +1392,7 @@ intros Heqr Hequivr HC Hsiwf Hrfwf Hcowf Hlin Hrfeincl Hcoincl Hfrincl Hscaobinc
 right; apply tc_obsp_si_in_order with E co si r C; auto.
 Qed.
 
-Definition mobs_r_mobs E co si r := rel_seq (maybe (transitive_closure (rel_seq (obsplus E co) (si E)))) 
+Definition mobs_r_mobs E co si r := rel_seq (maybe (transitive_closure (rel_seq (obsplus E co) (si E))))
                                 (rel_seq r (maybe (transitive_closure (rel_seq (obsplus E co) (si E))))).
 Definition tc_mobs_r_mobs E co si r := transitive_closure (mobs_r_mobs E co si r).
 
@@ -1406,7 +1406,7 @@ Proof.
 intros Hequivr H1 H2 H12.
 generalize (class_of_refl e1 Hequivr); intro Hre1;
 generalize (class_of_refl e2 Hequivr); intro Hre2.
-split; auto; split; auto; exists e1; exists e2; split; auto. 
+split; auto; split; auto; exists e1; exists e2; split; auto.
 Qed.
 
 Lemma mobs_r_mobs_in_order E co si r eqr C o e1 e2 :
@@ -1430,9 +1430,9 @@ generalize (class_of_in_classes e' Hequivr HC); intros HCe';
 generalize (clin_ext_prop C (lift C r) o); intros [Himpl _];
 generalize (Himpl Hlin); intros [Hincl Hlso];
 destruct_lin Hlso; destruct_part Hpart;
-generalize (mop_in_order Heqr Hequivr HC Hsiwf Hrfwf Hcowf Hlin Hrfincl Hcoincl Hfrincl Hscaobincl H1e); 
+generalize (mop_in_order Heqr Hequivr HC Hsiwf Hrfwf Hcowf Hlin Hrfincl Hcoincl Hfrincl Hscaobincl H1e);
 generalize (mop_in_order Heqr Hequivr HC Hsiwf Hrfwf Hcowf Hlin Hrfincl Hcoincl Hfrincl Hscaobincl He'2);
-intros [Heqe'2 | Hgcbe'2]; intros [Heqe1 | Hgcbe1]. 
+intros [Heqe'2 | Hgcbe'2]; intros [Heqe1 | Hgcbe1].
 
   rewrite Heqe1; rewrite <- Heqe'2; auto;
   apply Hincl; apply r_to_lift; auto.
@@ -1445,7 +1445,7 @@ intros [Heqe'2 | Hgcbe'2]; intros [Heqe1 | Hgcbe1].
   rewrite Heqe1; auto;
   apply Hincl; apply r_to_lift; auto.
 
-  apply Htrans with (class_of eqr e); auto; 
+  apply Htrans with (class_of eqr e); auto;
   apply Htrans with (class_of eqr e'); auto;
   apply Hincl; apply r_to_lift; auto.
 Qed.
@@ -1489,7 +1489,7 @@ Lemma tc_mobs_r_mobs_irr E co si r eqr C o x :
   rel_incl (scaob E si) r ->
   ~(tc_mobs_r_mobs E co si r x x).
 Proof.
-intros Heqr Hequivr HC Hsiwf Hrfwf Hcowf Hlin Hrfeincl Hcoincl Hfrincl Hscaobincl Hxx; 
+intros Heqr Hequivr HC Hsiwf Hrfwf Hcowf Hlin Hrfeincl Hcoincl Hfrincl Hscaobincl Hxx;
 generalize (clin_ext_prop C (lift C r) o); intros [Himpl _];
 generalize (Himpl Hlin); clear Himpl; intros [Hincl Hlso]; destruct_lin Hlso; destruct_part Hpart.
 apply Hirr with (class_of eqr x); apply tc_mobs_r_mobs_in_order with E co si r C; auto.
@@ -1529,14 +1529,14 @@ Definition preorder_gcb (E : set Event) (si lob : set Event -> Rln Event) (e1 e2
    (is_read e1 /\ read_requirements E lob e1 e2))) \/
   (scaob E si e1 e2).
 Definition preorder_gcb_lift E si lob C :=
-  lift C (preorder_gcb E si lob). 
+  lift C (preorder_gcb E si lob).
 
-Definition dgcb_loc E C gcb := 
-  fun e1 => fun e2 => E e1 /\ E e2 /\ delift C gcb e1 e2 /\ loc e1 = loc e2. 
+Definition dgcb_loc E C gcb :=
+  fun e1 => fun e2 => E e1 /\ E e2 /\ delift C gcb e1 e2 /\ loc e1 = loc e2.
 Definition external_global_completion (E : set Event) (co si lob: set Event -> Rln Event) (gcb : Rln (Class Event)): Prop :=
   (clinearisations (preorder_gcb_lift E si lob (MemC E si)) (MemC E si)) gcb /\
   rel_equal (rf E) (gcb_rf E (dgcb_loc E (MemC E si) gcb)) /\ rel_equal (co E) (gcb_co E (dgcb_loc E (MemC E si) gcb)).
-  
+
 (** ** External Global Completion: Auxiliary definitions, for convenience in the proofs below *)
 
 Definition big_rel E co si lob := tc_mobs_r_mobs E co si (preorder_gcb E si lob).
@@ -1549,7 +1549,7 @@ Lemma lob'_irr E si lob x :
 Proof.
 intros Hlobwf [Hxx ?]; destruct_lob_wf Hlobwf.
 apply Hirr_lob; exists x; auto.
-Qed. 
+Qed.
 
 Lemma lob_implies_pgcb_or_lob' (E : set Event) (si lob : set Event -> Rln Event) (e1 e2 : Event) :
   lob_well_formed E si lob ->
@@ -1573,7 +1573,7 @@ Lemma lob'_in_lob'_seq_big_rel E co si lob e1 e2 :
   lob' E lob e1 e2 ->
   rel_seq (lob' E lob) (maybe (big_rel E co si lob)) e1 e2.
 Proof.
-intros H12; exists e2; split; auto; left; auto. 
+intros H12; exists e2; split; auto; left; auto.
 Qed.
 
 Lemma front_seq (r1 r2 : Rln Event) e1 e2 e3 :
@@ -1616,7 +1616,7 @@ Lemma ER_lob'_contrad E lob e1 e2 :
   False.
 Proof.
 intros Hrfwf [w1 [Hrfw1e1 Hext]] [Hlob [Hr1 Hnrr]]; apply Hnrr; left; intros [w [Hrfw1 Hint]].
-destruct Hrfwf as [? Hr]; generalize (Hr e1 Hr1); intros [? Huni]; generalize (Huni w1 w Hrfw1e1 Hrfw1); 
+destruct Hrfwf as [? Hr]; generalize (Hr e1 Hr1); intros [? Huni]; generalize (Huni w1 w Hrfw1e1 Hrfw1);
 intro Heq; rewrite Heq in Hext; apply int_ext_contrad with E w e1; auto.
 Qed.
 
@@ -1644,12 +1644,12 @@ Lemma obsp_si_lob' E co si lob e1 e2 e3 :
   rf_well_formed E ->
   co_well_formed E co ->
   rel_seq (obsplus E co) (si E) e1 e2 ->
-  lob' E lob e2 e3 -> 
+  lob' E lob e2 e3 ->
   rel_seq (rel_seq (maybe (rel_union (co E) (fr E co))) (rfe E))
     (rel_seq (scaob E si) (lob' E lob)) e1 e3.
 Proof.
 intros Hsiwf Hrfwf Hcowf [e [H1e He2]] H23.
-generalize (obsplus_dec Hrfwf Hcowf H1e); clear H1e; 
+generalize (obsplus_dec Hrfwf Hcowf H1e); clear H1e;
 intros [Hrfe1e | [Hco1e | [Hfr1e | [Hcorfe1e | Hfrrfe1e]]]].
 
   assert (ER E e) as HERe.
@@ -1668,7 +1668,7 @@ intros [Hrfe1e | [Hco1e | [Hfr1e | [Hcorfe1e | Hfrrfe1e]]]].
     destruct_siwf Hsiwf; apply Hw with e; auto; apply ran_fr_is_write with E co e1; auto.
   generalize (W_lob'_contrad Hw2 H23); intro Ht; inversion Ht.
 
-  destruct Hcorfe1e as [x [? Hrfe]]. 
+  destruct Hcorfe1e as [x [? Hrfe]].
   assert (ER E e) as HERe.
     exists x; auto.
   assert (is_read e2) as Hr2.
@@ -1677,7 +1677,7 @@ intros [Hrfe1e | [Hco1e | [Hfr1e | [Hcorfe1e | Hfrrfe1e]]]].
     generalize (read_is_ER_or_IR e2 Hrfwf Hr2); intros [HER2 | HIR2]; auto.
   generalize (ER_lob'_contrad Hrfwf HER2 H23); auto; intro Ht; inversion Ht.
 
-  destruct Hfrrfe1e as [x [? Hrfe]]. 
+  destruct Hfrrfe1e as [x [? Hrfe]].
   assert (ER E e) as HERe.
     exists x; auto.
   assert (is_read e2) as Hr2.
@@ -1693,8 +1693,8 @@ Lemma pre_mop_lob'_in_lob'_or_br E co si lob e1 e2 e3 :
   co_well_formed E co ->
   maybe (transitive_closure (rel_seq (obsplus E co) (si E))) e1 e2 ->
   lob' E lob e2 e3 ->
-  lob' E lob e1 e3 \/ 
-  rel_seq (maybe (transitive_closure (rel_seq (obsplus E co) (si E)))) 
+  lob' E lob e1 e3 \/
+  rel_seq (maybe (transitive_closure (rel_seq (obsplus E co) (si E))))
           (rel_seq (rel_seq (maybe (rel_union (co E) (fr E co))) (rfe E)) (rel_seq (scaob E si) (lob' E lob))) e1 e3.
 Proof.
 intros Hsiwf Hrfwf Hcowf [Heq12 | H12] H23; [rewrite Heq12|]; auto.
@@ -1719,7 +1719,7 @@ Lemma scaob_lob'_is_pgcb_or_lob' E si lob e1 e2 :
   rel_seq (scaob E si) (lob' E lob) e1 e2 ->
   preorder_gcb E si lob e1 e2.
 Proof.
-intros Hrfwf Hlobwf [e [Hsi Hlob']]; 
+intros Hrfwf Hlobwf [e [Hsi Hlob']];
   unfold preorder_gcb; left; split; auto.
     destruct_lob_wf Hlobwf; destruct Hlob' as [Hlob ?].
     apply Hscaob_lob; exists e; auto.
@@ -1759,12 +1759,12 @@ destruct Hseq as [a [H1a [b [Hab Hb3]]]].
 generalize (scaob_lob'_is_pgcb_or_lob' Hrfwf Hlobwf Hb3); intros Hpgcb.
 right; unfold big_rel. unfold tc_mobs_r_mobs. unfold mobs_r_mobs.
 
-  apply _base; exists b; split. 
+  apply _base; exists b; split.
   inversion H1a as [Heq1a | Hs1a].
     rewrite Heq1a; right; apply _base; exists b; split; auto.
       destruct Hab as [x [[Heqax | Hax] Hxb]].
         rewrite Heqax; apply _base; left; auto.
-        apply _trans with x; auto. 
+        apply _trans with x; auto.
           inversion Hax as [Hco | Hfr]; right; [left | right]; auto.
           apply _base; left; auto.
       destruct_siwf Hsiwf; apply Hrefl; auto.
@@ -1773,7 +1773,7 @@ right; unfold big_rel. unfold tc_mobs_r_mobs. unfold mobs_r_mobs.
     apply _base; exists b; split.
       destruct Hab as [x [[Heqax | Hax] Hxb]].
         rewrite Heqax; apply _base; left; auto.
-        apply _trans with x; auto. 
+        apply _trans with x; auto.
           inversion Hax as [Hco | Hfr]; right; [left | right]; auto.
           apply _base; left; auto.
       destruct_siwf Hsiwf; apply Hrefl; auto.
@@ -1788,7 +1788,7 @@ Lemma br_trans E co si lob e1 e2 e3 :
 Proof.
 intros H12 H23.
 apply tc_trans with e2; auto.
-Qed. 
+Qed.
 
 Lemma br_mop_in_br E co si lob e1 e2 e3 :
   big_rel E co si lob e1 e2 ->
@@ -1797,9 +1797,9 @@ Lemma br_mop_in_br E co si lob e1 e2 e3 :
 Proof.
 intros Hbr12 Hmop23; induction Hbr12 as [e1 e2 Hb | e1 e2 e H1e].
 
-destruct Hb as [e [He1e [e'[Hee' He'2]]]]; 
-apply _base; exists e; split; auto; exists e'; split; auto. 
-  generalize Hmop23; generalize He'2; apply maybe_tc_trans. 
+destruct Hb as [e [He1e [e'[Hee' He'2]]]];
+apply _base; exists e; split; auto; exists e'; split; auto.
+  generalize Hmop23; generalize He'2; apply maybe_tc_trans.
 
 apply br_trans with e; auto; apply _base; auto.
 Qed.
@@ -1810,7 +1810,7 @@ Lemma lob'_seq_lob'_in_pgcb_or_lob' E si lob e1 e2 e3:
   lob' E lob e2 e3 ->
   (preorder_gcb E si lob) e1 e3 \/ lob' E lob e1 e3.
 Proof.
-intros Hlobwf [Hlob12 [Hw1 Hrr1]] [Hlob23 [Hw2 Hrr2]]; destruct_lob_wf Hlobwf. 
+intros Hlobwf [Hlob12 [Hw1 Hrr1]] [Hlob23 [Hw2 Hrr2]]; destruct_lob_wf Hlobwf.
 assert (lob E e1 e3) as H13.
   apply (Htrans_lob e1 e2 e3 Hlob12 Hlob23).
 generalize (excluded_middle (read_requirements E lob e1 e3)); intros [Hrr | Hnrr].
@@ -1822,7 +1822,7 @@ Lemma pgcb_lob'_in_pgcb_or_lob' E si lob e1 e2 e3 :
   lob_well_formed E si lob ->
   (preorder_gcb E si lob) e1 e2 ->
   lob' E lob e2 e3 ->
-  rel_seq (maybe (scaob E si)) (preorder_gcb E si lob) e1 e3 \/ 
+  rel_seq (maybe (scaob E si)) (preorder_gcb E si lob) e1 e3 \/
   rel_seq (maybe (scaob E si)) (lob' E lob) e1 e3.
 Proof.
 intros Hlobwf Hpgcb H23; generalize Hlobwf; intro Hlobwf'; destruct_lob_wf Hlobwf'.
@@ -1853,7 +1853,7 @@ intros Hsiwf Hrfwf Hcowf Hlobwf H12 H23; induction H12 as [e1 e2 [e [H1e [e' [He
 
   (*e',e3 in lob'*)
   generalize (pgcb_lob'_in_pgcb_or_lob' Hlobwf Hee' He'3); intros [Hpgcbe3 | Hlob'e3].
-    destruct Hpgcbe3 as [e0 [Hee0 H03]]; inversion Hee0 as [Heqee0 | Hsee0]; clear Hee0; left. 
+    destruct Hpgcbe3 as [e0 [Hee0 H03]]; inversion Hee0 as [Heqee0 | Hsee0]; clear Hee0; left.
       rewrite Heqee0 in H1e; apply _base; exists e0; split; auto; exists e3; split; auto; left; auto.
       apply tc_trans with e0; apply _base.
         exists e; split; auto; exists e0; split; [|left]; auto; right; auto.
@@ -1875,7 +1875,7 @@ intros Hsiwf Hrfwf Hcowf Hlobwf H12 H23; induction H12 as [e1 e2 [e [H1e [e' [He
 
     (*y,e3 in lob'*)
     generalize (pgcb_lob'_in_pgcb_or_lob' Hlobwf Hxy Hy3); intros [Hpgcbx3 | Hlob'x3].
-    destruct Hpgcbx3 as [e0 [Hee0 H03]]; inversion Hee0 as [Heqee0 | Hsee0]; clear Hee0; left. 
+    destruct Hpgcbx3 as [e0 [Hee0 H03]]; inversion Hee0 as [Heqee0 | Hsee0]; clear Hee0; left.
       rewrite Heqee0 in H1x; apply _base; exists e0; split; auto; exists e3; split; auto; left; auto.
       apply tc_trans with e0; apply _base.
         exists x; split; auto; exists e0; split; [|left]; auto; right; auto.
@@ -1887,8 +1887,8 @@ intros Hsiwf Hrfwf Hcowf Hlobwf H12 H23; induction H12 as [e1 e2 [e [H1e [e' [He
 
     (*y,e3 in br*)
     left; apply _trans with y; auto; exists x; split; auto; exists y; split; [|left]; auto.
-Qed. 
-          
+Qed.
+
 Lemma pgcb_mbr_in_br E co si lob e1 e2 e3 :
   (preorder_gcb E si lob) e1 e2 ->
   maybe (big_rel E co si lob) e2 e3 ->
@@ -1910,8 +1910,8 @@ Lemma gcb_path_ob_dec (E : set Event) (co si lob : set Event -> Rln Event) (e1 e
   co_well_formed E co ->
   lob_well_formed E si lob ->
   ob E co (si E) (lob E) e1 e2 ->
-  transitive_closure (rel_seq (obsplus E co) (si E)) e1 e2 \/ 
-  big_rel E co si lob e1 e2 \/ rel_seq (lob' E lob) (maybe (big_rel E co si lob)) e1 e2 
+  transitive_closure (rel_seq (obsplus E co) (si E)) e1 e2 \/
+  big_rel E co si lob e1 e2 \/ rel_seq (lob' E lob) (maybe (big_rel E co si lob)) e1 e2
   \/ rel_seq (lob' E lob) (maybe (transitive_closure (rel_seq (obsplus E co) (si E)))) e1 e2.
 Proof.
 intros Hsiwf Hrfwf Hcowf Hlobwf H12.
@@ -1933,7 +1933,7 @@ induction H12 as [e1 e3 [e2 [Hobs Hsi]] | e1 e2 Hlob |]; auto.
       left; apply tc_trans with e; auto.
 
       (*e,e2 in br*)
-      right; left; apply mop_br_in_br with e; auto; right; auto. 
+      right; left; apply mop_br_in_br with e; auto; right; auto.
 
       (*e,e2 in lob';mbr U lob';mop*)
       assert (maybe (transitive_closure (rel_seq (obsplus E co) (si E))) e1 e) as Hmmop1e.
@@ -1941,9 +1941,9 @@ induction H12 as [e1 e3 [e2 [Hobs Hsi]] | e1 e2 Hlob |]; auto.
       inversion Hlob'e2 as [Hee2 | Hee2]; clear Hlob'e2; destruct Hee2 as [e' [Hlob'ee' Hbre'2]];
       generalize (mop_lob'_in_lob'_or_br Hsiwf Hrfwf Hcowf Hlobwf Hmmop1e Hlob'ee'); intros [Hlob'1' | Hbr1']; right.
         right; left; exists e'; split; auto.
-        left; inversion Hbre'2 as [Heq | Hbr]; [rewrite <- Heq | apply br_trans with e']; auto. 
+        left; inversion Hbre'2 as [Heq | Hbr]; [rewrite <- Heq | apply br_trans with e']; auto.
         right; right; exists e'; split; auto.
-        left; inversion Hbre'2 as [Heq | Hbr]; 
+        left; inversion Hbre'2 as [Heq | Hbr];
           [rewrite <- Heq | apply br_mop_in_br with e'; auto; right; apply _base; auto]; auto.
 
     (*e1,e in br*)
@@ -1956,13 +1956,13 @@ induction H12 as [e1 e3 [e2 [Hobs Hsi]] | e1 e2 Hlob |]; auto.
       right; left; apply br_trans with e; auto.
 
       (*e,e2 in lob';mbr U lob';mop*)
-      inversion Hlob'e2 as [Hee2 | Hee2]; clear Hlob'e2; destruct Hee2 as [e' [Hee' He'2]]; 
-      generalize (br_lob'_in_br_or_lob' Hsiwf Hrfwf Hcowf Hlobwf Hbr1e Hee'); 
-      clear Hbr1e Hee' e; intros [Hbr1' | Hlob1']; right. 
+      inversion Hlob'e2 as [Hee2 | Hee2]; clear Hlob'e2; destruct Hee2 as [e' [Hee' He'2]];
+      generalize (br_lob'_in_br_or_lob' Hsiwf Hrfwf Hcowf Hlobwf Hbr1e Hee');
+      clear Hbr1e Hee' e; intros [Hbr1' | Hlob1']; right.
 
         left; inversion He'2 as [Heqe'2 | Hbre'2]; clear He'2; [rewrite Heqe'2 in Hbr1'|apply br_trans with e']; auto.
         right; left; exists e'; auto.
-        left; apply br_mop_in_br with e'; auto. 
+        left; apply br_mop_in_br with e'; auto.
         right; right; exists e'; split; auto.
 
     (*e1,e in lob';mbr*)
@@ -1972,7 +1972,7 @@ induction H12 as [e1 e3 [e2 [Hobs Hsi]] | e1 e2 Hlob |]; auto.
       inversion He'e as [Heqe'e | Hbre'e]; clear He'e; right; right;
         [right; rewrite Heqe'e in H1e'; exists e; split |
         left; exists e'; split; auto; right; apply br_mop_in_br with e]; auto; right; auto.
-      
+
       (*e,e2 in br*)
       right; right; left; exists e'; split; auto;
       inversion He'e as [Heqe'e | Hbre'e]; clear He'e; auto; right; [rewrite Heqe'e | apply br_trans with e]; auto.
@@ -1981,7 +1981,7 @@ induction H12 as [e1 e3 [e2 [Hobs Hsi]] | e1 e2 Hlob |]; auto.
       inversion Hlob'e2 as [He2 | He2]; clear Hlob'e2; destruct He2 as [e'' [Hee'' He''2]];
       inversion He'e as [Heqe'e | Hbre'e]; clear He'e.
 
-         rewrite Heqe'e in H1e'; generalize (lob'_seq_lob'_in_pgcb_or_lob' Hlobwf H1e' Hee''); clear e Heqe'e H1e' Hee''; 
+         rewrite Heqe'e in H1e'; generalize (lob'_seq_lob'_in_pgcb_or_lob' Hlobwf H1e' Hee''); clear e Heqe'e H1e' Hee'';
          intros [Hpgcb1'' | Hlob'1'']; right; [left; apply pgcb_mbr_in_br with e''; auto | right; left; exists e''; auto].
 
         generalize (br_lob'_in_br_or_lob' Hsiwf Hrfwf Hcowf Hlobwf Hbre'e Hee''); clear Hbre'e Hee'' e; intros [Hbre'e'' | Hlobe'e''].
@@ -1996,7 +1996,7 @@ induction H12 as [e1 e3 [e2 [Hobs Hsi]] | e1 e2 Hlob |]; auto.
 
       (*e,e2 in lob;mop*)
 
-         rewrite Heqe'e in H1e'; generalize (lob'_seq_lob'_in_pgcb_or_lob' Hlobwf H1e' Hee''); clear e Heqe'e H1e' Hee''; 
+         rewrite Heqe'e in H1e'; generalize (lob'_seq_lob'_in_pgcb_or_lob' Hlobwf H1e' Hee''); clear e Heqe'e H1e' Hee'';
          intros [Hpgcb1'' | Hlob'1'']; right; [left; apply _base; exists e1; split; [left | exists e''; split]; auto |
                                              right; right; exists e''; split; auto].
 
@@ -2017,11 +2017,11 @@ induction H12 as [e1 e3 [e2 [Hobs Hsi]] | e1 e2 Hlob |]; auto.
       (*e,e2 in br*)
       right; right; left; exists e'; split; auto.
         right; apply mop_br_in_br with e; auto.
-      
+
       (*e,e2 in lob';mbr U lob';mop*)
       inversion Hlob'e2 as [He2 | He2]; destruct He2 as [e'' [He'' H''2]];
       generalize (mop_lob'_in_lob'_or_br Hsiwf Hrfwf Hcowf Hlobwf H'e He''); clear H'e He''; intros [Hlob | Hbr].
-    
+
        (*e',e'' in lob'*)
         generalize (lob'_seq_lob'_in_pgcb_or_lob' Hlobwf H1' Hlob); clear H1' Hlob; intros [Hpgcb | Hlob]; right.
 
@@ -2034,7 +2034,7 @@ induction H12 as [e1 e3 [e2 [Hobs Hsi]] | e1 e2 Hlob |]; auto.
             right; right; left; exists e'; split; auto; inversion H''2 as [Heq | Hbr''2]; clear H''2;
               [rewrite Heq in Hbr; right | right; apply br_trans with e'']; auto.
 
-            
+
        (*e',e'' in lob*)
         generalize (lob'_seq_lob'_in_pgcb_or_lob' Hlobwf H1' Hlob); clear H1' Hlob; intros [Hpgcb | Hlob]; right.
 
@@ -2045,7 +2045,7 @@ induction H12 as [e1 e3 [e2 [Hobs Hsi]] | e1 e2 Hlob |]; auto.
 
        (*e',e'' in br*)
        right; right; left; exists e'; split; auto; right; apply br_mop_in_br with e''; auto.
-Qed. 
+Qed.
 
 (** * External Global Completion -> External Visibility lemmas *)
 
@@ -2053,7 +2053,7 @@ Lemma rf_in_dgcb E si gcb :
   rel_equal (rf E) (gcb_rf E (dgcb_loc E (MemC E si) gcb)) ->
   rel_incl (rf E) (delift (MemC E si) gcb).
 Proof.
-intros Hrfeq x y Hrf; destruct Hrfeq as [Hrfincl ?]; 
+intros Hrfeq x y Hrf; destruct Hrfeq as [Hrfincl ?];
 generalize (Hrfincl x y Hrf); intros [? [? [? [? [? [? [Hxy ?]]]]]]]; auto;
 destruct Hxy as [? [? [? ?]]]; auto.
 Qed.
@@ -2062,7 +2062,7 @@ Lemma co_in_dgcb E co si gcb :
   rel_equal (co E) (gcb_co E (dgcb_loc E (MemC E si) gcb)) ->
   rel_incl (co E) (delift (MemC E si) gcb).
 Proof.
-intros Hcoeq x y Hco; destruct Hcoeq as [Hcoincl ?]; 
+intros Hcoeq x y Hco; destruct Hcoeq as [Hcoincl ?];
 generalize (Hcoincl x y Hco); intros [? [? [? [? [? [? [? [? ?]]]]]]]]; auto.
 Qed.
 
@@ -2077,7 +2077,7 @@ split; [|split].
   intro x; generalize (Hrefl x); intro Hsix.
   assert (M E x) as HMx.
     apply Hdom; exists x; auto.
-  split; auto; split; auto; split; auto. 
+  split; auto; split; auto; split; auto.
   destruct HMx as [HEx [Hwx | Hrx]]; [left | right]; auto.
    destruct_rf_wf Hrfwf; generalize (Hex_uni x Hrx); intros [[wx Hrf] Huni];
    generalize (dom_rf_in_evts Hrf); intro HEwx.
@@ -2085,7 +2085,7 @@ split; [|split].
      right; exists wx; exists wx; split; auto; split; auto; split; auto.
      left; split; auto; exists wx; split; auto.
 
-  intros x y [HMx [HMy [Hsi [[Hwx Hwy] | [[HERx HERy] | [wx [wy [Hrfix [Hrfiy Hsixy]]]] ]]]]]; 
+  intros x y [HMx [HMy [Hsi [[Hwx Hwy] | [[HERx HERy] | [wx [wy [Hrfix [Hrfiy Hsixy]]]] ]]]]];
     split; auto; split; auto; split; auto; right; right; exists wy; exists wx; split; auto.
 
   intros x y z [HMx [HMy [Hsixy Horxy]]] [HMy' [HMz [Hsiyz Horyz]]]; split; auto; split; auto; split; auto.
@@ -2103,7 +2103,7 @@ split; [|split].
 
       destruct HERy as [wy [Hrf ?]]; generalize (ran_rf_is_read Hrf); intro Hry;
       generalize (read_write_contrad y Hry Hwy'); intro Ht; inversion Ht.
-      
+
       right; left; split; auto.
 
       destruct HERy as [wy [Hrf Hext]]; destruct Hrfiy' as [Hrf' Hint];
@@ -2119,13 +2119,13 @@ split; [|split].
       generalize (ran_rf_is_read Hrf); intro Hry.
       destruct_rf_wf Hrfwf; generalize (Hex_uni y Hry); intros [? Huni];
       generalize (Huni wy wy' Hrf Hrf'); intro Heq; rewrite Heq in Hint;
-      generalize (int_ext_contrad Hint Hext); intro Ht; inversion Ht.   
+      generalize (int_ext_contrad Hint Hext); intro Ht; inversion Ht.
 
       right; right; exists wx; exists wz; split; auto; split; auto.
       destruct Hrfiy as [Hrf Hint]; destruct Hrfiy' as [Hrf' Hint'];
       generalize (ran_rf_is_read Hrf); intro Hry;
       destruct_rf_wf Hrfwf; generalize (Hex_uni y Hry); intros [? Huni];
-      generalize (Huni wy wy' Hrf Hrf'); intro Heq; 
+      generalize (Huni wy wy' Hrf Hrf'); intro Heq;
       apply Htrans with wy; auto; rewrite Heq; auto.
 Qed.
 
@@ -2150,7 +2150,7 @@ Qed.
 Lemma delift_irr E si gcb :
   si_well_formed E (si E) ->
   rf_well_formed E ->
-  partial_order gcb (MemC E si) -> 
+  partial_order gcb (MemC E si) ->
   forall x : Event, ~ delift (MemC E si) gcb x x.
 Proof.
 unfold delift;
@@ -2161,7 +2161,7 @@ generalize (erln_is_equiv si Hsiwf Hrfwf); intro Herln;
 generalize (class_of_in_classes x Herln HeqMemC); intro HCx;
 generalize (class_of_refl x Herln); intro Hxx;
 destruct_part Hpart; apply Hirr with (class_of (erln E si) x);
-apply Hx; auto. 
+apply Hx; auto.
 Qed.
 
 Lemma in_class_implies_class_of (A:Type) (eqr:Rln A) (Cx:Class A) (x:A) :
@@ -2170,8 +2170,8 @@ Lemma in_class_implies_class_of (A:Type) (eqr:Rln A) (Cx:Class A) (x:A) :
   Cx x ->
   Cx = class_of eqr x.
 Proof.
-unfold classes; unfold class_of; 
-intros Heqr [x' HeqCx] Hx; destruct_eqrln Heqr; 
+unfold classes; unfold class_of;
+intros Heqr [x' HeqCx] Hx; destruct_eqrln Heqr;
 apply Extensionality_Ensembles; split; intros e He; unfold In in *|-*.
   rewrite HeqCx in Hx; rewrite HeqCx in He; apply Htrans with x'; auto.
   rewrite HeqCx in Hx; rewrite HeqCx; apply Htrans with x; auto.
@@ -2199,9 +2199,9 @@ intros Hcowf Hsiwf Hfr; destruct_siwf Hsiwf.
 generalize (excluded_middle (si E x y)); intros [Hsi |?]; auto.
 generalize (dom_fr_is_read Hfr); intro Hrx;
 generalize (ran_fr_is_write Hcowf Hfr); intro Hwy.
-generalize (Hsym x y Hsi); intro Hsiyx; 
+generalize (Hsym x y Hsi); intro Hsiyx;
 generalize (Hw y x Hsiyx Hwy); intro Hwx;
-generalize (read_write_contrad x Hrx Hwx); 
+generalize (read_write_contrad x Hrx Hwx);
 intro Ht; inversion Ht.
 Qed.
 
@@ -2230,7 +2230,7 @@ assert (Cx <> Cy) as Hdiff.
 
 generalize (Htot Cx Cy Hdiff HinCx HinCy); intros [? | Hyx]; auto.
 
-generalize Hfr; intros [w [Hw [Hrf Hco]]]; 
+generalize Hfr; intros [w [Hw [Hrf Hco]]];
 generalize (rf_in_dgcb Hrfeq Hrf); intro Hgcbwx;
 generalize (co_in_dgcb co Hcoeq w y Hco); intro Hgcbwy.
 destruct Hrfeq as [Hinrf ?]; generalize (Hinrf w x Hrf); intros [? [? [? Hnointerv]]].
@@ -2241,7 +2241,7 @@ assert (loc x = loc y) as Hlocxy.
 assert False as Ht.
   apply Hnointerv; exists y; split; [|split; split]; auto.
     apply ran_co_is_write with E co w; auto.
-    split; auto. 
+    split; auto.
     split; auto.
       apply ran_co_in_evts with co w; auto.
       split; auto.
@@ -2270,8 +2270,8 @@ Lemma big_rel_irr E co si lob gcb x :
   rel_equal (co E) (gcb_co E (dgcb_loc E (MemC E si) gcb)) ->
   ~(big_rel E co si lob x x).
 Proof.
-intros Hsiwf Hrfwf Hcowf Hlin Hrfeq Hcoeq; 
-apply tc_mobs_r_mobs_irr with (erln E si) (MemC E si) gcb; auto. 
+intros Hsiwf Hrfwf Hcowf Hlin Hrfeq Hcoeq;
+apply tc_mobs_r_mobs_irr with (erln E si) (MemC E si) gcb; auto.
   apply erln_is_equiv; auto.
 intros e1 e2 H12.
   apply rf_in_dgcb; destruct H12; auto.
@@ -2305,12 +2305,12 @@ generalize (fr_in_dgcb Hsiwf Hcowf Hrfwf Hlin Hrfeq Hcoeq); intro Hfrincl.
 assert (rel_incl (scaob E si) (preorder_gcb E si lob)) as Hscaobincl.
   apply scaob_in_pgcb; auto.
 
-generalize (tc_obsp_si_in_order Heqt Hequivr HeqC Hsiwf Hrfwf Hcowf Hlin Hrfeincl Hcoincl Hfrincl Hscaobincl Hx); 
-generalize (clin_ext_prop (MemC E si) (preorder_gcb_lift E si lob (MemC E si)) gcb); intros [Himpl _]; generalize (Himpl Hlin); 
+generalize (tc_obsp_si_in_order Heqt Hequivr HeqC Hsiwf Hrfwf Hcowf Hlin Hrfeincl Hcoincl Hfrincl Hscaobincl Hx);
+generalize (clin_ext_prop (MemC E si) (preorder_gcb_lift E si lob (MemC E si)) gcb); intros [Himpl _]; generalize (Himpl Hlin);
 clear Himpl; intros [Hincl Hlso]; destruct_lin Hlso; destruct_part Hpart; apply Hirr.
 Qed.
 
-(** ** External global completion implies External Visibility *) 
+(** ** External global completion implies External Visibility *)
 
 Lemma external_global_completion_implies_external_visibility (E : set Event) (co si lob : set Event -> Rln Event) :
   si_well_formed E (si E) ->
@@ -2321,21 +2321,21 @@ Lemma external_global_completion_implies_external_visibility (E : set Event) (co
   (exists gcb, external_global_completion E co si lob gcb) -> external_visibility E co si lob.
 
 (** We show here that:
-    - given a well-formed execution (E, lob, rf, co) 
+    - given a well-formed execution (E, lob, rf, co)
     - if the [internal_visibility] axiom holds over E,
     - and there exists an [external_global_completion] External Global Completion order gcb,
     - then the [external_visibility] axiom holds over E *)
 
 Proof.
 intros Hsiwf Hrfwf Hcowf Hlobwf Hscpv [gcb [Hlin [Hrfeq Hcoeq]]] [x Hx].
-(** Reason by contradiction: suppose that the [external_visibility] axiom does not hold over E, viz, 
+(** Reason by contradiction: suppose that the [external_visibility] axiom does not hold over E, viz,
     there exists x s.t. (x,x) in ob.*)
 generalize (gcb_path_ob_dec Hsiwf Hrfwf Hcowf Hlobwf Hx); clear Hx; intros [Hmop | [Hbr | [Hlbr | Hlop]]].
 
-(** Now observe (c.f. [gcb_path_ob_dec]) that (x,x) in ob means either: 
+(** Now observe (c.f. [gcb_path_ob_dec]) that (x,x) in ob means either:
  - (x,x) obsplus
- - (x,x) in big_rel 
- - (x,x) in lob';big_rel? 
+ - (x,x) in big_rel
+ - (x,x) in lob';big_rel?
  - (x,x) in lob';obs *)
 
 (** *** Case 1: (x,x) obsplus*)
@@ -2361,13 +2361,13 @@ generalize (gcb_path_ob_dec Hsiwf Hrfwf Hcowf Hlobwf Hx); clear Hx; intros [Hmop
 
       (** This is impossible as lob' is irreflexive (c.f. [lob'_irr]). *)
 
-      (** **** Case 3b: (x,x) in lob';big_rel 
+      (** **** Case 3b: (x,x) in lob';big_rel
 
           In this case by definition there exists y s.t. (x,y) in lob' and (y,x) in big_rel. *)
       generalize (br_lob'_in_br_or_lob' Hsiwf Hrfwf Hcowf Hlobwf Hbryx Hxy); clear Hbryx Hxy; intros [Hbr | Hlob'].
       (** Using [br_lob'_in_br_or_lob'] we can reason by case disjunction:
-          - 3bi. (x,x) in big_rel 
-          - 3bii. (x,x) in lob'*) 
+          - 3bi. (x,x) in big_rel
+          - 3bii. (x,x) in lob'*)
 
           (** Case 3bi: (x,x) in big_rel *)
           apply (big_rel_irr Hsiwf Hrfwf Hcowf Hlin Hrfeq Hcoeq Hbr); auto.
@@ -2377,7 +2377,7 @@ generalize (gcb_path_ob_dec Hsiwf Hrfwf Hcowf Hlobwf Hx); clear Hx; intros [Hmop
           (** Case 3bii: (x,x) in lob' *)
           apply (lob'_irr Hlobwf Hlob').
 
-          (** This is impossible because lob' is irreflexive (c.f. [lob'_irr]). *)          
+          (** This is impossible because lob' is irreflexive (c.f. [lob'_irr]). *)
 
 (** *** Case 4: (x,x) in lob';obs* *)
   destruct Hlop as [y [Hxy Hyx]].
@@ -2397,22 +2397,22 @@ generalize (gcb_path_ob_dec Hsiwf Hrfwf Hcowf Hlobwf Hx); clear Hx; intros [Hmop
 Qed.
 
 (** * External Visibility -> External Global Completion lemmas *)
-(** We show here that: 
-     - given a well-formed execution (E, lob, rf, co) 
-     - if the internal visibility axiom holds 
+(** We show here that:
+     - given a well-formed execution (E, lob, rf, co)
+     - if the internal visibility axiom holds
      - if the external visibility axiom holds
      - then there exists a External Global Completion external global completion order gcb.*)
-(** To do so we need to exhibit an order gcb that satisfies the requirements given in [external_global_completion]. 
+(** To do so we need to exhibit an order gcb that satisfies the requirements given in [external_global_completion].
     Observe that (c.f. [pre_egc_partial_order]) the relation [pre_egc] is a partial order.
     Using the order extension principle (c.f. [order_ext]) we can extend pre_egc to a total order that we call gcb.
     Using [external_global_completion_gcb] we then show that gcb satisfies the [external_global_completion] requirement.*)
-Definition pre_egc E co si lob := 
-  transitive_closure (rel_union (rel_seq (rf E) (erln E si)) (rel_union (rel_seq (co E) (erln E si)) 
+Definition pre_egc E co si lob :=
+  transitive_closure (rel_union (rel_seq (rf E) (erln E si)) (rel_union (rel_seq (co E) (erln E si))
     (rel_union (rel_seq (fr E co) (erln E si)) (preorder_gcb E si lob)))).
-Definition big_rel2 E co si lob := 
-  transitive_closure 
-    (rel_seq (maybe (transitive_closure (rel_seq (erln E si) (rel_seq (obsplus E co) (erln E si))))) 
-             (rel_seq (rel_seq (erln E si) (rel_seq (preorder_gcb E si lob) (erln E si))) 
+Definition big_rel2 E co si lob :=
+  transitive_closure
+    (rel_seq (maybe (transitive_closure (rel_seq (erln E si) (rel_seq (obsplus E co) (erln E si)))))
+             (rel_seq (rel_seq (erln E si) (rel_seq (preorder_gcb E si lob) (erln E si)))
                       (maybe (transitive_closure (rel_seq (erln E si) (rel_seq (obsplus E co) (erln E si))))))).
 
 Lemma transitive_maybe_tc r :
@@ -2439,7 +2439,7 @@ intros Hsiwf Hrfwf Hrfiwe1 [HM1 [HM2 [Hsi12 Hor12]]].
 inversion Hor12 as [[Hw1 Hw2] | [[HER1 HER2] | Hrfisw12]]; clear Hor12.
   destruct Hrfiwe1 as [Hrf ?]; generalize (ran_rf_is_read Hrf); intro Hr1;
   generalize (read_write_contrad e1 Hr1 Hw1); intro Ht; inversion Ht.
-  
+
   destruct Hrfiwe1 as [Hrf Hint]; destruct HER1 as [w' [Hrf' Hext]];
   generalize (ran_rf_is_read Hrf); intro Hr1;
   destruct_rf_wf Hrfwf; generalize (Hex_uni e1 Hr1); intros [? Huni];
@@ -2451,9 +2451,9 @@ inversion Hor12 as [[Hw1 Hw2] | [[HER1 HER2] | Hrfisw12]]; clear Hor12.
   generalize (ran_rf_is_read Hrf); intro Hr1;
   destruct_rf_wf Hrfwf; generalize (Hex_uni e1 Hr1); intros [? Huni];
   generalize (Huni w1 w' Hrf Hrf'); intro Heq; rewrite <- Heq in Hsiw12;
-  split; [| split; [|split]]; auto.  
-    split; [apply dom_rf_in_evts with e1 | left; apply dom_rf_is_write with E e1]; auto. 
-    destruct Hrfi2; split; [apply dom_rf_in_evts with e2 | left; apply dom_rf_is_write with E e2]; auto. 
+  split; [| split; [|split]]; auto.
+    split; [apply dom_rf_in_evts with e1 | left; apply dom_rf_is_write with E e1]; auto.
+    destruct Hrfi2; split; [apply dom_rf_in_evts with e2 | left; apply dom_rf_is_write with E e2]; auto.
     destruct Hrfi2; left; split; [apply dom_rf_is_write with E e1 | apply dom_rf_is_write with E e2]; auto.
 Qed.
 
@@ -2467,7 +2467,7 @@ Lemma rfi_obs_in_obsp E co si w r e :
 Proof.
 intros Hsiwf Hcowf Hrfwf Hwr Hre.
   inversion Hre as [Hrfe | [Hco | Hfr]]; clear Hre.
-  
+
     assert (is_read r) as Hr.
       apply ran_rf_is_read with E w; destruct Hwr; auto.
     assert (is_write r) as Hw.
@@ -2506,11 +2506,11 @@ Lemma rfi_erln_obsp_in_erln_obsp E (co si : set Event -> Rln Event) e1 e e0 e2 :
   rfi E e1 e0 ->
   erln E si e0 e ->
   obsplus E co e e2 ->
-  rel_seq (erln E si) (obsplus E co) e1 e2. 
+  rel_seq (erln E si) (obsplus E co) e1 e2.
 Proof.
 intros Hsiwf Hcowf Hrfwf H10 H0e He2.
 generalize (rfi_erln_is_erln_rfi Hsiwf Hrfwf H10 H0e); clear H10 H0e;
-intros [we [H0we Hrfi]]; exists we; split; auto;  
+intros [we [H0we Hrfi]]; exists we; split; auto;
 apply rfi_obsp_in_obsp with si e; auto.
 Qed.
 
@@ -2521,9 +2521,9 @@ Lemma rf_erln_obsp_erln_in_tc E (co si : set Event -> Rln Event) e1 e e0 e2 :
   rf E e1 e0 ->
   erln E si e0 e ->
   (rel_seq (erln E si) (rel_seq (obsplus E co) (erln E si))) e e2 ->
-  transitive_closure (rel_seq (erln E si) (rel_seq (obsplus E co) (erln E si))) e1 e2. 
+  transitive_closure (rel_seq (erln E si) (rel_seq (obsplus E co) (erln E si))) e1 e2.
 Proof.
-intros Hsiwf Hcowf Hrfwf H10 H0e He2; 
+intros Hsiwf Hcowf Hrfwf H10 H0e He2;
 generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl [? Htrans]].
 
   assert (E e1) as HE1.
@@ -2553,9 +2553,9 @@ Lemma rf_tc_erln_obsp_erln_in_tc E (co si : set Event -> Rln Event) e1 e e0 e2 :
   rf E e1 e0 ->
   erln E si e0 e ->
   transitive_closure (rel_seq (erln E si) (rel_seq (obsplus E co) (erln E si))) e e2 ->
-  transitive_closure (rel_seq (erln E si) (rel_seq (obsplus E co) (erln E si))) e1 e2. 
+  transitive_closure (rel_seq (erln E si) (rel_seq (obsplus E co) (erln E si))) e1 e2.
 Proof.
-intros Hsiwf Hcowf Hrfwf H10 H0e He2; 
+intros Hsiwf Hcowf Hrfwf H10 H0e He2;
 generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl [? Htrans]];
 induction He2.
 
@@ -2581,17 +2581,17 @@ Lemma rfi_pgcb_is_pgcb E si lob e1 e2 e3 :
   preorder_gcb E si lob e1 e3.
 Proof.
 intros Hrfwf [Hrf12 Hint12];
-generalize (ran_rf_is_read Hrf12); intros Hr2 [[Hlob23 Hreqs] | Hscaob].  
+generalize (ran_rf_is_read Hrf12); intros Hr2 [[Hlob23 Hreqs] | Hscaob].
   inversion Hreqs as [Hw2 | [_ Hrr23]];
   [generalize (read_write_contrad e2 Hr2 Hw2); intro Ht; inversion Ht | inversion Hrr23 as [Hext | Hint]; clear Hrr23].
   assert False as Ht.
-    apply Hext; exists e1; split; auto. 
+    apply Hext; exists e1; split; auto.
   inversion Ht.
   destruct Hint as [w' [[Hrf' ?] Hlob]]; destruct_rf_wf Hrfwf;
   generalize (Hex_uni e2 Hr2); intros [? Huni]; generalize (Huni e1 w' Hrf12 Hrf'); intro Heq.
   rewrite Heq; left; split; auto; left; apply dom_rf_is_write with E e2; auto.
 
-  destruct Hscaob as [? [[w2 [Hrf2 Hext2]] He3]]. 
+  destruct Hscaob as [? [[w2 [Hrf2 Hext2]] He3]].
 
   destruct_rf_wf Hrfwf; generalize (Hex_uni e2 Hr2); intros [Hex Huni];
   generalize (Huni e1 w2 Hrf12 Hrf2); intro Heq12; rewrite Heq12 in Hint12;
@@ -2638,7 +2638,7 @@ intros Hsiwf Hrfwf H1e0 He0e Hex Hx2; generalize (erln_is_equiv si Hsiwf Hrfwf);
     generalize (int_or_ext E e1 e0 HE1 HE0); intros [Hint | Hext].
       assert (rfi E e1 e0) as Hrfi.
         split; auto.
-      generalize (rfi_erln_is_erln_rfi Hsiwf Hrfwf Hrfi He0e); 
+      generalize (rfi_erln_is_erln_rfi Hsiwf Hrfwf Hrfi He0e);
       clear Hrfi He0e; intros [w [H1w Hwe]].
       destruct Hex as [e' [Hee' He'x]].
       destruct Hee' as [a [Hea [b [Hab Hbe']]]].
@@ -2646,24 +2646,24 @@ intros Hsiwf Hrfwf H1e0 He0e Hex Hx2; generalize (erln_is_equiv si Hsiwf Hrfwf);
       assert (erln E si e1 wa) as Herlne1wa.
         apply Htrans with w; auto.
       clear H1w Herlnwa.
-      generalize (rfi_pgcb_is_pgcb Hrfwf Hrfia Hab); clear Hrfia Hab; intro Hpgcbwab.  
+      generalize (rfi_pgcb_is_pgcb Hrfwf Hrfia Hab); clear Hrfia Hab; intro Hpgcbwab.
       inversion Hx2 as [Heqx2 | Htcx2]; clear Hx2.
-        rewrite Heqx2 in He'x; apply _base; 
-        exists e1; split; [left|]; auto. 
+        rewrite Heqx2 in He'x; apply _base;
+        exists e1; split; [left|]; auto.
         exists e'; split; auto; exists wa; split; auto; exists b; split; auto.
 
         apply _trans with x; auto.
-        exists e1; split; [left|]; auto. 
+        exists e1; split; [left|]; auto.
         exists e'; split; auto; exists wa; split; auto; exists b; split; auto.
 
       assert (rfe E e1 e0) as Hrfe.
         split; auto.
       inversion Hx2 as [Heqx2 | Htcx2]; clear Hx2.
         rewrite Heqx2 in Hex; clear Heqx2; apply _base; exists e; split; auto;
-        right; apply _base; exists e1; split; auto; exists e0; split; auto; left; left; auto. 
+        right; apply _base; exists e1; split; auto; exists e0; split; auto; left; left; auto.
 
         apply _trans with x; auto; exists e; split; auto;
-        right; apply _base; exists e1; split; auto; exists e0; split; auto; left; left; auto. 
+        right; apply _base; exists e1; split; auto; exists e0; split; auto; left; left; auto.
 Qed.
 
 Lemma rf_br2_in_br2 E (co si lob : set Event -> Rln Event) e1 e e0 e2 :
@@ -2673,16 +2673,16 @@ Lemma rf_br2_in_br2 E (co si lob : set Event -> Rln Event) e1 e e0 e2 :
   rf E e1 e0 ->
   erln E si e0 e ->
   big_rel2 E co si lob e e2 ->
-  (big_rel2 E co si lob) e1 e2. 
+  (big_rel2 E co si lob) e1 e2.
 Proof.
 intros Hsiwf Hcowf Hrfwf H1e0 He0e He2; generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl [Hsym Htrans]];
 generalize (tc_dec2 He2); clear He2; intros [x [[y [Hey Hex]] He2]].
 
   inversion Hey as [Heqey | Htcey]; clear Hey.
-    rewrite <- Heqey in Hex; clear Heqey. 
+    rewrite <- Heqey in Hex; clear Heqey.
     apply rf_base_br2_in_br2 with e0 e x; auto.
 
-    inversion He2 as [Heqxe2 | Htcxe2]; clear He2. 
+    inversion He2 as [Heqxe2 | Htcxe2]; clear He2.
       rewrite Heqxe2 in Hex; clear Heqxe2.
       apply _base; exists y; split; auto; right; apply rf_tc_erln_obsp_erln_in_tc with e e0; auto.
 
@@ -2715,19 +2715,19 @@ Lemma fr_br2_in_br2 E (co si lob : set Event -> Rln Event) e1 e e0 e2 :
   fr E co e1 e0 ->
   erln E si e0 e ->
   big_rel2 E co si lob e e2 ->
-  big_rel2 E co si lob e1 e2. 
+  big_rel2 E co si lob e1 e2.
 Proof.
 intros Hsiwf Hrfwf Hcowf H1e0 He0e He2; generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl ?].
   apply tc_seq_left with e; auto.
 
     apply transitive_maybe_tc.
-    
+
     right; apply _base; exists e1; split; auto;
     exists e0; split; auto; left; right; right; auto.
 Qed.
 
 Definition nrel E co si lob :=
-  maybe (transitive_closure 
+  maybe (transitive_closure
     (rel_union (rel_seq (erln E si) (rel_seq (obsplus E co) (erln E si)))
                (rel_seq (erln E si)(rel_seq (preorder_gcb E si lob) (erln E si))))).
 
@@ -2750,7 +2750,7 @@ intros Hsiwf Hcowf Hrfwf Hrfi Herln [Heoe | Hpgcbe].
   generalize (rf_erln_obsp_erln_in_tc Hsiwf Hcowf Hrfwf Hrf Herln Heoe); intro H14.
   apply tc_incl with (rel_seq (erln E si) (rel_seq (obsplus E co) (erln E si))); auto.
     intros x y Hxy; left; auto.
-  
+
   destruct Hpgcbe as [x [H3x [y [Hxy Hy4]]]].
   generalize (erln_is_equiv si Hsiwf Hrfwf); intros [? [? Htrans]].
   assert (erln E si e2 x) as H2x.
@@ -2776,7 +2776,7 @@ intros Hsiwf Hcowf Hrfwf Hrfi Herln [Heoe | Hpgcbe].
   generalize (rf_erln_obsp_erln_in_tc Hsiwf Hcowf Hrfwf Hrf Herln Heoe); intro H14.
   right; apply tc_incl with (rel_seq (erln E si) (rel_seq (obsplus E co) (erln E si))); auto.
     intros x y Hxy; left; auto.
-  
+
   destruct Hpgcbe as [x [H3x [y [Hxy Hy4]]]].
   generalize (erln_is_equiv si Hsiwf Hrfwf); intros [? [? Htrans]].
   assert (erln E si e2 x) as H2x.
@@ -2785,7 +2785,7 @@ intros Hsiwf Hcowf Hrfwf Hrfi Herln [Heoe | Hpgcbe].
   generalize (rfi_erln_is_erln_rfi Hsiwf Hrfwf Hrfi H2x); clear Hrfi H2x; intros [wx [Hrfi Hwxx]].
   right; apply _base; right; exists wx; split; auto; exists y; split; auto.
     apply rfi_pgcb_is_pgcb with x; auto.
-Qed. 
+Qed.
 
 Lemma rf_erln_nrel_in_nrel_irr E co si lob e1 e2 e3 e4 :
   si_well_formed E (si E) ->
@@ -2798,7 +2798,7 @@ Lemma rf_erln_nrel_in_nrel_irr E co si lob e1 e2 e3 e4 :
      (rel_union
         (rel_seq (erln E si) (rel_seq (obsplus E co) (erln E si)))
         (rel_seq (erln E si)
-           (rel_seq (preorder_gcb E si lob) (erln E si))))) e1 e4 \/ 
+           (rel_seq (preorder_gcb E si lob) (erln E si))))) e1 e4 \/
   (rel_seq (rfi E) (erln E si)) e1 e4.
 Proof.
 intros Hsiwf Hcowf Hrfwf H12 H23 H34.
@@ -2816,9 +2816,9 @@ generalize (int_or_ext E e1 e2 HE1 HE2); intros [Hint | Hext].
     right; rewrite <- Heq; exists e2; split; auto.
     generalize (tc_dec2 Htc); clear Htc; intros [e [He3e Hee4]].
       inversion Hee4 as [Heqee4 | Htcee4]; clear Hee4.
-        rewrite Heqee4 in He3e; clear Heqee4; left. 
+        rewrite Heqee4 in He3e; clear Heqee4; left.
           apply rfi_erln_base_nrel_in_nrel_irr with e2 e3; auto.
-        left; 
+        left;
         generalize (rfi_erln_base_nrel_in_nrel_irr Hsiwf Hcowf Hrfwf Hrfi12 H23 He3e); clear Hrfi12 H23 He3e; intro H1e.
           apply tc_trans with e; auto.
 
@@ -2838,7 +2838,7 @@ Qed.
 
 Lemma rf_erln_nrel_in_nrel E co si lob e1 e2 e3 e4 :
   si_well_formed E (si E) ->
-  co_well_formed E co -> 
+  co_well_formed E co ->
   rf_well_formed E ->
   rf E e1 e2 ->
   erln E si e2 e3 ->
@@ -2860,7 +2860,7 @@ generalize (int_or_ext E e1 e2 HE1 HE2); intros [Hint | Hext].
     right; rewrite <- Heq; exists e2; split; auto.
     generalize (tc_dec2 Htc); clear Htc; intros [e [He3e Hee4]].
       inversion Hee4 as [Heqee4 | Htcee4]; clear Hee4.
-        rewrite Heqee4 in He3e; clear Heqee4; left. 
+        rewrite Heqee4 in He3e; clear Heqee4; left.
           apply rfi_erln_base_nrel_in_nrel with e2 e3; auto.
 
         left; right;
@@ -2895,10 +2895,10 @@ intros Hsiwf Hrfwf H1e' He'e Hor;
 generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl ?];
 inversion Hor as [Hea | Hea]; clear Hor; right.
 
-  rewrite <- Hea; clear Hea; apply _base; left; exists e1; split; auto; 
+  rewrite <- Hea; clear Hea; apply _base; left; exists e1; split; auto;
   exists e'; split; auto; left; right; left; auto.
 
-  apply _trans with e; auto; left; exists e1; split; auto; 
+  apply _trans with e; auto; left; exists e1; split; auto;
   exists e'; split; auto; left; right; left; auto.
 Qed.
 
@@ -2914,9 +2914,9 @@ intros Hsiwf Hrfwf H1e' He'e Hor;
 generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl ?];
 inversion Hor as [Hea | Hea]; clear Hor; right.
 
-  rewrite <- Hea; clear Hea; apply _base; left; exists e1; split; auto; 
+  rewrite <- Hea; clear Hea; apply _base; left; exists e1; split; auto;
   exists e'; split; auto; left; right; right; auto.
-  apply _trans with e; auto; left; exists e1; split; auto; 
+  apply _trans with e; auto; left; exists e1; split; auto;
   exists e'; split; auto; left; right; right; auto.
 Qed.
 
@@ -2929,7 +2929,7 @@ Lemma pgcb_seq_nrel_in_nrel E co si lob e1 e a :
 Proof.
 intros Hsiwf Hrfwf H1e Hor;
 generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl ?];
-inversion Hor as [Hea | Hea]; clear Hor; right. 
+inversion Hor as [Hea | Hea]; clear Hor; right.
 
   apply _base; right; exists e1; split; auto; exists a; split; auto; rewrite <- Hea; auto.
 
@@ -2942,10 +2942,10 @@ Lemma pre_egc_dec (E : set Event) (co si lob : set Event -> Rln Event) (e1 e2 : 
   co_well_formed E co ->
   pre_egc E co si lob e1 e2 ->
   (rel_seq (nrel E co si lob) (rel_seq (rfi E) (erln E si))) e1 e2 \/
-  transitive_closure (rel_seq (erln E si) (rel_seq (obsplus E co) (erln E si))) e1 e2 \/ 
+  transitive_closure (rel_seq (erln E si) (rel_seq (obsplus E co) (erln E si))) e1 e2 \/
   (big_rel2 E co si lob) e1 e2.
 Proof.
-intros Hsiwf Hrfwf Hcowf H12; 
+intros Hsiwf Hrfwf Hcowf H12;
 generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl [Hsym Htrans]].
 
 induction H12 as [e1 e2 H12 | e1 e2 e H1e He2].
@@ -2958,16 +2958,16 @@ induction H12 as [e1 e2 H12 | e1 e2 e H1e He2].
       apply ran_rf_in_evts with e1; auto.
     generalize (int_or_ext E e1 e' HE1 HE'); intros [Hint | Hext].
       left; exists e1; split; auto; [left|exists e'; split]; auto; split; auto.
-      right; left; apply _base; exists e1; split; auto; 
-        exists e'; split; auto; left; auto; left; auto; split; auto. 
+      right; left; apply _base; exists e1; split; auto;
+        exists e'; split; auto; left; auto; left; auto; split; auto.
    right; left; apply _base; exists e1; split; auto;
-     exists e'; split; auto; left; auto; right; left; auto. 
+     exists e'; split; auto; left; auto; right; left; auto.
    right; left; apply _base; exists e1; split; auto;
      exists e'; split; auto; left; auto; right; right; auto.
    right; right; apply _base; exists e1; split; auto; [left | exists e2; split; auto]; auto;
-      [exists e1; split; auto; exists e2; split; auto | left; auto]. 
+      [exists e1; split; auto; exists e2; split; auto | left; auto].
 
-  inversion H1e as [[e' [Hrf1e' Hsie'e]] | [[e' [Hco1e' Hsie'e]] | [[e' [Hfr1e' Hsie'e]] | Hpgcb1e]]]; clear H1e; 
+  inversion H1e as [[e' [Hrf1e' Hsie'e]] | [[e' [Hco1e' Hsie'e]] | [[e' [Hfr1e' Hsie'e]] | Hpgcb1e]]]; clear H1e;
   inversion IHHe2 as [Hnrfie2 | [Hcompluse2 | Hbre2]]; clear IHHe2.
 
     destruct Hnrfie2 as [e'' [Hnrel Hrfie]].
@@ -2979,44 +2979,44 @@ induction H12 as [e1 e2 H12 | e1 e2 e H1e He2].
         apply dom_rf_is_write with E r; auto.
       assert (is_read e'') as Hre''.
         destruct Hrfiee1e'' as [x [[He1x ?] Hxe'']];
-        destruct Hxe'' as [? [? [Hsi ?]]]. 
+        destruct Hxe'' as [? [? [Hsi ?]]].
         clear Hrefl Hsym Htrans; destruct_siwf Hsiwf; apply Hr with x; auto;
         apply ran_rf_is_read with E e1; auto.
       generalize (read_write_contrad e'' Hre'' Hwe''); intro Ht; inversion Ht.
         right; left; apply rf_tc_erln_obsp_erln_in_tc with e e'; auto.
 
-    right; right; apply rf_br2_in_br2 with e e'; auto. 
+    right; right; apply rf_br2_in_br2 with e e'; auto.
 
     destruct Hnrfie2 as [a [Hea Ha2]]; left; exists a; split; auto.
     apply co_erln_seq_nrel_in_nrel with e' e; auto.
 
-    right; left; apply tc_trans with e; auto; apply _base; exists e1; split; auto; exists e'; split; auto. 
+    right; left; apply tc_trans with e; auto; apply _base; exists e1; split; auto; exists e'; split; auto.
       left; auto.  right; left; auto.
-    right; right; apply co_br2_in_br2 with e e'; auto. 
+    right; right; apply co_br2_in_br2 with e e'; auto.
 
     destruct Hnrfie2 as [a [Hea Ha2]]; left; exists a; split; auto.
     apply fr_erln_seq_nrel_in_nrel with e' e; auto.
 
-    right; left; apply tc_trans with e; auto; apply _base; exists e1; split; auto; exists e'; split; auto. 
+    right; left; apply tc_trans with e; auto; apply _base; exists e1; split; auto; exists e'; split; auto.
       left; right; right; auto.
-    right; right; apply fr_br2_in_br2 with e e'; auto. 
+    right; right; apply fr_br2_in_br2 with e e'; auto.
 
     destruct Hnrfie2 as [a [Hea Ha2]]; left; exists a; split; auto.
     apply pgcb_seq_nrel_in_nrel with e; auto.
 
     right; right; apply _base; exists e1; split; auto; [left | exists e; split; [| right]]; auto.
-      exists e1; split; auto; exists e; split; auto. 
-    right; right; 
-    apply _trans with e; auto. 
+      exists e1; split; auto; exists e; split; auto.
+    right; right;
+    apply _trans with e; auto.
       exists e1; split; auto; [left |]; auto; exists e; split; [|left]; auto.
-      exists e1; split; auto; exists e; split; auto.      
+      exists e1; split; auto; exists e; split; auto.
 Qed.
 
 Definition obs_extra E co := rel_union (rfe E) (rel_union (co E) (rel_union (fr E co) (rel_union (corfe E co) (frrfe E co)))).
 
 Lemma seq_tc_reorg3 r0 r1 r2 r3 e1 e2 e3 :
   transitive r0 ->
-  rel_incl (rel_seq (rel_seq r0 r2) (rel_seq r0 r3))  
+  rel_incl (rel_seq (rel_seq r0 r2) (rel_seq r0 r3))
     (rel_seq (maybe (transitive_closure (rel_seq r0 (rel_seq r1 r0)))) (rel_seq r0 r3)) ->
   rel_seq r0 (rel_seq (rel_union r1 r2) r0) e1 e2 ->
   (rel_seq r0 r3) e2 e3 ->
@@ -3026,14 +3026,14 @@ intros Htr0 Hincl [x [H1x [y [Hxy Hy2]]]] H23.
 inversion Hxy as [Hr1xy | Hr2xy]; clear Hxy.
 
   exists e2; split; auto; right; apply _base; exists x; split; auto; exists y; split; auto.
-  
+
   apply Hincl; exists y; split; auto.
     exists x; split; auto.
-    destruct H23 as [e [H2e He3]]; exists e; split; auto; apply Htr0 with e2; auto. 
+    destruct H23 as [e [H2e He3]]; exists e; split; auto; apply Htr0 with e2; auto.
 Qed.
 
 Lemma complus_obs_extra_rln E co :
-  complus E co = rel_union (obs_extra E co) (rel_union (rfi E) (rel_union (rel_seq (co E) (rfi E)) (rel_seq (fr E co) (rfi E)))). 
+  complus E co = rel_union (obs_extra E co) (rel_union (rfi E) (rel_union (rel_seq (co E) (rfi E)) (rel_seq (fr E co) (rfi E)))).
 Proof.
 apply Extensionality_Rlns; split; intros e1 e2 H12.
   inversion H12 as [Hrf | [Hco | [Hfr | [Hcorf | Hfrrf]]]]; clear H12.
@@ -3075,10 +3075,10 @@ Lemma complus_seq_pgcb E co si lob e1 e2 e3 :
   rf_well_formed E ->
   (rel_seq (erln E si) (rel_seq (complus E co) (erln E si))) e1 e2 ->
   (rel_seq (erln E si) (preorder_gcb E si lob)) e2 e3 ->
-  rel_seq (maybe (transitive_closure (rel_seq (erln E si) (rel_seq (obs_extra E co) (erln E si))))) 
-    (rel_seq (erln E si) (preorder_gcb E si lob)) e1 e3. 
+  rel_seq (maybe (transitive_closure (rel_seq (erln E si) (rel_seq (obs_extra E co) (erln E si)))))
+    (rel_seq (erln E si) (preorder_gcb E si lob)) e1 e3.
 Proof.
-intros Hsiwf Hrfwf H12 [e'2 [H22' H2'3]]; 
+intros Hsiwf Hrfwf H12 [e'2 [H22' H2'3]];
 generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl [? Htrans]].
 assert (complus E co = rel_union (obs_extra E co) (rel_union (rfi E) (rel_union (rel_seq (co E) (rfi E)) (rel_seq (fr E co) (rfi E)))) ) as Heq.
   apply complus_obs_extra_rln; auto.
@@ -3092,13 +3092,13 @@ Focus 2.
   generalize (rfi_erln_is_erln_rfi Hsiwf Hrfwf Hrfi Hye'); intros [w' [Hae' Hrfi']].
 
     exists x; split; [left | exists w'; split; [apply Htrans with a|]]; auto; apply rfi_pgcb_is_pgcb with e'; auto.
-    exists e; split; 
-      [right; apply _base; exists a; split; auto; exists e; split; auto; right; left | 
+    exists e; split;
+      [right; apply _base; exists a; split; auto; exists e; split; auto; right; left |
       exists w'; split; auto; apply rfi_pgcb_is_pgcb with e']; auto.
-    exists e; split; 
+    exists e; split;
       [right; apply _base; exists a; split; auto; exists e; split; auto; right; right; left |
-      exists w'; split; auto; apply rfi_pgcb_is_pgcb with e']; auto.      
-Qed.    
+      exists w'; split; auto; apply rfi_pgcb_is_pgcb with e']; auto.
+Qed.
 
 Lemma rf_obs_extra_is_obs_extra E co e1 e2 e3 :
   co_well_formed E co ->
@@ -3109,19 +3109,19 @@ Lemma rf_obs_extra_is_obs_extra E co e1 e2 e3 :
 Proof.
 intros Hcowf Hrfwf H12 [Hrfe | [Hco | [Hfr | [Hcorfe | Hfrrfe]]]].
 
-  destruct Hrfe as [Hrf23 ?]; 
-  generalize (ran_rf_is_read H12); intro Hr2; 
+  destruct Hrfe as [Hrf23 ?];
+  generalize (ran_rf_is_read H12); intro Hr2;
   generalize (dom_rf_is_write Hrf23); intro Hw2;
   generalize (read_write_contrad e2 Hr2 Hw2); intro Ht; inversion Ht.
 
-  generalize (ran_rf_is_read H12); intro Hr2; 
+  generalize (ran_rf_is_read H12); intro Hr2;
   generalize (dom_co_is_write e2 e3 Hcowf Hco); intro Hw2;
   generalize (read_write_contrad e2 Hr2 Hw2); intro Ht; inversion Ht.
 
   right; left; apply rf_fr_is_co with e2; auto.
 
   destruct Hcorfe as [e [Hco Hrfe]];
-  generalize (ran_rf_is_read H12); intro Hr2; 
+  generalize (ran_rf_is_read H12); intro Hr2;
   generalize (dom_co_is_write e2 e Hcowf Hco); intro Hw2;
   generalize (read_write_contrad e2 Hr2 Hw2); intro Ht; inversion Ht.
 
@@ -3140,7 +3140,7 @@ Qed.
 
 Lemma seq_tc_reorg4 r0 r1 r2 x y z :
   transitive r0 ->
-  rel_incl (rel_seq (rel_seq r2 r0) (rel_seq r0 r1)) (rel_seq r0 r1) -> 
+  rel_incl (rel_seq (rel_seq r2 r0) (rel_seq r0 r1)) (rel_seq r0 r1) ->
   rel_seq r0 (rel_seq (rel_union r1 r2) r0) x y ->
   rel_seq r0 (rel_seq r1 r0) y z ->
   transitive_closure (rel_seq r0 (rel_seq r1 r0)) x z.
@@ -3156,7 +3156,7 @@ inversion H12 as [Hr112 | Hr212]; clear H12.
   clear Hr212 H2y e2.
 
   assert ((rel_seq (rel_seq r0 r1) r0) y z) as Hyz'.
-    destruct Hyz as [a [Hya [b [Hab Hz]]]]. 
+    destruct Hyz as [a [Hya [b [Hab Hz]]]].
     exists b; split; auto; exists a; split; auto.
   clear Hyz.
 
@@ -3174,7 +3174,7 @@ Qed.
 
 Lemma seq_tc_reorg5 r0 r1 r2 x y z :
   transitive r0 ->
-  rel_incl (rel_seq (rel_seq r0 (rel_seq r2 r0)) (rel_seq r0 (rel_seq r1 r0))) (transitive_closure (rel_seq r0 (rel_seq r1 r0))) -> 
+  rel_incl (rel_seq (rel_seq r0 (rel_seq r2 r0)) (rel_seq r0 (rel_seq r1 r0))) (transitive_closure (rel_seq r0 (rel_seq r1 r0))) ->
   rel_seq r0 (rel_seq (rel_union r1 r2) r0) x y ->
   rel_seq r0 (rel_seq r1 r0) y z ->
   transitive_closure (rel_seq r0 (rel_seq r1 r0)) x z.
@@ -3224,7 +3224,7 @@ rel_incl
         (rel_seq
            (rel_union (rfi E)
               (rel_union (rel_seq (co E) (rfi E))
-                 (rel_seq (fr E co) (rfi E)))) 
+                 (rel_seq (fr E co) (rfi E))))
            (erln E si)))
      (rel_seq (erln E si)
         (rel_seq (obs_extra E co) (erln E si))))
@@ -3240,11 +3240,11 @@ inversion H23 as [Hrfi | [Hcorfi | Hfrrfi]]; clear H23.
   generalize (rfi_erln_obs_extra_erln_red Hsiwf Hcowf Hrfwf Hrfi H35 H56); intro H26.
   apply tc_seq_left with e2; auto; apply _base; auto.
 
-  destruct Hcorfi as [e [H2e Hrfi]]; apply tc_trans with e; [|clear H12 H2e]. 
+  destruct Hcorfi as [e [H2e Hrfi]]; apply tc_trans with e; [|clear H12 H2e].
     apply _base; exists e2; split; auto; exists e; split; auto; right; left; auto.
   apply _base; apply rfi_erln_obs_extra_erln_red with e3 e5; auto.
 
-  destruct Hfrrfi as [e [H2e Hrfi]]; apply tc_trans with e; [|clear H12 H2e]. 
+  destruct Hfrrfi as [e [H2e Hrfi]]; apply tc_trans with e; [|clear H12 H2e].
     apply _base; exists e2; split; auto; exists e; split; auto; right; right; left; auto.
   apply _base; apply rfi_erln_obs_extra_erln_red with e3 e5; auto.
 Qed.
@@ -3332,8 +3332,8 @@ intros Hsiwf Hcowf Hrfwf H12 H23; induction H23.
 Focus 2.
   apply IHtransitive_closure.
   generalize (tc_erln_complus_erln_obs_extra_si Hsiwf Hcowf Hrfwf H12 H); apply tc_incl;
-  intros x z [y [Hxz [a [Hza Hay]]]]; exists y; split; auto; 
-  exists a; split; auto; apply obs_extra_in_complus; auto. 
+  intros x z [y [Hxz [a [Hza Hay]]]]; exists y; split; auto;
+  exists a; split; auto; apply obs_extra_in_complus; auto.
 
   apply tc_erln_complus_erln_obs_extra_si with e0; auto.
 Qed.
@@ -3344,21 +3344,21 @@ Lemma mcomplus_seq_obs_extra E co si lob e1 e2 e3 :
   rf_well_formed E ->
   maybe (transitive_closure (rel_seq (erln E si) (rel_seq (complus E co) (erln E si)))) e1 e2 ->
   (rel_seq (erln E si) (preorder_gcb E si lob)) e2 e3 ->
-  rel_seq (maybe (transitive_closure (rel_seq (erln E si) (rel_seq (obs_extra E co) (erln E si))))) 
-    (rel_seq (erln E si) (preorder_gcb E si lob)) e1 e3. 
+  rel_seq (maybe (transitive_closure (rel_seq (erln E si) (rel_seq (obs_extra E co) (erln E si)))))
+    (rel_seq (erln E si) (preorder_gcb E si lob)) e1 e3.
 Proof.
 intros Hsiwf Hcowf Hrfwf H12 H23; generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl ?];
-  inversion H12 as [Heq12 | Htc12]; clear H12. 
+  inversion H12 as [Heq12 | Htc12]; clear H12.
   rewrite Heq12; exists e2; split; [left|]; auto.
 
-  induction Htc12 as [e1 e2 H12|]. 
+  induction Htc12 as [e1 e2 H12|].
 
   generalize (complus_seq_pgcb Hsiwf Hrfwf H12 H23); intros [e0 [H10 H03]];
     exists e0; split; auto.
 
   generalize (IHHtc12 H23); intros [e0 [[Heqee0 | Hee0] He0e3]].
-    rewrite <- Heqee0 in He0e3; 
-    generalize (complus_seq_pgcb Hsiwf Hrfwf H0 He0e3); intros [e' [H1' H'3]]. 
+    rewrite <- Heqee0 in He0e3;
+    generalize (complus_seq_pgcb Hsiwf Hrfwf H0 He0e3); intros [e' [H1' H'3]].
     exists e'; split; auto.
 
   exists e0; split; auto;
@@ -3369,9 +3369,9 @@ Lemma mcomplus_seq_obs_extra_incl E co si lob :
   si_well_formed E (si E) ->
   co_well_formed E co ->
   rf_well_formed E ->
-  rel_incl (rel_seq (maybe (transitive_closure (rel_seq (erln E si) (rel_seq (complus E co) (erln E si))))) 
-    (rel_seq (erln E si) (preorder_gcb E si lob))) 
-    (rel_seq (maybe (transitive_closure (rel_seq (erln E si) (rel_seq (obs_extra E co) (erln E si))))) 
+  rel_incl (rel_seq (maybe (transitive_closure (rel_seq (erln E si) (rel_seq (complus E co) (erln E si)))))
+    (rel_seq (erln E si) (preorder_gcb E si lob)))
+    (rel_seq (maybe (transitive_closure (rel_seq (erln E si) (rel_seq (obs_extra E co) (erln E si)))))
       (rel_seq (erln E si) (preorder_gcb E si lob))).
 Proof.
 intros Hsiwf Hcowf Hrfwf e1 e3 [e2 [H12 H23]]; apply mcomplus_seq_obs_extra with e2; auto.
@@ -3384,7 +3384,7 @@ Lemma erln_scaob_is_scaob E si e1 e2 e3 :
   scaob E si e2 e3 ->
   scaob E si e1 e3.
 Proof.
-intros Hsiwf Hrfwf [? [? [Hsi12 H12]]] [H23 [HE2 HI3]]; 
+intros Hsiwf Hrfwf [? [? [Hsi12 H12]]] [H23 [HE2 HI3]];
 destruct_siwf Hsiwf;
 split; auto.
   apply Htrans with e2; auto.
@@ -3404,7 +3404,7 @@ split; auto.
     destruct Hrfisw as [? [w2' [? [[Hrf2' Hint2] ?]]]].
     destruct_rf_wf Hrfwf; generalize (Hex_uni e2 Hr2); intros [? Huni];
     generalize (Huni w2 w2' Hrf2 Hrf2'); intro Heq; rewrite <- Heq in Hint2.
-    generalize (int_ext_contrad Hint2 Hext2); intro Ht; inversion Ht. 
+    generalize (int_ext_contrad Hint2 Hext2); intro Ht; inversion Ht.
 Qed.
 
 Lemma erln_pgcb_in_dec E (co si lob : set Event -> Rln Event) e1 e2 :
@@ -3416,11 +3416,11 @@ Lemma erln_pgcb_in_dec E (co si lob : set Event -> Rln Event) e1 e2 :
 Proof.
 intros Hsiwf Hrfwf Hcowf H12.
 destruct H12 as [e [H1e He3]];
-  generalize H1e; intros [? [? [Hsi1e ?]]]; 
-  generalize Hsiwf; intro Hsiwf'; destruct_siwf Hsiwf'; 
+  generalize H1e; intros [? [? [Hsi1e ?]]];
+  generalize Hsiwf; intro Hsiwf'; destruct_siwf Hsiwf';
   inversion He3 as [[Hlob ?] | Hscaob]; clear He3.
 
-    right; exists e; split; auto; [left | apply _lob]; auto. 
+    right; exists e; split; auto; [left | apply _lob]; auto.
     left; apply erln_scaob_is_scaob with e; auto.
 Qed.
 
@@ -3485,15 +3485,15 @@ Lemma obs_extra_in_ob E (co si lob : set Event -> Rln Event) e1 e2 :
 Proof.
 intros Hsiwf Hrfwf Hcowf; destruct_siwf Hsiwf; intros [Hrfe | [Hco | [Hfr | [[e [Hco Hrfe]] | [e [Hfr Hrfe]]]]]].
   apply _obs; exists e2; split; auto; left; auto.
-  apply _obs; exists e2; split; auto; right; left; auto.   
+  apply _obs; exists e2; split; auto; right; left; auto.
   apply _obs; exists e2; split; auto; right; right; auto.
 
   apply _ob with e; auto; apply _obs.
-    exists e; split; auto; right; left; auto.   
+    exists e; split; auto; right; left; auto.
     exists e2; split; auto; left; auto.
 
   apply _ob with e; auto; apply _obs.
-    exists e; split; auto; right; right; auto.   
+    exists e; split; auto; right; right; auto.
     exists e2; split; auto; left; auto.
 Qed.
 
@@ -3519,18 +3519,18 @@ Lemma scaob_erln_is_scaob E si e1 e2 e3 :
   scaob E si e1 e3.
 Proof.
 intros Hsiwf Hrfwf [Hsi12 [HER1 HIR2]] [? [? [Hsi23 H23]]];
-destruct_siwf Hsiwf; split. 
+destruct_siwf Hsiwf; split.
   apply Htrans with e2; auto.
 
   assert (is_read e2) as Hr2.
     destruct HIR2 as [w2 [Hrf2 Hint2]]; apply ran_rf_is_read with E w2; auto.
   split; auto.
     inversion H23 as [[Hw2 Hw3] | [[HER2 HER3] | Hrfisw]].
-    
-      generalize (read_write_contrad e2 Hr2 Hw2); intro Ht; inversion Ht. 
+
+      generalize (read_write_contrad e2 Hr2 Hw2); intro Ht; inversion Ht.
 
       destruct HIR2 as [w2 [Hrf2 Hint2]]; destruct HER2 as [w2' [Hrf2' Hext2]];
-      destruct_rf_wf Hrfwf; generalize (Hex_uni e2 Hr2); intros [? Huni]; generalize (Huni w2 w2' Hrf2 Hrf2'); 
+      destruct_rf_wf Hrfwf; generalize (Hex_uni e2 Hr2); intros [? Huni]; generalize (Huni w2 w2' Hrf2 Hrf2');
       intro Heq; rewrite <- Heq in Hext2; generalize (int_ext_contrad Hint2 Hext2); intro Ht; inversion Ht.
 
       destruct Hrfisw as [? [w3 [? [Hrfi3 ?]]]]; exists w3; auto.
@@ -3545,7 +3545,7 @@ Proof.
 intros Hrfwf [? [? [w2 [Hrf2 Hint]]]] [? [[w2' [Hrf2' Hext]] ?]];
   assert (is_read e2) as Hr2.
     apply ran_rf_is_read with E w2; auto.
-  destruct_rf_wf Hrfwf; generalize (Hex_uni e2 Hr2); intros [? Huni]; generalize (Huni w2 w2' Hrf2 Hrf2'); 
+  destruct_rf_wf Hrfwf; generalize (Hex_uni e2 Hr2); intros [? Huni]; generalize (Huni w2 w2' Hrf2 Hrf2');
   intro Heq; rewrite <- Heq in Hext; generalize (int_ext_contrad Hint Hext); intro Ht; inversion Ht.
 Qed.
 
@@ -3563,7 +3563,7 @@ intros Hsiwf Hrfwf Hcowf Hlobwf [Hsi12 | Hs12] [Hsi23 | Hs23].
   destruct Hsi12 as [? [? [w2 [Hrf2 Hint]]]]; destruct Hsi23 as [? [[w2' [Hrf2' Hext]] ?]];
   assert (is_read e2) as Hr2.
     apply ran_rf_is_read with E w2; auto.
-  destruct_rf_wf Hrfwf; generalize (Hex_uni e2 Hr2); intros [? Huni]; generalize (Huni w2 w2' Hrf2 Hrf2'); 
+  destruct_rf_wf Hrfwf; generalize (Hex_uni e2 Hr2); intros [? Huni]; generalize (Huni w2 w2' Hrf2 Hrf2');
   intro Heq; rewrite <- Heq in Hext; generalize (int_ext_contrad Hint Hext); intro Ht; inversion Ht.
 
   destruct Hs23 as [e [[H2e | H2e] He3]].
@@ -3593,7 +3593,7 @@ Lemma trans_equals_tc r :
   r = transitive_closure r.
 Proof.
 intro Htr; apply Extensionality_Rlns; split; intros e1 e2 H12.
-  apply _base; auto. 
+  apply _base; auto.
   induction H12; auto.
     apply Htr with e; auto.
 Qed.
@@ -3603,7 +3603,7 @@ Lemma pgcb_mobs_extra_seq_dec E (co si lob : set Event -> Rln Event) e1 e3 :
   rf_well_formed E ->
   co_well_formed E co ->
   lob_well_formed E si lob ->
-  rel_seq (rel_seq (erln E si) (preorder_gcb E si lob)) 
+  rel_seq (rel_seq (erln E si) (preorder_gcb E si lob))
     (maybe (transitive_closure (rel_seq (erln E si) (rel_seq (obs_extra E co) (erln E si))))) e1 e3 ->
   rel_union (scaob E si) (rel_seq (rel_union (erln E si) (scaob E si)) (ob E co (si E) (lob E))) e1 e3.
 Proof.
@@ -3611,7 +3611,7 @@ intros Hsiwf Hrfwf Hcowf Hlobwf [e2 [H12 H23]];
 inversion H23 as [Heq23 | Htc23]; clear H23.
 
   rewrite Heq23 in H12; clear Heq23; apply erln_pgcb_in_dec; auto.
-  
+
   generalize (dec_is_trans Hsiwf Hrfwf Hcowf Hlobwf); intro Hdt;
   rewrite (trans_equals_tc Hdt).
 
@@ -3620,17 +3620,17 @@ inversion H23 as [Heq23 | Htc23]; clear H23.
     generalize (erln_pgcb_in_dec Hsiwf Hrfwf Hcowf H12); intro H10.
     generalize (erln_obs_extra_erln_in_dec Hsiwf Hrfwf Hcowf Hlobwf H); intro H0e.
 
-    assert (rel_incl 
-             (rel_seq (erln E si) (rel_seq (obs_extra E co) (erln E si))) 
+    assert (rel_incl
+             (rel_seq (erln E si) (rel_seq (obs_extra E co) (erln E si)))
              (rel_union (scaob E si) (rel_seq (rel_union (erln E si) (scaob E si)) (ob E co (si E) (lob E))))) as Hincl.
       intros a b Hab; apply erln_obs_extra_erln_in_dec; auto.
     generalize (tc_incl Hincl Htc23); intros He2.
-    
-    apply tc_trans with e0; auto. 
-      apply _base; auto.
-      apply tc_trans with e; auto; apply _base; auto. 
 
-    apply tc_trans with x; auto; apply _base. 
+    apply tc_trans with e0; auto.
+      apply _base; auto.
+      apply tc_trans with e; auto; apply _base; auto.
+
+    apply tc_trans with x; auto; apply _base.
       apply erln_pgcb_in_dec; auto.
       apply erln_obs_extra_erln_in_dec; auto.
 Qed.
@@ -3641,7 +3641,7 @@ Lemma tc_pgcb_mobs_extra_dec E (co si lob aob : set Event -> Rln Event) x y :
   co_well_formed E co ->
   lob_well_formed E si lob ->
   internal_visibility E co ->
-  transitive_closure (rel_seq (rel_seq (erln E si) (preorder_gcb E si lob)) 
+  transitive_closure (rel_seq (rel_seq (erln E si) (preorder_gcb E si lob))
     (maybe (transitive_closure (rel_seq (erln E si) (rel_seq (obs_extra E co) (erln E si)))))) x y ->
   rel_union (scaob E si) (rel_seq (rel_union (erln E si) (scaob E si)) (ob E co (si E) (lob E))) x y.
 Proof.
@@ -3659,20 +3659,20 @@ Lemma mcomplus_seq_obs_extra_seq_pgcb E co si lob e' e2 e'' e3 :
   maybe (transitive_closure (rel_seq (erln E si) (rel_seq (complus E co) (erln E si)))) e' e2 ->
   transitive_closure (rel_seq (erln E si) (rel_seq (obs_extra E co) (erln E si))) e2 e'' ->
   (rel_seq (erln E si)(preorder_gcb E si lob)) e'' e3 ->
-  rel_seq (maybe (transitive_closure (rel_seq (erln E si) (rel_seq (obs_extra E co) (erln E si))))) 
+  rel_seq (maybe (transitive_closure (rel_seq (erln E si) (rel_seq (obs_extra E co) (erln E si)))))
     (rel_seq (erln E si)(preorder_gcb E si lob)) e' e3.
 Proof.
 intros Hsiwf Hrfwf Hcowf H'2 H2'' H''3.
-apply mcomplus_seq_obs_extra_incl; auto. 
+apply mcomplus_seq_obs_extra_incl; auto.
 inversion H'2 as [Heq'2 | Htc'2]; clear H'2.
 
   rewrite Heq'2; exists e''; split; auto.
-  right; generalize H2''; apply tc_incl; intros x y [e [Hxe [e0 [Hee0 He0y]]]]; 
+  right; generalize H2''; apply tc_incl; intros x y [e [Hxe [e0 [Hee0 He0y]]]];
   exists e; split; auto; exists e0; split; auto.
-    apply obs_extra_in_complus; auto.  
+    apply obs_extra_in_complus; auto.
 
   generalize (tc_erln_complus_erln_tc_obs_extra_si Hsiwf Hcowf Hrfwf Htc'2 H2''); intro He'e''; exists e''; split; auto.
-  right; generalize He'e''; apply tc_incl; intros x y [e [Hxe [e0 [Hee0 He0y]]]]; 
+  right; generalize He'e''; apply tc_incl; intros x y [e [Hxe [e0 [Hee0 He0y]]]];
   exists e; split; auto; exists e0; split; auto.
     apply obs_extra_in_complus; auto.
 Qed.
@@ -3696,9 +3696,9 @@ induction Hyz. Focus 2.
     apply mcomplus_seq_obs_extra_seq_pgcb with e1 e'; auto.
 
   destruct H as [e' [H1' H'e]]; inversion H1' as [Heq1' | Hobs_extra1']; clear H1'.
-    apply _base; rewrite Heq1' in Hxy; apply mcomplus_seq_obs_extra with e'; auto. 
-    apply _base; apply mcomplus_seq_obs_extra_seq_pgcb with e1 e'; auto.  
-Qed. 
+    apply _base; rewrite Heq1' in Hxy; apply mcomplus_seq_obs_extra with e'; auto.
+    apply _base; apply mcomplus_seq_obs_extra_seq_pgcb with e1 e'; auto.
+Qed.
 
 (** ** The relation pre_egc is a partial order over events
         viz,
@@ -3717,7 +3717,7 @@ intros Hsiwf Hxy; destruct_siwf Hsiwf.
 assert (ran (si E) y) as Hrany.
   exists x; auto.
 generalize (Hran y Hrany); intros [? ?]; auto.
-Qed. 
+Qed.
 
 Lemma pre_egc_in_evts (E : set Event) (co si lob : set Event -> Rln Event) :
   si_well_formed E (si E) ->
@@ -3728,7 +3728,7 @@ Lemma pre_egc_in_evts (E : set Event) (co si lob : set Event -> Rln Event) :
 Proof.
 (** The relation pre_egc is defined over events and transitive:
     since pre_egc is defined as the transitive closure of a union of relations over events,
-    it is trivially defined over events and trivially transitive. 
+    it is trivially defined over events and trivially transitive.
 *)
 intros Hsiwf Hrfwf Hcowf Hlobwf; apply r_in_evts_implies_tc_in_evts; intros _x [x Hdom | y Hran].
 
@@ -3737,7 +3737,7 @@ intros Hsiwf Hrfwf Hcowf Hlobwf; apply r_in_evts_implies_tc_in_evts; intros _x [
     apply dom_co_in_evts with co y; auto.
     apply dom_fr_in_evts with co y; auto.
     destruct_lob_wf Hlobwf; apply dom_po_in_evts with e; auto.
-    destruct Hscaob as [? [[wx [Hrfx ?]] ?]]; apply ran_rf_in_evts with wx; auto.  
+    destruct Hscaob as [? [[wx [Hrfx ?]] ?]]; apply ran_rf_in_evts with wx; auto.
   destruct Hran as [e Hey]; inversion Hey as [[x [? Hsi]] | [[x [? Hsi]] | [[x [? Hsi]] | [[Hlob ?] | Hscaob]]]].
     destruct Hsi as [? [? [? ?]]]; apply ran_si_in_evts with si x; auto.
     destruct Hsi as [? [? [? ?]]]; apply ran_si_in_evts with si x; auto.
@@ -3748,14 +3748,14 @@ Qed.
 
 Lemma tc_seq_split r1 r2 x y :
   transitive r1 ->
-  transitive_closure (rel_seq r1 (rel_seq r2 r1)) x y -> 
-  exists e, r1 x e /\ transitive_closure (rel_seq r2 r1) e y. 
+  transitive_closure (rel_seq r1 (rel_seq r2 r1)) x y ->
+  exists e, r1 x e /\ transitive_closure (rel_seq r2 r1) e y.
 Proof.
 intros Htr1 Hxy; induction Hxy; [|clear Hxy].
   destruct H as [e [Hxe Hey]]; exists e; split; auto; apply _base; auto.
 
   destruct H as [a [H1a Hae]]; destruct IHHxy as [b [Heb Hb2]]; exists a; split; auto.
-  apply _trans with b; auto. 
+  apply _trans with b; auto.
     destruct Hae as [c [Hac Hce]]; exists c; split; auto; apply Htr1 with e; auto.
 Qed.
 
@@ -3770,7 +3770,7 @@ Proof.
 intros Hsiwf Hlobwf Hrfwf [w1 [Hrfi1 Hlob2]] H23;
 destruct_lob_wf Hlobwf;
 exists w1; split; auto;
-apply Hlob_erln; exists e2; auto. 
+apply Hlob_erln; exists e2; auto.
 Qed.
 
 Lemma pc_erln_dec (E : set Event) (si lob : set Event -> Rln Event) (e1 e3 : Event) :
@@ -3780,7 +3780,7 @@ Lemma pc_erln_dec (E : set Event) (si lob : set Event -> Rln Event) (e1 e3 : Eve
   rel_seq (preorder_gcb E si lob) (erln E si) e1 e3 ->
   (preorder_gcb E si lob) e1 e3.
 Proof.
-intros Hsiwf Hlobwf Hrfwf [e2 [[Hlob12 | Hscaob12] H23]]; 
+intros Hsiwf Hlobwf Hrfwf [e2 [[Hlob12 | Hscaob12] H23]];
 generalize Hlobwf; intros Hlobwf'; destruct_lob_wf Hlobwf'.
   destruct Hlob12 as [Hlob [Hw1 | [Hr1 Hrr12]]].
     left; split; auto.
@@ -3789,10 +3789,10 @@ generalize Hlobwf; intros Hlobwf'; destruct_lob_wf Hlobwf'.
     left; split; auto.
       apply Hlob_erln; exists e2; split; auto.
       right; split; auto; inversion Hrr12 as [He | Hi]; clear Hrr12.
-        left; auto. 
-        right; auto. 
+        left; auto.
+        right; auto.
           apply lrflobw_erln_is_lrflobw with si e2; auto.
- 
+
     right; auto.
     apply scaob_erln_is_scaob with e2; auto.
 Qed.
@@ -3808,7 +3808,7 @@ Lemma nrel_irr_dec E co si lob x z :
              (rel_seq (erln E si)
                 (rel_seq (preorder_gcb E si lob)
                    (erln E si)))) x z ->
- rel_seq (erln E si) 
+ rel_seq (erln E si)
     (transitive_closure (rel_union (rel_seq (obsplus E co) (erln E si)) (preorder_gcb E si lob))) x z.
 Proof.
 intros Hsiwf Hlobwf Hrfwf Hxz; generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl [Hsym Htrans]];
@@ -3835,9 +3835,9 @@ Lemma tc_eoe_is_e_seq_tc_oe E co si x z :
 Proof.
 intros Hsiwf Hrfwf Hxz; generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl [Hsym Htrans]]; induction Hxz.
   destruct H as [y [H1y Hy2]]; exists y; split; auto; apply _base; auto.
-  clear Hxz; destruct H as [a [H1a Hae]]; destruct IHHxz as [b [Heb Hb2]]; 
+  clear Hxz; destruct H as [a [H1a Hae]]; destruct IHHxz as [b [Heb Hb2]];
   exists a; split; auto; apply _trans with b; auto.
-  destruct Hae as [x [Hax Hxe]]; exists x; split; auto; 
+  destruct Hae as [x [Hax Hxe]]; exists x; split; auto;
   apply Htrans with e; auto.
 Qed.
 
@@ -3872,7 +3872,7 @@ Lemma mtc_eoe_e_is_mtc_eoe E co si b x e :
   maybe
         (transitive_closure
            (rel_seq (erln E si)
-              (rel_seq (obsplus E co) (erln E si)))) b e \/ erln E si b e. 
+              (rel_seq (obsplus E co) (erln E si)))) b e \/ erln E si b e.
 Proof.
 intros Hsiwf Hrfwf; generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl [Hsym Htrans]];
 intros [Heqbx | Hbx] Hxe.
@@ -3880,14 +3880,14 @@ intros [Heqbx | Hbx] Hxe.
 
   induction Hbx.
 
-    left; destruct H as [a [H1a [b [Hab Hb2]]]]; 
+    left; destruct H as [a [H1a [b [Hab Hb2]]]];
       right; apply _base; exists a; split; auto;
       exists b; split; auto; apply Htrans with e2; auto.
 
-    clear Hbx; generalize (IHHbx Hxe); clear Hxe IHHbx; intros [[Heq0e | Htc] | Herln].   
+    clear Hbx; generalize (IHHbx Hxe); clear Hxe IHHbx; intros [[Heq0e | Htc] | Herln].
       rewrite Heq0e in H; clear Heq0e; left; right; apply _base; auto.
       left; right; apply _trans with e0; auto.
-      left; right; apply _base; destruct H as [a [H1a [b [Hab Hb0]]]]; 
+      left; right; apply _base; destruct H as [a [H1a [b [Hab Hb0]]]];
       exists a; split; auto; exists b; split; auto; apply Htrans with e0; auto.
 Qed.
 
@@ -3908,7 +3908,7 @@ Lemma br2_base_dec (E : set Event) (co si lob : set Event -> Rln Event) (e1 e2 :
             (transitive_closure
                (rel_seq (erln E si)
                   (rel_seq (obsplus E co) (erln E si)))))) e1 e2 ->
-  rel_seq (erln E si) 
+  rel_seq (erln E si)
     (transitive_closure (rel_union (rel_seq (obsplus E co) (erln E si)) (preorder_gcb E si lob))) e1 e2.
 Proof.
 intros Hsiwf Hlobwf Hrfwf Hcowf H12; generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl [Hsym Htrans]].
@@ -3918,12 +3918,12 @@ intros Hsiwf Hlobwf Hrfwf Hcowf H12; generalize (erln_is_equiv si Hsiwf Hrfwf); 
   inversion Hy2 as [Heqy2 | Htcy2]; clear Hy2.
 
     rewrite Heq1x; rewrite <- Heqy2; clear Heq1x Heqy2;
-    destruct Hxy as [z [Hxz Hzy]]; 
-    exists z; split; auto; apply _base; right; 
-    apply (pc_erln_dec Hsiwf Hlobwf Hrfwf Hzy). 
+    destruct Hxy as [z [Hxz Hzy]];
+    exists z; split; auto; apply _base; right;
+    apply (pc_erln_dec Hsiwf Hlobwf Hrfwf Hzy).
 
     rewrite Heq1x; clear Heq1x;
-    destruct Hxy as [z [Hxz Hzy]]; 
+    destruct Hxy as [z [Hxz Hzy]];
     exists z; split; auto; clear Hxz.
     generalize (tc_dec2 Htcy2); clear Htcy2; intros [e [[d [Hyd Hde]] He2]].
     assert (rel_seq (preorder_gcb E si lob) (erln E si) z d) as Hzd.
@@ -3986,14 +3986,14 @@ Lemma br2_dec (E : set Event) (co si lob : set Event -> Rln Event) (e1 e2 : Even
   lob_well_formed E si lob ->
   rf_well_formed E ->
   co_well_formed E co ->
-  (big_rel2 E co si lob) e1 e2 -> 
-  rel_seq (erln E si) 
+  (big_rel2 E co si lob) e1 e2 ->
+  rel_seq (erln E si)
     (transitive_closure (rel_union (rel_seq (obsplus E co) (erln E si)) (preorder_gcb E si lob))) e1 e2.
 Proof.
 intros Hsiwf Hlobwf Hrfwf Hcowf H12; induction H12.
 
   apply br2_base_dec; auto.
-  
+
   generalize (br2_base_dec Hsiwf Hlobwf Hrfwf Hcowf H); clear H H12; intros [a [H1a Hae]];
   exists a; split; auto; clear H1a;
   destruct IHtransitive_closure as [b [Heb Hb2]]; apply tc_trans with b; auto; clear Hb2.
@@ -4003,12 +4003,12 @@ Qed.
 Lemma op_si_in_ob (E : set Event) (co si lob : set Event -> Rln Event) x y z :
   si_well_formed E (si E) ->
   (obsplus E co) x y ->
-  si E y z -> 
+  si E y z ->
   ob E co (si E) (lob E) x z.
 Proof.
 intros Hsiwf Hxy Hyz; induction Hxy.
 Focus 2.
-  destruct_siwf Hsiwf; 
+  destruct_siwf Hsiwf;
   apply _ob with e; auto; apply _obs; exists e; split; auto.
 
 apply _obs; exists e2; split; auto.
@@ -4016,10 +4016,10 @@ Qed.
 
 Lemma op_e_in_ob (E : set Event) (co si lob : set Event -> Rln Event) x y :
   si_well_formed E (si E) ->
-  rel_seq (obsplus E co) (erln E si) x y -> 
+  rel_seq (obsplus E co) (erln E si) x y ->
   ob E co (si E) (lob E) x y.
 Proof.
-intros Hsiwf [e [Hxe [? [? [Hsi ?]]]]]; 
+intros Hsiwf [e [Hxe [? [? [Hsi ?]]]]];
 apply op_si_in_ob with e; auto.
 Qed.
 
@@ -4030,7 +4030,7 @@ Proof.
 intros [[Hlob ?] | Hsi]; [left; exists x; split | right]; auto.
   left; auto. apply _lob; auto.
   exists y; split; [|left]; auto.
-Qed.  
+Qed.
 
 Lemma pc_in_dec2 (E : set Event) (co si lob : set Event -> Rln Event) (x y : Event) :
   preorder_gcb E si lob x y ->
@@ -4039,7 +4039,7 @@ Proof.
 intros [[Hlob ?] | Hsi]; [left | right]; auto.
   apply _lob; auto.
   exists y; split; [|left]; auto.
-Qed.  
+Qed.
 
 Lemma nrr_implies_IR E lob e1 e2 :
   ~read_requirements E lob e1 e2 ->
@@ -4059,42 +4059,42 @@ Lemma tc_e_in_ob_or_scaob (E : set Event) (co si lob : set Event -> Rln Event) (
   transitive_closure
         (rel_union (rel_seq (obsplus E co) (erln E si))
            (preorder_gcb E si lob)) x y ->
-  erln E si y z -> 
+  erln E si y z ->
   rel_seq (maybe (scaob E si)) (ob E co (si E) (lob E)) x z \/ rel_seq (scaob E si) (maybe (lob' E lob)) x z.
 Proof.
 intros Hsiwf Hlobwf Hrfwf Hxy Hyz; generalize (tcu_e_is_tcu Hsiwf Hlobwf Hrfwf Hxy Hyz); clear Hxy Hyz; intros Hxz.
-induction Hxz; [| clear Hxz]. 
+induction Hxz; [| clear Hxz].
   inversion H as [Hobs | Hpc]; clear H; [left; exists e1; split; auto; [left | apply op_e_in_ob]; auto | apply pc_in_dec]; auto.
-  
+
   inversion H as [Hobs1e | Hpc1e]; clear H; inversion IHHxz as [Hobe2 | Hsie2]; clear IHHxz.
     destruct Hobe2 as [b [[Heqeb | [Hsieb ?]] Hb2]].
       rewrite Heqeb in Hobs1e; clear Heqeb;
-      left; exists e1; split; auto; 
+      left; exists e1; split; auto;
         [left|apply _ob with b; auto; apply op_e_in_ob]; auto.
-      destruct Hobs1e as [a [H1a [? [? [Hae ?]]]]]; 
-      left; exists e1; split; auto; 
+      destruct Hobs1e as [a [H1a [? [? [Hae ?]]]]];
+      left; exists e1; split; auto;
         [left|apply _ob with b; auto; apply op_si_in_ob with a; auto; destruct_siwf Hsiwf; apply Htrans with e]; auto.
 
     destruct Hsie2 as [b [[Hsi ?] [Heq | [Hlob ?]]]]; destruct Hobs1e as [a [H1a [? [? [Hae ?]]]]].
-      rewrite Heq in Hsi; clear Heq; left; exists e1; split; auto; 
+      rewrite Heq in Hsi; clear Heq; left; exists e1; split; auto;
         [left | apply op_si_in_ob with a; auto; destruct_siwf Hsiwf; apply Htrans with e]; auto.
-      left; exists e1; split; auto; 
+      left; exists e1; split; auto;
         [left | apply _ob with b; auto;
                   [apply op_si_in_ob with a; auto; destruct_siwf Hsiwf; apply Htrans with e |
                    apply _lob]]; auto.
 
-    inversion Hpc1e as [[Hlob1e ?] | Hscaob]; clear Hpc1e; 
+    inversion Hpc1e as [[Hlob1e ?] | Hscaob]; clear Hpc1e;
       [left; exists e1; split; auto; [left |]|]; auto.
-        destruct Hobe2 as [b [[Heqeb | Hscaobeb] Hb2]]; apply _ob with b; auto. 
+        destruct Hobe2 as [b [[Heqeb | Hscaobeb] Hb2]]; apply _ob with b; auto.
           rewrite Heqeb in Hlob1e; clear Heqeb; apply _lob; auto.
           destruct_lob_wf Hlobwf; apply _lob; apply Hlob_scaob; exists e; split; auto.
-      destruct Hobe2 as [b [[Heqeb | Hscaobeb] Hb2]]. 
-        rewrite Heqeb in Hscaob; clear Heqeb; left; exists b; split; auto; right; auto. 
+      destruct Hobe2 as [b [[Heqeb | Hscaobeb] Hb2]].
+        rewrite Heqeb in Hscaob; clear Heqeb; left; exists b; split; auto; right; auto.
         generalize (scaob_scaob_contrad Hrfwf Hscaob Hscaobeb); intro Ht; inversion Ht.
 
-    inversion Hpc1e as [[Hlob1e ?] | Hscaob1e]; clear Hpc1e; 
+    inversion Hpc1e as [[Hlob1e ?] | Hscaob1e]; clear Hpc1e;
     destruct Hsie2 as [b [Hscaob [Heq | Hlob']]].
-      rewrite Heq in Hscaob; clear Heq; left; exists e1; split; 
+      rewrite Heq in Hscaob; clear Heq; left; exists e1; split;
         [left| apply _lob; destruct_lob_wf Hlobwf; apply Hlob_scaob; exists e; auto]; auto.
       left; exists e1; split; destruct Hlob' as [Hlob ?];
         [left| apply _ob with b; apply _lob; auto; destruct_lob_wf Hlobwf; apply Hlob_scaob; exists e; auto]; auto.
@@ -4114,9 +4114,9 @@ intros Hsiwf Hlobwf Hrfwf Hxy Hyz; induction Hxy.
 
   destruct H as [a [Hxa Hay]]; destruct Hyz as [? [? [Hsi ?]]]; apply _obs;
   exists a; split; auto; destruct_siwf Hsiwf; apply Htrans with e2; auto.
-  
+
   destruct_lob_wf Hlobwf; apply _lob; apply Hlob_scaob; exists e2; auto.
-  
+
   apply _ob with e; auto.
 Qed.
 
@@ -4137,24 +4137,24 @@ Lemma e_tc_union_irr (E : set Event) (co si lob : set Event -> Rln Event) (x : E
   lob_well_formed E si lob ->
   rf_well_formed E ->
   external_visibility E co si lob ->
-  rel_seq (erln E si) 
-      (transitive_closure (rel_union (rel_seq (obsplus E co) (erln E si)) (preorder_gcb E si lob))) x x -> 
+  rel_seq (erln E si)
+      (transitive_closure (rel_union (rel_seq (obsplus E co) (erln E si)) (preorder_gcb E si lob))) x x ->
   False.
 Proof.
 intros Hsiwf Hlobwf Hrfwf Hev [y [Hxy Hyx]].
-generalize (tc_e_in_ob_or_scaob Hsiwf Hlobwf Hrfwf Hyx Hxy); clear Hxy Hyx x; 
+generalize (tc_e_in_ob_or_scaob Hsiwf Hlobwf Hrfwf Hyx Hxy); clear Hxy Hyx x;
   intros [[x [[Heq | Hsi] Hob]] | [x [Hscaob [Heq | Hlob']]]].
 
   rewrite Heq in Hob; clear Heq; apply Hev; exists x; auto.
   apply Hev; exists x; apply ob_scaob with y; auto.
 
-  rewrite Heq in Hscaob; clear Heq. 
+  rewrite Heq in Hscaob; clear Heq.
     apply scaob_irr with E si y; auto.
 
   destruct Hlob' as [Hlob ?]; apply Hev; exists x; apply _lob;
-  destruct_lob_wf Hlobwf; apply Hlob_scaob; exists y; auto. 
+  destruct_lob_wf Hlobwf; apply Hlob_scaob; exists y; auto.
 Qed.
-  
+
 (** ** The relation pre_egc is irreflexive:
 *)
 Lemma pre_egc_irr (E : set Event) (co si lob aob : set Event -> Rln Event) :
@@ -4180,7 +4180,7 @@ generalize (pre_egc_dec Hsiwf Hrfwf Hcowf Hx); clear Hx; intros [Hx|Hx].
   destruct Hx as [y [Hxy [z [[Hyz Hint] Hzx]]]].
   generalize (rf_erln_nrel_in_nrel_irr Hsiwf Hcowf Hrfwf Hyz Hzx Hxy); clear Hyz Hzx Hxy Hint x z; intros [Hnrel | Hrfie].
 
-    generalize (nrel_irr_dec Hsiwf Hlobwf Hrfwf Hnrel); clear Hnrel. 
+    generalize (nrel_irr_dec Hsiwf Hlobwf Hrfwf Hnrel); clear Hnrel.
       apply e_tc_union_irr; auto.
     destruct Hrfie as [x [[Hrf ?] Herln]];
     apply read_write_contrad with y; auto.
@@ -4193,10 +4193,10 @@ generalize (pre_egc_dec Hsiwf Hrfwf Hcowf Hx); clear Hx; intros [Hx|Hx].
 
 (** ** Case 2: (x,x) in (e;obs+;e)+ or big_rel2 *)
 
-  inversion Hx as [Heoe | Hbr2]; clear Hx. 
+  inversion Hx as [Heoe | Hbr2]; clear Hx.
    generalize (tc_eoe_is_e_seq_tc_oe Hsiwf Hrfwf Heoe); intros [y [Hxy Hyx]];
-    apply e_tc_union_irr with E co si lob x; auto; exists y; split; auto; 
-    apply tc_incl with (rel_seq (obsplus E co) (erln E si)); auto; 
+    apply e_tc_union_irr with E co si lob x; auto; exists y; split; auto;
+    apply tc_incl with (rel_seq (obsplus E co) (erln E si)); auto;
     intros e1 e2 H12; left; auto.
 
     apply e_tc_union_irr with E co si lob x; auto; apply br2_dec; auto.
@@ -4221,8 +4221,8 @@ Lemma rel_incl_lift (A:Type) (C:set (Class A)) (r1 r2 : Rln A) :
   rel_incl r1 r2 ->
   rel_incl (lift C r1) (lift C r2).
 Proof.
-unfold lift; 
-intros Hincl C1 C2 [HC1 [HC2 [x [y [Hx1 [Hy2 Hrxy]]]]]]; 
+unfold lift;
+intros Hincl C1 C2 [HC1 [HC2 [x [y [Hx1 [Hy2 Hrxy]]]]]];
 split; auto; split; auto; exists x; exists y; split; auto.
 Qed.
 
@@ -4230,7 +4230,7 @@ Qed.
         viz,
         - gcb is a linear extension of the preorder_gcb relation
         - the read-froms extracted from gcb [gcb_rf] are the same as the axiomatic ones [rf]
-        - the coherence extracted from gcb [gcb_co] are the same as the axiomatic ones [co] 
+        - the coherence extracted from gcb [gcb_co] are the same as the axiomatic ones [co]
 
 *)
 
@@ -4253,7 +4253,7 @@ Lemma lob'_erln_is_lob' E si lob x y z :
   erln E si y z ->
   lob' E lob x z.
 Proof.
-intros Hsiwf Hrfwf Hlobwf [Hxy [? Hrr]] Hyz; 
+intros Hsiwf Hrfwf Hlobwf [Hxy [? Hrr]] Hyz;
 generalize Hlobwf; intros Hlobwf'; destruct_lob_wf Hlobwf'; split; [|split]; auto.
   apply Hlob_erln; exists y; auto.
   generalize (erln_is_equiv si Hsiwf Hrfwf); intros [? [Hsym ?]];
@@ -4272,23 +4272,23 @@ Proof.
 intros Hsiwf Hrfwf Hlobwf Hxy Hyz; induction Hxy as [x y Hb | x e3 y Htc].
 Focus 2.
   apply _trans with y; auto; unfold pre_egc in IHHxy; generalize (IHHxy Hyz); intro Ht; auto.
-  
+
   assert (si E y z) as Hsi.
     destruct Hyz as [? [? [? ?]]]; auto.
   generalize (erln_is_equiv si Hsiwf Hrfwf); intros [? [? Htrans]];
   inversion Hb as [Hrfsi | [Hcosi | [Hfrsi | Hpc]]].
-    
+
     destruct Hrfsi as [e [Hxe Hey]]; apply _base; left; exists e; split; auto.
     apply Htrans with y; auto.
 
     destruct Hcosi as [e [Hxe Hey]]; apply _base; right; left; exists e; split; auto;
-    apply Htrans with y; auto.    
+    apply Htrans with y; auto.
 
     destruct Hfrsi as [e [Hxe Hey]]; apply _base; right; right; left; exists e; split; auto;
     apply Htrans with y; auto.
 
-    generalize Hlobwf; intro Hlobwf'; destruct_lob_wf Hlobwf'; 
-    inversion Hpc as [[Hlob Hreqs] | Hscaob]; clear Hpc; apply _base; right; right; right. 
+    generalize Hlobwf; intro Hlobwf'; destruct_lob_wf Hlobwf';
+    inversion Hpc as [[Hlob Hreqs] | Hscaob]; clear Hpc; apply _base; right; right; right.
       left; split.
         apply Hlob_erln; exists y; split; auto.
         inversion Hreqs as [Hwx | [Hrx Hrr]]; [left | right; split]; auto.
@@ -4337,7 +4337,7 @@ Proof.
   intros Hsiwf Hrfwf Hlobwf Hpart; destruct_part Hpart.
   unfold lift; intros [HCx [? [e1 [e2 [H1 [H2 H12]]]]]].
   unfold MemC in HCx; unfold classes in HCx; unfold class_of in HCx; destruct HCx as [x0 HCx];
-  rewrite HCx in H1; rewrite HCx in H2. 
+  rewrite HCx in H1; rewrite HCx in H2.
     assert (erln E si e2 e1) as Hyy'.
       generalize (erln_is_equiv si Hsiwf Hrfwf); intro Hequiv; clear Htrans; destruct_eqrln Hequiv;
       apply Htrans with x0; auto.
@@ -4349,7 +4349,7 @@ Lemma lift_partial_order E co si lob :
   rf_well_formed E ->
   lob_well_formed E si lob ->
   partial_order (pre_egc E co si lob) E ->
-  partial_order (lift (MemC E si) (pre_egc E co si lob)) (MemC E si). 
+  partial_order (lift (MemC E si) (pre_egc E co si lob)) (MemC E si).
 Proof.
 intros Hsiwf Hrfwf Hlobwf Hpart; split; [|split].
 
@@ -4365,13 +4365,13 @@ Lemma gcb_is_lin (E : set Event) (co si lob : set Event -> Rln Event) (gcb : Rln
   clinearisations (lift (MemC E si) (pre_egc E co si lob)) (MemC E si) gcb ->
   clinearisations (preorder_gcb_lift E si lob (MemC E si)) (MemC E si) gcb.
 Proof.
-(** By definition gcb is a linearisation of the relation pre_egc. 
+(** By definition gcb is a linearisation of the relation pre_egc.
 
     Observe that preorder_gcb is included in pre_egc.
 
     Note that for all relation r2 included in another relation r1,
-    a linearisation of the bigger relation r1   
-    is a linearisation of the smaller relation r2. 
+    a linearisation of the bigger relation r1
+    is a linearisation of the smaller relation r2.
 
     Therefore a linearisation of the bigger relation pre_egc
     is also a linearisation of the smaller relation preorder_gcb. *)
@@ -4408,7 +4408,7 @@ Lemma co_gcb_incl (E : set Event) (co si lob : set Event -> Rln Event) gcb :
   clinearisations (lift (MemC E si) (pre_egc E co si lob)) (MemC E si) gcb ->
   rel_incl (co E) (gcb_co E (dgcb_loc E (MemC E si) gcb)).
 Proof.
-intros Hsiwf Hcowf Hrfwf Hlin; generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl ?]. 
+intros Hsiwf Hcowf Hrfwf Hlin; generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl ?].
 
   intros x y Hxy; split; [| split; [|split; [|split; [|split]]]].
     apply dom_co_in_evts with co y; auto.
@@ -4416,13 +4416,13 @@ intros Hsiwf Hcowf Hrfwf Hlin; generalize (erln_is_equiv si Hsiwf Hrfwf); intros
     apply dom_co_is_write with E co y; auto.
     apply ran_co_is_write with E co x; auto.
     apply co_implies_same_loc with E co; auto.
-    split. 
+    split.
       apply dom_co_in_evts with co y; auto.
-      split. 
+      split.
       apply ran_co_in_evts with co x; auto.
       split.
       generalize (co_in_pre_egc co si lob Hsiwf); intro Hcoincl.
-      generalize (clin_ext_prop (MemC E si) (lift (MemC E si) (pre_egc E co si lob)) gcb); 
+      generalize (clin_ext_prop (MemC E si) (lift (MemC E si) (pre_egc E co si lob)) gcb);
       intros [Himpl _]; generalize (Himpl Hlin); clear Himpl; intros [Hincl Hlso].
       intros Cx Cy HCx HCy Hinx Hiny; apply Hincl; unfold lift; split; auto; split; auto;
       exists x; exists y; split; auto; split; auto; apply _base; right; left; exists y; split; auto.
@@ -4475,7 +4475,7 @@ Lemma gcb_coeq (E : set Event) (co si lob : set Event -> Rln Event) gcb :
   clinearisations (lift (MemC E si) (pre_egc E co si lob)) (MemC E si) gcb ->
   rel_equal (co E) (gcb_co E (dgcb_loc E (MemC E si) gcb)).
 Proof.
-intros Hsiwf Hcowf Hrfwf Hlin; generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl ?]; split. 
+intros Hsiwf Hcowf Hrfwf Hlin; generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl ?]; split.
 
   apply co_gcb_incl with lob; auto.
 
@@ -4515,10 +4515,10 @@ Lemma gcb_rf_incl (E : set Event) (co si lob : set Event -> Rln Event) gcb :
   clinearisations (lift (MemC E si) (pre_egc E co si lob)) (MemC E si) gcb ->
   rel_incl (gcb_rf E (dgcb_loc E (MemC E si) gcb)) (rf E).
 Proof.
-intros Hswif Hrfwf Hlin; generalize (clin_ext_prop (MemC E si) (lift (MemC E si) (pre_egc E co si lob)) gcb); 
+intros Hswif Hrfwf Hlin; generalize (clin_ext_prop (MemC E si) (lift (MemC E si) (pre_egc E co si lob)) gcb);
   intros [Himpl _]; generalize (Himpl Hlin); clear Himpl; intros [Hincl Hlso]; intros x y Hxy.
 
-  destruct_lin Hlso; destruct Hxy as [HEx [HEy [Hwx [Hry [Hloc [Hval [Hgcb Hnointerv]]]]]]]; 
+  destruct_lin Hlso; destruct Hxy as [HEx [HEy [Hwx [Hry [Hloc [Hval [Hgcb Hnointerv]]]]]]];
   split; auto; split; auto; split; auto; split; auto; split; auto.
 Qed.
 
@@ -4531,13 +4531,13 @@ Lemma gcb_rf_is_wf (E : set Event) (co si lob : set Event -> Rln Event) gcb :
   external_visibility E co si lob ->
   clinearisations (lift (MemC E si) (pre_egc E co si lob)) (MemC E si) gcb ->
   gcb_rf_wf E (dgcb_loc E (MemC E si) gcb).
-Proof. 
+Proof.
 intros Hsiwf Hrfwf Hcowf Hlobwf Hint_vis Hext_vis Hlin r Hr.
 generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl ?].
-generalize Hrfwf; intro Hrfwf'; destruct_rf_wf Hrfwf'; generalize (Hex_uni r Hr); intros [[w Hrf] Huni]; 
-  generalize (clin_ext_prop (MemC E si) (lift (MemC E si) (pre_egc E co si lob)) gcb); 
+generalize Hrfwf; intro Hrfwf'; destruct_rf_wf Hrfwf'; generalize (Hex_uni r Hr); intros [[w Hrf] Huni];
+  generalize (clin_ext_prop (MemC E si) (lift (MemC E si) (pre_egc E co si lob)) gcb);
   intros [Himpl _]; generalize (Himpl Hlin); clear Himpl; intros [Hincl Hlso];
-  exists w; split; [apply dom_rf_in_evts with r | split; [apply ran_rf_in_evts with w| 
+  exists w; split; [apply dom_rf_in_evts with r | split; [apply ran_rf_in_evts with w|
     split; [apply dom_rf_is_write with E r | split; [apply ran_rf_is_read with E w |
             split; [apply rf_implies_same_loc with E | split; [apply rf_implies_same_val with E | split]]]]]]; auto.
 
@@ -4546,18 +4546,18 @@ generalize Hrfwf; intro Hrfwf'; destruct_rf_wf Hrfwf'; generalize (Hex_uni r Hr)
     split.
     apply ran_rf_in_evts with w; auto.
     split.
-    intros Cw Cr HCw HCr Hinw Hinr; apply Hincl; 
+    intros Cw Cr HCw HCr Hinw Hinr; apply Hincl;
     unfold lift; split; auto; split; auto;
     exists w; exists r; split; auto; split; auto;
     apply _base; left; exists r; split; auto.
     apply rf_implies_same_loc with E; auto.
 
-  intros [w' [Hw' [[Hgcbww' Hlocww']  [Hgcbw'r Hlocw'r]]]]. 
+  intros [w' [Hw' [[Hgcbww' Hlocww']  [Hgcbw'r Hlocw'r]]]].
 
   generalize (gcb_co_incl Hsiwf Hcowf Hrfwf Hlin); intro Hcoincl.
   assert (E w) as HEw.
     apply dom_rf_in_evts with r; auto.
-  assert (E w') as HEw'. 
+  assert (E w') as HEw'.
     destruct Hgcbww' as [? [HEw' ?]]; auto.
   assert (is_write w) as Hw.
     apply dom_rf_is_write with E r; auto.
@@ -4571,7 +4571,7 @@ generalize Hrfwf; intro Hrfwf'; destruct_rf_wf Hrfwf'; generalize (Hex_uni r Hr)
     split; auto.
     split; auto.
     intros Cr Cw' HCr HCw' Hinr Hinw'; apply Hincl;
-    unfold lift; split; auto; split; auto; 
+    unfold lift; split; auto; split; auto;
     exists r; exists w'; split; auto; split; auto;
     apply _base; right; right; left; exists w'; split; auto.
 
@@ -4613,8 +4613,8 @@ Lemma gcb_rfeq (E : set Event) (co si lob : set Event -> Rln Event) gcb :
   clinearisations (lift (MemC E si) (pre_egc E co si lob)) (MemC E si) gcb ->
   rel_equal (rf E) (gcb_rf E (dgcb_loc E (MemC E si) gcb)).
 Proof.
-intros Hsiwf Hrfwf Hcowf Hlobwf Hint_vis Hext_vis Hlin; 
-  generalize (clin_ext_prop (MemC E si) (lift (MemC E si) (pre_egc E co si lob)) gcb); 
+intros Hsiwf Hrfwf Hcowf Hlobwf Hint_vis Hext_vis Hlin;
+  generalize (clin_ext_prop (MemC E si) (lift (MemC E si) (pre_egc E co si lob)) gcb);
   intros [Himpl _]; generalize (Himpl Hlin); clear Himpl; intros [Hincl Hlso]; split.
   apply rf_gcb_incl with co lob; auto.
   apply gcb_rf_incl with co lob; auto.
@@ -4630,7 +4630,7 @@ Lemma external_global_completion_gcb (E : set Event) (co si lob : set Event -> R
   clinearisations (lift (MemC E si) (pre_egc E co si lob)) (MemC E si) gcb ->
   external_global_completion E co si lob gcb.
 Proof.
-intros Hsiwf Hrfwf Hcowf Hlobwf Hint_vis Hext_vis Hlin; split; [|split]; auto. 
+intros Hsiwf Hrfwf Hcowf Hlobwf Hint_vis Hext_vis Hlin; split; [|split]; auto.
   apply gcb_is_lin with co; auto.
   apply gcb_rfeq with co lob; auto.
   apply gcb_coeq with lob; auto.
@@ -4651,7 +4651,7 @@ generalize (lift_partial_order Hsiwf Hrfwf Hlobwf Hpart); clear Hpart; intro Hpa
 generalize (corder_ext Hpart); intros [gcb Hgcb]; exists gcb.
 
   apply external_global_completion_gcb; auto.
-Qed. 
+Qed.
 
 (** * External Visibility <-> External Global Completion *)
 Theorem external_visibility_gcb_equivalence (E : set Event) (co si lob : set Event -> Rln Event) :
@@ -4672,9 +4672,9 @@ Qed.
 
 (** ** Global Completion: Definitions *)
 
-Definition fwd (E : set Event) (cb : Rln Event) (w r : Event) := 
+Definition fwd (E : set Event) (cb : Rln Event) (w r : Event) :=
   po E w r /\ cb r w /\ ~intervening_write (fun e1 e2 => po E e1 e2 /\ loc e1 = loc e2) w r.
-Definition nfwd (E : set Event) (cb : Rln Event) (w r : Event) := 
+Definition nfwd (E : set Event) (cb : Rln Event) (w r : Event) :=
   cb w r /\ ~intervening_write (fun e1 e2 => cb e1 e2 /\ loc e1 = loc e2) w r.
 Definition cb_rf (E : set Event) (cb : Rln Event) (e1 e2 : Event) : Prop :=
   is_write e1 /\ is_read e2 /\ loc e1 = loc e2 /\ val e1 = val e2 /\
@@ -4690,10 +4690,10 @@ Definition preorder_cb_lift E si lob C :=
 
 Definition global_completion (E : set Event) (co si lob : set Event -> Rln Event) (cb : Rln (Class Event)): Prop :=
   (clinearisations (preorder_cb_lift E si lob (MemC E si)) (MemC E si)) cb /\
-  rel_equal (rf E) (cb_rf E (dgcb_loc E (MemC E si) cb)) /\ 
+  rel_equal (rf E) (cb_rf E (dgcb_loc E (MemC E si) cb)) /\
   rel_equal (co E) (cb_co E (dgcb_loc E (MemC E si) cb)).
 
-Definition big_rel3 (E : set Event) (co si lob : set Event -> Rln Event) := 
+Definition big_rel3 (E : set Event) (co si lob : set Event -> Rln Event) :=
   tc_mobs_r_mobs E co si (preorder_cb E si lob).
 
 (** ** Global Completion: Lemmas that do _not_ need the existence of a External Global Completion order *)
@@ -4702,7 +4702,7 @@ Lemma rfe_in_cb E si cb :
   rel_equal (rf E) (cb_rf E (dgcb_loc E (MemC E si) cb)) ->
   rel_incl (rfe E) (delift (MemC E si) cb).
 Proof.
-intros Hrfeq x y [Hrf Hext]; destruct Hrfeq as [Hrfincl ?]; 
+intros Hrfeq x y [Hrf Hext]; destruct Hrfeq as [Hrfincl ?];
 generalize (Hrfincl x y Hrf); intros [? [? [? [? Hor]]]].
 inversion Hor as [[Hpo ?]| Hnfwd]; clear Hor.
 
@@ -4711,7 +4711,7 @@ inversion Hor as [[Hpo ?]| Hnfwd]; clear Hor.
   assert False as Ht.
     apply int_ext_contrad with E x y; auto.
   inversion Ht; auto.
- 
+
   destruct Hnfwd as [[? [? [Hxy ?]]] ?]; auto.
 Qed.
 
@@ -4719,9 +4719,9 @@ Lemma co_in_cb E co si cb :
   rel_equal (co E) (cb_co E (dgcb_loc E (MemC E si) cb)) ->
   rel_incl (co E) (delift (MemC E si) cb).
 Proof.
-intros Hcoeq x y Hco; destruct Hcoeq as [Hcoincl ?]; 
+intros Hcoeq x y Hco; destruct Hcoeq as [Hcoincl ?];
 generalize (Hcoincl x y Hco); intros [? [? [? [? [? [? [? [? ?]]]]]]]]; auto.
-Qed. 
+Qed.
 
 Lemma fr_in_cb E co si lob cb :
   si_well_formed E (si E) ->
@@ -4748,7 +4748,7 @@ assert (Cx <> Cy) as Hdiff.
 
 generalize (Htot Cx Cy Hdiff HinCx HinCy); intros [? | Hyx]; auto.
 
-generalize Hfr; intros [w [Hw [Hrf Hco]]]; 
+generalize Hfr; intros [w [Hw [Hrf Hco]]];
 generalize (co_in_dgcb co Hcoeq w y Hco); intro Hgcbwy.
 
 generalize Hrfeq; intros Hrfeq';
@@ -4764,7 +4764,7 @@ assert (loc x = loc y) as Hlocxy.
 assert False as Ht.
   apply Hnointerv; exists y; split; [|split; split]; auto.
     apply ran_co_is_write with E co w; auto.
-    split; auto. 
+    split; auto.
       apply dom_co_in_evts with co y; auto.
       split; auto.
       apply ran_co_in_evts with co w; auto.
@@ -4816,13 +4816,13 @@ Lemma big_rel3_irr E co si lob cb x :
   rel_equal (rf E) (cb_rf E (dgcb_loc E (MemC E si) cb)) ->
   rel_equal (co E) (cb_co E (dgcb_loc E (MemC E si) cb)) ->
   ~(big_rel3 E co si lob x x).
-Proof. 
+Proof.
 intros Hsiwf Hrfwf Hcowf Hlin Hrfeq Hcoeq; generalize (erln_is_equiv si Hsiwf Hrfwf); intro Herln;
 apply tc_mobs_r_mobs_irr with (erln E si) (MemC E si) cb; auto; intros e1 e2 H12.
   apply rfe_in_cb; auto.
-  apply co_in_cb with co; auto. 
+  apply co_in_cb with co; auto.
   apply fr_in_cb with co lob; auto.
-  unfold preorder_cb. 
+  unfold preorder_cb.
   right; auto.
 Qed.
 
@@ -4850,24 +4850,24 @@ generalize (co_in_cb co Hcoeq); intro Hcoincl.
 generalize (fr_in_cb Hsiwf Hcowf Hrfwf Hlin Hrfeq Hcoeq); intro Hfrincl.
 
 assert (rel_incl (scaob E si) (preorder_cb E si lob)) as Hscaobincl.
-  intros e1 e2 H12; right; auto. 
+  intros e1 e2 H12; right; auto.
 
-generalize (tc_obsp_si_in_order Heqt Hequivr HeqC Hsiwf Hrfwf Hcowf Hlin Hrfeincl Hcoincl Hfrincl Hscaobincl Hx); 
-generalize (clin_ext_prop (MemC E si) (preorder_cb_lift E si lob (MemC E si)) cb); intros [Himpl _]; generalize (Himpl Hlin); 
+generalize (tc_obsp_si_in_order Heqt Hequivr HeqC Hsiwf Hrfwf Hcowf Hlin Hrfeincl Hcoincl Hfrincl Hscaobincl Hx);
+generalize (clin_ext_prop (MemC E si) (preorder_cb_lift E si lob (MemC E si)) cb); intros [Himpl _]; generalize (Himpl Hlin);
 clear Himpl; intros [Hincl Hlso]; destruct_lin Hlso; destruct_part Hpart; apply Hirr.
-Qed. 
+Qed.
 
 Lemma global_completion_implies_external_visibility (E : set Event) (co si lob : set Event -> Rln Event) :
   si_well_formed E (si E) ->
   rf_well_formed E ->
   co_well_formed E co ->
   internal_visibility E co ->
-  (exists cb : Rln (Class Event), global_completion E co si lob cb) -> 
+  (exists cb : Rln (Class Event), global_completion E co si lob cb) ->
   external_visibility E co si lob.
 Proof.
 intros Hsiwf Hrfwf Hcowf Hintv [cb [Hlin [Hrfeq Hcoeq]]] [x Hx].
 generalize (cb_path_ob_dec si lob Hrfeq Hcoeq Hx); intros [Hobs | Hbr3].
-  
+
   apply (obsp_si_ac2 Hsiwf Hrfwf Hcowf Hlin Hrfeq Hcoeq Hobs).
 
   apply (big_rel3_irr Hsiwf Hrfwf Hcowf Hlin Hrfeq Hcoeq Hbr3); auto.
@@ -4875,14 +4875,14 @@ Qed.
 
 (** ** External Visibility -> Global Completion lemmas *)
 
-Definition pre_gc (E : set Event) (co si lob : set Event -> Rln Event) := 
+Definition pre_gc (E : set Event) (co si lob : set Event -> Rln Event) :=
 transitive_closure
   (rel_union (rel_seq (rfe E) (erln E si))
      (rel_union (rel_seq (co E) (erln E si))
         (rel_union (rel_seq (fr E co) (erln E si))
            (preorder_cb E si lob)))).
 
-Definition big_rel4 E co si lob := 
+Definition big_rel4 E co si lob :=
 transitive_closure
   (rel_seq
      (maybe
@@ -4934,20 +4934,20 @@ intros Hsiwf Hrfwf H1e0 He0e Hex Hx2; generalize (erln_is_equiv si Hsiwf Hrfwf);
       inversion Hx2 as [Heqx2 | Htcx2]; clear Hx2.
 
         rewrite Heqx2 in Hex; clear Heqx2; apply _base; exists e; split; auto;
-        right; apply _base; exists e1; split; auto; exists e0; split; auto; left; left; auto. 
+        right; apply _base; exists e1; split; auto; exists e0; split; auto; left; left; auto.
 
         apply _trans with x; auto; exists e; split; auto;
-        right; apply _base; exists e1; split; auto; exists e0; split; auto; left; left; auto. 
+        right; apply _base; exists e1; split; auto; exists e0; split; auto; left; left; auto.
 Qed.
 
 Lemma rf_br4_in_br4 E co si lob e1 e e0 e2 :
   si_well_formed E (si E) ->
-  co_well_formed E co -> 
+  co_well_formed E co ->
   rf_well_formed E ->
   rfe E e1 e0 ->
   erln E si e0 e ->
   big_rel4 E co si lob e e2 ->
-  big_rel4 E co si lob e1 e2. 
+  big_rel4 E co si lob e1 e2.
 Proof.
 intros Hsiwf Hcowf Hrfwf H1e0 He0e He2; generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl [Hsym Htrans]];
 generalize (tc_dec2 He2); clear He2; intros [x [[y [Hey Hex]] He2]].
@@ -4957,7 +4957,7 @@ generalize (tc_dec2 He2); clear He2; intros [x [[y [Hey Hex]] He2]].
 
     apply rfe_base_br4_in_br4 with e0 e x; auto.
 
-    inversion He2 as [Heqxe2 | Htcxe2]; clear He2. 
+    inversion He2 as [Heqxe2 | Htcxe2]; clear He2.
       rewrite Heqxe2 in Hex; clear Heqxe2.
       apply _base; exists y; split; auto; right; apply rf_tc_erln_obsp_erln_in_tc with e e0; auto;
       destruct H1e0; auto.
@@ -4983,7 +4983,7 @@ intros Hsiwf Hrfwf Hcowf H1e0 He0e He2; generalize (erln_is_equiv si Hsiwf Hrfwf
 
     right; apply _base; exists e1; split; auto;
     exists e0; split; auto; left; right; left; auto.
-Qed. 
+Qed.
 
 Lemma fr_br4_in_br4 E (co si lob : set Event -> Rln Event) e1 e e0 e2 :
   si_well_formed E (si E) ->
@@ -4992,16 +4992,16 @@ Lemma fr_br4_in_br4 E (co si lob : set Event -> Rln Event) e1 e e0 e2 :
   fr E co e1 e0 ->
   erln E si e0 e ->
   big_rel4 E co si lob e e2 ->
-  big_rel4 E co si lob e1 e2. 
+  big_rel4 E co si lob e1 e2.
 Proof.
 intros Hsiwf Hrfwf Hcowf H1e0 He0e He2; generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl ?].
   apply tc_seq_left with e; auto.
 
     apply transitive_maybe_tc.
-    
+
     right; apply _base; exists e1; split; auto;
     exists e0; split; auto; left; right; right; auto.
-Qed. 
+Qed.
 
 Lemma preorder_cb_br4_in_br4 E (co si lob : set Event -> Rln Event) e1 e e2 :
   si_well_formed E (si E) ->
@@ -5009,7 +5009,7 @@ Lemma preorder_cb_br4_in_br4 E (co si lob : set Event -> Rln Event) e1 e e2 :
   co_well_formed E co ->
   preorder_cb E si lob e1 e ->
   big_rel4 E co si lob e e2 ->
-  big_rel4 E co si lob e1 e2. 
+  big_rel4 E co si lob e1 e2.
 Proof.
 intros Hsiwf Hrfwf Hcowf H1e He2; generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl ?];
 induction He2 as [e e2 He2 | e e2 e' Hee'].
@@ -5020,14 +5020,14 @@ induction He2 as [e e2 He2 | e e2 e' Hee'].
   apply tc_trans with e'; auto.
     apply _trans with e; [exists e1; split; [left | exists e; split; [|left]]|apply _base]; auto.
       exists e1; split; auto; exists e; split; auto.
-Qed. 
+Qed.
 
 Lemma obs_extra_obsp_eq E co :
   rf_well_formed E ->
   co_well_formed E co ->
   obs_extra E co = obsplus E co.
 Proof.
-intros Hrfwf Hcowf; 
+intros Hrfwf Hcowf;
 apply Extensionality_Rlns; split; intros e1 e2 H12.
   inversion H12 as [Hrfe | [Hco | [Hfr | [Hcorfe | Hfrrfe]]]].
     apply _base; left; auto.
@@ -5042,17 +5042,17 @@ apply Extensionality_Rlns; split; intros e1 e2 H12.
       right; left; auto.
       right; right; left; auto.
 
-    inversion H as [Hrfe1e | [Hco1e | Hfr1e]].  
+    inversion H as [Hrfe1e | [Hco1e | Hfr1e]].
 
-    (*e1,e in rfe*) 
+    (*e1,e in rfe*)
     inversion IHtransitive_closure as [Hrfee2 | [Hcoe2 | [Hfre2 | [Hcorfee2 | Hfrrfee2]]]].
-      destruct Hrfe1e as [Hrfe1e ?]; destruct Hrfee2 as [Hrfee2 ?]; 
+      destruct Hrfe1e as [Hrfe1e ?]; destruct Hrfee2 as [Hrfee2 ?];
         generalize (ran_rf_is_read Hrfe1e); intro Hre; generalize (dom_rf_is_write Hrfee2); intro Hwe;
         generalize (read_write_contrad e Hre Hwe); intro Ht; inversion Ht.
-      destruct Hrfe1e as [Hrfe1e ?]; 
+      destruct Hrfe1e as [Hrfe1e ?];
         generalize (ran_rf_is_read Hrfe1e); intro Hre; generalize (dom_co_is_write e e2 Hcowf Hcoe2); intro Hwe;
         generalize (read_write_contrad e Hre Hwe); intro Ht; inversion Ht.
-       destruct Hrfe1e as [Hrfe1e ?]; right; left; apply rf_fr_is_co with e; auto. 
+       destruct Hrfe1e as [Hrfe1e ?]; right; left; apply rf_fr_is_co with e; auto.
       destruct Hrfe1e as [Hrfe1e ?]; destruct Hcorfee2 as [e' [Hco ?]];
         generalize (ran_rf_is_read Hrfe1e); intro Hre; generalize (dom_co_is_write e e' Hcowf Hco); intro Hwe;
         generalize (read_write_contrad e Hre Hwe); intro Ht; inversion Ht.
@@ -5067,7 +5067,7 @@ apply Extensionality_Rlns; split; intros e1 e2 H12.
       generalize (read_write_contrad e Hre Hwe); intro Ht; inversion Ht.
       destruct Hcorfee2 as [e'[Hco ?]]; generalize (co_trans e1 e e' Hcowf Hco1e Hco); intro Hco1e';
       right; right; right; left; exists e'; split; auto.
-      destruct Hfrrfee2 as [e' [Hfr ?]]; 
+      destruct Hfrrfee2 as [e' [Hfr ?]];
       generalize (ran_co_is_write e1 e Hcowf Hco1e); intro Hwe; generalize (dom_fr_is_read Hfr); intro Hre.
       generalize (read_write_contrad e Hre Hwe); intro Ht; inversion Ht.
 
@@ -5079,7 +5079,7 @@ apply Extensionality_Rlns; split; intros e1 e2 H12.
       generalize (read_write_contrad e Hre Hwe); intro Ht; inversion Ht.
       destruct Hcorfee2 as [e' [Hco Hrfe]]; generalize (fr_co_is_fr e' Hcowf Hfr1e Hco); intro Hfr1e';
       right; right; right; right; exists e'; split; auto.
-      destruct Hfrrfee2 as [e' [Hfr Hrfe]]; 
+      destruct Hfrrfee2 as [e' [Hfr Hrfe]];
       generalize (ran_fr_is_write Hcowf Hfr1e); intro Hwe; generalize (dom_fr_is_read Hfr); intro Hre;
       generalize (read_write_contrad e Hre Hwe); intro Ht; inversion Ht.
 Qed.
@@ -5102,15 +5102,15 @@ induction H12 as [e1 e2 H12 | e1 e2 b H1b Hb2].
 
   inversion H1b as [[a [Hrfe Hsi]]  | [[a [Hco Hsi]] | [[a [Hfr Hsi]] | Hlob]]]; clear H1b;
   inversion IHHb2 as [Hcpb2 | Hbr4b2]; clear IHHb2.
-    left; apply _trans with b; auto; exists e1; split; auto; exists a; split; auto; left; auto. 
-    right; apply rf_br4_in_br4 with b a; auto. 
-    left; apply _trans with b; auto; exists e1; split; auto; exists a; split; auto; right; left; auto. 
+    left; apply _trans with b; auto; exists e1; split; auto; exists a; split; auto; left; auto.
+    right; apply rf_br4_in_br4 with b a; auto.
+    left; apply _trans with b; auto; exists e1; split; auto; exists a; split; auto; right; left; auto.
     right; apply co_br4_in_br4 with b a; auto.
-    left; apply _trans with b; auto; exists e1; split; auto; exists a; split; auto; right; right; left; auto. 
+    left; apply _trans with b; auto; exists e1; split; auto; exists a; split; auto; right; right; left; auto.
     right; apply fr_br4_in_br4 with b a; auto.
     right; apply _base; exists e1; split; [left |exists b; split; [|right]]; auto.
-      exists e1; split; auto; exists b; split; auto. 
-      rewrite <- obs_extra_obsp_eq; auto. 
+      exists e1; split; auto; exists b; split; auto.
+      rewrite <- obs_extra_obsp_eq; auto.
     right; apply preorder_cb_br4_in_br4 with b; auto.
 Qed.
 
@@ -5121,8 +5121,8 @@ Lemma mobs_extra_trans E (co si lob : set Event -> Rln Event) :
   internal_visibility E co ->
   external_visibility E co si lob ->
   transitive (maybe (obs_extra E co)).
-Proof. 
-intros Hrfwf Hcowf Hlobwf Hintv Hextv x y z Hxy Hyz; 
+Proof.
+intros Hrfwf Hcowf Hlobwf Hintv Hextv x y z Hxy Hyz;
 inversion Hxy as [Heqxy | Hpcxy]; clear Hxy; inversion Hyz as [Heqyz | Hpcyz]; clear Hyz.
   left; rewrite Heqxy; auto.
   right; rewrite Heqxy; auto.
@@ -5135,14 +5135,14 @@ inversion Hxy as [Heqxy | Hpcxy]; clear Hxy; inversion Hyz as [Heqyz | Hpcyz]; c
     inversion Ht.
 
     assert False as Ht.
-      apply (read_write_contrad y); [apply ran_rf_is_read with E x; destruct Hrfexy | 
+      apply (read_write_contrad y); [apply ran_rf_is_read with E x; destruct Hrfexy |
                                      apply dom_co_is_write with E co z]; auto.
     inversion Ht.
 
     destruct Hrfexy as [? ?]; right; left; apply rf_fr_is_co with y; auto.
 
     assert False as Ht.
-      apply (read_write_contrad y); [apply ran_rf_is_read with E x; destruct Hrfexy | 
+      apply (read_write_contrad y); [apply ran_rf_is_read with E x; destruct Hrfexy |
                                        destruct Hcorfeyz as [e [Hye Hez]]; apply dom_co_is_write with E co e]; auto.
     inversion Ht.
 
@@ -5179,22 +5179,22 @@ inversion Hxy as [Heqxy | Hpcxy]; clear Hxy; inversion Hyz as [Heqyz | Hpcyz]; c
     destruct Hfrrfeyz as [e [Hfr Hrfe]]; assert False as Ht.
       generalize (ran_fr_is_write Hcowf Hfrxy); intro Hwy; generalize (dom_fr_is_read Hfr); intro Hry;
       apply (read_write_contrad y Hry Hwy).
-    inversion Ht.    
+    inversion Ht.
 
     assert False as Ht.
-      apply (read_write_contrad y); [destruct Hcorfexy as [e [Hxe [Hey ?]]]; apply ran_rf_is_read with E e | 
+      apply (read_write_contrad y); [destruct Hcorfexy as [e [Hxe [Hey ?]]]; apply ran_rf_is_read with E e |
                                        apply dom_rf_is_write with E z; destruct Hrfeyz]; auto.
     inversion Ht.
 
     assert False as Ht.
-      apply (read_write_contrad y); [destruct Hcorfexy as [e [Hxe [Hey ?]]]; apply ran_rf_is_read with E e | 
+      apply (read_write_contrad y); [destruct Hcorfexy as [e [Hxe [Hey ?]]]; apply ran_rf_is_read with E e |
                                        apply dom_co_is_write with E co z]; auto.
     inversion Ht.
 
     destruct Hcorfexy as [e [Hco Hrfe]]; destruct Hrfe as [? ?]; right; left; apply co_trans with e; auto; apply rf_fr_is_co with y; auto.
 
     assert False as Ht.
-      apply (read_write_contrad y); [destruct Hcorfexy as [e [Hxe [Hey ?]]]; apply ran_rf_is_read with E e | 
+      apply (read_write_contrad y); [destruct Hcorfexy as [e [Hxe [Hey ?]]]; apply ran_rf_is_read with E e |
                                        destruct Hcorfeyz as [e [Hye Hez]]; apply dom_co_is_write with E co e]; auto.
     inversion Ht.
 
@@ -5207,27 +5207,27 @@ inversion Hxy as [Heqxy | Hpcxy]; clear Hxy; inversion Hyz as [Heqyz | Hpcyz]; c
     inversion Ht.
 
     destruct Hfrrfexy as [e [Hfr [Hrf ?]]]; assert False as Ht.
-      generalize (ran_rf_is_read Hrf); intro Hry; generalize (dom_co_is_write y z Hcowf Hcoyz); intro Hwy; 
+      generalize (ran_rf_is_read Hrf); intro Hry; generalize (dom_co_is_write y z Hcowf Hcoyz); intro Hwy;
       apply (read_write_contrad y Hry Hwy).
     inversion Ht.
 
     destruct Hfrrfexy as [e [Hfr [Hrf ?]]]; right; right; left; apply fr_co_is_fr with e; auto; apply rf_fr_is_co with y; auto.
 
-    destruct Hfrrfexy as [e [Hfr [Hrf ?]]]; destruct Hcorfeyz as [e' [Hco [Hrf' ?]]]; assert False as Ht. 
-      generalize (ran_rf_is_read Hrf); intro Hry; generalize (dom_co_is_write y e' Hcowf Hco); intro Hwy; 
+    destruct Hfrrfexy as [e [Hfr [Hrf ?]]]; destruct Hcorfeyz as [e' [Hco [Hrf' ?]]]; assert False as Ht.
+      generalize (ran_rf_is_read Hrf); intro Hry; generalize (dom_co_is_write y e' Hcowf Hco); intro Hwy;
       apply (read_write_contrad y Hry Hwy).
     inversion Ht.
 
-    destruct Hfrrfexy as [e [Hfr [Hrf ?]]]; destruct Hfrrfeyz as [e' [Hfr' Hrfe]]; right; right; right; right; 
+    destruct Hfrrfexy as [e [Hfr [Hrf ?]]]; destruct Hfrrfeyz as [e' [Hfr' Hrfe]]; right; right; right; right;
     exists e'; split; auto; apply fr_co_is_fr with e; auto; apply rf_fr_is_co with y; auto.
-Qed. 
+Qed.
 
 Lemma preorder_cb_seq_mobs_extra_dec E co si lob x y :
   rf_well_formed E ->
   co_well_formed E co ->
   (rel_seq (preorder_cb E si lob) (maybe (obs_extra E co))) x y ->
   rel_seq (maybe (scaob E si))
-      (transitive_closure (rel_union (rel_seq (obsplus E co) (maybe (scaob E si))) (lob E))) x y \/ scaob E si x y. 
+      (transitive_closure (rel_union (rel_seq (obsplus E co) (maybe (scaob E si))) (lob E))) x y \/ scaob E si x y.
 Proof.
 intros Hrfwf Hcowf [e [Hpre [Heq | Hobs_extra]]].
     rewrite Heq in Hpre; clear Heq.
@@ -5239,7 +5239,7 @@ intros Hrfwf Hcowf [e [Hpre [Heq | Hobs_extra]]].
     inversion Hpre as [Hlob | Hscaob]; clear Hpre.
       left; exists x; split; [left|apply _trans with e; [right|apply _base; left]]; auto.
         exists y; split; [|left]; auto.
-        rewrite <- obs_extra_obsp_eq; auto. 
+        rewrite <- obs_extra_obsp_eq; auto.
 
     left; exists e; split.
       right; auto.
@@ -5275,7 +5275,7 @@ Lemma tc_preorder_cb_seq_mobs_extra_dec E co si lob x y :
   transitive_closure
         (rel_seq (preorder_cb E si lob) (maybe (obs_extra E co))) x y ->
   rel_seq (maybe (scaob E si))
-      (transitive_closure (rel_union (rel_seq (obsplus E co) (maybe (scaob E si))) (lob E))) x y \/ scaob E si x y. 
+      (transitive_closure (rel_union (rel_seq (obsplus E co) (maybe (scaob E si))) (lob E))) x y \/ scaob E si x y.
 Proof.
 intros Hlobwf Hrfwf Hcowf Hxy; induction Hxy.
 
@@ -5341,12 +5341,12 @@ Lemma u_in_ob E co si lob e1 e2 :
   si_well_formed E (si E) ->
   rf_well_formed E ->
   co_well_formed E co ->
-  rel_union (rel_seq (obsplus E co) (maybe (scaob E si))) 
+  rel_union (rel_seq (obsplus E co) (maybe (scaob E si)))
      (lob E) e1 e2 ->
   ob E co (si E) (lob E) e1 e2.
 Proof.
 intros Hsiwf Hrfwf Hcowf [[e [Hobsp [Heq | Hscaob]]] |Hlob].
-    rewrite Heq in Hobsp; clear Heq. 
+    rewrite Heq in Hobsp; clear Heq.
       apply obsp_in_ob; auto.
       apply obsp_scaob_in_ob with e; auto.
     apply _lob; auto.
@@ -5379,7 +5379,7 @@ Proof.
 intros Hsiwf Hlobwf Hrfwf Hcowf Hext_vis Hx; generalize (tc_preorder_cb_seq_mobs_extra_dec Hlobwf Hrfwf Hcowf Hx); clear Hx.
 intros [[y [Hxy Htc]] | Hscaob].
   generalize (tc_u_scaob_is_tc Hlobwf Hrfwf Htc Hxy); clear Htc Hxy x; intro Hy;
-  apply Hext_vis; exists y. 
+  apply Hext_vis; exists y.
     apply tc_in_ob; auto.
 
   apply scaob_irr with E si x; auto.
@@ -5392,11 +5392,11 @@ Lemma preorder_cb_erln_dec (E : set Event) (si lob : set Event -> Rln Event) (e1
   rel_seq (preorder_cb E si lob) (erln E si) e1 e3 ->
   (preorder_cb E si lob) e1 e3.
 Proof.
-intros Hsiwf Hlobwf Hrfwf [e2 [[Hlob12 | Hscaob12] H23]]; 
+intros Hsiwf Hlobwf Hrfwf [e2 [[Hlob12 | Hscaob12] H23]];
 generalize Hlobwf; intros Hlobwf'; destruct_lob_wf Hlobwf'.
     left; auto.
       apply Hlob_erln; exists e2; split; auto.
- 
+
     right; auto.
     apply scaob_erln_is_scaob with e2; auto.
 Qed.
@@ -5429,7 +5429,7 @@ Lemma preorder_cb_in_dec (E : set Event) (co si lob : set Event -> Rln Event) (x
 Proof.
 intros [Hlob | Hsi]; [left; exists x; split | ]; auto.
   left; auto. apply _lob; auto.
-Qed.  
+Qed.
 
 Lemma tc_e_in_ob_or_scaob2 (E : set Event) (co si lob : set Event -> Rln Event) (x y z : Event) :
   si_well_formed E (si E) ->
@@ -5438,36 +5438,36 @@ Lemma tc_e_in_ob_or_scaob2 (E : set Event) (co si lob : set Event -> Rln Event) 
   transitive_closure
         (rel_union (rel_seq (obsplus E co) (erln E si))
            (preorder_cb E si lob)) x y ->
-  erln E si y z -> 
+  erln E si y z ->
   rel_seq (maybe (scaob E si)) (ob E co (si E) (lob E)) x z \/ (scaob E si) x z.
 Proof.
 intros Hsiwf Hlobwf Hrfwf Hxy Hyz; generalize (tcu_e_is_tcu2 Hsiwf Hlobwf Hrfwf Hxy Hyz); clear Hxy Hyz; intros Hxz.
-induction Hxz; [| clear Hxz]. 
+induction Hxz; [| clear Hxz].
   inversion H as [Hobs | Hpc]; clear H; [left; exists e1; split; auto; [left | apply op_e_in_ob]; auto | apply preorder_cb_in_dec]; auto.
-  
+
   inversion H as [Hobs1e | Hpc1e]; clear H; inversion IHHxz as [Hobe2 | Hsie2]; clear IHHxz.
     destruct Hobe2 as [b [[Heqeb | [Hsieb ?]] Hb2]].
       rewrite Heqeb in Hobs1e; clear Heqeb;
-      left; exists e1; split; auto; 
+      left; exists e1; split; auto;
         [left|apply _ob with b; auto; apply op_e_in_ob]; auto.
-      destruct Hobs1e as [a [H1a [? [? [Hae ?]]]]]; 
-      left; exists e1; split; auto; 
+      destruct Hobs1e as [a [H1a [? [? [Hae ?]]]]];
+      left; exists e1; split; auto;
         [left|apply _ob with b; auto; apply op_si_in_ob with a; auto; destruct_siwf Hsiwf; apply Htrans with e]; auto.
 
     destruct Hsie2 as [Hsi ?]; destruct Hobs1e as [a [H1a [? [? [Hae ?]]]]].
-      left; exists e1; split; auto; 
-        [left | apply op_si_in_ob with a; auto; destruct_siwf Hsiwf; apply Htrans with e]; auto. 
+      left; exists e1; split; auto;
+        [left | apply op_si_in_ob with a; auto; destruct_siwf Hsiwf; apply Htrans with e]; auto.
 
-    inversion Hpc1e as [Hlob1e | Hsi1e]; clear Hpc1e; 
+    inversion Hpc1e as [Hlob1e | Hsi1e]; clear Hpc1e;
       [left; exists e1; split; auto; [left |]|]; auto.
-        destruct Hobe2 as [b [[Heqeb | Hscaobeb] Hb2]]; apply _ob with b; auto. 
+        destruct Hobe2 as [b [[Heqeb | Hscaobeb] Hb2]]; apply _ob with b; auto.
           rewrite Heqeb in Hlob1e; clear Heqeb; apply _lob; auto.
           destruct_lob_wf Hlobwf; apply _lob; apply Hlob_scaob; exists e; split; auto.
 
-      destruct Hobe2 as [b [[Heqeb | Hscaobeb] Hb2]]. 
-        rewrite Heqeb in Hsi1e; clear Heqeb; left; exists b; split; auto; right; auto. 
+      destruct Hobe2 as [b [[Heqeb | Hscaobeb] Hb2]].
+        rewrite Heqeb in Hsi1e; clear Heqeb; left; exists b; split; auto; right; auto.
         generalize (scaob_scaob_contrad Hrfwf Hsi1e Hscaobeb); intro Ht; inversion Ht.
-      
+
       inversion Hpc1e as [Hlob1e | Hsi1e]; clear Hpc1e.
       left; exists e1; split; [left|apply _lob; destruct_lob_wf Hlobwf; apply Hlob_scaob; exists e]; auto.
       generalize (scaob_scaob_contrad Hrfwf Hsi1e Hsie2); intro Ht; inversion Ht.
@@ -5478,12 +5478,12 @@ Lemma e_tc_union_irr2 (E : set Event) (co si lob : set Event -> Rln Event) (x : 
   lob_well_formed E si lob ->
   rf_well_formed E ->
   external_visibility E co si lob ->
-  rel_seq (erln E si) 
-      (transitive_closure (rel_union (rel_seq (obsplus E co) (erln E si)) (preorder_cb E si lob))) x x -> 
+  rel_seq (erln E si)
+      (transitive_closure (rel_union (rel_seq (obsplus E co) (erln E si)) (preorder_cb E si lob))) x x ->
   False.
 Proof.
 intros Hsiwf Hlobwf Hrfwf Hev [y [Hxy Hyx]].
-generalize (tc_e_in_ob_or_scaob2 Hsiwf Hlobwf Hrfwf Hyx Hxy); clear Hxy Hyx x; 
+generalize (tc_e_in_ob_or_scaob2 Hsiwf Hlobwf Hrfwf Hyx Hxy); clear Hxy Hyx x;
   intros [[x [[Heq | Hsi] Hob]] | Hscaob].
 
   rewrite Heq in Hob; clear Heq; apply Hev; exists x; auto.
@@ -5509,7 +5509,7 @@ Lemma br4_base_dec (E : set Event) (co si lob : set Event -> Rln Event) (e1 e2 :
             (transitive_closure
                (rel_seq (erln E si)
                   (rel_seq (obsplus E co) (erln E si)))))) e1 e2 ->
-  rel_seq (erln E si) 
+  rel_seq (erln E si)
     (transitive_closure (rel_union (rel_seq (obsplus E co) (erln E si)) (preorder_cb E si lob))) e1 e2.
 Proof.
 intros Hsiwf Hlobwf Hrfwf Hcowf H12; generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl [Hsym Htrans]].
@@ -5519,12 +5519,12 @@ intros Hsiwf Hlobwf Hrfwf Hcowf H12; generalize (erln_is_equiv si Hsiwf Hrfwf); 
   inversion Hy2 as [Heqy2 | Htcy2]; clear Hy2.
 
     rewrite Heq1x; rewrite <- Heqy2; clear Heq1x Heqy2;
-    destruct Hxy as [z [Hxz Hzy]]; 
-    exists z; split; auto; apply _base; right; 
-    apply (preorder_cb_erln_dec Hsiwf Hlobwf Hrfwf Hzy). 
+    destruct Hxy as [z [Hxz Hzy]];
+    exists z; split; auto; apply _base; right;
+    apply (preorder_cb_erln_dec Hsiwf Hlobwf Hrfwf Hzy).
 
     rewrite Heq1x; clear Heq1x;
-    destruct Hxy as [z [Hxz Hzy]]; 
+    destruct Hxy as [z [Hxz Hzy]];
     exists z; split; auto; clear Hxz.
     generalize (tc_dec2 Htcy2); clear Htcy2; intros [e [[d [Hyd Hde]] He2]].
     assert (rel_seq (preorder_cb E si lob) (erln E si) z d) as Hzd.
@@ -5559,21 +5559,21 @@ intros Hsiwf Hlobwf Hrfwf Hcowf H12; generalize (erln_is_equiv si Hsiwf Hrfwf); 
       apply _trans with d; auto; [right; apply preorder_cb_erln_dec|]; auto.
         destruct Hz2 as [f [Hzf Hfy]]; exists f; split; auto; apply Htrans with y; auto.
         apply oe_mtc_eoe_in_tc with e; auto.
-Qed. 
+Qed.
 
 Lemma br4_dec (E : set Event) (co si lob : set Event -> Rln Event) (e1 e2 : Event) :
   si_well_formed E (si E) ->
   lob_well_formed E si lob ->
   rf_well_formed E ->
   co_well_formed E co ->
-  (big_rel4 E co si lob) e1 e2 -> 
-  rel_seq (erln E si) 
+  (big_rel4 E co si lob) e1 e2 ->
+  rel_seq (erln E si)
     (transitive_closure (rel_union (rel_seq (obsplus E co) (erln E si)) (preorder_cb E si lob))) e1 e2.
 Proof.
 intros Hsiwf Hlobwf Hrfwf Hcowf H12; induction H12.
 
   apply br4_base_dec; auto.
-  
+
   generalize (br4_base_dec Hsiwf Hlobwf Hrfwf Hcowf H); clear H H12; intros [a [H1a Hae]];
   exists a; split; auto; clear H1a;
   destruct IHtransitive_closure as [b [Heb Hb2]]; apply tc_trans with b; auto; clear Hb2.
@@ -5593,8 +5593,8 @@ intros Hsiwf Hrfwf Hcowf Hlobwf Hint_vis Hext_vis x Hx.
 generalize (pre_gc_dec Hsiwf Hrfwf Hcowf Hx); clear Hx; intros [Heoe|Hx].
    rewrite obs_extra_obsp_eq in Heoe; auto.
    generalize (tc_eoe_is_e_seq_tc_oe Hsiwf Hrfwf Heoe); intros [y [Hxy Hyx]];
-    apply e_tc_union_irr2 with E co si lob x; auto; exists y; split; auto; 
-    apply tc_incl with (rel_seq (obsplus E co) (erln E si)); auto; 
+    apply e_tc_union_irr2 with E co si lob x; auto; exists y; split; auto;
+    apply tc_incl with (rel_seq (obsplus E co) (erln E si)); auto;
     intros e1 e2 H12; left; auto.
 
     apply e_tc_union_irr2 with E co si lob x; auto; apply br4_dec; auto.
@@ -5609,7 +5609,7 @@ Lemma pre_gc_in_evts (E : set Event) (co si lob : set Event -> Rln Event) :
 Proof.
 intros Hsiwf Hrfwf Hcowf Hlobwf; apply r_in_evts_implies_tc_in_evts; intros _x [x Hdom | y Hran].
 
-  destruct Hdom as [e' Hxe']; 
+  destruct Hdom as [e' Hxe'];
   inversion Hxe' as [[y [[Hrf ?] Hsi]] | [[y [Hco Hsi]]| [[y [Hfr Hsi]] | [Hlob | [Hsi ?]]]]]; clear Hxe'.
     apply dom_rf_in_evts with y; auto.
     apply dom_co_in_evts with co y; auto.
@@ -5619,7 +5619,7 @@ intros Hsiwf Hrfwf Hcowf Hlobwf; apply r_in_evts_implies_tc_in_evts; intros _x [
       exists e'; auto.
     destruct_siwf Hsiwf; generalize (Hdom x Hdx); intros [? ?]; auto.
 
-  destruct Hran as [e' Hxe']; 
+  destruct Hran as [e' Hxe'];
   inversion Hxe' as [[x [[Hrf ?] [? [? [Hsi ?]]]]] | [[x [Hco [? [? [Hsi ?]]]]]| [[x [Hfr [? [? [Hsi ?]]]]] | [Hlob | [Hsi ?]]]]]; clear Hxe'.
     assert (ran (si E) y) as Hry.
       exists x; auto.
@@ -5638,7 +5638,7 @@ intros Hsiwf Hrfwf Hcowf Hlobwf; apply r_in_evts_implies_tc_in_evts; intros _x [
     assert (ran (si E) y) as Hry.
         exists e'; auto.
       destruct_siwf Hsiwf; generalize (Hran y Hry); intros [? ?]; auto.
-Qed. 
+Qed.
 
 Lemma pre_gc_partial_order (E : set Event) (co si lob : set Event -> Rln Event) :
   si_well_formed E (si E) ->
@@ -5663,7 +5663,7 @@ Proof.
 intros Hlin; apply clin_of_big_is_clin_of_little with (lift (MemC E si) (pre_gc E co si lob)); auto.
 apply rel_incl_lift; auto.
 intros x y Hxy; apply _base; right; right; right; auto.
-Qed. 
+Qed.
 
 Lemma co_in_pre_gc E co si lob :
   si_well_formed E (si E) ->
@@ -5673,7 +5673,7 @@ Proof.
 intros Hsiwf Hrfwf x y Hxy; apply _base; right; left; auto.
 generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl ?].
 exists y; split; auto.
-Qed. 
+Qed.
 
 Lemma co_cb_incl (E : set Event) (co si lob : set Event -> Rln Event) cb :
   si_well_formed E (si E) ->
@@ -5682,7 +5682,7 @@ Lemma co_cb_incl (E : set Event) (co si lob : set Event -> Rln Event) cb :
   clinearisations (lift (MemC E si) (pre_gc E co si lob)) (MemC E si) cb ->
   rel_incl (co E) (cb_co E (dgcb_loc E (MemC E si) cb)).
 Proof.
-intros Hsiwf Hcowf Hrfwf Hlin; generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl ?]. 
+intros Hsiwf Hcowf Hrfwf Hlin; generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl ?].
 
   intros x y Hxy; split; [| split; [|split; [|split; [|split]]]].
     apply dom_co_in_evts with co y; auto.
@@ -5690,13 +5690,13 @@ intros Hsiwf Hcowf Hrfwf Hlin; generalize (erln_is_equiv si Hsiwf Hrfwf); intros
     apply dom_co_is_write with E co y; auto.
     apply ran_co_is_write with E co x; auto.
     apply co_implies_same_loc with E co; auto.
-    split. 
+    split.
       apply dom_co_in_evts with co y; auto.
-      split. 
+      split.
       apply ran_co_in_evts with co x; auto.
-      split.  
+      split.
       generalize (co_in_pre_gc co si lob Hsiwf); intro Hcoincl.
-      generalize (clin_ext_prop (MemC E si) (lift (MemC E si) (pre_gc E co si lob)) cb); 
+      generalize (clin_ext_prop (MemC E si) (lift (MemC E si) (pre_gc E co si lob)) cb);
       intros [Himpl _]; generalize (Himpl Hlin); clear Himpl; intros [Hincl Hlso].
       intros Cx Cy HCx HCy Hinx Hiny; apply Hincl; unfold lift; split; auto; split; auto;
       exists x; exists y; split; auto; split; auto; apply _base; right; left; auto; exists y; split; auto.
@@ -5744,36 +5744,36 @@ Qed.
 
 Lemma cb_coeq (E : set Event) (co si lob : set Event -> Rln Event) cb :
   si_well_formed E (si E) ->
-  co_well_formed E co -> 
+  co_well_formed E co ->
   rf_well_formed E ->
   clinearisations (lift (MemC E si) (pre_gc E co si lob)) (MemC E si) cb ->
   rel_equal (co E) (cb_co E (dgcb_loc E (MemC E si) cb)).
 Proof.
-intros Hsiwf Hcowf Hrfwf Hlin; generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl ?]; split. 
+intros Hsiwf Hcowf Hrfwf Hlin; generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl ?]; split.
 
   apply co_cb_incl with lob; auto.
 
   apply cb_co_incl with lob; auto.
-Qed. 
+Qed.
 
 Lemma cb_rf_incl (E : set Event) (co si lob : set Event -> Rln Event) (cb : Rln (Class Event)) :
   clinearisations (lift (MemC E si) (pre_gc E co si lob)) (MemC E si) cb ->
   rel_incl (cb_rf E (dgcb_loc E (MemC E si) cb)) (rf E).
 Proof.
-intros Hlin; generalize (clin_ext_prop (MemC E si) (lift (MemC E si) (pre_gc E co si lob)) cb); 
+intros Hlin; generalize (clin_ext_prop (MemC E si) (lift (MemC E si) (pre_gc E co si lob)) cb);
   intros [Himpl _]; generalize (Himpl Hlin); clear Himpl; intros [Hincl Hlso]; intros x y Hxy.
 
   destruct_lin Hlso; destruct_part Hpart; destruct Hxy as [Hwx [Hry [Hloc [Hval [Hfwd | Hnfwd]]]]].
 
   destruct Hfwd as [Hpo [Hcbyx Hnointerv]].
-    split; auto; split; auto; split; auto; split; auto; split; auto. 
-    apply dom_po_in_evts with y; auto. 
+    split; auto; split; auto; split; auto; split; auto; split; auto.
+    apply dom_po_in_evts with y; auto.
     apply ran_po_in_evts with x; auto.
 
   destruct Hnfwd as [Hcb Hnoniterv].
     split; auto; split; auto; split; auto; split; auto; split; auto;
     destruct Hcb as [? [? ?]]; auto.
-Qed. 
+Qed.
 
 Definition cb_rf_wf (E : set Event) (si : set Event -> Rln Event) (cb : Rln (Class Event)) :=
    forall r : Event, is_read r -> exists w : Event, cb_rf E (dgcb_loc E (MemC E si) cb) w r.
@@ -5788,7 +5788,7 @@ intros Hsiwf Hrfwf Hwr; generalize (erln_is_equiv si Hsiwf Hrfwf); intro Heqr.
 generalize (dom_rf_is_write Hwr); intro Hw.
 generalize (ran_rf_is_read Hwr); intro Hr.
 generalize (class_of_refl w Heqr); intros HCw Heq; rewrite Heq in HCw; clear Heq.
-destruct HCw as [? [? [? Hor]]]; 
+destruct HCw as [? [? [? Hor]]];
   inversion Hor as [[Hiswr ?] | [[? [x [Hrfw ?]]] | [w1 [w2 [? [[Hrf ?] ?]]]]]]; clear Hor.
   apply read_write_contrad with r; auto.
   apply read_write_contrad with w; auto.
@@ -5810,8 +5810,8 @@ Proof.
 intros Hsiwf Hrfwf Hcowf Hlobwf Hint_vis Hext_vis Hlin r Hr;
 generalize (erln_is_equiv si Hsiwf Hrfwf); intros [Hrefl ?];
 unfold gcb_rf.
-generalize Hrfwf; intro Hrfwf'; destruct_rf_wf Hrfwf'; generalize (Hex_uni r Hr); intros [[w Hrf] Huni]; 
-  generalize (clin_ext_prop (MemC E si) (lift (MemC E si) (pre_gc E co si lob)) cb); 
+generalize Hrfwf; intro Hrfwf'; destruct_rf_wf Hrfwf'; generalize (Hex_uni r Hr); intros [[w Hrf] Huni];
+  generalize (clin_ext_prop (MemC E si) (lift (MemC E si) (pre_gc E co si lob)) cb);
   intros [Himpl _]; generalize (Himpl Hlin); clear Himpl; intros [Hincl Hlso];
   exists w; split; [apply dom_rf_is_write with E r | split; [apply ran_rf_is_read with E w |
             split; [apply rf_implies_same_loc with E | split; [apply rf_implies_same_val with E | ]]]]; auto.
@@ -5827,8 +5827,8 @@ generalize Hrfwf; intro Hrfwf'; destruct_rf_wf Hrfwf'; generalize (Hex_uni r Hr)
 
   assert (dgcb_loc E (MemC E si) cb w r) as Hcbwr.
     split; auto; split; auto; split; auto.
-    unfold delift; intros Cw Cr HinCw HinCr HCw HCr; 
-    apply Hincl; unfold lift; split; auto; split; auto;   
+    unfold delift; intros Cw Cr HinCw HinCr HCw HCr;
+    apply Hincl; unfold lift; split; auto; split; auto;
     exists w; exists r; split; auto; split; auto;
     left; left; exists r; split; auto; split; auto.
       apply rf_implies_same_loc with E; auto.
@@ -5849,25 +5849,25 @@ generalize Hrfwf; intro Hrfwf'; destruct_rf_wf Hrfwf'; generalize (Hex_uni r Hr)
       split; auto; split; auto; split; auto.
       unfold delift; intros Cr Cw' HinCr HinCw' HCr HCw'.
       apply Hincl; unfold lift; split; auto; split; auto.
-    exists r; exists w'; split; auto; split; auto; 
+    exists r; exists w'; split; auto; split; auto;
       left; right; right; left; auto; exists w'; split; auto.
-    destruct_lin Hlso; destruct_part Hpart. 
+    destruct_lin Hlso; destruct_part Hpart.
     apply Hirr with (class_of (erln E si) w'); apply Htrans with (class_of (erln E si) r).
-      destruct Hcbw'r as [? [? [Hd ?]]]; apply Hd. 
+      destruct Hcbw'r as [? [? [Hd ?]]]; apply Hd.
         apply class_of_in_classes; auto; apply erln_is_equiv; auto.
         apply class_of_in_classes; auto; apply erln_is_equiv; auto.
         apply class_of_refl; auto; apply erln_is_equiv; auto.
         apply class_of_refl; auto; apply erln_is_equiv; auto.
 
-      destruct Hcbrw' as [? [? [Hd ?]]]; apply Hd. 
+      destruct Hcbrw' as [? [? [Hd ?]]]; apply Hd.
         apply class_of_in_classes; auto; apply erln_is_equiv; auto.
         apply class_of_in_classes; auto; apply erln_is_equiv; auto.
         apply class_of_refl; auto; apply erln_is_equiv; auto.
         apply class_of_refl; auto; apply erln_is_equiv; auto.
 
-  assert (cb (class_of (erln E si) w) (class_of (erln E si) r) \/ 
+  assert (cb (class_of (erln E si) w) (class_of (erln E si) r) \/
           cb (class_of (erln E si) r) (class_of (erln E si) w)) as Hor.
-    destruct_lin Hlso; apply Htot; auto. 
+    destruct_lin Hlso; apply Htot; auto.
       apply rf_implies_diff_classes; auto.
 
         apply class_of_in_classes; auto; apply erln_is_equiv; auto.
@@ -5876,7 +5876,7 @@ generalize Hrfwf; intro Hrfwf'; destruct_rf_wf Hrfwf'; generalize (Hex_uni r Hr)
   inversion Hor as [Hcbwr | Hcbrw]; clear Hor; [right|left]; split; auto.
 
     split; auto; split; auto; split; auto.
-      unfold delift; intros Cw Cr HinCw HinCr HCw HCr. 
+      unfold delift; intros Cw Cr HinCw HinCr HCw HCr.
     destruct HinCr as [cr HinCr]; assert (Cr = class_of (erln E si) r) as HeqCr.
       rewrite HinCr; apply equiv_elts_have_equal_classes; auto.
         apply erln_is_equiv; auto.
@@ -5903,23 +5903,23 @@ generalize Hrfwf; intro Hrfwf'; destruct_rf_wf Hrfwf'; generalize (Hex_uni r Hr)
       split; auto; split; auto; split; auto.
       unfold delift; intros Cr Cw' HinCr HinCw' HCr HCw'.
       apply Hincl; unfold lift; split; auto; split; auto.
-    exists r; exists w'; split; auto; split; auto; 
+    exists r; exists w'; split; auto; split; auto;
       left; right; right; left; auto; exists w'; split; auto.
-    destruct_lin Hlso; destruct_part Hpart. 
+    destruct_lin Hlso; destruct_part Hpart.
     apply Hirr with (class_of (erln E si) w'); apply Htrans with (class_of (erln E si) r).
-      destruct Hcbw'r as [? [? [Hd ?]]]; apply Hd. 
+      destruct Hcbw'r as [? [? [Hd ?]]]; apply Hd.
         apply class_of_in_classes; auto; apply erln_is_equiv; auto.
         apply class_of_in_classes; auto; apply erln_is_equiv; auto.
         apply class_of_refl; auto; apply erln_is_equiv; auto.
         apply class_of_refl; auto; apply erln_is_equiv; auto.
 
-      destruct Hcbrw' as [? [? [Hd ?]]]; apply Hd. 
+      destruct Hcbrw' as [? [? [Hd ?]]]; apply Hd.
         apply class_of_in_classes; auto; apply erln_is_equiv; auto.
         apply class_of_in_classes; auto; apply erln_is_equiv; auto.
         apply class_of_refl; auto; apply erln_is_equiv; auto.
         apply class_of_refl; auto; apply erln_is_equiv; auto.
 
-  apply rfi_implies_po with co; auto; split; auto. 
+  apply rfi_implies_po with co; auto; split; auto.
   split; auto.
     split; auto; split; auto; split; auto.
     unfold delift; intros Cr Cw HinCr HinCw HCr HCw.
@@ -5975,10 +5975,10 @@ Lemma cb_rfeq (E : set Event) (co si lob : set Event -> Rln Event) (cb : Rln (Cl
   clinearisations (lift (MemC E si) (pre_gc E co si lob)) (MemC E si) cb ->
   rel_equal (rf E) (cb_rf E (dgcb_loc E (MemC E si) cb)).
 Proof.
-intros Hsiwf Hrfwf Hcowf Hlobwf Hint_vis Hext_vis Hlin; generalize (clin_ext_prop (MemC E si) (lift (MemC E si) (pre_gc E co si lob)) cb); 
-  intros [Himpl _]; generalize (Himpl Hlin); clear Himpl; intros [Hincl Hlso]; split. 
+intros Hsiwf Hrfwf Hcowf Hlobwf Hint_vis Hext_vis Hlin; generalize (clin_ext_prop (MemC E si) (lift (MemC E si) (pre_gc E co si lob)) cb);
+  intros [Himpl _]; generalize (Himpl Hlin); clear Himpl; intros [Hincl Hlso]; split.
   apply rf_cb_incl with co lob; auto.
-  apply cb_rf_incl with co lob; auto.  
+  apply cb_rf_incl with co lob; auto.
 Qed.
 
 Lemma global_completion_cb (E : set Event) (co si lob : set Event -> Rln Event) (cb : Rln (Class Event)) :
@@ -6006,7 +6006,7 @@ Lemma udr_lift2 E co si lob :
 Proof.
 unfold lift;
 intros ? [Cx [Cy [? ?]] | Cy [Cx [? [? ?]]]]; auto.
-Qed. 
+Qed.
 
 Lemma pre_gc_erln_is_pre_gc E co si lob x y z :
   si_well_formed E (si E) ->
@@ -6015,32 +6015,32 @@ Lemma pre_gc_erln_is_pre_gc E co si lob x y z :
   pre_gc E co si lob x y ->
   erln E si y z ->
   pre_gc E co si lob x z.
-Proof. 
+Proof.
 intros Hsiwf Hrfwf Hlobwf Hxy Hyz; induction Hxy as [x y Hb | x e3 y Htc].
 Focus 2.
   apply _trans with y; auto; unfold pre_gc in IHHxy; generalize (IHHxy Hyz); intro Ht; auto.
- 
+
   assert (si E y z) as Hsi.
     destruct Hyz as [? [? [? ?]]]; auto.
   generalize (erln_is_equiv si Hsiwf Hrfwf); intros [? [? Htrans]];
   inversion Hb as [Hrfsi | [Hcosi | [Hfrsi | Hpc]]].
-    
+
     destruct Hrfsi as [e [Hxe Hey]]; apply _base; left; exists e; split; auto.
     apply Htrans with y; auto.
 
     destruct Hcosi as [e [Hxe Hey]]; apply _base; right; left; exists e; split; auto;
-    apply Htrans with y; auto.    
+    apply Htrans with y; auto.
 
     destruct Hfrsi as [e [Hxe Hey]]; apply _base; right; right; left; exists e; split; auto;
     apply Htrans with y; auto.
 
-    generalize Hlobwf; intro Hlobwf'; destruct_lob_wf Hlobwf'; 
-    inversion Hpc as [Hlob | Hscaob]; clear Hpc; apply _base; right; right; right. 
-      left. 
+    generalize Hlobwf; intro Hlobwf'; destruct_lob_wf Hlobwf';
+    inversion Hpc as [Hlob | Hscaob]; clear Hpc; apply _base; right; right; right.
+      left.
         apply Hlob_erln; exists y; split; auto.
 
       right; apply scaob_erln_is_scaob with y; auto.
-Qed. 
+Qed.
 
 Lemma trans_lift2 E co si lob :
   si_well_formed E (si E) ->
@@ -6073,7 +6073,7 @@ Proof.
   intros Hsiwf Hrfwf Hlobwf Hpart; destruct_part Hpart.
   unfold lift; intros [HCx [? [e1 [e2 [H1 [H2 H12]]]]]].
   unfold MemC in HCx; unfold classes in HCx; unfold class_of in HCx; destruct HCx as [x0 HCx];
-  rewrite HCx in H1; rewrite HCx in H2. 
+  rewrite HCx in H1; rewrite HCx in H2.
     assert (erln E si e2 e1) as Hyy'.
       generalize (erln_is_equiv si Hsiwf Hrfwf); intro Hequiv; clear Htrans; destruct_eqrln Hequiv;
       apply Htrans with x0; auto.
@@ -6085,7 +6085,7 @@ Lemma lift_partial_order2 E co si lob :
   rf_well_formed E ->
   lob_well_formed E si lob ->
   partial_order (pre_gc E co si lob) E ->
-  partial_order (lift (MemC E si) (pre_gc E co si lob)) (MemC E si). 
+  partial_order (lift (MemC E si) (pre_gc E co si lob)) (MemC E si).
 Proof.
 intros Hsiwf Hrfwf Hlobwf Hpart; split; [|split].
 
@@ -6102,10 +6102,10 @@ Lemma external_visibility_implies_global_completion (E : set Event) (co si lob :
   co_well_formed E co ->
   lob_well_formed E si lob ->
   internal_visibility E co ->
-  external_visibility E co si lob -> 
+  external_visibility E co si lob ->
   (exists cb, global_completion E co si lob cb).
 Proof.
-intros Hsiwf Hrfwf Hcowf Hlobwf Hintv Hextv. 
+intros Hsiwf Hrfwf Hcowf Hlobwf Hintv Hextv.
 generalize (pre_gc_partial_order Hsiwf Hrfwf Hcowf Hlobwf Hintv Hextv); intro Hpart;
 generalize (lift_partial_order2 Hsiwf Hrfwf Hlobwf Hpart); clear Hpart; intro Hpart.
 generalize (corder_ext Hpart); intros [cb Hcb]; exists cb.
