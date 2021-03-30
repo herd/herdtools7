@@ -63,6 +63,8 @@ module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
     | true,Some r -> (A.Reg (p,r),Some (A.S "-1"))::init
     | _,_ -> init
 
+  type typ = Typ of TypBase.t | IntArray of int
+
   type test =
       {
        name : string ;
@@ -73,7 +75,7 @@ module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
        prog : A.pseudo list list ;
        scopes : BellInfo.scopes option ;
        final : F.final ;
-       env : TypBase.t A.LocMap.t
+       env : typ A.LocMap.t
      }
 
   let get_nprocs t = List.length t.prog
@@ -559,7 +561,6 @@ let max_set = IntSet.max_elt
   let do_memtag = O.variant Variant_gen.MemTag
   let do_morello = O.variant Variant_gen.Morello
   let do_kvm = O.variant Variant_gen.KVM
-  let do_neon = O.variant Variant_gen.Neon
 
   let compile_cycle ok n =
     let open Config in
@@ -632,6 +633,14 @@ let max_set = IntSet.max_elt
               i,obsc@cs,(m,f@fs),ios,env
             else Warn.fatal "Last minute check"
           else  Warn.fatal "Too many procs" in
+        let env = A.LocMap.map (fun t -> Typ t) env in
+        let env =
+          StringMap.fold
+            (fun loc sz k ->
+              let loc = A.Loc loc in
+              assert (not (A.LocMap.mem loc k)) ;
+              A.LocMap.add loc (IntArray sz) k)
+          (C.get_wide n) env in
         let env =
           let ptes = A.LocSet.of_list (F.extract_ptes f) in
           List.fold_left
@@ -642,16 +651,20 @@ let max_set = IntSet.max_elt
               with Not_found ->
                 let t =
                   if A.LocSet.mem loc ptes then TypBase.pteval_t else O.typ in
-                A.LocMap.add loc t m)
+                A.LocMap.add loc (Typ t) m)
             env f in
-        let globals = C.get_globals n in
-        let typ = if do_morello
-          then TypBase.Std (TypBase.Unsigned,MachSize.S128)
-          else if do_neon then TypBase.Std (TypBase.Unsigned,MachSize.S128)
-          else O.typ in
         let env =
+          let globals = C.get_globals n in
+          let typ =
+            if do_morello
+            then TypBase.Std (TypBase.Unsigned,MachSize.S128)
+            else O.typ in
+        let typ = Typ typ in
           List.fold_left
-            (fun m loc -> A.LocMap.add (A.Loc loc) typ m)
+            (fun m loc ->
+              let loc = A.Loc loc in
+              if A.LocMap.mem loc m then m
+              else A.LocMap.add loc typ m)
             env globals in
         let flts =
           if do_memtag then
@@ -742,11 +755,15 @@ let dump_init chan inits env =
   let pp =
     A.LocMap.fold
       (fun loc t k ->
-      let open TypBase in
-      let open MachSize in
-      match t with
-      | Int|Std (Signed,Word) -> k
-      | _ -> sprintf "%s %s;" (TypBase.pp t) (A.pp_location loc)::k)
+        match t with
+        | IntArray sz ->
+           sprintf "int %s[%d];" (A.pp_location loc) sz::k
+        | Typ t ->
+           let open TypBase in
+           let open MachSize in
+           match t with
+           | Int|Std (Signed,Word) -> k
+           | _ -> sprintf "%s %s;" (TypBase.pp t) (A.pp_location loc)::k)
       env [] in
   begin match pp with
   | [] -> ()
