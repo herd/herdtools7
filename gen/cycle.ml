@@ -96,6 +96,10 @@ module type S = sig
 
 (* Generic fold *)
   val fold : (node -> 'a -> 'a) -> node -> 'a -> 'a
+
+(* Extract wide accesses from cycle. Size as number of integers *)
+  val get_wide : node -> int StringMap.t
+
 end
 
 module type Config = sig
@@ -1112,8 +1116,6 @@ let rec group_rec x ns = function
     get_rec
       (fun loc k -> match loc with Code loc -> loc::k | Data _ -> k)
       m
-
-
 (* generic scan *)
   let fold f m k =
     let rec fold_rec n k =
@@ -1122,4 +1124,16 @@ let rec group_rec x ns = function
       if nxt == m then k
       else fold_rec nxt k in
     fold_rec m k
+
+(* Get size (as integers) from annotations *)
+  let get_wide m =
+    fold
+      (fun n k ->
+      match n.evt.loc,E.as_integers n.edge with
+      | Data loc,Some sz ->
+         let sz0 = StringMap.safe_find 0 loc k in
+         StringMap.add loc (max sz0 sz) k
+      | _,_ -> k)
+    m StringMap.empty
+
 end
