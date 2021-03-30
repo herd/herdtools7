@@ -100,7 +100,7 @@ module Make
         | CType.Base "atomic_t" ->  CType.Base "int"
         | t -> t in
         CType.dump (CType.strip_atomic t),CType.is_ptr t in
-      DC.fundef find_type cond
+      DC.fundef (U.cast_constant env) find_type cond
 
     let dump_cond_fun env test = do_dump_cond_fun env test.T.condition
 
@@ -113,7 +113,7 @@ module Make
         let find_type loc =
           let t = U.find_rloc_type loc env in
           CType.dump (CType.strip_atomic t),CType.is_ptr t in
-        DC.fundef_prop "filter_cond" find_type f
+        DC.fundef_prop "filter_cond" (U.cast_constant env) find_type f
 
 
     let is_srcu_struct t = match t with

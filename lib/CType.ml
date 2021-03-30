@@ -150,3 +150,27 @@ let type_for_align i = Array ("uint8_t",i)
 let element_type = function
   | Array (b,_) -> Base b
   | t -> Warn.fatal "Array type expected, found %s" (dump t)
+
+let rec signed = function
+  | Atomic t|Volatile t -> signed t
+  | Pointer _|Array _ -> false
+  | Base
+      ("atomic_t"|"int"|"char"|"long"|
+      "int8_t"|"int16_t"|"int32_t"|"int64_t"|"int128_t") -> true
+ | Base _ -> false
+
+(* Best effort *)
+let do_base_size =
+  let open MachSize in
+  function
+  | "char"|"int8_t"|"uint8_t" -> Some Byte
+  | "short"|"int16_t"|"uint16_t" -> Some Short
+  | "int"|"int32_t"|"uint32_t" -> Some Word
+  | "int64_t"|"uint64_t" -> Some Quad
+  | "int128_t"|"uint128_t" -> Some S128
+  | _ -> None
+
+let rec base_size t = match t with
+| Atomic t|Volatile t -> base_size t
+| Pointer _|Array _ -> None
+| Base b -> do_base_size b

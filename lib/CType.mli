@@ -55,3 +55,11 @@ val type_for_align : int -> t
 
 (* Type of array elements, fails if argument is not an array type *)
 val element_type : t -> t
+
+(* Is type integer signed? *)
+val signed : t -> bool
+
+(* Best effort to find size of integer types.
+   Return None when type is not an integer type or
+   when size is unclear. *)
+val base_size : t -> MachSize.sz option

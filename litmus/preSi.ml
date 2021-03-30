@@ -804,12 +804,12 @@ module Make
         begin match test.T.filter with
         | None -> ()
         | Some f ->
-            DC.fundef_onlog_prop "filter_cond" f ;
+            DC.fundef_onlog_prop "filter_cond" (U.cast_constant env) f ;
             O.o "" ;
             ()
         end ;
         let cond = test.T.condition in
-        DC.fundef_onlog cond ;
+        DC.fundef_onlog (U.cast_constant env) cond ;
         ()
 
       let dump_cond_def env test =

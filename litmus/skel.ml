@@ -887,15 +887,17 @@ module Make
           | u -> u in
         CType.dump u,CType.is_ptr t
 
+
       let do_dump_cond_fun env cond =
-        DC.fundef (find_rloc_type env) cond
+        DC.fundef (U.cast_constant env) (find_rloc_type env) cond
 
       let dump_cond_fun env test = do_dump_cond_fun env test.T.condition
 
       let dump_filter env test = match test.T.filter with
       | None -> ()
       | Some f ->
-          DC.fundef_prop "filter_cond" (find_rloc_type env) f
+          DC.fundef_prop
+            "filter_cond" (U.cast_constant env) (find_rloc_type env) f
 
       let dump_cond_fun_call test dump_loc dump_val =
         DC.funcall test.T.condition dump_loc dump_val
