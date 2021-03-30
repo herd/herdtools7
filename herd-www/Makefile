@@ -7,12 +7,12 @@ BOOKS=aarch64 aarch64-mixed aarch64-MTE aarch64-MTE-mixed x86 linux
 #BOOKS=aarch64-ptw #Add some day.
 WWW_CATALOGUE=www/catalogue
 HERD_CATALOGUE=../catalogue
-OCB=ocamlbuild $(OCBOPT) $(JERD_OPT) -cflags -bin-annot,-w,A-4-9-29-45-60-67,-g -classic-display $(J)
+OCB=ocamlbuild $(JERD_OPT) -cflags -bin-annot,-w,A-4-9-29-45-60-67,-g -classic-display $(J)
 PROG=jerd.js
 BYTE=jerd.byte
 WWW_PROG=www/$(PROG)
 WWW_LIB=www/weblib
-JSON_SPINES=$(foreach book,$(BOOKS),$(WWW_CATALOGUE)/$(book)/shelf.json)
+JSON_SHELVES=$(foreach book,$(BOOKS),$(WWW_CATALOGUE)/$(book)/shelf.json)
 CATINCLUDES=herd/libdir linux $(foreach b,$(BOOKS),$(HERD_CATALOGUE)/$(b)/cats)
 CATINCLUDESDEP=$(foreach d,$(CATINCLUDES),$(wildcard $(d)/*.*))
 all: web
@@ -37,7 +37,7 @@ weblib:
 	@echo '** INSTALL ' $(WWW_LIB) && mkdir -p $(WWW_LIB) && cp ./cat.css $(WWW_LIB)
 	@ocaml generate_names.ml $(CATINCLUDES) | while read f; do cp $$f $(WWW_LIB) && cat2html7 $(WWW_LIB)/$$(basename $$f) ; done
 
-web: $(JSON_SPINES) $(PROG) weblib
+web: $(JSON_SHELVES) $(PROG) weblib
 	@cp -v $(PROG) www/$(PROG)
 
 #js_of_ocaml --pretty --no-inline --debug-info $(BYTE)
@@ -62,7 +62,7 @@ clean::
 	/bin/rm -f *~
 	/bin/rm -f $(PROG) $(BYTE) $(WWW_PROG) catIncludes.ml
 	/bin/rm -f $(JSON_SHELVES)
-	/bin/rm -rf $(WEB_LIB)
+	/bin/rm -rf $(WWW_LIB)
 
 clean::
 
