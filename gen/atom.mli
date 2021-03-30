@@ -35,4 +35,6 @@ module type S = sig
   val tr_value : atom option -> Code.v -> Code.v
   val overwrite_value : Code. v -> atom option -> Code.v -> Code.v
   val extract_value : Code. v -> atom option -> Code.v
+(* Typing of wide accesses as arrays of integers *)
+  val as_integers : atom option -> int option
 end

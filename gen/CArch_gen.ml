@@ -58,8 +58,10 @@ let merge_atoms a1 a2 = if a1=a2 then Some a1 else None
 let atom_to_bank _ = Code.Ord
 
 include NoMixed
+include NoWide
 
 let set_pteval _ p _ = p
+
 
 (* Fences, to be completed *)
 

@@ -38,6 +38,8 @@ module Make
          let fullmixed = C.moreedges
        end)
 
+   include NoWide
+
    let set_pteval _ p _ = p
 
 (*********)

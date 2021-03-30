@@ -202,6 +202,8 @@ include NoMixed
 
 let set_pteval _ p _ = p
 
+include NoWide
+
 (* End of atoms *)
 
 (**********)

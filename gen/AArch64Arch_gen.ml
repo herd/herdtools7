@@ -274,6 +274,7 @@ let applies_atom (a,_) d = match a,d with
 (**************)
 (* Mixed size *)
 (**************)
+
    let tr_value ao v = match ao with
    | None| Some (_,None) -> v
    | Some (_,Some (sz,_)) -> Mixed.tr_value sz v
@@ -303,6 +304,7 @@ let overwrite_value v ao w = match ao with
       ValsMixed.extract_value v sz o
   | Some (Pte _,Some _) -> assert false
 
+(* Page table entries *)
   let do_setpteval a f p =
     let open PTEVal in
     let f = match f with
@@ -321,11 +323,27 @@ let overwrite_value v ao w = match ao with
      | Pte f,None -> do_setpteval a f p
      | _ -> Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
 
+
+(* Wide accesses *)
+   let neon_as_integers = function
+     | N1 -> 4
+     | N2 -> 8
+     | N3 -> 12
+     | N4 -> 16
+
+   let as_integers a =
+     Misc.seq_opt
+       (function
+        | (Neon n,_) -> Some (neon_as_integers n)
+        | _ -> None)
+       a
+
 (* End of atoms *)
 
 (**********)
 (* Fences *)
 (**********)
+
 type strength = Strong | Weak
 let fold_strength f r = f Strong (f Weak r)
 

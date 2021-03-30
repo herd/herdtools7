@@ -93,4 +93,6 @@ module Make(C:Config) = struct
   | None| Some (Atomic|Reserve) -> v
   | Some (Mixed (sz,o)) ->
       ValsMixed.extract_value v sz o
+
+  include NoWide
 end

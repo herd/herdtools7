@@ -87,6 +87,7 @@ let pp_dp = function
 (*******)
 include OneRMW
 include NoEdge
+
   include
     ArchExtra_gen.Make
     (struct
