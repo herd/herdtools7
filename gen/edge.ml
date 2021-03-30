@@ -76,6 +76,7 @@ module type S = sig
 
   val pp_tedge : tedge -> string
   val pp_atom_option : atom option -> string
+
   val debug_edge : edge -> string
   val pp_edge : edge -> string
   val compare_atomo : atom option -> atom option -> int
@@ -108,6 +109,9 @@ module type S = sig
 (* More detailed *)
   type full_ie = IE of ie | LeaveBack
   val get_full_ie : edge -> full_ie
+
+(* If source atom implies wide access, size of access as integers *)
+  val as_integers : edge -> int option
 
 (* Can e1 target event direction be the same as e2 source event? *)
   val can_precede : edge -> edge -> bool
@@ -643,6 +647,7 @@ and do_set_src d e = match e with
   | Leave _|Back _ -> LeaveBack
   | _ -> IE (get_ie e)
 
+  let as_integers e = F.as_integers e.a1
 
   let can_precede_dirs  x y = match x.edge,y.edge with
   | (Id,Id) -> false
