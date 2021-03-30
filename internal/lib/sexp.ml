@@ -77,6 +77,12 @@ let from_dune_channel chan =
     | Some ' ' | Some '\t' | Some '\n' | Some '\r' -> junk () ; whitespace ()
     | _ -> ()
   in
+  let rec comment () =
+    match peek () with
+    | Some '\n' -> junk ()
+    | Some _ -> junk () ; comment ()
+    | None -> ()
+  in
   let atom () =
     let buf = Buffer.create 16 in
     let rec atom' () =
@@ -90,6 +96,7 @@ let from_dune_channel chan =
     whitespace () ;
     match peek () with
     | None -> raise (ParseError "Unexpected end of input")
+    | Some ';' -> comment () ; list acc
     | Some '(' -> junk () ; list ((list []) :: acc)
     | Some ')' -> junk () ; List (List.rev acc)
     | Some c when printable c -> list ((atom ()) :: acc)
@@ -100,6 +107,7 @@ let from_dune_channel chan =
     whitespace () ;
     match peek () with
     | None -> List (List.rev acc)
+    | Some ';' -> comment () ; dune_file acc
     | Some '(' -> junk () ; dune_file ((list []) :: acc)
     | Some c when printable c -> dune_file ((atom ()) :: acc)
     | Some c ->
