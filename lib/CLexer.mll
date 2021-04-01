@@ -51,7 +51,7 @@ let tr_name s = match s with
 | "void" -> VOID
 (* C11 primitives, quite a lot! *)
 | "atomic_fetch_add_explicit" -> ATOMIC_FETCH_EXPLICIT Op.Add
-| "atomic_fetch_sub_explicit" -> ATOMIC_FETCH_EXPLICIT Op.Add
+| "atomic_fetch_sub_explicit" -> ATOMIC_FETCH_EXPLICIT Op.Sub
 | "atomic_fetch_or_explicit" -> ATOMIC_FETCH_EXPLICIT Op.Or
 | "atomic_fetch_xor_explicit" -> ATOMIC_FETCH_EXPLICIT Op.Xor
 | "atomic_fetch_and_explicit" -> ATOMIC_FETCH_EXPLICIT Op.And
