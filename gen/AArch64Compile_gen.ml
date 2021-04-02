@@ -49,6 +49,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
 (* Utilities *)
     let next_reg x = A64.alloc_reg x
+    let next_vreg x = A64.alloc_special x
     let pseudo = List.map (fun i -> Instruction i)
 
     let tempo1 st = A.alloc_trashed_reg "T1" st (* May be used for address  *)
@@ -90,6 +91,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let mov_reg_addr r1 r2 =  I_MOV (V64,r1,RV (V64,r2))
     let mov_reg r1 r2 = I_MOV (vloc,r1,RV (vloc,r2))
     let mov_reg_mixed sz r1 r2 = let v = sz2v sz in I_MOV (v,r1,RV (v,r2))
+    let movi_reg r1 i = I_MOVI_V (r1,i,S_NOEXT)
 
     module Extra = struct
       let use_symbolic = false
@@ -112,12 +114,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let cmp r1 r2 = I_OP3 (vloc,SUBS,ZR,r1,RV (vloc,r2), S_NOEXT)
     let bne lbl = I_BC (NE,lbl)
     let eor sz r1 r2 r3 = I_OP3 (sz,EOR,r1,r2,RV (sz,r3), S_NOEXT)
+    let eor_simd r1 r2 = I_EOR_SIMD (r1,r2,r2)
     let andi sz r1 r2 k = I_OP3 (sz,AND,r1,r2,K k, S_NOEXT)
     let addi r1 r2 k = I_OP3 (vloc,ADD,r1,r2,K k, S_NOEXT)
     let incr r = I_OP3 (V32,ADD,r,r,K 1, S_NOEXT)
     let lsri64 r1 r2 k = I_OP3 (V64,LSR,r1,r2,K k, S_NOEXT)
     let addi_64 r1 r2 k = I_OP3 (V64,ADD,r1,r2,K k, S_NOEXT)
     let add v r1 r2 r3 = I_OP3 (v,ADD,r1,r2,RV (v,r3), S_NOEXT)
+    let add_simd r1 r2 = I_ADD_SIMD (r1,r1,r2)
     let do_add64 v r1 r2 r3 =
       let ext = match v with
       | V128 -> assert false
@@ -150,6 +154,17 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let ldaxr r1 r2 = I_LDAR (vloc,AX,r1,r2)
     let sxtw r1 r2 = I_SXTW (r1,r2)
     let do_ldr_idx v1 v2 r1 r2 idx = I_LDR (v1,r1,r2,RV (v2,idx),S_NOEXT)
+    let ldn n rs rt = match n with
+    | N1 -> I_LD1M (rs,rt,K 0)
+    | N2 -> I_LD2M (rs,rt,K 0)
+    | N3 -> I_LD3M (rs,rt,K 0)
+    | N4 -> I_LD4M (rs,rt,K 0)
+    let ldn_idx n rs rt ro = match n with
+    | N1 -> I_LD1M (rs,rt,RV (V64,ro))
+    | N2 -> I_LD2M (rs,rt,RV (V64,ro))
+    | N3 -> I_LD3M (rs,rt,RV (V64,ro))
+    | N4 -> I_LD4M (rs,rt,RV (V64,ro))
+
 
     let ldr_mixed_idx v r1 r2 idx sz  =
       let open MachSize in
@@ -180,6 +195,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let str_idx = do_str_idx vloc
     let stxr r1 r2 r3 = I_STXR (vloc,YY,r1,r2,r3)
     let stlxr r1 r2 r3 = I_STXR (vloc,LY,r1,r2,r3)
+    let stn n rs rt = match n with
+    | N1 -> I_ST1M (rs,rt,K 0)
+    | N2 -> I_ST2M (rs,rt,K 0)
+    | N3 -> I_ST3M (rs,rt,K 0)
+    | N4 -> I_ST4M (rs,rt,K 0)
+    let stn_idx n rs rt ro = match n with
+    | N1 -> I_ST1M (rs,rt,RV (V64,ro))
+    | N2 -> I_ST2M (rs,rt,RV (V64,ro))
+    | N3 -> I_ST3M (rs,rt,RV (V64,ro))
+    | N4 -> I_ST4M (rs,rt,RV (V64,ro))
 
     let stxr_sz t sz r1 r2 r3 =
       let open MachSize in
@@ -429,6 +454,27 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let load_idx v1 v2 st rA rB idx = [do_ldr_idx v1 v2 rA rB idx],st
         end)
 
+    module LDN = struct
+
+      let emit_vregs n st =
+        let rec get_reg_list n rs st = match n with
+        | N1 -> let r,st = next_vreg st in (rs@[r]),st
+        | N2 -> let r,st = next_vreg st in get_reg_list N1 (rs@[r]) st
+        | N3 -> let r,st = next_vreg st in get_reg_list N2 (rs@[r]) st
+        | N4 -> let r,st = next_vreg st in get_reg_list N3 (rs@[r]) st
+        in get_reg_list n [] st
+
+      let emit_load n st p init x =
+        let rs,st = emit_vregs n st in
+        let rB,init,st = U.next_init st p init x in
+        (List.hd rs),init,lift_code [ldn n rs rB],st
+
+      let emit_load_idx n st p init x ro =
+        let rs,st = emit_vregs n st in
+        let rB,init,st = U.next_init st p init x in
+        (List.hd rs),init,lift_code [ldn_idx n rs rB ro],st
+    end
+
     module LDG = struct
       let emit_load st p init x =
         let rA,st = next_reg st in
@@ -483,6 +529,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let r,init,cs,st = emit_load_mixed MachSize.S128 0 st p init x in
       let cs2 = lift_code [gctype r r] in
       r,init,cs@cs2,st
+    | Code.VecReg -> LDN.emit_load N1
     let emit_obs_not_value = OBS.emit_load_not_value
     let emit_obs_not_eq = OBS.emit_load_not_eq
     let emit_obs_not_zero = OBS.emit_load_not_zero
@@ -590,6 +637,38 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let store = wrap_st str
           let store_idx st rA rB idx = [str_idx rA rB idx],st
         end)
+
+    module STN = struct
+      let emit_store_reg n st p init x rs =
+        let rB,init,st = U.next_init st p init x in
+        init,pseudo [stn n rs rB],st
+
+      let emit_store_reg_idx n st p init x rs ro =
+        let rB,init,st = U.next_init st p init x in
+        init,pseudo [stn_idx n rs rB ro],st
+
+      let emit_vregs n st =
+        let rec get_reg_list n rs st = match n with
+        | N1 -> let r,st = next_vreg st in (rs@[r]),st
+        | N2 -> let r,st = next_vreg st in get_reg_list N1 (rs@[r]) st
+        | N3 -> let r,st = next_vreg st in get_reg_list N2 (rs@[r]) st
+        | N4 -> let r,st = next_vreg st in get_reg_list N3 (rs@[r]) st
+        in get_reg_list n [] st
+
+      let emit_movis rs v = List.map (fun r -> movi_reg r v) rs
+
+      let emit_store n st p init x v =
+        let rs,st = emit_vregs n st in
+        let mvs = emit_movis rs v in
+        let init,cs,st = emit_store_reg n st p init x rs in
+        init,pseudo mvs@cs,st
+
+        let emit_store_idx n st p init x ro v =
+          let rs,st = emit_vregs n st in
+          let mvs = emit_movis rs v in
+          let init,cs,st = emit_store_reg_idx n st p init x rs ro in
+          init,pseudo mvs@cs,st
+    end
 
     module STG = struct
 
@@ -978,6 +1057,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let r,init,cs,st = emit_load_mixed MachSize.S128 0 st p init loc in
             Some r,init,cs@lift_code [gctype r r],st
         | R,Some (CapaSeal,Some _) -> assert false
+        | R,Some (Neon n, None) -> let r,init,cs,st = LDN.emit_load n st p init loc in Some r,init,cs,st
+        | R,Some (Neon _,Some _) -> assert false
         | W,None ->
             let init,cs,st = STR.emit_store st p init loc e.v None evt_null in
             None,init,cs,st
@@ -1045,6 +1126,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let init,cs,st = emit_str_addon st p init rB rA (Some Capability) {e with cseal = e.v} in
             None,init,csi@cs@lift_code [str_mixed MachSize.S128 0 rB rA],st
         | W,Some (CapaSeal,Some _) -> assert false
+        | W,Some (Neon n, None) -> let init,cs,st = STN.emit_store n st p init loc e.v in None,init,cs,st
+        | W,Some (Neon _,Some _) -> assert false
         end
 
     let emit_exch st p init er ew =
@@ -1290,6 +1373,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let rB,st = next_reg st in
               Some rB,init,cs@lift_code [ldr_mixed rB rA MachSize.S128 0; gctype rB rB],st
           | R,Some (CapaSeal,Some _) -> assert false
+          | R,Some (Neon n,None) ->
+              let c = sxtw r2 rd in
+              let r3,st = next_reg st in
+              let c1 = calc0 V64 r3 r2 in
+              let rB,init,cs,st = LDN.emit_load_idx n st p init loc r3 in
+              Some rB,init,Instruction c::Instruction c1::cs,st
+          | R,Some (Neon _,Some _) -> assert false
           | W,None ->
               let module STR =
                 STORE
@@ -1407,6 +1497,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 {e with cseal = e.v} in
               None,init,csi@csi2@cs@lift_code [str_mixed MachSize.S128 0 rC rB],st
           | W,Some (CapaSeal,Some _) -> assert false
+          | W,Some (Neon n,None) ->
+              let c = sxtw r2 rd in
+              let r3,st = next_reg st in
+              let c1 = calc0 V64 r3 r2 in
+              let init,cs,st = STN.emit_store_idx n st p init loc r3 e.v in
+              None,init,Instruction c::Instruction c1::cs,st
+          | W,Some (Neon _,Some _) -> assert false
           | J,_ -> emit_joker st init
           | _,Some (Plain _,None) -> assert false
           end
@@ -1478,6 +1575,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                       [Instruction (sxtw r3 r1);
                        Instruction (calc0 A64.V64 r2 r3);],st in
                 let cs2 = cs@[Instruction (add A64.V64 r2 r2 rA);] in
+                r2,cs2,init,st
+            | Some (Neon _,None) ->
+                let r2,st = next_vreg st in
+                let r3,st = next_vreg st in
+                let cs2 =
+                  [Instruction (eor_simd r2 r1) ;
+                   Instruction (movi_reg r3 e.v) ;
+                   Instruction (add_simd r2 r3); ] in
                 r2,cs2,init,st
             | _ ->
                 let cs2,st =
@@ -1557,6 +1662,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let init,cs,st = emit_str_addon st p init r2 rA (Some Capability) {e with cseal = e.v} in
               None,init,cs2@cs@lift_code [str_mixed MachSize.S128 0 r2 rA],st
           | Some (CapaSeal,Some _) -> assert false
+          | Some (Neon n,None) ->
+            let init,cs,st = STN.emit_store_reg n st p init loc [r2] in
+            None,init,cs2@cs,st
+          | Some (Neon _,Some _) -> assert false
           end
       | Some J,_ -> emit_joker st init
       | _,Code _ -> Warn.fatal "Not Yet (%s,dep_data)" (C.debug_evt e)

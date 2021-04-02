@@ -25,6 +25,7 @@ module type S = sig
   type event =
       { loc : loc ; ord : int; tag : int;
         ctag : int; cseal : int; dep : int;
+        vecreg: int array;
         v   : v ;
         dir : dir option ;
         proc : Code.proc ;
@@ -114,6 +115,7 @@ module Make (O:Config) (E:Edge.S) :
   let do_memtag = O.variant Variant_gen.MemTag
   let do_morello = O.variant Variant_gen.Morello
   let do_kvm = O.variant Variant_gen.KVM
+  let do_neon = O.variant Variant_gen.Neon
 
   type fence = E.fence
   type edge = E.edge
@@ -122,6 +124,7 @@ module Make (O:Config) (E:Edge.S) :
   type event =
       { loc : loc ; ord : int; tag : int;
         ctag : int; cseal : int; dep : int;
+        vecreg: int array;
         v   : v ;
         dir : dir option ;
         proc : Code.proc ;
@@ -137,6 +140,7 @@ module Make (O:Config) (E:Edge.S) :
   let evt_null =
     { loc=Code.loc_none ; ord=0; tag=0;
       ctag=0; cseal=0; dep=0;
+      vecreg= [|0;0;0;0|];
       v=(-1) ; dir=None; proc=(-1); atom=None; rmw=false;
       cell=(-1); bank=Code.Ord; idx=(-1);
       pte=pte_default; }
@@ -177,18 +181,23 @@ module Make (O:Config) (E:Edge.S) :
       sprintf " (ord=%i) (ctag=%i) (cseal=%i) (dep=%i)" e.ord e.ctag e.cseal e.dep
     else fun _ -> ""
 
+  let debug_neon =
+    if do_neon then fun e ->
+      sprintf " (vecreg={%i,%i,%i,%i})" e.vecreg.(0) e.vecreg.(1) e.vecreg.(2) e.vecreg.(3)
+    else fun _ -> ""
+
   let debug_evt e =
     let pp_v =
       match e.bank with
       | Pte -> PTEVal.pp e.pte
-      | (Ord|Tag|CapaTag|CapaSeal) ->
+      | (Ord|Tag|CapaTag|CapaSeal|VecReg) ->
           if O.hexa then sprintf "0x%x" e.v
           else sprintf "%i" e.v in
-    sprintf "%s%s %s %s%s%s"
+    sprintf "%s%s %s %s%s%s%s"
       (debug_dir e.dir)
       (debug_atom e.atom)
       (Code.pp_loc e.loc)
-      pp_v (debug_tag e) (debug_morello e)
+      pp_v (debug_tag e) (debug_morello e) (debug_neon e)
 
   let debug_edge = E.pp_edge
 
@@ -369,8 +378,8 @@ let diff_proc e = E.get_ie e = Ext
 (* Coherence definition *)
 module CoSt = MyMap.Make(struct type t = Code.bank let compare = compare end)
 
-let co_st_0  = CoSt.add Ord 0 (CoSt.add Tag 0 (CoSt.add CapaTag 0 (CoSt.add CapaSeal 0 CoSt.empty)))
-let co_st_1  = CoSt.add Ord 1 (CoSt.add Tag 1 (CoSt.add CapaTag 1 (CoSt.add CapaSeal 1 CoSt.empty)))
+let co_st_0  = CoSt.add Ord 0 (CoSt.add Tag 0 (CoSt.add CapaTag 0 (CoSt.add CapaSeal 0 (CoSt.add VecReg 0 CoSt.empty))))
+let co_st_1  = CoSt.add Ord 1 (CoSt.add Tag 1 (CoSt.add CapaTag 1 (CoSt.add CapaSeal 1 (CoSt.add VecReg 1 CoSt.empty))))
 let start_co _ = co_st_1
 
 let get_co st bank =
@@ -611,6 +620,11 @@ let set_same_loc st n0 =
             let ctag = get_co old CapaTag in
             let cseal = get_co old CapaSeal in
             n.evt <- { n.evt with ord=ord; ctag=ctag; cseal=cseal; }
+          else if do_neon then
+            let ord = get_co old Ord in
+            let v = get_co old VecReg in
+            let vecreg = [|v;v;v;v;|] in
+            n.evt <- { n.evt with ord=ord; vecreg=vecreg; }
           end
         end ;
         begin match n.evt.dir with
@@ -634,6 +648,13 @@ let set_same_loc st n0 =
                     let v =  get_co next Tag in
                     n.evt <- { n.evt with v = v; } ;
                     do_set_write_val (set_co old bank v)
+                      (next_co next bank) pte_val ns
+                | VecReg ->
+                    let v = get_co next bank in
+                    n.evt <- { n.evt with v = v; } ;
+                    set_cell n (get_co old Ord) ;
+                    do_set_write_val
+                      (set_co old bank v)
                       (next_co next bank) pte_val ns
                 | Pte ->
                     let pte_val =
@@ -727,7 +748,7 @@ let do_set_read_v =
             begin match  n.evt.bank with
             | Ord ->
                 set_read_v n cell
-            | Tag|CapaTag|CapaSeal as bank ->
+            | Tag|CapaTag|CapaSeal|VecReg as bank ->
                 n.evt <- { n.evt with v = get_co st bank; }
             | Pte ->
                 n.evt <- { n.evt with pte =  pte_cell; }
@@ -739,9 +760,9 @@ let do_set_read_v =
             do_rec st
               (match bank with
                | Ord -> n.evt.cell
-               | Tag|CapaTag|CapaSeal|Pte -> cell)
+               | Tag|CapaTag|CapaSeal|Pte|VecReg -> cell)
               (match bank with
-               | Ord|Tag|CapaTag|CapaSeal -> pte_cell
+               | Ord|Tag|CapaTag|CapaSeal|VecReg -> pte_cell
                | Pte -> n.evt.pte)
               ns
         | None | Some J ->

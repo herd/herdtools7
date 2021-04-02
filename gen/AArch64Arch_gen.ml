@@ -34,6 +34,7 @@ let do_tag = C.variant Variant_gen.MemTag
 let do_morello = C.variant Variant_gen.Morello
 let do_kvm = C.variant Variant_gen.KVM
 
+let do_neon = C.variant Variant_gen.Neon
 open Code
 open Printf
 
@@ -62,9 +63,10 @@ type atom_pte =
   | Read|ReadAcq|ReadAcqPc
   | Set of w_pte
   | SetRel of w_pte
+type neon_sizes = N1 | N2 | N3 | N4
 type atom_acc =
   | Plain of capa_opt | Acq of capa_opt | AcqPc of capa_opt | Rel of capa_opt
-  | Atomic of atom_rw | Tag | CapaTag | CapaSeal | Pte of atom_pte
+  | Atomic of atom_rw | Tag | CapaTag | CapaSeal | Pte of atom_pte | Neon of neon_sizes
 
 type atom = atom_acc * MachMixed.t option
 
@@ -76,7 +78,7 @@ let applies_atom (a,_) d = match a,d with
 | Rel _,W
 | Pte (Read|ReadAcq|ReadAcqPc),R
 | Pte (Set _|SetRel _),W
-| (Plain _|Atomic _|Tag|CapaTag|CapaSeal),(R|W)
+| (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _),(R|W)
   -> true
 | _ -> false
 
@@ -107,6 +109,11 @@ let applies_atom (a,_) d = match a,d with
      | ReadAcqPc -> "Q"
      | Set set -> pp_w_pte set
      | SetRel set -> pp_w_pte set ^"L"
+   let pp_neon_size = function
+     | N1 -> "1"
+     | N2 -> "2"
+     | N3 -> "3"
+     | N4 -> "4"
 
    let pp_atom_acc = function
      | Atomic rw -> sprintf "X%s" (pp_atom_rw rw)
@@ -118,6 +125,7 @@ let applies_atom (a,_) d = match a,d with
      | CapaTag -> "Ct"
      | CapaSeal -> "Cs"
      | Pte p -> sprintf "Pte%s" (pp_atom_pte p)
+     | Neon n -> sprintf "N%s" (pp_neon_size n)
 
    let pp_atom (a,m) = match a with
    | Plain o ->
@@ -162,6 +170,8 @@ let applies_atom (a,_) d = match a,d with
      if do_morello then fun f r -> f CapaSeal (f CapaTag r)
      else fun _f r -> r
 
+   let fold_neon f r = f N1 (f N2 (f N3 (f N4 r)))
+
    let fold_acc_opt o f r =
      let r = f (Acq o) r in
      let r = f (AcqPc o) r in
@@ -172,6 +182,7 @@ let applies_atom (a,_) d = match a,d with
      let r = if mixed then r else fold_pte (fun p r -> f (Pte p) r) r in
      let r = fold_morello f r in
      let r = fold_tag f r in
+     let r = fold_neon (fun n -> f (Neon n)) r in
      let r = fold_acc_opt None f r in
      let r =
        if do_morello then
@@ -192,7 +203,7 @@ let applies_atom (a,_) d = match a,d with
 
    let worth_final (a,_) = match a with
      | Atomic _ -> true
-     | Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal|Pte _ -> false
+     | Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal|Pte _|Neon _ -> false
 
 
 
@@ -254,7 +265,8 @@ let applies_atom (a,_) d = match a,d with
    | Pte _,None -> Code.Pte
    | CapaTag,None -> Code.CapaTag
    | CapaSeal,None -> Code.CapaSeal
-   | (Tag|CapaTag|CapaSeal|Pte _),Some _ -> assert false
+   | Neon _,None -> Code.VecReg
+   | (Tag|CapaTag|CapaSeal|Pte _|Neon _),Some _ -> assert false
    | (Plain _|Acq _|AcqPc _|Rel _|Atomic (PP|PL|AP|AL)),_
       -> Code.Ord
 
@@ -275,9 +287,9 @@ let applies_atom (a,_) d = match a,d with
 
 let overwrite_value v ao w = match ao with
 | None
-| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal|Pte _),None)
+| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal|Pte _|Neon _),None)
   -> w (* total overwrite *)
-| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _),Some (sz,o)) ->
+| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Neon _),Some (sz,o)) ->
     ValsMixed.overwrite_value v sz o w
 | Some ((Tag|CapaTag|CapaSeal|Pte _),Some _) ->
     assert false
@@ -286,8 +298,8 @@ let overwrite_value v ao w = match ao with
   | None
   | Some
       ((Atomic _|Acq _|AcqPc _|Rel _|Plain _
-        |Tag|CapaTag|CapaSeal|Pte _),None) -> v
-  | Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal),Some (sz,o)) ->
+        |Tag|CapaTag|CapaSeal|Pte _|Neon _),None) -> v
+  | Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal|Neon _),Some (sz,o)) ->
       ValsMixed.extract_value v sz o
   | Some (Pte _,Some _) -> assert false
 
@@ -492,7 +504,9 @@ include
 
       let pp_reg = pp_reg
       let free_registers = allowed_for_symb
-      include NoSpecial
+
+      type special = reg
+      let specials = vregs
     end)
 
 end

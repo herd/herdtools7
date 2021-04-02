@@ -280,7 +280,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     let check_here n = match n.C.C.evt.C.C.bank with
     | Pte ->
         Misc.is_some (find_next_pte_write n)
-    | Ord|Tag|CapaTag|CapaSeal ->
+    | Ord|Tag|CapaTag|CapaSeal|VecReg ->
         check_edge n.C.C.edge.C.E.edge && not (is_load_init n.C.C.evt)
 
 (* Poll for value is possible *)
