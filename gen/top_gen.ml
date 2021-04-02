@@ -241,7 +241,7 @@ let get_fence n =
               let call_add =
                 StringSet.mem loc loc_writes  && not (U.do_poll n) in
               if call_add then
-                F.add_final p o n finals
+                F.add_final (A.get_friends st) p o n finals
               else begin
                 finals
               end

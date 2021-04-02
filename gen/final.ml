@@ -24,6 +24,14 @@ end
 
 module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
   sig
+
+(* During compilation of cycle, final state is a
+   pair eventmap * fenv, where
+    + fenv associates locations to final values;
+    + eventmap maps one event to the register
+      written by the node. This is useful only
+      for simulating execution in `-cond unicond` mode *)
+
     type vset
     type fenv = (C.A.location * vset) list
     type eventmap = C.A.location C.C.EventMap.t
@@ -39,9 +47,24 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     val cons_pteval :   C.A.location -> PTEVal.t -> fenv -> fenv
     val cons_int_set :  (C.A.location * IntSet.t) -> fenv -> fenv
     val add_int_sets : fenv -> (C.A.location * IntSet.t) list -> fenv
+
+(* Standard function to record an association from register
+   to expected value:
+   Call is `add_final get_friends proc reg node (map,fenv)`,
+   where:
+     + get_friends returns the "friends of register",
+       friends are registers whose expected value is
+       identical. Those may stem from instructions that
+       write into several registers.
+     + proc is a thread identifier.
+     + reg is a register option, when None nothing happens.
+     + node is the current node.
+     + (map,env) is the old final structure.
+*)
     val add_final :
-        Code.proc -> C.A.arch_reg option -> C.C.node ->
-          eventmap * fenv -> eventmap * fenv
+      (C.A.arch_reg -> C.A.arch_reg list) ->
+      Code.proc -> C.A.arch_reg option -> C.C.node ->
+      eventmap * fenv -> eventmap * fenv
 
     type faults = (Proc.t * StringSet.t) list
     type final
@@ -114,7 +137,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     let add_final_pte p r v finals = (C.A.of_reg p r,VSet.singleton (P v))::finals
 
     let add_final_loc p r v finals =
-      (C.A.of_reg p r,VSet.singleton (S v))::finals
+      let loc = C.A.of_reg p r in
+      (loc,VSet.singleton (S v))::finals
 
     let cons_int loc i fs = (loc,VSet.singleton (I i))::fs
 
@@ -127,7 +151,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     let prev_value = fun v -> v-1
 
-    let add_final p o n finals = match o with
+    let add_final get_friends p o n finals = match o with
     | Some r ->
         let m,fs = finals in
         let evt = n.C.C.evt in
@@ -139,7 +163,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
             | Code.Ord ->
                 Some (I evt.C.C.v)
             | Code.VecReg ->
-                Some (S (Code.add_vector evt.C.C.vecreg))
+                let vec =Code.add_vector evt.C.C.vecreg in
+                Some (S vec)
             | Code.Tag ->
                 Some (S (Code.add_tag (Code.as_data evt.C.C.loc) evt.C.C.v))
             | Code.Pte ->
@@ -149,8 +174,12 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         | None|Some Code.J -> None in
         if show_in_cond n then match v with
         | Some v ->
-            C.C.EventMap.add n.C.C.evt (C.A.of_reg p r) m,
-            (C.A.of_reg p r,VSet.singleton v)::fs
+           let add_to_fs r fs =
+             (C.A.of_reg p r,VSet.singleton v)::fs in
+           let m = C.C.EventMap.add n.C.C.evt (C.A.of_reg p r) m
+           and fs =
+             add_to_fs r (List.fold_right add_to_fs (get_friends r) fs) in
+           m,fs
         | None -> finals
         else finals
     | None -> finals

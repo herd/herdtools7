@@ -648,7 +648,7 @@ module Make(O:Config) : Builder.S
                    ((Load (of_reg p just_read),Eq,Const expected_v),
                     A.seqs [obs;is],
                     None)),
-              F.add_final p o n fs,
+              F.add_final (fun _ -> []) p o n fs,
               st
 
           | _ ->
@@ -658,7 +658,7 @@ module Make(O:Config) : Builder.S
               let obs,fs,st = observe_local st p fs n in
               A.seqs [i;obs;add_fence n is],
               (if not (U.do_poll n) then
-                F.add_final p o n fs
+                F.add_final (fun _ -> []) p o n fs
               else fs),
               st
           end
@@ -718,7 +718,7 @@ module Make(O:Config) : Builder.S
           let is,fs,st = do_compile_proc_check loc_writes st p ns in
           let obs,fs,st = observe_local_check st p fs n in
           fi (obs is),
-          (if true then F.add_final p o n fs
+          (if true then F.add_final (fun _ -> []) p o n fs
           else fs),
           st
 
