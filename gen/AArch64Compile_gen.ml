@@ -57,6 +57,21 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
     let tempo4 st = A.alloc_loop_idx "I4" st (* Loop observer index *)
 
+    let emit_vregs =
+      let rec call_rec n st =
+        let r1,st = next_vreg st in
+        let (r2,rs),st = get_reg_list n st in
+        (r1,(r2::rs)),st
+      and get_reg_list n st = match n with
+        | N1 ->
+           let r,st = next_vreg st in (r,[]),st
+        | N2 -> call_rec N1 st
+        | N3 -> call_rec N2 st
+        | N4 -> call_rec N3 st in
+      fun n st ->
+        let (r,rs),st = get_reg_list n st in
+        (r,rs),A.set_friends r rs st
+
 (******************)
 (* Idiosyncrasies *)
 (******************)
@@ -456,23 +471,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     module LDN = struct
 
-      let emit_vregs n st =
-        let rec get_reg_list n rs st = match n with
-        | N1 -> let r,st = next_vreg st in (rs@[r]),st
-        | N2 -> let r,st = next_vreg st in get_reg_list N1 (rs@[r]) st
-        | N3 -> let r,st = next_vreg st in get_reg_list N2 (rs@[r]) st
-        | N4 -> let r,st = next_vreg st in get_reg_list N3 (rs@[r]) st
-        in get_reg_list n [] st
-
       let emit_load n st p init x =
-        let rs,st = emit_vregs n st in
+        let (r,rs),st = emit_vregs n st in
         let rB,init,st = U.next_init st p init x in
-        (List.hd rs),init,lift_code [ldn n rs rB],st
+        r,init,lift_code [ldn n (r::rs) rB],st
 
       let emit_load_idx n st p init x ro =
-        let rs,st = emit_vregs n st in
+        let (r,rs),st = emit_vregs n st in
         let rB,init,st = U.next_init st p init x in
-        (List.hd rs),init,lift_code [ldn_idx n rs rB ro],st
+        r,init,lift_code [ldn_idx n (r::rs) rB ro],st
     end
 
     module LDG = struct
@@ -647,24 +654,20 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let rB,init,st = U.next_init st p init x in
         init,pseudo [stn_idx n rs rB ro],st
 
-      let emit_vregs n st =
-        let rec get_reg_list n rs st = match n with
-        | N1 -> let r,st = next_vreg st in (rs@[r]),st
-        | N2 -> let r,st = next_vreg st in get_reg_list N1 (rs@[r]) st
-        | N3 -> let r,st = next_vreg st in get_reg_list N2 (rs@[r]) st
-        | N4 -> let r,st = next_vreg st in get_reg_list N3 (rs@[r]) st
-        in get_reg_list n [] st
-
       let emit_movis rs v = List.map (fun r -> movi_reg r v) rs
 
+      let emit_vregs_store n st =
+        let (r,rs),st = emit_vregs n st in
+        r::rs,st
+
       let emit_store n st p init x v =
-        let rs,st = emit_vregs n st in
+        let rs,st = emit_vregs_store n st in
         let mvs = emit_movis rs v in
         let init,cs,st = emit_store_reg n st p init x rs in
         init,pseudo mvs@cs,st
 
         let emit_store_idx n st p init x ro v =
-          let rs,st = emit_vregs n st in
+          let rs,st = emit_vregs_store n st in
           let mvs = emit_movis rs v in
           let init,cs,st = emit_store_reg_idx n st p init x rs ro in
           init,pseudo mvs@cs,st
