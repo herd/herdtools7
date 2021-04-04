@@ -48,6 +48,8 @@ module Make
 
    let bellatom = false
 
+   module SIMD = NoSIMD
+
    type atom = MO of mo | Atomic of mo * mo | Mixed of MachMixed.t
 
    let default_atom = Atomic (Rlx,Rlx)

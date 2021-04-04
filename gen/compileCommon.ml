@@ -32,6 +32,7 @@ module type S = sig
   module E : Edge.S
   with type fence = A.fence
   and type dp = A.dp
+  and module SIMD = A.SIMD
   and type atom = A.atom
   and type rmw = A.rmw
 
@@ -42,7 +43,11 @@ module type S = sig
   and type dp = A.dp
   and type edge = E.edge
 
-  module C : Cycle.S with type fence = A.fence and type edge=E.edge and type atom = A.atom
+  module C : Cycle.S
+   with type fence = A.fence
+   and type edge=E.edge
+   and module SIMD = A.SIMD
+   and type atom = A.atom
 
 end
 

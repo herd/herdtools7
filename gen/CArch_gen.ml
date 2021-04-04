@@ -23,6 +23,8 @@ open Code
 open MemOrder
 let bellatom = false
 
+module SIMD = NoSIMD
+
 type atom = MemOrder.t
 
 let default_atom = SC

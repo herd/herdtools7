@@ -54,6 +54,17 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     open Printf
     open Code
 
+    let pp_v =
+      if O.hexa then sprintf "0x%x"
+      else sprintf "%i"
+
+    let pp_cell t = match Array.length t with
+      | 0 -> ""
+      | 1 -> pp_v t.(0)
+      | _ ->
+         sprintf "[%s]"
+           (String.concat "," (List.map pp_v (Array.to_list t)))
+
     let pp_coherence cos0 =
       eprintf "COHERENCE: " ;
       Misc.pp_list stderr ""
@@ -64,10 +75,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                 (fun chan ->
                   Misc.pp_list chan ","
                     (fun chan (n,obs) ->
-                      let pp chan =
-                        if O.hexa then fprintf chan "0x%x{%s}"
-                        else fprintf chan "%i{%s}" in
-                      pp chan n.C.C.evt.C.C.cell
+                      let pp chan = fprintf chan "%s{%s}" in
+                      pp chan (pp_cell n.C.C.evt.C.C.cell)
                         (IntSet.pp_str "," (sprintf "%i") obs)
                     )))
             vs)
@@ -104,7 +113,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         (fun (loc,ns) ->
           loc,
           List.map
-            (List.map (fun (n,obs) -> n.C.C.evt.C.C.cell,obs))
+            (*NOTYET*)
+            (List.map (fun (n,obs) -> n.C.C.evt.C.C.cell.(0),obs))
             ns)
 
 (******************)
@@ -280,7 +290,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     let check_here n = match n.C.C.evt.C.C.bank with
     | Pte ->
         Misc.is_some (find_next_pte_write n)
-    | Ord|Tag|CapaTag|CapaSeal|VecReg ->
+    | Ord|Tag|CapaTag|CapaSeal|VecReg _ ->
         check_edge n.C.C.edge.C.E.edge && not (is_load_init n.C.C.evt)
 
 (* Poll for value is possible *)

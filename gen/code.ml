@@ -126,7 +126,7 @@ type info = (string * string) list
 let plain = "Na"
 
 (* Memory Space *)
-type bank = Ord | Tag | CapaTag | CapaSeal | Pte | VecReg
+type 'a bank = Ord | Tag | CapaTag | CapaSeal | Pte | VecReg of 'a
 
 let pp_bank = function
   | Ord -> "Ord"
@@ -134,7 +134,7 @@ let pp_bank = function
   | CapaTag -> "CapaTag"
   | CapaSeal -> "CapaSeal"
   | Pte -> "Pte"
-  | VecReg -> "VecReg"
+  | VecReg _ -> "VecReg"
 
 let tag_of_int  = function
   | 0 -> "green"
@@ -151,4 +151,8 @@ let add_tag s t = Printf.sprintf "%s:%s" s (tag_of_int t)
 
 let add_capability s t = Printf.sprintf "0xffffc0000:%s:%i" s (if t = 0 then 1 else 0)
 
-let add_vector v = Printf.sprintf "{%i,%i,%i,%i}" v.(0) v.(1) v.(2) v.(3)
+let add_vector hexa v =
+  let open Printf in
+  let pp = if hexa then sprintf "0x%x" else sprintf "%i" in
+  sprintf "{%s}"
+    (String.concat "," (List.map pp  v))

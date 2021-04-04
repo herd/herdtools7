@@ -22,6 +22,8 @@ module ScopeGen = ScopeGen.NoGen
 
 let bellatom = false
 
+module SIMD = NoSIMD
+
 type atom = Atomic
 
 let default_atom = Atomic

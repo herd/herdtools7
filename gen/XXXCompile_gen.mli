@@ -26,7 +26,7 @@ module type S = sig
 
 (* Load for observation *)
   val emit_obs :
-       Code.bank -> A.st -> Code.proc -> A.init -> string ->
+       A.SIMD.atom Code.bank -> A.st -> Code.proc -> A.init -> string ->
         A.reg * A.init * A.pseudo list * A.st
 
   val emit_obs_not_zero :

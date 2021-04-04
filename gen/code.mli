@@ -83,12 +83,12 @@ type info = (string * string) list
 val plain : string
 
 (* Memory bank (for MTE, KVM)  *)
-type bank = Ord | Tag | CapaTag | CapaSeal | Pte | VecReg
+type 'a bank = Ord | Tag | CapaTag | CapaSeal | Pte | VecReg of 'a
 
-val pp_bank : bank -> string
+val pp_bank : 'a bank -> string
 
 val add_tag : string -> v -> string
 
 val add_capability : string -> v -> string
 
-val add_vector : int array -> string
+val add_vector : bool -> int list -> string

@@ -40,6 +40,8 @@ module Make
 
       let bellatom = false
 
+      module SIMD = NoSIMD
+
       type atom_acc = Plain | Atomic | NonTemporal
 
       type atom = atom_acc * MachMixed.t option

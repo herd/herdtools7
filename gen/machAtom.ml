@@ -27,6 +27,8 @@ module Make(C:Config) = struct
 
   let bellatom = false
 
+  module SIMD = NoSIMD
+
   type hidden_atom = Atomic | Reserve | Mixed of MachMixed.t
   type atom = hidden_atom
 

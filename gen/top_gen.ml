@@ -478,10 +478,9 @@ let max_set = IntSet.max_elt
 
 
 
-  let do_observe_local st p i code f x prev_v v =
-    let open Config in
-    match O.obs_type with
-    | Straight ->
+  let rec do_observe_local obs_type st p i code f x prev_v v =
+    match obs_type with
+    | Config.Straight ->
         let i,c,f,st = do_add_load st p i f x v in
         i,code@c,f,st
     |  Config.Fenced ->
@@ -489,9 +488,31 @@ let max_set = IntSet.max_elt
         let i,c',st = Comp.emit_fence st p i C.nil Comp.stronger_fence in
         let c = c'@c in
         i,code@c,f,st
-    | Loop ->
-        let i,c,f,st = do_add_loop st p i f x prev_v v in
-        i,code@c,f,st
+    | Config.Loop ->
+       begin match prev_v with
+       | Some prev_v ->
+          let i,c,f,st = do_add_loop st p i f x prev_v v in
+          i,code@c,f,st
+       | None ->
+          do_observe_local Config.Fenced st p i code f x None v
+       end
+
+  let do_observe_local_simd st p i code f x bank nxt =
+    let vs = nxt.C.vecreg in
+    let r,i,c,st = Comp.emit_obs bank st p i x in
+    let i,c,st =
+      match O.obs_type with
+      | Config.Straight -> i,c,st
+      | Config.Fenced|Config.Loop -> (* No loop observed, too complex *)
+         let i,c',st =
+           Comp.emit_fence st p i C.nil Comp.stronger_fence in
+         i,c'@c,st in
+    let rs = r::A.get_friends st r in
+    let f =
+      List.fold_right2
+        (fun r v -> F.add_final_loc p r (Code.add_vector O.hexa v))
+        rs vs f in
+    i,code@c,f,st
 
   let do_add_local_check_pte avoid st p i code f n x =
     if StringSet.mem (Misc.add_pte x) avoid then i,code,f,st
@@ -517,16 +538,22 @@ let max_set = IntSet.max_elt
     if U.check_here lst then
       match lst.C.evt.C.loc,lst.C.evt.C.bank with
       | Data x,Ord ->
-          let v = lst.C.next.C.evt.C.v
-          and prev_v = lst.C.evt.C.v in
-          let all_lst =
-            try StringMap.find x lsts
-            with Not_found -> C.evt_null in
-          if C.OrderedEvent.compare all_lst lst.C.next.C.evt = 0
-          then
-            i,code,F.cons_int_set (A.Loc x,IntSet.singleton v) f,st
-          else
-            do_observe_local st p i code f x prev_v v
+         let nxt = lst.C.next.C.evt in
+         begin match nxt.C.bank with
+         | VecReg _ as bank ->
+            do_observe_local_simd st p i code f x bank nxt
+         | _ ->
+            let v = nxt.C.v
+            and prev_v = lst.C.evt.C.v in
+            let all_lst =
+              try StringMap.find x lsts
+              with Not_found -> C.evt_null in
+            if C.OrderedEvent.compare all_lst lst.C.next.C.evt = 0
+            then
+              i,code,F.cons_int_set (A.Loc x,IntSet.singleton v) f,st
+            else
+              do_observe_local O.obs_type st p i code f x (Some prev_v) v
+         end
       | Data x,Tag ->
           let v = lst.C.next.C.evt.C.v in
           let r,i,c,st = Comp.emit_obs Tag st p i x in
@@ -541,12 +568,19 @@ let max_set = IntSet.max_elt
           i,code@c,F.add_final_loc p r (Code.add_capability x v) f,st
       | Data x,Pte ->
           do_add_local_check_pte avoid_ptes st p i code f lst x
-      | Data x,VecReg ->
-          let v = lst.C.next.C.evt.C.vecreg in
-          let r,i,c,st = Comp.emit_obs VecReg st p i x in
-          i,code@c,F.add_final_loc p r (Code.add_vector v) f,st
+      | Data x,(VecReg _)->
+         let nxt = lst.C.next.C.evt in
+         let bank = nxt.C.bank in
+         begin match bank with
+         | Ord ->
+            let v = nxt.C.v in
+            do_observe_local O.obs_type st p i code f x None v
+         | VecReg _ ->
+            do_observe_local_simd st p i code f x bank nxt
+         | _ -> Warn.fatal "Mixing SIMD and other variants"
+         end
       | Code _,_ -> i,code,f,st
-    else i,code,f,st
+    else  i,code,f,st
 
 (******************************************)
 (* Compile cycle, ie generate test proper *)

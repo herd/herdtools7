@@ -155,30 +155,47 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     | Some r ->
         let m,fs = finals in
         let evt = n.C.C.evt in
+        let bank = evt.C.C.bank in
         let v = match evt.C.C.dir with
         | Some Code.R ->
-            begin match evt.C.C.bank with
+            begin match bank with
             | Code.CapaTag
             | Code.CapaSeal
             | Code.Ord ->
                 Some (I evt.C.C.v)
-            | Code.VecReg ->
-                let vec =Code.add_vector evt.C.C.vecreg in
+            | Code.VecReg _->
+               let v0 =
+                 match evt.C.C.vecreg with
+                 | [] -> assert false
+                 | v0::_ -> v0 in
+                let vec = Code.add_vector O.hexa v0 in
                 Some (S vec)
             | Code.Tag ->
                 Some (S (Code.add_tag (Code.as_data evt.C.C.loc) evt.C.C.v))
             | Code.Pte ->
                 Some (P evt.C.C.pte)
             end
-        | Some Code.W -> assert (evt.C.C.bank = Code.Ord || evt.C.C.bank = Code.CapaSeal || evt.C.C.bank == Code.VecReg) ; Some (I (prev_value evt.C.C.v))
+        | Some Code.W ->
+           assert (evt.C.C.bank = Code.Ord || evt.C.C.bank = Code.CapaSeal) ;
+           Some (I (prev_value evt.C.C.v))
         | None|Some Code.J -> None in
         if show_in_cond n then match v with
         | Some v ->
-           let add_to_fs r fs =
+           let add_to_fs r v fs =
              (C.A.of_reg p r,VSet.singleton v)::fs in
+           let vs =
+             match bank with
+             | Code.VecReg _ ->
+                begin match evt.C.C.vecreg with
+                | _::vs ->
+                   List.map (fun v -> S (Code.add_vector O.hexa v)) vs
+                | _ -> assert false
+                end
+             | _ -> [] in
            let m = C.C.EventMap.add n.C.C.evt (C.A.of_reg p r) m
            and fs =
-             add_to_fs r (List.fold_right add_to_fs (get_friends r) fs) in
+             add_to_fs r v
+               (List.fold_right2 add_to_fs (get_friends r) vs fs) in
            m,fs
         | None -> finals
         else finals

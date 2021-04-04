@@ -25,6 +25,9 @@ module type S = sig
 
   type fence
   type dp
+
+  module SIMD : Atom.SIMD
+
   type atom
   type rmw
 
@@ -34,7 +37,7 @@ module type S = sig
   val extract_value : Code.v -> atom option -> Code.v
   val set_pteval : atom option -> PTEVal.t -> (unit -> string) -> PTEVal.t
   val merge_atoms : atom -> atom -> atom option
-  val atom_to_bank : atom option -> Code.bank
+  val atom_to_bank : atom option -> SIMD.atom Code.bank
   val strong : fence
   val pp_fence : fence -> string
 
@@ -147,6 +150,7 @@ module Make(Cfg:sig val variant : Variant_gen.t -> bool end)(F:Fence.S) : S
 with
 type fence = F.fence
 and type dp = F.dp
+and module SIMD = F.SIMD
 and type atom = F.atom
 and type rmw = F.rmw = struct
   let do_self = Cfg.variant Variant_gen.Self
@@ -155,6 +159,9 @@ and type rmw = F.rmw = struct
 
   type fence = F.fence
   type dp = F.dp
+
+  module SIMD = F.SIMD
+
   type atom = F.atom
   type rmw = F.rmw
 

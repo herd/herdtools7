@@ -100,6 +100,9 @@ let pp_annot a = match a with
 
 (* No atoms yet *)
 let bellatom = true
+
+module SIMD = NoSIMD
+
 type atom = string list
 
 let default_atom = [] (* Wrong, extract from bell file? *)
