@@ -44,6 +44,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     val add_final_loc :
         Code.proc -> C.A.arch_reg -> string -> fenv -> fenv
     val cons_int :   C.A.location -> int -> fenv -> fenv
+    val cons_vec : C.A.location -> int array -> fenv -> fenv
     val cons_pteval :   C.A.location -> PTEVal.t -> fenv -> fenv
     val cons_int_set :  (C.A.location * IntSet.t) -> fenv -> fenv
     val add_int_sets : fenv -> (C.A.location * IntSet.t) list -> fenv
@@ -141,6 +142,10 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       (loc,VSet.singleton (S v))::finals
 
     let cons_int loc i fs = (loc,VSet.singleton (I i))::fs
+
+    let cons_vec loc t fs =
+      let vec = Code.add_vector O.hexa (Array.to_list t) in
+      (loc,VSet.singleton (S vec))::fs
 
     let cons_pteval loc p fs = (loc,VSet.singleton (P p))::fs
 

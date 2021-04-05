@@ -581,7 +581,21 @@ module Make(O:Config) : Builder.S
                 check_rec env (p+List.length c) xvs in
               c@cs,f@fs
 
-      let check_writes p cos = check_rec p cos
+      let check_writes env p cos =
+        let cos =
+          List.map
+            (fun (loc,vss) ->
+              let vss =
+                List.map
+                  (List.map
+                     (fun (v,obs) ->
+                       if Array.length v > 1 then
+                         Warn.fatal "No wide access in C" ;
+                       v.(0),obs))
+                  vss in
+              loc,vss)
+            cos in
+        check_rec env p cos
 
 (* Local check of coherence *)
 

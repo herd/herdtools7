@@ -401,18 +401,37 @@ let max_set = IntSet.max_elt
               i,c::cs,f@fs
         with NoObserver -> build_observers p i x vss
 
-  let cons_one x v fs = F.cons_int (A.Loc x) v fs
+  let check_writes env_wide atoms =
 
-  let rec check_rec ats p i =
+    let call_build_observers p i x vs =
+      if StringMap.mem x env_wide then
+        Warn.user_error "No observers on wide accesses"
+      else
+        let vs =
+          List.map
+            (List.map (fun (v,obs) -> v.(0),obs))
+            vs in
+        build_observers p i x vs in
+
+    let cons_one x v fs =
+      let loc = A.Loc x in
+      if StringMap.mem x env_wide then
+        F.cons_vec loc v fs
+      else
+        F.cons_int (A.Loc x) v.(0) fs in
+
     let add_look_loc loc v k =
-      if (not (StringSet.mem loc ats) && O.optcond) then k
+      if (not (StringSet.mem loc atoms) && O.optcond) then k
       else cons_one loc v k in
-    let open Config in
-    function
+
+    let rec check_rec p i =
+
+      let open Config in
+      function
       | [] -> i,[],[]
       | (x,vs)::xvs ->
-          let i,c,f = match O.cond with
-          | Observe ->
+         let i,c,f = match O.cond with
+           | Observe ->
               let vs = List.flatten vs in
               begin match vs with
               | [] -> i,[],[]
@@ -431,7 +450,7 @@ let max_set = IntSet.max_elt
                   | Avoid|Accept|Three|Four|Infinity
                     -> i,[],cons_one x v []
                   | Enforce ->
-                      let i,c,f = build_observers p i x vs in
+                      let i,c,f = call_build_observers p i x vs in
                       i,c,add_look_loc x v f
                   end
               | _ ->
@@ -454,15 +473,14 @@ let max_set = IntSet.max_elt
                   | Infinity ->
                       i,[],cons_one x v []
                   | _ ->
-                      let i,c,f = build_observers p i x vs in
+                      let i,c,f = call_build_observers p i x vs in
                       i,c,add_look_loc x v f
                   end
           end in
           let i,cs,fs =
-            check_rec ats (p+List.length c) i xvs in
-          i,c@cs,f@fs
-
-  let check_writes atoms p i cos = check_rec atoms p i cos
+            check_rec (p+List.length c) i xvs in
+          i,c@cs,f@fs in
+    check_rec
 
 
 (* Local check of coherence *)
@@ -599,6 +617,7 @@ let max_set = IntSet.max_elt
   let compile_cycle ok n =
     let open Config in
     Label.reset () ;
+    let env_wide = C.get_wide n in
     let splitted =  C.split_procs n in
     (* Split before, as  proc numbers added by side effet.. *)
     let cos0 = C.coherence n in
@@ -649,7 +668,7 @@ let max_set = IntSet.max_elt
       | Unicond -> [],[],[]
       | Cycle|Observe ->
           let atoms = U.comp_atoms n in
-          check_writes atoms 0  [] cos in
+          check_writes env_wide atoms 0  [] cos in
     match splitted,O.cond with
     | [],_ -> Warn.fatal "No proc"
 (*    | [_],Cycle -> Warn.fatal "One proc" *)
@@ -674,7 +693,7 @@ let max_set = IntSet.max_elt
               let loc = A.Loc loc in
               assert (not (A.LocMap.mem loc k)) ;
               A.LocMap.add loc (IntArray sz) k)
-          (C.get_wide n) env in
+          env_wide env in
         let env =
           let ptes = A.LocSet.of_list (F.extract_ptes f) in
           List.fold_left

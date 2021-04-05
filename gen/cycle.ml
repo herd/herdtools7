@@ -1111,7 +1111,7 @@ let rec group_rec x ns = function
     do_rec n
 
 
-  let do_get_writes bank n =
+  let do_get_writes pbank n =
     let rec do_rec m =
       let k =
         if m.next == n then []
@@ -1120,15 +1120,18 @@ let rec group_rec x ns = function
       let k =  match e.dir with
       | Some W ->
           if
-            E.is_node m.edge.E.edge ||
-            m.evt.bank <> bank
+            E.is_node m.edge.E.edge || not (pbank m.evt.bank)
           then k else (e.loc,m)::k
       | None| Some R | Some J -> k in
       k in
     do_rec n
 
-  let get_ord_writes = do_get_writes Code.Ord
-  let get_pte_writes = do_get_writes Code.Pte
+  let get_ord_writes =
+    do_get_writes
+      (function Code.Ord|Code.VecReg _ -> true | _ -> false)
+
+  let get_pte_writes =
+    do_get_writes (function Code.Pte -> true | _ -> false)
 
   let get_observers n =
     let e = n.evt in
