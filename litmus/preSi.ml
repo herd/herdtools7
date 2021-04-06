@@ -1077,8 +1077,13 @@ module Make
         if Cfg.is_kvm then begin
           O.o "#define LINE LITMUS_PAGE_SIZE" ;
         end else begin
-          O.f "#define LINE %i" Cfg.line ;
-          O.o "#define VOFF 1"
+          let nvars = List.length test.T.globals in
+          let voff =
+            Misc.max_int (MachSize.nbytes MachSize.Quad) (U.max_align test) in
+          let needed = voff*nvars in (* bytes needed *)
+          let line = Cfg.line + Cfg.line * ((needed-1)/Cfg.line) in
+          O.f "#define LINE %i" line ;
+          O.f "#define VOFF %d" voff ;
         end ;
         O.o "" ;
         if Cfg.is_kvm then begin
@@ -1607,7 +1612,7 @@ module Make
                     O.fiii
                       "ctx->p.%s = comp_param(&c->seed,&%s->%s,NVARS,0);"
                       tag param tag ;
-                    O.fiii "_vars->%s = _mem + LINESZ*ctx->p.%s + %i*VOFF;"
+                    O.fiii "_vars->%s = _mem + LINESZ*ctx->p.%s + %i*VOFFSZ;"
                       a tag pos
                   with Not_found ->
                     O.fiii "_vars->%s = _mem;" a)
