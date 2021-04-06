@@ -174,34 +174,6 @@ module Make
           env
 
       let build_env test = test.T.type_env
-(*
-  let m =
-
- *)
-
-          (*
-            let e = A.LocMap.empty in
-            let e =
-            List.fold_left
-            (fun e (s,t) ->
-(*              eprintf "BUILD %s <%s>\n" s (CType.dump t) ; *)
-            A.LocMap.add (A.Location_global s) t e)
-            e test.T.globals in
-            let e =
-            List.fold_left
-            (fun e (proc,(_,(outs, _))) ->
-            List.fold_left
-            (fun e  (reg,t) ->
-            A.LocMap.add (A.Location_reg (proc,reg)) t e)
-            e outs)
-            e test.T.code in
-            let pp = A.LocMap.fold
-            (fun loc t k ->
-            sprintf "%s -> %s" (A.pp_location loc) (CType.dump t)::k)
-            e [] in
-            eprintf "Env: {%s}\n" (String.concat "; " pp) ;
-            e
-           *)
 
       let find_type loc (env,_) =
         try A.LocMap.find loc env
