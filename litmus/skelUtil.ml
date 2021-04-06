@@ -140,12 +140,15 @@ module Make
 (* Dump stuff *)
       module Dump : functor (O:Indent.S) -> functor(EPF:EmitPrintf.S) -> sig
         (* Some small dump functions common std/presi *)
-        val dump_vars_types : T.t -> unit
 
-            (* Same output as shell script in (normal) shell driver mode *)
+        (* Dump (typedef) array types, boolean argument commands
+           also dumping types used for alignment. *)
+        val dump_vars_types : bool -> T.t -> unit
+
+       (* Same output as shell script in (normal) shell driver mode *)
         val prelude : Name.t -> T.t -> unit
 
-            (* Dump results *)
+        (* Dump results *)
         val postlude :
             Name.t -> T.t -> Affi.t option -> bool ->
               stat list -> unit
@@ -455,7 +458,7 @@ module Make
 
       module Dump (O:Indent.S) (EPF:EmitPrintf.S) = struct
 
-        let dump_vars_types test =
+        let dump_vars_types dump_align test =
           let _,env = build_env test in
           let globs = test.T.globals in
           List.iter
@@ -463,6 +466,7 @@ module Make
             | CType.Array (t,sz) ->
                 O.f "typedef %s %s[%d];" t (type_name s) sz
             | _ ->
+               if dump_align then
                 begin match do_find_type_align s env with
                 | None -> ()
                 | Some (CType.Array (t,sz)) ->
