@@ -532,7 +532,7 @@ module Make
             O.o "} vars_t;" ;
         end ;
         O.o "" ;
-        UD.dump_vars_types test ;
+        UD.dump_vars_types false test ;
         O.o "typedef struct {" ;
         let fields =
           A.RLocSet.fold
