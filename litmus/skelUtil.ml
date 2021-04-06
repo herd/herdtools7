@@ -93,6 +93,8 @@ module Make
       val cast_constant : env -> A.rlocation -> A.V.v -> A.V.v
       val find_type_align : string -> env -> CType.t option
       val is_aligned : string -> env -> bool
+      (* Maximal alignment constraint in bytes, 0 if none *)
+      val max_align : T.t -> int
       val dump_mem_type : string -> CType.t -> env -> string
 
       val select_proc : int -> env -> CType.t A.RegMap.t
@@ -203,6 +205,24 @@ module Make
 
       let is_aligned loc (_,env) =
         try ignore (StringMap.find loc env) ; true with Not_found -> false
+
+      let nbytes t =
+        let sz =
+          match CType.base_size t with
+          | Some sz -> sz
+          | None -> MachSize.Quad (* Largest available *) in
+        MachSize.nbytes sz
+
+        let max_align test =
+          let _,env = build_env test in
+          StringMap.fold
+            (fun _ t k ->
+              let sz =
+                match t with
+                  | CType.Array (t,sz) -> sz*nbytes (CType.Base t)
+                  | _ -> nbytes t in
+              Misc.max_int sz k)
+            env 0
 
       let dump_mem_type loc t env =
         if is_aligned loc env then type_name loc
@@ -454,6 +474,8 @@ module Make
             globs ;
           begin match globs with _::_ -> O.o "" | [] -> () end ;
           ()
+
+
 
         open Preload
 
