@@ -46,6 +46,7 @@ val filebase : string -> string
 val polymorphic_compare : 'a -> 'a -> int
 external int_compare : int -> int -> int = "caml_int_compare"
 val int_eq : int -> int -> bool
+val max_int : int -> int -> int
 val string_eq : string -> string -> bool
 val bool_eq : bool -> bool -> bool
 

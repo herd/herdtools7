@@ -51,6 +51,7 @@ let polymorphic_compare = compare
 
 external int_compare : int -> int -> int = "caml_int_compare"
 let int_eq (x:int) (y:int) = x == y
+let max_int (x:int) (y:int) = if x >= y then x else y
 let string_eq (s1:string) (s2:string) = (=) s1 s2
 
 let bool_eq b1 b2 = match b1,b2 with
