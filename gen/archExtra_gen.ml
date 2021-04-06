@@ -17,7 +17,7 @@
 open Printf
 
 module type I = sig
- type arch_reg
+  type arch_reg
 
   val is_symbolic : arch_reg -> bool
   val pp_reg : arch_reg -> string
@@ -69,6 +69,9 @@ module type S = sig
 
   type special
   val alloc_special : st -> special * st
+
+  val set_friends : arch_reg -> arch_reg list -> st -> st
+  val get_friends : st -> arch_reg -> arch_reg list
 
   val ok_reg : st -> arch_reg * st
   val next_ok : st -> st
@@ -171,19 +174,30 @@ with type arch_reg = I.arch_reg and type special = I.special
       (StringSet.diff refer already_here)
       i
 
+  module RegMap =
+    MyMap.Make
+      (struct
+        type t = I.arch_reg
+        let compare = compare
+      end)
+
   type st =
       { regs : arch_reg list ;
         map  : arch_reg StringMap.t ;
         specials : I.special list ;
         noks : int ;
-        env : TypBase.t LocMap.t ; }
+        env : TypBase.t LocMap.t ; (* Record types *)
+        (* Group special registers together *)
+        friends : arch_reg list RegMap.t; }
+
 
   let st0 =
     { regs = I.free_registers;
       map = StringMap.empty;
       specials = I.specials;
       noks = 0;
-      env = LocMap.empty; }
+      env = LocMap.empty;
+      friends = RegMap.empty; }
 
   let alloc_reg st = match st.regs with
     | [] -> Warn.fatal "No more registers"
@@ -211,6 +225,12 @@ with type arch_reg = I.arch_reg and type special = I.special
   let alloc_special st = match st.specials with
   | [] -> Warn.fatal "No more special registers"
   | r::rs -> r,{ st with specials = rs; }
+
+  let set_friends r rs st =
+    let friends = RegMap.add r rs st.friends in
+    { st with friends; }
+
+  let get_friends st r = RegMap.safe_find [] r st.friends
 
   let ok_reg st = alloc_trashed_reg "ok" st
   let next_ok st = { st with noks = st.noks+1; }

@@ -22,6 +22,8 @@ module ScopeGen = ScopeGen.NoGen
 
 let bellatom = false
 
+module SIMD = NoSIMD
+
 type atom = Atomic
 
 let default_atom = Atomic
@@ -52,6 +54,7 @@ let varatom_dir _d f = f None
 let atom_to_bank _ = Code.Ord
 
 include NoMixed
+include NoWide
 
 let set_pteval _ p _ = p
 

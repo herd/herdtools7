@@ -20,19 +20,21 @@ open Code
 module type S = sig
   type fence
   type edge
+  module SIMD : Atom.SIMD
   type atom
+
 
   type event =
       { loc : loc ; ord : int; tag : int;
         ctag : int; cseal : int; dep : int;
-        vecreg: int array;
-        v   : v ;
+        v   : v ; (* Value read or written *)
+        vecreg: v list list; (* Alternative for SIMD *)
         dir : dir option ;
         proc : Code.proc ;
         atom : atom option ;
         rmw : bool ;
-        cell : v ;
-        bank : Code.bank ;
+        cell : v array ; (* Content of memory, after event *)
+        bank : SIMD.atom Code.bank ;
         idx : int ;
         pte : PTEVal.t ; }
 
@@ -69,6 +71,12 @@ module type S = sig
   val find_non_pseudo : node -> node
   val find_non_pseudo_prev : node -> node
 
+(* Generic fold *)
+  val fold : (node -> 'a -> 'a) -> node -> 'a -> 'a
+
+(* Extract wide accesses from cycle. Size as number of integers *)
+  val get_wide : node -> int StringMap.t
+
 (* Re-extract edges out of cycle *)
   val extract_edges : node -> edge list
 
@@ -84,18 +92,18 @@ module type S = sig
 (* split cycle amoungst processors *)
   val split_procs : node -> node list list
 
-
 (* Return coherence orders *)
   val coherence : node -> (string * (node * IntSet.t) list list) list
+
 (* Return last pteval in pte accesses coherence *)
   val last_ptes : node -> (string * PTEVal.t) list
+
 (* All locations *)
   val get_globals : node -> string list
+
 (* All (modified) code labels *)
   val get_labels : node -> string list
 
-(* Generic fold *)
-  val fold : (node -> 'a -> 'a) -> node -> 'a -> 'a
 end
 
 module type Config = sig
@@ -109,7 +117,10 @@ module type Config = sig
 end
 
 module Make (O:Config) (E:Edge.S) :
-    S with type fence = E.fence and type edge = E.edge and type atom = E.atom
+    S with type fence = E.fence
+       and type edge = E.edge
+       and module SIMD = E.SIMD
+       and type atom = E.atom
 = struct
   let dbg = false
   let do_memtag = O.variant Variant_gen.MemTag
@@ -119,19 +130,20 @@ module Make (O:Config) (E:Edge.S) :
 
   type fence = E.fence
   type edge = E.edge
+  module SIMD = E.SIMD
   type atom = E.atom
 
   type event =
       { loc : loc ; ord : int; tag : int;
         ctag : int; cseal : int; dep : int;
-        vecreg: int array;
         v   : v ;
+        vecreg: v list list ;
         dir : dir option ;
         proc : Code.proc ;
         atom : atom option ;
         rmw : bool ;
-        cell : v ; (* value of cell at node... *)
-        bank : Code.bank ;
+        cell : v array ; (* value of cell at node exit *)
+        bank : SIMD.atom Code.bank ;
         idx : int ;
         pte : PTEVal.t ; }
 
@@ -140,9 +152,9 @@ module Make (O:Config) (E:Edge.S) :
   let evt_null =
     { loc=Code.loc_none ; ord=0; tag=0;
       ctag=0; cseal=0; dep=0;
-      vecreg= [|0;0;0;0|];
+      vecreg= [];
       v=(-1) ; dir=None; proc=(-1); atom=None; rmw=false;
-      cell=(-1); bank=Code.Ord; idx=(-1);
+      cell=[||]; bank=Code.Ord; idx=(-1);
       pte=pte_default; }
 
   let make_wsi idx loc = { evt_null with dir=Some W ; loc=loc; idx=idx; v=0;}
@@ -182,15 +194,18 @@ module Make (O:Config) (E:Edge.S) :
     else fun _ -> ""
 
   let debug_neon =
-    if do_neon then fun e ->
-      sprintf " (vecreg={%i,%i,%i,%i})" e.vecreg.(0) e.vecreg.(1) e.vecreg.(2) e.vecreg.(3)
+    if do_neon then
+      let pp_one = Code.add_vector O.hexa in
+      fun e ->
+      sprintf " (vecreg={%s})"
+        (String.concat "," (List.map pp_one e.vecreg))
     else fun _ -> ""
 
   let debug_evt e =
     let pp_v =
       match e.bank with
       | Pte -> PTEVal.pp e.pte
-      | (Ord|Tag|CapaTag|CapaSeal|VecReg) ->
+      | (Ord|Tag|CapaTag|CapaSeal|VecReg _) ->
           if O.hexa then sprintf "0x%x" e.v
           else sprintf "%i" e.v in
     sprintf "%s%s %s %s%s%s%s"
@@ -342,6 +357,44 @@ let is_real_edge e =  non_pseudo e && non_insert e
 
 let find_real_edge_prev = find_edge_prev is_real_edge
 
+(* generic scan *)
+  let fold f m k =
+    let rec fold_rec n k =
+      let k = f n k
+      and nxt = n.next in
+      if nxt == m then k
+      else fold_rec nxt k in
+    fold_rec m k
+
+(* Get size (as integers) from annotations *)
+
+  let as_integers n = match n.evt.loc with
+      | Data loc ->
+         begin
+           match E.as_integers n.edge with
+           | Some sz -> Some (loc,sz)
+           | None -> None
+         end
+      | Code _ -> None
+
+  let get_wide_list ns =
+    List.fold_left
+      (fun k n ->
+        match as_integers n with
+        | Some (_,n) -> max n k
+        | None -> k)
+    0 ns
+
+  let get_wide m =
+    fold
+      (fun n k ->
+        match as_integers n with
+        | Some (loc,sz) ->
+           let sz0 = StringMap.safe_find 0 loc k in
+           StringMap.add loc (max sz0 sz) k
+        | None-> k)
+    m StringMap.empty
+
 (* Add events in nodes *)
 
 module Env = Map.Make(String)
@@ -375,23 +428,63 @@ let diff_loc e = not (same_loc e)
 let same_proc e = E.get_ie e = Int
 let diff_proc e = E.get_ie e = Ext
 
+
 (* Coherence definition *)
-module CoSt = MyMap.Make(struct type t = Code.bank let compare = compare end)
 
-let co_st_0  = CoSt.add Ord 0 (CoSt.add Tag 0 (CoSt.add CapaTag 0 (CoSt.add CapaSeal 0 (CoSt.add VecReg 0 CoSt.empty))))
-let co_st_1  = CoSt.add Ord 1 (CoSt.add Tag 1 (CoSt.add CapaTag 1 (CoSt.add CapaSeal 1 (CoSt.add VecReg 1 CoSt.empty))))
-let start_co _ = co_st_1
+module CoSt = struct
 
-let get_co st bank =
-  try CoSt.find bank st with Not_found -> assert false
+  module M =
+    MyMap.Make
+      (struct type t = E.SIMD.atom Code.bank let compare = compare end)
 
-let set_co st bank v = match bank with
-| Pte -> st
-| _  -> CoSt.add bank v st
+  type t = { map : int M.t; co_cell : int array; }
 
-let next_co st bank =
-  let v = get_co st bank in
-  CoSt.add bank (v+1) st
+  let (<<) f g = fun x -> f (g x)
+  and (<!) f x = f x
+
+  let create sz =
+    let map  =
+      M.add Tag 0 <<  M.add CapaTag 0 <<
+      M.add CapaSeal 0 << M.add Ord 0 <! M.empty
+    and co_cell = Array.make (if sz <= 0 then 1 else sz) 0 in
+    { map; co_cell;  }
+
+  let find_no_fail key map =
+    try M.find key map with Not_found -> assert false
+
+  let get_co st bank = find_no_fail bank st.map
+
+  let set_co st bank v =
+    let b = match bank with VecReg _ -> Ord | _ -> bank in
+    { st with map=M.add b v st.map; }
+
+  let get_cell st = st.co_cell
+
+  let set_cell st e = match e.bank with
+    | Ord ->
+       let old = st.co_cell.(0) in
+       let cell = E.overwrite_value old e.atom e.v in
+       let co_cell = Array.copy st.co_cell in
+       co_cell.(0) <- cell ;
+       {e with cell=co_cell;},{ st with co_cell; }
+    | _ -> e,st
+
+  let next_co st bank =
+   match bank with
+   | VecReg n ->
+      let v = find_no_fail Ord st.map in
+      { st with map=M.add Ord (v+E.SIMD.nregs n) st.map; }
+   | _ ->
+      let v = find_no_fail bank st.map in
+      { st with map=M.add bank (v+1) st.map; }
+
+  let step_simd st n =
+    let fst = find_no_fail Ord st.map in
+    let lst = fst+E.SIMD.nregs n in
+    { co_cell=E.SIMD.step n fst st.co_cell;
+      map=M.add Ord lst st.map;}
+
+end
 
 let pte_val_init loc = match loc with
 | Code.Data loc when do_kvm -> PTEVal.default loc
@@ -603,28 +696,25 @@ let set_same_loc st n0 =
 
   let tr_value e v = E.tr_value e.atom v
 
-  let set_cell n old =
-    let e = n.evt in
-    let e = { e with cell=E.overwrite_value old e.atom e.v} in
-    n.evt <- e
-
-  let rec do_set_write_val old next pte_val = function
+  let rec do_set_write_val st pte_val = function
     | [] -> ()
     | n::ns ->
         begin if Code.is_data n.evt.loc then
           begin if do_memtag then
-            let tag = get_co old Tag in
+            let tag = CoSt.get_co st Tag in
             n.evt <- { n.evt with tag=tag; }
           else if do_morello then
-            let ord = get_co old Ord in
-            let ctag = get_co old CapaTag in
-            let cseal = get_co old CapaSeal in
+            let ord = CoSt.get_co st Ord in
+            let ctag = CoSt.get_co st CapaTag in
+            let cseal = CoSt.get_co st CapaSeal in
             n.evt <- { n.evt with ord=ord; ctag=ctag; cseal=cseal; }
-          else if do_neon then
-            let ord = get_co old Ord in
-            let v = get_co old VecReg in
+(*
+          else if do_neon then (* set both fields, it cannot harm *)
+            let ord = get_co st Ord in
+            let v = get_co st VecReg in
             let vecreg = [|v;v;v;v;|] in
             n.evt <- { n.evt with ord=ord; vecreg=vecreg; }
+*)
           end
         end ;
         begin match n.evt.dir with
@@ -634,28 +724,29 @@ let set_same_loc st n0 =
                 let bank = n.evt.bank in
                 begin match bank with
                 | Ord ->
-                    n.evt <- { n.evt with v =  tr_value n.evt (get_co next Ord); } ;
-                    (* Writing Ord resets morello tag *)
-                    let old = set_co old CapaTag evt_null.ctag in
-                    let next = next_co (set_co next CapaTag evt_null.ctag) CapaTag in
-                    set_cell n (get_co old Ord) ;
-                    do_set_write_val
-                      (set_co old bank n.evt.cell)
-                      (if E.is_node n.edge.E.edge then next
-                       else next_co next Ord)
-                      pte_val ns
+                   let st = CoSt.next_co st Ord in
+                   let v = CoSt.get_co st Ord in
+                   n.evt <- { n.evt with v = tr_value n.evt v; } ;
+                   (* Writing Ord resets morello tag *)
+                   let st = CoSt.set_co st CapaTag evt_null.ctag in
+                   let e,st = CoSt.set_cell st n.evt in
+                   n.evt <- e ;
+                   do_set_write_val st pte_val ns
                 | Tag|CapaTag|CapaSeal ->
-                    let v =  get_co next Tag in
-                    n.evt <- { n.evt with v = v; } ;
-                    do_set_write_val (set_co old bank v)
-                      (next_co next bank) pte_val ns
-                | VecReg ->
-                    let v = get_co next bank in
-                    n.evt <- { n.evt with v = v; } ;
-                    set_cell n (get_co old Ord) ;
-                    do_set_write_val
-                      (set_co old bank v)
-                      (next_co next bank) pte_val ns
+                   let st = CoSt.next_co st bank in
+                   let v = CoSt.get_co st bank in
+                   n.evt <- { n.evt with v = v; } ;
+                   do_set_write_val st pte_val ns
+                | VecReg a ->
+                   let st = CoSt.step_simd st a in
+                   let cell = CoSt.get_cell st in
+                   let vecreg  = E.SIMD.read a cell in
+                   let v =
+                     match vecreg with
+                       | (v::_)::_ -> v
+                       | _ -> assert false in
+                   n.evt <- { n.evt with vecreg; cell;v;} ;
+                   do_set_write_val st pte_val ns
                 | Pte ->
                     let pte_val =
                       if do_kvm then begin
@@ -674,12 +765,12 @@ let set_same_loc st n0 =
                         E.set_pteval n.evt.atom pte_val next_loc
                       end else pte_val in
                     n.evt <- { n.evt with pte = pte_val; } ;
-                    do_set_write_val old next pte_val ns
+                    do_set_write_val st pte_val ns
                 end
             | Code _ ->
-                do_set_write_val old next pte_val ns
+               do_set_write_val st pte_val ns
             end
-        | (Some R) | Some J |None ->  do_set_write_val old next pte_val ns
+        | Some R | Some J |None -> do_set_write_val st pte_val ns
         end
 
   let set_all_write_val nss =
@@ -687,8 +778,8 @@ let set_same_loc st n0 =
       (fun ns -> match ns with
       | [] -> ()
       | n::_ ->
-          do_set_write_val
-            co_st_0 (start_co ns) (pte_val_init n.evt.loc) ns)
+         let sz = get_wide_list ns in
+         do_set_write_val (CoSt.create sz) (pte_val_init n.evt.loc) ns)
       nss
 
   let set_write_v n =
@@ -732,37 +823,46 @@ let set_dep_v nss =
 (* TODO: this is wrong for Store CR's: consider Rfi Store PosRR *)
 let set_read_v n cell =
   let e = n.evt in
-  let v = E.extract_value cell e.atom in
+  let v = E.extract_value cell.(0) e.atom in
 (* eprintf "SET READ: cell=0x%x, v=0x%x\n" cell v ; *)
   let e = { e with v=v; } in
   n.evt <- e
 (*  eprintf "AFTER %a\n" debug_node n *)
 
 let do_set_read_v =
-
+  (* st keeps track of tags, cell and pte_cell are the current
+     state of memory *)
   let rec do_rec st cell pte_cell = function
-    | [] -> cell,pte_cell
+    | [] -> cell.(0),pte_cell
     | n::ns ->
+        let bank = n.evt.bank in
         begin match n.evt.dir with
         | Some R ->
-            begin match  n.evt.bank with
+            begin match bank with
             | Ord ->
-                set_read_v n cell
-            | Tag|CapaTag|CapaSeal|VecReg as bank ->
-                n.evt <- { n.evt with v = get_co st bank; }
+               set_read_v n cell
+            | VecReg a ->
+               let v = E.SIMD.read a cell in
+               n.evt <- { n.evt with vecreg=v; }
+            | Tag|CapaTag|CapaSeal ->
+                n.evt <- { n.evt with v = CoSt.get_co st bank; }
             | Pte ->
-                n.evt <- { n.evt with pte =  pte_cell; }
+                n.evt <- { n.evt with pte = pte_cell; }
             end ;
             do_rec st cell pte_cell ns
         | Some W ->
-            let st = set_co st n.evt.bank n.evt.v in
-            let bank = n.evt.bank in
+            let st =
+              match bank with
+              | Tag|CapaTag|CapaSeal ->
+                 CoSt.set_co st bank n.evt.v
+              | Pte|Ord|VecReg _ ->
+                 st in
             do_rec st
               (match bank with
-               | Ord -> n.evt.cell
-               | Tag|CapaTag|CapaSeal|Pte|VecReg -> cell)
+               | Ord|VecReg _ -> n.evt.cell
+               | Tag|CapaTag|CapaSeal|Pte -> cell)
               (match bank with
-               | Ord|Tag|CapaTag|CapaSeal|VecReg -> pte_cell
+               | Ord|Tag|CapaTag|CapaSeal|VecReg _ -> pte_cell
                | Pte -> n.evt.pte)
               ns
         | None | Some J ->
@@ -771,7 +871,10 @@ let do_set_read_v =
   fun ns -> match ns with
   | []   -> assert false
   | n::_ ->
-      do_rec co_st_0 0
+     let sz = get_wide_list ns in
+     let st = CoSt.create sz in
+     let cell = CoSt.get_cell st in
+      do_rec st cell
         (pte_val_init n.evt.loc)
         ns
 
@@ -1008,7 +1111,7 @@ let rec group_rec x ns = function
     do_rec n
 
 
-  let do_get_writes bank n =
+  let do_get_writes pbank n =
     let rec do_rec m =
       let k =
         if m.next == n then []
@@ -1017,15 +1120,18 @@ let rec group_rec x ns = function
       let k =  match e.dir with
       | Some W ->
           if
-            E.is_node m.edge.E.edge ||
-            m.evt.bank <> bank
+            E.is_node m.edge.E.edge || not (pbank m.evt.bank)
           then k else (e.loc,m)::k
       | None| Some R | Some J -> k in
       k in
     do_rec n
 
-  let get_ord_writes = do_get_writes Code.Ord
-  let get_pte_writes = do_get_writes Code.Pte
+  let get_ord_writes =
+    do_get_writes
+      (function Code.Ord|Code.VecReg _ -> true | _ -> false)
+
+  let get_pte_writes =
+    do_get_writes (function Code.Pte -> true | _ -> false)
 
   let get_observers n =
     let e = n.evt in
@@ -1113,13 +1219,4 @@ let rec group_rec x ns = function
       (fun loc k -> match loc with Code loc -> loc::k | Data _ -> k)
       m
 
-
-(* generic scan *)
-  let fold f m k =
-    let rec fold_rec n k =
-      let k = f n k
-      and nxt = n.next in
-      if nxt == m then k
-      else fold_rec nxt k in
-    fold_rec m k
 end

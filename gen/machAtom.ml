@@ -27,6 +27,8 @@ module Make(C:Config) = struct
 
   let bellatom = false
 
+  module SIMD = NoSIMD
+
   type hidden_atom = Atomic | Reserve | Mixed of MachMixed.t
   type atom = hidden_atom
 
@@ -93,4 +95,6 @@ module Make(C:Config) = struct
   | None| Some (Atomic|Reserve) -> v
   | Some (Mixed (sz,o)) ->
       ValsMixed.extract_value v sz o
+
+  include NoWide
 end

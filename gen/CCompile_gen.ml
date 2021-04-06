@@ -581,7 +581,21 @@ module Make(O:Config) : Builder.S
                 check_rec env (p+List.length c) xvs in
               c@cs,f@fs
 
-      let check_writes p cos = check_rec p cos
+      let check_writes env p cos =
+        let cos =
+          List.map
+            (fun (loc,vss) ->
+              let vss =
+                List.map
+                  (List.map
+                     (fun (v,obs) ->
+                       if Array.length v > 1 then
+                         Warn.fatal "No wide access in C" ;
+                       v.(0),obs))
+                  vss in
+              loc,vss)
+            cos in
+        check_rec env p cos
 
 (* Local check of coherence *)
 
@@ -648,7 +662,7 @@ module Make(O:Config) : Builder.S
                    ((Load (of_reg p just_read),Eq,Const expected_v),
                     A.seqs [obs;is],
                     None)),
-              F.add_final p o n fs,
+              F.add_final (fun _ -> []) p o n fs,
               st
 
           | _ ->
@@ -658,7 +672,7 @@ module Make(O:Config) : Builder.S
               let obs,fs,st = observe_local st p fs n in
               A.seqs [i;obs;add_fence n is],
               (if not (U.do_poll n) then
-                F.add_final p o n fs
+                F.add_final (fun _ -> []) p o n fs
               else fs),
               st
           end
@@ -718,7 +732,7 @@ module Make(O:Config) : Builder.S
           let is,fs,st = do_compile_proc_check loc_writes st p ns in
           let obs,fs,st = observe_local_check st p fs n in
           fi (obs is),
-          (if true then F.add_final p o n fs
+          (if true then F.add_final (fun _ -> []) p o n fs
           else fs),
           st
 

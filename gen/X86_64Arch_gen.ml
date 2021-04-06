@@ -40,6 +40,8 @@ module Make
 
       let bellatom = false
 
+      module SIMD = NoSIMD
+
       type atom_acc = Plain | Atomic | NonTemporal
 
       type atom = atom_acc * MachMixed.t option
@@ -134,6 +136,8 @@ module Make
       | None | Some ((Plain|Atomic|NonTemporal),None) -> v
       | Some ((Plain|Atomic|NonTemporal),Some (sz, o)) ->
           ValsMixed.extract_value v sz o
+
+      include NoWide
 
       let set_pteval _ p _ = p
 

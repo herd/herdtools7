@@ -63,6 +63,8 @@ module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
     | true,Some r -> (A.Reg (p,r),Some (A.S "-1"))::init
     | _,_ -> init
 
+  type typ = Typ of TypBase.t | IntArray of int
+
   type test =
       {
        name : string ;
@@ -73,7 +75,7 @@ module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
        prog : A.pseudo list list ;
        scopes : BellInfo.scopes option ;
        final : F.final ;
-       env : TypBase.t A.LocMap.t
+       env : typ A.LocMap.t
      }
 
   let get_nprocs t = List.length t.prog
@@ -239,7 +241,7 @@ let get_fence n =
               let call_add =
                 StringSet.mem loc loc_writes  && not (U.do_poll n) in
               if call_add then
-                F.add_final p o n finals
+                F.add_final (A.get_friends st) p o n finals
               else begin
                 finals
               end
@@ -399,18 +401,37 @@ let max_set = IntSet.max_elt
               i,c::cs,f@fs
         with NoObserver -> build_observers p i x vss
 
-  let cons_one x v fs = F.cons_int (A.Loc x) v fs
+  let check_writes env_wide atoms =
 
-  let rec check_rec ats p i =
+    let call_build_observers p i x vs =
+      if StringMap.mem x env_wide then
+        Warn.user_error "No observers on wide accesses"
+      else
+        let vs =
+          List.map
+            (List.map (fun (v,obs) -> v.(0),obs))
+            vs in
+        build_observers p i x vs in
+
+    let cons_one x v fs =
+      let loc = A.Loc x in
+      if StringMap.mem x env_wide then
+        F.cons_vec loc v fs
+      else
+        F.cons_int (A.Loc x) v.(0) fs in
+
     let add_look_loc loc v k =
-      if (not (StringSet.mem loc ats) && O.optcond) then k
+      if (not (StringSet.mem loc atoms) && O.optcond) then k
       else cons_one loc v k in
-    let open Config in
-    function
+
+    let rec check_rec p i =
+
+      let open Config in
+      function
       | [] -> i,[],[]
       | (x,vs)::xvs ->
-          let i,c,f = match O.cond with
-          | Observe ->
+         let i,c,f = match O.cond with
+           | Observe ->
               let vs = List.flatten vs in
               begin match vs with
               | [] -> i,[],[]
@@ -429,7 +450,7 @@ let max_set = IntSet.max_elt
                   | Avoid|Accept|Three|Four|Infinity
                     -> i,[],cons_one x v []
                   | Enforce ->
-                      let i,c,f = build_observers p i x vs in
+                      let i,c,f = call_build_observers p i x vs in
                       i,c,add_look_loc x v f
                   end
               | _ ->
@@ -452,15 +473,14 @@ let max_set = IntSet.max_elt
                   | Infinity ->
                       i,[],cons_one x v []
                   | _ ->
-                      let i,c,f = build_observers p i x vs in
+                      let i,c,f = call_build_observers p i x vs in
                       i,c,add_look_loc x v f
                   end
           end in
           let i,cs,fs =
-            check_rec ats (p+List.length c) i xvs in
-          i,c@cs,f@fs
-
-  let check_writes atoms p i cos = check_rec atoms p i cos
+            check_rec (p+List.length c) i xvs in
+          i,c@cs,f@fs in
+    check_rec
 
 
 (* Local check of coherence *)
@@ -476,10 +496,9 @@ let max_set = IntSet.max_elt
 
 
 
-  let do_observe_local st p i code f x prev_v v =
-    let open Config in
-    match O.obs_type with
-    | Straight ->
+  let rec do_observe_local obs_type st p i code f x prev_v v =
+    match obs_type with
+    | Config.Straight ->
         let i,c,f,st = do_add_load st p i f x v in
         i,code@c,f,st
     |  Config.Fenced ->
@@ -487,9 +506,31 @@ let max_set = IntSet.max_elt
         let i,c',st = Comp.emit_fence st p i C.nil Comp.stronger_fence in
         let c = c'@c in
         i,code@c,f,st
-    | Loop ->
-        let i,c,f,st = do_add_loop st p i f x prev_v v in
-        i,code@c,f,st
+    | Config.Loop ->
+       begin match prev_v with
+       | Some prev_v ->
+          let i,c,f,st = do_add_loop st p i f x prev_v v in
+          i,code@c,f,st
+       | None ->
+          do_observe_local Config.Fenced st p i code f x None v
+       end
+
+  let do_observe_local_simd st p i code f x bank nxt =
+    let vs = nxt.C.vecreg in
+    let r,i,c,st = Comp.emit_obs bank st p i x in
+    let i,c,st =
+      match O.obs_type with
+      | Config.Straight -> i,c,st
+      | Config.Fenced|Config.Loop -> (* No loop observed, too complex *)
+         let i,c',st =
+           Comp.emit_fence st p i C.nil Comp.stronger_fence in
+         i,c'@c,st in
+    let rs = r::A.get_friends st r in
+    let f =
+      List.fold_right2
+        (fun r v -> F.add_final_loc p r (Code.add_vector O.hexa v))
+        rs vs f in
+    i,code@c,f,st
 
   let do_add_local_check_pte avoid st p i code f n x =
     if StringSet.mem (Misc.add_pte x) avoid then i,code,f,st
@@ -515,16 +556,22 @@ let max_set = IntSet.max_elt
     if U.check_here lst then
       match lst.C.evt.C.loc,lst.C.evt.C.bank with
       | Data x,Ord ->
-          let v = lst.C.next.C.evt.C.v
-          and prev_v = lst.C.evt.C.v in
-          let all_lst =
-            try StringMap.find x lsts
-            with Not_found -> C.evt_null in
-          if C.OrderedEvent.compare all_lst lst.C.next.C.evt = 0
-          then
-            i,code,F.cons_int_set (A.Loc x,IntSet.singleton v) f,st
-          else
-            do_observe_local st p i code f x prev_v v
+         let nxt = lst.C.next.C.evt in
+         begin match nxt.C.bank with
+         | VecReg _ as bank ->
+            do_observe_local_simd st p i code f x bank nxt
+         | _ ->
+            let v = nxt.C.v
+            and prev_v = lst.C.evt.C.v in
+            let all_lst =
+              try StringMap.find x lsts
+              with Not_found -> C.evt_null in
+            if C.OrderedEvent.compare all_lst lst.C.next.C.evt = 0
+            then
+              i,code,F.cons_int_set (A.Loc x,IntSet.singleton v) f,st
+            else
+              do_observe_local O.obs_type st p i code f x (Some prev_v) v
+         end
       | Data x,Tag ->
           let v = lst.C.next.C.evt.C.v in
           let r,i,c,st = Comp.emit_obs Tag st p i x in
@@ -539,12 +586,19 @@ let max_set = IntSet.max_elt
           i,code@c,F.add_final_loc p r (Code.add_capability x v) f,st
       | Data x,Pte ->
           do_add_local_check_pte avoid_ptes st p i code f lst x
-      | Data x,VecReg ->
-          let v = lst.C.next.C.evt.C.vecreg in
-          let r,i,c,st = Comp.emit_obs VecReg st p i x in
-          i,code@c,F.add_final_loc p r (Code.add_vector v) f,st
+      | Data x,(VecReg _)->
+         let nxt = lst.C.next.C.evt in
+         let bank = nxt.C.bank in
+         begin match bank with
+         | Ord ->
+            let v = nxt.C.v in
+            do_observe_local O.obs_type st p i code f x None v
+         | VecReg _ ->
+            do_observe_local_simd st p i code f x bank nxt
+         | _ -> Warn.fatal "Mixing SIMD and other variants"
+         end
       | Code _,_ -> i,code,f,st
-    else i,code,f,st
+    else  i,code,f,st
 
 (******************************************)
 (* Compile cycle, ie generate test proper *)
@@ -559,11 +613,11 @@ let max_set = IntSet.max_elt
   let do_memtag = O.variant Variant_gen.MemTag
   let do_morello = O.variant Variant_gen.Morello
   let do_kvm = O.variant Variant_gen.KVM
-  let do_neon = O.variant Variant_gen.Neon
 
   let compile_cycle ok n =
     let open Config in
     Label.reset () ;
+    let env_wide = C.get_wide n in
     let splitted =  C.split_procs n in
     (* Split before, as  proc numbers added by side effet.. *)
     let cos0 = C.coherence n in
@@ -614,7 +668,7 @@ let max_set = IntSet.max_elt
       | Unicond -> [],[],[]
       | Cycle|Observe ->
           let atoms = U.comp_atoms n in
-          check_writes atoms 0  [] cos in
+          check_writes env_wide atoms 0  [] cos in
     match splitted,O.cond with
     | [],_ -> Warn.fatal "No proc"
 (*    | [_],Cycle -> Warn.fatal "One proc" *)
@@ -632,6 +686,14 @@ let max_set = IntSet.max_elt
               i,obsc@cs,(m,f@fs),ios,env
             else Warn.fatal "Last minute check"
           else  Warn.fatal "Too many procs" in
+        let env = A.LocMap.map (fun t -> Typ t) env in
+        let env =
+          StringMap.fold
+            (fun loc sz k ->
+              let loc = A.Loc loc in
+              assert (not (A.LocMap.mem loc k)) ;
+              A.LocMap.add loc (IntArray sz) k)
+          env_wide env in
         let env =
           let ptes = A.LocSet.of_list (F.extract_ptes f) in
           List.fold_left
@@ -642,16 +704,20 @@ let max_set = IntSet.max_elt
               with Not_found ->
                 let t =
                   if A.LocSet.mem loc ptes then TypBase.pteval_t else O.typ in
-                A.LocMap.add loc t m)
+                A.LocMap.add loc (Typ t) m)
             env f in
-        let globals = C.get_globals n in
-        let typ = if do_morello
-          then TypBase.Std (TypBase.Unsigned,MachSize.S128)
-          else if do_neon then TypBase.Std (TypBase.Unsigned,MachSize.S128)
-          else O.typ in
         let env =
+          let globals = C.get_globals n in
+          let typ =
+            if do_morello
+            then TypBase.Std (TypBase.Unsigned,MachSize.S128)
+            else O.typ in
+        let typ = Typ typ in
           List.fold_left
-            (fun m loc -> A.LocMap.add (A.Loc loc) typ m)
+            (fun m loc ->
+              let loc = A.Loc loc in
+              if A.LocMap.mem loc m then m
+              else A.LocMap.add loc typ m)
             env globals in
         let flts =
           if do_memtag then
@@ -742,11 +808,15 @@ let dump_init chan inits env =
   let pp =
     A.LocMap.fold
       (fun loc t k ->
-      let open TypBase in
-      let open MachSize in
-      match t with
-      | Int|Std (Signed,Word) -> k
-      | _ -> sprintf "%s %s;" (TypBase.pp t) (A.pp_location loc)::k)
+        match t with
+        | IntArray sz ->
+           sprintf "int %s[%d];" (A.pp_location loc) sz::k
+        | Typ t ->
+           let open TypBase in
+           let open MachSize in
+           match t with
+           | Int|Std (Signed,Word) -> k
+           | _ -> sprintf "%s %s;" (TypBase.pp t) (A.pp_location loc)::k)
       env [] in
   begin match pp with
   | [] -> ()

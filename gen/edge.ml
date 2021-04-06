@@ -25,6 +25,9 @@ module type S = sig
 
   type fence
   type dp
+
+  module SIMD : Atom.SIMD
+
   type atom
   type rmw
 
@@ -34,7 +37,7 @@ module type S = sig
   val extract_value : Code.v -> atom option -> Code.v
   val set_pteval : atom option -> PTEVal.t -> (unit -> string) -> PTEVal.t
   val merge_atoms : atom -> atom -> atom option
-  val atom_to_bank : atom option -> Code.bank
+  val atom_to_bank : atom option -> SIMD.atom Code.bank
   val strong : fence
   val pp_fence : fence -> string
 
@@ -76,6 +79,7 @@ module type S = sig
 
   val pp_tedge : tedge -> string
   val pp_atom_option : atom option -> string
+
   val debug_edge : edge -> string
   val pp_edge : edge -> string
   val compare_atomo : atom option -> atom option -> int
@@ -108,6 +112,9 @@ module type S = sig
 (* More detailed *)
   type full_ie = IE of ie | LeaveBack
   val get_full_ie : edge -> full_ie
+
+(* If source atom implies wide access, size of access as integers *)
+  val as_integers : edge -> int option
 
 (* Can e1 target event direction be the same as e2 source event? *)
   val can_precede : edge -> edge -> bool
@@ -143,6 +150,7 @@ module Make(Cfg:sig val variant : Variant_gen.t -> bool end)(F:Fence.S) : S
 with
 type fence = F.fence
 and type dp = F.dp
+and module SIMD = F.SIMD
 and type atom = F.atom
 and type rmw = F.rmw = struct
   let do_self = Cfg.variant Variant_gen.Self
@@ -151,6 +159,9 @@ and type rmw = F.rmw = struct
 
   type fence = F.fence
   type dp = F.dp
+
+  module SIMD = F.SIMD
+
   type atom = F.atom
   type rmw = F.rmw
 
@@ -643,6 +654,7 @@ and do_set_src d e = match e with
   | Leave _|Back _ -> LeaveBack
   | _ -> IE (get_ie e)
 
+  let as_integers e = F.as_integers e.a1
 
   let can_precede_dirs  x y = match x.edge,y.edge with
   | (Id,Id) -> false

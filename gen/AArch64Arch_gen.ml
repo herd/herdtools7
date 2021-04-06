@@ -55,6 +55,50 @@ module Mixed =
 
 (* AArch64 has more atoms that others *)
 let bellatom = false
+module SIMD = struct
+
+  type atom = N1|N2|N3|N4
+
+  let fold_neon f r = f N1 (f N2 (f N3 (f N4 r)))
+
+  let nregs = function
+    | N1 -> 1
+    | N2 -> 2
+    | N3 -> 3
+    | N4 -> 4
+
+  let pp n = Printf.sprintf "N%i" (nregs n)
+
+  let initial sz =
+    let sz = if sz <= 0 then 1 else sz in
+    Array.make sz 0
+
+  let step n start v =
+    let start = start+1 in
+    let sz = nregs n in
+    let v = Array.copy v in
+    for k = 0 to sz-1 do
+      for i=0 to 3 do
+       let j = k+i*sz in
+       v.(j) <- start+k
+      done
+    done ;
+    v
+
+
+  let read n v =
+    let sz = nregs n in
+    let access r k = sz*k + r in
+    let rec reg r k =
+      if k >= 4 then []
+      else v.(access r k)::reg r (k+1) in
+    let rec regs r =
+      if r >= sz then []
+      else reg r 0::regs (r+1) in
+    regs 0
+
+end
+
 type atom_rw =  PP | PL | AP | AL
 type capa = Capability
 type capa_opt = capa option
@@ -63,7 +107,7 @@ type atom_pte =
   | Read|ReadAcq|ReadAcqPc
   | Set of w_pte
   | SetRel of w_pte
-type neon_sizes = N1 | N2 | N3 | N4
+type neon_sizes = SIMD.atom
 type atom_acc =
   | Plain of capa_opt | Acq of capa_opt | AcqPc of capa_opt | Rel of capa_opt
   | Atomic of atom_rw | Tag | CapaTag | CapaSeal | Pte of atom_pte | Neon of neon_sizes
@@ -109,11 +153,6 @@ let applies_atom (a,_) d = match a,d with
      | ReadAcqPc -> "Q"
      | Set set -> pp_w_pte set
      | SetRel set -> pp_w_pte set ^"L"
-   let pp_neon_size = function
-     | N1 -> "1"
-     | N2 -> "2"
-     | N3 -> "3"
-     | N4 -> "4"
 
    let pp_atom_acc = function
      | Atomic rw -> sprintf "X%s" (pp_atom_rw rw)
@@ -125,7 +164,7 @@ let applies_atom (a,_) d = match a,d with
      | CapaTag -> "Ct"
      | CapaSeal -> "Cs"
      | Pte p -> sprintf "Pte%s" (pp_atom_pte p)
-     | Neon n -> sprintf "N%s" (pp_neon_size n)
+     | Neon n -> SIMD.pp n
 
    let pp_atom (a,m) = match a with
    | Plain o ->
@@ -170,7 +209,6 @@ let applies_atom (a,_) d = match a,d with
      if do_morello then fun f r -> f CapaSeal (f CapaTag r)
      else fun _f r -> r
 
-   let fold_neon f r = f N1 (f N2 (f N3 (f N4 r)))
 
    let fold_acc_opt o f r =
      let r = f (Acq o) r in
@@ -182,7 +220,7 @@ let applies_atom (a,_) d = match a,d with
      let r = if mixed then r else fold_pte (fun p r -> f (Pte p) r) r in
      let r = fold_morello f r in
      let r = fold_tag f r in
-     let r = fold_neon (fun n -> f (Neon n)) r in
+     let r = SIMD.fold_neon (fun n -> f (Neon n)) r in
      let r = fold_acc_opt None f r in
      let r =
        if do_morello then
@@ -260,12 +298,20 @@ let applies_atom (a,_) d = match a,d with
    | _,_ ->
        if equal_atom a1 a2 then Some a1 else None
 
+   let neon_as_integers =
+     let open SIMD in
+     function
+     | N1 -> 4
+     | N2 -> 8
+     | N3 -> 12
+     | N4 -> 16
+
    let atom_to_bank = function
    | Tag,None -> Code.Tag
    | Pte _,None -> Code.Pte
    | CapaTag,None -> Code.CapaTag
    | CapaSeal,None -> Code.CapaSeal
-   | Neon _,None -> Code.VecReg
+   | Neon n,None -> Code.VecReg n
    | (Tag|CapaTag|CapaSeal|Pte _|Neon _),Some _ -> assert false
    | (Plain _|Acq _|AcqPc _|Rel _|Atomic (PP|PL|AP|AL)),_
       -> Code.Ord
@@ -274,6 +320,7 @@ let applies_atom (a,_) d = match a,d with
 (**************)
 (* Mixed size *)
 (**************)
+
    let tr_value ao v = match ao with
    | None| Some (_,None) -> v
    | Some (_,Some (sz,_)) -> Mixed.tr_value sz v
@@ -303,6 +350,7 @@ let overwrite_value v ao w = match ao with
       ValsMixed.extract_value v sz o
   | Some (Pte _,Some _) -> assert false
 
+(* Page table entries *)
   let do_setpteval a f p =
     let open PTEVal in
     let f = match f with
@@ -321,11 +369,22 @@ let overwrite_value v ao w = match ao with
      | Pte f,None -> do_setpteval a f p
      | _ -> Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
 
+
+(* Wide accesses *)
+
+   let as_integers a =
+     Misc.seq_opt
+       (function
+        | (Neon n,_) -> Some (neon_as_integers n)
+        | _ -> None)
+       a
+
 (* End of atoms *)
 
 (**********)
 (* Fences *)
 (**********)
+
 type strength = Strong | Weak
 let fold_strength f r = f Strong (f Weak r)
 

@@ -38,6 +38,8 @@ module Make
          let fullmixed = C.moreedges
        end)
 
+   include NoWide
+
    let set_pteval _ p _ = p
 
 (*********)
@@ -45,6 +47,8 @@ module Make
 (*********)
 
    let bellatom = false
+
+   module SIMD = NoSIMD
 
    type atom = MO of mo | Atomic of mo * mo | Mixed of MachMixed.t
 
