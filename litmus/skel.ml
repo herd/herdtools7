@@ -2412,7 +2412,7 @@ module Make
         O.o "/* Context definition */" ;
         O.o "/**********************/" ;
         O.o "" ;
-        dump_vars_types test ;
+        dump_vars_types true test ;
         dump_array_typedefs test;
         O.o "typedef struct {" ;
         let cpys = dump_vars env test in

@@ -93,6 +93,8 @@ module Make
       val cast_constant : env -> A.rlocation -> A.V.v -> A.V.v
       val find_type_align : string -> env -> CType.t option
       val is_aligned : string -> env -> bool
+      (* Maximal alignment constraint in bytes, 0 if none *)
+      val max_align : T.t -> int
       val dump_mem_type : string -> CType.t -> env -> string
 
       val select_proc : int -> env -> CType.t A.RegMap.t
@@ -138,12 +140,15 @@ module Make
 (* Dump stuff *)
       module Dump : functor (O:Indent.S) -> functor(EPF:EmitPrintf.S) -> sig
         (* Some small dump functions common std/presi *)
-        val dump_vars_types : T.t -> unit
 
-            (* Same output as shell script in (normal) shell driver mode *)
+        (* Dump (typedef) array types, boolean argument commands
+           also dumping types used for alignment. *)
+        val dump_vars_types : bool -> T.t -> unit
+
+       (* Same output as shell script in (normal) shell driver mode *)
         val prelude : Name.t -> T.t -> unit
 
-            (* Dump results *)
+        (* Dump results *)
         val postlude :
             Name.t -> T.t -> Affi.t option -> bool ->
               stat list -> unit
@@ -174,34 +179,6 @@ module Make
           env
 
       let build_env test = test.T.type_env
-(*
-  let m =
-
- *)
-
-          (*
-            let e = A.LocMap.empty in
-            let e =
-            List.fold_left
-            (fun e (s,t) ->
-(*              eprintf "BUILD %s <%s>\n" s (CType.dump t) ; *)
-            A.LocMap.add (A.Location_global s) t e)
-            e test.T.globals in
-            let e =
-            List.fold_left
-            (fun e (proc,(_,(outs, _))) ->
-            List.fold_left
-            (fun e  (reg,t) ->
-            A.LocMap.add (A.Location_reg (proc,reg)) t e)
-            e outs)
-            e test.T.code in
-            let pp = A.LocMap.fold
-            (fun loc t k ->
-            sprintf "%s -> %s" (A.pp_location loc) (CType.dump t)::k)
-            e [] in
-            eprintf "Env: {%s}\n" (String.concat "; " pp) ;
-            e
-           *)
 
       let find_type loc (env,_) =
         try A.LocMap.find loc env
@@ -231,6 +208,24 @@ module Make
 
       let is_aligned loc (_,env) =
         try ignore (StringMap.find loc env) ; true with Not_found -> false
+
+      let nbytes t =
+        let sz =
+          match CType.base_size t with
+          | Some sz -> sz
+          | None -> MachSize.Quad (* Largest available *) in
+        MachSize.nbytes sz
+
+        let max_align test =
+          let _,env = build_env test in
+          StringMap.fold
+            (fun _ t k ->
+              let sz =
+                match t with
+                  | CType.Array (t,sz) -> sz*nbytes (CType.Base t)
+                  | _ -> nbytes t in
+              Misc.max_int sz k)
+            env 0
 
       let dump_mem_type loc t env =
         if is_aligned loc env then type_name loc
@@ -463,7 +458,7 @@ module Make
 
       module Dump (O:Indent.S) (EPF:EmitPrintf.S) = struct
 
-        let dump_vars_types test =
+        let dump_vars_types dump_align test =
           let _,env = build_env test in
           let globs = test.T.globals in
           List.iter
@@ -471,6 +466,7 @@ module Make
             | CType.Array (t,sz) ->
                 O.f "typedef %s %s[%d];" t (type_name s) sz
             | _ ->
+               if dump_align then
                 begin match do_find_type_align s env with
                 | None -> ()
                 | Some (CType.Array (t,sz)) ->
@@ -482,6 +478,8 @@ module Make
             globs ;
           begin match globs with _::_ -> O.o "" | [] -> () end ;
           ()
+
+
 
         open Preload
 

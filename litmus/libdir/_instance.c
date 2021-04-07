@@ -56,6 +56,7 @@ static void instance_init (ctx_t *p, int id, intmax_t *mem) {
 /******************/
 
 #define LINESZ (LINE/sizeof(intmax_t))
+#define VOFFSZ (VOFF/sizeof(intmax_t))
 #define MEMSZ ((NVARS*NEXE+1)*LINESZ)
 
 static intmax_t mem[MEMSZ] ;
