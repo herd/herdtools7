@@ -128,8 +128,11 @@ module Make
         match p with
         | None -> Warn.user_error "Init write as first argument of writable2"
         | Some p ->
-            let open DirtyBit in
-            let ha = O.dirty.ha p and hd = O.dirty.hd p in
+            let ha,hd =
+              let open DirtyBit in
+              match O.dirty with
+              | Some d -> d.ha p,d.hd p
+              | None -> false,false in
             writable ha hd e1 || writable ha hd e2
 
     end
@@ -354,10 +357,17 @@ module Make
                (fun (k,a) ->
                  k,lazy begin
                    let open DirtyBit in
-                   let tr_proc proc =
-                     let my_ha () = O.dirty.ha proc
-                     and my_hd () = O.dirty.hd proc in
-                     { my_ha; my_hd; } in
+                   let tr_proc =
+                     match O.dirty with
+                     | None ->
+                        fun _ ->
+                        let f () = false in
+                        { my_ha=f; my_hd=f; }
+                     | Some dirty ->
+                        fun proc ->
+                        let my_ha () = dirty.ha proc
+                        and my_hd () = dirty.hd proc in
+                        { my_ha; my_hd; } in
                    E.EventSet.filter
                      (fun e ->
                        begin match E.proc_of e with

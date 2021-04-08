@@ -25,4 +25,6 @@ type t =
 
 type my_t = { my_ha : unit -> bool; my_hd : unit -> bool; }
 
-val get : MiscParser.info -> t
+val soft : t
+
+val get : MiscParser.info -> t option

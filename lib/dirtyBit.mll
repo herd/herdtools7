@@ -51,9 +51,10 @@ rule all k = parse
 
 {
 
- let soft =
-   let f _ = false in
-   { tthm=f; ha=f; hd=f; some_ha=false; some_hd=false; }
+let soft =
+  let f _ = false in
+  { tthm=f; ha=f; hd=f; some_ha=false; some_hd=false; }
+
 
 let filter_opt f =
   List.fold_left
@@ -67,7 +68,7 @@ let get info =
    MiscParser.get_info_on_info
      MiscParser.tthm_key info
  with
- | None -> soft
+ | None -> None
  | Some s ->
     try
       let xs = all [] (Lexing.from_string s) in
@@ -96,8 +97,9 @@ let get info =
               (function (Some _ as p,HD) -> p | _ -> None)
               hds in
           fun proc -> List.exists (Misc.int_eq proc) xs in
-      {tthm; ha; hd;
-       some_ha=Misc.consp has; some_hd=Misc.consp hds;}
+      Some
+        {tthm; ha; hd;
+         some_ha=Misc.consp has; some_hd=Misc.consp hds;}
     with Error ->
       Warn.user_error "Incorrect dirty bit managment specification '%s'" s
 }
