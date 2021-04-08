@@ -95,7 +95,7 @@ module type Config = sig
   val optace : bool
   val libfind : string -> string
   val variant : Variant.t -> bool
-  val dirty : DirtyBit.t
+  val dirty : DirtyBit.t option
 end
 
 let get_default_model variant a =
