@@ -333,26 +333,24 @@ module Make
           end ;
           O.oi "atomic_inc_fetch(&nfaults[w->proc]);" ;
           O.o "}" ;
+          O.o "" ;
+          Insert.insert O.o "kvm_fault_handler.c" ;
+          O.o "" ;
+          O.o "static void pp_faults(void) {" ;
+          O.oi "count_t total=0;" ;
+          O.oi "for (int k=0 ; k < NTHREADS; k++) { total += nfaults[k]; }" ;
+          O.oi "if (total > 0) {" ;
+          O.fii "printf(\"Faults %s %%\"PCTR\"\",total);"  doc.Name.name ;
+          O.oii "for (int k = 0 ; k < NTHREADS ; k++) {" ;
+          O.oiii "count_t c = nfaults[k];" ;
+          let fmt = " P%d:%\"PCTR\"" in
+          O.fiii "if (c > 0) printf(\"%s\",k,c);" fmt;
+          O.oii "}" ;
+          O.oii "printf(\"\\n\");" ;
+          O.oi "}" ;
+          O.o "}" ;
           O.o ""
-          end ;
-        if Cfg.is_kvm then begin
-            Insert.insert O.o "kvm_fault_handler.c" ;
-            O.o "" ;
-            O.o "static void pp_faults(void) {" ;
-            O.oi "count_t total=0;" ;
-            O.oi "for (int k=0 ; k < NTHREADS; k++) { total += nfaults[k]; }" ;
-            O.oi "if (total > 0) {" ;
-            O.fii "printf(\"Faults %s %%\"PCTR\"\",total);"  doc.Name.name ;
-            O.oii "for (int k = 0 ; k < NTHREADS ; k++) {" ;
-            O.oiii "count_t c = nfaults[k];" ;
-            let fmt = " P%d:%\"PCTR\"" in
-            O.fiii "if (c > 0) printf(\"%s\",k,c);" fmt;
-            O.oii "}" ;
-            O.oii "printf(\"\\n\");" ;
-            O.oi "}" ;
-            O.o "}" ;
-            O.o ""
-          end
+       end
 
 (* User mode *)
       let dump_user_stacks procs_user = match procs_user with
@@ -1793,7 +1791,7 @@ module Make
         if Misc.consp procs_user then begin
             O.oi "set_user_stack(id);"
         end ;
-        if Cfg.is_kvm && have_fault_handler then begin
+        if have_fault_handler then begin
             if Misc.consp procs_user then begin
                 O.o "/* Fault handlers installation depends on user stacks */"
             end ;
