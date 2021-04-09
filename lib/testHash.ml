@@ -101,6 +101,24 @@ let digest_init debug init =
   debug "INIT" pp ;
   Digest.string pp
 
+let key_compare k1 k2 =
+  if MiscParser.key_match k1 k2 then
+    Warn.user_error "Duplicated meta-data on key %s\n" k2 ;
+  String.compare k1 k2
+
+let digest_info i =
+  let i = List.stable_sort (fun (k1,_) (k2,_) -> key_compare k1 k2) i in
+  let ds =
+    List.fold_left
+      (fun ds (k,i) ->
+        if MiscParser.digest_mem k then
+          sprintf "%s=%s" (String.lowercase k) i::ds
+        else ds)
+      [] i in
+  match ds with
+  | [] -> "" (* Backward compatibility *)
+  | _::_ -> Digest.string (String.concat "" ds)
+
 (**********)
 (* Digest *)
 (**********)
@@ -199,9 +217,10 @@ module Make(A:ArchBase.S)
         Digest.string pp
 
 
-      let digest init code observed =
+      let digest info init code observed =
         Digest.to_hex
           (Digest.string
-             (digest_init init ^ digest_code code ^
-              digest_observed observed))
+             (String.concat ""
+                [digest_info info; digest_init init;
+                 digest_code code; digest_observed observed;]))
     end

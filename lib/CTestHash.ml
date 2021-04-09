@@ -57,9 +57,11 @@ module Make(P:Input)
         Digest.string pp
 
 
-      let digest init code observed =
+      let digest info init code observed =
         Digest.to_hex
           (Digest.string
-             (TestHash.digest_init debug init ^ digest_code code ^
-              digest_observed observed))
+             (String.concat ""
+                [TestHash.digest_info info; TestHash.digest_init debug init;
+                 digest_code code; digest_observed observed;]))
+
     end

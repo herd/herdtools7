@@ -229,6 +229,10 @@ let key_match k1 k2 =
       do_rec 0
     end
 
+let digested_keys = [memory_type_key; mt_key;]
+
+let digest_mem k = List.exists (key_match k) digested_keys
+
 let get_info_on_info key =
   let rec find = function
     | [] -> None

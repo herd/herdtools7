@@ -216,7 +216,7 @@ module Do
 		(* For computing hash, we must parse as litmus does.
                 This includes stripping away toplevel '*' of types *)
 		let prog = List.map CAstUtils.strip_pointers prog_litmus in
-		D.digest init prog all_locs)::info ; }
+		D.digest info init prog all_locs)::info ; }
         | Some _ -> parsed in
     parsed
 end
