@@ -125,6 +125,8 @@ val set_hash :
       ('i, 'p, 'c, 'loc, 'v) result
 
 (* Extract meta information from key *)
+val key_match : string -> string -> bool
+
 val get_info_on_info : string -> (string * string) list -> string option
 
 val get_info :  ('i, 'p, 'c, 'loc, 'v) result -> string -> string option

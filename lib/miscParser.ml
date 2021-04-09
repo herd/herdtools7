@@ -204,6 +204,7 @@ let mach2generic parser lexer buff =
     procs,code,NoExtra
 
 (* Info keys *)
+
 let hash_key =  "Hash"
 and stable_key = "Stable"
 and align_key = "Align"
@@ -214,14 +215,25 @@ and el0_key = "el0"
 and memory_type_key = "MemoryType"
 and mt_key = "MT"
 
-let low_hash = "hash"
+let key_match k1 k2 =
+  let len1 = String.length k1 in
+  let len2 = String.length k2 in
+  Misc.int_eq len1 len2 &&
+    begin
+      let len = len1 in
+      let rec do_rec k =
+        if k >= len then true
+        else
+          Misc.char_uppercase k1.[k] = Misc.char_uppercase k2.[k]
+          && do_rec (k+1) in
+      do_rec 0
+    end
 
 let get_info_on_info key =
-  let key = Misc.lowercase key in
   let rec find = function
     | [] -> None
     | (k,v)::rem ->
-        if Misc.string_eq (Misc.lowercase k) key then Some v
+        if key_match k key then Some v
         else find rem in
   find
 
@@ -230,7 +242,7 @@ let get_hash p = get_info_on_info hash_key p.info
 
 let rec set_hash_rec h = function
   | [] -> [hash_key,h]
-  | (k,_)::rem when Misc.string_eq (Misc.lowercase k) low_hash -> (k,h)::rem
+  | (k,_)::rem when key_match hash_key k -> (k,h)::rem
   | p::rem -> p::set_hash_rec h rem
 
 let set_hash p h = { p with info = set_hash_rec  h p.info; }
