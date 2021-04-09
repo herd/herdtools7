@@ -115,6 +115,8 @@ val tthm_key : string
 val variant_key : string
 val user_key : string
 val el0_key : string
+val memory_type_key : string
+val mt_key : string
 
 (* Extract hash *)
 val get_hash : ('i, 'p, 'c, 'loc, 'v) result -> string option

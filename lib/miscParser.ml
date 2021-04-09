@@ -211,6 +211,9 @@ and tthm_key = "TTHM"
 and variant_key = "Variant"
 and user_key = "user"
 and el0_key = "el0"
+and memory_type_key = "MemoryType"
+and mt_key = "MT"
+
 let low_hash = "hash"
 
 let get_info_on_info key =
