@@ -689,6 +689,14 @@ let dump_zyva tname env test =
   let fmt =
     "Condition " ^ U.pp_cond test ^ " is %svalidated\n" in
   O.fii "seq_printf(m,%S,%s?\"\":\"NOT \");" fmt ok_expr ;
+  List.iter
+    (fun (k,i) ->
+      if
+        MiscParser.key_match MiscParser.mt_key k
+        ||         MiscParser.key_match MiscParser.memory_type_key k
+      then
+        O.fii "seq_printf(m,\"%%s=%%s\\n\",%S,%S);" k i)
+    test.T.info ;
   begin match U.get_info MiscParser.hash_key test with
   | None -> ()
   | Some h ->
