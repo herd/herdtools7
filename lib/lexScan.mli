@@ -19,4 +19,5 @@ exception Error
 
 val is_num : string -> bool
 val info : string -> (string * string) option
+val infos : string -> (string * string) list
 val procs : string -> Proc.t list

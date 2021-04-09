@@ -38,6 +38,13 @@ and info_rule = parse
   { let p = key,value in Some p }
 | "" { None }
 
+and infos_rule = parse
+| "" { [] }
+| blank+|',' { infos_rule lexbuf }
+| (name as x) blank* ':' blank* (name as info)
+   { (x,info)::infos_rule lexbuf }
+| "" { raise Error }
+
 and procs_rule = parse
 | 'P' (digit+ as p)
 { let p = try int_of_string p with _ -> assert false in
@@ -48,5 +55,6 @@ and procs_rule = parse
 {
 let is_num s = num_rule (Lexing.from_string s)
 let info s = info_rule (Lexing.from_string s)
+let infos s = infos_rule (Lexing.from_string s)
 let procs s = procs_rule (Lexing.from_string s)
 }
