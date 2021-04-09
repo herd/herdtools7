@@ -38,6 +38,7 @@ module type Config = sig
   val pad : int
   val ccopts : string list
   val sharelocks : int option
+  val sysarch : Archs.System.t
 end
 
 module Top(O:Config)(Tar:Tar.S) = struct
@@ -70,7 +71,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
       else exit_not_compiled fname
 
 
-  module Utils(A:Arch_litmus.Base)
+  module Utils(A:Arch_litmus.Base)(MemType:MemoryType.S)
       (Lang:Language.S
       with type arch_reg = A.Out.arch_reg
       and type t = A.Out.t
@@ -86,7 +87,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
             (fun chan ->
               let module Out =
                 Indent.Make(struct let hexa = O.hexa let out = chan end) in
-              let module S = KSkel.Make(O)(Pseudo)(A)(T)(Out)(Lang) in
+              let module S = KSkel.Make(O)(Pseudo)(A)(MemType)(T)(Out)(Lang) in
               S.dump doc compiled)
             outname
         with e ->
@@ -137,7 +138,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
       module LISAComp = LISACompile.Make(V)
       module Pseudo = LitmusUtils.Pseudo(A)
       module Lang = LISALang.Make(V)
-      module Utils = Utils(A)(Lang)(Pseudo)
+      module Utils = Utils(A)(MemoryType.No)(Lang)(Pseudo)
       module P = GenParser.Make(OX)(A)(LexParse)
       module T = Utils.T
 
@@ -207,7 +208,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
           let simple = true
           let out_ctx s = "_a->" ^ s
         end)
-    module Utils = Utils(A)(Lang)(Pseudo)
+    module Utils = Utils(A)(MemoryType.X86_64)(Lang)(Pseudo)
     module T = Utils.T
     module P = CGenParser_litmus.Make(OX)(Pseudo)(A)(LexParse)
     module CComp =

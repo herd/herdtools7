@@ -54,6 +54,8 @@ module KOption : sig
   val affinity : KAffinity.t ref
   val ccopts : string list ref
   val sharelocks : int option ref
+  val carch : Archs.System.t option ref
+  val set_carch : Archs.System.t -> unit
 end = struct
   include Option
   let stride = ref (KStride.St 1)
@@ -64,6 +66,7 @@ end = struct
   let affinity = ref KAffinity.No
   let ccopts = ref []
   let sharelocks = ref None
+  let carch = ref (Some `X86_64)
 end
 
 open KOption
@@ -110,6 +113,9 @@ let opts =
        let i = if i >=0 then i else 0 in
        KOption.affinity := KAffinity.Incr i),
    "<n> alias for -affinity incr<n>" ;
+   begin let module P = ParseTag.Make(Archs.System) in
+   P.parse_withfun "-carch"
+     KOption.set_carch "Target architechture (C arch only)" None end ;
 (********)
 (* Misc *)
 (********)
@@ -184,6 +190,7 @@ let () =
       let pad = !pad
       let ccopts = !ccopts
       let sharelocks = !sharelocks
+      let sysarch = Misc.as_some !carch
 (* tar stuff *)
       let tarname = KOption.get_tar ()
     end in
