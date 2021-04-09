@@ -333,26 +333,24 @@ module Make
           end ;
           O.oi "atomic_inc_fetch(&nfaults[w->proc]);" ;
           O.o "}" ;
+          O.o "" ;
+          Insert.insert O.o "kvm_fault_handler.c" ;
+          O.o "" ;
+          O.o "static void pp_faults(void) {" ;
+          O.oi "count_t total=0;" ;
+          O.oi "for (int k=0 ; k < NTHREADS; k++) { total += nfaults[k]; }" ;
+          O.oi "if (total > 0) {" ;
+          O.fii "printf(\"Faults %s %%\"PCTR\"\",total);"  doc.Name.name ;
+          O.oii "for (int k = 0 ; k < NTHREADS ; k++) {" ;
+          O.oiii "count_t c = nfaults[k];" ;
+          let fmt = " P%d:%\"PCTR\"" in
+          O.fiii "if (c > 0) printf(\"%s\",k,c);" fmt;
+          O.oii "}" ;
+          O.oii "printf(\"\\n\");" ;
+          O.oi "}" ;
+          O.o "}" ;
           O.o ""
-          end ;
-        if Cfg.is_kvm then begin
-            Insert.insert O.o "kvm_fault_handler.c" ;
-            O.o "" ;
-            O.o "static void pp_faults(void) {" ;
-            O.oi "count_t total=0;" ;
-            O.oi "for (int k=0 ; k < NTHREADS; k++) { total += nfaults[k]; }" ;
-            O.oi "if (total > 0) {" ;
-            O.fii "printf(\"Faults %s %%\"PCTR\"\",total);"  doc.Name.name ;
-            O.oii "for (int k = 0 ; k < NTHREADS ; k++) {" ;
-            O.oiii "count_t c = nfaults[k];" ;
-            let fmt = " P%d:%\"PCTR\"" in
-            O.fiii "if (c > 0) printf(\"%s\",k,c);" fmt;
-            O.oii "}" ;
-            O.oii "printf(\"\\n\");" ;
-            O.oi "}" ;
-            O.o "}" ;
-            O.o ""
-          end
+       end
 
 (* User mode *)
       let dump_user_stacks procs_user = match procs_user with
@@ -1041,27 +1039,31 @@ module Make
 
       let dump_set_feature test db =
         if Cfg.is_kvm  then begin
-          let open DirtyBit in
-          let ha_diff = Misc.is_none (forall_procs test db.ha)
-          and hd_diff = Misc.is_none (forall_procs test db.hd) in
-          if  ha_diff || hd_diff  then begin
-            O.o "static void set_feature(int role) {" ;
-            O.oi "switch (role) {" ;
-            for k=0 to T.get_nprocs test-1 do
-              O.fi "case %i:" k ;
-              let ha = if db.ha k then '1' else '0'
-              and hd = if db.hd k then '1' else '0' in
-              O.fii "set_hahd_bits(0b%c%c);" hd ha ;
-              O.fii "return;"
-            done ;
-            O.oi "}" ;
-            O.oi "return;" ;
-            O.o"}"
-          end else begin
-            O.o "static void set_feature(int _role) { }"
-          end ;
-          O.o ""
-        end
+            match db with
+            | None ->
+               O.o "static void set_feature(int _role) { }"
+            | Some db ->
+               let open DirtyBit in
+               let ha_diff = Misc.is_none (forall_procs test db.ha)
+               and hd_diff = Misc.is_none (forall_procs test db.hd) in
+               if  ha_diff || hd_diff  then begin
+                   O.o "static void set_feature(int role) {" ;
+                   O.oi "switch (role) {" ;
+                   for k=0 to T.get_nprocs test-1 do
+                     O.fi "case %i:" k ;
+                     let ha = if db.ha k then '1' else '0'
+                     and hd = if db.hd k then '1' else '0' in
+                     O.fii "set_hahd_bits(0b%c%c);" hd ha ;
+                     O.fii "return;"
+                   done ;
+                   O.oi "}" ;
+                   O.oi "return;" ;
+                   O.o"}"
+                 end else begin
+                   O.o "static void set_feature(int _role) { }"
+                 end ;
+               O.o ""
+          end
 
 (*****************)
 (* Test instance *)
@@ -1775,18 +1777,21 @@ module Make
         O.oi "int id = a->id;" ;
         O.oi "global_t *g = a->g;" ;
         if Cfg.is_kvm then begin
-          let feat_same p = match forall_procs test p with
-          | None -> None
-          | Some b -> Some (if b then '1' else '0') in
-          match feat_same db.DirtyBit.ha,feat_same db.DirtyBit.hd with
-          | Some ha,Some hd ->
-              O.fi "set_hahd_bits(0b%c%c);" hd ha
-          | _,_ -> ()
-          end ;
+          match db with
+          | None -> ()
+          | Some db ->
+             let feat_same p = match forall_procs test p with
+               | None -> None
+               | Some b -> Some (if b then '1' else '0') in
+             match feat_same db.DirtyBit.ha,feat_same db.DirtyBit.hd with
+             | Some ha,Some hd ->
+                O.fi "set_hahd_bits(0b%c%c);" hd ha
+             | _,_ -> ()
+        end ;
         if Misc.consp procs_user then begin
             O.oi "set_user_stack(id);"
         end ;
-        if Cfg.is_kvm && have_fault_handler then begin
+        if have_fault_handler then begin
             if Misc.consp procs_user then begin
                 O.o "/* Fault handlers installation depends on user stacks */"
             end ;
@@ -1877,32 +1882,36 @@ module Make
         dump_zyva_def doc.Name.name env test db stats procs_user ;
         dump_prelude_def doc test ;
         if Cfg.is_kvm then begin
-          let open DirtyBit in
-          let to_check,msg  =
-            if db.some_hd then Some "0b0010","dirty bit"
-            else if db.some_ha then  Some "0b0001","access flag"
-            else None,"" in
-          O.o "static void feature_check(void) {" ;
-(* Check if hardware features are present *)
-          List.iter
-            (fun (p,name) ->
-              if T.code_exists p test then
-                O.fi "if (!check_%s()) fatal(\"Test %s, required hardware feature '%s' not available on this system\");" name doc.Name.name name)
-            A.features ;
-(* Check ability to enable features *)
-          begin match to_check with
-          | None -> ()
-          | Some b ->
-              O.oi "uint64_t v = get_hafdbs();" ;
-              O.fi "if (v  >= %s) return;" b ;
-              O.oi "printf(\"HAFDBS is %lx\\n\",v);" ;
-              O.fi
-                "fatal(\"Test %s, hardware management of %s not available on this system\");"
-                doc.Name.name msg
+          match db with
+          | None ->
+             O.o "static void feature_check(void) { }"
+          | Some db ->
+             let open DirtyBit in
+             let to_check,msg  =
+               if db.some_hd then Some "0b0010","dirty bit"
+               else if db.some_ha then  Some "0b0001","access flag"
+               else None,"" in
+             O.o "static void feature_check(void) {" ;
+             (* Check if hardware features are present *)
+             List.iter
+               (fun (p,name) ->
+                 if T.code_exists p test then
+                   O.fi "if (!check_%s()) fatal(\"Test %s, required hardware feature '%s' not available on this system\");" name doc.Name.name name)
+               A.features ;
+             (* Check ability to enable features *)
+             begin match to_check with
+             | None -> ()
+             | Some b ->
+                O.oi "uint64_t v = get_hafdbs();" ;
+                O.fi "if (v  >= %s) return;" b ;
+                O.oi "printf(\"HAFDBS is %lx\\n\",v);" ;
+                O.fi
+                  "fatal(\"Test %s, hardware management of %s not available on this system\");"
+                  doc.Name.name msg
+             end ;
+             O.o "}" ;
+             O.o ""
           end ;
-          O.o "}" ;
-          O.o ""
-        end ;
         dump_main_def doc env test stats ;
         ()
 

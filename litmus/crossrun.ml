@@ -40,6 +40,7 @@ let parse tag = match tag with
         and p = String.sub tag (j+1) (String.length tag - (j+1)) in
         match h with
         | "qemu" -> Qemu p
+        | "kvm" -> Kvm p
         | _ ->
             let p = try int_of_string p with _ -> raise Exit in
             Host { host=h; port=Some p;}

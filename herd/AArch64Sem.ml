@@ -17,7 +17,7 @@
 module Make
     (TopConf:sig
       module C : Sem.Config
-      val dirty : DirtyBit.t
+      val dirty : DirtyBit.t option
       val procs_user : Proc.t list
     end)
     (V:Value.S)
@@ -30,6 +30,7 @@ module Make
     module Act = MachAction.Make(ConfLoc)(AArch64)
     include SemExtra.Make(C)(AArch64)(Act)
 
+    let dirty = match TopConf.dirty with | None -> DirtyBit.soft | Some d -> d
     let mixed = AArch64.is_mixed
     let memtag = C.variant Variant.MemTag
     let morello = C.variant Variant.Morello
@@ -487,9 +488,9 @@ module Make
              else m in
 
         let open DirtyBit in
-        let tthm = TopConf.dirty.tthm proc
-        and ha = TopConf.dirty.ha proc
-        and hd = TopConf.dirty.hd proc in
+        let tthm = dirty.tthm proc
+        and ha = dirty.ha proc
+        and hd = dirty.hd proc in
         let ha = ha || hd in (* As far as we know hd => ha *)
 (* Perform PTE update, when told to do so *)
         let setbits_get_oa a_pte m =
