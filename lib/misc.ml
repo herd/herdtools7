@@ -727,12 +727,14 @@ module Simple = struct
 
   type 'a bds = (string * 'a) list
 
-  let assoc (k:string) env =
+  let assoc (k:string) =
     let rec find_rec = function
       | [] -> raise Not_found
       | (k0,v)::env ->
           if k0 = k then v else find_rec env in
-    find_rec env
+    find_rec
+
+  let assoc_opt k env = try Some (assoc k env) with Not_found -> None
 
   let mem (y:string) xs = List.exists (fun x -> x=y) xs
 
@@ -740,6 +742,7 @@ module Simple = struct
     try ignore (assoc k env) ; true
     with Not_found -> false
 
+  let map f env = List.map (fun (k,v) -> k,f v) env
 end
 
 (*************)
