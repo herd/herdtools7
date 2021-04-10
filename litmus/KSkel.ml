@@ -516,6 +516,7 @@ module Make
       | TimeBase ->
           O.oi "barrier_init(_a->barrier);"
       end ;
+      if MemType.need_flush mts then O.oi "klitmus_flush_caches();" ;
       O.o "}" ;
       O.o "" ;
       ()

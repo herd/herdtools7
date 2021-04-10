@@ -62,3 +62,7 @@ static void *klitmus_alloc_pat(pat_t pat, size_t sz) {
   }
   return r;
 }
+
+inline static void klitmus_flush_caches(void) {
+  asm __volatile__ ("wbinvd" ::: "memory");
+}
