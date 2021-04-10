@@ -21,6 +21,8 @@ module type S = sig
   val emit : t -> string (* Emit in code *)
 
   val parse : MiscParser.info -> t Misc.Simple.bds
+  (* Cache flush neeed after initialisation *)
+  val need_flush : t Misc.Simple.bds -> bool
 end
 
 module X86_64 = struct
@@ -65,6 +67,9 @@ module X86_64 = struct
              i
          end in
     Misc.Simple.map parse_t ps
+
+  let need_flush =
+    List.exists (fun (_,m) -> match m with WC -> true | _ -> false)
 end
 
 module No = struct
@@ -76,5 +81,7 @@ module No = struct
   let emit = pp
 
   let parse _ = []
+
+  let need_flush _ = false
 
 end

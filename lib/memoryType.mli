@@ -21,6 +21,8 @@ module type S = sig
   val emit : t -> string (* Emit in code *)
 
   val parse : MiscParser.info -> t Misc.Simple.bds
+  (* Cache flush neeed after initialisation *)
+  val need_flush : t Misc.Simple.bds -> bool
 end
 
 module X86_64 : S
