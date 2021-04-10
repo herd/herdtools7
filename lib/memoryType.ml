@@ -35,12 +35,15 @@ module X86_64 = struct
 
   let emit m = Printf.sprintf "PAT_%s" (pp m)
 
+  let _ = WP (* Silence warning 37 *)
+
   let parse_t = function
     | "UC" -> UC
     | "WC" -> WC
     | "WT" -> WT
-    | "WP" -> WP
     | "WB" -> WB
+    | "WP" as s ->
+       Warn.fatal "%s memory type  is not implemented" s
     | s ->
        Warn.fatal "'%s' is not a X86_64 memory type" s
 
