@@ -66,7 +66,12 @@ module X86_64 = struct
              "'%s' is not a proper specificaton of X86_64 memory types"
              i
          end in
-    Misc.Simple.map parse_t ps
+    List.fold_right
+      (fun (key,tok) k ->
+        match parse_t tok with
+        | WB -> k
+        | m -> (key,m)::k)
+      ps []
 
   let need_flush =
     List.exists (fun (_,m) -> match m with WC -> true | _ -> false)
