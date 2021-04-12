@@ -1,3 +1,5 @@
+.PHONY: check-deps
+
 PREFIX=$$HOME
 D=dune
 #For building with ocamlbuild set
@@ -7,22 +9,16 @@ REGRESSION_TEST_MODE = test
 # REGRESSION_TEST_MODE = promote
 # REGRESSION_TEST_MODE = show
 
-OPAM_DEPS = menhir
-
 ifeq ($(D), dune)
 	DIYCROSS                      = _build/install/default/bin/diycross7
 	HERD                          = _build/install/default/bin/herd7
 	HERD_REGRESSION_TEST          = _build/default/internal/herd_regression_test.exe
 	HERD_DIYCROSS_REGRESSION_TEST = _build/default/internal/herd_diycross_regression_test.exe
-
-	OPAM_DEPS += dune
 else
 	DIYCROSS                      = _build/gen/diycross.native
 	HERD                          = _build/herd/herd.native
 	HERD_REGRESSION_TEST          = _build/internal/herd_regression_test.native
 	HERD_DIYCROSS_REGRESSION_TEST = _build/internal/herd_diycross_regression_test.native
-
-	OPAM_DEPS += ocamlbuild ocamlfind
 endif
 
 
@@ -51,19 +47,20 @@ versions:
 	@ dune build --workspace dune-workspace.versions @all
 
 
-check-deps::
-	@ command -v opam >/dev/null \
-		|| (echo "Opam not installed; please install it from your system's package manager" \
-			&& exit 1)
+# Dependencies.
 
-define check-opam-dep
 check-deps::
-	@ (opam list --installed --columns=name \
-		| grep -E '^$(1)$$$$' >/dev/null) \
-	|| (echo "Package $(1) not installed; please run: opam install $(1)" \
-		&& exit 1)
-endef
-$(foreach dep,$(OPAM_DEPS),$(eval $(call check-opam-dep,$(dep))))
+	$(if $(shell which ocaml),,$(error "Could not find ocaml in PATH"))
+	$(if $(shell which menhir),,$(error "Could not find menhir in PATH; it can be installed with `opam install menhir`."))
+
+ifeq ($(D), dune)
+check-deps::
+	$(if $(shell which dune),,$(error "Could not find dune in PATH; it can be installed with `opam install dune`."))
+else
+check-deps::
+	$(if $(shell which ocamlbuild),,$(error "Could not find ocamlbuild in PATH; it can be installed with `opam install ocamlbuild`."))
+	$(if $(shell which ocamlfind),,$(error "Could not find ocamlfind in PATH; it can be installed with `opam install ocamlfind`."))
+endif
 
 
 # Tests.
