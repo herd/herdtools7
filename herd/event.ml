@@ -1821,7 +1821,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
              wm.intra_causality_data)
           (EventRel.union4
              (EventRel.cartesian (get_output rn) input_rm)    (* D1 *)
-             (EventRel.cartesian output_rs input_wrs)         (* Ds1 *)
+             (EventRel.cartesian output_rm input_wrs)         (* Ds1 *)
              (EventRel.cartesian (get_output rn) input_wm)    (* Ds2 *)
              (EventRel.cartesian (maximals rt) input_wm));    (* Ds3 *)
         intra_causality_control =
