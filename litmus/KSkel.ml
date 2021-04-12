@@ -33,12 +33,14 @@ module type Config = sig
   val barrier : KBarrier.t
   val affinity : KAffinity.t
   val sharelocks : int option
+  val sysarch : Archs.System.t
 end
 
 module Make
     (Cfg:Config)
     (P:sig type code end)
     (A:Arch_litmus.Base)
+    (MemType:MemoryType.S)
     (T:Test_litmus.S with type P.code = P.code and module A = A)
     (O:Indent.S)
     (Lang:Language.S
@@ -48,6 +50,18 @@ module Make
       val dump : Name.t -> T.t -> unit
     end =
   struct
+
+(******************)
+(* Arch dependant *)
+(******************)
+
+    module Insert =
+      ObjUtil.Insert
+        (struct
+          let sysarch = Cfg.sysarch
+        end)
+
+    let memtype_possible = Insert.exists "klitmus_memory_type.c"
 
 (*************)
 (* Utilities *)
@@ -123,6 +137,7 @@ module Make
     and is_spinlock_t t = match t with
     | CType.Base "spinlock_t" -> true
     | _ -> false
+
 (***********)
 (* Headers *)
 (***********)
@@ -305,7 +320,7 @@ module Make
       | Symbolic _|Tag _| PteVal _ ->
           Warn.user_error "No tag, indexed access, nor pteval for klitmus"
 
-    let dump_ctx env test =
+    let dump_ctx mts env test =
       O.o "/****************/" ;
       O.o "/* Affinity     */" ;
       O.o "/****************/" ;
@@ -355,6 +370,11 @@ module Make
       end ;
       O.o "static ctx_t **ctx;" ;
       O.o "" ;
+      begin match mts with
+      | _::_ ->
+         Insert.insert O.o "klitmus_memory_type.c"
+      | _ -> ()
+      end ;
       if List.exists (fun (_,t) -> is_srcu_struct(t)) test.T.globals
       then begin
         O.o "static void cleanup_srcu_structs(struct srcu_struct *p,int sz) {" ;
@@ -362,9 +382,12 @@ module Make
         O.o "}" ;
         O.o ""
       end ;
-      O.o "static void free_ctx(ctx_t *p) { " ;
+      let sz = if Misc.consp mts then ",size_t sz" else "" in
+      O.f "static void free_ctx(ctx_t *p%s) { " sz ;
       O.oi "if (p == NULL) return;" ;
-      let free tag = O.fi "if (p->%s) kfree(p->%s);" tag tag in
+      let free tag = O.fi "if (p->%s) kfree(p->%s);" tag tag
+      and free_mt tag =
+        O.fi "if (p->%s) klitmus_free_pat(p->%s,sz);" tag tag in
       List.iter
         (fun (s,t) ->
           if is_srcu_struct t then begin
@@ -374,7 +397,9 @@ module Make
             O.fii "kfree(p->%s);" s ;
             O.oi "}"
           end else begin
-            free s
+            match Misc.Simple.assoc_opt s mts with
+            | None -> free s
+            | Some _ -> free_mt s
           end)
         test.T.globals ;
       iter_all_outs
@@ -395,6 +420,11 @@ module Make
       O.oi "if (!r) { return NULL; }" ;
       let alloc sz tag =
         O.fi "r->%s = kmalloc(sizeof(r->%s[0])*%s,GFP_KERNEL);" tag tag sz;
+        O.fi "if (!r->%s) { return NULL; }" tag
+      and alloc_mt mt sz tag =
+        let mt = MemType.emit mt in
+        O.fi "r->%s = klitmus_alloc_pat(%s,sizeof(r->%s[0])*%s);"
+          tag mt tag sz;
         O.fi "if (!r->%s) { return NULL; }" tag in
       List.iter
         (fun (s,t) ->
@@ -421,7 +451,9 @@ module Make
                 let sz = do_spinsize "sz" in
                 alloc sz s
               end else
-                alloc "sz" s)
+                match Misc.Simple.assoc_opt s mts with
+                | None -> alloc "sz" s
+                | Some mt -> alloc_mt mt "sz" s)
         test.T.globals ;
       iter_all_outs
         (fun proc (reg,_) ->
@@ -484,6 +516,7 @@ module Make
       | TimeBase ->
           O.oi "barrier_init(_a->barrier);"
       end ;
+      if MemType.need_flush mts then O.oi "klitmus_flush_caches();" ;
       O.o "}" ;
       O.o "" ;
       ()
@@ -657,6 +690,14 @@ let dump_zyva tname env test =
   let fmt =
     "Condition " ^ U.pp_cond test ^ " is %svalidated\n" in
   O.fii "seq_printf(m,%S,%s?\"\":\"NOT \");" fmt ok_expr ;
+  List.iter
+    (fun (k,i) ->
+      if
+        MiscParser.key_match MiscParser.mt_key k
+        ||         MiscParser.key_match MiscParser.memory_type_key k
+      then
+        O.fii "seq_printf(m,\"%%s=%%s\\n\",%S,%S);" k i)
+    test.T.info ;
   begin match U.get_info MiscParser.hash_key test with
   | None -> ()
   | Some h ->
@@ -713,7 +754,7 @@ let dump_proc tname _test =
 (* Init, Exit and friends *)
 (**************************)
 
-let dump_init_exit _test =
+let dump_init_exit has_memtype _test =
   O.o "static int __init" ;
   O.o "litmus_init(void) {" ;
   O.oi "int err=0;" ;
@@ -746,7 +787,8 @@ let dump_init_exit _test =
   O.oi "init_waitqueue_head(wq);" ;
   O.oi "return 0; " ;
   O.o "clean_ctx:" ;
-  O.oi "for (int k=0 ; k < ninst ; k++) free_ctx(ctx[k]);" ;
+  let free_ctx_sz = if has_memtype then ",size" else "" in
+  O.fi "for (int k=0 ; k < ninst ; k++) free_ctx(ctx[k]%s);" free_ctx_sz;
   O.oi "kfree(ctx);" ;
   O.o  "clean_online:" ;
   O.oi "kfree(online);" ;
@@ -758,7 +800,7 @@ let dump_init_exit _test =
 
   O.o "static void __exit" ;
   O.o "litmus_exit(void) {" ;
-  O.oi "for (int k=0 ; k < ninst ; k++) free_ctx(ctx[k]);" ;
+  O.fi "for (int k=0 ; k < ninst ; k++) free_ctx(ctx[k]%s);" free_ctx_sz;
   O.oi "kfree(ctx);" ;
   O.oi "kfree(online);" ;
   O.oi "remove_proc_entry(\"litmus\",NULL);" ;
@@ -778,17 +820,19 @@ let dump name test =
   ObjUtil.insert_lib_file O.o "header.txt" ;
   let tname = name.Name.name in
   let env = U.build_env test in
+  let mts = if memtype_possible then MemType.parse test.T.info else [] in
+  let has_memtype = Misc.consp mts in
   dump_header () ;
   dump_params tname test ;
   dump_outs env test ;
   dump_barrier_def () ;
-  dump_ctx env test ;
+  dump_ctx mts env test ;
   dump_threads tname env test ;
   dump_filter env test ;
   dump_cond_fun env test ;
   dump_zyva tname env test ;
   dump_proc tname test ;
-  dump_init_exit test ;
+  dump_init_exit has_memtype test ;
   ()
 
 

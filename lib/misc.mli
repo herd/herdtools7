@@ -251,8 +251,10 @@ module Simple : sig
   type 'a bds = (string * 'a) list
 
   val assoc : string -> 'a bds -> 'a
+  val assoc_opt : string -> 'a bds -> 'a option
   val mem : string -> string list -> bool
   val mem_assoc : string -> 'a bds -> bool
+  val map : ('a -> 'b) -> 'a bds -> 'b bds
 end
 
 (*************)

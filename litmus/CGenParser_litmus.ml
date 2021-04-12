@@ -176,7 +176,7 @@ let check_regs = GenParserUtils.check_regs
       let parsed =
         match MiscParser.get_hash parsed with
         | None ->
-            MiscParser.set_hash parsed (D.digest init prog all_locs)
+            MiscParser.set_hash parsed (D.digest info init prog all_locs)
         | Some _ ->
             parsed in
       parsed

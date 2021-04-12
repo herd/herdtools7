@@ -227,7 +227,7 @@ module Make
              let info = parsed.MiscParser.info in
              { parsed with
                MiscParser.info =
-               ("Hash",D.digest init prog all_locs)::info ; }
+               ("Hash",D.digest info init prog all_locs)::info ; }
         | Some _ -> parsed in
       parsed
            end

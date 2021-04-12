@@ -37,6 +37,9 @@ val check_env : env -> string -> string -> string -> env
 val digest_init :
   (string -> string -> unit) (* debug *) -> MiscParser.state -> string
 
+(* Digest of meta-data (shared with C digests) *)
+val digest_info : MiscParser.info -> string
+
 module Make :
   functor (A:ArchBase.S) -> sig
     type init = MiscParser.state
@@ -44,5 +47,5 @@ module Make :
     type rlocations = MiscParser.RLocSet.t
 
     val refresh_labels : string -> prog -> prog
-    val digest : init -> prog -> rlocations -> string
+    val digest : MiscParser.info -> init -> prog -> rlocations -> string
   end

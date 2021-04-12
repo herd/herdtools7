@@ -115,6 +115,13 @@ val tthm_key : string
 val variant_key : string
 val user_key : string
 val el0_key : string
+val memory_type_key : string
+val mt_key : string
+
+val key_match : string -> string -> bool
+
+(* Meta-data included in digest ? *)
+val digest_mem : string -> bool
 
 (* Extract hash *)
 val get_hash : ('i, 'p, 'c, 'loc, 'v) result -> string option
@@ -122,7 +129,9 @@ val set_hash :
     ('i, 'p, 'c, 'loc, 'v) result -> string ->
       ('i, 'p, 'c, 'loc, 'v) result
 
+
 (* Extract meta information from key *)
+
 val get_info_on_info : string -> (string * string) list -> string option
 
 val get_info :  ('i, 'p, 'c, 'loc, 'v) result -> string -> string option
