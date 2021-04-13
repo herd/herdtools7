@@ -1816,19 +1816,13 @@ module Make
               O.oi "int _stride = _a->_p->stride;"
             end ;
             let addrs = A.Out.get_addrs_only out in
-            (*
+            if not do_ascall then begin
               List.iter
-              (fun a ->
-              let t = find_global_type a env in
-              O.fi "%s *%s = _a->%s;" (dump_global_type t) a a)
-              addrs ;
-             *)
-            List.iter
-              (fun (r,t) ->
-                let name = A.Out.dump_out_reg  proc r in
-                O.fi "%s *%s = _a->%s;" (CType.dump t) name name)
-              outregs ;
-
+                (fun (r,t) ->
+                  let name = A.Out.dump_out_reg  proc r in
+                  O.fi "%s *%s = _a->%s;" (CType.dump t) name name)
+                outregs
+            end;
             let iloop =
               if Stride.some stride then begin
                 O.fi "for (int _j = _stride ; _j > 0 ; _j--) {" ;
