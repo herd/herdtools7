@@ -17,15 +17,17 @@
 
 (* Barrier option *)
 
-type t = User | TimeBase
+type t = User | TimeBase | No
 
-let tags = ["user"; "timebase";]
+let tags = ["user"; "timebase";"no"]
 
 let parse tag = match Misc.lowercase tag with
 | "user" -> Some User
 | "timebase"|"tb" -> Some TimeBase
+| "no"|"none" -> Some No
 | _ -> None
 
 let pp = function
 | User -> "user"
 | TimeBase  -> "timebase"
+| No -> "no"
