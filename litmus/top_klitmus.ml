@@ -240,6 +240,69 @@ module Top(O:Config)(Tar:Tar.S) = struct
 
   end
 
+  module MakeX86_64 = struct
+    module V = Int64Constant
+    module OC = struct
+      include OX
+      let asmcomment = None
+    end
+    module A = X86_64Arch_litmus.Make(OC)(V)
+
+    module LexParse = struct
+      type instruction = A.pseudo
+      type token = X86_64Parser.token
+      module Lexer = X86_64Lexer.Make(OX)
+      let lexer = Lexer.token
+      let parser = MiscParser.mach2generic X86_64Parser.main
+    end
+
+    module XXXComp = X86_64Compile_litmus.Make(V)(OC)
+
+    module Pseudo = LitmusUtils.Pseudo(A)
+
+    module ASMConfig = struct
+      let memory = Memory.Direct
+      let cautious = false
+      let mode = Mode.Std
+      let asmcommentaslabel = false
+      let noinline = false
+    end
+
+    module ALang = struct
+      include A.I
+      module RegSet = A.Out.RegSet
+      module RegMap = A.Out.RegMap
+    end
+
+    module Lang = ASMLang.Make(ASMConfig)(ALang)(A.Out)(A)
+
+    module Utils = Utils(A)(MemoryType.X86_64)(Lang)(Pseudo)
+
+    module P = GenParser.Make(OX)(A)(LexParse)
+
+    module Comp = Compile.Make(Compile.Default)(A)(Utils.T)(XXXComp)
+
+    module AllocArch = struct
+        include A
+        type v = A.V.v
+        let maybevToV c =
+          let open Constant in
+          let rec f c = match c with
+          | Tag _|Symbolic _|Label _|PteVal _ as sym -> sym
+          | Concrete i -> Concrete (A.V.Scalar.of_string i)
+          | ConcreteVector (sz,vs) -> ConcreteVector (sz, List.map f vs) in
+          f c
+        type global = Global_litmus.t
+        let maybevToGlobal = A.tr_global
+      end
+
+    module Alloc = SymbReg.Make(AllocArch)
+
+    let compile fname =
+      Utils.compile P.parse List.length Comp.compile Alloc.allocate_regs
+        fname
+  end
+
   module SP = Splitter.Make(OX)
 
   let from_chan hash_env fname chan =
@@ -252,7 +315,9 @@ module Top(O:Config)(Tar:Tar.S) = struct
       | `LISA ->
           MakeLISA.compile fname hash_env chan splitted
       | `C ->
-          MakeC.compile fname hash_env chan splitted
+         MakeC.compile fname hash_env chan splitted
+      | `X86_64 ->
+         MakeX86_64.compile fname hash_env chan splitted
       | _ ->
           W.warn "%s, cannot handle arch %s" (Pos.str_pos0 fname)
             (Archs.pp arch) ;
