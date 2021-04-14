@@ -19,6 +19,7 @@ module type Config = sig
   val cautious : bool
   val mode : Mode.t
   val asmcommentaslabel : bool
+  val noinline : bool
 end
 
 module type I = sig
@@ -546,7 +547,7 @@ module RegMap = A.RegMap)
               let x = Tmpl.dump_out_reg proc x in
               sprintf "%s *%s" (CType.dump ty) x) t.Tmpl.final in
         let params =  String.concat "," (params0@labels@addrs@ptes@phys@ptevals@cpys@outs) in
-        LangUtils.dump_code_def chan true proc params ;
+        LangUtils.dump_code_def chan O.noinline proc params ;
         do_dump
           args0
           (compile_init_val_fun ptevalEnv)
@@ -588,7 +589,7 @@ module RegMap = A.RegMap)
         sprintf "&_a->%s[_i]" (Tmpl.addr_cpy_name x proc)
 
       let compile_out_reg_call_std proc reg =
-        sprintf "&%s" (Tmpl.compile_out_reg proc reg)
+        sprintf "&_a->%s" (Tmpl.compile_out_reg proc reg)
 
       let compile_out_reg_call_kvm env proc reg =
         let ty =

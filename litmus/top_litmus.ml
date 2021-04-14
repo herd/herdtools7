@@ -122,6 +122,7 @@ module type Config = sig
   val limit : bool
   val sysarch : Archs.System.t
   val word : Word.t
+  val noinline : bool
 end
 
 module Top (OT:TopConfig) (Tar:Tar.S) : sig
@@ -444,6 +445,7 @@ end = struct
               | _ ->
                 Warn.fatal "no support for arch '%s'" (Archs.pp arch)
             end
+          let noinline = true
           end in
         let aux = function
           | `PPC ->
