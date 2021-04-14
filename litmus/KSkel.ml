@@ -389,7 +389,8 @@ module Make
       O.oi "if (p == NULL) return;" ;
       let free tag = O.fi "if (p->%s) kfree(p->%s);" tag tag
       and free_mt tag =
-        O.fi "if (p->%s) klitmus_free_pat(p->%s,sz);" tag tag in
+        O.fi "if (p->%s) klitmus_free_pat(p->%s,sizeof(p->%s[0])*sz);"
+          tag tag tag in
       List.iter
         (fun (s,t) ->
           if is_srcu_struct t then begin
