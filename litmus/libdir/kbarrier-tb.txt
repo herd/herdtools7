@@ -16,7 +16,7 @@ static sense_t *alloc_sense(void) {
   return r;
 }
 
-static void barrier_init (sense_t *p) {
+static void sense_init (sense_t *p) {
   atomic_set(&(p->c),nthreads) ;
   p->sense = 0;
 }
@@ -24,7 +24,7 @@ static void barrier_init (sense_t *p) {
 static const int busy_n1_0 = 64*1024;
 static const int busy_n2_0 = 1024;
 
-static void barrier_wait(sense_t *p) {
+static void sense_wait(sense_t *p) {
   int sense = READ_ONCE(p->sense) ;
   int last ;
 

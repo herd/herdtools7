@@ -17,7 +17,7 @@
 
 (* Barrier option *)
 
-type t = User | TimeBase
+type t = User | TimeBase | No
 
 val tags : string list
 val parse : string -> t option

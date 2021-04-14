@@ -347,12 +347,14 @@ module Make
             (A.Out.dump_out_reg proc reg))
         test ;
       O.o "/* For synchronisation */" ;
+      O.oi "sense_t *sync_barrier;" ;
       begin let open KBarrier in
       match Cfg.barrier with
       | User ->
-          O.oi "int *barrier;" ;
+          O.oi "int *barrier;"
       | TimeBase ->
-          O.oi "sense_t *barrier;" ;
+          O.oi "sense_t *barrier;"
+      | No -> ()
       end ;
       O.o "} ctx_t ;" ;
       O.o "" ;
@@ -407,10 +409,12 @@ module Make
           let tag = A.Out.dump_out_reg proc reg in
           free tag) test ;
       begin
+        O.oi "free_sense(p->sync_barrier);" ;
         let open KBarrier in
         match Cfg.barrier with
         | User -> free "barrier"
         | TimeBase -> O.oi "free_sense(p->barrier);"
+        | No -> ()
       end ;
       O.oi "kfree(p);" ;
       O.o "}" ;
@@ -460,11 +464,14 @@ module Make
           let tag = A.Out.dump_out_reg proc reg in
           alloc "sz" tag) test ;
       begin let open KBarrier in
+      O.oi "r->sync_barrier = alloc_sense();";
+      O.oi "if (!r->sync_barrier) { return NULL; }" ;
       match Cfg.barrier with
       | User -> alloc "sz" "barrier"
       | TimeBase ->
           O.oi "r->barrier = alloc_sense();";
           O.oi "if (!r->barrier) { return NULL; }"
+      | No -> ()
       end ;
       O.oi "return r;" ;
       O.o "}" ;
@@ -502,19 +509,20 @@ module Make
                 | true -> "NULL"))
             outs)
         test.T.code ;
+      O.oi "sense_init(_a->sync_barrier);" ;
       begin let open KBarrier in
       match Cfg.barrier with
       | User ->
           O.oii "_a->barrier[_i] = 0;"
-      | TimeBase ->
+      | No|TimeBase ->
           ()
       end ;
       O.oi "}" ;
       begin let open KBarrier in
       match Cfg.barrier with
-      | User -> ()
+      | User|No -> ()
       | TimeBase ->
-          O.oi "barrier_init(_a->barrier);"
+          O.oi "sense_init(_a->barrier);"
       end ;
       if MemType.need_flush mts then O.oi "klitmus_flush_caches();" ;
       O.o "}" ;
@@ -525,12 +533,12 @@ module Make
 (* Test proper *)
 (***************)
 let dump_barrier_def () =
+  ObjUtil.insert_lib_file O.o "kbarrier-tb.txt" ;
   begin let open KBarrier in
   match Cfg.barrier with
   | User ->
-      ObjUtil.insert_lib_file O.o "kbarrier-user.txt" ;
-  | TimeBase ->
-      ObjUtil.insert_lib_file O.o "kbarrier-tb.txt" ;
+      ObjUtil.insert_lib_file O.o "kbarrier-user.txt"
+  | TimeBase|No -> ()
   end ;
   O.o ""
 
@@ -554,6 +562,8 @@ let dump_threads _tname env test =
       O.oi "ctx_t *_a = (ctx_t *)_p;" ;
       O.o "" ;
       O.oi "smp_mb();" ;
+      O.oi "sense_wait(_a->sync_barrier);";
+      O.oi "smp_mb();" ;
       O.oi "for (int _j = 0 ; _j < stride ; _j++) {" ;
       O.oii "for (int _i = _j ; _i < size ; _i += stride) {" ;
       begin let open KBarrier in
@@ -561,7 +571,8 @@ let dump_threads _tname env test =
       | User ->
           O.fiii "barrier_wait(%i,_i,&_a->barrier[_i]);" proc
       | TimeBase ->
-          O.oiii "barrier_wait(_a->barrier);"
+          O.oiii "sense_wait(_a->barrier);"
+      | No -> ()
       end ;
       let tr_idx t idx = match Cfg.sharelocks with
       | Some _ when is_srcu_struct t || is_spinlock_t t ->
@@ -572,6 +583,7 @@ let dump_threads _tname env test =
         myenv (global_env,[]) envVolatile proc out ;
       O.oii "}" ;
       O.oi "}" ;
+      O.oi "smp_mb();" ;
       O.oi "atomic_inc(&done);" ;
       O.oi "smp_mb();" ;
       O.oi "wake_up(wq);" ;
