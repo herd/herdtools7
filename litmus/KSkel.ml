@@ -374,7 +374,8 @@ module Make
       O.o "" ;
       begin match mts with
       | _::_ ->
-         Insert.insert O.o "klitmus_memory_type.c"
+        Insert.insert O.o "klitmus_memory_type.c" ;
+        O.o ""
       | _ -> ()
       end ;
       if List.exists (fun (_,t) -> is_srcu_struct(t)) test.T.globals
@@ -385,7 +386,7 @@ module Make
         O.o ""
       end ;
       let sz = if Misc.consp mts then ",size_t sz" else "" in
-      O.f "static void free_ctx(ctx_t *p%s) { " sz ;
+      O.f "static void free_ctx(ctx_t *p%s) {" sz ;
       O.oi "if (p == NULL) return;" ;
       let free tag = O.fi "if (p->%s) kfree(p->%s);" tag tag
       and free_mt tag =
@@ -420,7 +421,7 @@ module Make
       O.oi "kfree(p);" ;
       O.o "}" ;
       O.o "" ;
-      O.o "static ctx_t *alloc_ctx(size_t sz) { " ;
+      O.o "static ctx_t *alloc_ctx(size_t sz) {" ;
       O.oi "ctx_t *r = kzalloc(sizeof(*r),GFP_KERNEL);" ;
       O.oi "if (!r) { return NULL; }" ;
       let alloc sz tag =
@@ -535,13 +536,14 @@ module Make
 (***************)
 let dump_barrier_def () =
   ObjUtil.insert_lib_file O.o "kbarrier-tb.txt" ;
+  O.o "" ;
   begin let open KBarrier in
   match Cfg.barrier with
   | User ->
-      ObjUtil.insert_lib_file O.o "kbarrier-user.txt"
+      ObjUtil.insert_lib_file O.o "kbarrier-user.txt" ;
+      O.o ""
   | TimeBase|No -> ()
-  end ;
-  O.o ""
+  end
 
 
 let dump_threads _tname env test =
@@ -628,7 +630,7 @@ let dump_zyva tname env test =
   O.oiii "if (affincr < 0) shuffle_array(online,nonline);" ;
   O.oiii "for (int _t = 0 ; _t < nth ; _t++) {" ;
   O.oiv "kthread_bind(th[_t],online[_idx]);" ;
-  O.oiv "_idx += _incr; ";
+  O.oiv "_idx += _incr;";
   O.oiv "if (_idx >= nonline) _idx = ++_idx0;" ;
   O.oiv "if (_idx >= nonline) _idx = _idx0 = 0;" ;
   O.oiii "}" ;
@@ -798,7 +800,7 @@ let dump_init_exit has_memtype _test =
   O.oi "wq =  kzalloc(sizeof(*wq), GFP_KERNEL);" ;
   O.oi "if (wq == NULL) { err = -ENOMEM; goto clean_ctx; }" ;
   O.oi "init_waitqueue_head(wq);" ;
-  O.oi "return 0; " ;
+  O.oi "return 0;" ;
   O.o "clean_ctx:" ;
   let free_ctx_sz = if has_memtype then ",size" else "" in
   O.fi "for (int k=0 ; k < ninst ; k++) free_ctx(ctx[k]%s);" free_ctx_sz;
