@@ -739,13 +739,24 @@ let dump_zyva tname env test =
 
 let dump_proc tname _test =
   let tname = String.escaped tname in
-  O.o "static int\nlitmus_proc_show(struct seq_file *m,void *v) {" ;
+  O.o "static atomic_t running=ATOMIC_INIT(0);" ;
+  O.o "" ;
+  O.o "static int litmus_proc_show(struct seq_file *m,void *v) {" ;
+  O.oi "if (atomic_add_return(1,&running) != 1) {";
+  let fmt = "%s: already running, good bye!\\n" in
+  O.fii "seq_printf(m,\"%s\",\"%s\");" fmt tname ;
+  O.oii "atomic_dec(&running);" ;
+  O.oii "return 0;" ;
+  O.oi "}" ;
   O.oi "if (ninst == 0 || ninst * nthreads > nonline) {" ;
   let fmt = "%s: skipped\\n" in
   O.fii "seq_printf(m,\"%s\",\"%s\");" fmt tname ;
+  O.oii "atomic_dec(&running);" ;
   O.oii "return 0;" ;
   O.oi "} else {" ;
-  O.oi "return do_it(m);" ;
+  O.oii "int ret = do_it(m);" ;
+  O.oii "atomic_dec(&running);" ;
+  O.oii "return ret;" ;
   O.oi "}" ;
   O.o "}" ;
   O.o "" ;

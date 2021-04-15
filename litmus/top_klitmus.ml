@@ -365,6 +365,12 @@ module Top(O:Config)(Tar:Tar.S) = struct
       (fun chan ->
         let module Out =
           Indent.Make(struct let hexa = O.hexa let out = chan end) in
+        Out.o "LOCKDIR=/tmp/klitmus-locked" ;
+        Out.o "trap \"rmdir $LOCKDIR 2>/dev/null; exit\" INT TERM" ;
+        Out.o "if ! mkdir $LOCKDIR 2>/dev/null; then" ;
+        Out.o "  echo \"Already running, locked by $LOCKDIR\"" ;
+        Out.o "  exit 1" ;
+        Out.o "fi" ;
         Out.o "OPT=\"$*\"" ;
         Out.o "date" ;
         Out.f "echo Compilation command: \"%s\""
@@ -384,11 +390,11 @@ module Top(O:Config)(Tar:Tar.S) = struct
         Out.oi "fi" ;
         Out.o "}" ;
         Out.o "" ;
-
         List.iter
           (fun (src,name) ->
             Out.f "zyva %S %s.ko" name src)
           srcs ;
+        Out.o "rmdir $LOCKDIR 2>/dev/null" ;
         Out.o "date" ;
         ())
       fname
