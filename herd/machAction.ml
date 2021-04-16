@@ -28,6 +28,15 @@ module type A = sig
   val is_atomic : lannot -> bool
   val is_isync : barrier -> bool
   val pp_isync : string
+
+  module ArchAction :
+  ArchAction.S
+    with type v = V.v
+    and type loc = location
+    and type value_set = V.ValueSet.t
+    and type solution = V.solution
+    and type arch_lannot = lannot
+    and type arch_explicit = explicit
 end
 
 module type Config = sig
@@ -59,6 +68,8 @@ module Make (C:Config) (A : A) : sig
     | Inv of A.TLBI.op * A.location option
 (* Data cache operation event *)
     | DC of AArch64Base.DC.op * A.location option
+(* Arch specific actions *)
+    | Arch of A.ArchAction.t
 
   val tag_access :
     MachSize.sz -> Dir.dirn -> A.location -> A.V.v -> action
@@ -131,6 +142,7 @@ end = struct
     | TooFar
     | Inv of A.TLBI.op * A.location option
     | DC of AArch64Base.DC.op * A.location option
+    | Arch of A.ArchAction.t
 
   let tag_access sz d l v =
     Access (d,l,v,A.empty_annot,A.exp_annot,sz,A_TAG)
@@ -177,6 +189,7 @@ end = struct
       Printf.sprintf "DC(%s)" (AArch64Base.DC.pp_op op)
   | DC(op,Some loc) ->
       Printf.sprintf "DC(%s,%s)" (AArch64Base.DC.pp_op op) (A.pp_location loc)
+  | Arch a -> A.ArchAction.pp a
 
 (* Utility functions to pick out components *)
   let value_of a = match a with
@@ -184,11 +197,13 @@ end = struct
     -> Some v
   | Barrier _|Commit _|Amo _|Fault _|TooFar|Inv _|DC _
     -> None
+  | Arch a -> A.ArchAction.value_of a
 
   let read_of a = match a with
   | Access (R,_,v,_,_,_,_)
   | Amo (_,v,_,_,_,_,_)
     -> Some v
+  | Arch a -> A.ArchAction.read_of a
   | Access (W, _, _, _,_,_,_)|Barrier _|Commit _|Fault _
   | TooFar|Inv _|DC _
     -> None
@@ -197,6 +212,7 @@ end = struct
   | Access (W,_,v,_,_,_,_)
   | Amo (_,_,v,_,_,_,_)
     -> Some v
+  | Arch a -> A.ArchAction.written_of a
   | Access (R, _, _, _,_,_,_)|Barrier _|Commit _|Fault _
   | TooFar|Inv _|DC _
     -> None
@@ -208,19 +224,29 @@ end = struct
   | Inv (_,Some l)
   | DC(_,Some l)
     -> Some l
+  | Arch a -> A.ArchAction.location_of a
   | Barrier _|Commit _ | TooFar| Inv (_,None) | DC (_,None) -> None
 
 (* relative to memory *)
+  let is_mem_arch_action a =
+    match A.ArchAction.location_of a with
+    | Some a -> A.is_global a
+    | None -> false
+
   let is_mem_store a = match a with
   | Access (W,A.Location_global _,_,_,_,_,_)
   | Amo (A.Location_global _,_,_,_,_,_,_)
     -> true
+  | Arch a ->
+     is_mem_arch_action a && A.ArchAction.is_store a
   | _ -> false
 
   let is_mem_load a = match a with
   | Access (R,A.Location_global _,_,_,_,_,_)
   | Amo (A.Location_global _,_,_,_,_,_,_)
     -> true
+  | Arch a ->
+     is_mem_arch_action a && A.ArchAction.is_load a
   | _ -> false
 
   let is_additional_mem_load _ = false
@@ -229,12 +255,19 @@ end = struct
   | Access (_,A.Location_global _,_,_,_,_,_)
   | Amo (A.Location_global _,_,_,_,_,_,_)
     -> true
+  | Arch a -> is_mem_arch_action a
   | _ -> false
 
   let is_pt a = match a with
   | Access (_,A.Location_global (A.V.Val c),_,_,_,_,_)
   | Amo (A.Location_global (A.V.Val c),_,_,_,_,_,_)
     -> Constant.is_pt c
+  | Arch a ->
+     begin
+       match A.ArchAction.location_of a with
+       | Some (A.Location_global (A.V.Val c)) -> Constant.is_pt c
+       | _ -> false
+     end
   | _ -> false
 
   let is_additional_mem _ = false
@@ -242,19 +275,22 @@ end = struct
   let is_atomic a = match a with
   | Access (_,_,_,an,_,_,_) ->
       is_mem a && A.is_atomic an
+  | Arch a ->
+     is_mem_arch_action a && A.ArchAction.is_atomic a
   | _ -> false
 
   let is_tag = function
     | Access (_,_,_,_,_,_,A_TAG) -> true
-    | Access _ | Barrier _ | Commit _ | Amo _ | Fault _ | TooFar | Inv _ | DC _ -> false
+    | Access _|Barrier _|Commit _
+    | Amo _|Fault _|TooFar|Inv _|DC _|Arch _ -> false
 
   let is_inv = function
     | Inv _ -> true
-    | Access _|Amo _|Commit _|Barrier _ | Fault _ | TooFar | DC _ -> false
+    | Access _|Amo _|Commit _|Barrier _|Fault _|TooFar|DC _|Arch _ -> false
 
   let is_dc = function
     | DC _ -> true
-    | Access _|Amo _|Commit _|Barrier _ | Fault _ | TooFar | Inv _ -> false
+    | Access _|Amo _|Commit _|Barrier _ |Fault _|TooFar|Inv _|Arch _ -> false
 
   let is_ci = function
     | DC(op,_) as a -> is_dc a && AArch64Base.DC.ci op
@@ -274,11 +310,12 @@ end = struct
 
   let is_fault = function
     | Fault _ -> true
-    | Access _|Amo _|Commit _|Barrier _ | TooFar | Inv _ | DC _ -> false
+    | Access _|Amo _|Commit _|Barrier _ | TooFar | Inv _ | DC _|Arch _ -> false
 
   let to_fault = function
     | Fault (i,A.Location_global x,msg) -> Some ((i.A.proc,i.A.labels),x,msg)
-    | Fault _|Access _|Amo _|Commit _|Barrier _ | TooFar | Inv _ | DC _ -> None
+    | Fault _|Access _|Amo _|Commit _|Barrier _ |TooFar|Inv _|DC _|Arch _
+      -> None
 
   let get_mem_dir a = match a with
   | Access (d,A.Location_global _,_,_,_,_,_) -> d
@@ -286,6 +323,7 @@ end = struct
 
   let get_mem_size a = match a with
   | Access (_,A.Location_global _,_,_,_,sz,_) -> sz
+  | Arch a -> A.ArchAction.get_size a
   | _ -> assert false
 
   let is_PA_access = function
@@ -323,14 +361,13 @@ end = struct
   let get_pteval act = match written_of act,read_of act with
   | None,None -> None
   | (Some v,None)
-  | (None,Some v)
+  | (_,Some v) (* written value has priority... *)
       ->
         let open Constant in
         begin match v with
         |  A.V.Val (PteVal v) -> Some v
         | _ -> None
         end
-  | Some _,Some _ -> Warn.fatal "No Amo action on pteval"
 
   let is_implicit_pte_read = function
   | Access (R,_,_,_,_,_,A_PTE) -> true
@@ -352,10 +389,12 @@ end = struct
 (* Store/Load anywhere *)
   let is_store a = match a with
   | Access (W,_,_,_,_,_,_)|Amo _ -> true
+  | Arch a -> A.ArchAction.is_load a
   | Access (R,_,_,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar| Inv _ | DC _ -> false
 
   let is_load a = match a with
   | Access (R,_,_,_,_,_,_)|Amo _ -> true
+  | Arch a -> A.ArchAction.is_store a
   | Access (W,_,_,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar|Inv _ | DC _ -> false
 
   let compatible_kinds k1 k2 = match k1,k2 with
@@ -436,6 +475,7 @@ end = struct
         (fun (tag,p) ->
           let p act = match act with
           | Access(_,_,_,annot,_,_,_)|Amo (_,_,_,annot,_,_,_) -> p annot
+          | Arch a -> p (A.ArchAction.get_lannot a)
           | _ -> false
           in tag,p) A.annot_sets
     and esets =
@@ -443,6 +483,7 @@ end = struct
         (fun (tag,p) ->
           let p act = match act with
           | Access(_,_,_,_,e,_,_)|Amo (_,_,_,_,e,_,_) -> p e
+          | Arch a -> p (A.ArchAction.get_explicit a)
           | _ -> false
           in tag,p) A.explicit_sets
 
@@ -583,6 +624,7 @@ end = struct
         | None -> V.ValueSet.empty
         | Some v -> V.ValueSet.singleton v in
         add_v_undet v1 (add_v_undet v2 undet)
+    | Arch a -> A.ArchAction.undetermined_vars a
     | Barrier _|Commit _|Fault _|TooFar|Inv _ | DC _ -> V.ValueSet.empty
 
   let simplify_vars_in_action soln a =
@@ -605,6 +647,7 @@ end = struct
     | DC (op,oloc) ->
         let oloc = Misc.app_opt (A.simplify_vars_in_loc soln) oloc in
         DC (op,oloc)
+    | Arch a -> Arch (A.ArchAction.simplify_vars soln a)
     | Barrier _ | Commit _|TooFar -> a
 
   let annot_in_list _str _ac = false

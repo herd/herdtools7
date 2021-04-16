@@ -112,6 +112,15 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
 
     module MemType=MemoryType.X86_64
 
-    module ArchAction = ArchAction.No
+    module NoConf = struct
+      type v = V.v
+      type loc = location
+      type value_set = V.ValueSet.t
+      type solution = V.solution
+      type arch_lannot = lannot
+      type arch_explicit = explicit
+    end
+
+    module ArchAction = ArchAction.No(NoConf)
 
   end

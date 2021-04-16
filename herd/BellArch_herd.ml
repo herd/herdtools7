@@ -51,6 +51,4 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
 
     module MemType=MemoryType.No
 
-    module ArchAction = ArchAction.No
-
   end

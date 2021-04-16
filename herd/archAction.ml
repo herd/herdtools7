@@ -18,11 +18,59 @@
 
 module type S = sig
   type t
+  type v
+  type loc
+  type value_set
+  type solution
+  type arch_lannot
+  type arch_explicit
 
   val pp : t -> string
+
+  val get_lannot : t -> arch_lannot
+  val get_explicit : t ->  arch_explicit
+  val value_of : t -> v option
+  val read_of : t -> v option
+  val written_of : t -> v option
+  val location_of : t -> loc option
+  val is_store : t -> bool
+  val is_load : t -> bool
+  val is_atomic : t -> bool
+  val get_size: t -> MachSize.sz
+  val undetermined_vars : t -> value_set
+  val simplify_vars : solution -> t -> t
 end
 
-module No = struct
+module type NoConf = sig
+  type v
+  type loc
+  type value_set
+  type solution
+  type arch_lannot
+  type arch_explicit
+end
+
+module No(C:NoConf) = struct
   type t
+  type v = C.v
+  type loc = C.loc
+  type value_set = C.value_set
+  type solution = C.solution
+  type arch_lannot = C.arch_lannot
+  type arch_explicit = C.arch_explicit
+
   let pp _ = assert false
+
+  let get_lannot _ = assert false
+  let get_explicit _ = assert false
+  let value_of _ = assert false
+  let read_of _ = assert false
+  let written_of _ = assert false
+  let location_of _ = assert false
+  let is_store _ = assert false
+  let is_load _ = assert false
+  let is_atomic _ = assert false
+  let get_size _ = assert false
+  let undetermined_vars _ = assert false
+  let simplify_vars _ = assert false
 end
