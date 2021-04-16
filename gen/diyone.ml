@@ -110,7 +110,9 @@ module Make(O:Config) (M:Builder.S) =
           let scope =  get_scope nprocs in
           match name with
           | None -> dump_stdout ?scope (M.E.resolve_edges es)
-          | Some name -> let name = add_suffix name in  dump_file name ?scope (M.E.resolve_edges es)
+          | Some name ->
+              let name = add_suffix name in
+              dump_file name ?scope (M.E.resolve_edges es)
 
     module P = LineUtils.Make(M.E)
 
@@ -152,7 +154,12 @@ module Make(O:Config) (M:Builder.S) =
                       let name,es,st = parse_line line in
                       let mk_name =
                         if dump_names then D.no_name
-                        else (fun _ -> Some name) in
+                        else
+                          let name =
+                            match O.sufname with
+                            | None -> name
+                            | Some suf -> name ^ suf in
+                          fun _ -> Some name in
                       let mk_scope _ = st in
                       Some (kont es D.no_info mk_name mk_scope k0)
                     with
