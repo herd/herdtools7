@@ -127,4 +127,6 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     module MemType=MemoryType.No
 
+    module ArchAction = ArchAction.No
+
   end

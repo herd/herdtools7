@@ -14,40 +14,15 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Basic arch, ie with no definition of what a global location is *)
+(** Action that are arch specific *)
 
-module type Config = ArchExtra_herd.Config
+module type S = sig
+  type t
 
+  val pp : t -> string
+end
 
-module type S =
-  sig
-
-    include ArchBase.S
-    val is_amo : instruction -> bool
-    val pp_barrier_short : barrier -> string
-    val reject_mixed : bool (* perform a check that rejects mixed-size tests *)
-    val mem_access_size : instruction -> MachSize.sz option
-
-    module V : Value.S
-    include ArchExtra_herd.S with module I.V = V
-    and type I.arch_reg = reg
-    and type I.arch_instruction = instruction
-
-(* Levels are abstract, for AArch64, they are E0 to E3 *)
-    type level
-    val levels : level list
-    val pp_level : level -> string
-
-    module TLBI :
-    sig
-      type op
-      val pp_op : op -> string
-      val is_at_level : level -> op -> bool
-      val inv_all : op -> bool
-    end
-
-    module MemType:MemoryType.S
-
-    module ArchAction : ArchAction.S
-
-  end
+module No = struct
+  type t
+  let pp _ = assert false
+end
