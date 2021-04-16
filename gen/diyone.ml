@@ -44,7 +44,7 @@ module Make(O:Config) (M:Builder.S) =
   struct
 
     let dump_stdout ?scope es =
-      let t = M.make_test "A" ?scope es in
+      let t = M.make_test "A" ~info:O.info ?scope es in
       M.dump_test_channel stdout t ;
       None
 
@@ -54,7 +54,7 @@ module Make(O:Config) (M:Builder.S) =
 
     let dump_file name ?scope es =
       if O.verbose > 0 then eprintf "Test name: %s\n" name ;
-      let t = M.make_test name ?scope es in
+      let t = M.make_test name ~info:O.info ?scope es in
       let fname = litmus name in
       Misc.output_protect
         (fun chan -> M.dump_test_channel chan t; Some fname)
