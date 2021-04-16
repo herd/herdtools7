@@ -14,7 +14,12 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make(V:Constant.S)(O:Arch_litmus.Config) =
+module type Config = sig
+  val sse: bool
+  val reason : string
+end
+
+module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
   struct
     module A = X86_64Arch_litmus.Make(O)(V)
     open A
@@ -278,7 +283,9 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
     | I_CMPXCHG (_, ea, r) as i-> cmpxchg (inst_string i) ea r
     | I_MOVNTI (sz,ea,r) -> movnti sz ea r
     | I_MOVD (sz,r,xmm) -> movd sz r xmm
-    | I_MOVNTDQA (xmm,ea) -> movntdqa xmm ea
+    | I_MOVNTDQA (xmm,ea) ->
+        if Cfg.sse then movntdqa xmm ea
+        else Warn.user_error "SSE not enabled for %s" Cfg.reason
 (* here I fail to know *)
     | I_CMOVC _ -> Warn.user_error "CMOVC ??"
 
