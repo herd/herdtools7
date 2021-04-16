@@ -502,7 +502,15 @@ end = struct
                  let lexer = Lexer.token
                  let parser = MiscParser.mach2generic X86_64Parser.main
                end in
-             let module Compile = X86_64Compile_litmus.Make(V)(OC) in
+             let module X86_64Config = struct
+                 let sse =
+                   match OT.mode with
+                   | Mode.Kvm -> false
+                   | Mode.PreSi|Mode.Std -> true
+                 let reason = "-mode kvm"
+               end in
+             let module Compile =
+               X86_64Compile_litmus.Make(X86_64Config)(V)(OC) in
              let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
              X.compile
           | `ARM ->

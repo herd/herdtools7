@@ -83,6 +83,16 @@ module Make
     end
 
     module U = SkelUtil.Make(UCfg)(P)(A)(T)
+    module EPF =
+      DoEmitPrintf.Make
+        (struct
+          let emitprintf = true
+          let ctr = Fmt.I64
+          let no_file = false
+        end)(O)
+    module UD = U.Dump(O)(EPF)
+
+    let tag_malloc s = sprintf "malloc_%s" s
 
     let iter_outs f proc = List.iter (f proc)
 
@@ -90,8 +100,6 @@ module Make
       List.iter
         (fun (proc,(_,(outs,_))) -> iter_outs f proc outs)
         test.T.code
-
-    let dump_rloc_name = A.dump_rloc_tag
 
     module DC =
       CompCond.Make(O)
@@ -103,7 +111,7 @@ module Make
             type location = A.location
             type t = A.rlocation
             let compare = A.rlocation_compare
-            let dump loc = "_" ^ dump_rloc_name loc
+            let dump loc = "_" ^ A.dump_rloc_tag loc
             let dump_fatom d a = "_" ^ SkelUtil.dump_fatom_tag d a
           end
         end)
@@ -150,7 +158,7 @@ module Make
 (* Outs *)
 (********)
 
-    let dump_rloc_idx loc = sprintf "%s_f" (dump_rloc_name loc)
+    let dump_rloc_idx loc = sprintf "%s_f" (A.dump_rloc_tag loc)
 
     let fmt_outcome test locs env =
       U.fmt_outcome test
@@ -224,7 +232,7 @@ module Make
             tst ^ " ? '*' : ':'")::
            (List.map
               (fun loc ->
-                let sloc = dump_rloc_name loc in
+                let sloc = A.dump_rloc_tag loc in
                 match U.find_rloc_type loc env with
                 | CType.Pointer _ ->
                     sprintf "pretty_addr[(int)o[%s_f]]" sloc
@@ -320,7 +328,17 @@ module Make
       | Symbolic _|Tag _| PteVal _ ->
           Warn.user_error "No tag, indexed access, nor pteval for klitmus"
 
-    let dump_ctx mts env test =
+    let is_align_effective mts env s =
+      U.is_aligned s env && Misc.is_none (Misc.Simple.assoc_opt s mts)
+
+    let is_rloc_align env rloc =
+      let open ConstrGen in
+      match rloc with
+      | Loc (A.Location_global s) ->
+          U.is_aligned (Global_litmus.as_addr s) env
+      | Loc (A.Location_reg _)|Deref _ -> false
+
+let dump_ctx mts env test =
       O.o "/****************/" ;
       O.o "/* Affinity     */" ;
       O.o "/****************/" ;
@@ -332,12 +350,37 @@ module Make
       O.o "/* Test Context */" ;
       O.o "/****************/" ;
       O.o "" ;
+      let need_align =
+        List.exists
+          (fun (s,_) -> is_align_effective mts env s)
+          test.T.globals in
+      if need_align then
+        begin
+          O.o "static void *do_align(void *p,size_t sz) {" ;
+          O.oi "uintptr_t x = (uintptr_t)p;" ;
+          O.oi "x += sz-1;" ;
+          O.oi  "x /= sz;" ;
+          O.oi  "x *= sz;" ;
+          O.oi "return (void *)x;" ;
+          O.o "}" ;
+          O.o ""
+        end ;
+      UD.dump_vars_types true test ;
       O.o "typedef struct {" ;
       O.o "/* Shared locations */" ;
       List.iter
         (fun (s,t) ->
-          let pp_t = SkelUtil.dump_global_type s (CType.strip_volatile t) in
-          O.fi "%s *%s;" pp_t s)
+          let t = CType.strip_volatile t in
+          if U.is_aligned s env then
+            let pp_t = SkelUtil.type_name s in
+            match Misc.Simple.assoc_opt s mts with
+            | None ->
+                O.fi "%s *%s,*%s;" pp_t (tag_malloc s) s
+            | Some _ ->
+                O.fi "%s *%s;" pp_t s
+          else
+            let pp_t = SkelUtil.dump_global_type s t in
+            O.fi "%s *%s;" pp_t s)
         test.T.globals ;
       O.o "/* Final contents of observed registers */" ;
       iter_all_outs
@@ -402,7 +445,8 @@ module Make
             O.oi "}"
           end else begin
             match Misc.Simple.assoc_opt s mts with
-            | None -> free s
+            | None ->
+                free (if U.is_aligned s env then tag_malloc s else s)
             | Some _ -> free_mt s
           end)
         test.T.globals ;
@@ -424,9 +468,19 @@ module Make
       O.o "static ctx_t *alloc_ctx(size_t sz) {" ;
       O.oi "ctx_t *r = kzalloc(sizeof(*r),GFP_KERNEL);" ;
       O.oi "if (!r) { return NULL; }" ;
-      let alloc sz tag =
+      let do_alloc sz tag =
         O.fi "r->%s = kmalloc(sizeof(r->%s[0])*%s,GFP_KERNEL);" tag tag sz;
-        O.fi "if (!r->%s) { return NULL; }" tag
+        O.fi "if (!r->%s) { return NULL; }" tag in
+      let alloc sz s =
+        if U.is_aligned s env then
+          begin
+            do_alloc (sprintf "(%s+1)" sz) (tag_malloc s) ;
+            O.fi
+              "r->%s = do_align(r->%s,sizeof(r->%s[0]));"
+              s (tag_malloc s) s
+          end
+        else
+          do_alloc sz s
       and alloc_mt mt sz tag =
         let mt = MemType.emit mt in
         O.fi "r->%s = klitmus_alloc_pat(%s,sizeof(r->%s[0])*%s);"
@@ -494,7 +548,14 @@ module Make
                 (dump_a_leftval s)
                 (dump_a_v v)
           | _ ->
-              if not (is_srcu_struct ty) then
+              if U.is_aligned s env then
+                begin
+                  let pp_t = CType.dump ty in
+                  O.fii "%s *_%s_ptr = (%s *)&(%s);"
+                    pp_t s pp_t  (dump_a_leftval s) ;
+                  O.fii "*_%s_ptr = (%s)%s;" s pp_t (dump_a_v v)
+                end
+              else if not (is_srcu_struct ty) then
                 O.fii "%s = (%s)%s;"
                   (dump_a_leftval s)
                   (CType.dump ty)
@@ -511,7 +572,7 @@ module Make
                 | true -> "NULL"))
             outs)
         test.T.code ;
-      O.oi "sense_init(_a->sync_barrier);" ;
+      O.oii "sense_init(_a->sync_barrier);" ;
       begin let open KBarrier in
       match Cfg.barrier with
       | User ->
@@ -556,6 +617,10 @@ let dump_threads _tname env test =
     List.map
       (fun (x,ty) -> x,CType.strip_volatile ty)
       global_env in
+  let aligned_env =
+    List.filter
+      (fun (a,_) -> U.is_aligned a env)
+      test.T.globals in
   List.iter
     (fun (proc,(out,(_outregs,envVolatile))) ->
       let myenv = U.select_proc proc env in
@@ -583,7 +648,7 @@ let dump_threads _tname env test =
       | Some _|None -> idx in
       Lang.dump_call (LangUtils.code_fun proc)
         [] tr_idx O.out (Indent.as_string indent3)
-        myenv (global_env,[]) envVolatile proc out ;
+        myenv (global_env,aligned_env) envVolatile proc out ;
       O.oii "}" ;
       O.oi "}" ;
       O.oi "smp_mb();" ;
@@ -641,14 +706,31 @@ let dump_zyva tname env test =
   O.oii "for (int _ni = 0 ; _ni < ninst ; _ni++) {" ;
   O.oiii "ctx_t *_a = c[_ni];" ;
   O.oiii "for (int _i = 0 ; _i < size ; _i++) {" ;
+  let tag_copy s = sprintf "_%s_i" s in
   let dump_a_rloc loc =
     match U.find_rloc_type loc env with
     | CType.Base "atomic_t" ->
-        sprintf "atomic_read(&_a->%s[_i])"  (dump_rloc_name loc)
+        sprintf "atomic_read(&_a->%s[_i])"  (A.dump_rloc_tag loc)
     | _ ->
-        sprintf "_a->%s[_i]" (dump_rloc_name loc) in
+        if is_rloc_align env loc then
+          tag_copy (A.dump_rloc_tag loc)
+        else
+          sprintf "_a->%s[_i]" (A.dump_rloc_tag loc) in
   O.oiv "outcome_t _o;" ;
   O.oiv "int _cond;" ;
+  A.RLocSet.iter
+    (fun rloc ->
+      if is_rloc_align env rloc then
+        let t = U.find_rloc_type rloc env in
+        let pp_t = CType.dump t in
+        let tag = A.dump_rloc_tag rloc in
+        let ptr = sprintf "_ptr_%s_i" tag in
+        begin
+          O.fiv "%s *%s = (%s *)&(%s);"
+            pp_t ptr pp_t (sprintf "_a->%s[_i]" tag) ;
+          O.fiv "%s %s = *%s;" pp_t (tag_copy tag) ptr
+        end)
+    (U.get_observed_locs test) ;
   begin match test.T.filter with
   | None -> ()
   | Some f ->
@@ -657,7 +739,6 @@ let dump_zyva tname env test =
   end ;
   O.fiv "_cond = %s;"
     (dump_cond_fun_call test dump_a_rloc dump_a_addr)  ;
-  let locs = U.get_displayed_locs test in
   A.RLocSet.iter
     (fun loc ->
       O.fiv "_o[%s] = %s;"
@@ -665,7 +746,7 @@ let dump_zyva tname env test =
         (let sloc = dump_a_rloc loc in
         if U.is_rloc_ptr loc env then sprintf "idx_addr(_a,_i,%s)" sloc
         else sloc))
-    locs ;
+    (U.get_displayed_locs test) ;
   O.oiv "outs = add_outcome_outs(outs,_o,_cond);" ;
   O.oiii "}" ;
   O.oii "}" ;

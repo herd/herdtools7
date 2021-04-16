@@ -256,7 +256,10 @@ module Top(O:Config)(Tar:Tar.S) = struct
       let parser = MiscParser.mach2generic X86_64Parser.main
     end
 
-    module XXXComp = X86_64Compile_litmus.Make(V)(OC)
+    module XXXComp =
+      X86_64Compile_litmus.Make
+        (struct let sse = false let reason = "klitmus" end)
+        (V)(OC)
 
     module Pseudo = LitmusUtils.Pseudo(A)
 
