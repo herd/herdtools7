@@ -44,7 +44,7 @@ module Make(O:Config) (M:Builder.S) =
   struct
 
     let dump_stdout ?scope es =
-      let t = M.make_test "A" ?scope es in
+      let t = M.make_test "A" ~info:O.info ?scope es in
       M.dump_test_channel stdout t ;
       None
 
@@ -54,7 +54,7 @@ module Make(O:Config) (M:Builder.S) =
 
     let dump_file name ?scope es =
       if O.verbose > 0 then eprintf "Test name: %s\n" name ;
-      let t = M.make_test name ?scope es in
+      let t = M.make_test name ~info:O.info ?scope es in
       let fname = litmus name in
       Misc.output_protect
         (fun chan -> M.dump_test_channel chan t; Some fname)
@@ -110,7 +110,9 @@ module Make(O:Config) (M:Builder.S) =
           let scope =  get_scope nprocs in
           match name with
           | None -> dump_stdout ?scope (M.E.resolve_edges es)
-          | Some name -> let name = add_suffix name in  dump_file name ?scope (M.E.resolve_edges es)
+          | Some name ->
+              let name = add_suffix name in
+              dump_file name ?scope (M.E.resolve_edges es)
 
     module P = LineUtils.Make(M.E)
 
@@ -152,7 +154,12 @@ module Make(O:Config) (M:Builder.S) =
                       let name,es,st = parse_line line in
                       let mk_name =
                         if dump_names then D.no_name
-                        else (fun _ -> Some name) in
+                        else
+                          let name =
+                            match O.sufname with
+                            | None -> name
+                            | Some suf -> name ^ suf in
+                          fun _ -> Some name in
                       let mk_scope _ = st in
                       Some (kont es D.no_info mk_name mk_scope k0)
                     with
