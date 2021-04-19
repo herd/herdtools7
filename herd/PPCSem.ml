@@ -76,16 +76,16 @@ module Make (C:Sem.Config)(V:Value.S)
 
       let write_reg r v ii =
         M.mk_singleton_es
-          (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, (), nat_sz,Act.A_REG)) ii
+          (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, (), nat_sz,Access.REG)) ii
 
       let do_write_mem sz ato a v ii =
         if mixed then
           Mixed.write_mixed sz
-            (fun sz loc v -> Act.Access (Dir.W, loc , v, ato, (), sz, Act.A_VIR))
+            (fun sz loc v -> Act.Access (Dir.W, loc , v, ato, (), sz, Access.VIR))
             a v ii
         else
           M.mk_singleton_es
-            (Act.Access (Dir.W, A.Location_global a, v, ato, (), sz, Act.A_VIR)) ii
+            (Act.Access (Dir.W, A.Location_global a, v, ato, (), sz, Access.VIR)) ii
 
       let write_mem sz a v ii = do_write_mem sz false a v ii
       let write_mem_atomic sz a v ii = do_write_mem sz true a v ii
@@ -109,7 +109,7 @@ module Make (C:Sem.Config)(V:Value.S)
           [M.VC.Assign (a, M.VC.Atom ar);
            M.VC.Assign (rr,M.VC.Atom V.one)] in
         M.mk_singleton_es_eq
-          (Act.Access (Dir.W, A.Location_global a, v, true, (), sz, Act.A_VIR)) (* a rr ar *) eq ii
+          (Act.Access (Dir.W, A.Location_global a, v, true, (), sz, Access.VIR)) (* a rr ar *) eq ii
 
       let read_addr a ii = read_mem a ii
       let read_addr_res a ii = read_mem_atomic a ii

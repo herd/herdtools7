@@ -45,20 +45,12 @@ module type Config = sig
 end
 
 module Make (C:Config) (A : A) : sig
-
-  (* All sorts of accesses, redundunt with symbol hidden in location,
-     when symbol is known, which may not be the case *)
-
-  type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_TLB | A_TAG | A_PHY_PTE
-
-  val is_physical : access_t -> bool
-
   type action =
-    | Access of Dir.dirn * A.location * A.V.v * A.lannot * A.explicit * MachSize.sz * access_t
+    | Access of Dir.dirn * A.location * A.V.v * A.lannot * A.explicit * MachSize.sz * Access.t
     | Barrier of A.barrier
     | Commit of bool (* true = bcc / false = pred *)
 (* Atomic modify, (location,value read, value written, annotation *)
-    | Amo of A.location * A.V.v * A.V.v * A.lannot * A.explicit * MachSize.sz * access_t
+    | Amo of A.location * A.V.v * A.V.v * A.lannot * A.explicit * MachSize.sz * Access.t
 (* NB: Amo used in some arch only (e.g., Arm, RISCV) *)
     | Fault of A.inst_instance_id * A.location * string option
 (* Unrolling control *)
@@ -76,30 +68,25 @@ module Make (C:Config) (A : A) : sig
 
   include Action.S with type action := action and module A = A
 
-  val access_of_location_std : A.location -> access_t
+  val access_of_location_std : A.location -> Access.t
 
 end = struct
 
   module A = A
   module V = A.V
   open Dir
+  open Access
 
   let kvm = C.variant Variant.Kvm
-
-  type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_TLB | A_TAG | A_PHY_PTE
-
-  let is_physical = function
-    | A_PHY|A_PHY_PTE -> true
-    | A_REG|A_VIR|A_PTE|A_TLB|A_TAG -> false
 
   let access_of_constant cst =
     let open Constant in
     match cst with
-    | Symbolic (Virtual _) -> A_VIR
-    | Symbolic (Physical _) -> A_PHY
-    | Symbolic (System ((PTE|PTE2),_)) -> A_PTE
-    | Symbolic (System (TLB,_)) -> A_TLB
-    | Symbolic (System (TAG,_)) -> A_TAG
+    | Symbolic (Virtual _) -> VIR
+    | Symbolic (Physical _) -> PHY
+    | Symbolic (System ((PTE|PTE2),_)) -> Access.PTE
+    | Symbolic (System (TLB,_)) -> Access.TLB
+    | Symbolic (System (TAG,_)) -> Access.TAG
     | Label _|Tag _
     | ConcreteVector _|Concrete _|PteVal _ as v ->
         Warn.fatal "access_of_constant %s as an address"
@@ -112,19 +99,19 @@ end = struct
   | V.Val cst -> access_of_constant cst
 
   let access_of_location_init = function
-    | A.Location_reg _ -> A_REG
+    | A.Location_reg _ -> REG
     | A.Location_global v
       -> access_of_value v
 
   let access_of_location_std =
     let open Constant in
     function
-    | A.Location_reg _ -> A_REG
+    | A.Location_reg _ -> REG
     | A.Location_global (V.Val (Symbolic (Virtual _))|V.Var _)
-      -> A_VIR
+      -> VIR
     | A.Location_global (V.Val (Symbolic ((System (PTE,_))))) as loc
         ->
-          if kvm then A_PTE
+          if kvm then Access.PTE
           else Warn.fatal "PTE %s while -variant kvm is not active"
                  (A.pp_location loc)
     | A.Location_global v ->
@@ -134,10 +121,10 @@ end = struct
 
 
   type action =
-    | Access of Dir.dirn * A.location * A.V.v * A.lannot * A.explicit * MachSize.sz * access_t
+    | Access of Dir.dirn * A.location * A.V.v * A.lannot * A.explicit * MachSize.sz * Access.t
     | Barrier of A.barrier
     | Commit of bool
-    | Amo of A.location * A.V.v * A.V.v * A.lannot * A.explicit * MachSize.sz * access_t
+    | Amo of A.location * A.V.v * A.V.v * A.lannot * A.explicit * MachSize.sz * Access.t
     | Fault of A.inst_instance_id * A.location * string option
     | TooFar
     | Inv of A.TLBI.op * A.location option
@@ -145,7 +132,7 @@ end = struct
     | Arch of A.ArchAction.t
 
   let tag_access sz d l v =
-    Access (d,l,v,A.empty_annot,A.exp_annot,sz,A_TAG)
+    Access (d,l,v,A.empty_annot,A.exp_annot,sz,Access.TAG)
 
   let mk_init_write l sz v =
     match l,v with
@@ -280,7 +267,7 @@ end = struct
   | _ -> false
 
   let is_tag = function
-    | Access (_,_,_,_,_,_,A_TAG) -> true
+    | Access (_,_,_,_,_,_,Access.TAG) -> true
     | Access _|Barrier _|Commit _
     | Amo _|Fault _|TooFar|Inv _|DC _|Arch _ -> false
 
@@ -327,8 +314,8 @@ end = struct
   | _ -> assert false
 
   let is_PA_access = function
-    | Access (_,_,_,_,_,_,(A_PHY|A_PHY_PTE))
-    | Amo  (_,_,_,_,_,_,(A_PHY|A_PHY_PTE))
+    | Access (_,_,_,_,_,_,(Access.PHY|Access.PHY_PTE))
+    | Amo  (_,_,_,_,_,_,(Access.PHY|Access.PHY_PTE))
         -> true
     | _ -> false
 
@@ -370,7 +357,7 @@ end = struct
         end
 
   let is_implicit_pte_read = function
-  | Access (R,_,_,_,_,_,A_PTE) -> true
+  | Access (R,_,_,_,_,_,Access.PTE) -> true
   | _ -> false
 
 (* relative to the registers of the given proc *)
@@ -397,24 +384,14 @@ end = struct
   | Arch a -> A.ArchAction.is_store a
   | Access (W,_,_,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar|Inv _ | DC _ -> false
 
-  let compatible_kinds k1 k2 = match k1,k2 with
-  | (A_PTE|A_PHY_PTE),(A_PTE|A_PHY_PTE) -> true
-  | _,_ -> k1 = k2
+  let get_kind = function
+    | (Access (_,_,_,_,_,_,k)|Amo (_,_,_,_,_,_,k)) ->k
+    | Arch a -> A.ArchAction.get_kind a
+    | _ -> assert false
 
-  let compatible_categories loc1 loc2 = match loc1,loc2 with
-  | (A.Location_global _,A.Location_global _)
-  | (A.Location_reg _,A.Location_reg _)
-    -> true
-  | (A.Location_global _,A.Location_reg _)
-  | (A.Location_reg _,A.Location_global _)
-    -> false
-
-  let compatible_accesses a1 a2 = match a1,a2 with
-  | (Access (_,loc1,_,_,_,_,k1)|Amo (loc1,_,_,_,_,_,k1)),
-    (Access (_,loc2,_,_,_,_,k2)|Amo (loc2,_,_,_,_,_,k2))
-    ->
-      compatible_kinds k1 k2 &&  compatible_categories loc1 loc2
-  | _,_ -> assert false
+  let compatible_accesses a1 a2 =
+    let k1 = get_kind a1 and k2 = get_kind a2 in
+    Access.compatible k1 k2
 
   let is_reg_any a = match a with
   | Access (_,A.Location_reg _,_,_,_,_,_) -> true

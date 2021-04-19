@@ -36,6 +36,7 @@ module type S = sig
   val is_store : t -> bool
   val is_load : t -> bool
   val get_size: t -> MachSize.sz
+  val get_kind : t -> Access.t
   val undetermined_vars : t -> value_set
   val simplify_vars : solution -> t -> t
 end
@@ -69,6 +70,7 @@ module No(C:NoConf) = struct
   let is_store _ = assert false
   let is_load _ = assert false
   let get_size _ = assert false
+  let get_kind _ = assert false
   let undetermined_vars _ = assert false
   let simplify_vars _ = assert false
 end

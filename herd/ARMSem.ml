@@ -82,18 +82,18 @@ module Make (C:Sem.Config)(V:Value.S)
 
       let write_reg r v ii =
         M.mk_singleton_es
-          (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, ARM.exp_annot, reg_sz, Act.A_REG))
+          (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, ARM.exp_annot, reg_sz, Access.REG))
           ii
 
       let write_mem sz a v ii  =
         M.mk_singleton_es
-          (Act.Access (Dir.W, A.Location_global a, v, false, (), sz, Act.A_VIR))
+          (Act.Access (Dir.W, A.Location_global a, v, false, (), sz, Access.VIR))
           ii
 
       let write_mem_atomic sz a v resa ii =
         let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
         M.mk_singleton_es_eq
-          (Act.Access (Dir.W, A.Location_global a, v, true, (), sz, Act.A_VIR))
+          (Act.Access (Dir.W, A.Location_global a, v, true, (), sz, Access.VIR))
           eq ii
 
       let write_flag r o v1 v2 ii =
