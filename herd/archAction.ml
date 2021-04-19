@@ -35,7 +35,6 @@ module type S = sig
   val location_of : t -> loc option
   val is_store : t -> bool
   val is_load : t -> bool
-  val is_atomic : t -> bool
   val get_size: t -> MachSize.sz
   val undetermined_vars : t -> value_set
   val simplify_vars : solution -> t -> t
@@ -63,13 +62,12 @@ module No(C:NoConf) = struct
 
   let get_lannot _ = assert false
   let get_explicit _ = assert false
-  let value_of _ = assert false
   let read_of _ = assert false
   let written_of _ = assert false
+  let value_of _ = assert false
   let location_of _ = assert false
   let is_store _ = assert false
   let is_load _ = assert false
-  let is_atomic _ = assert false
   let get_size _ = assert false
   let undetermined_vars _ = assert false
   let simplify_vars _ = assert false

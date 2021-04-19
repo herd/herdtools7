@@ -351,30 +351,20 @@ end = struct
     match a with
     | Access (_,l,v,_,_,_)
     | SRCU (l,_,Some v) ->
-        let undet_loc = match A.undetermined_vars_in_loc l with
-        | None -> V.ValueSet.empty
-        | Some v -> V.ValueSet.singleton v in
-        if V.is_var_determined v then undet_loc
-        else V.ValueSet.add v undet_loc
+        V.ValueSet.union
+          (A.undetermined_vars_in_loc l)
+          (V.undetermined_vars v)
     | RMW(l,v1,v2,_,_) ->
-        let undet_loc = match A.undetermined_vars_in_loc l with
-        | None -> V.ValueSet.empty
-        | Some v -> V.ValueSet.singleton v in
-        let undet_loc =
-          (if V.is_var_determined v1 then undet_loc
-          else V.ValueSet.add v1 undet_loc) in
-        let undet_loc =
-          (if V.is_var_determined v2 then undet_loc
-          else V.ValueSet.add v2 undet_loc) in
-        undet_loc
+        V.ValueSet.union3
+          (A.undetermined_vars_in_loc l)
+          (V.undetermined_vars v1)
+          (V.undetermined_vars v2)
     | TryLock (l)
     | Lock(l,_)
     | Unlock (l,_)
     | ReadLock (l,_)
     | SRCU(l,_,None) ->
-        (match A.undetermined_vars_in_loc l with
-        | None -> V.ValueSet.empty
-        | Some v -> V.ValueSet.singleton v)
+        A.undetermined_vars_in_loc l
     | Fence _|TooFar -> V.ValueSet.empty
 
   let simplify_vars_in_action soln a =

@@ -276,7 +276,7 @@ end = struct
   | Access (_,_,_,an,_,_,_) ->
       is_mem a && A.is_atomic an
   | Arch a ->
-     is_mem_arch_action a && A.ArchAction.is_atomic a
+     is_mem_arch_action a && A.is_atomic (A.ArchAction.get_lannot a)
   | _ -> false
 
   let is_tag = function
@@ -608,22 +608,17 @@ end = struct
   let pp_isync = A.pp_isync
 
 (* Equations *)
-  let add_v_undet v vs =
-    if V.is_var_determined v then vs
-    else  V.ValueSet.add v vs
-
   let undetermined_vars_in_action a =
     match a with
     | Access (_,l,v,_,_,_,_) ->
-        let undet_loc = match A.undetermined_vars_in_loc l with
-        | None -> V.ValueSet.empty
-        | Some v -> V.ValueSet.singleton v in
-        add_v_undet v undet_loc
+        V.ValueSet.union
+          (A.undetermined_vars_in_loc l)
+          (V.undetermined_vars v)
     | Amo (loc,v1,v2,_,_,_,_) ->
-        let undet = match A.undetermined_vars_in_loc loc with
-        | None -> V.ValueSet.empty
-        | Some v -> V.ValueSet.singleton v in
-        add_v_undet v1 (add_v_undet v2 undet)
+        V.ValueSet.union3
+          (A.undetermined_vars_in_loc loc)
+          (V.undetermined_vars v1)
+          (V.undetermined_vars v2)
     | Arch a -> A.ArchAction.undetermined_vars a
     | Barrier _|Commit _|Fault _|TooFar|Inv _ | DC _ -> V.ValueSet.empty
 

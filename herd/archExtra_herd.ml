@@ -41,9 +41,6 @@ module type S = sig
   type global_loc = I.V.v
   type v = I.V.v
 
-  module VSet : MySet.S with type elt = v
-  module VMap : MyMap.S with type key = v
-
   type proc = Proc.t
   val pp_proc : proc -> string
 
@@ -81,7 +78,8 @@ module type S = sig
   val do_dump_location : (string -> string) -> location -> string
   val dump_location : location -> string
 
-  val undetermined_vars_in_loc : location -> v option
+  val undetermined_vars_in_loc_opt : location -> I.V.v option
+  val undetermined_vars_in_loc : location -> I.V.ValueSet.t
   val simplify_vars_in_loc : I.V.solution ->  location -> location
   val map_loc : (v -> v) -> location -> location
 
@@ -327,12 +325,20 @@ module Make(C:Config) (I:I) : S with module I = I
           then "\\asm{Proc " ^ bodytext ^ "}" else bodytext
       | Location_global a -> do_brackets (pp_global a)
 
-      let undetermined_vars_in_loc l =  match l with
-      | Location_reg _ -> None
-      | Location_global a ->
-          if I.V.is_var_determined a then None
-          else Some a
+      let some_undetermined_vars_in_loc l =  match l with
+      | Location_reg _ ->  false
+      | Location_global a -> not (I.V.is_var_determined a)
 
+      let undetermined_vars_in_loc_opt l =  match l with
+      | Location_reg _
+      | Location_global (I.V.Val _) ->
+          None
+      | Location_global (I.V.Var _ as v) ->
+          Some v
+
+      let undetermined_vars_in_loc l =  match l with
+      | Location_reg _ -> I.V.ValueSet.empty
+      | Location_global a -> I.V.undetermined_vars a
 
       let simplify_vars_in_loc soln l = match l with
       | Location_reg _ -> l
@@ -564,12 +570,11 @@ module Make(C:Config) (I:I) : S with module I = I
       let get_of_val st a = State.safe_find I.V.zero (Location_global a) st
 
       let look_address_in_state st loc =
-        match undetermined_vars_in_loc loc with
-        | Some _ ->
+        if some_undetermined_vars_in_loc loc then
             (* if loc is not determined, then we cannot get its
                content yet *)
             raise LocUndetermined
-        | None -> get_in_state loc st
+        else get_in_state loc st
 
       (* Sizes *)
 
@@ -813,12 +818,11 @@ module Make(C:Config) (I:I) : S with module I = I
             I.V.op Op.Or (I.V.op1 (Op.LeftShift nshift) w) d
 
         let look_in_state_mixed senv st loc =
-          match undetermined_vars_in_loc loc with
-          | Some _ ->
-              (* if loc is not determined, then we cannot get its
+          if some_undetermined_vars_in_loc loc then
+            (* if loc is not determined, then we cannot get its
                  content yet *)
               raise LocUndetermined
-          | None ->
+          else
               let open Constant in
               match loc with
               | Location_global

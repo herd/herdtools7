@@ -205,11 +205,9 @@ end = struct
   let undetermined_vars_in_action a =
     match a with
     | Access (_,l,v,_,_,_) ->
-        let undet_loc = match A.undetermined_vars_in_loc l with
-        | None -> V.ValueSet.empty
-        | Some v -> V.ValueSet.singleton v in
-        if V.is_var_determined v then undet_loc
-        else V.ValueSet.add v undet_loc
+        V.ValueSet.union
+          (A.undetermined_vars_in_loc l)
+          (V.undetermined_vars v)
     | Barrier _|Commit|TooFar -> V.ValueSet.empty
 
   let simplify_vars_in_action soln a =

@@ -860,8 +860,8 @@ module Make(Cst:Constant.S) = struct
     let compare = compare
   end
 
-
   module ValueSet = MySet.Make(OrderedValue)
+  module ValueMap = MyMap.Make(OrderedValue)
 
   module OrderedVar = struct
     type t = csym
@@ -875,6 +875,10 @@ module Make(Cst:Constant.S) = struct
   let is_var_determined v = match v with
   | Var _ -> false
   | Val _ -> true
+
+  let undetermined_vars v = match v with
+  | Var _ -> ValueSet.singleton v
+  | Val _ -> ValueSet.empty
 
   let determined_val v = match v with
   | Var _ -> None
