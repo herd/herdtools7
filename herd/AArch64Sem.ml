@@ -716,6 +716,11 @@ module Make
       let append_commit ma ii =
         if is_branching then do_append_commit ma ii else ma
 
+      let append_commit_ac ac ma ii =
+        if Act.is_physical ac && is_branching then
+          do_append_commit ma ii
+        else ma
+
       let do_insert_commit m1 m2 ii =
         m1 >>= fun a -> commit_pred ii >>*== fun _ -> m2 a
 
@@ -791,8 +796,8 @@ module Make
               else
                 fun ma _a -> mop Act.A_PHY ma >>! B.Next in
             lift_kvm dir mop ma an ii mphy
-        else
-          mop Act.A_VIR ma >>! B.Next
+          else
+            mop Act.A_VIR ma >>! B.Next
 
 (* Generic load *)
       let do_ldr sz an mop ma ii =
@@ -926,7 +931,7 @@ module Make
             M.riscv_store_conditional
               (read_reg_ord ResAddr ii)
               mv
-              (append_commit ma ii)
+              (append_commit_ac ac ma ii)
               (write_reg ResAddr V.zero ii)
               (fun v -> write_reg rr v ii)
               (fun ea resa v ->
@@ -961,7 +966,10 @@ module Make
             and w2 v = write_reg_sz_non_mixed sz r2 v ii
             and r1 a = rmw_amo_read sz rmw ac a ii
             and w1 a v = rmw_amo_write sz rmw ac a v ii in
-            M.swp (Act.is_physical ac) (append_commit ma ii) r1 r2 w1 w2)
+            M.swp
+              (Act.is_physical ac)
+              (append_commit_ac ac ma ii)
+              r1 r2 w1 w2)
           (to_perms "rw" sz)
           (read_reg_ord r3 ii)
           (read_reg_data sz r1 ii)
@@ -976,8 +984,8 @@ module Make
            (* mv is read new value from reg, not important
               as this code is not executed in morello mode *)
           (fun ac ma mv ->
-            let is_phy = Act.is_physical ac in
-            let ma = if is_phy then append_commit ma ii else ma in
+            let is_phy = Act.is_physical ac
+            and ma = append_commit_ac ac ma ii in
              M.altT
               (let read_mem a = do_read_mem_ret sz an aexp ac a ii in
                M.aarch64_cas_no is_phy ma read_rs write_rs read_mem M.neqT)
@@ -1039,7 +1047,7 @@ module Make
               else fun sz -> rmw_amo_read sz rmw ac
             and write_mem = fun sz -> rmw_amo_write sz rmw ac in
             M.amo_strict (Act.is_physical ac) op
-              (append_commit ma ii)
+              (append_commit_ac ac ma ii)
               (fun a -> read_mem sz a ii) mv
               (fun a v -> write_mem sz a v ii)
               (fun w ->
