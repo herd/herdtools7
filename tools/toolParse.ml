@@ -18,6 +18,11 @@
 (* Apply a function (zyva) to one test *)
 (***************************************)
 
+module LexConf = struct
+  include Splitter.Default
+  let is_morello = false (* For AArch64, no Morello extension for tools *)
+end
+
 module Top
     (T:sig type t end) (* Return type, must be abstracted *)
     (B: functor(A:ArchBase.S)->
@@ -39,8 +44,6 @@ end = struct
         let parsed = P.parse chan splitted in
         X.zyva name parsed
     end
-
-  module LexConf = Splitter.Default
 
   let from_chan chan splitted =
     match splitted.Splitter.arch with
@@ -93,7 +96,8 @@ end = struct
         let module X = Make (ARM) (ARMLexParse) in
         X.zyva chan splitted
     | `AArch64 ->
-        let module AArch64 = AArch64Base in
+        let module AArch64 =
+          MakeAArch64Base.Make(MakeAArch64Base.NoMorello) in
         let module AArch64LexParse = struct
 	  type instruction = AArch64.parsedPseudo
 	  type token = AArch64Parser.token
@@ -181,7 +185,6 @@ module Tops
       val from_files : string list -> T.t
     end = struct
 
-      module LexConf = Splitter.Default
       module SP = Splitter.Make(LexConf)
 
 (* Code shared between mach argch's and C *)
@@ -290,7 +293,8 @@ module Tops
             let module X = Make (ARM) (ARMLexParse) in
             X.zyva
         | `AArch64 ->
-            let module AArch64 = AArch64Base in
+            let module AArch64 =
+              MakeAArch64Base.Make(MakeAArch64Base.NoMorello) in
             let module AArch64LexParse = struct
 	      type instruction = AArch64.parsedPseudo
 	      type token = AArch64Parser.token

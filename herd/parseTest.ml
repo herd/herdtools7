@@ -253,7 +253,9 @@ module Top (Conf:Config) = struct
           let module AArch64LexParse = struct
             type instruction = AArch64.parsedPseudo
             type token = AArch64Parser.token
-            module Lexer = AArch64Lexer.Make(LexConfig)
+            module Lexer =
+              AArch64Lexer.Make
+                (struct include LexConfig let is_morello = true end)
             let lexer = Lexer.token
             let parser = (*MiscParser.mach2generic*) AArch64Parser.main
           end in
@@ -299,7 +301,9 @@ module Top (Conf:Config) = struct
           let module AArch64LexParse = struct
             type instruction = AArch64.parsedPseudo
             type token = AArch64Parser.token
-            module Lexer = AArch64Lexer.Make(LexConfig)
+            module Lexer =
+              AArch64Lexer.Make
+                (struct include LexConfig let is_morello = false end)
             let lexer = Lexer.token
             let parser = (*MiscParser.mach2generic*) AArch64Parser.main
           end in
@@ -345,7 +349,9 @@ module Top (Conf:Config) = struct
           let module AArch64LexParse = struct
             type instruction = AArch64.parsedPseudo
             type token = AArch64Parser.token
-            module Lexer = AArch64Lexer.Make(LexConfig)
+            module Lexer =
+              AArch64Lexer.Make
+                (struct include LexConfig let is_morello = false end)
             let lexer = Lexer.token
             let parser = (*MiscParser.mach2generic*) AArch64Parser.main
           end in

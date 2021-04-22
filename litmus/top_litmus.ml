@@ -534,7 +534,9 @@ end = struct
                 let module LexParse = struct
                   type instruction = Arch'.parsedPseudo
                   type token = AArch64Parser.token
-                  module Lexer = AArch64Lexer.Make(LexConfig)
+                  module Lexer =
+                    AArch64Lexer.Make
+                      (struct include LexConfig let is_morello = false end)
                   let lexer = Lexer.token
                   let parser = (*MiscParser.mach2generic*) AArch64Parser.main
                 end in

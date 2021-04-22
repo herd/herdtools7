@@ -33,12 +33,12 @@ let do_self = C.variant Variant_gen.Self
 let do_tag = C.variant Variant_gen.MemTag
 let do_morello = C.variant Variant_gen.Morello
 let do_kvm = C.variant Variant_gen.KVM
-
 let do_neon = C.variant Variant_gen.Neon
+
 open Code
 open Printf
 
-include AArch64Base
+include MakeAArch64Base.Make(struct let is_morello = do_morello end)
 
 (* Little endian *)
 let tr_endian = Misc.identity

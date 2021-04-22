@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2015-present Institut National de Recherche en Informatique et *)
+(* Copyright 2021-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,13 +14,16 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Lexing AArch64 assembly *)
-
 module type Config = sig
- include LexUtils.Config
- val is_morello : bool
+  val is_morello : bool
 end
 
-module Make : functor(O:Config) -> sig
-  val token : Lexing.lexbuf -> AArch64Parser.token
+module NoMorello = struct
+  let is_morello = false
 end
+
+module Make(C:Config) = struct
+  include AArch64Base
+  include MakePP(C)
+end
+

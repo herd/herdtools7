@@ -901,6 +901,7 @@ let pp_gc = function
   | GCTYPE -> "GCTYPE"
   | GCVALUE -> "GCVALUE"
 
+module MakePP(C:sig val is_morello : bool end) = struct
 let do_pp_instruction m =
   let pp_rrr memo v rt rn rm =
     pp_memo memo ^ " " ^ pp_vreg v rt ^ "," ^
@@ -945,8 +946,9 @@ let do_pp_instruction m =
       (match v with V32 when showsxtw -> ",SXTW" | V32|V64 -> "" | V128 -> assert false) in
 
   let pp_mem memo v rt ra kr =
+    let pp_addr = if C.is_morello then pp_creg else pp_xreg in
     pp_memo memo ^ " " ^ pp_vreg v rt ^
-    ",[" ^ pp_xreg ra ^ pp_kr true false kr ^ "]" in
+    ",[" ^ pp_addr ra ^ pp_kr true false kr ^ "]" in
 
   let pp_mem_shift memo v rt ra kr s =
     pp_memo memo ^ " " ^ pp_vreg v rt ^
@@ -1317,6 +1319,7 @@ let dump_parsedInstruction =
     {  pp_k = MetaConst.pp_prefix "#";
        zerop = (fun k -> MetaConst.compare MetaConst.zero k = 0);
        k0 = K MetaConst.zero; }
+end
 
 (****************************)
 (* Symbolic registers stuff *)
@@ -1960,3 +1963,4 @@ and max_idx = Internal 1
 and idx = Internal 2
 and ephemeral = Internal 3
 let loop_idx = Internal 4
+
