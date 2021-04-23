@@ -289,7 +289,11 @@ val same_instance : event -> event -> bool
     -> event_structure -> event_structure -> event_structure option
 
 (* sequential composition, add data dependency *)
-  val (=*$=) :
+
+  val (=*$=) : (* second es entries are minimal evts for iico_data *)
+      event_structure -> event_structure -> event_structure option
+
+  val data_to_minimals : (* second es entries are minimal evts all iico *)
       event_structure -> event_structure -> event_structure option
 
 (* Identical, keep first event structure output as output... *)
@@ -1040,6 +1044,9 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 
     let (=*$=) =
       check_disjoint (data_comp minimals_data sequence_data_output)
+
+    let data_to_minimals =
+      check_disjoint (data_comp minimals sequence_data_output)
 
     let (=$$=) =
       let out es1 es2 =
