@@ -101,6 +101,9 @@ module type S = sig
   val toofar : action
   val is_toofar : action -> bool
 
+(* For diagrams *)
+  val is_out_of_the_box : action -> bool
+
 (********************)
 (* Equation solving *)
 (********************)

@@ -209,6 +209,9 @@ end = struct
     | TooFar -> true
     | _ -> false
 
+(* Diagrams *)
+  let is_out_of_the_box _ = false
+
 (* Equations *)
 
   let undetermined_vars_in_action a =

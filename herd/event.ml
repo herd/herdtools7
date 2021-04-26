@@ -125,6 +125,9 @@ val same_instance : event -> event -> bool
 (* Too much unrolling *)
   val is_toofar : event -> bool
 
+(* Diagrams *)
+  val is_out_of_the_box : event -> bool
+
 (**************)
 (* Event sets *)
 (**************)
@@ -585,8 +588,11 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       let act = e.action in
       Act.is_pod act || is_commit e
 
-(*  Unrolling control *)
+(* Unrolling control *)
     let is_toofar e = Act.is_toofar e.action
+
+(* Diagram *)
+    let is_out_of_the_box e = Act.is_out_of_the_box e.action
 
 (******************************)
 (* Build structures of events *)

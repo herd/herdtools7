@@ -431,6 +431,11 @@ end = struct
     | TooFar -> true
     | _ -> false
 
+(* Diagram *)
+  let is_out_of_the_box = function
+    | Access (_,_,_,_,nexp,_,_) -> A.is_out_of_the_box nexp
+    | _ -> false
+
 (* Architecture-specific sets *)
 
   let arch_sets =

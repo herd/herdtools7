@@ -82,6 +82,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | NExp DB -> true
       | _ -> false
 
+    let is_out_of_the_box = is_af
+
     let barrier_sets =
       do_fold_dmb_dsb true
         (fun b k ->

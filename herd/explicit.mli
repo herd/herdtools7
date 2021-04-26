@@ -21,6 +21,7 @@ module type S = sig
   type explicit
   val exp_annot : explicit
   val nexp_annot : explicit
+  val is_out_of_the_box : explicit -> bool
   val pp_explicit : explicit -> string
   val explicit_sets : (string * (explicit -> bool)) list
 end

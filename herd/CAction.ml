@@ -272,6 +272,9 @@ end = struct
     | TooFar -> true
     | _ -> false
 
+(* Diagrams *)
+  let is_out_of_the_box _ = false
+
 (* RMWs *)
   let is_rmw a = match a with
   | RMW _ -> true
