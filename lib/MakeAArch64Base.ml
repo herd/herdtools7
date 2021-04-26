@@ -26,4 +26,3 @@ module Make(C:Config) = struct
   include AArch64Base
   include MakePP(C)
 end
-
