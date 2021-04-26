@@ -54,7 +54,7 @@ let tuple_pat = function
 %token SHOW UNSHOW AS FUN IN PROCEDURE CALL FORALL DO FROM
 %token TRY INSTRUCTIONS DEFAULT IF THEN ELSE
 %token VARIANT
-%token REQUIRES FLAG
+%token REQUIRES FLAG ASSERT
 %token ARROW
 %token ENUM DEBUG MATCH WITH
 %token CATDEP
@@ -181,6 +181,7 @@ test_type:
 |          { Check }
 | REQUIRES { UndefinedUnless }
 | FLAG     { Flagged }
+| ASSERT   { Assert }
 
 optional_name:
 |        { None }
