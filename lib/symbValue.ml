@@ -101,12 +101,18 @@ module Make(Cst:Constant.S) = struct
 
   exception Undetermined
 
+  let cst_is_zero cst = Cst.eq cst Cst.zero
+
   let is_zero v = match v with
-  | Val cst -> Cst.eq cst Cst.zero
+  | Val cst -> cst_is_zero cst
   | Var _ -> raise  Undetermined
 
   let is_one v = match v with
   | Val cst ->  Cst.eq cst Cst.one
+  | Var _ -> raise  Undetermined
+
+  let is_not_zero v = match v with
+  | Val cst ->  not (cst_is_zero cst)
   | Var _ -> raise  Undetermined
 
   let protect_is p v =  try p v with Undetermined -> false
@@ -276,6 +282,8 @@ module Make(Cst:Constant.S) = struct
   and orop v1 v2 =
     if protect_is is_zero v1 then v2
     else if protect_is is_zero v2 then v1
+    else if protect_is is_not_zero v1 then v1
+    else if protect_is is_not_zero v2 then v2
     else
       match v1,v2 with
       | (Val (Symbolic _),Val (Symbolic _))
@@ -487,6 +495,7 @@ module Make(Cst:Constant.S) = struct
 
   let op_pte_val op_op op v = match v with
   | Val (PteVal a) -> Val (op a)
+  | Val c when cst_is_zero c -> zero
   | Var _ -> raise Undetermined
   | _ -> Warn.user_error "Illegal pte operation %s on %s" op_op (pp_v v)
 
@@ -508,7 +517,11 @@ module Make(Cst:Constant.S) = struct
   let dbmloc = op_pte_val "dbmloc" op_dbmloc
 
   let op_validloc a = Cst.intToV a.valid
-  let validloc = op_pte_val "validloc" op_validloc
+  let validloc v =
+    if is_zero v then
+      zero
+    else
+      op_pte_val "validloc" op_validloc v
 
   let op_el0loc a = Cst.intToV a.el0
   let el0loc = op_pte_val "el0loc" op_el0loc

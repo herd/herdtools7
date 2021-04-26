@@ -328,6 +328,7 @@ module Make
                     match pteval_v with
                     | Some (S.A.V.Val (PteVal v)) ->
                         PTEVal.Attrs.as_list v.PTEVal.attrs
+                    | Some v when S.A.V.is_zero v -> []
                     | _ -> assert false in
                   List.fold_right
                     (fun attr evts_map ->
