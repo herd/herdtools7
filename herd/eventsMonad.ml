@@ -227,6 +227,8 @@ Monad type:
       assert (cl=[]) ;
       data_comp (E.bind_ctrl_avoid es.E.events) s f eiid
 
+    let bind_data_to_minimals s f =  data_comp E.data_to_minimals s f
+
 (* Triple composition *)
     let comp_comp comp_str m1 m2 m3 eiid =
       let eiid,(acts1,spec1) = m1 eiid in

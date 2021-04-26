@@ -104,10 +104,6 @@ module Make
       let mk_fault a ii msg =
         M.mk_singleton_es (Act.Fault (ii,A.Location_global a,msg)) ii
 
-      let mk_pte_fault ma ii =
-        ma >>= fun a ->
-        mk_fault a ii (Some "EL0") >>! B.Exit
-
       let read_loc v is_data = M.read_loc is_data (mk_read v AArch64.N aexp)
 
       let read_reg is_data r ii = match r with
@@ -429,6 +425,36 @@ module Make
         (M.op1 Op.Offset a_virt >>| mpte)
         >>= fun (o,p) -> M.add p.oa_v o
 
+(************************************************)
+(* Add commit events, when commanded by options *)
+(************************************************)
+
+      let append_commit ma ii =
+        if is_branching then do_append_commit ma ii else ma
+
+      let append_commit_ac ac ma ii =
+        if Act.is_physical ac && is_branching then
+          do_append_commit ma ii
+        else ma
+
+      let do_insert_commit m1 m2 ii =
+      (* Notice the complex dependency >>*==
+         from branch to instructions events *)
+        m1 >>= fun a -> commit_pred ii >>*== fun _ -> m2 a
+
+      let insert_commit m1 m2 ii =
+        if is_branching || morello then do_insert_commit m1 m2 ii
+        else m1 >>= m2
+
+      let do_insert_commit_to_fault m1 m2 ii =
+        (* Dependencies to fault are simple: Rpte -data-> Branch -> Fault *)
+        M.bind_data_to_minimals m1
+          (fun a -> commit_pred ii >>*= fun () -> m2 a)
+
+      let insert_commit_to_fault m1 m2 ii =
+        if is_branching || morello then do_insert_commit_to_fault m1 m2 ii
+        else m1 >>*= m2 (* Direct control dependency to fault *)
+
 (******************)
 (* Checking flags *)
 (******************)
@@ -478,6 +504,11 @@ module Make
           and AP[2] == 0b0 for dirty, with AP[2] == 0b0 being more directly "writable".
 
          *)
+
+      let mk_pte_fault a ma ii =
+        insert_commit_to_fault ma
+          (fun _ -> mk_fault a ii (Some "EL0")) ii >>! B.Exit
+
 
       let check_ptw proc dir a_virt ma an ii mdirect mok mfault =
 
@@ -572,7 +603,7 @@ module Make
           M.choiceT cond mvirt
             (* Non-virtual accesses are disallowed from EL0.
                For instance, user code cannot access the page table. *)
-            (if is_el0 then mk_pte_fault ma ii
+            (if is_el0 then mk_pte_fault a_virt ma ii
              else mdirect)
 
 (* Read memory, return value read *)
@@ -713,24 +744,10 @@ module Make
               if C.precision then  mfault >>! B.Exit
               else (mfault >>| mm) >>! B.Next))
 
-      let append_commit ma ii =
-        if is_branching then do_append_commit ma ii else ma
-
-      let append_commit_ac ac ma ii =
-        if Act.is_physical ac && is_branching then
-          do_append_commit ma ii
-        else ma
-
-      let do_insert_commit m1 m2 ii =
-        m1 >>= fun a -> commit_pred ii >>*== fun _ -> m2 a
-
-      let insert_commit m1 m2 ii =
-        if is_branching || morello then do_insert_commit m1 m2 ii
-        else m1 >>= m2
 
       let lift_kvm dir mop ma an ii mphy =
         let mfault ma a =
-          insert_commit ma (fun _ -> mk_fault a ii None) ii
+          insert_commit_to_fault ma (fun _ -> mk_fault a ii None) ii
           >>! if C.precision then B.Exit else B.ReExec in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir a ma an ii
