@@ -15,12 +15,20 @@
 (****************************************************************************)
 
 {
-module Make(O:LexUtils.Config) = struct
+
+module type Config = sig
+ include LexUtils.Config
+ val is_morello : bool
+end
+
+module Make(O:Config) = struct
 open Lexing
 open LexMisc
 open AArch64Parser
 module A = AArch64Base
 module LU = LexUtils.Make(O)
+
+let parse_creg = if O.is_morello then A.parse_creg  else fun _ -> None
 
 let check_name name =
 if O.debug then Printf.eprintf "Check: '%s'\n"  name ;
@@ -441,7 +449,7 @@ match name with
         begin match A.parse_xreg name with
         | Some r -> ARCH_XREG r
         | None ->
-            begin match A.parse_creg name with
+            begin match parse_creg name with
             | Some r -> ARCH_CREG r
             | None ->
                 begin match A.parse_vreg name with

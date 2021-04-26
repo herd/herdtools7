@@ -20,7 +20,7 @@ let comment = "#"
 
 module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
 
-  include AArch64Base
+  include MakeAArch64Base.Make(MakeAArch64Base.NoMorello)
 
   let features = [is_atomic,"atomic"]
 

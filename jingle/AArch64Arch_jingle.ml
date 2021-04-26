@@ -14,10 +14,14 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 include Arch.MakeArch(struct
-
   open AArch64Base
 
-  include Arch.MakeCommon(AArch64Base)
+  module A = struct
+    include AArch64Base
+    include MakePP(struct let is_morello = false end)
+  end
+
+  include Arch.MakeCommon(A)
 
   let match_kr subs kr kr' =  match kr,kr' with
     | K(MetaConst.Meta m),K i ->  add_subs [Cst(m, i)] subs

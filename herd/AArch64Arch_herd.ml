@@ -15,9 +15,13 @@
 (****************************************************************************)
 module Make (C:Arch_herd.Config) (V:Value.S) =
   struct
-    include AArch64Base
+
+    include
+      MakeAArch64Base.Make
+        (struct let is_morello = C.variant Variant.Morello end)
 
     let is_kvm = C.variant Variant.Kvm
+
 
     let is_amo _ = false
     let pp_barrier_short = pp_barrier

@@ -1175,7 +1175,7 @@ module Make
         | _, S_LSL(_) | _, _ ->
             Warn.fatal
               "illegal instruction %s"
-              (dump_instruction (I_MOVZ (sz, rd, k, os)))
+              (AArch64.dump_instruction (I_MOVZ (sz, rd, k, os)))
         end
           >>= (fun v -> write_reg rd v ii)
           >>! B.Next
