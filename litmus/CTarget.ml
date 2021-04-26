@@ -30,7 +30,8 @@ let fmt_reg x = x
 
 let dump_out_reg p x =  OutUtils.fmt_out_reg p x
 
-let compile_out_reg proc reg = OutUtils.fmt_index (dump_out_reg proc reg)
+let compile_out_reg proc reg =
+  Printf.sprintf "_a->%s" (OutUtils.fmt_index (dump_out_reg proc reg))
 
 let compile_presi_out_reg proc reg =
   OutUtils.fmt_presi_index (dump_out_reg proc reg)
