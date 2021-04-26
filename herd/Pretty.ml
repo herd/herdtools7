@@ -897,7 +897,11 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
 (************************)
     let max_proc = Misc.last (E.procs_of es) in
     (* Collect events (1) by proc, then (2) by poi *)
-    let events_by_proc_and_poi = PU.make_by_proc_and_poi es in
+    let events_by_proc_and_poi,out_of_the_box =
+      PU.make_by_proc_and_poi
+        (match PC.graph with
+         | Graph.Columns -> fun _ -> false
+         | Graph.Cluster|Graph.Free -> E.is_out_of_the_box) es in
     let maxy,envy,envx =
       let mult = true in
       if mult then order_events_mult es events_by_proc_and_poi
@@ -1302,7 +1306,8 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
           | Graph.Free|Graph.Columns -> ()
           end)
         events_by_proc_and_poi;
-
+      pl "" ;
+      E.EventSet.pp chan "" (pp_event false "blue") out_of_the_box ;
       pl "" ;
       pl "/* the intra_causality_data edges */\n" ;
       E.EventRel.pp chan ""

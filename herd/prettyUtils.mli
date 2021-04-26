@@ -17,8 +17,12 @@
 (** Utilities for pretty-printing *)
 
 module Make : functor (S:SemExtra.S) -> sig
-  (* Organize events, first by proc, then by po *)
-  val make_by_proc_and_poi : S.event_structure -> S.event_set list list
+  (* Organize events, first by proc, then by po.
+     The first, predicate, argument characterizes
+     events that are gathered apart in second result *)
+  val make_by_proc_and_poi :
+    (S.event -> bool) -> S.event_structure ->
+    S.event_set list list * S.event_set
 
   (* Observed read events *)
   val observed : S.test -> S.event_structure -> S.event_set

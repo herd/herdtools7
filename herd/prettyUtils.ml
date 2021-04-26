@@ -27,13 +27,15 @@ module Make(S : SemExtra.S) = struct
   | Some x -> x
   | None -> assert false
 
-  let progorder_as_list es  =
+  let progorder_as_list out es  =
     let by_po =
       E.EventSet.fold
         (fun e k ->
-          let poi = get_poi e in
-          let es_poi = int_map_find  poi k in
-          IntMap.add poi (e::es_poi) k)
+          if out e then k
+          else
+            let poi = get_poi e in
+            let es_poi = int_map_find  poi k in
+            IntMap.add poi (e::es_poi) k)
         es IntMap.empty in
     let as_list =
       IntMap.fold
@@ -41,13 +43,15 @@ module Make(S : SemExtra.S) = struct
         by_po [] in
     List.rev_map E.EventSet.of_list as_list
 
-  let make_by_proc_and_poi es =
+  let make_by_proc_and_poi out es =
+    let out_of_the_box =
+      E.EventSet.filter out es.E.events in
     let by_proc = E.proj_events es in
-    List.map progorder_as_list by_proc
+    List.map (progorder_as_list out) by_proc,out_of_the_box
 
   let observed test es =
     let locs = S.observed_locations test in
-    let xss = make_by_proc_and_poi es in
+    let xss,_ = make_by_proc_and_poi (fun _ -> false) es in
     let xss = Misc.mapi (fun i x -> i,x) xss in
     let _,obs =
       List.fold_right
@@ -80,7 +84,7 @@ module Make(S : SemExtra.S) = struct
 (* All registers that read memory *)
 
   let all_regs_that_read es =
-    let xss = make_by_proc_and_poi es in
+    let xss,_ = make_by_proc_and_poi (fun _ -> false) es in
     let xss = Misc.mapi (fun i x -> i,x) xss in
     let locs =
       List.fold_right
