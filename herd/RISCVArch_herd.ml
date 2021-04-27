@@ -125,4 +125,6 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
         end)
 
+    module MemType=MemoryType.No
+
   end

@@ -45,4 +45,6 @@ module type S =
       val is_at_level : level -> op -> bool
       val inv_all : op -> bool
     end
+
+    module MemType:MemoryType.S
   end
