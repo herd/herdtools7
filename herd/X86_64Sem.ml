@@ -95,7 +95,8 @@ module Make (C:Sem.Config)(V : Value.S)
         else
           read_loc nat_sz is_data (A.Location_reg (ii.A.proc,r)) ii
 
-      let read_mem sz data an a ii =
+      let read_mem sz _data an a ii =
+        let data = false in
         if mixed then
           Mixed.read_mixed data sz (fun sz -> mk_read sz an) a ii
         else
@@ -181,7 +182,8 @@ module Make (C:Sem.Config)(V : Value.S)
         | X86_64.Effaddr_rm64 (X86_64.Rm64_abs v)->
            M.unitT (X86_64.maybev_to_location v)
 
-      let rval_ea sz locked ea ii = lval_ea ea ii >>= fun loc -> read_loc_gen sz true locked loc ii
+      let rval_ea sz locked ea ii =
+        lval_ea ea ii >>= fun loc -> read_loc_gen sz true locked loc ii
 
       let rval_op sz locked op ii = match op with
         | X86_64.Operand_effaddr ea  -> rval_ea sz locked ea ii
