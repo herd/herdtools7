@@ -99,7 +99,6 @@ module Make
 (* Options *)
       let do_self = Cfg.variant Variant_litmus.Self
       let do_ascall = Cfg.ascall || do_self
-      let is_C = match A.arch with `C -> true | _ -> false
 
       open Speedcheck
       let do_vp = Cfg.verbose_prelude
@@ -1817,7 +1816,7 @@ module Make
               O.oi "int _stride = _a->_p->stride;"
             end ;
             let addrs = A.Out.get_addrs_only out in
-            if not (do_ascall || is_C)  then begin
+            if not do_ascall then begin
               List.iter
                 (fun (r,t) ->
                   let name = A.Out.dump_out_reg  proc r in
