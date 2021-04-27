@@ -92,7 +92,9 @@ module Make
               (f (acc,None) r))
           (fold_mixed f r)
 
-      let worth_final _ = true
+      let worth_final (a,_) = match a with
+        | NonTemporal|Plain -> false
+        | Atomic  -> true
 
       let varatom_dir _d f = f None
 
