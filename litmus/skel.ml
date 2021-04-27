@@ -99,7 +99,6 @@ module Make
 (* Options *)
       let do_self = Cfg.variant Variant_litmus.Self
       let do_ascall = Cfg.ascall || do_self
-      let is_C = match A.arch with `C -> true | _ -> false
 
       open Speedcheck
       let do_vp = Cfg.verbose_prelude
@@ -1765,7 +1764,7 @@ module Make
             (fun (a,_) -> U.is_aligned a env)
             test.T.globals in
         List.iter
-          (fun (proc,(out,(outregs,envVolatile))) ->
+          (fun (proc,(out,(_outregs,envVolatile))) ->
             let myenv = U.select_proc proc env
             and global_env = U.select_global env in
             if do_ascall then begin
@@ -1817,13 +1816,6 @@ module Make
               O.oi "int _stride = _a->_p->stride;"
             end ;
             let addrs = A.Out.get_addrs_only out in
-            if not (do_ascall || is_C)  then begin
-              List.iter
-                (fun (r,t) ->
-                  let name = A.Out.dump_out_reg  proc r in
-                  O.fi "%s *%s = _a->%s;" (CType.dump t) name name)
-                outregs
-            end;
             let iloop =
               if Stride.some stride then begin
                 O.fi "for (int _j = _stride ; _j > 0 ; _j--) {" ;

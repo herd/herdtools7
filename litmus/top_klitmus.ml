@@ -206,7 +206,6 @@ module Top(O:Config)(Tar:Tar.S) = struct
           let verbose = O.verbose
           let noinline = false
           let simple = true
-          let out_ctx s = "_a->" ^ s
         end)
     module Utils = Utils(A)(MemoryType.X86_64)(Lang)(Pseudo)
     module T = Utils.T
