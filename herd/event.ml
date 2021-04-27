@@ -255,6 +255,7 @@ val same_instance : event -> event -> bool
   val location_of   : event -> A.location option
   val location_reg_of : event -> A.reg option
   val global_loc_of    : event -> A.global_loc option
+  val virtual_loc_of : event -> string option
 
 (****************************)
 (* Convenience on locations *)
@@ -476,6 +477,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let  global_loc_of e = match location_of e with
     | Some (A.Location_global a) -> Some a
     | _ -> None
+
+    let virtual_loc_of e = match global_loc_of e with
+    | Some (A.V.Val c) -> Constant.as_virtual c
+    | None|Some (A.V.Var _) -> None
 
 (* Visible locations *)
 (*
