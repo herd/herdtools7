@@ -366,7 +366,6 @@ end = struct
             let verbose = O.verbose
             let noinline = true
             let simple = false
-            let out_ctx = Misc.identity
           end)
       module Utils = Utils(O)(A')(Lang)(Pseudo)
       module P = CGenParser_litmus.Make(O)(Pseudo)(A')(L)

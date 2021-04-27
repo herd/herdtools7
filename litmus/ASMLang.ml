@@ -433,7 +433,8 @@ module RegMap = A.RegMap)
         if debug then debug_globEnv globEnv ;
 
         let compile_out_reg = match O.mode with
-        | Mode.Std -> Tmpl.compile_out_reg
+        | Mode.Std ->
+           fun proc reg -> "_a->" ^ Tmpl.compile_out_reg proc reg
         | Mode.Kvm|Mode.PreSi ->
             fun proc reg ->
               let ty =

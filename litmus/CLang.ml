@@ -32,7 +32,6 @@ module type Extra = sig
   val verbose : int
   val noinline : bool
   val simple : bool
-  val out_ctx : string -> string
 end
 
 module Make(C:Config)(E:Extra) = struct
@@ -158,7 +157,7 @@ module Make(C:Config)(E:Extra) = struct
         t.CTarget.inputs
           and out_args =
             List.map
-              (fun x -> sprintf "&%s" (E.out_ctx (CTarget.compile_out_reg proc x)))
+              (fun x -> sprintf "&_a->%s" (CTarget.compile_out_reg proc x))
               t.CTarget.finals in
           let args = String.concat "," (args0@global_args@out_args) in
           LangUtils.dump_code_call chan indent f_id args
@@ -188,7 +187,7 @@ module Make(C:Config)(E:Extra) = struct
         match C.mode with
         | Mode.Std ->
             let outname = CTarget.compile_out_reg proc x in
-            out "%s%s = (%s)%s;\n"
+            out "%s_a->%s = (%s)%s;\n"
               indent outname (CType.dump ty) (CTarget.fmt_reg x)
         | Mode.PreSi|Mode.Kvm ->
             let outname =
