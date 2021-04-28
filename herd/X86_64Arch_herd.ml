@@ -29,10 +29,15 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
     let pp_barrier_short = pp_barrier
     let reject_mixed = false
 
-    type lannot = bool (* atomicity *)
+    type lannot = Plain|Atomic|NonTemporal
     let get_machsize _ = V.Cst.Scalar.machsize
-    let empty_annot = false
-    let is_atomic annot = annot
+    let empty_annot = Plain
+    let is_atomic = function
+      | Atomic -> true
+      | Plain|NonTemporal -> false
+    and is_nt = function
+      | NonTemporal -> true
+      | Plain|Atomic -> false
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
     let barrier_sets =
@@ -42,15 +47,18 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
         "LFENCE",is_barrier LFENCE;
       ]
 
-    let annot_sets = ["X",is_atomic]
+    let annot_sets = ["X",is_atomic; "NT",is_nt;]
 
     include Explicit.No
 
     let is_isync _ = false
     let pp_isync = "???"
 
-    let pp_annot annot =
-      if annot then "*" else ""
+    let pp_annot annot = match annot with
+      | Atomic -> "*"
+      | Plain -> ""
+      | NonTemporal -> "NT"
+
 
     let inst_size_to_mach_size = function
       | I8b -> MachSize.Byte
