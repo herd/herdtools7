@@ -17,16 +17,22 @@
 (* Memory types of global variables *)
 module type S = sig
   type t
+  val default : t
   val pp : t -> string (* Pretty print *)
   val emit : t -> string (* Emit in code *)
+  val fold : (t -> 'a -> 'a) -> 'a -> 'a
+  val equal : t -> t -> bool
 
   val parse : MiscParser.info -> t Misc.Simple.bds
   (* Cache flush neeed after initialisation *)
   val need_flush : t Misc.Simple.bds -> bool
+
 end
 
 module X86_64 = struct
   type t = UC | WC | WT | WP | WB
+
+  let default = WB
 
   let pp = function
     | UC -> "UC"
@@ -36,6 +42,15 @@ module X86_64 = struct
     | WB -> "WB"
 
   let emit m = Printf.sprintf "PAT_%s" (pp m)
+
+  let fold f k =
+    let k = f UC k in
+    let k = f WC k in
+    let k = f WT k in
+    let k = f WB k in
+    k
+
+  let equal (m1:t) (m2:t) = m1=m2
 
   let _ = WP (* Silence warning 37 *)
 
@@ -81,9 +96,15 @@ module No = struct
 
   type t = unit
 
-  let pp () = ""
+  let default = ()
+
+  let pp () = "OneMemtype"
 
   let emit = pp
+
+  let fold _f k = k
+
+  let equal () () = true
 
   let parse _ = []
 

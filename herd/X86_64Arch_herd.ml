@@ -100,4 +100,7 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
                 let get_val _ v = v
 
               end)
+
+    module MemType=MemoryType.X86_64
+
   end

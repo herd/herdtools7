@@ -289,23 +289,38 @@ module Make
         let is_spec = (fun e -> E.EventSet.mem e spec) in
         let data_ports = conc.S.str.E.data_ports in
         let is_data_port = (fun e -> E.EventSet.mem e data_ports) in
+        let are_memtypes =
+          let module MT = S.A.MemType in
+          let mts = MT.parse test.Test_herd.info in
+          MT.fold
+            (fun mt k ->
+              let tag = MT.pp mt
+              and p e = match S.E.virtual_loc_of e with
+                | Some s ->
+                   let mtx =
+                     try Misc.Simple.assoc s mts
+                     with Not_found -> MT.default in
+                   MT.equal mt mtx
+                | None -> false in
+              (tag,p)::k) in
         I.add_sets m
           (("M",mem_evts)::
            List.fold_right
              (fun (k,p) ps ->
                (k,lazy (E.EventSet.filter p (Lazy.force mem_evts)))::ps)
-             ["R", E.is_mem_load;
-              "W", E.is_mem_store;
-              "Rreg", E.is_reg_load_any;
-              "Wreg", E.is_reg_store_any;
-              "SPEC", is_spec;
-              "EXEC", (fun e -> not (is_spec e));
-              "AMO",E.is_amo;
-              "I", E.is_mem_store_init;
-              "IW", E.is_mem_store_init;
-              "FW",
-              (let ws = lazy (U.make_write_mem_finals conc) in
-              fun e -> E.EventSet.mem e (Lazy.force ws)); ]
+             (are_memtypes
+                ["R", E.is_mem_load;
+                 "W", E.is_mem_store;
+                 "Rreg", E.is_reg_load_any;
+                 "Wreg", E.is_reg_store_any;
+                 "SPEC", is_spec;
+                 "EXEC", (fun e -> not (is_spec e));
+                 "AMO",E.is_amo;
+                 "I", E.is_mem_store_init;
+                 "IW", E.is_mem_store_init;
+                 "FW",
+                 (let ws = lazy (U.make_write_mem_finals conc) in
+                  fun e -> E.EventSet.mem e (Lazy.force ws)); ])
              (List.map
                 (fun (k,p) -> k,lazy (E.EventSet.filter p evts))
                 ["C", E.is_commit;
