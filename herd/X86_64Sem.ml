@@ -55,13 +55,19 @@ module Make (C:Sem.Config)(V : Value.S)
         | X86_64.R32b -> MachSize.Word
         | X86_64.R64b -> MachSize.Quad
 
-      let mk_read sz ato loc v =
+      let mk_read sz an loc v =
         let ac = Act.access_of_location_std loc in
-        Act.Access (Dir.R, loc, v, ato, (), sz, ac)
+        Act.Access (Dir.R, loc, v, an, (), sz, ac)
 
-      let read_loc sz is_d = M.read_loc is_d (mk_read sz false)
+      let read_loc sz is_d = M.read_loc is_d (mk_read sz X86_64.Plain)
 
-      let mk_read_choose_atomic sz loc = mk_read sz (is_global loc) loc
+      let plain = X86_64.Plain
+      and atomic = X86_64.Atomic
+
+      let atomic_when_global loc = if is_global loc then atomic else plain
+
+      let mk_read_choose_atomic sz loc =
+        mk_read sz (atomic_when_global loc) loc
 
       let mask_from_reg_part = function
         | X86_64.R8bH -> fun w -> M.op1 (Op.LogicalRightShift 8) w >>=
@@ -103,7 +109,7 @@ module Make (C:Sem.Config)(V : Value.S)
           let a = A.Location_global a in
           M.read_loc data (mk_read sz an) a ii
 
-      let read_mem_atomic sz a ii = read_mem sz false true a ii
+      let read_mem_atomic sz a ii = read_mem sz false X86_64.Atomic a ii
 
       let read_loc_gen sz data locked loc ii = begin
         match loc with
@@ -115,7 +121,7 @@ module Make (C:Sem.Config)(V : Value.S)
                    else X86_64.R64b)
 
       let read_loc_atomic sz is_d loc ii =
-        read_loc_gen sz is_d (is_global loc) loc ii
+        read_loc_gen sz is_d (atomic_when_global loc) loc ii
 
       let mk_write sz an loc v =
         let ac = Act.access_of_location_std loc in
@@ -152,22 +158,22 @@ module Make (C:Sem.Config)(V : Value.S)
              normalize_register_and_value p >>=
              fun nr -> M.op1 (Op.LeftShift (if p = X86_64.R8bH then 8 else 0)) v >>=
              fun nv -> M.op Op.Or nr nv >>=
-             fun w -> write_loc sz false (A.Location_reg (ii.A.proc,r)) w ii
-        | _ -> write_loc nat_sz false (A.Location_reg (ii.A.proc,r)) v ii
+             fun w -> write_loc sz plain (A.Location_reg (ii.A.proc,r)) w ii
+        | _ -> write_loc nat_sz plain (A.Location_reg (ii.A.proc,r)) v ii
 
-      let write_loc_gen sz locked loc v ii = match loc with
-        | A.Location_global l -> write_mem sz locked l v ii
+      let write_loc_gen sz an loc v ii = match loc with
+        | A.Location_global l -> write_mem sz an l v ii
         | A.Location_reg (_, reg) -> write_reg reg v ii
 
-      let write_mem_atomic sz a v ii = write_mem sz true a v ii
+      let write_mem_atomic sz a v ii = write_mem sz atomic a v ii
 
       let write_loc_atomic sz loc v ii =
-        write_loc_gen sz (is_global loc) loc v ii
+        write_loc_gen sz (atomic_when_global loc) loc v ii
 
       let write_flag r o v1 v2 ii =
         M.addT (A.Location_reg (ii.A.proc,r)) (M.op o v1 v2) >>=
           (fun (loc,v) ->
-            write_loc (reg_size_to_mach_size (X86_64.get_reg_size r)) false loc v ii)
+            write_loc (reg_size_to_mach_size (X86_64.get_reg_size r)) plain loc v ii)
 
       let create_barrier b ii =
         M.mk_singleton_es (Act.Barrier b) ii
@@ -267,7 +273,7 @@ module Make (C:Sem.Config)(V : Value.S)
               let sz = inst_size_to_mach_size sz in
               (lval_ea ea ii >>| read_reg true r ii) >>=
               fun (loc,v) ->
-              write_loc_gen sz locked loc v ii >>! B.Next
+              write_loc_gen sz X86_64.NonTemporal loc v ii >>! B.Next
           | X86_64.I_EFF_OP (x86_op, sz, ea, op) ->
              let sz = inst_size_to_mach_size sz in
              do_op sz locked x86_op ea op ii (* Problem, it's not always xor but the parameter of I_EFF_OP *)
@@ -276,7 +282,7 @@ module Make (C:Sem.Config)(V : Value.S)
              (lval_ea ea ii >>| read_reg false (X86_64.Flag X86_64.CF) ii) >>=
                fun (loc,cf) ->
                flip_flag cf >>=
-               fun v -> write_loc sz false loc v ii >>! B.Next
+               fun v -> write_loc sz plain loc v ii >>! B.Next
           | X86_64.I_EFF (inst, sz, ea) ->
              let sz = inst_size_to_mach_size sz in
              lval_ea ea ii >>=
@@ -340,7 +346,7 @@ module Make (C:Sem.Config)(V : Value.S)
               | I_EFF_EFF _
                 | I_EFF_OP ((I_ADD | I_XOR), _, _, _)
                 | I_EFF ((I_DEC | I_INC),  _, _) ->
-                 build_semantics_inner true {ii with A.inst = inst}
+                 build_semantics_inner atomic {ii with A.inst = inst}
               | _ ->
                  Warn.user_error "Illegal lock prefix on instruction %s"
                    (dump_instruction inst)
@@ -358,6 +364,6 @@ module Make (C:Sem.Config)(V : Value.S)
         in
         M.addT
           (A.next_po_index ii.A.program_order_index)
-          (build_semantics_inner false ii)
+          (build_semantics_inner plain ii)
     end
   end
