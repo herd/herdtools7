@@ -47,7 +47,10 @@ let intrinsic = (iico_data|iico_ctrl)+
 (* Dependency through register *)
 let rf-reg-no-stxr =
   rf-reg \ ([W & range(lxsx)];rf-reg)
-let dd = (rf-reg-no-stxr | intrinsic)+
+
+let dd =
+  let r = (rf-reg-no-stxr | intrinsic)* in
+  r;rf-reg-no-stxr;r
 
 (* The relation to-PoD is a dependency through register
    to a point of divergence*)
