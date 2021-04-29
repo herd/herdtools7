@@ -39,6 +39,8 @@ module Make
     let kvm = C.variant Variant.Kvm
     let is_branching = kvm && not (C.variant Variant.NoPteBranch)
     let pte2 = kvm && C.variant Variant.PTE2
+    let phantom =
+      Variant.get_switch `AArch64 Variant.SwitchPhantom C.variant
 
     let check_memtag ins =
       if not memtag then
@@ -397,6 +399,11 @@ module Make
       let bit_is_not_zero op v = M.op1 op v >>= is_not_zero
       let m_op op m1 m2 = (m1 >>| m2) >>= fun (v1,v2) -> M.op op v1 v2
 
+      let set_af a_pte pte_v ii =
+        let nexp = AArch64.NExp AArch64.AF in
+        M.op1 Op.SetAF pte_v >>= fun v ->
+        write_whole_pte_val AArch64.X nexp a_pte v (E.IdSome ii)
+
       let test_and_set_af =
         test_and_set_bit
           (fun v ->
@@ -510,7 +517,7 @@ module Make
           (fun _ -> mk_fault a ii (Some "EL0")) ii >>! B.Exit
 
 
-      let check_ptw proc dir a_virt ma an ii mdirect mok mfault =
+      let check_ptw proc dir a_virt ma _an ii mdirect mok mfault =
 
         let is_el0  = List.exists (Proc.equal proc) TopConf.procs_user in
         let check_el0 m =
@@ -549,13 +556,29 @@ module Make
             begin
               let get_a_pte = ma >>= fun _ -> M.op1 Op.PTELoc a_virt
               and test_and_set_af a_pte =
-                if tthm && ha then
+                if tthm && ha && not phantom then
                   test_and_set_af a_pte (E.IdSome ii) >>! a_pte
                 else M.unitT a_pte in
               (get_a_pte >>== test_and_set_af) >>= fun a_pte ->
+              let an,nexp =
+                if tthm && ha && phantom then
+                  (* Phantom mode, to be paired with setAF *)
+                  AArch64.X,AArch64.NExp AArch64.AF
+                else
+                  (* Non phantom, ordinary non-explicit access *)
+                  AArch64.empty_annot,AArch64.nexp_annot in
               mextract_whole_pte_val
-                an AArch64.nexp_annot a_pte (E.IdSome ii) >>= fun pte_v ->
-              (mextract_pte_vals pte_v) >>= fun pte_v -> M.unitT (pte_v,a_pte)
+                an nexp a_pte (E.IdSome ii) >>== fun pte_v ->
+              (mextract_pte_vals pte_v) >>= fun ipte ->
+              let out = M.unitT (ipte,a_pte) in
+              if tthm && ha && phantom then
+                m_op Op.And
+                  (is_zero ipte.af_v)
+                  (is_not_zero ipte.valid_v) >>*=
+                  fun c ->
+                  M.choiceT c
+                    (set_af a_pte pte_v ii >>= fun () -> out) out
+              else out
             end
           (fun (_,a_pte) ma -> (* now we have PTE content *)
             (* Monad will carry changing internal pte value *)
