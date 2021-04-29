@@ -50,6 +50,8 @@ type t =
   | NoPteBranch
 (* Pte-Squared: all accesses through page table, including PT accesses *)
   | PTE2
+(* Switch "phantom" mode for setting the AF bit by hardware *)
+  | SwitchPhantom
 (* Perform experiment *)
   | Exp
 
@@ -58,7 +60,8 @@ let tags =
    "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
    "mixed";"dontcheckmixed";"weakpredicated"; "memtag";
    "tagcheckprecise"; "tagcheckunprecise"; "precise"; "imprecise";
-   "toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2"; "pte-squared";
+   "toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
+   "pte-squared"; "switchphantom";
    "exp"; ]
 
 let parse s = match Misc.lowercase s with
@@ -89,6 +92,7 @@ let parse s = match Misc.lowercase s with
 | "ets" -> Some ETS
 | "noptebranch"|"nobranch" -> Some NoPteBranch
 | "pte2" | "pte-squared" -> Some PTE2
+| "switchphantom" -> Some SwitchPhantom
 | "exp" -> Some Exp
 | _ -> None
 
@@ -120,11 +124,13 @@ let pp = function
   | ETS -> "ets"
   | NoPteBranch -> "NoPteBranch"
   | PTE2 -> "pte-squared"
+  | SwitchPhantom -> "SwitchPhantom"
   | Exp -> "exp"
 
 let compare = compare
 
-let get_default a = function
+let get_default a v =
+  try match v with
   | SwitchDepScWrite ->
       begin match a with
       | `RISCV(*|`AArch64*) -> true
@@ -135,7 +141,13 @@ let get_default a = function
       | `AArch64 -> false
       | _ -> true
       end
-  | v -> Warn.fatal "No default for variant %s" (pp v)
+  | SwitchPhantom ->
+      begin match a with
+      | `AArch64 -> true
+      | _ -> raise Exit
+      end
+  | _ -> raise Exit
+  with Exit -> Warn.fatal "No default for variant %s" (pp v)
 
 let get_switch a v f =
   let d = get_default a v in

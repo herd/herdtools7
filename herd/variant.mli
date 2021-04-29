@@ -48,6 +48,8 @@ type t =
   | NoPteBranch
 (* Pte-Squared: all accesses through page table, including PT accesses *)
   | PTE2
+(* Switch "phantom" mode for setting the AF bit by hardware *)
+  | SwitchPhantom
 (* Perform experiment *)
   | Exp
 
