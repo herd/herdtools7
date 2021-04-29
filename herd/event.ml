@@ -1673,9 +1673,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         fun es _ _ _ _ _ -> es.po
 
 (* RISCV Store conditional *)
-    let get_switch v =
-      let d = Variant.get_default A.arch v in
-      if C.variant v then not d else d
+    let get_switch v = Variant.get_switch A.arch v C.variant
 
     let riscv_sc success resa data addr wres wresult wmem =
       let dep_on_write = get_switch Variant.SwitchDepScWrite
