@@ -137,6 +137,10 @@ let get_default a = function
       end
   | v -> Warn.fatal "No default for variant %s" (pp v)
 
+let get_switch a v f =
+  let d = get_default a v in
+  if f v then not d else d
+
 let set_precision r tag =
     try
       r :=

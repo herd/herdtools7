@@ -59,5 +59,8 @@ val pp : t -> string
 (* switch variant that flips an arch-dependent, default value *)
 val get_default :  Archs.t -> t -> bool
 
+(* Get value for switchable variant *)
+val get_switch : Archs.t -> t -> (t -> bool) -> bool
+
 (* set precision *)
 val set_precision : bool ref -> t -> bool
