@@ -332,5 +332,9 @@ module Make (C:Sem.Config)(V:Value.S)
               create_barrier b ii >>! B.Next
           | ins -> Warn.fatal "RISCV, instruction '%s' not handled" (RISCV.dump_instruction ins)
           end
+
+      let spurious_setaf _ = assert false
+
     end
+
   end

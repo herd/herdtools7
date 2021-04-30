@@ -368,5 +368,8 @@ module Make (C:Sem.Config)(V:Value.S)
               Warn.fatal "Instruction %s not implemented"
                 (PPC.dump_instruction ii.A.inst)
           end
+
+      let spurious_setaf _ = assert false
+
     end
   end

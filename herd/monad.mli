@@ -176,8 +176,13 @@ module type S =
            is_data charaterizes the data port of a store *)
 
     (* Read, the first, boolean, argument identifies a store data port *)
+    val do_read_loc : bool -> (A.location -> A.V.v -> E.action) ->
+      A.location -> E.iiid -> A.V.v t
     val read_loc : bool -> (A.location -> A.V.v -> E.action) ->
       A.location -> A.inst_instance_id -> A.V.v t
+
+    val do_write_loc :
+      (A.location -> E.action) -> A.location -> E.iiid -> unit t
     val write_loc :
       (A.location -> E.action) -> A.location -> A.inst_instance_id -> unit t
     (* Fence, must be used when output is absent *)

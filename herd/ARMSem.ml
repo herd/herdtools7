@@ -305,5 +305,8 @@ module Make (C:Sem.Config)(V:Value.S)
           | ARM.I_SEL _ ->
               Warn.user_error "SEL not implemented"
           end
+
+      let spurious_setaf _ = assert false
+
     end
   end

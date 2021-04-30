@@ -181,5 +181,6 @@ module Make (C:Sem.Config)(V:Value.S)
 
         in
         M.addT (A.next_po_index ii.A.program_order_index) (build_semantics_inner ii)
+      let spurious_setaf _ = assert false
     end
   end

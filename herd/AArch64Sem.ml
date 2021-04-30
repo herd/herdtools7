@@ -367,16 +367,16 @@ module Make
       let extract_el0 v = M.op1 Op.EL0 v
       let extract_oa v = M.op1 Op.OA v
 
-      let mextract_whole_pte_val an nexp a_pte ii =
-        (M.read_loc false
+      let mextract_whole_pte_val an nexp a_pte iiid =
+        (M.do_read_loc false
            (fun loc v ->
              Act.Access (Dir.R,loc,v,an,nexp,quad,Act.A_PTE))
-           (A.Location_global a_pte) ii)
+           (A.Location_global a_pte) iiid)
 
-      and write_whole_pte_val an explicit a_pte v ii =
-        M.write_loc
+      and write_whole_pte_val an explicit a_pte v iiid =
+        M.do_write_loc
           (mk_write quad an explicit Act.A_PTE v)
-          (A.Location_global a_pte) ii
+          (A.Location_global a_pte) iiid
 
 
       let op_of_set = function
@@ -384,13 +384,13 @@ module Make
         | AArch64.DB -> Op.SetDB
         | AArch64.Other -> assert false
 
-      let test_and_set_bit cond set a_pte ii =
+      let test_and_set_bit cond set a_pte iiid =
         let nexp = AArch64.NExp set in
-        mextract_whole_pte_val AArch64.X nexp a_pte ii >>= fun pte_v ->
+        mextract_whole_pte_val AArch64.X nexp a_pte iiid >>= fun pte_v ->
         cond pte_v >>*= fun c ->
         M.choiceT c
             (M.op1 (op_of_set set) pte_v >>= fun v ->
-             write_whole_pte_val AArch64.X nexp a_pte v ii)
+             write_whole_pte_val AArch64.X nexp a_pte v iiid)
             (M.unitT ())
 
       let bit_is_zero op v = M.op1 op v >>= is_zero
@@ -531,7 +531,7 @@ module Make
             begin if hd && dir = Dir.W then
               is_zero pte_v.db_v >>= fun c ->
               M.choiceT c
-                  (test_and_set_db a_pte ii)
+                  (test_and_set_db a_pte (E.IdSome ii))
                   (M.unitT ())
             else M.unitT ()
             end
@@ -550,11 +550,11 @@ module Make
               let get_a_pte = ma >>= fun _ -> M.op1 Op.PTELoc a_virt
               and test_and_set_af a_pte =
                 if tthm && ha then
-                  test_and_set_af a_pte ii >>! a_pte
+                  test_and_set_af a_pte (E.IdSome ii) >>! a_pte
                 else M.unitT a_pte in
               (get_a_pte >>== test_and_set_af) >>= fun a_pte ->
               mextract_whole_pte_val
-                an AArch64.nexp_annot a_pte ii >>= fun pte_v ->
+                an AArch64.nexp_annot a_pte (E.IdSome ii) >>= fun pte_v ->
               (mextract_pte_vals pte_v) >>= fun pte_v -> M.unitT (pte_v,a_pte)
             end
           (fun (_,a_pte) ma -> (* now we have PTE content *)
@@ -1808,5 +1808,9 @@ module Make
         | I_LD1M _|I_ST1M _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
         )
+
+      let spurious_setaf v = test_and_set_af v E.IdSpurious
+
     end
+
   end

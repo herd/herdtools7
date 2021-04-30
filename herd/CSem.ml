@@ -440,5 +440,8 @@ module Make (Conf:Config)(V:Value.S)
           let ii = {ii with A.inst=inst; } in
           build_semantics ii >>> fun (prog_order, _branch) ->
             build_semantics_list insts {ii with  A.program_order_index = prog_order;}
+
+      let spurious_setaf _ = assert false
+
     end
   end
