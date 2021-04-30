@@ -215,8 +215,12 @@ let as_symbolic_data =function
 
 let of_symbolic_data sym = Symbolic (Virtual sym)
 
+let as_pte v = match v with
+| Symbolic (System ((PTE|PTE2),_)) -> Some v
+| _ -> None
+
 let is_pt v = match v with
-| Symbolic (System (PTE,_)) -> true
+| Symbolic (System ((PTE|PTE2),_)) -> true
 | _ -> false
 
 let same_oa v1 v2 =

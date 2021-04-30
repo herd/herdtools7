@@ -91,6 +91,7 @@ val as_symbol : 'a t -> symbol option
 val as_symbolic_data : 'a t -> symbolic_data option
 val of_symbolic_data : symbolic_data -> 'a t
 
+val as_pte : 'a t -> 'a t option
 val is_pt : 'a t -> bool
 
 (* Those two are properties of ptevals.
