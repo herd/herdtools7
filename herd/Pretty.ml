@@ -175,8 +175,9 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     fprintf chan "[label=\" %s\\l\"]\n}\n" msg
 
   let pp_instruction dm m chan iiid = match iiid with
-  | None -> fprintf chan "Init"
-  | Some iiid ->
+  | E.IdInit -> fprintf chan "Init"
+  | E.IdSpurious -> fprintf chan "Spurious"
+  | E.IdSome iiid ->
       let instruction = iiid.A.inst in
       fprintf chan "%s" (a_pp_instruction dm m instruction)
 
@@ -842,10 +843,10 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   let pp_node_eiid e = sprintf "eiid%i" e.E.eiid
 
   let pp_node_ii chan ii = match ii with
-  | None -> ()
-  | Some ii ->
-      fprintf chan "proc:%i poi:%i\\l"
-        ii.A.proc
+  | E.IdInit|E.IdSpurious -> ()
+  | E.IdSome ii ->
+      fprintf chan "proc:%s poi:%i\\l"
+        (Proc.pp ii.A.proc)
         ii.A.program_order_index
 
 (*
@@ -1277,8 +1278,8 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
                       with Not_found -> assert false in
                     let ins =
                       match e0.E.iiid with
-                      | Some iiid -> iiid.A.inst
-                      | None -> assert false in
+                      | E.IdSome iiid -> iiid.A.inst
+                      | E.IdInit|E.IdSpurious -> assert false in
                     E.pp_instance e0 ^ " " ^
                     a_pp_instruction dm mmode ins
                   else "" in

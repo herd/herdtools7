@@ -33,7 +33,7 @@ module Make (C:Sem.Config)(V : Value.S)
     let is_global = A.is_global
 
     let atomic_pair_allowed e1 e2 = match e1.E.iiid, e2.E.iiid with
-    | Some i1,Some i2 -> i1 == i2
+    | E.IdSome i1,E.IdSome i2 -> i1 == i2
     | _,_ -> false
 
 (********************)

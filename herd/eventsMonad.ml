@@ -922,13 +922,13 @@ Monad type:
     let make_one_event a ii eiid =
       bump_eid eiid,
       { E.eiid = eiid.id; E.subid=eiid.sub;
-        E.iiid = Some ii;
+        E.iiid = E.IdSome ii;
         E.action = a; }
 
     let make_one_init_event a eiid =
       bump_eid eiid,
       { E.eiid = eiid.id; E.subid=eiid.sub;
-        E.iiid = None;
+        E.iiid = E.IdInit;
         E.action = a; }
 
     let make_one_event_structure a ii =
@@ -1011,12 +1011,12 @@ Monad type:
       let v_tag = V.fresh_var () in
       let eqs = eqs@[VC.Assign (v_tag,VC.Binop (Op.CapaSetTag,v,vs_tag))] in
       let eiid,es = bump_eid eiid, E.EventSet.add
-        { E.eiid = eiid.id; E.subid=eiid.sub; E.iiid = Some ii;
+        { E.eiid = eiid.id; E.subid=eiid.sub; E.iiid = E.IdSome ii;
           E.action = f (A.Location_global a_tag) vs_tag;} st.E.events in
       let e_full_action = if E.EventSet.is_empty st.E.events then f (A.Location_global a) v
         else (E.EventSet.max_elt st.E.events).E.action in
       let e_full = if E.EventSet.is_empty st.E.mem_accesses then
-        { E.eiid=eiid.id; E.subid=eiid.sub; E.iiid = Some ii;
+        { E.eiid=eiid.id; E.subid=eiid.sub; E.iiid = E.IdSome ii;
           E.action = e_full_action; } else
         E.EventSet.max_elt st.E.mem_accesses in
       let st = { st with
@@ -1033,12 +1033,12 @@ Monad type:
       let a_tag = V.fresh_var () in
       let eqs = VC.Assign (a_tag,VC.Unop (Op.CapaTagLoc,a))::eqs in
       let eiid,es = bump_eid eiid, E.EventSet.add
-        { E.eiid = eiid.id; E.subid=eiid.sub; E.iiid = Some ii;
+        { E.eiid = eiid.id; E.subid=eiid.sub; E.iiid = E.IdSome ii;
           E.action = f (A.Location_global a_tag) v;} st.E.events in
       let e_full_action = if E.EventSet.is_empty st.E.events then f (A.Location_global a) v
         else (E.EventSet.max_elt st.E.events).E.action in
       let e_full = if E.EventSet.is_empty st.E.mem_accesses then
-        { E.eiid=eiid.id; E.subid=eiid.sub; E.iiid = Some ii;
+        { E.eiid=eiid.id; E.subid=eiid.sub; E.iiid = E.IdSome ii;
           E.action = e_full_action; } else
         E.EventSet.max_elt st.E.mem_accesses in
       let st = { st with
@@ -1208,7 +1208,7 @@ Monad type:
         assert morello ;
         let open Constant in
         bump_eid eiid,
-        { E.eiid = eiid.id; E.subid=eiid.sub; E.iiid = None;
+        { E.eiid = eiid.id; E.subid=eiid.sub; E.iiid = E.IdInit;
           E.action =
             E.Act.mk_init_write
               (A.of_symbolic_data
