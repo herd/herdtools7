@@ -1302,9 +1302,14 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
           | Graph.Cluster ->  fprintf chan "}\n"
           | Graph.Free|Graph.Columns -> ()
           end)
-        events_by_proc_and_poi;
-
+        events_by_proc_and_poi ;
       pl "" ;
+      let spurious_es = PU.spurious_events es in
+      if not (E.EventSet.is_empty spurious_es) then begin
+        pl "/* Spurious events */" ;
+        E.EventSet.pp chan "" (pp_event false "red") spurious_es ;
+        ()
+      end ;
       pl "/* the intra_causality_data edges */\n" ;
       E.EventRel.pp chan ""
         (fun chan (e,e') ->
