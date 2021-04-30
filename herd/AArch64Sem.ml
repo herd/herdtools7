@@ -42,6 +42,7 @@ module Make
     let phantom =
       Variant.get_switch `AArch64 Variant.SwitchPhantom C.variant
 
+
     let check_memtag ins =
       if not memtag then
         Warn.user_error "%s without -variant memtag" ins
@@ -556,8 +557,9 @@ module Make
             begin
               let get_a_pte = ma >>= fun _ -> M.op1 Op.PTELoc a_virt
               and test_and_set_af a_pte =
-                if tthm && ha && not phantom then
-                  test_and_set_af a_pte (E.IdSome ii) >>! a_pte
+                if not phantom && tthm && ha then
+                  let iiid =E.IdSome ii in
+                  test_and_set_af a_pte iiid >>! a_pte
                 else M.unitT a_pte in
               (get_a_pte >>== test_and_set_af) >>= fun a_pte ->
               let an,nexp =
@@ -768,13 +770,23 @@ module Make
               else (mfault >>| mm) >>! B.Next))
 
 
+      let some_ha = dirty.DirtyBit.some_ha || dirty.DirtyBit.some_hd
+
+      let fire_spurious_af dir a m =
+        if phantom && some_ha && dir = Dir.W then
+          (m >>|
+             M.altT (test_and_set_af a E.IdSpurious) (M.unitT ())) >>=
+            fun (r,_) -> M.unitT r
+        else m
+
       let lift_kvm dir mop ma an ii mphy =
         let mfault ma a =
           insert_commit_to_fault ma (fun _ -> mk_fault a ii None) ii
           >>! if C.precision then B.Exit else B.ReExec in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir a ma an ii
-            (mop Act.A_PTE ma >>! B.Next)
+            ((let m = mop Act.A_PTE ma in
+              fire_spurious_af dir a m) >>! B.Next)
             mphy
             mfault in
         M.delay_kont "6" ma
@@ -832,7 +844,9 @@ module Make
                 fun ma a_virt ->
                 M.op1 Op.IsVirtual a_virt >>= fun c ->
                 M.choiceT c
-                  (mop Act.A_PHY ma) (mop Act.A_PHY_PTE ma) >>! B.Next
+                  (mop Act.A_PHY ma)
+                  (fire_spurious_af dir a_virt (mop Act.A_PHY_PTE ma))
+                >>! B.Next
               else
                 fun ma _a -> mop Act.A_PHY ma >>! B.Next in
             lift_kvm dir mop ma an ii mphy
