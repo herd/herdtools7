@@ -628,6 +628,10 @@ Monad type:
     let (>>::) : 'a t -> 'a list t -> 'a list  t
         = fun s1 s2 -> combi (fun v1 v2 -> v1::v2) (fun es1 es2 -> es1 =|= es2) s1 s2
 
+(* Parallel composition no result *)
+    let (|||) : unit t -> unit t -> unit t
+      = fun  s1 s2 -> combi (fun _ _ -> ()) (=|=) s1 s2
+
 (* Force monad value *)
     let forceT : 'a -> 'b t -> 'a t =
       fun v s eiid ->
@@ -1306,7 +1310,7 @@ Monad type:
         r
 
 
-      let initwrites_non_mixed env size_env =
+      let initwrites_non_mixed madd env size_env =
         let env =
           if kvm then (if dbg then debug_add_initpte else add_initpte) env
           else env in
@@ -1344,7 +1348,7 @@ Monad type:
             begin
               eprintf "Init writes %a\n" E.debug_events es
             end ;
-          make_one_monad () [] (do_trivial es) eiid
+          madd (make_one_monad () [] (do_trivial es)) eiid
 
       let debug_env env =
         String.concat "; "
@@ -1410,17 +1414,18 @@ Monad type:
         with
         | V.Undetermined -> assert false
 
-      let do_initwrites env =
+      let do_initwrites madd env =
         let env = if memtag then add_inittags env else env in
         (if A.is_mixed then initwrites_mixed
-        else initwrites_non_mixed) env
+        else initwrites_non_mixed madd) env
 
       let t2code : 'a t -> 'a code
           = fun m -> fun (poi,eiid) ->
             let eiid,r = m {id=eiid;sub=0;} in
             ((poi,eiid.id),r)
 
-      let initwrites env size_env = t2code (do_initwrites env size_env)
+      let initwrites madd env size_env =
+        t2code (do_initwrites madd env size_env)
 
     end
 
@@ -1476,8 +1481,9 @@ Monad type:
     type evt_struct = E.event_structure
     type output = VC.cnstrnts * evt_struct
 
-    let get_output =
-      fun et ->
-        let (_,(es,_)) = et (0,0) in
-        List.map (fun (_,vcl,evts) -> (vcl,evts)) (Evt.elements es)
+    let get_output et k =
+      let (_,(es,_)) = et (0,0) in
+      List.fold_left
+        (fun k (_,vcl,evts) -> (vcl,evts)::k)
+        k (Evt.elements es)
   end

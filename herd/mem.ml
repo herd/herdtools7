@@ -32,6 +32,7 @@ end
 module type Config = sig
   include CommonConfig
   val byte : MachSize.sz
+  val dirty : DirtyBit.t option
 end
 
 module type S = sig
@@ -139,6 +140,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     let check_mixed =  not (C.variant Variant.DontCheckMixed)
     let do_deps = C.variant Variant.Deps
     let kvm = C.variant Variant.Kvm
+    let phantom =
+      kvm && Variant.get_switch A.arch Variant.SwitchPhantom C.variant
 
 (*****************************)
 (* Event structure generator *)
@@ -338,25 +341,53 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       let jump_start proc code =
         add_code proc Imap.empty code in
 
+(* As name suggests, add events of one thread *)
       let add_events_for_a_processor (proc,code) evts =
         let evts_proc = jump_start proc code in
         evts_proc |*| evts in
 
-      let add_inits env size_env =
+(* Initial events, some additional events from caller in madd *)
+      let make_inits madd env size_env =
         if C.initwrites then
           let module MI = EM.Mixed(C) in
-          MI.initwrites env size_env
+          MI.initwrites madd env size_env
         else EM.zerocodeT in
 
-      let set_of_all_instr_events =
+      let env0 = get_all_mem_locs test in
+
+(* Build code monad for one given set of events to add *)
+      let set_of_all_instr_events madd =
         List.fold_right
           add_events_for_a_processor
           starts
-          (add_inits (get_all_mem_locs test) test.Test_herd.size_env) in
+          (make_inits madd env0 test.Test_herd.size_env) in
 
       let transitive_po es =
         let r,e = es.E.po in
         (r,E.EventRel.transitive_closure e) in
+
+      let add_setaf0 k (loc,v) =
+        match loc with
+        | A.Location_global (V.Val c as vloc) ->
+           if Constant.is_pt c then
+             let open PTEVal in
+             match v with
+             | V.Val (Constant.PteVal {af=0}) ->
+                vloc::k
+             | _ -> k
+           else k
+        | _ -> k in
+
+      let af0 =
+        if
+          begin match C.dirty with
+          | None -> false
+          | Some t -> t.DirtyBit.some_ha || t.DirtyBit.some_hd
+          end &&
+          phantom
+        then
+          List.fold_left add_setaf0 [] env0
+        else [] in
 
       let rec index xs i = match xs with
       | [] ->
@@ -367,7 +398,13 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           let es =
             { es with E.procs = procs; E.po = if do_deps then transitive_po es else es.E.po } in
           (i,vcl,es)::index xs (i+1) in
-      let r = EM.get_output set_of_all_instr_events  in
+      let r =
+        Misc.fold_subsets_gen
+          (fun vloc -> EM.(|||) (SM.spurious_setaf vloc))
+          (EM.unitT ()) af0
+          (fun maf0 ->
+            EM.get_output (set_of_all_instr_events (EM.(|||) maf0)))
+           [] in
       { event_structures=index r 0; loop_present = !tooFar; }
 
 

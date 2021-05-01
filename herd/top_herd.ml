@@ -38,6 +38,7 @@ end
 module type Config = sig
   include CommonConfig
   val byte : MachSize.sz
+  val dirty : DirtyBit.t option
 end
 
 module Make(O:Config)(M:XXXMem.S) =

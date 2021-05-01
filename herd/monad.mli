@@ -138,8 +138,9 @@ module type S =
 
 (* Parallel composition *)
     val (>>|) : 'a t -> 'b t -> ('a * 'b)  t
-
     val (>>::) : 'a t -> 'a list t -> 'a list t
+    val (|||) : unit t -> unit t -> unit t
+
     val (|*|)   : bool code -> unit code -> unit code   (* Cross product *)
 (*    val lockT : 'a t -> 'a t *)
     val forceT : 'a -> 'b t -> 'a t
@@ -212,7 +213,11 @@ module type S =
       (MachSize.sz -> A.location -> A.V.v -> E.action) ->
         A.V.v -> A.V.v ->  A.inst_instance_id -> unit t
 
-      val initwrites : (A.location * A.V.v) list -> A.size_env -> unit code
+      (* Generate initial code monad, first argument represent additional
+         events, beyond intwrites themselves *)
+      val initwrites :
+        (unit t -> unit t) ->
+          (A.location * A.V.v) list -> A.size_env -> unit code
 
     end
 
@@ -232,5 +237,5 @@ module type S =
     type evt_struct
     type output = VC.cnstrnts * evt_struct
 
-    val get_output  : 'a code -> output list
+    val get_output  : 'a code -> output list -> output list
   end
