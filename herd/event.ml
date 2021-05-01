@@ -80,6 +80,7 @@ val same_instance : event -> event -> bool
 (* relative to memory *)
   val is_mem_store : event -> bool
   val is_mem_store_init : event -> bool
+  val is_spurious : event -> bool
   val is_mem_load : event ->  bool
   val is_additional_mem_load : event ->  bool (* trylock... *)
   val is_mem : event -> bool
@@ -553,6 +554,11 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let is_mem_store_init e = match e.iiid with
     | IdInit -> true
     | IdSpurious|IdSome _ -> false
+
+    let is_spurious e = match e.iiid with
+    | IdSpurious -> true
+    | IdInit|IdSome _ -> false
+
 
     let is_mem_load e = Act.is_mem_load e.action
     let is_additional_mem_load e = Act.is_additional_mem_load e.action
