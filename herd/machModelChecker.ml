@@ -127,7 +127,9 @@ module Make
         fun e1 e2 ->
         let p = S.E.proc_of e1 in
         match p with
-        | None -> Warn.user_error "Init write as first argument of writable2"
+        | None ->
+           Warn.user_error
+             "Init or spurious write as first argument of writable2"
         | Some p ->
             let ha,hd =
               let open DirtyBit in
@@ -318,6 +320,7 @@ module Make
                  "EXEC", (fun e -> not (is_spec e));
                  "AMO",E.is_amo;
                  "I", E.is_mem_store_init;
+                 "SPURIOUS", E.is_spurious;
                  "IW", E.is_mem_store_init;
                  "FW",
                  (let ws = lazy (U.make_write_mem_finals conc) in
