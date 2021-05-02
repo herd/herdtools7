@@ -38,6 +38,7 @@ module type Config = sig
   val pad : int
   val ccopts : string list
   val sharelocks : int option
+  val delay : int
   val sysarch : Archs.System.t
 end
 

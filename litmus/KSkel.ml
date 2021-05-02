@@ -33,6 +33,7 @@ module type Config = sig
   val barrier : KBarrier.t
   val affinity : KAffinity.t
   val sharelocks : int option
+  val delay : int
   val sysarch : Archs.System.t
 end
 
@@ -62,10 +63,12 @@ module Make
         end)
 
     let memtype_possible = Insert.exists "klitmus_memory_type.c"
+    let timebase_possible = Insert.exists "timebase.c"
 
 (*************)
 (* Utilities *)
 (*************)
+
     let spinsize = "spinsize"
 
     let do_spinsize sz = match Cfg.sharelocks with
@@ -285,6 +288,8 @@ module Make
         | No -> 0
         | Incr i -> i
         | Random -> -1) ;
+      if timebase_possible then
+        O.f "static unsigned int delay_tb = %i;" Cfg.delay ;
       O.o "" ;
       let do_module_param t v = O.f "module_param(%s,%s,0644);" v t in
       let module_param = do_module_param "uint" in
@@ -294,6 +299,8 @@ module Make
       module_param "avail" ;
       module_param "ninst" ;
       do_module_param "int" "affincr" ;
+      if timebase_possible then
+        module_param "delay_tb" ;
       O.o "" ;
       O.f "static char *name = %S;" tname ;
       O.o "module_param(name,charp,0444);" ;
@@ -595,7 +602,16 @@ let dump_ctx mts env test =
 (***************)
 (* Test proper *)
 (***************)
+
 let dump_barrier_def () =
+  if timebase_possible then begin
+     O.o "/* Read timebase */" ;
+     O.o "#define TIMEBASE" ;
+     O.o "typedef uint64_t tb_t ;" ;
+     O.o "" ;
+     Insert.insert O.o "timebase.c";
+     O.o ""
+  end ;
   ObjUtil.insert_lib_file O.o "kbarrier-tb.txt" ;
   O.o "" ;
   begin let open KBarrier in
