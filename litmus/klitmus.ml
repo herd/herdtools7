@@ -54,6 +54,8 @@ module KOption : sig
   val affinity : KAffinity.t ref
   val ccopts : string list ref
   val sharelocks : int option ref
+  val delay : int ref
+
   val carch : Archs.System.t option ref
   val set_carch : Archs.System.t -> unit
 end = struct
@@ -66,6 +68,7 @@ end = struct
   let affinity = ref KAffinity.No
   let ccopts = ref []
   let sharelocks = ref None
+  let delay = ref 256
   let carch = ref (Some `X86_64)
 end
 
@@ -100,6 +103,9 @@ let opts =
    PStride.parse "-stride" KOption.stride "stride for scanning memory" ;
    begin let module P = ParseTag.Make(KBarrier)  in
    P.parse "-barrier" KOption.barrier "synchronisation barrier style" end;
+   "-delay", Arg.Int (fun i -> KOption.delay := i),
+   sprintf
+     "set timebase delay (default %i)" !KOption.delay;
 (* number if shared spinlocks and srcu_struct *)
    "-share_locks", arginto KOption.sharelocks,
      "<n> number of spinlock_t's and srcu)_structs to share between test instances (default, do not share)";
@@ -190,6 +196,7 @@ let () =
       let pad = !pad
       let ccopts = !ccopts
       let sharelocks = !sharelocks
+      let delay = !delay
       let sysarch = Misc.as_some !carch
 (* tar stuff *)
       let tarname = KOption.get_tar ()

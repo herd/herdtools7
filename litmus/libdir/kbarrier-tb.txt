@@ -3,6 +3,9 @@
 typedef struct {
   atomic_t c;
   int sense;
+#ifdef TIMEBASE
+  tb_t tb;
+#endif
 } sense_t;
 
 static void free_sense(sense_t *p) {
@@ -32,6 +35,9 @@ static void sense_wait(sense_t *p) {
   last = atomic_dec_and_test(&(p->c)) ;
   smp_mb() ;
   if (last) {
+#ifdef TIMEBASE
+  p->tb = read_timebase();
+#endif
     atomic_set(&p->c,nthreads) ;
     smp_mb() ;
     WRITE_ONCE(p->sense,1-sense);
@@ -49,4 +55,10 @@ static void sense_wait(sense_t *p) {
     }
     smp_mb() ;
   }
+#ifdef TIMEBASE
+  tb_t limit = p->tb + delay_tb;
+  for ( ; ; ) {
+    if (read_timebase() >= limit) break;
+  }
+#endif
 }
