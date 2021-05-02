@@ -105,7 +105,7 @@ let opts =
    P.parse "-barrier" KOption.barrier "synchronisation barrier style" end;
    "-delay", Arg.Int (fun i -> KOption.delay := i),
    sprintf
-     "set timebase delay (default %i)" !KOption.delay;
+     "<n> set timebase delay (default %i)" !KOption.delay;
 (* number if shared spinlocks and srcu_struct *)
    "-share_locks", arginto KOption.sharelocks,
      "<n> number of spinlock_t's and srcu)_structs to share between test instances (default, do not share)";
