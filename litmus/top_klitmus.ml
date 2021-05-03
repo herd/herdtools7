@@ -39,7 +39,7 @@ module type Config = sig
   val ccopts : string list
   val sharelocks : int option
   val delay : int
-  val sysarch : Archs.System.t
+  val carch : Archs.System.t
 end
 
 module Top(O:Config)(Tar:Tar.S) = struct
@@ -80,7 +80,10 @@ module Top(O:Config)(Tar:Tar.S) = struct
       (Pseudo:PseudoAbstract.S) =
     struct
       module T = Test_litmus.Make(O)(A)(Pseudo)
-
+      module O = struct
+        include O
+        let sysarch = Archs.get_sysarch A.arch O.carch
+      end
       let dump source doc compiled =
         let outname = Tar.outname source in
         try

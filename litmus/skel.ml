@@ -134,14 +134,6 @@ module Make
       | TimeBase -> true
       | _ -> false
 
-      let have_timebase = function
-        | `AArch64 -> false (* FIXME: ??? *)
-        | `ARM|`MIPS -> false
-        | `PPC|`X86 | `X86_64-> true
-        | _ -> false
-
-      let have_timebase = have_timebase Cfg.sysarch
-
       let do_collect_local = match Cfg.collect with
       | Collect.Local|Collect.Both ->
           if do_timebase then true
@@ -286,13 +278,11 @@ module Make
 
 (* Inserted source *)
 
-      module Insert =
-        ObjUtil.Insert
-          (struct
-            let sysarch = Cfg.sysarch
-          end)
+      module Insert = ObjUtil.Insert(Cfg)
 
-(* Location utilities *)
+      let have_timebase = Insert.exists "timebase.c"
+
+      (* Location utilities *)
       let get_global_names t = List.map fst t.T.globals
 
       let find_index  v =
@@ -420,11 +410,14 @@ module Make
           O.o "#include \"affinity.h\""
         end ;
         O.o "" ;
-        if Cfg.sysarch = `AArch64 then begin
-          O.o "/* 128 bit types */" ;
-          O.o "typedef __int128 int128_t;" ;
-          O.o "typedef unsigned __int128 uint128_t;" ;
-          O.o "" ;
+        begin match Cfg.sysarch with
+        | `AArch64 ->
+            O.o "/* 128 bit types */" ;
+            O.o "typedef __int128 int128_t;" ;
+            O.o "typedef unsigned __int128 uint128_t;" ;
+            O.o "" ;
+            ()
+        | _ -> ()
        end;
         O.o "/* params */" ;
         O.o "typedef struct {" ;
@@ -558,7 +551,7 @@ module Make
                 end ;
                 sprintf "barrier%s.c" lab_ext
         in
-        Insert.insert O.o (fname Cfg.sysarch)
+        Insert.insert O.o (fname (Archs.check_carch Cfg.sysarch))
 
       let dump_user_barrier_vars () = O.oi "int volatile *barrier;"
 
@@ -1944,16 +1937,15 @@ module Make
             end ;
             if do_isync then begin match barrier with
             | User | User2 | UserFence | UserFence2 | TimeBase ->
-                let aux = function
-                  | `PPCGen
+                let aux a = match a with
                   | `PPC ->
-                      O.fx iloop "asm __volatile__ (\"isync\" : : : \"memory\");"
-                  | `ARM ->
-                      O.fx iloop "asm __volatile__ (\"isb\" : : : \"memory\");"
-                  | `AArch64 -> assert false (* FIXME: ??? *)
+                      O.fx iloop
+                        "asm __volatile__ (\"isync\" : : : \"memory\");"
+                  | `ARM|`AArch64 ->
+                      O.fx iloop
+                        "asm __volatile__ (\"isb\" : : : \"memory\");"
                   | `X86_64 | `X86|`MIPS|`RISCV -> ()
-                  | `GPU_PTX -> assert false
-                in
+                  | _ -> () in
                 aux Cfg.sysarch
             | Pthread|NoBarrier -> ()
             end ;

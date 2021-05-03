@@ -18,8 +18,10 @@
 (* Archs *)
 (*********)
 
+
 module System = struct
-  type t = [
+
+  type arch = [
     | `AArch64
     | `ARM
     | `MIPS
@@ -27,7 +29,9 @@ module System = struct
     | `X86
     | `RISCV
     | `X86_64
-  ]
+    ]
+
+  type t = [ arch | `Unknown ]
 
   let tags = [
     "AArch64";
@@ -49,11 +53,7 @@ module System = struct
     | "X86_64" -> Some `X86_64
     | _ -> None
 
-  let lex s = match parse s with
-    | Some a -> a
-    | None -> assert false
-
-  let pp a = match a with
+  let pp (a:t) = match a with
     | `AArch64 -> "AArch64"
     | `ARM -> "ARM"
     | `MIPS -> "MIPS"
@@ -61,10 +61,11 @@ module System = struct
     | `X86 -> "X86"
     | `RISCV -> "RISCV"
     | `X86_64 -> "X86_64"
+    | `Unknown -> "Unknown"
 end
 
 type t = [
-  System.t
+  System.arch
   | `C
   | `CPP
   | `LISA
@@ -89,15 +90,11 @@ let parse s = match System.parse s with
   end
   | a -> a
 
-let lex s = match parse s with
-  | Some a -> a
-  | None -> assert false
-
 let pp = function
   | `C -> "C"
   | `CPP -> "C++"
   | `LISA -> "LISA"
-  | #System.t as a -> System.pp a
+  | #System.arch as a -> System.pp a
 
 let aarch64 = `AArch64
 let arm = `ARM
@@ -112,7 +109,13 @@ let x86_64 = `X86_64
 
 let compare = compare
 
-let get_sysarch (a:t) (ca:System.t option) = match a with
-| #System.t as a -> Some a
-|`CPP|`LISA -> None
-| `C -> ca
+let get_sysarch a ca = match a with
+  | #System.arch as a -> a
+  |`CPP|`LISA -> `Unknown
+  | `C -> ca
+
+let check_carch a = match a with
+  | `Unknown ->
+      Warn.user_error
+        "Please specify your architecture with the -carch <arch> option"
+  | #System.arch as a -> a

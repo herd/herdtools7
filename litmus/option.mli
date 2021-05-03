@@ -117,7 +117,7 @@ val xy : bool ref
 val morearch : MoreArch.t ref
 val pldw : bool ref
 val cacheflush : bool ref
-val carch : Archs.System.t option ref
+val carch : Archs.System.t ref
 val mode : Mode.t ref
 val usearch : UseArch.t ref
 val precision : bool ref

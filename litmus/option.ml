@@ -169,7 +169,7 @@ let syncconst = 128
 let syncmacro = ref (-1)
 let xy = ref false
 let morearch = ref MoreArch.No
-let carch = ref None
+let carch = ref `Unknown
 let mode = ref Mode.Std
 let usearch = ref UseArch.Trad
 let precision = ref false
@@ -228,7 +228,7 @@ let get_word opt = opt.word
 let set_line w = replace_config (fun o ->  { o with line = w; })
 let get_line opt = opt.line
 
-let set_carch x = carch := Some x
+let set_carch x = carch := x
 
 (* More *)
 

@@ -56,11 +56,7 @@ module Make
 (* Arch dependant *)
 (******************)
 
-    module Insert =
-      ObjUtil.Insert
-        (struct
-          let sysarch = Cfg.sysarch
-        end)
+    module Insert = ObjUtil.Insert(Cfg)
 
     let memtype_possible = Insert.exists "klitmus_memory_type.c"
     let timebase_possible = Insert.exists "timebase.c"

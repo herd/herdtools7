@@ -56,7 +56,7 @@ module KOption : sig
   val sharelocks : int option ref
   val delay : int ref
 
-  val carch : Archs.System.t option ref
+  val carch : Archs.System.t ref
   val set_carch : Archs.System.t -> unit
 end = struct
   include Option
@@ -69,7 +69,6 @@ end = struct
   let ccopts = ref []
   let sharelocks = ref None
   let delay = ref 256
-  let carch = ref (Some `X86_64)
 end
 
 open KOption
@@ -197,7 +196,7 @@ let () =
       let ccopts = !ccopts
       let sharelocks = !sharelocks
       let delay = !delay
-      let sysarch = Misc.as_some !carch
+      let carch = !carch
 (* tar stuff *)
       let tarname = KOption.get_tar ()
     end in

@@ -22,7 +22,7 @@ open Answer
 open Printf
 
 module type Config = sig
-  val carch : Archs.System.t option
+  val carch : Archs.System.t
   val platform : string
   val makevar : string list
   val gcc : string
@@ -68,7 +68,6 @@ end = struct
     end
 
   module type ArchConf = sig
-    val sysarch : Archs.System.t
     val word : Word.t
     val delay : int
     val gccopts :  string
@@ -76,17 +75,12 @@ end = struct
 
   let get_arch arch =
     let arch = match arch with
-    | `C ->
-        begin match Cfg.carch with
-        | Some a -> a
-        | None -> assert false
-        end
+    | `C -> Archs.check_carch Cfg.carch
     | `OpenCL | `CPP | `LISA -> assert false
-    | #Archs.System.t as a -> a in
+    | #Archs.System.arch as a -> a in
     let opt = Option.get_default arch in
     let opt = Cfg.mkopt opt in
     let module M = struct
-      let sysarch = arch
       let word = Option.get_word opt
       let gccopts = Option.get_gccopts opt
       let delay = Option.get_delay opt
@@ -205,8 +199,10 @@ let run_tests names out_chan =
   let utils =
     let module O = struct
       include Cfg
-      let cached = match Cfg.threadstyle with ThreadStyle.Cached -> true | _ -> false
+      let cached =
+        match Cfg.threadstyle with ThreadStyle.Cached -> true | _ -> false
       let arch = arch
+      let sysarch  = Archs.get_sysarch arch Cfg.carch
     end in
     let module Obj = ObjUtil.Make(O)(Tar) in
     Obj.dump () in
@@ -393,7 +389,9 @@ let dump_shell_cont arch sources utils =
           fprintf chan "\tawk -f show.awk $< > $@\n" ;
           fprintf chan "\n"
       | Mode.Kvm ->
-          let module A = (val (get_arch arch) : ArchConf) in
+          let module A = struct
+            let sysarch = Archs.get_sysarch arch Cfg.carch
+            end in
           let module Insert =  ObjUtil.Insert(A) in
           Insert.insert (fprintf chan "%s\n") "kvm.rules"
       end)
