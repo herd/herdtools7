@@ -23,7 +23,7 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
       | I_LOCK _ | I_EFF_EFF (I_XCHG,_,_,_) -> true
       | I_NOP | I_EFF_OP _ | I_EFF _ | I_EFF_EFF _
       | I_CMPXCHG _ | I_JMP _ | I_JCC _ | I_CMOVC _ | I_MOVNTI _
-      | I_FENCE _ | I_MOVD _ | I_MOVNTDQA _
+      | I_FENCE _ | I_MOVD _ | I_MOVNTDQA _ | I_CLFLUSH _
         -> false
 
     let pp_barrier_short = pp_barrier
@@ -78,6 +78,7 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
 
     let mem_access_size = function
       | I_NOP | I_JMP _ | I_JCC _ | I_LOCK _ | I_FENCE _
+      | I_CLFLUSH _
       | I_MOVNTDQA _ (* twice a quad in fact *)
         -> None
       | I_EFF_OP (_, sz, _, _) | I_EFF (_, sz, _) | I_EFF_EFF (_, sz, _, _)
