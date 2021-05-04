@@ -26,6 +26,7 @@ and indent5 = Indent.indent5
 module type Config = sig
   val verbose : int
   val hexa : bool
+  val litmus : string
   val size : int
   val runs : int
   val avail : int option
@@ -878,9 +879,9 @@ let dump_init_exit has_memtype _test =
   O.o "litmus_init(void) {" ;
   O.oi "int err=0;" ;
   O.o "#ifdef HAVE_PROC_CREATE_SINGLE" ;
-  O.oi "struct proc_dir_entry *litmus_pde = proc_create_single(\"litmus\",0,NULL,litmus_proc_show);" ;
+  O.fi "struct proc_dir_entry *litmus_pde = proc_create_single(\"%s\",0,NULL,litmus_proc_show);" Cfg.litmus ;
   O.o "#else" ;
-  O.oi "struct proc_dir_entry *litmus_pde = proc_create(\"litmus\",0,NULL,&litmus_proc_fops);" ;
+  O.fi "struct proc_dir_entry *litmus_pde = proc_create(\"%s\",0,NULL,&litmus_proc_fops);" Cfg.litmus ;
   O.o "#endif" ;
   O.oi "if (litmus_pde == NULL) { return -ENOMEM; }" ;
   O.oi "stride = stride == 0 ? 1 : stride;" ;
@@ -912,7 +913,7 @@ let dump_init_exit has_memtype _test =
   O.o  "clean_online:" ;
   O.oi "kfree(online);" ;
   O.o  "clean_pde:" ;
-  O.oi "remove_proc_entry(\"litmus\",NULL);" ;
+  O.fi "remove_proc_entry(\"%s\",NULL);" Cfg.litmus ;
   O.oi "return err;" ;
   O.o "}" ;
   O.o "" ;
@@ -922,7 +923,7 @@ let dump_init_exit has_memtype _test =
   O.fi "for (int k=0 ; k < ninst ; k++) free_ctx(ctx[k]%s);" free_ctx_sz;
   O.oi "kfree(ctx);" ;
   O.oi "kfree(online);" ;
-  O.oi "remove_proc_entry(\"litmus\",NULL);" ;
+  O.fi "remove_proc_entry(\"%s\",NULL);" Cfg.litmus ;
   O.o "}" ;
   O.o "" ;
   O.o "module_init(litmus_init);" ;

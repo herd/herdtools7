@@ -58,6 +58,8 @@ module KOption : sig
 
   val carch : Archs.System.t ref
   val set_carch : Archs.System.t -> unit
+(* Additional option *)
+  val experimental : bool ref (* experimental *)
 end = struct
   include Option
   let stride = ref (KStride.St 1)
@@ -69,6 +71,7 @@ end = struct
   let ccopts = ref []
   let sharelocks = ref None
   let delay = ref 256
+  let experimental = ref false
 end
 
 open KOption
@@ -90,6 +93,7 @@ let opts =
    "-hexa", Arg.Set KOption.hexa,
    " hexadecimal output";
    argint "-pad" KOption.pad "size of padding for C litmus source names";
+   "-exp", Arg.Set KOption.experimental,"<bool> experimental mode";
 (* Test parameters *)
    "-a", arginto KOption.avail,
      "<n> Run maximal number of tests concurrently for n available cores (default, run one test)";
@@ -105,7 +109,7 @@ let opts =
    "-delay", Arg.Int (fun i -> KOption.delay := i),
    sprintf
      "<n> set timebase delay (default %i)" !KOption.delay;
-(* number if shared spinlocks and srcu_struct *)
+   (* number if shared spinlocks and srcu_struct *)
    "-share_locks", arginto KOption.sharelocks,
      "<n> number of spinlock_t's and srcu)_structs to share between test instances (default, do not share)";
 (* Affinity *)
@@ -178,6 +182,8 @@ let () =
 (* Static options *)
       let verbose = verbose
       let hexa = !hexa
+      let litmus  =
+        if !experimental then "litmus-exp" else "litmus"
       let is_out = is_out ()
       let size = !size
       let runs = !runs

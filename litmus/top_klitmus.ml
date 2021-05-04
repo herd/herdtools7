@@ -25,6 +25,7 @@ module type Config = sig
 (* Parameters *)
   val verbose : int
   val hexa : bool
+  val litmus : string
   val is_out : bool
   val size : int
   val runs : int
@@ -43,7 +44,6 @@ module type Config = sig
 end
 
 module Top(O:Config)(Tar:Tar.S) = struct
-
 
   module OX = struct
     let debuglexer = O.verbose > 2
@@ -114,7 +114,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
           let hash_ok = H.hash_ok hash_env tname hash in
           if hash_ok then begin
             let hash_env = StringMap.add tname hash hash_env in
-            let base = sprintf "litmus%0*i" O.pad id in
+            let base = sprintf "%s%0*i" O.litmus O.pad id in
             let src = sprintf "%s.c" base in
             let parsed = allocate parsed in
             let compiled =  compile doc parsed in
@@ -371,7 +371,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
       (fun chan ->
         let module Out =
           Indent.Make(struct let hexa = O.hexa let out = chan end) in
-        Out.o "LOCKDIR=/tmp/klitmus-locked" ;
+        Out.f "LOCKDIR=/tmp/k%s-locked" O.litmus ;
         Out.o "trap \"rmdir $LOCKDIR 2>/dev/null; exit\" INT TERM" ;
         Out.o "if ! mkdir $LOCKDIR 2>/dev/null; then" ;
         Out.o "  echo \"Already running, locked by $LOCKDIR\"" ;
@@ -391,7 +391,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
         Out.oi "if test -f  $ko" ;
         Out.oi "then" ;
         Out.oii "insmod $ko $OPT" ;
-        Out.oii "cat /proc/litmus" ;
+        Out.fii "cat /proc/%s" O.litmus;
         Out.oii "rmmod $ko" ;
         Out.oi "fi" ;
         Out.o "}" ;
