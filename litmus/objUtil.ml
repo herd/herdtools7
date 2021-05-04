@@ -69,13 +69,14 @@ module Insert (O:InsertConfig) :
   struct
 
     let dir = match O.sysarch with
-    | `X86 -> "_x86"
-    | `X86_64 -> "_x86_64"
-    | `PPC -> "_ppc"
-    | `ARM -> "_arm"
-    | `MIPS -> "_mips"
-    | `AArch64 -> "_aarch64"
-    | `RISCV -> "_riscv"
+      | `X86 -> "_x86"
+      | `X86_64 -> "_x86_64"
+      | `PPC -> "_ppc"
+      | `ARM -> "_arm"
+      | `MIPS -> "_mips"
+      | `AArch64 -> "_aarch64"
+      | `RISCV -> "_riscv"
+      | `Unknown -> "_none"
 
     let find_lib src =
       let n1 = Filename.concat dir src in
@@ -114,7 +115,7 @@ module type Config = sig
   val driver : Driver.t
   val affinity : Affinity.t
   val arch : Archs.t
-  val carch   : Archs.System.t option
+  val sysarch   : Archs.System.t
   val mode : Mode.t
   val stdio : bool
   val platform : string
@@ -204,10 +205,7 @@ module Make(O:Config)(Tar:Tar.S) =
           let fnames = cpy' ~prf:"#define KVM 1" fnames "presi" "utils" ".c" in
           let fnames = cpy' ~prf:"#define KVM 1" fnames "presi" "utils" ".h" in
           let fnames = cpy fnames "kvm_timeofday" ".h" in
-          let sysarch = match Archs.get_sysarch O.arch O.carch with
-          | Some a -> a
-          | None -> assert false in
-          let module I = Insert(struct let sysarch = sysarch end) in
+          let module I = Insert(O) in
           I.copy "kvm_timeofday.c" Tar.outname ;
           I.copy "kvm-headers.h" Tar.outname ;
           fnames in

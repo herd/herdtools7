@@ -65,7 +65,7 @@ module type CommonConfig = sig
   val pldw : bool
   val cacheflush : bool
   val morearch : MoreArch.t
-  val carch : Archs.System.t option
+  val carch : Archs.System.t
   val syncconst : int
   val numeric_labels : bool
   val kind : bool
@@ -110,6 +110,7 @@ module type Config = sig
   include GenParser.Config
   include Compile.Config
   val asmcommentaslabel : bool
+  val sysarch : Archs.System.t
   (* Additions for Presi *)
   val line : int
   val noccs : int
@@ -120,7 +121,6 @@ module type Config = sig
   include Skel.Config
   include Run_litmus.Config
   val limit : bool
-  val sysarch : Archs.System.t
   val word : Word.t
   val noinline : bool
 end
@@ -273,6 +273,7 @@ end = struct
                       let module OO = struct
                         include OT
                         let arch = A'.arch
+                        let sysarch = Archs.get_sysarch A'.arch OT.carch
                         let cached =
                           match threadstyle with
                           | ThreadStyle.Cached -> true
@@ -436,14 +437,10 @@ end = struct
           include ODep
           let debuglexer = debuglexer
           let sysarch =
-            match Archs.get_sysarch arch  OT.carch with
-            | Some a -> a
-            | None -> begin match arch with
-              | `C ->
+            match arch,Archs.get_sysarch arch  OT.carch with
+            | `C,`Unknown->
                   Warn.fatal "Test %s not performed because -carch is not given but required while using C arch" tname
-              | _ ->
-                Warn.fatal "no support for arch '%s'" (Archs.pp arch)
-            end
+            | _,a -> a
           let noinline = true
           end in
         let aux = function
@@ -597,6 +594,7 @@ end = struct
                       | `AArch64 -> AArch64Arch_litmus.comment
                       | `MIPS -> MIPSArch_litmus.comment
                       | `RISCV -> RISCVArch_litmus.comment
+                      | `Unknown -> assert false
                       end
                end in
              let module X = Make'(Cfg)(Arch') in

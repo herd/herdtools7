@@ -94,9 +94,7 @@ module Make
 
       let have_timebase =
         Cfg.is_tb &&
-        (timebase_possible ||
-        (Warn.user_error
-           "No timebase for arch %s" (Archs.pp  Cfg.sysarch)))
+        (timebase_possible || SkelUtil.no_timebase_error Cfg.sysarch)
 
       let have_cache = Insert.exists "cache.c"
 
@@ -383,19 +381,8 @@ module Make
       let lab_ext = if Cfg.numeric_labels then "" else "_lab"
 
       let dump_barrier_def () =
-        let fname =
-          function
-            | `PPC
-            | `X86
-            | `X86_64
-            | `ARM
-            | `MIPS
-            | `AArch64
-            | `RISCV
-              ->
-               sprintf "barrier%s.c" lab_ext
-            | _ -> assert false in
-        Insert.insert O.o (fname Cfg.sysarch)
+        let fname =  sprintf "barrier%s.c" lab_ext in
+        Insert.insert O.o fname
 
 (**************)
 (* Topologies *)

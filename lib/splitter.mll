@@ -78,7 +78,11 @@ and main start = parse
   ( ('\n'? as line) blank*'"'([^'"']* as doc) '"' blank*) ? (* '"' *)
   ';' ?
   { begin match line with Some _ -> incr_lineno lexbuf | None -> () end ;
-    let arch = Archs.lex arch in
+    let arch =
+      match Archs.parse arch with
+      | Some a -> a
+      | None ->
+        Warn.user_error "%s is not an implemented architecture" arch in
     let (info,init1,(init2,prog1)) = find_init [] lexbuf in
     let do_skip_comments = match arch with
     | `C|`CPP -> false (* We can't skip comments in C, because "(*" is legal and frequent syntax *)

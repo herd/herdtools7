@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2012-present Institut National de Recherche en Informatique et *)
+(* Copyright 2013-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,40 +14,58 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(*********************************)
-(* Dump or run a series of tests *)
-(*********************************)
+(** Implemented archituctures *)
 
-open Answer
+module System : sig
 
-module type Config = sig
-  val carch : Archs.System.t
-  val platform : string
-  val makevar : string list
-  val gcc : string
-  val stdio : bool
-  val index : string option
-  val crossrun : Crossrun.t
-  val adbdir : string
-  val sleep : int
-  val tarname : string
-  val driver : Driver.t
-  val cross : bool
-  val hexa : bool
-  val threadstyle : ThreadStyle.t
-  val asmcommentaslabel : bool
-  include RunUtils.CommonConfig
-  val mkopt : Option.opt -> Option.opt
-  val variant : Variant_litmus.t -> bool
-  val nocatch : bool
+  (* Native architectures *)
+    type arch = [
+    | `AArch64
+    | `ARM
+    | `MIPS
+    | `PPC
+    | `X86
+    | `RISCV
+    | `X86_64
+    ]
+
+  (* Native architecture may be unknown, some features
+     will notbe available *)
+    type t = [ arch | `Unknown ]
+
+    val tags : string list
+
+    val parse : string -> t option
+
+    val pp : t -> string
+
 end
 
+(* All implement architectures *)
+type t = [
+    System.arch
+  | `C
+  | `CPP
+  | `LISA
+  ]
 
-module type OneTest = sig
-  val from_file :
-      StringSet.t -> hash_env-> string -> out_channel -> answer
-end
+val tags : string list
 
-module Make :
-  functor (O:Config) -> functor(Tar : Tar.S) -> functor (CT : OneTest) ->
-  sig val from_files : string list -> unit end
+val parse : string -> t option
+val pp : t -> string
+
+val compare : t -> t -> int
+
+val  aarch64 : t
+val  arm : t
+val  mips : t
+val  ppc : t
+val  x86 : t
+val  riscv : t
+val  c : t
+val  cpp : t
+val  lisa : t
+val  x86_64 : t
+
+val get_sysarch : [< t ] ->  System.t -> System.t
+val check_carch : [< System.t ] -> System.arch

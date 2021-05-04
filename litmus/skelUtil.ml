@@ -26,6 +26,15 @@ module type Config = sig
   val have_fault_handler : bool
 end
 
+let no_timebase_error sysarch =
+  match sysarch with
+  | #Archs.System.arch ->
+      Warn.user_error
+        "No timebase for arch %s" (Archs.System.pp sysarch)
+  | `Unknown ->
+      Warn.user_error
+        "Timebase not available for C without option -carch <arch>"
+
 type stat =
     { tags : string list ;
       name : string ;
