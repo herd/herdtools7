@@ -47,7 +47,7 @@ module X86_64 = X86_64Base
 %token I_JE I_JNE I_JLE I_JLT I_JGT I_JGE I_JS I_JNS
 %token I_MOVNTI  I_MOVNTIL I_MOVNTIQ
 %token I_MOVD I_MOVNTDQA
-
+%token <X86_64Base.opt> I_CLFLUSH
 %type <MiscParser.proc list * (X86_64Base.pseudo) list list> main
 %start  main
 
@@ -180,7 +180,8 @@ instr:
       { X86_64.I_FENCE (X86_64.SFENCE) }
   | I_LFENCE
       { X86_64.I_FENCE (X86_64.LFENCE) }
-
+  | I_CLFLUSH effaddr
+      { X86_64.I_CLFLUSH ($1,$2) }
   | I_DEC  effaddr
     {X86_64.I_EFF (X86_64.I_DEC, X86_64.INSb, $2)}
   | I_DECB  effaddr
