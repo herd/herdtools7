@@ -79,7 +79,7 @@ and binding = TxtLoc.t * pat * exp
 
 type do_test = Acyclic | Irreflexive | TestEmpty
 type test = Yes of do_test | No of do_test
-type test_type = Flagged | UndefinedUnless | Check
+type test_type = Flagged | UndefinedUnless | Check | Assert
 type app_test = TxtLoc.t * pos * test * exp * string option
 type is_rec = IsRec | IsNotRec
 

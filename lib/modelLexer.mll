@@ -40,6 +40,7 @@ module LU = LexUtils.Make(O)
     | "in" -> IN
     | "undefined_unless" -> REQUIRES (* jade: deprecated?, indeed but still here ! *)
     | "flag" -> FLAG
+    | "assert" -> ASSERT
     | "include" -> INCLUDE
     | "variant" -> VARIANT
     | "begin" -> BEGIN

@@ -168,7 +168,7 @@ module Make
 
     let check_through test_type ok = match test_type with
     | Check ->  U.check_through ok
-    | UndefinedUnless|Flagged -> ok
+    | UndefinedUnless|Flagged|Assert -> ok
 
 
 (*  Model interpret *)
@@ -2474,7 +2474,7 @@ module Make
                           then show_cycle st tst ;
                           if ok then
                             match test_type with
-                            | Check|UndefinedUnless -> kont st res
+                            | Check|UndefinedUnless|Assert -> kont st res
                             | Flagged ->
                                 begin match name with
                                 | None ->
@@ -2503,7 +2503,15 @@ module Make
                               | UndefinedUnless ->
                                   kont {st with flags=Flag.Set.add Flag.Undef st.flags;} res
                               | Flagged -> kont st res
-                            end
+                              | Assert ->
+                                 let a = match name with
+                                   | None ->
+                                      "(unknown)"
+                                   | Some name ->
+                                      name
+                                 in
+                                 Warn.user_error "%s assertion failed, check input test." a
+                              end
                           end else begin
                             W.warn "Skipping check %s" (Misc.as_some name) ;
                             kont st res
