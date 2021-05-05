@@ -147,29 +147,42 @@ module Make
             (* Fences *)
             (**********)
 
-      type fence = barrier
+      type fence = Fence of barrier | ClFlush of opt
 
       let is_isync _ = false
 
-      let compare_fence = barrier_compare
+      let compare_fence f1 f2 = match f1,f2 with
+        | Fence b1,Fence b2 -> barrier_compare b1 b2
+        | ClFlush o1,ClFlush o2 -> compare o1 o2
+        | ClFlush _,Fence _ -> -1
+        | Fence _,ClFlush _ -> 1
 
-      let default = MFENCE
+      let default = Fence MFENCE
       let strong = default
 
-      let pp_fence = function
+      let pp_barrier = function
         | MFENCE -> "MFence"
         | SFENCE -> "SFence"
         | LFENCE -> "LFence"
 
-      let fold_all_fences f r = f MFENCE (f SFENCE (f LFENCE r))
+      let pp_fence = function
+        | Fence b -> pp_barrier b
+        | ClFlush NoOpt -> "ClFlush"
+        | ClFlush Opt -> "ClFlushOpt"
+
+      let fold_all_barriers f r = f MFENCE (f SFENCE (f LFENCE r))
+      let fold_all_fences f r =
+        let r = f (ClFlush NoOpt) (f (ClFlush Opt) r) in
+        fold_all_barriers (fun b -> f (Fence b)) r
       let fold_cumul_fences = fold_all_fences
-      let fold_some_fences f r =  f MFENCE r
+      let fold_some_fences f r =  f default r
 
       let orders f d1 d2 =
         let open Code in match f,d1,d2 with
-        | (MFENCE,_,_)
-        | (SFENCE,W,W)
-        | (LFENCE,R,R)
+        | (Fence MFENCE,_,_)
+        | (Fence SFENCE,W,W)
+        | (Fence LFENCE,R,R)
+        | (ClFlush _,_,_) (* Do not know exactly yet *)
           -> true
         | (_,_,_)
           -> false

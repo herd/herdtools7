@@ -386,9 +386,24 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     let emit_rmw_dep () =  emit_exch_dep
 
-    let emit_fence st _ init _ f = init,[X86_64.Instruction (I_FENCE f)],st
+    let emit_fence st p init n f = match f with
+      | Fence b -> init,[X86_64.Instruction (I_FENCE b)],st
+      | ClFlush opt ->
+          let addr = match n.C.evt.C.loc with
+            | Data addr -> addr
+            | Code _ ->
+                Warn.user_error "ClFlush not allowed on code location" in
+          let ea,init,st = match n.C.edge.E.a1 with
+            | Some (NonTemporal,_) ->
+                let r,init,st = U.next_init st p init addr in
+                Rm64_deref (r,0),init,st
+            | _ ->
+                Rm64_abs (ParsedConstant.nameToV addr),init,st in
+          let cs =
+            [X86_64.Instruction (I_CLFLUSH (opt,Effaddr_rm64 ea))] in
+          init,cs,st
 
-    let stronger_fence = MFENCE
+    let stronger_fence = Fence MFENCE
 
     (* Check load *)
     let do_check_load p st r e =
