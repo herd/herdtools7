@@ -358,10 +358,10 @@ module Top(O:Config)(Tar:Tar.S) = struct
         List.iter (fun (src,_) -> Out.f "obj-m += %s.o" src) srcs ;
         Out.o "" ;
         Out.o "all:" ;
-        Out.o "\tmake -C /lib/modules/$(shell uname -r)/build/ M=$(PWD) modules" ;
+        Out.o "\t$(MAKE) -C /lib/modules/$(shell uname -r)/build/ M=$(PWD) modules" ;
         Out.o "" ;
         Out.o "clean:" ;
-        Out.o "\tmake -C /lib/modules/$(shell uname -r)/build/ M=$(PWD) clean" ;
+        Out.o "\t$(MAKE) -C /lib/modules/$(shell uname -r)/build/ M=$(PWD) clean" ;
         ())
       fname
 
