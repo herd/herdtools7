@@ -63,11 +63,9 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
         ->  G.Set.union (extract_ea ea) (extract_op op)
       | I_NOP | I_JMP _ | I_FENCE _ | I_JCC _ | I_MOVD _
         -> G.Set.empty
-      | I_CMPXCHG (_, ea,_)
-        | I_EFF (_, _, ea)
-        | I_CMOVC (_, _, ea)
-        | I_MOVNTI (_,ea,_)
-        | I_MOVNTDQA (_,ea)
+      | I_CMPXCHG (_, ea,_) | I_EFF (_, _, ea)
+      | I_CMOVC (_, _, ea)  | I_MOVNTI (_,ea,_)
+      | I_MOVNTDQA (_,ea)   | I_CLFLUSH (_,ea)
         -> extract_ea ea
       | I_EFF_EFF (_, _, ea1, ea2)
         ->  G.Set.union (extract_ea ea1) (extract_ea ea2)
@@ -193,6 +191,13 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
         inputs = inp ;
         outputs = outp ; }
 
+    let clflush opt ea =
+      let ea,(_,inp) = compile_ea_input 0 ea in
+      { empty_ins with
+        memo = sprintf "%s %s" (pp_clflush opt) ea ;
+        inputs = inp ;
+        outputs = []; }
+
     let op_ea_ea memo ea1 ea2 =
       let ea1,(i,ins1),(o,outs1) = compile_ea_output 0 0 ea1 in
       let ea2,(_,ins2),(_,outs2) = compile_ea_output i o ea2 in
@@ -286,6 +291,8 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
     | I_MOVNTDQA (xmm,ea) ->
         if Cfg.sse then movntdqa xmm ea
         else Warn.user_error "SSE not enabled for %s" Cfg.reason
+    | I_CLFLUSH (opt,ea) ->
+        clflush opt ea
 (* here I fail to know *)
     | I_CMOVC _ -> Warn.user_error "CMOVC ??"
 
