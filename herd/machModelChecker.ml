@@ -364,7 +364,7 @@ module Make
              E.Act.arch_sets) in
     let m = (* To be deprecated *)
       if kvm then
-          let mevt = match I.get_set m "M" with
+          let mevt = match I.get_set m "PTEV" with
             | Some mevt -> mevt
             | None -> (* Must exists *) assert false in
           I.add_sets m
