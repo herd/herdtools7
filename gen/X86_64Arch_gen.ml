@@ -146,14 +146,18 @@ module Make
             (**********)
             (* Fences *)
             (**********)
-
-      type fence = Fence of barrier | ClFlush of opt
+      type flushline = Prev|Next
+      type fence = Fence of barrier | ClFlush of opt * flushline
 
       let is_isync _ = false
 
       let compare_fence f1 f2 = match f1,f2 with
         | Fence b1,Fence b2 -> barrier_compare b1 b2
-        | ClFlush o1,ClFlush o2 -> compare o1 o2
+        | ClFlush (o1,l1),ClFlush (o2,l2) ->
+           begin match compare o1 o2 with
+           | 0 -> compare l1 l2
+           | r -> r
+           end
         | ClFlush _,Fence _ -> -1
         | Fence _,ClFlush _ -> 1
 
@@ -167,12 +171,15 @@ module Make
 
       let pp_fence = function
         | Fence b -> pp_barrier b
-        | ClFlush NoOpt -> "ClFlush"
-        | ClFlush Opt -> "ClFlushOpt"
+        | ClFlush (NoOpt,Prev) -> "ClFlush"
+        | ClFlush (Opt,Prev) -> "ClFlushOpt"
+        | ClFlush (NoOpt,Next) -> "ClFlushNext"
+        | ClFlush (Opt,Next) -> "ClFlushOptNext"
 
       let fold_all_barriers f r = f MFENCE (f SFENCE (f LFENCE r))
       let fold_all_fences f r =
-        let r = f (ClFlush NoOpt) (f (ClFlush Opt) r) in
+        let r = f (ClFlush (NoOpt,Prev)) (f (ClFlush (Opt,Prev)) r) in
+        let r = f (ClFlush (NoOpt,Next)) (f (ClFlush (Opt,Next)) r) in
         fold_all_barriers (fun b -> f (Fence b)) r
       let fold_cumul_fences = fold_all_fences
       let fold_some_fences f r =  f default r

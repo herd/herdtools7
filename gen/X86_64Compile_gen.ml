@@ -388,20 +388,24 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     let emit_fence st p init n f = match f with
       | Fence b -> init,[X86_64.Instruction (I_FENCE b)],st
-      | ClFlush opt ->
-          let addr = match n.C.evt.C.loc with
-            | Data addr -> addr
-            | Code _ ->
-                Warn.user_error "ClFlush not allowed on code location" in
-          let ea,init,st = match n.C.edge.E.a1 with
-            | Some (NonTemporal,_) ->
-                let r,init,st = U.next_init st p init addr in
-                Rm64_deref (r,0),init,st
-            | _ ->
-                Rm64_abs (ParsedConstant.nameToV addr),init,st in
-          let cs =
-            [X86_64.Instruction (I_CLFLUSH (opt,Effaddr_rm64 ea))] in
-          init,cs,st
+      | ClFlush (opt,line) ->
+         let node_loc =
+           match line with
+           | Prev -> n
+           | Next -> n.C.next in
+         let addr = match node_loc.C.evt.C.loc with
+           | Data addr -> addr
+           | Code _ ->
+              Warn.user_error "ClFlush not allowed on code location" in
+         let ea,init,st = match n.C.edge.E.a1 with
+           | Some (NonTemporal,_) ->
+              let r,init,st = U.next_init st p init addr in
+              Rm64_deref (r,0),init,st
+           | _ ->
+              Rm64_abs (ParsedConstant.nameToV addr),init,st in
+         let cs =
+           [X86_64.Instruction (I_CLFLUSH (opt,Effaddr_rm64 ea))] in
+         init,cs,st
 
     let stronger_fence = Fence MFENCE
 
