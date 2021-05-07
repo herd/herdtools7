@@ -20,8 +20,8 @@
      tthm : Proc.t -> bool;
      ha : Proc.t -> bool;
      hd : Proc.t -> bool;
-     some_ha : bool;
-     some_hd : bool;
+     some_ha : bool; some_hd : bool;
+     all_ha : bool; all_hd : bool;
    }
 
 type my_t = { my_ha : unit -> bool; my_hd : unit -> bool; }
@@ -53,7 +53,9 @@ rule all k = parse
 
 let soft =
   let f _ = false in
-  { tthm=f; ha=f; hd=f; some_ha=false; some_hd=false; }
+  { tthm=f; ha=f; hd=f;
+    some_ha=false; some_hd=false;
+    all_ha=false; all_hd=false; }
 
 
 let filter_opt f =
@@ -79,27 +81,28 @@ let get info =
           (function (Some _ as p,SW) -> p | _ -> None)
           xs in
       let tthm p = not (List.exists (Misc.int_eq p) soft) in
-      let ha =
-        if List.exists (function None,(HA|HD) -> true | _ -> false) has then
-          fun _ -> true
+      let all_ha,ha =
+        if List.exists (function (None,(HA|HD)) -> true | _ -> false) has then
+          true,fun _ -> true
         else
           let xs =
             filter_opt
               (function (Some _ as p,(HA|HD)) -> p | _ -> None)
               has in
-          fun proc -> List.exists (Misc.int_eq proc) xs
-      and hd =
-        if List.exists (function None,HD -> true | _ -> false) hds then
-          fun _ -> true
+          false,fun proc -> List.exists (Misc.int_eq proc) xs
+      and all_hd,hd =
+        if List.exists (function (None,HD) -> true | _ -> false) hds then
+          true,(fun _ -> true)
         else
           let xs =
             filter_opt
               (function (Some _ as p,HD) -> p | _ -> None)
               hds in
-          fun proc -> List.exists (Misc.int_eq proc) xs in
+          false,fun proc -> List.exists (Misc.int_eq proc) xs in
       Some
         {tthm; ha; hd;
-         some_ha=Misc.consp has; some_hd=Misc.consp hds;}
+         some_ha=Misc.consp has; some_hd=Misc.consp hds;
+         all_ha; all_hd; }
     with Error ->
       Warn.user_error "Incorrect dirty bit managment specification '%s'" s
 }
