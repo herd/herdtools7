@@ -33,13 +33,6 @@ module type Config = sig
 end
 
 
-(* Goes nowhere else *)
-(*
-val one_line : string -> cell
-val one_lines : string list -> column
-val one_liness : string list list -> matrix
-*)
-
 (*****************)
 (* Simple Build  *)
 (*****************)

@@ -18,6 +18,8 @@
 open Printf
 open LogState
 
+type act = Diff | Inter
+
 let verbose = ref 0
 let logs = ref []
 let select = ref []
@@ -27,11 +29,20 @@ let excl = ref []
 let hexa = ref false
 let int32 = ref true
 let emptyok = ref false
+let act = ref Diff
 
 let parse_emptyok r =
   "-emptyok", Arg.Bool (fun b -> r := b),
   (Printf.sprintf "<bool> keep tests with empty outcome in output, default %b" !hexa)
 
+let parse_act r =
+  let act_of_string = function
+    | "diff" -> Diff
+    | "inter" | "intersect" -> Inter
+    | _ -> raise (Arg.Bad "-act must be one of {diff, inter}")
+  in
+  "-act", Arg.String (fun s -> r := act_of_string s),
+  "<diff|intersect> either diff or intersect the logs, default diff"
 
 let options =
   let open CheckName in
@@ -46,22 +57,13 @@ let options =
    parse_rename rename;
    parse_select select; parse_names names;
    parse_excl excl;
+   parse_act act;
   ]
 
 let prog =
   if Array.length Sys.argv > 0 then (Filename.basename Sys.argv.(0))
   else "mdiff"
 
-type act = Diff | Inter
-
-let act =
-  let base = Filename.basename prog in
-  let base =
-    try Filename.chop_extension base with Invalid_argument _ -> base in
-  match base with
-  | "mdiff"|"mdiff7" -> Diff
-  | "minter"|"minter7" -> Inter
-  | _ -> assert false
 
 let usage = String.concat "\n" [
   Printf.sprintf "Usage: %s [options] <path/to/log-1> <path/to/log-2>" prog ;
@@ -178,7 +180,7 @@ let zyva log1 log2  =
 
   let dump_log chan =  Array.iter (dump_test chan) in
 
-  let diff = match act with
+  let diff = match !act with
   | Diff -> LS.diff_logs emptyok test1 test2
   | Inter -> LS.inter_logs emptyok test1 test2 in
   dump_log stdout diff ;
