@@ -161,5 +161,8 @@ module Make (C:Sem.Config)(V:Value.S)
           | MIPS.SYNC ->
               create_barrier MIPS.Sync ii >>! B.Next
           end
+
+      let spurious_setaf _ = assert false
+
     end
   end

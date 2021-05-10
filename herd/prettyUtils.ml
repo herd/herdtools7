@@ -19,21 +19,15 @@ module Make(S : SemExtra.S) = struct
   module A = S.A
   module E = S.E
 
-  let int_map_find k m =
-    try IntMap.find k m
-    with Not_found -> []
-
-  let get_poi e = match E.progorder_of e with
-  | Some x -> x
-  | None -> assert false
-
   let progorder_as_list es  =
     let by_po =
       E.EventSet.fold
         (fun e k ->
-          let poi = get_poi e in
-          let es_poi = int_map_find  poi k in
-          IntMap.add poi (e::es_poi) k)
+          match E.progorder_of e with
+            | None -> k
+            | Some poi ->
+               let es_poi = IntMap.safe_find []  poi k in
+               IntMap.add poi (e::es_poi) k)
         es IntMap.empty in
     let as_list =
       IntMap.fold
@@ -44,6 +38,14 @@ module Make(S : SemExtra.S) = struct
   let make_by_proc_and_poi es =
     let by_proc = E.proj_events es in
     List.map progorder_as_list by_proc
+
+  let spurious_events es =
+    E.EventSet.filter
+      (fun e ->
+        match e.E.iiid with
+        | E.IdSpurious -> true
+        | E.IdInit|E.IdSome _ -> false)
+      es.E.events
 
   let observed test es =
     let locs = S.observed_locations test in

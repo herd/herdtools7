@@ -31,7 +31,7 @@ module Make (Conf:Config)(V:Value.S)
     let nat_sz = V.Cst.Scalar.machsize
 
     let atomic_pair_allowed e1 e2 = match e1.E.iiid, e2.E.iiid with
-    | Some i1,Some i2 -> i1 == i2
+    | E.IdSome i1,E.IdSome i2 -> i1 == i2
     | _,_ -> false
 
 
@@ -440,5 +440,8 @@ module Make (Conf:Config)(V:Value.S)
           let ii = {ii with A.inst=inst; } in
           build_semantics ii >>> fun (prog_order, _branch) ->
             build_semantics_list insts {ii with  A.program_order_index = prog_order;}
+
+      let spurious_setaf _ = assert false
+
     end
   end

@@ -60,7 +60,7 @@ module Top (Conf:Config) = struct
     struct
       module T = Test_herd.Make(S.A)
 
-      let run start_time filename chan env splitted =
+      let run dirty start_time filename chan env splitted =
         try
           let parsed = P.parse chan splitted in
 
@@ -93,7 +93,12 @@ module Top (Conf:Config) = struct
             end in
 (* And run test *)
           let module T =
-            Top_herd.Make(struct include Conf let byte = sz end)(M) in
+            Top_herd.Make
+              (struct
+                include Conf
+                let byte = sz
+                let dirty = dirty
+              end)(M) in
           T.run start_time test ;
           env
           with TestHash.Seen -> env
@@ -167,6 +172,7 @@ module Top (Conf:Config) = struct
         | _ -> m in
         check_arch_model arch m in
 
+      let dirty = DirtyBit.get splitted.Splitter.info in
 
       let module ModelConfig = struct
         let bell_model_info = Conf.bell_model_info
@@ -187,8 +193,7 @@ module Top (Conf:Config) = struct
         let optace = Conf.optace
         let libfind = Conf.libfind
         let variant = Conf.variant
-        let dirty = DirtyBit.get splitted.Splitter.info
-
+        let dirty = dirty
         let statelessrc11 = Conf.statelessrc11
       end in
       let module ArchConfig = SemExtra.ConfigToArchConfig(Conf) in
@@ -216,7 +221,7 @@ module Top (Conf:Config) = struct
           let module PPCM = PPCMem.Make(ModelConfig)(PPCS) (PPCBarrier) in
           let module P = GenParser.Make (Conf) (PPC) (PPCLexParse) in
           let module X = Make (PPCS) (P) (NoCheck) (PPCM) in
-          X.run start_time name chan env splitted
+          X.run dirty start_time name chan env splitted
 
       | `ARM ->
           let module ARM = ARMArch_herd.Make(ArchConfig)(Int32Value) in
@@ -242,7 +247,7 @@ module Top (Conf:Config) = struct
           let module ARMM = ARMMem.Make(ModelConfig)(ARMS)(ARMBarrier) in
           let module P = GenParser.Make (Conf) (ARM) (ARMLexParse) in
           let module X = Make (ARMS) (P) (NoCheck) (ARMM) in
-          X.run start_time name chan env splitted
+          X.run dirty start_time name chan env splitted
 (* Markers START/END below are for excluding source when compiling
    the web interface *)
 (* START NOTWWW *)
@@ -294,7 +299,7 @@ module Top (Conf:Config) = struct
             AArch64Mem.Make(ModelConfig)(AArch64S) (AArch64Barrier) in
           let module P = GenParser.Make (Conf) (AArch64) (AArch64LexParse) in
           let module X = Make (AArch64S) (P) (AArch64C) (AArch64M) in
-          X.run start_time name chan env splitted
+          X.run dirty start_time name chan env splitted
       | `AArch64 when Conf.variant Variant.Neon ->
           let module AArch64Conf = ArchConfig in
           let module AArch64 = AArch64Arch_herd.Make(AArch64Conf)(UInt128Value) in
@@ -341,7 +346,7 @@ module Top (Conf:Config) = struct
             AArch64Mem.Make(ModelConfig)(AArch64S) (AArch64Barrier) in
           let module P = GenParser.Make (Conf) (AArch64) (AArch64LexParse) in
           let module X = Make (AArch64S) (P) (AArch64C) (AArch64M) in
-          X.run start_time name chan env splitted
+          X.run dirty start_time name chan env splitted
 (* END NOTWWW *)
       | `AArch64 ->
           let module AArch64 =
@@ -389,7 +394,7 @@ module Top (Conf:Config) = struct
             AArch64Mem.Make(ModelConfig)(AArch64S) (AArch64Barrier) in
           let module P = GenParser.Make (Conf) (AArch64) (AArch64LexParse) in
           let module X = Make (AArch64S) (P) (AArch64C) (AArch64M) in
-          X.run start_time name chan env splitted
+          X.run dirty start_time name chan env splitted
 
       | `X86 ->
           let module X86 = X86Arch_herd.Make(ArchConfig)(Int32Value) in
@@ -412,7 +417,7 @@ module Top (Conf:Config) = struct
           let module X86M = X86Mem.Make(ModelConfig)(X86S) (X86Barrier) in
           let module P = GenParser.Make (Conf) (X86) (X86LexParse) in
           let module X = Make (X86S) (P) (NoCheck) (X86M) in
-          X.run start_time name chan env splitted
+          X.run dirty start_time name chan env splitted
 
       | `X86_64 ->
           let module X86_64 = X86_64Arch_herd.Make(ArchConfig)(Int64Value) in
@@ -432,7 +437,7 @@ module Top (Conf:Config) = struct
           let module X86_64M = X86_64Mem.Make(ModelConfig)(X86_64S)(X86_64Barrier) in
           let module P = GenParser.Make(Conf)(X86_64)(X86_64LexParse) in
           let module X = Make(X86_64S)(P)(NoCheck)(X86_64M) in
-          X.run start_time name chan env splitted
+          X.run dirty start_time name chan env splitted
 
 
       | `MIPS ->
@@ -454,7 +459,7 @@ module Top (Conf:Config) = struct
           let module MIPSM = MIPSMem.Make(ModelConfig)(MIPSS)(MIPSBarrier) in
           let module P = GenParser.Make (Conf) (MIPS) (MIPSLexParse) in
           let module X = Make (MIPSS) (P) (NoCheck) (MIPSM) in
-          X.run start_time name chan env splitted
+          X.run dirty start_time name chan env splitted
 
       | `RISCV ->
           let module RISCV = RISCVArch_herd.Make(ArchConfig)(Int64Value) in
@@ -469,7 +474,7 @@ module Top (Conf:Config) = struct
           let module RISCVM = RISCVMem.Make(ModelConfig)(RISCVS) in
           let module P = GenParser.Make (Conf) (RISCV) (RISCVLexParse) in
           let module X = Make (RISCVS) (P) (NoCheck) (RISCVM) in
-          X.run start_time name chan env splitted
+          X.run dirty start_time name chan env splitted
       | `C ->
           let module C = CArch_herd.Make(ArchConfig)(Int64Value) in
           let module CLexParse = struct
@@ -491,7 +496,7 @@ module Top (Conf:Config) = struct
           let module CM = CMem.Make(ModelConfig)(CS) in
           let module P = CGenParser_lib.Make (Conf) (C) (CLexParse) in
           let module X = Make (CS) (P) (NoCheck) (CM) in
-          X.run start_time name chan env splitted
+          X.run dirty start_time name chan env splitted
       | `CPP as arch -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
       | `LISA ->
           let module Bell = BellArch_herd.Make(ArchConfig)(Int64Value) in
@@ -520,7 +525,7 @@ module Top (Conf:Config) = struct
               end) in
           let module P = GenParser.Make (Conf) (Bell) (BellLexParse) in
           let module X = Make (BellS) (P) (BellC) (BellM) in
-          X.run start_time name chan env splitted
+          X.run dirty start_time name chan env splitted
 
     end else env
 

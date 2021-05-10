@@ -219,6 +219,23 @@ val iter_stdin :  (string -> unit) -> unit
 val fold_argv_or_stdin : (string -> 'a -> 'a) -> string list -> 'a -> 'a
 val iter_argv_or_stdin : (string -> unit) -> string list -> unit
 
+(*********************)
+(* Subset generators *)
+(*********************)
+
+(* Apply accumulating fonction on all subsets of a set.
+  fold_subsets_gen xs f v0 computes f s1 (f s2 .. (f sN v0))
+  where the si's are the sub-lists of xs.
+  Notice: element order is preserved. *)
+val fold_subsets : 'a list -> ('a list -> 'b -> 'b) -> 'b -> 'b
+
+(* Generic version,
+  fold_subsets_gen add y0 xs f v0 computes f s1 (f s2 .. (f sN v0))
+  where the si's are, is add (yM .. (add y2 ... (add y1 start))) for
+  each subset ysi = [y1;y2;...;yM;] of xs. *)
+val fold_subsets_gen :
+    ('a -> 'b -> 'b) -> 'b -> 'a list -> ('b -> 'c -> 'c) -> 'c -> 'c
+
 (****************************)
 (* Cross product generators *)
 (****************************)

@@ -138,8 +138,9 @@ module type S =
 
 (* Parallel composition *)
     val (>>|) : 'a t -> 'b t -> ('a * 'b)  t
-
     val (>>::) : 'a t -> 'a list t -> 'a list t
+    val (|||) : unit t -> unit t -> unit t
+
     val (|*|)   : bool code -> unit code -> unit code   (* Cross product *)
 (*    val lockT : 'a t -> 'a t *)
     val forceT : 'a -> 'b t -> 'a t
@@ -176,8 +177,13 @@ module type S =
            is_data charaterizes the data port of a store *)
 
     (* Read, the first, boolean, argument identifies a store data port *)
+    val do_read_loc : bool -> (A.location -> A.V.v -> E.action) ->
+      A.location -> E.iiid -> A.V.v t
     val read_loc : bool -> (A.location -> A.V.v -> E.action) ->
       A.location -> A.inst_instance_id -> A.V.v t
+
+    val do_write_loc :
+      (A.location -> E.action) -> A.location -> E.iiid -> unit t
     val write_loc :
       (A.location -> E.action) -> A.location -> A.inst_instance_id -> unit t
     (* Fence, must be used when output is absent *)
@@ -207,7 +213,11 @@ module type S =
       (MachSize.sz -> A.location -> A.V.v -> E.action) ->
         A.V.v -> A.V.v ->  A.inst_instance_id -> unit t
 
-      val initwrites : (A.location * A.V.v) list -> A.size_env -> unit code
+      (* Generate initial code monad, first argument represent additional
+         events, beyond intwrites themselves *)
+      val initwrites :
+        (unit t -> unit t) ->
+          (A.location * A.V.v) list -> A.size_env -> unit code
 
     end
 
@@ -227,5 +237,5 @@ module type S =
     type evt_struct
     type output = VC.cnstrnts * evt_struct
 
-    val get_output  : 'a code -> output list
+    val get_output  : 'a code -> output list -> output list
   end

@@ -68,8 +68,8 @@ module Make(S:Sem.Semantics) = struct
     let m =
       E.EventSet.fold
         (fun e m -> match e.E.iiid with
-        | None -> m
-        | Some i ->
+        | E.IdInit|E.IdSpurious -> m
+        | E.IdSome i ->
             InstMap.add i
               (E.EventSet.add e (InstMap.safe_find E.EventSet.empty i m)) m)
         evts InstMap.empty in
@@ -81,10 +81,10 @@ module Make(S:Sem.Semantics) = struct
     let rf_rel =
       E.EventRel.fold
         (fun (w,r) m -> match r.E.iiid with
-        | None -> assert false
-        | Some ir -> match w.E.iiid with
-          | None -> m
-          | Some iw -> add_succ ir iw m)
+        | E.IdInit|E.IdSpurious -> assert false
+        | E.IdSome ir -> match w.E.iiid with
+          | E.IdInit|E.IdSpurious -> m
+          | E.IdSome iw -> add_succ ir iw m)
         rf InstMap.empty in
 
     if dbg then eprintf "RF-REG:\n%a\n" pp_rel rf_rel ;

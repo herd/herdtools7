@@ -34,7 +34,7 @@ module Make (C:Sem.Config)(V : Value.S)
     let is_global = A.is_global
 
     let atomic_pair_allowed e1 e2 = match e1.E.iiid, e2.E.iiid with
-      | Some i1,Some i2 -> i1 == i2
+      | E.IdSome i1,E.IdSome i2 -> i1 == i2
       | _,_ -> false
 
 
@@ -368,5 +368,9 @@ module Make (C:Sem.Config)(V : Value.S)
         M.addT
           (A.next_po_index ii.A.program_order_index)
           (build_semantics_inner plain ii)
+
+    let spurious_setaf _ = assert false
+
     end
+
   end

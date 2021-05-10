@@ -39,6 +39,9 @@ module Make
     let kvm = C.variant Variant.Kvm
     let is_branching = kvm && not (C.variant Variant.NoPteBranch)
     let pte2 = kvm && C.variant Variant.PTE2
+    let phantom =
+      Variant.get_switch `AArch64 Variant.SwitchPhantom C.variant
+
 
     let check_memtag ins =
       if not memtag then
@@ -367,16 +370,16 @@ module Make
       let extract_el0 v = M.op1 Op.EL0 v
       let extract_oa v = M.op1 Op.OA v
 
-      let mextract_whole_pte_val an nexp a_pte ii =
-        (M.read_loc false
+      let mextract_whole_pte_val an nexp a_pte iiid =
+        (M.do_read_loc false
            (fun loc v ->
              Act.Access (Dir.R,loc,v,an,nexp,quad,Act.A_PTE))
-           (A.Location_global a_pte) ii)
+           (A.Location_global a_pte) iiid)
 
-      and write_whole_pte_val an explicit a_pte v ii =
-        M.write_loc
+      and write_whole_pte_val an explicit a_pte v iiid =
+        M.do_write_loc
           (mk_write quad an explicit Act.A_PTE v)
-          (A.Location_global a_pte) ii
+          (A.Location_global a_pte) iiid
 
 
       let op_of_set = function
@@ -384,18 +387,23 @@ module Make
         | AArch64.DB -> Op.SetDB
         | AArch64.Other -> assert false
 
-      let test_and_set_bit cond set a_pte ii =
+      let test_and_set_bit cond set a_pte iiid =
         let nexp = AArch64.NExp set in
-        mextract_whole_pte_val AArch64.X nexp a_pte ii >>= fun pte_v ->
+        mextract_whole_pte_val AArch64.X nexp a_pte iiid >>= fun pte_v ->
         cond pte_v >>*= fun c ->
         M.choiceT c
             (M.op1 (op_of_set set) pte_v >>= fun v ->
-             write_whole_pte_val AArch64.X nexp a_pte v ii)
+             write_whole_pte_val AArch64.X nexp a_pte v iiid)
             (M.unitT ())
 
       let bit_is_zero op v = M.op1 op v >>= is_zero
       let bit_is_not_zero op v = M.op1 op v >>= is_not_zero
       let m_op op m1 m2 = (m1 >>| m2) >>= fun (v1,v2) -> M.op op v1 v2
+
+      let set_af a_pte pte_v ii =
+        let nexp = AArch64.NExp AArch64.AF in
+        M.op1 Op.SetAF pte_v >>= fun v ->
+        write_whole_pte_val AArch64.X nexp a_pte v (E.IdSome ii)
 
       let test_and_set_af =
         test_and_set_bit
@@ -510,7 +518,7 @@ module Make
           (fun _ -> mk_fault a ii (Some "EL0")) ii >>! B.Exit
 
 
-      let check_ptw proc dir a_virt ma an ii mdirect mok mfault =
+      let check_ptw proc dir a_virt ma _an ii mdirect mok mfault =
 
         let is_el0  = List.exists (Proc.equal proc) TopConf.procs_user in
         let check_el0 m =
@@ -531,7 +539,7 @@ module Make
             begin if hd && dir = Dir.W then
               is_zero pte_v.db_v >>= fun c ->
               M.choiceT c
-                  (test_and_set_db a_pte ii)
+                  (test_and_set_db a_pte (E.IdSome ii))
                   (M.unitT ())
             else M.unitT ()
             end
@@ -549,13 +557,30 @@ module Make
             begin
               let get_a_pte = ma >>= fun _ -> M.op1 Op.PTELoc a_virt
               and test_and_set_af a_pte =
-                if tthm && ha then
-                  test_and_set_af a_pte ii >>! a_pte
+                if not phantom && tthm && ha then
+                  let iiid =E.IdSome ii in
+                  test_and_set_af a_pte iiid >>! a_pte
                 else M.unitT a_pte in
               (get_a_pte >>== test_and_set_af) >>= fun a_pte ->
+              let an,nexp =
+                if tthm && ha && phantom then
+                  (* Phantom mode, to be paired with setAF *)
+                  AArch64.X,AArch64.NExp AArch64.AF
+                else
+                  (* Non phantom, ordinary non-explicit access *)
+                  AArch64.empty_annot,AArch64.nexp_annot in
               mextract_whole_pte_val
-                an AArch64.nexp_annot a_pte ii >>= fun pte_v ->
-              (mextract_pte_vals pte_v) >>= fun pte_v -> M.unitT (pte_v,a_pte)
+                an nexp a_pte (E.IdSome ii) >>== fun pte_v ->
+              (mextract_pte_vals pte_v) >>= fun ipte ->
+              let out = M.unitT (ipte,a_pte) in
+              if tthm && ha && phantom then
+                m_op Op.And
+                  (is_zero ipte.af_v)
+                  (is_not_zero ipte.valid_v) >>*=
+                  fun c ->
+                  M.choiceT c
+                    (set_af a_pte pte_v ii >>= fun () -> out) out
+              else out
             end
           (fun (_,a_pte) ma -> (* now we have PTE content *)
             (* Monad will carry changing internal pte value *)
@@ -745,13 +770,23 @@ module Make
               else (mfault >>| mm) >>! B.Next))
 
 
+      let some_ha = dirty.DirtyBit.some_ha || dirty.DirtyBit.some_hd
+
+      let fire_spurious_af dir a m =
+        if phantom && some_ha && dir = Dir.W then
+          (m >>|
+             M.altT (test_and_set_af a E.IdSpurious) (M.unitT ())) >>=
+            fun (r,_) -> M.unitT r
+        else m
+
       let lift_kvm dir mop ma an ii mphy =
         let mfault ma a =
           insert_commit_to_fault ma (fun _ -> mk_fault a ii None) ii
           >>! if C.precision then B.Exit else B.ReExec in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir a ma an ii
-            (mop Act.A_PTE ma >>! B.Next)
+            ((let m = mop Act.A_PTE ma in
+              fire_spurious_af dir a m) >>! B.Next)
             mphy
             mfault in
         M.delay_kont "6" ma
@@ -809,7 +844,9 @@ module Make
                 fun ma a_virt ->
                 M.op1 Op.IsVirtual a_virt >>= fun c ->
                 M.choiceT c
-                  (mop Act.A_PHY ma) (mop Act.A_PHY_PTE ma) >>! B.Next
+                  (mop Act.A_PHY ma)
+                  (fire_spurious_af dir a_virt (mop Act.A_PHY_PTE ma))
+                >>! B.Next
               else
                 fun ma _a -> mop Act.A_PHY ma >>! B.Next in
             lift_kvm dir mop ma an ii mphy
@@ -1808,5 +1845,9 @@ module Make
         | I_LD1M _|I_ST1M _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
         )
+
+      let spurious_setaf v = test_and_set_af v E.IdSpurious
+
     end
+
   end

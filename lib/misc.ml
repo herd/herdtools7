@@ -701,6 +701,26 @@ and go dir line (chans,ns as st) =
     | None -> next_iter st
   else Some (fconcat dir line,st)
 
+(********************)
+(* Subset generator *)
+(********************)
+
+(* Written in the same generic style as fold_cross *)
+let fold_subsets_gen add start xs kont r =
+  let rec fold_rec r ys = function
+    | [] -> kont ys r
+    | x::xs ->
+       fold_rec
+         (fold_rec r ys xs)
+         (add x ys)
+         xs in
+  fold_rec r start xs
+
+(* Contrieved way to keep set order in subsets *)
+let fold_subsets xs kont r =
+  let kont s = kont (s []) in
+  fold_subsets_gen (fun x s k -> s (x::k)) (fun k -> k) xs kont r
+
 (***************************)
 (* cross product iteration *)
 (***************************)

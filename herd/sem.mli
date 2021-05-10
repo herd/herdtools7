@@ -30,5 +30,6 @@ module type Semantics =
 (* Instruction semantics, highly arch dependant *)
     module Mixed(SZ:ByteSize.S) : sig
       val build_semantics : A.inst_instance_id -> (A.program_order_index * branch) M.t
+      val spurious_setaf : A.V.v -> unit M.t
     end
   end
