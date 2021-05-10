@@ -385,11 +385,20 @@ module Make
                         { my_ha; my_hd; } in
                    E.EventSet.filter
                      (fun e ->
-                       begin match E.proc_of e with
+                       match E.proc_of e with
                        | Some proc -> a (tr_proc proc) e.E.action
-                       (* Init writes excluded as no proc for them *)
-                       | None -> false
-                       end)
+                       (* For init consider all threads setting *)
+                       | None ->
+                          let d =
+                            match O.dirty with
+                            | None ->
+                               let f () = false in
+                               { my_ha=f; my_hd=f; }
+                            | Some dirty ->
+                               let k b () = b in
+                               { my_ha=k dirty.all_ha;
+                                 my_hd=k dirty.all_hd; } in
+                          a d e.E.action)
                      (Lazy.force mevt)
                  end)
                E.Act.arch_dirty)

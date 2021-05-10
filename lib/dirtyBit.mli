@@ -19,8 +19,8 @@ type t =
      tthm : Proc.t -> bool;
      ha : Proc.t -> bool;
      hd : Proc.t -> bool;
-     some_ha : bool;
-     some_hd : bool;
+     some_ha : bool;   some_hd : bool;
+     all_ha : bool;   all_hd : bool;
    }
 
 type my_t = { my_ha : unit -> bool; my_hd : unit -> bool; }
