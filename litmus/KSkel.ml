@@ -60,7 +60,7 @@ module Make
     module Insert = ObjUtil.Insert(Cfg)
 
     let memtype_possible = Insert.exists "klitmus_memory_type.c"
-    let timebase_possible = Insert.exists "timebase.c"
+    let timebase_possible = Cfg.delay > 0 && Insert.exists "timebase.c"
 
 (*************)
 (* Utilities *)
