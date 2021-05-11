@@ -387,14 +387,18 @@ module Make
         | AArch64.DB -> Op.SetDB
         | AArch64.Other -> assert false
 
-      let test_and_set_bit cond set a_pte iiid =
+      let do_test_and_set_bit combine cond set a_pte iiid =
         let nexp = AArch64.NExp set in
         mextract_whole_pte_val AArch64.X nexp a_pte iiid >>= fun pte_v ->
         cond pte_v >>*= fun c ->
-        M.choiceT c
+        combine c
             (M.op1 (op_of_set set) pte_v >>= fun v ->
              write_whole_pte_val AArch64.X nexp a_pte v iiid)
             (M.unitT ())
+
+      let test_and_set_bit cond =  do_test_and_set_bit M.choiceT cond
+      and test_and_set_bit_succeeds cond =
+        do_test_and_set_bit (fun c m _ -> M.assertT c m) cond
 
       let bit_is_zero op v = M.op1 op v >>= is_zero
       let bit_is_not_zero op v = M.op1 op v >>= is_not_zero
@@ -405,12 +409,14 @@ module Make
         M.op1 Op.SetAF pte_v >>= fun v ->
         write_whole_pte_val AArch64.X nexp a_pte v (E.IdSome ii)
 
-      let test_and_set_af =
-        test_and_set_bit
-          (fun v ->
-            m_op Op.And
-              (bit_is_zero Op.AF v) (bit_is_not_zero Op.Valid v))
-          AArch64.AF
+      let cond_af v =
+        m_op Op.And
+          (bit_is_zero Op.AF v) (bit_is_not_zero Op.Valid v)
+
+      let test_and_set_af = test_and_set_bit cond_af AArch64.AF
+
+      and test_and_set_af_succeeds =
+        test_and_set_bit_succeeds cond_af AArch64.AF
 
       and test_and_set_db =
         test_and_set_bit
@@ -775,7 +781,7 @@ module Make
       let fire_spurious_af dir a m =
         if phantom && some_ha && dir = Dir.W then
           (m >>|
-             M.altT (test_and_set_af a E.IdSpurious) (M.unitT ())) >>=
+             M.altT (test_and_set_af_succeeds a E.IdSpurious) (M.unitT ())) >>=
             fun (r,_) -> M.unitT r
         else m
 
@@ -1846,7 +1852,7 @@ module Make
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
         )
 
-      let spurious_setaf v = test_and_set_af v E.IdSpurious
+      let spurious_setaf v = test_and_set_af_succeeds v E.IdSpurious
 
     end
 
