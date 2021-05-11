@@ -651,6 +651,13 @@ Monad type:
           let f = (fun (vin, vcl, es) -> ((v, vin), vcl, es)) in
           (eiid1,(Evt.map f sact, Misc.app_opt (Evt.map f) spec))
 
+(* Assert a value *)
+    let assertT : 'A.V.v -> 'a t -> 'a t =
+      fun v m eiid ->
+      let eiid,(acts,spec) = m eiid in
+      let f (r,cs,es) = r,VC.Assign (v,VC.Atom V.one)::cs,es in
+      eiid,(Evt.map f acts,Misc.app_opt (Evt.map f) spec)
+
 (* Choosing dependant upon flag, notice that, once determined v is either one or zero *)
     let choiceT =
       fun v l r eiid ->
