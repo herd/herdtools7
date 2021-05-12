@@ -443,6 +443,12 @@ module Make
 (* Add commit events, when commanded by options *)
 (************************************************)
 
+      let do_prefix_commit m ii =
+        commit_pred ii >>*== fun () -> m
+
+      let prefix_commit m ii =
+        if is_branching then do_prefix_commit m ii else m
+
       let append_commit ma ii =
         if is_branching then do_append_commit ma ii else ma
 
@@ -552,7 +558,9 @@ module Make
             >>| (M.op1 Op.Offset a_virt >>= M.add pte_v.oa_v)
             >>= fun (_,oa) -> M.unitT oa in
         let mfault m _a = mfault (get_oa a_virt m) a_virt
-        and mok a_pte m a = mok (setbits_get_oa a_pte m) a in
+        and mok a_pte m a =
+          let m = append_commit m ii in
+          mok (setbits_get_oa a_pte m) a in
 
 
 (* Action on case of page table access.
@@ -864,7 +872,7 @@ module Make
         lift_memop Dir.R
           (fun ac ma _mv -> (* value fake here *)
             if Access.is_physical ac then
-              M.bind_ctrl (append_commit ma ii) (mop ac)
+              M.bind_ctrl ma (mop ac)
             else
               ma >>= mop ac)
           (to_perms "r" sz)
@@ -876,7 +884,7 @@ module Make
           (fun ac ma mv ->
             if is_branching && Access.is_physical ac then
               (* additional ctrl dep on address *)
-              M.bind_ctrl_data (append_commit ma ii) mv
+              M.bind_ctrl_data ma mv
                 (fun a v ->
                   do_write_mem sz an aexp ac a v ii)
             else if morello then
@@ -991,7 +999,7 @@ module Make
             M.riscv_store_conditional
               (read_reg_ord ResAddr ii)
               mv
-              (append_commit_ac ac ma ii)
+              ma
               (write_reg ResAddr V.zero ii)
               (fun v -> write_reg rr v ii)
               (fun ea resa v ->
@@ -1028,7 +1036,7 @@ module Make
             and w1 a v = rmw_amo_write sz rmw ac a v ii in
             M.swp
               (Access.is_physical ac)
-              (append_commit_ac ac ma ii)
+              ma
               r1 r2 w1 w2)
           (to_perms "rw" sz)
           (read_reg_ord r3 ii)
@@ -1044,8 +1052,7 @@ module Make
            (* mv is read new value from reg, not important
               as this code is not executed in morello mode *)
           (fun ac ma mv ->
-            let is_phy = Access.is_physical ac
-            and ma = append_commit_ac ac ma ii in
+            let is_phy = Access.is_physical ac in
              M.altT
               (let read_mem a = do_read_mem_ret sz an aexp ac a ii in
                M.aarch64_cas_no is_phy ma read_rs write_rs read_mem M.neqT)
@@ -1107,7 +1114,7 @@ module Make
               else fun sz -> rmw_amo_read sz rmw ac
             and write_mem = fun sz -> rmw_amo_write sz rmw ac in
             M.amo_strict (Access.is_physical ac) op
-              (append_commit_ac ac ma ii)
+              ma
               (fun a -> read_mem sz a ii) mv
               (fun a v -> write_mem sz a v ii)
               (fun w ->
