@@ -995,7 +995,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         output = es2.output; ctrl_output = es2.ctrl_output ;
         sca = EventSetSet.union es1.sca es2.sca;
         mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses;
-        aligned = List.append (es1.aligned) (es2.aligned); }
+        aligned = es1.aligned @ es2.aligned;
+      }
 
 (* Function inst_code_comp_spec builds pod node with two branches, left and right,
    It is important that left and right output are single, have increasing ids
@@ -1050,7 +1051,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
             sca = EventSetSet.union3 es1.sca es2.sca es3.sca;
             mem_accesses =
             EventSet.union3 es1.mem_accesses es2.mem_accesses es3.mem_accesses;
-            aligned = List.append (List.append (es1.aligned) (es2.aligned)) (es3.aligned);
+            aligned = es1.aligned @ es2.aligned @ es3.aligned ;
           }
       | _ -> Warn.fatal "Event.inst_code_comp_spec called in wrong context"
 
@@ -1147,14 +1148,9 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           EventRel.union
             r.intra_causality_control
             (EventRel.cartesian (maxi_loc es1) (mini_loc es2)) ;
-        control = EventRel.union es1.control es2.control;
-        data_ports = EventSet.union es1.data_ports es2.data_ports;
-        success_ports = EventSet.union es1.success_ports es2.success_ports;
         output = mkOut es1 es2;
         ctrl_output = sequence_data_ctrl_output es1 es2;
-        sca = EventSetSet.union es1.sca es2.sca;
-        mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses;
-        aligned = List.append es1.aligned es2.aligned;}
+      }
 
 (* Standard *)
     let (=**=) =
@@ -1301,7 +1297,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         sca = EventSetSet.union3  a.sca rtag.sca commit.sca;
         mem_accesses =
         EventSet.union3  a.mem_accesses rtag.mem_accesses commit.mem_accesses;
-        aligned = List.append (List.append (a.aligned) (rtag.aligned)) (commit.aligned);}
+        aligned = a.aligned @ rtag.aligned @ commit.aligned ;
+      }
 
 (* Multi composition for exchange *)
 
@@ -1343,12 +1340,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         EventSet.union4
           rs1.mem_accesses rs2.mem_accesses
           ws1.mem_accesses ws2.mem_accesses ;
-        aligned = List.append
-                    (List.append
-                      (List.append (rs1.aligned)
-                                   (rs2.aligned))
-                                   (ws1.aligned))
-                                   (ws2.aligned);}
+        aligned = rs1.aligned @ rs2.aligned @ ws1.aligned @ ws2.aligned ;
+      }
 
     let po_union5 es1 es2 es3 es4 es5 =
       let r1,e1 = es1.po and r2,e2 = es2.po and r3,e3 = es3.po
@@ -1419,14 +1412,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           rloc.mem_accesses
           rmem.mem_accesses rreg.mem_accesses
           wmem.mem_accesses wreg.mem_accesses ;
-        aligned = List.append
-                    (List.append
-                      (List.append
-                        (List.append (rloc.aligned)
-                                     (rmem.aligned))
-                                     (rreg.aligned))
-                                     (wmem.aligned))
-                                     (wreg.aligned) ;}
+        aligned =
+          rloc.aligned @ rmem.aligned @ rreg.aligned @ wmem.aligned
+          @ wreg.aligned ;
+      }
 
 (* disjointness is awful *)
 
@@ -1484,12 +1473,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         mem_accesses =
         EventSet.union4
           re.mem_accesses rloc.mem_accesses rmem.mem_accesses wmem.mem_accesses;
-        aligned = List.append
-                    (List.append
-                      (List.append (re.aligned)
-                                   (rloc.aligned))
-                                   (rmem.aligned))
-                                   (wmem.aligned);}
+        aligned = re.aligned @ rloc.aligned @ rmem.aligned @ wmem.aligned ;
+      }
 
     let amo re rloc rmem wmem =
       let input_wmem = minimals wmem in
@@ -1531,12 +1516,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         mem_accesses =
         EventSet.union4
           re.mem_accesses rloc.mem_accesses rmem.mem_accesses wmem.mem_accesses;
-        aligned = List.append
-                    (List.append
-                      (List.append (re.aligned)
-                                   (rloc.aligned))
-                                   (rmem.aligned))
-                                   (wmem.aligned);}
+        aligned = re.aligned @ rloc.aligned @ rmem.aligned @ wmem.aligned ;
+    }
 
 
 (************************************)
@@ -1591,14 +1572,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         mem_accesses=
         EventSet.union5 rloc.mem_accesses rold.mem_accesses rnew.mem_accesses
           rmem.mem_accesses wmem.mem_accesses;
-        aligned = List.append
-                    (List.append
-                      (List.append
-                        (List.append (rloc.aligned)
-                                     (rold.aligned))
-                                     (rnew.aligned))
-                                     (rmem.aligned))
-                                     (wmem.aligned) ;}
+        aligned =
+          rloc.aligned @ rold.aligned @ rnew.aligned
+          @ rmem.aligned @ wmem.aligned ;
+      }
 
 (* Failure, a phantom write event that would iico_control depens
    upon rold may be an idea... Without it rold has no impact out evt_struct
@@ -1637,7 +1614,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         sca = EventSetSet.union3 rloc.sca rold.sca rmem.sca;
         mem_accesses=
         EventSet.union3 rloc.mem_accesses rold.mem_accesses rmem.mem_accesses;
-        aligned = List.append (List.append (rloc.aligned) (rold.aligned)) (rmem.aligned);
+        aligned = rloc.aligned @ rold.aligned @ rmem.aligned ;
       }
 
 (**************)
@@ -1732,10 +1709,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         Some
           (if retbool then EventSet.union (get_output rmem) (get_output u) else get_output rmem);
         ctrl_output = None ;
-        sca = EventSetSet.union3 loc.sca u.sca rmem.sca;
+        sca = EventSetSet.union3 loc.sca u.sca rmem.sca ;
         mem_accesses =
         EventSet.union3 loc.mem_accesses u.mem_accesses rmem.mem_accesses;
-        aligned = List.append (List.append (loc.aligned) (u.aligned)) (rmem.aligned);
+        aligned = loc.aligned @ u.aligned @ rmem.aligned ;
       }
 
     let po_union6 =
@@ -1829,16 +1806,9 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         EventSet.union
           (EventSet.union3 resa.mem_accesses data.mem_accesses addr.mem_accesses)
           (EventSet.union3 wres.mem_accesses wresult.mem_accesses wmem.mem_accesses);
-        aligned = List.append
-                    (List.append
-                      (List.append
-                        (List.append
-                          (List.append (resa.aligned)
-                                       (data.aligned))
-                                       (addr.aligned))
-                                       (wres.aligned))
-                                       (wresult.aligned))
-                                       (wmem.aligned) ;}
+        aligned =
+          resa.aligned @ data.aligned @ addr.aligned
+          @ wres.aligned @ wresult.aligned @ wmem.aligned ;}
 
 (* AArch64 CAS, failure *)
     let aarch64_cas_no is_phy rn rs wrs rm =
