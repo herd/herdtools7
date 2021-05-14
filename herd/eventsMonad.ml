@@ -249,10 +249,14 @@ Monad type:
           acts1 acts2 (eiid,Evt.empty) in
       eiid,(acts,None)
 
-    let bind_ctrl_data m1 m2 m3 eiid =
-      comp_comp E.bind_ctrl_data m1 m2 m3 eiid
+    let bind_ctrldata_data m1 m2 m3 eiid =
+      comp_comp E.bind_ctrldata_data m1 m2 m3 eiid
 
-    let bind_ctrl m1 m3 = bind_ctrl_data m1 (unitT ()) (fun a () -> m3 a)
+    let bind_ctrldata m1 m3 =
+      bind_ctrldata_data m1 (unitT ()) (fun a () -> m3 a)
+
+    let (>>**==) : 'a t -> ('a -> 'b t) -> ('b) t
+        = fun s f -> data_comp E.bind_ctrldata_first_outputs s f
 
 (* Tag check combinator *)
     let check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v t) -> 'x t -> 'v t
@@ -472,19 +476,25 @@ Monad type:
         eiid =
       let eiid,read_rn = read_rn eiid in
       let eiid,read_rs = read_rs eiid in
-      let a,cl_a,es_rn = Evt.as_singleton_nospecul read_rn
-      and cv,cl_cv,es_rs = Evt.as_singleton_nospecul read_rs in
-      let eiid,read_mem = read_mem a eiid in
-      let ov,cl_rm,es_rm = Evt.as_singleton_nospecul read_mem in
-      let eiid,write_rs = write_rs ov eiid in
-      let (),cl_wrs,es_wrs = Evt.as_singleton_nospecul write_rs in
-      let eiid,nem = rne ov cv eiid in
-      let (),cl_ne,eseq =  Evt.as_singleton_nospecul nem in
-      assert (E.is_empty_event_structure eseq) ;
-      let es =
-        E.aarch64_cas_no is_physical es_rn es_rs es_wrs es_rm in
-      let cls = cl_a@cl_cv@cl_rm@cl_wrs@cl_ne  in
-      eiid,(Evt.singleton ((),cls,es), None)
+      let cv,cl_cv,es_rs = Evt.as_singleton_nospecul read_rs in
+      let acts_rn,spec = read_rn in
+      assert (Misc.is_none spec) ;
+      let eiid,acts =
+        Evt.fold
+          (fun  (a,cl_a,es_rn) (eiid,acts) ->
+            let eiid,read_mem = read_mem a eiid in
+            let ov,cl_rm,es_rm = Evt.as_singleton_nospecul read_mem in
+            let eiid,write_rs = write_rs ov eiid in
+            let (),cl_wrs,es_wrs = Evt.as_singleton_nospecul write_rs in
+            let eiid,nem = rne ov cv eiid in
+            let (),cl_ne,eseq =  Evt.as_singleton_nospecul nem in
+            assert (E.is_empty_event_structure eseq) ;
+            let es =
+              E.aarch64_cas_no is_physical es_rn es_rs es_wrs es_rm in
+            let cls = cl_a@cl_cv@cl_rm@cl_wrs@cl_ne  in
+            eiid,Evt.add ((),cls,es) acts)
+          acts_rn (eiid,Evt.empty) in
+      eiid,(acts, None)
 
 (* AArch64 successful cas *)
     let aarch64_cas_ok

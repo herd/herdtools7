@@ -77,6 +77,7 @@ module Make
       let (>>==) = M.(>>==)
       let (>>*=) = M.(>>*=)
       let (>>*==) = M.(>>*==)
+      let (>>**==) = M.(>>**==)
       let (>>|) = M.(>>|)
       let (>>!) = M.(>>!)
       let (>>::) = M.(>>::)
@@ -558,8 +559,19 @@ module Make
             >>| (M.op1 Op.Offset a_virt >>= M.add pte_v.oa_v)
             >>= fun (_,oa) -> M.unitT oa in
         let mfault m _a = mfault (get_oa a_virt m) a_virt
-        and mok a_pte m a =
-          let m = append_commit m ii in
+        and mok (pte_v,ipte) a_pte m a =
+          let m =
+            let m = append_commit m ii in
+            if tthm && ha && phantom then
+              is_zero ipte.af_v >>=
+                fun c ->
+                M.choiceT c
+                  (m >>**==
+                     (fun _ ->
+                       commit_pred ii >>*= fun _ -> set_af a_pte pte_v ii)
+                   >>== fun () -> M.unitT ipte)
+                  m
+            else m in
           mok (setbits_get_oa a_pte m) a in
 
 
@@ -586,8 +598,8 @@ module Make
               mextract_whole_pte_val
                 an nexp a_pte (E.IdSome ii) >>== fun pte_v ->
               (mextract_pte_vals pte_v) >>= fun ipte ->
-              let out = M.unitT (ipte,a_pte) in
-              if tthm && ha && phantom then
+              let out = M.unitT ((pte_v,ipte),a_pte) in
+              if false && tthm && ha && phantom then
                 m_op Op.And
                   (is_zero ipte.af_v)
                   (is_not_zero ipte.valid_v) >>*=
@@ -596,12 +608,12 @@ module Make
                     (set_af a_pte pte_v ii >>= fun () -> out) out
               else out
             end
-          (fun (_,a_pte) ma -> (* now we have PTE content *)
+          (fun (pair_pte,a_pte) ma -> (* now we have PTE content *)
             (* Monad will carry changing internal pte value *)
-            let ma = ma >>= fun (pte_v,_) -> M.unitT pte_v in
+            let ma = ma >>= fun ((_,ipte),_) -> M.unitT ipte in
             (* wrapping of success/failure continuations,
                only pte value may have changed *)
-            let mok ma = mok a_pte ma a_virt
+            let mok ma = mok pair_pte a_pte ma a_virt
 (* a_virt was (if pte2 then a_virt else pte_v.oa_v), why? *)
             and mno ma =  mfault ma a_virt in
             let check_cond cond =
@@ -872,7 +884,7 @@ module Make
         lift_memop Dir.R
           (fun ac ma _mv -> (* value fake here *)
             if Access.is_physical ac then
-              M.bind_ctrl ma (mop ac)
+              M.bind_ctrldata ma (mop ac)
             else
               ma >>= mop ac)
           (to_perms "r" sz)
@@ -884,7 +896,7 @@ module Make
           (fun ac ma mv ->
             if is_branching && Access.is_physical ac then
               (* additional ctrl dep on address *)
-              M.bind_ctrl_data ma mv
+              M.bind_ctrldata_data ma mv
                 (fun a v ->
                   do_write_mem sz an aexp ac a v ii)
             else if morello then
