@@ -225,8 +225,11 @@ module Make
         else write_reg_sz
 
 (* Emit commit event *)
-      let commit_bcc ii = M.mk_singleton_es (Act.Commit true) ii
-      let commit_pred ii = M.mk_singleton_es (Act.Commit false) ii
+      let commit_bcc ii = M.mk_singleton_es (Act.Commit (true,None)) ii
+      and commit_pred_txt txt ii =
+        M.mk_singleton_es (Act.Commit (false,txt)) ii
+
+      let commit_pred ii = commit_pred_txt None ii
 
 (* Fence *)
       let create_barrier b ii = M.mk_singleton_es (Act.Barrier b) ii
@@ -318,8 +321,8 @@ module Make
           (commit_pred ii)  ++ fun cond ->  M.choiceT cond m1 m2
 
 (* Tag checking Morello *)
-      let do_append_commit ma ii =
-        ma >>== fun a -> commit_pred ii >>= fun () -> M.unitT a
+      let do_append_commit ma txt ii =
+        ma >>== fun a -> commit_pred_txt txt ii >>= fun () -> M.unitT a
 
       let mzero = M.unitT M.A.V.zero
 
@@ -450,13 +453,8 @@ module Make
       let prefix_commit m ii =
         if is_branching then do_prefix_commit m ii else m
 
-      let append_commit ma ii =
-        if is_branching then do_append_commit ma ii else ma
-
-      let append_commit_ac ac ma ii =
-        if Access.is_physical ac && is_branching then
-          do_append_commit ma ii
-        else ma
+      let append_commit ma txt ii =
+        if is_branching then do_append_commit ma txt ii else ma
 
       let do_insert_commit m1 m2 ii =
       (* Notice the complex dependency >>*==
@@ -561,14 +559,15 @@ module Make
         let mfault m _a = mfault (get_oa a_virt m) a_virt
         and mok (pte_v,ipte) a_pte m a =
           let m =
-            let m = append_commit m ii in
+            let m = append_commit m (Some "valid:1") ii in
             if tthm && ha && phantom then
               is_zero ipte.af_v >>=
                 fun c ->
                 M.choiceT c
                   (m >>**==
                      (fun _ ->
-                       commit_pred ii >>*= fun _ -> set_af a_pte pte_v ii)
+                       commit_pred_txt (Some "af:0") ii >>*=
+                       fun _ -> set_af a_pte pte_v ii)
                    >>== fun () -> M.unitT ipte)
                   m
             else m in

@@ -48,7 +48,7 @@ module Make (C:Config) (A : A) : sig
   type action =
     | Access of Dir.dirn * A.location * A.V.v * A.lannot * A.explicit * MachSize.sz * Access.t
     | Barrier of A.barrier
-    | Commit of bool (* true = bcc / false = pred *)
+    | Commit of bool (* true = bcc / false = pred *) * string option
 (* Atomic modify, (location,value read, value written, annotation *)
     | Amo of A.location * A.V.v * A.V.v * A.lannot * A.explicit * MachSize.sz * Access.t
 (* NB: Amo used in some arch only (e.g., Arm, RISCV) *)
@@ -123,8 +123,10 @@ end = struct
   type action =
     | Access of Dir.dirn * A.location * A.V.v * A.lannot * A.explicit * MachSize.sz * Access.t
     | Barrier of A.barrier
-    | Commit of bool
-    | Amo of A.location * A.V.v * A.V.v * A.lannot * A.explicit * MachSize.sz * Access.t
+    | Commit of bool * string option
+    | Amo of
+        A.location * A.V.v * A.V.v * A.lannot * A.explicit *
+        MachSize.sz * Access.t
     | Fault of A.inst_instance_id * A.location * string option
     | TooFar
     | Inv of A.TLBI.op * A.location option
@@ -154,7 +156,9 @@ end = struct
         (if sz = MachSize.Word then "" else MachSize.pp_short sz)
         (V.pp C.hexa v)
   | Barrier b -> A.pp_barrier_short b
-  | Commit _ -> "Branching"
+  | Commit (_,m) ->
+     Printf.sprintf "Branching%s"
+       (match m with None -> "" | Some txt -> "("^txt^")")
   | Amo (loc,v1,v2,an,exp_an,sz,_) ->
       Printf.sprintf "RMW(%s)%s%s%s(%s>%s)"
         (A.pp_annot an)
@@ -419,11 +423,11 @@ end = struct
 (* Commits *)
 
   let is_commit_bcc a = match a with
-  | Commit b -> b
+  | Commit (b,_) -> b
   | _ -> false
 
   let is_commit_pred a = match a with
-  | Commit b -> not b
+  | Commit (b,_) -> not b
   | _ -> false
 
   let is_pod a = match a with

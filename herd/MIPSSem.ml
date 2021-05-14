@@ -90,7 +90,7 @@ module Make (C:Sem.Config)(V:Value.S)
         M.mk_singleton_es (Act.Barrier b) ii
 
       let commit ii =
-        M.mk_singleton_es (Act.Commit true) ii
+        M.mk_singleton_es (Act.Commit (true,None)) ii
 
 (* Entry point *)
 
