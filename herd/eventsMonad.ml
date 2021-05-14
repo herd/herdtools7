@@ -252,6 +252,8 @@ Monad type:
     let bind_ctrl_data m1 m2 m3 eiid =
       comp_comp E.bind_ctrl_data m1 m2 m3 eiid
 
+    let bind_ctrl m1 m3 = bind_ctrl_data m1 (unitT ()) (fun a () -> m3 a)
+
 (* Tag check combinator *)
     let check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v t) -> 'x t -> 'v t
         = fun ma rtag comp commit ->

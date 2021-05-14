@@ -55,8 +55,11 @@ module type S =
     (* Data composition, entry for snd monad: minimals for complete iico *)
     val bind_data_to_minimals : 'a t -> ('a -> 'b t) -> ('b) t
 
-    (* Hybrid composition m1 m2 m3, m1 -ctrl-> m3 and m2 -data-> m3 *)
+    (* Hybrid composition m1 m2 m3, m1 -ctrl+data-> m3 and m2 -data-> m3.
+       ctrl+data -> ctrl from maximal commit evts + data from
+       monad output *)
     val bind_ctrl_data : 'a t -> 'b t -> ('a -> 'b -> 'c t) -> 'c t
+    val bind_ctrl : 'a t -> ('a -> 'c t) -> 'c t
 
 
     val check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v t) -> 'x t -> 'v t

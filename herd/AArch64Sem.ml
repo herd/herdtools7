@@ -864,7 +864,7 @@ module Make
         lift_memop Dir.R
           (fun ac ma _mv -> (* value fake here *)
             if Act.is_physical ac then
-              insert_commit ma (mop ac) ii
+              M.bind_ctrl (append_commit ma ii) (mop ac)
             else
               ma >>= mop ac)
           (to_perms "r" sz)
