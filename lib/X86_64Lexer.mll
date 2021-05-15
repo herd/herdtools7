@@ -126,7 +126,7 @@ rule token = parse
 | "sfence"|"SFENCE"   { I_SFENCE }
 | "setnb"|"SETNB"       { I_SETNB }
 | "clflush"|"CLFLUSH" { I_CLFLUSH X86_64.NoOpt }
-| "clflusopt"|"CLFLUSHOPT" { I_CLFLUSH X86_64.Opt }
+| "clflushopt"|"CLFLUSHOPT" { I_CLFLUSH X86_64.Opt }
 | name as x
   { match X86_64.parse_any_reg x with
   | Some r -> ARCH_REG r
