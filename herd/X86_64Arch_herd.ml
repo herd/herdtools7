@@ -112,15 +112,47 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
 
     module MemType=MemoryType.X86_64
 
-    module NoConf = struct
+    module ArchAction = struct
+      type t = ClFlush of opt * location
       type v = V.v
       type loc = location
       type value_set = V.ValueSet.t
       type solution = V.solution
       type arch_lannot = lannot
       type arch_explicit = explicit
-    end
 
-    module ArchAction = ArchAction.No(NoConf)
+      let pp_opt = function
+        | NoOpt -> ""
+        | Opt -> "Opt"
+
+      let pp (ClFlush (opt,loc)) =
+        Printf.sprintf "ClFlush%s %s" (pp_opt opt) (pp_location loc)
+
+      let get_lannot _ = Plain
+      let get_explicit _ = exp_annot
+      let value_of _ = None
+      let read_of _ = None
+      let written_of _ = None
+      let location_of (ClFlush (_,loc)) = Some loc
+      let is_store _ = false
+      let is_load _ = false
+      let get_size _ = assert false
+      let get_kind _ = assert false
+
+      let undetermined_vars (ClFlush (_,loc)) =
+        undetermined_vars_in_loc loc
+
+      let simplify_vars sol (ClFlush (opt,loc)) =
+        ClFlush (opt,simplify_vars_in_loc sol loc)
+
+      let is_opt (ClFlush (opt,_)) =
+        match opt with
+        | NoOpt -> false
+        | Opt -> true
+
+      let sets =
+        ["ClFlush",(fun a -> not (is_opt a));
+         "ClFlushOpt",(fun a -> is_opt a);]
+    end
 
   end
