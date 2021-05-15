@@ -468,6 +468,16 @@ end = struct
       List.map
         (fun lvl -> A.pp_level lvl,is_at_level lvl)
         A.levels
+
+    and aasets =
+      List.map
+        (fun (tag,p) ->
+          let p act = match act with
+            | Arch act -> p act
+            | _ -> false in
+          tag,p)
+      A.ArchAction.sets
+
     in
     ("T",is_tag)::
     ("FAULT",is_fault)::
@@ -486,7 +496,7 @@ end = struct
         k
     else
       fun k -> k)
-      (bsets @ asets @ esets @ lsets)
+      (bsets @ asets @ esets @ lsets @ aasets)
 
   let arch_rels =
     if kvm then

@@ -39,6 +39,7 @@ module type S = sig
   val get_kind : t -> Access.t
   val undetermined_vars : t -> value_set
   val simplify_vars : solution -> t -> t
+  val sets : (string * (t -> bool)) list
 end
 
 module type NoConf = sig
@@ -73,4 +74,6 @@ module No(C:NoConf) = struct
   let get_kind _ = assert false
   let undetermined_vars _ = assert false
   let simplify_vars _ = assert false
+
+  let sets = []
 end
