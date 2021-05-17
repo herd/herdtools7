@@ -371,18 +371,6 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         let r,e = es.E.po in
         (r,E.EventRel.transitive_closure e) in
 
-      let add_setaf0 k (loc,v) =
-        match loc with
-        | A.Location_global (V.Val c as vloc) ->
-           if Constant.is_pt c then
-             let open PTEVal in
-             match v with
-             | V.Val (Constant.PteVal {af=0}) ->
-                vloc::k
-             | _ -> k
-           else k
-        | _ -> k in
-
       let af0 =
         if
           begin match C.dirty with
@@ -390,9 +378,27 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           | Some t -> t.DirtyBit.some_ha || t.DirtyBit.some_hd
           end &&
           phantom
-        then
-          List.fold_left add_setaf0 [] env0
-        else [] in
+        then begin
+            if C.variant Variant.PhantomOnLoad then
+              let look_pt rloc k = match rloc with
+                | ConstrGen.Loc (A.Location_global (V.Val c as vloc))
+                when Constant.is_pt c -> vloc::k
+                | _ -> k in
+              A.RLocSet.fold look_pt test.Test_herd.observed []
+            else
+              let add_setaf0 k (loc,v) =
+                match loc with
+                | A.Location_global (V.Val c as vloc) ->
+                   if Constant.is_pt c then
+                     let open PTEVal in
+                     match v with
+                     | V.Val (Constant.PteVal {af=0}) ->
+                        vloc::k
+                     | _ -> k
+                   else k
+                | _ -> k in
+              List.fold_left add_setaf0 [] env0
+        end else [] in
 
       let rec index xs i = match xs with
       | [] ->

@@ -41,7 +41,7 @@ module Make
     let pte2 = kvm && C.variant Variant.PTE2
     let phantom =
       Variant.get_switch `AArch64 Variant.SwitchPhantom C.variant
-
+    let experimental = false
 
     let check_memtag ins =
       if not memtag then
@@ -566,8 +566,13 @@ module Make
                 M.choiceT c
                   (m >>**==
                      (fun _ ->
-                       commit_pred_txt (Some "af:0") ii >>*=
-                       fun _ -> set_af a_pte pte_v ii)
+                       let m =
+                         commit_pred_txt (Some "af:0") ii >>*=
+                         fun _ -> set_af a_pte pte_v ii in
+                       if experimental then
+                          M.altT m
+                          (test_and_set_af_succeeds a_pte E.IdSpurious)
+                       else m)
                    >>== fun () -> M.unitT ipte)
                   m
             else m in
@@ -798,7 +803,11 @@ module Make
       let some_ha = dirty.DirtyBit.some_ha || dirty.DirtyBit.some_hd
 
       let fire_spurious_af dir a m =
-        if phantom && some_ha && dir = Dir.W then
+        if
+          phantom && some_ha &&
+            (let v = C.variant Variant.PhantomOnLoad in
+             match dir with Dir.W -> not v | Dir.R -> v)
+        then
           (m >>|
              M.altT (test_and_set_af_succeeds a E.IdSpurious) (M.unitT ())) >>=
             fun (r,_) -> M.unitT r

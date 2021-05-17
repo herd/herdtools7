@@ -50,6 +50,8 @@ type t =
   | PTE2
 (* Switch "phantom" mode for setting the AF bit by hardware *)
   | SwitchPhantom
+(* Generate extra spurious updates based upon load on pte. *)
+  | PhantomOnLoad
 (* Perform experiment *)
   | Exp
 
