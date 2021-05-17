@@ -852,6 +852,12 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
             (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
         es.events
 
+    let minimals_no_spurious es =
+      EventSet.filter
+        (fun e -> not (is_spurious e))
+        (minimals es)
+
+
     let minimals_avoid aset es =
       let intra_causality =
         let r =
@@ -871,6 +877,11 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           EventRel.for_all
             (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
         es.events
+
+    let minimals_data_no_spurious es =
+      EventSet.filter
+        (fun e -> not (is_spurious e))
+        (minimals_data es)
 
     let maximals es =
       let intra_causality =
@@ -1253,11 +1264,11 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           intra_causality_data =
             EventRel.union
               r.intra_causality_data
-              (EventRel.cartesian data_out1 (minimals_data es2)) ;
+              (EventRel.cartesian data_out1 (minimals_data_no_spurious es2)) ;
           intra_causality_control =
             EventRel.union
               r.intra_causality_control
-              (EventRel.cartesian ctrl_out1 (minimals es2)) ;
+              (EventRel.cartesian ctrl_out1 (minimals_no_spurious es2)) ;
           output = Some data_out1 ;
           ctrl_output = Some ctrl_out1 ;
         } in
