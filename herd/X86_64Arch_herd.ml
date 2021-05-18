@@ -86,6 +86,8 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
       | I_MOVNTI (sz,_,_)  | I_MOVD (sz,_,_)
         -> Some (inst_size_to_mach_size sz)
 
+    let opt_env = false
+    let killed _ = []
 
     (********************)
     (* global locations *)

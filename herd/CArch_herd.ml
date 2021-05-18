@@ -21,6 +21,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
   let pp_barrier_short = pp_barrier
   let reject_mixed = false
   let mem_access_size _ = None
+  let opt_env = false
+  let killed _ = []
 
   module V = V
 
