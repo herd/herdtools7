@@ -207,6 +207,61 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
           -> None
 
+    let all_regs =
+      all_gprs@vregs (* Should be enough, only those are tracked *)
+
+    let opt_env = true
+
+    let killed i =
+      match i with
+      | I_B _| I_BR _
+      | I_BC _ | I_CBZ _ | I_CBNZ _
+      | I_STP _ | I_STR _ | I_STLR _
+      | I_STRBH _ | I_STLRBH _
+      | I_STOP _ | I_STOPBH _
+      | I_FENCE _
+      | I_IC _|I_DC _|I_TLBI _
+      | I_NOP|I_TBZ _|I_TBNZ _
+        -> []
+      | I_BL _ | I_BLR _ | I_RET _
+        -> all_regs
+      | I_LDR (_,r,_,_,_)|I_LDRBH (_,r,_,_)
+      | I_LDUR (_,r,_,_)
+      | I_LDR_P (_,r,_,_)
+      | I_LDAR (_,_,r,_) |I_LDARBH (_,_,r,_)
+      | I_SWP (_,_,_,r,_) | I_SWPBH (_,_,_,r,_)
+      | I_STXR (_,_,r,_,_) | I_STXRBH (_,_,r,_,_)
+      | I_CAS (_,_,r,_,_) | I_CASBH (_,_,r,_,_)
+      | I_LDOP (_,_,_,_,r,_) | I_LDOPBH (_,_,_,_,r,_)
+      | I_MOV (_,r,_) | I_MOVZ (_,r,_,_) | I_MOVK (_,r,_,_)
+      | I_SXTW (r,_)
+      | I_OP3 (_,_,r,_,_,_)
+      | I_ADDR (r,_)
+      | I_RBIT (_,r,_)
+      | I_CSEL (_,r,_,_,_,_)
+      | I_MRS (r,_)
+          -> [r]
+      | I_LD1 _|I_LD1M _|I_LD1R _|I_LD2 _
+      | I_LD2M _|I_LD2R _|I_LD3 _|I_LD3M _
+      | I_LD3R _|I_LD4 _|I_LD4M _|I_LD4R _
+      | I_ST1 _|I_ST1M _|I_ST2 _|I_ST2M _
+      | I_ST3 _|I_ST3M _|I_ST4 _|I_ST4M _
+      | I_LDP_P_SIMD _|I_STP_P_SIMD _
+      | I_LDP_SIMD _|I_STP_SIMD _
+      | I_LDR_SIMD _|I_LDR_P_SIMD _
+      | I_STR_SIMD _|I_STR_P_SIMD _
+      | I_LDUR_SIMD _|I_STUR_SIMD _|I_MOV_VE _
+      | I_MOV_V _|I_MOV_TG _|I_MOV_FG _
+      | I_MOV_S _|I_MOVI_V _|I_MOVI_S _
+      | I_EOR_SIMD _|I_ADD_SIMD _|I_ADD_SIMD_S _
+      | I_LDP _|I_ALIGND _|I_ALIGNU _
+      | I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
+      | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _
+      | I_LDCT _|I_SC _|I_SEAL _|I_STCT _
+      | I_UNSEAL _|I_STG _|I_STZG _|I_LDG _
+        ->
+         all_regs (* safe approximation *)
+
     include ArchExtra_herd.Make(C)
         (struct
           module V = V
