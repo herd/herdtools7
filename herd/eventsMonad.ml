@@ -663,9 +663,9 @@ Monad type:
 (* Choosing dependant upon flag, notice that, once determined v is either one or zero *)
     let choiceT =
       fun v l r eiid ->
-        if V.is_var_determined v then
+        if V.is_var_determined v then begin
           if V.is_zero v  then r eiid else l eiid
-        else
+        end else
           let (eiid, (lact,lspec)) = l eiid in
           assert (lspec = None);
           let (eiid, (ract,rspec)) = r eiid in
@@ -985,7 +985,13 @@ Monad type:
     let do_read_loc is_data mk_action loc iiid = fun eiid ->
       (* It is important to call V.fresh_var
          for every _complete_ call of read_loc *)
-      let v = V.fresh_var () in
+      let v = match iiid,loc with
+          | E.IdSome {A.env=env; _},A.Location_reg (_,r) ->
+             begin match A.look_reg r env with
+             | Some v -> v
+             | None -> V.fresh_var ()
+             end
+          | _ -> V.fresh_var () in
       let m =
         do_make_one_event_structure_data is_data (mk_action loc v) iiid ++
         make_one_monad v [] in
