@@ -28,6 +28,9 @@ module type S =
     val reject_mixed : bool (* perform a check that rejects mixed-size tests *)
     val mem_access_size : instruction -> MachSize.sz option
 
+    val opt_env : bool (* environemnt optimisation is available *)
+    val killed : instruction -> reg list
+
     module V : Value.S
     include ArchExtra_herd.S with module I.V = V
     and type I.arch_reg = reg
