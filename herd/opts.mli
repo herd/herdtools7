@@ -37,7 +37,7 @@ val bell : string option ref
 val macros : string option ref
 val unroll : int ref
 val speedcheck : Speed.t ref
-val optace : bool option ref
+val optace : OptAce.t option ref
 val archcheck : bool ref
 val variant : (Variant.t -> bool) ref
 val precision : bool ref

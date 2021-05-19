@@ -19,7 +19,7 @@
 
 module type CommonConfig = sig
   val verbose : int
-  val optace : bool
+  val optace : OptAce.t
   val unroll : int
   val speedcheck : Speed.t
   val debug : Debug_herd.t
@@ -677,6 +677,12 @@ let match_reg_events es =
     (suppressed when uniproc is not optmised early) *)
 
     let map_load_possible_stores test es loads stores compat_locs =
+      let ok = match C.optace with
+        | OptAce.False -> fun _ _ -> true
+        | OptAce.True -> U.is_before_strict es
+        | OptAce.Iico ->
+           let iico = U.iico es in
+           fun load store -> not (E.EventRel.mem (load,store) iico) in
       let m =
         E.EventSet.fold
           (fun store map_load ->
@@ -685,9 +691,7 @@ let match_reg_events es =
                 if
                   compat_locs store load &&
                   check_speculation es store load &&
-                  (if C.optace then
-                    not (U.is_before_strict es load store)
-                  else true)
+                  ok load store
                 then
                   load,S.Store store::stores
                 else c)
@@ -1336,18 +1340,19 @@ let match_reg_events es =
         else loc_stores in
 
       let possible_finals =
-        if C.optace then
-          U.LocEnv.fold
-            (fun _loc ws k ->
-              List.filter
-                (fun w ->
-                  not
-                    (List.exists
-                       (fun w' -> U.is_before_strict es w w') ws))
-                ws::k)
-            loc_stores []
-        else
-          U.LocEnv.fold (fun _loc ws k -> ws::k) loc_stores [] in
+        match C.optace with
+        | OptAce.True ->
+           U.LocEnv.fold
+             (fun _loc ws k ->
+               List.filter
+                 (fun w ->
+                   not
+                     (List.exists
+                        (fun w' -> U.is_before_strict es w w') ws))
+                 ws::k)
+             loc_stores []
+        | OptAce.False|OptAce.Iico ->
+           U.LocEnv.fold (fun _loc ws k -> ws::k) loc_stores [] in
       if C.debug.Debug_herd.solver && Misc.consp possible_finals then begin
         eprintf "+++++++++ possible finals ++++++++++++++\n" ;
         List.iter
@@ -1481,9 +1486,9 @@ let match_reg_events es =
         (*jade: looks ok even in specul case: writes from init are before all
           other writes, including speculated writes*)
         let pco =
-          if not C.optace then
-            pco0
-          else
+          match C.optace with
+          | OptAce.False|OptAce.Iico -> pco0
+          | OptAce.True ->
             (*jade: looks compatible with speculation, but there might be some
               unforeseen subtlety here so flagging it to be sure*)
             match U.compute_pco rfm ppoloc with
@@ -1686,7 +1691,9 @@ let match_reg_events es =
                     PP.show_es_rfm test es rfm
                   end ;
                   if
-                    not (C.optace) ||  check_rfmap es rfm
+                    match C.optace with
+                    | OptAce.False|OptAce.Iico -> true
+                    | OptAce.True -> check_rfmap es rfm
                   then
                     fold_mem_finals test es rfm kont res
                   else begin

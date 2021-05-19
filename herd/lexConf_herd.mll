@@ -153,7 +153,8 @@ let handle_key main key arg = match key with
 | "unroll" ->
     lex_int unroll arg
 | "optace" ->
-    lex_bool_fun (fun b ->  optace := Some b) arg
+    lex_tag_fun
+       "optace" OptAce.parse OptAce.tags (fun b ->  optace := Some b) arg
 | "archcheck" ->
     lex_bool archcheck arg
 | "initwrites" ->

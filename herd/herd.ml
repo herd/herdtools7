@@ -237,8 +237,12 @@ let options = [
   begin let module ParseEndian = ParseTag.Make(Endian) in
   ParseEndian.parse_opt "-endian" endian "set endianness" end ;
   parse_bool "-archcheck" archcheck "check compatibility of test and cat model architectures" ;
-  "-optace", Arg.Bool (fun b -> optace := Some b),
-    "<bool> optimize axiomatic candidate generation, default is true except for the minimal model and all generic models";
+  parse_tag "-optace"
+    (fun tag -> match OptAce.parse tag with
+    | None -> false
+    | Some t -> optace := Some t ; true)
+    OptAce.tags
+    "optimize axiomatic candidate generation, default is iico";
   "-initwrites", Arg.Bool (fun b -> initwrites := Some b),
     "<bool> represent init writes as write events, this option should not be used except for debugging model options";
   parse_tag "-show"
@@ -528,9 +532,9 @@ let () =
     let optace = match !optace with
     | Some b -> b
     | None -> match model with
-      | Some (Model.Minimal b) -> b
-      | Some (Model.Generic _|Model.File _) -> false
-      | _ -> false
+      | Some (Model.Minimal b) -> if b then OptAce.True else OptAce.False
+      | Some (Model.Generic _|Model.File _) -> OptAce.Iico
+      | Some (Model.CAV12 _)|None -> OptAce.False
     let variant = !variant
     let precision = !precision
     let byte = !byte

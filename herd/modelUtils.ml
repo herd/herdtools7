@@ -192,7 +192,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
   let check_uniproc test conc rf fr co =
     let rel = S.unions [fr;rf;co;conc.S.pos] in
     let r = E.EventRel.is_acyclic rel in
-    if S.O.optace then assert r ;
+    if S.O.optace = OptAce.True then assert r ;
     let r = let open Model in
     match O.through with
     | ThroughNone|ThroughInvalid ->  r
