@@ -1462,11 +1462,17 @@ Monad type:
 
     let any_op mk_v mk_c =
       try
-        let v = mk_v () in
+        let v =
+          try mk_v () with
+          | V.Cst.Result (a,c,_) ->
+             if  a = A.arch then V.Val c else raise Exit
+          | e -> raise e in
         make_one_monad v [] E.empty_event_structure
-      with V.Undetermined ->
-        let v = V.fresh_var () in
-        make_one_monad v [VC.Assign (v, mk_c ())] E.empty_event_structure
+      with
+      | V.Undetermined|Exit
+        ->
+         let v = V.fresh_var () in
+         make_one_monad v [VC.Assign (v, mk_c ())] E.empty_event_structure
 
     let op1 op v1 =
       any_op
