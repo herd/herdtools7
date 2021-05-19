@@ -300,50 +300,55 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             Some (tgt,seen)
         in if dbg then eprintf "fetch: %s %s\n" lbl (match r with None -> "None" | Some _ -> "Some"); r in
 
-      let rec add_next_instr re_exec proc seen addr inst nexts =
+      let rec add_next_instr re_exec proc env seen addr inst nexts =
         let wrap poi =
           (let ii =
             { A.program_order_index = poi;
               proc = proc; inst = inst; unroll_count = 0;
-              labels = labels_of_instr addr; }
+              labels = labels_of_instr addr;
+              env = env; }
           in SM.build_semantics ii) in
         wrap >>> fun branch ->
-          next_instr re_exec inst proc seen addr nexts branch
+          let env = A.kill_regs (A.killed inst) env in
+          next_instr re_exec inst proc env seen addr nexts branch
 
-      and add_code proc seen nexts = match nexts with
+      and add_code proc env seen nexts = match nexts with
       | [] -> EM.unitcodeT true
       | (addr,inst)::nexts ->
-          add_next_instr false proc seen addr inst nexts
+          add_next_instr false proc env seen addr inst nexts
 
-      and add_lbl proc seen addr_jmp lbl =
+      and add_lbl proc env seen addr_jmp lbl =
         match fetch_code seen addr_jmp lbl with
         | None -> tooFar := true ; EM.tooFarcode lbl true
-        | Some (code,seen) -> add_code proc seen code
+        | Some (code,seen) -> add_code proc env seen code
 
-      and next_instr re_exec inst proc seen addr nexts b = match b with
+      and next_instr re_exec inst proc env seen addr nexts b = match b with
       | S.B.Exit -> tooFar := true ; EM.unitcodeT true
       | S.B.ReExec ->
           if re_exec then begin
             tooFar := true ;
             EM.unitcodeT false
           end else
-            add_next_instr true proc seen addr inst nexts
-      | S.B.Next -> add_code proc seen nexts
+            add_next_instr true proc env seen addr inst nexts
+      | S.B.Next -> add_code proc env seen nexts
       | S.B.Jump lbl ->
-          add_lbl proc seen addr lbl
+          add_lbl proc env seen addr lbl
       | S.B.CondJump (v,lbl) ->
           EM.condJumpT v
-            (add_lbl proc seen addr lbl)
-            (add_code proc seen nexts) in
+            (add_lbl proc env seen addr lbl)
+            (add_code proc env seen nexts) in
 
 (* Code monad returns a boolean. When false the code must be discarded.
    See also add_instr in eventsMonad.ml *)
-      let jump_start proc code =
-        add_code proc Imap.empty code in
+      let jump_start proc env code =
+        add_code proc env Imap.empty code in
 
 (* As name suggests, add events of one thread *)
-      let add_events_for_a_processor (proc,code) evts =
-        let evts_proc = jump_start proc code in
+      let add_events_for_a_processor env (proc,code) evts =
+        let env =
+          if A.opt_env then A.build_reg_state proc env
+          else A.reg_state_empty in
+        let evts_proc = jump_start proc env code in
         evts_proc |*| evts in
 
 (* Initial events, some additional events from caller in madd *)
@@ -358,7 +363,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 (* Build code monad for one given set of events to add *)
       let set_of_all_instr_events madd =
         List.fold_right
-          add_events_for_a_processor
+          (add_events_for_a_processor test.Test_herd.init_state)
           starts
           (make_inits madd env0 test.Test_herd.size_env) in
 

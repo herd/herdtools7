@@ -53,12 +53,16 @@ module type S = sig
   val zero_po_index : program_order_index
   val next_po_index : program_order_index -> program_order_index
 
+  type reg_state
+  val reg_state_empty : reg_state
+
   type inst_instance_id = {
       proc       : proc;
       program_order_index   : program_order_index;
       inst : I.arch_instruction;
       unroll_count : int; (* number of loop unrollings *)
       labels : Label.Set.t;
+      env : reg_state ;
     }
 
   val inst_instance_compare :
@@ -119,6 +123,14 @@ module type S = sig
   (* Exception raised when location is yet unkown *)
   exception LocUndetermined
   val look_address_in_state : state -> location -> v
+
+(******************)
+(* Register state *)
+(******************)
+
+  val build_reg_state : proc -> state -> reg_state
+  val look_reg : I.arch_reg -> reg_state -> I.V.v option
+  val kill_regs : I.arch_reg list -> reg_state -> reg_state
 
 (****************)
 (* Environments *)
@@ -252,6 +264,16 @@ module Make(C:Config) (I:I) : S with module I = I
       let zero_po_index = 0
       let next_po_index po = po + 1
 
+      module RegOrd = struct
+        type t = I.arch_reg
+        let compare = I.reg_compare
+      end
+
+      module RegMap = MyMap.Make(RegOrd)
+
+      type reg_state = I.V.v RegMap.t
+
+      let reg_state_empty = RegMap.empty
 
       type inst_instance_id = {
           proc       : proc;
@@ -259,6 +281,7 @@ module Make(C:Config) (I:I) : S with module I = I
           inst : I.arch_instruction ;
           unroll_count: int; (* number of loop unrollings *)
           labels : Label.Set.t ;
+          env : reg_state ;
         }
 
 
@@ -447,6 +470,27 @@ module Make(C:Config) (I:I) : S with module I = I
           (fun l v -> do_dump_location tr l ^ "=" ^ I.V.pp C.hexa (get_val l v) ^";")
 
       let dump_state st = do_dump_state Misc.identity st
+
+(******************)
+(* Register state *)
+(******************)
+
+      let build_reg_state p st =
+        LocMap.fold
+          (fun loc v k ->
+            match loc with
+            | Location_reg (q,r) when Proc.equal p q ->
+               RegMap.add r v k
+            | _ -> k)
+          st RegMap.empty
+
+      let look_reg r st = try Some (RegMap.find r st) with Not_found -> None
+
+      let kill_regs rs st =  List.fold_right RegMap.remove rs st
+
+(****************)
+(* Environments *)
+(****************)
 
       let size_of_t = TestType.size_of I.V.Cst.Scalar.machsize
 

@@ -62,6 +62,9 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | I_LDR _ | I_LDREX _ | I_LDR3 _ | I_STR _ | I_STREX _ | I_STR3 _
         -> Some MachSize.Word
 
+    let opt_env = false
+    let killed _ = []
+
     include NoLevelNorTLBI
 
     include ArchExtra_herd.Make(C)

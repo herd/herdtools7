@@ -45,6 +45,9 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 (* Technically wrong, but it does not matter as there is no mixed-size *)
     let mem_access_size _ = None
 
+    let opt_env = false
+    let killed _ = []
+
     include NoLevelNorTLBI
 
     include ArchExtra_herd.Make(C)
