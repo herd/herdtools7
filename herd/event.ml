@@ -563,9 +563,15 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let is_mem_load e = Act.is_mem_load e.action
     let is_additional_mem_load e = Act.is_additional_mem_load e.action
     let is_mem e = Act.is_mem e.action
-    let is_pt e = Act.is_pt e.action
+    let is_pt e = match Act.location_of e.action with
+      | Some (A.Location_global (V.Val c)) -> Constant.is_pt c
+      | _ -> false
     let is_tag e = Act.is_tag e.action
-    let is_mem_physical e =  Act.is_mem_physical e.action
+    let is_mem_physical e =
+      let open Constant in
+      match Act.location_of e.action with
+      | Some (A.Location_global (V.Val (Symbolic (Physical _)))) -> true
+      | _ -> false
     let is_additional_mem e = Act.is_additional_mem e.action
     let is_atomic e = Act.is_atomic e.action
     let to_fault e = Act.to_fault e.action

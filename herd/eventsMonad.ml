@@ -288,7 +288,7 @@ Monad type:
 (* Exchange combination *)
 (* NB: first boolean -> physical memory access *)
     let swp_or_amo : bool -> Op.op option -> ('loc t) ->
-      ('loc -> A.V.v t) -> A.V.v t -> ('loc -> A.V.v -> unit t) -> (A.V.v -> unit t)
+      ('loc -> V.v t) -> V.v t -> ('loc -> V.v -> unit t) -> (V.v -> unit t)
         -> unit t  = fun is_phy op rloc rmem rreg wmem wreg ->
           fun eiid ->
         let eiid,(locm,spec) = rloc eiid in
@@ -555,11 +555,11 @@ Monad type:
       altT
         (riscv_sc false
            read_res read_data read_addr cancel_res
-           (write_result A.V.one)
+           (write_result V.one)
            (fun _a _resa _v -> unitT ()))
         (riscv_sc true
            read_res read_data read_addr cancel_res
-           (write_result A.V.zero)
+           (write_result V.zero)
            write_mem)
 
 (* stu combinator *)
@@ -1212,19 +1212,19 @@ Monad type:
                 else a::glob,tag
             | A.Location_reg _ -> p)
             ([],[]) env in
-        let tag_set = A.VSet.of_list tag in
+        let tag_set = V.ValueSet.of_list tag in
         let env =
           List.fold_left
             (fun env a ->
               if not (is_pteloc a) then
               begin
                 let atag =  V.op1 Op.TagLoc a in
-                if A.VSet.mem atag tag_set then env
+                if V.ValueSet.mem atag tag_set then env
                 else begin
                   if dbg then
                     eprintf "Tag %s for %s defaulting\n"
-                      (A.V.pp_v atag) (A.V.pp_v a) ;
-                  (A.Location_global atag,A.V.Val (Constant.default_tag))::env
+                      (V.pp_v atag) (V.pp_v a) ;
+                  (A.Location_global atag,V.Val (Constant.default_tag))::env
                 end
               end
               else env)
@@ -1245,7 +1245,7 @@ Monad type:
       let debug_env env =
         String.concat ", "
           (List.map
-             (fun (loc,v) -> sprintf "%s -> %s" (A.pp_location loc) (A.V.pp_v v))
+             (fun (loc,v) -> sprintf "%s -> %s" (A.pp_location loc) (V.pp_v v))
              env)
 
       let val_of_pteval p = V.Val (Constant.PteVal p)
@@ -1261,7 +1261,7 @@ Monad type:
         | _ ->
             Warn.user_error
               "Cannot initialize %s with %s"
-              (A.pp_location loc ) (A.V.pp C.hexa v)
+              (A.pp_location loc ) (V.pp C.hexa v)
 
       let pte_loc s =
         let open Constant in
@@ -1343,7 +1343,7 @@ Monad type:
                       A.look_size size_env s
                   | _ -> def_size in
                 let eiid,ew =
-                  let v = A.V.map_scalar (A.V.Cst.Scalar.mask sz) v in
+                  let v = V.map_scalar (V.Cst.Scalar.mask sz) v in
                   make_one_init_event
                     (E.Act.mk_init_write loc sz v) eiid in
                 match A.symbolic_data loc with
@@ -1352,7 +1352,7 @@ Monad type:
                       if morello then
                         let eiid,em =
                           morello_init_tag
-                            s (A.V.op1 Op.CapaGetTag v) eiid in
+                            s (V.op1 Op.CapaGetTag v) eiid in
                         eiid,(em::[ew])
                       else eiid,[ew] in
                     (eiid,ews@es)
@@ -1368,7 +1368,7 @@ Monad type:
       let debug_env env =
         String.concat "; "
           (List.map
-             (fun (loc,v) -> A.pp_location loc ^ " -> " ^ A.V.pp_v v)
+             (fun (loc,v) -> A.pp_location loc ^ " -> " ^ V.pp_v v)
              env)
 
       let initwrites_mixed env size_env =
@@ -1383,7 +1383,7 @@ Monad type:
                 let open Constant in
                 match loc with
                 | A.Location_global
-                  (A.V.Val
+                  (V.Val
                      (Symbolic
                         (Virtual
                            {name=s;offset=_;_})) as a)
@@ -1406,7 +1406,7 @@ Monad type:
                       if morello then
                         let eiid,em =
                           morello_init_tag
-                            s (A.V.op1 Op.CapaGetTag v)
+                            s (V.op1 Op.CapaGetTag v)
                             eiid in
                         eiid,em::ews
                       else eiid,ews in

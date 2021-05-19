@@ -55,16 +55,13 @@ module type S = sig
   val is_mem_load : action ->  bool
   val is_additional_mem_load :  action -> bool (* trylock *)
   val is_mem : action -> bool
-  val is_pt : action -> bool
   val is_tag : action -> bool
-  val is_mem_physical : action -> bool
   val is_additional_mem : action -> bool (* abstract memory actions, eg locks *)
   val is_atomic : action -> bool
   val is_fault : action -> bool
   val to_fault : action -> A.fault option
   val get_mem_dir : action -> Dir.dirn
   val get_mem_size : action -> MachSize.sz
-  val is_PA_val : A.V.v -> bool
   val is_implicit_pte_read : action -> bool
 
 (* relative to the registers of the given proc *)

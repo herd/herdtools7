@@ -75,12 +75,12 @@ module Make (C:Sem.Config)(V : Value.S)
       let write_loc_gen sz locked loc v ii = match loc with
       |  A.Location_global _ ->
           M.mk_singleton_es
-            (Act.Access (Dir.W, loc, v, locked, (), sz, Act.A_VIR))
+            (Act.Access (Dir.W, loc, v, locked, (), sz, Access.VIR))
             ii
       | _ ->
           M.mk_singleton_es
             (Act.Access
-               (Dir.W, loc, v, locked, (), nat_sz, Act.A_VIR))
+               (Dir.W, loc, v, locked, (), nat_sz, Access.VIR))
             ii
 
       let write_loc sz loc v ii =
@@ -91,17 +91,17 @@ module Make (C:Sem.Config)(V : Value.S)
 
       let write_reg r v ii =
         M.mk_singleton_es
-          (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, (), nat_sz, Act.A_REG))
+          (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, (), nat_sz, Access.REG))
           ii
 
       let write_mem sz a v ii  =
         M.mk_singleton_es
-          (Act.Access (Dir.W, A.Location_global a, v, false, (), sz, Act.A_VIR))
+          (Act.Access (Dir.W, A.Location_global a, v, false, (), sz, Access.VIR))
           ii
 
       let write_mem_atomic sz a v ii =
         M.mk_singleton_es
-          (Act.Access (Dir.W, A.Location_global a, v, true, (), sz, Act.A_VIR))
+          (Act.Access (Dir.W, A.Location_global a, v, true, (), sz, Access.VIR))
           ii
 
       let write_loc_atomic sz loc v ii =

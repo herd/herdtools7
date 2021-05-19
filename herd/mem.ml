@@ -575,8 +575,8 @@ let match_reg_events es =
       begin
         let loc1 = get_loc e1
         and loc2 = get_loc e2 in
-        let ov1 =  A.undetermined_vars_in_loc loc1
-        and ov2 =  A.undetermined_vars_in_loc loc2 in
+        let ov1 =  A.undetermined_vars_in_loc_opt loc1
+        and ov2 =  A.undetermined_vars_in_loc_opt loc2 in
         match ov1,ov2 with
         | None,None -> E.same_location e1 e2
         | (Some _,None)|(None,Some _)

@@ -107,20 +107,11 @@ end = struct
   | Access (_,A.Location_global _,_,_,_,_)   -> true
   | _ -> false
 
-  let is_pt a = match a with
-    | Access (_,A.Location_global (A.V.Val c),_,_,_,_)   ->
-        Constant.is_pt c
-    | _ -> false
 
 (* None of those below *)
   let is_tag _ = false
-  let is_mem_physical a = let open Constant in match a with
-  | Access (_,A.Location_global (V.Val (Symbolic (Physical _))),_,_,_,_)   -> true
-  | _ -> false
 
   let is_additional_mem _ = false
-
-  let is_PA_val _ = false
 
   (* Unimplemented *)
   let is_implicit_pte_read _ = assert false
@@ -214,11 +205,9 @@ end = struct
   let undetermined_vars_in_action a =
     match a with
     | Access (_,l,v,_,_,_) ->
-        let undet_loc = match A.undetermined_vars_in_loc l with
-        | None -> V.ValueSet.empty
-        | Some v -> V.ValueSet.singleton v in
-        if V.is_var_determined v then undet_loc
-        else V.ValueSet.add v undet_loc
+        V.ValueSet.union
+          (A.undetermined_vars_in_loc l)
+          (V.undetermined_vars v)
     | Barrier _|Commit|TooFar -> V.ValueSet.empty
 
   let simplify_vars_in_action soln a =

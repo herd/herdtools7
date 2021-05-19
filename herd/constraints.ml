@@ -165,7 +165,7 @@ module Make (C:Config) (A : Arch_herd.S) :
             List.map
               (fun col ->
                 let vs = List.map (fun (_,v) -> v) col in
-                A.VSet.cardinal (A.VSet.of_list vs))
+                V.ValueSet.cardinal (V.ValueSet.of_list vs))
               mt in
           let rec best_rec k (kb,b as p) = function
             | [] -> kb
@@ -207,10 +207,10 @@ module Make (C:Config) (A : Arch_herd.S) :
           List.fold_left
             (fun m (v,ps) ->
               let pss =
-                try A.VMap.find v m
+                try V.ValueMap.find v m
                 with Not_found -> [] in
-              A.VMap.add v (ps::pss) m)
-            A.VMap.empty ps
+              V.ValueMap.add v (ps::pss) m)
+            V.ValueMap.empty ps
 
         let rec compile_cond m =
           let k = best_col m in
@@ -220,12 +220,12 @@ module Make (C:Config) (A : Arch_herd.S) :
           | [] -> assert false
           | (_,[])::_ ->
               Or
-                (A.VMap.fold
+                (V.ValueMap.fold
                    (fun v _ k -> Atom (LV (loc,v))::k)
                    m [])
           | _ ->
               Or
-                (A.VMap.fold
+                (V.ValueMap.fold
                    (fun v m k -> And [Atom (LV (loc,v));compile_cond m]::k)
                    m [])
 

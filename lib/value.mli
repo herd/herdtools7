@@ -83,11 +83,13 @@ module type S =
       val op3 : Op.op3 -> v -> v -> v -> v
 
       module ValueSet : MySet.S with type elt = v
+      module ValueMap : MyMap.S with type key = v
       module Solution : Map.S with type key = csym
 
       type solution = v Solution.t
 
       val is_var_determined : v -> bool
+      val undetermined_vars : v -> ValueSet.t
       val determined_val : v -> Cst.v option
       val simplify_var : solution -> v -> v
 

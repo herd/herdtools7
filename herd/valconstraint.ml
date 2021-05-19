@@ -177,7 +177,7 @@ and type state = A.state =
     | V.Val _ -> t
     | V.Var x -> Part.add t x
 
-    let add_var_loc t loc = match A.undetermined_vars_in_loc loc with
+    let add_var_loc t loc = match A.undetermined_vars_in_loc_opt loc with
     | None -> t
     | Some v -> add_var  t v
 

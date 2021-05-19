@@ -162,14 +162,14 @@ module Make
       | AArch64.ZR -> M.unitT ()
       | _ ->
           M.write_loc
-            (mk_write quad AArch64.N aexp Act.A_REG v)
+            (mk_write quad AArch64.N aexp Access.REG v)
             (A.Location_reg (ii.A.proc,r)) ii
 
       let write_reg_morello r v ii =
         if not morello then
           Warn.user_error "capabilities require -variant morello" ;
         M.write_loc
-          (mk_write MachSize.S128  AArch64.N aexp Act.A_REG v)
+          (mk_write MachSize.S128  AArch64.N aexp Access.REG v)
           (A.Location_reg (ii.A.proc,r)) ii
 
       let neon_setlane old_val idx esize v =
@@ -195,7 +195,7 @@ module Make
           (* Clear unused register bits (zero extend) *)
           M.op1 (Op.Mask sz) v >>= fun v ->
           let location = A.Location_reg (ii.A.proc,vr) in
-          M.write_loc (mk_write MachSize.S128 AArch64.N aexp Act.A_REG v) location ii
+          M.write_loc (mk_write MachSize.S128 AArch64.N aexp Access.REG v) location ii
 
       let write_reg_neon = write_reg_neon_sz MachSize.S128
 
@@ -279,16 +279,16 @@ module Make
 (*  Low level tag access *)
       let do_read_tag a ii =
         M.read_loc false
-          (fun loc v -> access_ord Dir.R loc v Act.A_TAG)
+          (fun loc v -> access_ord Dir.R loc v Access.TAG)
           (A.Location_global a) ii
       and do_read_tag_nexp a ii =
         M.read_loc false
-          (fun loc v -> access_anexp AArch64.nexp_annot Dir.R loc v Act.A_TAG)
+          (fun loc v -> access_anexp AArch64.nexp_annot Dir.R loc v Access.TAG)
           (A.Location_global a) ii
       and do_write_tag a v ii =
         let loc = A.Location_global a in
         M.mk_singleton_es
-          (access_ord Dir.W loc v Act.A_TAG)
+          (access_ord Dir.W loc v Access.TAG)
           ii
 
       let do_read_morello_tag a ii =
@@ -373,12 +373,12 @@ module Make
       let mextract_whole_pte_val an nexp a_pte iiid =
         (M.do_read_loc false
            (fun loc v ->
-             Act.Access (Dir.R,loc,v,an,nexp,quad,Act.A_PTE))
+             Act.Access (Dir.R,loc,v,an,nexp,quad,Access.PTE))
            (A.Location_global a_pte) iiid)
 
       and write_whole_pte_val an explicit a_pte v iiid =
         M.do_write_loc
-          (mk_write quad an explicit Act.A_PTE v)
+          (mk_write quad an explicit Access.PTE v)
           (A.Location_global a_pte) iiid
 
 
@@ -447,7 +447,7 @@ module Make
         if is_branching then do_append_commit ma ii else ma
 
       let append_commit_ac ac ma ii =
-        if Act.is_physical ac && is_branching then
+        if Access.is_physical ac && is_branching then
           do_append_commit ma ii
         else ma
 
@@ -758,7 +758,7 @@ module Make
       let lift_memtag_phy mop a_virt ma ii =
         M.delay_kont "4" ma
           (fun _ ma ->
-            let mm = mop Act.A_PHY ma in
+            let mm = mop Access.PHY ma in
             delayed_check_tags a_virt ma ii
               (mm  >>! B.Next)
               (let mfault = mk_fault a_virt ii None in
@@ -768,7 +768,7 @@ module Make
       let lift_memtag_virt mop ma ii =
         M.delay_kont "5" ma
           (fun a_virt ma  ->
-            let mm = mop Act.A_VIR (ma >>= fun a -> loc_extract a) in
+            let mm = mop Access.VIR (ma >>= fun a -> loc_extract a) in
             delayed_check_tags a_virt ma ii
               (mm  >>! B.Next)
               (let mfault = ma >>= fun a -> mk_fault a ii None in
@@ -791,7 +791,7 @@ module Make
           >>! if C.precision then B.Exit else B.ReExec in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir a ma an ii
-            ((let m = mop Act.A_PTE ma in
+            ((let m = mop Access.PTE ma in
               fire_spurious_af dir a m) >>! B.Next)
             mphy
             mfault in
@@ -800,7 +800,7 @@ module Make
            else
              fun a ma ->
              match Act.access_of_location_std (A.Location_global a) with
-             | Act.A_VIR|Act.A_PTE -> maccess a ma
+             | Access.VIR|Access.PTE -> maccess a ma
              | ac -> mop ac ma >>! B.Next)
 
       let lift_morello mop perms ma mv ii =
@@ -811,7 +811,7 @@ module Make
         M.delay_kont "morello" ma
           (fun a ma ->
             (* Notice: virtual access only, beaause morello # kvm *)
-            let mok ma mv = mop Act.A_VIR ma mv in
+            let mok ma mv = mop Access.VIR ma mv in
             check_morello_tag a ma mv
               (fun ma mv ->
                 check_morello_sealed a ma mv
@@ -850,20 +850,20 @@ module Make
                 fun ma a_virt ->
                 M.op1 Op.IsVirtual a_virt >>= fun c ->
                 M.choiceT c
-                  (mop Act.A_PHY ma)
-                  (fire_spurious_af dir a_virt (mop Act.A_PHY_PTE ma))
+                  (mop Access.PHY ma)
+                  (fire_spurious_af dir a_virt (mop Access.PHY_PTE ma))
                 >>! B.Next
               else
-                fun ma _a -> mop Act.A_PHY ma >>! B.Next in
+                fun ma _a -> mop Access.PHY ma >>! B.Next in
             lift_kvm dir mop ma an ii mphy
           else
-            mop Act.A_VIR ma >>! B.Next
+            mop Access.VIR ma >>! B.Next
 
 (* Generic load *)
       let do_ldr sz an mop ma ii =
         lift_memop Dir.R
           (fun ac ma _mv -> (* value fake here *)
-            if Act.is_physical ac then
+            if Access.is_physical ac then
               M.bind_ctrl (append_commit ma ii) (mop ac)
             else
               ma >>= mop ac)
@@ -874,7 +874,7 @@ module Make
       let do_str sz an ma mv ii =
         lift_memop Dir.W
           (fun ac ma mv ->
-            if is_branching && Act.is_physical ac then
+            if is_branching && Access.is_physical ac then
               (* additional ctrl dep on address *)
               M.bind_ctrl_data (append_commit ma ii) mv
                 (fun a v ->
@@ -1027,7 +1027,7 @@ module Make
             and r1 a = rmw_amo_read sz rmw ac a ii
             and w1 a v = rmw_amo_write sz rmw ac a v ii in
             M.swp
-              (Act.is_physical ac)
+              (Access.is_physical ac)
               (append_commit_ac ac ma ii)
               r1 r2 w1 w2)
           (to_perms "rw" sz)
@@ -1044,7 +1044,7 @@ module Make
            (* mv is read new value from reg, not important
               as this code is not executed in morello mode *)
           (fun ac ma mv ->
-            let is_phy = Act.is_physical ac
+            let is_phy = Access.is_physical ac
             and ma = append_commit_ac ac ma ii in
              M.altT
               (let read_mem a = do_read_mem_ret sz an aexp ac a ii in
@@ -1106,7 +1106,7 @@ module Make
               if noret then fun sz -> do_read_mem_ret sz NoRet Exp ac
               else fun sz -> rmw_amo_read sz rmw ac
             and write_mem = fun sz -> rmw_amo_write sz rmw ac in
-            M.amo_strict (Act.is_physical ac) op
+            M.amo_strict (Access.is_physical ac) op
               (append_commit_ac ac ma ii)
               (fun a -> read_mem sz a ii) mv
               (fun a v -> write_mem sz a v ii)
@@ -1120,18 +1120,18 @@ module Make
 
       (* Neon extension *)
       let simd_ldr sz addr rd ii =
-        do_read_mem_ret sz AArch64.N aexp Act.A_VIR addr ii >>= fun v ->
+        do_read_mem_ret sz AArch64.N aexp Access.VIR addr ii >>= fun v ->
         write_reg_neon_sz sz rd v ii >>! B.Next
 
       let simd_str sz rs rd kr s ii =
         get_ea rs kr s ii >>|
         read_reg_neon true rd ii >>= fun (addr,v) ->
-        write_mem sz aexp Act.A_VIR addr v ii >>! B.Next
+        write_mem sz aexp Access.VIR addr v ii >>! B.Next
 
       let simd_str_p sz rs rd k ii =
         read_reg_ord rs ii >>|
         read_reg_neon true rd ii >>= fun (addr,v) ->
-        write_mem sz aexp Act.A_VIR addr v ii >>|
+        write_mem sz aexp Access.VIR addr v ii >>|
         post_kr rs addr k ii >>! B.Next
 
       let simd_ldp var addr1 rd1 rd2 ii =
@@ -1146,12 +1146,12 @@ module Make
         let open AArch64Base in
         let access_size = tr_simd_variant var in
         (read_reg_neon true rd1 ii >>= fun v1 ->
-        write_mem access_size aexp Act.A_VIR addr1 v1 ii)
+        write_mem access_size aexp Access.VIR addr1 v1 ii)
         >>|
         (neon_sz_k var >>= fun os ->
         M.add addr1 os >>|
         read_reg_neon true rd2 ii >>= fun (addr2,v2) ->
-        write_mem access_size aexp Act.A_VIR addr2 v2 ii) >>! B.Next
+        write_mem access_size aexp Access.VIR addr2 v2 ii) >>! B.Next
 
       let movi_v r k shift ii =
         let open AArch64Base in
@@ -1264,18 +1264,18 @@ module Make
 
       let load_elem sz i r addr ii =
         let access_size = AArch64.simd_mem_access_size [r] in
-        do_read_mem_ret access_size AArch64.N aexp Act.A_VIR addr ii >>= fun v ->
+        do_read_mem_ret access_size AArch64.N aexp Access.VIR addr ii >>= fun v ->
         write_reg_neon_elem sz r i v ii
 
       let load_elem_rep sz r addr ii =
         let access_size = AArch64.simd_mem_access_size [r] in
-        do_read_mem_ret access_size AArch64.N aexp Act.A_VIR addr ii >>= fun v ->
+        do_read_mem_ret access_size AArch64.N aexp Access.VIR addr ii >>= fun v ->
         write_reg_neon_rep sz r v ii
 
       let store_elem i r addr ii =
         let access_size = AArch64.simd_mem_access_size [r] in
         read_reg_neon_elem true r i ii >>= fun v ->
-        write_mem access_size aexp Act.A_VIR addr v ii
+        write_mem access_size aexp Access.VIR addr v ii
 
      (* Single structure memory access *)
       let mem_ss memop addr rs ii =
@@ -1390,7 +1390,7 @@ module Make
               get_ea rn kr AArch64.S_NOEXT ii
             end >>= fun (v,a) ->
               (M.op1 Op.TagLoc a >>| loc_extract a) >>= fun (atag,loc) ->
-                (do_write_tag atag v ii >>| do_write_mem quad AArch64.N aexp Act.A_VIR loc V.zero ii) >>! B.Next
+                (do_write_tag atag v ii >>| do_write_mem quad AArch64.N aexp Access.VIR loc V.zero ii) >>! B.Next
 
         | I_STG(rt,rn,kr) ->
             check_memtag "STG" ;

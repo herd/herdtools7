@@ -255,6 +255,11 @@ module Make (C:Sem.Config)(V : Value.S)
           (write_loc_gen sz locked loc v_result ii >>|
              write_all_flags v_result V.zero ii) >>! B.Next
 
+      let clflush opt ea ii =
+        lval_ea ea ii >>= fun a ->
+        M.mk_singleton_es
+          (Act.Arch (X86_64.ArchAction.ClFlush (opt,a))) ii
+
       let build_semantics ii =
         let rec build_semantics_inner locked ii =
           match ii.A.inst with
@@ -360,9 +365,10 @@ module Make (C:Sem.Config)(V : Value.S)
              cmpxchg sz locked ea r ii
           | X86_64.I_FENCE f ->
               create_barrier f ii >>! B.Next
+          | X86_64.I_CLFLUSH (opt,ea) ->
+              clflush opt ea ii >>! B.Next
           | X86_64.I_MOVD _
-          | X86_64.I_MOVNTDQA _
-          | X86_64.I_CLFLUSH _ as i ->
+          | X86_64.I_MOVNTDQA _ as i ->
               Warn.fatal "X86_64Sem.ml: Instruction %s not implemented" (X86_64.dump_instruction i)
         in
         M.addT

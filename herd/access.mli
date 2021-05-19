@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2021-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,41 +14,13 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Basic arch, ie with no definition of what a global location is *)
+(** All sorts of accesses, redundant with symbol hidden in location,
+   when symbol is known, which may not be the case *)
 
-module type Config = ArchExtra_herd.Config
+type t = REG | VIR | PHY | PTE | TLB | TAG | PHY_PTE
 
+val pp : t -> string
 
-module type S =
-  sig
+val is_physical : t -> bool
 
-    include ArchBase.S
-    val is_amo : instruction -> bool
-    val pp_barrier_short : barrier -> string
-    val reject_mixed : bool (* perform a check that rejects mixed-size tests *)
-    val mem_access_size : instruction -> MachSize.sz option
-
-    val opt_env : bool (* environemnt optimisation is available *)
-    val killed : instruction -> reg list
-
-    module V : Value.S
-    include ArchExtra_herd.S with module I.V = V
-    and type I.arch_reg = reg
-    and type I.arch_instruction = instruction
-
-(* Levels are abstract, for AArch64, they are E0 to E3 *)
-    type level
-    val levels : level list
-    val pp_level : level -> string
-
-    module TLBI :
-    sig
-      type op
-      val pp_op : op -> string
-      val is_at_level : level -> op -> bool
-      val inv_all : op -> bool
-    end
-
-    module MemType:MemoryType.S
-
-  end
+val compatible : t -> t -> bool
