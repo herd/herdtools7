@@ -227,7 +227,6 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
         -> all_regs
       | I_LDR (_,r,_,_,_)|I_LDRBH (_,r,_,_)
       | I_LDUR (_,r,_,_)
-      | I_LDR_P (_,r,_,_)
       | I_LDAR (_,_,r,_) |I_LDARBH (_,_,r,_)
       | I_SWP (_,_,_,r,_) | I_SWPBH (_,_,_,r,_)
       | I_STXR (_,_,r,_,_) | I_STXRBH (_,_,r,_,_)
@@ -240,7 +239,9 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | I_RBIT (_,r,_)
       | I_CSEL (_,r,_,_,_,_)
       | I_MRS (r,_)
-          -> [r]
+        -> [r]
+      | I_LDR_P (_,r1,r2,_) | I_LDP (_,_,r1,r2,_,_)
+        -> [r1;r2;]
       | I_LD1 _|I_LD1M _|I_LD1R _|I_LD2 _
       | I_LD2M _|I_LD2R _|I_LD3 _|I_LD3M _
       | I_LD3R _|I_LD4 _|I_LD4M _|I_LD4R _
@@ -254,7 +255,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | I_MOV_V _|I_MOV_TG _|I_MOV_FG _
       | I_MOV_S _|I_MOVI_V _|I_MOVI_S _
       | I_EOR_SIMD _|I_ADD_SIMD _|I_ADD_SIMD_S _
-      | I_LDP _|I_ALIGND _|I_ALIGNU _
+      | I_ALIGND _|I_ALIGNU _
       | I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
       | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _
       | I_LDCT _|I_SC _|I_SEAL _|I_STCT _

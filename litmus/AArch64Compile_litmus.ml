@@ -254,13 +254,13 @@ module Make(V:Constant.S)(C:Config) =
         { empty_ins with
           memo= sprintf "%s ^wo0,[^i0],#%i" memo k;
           inputs=[rA];
-          outputs=[rD];
+          outputs=[rD;rA;];
           reg_env=[(rA,voidstar);(rD,word)];}
     | V64 ->
         { empty_ins with
           memo=memo ^ sprintf " ^o0,[^i0],#%i" k;
           inputs=[rA];
-          outputs=[rD];
+          outputs=[rD;rA;];
           reg_env=[rA,voidstar; rD,quad;]; }
     | V128 -> assert false
 
