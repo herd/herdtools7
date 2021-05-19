@@ -332,6 +332,11 @@ val same_instance : event -> event -> bool
   val bind_ctrldata_first_outputs :
       event_structure -> event_structure -> event_structure option
 
+(* Sequential composition, add ctrl dependency
+    keep first event structure output as data and control output. *)
+  val bind_ctrl_first_outputs :
+      event_structure -> event_structure -> event_structure option
+
 
 (* check memory tags *)
   val check_tags :
@@ -1269,6 +1274,22 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
             EventRel.union
               r.intra_causality_control
               (EventRel.cartesian ctrl_out1 (minimals_no_spurious es2)) ;
+          output = Some data_out1 ;
+          ctrl_output = Some ctrl_out1 ;
+        } in
+      Some r
+
+(* Control composition, both output stay in first structure *)
+    let bind_ctrl_first_outputs es1 es2 =
+      let data_out1 = get_output es1
+      and ctrl_out1 = get_ctrl_output_commits es1 in
+      let r = union es1 es2 in
+      let r =
+        { r with
+          intra_causality_control =
+            EventRel.union
+              r.intra_causality_control
+              (EventRel.cartesian ctrl_out1 es2.events) ;
           output = Some data_out1 ;
           ctrl_output = Some ctrl_out1 ;
         } in

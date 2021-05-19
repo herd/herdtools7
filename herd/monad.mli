@@ -68,6 +68,8 @@ module type S =
     (* Same as bind_ctrldata, all output from first argument *)
     val (>>**==) : 'a t -> ('a -> 'b t) -> 'b t
 
+    (* Identical control dep only, all output from firtst argument *)
+    val bind_ctrl_first_outputs : 'a t -> ('a -> 'b t) -> 'b t
 
     val check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v t) -> 'x t -> 'v t
     val exch : 'a t -> 'a t -> ('a -> 'b t) ->  ('a -> 'c t) ->  ('b * 'c) t

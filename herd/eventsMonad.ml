@@ -258,6 +258,8 @@ Monad type:
     let (>>**==) : 'a t -> ('a -> 'b t) -> ('b) t
         = fun s f -> data_comp E.bind_ctrldata_first_outputs s f
 
+    let bind_ctrl_first_outputs s f = data_comp E.bind_ctrl_first_outputs s f
+
 (* Tag check combinator *)
     let check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v t) -> 'x t -> 'v t
         = fun ma rtag comp commit ->

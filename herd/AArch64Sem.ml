@@ -447,11 +447,6 @@ module Make
 (* Add commit events, when commanded by options *)
 (************************************************)
 
-      let do_prefix_commit m ii =
-        commit_pred ii >>*== fun () -> m
-
-      let prefix_commit m ii =
-        if is_branching then do_prefix_commit m ii else m
 
       let append_commit ma txt ii =
         if is_branching then do_append_commit ma txt ii else ma
@@ -544,17 +539,19 @@ module Make
         let ha = ha || hd in (* As far as we know hd => ha *)
 (* Perform PTE update, when told to do so *)
         let setbits_get_oa a_pte m =
-          m >>*== fun pte_v ->
-           (* >>== is important, as the test and set below
-              is performed 'on the side ' *)
-            begin if hd && dir = Dir.W then
-              is_zero pte_v.db_v >>= fun c ->
-              M.choiceT c
-                  (test_and_set_db a_pte (E.IdSome ii))
-                  (M.unitT ())
-            else M.unitT ()
-            end
-            >>| (M.op1 Op.Offset a_virt >>= M.add pte_v.oa_v)
+          M.bind_ctrl_first_outputs m
+            (fun pte_v ->
+           (* Special combinator, as the test and set below
+              is performed 'on the side ' and as outputs
+              should remain in m and only ctrl iicco added *)
+              begin
+                if hd && dir = Dir.W then
+                  is_zero pte_v.db_v >>= fun c ->
+                  M.choiceT c
+                    (test_and_set_db a_pte (E.IdSome ii))
+                    (M.unitT ())
+                else M.unitT ()
+              end >>| (M.op1 Op.Offset a_virt >>= M.add pte_v.oa_v))
             >>= fun (_,oa) -> M.unitT oa in
         let mfault m _a = mfault (get_oa a_virt m) a_virt
         and mok (pte_v,ipte) a_pte m a =
