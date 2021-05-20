@@ -52,6 +52,7 @@ type t =
   | PTE2
 (* Switch "phantom" mode for setting the AF bit by hardware *)
   | SwitchPhantom
+  | PhantomOnLoad
 (* Perform experiment *)
   | Exp
 
@@ -61,7 +62,7 @@ let tags =
    "mixed";"dontcheckmixed";"weakpredicated"; "memtag";
    "tagcheckprecise"; "tagcheckunprecise"; "precise"; "imprecise";
    "toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
-   "pte-squared"; "switchphantom";
+   "pte-squared"; "switchphantom"; "PhantomOnLoad";
    "exp"; ]
 
 let parse s = match Misc.lowercase s with
@@ -93,6 +94,7 @@ let parse s = match Misc.lowercase s with
 | "noptebranch"|"nobranch" -> Some NoPteBranch
 | "pte2" | "pte-squared" -> Some PTE2
 | "switchphantom" -> Some SwitchPhantom
+| "phantomonload" -> Some PhantomOnLoad
 | "exp" -> Some Exp
 | _ -> None
 
@@ -125,6 +127,7 @@ let pp = function
   | NoPteBranch -> "NoPteBranch"
   | PTE2 -> "pte-squared"
   | SwitchPhantom -> "SwitchPhantom"
+  | PhantomOnLoad -> "PhantomOnLoad"
   | Exp -> "exp"
 
 let compare = compare

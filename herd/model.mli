@@ -51,7 +51,7 @@ module type Config = sig
   val skipchecks : StringSet.t
   val strictskip : bool
   val cycles : StringSet.t
-  val optace : bool
+  val optace : OptAce.t
   val libfind : string -> string
   val variant : Variant.t -> bool
   val dirty : DirtyBit.t option

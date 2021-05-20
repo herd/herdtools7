@@ -19,7 +19,7 @@
 (* Some configuration *)
 module type Config = sig
   val verbose : int
-  val optace : bool
+  val optace : OptAce.t
   val debug : Debug_herd.t
   val precision : bool
   val variant : Variant.t -> bool

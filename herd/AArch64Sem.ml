@@ -41,7 +41,7 @@ module Make
     let pte2 = kvm && C.variant Variant.PTE2
     let phantom =
       Variant.get_switch `AArch64 Variant.SwitchPhantom C.variant
-
+    let experimental = false
 
     let check_memtag ins =
       if not memtag then
@@ -77,6 +77,7 @@ module Make
       let (>>==) = M.(>>==)
       let (>>*=) = M.(>>*=)
       let (>>*==) = M.(>>*==)
+      let (>>**==) = M.(>>**==)
       let (>>|) = M.(>>|)
       let (>>!) = M.(>>!)
       let (>>::) = M.(>>::)
@@ -224,8 +225,11 @@ module Make
         else write_reg_sz
 
 (* Emit commit event *)
-      let commit_bcc ii = M.mk_singleton_es (Act.Commit true) ii
-      let commit_pred ii = M.mk_singleton_es (Act.Commit false) ii
+      let commit_bcc ii = M.mk_singleton_es (Act.Commit (true,None)) ii
+      and commit_pred_txt txt ii =
+        M.mk_singleton_es (Act.Commit (false,txt)) ii
+
+      let commit_pred ii = commit_pred_txt None ii
 
 (* Fence *)
       let create_barrier b ii = M.mk_singleton_es (Act.Barrier b) ii
@@ -317,8 +321,8 @@ module Make
           (commit_pred ii)  ++ fun cond ->  M.choiceT cond m1 m2
 
 (* Tag checking Morello *)
-      let do_append_commit ma ii =
-        ma >>== fun a -> commit_pred ii >>= fun () -> M.unitT a
+      let do_append_commit ma txt ii =
+        ma >>== fun a -> commit_pred_txt txt ii >>= fun () -> M.unitT a
 
       let mzero = M.unitT M.A.V.zero
 
@@ -443,13 +447,9 @@ module Make
 (* Add commit events, when commanded by options *)
 (************************************************)
 
-      let append_commit ma ii =
-        if is_branching then do_append_commit ma ii else ma
 
-      let append_commit_ac ac ma ii =
-        if Access.is_physical ac && is_branching then
-          do_append_commit ma ii
-        else ma
+      let append_commit ma txt ii =
+        if is_branching then do_append_commit ma txt ii else ma
 
       let do_insert_commit m1 m2 ii =
       (* Notice the complex dependency >>*==
@@ -539,20 +539,41 @@ module Make
         let ha = ha || hd in (* As far as we know hd => ha *)
 (* Perform PTE update, when told to do so *)
         let setbits_get_oa a_pte m =
-          m >>*== fun pte_v ->
-           (* >>== is important, as the test and set below
-              is performed 'on the side ' *)
-            begin if hd && dir = Dir.W then
-              is_zero pte_v.db_v >>= fun c ->
-              M.choiceT c
-                  (test_and_set_db a_pte (E.IdSome ii))
-                  (M.unitT ())
-            else M.unitT ()
-            end
-            >>| (M.op1 Op.Offset a_virt >>= M.add pte_v.oa_v)
+          M.bind_ctrl_first_outputs m
+            (fun pte_v ->
+           (* Special combinator, as the test and set below
+              is performed 'on the side ' and as outputs
+              should remain in m and only ctrl iicco added *)
+              begin
+                if hd && dir = Dir.W then
+                  is_zero pte_v.db_v >>= fun c ->
+                  M.choiceT c
+                    (test_and_set_db a_pte (E.IdSome ii))
+                    (M.unitT ())
+                else M.unitT ()
+              end >>| (M.op1 Op.Offset a_virt >>= M.add pte_v.oa_v))
             >>= fun (_,oa) -> M.unitT oa in
         let mfault m _a = mfault (get_oa a_virt m) a_virt
-        and mok a_pte m a = mok (setbits_get_oa a_pte m) a in
+        and mok (pte_v,ipte) a_pte m a =
+          let m =
+            let m = append_commit m (Some "valid:1") ii in
+            if tthm && ha && phantom then
+              is_zero ipte.af_v >>=
+                fun c ->
+                M.choiceT c
+                  (m >>**==
+                     (fun _ ->
+                       let m =
+                         commit_pred_txt (Some "af:0") ii >>*=
+                         fun _ -> set_af a_pte pte_v ii in
+                       if experimental then
+                          M.altT m
+                          (test_and_set_af_succeeds a_pte E.IdSpurious)
+                       else m)
+                   >>== fun () -> M.unitT ipte)
+                  m
+            else m in
+          mok (setbits_get_oa a_pte m) a in
 
 
 (* Action on case of page table access.
@@ -578,8 +599,8 @@ module Make
               mextract_whole_pte_val
                 an nexp a_pte (E.IdSome ii) >>== fun pte_v ->
               (mextract_pte_vals pte_v) >>= fun ipte ->
-              let out = M.unitT (ipte,a_pte) in
-              if tthm && ha && phantom then
+              let out = M.unitT ((pte_v,ipte),a_pte) in
+              if false && tthm && ha && phantom then
                 m_op Op.And
                   (is_zero ipte.af_v)
                   (is_not_zero ipte.valid_v) >>*=
@@ -588,12 +609,12 @@ module Make
                     (set_af a_pte pte_v ii >>= fun () -> out) out
               else out
             end
-          (fun (_,a_pte) ma -> (* now we have PTE content *)
+          (fun (pair_pte,a_pte) ma -> (* now we have PTE content *)
             (* Monad will carry changing internal pte value *)
-            let ma = ma >>= fun (pte_v,_) -> M.unitT pte_v in
+            let ma = ma >>= fun ((_,ipte),_) -> M.unitT ipte in
             (* wrapping of success/failure continuations,
                only pte value may have changed *)
-            let mok ma = mok a_pte ma a_virt
+            let mok ma = mok pair_pte a_pte ma a_virt
 (* a_virt was (if pte2 then a_virt else pte_v.oa_v), why? *)
             and mno ma =  mfault ma a_virt in
             let check_cond cond =
@@ -779,7 +800,11 @@ module Make
       let some_ha = dirty.DirtyBit.some_ha || dirty.DirtyBit.some_hd
 
       let fire_spurious_af dir a m =
-        if phantom && some_ha && dir = Dir.W then
+        if
+          phantom && some_ha &&
+            (let v = C.variant Variant.PhantomOnLoad in
+             match dir with Dir.W -> not v | Dir.R -> v)
+        then
           (m >>|
              M.altT (test_and_set_af_succeeds a E.IdSpurious) (M.unitT ())) >>=
             fun (r,_) -> M.unitT r
@@ -864,7 +889,7 @@ module Make
         lift_memop Dir.R
           (fun ac ma _mv -> (* value fake here *)
             if Access.is_physical ac then
-              M.bind_ctrl (append_commit ma ii) (mop ac)
+              M.bind_ctrldata ma (mop ac)
             else
               ma >>= mop ac)
           (to_perms "r" sz)
@@ -876,7 +901,7 @@ module Make
           (fun ac ma mv ->
             if is_branching && Access.is_physical ac then
               (* additional ctrl dep on address *)
-              M.bind_ctrl_data (append_commit ma ii) mv
+              M.bind_ctrldata_data ma mv
                 (fun a v ->
                   do_write_mem sz an aexp ac a v ii)
             else if morello then
@@ -991,7 +1016,7 @@ module Make
             M.riscv_store_conditional
               (read_reg_ord ResAddr ii)
               mv
-              (append_commit_ac ac ma ii)
+              ma
               (write_reg ResAddr V.zero ii)
               (fun v -> write_reg rr v ii)
               (fun ea resa v ->
@@ -1028,7 +1053,7 @@ module Make
             and w1 a v = rmw_amo_write sz rmw ac a v ii in
             M.swp
               (Access.is_physical ac)
-              (append_commit_ac ac ma ii)
+              ma
               r1 r2 w1 w2)
           (to_perms "rw" sz)
           (read_reg_ord r3 ii)
@@ -1044,8 +1069,7 @@ module Make
            (* mv is read new value from reg, not important
               as this code is not executed in morello mode *)
           (fun ac ma mv ->
-            let is_phy = Access.is_physical ac
-            and ma = append_commit_ac ac ma ii in
+            let is_phy = Access.is_physical ac in
              M.altT
               (let read_mem a = do_read_mem_ret sz an aexp ac a ii in
                M.aarch64_cas_no is_phy ma read_rs write_rs read_mem M.neqT)
@@ -1107,7 +1131,7 @@ module Make
               else fun sz -> rmw_amo_read sz rmw ac
             and write_mem = fun sz -> rmw_amo_write sz rmw ac in
             M.amo_strict (Access.is_physical ac) op
-              (append_commit_ac ac ma ii)
+              ma
               (fun a -> read_mem sz a ii) mv
               (fun a v -> write_mem sz a v ii)
               (fun w ->

@@ -46,9 +46,11 @@ module type S =
 (* Data composition, entry for snd monad: minimals for iico_data *)
     val (>>=) : 'a t -> ('a -> 'b t) -> ('b) t
 
-    val (>>==) : 'a t -> ('a -> 'b t) -> ('b) t (* Output event stay in first arg *)
-    val (>>*=) : 'a t -> ('a -> 'b t) -> ('b) t
-    val (>>*==) : 'a t -> ('a -> 'b t) -> ('b) t (* Output event stay in first argument *)
+    val (>>==) : 'a t -> ('a -> 'b t) -> 'b t (* Output events stay in first arg *)
+(* Control composition *)
+    val (>>*=) : 'a t -> ('a -> 'b t) -> 'b t
+    val (>>*==) : 'a t -> ('a -> 'b t) -> 'b t (* Output events stay in first argument *)
+
     (* Control composition, avoid events from first argument) *)
     val bind_ctrl_avoid : 'c t -> 'a t -> ('a -> 'b t) -> 'b t
 
@@ -58,9 +60,16 @@ module type S =
     (* Hybrid composition m1 m2 m3, m1 -ctrl+data-> m3 and m2 -data-> m3.
        ctrl+data -> ctrl from maximal commit evts + data from
        monad output *)
-    val bind_ctrl_data : 'a t -> 'b t -> ('a -> 'b -> 'c t) -> 'c t
-    val bind_ctrl : 'a t -> ('a -> 'c t) -> 'c t
+    val bind_ctrldata_data : 'a t -> 'b t -> ('a -> 'b -> 'c t) -> 'c t
 
+    (* Similar, no second argument *)
+    val bind_ctrldata : 'a t -> ('a -> 'c t) -> 'c t
+
+    (* Same as bind_ctrldata, all output from first argument *)
+    val (>>**==) : 'a t -> ('a -> 'b t) -> 'b t
+
+    (* Identical control dep only, all output from firtst argument *)
+    val bind_ctrl_first_outputs : 'a t -> ('a -> 'b t) -> 'b t
 
     val check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v t) -> 'x t -> 'v t
     val exch : 'a t -> 'a t -> ('a -> 'b t) ->  ('a -> 'c t) ->  ('b * 'c) t
