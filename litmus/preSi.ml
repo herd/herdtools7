@@ -1256,17 +1256,17 @@ module Make
                   begin match Misc.Simple.assoc x bds with
                   | P phy ->
                       O.fii
-                        "*_vars->pte_%s = _vars->saved_pte_%s;"
+                        "(void)litmus_set_pte(_vars->pte_%s,_vars->saved_pte_%s);"
                         x phy
                   | Z ->
-                      O.fii "*_vars->pte_%s = litmus_set_pte_invalid(*_vars->pte_%s);" x x
+                      O.fii "(void)litmus_set_pte(_vars->pte_%s,litmus_set_pte_invalid(*_vars->pte_%s));" x x
                   | V (o,pteval) ->
                       let is_default = PTEVal.is_default pteval in
                       if not (o = None && is_default) then begin
                         let arg = match o with
                         | None -> sprintf "_vars->saved_pte_%s" x
                         | Some s -> sprintf "_vars->saved_pte_%s" s in
-                        O.fii "*_vars->pte_%s = %s;"
+                        O.fii "(void)litmus_set_pte(_vars->pte_%s,%s);"
                           x (SkelUtil.dump_pteval_flags arg pteval);
                         List.iter
                           (fun attr ->
@@ -1325,16 +1325,25 @@ module Make
           if Cfg.is_kvm then U.get_displayed_ptes test
           else StringSet.empty in
         if Cfg.is_kvm then begin
+            let i_ptes,i_non_ptes=
+              List.partition
+                (fun a -> StringSet.mem a ptes)              
+                inits in
           List.iter
             (fun a ->
               let pte = OutUtils.fmt_pte_kvm a
               and phy = OutUtils.fmt_phy_kvm a in
-              if StringSet.mem a ptes then begin
-                O.fii "_log_ptr->%s = *%s;"
-                  (OutUtils.fmt_pte_tag a) pte
-              end ;
-              O.fii "*(%s) = %s;" pte phy ;
-              O.fii "litmus_flush_tlb((void *)%s);" a)
+              let rhs =
+                sprintf "litmus_set_pte(%s,%s)" pte phy in
+              let lhs =
+                if StringSet.mem a ptes then
+                  sprintf  "_log_ptr->%s = " (OutUtils.fmt_pte_tag a)
+                else
+                  "(void)" in
+              O.fii "%s%s;" lhs rhs)
+            (i_ptes@i_non_ptes) ;
+          List.iter
+            (fun a -> O.fii "litmus_flush_tlb((void *)%s);" a)
             inits
         end ;
 (* Collect shared locations final values, if appropriate *)

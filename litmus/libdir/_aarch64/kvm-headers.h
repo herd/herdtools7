@@ -37,6 +37,15 @@ static inline void litmus_flush_tlb_all(void) {
   flush_tlb_all();
 }
 
+static inline pteval_t litmus_set_pte(pteval_t *p,pteval_t v) {
+  pteval_t w;
+  asm __volatile__
+    ("swp %[v],%[w],[%[p]]"
+     :[w] "=r" (w)
+     :[p] "r" (p),[v] "r" (v)
+     :"memory") ;
+  return w ;
+}
 /* Field access */
 
 static inline uint64_t litmus_get_field(pteval_t x,int low,int sz) {
