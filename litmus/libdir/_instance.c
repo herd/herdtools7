@@ -104,6 +104,9 @@ static global_t global  =
 #ifdef ACTIVE
     active,
 #endif
+    0,
+    SIZE_OF_TEST, NUMBER_OF_RUN, NEXE, NOCCS,
+    0,
   };
 
 static void init_global(global_t *g,int id) {

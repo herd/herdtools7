@@ -44,7 +44,6 @@ int RUN(int argc,char **argv,FILE *out) {
   if (n_exe < 1) n_exe = 1 ;
   global.verbose = d.verbose;
   global.nexe = n_exe;
-  global.noccs = NOCCS ;
   global.nruns = d.max_run;
   global.size = d.size_of_test;
   global.do_scan = d.mode == mode_scan ;
@@ -62,13 +61,6 @@ int RUN(int argc,char **argv,FILE *out) {
 #endif
 #endif
   tsc_t start = timeofday();
-#else
-  global.verbose = 0 ;
-  global.nexe = NEXE ;
-  global.noccs = NOCCS ;
-  global.nruns = NUMBER_OF_RUN ;
-  global.size = SIZE_OF_TEST ;
-  global.do_scan = 0;
 #endif
   for (int id=0; id < AVAIL ; id++) {
     arg[id].id = id;
