@@ -63,11 +63,8 @@ int RUN(int argc,char **argv,FILE *out) {
     arg[id].g = &global;
   }
 #ifdef KVM
-  /* "spawn" downwards as id 0 is not asynchornous */
   init_labels();
-  global.over = 0 ;
-  for (int id = AVAIL-1 ; id >= 0 ; id--) on_cpu_async(id,zyva,&arg[id]);
-  while (global.over < AVAIL) mdelay(500);
+  on_cpus(zyva, arg);
 #else
   for (int id=0; id < AVAIL ; id++) launch(&th[id],zyva,&arg[id]);
   for (int id=0; id < AVAIL ; id++) join(&th[id]);

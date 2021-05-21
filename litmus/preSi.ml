@@ -1760,8 +1760,15 @@ module Make
         O.o "} zyva_t;" ;
         O.o "" ;
         O.f "static void %szyva(void *_a) {" (k_nkvm "*") ;
-        O.oi "zyva_t *a = (zyva_t*)_a;" ;
-        O.oi "int id = a->id;" ;
+        if Cfg.is_kvm then begin
+            O.oi "int id = smp_processor_id();" ;
+            O.oi "if (id >= AVAIL) return;" ;
+            O.oi "zyva_t *a = (zyva_t*)_a + id;" ;
+          end
+        else begin
+            O.oi "zyva_t *a = (zyva_t*)_a;" ;
+            O.oi "int id = a->id;" ;
+          end;
         O.oi "global_t *g = a->g;" ;
         if Cfg.is_kvm then begin
           match db with
@@ -1796,10 +1803,7 @@ module Make
         O.oi "init_global(g,id);" ;
 (*        O.oi "if (g->do_scan) scan(id,g); else choose(id,g);" ; *)
         O.oi "choose(id,g);" ;
-        if Cfg.is_kvm then begin
-          O.oi "mbar();" ;
-          O.oi "atomic_inc_fetch(&g->over);"
-        end else begin
+        if not Cfg.is_kvm then begin
           O.oi "return NULL;"
         end ;
         O.o "}" ;
