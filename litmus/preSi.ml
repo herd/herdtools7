@@ -1672,23 +1672,14 @@ module Make
         O.o "static void choose(int id,global_t *g) {" ;
         O.oi "param_t *q = g->param;" ;
         O.oi "thread_ctx_t c; c.id = c.seed = id;" ;
+        O.oi "st_t seed = 0;" ;
         O.o "" ;
-        O.oi "if (q->part >=0) {" ;
-        O.oii "set_role(g,&c,q->part);";
-        O.oii "for (int nrun = 0; nrun < g->nruns ; nrun++) {" ;
-        O.oiii
-            "if (g->verbose>1) fprintf(stderr, \"Run %i of %i\\r\", nrun, g->nruns);";
-        O.oiii "choose_params(g,&c,q->part);" ;
-        O.oii "}" ;
-        O.oi "} else {" ;
-        O.oii "st_t seed = 0;" ;
-        O.oii "for (int nrun = 0; nrun < g->nruns ; nrun++) {" ;
-        O.oiii
-          "if (g->verbose>1) fprintf(stderr, \"Run %i of %i\\r\", nrun, g->nruns);";
-        O.oiii "int part = rand_k(&seed,SCANSZ);" ;
-        O.oiii "set_role(g,&c,part);";
-        O.oiii "choose_params(g,&c,part);" ;
-        O.oii "}" ;
+        O.oi "for (int nrun = 0; nrun < g->nruns ; nrun++) {" ;
+        O.oii
+          "if (g->verbose>1) fprintf(stderr, \"Run %i of %i\\r\", nrun, g->nruns);" ;
+        O.oii "int part = q->part >= 0 ? q->part : rand_k(&seed,SCANSZ);" ;
+        O.oii "set_role(g,&c,part);";
+        O.oii "choose_params(g,&c,part);" ;
         O.oi "}" ;
         O.o "}" ;
         O.o ""
