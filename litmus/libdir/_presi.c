@@ -13,10 +13,10 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
+#include <stdlib.h>
 #ifdef KVM
 #include <libcflat.h>
 #else
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
@@ -78,38 +78,6 @@ static long my_pow10(int p,long x) {
   }
   return r ;
 }
-#ifdef KVM
-/* NB: Radix is ignored, will be ten anyway. */
-static long strtol(char *ptr,char **q,int radix10) {
-    long acc = 0;
-    char *s = ptr;
-    int neg, c;
-
-    while (*s == ' ' || *s == '\t')
-        s++;
-    if (*s == '-'){
-        neg = 1;
-        s++;
-    } else {
-        neg = 0;
-        if (*s == '+')
-            s++;
-    }
-
-    while (*s) {
-        if (*s < '0' || *s > '9')
-            break;
-        c = *s - '0';
-        acc = acc * 10 + c;
-        s++;
-    }
-    if (q) *q = s ;
-    if (neg)
-        acc = -acc;
-
-    return acc;
-}
-#endif
 
 static int do_argint(char *p, char **q) {
   long r =  strtol(p,q,10) ;
