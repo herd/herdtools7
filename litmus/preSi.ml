@@ -1676,19 +1676,15 @@ module Make
         O.oi "if (q->part >=0) {" ;
         O.oii "set_role(g,&c,q->part);";
         O.oii "for (int nrun = 0; nrun < g->nruns ; nrun++) {" ;
-        if not Cfg.is_kvm then begin
-          O.oiii
-            "if (g->verbose>1) fprintf(stderr, \"Run %i of %i\\r\", nrun, g->nruns);"
-        end ;
+        O.oiii
+            "if (g->verbose>1) fprintf(stderr, \"Run %i of %i\\r\", nrun, g->nruns);";
         O.oiii "choose_params(g,&c,q->part);" ;
         O.oii "}" ;
         O.oi "} else {" ;
         O.oii "st_t seed = 0;" ;
         O.oii "for (int nrun = 0; nrun < g->nruns ; nrun++) {" ;
-        if not Cfg.is_kvm then begin
-          O.oiii
-            "if (g->verbose>1) fprintf(stderr, \"Run %i of %i\\r\", nrun, g->nruns);"
-        end ;
+        O.oiii
+          "if (g->verbose>1) fprintf(stderr, \"Run %i of %i\\r\", nrun, g->nruns);";
         O.oiii "int part = rand_k(&seed,SCANSZ);" ;
         O.oiii "set_role(g,&c,part);";
         O.oiii "choose_params(g,&c,part);" ;

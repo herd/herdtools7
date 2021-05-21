@@ -29,8 +29,6 @@
 
 
 #ifdef KVM
-#define fprintf(stderr,fmt,...) printf(fmt, __VA_ARGS__)
-
 static int errno = 0 ;
 static const int ERANGE = 1 ;
 static const char *strerror(int e) { return "ERROR"; }

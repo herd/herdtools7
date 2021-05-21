@@ -48,11 +48,7 @@ int RUN(int argc,char **argv,FILE *out) {
   global.size = d.size_of_test;
   global.do_scan = d.mode == mode_scan ;
   if (global.verbose) {
-#ifdef KVM
-    printf("%s: n=%d, r=%d, s=%d, %s\n",prog,global.nexe,global.nruns,global.size,global.do_scan ? "+sp" : "+rp");
-#else
     fprintf(stderr,"%s: n=%i, r=%i, s=%i, %s\n",prog,global.nexe,global.nruns,global.size,global.do_scan ? "+sp" : "+rp");
-#endif
   }
   parse_param(prog,global.parse,PARSESZ,p) ;
 #ifdef PRELUDE
