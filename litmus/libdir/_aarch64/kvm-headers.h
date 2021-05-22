@@ -39,11 +39,23 @@ static inline void litmus_flush_tlb_all(void) {
 
 static inline pteval_t litmus_set_pte(pteval_t *p,pteval_t v) {
   pteval_t w;
+#ifdef NOSWP
+  int t;
+  asm __volatile (
+  "0:\n\t"
+  "ldxr    %[w],[%[p]]\n\t"
+  "stlxr   %w[t], %[v], [%[p]]\n\t"
+  "cbnz    %w[t],0b\n"
+  :[w] "=&r" (w), [t] "=&r" (t)
+  :[p] "r" (p),[v] "r" (v)
+  :"memory") ;
+#else
   asm __volatile__
     ("swp %[v],%[w],[%[p]]"
      :[w] "=r" (w)
      :[p] "r" (p),[v] "r" (v)
      :"memory") ;
+#endif
   return w ;
 }
 /* Field access */

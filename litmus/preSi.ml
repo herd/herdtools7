@@ -1327,7 +1327,7 @@ module Make
         if Cfg.is_kvm then begin
             let i_ptes,i_non_ptes=
               List.partition
-                (fun a -> StringSet.mem a ptes)              
+                (fun a -> StringSet.mem a ptes)
                 inits in
           List.iter
             (fun a ->
