@@ -1,0 +1,10 @@
+Test M006 Allowed
+States 1
+x={0x2,0x1};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (x={0x2,0x1})
+Observation M006 Always 1 0
+Hash=4d6e36211c150aee5ee2723464a442f6
+

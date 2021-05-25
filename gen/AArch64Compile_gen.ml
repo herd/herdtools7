@@ -200,18 +200,18 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       match sz with
       | Byte -> I_STRBH (B,r1,r2,K o)
       | Short -> I_STRBH (H,r1,r2,K o)
-      | Word -> I_STR (V32,r1,r2,K o)
-      | Quad -> I_STR (V64,r1,r2,K o)
-      | S128 -> I_STR (V128,r1,r2,K o)
+      | Word -> I_STR (V32,r1,r2,K o, S_NOEXT)
+      | Quad -> I_STR (V64,r1,r2,K o, S_NOEXT)
+      | S128 -> I_STR (V128,r1,r2,K o, S_NOEXT)
 
-    let do_str v r1 r2 = I_STR (v,r1,r2,K 0)
+    let do_str v r1 r2 = I_STR (v,r1,r2,K 0, S_NOEXT)
     let str = do_str vloc
     let stg r1 r2 = I_STG (r1,r2,K 0)
     let stct r1 r2 = I_STCT(r1,r2)
     let do_stlr v r1 r2 = I_STLR (v,r1,r2)
     let stlr = do_stlr vloc
 
-    let do_str_idx v r1 r2 idx = I_STR (vloc,r1,r2,RV (v,idx))
+    let do_str_idx v r1 r2 idx = I_STR (vloc,r1,r2,RV (v,idx), S_NOEXT)
     let str_idx = do_str_idx vloc
     let stxr r1 r2 r3 = I_STXR (vloc,YY,r1,r2,r3)
     let stlxr r1 r2 r3 = I_STXR (vloc,LY,r1,r2,r3)
@@ -261,9 +261,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       match sz with
       | Byte -> I_STRBH (B,r1,r2,RV (v,idx))
       | Short -> I_STRBH (H,r1,r2,RV (v,idx))
-      | Word -> I_STR (V32,r1,r2,RV (v,idx))
-      | Quad -> I_STR (V64,r1,r2,RV (v,idx))
-      | S128 -> I_STR (V128,r1,r2,RV (v,idx))
+      | Word -> I_STR (V32,r1,r2,RV (v,idx), S_NOEXT)
+      | Quad -> I_STR (V64,r1,r2,RV (v,idx), S_NOEXT)
+      | S128 -> I_STR (V128,r1,r2,RV (v,idx), S_NOEXT)
 
     let swp_mixed sz a rS rT rN =
       let open MachSize in

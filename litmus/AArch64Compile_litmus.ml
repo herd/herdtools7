@@ -379,49 +379,67 @@ module Make(V:Constant.S)(C:Config) =
     | _,ZR  -> [rA],fmt vA "i0","^i1",[],zr vC
     | _,_   -> [rA],fmt vA "i0","^i1",[rC],fmt vC "i2"
 
-    let store memo v rA rB kr = match v,kr with
-    | V32,K 0 ->
+    let store memo v rA rB kr s = match v,kr,s with
+    | V32,K 0,S_NOEXT ->
         let rA,fA,fB = str_arg1 V32 rA in
         { empty_ins with
           memo=memo ^ " " ^ fA ^",["^fB^"]";
           inputs=rA@[rB;]; reg_env=[rB,voidstar]@add_w rA; }
-    | V32,K k ->
+    | V32,K k, s ->
         let rA,fA,fB = str_arg1 V32 rA in
+        let shift = match s with
+        | S_NOEXT -> ""
+        | s -> "," ^ pp_shifter s in
         { empty_ins with
-          memo=memo ^ sprintf " %s,[%s,#%i]" fA fB k;
+          memo=memo ^ sprintf " %s,[%s,#%i%s]" fA fB k shift;
           inputs=rA@[rB]; reg_env=[rB,voidstar;]@add_w rA; }
-    | V32,RV (V32,rC) ->
+    | V32,RV (V32,rC),s ->
         let rA,fA,fB,rC,fC = str_arg2 V32 rA V32 rC in
+        let shift = match s with
+        | S_NOEXT -> ",sxtw"
+        | s -> "," ^ pp_shifter s in
         { empty_ins with
-          memo=memo^ sprintf " %s,[%s,%s,sxtw]" fA fB fC;
+          memo=memo^ sprintf " %s,[%s,%s%s]" fA fB fC shift;
           inputs=rA@[rB;]@rC; reg_env=add_w rC@[rB,voidstar]@add_w rA; }
-    | V64,K 0 ->
+    | V64,K 0,S_NOEXT ->
         let rA,fA,fB = str_arg1 V64 rA in
         { empty_ins with
           memo=memo ^ sprintf " %s,[%s]" fA fB;
           inputs=rA@[rB]; reg_env=[rB,voidstar;]@add_q  rA; }
-    | V64,K k ->
+    | V64,K k,s ->
         let rA,fA,fB = str_arg1 V64 rA in
+        let shift = match s with
+        | S_NOEXT -> ""
+        | s -> "," ^ pp_shifter s in
         { empty_ins with
-          memo=memo ^ sprintf " %s,[%s,#%i]" fA fB k;
+          memo=memo ^ sprintf " %s,[%s,#%i%s]" fA fB k shift;
           inputs=rA@[rB]; reg_env=[rB,voidstar;]@add_q  rA; }
-    | V64,RV (V64,rC) ->
+    | V64,RV (V64,rC),s ->
         let rA,fA,fB,rC,fC = str_arg2 V64 rA V64 rC in
+        let shift = match s with
+        | S_NOEXT -> ""
+        | s -> "," ^ pp_shifter s in
         { empty_ins with
-          memo=memo ^ sprintf " %s,[%s,%s]" fA fB fC;
+          memo=memo ^ sprintf " %s,[%s,%s%s]" fA fB fC shift;
           inputs=rA@[rB;]@rC; reg_env=add_q rC@[rB,voidstar;]@add_q rA; }
-    | V64,RV (V32,rC) ->
+    | V64,RV (V32,rC),s ->
         let rA,fA,fB,rC,fC = str_arg2 V64 rA V32 rC in
+        let shift = match s with
+        | S_NOEXT -> ",sxtw"
+        | s -> "," ^ pp_shifter s in
         { empty_ins with
-          memo=memo ^ sprintf " %s,[%s,%s,sxtw]" fA fB fC;
+          memo=memo ^ sprintf " %s,[%s,%s%s]" fA fB fC shift;
           inputs=rA@[rB;]@rC; reg_env=add_w rC@[rB,voidstar;]@add_q rA; }
-    | V32,RV (V64,rC) ->
+    | V32,RV (V64,rC),s ->
         let rA,fA,fB,rC,fC = str_arg2 V32 rA V64 rC in
+        let shift = match s with
+        | S_NOEXT -> ""
+        | s -> "," ^ pp_shifter s in
         { empty_ins with
-          memo=memo ^ sprintf " %s,[%s,%s]" fA fB fC;
+          memo=memo ^ sprintf " %s,[%s,%s%s]" fA fB fC shift;
           inputs=rA@[rB;]@rC; reg_env=add_q rC@[rB,voidstar;]@add_w  rA; }
-    | V128,_
-    | _,RV (V128,_) ->
+    | V128,_,_
+    | _,RV (V128,_),_ ->
         assert false
 
     let stxr memo v r1 r2 r3 = match v with
@@ -1147,12 +1165,12 @@ module Make(V:Constant.S)(C:Config) =
     | I_LDRBH (H,r1,r2,kr) -> load "ldrh" V32 r1 r2 kr (default_shift kr)::k
     | I_LDAR (v,t,r1,r2) -> load (ldr_memo t) v r1 r2 k0 S_NOEXT::k
     | I_LDARBH (bh,t,r1,r2) -> load (ldrbh_memo bh t) V32 r1 r2 k0 S_NOEXT::k
-    | I_STR (v,r1,r2,kr) -> store "str" v r1 r2 kr::k
-    | I_STRBH (B,r1,r2,kr) -> store "strb" V32 r1 r2 kr::k
-    | I_STRBH (H,r1,r2,kr) -> store "strh" V32 r1 r2 kr::k
-    | I_STLR (v,r1,r2) -> store "stlr" v r1 r2 k0::k
-    | I_STLRBH (B,r1,r2) -> store "stlrb" V32 r1 r2 k0::k
-    | I_STLRBH (H,r1,r2) -> store "stlrh" V32 r1 r2 k0::k
+    | I_STR (v,r1,r2,kr,s) -> store "str" v r1 r2 kr s::k
+    | I_STRBH (B,r1,r2,kr) -> store "strb" V32 r1 r2 kr S_NOEXT::k
+    | I_STRBH (H,r1,r2,kr) -> store "strh" V32 r1 r2 kr S_NOEXT::k
+    | I_STLR (v,r1,r2) -> store "stlr" v r1 r2 k0 S_NOEXT::k
+    | I_STLRBH (B,r1,r2) -> store "stlrb" V32 r1 r2 k0 S_NOEXT::k
+    | I_STLRBH (H,r1,r2) -> store "stlrh" V32 r1 r2 k0 S_NOEXT::k
     | I_STXR (v,t,r1,r2,r3) -> stxr (str_memo t) v r1 r2 r3::k
     | I_STXRBH (bh,t,r1,r2,r3) -> stxr (strbh_memo bh t) V32 r1 r2 r3::k
     | I_CAS (v,rmw,r1,r2,r3) -> cas (cas_memo rmw) v r1 r2 r3::k

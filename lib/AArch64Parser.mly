@@ -418,8 +418,9 @@ instr:
   { A.I_LDARBH (A.B,A.AQ,$2,$5) }
 | LDAPRH wreg COMMA LBRK cxreg RBRK
   { A.I_LDARBH (A.H,A.AQ,$2,$5) }
-| STR reg COMMA LBRK cxreg kr0_no_shift RBRK
-  { let v,r = $2 in A.I_STR (v,r,$5,$6) }
+| STR reg COMMA LBRK cxreg kr0 RBRK
+  { let (v,r)   = $2 in
+    let (kr,os) = $6 in A.I_STR (v,r,$5,kr,os) }
 | STRB wreg COMMA LBRK cxreg kr0_no_shift RBRK
   { A.I_STRBH (A.B,$2,$5,$6) }
 | STRH wreg COMMA LBRK cxreg kr0_no_shift RBRK

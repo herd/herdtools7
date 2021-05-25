@@ -1,0 +1,9 @@
+AArch64 M003
+
+(* Tests STR barrel shifters - LSL *)
+
+{ uint64_t x; 0:x0=1; 0:x2=x; int64_t 0:x3=0;}
+P0                        ;
+   STR W0, [X2, X3, LSL#0];
+
+exists (x=0x1)

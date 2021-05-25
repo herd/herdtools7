@@ -1,0 +1,10 @@
+Test M003 Allowed
+States 1
+x=0x1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (x=0x1)
+Observation M003 Always 1 0
+Hash=d612e42cf7c0844663af34d30297f2f6
+

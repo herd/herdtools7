@@ -1,0 +1,10 @@
+Test A12 Allowed
+States 1
+x=0x100000000;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (x=0x100000000)
+Observation A12 Always 1 0
+Hash=86545e2af1a0880e99658d8d4d00c83c
+

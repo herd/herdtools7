@@ -1,0 +1,10 @@
+Test L016 Allowed
+States 1
+x=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (x=1)
+Observation L016 Always 1 0
+Hash=2c1dc0ae671fb6f35401c54bde5b7845
+

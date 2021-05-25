@@ -81,13 +81,10 @@ include Arch.MakeArch(struct
         match_kr subs (K k) (K k') >>>
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
     | I_LDR(_,r1,r2,kr,s),I_LDR(_,r1',r2',kr',s')
+    | I_STR(_,r1,r2,kr,s),I_STR(_,r1',r2',kr',s')
       ->
         match_kr subs kr kr' >>>
         match_shift s s' >>>
-        add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
-    | I_STR(_,r1,r2,kr),I_STR(_,r1',r2',kr')
-      ->
-        match_kr subs kr kr' >>>
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
 
     | I_OP3(_,opp,r1,r2,kr,_),I_OP3(_,opi,r1',r2',kr',_) when opp=opi
@@ -238,11 +235,12 @@ include Arch.MakeArch(struct
         conv_reg r2 >> fun r2 ->
         expl_kr kr >! fun kr ->
         I_LDRBH(a,r1,r2,kr)
-    | I_STR(a,r1,r2,kr) ->
+    | I_STR(a,r1,r2,kr,s) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
+        find_shift s >> fun s ->
         expl_kr kr >! fun kr ->
-        I_STR(a,r1,r2,kr)
+        I_STR(a,r1,r2,kr,s)
     | I_STRBH(a,r1,r2,kr) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

@@ -1,0 +1,10 @@
+Test M002 Allowed
+States 1
+x=0x100000000;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (x=0x100000000)
+Observation M002 Always 1 0
+Hash=822a4c2b0005fec10225b46de30bd2fe
+
