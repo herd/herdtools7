@@ -131,25 +131,25 @@ module Top (Conf:Config) = struct
 (* First split the input file in sections *)
     let (splitted:Splitter.result) =  SP.split name chan in
     let tname = splitted.Splitter.name.Name.name in
-    if Conf.check_name tname then begin
-      let module Conf = struct (* override the precision and variant fields *)
+    let module Conf = struct (* override the precision and variant fields *)
 
-       (* Modify variant with the 'Variant' field of test *)
-        module TestConf =
-          TestVariant.Make
-            (struct
-              module Opt = Variant
-              let set_precision = Variant.set_precision
-              let info = splitted.Splitter.info
-              let precision = Conf.precision
-              let variant = Conf.variant
-            end)
-        (* Override *)
-        include Conf
-        let precision = TestConf.precision
-        let variant = TestConf.variant
-      end in
-(* Get arch *)
+      (* Modify variant with the 'Variant' field of test *)
+      module TestConf =
+        TestVariant.Make
+          (struct
+            module Opt = Variant
+            let set_precision = Variant.set_precision
+            let info = splitted.Splitter.info
+            let precision = Conf.precision
+            let variant = Conf.variant
+          end)
+      (* Override *)
+      include Conf
+      let precision = TestConf.precision
+      let variant = TestConf.variant
+    end in
+    if Conf.check_name tname then begin
+    (* Get arch *)
       let arch = splitted.Splitter.arch in
 (* Now, we have the architecture, call specific parsers
    generically. *)

@@ -1,0 +1,17 @@
+AArch64 M001
+(* Test elementary size computation (also scanning initialisations) *)
+(* This is a replica of M001 in the AArch64.mixed directory*)
+(* It is repeated here, with the `Variant=mixed` flag, to ensure the*)
+(* inline variant flag is specified*)
+
+Variant=mixed
+
+{
+uint8_t t[4]={ 0,0,0,0 };
+0:X2=t;
+}
+  P0           ;
+MOV W0,#1      ;
+SUB W0,WZR,W0  ;
+STR W0,[X2]    ;
+locations [t;]

@@ -1,0 +1,10 @@
+Test M001 Required
+States 1
+t={255,255,255,255};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (true)
+Observation M001 Always 1 0
+Hash=192e33ccf5ce7ad96d47e0f528afd7e6
+
