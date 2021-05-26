@@ -5,6 +5,7 @@ uint8_t t[4]={ 0,0,0,0 };
 0:X2=t;
 }
   P0           ;
-SUBS W0,WZR,#1 ;
+MOV W0,#1      ;
+SUB W0,WZR,W0  ;
 STR W0,[X2]    ;
 locations [t;]
