@@ -998,9 +998,9 @@ module Make
                 read_mem_postindexed a_virt sz AArch64.N aexp ac rd rs k a ii)
               ma ii)
 
-      and str sz rs rd kr ii =
+      and str sz rs rd kr s ii =
         do_str sz AArch64.N
-          (get_ea_noext rd kr ii) (read_reg_data sz rs ii) ii
+          (get_ea rd kr s ii) (read_reg_data sz rs ii) ii
 
       and stlr sz rs rd ii =
         do_str sz AArch64.L
@@ -1395,11 +1395,11 @@ module Make
             let sz = bh_to_sz bh in
             ldar sz t rd rs ii
 
-        | I_STR(var,rs,rd,kr) ->
-            str (tr_variant var) rs rd kr ii
+        | I_STR(var,rs,rd,kr,os) ->
+            str (tr_variant var) rs rd kr os ii
 
         | I_STRBH(bh,rs,rd,kr) ->
-            str (bh_to_sz bh) rs rd kr ii
+            str (bh_to_sz bh) rs rd kr S_NOEXT ii
 
         | I_STLR(var,rs,rd) ->
             stlr (tr_variant var) rs rd ii

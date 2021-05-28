@@ -1,0 +1,9 @@
+AArch64 A10
+
+
+ { int64_t x; int64_t 0:x0=1; 0:x2=x}
+
+P0;
+  STR X0, [X2];
+
+exists (x=1)

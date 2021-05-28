@@ -1,0 +1,10 @@
+Test L015 Allowed
+States 1
+x=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (x=1)
+Observation L015 Always 1 0
+Hash=1e61a83b6f7566c8526ca4540c009b2f
+

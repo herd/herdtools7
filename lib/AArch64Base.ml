@@ -770,7 +770,7 @@ type 'k kinstruction =
   | I_LDP of temporal * variant * reg * reg * reg * 'k kr
   | I_STP of temporal * variant * reg * reg * reg * 'k kr
   | I_LDAR of variant * ld_type * reg * reg
-  | I_STR of variant * reg * reg * 'k kr
+  | I_STR of variant * reg * reg * 'k kr * 'k s
   | I_STLR of variant * reg * reg
   | I_STXR of variant * st_type * reg * reg * reg
 (* Morello *)
@@ -1080,8 +1080,10 @@ let do_pp_instruction m =
       pp_mem (ldr_memo t) v r1 r2 m.k0
   | I_LDARBH (bh,t,r1,r2) ->
       pp_mem (ldrbh_memo bh t)  V32 r1 r2 m.k0
-  | I_STR (v,r1,r2,k) ->
+  | I_STR (v,r1,r2,k,S_NOEXT) ->
       pp_mem "STR" v r1 r2 k
+  | I_STR (v,r1,r2,k,s) ->
+      pp_mem_shift "STR" v r1 r2 k s
   | I_STLR (v,r1,r2) ->
       pp_mem "STLR" v r1 r2 m.k0
   | I_STXR (v,t,r1,r2,r3) ->
@@ -1365,7 +1367,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_MOV_S (_,r1,r2,_)
   | I_LDUR_SIMD (_,r1,r2,_) | I_STUR_SIMD (_,r1,r2,_)
     -> fold_reg r1 (fold_reg r2 c)
-  | I_LDR (_,r1,r2,kr,_) | I_STR (_,r1,r2,kr)
+  | I_LDR (_,r1,r2,kr,_) | I_STR (_,r1,r2,kr,_)
   | I_OP3 (_,_,r1,r2,kr,_)
   | I_LDRBH (_,r1,r2,kr) | I_STRBH (_,r1,r2,kr)
   | I_ALIGND (r1,r2,kr) | I_ALIGNU (r1,r2,kr)
@@ -1454,8 +1456,8 @@ let map_regs f_reg f_symb =
      I_LDAR (v,t,map_reg r1,map_reg r2)
   | I_LDARBH (bh,t,r1,r2) ->
      I_LDARBH (bh,t,map_reg r1,map_reg r2)
-  | I_STR (v,r1,r2,k) ->
-      I_STR (v,map_reg r1,map_reg r2,k)
+  | I_STR (v,r1,r2,k,s) ->
+      I_STR (v,map_reg r1,map_reg r2,k,s)
   | I_STLR (v,r1,r2) ->
       I_STLR (v,map_reg r1,map_reg r2)
   | I_STLRBH (v,r1,r2) ->
@@ -1783,7 +1785,7 @@ include Pseudo.Make
         | I_LDR_P (v,r1,r2,k) -> I_LDR_P (v,r1,r2,k_tr k)
         | I_LDP (t,v,r1,r2,r3,kr) -> I_LDP (t,v,r1,r2,r3,kr_tr kr)
         | I_STP (t,v,r1,r2,r3,kr) -> I_STP (t,v,r1,r2,r3,kr_tr kr)
-        | I_STR (v,r1,r2,kr) -> I_STR (v,r1,r2,kr_tr kr)
+        | I_STR (v,r1,r2,kr,s) -> I_STR (v,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_STG (r1,r2,kr) -> I_STG (r1,r2,kr_tr kr)
         | I_STZG (r1,r2,kr) -> I_STZG (r1,r2,kr_tr kr)
         | I_LDG (r1,r2,kr) -> I_LDG (r1,r2,kr_tr kr)
