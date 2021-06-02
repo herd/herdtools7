@@ -272,7 +272,8 @@ let options = [
   "-showone",
   Arg.Bool (fun b -> if b then nshow := Some 1),
   "<bool> alias for -nshow 1";
-
+  parse_int_opt
+    "-maxphantom" maxphantom "maximum phantom update (per variable)";
   "-statelessrc11",
   Arg.Bool (fun b -> if b then statelessrc11 := true),
   "<bool> enable stateless RC11 model checking, use with -variant normw, SC check can be skipped";
@@ -508,7 +509,7 @@ let () =
     let badexecs = !badexecs
     let badflag = !badflag
     let throughflag = !throughflag
-
+    let maxphantom = !maxphantom
     let statelessrc11 = !statelessrc11
 
     let check_name = Check.ok

@@ -26,6 +26,7 @@ module type CommonConfig = sig
   val observed_finals_only : bool
   val initwrites : bool
   val check_filter : bool
+  val maxphantom : int option
   val variant : Variant.t -> bool
 end
 
@@ -415,7 +416,18 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           (EM.unitT ()) af0
           (fun maf0 ->
             EM.get_output (set_of_all_instr_events (EM.(|||) maf0)))
-           [] in
+          [] in
+      let r = match C.maxphantom with
+        | None -> r
+        | Some max ->
+           let count_spurious es =
+             E.EventSet.fold
+               (fun e k ->
+                 if E.is_load e && E.is_spurious e then k+1 else k)
+               es 0 in
+           List.filter
+             (fun (_,es) -> count_spurious es.E.events <= max)
+             r in
       { event_structures=index r 0; loop_present = !tooFar; }
 
 
