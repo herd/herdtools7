@@ -65,7 +65,7 @@ val suffix : string ref
 val dumpes : bool ref
 val dumplem : bool ref
 val dumptex : bool ref
-
+val maxphantom : int option ref
 val statelessrc11 : bool ref
 
 (* Pretty printing configuration, deserves its own module *)
