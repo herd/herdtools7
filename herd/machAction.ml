@@ -346,8 +346,8 @@ end = struct
     | Some (A.V.Val (PteVal v)) -> V.is_zero (V.intToV v.PTEVal.db)
     | _ -> false
 
-  let read_pteaf0 act = af0_val (read_of act)
-  and read_ptedb0 act = db0_val (read_of act)
+  let val_pteaf0 act = af0_val (read_of act) || af0_val (written_of act)
+  and val_ptedb0 act = db0_val (read_of act) || db0_val (written_of act)
 
   let get_pteval act = match written_of act,read_of act with
   | None,None -> None
@@ -495,8 +495,8 @@ end = struct
         ("PTE",is_pt)::
         ("PTEINV",invalid_pte)::
         ("PTEV",valid_pte)::
-        ("PTEAF0",read_pteaf0)::
-        ("PTEDB0",read_ptedb0)::
+        ("PTEAF0",val_pteaf0)::
+        ("PTEDB0",val_ptedb0)::
         k
     else
       fun k -> k)
