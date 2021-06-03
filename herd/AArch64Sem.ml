@@ -39,9 +39,6 @@ module Make
     let kvm = C.variant Variant.Kvm
     let is_branching = kvm && not (C.variant Variant.NoPteBranch)
     let pte2 = kvm && C.variant Variant.PTE2
-    let phantom =
-      Variant.get_switch `AArch64 Variant.SwitchPhantom C.variant
-    let experimental = false
 
     let check_memtag ins =
       if not memtag then
@@ -408,9 +405,17 @@ module Make
       let bit_is_not_zero op v = M.op1 op v >>= is_not_zero
       let m_op op m1 m2 = (m1 >>| m2) >>= fun (v1,v2) -> M.op op v1 v2
 
-      let set_af a_pte pte_v ii =
-        let nexp = AArch64.NExp AArch64.AF in
-        M.op1 Op.SetAF pte_v >>= fun v ->
+      let do_set_bit an a_pte pte_v ii =
+        let nexp = AArch64.NExp an in
+        M.op1 (op_of_set an) pte_v >>= fun v ->
+        write_whole_pte_val AArch64.X nexp a_pte v (E.IdSome ii)
+
+      let set_af = do_set_bit AArch64.AF
+      and set_db = do_set_bit AArch64.DB
+
+      let set_afdb a_pte pte_v ii =
+        let nexp = AArch64.NExp AArch64.AFDB in
+        M.op1 (Op.SetAF) pte_v >>= M.op1 (Op.SetDB) >>= fun v ->
         write_whole_pte_val AArch64.X nexp a_pte v (E.IdSome ii)
 
       let cond_af v =
@@ -441,7 +446,7 @@ module Make
 
       let get_oa a_virt mpte =
         (M.op1 Op.Offset a_virt >>| mpte)
-        >>= fun (o,p) -> M.add p.oa_v o
+        >>= fun (o,(_,ipte)) -> M.add ipte.oa_v o
 
 (************************************************)
 (* Add commit events, when commanded by options *)
@@ -476,9 +481,10 @@ module Make
 (* With choice operator *)
       let do_check_cond m m_cond k1 k2 =
         M.delay_kont "1"
-          (m >>= fun pte_v -> m_cond pte_v >>= fun c -> M.unitT (c,pte_v))
-          (fun (c,pte_v) m ->
-            let m = m >>= fun _ -> M.unitT pte_v in
+          (m >>= fun (_,pte_v as p) ->
+           m_cond pte_v >>= fun c -> M.unitT (c,p))
+          (fun (c,p) m ->
+            let m = m >>= fun _ -> M.unitT p in
             M.choiceT c (k1 m) (k2 m))
 
         (* Summary of access flag and dirty bit management.
@@ -537,43 +543,51 @@ module Make
         and ha = dirty.ha proc
         and hd = dirty.hd proc in
         let ha = ha || hd in (* As far as we know hd => ha *)
-(* Perform PTE update, when told to do so *)
-        let setbits_get_oa a_pte m =
-          M.bind_ctrl_first_outputs m
-            (fun pte_v ->
-           (* Special combinator, as the test and set below
-              is performed 'on the side ' and as outputs
-              should remain in m and only ctrl iicco added *)
-              begin
-                if hd && dir = Dir.W then
-                  is_zero pte_v.db_v >>= fun c ->
-                  M.choiceT c
-                    (test_and_set_db a_pte (E.IdSome ii))
-                    (M.unitT ())
-                else M.unitT ()
-              end >>| (M.op1 Op.Offset a_virt >>= M.add pte_v.oa_v))
-            >>= fun (_,oa) -> M.unitT oa in
         let mfault m _a = mfault (get_oa a_virt m) a_virt
         and mok (pte_v,ipte) a_pte m a =
           let m =
-            let m = append_commit m (Some "valid:1") ii in
-            if tthm && ha && phantom then
-              is_zero ipte.af_v >>=
-                fun c ->
-                M.choiceT c
-                  (m >>**==
-                     (fun _ ->
-                       let m =
-                         commit_pred_txt (Some "af:0") ii >>*=
-                         fun _ -> set_af a_pte pte_v ii in
-                       if experimental then
-                          M.altT m
-                          (test_and_set_af_succeeds a_pte E.IdSpurious)
-                       else m)
-                   >>== fun () -> M.unitT ipte)
-                  m
-            else m in
-          mok (setbits_get_oa a_pte m) a in
+            let msg =
+              match dir with
+              | Dir.W ->
+                 if hd then
+                   "valid:1 && (db:1 || dbm:1 && hd)"
+                 else if ha then
+                   "valid:1 && db:1"
+                 else
+                   "valid:1 && af:1 && db:1"
+              | Dir.R ->
+                 if ha then "valid:1"
+                 else "valid:1 && af:1" in
+            let m = append_commit m (Some msg) ii in
+            let add_setbits cond txt set no =
+              cond >>= fun c ->
+              M.choiceT c
+                (m >>**==
+                   (fun _ ->
+                     commit_pred_txt (Some txt) ii >>*=
+                       fun _ -> set a_pte pte_v ii)
+                 >>== fun () -> M.unitT (pte_v,ipte))
+               no in
+            let setbits =
+              match dir with
+              | Dir.W ->
+                 if hd then
+                   add_setbits
+                     (m_op Op.And (is_zero ipte.af_v) (is_zero ipte.db_v))
+                     "af:0 && db:0"
+                     set_afdb
+                     (add_setbits
+                        (is_zero ipte.db_v) "db:0" set_db
+                        (add_setbits (is_zero ipte.af_v) "af:0" set_af m))
+                 else if ha then
+                   add_setbits (is_zero ipte.af_v) "af:0" set_af m
+                 else m
+              | Dir.R ->
+                  if ha then
+                   add_setbits (is_zero ipte.af_v) "af:0" set_af m
+                 else m in
+            setbits in
+          mok (get_oa a_pte m) a in
 
 
 (* Action on case of page table access.
@@ -582,36 +596,23 @@ module Make
         let mvirt = begin
           M.delay_kont "3"
             begin
-              let get_a_pte = ma >>= fun _ -> M.op1 Op.PTELoc a_virt
-              and test_and_set_af a_pte =
-                if not phantom && tthm && ha then
-                  let iiid =E.IdSome ii in
-                  test_and_set_af a_pte iiid >>! a_pte
-                else M.unitT a_pte in
-              (get_a_pte >>== test_and_set_af) >>= fun a_pte ->
+              ma >>= fun _ -> M.op1 Op.PTELoc a_virt >>= fun a_pte ->
               let an,nexp =
-                if tthm && ha && phantom then
-                  (* Phantom mode, to be paired with setAF *)
+                if hd then (* Atomic accesses, tagged with updated bits *)
+                  AArch64.X,AArch64.NExp AArch64.AFDB
+                else if ha then
                   AArch64.X,AArch64.NExp AArch64.AF
                 else
-                  (* Non phantom, ordinary non-explicit access *)
+                  (* Ordinary non-explicit access *)
                   AArch64.empty_annot,AArch64.nexp_annot in
               mextract_whole_pte_val
                 an nexp a_pte (E.IdSome ii) >>== fun pte_v ->
               (mextract_pte_vals pte_v) >>= fun ipte ->
-              let out = M.unitT ((pte_v,ipte),a_pte) in
-              if false && tthm && ha && phantom then
-                m_op Op.And
-                  (is_zero ipte.af_v)
-                  (is_not_zero ipte.valid_v) >>*=
-                  fun c ->
-                  M.choiceT c
-                    (set_af a_pte pte_v ii >>= fun () -> out) out
-              else out
+              M.unitT ((pte_v,ipte),a_pte)
             end
           (fun (pair_pte,a_pte) ma -> (* now we have PTE content *)
             (* Monad will carry changing internal pte value *)
-            let ma = ma >>= fun ((_,ipte),_) -> M.unitT ipte in
+            let ma = ma >>= fun (p,_) -> M.unitT p in
             (* wrapping of success/failure continuations,
                only pte value may have changed *)
             let mok ma = mok pair_pte a_pte ma a_virt
@@ -801,7 +802,7 @@ module Make
 
       let fire_spurious_af dir a m =
         if
-          phantom && some_ha &&
+          some_ha &&
             (let v = C.variant Variant.PhantomOnLoad in
              match dir with Dir.W -> not v | Dir.R -> v)
         then
