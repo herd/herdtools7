@@ -50,8 +50,7 @@ type t =
   | NoPteBranch
 (* Pte-Squared: all accesses through page table, including PT accesses *)
   | PTE2
-(* Switch "phantom" mode for setting the AF bit by hardware *)
-  | SwitchPhantom
+(* Count maximal number of phantom updates by looking at loads *)
   | PhantomOnLoad
 (* Perform experiment *)
   | Exp
@@ -62,7 +61,7 @@ let tags =
    "mixed";"dontcheckmixed";"weakpredicated"; "memtag";
    "tagcheckprecise"; "tagcheckunprecise"; "precise"; "imprecise";
    "toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
-   "pte-squared"; "switchphantom"; "PhantomOnLoad";
+   "pte-squared"; "PhantomOnLoad";
    "exp"; ]
 
 let parse s = match Misc.lowercase s with
@@ -93,7 +92,6 @@ let parse s = match Misc.lowercase s with
 | "ets" -> Some ETS
 | "noptebranch"|"nobranch" -> Some NoPteBranch
 | "pte2" | "pte-squared" -> Some PTE2
-| "switchphantom" -> Some SwitchPhantom
 | "phantomonload" -> Some PhantomOnLoad
 | "exp" -> Some Exp
 | _ -> None
@@ -126,7 +124,6 @@ let pp = function
   | ETS -> "ets"
   | NoPteBranch -> "NoPteBranch"
   | PTE2 -> "pte-squared"
-  | SwitchPhantom -> "SwitchPhantom"
   | PhantomOnLoad -> "PhantomOnLoad"
   | Exp -> "exp"
 
@@ -143,11 +140,6 @@ let get_default a v =
       begin match a with
       | `AArch64 -> false
       | _ -> true
-      end
-  | SwitchPhantom ->
-      begin match a with
-      | `AArch64 -> true
-      | _ -> raise Exit
       end
   | _ -> raise Exit
   with Exit -> Warn.fatal "No default for variant %s" (pp v)

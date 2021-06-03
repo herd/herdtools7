@@ -141,8 +141,6 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     let check_mixed =  not (C.variant Variant.DontCheckMixed)
     let do_deps = C.variant Variant.Deps
     let kvm = C.variant Variant.Kvm
-    let phantom =
-      kvm && Variant.get_switch A.arch Variant.SwitchPhantom C.variant
 
 (*****************************)
 (* Event structure generator *)
@@ -374,11 +372,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
       let af0 =
         if
-          begin match C.dirty with
+          match C.dirty with
           | None -> false
           | Some t -> t.DirtyBit.some_ha || t.DirtyBit.some_hd
-          end &&
-          phantom
         then begin
             if C.variant Variant.PhantomOnLoad then
               let look_pt rloc k = match rloc with
