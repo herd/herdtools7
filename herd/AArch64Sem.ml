@@ -389,7 +389,7 @@ module Make
       let op_of_set = function
         | AArch64.AF -> Op.SetAF
         | AArch64.DB -> Op.SetDB
-        | AArch64.Other -> assert false
+        | AArch64.Other|AArch64.AFDB -> assert false
 
       let do_test_and_set_bit combine cond set a_pte iiid =
         let nexp = AArch64.NExp set in

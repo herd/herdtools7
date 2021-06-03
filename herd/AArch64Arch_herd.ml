@@ -28,7 +28,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let reject_mixed = true
 
     type annot = A | XA | L | XL | X | N | Q | NoRet | T | S
-    type nexp =  AF|DB|Other
+    type nexp =  AF|DB|AFDB|Other
     type explicit = Exp | NExp of nexp
     type lannot = annot
 
@@ -80,10 +80,10 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | NExp _-> true
       | _ -> false
     and is_af = function (* Setting of access flag *)
-      | NExp AF-> true
+      | NExp (AF|AFDB)-> true
       | _ -> false
     and is_db = function (* Setting of dirty bit flag *)
-      | NExp DB -> true
+      | NExp (DB|AFDB) -> true
       | _ -> false
 
     let barrier_sets =
@@ -130,6 +130,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | NExp Other-> "NExp"
       | NExp AF-> "NExpAF"
       | NExp DB-> "NExpDB"
+      | NExp AFDB-> "NExpAFDB"
     module V = V
 
     let neon_mask esize =
