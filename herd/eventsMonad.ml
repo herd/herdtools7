@@ -452,21 +452,29 @@ Monad type:
         cancel_res write_result write_mem eiid =
       let eiid,read_res =  read_res eiid in
       let eiid,read_data = read_data eiid in
-      let eiid,read_addr = read_addr eiid in
+      let eiid,(read_addr,spec) = read_addr eiid in
+      assert (spec=None) ;
       let resa,cl_resa,es_resa =  Evt.as_singleton_nospecul read_res
-      and data,cl_data,es_data =  Evt.as_singleton_nospecul read_data
-      and addr,cl_addr,es_addr =  Evt.as_singleton_nospecul read_addr in
-      let eiid,cancel_res = cancel_res eiid in
-      let eiid,write_result = write_result eiid in
-      let eiid,write_mem = write_mem addr resa data eiid in
-      let (),cl_wres,es_wres = Evt.as_singleton_nospecul cancel_res
-      and (),cl_wresult,es_wresult =  Evt.as_singleton_nospecul write_result
-      and r,cl_wmem,es_wmem =  Evt.as_singleton_nospecul write_mem in
-      let es =
-        E.riscv_sc success
-          es_resa es_data es_addr es_wres es_wresult es_wmem in
-      eiid,
-      (Evt.singleton (r,cl_resa@cl_data@cl_addr@cl_wres@cl_wresult@cl_wmem,es), None)
+      and data,cl_data,es_data =  Evt.as_singleton_nospecul read_data in
+      let eiid,acts =
+        Evt.fold
+          (fun (addr,cl_addr,es_addr) (eiid,acts) ->
+            let eiid,cancel_res = cancel_res eiid in
+            let eiid,write_result = write_result eiid in
+            let eiid,write_mem = write_mem addr resa data eiid in
+            let (),cl_wres,es_wres = Evt.as_singleton_nospecul cancel_res
+            and (),cl_wresult,es_wresult =
+              Evt.as_singleton_nospecul write_result
+            and r,cl_wmem,es_wmem =  Evt.as_singleton_nospecul write_mem in
+            let es =
+              E.riscv_sc success
+                es_resa es_data es_addr es_wres es_wresult es_wmem in
+            eiid,
+            Evt.add
+              (r,cl_resa@cl_data@cl_addr@cl_wres@cl_wresult@cl_wmem,es)
+              acts)
+          read_addr (eiid,Evt.empty) in
+      eiid,(acts,None)
 
 (* AArch64 failed cas *)
     let aarch64_cas_no

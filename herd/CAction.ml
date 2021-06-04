@@ -178,8 +178,10 @@ end = struct
   (* Unimplemented *)
   let is_implicit_pte_read _ = assert false
 
-        (* The following definition of is_atomic
-           is quite arbitrary. *)
+  (* All accesses are explicit *)
+  let is_explicit _ = true
+
+  (* The following definition of is_atomic is quite arbitrary. *)
 
   let old_is_atomic a = match a with
   | Access (_,A.Location_global _,_,AN _,_,_) -> false

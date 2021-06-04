@@ -116,6 +116,9 @@ end = struct
   (* Unimplemented *)
   let is_implicit_pte_read _ = assert false
 
+  (* All accesses are explicit *)
+  let is_explicit _ = true
+
   let is_atomic a = match a with
   | Access (_,_,_,true,_,_) ->
       assert (is_mem a); true
