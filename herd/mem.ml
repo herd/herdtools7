@@ -1232,14 +1232,17 @@ let match_reg_events es =
           let rs,ws = List.partition E.is_load atms in
           List.fold_left
             (fun k r ->
+              let exp = E.is_explicit r in
               List.fold_left
                 (fun k w ->
                   if
                     S.atomic_pair_allowed r w &&
                     U.is_before_strict es r w &&
+                    E.is_explicit w = exp &&
                     not
                       (E.EventSet.exists
                          (fun e ->
+                           E.is_explicit e = exp &&
                            U.is_before_strict es r e &&
                            U.is_before_strict es e w)
                          all)
