@@ -1,0 +1,9 @@
+AArch64 A173
+(* Tests Add, from stack pointer*)
+{ uint64_t 0:SP = 1; x=1; uint64_t 0:X2=0; }
+
+P0;
+  add X2, SP, #8;
+
+
+forall (0:X2=9)

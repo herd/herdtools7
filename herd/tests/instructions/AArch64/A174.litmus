@@ -1,0 +1,9 @@
+AArch64 A174
+(* Tests mov immediate, no offset, from stack pointer*)
+{ uint64_t 0:SP = 1; uint64_t 0:X6; }
+
+P0;
+ mov X6, SP;
+
+
+forall (0:X6=1)

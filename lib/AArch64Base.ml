@@ -64,6 +64,7 @@ type reg =
   | Symbolic_reg of string
   | Internal of int
   | NZP
+  | SP
   | ResAddr
 
 let gprs =
@@ -75,7 +76,7 @@ let gprs =
   R16; R17; R18; R19 ;
   R20; R21; R22; R23 ;
   R24; R25; R26; R27 ;
-  R28; R29; R30 ;
+  R28; R29; R30;
 ]
 
 let vec_regs =
@@ -117,10 +118,10 @@ let xgprs =
  R16,"X16" ; R17,"X17" ; R18,"X18" ; R19,"X19" ;
  R20,"X20" ; R21,"X21" ; R22,"X22" ; R23,"X23" ;
  R24,"X24" ; R25,"X25" ; R26,"X26" ; R27,"X27" ;
- R28,"X28" ; R29,"X29" ; R30,"X30" ;
+ R28,"X28" ; R29,"X29" ; R30,"X30" ; R30, "LR" ;
 ]
 
-let xregs = (ZR,"XZR")::List.map (fun (r,s) -> Ireg r,s) xgprs
+let xregs = (ZR,"XZR")::(SP,"SP")::List.map (fun (r,s) -> Ireg r,s) xgprs
 
 let regs = xregs
 
@@ -1338,7 +1339,7 @@ let fold_regs (f_regs,f_sregs) =
   | Vreg _ -> f_regs reg y_reg,y_sreg
   | SIMDreg _ -> f_regs reg y_reg,y_sreg
   | Symbolic_reg reg ->  y_reg,f_sregs reg y_sreg
-  | Internal _ | NZP | ZR | ResAddr | Tag _ -> y_reg,y_sreg in
+  | Internal _ | NZP | ZR | SP | ResAddr | Tag _ -> y_reg,y_sreg in
 
   let fold_kr kr y = match kr with
   | K _ -> y
@@ -1412,7 +1413,7 @@ let map_regs f_reg f_symb =
   | Vreg _ -> f_reg reg
   | SIMDreg _ -> f_reg reg
   | Symbolic_reg reg -> f_symb reg
-  | Internal _ | ZR | NZP | ResAddr | Tag _-> reg in
+  | Internal _ | ZR | SP | NZP | ResAddr | Tag _-> reg in
 
   let map_kr kr = match kr with
   | K _ -> kr

@@ -1,0 +1,10 @@
+Test A172 Required
+States 1
+0:X1=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=1)
+Observation A172 Always 1 0
+Hash=bf9bc25d44c8579a87f8d01aefd1536f
+
