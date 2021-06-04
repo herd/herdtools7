@@ -37,6 +37,10 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let exp_annot = Exp
     let nexp_annot = NExp Other
 
+    let is_explicit_annot = function
+      | Exp -> true
+      | NExp _ -> false
+
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
     let is_speculated = function

@@ -364,6 +364,13 @@ end = struct
   | Access (R,_,_,_,_,_,Access.PTE) -> true
   | _ -> false
 
+  let lift_explicit_predicate p act = match act with
+    | Access(_,_,_,_,e,_,_)|Amo (_,_,_,_,e,_,_) -> p e
+    | Arch a -> p (A.ArchAction.get_explicit a)
+    | _ -> false
+
+  let is_explicit = lift_explicit_predicate A.is_explicit_annot
+
 (* relative to the registers of the given proc *)
   let is_reg_store a (p:int) = match a with
   | Access (W,A.Location_reg (q,_),_,_,_,_,_) -> p = q
@@ -462,11 +469,8 @@ end = struct
     and esets =
       List.map
         (fun (tag,p) ->
-          let p act = match act with
-          | Access(_,_,_,_,e,_,_)|Amo (_,_,_,_,e,_,_) -> p e
-          | Arch a -> p (A.ArchAction.get_explicit a)
-          | _ -> false
-          in tag,p) A.explicit_sets
+          let p = lift_explicit_predicate p in
+          tag,p) A.explicit_sets
 
     and lsets =
       List.map
