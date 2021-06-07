@@ -168,6 +168,7 @@ xreg:
 
 cxreg:
 | SYMB_CREG { A.Symbolic_reg $1 }
+| SYMB_XREG { A.Symbolic_reg $1 }
 | ARCH_XREG { $1 }
 | ARCH_CREG { $1 }
 
