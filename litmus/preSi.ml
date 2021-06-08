@@ -852,7 +852,7 @@ module Make
           List.flatten r
         end else []
 
-      let get_stats test =
+      let do_get_stats test =
         let open SkelUtil in
         begin let tags = if Cfg.is_kvm then [] else get_param_vars test in
         if tags = [] then [] else
@@ -871,6 +871,10 @@ module Make
           [{tags = List.map pctag tags;
             name = "dirs"; max="cmax"; tag="Cache";
             process=(fun s -> s);};] end
+
+      (* For now, limit kvm stats printing to topology *)
+      let get_stats test =
+        if Cfg.is_kvm then [] else do_get_stats test
 
       let dump_parameters _env test =
         let v_tags =

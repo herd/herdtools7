@@ -522,9 +522,8 @@ module Make
           EPF.fi "Histogram (%d states)\n" [nstates]
 
         let cstring s = sprintf "%S" s
-        let show_stats = match Cfg.mode with
-        | Mode.Kvm -> false
-        | Mode.Std|Mode.PreSi -> true
+
+        let show_stats = true
 
         let postlude doc test affi show_topos stats =
           let t = if Cfg.exit_cond then "int" else "void" in
