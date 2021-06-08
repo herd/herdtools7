@@ -30,6 +30,12 @@ static inline void litmus_init(void) {
 
 static inline void mdelay(u64 count) { delay(count) ; }
 
+static inline pteval_t litmus_set_pte(pteval_t *p,pteval_t x) {
+  asm __volatile__
+    ("xchgq (%[p]),%[r]" :[r] "+r" (x) :[p] "r" (p) :"memory") ;
+  return x;
+}
+
 static inline pteval_t *litmus_tr_pte(void *p) {
   return get_pte((pgd_t *)read_cr3(),p);
 }
