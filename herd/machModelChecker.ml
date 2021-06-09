@@ -328,7 +328,7 @@ module Make
              (List.map
                 (fun (k,p) -> k,lazy (E.EventSet.filter p evts))
                 ["C", E.is_commit;
-                 "PoD", E.is_pod;
+                 "PoD", E.is_commit_bcc;
                  "F", E.is_barrier;
                  "DATA", is_data_port;
                  "NDATA", (fun e -> not (is_data_port e));])) in
