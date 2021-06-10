@@ -80,6 +80,7 @@ module type S = sig
   val add_type : location -> TypBase.t -> st -> st
   val get_env : st -> TypBase.t LocMap.t
 
+  val next_addr : st -> string * st
 end
 
 module Make(I:I) : S
@@ -188,7 +189,9 @@ with type arch_reg = I.arch_reg and type special = I.special
         noks : int ;
         env : TypBase.t LocMap.t ; (* Record types *)
         (* Group special registers together *)
-        friends : arch_reg list RegMap.t; }
+        friends : arch_reg list RegMap.t;
+        (* For fresh addresses *)
+        next_addr : int; }
 
 
   let st0 =
@@ -197,7 +200,8 @@ with type arch_reg = I.arch_reg and type special = I.special
       specials = I.specials;
       noks = 0;
       env = LocMap.empty;
-      friends = RegMap.empty; }
+      friends = RegMap.empty;
+      next_addr = 0; }
 
   let alloc_reg st = match st.regs with
     | [] -> Warn.fatal "No more registers"
@@ -239,4 +243,9 @@ with type arch_reg = I.arch_reg and type special = I.special
   let add_type loc t st = { st with env = LocMap.add loc t st.env; }
   let get_env st = st.env
 
+  let next_addr st =
+    let n = st.next_addr in
+    let r =
+      if n = 0 then "_z" else sprintf "_z%d" n in
+    r,{ st with next_addr = n+1; }
 end
