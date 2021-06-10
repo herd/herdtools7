@@ -143,10 +143,12 @@ module Make
 
       let set_pteval _ p _ = p
 
-            (**********)
-            (* Fences *)
-            (**********)
-      type flushline = Prev|Next
+      (**********)
+      (* Fences *)
+      (**********)
+
+      type flushline = Prev|Next|Other
+
       type fence = Fence of barrier | ClFlush of opt * flushline
 
       let is_isync _ = false
@@ -175,11 +177,14 @@ module Make
         | ClFlush (Opt,Prev) -> "ClFlushOpt"
         | ClFlush (NoOpt,Next) -> "ClFlushNext"
         | ClFlush (Opt,Next) -> "ClFlushOptNext"
+        | ClFlush (NoOpt,Other) -> "ClFlushOther"
+        | ClFlush (Opt,Other) -> "ClFlushOptOther"
 
       let fold_all_barriers f r = f MFENCE (f SFENCE (f LFENCE r))
       let fold_all_fences f r =
         let r = f (ClFlush (NoOpt,Prev)) (f (ClFlush (Opt,Prev)) r) in
         let r = f (ClFlush (NoOpt,Next)) (f (ClFlush (Opt,Next)) r) in
+        let r = f (ClFlush (NoOpt,Other)) (f (ClFlush (Opt,Other)) r) in
         fold_all_barriers (fun b -> f (Fence b)) r
       let fold_cumul_fences = fold_all_fences
       let fold_some_fences f r =  f default r
