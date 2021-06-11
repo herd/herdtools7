@@ -1189,6 +1189,7 @@ module Make
                   (dump_test dump_addr (sprintf "(%s)[_j]") (s,t))
                   doc.Name.name ;
                 O.fii "}"
+            | Pointer _ when memory=Indirect -> ()
             | _ ->
                 let s_ptr = sprintf "_%s_ptr" s in
                 let dump_addr =
