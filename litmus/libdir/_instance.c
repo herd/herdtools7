@@ -65,9 +65,6 @@ typedef struct global_t {
   /* Command-line parameter */
   param_t *param ;
   parse_param_t *parse ;
-#ifdef KVM
-  int volatile over;
-#endif
   /* Topology */
   const int *inst, *role ;
   const char **group ;
@@ -97,13 +94,13 @@ typedef struct global_t {
 
 static global_t global  =
   { &param, &parse[0],
-#ifdef KVM
-    0,
-#endif
     inst, role, group, mem,
 #ifdef ACTIVE
     active,
 #endif
+    0,
+    SIZE_OF_TEST, NUMBER_OF_RUN, NEXE, NOCCS,
+    0,
   };
 
 static void init_global(global_t *g,int id) {

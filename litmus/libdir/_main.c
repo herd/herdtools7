@@ -44,16 +44,11 @@ int RUN(int argc,char **argv,FILE *out) {
   if (n_exe < 1) n_exe = 1 ;
   global.verbose = d.verbose;
   global.nexe = n_exe;
-  global.noccs = NOCCS ;
   global.nruns = d.max_run;
   global.size = d.size_of_test;
   global.do_scan = d.mode == mode_scan ;
   if (global.verbose) {
-#ifdef KVM
-    printf("%s: n=%d, r=%d, s=%d, %s\n",prog,global.nexe,global.nruns,global.size,global.do_scan ? "+sp" : "+rp");
-#else
     fprintf(stderr,"%s: n=%i, r=%i, s=%i, %s\n",prog,global.nexe,global.nruns,global.size,global.do_scan ? "+sp" : "+rp");
-#endif
   }
   parse_param(prog,global.parse,PARSESZ,p) ;
 #ifdef PRELUDE
@@ -62,24 +57,14 @@ int RUN(int argc,char **argv,FILE *out) {
 #endif
 #endif
   tsc_t start = timeofday();
-#else
-  global.verbose = 0 ;
-  global.nexe = NEXE ;
-  global.noccs = NOCCS ;
-  global.nruns = NUMBER_OF_RUN ;
-  global.size = SIZE_OF_TEST ;
-  global.do_scan = 0;
 #endif
   for (int id=0; id < AVAIL ; id++) {
     arg[id].id = id;
     arg[id].g = &global;
   }
 #ifdef KVM
-  /* "spawn" downwards as id 0 is not asynchornous */
   init_labels();
-  global.over = 0 ;
-  for (int id = AVAIL-1 ; id >= 0 ; id--) on_cpu_async(id,zyva,&arg[id]);
-  while (global.over < AVAIL) mdelay(500);
+  on_cpus(zyva, arg);
 #else
   for (int id=0; id < AVAIL ; id++) launch(&th[id],zyva,&arg[id]);
   for (int id=0; id < AVAIL ; id++) join(&th[id]);

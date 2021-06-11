@@ -1672,27 +1672,14 @@ module Make
         O.o "static void choose(int id,global_t *g) {" ;
         O.oi "param_t *q = g->param;" ;
         O.oi "thread_ctx_t c; c.id = c.seed = id;" ;
+        O.oi "st_t seed = 0;" ;
         O.o "" ;
-        O.oi "if (q->part >=0) {" ;
-        O.oii "set_role(g,&c,q->part);";
-        O.oii "for (int nrun = 0; nrun < g->nruns ; nrun++) {" ;
-        if not Cfg.is_kvm then begin
-          O.oiii
-            "if (g->verbose>1) fprintf(stderr, \"Run %i of %i\\r\", nrun, g->nruns);"
-        end ;
-        O.oiii "choose_params(g,&c,q->part);" ;
-        O.oii "}" ;
-        O.oi "} else {" ;
-        O.oii "st_t seed = 0;" ;
-        O.oii "for (int nrun = 0; nrun < g->nruns ; nrun++) {" ;
-        if not Cfg.is_kvm then begin
-          O.oiii
-            "if (g->verbose>1) fprintf(stderr, \"Run %i of %i\\r\", nrun, g->nruns);"
-        end ;
-        O.oiii "int part = rand_k(&seed,SCANSZ);" ;
-        O.oiii "set_role(g,&c,part);";
-        O.oiii "choose_params(g,&c,part);" ;
-        O.oii "}" ;
+        O.oi "for (int nrun = 0; nrun < g->nruns ; nrun++) {" ;
+        O.oii
+          "if (g->verbose>1) fprintf(stderr, \"Run %i of %i\\r\", nrun, g->nruns);" ;
+        O.oii "int part = q->part >= 0 ? q->part : rand_k(&seed,SCANSZ);" ;
+        O.oii "set_role(g,&c,part);";
+        O.oii "choose_params(g,&c,part);" ;
         O.oi "}" ;
         O.o "}" ;
         O.o ""
@@ -1773,8 +1760,15 @@ module Make
         O.o "} zyva_t;" ;
         O.o "" ;
         O.f "static void %szyva(void *_a) {" (k_nkvm "*") ;
-        O.oi "zyva_t *a = (zyva_t*)_a;" ;
-        O.oi "int id = a->id;" ;
+        if Cfg.is_kvm then begin
+            O.oi "int id = smp_processor_id();" ;
+            O.oi "if (id >= AVAIL) return;" ;
+            O.oi "zyva_t *a = (zyva_t*)_a + id;" ;
+          end
+        else begin
+            O.oi "zyva_t *a = (zyva_t*)_a;" ;
+            O.oi "int id = a->id;" ;
+          end;
         O.oi "global_t *g = a->g;" ;
         if Cfg.is_kvm then begin
           match db with
@@ -1809,10 +1803,7 @@ module Make
         O.oi "init_global(g,id);" ;
 (*        O.oi "if (g->do_scan) scan(id,g); else choose(id,g);" ; *)
         O.oi "choose(id,g);" ;
-        if Cfg.is_kvm then begin
-          O.oi "mbar();" ;
-          O.oi "atomic_inc_fetch(&g->over);"
-        end else begin
+        if not Cfg.is_kvm then begin
           O.oi "return NULL;"
         end ;
         O.o "}" ;
