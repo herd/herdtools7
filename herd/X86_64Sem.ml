@@ -350,8 +350,9 @@ module Make (C:Sem.Config)(V : Value.S)
               let open X86_64 in
               match inst with
               | I_EFF_EFF _
-                | I_EFF_OP ((I_ADD | I_XOR), _, _, _)
-                | I_EFF ((I_DEC | I_INC),  _, _) ->
+              | I_EFF_OP ((I_ADD | I_XOR), _, _, _)
+              | I_EFF ((I_DEC | I_INC),  _, _)
+              | I_CMPXCHG _ ->
                  build_semantics_inner atomic {ii with A.inst = inst}
               | _ ->
                  Warn.user_error "Illegal lock prefix on instruction %s"
