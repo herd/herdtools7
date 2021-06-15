@@ -11,4 +11,3 @@ P0;
   foo: NOP;
 
 forall (0:X1=1 /\ 0:XZR=0 /\ 0:X0=0)
-

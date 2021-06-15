@@ -2,7 +2,7 @@ AArch64 A164
 (* CMP shifted register is equivalent to SUBS WZR *)
 (* tests xreg *)
 
- { 0:X1=1; }
+ { int64_t 0:X1=1; int64_t 0:X0; }
 
 P0;
   CMP XZR, X1, ASR #1;
