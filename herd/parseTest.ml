@@ -45,7 +45,7 @@ module NoCheck = struct
   let check parsed= parsed
 end
 
-module Top (Conf:Config) = struct
+module Top (TopConf:Config) = struct
   module Make
       (S:Sem.Semantics)
       (P:sig
@@ -77,7 +77,7 @@ module Top (Conf:Config) = struct
           let test = T.build name parsed in
 (* Compute basic machine size *)
           let sz =
-            if S.A.is_mixed then begin match Conf.byte with
+            if S.A.is_mixed then begin match TopConf.byte with
             | MachSize.Tag.Size sz -> sz
             | MachSize.Tag.Auto ->
                 let szs = test.Test_herd.access_size in
@@ -95,7 +95,7 @@ module Top (Conf:Config) = struct
           let module T =
             Top_herd.Make
               (struct
-                include Conf
+                include TopConf
                 let byte = sz
                 let dirty = dirty
               end)(M) in
@@ -107,12 +107,12 @@ module Top (Conf:Config) = struct
   module SP =
     Splitter.Make
       (struct
-        let debug = Conf.debug.Debug_herd.lexer
-        let check_rename = Conf.check_rename
+        let debug = TopConf.debug.Debug_herd.lexer
+        let check_rename = TopConf.check_rename
       end)
 
   let check_arch_model a m =
-    if Conf.archcheck then match m with
+    if TopConf.archcheck then match m with
     | Model.Generic (o,_,_) ->
         begin match o.ModelOption.arch with
         | None -> m
@@ -127,12 +127,11 @@ module Top (Conf:Config) = struct
     else m
 
   let do_from_file start_time env name chan =
-    if Conf.debug.Debug_herd.files then MyLib.pp_debug name ;
+    if TopConf.debug.Debug_herd.files then MyLib.pp_debug name ;
 (* First split the input file in sections *)
     let (splitted:Splitter.result) =  SP.split name chan in
     let tname = splitted.Splitter.name.Name.name in
     let module Conf = struct (* override the precision and variant fields *)
-
       (* Modify variant with the 'Variant' field of test *)
       module TestConf =
         TestVariant.Make
@@ -140,11 +139,11 @@ module Top (Conf:Config) = struct
             module Opt = Variant
             let set_precision = Variant.set_precision
             let info = splitted.Splitter.info
-            let precision = Conf.precision
-            let variant = Conf.variant
+            let precision = TopConf.precision
+            let variant = TopConf.variant
           end)
       (* Override *)
-      include Conf
+      include TopConf
       let precision = TestConf.precision
       let variant = TestConf.variant
     end in
