@@ -382,6 +382,10 @@ let rec for_all_strict p = function
 let exists_exists p xss =
   List.exists (fun xs -> List.exists p xs) xss
 
+let rec exists_pair p xs = match xs with
+| [] -> false
+| x::xs -> List.exists (p x) xs || exists_pair p xs
+
 let nsplit n xs =
   let rec combine xs yss = match yss with
   | [] -> xs,yss
