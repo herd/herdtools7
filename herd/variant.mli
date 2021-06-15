@@ -50,6 +50,8 @@ type t =
   | PTE2
 (* Generate extra spurious updates based upon load on pte. *)
   | PhantomOnLoad
+(* Optimise Rf enumeration leading to rmw *)
+  | OptRfRMW
 (* Perform experiment *)
   | Exp
 

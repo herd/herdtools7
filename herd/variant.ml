@@ -52,6 +52,8 @@ type t =
   | PTE2
 (* Count maximal number of phantom updates by looking at loads *)
   | PhantomOnLoad
+(* Optimise Rf enumeration leading to rmw *)
+  | OptRfRMW
 (* Perform experiment *)
   | Exp
 
@@ -61,7 +63,7 @@ let tags =
    "mixed";"dontcheckmixed";"weakpredicated"; "memtag";
    "tagcheckprecise"; "tagcheckunprecise"; "precise"; "imprecise";
    "toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
-   "pte-squared"; "PhantomOnLoad";
+   "pte-squared"; "PhantomOnLoad"; "OptRfRMW";
    "exp"; ]
 
 let parse s = match Misc.lowercase s with
@@ -93,6 +95,7 @@ let parse s = match Misc.lowercase s with
 | "noptebranch"|"nobranch" -> Some NoPteBranch
 | "pte2" | "pte-squared" -> Some PTE2
 | "phantomonload" -> Some PhantomOnLoad
+| "optrfrmw" -> Some OptRfRMW
 | "exp" -> Some Exp
 | _ -> None
 
@@ -125,6 +128,7 @@ let pp = function
   | NoPteBranch -> "NoPteBranch"
   | PTE2 -> "pte-squared"
   | PhantomOnLoad -> "PhantomOnLoad"
+  | OptRfRMW -> "OptRfRMW"
   | Exp -> "exp"
 
 let compare = compare
