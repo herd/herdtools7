@@ -49,6 +49,7 @@ type symbol =
   | Physical of string * int       (* symbol, index *)
   | System of (syskind * string)   (* System memory *)
 
+val pp_symbol_old : symbol -> string
 val pp_symbol : symbol -> string
 val compare_symbol : symbol -> symbol -> int
 val symbol_eq : symbol -> symbol -> bool
@@ -116,6 +117,7 @@ module type S =  sig
   val pp : bool -> v -> string (* true -> hexa *)
   val pp_unsigned : bool -> v -> string (* true -> hexa *)
   val pp_v  : v -> string
+  val pp_v_old  : v -> string
   val compare : v -> v -> int
   val eq : v -> v -> bool
   val vToName : v -> string

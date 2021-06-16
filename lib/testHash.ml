@@ -39,6 +39,24 @@ let check_env env name filename hash =
 
 open Printf
 
+module HashUtils = struct
+
+(* Backward compatible identifier and value printing functions *)
+
+  open MiscParser
+
+  let dump_location = function
+  | Location_reg (i,r) -> Printf.sprintf "%i:%s" i r
+  | Location_sreg s -> s
+  | Location_global v -> ParsedConstant.pp_v_old v
+
+  and pp_v v =
+    let open Constant in
+    match v with
+    | PteVal p -> PTEVal.pp_hash p
+    | _ -> ParsedConstant.pp_v_old v
+end
+
 let digest_init debug init =
   let open MiscParser in
   let open TestType in
@@ -53,11 +71,12 @@ let digest_init debug init =
             then begin
               Warn.fatal
                 "Location %s non-unique in init state"
-                (dump_location loc1)
+                (HashUtils.dump_location loc1)
             end ;
             0
         | c -> c)
       init in
+
   let init =
     Misc.rem_dups
       (fun (loc1,_) (loc2,_) -> location_compare loc1 loc2 = 0)
@@ -66,37 +85,27 @@ let digest_init debug init =
 (* We perform explicit printing to be  more robust
    against pretty printer changes *)
 
-  let dump_location = function
-    | Location_reg (i,r) -> Printf.sprintf "%i:%s" i r
-    | Location_sreg s -> s
-    | Location_global v -> ParsedConstant.pp_v v
-  in
-  let pp_v v =
-    let open Constant in
-    match v with
-    | PteVal p -> PTEVal.pp_hash p
-    | _ -> ParsedConstant.pp_v v in
   let pp =
     (String.concat "; "
        (List.map
           (fun (loc,(t,v)) -> match t with
           | TyDef ->
               sprintf "%s=%s"
-                (dump_location loc) (pp_v v)
+                (HashUtils.dump_location loc) (HashUtils.pp_v v)
           | TyDefPointer ->
               sprintf "*%s=%s"
-                (dump_location loc) (pp_v v)
+                (HashUtils.dump_location loc) (HashUtils.pp_v v)
           | Ty t ->
               sprintf "%s %s=%s" t
-                (dump_location loc) (pp_v v)
+                (HashUtils.dump_location loc) (HashUtils.pp_v v)
           | Atomic t ->
               sprintf "_Atomic %s %s=%s" t
-                (dump_location loc) (pp_v v)
+                (HashUtils.dump_location loc) (HashUtils.pp_v v)
           | Pointer t ->
               sprintf "%s *%s=%s" t
-                (dump_location loc) (pp_v v)
+                (HashUtils.dump_location loc) (HashUtils.pp_v v)
           | TyArray (t,sz) ->
-              sprintf "%s %s[%i]" t (dump_location loc) sz)
+              sprintf "%s %s[%i]" t (HashUtils.dump_location loc) sz)
           init)) in
   debug "INIT" pp ;
   Digest.string pp
@@ -212,7 +221,7 @@ module Make(A:ArchBase.S)
         let locs = MiscParser.RLocSet.elements locs in
         let pp =
           String.concat "; "
-            (List.map (ConstrGen.dump_rloc dump_location) locs) in
+            (List.map (ConstrGen.dump_rloc HashUtils.dump_location) locs) in
         debug "LOCS" pp ;
         Digest.string pp
 
