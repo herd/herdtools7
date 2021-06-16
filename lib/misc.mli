@@ -300,6 +300,7 @@ val tr_ctag : string -> string
 val add_atag : string -> string
 val check_atag : string -> bool
 val tr_atag : string -> string option
+val is_atag : string -> bool
 
 val add_pte : string -> string
 val tr_pte : string ->  string option
@@ -316,6 +317,7 @@ val add_oa : string -> string
 
 val add_physical : string -> string
 val tr_physical : string -> string option
+val is_physical : string -> bool
 
 (******************)
 (* Hash utilities *)
