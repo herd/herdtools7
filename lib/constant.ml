@@ -89,12 +89,20 @@ let pp_index base o = match o with
 | 0 -> base
 | i -> sprintf "%s+%i" base i
 
-let pp_symbol = function
+let pp_symbol_old = function
   | Virtual s -> pp_index (pp_symbolic_data s) s.offset
   | Physical (s,o) -> pp_index (Misc.add_physical s) o
   | System (TLB,s) -> Misc.add_tlb s
   | System (PTE,s) -> Misc.add_pte s
   | System (PTE2,s) -> Misc.add_pte (Misc.add_pte s)
+  | System (TAG,s) -> Misc.add_atag s
+
+let pp_symbol = function
+  | Virtual s -> pp_index (pp_symbolic_data s) s.offset
+  | Physical (s,o) -> pp_index (sprintf "PA(%s)" s) o
+  | System (TLB,s) -> sprintf "TLB(%s)" s
+  | System (PTE,s) -> sprintf "PTE(%s)" s
+  | System (PTE2,s) -> sprintf "PTE(PTE(%s))" s
   | System (TAG,s) -> Misc.add_atag s
 
 let compare_symbol sym1 sym2 = match sym1,sym2 with
@@ -269,6 +277,7 @@ module type S =  sig
   val pp : bool -> v -> string (* true -> hexa *)
   val pp_unsigned : bool -> v -> string (* true -> hexa *)
   val pp_v  : v -> string
+  val pp_v_old  : v -> string
   val compare : v -> v -> int
   val eq : v -> v -> bool
   val vToName : v -> string
