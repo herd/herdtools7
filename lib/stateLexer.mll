@@ -69,6 +69,9 @@ rule token = parse
 | "filter" { FILTER }
 | "fault"|"Fault" { FAULT }
 | "attrs"|"Attrs" { ATTRS }
+(* PTW keywords *)
+| "PTE" { TOK_PTE }
+| "PA"  { TOK_PA }
 (* Typing *)
 | "_Atomic" { ATOMIC }
 | "ATOMIC_INIT" { ATOMICINIT }

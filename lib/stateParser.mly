@@ -64,6 +64,7 @@ let mk_lab p s = Label (p,s)
 %token ATOMIC
 %token ATOMICINIT
 %token ATTRS
+%token TOK_PTE TOK_PA
 
 %token PTX_REG_DEC
 %token <string> PTX_REG_TYPE
@@ -102,6 +103,9 @@ reg:
 
 location_global:
 | NAME { Constant.mk_sym $1  }
+| TOK_PTE LPAR NAME RPAR { Constant.mk_sym_pte  $3 }
+| TOK_PTE LPAR TOK_PTE LPAR NAME RPAR RPAR { Constant.mk_sym_pte2 $5 }
+| TOK_PA LPAR NAME RPAR { Constant.mk_sym_pa $3 }
 | NAME COLON NAME { mk_sym_tag $1 $3 }
 (* TODO: have MTE and Morello tags be usable at the same time? *)
 | NUM COLON NAME COLON NUM {mk_sym_morello $1 $3 $5}
@@ -220,7 +224,13 @@ rloc_typ:
 | rloc NAME { ($1, Ty $2) }
 | rloc NAME STAR { ($1, Pointer $2) }
 
-fault: FAULT LPAR lbl COMMA NAME RPAR { ($3,mk_sym $5) }
+fault_loc:
+| name=NAME { Constant.mk_sym name }
+| TOK_PTE LPAR name=NAME RPAR { Constant.mk_sym_pte name }
+
+fault:
+| FAULT LPAR lbl COMMA fault_loc RPAR { ($3,$5) }
+
 
 loc_item:
 | rloc_typ { let a,t = $1 in LocationsItem.Loc (a,t) }
