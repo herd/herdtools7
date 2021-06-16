@@ -74,6 +74,9 @@ val map_scalar : ('scalar -> 'scalar) -> 'scalar t -> 'scalar t
 
 val mk_sym_virtual : string -> 'scalar t
 val mk_sym : string -> 'scalar t
+val mk_sym_pte : string -> 'scalar t
+val mk_sym_pte2 : string -> 'scalar t
+val mk_sym_pa : string -> 'scalar t
 val mk_vec : int -> 'scalar t list -> 'scalar t
 val mk_replicate : int -> 'scalar t -> 'scalar t
 
