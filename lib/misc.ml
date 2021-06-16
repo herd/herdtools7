@@ -797,6 +797,8 @@ let tr_atag s =
     Some (Filename.chop_suffix s ".atag")
   else None
 
+let is_atag = check_atag
+
 let is_prefix prf =
   let prf_len = String.length prf in
   fun s ->
@@ -834,6 +836,7 @@ let tr_dbm = do_tr "dbm_"
 
 let add_physical s = sprintf "phy_%s" s
 let tr_physical = do_tr "phy_"
+let is_physical = is_prefix "phy_"
 
 let add_valid = sprintf "valid_%s"
 let add_oa = sprintf "oa_%s"
