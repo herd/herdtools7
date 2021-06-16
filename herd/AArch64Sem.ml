@@ -236,11 +236,6 @@ module Make
         let oloc = if A.TLBI.inv_all op then None else Some loc in
         M.mk_singleton_es (Act.Inv (op,oloc)) ii
 
-(* Data cache operations *)
-      let dc_loc op loc ii =
-        let oloc = if AArch64Base.DC.sw op then None else Some loc in
-        M.mk_singleton_es (Act.DC (op,oloc)) ii
-
 (* Neon size *)
       let neon_esize r = match r with
       | AArch64Base.Vreg (_,(_,esize)) -> esize
@@ -762,9 +757,6 @@ module Make
 
 (* Page tables and TLBs *)
       let do_inv op a ii = inv_loc op (A.Location_global a) ii
-
-(* Data cache operations *)
-      let do_dc op a ii = dc_loc op (A.Location_global a) ii
 
 (***************************)
 (* Various lift functions. *)
@@ -1333,6 +1325,28 @@ module Make
         let ops = List.map op (Misc.interval 0 (neon_nelem (List.hd rlist))) in
         List.fold_right (>>::) ops (M.unitT [[()]])
 
+      (* Data cache operations *)
+      let dc_loc op a ii =
+        let mk_act loc = Act.DC (op,Some loc) in
+        let loc = A.Location_global a in
+        M.mk_singleton_es (mk_act loc) ii
+
+      let do_dc op rd ii =
+        if AArch64Base.DC.sw op then
+          M.mk_singleton_es (Act.DC (op, None)) ii >>! B.Next
+        else begin
+            (* TODO: The size for DC should be a cache line *)
+            let mop _ac a = dc_loc op a ii in
+            lift_memop Dir.R
+              (fun ac ma _mv -> (* value fake here *)
+                if Access.is_physical ac then
+                  M.bind_ctrldata ma (mop ac)
+                else
+                  ma >>= mop ac)
+              (to_perms "r" MachSize.Word)
+              (read_reg_ord rd ii) mzero AArch64.N ii
+          end
+
 (********************)
 (* Main entry point *)
 (********************)
@@ -1868,8 +1882,7 @@ module Make
             read_reg_ord rd ii >>= fun a ->
               do_inv op a ii >>! B.Next
 (* Data cache instructions *)
-        | I_DC (op,rd) -> read_reg_ord rd ii >>= fun a ->
-            do_dc op a ii >>! B.Next
+        | I_DC (op,rd) -> do_dc op rd ii >>! B.Next
 (*  Cannot handle *)
         | (I_RBIT _|I_MRS _|I_LDP _|I_STP _|I_IC _
         | I_BL _|I_BLR _|I_BR _|I_RET _
