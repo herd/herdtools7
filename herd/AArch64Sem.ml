@@ -236,11 +236,6 @@ module Make
         let oloc = if A.TLBI.inv_all op then None else Some loc in
         M.mk_singleton_es (Act.Inv (op,oloc)) ii
 
-(* Data cache operations *)
-      let dc_loc op loc ii =
-        let oloc = if AArch64Base.DC.sw op then None else Some loc in
-        M.mk_singleton_es (Act.DC (op,oloc)) ii
-
 (* Neon size *)
       let neon_esize r = match r with
       | AArch64Base.Vreg (_,(_,esize)) -> esize
@@ -530,7 +525,7 @@ module Make
           (fun _ -> mk_fault a ii (Some "EL0")) ii >>! B.Exit
 
 
-      let check_ptw proc dir a_virt ma _an ii mdirect mok mfault =
+      let check_ptw proc dir updatedb a_virt ma _an ii mdirect mok mfault =
 
         let is_el0  = List.exists (Proc.equal proc) TopConf.procs_user in
         let check_el0 m =
@@ -571,7 +566,7 @@ module Make
             let setbits =
               match dir with
               | Dir.W ->
-                 if hd then
+                 if hd && updatedb then
                    add_setbits
                      (m_op Op.And (is_zero ipte.af_v) (is_zero ipte.db_v))
                      "af:0 && db:0"
@@ -763,9 +758,6 @@ module Make
 (* Page tables and TLBs *)
       let do_inv op a ii = inv_loc op (A.Location_global a) ii
 
-(* Data cache operations *)
-      let do_dc op a ii = dc_loc op (A.Location_global a) ii
-
 (***************************)
 (* Various lift functions. *)
 (***************************)
@@ -811,12 +803,12 @@ module Make
             fun (r,_) -> M.unitT r
         else m
 
-      let lift_kvm dir mop ma an ii mphy =
+      let lift_kvm dir updatedb mop ma an ii mphy =
         let mfault ma a =
           insert_commit_to_fault ma (fun _ -> mk_fault a ii None) ii
           >>! if C.precision then B.Exit else B.ReExec in
         let maccess a ma =
-          check_ptw ii.AArch64.proc dir a ma an ii
+          check_ptw ii.AArch64.proc dir updatedb a ma an ii
             ((let m = mop Access.PTE ma in
               fire_spurious_af dir a m) >>! B.Next)
             mphy
@@ -858,7 +850,7 @@ module Make
 
       let apply_mv mop mv = fun ac ma -> mop ac ma mv
 
-      let lift_memop dir mop perms ma mv an ii =
+      let lift_memop dir updatedb mop perms ma mv an ii =
         if morello then
           lift_morello mop perms ma mv ii
         else
@@ -867,7 +859,7 @@ module Make
             begin
               if kvm then
                 let mphy = (fun ma a -> lift_memtag_phy mop a ma ii) in
-                lift_kvm dir mop ma an ii mphy
+                lift_kvm dir updatedb mop ma an ii mphy
               else lift_memtag_virt mop ma ii
             end
           else if kvm then
@@ -881,13 +873,13 @@ module Make
                 >>! B.Next
               else
                 fun ma _a -> mop Access.PHY ma >>! B.Next in
-            lift_kvm dir mop ma an ii mphy
+            lift_kvm dir updatedb mop ma an ii mphy
           else
             mop Access.VIR ma >>! B.Next
 
 (* Generic load *)
       let do_ldr sz an mop ma ii =
-        lift_memop Dir.R
+        lift_memop Dir.R true
           (fun ac ma _mv -> (* value fake here *)
             if Access.is_physical ac then
               M.bind_ctrldata ma (mop ac)
@@ -898,7 +890,7 @@ module Make
 
 (* Generic store *)
       let do_str sz an ma mv ii =
-        lift_memop Dir.W
+        lift_memop Dir.W true
           (fun ac ma mv ->
             if is_branching && Access.is_physical ac then
               (* additional ctrl dep on address *)
@@ -1012,7 +1004,7 @@ module Make
         let an = match t with
         | YY -> AArch64.X
         | LY -> AArch64.XL in
-        lift_memop Dir.W
+        lift_memop Dir.W true
           (fun ac ma mv ->
             M.riscv_store_conditional
               (read_reg_ord ResAddr ii)
@@ -1046,7 +1038,7 @@ module Make
         | RMW_A | RMW_AL -> A
 
       let swp sz rmw r1 r2 r3 ii =
-        lift_memop Dir.W (* swp is a write for the purpose of DB *)
+        lift_memop Dir.W true (* swp is a write for the purpose of DB *)
           (fun ac ma mv ->
             let r2 = mv
             and w2 v = write_reg_sz_non_mixed sz r2 v ii
@@ -1066,7 +1058,7 @@ module Make
         let an = rmw_to_read rmw in
         let read_rs = read_reg_data sz rs ii
         and write_rs v = write_reg_sz_non_mixed sz rs v ii in
-        lift_memop Dir.W
+        lift_memop Dir.W true
            (* mv is read new value from reg, not important
               as this code is not executed in morello mode *)
           (fun ac ma mv ->
@@ -1117,7 +1109,7 @@ module Make
       let ldop op sz rmw rs rt rn ii =
         let open AArch64 in
         let an = rmw_to_read rmw in
-        lift_memop Dir.W
+        lift_memop Dir.W true
           (fun ac ma mv ->
             let noret = match rt with | ZR -> true | _ -> false in
             let op = match op with
@@ -1332,6 +1324,31 @@ module Make
           List.fold_right (>>::) ops (M.unitT [()]) in
         let ops = List.map op (Misc.interval 0 (neon_nelem (List.hd rlist))) in
         List.fold_right (>>::) ops (M.unitT [[()]])
+
+      (* Data cache operations *)
+      let dc_loc op a ii =
+        let mk_act loc = Act.DC (op,Some loc) in
+        let loc = A.Location_global a in
+        M.mk_singleton_es (mk_act loc) ii
+
+      let do_dc op rd ii =
+        if AArch64Base.DC.sw op then
+          M.mk_singleton_es (Act.DC (op, None)) ii >>! B.Next
+        else begin
+            (* TODO: The size for DC should be a cache line *)
+            let mop _ac a = dc_loc op a ii in
+            let dir = match op.AArch64Base.DC.funct with
+              | AArch64Base.DC.I -> Dir.W
+              | _ -> Dir.R in
+            lift_memop dir false
+              (fun ac ma _mv -> (* value fake here *)
+                if Access.is_physical ac then
+                  M.bind_ctrldata ma (mop ac)
+                else
+                  ma >>= mop ac)
+              (to_perms "r" MachSize.Word)
+              (read_reg_ord rd ii) mzero AArch64.N ii
+          end
 
 (********************)
 (* Main entry point *)
@@ -1868,8 +1885,7 @@ module Make
             read_reg_ord rd ii >>= fun a ->
               do_inv op a ii >>! B.Next
 (* Data cache instructions *)
-        | I_DC (op,rd) -> read_reg_ord rd ii >>= fun a ->
-            do_dc op a ii >>! B.Next
+        | I_DC (op,rd) -> do_dc op rd ii >>! B.Next
 (*  Cannot handle *)
         | (I_RBIT _|I_MRS _|I_LDP _|I_STP _|I_IC _
         | I_BL _|I_BLR _|I_BR _|I_RET _
