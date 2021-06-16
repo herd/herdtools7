@@ -176,6 +176,24 @@ let do_mk_sym sym = match Misc.tr_pte sym with
 let mk_sym_virtual s = Symbolic (do_mk_virtual s)
 let mk_sym s = Symbolic (do_mk_sym s)
 
+let as_virtual s =
+  if Misc.is_pte s || Misc.is_physical s || Misc.is_atag s then
+    Warn.user_error "Non-virtual id %s" s ;
+  s
+
+
+let mk_sym_pte s =
+  let s = as_virtual s in
+  Symbolic (System (PTE,s))
+
+let mk_sym_pte2 s =
+  let s = as_virtual s in
+  Symbolic (System (PTE2,s))
+
+let mk_sym_pa s =
+  let s = as_virtual s in
+  Symbolic (Physical (s,0))
+
 let mk_vec sz v =
   assert (sz == (List.length v));
   ConcreteVector (sz, v)
