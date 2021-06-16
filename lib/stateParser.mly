@@ -101,7 +101,7 @@ reg:
 | DOLLARNAME {  $1 }
 
 location_global:
-| NAME { mk_sym $1  }
+| NAME { Constant.mk_sym $1  }
 | NAME COLON NAME { mk_sym_tag $1 $3 }
 (* TODO: have MTE and Morello tags be usable at the same time? *)
 | NUM COLON NAME COLON NUM {mk_sym_morello $1 $3 $5}
