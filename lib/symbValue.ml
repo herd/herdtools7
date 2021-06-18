@@ -513,7 +513,7 @@ module Make(Cst:Constant.S) = struct
   let op_el0loc a = Cst.intToV a.el0
   let el0loc = op_pte_val "el0loc" op_el0loc
 
-  let op_oaloc a = Cst.nameToV a.oa
+  let op_oaloc a = Symbolic (Constant.oa2symbol a.oa)
   let oaloc = op_pte_val "oaloc" op_oaloc
 
   let op_tlbloc {name=a;_} = Symbolic (System (TLB,a))

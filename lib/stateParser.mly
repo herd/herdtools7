@@ -114,6 +114,8 @@ location_global:
 name_or_num:
 | NAME { $1 }
 | NUM { $1 }
+| TOK_PA LPAR NAME RPAR {  Misc.add_physical $3 }
+| TOK_PTE LPAR NAME RPAR {  Misc.add_pte $3 }
 
 maybev_prop:
 | separated_pair(NAME, COLON, name_or_num) { PTEVal.KV $1 }
