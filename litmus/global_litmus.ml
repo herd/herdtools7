@@ -16,10 +16,15 @@
 
 type t = Addr of string | Pte of string | Phy of string
 
-let pp = function
+let pp_old = function
   | Addr s -> s
   | Pte s -> Misc.add_pte s
   | Phy s -> Misc.add_physical s
+
+let pp = function
+  | Addr s -> s
+  | Pte s -> Misc.pp_pte s
+  | Phy s -> Misc.pp_physical s
 
 let compare g1 g2 = match g1,g2 with
 | (Addr s1,Addr s2)
