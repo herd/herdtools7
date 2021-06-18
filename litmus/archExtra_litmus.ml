@@ -139,7 +139,7 @@ module Make(O:Config)(I:I) : S with module I = I
     match loc with
     | Location_reg (proc,reg) -> Out.dump_out_reg proc reg
     | Location_global (G.Addr s) -> s
-    | Location_global (G.Pte s) -> Printf.sprintf "pte_%s" s
+    | Location_global (G.Pte s) -> Misc.add_pte s
     | Location_global (G.Phy _)
       -> assert false
 

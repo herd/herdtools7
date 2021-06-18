@@ -18,6 +18,7 @@
 
 type t = Addr of string | Pte of string | Phy of string
 
+val pp_old : t -> string
 val pp : t -> string
 val compare : t -> t -> int
 val as_addr : t -> string (* assert false if not an addr *)
