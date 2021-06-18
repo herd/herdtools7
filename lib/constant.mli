@@ -55,6 +55,8 @@ val compare_symbol : symbol -> symbol -> int
 val symbol_eq : symbol -> symbol -> bool
 val as_address : symbol -> string
 
+val oa2symbol : PTEVal.oa_t -> symbol
+
 (* 'phy' is the physical address (initially) matching virual adress 'virt' *)
 val virt_match_phy : symbol (* virt *) -> symbol (* phy *)-> bool
 

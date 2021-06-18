@@ -137,6 +137,15 @@ let as_address = function
   | Virtual {name=s; offset=0;_} -> s
   | sym -> Warn.fatal "symbol '%s' is not an address" (pp_symbol sym)
 
+let oa2symbol oa =
+  match PTEVal.as_physical oa with
+  | Some s -> Physical (s,0)
+  | None ->
+     begin match PTEVal.as_pte oa with
+     | Some s -> System (PTE,s)
+     | None -> assert false
+     end
+
 let virt_match_phy s1 s2 = match s1,s2 with
 | Virtual {name=s1; offset=i1;_},Physical (s2,i2) ->
     Misc.string_eq s1 s2 && Misc.int_eq i1 i2
@@ -252,7 +261,7 @@ let is_pt v = match v with
 let same_oa v1 v2 =
   let open PTEVal in
   match v1,v2 with
-  | PteVal p1,PteVal p2 ->  Misc.string_eq p1.oa p2.oa
+  | PteVal p1,PteVal p2 ->  PTEVal.oa_eq p1.oa p2.oa
   | _ -> false
 
 let writable ha hd v =

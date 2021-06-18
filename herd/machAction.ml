@@ -564,7 +564,7 @@ end = struct
           assert (not (is_amo act1 || is_amo act2)) ;
           is_pt act1 && is_pt act2 &&
           (match get_oa (value_of act1), get_oa (value_of act2) with
-          | Some s1,Some s2 -> Misc.string_eq s1 s2
+          | Some s1,Some s2 -> PTEVal.oa_eq s1 s2
           | _,_ -> false) in
 
       [("inv-domain",inv_domain_act); ("alias",alias_act);]
