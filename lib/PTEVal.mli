@@ -26,8 +26,16 @@ module Attrs : sig
   val of_list : string list -> t
 end
 
+type oa_t
+
+val pp_oa_old : oa_t -> string
+val oa_eq : oa_t -> oa_t -> bool
+val as_physical : oa_t -> string option
+val as_pte : oa_t -> string option
+val oa_refers_virtual : oa_t -> string option
+
 type t = {
-  oa : string;
+  oa : oa_t;
   valid : int;
   af : int;
   db : int;

@@ -822,6 +822,7 @@ let do_tr prf =
 let add_pte = sprintf "pte_%s"
 let tr_pte = do_tr "pte_"
 let is_pte = is_prefix "pte_"
+let pp_pte = sprintf "PTE(%s)"
 
 let add_tlb = sprintf "tlb_%s"
 
@@ -837,6 +838,7 @@ let tr_dbm = do_tr "dbm_"
 let add_physical s = sprintf "phy_%s" s
 let tr_physical = do_tr "phy_"
 let is_physical = is_prefix "phy_"
+let pp_physical = sprintf "PA(%s)"
 
 let add_valid = sprintf "valid_%s"
 let add_oa = sprintf "oa_%s"
