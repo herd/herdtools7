@@ -34,6 +34,7 @@ For using ocamlbuild, supplementary software ocamlbuild and ocamlfind are requir
 They can be installed with opam:
 
      % opam install ocamlfind ocamlbuild
+Make sure to run `eval $(opam config env)` to make tools available in your PATH. 
 
 Build
 -----
