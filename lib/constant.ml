@@ -211,6 +211,19 @@ let mk_sym_pa s =
   let s = as_virtual s in
   Symbolic (Physical (s,0))
 
+let old2new s =
+ match Misc.tr_pte s with
+| Some s ->
+   begin match Misc.tr_pte s with
+   | Some s -> Misc.pp_pte (Misc.pp_pte s)
+   | None -> Misc.pp_pte s
+   end
+| None ->
+   begin match Misc.tr_physical s with
+   | Some s -> Misc.pp_physical s
+   | None -> s
+   end
+
 let mk_vec sz v =
   assert (sz == (List.length v));
   ConcreteVector (sz, v)
