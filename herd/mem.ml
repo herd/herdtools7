@@ -1457,15 +1457,26 @@ let match_reg_events es =
       with CannotSca ->
         all_finals_non_mixed test es
 
-    let fold_mem_finals test es rfm kont res =
+    let some_same_rf_rmw rfm rmw =
+      let loads = U.partition_events (E.EventRel.domain rmw) in
+      List.exists
+        (fun ers ->
+          let rfs =
+            E.EventSet.fold
+              (fun er k ->
+                try S.RFMap.find (S.Load er) rfm::k
+                with Not_found -> assert false)
+            ers [] in
+          Misc.exists_pair S.read_from_equal rfs)
+        loads
+
+    let fold_mem_finals test es rfm atomic_load_store kont res =
       (* We can build those now *)
       let evts = es.E.events in
       let po_iico = U.po_iico es in
       let ppoloc = make_ppoloc po_iico evts in
       let store_load_vbf = store_load rfm
       and init_load_vbf = init_load es rfm in
-(* Atomic load/store pairs *)
-      let atomic_load_store = make_atomic_load_store es in
 (* Now generate final stores *)
       let possible_finals = all_finals test es in
       if C.debug.Debug_herd.mem then begin
@@ -1510,7 +1521,6 @@ let match_reg_events es =
         Misc.fold_cross
           possible_finals
           (fun ws res ->
-
             if C.debug.Debug_herd.mem then begin
               eprintf "Finals:" ;
               List.iter
@@ -1706,10 +1716,22 @@ let match_reg_events es =
                     | OptAce.False|OptAce.Iico -> true
                     | OptAce.True -> check_rfmap es rfm
                   then
-                    fold_mem_finals test es rfm kont res
-                  else begin
-                    res
-                  end)
+                    (* Atomic load/store pairs *)
+                    let atomic_load_store = make_atomic_load_store es in
+                    if
+                      C.variant Variant.OptRfRMW
+                      && some_same_rf_rmw rfm atomic_load_store
+                    then begin
+                      if C.debug.Debug_herd.mem then begin
+                        let module PP = Pretty.Make(S) in
+                        eprintf
+                          "Atomicity violation anticipated from rf map%!" ;
+                        PP.show_es_rfm test es rfm
+                      end ;
+                      res
+                    end else
+                      fold_mem_finals test es
+                        rfm atomic_load_store kont res
+                  else  res)
             res
-
   end

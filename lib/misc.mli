@@ -129,6 +129,9 @@ val for_all_strict : ('a -> bool) -> 'a list -> bool
 (* List.exists on list of list *)
 val exists_exists : ('a -> bool) -> 'a list list -> bool
 
+(* Does a pair in list satisfy predicate ? *)
+val exists_pair : ('a -> 'a -> bool) -> 'a list -> bool
+
 (* split a list into n list of as much as possible equal length *)
 val nsplit : int -> 'a list -> 'a list list
 
