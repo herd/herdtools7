@@ -174,15 +174,22 @@ location:
 | location_reg { $1 }
 | location_global { Location_global $1 }
 
+left_loc:
+| loc=location { loc }
+| LBRK loc=location_global RBRK { Location_global loc }
+
 atom:
 | location {($1,ParsedConstant.zero)}
-| location EQUAL maybev_label {($1,$3)}
+| left_loc EQUAL maybev_label {($1,$3)}
+
 
 atom_init:
 | atom { let x,v = $1 in x,(TyDef,v) }
-| NAME location  { ($2, (Ty $1,ParsedConstant.zero)) }
-| ATOMIC NAME location { $3,(Atomic $2,ParsedConstant.zero)}
-| NAME location EQUAL maybev { ($2,(Ty $1,$4))}
+| typ=NAME loc=left_loc  { (loc, (Ty typ,ParsedConstant.zero)) }
+| ATOMIC typ=NAME loc=left_loc { loc,(Atomic typ,ParsedConstant.zero)}
+| typ=NAME loc=left_loc EQUAL v=maybev { (loc,(Ty typ,v))}
+| typ=NAME loc=left_loc EQUAL ATOMICINIT LPAR v=maybev RPAR
+   { (loc,(Ty typ,v))}
 | NAME arrayspec
    { let (t,sz) = $2 in
      let v0 = Constant.mk_replicate sz ParsedConstant.zero in
@@ -198,13 +205,15 @@ atom_init:
 	 (dump_location t) }
 /* prohibit "v[i] = scalar" form in init allow only "v[i]={scalar_list}" */
 | locindex EQUAL maybev { raise Parsing.Parse_error }
-| NAME location EQUAL ATOMICINIT LPAR maybev RPAR { ($2,(Ty $1,$6))}
-| NAME STAR location { ($3,(Pointer $1,ParsedConstant.zero))}
-| NAME STAR location EQUAL amperopt maybev { ($3,(Pointer $1,$6))}
-| STAR location { ($2,(TyDefPointer,ParsedConstant.zero))}
-| STAR location EQUAL amperopt maybev { ($2,(TyDefPointer,$5))}
-| location EQUAL LPAR separated_nonempty_list(COMMA, maybev_prop) RPAR
-  { ($1,(Ty "pteval_t", mk_pte_val $1 $4)) }
+| typ=NAME STAR loc=left_loc { (loc,(Pointer typ,ParsedConstant.zero))}
+| typ=NAME STAR loc=left_loc EQUAL amperopt v=maybev { (loc,(Pointer typ,v))}
+| STAR loc=left_loc { (loc,(TyDefPointer,ParsedConstant.zero))}
+| STAR loc=left_loc EQUAL amperopt v=maybev { (loc,(TyDefPointer,v))}
+| typ=NAME loc=left_loc
+  EQUAL LPAR v=separated_nonempty_list(COMMA, maybev_prop) RPAR
+  { (loc,(Ty typ, mk_pte_val loc v)) }
+| loc=left_loc EQUAL LPAR v=separated_nonempty_list(COMMA, maybev_prop) RPAR
+  { (loc,(Ty "pteval_t", mk_pte_val loc v)) }
 
 amperopt:
 | AMPER { () }
@@ -333,27 +342,36 @@ arrayspec:
 | NAME LBRK NUM RBRK
     { (Location_global (Constant.mk_sym $1),Misc.string_as_int $3) }
 
+equal:
+| EQUAL { () }
+| EQUALEQUAL { () }
 
 atom_prop:
-| location EQUAL maybev {Atom (LV (Loc $1,$3))}
-| location EQUAL LCURLY maybev_list RCURLY
+| location equal maybev {Atom (LV (Loc $1,$3))}
+| LBRK loc=location_global RBRK EQUAL v=maybev
+   {Atom (LV (Loc (Location_global loc),v))}
+| location NOTEQUAL maybev {Not (Atom (LV (Loc $1,$3)))}
+| LBRK loc=location_global RBRK NOTEQUAL v=maybev
+   {Not (Atom (LV (Loc (Location_global loc),v)))}
+| location equal LPAR separated_nonempty_list(COMMA, maybev_prop) RPAR
+  { Atom (LV (Loc $1, mk_pte_val $1 $4)) }
+| LBRK loc=location_global RBRK equal
+  LPAR v=separated_nonempty_list(COMMA, maybev_prop) RPAR
+  { let loc = Location_global loc in
+    Atom (LV (Loc loc, mk_pte_val loc v)) }
+/* Array, array cell, equality of content no [x] = .. notation */
+| location equal LCURLY maybev_list RCURLY
     { let sz = List.length $4 in
       let vec = Constant.mk_vec sz $4 in
       Atom (LV (Loc $1,vec)) }
-| location EQUALEQUAL maybev {Atom (LV (Loc $1,$3))}
-| locindex EQUAL maybev {Atom (LV ($1,$3))}
-| locindex EQUALEQUAL maybev {Atom (LV ($1,$3))}
-| location NOTEQUAL maybev {Not (Atom (LV (Loc $1,$3)))}
-| locindex NOTEQUAL maybev {Not (Atom (LV ($1,$3)))}
 | location NOTEQUAL LCURLY maybev_list RCURLY
     { let sz = List.length $4 in
       let vec = Constant.mk_vec sz $4 in
       Not (Atom (LV (Loc $1,vec))) }
-| location EQUAL location_deref {Atom (LL ($1,$3))}
-| location EQUALEQUAL location_deref {Atom (LL ($1,$3))}
+| locindex equal maybev {Atom (LV ($1,$3))}
+| locindex NOTEQUAL maybev {Not (Atom (LV ($1,$3)))}
+| location equal location_deref {Atom (LL ($1,$3))}
 | fault { Atom (FF $1) }
-| location EQUAL LPAR separated_nonempty_list(COMMA, maybev_prop) RPAR
-  { Atom (LV (Loc $1, mk_pte_val $1 $4)) }
 
 prop:
 | TRUE
