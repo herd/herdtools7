@@ -340,6 +340,11 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let dump_location = do_dump_location Misc.identity
 
+      let do_dump_location_no_brackets tr = function
+        | Location_reg (proc,r) ->
+            tr (string_of_int proc ^ ":" ^ I.pp_reg r)
+        | Location_global a -> pp_global a
+
 (* This redefines pp_location from Location.Make ... *)
       let pp_location l = match l with
       | Location_reg (proc,r) ->
@@ -743,7 +748,7 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let pp_typed t v =
         let max_unsigned =
-          MachSize.equal (mem_access_size_of_t t) I.V.Cst.Scalar.machsize
+           MachSize.equal (mem_access_size_of_t t) I.V.Cst.Scalar.machsize
           && not (signed_of_t t) in
         let v = I.V.map_scalar (cast_for_pp_with_type t) v in
         if max_unsigned then I.V.pp_unsigned C.hexa v
@@ -753,7 +758,16 @@ module Make(C:Config) (I:I) : S with module I = I
         pp_nice_rstate st " "
           (fun l v ->
             let t = look_rloc_type tenv l in
-            ConstrGen.dump_rloc (do_dump_location tr) l ^
+            let dump_loc =
+              let open ConstrGen  in
+              match l,t with
+              | (Deref _,_)
+              | (_,TestType.TyArray _)
+                ->
+                 do_dump_location_no_brackets
+              | _,_ ->
+                 do_dump_location in
+            ConstrGen.dump_rloc (dump_loc tr) l ^
               "=" ^ pp_typed t v ^";")
 
       let do_dump_final_state tenv fobs tr (st,flts) =

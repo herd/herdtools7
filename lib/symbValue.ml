@@ -57,6 +57,7 @@ module Make(Cst:Constant.S) = struct
   let pp_unsigned hexa = do_pp (Cst.pp_unsigned hexa)
 
   let pp_v =  do_pp Cst.pp_v
+  let pp_v_old =  do_pp Cst.pp_v_old
 
   let equalityPossible v1 v2 =
     match (v1,v2) with
