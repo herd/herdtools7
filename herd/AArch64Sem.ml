@@ -587,7 +587,7 @@ module Make
                    add_setbits (is_zero ipte.af_v) "af:0" set_af m
                  else m in
             setbits in
-          mok (get_oa a_pte m) a in
+          mok (get_oa a_virt m) a in
 
 
 (* Action on case of page table access.
