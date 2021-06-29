@@ -1,0 +1,10 @@
+C C02
+
+{}
+
+P0 (const int* y,volatile int* x) {
+  int r0 = *x;
+  *y = 1;
+}
+
+forall (0:r0=1 /\ y=1)

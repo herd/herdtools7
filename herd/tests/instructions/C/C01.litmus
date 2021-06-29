@@ -1,0 +1,10 @@
+C C01
+
+{ x = 1 }
+
+P0 (const int* x) {
+  int r0 = *x;
+}
+
+
+forall (0:r0=1)

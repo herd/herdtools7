@@ -1,0 +1,10 @@
+Test C01 Required
+States 1
+0:r0=0x1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:r0=0x1)
+Observation C01 Always 1 0
+Hash=f26e77b9ef2528a6e6c9757a77f150a1
+

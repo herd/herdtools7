@@ -21,6 +21,7 @@ type base = string
 type t =
   | Base of base
   | Volatile of t
+  | Const of t
   | Atomic of t
   | Pointer of t
 (** limited arrays *)
@@ -39,6 +40,7 @@ let rec  dump = function
   | Volatile (Base s) -> "volatile " ^ s
   | Atomic (Base s) -> "_Atomic " ^ s
   | Volatile t -> sprintf "%s volatile" (dump t)
+  | Const t -> sprintf "%s const" (dump t)
   | Atomic t -> sprintf "_Atomic (%s)" (dump t)
   | Pointer t -> dump t  ^ "*"
   | Array (t,sz) -> sprintf "%s_%i_t" t sz
@@ -48,6 +50,7 @@ let rec  debug = function
   | Volatile (Base s) -> "volatile <" ^ s ^ ">"
   | Atomic (Base s) -> "_Atomic " ^ s
   | Volatile t -> sprintf "%s volatile" (debug t)
+  | Const t -> sprintf "%s const" (debug t)
   | Atomic t -> sprintf "_Atomic (%s)" (debug t)
   | Pointer t -> debug t  ^ "*"
   | Array (t,sz) -> sprintf "%s[%i]" t sz
@@ -90,8 +93,8 @@ let get_fmt hexa = if hexa then fmt16 else fmt10
 
 let rec is_ptr =  function
   | Pointer _ -> true
-  | Atomic t|Volatile t -> is_ptr t
-  | _ -> false
+  | Atomic t | Volatile t | Const t -> is_ptr t
+  | Array _ | Base _ -> false
 
 let rec is_pte t = match t with
 | Base "pteval_t" -> true
@@ -100,37 +103,45 @@ let rec is_pte t = match t with
 
 let rec is_array = function
   | Array _ -> true
-  | Atomic t|Volatile t -> is_array t
-  | _ -> false
+  | Atomic t | Volatile t | Const t -> is_array t
+  | Base _ | Pointer _ -> false
 
 let rec is_atomic = function
-  | Volatile t -> is_atomic t
+  | Volatile t | Const t -> is_atomic t
   | Atomic _ -> true
-  | _ -> false
-
-let strip_atomic0 = function
-  | Atomic t -> t
-  | t -> t
+  | Array _ | Base _ | Pointer _ -> false
 
 let rec strip_atomic = function
   | Volatile t -> Volatile (strip_atomic t)
-  | t ->  strip_atomic0 t
-
-let strip_volatile0 = function
-  | Volatile t -> t
-  | t -> t
+  | Atomic t -> strip_atomic t (* We handle the case where we have malformed types *)
+  | Const t -> Const (strip_atomic t)
+  | Pointer t -> Pointer (strip_atomic t)
+  | Base s -> Base s
+  | Array (s,t) -> Array (s,t)
 
 let rec strip_volatile = function
   | Atomic t -> Atomic (strip_volatile t)
   | Pointer t -> Pointer (strip_volatile t)
-  | t ->  strip_volatile0 t
+  | Const t -> Const (strip_volatile t)
+  | Volatile t -> strip_volatile t (* We handle the case where we have malformed types*)
+  | Base s -> Base s
+  | Array (s,t) -> Array (s,t)
 
-let strip_attributes t = strip_atomic (strip_volatile t)
+let rec strip_const = function
+  | Atomic t -> Atomic (strip_const t)
+  | Pointer t -> Pointer (strip_const t)
+  | Volatile t -> Volatile (strip_const t)
+  | Const t -> strip_const t (* handles the case of malformed types *)
+  | Array (t,s) -> Array (t,s)
+  | Base s -> Base s
+
+let strip_attributes t = strip_const (strip_atomic (strip_volatile t))
 
 let rec is_ptr_to_atomic = function
   | Volatile t -> is_ptr_to_atomic t
+  | Const t -> is_ptr_to_atomic t
   | Pointer t -> is_atomic t
-  | _ -> false
+  | Array _ | Base _ | Atomic _ -> false
 
 let same_base t0 t1 = match t0,t1 with
 | Base s0,Base s1 ->
@@ -152,7 +163,7 @@ let element_type = function
   | t -> Warn.fatal "Array type expected, found %s" (dump t)
 
 let rec signed = function
-  | Atomic t|Volatile t -> signed t
+  | Atomic t|Volatile t| Const t -> signed t
   | Pointer _|Array _ -> false
   | Base
       ("atomic_t"|"int"|"char"|"long"|
@@ -171,6 +182,6 @@ let do_base_size =
   | _ -> None
 
 let rec base_size t = match t with
-| Atomic t|Volatile t -> base_size t
+| Atomic t|Volatile t| Const t -> base_size t
 | Pointer _|Array _ -> None
 | Base b -> do_base_size b

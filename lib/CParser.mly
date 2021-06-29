@@ -34,7 +34,7 @@ open MemOrderOrAnnot
 %token LPAR RPAR COMMA LBRACE RBRACE STAR
 %token ATOMIC CHAR INT LONG VOID
 %token MUTEX
-%token VOLATILE
+%token VOLATILE CONST
 %token STRUCT
 
 /* For shallow parsing */
@@ -99,8 +99,10 @@ void:
 typ:
 | typ_ptr { $1 }
 | typ VOLATILE { Volatile $1 }
+| typ CONST { CType.Const $1 }
 | ATOMIC base { Atomic $2 }
 | VOLATILE base0 { Volatile $2 }
+| CONST base0 { Const $2 }
 | base { $1 }
 
 base0:
@@ -163,10 +165,10 @@ expr:
 | expr1 { $1 }
 
 expr0:
-| CONSTANT { Const(Constant.Concrete $1) }
-| CONSTVAR { Const(mk_sym $1) }
-| IDENTIFIER { LoadReg $1 }
-| STAR IDENTIFIER { LoadMem (LoadReg $2,AN []) }
+| CONSTANT { CBase.Const(Constant.Concrete $1) }
+| CONSTVAR { CBase.Const(mk_sym $1) }
+| IDENTIFIER { CBase.LoadReg $1 }
+| STAR IDENTIFIER { CBase.LoadMem (CBase.LoadReg $2,AN []) }
 | LPAR expr RPAR { $2 }
 
 expr1:
