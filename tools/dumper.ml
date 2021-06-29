@@ -25,18 +25,13 @@ module Make(A:Arch_tools.S) = struct
         type v = A.v
         let dump_v = A.pp_v
 
-        type atom = (A.location * (TestType.t * A.v))
-        type state = atom list
+        type state_atom = (A.location * (TestType.t * A.v))
+        type state = state_atom list
+        let env_for_pp = A.env_for_pp
 
-        let dump_atom_state a =
-          MiscParser.dump_state_atom A.pp_location dump_v a
-
-
-        let dump_state st =
-          String.concat " "
-            (List.map
-               (fun a -> sprintf "%s;" (dump_atom_state a))
-               st)
+        let dump_state_atom a =
+          MiscParser.dump_state_atom
+            A.is_global A.pp_location dump_v a
 
         type prop = (A.location,A.v) ConstrGen.prop
 
