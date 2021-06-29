@@ -381,16 +381,12 @@ module DefaultDumper(A:ArchBase.S) = struct
 
         let dump_loc = MiscParser.dump_location
 
-        let dump_state_atom a =
-          MiscParser.dump_state_atom dump_loc dump_v a
-
+        type state_atom = MiscParser.state_atom
         type state = MiscParser.state
+        let env_for_pp = MiscParser.env_for_pp
+        let dump_state_atom a =
+          MiscParser.dump_state_atom MiscParser.is_global dump_loc dump_v a
 
-        let dump_state st =
-          String.concat " "
-            (List.map
-               (fun a -> sprintf "%s;" (dump_state_atom a))
-               st)
 
         type prop = MiscParser.prop
 
