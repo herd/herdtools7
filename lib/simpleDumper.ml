@@ -21,8 +21,10 @@ module type I = sig
   type v
   val dump_v : v -> string
 
-  type state
-  val dump_state : state -> string
+  type state_atom
+  type state = state_atom list
+  val env_for_pp : state -> state_atom list list
+  val dump_state_atom : state_atom -> string
 
   type prop
   val dump_prop : prop -> string
@@ -85,6 +87,16 @@ end = struct
 *)
   open MiscParser
 
+  let dump_state st =
+    List.map
+      (fun bds ->
+        String.concat " "
+           (List.map
+              (fun bd ->
+                let pp = I.dump_state_atom bd in
+                sprintf "%s;" pp)
+              bds))
+      (I.env_for_pp st)
 
   let do_dump withinfo chan doc t =
     Out.fprintf chan "%s %s\n" (Archs.pp A.arch) doc.Name.name ;
@@ -97,7 +109,9 @@ end = struct
         (fun (k,i) -> Out.fprintf chan "%s=%s\n" k i)
         t.info
     end ;
-    Out.fprintf chan "\n{%s}\n\n" (dump_state  t.init) ;
+    Out.fprintf chan "\n{\n%s}\n\n"
+      (String.concat ""
+         (List.map (sprintf " %s\n") (dump_state  t.init))) ;
     prog chan t.prog ;
     Out.fprintf chan "\n" ;
     let locs =
@@ -110,7 +124,8 @@ end = struct
     begin match t.extra_data with
     | NoExtra|CExtra _ -> ()
     | BellExtra bi ->
-        Out.fprintf chan "\n%s\n" (BellInfo.pp bi)
+       if not (BellInfo.is_none bi) then
+         Out.fprintf chan "%s\n" (BellInfo.pp bi)
     end ;
     Out.fprintf chan "%s\n" (I.dump_constr t.condition) ;
     ()
@@ -127,7 +142,9 @@ end = struct
     | "" -> k
     | doc -> sprintf "\"%s\"" doc :: k
     end @@
-    begin fun k ->  sprintf "{%s}" (dump_state  t.init) :: k
+    begin
+      fun k ->
+      "{"::dump_state t.init @("}"::k)
     end @@
     begin
       fun k ->

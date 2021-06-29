@@ -37,6 +37,7 @@ type test = {
   levels : scopes option
 }
 
+val is_none : test -> bool
 val pp : test -> string
 
 (**************)
