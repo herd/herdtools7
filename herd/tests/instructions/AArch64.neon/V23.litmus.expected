@@ -1,10 +1,10 @@
 Test V23 Required
 States 1
-a=1; x=1; y=1; z=1;
+[a]=1; [x]=1; [y]=1; [z]=1;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (x=1 /\ y=1 /\ z=1 /\ a=1)
+Condition forall ([x]=1 /\ [y]=1 /\ [z]=1 /\ [a]=1)
 Observation V23 Always 1 0
 Hash=2ead36775b1b81664fc1036e3ff0673e
 

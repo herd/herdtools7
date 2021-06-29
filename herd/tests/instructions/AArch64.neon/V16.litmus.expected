@@ -1,10 +1,10 @@
 Test V16 Required
 States 1
-a=0; x=255; y=0; z=255;
+[a]=0; [x]=255; [y]=0; [z]=255;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (x=255 /\ y=0 /\ z=255 /\ a=0)
+Condition forall ([x]=255 /\ [y]=0 /\ [z]=255 /\ [a]=0)
 Observation V16 Always 1 0
 Hash=58dbfa0a0bd0a96666e6cf6ab431f3fb
 
