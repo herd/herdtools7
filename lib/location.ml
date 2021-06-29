@@ -34,6 +34,7 @@ module type S = sig
     | Location_reg of int*loc_reg
 
   val pp_location : location -> string
+  val pp_location_brk : location -> string
   val pp_rval : location -> string
   val location_compare : location -> location -> int
   val of_proc : int -> location -> loc_reg option
@@ -85,6 +86,10 @@ with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
     let pp_location l = match l with
     | Location_reg (proc,r) -> string_of_int proc ^ ":" ^ A.pp_reg r
     | Location_global a -> A.pp_global a
+
+    let pp_location_brk l = match l with
+    | Location_reg (proc,r) -> string_of_int proc ^ ":" ^ A.pp_reg r
+    | Location_global a -> "[" ^ A.pp_global a ^ "]"
 
     let pp_rval l = match l with
     | Location_reg (proc,r) -> string_of_int proc ^ ":" ^ A.pp_reg r
