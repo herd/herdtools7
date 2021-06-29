@@ -26,6 +26,7 @@ type t =
 (** limited arrays *)
   | Array of base * int
 
+val void : t
 val voidstar : t
 val word : t
 val quad : t
