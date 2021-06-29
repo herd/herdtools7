@@ -99,13 +99,17 @@ type test = {
   levels : scopes option ;
   }
 
+let is_none = function
+  | {regions=None; scopes=None; levels=None; } -> true
+  | _ -> false
+
 let pp t = begin match t.scopes with
 | None -> ""
 | Some sc ->
     sprintf "scopes: %s\n" (pp_scopes sc)
 end ^
-  begin match t.regions with
+begin match t.regions with
   | None -> ""
   | Some m ->
       sprintf "regions: %s\n" (pp_mem_map m) ;
-  end
+end

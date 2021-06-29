@@ -72,6 +72,14 @@ let as_local_proc i syms = function
         Some (Misc.dump_symbolic reg)
       else None
 
+let env_for_pp env =
+  Misc.group_by_int
+    (fun loc ->
+      match loc with
+      | Location_reg (proc,_) -> Some proc
+      | Location_global _|Location_sreg _ -> None)
+    env
+
 module LocSet =
   MySet.Make
     (struct type t = location let compare = location_compare end)
@@ -106,7 +114,8 @@ let pp_outcome o =
   String.concat " "
     (List.map (fun a -> sprintf "%s;" (pp_atom a)) o)
 
-type state = (location * (TestType.t * maybev)) list
+type state_atom = location * (TestType.t * maybev)
+type state = state_atom list
 
 (* Check that initialisations are unique *)
 
@@ -143,13 +152,18 @@ let mk_pte_val pte l =
   let v = PTEVal.of_list s l in
   PteVal v
 
-let dump_state_atom dump_loc dump_val (loc,(t,v)) =
+let dump_state_atom is_global dump_loc dump_val (loc,(t,v)) =
   let open TestType in
   match t with
   | TyDef ->
+     if is_global loc then
+       sprintf "[%s]=%s" (dump_loc loc) (dump_val v)
+     else
       sprintf "%s=%s" (dump_loc loc) (dump_val v)
   | TyDefPointer ->
       sprintf "*%s=%s" (dump_loc loc) (dump_val v)
+  | Ty "pteval_t" when is_global loc ->
+      sprintf "[%s]=%s" (dump_loc loc) (dump_val v)
   | Ty t ->
       sprintf "%s %s=%s" t (dump_loc loc) (dump_val v)
   | Atomic t ->

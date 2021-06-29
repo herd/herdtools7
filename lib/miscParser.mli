@@ -38,6 +38,8 @@ val dump_rval : location -> string
 val is_global : location -> bool
 val as_local_proc : int -> StringSet.t -> location -> reg option
 
+val env_for_pp : (location * 'a) list -> (location * 'a) list list
+
 module LocSet : MySet.S with type elt = location
 module LocMap : MyMap.S with type key = location
 
@@ -56,12 +58,14 @@ type outcome = atom list
 val pp_atom : atom -> string
 val pp_outcome : outcome -> string
 
-type state = (location * (TestType.t * maybev)) list
+type state_atom = location * (TestType.t * maybev)
+type state = state_atom list
 
 val check_env_for_dups : state -> unit
 
 
 val dump_state_atom :
+  ('loc -> bool) ->
   ('loc -> string) -> ('v -> string) -> ('loc * (TestType.t * 'v)) -> string
 
 (* Packed result *)
