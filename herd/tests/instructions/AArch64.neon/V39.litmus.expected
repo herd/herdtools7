@@ -1,10 +1,10 @@
 Test V39 Required
 States 1
-z=3;
+[z]=3;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (z=3)
+Condition forall ([z]=3)
 Observation V39 Always 1 0
 Hash=3bf51624352b685a680c2d5656d161ee
 
