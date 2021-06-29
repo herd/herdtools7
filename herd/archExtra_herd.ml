@@ -71,6 +71,7 @@ module type S = sig
   val pp_global : global_loc -> string
   include Location.S
   with type loc_reg := I.arch_reg and type loc_global := v
+  val pp_location_old : location -> string
 
   val symbol : location -> Constant.symbol option
   val offset : location -> int option
@@ -80,6 +81,7 @@ module type S = sig
 (* Extra for locations *)
   val maybev_to_location : MiscParser.maybev -> location
   val do_dump_location : (string -> string) -> location -> string
+  val do_dump_location_no_brackets : (string -> string) -> location -> string
   val dump_location : location -> string
 
   val undetermined_vars_in_loc_opt : location -> I.V.v option
@@ -345,13 +347,17 @@ module Make(C:Config) (I:I) : S with module I = I
             tr (string_of_int proc ^ ":" ^ I.pp_reg r)
         | Location_global a -> pp_global a
 
-(* This redefines pp_location from Location.Make ... *)
-      let pp_location l = match l with
+
+      let do_pp_location do_brackets l = match l with
       | Location_reg (proc,r) ->
           let bodytext = string_of_int proc ^ ":" ^ I.pp_reg r in
           if C.texmacros
           then "\\asm{Proc " ^ bodytext ^ "}" else bodytext
       | Location_global a -> do_brackets (pp_global a)
+
+(* This redefines pp_location from Location.Make ... *)
+      let pp_location = do_pp_location do_brackets
+      and pp_location_old = do_pp_location Misc.identity
 
       let some_undetermined_vars_in_loc l =  match l with
       | Location_reg _ ->  false

@@ -169,7 +169,7 @@ end = struct
       Printf.sprintf "Fault(proc:%s,poi:%s,loc:%s,type:%s)"
         (A.pp_proc ii.A.proc)
         (A.pp_prog_order_index ii.A.program_order_index)
-        (A.pp_location loc)
+        (A.pp_location_old loc)
         (Misc.proj_opt "None" msg)
   | TooFar -> "TooFar"
   | Inv (op,None) ->
