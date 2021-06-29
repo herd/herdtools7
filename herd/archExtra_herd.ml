@@ -595,10 +595,10 @@ module Make(C:Config) (I:I) : S with module I = I
           | None ->
              Warn.user_error
                "Location %s of type %s is used as an array"
-               (pp_location loc) (TestType.pp t) in
+               (pp_location_old loc) (TestType.pp t) in
         if os < 0 || os >= n_elts then
           Warn.user_error
-            "Out of bounds access on array %s" (pp_location loc) ;
+            "Out of bounds access on array %s" (pp_location_old loc) ;
         if os = 0 then loc
         else
           match symbolic_data loc with
@@ -607,7 +607,7 @@ module Make(C:Config) (I:I) : S with module I = I
                 { s with Constant.offset = MachSize.nbytes sz_elt * os} in
               of_symbolic_data s
           | _ -> (* Excluded by parsing *)
-              Warn.fatal "Location %s is not global" (pp_location loc)
+              Warn.fatal "Location %s is not global" (pp_location_old loc)
 
 (* To get protection against wandering undetermined locations,
    all loads from state are by this function *)
