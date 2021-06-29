@@ -866,3 +866,26 @@ let  mix a b c =
   let c = c-a in let c = c-b in
   let c = c lxor (c lsr  15) in
   c
+
+(* Group by optional integer key *)
+
+let group_by_int get_key env =
+  let m =
+    List.fold_left
+      (fun m (loc,_ as p) ->
+        match get_key loc with
+        | Some proc ->
+           let env_proc = IntMap.safe_find [] proc m in
+           IntMap.add proc (p::env_proc) m
+        | None -> m)
+        IntMap.empty env in
+  List.fold_right
+    (fun (loc,_ as p) k ->
+      match get_key loc with
+      | None  -> [p]::k
+      | Some _ -> k)
+    env
+    (List.rev
+       (IntMap.fold
+          (fun _ env_p k -> List.rev env_p::k)
+          m []))

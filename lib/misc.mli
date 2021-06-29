@@ -326,3 +326,9 @@ val pp_physical : string -> string
 (******************)
 
 val mix : int -> int -> int -> int
+
+(*********************************)
+(* Group by optional integer key *)
+(*********************************)
+
+val group_by_int : ('k -> int option) -> ('k * 'v) list -> ('k * 'v) list list
