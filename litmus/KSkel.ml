@@ -374,6 +374,7 @@ let dump_ctx mts env test =
       O.o "/* Shared locations */" ;
       List.iter
         (fun (s,t) ->
+          let t = CType.strip_const t in
           let t = CType.strip_volatile t in
           if U.is_aligned s env then
             let pp_t = SkelUtil.type_name s in
@@ -628,7 +629,7 @@ let dump_threads _tname env test =
   let global_env = U.select_global env in
   let global_env =
     List.map
-      (fun (x,ty) -> x,CType.strip_volatile ty)
+      (fun (x,ty) -> x,CType.strip_const (CType.strip_volatile ty))
       global_env in
   let aligned_env =
     List.filter
