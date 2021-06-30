@@ -45,18 +45,24 @@ end = struct
         module P = I.P
 
         type v = A.V.v
+
         let dump_v = A.V.pp I.hexa
 
         let dump_state_atom =
-          MiscParser.dump_state_atom A.pp_location dump_v
+          MiscParser.dump_state_atom A.is_global A.pp_location dump_v
 
         type state = A.fullstate
 
         let dump_state st =
-          String.concat " "
-            (List.map
-               (fun a -> sprintf "%s;" (dump_state_atom a))
-               st)
+          List.map
+            (fun bds ->
+              String.concat " "
+                (List.map
+                   (fun bd ->
+                     let pp = dump_state_atom bd in
+                     sprintf "%s;" pp)
+                   bds))
+             (I.A.env_for_pp st)
 
         type prop = I.C.prop
 

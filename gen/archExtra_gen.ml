@@ -92,11 +92,16 @@ with type arch_reg = I.arch_reg and type special = I.special
     | Reg of int * arch_reg
     | Loc of string
 
+  let pp_symbol loc =
+    match Misc.tr_pte loc with
+    | Some s -> Misc.pp_pte s
+    | None -> loc
+
   let pp_location = function
     | Reg (i,r) ->
         if I.is_symbolic r then I.pp_reg r
         else sprintf "%i:%s" i (I.pp_reg r)
-    | Loc loc -> loc
+    | Loc loc -> pp_symbol loc
 
   let location_compare loc1 loc2 = match loc1,loc2 with
   | Reg _,Loc _ -> -1
@@ -121,7 +126,7 @@ with type arch_reg = I.arch_reg and type special = I.special
 
   type initval = S of string | P of PTEVal.t
   let pp_initval = function
-    | S v ->  v
+    | S v ->  pp_symbol v
     | P p -> PTEVal.pp p
 
   let initval_eq v1 v2 = match v1,v2 with
@@ -166,7 +171,8 @@ with type arch_reg = I.arch_reg and type special = I.special
           | Reg _ -> k in
           let k = match v with
           | Some (S s) -> add_some (refers_virtual s) k
-          | Some (P p) -> add_some (refers_virtual p.PTEVal.oa) k
+          | Some (P p) ->
+             add_some (PTEVal.oa_refers_virtual p.PTEVal.oa) k
           | None -> k in
           k)
         StringSet.empty i in

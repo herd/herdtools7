@@ -49,10 +49,13 @@ type symbol =
   | Physical of string * int       (* symbol, index *)
   | System of (syskind * string)   (* System memory *)
 
+val pp_symbol_old : symbol -> string
 val pp_symbol : symbol -> string
 val compare_symbol : symbol -> symbol -> int
 val symbol_eq : symbol -> symbol -> bool
 val as_address : symbol -> string
+
+val oa2symbol : PTEVal.oa_t -> symbol
 
 (* 'phy' is the physical address (initially) matching virual adress 'virt' *)
 val virt_match_phy : symbol (* virt *) -> symbol (* phy *)-> bool
@@ -74,6 +77,11 @@ val map_scalar : ('scalar -> 'scalar) -> 'scalar t -> 'scalar t
 
 val mk_sym_virtual : string -> 'scalar t
 val mk_sym : string -> 'scalar t
+val mk_sym_pte : string -> 'scalar t
+val mk_sym_pte2 : string -> 'scalar t
+val mk_sym_pa : string -> 'scalar t
+val old2new : string -> string
+
 val mk_vec : int -> 'scalar t list -> 'scalar t
 val mk_replicate : int -> 'scalar t -> 'scalar t
 
@@ -113,6 +121,7 @@ module type S =  sig
   val pp : bool -> v -> string (* true -> hexa *)
   val pp_unsigned : bool -> v -> string (* true -> hexa *)
   val pp_v  : v -> string
+  val pp_v_old  : v -> string
   val compare : v -> v -> int
   val eq : v -> v -> bool
   val vToName : v -> string

@@ -300,10 +300,12 @@ val tr_ctag : string -> string
 val add_atag : string -> string
 val check_atag : string -> bool
 val tr_atag : string -> string option
+val is_atag : string -> bool
 
 val add_pte : string -> string
 val tr_pte : string ->  string option
 val is_pte : string -> bool
+val pp_pte : string -> string
 val add_tlb : string -> string
 val add_af : string -> string
 val tr_af : string ->  string option
@@ -316,9 +318,17 @@ val add_oa : string -> string
 
 val add_physical : string -> string
 val tr_physical : string -> string option
+val is_physical : string -> bool
+val pp_physical : string -> string
 
 (******************)
 (* Hash utilities *)
 (******************)
 
 val mix : int -> int -> int -> int
+
+(*********************************)
+(* Group by optional integer key *)
+(*********************************)
+
+val group_by_int : ('k -> int option) -> ('k * 'v) list -> ('k * 'v) list list

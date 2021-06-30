@@ -30,6 +30,10 @@ let call_parser name lexbuf lex parse =
       and start_loc = lexeme_start_p lexbuf
       and end_loc = lexeme_end_p lexbuf in
       Warn.user_error "%s: unexpected '%s' (in %s)" (Pos.str_pos2 (start_loc, end_loc)) lxm name
+  | Misc.UserError msg ->
+      let start_loc = lexeme_start_p lexbuf
+      and end_loc = lexeme_end_p lexbuf in
+      Warn.user_error "%s: %s (in %s)" (Pos.str_pos2 (start_loc, end_loc)) msg name
   | e ->
       Printf.eprintf
         "%a: Uncaught exception %s (in %s)\n"

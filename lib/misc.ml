@@ -797,6 +797,8 @@ let tr_atag s =
     Some (Filename.chop_suffix s ".atag")
   else None
 
+let is_atag = check_atag
+
 let is_prefix prf =
   let prf_len = String.length prf in
   fun s ->
@@ -820,6 +822,7 @@ let do_tr prf =
 let add_pte = sprintf "pte_%s"
 let tr_pte = do_tr "pte_"
 let is_pte = is_prefix "pte_"
+let pp_pte = sprintf "PTE(%s)"
 
 let add_tlb = sprintf "tlb_%s"
 
@@ -834,6 +837,8 @@ let tr_dbm = do_tr "dbm_"
 
 let add_physical s = sprintf "phy_%s" s
 let tr_physical = do_tr "phy_"
+let is_physical = is_prefix "phy_"
+let pp_physical = sprintf "PA(%s)"
 
 let add_valid = sprintf "valid_%s"
 let add_oa = sprintf "oa_%s"
@@ -861,3 +866,26 @@ let  mix a b c =
   let c = c-a in let c = c-b in
   let c = c lxor (c lsr  15) in
   c
+
+(* Group by optional integer key *)
+
+let group_by_int get_key env =
+  let m =
+    List.fold_left
+      (fun m (loc,_ as p) ->
+        match get_key loc with
+        | Some proc ->
+           let env_proc = IntMap.safe_find [] proc m in
+           IntMap.add proc (p::env_proc) m
+        | None -> m)
+        IntMap.empty env in
+  List.fold_right
+    (fun (loc,_ as p) k ->
+      match get_key loc with
+      | None  -> [p]::k
+      | Some _ -> k)
+    env
+    (List.rev
+       (IntMap.fold
+          (fun _ env_p k -> List.rev env_p::k)
+          m []))

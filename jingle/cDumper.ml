@@ -21,8 +21,8 @@ type pseudo = CBase.pseudo
 let dump_loc = MiscParser.dump_location
 
 let dump_state_atom a =
-  MiscParser.dump_state_atom dump_loc
-    ParsedConstant.pp_v a
+  MiscParser.dump_state_atom
+    MiscParser.is_global dump_loc ParsedConstant.pp_v a
 
 type state = MiscParser.state
 

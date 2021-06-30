@@ -89,12 +89,20 @@ let pp_index base o = match o with
 | 0 -> base
 | i -> sprintf "%s+%i" base i
 
-let pp_symbol = function
+let pp_symbol_old = function
   | Virtual s -> pp_index (pp_symbolic_data s) s.offset
   | Physical (s,o) -> pp_index (Misc.add_physical s) o
   | System (TLB,s) -> Misc.add_tlb s
   | System (PTE,s) -> Misc.add_pte s
   | System (PTE2,s) -> Misc.add_pte (Misc.add_pte s)
+  | System (TAG,s) -> Misc.add_atag s
+
+let pp_symbol = function
+  | Virtual s -> pp_index (pp_symbolic_data s) s.offset
+  | Physical (s,o) -> pp_index (sprintf "PA(%s)" s) o
+  | System (TLB,s) -> sprintf "TLB(%s)" s
+  | System (PTE,s) -> sprintf "PTE(%s)" s
+  | System (PTE2,s) -> sprintf "PTE(PTE(%s))" s
   | System (TAG,s) -> Misc.add_atag s
 
 let compare_symbol sym1 sym2 = match sym1,sym2 with
@@ -128,6 +136,15 @@ let symbol_eq s1 s2 = match s1,s2 with
 let as_address = function
   | Virtual {name=s; offset=0;_} -> s
   | sym -> Warn.fatal "symbol '%s' is not an address" (pp_symbol sym)
+
+let oa2symbol oa =
+  match PTEVal.as_physical oa with
+  | Some s -> Physical (s,0)
+  | None ->
+     begin match PTEVal.as_pte oa with
+     | Some s -> System (PTE,s)
+     | None -> assert false
+     end
 
 let virt_match_phy s1 s2 = match s1,s2 with
 | Virtual {name=s1; offset=i1;_},Physical (s2,i2) ->
@@ -175,6 +192,37 @@ let do_mk_sym sym = match Misc.tr_pte sym with
 
 let mk_sym_virtual s = Symbolic (do_mk_virtual s)
 let mk_sym s = Symbolic (do_mk_sym s)
+
+let as_virtual s =
+  if Misc.is_pte s || Misc.is_physical s || Misc.is_atag s then
+    Warn.user_error "Non-virtual id %s" s ;
+  s
+
+
+let mk_sym_pte s =
+  let s = as_virtual s in
+  Symbolic (System (PTE,s))
+
+let mk_sym_pte2 s =
+  let s = as_virtual s in
+  Symbolic (System (PTE2,s))
+
+let mk_sym_pa s =
+  let s = as_virtual s in
+  Symbolic (Physical (s,0))
+
+let old2new s =
+ match Misc.tr_pte s with
+| Some s ->
+   begin match Misc.tr_pte s with
+   | Some s -> Misc.pp_pte (Misc.pp_pte s)
+   | None -> Misc.pp_pte s
+   end
+| None ->
+   begin match Misc.tr_physical s with
+   | Some s -> Misc.pp_physical s
+   | None -> s
+   end
 
 let mk_vec sz v =
   assert (sz == (List.length v));
@@ -226,7 +274,7 @@ let is_pt v = match v with
 let same_oa v1 v2 =
   let open PTEVal in
   match v1,v2 with
-  | PteVal p1,PteVal p2 ->  Misc.string_eq p1.oa p2.oa
+  | PteVal p1,PteVal p2 ->  PTEVal.oa_eq p1.oa p2.oa
   | _ -> false
 
 let writable ha hd v =
@@ -251,6 +299,7 @@ module type S =  sig
   val pp : bool -> v -> string (* true -> hexa *)
   val pp_unsigned : bool -> v -> string (* true -> hexa *)
   val pp_v  : v -> string
+  val pp_v_old  : v -> string
   val compare : v -> v -> int
   val eq : v -> v -> bool
   val vToName : v -> string

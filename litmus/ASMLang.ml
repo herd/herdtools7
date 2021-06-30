@@ -464,7 +464,7 @@ module RegMap = A.RegMap)
         let open Constant in
         fun ptevalEnv v -> match v with
         | Symbolic sym ->
-            let s = Constant.pp_symbol sym in
+            let s = Constant.pp_symbol_old sym in
             sprintf "%s%s"
               (match O.memory with Memory.Direct -> "" | Memory.Indirect -> "*")
               s
@@ -620,8 +620,7 @@ module RegMap = A.RegMap)
         let ptevals =
           List.map
             (fun p ->
-              let open PTEVal in
-              match Misc.tr_physical p.oa with
+              match PTEVal.as_physical p.PTEVal.oa with
               | None ->
                   Warn.user_error "litmus cannot handle pte initialisation with '%s'"
                     (PTEVal.pp p)

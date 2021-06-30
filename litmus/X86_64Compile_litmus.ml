@@ -90,8 +90,8 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
     |  Rm64_deref (reg,o) -> pp_offset o ^ "(" ^ compile_reg reg ^ ")",(i+1,[reg]),(o,[])
     |  Rm64_abs abs ->
         (let name = A.tr_global abs in
-        if internal_addr name then G.pp name
-        else sprintf "%%[%s]" (G.pp name)),
+        if internal_addr name then G.pp_old name
+        else sprintf "%%[%s]" (G.pp_old name)),
         (i,[]),(o,[])
 
     let compile_ea_move i o ea = match ea with
@@ -103,7 +103,7 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
     |  Rm64_deref (reg,o) -> pp_offset o ^ "(" ^ compile_reg reg ^ ")",(i+1,[reg]),(o,[])
     |  Rm64_abs abs ->
         let name = A.tr_global abs in
-        sprintf "%%[%s]" (G.pp name),(i,[]),(o,[])
+        sprintf "%%[%s]" (G.pp_old name),(i,[]),(o,[])
 
     let compile_ea_output i o ea = match ea with
     | Effaddr_rm64 r -> compile_rm64_output i o r
@@ -114,7 +114,7 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
     |  Rm64_deref (reg,o) -> pp_offset o ^ "(" ^ compile_reg reg ^ ")",(i+1,[reg])
     |  Rm64_abs abs ->
         let name = A.tr_global abs in
-        sprintf "%%[%s]" (G.pp name),(i,[])
+        sprintf "%%[%s]" (G.pp_old name),(i,[])
 
     let compile_ea_input i ea = match ea with
     | Effaddr_rm64 r -> compile_rm64_input i r

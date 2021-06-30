@@ -34,11 +34,18 @@ module type S = sig
     | Location_reg of int*loc_reg
 
   val pp_location : location -> string
+  val pp_location_brk : location -> string
   val pp_rval : location -> string
   val location_compare : location -> location -> int
   val of_proc : int -> location -> loc_reg option
   val is_global : location -> bool
   val global : location -> loc_global option
+
+(* Group locations as follows
+   1. Global locations, one per list
+   2. registers by proc
+*)
+  val env_for_pp : (location * 'a) list -> (location * 'a) list list
 
   module LocSet : MySet.S with type elt = location
   module LocMap : MyMap.S with type key = location
@@ -80,10 +87,21 @@ with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
     | Location_reg (proc,r) -> string_of_int proc ^ ":" ^ A.pp_reg r
     | Location_global a -> A.pp_global a
 
+    let pp_location_brk l = match l with
+    | Location_reg (proc,r) -> string_of_int proc ^ ":" ^ A.pp_reg r
+    | Location_global a -> "[" ^ A.pp_global a ^ "]"
+
     let pp_rval l = match l with
     | Location_reg (proc,r) -> string_of_int proc ^ ":" ^ A.pp_reg r
     | Location_global a -> sprintf "*%s" (A.pp_global a)
 
+    let env_for_pp env =
+      Misc.group_by_int
+        (fun loc ->
+          match loc with
+          | Location_reg (proc,_) -> Some proc
+          | Location_global _ -> None)
+        env
 (*
   The following compare  comes from ancient code
   that used that order to pretty print states.

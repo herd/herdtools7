@@ -55,7 +55,8 @@ module Top
             let dump_loc = MiscParser.dump_location
             let dump_reg r = r
 
-            let dump_state_atom dump_loc a = MiscParser.dump_state_atom dump_loc dump_v a
+            let dump_state_atom dump_loc a =
+              MiscParser.dump_state_atom MiscParser.is_global dump_loc dump_v a
 
             type state = MiscParser.state
 
@@ -100,7 +101,9 @@ module Top
               let st = global_st @ zeros in
               String.concat " "
                 (List.map
-                   (fun a -> sprintf "%s;" (dump_state_atom dump_loc a))
+                   (fun a ->
+                     sprintf "%s;"
+                       (dump_state_atom dump_loc a))
                    st)
 
             let ignore_reg _r () = ()
@@ -129,12 +132,15 @@ module Top
               match st with
               | [] -> None
               | _ ->
-                  let pp =
-                    String.concat " "
-                      (List.map
-                         (fun a -> sprintf "%s;" (dump_state_atom dump_reg a))
-                         st) in
-                  Some pp
+                 let pp =
+                   String.concat " "
+                     (List.map
+                        (fun a ->
+                          MiscParser.dump_state_atom
+                            (fun _ -> false)
+                            dump_reg dump_v a)
+                        st) in
+                 Some pp
 
             type prop = MiscParser.prop
 
