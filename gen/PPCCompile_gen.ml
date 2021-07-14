@@ -196,10 +196,12 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
     let emit_store_reg st p init x rA =
       emit_store_reg_mixed naturalsize 0 st p init x rA
 
-
-    let emit_store_idx_reg  st p init x idx rA =
+    let emit_store_idx_reg_mixed sz st p init x idx rA =
       let rB,init,st = U.next_init st p init x in
-      init,[PPC.Instruction (PPC.Pstorex (Word,rA,idx,rB))],st
+      init,[PPC.Instruction (PPC.Pstorex (sz,rA,idx,rB))],st
+
+    let emit_store_idx_reg st p init x idx rA =
+      emit_store_idx_reg_mixed naturalsize st p init x idx rA
 
     let emit_store_mixed sz o st p init x v =
       let rA,init,csi,st = U.emit_mov st p init v in
