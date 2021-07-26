@@ -74,6 +74,21 @@ module Make
          | Node _ -> assert false
          | _ -> None
 
+       let ambiguous_target = function
+         | Po _|Fenced _|Dp _
+           -> true
+         |Rf _|Ws _|Fr _
+         |Id|Hat|Leave _|Back _
+         |Insert _|Node _|Rmw _|Irf _|Ifr _
+           -> false
+       and ambiguous_source = function
+         | Po _|Fenced _
+           -> true
+         |Dp _| Rf _|Ws _|Fr _
+         |Id|Hat|Leave _|Back _
+         |Insert _|Node _|Rmw _|Irf _|Ifr _
+           -> false
+
        let plain  = Misc.lowercase (A.pp_plain)
 
        let atom_name = function
@@ -84,10 +99,11 @@ module Make
        | None,None -> ""
        | _ -> sprintf "%s%s" (atom_name a1) (atom_name a2)
 
-       let one_name is_last e = match edge_name e.edge with
+       let one_name no_dir e = match edge_name e.edge with
        | Some n ->
           let d =
-            if is_last then "" else Code.pp_extr (E.dir_tgt e) in
+            if no_dir then ""
+            else Code.pp_extr (E.dir_tgt e) in
           Some (sprintf "%s%s%s" n d (atoms_name e.a1 e.a2))
        | None -> None
 
@@ -162,12 +178,17 @@ module Make
              (fun es ->
                let rec pp = function
                  | [] -> []
-                 | e::es ->
-                    let is_last = Misc.nilp es in
-                    begin match one_name is_last e with
-                    | Some s -> s::pp es
-                    | None -> Warn.fatal "Namer failiure"
-                    end  in
+                 | [e] ->
+                    pp_one true e []
+                 | e::(f::_ as es) ->
+                    pp_one
+                      (not
+                         (ambiguous_target e.edge
+                          && ambiguous_source f.edge))
+                      e es
+               and pp_one no_dir e es = match one_name no_dir e with
+                 | Some s -> s::pp es
+                 | None -> Warn.fatal "Namer failiure" in
                String.concat "-" (pp es))
              xss in
          xs
