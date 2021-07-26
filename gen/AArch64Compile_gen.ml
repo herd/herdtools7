@@ -1300,9 +1300,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | CacheSync (s,isb) ->
         try
           let lab = C.find_prev_code_write n in
-          let r = U.find_init p init lab in
+          let r,init,st = U.next_init st p init lab in
           init,emit_cachesync s isb r,st
-        with Not_found -> Warn.user_error "No code write before CacheSync"
+        with Not_found ->
+          Warn.user_error "No code write before CacheSync"
 
     let stronger_fence = strong
 
