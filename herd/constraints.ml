@@ -36,8 +36,6 @@ module type S = sig
   type constr = prop ConstrGen.constr
 
 (* Does loc appears in constr ? *)
-  val loc_in : A.location -> constr -> bool
-
   val foralltrue : constr
 
   module Mixed : functor (SZ: ByteSize.S) -> sig
@@ -87,31 +85,6 @@ module Make (C:Config) (A : Arch_herd.S) :
         type constr = prop ConstrGen.constr
 
         let foralltrue = ForallStates ptrue
-
-        let loc_in_atom loc = function
-          | LL (l1,l2) ->
-              A.location_compare l1 loc = 0 ||
-              A.location_compare l2 loc = 0
-          | LV (l,_) ->
-              A.location_compare (loc_of_rloc l) loc = 0
-          | FF (_,x) ->
-              A.location_compare
-                (A.Location_global x)
-                loc = 0
-
-        let rec loc_in_prop loc p = match p with
-        | Atom a -> loc_in_atom loc a
-        | Not p -> loc_in_prop loc p
-        | And ps|Or ps -> loc_in_props loc ps
-        | Implies (p1,p2) ->
-            loc_in_prop loc p1 || loc_in_prop loc p2
-
-        and loc_in_props loc =  List.exists (loc_in_prop loc)
-
-        let loc_in loc c = match c with
-        | ForallStates p
-        | ExistsState p
-        | NotExistsState p -> loc_in_prop loc p
 
         module Mixed (SZ : ByteSize.S) = struct
           module AM = A.Mixed(SZ)
