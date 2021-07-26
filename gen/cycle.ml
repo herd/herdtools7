@@ -859,7 +859,9 @@ let do_set_read_v =
                  st in
             do_rec st
               (match bank with
-               | Ord|VecReg _ -> n.evt.cell
+               | Ord|VecReg _ ->
+                  if Code.is_data n.evt.loc then n.evt.cell
+                  else cell
                | Tag|CapaTag|CapaSeal|Pte -> cell)
               (match bank with
                | Ord|Tag|CapaTag|CapaSeal|VecReg _ -> pte_cell
@@ -874,7 +876,7 @@ let do_set_read_v =
      let sz = get_wide_list ns in
      let st = CoSt.create sz in
      let cell = CoSt.get_cell st in
-      do_rec st cell
+     do_rec st cell
         (pte_val_init n.evt.loc)
         ns
 
