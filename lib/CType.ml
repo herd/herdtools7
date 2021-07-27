@@ -26,7 +26,8 @@ type t =
 (** limited arrays *)
   | Array of base * int
 
-let voidstar = Pointer (Base "void")
+let void = Base "void"
+let voidstar = Pointer void
 let word = Base "int"
 let quad = Base "int64_t"
 let int128 = Array ("int",4) (* Why not Base "int128_t"? *)
