@@ -60,7 +60,7 @@ let dump_global_type loc t = match t with
 
 let rec nitems t = match t with
 | Array (_,sz) -> sz
-| Volatile t|Atomic t -> nitems t
+| Volatile t|Atomic t|Const t -> nitems t
 | Base _|Pointer _ -> 1
 
 let dump_fatom_tag d ((p,lbl),v) =
@@ -305,7 +305,7 @@ module Make
             ["("; "oa:%s";  ", af:%d"; ", db:%d";
              ", dbm:%d"; ", valid:%d"; ", el0:%d"; ")"]
         | CType.Base t -> [pp_fmt_base t]
-        | CType.Atomic t|CType.Volatile t -> pp_fmt t
+        | CType.Atomic t|CType.Volatile t|CType.Const t-> pp_fmt t
         | CType.Array (t,sz) ->
             let fmt_elt = pp_fmt_base t in
             let fmts = Misc.replicate sz fmt_elt in

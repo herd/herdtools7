@@ -748,7 +748,7 @@ module Make
                 (fun (b,t) k -> match t with
                 | Base "mtx_t" -> k
                 | _ ->
-                    let pp_t = pp_t b (CType.strip_volatile t) in
+                    let pp_t = pp_t b (CType.strip_volatile (CType.strip_const t)) in
                     let a = tag_mem b in
                     begin match t,do_staticalloc with
                     | Array _,false ->
@@ -1133,6 +1133,7 @@ module Make
           List.iter
             (fun (a,t) ->
               let t = CType.strip_volatile t in
+              let t = CType.strip_const t in
               match t with
               | Base "mtx_t" -> ()
               | _ ->
