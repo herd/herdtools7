@@ -534,7 +534,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     | _,_ -> false
 
     let proc_of e = match e.iiid with
-    | IdSome {A.proc=p} -> Some p
+    | IdSome {A.proc=p;_} -> Some p
     | IdSpurious|IdInit -> None
 
     let same_proc e1 e2 = match proc_of e1, proc_of e2 with

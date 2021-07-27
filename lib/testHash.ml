@@ -112,7 +112,7 @@ let digest_info i =
     List.fold_left
       (fun ds (k,i) ->
         if MiscParser.digest_mem k then
-          sprintf "%s=%s" (String.lowercase k) i::ds
+          sprintf "%s=%s" (Misc.lowercase k) i::ds
         else ds)
       [] i in
   match ds with

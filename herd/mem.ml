@@ -389,7 +389,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                    if Constant.is_pt c then
                      let open PTEVal in
                      match v with
-                     | V.Val (Constant.PteVal {af=0}) ->
+                     | V.Val (Constant.PteVal {af=0;_}) ->
                         vloc::k
                      | _ -> k
                    else k
