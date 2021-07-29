@@ -55,7 +55,7 @@ struct
         if MiscParser.LocSet.mem loc locs then p else And []
     | Atom (LV (Deref _,_)) ->
         prerr_endline "TODO" ; assert false
-    | Atom (FF (_,x)) ->
+    | Atom (FF (_,x,_)) ->
         let loc = MiscParser.Location_global (Constant.check_sym x) in
         if MiscParser.LocSet.mem loc locs then p else And []
     | Or ps ->

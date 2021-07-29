@@ -90,7 +90,7 @@ module Make (C:Config) (A : Arch_herd.S) :
           module AM = A.Mixed(SZ)
 
           let do_check_prop look_type look_val flts =
-            let rec do_rec = function
+            let rec do_rec look_val = function
               | Atom (LV (rloc,v)) ->
                  let t = look_type rloc in
                  let w = look_val rloc
@@ -104,14 +104,23 @@ module Make (C:Config) (A : Arch_herd.S) :
                   let v1 = look_val (Loc l1)
                   and v2 = look_val (Loc l2) in
                   A.V.compare v1 v2 = 0
-              | Atom (FF f) -> A.check_fatom flts f
-              | Not p -> not (do_rec p)
-              | And ps -> List.for_all do_rec ps
-              | Or ps -> List.exists do_rec ps
+              | Atom (FF f) ->
+                 let check_prop prop_opt rstate =
+                   match prop_opt with
+                   | None ->
+                      true
+                   | Some prop ->
+                      let look_val rloc = AM.look_in_state_rlocs rstate rloc in
+                      do_rec look_val prop
+                 in
+                 A.check_fatom check_prop flts f
+              | Not p -> not (do_rec look_val p)
+              | And ps -> List.for_all (do_rec look_val) ps
+              | Or ps -> List.exists (do_rec look_val) ps
               | Implies (p1, p2) ->
-                  not (do_rec p1) || do_rec p2 in
+                  not (do_rec look_val p1) || do_rec look_val p2 in
             fun p ->
-              try do_rec p with A.LocUndetermined -> assert false
+              try do_rec look_val p with A.LocUndetermined -> assert false
 
           let check_prop p tenv senv (state,flts) =
             let look_val rloc =
@@ -270,7 +279,7 @@ module Make (C:Config) (A : Arch_herd.S) :
         | Latex ->  sprintf "\\asm{%s}"
         | DotFig ->  sprintf "\\\\asm{%s}"
 
-        let pp_atom tr m a =
+        let rec pp_atom tr m a =
           match a with
           | LV (Deref _ as rloc,v)
           | LV (rloc,(V.Val (Constant.ConcreteVector _) as v))
@@ -287,7 +296,10 @@ module Make (C:Config) (A : Arch_herd.S) :
               pp_equal m ^
               mbox m (pp_loc tr m l2)
           | FF f ->
-              mbox m (Fault.pp_fatom (fun v -> do_add_asm m (V.pp_v v)) f)
+              mbox m (Fault.pp_fatom
+                        (fun v -> do_add_asm m (V.pp_v v))
+                        (ConstrGen.prop_to_string (pp_atom tr m))
+                        f)
 
 (* ascii, parsable dump *)
         let dump_as_kind c = pp_kind (kind_of c)

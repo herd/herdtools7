@@ -33,6 +33,8 @@ module type S = sig
 
   type 'a type_env = ('a * CType.t) list
   type env_volatile = string list
+  type prop = (A.location,A.V.v) ConstrGen.prop
+  type fault = (A.V.v,prop) Fault.atom
 
   type t =
     { init : A.state ;
@@ -42,7 +44,7 @@ module type S = sig
       filter : C.prop option ;
       globals : string type_env ;
       flocs : A.location ConstrGen.rloc list ;
-      ffaults : A.V.v Fault.atom list;
+      ffaults : fault list;
       global_code : string list;
       src : src ;
       type_env : CType.t A.LocMap.t * CType.t StringMap.t ;
@@ -75,6 +77,8 @@ struct
          MiscParser.result
 
   type env_volatile = string list
+  type prop = (A.location,A.V.v) ConstrGen.prop
+  type fault = (A.V.v,prop) Fault.atom
 
   type t =
     { init : A.state ;
@@ -84,7 +88,7 @@ struct
       filter : C.prop option ;
       globals : string type_env ; (* Virtual addresses only *)
       flocs : A.location ConstrGen.rloc list ;
-      ffaults : A.V.v Fault.atom list;
+      ffaults : fault list;
       global_code : string list;
       src : src ;
       type_env : CType.t A.LocMap.t * CType.t StringMap.t ;

@@ -257,6 +257,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       env
 
     module SM = S.Mixed(C)
+    module T = Test_herd.Make(S.A)
 
     let glommed_event_structures (test:S.test) =
       let tooFar = ref false in
@@ -300,12 +301,40 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         in if dbg then eprintf "fetch: %s %s\n" lbl (match r with None -> "None" | Some _ -> "Some"); r in
 
       let rec add_next_instr re_exec proc env seen addr inst nexts =
+        let labels = labels_of_instr addr in
+        let open ConstrGen in
+        let cnstr = T.find_our_constraint test in
+        let flocs =
+          let collect_fprops p r =
+            let senv = S.size_env test in
+            let collect_locs a r = match a with
+              | LV (l,_) ->
+                 let loc = loc_of_rloc l in
+                 let sz = A.look_size_location senv loc in
+                 (loc,sz)::r
+              | LL (l1,l2) ->
+                 let sz1 = A.look_size_location senv l1 in
+                 let sz2 = A.look_size_location senv l2 in
+                 (l1,sz1)::((l2,sz2)::r)
+              | FF _ -> assert false
+            in
+            match p with
+            | FF ((p,Some lbl),_,Some prop) -> begin
+                match Proc.compare proc p with
+                | 0 ->
+                   if Label.Set.mem lbl labels then fold_prop collect_locs prop r else r
+                | _ -> r
+              end
+            | _ -> r
+          in
+          fold_constr collect_fprops cnstr [] in
         let wrap poi =
           (let ii =
             { A.program_order_index = poi;
               proc = proc; inst = inst; unroll_count = 0;
-              labels = labels_of_instr addr;
-              env = env; }
+              labels = labels;
+              env = env;
+              flocs = flocs }
           in SM.build_semantics ii) in
         wrap >>> fun branch ->
           let env = A.kill_regs (A.killed inst) env in
@@ -1128,8 +1157,6 @@ let match_reg_events es =
   If no, not need to go on
  *)
 
-    module T = Test_herd.Make(S.A)
-
     let final_is_relevant test fsc =
       let open ConstrGen in
       let cnstr = T.find_our_constraint test in
@@ -1174,10 +1201,29 @@ let match_reg_events es =
           rfm test.Test_herd.init_state in
       st,
       if memtag || morello || kvm  then
+        let open ConstrGen in
         E.EventSet.fold
-          (fun e k -> match E.to_fault e with
-          | Some f -> A.FaultSet.add f k
-          | None -> k)
+          (fun e k ->
+            match E.to_fault e with
+            | Some (p,loc,rst,msg) ->
+               let rst =
+                 E.EventSet.fold
+                   (fun e1 r ->
+                     if E.same_instruction e e1 && E.is_explicit e1 && E.is_mem_load e1 then begin
+                         let l1 =
+                           match E.location_of e1 with
+                           | Some l -> rloc_of_loc (tr_physical l)
+                           | None -> assert false in
+                         let v1 =
+                           match E.read_of e1 with
+                           | Some v -> v
+                           | None -> assert false in
+                         S.A.rstate_add l1 v1 r
+                       end
+                     else r
+                   ) es rst in
+               A.FaultSet.add (p,loc,rst,msg) k
+            | None -> k)
           es A.FaultSet.empty
       else A.FaultSet.empty
 

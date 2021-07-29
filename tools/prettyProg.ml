@@ -301,6 +301,24 @@ module Make(O:Config)(A:Arch_tools.S) =
 
 
       let arg =
+        let rec pp_atom = function
+          | LV (loc,v) ->
+             let pp_loc =
+               match loc,v with
+               | (Deref _,_)
+               | (_,Constant.ConcreteVector _)
+                 -> pp_location
+               | _ -> pp_location_brk in
+             pp_mbox (ConstrGen.dump_rloc pp_loc loc) ^
+               pp_equal ^
+                 pp_mbox (pp_asm_v v)
+          | LL (l1,l2) ->
+             pp_mbox (pp_location_brk l1) ^
+             pp_equal ^
+             pp_mbox (pp_location_brk l2) ;
+          | FF f ->
+             pp_mbox (Fault.pp_fatom pp_asm_v (ConstrGen.prop_to_string pp_atom) f)
+        in
         { ConstrGen.pp_true = "\\top" ;
           pp_false = "\\perp" ;
           pp_not = "\\neg" ;
@@ -308,24 +326,7 @@ module Make(O:Config)(A:Arch_tools.S) =
           pp_or = "\\vee" ;
           pp_implies = "\\Righarrow" ;
           pp_mbox = sprintf "\\mbox{%s}" ;
-          pp_atom = fun a ->
-            match a with
-            | LV (loc,v) ->
-                let pp_loc =
-                  match loc,v with
-                  | (Deref _,_)
-                  | (_,Constant.ConcreteVector _)
-                    -> pp_location
-                  | _ -> pp_location_brk in
-              pp_mbox (ConstrGen.dump_rloc pp_loc loc) ^
-              pp_equal ^
-              pp_mbox (pp_asm_v v)
-          | LL (l1,l2) ->
-              pp_mbox (pp_location_brk l1) ^
-              pp_equal ^
-              pp_mbox (pp_location_brk l2) ;
-          | FF f ->
-              pp_mbox (Fault.pp_fatom pp_asm_v f)
+          pp_atom = pp_atom
         }
 
       let enddollar = sprintf "$%s$"

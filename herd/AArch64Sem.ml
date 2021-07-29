@@ -102,9 +102,6 @@ module Make
 
       let mk_read_std = mk_read quad AArch64.N
 
-      let mk_fault a ii msg =
-        M.mk_singleton_es (Act.Fault (ii,A.Location_global a,msg)) ii
-
       let read_loc v is_data = M.read_loc is_data (mk_read v AArch64.N aexp)
 
       let read_reg is_data r ii = match r with
@@ -520,9 +517,6 @@ module Make
 
          *)
 
-      let mk_pte_fault a ma ii =
-        insert_commit_to_fault ma
-          (fun _ -> mk_fault a ii (Some "EL0")) ii >>! B.Exit
 
       let an_xpte =
         let open AArch64 in
@@ -543,7 +537,7 @@ module Make
         | NoRet|T|S -> N
 
 
-      let check_ptw proc dir updatedb a_virt ma an ii mdirect mok mfault =
+      let check_ptw proc dir updatedb a_virt ma an ii mdirect mok mfault mkfault =
 
         let is_el0  = List.exists (Proc.equal proc) TopConf.procs_user in
         let check_el0 m =
@@ -669,7 +663,9 @@ module Make
           M.choiceT cond mvirt
             (* Non-virtual accesses are disallowed from EL0.
                For instance, user code cannot access the page table. *)
-            (if is_el0 then mk_pte_fault a_virt ma ii
+            (if is_el0 then
+               insert_commit_to_fault ma
+                 (fun _ -> mkfault a_virt ii (Some "EL0")) ii >>! B.Exit
              else mdirect)
 
 (* Read memory, return value read *)
@@ -787,23 +783,23 @@ module Make
   addresses. Thus the resulting monads will possess
   extra dependencies w.r.t the simple case.
  *)
-      let lift_memtag_phy mop a_virt ma ii =
+      let lift_memtag_phy mop a_virt ma mkfault ii =
         M.delay_kont "4" ma
           (fun _ ma ->
             let mm = mop Access.PHY ma in
             delayed_check_tags a_virt ma ii
               (mm  >>! B.Next)
-              (let mfault = mk_fault a_virt ii None in
+              (let mfault = mkfault a_virt ii None in
               if C.precision then  mfault >>! B.Exit
               else (mfault >>| mm) >>! B.Next))
 
-      let lift_memtag_virt mop ma ii =
+      let lift_memtag_virt mop ma mkfault ii =
         M.delay_kont "5" ma
           (fun a_virt ma  ->
             let mm = mop Access.VIR (ma >>= fun a -> loc_extract a) in
             delayed_check_tags a_virt ma ii
               (mm  >>! B.Next)
-              (let mfault = ma >>= fun a -> mk_fault a ii None in
+              (let mfault = ma >>= fun a -> mkfault a ii None in
               if C.precision then  mfault >>! B.Exit
               else (mfault >>| mm) >>! B.Next))
 
@@ -821,16 +817,17 @@ module Make
             fun (r,_) -> M.unitT r
         else m
 
-      let lift_kvm dir updatedb mop ma an ii mphy =
+
+      let lift_kvm dir updatedb mop ma an mkfault ii mphy =
         let mfault ma a =
-          insert_commit_to_fault ma (fun _ -> mk_fault a ii None) ii
+          insert_commit_to_fault ma (fun _ -> mkfault a ii None) ii
           >>! if C.precision then B.Exit else B.ReExec in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb a ma an ii
             ((let m = mop Access.PTE ma in
               fire_spurious_af dir a m) >>! B.Next)
             mphy
-            mfault in
+            mfault mkfault in
         M.delay_kont "6" ma
           (if pte2 then maccess
            else
@@ -839,11 +836,11 @@ module Make
              | Access.VIR|Access.PTE -> maccess a ma
              | ac -> mop ac ma >>! B.Next)
 
-      let lift_morello mop perms ma mv ii =
+      let lift_morello mop perms ma mv mkfault ii =
         let mfault msg ma mv =
           do_insert_commit
             (ma >>| mv)
-            (fun (a,_v) -> mk_fault a ii (Some msg)) ii  >>! B.Exit in
+            (fun (a,_v) -> mkfault a ii (Some msg)) ii  >>! B.Exit in
         M.delay_kont "morello" ma
           (fun a ma ->
             (* Notice: virtual access only, beaause morello # kvm *)
@@ -868,17 +865,18 @@ module Make
 
       let apply_mv mop mv = fun ac ma -> mop ac ma mv
 
-      let lift_memop dir updatedb mop perms ma mv an ii =
+
+      let lift_memop dir updatedb mop perms ma mv an mkfault ii =
         if morello then
-          lift_morello mop perms ma mv ii
+          lift_morello mop perms ma mv mkfault ii
         else
           let mop = apply_mv mop mv in
           if memtag then
             begin
               if kvm then
-                let mphy = (fun ma a -> lift_memtag_phy mop a ma ii) in
-                lift_kvm dir updatedb mop ma an ii mphy
-              else lift_memtag_virt mop ma ii
+                let mphy = (fun ma a -> lift_memtag_phy mop a ma mkfault ii) in
+                lift_kvm dir updatedb mop ma an mkfault ii mphy
+              else lift_memtag_virt mop ma mkfault ii
             end
           else if kvm then
             let mphy =
@@ -891,9 +889,32 @@ module Make
                 >>! B.Next
               else
                 fun ma _a -> mop Access.PHY ma >>! B.Next in
-            lift_kvm dir updatedb mop ma an ii mphy
+            lift_kvm dir updatedb mop ma an mkfault ii mphy
           else
             mop Access.VIR ma >>! B.Next
+
+      let rec mk_fault a ii msg =
+        let read_mem (loc,sz) =
+          let mop ac a =
+            do_read_mem sz AArch64.N AArch64.exp_annot ac AArch64.ZR a ii in
+          let ma = match loc with
+            | A.Location_global a ->
+               M.unitT a
+            | _ -> assert false
+          in
+          lift_memop Dir.R false
+            (fun ac ma _mv -> (* value fake here *)
+               if Access.is_physical ac then
+                 M.bind_ctrldata ma (mop ac)
+               else
+                 ma >>= mop ac)
+            (to_perms "r" MachSize.Word)
+            ma mzero AArch64.N mk_fault A.({ ii with flocs = []; })
+        in
+        let mreads = List.map read_mem ii.A.flocs in
+        let mreads = List.fold_right (>>::) mreads (M.unitT [B.Next]) in
+        let mfault = M.mk_singleton_es (Act.Fault (ii,A.Location_global a,msg)) in
+        M.bind_ctrldata (mfault ii) (fun _ -> mreads)
 
 (* Generic load *)
       let do_ldr sz an mop ma ii =
@@ -904,7 +925,7 @@ module Make
             else
               ma >>= mop ac)
           (to_perms "r" sz)
-          ma mzero an ii
+          ma mzero an mk_fault ii
 
 (* Generic store *)
       let do_str sz an ma mv ii =
@@ -923,7 +944,7 @@ module Make
             else
               (ma >>| mv) >>= fun (a,v) ->
               do_write_mem sz an aexp ac a v ii)
-          (to_perms "w" sz) ma mv an ii
+          (to_perms "w" sz) ma mv an mk_fault ii
 
 (***********************)
 (* Memory instructions *)
@@ -1034,7 +1055,7 @@ module Make
                 write_mem_atomic sz an aexp ac ea v resa ii))
           (to_perms "w" sz)
           (read_reg_ord rd ii)
-          (read_reg_data sz rs ii) an ii
+          (read_reg_data sz rs ii) an mk_fault ii
 
 (* AMO instructions *)
       let rmw_amo_read sz rmw =
@@ -1070,6 +1091,7 @@ module Make
           (read_reg_ord r3 ii)
           (read_reg_data sz r1 ii)
           (rmw_to_read rmw)
+          mk_fault
           ii
 
       let cas sz rmw rs rt rn ii =
@@ -1090,7 +1112,7 @@ module Make
                M.aarch64_cas_ok is_phy ma read_rs read_rt write_rs
                  read_mem write_mem M.eqT))
           (to_perms "rw" sz) (read_reg_ord rn ii) (read_reg_data sz rt ii)
-        an ii
+        an mk_fault ii
 
       (* Temporary morello variation of CAS *)
       let cas_morello sz rmw rs rt rn ii =
@@ -1122,6 +1144,7 @@ module Make
           (to_perms "rw" sz)
           (read_reg_ord rn ii)
           (read_reg_data sz rt ii)
+          mk_fault
           ii
 
       let ldop op sz rmw rs rt rn ii =
@@ -1151,7 +1174,7 @@ module Make
           (to_perms "rw" sz)
           (read_reg_ord rn ii)
           (read_reg_data sz rs ii)
-          an ii
+          an mk_fault ii
 
       (* Neon extension *)
       let simd_ldr sz addr rd ii =
@@ -1365,7 +1388,7 @@ module Make
                 else
                   ma >>= mop ac)
               (to_perms "r" MachSize.Word)
-              (read_reg_ord rd ii) mzero AArch64.N ii
+              (read_reg_ord rd ii) mzero AArch64.N mk_fault ii
           end
 
 (********************)
@@ -1705,6 +1728,7 @@ module Make
               (to_perms "tw" MachSize.S128)
               (read_reg_ord rn ii)
               (read_reg_data MachSize.Quad rt ii)
+              mk_fault
               ii
         | I_LDCT(rt,rn) ->
             check_morello ii ;
@@ -1725,6 +1749,7 @@ module Make
               (to_perms "r" MachSize.S128)
               (read_reg_ord rn ii)
               mzero
+              mk_fault
               ii
         | I_UNSEAL(rd,rn,rm) ->
             check_morello ii ;

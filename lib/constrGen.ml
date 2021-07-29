@@ -50,25 +50,9 @@ let match_rloc f g = function
 type ('loc,'v) atom =
   | LV of 'loc rloc * 'v
   | LL of 'loc * 'loc
-  | FF of 'v Fault.atom
+  | FF of ('v, ('loc,'v) prop) Fault.atom
 
-let dump_atom pp_loc pp_loc_brk pp_v a =
-  match a with
-  | LV (loc,v) ->
-      let pp_loc =
-        match loc,v with
-        | (Deref _,_)
-        | (_,Constant.ConcreteVector _)
-          -> pp_loc
-        | _ -> pp_loc_brk in
-      sprintf "%s=%s"
-        (dump_rloc pp_loc loc)
-        (pp_v v)
-  | LL (loc1,loc2) ->
-      sprintf "%s=%s" (pp_loc_brk loc1) (pp_loc_brk loc2)
-  | FF f -> Fault.pp_fatom pp_v f
-
-type ('l,'v) prop =
+and ('l,'v) prop =
   | Atom of ('l, 'v) atom
   | Not of ('l,'v) prop
   | And of ('l,'v) prop list
@@ -275,6 +259,22 @@ let dump_prop pp_atom =
   fun chan p -> output_string chan (pp_prop (mk_arg pp_atom) p)
 
 let prop_to_string pp_atom = pp_prop (mk_arg pp_atom)
+
+let rec dump_atom pp_loc pp_loc_brk pp_v a =
+  match a with
+  | LV (loc,v) ->
+     let pp_loc =
+       match loc,v with
+       | (Deref _,_)
+         | (_,Constant.ConcreteVector _)
+         -> pp_loc
+       | _ -> pp_loc_brk in
+     sprintf "%s=%s"
+       (dump_rloc pp_loc loc)
+       (pp_v v)
+  | LL (loc1,loc2) ->
+     sprintf "%s=%s" (pp_loc_brk loc1) (pp_loc_brk loc2)
+  | FF f -> Fault.pp_fatom pp_v (prop_to_string (dump_atom pp_loc pp_loc_brk pp_v)) f
 
 let dump_constraints chan pp_atom c = match c with
 | ForallStates p ->

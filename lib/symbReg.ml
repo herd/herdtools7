@@ -79,28 +79,29 @@ and type pseudo = A.pseudo
 
   let finish_state f_reg = List.map (finish_state_atom f_reg)
 
-  let finish_location_item f =
-    let open LocationsItem in
-    function
-    | Loc (loc,t) -> Loc (ConstrGen.map_rloc f loc,t)
-    | Fault v -> Fault (Fault.map_value A.maybevToV v)
-
-  let finish_locations f_reg =
-    List.map (finish_location_item (finish_location f_reg))
-
-
-  let finish_atom f_reg a =
+  let rec finish_atom f_reg a =
     let open ConstrGen in
     match a with
     | LV (loc,v) -> LV (finish_rval f_reg loc, A.maybevToV v)
     | LL (l1,l2) -> LL (finish_location f_reg l1,finish_location f_reg l2)
-    | FF (p,v) -> FF (p,A.maybevToV v)
+    | FF (p,v,None) -> FF (p,A.maybevToV v,None)
+    | FF (p,v,Some prop) -> FF (p,A.maybevToV v,Some (ConstrGen.map_prop (finish_atom f_reg) prop))
 
-   let finish_prop f_reg = ConstrGen.map_prop (finish_atom f_reg)
+  let finish_prop f_reg = ConstrGen.map_prop (finish_atom f_reg)
 
   let finish_filter f_reg = function
     | None -> None
     | Some p -> Some (finish_prop f_reg p)
+
+  let finish_location_item f_reg =
+    let open LocationsItem in
+    function
+    | Loc (loc,t) -> Loc (finish_rval f_reg loc,t)
+    | Fault (p,v,None) -> Fault (p, A.maybevToV v, None)
+    | Fault (p,v,Some prop) -> Fault (p,A.maybevToV v,Some (ConstrGen.map_prop (finish_atom f_reg) prop))
+
+  let finish_locations f_reg =
+    List.map (finish_location_item f_reg)
 
   let finish_constr f_reg = ConstrGen.map_constr (finish_atom f_reg)
 

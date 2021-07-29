@@ -64,7 +64,7 @@ let call_parser name lexbuf lex parse =
       match a with
       | LV (loc,_) -> check_rloc procs loc
       | LL (l1,l2) -> check_loc procs l1 ; check_loc procs l2
-      | FF ((p,_),_) -> check_one_proc procs p
+      | FF ((p,_),_,_) -> check_one_proc procs p
 
     let check_regs procs init locs final =
       List.iter (fun (loc,_) -> check_loc procs  loc) init ;
@@ -72,14 +72,19 @@ let call_parser name lexbuf lex parse =
       ConstrGen.fold_constr (fun a () -> check_atom procs a) final ()
 
 (* Extract locations final items *)
-    let get_locs_atom a =
+    let rec get_locs_atom a =
       let open ConstrGen in
       let open MiscParser in
       match a with
       | LV (loc,_) -> RLocSet.add loc
       | LL (loc1,loc2) ->
           (fun k -> RLocSet.add (Loc loc1) (RLocSet.add (Loc loc2) k))
-      | FF (_,x) -> RLocSet.add (Loc (MiscParser.Location_global x))
+      | FF (_,x,None) ->
+          (fun k -> RLocSet.add (Loc (MiscParser.Location_global x)) k)
+      | FF (_,x,Some prop) ->
+         (fun k -> RLocSet.union
+                     (RLocSet.add (Loc (MiscParser.Location_global x)) k)
+                     (ConstrGen.fold_prop get_locs_atom prop MiscParser.RLocSet.empty))
 
     let get_visible_locs locs c =
       MiscParser.RLocSet.union

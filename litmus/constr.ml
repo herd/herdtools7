@@ -29,6 +29,7 @@ module type S = sig
 
   type prop = (location,V.v) ConstrGen.prop
   type cond = prop ConstrGen.constr
+  type fault = (V.v,prop) Fault.atom
 
 (* List of read locations *)
   val locations : cond -> LocSet.t
@@ -41,7 +42,7 @@ module type S = sig
   val location_values_prop : prop -> string list
 
 (* All faults *)
-  val get_faults : cond -> V.v Fault.atom list
+  val get_faults : cond -> fault list
 
 end
 
@@ -63,6 +64,7 @@ module RLocSet = A.RLocSet =
 
     type prop = (location,V.v) ConstrGen.prop
     type cond = prop ConstrGen.constr
+    type fault = (V.v,prop) Fault.atom
 
     let locations_atom a r =
       match a with
@@ -115,7 +117,8 @@ module RLocSet = A.RLocSet =
       Strings.elements locs
 
     module F = struct
-      type t = A.V.v Fault.atom
+      type prop = (A.location,A.V.v) ConstrGen.prop
+      type t = (A.V.v,prop) Fault.atom
       let compare = Fault.atom_compare A.V.compare
     end
 

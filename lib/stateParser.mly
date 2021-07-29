@@ -241,8 +241,8 @@ fault_loc:
 | TOK_PTE LPAR name=NAME RPAR { Constant.mk_sym_pte name }
 
 fault:
-| FAULT LPAR lbl COMMA fault_loc RPAR { ($3,$5) }
-
+| FAULT LPAR lbl COMMA fault_loc RPAR { ($3,$5,None) }
+| FAULT LPAR lbl COMMA fault_loc COMMA prop RPAR { ($3,$5,Some $7) }
 
 loc_item:
 | rloc_typ { let a,t = $1 in LocationsItem.Loc (a,t) }
@@ -383,7 +383,6 @@ atom_prop:
    Delitng it is not a real problem by symetry of equal */
 /* | loc1=location_reg  equal loc2=loc_brk
     { Atom (LL (loc1,loc2)) } */
-| fault { Atom (FF $1) }
 
 prop:
 | TRUE
@@ -392,6 +391,8 @@ prop:
     {Or []}
 | atom_prop
     { $1 }
+| fault
+    { Atom (FF $1) }
 | NOT prop
     {Not $2}
 | prop AND prop

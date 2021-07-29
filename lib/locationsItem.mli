@@ -14,7 +14,11 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type ('loc,'v) t = Loc of 'loc ConstrGen.rloc * TestType.t | Fault of 'v Fault.atom
+type ('loc,'v) fault_atom = ('v,('loc,'v) ConstrGen.prop) Fault.atom
+
+type ('loc, 'v) t =
+| Loc of 'loc ConstrGen.rloc * TestType.t
+| Fault of ('loc,'v) fault_atom
 
 val fold_loc : ('loc -> 'r -> 'r) -> ('loc,'v) t -> 'r -> 'r
 val fold_locs : ('loc -> 'r -> 'r) -> ('loc,'v) t list -> 'r -> 'r
@@ -26,4 +30,4 @@ val map_loc : ('loc -> 'a) -> ('loc,'v) t -> ('a,'v) t
 val map_locs : ('loc -> 'a) -> ('loc,'v) t list -> ('a,'v) t list
 
 val locs_and_faults :
-  ('loc, 'v) t list -> ('loc ConstrGen.rloc list * 'v Fault.atom list)
+  ('loc,'v) t list -> ('loc ConstrGen.rloc list * ('loc,'v)fault_atom list)

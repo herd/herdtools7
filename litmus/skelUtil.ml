@@ -64,7 +64,7 @@ let rec nitems t = match t with
 | Volatile t|Atomic t|Const t -> nitems t
 | Base _|Pointer _ -> 1
 
-let dump_fatom_tag d ((p,lbl),v) =
+let dump_fatom_tag d ((p,lbl),v,_prop) =
   sprintf "fault_P%d%s_%s" p (match lbl with None -> "" | Some lbl -> "_" ^ lbl) (d v)
 
 let dump_pteval_flags s p =
@@ -117,7 +117,7 @@ module Make
         T.t -> (CType.base -> string) -> A.RLocSet.t -> env
         -> (string * string list) list
       val fmt_outcome : T.t -> (CType.base -> string) -> A.RLocSet.t -> env -> string
-      val fmt_faults : A.V.v Fault.atom list -> string
+      val fmt_faults : (A.V.v,'prop) Fault.atom list -> string
 
 (* Globals *)
       exception NotGlobal
@@ -137,7 +137,7 @@ module Make
       val is_rloc_pte : A.rlocation -> env -> bool
       val pte_in_outs : env -> T.t -> bool
       val ptr_pte_in_outs : env -> T.t -> bool
-      val get_faults : T.t -> A.V.v Fault.atom list
+      val get_faults : T.t -> T.C.fault list
       val find_label_offset : Proc.t -> string -> T.t -> int
 
 (* Instructions *)
@@ -341,7 +341,7 @@ module Make
       let fmt_faults fs =
         String.concat ""
           (List.map
-             (fun f -> sprintf " %s%s;" "%s" (Fault.pp_fatom A.V.pp_v f))
+             (fun f -> sprintf " %s%s;" "%s" (Fault.pp_fatom A.V.pp_v (fun _ -> "") f))
              fs)
 
 (* Locations *)

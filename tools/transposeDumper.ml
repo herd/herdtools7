@@ -28,11 +28,11 @@ module type I = sig
   val dump_global_state : prog -> state -> string
   val dump_proc_state : int -> A.pseudo list -> state -> string option
 
-  type prop
+  type location
+  type prop = (location, v) ConstrGen.prop
   val dump_prop : prop -> string
   val dump_constr : prop ConstrGen.constr -> string
 
-  type location
   val dump_location : location -> string
 
 end
@@ -130,7 +130,7 @@ end = struct
                    fprintf chan "%s %s*; " (dump_rloc loc) t
                |  TestType.TyArray _|TestType.Atomic _ -> assert false
                end
-           | Fault f -> fprintf chan "%s; " (Fault.pp_fatom I.dump_v f))
+           | Fault f -> fprintf chan "%s; " (Fault.pp_fatom I.dump_v I.dump_prop f))
           locs ;
         fprintf chan "]\n"
     end ;

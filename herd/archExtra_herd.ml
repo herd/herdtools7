@@ -53,6 +53,11 @@ module type S = sig
   type reg_state
   val reg_state_empty : reg_state
 
+  include Location.S
+  with type loc_reg := I.arch_reg and type loc_global := v
+
+  val pp_location_old : location -> string
+
   type inst_instance_id = {
       proc       : proc;
       program_order_index   : program_order_index;
@@ -60,6 +65,7 @@ module type S = sig
       unroll_count : int; (* number of loop unrollings *)
       labels : Label.Set.t;
       env : reg_state ;
+      flocs : (location * MachSize.sz) list ;
     }
 
   val inst_instance_compare :
@@ -69,9 +75,6 @@ module type S = sig
       inst_instance_id -> inst_instance_id -> bool
 
   val pp_global : global_loc -> string
-  include Location.S
-  with type loc_reg := I.arch_reg and type loc_global := v
-  val pp_location_old : location -> string
 
   val symbol : location -> Constant.symbol option
   val offset : location -> int option
@@ -90,11 +93,6 @@ module type S = sig
   val map_loc : (v -> v) -> location -> location
 
   val same_base_virt : location -> location -> bool
-
-(**********)
-(* Faults *)
-(**********)
-  include Fault.S with type loc_global := v
 
 (*********)
 (* State *)
@@ -159,8 +157,16 @@ module type S = sig
 
   (* Final state, our outcome *)
   type rstate
+  val rstate_empty : rstate
   val rstate_to_list : rstate -> (rlocation * v) list
   val rstate_filter : (rlocation -> bool) -> rstate -> rstate
+  val rstate_add : rlocation -> v -> rstate -> rstate
+  val rstate_compare : rstate -> rstate -> int
+
+  (**********)
+  (* Faults *)
+  (**********)
+  include Fault.S with type loc_global := I.V.v and type prop := (location,v) ConstrGen.prop and type rstate := rstate
 
   type final_state = rstate * FaultSet.t
   val do_dump_final_state :
@@ -275,22 +281,6 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let reg_state_empty = RegMap.empty
 
-      type inst_instance_id = {
-          proc       : proc;
-          program_order_index   : program_order_index;
-          inst : I.arch_instruction ;
-          unroll_count: int; (* number of loop unrollings *)
-          labels : Label.Set.t ;
-          env : reg_state ;
-        }
-
-
-      let inst_instance_compare i1 i2 = match Misc.int_compare i1.proc i2.proc with
-      | 0 -> Misc.int_compare i1.program_order_index i2.program_order_index
-      | r -> r
-
-      let same_instruction i1 i2 = i1.inst == i2.inst
-
       let pp_global = I.V.pp C.hexa
 
       module LocArg =
@@ -305,6 +295,23 @@ module Make(C:Config) (I:I) : S with module I = I
         end
 
       include Location.Make (LocArg)
+
+      type inst_instance_id = {
+          proc       : proc;
+          program_order_index   : program_order_index;
+          inst : I.arch_instruction ;
+          unroll_count: int; (* number of loop unrollings *)
+          labels : Label.Set.t ;
+          env : reg_state ;
+          flocs : (location * MachSize.sz) list ;
+        }
+
+
+      let inst_instance_compare i1 i2 = match Misc.int_compare i1.proc i2.proc with
+      | 0 -> Misc.int_compare i1.program_order_index i2.program_order_index
+      | r -> r
+
+      let same_instruction i1 i2 = i1.inst == i2.inst
 
       let symbol loc =
         let open Constant in
@@ -384,12 +391,30 @@ module Make(C:Config) (I:I) : S with module I = I
       | Location_global a -> Location_global (fv a)
 
 
+      (* Final (include faults) *)
+      module RState = RLocMap
+
+      type rstate = v RState.t
+
+      let rstate_empty = RState.empty
+
+      let rstate_to_list st =
+        List.rev (RState.fold (fun l v k -> (l,v)::k) st [])
+
+      let rstate_filter = RState.filter
+      let rstate_add = RState.add
+      let rstate_compare st1 st2 =
+        RState.compare I.V.compare st1 st2
+
 (*********)
 (* Fault *)
 (*********)
       module FaultArg = struct
         include LocArg
         open Constant
+        type prop = (location,v) ConstrGen.prop
+        type frstate = rstate
+        let frstate_compare = rstate_compare
 
 (* Compare id in fault and other id, at least one id must be allowed in fault *)
         let same_sym_fault sym1 sym2 = match sym1,sym2 with
@@ -713,17 +738,6 @@ module Make(C:Config) (I:I) : S with module I = I
              locs in
          I.V.Val (Constant.ConcreteVector (List.length cs,cs))
 
-
-      (* Final (include faults) *)
-      module RState = RLocMap
-
-      type rstate = v RState.t
-
-      let rstate_to_list st =
-        List.rev (RState.fold (fun l v k -> (l,v)::k) st [])
-
-      let rstate_filter = RState.filter
-
       type final_state = rstate * FaultSet.t
 
       let pp_nice_rstate st delim pp_bd =
@@ -782,18 +796,18 @@ module Make(C:Config) (I:I) : S with module I = I
         else
           let noflts =
             FaultAtomSet.fold
-              (fun ((p,lab),loc as fa) k ->
+              (fun ((p,lab),loc,_prop as fa) k ->
                 if
-                  FaultSet.exists (fun f -> check_one_fatom f fa) flts
+                  FaultSet.exists (fun f -> check_one_fatom (fun _ _ -> true) f fa) flts
                 then k
                 else
                   let tr_lab = match lab with
                     | None -> Label.Set.empty
                     | Some lab -> Label.Set.singleton lab in
-                  (" ~"^pp_fault (((p,tr_lab),loc,None))^";")::k)
+                  (" ~"^pp_fault (fun _ -> "") (((p,tr_lab),loc,RLocMap.empty,None))^";")::k)
               fobs [] in
           pp_st ^ " " ^
-          FaultSet.pp_str " " (fun f -> pp_fault f ^ ";") flts ^
+          FaultSet.pp_str " " (fun f -> pp_fault (do_dump_rstate tenv tr) f ^ ";") flts ^
           String.concat "" noflts
 
       module StateSet =

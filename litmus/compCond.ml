@@ -37,60 +37,65 @@ module Make (O:Indent.S) (I:CompCondUtils.I) =
          has failed *)
 
       let dump_v v = I.dump_value v
-      let dump_loc loc = I.Loc.dump (ConstrGen.Loc loc)
+      let dump_loc f loc = I.Loc.dump f (ConstrGen.Loc loc)
 
-      let dump_vec loc vs =
+      let dump_vec f loc vs =
         let mk_elem_check i v =
-          "(" ^ (I.Loc.dump loc) ^
+          "(" ^ (I.Loc.dump f loc) ^
             "["^ string_of_int i ^ "] == "^ (dump_v None v) ^")"
         in
         String.concat " && " (List.mapi mk_elem_check vs)
 
-      let dump  =
-        let rec dump_prop p = match p with
+      let dump p =
+        let rec dump_prop p f = match p with
         | Atom (LV (loc,v)) ->
             begin match v with
             | Constant.ConcreteVector (_,vs) ->
-                O.fprintf "(%s)" (dump_vec loc vs)
+                O.fprintf "(%s)" (dump_vec f loc vs)
             | _ ->
                 O.fprintf "%s == %s"
-                  (I.Loc.dump loc)
+                  (I.Loc.dump f loc)
                   (dump_v (Some (ConstrGen.loc_of_rloc loc)) v)
             end
         | Atom (LL (loc1,loc2)) ->
-            O.fprintf"%s == %s" (dump_loc loc1) (dump_loc loc2)
-        | Atom (FF f) ->
-            O.fprintf "%s" (I.Loc.dump_fatom (V.pp O.hexa) f)
+            O.fprintf"%s == %s" (dump_loc f loc1) (dump_loc f loc2)
+        | Atom (FF ((_,_,None) as f1)) ->
+            O.fprintf "%s" (I.Loc.dump_fatom (V.pp O.hexa) f1)
+        | Atom (FF ((_,_,Some prop) as f1)) ->
+            O.fprintf "%s && (" (I.Loc.dump_fatom (V.pp O.hexa) f1);
+            assert(f = None);
+            dump_prop prop (Some f1);
+            O.fprintf ")"
         | Not p ->
             O.output "!(" ;
-            dump_prop p ;
+            dump_prop p f;
             O.output ")"
         | Or [] -> O.output "0"
-        | Or [p] -> dump_prop p
+        | Or [p] -> dump_prop p f
         | Or (p::ps) ->
             O.output "(" ;
-            dump_prop p ;
+            dump_prop p f ;
             O.output ") || (" ;
-            dump_prop (Or ps) ;
+            dump_prop (Or ps) f ;
             O.output ")" ;
             ()
         | And [] -> O.output "1"
-        | And [p] -> dump_prop p
+        | And [p] -> dump_prop p f
         | And (p::ps) ->
             O.output "(" ;
-            dump_prop p ;
+            dump_prop p f ;
             O.output ") && (" ;
-            dump_prop (And ps) ;
+            dump_prop (And ps) f ;
             O.output ")" ;
             ()
         | Implies (p1,p2) ->
             O.output "!(" ;
-            dump_prop p1 ;
+            dump_prop p1 f ;
             O.output ") || (" ;
-            dump_prop p2 ;
+            dump_prop p2 f ;
             O.output ")" ;
             () in
-        dump_prop
+        dump_prop p None
 
       (* Conventional names *)
       let funname = "final_cond"
@@ -119,7 +124,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) =
           I.C.RLocSet.map_list
             (fun rloc ->
               let t,is_ptr = find_type rloc in
-              sprintf "%s %s" t (I.Loc.dump rloc),is_ptr)
+              sprintf "%s %s" t (I.Loc.dump None rloc),is_ptr)
             rlocs in
         let plocs,is_ptr = List.split plocs in
         let is_ptr = List.exists (fun b -> b) is_ptr in

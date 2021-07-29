@@ -298,13 +298,16 @@ module Make(C:Config) = struct
             k)
         src.init [] in
 
-    let map_lv_ll =
+    let rec map_atom =
       ConstrGen.(function
         | LV(l,v) -> LV(conv_rloc map l,v)
         | LL(l1,l2) -> LL(conv_loc map l1,conv_loc map l2)
-        | FF (_,x) as a -> ignore (Constant.check_sym x) ; a) in
-    let condition = ConstrGen.map_constr map_lv_ll src.condition
-    and filter = Misc.app_opt (ConstrGen.map_prop map_lv_ll) src.filter in
+        | FF (_,x,None) as a -> ignore (Constant.check_sym x) ; a
+        | FF (p,x,Some prop) ->
+           ignore (Constant.check_sym x);
+           FF(p,x,Some (ConstrGen.map_prop map_atom prop))) in
+    let condition = ConstrGen.map_constr map_atom src.condition
+    and filter = Misc.app_opt (ConstrGen.map_prop map_atom) src.filter in
     let locations =
       LocationsItem.map_locs (fun loc -> conv_loc map loc) src.locations in
     { info = (OutMapping.key,dump_map map)::src.info;

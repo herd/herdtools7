@@ -32,6 +32,7 @@ let fmt_pte_tag x = Misc.add_pte x
 let fmt_pte_kvm x = sprintf "_vars->%s" (fmt_pte_tag x)
 let fmt_phy_tag x = "saved_" ^ Misc.add_pte x
 let fmt_phy_kvm x = sprintf "_vars->%s" (fmt_phy_tag x)
+let fmt_fault_vars x = sprintf "_vars->%s" (fmt_phy_tag x)
 
 (* Value (address) output *)
 module type Config = sig

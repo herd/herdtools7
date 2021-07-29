@@ -67,22 +67,26 @@ with type v = A.V.v and type location = A.location
 
   let finish_state f_reg = List.map (finish_state_atom f_reg)
 
-  let finish_locations f_reg =
+  let rec finish_locations f_reg =
     let open LocationsItem in
     List.map
       (function
         | Loc (loc,t) -> Loc (finish_rloc f_reg loc,t)
-        | Fault f -> Fault (Fault.map_value maybevToV f))
+        | Fault (p,v,None) -> Fault (p,maybevToV v,None)
+        | Fault (p,v,Some prop) ->
+           Fault (p,maybevToV v,Some (finish_prop f_reg prop)))
 
-  let finish_atom f_reg a =
+  and finish_atom f_reg a =
     let open ConstrGen in
     match a with
     | LV (loc,v) -> LV (finish_rloc f_reg loc, maybevToV v)
     | LL (l1,l2) -> LL (finish_location f_reg l1,finish_location f_reg l2)
-    | FF f -> FF (Fault.map_value maybevToV f)
+    | FF (p,v,None) -> FF (p, maybevToV v,None)
+    | FF (p,v,Some prop) ->
+       FF (p, maybevToV v,Some (finish_prop f_reg prop))
 
-   let finish_prop f_reg = ConstrGen.map_prop (finish_atom f_reg)
-   let finish_constr f_reg = ConstrGen.map_constr (finish_atom f_reg)
+  and finish_prop f_reg = ConstrGen.map_prop (finish_atom f_reg)
+  let finish_constr f_reg = ConstrGen.map_constr (finish_atom f_reg)
 
 
 (**********************************)
@@ -120,13 +124,18 @@ with type v = A.V.v and type location = A.location
 
   let collect_rloc = ConstrGen.fold_rloc collect_location
 
-  let collect_atom a =
+  let rec collect_atom a =
     let open ConstrGen in
     match a with
     | LV (rloc,_) -> collect_rloc rloc
     | LL (loc1,loc2) ->
         fun c -> collect_location loc1 (collect_location loc2 c)
-    | FF (_,x) -> collect_location (MiscParser.Location_global x)
+    | FF (_,x,None) -> collect_location (MiscParser.Location_global x)
+    | FF (_,x,Some prop) ->
+        fun c -> collect_prop prop
+                   (collect_location (MiscParser.Location_global x) c)
+
+   and collect_prop prop = ConstrGen.fold_prop collect_atom prop
 
    let collect_constr = ConstrGen.fold_constr collect_atom
 

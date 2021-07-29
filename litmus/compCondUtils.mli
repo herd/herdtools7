@@ -20,8 +20,8 @@ module type X = sig
   type location
   type t = location ConstrGen.rloc
   val compare : t -> t -> int
-  val dump : t -> string
-  val dump_fatom : ('v -> string) -> 'v Fault.atom -> string
+  val dump : ('v,'prop) Fault.atom option -> t -> string
+  val dump_fatom : ('v -> string) -> ('v,'prop) Fault.atom -> string
 end
 
 module type I = sig

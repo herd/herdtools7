@@ -27,7 +27,7 @@ let dump_locations dump_location dump_v env = match env with
     | Ty t -> sprintf "%s %s;" (dump_location loc) t
     | Pointer t -> sprintf "%s %s*;" (dump_location loc) t
     | TyArray _|Atomic _ -> assert false (* No arrays nor atomics here *)
-    and dump_fault f = sprintf "%s;" (Fault.pp_fatom dump_v f) in
+    and dump_fault f = sprintf "%s;" (Fault.pp_fatom dump_v (fun _ -> "") f) in
     let dump_item i =
       let open LocationsItem in
       match i with

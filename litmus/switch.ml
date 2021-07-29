@@ -285,7 +285,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
         let rhs = Array.of_list rhs in
         let t = Array.make (Array.length rhs) [] in
         List.iter (fun (i,j) -> t.(j) <- i :: t.(j)) cs ;
-        O.fx i "switch (%s) {" (I.Loc.dump loc) ;
+        O.fx i "switch (%s) {" (I.Loc.dump None loc) ;
         for k = 0 to Array.length t-1 do
           if k <> d then begin
             dump_cases i t.(k) ;

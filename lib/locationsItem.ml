@@ -14,9 +14,11 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+type ('loc,'v) fault_atom = ('v,('loc,'v) ConstrGen.prop) Fault.atom
+
 type ('loc,'v) t =
   | Loc of 'loc ConstrGen.rloc * TestType.t
-  | Fault of 'v Fault.atom
+  | Fault of ('loc,'v) fault_atom
 
 let fold_loc f i r = match i with
 | Loc (loc,_) -> ConstrGen.fold_rloc f loc r
@@ -29,7 +31,16 @@ let iter_locs f = List.iter (iter_loc f)
 
 let map_loc f i = match i with
 | Loc (loc,t) -> Loc (ConstrGen.map_rloc f loc,t)
-| Fault _ as j -> j
+| Fault (_,_,None) as f -> f
+| Fault (p,l,Some prop) ->
+   let open ConstrGen in
+   let f_atom = function
+     | LV (l,v) -> LV (map_rloc f l,v)
+     | LL (l1,l2) -> LL (f l1, f l2)
+     | FF _ -> assert false
+   in
+   let prop = map_prop f_atom prop in
+   Fault (p,l,Some prop)
 let map_locs f = List.map (map_loc f)
 
 let locs_and_faults locs =

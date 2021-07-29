@@ -41,18 +41,18 @@ val match_rloc :
 type ('loc,'v) atom =
   | LV of 'loc rloc * 'v
   | LL of 'loc * 'loc
-  | FF of 'v Fault.atom
+  | FF of ('v,('loc,'v) prop) Fault.atom
+
+and ('l,'v) prop =
+  | Atom of ('l,'v) atom
+  | Not of  ('l,'v) prop
+  | And of  ('l,'v) prop list
+  | Or of  ('l,'v) prop list
+  | Implies of  ('l,'v) prop * ('l,'v) prop
 
 val dump_atom :
     ('loc -> string) ->  ('loc -> string) -> ('c Constant.t -> string) ->
       ('loc,'c Constant.t) atom -> string
-
-type ('loc,'v) prop =
-  | Atom of ('loc, 'v) atom
-  | Not of ('loc,'v) prop
-  | And of ('loc,'v) prop list
-  | Or of ('loc,'v) prop list
-  | Implies of ('loc,'v) prop * ('loc,'v) prop
 
 type 'prop constr =
     ForallStates of 'prop

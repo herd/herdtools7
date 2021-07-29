@@ -35,7 +35,7 @@ end =
     let perm_atom p a = match a with
     | LV (loc,v) -> LV (perm_rloc p loc,v)
     | LL (l1,l2) -> LL (perm_location p l1,perm_location p l2)
-    | FF ((i,lbls),x) -> FF ((p.(i),lbls),x)
+    | FF ((i,lbls),x,prop) -> FF ((p.(i),lbls),x,prop)
 
     let perm_constr p = ConstrGen.map_constr (perm_atom p)
 

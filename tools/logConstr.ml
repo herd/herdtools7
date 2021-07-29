@@ -33,10 +33,13 @@ let rec tr_v v =
   | ConcreteVector (sz,vs) -> ConcreteVector (sz,List.map tr_v vs)
   | Symbolic _|Label _|Tag _|PteVal _ as sym -> sym
 
-let tr_atom = function
+let rec tr_atom = function
   | LV(loc,v) ->  LV(loc,tr_v v)
   | LL (loc1,loc2) -> LL(loc1,loc2)
-  | FF (p,x) -> FF (p,tr_v x)
+  | FF (p,x,None) -> FF (p,tr_v x,None)
+  | FF (p,x,Some prop) ->
+     let prop = map_prop tr_atom prop in
+     FF (p,tr_v x,Some prop)
 
 let tr_cond c = ConstrGen.map_constr tr_atom c
 
@@ -60,27 +63,31 @@ module Dump(O:DumpConfig) = struct
     let s = MiscParser.dump_location loc in
     O.tr s
 
-  let pp_atom a = match a with
+  let rec pp_atom a = match a with
   | LV (rl,v) ->
       sprintf "%s=%s" (dump_rloc pp_loc rl) (Int64Constant.pp O.hexa v)
   | LL (l1,l2) ->
       sprintf "%s=%s" (pp_loc l1) (pp_loc l2)
   | FF f ->
-      Fault.pp_fatom Int64Constant.pp_v f
+      Fault.pp_fatom Int64Constant.pp_v (ConstrGen.prop_to_string pp_atom) f
 
-  let dump_prop chan = ConstrGen.dump_prop pp_atom chan
+  and dump_prop chan = ConstrGen.dump_prop pp_atom chan
   let dump chan = ConstrGen.dump_constraints chan pp_atom
 
 end
 
 module LocSet = MiscParser.LocSet
 
-let get_locs_atom a =
+let rec get_locs_atom a =
   match a with
   | LV (loc,_) -> LocSet.add (loc_of_rloc loc)
   | LL (loc1,loc2) ->
       (fun k -> LocSet.add loc1 (LocSet.add loc2 k))
-  | FF (_,x) -> LocSet.add (MiscParser.Location_global x)
+  | FF (_,x,None) -> LocSet.add (MiscParser.Location_global x)
+  | FF (_,x,Some prop) ->
+     (fun k ->
+       fold_prop get_locs_atom prop
+         (LocSet.add (MiscParser.Location_global x) k))
 
 let get_locs c = fold_constr get_locs_atom c LocSet.empty
 
@@ -125,7 +132,7 @@ module type I = sig
 
   val state_mem : state -> MiscParser.location -> V.v -> bool
   val state_eqloc : state -> MiscParser.location -> MiscParser.location -> bool
-  val state_fault : state -> V.v Fault.atom -> bool
+  val state_fault : state -> (V.v,'prop) Fault.atom -> bool
 end
 
 module Make(I:I) : sig
