@@ -1,9 +1,3 @@
-
-EXE=$(SRC:.c=.flat)
-T=$(SRC:.c=.t)
-
-all: $(EXE) $(T)
-
 clean:
 	/bin/rm -f *.o *.s *.t *.elf *.flat *~
 
