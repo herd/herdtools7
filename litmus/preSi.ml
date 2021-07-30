@@ -173,9 +173,12 @@ module Make
           O.o "#include <assert.h>" ;
           O.o "#include <time.h>" ;
           O.o "#include <limits.h>" ;
-          O.o
-            (if Cfg.stdio then "#include <stdio.h>"
-            else "#include \"litmus_io.h\"") ;
+          if Cfg.stdio then begin
+            O.o "#include <stdio.h>"
+          end else begin
+            O.o "#include \"litmus_io.h\"" ;
+            O.o "#define NOSTDIO 1"                        
+          end ;
           O.o "#include \"litmus_rand.h\"" ;
           O.o "#include \"utils.h\"" ;
           if Cfg.c11 then O.o "#include <stdatomic.h>";

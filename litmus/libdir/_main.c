@@ -66,7 +66,18 @@ int RUN(int argc,char **argv,FILE *out) {
   glo_ptr->nruns = d.max_run;
   glo_ptr->size = d.size_of_test;
   if (glo_ptr->verbose) {
+#ifdef NOSTDIO    
+    emit_string(stderr,prog);
+    emit_string(stderr,": n=");
+    emit_int(stderr,glo_ptr->nexe);
+    emit_string(stderr,", r=");
+    emit_int(stderr,glo_ptr->nruns);
+    emit_string(stderr,", s=");
+    emit_int(stderr,glo_ptr->size);
+    emit_string(stderr,"\n");    
+#else
     fprintf(stderr,"%s: n=%d, r=%d, s=%d\n",prog,glo_ptr->nexe,glo_ptr->nruns,glo_ptr->size);
+#endif
   }
   parse_param(prog,glo_ptr->parse,PARSESZ,p) ;
 #ifdef PRELUDE
