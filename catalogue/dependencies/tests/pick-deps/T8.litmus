@@ -1,0 +1,19 @@
+AArch64 T8
+{
+0:X1=x; 0:X10=y; 0:X5=z;
+1:X1=y; 1:X3=x;
+}
+P0                 | P1           ;
+LDR W0,[X1]        | LDAR W0,[X1] ;
+CMP W0,#1          | MOV W2,#1    ;
+CSEL X2,X3,X4,EQ   | STR W2,[X3]  ;
+STR X2,[X5]        |              ;
+LDXR X3,[X5]       |              ;
+STXR W7,X4,[X5]    |              ; (* Remove me *)
+LDR X8,[X5]        |              ;
+EOR X9,X8,X8       |              ;
+ADD X9,X9,X10      |              ;
+MOV W11,#1         |              ;
+STR W11,[X9]       |              ;
+exists
+(0:X0=1 /\ 0:X7=0 /\ 1:X0=1)

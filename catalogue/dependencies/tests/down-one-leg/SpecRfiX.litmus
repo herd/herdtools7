@@ -1,0 +1,17 @@
+AArch64 SpecRfiX
+Com=Rf Rf
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X3=x; 1:X9=z;
+}
+ P0          | P1           ;
+ LDR W0,[X1] | LDR W0,[X1]  ;
+ DMB SY      | CBNZ W0,LC00 ;
+             | LDR W2,[X9]  ;
+ MOV W2,#1   |LC00:         ;
+             | MOV W2,#1    ;
+             | STR W2,[X9]  ;
+             | LDR W4,[X9]  ;
+ STR W2,[X3] | STR W4,[X3]  ;
+
+exists (0:X0=1 /\ 1:X0=1)

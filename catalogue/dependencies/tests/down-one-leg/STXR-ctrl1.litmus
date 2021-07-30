@@ -1,0 +1,17 @@
+AArch64 STXR-ctrl1
+{
+0:X1=x; 0:X3=y;
+1:X8=y; 1:X5=x; 1:X0=z;
+}
+ P0          | P1              ;
+ MOV W0,#2   | MOV W2,#2       ;
+ STR W0,[X1] | LDR W7,[X8]     ;
+             | EOR W6,W7,W7    ;
+             | ADD X0,X6,X0    ;
+ DMB ST      | LDXR W1,[X0]    ;
+ MOV W2,#1   | STXR W3,W2,[X0] ;
+ STR W2,[X3] | CBNZ W3,Fail    ;
+             | MOV W4,#1       ;
+             | STR W4,[X5]     ;
+             | Fail:           ;
+exists (x=2 /\ z=2 /\ 1:X7=1 /\ 1:X3=0)

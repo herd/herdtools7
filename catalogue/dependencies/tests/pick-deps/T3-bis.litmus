@@ -1,0 +1,14 @@
+AArch64 T3-bis
+{
+0:X1=x; 0:X3=y; 0:X10=za; 0:X11=zb;
+1:X1=y; 1:X3=x;
+}
+P0                 | P1           ;
+LDR W0,[X1]        | LDAR W0,[X1] ;
+CMP W0,#0          | MOV W2,#1    ;
+CSEL X5,X10,X11,EQ | STR W2,[X3]  ;
+LDR X4,[X5]        |              ;
+MOV W2,#1          |              ;
+STR W2,[X3]        |              ;
+exists
+(0:X0=1 /\ 1:X0=1)

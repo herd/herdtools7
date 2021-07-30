@@ -1,0 +1,14 @@
+AArch64 LB+CSEL-data-po+DMB 
+{
+0:X1=x; 0:X4=4; 0:X5=5; 0:X6=z; 0:X8=y;
+1:X1=x; 1:X8=y;
+}
+P0                   | P1           ;
+LDR X0,[X1]          | LDR X0, [X8] ;
+CMP X0, #1           | DMB SY       ;
+CSEL X3, X4, X5, EQ  | MOV X2,#1    ;
+STR  X3, [X6]        | STR X2,[X1]  ;   
+MOV X7,#1            |              ;
+STR X7, [X8]         |              ;
+exists
+  (0:X0=1 /\ 1:X0=1)

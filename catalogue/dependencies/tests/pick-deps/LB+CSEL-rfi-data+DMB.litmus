@@ -1,0 +1,16 @@
+AArch64 LB+CSEL-rfi-data+DMB 
+{
+0:X1=x; 0:X10=y; 0:X3=1; 0:X4=2; 0:X5=z;
+1:X1=x; 1:X10=y ; 1:X2=1 ;
+}
+P0                   | P1           ;
+LDR W0,[X1]          | LDR W0, [X10];
+CMP W0, #1           | DMB SY       ;
+CSEL W2, W3, W4, EQ  | STR W2,[X1]  ;
+STR W2,[X5]          |              ;
+LDR W6,[X5]          |              ;
+EOR W8, W6, W6       |              ;
+ADD W9, W8, W3       |              ;
+STR W9, [X10]        |              ;
+exists
+  (0:X0=1 /\ 1:X0=1)

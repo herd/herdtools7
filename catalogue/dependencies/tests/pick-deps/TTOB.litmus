@@ -1,0 +1,15 @@
+AArch64 TTOB
+{
+0:X1=x:green; 0:X3=y:green;
+1:X1=y:green; 1:X11=x:green; 1:X5=za:green;
+1:X3=za:blue; 1:X4=za:red; 1:X6=1;  
+}
+P0           | P1               ;
+MOV X0,#2    | LDR X0,[X1]      ;
+STR X0,[X1]  | CMP X0,#1        ;
+MOV X2,#1    | CSEL X2,X3,X4,EQ ;
+STLR X2,[X3] | STG X2,[X5]      ; (* Set allocation tag for za *)
+             | STR X6,[X2]      ; (* Checked store to za using new tag *)
+	     | MOV X10,#1       ;
+	     | STR X10,[X11]    ;
+exists (x=2 /\ 1:X0=1 /\ za=1 /\ ~fault(P1,za))

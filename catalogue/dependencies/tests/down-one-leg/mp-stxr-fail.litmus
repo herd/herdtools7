@@ -1,0 +1,17 @@
+AArch64 MP-STXR-fail
+{
+0:X1=x0; 0:X4=x1; 0:X5=x2;
+1:X2=x1; 1:X4=x0;
+}
+ P0          		 | P1          ;
+ LDR W0,[X1]   		 | MOV W0,#1   ;
+ EOR W2,W0,W0            | MOV W1,#2   ;
+ ADD X5,X2,X5            | MOV W3,#3   ;
+ STR  WZR,[X5]           | STR W0,[X2] ;
+ LDXR  W9,[X5]           | STR W1,[X2] ;
+ STXR W2,W9,[X5]         | DMB SY      ;
+ EOR W6,W2,W2            | STR W3,[X4] ;
+ ADD X4,X6,X4            |             ;
+ LDR W3,[X4]             |             ;
+exists
+(0:X0=3 /\ 0:X3=1 /\ 0:X2=1)

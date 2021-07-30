@@ -1,0 +1,43 @@
+(* Intrinsic dependencies *)
+let intrinsic = (iico_data|iico_ctrl)+
+
+(* Dependency through register *)
+let generated-by-stxr = udr(same-instr;[range(lxsx)])
+let rf-reg-no-stxr =
+  let NW = ~generated-by-stxr in
+  [NW];rf-reg
+let dd = (rf-reg-no-stxr | intrinsic)+
+
+(* The relation to-PoD is a dependency through register
+   to a point of divergence*)
+let to-PoD = [R]; dd; [PoD]
+
+(** Data and Address dependencies *)
+let data = [R]; dd; [DATA]; intrinsic; [W]
+let addrW = [R]; dd; [NDATA]; intrinsic; [W]
+let addrR =
+ let dd-no-interv-PoD = dd \ (to-PoD;dd) in
+ [R]; dd-no-interv-PoD; [NDATA]; intrinsic; [R]
+let addr = addrW | addrR
+
+(** Control dependency *)
+(* Pre-control dependency *)
+let pre-ctrl = to-PoD; po
+
+(* Equivalent writes *)
+let antecedent =
+  let immediate-lws = singlestep([W];po-loc;[W]) in
+  (intrinsic|rf-reg|lrs|immediate-lws)^-1
+
+let pre-equiv-evts =
+  let rdw-ext =
+    let wwloc = ((W * W) & loc) \ id in
+    ((rfe^-1;wwloc;rf)|(rf^-1;wwloc;rfe))
+  in same-static\rdw-ext
+show pre-equiv-evts \ id as pre-equiv-evts
+
+let equivalent-writes = (W*W) & bisimulation(antecedent,pre-equiv-evts)
+show equivalent-writes \ id as equivalent-writes
+
+(* Control dependency *)
+let ctrl = pre-ctrl \ (always-executed(to-PoD,equivalent-writes))

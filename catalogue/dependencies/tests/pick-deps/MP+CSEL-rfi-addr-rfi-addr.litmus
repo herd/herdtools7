@@ -1,0 +1,21 @@
+AArch64 MP+CSEL-rfi-addr-rfi-addr
+{
+0:X10=x; 1:X10=x;
+0:X2=y; 1:X2=y;
+1:X6=z; 1:X12=v ;
+1:X4=4; 1:X5=5;
+}
+P0            | P1                 ;
+MOV W9,#1     | LDR W1, [X2]       ;
+STR W9,[X10]  | CMP W1, #1         ;
+MOV W11,#1    | CSEL W3, W4, W5, EQ;
+STLR W11,[X2] | STR W3, [X6]       ;
+              | LDR W9, [X6]       ;
+              | EOR W11, W9, W9     ;
+              | MOV W8,#2       ;
+              | STR W8,[X12, W11, SXTW]       ;
+              | LDR W13, [X12];
+              | EOR W14, W13, W13 ;
+              | LDR W16, [X10,W14,SXTW];
+     
+exists(1:X1=1 /\ 1:X16=0)

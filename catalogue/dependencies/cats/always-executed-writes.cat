@@ -1,0 +1,103 @@
+(* Cat file to compute always executed write effects *)
+
+(* Utilities *)
+
+let roots(r) = domain(r) \ range(r)
+let succs (e,r) = range ([e];r)
+
+let mapset2rel f =
+  let rec map_rec xs = match xs with
+  || {} -> 0
+  || x ++ xs ->
+     f x | map_rec xs
+  end in
+  map_rec
+
+let mapset2set f =
+  let rec map_rec xs = match xs with
+  || {} -> {}
+  || x ++ xs ->
+     f x | map_rec xs
+  end in
+  map_rec
+
+(* Basic definitions *)
+let poDorW = [PoD|W];po;[PoD|W]
+let nextDorW = poDorW \ (poDorW;poDorW)
+
+let sibling =
+  let inv = nextDorW^-1 in
+  fun s -> ([s];inv;nextDorW;[s])\(id|inv|nextDorW)
+
+let DpoDorW = [PoD];poDorW
+
+(* Add pair dw for w in ws
+   More precisely:
+   addD d (ws,dw) = dw U {(d,w) | w in ws}
+*)
+
+let addD d =
+  let rec do_rec ws =  match ws with
+  || {} -> fun k -> k
+  || w ++ ws ->
+       let kws = do_rec ws in
+       fun k -> (d,w) ++ kws k
+  end in do_rec
+
+(*
+  Set combination: union of equiv-related sets
+*)
+
+let addifequiv (equiv,ws0) = mapset2set (fun w -> succs (w,equiv) & ws0)
+
+let combine (equiv,ws1,ws2) =
+  addifequiv (equiv,ws1) ws2 | addifequiv (equiv,ws2) ws1
+
+(* Tree scan: returns ws,dw, where ws is the set of writes always performed at
+this level and dw is the relation from PoD to writes always performed *)
+
+let rec case_disjunction (equiv,e) = match { e } & PoD with
+|| {} ->  (* e is not a PoD, hence is a write *)
+    let (ws,dw) = write_acc (equiv, (succs (e,nextDorW))) in
+    (e ++ ws,dw)
+|| d ++ es ->   (* e is a PoD *)
+   let nexts = (succs (d,nextDorW)) in
+   match sibling(nexts) with
+   || {} -> (* Only one branch, nothing equivalent *)
+      ({},0)
+   || _e ++ _es ->
+      let (ws,dw) = keep_equiv_writes (equiv,nexts) in
+      (ws,addD d ws dw)
+   end
+end
+
+and write_acc (equiv,es) = match es with
+|| {} -> ({},0)
+|| e ++ es ->
+    let (ws_e,dw_e) = case_disjunction (equiv, e)
+    and (ws_es,dw_es) = write_acc (equiv, es) in
+    (ws_e|ws_es, dw_e|dw_es)
+end
+
+(* Warning, base case is on singleton *)
+and keep_equiv_writes (equiv,es) = match es with
+  || {} -> ({},0)  (* No successors, ie no W po-after, special case *)
+  || e ++ es ->
+        match es with
+        || {} -> case_disjunction(equiv,e) (* Singleton = base case *)
+        || f ++ fs  ->
+          let (ws_e,dw_e) = case_disjunction(equiv,e)
+          and (ws_es,dw_es) = keep_equiv_writes(equiv,es) in
+          (combine (equiv,ws_e,ws_es), dw_e|dw_es)
+        end
+end
+
+(* Final call *)
+let zyva equiv =
+  mapset2rel
+    (fun r -> let (ws,dw) = case_disjunction(equiv,r) in dw)
+
+let Dmins = roots(DpoDorW)
+let always-executed (to-PoD,equiv) =
+  let DW = zyva equiv Dmins in
+  to-PoD; DW

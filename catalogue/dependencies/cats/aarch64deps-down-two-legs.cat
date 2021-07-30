@@ -1,0 +1,25 @@
+(* Intrinsic dependencies *)
+let intrinsic = (iico_data|iico_ctrl)+
+
+(* Dependency through register *)
+let rf-reg-no-stxr =
+  rf-reg \ ([W & range(lxsx)];rf-reg)
+
+let dd =
+  let r = (rf-reg-no-stxr | intrinsic)* in
+  r;rf-reg-no-stxr;r
+
+(* The relation to-BR is a dependency through register
+   to a Branching effect *)
+let to-BR = [R]; dd; [BR]
+
+(** Data and Address dependencies *)
+let data = ([R]; dd; [DATA]; intrinsic; [W]) \ same-instance
+let addrW = [R]; dd; [NDATA]; intrinsic; [W]
+let addrR =
+ let dd-no-interv-BR = dd \ (to-BR;dd) in
+ [R]; dd-no-interv-BR; [NDATA]; intrinsic; [R]
+let addr = (addrW | addrR) \ same-instance
+
+(** Control dependencies *)
+let ctrl = to-BR; po

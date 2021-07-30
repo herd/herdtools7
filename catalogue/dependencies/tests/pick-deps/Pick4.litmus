@@ -1,0 +1,12 @@
+AArch64 Pick4 
+{
+0:X1=x; 0:X2=y;
+1:X1=y; 1:X3=x; 1:X4=z;
+}
+P0           | P1               ;
+MOV X0,#1    | LDR X0,[X1]      ;
+STR X0,[X1]  | CMP X0,#1        ;
+STLR X0,[X2] | CSEL X2,X3,X4,EQ ;
+             | LDR X5,[X2]      ; 
+exists
+(1:X0=1 /\ 1:X5=0)

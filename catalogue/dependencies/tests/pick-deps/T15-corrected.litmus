@@ -1,0 +1,16 @@
+AArch64 T15-corrected
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X11=x; 1:X5=z;
+}
+P0           | P1               ;
+MOV X0,#1    | LDR X0,[X1]      ;
+STR X0,[X1]  | CMP X0,#1        ;
+MOV X2,#1    | CSEL X2,X3,X4,EQ ;
+STLR X2,[X3] | STR X2,[X5]      ;
+             | LDR X6,[X5]      ;
+             | CBNZ X6,L0       ;
+             | L0:              ;
+             | ISB              ;
+             | LDR X10,[X11]    ;
+exists (1:X0=1 /\ 1:X10=0)

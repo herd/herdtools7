@@ -1,0 +1,17 @@
+AArch64 T12B
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X3=z; 1:X7=x;
+}
+P0           | P1               ;
+MOV W0,#2    | LDR W0,[X1]      ;
+STR W0,[X1]  | EOR W2,W0,W0     ;
+MOV W2,#1    | ADD W2,W2,#1     ;
+STLR W2,[X3] | STR W2,[X3]      ;
+              | MOV W4,#2        ;
+              | STR W4,[X3]      ;
+              | LDR W5,[X3]      ;
+              | EOR W6,W5,W5     ;
+              | ADD W6,W6,#1     ;
+              | STR W6,[X7]      ;
+exists (x=2 /\ z=2 /\ 1:X0=1 /\ 1:X5=2)

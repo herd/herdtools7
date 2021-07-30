@@ -1,0 +1,16 @@
+AArch64 LB+rel+data
+"PodRWPL RfeLP DpDatadW Rfe"
+Generator=diyone7 (version 7.56+02~dev)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Rf
+Orig=PodRWPL RfeLP DpDatadW Rfe
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X3=x;
+}
+ P0           | P1           ;
+ LDR W0,[X1]  | LDR W0,[X1]  ;
+ MOV W2,#1    | EOR W2,W0,W0 ;
+ STLR W2,[X3] | ADD W2,W2,#1 ;
+              | STR W2,[X3]  ;
+exists (0:X0=1 /\ 1:X0=1)
