@@ -118,7 +118,7 @@ let xgprs =
  R16,"X16" ; R17,"X17" ; R18,"X18" ; R19,"X19" ;
  R20,"X20" ; R21,"X21" ; R22,"X22" ; R23,"X23" ;
  R24,"X24" ; R25,"X25" ; R26,"X26" ; R27,"X27" ;
- R28,"X28" ; R29,"X29" ; R30,"X30" ; R30, "LR" ;
+ R28,"X28" ; R29,"X29" ; R30,"X30" ;
 ]
 
 let xregs = (ZR,"XZR")::(SP,"SP")::List.map (fun (r,s) -> Ireg r,s) xgprs
@@ -219,24 +219,33 @@ let simd_regs =
 let parse_list rs =
   List.map (fun (r,s) -> s,r) rs
 
-let parse_creg s =
-  try Some (List.assoc (Misc.uppercase s) (parse_list cregs))
-  with Not_found -> None
+let parse_creg =
+  let plist = parse_list cregs in
+  fun s ->
+    try Some (List.assoc (Misc.uppercase s) plist)
+    with Not_found -> None
 
-let parse_xreg s =
-  try Some (List.assoc (Misc.uppercase s) (parse_list regs))
-  with Not_found -> None
+let parse_xreg =
+  let plist = ("LR",Ireg R30)::parse_list regs in
+  fun s ->
+    try Some (List.assoc (Misc.uppercase s) plist)
+    with Not_found -> None
 
-let parse_wreg s =
-  try Some (List.assoc (Misc.uppercase s) (parse_list wregs))
-  with Not_found -> None
+let parse_wreg =
+  let plist = parse_list wregs in
+  fun s ->
+    try Some (List.assoc (Misc.uppercase s) plist)
+    with Not_found -> None
 
-let parse_vreg s =
-  try let (g1, g2) =
-    ignore (Str.search_forward (Str.regexp "\\(V[0-9]+\\)\\(\\.[0-9]*[B,D,Q,H,S]\\)") (Misc.uppercase s) 0);
-    (Str.matched_group 1 s, Str.matched_group 2 s);
-    in Some (Vreg (List.assoc g1 (parse_list vvrs), List.assoc g2 (parse_list arrange_specifier)))
-  with Not_found -> None
+let parse_vreg =
+  let vplist = parse_list vvrs
+  and arplist = parse_list arrange_specifier in
+  fun s ->
+    try let (g1, g2) =
+      ignore (Str.search_forward (Str.regexp "\\(V[0-9]+\\)\\(\\.[0-9]*[B,D,Q,H,S]\\)") (Misc.uppercase s) 0);
+      (Str.matched_group 1 s, Str.matched_group 2 s);
+      in Some (Vreg (List.assoc g1 vplist, List.assoc g2 arplist))
+    with Not_found -> None
 
 let parse_simd_reg s =
   try Some (List.assoc (Misc.uppercase s) simd_regs)
