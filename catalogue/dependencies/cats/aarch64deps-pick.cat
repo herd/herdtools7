@@ -1,8 +1,8 @@
 (* Dependency through registers and memory *)
-let rec dtrm = 
+let rec dtrm =
   rf-reg \ ([W & range(lxsx)];rf-reg)
   | rfi
-  | iico_data 
+  | iico_data
   | dtrm; dtrm
 
 let Reg=~M | ~BR
@@ -16,7 +16,7 @@ let ctrl = basic-dep; [BR]; po
 
 (** Pick dependencies *)
 let pick-basic-dep =
-   [R|Rreg]; dtrm?; [Reg]; iico_ctrl; [Reg]; dtrm? 
+   [R|Rreg]; dtrm?; [Reg]; iico_ctrl; [Reg]; dtrm?
 let pick-addr-dep =
    pick-basic-dep; [ADDR]; iico_data; [M]
 let pick-data-dep =
@@ -24,9 +24,9 @@ let pick-data-dep =
 let pick-ctrl-dep =
    pick-basic-dep; [BR]; po
 let pick-dep =
-( 
-   pick-basic-dep | 
-   pick-addr-dep  | 
+(
+   pick-basic-dep |
+   pick-addr-dep  |
    pick-data-dep  |
-   pick-ctrl-dep  
+   pick-ctrl-dep
 )

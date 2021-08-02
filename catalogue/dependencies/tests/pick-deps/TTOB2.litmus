@@ -2,7 +2,7 @@ AArch64 TTOB2
 {
 0:X1=x:indeed; 0:X3=y:indeed;
 1:X1=y:indeed; 1:X11=x:indeed; 1:X5=za:indeed;
-1:X3=za:ohyeah; 1:X4=za:yes; 1:X6=1;  
+1:X3=za:ohyeah; 1:X4=za:yes; 1:X6=1;
 }
 P0           | P1               ;
 MOV X0,#2    | LDR X0,[X1]      ;

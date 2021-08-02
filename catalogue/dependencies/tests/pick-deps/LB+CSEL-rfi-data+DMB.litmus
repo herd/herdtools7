@@ -1,4 +1,4 @@
-AArch64 LB+CSEL-rfi-data+DMB 
+AArch64 LB+CSEL-rfi-data+DMB
 {
 0:X1=x; 0:X10=y; 0:X3=1; 0:X4=2; 0:X5=z;
 1:X1=x; 1:X10=y ; 1:X2=1 ;

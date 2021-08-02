@@ -1,4 +1,4 @@
-AArch64 Pick2 
+AArch64 Pick2
 {
 0:X1=x; 0:X3=y;
 1:X1=y; 1:X11=x; 1:X5=z;

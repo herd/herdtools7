@@ -17,5 +17,5 @@ STLR W11,[X2] | STR W3, [X6]       ;
               | LDR W13, [X12];
               | EOR W14, W13, W13 ;
               | LDR W16, [X10,W14,SXTW];
-     
+
 exists(1:X1=1 /\ 1:X16=0)

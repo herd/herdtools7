@@ -1,7 +1,7 @@
 AArch64 T5
 {
 0:X1=x; 0:X9=y; 0:X5=z; 0:X7=p; 0:X8=q;
-1:X1=y; 1:X3=x; 
+1:X1=y; 1:X3=x;
 }
 P0                 | P1           ;
 LDR X0,[X1]        | LDAR X0,[X1] ;
