@@ -10,6 +10,8 @@ let emptyset = domain 0
 let partition = classes-loc
 let tag2instrs = tag2events
 
+(* Aliases *)
+let BR = PoD
 
 (* Basic relations *)
 let po-loc = po & loc
