@@ -64,7 +64,6 @@ module Make
     and module RegMap = T.A.RegMap) : sig
       val dump : Name.t -> T.t -> unit
     end = struct
-      let k_nkvm x = if Cfg.is_kvm then "" else x
       let do_ascall = Cfg.ascall || Cfg.is_kvm
       let do_precise = Cfg.precision
 
@@ -642,7 +641,7 @@ module Make
           O.o ""
         end ;
         O.o "/* Dump of outcome */" ;
-        O.f "static void pp_log(%slog_t *p) {" (k_nkvm  "FILE *chan,") ;
+        O.o "static void pp_log(FILE *chan,log_t *p) {"  ;
         let fmt = fmt_outcome test env rlocs
         and args =
           A.RLocSet.map_list
@@ -935,7 +934,7 @@ module Make
         O.o "";
 (* Print *)
         let is_delay tag = List.exists (fun x -> Misc.string_eq x tag) d_tags in
-        O.f "static void pp_param(%sparam_t *p) {" (k_nkvm "FILE *out,") ;
+        O.f "static void pp_param(FILE *out,param_t *p) {" ;
         let fmt =
           "{" ^
           String.concat ", "
@@ -997,15 +996,13 @@ module Make
         O.o "" ;
         ObjUtil.insert_lib_file O.o "_hash.c" ;
         O.o "" ;
-        O.f "static void pp_entry(%sentry_t *p, int verbose, const char **group) {"
-          (k_nkvm "FILE *out,") ;
+        O.o "static void pp_entry(FILE *out,entry_t *p, int verbose, const char **group) {" ;
         let fmt = "%-6PCTR%c>" in
         EPF.fi fmt ["p->c";"p->ok ? '*' : ':'";] ;
-        let out = k_nkvm "out," in
-        O.fi "pp_log(%s&p->key);" out ;
+        O.oi "pp_log(out,&p->key);" ;
         O.oi "if (verbose) {" ;
         EPF.fii " # " [] ;
-        O.fii "pp_param(%s&p->p);" out ;
+        O.fii "pp_param(out,&p->p);" ;
         EPF.fii " %s" ["group[p->p.part]"];
         O.oi "}" ;
         EPF.fi "%c" ["'\\n'"] ;
@@ -1759,7 +1756,7 @@ module Make
         O.oi "global_t *g;" ;
         O.o "} zyva_t;" ;
         O.o "" ;
-        O.f "static void %szyva(void *_a) {" (k_nkvm "*") ;
+        O.f "static void %szyva(void *_a) {" (if Cfg.is_kvm then "" else "*") ;
         if Cfg.is_kvm then begin
             O.oi "int id = smp_processor_id();" ;
             O.oi "if (id >= AVAIL) return;" ;

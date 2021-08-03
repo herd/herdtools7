@@ -23,30 +23,18 @@ typedef struct {
   int ok ;
 } entry_t ;
 
-#ifdef KVM
-static void pp_entry(entry_t *p, int verbose, const char **group) ;
-#else
 static void pp_entry(FILE *out,entry_t *p, int verbose, const char **group) ;
-#endif
 
 typedef struct {
   int nhash ;
   entry_t t[HASHSZ] ;
 } hash_t ;
 
-#ifdef KVM
-static void pp_hash(hash_t *t,int verbose,const char **group) {
-#else
 static void pp_hash(FILE *fp,hash_t *t,int verbose,const char **group) {
-#endif
   for (int k = 0 ; k < HASHSZ ; k++) {
     entry_t *p = t->t+k ;
     if (p->c > 0) {
-#ifdef KVM
-      pp_entry(p,verbose,group) ;
-#else
       pp_entry(fp,p,verbose,group) ;
-#endif
     }
   }
 }

@@ -532,11 +532,8 @@ module Make
           begin match Cfg.mode with
           | Mode.Std ->
               O.f "static %s postlude(FILE *out,cmd_t *cmd,hist_t *hist,count_t p_true,count_t p_false,tsc_t total) {" t
-          | Mode.PreSi ->
+          | Mode.PreSi|Mode.Kvm ->
               O.f "static %s postlude(FILE *out,global_t *g,count_t p_true,count_t p_false,tsc_t total) {" t ;
-              O.oi "hash_t *hash = &g->hash ;"
-          | Mode.Kvm ->
-              O.f "static %s postlude(global_t *g,count_t p_true,count_t p_false,tsc_t total) {" t ;
               O.oi "hash_t *hash = &g->hash ;"
           end ;
 (* Print header *)
@@ -554,12 +551,9 @@ module Make
           | Mode.Std ->
               pp_nstates "finals_outs(hist->outcomes)" ;
               O.oi "just_dump_outcomes(out,hist);"
-          | Mode.PreSi ->
+          | Mode.PreSi|Mode.Kvm ->
               pp_nstates "hash->nhash" ;
-              O.oi "pp_hash(out,hash,g->verbose > 1,g->group);"
-          | Mode.Kvm ->
-              pp_nstates "hash->nhash" ;
-              O.oi "pp_hash(hash,g->verbose > 1,g->group);" ;
+              O.oi "pp_hash(out,hash,g->verbose > 1,g->group);" ;
               ()
           end ;
 (* Print condition and witnesses *)

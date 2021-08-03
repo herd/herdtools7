@@ -19,6 +19,9 @@
 #include <stdint.h>
 #ifdef KVM
 #include <libcflat.h>
+typedef void FILE;
+#define stdout NULL
+#define stderr NULL
 #define fprintf(stderr,...) printf(__VA_ARGS__)
 #else
 #include <pthread.h>
