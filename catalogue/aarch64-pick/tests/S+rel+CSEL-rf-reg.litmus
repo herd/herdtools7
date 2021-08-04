@@ -1,4 +1,4 @@
-AArch64 MP+rel+CSEL-rf-reg
+AArch64 S+rel+CSEL-rf-reg
 {
 0:X10=x; 1:X10=x;
 0:X2=y; 1:X2=y;

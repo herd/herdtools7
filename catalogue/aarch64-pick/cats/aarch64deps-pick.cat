@@ -15,8 +15,13 @@ let addr = basic-dep; [ADDR]; iico_data; [M]
 let ctrl = basic-dep; [BR]; po
 
 (** Pick dependencies *)
+let rec dtrm_ctrl =
+    iico_ctrl
+  | dtrm
+  | dtrm_ctrl; dtrm_ctrl
+
 let pick-basic-dep =
-   [R|Rreg]; dtrm?; [Reg]; iico_ctrl; [Reg]; dtrm?
+   [R|Rreg]; dtrm_ctrl?; [Reg]; iico_ctrl; [Reg]; dtrm_ctrl?
 let pick-addr-dep =
    pick-basic-dep; [ADDR]; iico_data; [M]
 let pick-data-dep =
