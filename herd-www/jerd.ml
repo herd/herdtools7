@@ -153,6 +153,7 @@ let run_herd bell cat litmus cfg =
     let badexecs = !badexecs
     let badflag = !badflag
     let throughflag = !throughflag
+    let maxphantom = !maxphantom
 
     let statelessrc11 = !statelessrc11
 
