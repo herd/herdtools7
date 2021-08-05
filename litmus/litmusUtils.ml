@@ -23,10 +23,10 @@ module Hash(O:Warn.Config) =
     module W = Warn.Make(O)
 
     let mk_hash_info fname info =
-      try
-          let hash = List.assoc MiscParser.hash_key info in
-          { filename=fname; hash=hash;}
-      with Not_found -> assert false
+      let hash = MiscParser.get_info_on_info MiscParser.hash_key info in
+      match hash with
+      | Some hash -> { filename=fname; hash=hash;}
+      | None -> assert false
 
     let hash_ok env tname hash =
       try
