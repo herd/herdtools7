@@ -426,11 +426,13 @@ let dump_c xcode names =
       O.o "#include <stdlib.h>" ;
       begin match Cfg.mode with
       | Mode.Std|Mode.PreSi ->
-         O.o "#include <stdio.h>"
+         O.o "#include <stdio.h>" ;
+         if Cfg.sleep > 0 then  O.o "#include <unistd.h>"
       | Mode.Kvm ->
-         O.o "#include \"utils.h\""
+         O.o "#include \"utils.h\"" ;
+         if Cfg.sleep > 0 then
+           O.o "#include <asm/delay.h>"
       end ;
-      if Cfg.sleep > 0 then  O.o "#include <unistd.h>" ;
       begin match Cfg.threadstyle with
       | ThreadStyle.Cached -> O.o "extern void set_pool(void);"
       | _ -> ()
@@ -480,7 +482,13 @@ let dump_c xcode names =
         end ;
         List.iteri
           (fun k doc ->
-            if k > 0 && Cfg.sleep > 0 then  O.fi "sleep(%i);" Cfg.sleep ;
+            if k > 0 && Cfg.sleep > 0 then begin
+              match Cfg.mode with
+              | Mode.Std|Mode.PreSi ->
+                 O.fi "sleep(%i);" Cfg.sleep
+              | Mode.Kvm ->
+                 O.fi "mdelay(%i*1000);" Cfg.sleep
+              end ;
             O.fi "%s(argc,argv,out);" (MyName.as_symbol doc) ;
             if xcode then O.oi "[tick tick];")
           (List.rev docs) ;
