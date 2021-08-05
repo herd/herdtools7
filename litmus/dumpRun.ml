@@ -222,29 +222,50 @@ let dump_command names =
   flush out_chan ;
   ()
 
+let dump_shell_prefix out_chan =
+  output_line out_chan "#!/bin/sh\n" ;
+  output_line out_chan "date" ;
+  output_line out_chan "LITMUSOPTS=\"${@:-$LITMUSOPTS}\"" ;
+  ()
+
+let dump_shell_postfix out_chan =
+  output_line out_chan "echo \"LITMUSOPTS=$LITMUSOPTS\"" ;
+  output_line out_chan "date" ;
+  ()
+
+let dump_shell_kvm_dorun out_chan e =
+  fprintf out_chan "TDIR=$(dirname $0)\n" ;
+  fprintf out_chan "KVM_RUN=\"${KVM_RUN:-%s}\"\n" e ;
+  fprintf out_chan "dorun () {\n" ;
+  fprintf out_chan "  EXE=$1\n" ;
+  fprintf out_chan "  shift\n" ;
+  fprintf out_chan "  OPTS=\"$@\"\n" ;
+  fprintf out_chan "  ${KVM_RUN} ${TDIR}/${EXE} -cpu host -smp %i -append \"${OPTS}\"\n"
+    (match Cfg.avail with
+     | Some e -> e
+     | None ->
+        Warn.user_error "Available threads must be set in kvm mode") ;
+  fprintf out_chan "}\n"
+
+let dump_c_shell_kvm e =
+  Misc.output_protect
+    (fun out_chan ->
+      dump_shell_prefix out_chan ;
+      dump_shell_kvm_dorun out_chan e ;
+      fprintf out_chan "dorun ./run.flat -q ${LITMUSOPTS}\n" ;
+      dump_shell_postfix out_chan)
+    (Tar.outname (MyName.outname "run" ".sh"))
+
 let dump_shell names =
   Misc.output_protect
     (fun out_chan ->
-      output_line out_chan "#!/bin/sh\n" ;
-      output_line out_chan "date" ;
-      output_line out_chan "LITMUSOPTS=\"${@:-$LITMUSOPTS}\"" ;
+      dump_shell_prefix out_chan ;
       begin match Cfg.crossrun with
       | Crossrun.No -> ()
       | Crossrun.Qemu e ->
           fprintf out_chan "QEMU=\"${QEMU:-%s}\"\n" e
       | Crossrun.Kvm e ->
-          fprintf out_chan "TDIR=$(dirname $0)\n" ;
-          fprintf out_chan "KVM_RUN=\"${KVM_RUN:-%s}\"\n" e ;
-          fprintf out_chan "dorun () {\n" ;
-          fprintf out_chan "  EXE=$1\n" ;
-          fprintf out_chan "  shift\n" ;
-          fprintf out_chan "  OPTS=\"$@\"\n" ;
-          fprintf out_chan "  ${KVM_RUN} ${TDIR}/${EXE} -cpu host -smp %i -append \"${OPTS}\"\n"
-            (match Cfg.avail with
-            | Some e -> e
-            | None ->
-                Warn.user_error "Available threads must be set in kvm mode") ;
-          fprintf out_chan "}\n"
+         dump_shell_kvm_dorun out_chan e
       | Crossrun.Adb  ->
           fprintf out_chan "RDIR=%s\n" Cfg.adbdir ;
           fprintf out_chan "adb shell mkdir $RDIR >/dev/null 2>&1\n" ;
@@ -288,8 +309,7 @@ let dump_shell names =
           output_line out_chan "sed '2q;d' comp.sh"
       | Mode.Kvm -> ()
       end ;
-      output_line out_chan "echo \"LITMUSOPTS=$LITMUSOPTS\"" ;
-      output_line out_chan "date" ;
+      dump_shell_postfix out_chan ;
       arch,sources,utils)
     (Tar.outname (MyName.outname "run" ".sh"))
 
@@ -391,7 +411,7 @@ let dump_shell_cont arch sources utils =
       | Mode.Kvm ->
           let module A = struct
             let sysarch = Archs.get_sysarch arch Cfg.carch
-            end in
+          end in
           let module Insert =  ObjUtil.Insert(A) in
           Insert.insert (fprintf chan "%s\n") "kvm.rules"
       end)
@@ -403,8 +423,13 @@ let dump_c xcode names =
   Misc.output_protect
     (fun out_chan ->
       let module O = Indent.Make(struct let hexa = Cfg.hexa let out = out_chan end) in
-      O.o "#include <stdio.h>" ;
       O.o "#include <stdlib.h>" ;
+      begin match Cfg.mode with
+      | Mode.Std|Mode.PreSi ->
+         O.o "#include <stdio.h>"
+      | Mode.Kvm ->
+         O.o "#include \"utils.h\""
+      end ;
       if Cfg.sleep > 0 then  O.o "#include <unistd.h>" ;
       begin match Cfg.threadstyle with
       | ThreadStyle.Cached -> O.o "extern void set_pool(void);"
@@ -418,14 +443,20 @@ let dump_c xcode names =
         include (val (get_arch arch) : ArchConf)
       end in
       let module RU = RunUtils.Make(C) in
-
       O.o "" ;
-      O.o "/* Date function */" ;
-      O.o "#include <time.h>" ;
-      O.o "static void my_date(FILE *out) {" ;
-      O.oi "time_t t = time(NULL);" ;
-      O.oi "fprintf(out,\"%s\",ctime(&t));";
-      O.o "}" ;
+      begin match  Cfg.mode with
+      | Mode.Std|Mode.PreSi ->
+         O.o "/* Date function */" ;
+         O.o "#include <time.h>" ;
+         O.o "static void my_date(FILE *out) {" ;
+         O.oi "time_t t = time(NULL);" ;
+         O.oi "fprintf(out,\"%s\",ctime(&t));";
+         O.o "}" ;
+         ()
+      | Mode.Kvm ->
+         O.o "static void my_date(FILE *out) { }" ;
+         ()
+      end ;
       O.o "" ;
       O.o "/* Postlude */" ;
       O.o "static void end_report(int argc,char **argv,FILE *out) {" ;
@@ -437,7 +468,7 @@ let dump_c xcode names =
       O.oi "for ( ; *argv ; argv++) {" ;
       O.oii "fprintf(out,\" %s\",*argv);" ;
       O.oi "}" ;
-      O.oi "putc('\\n',out);" ;
+      O.oi "fprintf(out,\"\\n\");" ;
       O.o "}" ;
       O.o"" ;
       O.o"/* Run all tests */" ;
@@ -485,6 +516,10 @@ let dump_c xcode names =
 
 
 let dump_c_cont xcode arch sources utils =
+  let is_kvm =
+    match Cfg.mode with
+    | Mode.Kvm -> true
+    | Mode.PreSi|Mode.Std -> false in
   let sources = List.map Filename.basename  sources in
 (* Makefile *)
   let infile = not xcode in
@@ -496,7 +531,7 @@ let dump_c_cont xcode arch sources utils =
       fprintf chan "H=$(SRC:.c=.h)\n" ;
       if not xcode then begin
         fprintf chan "OBJ=$(SRC:.c=.o)\n" ;
-        fprintf chan "EXE=run.exe\n" ;
+        fprintf chan "EXE=run.%s\n" (if is_kvm then "flat" else "exe") ;
         fprintf chan "\n" ;
       end ;
 (* Entry point *)
@@ -506,44 +541,52 @@ let dump_c_cont xcode arch sources utils =
         fprintf chan "all: $(EXE)\n" ;
       end ;
       fprintf chan "\n" ;
-      makefile_clean chan ((if infile then " obj " else " ")^"$(H)");
-      if not xcode then makefile_utils chan utils ;
+      if is_kvm then begin
+          let module A = struct
+            let sysarch = Archs.get_sysarch arch Cfg.carch
+          end in
+          let module Insert =  ObjUtil.Insert(A) in
+          Insert.insert (fprintf chan "%s\n") "kvm.c.rules"
+      end else begin
+        makefile_clean chan ((if infile then " obj " else " ")^"$(H)");
+        if not xcode then makefile_utils chan utils ;
 (* Rules *)
-      if not xcode then begin
-        if infile then begin
-          fprintf chan "obj: $(OBJ) src\n" ;
-          fprintf chan "\tsed -e 's|.c$$|.o|g' < src > obj\n\n"
+        if not xcode then begin
+          if infile then begin
+            fprintf chan "obj: $(OBJ) src\n" ;
+            fprintf chan "\tsed -e 's|.c$$|.o|g' < src > obj\n\n"
+          end ;
+          let o1 =
+            if infile then "$(UTILS) obj run.o"
+            else "$(UTILS) $(OBJ) run.o" in
+          let o2 =
+            if infile then "$(UTILS) @obj run.o"
+            else o1 in
+          fprintf chan "$(EXE): %s\n" o1 ;
+          fprintf chan "\t$(GCC)  $(GCCOPTS) $(LINKOPTS) -o $@ %s\n" o2 ;
+          fprintf chan "\n" ;
+          (* .o pattern rule *)
+          fprintf chan "%%.o:%%.c\n" ;
+          fprintf chan
+            "\t$(GCC) $(GCCOPTS) $(LINKOPTS) -c -o $@ $<\n" ;
+          fprintf chan "\n"
         end ;
-        let o1 =
-          if infile then "$(UTILS) obj run.o"
-          else "$(UTILS) $(OBJ) run.o" in
-        let o2 =
-          if infile then "$(UTILS) @obj run.o"
-          else o1 in
-        fprintf chan "$(EXE): %s\n" o1 ;
-        fprintf chan "\t$(GCC)  $(GCCOPTS) $(LINKOPTS) -o $@ %s\n" o2 ;
+        (* .s pattern rule *)
+        fprintf chan "%%.s:%%.c\n" ;
+        fprintf chan "\t$(GCC) -DASS $(GCCOPTS) -S $<\n" ;
         fprintf chan "\n" ;
-(* .o pattern rule *)
-        fprintf chan "%%.o:%%.c\n" ;
-        fprintf chan
-        "\t$(GCC) $(GCCOPTS) $(LINKOPTS) -c -o $@ $<\n" ;
+        (* .t pattern rule *)
+        fprintf chan "%%.t:%%.s\n" ;
+        fprintf chan "\tawk -f show.awk $< > $@\n" ;
+        fprintf chan "\n" ;
+        (* .h pattern rule *)
+        fprintf chan "%%.h:%%.t\n" ;
+        fprintf chan "\tsh toh.sh $< > $@\n" ;
         fprintf chan "\n"
-      end ;
-(* .s pattern rule *)
-      fprintf chan "%%.s:%%.c\n" ;
-      fprintf chan "\t$(GCC) -DASS $(GCCOPTS) -S $<\n" ;
-      fprintf chan "\n" ;
-(* .t pattern rule *)
-      fprintf chan "%%.t:%%.s\n" ;
-      fprintf chan "\tawk -f show.awk $< > $@\n" ;
-      fprintf chan "\n" ;
- (* .h pattern rule *)
-      fprintf chan "%%.h:%%.t\n" ;
-      fprintf chan "\tsh toh.sh $< > $@\n" ;
-      fprintf chan "\n" ;
-(* Dependencies *)
-      if not xcode then begin
-        List.iter
+        end ;
+      (* Dependencies *)
+        if not xcode then begin
+            List.iter
           (fun src ->
             let base = Filename.chop_extension src in
             fprintf chan "%s.o: %s.h %s.c\n" base base base)
@@ -627,6 +670,11 @@ let from_files =
             | Driver.XCode -> true
             | _ -> false in
             let arch,sources,utils = dump_c xcode names in
+            begin match Cfg.crossrun with
+            | Crossrun.Kvm e ->
+               dump_c_shell_kvm e
+            | _ ->  ()
+            end ;
             dump_c_cont xcode arch sources utils ;
             arch in
       if Cfg.cross then dump_cross arch

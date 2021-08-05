@@ -1,19 +1,20 @@
 clean:
-	/bin/rm -f *.o *.s *.t *.elf *.flat *~ $(H)
-
-cleansource:
-	/bin/rm -f *.o *.c *.h *.s *~
+	/bin/rm -f *.o *.s *.t *.elf *.flat *~ *.t $(H)
 
 %.s: %.c
-	$(GCC) $(GCCOPTS) -S $<
+	$(GCC) -DASS $(GCCOPTS) -S $<
+
 %.o: %.c
-%.o: %.s
 	$(GCC) $(GCCOPTS) -c -o $@ $<
+
 %.t: %.s
 	awk -f show.awk $< > $@
 
+%.h: %.t
+	sh toh.sh $< > $@
+        
 %.elf: LDFLAGS = -nostdlib -pie -n
-%.elf: %.o utils.o kvm_timeofday.o $(FLATLIBS) $(SRCDIR)/arm/flat.lds $(cstart.o)
+run.elf: run.o $(OBJ) utils.o kvm_timeofday.o $(FLATLIBS) $(SRCDIR)/arm/flat.lds $(cstart.o)
 	$(GCC) $(CFLAGS) -c -o $(@:.elf=.aux.o) $(SRCDIR)/lib/auxinfo.c \
 		-DPROGNAME=\"$(@:.elf=.flat)\" -DAUXFLAGS=$(AUXFLAGS)
 	$(LD) $(LDFLAGS) -o $@ -T $(SRCDIR)/arm/flat.lds \
