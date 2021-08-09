@@ -136,6 +136,12 @@ type simple_test =
 type simple_t =  { s_name : string ; s_tests : simple_test list; }
 
 
+let is_local loc = String.contains loc ':'
+
+let pretty_binding loc v =
+  if is_local loc then Printf.sprintf "%s=%s" loc v
+  else Printf.sprintf "[%s]=%s" loc v
+
 
 module Make(O:sig val verbose : int end) = struct
 open Printf
@@ -179,11 +185,7 @@ let get_bindings st = List.map (fun st -> st_as_string st.p_st) st.p_sts
 
 let empty_sts = { p_nouts = Int64.zero ; p_sts = []; }
 
-let is_local loc = String.contains loc ':'
-
-let pretty_bd loc v =
-  if is_local loc then sprintf "%s=%s;" loc v
-  else sprintf "[%s]=%s;" loc v
+let pretty_bd loc v = pretty_binding loc v ^ ";"
 
 let pretty_state pref mode with_noccs st =
   let buff = Buffer.create 10 in

@@ -21,7 +21,7 @@ type fault = string
 type bds = bd list * fault list * fault list
 type cnf = bds list
 
-let pp_bd (loc,v) = sprintf "%s=%s" loc v
+let pp_bd (loc,v) = LogState.pretty_binding loc v
 and pp_fault f = f
 and pp_not_fault f = sprintf "~%s" f
 
