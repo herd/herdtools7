@@ -280,7 +280,8 @@ and strip_end_cond buff = parse
 | _ as c { Buffer.add_char buff c ; strip_end_cond buff lexbuf }
 
 and phash st = parse
-| "Hash" blank* '=' blank* ([^' ''\t''\n''\r']+ as hash) blank*  nl
+| ['h''H']['a''A']['s''S']['h''H']
+    blank* '=' blank* ([^' ''\t''\n''\r']+ as hash) blank*  nl
   { let _,p_topos,p_time = st in
    incr_lineno lexbuf ; phash (Some hash,p_topos,p_time) lexbuf }
 | "Time" blank+ testname blank+ (num '.' num as t) blank*  nl
