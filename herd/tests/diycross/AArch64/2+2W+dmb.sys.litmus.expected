@@ -1,12 +1,12 @@
 Test 2+2W+dmb.sys Allowed
 States 3
-x=1; y=1;
-x=1; y=2;
-x=2; y=1;
+[x]=1; [y]=1;
+[x]=1; [y]=2;
+[x]=2; [y]=1;
 No
 Witnesses
 Positive: 0 Negative: 3
-Condition exists (x=2 /\ y=2)
+Condition exists ([x]=2 /\ [y]=2)
 Observation 2+2W+dmb.sys Never 0 3
 Hash=9495f1f810a4f034c732242a8a2c3eed
 

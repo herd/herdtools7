@@ -1,13 +1,13 @@
 Test S Allowed
 States 4
-1:X1=0; x=1;
-1:X1=0; x=2;
-1:X1=1; x=1;
-1:X1=1; x=2;
+1:X1=0; [x]=1;
+1:X1=0; [x]=2;
+1:X1=1; [x]=1;
+1:X1=1; [x]=2;
 Ok
 Witnesses
 Positive: 1 Negative: 3
-Condition exists (x=2 /\ 1:X1=1)
+Condition exists ([x]=2 /\ 1:X1=1)
 Observation S Sometimes 1 3
 Hash=4a8390a6db1dd4bb80b5f2347e861742
 

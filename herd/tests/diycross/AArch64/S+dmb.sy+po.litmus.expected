@@ -1,13 +1,13 @@
 Test S+dmb.sy+po Allowed
 States 4
-1:X1=0; x=1;
-1:X1=0; x=2;
-1:X1=1; x=1;
-1:X1=1; x=2;
+1:X1=0; [x]=1;
+1:X1=0; [x]=2;
+1:X1=1; [x]=1;
+1:X1=1; [x]=2;
 Ok
 Witnesses
 Positive: 1 Negative: 3
-Condition exists (x=2 /\ 1:X1=1)
+Condition exists ([x]=2 /\ 1:X1=1)
 Observation S+dmb.sy+po Sometimes 1 3
 Hash=15ad98e55f7098898ad567e00f3adb87
 

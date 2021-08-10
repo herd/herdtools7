@@ -1070,7 +1070,10 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
 
     let pp_loc e = match E.location_of e with
     | None -> assert false
-    | Some loc -> A.pp_location loc in
+    | Some (A.Location_global v)  -> (* No brackets, old style *)
+       A.V.pp_v_old v
+    | Some loc ->
+       A.pp_location loc in
 
     let pp_event ?lbl isinit color chan e =
       let act = pp_action e in

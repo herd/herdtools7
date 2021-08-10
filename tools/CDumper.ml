@@ -31,7 +31,8 @@ end = struct
   let dump_loc = MiscParser.dump_location
 
   let dump_atom_state a =
-    MiscParser.dump_state_atom dump_loc ParsedConstant.pp_v a
+    MiscParser.dump_state_atom
+      MiscParser.is_global dump_loc ParsedConstant.pp_v a
 
 
   let dump_state st =

@@ -96,8 +96,8 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
     |  Rm32_deref reg -> sprintf "(^i%i)" i,(i+1,[reg]),(o,[])
     |  Rm32_abs abs ->
         (let name = A.tr_global abs in
-        if internal_addr name then G.pp name
-        else sprintf "%%[%s]" (G.pp name)),
+        if internal_addr name then G.pp_old name
+        else sprintf "%%[%s]" (G.pp_old name)),
         (i,[]),(o,[])
 
     let compile_ea_move i o ea = match ea with
@@ -109,7 +109,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
     |  Rm32_deref reg -> sprintf "(^i%i)" i,(i+1,[reg]),(o,[])
     |  Rm32_abs abs ->
         let name = A.tr_global abs in
-        sprintf "%%[%s]" (G.pp name),(i,[]),(o,[])
+        sprintf "%%[%s]" (G.pp_old name),(i,[]),(o,[])
 
     let compile_ea_output i o ea = match ea with
     | Effaddr_rm32 r -> compile_rm32_output i o r
@@ -120,7 +120,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
     |  Rm32_deref reg -> sprintf "(^i%i)" i,(i+1,[reg])
     |  Rm32_abs abs ->
         let name = A.tr_global abs in
-        sprintf "%%[%s]" (G.pp name),(i,[])
+        sprintf "%%[%s]" (G.pp_old name),(i,[])
 
     let compile_ea_input i ea = match ea with
     | Effaddr_rm32 r -> compile_rm32_input i r

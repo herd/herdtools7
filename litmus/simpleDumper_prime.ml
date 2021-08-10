@@ -17,6 +17,7 @@
 (*****************)
 (* Parsable dump *)
 (*****************)
+
 module type I = sig
   module A : Arch_litmus.Base
 
@@ -26,7 +27,7 @@ module type I = sig
   val dump_v : v -> string
 
   type state
-  val dump_state :state -> string
+  val dump_state : state -> string list
 
   type prop
   val dump_prop : prop -> string
@@ -77,7 +78,9 @@ end = struct
     | "" -> ()
     | doc -> fprintf chan "\"%s\"\n" doc
     end ;
-    fprintf chan "\n{%s}\n\n" (dump_state  t.init) ;
+    fprintf chan "\n{\n%s}\n"
+      (String.concat ""
+         (List.map (sprintf " %s\n") (dump_state  t.init))) ;
     I.P.print_prog chan t.prog ;
     fprintf chan "\n" ;
     begin match t.locations with
@@ -100,7 +103,12 @@ end = struct
     | "" -> k
     | doc -> sprintf "\"%s\"" doc :: k
     end @@
-    begin fun k ->  sprintf "{%s}" (dump_state  t.init) :: k
+      begin
+        fun k ->
+        "{" ::
+          List.fold_right
+            (fun s k -> sprintf " %s" s::k)
+            (dump_state  t.init) ("}":: k)
     end @@
     begin
       fun k ->

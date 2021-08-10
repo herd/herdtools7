@@ -1,10 +1,10 @@
 Test V40 Required
 States 1
-x=9; y=0;
+[x]=9; [y]=0;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (x=9 /\ y=0)
+Condition forall ([x]=9 /\ [y]=0)
 Observation V40 Always 1 0
 Hash=e838e06aed7899fef86b138f4ed09516
 

@@ -86,6 +86,8 @@ type simple_test =
 
 type simple_t = { s_name : string ; s_tests : simple_test list; }
 
+(*  Pretty print one binding *)
+val pretty_binding : string -> string -> string
 
 module Make(O:sig val verbose : int end) : sig
 

@@ -1,10 +1,10 @@
 Test V06 Required
 States 1
-y=254; z=255;
+[y]=254; [z]=255;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (y=254 /\ z=255)
+Condition forall ([y]=254 /\ [z]=255)
 Observation V06 Always 1 0
 Hash=fdf8b3c8a75fea5a28764852d32d6c96
 

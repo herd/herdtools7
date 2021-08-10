@@ -33,6 +33,7 @@ module type S =
         | Var of csym
         | Val of Cst.v
 
+      val pp_v_old  : v -> string
       val pp_v  : v -> string
       val pp : bool (* hexa *) -> v -> string
       val pp_unsigned : bool (* hexa *) -> v -> string

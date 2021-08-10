@@ -169,7 +169,7 @@ end = struct
       Printf.sprintf "Fault(proc:%s,poi:%s,loc:%s,type:%s)"
         (A.pp_proc ii.A.proc)
         (A.pp_prog_order_index ii.A.program_order_index)
-        (A.pp_location loc)
+        (A.pp_location_old loc)
         (Misc.proj_opt "None" msg)
   | TooFar -> "TooFar"
   | Inv (op,None) ->
@@ -564,7 +564,7 @@ end = struct
           assert (not (is_amo act1 || is_amo act2)) ;
           is_pt act1 && is_pt act2 &&
           (match get_oa (value_of act1), get_oa (value_of act2) with
-          | Some s1,Some s2 -> Misc.string_eq s1 s2
+          | Some s1,Some s2 -> PTEVal.oa_eq s1 s2
           | _,_ -> false) in
 
       [("inv-domain",inv_domain_act); ("alias",alias_act);]

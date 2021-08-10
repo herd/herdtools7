@@ -284,6 +284,13 @@ module Make (C:Config) (A : Arch_herd.S) :
 
         let pp_rloc tr m rloc = ConstrGen.dump_rloc (pp_loc tr m) rloc
 
+        let pp_loc_no_brk tr m loc = match m with
+        | Ascii|Dot -> A.do_dump_location_no_brackets tr loc
+        | Latex|DotFig -> A.pp_location loc
+
+        let pp_rloc_no_brk tr m rloc =
+          ConstrGen.dump_rloc (pp_loc_no_brk tr m) rloc
+
         let pp_rvalue tr m loc = match loc with
         | A.Location_global _ -> sprintf "*%s" (A.pp_location loc)
         | _ -> pp_loc tr m loc
@@ -296,12 +303,18 @@ module Make (C:Config) (A : Arch_herd.S) :
 
         let pp_atom tr m a =
           match a with
+          | LV (Deref _ as rloc,v)
+          | LV (rloc,(V.Val (Constant.ConcreteVector _) as v))
+            ->
+             mbox m (pp_rloc_no_brk tr m rloc) ^
+             pp_equal m ^
+             mbox m (do_add_asm m (V.pp C.hexa v))
           | LV (rloc,v) ->
-              mbox m (pp_rloc tr m rloc) ^
-              pp_equal m ^
-              mbox m (do_add_asm m (V.pp C.hexa v))
+             mbox m (pp_rloc tr m rloc) ^
+             pp_equal m ^
+             mbox m (do_add_asm m (V.pp C.hexa v))
           | LL (l1,l2) ->
-              mbox m (pp_loc tr m l1) ^
+              mbox m (pp_loc_no_brk tr m l1) ^
               pp_equal m ^
               mbox m (pp_rvalue tr m l2)
           | FF f ->

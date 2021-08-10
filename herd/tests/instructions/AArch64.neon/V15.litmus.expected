@@ -1,10 +1,10 @@
 Test V15 Required
 States 1
-x=255; y=0;
+[x]=255; [y]=0;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (x=255 /\ y=0)
+Condition forall ([x]=255 /\ [y]=0)
 Observation V15 Always 1 0
 Hash=704364f237c8863040541c2bb52b8b94
 

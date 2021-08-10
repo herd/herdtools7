@@ -136,6 +136,12 @@ type simple_test =
 type simple_t =  { s_name : string ; s_tests : simple_test list; }
 
 
+let is_local loc = String.contains loc ':'
+
+let pretty_binding loc v =
+  if is_local loc then Printf.sprintf "%s=%s" loc v
+  else Printf.sprintf "[%s]=%s" loc v
+
 
 module Make(O:sig val verbose : int end) = struct
 open Printf
@@ -179,12 +185,14 @@ let get_bindings st = List.map (fun st -> st_as_string st.p_st) st.p_sts
 
 let empty_sts = { p_nouts = Int64.zero ; p_sts = []; }
 
+let pretty_bd loc v = pretty_binding loc v ^ ";"
+
 let pretty_state pref mode with_noccs st =
   let buff = Buffer.create 10 in
   Buffer.add_string buff pref ;
   Buffer.add_char buff '[' ;
   let e,f,a = st_as_string st.p_st in
-  let pp_e = List.map (fun (loc,v) -> sprintf "%s=%s;" loc v) e
+  let pp_e = List.map (fun (loc,v) -> pretty_bd loc v) e
   and pp_f = f
   and pp_a = List.map (sprintf "~%s") a in
   let pp = String.concat " " (pp_e @ pp_f @ pp_a ) in
@@ -201,13 +209,17 @@ let pretty_state pref mode with_noccs st =
 
 (* Redump log *)
 
+let dump_bd chan loc v =
+  if is_local loc then fprintf chan " %s=%s;" loc v
+  else fprintf chan " [%s]=%s;" loc v
+
 let dump_state chan is_litmus st =
   if is_litmus then fprintf chan  "%-8s:>" (Int64.to_string st.p_noccs) ;
   let {HashedState.S.e=e; f; a;} = HashedState.as_t st.p_st in
   HashedEnv.iter
     (fun p ->
       let loc,v = HashedBinding.as_t p in
-      fprintf chan " %s=%s;"loc v)
+      dump_bd chan loc v)
     e ;
   let dump_faults prf =
     HashedFaults.iter

@@ -286,13 +286,24 @@ module Make
       let tr_out test = OutMapping.info_to_tr test.T.info
 
       let pp_loc tr_out loc =  match loc with
-      | A.Location_reg (proc,reg) -> tr_out (sprintf "%d:%s" proc (A.pp_reg reg))
-      | A.Location_global s -> G.pp s
+        | A.Location_reg (proc,reg) ->
+           tr_out (sprintf "%d:%s" proc (A.pp_reg reg))
+        | A.Location_global s -> G.pp s
 
-      let pp_rloc tr_out rloc =
+      let pp_loc_brk tr_out loc =  match loc with
+        | A.Location_reg (proc,reg) ->
+           tr_out (sprintf "%d:%s" proc (A.pp_reg reg))
+        | A.Location_global s -> sprintf "[%s]" (G.pp s)
+
+      let pp_rloc tr_out t rloc =
         let open ConstrGen in
         match rloc with
-        | Loc loc -> pp_loc tr_out loc
+        | Loc loc ->
+           let pp_loc =
+             match t with
+             | CType.Array _ -> pp_loc
+             | _ -> pp_loc_brk in
+           pp_loc tr_out loc
         | Deref (loc,i) -> sprintf "%s[%d]" (pp_loc tr_out loc) i
 
       let register_type _loc t = t (* Systematically follow given type *)
@@ -313,8 +324,9 @@ module Make
             [sprintf "{%s}" fmt] in
         A.RLocSet.map_list
           (fun rloc ->
-            let pp1 = pp_rloc tr_out rloc
-            and pp2 = pp_fmt (register_type rloc (find_rloc_type rloc env)) in
+            let t = find_rloc_type rloc env in
+            let pp1 = pp_rloc tr_out t rloc
+            and pp2 = pp_fmt (register_type rloc t) in
             (pp1,pp2))
          rlocs
 
@@ -453,8 +465,14 @@ module Make
       let pp_atom tr_out a =
         match a with
         | LV (loc,v) ->
-            sprintf "%s=%s"
-              (tr_out (ConstrGen.dump_rloc A.pp_location loc))
+           let pp_loc =
+             match loc,v with
+             | (Deref _,_)
+             | (_,Constant.ConcreteVector _)
+               -> A.pp_location
+             | _ -> A.pp_location_brk in
+             sprintf "%s=%s"
+              (tr_out (ConstrGen.dump_rloc pp_loc loc))
               (A.V.pp Cfg.hexa v)
         | LL (loc1,loc2) ->
             sprintf "%s=%s" (tr_out (A.pp_location loc1))

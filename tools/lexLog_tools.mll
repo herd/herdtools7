@@ -93,7 +93,9 @@ let norm_value s =
   match s.[0] with
   | '(' -> norm_pteval s
   | '0'..'9' -> to_xxx s
-  | _ ->  s
+  | _ ->  Constant.old2new s
+
+let norm_loc s = Constant.old2new s
 
 let to_proc s = try int_of_string s with _ -> assert false
 
@@ -105,13 +107,15 @@ let num = digit+
 let hexa = ['0'-'9' 'a'-'f' 'A'-'F' ]
 let hexanum = "0x" hexa+
 let set = '{' (' '|','|('-'?(num|hexanum)))* '}'
-let pteval = '(' [^')''\n''\r']+ ')'
 let alpha = [ 'a'-'z' 'A'-'Z']
+let pteval = '(' ([' ''_'','':''('')']|alpha|digit)+ ')'
 let name = alpha (alpha|digit|'_'| '.')*
 let label = 'L' (alpha|digit)+
 let fault = (['f''F'] "ault")
 let reg = name
 let loc = name | ('$' (alpha+|digit+))
+let new_loc =
+ ("PTE"|"PA") ' '* '(' ' '* (name| "PTE" ' '* '(' ' '* name ' '* ')') ' '* ')'
 let blank = [' ' '\t']
 let testname  = (alpha|digit|'_' | '/' | '.' | '-' | '+' | '[' | ']')+
 let nl = '\n'|"\r\n"
@@ -215,25 +219,28 @@ and skip_empty_lines = parse
 
 and pline bds fs abs = parse
 | blank*
- ((num ':' reg as loc)|(('['?) (loc as loc) ( ']'?))|(loc '[' num ']' as loc))
-    blank* '=' blank* (('-' ? (num|hexanum))|(name(':'name)?)|set|pteval as v)
+ ((num ':' reg as loc)|(('['?) ((loc|new_loc) as loc) ( ']'?))|(loc '[' num ']' as loc))
+    blank* '=' blank* (('-' ? (num|hexanum))|(name(':'name)?)|new_loc|set|pteval as v)
     blank* ';'
     {
      let v = norm_value v in  (* Translate to decimal *)
+     let loc = norm_loc loc in
      let p = poolize loc v in
      pline (p::bds) fs abs lexbuf }
 | blank* fault blank*
     '(' blank* ('P'? (num as proc)) (':' (label as lbl))? blank* ','
-     (loc as loc) (':' alpha+)? blank* (* skip optional tag *)
+     ((loc|new_loc) as loc) (':' alpha+)? blank* (* skip optional tag *)
       (',' [^')']*)?  (* skip optional comment *)
       ')' blank* ';'
     {
+     let loc = Constant.old2new loc in
      let f = (to_proc proc,lbl),loc in
      let f = HashedFault.as_hashed f in
      pline bds (f::fs) abs lexbuf }
 | blank* '~' fault blank* '(' blank* ('P'? (num as proc)) (':' (label as lbl))? blank* ','
-    (loc as loc) blank* ')' blank* ';'
+    ((loc|new_loc) as loc) blank* ')' blank* ';'
     {
+     let loc = Constant.old2new loc in
      let f = (to_proc proc,lbl),loc in
      let f = HashedFault.as_hashed f in
      pline bds fs (f::abs) lexbuf }
@@ -280,7 +287,8 @@ and strip_end_cond buff = parse
 | _ as c { Buffer.add_char buff c ; strip_end_cond buff lexbuf }
 
 and phash st = parse
-| "Hash" blank* '=' blank* ([^' ''\t''\n''\r']+ as hash) blank*  nl
+| ['h''H']['a''A']['s''S']['h''H']
+    blank* '=' blank* ([^' ''\t''\n''\r']+ as hash) blank*  nl
   { let _,p_topos,p_time = st in
    incr_lineno lexbuf ; phash (Some hash,p_topos,p_time) lexbuf }
 | "Time" blank+ testname blank+ (num '.' num as t) blank*  nl

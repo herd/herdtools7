@@ -222,10 +222,11 @@ module Make
         List.filter
           (fun ((_,o),_) -> Misc.is_some o)
 
-      let tag_seen f =  sprintf "see_%s" (SkelUtil.dump_fatom_tag A.V.pp_v f)
+      let tag_seen f =
+        sprintf "see_%s" (SkelUtil.dump_fatom_tag A.V.pp_v_old f)
       and tag_code ((p,lbl),_) = sprintf "code_P%d%s" p
           (match lbl with None -> assert false | Some lbl -> "_" ^ lbl)
-      and tag_log f =  SkelUtil.dump_fatom_tag A.V.pp_v f
+      and tag_log f =  SkelUtil.dump_fatom_tag A.V.pp_v_old f
       and dump_addr_idx s = sprintf "_idx_%s" s
 
 
@@ -304,7 +305,8 @@ module Make
                     (fun k (_,v) fs ->
                       let prf = if k > 0 then "else if" else "if"
                       and test =
-                        sprintf "idx_loc == %s" (dump_addr_idx (A.V.pp_v v)) in
+                        sprintf "idx_loc == %s"
+                          (dump_addr_idx (A.V.pp_v_old v)) in
                       O.fii "%s (%s) {" prf test ;
                       let no_lbl ((_,o),_) = Misc.is_none o in
                       let no,fs = List.partition no_lbl fs in
@@ -417,7 +419,7 @@ module Make
                   | Concrete z when A.V.Scalar.compare z A.V.Scalar.zero = 0 -> (pte,Z)::k
                   | PteVal pteval ->
                       let open PTEVal in
-                      begin match Misc.tr_physical pteval.oa with
+                      begin match PTEVal.as_physical pteval.oa with
                       | None ->
                           Warn.user_error "litmus cannot handle pte initialisation with '%s'"
                             (A.V.pp_v v)
@@ -610,7 +612,7 @@ module Make
                        s
                        (if Cfg.is_kvm then
                          sprintf "\"%s\","
-                           (Misc.add_pte s)
+                           (Misc.pp_pte s)
                        else ""))
                       test.T.globals)) ;
               O.o ""
@@ -637,7 +639,7 @@ module Make
           O.f "static const char *pretty_addr_physical[NVARS+1] = {%s,\"???\"};"
             (String.concat ","
                (List.map
-                  (fun (s,_) -> sprintf "\"%s\"" (Misc.add_physical s))
+                  (fun (s,_) -> sprintf "\"%s\"" (Misc.pp_physical s))
                   test.T.globals)) ;
           O.o ""
         end ;
@@ -713,8 +715,7 @@ module Make
             let fmt2 = U.fmt_faults faults
             and args2 =
               List.map
-                (fun f -> sprintf "p->%s?\"\":\"~\""
-                    (SkelUtil.dump_fatom_tag A.V.pp_v f))
+                (fun f -> sprintf "p->%s?\"\":\"~\"" (tag_log f))
                 faults in
             EPF.fi ~out:"chan" fmt2 args2 ;
         end ;
@@ -741,7 +742,7 @@ module Make
         let rec do_eq_faults = function
           | [] -> O.oii "1;"
           | f::fs ->
-              let tag = SkelUtil.dump_fatom_tag A.V.pp_v f in
+              let tag = tag_log f in
               O.fii "p->%s == q->%s &&" tag tag ;
               do_eq_faults fs in
         let rec do_rec = function
@@ -765,7 +766,7 @@ module Make
                   let open PTEVal in
                   sprintf
                     "pack_pack(%s,%d,%d,%d,%d,%d)"
-                    (dump_addr_idx p.oa) p.af p.db p.dbm p.valid p.el0
+                    (dump_addr_idx (PTEVal.pp_oa_old p.oa)) p.af p.db p.dbm p.valid p.el0
               | _ ->
                   begin match loc with
                   | Some loc ->
@@ -782,7 +783,8 @@ module Make
                 type t = location ConstrGen.rloc
                 let compare = A.rlocation_compare
                 let dump rloc = sprintf "p->%s" (choose_dump_rloc_tag rloc env)
-                let dump_fatom dump a = sprintf "p->%s" (SkelUtil.dump_fatom_tag dump a)
+                let dump_fatom dump a =
+                  sprintf "p->%s" (SkelUtil.dump_fatom_tag dump a)
               end
             end) in
 

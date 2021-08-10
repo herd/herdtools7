@@ -31,20 +31,23 @@ module Make(Scalar:Scalar.S) = struct
   let zero = Concrete Scalar.zero
   and one = Concrete Scalar.one
 
-  let rec do_pp pp_scalar hexa = function
+  let rec do_pp pp_symbol pp_scalar hexa = function
     | Concrete i -> pp_scalar hexa i
     | ConcreteVector (_,vs) ->
-        let s = String.concat "," (List.map (do_pp pp_scalar hexa) vs)
+        let s =
+          String.concat ","
+            (List.map (do_pp pp_symbol pp_scalar hexa) vs)
         in sprintf "{%s}" s
-    | Symbolic sym -> Constant.pp_symbol sym
+    | Symbolic sym -> pp_symbol sym
     | Label (p,lbl)  -> sprintf "%i:%s" p lbl
     | Tag s -> sprintf ":%s" s
     | PteVal p -> PTEVal.pp p
 
-  let pp = do_pp Scalar.pp
-  and pp_unsigned = do_pp Scalar.pp_unsigned
+  let pp = do_pp Constant.pp_symbol Scalar.pp
+  and pp_unsigned = do_pp Constant.pp_symbol Scalar.pp_unsigned
 
   let pp_v = pp false
+  let pp_v_old = do_pp Constant.pp_symbol_old Scalar.pp false
 
   let rec compare c1 c2 = match c1,c2 with
   | Concrete i1, Concrete i2 -> Scalar.compare i1 i2
