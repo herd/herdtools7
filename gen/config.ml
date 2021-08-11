@@ -167,7 +167,16 @@ let common_specs () =
     (fun tag -> match Variant_gen.parse tag with
     | None -> false
     | Some v0 ->
-        let ov = !variant in variant := (fun v -> v = v0 || ov v) ;
+        let open  Variant_gen in
+        let ov =
+          let ov = !variant in
+          match v0 with
+          | Mixed -> (* Special case: Mixed cancels FullMixed  *)
+              (function
+               | FullMixed -> false
+               |  v-> ov v)
+          | _ -> ov in
+        variant := (fun v -> v = v0 || ov v) ;
         true)
     Variant_gen.tags
     (sprintf "specify variant")::
