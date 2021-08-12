@@ -409,7 +409,8 @@ let max_set = IntSet.max_elt
       else
         let vs =
           List.map
-            (List.map (fun (v,obs) -> v.(0),obs))
+            (Misc.filter_map (fun (v,obs) ->
+               if Array.length v > 0 then Some (v.(0),obs) else None ))
             vs in
         build_observers p i x vs in
 
@@ -417,8 +418,11 @@ let max_set = IntSet.max_elt
       let loc = A.Loc x in
       if StringMap.mem x env_wide then
         F.cons_vec loc v fs
-      else
-        F.cons_int (A.Loc x) v.(0) fs in
+      else if Array.length v > 0 then
+        (* For MTE locations, we may have only a tag write and not an *)
+        (* Ord write. We therefore need a length check here. *)
+        F.cons_int (A.Loc x) v.(0) fs
+      else fs in
 
     let add_look_loc loc v k =
       if (not (StringSet.mem loc atoms) && O.optcond) then k

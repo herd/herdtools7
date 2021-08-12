@@ -231,8 +231,13 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       | S s -> s
       | P p -> PTEVal.pp p
 
-    let dump_atom r v =
-      sprintf "%s=%s" (C.A.pp_location_brk r) (dump_val v)
+    let dump_tag = function
+      | I i -> i
+      | _ -> Warn.fatal "Tags can only be of type integer"
+
+    let dump_atom r v = match Misc.tr_atag (C.A.pp_location r) with
+        | Some s -> sprintf "[tag(%s)]=%s" s (Code.add_tag "" (dump_tag v))
+        | None -> sprintf "%s=%s" (C.A.pp_location_brk r) (dump_val v)
 
     let dump_state fs =
       String.concat " /\\ "

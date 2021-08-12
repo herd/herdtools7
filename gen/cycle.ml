@@ -34,6 +34,7 @@ module type S = sig
         atom : atom option ;
         rmw : bool ;
         cell : v array ; (* Content of memory, after event *)
+        tcell : v array ; (* value of tag memory after event *)
         bank : SIMD.atom Code.bank ;
         idx : int ;
         pte : PTEVal.t ; }
@@ -143,6 +144,7 @@ module Make (O:Config) (E:Edge.S) :
         atom : atom option ;
         rmw : bool ;
         cell : v array ; (* value of cell at node exit *)
+        tcell : v array ; (* value of tag cell at node exit *)
         bank : SIMD.atom Code.bank ;
         idx : int ;
         pte : PTEVal.t ; }
@@ -154,7 +156,8 @@ module Make (O:Config) (E:Edge.S) :
       ctag=0; cseal=0; dep=0;
       vecreg= [];
       v=(-1) ; dir=None; proc=(-1); atom=None; rmw=false;
-      cell=[||]; bank=Code.Ord; idx=(-1);
+      cell=[||]; tcell=[||];
+      bank=Code.Ord; idx=(-1);
       pte=pte_default; }
 
   let make_wsi idx loc = { evt_null with dir=Some W ; loc=loc; idx=idx; v=0;}
@@ -469,6 +472,15 @@ module CoSt = struct
        {e with cell=co_cell;},{ st with co_cell; }
     | _ -> e,st
 
+  let set_tcell st e = match e.bank with
+    | Tag ->
+       let old = st.co_cell.(0) in
+       let cell = E.overwrite_value old e.atom e.v in
+       let co_cell = Array.copy st.co_cell in
+       co_cell.(0) <- cell ;
+       {e with tcell=co_cell;},{ st with co_cell; }
+    | _ -> e,st
+
   let next_co st bank =
    match bank with
    | VecReg n ->
@@ -736,6 +748,8 @@ let set_same_loc st n0 =
                    let st = CoSt.next_co st bank in
                    let v = CoSt.get_co st bank in
                    n.evt <- { n.evt with v = v; } ;
+                   let e,st = CoSt.set_tcell st n.evt in
+                   n.evt <- e ;
                    do_set_write_val st pte_val ns
                 | VecReg a ->
                    let st = CoSt.step_simd st a in
@@ -1130,10 +1144,17 @@ let rec group_rec x ns = function
 
   let get_ord_writes =
     do_get_writes
-      (function Code.Ord|Code.VecReg _ -> true | _ -> false)
+      (function Code.Ord|Code.Tag|Code.VecReg _ -> true | _ -> false)
 
   let get_pte_writes =
     do_get_writes (function Code.Pte -> true | _ -> false)
+
+  let to_tagloc = function
+    | Data s -> Data (Misc.add_atag s)
+    | Code s -> Code (Misc.add_atag s)
+
+  let get_tag_locs (loc,n) =
+    (to_tagloc loc,n)
 
   let get_observers n =
     let e = n.evt in
@@ -1148,7 +1169,14 @@ let rec group_rec x ns = function
   let coherence n =
     let r = match find_change n with
     | Some n ->
-        let ws = get_ord_writes n in
+        let ord_ws = get_ord_writes n in
+        (* MTE locations shadow normal locations, so we need
+         * to track them separately. As we may be interested
+         * in the same graph nodes, lets just duplicate and
+         * label accordingly. *)
+        let tag_ws = if do_memtag then
+          List.map get_tag_locs (get_ord_writes n) else [] in
+        let ws = ord_ws@tag_ws in
 (*
         List.iter
           (fun (loc,n) ->
