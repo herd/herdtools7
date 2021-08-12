@@ -34,7 +34,8 @@ let do_tag = C.variant Variant_gen.MemTag
 let do_morello = C.variant Variant_gen.Morello
 let do_kvm = C.variant Variant_gen.KVM
 let do_neon = C.variant Variant_gen.Neon
-
+let do_mixed =
+  C.variant Variant_gen.Mixed || C.variant Variant_gen.FullMixed
 open Code
 open Printf
 
@@ -188,8 +189,11 @@ let applies_atom (a,_) d = match a,d with
    let equal_atom a1 a2 = a1 = a2
 
    let fold_mixed f r =
-     Mixed.fold_mixed
-       (fun m r -> f (Plain None,Some m) r)
+     if do_mixed then
+       Mixed.fold_mixed
+         (fun m r -> f (Plain None,Some m) r)
+         r
+     else
        r
 
    let fold_pte f r =
@@ -235,9 +239,11 @@ let applies_atom (a,_) d = match a,d with
 
    let fold_atom f r =
      let r = fold_non_mixed f r in
-     fold_acc true
-       (fun acc r -> Mixed.fold_mixed (fun m r -> f (acc,Some m) r) r)
-       (fold_mixed f r)
+     if do_mixed then
+       fold_acc true
+         (fun acc r -> Mixed.fold_mixed (fun m r -> f (acc,Some m) r) r)
+         (fold_mixed f r)
+     else r
 
    let worth_final (a,_) = match a with
      | Atomic _ -> true

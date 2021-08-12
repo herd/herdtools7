@@ -38,7 +38,8 @@ module Make(C:Builder.S)
 
     =
   struct
-    let mixed = O.variant Variant_gen.Mixed
+    let mixed =
+      O.variant Variant_gen.Mixed || O.variant Variant_gen.FullMixed
     module D = DumpAll.Make(O) (C)
     open C.E
     open C.R
