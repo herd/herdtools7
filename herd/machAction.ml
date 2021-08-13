@@ -166,11 +166,13 @@ end = struct
         (A.pp_location loc) (MachSize.pp_short sz)
         (V.pp C.hexa v1) (V.pp C.hexa v2)
   | Fault (ii,loc,msg) ->
-      Printf.sprintf "Fault(proc:%s,poi:%s,loc:%s,type:%s)"
+      Printf.sprintf "Fault(proc:%s,poi:%s,loc:%s%s)"
         (A.pp_proc ii.A.proc)
         (A.pp_prog_order_index ii.A.program_order_index)
         (A.pp_location_old loc)
-        (Misc.proj_opt "None" msg)
+        (match msg with
+         | None -> ""
+         | Some msg -> Printf.sprintf ",type:%s" msg)
   | TooFar -> "TooFar"
   | Inv (op,None) ->
       Printf.sprintf "TLBI(%s)" (A.TLBI.pp_op op)
