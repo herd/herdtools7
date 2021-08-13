@@ -524,8 +524,26 @@ module Make
         insert_commit_to_fault ma
           (fun _ -> mk_fault a ii (Some "EL0")) ii >>! B.Exit
 
+      let an_xpte =
+        let open AArch64 in
+        function
+        | A|XA -> XA
+        | Q|XQ -> XQ
+        | L|XL -> XL
+        | X|N  -> X
+        |NoRet|T|S -> X (* Does it occur? *)
 
-      let check_ptw proc dir updatedb a_virt ma _an ii mdirect mok mfault =
+      let an_pte =
+        let open AArch64 in
+        function
+        | A|XA -> A
+        | Q|XQ -> Q
+        | L|XL -> L
+        | X|N -> N
+        | NoRet|T|S -> N
+
+
+      let check_ptw proc dir updatedb a_virt ma an ii mdirect mok mfault =
 
         let is_el0  = List.exists (Proc.equal proc) TopConf.procs_user in
         let check_el0 m =
@@ -594,12 +612,12 @@ module Make
               ma >>= fun _ -> M.op1 Op.PTELoc a_virt >>= fun a_pte ->
               let an,nexp =
                 if hd then (* Atomic accesses, tagged with updated bits *)
-                  AArch64.X,AArch64.NExp AArch64.AFDB
+                  an_xpte an,AArch64.NExp AArch64.AFDB
                 else if ha then
-                  AArch64.X,AArch64.NExp AArch64.AF
+                  an_xpte an,AArch64.NExp AArch64.AF
                 else
                   (* Ordinary non-explicit access *)
-                  AArch64.empty_annot,AArch64.nexp_annot in
+                  an_pte an,AArch64.nexp_annot in
               mextract_whole_pte_val
                 an nexp a_pte (E.IdSome ii) >>== fun pte_v ->
               (mextract_pte_vals pte_v) >>= fun ipte ->
