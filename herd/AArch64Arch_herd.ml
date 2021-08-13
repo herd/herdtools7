@@ -27,7 +27,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let pp_barrier_short = pp_barrier
     let reject_mixed = true
 
-    type annot = A | XA | L | XL | X | N | Q | NoRet | T | S
+    type annot = A | XA | L | XL | X | N | Q | XQ | NoRet | T | S
     type nexp =  AF|DB|AFDB|Other
     type explicit = Exp | NExp of nexp
     type lannot = annot
@@ -48,7 +48,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | _ -> false
 
     let _is_atomic = function
-      | XA | XL | X | NoRet -> true
+      | XA | XQ | XL | X | NoRet -> true
       | _ -> false
 
     let is_atomic = _is_atomic
@@ -62,7 +62,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | _ -> false
 
     let is_acquire_pc = function
-      | Q -> true
+      | Q | XQ -> true
       | _ -> false
 
     let is_release = function
@@ -117,6 +117,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | XA -> "Acq*"
       | A -> "Acq"
       | Q -> "AcqPc"
+      | XQ -> "AcqPc*"
       | XL -> "Rel*"
       | L -> "Rel"
       | X -> "*"
