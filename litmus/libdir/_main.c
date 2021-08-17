@@ -26,13 +26,10 @@ static zyva_t arg[AVAIL];
 static pthread_t th[AVAIL];
 #endif
 
-#ifdef KVM
-int RUN(int argc,char **argv) ;
-int RUN(int argc,char **argv) {
-  feature_check();
-#else
 int RUN(int argc,char **argv,FILE *out) ;
 int RUN(int argc,char **argv,FILE *out) {
+#ifdef KVM
+  feature_check();
 #endif
 #ifdef OUT
   opt_t def = { 0, NUMBER_OF_RUN, SIZE_OF_TEST, AVAIL, NEXE, mode_random, };
@@ -52,9 +49,7 @@ int RUN(int argc,char **argv,FILE *out) {
   }
   parse_param(prog,global.parse,PARSESZ,p) ;
 #ifdef PRELUDE
-#ifndef KVM
   prelude(out) ;
-#endif
 #endif
   tsc_t start = timeofday();
 #endif
@@ -85,11 +80,7 @@ int RUN(int argc,char **argv,FILE *out) {
       p_false += e->c;
     }
   }
-#ifdef KVM
-  postlude(&global,p_true,p_false,total);
-#else
   postlude(out,&global,p_true,p_false,total);
-#endif
 #endif
   return EXIT_SUCCESS;
 }
@@ -98,9 +89,7 @@ int RUN(int argc,char **argv,FILE *out) {
 int main (int argc,char **argv) {
 #ifdef KVM
   litmus_init();
-  return RUN(argc,argv) ;
-#else
-  return RUN(argc,argv,stdout) ;
 #endif
+  return RUN(argc,argv,stdout) ;
 }
 #endif
