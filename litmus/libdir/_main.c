@@ -21,13 +21,26 @@
 #define EXIT_SUCCESS 0
 #endif
 
+#ifndef DYNALLOC
 static zyva_t arg[AVAIL];
 #ifndef KVM
 static pthread_t th[AVAIL];
 #endif
+#endif
 
 int RUN(int argc,char **argv,FILE *out) ;
 int RUN(int argc,char **argv,FILE *out) {
+#ifdef DYNALLOC
+  global_t *glo_ptr = malloc_check(sizeof(global_t));
+  glo_ptr->mem = malloc_check(MEMSZ*sizeof(*glo_ptr->mem)) ;
+  zyva_t *arg = malloc_check(AVAIL*sizeof(*arg));
+#ifndef KVM
+  pthread_t *th = malloc_check(AVAIL*sizeof(*th));
+#endif
+#else
+  global_t *glo_ptr = &global;
+#endif
+  init_global(glo_ptr);
 #ifdef KVM
   feature_check();
 #endif
@@ -39,15 +52,15 @@ int RUN(int argc,char **argv,FILE *out) {
   int n_exe = d.n_exe ;
   if (d.avail != AVAIL) n_exe = d.avail / N ;
   if (n_exe < 1) n_exe = 1 ;
-  global.verbose = d.verbose;
-  global.nexe = n_exe;
-  global.nruns = d.max_run;
-  global.size = d.size_of_test;
-  global.do_scan = d.mode == mode_scan ;
-  if (global.verbose) {
-    fprintf(stderr,"%s: n=%i, r=%i, s=%i, %s\n",prog,global.nexe,global.nruns,global.size,global.do_scan ? "+sp" : "+rp");
+  glo_ptr->verbose = d.verbose;
+  glo_ptr->nexe = n_exe;
+  glo_ptr->nruns = d.max_run;
+  glo_ptr->size = d.size_of_test;
+  glo_ptr->do_scan = d.mode == mode_scan ;
+  if (glo_ptr->verbose) {
+    fprintf(stderr,"%s: n=%i, r=%i, s=%i, %s\n",prog,glo_ptr->nexe,glo_ptr->nruns,glo_ptr->size,glo_ptr->do_scan ? "+sp" : "+rp");
   }
-  parse_param(prog,global.parse,PARSESZ,p) ;
+  parse_param(prog,glo_ptr->parse,PARSESZ,p) ;
 #ifdef PRELUDE
   prelude(out) ;
 #endif
@@ -55,7 +68,7 @@ int RUN(int argc,char **argv,FILE *out) {
 #endif
   for (int id=0; id < AVAIL ; id++) {
     arg[id].id = id;
-    arg[id].g = &global;
+    arg[id].g = glo_ptr;
   }
 #ifdef KVM
   init_labels();
@@ -64,23 +77,31 @@ int RUN(int argc,char **argv,FILE *out) {
   for (int id=0; id < AVAIL ; id++) launch(&th[id],zyva,&arg[id]);
   for (int id=0; id < AVAIL ; id++) join(&th[id]);
 #endif
-  int nexe = global.nexe ;
-  hash_init(&global.hash) ;
+  int nexe = glo_ptr->nexe ;
+  hash_init(&glo_ptr->hash) ;
   for (int k=0 ; k < nexe ; k++) {
-    hash_adds(&global.hash,&global.ctx[k].t) ;
+    hash_adds(&glo_ptr->hash,&glo_ptr->ctx[k].t) ;
   }
 #ifdef OUT
   tsc_t total = timeofday()-start;
   count_t p_true = 0, p_false = 0;
   for (int k = 0 ; k < HASHSZ ; k++) {
-    entry_t *e = &global.hash.t[k];
+    entry_t *e = &glo_ptr->hash.t[k];
     if (e->ok) {
       p_true += e->c ;
     } else {
       p_false += e->c;
     }
   }
-  postlude(out,&global,p_true,p_false,total);
+  postlude(out,glo_ptr,p_true,p_false,total);
+#endif
+#ifdef DYNALLOC
+  free(glo_ptr->mem);
+  free(glo_ptr);
+  free(arg);
+#ifndef KVM
+  free(th);
+#endif
 #endif
   return EXIT_SUCCESS;
 }

@@ -22,6 +22,7 @@ module type Config = sig
   val hexa : bool
   val preload : Preload.t
   val driver : Driver.t
+  val alloc : Alloc.t
   val word : Word.t
   val line : int
   val noccs : int
@@ -66,6 +67,11 @@ module Make
     end = struct
       let do_ascall = Cfg.ascall || Cfg.is_kvm
       let do_precise = Cfg.precision
+      let do_dynalloc =
+        let open Alloc in
+        match Cfg.alloc with
+        | Dynamic -> true
+        | Static|Before -> false
 
       open CType
       module G = Global_litmus
@@ -144,6 +150,7 @@ module Make
           if have_timebase then O.f "#define DELTA_TB %s" delta
         end ;
         O.o "/* Includes */" ;
+        if do_dynalloc then O.o "#define DYNALLOC 1" ;
         if Cfg.is_kvm then begin
           O.o "#define KVM 1" ;
           O.o "#include <libcflat.h>" ;
@@ -1799,7 +1806,6 @@ module Make
             else
               "write_one_affinity(id);")
         end ;
-        O.oi "init_global(g,id);" ;
 (*        O.oi "if (g->do_scan) scan(id,g); else choose(id,g);" ; *)
         O.oi "choose(id,g);" ;
         if Cfg.is_kvm then begin

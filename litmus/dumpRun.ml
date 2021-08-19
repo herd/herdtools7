@@ -433,8 +433,8 @@ let dump_c xcode names =
          O.o "#include <stdio.h>" ;
          if Cfg.sleep > 0 then  O.o "#include <unistd.h>"
       | Mode.Kvm ->
-         O.o "#include \"utils.h\"" ;
          O.o "#include \"kvm-headers.h\"" ;
+         O.o "#include \"utils.h\"" ;
          if Cfg.sleep > 0 then
            O.o "#include <asm/delay.h>"
       end ;

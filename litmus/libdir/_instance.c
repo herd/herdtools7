@@ -59,7 +59,9 @@ static void instance_init (ctx_t *p, int id, intmax_t *mem) {
 #define VOFFSZ (VOFF/sizeof(intmax_t))
 #define MEMSZ ((NVARS*NEXE+1)*LINESZ)
 
+#ifndef DYNALLOC
 static intmax_t mem[MEMSZ] ;
+#endif
 
 typedef struct global_t {
   /* Command-line parameter */
@@ -79,8 +81,7 @@ typedef struct global_t {
   int size,nruns,nexe,noccs ;
   int do_scan ;
   /* Synchronisation for all threads */
-  volatile int go ; /* First synchronisation */
-  sense_t gb ;    /* All following synchronisation */
+  sense_t gb ;
   /* Count 'interesting' outcomes */
   volatile int ok ;
   /* Times for timeout */
@@ -92,9 +93,15 @@ typedef struct global_t {
   stats_t stats ;
 } global_t ;
 
+#ifndef DYNALLOC
 static global_t global  =
   { &param, &parse[0],
-    inst, role, group, mem,
+    inst, role, group,
+#ifdef DYNALLOC
+    NULL,
+#else
+    mem,
+#endif
 #ifdef ACTIVE
     active,
 #endif
@@ -102,29 +109,33 @@ static global_t global  =
     SIZE_OF_TEST, NUMBER_OF_RUN, NEXE, NOCCS,
     0,
   };
-
-static void init_global(global_t *g,int id) {
-  if (id == 0) {
-#ifdef TIMELIMIT
-    /* Starting time */
-    g->start = timeofday() ;
 #endif
-    /* Global barrier */
-    barrier_init(&g->gb,AVAIL) ;
-    /* Align  to cache line */
-    uintptr_t x = (uintptr_t)(g->mem) ;
-    x += LINE-1 ; x /=  LINE ; x *= LINE ;
-    intmax_t *m = (intmax_t *)x ;
-    /* Instance contexts */
-    for (int k = 0 ; k < NEXE ; k++) {
-      instance_init(&g->ctx[k],k,m) ;
-      m += NVARS*LINESZ ;
-    }
-    mbar() ;
-    g->go = 1 ;
-  } else {
-    while (g->go == 0) ;
-    mbar() ;
+
+static void init_global(global_t *g) {
+#ifdef DYNALLOC
+  g->param = &param;
+  g->parse = &parse[0];
+  g->inst = inst;
+  g->role = role;
+  g->group = group;
+#ifdef ACTIVE
+  g->active = active;
+#endif
+#endif
+#ifdef TIMELIMIT
+  /* Starting time */
+  g->start = timeofday() ;
+#endif
+  /* Global barrier */
+  barrier_init(&g->gb,AVAIL) ;
+  /* Align  to cache line */
+  uintptr_t x = (uintptr_t)(g->mem) ;
+  x += LINE-1 ; x /=  LINE ; x *= LINE ;
+  intmax_t *m = (intmax_t *)x ;
+  /* Instance contexts */
+  for (int k = 0 ; k < NEXE ; k++) {
+    instance_init(&g->ctx[k],k,m) ;
+    m += NVARS*LINESZ ;
   }
 }
 
