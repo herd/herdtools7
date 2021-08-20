@@ -1696,7 +1696,7 @@ module Make
         O.o "" ;
         O.oi "for (int nrun = 0; nrun < g->nruns ; nrun++) {" ;
         O.oii
-          "if (g->verbose>1) fprintf(stderr, \"Run %i of %i\\r\", nrun, g->nruns);" ;
+          "if (g->verbose>1) fprintf(stderr, \"Run %d of %d\\r\", nrun, g->nruns);" ;
         O.oii "int part = q->part >= 0 ? q->part : rand_k(&seed,SCANSZ);" ;
         O.oii "set_role(g,&c,part);";
         O.oii "choose_params(g,&c,part);" ;

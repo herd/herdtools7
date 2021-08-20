@@ -58,7 +58,7 @@ int RUN(int argc,char **argv,FILE *out) {
   glo_ptr->nruns = d.max_run;
   glo_ptr->size = d.size_of_test;
   if (glo_ptr->verbose) {
-    fprintf(stderr,"%s: n=%i, r=%i, s=%i\n",prog,glo_ptr->nexe,glo_ptr->nruns,glo_ptr->size);
+    fprintf(stderr,"%s: n=%d, r=%d, s=%d\n",prog,glo_ptr->nexe,glo_ptr->nruns,glo_ptr->size);
   }
   parse_param(prog,glo_ptr->parse,PARSESZ,p) ;
 #ifdef PRELUDE
