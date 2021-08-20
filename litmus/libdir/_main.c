@@ -50,8 +50,9 @@ int RUN(int argc,char **argv,FILE *out) {
   char *prog = argv[0] ;
   char **p = parse_opt(argc,argv,&def,&d) ;
   int n_exe = d.n_exe ;
-  if (d.avail != AVAIL) n_exe = d.avail / N ;
+  if (d.avail < AVAIL) n_exe = d.avail / N ;
   if (n_exe < 1) n_exe = 1 ;
+  if (n_exe > NEXE) n_exe = NEXE ;
   glo_ptr->verbose = d.verbose;
   glo_ptr->nexe = n_exe;
   glo_ptr->nruns = d.max_run;
