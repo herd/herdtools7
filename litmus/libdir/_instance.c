@@ -89,8 +89,10 @@ typedef struct global_t {
   /* All instance contexts */
   ctx_t ctx[NEXE] ; /* All test instance contexts */
   hash_t hash ;     /* Sum of outcomes */
+#ifdef STATS
   /* statistics */
   stats_t stats ;
+#endif
 } global_t ;
 
 #ifndef DYNALLOC

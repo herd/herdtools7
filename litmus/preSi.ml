@@ -73,6 +73,9 @@ module Make
         | Dynamic -> true
         | Static|Before -> false
 
+      (* Statistic struct may not be initialised when dynamically allocated *)
+      let do_stats = not do_dynalloc
+
       open CType
       module G = Global_litmus
 
@@ -117,6 +120,7 @@ module Make
         let hexa = Cfg.hexa
         let exit_cond = Cfg.exit_cond
         let have_fault_handler = have_fault_handler
+        let do_stats = do_stats
       end
 
       module U = SkelUtil.Make(UCfg)(P)(A)(T)
@@ -151,6 +155,7 @@ module Make
         end ;
         O.o "/* Includes */" ;
         if do_dynalloc then O.o "#define DYNALLOC 1" ;
+        if do_stats then O.o "#define STATS 1" ;
         if Cfg.is_kvm then begin
           O.o "#define KVM 1" ;
           O.o "#include <libcflat.h>" ;
@@ -882,7 +887,7 @@ module Make
 
       (* For now, limit kvm stats printing to topology *)
       let get_stats test =
-        if Cfg.is_kvm then [] else do_get_stats test
+        if Cfg.is_kvm || not do_stats then [] else do_get_stats test
 
       let dump_parameters _env test =
         let v_tags =
@@ -942,33 +947,37 @@ module Make
         O.o "#define PARSESZ (sizeof(parse)/sizeof(parse[0]))" ;
         O.o "";
 (* Print *)
-        let is_delay tag = List.exists (fun x -> Misc.string_eq x tag) d_tags in
-        O.f "static void pp_param(FILE *out,param_t *p) {" ;
-        let fmt =
-          "{" ^
-          String.concat ", "
-            (List.map (fun tag -> sprintf "%s=%%i" tag) all_tags) ^
-          "}"
-        and params = List.map
-            (fun tag ->
-              sprintf
-                (if is_delay tag then "p->%s-NSTEPS2" else "p->%s")
-                tag)
-            all_tags  in
-        EPF.fi fmt params ;
-        O.o "}" ;
-        O.o "" ;
-(* Statistics *)
-        O.o "typedef struct {" ;
-        O.oi "count_t groups[SCANSZ];" ;
-        O.fi "count_t vars%s;"
-          (String.concat "" (List.map (fun _ -> "[NVARS]") v_tags)) ;
-        O.fi "count_t delays%s;"
-          (String.concat "" (List.map (fun _ -> "[NSTEPS]") d_tags)) ;
-        O.fi "count_t dirs%s;"
-          (String.concat "" (List.map (fun _ -> "[cmax]") c_tags)) ;
-        O.o "} stats_t;" ;
-        O.o "" ;
+        if do_stats then begin
+          let is_delay tag =
+            List.exists (fun x -> Misc.string_eq x tag) d_tags in
+          O.f "static void pp_param(FILE *out,param_t *p) {" ;
+          let fmt =
+            "{" ^
+              String.concat ", "
+                (List.map (fun tag -> sprintf "%s=%%i" tag) all_tags) ^
+                "}"
+          and params =
+            List.map
+              (fun tag ->
+                sprintf
+                  (if is_delay tag then "p->%s-NSTEPS2" else "p->%s")
+                  tag)
+              all_tags  in
+          EPF.fi fmt params ;
+          O.o "}" ;
+          O.o "" ;
+          (* Statistics *)
+          O.o "typedef struct {" ;
+          O.oi "count_t groups[SCANSZ];" ;
+          O.fi "count_t vars%s;"
+            (String.concat "" (List.map (fun _ -> "[NVARS]") v_tags)) ;
+          O.fi "count_t delays%s;"
+            (String.concat "" (List.map (fun _ -> "[NSTEPS]") d_tags)) ;
+          O.fi "count_t dirs%s;"
+            (String.concat "" (List.map (fun _ -> "[cmax]") c_tags)) ;
+          O.o "} stats_t;" ;
+          O.o ""
+        end ;
         ()
 
 (*************)
@@ -1009,15 +1018,16 @@ module Make
         let fmt = "%-6PCTR%c>" in
         EPF.fi fmt ["p->c";"p->ok ? '*' : ':'";] ;
         O.oi "pp_log(out,&p->key);" ;
-        O.oi "if (verbose) {" ;
-        EPF.fii " # " [] ;
-        O.fii "pp_param(out,&p->p);" ;
-        EPF.fii " %s" ["group[p->p.part]"];
-        O.oi "}" ;
+        if do_stats then begin
+          O.oi "if (verbose) {" ;
+          EPF.fii " # " [] ;
+          O.fii "pp_param(out,&p->p);" ;
+          EPF.fii " %s" ["group[p->p.part]"];
+          O.oi "}"
+        end ;
         EPF.fi "%c" ["'\\n'"] ;
         O.o "}" ;
         O.o ""
-
 
 (****************************************)
 (* Feature enabling/disabling, per role *)
@@ -1415,20 +1425,24 @@ module Make
               Indent.indent3 in
           O.ox id "int _cond = final_ok(final_cond(_log));" ;
           (* recorded outcome *)
-          O.ox id "hash_add(&_ctx->t,_log,_p,1,_cond);" ;
+          O.fx id "hash_add(&_ctx->t,_log%s,1,_cond);"
+            (if do_stats then ",_p" else "") ;
           (* Result and stats *)
           O.ox id "if (_cond) {" ;
           let nid = Indent.tab id in
           O.ox nid "_ok = 1;" ;
-          O.ox nid "(void)__sync_add_and_fetch(&_g->stats.groups[_p->part],1);" ;
-          let open SkelUtil in
-          List.iter
-            (fun {tags; name; _} ->
-              let idx =
-                String.concat ""
-                  (List.map (sprintf "[_p->%s]") tags) in
-              O.fx nid "(void)__sync_add_and_fetch(&_g->stats.%s%s,1);" name idx)
-            stats ;
+          if do_stats then begin
+            O.ox nid
+              "(void)__sync_add_and_fetch(&_g->stats.groups[_p->part],1);" ;
+            let open SkelUtil in
+            List.iter
+              (fun {tags; name; _} ->
+                let idx =
+                  String.concat ""
+                    (List.map (sprintf "[_p->%s]") tags) in
+                O.fx nid "(void)__sync_add_and_fetch(&_g->stats.%s%s,1);" name idx)
+              stats
+          end ;
           O.ox id "}" ;
           begin match test.T.filter with
           | None -> () | Some _ -> O.oii "}"
