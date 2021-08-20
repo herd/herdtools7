@@ -135,8 +135,8 @@ let opts =
    argint "-nsockets" Option.nsockets "specify <n> sockets" ;
 (* Allocation *)
   begin let module P = ParseTag.Make(Alloc) in
-   P.parse"-alloc" Option.alloc
-     "allocation mode"  end ;
+   P.parse_opt "-alloc" Option.alloc
+     "allocation mode, default: dynamic most often, static for -mode presi/kvm -driver shell"  end ;
    argbool "-doublealloc" Option.doublealloc
      "perform a malloc/free once before allocating for real" ;
    argbool "-contiguous" Option.contiguous
@@ -334,7 +334,15 @@ let () =
       let barrier = !barrier
       let threadstyle = !threadstyle
       let launch = !launch
-      let alloc = !alloc
+      let alloc =
+        match !alloc with
+        | Some a -> a
+        | None ->
+           begin
+             match !Option.mode,!Option.driver with
+             | (Mode.PreSi|Mode.Kvm),Driver.Shell -> Alloc.Static
+             | _,_ -> Alloc.Dynamic
+           end
       let doublealloc = !doublealloc
       let memory = !memory
       let preload = !preload

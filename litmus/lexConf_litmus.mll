@@ -70,6 +70,7 @@ module LexTag(O:ParseTag.Opt) = struct
                 tag opt (String.concat "," O.tags))))
 
   let lexfun opt r = lexfun_with_fun opt ((:=) r)
+  let lexfun_opt opt r  = lexfun_with_fun opt (fun t -> r := Some t)
 end
 
 }
@@ -159,7 +160,7 @@ rule main = parse
     P.lexfun "collect" collect arg ; main lexbuf }
 | "alloc" arg
    { let module P = LexTag(Alloc) in
-   P.lexfun "alloc" alloc arg  ; main lexbuf }
+   P.lexfun_opt "alloc" alloc arg  ; main lexbuf }
 | "doublealloc" arg
    { set_bool doublealloc arg ; main lexbuf }
 | "carch" arg

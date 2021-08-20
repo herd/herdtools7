@@ -1415,6 +1415,12 @@ or a compressed archive (extension \opt{.tgz}),
 demonstrated in Sec.~\ref{cross}.
 Otherwise, \opt{<dest>} is interpreted as the name of an
 existing directory and tests are saved in it.
+\item[{\tt -mode (std|presi|kvm)}]
+Style for output C files, default is \texttt{std}.
+Standard mode (\texttt{std}) is the operating mode described in this manual.
+Other modes are experimental. Mode \texttt{presi} (for ``pre-silicium``) is an attempt not to rely on pre-existing operating system calls and libraries, while mode \texttt{kvm} is for running system level tests on top of the
+\ahref{https://www.linux-kvm.org/page/KVM-unit-tests}{kvm-unit-tests}
+infrastructure.
 \item[{\tt -driver (shell|C|XCode)}]
 Choose the driver that will run the tests.
 In the ``\opt{shell}'' (and default) mode,
@@ -1519,7 +1525,8 @@ compile time defined parameters: the number of available logical processors
 and the size of a run (see option \ahrefloc{sizeoftest}{\opt{-s <n>}}).
 It remains possible to change those those at execution time, provided
 the resulting memory size does not exceed the compile time value.
-Default is \texttt{dynamic}.
+Default is \texttt{dynamic} most often and
+static for options \texttt{-mode presi/kvm -driver shell}.
 
 \item[{\tt -preload (no|random|custom|static|static1|static2)}]
 Specify preload mode (see Sec.~\ref{defpreload}), default is \texttt{random}.
