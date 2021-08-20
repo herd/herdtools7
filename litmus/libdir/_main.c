@@ -45,7 +45,7 @@ int RUN(int argc,char **argv,FILE *out) {
   feature_check();
 #endif
 #ifdef OUT
-  opt_t def = { 0, NUMBER_OF_RUN, SIZE_OF_TEST, AVAIL, NEXE, mode_random, };
+  opt_t def = { 0, NUMBER_OF_RUN, SIZE_OF_TEST, AVAIL, NEXE, };
   opt_t d = def ;
   char *prog = argv[0] ;
   char **p = parse_opt(argc,argv,&def,&d) ;
@@ -56,9 +56,8 @@ int RUN(int argc,char **argv,FILE *out) {
   glo_ptr->nexe = n_exe;
   glo_ptr->nruns = d.max_run;
   glo_ptr->size = d.size_of_test;
-  glo_ptr->do_scan = d.mode == mode_scan ;
   if (glo_ptr->verbose) {
-    fprintf(stderr,"%s: n=%i, r=%i, s=%i, %s\n",prog,glo_ptr->nexe,glo_ptr->nruns,glo_ptr->size,glo_ptr->do_scan ? "+sp" : "+rp");
+    fprintf(stderr,"%s: n=%i, r=%i, s=%i\n",prog,glo_ptr->nexe,glo_ptr->nruns,glo_ptr->size);
   }
   parse_param(prog,glo_ptr->parse,PARSESZ,p) ;
 #ifdef PRELUDE

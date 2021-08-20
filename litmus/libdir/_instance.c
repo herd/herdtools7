@@ -35,7 +35,7 @@ typedef struct {
 #endif
   hash_t t;
   sense_t b;
-  param_t p; // For random scan
+  param_t p;
 } ctx_t ;
 
 
@@ -79,7 +79,6 @@ typedef struct global_t {
   /* Runtime control */
   int verbose ;
   int size,nruns,nexe,noccs ;
-  int do_scan ;
   /* Synchronisation for all threads */
   sense_t gb ;
   /* Count 'interesting' outcomes */
@@ -109,7 +108,6 @@ static global_t global  =
 #endif
     0,
     SIZE_OF_TEST, NUMBER_OF_RUN, NEXE, NOCCS,
-    0,
   };
 #endif
 

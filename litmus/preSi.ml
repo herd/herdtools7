@@ -1820,7 +1820,6 @@ module Make
             else
               "write_one_affinity(id);")
         end ;
-(*        O.oi "if (g->do_scan) scan(id,g); else choose(id,g);" ; *)
         O.oi "choose(id,g);" ;
         if Cfg.is_kvm then begin
           match Cfg.driver,db with
