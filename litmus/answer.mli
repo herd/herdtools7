@@ -26,5 +26,6 @@ type answer =
         * string         (* C source file of test *)
         * StringSet.t    (* cycles *)
         * hash_env       (* name -> hash *)
+        * int            (* number of threads *)
   | Interrupted of Archs.t * exn
   | Absent of Archs.t

@@ -75,6 +75,10 @@ module Make
 
       (* Statistic struct may not be initialised when dynamically allocated *)
       let do_stats = not do_dynalloc
+      let do_inlined = (* inline topology description *)
+        match Cfg.mode,Cfg.driver with
+        | Mode.Kvm,Driver.C -> not do_dynalloc
+        | _,_ -> true
 
       open CType
       module G = Global_litmus
@@ -160,7 +164,8 @@ module Make
           O.o "#define KVM 1" ;
           O.o "#include <libcflat.h>" ;
           O.o "#include \"kvm-headers.h\"" ;
-          O.o "#include \"utils.h\""
+          O.o "#include \"utils.h\"" ;
+          if not do_inlined then O.o "#include \"topology.h\""
         end else begin
           O.o "#include <stdlib.h>" ;
           O.o "#include <inttypes.h>" ;
@@ -478,12 +483,17 @@ module Make
           test.T.code
 
       let dump_topology doc test =
+        O.o "/************/" ;
+        O.o "/* Topology */" ;
+        O.o "/************/" ;
+        O.o "" ;
         let n = T.get_nprocs test in
-        let module Topo =
+        if do_inlined then begin
+          let module Topo =
           Topology.Make
             (struct
               let verbose = Cfg.verbose
-              let name = doc
+              let file_name = doc.Name.file
               let nthreads = n
               let avail = match Cfg.avail with
               | None -> 0
@@ -494,12 +504,17 @@ module Make
               let smtmode = Cfg.smtmode
               let mode = if Cfg.is_kvm then Mode.Kvm else Mode.PreSi
               let is_active = is_active
+              let inlined = true
             end) (O) in
-        O.o "/************/" ;
-        O.o "/* Topology */" ;
-        O.o "/************/" ;
-        O.o "" ;
-        Topo.dump_alloc (get_addrs test)
+          ignore (Topo.dump_alloc (get_addrs test))
+        end else begin
+          O.f "#define inst inst_%d" n ;
+          O.f "#define role role_%d" n ;
+          O.f "#define group group_%d" n;
+          O.f "#define SCANSZ scansz_%d" n ;
+          O.f "#define SCANLINE scanline_%d" n ;
+          ()
+        end
 
 (************)
 (* Outcomes *)

@@ -40,6 +40,9 @@ module type Config = sig
   val mkopt : Option.opt -> Option.opt
   val variant : Variant_litmus.t -> bool
   val nocatch : bool
+  val smt : int
+  val nsockets : int
+  val smtmode : Smt.t
 end
 
 

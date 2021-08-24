@@ -19,7 +19,7 @@
 
 module type Config = sig
   val verbose : int
-  val name : Name.t
+  val file_name : string
   val nthreads : int
   val avail : int
   val smt : int
@@ -27,12 +27,15 @@ module type Config = sig
   val smtmode : Smt.t
   val mode : Mode.t
   val is_active : bool
+  val inlined : bool
 end
 
 let active_tag (proc,a) = Printf.sprintf "act_%i_%s"  proc a
 
+type sz = { scanline : int; scansz  : int; }
+
 module Make(Cfg:Config) (O:Indent.S) : sig
-  val dump_alloc : string list list -> unit
+  val dump_alloc : string list list -> sz
 end = struct
   open Cfg
   open Printf
@@ -41,7 +44,7 @@ let () =
   if verbose > 0 && smtmode = Smt.No then
     Warn.warn_always
       "%s smtmode not specified, defaulting to static thread allocation"
-      (Pos.str_pos0 name.Name.file)
+      (Pos.str_pos0 file_name)
 
 (* Get reasonable default values when topology is not specified *)
   let set_ifnone def x =  match smtmode with
@@ -293,22 +296,32 @@ let part pp_part maxelt maxpart k r =
 
 
   let handle_groups sz all_gs =
-    O.o "static const char *group[] = {" ;
+    if inlined then
+      O.o "static const char *group[] = {"
+    else
+      O.f "static const char *_group_%d[] = {" nthreads ;
     List.iter
       (fun g -> O.f "\"%s\"," (pp_gss g))
       all_gs ;
     O.o "};" ;
     O.o "" ;
-    O.f "#define SCANSZ %i" (List.length all_gs) ;
-    O.f "#define SCANLINE %i" sz ;
-    begin match Cfg.mode with
+    if not inlined then begin
+      O.f "const char **group_%d = &_group_%d[0];" nthreads nthreads ;
+      O.o ""
+    end ;
+    let scansz = List.length all_gs in
+    if inlined then begin
+      O.f "#define %s %i" "SCANSZ" scansz ;
+      O.f "#define %s %i" "SCANLINE" sz
+    end ;
+      begin match Cfg.mode with
     | Mode.Std ->
         O.o "" ;
         O.o "static count_t ngroups[SCANSZ];"
     | Mode.PreSi|Mode.Kvm -> ()
     end ;
     O.o "" ;
-    ()
+    { scansz=scansz; scanline=sz; }
 
   let std_handle groups =
 (* Actual virtual proc numbers *)
@@ -319,7 +332,10 @@ let part pp_part maxelt maxpart k r =
     handle_groups (nthreads*ninst) (List.rev all_gs)
 
   let handle_table name mk gss cpus =
-    O.f "static const int %s[] = {" name ;
+    if inlined then
+      O.f "static const int %s[] = {" name
+    else
+      O.f "static const int _%s_%d[] = {" name nthreads ;
     List.iter2
       (fun gs cpu ->
         let xs = mk cpu in
@@ -327,6 +343,11 @@ let part pp_part maxelt maxpart k r =
       gss cpus ;
     O.o "};" ;
     O.o "" ;
+    if not inlined then begin
+      O.f "const int *%s_%d = &_%s_%d[0];"
+        name nthreads name nthreads ;
+      O.o ""
+    end ;
     ()
 
 
@@ -418,8 +439,7 @@ let part pp_part maxelt maxpart k r =
     handle_table "inst" mk_inst gss cpus ;
     handle_table "role" mk_role gss cpus ;
     handle_vars vss gss ;
-    handle_groups avail gss ;
-    ()
+    handle_groups avail gss
 
 
   let dump_alloc_gen kont handle =

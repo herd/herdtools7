@@ -284,7 +284,7 @@ end = struct
                     ()
                   end ;
                 R.run name out_chan doc allocated source ;
-                Completed (A'.arch,doc,source,cycles,hash_env)
+                Completed (A'.arch,doc,source,cycles,hash_env,nprocs)
               end else begin
                 let cause = if limit_ok then "" else " (too many threads)" in
                 W.warn "%s test not compiled%s"
