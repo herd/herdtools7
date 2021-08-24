@@ -31,6 +31,12 @@ static pthread_t th[AVAIL];
 int RUN(int argc,char **argv,FILE *out) ;
 int RUN(int argc,char **argv,FILE *out) {
 #ifdef DYNALLOC
+#ifdef HAVE_FAULT_HANDLER
+  alloc_fault_handler();
+#ifdef SEE_FAULTS
+  alloc_see_faults();
+#endif
+#endif
   global_t *glo_ptr = malloc_check(sizeof(global_t));
   glo_ptr->mem = malloc_check(MEMSZ*sizeof(*glo_ptr->mem)) ;
   zyva_t *arg = malloc_check(AVAIL*sizeof(*arg));
@@ -96,6 +102,12 @@ int RUN(int argc,char **argv,FILE *out) {
   postlude(out,glo_ptr,p_true,p_false,total);
 #endif
 #ifdef DYNALLOC
+#ifdef HAVE_FAULT_HANDLER
+#ifdef SEE_FAULTS
+  free_see_faults();
+#endif
+  free_fault_handler();
+#endif
   free(glo_ptr->mem);
   free(glo_ptr);
   free(arg);

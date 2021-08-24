@@ -248,8 +248,22 @@ module Make
           O.o "" ;
           O.o "typedef struct { int instance,proc; } who_t;" ;
           O.o "" ;
-          O.o "static count_t nfaults[NTHREADS];" ;
-          O.o "static who_t whoami[AVAIL];" ;
+          if do_dynalloc then begin
+            O.o "static count_t *nfaults;" ;
+            O.o "static who_t *whoami;" ;
+            O.o "" ;
+            O.o "static void alloc_fault_handler(void) {" ;
+            O.oi "nfaults = malloc_check(NTHREADS*sizeof(*nfaults));" ;
+            O.oi "whoami = malloc_check(AVAIL*sizeof(*whoami));" ;
+            O.o "}" ;
+            O.o "" ;
+            O.o "static void free_fault_handler(void) {" ;
+            O.oi "free(whoami); free(nfaults);" ;
+            O.o "}"
+          end else begin
+            O.o "static count_t nfaults[NTHREADS];" ;
+            O.o "static who_t whoami[AVAIL];"
+          end ;
           O.o "" ;
           Insert.insert O.o "instruction.h" ;
           O.o "" ;
@@ -289,8 +303,22 @@ module Make
               O.fi "int %s;" (String.concat "," (List.map tag_seen faults)) ;
               O.o "} see_fault_t;" ;
               O.o "" ;
-              O.o "static see_fault_t *see_fault[NEXE];" ;
-              O.o "static vars_t *vars_ptr[NEXE];" ;
+              if do_dynalloc then begin
+                O.o "static see_fault_t **see_fault;" ;
+                O.o "static vars_t **vars_ptr;" ;
+                O.o "" ;
+                O.o "static void alloc_see_faults(void) {" ;
+                O.oi "see_fault = malloc_check(NEXE*sizeof(*see_fault));" ;
+                O.oi "vars_ptr = malloc_check(NEXE*sizeof(*vars_ptr));" ;
+                O.o "}" ;
+                O.o "" ;
+                O.o "static void free_see_faults(void) {" ;
+                O.oi "free(see_fault); free(vars_ptr);" ;
+                O.o "}"
+              end else begin
+                O.o "static see_fault_t *see_fault[NEXE];" ;
+                O.o "static vars_t *vars_ptr[NEXE];"
+              end ;
               O.o "" ;
               O.o "static void init_see_fault(see_fault_t *p) {" ;
               List.iter
