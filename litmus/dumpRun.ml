@@ -52,6 +52,12 @@ end
 module Make (Cfg:Config) (Tar:Tar.S) (CT:OneTest) : sig
   val from_files : string list -> unit
 end = struct
+
+  let is_kvm =
+    match Cfg.mode with
+    | Mode.Kvm -> true
+    | Mode.PreSi|Mode.Std -> false
+
   open MySys
 
   module GD = GenerateCrossDoc.Make(Cfg)
@@ -304,11 +310,9 @@ let dump_shell names =
       end in
       let module RU = RunUtils.Make(O) in
       RU.report_machine out_chan ;
-      begin match Cfg.mode with
-      | Mode.Std|Mode.PreSi ->
-          output_line out_chan "sed '2q;d' comp.sh"
-      | Mode.Kvm -> ()
-      end ;
+      if not is_kvm then begin
+        output_line out_chan "sed '2q;d' comp.sh"
+       end ;
       dump_shell_postfix out_chan ;
       arch,sources,utils)
     (Tar.outname (MyName.outname "run" ".sh"))
@@ -430,6 +434,7 @@ let dump_c xcode names =
          if Cfg.sleep > 0 then  O.o "#include <unistd.h>"
       | Mode.Kvm ->
          O.o "#include \"utils.h\"" ;
+         O.o "#include \"kvm-headers.h\"" ;
          if Cfg.sleep > 0 then
            O.o "#include <asm/delay.h>"
       end ;
@@ -446,18 +451,14 @@ let dump_c xcode names =
       end in
       let module RU = RunUtils.Make(C) in
       O.o "" ;
-      begin match  Cfg.mode with
-      | Mode.Std|Mode.PreSi ->
-         O.o "/* Date function */" ;
-         O.o "#include <time.h>" ;
-         O.o "static void my_date(FILE *out) {" ;
-         O.oi "time_t t = time(NULL);" ;
-         O.oi "fprintf(out,\"%s\",ctime(&t));";
-         O.o "}" ;
-         ()
-      | Mode.Kvm ->
-         O.o "static void my_date(FILE *out) { }" ;
-         ()
+      if not is_kvm then begin
+        O.o "/* Date function */" ;
+        O.o "#include <time.h>" ;
+        O.o "static void my_date(FILE *out) {" ;
+        O.oi "time_t t = time(NULL);" ;
+        O.oi "fprintf(out,\"%s\",ctime(&t));";
+        O.o "}" ;
+        ()
       end ;
       O.o "" ;
       O.o "/* Postlude */" ;
@@ -475,7 +476,7 @@ let dump_c xcode names =
       O.o"" ;
       O.o"/* Run all tests */" ;
       let runbody () =
-        O.oi "my_date(out);" ;
+        if not is_kvm then O.oi "my_date(out);" ;
         begin match Cfg.threadstyle with
         | ThreadStyle.Cached -> O.oi "set_pool();"
         | _ -> ()
@@ -493,7 +494,7 @@ let dump_c xcode names =
             if xcode then O.oi "[tick tick];")
           (List.rev docs) ;
         O.oi "end_report(argc,argv,out);" ;
-        O.oi "my_date(out);" in
+        if not is_kvm then O.oi "my_date(out);" in
       if xcode then begin
         O.o "#import \"run.h\"";
         O.o "" ;
@@ -515,6 +516,7 @@ let dump_c xcode names =
         O.o "@end"
       end else  begin
         O.o"int main(int argc,char **argv) {" ;
+        if is_kvm then O.oi "litmus_init();" ;
         O.oi "run(argc,argv,stdout);" ;
         O.oi "return 0;" ;
         O.o"}"
@@ -524,10 +526,6 @@ let dump_c xcode names =
 
 
 let dump_c_cont xcode arch sources utils =
-  let is_kvm =
-    match Cfg.mode with
-    | Mode.Kvm -> true
-    | Mode.PreSi|Mode.Std -> false in
   let sources = List.map Filename.basename  sources in
 (* Makefile *)
   let infile = not xcode in

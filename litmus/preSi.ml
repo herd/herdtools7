@@ -1802,6 +1802,14 @@ module Make
         O.oi "init_global(g,id);" ;
 (*        O.oi "if (g->do_scan) scan(id,g); else choose(id,g);" ; *)
         O.oi "choose(id,g);" ;
+        if Cfg.is_kvm then begin
+          match Cfg.driver,db with
+          | Driver.C,Some _ -> (* Reset for next test *)
+              O.oi "reset_hahd_bits();"
+          | ((Driver.XCode|Driver.Shell),_)
+          | (_,None)
+            -> ()
+        end ;
         if not Cfg.is_kvm then begin
           O.oi "return NULL;"
         end ;
