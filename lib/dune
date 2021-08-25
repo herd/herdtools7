@@ -10,7 +10,7 @@
 (menhir (modules X86_64Parser) (flags  --fixed-exception))
 (menhir (modules modelParser) (flags  --fixed-exception))
 (menhir (modules RISCVParser) (flags  --fixed-exception))
-(menhir (modules stateParser) (flags  --fixed-exception))
+(menhir (modules stateParser) (flags  --explain --fixed-exception))
 
 (menhir (modules procRules scopeRules  BellExtraRules AArch64Parser)
   (merge_into AArch64Parser)

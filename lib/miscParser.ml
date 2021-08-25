@@ -16,14 +16,16 @@
 
 (* The basic types of architectures and semantics, just parsed *)
 
+open Printf
+
 type proc = int * string list option
 
 let pp_proc (p,ao) =
-  Printf.sprintf
+  sprintf
     "P%i%s" p
     (match ao with
     | None -> ""
-    | Some a -> Printf.sprintf ":%s" (String.concat "," a))
+    | Some a -> sprintf ":%s" (String.concat "," a))
 
 type maybev = ParsedConstant.v
 
@@ -50,14 +52,14 @@ let location_compare loc1 loc2 = match loc1,loc2 with
 | Location_global _, Location_sreg _ -> 1
 
 let dump_location = function
-  | Location_reg (i,r) -> Printf.sprintf "%i:%s" i r
+  | Location_reg (i,r) -> sprintf "%i:%s" i r
   | Location_sreg s -> Misc.dump_symbolic s
   | Location_global v -> ParsedConstant.pp_v v
 
-let dump_rval loc = match loc with
-  | Location_reg (i,r) -> Printf.sprintf "%i:%s" i r
+let dump_location_brk = function
+  | Location_reg (i,r) -> sprintf "%i:%s" i r
   | Location_sreg s -> Misc.dump_symbolic s
-  | Location_global v -> Printf.sprintf "*%s" (ParsedConstant.pp_v v)
+  | Location_global v -> sprintf "[%s]" (ParsedConstant.pp_v v)
 
 let is_global = function
   | Location_global _ -> true
@@ -101,18 +103,6 @@ type locations = (location,maybev) LocationsItem.t list
 type prop = (location, maybev) ConstrGen.prop
 type constr = prop ConstrGen.constr
 type quantifier = ConstrGen.kind
-
-type atom = location * maybev
-type outcome = atom list
-
-open Printf
-
-let pp_atom (loc,v) =
-  sprintf "%s=%s" (dump_location loc) (ParsedConstant.pp_v v)
-
-let pp_outcome o =
-  String.concat " "
-    (List.map (fun a -> sprintf "%s;" (pp_atom a)) o)
 
 type state_atom = location * (TestType.t * maybev)
 type state = state_atom list

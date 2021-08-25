@@ -326,4 +326,3 @@ inline static void reset_hahd_bits(void) {
 }
 
 static inline void litmus_init(void) { reset_hahd_bits(); }
-

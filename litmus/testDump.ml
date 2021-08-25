@@ -67,7 +67,7 @@ end = struct
         type prop = I.C.prop
 
         let dump_atom a =
-          ConstrGen.dump_atom A.pp_location A.pp_rval dump_v a
+          ConstrGen.dump_atom A.pp_location A.pp_location_brk dump_v a
 
         let dump_prop = ConstrGen.prop_to_string dump_atom
         let dump_constr = ConstrGen.constraints_to_string dump_atom

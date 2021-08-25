@@ -145,8 +145,9 @@ module Top
             type prop = MiscParser.prop
 
             let dump_atom a =
-              ConstrGen.dump_atom dump_loc MiscParser.dump_rval
-                ParsedConstant.pp_v a
+              ConstrGen.dump_atom
+                dump_loc MiscParser.dump_location_brk ParsedConstant.pp_v
+                a
 
             let dump_prop = ConstrGen.prop_to_string dump_atom
             let dump_constr = ConstrGen.constraints_to_string dump_atom
