@@ -23,8 +23,6 @@
 
 #define LITMUS_PAGE_SIZE PAGE_SIZE
 
-static inline void litmus_init(void) {}
-
 static inline pteval_t *litmus_tr_pte(void *p) {
   return mmu_get_pte(mmu_idmap, (uintptr_t)p);
 }
@@ -317,3 +315,15 @@ inline static void set_hahd_bits(uint64_t v) {
   uint64_t n = (old & ~msk)|(v << 39);
   set_tcr_el1(n);
 }
+
+inline static void reset_hahd_bits(void) {
+  uint64_t hafdbs = get_hafdbs();
+  if (hafdbs == 0b0001) {
+    set_ha_bit(0);
+  } else if (hafdbs == 0b0010) {
+    set_hahd_bits(0b00);
+  }
+}
+
+static inline void litmus_init(void) { reset_hahd_bits(); }
+
