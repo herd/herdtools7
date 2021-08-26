@@ -216,7 +216,8 @@ module Make(O:Config)(A:Arch_tools.S) =
 
     let pp_v = ParsedConstant.pp O.hexa
     let pp_location = A.pp_location
-    let pp_rval = A.pp_rval
+    let pp_location_brk = A.pp_location_brk
+
 
     let pp_nice_state sc sep pp =
       let pp = List.map pp sc in
@@ -309,14 +310,20 @@ module Make(O:Config)(A:Arch_tools.S) =
           pp_mbox = sprintf "\\mbox{%s}" ;
           pp_atom = fun a ->
             match a with
-          | LV (loc,v) ->
-              pp_mbox (ConstrGen.dump_rloc pp_location loc) ^
+            | LV (loc,v) ->
+                let pp_loc =
+                  match loc,v with
+                  | (Deref _,_)
+                  | (_,Constant.ConcreteVector _)
+                    -> pp_location
+                  | _ -> pp_location_brk in
+              pp_mbox (ConstrGen.dump_rloc pp_loc loc) ^
               pp_equal ^
               pp_mbox (pp_asm_v v)
           | LL (l1,l2) ->
-              pp_mbox (pp_location l1) ^
+              pp_mbox (pp_location_brk l1) ^
               pp_equal ^
-              pp_mbox (pp_rval l2) ;
+              pp_mbox (pp_location_brk l2) ;
           | FF f ->
               pp_mbox (Fault.pp_fatom pp_asm_v f)
         }

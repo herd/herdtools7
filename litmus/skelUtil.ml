@@ -463,21 +463,10 @@ module Make
       open ConstrGen
 
       let pp_atom tr_out a =
-        match a with
-        | LV (loc,v) ->
-           let pp_loc =
-             match loc,v with
-             | (Deref _,_)
-             | (_,Constant.ConcreteVector _)
-               -> A.pp_location
-             | _ -> A.pp_location_brk in
-             sprintf "%s=%s"
-              (tr_out (ConstrGen.dump_rloc pp_loc loc))
-              (A.V.pp Cfg.hexa v)
-        | LL (loc1,loc2) ->
-            sprintf "%s=%s" (tr_out (A.pp_location loc1))
-              (tr_out (A.pp_rval loc2))
-        | FF f -> Fault.pp_fatom A.V.pp_v f
+        let pp_loc loc = tr_out (A.pp_location loc)
+        and pp_loc_brk loc = tr_out (A.pp_location_brk loc)
+        and pp_v v = A.V.pp Cfg.hexa v in
+        ConstrGen.dump_atom pp_loc pp_loc_brk pp_v a
 
       let pp_cond test =
         let tr_out = tr_out test in

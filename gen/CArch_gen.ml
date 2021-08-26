@@ -113,6 +113,11 @@ let dump_loc = function
 
 let pp_location = dump_loc
 
+let pp_location_brk loc = match loc with
+  | Loc loc -> sprintf "[%s]" loc
+  | Reg _ -> dump_loc loc
+
+
 let location_compare loc1 loc2 = match loc1,loc2 with
 | Loc _,Reg _ -> -1
 | Reg _,Loc _ -> 1

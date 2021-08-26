@@ -147,7 +147,7 @@ maybev_label:
 | maybev { $1 }
 | PROC COLON NAME { mk_lab $1 $3 }
 
-location_reg:
+%inline location_reg:
 | PROC COLON reg  {Location_reg ($1,$3)}
 | NUM COLON reg   {Location_reg (Misc.string_as_int $1,$3)}
 | PROC COLON SYMB_REG  {Location_reg ($1,$3)}
@@ -166,6 +166,7 @@ location_deref:
 | location_reg { $1 }
 | STAR location_reg { $2 }
 | STAR NAME { Location_global (Constant.mk_sym $2) }
+| loc_brk { $1 }
 
 main_location:
 | loc=location EOF { loc }
@@ -342,23 +343,25 @@ arrayspec:
 | NAME LBRK NUM RBRK
     { (Location_global (Constant.mk_sym $1),Misc.string_as_int $3) }
 
-equal:
+%inline equal:
 | EQUAL { () }
 | EQUALEQUAL { () }
 
+%inline loc_brk:
+| LBRK loc=location_global RBRK { Location_global loc }
+
 atom_prop:
 | location equal maybev {Atom (LV (Loc $1,$3))}
-| LBRK loc=location_global RBRK EQUAL v=maybev
-   {Atom (LV (Loc (Location_global loc),v))}
+| loc=loc_brk equal v=maybev
+   {Atom (LV (Loc loc,v))}
 | location NOTEQUAL maybev {Not (Atom (LV (Loc $1,$3)))}
-| LBRK loc=location_global RBRK NOTEQUAL v=maybev
-   {Not (Atom (LV (Loc (Location_global loc),v)))}
+| loc=loc_brk NOTEQUAL v=maybev
+   {Not (Atom (LV (Loc loc,v)))}
 | location equal LPAR separated_nonempty_list(COMMA, maybev_prop) RPAR
   { Atom (LV (Loc $1, mk_pte_val $1 $4)) }
-| LBRK loc=location_global RBRK equal
+| loc=loc_brk equal
   LPAR v=separated_nonempty_list(COMMA, maybev_prop) RPAR
-  { let loc = Location_global loc in
-    Atom (LV (Loc loc, mk_pte_val loc v)) }
+  { Atom (LV (Loc loc, mk_pte_val loc v)) }
 /* Array, array cell, equality of content no [x] = .. notation */
 | location equal LCURLY maybev_list RCURLY
     { let sz = List.length $4 in
@@ -371,6 +374,15 @@ atom_prop:
 | locindex equal maybev {Atom (LV ($1,$3))}
 | locindex NOTEQUAL maybev {Not (Atom (LV ($1,$3)))}
 | location equal location_deref {Atom (LL ($1,$3))}
+| loc1=loc_brk  equal loc2=loc_brk
+    { Atom (LL (loc1,loc2)) }
+| loc1=loc_brk  equal loc2=location_reg
+    { Atom (LL (loc1,loc2)) }
+/* The following rule add conflicts, e.g shifting it vs.
+   reducing this production first rule.
+   Delitng it is not a real problem by symetry of equal */
+/* | loc1=location_reg  equal loc2=loc_brk
+    { Atom (LL (loc1,loc2)) } */
 | fault { Atom (FF $1) }
 
 prop:

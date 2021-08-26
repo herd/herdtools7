@@ -291,10 +291,6 @@ module Make (C:Config) (A : Arch_herd.S) :
         let pp_rloc_no_brk tr m rloc =
           ConstrGen.dump_rloc (pp_loc_no_brk tr m) rloc
 
-        let pp_rvalue tr m loc = match loc with
-        | A.Location_global _ -> sprintf "*%s" (A.pp_location loc)
-        | _ -> pp_loc tr m loc
-
         let do_add_asm m = match m with
         | Ascii|Dot -> Misc.identity
         | Latex|DotFig when not C.texmacros -> Misc.identity
@@ -314,9 +310,9 @@ module Make (C:Config) (A : Arch_herd.S) :
              pp_equal m ^
              mbox m (do_add_asm m (V.pp C.hexa v))
           | LL (l1,l2) ->
-              mbox m (pp_loc_no_brk tr m l1) ^
+              mbox m (pp_loc tr m l1) ^
               pp_equal m ^
-              mbox m (pp_rvalue tr m l2)
+              mbox m (pp_loc tr m l2)
           | FF f ->
               mbox m (Fault.pp_fatom (fun v -> do_add_asm m (V.pp_v v)) f)
 

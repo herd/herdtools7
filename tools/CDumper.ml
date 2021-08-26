@@ -34,7 +34,6 @@ end = struct
     MiscParser.dump_state_atom
       MiscParser.is_global dump_loc ParsedConstant.pp_v a
 
-
   let dump_state st =
     let st =
       List.filter
@@ -51,8 +50,8 @@ end = struct
 
 (* Propositions *)
   let dump_atom a =
-    ConstrGen.dump_atom dump_loc
-      MiscParser.dump_rval ParsedConstant.pp_v a
+    ConstrGen.dump_atom dump_loc MiscParser.dump_location_brk
+      ParsedConstant.pp_v a
 
   let dump_prop = ConstrGen.prop_to_string dump_atom
   let dump_constr = ConstrGen.constraints_to_string dump_atom

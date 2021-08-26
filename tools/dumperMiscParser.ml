@@ -49,16 +49,9 @@ end = struct
         type prop = MiscParser.prop
 
         let dump_atom a =
-          let open ConstrGen in
-          match a with
-          | LV (rloc,v) ->
-              sprintf "%s=%s"
-                (ConstrGen.dump_rloc dump_loc rloc)
-                (ParsedConstant.pp_v v)
-          | LL (loc1,loc2) ->
-              sprintf "%s=%s" (dump_loc loc1) (MiscParser.dump_rval loc2)
-          | FF f ->
-              Fault.pp_fatom ParsedConstant.pp_v f
+          ConstrGen.dump_atom
+            dump_loc MiscParser.dump_location_brk ParsedConstant.pp_v
+            a
 
         let dump_prop = ConstrGen.prop_to_string dump_atom
         let dump_constr = ConstrGen.constraints_to_string dump_atom

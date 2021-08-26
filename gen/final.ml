@@ -231,7 +231,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       | S s -> s
       | P p -> PTEVal.pp p
 
-    let dump_atom r v = sprintf "%s=%s" (C.A.pp_location r) (dump_val v)
+    let dump_atom r v =
+      sprintf "%s=%s" (C.A.pp_location_brk r) (dump_val v)
 
     let dump_state fs =
       String.concat " /\\ "

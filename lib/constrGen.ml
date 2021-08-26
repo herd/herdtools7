@@ -52,10 +52,20 @@ type ('loc,'v) atom =
   | LL of 'loc * 'loc
   | FF of 'v Fault.atom
 
-let dump_atom pp_loc pp_rloc pp_v = function
-  | LV (rloc,v) ->  sprintf "%s=%s" (dump_rloc pp_loc rloc)  (pp_v v)
+let dump_atom pp_loc pp_loc_brk pp_v a =
+  match a with
+  | LV (loc,v) ->
+      let pp_loc =
+        match loc,v with
+        | (Deref _,_)
+        | (_,Constant.ConcreteVector _)
+          -> pp_loc
+        | _ -> pp_loc_brk in
+      sprintf "%s=%s"
+        (dump_rloc pp_loc loc)
+        (pp_v v)
   | LL (loc1,loc2) ->
-      sprintf "%s=%s" (pp_loc loc1) (pp_rloc loc2)
+      sprintf "%s=%s" (pp_loc_brk loc1) (pp_loc_brk loc2)
   | FF f -> Fault.pp_fatom pp_v f
 
 type ('l,'v) prop =

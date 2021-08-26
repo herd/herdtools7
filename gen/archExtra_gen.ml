@@ -39,6 +39,7 @@ module type S = sig
   val of_reg : Code.proc -> arch_reg -> location
 
   val pp_location : location -> string
+  val pp_location_brk : location -> string
   val location_compare : location -> location -> int
 
   module LocSet : MySet.S with type elt = location
@@ -102,6 +103,12 @@ with type arch_reg = I.arch_reg and type special = I.special
         if I.is_symbolic r then I.pp_reg r
         else sprintf "%i:%s" i (I.pp_reg r)
     | Loc loc -> pp_symbol loc
+
+  let pp_location_brk = function
+    | Reg (i,r) ->
+        if I.is_symbolic r then I.pp_reg r
+        else sprintf "%i:%s" i (I.pp_reg r)
+    | Loc loc -> sprintf "[%s]" (pp_symbol loc)
 
   let location_compare loc1 loc2 = match loc1,loc2 with
   | Reg _,Loc _ -> -1

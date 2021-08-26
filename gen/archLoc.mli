@@ -24,4 +24,5 @@ module type S = sig
   val of_reg : Code.proc -> arch_reg -> location
   val location_compare : location -> location -> int
   val pp_location : location -> string
+  val pp_location_brk : location -> string
 end

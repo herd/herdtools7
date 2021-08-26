@@ -34,7 +34,7 @@ type location =
 
 val location_compare : location -> location -> int
 val dump_location : location -> string
-val dump_rval : location -> string
+val dump_location_brk : location -> string
 val is_global : location -> bool
 val as_local_proc : int -> StringSet.t -> location -> reg option
 
@@ -51,12 +51,6 @@ type locations = (location,maybev) LocationsItem.t list
 type prop = (location, maybev) ConstrGen.prop
 type constr = prop ConstrGen.constr
 type quantifier = ConstrGen.kind
-
-type atom = location * maybev
-type outcome = atom list
-
-val pp_atom : atom -> string
-val pp_outcome : outcome -> string
 
 type state_atom = location * (TestType.t * maybev)
 type state = state_atom list
