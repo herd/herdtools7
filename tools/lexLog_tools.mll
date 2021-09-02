@@ -187,11 +187,14 @@ and plines nk k = parse
     end }
 | blank* nl
   { incr_lineno lexbuf ;
-    let st = {
-      p_noccs = Int64.one;
-      p_st = LS.as_st_concrete [] [] []
-    } in
-    plines (nk+1) (st::k) lexbuf
+    if nk > 0 then (* Ignore empty lines, except at beginning *)
+      plines nk k lexbuf
+    else
+      let st = {
+        p_noccs = Int64.one;
+        p_st = LS.as_st_concrete [] [] []
+      } in
+      plines (nk+1) (st::k) lexbuf
   }
 | ("Loop" blank+ as loop)?
    (((validation as ok) ([^'\r''\n']*))
