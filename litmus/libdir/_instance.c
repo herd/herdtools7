@@ -94,25 +94,8 @@ typedef struct global_t {
 #endif
 } global_t ;
 
-#ifndef DYNALLOC
-static global_t global  =
-  { &param, &parse[0],
-    inst, role, group,
-#ifdef DYNALLOC
-    NULL,
-#else
-    mem,
-#endif
-#ifdef ACTIVE
-    active,
-#endif
-    0,
-    SIZE_OF_TEST, NUMBER_OF_RUN, NEXE, NOCCS,
-  };
-#endif
 
 static void init_global(global_t *g) {
-#ifdef DYNALLOC
   g->param = &param;
   g->parse = &parse[0];
   g->inst = inst;
@@ -120,7 +103,6 @@ static void init_global(global_t *g) {
   g->group = group;
 #ifdef ACTIVE
   g->active = active;
-#endif
 #endif
 #ifdef TIMELIMIT
   /* Starting time */

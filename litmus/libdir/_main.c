@@ -22,6 +22,7 @@
 #endif
 
 #ifndef DYNALLOC
+static global_t global;
 static zyva_t arg[AVAIL];
 #ifndef KVM
 static pthread_t th[AVAIL];
@@ -45,6 +46,7 @@ int RUN(int argc,char **argv,FILE *out) {
 #endif
 #else
   global_t *glo_ptr = &global;
+  glo_ptr->mem = mem;
 #endif
   init_global(glo_ptr);
 #ifdef KVM
