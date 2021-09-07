@@ -86,7 +86,7 @@ rule token = parse
 (* Memory Tagging *)
 | "*" { STAR }
 | '$' (digit+|alpha+) as name { DOLLARNAME name }
-| name as name { NAME name }
+| '_' ? name as name { NAME name }
 | eof { EOF }
 | "<<" { error "<<" lexbuf }
 | "" { error "Init lex" lexbuf }
