@@ -54,15 +54,9 @@ end = struct
         type state = A.fullstate
 
         let dump_state st =
-          List.map
-            (fun bds ->
-              String.concat " "
-                (List.map
-                   (fun bd ->
-                     let pp = dump_state_atom bd in
-                     sprintf "%s;" pp)
-                   bds))
-             (I.A.env_for_pp st)
+          DumpUtils.dump_state
+            dump_state_atom
+            (I.A.env_for_pp st)
 
         type prop = I.C.prop
 

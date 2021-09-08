@@ -16,15 +16,13 @@
 (** Parsable dump *)
 
 module type I = sig
-  module A : ArchBase.S
+  module A : ArchDump.S
 
   type v
   val dump_v : v -> string
 
-  type state_atom
-  type state = state_atom list
-  val env_for_pp : state -> state_atom list list
-  val dump_state_atom : state_atom -> string
+  type state
+  val dump_state : state -> string list
 
   type prop
   val dump_prop : prop -> string
@@ -87,16 +85,7 @@ end = struct
 *)
   open MiscParser
 
-  let dump_state st =
-    List.map
-      (fun bds ->
-        String.concat " "
-           (List.map
-              (fun bd ->
-                let pp = I.dump_state_atom bd in
-                sprintf "%s;" pp)
-              bds))
-      (I.env_for_pp st)
+  let dump_state = I.dump_state
 
   let do_dump withinfo chan doc t =
     Out.fprintf chan "%s %s\n" (Archs.pp A.arch) doc.Name.name ;

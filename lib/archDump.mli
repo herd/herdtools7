@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2015-present Institut National de Recherche en Informatique et *)
+(* Copyright 2021-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,7 +14,29 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-val dump_locations :
- ('loc -> string) -> ('v -> string) -> ('loc ,'v) LocationsItem.t list -> string
+(** Arch definition for dumper, very minimal *)
 
-val dump_state : ('bd -> string) -> 'bd list list -> string list
+module type S = sig
+
+  (* Who am I ? *)
+  val arch : Archs.t
+
+  (***********************************************)
+  (* Basic arch types and their basic operations *)
+  (***********************************************)
+
+  type reg
+
+  val pp_reg : reg -> string
+
+  type parsedInstruction
+  type instruction
+
+  val dump_instruction : instruction -> string
+
+  include Pseudo.Types
+   with type ins = instruction
+   and type pins = parsedInstruction
+   and type reg_arg = reg
+
+end

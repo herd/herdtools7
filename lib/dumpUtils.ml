@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 open Printf
+
 let dump_locations dump_location dump_v env = match env with
 | [] -> ""
 | _::_ ->
@@ -35,3 +36,13 @@ let dump_locations dump_location dump_v env = match env with
     let pp = List.map dump_item env in
     let pp = String.concat " " pp in
     sprintf "locations [%s]" pp
+
+let dump_state dump_state_atom =
+  List.map
+    (fun bds ->
+      String.concat " "
+        (List.map
+           (fun bd ->
+             let pp = dump_state_atom bd in
+             sprintf "%s;" pp)
+           bds))

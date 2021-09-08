@@ -381,12 +381,15 @@ module DefaultDumper(A:ArchBase.S) = struct
 
         let dump_loc = MiscParser.dump_location
 
-        type state_atom = MiscParser.state_atom
-        type state = MiscParser.state
-        let env_for_pp = MiscParser.env_for_pp
         let dump_state_atom a =
           MiscParser.dump_state_atom MiscParser.is_global dump_loc dump_v a
 
+        type state = MiscParser.state
+
+        let dump_state st =
+          DumpUtils.dump_state
+            dump_state_atom
+            (MiscParser.env_for_pp st)
 
         type prop = MiscParser.prop
 
