@@ -22,6 +22,7 @@ module type Config = sig
   val hexa : bool
   val preload : Preload.t
   val driver : Driver.t
+  val alloc : Alloc.t
   val word : Word.t
   val line : int
   val noccs : int
@@ -66,6 +67,18 @@ module Make
     end = struct
       let do_ascall = Cfg.ascall || Cfg.is_kvm
       let do_precise = Cfg.precision
+      let do_dynalloc =
+        let open Alloc in
+        match Cfg.alloc with
+        | Dynamic -> true
+        | Static|Before -> false
+
+      (* Statistic struct may not be initialised when dynamically allocated *)
+      let do_stats = not do_dynalloc
+      let do_inlined = (* inline topology description *)
+        match Cfg.mode,Cfg.driver with
+        | Mode.Kvm,Driver.C -> not do_dynalloc
+        | _,_ -> true
 
       open CType
       module G = Global_litmus
@@ -111,6 +124,7 @@ module Make
         let hexa = Cfg.hexa
         let exit_cond = Cfg.exit_cond
         let have_fault_handler = have_fault_handler
+        let do_stats = do_stats
       end
 
       module U = SkelUtil.Make(UCfg)(P)(A)(T)
@@ -144,11 +158,14 @@ module Make
           if have_timebase then O.f "#define DELTA_TB %s" delta
         end ;
         O.o "/* Includes */" ;
+        if do_dynalloc then O.o "#define DYNALLOC 1" ;
+        if do_stats then O.o "#define STATS 1" ;
         if Cfg.is_kvm then begin
           O.o "#define KVM 1" ;
           O.o "#include <libcflat.h>" ;
           O.o "#include \"kvm-headers.h\"" ;
-          O.o "#include \"utils.h\""
+          O.o "#include \"utils.h\"" ;
+          if not do_inlined then O.o "#include \"topology.h\""
         end else begin
           O.o "#include <stdlib.h>" ;
           O.o "#include <inttypes.h>" ;
@@ -236,8 +253,22 @@ module Make
           O.o "" ;
           O.o "typedef struct { int instance,proc; } who_t;" ;
           O.o "" ;
-          O.o "static count_t nfaults[NTHREADS];" ;
-          O.o "static who_t whoami[AVAIL];" ;
+          if do_dynalloc then begin
+            O.o "static count_t *nfaults;" ;
+            O.o "static who_t *whoami;" ;
+            O.o "" ;
+            O.o "static void alloc_fault_handler(void) {" ;
+            O.oi "nfaults = malloc_check(NTHREADS*sizeof(*nfaults));" ;
+            O.oi "whoami = malloc_check(AVAIL*sizeof(*whoami));" ;
+            O.o "}" ;
+            O.o "" ;
+            O.o "static void free_fault_handler(void) {" ;
+            O.oi "free(whoami); free(nfaults);" ;
+            O.o "}"
+          end else begin
+            O.o "static count_t nfaults[NTHREADS];" ;
+            O.o "static who_t whoami[AVAIL];"
+          end ;
           O.o "" ;
           Insert.insert O.o "instruction.h" ;
           O.o "" ;
@@ -277,8 +308,22 @@ module Make
               O.fi "int %s;" (String.concat "," (List.map tag_seen faults)) ;
               O.o "} see_fault_t;" ;
               O.o "" ;
-              O.o "static see_fault_t *see_fault[NEXE];" ;
-              O.o "static vars_t *vars_ptr[NEXE];" ;
+              if do_dynalloc then begin
+                O.o "static see_fault_t **see_fault;" ;
+                O.o "static vars_t **vars_ptr;" ;
+                O.o "" ;
+                O.o "static void alloc_see_faults(void) {" ;
+                O.oi "see_fault = malloc_check(NEXE*sizeof(*see_fault));" ;
+                O.oi "vars_ptr = malloc_check(NEXE*sizeof(*vars_ptr));" ;
+                O.o "}" ;
+                O.o "" ;
+                O.o "static void free_see_faults(void) {" ;
+                O.oi "free(see_fault); free(vars_ptr);" ;
+                O.o "}"
+              end else begin
+                O.o "static see_fault_t *see_fault[NEXE];" ;
+                O.o "static vars_t *vars_ptr[NEXE];"
+              end ;
               O.o "" ;
               O.o "static void init_see_fault(see_fault_t *p) {" ;
               List.iter
@@ -438,12 +483,17 @@ module Make
           test.T.code
 
       let dump_topology doc test =
+        O.o "/************/" ;
+        O.o "/* Topology */" ;
+        O.o "/************/" ;
+        O.o "" ;
         let n = T.get_nprocs test in
-        let module Topo =
+        if do_inlined then begin
+          let module Topo =
           Topology.Make
             (struct
               let verbose = Cfg.verbose
-              let name = doc
+              let file_name = doc.Name.file
               let nthreads = n
               let avail = match Cfg.avail with
               | None -> 0
@@ -454,12 +504,17 @@ module Make
               let smtmode = Cfg.smtmode
               let mode = if Cfg.is_kvm then Mode.Kvm else Mode.PreSi
               let is_active = is_active
+              let inlined = true
             end) (O) in
-        O.o "/************/" ;
-        O.o "/* Topology */" ;
-        O.o "/************/" ;
-        O.o "" ;
-        Topo.dump_alloc (get_addrs test)
+          ignore (Topo.dump_alloc (get_addrs test))
+        end else begin
+          O.f "#define inst inst_%d" n ;
+          O.f "#define role role_%d" n ;
+          O.f "#define group group_%d" n;
+          O.f "#define SCANSZ scansz_%d" n ;
+          O.f "#define SCANLINE scanline_%d" n ;
+          ()
+        end
 
 (************)
 (* Outcomes *)
@@ -875,7 +930,7 @@ module Make
 
       (* For now, limit kvm stats printing to topology *)
       let get_stats test =
-        if Cfg.is_kvm then [] else do_get_stats test
+        if Cfg.is_kvm || not do_stats then [] else do_get_stats test
 
       let dump_parameters _env test =
         let v_tags =
@@ -935,33 +990,37 @@ module Make
         O.o "#define PARSESZ (sizeof(parse)/sizeof(parse[0]))" ;
         O.o "";
 (* Print *)
-        let is_delay tag = List.exists (fun x -> Misc.string_eq x tag) d_tags in
-        O.f "static void pp_param(FILE *out,param_t *p) {" ;
-        let fmt =
-          "{" ^
-          String.concat ", "
-            (List.map (fun tag -> sprintf "%s=%%i" tag) all_tags) ^
-          "}"
-        and params = List.map
-            (fun tag ->
-              sprintf
-                (if is_delay tag then "p->%s-NSTEPS2" else "p->%s")
-                tag)
-            all_tags  in
-        EPF.fi fmt params ;
-        O.o "}" ;
-        O.o "" ;
-(* Statistics *)
-        O.o "typedef struct {" ;
-        O.oi "count_t groups[SCANSZ];" ;
-        O.fi "count_t vars%s;"
-          (String.concat "" (List.map (fun _ -> "[NVARS]") v_tags)) ;
-        O.fi "count_t delays%s;"
-          (String.concat "" (List.map (fun _ -> "[NSTEPS]") d_tags)) ;
-        O.fi "count_t dirs%s;"
-          (String.concat "" (List.map (fun _ -> "[cmax]") c_tags)) ;
-        O.o "} stats_t;" ;
-        O.o "" ;
+        if do_stats then begin
+          let is_delay tag =
+            List.exists (fun x -> Misc.string_eq x tag) d_tags in
+          O.f "static void pp_param(FILE *out,param_t *p) {" ;
+          let fmt =
+            "{" ^
+              String.concat ", "
+                (List.map (fun tag -> sprintf "%s=%%i" tag) all_tags) ^
+                "}"
+          and params =
+            List.map
+              (fun tag ->
+                sprintf
+                  (if is_delay tag then "p->%s-NSTEPS2" else "p->%s")
+                  tag)
+              all_tags  in
+          EPF.fi fmt params ;
+          O.o "}" ;
+          O.o "" ;
+          (* Statistics *)
+          O.o "typedef struct {" ;
+          O.oi "count_t groups[SCANSZ];" ;
+          O.fi "count_t vars%s;"
+            (String.concat "" (List.map (fun _ -> "[NVARS]") v_tags)) ;
+          O.fi "count_t delays%s;"
+            (String.concat "" (List.map (fun _ -> "[NSTEPS]") d_tags)) ;
+          O.fi "count_t dirs%s;"
+            (String.concat "" (List.map (fun _ -> "[cmax]") c_tags)) ;
+          O.o "} stats_t;" ;
+          O.o ""
+        end ;
         ()
 
 (*************)
@@ -1002,15 +1061,16 @@ module Make
         let fmt = "%-6PCTR%c>" in
         EPF.fi fmt ["p->c";"p->ok ? '*' : ':'";] ;
         O.oi "pp_log(out,&p->key);" ;
-        O.oi "if (verbose) {" ;
-        EPF.fii " # " [] ;
-        O.fii "pp_param(out,&p->p);" ;
-        EPF.fii " %s" ["group[p->p.part]"];
-        O.oi "}" ;
+        if do_stats then begin
+          O.oi "if (verbose) {" ;
+          EPF.fii " # " [] ;
+          O.fii "pp_param(out,&p->p);" ;
+          EPF.fii " %s" ["group[p->p.part]"];
+          O.oi "}"
+        end ;
         EPF.fi "%c" ["'\\n'"] ;
         O.o "}" ;
         O.o ""
-
 
 (****************************************)
 (* Feature enabling/disabling, per role *)
@@ -1408,20 +1468,24 @@ module Make
               Indent.indent3 in
           O.ox id "int _cond = final_ok(final_cond(_log));" ;
           (* recorded outcome *)
-          O.ox id "hash_add(&_ctx->t,_log,_p,1,_cond);" ;
+          O.fx id "hash_add(&_ctx->t,_log%s,1,_cond);"
+            (if do_stats then ",_p" else "") ;
           (* Result and stats *)
           O.ox id "if (_cond) {" ;
           let nid = Indent.tab id in
           O.ox nid "_ok = 1;" ;
-          O.ox nid "(void)__sync_add_and_fetch(&_g->stats.groups[_p->part],1);" ;
-          let open SkelUtil in
-          List.iter
-            (fun {tags; name; _} ->
-              let idx =
-                String.concat ""
-                  (List.map (sprintf "[_p->%s]") tags) in
-              O.fx nid "(void)__sync_add_and_fetch(&_g->stats.%s%s,1);" name idx)
-            stats ;
+          if do_stats then begin
+            O.ox nid
+              "(void)__sync_add_and_fetch(&_g->stats.groups[_p->part],1);" ;
+            let open SkelUtil in
+            List.iter
+              (fun {tags; name; _} ->
+                let idx =
+                  String.concat ""
+                    (List.map (sprintf "[_p->%s]") tags) in
+                O.fx nid "(void)__sync_add_and_fetch(&_g->stats.%s%s,1);" name idx)
+              stats
+          end ;
           O.ox id "}" ;
           begin match test.T.filter with
           | None -> () | Some _ -> O.oii "}"
@@ -1675,7 +1739,7 @@ module Make
         O.o "" ;
         O.oi "for (int nrun = 0; nrun < g->nruns ; nrun++) {" ;
         O.oii
-          "if (g->verbose>1) fprintf(stderr, \"Run %i of %i\\r\", nrun, g->nruns);" ;
+          "if (g->verbose>1) fprintf(stderr, \"Run %d of %d\\r\", nrun, g->nruns);" ;
         O.oii "int part = q->part >= 0 ? q->part : rand_k(&seed,SCANSZ);" ;
         O.oii "set_role(g,&c,part);";
         O.oii "choose_params(g,&c,part);" ;
@@ -1799,8 +1863,6 @@ module Make
             else
               "write_one_affinity(id);")
         end ;
-        O.oi "init_global(g,id);" ;
-(*        O.oi "if (g->do_scan) scan(id,g); else choose(id,g);" ; *)
         O.oi "choose(id,g);" ;
         if Cfg.is_kvm then begin
           match Cfg.driver,db with

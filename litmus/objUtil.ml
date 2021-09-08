@@ -117,6 +117,7 @@ module type Config = sig
   val arch : Archs.t
   val sysarch   : Archs.System.t
   val mode : Mode.t
+  val alloc : Alloc.t
   val stdio : bool
   val platform : string
   val asmcommentaslabel : bool
@@ -125,6 +126,12 @@ end
 
 module Make(O:Config)(Tar:Tar.S) =
   struct
+    let do_dynalloc =
+      let open Alloc in
+      match O.alloc with
+      | Dynamic -> true
+      | Static|Before -> false
+
     open TargetOS
 
     let actual_name name ext = Tar.outname (name ^ ext)
@@ -199,11 +206,21 @@ module Make(O:Config)(Tar:Tar.S) =
           else *)
             cpy fnames "utils" ".h"
       | Mode.PreSi ->
-          let fnames = cpy' fnames "presi" "utils" ".c" in
-          cpy' fnames "presi" "utils" ".h"
+         if do_dynalloc then
+           let fnames =
+             cpy' ~prf:"#define DYNALLOC 1" fnames "presi" "utils" ".c" in
+           cpy' ~prf:"#define DYNALLOC 1" fnames "presi" "utils" ".h"
+         else
+           let fnames = cpy' fnames "presi" "utils" ".c" in
+           cpy' fnames "presi" "utils" ".h"
       |  Mode.Kvm ->
-          let fnames = cpy' ~prf:"#define KVM 1" fnames "presi" "utils" ".c" in
-          let fnames = cpy' ~prf:"#define KVM 1" fnames "presi" "utils" ".h" in
+          let prf =
+            if do_dynalloc then
+              "#define KVM 1\n#define DYNALLOC 1"
+            else
+              "#define KVM 1" in
+          let fnames = cpy' ~prf:prf fnames "presi" "utils" ".c" in
+          let fnames = cpy' ~prf:prf fnames "presi" "utils" ".h" in
           let fnames = cpy fnames "kvm_timeofday" ".h" in
           let module I = Insert(O) in
           I.copy "kvm_timeofday.c" Tar.outname ;

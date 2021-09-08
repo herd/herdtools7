@@ -24,6 +24,7 @@ module type Config = sig
   val hexa : bool
   val exit_cond : bool
   val have_fault_handler : bool
+  val do_stats : bool
 end
 
 let no_timebase_error sysarch =
@@ -530,7 +531,7 @@ module Make
 
         let cstring s = sprintf "%S" s
 
-        let show_stats = true
+        let show_stats = Cfg.do_stats
 
         let postlude doc test affi show_topos stats =
           let t = if Cfg.exit_cond then "int" else "void" in

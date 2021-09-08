@@ -41,6 +41,9 @@ module type Config = sig
   val mkopt : Option.opt -> Option.opt
   val variant : Variant_litmus.t -> bool
   val nocatch : bool
+  val smt : int
+  val nsockets : int
+  val smtmode : Smt.t
 end
 
 module type OneTest = sig
@@ -166,9 +169,9 @@ let run_tests names out_chan =
   let exp = match Cfg.index with
   | None -> None
   | Some exp -> Some (open_out exp) in
-  let  arch,docs,sources,_,_ =
+  let  arch,docs,sources,_,_,nts =
     Misc.fold_argv_or_stdin
-      (fun name (a0,docs,srcs,cycles,hash_env) ->
+      (fun name (a0,docs,srcs,cycles,hash_env,nts) ->
         let ans =
           try CT.from_file cycles hash_env name out_chan
           with
@@ -176,13 +179,13 @@ let run_tests names out_chan =
               if Cfg.nocatch then raise e ;
               Interrupted (a0,e) in
         match ans with
-        | Completed (a,doc,src,cycles,hash_env) ->
+        | Completed (a,doc,src,cycles,hash_env,nt) ->
             begin match exp with
             | None -> ()
             | Some exp -> fprintf exp "%s\n" name
             end ;
-            a,(doc::docs),(src::srcs),cycles,hash_env
-        | Absent a -> a,docs,srcs,cycles,hash_env
+            a,(doc::docs),(src::srcs),cycles,hash_env,IntSet.add nt nts
+        | Absent a -> a,docs,srcs,cycles,hash_env,nts
         | Interrupted (a,e) ->
             let msg =  match e with
             | Misc.Exit -> "None"
@@ -196,8 +199,8 @@ let run_tests names out_chan =
                 eprintf "%a %s\n%!" Pos.pp_pos0 name msg ;
                 msg in
             report_failure name msg out_chan ;
-            a,docs,srcs,cycles,hash_env)
-      names (`X86,[],[],StringSet.empty,StringMap.empty) in
+            a,docs,srcs,cycles,hash_env,nts)
+      names (`X86,[],[],StringSet.empty,StringMap.empty,IntSet.empty) in
   begin match exp with
   | None -> ()
   | Some exp -> close_out exp
@@ -212,12 +215,12 @@ let run_tests names out_chan =
     end in
     let module Obj = ObjUtil.Make(O)(Tar) in
     Obj.dump () in
-  arch,docs,sources,utils
+  arch,docs,sources,utils,nts
 
 (* Run tests (command line mode) *)
 let dump_command names =
   let out_chan = stdout in
-  let arch,_,_,utils = run_tests names out_chan in
+  let arch,_,_,utils,_ = run_tests names out_chan in
   let module O = struct
       include Cfg
     include (val (get_arch arch) : ArchConf)
@@ -302,7 +305,7 @@ let dump_shell names =
       end ;
       let sleep = Cfg.sleep in
       if sleep >= 0 then fprintf out_chan "SLEEP=%i\n" sleep ;
-      let arch,_,sources,utils = run_tests names out_chan in
+      let arch,_,sources,utils,_ = run_tests names out_chan in
 
       let module O = struct
         include Cfg
@@ -433,8 +436,8 @@ let dump_c xcode names =
          O.o "#include <stdio.h>" ;
          if Cfg.sleep > 0 then  O.o "#include <unistd.h>"
       | Mode.Kvm ->
-         O.o "#include \"utils.h\"" ;
          O.o "#include \"kvm-headers.h\"" ;
+         O.o "#include \"utils.h\"" ;
          if Cfg.sleep > 0 then
            O.o "#include <asm/delay.h>"
       end ;
@@ -444,7 +447,7 @@ let dump_c xcode names =
       end ;
       O.o "" ;
       O.o "/* Declarations of tests entry points */" ;
-      let arch,docs,srcs,utils = run_tests names out_chan in
+      let arch,docs,srcs,utils,nts = run_tests names out_chan in
       let module C = struct
         include Cfg
         include (val (get_arch arch) : ArchConf)
@@ -521,11 +524,12 @@ let dump_c xcode names =
         O.oi "return 0;" ;
         O.o"}"
       end ;
-      arch,srcs,utils)
+      arch,srcs,utils,nts)
     (Tar.outname (MyName.outname "run" (if xcode then ".m" else ".c")))
 
 
-let dump_c_cont xcode arch sources utils =
+let dump_c_cont xcode arch sources utils nts =
+  let shared_topology = is_kvm && Cfg.alloc = Alloc.Dynamic in
   let sources = List.map Filename.basename  sources in
 (* Makefile *)
   let infile = not xcode in
@@ -536,7 +540,8 @@ let dump_c_cont xcode arch sources utils =
       fprintf chan "T=$(SRC:.c=.t)\n" ;
       fprintf chan "H=$(SRC:.c=.h)\n" ;
       if not xcode then begin
-        fprintf chan "OBJ=$(SRC:.c=.o)\n" ;
+        fprintf chan "OBJ=$(SRC:.c=.o)%s\n"
+          (if shared_topology then " topology.o" else "") ;
         fprintf chan "EXE=run.%s\n" (if is_kvm then "flat" else "exe") ;
         fprintf chan "\n" ;
       end ;
@@ -592,14 +597,13 @@ let dump_c_cont xcode arch sources utils =
         end ;
       (* Dependencies *)
         if not xcode then begin
-            List.iter
-          (fun src ->
-            let base = Filename.chop_extension src in
-            fprintf chan "%s.o: %s.h %s.c\n" base base base)
-          sources ;
-        fprintf chan "\n"
-      end ;
-      ())
+          fprintf chan "\n" ;
+          List.iter
+            (fun src ->
+              let base = Filename.chop_extension src in
+              fprintf chan "%s.o: %s.h %s.c\n" base base base)
+            sources
+        end)
     (Tar.outname (MyName.outname "Makefile" "")) ;
 (* Source list in file  *)
   if infile then begin
@@ -622,6 +626,58 @@ let dump_c_cont xcode arch sources utils =
         O.o "@end")
        (Tar.outname (MyName.outname "run" ".h")) ;
   end ;
+  (* Topology arrays, when shared *)
+  if shared_topology then begin
+    let m =
+      Misc.output_protect
+        (fun chan ->
+          let module O =
+            Indent.Make(struct let hexa = Cfg.hexa let out = chan end) in
+          O.f "/* Topologies for threads in {%s} */"
+            (IntSet.pp_str "," (sprintf "%i") nts) ;
+          IntSet.fold
+            (fun k m ->
+              let module K = struct
+                let verbose = Cfg.verbose
+                let file_name = "topology.c"
+                let nthreads = k
+                let avail = match Cfg.avail with None -> 0 | Some a -> a
+                let smt = Cfg.smt
+                let nsockets = Cfg.nsockets
+                let smtmode = Cfg.smtmode
+                let mode = Mode.Kvm
+                let is_active = false
+                let inlined = false
+              end in
+              let module Topo = Topology.Make(K)(O) in
+              O.o "" ;
+              O.o "/***************/" ;
+              O.f "/* nthreads=%d */" k ;
+              O.o "/***************/" ;
+              O.o "" ;
+              let sz = Topo.dump_alloc [] in
+              IntMap.add k sz m)
+            nts IntMap.empty)
+        (Tar.outname (MyName.outname "topology" ".c")) in
+      Misc.output_protect
+        (fun chan ->
+          let module O =
+            Indent.Make(struct let hexa = Cfg.hexa let out = chan end) in
+          O.f "/* Topologies for threads in {%s} */"
+            (IntSet.pp_str "," (sprintf "%i") nts) ;
+          IntMap.iter
+            (fun k sz ->
+              let open Topology in
+              O.o "" ;
+              O.f "const int *inst_%d;" k ;
+              O.f "const int *role_%d;" k ;
+              O.f "const char **group_%d;" k ;
+              O.f "#define scansz_%d %d" k sz.scansz ;
+              O.f "#define scanline_%d %d" k sz.scanline)
+            m)
+        (Tar.outname (MyName.outname "topology" ".h")) ;
+      ()
+  end  ;
   Tar.tar  () ;
   ()
 
@@ -675,13 +731,13 @@ let from_files =
             let xcode = match d with
             | Driver.XCode -> true
             | _ -> false in
-            let arch,sources,utils = dump_c xcode names in
+            let arch,sources,utils,nts = dump_c xcode names in
             begin match Cfg.crossrun with
             | Crossrun.Kvm e ->
                dump_c_shell_kvm e
             | _ ->  ()
             end ;
-            dump_c_cont xcode arch sources utils ;
+            dump_c_cont xcode arch sources utils nts ;
             arch in
       if Cfg.cross then dump_cross arch
 end

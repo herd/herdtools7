@@ -18,7 +18,9 @@
 
 typedef struct {
   log_t key ;
+#ifdef STATS
   param_t p ;
+#endif
   count_t c ;
   int ok ;
 } entry_t ;
@@ -120,14 +122,20 @@ static uint32_t hash_log (log_t *key) {
   return hashword((uint32_t *)key,sizeof(log_t)/sizeof(uint32_t)) ;
 }
 
+#ifdef STATS
 static void hash_add(hash_t *t,log_t *key, param_t *v,count_t c,int ok) {
+#else
+static void hash_add(hash_t *t,log_t *key, count_t c,int ok) {
+#endif
   uint32_t h = hash_log(key) ;
   h = h % HASHSZ ;
   for (int k = 0 ; k < HASHSZ ;  k++) {
     entry_t *p = t->t + h ;
     if (p->c == 0) { /* New entry */
       p->key = *key ;
+#ifdef STATS
       p->p = *v ;
+#endif
       p->c = c ;
       p->ok = ok ;
       t->nhash++ ;
@@ -147,7 +155,11 @@ static void hash_adds(hash_t *t, hash_t *f) {
   for (int k = 0 ; k < HASHSZ ; k++) {
     entry_t *p = f->t+k ;
     if (p->c > 0) {
+#ifdef STATS
       hash_add(t,&p->key,&p->p,p->c,p->ok) ;
+#else
+      hash_add(t,&p->key,p->c,p->ok) ;
+#endif
     }
   }
 }

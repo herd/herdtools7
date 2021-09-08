@@ -264,6 +264,7 @@ module Make
         let hexa = Cfg.hexa
         let exit_cond = Cfg.exit_cond
         let have_fault_handler = false
+        let do_stats = false
       end
 
       module U = SkelUtil.Make(UCfg)(P)(A)(T)
@@ -688,7 +689,7 @@ module Make
           Topology.Make
             (struct
               let verbose = Cfg.verbose
-              let name = doc
+              let file_name = doc.Name.file
               let nthreads = n
               let avail = match Cfg.avail with
               | None -> 0
@@ -699,8 +700,9 @@ module Make
               let smtmode = Cfg.smtmode
               let mode = Mode.Std
               let is_active = true
+              let inlined = true
             end) (O) in
-        Topo.dump_alloc []
+        ignore (Topo.dump_alloc [])
 
 (*************)
 (* Variables *)

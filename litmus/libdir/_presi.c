@@ -61,6 +61,18 @@ void *do_align(void *p,size_t sz) {
   return (void *)x ;
 }
 
+#ifdef KVM
+#include <alloc.h>
+#endif
+
+#ifdef DYNALLOC
+void* malloc_check(size_t sz) {
+  void *r = malloc(sz) ;
+  if (!r) fatal("malloc");
+  return r ;
+}
+#endif
+
 /* Artithmetic  */
 static long my_add (long x, long y) {
   long r = x+y ;
@@ -215,10 +227,6 @@ static void usage_opt(char *prog,opt_t *d) {
   fprintf(stderr,"  -n <n>  run n tests concurrently (default %i)\n",d->n_exe) ;
   fprintf(stderr,"  -r <n>  perform n external runs (default %i)\n",d->max_run) ;
   fprintf(stderr,"  -s <n>  perform n internal runs (default %i)\n",d->size_of_test) ;
-  /*
-  fprintf(stderr,"  +rp     random parameter%s\n",d->mode == mode_random ? " (default)" : "") ;
-  fprintf(stderr,"  +sp     scan parameter%s\n",d->mode == mode_scan ? " (default)" : "") ;
-  */
   exit(2) ;
 }
 
@@ -258,11 +266,7 @@ char **parse_opt(int argc,char **argv,opt_t *d, opt_t *p) {
       if (!*argv) usage_opt(prog,d) ;
       p->n_exe = argint_opt(prog,argv[0],d) ;
       if (p->n_exe < 1) p->n_exe = 1 ;
-    } /* else if (strcmp(*argv,"+rp") == 0) {
-      p->mode = mode_random;
-    } else if (strcmp(*argv,"+sp") == 0) {
-      p->mode = mode_scan;
-      } */ else usage_opt(prog,d);
+    } else usage_opt(prog,d);
   }
 }
 
