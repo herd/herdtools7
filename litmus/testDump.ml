@@ -36,17 +36,25 @@ module Make(I:I) : sig
 end = struct
   type code =  I.P.code list
   type test =  (I.A.fullstate, code, I.C.prop, I.A.location, I.A.V.v)  MiscParser.result
-  include SimpleDumper_prime.Make
+
+  include
+    CoreDumper.Make
       (struct
-        open Printf
+        open I
 
-        module A = I.A
+        module Out = struct
+          type t = out_channel
+          let fprintf chan fmt = Printf.fprintf chan fmt
+        end
 
-        module P = I.P
+        let arch = A.arch
+
+        type prog = P.code list
+        let print_prog = P.print_prog
+        let dump_prog_lines = P.dump_prog_lines
 
         type v = A.V.v
-
-        let dump_v = A.V.pp I.hexa
+        let dump_v = A.V.pp hexa
 
         let dump_state_atom =
           MiscParser.dump_state_atom A.is_global A.pp_location dump_v
@@ -56,9 +64,9 @@ end = struct
         let dump_state st =
           DumpUtils.dump_state
             dump_state_atom
-            (I.A.env_for_pp st)
+            (A.env_for_pp st)
 
-        type prop = I.C.prop
+        type prop = C.prop
 
         let dump_atom a =
           ConstrGen.dump_atom A.pp_location A.pp_location_brk dump_v a
@@ -68,5 +76,7 @@ end = struct
 
         type location = A.location
         let dump_location loc = A.pp_location loc
+
       end)
+
 end

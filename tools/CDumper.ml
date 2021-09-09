@@ -17,7 +17,7 @@
 (* C dumper *)
 
 
-module Make(Out:SimpleDumper.Out) : sig
+module Make(Out:CoreDumper.Out) : sig
   val dump :
       Out.t -> Name.t -> CBase.pseudo MiscParser.t -> unit
   val dump_withhash :

@@ -20,7 +20,7 @@ module type Opt = sig
   val hexa : bool
 end
 
-module Make(Opt:Opt)(Out:SimpleDumper.Out)(A:ArchBase.S) : sig
+module Make(Opt:Opt)(Out:CoreDumper.Out)(A:ArchBase.S) : sig
   val dump_info :
       Out.t -> Name.t -> A.pseudo MiscParser.t -> unit
 end = struct
