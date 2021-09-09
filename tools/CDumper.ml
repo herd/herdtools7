@@ -16,8 +16,12 @@
 
 (* C dumper *)
 
+module type Out = sig
+  type t
+  val fprintf : t -> ('a, out_channel, unit) format -> 'a
+end
 
-module Make(Out:CoreDumper.Out) : sig
+module Make(Out:Out) : sig
   val dump :
       Out.t -> Name.t -> CBase.pseudo MiscParser.t -> unit
   val dump_withhash :

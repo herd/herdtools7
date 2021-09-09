@@ -51,11 +51,9 @@ module type S = sig
   val find_our_constraint : t -> C.cond
   val get_nprocs : t -> int
 
-  module D : sig
-    type test =  (A.fullstate, P.code list, C.prop, A.location, A.V.v)  MiscParser.result
-    val dump : out_channel -> Name.t -> test -> unit
-    val lines : Name.t -> test -> string list
-  end
+  module D : CoreDumper.S
+    with
+      type test =  (A.fullstate, P.code list, C.prop, A.location, A.V.v)  MiscParser.result
 
   val find_offset : P.code list -> int -> string -> int
   val code_exists : (P.ins -> bool) -> t -> bool
@@ -98,16 +96,9 @@ struct
 
   module D =
     struct
-      type code = P.code list
-      type test = (A.fullstate, code, C.prop, A.location, A.V.v)  MiscParser.result
       include
         CoreDumper.Make
           (struct
-
-            module Out = struct
-              type t = out_channel
-              let fprintf chan fmt = Printf.fprintf chan fmt
-            end
 
             let arch = A.arch
 

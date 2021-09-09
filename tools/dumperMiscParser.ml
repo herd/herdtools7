@@ -20,12 +20,11 @@ module type Opt = sig
   val hexa : bool
 end
 
-module Make(Opt:Opt)(Out:CoreDumper.Out)(A:ArchBase.S) : sig
-  val dump_info :
-      Out.t -> Name.t -> A.pseudo MiscParser.t -> unit
-end = struct
+module Make(Opt:Opt)(A:ArchBase.S) : CoreDumper.S
+  with type test =  A.pseudo MiscParser.t
+= struct
   include
-   SimpleDumper.Make(Out)
+   SimpleDumper.Make
       (struct
         open Printf
 

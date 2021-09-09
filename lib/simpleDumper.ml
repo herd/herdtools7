@@ -33,28 +33,12 @@ module type I = sig
 end
 
 
-module OutChannel = struct
-  type t = out_channel
-  let fprintf chan fmt = Printf.fprintf chan fmt
-end
-
-module Make(Out:CoreDumper.Out)(I:I) : sig
-  val dump : Out.t ->
-    Name.t ->
+module Make(I:I) :
+CoreDumper.S with 
+  type test =
     (I.state, (MiscParser.proc * I.A.pseudo list) list, I.prop, I.location,I.v)
-        MiscParser.result
-      -> unit
-  val dump_info : Out.t ->
-    Name.t ->
-    (I.state, (MiscParser.proc * I.A.pseudo list) list, I.prop, I.location,I.v)
-        MiscParser.result
-      -> unit
-  val lines :
-      Name.t ->
-        (I.state, (MiscParser.proc * I.A.pseudo list) list, I.prop, I.location,I.v)
-          MiscParser.result
-      -> string list
-end = struct
+      MiscParser.result
+= struct
 
   open Printf
   open I
@@ -75,7 +59,6 @@ end = struct
   module Dump =
     CoreDumper.Make
       (struct
-        module Out = Out
 
         let arch = I.A.arch
 
@@ -83,7 +66,7 @@ end = struct
 
         let print_prog chan prog =
           let pp = List.map fmt_col prog in
-          Out.fprintf chan "%s" (Misc.string_of_prog pp)
+          fprintf chan "%s" (Misc.string_of_prog pp)
 
         let dump_prog_lines prog =
           let pp = List.map fmt_col prog in

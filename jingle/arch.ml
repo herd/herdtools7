@@ -372,7 +372,7 @@ end
 
 module DefaultDumper(A:ArchBase.S) = struct
   type pseudo = A.pseudo
-  include SimpleDumper.Make(SimpleDumper.OutChannel)
+  include SimpleDumper.Make
       (struct
         module A = A
 

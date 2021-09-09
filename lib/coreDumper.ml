@@ -17,20 +17,12 @@
 (******************)
 (* Core test dump *)
 (******************)
-
-module type Out = sig
-  type t
-  val fprintf : t -> ('a, out_channel, unit) format -> 'a
-end
-
 module type I = sig
-
-  module Out : Out
 
   val arch : Archs.t
 
   type prog
-  val print_prog : Out.t -> prog -> unit
+  val print_prog : out_channel -> prog -> unit
   val dump_prog_lines : prog -> string list
 
   type v
@@ -47,23 +39,20 @@ module type I = sig
   val dump_location : location -> string
 end
 
-module Make(I:I) : sig
-  val dump : I.Out.t ->
-    Name.t ->
-    (I.state, I.prog, I.prop, I.location,I.v)
-        MiscParser.result
-      -> unit
-  val dump_info : I.Out.t ->
-    Name.t ->
-    (I.state, I.prog, I.prop, I.location,I.v)
-        MiscParser.result
-      -> unit
-  val lines :
-      Name.t ->
-        (I.state, I.prog, I.prop, I.location,I.v)
-          MiscParser.result
-      -> string list
-end = struct
+module type S = sig
+  type test
+
+  val dump : out_channel -> Name.t -> test -> unit
+  val dump_info : out_channel -> Name.t -> test -> unit
+  val lines : Name.t -> test -> string list
+end
+
+module Make(I:I) :
+S with
+  type test = (I.state, I.prog, I.prop, I.location,I.v) MiscParser.result
+= struct
+
+  type test = (I.state, I.prog, I.prop, I.location,I.v) MiscParser.result
 
   open Printf
   open I
@@ -73,32 +62,32 @@ end = struct
     DumpUtils.dump_locations I.dump_location I.dump_v locs
 
   let do_dump withinfo chan doc t =
-    Out.fprintf chan "%s %s\n" (Archs.pp I.arch) doc.Name.name ;
+    fprintf chan "%s %s\n" (Archs.pp I.arch) doc.Name.name ;
     if withinfo then begin
       List.iter
-        (fun (k,i) -> Out.fprintf chan "%s=%s\n" k i)
+        (fun (k,i) -> fprintf chan "%s=%s\n" k i)
         t.info
     end else begin
       List.iter
         (fun (k,i) ->
-          if k = MiscParser.stable_key then Out.fprintf chan "%s=%s\n" k i)
+          if k = MiscParser.stable_key then fprintf chan "%s=%s\n" k i)
         t.info
     end ;
     begin match doc.Name.doc with
     | "" -> ()
-    | doc -> Out.fprintf chan "\"%s\"\n" doc
+    | doc -> fprintf chan "\"%s\"\n" doc
     end ;
-    Out.fprintf chan "\n{\n%s}\n"
+    fprintf chan "\n{\n%s}\n"
       (String.concat ""
          (List.map (sprintf " %s\n") (dump_state  t.init))) ;
     I.print_prog chan t.prog ;
-    Out.fprintf chan "\n" ;
+    fprintf chan "\n" ;
     begin match t.locations with
     | [] -> ()
     | locs ->
-        Out.fprintf chan "%s\n" (dump_locations locs)
+        fprintf chan "%s\n" (dump_locations locs)
     end ;
-    Out.fprintf chan "%s\n" (I.dump_constr t.condition) ;
+    fprintf chan "%s\n" (I.dump_constr t.condition) ;
     ()
 
   let dump = do_dump false
