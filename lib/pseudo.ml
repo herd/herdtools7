@@ -16,7 +16,9 @@
 
 (** Closed signature for basic view of architectures *)
 
-module type S = sig
+(* Restricted signature, for dumping *)
+
+module type Types = sig
   type pins (* Parsed instruction *)
   type ins  (* Final instruction  *)
 
@@ -31,7 +33,11 @@ module type S = sig
 
   type pseudo = ins kpseudo
   type parsedPseudo = pins kpseudo
+end
 
+module type S = sig
+
+  include Types
 
 (* Lifting of Oufold/map *)
   val pseudo_map : ('a -> 'b) -> 'a kpseudo -> 'b kpseudo
@@ -60,6 +66,7 @@ module type S = sig
 (* Does exist some instruction s.t. predicate yields true *)
   val code_exists : (ins -> bool) -> pseudo list -> bool
 end
+
 
 (* Input signature *)
 module type I = sig

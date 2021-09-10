@@ -18,7 +18,7 @@ open Printf
 
 module Make(A:Arch_tools.S) = struct
   include
-      SimpleDumper.Make(SimpleDumper.OutChannel)
+      SimpleDumper.Make
       (struct
         module A = A
 
@@ -26,12 +26,17 @@ module Make(A:Arch_tools.S) = struct
         let dump_v = A.pp_v
 
         type state_atom = (A.location * (TestType.t * A.v))
-        type state = state_atom list
-        let env_for_pp = A.env_for_pp
 
         let dump_state_atom a =
           MiscParser.dump_state_atom
             A.is_global A.pp_location dump_v a
+
+        type state = state_atom list
+
+        let dump_state st =
+          DumpUtils.dump_state
+            dump_state_atom
+            (A.env_for_pp st)
 
         type prop = (A.location,A.v) ConstrGen.prop
 

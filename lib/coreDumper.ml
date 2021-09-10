@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2021-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,14 +14,16 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(*****************)
-(* Parsable dump *)
-(*****************)
-
+(******************)
+(* Core test dump *)
+(******************)
 module type I = sig
-  module A : Arch_litmus.Base
 
-  module P : PseudoAbstract.S
+  val arch : Archs.t
+
+  type prog
+  val print_prog : out_channel -> prog -> unit
+  val dump_prog_lines : prog -> string list
 
   type v
   val dump_v : v -> string
@@ -37,33 +39,30 @@ module type I = sig
   val dump_location : location -> string
 end
 
-module Make(I:I) : sig
-  val dump : out_channel ->
-    Name.t ->
-    (I.state, I.P.code list, I.prop, I.location,I.v)
-        MiscParser.result
-      -> unit
-  val dump_info : out_channel ->
-    Name.t ->
-    (I.state, I.P.code list, I.prop, I.location,I.v)
-        MiscParser.result
-      -> unit
-  val lines :
-      Name.t ->
-        (I.state, I.P.code list, I.prop, I.location,I.v)
-          MiscParser.result
-      -> string list
-end = struct
+module type S = sig
+  type test
+
+  val dump : out_channel -> Name.t -> test -> unit
+  val dump_info : out_channel -> Name.t -> test -> unit
+  val lines : Name.t -> test -> string list
+end
+
+module Make(I:I) :
+S with
+  type test = (I.state, I.prog, I.prop, I.location,I.v) MiscParser.result
+= struct
+
+  type test = (I.state, I.prog, I.prop, I.location,I.v) MiscParser.result
+
   open Printf
   open I
-
   open MiscParser
 
   let dump_locations locs =
     DumpUtils.dump_locations I.dump_location I.dump_v locs
 
   let do_dump withinfo chan doc t =
-    fprintf chan "%s %s\n" (Archs.pp A.arch) doc.Name.name ;
+    fprintf chan "%s %s\n" (Archs.pp I.arch) doc.Name.name ;
     if withinfo then begin
       List.iter
         (fun (k,i) -> fprintf chan "%s=%s\n" k i)
@@ -81,7 +80,7 @@ end = struct
     fprintf chan "\n{\n%s}\n"
       (String.concat ""
          (List.map (sprintf " %s\n") (dump_state  t.init))) ;
-    I.P.print_prog chan t.prog ;
+    I.print_prog chan t.prog ;
     fprintf chan "\n" ;
     begin match t.locations with
     | [] -> ()
@@ -97,7 +96,7 @@ end = struct
   let (@@) f k = f k
 
   let lines doc t =
-    begin fun k -> sprintf "%s %s" (Archs.pp A.arch) doc.Name.name :: k
+    begin fun k -> sprintf "%s %s" (Archs.pp I.arch) doc.Name.name :: k
     end @@
     begin fun k -> match doc.Name.doc with
     | "" -> k
@@ -112,7 +111,7 @@ end = struct
     end @@
     begin
       fun k ->
-      let pp = I.P.dump_prog_lines t.prog in
+      let pp = I.dump_prog_lines t.prog in
       pp @ ""::k
     end @@
     begin fun k ->

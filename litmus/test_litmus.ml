@@ -51,15 +51,9 @@ module type S = sig
   val find_our_constraint : t -> C.cond
   val get_nprocs : t -> int
 
-  module D :
-  module type of
-    TestDump.Make
-      (struct
-        let hexa = false
-        module A=A
-        module C=C
-        module P=P
-      end)
+  module D : CoreDumper.S
+    with
+      type test =  (A.fullstate, P.code list, C.prop, A.location, A.V.v)  MiscParser.result
 
   val find_offset : P.code list -> int -> string -> int
   val code_exists : (P.ins -> bool) -> t -> bool
@@ -101,15 +95,46 @@ struct
   let get_nprocs t = List.length t.code
 
   module D =
-    TestDump.Make
-      (struct
-        let hexa = Cfg.hexa
-        module A = A
-        module C = C
-        module P = P
-      end)
+    struct
+      include
+        CoreDumper.Make
+          (struct
+
+            let arch = A.arch
+
+            type prog = P.code list
+            let print_prog = P.print_prog
+            let dump_prog_lines = P.dump_prog_lines
+
+            type v = A.V.v
+            let dump_v = A.V.pp Cfg.hexa
+
+            let dump_state_atom =
+              MiscParser.dump_state_atom A.is_global A.pp_location dump_v
+
+            type state = A.fullstate
+
+            let dump_state st =
+              DumpUtils.dump_state
+                dump_state_atom
+                (A.env_for_pp st)
+
+            type prop = C.prop
+
+            let dump_atom a =
+              ConstrGen.dump_atom A.pp_location A.pp_location_brk dump_v a
+
+            let dump_prop = ConstrGen.prop_to_string dump_atom
+            let dump_constr = ConstrGen.constraints_to_string dump_atom
+
+            type location = A.location
+            let dump_location loc = A.pp_location loc
+
+          end)
+    end
 
   let find_offset code p lbl = P.find_offset code p lbl
+
   let code_exists p t =
     let src = t.src in
     let code = src.MiscParser.prog in

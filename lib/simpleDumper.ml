@@ -16,15 +16,13 @@
 (** Parsable dump *)
 
 module type I = sig
-  module A : ArchBase.S
+  module A : ArchDump.S
 
   type v
   val dump_v : v -> string
 
-  type state_atom
-  type state = state_atom list
-  val env_for_pp : state -> state_atom list list
-  val dump_state_atom : state_atom -> string
+  type state
+  val dump_state : state -> string list
 
   type prop
   val dump_prop : prop -> string
@@ -34,33 +32,14 @@ module type I = sig
   val dump_location : location -> string
 end
 
-module type Out = sig
-  type t
-  val fprintf : t -> ('a, out_channel, unit) format -> 'a
-end
 
-module OutChannel = struct
-  type t = out_channel
-  let fprintf chan fmt = Printf.fprintf chan fmt
-end
+module Make(I:I) :
+CoreDumper.S with 
+  type test =
+    (I.state, (MiscParser.proc * I.A.pseudo list) list, I.prop, I.location,I.v)
+      MiscParser.result
+= struct
 
-module Make(Out:Out)(I:I) : sig
-  val dump : Out.t ->
-    Name.t ->
-    (I.state, (MiscParser.proc * I.A.pseudo list) list, I.prop, I.location,I.v)
-        MiscParser.result
-      -> unit
-  val dump_info : Out.t ->
-    Name.t ->
-    (I.state, (MiscParser.proc * I.A.pseudo list) list, I.prop, I.location,I.v)
-        MiscParser.result
-      -> unit
-  val lines :
-      Name.t ->
-        (I.state, (MiscParser.proc * I.A.pseudo list) list, I.prop, I.location,I.v)
-          MiscParser.result
-      -> string list
-end = struct
   open Printf
   open I
 
@@ -77,87 +56,37 @@ end = struct
 
   let fmt_col (p,is) = MiscParser.pp_proc p::List.map fmt_io is
 
-  let prog chan prog =
-    let pp = List.map fmt_col prog in
-    Out.fprintf chan "%s" (Misc.string_of_prog pp)
-(*
-    dump_procs chan prog ;
-    iter_prog (dump_ios chan)
-      (List.map snd prog)
-*)
-  open MiscParser
+  module Dump =
+    CoreDumper.Make
+      (struct
 
-  let dump_state st =
-    List.map
-      (fun bds ->
-        String.concat " "
-           (List.map
-              (fun bd ->
-                let pp = I.dump_state_atom bd in
-                sprintf "%s;" pp)
-              bds))
-      (I.env_for_pp st)
+        let arch = I.A.arch
 
-  let do_dump withinfo chan doc t =
-    Out.fprintf chan "%s %s\n" (Archs.pp A.arch) doc.Name.name ;
-    begin match doc.Name.doc with
-    | "" -> ()
-    | doc -> Out.fprintf chan "\"%s\"\n" doc
-    end ;
-    if withinfo then begin
-      List.iter
-        (fun (k,i) -> Out.fprintf chan "%s=%s\n" k i)
-        t.info
-    end ;
-    Out.fprintf chan "\n{\n%s}\n\n"
-      (String.concat ""
-         (List.map (sprintf " %s\n") (dump_state  t.init))) ;
-    prog chan t.prog ;
-    Out.fprintf chan "\n" ;
-    let locs =
-      DumpUtils.dump_locations I.dump_location I.dump_v t.locations in
-    if locs <> "" then Out.fprintf chan "%s\n" locs ;
-    begin match t.filter with
-    | None -> ()
-    | Some p -> Out.fprintf chan "filter %s\n" (I.dump_prop p)
-    end ;
-    begin match t.extra_data with
-    | NoExtra|CExtra _ -> ()
-    | BellExtra bi ->
-       if not (BellInfo.is_none bi) then
-         Out.fprintf chan "%s\n" (BellInfo.pp bi)
-    end ;
-    Out.fprintf chan "%s\n" (I.dump_constr t.condition) ;
-    ()
+        type prog = (MiscParser.proc * I.A.pseudo list) list
 
-  let dump = do_dump false
-  let dump_info = do_dump true
+        let print_prog chan prog =
+          let pp = List.map fmt_col prog in
+          fprintf chan "%s" (Misc.string_of_prog pp)
 
-  let (@@) f k = f k
+        let dump_prog_lines prog =
+          let pp = List.map fmt_col prog in
+          let pp = Misc.lines_of_prog pp in
+          let pp = List.map (sprintf "%s;") pp in
+          pp
 
-  let lines doc t =
-    begin fun k -> sprintf "%s %s" (Archs.pp A.arch) doc.Name.name :: k
-    end @@
-    begin fun k -> match doc.Name.doc with
-    | "" -> k
-    | doc -> sprintf "\"%s\"" doc :: k
-    end @@
-    begin
-      fun k ->
-      "{"::dump_state t.init @("}"::k)
-    end @@
-    begin
-      fun k ->
-      let pp = List.map fmt_col t.prog in
-      let pp = Misc.lines_of_prog pp in
-      let pp = List.map (sprintf "%s;") pp in
-      pp @ ""::k
-    end @@
-    begin fun k ->
-      match t.locations with
-      | [] -> k
-      | locs ->
-          DumpUtils.dump_locations I.dump_location I.dump_v locs::k
-    end @@
-    [I.dump_constr t.condition]
+        type v = I.v
+        let dump_v = I.dump_v
+
+        type state = I.state
+        let dump_state = I.dump_state
+
+        type prop = I.prop
+        let dump_prop = I.dump_prop
+        let dump_constr = I.dump_constr
+
+        type location = I.location
+        let dump_location = I.dump_location
+      end)
+
+  include Dump
 end

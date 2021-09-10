@@ -176,7 +176,7 @@ module Top
 
     (* No alloc *)
     module Text(A:ArchBase.S) = struct
-      module D = DumperMiscParser.Make(O)(SimpleDumper.OutChannel)(A)
+      module D = DumperMiscParser.Make(O)(A)
 
       let zyva = match O.outputdir with
       | None -> D.dump_info stdout

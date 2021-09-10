@@ -26,13 +26,7 @@ module type Config = sig
   include RunUtils.Config
 end
 
-module type Test = sig
-  type test
-  val dump : out_channel -> Name.t -> test -> unit
-  val lines : Name.t -> test -> string list
-end
-
-module Make(O:Config)(Tar:Tar.S)(D:Test) =
+module Make(O:Config)(Tar:Tar.S)(D:CoreDumper.S) =
   struct
     module RU = RunUtils.Make(O)
 
