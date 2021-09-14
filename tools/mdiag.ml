@@ -21,17 +21,16 @@ module Top
          val verbose : int
        end) =
   struct
-    let () = ignore Opt.verbose
 
     open TestInfo
 
-    let do_test name k =
-      try Z.from_file name::k
+    let do_test name (k,n as c) =
+      try Z.from_file name::k,n+1
       with
-      | Misc.Exit -> k
+      | Misc.Exit -> c
       | Misc.Fatal msg|Misc.UserError msg ->
           Warn.warn_always "%a %s" Pos.pp_pos0 name msg ;
-          k
+          c
       | e ->
           Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
           raise e
@@ -47,9 +46,9 @@ module Top
       StringMap.add k (TSet.add v old) m
 
     let zyva tests =
-      let tests = match tests with
-      | [] -> Misc.fold_stdin do_test []
-      | _::_ -> Misc.fold_argv do_test tests [] in
+      let tests,ntests = match tests with
+      | [] -> Misc.fold_stdin do_test ([],0)
+      | _::_ -> Misc.fold_argv do_test tests ([],0) in
       let tests = TSet.of_list tests in
       let byName,byHash =
         TSet.fold
@@ -87,19 +86,22 @@ module Top
             printf "Warning: tests {%s} are the same test\n"
               (StringSet.pp_str "," Misc.identity names))
         byHash ;
-
-      StringMap.iter
-        (fun name ts ->
-          let fnames = TSet.fold (fun t k -> t.T.fname::k) ts [] in
-          let fnames = StringSet.of_list fnames in
-          if not (is_singleton fnames) then begin
-            printf "Warning: test %s is referenced more than once:\n"
-              name ;
-            StringSet.iter
-              (fun fname -> printf "  %s\n" fname)
-              fnames
-          end)
-        byName ;
+      if Opt.verbose > 0 then
+        StringMap.iter
+          (fun name ts ->
+            let fnames = TSet.fold (fun t k -> t.T.fname::k) ts [] in
+            let fnames = StringSet.of_list fnames in
+            if not (is_singleton fnames) then begin
+                printf "Warning: test %s is referenced more than once:\n"
+                  name ;
+                StringSet.iter
+                  (fun fname -> printf "  %s\n" fname)
+                  fnames
+              end)
+          byName ;
+      Printf.printf "Input: %i\nBy name: %i\nBy hash: %i\n" ntests
+        (StringMap.cardinal byName)
+        (StringMap.cardinal byHash) ;
       ()
   end
 
