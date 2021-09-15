@@ -529,8 +529,11 @@ let dump_c xcode names =
 
 
 let dump_c_cont xcode arch sources utils nts =
-  let shared_topology = is_kvm && Cfg.alloc = Alloc.Dynamic in
+  let shared_topology = Cfg.alloc = Alloc.Dynamic in
   let sources = List.map Filename.basename  sources in
+  let utils =
+    if shared_topology then utils@["topology.c"]
+    else utils in
 (* Makefile *)
   let infile = not xcode in
   Misc.output_protect

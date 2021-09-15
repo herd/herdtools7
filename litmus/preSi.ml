@@ -77,7 +77,7 @@ module Make
       let do_stats = not do_dynalloc
       let do_inlined = (* inline topology description *)
         match Cfg.mode,Cfg.driver with
-        | Mode.Kvm,Driver.C -> not do_dynalloc
+        | (Mode.Kvm|Mode.PreSi),Driver.C -> not do_dynalloc
         | _,_ -> true
 
       open CType
@@ -164,8 +164,7 @@ module Make
           O.o "#define KVM 1" ;
           O.o "#include <libcflat.h>" ;
           O.o "#include \"kvm-headers.h\"" ;
-          O.o "#include \"utils.h\"" ;
-          if not do_inlined then O.o "#include \"topology.h\""
+          O.o "#include \"utils.h\""
         end else begin
           O.o "#include <stdlib.h>" ;
           O.o "#include <inttypes.h>" ;
@@ -184,6 +183,7 @@ module Make
             O.o "#include \"affinity.h\""
           end
         end ;
+        if not do_inlined then O.o "#include \"topology.h\"" ;
         O.o "" ;
         O.o "typedef uint32_t count_t;" ;
         O.o "#define PCTR PRIu32" ;
@@ -433,7 +433,9 @@ module Make
 (**************)
 (* Topologies *)
 (**************)
-      let is_active = not Cfg.is_kvm
+      let is_active = match Cfg.alloc with
+        | Alloc.Dynamic -> false
+        | Alloc.Static|Alloc.Before -> not Cfg.is_kvm
 
       let dbg = false
 
@@ -513,6 +515,7 @@ module Make
           O.f "#define group group_%d" n;
           O.f "#define SCANSZ scansz_%d" n ;
           O.f "#define SCANLINE scanline_%d" n ;
+          O.o "" ;
           ()
         end
 
