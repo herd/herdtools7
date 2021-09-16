@@ -34,7 +34,7 @@ end
 
 
 module Make(I:I) :
-CoreDumper.S with 
+CoreDumper.S with
   type test =
     (I.state, (MiscParser.proc * I.A.pseudo list) list, I.prop, I.location,I.v)
       MiscParser.result
