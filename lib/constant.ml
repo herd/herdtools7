@@ -95,7 +95,7 @@ let pp_symbol_old = function
   | System (TLB,s) -> Misc.add_tlb s
   | System (PTE,s) -> Misc.add_pte s
   | System (PTE2,s) -> Misc.add_pte (Misc.add_pte s)
-  | System (TAG,s) -> Misc.add_atag s
+  | System (TAG,s) -> sprintf "tag(%s)" s
 
 let pp_symbol = function
   | Virtual s -> pp_index (pp_symbolic_data s) s.offset
@@ -103,7 +103,7 @@ let pp_symbol = function
   | System (TLB,s) -> sprintf "TLB(%s)" s
   | System (PTE,s) -> sprintf "PTE(%s)" s
   | System (PTE2,s) -> sprintf "PTE(PTE(%s))" s
-  | System (TAG,s) -> Misc.add_atag s
+  | System (TAG,s) -> sprintf "tag(%s)" s
 
 let compare_symbol sym1 sym2 = match sym1,sym2 with
 | Virtual s1,Virtual s2 -> compare_symbolic_data s1 s2

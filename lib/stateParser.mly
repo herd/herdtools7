@@ -24,6 +24,9 @@ open ConstrGen
 let mk_sym_tag s t =
   Symbolic (Virtual {default_symbolic_data with name=s;tag=Some t;})
 
+let mk_sym_tagloc s =
+  Symbolic (System (TAG, s))
+
 let mk_sym_morello p s t =
   let p_int = Misc.string_as_int64 p in
   if
@@ -65,6 +68,7 @@ let mk_lab p s = Label (p,s)
 %token ATOMICINIT
 %token ATTRS
 %token TOK_PTE TOK_PA
+%token TOK_TAG
 
 %token PTX_REG_DEC
 %token <string> PTX_REG_TYPE
@@ -107,6 +111,7 @@ location_global:
 | TOK_PTE LPAR TOK_PTE LPAR NAME RPAR RPAR { Constant.mk_sym_pte2 $5 }
 | TOK_PA LPAR NAME RPAR { Constant.mk_sym_pa $3 }
 | NAME COLON NAME { mk_sym_tag $1 $3 }
+| TOK_TAG LPAR NAME RPAR { mk_sym_tagloc $3 }
 (* TODO: have MTE and Morello tags be usable at the same time? *)
 | NUM COLON NAME COLON NUM {mk_sym_morello $1 $3 $5}
 | NAME COLON NUM { mk_sym_morello "0" $1 $3 }

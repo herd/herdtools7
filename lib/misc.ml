@@ -256,6 +256,16 @@ let split_on_char c s =
     else do_rec k0 (k+1) in
   do_rec 0 0
 
+  let filter_map f =
+    let rec aux accu = function
+      | [] -> List.rev accu
+      | x :: l ->
+          match f x with
+          | None -> aux accu l
+          | Some v -> aux (v :: accu) l
+    in
+    aux []
+
 (********************)
 (* Position parsing *)
 (********************)

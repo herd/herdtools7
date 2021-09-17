@@ -68,6 +68,7 @@ rule token = parse
 | "locations" { LOCATIONS }
 | "filter" { FILTER }
 | "fault"|"Fault" { FAULT }
+| "tag" { TOK_TAG }
 | "attrs"|"Attrs" { ATTRS }
 (* PTW keywords *)
 | "PTE" { TOK_PTE }

@@ -114,7 +114,11 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           loc,
           List.map
             (*NOTYET*)
-            (List.map (fun (n,obs) -> n.C.C.evt.C.C.cell,obs))
+            (List.map (fun (n,obs) ->
+            let cells = if Misc.check_atag loc then
+              n.C.C.evt.C.C.tcell
+            else n.C.C.evt.C.C.cell in
+            cells,obs))
             ns)
 
 (******************)
