@@ -800,13 +800,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
        ] in
       init,pseudo cs0@cs1@cs,st
 
-    let emit_one_pair (ar, aw) p st init r rR rW rA k e =
+    let emit_one_pair (ar, aw) p st init r rR rW rAR rAW k e =
       let ok,st = A.ok_reg st in
-      let init,cs1,st = get_xstore_addon ar rW rA e init st p in
+      let init,cs1,st = get_xstore_addon ar rW rAW e init st p in
       init,
-      cs1@Instruction (get_xload ar rR rA)::
+      cs1@Instruction (get_xload ar rR rAR)::
       lift_code (get_xload_addon ar rR) @
-      Instruction (get_xstore aw r rW rA)::
+      Instruction (get_xstore aw r rW rAW)::
       Instruction (cbnz r (Label.last p))::
       (k (Instruction (incr ok))),
       A.next_ok st
@@ -825,7 +825,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       else if u = 1 then
         let r,st = tempo3 st in
         let init,cs,st =
-          emit_one_pair arw p st init r rR rW rA (fun i -> [i]) e in
+          emit_one_pair arw p st init r rR rW rAR rAW (fun i -> [i]) e in
         init,cs0@cs,st
       else
         let r,st = tempo3 st in
@@ -833,19 +833,19 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let out = Label.next_label "Go" in
         let rec do_rec = function
           | 1 ->
-              let init,cs,st = emit_one_pair
-                  arw p st init r rR rW rA
-                  (fun i ->  [Label (out,Nop);i]) e in
-              init,cs0@cs,st
+              emit_one_pair
+                arw p st init r rR rW rAR rAW
+                (fun i ->  [Label (out,Nop);i]) e
           | u ->
               let init,cs,st = do_rec (u-1) in
               init,
-              (Instruction (get_xload ar rR rA)::
+              (Instruction (get_xload ar rR rAR)::
                lift_code (get_xload_addon ar rR) @
-               Instruction (get_xstore aw r rW rA)::
+               Instruction (get_xstore aw r rW rAW)::
                Instruction (cbz r out)::
-               cs0@cs1@cs),st in
-        do_rec u
+               cs1@cs),st in
+        let init,cs,st = do_rec u in
+        init,cs0@cs,st
 
     let emit_pair = match Cfg.unrollatomic with
     | None -> emit_loop_pair
