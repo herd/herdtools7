@@ -433,7 +433,10 @@ let dump_c xcode names =
       O.o "#include <stdlib.h>" ;
       begin match Cfg.mode with
       | Mode.Std|Mode.PreSi ->
-         O.o "#include <stdio.h>" ;
+         if Cfg.stdio then 
+           O.o "#include <stdio.h>"
+         else
+           O.o "#include \"litmus_io.h\"" ;
          if Cfg.sleep > 0 then  O.o "#include <unistd.h>"
       | Mode.Kvm ->
          O.o "#include \"kvm-headers.h\"" ;
@@ -459,22 +462,38 @@ let dump_c xcode names =
         O.o "#include <time.h>" ;
         O.o "static void my_date(FILE *out) {" ;
         O.oi "time_t t = time(NULL);" ;
-        O.oi "fprintf(out,\"%s\",ctime(&t));";
+        if Cfg.stdio then
+          O.oi "fprintf(out,\"%s\",ctime(&t));"
+        else
+          O.oi "emit_string(out,ctime(&t));" ;
         O.o "}" ;
         ()
       end ;
       O.o "" ;
       O.o "/* Postlude */" ;
       O.o "static void end_report(int argc,char **argv,FILE *out) {" ;
-      let dstring s =
-        O.fi "fprintf(out,\"%%s\\n\",\"%s\");" (String.escaped s) in
+      let dstring =
+        if Cfg.stdio then
+          fun s -> O.fi "fprintf(out,\"%%s\\n\",\"%s\");" (String.escaped s)
+        else
+          fun s -> O.fi "emit_string(out,\"%s\\n\");" (String.escaped s) in
       RU.report_parameters dstring ;
       O.o "/* Command line options */" ;
-      O.oi "fprintf(out,\"Command:\");" ;
+      let dstring =
+        if Cfg.stdio then
+          fun s -> O.fi "fprintf(out,\"%%s\",\"%s\");" (String.escaped s)
+        else
+          fun s -> O.fi "emit_string(out,\"%s\");" (String.escaped s) in
+      dstring "Command:" ;
       O.oi "for ( ; *argv ; argv++) {" ;
-      O.oii "fprintf(out,\" %s\",*argv);" ;
+      if Cfg.stdio then begin
+        O.oii "fprintf(out,\" %s\",*argv);"
+      end else begin
+        O.oii "emit_string(out,\" \");" ;
+        O.oii "emit_string(out,*argv);"
+      end ;
       O.oi "}" ;
-      O.oi "fprintf(out,\"\\n\");" ;
+      dstring "\n" ;
       O.o "}" ;
       O.o"" ;
       O.o"/* Run all tests */" ;

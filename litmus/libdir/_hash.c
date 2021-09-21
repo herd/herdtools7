@@ -147,7 +147,11 @@ static void hash_add(hash_t *t,log_t *key, count_t c,int ok) {
     h++ ;
     h %= HASHSZ ;
   }
+#ifdef NOSTDIO
+  emit_string(stderr,"Hash table is full\n") ;
+#else
   fprintf(stderr,"Hash table is full\n") ;
+#endif
   exit(2) ;
 }
 

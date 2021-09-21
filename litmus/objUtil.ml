@@ -169,7 +169,11 @@ module Make(O:Config)(Tar:Tar.S) =
       let fnames = [] in
       let fnames = match O.driver with
       | Driver.Shell -> fnames
-      | Driver.C|Driver.XCode -> cpy fnames "toh" ".sh" in
+      | Driver.C|Driver.XCode ->
+         if O.stdio then
+           cpy fnames "toh" ".sh"
+         else
+           cpy' fnames "toh_nostdio" "toh" ".sh" in
       let fnames = match O.arch with
         | `C ->
             if O.asmcommentaslabel then

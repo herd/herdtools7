@@ -518,7 +518,7 @@ module Make
           dstring nice ;
           let xs = T.D.lines doc test.T.src in
           List.iter dstring xs ;
-          O.oi "fprintf(out,\"Generated assembler\\n\");" ;
+          dstring "Generated assembler" ;
           O.oi "ass(out);" ;
           O.o "}" ;
           O.o "" ;
