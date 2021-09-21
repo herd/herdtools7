@@ -137,10 +137,14 @@ type simple_t =  { s_name : string ; s_tests : simple_test list; }
 
 
 let is_local loc = String.contains loc ':'
+let is_array_item loc = String.contains loc '['
+let is_array v =  String.contains v '{'
+
+let add_brk loc v = not (is_local loc || is_array_item loc || is_array v)
 
 let pretty_binding loc v =
-  if is_local loc then Printf.sprintf "%s=%s" loc v
-  else Printf.sprintf "[%s]=%s" loc v
+  if add_brk loc v then Printf.sprintf "[%s]=%s" loc v
+  else Printf.sprintf "%s=%s" loc v
 
 
 module Make(O:sig val verbose : int end) = struct
@@ -210,8 +214,8 @@ let pretty_state pref mode with_noccs st =
 (* Redump log *)
 
 let dump_bd chan loc v =
-  if is_local loc then fprintf chan " %s=%s;" loc v
-  else fprintf chan " [%s]=%s;" loc v
+  if add_brk loc v then fprintf chan " [%s]=%s;" loc v
+  else fprintf chan " %s=%s;" loc v
 
 let dump_state chan is_litmus st =
   if is_litmus then fprintf chan  "%-8s:>" (Int64.to_string st.p_noccs) ;
