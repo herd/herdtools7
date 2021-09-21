@@ -34,10 +34,12 @@ type t =
   | KVM
 (* Neon AArch64 extension *)
   | Neon
+(* Constrained Unpredictable *)
+  | ConstrainedUnpredictable
 
 let tags =
  ["AsAmo";"ConstsInInit";"Mixed";"FullMixed";"Self"; "MemTag";
-  "NoVolatile"; "Morello"; "kvm"; "Neon"; ]
+  "NoVolatile"; "Morello"; "kvm"; "Neon"; "ConstrainedUnpredictable"; ]
 
 let parse tag = match Misc.lowercase tag with
 | "asamo" -> Some AsAmo
@@ -50,6 +52,7 @@ let parse tag = match Misc.lowercase tag with
 | "morello" -> Some Morello
 | "kvm" -> Some KVM
 | "neon" -> Some Neon
+| "constrainedunpredictable"|"cu" -> Some ConstrainedUnpredictable
 | _ -> None
 
 let pp = function
@@ -63,3 +66,4 @@ let pp = function
   | Morello -> "Morello"
   | KVM -> "kvm"
   | Neon -> "Neon"
+  | ConstrainedUnpredictable -> "ConstrainedUnpredictable"

@@ -34,6 +34,9 @@ type t =
   | KVM
 (* Neon AArch64 extension *)
   | Neon
+(* Constrained Unpredictable, ie generate tests thar may exhibit
+   such behaviours. Typically LDXR / STXR of different size or address. *)
+  | ConstrainedUnpredictable
 
 val tags : string list
 
