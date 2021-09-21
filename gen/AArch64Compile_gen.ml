@@ -1148,19 +1148,32 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Some (Neon _,Some _) -> assert false
         end
 
+    let same_sz sz1 sz2 = match sz1,sz2 with
+      | None,None -> true
+      | Some s1,Some s2 ->  MachMixed.equal s1 s2
+      | (None,Some _)|(Some _,None) -> false
+
+    let check_arw_lxsx er ew =
+      let _,szr as ar = tr_none er.C.atom
+      and _,szw as aw = tr_none ew.C.atom in
+      if not (A64.do_cu || same_sz szr szw) then
+        Warn.fatal
+          "Refuse to generate constrained unpredictable, use -variant CU to accept" ;
+      ar,aw
+
+
     let emit_exch st p init er ew =
       let rA,init,st = U.next_init st p init (add_tag (as_data er.C.loc) 0) in
       let rR,st = next_reg st in
       let rW,init,csi,st = U.emit_mov st p init ew.C.v in
-      let arw = (tr_none er.C.atom, tr_none ew.C.atom) in
+      let arw = check_arw_lxsx er ew in
       let init,cs,st = emit_pair arw p st init rR rW rA ew in
       rR,init,csi@cs,st
 
-    let do_sz sz1 sz2 = match sz1,sz2 with
-    | None,None -> None
-    | Some s1,Some s2 when s1 = s2 -> sz1
-    | _,_ ->
-        Warn.fatal "Amo instructions with different sizes"
+    let do_sz sz1 sz2 =
+      if same_sz sz1 sz2 then sz1
+      else
+        Warn.fatal "Amo instructions with different sizes or offsets"
 
     let do_rmw_type a1 a2 = match a1,a2 with
     | Plain o1,Plain o2 when o1 = o2 -> RMW_P,o1
@@ -1543,7 +1556,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rA,init,caddr,st =  emit_addr_dep  st p init (add_tag (as_data er.C.loc) 0) rd in
       let rR,st = next_reg st in
       let rW,init,csi,st = U.emit_mov st p init ew.C.v in
-      let arw = (tr_none  er.C.atom, tr_none ew.C.atom) in
+      let arw = check_arw_lxsx er ew in
       let init,cs,st = emit_pair arw p st init rR rW rA ew in
       rR,init,
       csi@caddr@cs,

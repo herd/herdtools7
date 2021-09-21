@@ -36,6 +36,8 @@ let do_kvm = C.variant Variant_gen.KVM
 let do_neon = C.variant Variant_gen.Neon
 let do_mixed =
   C.variant Variant_gen.Mixed || C.variant Variant_gen.FullMixed
+let do_cu = C.variant Variant_gen.ConstrainedUnpredictable
+
 open Code
 open Printf
 
@@ -529,14 +531,7 @@ let fold_rmw f r =
   let r = fold_aop (fun op r -> f (StOp op) r) r in
   r
 
-(*
-let applies_atom_rmw rmw ar aw = match rmw,ar,aw with
-| (LrSc|Swp|Cas|LdOp _),
-  (Some ((Acq _|Plain _),_)|None),(Some ((Rel _|Plain _),_)|None)
-| (StOp _),None,(Some ((Rel _|Plain _),_)|None)
-  -> true
-| _ -> false
- *)
+(* Check legal anotation for AMO instructions and LxSx pairs *)
 
 let ok_rw ar aw =
   match ar,aw with
@@ -550,7 +545,7 @@ let ok_w  ar aw =
     -> true
   | _ -> false
 
-let same_sz a1 a2 = match a1,a2 with
+let same_mixed a1 a2 = match a1,a2 with
   |(None,None)
   |(None,Some (_,None))
   |(Some (_,None),None)
@@ -564,11 +559,12 @@ let same_sz a1 a2 = match a1,a2 with
    -> false
 
 let applies_atom_rmw rmw ar aw = match rmw with
-  | LrSc -> ok_rw ar aw
+  | LrSc ->
+     ok_rw ar aw && (do_cu || same_mixed ar aw)
   | Swp|Cas|LdOp _ ->
-     ok_rw ar aw && same_sz ar aw
+     ok_rw ar aw && same_mixed ar aw
   | StOp _ ->
-     ok_w ar aw && same_sz ar aw
+     ok_w ar aw && same_mixed ar aw
 
 let show_rmw_reg = function
 | StOp _ -> false
