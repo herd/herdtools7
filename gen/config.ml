@@ -162,7 +162,7 @@ let common_specs () =
     | Some a -> typ := a ; true)
     TypBase.tags
     (sprintf "specify base type, default %s" (TypBase.pp !typ))::
-  Util.parse_tag
+  Util.parse_tags
     "-variant"
     (fun tag -> match Variant_gen.parse tag with
     | None -> false

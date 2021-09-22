@@ -22,6 +22,11 @@ val parse_tag :
       (string -> bool) -> string list -> string ->
           string * Arg.spec * string
 
+val parse_tags :
+    string ->
+      (string -> bool) -> string list -> string ->
+          string * Arg.spec * string
+
 val arch_opt : Archs.t ref -> spec
 
 

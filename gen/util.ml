@@ -31,6 +31,22 @@ let parse_tag opt set tags msg =
     | true -> ()),
   sprintf "<%s> %s" (String.concat "|" tags) msg
 
+let parse_tags opt set_one all_tags msg =
+  opt,
+  Arg.String
+    (fun tags ->
+      let tags = Misc.split_comma tags in
+      List.iter
+        (fun tag -> match set_one tag with
+        | false ->
+            raise
+              (Arg.Bad
+                 (sprintf "bad tags for %s, allowed tag are %s"
+                    opt (String.concat "," all_tags)))
+        | true -> ())
+      tags),
+   sprintf "<%s> %s" (String.concat "|" all_tags) msg
+
 let arch_opt arch =
   let d = !arch in
    parse_tag
