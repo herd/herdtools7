@@ -151,7 +151,7 @@ module Make(O:Config)(M:XXXMem.S) =
 
 
 (* rfmap generation and processing, from pre-candidates *)
-    let iter_rfms test rfms kont kont_loop k =
+    let iter_rfms test rfms kont k =
       let kont =
         if O.verbose > 0 then
           fun conc k ->
@@ -163,7 +163,7 @@ module Make(O:Config)(M:XXXMem.S) =
         List.fold_left
           (fun res (_i,cs,es) ->
             MC.calculate_rf_with_cnstrnts test es cs
-              kont kont_loop res)
+              kont res)
           k rfms in
       k
 
@@ -400,7 +400,7 @@ module Make(O:Config)(M:XXXMem.S) =
              SL.check_event_structure test rfms kfail (fun _ c -> c)
           (model_kont ochan test final_state_restrict_locs cstr) start
         else
-        try iter_rfms test rfms call_model (fun c -> c) start
+        try iter_rfms test rfms call_model start
         with
         | Over c -> c
         | e ->

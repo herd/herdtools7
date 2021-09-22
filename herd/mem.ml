@@ -50,7 +50,7 @@ module type S = sig
 
 
 (* A first generator,
-   calculate_rf_with_cnstrnts test es constraints kont kont_loop res,
+   calculate_rf_with_cnstrnts test es constraints kont res,
 
    - test and es are test description and (abstract) event structure.
      By abstract, we here mean that some values and even
@@ -70,19 +70,13 @@ module type S = sig
         + abstract es with variables replaced by constants
         + rfmap
         + final state (included in rfmap in fact)
-
-   Additionnaly, the function detects loops (in fact
-   two many passages by the same label).
-   In such a case, kont_loop is called and not kont.
-
  *)
 
 
   val calculate_rf_with_cnstrnts :
       S.test -> S.event_structure -> S.M.VC.cnstrnts ->
         (S.concrete -> 'a -> 'a ) -> (* kont *)
-          ('a -> 'a) ->              (* kont_loop *)
-            'a -> 'a
+          'a -> 'a
 
   val solve_regs :
       S.test -> S.E.event_structure -> S.M.VC.cnstrnt list ->
@@ -100,8 +94,7 @@ module type S = sig
     S.E.event_structure -> S.read_from S.RFMap.t -> bool
 
   val when_unsolved :
-      S.test -> S.E.event_structure -> S.read_from S.RFMap.t -> S.M.VC.cnstrnt list ->
-        ('a -> 'a) -> 'a -> 'a
+      S.test -> S.E.event_structure -> S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> 'a -> 'a
 
   val compute_final_state :
     S.test -> S.read_from S.RFMap.t -> S.E.EventSet.t -> S.A.state * S.A.FaultSet.t
@@ -299,7 +292,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       let wrap proc inst addr env m poi =
         let ii =
            { A.program_order_index = poi;
-             proc = proc; inst = inst; unroll_count = 0;
+             proc = proc; inst = inst;
              labels = labels_of_instr addr;
              env = env; } in
         m ii in
@@ -828,36 +821,19 @@ let match_reg_events es =
         )
         res
 
-    let when_unsolved test es rfm cs kont_loop res =
+    let when_unsolved test es rfm _cs res =
       (* This system in fact has no solution.
          In other words, it is not possible to make
          such event structures concrete.
-         This occurs with cyclic rfmaps,
-         or not enough unrolled loops -- hack *)
-      let unroll_only =
-        List.for_all
-          (fun cn -> match cn with
-          | VC.Unroll lbl ->
-              Warn.warn_always
-                "unrolling too deep at label: %s" lbl;
-              true
-          | VC.Failed _ -> (* Should not be here, eaten in solver *)
-             assert false
-          | VC.Assign _ -> false)
-          cs in
-      if unroll_only then
-        kont_loop res
-      else begin
-        if C.debug.Debug_herd.solver then begin
+         This occurs with cyclic rfmaps *)
+      if C.debug.Debug_herd.solver then begin
           let module PP = Pretty.Make(S) in
           prerr_endline "Unsolvable system" ;
           PP.show_es_rfm test es rfm ;
           prerr_endline "Unsolvable system"
         end ;
-        assert (rfmap_is_cyclic es rfm);
-        res
-      end
-
+      assert (rfmap_is_cyclic es rfm);
+      res
 
     let solve_mem_non_mixed test es rfm cns kont res =
       let loads =  E.EventSet.filter E.is_mem_load es.E.events
@@ -1682,7 +1658,7 @@ let match_reg_events es =
         (E.mem_of es.E.events)
 
 
-    let calculate_rf_with_cnstrnts test es cs kont kont_loop res =
+    let calculate_rf_with_cnstrnts test es cs kont res =
       match solve_regs test es cs with
       | None -> res
       | Some (es,rfm,cs) ->
@@ -1703,7 +1679,7 @@ let match_reg_events es =
    Done, or at least avoid accepting such candidates in non-deps mode.
    Namely, having  non-sensical candidates rejected later by model
    entails a tremendous runtime penalty. *)
-                  when_unsolved test es rfm cs kont_loop res
+                  when_unsolved test es rfm cs res
               | _ ->
                   check_symbolic_locations test es ;
                   if (mixed && not unaligned) then check_aligned test es ;
