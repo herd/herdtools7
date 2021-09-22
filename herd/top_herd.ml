@@ -491,12 +491,16 @@ module Make(O:Config)(M:XXXMem.S) =
         if O.candidates then
           printf "Candidates %s %i\n" tname (c.cfail+c.cands) ;
 (* Auto info or Hash only*)
-          List.iter
-            (fun (k,v) ->
-              if Misc.string_eq k "Hash" then
-                printf "%s=%s\n" k v)
-            test.Test_herd.info ;
-        print_newline ()
+        List.iter
+          (fun (k,v) ->
+            if Misc.string_eq k "Hash" then
+              printf "%s=%s\n" k v)
+          test.Test_herd.info ;
+        print_newline () ;
+        if c.toofar then
+          Warn.warn_always
+            "File \"%s\", unrolling limit exceeded, legal outcomes may be missing."
+            test.Test_herd.name.Name.file
       end with Exit -> () ;
       ()
   end
