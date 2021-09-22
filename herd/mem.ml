@@ -43,7 +43,6 @@ module type S = sig
   type result =
      {
       event_structures : (int * S.M.VC.cnstrnts * S.event_structure) list ;
-      loop_present : bool ;
      }
 
   val glommed_event_structures : S.test -> result
@@ -196,8 +195,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     type result =
         {
          event_structures : (int * S.M.VC.cnstrnts * S.event_structure) list ;
-         loop_present : bool ;
-       }
+        }
 
 (* All (virtual) locations from init state *)
 
@@ -258,8 +256,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
     module SM = S.Mixed(C)
 
+    type ('a,'b) fetch_r = Ok of 'a * 'b | No of 'a
+
     let glommed_event_structures (test:S.test) =
-      let tooFar = ref false in
       let p = test.Test_herd.program in
       let starts = test.Test_herd.start_points in
       let procs = List.map fst starts in
@@ -281,33 +280,32 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         let seen = Imap.add lbl (x+1) seen in
         x+1,seen in
 
-      let fetch_code seen addr_jmp lbl =
-        let r =
-          let tgt =
-            try A.LabelMap.find lbl p
-            with Not_found ->
-              Warn.user_error
-                "Segmentation fault (kidding, label %s not found)" lbl in
-          if is_back_jump addr_jmp tgt then
-            let x,seen = see seen lbl in
-            if x > C.unroll then begin
-              W.warn "loop unrolling limit reached: %s" lbl;
-              None
-            end else
-              Some (tgt,seen)
-          else
-            Some (tgt,seen)
-        in if dbg then eprintf "fetch: %s %s\n" lbl (match r with None -> "None" | Some _ -> "Some"); r in
+    let fetch_code seen addr_jmp lbl =
+      let tgt =
+        try A.LabelMap.find lbl p
+        with Not_found ->
+          Warn.user_error
+            "Segmentation fault (kidding, label %s not found)" lbl in
+      if is_back_jump addr_jmp tgt then
+        let x,seen = see seen lbl in
+        if x > C.unroll then begin
+            W.warn "loop unrolling limit reached: %s" lbl;
+            No tgt
+          end else
+          Ok (tgt,seen)
+      else
+        Ok (tgt,seen) in
+
+      let wrap proc inst addr env m poi =
+        let ii =
+           { A.program_order_index = poi;
+             proc = proc; inst = inst; unroll_count = 0;
+             labels = labels_of_instr addr;
+             env = env; } in
+        m ii in
 
       let rec add_next_instr re_exec proc env seen addr inst nexts =
-        let wrap poi =
-          (let ii =
-            { A.program_order_index = poi;
-              proc = proc; inst = inst; unroll_count = 0;
-              labels = labels_of_instr addr;
-              env = env; }
-          in SM.build_semantics ii) in
-        wrap >>> fun branch ->
+        wrap proc inst addr env SM.build_semantics >>> fun branch ->
           let env = A.kill_regs (A.killed inst) env in
           next_instr re_exec inst proc env seen addr nexts branch
 
@@ -318,14 +316,19 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
       and add_lbl proc env seen addr_jmp lbl =
         match fetch_code seen addr_jmp lbl with
-        | None -> tooFar := true ; EM.tooFarcode lbl true
-        | Some (code,seen) -> add_code proc env seen code
+        | No ((addr,inst)::_) ->
+            let m ii =
+              EM.addT
+                (A.next_po_index ii.A.program_order_index)
+                (EM.tooFar lbl ii S.B.Next) in
+            wrap proc inst addr env m >>> fun _ -> EM.unitcodeT true
+        | No [] -> assert false (* Backward jump cannot be to end of code *)
+        | Ok (code,seen) -> add_code proc env seen code
 
       and next_instr re_exec inst proc env seen addr nexts b = match b with
-      | S.B.Exit -> tooFar := true ; EM.unitcodeT true
+      | S.B.Exit -> EM.unitcodeT true
       | S.B.ReExec ->
           if re_exec then begin
-            tooFar := true ;
             EM.unitcodeT false
           end else
             add_next_instr true proc env seen addr inst nexts
@@ -424,7 +427,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
            List.filter
              (fun (_,es) -> count_spurious es.E.events <= max)
              r in
-      { event_structures=index r 0; loop_present = !tooFar; }
+      { event_structures=index r 0; }
 
 
 (*******************)

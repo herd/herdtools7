@@ -226,12 +226,13 @@ module Make(O:Config)(M:XXXMem.S) =
       S.E.EventSet.subset loads obs
 
 (* Called by model simulator in case of success *)
-    let model_kont loop ochan test do_restrict cstr =
+    let model_kont ochan test do_restrict cstr =
 
       let check = check_prop test in
 
       fun conc fsc (set_pp,vbpp) flags c ->
-        if not showtoofar && loop && S.gone_toofar conc then { c with toofar = true; }
+        if not showtoofar && S.gone_toofar conc then
+          { c with toofar = true; }
         else if do_observed && not (all_observed test conc) then c
         else if
           match O.throughflag with
@@ -362,7 +363,7 @@ module Make(O:Config)(M:XXXMem.S) =
         AM.state_restrict_locs O.outcomereads dlocs tenv senv fsc,
         restrict_faults flts in
 
-      let { MC.event_structures=rfms; loop_present=loop; } =
+      let { MC.event_structures=rfms;  } =
         MC.glommed_event_structures test in
 (* Open *)
       let ochan = open_dot test in
@@ -392,12 +393,12 @@ module Make(O:Config)(M:XXXMem.S) =
         let call_model conc =
           check_test
             conc kfail
-            (model_kont loop ochan test final_state_restrict_locs cstr) in
+            (model_kont ochan test final_state_restrict_locs cstr) in
       let c =
         if O.statelessrc11
         then let module SL = Slrc11.Make(struct include MC let skipchecks = O.skipchecks end) in
              SL.check_event_structure test rfms kfail (fun _ c -> c)
-          (model_kont loop ochan test final_state_restrict_locs cstr) start
+          (model_kont ochan test final_state_restrict_locs cstr) start
         else
         try iter_rfms test rfms call_model (fun c -> c) start
         with
