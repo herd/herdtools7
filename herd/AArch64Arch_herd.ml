@@ -270,9 +270,10 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
          all_regs (* safe approximation *)
 
     let get_lx_sz = function
-      | I_LDAR (var,(XX|AX),_,_) -> Some (tr_variant var)
-      | I_LDARBH (bh,(XX|AX),_,_) -> Some (bh_to_sz bh)
-      | _ -> None
+      | I_LDAR (var,(XX|AX),_,_) -> MachSize.Ld (tr_variant var)
+      | I_LDARBH (bh,(XX|AX),_,_) -> MachSize.Ld (bh_to_sz bh)
+      | I_STXR _|I_STXRBH _ -> MachSize.St
+      | _ -> MachSize.No
 
     include ArchExtra_herd.Make(C)
         (struct

@@ -20,4 +20,4 @@ let opt_env = false
 
 let killed _ = []
 
-let get_lx_sz _ = None
+let get_lx_sz _ = MachSize.No

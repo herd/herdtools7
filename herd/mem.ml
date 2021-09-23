@@ -302,9 +302,11 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           let { A.regs=env; lx_sz=szo; } = env in
           let env = A.kill_regs (A.killed inst) env
           and szo =
+            let open MachSize in
             match A.get_lx_sz inst with
-            | None -> szo
-            | Some _ as x -> x in
+            | No -> szo
+            | St -> None
+            | Ld sz -> Some sz in
           next_instr
             re_exec inst proc { A.regs=env; lx_sz=szo; }
             seen addr nexts branch

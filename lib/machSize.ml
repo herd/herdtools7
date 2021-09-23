@@ -198,3 +198,10 @@ module Tag = struct
     | Auto -> "auto"
 
 end
+
+(* Some size info for load reserve *)
+
+type lr_sc =
+  | Ld of sz
+  | St
+  | No

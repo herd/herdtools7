@@ -23,5 +23,4 @@ val opt_env : bool
 val killed : 'i -> 'r list
 
 (* Size of load reserve access *)
-val get_lx_sz : 'i -> 'sz option
-
+val get_lx_sz : 'i -> MachSize.lr_sc

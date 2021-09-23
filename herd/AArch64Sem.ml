@@ -39,6 +39,7 @@ module Make
     let kvm = C.variant Variant.Kvm
     let is_branching = kvm && not (C.variant Variant.NoPteBranch)
     let pte2 = kvm && C.variant Variant.PTE2
+    let do_cu = C.variant Variant.ConstrainedUnpredictable
 
     let check_memtag ins =
       if not memtag then
@@ -752,7 +753,8 @@ module Make
       let write_mem_atomic sz an anexp ac a v resa ii =
         check_morello_for_write
           (fun a ->
-            (M.assign a resa
+            ((if do_cu (* If CU allowed, write may succeed whatever the address _a_ is *)
+              then M.unitT () else M.assign a resa)
              >>| check_mixed_write_mem sz an anexp ac a v ii)
             >>! ())
         a v ii
@@ -1025,11 +1027,15 @@ module Make
         lift_memop Dir.W true
           (fun ac ma mv ->
             let must_fail =
-              let open AArch64 in
-              match ii.env.lx_sz with
-              | None -> true (* No LoadExcl at all *)
-              | Some szr ->  not (MachSize.equal szr sz) in
-            M.aarch64_store_conditional must_fail
+              begin
+                let open AArch64 in
+                match ii.env.lx_sz with
+                | None -> true (* No LoadExcl at all. always fail *)
+                | Some szr ->
+                   (* Some, must fail when size differ and cu is disallowed *)
+                   not (do_cu || MachSize.equal szr sz)
+              end in
+                M.aarch64_store_conditional must_fail
               (read_reg_ord ResAddr ii)
               mv
               ma

@@ -52,6 +52,9 @@ type t =
   | PhantomOnLoad
 (* Optimise Rf enumeration leading to rmw *)
   | OptRfRMW
+(* Allow some constrained unpredictable, behaviours.
+   AArch64: LDXR / STXR of different size or address may succeed. *)
+  | ConstrainedUnpredictable
 (* Perform experiment *)
   | Exp
 

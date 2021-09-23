@@ -50,3 +50,10 @@ module Tag : sig
   val parse : string -> t option
   val pp : t -> string
 end
+
+(* Some size info for load reserve *)
+
+type lr_sc =
+  | Ld of sz
+  | St
+  | No
