@@ -299,8 +299,15 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
       let rec add_next_instr re_exec proc env seen addr inst nexts =
         wrap proc inst addr env SM.build_semantics >>> fun branch ->
-          let env = A.kill_regs (A.killed inst) env in
-          next_instr re_exec inst proc env seen addr nexts branch
+          let { A.regs=env; lx_sz=szo; } = env in
+          let env = A.kill_regs (A.killed inst) env
+          and szo =
+            match A.get_lx_sz inst with
+            | None -> szo
+            | Some _ as x -> x in
+          next_instr
+            re_exec inst proc { A.regs=env; lx_sz=szo; }
+            seen addr nexts branch
 
       and add_code proc env seen nexts = match nexts with
       | [] -> EM.unitcodeT true
@@ -343,7 +350,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         let env =
           if A.opt_env then A.build_reg_state proc env
           else A.reg_state_empty in
-        let evts_proc = jump_start proc env code in
+        let evts_proc =
+          jump_start proc { A.regs=env; lx_sz=None; } code in
         evts_proc |*| evts in
 
 (* Initial events, some additional events from caller in madd *)

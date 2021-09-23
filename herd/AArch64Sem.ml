@@ -1024,7 +1024,12 @@ module Make
         | LY -> AArch64.XL in
         lift_memop Dir.W true
           (fun ac ma mv ->
-            M.riscv_store_conditional
+            let must_fail =
+              let open AArch64 in
+              match ii.env.lx_sz with
+              | None -> true (* No LoadExcl at all *)
+              | Some szr ->  not (MachSize.equal szr sz) in
+            M.aarch64_store_conditional must_fail
               (read_reg_ord ResAddr ii)
               mv
               ma

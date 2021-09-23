@@ -570,17 +570,25 @@ Monad type:
         let un =  Evt.union act1 act2 in
         (eiid, (un,None))
 
-    let riscv_store_conditional read_res read_data read_addr
-        cancel_res write_result write_mem =
-      altT
-        (riscv_sc false
+    let aarch64_or_riscv_store_conditional
+          must_fail read_res read_data read_addr
+          cancel_res write_result write_mem =
+      let m_fail = riscv_sc false
            read_res read_data read_addr cancel_res
            (write_result V.one)
-           (fun _a _resa _v -> unitT ()))
-        (riscv_sc true
-           read_res read_data read_addr cancel_res
-           (write_result V.zero)
-           write_mem)
+           (fun _a _resa _v -> unitT ()) in
+      if must_fail then m_fail
+      else
+        altT m_fail
+          (riscv_sc true
+             read_res read_data read_addr cancel_res
+             (write_result V.zero)
+             write_mem)
+
+    (* RISCV store conditional may always succeed? *)
+    let riscv_store_conditional = aarch64_or_riscv_store_conditional false
+
+    let aarch64_store_conditional = aarch64_or_riscv_store_conditional
 
 (* stu combinator *)
     let stu : 'a t -> 'b t -> ('a -> unit t) -> (('a * 'b) -> unit t) -> unit t
@@ -1006,7 +1014,7 @@ Monad type:
       (* It is important to call V.fresh_var
          for every _complete_ call of read_loc *)
       let v = match iiid,loc with
-          | E.IdSome {A.env=env; _},A.Location_reg (_,r) ->
+          | E.IdSome {A.env={A.regs=env}; _},A.Location_reg (_,r) ->
              begin match A.look_reg r env with
              | Some v -> v
              | None -> V.fresh_var ()

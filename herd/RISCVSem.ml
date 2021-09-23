@@ -317,7 +317,8 @@ module Make (C:Sem.Config)(V:Value.S)
               (fun ea ->
                 write_reg RISCV.RESADDR ea ii >>|
                 (read_mem_atomic (tr_sz sz) mo ea ii >>= fun v -> write_reg r1 v ii)) >>! B.Next
-          | RISCV.StoreConditional ((RISCV.Double|RISCV.Word as sz),mo,r1,r2,r3) ->
+          | RISCV.StoreConditional
+              ((RISCV.Double|RISCV.Word as sz),mo,r1,r2,r3) ->
               M.riscv_store_conditional
                 (read_reg_ord RISCV.RESADDR ii)
                 (read_reg_data r2 ii)
