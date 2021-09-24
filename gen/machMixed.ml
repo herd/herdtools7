@@ -24,6 +24,9 @@ open Endian
 type offset = int
 type t = sz * offset
 
+let equal (sz1,o1) (sz2,o2) =
+  MachSize.equal sz1 sz2 && Misc.int_eq o1 o2
+
 module Make(C:Config) = struct
 
   open Printf

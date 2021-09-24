@@ -36,6 +36,8 @@ let do_kvm = C.variant Variant_gen.KVM
 let do_neon = C.variant Variant_gen.Neon
 let do_mixed =
   C.variant Variant_gen.Mixed || C.variant Variant_gen.FullMixed
+let do_cu = C.variant Variant_gen.ConstrainedUnpredictable
+
 open Code
 open Printf
 
@@ -175,9 +177,10 @@ let applies_atom (a,_) d = match a,d with
        begin
          match m with
          | None -> prefix
-         | Some m -> if String.length prefix > 0
-           then sprintf "%s.%s" prefix (Mixed.pp_mixed m)
-           else Mixed.pp_mixed m
+         | Some m ->
+            if String.length prefix > 0
+            then sprintf "%s.%s" prefix (Mixed.pp_mixed m)
+            else Mixed.pp_mixed m
        end
    | _ ->
      let pp_acc = pp_atom_acc a in
@@ -242,7 +245,9 @@ let applies_atom (a,_) d = match a,d with
      if do_mixed then
        fold_acc true
          (fun acc r -> Mixed.fold_mixed (fun m r -> f (acc,Some m) r) r)
-         (fold_mixed f r)
+         (Mixed.fold_mixed
+            (fun m r -> f (Plain None,Some m) r)
+            r)
      else r
 
    let worth_final (a,_) = match a with
@@ -526,11 +531,40 @@ let fold_rmw f r =
   let r = fold_aop (fun op r -> f (StOp op) r) r in
   r
 
-let applies_atom_rmw rmw ar aw = match rmw,ar,aw with
-| (LrSc|Swp|Cas|LdOp _),(Some (Acq _,_)|None),(Some (Rel _,_)|None)
-| (StOp _),None,(Some (Rel _,_)|None)
-  -> true
-| _ -> false
+(* Check legal anotation for AMO instructions and LxSx pairs *)
+
+let ok_rw ar aw =
+  match ar,aw with
+  | (Some ((Acq _|Plain _),_)|None),(Some ((Rel _|Plain _),_)|None)
+    -> true
+  | _ -> false
+
+let ok_w  ar aw =
+  match ar,aw with
+  | (Some (Plain _,_)|None),(Some ((Rel _|Plain _),_)|None)
+    -> true
+  | _ -> false
+
+let same_mixed a1 a2 = match a1,a2 with
+  |(None,None)
+  |(None,Some (_,None))
+  |(Some (_,None),None)
+  |((Some (_,None),Some (_,None)))
+   -> true
+  | Some (_,Some sz1),Some (_,Some sz2) -> MachMixed.equal sz1 sz2
+  |(None,Some (_,Some _))
+  |(Some (_,Some _),None)
+  |(Some (_, None), Some (_, Some _))
+  |(Some (_,Some _),Some (_,None))
+   -> false
+
+let applies_atom_rmw rmw ar aw = match rmw with
+  | LrSc ->
+     ok_rw ar aw && (do_cu || same_mixed ar aw)
+  | Swp|Cas|LdOp _ ->
+     ok_rw ar aw && same_mixed ar aw
+  | StOp _ ->
+     ok_w ar aw && same_mixed ar aw
 
 let show_rmw_reg = function
 | StOp _ -> false
