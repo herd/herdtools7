@@ -1,0 +1,10 @@
+Test M007 Required
+States 1
+[x]=0x0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([x]=0x0)
+Observation M007 Always 1 0
+Hash=864a185273e1e1e0538afaad1c74c38d
+
