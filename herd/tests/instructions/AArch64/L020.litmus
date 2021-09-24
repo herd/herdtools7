@@ -1,0 +1,14 @@
+AArch64 L020
+(* LX/SX with different address, success is Constrained Upredictable.
+   Normaly excluded, appears with  -variant CU *)
+{
+int x=1;
+int y=2;
+0:X0=x;
+0:X2=y;
+}
+ P0               ;
+ LDXR W1,[X0]     ;
+ MOV W3,#3        ;
+ STXR W4,W3,[X2]  ;
+~exists y=3;

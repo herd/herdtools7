@@ -1,0 +1,13 @@
+AArch64 L021
+(* Second STXR cannot succeeed *)
+{
+int x=1;
+0:X0=x;
+}
+ P0               ;
+ MOV W3,#2        ;
+ MOV W5,#3        ;
+ LDXR W1,[X0]     ;
+ STXR W4,W3,[X0]  ;
+ STXR W6,W5,[X0]  ;
+~exists 0:X4=1 /\ 0:X6=0 /\ x=3

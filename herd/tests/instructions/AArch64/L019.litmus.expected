@@ -1,0 +1,11 @@
+Test L019 Allowed
+States 2
+0:X4=0; [x]=2;
+0:X4=1; [x]=1;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (not (0:X4=0) /\ [x]=1)
+Observation L019 Sometimes 1 1
+Hash=af6b38c40bdc3f1f6f0dc714391a363e
+

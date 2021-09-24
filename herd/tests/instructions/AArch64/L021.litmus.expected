@@ -1,0 +1,11 @@
+Test L021 Forbidden
+States 2
+0:X4=0; 0:X6=1; [x]=2;
+0:X4=1; 0:X6=1; [x]=1;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition ~exists (0:X4=1 /\ 0:X6=0 /\ [x]=3)
+Observation L021 Never 0 2
+Hash=7a4f826210407ee264f41a4a24ae888c
+
