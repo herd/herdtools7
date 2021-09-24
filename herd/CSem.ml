@@ -59,7 +59,7 @@ module Make (Conf:Config)(V:Value.S)
       let no_mo = MOorAN.AN []
       let mo_as_anmo mo = MOorAN.MO mo
 
-      let mk_toofar ii = M.mk_singleton_es (Act.TooFar) ii
+      let mk_toofar msg ii = M.mk_singleton_es (Act.TooFar msg) ii
 
       let read_loc is_data mo =
         M.read_loc is_data (fun loc v -> Act.Access (Dir.R, loc, v, mo, false, nat_sz))
@@ -366,7 +366,7 @@ module Make (Conf:Config)(V:Value.S)
               let else_branch = M.unitT (ii.A.program_order_index, B.Next)
               and then_branch =
                 if n >= Conf.unroll then
-                  mk_toofar ii >>= fun () -> M.unitT (ii.A.program_order_index, B.Exit)
+                  mk_toofar "While" ii >>= fun () -> M.unitT (ii.A.program_order_index, B.Exit)
                 else
                   build_semantics {ii with A.inst = t} >>> fun (prog_order, _branch) ->
                   build_semantics

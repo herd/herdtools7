@@ -96,7 +96,7 @@ module type S = sig
   val is_pod : action -> bool
 
 (* Unrolling control *)
-  val toofar : action
+  val toofar : string -> action
   val is_toofar : action -> bool
 
 (********************)

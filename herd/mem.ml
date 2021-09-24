@@ -43,7 +43,6 @@ module type S = sig
   type result =
      {
       event_structures : (int * S.M.VC.cnstrnts * S.event_structure) list ;
-      loop_present : bool ;
      }
 
   val glommed_event_structures : S.test -> result
@@ -51,7 +50,7 @@ module type S = sig
 
 
 (* A first generator,
-   calculate_rf_with_cnstrnts test es constraints kont kont_loop res,
+   calculate_rf_with_cnstrnts test es constraints kont res,
 
    - test and es are test description and (abstract) event structure.
      By abstract, we here mean that some values and even
@@ -71,19 +70,13 @@ module type S = sig
         + abstract es with variables replaced by constants
         + rfmap
         + final state (included in rfmap in fact)
-
-   Additionnaly, the function detects loops (in fact
-   two many passages by the same label).
-   In such a case, kont_loop is called and not kont.
-
  *)
 
 
   val calculate_rf_with_cnstrnts :
       S.test -> S.event_structure -> S.M.VC.cnstrnts ->
         (S.concrete -> 'a -> 'a ) -> (* kont *)
-          ('a -> 'a) ->              (* kont_loop *)
-            'a -> 'a
+          'a -> 'a
 
   val solve_regs :
       S.test -> S.E.event_structure -> S.M.VC.cnstrnt list ->
@@ -101,8 +94,7 @@ module type S = sig
     S.E.event_structure -> S.read_from S.RFMap.t -> bool
 
   val when_unsolved :
-      S.test -> S.E.event_structure -> S.read_from S.RFMap.t -> S.M.VC.cnstrnt list ->
-        ('a -> 'a) -> 'a -> 'a
+      S.test -> S.E.event_structure -> S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> 'a -> 'a
 
   val compute_final_state :
     S.test -> S.read_from S.RFMap.t -> S.E.EventSet.t -> S.A.state * S.A.FaultSet.t
@@ -196,8 +188,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     type result =
         {
          event_structures : (int * S.M.VC.cnstrnts * S.event_structure) list ;
-         loop_present : bool ;
-       }
+        }
 
 (* All (virtual) locations from init state *)
 
@@ -258,8 +249,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
     module SM = S.Mixed(C)
 
+    type ('a,'b) fetch_r = Ok of 'a * 'b | No of 'a
+
     let glommed_event_structures (test:S.test) =
-      let tooFar = ref false in
       let p = test.Test_herd.program in
       let starts = test.Test_herd.start_points in
       let procs = List.map fst starts in
@@ -281,33 +273,32 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         let seen = Imap.add lbl (x+1) seen in
         x+1,seen in
 
-      let fetch_code seen addr_jmp lbl =
-        let r =
-          let tgt =
-            try A.LabelMap.find lbl p
-            with Not_found ->
-              Warn.user_error
-                "Segmentation fault (kidding, label %s not found)" lbl in
-          if is_back_jump addr_jmp tgt then
-            let x,seen = see seen lbl in
-            if x > C.unroll then begin
-              W.warn "loop unrolling limit reached: %s" lbl;
-              None
-            end else
-              Some (tgt,seen)
-          else
-            Some (tgt,seen)
-        in if dbg then eprintf "fetch: %s %s\n" lbl (match r with None -> "None" | Some _ -> "Some"); r in
+    let fetch_code seen addr_jmp lbl =
+      let tgt =
+        try A.LabelMap.find lbl p
+        with Not_found ->
+          Warn.user_error
+            "Segmentation fault (kidding, label %s not found)" lbl in
+      if is_back_jump addr_jmp tgt then
+        let x,seen = see seen lbl in
+        if x > C.unroll then begin
+            W.warn "loop unrolling limit reached: %s" lbl;
+            No tgt
+          end else
+          Ok (tgt,seen)
+      else
+        Ok (tgt,seen) in
+
+      let wrap proc inst addr env m poi =
+        let ii =
+           { A.program_order_index = poi;
+             proc = proc; inst = inst;
+             labels = labels_of_instr addr;
+             env = env; } in
+        m ii in
 
       let rec add_next_instr re_exec proc env seen addr inst nexts =
-        let wrap poi =
-          (let ii =
-            { A.program_order_index = poi;
-              proc = proc; inst = inst; unroll_count = 0;
-              labels = labels_of_instr addr;
-              env = env; }
-          in SM.build_semantics ii) in
-        wrap >>> fun branch ->
+        wrap proc inst addr env SM.build_semantics >>> fun branch ->
           let env = A.kill_regs (A.killed inst) env in
           next_instr re_exec inst proc env seen addr nexts branch
 
@@ -318,14 +309,19 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
       and add_lbl proc env seen addr_jmp lbl =
         match fetch_code seen addr_jmp lbl with
-        | None -> tooFar := true ; EM.tooFarcode lbl true
-        | Some (code,seen) -> add_code proc env seen code
+        | No ((addr,inst)::_) ->
+            let m ii =
+              EM.addT
+                (A.next_po_index ii.A.program_order_index)
+                (EM.tooFar lbl ii S.B.Next) in
+            wrap proc inst addr env m >>> fun _ -> EM.unitcodeT true
+        | No [] -> assert false (* Backward jump cannot be to end of code *)
+        | Ok (code,seen) -> add_code proc env seen code
 
       and next_instr re_exec inst proc env seen addr nexts b = match b with
-      | S.B.Exit -> tooFar := true ; EM.unitcodeT true
+      | S.B.Exit -> EM.unitcodeT true
       | S.B.ReExec ->
           if re_exec then begin
-            tooFar := true ;
             EM.unitcodeT false
           end else
             add_next_instr true proc env seen addr inst nexts
@@ -424,7 +420,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
            List.filter
              (fun (_,es) -> count_spurious es.E.events <= max)
              r in
-      { event_structures=index r 0; loop_present = !tooFar; }
+      { event_structures=index r 0; }
 
 
 (*******************)
@@ -825,36 +821,19 @@ let match_reg_events es =
         )
         res
 
-    let when_unsolved test es rfm cs kont_loop res =
+    let when_unsolved test es rfm _cs res =
       (* This system in fact has no solution.
          In other words, it is not possible to make
          such event structures concrete.
-         This occurs with cyclic rfmaps,
-         or not enough unrolled loops -- hack *)
-      let unroll_only =
-        List.for_all
-          (fun cn -> match cn with
-          | VC.Unroll lbl ->
-              Warn.warn_always
-                "unrolling too deep at label: %s" lbl;
-              true
-          | VC.Failed _ -> (* Should not be here, eaten in solver *)
-             assert false
-          | VC.Assign _ -> false)
-          cs in
-      if unroll_only then
-        kont_loop res
-      else begin
-        if C.debug.Debug_herd.solver then begin
+         This occurs with cyclic rfmaps *)
+      if C.debug.Debug_herd.solver then begin
           let module PP = Pretty.Make(S) in
           prerr_endline "Unsolvable system" ;
           PP.show_es_rfm test es rfm ;
           prerr_endline "Unsolvable system"
         end ;
-        assert (rfmap_is_cyclic es rfm);
-        res
-      end
-
+      assert (rfmap_is_cyclic es rfm);
+      res
 
     let solve_mem_non_mixed test es rfm cns kont res =
       let loads =  E.EventSet.filter E.is_mem_load es.E.events
@@ -1679,7 +1658,7 @@ let match_reg_events es =
         (E.mem_of es.E.events)
 
 
-    let calculate_rf_with_cnstrnts test es cs kont kont_loop res =
+    let calculate_rf_with_cnstrnts test es cs kont res =
       match solve_regs test es cs with
       | None -> res
       | Some (es,rfm,cs) ->
@@ -1700,7 +1679,7 @@ let match_reg_events es =
    Done, or at least avoid accepting such candidates in non-deps mode.
    Namely, having  non-sensical candidates rejected later by model
    entails a tremendous runtime penalty. *)
-                  when_unsolved test es rfm cs kont_loop res
+                  when_unsolved test es rfm cs res
               | _ ->
                   check_symbolic_locations test es ;
                   if (mixed && not unaligned) then check_aligned test es ;

@@ -168,8 +168,7 @@ module type S =
 
     val altT : 'a t -> 'a t -> 'a t
 
-    val tooFar : string -> 'a -> 'a t
-    val tooFarcode : string -> 'a -> 'a code
+    val tooFar : string -> E.A.inst_instance_id -> 'v -> 'v t
 
     (**********************************************************)
     (* A few action instruction instance -> monad constructors *)

@@ -54,7 +54,7 @@ module Make (C:Config) (A : A) : sig
 (* NB: Amo used in some arch only (e.g., Arm, RISCV) *)
     | Fault of A.inst_instance_id * A.location * string option
 (* Unrolling control *)
-    | TooFar
+    | TooFar of string
 (* TLB Invalidate event, operation (for print and level), address, if any.
    No adresss means complete invalidation at level *)
     | Inv of A.TLBI.op * A.location option
@@ -128,7 +128,7 @@ end = struct
         A.location * A.V.v * A.V.v * A.lannot * A.explicit *
         MachSize.sz * Access.t
     | Fault of A.inst_instance_id * A.location * string option
-    | TooFar
+    | TooFar of string
     | Inv of A.TLBI.op * A.location option
     | DC of AArch64Base.DC.op * A.location option
     | Arch of A.ArchAction.t
@@ -173,7 +173,7 @@ end = struct
         (match msg with
          | None -> ""
          | Some msg -> Printf.sprintf ",type:%s" msg)
-  | TooFar -> "TooFar"
+  | TooFar msg -> Printf.sprintf "TooFar:%s" msg
   | Inv (op,None) ->
       Printf.sprintf "TLBI(%s)" (A.TLBI.pp_op op)
   | Inv (op,Some loc) ->
@@ -188,7 +188,7 @@ end = struct
   let value_of a = match a with
   | Access (_,_ , v,_,_,_,_)
     -> Some v
-  | Barrier _|Commit _|Amo _|Fault _|TooFar|Inv _|DC _
+  | Barrier _|Commit _|Amo _|Fault _|TooFar _|Inv _|DC _
     -> None
   | Arch a -> A.ArchAction.value_of a
 
@@ -198,7 +198,7 @@ end = struct
     -> Some v
   | Arch a -> A.ArchAction.read_of a
   | Access (W, _, _, _,_,_,_)|Barrier _|Commit _|Fault _
-  | TooFar|Inv _|DC _
+  | TooFar _|Inv _|DC _
     -> None
 
   and written_of a = match a with
@@ -207,7 +207,7 @@ end = struct
     -> Some v
   | Arch a -> A.ArchAction.written_of a
   | Access (R, _, _, _,_,_,_)|Barrier _|Commit _|Fault _
-  | TooFar|Inv _|DC _
+  | TooFar _|Inv _|DC _
     -> None
 
   let location_of a = match a with
@@ -218,7 +218,7 @@ end = struct
   | DC(_,Some l)
     -> Some l
   | Arch a -> A.ArchAction.location_of a
-  | Barrier _|Commit _ | TooFar| Inv (_,None) | DC (_,None) -> None
+  | Barrier _|Commit _ | TooFar _| Inv (_,None) | DC (_,None) -> None
 
 (* relative to memory *)
   let is_mem_arch_action a =
@@ -275,15 +275,15 @@ end = struct
   let is_tag = function
     | Access (_,_,_,_,_,_,Access.TAG) -> true
     | Access _|Barrier _|Commit _
-    | Amo _|Fault _|TooFar|Inv _|DC _|Arch _ -> false
+    | Amo _|Fault _|TooFar _|Inv _|DC _|Arch _ -> false
 
   let is_inv = function
     | Inv _ -> true
-    | Access _|Amo _|Commit _|Barrier _|Fault _|TooFar|DC _|Arch _ -> false
+    | Access _|Amo _|Commit _|Barrier _|Fault _|TooFar _|DC _|Arch _ -> false
 
   let is_dc = function
     | DC _ -> true
-    | Access _|Amo _|Commit _|Barrier _ |Fault _|TooFar|Inv _|Arch _ -> false
+    | Access _|Amo _|Commit _|Barrier _ |Fault _|TooFar _|Inv _|Arch _ -> false
 
   let is_ci = function
     | DC(op,_) as a -> is_dc a && AArch64Base.DC.ci op
@@ -303,11 +303,11 @@ end = struct
 
   let is_fault = function
     | Fault _ -> true
-    | Access _|Amo _|Commit _|Barrier _ | TooFar | Inv _ | DC _|Arch _ -> false
+    | Access _|Amo _|Commit _|Barrier _ | TooFar _| Inv _ | DC _|Arch _ -> false
 
   let to_fault = function
     | Fault (i,A.Location_global x,msg) -> Some ((i.A.proc,i.A.labels),x,msg)
-    | Fault _|Access _|Amo _|Commit _|Barrier _ |TooFar|Inv _|DC _|Arch _
+    | Fault _|Access _|Amo _|Commit _|Barrier _ |TooFar _|Inv _|DC _|Arch _
       -> None
 
   let get_mem_dir a = match a with
@@ -390,12 +390,12 @@ end = struct
   let is_store a = match a with
   | Access (W,_,_,_,_,_,_)|Amo _ -> true
   | Arch a -> A.ArchAction.is_load a
-  | Access (R,_,_,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar| Inv _ | DC _ -> false
+  | Access (R,_,_,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar _| Inv _ | DC _ -> false
 
   let is_load a = match a with
   | Access (R,_,_,_,_,_,_)|Amo _ -> true
   | Arch a -> A.ArchAction.is_store a
-  | Access (W,_,_,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar|Inv _ | DC _ -> false
+  | Access (W,_,_,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar _|Inv _ | DC _ -> false
 
   let get_kind = function
     | (Access (_,_,_,_,_,_,k)|Amo (_,_,_,_,_,_,k)) ->k
@@ -444,10 +444,10 @@ end = struct
   | _ -> false
 
 (* Unroll control *)
-  let toofar = TooFar
+  let toofar msg = TooFar msg
 
   let is_toofar = function
-    | TooFar -> true
+    | TooFar _ -> true
     | _ -> false
 
 (* Architecture-specific sets *)
@@ -617,7 +617,7 @@ end = struct
           (V.undetermined_vars v1)
           (V.undetermined_vars v2)
     | Arch a -> A.ArchAction.undetermined_vars a
-    | Barrier _|Commit _|Fault _|TooFar|Inv _ | DC _ -> V.ValueSet.empty
+    | Barrier _|Commit _|Fault _|TooFar _|Inv _ | DC _ -> V.ValueSet.empty
 
   let simplify_vars_in_action soln a =
     match a with
@@ -640,7 +640,7 @@ end = struct
         let oloc = Misc.app_opt (A.simplify_vars_in_loc soln) oloc in
         DC (op,oloc)
     | Arch a -> Arch (A.ArchAction.simplify_vars soln a)
-    | Barrier _ | Commit _|TooFar -> a
+    | Barrier _ | Commit _|TooFar _ -> a
 
   let annot_in_list _str _ac = false
 

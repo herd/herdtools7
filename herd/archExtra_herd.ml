@@ -57,7 +57,6 @@ module type S = sig
       proc       : proc;
       program_order_index   : program_order_index;
       inst : I.arch_instruction;
-      unroll_count : int; (* number of loop unrollings *)
       labels : Label.Set.t;
       env : reg_state ;
     }
@@ -279,7 +278,6 @@ module Make(C:Config) (I:I) : S with module I = I
           proc       : proc;
           program_order_index   : program_order_index;
           inst : I.arch_instruction ;
-          unroll_count: int; (* number of loop unrollings *)
           labels : Label.Set.t ;
           env : reg_state ;
         }

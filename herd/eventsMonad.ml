@@ -1515,9 +1515,8 @@ Monad type:
 
     let eqT : V.v -> V.v -> unit t = assign
 
-    let tooFar _msg v = unitT v
-    let tooFarcode _msg v = unitcodeT v
-
+    let tooFar msg ii v =
+      forceT v (mk_singleton_es (E.Act.toofar msg) ii)
 
     type evt_struct = E.event_structure
     type output = VC.cnstrnts * evt_struct
