@@ -216,6 +216,11 @@ let applies_atom (a,_) d = match a,d with
      if do_morello then fun f r -> f CapaSeal (f CapaTag r)
      else fun _f r -> r
 
+   let fold_neon =
+     if do_neon then
+       fun f -> SIMD.fold_neon (fun n -> f (Neon n))
+     else
+       fun _ r -> r
 
    let fold_acc_opt o f r =
      let r = f (Acq o) r in
@@ -227,7 +232,7 @@ let applies_atom (a,_) d = match a,d with
      let r = if mixed then r else fold_pte (fun p r -> f (Pte p) r) r in
      let r = fold_morello f r in
      let r = fold_tag f r in
-     let r = SIMD.fold_neon (fun n -> f (Neon n)) r in
+     let r = fold_neon f r in
      let r = fold_acc_opt None f r in
      let r =
        if do_morello then
