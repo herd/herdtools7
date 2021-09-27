@@ -139,9 +139,6 @@ module Make(A:ArchBase.S)
       type prog = (MiscParser.proc * A.pseudo list) list
       type rlocations =  MiscParser.RLocSet.t
 
-
-      open MiscParser
-
       let verbose = 0
 
       let debug tag s =

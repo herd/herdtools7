@@ -26,7 +26,6 @@ module Make(Opt:Opt)(A:ArchBase.S) : CoreDumper.S
   include
    SimpleDumper.Make
       (struct
-        open Printf
 
         module A = A
 

@@ -42,7 +42,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
 (* Cycles of edges *)
     module CE = struct
       type t =
-          { edge : E.edge ; mutable dir : dir option ;
+          { edge : E.edge ; dir : dir option ;
             mutable next : t ; mutable prev : t;
             mutable matches : t ; }
 
@@ -370,10 +370,10 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
     module CP = struct
       type t =
           { points : points ; cycle : CE.t ;
-            mutable next : t ; mutable prev : t ; }
+            mutable next : t ; }
 
       let rec nil =
-        { points = One Dir.R; cycle = CE.nil; prev = nil; next = nil; }
+        { points = One Dir.R; cycle = CE.nil; next = nil; }
 
       let has_dir e = match e.CE.dir with
       | Some _ -> true
@@ -392,16 +392,16 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
               let p =
                 if e == o then One (Dir.tr e)
                 else Two (Dir.tr e,Dir.tr o) in
-              { points=p; cycle=e;  prev=nil; next=nil; })
+              { points=p; cycle=e;  next=nil; })
             eos in
         let patch = function
           | [] -> assert false
           | x::xs ->
               let rec do_rec prev = function
                 | [] ->
-                    prev.next <- x ; x.prev <- prev
+                    prev.next <- x ;
                 | y::ys ->
-                    prev.next <- y ; y.prev <- prev ;
+                    prev.next <- y ;
                     do_rec y ys in
               do_rec x xs ; x in
         patch ms

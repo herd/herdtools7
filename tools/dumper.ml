@@ -14,8 +14,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-open Printf
-
 module Make(A:Arch_tools.S) = struct
   include
       SimpleDumper.Make
