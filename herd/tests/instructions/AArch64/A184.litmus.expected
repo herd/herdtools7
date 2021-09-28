@@ -1,0 +1,10 @@
+Test A184 Required
+States 1
+[x]=2;
+Loop Ok
+Witnesses
+Positive: 3 Negative: 0
+Condition forall ([x]=2)
+Observation A184 Always 3 0
+Hash=79c44439d71d498715a5ee40615de31c
+

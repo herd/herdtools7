@@ -1,0 +1,13 @@
+AArch64 A184
+(* LDXR/STXR Loop, test partial execution, with warnong on stderr *)
+{
+int x=1;
+0:X0=x;
+}
+  P0             ;
+L0:              ;   
+ LDXR W1,[X0]    ;
+ MOV W3,#2       ;
+ STXR W4,W3,[X0] ;
+ CBNZ W4,L0      ;
+forall (x=2)
