@@ -72,9 +72,12 @@ let run_tests flags =
   let tmp_dir = Filesystem.new_temp_dir () in
   let args = diycross_args flags.libdir flags.arch flags.relaxlists tmp_dir in
   Command.run flags.diycross args ;
-  let litmuses = List.filter TestHerd.is_litmus (list_dir tmp_dir) in
 
-  let expecteds = List.filter TestHerd.is_expected (list_dir flags.expected_dir) in
+  let litmuses =
+    List.filter TestHerd.is_litmus (list_dir tmp_dir) in
+
+  let expecteds =
+    List.filter TestHerd.is_expected (list_dir flags.expected_dir) in
   let expected_litmuses = List.map TestHerd.litmus_of_expected expecteds in
 
   let only_in_expected = without_members litmuses expected_litmuses in
@@ -100,7 +103,7 @@ let run_tests flags =
         ~conf:flags.conf
         ~variants:flags.variants
         ~libdir:flags.libdir
-        flags.herd l e "")
+        flags.herd l e "" "")
     (List.combine litmus_paths expected_paths)
   in
   let passed x = x in

@@ -116,6 +116,7 @@ let run_tests flags =
       flags.herd l
       (TestHerd.expected_of_litmus l)
       (TestHerd.expected_failure_of_litmus l)
+      (TestHerd.expected_warn_of_litmus l)
   in
   let everything_passed = ref true in
   for_each_litmus_in_dir flags.litmus_dir (fun l ->
@@ -153,9 +154,10 @@ let promote_tests flags =
         remove_if_exists expected ;
         write_file expected_failure err
 
-    | _, _ ->
-        Printf.printf "Failed %s : Returned both stdout and stderr\n" l ;
-        everything_ok := false
+    | out, err ->
+       write_file expected out ;
+       let expected_warn = TestHerd.expected_warn_of_litmus l in
+       write_file expected_warn err
   ) ;
   if not !everything_ok then begin
     Printf.printf "Some tests had errors\n" ;

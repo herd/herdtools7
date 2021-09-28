@@ -66,47 +66,63 @@ let run_herd ~bell ~cat ~conf ~variants ~libdir herd litmuses =
   Command.run ~stdin:litmuses ~stdout:read_lines ~stderr:read_err_lines herd args ;
   (without_unstable_lines !lines, !err_lines)
 
-let herd_output_matches_expected ~bell ~cat ~conf ~variants ~libdir herd litmus expected expected_failure =
+let read_some_file litmus name =
+  try Some (Filesystem.read_file name Channel.read_lines)
+  with _ ->
+    begin
+      Printf.printf "Failed %s : Missing file %s\n" litmus name ;
+      None
+    end
+
+let herd_output_matches_expected ~bell ~cat ~conf ~variants ~libdir herd litmus expected expected_failure expected_warn =
   try
     match run_herd ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir herd [litmus] with
     | [],[] ->
       Printf.printf "Failed %s : Herd finished but returned no output or errors\n" litmus ; false
     | stdout, [] -> (* Herd finished without errors - normal *)
-      begin
-        let expected_output = try
-          Some (Filesystem.read_file expected Channel.read_lines)
-        with _ -> None in
-        match expected_output with
-        | None -> Printf.printf "Failed %s : Missing file %s\n" litmus expected ; false
-        | Some expected_output ->
-
-        if log_compare stdout expected_output <> 0 then begin
-          Printf.printf "Failed %s : Logs do not match\n" litmus ;
-          false
-        end else
-          true
-      end
+       begin
+         match read_some_file litmus expected with
+         | None -> false
+         | Some expected_output ->
+            if log_compare stdout expected_output <> 0 then begin
+              Printf.printf "Failed %s : Logs do not match\n" litmus ;
+              false
+            end else true
+       end
 
     | [], stderr -> (* Herd finished with errors - check expected failure *)
-      begin
-        let expected_failure_output = try
-          Some (Filesystem.read_file expected_failure Channel.read_lines)
-        with _ -> None in
-        match expected_failure_output with
-        | None -> Printf.printf "Failed %s : Missing file %s\n" litmus expected_failure ; false
-        | Some expected_failure_output ->
-
-        if log_compare stderr expected_failure_output <> 0 then begin
-          Printf.printf "Failed %s : Expected Failure Logs do not match\n" litmus ;
-          false
-        end else
-          true
-      end
-
-    | _,_ -> (* Herd returned both output and errors *)
-      Printf.printf "Failed %s : %s and %s exist, only one expected\n" litmus expected expected_failure ; false
+       begin
+         match read_some_file litmus expected_failure with
+         | None -> false
+         | Some expected_failure_output ->
+            if log_compare stderr expected_failure_output <> 0 then begin
+              Printf.printf
+                  "Failed %s : Expected Failure Logs do not match\n" litmus ;
+              false
+            end else true
+       end
+    | stdout,stderr -> (* Herd returned both output and errors *) 
+        begin
+         match read_some_file litmus expected with
+         | None -> false
+         | Some expected_output ->
+            if log_compare stdout expected_output <> 0 then begin
+              Printf.printf "Failed %s : Logs do not match\n" litmus ;
+              false
+            end else
+              match read_some_file litmus expected_warn with
+              | None -> false
+              | Some expected_warn ->
+                 if log_compare stderr expected_warn <> 0 then begin
+                   Printf.printf
+                     "Failed %s : Warning logs do not match\n" litmus ;
+                     false
+                   end else true
+        end
   with
-    Command.Error e -> Printf.printf "Failed %s : %s \n" litmus (Command.string_of_error e) ; false
+  | Command.Error e ->
+     Printf.printf "Failed %s : %s \n" litmus
+       (Command.string_of_error e) ; false
 
 
 let is_litmus path = Filename.check_suffix path ".litmus"
@@ -117,3 +133,5 @@ let litmus_of_expected expected = Filename.chop_suffix expected ".expected"
 
 let expected_failure_of_litmus litmus = litmus ^ ".expected-failure"
 let litmus_of_expected_failure expected = Filename.chop_suffix expected ".expected-failure"
+
+let expected_warn_of_litmus litmus = litmus ^ ".expected-warn"
