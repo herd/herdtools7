@@ -41,3 +41,10 @@ val run :
   ?stdin:(out_channel -> unit) ->
   ?stdout:(in_channel -> unit) ->
   ?stderr:(in_channel -> unit) -> string -> string list -> unit
+
+(** Same as [run] above, does not raise [Error] on non-zero exit
+  * code. Returns exit code *)
+val run_status :
+  ?stdin:(out_channel -> unit) ->
+  ?stdout:(in_channel -> unit) ->
+  ?stderr:(in_channel -> unit) -> string -> string list -> int

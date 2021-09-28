@@ -42,7 +42,7 @@ val run_herd :
   conf     : path option ->
   variants : string list ->
   libdir   : path ->
-    path -> path list -> stdout_lines * stdout_lines
+    path -> path list -> int * stdout_lines * stdout_lines
 
 (** [herd_output_matches_expected ~bell ~cat ~conf ~variants ~libdir herd
  *  litmus expected expected_failure expected_warn] runs the binary

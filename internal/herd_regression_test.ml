@@ -142,22 +142,25 @@ let promote_tests flags =
     let expected_failure = TestHerd.expected_failure_of_litmus l in
 
     match output_of_litmus l with
-    | [], [] ->
+    | 0, [], [] ->
         Printf.printf "Failed %s : Returned neither stdout nor stderr\n" l ;
         everything_ok := false
 
-    | out, [] ->
+    | 0, out, [] ->
         remove_if_exists expected_failure ;
         write_file expected out
 
-    | [], err ->
+    | r, [], err when r <> 0 ->
         remove_if_exists expected ;
         write_file expected_failure err
 
-    | out, err ->
+    | 0, out, err ->
        write_file expected out ;
        let expected_warn = TestHerd.expected_warn_of_litmus l in
        write_file expected_warn err
+    | r, _, _  ->
+       Printf.printf "Failed %s : unexpected exit code %i\n" l r ;
+       everything_ok := false
   ) ;
   if not !everything_ok then begin
     Printf.printf "Some tests had errors\n" ;

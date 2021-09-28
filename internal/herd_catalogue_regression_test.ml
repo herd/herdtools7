@@ -78,10 +78,10 @@ let herd_kinds_of_permutation flags shelf_dir litmuses p =
       flags.herd
   in
   match cmd litmuses with
-  | stdout, [] ->
+  | 0,stdout, [] ->
       let kind_of_log l = Log.(l.name, Option.get l.kind) in
       List.map kind_of_log (Log.of_string_list stdout)
-  | _, stderr ->
+  | _, _, stderr ->
       failwith (Printf.sprintf "Herd returned stderr: %s" (String.concat "\n" stderr))
 
 

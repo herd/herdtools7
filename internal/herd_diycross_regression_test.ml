@@ -144,7 +144,7 @@ let promote_tests flags =
       flags.herd [l]
   in
   let outputs = List.map output_of_litmus litmus_paths in
-  let write_file (path, (lines,_)) =
+  let write_file (path, (_,lines,_)) =
     Filesystem.write_file path (fun o -> Channel.write_lines o lines) in
   List.combine expected_paths outputs |> List.iter write_file ;
   Filesystem.remove_recursive tmp_dir

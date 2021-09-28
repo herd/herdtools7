@@ -48,7 +48,7 @@ let herd_args ~bell ~cat ~conf ~variants ~libdir =
     List.concat (List.map (fun v -> ["-variant"; v]) variants)
   in
   let libdirs = ["-set-libdir"; libdir] in
-  List.concat [bells; cats; confs; variants; libdirs]
+  List.concat [["-exit"; "true";]; bells; cats; confs; variants; libdirs]
 
 let herd_command ~bell ~cat ~conf ~variants ~libdir herd litmuses =
   let args = herd_args ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir in
@@ -63,8 +63,10 @@ let run_herd ~bell ~cat ~conf ~variants ~libdir herd litmuses =
   let err_lines = ref [] in
   let read_lines c = lines := Channel.read_lines c in
   let read_err_lines c = err_lines := Channel.read_lines c in
-  Command.run ~stdin:litmuses ~stdout:read_lines ~stderr:read_err_lines herd args ;
-  (without_unstable_lines !lines, !err_lines)
+  let r =
+    Command.run_status
+      ~stdin:litmuses ~stdout:read_lines ~stderr:read_err_lines herd args in
+  (r,without_unstable_lines !lines, !err_lines)
 
 let read_some_file litmus name =
   try Some (Filesystem.read_file name Channel.read_lines)
@@ -77,9 +79,9 @@ let read_some_file litmus name =
 let herd_output_matches_expected ~bell ~cat ~conf ~variants ~libdir herd litmus expected expected_failure expected_warn =
   try
     match run_herd ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir herd [litmus] with
-    | [],[] ->
+    | _,[],[] ->
       Printf.printf "Failed %s : Herd finished but returned no output or errors\n" litmus ; false
-    | stdout, [] -> (* Herd finished without errors - normal *)
+    | 0,(_::_ as stdout), [] -> (* Herd finished without errors - normal *)
        begin
          match read_some_file litmus expected with
          | None -> false
@@ -90,7 +92,7 @@ let herd_output_matches_expected ~bell ~cat ~conf ~variants ~libdir herd litmus 
             end else true
        end
 
-    | [], stderr -> (* Herd finished with errors - check expected failure *)
+    | r,[], (_::_ as stderr) when r <> 0 -> (* Herd finished with errors - check expected failure *)
        begin
          match read_some_file litmus expected_failure with
          | None -> false
@@ -101,12 +103,13 @@ let herd_output_matches_expected ~bell ~cat ~conf ~variants ~libdir herd litmus 
               false
             end else true
        end
-    | stdout,stderr -> (* Herd returned both output and errors *) 
+    | 0,(_::_ as stdout),(_::_ as stderr) ->
+       (* Herd returned both output and errors *)
         begin
          match read_some_file litmus expected with
          | None -> false
          | Some expected_output ->
-            if log_compare stdout expected_output <> 0 then begin
+             if log_compare stdout expected_output <> 0 then begin
               Printf.printf "Failed %s : Logs do not match\n" litmus ;
               false
             end else
@@ -119,6 +122,15 @@ let herd_output_matches_expected ~bell ~cat ~conf ~variants ~libdir herd litmus 
                      false
                    end else true
         end
+    | r,stdout,stderr ->
+       let some f =
+         match f with
+         | [] -> "no"
+         | _::_ -> "some" in
+       Printf.printf
+         "Failed %s : unexpeced exit code %i, %s output %s error.\n"
+         litmus r (some stdout) (some stderr) ;
+       false
   with
   | Command.Error e ->
      Printf.printf "Failed %s : %s \n" litmus
