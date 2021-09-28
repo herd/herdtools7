@@ -1131,6 +1131,25 @@ module Make(V:Constant.S)(C:Config) =
 
     let memo_of_op op = Misc.lowercase (pp_op op)
 
+    let mvn v r1 r2 =
+      let memo = "mvn" in
+      match v with
+      | V32 ->
+          let r1,f1 = arg1 "wzr" (fun s -> "^wo"^s) r1
+          and r2,f2 = arg1 "wzr" (fun s -> "^wi"^s) r2 in
+          { empty_ins with
+            memo=sprintf "%s %s,%s" memo f1 f2;
+            inputs=r2;
+            outputs=r1; reg_env = add_w (r1@r2);}
+      | V64 ->
+          let r1,f1 = arg1 "xzr" (fun s -> "^o"^s) r1
+          and r2,f2 = arg1 "xzr" (fun s -> "^i"^s) r2 in
+          { empty_ins with
+            memo=sprintf "%s %s,%s" memo f1 f2;
+            inputs=r2;
+            outputs=r1; reg_env = add_q (r1@r2);}
+      | V128 -> assert false
+
     let op3 v op rD rA kr s =
       let memo = memo_of_op op in
       let shift = Misc.lowercase (pp_barrel_shift "," s pp_imm) in
@@ -1367,6 +1386,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_OP3 (v,SUBS,ZR,r,K i, S_NOEXT) ->  cmpk v r i::k
     | I_OP3 (v,SUBS,ZR,r2,RV (v3,r3), s) when v=v3->  cmp v r2 r3 s::k
     | I_OP3 (v,ANDS,ZR,r,K i, S_NOEXT) -> tst v r i::k
+    | I_OP3 (v,ORN,r1,ZR,RV (_,r2),S_NOEXT) -> mvn v r1 r2::k
     | I_OP3 (V64,_,_,_,RV(V32,_),S_NOEXT) ->
         Warn.fatal "Instruction %s is illegal (extension required)"
           (dump_instruction ins)
