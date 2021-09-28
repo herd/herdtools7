@@ -1,0 +1,9 @@
+AArch64 231
+
+(* Tests MVN Register instruction *)
+{ int 0:X1 = 0; 0:X2 = 1}
+
+P0;
+  MVN X0, X1;
+  MVN X3, X2;
+forall (0:X0 = 1 /\ 0:X3 = 0)

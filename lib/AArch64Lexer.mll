@@ -134,6 +134,7 @@ match name with
 | "st3" | "ST3" -> ST3
 | "st4" | "ST4" -> ST4
 | "movi" | "MOVI" -> MOVI
+| "mvn" | "MVN" -> MVN
 (* Compare and swap *)
 | "cas"|"CAS" -> CAS
 | "casa"|"CASA" -> CASA
@@ -332,6 +333,7 @@ match name with
 | "adds"|"ADDS" -> OP A.ADDS
 | "eor"|"EOR" -> OP A.EOR
 | "orr"|"ORR" -> OP A.ORR
+| "orn"|"ORN" -> OP A.ORN
 | "and"|"AND" -> OP A.AND
 | "ands"|"ANDS" -> OP A.ANDS
 | "bic"|"BIC" -> OP A.BIC

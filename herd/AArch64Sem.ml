@@ -921,7 +921,7 @@ module Make
         (* Operation specific computations
            For specific formulae, see Hacker's Delight, 2-13.*)
         match op with
-        | ADD | EOR | ORR | SUB | AND | ASR | LSR | LSL | BIC -> None
+        | ADD | EOR | ORR | ORN | SUB | AND | ASR | LSR | LSL | BIC -> None
         | ANDS | BICS -> Some compute_nz
         | ADDS ->
             let x = make_op Op.ToInteger x res
@@ -2248,7 +2248,6 @@ module Make
            movz var rd k os ii >>= nextSet rd
         | I_MOVK(var,rd,k,os) ->
             movk var rd k os ii >>= nextSet rd
-
         | I_ADR (r,tgt) ->
            let v =
              let open BranchTarget in
@@ -2350,6 +2349,8 @@ module Make
                     | ADD | ADDS -> fun (v1, v2) -> M.add v1 v2
                     | EOR -> fun (v1, v2) -> M.op Op.Xor v1 v2
                     | ORR -> fun (v1, v2) -> M.op Op.Or v1 v2
+                    | ORN -> fun (v1, v2) -> M.op1 Op.Not v2
+                      >>= fun v2 -> M.op Op.Or v1 v2
                     | SUB | SUBS -> fun (v1, v2) -> M.op Op.Sub v1 v2
                     | AND | ANDS -> fun (v1, v2) -> M.op Op.And v1 v2
                     | ASR -> fun (v1, v2) -> M.op Op.ASR v1 v2
