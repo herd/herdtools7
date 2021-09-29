@@ -19,6 +19,7 @@ exception Error
 }
 
 let blank = [' ''\n''\r''\t']
+let non_blank = [^' ''\n''\r''\t']
 let digit = ['0'-'9']
 let printable = ['0'-'9''a'-'z''A'-'Z'':']
 rule main = parse
@@ -39,11 +40,17 @@ and strings_spaces = parse
 | eof { [] }
 | "" { raise Error }
 
+and words = parse
+| blank+ { words lexbuf }
+| non_blank+ as w { w::words lexbuf }
+| eof { [] }
+
 {
 
 let ints s = main (Lexing.from_string s)
 let strings s = strings (Lexing.from_string s)
 let strings_spaces s = strings_spaces (Lexing.from_string s)
+let words s = words (Lexing.from_string s)
 
 let pp_ints xs = String.concat "," (List.map string_of_int xs)
 
