@@ -38,7 +38,7 @@ let tests = [
       record = "AArch64" ;
       cats = [ "cats/sc.cat" ] ;
       configs = [ "cfgs/web.cfg" ] ;
-      illustrative_tests = [ "tests/meow.litmus"; "tests/mew.litmus" ] ;
+      tests = [ "tests/meow.litmus"; "tests/mew.litmus" ] ;
       bells = Some [ "bells/tabby.bell" ] ;
       compatibilities = None ;
     } in
@@ -73,7 +73,7 @@ let tests = [
       record = "AArch64" ;
       cats = [ "cats/sc.cat" ] ;
       configs = [ "cfgs/web.cfg" ] ;
-      illustrative_tests = [ "tests/meow.litmus"; "tests/mew.litmus" ] ;
+      tests = [ "tests/meow.litmus"; "tests/mew.litmus" ] ;
       bells = None ;
       compatibilities = None ;
     } in
@@ -108,7 +108,7 @@ let tests = [
       record = "AArch64" ;
       cats = [ "cats/sc.cat" ] ;
       configs = [ "cfgs/web.cfg" ] ;
-      illustrative_tests = [ "tests/a.litmus"; "tests/b.litmus" ] ;
+      tests = [ "tests/a.litmus"; "tests/b.litmus" ] ;
       bells = None ;
       compatibilities = None ;
     } in
@@ -143,7 +143,7 @@ let tests = [
       record = "AArch64" ;
       cats = [ "cats/sc.cat" ] ;
       configs = [ "cfgs/web.cfg" ] ;
-      illustrative_tests = [ "mew.litmus"; "purr.litmus" ] ;
+      tests = [ "mew.litmus"; "purr.litmus" ] ;
       bells = None ;
       compatibilities = None ;
     } in

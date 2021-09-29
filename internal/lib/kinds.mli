@@ -14,12 +14,21 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Parse kinds.txt files. *)
+(** Manage kinds.txt files. *)
 
 exception ParseError of string
 
-(** [t] is an associative list of (name, kind). *)
-type t = (string * ConstrGen.kind) list
+(** [t] is an association list of (name, kind). *)
+type kind = ConstrGen.kind
+type t = (string * kind) list
+
+(** Check actual kinds against reference.
+  * Returns pair [diff,miss] where [diff] is a listt of
+  * differences and [miss] a list of test names whose kinds
+  * are not in reference *)
+val check :
+  expected:t -> actual:t ->
+    (string * kind * kind) list * string list
 
 val compare : t -> t -> int
 

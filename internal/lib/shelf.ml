@@ -32,7 +32,7 @@ type t = {
 
   cats : string list ;
   configs : string list ;
-  illustrative_tests : string list ;
+  tests : string list ;
 
   bells : string list option ;
   compatibilities : string list option ;
@@ -42,7 +42,7 @@ let compare a b = Compare.chain [
   String.compare a.record b.record ;
   StringList.compare a.cats b.cats ;
   StringList.compare a.configs b.configs ;
-  StringList.compare a.illustrative_tests b.illustrative_tests ;
+  StringList.compare a.tests b.tests ;
   StringListOption.compare a.bells b.bells ;
   StringListOption.compare a.compatibilities b.compatibilities ;
 ]
@@ -51,7 +51,7 @@ let to_ocaml_string shelf = OcamlString.record [
   "record",              Base.String.to_ocaml_string       shelf.record ;
   "cats",                StringList.to_ocaml_string        shelf.cats ;
   "configs",             StringList.to_ocaml_string        shelf.configs ;
-  "illustrative_tests",  StringList.to_ocaml_string        shelf.illustrative_tests ;
+  "tests",               StringList.to_ocaml_string        shelf.tests ;
   "bells",               StringListOption.to_ocaml_string  shelf.bells ;
   "compatibilities",     StringListOption.to_ocaml_string  shelf.compatibilities ;
 ]
@@ -71,7 +71,7 @@ let python = lazy
     | None -> failwith "Could not find either python or python3"
   end
 
-let list_of_file path key =
+let do_list_of_file sorted path key =
   (* Shelf files are executable Python code, so this Python script imports the
    * shelf.py file, then prints the given global variables. *)
   let script chan =
@@ -101,8 +101,13 @@ let list_of_file path key =
   with
     Command.Error e -> failwith (Command.string_of_error e)
   end ;
-  (* Sorted for stability / comparability. *)
-  List.sort String.compare !lines
+  if sorted then
+    List.sort String.compare !lines
+  else
+    !lines
+
+let list_of_file = do_list_of_file false
+and list_of_file_sorted = do_list_of_file true
 
 let string_of_file path key =
   match list_of_file path key with
@@ -121,8 +126,10 @@ let of_file path =
 
     cats               = list_of_file path "cats" ;
     configs            = list_of_file path "cfgs" ;
-    illustrative_tests = list_of_file path "illustrative_tests" ;
-
+    tests =
+      (match list_of_file_sorted path "illustrative_tests" with
+      | [] -> list_of_file_sorted path "tests"
+      | xs -> xs);
     bells           = optional_list_of_file path "bells" ;
     compatibilities = optional_list_of_file path "compatibilities" ;
   }
