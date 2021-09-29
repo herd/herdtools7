@@ -1262,6 +1262,17 @@ module Make
           sz AArch64.N
           (get_ea rd kr s ii)  (M.unitT V.zero) ii
 
+      (* Store - post-indexed write *)
+      and str_post var r1 rd k ii =
+        let open AArch64Base in
+        let sz = tr_variant var in
+        (read_reg_ord r1 ii >>| read_reg_ord rd ii)
+          >>= fun (v1,a) ->
+            (write_mem sz aexp Access.VIR a v1 ii)
+            >>| (M.add a (V.intToV k)
+                >>= fun v -> write_reg rd v ii)
+        >>= fun _ -> B.nextT
+
       and stp =
         let (>>>) = M.data_input_next in
         fun sz rs1 rs2 rd kr ii ->
@@ -1922,6 +1933,9 @@ module Make
 
         | I_STR(var,rs,rd,kr,os) ->
             str (tr_variant var) rs rd kr os ii
+
+        | I_STR_P(sz, rs, rd, k) ->
+            str_post sz rs rd k ii
 
         | I_STRBH(bh,rs,rd,kr, s) ->
             str (bh_to_sz bh) rs rd kr s ii

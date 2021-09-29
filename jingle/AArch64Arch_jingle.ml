@@ -284,6 +284,11 @@ include Arch.MakeArch(struct
         find_shift s >> fun s ->
         expl_kr kr >! fun kr ->
         I_STR(a,r1,r2,kr,s)
+    | I_STR_P(a,r1,r2,k) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        find_cst k >! fun k ->
+        I_STR_P(a,r1,r2,k)
     | I_STRBH(a,r1,r2,kr,s) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

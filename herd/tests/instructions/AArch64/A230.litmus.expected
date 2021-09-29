@@ -1,0 +1,10 @@
+Test A230 Required
+States 1
+x[0]=0; x[1]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x[0]=0 /\ x[1]=2)
+Observation A230 Always 1 0
+Hash=b0df608768bd2fdce0a351dca9a3c498
+

@@ -517,6 +517,21 @@ module Make(V:Constant.S)(C:Config) =
     | _,RV (V128,_),_ ->
         assert false
 
+    let store_post memo v rA rB s = match v,s with
+    | V32, k ->
+        let rA,fA,fB = str_arg1 V32 rA in
+        { empty_ins with
+          memo=memo ^ sprintf " %s,[%s],#%i" fA fB k;
+          outputs=[rB;]; inputs=rA@[rB]; reg_env=[rB,voidstar;]@add_w rA; }
+    | V64, k ->
+        let rA,fA,fB = str_arg1 V64 rA in
+        { empty_ins with
+          memo=memo ^ sprintf " %s,[%s],#%i" fA fB k;
+          outputs=[rB;]; inputs=rA@[rB]; reg_env=[rB,voidstar;]@add_q  rA; }
+    | V128,_ ->
+        assert false
+
+
     let stxr memo v r1 r2 r3 = match v with
     | V32 ->
         let r2,f2,f3 = str_arg1 V32 r2 in
@@ -1300,6 +1315,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_STR (v,r1,r2,kr, s) -> store "str" v r1 r2 kr s::k
     | I_STRBH (B,r1,r2,kr,s) -> store "strb" V32 r1 r2 kr s::k
     | I_STRBH (H,r1,r2,kr,s) -> store "strh" V32 r1 r2 kr s::k
+    | I_STR_P (v,r1,r2,s) -> store_post "str" v r1 r2 s::k
     | I_STLR (v,r1,r2) -> store "stlr" v r1 r2 k0 S_NOEXT::k
     | I_STLRBH (B,r1,r2) -> store "stlrb" V32 r1 r2 k0 S_NOEXT::k
     | I_STLRBH (H,r1,r2) -> store "stlrh" V32 r1 r2 k0 S_NOEXT::k

@@ -832,6 +832,7 @@ type 'k kinstruction =
   | I_LDXP of variant * ldxp_type * reg * reg * reg
   | I_STR of variant * reg * reg * 'k kr * 'k s
   | I_STP of temporal * variant * reg * reg * reg * 'k kr
+  | I_STR_P of variant * reg * reg * 'k
   | I_STLR of variant * reg * reg
   | I_STXR of variant * st_type * reg * reg * reg
   | I_STXP of variant * st_type * reg * reg * reg * reg
@@ -1037,7 +1038,7 @@ let do_pp_instruction m =
 
   let pp_mem_post memo v rt ra k =
     pp_memo memo ^ " " ^ pp_vreg v rt ^
-    ",[" ^ pp_xreg ra ^ "]" ^ m.pp_k k in
+    (if m.compat then ",[" ^ pp_xreg ra ^ "]" else",[" ^ pp_xreg ra ^ "],") ^ m.pp_k k in
 
   let pp_memp memo v r1 r2 ra kr =
     pp_memo memo ^ " " ^
@@ -1185,6 +1186,8 @@ let do_pp_instruction m =
       pp_mem "STR" v r1 r2 k
   | I_STR (v,r1,r2,k,s) ->
       pp_mem_shift "STR" v r1 r2 k s
+  | I_STR_P (v,r1,r2, os) ->
+      pp_mem_post "STR" v r1 r2 os
   | I_STLR (v,r1,r2) ->
       pp_mem "STLR" v r1 r2 m.k0
   | I_STXR (v,t,r1,r2,r3) ->
@@ -1474,7 +1477,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDG (r1,r2,_) | I_STZG (r1,r2,_) | I_STG (r1,r2,_)
   | I_CHKEQ (r1,r2) | I_CLRTAG (r1,r2) | I_GC (_,r1,r2) | I_LDCT (r1,r2)
   | I_STCT (r1,r2)
-  | I_LDR_P_SIMD (_,r1,r2,_) | I_STR_P_SIMD (_,r1,r2,_)
+  | I_LDR_P_SIMD (_,r1,r2,_) | I_STR_P_SIMD (_,r1,r2,_) | I_STR_P (_,r1,r2,_)
   | I_MOV_VE (r1,_,r2,_) | I_MOV_V (r1,r2) | I_MOV_TG (_,r1,r2,_) | I_MOV_FG (r1,_,_,r2)
   | I_MOV_S (_,r1,r2,_)
   | I_LDUR_SIMD (_,r1,r2,_) | I_STUR_SIMD (_,r1,r2,_)
@@ -1581,6 +1584,8 @@ let map_regs f_reg f_symb =
      I_LDRS (v,bh,map_reg r1,map_reg r2)
   | I_STR (v,r1,r2,k,s) ->
       I_STR (v,map_reg r1,map_reg r2,k,s)
+  | I_STR_P (v,r1,r2,s) ->
+      I_STR_P (v,map_reg r1,map_reg r2,s)
   | I_STLR (v,r1,r2) ->
       I_STLR (v,map_reg r1,map_reg r2)
   | I_STLRBH (v,r1,r2) ->
@@ -1808,6 +1813,7 @@ let get_next =
   | I_LDPSW _
   | I_STP _
   | I_STR _
+  | I_STR_P _
   | I_LDAR _
   | I_LDARBH _
   | I_LDRS _
@@ -1931,6 +1937,7 @@ module PseudoI = struct
         | I_LDPSW (r1,r2,r3,kr) -> I_LDPSW (r1,r2,r3,kr_tr kr)
         | I_STP (t,v,r1,r2,r3,kr) -> I_STP (t,v,r1,r2,r3,kr_tr kr)
         | I_STR (v,r1,r2,kr,s) -> I_STR (v,r1,r2,kr_tr kr,ap_shift k_tr s)
+        | I_STR_P (v,r1,r2,s) -> I_STR_P (v,r1,r2, k_tr s)
         | I_STG (r1,r2,kr) -> I_STG (r1,r2,kr_tr kr)
         | I_STZG (r1,r2,kr) -> I_STZG (r1,r2,kr_tr kr)
         | I_LDG (r1,r2,kr) -> I_LDG (r1,r2,kr_tr kr)
@@ -2005,7 +2012,7 @@ module PseudoI = struct
 
       let get_naccesses ins = match ins with
         | I_LDR _ | I_LDAR _ | I_LDARBH _ | I_LDUR _ | I_LDRS _
-        | I_STR _ | I_STLR _ | I_STLRBH _ | I_STXR _
+        | I_STR _ | I_STR_P _ | I_STLR _ | I_STLRBH _ | I_STXR _
         | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
         | I_STG _ | I_LDG _
         | I_LDR_SIMD _ | I_STR_SIMD _
