@@ -44,7 +44,7 @@ let string_of_error { binary = bin ; args = args ; status = s } =
     (command bin args)
 
 
-let run ?stdin:in_f ?stdout:out_f ?stderr:err_f bin args =
+let do_run must_succeed ?stdin:in_f ?stdout:out_f ?stderr:err_f bin args =
   (* Notes:
    * - By default, the file descriptors are Unix.stdin, Unix.stdout, Unix.stderr,
    *   and the {in,out,err}_f and close_{in,out,err}_pipe functions are all nops.
@@ -99,6 +99,12 @@ let run ?stdin:in_f ?stdout:out_f ?stderr:err_f bin args =
   in
   let _, status = Unix.waitpid [] pid in
   match status with
-  | Unix.WEXITED 0 -> ()
+  | Unix.WEXITED 0 -> 0
+  | Unix.WEXITED r when not must_succeed -> r
   | status ->
       raise (Error { binary = bin ; args = args ; status = status })
+
+let run ?stdin ?stdout ?stderr bin args =
+  ignore (do_run true ?stdin ?stdout ?stderr bin args)
+and run_status ?stdin ?stdout ?stderr bin args =
+  do_run false ?stdin ?stdout ?stderr bin args

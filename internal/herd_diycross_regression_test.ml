@@ -72,9 +72,12 @@ let run_tests flags =
   let tmp_dir = Filesystem.new_temp_dir () in
   let args = diycross_args flags.libdir flags.arch flags.relaxlists tmp_dir in
   Command.run flags.diycross args ;
-  let litmuses = List.filter TestHerd.is_litmus (list_dir tmp_dir) in
 
-  let expecteds = List.filter TestHerd.is_expected (list_dir flags.expected_dir) in
+  let litmuses =
+    List.filter TestHerd.is_litmus (list_dir tmp_dir) in
+
+  let expecteds =
+    List.filter TestHerd.is_expected (list_dir flags.expected_dir) in
   let expected_litmuses = List.map TestHerd.litmus_of_expected expecteds in
 
   let only_in_expected = without_members litmuses expected_litmuses in
@@ -100,7 +103,7 @@ let run_tests flags =
         ~conf:flags.conf
         ~variants:flags.variants
         ~libdir:flags.libdir
-        flags.herd l e "")
+        flags.herd l e "" "")
     (List.combine litmus_paths expected_paths)
   in
   let passed x = x in
@@ -141,7 +144,7 @@ let promote_tests flags =
       flags.herd [l]
   in
   let outputs = List.map output_of_litmus litmus_paths in
-  let write_file (path, (lines,_)) =
+  let write_file (path, (_,lines,_)) =
     Filesystem.write_file path (fun o -> Channel.write_lines o lines) in
   List.combine expected_paths outputs |> List.iter write_file ;
   Filesystem.remove_recursive tmp_dir

@@ -42,14 +42,19 @@ val run_herd :
   conf     : path option ->
   variants : string list ->
   libdir   : path ->
-    path -> path list -> stdout_lines * stdout_lines
+    path -> path list -> int * stdout_lines * stdout_lines
 
 (** [herd_output_matches_expected ~bell ~cat ~conf ~variants ~libdir herd
- *  litmus expected expected_failure] runs the binary [herd] with a custom
- *  [libdir] on a [litmus] file, and compares the output with an [expected]
- *  file. If the run writes to stderr then we check [expected_failure]. If the
+ *  litmus expected expected_failure expected_warn] runs the binary
+ *  [herd] with a custom [libdir] on a [litmus] file,
+ *  and compares the output with an [expected] file.
+ *  If the run writes to stderr then we check [expected_failure]. If the
  *  contents of [expected_failure] match then it is an expected failure,
  *  otherwise it is an unexpected failure and will raise an Error.
+ *  If the run writes to both stdout and stderr, stdout is checked
+ *  against the [expected] file, while stderr is checked against
+ *  the [expected_warn] file. If any file is missing or differs,
+ *  an Error is raised. 
  *  Paths to [cat], [bell], and [conf] files, as well as [variants], can also
  *  be passed in. *)
 val herd_output_matches_expected :
@@ -58,7 +63,7 @@ val herd_output_matches_expected :
   conf     : path option ->
   variants : string list ->
   libdir   : path ->
-    path -> path -> path -> path -> bool
+    path -> path -> path -> path -> path  -> bool
 
 (** [is_litmus filename] returns whether the [filename] is a .litmus file. *)
 val is_litmus : path -> bool
@@ -77,3 +82,6 @@ val expected_failure_of_litmus : path -> path
 
 (** [litmus_of_expected_failure filename] returns the .litmus name for a given .litmus.expected-failure [filename]. *)
 val litmus_of_expected_failure : path -> path
+
+(** [expected_warn_of_litmus filename] returns the .litmus.expected-warn name for a given .litmus [filename]. *)
+val expected_warn_of_litmus : path -> path
