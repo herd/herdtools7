@@ -1,0 +1,9 @@
+2+2W+posb0b0+posb1b1           Allowed
+CO-MIXED-20cc+H                Forbidden
+CoRW2+posb0b0+b0               Allowed
+CoRW2+posb1b0+h0               Forbidden
+CoRW2+posh0h0+h0               Allowed
+LB+dmb.sy+data-wsi-wsi+MIXED+H Forbidden
+MP+HAmo+BAcqAmo                Forbidden
+MP+dmb.syb0b1+datab1b1-rfib1h0 Allowed
+MP-Koeln                       Forbidden
