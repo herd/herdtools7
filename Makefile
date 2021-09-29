@@ -14,11 +14,13 @@ ifeq ($(D), dune)
 	HERD                          = _build/install/default/bin/herd7
 	HERD_REGRESSION_TEST          = _build/default/internal/herd_regression_test.exe
 	HERD_DIYCROSS_REGRESSION_TEST = _build/default/internal/herd_diycross_regression_test.exe
+	HERD_CATALOGUE_REGRESSION_TEST = _build/default/internal/herd_catalogue_regression_test.exe
 else
 	DIYCROSS                      = _build/gen/diycross.native
 	HERD                          = _build/herd/herd.native
 	HERD_REGRESSION_TEST          = _build/internal/herd_regression_test.native
 	HERD_DIYCROSS_REGRESSION_TEST = _build/internal/herd_diycross_regression_test.native
+	HERD_CATALOGUE_REGRESSION_TEST = _build/internal/herd_catalogue_regression_test.exe
 endif
 
 
@@ -132,3 +134,23 @@ test::
 		-relaxlist 'Rfe,Fre,Coe' \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 diycross7 tests: OK"
+
+test::
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64/tests/kinds.txt \
+		-shelf-path catalogue/aarch64/shelf.py \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 catalogue aarch64 tests: OK"
+
+test::
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64-mixed/tests/kinds.txt \
+		-shelf-path catalogue/aarch64-mixed/shelf.py \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 catalogue aarch64-mixed tests: OK"
