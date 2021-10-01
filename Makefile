@@ -135,9 +135,12 @@ test::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 diycross7 tests: OK"
 
+J=2
+
 test::
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-j $(J) \
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
 		-kinds-path catalogue/aarch64/tests/kinds.txt \

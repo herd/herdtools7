@@ -73,7 +73,7 @@ let kinds_path_of_permutation kinds_dir p =
   in
   Filename.concat kinds_dir (escape_filename (filename_of_permutation p))
 
-let herd_kinds_of_permutation flags shelf_dir litmuses p =
+let herd_kinds_of_permutation ?j flags shelf_dir litmuses p =
   let prepend path = Filename.concat shelf_dir path in
   let cmd =
     TestHerd.run_herd
@@ -82,7 +82,7 @@ let herd_kinds_of_permutation flags shelf_dir litmuses p =
       ~conf:(Base.Option.map prepend p.cfg)
       ~variants:flags.variants
       ~libdir:flags.libdir
-      flags.herd
+      flags.herd ?j
   in
   match cmd litmuses with
   | 0,stdout, [] ->
@@ -113,7 +113,7 @@ let exit_1_if_any_files_missing ~description paths =
 
 (* Commands. *)
 
-let show_tests flags =
+let show_tests ?j flags =
   let cat, shelf_dir, tests = first_of_shelf flags.shelf_path in
 
   let prepend path = Filename.concat shelf_dir path in
@@ -126,14 +126,14 @@ let show_tests flags =
         ~conf:(Base.Option.map prepend p.cfg)
         ~variants:flags.variants
         ~libdir:flags.libdir
-        flags.herd
+        flags.herd ?j
     in
     cmd tests
   in
     command_of_permutation cat
     |> Printf.printf "%s\n"
 
-let run_tests flags =
+let run_tests ?j flags =
   let cat, shelf_dir, tests = first_of_shelf flags.shelf_path in
 
   exit_1_if_any_files_missing ~description:"test" tests ;
@@ -142,7 +142,7 @@ let run_tests flags =
   let result_of_permutation kinds_path p =
     let expected = Kinds.of_file kinds_path in
     let actual =
-      herd_kinds_of_permutation flags shelf_dir tests p in
+      herd_kinds_of_permutation ?j flags shelf_dir tests p in
     let diff,miss = Kinds.check ~expected ~actual in
     if Misc.consp miss then begin
       let pf =
@@ -168,13 +168,13 @@ let run_tests flags =
   if not passed then exit 1
 
 
-let promote_tests flags =
+let promote_tests ?j flags =
   let cat, shelf_dir, tests =
     first_of_shelf flags.shelf_path in
   exit_1_if_any_files_missing ~description:"tests" tests ;
 
   let kinds =
-    herd_kinds_of_permutation flags shelf_dir tests cat
+    herd_kinds_of_permutation ?j flags shelf_dir tests cat
   in
   Filesystem.write_file flags.kinds_path
     (fun o -> output_string o (Kinds.to_string kinds))
@@ -199,10 +199,11 @@ let () =
 
   (* Optional arguments. *)
   let variants = ref [] in
-
+  let j = ref None in
   let anon_args = ref [] in
 
   let options = [
+    "-j",Arg.Int (fun i -> j := Some i),"<n> concurrent run with at most <n> instances";
     Args.is_file ("-herd-path",   Arg.Set_string herd,         "path to herd binary") ;
     Args.is_dir  ("-libdir-path", Arg.Set_string libdir,       "path to herd libdir") ;
     Args.is_file  ("-kinds-path",   Arg.Set_string kinds_path,    "path to directory of kinds files to test against") ;
@@ -234,10 +235,11 @@ let () =
     variants = !variants ;
     } in
   try
+    let j = !j in
     match !anon_args with
-    | "show" :: [] -> show_tests flags
-    | "test" :: [] -> run_tests flags
-    | "promote" :: [] -> promote_tests flags
+    | "show" :: [] -> show_tests ?j flags
+    | "test" :: [] -> run_tests ?j flags
+    | "promote" :: [] -> promote_tests ?j flags
     | _ -> exit_with_error "Must provide one command of: show, test, promote"
   with
   | Error msg ->
