@@ -28,7 +28,11 @@ let without_unstable_lines lines =
 
 let log_compare a b = String.compare (String.concat "\n" a) (String.concat "\n" b)
 
-let herd_args ~bell ~cat ~conf ~variants ~libdir =
+let herd_args  ~bell ~cat ~conf ~variants ~libdir ~timeout =
+  let timeout =
+    match timeout with
+    | None -> []
+    | Some t -> ["-timeout"; Printf.sprintf "%.2f" t;] in
   let bells =
     match bell with
     | None -> []
@@ -48,14 +52,17 @@ let herd_args ~bell ~cat ~conf ~variants ~libdir =
     List.concat (List.map (fun v -> ["-variant"; v]) variants)
   in
   let libdirs = ["-set-libdir"; libdir] in
-  List.concat [["-exit"; "true";]; bells; cats; confs; variants; libdirs]
+  List.concat [["-exit"; "true";]; timeout; bells; cats; confs; variants; libdirs]
 
 let apply_args herd j herd_args =
   let herd_args = String.concat "," herd_args in
   ["-com"; herd; "-j" ; Printf.sprintf "%i" j; "-comargs"; herd_args;]
 
-let herd_command ~bell ~cat ~conf ~variants ~libdir herd ?j litmuses =
-  let args = herd_args ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir in
+let herd_command ~bell ~cat ~conf ~variants ~libdir herd ?j ?timeout litmuses =
+  let args =
+    herd_args
+      ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir
+      ~timeout:timeout in
   match j with
   | None ->
      Command.command herd (args @ litmuses)
@@ -64,8 +71,11 @@ let herd_command ~bell ~cat ~conf ~variants ~libdir herd ?j litmuses =
      let args = apply_args  herd j args in
      Command.command mapply  (args @ litmuses)
 
-let run_herd ~bell ~cat ~conf ~variants ~libdir herd ?j litmuses =
-  let args = herd_args ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir in
+let run_herd ~bell ~cat ~conf ~variants ~libdir herd ?j ?timeout litmuses =
+  let args =
+    herd_args
+      ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir
+      ~timeout:timeout in
   let litmuses o = Channel.write_lines o litmuses ; close_out o in
 
   (* Record stdout and stderr to two sources if we need to reason about them separately *)

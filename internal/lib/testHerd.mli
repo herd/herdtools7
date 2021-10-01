@@ -29,7 +29,7 @@ val herd_command :
   conf     : path option ->
   variants : string list ->
   libdir   : path ->
-    path -> ?j:int -> path list -> string
+    path -> ?j:int -> ?timeout:float -> path list -> string
 
 (** [run_herd ~bell ~cat ~conf ~variants ~libdir herd ?j litmuses] runs the
  *  binary [herd] with a custom [libdir] on list of litmus files [litmuses],
@@ -43,7 +43,8 @@ val run_herd :
   conf     : path option ->
   variants : string list ->
   libdir   : path ->
-    path -> ?j:int -> path list -> int * stdout_lines * stdout_lines
+     path -> ?j:int -> ?timeout:float ->
+     path list -> int * stdout_lines * stdout_lines
 
 (** [herd_output_matches_expected ~bell ~cat ~conf ~variants ~libdir herd
  *  litmus expected expected_failure expected_warn] runs the binary

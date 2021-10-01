@@ -141,6 +141,7 @@ test::
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
 		-j $(J) \
+		-herd-timeout 1.0 \
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
 		-kinds-path catalogue/aarch64/tests/kinds.txt \
