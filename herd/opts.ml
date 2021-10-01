@@ -27,6 +27,7 @@ let verbose = ref 0
 let libdir = ref (Filename.concat Version.libdir "herd")
 let includes = ref []
 let exit_if_failed = ref false
+let timeout = ref None
 let debug = ref Debug_herd.none
 let names = ref []
 let excl = ref []
