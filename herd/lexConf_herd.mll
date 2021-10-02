@@ -114,6 +114,8 @@ let handle_key main key arg = match key with
 | "suffix" ->  suffix := arg
 | "include" ->
    includes := !includes @ [arg]
+| "timeout" ->
+   lex_float_opt timeout arg
 (* Change input *)
 | "names" ->
     names := !names @ [arg]

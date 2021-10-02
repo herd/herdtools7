@@ -62,6 +62,7 @@ module Top (TopConf:Config) = struct
 
       let run dirty start_time filename chan env splitted =
         try
+
           let parsed = P.parse chan splitted in
 
           (* Additional checks *)
@@ -101,7 +102,7 @@ module Top (TopConf:Config) = struct
               end)(M) in
           T.run start_time test ;
           env
-          with TestHash.Seen -> env
+        with TestHash.Seen -> env
     end
 
   module SP =
@@ -529,7 +530,10 @@ module Top (TopConf:Config) = struct
     end else env
 
 (* Enter here... *)
+
   let from_file name env =
+    (* Interval timer will be stopped just before output, see top_herd *)
+    Itimer.start TopConf.timeout ;
     let start_time = Sys.time () in
     Misc.input_protect (do_from_file start_time env name) name
 end

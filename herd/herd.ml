@@ -161,6 +161,7 @@ let options = [
   ("-I", Arg.String (fun s -> includes := !includes @ [s]),
    "<dir> add <dir> to search path");
   parse_bool "-exit" Opts.exit_if_failed "exit in case of failure";
+  parse_float_opt "-timeout" Opts.timeout "timeout (CPU time)";
   ("-conf",
    Arg.String load_config,
    "<name> read configuration file <name>") ;
@@ -493,6 +494,7 @@ let conds = LR.read_from_files !conds (fun s -> Some s)
 (* Configure parser/models/etc. *)
 let () =
   let module Config = struct
+    let timeout = !timeout
     let candidates = !candidates
     let nshow = !nshow
     let restrict = !restrict
@@ -643,7 +645,10 @@ let () =
 
   let from_file =
     let module T =
-      ParseTest.Top (struct let bell_model_info = bi include Config end) in
+      ParseTest.Top
+        (struct
+          let bell_model_info = bi
+          include Config end) in
     T.from_file in
 
 
@@ -663,6 +668,17 @@ let () =
     end  in
 
   let _seen =
+
+(* If interval timer enabled and triggered,
+   then stop test with not output at all *)
+    begin match Config.timeout with
+    | None -> ()
+    | Some _ ->
+        Sys.set_signal
+          26 (* SIGVTALARM *)
+          (Sys.Signal_handle (fun _ -> raise Misc.Exit))
+    end ;
+
     Misc.fold_argv_or_stdin
       (fun name seen ->
         try from_file name seen

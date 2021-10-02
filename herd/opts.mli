@@ -26,6 +26,7 @@ val verbose : int ref
 val libdir : string ref
 val includes : string list ref
 val exit_if_failed : bool ref
+val timeout : float option ref
 val debug : Debug_herd.t ref
 val names : string list ref
 val excl : string list ref
