@@ -533,7 +533,7 @@ module Top (TopConf:Config) = struct
 
   let from_file name env =
     (* Interval timer will be stopped just before output, see top_herd *)
-    Itimer.start TopConf.timeout ;
+    Itimer.start name TopConf.timeout ;
     let start_time = Sys.time () in
     Misc.input_protect (do_from_file start_time env name) name
 end

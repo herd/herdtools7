@@ -16,12 +16,17 @@
 
 (** Simple interface to interval timer in virtual processor time *)
 
+
+(** [set_signal timeout handle] set signal handle for timer.
+  * Argument timeout is an option, if [None] do nothing. *)
+val set_signal : float option -> (int -> unit) -> unit
+
 (** [start timeout] start interval for the given period.
   * Argument timeout is an option, if [None] do nothing,
-  * otherwise the option specifies the timer period *)
-val start : float option -> unit
+  * otherwise the option specifies the timer period. *)
+val start : string -> float option -> unit
 
 (** [stop timeout] stop interval timer.
   * Argument timeout is an option, if [None] do nothing,
-  * otherwise stop timer *)
+  * otherwise stop timer. *)
 val stop : float option -> unit
