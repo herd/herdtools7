@@ -119,9 +119,17 @@ module type S =
         'loc t -> 'v t -> ('loc -> 'v t) -> ('v -> 'v -> unit t) -> 'v option -> 'v t
 
     val riscv_store_conditional :
+      A.V.v t -> A.V.v t -> A.V.v t -> (* read reserve, data, address *)
+        (unit t) -> (* write reserve *)
+          (A.V.v -> unit t) -> (* write result *)
+            (A.V.v -> A.V.v -> A.V.v -> unit t) -> (* write mem *)
+              unit t
+
+    val aarch64_store_conditional :
+      bool -> (* must fail *)
         A.V.v t -> A.V.v t -> A.V.v t -> (* read reserve, data, address *)
           (unit t) -> (* write reserve *)
-            (A.V.v -> unit t) -> (* write result *)
+          (A.V.v -> unit t) -> (* write result *)
               (A.V.v -> A.V.v -> A.V.v -> unit t) -> (* write mem *)
                 unit t
 

@@ -53,12 +53,16 @@ module type S = sig
   type reg_state
   val reg_state_empty : reg_state
 
+  (* Register contents (when known) X size of last load exclusive *)
+
+  type ii_env =  { regs:reg_state; lx_sz:MachSize.sz option; }
+
   type inst_instance_id = {
       proc       : proc;
       program_order_index   : program_order_index;
       inst : I.arch_instruction;
       labels : Label.Set.t;
-      env : reg_state ;
+      env : ii_env;
     }
 
   val inst_instance_compare :
@@ -274,12 +278,14 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let reg_state_empty = RegMap.empty
 
+      type ii_env =  { regs:reg_state; lx_sz:MachSize.sz option; }
+
       type inst_instance_id = {
           proc       : proc;
           program_order_index   : program_order_index;
           inst : I.arch_instruction ;
           labels : Label.Set.t ;
-          env : reg_state ;
+          env : ii_env ;
         }
 
 

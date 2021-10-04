@@ -1,0 +1,12 @@
+AArch64 L019
+(* Successful LX/SX pair, can also fail *)
+{
+int x=1;
+0:X0=x;
+}
+ P0               ;
+ MOV W3,#2        ;
+ LDXR W1,[X0]     ;
+ STXR W4,W3,[X0]  ;
+
+exists 0:X4<>0 /\ x=1;

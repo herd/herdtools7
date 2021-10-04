@@ -54,6 +54,9 @@ type t =
   | PhantomOnLoad
 (* Optimise Rf enumeration leading to rmw *)
   | OptRfRMW
+(* Allow some constrained unpredictable, behaviours.
+   AArch64: LDXR / STXR of different size or address may succeed. *)
+  | ConstrainedUnpredictable
 (* Perform experiment *)
   | Exp
 
@@ -63,7 +66,7 @@ let tags =
    "mixed";"dontcheckmixed";"weakpredicated"; "memtag";
    "tagcheckprecise"; "tagcheckunprecise"; "precise"; "imprecise";
    "toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
-   "pte-squared"; "PhantomOnLoad"; "OptRfRMW";
+   "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
    "exp"; ]
 
 let parse s = match Misc.lowercase s with
@@ -96,6 +99,7 @@ let parse s = match Misc.lowercase s with
 | "pte2" | "pte-squared" -> Some PTE2
 | "phantomonload" -> Some PhantomOnLoad
 | "optrfrmw" -> Some OptRfRMW
+| "constrainedunpredictable"|"cu" -> Some ConstrainedUnpredictable
 | "exp" -> Some Exp
 | _ -> None
 
@@ -129,6 +133,7 @@ let pp = function
   | PTE2 -> "pte-squared"
   | PhantomOnLoad -> "PhantomOnLoad"
   | OptRfRMW -> "OptRfRMW"
+  | ConstrainedUnpredictable -> "ConstrainedUnpredictable"
   | Exp -> "exp"
 
 let compare = compare

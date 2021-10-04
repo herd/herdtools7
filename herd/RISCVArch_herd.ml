@@ -107,8 +107,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | Amo (_,w,_,_,_,_)
         -> Some (tr_width w)
 
-    let opt_env = false
-    let killed _ = []
+    include NoSemEnv
 
     include  NoLevelNorTLBI
 

@@ -31,6 +31,8 @@ module type S =
     val opt_env : bool (* environemnt optimisation is available *)
     val killed : instruction -> reg list
 
+    val get_lx_sz : instruction -> MachSize.lr_sc
+
     module V : Value.S
     include ArchExtra_herd.S with module I.V = V
     and type I.arch_reg = reg

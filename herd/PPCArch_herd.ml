@@ -69,8 +69,7 @@ module Make (C:Arch_herd.Config) (V:Value.S)
       | Pstore (sz,_,_,_) | Pstorex (sz,_,_,_)
         -> Some sz
 
-    let opt_env = false
-    let killed _ = []
+    include NoSemEnv
 
     include NoLevelNorTLBI
 
