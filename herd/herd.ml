@@ -671,18 +671,12 @@ let () =
 
 (* If interval timer enabled and triggered,
    then stop test with not output at all *)
-    begin match Config.timeout with
-    | None -> ()
-    | Some _ ->
-        Sys.set_signal
-          26 (* SIGVTALARM *)
-          (Sys.Signal_handle (fun _ -> raise Misc.Exit))
-    end ;
-
+    Itimer.set_signal Config.timeout (fun _ -> raise Misc.Timeout) ;
     Misc.fold_argv_or_stdin
       (fun name seen ->
         try from_file name seen
         with
+        | Misc.Timeout -> seen
         | Misc.Exit -> check_exit seen
         | Misc.Fatal msg ->
             Warn.warn_always "%a: %s" Pos.pp_pos0 name msg ;

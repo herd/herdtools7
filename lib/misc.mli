@@ -21,6 +21,7 @@
 (***********************************************************)
 
 exception Exit
+exception Timeout
 exception UserError of string
 exception Fatal of string
 exception NoIsync

@@ -35,6 +35,7 @@ let call_parser name lexbuf lex parse =
         Pos.pp_pos2 (start_loc,end_loc)
         lxm name ;
       raise Misc.Exit
+  | Misc.Timeout as e -> raise e
   | e ->
       Printf.eprintf
         "%a: Uncaught exception %s (in %s)\n"

@@ -285,7 +285,7 @@ and type state = A.state =
 	   end
          (* Delay failure to preserve potential contradiction *)
          with
-         | Contradiction -> raise Contradiction
+         | Contradiction|Misc.Timeout as e -> raise e
          | e ->
             if C.debug then
               eprintf "Delaying exception in solver: %s\n"
