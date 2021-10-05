@@ -7,3 +7,4 @@ LB+dmb.sy+data-wsi-wsi+MIXED+H Forbidden
 MP+HAmo+BAcqAmo                Forbidden
 MP+dmb.syb0b1+datab1b1-rfib1h0 Allowed
 MP-Koeln                       Forbidden
+SmallEndian                    Required

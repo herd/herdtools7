@@ -1,0 +1,11 @@
+AArch64 SmallEndian
+{
+int x;
+0:X0=x;
+}
+ P0              ;
+ MOV W1,#1       ;
+ MOV W2,#2       ;
+ STRH W1,[X0]    ;
+ STRH W2,[X0,#2] ;
+forall x=0x00020001
