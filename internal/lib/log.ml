@@ -35,18 +35,36 @@ let compare a b =
     Option.compare ConstrGen.compare_kind a.kind b.kind ;
   ]
 
-let from_stream s =
-  let logs = ref [] in
-  let header = Str.regexp "^Test \\(.+\\) \\(Allowed\\|Forbid\\)$" in
-  let from_header l =
-    if Str.string_match header l 0 then
-      logs := {
-        name = Str.matched_group 1 l ;
-        kind = ConstrGen.parse_kind @@ Str.matched_group 2 l ;
-      } :: !logs
-  in
-  Stream.iter from_header s ;
-  List.rev !logs
+let split = LexSplit.words
 
-let of_string_list ls =
-  from_stream (Stream.of_list ls)
+let rec next_test k = function
+  | [] -> List.rev k
+  | line::lines ->
+      match split line with
+      | ["Test"; name ; ("Forbidden"|"Forbid"|"Allowed");] ->
+          in_test k name true lines
+      | ["Test"; name ; "Required";] ->
+          in_test k name false lines
+      | _ -> next_test k lines
+
+and in_test k name exists = function
+  | [] -> List.rev k
+  | line::lines ->
+      match split line with
+      | "Observation"::name2::r::_ ->
+          if name <> name2 then next_test k lines
+          else begin
+            let kind =
+              let open ConstrGen in
+              match r with
+              | "Always" ->
+                  if exists then Allow else Require
+              | "Sometimes" -> Allow
+              | "Never" -> Forbid
+              | _ -> assert false in
+            next_test ({ name; kind=Some kind; }::k) lines
+          end
+      | "Test"::_ -> next_test k (line::lines)
+      | _ -> in_test k name exists lines
+
+let of_string_list ls = next_test [] ls

@@ -20,7 +20,24 @@ module Option = Base.Option
 
 exception ParseError of string
 
+type kind = ConstrGen.kind
 type t = (string * ConstrGen.kind) list
+
+let check ~expected ~actual =
+  let m =
+    List.fold_left
+      (fun m (ne,ke) -> StringMap.add ne ke m)
+      StringMap.empty expected in
+  List.fold_left
+    (fun (ks,miss as b) (n,ka) ->
+      try
+        let ke = StringMap.find n m in
+        if ConstrGen.compare_kind ka ke = 0 then b
+        else begin
+          (n,ke,ka)::ks,miss
+        end
+      with Not_found -> ks,n::miss)
+    ([],[]) actual
 
 let compare xs ys =
   let compare_pair (x_name, x_kind) (y_name, y_kind) =

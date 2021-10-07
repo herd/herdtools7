@@ -33,7 +33,7 @@ let lint_shelf shelf_path =
     let open Shelf in [
       "cat", shelf.cats ;
       "config", shelf.configs ;
-      "illustrative test", shelf.illustrative_tests ;
+      "illustrative test", shelf.tests ;
       "bell", Option.value shelf.bells ~default:[] ;
     ]
   in

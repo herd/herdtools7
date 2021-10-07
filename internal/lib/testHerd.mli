@@ -21,7 +21,7 @@ type path = string
 type stdout_lines = string list
 type stderr_lines = string list
 
-(** [herd_command ~bell ~cat ~conf ~variants ~libdir herd litmuses] returns the
+(** [herd_command ~bell ~cat ~conf ~variants ~libdir herd ?j litmuses] returns the
  *  command line that [run_herd] would run. *)
 val herd_command :
   bell     : path option ->
@@ -29,20 +29,22 @@ val herd_command :
   conf     : path option ->
   variants : string list ->
   libdir   : path ->
-    path -> path list -> string
+    path -> ?j:int -> ?timeout:float -> path list -> string
 
-(** [run_herd ~bell ~cat ~conf ~variants ~libdir herd litmuses] runs the
+(** [run_herd ~bell ~cat ~conf ~variants ~libdir herd ?j litmuses] runs the
  *  binary [herd] with a custom [libdir] on list of litmus files [litmuses],
  *  and returns the stdout with unstable lines removed (e.g. Time) and stderr.
  *  Paths to [cat], [bell], and [conf] files, as well as [variants], can also
- *  be passed in. *)
+ *  be passed in.
+ * If argument [j] is present, at most [j] tests are run concurrently *)
 val run_herd :
   bell     : path option ->
   cat      : path option ->
   conf     : path option ->
   variants : string list ->
   libdir   : path ->
-    path -> path list -> int * stdout_lines * stdout_lines
+     path -> ?j:int -> ?timeout:float ->
+     path list -> int * stdout_lines * stdout_lines
 
 (** [herd_output_matches_expected ~bell ~cat ~conf ~variants ~libdir herd
  *  litmus expected expected_failure expected_warn] runs the binary

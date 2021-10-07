@@ -21,8 +21,7 @@ type t = {
 
   cats : string list ;
   configs : string list ;
-  illustrative_tests : string list ;
-
+  tests : string list ;
   bells : string list option ;
   compatibilities : string list option ;
 }

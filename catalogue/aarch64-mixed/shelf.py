@@ -23,4 +23,5 @@ illustrative_tests = [
     "tests/CoRW2+posb1b0+h0.litmus",
     "tests/2+2W+posb0b0+posb1b1.litmus",
     "tests/MP+dmb.syb0b1+datab1b1-rfib1h0.litmus",
+    "tests/SmallEndian.litmus",
 ]

@@ -28,7 +28,11 @@ let without_unstable_lines lines =
 
 let log_compare a b = String.compare (String.concat "\n" a) (String.concat "\n" b)
 
-let herd_args ~bell ~cat ~conf ~variants ~libdir =
+let herd_args  ~bell ~cat ~conf ~variants ~libdir ~timeout =
+  let timeout =
+    match timeout with
+    | None -> []
+    | Some t -> ["-timeout"; Printf.sprintf "%.2f" t;] in
   let bells =
     match bell with
     | None -> []
@@ -48,14 +52,30 @@ let herd_args ~bell ~cat ~conf ~variants ~libdir =
     List.concat (List.map (fun v -> ["-variant"; v]) variants)
   in
   let libdirs = ["-set-libdir"; libdir] in
-  List.concat [["-exit"; "true";]; bells; cats; confs; variants; libdirs]
+  List.concat [["-exit"; "true";]; timeout; bells; cats; confs; variants; libdirs]
 
-let herd_command ~bell ~cat ~conf ~variants ~libdir herd litmuses =
-  let args = herd_args ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir in
-  Command.command herd (args @ litmuses)
+let apply_args herd j herd_args =
+  let herd_args = String.concat "," herd_args in
+  ["-com"; herd; "-j" ; Printf.sprintf "%i" j; "-comargs"; herd_args;]
 
-let run_herd ~bell ~cat ~conf ~variants ~libdir herd litmuses =
-  let args = herd_args ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir in
+let herd_command ~bell ~cat ~conf ~variants ~libdir herd ?j ?timeout litmuses =
+  let args =
+    herd_args
+      ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir
+      ~timeout:timeout in
+  match j with
+  | None ->
+     Command.command herd (args @ litmuses)
+  | Some j ->
+     let mapply = Filename.concat (Filename.dirname herd) "mapply7" in
+     let args = apply_args  herd j args in
+     Command.command mapply  (args @ litmuses)
+
+let run_herd ~bell ~cat ~conf ~variants ~libdir herd ?j ?timeout litmuses =
+  let args =
+    herd_args
+      ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir
+      ~timeout:timeout in
   let litmuses o = Channel.write_lines o litmuses ; close_out o in
 
   (* Record stdout and stderr to two sources if we need to reason about them separately *)
@@ -64,8 +84,16 @@ let run_herd ~bell ~cat ~conf ~variants ~libdir herd litmuses =
   let read_lines c = lines := Channel.read_lines c in
   let read_err_lines c = err_lines := Channel.read_lines c in
   let r =
-    Command.run_status
-      ~stdin:litmuses ~stdout:read_lines ~stderr:read_err_lines herd args in
+    match j with
+    | None ->
+       Command.run_status
+         ~stdin:litmuses ~stdout:read_lines ~stderr:read_err_lines herd args
+    | Some j ->
+       let j = max 2 j in
+       let mapply = Filename.concat (Filename.dirname herd) "mapply7" in
+       let args = apply_args herd j args in
+       Command.run_status
+         ~stdin:litmuses ~stdout:read_lines ~stderr:read_err_lines mapply args in
   (r,without_unstable_lines !lines, !err_lines)
 
 let read_some_file litmus name =
@@ -78,7 +106,7 @@ let read_some_file litmus name =
 
 let herd_output_matches_expected ~bell ~cat ~conf ~variants ~libdir herd litmus expected expected_failure expected_warn =
   try
-    match run_herd ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir herd [litmus] with
+    match run_herd ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir herd  [litmus] with
     | _,[],[] ->
       Printf.printf "Failed %s : Herd finished but returned no output or errors\n" litmus ; false
     | 0,(_::_ as stdout), [] -> (* Herd finished without errors - normal *)

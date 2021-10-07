@@ -17,6 +17,7 @@
 module Fun = Base.Fun
 module Option = Base.Option
 
+exception Error of string
 
 (* Flags. *)
 
@@ -26,7 +27,7 @@ type flags = {
   herd       : path ;
   libdir     : path ;
   shelf_path : path ;
-  kinds_dir  : path ;
+  kinds_path  : path ;
   variants   : string list ;
 }
 
@@ -35,6 +36,7 @@ type flags = {
 
 type permutation = {
   cat : string ;
+  cfg : string option ;
   bell : string option ;
 }
 
@@ -43,17 +45,22 @@ let string_of_permutation p =
   | None -> Printf.sprintf "cat = %S" p.cat
   | Some bell -> Printf.sprintf "cat = %S ; bell = %S" p.cat bell
 
-let permutations_of_shelf shelf =
+let some_head = function
+  | None|Some [] -> None
+  | Some (x::_) -> Some x
+
+let one_of_shelf shelf =
   let open Shelf in
-  match shelf.bells with
-  | None -> List.map (fun cat -> { cat = cat ; bell = None }) shelf.cats
-  | Some bells ->
-      List.flatten
-        (List.map (fun cat ->
-          List.map (fun bell ->
-            { cat = cat ; bell = Some bell } )
-          bells)
-        shelf.cats)
+  let cat =
+    match shelf.cats with
+    | cat::_ -> cat
+    | [] -> raise (Error "no cat file")
+  and bell = some_head shelf.bells
+  and cfg =
+    match shelf.configs with
+    | [] -> None
+    | x::_ -> Some x in
+  { cat; bell; cfg; }
 
 let kinds_path_of_permutation kinds_dir p =
   let escape_filename n =
@@ -66,16 +73,16 @@ let kinds_path_of_permutation kinds_dir p =
   in
   Filename.concat kinds_dir (escape_filename (filename_of_permutation p))
 
-let herd_kinds_of_permutation flags shelf_dir litmuses p =
+let herd_kinds_of_permutation ?j ?timeout flags shelf_dir litmuses p =
   let prepend path = Filename.concat shelf_dir path in
   let cmd =
     TestHerd.run_herd
       ~bell:(Option.map prepend p.bell)
       ~cat:(Some (prepend p.cat))
-      ~conf:None
+      ~conf:(Base.Option.map prepend p.cfg)
       ~variants:flags.variants
       ~libdir:flags.libdir
-      flags.herd
+      flags.herd ?j ?timeout
   in
   match cmd litmuses with
   | 0,stdout, [] ->
@@ -87,12 +94,12 @@ let herd_kinds_of_permutation flags shelf_dir litmuses p =
 
 (* Shelves. *)
 
-let various_of_shelf shelf_path =
+let first_of_shelf shelf_path =
   let shelf = Shelf.of_file shelf_path in
   let shelf_dir = Filename.dirname shelf_path in
-  let illustrative_tests = List.map (Filename.concat shelf_dir) shelf.Shelf.illustrative_tests in
-  permutations_of_shelf shelf, shelf_dir, illustrative_tests
-
+  let tests =
+    List.map (Filename.concat shelf_dir) shelf.Shelf.tests in
+  one_of_shelf shelf, shelf_dir, tests
 
 (* Helpers. *)
 
@@ -101,74 +108,76 @@ let exit_1_if_any_files_missing ~description paths =
   | [] -> ()
   | missing ->
       List.iter (Printf.printf "Missing %s: %s\n" description) missing ;
-      exit 1
+      raise (Error "Some files are missing")
 
 
 (* Commands. *)
 
-let show_tests flags =
-  let permutations, shelf_dir, illustrative_tests = various_of_shelf flags.shelf_path in
+let show_tests ?j ?timeout flags =
+  let cat, shelf_dir, tests = first_of_shelf flags.shelf_path in
 
   let prepend path = Filename.concat shelf_dir path in
+
   let command_of_permutation p =
     let cmd =
       TestHerd.herd_command
         ~bell:(Option.map prepend p.bell)
         ~cat:(Some (prepend p.cat))
-        ~conf:None
+        ~conf:(Base.Option.map prepend p.cfg)
         ~variants:flags.variants
         ~libdir:flags.libdir
-        flags.herd
+        flags.herd ?j ?timeout
     in
-    cmd illustrative_tests
+    cmd tests
   in
-  permutations
-    |> List.map command_of_permutation
-    |> List.iter (Printf.printf "%s\n")
+    command_of_permutation cat
+    |> Printf.printf "%s\n"
 
+let run_tests ?j ?timeout flags =
+  let cat, shelf_dir, tests = first_of_shelf flags.shelf_path in
 
-let run_tests flags =
-  let permutations, shelf_dir, illustrative_tests = various_of_shelf flags.shelf_path in
-  let kinds_paths = List.map (kinds_path_of_permutation flags.kinds_dir) permutations in
+  exit_1_if_any_files_missing ~description:"test" tests ;
+  exit_1_if_any_files_missing ~description:"kinds.txt file" [flags.kinds_path] ;
 
-  exit_1_if_any_files_missing ~description:"illustrative test" illustrative_tests ;
-  exit_1_if_any_files_missing ~description:"kinds.txt file" kinds_paths ;
-
-  let result_of_permutation (kinds_path, p) =
+  let result_of_permutation kinds_path p =
     let expected = Kinds.of_file kinds_path in
-    let actual = herd_kinds_of_permutation flags shelf_dir illustrative_tests p in
-    if Kinds.compare actual expected <> 0 then begin
-      Printf.printf "Kinds differs: kinds file = %s ; %s\n" kinds_path (string_of_permutation p) ;
-      false
-    end else
-      true
-  in
-  let passed =
-    List.combine kinds_paths permutations
-      |> List.map result_of_permutation
-      |> List.for_all (fun x -> x)
-  in
-  if passed then
-    Printf.printf "Tests OK\n"
-  else
-    exit 1
+    let actual =
+      herd_kinds_of_permutation ?j ?timeout flags shelf_dir tests p in
+    let diff,miss = Kinds.check ~expected ~actual in
+    if Misc.consp miss then begin
+      let pf =
+        match miss with
+        | [_] -> Printf.printf "Test %s is not in reference kind file %s\n"
+        | _ -> Printf.printf "Tests %s are not in reference kind file %s\n" in
+      pf (String.concat "," miss) kinds_path
+    end ;
+    match diff with
+    | [] -> true
+    | rs ->
+        let pp =
+          List.map
+            (fun (n,ke,ka) ->
+              Printf.sprintf "%s: expected=%s, actual=%s"
+                n (ConstrGen.pp_kind ke) (ConstrGen.pp_kind ka))
+            rs in
+        Printf.printf "Kinds differs: kinds file = %s ; %s\n"
+          kinds_path (string_of_permutation p) ;
+        List.iter (Printf.printf "%s\n") pp ;
+        false in
+  let passed = result_of_permutation flags.kinds_path cat in
+  if not passed then exit 1
 
 
-let promote_tests flags =
-  let permutations, shelf_dir, illustrative_tests = various_of_shelf flags.shelf_path in
-  let kinds_paths = List.map (kinds_path_of_permutation flags.kinds_dir) permutations in
-
-  exit_1_if_any_files_missing ~description:"illustrative test" illustrative_tests ;
+let promote_tests ?j flags =
+  let cat, shelf_dir, tests =
+    first_of_shelf flags.shelf_path in
+  exit_1_if_any_files_missing ~description:"tests" tests ;
 
   let kinds =
-    List.map
-      (herd_kinds_of_permutation flags shelf_dir illustrative_tests)
-      permutations
+    herd_kinds_of_permutation ?j flags shelf_dir tests cat
   in
-  List.map Kinds.to_string kinds
-    |> List.combine kinds_paths
-    |> List.iter (fun (p, k) -> Filesystem.write_file p (fun o -> output_string o k))
-
+  Filesystem.write_file flags.kinds_path
+    (fun o -> output_string o (Kinds.to_string kinds))
 
 let usage = String.concat "\n" [
   Printf.sprintf "Usage: %s [options] (show|test|promote)" (Filename.basename Sys.argv.(0)) ;
@@ -186,17 +195,20 @@ let () =
   let herd = ref "" in
   let libdir = ref "" in
   let shelf_path = ref "" in
-  let kinds_dir = ref "" in
+  let kinds_path = ref "" in
 
   (* Optional arguments. *)
   let variants = ref [] in
-
+  let j = ref None in
+  let timeout = ref None in
   let anon_args = ref [] in
 
   let options = [
+    "-j",Arg.Int (fun i -> j := Some i),"<n> concurrent run with at most <n> instances";
+    "-herd-timeout",Arg.Float (fun f -> timeout := Some f), "<f> herd timeout";
     Args.is_file ("-herd-path",   Arg.Set_string herd,         "path to herd binary") ;
     Args.is_dir  ("-libdir-path", Arg.Set_string libdir,       "path to herd libdir") ;
-    Args.is_dir  ("-kinds-dir",   Arg.Set_string kinds_dir,    "path to directory of kinds files to test against") ;
+    Args.is_file  ("-kinds-path",   Arg.Set_string kinds_path,    "path to directory of kinds files to test against") ;
     Args.is_file ("-shelf-path",  Arg.Set_string shelf_path,   "path to shelf.py to test") ;
                   "-variant",     Args.append_string variants, "variant to pass to herd7" ;
   ] in
@@ -214,18 +226,24 @@ let () =
     exit_with_error "Must set -libdir-path" ;
   if !shelf_path = "" then
     exit_with_error "Must set -shelf-path" ;
-  if !kinds_dir = "" then
-    exit_with_error "Must set -kinds-dir" ;
+  if !kinds_path = "" then
+    exit_with_error "Must set -kinds-path" ;
 
   let flags = {
     herd = !herd ;
     libdir = !libdir ;
     shelf_path = !shelf_path ;
-    kinds_dir = !kinds_dir ;
+    kinds_path = !kinds_path ;
     variants = !variants ;
-  } in
-  match !anon_args with
-  | "show" :: [] -> show_tests flags
-  | "test" :: [] -> run_tests flags
-  | "promote" :: [] -> promote_tests flags
-  | _ -> exit_with_error "Must provide one command of: show, test, promote"
+    } in
+  try
+    let j = !j in
+    let timeout = !timeout in
+    match !anon_args with
+    | "show" :: [] -> show_tests ?j ?timeout flags
+    | "test" :: [] -> run_tests ?j ?timeout flags
+    | "promote" :: [] -> promote_tests ?j flags
+    | _ -> exit_with_error "Must provide one command of: show, test, promote"
+  with
+  | Error msg ->
+      Printf.printf "Fatal error: %s\n" msg

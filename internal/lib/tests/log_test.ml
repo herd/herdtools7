@@ -73,7 +73,7 @@ let tests = [
         } ;
         {
           Log.name = "A8" ;
-          Log.kind = Some ConstrGen.Forbid ;
+          Log.kind = Some ConstrGen.Allow ;
         } ;
       ] ;
     ] in
