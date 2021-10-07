@@ -30,9 +30,6 @@ typedef struct {
 #ifdef SEE_FAULTS
   see_fault_t f;
 #endif
-#ifdef HAVE_TIMEBASE
-  tb_t next_tb;
-#endif
   hash_t t;
   sense_t b;
   param_t p;

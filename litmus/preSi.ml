@@ -1359,10 +1359,10 @@ module Make
               inits
         end ;
         (* Synchronise *)
-        if have_timebase then O.oii "_ctx->next_tb = read_timebase();" ;
+        if have_timebase then
+          O.oii "tb_t _tb0 = read_timebase();" ;
         O.oii "barrier_wait(_b);" ;
         if have_timebase then begin
-          O.oii "tb_t _tb0 = _ctx->next_tb;" ;
           O.oii "int _delta;" ;
           O.oii "do { _delta = read_timebase() - _tb0; } while (_delta < _delay);"
         end ;

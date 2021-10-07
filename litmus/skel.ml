@@ -556,9 +556,7 @@ module Make
 
       let dump_user_barrier_vars () = O.oi "int volatile *barrier;"
 
-      let dump_tb_barrier_vars () =
-        O.oi "sense_t barrier;" ;
-        if have_timebase then O.oi "tb_t volatile next_tb;"
+      let dump_tb_barrier_vars () = O.oi "sense_t barrier;"
 
 
 (*******************************************)
@@ -1909,9 +1907,8 @@ module Make
                 ()
             | TimeBase ->
                 if have_timebase then begin
-                  O.fx iloop "_a->next_tb = read_timebase();" ;
+                  O.fx iloop "tb_t _tb0 = read_timebase();" ;
                   O.fx iloop "barrier_wait(barrier);" ;
-                  O.fx iloop "tb_t _tb0 = _a->next_tb;"
                 end else begin
                   O.fx iloop "barrier_wait(barrier);" ;
                 end
