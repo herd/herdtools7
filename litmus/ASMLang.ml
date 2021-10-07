@@ -548,7 +548,7 @@ module RegMap = A.RegMap)
               let x = Tmpl.dump_out_reg proc x in
               sprintf "%s *%s" (CType.dump ty) x) t.Tmpl.final in
         let params =  String.concat "," (params0@labels@addrs@ptes@phys@ptevals@cpys@outs) in
-        LangUtils.dump_code_def chan O.noinline proc params ;
+        LangUtils.dump_code_def chan O.noinline O.mode proc params ;
         do_dump
           args0
           (compile_init_val_fun ptevalEnv)

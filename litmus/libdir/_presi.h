@@ -23,6 +23,11 @@ typedef void FILE;
 #define stdout NULL
 #define stderr NULL
 #define fprintf(stderr,...) printf(__VA_ARGS__)
+
+#ifndef noinline
+#define noinline __attribute__((noinline))
+#endif
+
 #else
 #include <pthread.h>
 #endif
