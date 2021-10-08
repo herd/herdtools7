@@ -14,6 +14,8 @@
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
 
+
+#include<libcflat.h>
 #include <vmalloc.h>
 #include <asm-generic/atomic.h>
 #include <asm/page.h>
@@ -25,8 +27,11 @@
 
 static inline void litmus_init(void) {
   setup_vm();
-  smp_init();
 }
+
+
+// Same name as aarch64
+static inline int smp_processor_id(void) { return smp_id(); }
 
 static inline void mdelay(u64 count) { delay(count) ; }
 

@@ -101,7 +101,12 @@ let tr_symbol name =
 
 let name_as_symbol name =
   let sym = tr_symbol name in
-  if start_with_letter name then sym
-  else "X" ^ sym
+  if start_with_letter name then
+    (* kvm-unit-tests defines preprocessor constants S and R... *)
+    match sym with
+    | "R"|"S" -> "_" ^ sym
+    | _ -> sym
+  else (* C symbols start with a letter, or '_' *)
+    "_X" ^ sym
 
 let as_symbol t = name_as_symbol t.Name.name

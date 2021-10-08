@@ -14,7 +14,7 @@
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
 
-inline static tb_t timeofday(void) {
+inline static tb_t read_timebase(void) {
   uint32_t a,d; ;
   asm __volatile__ ("rdtsc" : "=a" (a), "=d" (d)) ;
   tb_t r = ((tb_t)a) | (((tb_t)d)<<32);

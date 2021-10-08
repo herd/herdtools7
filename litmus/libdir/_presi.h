@@ -46,6 +46,9 @@ int max(int n,int m) ;
 void *do_align(void *p, size_t sz) ;
 
 #ifdef DYNALLOC
+#ifdef KVM
+#include <alloc.h>
+#endif
 /* Dynamic memory allocation, KVM style */
 void *malloc_check(size_t sz) ;
 #endif
