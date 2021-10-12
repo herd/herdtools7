@@ -1633,12 +1633,9 @@ module Make
         O.oi "int _role = c->role;" ;
         O.oi "if (_role < 0) return;" ;
         O.oi "ctx_t *ctx = c->ctx;" ;
-        let param = if Cfg.is_kvm then
-          "g->param" (* As not sure that param will be used, avoid binding. *)
-        else begin (* Here we know, it will. *)
-          O.oi "param_t *q = g->param;" ;
-          "q"
-        end in
+        O.oi "param_t *q = g->param;" ;
+        if have_timebase then
+          O.oi "ctx->p.d1 = q->d1;" ;
         let have_globals =
           not Cfg.is_kvm &&
           begin match test.T.globals with
@@ -1683,8 +1680,8 @@ module Make
                     (* Must come first [raises Not_found] *)
                     let tag = pvtag a in
                     O.fiii
-                      "ctx->p.%s = comp_param(&c->seed,&%s->%s,NVARS,0);"
-                      tag param tag ;
+                      "ctx->p.%s = comp_param(&c->seed,&q->%s,NVARS,0);"
+                      tag tag ;
                     O.fiii "_vars->%s = _mem + LINESZ*ctx->p.%s + %i*VOFFSZ;"
                       a tag pos
                   with Not_found ->
@@ -1697,7 +1694,7 @@ module Make
             List.iter
               (fun (tag,max) ->
                 O.fiii
-                  "ctx->p.%s = comp_param(&c->seed,&%s->%s,%s,0);" tag param tag max ;)
+                  "ctx->p.%s = comp_param(&c->seed,&q->%s,%s,0);" tag tag max ;)
               ps ;
 (* Cache parameters, locations must be allocated *)
             if have_globals then O.oiii "barrier_wait(&ctx->b);" ;
@@ -1719,15 +1716,15 @@ module Make
                   O.fiii "if (c->act->%s%s) {"
                     (Topology.active_tag p) more_test ;
                   let tag = pctag p in
-                  O.fiv "ctx->p.%s = comp_param(&c->seed,&%s->%s,cmax,1);"
-                    tag param tag ;
+                  O.fiv "ctx->p.%s = comp_param(&c->seed,&q->%s,cmax,1);"
+                    tag tag ;
                   O.oiii "} else {" ;
                   O.fiv "ctx->p.%s = cignore;" tag ;
                   O.oiii "}"
                 end else begin
                   let tag = pctag p in
-                  O.fiii "ctx->p.%s = comp_param(&c->seed,&%s->%s,cmax,1);"
-                    tag param tag
+                  O.fiii "ctx->p.%s = comp_param(&c->seed,&q->%s,cmax,1);"
+                    tag tag
                 end)
               cs ;
             O.oiii "break;")
