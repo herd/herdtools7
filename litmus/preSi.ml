@@ -553,6 +553,8 @@ module Make
               if Cfg.hexa then "0x%" ^ fmt else "%" ^ fmt)
           locs env
 
+      let some_vars test = Misc.consp test.T.globals
+
       let dump_outcomes env test =
         let rlocs = U.get_displayed_locs test
         and faults = U.get_faults test in
@@ -874,9 +876,12 @@ module Make
       let pdtag i = sprintf "d%i" i
       let pctag (i,s) = sprintf "c_%i_%s" i s
 
-      let get_param_vars test = match  test.T.globals with
-      | [] -> []
-      | _::xs -> xs
+      let get_param_vars test =
+        if Cfg.is_kvm then []
+        else
+          match  test.T.globals with
+          | [] -> []
+          | _::xs -> xs
 
       let get_param_delays =
         if have_timebase then fun test -> Misc.interval 1 (T.get_nprocs test)
@@ -918,7 +923,7 @@ module Make
 
       let do_get_stats test =
         let open SkelUtil in
-        begin let tags = if Cfg.is_kvm then [] else get_param_vars test in
+        begin let tags = get_param_vars test in
         if tags = [] then [] else
         [{tags=List.map (fun (s,_) -> pvtag s) tags;
           name = "vars"; max="NVARS"; tag = "Vars";
@@ -940,10 +945,13 @@ module Make
       let get_stats test =
         if Cfg.is_kvm || not do_stats then [] else do_get_stats test
 
+      let has_params test =
+        Misc.consp (get_param_vars test)
+        || Misc.consp (get_param_delays test)
+        || Misc.consp (get_param_caches test)
+
       let dump_parameters _env test =
-        let v_tags =
-          if Cfg.is_kvm then []
-          else List.map (fun (s,_) -> pvtag s) (get_param_vars test)
+        let v_tags = List.map (fun (s,_) -> pvtag s) (get_param_vars test)
         and d_tags = List.map pdtag (get_param_delays test)
         and c_tags = List.map pctag (get_param_caches test) in
         let all_tags = "part"::v_tags@d_tags@c_tags in
@@ -1146,7 +1154,7 @@ module Make
           O.f "#define VOFF %d" voff ;
         end ;
         O.o "" ;
-        if Cfg.is_kvm then begin
+        if Cfg.is_kvm && some_vars test then begin
           let has_user = Misc.consp procs_user in
           O.o "static void vars_init(vars_t *_vars,intmax_t *_mem) {" ;
           O.oi "const size_t _sz = LINE/sizeof(intmax_t);";
@@ -1633,9 +1641,7 @@ module Make
         O.oi "int _role = c->role;" ;
         O.oi "if (_role < 0) return;" ;
         O.oi "ctx_t *ctx = c->ctx;" ;
-        O.oi "param_t *q = g->param;" ;
-        if have_timebase then
-          O.oi "ctx->p.d1 = q->d1;" ;
+        if has_params test then O.oi "param_t *q = g->param;" ;
         let have_globals =
           not Cfg.is_kvm &&
           begin match test.T.globals with
@@ -1753,74 +1759,11 @@ module Make
         O.o ""
 
 
-      let _dump_scan_def _env test =
-        O.o "static void scan(int id,global_t *g) {" ;
-        O.oi "param_t p,*q = g->param;" ;
-        O.oi "thread_ctx_t c; c.id = id;" ;
-        O.oi "int nrun = 0;" ;
-        O.o "" ;
-        O.oi "g->ok = 0;" ;
-        O.oi "do {" ;
-        O.oii "for (int part = 0 ; part < SCANSZ ; part++) {" ;
-        O.oiii "if (q->part >= 0) p.part = q->part; else p.part = part;" ;
-        O.oiii "set_role(g,&c,p.part);" ;
-        (* Enumerate parameters *)
-        let rec loop_delays i = function
-          | [] ->
-              O.ox i "if (do_run(&c,&p,g)) (void)__sync_add_and_fetch(&g->ok,1);" ;
-              ()
-          | d::ds ->
-              let tag = pdtag d in
-              O.fx i "for (int %s = 0 ; %s < NSTEPS ; %s++) {" tag tag tag ;
-              O.fx (Indent.tab i)
-                "if (q->%s >= 0) p.%s = q->%s; else p.%s = %s;"
-                tag tag tag tag tag ;
-              loop_delays (Indent.tab i) ds ;
-              O.fx i "}" in
-        let rec loop_caches i = function
-          | [] -> loop_delays i (get_param_delays test)
-          | c::cs ->
-              let tag = pctag c in
-              O.fx i "for (int %s = cflush ; %s < cmax ; %s++) {" tag tag tag ;
-              O.fx (Indent.tab i)
-                "if (q->%s >= 0) p.%s = q->%s; else p.%s = %s;"
-                tag tag tag tag tag ;
-              loop_caches (Indent.tab i) cs ;
-              O.fx i "}" in
-        let rec loop_vars i = function
-          | [] -> loop_caches i (get_param_caches test)
-          | (x,_)::xs ->
-              let tag = pvtag x in
-              O.fx i "for (int %s = 0 ; %s < NVARS ; %s++) {" tag tag tag ;
-              O.fx (Indent.tab i)
-                "if (q->%s >= 0) p.%s = q->%s; else p.%s = %s;"
-                tag tag tag tag tag ;
-              loop_vars (Indent.tab i) xs ;
-              O.fx i "}" in
-        loop_vars Indent.indent3 (get_param_vars test) ;
-        O.oii "}" ;
-        begin match Cfg.timelimit with
-        | None -> ()
-        | Some _ ->
-            O.oii "if (id == 0) g->now = timeofday();"
-        end ;
-        O.oii "barrier_wait(&g->gb);" ;
-        O.oii "if (++nrun >= g->nruns) break;" ;
-        begin match Cfg.timelimit with
-        | None -> ()
-        | Some _ ->
-            O.oiii "if ((g->now - g->start)/ 1000000.0 > TIMELIMIT) break;"
-        end ;
-        O.oi "} while (g->ok < g->noccs);" ;
-        O.o "}" ;
-        O.o ""
-
       let dump_zyva_def tname env test db stats procs_user =
         O.o "/*******************/" ;
         O.o "/* Forked function */" ;
         O.o "/*******************/" ;
         O.o "" ;
-(*        dump_scan_def env test ; *)
         dump_choose_def env test stats ;
         O.o "typedef struct {" ;
         O.oi "int id;" ;
