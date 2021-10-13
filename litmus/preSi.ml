@@ -101,8 +101,10 @@ module Make
           end)(O)
 
       let timebase_possible =
-        Insert.exists "timebase.c" ||
-        (Cfg.is_kvm && Insert.exists "kvm_timebase.c")
+        if Cfg.is_kvm then
+          Insert.exists "kvm_timebase.c"
+        else
+          Insert.exists "timebase.c"
 
       let have_timebase =
         Cfg.is_tb &&

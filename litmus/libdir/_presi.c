@@ -61,10 +61,6 @@ void *do_align(void *p,size_t sz) {
   return (void *)x ;
 }
 
-#ifdef KVM
-#include <alloc.h>
-#endif
-
 #ifdef DYNALLOC
 void* malloc_check(size_t sz) {
   void *r = malloc(sz) ;
