@@ -1464,7 +1464,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                     let sz0 = sz
                     let load sz st r1 r2 = [ldr_mixed r1 r2 sz o],st
                     let load_idx sz _ st r1 r2 idx =
-                      let cs = [ldr_mixed_idx V64 r1 r2 idx sz] in
+                      let cs = [ldr_mixed_idx vdep r1 r2 idx sz] in
                       let cs = match o with
                       | 0 -> cs
                       | _ -> addi_64 idx idx o::cs in
