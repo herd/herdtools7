@@ -1164,7 +1164,7 @@ module Make
           (read_reg_data sz rs ii)
           an ii
 
-      (* Neon extension *)
+      (* Neon extension, memory accesses return B.Next, as they cannot fail *)
       let simd_ldr sz addr rd ii =
         do_read_mem_ret sz AArch64.N aexp Access.VIR addr ii >>= fun v ->
         write_reg_neon_sz sz rd v ii >>! B.Next
@@ -1183,21 +1183,24 @@ module Make
       let simd_ldp var addr1 rd1 rd2 ii =
         let open AArch64Base in
         let access_size = tr_simd_variant var in
-        simd_ldr access_size addr1 rd1 ii >>|
+        (simd_ldr access_size addr1 rd1 ii >>|
         (neon_sz_k var >>= fun os ->
         M.add addr1 os >>= fun addr2 ->
-        simd_ldr access_size addr2 rd2 ii) >>! B.Next
+        simd_ldr access_size addr2 rd2 ii)) >>=
+        fun (b1,b2) ->
+          assert (b1=B.Next && b2=B.Next) ;
+          M.unitT B.Next
 
       let simd_stp var addr1 rd1 rd2 ii =
         let open AArch64Base in
         let access_size = tr_simd_variant var in
-        (read_reg_neon true rd1 ii >>= fun v1 ->
+        ((read_reg_neon true rd1 ii >>= fun v1 ->
         write_mem access_size aexp Access.VIR addr1 v1 ii)
         >>|
         (neon_sz_k var >>= fun os ->
         M.add addr1 os >>|
         read_reg_neon true rd2 ii >>= fun (addr2,v2) ->
-        write_mem access_size aexp Access.VIR addr2 v2 ii) >>! B.Next
+        write_mem access_size aexp Access.VIR addr2 v2 ii)) >>! B.Next
 
       let movi_v r k shift ii =
         let open AArch64Base in
@@ -1223,7 +1226,7 @@ module Make
             esize
         end
           >>= (fun v ->  write_reg_neon_rep sz r v ii)
-          >>! B.Next
+
 
       let movi_s var r k ii =
         let open AArch64Base in
@@ -1235,7 +1238,7 @@ module Make
           "illegal scalar register size in instruction movi"
         end
           >>= (fun v -> write_reg_neon_sz (tr_simd_variant var) r v ii)
-          >>! B.Next
+
 
       let simd_op op sz r1 r2 r3 ii =
         read_reg_neon false r3 ii >>|
@@ -1245,7 +1248,7 @@ module Make
         | AArch64.EOR -> fun (v1,v2) -> M.op Op.Xor v1 v2
         | _ -> Warn.fatal "unsupported Neon operations"
         end >>=
-        fun v -> write_reg_neon_sz sz r1 v ii >>! B.Next
+        fun v -> write_reg_neon_sz sz r1 v ii
 
 (******************************)
 (* Move constant instructions *)
@@ -1266,8 +1269,8 @@ module Make
               "illegal instruction %s"
               (AArch64.dump_instruction (I_MOVZ (sz, rd, k, os)))
         end
-          >>= (fun v -> write_reg rd v ii)
-          >>! B.Next
+        >>= fun v -> write_reg rd v ii
+
       let m_movk msk v1 v2 =
         M.op Op.AndNot2 v2 msk >>= M.op Op.Or v1
 
@@ -1297,8 +1300,7 @@ module Make
             (pp_barrel_shift "," s pp_imm)
             (pp_variant var)
         end
-          >>= (fun v -> write_reg rd v ii)
-          >>! B.Next
+        >>= fun v -> write_reg rd v ii
 
       let csel_op op v =
         let open AArch64Base in
@@ -1382,6 +1384,21 @@ module Make
 (********************)
 (* Main entry point *)
 (********************)
+      (*
+         Additonal type checking, control over discarded values.
+         Namely, discarded value cannot be of type B.t, this would
+         mean discarding a control flow result and replacing it
+         systematically by B.Next. That way, some exit to end
+         of code instructions would be ignored. See issue #287.
+       *)
+
+      let (!!!!) (m1:(unit list list * unit) M.t) = m1 >>! B.Next
+      let (!!!) (m1:(unit list * unit) M.t) = m1 >>! B.Next
+      let (!!) (m1:(unit * unit) M.t) = m1 >>! B.Next
+      let (!) (m1:unit M.t) = m1 >>! B.Next
+      (* And now, just forget about >>! *)
+      let (>>!) (_:unit) (_:unit) = ()
+
       let build_semantics ii =
         M.addT (A.next_po_index ii.A.program_order_index)
           AArch64Base.(
@@ -1456,30 +1473,31 @@ module Make
 
         | I_STZG(rt,rn,kr) ->
             check_memtag "STZG" ;
-            begin
+            !!(begin
               (read_reg_data MachSize.Quad rt ii >>= tag_extract) >>|
               get_ea rn kr AArch64.S_NOEXT ii
             end >>= fun (v,a) ->
               (M.op1 Op.TagLoc a >>| loc_extract a) >>= fun (atag,loc) ->
-                (do_write_tag atag v ii >>| do_write_mem quad AArch64.N aexp Access.VIR loc V.zero ii) >>! B.Next
+                (do_write_tag atag v ii
+                 >>| do_write_mem quad AArch64.N aexp Access.VIR loc V.zero ii))
 
         | I_STG(rt,rn,kr) ->
             check_memtag "STG" ;
-            begin
+            !(begin
               (read_reg_data quad rt ii >>= tag_extract) >>|
               get_ea rn kr S_NOEXT ii
             end >>= fun (v,a) ->
               M.op1 Op.TagLoc a  >>= fun a ->
-                do_write_tag a v ii >>! B.Next
+                do_write_tag a v ii)
 
         | I_LDG (rt,rn,kr) ->
             check_memtag "LDG" ;
-            get_ea rn kr S_NOEXT ii  >>=
+            !(get_ea rn kr S_NOEXT ii  >>=
             fun a -> M.op1 Op.TagLoc a >>=
               fun atag -> do_read_tag atag ii
                   >>= fun tag ->
                     M.op Op.SetTag a tag >>= fun v ->
-                      write_reg rt v ii >>! B.Next
+                      write_reg rt v ii)
 
         | I_STXR(var,t,rr,rs,rd) ->
             stxr (tr_variant var) t rr rs rd ii
@@ -1488,75 +1506,80 @@ module Make
 
         (* Neon operations *)
         | I_MOV_VE(r1,i1,r2,i2) ->
-            read_reg_neon_elem false r2 i2 ii >>= fun v -> write_reg_neon_elem MachSize.S128 r1 i1 v ii >>! B.Next
+            !(read_reg_neon_elem false r2 i2 ii >>=
+              fun v -> write_reg_neon_elem MachSize.S128 r1 i1 v ii)
         | I_MOV_FG(r1,i,var,r2) ->
-            let sz = tr_variant var  in
-            read_reg_ord_sz sz r2 ii >>= fun v -> write_reg_neon_elem MachSize.S128 r1 i v ii >>! B.Next
+            !(let sz = tr_variant var  in
+              read_reg_ord_sz sz r2 ii >>=
+              fun v -> write_reg_neon_elem MachSize.S128 r1 i v ii)
         | I_MOV_TG(_,r1,r2,i) ->
-            read_reg_neon_elem false r2 i ii >>= fun v -> write_reg r1 v ii >>! B.Next
+            !(read_reg_neon_elem false r2 i ii >>=
+              fun v -> write_reg r1 v ii)
         | I_MOV_V(r1,r2) ->
-            read_reg_neon false r2 ii >>= fun v -> write_reg_neon r1 v ii >>! B.Next
+            !(read_reg_neon false r2 ii >>=
+              fun v -> write_reg_neon r1 v ii)
         | I_MOV_S(var,r1,r2,i) ->
-            let sz = tr_simd_variant var in
-            read_reg_neon_elem false r2 i ii >>= fun v -> write_reg_neon_sz sz r1 v ii >>! B.Next
+            !(let sz = tr_simd_variant var in
+              read_reg_neon_elem false r2 i ii >>=
+              fun v -> write_reg_neon_sz sz r1 v ii)
         | I_MOVI_V(r,k,shift) ->
-            movi_v r k shift ii
+            !(movi_v r k shift ii)
         | I_MOVI_S(var,r,k) ->
-            movi_s var r k ii
+            !(movi_s var r k ii)
         | I_EOR_SIMD(r1,r2,r3) ->
             let size = neon_sz r1 in
-            simd_op EOR size r1 r2 r3 ii
+            !(simd_op EOR size r1 r2 r3 ii)
         | I_ADD_SIMD(r1,r2,r3) ->
             let size = neon_sz r1 in
-            simd_op ADD size r1 r2 r3 ii
+            !(simd_op ADD size r1 r2 r3 ii)
         | I_ADD_SIMD_S(r1,r2,r3) ->
-            simd_op ADD MachSize.Quad r1 r2 r3 ii
+            !(simd_op ADD MachSize.Quad r1 r2 r3 ii)
 
         (* Neon loads and stores *)
         | I_LD1(r1,i,rA,kr) ->
-            read_reg_ord rA ii >>= fun addr ->
+            !!(read_reg_ord rA ii >>= fun addr ->
             (load_elem MachSize.S128 i r1 addr ii >>|
-            post_kr rA addr kr ii) >>! B.Next
+            post_kr rA addr kr ii))
         | I_LD2(rs,i,rA,kr)
         | I_LD3(rs,i,rA,kr)
         | I_LD4(rs,i,rA,kr) ->
-            read_reg_ord rA ii >>= fun addr ->
+            !!!(read_reg_ord rA ii >>= fun addr ->
             (mem_ss (load_elem MachSize.S128 i) addr rs ii >>|
-            post_kr rA addr kr ii) >>! B.Next
+            post_kr rA addr kr ii))
         | I_LD1R(r1,rA,kr) ->
-            read_reg_ord rA ii >>= fun addr ->
+            !!(read_reg_ord rA ii >>= fun addr ->
             (load_elem_rep MachSize.S128 r1 addr ii >>|
-            post_kr rA addr kr ii) >>! B.Next
+            post_kr rA addr kr ii))
         | I_LD2R(rs,rA,kr)
         | I_LD3R(rs,rA,kr)
         | I_LD4R(rs,rA,kr) ->
-            read_reg_ord rA ii >>= fun addr ->
+            !!!(read_reg_ord rA ii >>= fun addr ->
             (mem_ss (load_elem_rep MachSize.S128) addr rs ii >>|
-            post_kr rA addr kr ii) >>! B.Next
+            post_kr rA addr kr ii))
         | I_LD1M([_] as rs,rA,kr)
         | I_LD2M(rs,rA,kr)
         | I_LD3M(rs,rA,kr)
         | I_LD4M(rs,rA,kr) ->
-            read_reg_ord rA ii >>= fun addr ->
+            !!(read_reg_ord rA ii >>= fun addr ->
             (load_m addr rs ii >>|
-            post_kr rA addr kr ii) >>! B.Next
+            post_kr rA addr kr ii))
         | I_ST1(r1,i,rA,kr) ->
-            read_reg_ord rA ii >>= fun addr ->
+            !!(read_reg_ord rA ii >>= fun addr ->
             (store_elem i r1 addr ii >>|
-            post_kr rA addr kr ii) >>! B.Next
+            post_kr rA addr kr ii))
         | I_ST2(rs,i,rA,kr)
         | I_ST3(rs,i,rA,kr)
         | I_ST4(rs,i,rA,kr) ->
-            read_reg_ord rA ii >>= fun addr ->
+            !!!(read_reg_ord rA ii >>= fun addr ->
             (mem_ss (store_elem i) addr rs ii >>|
-            post_kr rA addr kr ii) >>! B.Next
+            post_kr rA addr kr ii))
         | I_ST1M([_] as rs,rA,kr)
         | I_ST2M(rs,rA,kr)
         | I_ST3M(rs,rA,kr)
         | I_ST4M(rs,rA,kr) ->
-            read_reg_ord rA ii >>= fun addr ->
+            !!!!(read_reg_ord rA ii >>= fun addr ->
             (store_m addr rs ii >>|
-            post_kr rA addr kr ii) >>! B.Next
+            post_kr rA addr kr ii))
 
         | I_LDR_SIMD(var,r1,rA,kr,s) ->
             let access_size = tr_simd_variant var in
@@ -1566,12 +1589,13 @@ module Make
             let access_size = tr_simd_variant var in
             read_reg_ord rA ii >>= fun addr ->
             simd_ldr access_size addr r1 ii >>|
-            post_kr rA addr (K k) ii >>! B.Next
+            post_kr rA addr (K k) ii >>=
+            fun (b,_) -> M.unitT b
         | I_LDUR_SIMD(var,r1,rA,k) ->
             let access_size = tr_simd_variant var and
             k = K (match k with Some k -> k | None -> 0) in
-            get_ea rA k S_NOEXT ii >>= fun addr ->
-            simd_ldr access_size addr r1 ii
+            (get_ea rA k S_NOEXT ii >>= fun addr ->
+            simd_ldr access_size addr r1 ii)
         | I_STR_SIMD(var,r1,rA,kr,s) ->
             let access_size = tr_simd_variant var in
             simd_str access_size rA r1 kr s ii
@@ -1587,86 +1611,88 @@ module Make
             simd_ldp var addr r1 r2 ii
         | I_LDP_P_SIMD(_,var,r1,r2,r3,k) ->
             read_reg_ord r3 ii >>= fun addr ->
-            simd_ldp var addr r1 r2 ii >>|
-            post_kr r3 addr (K k) ii >>! B.Next
+            (simd_ldp var addr r1 r2 ii >>|
+            post_kr r3 addr (K k) ii) >>=
+            fun (b,()) -> M.unitT b
         | I_STP_SIMD(_,var,r1,r2,r3,k) ->
             get_ea r3 k S_NOEXT ii >>= fun addr ->
             simd_stp var addr r1 r2 ii
         | I_STP_P_SIMD(_,var,r1,r2,r3,k) ->
             read_reg_ord r3 ii >>= fun addr ->
             simd_stp var addr r1 r2 ii >>|
-            post_kr r3 addr (K k) ii >>! B.Next
+            post_kr r3 addr (K k) ii >>=
+            fun (b,()) -> M.unitT b
 
         (* Morello instructions *)
         | I_ALIGND(rd,rn,kr) ->
             check_morello ii ;
-            (read_reg_ord_sz MachSize.S128 rn ii >>= match kr with
+            !((read_reg_ord_sz MachSize.S128 rn ii >>= match kr with
             | K k -> fun v -> M.op Op.Alignd v (V.intToV k)
             | _ -> assert false
-            ) >>= fun v -> write_reg_sz MachSize.S128 rd v ii >>! B.Next
+            ) >>= fun v -> write_reg_sz MachSize.S128 rd v ii)
         | I_ALIGNU(rd,rn,kr) ->
             check_morello ii ;
-            (read_reg_ord_sz MachSize.S128 rn ii >>= match kr with
+            !((read_reg_ord_sz MachSize.S128 rn ii >>= match kr with
             | K k -> fun v -> M.op Op.Alignu v (V.intToV k)
             | _ -> assert false
-            ) >>= fun v -> write_reg_sz MachSize.S128 rd v ii >>! B.Next
+            ) >>= fun v -> write_reg_sz MachSize.S128 rd v ii)
         | I_BUILD(rd,rn,rm) ->
             check_morello ii ;
-            begin
+            !(begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
             end >>= fun (a,b) ->
             M.op Op.Build a b >>= fun v ->
-            write_reg_sz MachSize.S128 rd v ii >>! B.Next
+            write_reg_sz MachSize.S128 rd v ii)
         | I_CHKEQ(rn,rm) ->
             check_morello ii ;
-            begin
+            !(begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
             end >>= fun (v1,v2) ->
             M.op Op.Eq v1 v2 >>= fun v -> M.op1 (Op.LeftShift 2) v >>= fun v ->
-            write_reg NZP v ii >>! B.Next
+            write_reg NZP v ii)
         | I_CHKSLD(rn) ->
             check_morello ii ;
-            read_reg_ord_sz MachSize.S128 rn ii >>= fun v ->
-            M.op1 Op.CheckSealed v >>= fun v -> write_reg NZP v ii >>! B.Next
+            !(read_reg_ord_sz MachSize.S128 rn ii >>= fun v ->
+            M.op1 Op.CheckSealed v >>= fun v -> write_reg NZP v ii)
         | I_CHKTGD(rn) ->
             check_morello ii ;
-            read_reg_ord_sz MachSize.S128 rn ii >>= fun v ->
-            M.op1 Op.CapaGetTag v >>= fun v -> M.op1 (Op.LeftShift 1) v >>= fun v ->
-            write_reg NZP v ii >>! B.Next
+            !(read_reg_ord_sz MachSize.S128 rn ii >>= fun v ->
+              M.op1 Op.CapaGetTag v >>= fun v -> M.op1 (Op.LeftShift 1) v
+              >>= fun v -> write_reg NZP v ii)
         | I_CLRTAG(rd,rn) ->
             check_morello ii ;
-            read_reg_ord_sz MachSize.S128 rn ii >>= fun (v) ->
+            !(read_reg_ord_sz MachSize.S128 rn ii >>= fun (v) ->
             M.op Op.CapaSetTag v V.zero >>= fun v ->
-            write_reg_sz MachSize.S128 rd v ii >>! B.Next
+            write_reg_sz MachSize.S128 rd v ii)
         | I_CPYTYPE(rd,rn,rm) ->
             check_morello ii ;
-            begin
+            !(begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
             end >>= fun (v1,v2) -> M.op Op.CpyType v1 v2 >>= fun v ->
-            write_reg_sz MachSize.S128 rd v ii >>! B.Next
+            write_reg_sz MachSize.S128 rd v ii)
         | I_CPYVALUE(rd,rn,rm) ->
             check_morello ii ;
-            begin
+            !(begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
             end >>= fun (v1,v2) -> M.op Op.SetValue v1 v2 >>= fun v ->
-            write_reg_sz MachSize.S128 rd v ii >>! B.Next
+            write_reg_sz MachSize.S128 rd v ii)
         | I_CSEAL(rd,rn,rm) ->
             check_morello ii ;
-            begin
+            !(begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
             end >>= fun (v1,v2) ->
             M.op Op.CSeal v1 v2 >>= fun v ->
             write_reg_sz MachSize.S128 rd v ii >>= fun _ ->
             (* TODO: PSTATE overflow flag would need to be conditionally set *)
-            write_reg NZP M.A.V.zero ii >>! B.Next
+            write_reg NZP M.A.V.zero ii)
         | I_GC(op,rd,rn) ->
             check_morello ii ;
-            read_reg_ord_sz MachSize.S128 rn ii >>= begin fun c -> match op with
+            !(read_reg_ord_sz MachSize.S128 rn ii >>= begin fun c -> match op with
             | CFHI -> M.op1 (Op.LogicalRightShift 64) c
             | GCFLGS -> M.op1 (Op.AndK "0xff00000000000000") c
             | GCPERM -> M.op1 (Op.LogicalRightShift 110) c
@@ -1676,10 +1702,10 @@ module Make
             | GCTYPE -> M.op1 (Op.LeftShift 18) c >>= fun v ->
                 M.op1 (Op.LogicalRightShift 113) v
             | GCVALUE -> M.op1 (Op.Mask MachSize.Quad) c
-            end >>= fun v -> write_reg_sz MachSize.Quad rd v ii >>! B.Next
+            end >>= fun v -> write_reg_sz MachSize.Quad rd v ii)
         | I_SC(op,rd,rn,rm) ->
             check_morello ii ;
-            begin
+            !(begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.Quad rm ii
             end >>=
@@ -1695,15 +1721,15 @@ module Make
                   M.op Op.CapaSetTag cn cond
               | SCVALUE -> M.op Op.SetValue cn xm
             end >>= fun v ->
-            write_reg_sz MachSize.S128 rd v ii >>! B.Next
+            write_reg_sz MachSize.S128 rd v ii)
         | I_SEAL(rd,rn,rm) ->
             check_morello ii ;
-            begin
+            !(begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
             end >>= fun (a,b) ->
             M.op Op.Seal a b >>= fun v ->
-            write_reg_sz MachSize.S128 rd v ii >>! B.Next
+            write_reg_sz MachSize.S128 rd v ii)
         | I_STCT(rt,rn) ->
             check_morello ii ;
             (* NB: only 1 access implemented out of the 4 *)
@@ -1711,7 +1737,7 @@ module Make
               (fun _ac ma mv ->
                 do_insert_commit
                   (ma >>| mv)
-                  (fun (a,v) -> do_write_morello_tag a v ii >>! B.Next)
+                  (fun (a,v) -> !(do_write_morello_tag a v ii))
                   ii)
               (to_perms "tw" MachSize.S128)
               (read_reg_ord rn ii)
@@ -1725,13 +1751,12 @@ module Make
                 M.delay_kont "LDCT" ma
                   (fun _a ma ->
                     do_insert_commit ma
-                      (fun a -> (* Why cheeck permissions again ? *)
+                      (fun a -> (* Why check permissions again ? *)
                         M.op (Op.CheckPerms "tr_c") a M.A.V.zero >>= fun v ->
                         M.choiceT v
                           (do_read_morello_tag a ii)
                           mzero
-                        >>= fun tag ->
-                        write_reg_sz quad rt tag ii >>! B.Next)
+                        >>= fun tag -> !(write_reg_sz quad rt tag ii))
                       ii))
               (to_perms "r" MachSize.S128)
               (read_reg_ord rn ii)
@@ -1739,32 +1764,31 @@ module Make
               ii
         | I_UNSEAL(rd,rn,rm) ->
             check_morello ii ;
-            begin
+            !(begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
             end >>= fun (a,b) ->
             M.op Op.Unseal a b >>= fun v ->
-            write_reg_sz MachSize.S128 rd v ii >>! B.Next
+            write_reg_sz MachSize.S128 rd v ii)
 
         (* Operations *)
         | I_MOV(var,r,K k) ->
-            (mask32 var
+            !(mask32 var
                (fun k -> write_reg r k ii)
                (V.intToV k))
-              >>! B.Next
         | I_MOV(var,r1,RV (_,r2)) ->
             let sz = tr_variant var in
-            read_reg_ord_sz sz r2 ii >>= fun v -> write_reg r1 v ii >>! B.Next
+            !(read_reg_ord_sz sz r2 ii >>= fun v -> write_reg r1 v ii)
         | I_MOVZ(var,rd,k,os) ->
-            movz var rd k os ii
+            !(movz var rd k os ii)
         | I_MOVK(var,rd,k,os) ->
-            movk var rd k os ii
+            !(movk var rd k os ii)
 
         | I_ADDR (r,lbl) ->
-            write_reg r (V.nameToV lbl) ii >>! B.Next
+            !(write_reg r (V.nameToV lbl) ii)
         | I_SXTW(rd,rs) ->
-            (read_reg_ord_sz MachSize.Word rs ii) >>=
-             sxtw_op >>= fun v -> write_reg rd v ii >>! B.Next
+            !(read_reg_ord_sz MachSize.Word rs ii >>=
+             sxtw_op >>= fun v -> write_reg rd v ii)
 
         | I_OP3(ty,op,rd,rn,kr,os) ->
             let sz = tr_variant ty in
@@ -1798,7 +1822,7 @@ module Make
                   (pp_variant ty)
                   (pp_op op)
             end in
-            begin match kr with
+            !!(begin match kr with
             | RV (_,r) when reg_compare r rn = 0 -> (* register variant*)
                 (* Keep sharing here, otherwise performance penalty on address
                    dependency by r^r in mixed size mode *)
@@ -1860,24 +1884,23 @@ module Make
                       -> is_zero v >>= fun v -> write_reg NZP v ii
                     | ADD|EOR|ORR|AND|SUB|ASR|LSR|LSL|BIC
                       -> M.unitT ()) in
-               mask32 ty m) >>! B.Next
+               mask32 ty m))
 
       (* Barrier *)
         | I_FENCE b ->
-            (create_barrier b ii) >>! B.Next
+            !(create_barrier b ii)
               (* Conditional selection *)
         | I_CSEL (var,r1,r2,r3,c,op) ->
             let sz = tr_variant var in
             let mask = match op with
             | Cpy -> fun m -> m
             | Inc|Inv|Neg -> mask32 var in
-            if not (C.variant Variant.NotWeakPredicated) then
+            !(if not (C.variant Variant.NotWeakPredicated) then
               read_reg_ord NZP ii >>= tr_cond c >>*= fun v ->
                 M.choiceT v
                   (read_reg_data sz r2 ii >>= fun v -> write_reg r1 v ii)
                   (read_reg_data sz r3 ii >>=
                      csel_op op >>= mask (fun v ->  write_reg r1 v ii))
-                >>! B.Next
             else
               begin
                 (read_reg_ord NZP ii >>= tr_cond c) >>|  read_reg_data sz r2 ii >>| read_reg_data sz r3 ii
@@ -1885,36 +1908,34 @@ module Make
               M.condPredT v
                 (M.unitT ())
                 (write_reg r1 v2 ii)
-                (csel_op op v3 >>= mask (fun v ->  write_reg r1 v ii))
-                  >>! B.Next
+                (csel_op op v3 >>= mask (fun v ->  write_reg r1 v ii)))
 
         (* Swap *)
-        | I_SWP (v,rmw,r1,r2,r3) -> swp (tr_variant v) rmw r1 r2 r3 ii >>! B.Next
-        | I_SWPBH (v,rmw,r1,r2,r3) -> swp (bh_to_sz v) rmw r1 r2 r3 ii >>! B.Next
+        | I_SWP (v,rmw,r1,r2,r3) -> swp (tr_variant v) rmw r1 r2 r3 ii
+        | I_SWPBH (v,rmw,r1,r2,r3) -> swp (bh_to_sz v) rmw r1 r2 r3 ii
 (* Compare & Swap *)
         | I_CAS (v,rmw,rs,rt,rn) ->
             (* TODO: unify cas functions *)
             let cas = if morello then cas_morello else cas in
-            cas (tr_variant v) rmw rs rt rn ii >>! B.Next
+            cas (tr_variant v) rmw rs rt rn ii
         | I_CASBH (v,rmw,rs,rt,rn) ->
             (* TODO: unify cas functions *)
             let cas = if morello then cas_morello else cas in
-            cas (bh_to_sz v) rmw rs rt rn ii >>! B.Next
+            cas (bh_to_sz v) rmw rs rt rn ii
 (* Fetch and Op *)
         | I_STOP (op,v,w,rs,rn) ->
-            ldop op (tr_variant v) (w_to_rmw w) rs ZR rn ii >>! B.Next
+            ldop op (tr_variant v) (w_to_rmw w) rs ZR rn ii
         | I_LDOP (op,v,rmw,rs,rt,rn) ->
-            ldop op (tr_variant v) rmw rs rt rn ii >>! B.Next
+            ldop op (tr_variant v) rmw rs rt rn ii
         | I_STOPBH (op,v,w,rs,rn) ->
-            ldop op (bh_to_sz v) (w_to_rmw w) rs ZR rn ii >>! B.Next
+            ldop op (bh_to_sz v) (w_to_rmw w) rs ZR rn ii
         | I_LDOPBH (op,v,rmw,rs,rt,rn) ->
-            ldop op (bh_to_sz v) rmw rs rt rn ii >>! B.Next
+            ldop op (bh_to_sz v) rmw rs rt rn ii
 (* Page tables and TLBs *)
         | I_TLBI (op, rd) ->
-            read_reg_ord rd ii >>= fun a ->
-              do_inv op a ii >>! B.Next
+            !(read_reg_ord rd ii >>= fun a -> do_inv op a ii)
 (* Data cache instructions *)
-        | I_DC (op,rd) -> do_dc op rd ii >>! B.Next
+        | I_DC (op,rd) -> do_dc op rd ii
 (*  Cannot handle *)
         | (I_RBIT _|I_MRS _|I_LDP _|I_STP _|I_IC _
         | I_BL _|I_BLR _|I_BR _|I_RET _
