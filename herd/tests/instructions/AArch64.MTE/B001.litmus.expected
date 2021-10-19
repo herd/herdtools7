@@ -1,0 +1,10 @@
+Test B001 Required
+States 1
+0:X5=0; [x]=0; Fault(P0,x:red);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([x]=0 /\ 0:X5=0)
+Observation B001 Always 1 0
+Hash=f71247cb81b2fe331994046291ecd8dd
+
