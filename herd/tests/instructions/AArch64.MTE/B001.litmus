@@ -1,0 +1,11 @@
+AArch64 B001
+(* Memory operation must fail *)
+{
+0:X1=x:red;
+}
+ P0                 ;
+ MOV W4,#1          ;
+ LDEORAL W4,W3,[X1] ;
+ MOV W5,#2          ;
+locations [Fault(P0,x);] 
+forall [x]=0 /\ 0:X5=0

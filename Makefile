@@ -115,6 +115,16 @@ test::
 	$(HERD_REGRESSION_TEST) \
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64.MTE \
+		-conf ./herd/tests/instructions/AArch64.MTE/mte.cfg \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 MTE instructions tests: OK"
+
+test::
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
 		-litmus-dir ./herd/tests/instructions/C \
 		-conf ./herd/tests/instructions/C/c.cfg \
 		$(REGRESSION_TEST_MODE)
