@@ -42,6 +42,7 @@ module Make(Scalar:Scalar.S) = struct
     | Label (p,lbl)  -> sprintf "%i:%s" p lbl
     | Tag s -> sprintf ":%s" s
     | PteVal p -> PTEVal.pp p
+    | Instruction i -> InstrLit.pp i
 
   let pp = do_pp Constant.pp_symbol Scalar.pp
   and pp_unsigned = do_pp Constant.pp_symbol Scalar.pp_unsigned
@@ -58,12 +59,16 @@ module Make(Scalar:Scalar.S) = struct
       Misc.pair_compare Proc.compare String.compare (p1,s1) (p2,s2)
   | Tag t1,Tag t2 -> String.compare t1 t2
   | PteVal p1,PteVal p2 -> PTEVal.compare p1 p2
-  | (Concrete _,(ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _))
-  | (ConcreteVector _,(Symbolic _|Label _|Tag _|PteVal _))
-  | (Symbolic _,(Label _|Tag _|PteVal _))
-  | (Label _,(Tag _|PteVal _))
-  | (Tag _,PteVal _)
+  | (Instruction i1, Instruction i2)
+    -> InstrLit.compare i1 i2
+  | (Concrete _,(ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _|Instruction _))
+  | (ConcreteVector _,(Symbolic _|Label _|Tag _|PteVal _|Instruction _))
+  | (Symbolic _,(Label _|Tag _|PteVal _|Instruction _))
+  | (Label _,(Tag _|PteVal _|Instruction _))
+  | (Tag _,(PteVal _|Instruction _))
+  | (PteVal _, Instruction _)
     -> -1
+  | (Instruction _, (PteVal _|Tag _|Label _|Symbolic _|ConcreteVector _|Concrete _))
   | (PteVal _,(Tag _|Label _|Symbolic _|ConcreteVector _|Concrete _))
   | (Tag _,(Label _|Symbolic _|ConcreteVector _|Concrete _))
   | (Label _,(Symbolic _|ConcreteVector _|Concrete _))
@@ -80,18 +85,20 @@ module Make(Scalar:Scalar.S) = struct
       Misc.string_eq  s1 s2 && Misc.int_eq p1 p2
   | Tag t1,Tag t2 -> Misc.string_eq t1 t2
   | PteVal p1,PteVal p2 -> PTEVal.compare p1 p2 = 0
-  | (PteVal _,(Symbolic _|Concrete _|ConcreteVector _|Label _|Tag _))
-  | (ConcreteVector _,(Symbolic _|Label _|Tag _|Concrete _|PteVal _))
-  | (Concrete _,(Symbolic _|Label _|Tag _|ConcreteVector _|PteVal _))
-  | (Symbolic _,(Concrete _|Label _|Tag _|ConcreteVector _|PteVal _))
-  | (Label _,(Concrete _|Symbolic _|Tag _|ConcreteVector _|PteVal _))
-  | (Tag _,(Concrete _|Symbolic _|Label _|ConcreteVector _|PteVal _))
+  | (Instruction i1, Instruction i2) -> InstrLit.compare i1 i2 = 0
+  | (PteVal _,(Symbolic _|Concrete _|ConcreteVector _|Label _|Tag _|Instruction _))
+  | (ConcreteVector _,(Symbolic _|Label _|Tag _|Concrete _|PteVal _|Instruction _))
+  | (Concrete _,(Symbolic _|Label _|Tag _|ConcreteVector _|PteVal _|Instruction _))
+  | (Symbolic _,(Concrete _|Label _|Tag _|ConcreteVector _|PteVal _|Instruction _))
+  | (Label _,(Concrete _|Symbolic _|Tag _|ConcreteVector _|PteVal _|Instruction _))
+  | (Tag _,(Concrete _|Symbolic _|Label _|ConcreteVector _|PteVal _|Instruction _))
+  | (Instruction _,(Concrete _|Symbolic _|Label _|ConcreteVector _|PteVal _|Tag _))
     -> false
 
  (* For building code symbols. *)
   let vToName = function
     | Symbolic s-> Constant.as_address s
-    | Concrete _|ConcreteVector _ | Label _|Tag _|PteVal _
+    | Concrete _|ConcreteVector _ | Label _|Tag _|PteVal _|Instruction _
         -> assert false
 
 (* Arch dependant result *)

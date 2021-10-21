@@ -166,6 +166,7 @@ type 'scalar t =
   | Label of Proc.t * string     (* In code *)
   | Tag of string
   | PteVal of PTEVal.t
+  | Instruction of InstrLit.t
 
 let _debug = function
 | Concrete _ -> "Concrete _"
@@ -174,11 +175,12 @@ let _debug = function
 | Label (p,s) -> sprintf "Label (%s,%s)" (Proc.pp p) s
 | Tag s -> sprintf "Tag %s" s
 | PteVal p -> sprintf "PteVal %s" (PTEVal.pp p)
+| Instruction i -> sprintf "Instruction %s" (InstrLit.pp i)
 
 let rec map_scalar f = function
 | Concrete s -> Concrete (f s)
 | ConcreteVector cs -> ConcreteVector (List.map (map_scalar f) cs)
-| (Symbolic _|Label _ |Tag _|PteVal _) as c -> c
+| (Symbolic _|Label _ |Tag _|PteVal _|Instruction _) as c -> c
 
 let do_mk_virtual s = Virtual { default_symbolic_data with name=s; }
 
@@ -232,7 +234,11 @@ let mk_replicate sz v = ConcreteVector (Misc.replicate sz v)
 
 let is_symbol = function
   | Symbolic _ -> true
-  | Concrete _|ConcreteVector _| Label _| Tag _ | PteVal _ -> false
+  | Concrete _|ConcreteVector _| Label _| Tag _ | PteVal _|Instruction _ -> false
+
+let is_label = function
+  | Label _ -> true
+  | Concrete _|ConcreteVector _| Symbolic _ | Tag _ | PteVal _|Instruction _ -> false
 
 let is_non_mixed_symbol = function
   | Virtual {offset=idx;_}
@@ -243,7 +249,7 @@ let default_tag = Tag "green"
 
 let check_sym v =  match v with
 | Symbolic _|Label _|Tag _ as sym -> sym
-| Concrete _|ConcreteVector _|PteVal _ ->  assert false
+| Concrete _|ConcreteVector _|PteVal _|Instruction _ ->  assert false
 
 let is_virtual v = match v with
 | Symbolic (Virtual _) -> true

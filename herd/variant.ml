@@ -59,6 +59,8 @@ type t =
   | ConstrainedUnpredictable
 (* Perform experiment *)
   | Exp
+(* Instruction-fetch support (AKA "self-modifying code" mode) *)
+  | Self
 
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
@@ -67,7 +69,7 @@ let tags =
    "tagcheckprecise"; "tagcheckunprecise"; "precise"; "imprecise";
    "toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
-   "exp"; ]
+   "exp"; "self";]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -101,6 +103,7 @@ let parse s = match Misc.lowercase s with
 | "optrfrmw" -> Some OptRfRMW
 | "constrainedunpredictable"|"cu" -> Some ConstrainedUnpredictable
 | "exp" -> Some Exp
+| "self" -> Some Self
 | _ -> None
 
 let pp = function
@@ -135,6 +138,7 @@ let pp = function
   | OptRfRMW -> "OptRfRMW"
   | ConstrainedUnpredictable -> "ConstrainedUnpredictable"
   | Exp -> "exp"
+  | Self -> "self"
 
 let compare = compare
 

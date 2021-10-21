@@ -71,6 +71,7 @@ type 'scalar t =
   | Label of Proc.t * string     (* In code *)
   | Tag of string
   | PteVal of PTEVal.t
+  | Instruction of InstrLit.t
 
 (* Do nothing on non-scalar *)
 val map_scalar : ('a -> 'b) -> 'a t -> 'b t
@@ -86,6 +87,7 @@ val mk_vec : int -> 'scalar t list -> 'scalar t
 val mk_replicate : int -> 'scalar t -> 'scalar t
 
 val is_symbol : 'scalar t -> bool
+val is_label : 'scalar t -> bool
 val is_non_mixed_symbol : symbol -> bool
 
 val default_tag : 'scalar t

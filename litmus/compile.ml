@@ -60,6 +60,8 @@ module Generic (A : Arch_litmus.Base)
         | Constant.Label _ -> code_pointer
         | Constant.Tag _ -> tag
         | Constant.PteVal _ -> pteval_t
+        | Constant.Instruction _ ->
+          Warn.fatal "FIXME: typeof functionality for -variant self" 
 
       let misc_to_c loc = function
         | TestType.TyDef when A.is_pte_loc loc -> pteval_t
@@ -400,6 +402,8 @@ type P.code = MiscParser.proc * A.pseudo list)
       | Concrete i -> i
       | ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _
         -> raise CannotIntern
+      | Instruction _ ->
+        Warn.fatal "FIXME: as_int functionality for -variant self" 
 
     let compile_pseudo_code code k =
       let m =

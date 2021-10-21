@@ -475,6 +475,7 @@ module RegMap = A.RegMap)
             let idx = find_pteval_index p ptevalEnv in
             add_pteval idx
         | Tag _ -> assert false
+        | Instruction _ -> Warn.fatal "FIXME: compile_val_fun functionality for -variant self" 
 
       let compile_init_val_fun = compile_val_fun
 

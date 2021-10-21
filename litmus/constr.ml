@@ -102,7 +102,8 @@ module RLocSet = A.RLocSet =
             | Concrete _|PteVal _ -> k
             | ConcreteVector vs ->
                 List.fold_right f vs k
-            | Label _|Symbolic _|Tag _ -> assert false in
+            | Label _|Symbolic _|Tag _ -> assert false
+            | Instruction _ -> Warn.fatal "FIXME: atom_values functionality for -variant self" in
             f v k
       | LL _|FF _ -> k
 
