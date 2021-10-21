@@ -33,6 +33,7 @@ type location =
   | Location_global of maybev
 
 val location_compare : location -> location -> int
+val dump_value : maybev -> string
 val dump_location : location -> string
 val dump_location_brk : location -> string
 val is_global : location -> bool
@@ -135,3 +136,6 @@ val get_info_on_info : string -> (string * string) list -> string option
 val get_info :  ('i, 'p, 'c, 'loc, 'v) result -> string -> string option
 
 val add_oa_if_none : location -> ParsedPteVal.t -> maybev
+
+val mk_instr_val : string -> ('scalar,'pte) Constant.t
+

@@ -288,6 +288,15 @@ type instruction = int kinstruction
 
 type parsedInstruction = MetaConst.k kinstruction
 
+let is_overwritable
+  (_ : Label.Set.t)
+  (_ : instruction) : bool =
+  Warn.fatal "FIXME: functionality not implemented for -variant self"
+  
+let instruction_to_value
+  (_ : instruction) =
+  Warn.fatal "FIXME: functionality not implemented for -variant self"
+
 let ppi_index_mode opcode r1 r2 r3 =
   opcode^" "^pp_reg r1 ^ ","^pp_reg r2 ^ ","^pp_reg r3
 

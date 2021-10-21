@@ -69,6 +69,7 @@ let mk_lab p s = Label (p,s)
 %token ATTRS TOK_OA
 %token TOK_PTE TOK_PA
 %token TOK_TAG
+%token TOK_NOP
 
 %token PTX_REG_DEC
 %token <string> PTX_REG_TYPE
@@ -206,6 +207,8 @@ atom_init:
 | atom { let x,v = $1 in x,(TyDef,v) }
 | typ=NAME loc=left_loc  { (loc, (Ty typ,ParsedConstant.zero)) }
 | ATOMIC typ=NAME loc=left_loc { loc,(Atomic typ,ParsedConstant.zero)}
+| loc=left_loc EQUAL TOK_NOP
+  { (loc,(Ty "string", mk_instr_val "NOP")) }
 | typ=NAME loc=left_loc EQUAL v=maybev { (loc,(Ty typ,v))}
 | typ=NAME loc=left_loc EQUAL ATOMICINIT LPAR v=maybev RPAR
    { (loc,(Ty typ,v))}

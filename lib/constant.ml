@@ -166,6 +166,7 @@ type ('scalar,'pte) t =
   | Label of Proc.t * string     (* In code *)
   | Tag of string
   | PteVal of 'pte
+  | Instruction of InstrLit.t
 
 let rec compare scalar_compare pteval_compare c1 c2 =
   match c1,c2 with
@@ -177,12 +178,15 @@ let rec compare scalar_compare pteval_compare c1 c2 =
       Misc.pair_compare Proc.compare String.compare (p1,s1) (p2,s2)
   | Tag t1,Tag t2 -> String.compare t1 t2
   | PteVal p1,PteVal p2 -> pteval_compare p1 p2
-  | (Concrete _,(ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _))
-  | (ConcreteVector _,(Symbolic _|Label _|Tag _|PteVal _))
-  | (Symbolic _,(Label _|Tag _|PteVal _))
-  | (Label _,(Tag _|PteVal _))
-  | (Tag _,PteVal _)
+  | Instruction i1,Instruction i2 -> InstrLit.compare i1 i2
+  | (Concrete _,(ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _|Instruction _))
+  | (ConcreteVector _,(Symbolic _|Label _|Tag _|PteVal _|Instruction _))
+  | (Symbolic _,(Label _|Tag _|PteVal _|Instruction _))
+  | (Label _,(Tag _|PteVal _|Instruction _))
+  | (Tag _,(PteVal _|Instruction _))
+  | (PteVal _,Instruction _)
     -> -1
+  | (Instruction _,(PteVal _|Tag _|Label _|Symbolic _|ConcreteVector _|Concrete _))
   | (PteVal _,(Tag _|Label _|Symbolic _|ConcreteVector _|Concrete _))
   | (Tag _,(Label _|Symbolic _|ConcreteVector _|Concrete _))
   | (Label _,(Symbolic _|ConcreteVector _|Concrete _))
@@ -199,12 +203,14 @@ let rec eq scalar_eq pteval_eq c1 c2 = match c1,c2 with
       Misc.string_eq  s1 s2 && Misc.int_eq p1 p2
   | Tag t1,Tag t2 -> Misc.string_eq t1 t2
   | PteVal p1,PteVal p2 -> pteval_eq p1 p2
-  | (PteVal _,(Symbolic _|Concrete _|ConcreteVector _|Label _|Tag _))
-  | (ConcreteVector _,(Symbolic _|Label _|Tag _|Concrete _|PteVal _))
-  | (Concrete _,(Symbolic _|Label _|Tag _|ConcreteVector _|PteVal _))
-  | (Symbolic _,(Concrete _|Label _|Tag _|ConcreteVector _|PteVal _))
-  | (Label _,(Concrete _|Symbolic _|Tag _|ConcreteVector _|PteVal _))
-  | (Tag _,(Concrete _|Symbolic _|Label _|ConcreteVector _|PteVal _))
+  | Instruction i1,Instruction i2 -> InstrLit.compare i1 i2 = 0
+  | (Instruction _,(Symbolic _|Concrete _|ConcreteVector _|Label _|Tag _|PteVal _))
+  | (PteVal _,(Symbolic _|Concrete _|ConcreteVector _|Label _|Tag _|Instruction _))
+  | (ConcreteVector _,(Symbolic _|Label _|Tag _|Concrete _|PteVal _|Instruction _))
+  | (Concrete _,(Symbolic _|Label _|Tag _|ConcreteVector _|PteVal _|Instruction _))
+  | (Symbolic _,(Concrete _|Label _|Tag _|ConcreteVector _|PteVal _|Instruction _))
+  | (Label _,(Concrete _|Symbolic _|Tag _|ConcreteVector _|PteVal _|Instruction _))
+  | (Tag _,(Concrete _|Symbolic _|Label _|ConcreteVector _|PteVal _|Instruction _))
     -> false
 
 let rec mk_pp pp_symbol pp_scalar pp_pteval = function
@@ -218,6 +224,7 @@ let rec mk_pp pp_symbol pp_scalar pp_pteval = function
     | Label (p,lbl)  -> sprintf "%i:%s" p lbl
     | Tag s -> sprintf ":%s" s
     | PteVal p -> pp_pteval p
+    | Instruction i -> InstrLit.pp i
 
 let pp pp_scalar pp_pteval = mk_pp pp_symbol pp_scalar pp_pteval
 and pp_old pp_scalar pp_pteval = mk_pp pp_symbol_old  pp_scalar pp_pteval
@@ -229,14 +236,16 @@ let _debug = function
 | Label (p,s) -> sprintf "Label (%s,%s)" (Proc.pp p) s
 | Tag s -> sprintf "Tag %s" s
 | PteVal _ -> "PteVal"
+| Instruction i -> sprintf "Instruction %s" (InstrLit.pp i)
+
 
 let rec map_scalar f = function
-| (Symbolic _|Label _ |Tag _|PteVal _) as c -> c
+| (Symbolic _|Label _ |Tag _|PteVal _|Instruction _) as c -> c
 | Concrete s -> Concrete (f s)
 | ConcreteVector cs -> ConcreteVector (List.map (map_scalar f) cs)
 
 let rec map f_scalar f_pteval = function
-| Symbolic _ | Label _ | Tag _ as m -> m
+| Symbolic _ | Label _ | Tag _ | Instruction _ as m -> m
 | PteVal p -> PteVal (f_pteval p)
 | Concrete s -> Concrete (f_scalar s)
 | ConcreteVector cs ->
@@ -295,7 +304,11 @@ let mk_replicate sz v = ConcreteVector (Misc.replicate sz v)
 
 let is_symbol = function
   | Symbolic _ -> true
-  | Concrete _|ConcreteVector _| Label _| Tag _ | PteVal _ -> false
+  | Concrete _|ConcreteVector _|Label _|Tag _| PteVal _|Instruction _ -> false
+
+let is_label = function
+  | Label _ -> true
+  | Concrete _|ConcreteVector _|Symbolic _|Tag _ |PteVal _|Instruction _ -> false
 
 let is_non_mixed_symbol = function
   | Virtual {offset=idx;_}
@@ -306,7 +319,7 @@ let default_tag = Tag "green"
 
 let check_sym v =  match v with
 | Symbolic _|Label _|Tag _ as sym -> sym
-| Concrete _|ConcreteVector _|PteVal _ ->  assert false
+| Concrete _|ConcreteVector _|PteVal _|Instruction _ ->  assert false
 
 let is_virtual v = match v with
 | Symbolic (Virtual _) -> true

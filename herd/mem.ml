@@ -133,6 +133,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     let check_mixed =  not (C.variant Variant.DontCheckMixed)
     let do_deps = C.variant Variant.Deps
     let kvm = C.variant Variant.Kvm
+    let self = C.variant Variant.Self
 
 (*****************************)
 (* Event structure generator *)
@@ -340,11 +341,12 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       | S.B.CondJump (v,lbl) ->
           EM.condJumpT v
             (add_lbl proc env seen addr lbl)
-            (add_code proc env seen nexts) in
+            (add_code proc env seen nexts) 
+      in
 
 (* Code monad returns a boolean. When false the code must be discarded.
    See also add_instr in eventsMonad.ml *)
-      let jump_start proc env code =
+      let jump_start proc env code =     
         add_code proc env Imap.empty code in
 
 (* As name suggests, add events of one thread *)
@@ -358,10 +360,16 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
 (* Initial events, some additional events from caller in madd *)
       let make_inits madd env size_env =
-        if C.initwrites then
-          let module MI = EM.Mixed(C) in
-          MI.initwrites madd env size_env
-        else EM.zerocodeT in
+        let module MI = EM.Mixed(C) in
+        if self then begin
+          if C.initwrites then      
+            MI.init_writes_and_instr madd env size_env labels_of_instr starts
+          else MI.initinstructions labels_of_instr starts
+        end else begin
+          if C.initwrites then
+            MI.initwrites madd env size_env
+          else EM.zerocodeT end
+      in
 
       let env0 = get_all_mem_locs test in
 
@@ -1666,6 +1674,11 @@ let match_reg_events es =
         (fun e -> match E.location_of e with
         | Some (A.Location_global (V.Val cst)) when Constant.is_symbol cst
               -> ()
+        | Some (A.Location_global (V.Val cst)) when Constant.is_label cst
+              ->
+              if not self then
+                Warn.user_error "Non-symbolic memory access via a label found on '%s'"
+                  (A.pp_location (A.Location_global (V.Val cst)))
         | Some loc ->
             Warn.user_error "Non-symbolic memory access found on '%s'"
               (A.pp_location loc)

@@ -40,6 +40,7 @@ module Make
     let is_branching = kvm && not (C.variant Variant.NoPteBranch)
     let pte2 = kvm && C.variant Variant.PTE2
     let do_cu = C.variant Variant.ConstrainedUnpredictable
+    let self = C.variant Variant.Self
 
     let check_memtag ins =
       if not memtag then
@@ -49,6 +50,12 @@ module Make
       if not morello then
         Warn.user_error
           "morello instruction %s require -variant morello"
+          (AArch64.dump_instruction ii.A.inst)
+
+    let check_self ii =
+      if not self then
+        Warn.user_error
+          "instruction %s requires -variant self"
           (AArch64.dump_instruction ii.A.inst)
 
 (* Barrier pretty print *)
@@ -769,6 +776,7 @@ module Make
       let is_gt v = M.op Op.Gt v V.zero
       let is_le v = M.op Op.Le v V.zero
       let is_lt v = M.op Op.Lt v V.zero
+      let is_eq v1 v2 = M.op Op.Eq v1 v2
 
       let tr_cond = function
         | AArch64.NE -> is_zero
@@ -1385,6 +1393,19 @@ module Make
           end
 
 (********************)
+(* TODO *)
+(********************)
+
+      let make_label (proc: A.proc) (lbl_str: string) : A.location =
+        A.Location_global (A.V.cstToV (Constant.Label (proc, lbl_str)))
+
+      let read_loc_instr v ii =
+        let loc_instr =
+          make_label ii.A.proc v
+        in
+        M.read_loc false (mk_read MachSize.Word AArch64.N aexp) loc_instr ii
+
+(********************)
 (* Main entry point *)
 (********************)
       (*
@@ -1410,7 +1431,25 @@ module Make
             M.unitT B.Next
               (* Branches *)
         | I_B l ->
-            B.branchT l
+            if not self then
+              B.branchT l
+            else begin
+              match Label.Set.elements ii.A.labels with
+              | hd::_ ->
+                  let instr_v = A.V.cstToV (A.instruction_to_value ii.A.inst) in
+                  M.altT  (
+                    read_loc_instr hd ii
+                    >>= is_eq instr_v
+                    >>= is_not_zero
+                    >>= fun _ -> B.branchT l
+                  ) (
+                    read_loc_instr hd ii
+                    >>= is_eq instr_v
+                    >>= is_zero
+                    >>= fun _ -> M.unitT B.Next
+                  )
+              | [] -> B.branchT l
+            end
 
         | I_BC(c,l)->
             read_reg_ord NZP ii  >>= tr_cond c >>= fun v ->

@@ -57,6 +57,8 @@ type t =
   | ConstrainedUnpredictable
 (* Perform experiment *)
   | Exp
+(* Instruction-fetch support (AKA "self-modifying code" mode) *)
+  | Self
 
 val compare : t -> t -> int
 val tags : string list

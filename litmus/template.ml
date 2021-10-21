@@ -183,7 +183,10 @@ module Make(O:Config)(A:I) =
                       end
                   | ConcreteVector vs ->
                       List.fold_right f vs k
-                  | Concrete _|Label _|Tag _|PteVal _ -> k in
+                  | Concrete _|Label _|Tag _|PteVal _ -> k
+                  | Instruction _ ->
+                    Warn.warn_always "FIXME: a possible error due to -variant self" ;
+                    k in
                   f v k)
                 [] init)) in
       StringSet.elements set
@@ -220,6 +223,9 @@ module Make(O:Config)(A:I) =
           | ConcreteVector vs ->
               List.fold_right f vs k
           | Concrete _|Symbolic _|Tag _|PteVal _ -> k
+          | Instruction _ ->
+            Warn.warn_always "FIXME: a possible error due to -variant self" ;
+            k
           in f v k)
         [] init
 

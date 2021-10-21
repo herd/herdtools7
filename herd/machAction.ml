@@ -91,8 +91,9 @@ end = struct
     | Symbolic (System ((PTE|PTE2),_)) -> Access.PTE
     | Symbolic (System (TLB,_)) -> Access.TLB
     | Symbolic (System (TAG,_)) -> Access.TAG
-    | Label _|Tag _
-    | ConcreteVector _|Concrete _|PteVal _ as v ->
+    | Label _ -> VIR
+    | Tag _
+    | ConcreteVector _|Concrete _|PteVal _|Instruction _ as v ->
         Warn.fatal "access_of_constant %s as an address"
           (V.pp_v (V.Val v)) (* assert false *)
 
@@ -118,6 +119,12 @@ end = struct
           if kvm then Access.PTE
           else Warn.fatal "PTE %s while -variant kvm is not active"
                  (A.pp_location loc)
+    | A.Location_global (V.Val (Label(_,_))) as loc
+        ->
+          Warn.warn_always
+            "FIXME: access_of_location_std on a label '%s' to be verified with -variant self"
+            (A.pp_location loc)
+          ; VIR
     | A.Location_global v ->
         Warn.fatal
           "access_of_location_std on non-standard symbol '%s'"
@@ -531,7 +538,7 @@ end = struct
           let open Constant in
           function
           | Some (A.V.Val (PteVal v)) -> Some v
-          | Some (A.V.Val (ConcreteVector _|Concrete _|Symbolic _|Label (_, _)|Tag _))
+          | Some (A.V.Val (ConcreteVector _|Concrete _|Symbolic _|Label (_, _)|Tag _|Instruction _))
           | None
             -> None
           | Some (A.V.Var _) ->

@@ -204,6 +204,15 @@ type 'k kinstruction =
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
 
+let is_overwritable
+  (_ : Label.Set.t)
+  (_ : instruction) : bool =
+  Warn.fatal "FIXME: functionality not implemented for -variant self"
+  
+let instruction_to_value
+  (_ : instruction)  =
+  Warn.fatal "FIXME: functionality not implemented for -variant self"
+
 let pp_lbl = fun i -> i
 
 open PPMode

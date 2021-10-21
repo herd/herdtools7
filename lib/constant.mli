@@ -71,6 +71,7 @@ type ('scalar,'pte) t =
   | Label of Proc.t * string     (* In code *)
   | Tag of string
   | PteVal of 'pte
+  | Instruction of InstrLit.t
 
 val compare :
   ('scalar -> 'scalar -> int) ->
@@ -103,6 +104,8 @@ val mk_vec : int -> ('scalar,'pte) t list -> ('scalar,'pte) t
 val mk_replicate : int -> ('scalar,'pte) t -> ('scalar,'pte) t
 
 val is_symbol : ('scalar,'pte) t -> bool
+val is_label : ('scalar,'pte) t -> bool
+
 val is_non_mixed_symbol : symbol -> bool
 
 val default_tag : ('scalar,'pte) t

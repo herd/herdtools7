@@ -86,6 +86,15 @@ type instruction =
 
 type parsedInstruction = instruction
 
+let is_overwritable
+  (_ : Label.Set.t)
+  (_ : instruction) : bool =
+  Warn.fatal "FIXME: functionality not implemented for -variant self"
+  
+let instruction_to_value
+  (_ : instruction)  =
+  Warn.fatal "FIXME: functionality not implemented for -variant self"
+
 let dump_op =
   let open Op in
   function
@@ -245,6 +254,8 @@ include Pseudo.Make
           | Const(Concrete _|ConcreteVector _) as k -> k
           | Const (Symbolic _|Label _|Tag _|PteVal _ as v) ->
               Warn.fatal "No constant '%s' allowed" (ParsedConstant.pp_v v)
+          | Const (Instruction _ as v) ->
+              Warn.fatal "FIXME: No constant '%s' allowed using -variant self" (ParsedConstant.pp_v v)
           | LoadReg _ as l -> l
           | LoadMem (l,mo) ->
               LoadMem (parsed_expr_tr l,mo)

@@ -843,6 +843,22 @@ type 'k kinstruction =
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
 
+let is_overwritable
+  (labels : Label.Set.t)
+  (i : instruction) : bool =
+  match i with
+  | I_B _ | I_NOP -> not (Label.Set.is_empty labels)
+  | _ -> false
+
+let instruction_to_value
+  (i : instruction) =
+  match i with
+  | I_B lbl -> 
+    Warn.warn_always "FIXME: creating a label constant P0:%s, although Pn was in fact not known" lbl
+    ; Constant.Instruction(InstrLit.LIT_B(0,lbl))
+  | I_NOP -> Constant.Instruction(InstrLit.LIT_NOP)
+  | _ -> Warn.fatal "FIXME: functionality not implemented for -variant self"
+
 let pp_label i = i
 
 open PPMode
