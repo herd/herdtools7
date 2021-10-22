@@ -541,9 +541,17 @@ module Make(C:Config) (I:I) : S with module I = I
               (* where 1 is the sizeof the underlying primitive type *)
               (* e.g uint64_t -> 8 bytes, so the above is v, v+8, v+16 *)
               let vs = match v with
-              | I.V.Val (Constant.ConcreteVector (sz,vs))
-                  when Misc.int_eq sz total_size -> vs
-              | _ -> Warn.user_error "Unexpected scalar value %s, vector expected" (I.V.pp_v v) in
+                | I.V.Val (Constant.ConcreteVector vs) ->
+                   if Misc.int_eq (List.length vs) total_size then
+                     vs
+                   else
+                     Warn.user_error
+                       "Vector size mismatch, %s (exepected size %d)\n"
+                       (I.V.pp_v v) total_size
+                | _ ->
+                   Warn.user_error
+                     "Unexpected scalar value %s, vector expected"
+                     (I.V.pp_v v) in
               let locval = match global loc with
               | Some x -> x
               | _ -> Warn.user_error "Non-global vector assignment in init" in
@@ -715,7 +723,7 @@ module Make(C:Config) (I:I) : S with module I = I
                | I.V.Val c -> c
                | _ -> Warn.fatal "Non constant value in vector")
              locs in
-         I.V.Val (Constant.ConcreteVector (List.length cs,cs))
+         I.V.Val (Constant.ConcreteVector cs)
 
 
       (* Final (include faults) *)

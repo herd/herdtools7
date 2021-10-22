@@ -315,13 +315,7 @@ end = struct
       module AllocArch = struct
         include A
         type v = A.V.v
-        let maybevToV c =
-          let open Constant in
-          let rec f c = match c with
-          | Tag _|Symbolic _|Label _|PteVal _ as sym -> sym
-          | Concrete i -> Concrete (A.V.Scalar.of_string i)
-          | ConcreteVector (sz,vs) -> ConcreteVector (sz, List.map f vs) in
-          f c
+        let maybevToV = A.maybevToV
         type global = Global_litmus.t
         let maybevToGlobal = A.tr_global
       end

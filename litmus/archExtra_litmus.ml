@@ -35,6 +35,7 @@ module type S = sig
 
   module I : I
 
+  val maybevToV : ParsedConstant.v -> I.V.Scalar.t Constant.t
   val comment : string (* ASM comment to use *)
 
   module RegSet : MySet.S with type elt = I.arch_reg
@@ -82,6 +83,8 @@ module Make(O:Config)(I:I) : S with module I = I
   | None -> I.comment
 
   module I = I
+
+  let maybevToV c = Constant.map_scalar I.V.Scalar.of_string c
 
   module RegSet =
     MySet.Make

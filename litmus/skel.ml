@@ -347,7 +347,7 @@ module Make
         | Concrete i ->  A.V.Scalar.pp  Cfg.hexa i
         | Symbolic (Virtual {name=s;tag=None; offset=0;_}) ->
             dump_a_addr s
-        | ConcreteVector (_,vs) ->
+        | ConcreteVector vs ->
            let pps =
              List.map
                (fun v -> sprintf "%s," (dump_a_v v))

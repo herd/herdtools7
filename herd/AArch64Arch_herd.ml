@@ -158,7 +158,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
             get_rec (idx+1)
         else [] in
       let vs = get_rec 0 in
-      V.Val (Constant.ConcreteVector(nelem, vs))
+      V.Val (Constant.ConcreteVector vs)
 
     let simd_mem_access_size rs = match List.hd rs with
     | Vreg (_,(_,8)) -> MachSize.Byte
