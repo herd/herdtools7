@@ -186,23 +186,24 @@ struct
     let notag_value () = Warn.user_error "No tag value for %s" Sys.argv.(0)
     let nopte_value () = Warn.user_error "No pteval_t value for %s" Sys.argv.(0)
 
-    let collect_value f v k = match v with
-    | Symbolic (Virtual {name=s;_}|System ((PTE|PTE2),s))
-      -> f s k
+    let rec collect_value f v k = match v with
+    | Symbolic (Virtual {name=s;_}|System ((PTE|PTE2),s)) -> f s k
     | Concrete _ -> k
-    | ConcreteVector _ -> k
+    | ConcreteVector (_,vs) ->
+       List.fold_left (fun k v -> collect_value f v k) k vs
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
     | PteVal _ -> nopte_value ()
     | Symbolic (Physical _|System ((TLB|TAG),_)) -> assert false
 
 
-    let map_value f v = match v with
-    | Symbolic (Virtual sym) -> Symbolic (Virtual {sym with name=sym.name; })
+    let rec map_value f v = match v with
+    | Symbolic (Virtual sym) -> Symbolic (Virtual {sym with name=f sym.name; })
     | Symbolic (System (PTE,s)) ->  Symbolic (System (PTE,f s))
     | Symbolic (System (PTE2,s)) ->  Symbolic (System (PTE2,f s))
     | Concrete _ -> v
-    | ConcreteVector _ -> v
+    | ConcreteVector (n,vs) ->
+       ConcreteVector (n,List.map (map_value f) vs)
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
     | PteVal _ -> nopte_value ()
@@ -233,7 +234,9 @@ struct
 
     let map_location f loc = match loc with
     | A.Location_reg _ -> loc
-    | A.Location_global v -> A.Location_global (map_value f v)
+    | A.Location_global v ->
+       let w = map_value f v in
+       A.Location_global w
 
     let my_map_rloc f = ConstrGen.map_rloc (map_location f)
 
@@ -313,6 +316,11 @@ struct
     let alpha avoid test =
       let ass = collect_test avoid
       and tss = collect_test test in
+      if O.verbose > 0 then begin
+        let pp_set = StringSet.pp_str "," Misc.identity in
+        eprintf
+          "avoid={%s}, source={%s}\n" (pp_set ass) (pp_set tss)
+      end ;
       let free = StringSet.diff all_addrs ass in
       let free = StringSet.elements free in
       let env,_ =
@@ -322,6 +330,11 @@ struct
           | f::free ->
               StringMap.add s f env,free)
           tss (StringMap.empty,free) in
+      if O.verbose > 0 then begin
+          let pp_map =
+            StringMap.pp_str (fun x y -> sprintf "%s -> %s" x y) in
+          eprintf "env={%s}\n" (pp_map env)
+      end ;
       alpha_test env test
 
   end
