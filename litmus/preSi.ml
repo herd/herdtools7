@@ -1294,7 +1294,7 @@ module Make
             match at with
             | Array (t,sz) ->
                 begin match v with
-                | Constant.ConcreteVector (_,ws) ->
+                | Constant.ConcreteVector ws ->
                     let rec init_rec k ws =
                       if k < sz then begin
                           let w,ws = match ws with

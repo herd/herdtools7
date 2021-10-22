@@ -189,7 +189,7 @@ struct
     let rec collect_value f v k = match v with
     | Symbolic (Virtual {name=s;_}|System ((PTE|PTE2),s)) -> f s k
     | Concrete _ -> k
-    | ConcreteVector (_,vs) ->
+    | ConcreteVector vs ->
        List.fold_left (fun k v -> collect_value f v k) k vs
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
@@ -202,8 +202,8 @@ struct
     | Symbolic (System (PTE,s)) ->  Symbolic (System (PTE,f s))
     | Symbolic (System (PTE2,s)) ->  Symbolic (System (PTE2,f s))
     | Concrete _ -> v
-    | ConcreteVector (n,vs) ->
-       ConcreteVector (n,List.map (map_value f) vs)
+    | ConcreteVector vs ->
+       ConcreteVector (List.map (map_value f) vs)
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
     | PteVal _ -> nopte_value ()

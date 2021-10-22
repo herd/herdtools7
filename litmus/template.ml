@@ -181,7 +181,7 @@ module Make(O:Config)(A:I) =
                       | Some s -> s::k
                       | None -> k
                       end
-                  | ConcreteVector (_,vs) ->
+                  | ConcreteVector vs ->
                       List.fold_right f vs k
                   | Concrete _|Label _|Tag _|PteVal _ -> k in
                   f v k)
@@ -217,7 +217,7 @@ module Make(O:Config)(A:I) =
         (fun k (_,v) ->
           let rec f v k = match v with
           | Label (p,s) -> (p,s)::k
-          | ConcreteVector (_,vs) ->
+          | ConcreteVector vs ->
               List.fold_right f vs k
           | Concrete _|Symbolic _|Tag _|PteVal _ -> k
           in f v k)

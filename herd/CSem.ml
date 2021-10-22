@@ -138,9 +138,7 @@ module Make (Conf:Config)(V:Value.S)
               (Act.Lock (A.Location_global loc,Act.LockLinux Dir.W)) ii
 
       let rec build_semantics_expr is_data e ii : V.v M.t = match e with
-      | C.Const v ->
-          M.unitT (V.maybevToV v)
-
+      | C.Const v -> M.unitT (V.maybevToV v)
       | C.LoadReg r -> read_reg is_data r ii
       | C.LoadMem(loc,mo) ->
           let open MemOrderOrAnnot in

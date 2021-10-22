@@ -80,7 +80,7 @@ module Make(Cst:Constant.S) = struct
   let rec tr_cst c = match c with
     | Symbolic _ | Label _ | Tag _ | PteVal _ as m -> m
     | Concrete s -> Concrete (Scalar.of_string s)
-    | ConcreteVector (sz,ms) -> ConcreteVector (sz,List.map tr_cst ms)
+    | ConcreteVector cs -> ConcreteVector (List.map tr_cst cs)
 
   let maybevToV c = Val (tr_cst c)
 

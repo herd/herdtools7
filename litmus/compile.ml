@@ -55,7 +55,7 @@ module Generic (A : Arch_litmus.Base)
 
       let typeof = function
         | Constant.Concrete _ -> base
-        | Constant.ConcreteVector (sz,_) -> base_array sz
+        | Constant.ConcreteVector vs -> base_array (List.length vs)
         | Constant.Symbolic _ -> pointer
         | Constant.Label _ -> code_pointer
         | Constant.Tag _ -> tag
