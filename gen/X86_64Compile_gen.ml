@@ -453,7 +453,9 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     let get_archinfo n =
       let i = C.fold add_info n StringMap.empty in
-      let i =
-        StringMap.fold (fun x a k -> Printf.sprintf "%s:%i" x a::k) i [] in
-      ["Align",String.concat "," i;]
+      if StringMap.is_empty i then []
+      else
+        let i =
+          StringMap.fold (fun x a k -> Printf.sprintf "%s:%i" x a::k) i [] in
+        ["Align",String.concat "," i;]
   end
