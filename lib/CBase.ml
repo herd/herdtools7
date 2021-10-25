@@ -37,10 +37,6 @@ let symb_reg_name r =
 let symb_reg r = sprintf "%%%s" r
 let type_reg _ = base_type
 
-type 's t_reg =
-  | T of 's Constant.t
-  | Reg of reg
-
 type mem_order = MemOrder.t
 
 type barrier = MemOrderOrAnnot.t

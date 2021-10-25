@@ -117,12 +117,12 @@ module Make
       | _ -> false
 
       let same_oa e1 e2 = match S.E.value_of e1,S.E.value_of e2 with
-        | Some (S.A.V.Val c1),Some (S.A.V.Val c2) -> Constant.same_oa c1 c2
+        | Some (S.A.V.Val c1),Some (S.A.V.Val c2) -> S.A.V.Cst.same_oa c1 c2
         | _ -> false
 
       let writable2 =
         let writable ha hd e = match S.E.value_of e with
-          | Some (S.A.V.Val c) -> Constant.writable ha hd c
+          | Some (S.A.V.Val c) ->  S.A.V.Cst.writable ha hd c
           | _ -> false in
         fun e1 e2 ->
         let p = S.E.proc_of e1 in

@@ -35,7 +35,7 @@ module type S = sig
 
   module I : I
 
-  val maybevToV : ParsedConstant.v -> I.V.Scalar.t Constant.t
+  val maybevToV : ParsedConstant.v -> (I.V.Scalar.t,PTEVal.t) Constant.t
   val comment : string (* ASM comment to use *)
 
   module RegSet : MySet.S with type elt = I.arch_reg

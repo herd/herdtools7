@@ -19,7 +19,7 @@ module Make(Scalar:Scalar.S) = struct
 
   module Scalar = Scalar
 
-  type v = Scalar.t Constant.t
+  type v = (Scalar.t,PTEVal.t)  Constant.t
   open Constant
 
   let intToV i = Concrete (Scalar.of_int i)
@@ -94,6 +94,21 @@ module Make(Scalar:Scalar.S) = struct
     | Concrete _|ConcreteVector _ | Label _|Tag _|PteVal _
         -> assert false
 
-(* Arch dependant result *)
+ (* PTEVal, value level *)
+  let same_oa v1 v2 =
+    let open PTEVal in
+    match v1,v2 with
+    | PteVal p1,PteVal p2 ->  PTEVal.oa_eq p1.oa p2.oa
+    | _ -> false
+
+  let writable ha hd v =
+    let open PTEVal in
+    match v with
+    | PteVal p ->
+       (p.af=1 || ha) && (* access allowed *)
+         (p.db=1 || (p.dbm=1 && hd)) (* write allowed *)
+    | _ -> false
+
+ (* Arch dependant result *)
   exception Result of Archs.t * v * string
 end

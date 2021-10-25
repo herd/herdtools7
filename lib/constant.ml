@@ -159,13 +159,13 @@ end
 module SymbolSet = MySet.Make(SC)
 module SymbolMap = MyMap.Make(SC)
 
-type 'scalar t =
+type ('scalar,'pte) t =
   | Concrete of 'scalar
-  | ConcreteVector of 'scalar t list
+  | ConcreteVector of ('scalar,'pte) t list
   | Symbolic  of symbol
   | Label of Proc.t * string     (* In code *)
   | Tag of string
-  | PteVal of PTEVal.t
+  | PteVal of 'pte
 
 let _debug = function
 | Concrete _ -> "Concrete _"
@@ -271,25 +271,11 @@ let is_pt v = match v with
 | Symbolic (System ((PTE|PTE2),_)) -> true
 | _ -> false
 
-let same_oa v1 v2 =
-  let open PTEVal in
-  match v1,v2 with
-  | PteVal p1,PteVal p2 ->  PTEVal.oa_eq p1.oa p2.oa
-  | _ -> false
-
-let writable ha hd v =
-  let open PTEVal in
-  match v with
-  | PteVal p ->
-      (p.af=1 || ha) && (* access allowed *)
-      (p.db=1 || (p.dbm=1 && hd)) (* write allowed *)
-  | _ -> false
-
 module type S =  sig
 
   module Scalar : Scalar.S
 
-  type v = Scalar.t t
+  type v = (Scalar.t,PTEVal.t) t
   val intToV  : int -> v
   val stringToV  : string -> v
   val nameToV  : string -> v
@@ -304,5 +290,9 @@ module type S =  sig
   val eq : v -> v -> bool
   val vToName : v -> string
 
+  val same_oa : v -> v -> bool
+  val writable : bool -> bool -> v -> bool
+
   exception Result of Archs.t * v * string
+
 end
