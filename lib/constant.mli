@@ -66,14 +66,14 @@ module SymbolMap : MyMap.S with type key = symbol
 (* Add scalars *)
 type 'scalar t =
   | Concrete of 'scalar
-  | ConcreteVector of int * 'scalar t list
+  | ConcreteVector of 'scalar t list
   | Symbolic  of symbol
   | Label of Proc.t * string     (* In code *)
   | Tag of string
   | PteVal of PTEVal.t
 
 (* Do nothing on non-scalar *)
-val map_scalar : ('scalar -> 'scalar) -> 'scalar t -> 'scalar t
+val map_scalar : ('a -> 'b) -> 'a t -> 'b t
 
 val mk_sym_virtual : string -> 'scalar t
 val mk_sym : string -> 'scalar t

@@ -50,7 +50,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) =
         let rec dump_prop p = match p with
         | Atom (LV (loc,v)) ->
             begin match v with
-            | Constant.ConcreteVector (_,vs) ->
+            | Constant.ConcreteVector vs ->
                 O.fprintf "(%s)" (dump_vec loc vs)
             | _ ->
                 O.fprintf "%s == %s"

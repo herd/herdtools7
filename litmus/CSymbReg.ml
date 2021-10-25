@@ -34,13 +34,7 @@ with type v = A.V.v and type location = A.location
    type location = A.location
    type ('loc,'v) t = ('loc,'v, string CAst.t) MiscParser.r4
 
-   let maybevToV =
-     let open Constant in
-     let rec f mv = match mv with
-     | Symbolic _|Label _|Tag _|PteVal _ as sym -> sym
-     | Concrete s -> Concrete (A.V.Scalar.of_string s)
-     | ConcreteVector (sz,vs) -> ConcreteVector (sz,List.map f vs) in
-     f
+   let maybevToV = Constant.map_scalar A.V.Scalar.of_string
 
 (******************************************************)
 (* All those to substitute symbolic regs by real ones *)

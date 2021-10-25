@@ -324,7 +324,7 @@ module Make
       let open Constant in
       match v with
       | Concrete i -> A.V.Scalar.pp Cfg.hexa i
-       | ConcreteVector (_,vs)->
+       | ConcreteVector vs->
           let pp_vs = List.map dump_a_v vs in
           sprintf "{%s}" (String.concat "," pp_vs) (* list initializer syntax *)
       | Symbolic (Virtual {name=s;tag=None;cap=0L;offset=0;_})-> dump_a_addr s

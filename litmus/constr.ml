@@ -100,7 +100,7 @@ module RLocSet = A.RLocSet =
             let rec f v k = match v with
             | Symbolic (Virtual {name=s;offset=0;tag=None;_}) -> Strings.add s k
             | Concrete _|PteVal _ -> k
-            | ConcreteVector (_,vs) ->
+            | ConcreteVector vs ->
                 List.fold_right f vs k
             | Label _|Symbolic _|Tag _ -> assert false in
             f v k

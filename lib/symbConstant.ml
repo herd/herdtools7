@@ -33,7 +33,7 @@ module Make(Scalar:Scalar.S) = struct
 
   let rec do_pp pp_symbol pp_scalar hexa = function
     | Concrete i -> pp_scalar hexa i
-    | ConcreteVector (_,vs) ->
+    | ConcreteVector vs ->
         let s =
           String.concat ","
             (List.map (do_pp pp_symbol pp_scalar hexa) vs)
@@ -51,7 +51,7 @@ module Make(Scalar:Scalar.S) = struct
 
   let rec compare c1 c2 = match c1,c2 with
   | Concrete i1, Concrete i2 -> Scalar.compare i1 i2
-  | ConcreteVector (_sz1, v1), ConcreteVector (_sz2, v2) ->
+  | ConcreteVector v1, ConcreteVector v2 ->
       Misc.list_compare compare v1 v2
   | Symbolic sym1,Symbolic sym2 -> compare_symbol sym1 sym2
   | Label (p1,s1),Label (p2,s2) ->
@@ -73,7 +73,7 @@ module Make(Scalar:Scalar.S) = struct
 
   let rec eq c1 c2 = match c1,c2 with
   | Concrete i1, Concrete i2 -> Scalar.compare i1 i2 = 0
-  | ConcreteVector (_,v1), ConcreteVector (_,v2) ->
+  | ConcreteVector v1, ConcreteVector v2 ->
       Misc.list_eq eq v1 v2
   | Symbolic s1, Symbolic s2 -> Constant.symbol_eq s1 s2
   | Label (p1,s1),Label (p2,s2) ->
