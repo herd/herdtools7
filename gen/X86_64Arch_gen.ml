@@ -141,7 +141,7 @@ module Make
 
       include NoWide
 
-      let set_pteval _ p _ = p
+      module PteVal = PteVal_gen.No(struct type arch_atom = atom end)
 
       (**********)
       (* Fences *)

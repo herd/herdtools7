@@ -1278,8 +1278,8 @@ Monad type:
 
       let val_of_pteval p = V.Val (Constant.PteVal p)
 
-      let default_pteval s = val_of_pteval (PTEVal.default s)
-      and pteval_of_pte s = val_of_pteval (PTEVal.of_pte s)
+      let default_pteval s = val_of_pteval (V.Cst.PteVal.default s)
+      and pteval_of_pte s = val_of_pteval (V.Cst.PteVal.of_pte s)
 
       let expand_pteval loc v =
         let open Constant in
@@ -1478,14 +1478,10 @@ Monad type:
 
     let any_op mk_v mk_c =
       try
-        let v =
-          try mk_v () with
-          | V.Cst.Result (a,c,_) ->
-             if  a = A.arch then V.Val c else raise Exit
-          | e -> raise e in
+        let v = mk_v () in
         make_one_monad v [] E.empty_event_structure
       with
-      | V.Undetermined|Exit
+      | V.Undetermined
         ->
          let v = V.fresh_var () in
          make_one_monad v [VC.Assign (v, mk_c ())] E.empty_event_structure

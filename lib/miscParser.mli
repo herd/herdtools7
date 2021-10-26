@@ -134,5 +134,4 @@ val get_info_on_info : string -> (string * string) list -> string option
 
 val get_info :  ('i, 'p, 'c, 'loc, 'v) result -> string -> string option
 
-val mk_pte_val :
-  location -> (PTEVal.pte_prop) list -> ('b,PTEVal.t) Constant.t
+val add_oa_if_none : location -> ParsedPteVal.t -> maybev

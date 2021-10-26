@@ -242,7 +242,7 @@ module type S =
     end
 
 (* Operations *)
-    val op1 : Op.op1 -> A.V.v -> A.V.v t
+    val op1 : A.V.op1_t -> A.V.v -> A.V.v t
     val op : Op.op -> A.V.v -> A.V.v -> A.V.v t
     val op3 : Op.op3 -> A.V.v -> A.V.v -> A.V.v -> A.V.v t
     val add : A.V.v -> A.V.v -> A.V.v t

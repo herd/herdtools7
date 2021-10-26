@@ -48,6 +48,7 @@ module Make (C:Arch_herd.Config) (V:Value.S)
       if annot then "*" else ""
 
     include Explicit.No
+    include PteValSets.No
 
 (* Now global locations, that include reservations *)
     module V = V

@@ -40,8 +40,6 @@ module Make
 
    include NoWide
 
-   let set_pteval _ p _ = p
-
 (*********)
 (* Atoms *)
 (*********)
@@ -140,7 +138,10 @@ module Make
    | Some (Mixed (sz,o)) ->
        ValsMixed.extract_value v sz o
 
+   module PteVal = PteVal_gen.No(struct type arch_atom = atom end)
+
 (* End of atoms *)
+
    type fence = barrier
 
    let is_isync = function

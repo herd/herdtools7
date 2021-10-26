@@ -55,7 +55,7 @@ val compare_symbol : symbol -> symbol -> int
 val symbol_eq : symbol -> symbol -> bool
 val as_address : symbol -> string
 
-val oa2symbol : PTEVal.oa_t -> symbol
+val oa2symbol : OutputAddress.t -> symbol
 
 (* 'phy' is the physical address (initially) matching virual adress 'virt' *)
 val virt_match_phy : symbol (* virt *) -> symbol (* phy *)-> bool
@@ -72,8 +72,25 @@ type ('scalar,'pte) t =
   | Tag of string
   | PteVal of 'pte
 
+val compare :
+  ('scalar -> 'scalar -> int) ->
+    ('pte -> 'pte -> int) ->
+      ('scalar,'pte) t -> ('scalar,'pte) t -> int
+val eq :
+  ('scalar -> 'scalar -> bool) ->
+    ('pte -> 'pte -> bool) ->
+      ('scalar,'pte) t -> ('scalar,'pte) t -> bool
+
+(* New style: PTE(s), PHY(s), etc. *)
+val pp :
+  ('scalar -> string) ->  ('pte -> string) ->  ('scalar,'pte) t  -> string
+(* Old style: pte_s, phy_s, etc. *)
+val pp_old :
+  ('scalar -> string) ->  ('pte -> string) ->  ('scalar,'pte) t  -> string
+
 (* Do nothing on non-scalar *)
 val map_scalar : ('a -> 'b) -> ('a,'pte) t -> ('b,'pte) t
+val map : ('a -> 'b) -> ('c -> 'd) -> ('a,'c) t -> ('b,'d) t
 
 val mk_sym_virtual : string -> ('scalar,'pte) t
 val mk_sym : string -> ('scalar,'pte) t
@@ -105,8 +122,10 @@ val is_pt : ('scalar,'pte) t -> bool
 module type S =  sig
 
   module Scalar : Scalar.S
+  module PteVal : PteVal.S
 
-  type v = (Scalar.t,PTEVal.t) t
+  type v = (Scalar.t,PteVal.t) t
+  val tr : (string,ParsedPteVal.t) t -> v
   val intToV  : int -> v
   val stringToV  : string -> v
   val nameToV  : string -> v
@@ -121,9 +140,4 @@ module type S =  sig
   val eq : v -> v -> bool
   val vToName : v -> string
 
-  val same_oa : v -> v -> bool
-  val writable : bool -> bool -> v -> bool
-
-(* Arch dependent result *)
-  exception Result of Archs.t * v * string
 end

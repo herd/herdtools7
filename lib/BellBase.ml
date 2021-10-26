@@ -420,3 +420,5 @@ let set_list i al = match i with
 let tr_compat = function
   | Pcall "sync" -> Pfence (Fence (["sync";],None))
   | i -> i
+
+let hash_pteval _ = assert false

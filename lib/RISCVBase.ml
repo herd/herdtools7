@@ -478,3 +478,5 @@ include Pseudo.Make
     end)
 
 let get_macro _name = raise Not_found
+
+let hash_pteval _ = assert false

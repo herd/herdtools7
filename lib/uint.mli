@@ -57,6 +57,7 @@ module type S = sig
   val leading_zeros : t -> int
 
   val compare : t -> t -> int
+  val equal : t -> t -> bool
 
   val to_int : t -> int
   val of_int : int -> t

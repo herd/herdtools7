@@ -302,7 +302,7 @@ module Top (TopConf:Config) = struct
           X.run dirty start_time name chan env splitted
       | `AArch64 when Conf.variant Variant.Neon ->
           let module AArch64Conf = ArchConfig in
-          let module AArch64 = AArch64Arch_herd.Make(AArch64Conf)(UInt128Value) in
+          let module AArch64 = AArch64Arch_herd.Make(AArch64Conf)(Uint128Value) in
           let module AArch64LexParse = struct
             type instruction = AArch64.parsedPseudo
             type token = AArch64Parser.token
@@ -317,7 +317,7 @@ module Top (TopConf:Config) = struct
             let dirty = ModelConfig.dirty
             let procs_user = ProcsUser.get splitted.Splitter.info
           end in
-          let module AArch64S = AArch64Sem.Make(AArch64SemConf)(UInt128Value) in
+          let module AArch64S = AArch64Sem.Make(AArch64SemConf)(Uint128Value) in
           let module AArch64Barrier = struct
             type a = AArch64.barrier
             type b =
@@ -350,7 +350,7 @@ module Top (TopConf:Config) = struct
 (* END NOTWWW *)
       | `AArch64 ->
           let module AArch64 =
-            AArch64Arch_herd.Make(ArchConfig)(Int64Value) in
+            AArch64Arch_herd.Make(ArchConfig)(AArch64Value) in
           let module AArch64LexParse = struct
             type instruction = AArch64.parsedPseudo
             type token = AArch64Parser.token
@@ -365,7 +365,7 @@ module Top (TopConf:Config) = struct
             let dirty = ModelConfig.dirty
             let procs_user = ProcsUser.get splitted.Splitter.info
           end in
-          let module AArch64S = AArch64Sem.Make(AArch64SemConf)(Int64Value) in
+          let module AArch64S = AArch64Sem.Make(AArch64SemConf)(AArch64Value) in
           let module AArch64Barrier = struct
             type a = AArch64.barrier
             type b =

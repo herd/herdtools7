@@ -14,4 +14,5 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-include SymbValue.Make(Int32Constant)
+include SymbValue.Make(Int32Constant)(ArchOp.No(Int32Constant))
+

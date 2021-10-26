@@ -14,47 +14,23 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module StringScalar = struct
-  type t = string
-  let machsize = MachSize.Quad
+type v = (string,ParsedPteVal.t) Constant.t
 
-  let zero = "0" and one = "1"
+let zero = Constant.Concrete "0"
+and one = Constant.Concrete "1"
+and intToV i = Constant.Concrete (string_of_int i)
 
-  let of_string s = s
-  let compare = String.compare
+let no_comp _ _ = assert false
 
-  let to_int k = int_of_string k
-  let of_int i = Printf.sprintf "%i" i
-  let to_int64 = Int64.of_string
-  let of_int64 = Int64.to_string
+(* Comparison is used by locations, which should contain symbols only,
+   It fails on scalars *)
+let compare c1 c2 = Constant.compare no_comp no_comp c1 c2
+and eq c1 c2 = Constant.eq no_comp no_comp c1 c2
 
-  let pp _ s = s
-  let pp_unsigned _ s = s
+let nameToV = Constant.mk_sym
 
-  let op1 name  _ = Warn.fatal "unary operation '%s' on parsed constant" name
-  let op2 name _ _ = Warn.fatal "binary operation '%s' on parsed constant" name
+let pp_v v = Constant.pp Misc.identity ParsedPteVal.pp v
+let pp_v_old v = Constant.pp_old Misc.identity ParsedPteVal.pp v
 
-  let add =  op2 "add"
-  let sub =  op2 "sub"
-  let mul =  op2 "mul"
-  let div =  op2 "div"
-  let logor = op2 "logor"
-  let logand = op2 "logand"
-  let logxor = op2 "logxor"
-  let lognot = op1 "lognot"
-  let bit_at _ _ =  Warn.fatal "bit_at on parsed constant"
-  let shift_left _ _ =  Warn.fatal "shift left on parsed constant"
-  let shift_right_logical _ _ =  Warn.fatal "shift right logical on parsed constant"
-  let shift_right_arithmetic _ _ =  Warn.fatal "shift right logical on parsed constant"
-  let addk _ k =  Warn.fatal "add constant %i on parsed constant" k
-  let lt = op2 "(<)"
-  let le = op2 "(<=)"
-  let mask sz = op1 (Op.pp_op1 false (Op.Mask sz))
-
-  let sxt sz v = op1 (Printf.sprintf "sxt(%s)" (MachSize.pp sz)) v
-
-  let get_tag _ = assert false
-  let set_tag _ = assert false
-end
-
-include SymbConstant.Make(StringScalar)
+(* Hexa parameter ignored... *)               
+let pp _hexa = pp_v

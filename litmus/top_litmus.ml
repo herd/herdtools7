@@ -519,7 +519,7 @@ end = struct
           | `AArch64 ->
              begin match OT.usearch with
              | UseArch.Trad ->
-                let module V = Int64Constant in
+                let module V = SymbConstant.Make(Int64Scalar)(AArch64PteVal) in
                 let module Arch' = AArch64Arch_litmus.Make(OC)(V) in
                 let module LexParse = struct
                   type instruction = Arch'.parsedPseudo

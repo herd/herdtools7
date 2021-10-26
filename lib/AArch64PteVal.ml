@@ -23,55 +23,19 @@ module Attrs = struct
      return on Linux. This is architecture specific, however, for now,
      translation is supported only for AArch64. *)
   let default =
-    List.fold_right StringSet.add
+    StringSet.of_list
       [ "Normal" ; "Inner-shareable"; "Inner-write-back"; "Outer-write-back" ]
-      StringSet.empty
 
   let compare a1 a2 = StringSet.compare a1 a2
   let eq a1 a2 = StringSet.equal a1 a2
-  let pp a = String.concat ", " (StringSet.elements a)
+  let pp a = StringSet.pp_str ", " Misc.identity a
   let as_list a = StringSet.elements a
   let of_list l = StringSet.of_list l
 end
 
-type oa_t = PTE of string | PHY of string
-
-let pp_oa_old = function
-| PTE s -> Misc.add_pte s
-| PHY s -> Misc.add_physical s
-
-let pp_oa = function
-| PTE s -> Misc.pp_pte s
-| PHY s -> Misc.pp_physical s
-
-let oa_compare oa1 oa2 = match oa1,oa2 with
-| (PHY s1,PHY s2)
-| (PTE s1,PTE s2)
-  -> String.compare s1 s2
-| PHY _,PTE _ -> -1
-| PTE _,PHY _ -> 1
-
-let oa_eq oa1 oa2 = match oa1,oa2 with
-| (PHY s1,PHY s2)
-| (PTE s1,PTE s2)
-  -> Misc.string_eq s1 s2
-| (PHY _,PTE _)
-| (PTE _,PHY _)
-  -> false
-
-let as_physical = function
-| PHY s -> Some s
-| PTE _ -> None
-
-let as_pte = function
-| PTE s -> Some s
-| PHY _ -> None
-
-let oa_refers_virtual = function
-| PTE s|PHY s -> Some s
 
 type t = {
-  oa : oa_t ;
+  oa : OutputAddress.t;
   valid : int;
   af : int;
   db : int;
@@ -80,33 +44,55 @@ type t = {
   attrs: Attrs.t;
   }
 
+let eq_props p1 p2 =
+  Misc.int_eq p1.af p2.af &&
+  Misc.int_eq p1.db p2.db &&
+  Misc.int_eq p1.dbm p2.dbm &&
+  Misc.int_eq p1.valid p2.valid &&
+  Misc.int_eq p1.el0 p2.el0 &&
+  Attrs.eq p1.attrs p2.attrs
+
+(* Let us abstract... *)
+let is_af {af; _} = af <> 0
+
+and same_oa {oa=oa1; _} {oa=oa2; _} = OutputAddress.eq oa1 oa2
+
+(* *)
+let writable ha hd p =
+  (p.af <> 0 || ha) && (* access allowed *)
+  (p.db <> 0 || (p.dbm <> 0 && hd)) (* write allowed *)
+
+let get_attrs {attrs;_ } = Attrs.as_list attrs
+
 (* For ordinary tests not to fault, the dirty bit has to be set. *)
-let prot_default =  { oa=PHY ""; valid=1; af=1; db=1; dbm=0; el0=1; attrs=Attrs.default; }
-let default s = { prot_default with  oa=PHY s; }
+
+let prot_default =
+  { oa=OutputAddress.PHY "";
+    valid=1; af=1; db=1; dbm=0; el0=1; attrs=Attrs.default; }
+
+let default s = { prot_default with  oa=OutputAddress.PHY s; }
 
 (* Page table entries for pointers into the page table
    have el0 flag unset. Namely, page table access from
    EL0 is disallowed. This correspond to expected behaviour:
    user code cannot access the page table. *)
-let of_pte s = { prot_default with  oa=PTE s; el0=0; }
+let of_pte s = { prot_default with  oa=OutputAddress.PTE s; el0=0; }
 
 let pp_field ok pp eq ac p k =
   let f = ac p in if not ok && eq f (ac prot_default) then k else pp f::k
 
-let pp_int_field ok name = pp_field ok (sprintf "%s:%i" name) Misc.int_eq
-let pp_valid ok = pp_int_field ok "valid" (fun p -> p.valid)
-and pp_af ok = pp_int_field ok "af" (fun p -> p.af)
-and pp_db ok = pp_int_field ok "db" (fun p -> p.db)
-and pp_dbm ok = pp_int_field ok "dbm" (fun p -> p.dbm)
-and pp_el0 ok = pp_int_field ok "el0" (fun p -> p.el0)
+let pp_int_field _hexa ok name =
+  let pp_int = (* if hexa then sprintf "0x%x" else *) sprintf "%d" in
+  pp_field ok (fun v -> sprintf "%s:%s" name (pp_int v)) Misc.int_eq
+
+let pp_valid hexa ok = pp_int_field hexa ok "valid" (fun p -> p.valid)
+and pp_af hexa ok = pp_int_field hexa ok "af" (fun p -> p.af)
+and pp_db hexa ok = pp_int_field hexa ok "db" (fun p -> p.db)
+and pp_dbm hexa ok = pp_int_field hexa ok "dbm" (fun p -> p.dbm)
+and pp_el0 hexa ok = pp_int_field hexa ok "el0" (fun p -> p.el0)
 and pp_attrs ok = pp_field ok (fun a -> Attrs.pp a) Attrs.eq (fun p -> p.attrs)
 
-let set_oa p s = { p with oa = PHY s; }
-
-let is_default t =
-  let d = prot_default in
-  t.valid=d.valid && t.af=d.af && t.db=d.db && t.dbm=d.dbm && t.el0=d.el0 &&
-    t.attrs=Attrs.default
+let is_default t =  eq_props prot_default t
 
 (* If showall is true, field will always be printed.
    Otherwise, field will be printed only if non-default.
@@ -114,66 +100,54 @@ let is_default t =
    (1) Fields older than el0 are always printed.
    (2) Fields from el0 (included) are printed if non-default. *)
 
-let do_pp showall old_oa p =
+let do_pp hexa showall old_oa p =
   let k = pp_attrs false p [] in
-  let k = pp_el0 false p k in
-  let k = pp_valid showall p k in
-  let k = pp_dbm showall p k in
-  let k = pp_db showall p k in
-  let k = pp_af showall p k in
-  let k = sprintf "oa:%s" ((if old_oa then pp_oa_old else pp_oa) p.oa)::k  in
+  let k = pp_el0 hexa false p k in
+  let k = pp_valid hexa showall p k in
+  let k = pp_dbm hexa showall p k in
+  let k = pp_db hexa showall p k in
+  let k = pp_af hexa showall p k in
+  let k =
+    sprintf "oa:%s"
+      ((if old_oa then OutputAddress.pp_old
+        else OutputAddress.pp) p.oa)::k  in
   let fs = String.concat ", " k in
   sprintf "(%s)" fs
 
 (* By default pp does not list fields whose value is default *)
-let pp = do_pp false false
+let pp hexa = do_pp hexa false false
 (* For initial values dumped for hashing, pp_hash is different,
    for not altering hashes as much as possible *)
-let pp_hash = do_pp true true
+let pp_v = pp false
+let pp_hash = do_pp false true true
 
 let my_int_of_string s v =
   let v = try int_of_string v with
     _ -> Warn.user_error "PTE field %s should be an integer" s
   in v
 
-type pte_prop =
-  | KV of (string * string)
-  | Attrs of string list
+let add_field k v p =
+  match k with
+  | "af" -> { p with af = my_int_of_string k v }
+  | "db" -> { p with db = my_int_of_string k v }
+  | "dbm" -> { p with dbm = my_int_of_string k v }
+  | "valid" -> { p with valid = my_int_of_string k v }
+  | "el0" -> { p with el0 = my_int_of_string k v }
+  | _ ->
+      Warn.user_error "Illegal AArch64 page table entry property %s" k
 
-let tr_oa s = match Misc.tr_physical s with
-| Some s -> PHY s
-| None ->
-   begin
-     match Misc.tr_pte s with
-     | Some s -> PTE s
-     | None ->
-        Warn.user_error
-          "identifier %s cannot be used as output address" s
-   end
-
-let do_of_list p l =
-  let add_field a v = match v with
-    | KV (s, v) -> begin
-        match s with
-        | "oa" -> { a with oa = tr_oa v }
-        | "af" -> { a with af = my_int_of_string s v }
-        | "db" -> { a with db = my_int_of_string s v }
-        | "dbm" -> { a with dbm = my_int_of_string s v }
-        | "valid" -> { a with valid = my_int_of_string s v }
-        | "el0" -> { a with el0 = my_int_of_string s v }
-        | _ ->
-           Warn.user_error "Illegal PTE property %s" s
-      end
-    | Attrs l -> { a with attrs = Attrs.of_list l }
-  in
-  let rec of_list a = function
-    | [] -> a
-    | h::t -> of_list (add_field a h) t in
-
-  of_list p l
-
-let of_list s = do_of_list (default s)
-and of_list0 = do_of_list prot_default
+let tr p =
+  let open ParsedPteVal in
+  let r = prot_default in
+  let r =
+    match p.p_oa with
+    | None -> r
+    | Some oa -> { r with oa; } in
+  let r = StringMap.fold add_field p.p_kv r in
+  let r =
+    let attrs = StringSet.union r.attrs p.p_attrs; in
+    { r with attrs; } in
+  r
 
 let lex_compare c1 c2 x y  = match c1 x y with
 | 0 -> c2 x y
@@ -190,16 +164,39 @@ let compare =
   let cmp =
     lex_compare (fun p1 p2 -> Misc.int_compare p1.af p2.af) cmp in
   let cmp =
-    lex_compare (fun p1 p2 -> oa_compare p1.oa p2.oa) cmp in
+    lex_compare (fun p1 p2 -> OutputAddress.compare p1.oa p2.oa) cmp in
   let cmp =
     lex_compare (fun p1 p2 -> Attrs.compare p1.attrs p2.attrs) cmp in
   cmp
 
-let eq p1 p2 =
-  oa_eq p1.oa p2.oa &&
-  Misc.int_eq p1.af p2.af &&
-  Misc.int_eq p1.db p2.db &&
-  Misc.int_eq p1.dbm p2.dbm &&
-  Misc.int_eq p1.valid p2.valid &&
-  Misc.int_eq p1.el0 p2.el0 &&
-  Attrs.eq p1.attrs p2.attrs
+let eq p1 p2 = OutputAddress.eq p1.oa p2.oa && eq_props p1 p2
+
+(* For litmus *)
+
+(* Those lists must of course match one with the other *)
+let fields = ["af";"db";"dbm";"valid";"el0";]
+and default_fields =
+  let p = prot_default in
+  let ds = [p.af; p.db; p.dbm; p.valid;p.el0;] in
+  List.map (Printf.sprintf "%i") ds
+
+let dump_pack pp_oa p =
+  sprintf
+    "pack_pack(%s,%d,%d,%d,%d,%d)"
+    (pp_oa (OutputAddress.pp_old p.oa))
+    p.af p.db p.dbm p.valid p.el0
+
+let as_physical p = OutputAddress.as_physical p.oa
+
+let as_flags p =
+  if is_default p then None
+  else
+    let add b s k = if b<>0 then s::k else k in
+    let msk =
+      add p.el0 "msk_el0"
+        (add p.valid "msk_valid"
+           (add p.af "msk_af"
+              (add p.dbm "msk_dbm"
+                 (add p.db "msk_db" [])))) in
+    let msk = String.concat "|" msk in
+    Some msk

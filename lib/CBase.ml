@@ -438,3 +438,5 @@ let expand ms = match ms with
 | _  ->
     let env = List.fold_left (fun e m -> add m e) env_empty ms in
     pseudo_map (subst env)
+
+let hash_pteval _ = assert false

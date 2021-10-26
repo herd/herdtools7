@@ -28,7 +28,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let empty_annot = false
 
     include Explicit.No
-
+    include PteValSets.No
 
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
     let is_atomic annot = annot

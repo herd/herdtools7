@@ -13,7 +13,7 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
-module Make (C:Arch_herd.Config) (V:Value.S) =
+module Make (C:Arch_herd.Config)(V:Value.S with type Cst.PteVal.t = AArch64PteVal.t) =
   struct
 
     include
@@ -110,6 +110,30 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       "DB", is_db;
     ]
 
+    let pteval_sets =
+      if is_kvm then
+        let open AArch64PteVal in
+        [
+          "PTEINV",(fun p -> p.valid=0);
+          "PTEV",(fun p -> p.valid=1);
+          "PTEAF0",(fun p -> p.af=0);
+          "PTEDB0",(fun p -> p.db=0);
+        ]
+      else []
+
+    let dirty_sets =
+
+         let read_only =
+           (fun t p ->
+             let open DirtyBit in
+             let open AArch64PteVal in
+             let af = p.af=1
+             and db = p.db=1
+             and dbm = p.dbm=1 in
+             (af || not af && t.my_ha ()) &&
+             (db && (not (t.my_hd ()) || dbm))) in
+             [ "ReadOnly",read_only; ]
+
     let is_isync = is_barrier ISB
     let pp_isync = "isb"
 
@@ -132,6 +156,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | NExp AF-> "NExpAF"
       | NExp DB-> "NExpDB"
       | NExp AFDB-> "NExpAFDB"
+
     module V = V
 
     let neon_mask esize =

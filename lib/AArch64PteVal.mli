@@ -26,16 +26,8 @@ module Attrs : sig
   val of_list : string list -> t
 end
 
-type oa_t
-
-val pp_oa_old : oa_t -> string
-val oa_eq : oa_t -> oa_t -> bool
-val as_physical : oa_t -> string option
-val as_pte : oa_t -> string option
-val oa_refers_virtual : oa_t -> string option
-
 type t = {
-  oa : oa_t;
+  oa : OutputAddress.t;
   valid : int;
   af : int;
   db : int;
@@ -44,32 +36,35 @@ type t = {
   attrs : Attrs.t;
   }
 
+val compare : t -> t -> int
+val eq : t -> t -> bool
+
+(* Accessors, setters *)
+val is_af : t -> bool
+
+val same_oa : t -> t -> bool
+val writable : bool -> bool -> t -> bool
+val get_attrs : t -> string list
+
 (* Default value *)
 val prot_default : t (* Fields only *)
 val default : string -> t (* Physical address + default fields *)
-
-(* Value for pte argument *)
-val of_pte : string -> t
-
-(* Set oa  field *)
-val set_oa : t -> string -> t
+val of_pte : string -> t (* Default value for pte page table entry *)
 
 (* Flags have default values *)
 val is_default : t -> bool
 
-type pte_prop =
-| KV of (string * string)
-| Attrs of string list
+(* Finish parsing *)
+val tr : ParsedPteVal.t -> t
 
-(* Create fresh pteval *)
-(* With physical adress *)
-val of_list : string -> pte_prop list -> t
-(* Without physcal adress *)
-val of_list0 : pte_prop list -> t
-
-(* Pretty print *)
-val pp : t -> string  (* Default field not printed *)
+(* Pretty print pp [hexa]  *)
+val pp : bool -> t -> string  (* Default field not printed *)
+val pp_v : t -> string  (* Decimal *)
 val pp_hash : t -> string (* Backward compatibility for test hashes *)
 
-val compare : t -> t -> int
-val eq : t -> t -> bool
+(* Litmus *)
+val fields : string list
+val default_fields : string list
+val dump_pack : (string -> string) -> t -> string
+val as_physical : t -> string option
+val as_flags : t -> string option

@@ -67,27 +67,22 @@ let rec nitems t = match t with
 let dump_fatom_tag d ((p,lbl),v) =
   sprintf "fault_P%d%s_%s" p (match lbl with None -> "" | Some lbl -> "_" ^ lbl) (d v)
 
-let dump_pteval_flags s p =
-  if PTEVal.is_default p then s
-  else
-    let open PTEVal in
-    let add b s k = if b<>0 then s::k else k in
-    let msk =
-      add p.el0 "msk_el0"
-        (add p.valid "msk_valid"
-           (add p.af "msk_af"
-              (add p.dbm "msk_dbm"
-                 (add p.db "msk_db" [])))) in
-    let msk = String.concat "|" msk in
-    sprintf "litmus_set_pte_flags(%s,%s)" s msk
+module PteValUtil(P:PteVal.S) = struct
 
-(* Skeleton utilities, useful for Skel and PreSi *)
+  let dump_pteval_flags s p =
+    match P.as_flags p with
+    | Some msk ->
+       sprintf "litmus_set_pte_flags(%s,%s)" s msk
+    | None -> s
+end
 
 module Make
     (Cfg:Config)
     (P:sig type code end)
     (A:Arch_litmus.Base)
     (T:Test_litmus.S with type P.code = P.code and module A = A) : sig
+
+(* Skeleton utilities, useful for Skel and PreSi *)
 
 (* Info *)
       val get_info : string -> T.t -> string option

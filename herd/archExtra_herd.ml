@@ -631,7 +631,7 @@ module Make(C:Config) (I:I) : S with module I = I
           let open Constant in
           match loc with
           | Location_global (I.V.Val (Symbolic (System (PTE,s)))) ->
-              I.V.Val (PteVal (PTEVal.default s))
+              I.V.Val (PteVal (I.V.Cst.PteVal.default s))
           | _ -> I.V.zero
 
       let get_of_val st a = State.safe_find I.V.zero (Location_global a) st

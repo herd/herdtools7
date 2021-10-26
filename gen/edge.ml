@@ -29,13 +29,15 @@ module type S = sig
   module SIMD : Atom.SIMD
 
   type atom
+  module PteVal : PteVal_gen.S with type pte_atom = atom
   type rmw
 
   val pp_atom : atom -> string
   val tr_value : atom option -> Code.v -> Code.v
   val overwrite_value : Code.v -> atom option -> Code.v -> Code.v
   val extract_value : Code.v -> atom option -> Code.v
-  val set_pteval : atom option -> PTEVal.t -> (unit -> string) -> PTEVal.t
+  val set_pteval :
+    atom option -> PteVal.t -> (unit -> string) -> PteVal.t
   val merge_atoms : atom -> atom -> atom option
   val atom_to_bank : atom option -> SIMD.atom Code.bank
   val strong : fence
@@ -153,6 +155,7 @@ type fence = F.fence
 and type dp = F.dp
 and module SIMD = F.SIMD
 and type atom = F.atom
+and module PteVal = F.PteVal
 and type rmw = F.rmw = struct
   let do_self = Cfg.variant Variant_gen.Self
   let debug = false
@@ -167,13 +170,16 @@ and type rmw = F.rmw = struct
   type rmw = F.rmw
 
   let compute_rmw = F.compute_rmw
+
+  module PteVal = F.PteVal
+
   let pp_atom = F.pp_atom
   let tr_value = F.tr_value
   let overwrite_value = F.overwrite_value
   let extract_value = F.extract_value
   let set_pteval ao p = match ao with
   | None -> fun _ -> p
-  | Some a -> F.set_pteval a p
+  | Some a -> F.PteVal.set_pteval a p
 
   let applies_atom ao d = match ao,d with
   | (None,_)|(_,(Irr|NoDir)) -> true

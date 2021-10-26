@@ -138,10 +138,10 @@ let as_address = function
   | sym -> Warn.fatal "symbol '%s' is not an address" (pp_symbol sym)
 
 let oa2symbol oa =
-  match PTEVal.as_physical oa with
+  match OutputAddress.as_physical oa with
   | Some s -> Physical (s,0)
   | None ->
-     begin match PTEVal.as_pte oa with
+     begin match OutputAddress.as_pte oa with
      | Some s -> System (PTE,s)
      | None -> assert false
      end
@@ -167,18 +167,81 @@ type ('scalar,'pte) t =
   | Tag of string
   | PteVal of 'pte
 
+let rec compare scalar_compare pteval_compare c1 c2 =
+  match c1,c2 with
+  | Concrete i1, Concrete i2 -> scalar_compare i1 i2
+  | ConcreteVector v1, ConcreteVector v2 ->
+     Misc.list_compare (compare scalar_compare pteval_compare) v1 v2
+  | Symbolic sym1,Symbolic sym2 -> compare_symbol sym1 sym2
+  | Label (p1,s1),Label (p2,s2) ->
+      Misc.pair_compare Proc.compare String.compare (p1,s1) (p2,s2)
+  | Tag t1,Tag t2 -> String.compare t1 t2
+  | PteVal p1,PteVal p2 -> pteval_compare p1 p2
+  | (Concrete _,(ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _))
+  | (ConcreteVector _,(Symbolic _|Label _|Tag _|PteVal _))
+  | (Symbolic _,(Label _|Tag _|PteVal _))
+  | (Label _,(Tag _|PteVal _))
+  | (Tag _,PteVal _)
+    -> -1
+  | (PteVal _,(Tag _|Label _|Symbolic _|ConcreteVector _|Concrete _))
+  | (Tag _,(Label _|Symbolic _|ConcreteVector _|Concrete _))
+  | (Label _,(Symbolic _|ConcreteVector _|Concrete _))
+  | (Symbolic _,(ConcreteVector _|Concrete _))
+  | (ConcreteVector _,Concrete _)
+    -> 1
+
+let rec eq scalar_eq pteval_eq c1 c2 = match c1,c2 with
+  | Concrete i1, Concrete i2 -> scalar_eq i1 i2
+  | ConcreteVector v1, ConcreteVector v2 ->
+     Misc.list_eq (eq scalar_eq pteval_eq) v1 v2
+  | Symbolic s1, Symbolic s2 -> symbol_eq s1 s2
+  | Label (p1,s1),Label (p2,s2) ->
+      Misc.string_eq  s1 s2 && Misc.int_eq p1 p2
+  | Tag t1,Tag t2 -> Misc.string_eq t1 t2
+  | PteVal p1,PteVal p2 -> pteval_eq p1 p2
+  | (PteVal _,(Symbolic _|Concrete _|ConcreteVector _|Label _|Tag _))
+  | (ConcreteVector _,(Symbolic _|Label _|Tag _|Concrete _|PteVal _))
+  | (Concrete _,(Symbolic _|Label _|Tag _|ConcreteVector _|PteVal _))
+  | (Symbolic _,(Concrete _|Label _|Tag _|ConcreteVector _|PteVal _))
+  | (Label _,(Concrete _|Symbolic _|Tag _|ConcreteVector _|PteVal _))
+  | (Tag _,(Concrete _|Symbolic _|Label _|ConcreteVector _|PteVal _))
+    -> false
+
+let rec mk_pp pp_symbol pp_scalar pp_pteval = function
+    | Concrete i -> pp_scalar i
+    | ConcreteVector vs ->
+        let s =
+          String.concat ","
+            (List.map (mk_pp pp_symbol pp_scalar pp_pteval) vs)
+        in sprintf "{%s}" s
+    | Symbolic sym -> pp_symbol sym
+    | Label (p,lbl)  -> sprintf "%i:%s" p lbl
+    | Tag s -> sprintf ":%s" s
+    | PteVal p -> pp_pteval p
+
+let pp pp_scalar pp_pteval = mk_pp pp_symbol pp_scalar pp_pteval
+and pp_old pp_scalar pp_pteval = mk_pp pp_symbol_old  pp_scalar pp_pteval
+
 let _debug = function
 | Concrete _ -> "Concrete _"
 | ConcreteVector vs -> sprintf "ConcreteVector (%d,_)" (List.length vs)
 | Symbolic sym -> sprintf "Symbol %s" (pp_symbol sym)
 | Label (p,s) -> sprintf "Label (%s,%s)" (Proc.pp p) s
 | Tag s -> sprintf "Tag %s" s
-| PteVal p -> sprintf "PteVal %s" (PTEVal.pp p)
+| PteVal _ -> "PteVal"
 
 let rec map_scalar f = function
+| (Symbolic _|Label _ |Tag _|PteVal _) as c -> c
 | Concrete s -> Concrete (f s)
 | ConcreteVector cs -> ConcreteVector (List.map (map_scalar f) cs)
-| (Symbolic _|Label _ |Tag _|PteVal _) as c -> c
+
+let rec map f_scalar f_pteval = function
+| Symbolic _ | Label _ | Tag _ as m -> m
+| PteVal p -> PteVal (f_pteval p)
+| Concrete s -> Concrete (f_scalar s)
+| ConcreteVector cs ->
+   ConcreteVector (List.map (map f_scalar f_pteval) cs)
+
 
 let do_mk_virtual s = Virtual { default_symbolic_data with name=s; }
 
@@ -274,8 +337,10 @@ let is_pt v = match v with
 module type S =  sig
 
   module Scalar : Scalar.S
+  module PteVal : PteVal.S
 
-  type v = (Scalar.t,PTEVal.t) t
+  type v = (Scalar.t,PteVal.t) t
+  val tr : (string,ParsedPteVal.t) t -> v
   val intToV  : int -> v
   val stringToV  : string -> v
   val nameToV  : string -> v
@@ -289,10 +354,5 @@ module type S =  sig
   val compare : v -> v -> int
   val eq : v -> v -> bool
   val vToName : v -> string
-
-  val same_oa : v -> v -> bool
-  val writable : bool -> bool -> v -> bool
-
-  exception Result of Archs.t * v * string
 
 end

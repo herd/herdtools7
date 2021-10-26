@@ -14,4 +14,4 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-include SymbValue.Make(Int64Constant)
+include SymbValue.Make(Int64Constant)(ArchOp.No(Int64Constant))

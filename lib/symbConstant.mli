@@ -16,4 +16,7 @@
 
 (** Symbolic constants *)
 
-module Make : functor (Scalar:Scalar.S)  -> Constant.S with module Scalar = Scalar
+module Make :
+functor (Scalar:Scalar.S) ->
+  functor (PteVal:PteVal.S) ->
+    Constant.S with module Scalar = Scalar and module PteVal = PteVal

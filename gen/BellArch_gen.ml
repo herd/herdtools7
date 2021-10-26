@@ -203,11 +203,11 @@ let varatom_rmw = match varatom with
 
 include NoMixed
 
-let set_pteval _ p _ = p
-
 include NoWide
 
 (* End of atoms *)
+
+module PteVal = PteVal_gen.No(struct type arch_atom = atom end)
 
 (**********)
 (* Fences *)

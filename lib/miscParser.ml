@@ -129,19 +129,6 @@ let check_env_for_dups env =
           (LocSet.pp_str "," dump_location bad)
   end
 
-let mk_pte_val pte l =
-  let open Constant in
-  let s = match pte with
-  | Location_global (Symbolic (System (PTE,s))) -> s
-  | Location_global (Symbolic (Virtual {tag;offset;_})) ->
-    assert (offset = 0) ;
-    assert (Misc.is_none tag) ;
-    ""
-  | Location_reg _ -> ""
-  | _ -> Warn.user_error "Expected a PTE or a register" in
-  let v = PTEVal.of_list s l in
-  PteVal v
-
 let dump_state_atom is_global dump_loc dump_val (loc,(t,v)) =
   let open TestType in
   match t with
@@ -255,5 +242,18 @@ let rec set_hash_rec h = function
 
 let set_hash p h = { p with info = set_hash_rec  h p.info; }
 
-
 let get_info p key = get_info_on_info key p.info
+
+let add_oa_if_none loc p =
+  let open Constant in
+  try
+    let oa =
+      match loc with
+      | Location_global (Symbolic (System (Constant.PTE,s))) ->
+         OutputAddress.PHY s
+      | Location_global (Symbolic (System (Constant.PTE2,s))) ->
+         OutputAddress.PTE s
+      | _ -> raise Exit in
+    let p = ParsedPteVal.add_oa_if_none oa p in
+    Constant.PteVal p
+  with Exit -> PteVal p

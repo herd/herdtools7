@@ -230,7 +230,7 @@ module Make
                ("Hash",D.digest info init prog all_locs)::info ; }
         | Some _ -> parsed in
       parsed
-           end
+    end
 
     let parse chan x =
       let module Src = struct

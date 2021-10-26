@@ -25,9 +25,13 @@ module type A = sig
   val annot_sets : (string * (lannot -> bool)) list
   val pp_annot : lannot -> string
   include Explicit.S
+  val pteval_sets : (string * (V.Cst.PteVal.t -> bool)) list
+  val dirty_sets : (string * (DirtyBit.my_t -> V.Cst.PteVal.t -> bool)) list
+
   val is_atomic : lannot -> bool
   val is_isync : barrier -> bool
   val pp_isync : string
+
 
   module ArchAction :
   ArchAction.S
@@ -325,31 +329,11 @@ end = struct
         -> true
     | _ -> false
 
-  let is_invalid_val = let open Constant in function
-    | Some (A.V.Val (PteVal v)) -> V.is_zero (V.intToV v.PTEVal.valid)
-    | _ -> false
-
-  let invalid_pte act = is_invalid_val (written_of act) || is_invalid_val (read_of act)
-
-  let is_valid_val =
-    let open Constant in function
-    | Some (A.V.Val (PteVal v)) -> V.is_one (V.intToV v.PTEVal.valid)
-    | _ -> false
-
-  let valid_pte act = is_valid_val (written_of act) || is_valid_val (read_of act)
-
-  let af0_val =
-    let open Constant in function
-    | Some (A.V.Val (PteVal v)) -> V.is_zero (V.intToV v.PTEVal.af)
-    | _ -> false
-
-  and db0_val =
-    let open Constant in function
-    | Some (A.V.Val (PteVal v)) -> V.is_zero (V.intToV v.PTEVal.db)
-    | _ -> false
-
-  let val_pteaf0 act = af0_val (read_of act) || af0_val (written_of act)
-  and val_ptedb0 act = db0_val (read_of act) || db0_val (written_of act)
+  let on_pteval pred act =
+    let pred = function
+      | Some (A.V.Val (Constant.PteVal p)) -> pred p
+      | None|Some _ -> false in
+    pred (written_of act) || pred (read_of act)
 
   let get_pteval act = match written_of act,read_of act with
   | None,None -> None
@@ -499,11 +483,8 @@ end = struct
       fun k ->
         ("PA",is_PA_access)::
         ("PTE",is_pt)::
-        ("PTEINV",invalid_pte)::
-        ("PTEV",valid_pte)::
-        ("PTEAF0",val_pteaf0)::
-        ("PTEDB0",val_ptedb0)::
-        k
+        List.fold_right
+          (fun (key,p) k -> (key,on_pteval p)::k) A.pteval_sets k
     else
       fun k -> k)
       (bsets @ asets @ esets @ lsets @ aasets)
@@ -546,10 +527,10 @@ end = struct
         | _ -> false
 
       and alias_act =
-        let get_oa =
+        let get_pteval =
           let open Constant in
           function
-          | Some (A.V.Val (PteVal v)) -> Some v.PTEVal.oa
+          | Some (A.V.Val (PteVal v)) -> Some v
           | Some (A.V.Val (ConcreteVector _|Concrete _|Symbolic _|Label (_, _)|Tag _))
           | None
             -> None
@@ -565,37 +546,23 @@ end = struct
           Reason: RWM events have two values.. *)
           assert (not (is_amo act1 || is_amo act2)) ;
           is_pt act1 && is_pt act2 &&
-          (match get_oa (value_of act1), get_oa (value_of act2) with
-          | Some s1,Some s2 -> PTEVal.oa_eq s1 s2
+          (match get_pteval (value_of act1), get_pteval (value_of act2) with
+          | Some s1,Some s2 -> A.V.Cst.PteVal.same_oa s1 s2
           | _,_ -> false) in
 
       [("inv-domain",inv_domain_act); ("alias",alias_act);]
     else []
 
-  let arch_dirty = (* To be deprecated *)
+  let arch_dirty =
     if kvm then
-      let open DirtyBit in
       let check_pred f d  =
         fun act ->
           is_pt act &&
           (match get_pteval act with
           | None -> false
           | Some pteval -> f d pteval) in
-
-      let read_only =
-        check_pred
-          (fun t p ->
-            let open PTEVal in
-            (p.af=1 || p.af=0 && t.my_ha ()) &&
-            (p.db=0 && (not (t.my_hd ()) || p.dbm=0)))
-
-      and _read_write =
-        check_pred
-          (fun t p ->
-            let open PTEVal in
-            (p.af=1 || (p.af=0 && t.my_ha ())) &&
-            (p.db=1 || (p.db=0 && p.dbm=1 && t.my_hd ()))) in
-      ["ReadOnly",read_only;]
+      List.map
+        (fun (key,f) -> key,check_pred f) A.dirty_sets
     else []
 
   let is_isync act = match act with

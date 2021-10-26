@@ -39,7 +39,9 @@ include Arch.MakeArch(struct
     let open Constant in
     let r =  match pat,instr with
     | Const(Symbolic (Virtual {name=s;_})),Const(Concrete c) ->
-        let c = ParsedConstant.Scalar.to_int c in
+        let c =
+          try int_of_string c
+          with Failure _ -> Warn.user_error "Int expected" in
         add_subs [Cst(s, c)] subs
     | Const(Concrete s),Const(Concrete c)
       when c=s ->

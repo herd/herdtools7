@@ -21,6 +21,10 @@ module type S =
 
 (* Constants, notice that they include symbolic "rigid" constants *)
       module Cst : Constant.S
+      type arch_op1 (* Arch specific operations *)
+      val pp_arch_op1 : bool -> arch_op1 -> string
+
+      type op1_t = arch_op1 Op.op1
 
 (* flexible variables *)
       type csym = int (* Opened by Susmit, lose pointless abstraction *)
@@ -79,7 +83,7 @@ module type S =
       val is_virtual : v -> bool
       val as_virtual : v -> string option
 
-      val op1 : Op.op1 -> v -> v
+      val op1 : arch_op1 Op.op1 -> v -> v
       val op : Op.op -> v -> v -> v
       val op3 : Op.op3 -> v -> v -> v -> v
 
