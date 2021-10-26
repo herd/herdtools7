@@ -470,11 +470,15 @@ let lift_proc_info i evts =
         stores [] in
     E.EventRel.of_list xs
 
+  let is_rwm e = E.is_store e && E.is_load e
+               
   let compute_pco rfmap ppoloc =
     try
       let pco =
         E.EventRel.fold
-          (fun (e1,e2 as p) k -> match E.get_mem_dir e1, E.get_mem_dir e2 with
+          (fun (e1,e2 as p) k ->
+            if is_rwm e1 || is_rwm e2 then k else                 
+            match E.get_mem_dir e1, E.get_mem_dir e2 with
           | Dir.W,Dir.W -> E.EventRel.add p k
           | Dir.R,Dir.R ->
               begin match
