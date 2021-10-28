@@ -470,39 +470,49 @@ let lift_proc_info i evts =
         stores [] in
     E.EventRel.of_list xs
 
+  let is_rwm e = E.is_store e && E.is_load e
+               
   let compute_pco rfmap ppoloc =
+    let open Dir in
+    let add e1 e2 d1 d2 k =
+      match d1, d2 with
+      | Dir.W,Dir.W -> E.EventRel.add (e1,e2) k
+      | Dir.R,Dir.R ->
+          begin match
+            find_source rfmap e1,
+            find_source rfmap e2
+          with
+          | S.Store w1,S.Store w2 ->
+              if E.event_equal w1 w2 then k
+              else E.EventRel.add (w1,w2) k
+          | S.Init,_ -> k
+          | _,S.Init -> raise Exit
+          end
+      | Dir.R,Dir.W ->
+          begin match
+            find_source rfmap e1
+          with
+          | S.Store w1 -> E.EventRel.add (w1,e2) k
+          | S.Init -> k
+          end
+      | Dir.W,Dir.R ->
+          begin match
+            find_source rfmap e2
+          with
+          | S.Store w2 ->
+              if E.event_equal e1 w2 then k
+              else E.EventRel.add (e1,w2) k
+          | S.Init -> raise Exit
+          end in
+    let add1 e1 e2 d1 k =
+      if is_rwm e2 then add e1 e2 d1 R (add e1 e2 d1 W k)
+      else add e1 e2 d1 (E.get_mem_dir e2) k in
     try
       let pco =
         E.EventRel.fold
-          (fun (e1,e2 as p) k -> match E.get_mem_dir e1, E.get_mem_dir e2 with
-          | Dir.W,Dir.W -> E.EventRel.add p k
-          | Dir.R,Dir.R ->
-              begin match
-                find_source rfmap e1,
-                find_source rfmap e2
-              with
-              | S.Store w1,S.Store w2 ->
-                  if E.event_equal w1 w2 then k
-                  else E.EventRel.add (w1,w2) k
-              | S.Init,_ -> k
-              | _,S.Init -> raise Exit
-              end
-          | Dir.R,Dir.W ->
-              begin match
-                find_source rfmap e1
-              with
-              | S.Store w1 -> E.EventRel.add (w1,e2) k
-              | S.Init -> k
-              end
-          | Dir.W,Dir.R ->
-              begin match
-                find_source rfmap e2
-              with
-              | S.Store w2 ->
-                  if E.event_equal e1 w2 then k
-                  else E.EventRel.add (e1,w2) k
-              | S.Init -> raise Exit
-              end)
+          (fun (e1,e2) k ->
+            if is_rwm e1 then add1 e1 e2 R (add1 e1 e2 W k)
+            else add1 e1 e2 (E.get_mem_dir e1) k)
           ppoloc
           E.EventRel.empty in
       Some pco

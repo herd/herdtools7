@@ -693,7 +693,9 @@ let match_reg_events es =
     let map_load_possible_stores test es loads stores compat_locs =
       let ok = match C.optace with
         | OptAce.False -> fun _ _ -> true
-        | OptAce.True -> U.is_before_strict es
+        | OptAce.True ->
+            let pred = U.is_before_strict es in
+            fun er ew -> not (pred er ew)
         | OptAce.Iico ->
            let iico = U.iico es in
            fun load store -> not (E.EventRel.mem (load,store) iico) in
