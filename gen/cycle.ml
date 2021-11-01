@@ -726,7 +726,6 @@ let set_same_loc st n0 =
             let ord = CoSt.get_co st Ord in
             let ctag = CoSt.get_co st CapaTag in
             let cseal = CoSt.get_co st CapaSeal in
-            fprintf stderr "test 20 \n" ;
             n.evt <- { n.evt with ord=ord; ctag=ctag; cseal=cseal; }
 (*
           else if do_neon then (* set both fields, it cannot harm *)
