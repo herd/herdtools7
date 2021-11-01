@@ -597,6 +597,26 @@ let get_ie e = match e with
 
 let fold_edge f r = Code.fold_ie (fun ie r -> f (IFF ie) (f (FIF ie) r)) r
 
+
+let compute_rmw r old co =
+   begin match r with
+    | LdOp op ->
+      begin match op with
+        | A_ADD -> old + co
+        | A_SMAX -> if old > co then old else co
+        | A_SMIN -> if old < co then old else co
+        | A_EOR | A_SET | A_CLR -> co
+      end
+    | StOp op ->
+      begin match op with
+        | A_ADD -> old + co
+        | A_SMAX -> if old > co then old else co
+        | A_SMIN -> if old < co then old else co
+        | A_EOR | A_SET | A_CLR -> co
+      end
+    | LrSc | Swp | Cas  -> co
+  end
+
 include
     ArchExtra_gen.Make
     (struct

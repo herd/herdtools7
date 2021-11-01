@@ -26,3 +26,6 @@ let applies_atom_rmw () ar aw = match ar,aw with
 | _,_ -> false
 
 let show_rmw_reg () = false
+
+let compute_rmw rmw old co_cell  = match rmw with
+| _ -> old+co_cell

@@ -22,3 +22,4 @@ val pp_rmw : rmw -> string
 val fold_rmw : (rmw -> 'a -> 'a) -> 'a -> 'a
 val applies_atom_rmw : rmw -> 'a option -> 'a option -> bool
 val show_rmw_reg : rmw -> bool
+val compute_rmw : rmw  -> int -> int -> int

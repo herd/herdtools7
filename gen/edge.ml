@@ -31,6 +31,7 @@ module type S = sig
   type atom
   type rmw
 
+
   val pp_atom : atom -> string
   val tr_value : atom option -> Code.v -> Code.v
   val overwrite_value : Code.v -> atom option -> Code.v -> Code.v
@@ -62,6 +63,7 @@ module type S = sig
   val is_node : tedge -> bool
   val is_insert : tedge -> bool
   val is_non_pseudo : tedge -> bool
+  val compute_rmw : rmw -> int -> int -> int
 
   type edge = { edge: tedge;  a1:atom option; a2: atom option; }
 
@@ -165,6 +167,7 @@ and type rmw = F.rmw = struct
   type atom = F.atom
   type rmw = F.rmw
 
+  let compute_rmw = F.compute_rmw
   let pp_atom = F.pp_atom
   let tr_value = F.tr_value
   let overwrite_value = F.overwrite_value
