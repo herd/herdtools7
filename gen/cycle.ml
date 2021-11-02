@@ -464,19 +464,17 @@ module CoSt = struct
   let get_cell st = st.co_cell
 
   let set_cell ?(rv = -1) st n =
-    let e = n.evt in  match e.bank with
+    let e = n.evt in match e.bank with
     | Ord -> begin
-      let old = st.co_cell.(0) in
-      let cell = E.overwrite_value old e.atom e.v in
-      let co_cell = Array.copy st.co_cell in
-      match n.edge.E.edge with
-      | E.Rmw rmw -> let cell2 = E.compute_rmw rmw old cell in
-        co_cell.(0) <- cell2 ;
-        {e with cell=co_cell;},{ st with co_cell; }
-      | _ -> let cell2 = if rv = -1 then cell else rv in
-          co_cell.(0) <- cell2 ;
-          {e with cell=co_cell;},{ st with co_cell; }
-      end
+       let old = st.co_cell.(0) in
+       let cell = E.overwrite_value old e.atom e.v in
+       let co_cell = Array.copy st.co_cell in
+       let cell2 = match n.edge.E.edge with
+        | E.Rmw rmw -> E.compute_rmw rmw old cell
+        | _ -> if rv = -1 then cell else rv in
+      co_cell.(0) <- cell2;
+      {e with cell=co_cell;},{ st with co_cell; }
+    end
     | _ -> e,st
 
   let set_tcell st e = match e.bank with
@@ -752,12 +750,12 @@ let set_same_loc st n0 =
                    n.evt <- e ;
                    do_set_write_val st pte_val ns
                 | Tag|CapaTag|CapaSeal ->
-                  let st = CoSt.next_co st bank in
-                  let v = CoSt.get_co st bank in
-                  n.evt <- { n.evt with v = v; } ;
-                  let e,st = CoSt.set_tcell st n.evt in
-                  n.evt <- e ;
-                do_set_write_val st pte_val ns
+                   let st = CoSt.next_co st bank in
+                   let v = CoSt.get_co st bank in
+                   n.evt <- { n.evt with v = v; } ;
+                   let e,st = CoSt.set_tcell st n.evt in
+                   n.evt <- e ;
+                   do_set_write_val st pte_val ns
                 | VecReg a ->
                    let st = CoSt.step_simd st a in
                    let cell = CoSt.get_cell st in
@@ -795,8 +793,8 @@ let set_same_loc st n0 =
           begin match n.evt.loc with
             | Data _ ->
               let bank = n.evt.bank in
-              begin match bank with
-                | Ord -> if n.evt.rmw then begin
+              begin match bank, n.evt.rmw with
+                | Ord, true ->
                    let st1 = CoSt.next_co st Ord in
                    let v1 = CoSt.get_co st1 Ord in
                    n.evt <- { n.evt with v = tr_value n.evt v1; };
@@ -805,9 +803,6 @@ let set_same_loc st n0 =
                    n.evt <- e ;
                    let co = n.evt.cell.(0) in
                    do_set_write_val st1 pte_val ns ~rv:co
-                 end
-                  else
-                    do_set_write_val st pte_val ns
                 | _   -> do_set_write_val st pte_val ns
               end
             | Code _ -> do_set_write_val st pte_val ns

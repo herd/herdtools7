@@ -31,7 +31,6 @@ module type S = sig
   type atom
   type rmw
 
-
   val pp_atom : atom -> string
   val tr_value : atom option -> Code.v -> Code.v
   val overwrite_value : Code.v -> atom option -> Code.v -> Code.v
