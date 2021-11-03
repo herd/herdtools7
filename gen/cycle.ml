@@ -463,16 +463,16 @@ module CoSt = struct
 
   let get_cell st = st.co_cell
 
-  let set_cell ?(rv = -1) st n =
+  let set_cell st n =
     let e = n.evt in match e.bank with
     | Ord -> begin
        let old = st.co_cell.(0) in
        let cell = E.overwrite_value old e.atom e.v in
        let co_cell = Array.copy st.co_cell in
-       let cell2 = match n.edge.E.edge with
+       let cell2 = match n.prev.edge.E.edge with
         | E.Rmw rmw -> E.compute_rmw rmw old cell
-        | _ -> if rv = -1 then cell else rv in
-      co_cell.(0) <- cell2;
+        | _ -> cell in
+       co_cell.(0) <- cell2;
       {e with cell=co_cell;},{ st with co_cell; }
     end
     | _ -> e,st
@@ -713,7 +713,7 @@ let set_same_loc st n0 =
 
   let tr_value e v = E.tr_value e.atom v
 
-  let rec do_set_write_val ?(rv = -1) st pte_val = function
+  let rec do_set_write_val st pte_val = function
     | [] -> ()
     | n::ns ->
         begin if Code.is_data n.evt.loc then
@@ -746,7 +746,7 @@ let set_same_loc st n0 =
                    n.evt <- { n.evt with v = tr_value n.evt v; } ;
                    (* Writing Ord resets morello tag *)
                    let st = CoSt.set_co st CapaTag evt_null.ctag in
-                   let e,st = CoSt.set_cell st n ~rv:rv in
+                   let e,st = CoSt.set_cell st n in
                    n.evt <- e ;
                    do_set_write_val st pte_val ns
                 | Tag|CapaTag|CapaSeal ->
@@ -787,27 +787,9 @@ let set_same_loc st n0 =
                     do_set_write_val st pte_val ns
                 end
             | Code _ ->
-              do_set_write_val st pte_val ns
+               do_set_write_val st pte_val ns
             end
-        | Some R ->
-          begin match n.evt.loc with
-            | Data _ ->
-              let bank = n.evt.bank in
-              begin match bank, n.evt.rmw with
-                | Ord, true ->
-                   let st1 = CoSt.next_co st Ord in
-                   let v1 = CoSt.get_co st1 Ord in
-                   n.evt <- { n.evt with v = tr_value n.evt v1; };
-                   let st1 = CoSt.set_co st CapaTag evt_null.ctag in
-                   let e,st1 = CoSt.set_cell st1 n in
-                   n.evt <- e ;
-                   let co = n.evt.cell.(0) in
-                   do_set_write_val st1 pte_val ns ~rv:co
-                | _   -> do_set_write_val st pte_val ns
-              end
-            | Code _ -> do_set_write_val st pte_val ns
-          end
-        | Some J |None -> do_set_write_val st pte_val ns
+        | Some R | Some J |None -> do_set_write_val st pte_val ns
         end
 
   let set_all_write_val nss =

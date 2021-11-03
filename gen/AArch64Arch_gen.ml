@@ -604,7 +604,9 @@ let compute_rmw r old co = match r with
         | A_ADD -> old + co
         | A_SMAX -> if old > co then old else co
         | A_SMIN -> if old < co then old else co
-        | A_EOR | A_SET | A_CLR -> co
+        | A_EOR -> old lxor co
+        | A_SET -> old lor co
+        | A_CLR -> lnot (old land co)
     end
     | LrSc | Swp | Cas  -> co
 
