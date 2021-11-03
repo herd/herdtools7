@@ -1,0 +1,13 @@
+Test M008 Allowed
+States 4
+1:X1=0x0; [x]=0x1; [y]=0x101;
+1:X1=0x0; [x]=0x2; [y]=0x101;
+1:X1=0x101; [x]=0x1; [y]=0x202;
+1:X1=0x101; [x]=0x2; [y]=0x202;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([x]=0x2 /\ [y]=0x202 /\ 1:X1=0x101)
+Observation M008 Sometimes 1 3
+Hash=dce7776cf1382a6e5b1afce5eab68a83
+
