@@ -606,7 +606,7 @@ let compute_rmw r old co = match r with
         | A_SMIN -> if old < co then old else co
         | A_EOR -> old lxor co
         | A_SET -> old lor co
-        | A_CLR -> lnot (old land co)
+        | A_CLR -> old land (lnot co)
     end
     | LrSc | Swp | Cas  -> co
 

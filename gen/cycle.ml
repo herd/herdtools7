@@ -470,9 +470,9 @@ module CoSt = struct
        let cell = E.overwrite_value old e.atom e.v in
        let co_cell = Array.copy st.co_cell in
        let cell2 = match n.prev.edge.E.edge with
-        | E.Rmw rmw -> E.compute_rmw rmw old cell
+        | E.Rmw rmw -> E.compute_rmw rmw old e.v
         | _ -> cell in
-       co_cell.(0) <- cell2;
+       co_cell.(0) <- E.overwrite_value old e.atom cell2;
       {e with cell=co_cell;},{ st with co_cell; }
     end
     | _ -> e,st
@@ -789,7 +789,7 @@ let set_same_loc st n0 =
             | Code _ ->
                do_set_write_val st pte_val ns
             end
-        | Some R | Some J |None -> do_set_write_val st pte_val ns
+        | Some (R|J) |None -> do_set_write_val st pte_val ns
         end
 
   let set_all_write_val nss =
