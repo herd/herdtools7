@@ -467,11 +467,13 @@ module CoSt = struct
     let e = n.evt in match e.bank with
     | Ord -> begin
        let old = st.co_cell.(0) in
-       let cell = E.overwrite_value old e.atom e.v in
        let co_cell = Array.copy st.co_cell in
-       let cell2 = match n.prev.edge.E.edge with
-        | E.Rmw rmw -> E.compute_rmw rmw old e.v
-        | _ -> cell in
+       let cell2 =
+         match n.prev.edge.E.edge with
+         | E.Rmw rmw ->
+           let old = E.extract_value old n.prev.evt.atom in
+           E.compute_rmw rmw old e.v
+         | _ -> e.v in
        co_cell.(0) <- E.overwrite_value old e.atom cell2;
       {e with cell=co_cell;},{ st with co_cell; }
     end
