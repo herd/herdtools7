@@ -1,0 +1,15 @@
+AArch64 M008
+"PodWWPh0 Rfeh0h0 Amo.Cash0h0 PodWWh0P Coe"
+Orig=PodWWPh0 Rfeh0h0 Amo.Cash0h0 PodWWh0P Coe
+(* Test bug fixed by PR #296 *)
+{
+0:X1=x; 0:X3=y;
+1:X0=y; 1:X4=x;
+}
+ P0           | P1              ;
+ MOV W0,#2    | MOV W1,#257     ;
+ STR W0,[X1]  | MOV W2,#514     ;
+ MOV W2,#257  | CASH W1,W2,[X0] ;
+ STRH W2,[X3] | MOV W3,#1       ;
+              | STR W3,[X4]     ;
+exists ([x]=0x2 /\ [y]=0x202 /\ 1:X1=0x101)
