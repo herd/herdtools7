@@ -27,7 +27,7 @@ let excl = ref []
 let npar = ref 1
 let hexa = ref false
 let int32 = ref true
-let nargs = ref 32
+let nargs = ref 64
 
 let options =
   let open CheckName in
@@ -245,15 +245,15 @@ module Task(O:Opt) = struct
         do_rec (x::k) in
     do_rec []
 
-  let extract q =
-    if Queue.length q < O.w then []
+  let extract w q =
+    if Queue.length q < w then []
     else
       let rec do_rec k =
         if k <= 0 then []
         else
           let x = try Queue.take q with Queue.Empty -> assert false in
           x::do_rec (k-1) in
-      do_rec O.w
+      do_rec w
 
 (* From file descriptor to task *)
   type task = { chan:in_channel; outname:string; }
@@ -290,20 +290,24 @@ module Task(O:Opt) = struct
 
 (* Spawn tasks, halt condition:
  *  + No free worker available.
- * + Or, les then O.w files to sum.
+ *  + Or, less then max (O.w,4) files to sum.
  *)
 
-  let rec process_tasks st =
+  let rec process_tasks w st =
     if st.nfree <= 0 then st
     else
-      let inputs = extract st.q in
+      let inputs = extract w st.q in
       match inputs with
-      | [] -> st
+      | [] ->
+         let ww = (w+1)/2 in
+         if ww > 4  then
+           process_tasks ww st
+         else st
       | _::_ ->
          let t = popen st.idx inputs in
          let fd = Unix.descr_of_in_channel t.chan in
          let st = { st with nfree=st.nfree-1; idx=st.idx+1; m=FdMap.add fd t st.m; } in
-         process_tasks st
+         process_tasks w st
 
 (* Polling loop *)
   let rec loop st =
@@ -321,7 +325,7 @@ module Task(O:Opt) = struct
              with End_of_file -> ignore (Unix.close_process_in t.chan) end ;
              Queue.add t.outname st.q ;
              { st with nfree=st.nfree+1; m = FdMap.remove fd st.m; }) st ok in
-       let st = process_tasks st in
+       let st = process_tasks O.w st in
        loop st
 
 
@@ -331,7 +335,7 @@ module Task(O:Opt) = struct
     let q = Queue.create () in
     List.iter (fun s -> Queue.add s q) args ;
     let st = { nfree=O.j; idx=0; q=q; m = FdMap.empty; } in
-    let st = process_tasks  st in
+    let st = process_tasks O.w st in
     let st = loop st in
     let args = queue_to_list st.q in
     zyva args ;
