@@ -76,5 +76,6 @@ module type S = sig
   val fold_rmw : (rmw -> 'a -> 'a) -> 'a -> 'a
   val applies_atom_rmw : rmw -> atom option -> atom option -> bool
   val show_rmw_reg : rmw -> bool
+  val compute_rmw : rmw -> int -> int -> int
 
 end

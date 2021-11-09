@@ -463,13 +463,20 @@ module CoSt = struct
 
   let get_cell st = st.co_cell
 
-  let set_cell st e = match e.bank with
-    | Ord ->
+  let set_cell st n =
+    let e = n.evt in match e.bank with
+    | Ord -> begin
        let old = st.co_cell.(0) in
-       let cell = E.overwrite_value old e.atom e.v in
        let co_cell = Array.copy st.co_cell in
-       co_cell.(0) <- cell ;
-       {e with cell=co_cell;},{ st with co_cell; }
+       let cell2 =
+         match n.prev.edge.E.edge with
+         | E.Rmw rmw ->
+           let old = E.extract_value old n.prev.evt.atom in
+           E.compute_rmw rmw old e.v
+         | _ -> e.v in
+       co_cell.(0) <- E.overwrite_value old e.atom cell2;
+      {e with cell=co_cell;},{ st with co_cell; }
+    end
     | _ -> e,st
 
   let set_tcell st e = match e.bank with
@@ -741,7 +748,7 @@ let set_same_loc st n0 =
                    n.evt <- { n.evt with v = tr_value n.evt v; } ;
                    (* Writing Ord resets morello tag *)
                    let st = CoSt.set_co st CapaTag evt_null.ctag in
-                   let e,st = CoSt.set_cell st n.evt in
+                   let e,st = CoSt.set_cell st n in
                    n.evt <- e ;
                    do_set_write_val st pte_val ns
                 | Tag|CapaTag|CapaSeal ->
@@ -784,7 +791,7 @@ let set_same_loc st n0 =
             | Code _ ->
                do_set_write_val st pte_val ns
             end
-        | Some R | Some J |None -> do_set_write_val st pte_val ns
+        | Some (R|J) |None -> do_set_write_val st pte_val ns
         end
 
   let set_all_write_val nss =
