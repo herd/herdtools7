@@ -331,4 +331,6 @@ module Make (C:Arch_herd.Config)(V:Value.S with type Cst.PteVal.t = AArch64PteVa
 
     module ArchAction = ArchAction.No(NoConf)
 
+    module Barrier = AllBarrier.No(struct type a = barrier end)
+
   end

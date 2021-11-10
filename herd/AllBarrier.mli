@@ -14,25 +14,19 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Union of relevant PPC, ARM, x86, and PTX barriers *)
+(** Union of relevant PPC, ARM, x86 barriers. Used by CAV12 model *)
+
+type b =
+  | SYNC | LWSYNC | ISYNC | EIEIO (* PPC memory model barrier *)
+  | DSB | DMB | ISB               (* ARM barrier *)
+  | DSBST | DMBST
+  | MFENCE | SFENCE | LFENCE      (* X86 *)
 
 module type S =
   sig
     type a (* Native arch barrier *)
-    type b =
-      | SYNC | LWSYNC | ISYNC | EIEIO (* PPC memory model barrier *)
-      | DSB | DMB | ISB               (* ARM barrier *)
-      | DSBST | DMBST
-      | MFENCE | SFENCE | LFENCE      (* X86 *)
-      | MEMBAR_CTA | MEMBAR_GL | MEMBAR_SYS (*PTX barriers*)
     val a_to_b : a -> b
     val pp_isync : string
   end
 
-
-module FromPPC    : functor(B:PPCBarrier.S)    -> S with type a = B.a
-module FromARM    : functor(B:ARMBarrier.S)    -> S with type a = B.a
-module FromX86    : functor(B:X86Barrier.S)    -> S with type a = B.a
-module FromX86_64 : functor(B:X86_64Barrier.S) -> S with type a = B.a
-module FromMIPS   : functor(B:MIPSBarrier.S)   -> S with type a = B.a
-module FromBell   : functor(B:BellBarrier.S)   -> S with type a = B.a
+module No : functor(B:sig type a end) -> S with type a = B.a

@@ -53,4 +53,5 @@ module type S =
 
     module MemType:MemoryType.S
 
+    module Barrier:AllBarrier.S with type a = barrier
   end

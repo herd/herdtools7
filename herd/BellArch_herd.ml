@@ -53,4 +53,6 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
 
     module MemType=MemoryType.No
 
-  end
+    module Barrier = AllBarrier.No(struct type a = barrier end)
+
+end

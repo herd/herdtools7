@@ -46,6 +46,7 @@ module NoCheck = struct
 end
 
 module Top (TopConf:Config) = struct
+
   module Make
       (S:Sem.Semantics)
       (P:sig
@@ -209,20 +210,10 @@ module Top (TopConf:Config) = struct
             let parser = MiscParser.mach2generic PPCParser.main
           end in
           let module PPCS = PPCSem.Make(Conf)(Int64Value) in
-          let module PPCBarrier = struct
-            type a = PPC.barrier
-            type b = SYNC | LWSYNC | ISYNC | EIEIO
-            let a_to_b a = match a with
-            | PPC.Sync -> SYNC
-            | PPC.Lwsync -> LWSYNC
-            | PPC.Isync -> ISYNC
-            | PPC.Eieio ->  EIEIO
-          end in
-          let module PPCM = PPCMem.Make(ModelConfig)(PPCS) (PPCBarrier) in
+          let module PPCM = PPCMem.Make(ModelConfig)(PPCS) in
           let module P = GenParser.Make (Conf) (PPC) (PPCLexParse) in
           let module X = Make (PPCS) (P) (NoCheck) (PPCM) in
           X.run dirty start_time name chan env splitted
-
       | `ARM ->
           let module ARM = ARMArch_herd.Make(ArchConfig)(Int32Value) in
           let module ARMLexParse = struct
@@ -233,18 +224,7 @@ module Top (TopConf:Config) = struct
             let parser = MiscParser.mach2generic ARMParser.main
           end in
           let module ARMS = ARMSem.Make(Conf)(Int32Value) in
-          let module ARMBarrier = struct
-            type a = ARM.barrier
-            type b =
-              | ISB
-              | DMB of ARMBase.barrier_option
-              | DSB of ARMBase.barrier_option
-            let a_to_b a = match a with
-            | ARM.DMB o -> DMB o
-            | ARM.DSB o -> DSB o
-            | ARM.ISB -> ISB
-          end in
-          let module ARMM = ARMMem.Make(ModelConfig)(ARMS)(ARMBarrier) in
+          let module ARMM = ARMMem.Make(ModelConfig)(ARMS) in
           let module P = GenParser.Make (Conf) (ARM) (ARMLexParse) in
           let module X = Make (ARMS) (P) (NoCheck) (ARMM) in
           X.run dirty start_time name chan env splitted
@@ -271,17 +251,6 @@ module Top (TopConf:Config) = struct
           end in
           let module AArch64S =
             AArch64Sem.Make(AArch64SemConf)(CapabilityValue) in
-          let module AArch64Barrier = struct
-            type a = AArch64.barrier
-            type b =
-              | ISB
-              | DMB of AArch64Base.mBReqDomain * AArch64Base.mBReqTypes
-              | DSB of AArch64Base.mBReqDomain * AArch64Base.mBReqTypes
-            let a_to_b a = match a with
-            | AArch64.DMB(d,t) -> DMB(d,t)
-            | AArch64.DSB(d,t) -> DSB(d,t)
-            | AArch64.ISB -> ISB
-          end in
           let module AArch64C =
           BellCheck.Make
             (struct
@@ -295,8 +264,7 @@ module Top (TopConf:Config) = struct
               let set_list _ _ = assert false
               let tr_compat i = i
              end) in
-          let module AArch64M =
-            AArch64Mem.Make(ModelConfig)(AArch64S) (AArch64Barrier) in
+          let module AArch64M = AArch64Mem.Make(ModelConfig)(AArch64S) in
           let module P = GenParser.Make (Conf) (AArch64) (AArch64LexParse) in
           let module X = Make (AArch64S) (P) (AArch64C) (AArch64M) in
           X.run dirty start_time name chan env splitted
@@ -318,17 +286,6 @@ module Top (TopConf:Config) = struct
             let procs_user = ProcsUser.get splitted.Splitter.info
           end in
           let module AArch64S = AArch64Sem.Make(AArch64SemConf)(Uint128Value) in
-          let module AArch64Barrier = struct
-            type a = AArch64.barrier
-            type b =
-              | ISB
-              | DMB of AArch64Base.mBReqDomain * AArch64Base.mBReqTypes
-              | DSB of AArch64Base.mBReqDomain * AArch64Base.mBReqTypes
-            let a_to_b a = match a with
-            | AArch64.DMB(d,t) -> DMB(d,t)
-            | AArch64.DSB(d,t) -> DSB(d,t)
-            | AArch64.ISB -> ISB
-          end in
           let module AArch64C =
           BellCheck.Make
             (struct
@@ -343,7 +300,7 @@ module Top (TopConf:Config) = struct
               let tr_compat i = i
              end) in
           let module AArch64M =
-            AArch64Mem.Make(ModelConfig)(AArch64S) (AArch64Barrier) in
+            AArch64Mem.Make(ModelConfig)(AArch64S) in
           let module P = GenParser.Make (Conf) (AArch64) (AArch64LexParse) in
           let module X = Make (AArch64S) (P) (AArch64C) (AArch64M) in
           X.run dirty start_time name chan env splitted
@@ -366,17 +323,6 @@ module Top (TopConf:Config) = struct
             let procs_user = ProcsUser.get splitted.Splitter.info
           end in
           let module AArch64S = AArch64Sem.Make(AArch64SemConf)(AArch64Value) in
-          let module AArch64Barrier = struct
-            type a = AArch64.barrier
-            type b =
-              | ISB
-              | DMB of AArch64Base.mBReqDomain * AArch64Base.mBReqTypes
-              | DSB of AArch64Base.mBReqDomain * AArch64Base.mBReqTypes
-            let a_to_b a = match a with
-            | AArch64.DMB(d,t) -> DMB(d,t)
-            | AArch64.DSB(d,t) -> DSB(d,t)
-            | AArch64.ISB -> ISB
-          end in
           let module AArch64C =
             BellCheck.Make
               (struct
@@ -391,11 +337,10 @@ module Top (TopConf:Config) = struct
                 let tr_compat i = i
               end) in
           let module AArch64M =
-            AArch64Mem.Make(ModelConfig)(AArch64S) (AArch64Barrier) in
+            AArch64Mem.Make(ModelConfig)(AArch64S) in
           let module P = GenParser.Make (Conf) (AArch64) (AArch64LexParse) in
           let module X = Make (AArch64S) (P) (AArch64C) (AArch64M) in
           X.run dirty start_time name chan env splitted
-
       | `X86 ->
           let module X86 = X86Arch_herd.Make(ArchConfig)(Int32Value) in
           let module X86LexParse = struct
@@ -406,15 +351,7 @@ module Top (TopConf:Config) = struct
             let parser = MiscParser.mach2generic X86Parser.main
           end in
           let module X86S = X86Sem.Make(Conf)(Int32Value) in
-          let module X86Barrier = struct
-            type a = X86.barrier
-            type b = MFENCE|LFENCE|SFENCE
-            let a_to_b a = match a with
-            | X86.Mfence -> MFENCE
-            | X86.Sfence -> SFENCE
-            | X86.Lfence -> LFENCE
-          end in
-          let module X86M = X86Mem.Make(ModelConfig)(X86S) (X86Barrier) in
+          let module X86M = X86Mem.Make(ModelConfig)(X86S) in
           let module P = GenParser.Make (Conf) (X86) (X86LexParse) in
           let module X = Make (X86S) (P) (NoCheck) (X86M) in
           X.run dirty start_time name chan env splitted
@@ -429,12 +366,7 @@ module Top (TopConf:Config) = struct
             let parser = MiscParser.mach2generic X86_64Parser.main
           end in
           let module X86_64S = X86_64Sem.Make(Conf)(Int64Value) in
-          let module X86_64Barrier = struct
-            type a = X86_64.barrier
-            type b = X86_64.barrier
-            let a_to_b (f:a) = (f:b)
-          end in
-          let module X86_64M = X86_64Mem.Make(ModelConfig)(X86_64S)(X86_64Barrier) in
+          let module X86_64M = X86_64Mem.Make(ModelConfig)(X86_64S) in
           let module P = GenParser.Make(Conf)(X86_64)(X86_64LexParse) in
           let module X = Make(X86_64S)(P)(NoCheck)(X86_64M) in
           X.run dirty start_time name chan env splitted
@@ -450,13 +382,7 @@ module Top (TopConf:Config) = struct
             let parser = MiscParser.mach2generic MIPSParser.main
           end in
           let module MIPSS = MIPSSem.Make(Conf)(Int64Value) in
-          let module MIPSBarrier = struct
-            type a = MIPS.barrier
-            type b = SYNC
-            let a_to_b a = match a with
-            | MIPS.Sync -> SYNC
-          end in
-          let module MIPSM = MIPSMem.Make(ModelConfig)(MIPSS)(MIPSBarrier) in
+          let module MIPSM = MIPSMem.Make(ModelConfig)(MIPSS) in
           let module P = GenParser.Make (Conf) (MIPS) (MIPSLexParse) in
           let module X = Make (MIPSS) (P) (NoCheck) (MIPSM) in
           X.run dirty start_time name chan env splitted
@@ -526,7 +452,6 @@ module Top (TopConf:Config) = struct
           let module P = GenParser.Make (Conf) (Bell) (BellLexParse) in
           let module X = Make (BellS) (P) (BellC) (BellM) in
           X.run dirty start_time name chan env splitted
-
     end else env
 
 (* Enter here... *)

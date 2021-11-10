@@ -79,4 +79,15 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     module ArchAction = ArchAction.No(NoConf)
 
+    module Barrier = struct
+
+      type a = barrier
+
+      let a_to_b = function
+        | Sync -> AllBarrier.SYNC
+
+      let pp_isync = "???"
+
+    end
+
   end

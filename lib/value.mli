@@ -102,3 +102,7 @@ module type S =
       val map_const : (Cst.v -> Cst.v) -> v -> v
       val map_scalar : (Cst.Scalar.t -> Cst.Scalar.t) -> v -> v
     end
+
+module type AArch64 = S
+  with type Cst.PteVal.t = AArch64PteVal.t
+  and type arch_op1 = AArch64Op.t

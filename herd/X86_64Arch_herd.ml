@@ -157,4 +157,19 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
          "ClFlushOpt",(fun a -> is_opt a);]
     end
 
+    module Barrier = struct
+
+      type a = barrier
+
+      let a_to_b =
+        let module N = AllBarrier in
+        function
+        | MFENCE -> N.MFENCE
+        | SFENCE -> N.SFENCE
+        | LFENCE -> N.LFENCE
+
+      let pp_isync = "???"
+
+    end
+
   end

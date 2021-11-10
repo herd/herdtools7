@@ -141,4 +141,6 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     module ArchAction = ArchAction.No(NoConf)
 
+    module Barrier = AllBarrier.No(struct type a = barrier end)
+
   end
