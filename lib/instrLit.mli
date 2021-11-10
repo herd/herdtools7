@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 type t =
-    | LIT_B of Proc.t * string
+    | LIT_B of string
     | LIT_NOP
 
 val pp : t -> string

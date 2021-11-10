@@ -15,20 +15,20 @@
 (****************************************************************************)
 
 type t =
-    | LIT_B of Proc.t * string
+    | LIT_B of string
     | LIT_NOP
 
 let pp = function
-    | LIT_B(proc,label) -> Printf.sprintf "B %d:%s" proc label
+    | LIT_B(label) -> Printf.sprintf "B %s" label
     | LIT_NOP -> "NOP"
 
 let compare i1 i2 =
     match (i1, i2) with
-    | (LIT_B(p1,l1), LIT_B(p2,l2)) ->
-        Misc.pair_compare Int.compare String.compare (p1,l1) (p2, l2)
+    | (LIT_B(l1), LIT_B(l2)) ->
+        String.compare l1 l2
     | (LIT_NOP, LIT_NOP) -> 0
-    | (LIT_B(_,_), LIT_NOP) -> -1
-    | (LIT_NOP, LIT_B(_,_)) -> 1
+    | (LIT_B(_), LIT_NOP) -> -1
+    | (LIT_NOP, LIT_B(_)) -> 1
 
 (* let from_string = function
     | "NOP" -> LIT_NOP
