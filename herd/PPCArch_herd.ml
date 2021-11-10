@@ -102,4 +102,19 @@ module Make (C:Arch_herd.Config) (V:Value.S)
 
     module ArchAction = ArchAction.No(NoConf)
 
+    module Barrier = struct
+      type a = barrier
+
+      let a_to_b a =
+        let open AllBarrier in
+        match a with
+        | Sync -> SYNC
+        | Lwsync -> LWSYNC
+        | Isync -> ISYNC
+        | Eieio ->  EIEIO
+
+      let pp_isync = "isync"
+
+    end
+
   end

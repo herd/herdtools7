@@ -24,7 +24,6 @@ end
 module Make
     (O:Config)
     (S:Sem.Semantics)
-    (B:ARMBarrier.S with type a = S.barrier)
  :
     XXXMem.S with
 module S = S
@@ -56,8 +55,7 @@ module S = S
               let opt = opt
               include ModelConfig
             end)
-            (S)
-            (AllBarrier.FromARM(B)) in
+            (S) in
         X.check_event_structure test
     | Generic m ->
         let module X =

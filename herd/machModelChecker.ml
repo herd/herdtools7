@@ -407,17 +407,7 @@ module Make
                  end)
                E.Act.arch_dirty)
         else m in
-(* Define empty fence relation
-   (for the few models that apply to several archs) *)
-      let m = I.add_rels m
-          [
-(* PTX fences *)
-           "membar.cta",lazy E.EventRel.empty;
-           "membar.gl", lazy E.EventRel.empty;
-           "membar.sys",lazy E.EventRel.empty;
-         ] in
 (* Override arch specific fences *)
-
       let m =
         I.add_rels m
           (List.map

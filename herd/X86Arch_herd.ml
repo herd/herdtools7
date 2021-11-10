@@ -90,4 +90,19 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
 
     module ArchAction = ArchAction.No(NoConf)
 
+    module Barrier = struct
+
+      type a = barrier
+
+      let a_to_b =
+        let open AllBarrier in
+        function
+        | Mfence -> MFENCE
+        | Sfence -> SFENCE
+        | Lfence -> LFENCE
+
+      let pp_isync = "???"
+                   
+    end
+
   end

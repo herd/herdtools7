@@ -24,7 +24,6 @@ end
 module Make
          (O:Config)
          (S:Sem.Semantics)
-         (B:X86_64Barrier.S with type a = S.barrier)
        : XXXMem.S with module S = S =
   struct
 
@@ -59,8 +58,7 @@ module Make
                let opt = opt
                include ModelConfig
              end)
-             (S)
-             (AllBarrier.FromX86_64(B)) in
+             (S) in
          X.check_event_structure test
       | File _ -> assert false
   end

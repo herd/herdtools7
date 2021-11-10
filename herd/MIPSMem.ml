@@ -23,7 +23,6 @@ end
 module Make
     (O:Config)
     (S:Sem.Semantics)
-    (B:MIPSBarrier.S with type a = S.barrier)
  :
     XXXMem.S with
 
@@ -55,8 +54,7 @@ module S = S
               let opt = opt
               include ModelConfig
             end)
-            (S)
-            (AllBarrier.FromMIPS(B)) in
+            (S) in
         X.check_event_structure test
     | Generic m ->
         let module X =

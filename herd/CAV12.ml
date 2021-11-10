@@ -17,6 +17,7 @@
 (** Sela Haim's axiomatic model for PPC, second version *)
 
 open Printf
+open AllBarrier
 
 module type Config =
   sig
@@ -27,7 +28,6 @@ module type Config =
 module Make
     (O:Config)
     (S:Sem.Semantics)
-    (B:AllBarrier.S with type a = S.barrier)
     =
   struct
 (************************)
@@ -42,12 +42,12 @@ module Make
 
     module S = S
     module A = S.A
+    module B = A.Barrier
     module E = S.E
     module U = MemUtils.Make(S)
     module MU = ModelUtils.Make(O)(S)
 
     let is_fence x =
-      let open B in
       match E.barrier_of x with
       | Some a ->
           begin match B.a_to_b a with
@@ -106,26 +106,26 @@ module Make
     | Some a -> B.a_to_b a = b
     | None -> false
 
-    let is_eieio x = is_that_fence B.EIEIO x
+    let is_eieio x = is_that_fence EIEIO x
 
     let is_strong x =
-      is_that_fence B.SYNC x ||
-      is_that_fence B.DMB x ||
-      is_that_fence B.DSB x ||
-      is_that_fence B.MFENCE x ||
+      is_that_fence SYNC x ||
+      is_that_fence DMB x ||
+      is_that_fence DSB x ||
+      is_that_fence MFENCE x ||
       (O.opt.strongst &&
-       (is_that_fence B.DSBST x || is_that_fence B.DMBST x))
+       (is_that_fence DSBST x || is_that_fence DMBST x))
 
 (*
     let is_light x =
-      is_that_fence B.LWSYNC x ||
-      is_that_fence B.EIEIO x ||
+      is_that_fence LWSYNC x ||
+      is_that_fence EIEIO x ||
       (not O.opt.strongst &&
-       (is_that_fence B.DSBST x || is_that_fence B.DMBST x))
+       (is_that_fence DSBST x || is_that_fence DMBST x))
 *)
     let is_isync x =
-      is_that_fence B.ISYNC x ||
-      is_that_fence B.ISB x
+      is_that_fence ISYNC x ||
+      is_that_fence ISB x
 
 (* Parameters of Sela's "generic" model *)
     let fbefore (x,y) =
@@ -367,7 +367,7 @@ module Make
 
       if E.EventSet.exists
           (fun x ->
-            (is_that_fence B.DSBST x || is_that_fence B.DMBST x))
+            (is_that_fence DSBST x || is_that_fence DMBST x))
           conc.S.str.E.events
       then
         Warn.user_error "ST qualifier not handled by CAV12" ;
@@ -394,7 +394,7 @@ module Make
         end ||
         begin
           SE.is_satisfy xe && SE.is_satisfy ye &&
-          is_that_fence B.LWSYNC ze.SE.event (* Ok for lwsync here: read/read *)
+          is_that_fence LWSYNC ze.SE.event (* Ok for lwsync here: read/read *)
         end ||
         begin
           SE.is_commit xe && SE.is_commit ye &&

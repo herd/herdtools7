@@ -24,7 +24,6 @@ end
 module Make
     (O:Config)
     (S:Sem.Semantics)
-    (B:X86Barrier.S with type a = S.barrier)
  :
     XXXMem.S with
 module S = S
@@ -49,6 +48,15 @@ module S = S
             end)
             (S) in
         X.check_event_structure test
+    | CAV12 opt ->
+        let module X =
+          CAV12.Make
+            (struct
+              let opt = opt
+              include ModelConfig
+            end)
+            (S) in
+        X.check_event_structure test
     | Generic m ->
         let module X =
           MachModelChecker.Make
@@ -59,6 +67,5 @@ module S = S
              end)(S) in
         X.check_event_structure test
     | File _ -> assert false
-    | m ->
-        Warn.fatal "Model %s not implemented for X86" (Model.pp m)
+
 end

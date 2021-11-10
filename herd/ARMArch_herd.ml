@@ -95,4 +95,22 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     module ArchAction = ArchAction.No(NoConf)
 
+    module Barrier = struct
+      type a = barrier
+
+      let a_to_b =
+        let module N = AllBarrier in
+        function
+        | DSB SY -> N.DSB
+        | DMB SY -> N.DMB
+        | DMB ST -> N.DMBST
+        | DSB ST -> N.DSBST
+        | ISB -> N.ISB
+        | a ->
+           Warn.fatal "Barrier %s not implemented for CAV12"
+             (pp_barrier a)
+
+      let pp_isync = "isb"
+
+    end
   end
