@@ -854,8 +854,7 @@ let instruction_to_value
   (i : instruction) : 'scalar Constant.t =
   match i with
   | I_B lbl -> 
-    Warn.warn_always "FIXME: creating a label constant P0:%s, although Pn was in fact not known" lbl
-    ; Constant.Instruction(InstrLit.LIT_B(0,lbl))
+    Constant.Instruction(InstrLit.LIT_B(lbl))
   | I_NOP -> Constant.Instruction(InstrLit.LIT_NOP)
   | _ -> Warn.fatal "FIXME: functionality not implemented for -variant self"
 

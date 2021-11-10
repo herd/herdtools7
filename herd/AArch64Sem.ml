@@ -52,12 +52,6 @@ module Make
           "morello instruction %s require -variant morello"
           (AArch64.dump_instruction ii.A.inst)
 
-    let check_self ii =
-      if not self then
-        Warn.user_error
-          "instruction %s requires -variant self"
-          (AArch64.dump_instruction ii.A.inst)
-
 (* Barrier pretty print *)
     let barriers =
       let bs = AArch64Base.do_fold_dmb_dsb true (fun h t -> h::t) []
