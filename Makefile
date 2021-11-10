@@ -130,20 +130,24 @@ test::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 C instructions tests: OK"
 
-test::
+test:: diy-test
+
+diy-test:
 	@ echo
 	$(HERD_DIYCROSS_REGRESSION_TEST) \
 		-herd-path $(HERD) \
 		-diycross-path $(DIYCROSS) \
 		-libdir-path ./herd/libdir \
 		-expected-dir ./herd/tests/diycross/AArch64 \
-		-arch AArch64 \
-		-relaxlist 'Pod**,Fenced**' \
-		-relaxlist 'Rfe,Fre,Coe' \
-		-relaxlist 'Pod**,Fenced**,DpAddrdR,DpAddrdW,DpDatadW,CtrldR,CtrldW' \
-		-relaxlist 'Rfe,Fre,Coe' \
+		-diycross-arg -arch \
+		-diycross-arg AArch64 \
+		-diycross-arg 'Pod**,Fenced**' \
+		-diycross-arg 'Rfe,Fre,Coe' \
+		-diycross-arg 'Pod**,Fenced**,DpAddrdR,DpAddrdW,DpDatadW,CtrldR,CtrldW' \
+		-diycross-arg 'Rfe,Fre,Coe' \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 diycross7 tests: OK"
+
 
 J=2
 
@@ -168,3 +172,42 @@ test::
 		-shelf-path catalogue/aarch64-mixed/shelf.py \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-mixed tests: OK"
+
+full-test: test diy-test-mixed
+
+LDS:="Amo.Cas,Amo.LdAdd,Amo.LdClr,Amo.LdEor,Amo.LdSet"
+diy-test-mixed:
+	@ echo
+	$(HERD_DIYCROSS_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-diycross-path $(DIYCROSS) \
+		-libdir-path ./herd/libdir \
+		-expected-dir ./herd/tests/diycross/AArch64.mixed \
+		-conf ./herd/tests/diycross/AArch64.mixed/mixed.cfg \
+		-diycross-arg -obs \
+		-diycross-arg oo \
+		-diycross-arg -arch \
+		-diycross-arg AArch64 \
+		-diycross-arg -variant \
+		-diycross-arg mixed \
+		-diycross-arg -hexa \
+		-diycross-arg Hat \
+		-diycross-arg h0 \
+		-diycross-arg $(LDS) \
+		-diycross-arg h0 \
+		-diycross-arg Rfi \
+		-diycross-arg w0 \
+		-diycross-arg Amo.StAdd \
+		-diycross-arg w0 \
+		-diycross-arg Rfi \
+		-diycross-arg h2 \
+		-diycross-arg $(LDS) \
+		-diycross-arg h2 \
+		-diycross-arg PodWR \
+		-diycross-arg Hat \
+		-diycross-arg w0 \
+		-diycross-arg Amo.LdSet \
+		-diycross-arg w0 \
+		-diycross-arg PodWR \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64.mixed diycross7 tests: OK"
