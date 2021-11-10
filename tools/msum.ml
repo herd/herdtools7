@@ -27,6 +27,7 @@ let excl = ref []
 let npar = ref 1
 let hexa = ref false
 let int32 = ref true
+let nargs = ref 64
 
 let options =
   let open CheckName in
@@ -37,6 +38,8 @@ let options =
    "<non-default> show various diagnostics, repeat to increase verbosity");
   ("-j", Arg.Int (fun i -> npar := i),
    (sprintf "<int> parallel sum using <n> processeses, default %i" !npar)) ;
+  ("-width", Arg.Int (fun i -> nargs := i),
+  (sprintf "<int>  merge width, when parallel sum enabled %i" !nargs)) ;
    parse_hexa hexa; parse_int32 int32;
    parse_rename rename;
    parse_select select; parse_names names; parse_excl excl;
@@ -58,6 +61,7 @@ let npar =
   let nlogs = List.length !logs in
   if 2* !npar > nlogs then max 1 (nlogs/2)
   else max !npar 1
+let nargs = !nargs
 let select = !select
 let rename = !rename
 let names = !names
@@ -193,12 +197,15 @@ let zyva fnames  =
   ()
 
 module type Opt = sig
+  val j : int (* Number of workers *)
+  val w : int (* Merge width *)
   val verbose : int
-  val j : int
   val opts : string list
 end
 
 module Task(O:Opt) = struct
+
+  (* Work in temporary directory *)
   let tmp = Filename.get_temp_dir_name ()
 
   let dir =
@@ -227,43 +234,111 @@ module Task(O:Opt) = struct
     Sys.set_signal
       Sys.sigint (Sys.Signal_handle (fun _ -> clean() ; exit 1))
 
+(* Queue *)
+  type queue = string Queue.t
+
+  let queue_to_list q =
+    let rec do_rec k =
+      if Queue.is_empty q then k
+      else
+        let x = try Queue.take  q with Queue.Empty -> assert false in
+        do_rec (x::k) in
+    do_rec []
+
+  let extract w q =
+    if Queue.length q < w then []
+    else
+      let rec do_rec k =
+        if k <= 0 then []
+        else
+          let x = try Queue.take q with Queue.Empty -> assert false in
+          x::do_rec (k-1) in
+      do_rec w
+
+(* From file descriptor to task *)
+  type task = { chan:in_channel; outname:string; }
+
+
+  module FdMap =
+    Map.Make
+      (struct
+        type t = Unix.file_descr
+        let compare = compare
+      end)
+
+  let get_waiting m =  FdMap.fold (fun fd _ k -> fd::k) m []
+
+(* Spawn task *)
   let opts = "-q" :: O.opts
 
   let popen idx args =
-    let oname = Filename.concat dir
+    let outname = Filename.concat dir
         (sprintf "sum-%02i.txt" idx) in
     let com =
       let args = String.concat " " (opts@args)  in
-      sprintf "%s %s >%s" prog args oname in
+      sprintf "%s %s >%s" prog args outname in
     if O.verbose > 0 then eprintf "Starting '%s'\n%!" com ;
     let chan = Unix.open_process_in com in
-    oname,chan
+    { outname; chan; }
 
-    let cut args =
-      let t = Array.make O.j [] in
-      let rec do_rec k args =
-        if k >= O.j then do_rec 0 args
-        else match args with
-        | [] -> ()
-        | a::args ->
-            t.(k) <- a :: t.(k)  ;
-            do_rec (k+1) args in
-      do_rec 0 args ;
-      let xs = Array.to_list t in
-      let xs = List.filter (function [] -> false | _::_ -> true) xs in
-      Array.of_list xs
+(* Current state *)
+  type st =
+    { idx:int;   (* gensym for file names *)
+      nfree:int; (* workers not working *)
+      m:task FdMap.t; (* From fd to running tasks *)
+      q:queue; (* Files to sum *) }
 
+(* Spawn tasks, halt condition:
+ *  + No free worker available.
+ *  + Or, less then max (O.w,4) files to sum.
+ *)
+
+  let rec process_tasks w st =
+    if st.nfree <= 0 then st
+    else
+      let inputs = extract w st.q in
+      match inputs with
+      | [] ->
+         let ww = (w+1)/2 in
+         if ww > 4  then
+           process_tasks ww st
+         else st
+      | _::_ ->
+         let t = popen st.idx inputs in
+         let fd = Unix.descr_of_in_channel t.chan in
+         let st = { st with nfree=st.nfree-1; idx=st.idx+1; m=FdMap.add fd t st.m; } in
+         process_tasks w st
+
+(* Polling loop *)
+  let rec loop st =
+    let fds = get_waiting st.m in
+    match fds with
+    | [] -> st
+    | _::_ ->
+       let ok,_,_ = Unix.select fds [] [] (-1.0) in
+       let st =
+         List.fold_left
+           (fun st fd ->
+             let t =
+               try FdMap.find fd st.m with Not_found -> assert false in
+             begin try while true do  ignore (input_char t.chan) done
+             with End_of_file -> ignore (Unix.close_process_in t.chan) end ;
+             Queue.add t.outname st.q ;
+             { st with nfree=st.nfree+1; m = FdMap.remove fd st.m; }) st ok in
+       let st = process_tasks O.w st in
+       loop st
+
+
+(* Entry point, set O.j workers at work, then reallocate tasks untill
+   less then O.w files to sum. Then perform the last sum. *)
   let run args =
-    let t = cut args in
-    let outs = Array.mapi popen t in
-    Array.iteri
-      (fun _i (_oname,chan) ->
-        try while true do ignore (input_char chan) done
-        with End_of_file -> ignore (Unix.close_process_in chan))
-      outs ;
-
-    let onames =  List.map fst (Array.to_list outs) in
-    zyva onames ;
+    let q = Queue.create () in
+    List.iter (fun s -> Queue.add s q) args ;
+    let st = { nfree=O.j; idx=0; q=q; m = FdMap.empty; } in
+    let st = process_tasks O.w st in
+    let st = loop st in
+    let args = queue_to_list st.q in
+    zyva args ;
     clean ()
 end
 
@@ -274,6 +349,7 @@ let () =
         Task
           (struct
             let j = npar
+            let w = nargs
             let verbose = verbose
             let opts = par_opts
           end) in
