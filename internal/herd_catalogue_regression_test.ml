@@ -204,7 +204,7 @@ let () =
   let anon_args = ref [] in
 
   let options = [
-    "-j",Arg.Int (fun i -> j := Some i),"<n> concurrent run with at most <n> instances";
+    Args.npar j ;
     "-herd-timeout",Arg.Float (fun f -> timeout := Some f), "<f> herd timeout";
     Args.is_file ("-herd-path",   Arg.Set_string herd,         "path to herd binary") ;
     Args.is_dir  ("-libdir-path", Arg.Set_string libdir,       "path to herd libdir") ;

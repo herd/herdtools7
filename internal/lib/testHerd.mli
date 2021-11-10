@@ -56,7 +56,7 @@ val run_herd :
  *  If the run writes to both stdout and stderr, stdout is checked
  *  against the [expected] file, while stderr is checked against
  *  the [expected_warn] file. If any file is missing or differs,
- *  an Error is raised. 
+ *  an Error is raised.
  *  Paths to [cat], [bell], and [conf] files, as well as [variants], can also
  *  be passed in. *)
 val herd_output_matches_expected :

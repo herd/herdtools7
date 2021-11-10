@@ -16,6 +16,7 @@
 
 (** Utilities for using the built-in Arg module. *)
 
+type spec = Arg.key * Arg.spec * Arg.doc
 
 (** Specs. *)
 
@@ -25,6 +26,11 @@ let append_string r =
 let set_string_option r =
   Arg.String (fun v -> r := Some v)
 
+(** Common options *)
+
+let npar j =
+  "-j",Arg.Int (fun i -> j := Some (max i 1)),
+  "<n> concurrent run with at most <n> instances"
 
 (** Validators. *)
 

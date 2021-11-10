@@ -23,14 +23,12 @@
 type path = string
 
 type flags = {
-  herd         : path ;
-  libdir       : path ;
-  diycross     : path ;
-  expected_dir : path ;
-  arch         : string ;
-  relaxlists   : string list ;
-  variants     : string list ;
-  conf         : path option ;
+  herd          : path ;
+  herd_conf     : path option ;
+  libdir        : path ;
+  diycross      : path ;
+  diycross_args : string list ;
+  expected_dir  : path ;
 }
 
 
@@ -45,36 +43,36 @@ let without_members cutset xs =
 let common xs ys =
   List.filter (fun x -> List.mem x ys) xs
 
-let diycross_args libdir arch relaxlists out_dir =
-  ["-o"; out_dir; "-set-libdir"; libdir; "-arch"; arch] @ relaxlists
+let diycross_args flags out_dir =
+  ["-o"; out_dir; "-set-libdir"; flags.libdir; ] @ flags.diycross_args
 
 
 (* Commands *)
-
-let show_tests flags =
+let run_diycross flags =
   let tmp_dir = Filesystem.new_temp_dir () in
-  let args = diycross_args flags.libdir flags.arch flags.relaxlists tmp_dir in
+  let args = diycross_args flags tmp_dir in
   Command.run flags.diycross args ;
-  let litmuses = List.filter TestHerd.is_litmus (list_dir tmp_dir) in
+  tmp_dir,List.filter TestHerd.is_litmus (list_dir tmp_dir)
 
+
+let show_tests ?j flags =
+  ignore (j) ;
+  let tmp_dir,litmuses = run_diycross flags in
   let litmus_paths = concat_dir tmp_dir litmuses in
+
   let command_of_litmus l =
-    TestHerd.herd_command ~bell:None ~cat:None
-      ~conf:flags.conf
-      ~variants:flags.variants
+    TestHerd.herd_command
+      ~bell:None ~cat:None ~variants:[]
+      ~conf:flags.herd_conf
       ~libdir:flags.libdir
       flags.herd [l]
   in
-  Channel.write_lines stdout (List.map command_of_litmus litmus_paths)
+  Channel.write_lines stdout (List .map command_of_litmus litmus_paths)
 
 
-let run_tests flags =
-  let tmp_dir = Filesystem.new_temp_dir () in
-  let args = diycross_args flags.libdir flags.arch flags.relaxlists tmp_dir in
-  Command.run flags.diycross args ;
-
-  let litmuses =
-    List.filter TestHerd.is_litmus (list_dir tmp_dir) in
+let run_tests ?j flags =
+  ignore (j) ;
+  let tmp_dir,litmuses = run_diycross flags in
 
   let expecteds =
     List.filter TestHerd.is_expected (list_dir flags.expected_dir) in
@@ -100,8 +98,8 @@ let run_tests flags =
   let results = List.map
     (fun (l, e) ->
       TestHerd.herd_output_matches_expected ~bell:None ~cat:None
-        ~conf:flags.conf
-        ~variants:flags.variants
+        ~conf:flags.herd_conf
+        ~variants:[]
         ~libdir:flags.libdir
         flags.herd l e "" "")
     (List.combine litmus_paths expected_paths)
@@ -122,12 +120,15 @@ let run_tests flags =
   end
 
 
-let promote_tests flags =
-  let old_paths = concat_dir flags.expected_dir (list_dir flags.expected_dir) in
+let promote_tests ?j flags =
+  ignore (j) ;
+  let old_paths =
+    concat_dir flags.expected_dir
+      (List.filter TestHerd.is_expected (list_dir flags.expected_dir))in
   List.iter Sys.remove old_paths ;
 
   let tmp_dir = Filesystem.new_temp_dir () in
-  let args = diycross_args flags.libdir flags.arch flags.relaxlists tmp_dir in
+  let args = diycross_args flags tmp_dir in
   Command.run flags.diycross args ;
   let litmuses = List.filter TestHerd.is_litmus (list_dir tmp_dir) in
 
@@ -138,12 +139,12 @@ let promote_tests flags =
 
   let output_of_litmus l =
     TestHerd.run_herd ~bell:None ~cat:None
-      ~conf:flags.conf
-      ~variants:flags.variants
+      ~conf:flags.herd_conf
+      ~variants:[]
       ~libdir:flags.libdir
       flags.herd [l]
   in
-  let outputs = List.map output_of_litmus litmus_paths in
+  let outputs = List.map (fun l -> output_of_litmus l) litmus_paths in
   let write_file (path, (_,lines,_)) =
     Filesystem.write_file path (fun o -> Channel.write_lines o lines) in
   List.combine expected_paths outputs |> List.iter write_file ;
@@ -167,12 +168,11 @@ let () =
   let libdir = ref "" in
   let diycross = ref "" in
   let expected_dir = ref "" in
-  let arch = ref "" in
-  let relaxlists = ref [] in
+  let diycross_args = ref [] in
 
   (* Optional arguments. *)
   let conf = ref None in
-  let variants = ref [] in
+  let j = ref None in
 
   let anon_args = ref [] in
   let options = [
@@ -180,10 +180,9 @@ let () =
     Args.is_dir  ("-libdir-path",   Arg.Set_string libdir,         "path to herd libdir") ;
     Args.is_file ("-diycross-path", Arg.Set_string diycross,       "path to diycross binary") ;
     Args.is_dir  ("-expected-dir",  Arg.Set_string expected_dir,   "path to directory of .expected files to test against") ;
-                  "-arch",          Arg.Set_string arch,           "arch to test" ;
-                  "-relaxlist",     Args.append_string relaxlists, "relaxlist to cross-product (specify multiple times)" ;
-    Args.is_file ("-conf",          Args.set_string_option conf,   "path to config file to pass to herd7") ;
-                  "-variant",       Args.append_string variants,   "variant to pass to herd7" ;
+    "-diycross-arg", Args.append_string diycross_args,  "one argument for diycross (cumulative)" ;
+    Args.is_file ("-conf", Args.set_string_option conf,   "path to config file to pass to herd7") ;
+    Args.npar j ;
   ] in
   Arg.parse options (fun a -> anon_args := a :: !anon_args) usage ;
 
@@ -201,23 +200,19 @@ let () =
     exit_with_error "Must set -diycross-path" ;
   if !expected_dir = "" then
     exit_with_error "Must set -expected-dir" ;
-  if !arch = "" then
-    exit_with_error "Must set -arch" ;
-  if List.length !relaxlists = 0 then
-    exit_with_error "Must provide at least one -relaxlist" ;
 
   let flags = {
     herd = !herd ;
+    herd_conf = !conf ;
     libdir = !libdir ;
     diycross = !diycross ;
+    diycross_args = !diycross_args ;
     expected_dir = !expected_dir ;
-    arch = !arch ;
-    relaxlists = !relaxlists ;
-    conf = !conf ;
-    variants = !variants ;
-  } in
+
+    } in
+  let j = !j in
   match !anon_args with
-  | "show" :: [] -> show_tests flags
-  | "test" :: [] -> run_tests flags
-  | "promote" :: [] -> promote_tests flags
+  | "show" :: [] -> show_tests ?j flags
+  | "test" :: [] -> run_tests ?j flags
+  | "promote" :: [] -> promote_tests ?j flags
   | _ -> exit_with_error "Must provide one command of: show, test, promote"

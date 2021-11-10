@@ -16,6 +16,7 @@
 
 (** Utilities for using the built-in Arg module. *)
 
+type spec = Arg.key * Arg.spec * Arg.doc
 
 (* Specs. *)
 
@@ -28,13 +29,20 @@ val append_string : string list ref -> Arg.spec
 val set_string_option : string option ref -> Arg.spec
 
 
+(** Common options *)
+
+(** [npar j] Build an Arg.spec for setting j, with documentation as
+ *  setting the parallelism level. *)
+
+val npar : int option ref -> spec
+
 (** Validators. *)
 
 (** [is_file (k, s, d)] returns [k, s', d], where [s'] wraps [s] with an
  *  Arg.spec that raises Arg.Bad if the argument is not a valid path to a file. *)
-val is_file : Arg.key * Arg.spec * Arg.doc -> Arg.key * Arg.spec * Arg.doc
+val is_file : spec -> spec
 
 (** [is_dir (k, s, d)] returns [k, s', d], where [s'] wraps [s] with an
  *  Arg.spec that raises Arg.Bad if the argument is not a valid path to a
  *  directory. *)
-val is_dir : Arg.key * Arg.spec * Arg.doc -> Arg.key * Arg.spec * Arg.doc
+val is_dir : spec -> spec
