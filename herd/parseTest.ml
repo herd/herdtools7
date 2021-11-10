@@ -228,119 +228,67 @@ module Top (TopConf:Config) = struct
           let module P = GenParser.Make (Conf) (ARM) (ARMLexParse) in
           let module X = Make (ARMS) (P) (NoCheck) (ARMM) in
           X.run dirty start_time name chan env splitted
+      | `AArch64 ->
+         let module
+             AArch64Make(V:Value.S) = struct
+             module AArch64 = AArch64Arch_herd.Make(ArchConfig)(V)
+
+             module AArch64LexParse = struct
+               type instruction = AArch64.parsedPseudo
+               type token = AArch64Parser.token
+               module Lexer =
+                 AArch64Lexer.Make
+                   (struct
+                     include LexConfig
+                     let is_morello =  Conf.variant Variant.Morello
+                   end)
+               let lexer = Lexer.token
+               let parser = (*MiscParser.mach2generic*) AArch64Parser.main
+             end
+
+             module AArch64SemConf = struct
+               module C = Conf
+               let dirty = ModelConfig.dirty
+               let procs_user = ProcsUser.get splitted.Splitter.info
+             end
+
+             module AArch64S = AArch64Sem.Make(AArch64SemConf)(V)
+
+             module AArch64C = (* TODO: Checking something? *)
+               BellCheck.Make
+                 (struct
+                   let debug = Conf.debug.Debug_herd.barrier
+                   let compat = Conf.variant Variant.BackCompat
+                 end)
+                 (AArch64)
+                 (struct
+                   let info = Misc.snd_opt Conf.bell_model_info
+                   let get_id_and_list _ = raise Not_found
+                   let set_list _ _ = assert false
+                   let tr_compat i = i
+                 end)
+
+             module AArch64M = AArch64Mem.Make(ModelConfig)(AArch64S)
+
+             module P = GenParser.Make (Conf) (AArch64) (AArch64LexParse)
+
+             module X = Make (AArch64S) (P) (AArch64C) (AArch64M)
+
+             let run = X.run
+         end in
 (* Markers START/END below are for excluding source when compiling
    the web interface *)
 (* START NOTWWW *)
-      (* TODO: try to avoid complete duplication for morello variant *)
-      | `AArch64 when Conf.variant Variant.Morello ->
-          let module AArch64 =
-            AArch64Arch_herd.Make(ArchConfig)(CapabilityValue) in
-          let module AArch64LexParse = struct
-            type instruction = AArch64.parsedPseudo
-            type token = AArch64Parser.token
-            module Lexer =
-              AArch64Lexer.Make
-                (struct include LexConfig let is_morello = true end)
-            let lexer = Lexer.token
-            let parser = (*MiscParser.mach2generic*) AArch64Parser.main
-          end in
-          let module AArch64SemConf = struct
-            module C = Conf
-            let dirty = ModelConfig.dirty
-            let procs_user = ProcsUser.get splitted.Splitter.info
-          end in
-          let module AArch64S =
-            AArch64Sem.Make(AArch64SemConf)(CapabilityValue) in
-          let module AArch64C =
-          BellCheck.Make
-            (struct
-              let debug = Conf.debug.Debug_herd.barrier
-              let compat = Conf.variant Variant.BackCompat
-            end)
-            (AArch64)
-            (struct
-              let info = Misc.snd_opt Conf.bell_model_info
-              let get_id_and_list _ = raise Not_found
-              let set_list _ _ = assert false
-              let tr_compat i = i
-             end) in
-          let module AArch64M = AArch64Mem.Make(ModelConfig)(AArch64S) in
-          let module P = GenParser.Make (Conf) (AArch64) (AArch64LexParse) in
-          let module X = Make (AArch64S) (P) (AArch64C) (AArch64M) in
-          X.run dirty start_time name chan env splitted
-      | `AArch64 when Conf.variant Variant.Neon ->
-          let module AArch64Conf = ArchConfig in
-          let module AArch64 = AArch64Arch_herd.Make(AArch64Conf)(UInt128Value) in
-          let module AArch64LexParse = struct
-            type instruction = AArch64.parsedPseudo
-            type token = AArch64Parser.token
-            module Lexer =
-              AArch64Lexer.Make
-                (struct include LexConfig let is_morello = false end)
-            let lexer = Lexer.token
-            let parser = (*MiscParser.mach2generic*) AArch64Parser.main
-          end in
-          let module AArch64SemConf = struct
-            module C = Conf
-            let dirty = ModelConfig.dirty
-            let procs_user = ProcsUser.get splitted.Splitter.info
-          end in
-          let module AArch64S = AArch64Sem.Make(AArch64SemConf)(UInt128Value) in
-          let module AArch64C =
-          BellCheck.Make
-            (struct
-              let debug = Conf.debug.Debug_herd.barrier
-              let compat = Conf.variant Variant.BackCompat
-            end)
-            (AArch64)
-            (struct
-              let info = Misc.snd_opt Conf.bell_model_info
-              let get_id_and_list _ = raise Not_found
-              let set_list _ _ = assert false
-              let tr_compat i = i
-             end) in
-          let module AArch64M =
-            AArch64Mem.Make(ModelConfig)(AArch64S) in
-          let module P = GenParser.Make (Conf) (AArch64) (AArch64LexParse) in
-          let module X = Make (AArch64S) (P) (AArch64C) (AArch64M) in
-          X.run dirty start_time name chan env splitted
+         if Conf.variant Variant.Morello then
+           let module X = AArch64Make(CapabilityValue) in
+           X.run dirty start_time name chan env splitted
+         else if Conf.variant Variant.Neon then
+           let module X = AArch64Make(UInt128Value) in
+           X.run dirty start_time name chan env splitted
+         else
 (* END NOTWWW *)
-      | `AArch64 ->
-          let module AArch64 =
-            AArch64Arch_herd.Make(ArchConfig)(Int64Value) in
-          let module AArch64LexParse = struct
-            type instruction = AArch64.parsedPseudo
-            type token = AArch64Parser.token
-            module Lexer =
-              AArch64Lexer.Make
-                (struct include LexConfig let is_morello = false end)
-            let lexer = Lexer.token
-            let parser = (*MiscParser.mach2generic*) AArch64Parser.main
-          end in
-          let module AArch64SemConf = struct
-            module C = Conf
-            let dirty = ModelConfig.dirty
-            let procs_user = ProcsUser.get splitted.Splitter.info
-          end in
-          let module AArch64S = AArch64Sem.Make(AArch64SemConf)(Int64Value) in
-          let module AArch64C =
-            BellCheck.Make
-              (struct
-                let debug = Conf.debug.Debug_herd.barrier
-                let compat = Conf.variant Variant.BackCompat
-              end)
-              (AArch64)
-              (struct
-                let info = Misc.snd_opt Conf.bell_model_info
-                let get_id_and_list _ = raise Not_found
-                let set_list _ _ = assert false
-                let tr_compat i = i
-              end) in
-          let module AArch64M =
-            AArch64Mem.Make(ModelConfig)(AArch64S) in
-          let module P = GenParser.Make (Conf) (AArch64) (AArch64LexParse) in
-          let module X = Make (AArch64S) (P) (AArch64C) (AArch64M) in
-          X.run dirty start_time name chan env splitted
+            let module X = AArch64Make(Int64Value) in
+           X.run dirty start_time name chan env splitted
       | `X86 ->
           let module X86 = X86Arch_herd.Make(ArchConfig)(Int32Value) in
           let module X86LexParse = struct
