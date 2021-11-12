@@ -30,6 +30,5 @@ let compare i1 i2 =
     | (LIT_B(_), LIT_NOP) -> -1
     | (LIT_NOP, LIT_B(_)) -> 1
 
-(* let from_string = function
-    | "NOP" -> LIT_NOP
-    | _ -> Warn.fatal "FIXME: unreachable code reached in instrLit.ml" *)
+let eq i1 i2 =
+    (compare i1 i2) = 0

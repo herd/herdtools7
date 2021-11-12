@@ -48,9 +48,6 @@ module type S = sig
   (* Shorthand for parsable dump *)
   val dump_instruction : instruction -> string
 
-  val is_overwritable : Label.Set.t -> instruction -> bool
-  val instruction_to_value : instruction -> ('scalar,'pte) Constant.t
-
   (*************************************)
   (* All this needed for symbolic regs *)
   (*************************************)

@@ -186,6 +186,8 @@ type concrete =
   type barrier = A.barrier
   type pp_barrier = { barrier:barrier ; pp:string; }
 
+  include IFetchTrait.S with type ifetch_instruction := instruction
+
 end
 
 module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
@@ -435,6 +437,9 @@ type concrete =
     type barrier = A.barrier
 
     type pp_barrier = { barrier:barrier ; pp:string; }
+
+    let is_overwritable = A.is_overwritable
+    let instruction_to_value = A.instruction_to_value
 
   end
 

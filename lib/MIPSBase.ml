@@ -185,15 +185,6 @@ type instruction =
 
 type parsedInstruction = instruction
 
-let is_overwritable
-  (_ : Label.Set.t)
-  (_ : instruction) : bool =
-  Warn.fatal "FIXME: functionality not implemented for -variant self"
-  
-let instruction_to_value
-  (_ : instruction) =
-  Warn.fatal "FIXME: functionality not implemented for -variant self"
-
 let move r1 r2 = OPI (OR,r1,r2,0)
 
 let pp_lbl = fun i -> i

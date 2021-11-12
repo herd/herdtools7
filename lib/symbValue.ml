@@ -358,15 +358,11 @@ module
 
   let eq v1 v2 = match v1,v2 with
   | Var i1,Var i2 when Misc.int_eq i1 i2 -> one
-  | Val (Symbolic _|Label _|Tag _|PteVal _|ConcreteVector _ as s1),Val (Symbolic _|Label _|Tag _|PteVal _|ConcreteVector _ as s2) ->
+  | Val (Symbolic _|Label _|Tag _|PteVal _|ConcreteVector _|Instruction _ as s1),Val (Symbolic _|Label _|Tag _|PteVal _|ConcreteVector _|Instruction _ as s2) ->
       bool_to_v Cst.eq s1 s2
 (* Assume concrete and others always to differ *)
-  | (Val (Symbolic _|Label _|Tag _|ConcreteVector _|PteVal _), Val (Concrete _))
-  | (Val (Concrete _), Val (Symbolic _|Label _|Tag _|ConcreteVector _|PteVal _)) -> zero
-  | (Val Instruction(i1), Val Instruction(i2)) ->
-    if InstrLit.compare i1 i2 == 0
-    then one
-    else zero
+  | (Val (Symbolic _|Label _|Tag _|ConcreteVector _|PteVal _|Instruction _), Val (Concrete _))
+  | (Val (Concrete _), Val (Symbolic _|Label _|Tag _|ConcreteVector _|PteVal _|Instruction _)) -> zero
   | _,_ ->
       binop
         Op.Eq

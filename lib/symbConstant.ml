@@ -42,10 +42,9 @@ module Make
   let pp_v_old = Constant.pp_old (Scalar.pp false) (PteVal.pp false)
 
   let compare c1 c2 = Constant.compare Scalar.compare PteVal.compare c1 c2
-
   let eq c1 c2 = Constant.eq Scalar.equal PteVal.eq c1 c2
-               
- (* For building code symbols. *)
+
+(* For building code symbols. *)
   let vToName = function
     | Symbolic s-> Constant.as_address s
     | Concrete _|ConcreteVector _ | Label _|Tag _|PteVal _|Instruction _

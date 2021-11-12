@@ -51,7 +51,7 @@ let location_compare loc1 loc2 = match loc1,loc2 with
 | Location_sreg _, Location_global  _ -> -1
 | Location_global _, Location_sreg _ -> 1
 
-let dump_value : maybev -> string = ParsedConstant.pp_v
+let dump_value = ParsedConstant.pp_v
 
 let dump_location = function
   | Location_reg (i,r) -> sprintf "%i:%s" i r

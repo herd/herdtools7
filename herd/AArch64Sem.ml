@@ -26,7 +26,6 @@ module Make
     module C = TopConf.C
     module ConfLoc = SemExtra.ConfigToArchConfig(C)
     module AArch64 = AArch64Arch_herd.Make(ConfLoc)(V)
-
     module Act = MachAction.Make(ConfLoc)(AArch64)
     include SemExtra.Make(C)(AArch64)(Act)
 
