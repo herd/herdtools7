@@ -770,7 +770,6 @@ module Make
       let is_gt v = M.op Op.Gt v V.zero
       let is_le v = M.op Op.Le v V.zero
       let is_lt v = M.op Op.Lt v V.zero
-      let is_eq v1 v2 = M.op Op.Eq v1 v2
 
       let tr_cond = function
         | AArch64.NE -> is_zero
@@ -1433,14 +1432,12 @@ module Make
                   let instr_v = A.V.cstToV (A.instruction_to_value ii.A.inst) in
                   M.altT  (
                     read_loc_instr hd ii
-                    >>= is_eq instr_v
-                    >>= is_not_zero
-                    >>= fun _ -> B.branchT l
+                    >>= M.eqT instr_v
+                    >>= fun () -> B.branchT l
                   ) (
                     read_loc_instr hd ii
-                    >>= is_eq instr_v
-                    >>= is_zero
-                    >>= fun _ -> M.unitT B.Next
+                    >>= M.neqT instr_v
+                    >>= fun () -> M.unitT B.Next
                   )
               | [] -> B.branchT l
             end

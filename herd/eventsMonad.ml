@@ -1497,9 +1497,7 @@ Monad type:
       let initwrites madd env size_env =
         t2code (do_initwrites madd env size_env [])
 
-      let initinstructions
-        (a2l : int -> Label.Set.t)
-        (starts : (A.proc * ((int * A.instruction) list)) list) =
+      let initinstructions a2l starts =
         let t_val = (fun init_eiid ->
           let (fin_eiid, fin_es) = List.fold_left
             (fun (cur_eiid, cur_es) (proc, code) ->
@@ -1513,6 +1511,8 @@ Monad type:
           ) in
         t2code t_val
 
+      (* Generates initial writes for both instructions AND data;
+         Combines functionality of initwrites and initinstructions *)
       let init_writes_and_instr madd env size_env a2l starts =
         let t_val = (fun init_eiid ->
           let (fin_eiid, fin_es) = List.fold_left
