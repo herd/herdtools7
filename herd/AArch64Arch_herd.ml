@@ -275,6 +275,20 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | I_STXR _|I_STXRBH _ -> MachSize.St
       | _ -> MachSize.No
 
+    type ifetch_instruction = instruction
+
+    let is_overwritable labels i =
+      match i with
+      | I_B _ | I_NOP -> not (Label.Set.is_empty labels)
+      | _ -> false
+
+    let instruction_to_value i =
+      match i with
+      | I_B lbl -> 
+        Constant.Instruction(InstrLit.LIT_B(lbl))
+      | I_NOP -> Constant.Instruction(InstrLit.LIT_NOP)
+      | _ -> Warn.fatal "FIXME: functionality not implemented for -variant self"
+
     include ArchExtra_herd.Make(C)
         (struct
           module V = V

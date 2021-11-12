@@ -21,3 +21,5 @@ type t =
 val pp : t -> string
 
 val compare : t -> t -> int
+
+val eq : t -> t -> bool

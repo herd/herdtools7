@@ -169,15 +169,6 @@ type instruction =
 
 type parsedInstruction = instruction
 
-let is_overwritable
-  (_ : Label.Set.t)
-  (_ : instruction) : bool =
-  Warn.fatal "FIXME: functionality not implemented for -variant self"
-  
-let instruction_to_value
-  (_ : instruction) : 'scalar Constant.t =
-  Warn.fatal "FIXME: functionality not implemented for -variant self"
-
 let pp_abs = ParsedConstant.pp_v
 
 let pp_rm32 rm32 =

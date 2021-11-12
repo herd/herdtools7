@@ -51,7 +51,7 @@ let location_compare loc1 loc2 = match loc1,loc2 with
 | Location_sreg _, Location_global  _ -> -1
 | Location_global _, Location_sreg _ -> 1
 
-let dump_value : maybev -> string = ParsedConstant.pp_v
+let dump_value = ParsedConstant.pp_v
 
 let dump_location = function
   | Location_reg (i,r) -> sprintf "%i:%s" i r
@@ -132,7 +132,6 @@ let check_env_for_dups env =
   end
 
 let mk_instr_val v =
-  let open Constant in
   match v with
   | "NOP" -> Constant.Instruction(InstrLit.LIT_NOP)
   | _ -> Warn.user_error "FIXME: Unexpected {%s} value in mk_instr_val" v

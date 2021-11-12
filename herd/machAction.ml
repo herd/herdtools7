@@ -115,12 +115,8 @@ end = struct
           if kvm then Access.PTE
           else Warn.fatal "PTE %s while -variant kvm is not active"
                  (A.pp_location loc)
-    | A.Location_global (V.Val (Label(_,_))) as loc
-        ->
-          Warn.warn_always
-            "FIXME: access_of_location_std on a label '%s' to be verified with -variant self"
-            (A.pp_location loc)
-          ; VIR
+    | A.Location_global (V.Val (Label(_,_)))
+      -> VIR
     | A.Location_global v ->
         Warn.fatal
           "access_of_location_std on non-standard symbol '%s'"

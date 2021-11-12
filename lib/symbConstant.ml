@@ -85,7 +85,7 @@ module Make(Scalar:Scalar.S) = struct
       Misc.string_eq  s1 s2 && Misc.int_eq p1 p2
   | Tag t1,Tag t2 -> Misc.string_eq t1 t2
   | PteVal p1,PteVal p2 -> PTEVal.compare p1 p2 = 0
-  | (Instruction i1, Instruction i2) -> InstrLit.compare i1 i2 = 0
+  | (Instruction i1, Instruction i2) -> InstrLit.eq i1 i2
   | (PteVal _,(Symbolic _|Concrete _|ConcreteVector _|Label _|Tag _|Instruction _))
   | (ConcreteVector _,(Symbolic _|Label _|Tag _|Concrete _|PteVal _|Instruction _))
   | (Concrete _,(Symbolic _|Label _|Tag _|ConcreteVector _|PteVal _|Instruction _))

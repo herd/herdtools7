@@ -38,6 +38,8 @@ module type S =
     and type I.arch_reg = reg
     and type I.arch_instruction = instruction
 
+    include IFetchTrait.S with type ifetch_instruction = instruction
+
 (* Levels are abstract, for AArch64, they are E0 to E3 *)
     type level
     val levels : level list

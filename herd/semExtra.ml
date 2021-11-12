@@ -186,6 +186,9 @@ type concrete =
   type barrier = A.barrier
   type pp_barrier = { barrier:barrier ; pp:string; }
 
+  val is_overwritable : Label.Set.t -> instruction -> bool
+  val instruction_to_value : instruction -> 'scalar Constant.t
+
 end
 
 module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
@@ -435,6 +438,9 @@ type concrete =
     type barrier = A.barrier
 
     type pp_barrier = { barrier:barrier ; pp:string; }
+
+    let is_overwritable = A.is_overwritable
+    let instruction_to_value = A.instruction_to_value
 
   end
 
