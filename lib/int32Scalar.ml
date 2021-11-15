@@ -44,7 +44,7 @@ let mask sz =
   | Word -> fun v -> v
   | Quad -> Warn.fatal "make 32 value with quad mask"
   | S128 -> Warn.fatal "make 32 value with s128 mask"
-          
+
 let sxt sz v =
   let open MachSize in
   match sz with
@@ -54,12 +54,12 @@ let sxt sz v =
      let nb = nbits sz in
      let m = shift_left one (nb-1) in
      sub (logxor v m) m
-     
+
 let of_int64 _ = assert false
 let to_int64 _ = assert false
-               
+
 let get_tag _ = assert false
 let set_tag _ = assert false
-    
+
 type mask = Int32.t
 let to_mask x = x

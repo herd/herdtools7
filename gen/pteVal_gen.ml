@@ -31,5 +31,5 @@ module No(A:sig type arch_atom end) = struct
   let compare _ _ = 0
   let set_pteval _ p _ = p
 end
-    
-  
+
+

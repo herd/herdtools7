@@ -33,5 +33,5 @@ val nameToV : string -> v
 val pp_v : v -> string
 val pp_v_old : v -> string
 
-(* Hexa parameter ignored... *)               
+(* Hexa parameter ignored... *)
 val pp : bool (* hexa *) -> v -> string

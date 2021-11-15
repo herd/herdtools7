@@ -15,4 +15,3 @@
 (****************************************************************************)
 
 include SymbValue.Make(Int32Constant)(ArchOp.No(Int32Constant))
-

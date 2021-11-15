@@ -7,5 +7,5 @@ AArch64 B001
  MOV W4,#1          ;
  LDEORAL W4,W3,[X1] ;
  MOV W5,#2          ;
-locations [Fault(P0,x);] 
+locations [Fault(P0,x);]
 forall [x]=0 /\ 0:X5=0

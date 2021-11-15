@@ -42,7 +42,7 @@ let compare (t1,x1) (t2,x2) =
   | r -> r
 
 let equal  (t1,x1) (t2,x2) = Uint128.equal x1 x2 && t1=t2
-  
+
 let add (_,x1) (_,x2) = false, Uint128.add x1 x2
 let sub (_,x1) (_,x2) = false, Uint128.sub x1 x2
 let mul (_,x1) (_,x2) = false, Uint128.mul x1 x2

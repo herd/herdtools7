@@ -5,7 +5,7 @@ int x=1;
 0:X0=x;
 }
   P0             ;
-L0:              ;   
+L0:              ;
  LDXR W1,[X0]    ;
  MOV W3,#2       ;
  STXR W4,W3,[X0] ;

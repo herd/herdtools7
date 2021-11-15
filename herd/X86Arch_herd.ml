@@ -103,7 +103,7 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
         | Lfence -> LFENCE
 
       let pp_isync = "???"
-                   
+
     end
 
   end
