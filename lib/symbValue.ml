@@ -309,7 +309,12 @@ module
 
   and maskop op sz v = match v,sz with
   | Val (Tag _),_ -> v (* tags are small enough for any mask be idempotent *)
-  | Val (PteVal _),MachSize.Quad -> v (* AArch64 specific *)
+  | Val (PteVal _|Instruction _ as c),_ ->
+     begin
+       match ArchOp.mask c sz with
+       | Some c -> Val c
+       | None -> unop op (Scalar.mask sz) v
+     end
   | _ ->  unop op (Scalar.mask sz) v
 
   and sxtop op sz v = unop op (Scalar.sxt sz) v

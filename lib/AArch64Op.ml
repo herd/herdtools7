@@ -129,4 +129,12 @@ module Make(S:Scalar.S) =
         let p = if is_set m mask_dbm then { p with dbm=0; } else p in
         Some p
 
+    let mask c sz =
+      let open MachSize in
+      let open Constant in
+      match c,sz with
+      | (PteVal _,Quad)
+      | (Instruction _,(Word|Quad))
+        -> Some c
+      | _,_ -> None
   end

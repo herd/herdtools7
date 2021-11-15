@@ -38,6 +38,8 @@ module type S = sig
   val orop : pteval -> scalar -> pteval option
   val andnot2 : pteval -> scalar -> pteval option
 
+  (* Masking some structured constant *)
+  val mask : cst -> MachSize.sz -> cst option
 end
 
 module No(Cst:Constant.S) = struct
@@ -48,8 +50,9 @@ module No(Cst:Constant.S) = struct
   type pteval = Cst.PteVal.t
   type cst = (scalar,pteval) Constant.t
 
-  let  do_op1 _ _ = None
+  let do_op1 _ _ = None
   let shift_address_right _ _ = None
   let orop _ _ = None
   let andnot2 _ _ = None
+  let mask _ _ = None
 end
