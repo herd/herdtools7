@@ -34,6 +34,7 @@ module type S = sig
   val to_int64 : t -> int64 (* Hum *)
 
   val compare : t -> t -> int
+  val equal : t -> t -> bool
 
 (* Operations *)
   val add : t -> t -> t

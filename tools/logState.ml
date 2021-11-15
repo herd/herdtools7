@@ -417,7 +417,7 @@ let union_states sts1 sts2 =
 module LC =
   LogConstr.Make
     (struct
-      module V = Int64Constant
+      type v = ToolsConstant.v
 
       type state = st_concrete
 
@@ -437,9 +437,9 @@ module LC =
         let v_bound_pp = bds_assoc bds (MiscParser.dump_location  loc) in
         try (* Ints are treated differently to abstract away radix *)
           let i = Int64.of_string v_bound_pp in
-          Int64Constant.eq v (Constant.Concrete i)
+          ToolsConstant.eq v (Constant.Concrete i)
         with Failure _ ->
-          Misc.string_eq v_bound_pp (Int64Constant.pp false v)
+          Misc.string_eq v_bound_pp (ToolsConstant.pp false v)
 
       let state_eqloc st loc1 loc2 =
         let open HashedState in
@@ -456,7 +456,7 @@ module LC =
         | None -> fun _ -> true
         | Some lbl0 ->
             Misc.app_opt_def true (Misc.string_eq lbl0) in
-        let sym0 = V.pp_v v0 in
+        let sym0 = ToolsConstant.pp_v v0 in
         let rec find fs = match fs.Hashcons.node with
           | Nil -> false
           | Cons (f,fs) ->

@@ -43,7 +43,7 @@ module Make(C:Config)  =
           let fullmixed = C.moreedges
         end)
 
-    let set_pteval _ p _ = p
+    module PteVal = PteVal_gen.No(struct type arch_atom = atom end)
 
 (**********)
 (* Fences *)

@@ -88,4 +88,6 @@ module type S = sig
       string ->
         (reg list -> pseudo list -> pseudo list)
 
+  (* For digest, include normalised prininting of pteval's *)
+  val hash_pteval : ParsedPteVal.t -> string
 end

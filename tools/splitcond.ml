@@ -60,7 +60,7 @@ module Make(Config:Config)(Out:Out) =
                         (fun (loc,v) ->
                           sprintf "%s=%s"
                             (MiscParser.dump_location loc)
-                            (Int64Constant.pp Config.hexa v))
+                            (ToolsConstant.pp Config.hexa v))
                         bds)))
               fname ;
             k+1)

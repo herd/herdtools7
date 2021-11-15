@@ -33,8 +33,8 @@ module Make (O:sig val hexa : bool end)(A:ArchBase.S) = struct
       end)
 
   type v = ParsedConstant.v
-  let zero = ParsedConstant.intToV 0
-  let one = ParsedConstant.intToV 1
+  let zero = ParsedConstant.zero
+  let one = ParsedConstant.one
   let symbToV =  ParsedConstant.nameToV
   let maybevToV c = c
   let pp_v = ParsedConstant.pp O.hexa

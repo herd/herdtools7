@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2015-present Institut National de Recherche en Informatique et *)
+(* Copyright 2017-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -13,9 +13,11 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
-module type S =
-  sig
-    type a (* Native arch barrier *)
-    type b = SYNC (* MIPS Memory barrier *)
-    val a_to_b : a -> b
-  end
+
+type v = (Int64Scalar.t,ParsedPteVal.t) Constant.t
+
+let pp hexa = Constant.pp (Int64Scalar.pp hexa) ParsedPteVal.pp
+let pp_v = pp false
+
+let compare = Constant.compare Int64.compare ParsedPteVal.compare
+let eq = Constant.eq Int64.equal ParsedPteVal.eq

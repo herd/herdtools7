@@ -367,24 +367,37 @@ let overwrite_value v ao w = match ao with
   | Some (Pte _,Some _) -> assert false
 
 (* Page table entries *)
-  let do_setpteval a f p =
-    let open PTEVal in
-    let f = match f with
-    | Set f|SetRel f -> f
-    | Read|ReadAcq|ReadAcqPc ->
-        Warn.user_error "Atom %s is not a pteval write" (pp_atom a) in
-    match f with
-    | AF -> fun _loc -> { p with af = 1-p.af; }
-    | DB -> fun _loc -> { p with db = 1-p.db; }
-    | DBM -> fun _loc -> { p with dbm = 1-p.dbm; }
-    | VALID -> fun _loc -> { p with valid = 1-p.valid; }
-    | OA -> fun loc -> PTEVal.set_oa p (loc ())
+  module PteVal = struct
 
-   let set_pteval a p =
-     match a with
-     | Pte f,None -> do_setpteval a f p
-     | _ -> Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
+    type pte_atom = atom
 
+    type t = AArch64PteVal.t
+
+    let pp = AArch64PteVal.pp_v
+
+    let default = AArch64PteVal.default
+
+    let compare = AArch64PteVal.compare
+
+    let do_setpteval a f p =
+      let open AArch64PteVal in
+      let f = match f with
+        | Set f|SetRel f -> f
+        | Read|ReadAcq|ReadAcqPc ->
+            Warn.user_error "Atom %s is not a pteval write" (pp_atom a) in
+      match f with
+      | AF -> fun _loc -> { p with af = 1-p.af; }
+      | DB -> fun _loc -> { p with db = 1-p.db; }
+      | DBM -> fun _loc -> { p with dbm = 1-p.dbm; }
+      | VALID -> fun _loc -> { p with valid = 1-p.valid; }
+      | OA -> fun loc ->
+              { p with oa=OutputAddress.PHY (loc ()); }
+
+    let set_pteval a p =
+      match a with
+      | Pte f,None -> do_setpteval a f p
+      | _ -> Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
+  end
 
 (* Wide accesses *)
 

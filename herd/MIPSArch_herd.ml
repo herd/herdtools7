@@ -33,6 +33,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let annot_sets = ["X", is_atomic]
 
     include Explicit.No
+    include PteValSets.No
 
     let is_isync _ = false
     let pp_isync = "???"
@@ -77,5 +78,16 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     end
 
     module ArchAction = ArchAction.No(NoConf)
+
+    module Barrier = struct
+
+      type a = barrier
+
+      let a_to_b = function
+        | Sync -> AllBarrier.SYNC
+
+      let pp_isync = "???"
+
+    end
 
   end

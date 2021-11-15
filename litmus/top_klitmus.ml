@@ -261,6 +261,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
     module Pseudo = LitmusUtils.Pseudo(A)
 
     module ASMConfig = struct
+      let hexa = O.hexa
       let memory = Memory.Direct
       let cautious = false
       let mode = Mode.Std

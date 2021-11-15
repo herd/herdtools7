@@ -58,7 +58,7 @@ module Make(Config:Config)(Out:OutTests.S) =
             (fun (loc,v) ->
               Out.fprintf chan "%s=%s;"
                 (dump_loc loc)
-                (Int64Constant.pp Config.hexa v))
+                (ToolsConstant.pp Config.hexa v))
             bds ;
           Out.fprintf chan "\n") ()
 
@@ -73,7 +73,7 @@ module Make(Config:Config)(Out:OutTests.S) =
                 (fun (loc,v) ->
                   sprintf "%s=%s;"
                     (dump_loc loc)
-                    (Int64Constant.pp Config.hexa v)) bds in
+                    (ToolsConstant.pp Config.hexa v)) bds in
             let pp = String.concat " " pp in
             Out.fprintf chan "%s\n" pp ;
             "and ")

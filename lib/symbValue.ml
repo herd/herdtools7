@@ -16,14 +16,22 @@
 
 open Printf
 
-module Make(Cst:Constant.S) = struct
+module
+  Make
+    (Cst:Constant.S)
+    (ArchOp:ArchOp.S with
+       type scalar = Cst.Scalar.t
+       and type pteval = Cst.PteVal.t) = struct
 
   module Cst = Cst
 
-  module Scalar = Cst.Scalar
+  type arch_op1 = ArchOp.op1
+  let pp_arch_op1 = ArchOp.pp_op1
+
+  type op1_t = arch_op1 Op.op1
 
   open Constant
-  open PTEVal
+  open Cst
 
   type csym = int
 
@@ -77,12 +85,7 @@ module Make(Cst:Constant.S) = struct
   and nameToV s = Val (Cst.nameToV s)
   and cstToV cst = Val cst
 
-  let rec tr_cst c = match c with
-    | Symbolic _ | Label _ | Tag _ | PteVal _ as m -> m
-    | Concrete s -> Concrete (Scalar.of_string s)
-    | ConcreteVector cs -> ConcreteVector (List.map tr_cst cs)
-
-  let maybevToV c = Val (tr_cst c)
+  let maybevToV c = Val (Cst.tr c)
 
 
   let as_symbol = function
@@ -118,12 +121,14 @@ module Make(Cst:Constant.S) = struct
         Warn.user_error "Illegal operation on %s" (Cst.pp_v x)
     | Var _ -> raise Undetermined
 
+  let pp_unop hexa = Op.pp_op1 hexa ArchOp.pp_op1
+
   let unop op_op op v1 = match v1 with
     | Val (Concrete i1) ->
         Val (Concrete (op i1))
     | Val (ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _ as x) ->
         Warn.user_error "Illegal operation %s on %s"
-          (Op.pp_op1 true op_op) (Cst.pp_v x)
+          (pp_unop true op_op) (Cst.pp_v x)
     | Var _ -> raise Undetermined
 
   let binop op_op op v1 v2 = match v1,v2 with
@@ -159,7 +164,7 @@ module Make(Cst:Constant.S) = struct
         Val (Concrete (op (scalar_of_cap c)))
     | Val cst ->
         Warn.user_error "Illegal operation %s on %s"
-          (Op.pp_op1 true op_op) (Cst.pp_v cst)
+          (pp_unop true op_op) (Cst.pp_v cst)
     | Var _ -> raise Undetermined
 
   (* Concrete,Concrete -> Concrete
@@ -284,32 +289,14 @@ module Make(Cst:Constant.S) = struct
       | (Val (Concrete _),Val (Symbolic _)) ->
           binop_cs_cs Op.Or Scalar.logor v2 v1
       | Val (PteVal p),Val (Concrete v) ->
-          (* Machine level mask operation on pteval's AArch64 specific *)
-          let msg =
-            sprintf
-              "Illegal operation %s on constants %s and %s"
-              (Op.pp_op Op.Or) (pp_v v1) (pp_v v2) in
-          let p =
-            if Scalar.compare v (Scalar.one) = 0 then
-              { p with PTEVal.valid=1; }
-            else if
-              let scalar_db = Scalar.shift_left Scalar.one 7 in
-              Scalar.compare v scalar_db = 0
-            then
-              { p with PTEVal.db=0; }
-            else if
-              let scalar_af = Scalar.shift_left Scalar.one 10 in
-              Scalar.compare v scalar_af = 0
-            then
-              { p with PTEVal.af=1; }
-            else if
-              let scalar_dbm = Scalar.shift_left Scalar.one 51 in
-              Scalar.compare v scalar_dbm = 0
-            then
-              { p with PTEVal.dbm=1; }
-            else
-              Warn.user_error "%s" msg in
-          raise (Cst.Result (`AArch64,PteVal p,msg))
+          (* Machine level mask operation on pteval's  *)
+          begin match ArchOp.orop p v with
+          | Some p ->  Val (PteVal p)
+          | None ->
+             Warn.user_error
+               "Illegal operation %s on constants %s and %s"
+               (Op.pp_op Op.Or) (pp_v v1) (pp_v v2)
+          end
       | _ -> binop_cs_cs Op.Or Scalar.logor v1 v2
 
   and xor v1 v2 =
@@ -324,45 +311,33 @@ module Make(Cst:Constant.S) = struct
   and sxtop op sz v = unop op (Scalar.sxt sz) v
 
   and shift_right_logical v1 v2 = match v1,v2 with
-  | Val (Symbolic (Virtual {name=s;_})),Val (Concrete v) when
-      Scalar.compare v (Scalar.of_int 12) = 0 ->
-        let msg =
-          sprintf
-            "Illegal operation %s on constants %s and %s"
-            (Op.pp_op Op.Lsr) (pp_v v1) (pp_v v2) in
-        (* Beware: AArch64 only, otherwise a fatal error. *)
+    | Val (Symbolic (Virtual {name=s;_})),Val (Concrete c) ->
+       begin
+         match ArchOp.shift_address_right s c with
+         | Some c -> Val c
+         | None ->
+            Warn.user_error
+              "Illegal operation %s on constants %s and %s"
+              (Op.pp_op Op.Lsr) (pp_v v1) (pp_v v2)
+       end
+
+(*
+         (* Beware: AArch64 only, otherwise a fatal error. *)
         raise (Cst.Result (`AArch64,Symbolic (System (TLB,s)),msg))
+ *)
   | _,_ ->
       binop Op.Lsr (fun x y -> Scalar.shift_right_logical x (Scalar.to_int y))
         v1 v2
 
   and andnot2 v1 v2 = match v1,v2 with
-  | Val (PteVal p),Val (Concrete v) ->
-        let msg =
-          sprintf
+    | Val (PteVal p),Val (Concrete v) ->
+       begin match ArchOp.andnot2 p v with
+       | Some p -> Val (PteVal p)
+       | None  ->
+          Warn.user_error
             "Illegal operation %s on constants %s and %s"
-            (Op.pp_op Op.AndNot2) (pp_v v1) (pp_v v2) in
-        let p =
-           if Scalar.compare v (Scalar.one) = 0 then
-             { p with PTEVal.valid=0; }
-           else if
-             let scalar_db = Scalar.shift_left Scalar.one 7 in
-             Scalar.compare v scalar_db = 0
-           then
-             { p with PTEVal.db=1; }
-           else if
-             let scalar_af = Scalar.shift_left Scalar.one 10 in
-             Scalar.compare v scalar_af = 0
-           then
-             { p with PTEVal.af=0; }
-           else if
-             let scalar_dbm = Scalar.shift_left Scalar.one 51 in
-             Scalar.compare v scalar_dbm = 0
-           then
-             { p with PTEVal.dbm=0; }
-           else
-             Warn.user_error "%s" msg in
-        raise (Cst.Result (`AArch64,PteVal p,msg))
+            (Op.pp_op Op.AndNot2) (pp_v v1) (pp_v v2)
+       end
   | _,_ ->
       binop Op.AndNot2
         (fun x1 x2 -> Scalar.logand x1 (Scalar.lognot x2)) v1 v2
@@ -485,37 +460,6 @@ module Make(Cst:Constant.S) = struct
   | Val (Concrete _|ConcreteVector _|Label _|Tag _|PteVal _) ->
       Warn.user_error "Illegal offset on %s" (pp_v v)
   | Var _ -> raise Undetermined
-
-  let op_pte_val op_op op v = match v with
-  | Val (PteVal a) -> Val (op a)
-  | Var _ -> raise Undetermined
-  | _ -> Warn.user_error "Illegal pte operation %s on %s" op_op (pp_v v)
-
-  let op_afloc a = Cst.intToV a.af
-  let afloc = op_pte_val "afloc" op_afloc
-
-  let op_set_pteval op op_op v = match v with
-    | Val (PteVal pte_v) -> Val (PteVal (op pte_v))
-    | Var _ -> raise Undetermined
-    | _ -> Warn.user_error "Illegal %s on %s" op_op (pp_v v)
-
-  let setaf = op_set_pteval (fun v -> { v with af = 1}) "setaf"
-
-  let op_dbloc a = Cst.intToV a.db
-  let dbloc = op_pte_val "dbloc" op_dbloc
-  let setdb = op_set_pteval (fun v ->  {v with db = 1}) "setdb"
-
-  let op_dbmloc a = Cst.intToV a.dbm
-  let dbmloc = op_pte_val "dbmloc" op_dbmloc
-
-  let op_validloc a = Cst.intToV a.valid
-  let validloc = op_pte_val "validloc" op_validloc
-
-  let op_el0loc a = Cst.intToV a.el0
-  let el0loc = op_pte_val "el0loc" op_el0loc
-
-  let op_oaloc a = Symbolic (Constant.oa2symbol a.oa)
-  let oaloc = op_pte_val "oaloc" op_oaloc
 
   let op_tlbloc {name=a;_} = Symbolic (System (TLB,a))
   let tlbloc = op_pte_tlb "tlbloc" op_tlbloc
@@ -793,14 +737,17 @@ module Make(Cst:Constant.S) = struct
     | PTELoc -> pteloc
     | Offset -> offset
     | IsVirtual -> is_virtual_v
-    | AF -> afloc
-    | SetAF -> setaf
-    | DB -> dbloc
-    | SetDB -> setdb
-    | DBM -> dbmloc
-    | Valid -> validloc
-    | EL0 -> el0loc
-    | OA -> oaloc
+    | ArchOp1 op ->
+        (function
+         | Var _ -> raise Undetermined
+         | Val c as v ->
+             begin
+               match ArchOp.do_op1 op c with
+               | None ->
+                   Warn.user_error "Illegal operation %s on %s"
+                     (ArchOp.pp_op1 true op) (pp_v v)
+               | Some c -> Val c
+             end)
 
   let op op = match op with
   | Add -> add

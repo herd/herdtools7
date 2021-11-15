@@ -20,7 +20,7 @@
 open ConstrGen
 open Printf
 
-type cond = (MiscParser.location,Int64Constant.v) prop constr
+type cond = (MiscParser.location,ToolsConstant.v) prop constr
 
 let foralltrue =  ForallStates (And [])
 
@@ -62,11 +62,11 @@ module Dump(O:DumpConfig) = struct
 
   let pp_atom a = match a with
   | LV (rl,v) ->
-      sprintf "%s=%s" (dump_rloc pp_loc rl) (Int64Constant.pp O.hexa v)
+      sprintf "%s=%s" (dump_rloc pp_loc rl) (ToolsConstant.pp O.hexa v)
   | LL (l1,l2) ->
       sprintf "%s=%s" (pp_loc l1) (pp_loc l2)
   | FF f ->
-      Fault.pp_fatom Int64Constant.pp_v f
+      Fault.pp_fatom ToolsConstant.pp_v f
 
   let dump_prop chan = ConstrGen.dump_prop pp_atom chan
   let dump chan = ConstrGen.dump_constraints chan pp_atom
@@ -119,19 +119,19 @@ let parse_filter lxb =
 (* Code duplication? (with constraints) oh well! *)
 
 module type I = sig
-  module V : Constant.S
+  type v = ToolsConstant.v
 
   type state
 
-  val state_mem : state -> MiscParser.location -> V.v -> bool
+  val state_mem : state -> MiscParser.location -> v -> bool
   val state_eqloc : state -> MiscParser.location -> MiscParser.location -> bool
-  val state_fault : state -> V.v Fault.atom -> bool
+  val state_fault : state -> v Fault.atom -> bool
 end
 
 module Make(I:I) : sig
 
   type state = I.state
-  type prop =  (MiscParser.location, I.V.v) ConstrGen.prop
+  type prop =  (MiscParser.location, I.v) ConstrGen.prop
   type constr = prop ConstrGen.constr
 
 (* check proposition *)
@@ -145,7 +145,7 @@ end  =
   struct
 
     type state = I.state
-    type prop =  (MiscParser.location, I.V.v) ConstrGen.prop
+    type prop =  (MiscParser.location, I.v) ConstrGen.prop
     type constr = prop ConstrGen.constr
 
 

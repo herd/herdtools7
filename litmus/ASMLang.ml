@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 module type Config = sig
+  val hexa : bool
   val memory : Memory.t
   val cautious : bool
   val mode : Mode.t
@@ -456,7 +457,7 @@ module RegMap = A.RegMap)
         let rec find_rec k = function
           | [] -> assert false
           | q::rem ->
-              if PTEVal.compare p q = 0 then k
+              if A.V.PteVal.eq p q then k
               else find_rec (k+1) rem in
         find_rec 0
 
@@ -607,6 +608,8 @@ module RegMap = A.RegMap)
         | Std -> compile_out_reg_call_std
         | Kvm|PreSi -> compile_out_reg_call_kvm env
 
+      module PU = SkelUtil.PteValUtil(A.V.PteVal)
+
       let dump_call f_id args0
             _tr_idx chan indent env (_,alignedEnv) _volatileEnv proc t =
         let labels = List.map compile_label_call (Tmpl.get_labels t) in
@@ -620,12 +623,12 @@ module RegMap = A.RegMap)
         let ptevals =
           List.map
             (fun p ->
-              match PTEVal.as_physical p.PTEVal.oa with
+              match A.V.PteVal.as_physical p with
               | None ->
                   Warn.user_error "litmus cannot handle pte initialisation with '%s'"
-                    (PTEVal.pp p)
+                    (A.V.PteVal.pp O.hexa p)
               | Some s ->
-                  SkelUtil.dump_pteval_flags (OutUtils.fmt_phy_kvm s) p)
+                  PU.dump_pteval_flags (OutUtils.fmt_phy_kvm s) p)
             ptevals in
         let addrs_cpy =
           if O.memory = Memory.Indirect && O.cautious then

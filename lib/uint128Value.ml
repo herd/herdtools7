@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2013-present Institut National de Recherche en Informatique et *)
+(* Copyright 2017-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,11 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Define barrier type for X86 architecture *)
-
-module type S =
-  sig
-    type a (* Native arch barrier *)
-    type b = X86_64Base.barrier
-    val a_to_b : a -> b
-  end
+include
+  SymbValue.Make
+    (SymbConstant.Make(Uint128Scalar)(AArch64PteVal))
+    (AArch64Op.Make(Uint128Scalar))

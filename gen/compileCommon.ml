@@ -48,7 +48,7 @@ module type S = sig
    and type edge=E.edge
    and module SIMD = A.SIMD
    and type atom = A.atom
-
+   and module PteVal = A.PteVal
 end
 
 module Make(C:Config) (A:Arch_gen.S) = struct

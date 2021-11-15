@@ -131,6 +131,7 @@ module Make
 
       module U = SkelUtil.Make(UCfg)(P)(A)(T)
       module UD = U.Dump(O)(EPF)
+      module PU = SkelUtil.PteValUtil(A.V.PteVal)
 
       let find_addr_type a env = U.find_type (A.location_of_addr a) env
       let see_faults test =  Misc.consp (U.get_faults test)
@@ -456,7 +457,7 @@ module Make
         end ;
         all,vs
 
-      type pte_addr = V of string option * PTEVal.t | P of string | Z
+      type pte_addr = V of string option * A.V.PteVal.t | P of string | Z
 
       let get_pte_init =
         if Cfg.is_kvm then
@@ -469,8 +470,7 @@ module Make
                   | Symbolic (Physical (phy,0)) -> (pte,P phy)::k
                   | Concrete z when A.V.Scalar.compare z A.V.Scalar.zero = 0 -> (pte,Z)::k
                   | PteVal pteval ->
-                      let open PTEVal in
-                      begin match PTEVal.as_physical pteval.oa with
+                      begin match A.V.PteVal.as_physical pteval with
                       | None ->
                           Warn.user_error "litmus cannot handle pte initialisation with '%s'"
                             (A.V.pp_v v)
@@ -729,7 +729,7 @@ module Make
                   sprintf "pretty_addr_physical[unpack_oa(%s)]" v::
                   List.map
                     (fun f -> sprintf "unpack_%s(%s)" f v)
-                    ["af";"db";"dbm";"valid";"el0";] in
+                    A.V.PteVal.fields in
                 Some v,fs
             | _ ->
                 None,[sprintf "p->%s" (A.dump_rloc_tag rloc)])
@@ -752,11 +752,7 @@ module Make
                   | o::oa::rem -> o^oa,rem
                   | _ -> assert false in
                 EPF.fii ~out:"chan" (sprintf "%s%s=%s" prf p1 oa_fmt) [oa] ;
-                let ds =
-                  let open PTEVal in
-                  let p = prot_default in
-                  let ds = [p.af; p.db; p.dbm; p.valid;p.el0;] in
-                  List.map (sprintf "%i") ds in
+                let ds = A.V.PteVal.default_fields in
                 let rec do_rec ds fs fmts = match ds,fs,fmts with
                   | [],[],[c] ->
                       let c = sprintf "\"%s\"" (String.escaped c) in
@@ -827,10 +823,7 @@ module Make
               let dump_value loc v = match v with
               | Constant.Symbolic _ -> dump_addr_idx (T.C.V.pp O.hexa v)
               | Constant.PteVal p ->
-                  let open PTEVal in
-                  sprintf
-                    "pack_pack(%s,%d,%d,%d,%d,%d)"
-                    (dump_addr_idx (PTEVal.pp_oa_old p.oa)) p.af p.db p.dbm p.valid p.el0
+                 A.V.PteVal.dump_pack dump_addr_idx p
               | _ ->
                   begin match loc with
                   | Some loc ->
@@ -1350,18 +1343,19 @@ module Make
                   | Z ->
                       O.fii "(void)litmus_set_pte(_vars->pte_%s,litmus_set_pte_invalid(*_vars->pte_%s));" x x
                   | V (o,pteval) ->
-                      let is_default = PTEVal.is_default pteval in
+                      let is_default = A.V.PteVal.is_default pteval in
                       if not (o = None && is_default) then begin
                         let arg = match o with
                         | None -> sprintf "_vars->saved_pte_%s" x
                         | Some s -> sprintf "_vars->saved_pte_%s" s in
                         O.fii "(void)litmus_set_pte(_vars->pte_%s,%s);"
-                          x (SkelUtil.dump_pteval_flags arg pteval);
+                          x (PU.dump_pteval_flags arg pteval);
                         List.iter
                           (fun attr ->
                             let attr = sprintf "attr_%s" (MyName.name_as_symbol attr) in
                             O.fii "litmus_set_pte_attribute(_vars->pte_%s, %s);"
-                              x attr) (PTEVal.Attrs.as_list pteval.PTEVal.attrs)
+                              x attr)
+                          (A.V.PteVal.get_attrs pteval)
                       end
                   end ;
                   true

@@ -471,7 +471,7 @@ let lift_proc_info i evts =
     E.EventRel.of_list xs
 
   let is_rwm e = E.is_store e && E.is_load e
-               
+
   let compute_pco rfmap ppoloc =
     let open Dir in
     let add e1 e2 d1 d2 k =

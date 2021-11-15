@@ -41,7 +41,8 @@ val digest_init :
 val digest_info : MiscParser.info -> string
 
 module Make :
-  functor (A:ArchBase.S) -> sig
+  functor (A:ArchBase.S) ->
+  sig
     type init = MiscParser.state
     type prog = (MiscParser.proc * A.pseudo list) list
     type rlocations = MiscParser.RLocSet.t

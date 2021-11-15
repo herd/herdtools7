@@ -39,7 +39,11 @@ let check_env env name filename hash =
 
 open Printf
 
-module HashUtils = struct
+module type PteVal = sig
+  val hash_pteval : ParsedPteVal.t -> string
+end
+
+module HashUtils(P:PteVal) = struct
 
 (* Backward compatible identifier and value printing functions *)
 
@@ -53,69 +57,75 @@ module HashUtils = struct
   and pp_v v =
     let open Constant in
     match v with
-    | PteVal p -> PTEVal.pp_hash p
+    | PteVal p -> P.hash_pteval p
     | _ -> ParsedConstant.pp_v_old v
-end
 
-let digest_init debug init =
-  let open MiscParser in
-  let open TestType in
-  let init =
-    List.sort
-      (fun (loc1,(t1,v1)) (loc2,(t2,v2)) ->
-        match location_compare loc1 loc2 with
-        | 0 ->
-            if
-              ParsedConstant.compare v1 v2 <> 0 &&
-              compare t1 t2 <> 0
-            then begin
-              Warn.fatal
-                "Location %s non-unique in init state"
-                (HashUtils.dump_location loc1)
-            end ;
-            0
-        | c -> c)
-      init in
 
-  let init =
-    Misc.rem_dups
-      (fun (loc1,_) (loc2,_) -> location_compare loc1 loc2 = 0)
-      init in
+  let digest_init debug init =
+    let open TestType in
+    let init =
+      List.sort
+        (fun (loc1,(t1,v1)) (loc2,(t2,v2)) ->
+          match location_compare loc1 loc2 with
+          | 0 ->
+             if
+               ParsedConstant.compare v1 v2 <> 0 &&
+                 compare t1 t2 <> 0
+             then begin
+                 Warn.fatal
+                   "Location %s non-unique in init state"
+                   (dump_location loc1)
+               end ;
+             0
+          | c -> c)
+        init in
+
+    let init =
+      Misc.rem_dups
+        (fun (loc1,_) (loc2,_) -> location_compare loc1 loc2 = 0)
+        init in
 
 (* We perform explicit printing to be  more robust
    against pretty printer changes *)
 
-  let pp =
-    (String.concat "; "
-       (List.map
-          (fun (loc,(t,v)) -> match t with
-          | TyDef ->
-              sprintf "%s=%s"
-                (HashUtils.dump_location loc) (HashUtils.pp_v v)
-          | TyDefPointer ->
-              sprintf "*%s=%s"
-                (HashUtils.dump_location loc) (HashUtils.pp_v v)
-          | Ty t ->
-              sprintf "%s %s=%s" t
-                (HashUtils.dump_location loc) (HashUtils.pp_v v)
-          | Atomic t ->
-              sprintf "_Atomic %s %s=%s" t
-                (HashUtils.dump_location loc) (HashUtils.pp_v v)
-          | Pointer t ->
-              sprintf "%s *%s=%s" t
-                (HashUtils.dump_location loc) (HashUtils.pp_v v)
-          | TyArray (t,sz) ->
-              sprintf "%s %s[%i]" t (HashUtils.dump_location loc) sz)
-          init)) in
-  debug "INIT" pp ;
-  Digest.string pp
+    let pp =
+      (String.concat "; "
+         (List.map
+            (fun (loc,(t,v)) ->
+              match t with
+              | TyDef ->
+                 sprintf "%s=%s"
+                   (dump_location loc) (pp_v v)
+              | TyDefPointer ->
+                 sprintf "*%s=%s"
+                   (dump_location loc) (pp_v v)
+              | Ty t ->
+                 sprintf "%s %s=%s" t
+                   (dump_location loc) (pp_v v)
+              | Atomic t ->
+                 sprintf "_Atomic %s %s=%s" t
+                   (dump_location loc) (pp_v v)
+              | Pointer t ->
+                 sprintf "%s *%s=%s" t
+                   (dump_location loc) (pp_v v)
+              | TyArray (t,sz) ->
+                 sprintf "%s %s[%i]" t (dump_location loc) sz)
+            init)) in
+    debug "INIT" pp ;
+    Digest.string pp
+
+end
+
+module NoPteValHU = HashUtils(struct let hash_pteval _ = assert false end)
+
+let digest_init debug init = NoPteValHU.digest_init debug init
 
 let key_compare k1 k2 =
   if MiscParser.key_match k1 k2 then
     Warn.user_error "Duplicated meta-data on key %s\n" k2 ;
   String.compare k1 k2
 
-let digest_info i =
+let do_digest_info verbose i =
   let i = List.stable_sort (fun (k1,_) (k2,_) -> key_compare k1 k2) i in
   let ds =
     List.fold_left
@@ -126,7 +136,14 @@ let digest_info i =
       [] i in
   match ds with
   | [] -> "" (* Backward compatibility *)
-  | _::_ -> Digest.string (String.concat "" ds)
+  | _::_ ->
+     let i = String.concat "" ds in
+     let d = Digest.string i in
+     if verbose > 0 then
+       eprintf "INFO:\n%s\nDigest=\"%s\"\n\n"
+         i (Digest.to_hex d) ;
+     d
+let digest_info = do_digest_info 0
 
 (**********)
 (* Digest *)
@@ -142,10 +159,16 @@ module Make(A:ArchBase.S)
       let verbose = 0
 
       let debug tag s =
-        if verbose > 0 then eprintf "%s:\n%s\n" tag s
+        if verbose > 0 then
+          eprintf "%s:\n%s\nDigest=\"%s\"\n\n"
+            tag s (Digest.to_hex (Digest.string s))
         else ()
 
-      let digest_init init = digest_init debug init
+      let digest_info = do_digest_info verbose
+
+      module HU=HashUtils(A)
+
+      let digest_init init = HU.digest_init debug init
 
 (* Code digest *)
 
@@ -192,7 +215,7 @@ module Make(A:ArchBase.S)
         | A.Nop -> k
         | A.Instruction i -> A.dump_instruction i::k
         | A.Label (lbl,p) -> sprintf "%s:" lbl::dump_rec p k
-	| A.Symbolic s -> sprintf "codevar:%s" s::k
+        | A.Symbolic s -> sprintf "codevar:%s" s::k
         | A.Macro _ -> assert false (* applied after macro expansion *) in
         fun (_,ps) ->
           List.fold_right dump_rec ps []
@@ -218,10 +241,9 @@ module Make(A:ArchBase.S)
         let locs = MiscParser.RLocSet.elements locs in
         let pp =
           String.concat "; "
-            (List.map (ConstrGen.dump_rloc HashUtils.dump_location) locs) in
+            (List.map (ConstrGen.dump_rloc HU.dump_location) locs) in
         debug "LOCS" pp ;
         Digest.string pp
-
 
       let digest info init code observed =
         Digest.to_hex

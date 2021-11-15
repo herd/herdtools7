@@ -48,6 +48,7 @@ module type S = sig
   val leading_zeros : t -> int
 
   val compare : t -> t -> int
+  val equal : t -> t -> bool
 
   val to_int : t -> int
   val of_int : int -> t
@@ -115,6 +116,8 @@ module Uint64 = struct
     | true, false -> 1
     | false, true -> -1
     | true, true -> Int64.compare a b
+
+  let equal = Int64.equal
 
   let add = Int64.add
   let sub = Int64.sub
@@ -258,6 +261,9 @@ module Uint128 = struct
     match Uint64.compare (fst a) (fst b) with
     | 0 -> Uint64.compare (snd a) (snd b)
     | n -> n
+
+  let equal a b =
+    Uint64.equal (snd a) (snd b) && Uint64.equal (fst a) (fst b)
 
   let add a b =
     let carry =

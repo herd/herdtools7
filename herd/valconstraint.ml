@@ -29,11 +29,12 @@ module type S = sig
   type cst
   type location
   type state
+  type arch_op1
 
   type expr =
     | Atom of atom
     | ReadInit of location * state
-    | Unop of Op.op1 * atom
+    | Unop of (arch_op1 Op.op1) * atom
     | Binop of Op.op * atom * atom
     | Terop of Op.op3 * atom * atom * atom
 
@@ -66,6 +67,7 @@ end
 module Make (C:Config) (A:Arch_herd.S) : S
 with type atom = A.V.v
 and type cst = A.V.Cst.v
+and type arch_op1 = A.V.arch_op1
 and type solution = A.V.solution
 and type location = A.location
 and type state = A.state =
@@ -78,11 +80,12 @@ and type state = A.state =
     type cst = V.Cst.v
     type location = A.location
     type state = A.state
+    type arch_op1 = V.arch_op1
 
     type expr =
       | Atom of atom
       | ReadInit of location * state
-      | Unop of Op.op1 * atom
+      | Unop of (arch_op1 Op.op1) * atom
       | Binop of Op.op * atom * atom
       | Terop of Op.op3 * atom * atom * atom
 
@@ -107,7 +110,9 @@ and type state = A.state =
       match e with
       | Atom a -> pp_atom a
       | ReadInit(loc,_) -> A.dump_location loc ^ " in init"
-      | Unop (o,a1) -> sprintf "%s(%s)" (Op.pp_op1 C.hexa o) (pp_atom a1)
+      | Unop (o,a1) ->
+          sprintf "%s(%s)"
+            (Op.pp_op1 C.hexa V.pp_arch_op1 o) (pp_atom a1)
       | Binop (o,a1,a2) -> pp_atom a1 ^ Op.pp_op o ^ pp_atom a2
       | Terop (op,a1,a2,a3) ->
 	  Op.pp_op3 op
@@ -261,10 +266,7 @@ and type state = A.state =
       | Unop (op,v1) -> Atom (V.op1 op v1)
       | Binop (op,v1,v2) -> Atom (V.op op v1 v2)
       | Terop (op,v1,v2,v3) -> Atom (V.op3 op v1 v2 v3)
-      with
-      | V.Cst.Result (a,c,msg) -> (* Catch arch-dependent result. *)
-          if a = A.arch then Atom (V.Val c)
-          else Warn.fatal "%s" msg
+      with (* [expr] still contains at least one undetermined sub-expression *)
       | A.LocUndetermined
       | V.Undetermined -> e
 

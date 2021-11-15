@@ -24,7 +24,6 @@ end
 module Make
     (O:Config)
     (S:Sem.Semantics)
-    (B:PPCBarrier.S with type a = S.barrier)
  :
     XXXMem.S with module S = S
     =
@@ -54,8 +53,7 @@ module Make
               let opt = opt
               include ModelConfig
             end)
-            (S)
-            (AllBarrier.FromPPC(B)) in
+            (S) in
         X.check_event_structure test
     | Generic m ->
         let module X =

@@ -1975,3 +1975,5 @@ and max_idx = Internal 1
 and idx = Internal 2
 and ephemeral = Internal 3
 let loop_idx = Internal 4
+
+let hash_pteval p = AArch64PteVal.pp_hash (AArch64PteVal.tr p)

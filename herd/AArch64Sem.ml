@@ -20,7 +20,7 @@ module Make
       val dirty : DirtyBit.t option
       val procs_user : Proc.t list
     end)
-    (V:Value.S)
+    (V:Value.AArch64)
     =
   struct
     module C = TopConf.C
@@ -360,12 +360,14 @@ module Make
             db_v:V.v; dbm_v:V.v; valid_v:V.v;
             el0_v:V.v; }
 
-      let extract_af v = M.op1 Op.AF v
-      let extract_db v = M.op1 Op.DB v
-      let extract_dbm v = M.op1 Op.DBM v
-      let extract_valid v = M.op1 Op.Valid v
-      let extract_el0 v = M.op1 Op.EL0 v
-      let extract_oa v = M.op1 Op.OA v
+      let arch_op1 op = M.op1 (Op.ArchOp1 op)
+
+      let extract_af v = arch_op1 AArch64Op.AF v
+      let extract_db v = arch_op1 AArch64Op.DB v
+      let extract_dbm v = arch_op1 AArch64Op.DBM v
+      let extract_valid v = arch_op1 AArch64Op.Valid v
+      let extract_el0 v = arch_op1 AArch64Op.EL0 v
+      let extract_oa v = arch_op1 AArch64Op.OA v
 
       let mextract_whole_pte_val an nexp a_pte iiid =
         (M.do_read_loc false
@@ -380,8 +382,8 @@ module Make
 
 
       let op_of_set = function
-        | AArch64.AF -> Op.SetAF
-        | AArch64.DB -> Op.SetDB
+        | AArch64.AF -> AArch64Op.SetAF
+        | AArch64.DB -> AArch64Op.SetDB
         | AArch64.Other|AArch64.AFDB -> assert false
 
       let do_test_and_set_bit combine cond set a_pte iiid =
@@ -389,7 +391,7 @@ module Make
         mextract_whole_pte_val AArch64.X nexp a_pte iiid >>= fun pte_v ->
         cond pte_v >>*= fun c ->
         combine c
-            (M.op1 (op_of_set set) pte_v >>= fun v ->
+            (arch_op1 (op_of_set set) pte_v >>= fun v ->
              write_whole_pte_val AArch64.X nexp a_pte v iiid)
             (M.unitT ())
 
@@ -397,13 +399,13 @@ module Make
       and test_and_set_bit_succeeds cond =
         do_test_and_set_bit (fun c m _ -> M.assertT c m) cond
 
-      let bit_is_zero op v = M.op1 op v >>= is_zero
-      let bit_is_not_zero op v = M.op1 op v >>= is_not_zero
+      let bit_is_zero op v = arch_op1 op v >>= is_zero
+      let bit_is_not_zero op v = arch_op1 op v >>= is_not_zero
       let m_op op m1 m2 = (m1 >>| m2) >>= fun (v1,v2) -> M.op op v1 v2
 
       let do_set_bit an a_pte pte_v ii =
         let nexp = AArch64.NExp an in
-        M.op1 (op_of_set an) pte_v >>= fun v ->
+        arch_op1 (op_of_set an) pte_v >>= fun v ->
         write_whole_pte_val AArch64.X nexp a_pte v (E.IdSome ii)
 
       let set_af = do_set_bit AArch64.AF
@@ -411,12 +413,12 @@ module Make
 
       let set_afdb a_pte pte_v ii =
         let nexp = AArch64.NExp AArch64.AFDB in
-        M.op1 (Op.SetAF) pte_v >>= M.op1 (Op.SetDB) >>= fun v ->
+        arch_op1 (AArch64Op.SetAF) pte_v >>= arch_op1 (AArch64Op.SetDB) >>= fun v ->
         write_whole_pte_val AArch64.X nexp a_pte v (E.IdSome ii)
 
       let cond_af v =
         m_op Op.And
-          (bit_is_zero Op.AF v) (bit_is_not_zero Op.Valid v)
+          (bit_is_zero AArch64Op.AF v) (bit_is_not_zero AArch64Op.Valid v)
 
       let test_and_set_af = test_and_set_bit cond_af AArch64.AF
 
@@ -427,7 +429,8 @@ module Make
         test_and_set_bit
           (fun v ->
             m_op Op.And
-              (bit_is_zero Op.DB v) (bit_is_not_zero Op.Valid v))
+              (bit_is_zero AArch64Op.DB v)
+              (bit_is_not_zero AArch64Op.Valid v))
           AArch64.DB
 
       let mextract_pte_vals pte_v =

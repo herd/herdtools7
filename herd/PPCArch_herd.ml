@@ -48,6 +48,7 @@ module Make (C:Arch_herd.Config) (V:Value.S)
       if annot then "*" else ""
 
     include Explicit.No
+    include PteValSets.No
 
 (* Now global locations, that include reservations *)
     module V = V
@@ -101,5 +102,20 @@ module Make (C:Arch_herd.Config) (V:Value.S)
     end
 
     module ArchAction = ArchAction.No(NoConf)
+
+    module Barrier = struct
+      type a = barrier
+
+      let a_to_b a =
+        let open AllBarrier in
+        match a with
+        | Sync -> SYNC
+        | Lwsync -> LWSYNC
+        | Isync -> ISYNC
+        | Eieio ->  EIEIO
+
+      let pp_isync = "isync"
+
+    end
 
   end

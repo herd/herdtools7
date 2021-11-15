@@ -34,7 +34,7 @@ with type v = A.V.v and type location = A.location
    type location = A.location
    type ('loc,'v) t = ('loc,'v, string CAst.t) MiscParser.r4
 
-   let maybevToV = Constant.map_scalar A.V.Scalar.of_string
+   let maybevToV = Constant.map A.V.Scalar.of_string A.V.PteVal.tr
 
 (******************************************************)
 (* All those to substitute symbolic regs by real ones *)

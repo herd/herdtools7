@@ -36,6 +36,19 @@ module Make
     let bell_fname =  Misc.app_opt (fun (x,_) -> x) O.bell_model_info
     let bell_info = Misc.app_opt (fun (_,x) -> x) O.bell_model_info
 
+    let tr_proc =
+      let open DirtyBit in
+      match O.dirty with
+      | None ->
+          fun _ ->
+          let f () = false in
+          { my_ha=f; my_hd=f; }
+      | Some dirty ->
+          fun proc ->
+          let my_ha () = dirty.ha proc
+          and my_hd () = dirty.hd proc in
+          { my_ha; my_hd; }
+
     module IConfig = struct
       let bell = false
       let bell_fname = bell_fname
@@ -116,13 +129,18 @@ module Make
       | Some v1,Some v2 -> S.A.V.compare v1 v2 = 0
       | _ -> false
 
-      let same_oa e1 e2 = match S.E.value_of e1,S.E.value_of e2 with
-        | Some (S.A.V.Val c1),Some (S.A.V.Val c2) -> Constant.same_oa c1 c2
+      let same_oa e1 e2 =
+        let open Constant in
+        match S.E.value_of e1,S.E.value_of e2 with
+        | Some (S.A.V.Val (PteVal p1)),
+          Some (S.A.V.Val (PteVal p2)) ->
+            S.A.V.Cst.PteVal.same_oa p1 p2
         | _ -> false
 
       let writable2 =
         let writable ha hd e = match S.E.value_of e with
-          | Some (S.A.V.Val c) -> Constant.writable ha hd c
+          | Some (S.A.V.Val (Constant.PteVal p)) ->
+              S.A.V.Cst.PteVal.writable ha hd p
           | _ -> false in
         fun e1 e2 ->
         let p = S.E.proc_of e1 in
@@ -346,7 +364,7 @@ module Make
                     let open Constant in
                     match pteval_v with
                     | Some (S.A.V.Val (PteVal v)) ->
-                        PTEVal.Attrs.as_list v.PTEVal.attrs
+                        S.A.V.Cst.PteVal.get_attrs v
                     | _ -> assert false in
                   List.fold_right
                     (fun attr evts_map ->
@@ -376,17 +394,6 @@ module Make
                (fun (k,a) ->
                  k,lazy begin
                    let open DirtyBit in
-                   let tr_proc =
-                     match O.dirty with
-                     | None ->
-                        fun _ ->
-                        let f () = false in
-                        { my_ha=f; my_hd=f; }
-                     | Some dirty ->
-                        fun proc ->
-                        let my_ha () = dirty.ha proc
-                        and my_hd () = dirty.hd proc in
-                        { my_ha; my_hd; } in
                    E.EventSet.filter
                      (fun e ->
                        match E.proc_of e with
@@ -407,17 +414,7 @@ module Make
                  end)
                E.Act.arch_dirty)
         else m in
-(* Define empty fence relation
-   (for the few models that apply to several archs) *)
-      let m = I.add_rels m
-          [
-(* PTX fences *)
-           "membar.cta",lazy E.EventRel.empty;
-           "membar.gl", lazy E.EventRel.empty;
-           "membar.sys",lazy E.EventRel.empty;
-         ] in
 (* Override arch specific fences *)
-
       let m =
         I.add_rels m
           (List.map

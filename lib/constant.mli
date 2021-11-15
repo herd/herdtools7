@@ -55,7 +55,7 @@ val compare_symbol : symbol -> symbol -> int
 val symbol_eq : symbol -> symbol -> bool
 val as_address : symbol -> string
 
-val oa2symbol : PTEVal.oa_t -> symbol
+val oa2symbol : OutputAddress.t -> symbol
 
 (* 'phy' is the physical address (initially) matching virual adress 'virt' *)
 val virt_match_phy : symbol (* virt *) -> symbol (* phy *)-> bool
@@ -64,54 +64,68 @@ module SymbolSet : MySet.S with type elt = symbol
 module SymbolMap : MyMap.S with type key = symbol
 
 (* Add scalars *)
-type 'scalar t =
+type ('scalar,'pte) t =
   | Concrete of 'scalar
-  | ConcreteVector of 'scalar t list
+  | ConcreteVector of ('scalar,'pte) t list
   | Symbolic  of symbol
   | Label of Proc.t * string     (* In code *)
   | Tag of string
-  | PteVal of PTEVal.t
+  | PteVal of 'pte
+
+val compare :
+  ('scalar -> 'scalar -> int) ->
+    ('pte -> 'pte -> int) ->
+      ('scalar,'pte) t -> ('scalar,'pte) t -> int
+val eq :
+  ('scalar -> 'scalar -> bool) ->
+    ('pte -> 'pte -> bool) ->
+      ('scalar,'pte) t -> ('scalar,'pte) t -> bool
+
+(* New style: PTE(s), PHY(s), etc. *)
+val pp :
+  ('scalar -> string) ->  ('pte -> string) ->  ('scalar,'pte) t  -> string
+(* Old style: pte_s, phy_s, etc. *)
+val pp_old :
+  ('scalar -> string) ->  ('pte -> string) ->  ('scalar,'pte) t  -> string
 
 (* Do nothing on non-scalar *)
-val map_scalar : ('a -> 'b) -> 'a t -> 'b t
+val map_scalar : ('a -> 'b) -> ('a,'pte) t -> ('b,'pte) t
+val map : ('a -> 'b) -> ('c -> 'd) -> ('a,'c) t -> ('b,'d) t
 
-val mk_sym_virtual : string -> 'scalar t
-val mk_sym : string -> 'scalar t
-val mk_sym_pte : string -> 'scalar t
-val mk_sym_pte2 : string -> 'scalar t
-val mk_sym_pa : string -> 'scalar t
+val mk_sym_virtual : string -> ('scalar,'pte) t
+val mk_sym : string -> ('scalar,'pte) t
+val mk_sym_pte : string -> ('scalar,'pte) t
+val mk_sym_pte2 : string -> ('scalar,'pte) t
+val mk_sym_pa : string -> ('scalar,'pte) t
 val old2new : string -> string
 
-val mk_vec : int -> 'scalar t list -> 'scalar t
-val mk_replicate : int -> 'scalar t -> 'scalar t
+val mk_vec : int -> ('scalar,'pte) t list -> ('scalar,'pte) t
+val mk_replicate : int -> ('scalar,'pte) t -> ('scalar,'pte) t
 
-val is_symbol : 'scalar t -> bool
+val is_symbol : ('scalar,'pte) t -> bool
 val is_non_mixed_symbol : symbol -> bool
 
-val default_tag : 'scalar t
+val default_tag : ('scalar,'pte) t
 
 (* Check  non-concrete constant (and change type!) *)
-val check_sym : 'a t -> 'b t
+val check_sym : ('a,'pte) t -> ('b,'pte) t
 
-val is_virtual : 'a t -> bool
-val as_virtual : 'a t -> string option
-val as_symbol : 'a t -> symbol option
-val as_symbolic_data : 'a t -> symbolic_data option
-val of_symbolic_data : symbolic_data -> 'a t
+val is_virtual : ('scalar,'pte) t -> bool
+val as_virtual : ('scalar,'pte) t -> string option
+val as_symbol : ('scalar,'pte) t -> symbol option
+val as_symbolic_data : ('scalar,'pte) t -> symbolic_data option
+val of_symbolic_data : symbolic_data -> ('scalar,'pte) t
 
-val as_pte : 'a t -> 'a t option
-val is_pt : 'a t -> bool
-
-(* Those two are properties of ptevals.
-   At the moment pteval are arch-independant. *)
-val same_oa : 'a t -> 'a t -> bool
-val writable : bool -> bool -> 'a t -> bool
+val as_pte : ('scalar,'pte) t -> ('scalar,'pte) t option
+val is_pt : ('scalar,'pte) t -> bool
 
 module type S =  sig
 
   module Scalar : Scalar.S
+  module PteVal : PteVal.S
 
-  type v = Scalar.t t
+  type v = (Scalar.t,PteVal.t) t
+  val tr : (string,ParsedPteVal.t) t -> v
   val intToV  : int -> v
   val stringToV  : string -> v
   val nameToV  : string -> v
@@ -126,6 +140,4 @@ module type S =  sig
   val eq : v -> v -> bool
   val vToName : v -> string
 
-(* Arch dependent result *)
-  exception Result of Archs.t * v * string
 end

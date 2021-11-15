@@ -53,7 +53,7 @@ functor (Cfg:Config) ->
         A.st -> Code.proc -> A.init -> int -> A.reg option * A.init * A.st
 
     val emit_pteval :
-        A.st -> Code.proc -> A.init -> PTEVal.t -> A.reg * A.init * A.st
+        A.st -> Code.proc -> A.init -> AArch64PteVal.t -> A.reg * A.init * A.st
 
     val emit_nop :
         A.st -> Code.proc -> A.init -> string -> A.reg * A.init * A.st

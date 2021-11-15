@@ -22,7 +22,7 @@ module type S = sig
   type edge
   module SIMD : Atom.SIMD
   type atom
-
+  module PteVal : PteVal_gen.S with type pte_atom = atom
 
   type event =
       { loc : loc ; ord : int; tag : int;
@@ -37,7 +37,7 @@ module type S = sig
         tcell : v array ; (* value of tag memory after event *)
         bank : SIMD.atom Code.bank ;
         idx : int ;
-        pte : PTEVal.t ; }
+        pte : PteVal.t ; }
 
   val evt_null : event
   val make_wsi : int -> Code.loc -> event
@@ -97,7 +97,7 @@ module type S = sig
   val coherence : node -> (string * (node * IntSet.t) list list) list
 
 (* Return last pteval in pte accesses coherence *)
-  val last_ptes : node -> (string * PTEVal.t) list
+  val last_ptes : node -> (string * PteVal.t) list
 
 (* All locations *)
   val get_globals : node -> string list
@@ -122,7 +122,8 @@ module Make (O:Config) (E:Edge.S) :
        and type edge = E.edge
        and module SIMD = E.SIMD
        and type atom = E.atom
-= struct
+       and module PteVal = E.PteVal
+  = struct
   let dbg = false
   let do_memtag = O.variant Variant_gen.MemTag
   let do_morello = O.variant Variant_gen.Morello
@@ -133,6 +134,7 @@ module Make (O:Config) (E:Edge.S) :
   type edge = E.edge
   module SIMD = E.SIMD
   type atom = E.atom
+  module PteVal = E.PteVal
 
   type event =
       { loc : loc ; ord : int; tag : int;
@@ -147,9 +149,9 @@ module Make (O:Config) (E:Edge.S) :
         tcell : v array ; (* value of tag cell at node exit *)
         bank : SIMD.atom Code.bank ;
         idx : int ;
-        pte : PTEVal.t ; }
+        pte : PteVal.t }
 
-  let pte_default = PTEVal.default "*"
+  let pte_default = PteVal.default "*"
 
   let evt_null =
     { loc=Code.loc_none ; ord=0; tag=0;
@@ -207,7 +209,7 @@ module Make (O:Config) (E:Edge.S) :
   let debug_evt e =
     let pp_v =
       match e.bank with
-      | Pte -> PTEVal.pp e.pte
+      | Pte -> PteVal.pp e.pte
       | (Ord|Tag|CapaTag|CapaSeal|VecReg _) ->
           if O.hexa then sprintf "0x%x" e.v
           else sprintf "%i" e.v in
@@ -506,7 +508,7 @@ module CoSt = struct
 end
 
 let pte_val_init loc = match loc with
-| Code.Data loc when do_kvm -> PTEVal.default loc
+| Code.Data loc when do_kvm -> PteVal.default loc
 | _ -> pte_default
 
 (****************************)

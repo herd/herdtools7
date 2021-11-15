@@ -433,7 +433,7 @@ let dump_c xcode names =
       O.o "#include <stdlib.h>" ;
       begin match Cfg.mode with
       | Mode.Std|Mode.PreSi ->
-         if Cfg.stdio then 
+         if Cfg.stdio then
            O.o "#include <stdio.h>"
          else
            O.o "#include \"litmus_io.h\"" ;

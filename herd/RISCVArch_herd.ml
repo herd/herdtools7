@@ -41,6 +41,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let empty_annot = P Rlx
 
     include Explicit.No
+    include PteValSets.No
 
     let is_atomic = function
     | X _ -> true
@@ -139,5 +140,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     end
 
     module ArchAction = ArchAction.No(NoConf)
+
+    module Barrier = AllBarrier.No(struct type a = barrier end)
 
   end

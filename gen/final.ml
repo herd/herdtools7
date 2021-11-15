@@ -40,12 +40,12 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     val add_final_v :
         Code.proc -> C.A.arch_reg -> IntSet.t -> fenv -> fenv
     val add_final_pte :
-        Code.proc -> C.A.arch_reg -> PTEVal.t -> fenv -> fenv
+        Code.proc -> C.A.arch_reg -> C.A.PteVal.t -> fenv -> fenv
     val add_final_loc :
         Code.proc -> C.A.arch_reg -> string -> fenv -> fenv
     val cons_int :   C.A.location -> int -> fenv -> fenv
     val cons_vec : C.A.location -> int array -> fenv -> fenv
-    val cons_pteval :   C.A.location -> PTEVal.t -> fenv -> fenv
+    val cons_pteval :   C.A.location -> C.A.PteVal.t -> fenv -> fenv
     val cons_int_set :  (C.A.location * IntSet.t) -> fenv -> fenv
     val add_int_sets : fenv -> (C.A.location * IntSet.t) list -> fenv
 
@@ -84,8 +84,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     let do_kvm = O.variant Variant_gen.KVM
 
-    type v = I of int | S of string | P of PTEVal.t
-    let pte_def = P (PTEVal.default "*")
+    type v = I of int | S of string | P of C.A.PteVal.t
+    let pte_def = P (C.A.PteVal.default "*")
     let () = ignore pte_def
 
     module VSet =
@@ -96,7 +96,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           let compare v1 v2 = match v1,v2 with
           | I i1,I i2 -> compare i1 i2
           | S s1,S s2 -> String.compare s1 s2
-          | P p1,P p2 -> PTEVal.compare p1 p2
+          | P p1,P p2 -> C.A.PteVal.compare p1 p2
           | ((P _|S _),I _)
           | (P _,S _)
             -> -1
@@ -229,7 +229,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           if O.hexa then sprintf "0x%x" i
           else sprintf "%i" i
       | S s -> s
-      | P p -> PTEVal.pp p
+      | P p -> C.A.PteVal.pp p
 
     let dump_tag = function
       | I i -> i

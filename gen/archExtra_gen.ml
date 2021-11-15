@@ -46,7 +46,7 @@ module type S = sig
   module LocMap : MyMap.S with type key = location
 
 (* Initial states *)
-  type initval = S of string | P of PTEVal.t
+  type initval = S of string | P of AArch64PteVal.t
   val pp_initval : initval -> string
   val initval_eq : initval -> initval -> bool
 
@@ -131,14 +131,14 @@ with type arch_reg = I.arch_reg and type special = I.special
   let of_loc loc = Loc (Code.as_data loc)
   let of_reg p r = Reg (p,r)
 
-  type initval = S of string | P of PTEVal.t
+  type initval = S of string | P of AArch64PteVal.t
   let pp_initval = function
     | S v ->  pp_symbol v
-    | P p -> PTEVal.pp p
+    | P p -> AArch64PteVal.pp_v p
 
   let initval_eq v1 v2 = match v1,v2 with
   | S s1,S s2 -> Misc.string_eq s1 s2
-  | P p1,P p2 -> PTEVal.compare p1 p2 = 0
+  | P p1,P p2 -> AArch64PteVal.compare p1 p2 = 0
   | (S _,P _)|(P _,S _) -> false
 
   type init = (location * initval option) list
@@ -179,7 +179,8 @@ with type arch_reg = I.arch_reg and type special = I.special
           let k = match v with
           | Some (S s) -> add_some (refers_virtual s) k
           | Some (P p) ->
-             add_some (PTEVal.oa_refers_virtual p.PTEVal.oa) k
+             add_some
+               (OutputAddress.refers_virtual p.AArch64PteVal.oa) k
           | None -> k in
           k)
         StringSet.empty i in

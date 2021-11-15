@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2013-present Institut National de Recherche en Informatique et *)
+(* Copyright 2017-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,10 +14,21 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Define barrier type for Bell architecture *)
+type t =
+  { p_oa : OutputAddress.t option;
+    p_kv : string StringMap.t;
+    p_attrs : StringSet.t; }
 
-module type S = sig
-  type a
-  type b = string list
-  val a_to_b : a -> b
-end
+(* Buld values *)
+val empty : t
+val add_oa : OutputAddress.t -> t -> t
+val add_oa_if_none : OutputAddress.t -> t -> t
+val add_kv : string -> string -> t -> t
+val add_attr : string -> t -> t
+val add_attrs : string list -> t -> t
+
+val compare : t -> t -> int
+val eq : t -> t -> bool
+
+val pp_old : t -> string
+val pp : t -> string

@@ -16,5 +16,5 @@
 
 val fold_outcomes :
     LogConstr.cond ->
-      ((MiscParser.location *  Int64Constant.v) list
+      ((MiscParser.location *  ToolsConstant.v) list
        -> 'a -> 'a) -> 'a -> 'a

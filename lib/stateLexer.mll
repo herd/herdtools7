@@ -69,7 +69,9 @@ rule token = parse
 | "filter" { FILTER }
 | "fault"|"Fault" { FAULT }
 | "tag" { TOK_TAG }
+(* Distinguished  PteVal fields *)
 | "attrs"|"Attrs" { ATTRS }
+| "oa" { TOK_OA }
 (* PTW keywords *)
 | "PTE" { TOK_PTE }
 | "PA"  { TOK_PA }
