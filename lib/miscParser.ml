@@ -263,4 +263,4 @@ let add_oa_if_none loc p =
 let mk_instr_val v =
   match v with
   | "NOP" -> Constant.Instruction(InstrLit.LIT_NOP)
-  | _ -> Warn.user_error "FIXME: Unexpected {%s} value in mk_instr_val" v
+  | _ -> Warn.user_error "unexpected {%s} value while parsing an instruction" v

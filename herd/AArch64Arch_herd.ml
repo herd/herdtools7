@@ -313,7 +313,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_B lbl -> 
         Constant.Instruction(InstrLit.LIT_B(lbl))
       | I_NOP -> Constant.Instruction(InstrLit.LIT_NOP)
-      | _ -> Warn.fatal "FIXME: functionality not implemented for -variant self"
+      | _ -> Warn.user_error "Functionality not implemented for -variant self: converting {%s} into a constant" (pp_instruction PPMode.Ascii i)
 
     include ArchExtra_herd.Make(C)
         (struct

@@ -10,8 +10,8 @@ S with type ifetch_instruction = I.arch_instruction
     type ifetch_instruction = I.arch_instruction
 
     let is_overwritable _ _ =
-        Warn.fatal "FIXME: functionality not implemented for -variant self"
+        Warn.fatal "Functionality not implemented for -variant self"
 
     let instruction_to_value _  =
-        Warn.fatal "FIXME: functionality not implemented for -variant self"
+        Warn.fatal "Functionality not implemented for -variant self"
 end

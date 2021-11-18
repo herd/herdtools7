@@ -1,0 +1,11 @@
+Test A2 Forbidden
+States 2
+0:X2=0;
+0:X2=1;
+No
+Witnesses
+Positive: 1 Negative: 1
+Condition ~exists (0:X2=0)
+Observation A2 Sometimes 1 1
+Hash=ec04650daeaf3e76dc7da9535c6427de
+
