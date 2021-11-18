@@ -32,6 +32,12 @@ module Fun : sig
    *  raises an exception [e], [e] is re-raised as [Finally_raised e].
    *  It is equivalent to [Fun.protect] from OCaml >= 4.08. *)
   val protect : finally:(unit -> unit) -> (unit -> 'a) -> 'a
+
+  (** [open_out_protect f name] applies f to a channel
+   *  to file whose name is [name]. Close the file under
+      all circumstances. *)
+  val open_out_protect : (out_channel -> 'a) -> string -> 'a
+
 end
 
 module List : sig

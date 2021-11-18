@@ -38,6 +38,11 @@ module Fun = struct
     in
     finally' () ;
     ret
+
+  let open_out_protect f name =
+    let out = open_out name in
+    protect ~finally:(fun () -> close_out out) (fun () -> f out)
+
 end
 
 module List = struct
