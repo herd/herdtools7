@@ -56,19 +56,37 @@ let run_diycross flags =
 
 
 let show_tests ?j flags =
-  ignore (j) ;
   let tmp_dir,litmuses = run_diycross flags in
-  let litmus_paths = concat_dir tmp_dir litmuses in
-
-  let command_of_litmus l =
-    TestHerd.herd_command
-      ~bell:None ~cat:None ~variants:[]
-      ~conf:flags.herd_conf
-      ~libdir:flags.libdir
-      flags.herd [l]
-  in
-  Channel.write_lines stdout (List .map command_of_litmus litmus_paths)
-
+  match j with
+  | None ->
+      let command_of_litmus litmus =
+        TestHerd.herd_command
+          ~bell:None ~cat:None ~variants:[]
+          ~conf:flags.herd_conf
+          ~libdir:flags.libdir
+          flags.herd
+          [litmus] in
+      let litmus_paths = concat_dir tmp_dir litmuses in
+      Channel.write_lines stdout
+        (List.map command_of_litmus litmus_paths)
+  | Some j ->
+      let index = Filename.concat tmp_dir "@all" in
+      let args =
+        TestHerd.herd_args
+          ~bell:None ~cat:None ~variants:[]
+          ~conf:flags.herd_conf
+          ~libdir:flags.libdir
+          ~timeout:None in
+      let comargs =
+        String.concat "," (flags.herd::args) in
+      let mydir = Filename.dirname Sys.argv.(0)
+      and herd_dir = Filename.dirname flags.herd in
+      let mapply = Filename.concat herd_dir "mapply7"
+      and com = Filename.concat mydir "herd_redirect.exe" in
+      let com =
+        Printf.sprintf "%s -j %i -com %s -comargs %s %s"
+          mapply j com comargs index in
+      Channel.write_lines stdout [com;]
 
 let run_tests ?j flags =
   ignore (j) ;

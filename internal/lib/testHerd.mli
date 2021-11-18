@@ -21,6 +21,16 @@ type path = string
 type stdout_lines = string list
 type stderr_lines = string list
 
+(** Format herd command-line option as a list *)
+val herd_args :
+  bell     : path option ->
+  cat      : path option ->
+  conf     : path option ->
+  variants : string list ->
+  libdir   : path ->
+  timeout  : float option ->
+  string list
+
 (** [herd_command ~bell ~cat ~conf ~variants ~libdir herd ?j litmuses] returns the
  *  command line that [run_herd] would run. *)
 val herd_command :
