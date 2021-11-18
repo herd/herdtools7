@@ -21,10 +21,20 @@ type path = string
 type stdout_lines = string list
 type stderr_lines = string list
 
+let outname l = l ^ ".out"
+and errname l = l ^ ".err"
+
+let read_file name =
+  if Sys.file_exists name then
+    Filesystem.read_file name Channel.read_lines
+  else []
+
+
 let time_re = Str.regexp "^Time "
-let without_unstable_lines lines =
-  let not_time l = not (Str.string_match time_re l 0) in
-  List.filter not_time lines
+
+let is_stable line = not (Str.string_match time_re line 0)
+
+let without_unstable_lines lines = List.filter is_stable lines
 
 let log_compare a b = String.compare (String.concat "\n" a) (String.concat "\n" b)
 
@@ -58,7 +68,15 @@ let apply_args herd j herd_args =
   let herd_args = String.concat "," herd_args in
   ["-com"; herd; "-j" ; Printf.sprintf "%i" j; "-comargs"; herd_args;]
 
-let herd_command ~bell ~cat ~conf ~variants ~libdir herd ?j ?timeout litmuses =
+let apply_redirect_args herd j herd_args =
+  let redirect_args = String.concat "," (herd::herd_args) in
+  let redirect =
+    Filename.concat (Filename.dirname Sys.argv.(0))
+      "herd_redirect.exe" in
+  ["-com"; redirect; "-j"; Printf.sprintf "%i" j; "-comargs"; redirect_args;]
+
+let herd_command
+      ~bell ~cat ~conf ~variants ~libdir herd ?j ?timeout litmuses =
   let args =
     herd_args
       ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir
@@ -96,6 +114,18 @@ let run_herd ~bell ~cat ~conf ~variants ~libdir herd ?j ?timeout litmuses =
          ~stdin:litmuses ~stdout:read_lines ~stderr:read_err_lines mapply args in
   (r,without_unstable_lines !lines, !err_lines)
 
+
+let run_herd_concurrent ~bell ~cat ~conf ~variants ~libdir herd ~j litmuses =
+  let args =
+    herd_args
+      ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir ~timeout:None in
+  let litmuses o = Channel.write_lines o litmuses ; close_out o in
+  let j = max 2 j in
+  let mapply = Filename.concat (Filename.dirname herd) "mapply7" in
+  let args = apply_redirect_args herd j args in
+  let r = Command.run_status ~stdin:litmuses  mapply args in
+  r
+
 let read_some_file litmus name =
   try Some (Filesystem.read_file name Channel.read_lines)
   with _ ->
@@ -104,9 +134,8 @@ let read_some_file litmus name =
       None
     end
 
-let herd_output_matches_expected ~bell ~cat ~conf ~variants ~libdir herd litmus expected expected_failure expected_warn =
-  try
-    match run_herd ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir herd  [litmus] with
+let do_check_output litmus expected  expected_failure expected_warn t =
+  match t with
     | _,[],[] ->
       Printf.printf "Failed %s : Herd finished but returned no output or errors\n" litmus ; false
     | 0,(_::_ as stdout), [] -> (* Herd finished without errors - normal *)
@@ -156,14 +185,37 @@ let herd_output_matches_expected ~bell ~cat ~conf ~variants ~libdir herd litmus 
          | [] -> "no"
          | _::_ -> "some" in
        Printf.printf
-         "Failed %s : unexpeced exit code %i, %s output %s error.\n"
+         "Failed %s : unexpected exit code %i, %s output %s error.\n"
          litmus r (some stdout) (some stderr) ;
        false
+
+let read_output_files litmus =
+  let o = read_file (outname litmus)
+  and e = read_file (errname litmus) in
+  o,e
+
+let output_matches_expected litmus expected =
+  try
+    let o,e = read_output_files litmus in
+    do_check_output litmus expected "" "" (0,o,e)
+  with Command.Error e ->
+     Printf.printf "Failed %s : %s \n" litmus
+       (Command.string_of_error e) ; false
+
+let herd_output_matches_expected
+      ~bell ~cat ~conf ~variants ~libdir
+      herd litmus expected expected_failure expected_warn =
+  try
+    let t =
+    run_herd
+      ~bell:bell ~cat:cat ~conf:conf
+      ~variants:variants ~libdir:libdir herd [litmus] in
+    do_check_output
+      litmus expected expected_failure expected_warn t
   with
   | Command.Error e ->
      Printf.printf "Failed %s : %s \n" litmus
        (Command.string_of_error e) ; false
-
 
 let is_litmus path = Filename.check_suffix path ".litmus"
 let is_expected path = Filename.check_suffix path ".litmus.expected"

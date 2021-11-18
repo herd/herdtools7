@@ -56,22 +56,35 @@ let run_diycross flags =
 
 
 let show_tests ?j flags =
-  ignore (j) ;
   let tmp_dir,litmuses = run_diycross flags in
-  let litmus_paths = concat_dir tmp_dir litmuses in
-
-  let command_of_litmus l =
-    TestHerd.herd_command
-      ~bell:None ~cat:None ~variants:[]
-      ~conf:flags.herd_conf
-      ~libdir:flags.libdir
-      flags.herd [l]
-  in
-  Channel.write_lines stdout (List .map command_of_litmus litmus_paths)
-
+  match j with
+  | None ->
+      let command_of_litmus litmus =
+        TestHerd.herd_command
+          ~bell:None ~cat:None ~variants:[]
+          ~conf:flags.herd_conf
+          ~libdir:flags.libdir
+          flags.herd
+          [litmus] in
+      let litmus_paths = concat_dir tmp_dir litmuses in
+      Channel.write_lines stdout
+        (List.map command_of_litmus litmus_paths)
+  | Some j ->
+      let index = Filename.concat tmp_dir "@all" in
+      let args =
+        TestHerd.herd_args
+          ~bell:None ~cat:None ~variants:[]
+          ~conf:flags.herd_conf
+          ~libdir:flags.libdir
+          ~timeout:None in
+      let herd_dir = Filename.dirname flags.herd in
+      let mapply = Filename.concat herd_dir "mapply7" in
+      let args =
+        String.concat " " (TestHerd.apply_redirect_args flags.herd j args) in
+      Channel.write_lines stdout
+        [Printf.sprintf "%s %s %s" mapply args index;]
 
 let run_tests ?j flags =
-  ignore (j) ;
   let tmp_dir,litmuses = run_diycross flags in
 
   let expecteds =
@@ -95,14 +108,28 @@ let run_tests ?j flags =
     concat_dir flags.expected_dir
     (List.map TestHerd.expected_of_litmus in_both)
   in
-  let results = List.map
-    (fun (l, e) ->
-      TestHerd.herd_output_matches_expected ~bell:None ~cat:None
-        ~conf:flags.herd_conf
-        ~variants:[]
-        ~libdir:flags.libdir
-        flags.herd l e "" "")
-    (List.combine litmus_paths expected_paths)
+  let results =
+    let les = List.combine litmus_paths expected_paths in
+    match j with
+    | None ->
+       List.map
+         (fun (l, e) ->
+           TestHerd.herd_output_matches_expected ~bell:None ~cat:None
+             ~conf:flags.herd_conf
+             ~variants:[]
+             ~libdir:flags.libdir
+             flags.herd l e "" "")
+         les
+    | Some j ->
+       ignore
+         (TestHerd.run_herd_concurrent  ~bell:None ~cat:None
+            ~conf:flags.herd_conf
+            ~variants:[]
+            ~libdir:flags.libdir
+            flags.herd ~j:j litmus_paths) ;
+       List.map
+         (fun (l,e) -> TestHerd.output_matches_expected l e)
+         les
   in
   let passed x = x in
 
@@ -119,32 +146,44 @@ let run_tests ?j flags =
     exit 1
   end
 
-
 let promote_tests ?j flags =
-  ignore (j) ;
+  (* Run diycross *)
+  let tmp_dir,litmuses = run_diycross flags in
+
+  (* Old reference files *)
   let old_paths =
     concat_dir flags.expected_dir
       (List.filter TestHerd.is_expected (list_dir flags.expected_dir))in
   List.iter Sys.remove old_paths ;
-
-  let tmp_dir = Filesystem.new_temp_dir () in
-  let args = diycross_args flags tmp_dir in
-  Command.run flags.diycross args ;
-  let litmuses = List.filter TestHerd.is_litmus (list_dir tmp_dir) in
-
+  (* New reference files *)
   let expecteds = List.map TestHerd.expected_of_litmus litmuses in
 
   let litmus_paths = concat_dir tmp_dir litmuses in
   let expected_paths = concat_dir flags.expected_dir expecteds in
 
-  let output_of_litmus l =
-    TestHerd.run_herd ~bell:None ~cat:None
-      ~conf:flags.herd_conf
-      ~variants:[]
-      ~libdir:flags.libdir
-      flags.herd [l]
-  in
-  let outputs = List.map (fun l -> output_of_litmus l) litmus_paths in
+  let outputs =
+    match j with
+    |  None ->
+        let output_of_litmus l =
+          TestHerd.run_herd ~bell:None ~cat:None
+            ~conf:flags.herd_conf
+            ~variants:[]
+            ~libdir:flags.libdir
+            flags.herd [l] in
+        List.map (fun l -> output_of_litmus l) litmus_paths
+  | Some j ->
+     ignore
+       (TestHerd.run_herd_concurrent  ~bell:None ~cat:None
+          ~conf:flags.herd_conf
+          ~variants:[]
+          ~libdir:flags.libdir
+          flags.herd ~j:j litmus_paths) ;
+     List.map
+       (fun l ->
+         0,
+         TestHerd.read_file (TestHerd.outname l),
+         TestHerd.read_file (TestHerd.errname l))
+     litmus_paths in
   let write_file (path, (_,lines,_)) =
     Filesystem.write_file path (fun o -> Channel.write_lines o lines) in
   List.combine expected_paths outputs |> List.iter write_file ;

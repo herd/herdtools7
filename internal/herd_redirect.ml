@@ -25,19 +25,21 @@ let rec to_list k =
 let com = Sys.argv.(1)
 let args = to_list 2
 
-let out_name = litmus ^ ".out"
-and err_name = litmus ^ ".err"
+let out_name = TestHerd.outname litmus
+and err_name = TestHerd.errname litmus
 
-let cat out_chan =
+let cat p out_chan =
   Channel.iter_lines
     (fun line ->
-      output_string out_chan line;
-      output_char out_chan '\n')
+      if p line then begin
+        output_string out_chan line;
+        output_char out_chan '\n'
+      end)
 
 
 let run out err =
-  let stdout = cat out
-  and stderr = cat err
+  let stdout = cat TestHerd.is_stable out
+  and stderr = cat (fun _ -> true) err
   and stdin out_chan =
     output_string out_chan litmus ;
     output_char out_chan '\n' ;
