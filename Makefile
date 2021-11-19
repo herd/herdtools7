@@ -149,7 +149,7 @@ diy-test:
 	@ echo "herd7 AArch64 diycross7 tests: OK"
 
 
-J=2
+J=4
 
 test::
 	@ echo
@@ -173,12 +173,13 @@ test::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-mixed tests: OK"
 
-full-test: test diy-test-mixed
+test:: diy-test-mixed
 
 LDS:="Amo.Cas,Amo.LdAdd,Amo.LdClr,Amo.LdEor,Amo.LdSet"
 diy-test-mixed:
 	@ echo
 	$(HERD_DIYCROSS_REGRESSION_TEST) \
+		-j $(J) \
 		-herd-path $(HERD) \
 		-diycross-path $(DIYCROSS) \
 		-libdir-path ./herd/libdir \
