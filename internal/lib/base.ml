@@ -103,3 +103,14 @@ module String = struct
 
   let to_ocaml_string s = Printf.sprintf "%S" s
 end
+
+module Iter = struct
+  type 'a t = unit -> 'a option
+
+  let of_list xs =
+    let r = ref xs in
+    fun () ->
+      match !r with
+      | [] -> None
+      | x::xs -> r := xs ; Some x
+end

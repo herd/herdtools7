@@ -89,3 +89,9 @@ module Option : sig
    * returns ["Some (\"hello\")"]. *)
   val to_ocaml_string : ('a -> string) -> 'a option -> string
 end
+
+module Iter : sig
+  type 'a t = unit -> 'a option
+
+  val of_list : 'a list -> 'a t
+end
