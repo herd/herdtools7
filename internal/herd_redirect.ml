@@ -28,24 +28,16 @@ let args = to_list 2
 let out_name = TestHerd.outname litmus
 and err_name = TestHerd.errname litmus
 
-let cat p out_chan =
-  Channel.iter_lines
-    (fun line ->
-      if p line then begin
-        output_string out_chan line;
-        output_char out_chan '\n'
-      end)
+let cat p out_chan line =
+  if p line then Printf.fprintf out_chan "%s\n" line
 
 
 let run out err =
   let stdout = cat TestHerd.is_stable out
   and stderr = cat (fun _ -> true) err
-  and stdin out_chan =
-    output_string out_chan litmus ;
-    output_char out_chan '\n' ;
-    close_out out_chan in
+  and stdin = Base.Iter.of_list [litmus] in
   ignore
-    (Command.run_status ~stdin ~stdout ~stderr com args)
+    (Command.NonBlock.run_status ~stdin ~stdout ~stderr com args)
 
 let rm_if_empty name =
   let st = Unix.stat name in

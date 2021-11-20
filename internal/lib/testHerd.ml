@@ -94,36 +94,36 @@ let run_herd ~bell ~cat ~conf ~variants ~libdir herd ?j ?timeout litmuses =
     herd_args
       ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir
       ~timeout:timeout in
-  let litmuses o = Channel.write_lines o litmuses ; close_out o in
+  let litmuses = Base.Iter.of_list litmuses in
 
   (* Record stdout and stderr to two sources if we need to reason about them separately *)
   let lines = ref [] in
   let err_lines = ref [] in
-  let read_lines c = lines := Channel.read_lines c in
-  let read_err_lines c = err_lines := Channel.read_lines c in
+  let read_line line = lines := line :: !lines in
+  let read_err_line line = err_lines := line :: !err_lines in
   let r =
     match j with
     | None ->
-       Command.run_status
-         ~stdin:litmuses ~stdout:read_lines ~stderr:read_err_lines herd args
+       Command.NonBlock.run_status
+         ~stdin:litmuses ~stdout:read_line ~stderr:read_err_line herd args
     | Some j ->
        let j = max 2 j in
        let mapply = Filename.concat (Filename.dirname herd) "mapply7" in
        let args = apply_args herd j args in
-       Command.run_status
-         ~stdin:litmuses ~stdout:read_lines ~stderr:read_err_lines mapply args in
-  (r,without_unstable_lines !lines, !err_lines)
+       Command.NonBlock.run_status
+         ~stdin:litmuses ~stdout:read_line ~stderr:read_err_line mapply args in
+  (r,without_unstable_lines (List.rev !lines), (List.rev !err_lines))
 
 
 let run_herd_concurrent ~bell ~cat ~conf ~variants ~libdir herd ~j litmuses =
   let args =
     herd_args
       ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir ~timeout:None in
-  let litmuses o = Channel.write_lines o litmuses ; close_out o in
+  let litmuses = Base.Iter.of_list litmuses in
   let j = max 2 j in
   let mapply = Filename.concat (Filename.dirname herd) "mapply7" in
   let args = apply_redirect_args herd j args in
-  let r = Command.run_status ~stdin:litmuses  mapply args in
+  let r = Command.NonBlock.run_status ~stdin:litmuses  mapply args in
   r
 
 let read_some_file litmus name =
