@@ -354,6 +354,8 @@ module Make
                vs in
            sprintf "{%s}" (String.concat "" pps)
         | Symbolic _|Label _|Tag _|PteVal _ -> assert false
+        | Instruction _ ->
+          Warn.fatal "FIXME: dump_a_v functionality for -variant self"
 
 (* Dump left & right values when context is available *)
 

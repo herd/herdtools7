@@ -185,6 +185,7 @@ struct
     let nolabel_value () = Warn.user_error "No label value for %s" Sys.argv.(0)
     let notag_value () = Warn.user_error "No tag value for %s" Sys.argv.(0)
     let nopte_value () = Warn.user_error "No pteval_t value for %s" Sys.argv.(0)
+    let noinstr_value () = Warn.user_error "No instruction value for %s" Sys.argv.(0)
 
     let rec collect_value f v k = match v with
     | Symbolic (Virtual {name=s;_}|System ((PTE|PTE2),s)) -> f s k
@@ -194,6 +195,7 @@ struct
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
     | PteVal _ -> nopte_value ()
+    | Instruction _ -> noinstr_value ()
     | Symbolic (Physical _|System ((TLB|TAG),_)) -> assert false
 
 
@@ -207,6 +209,7 @@ struct
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
     | PteVal _ -> nopte_value ()
+    | Instruction _ -> noinstr_value ()
     | Symbolic (Physical _|System ((TLB|TAG),_)) -> assert false
 
 

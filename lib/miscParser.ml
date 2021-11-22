@@ -51,6 +51,8 @@ let location_compare loc1 loc2 = match loc1,loc2 with
 | Location_sreg _, Location_global  _ -> -1
 | Location_global _, Location_sreg _ -> 1
 
+let dump_value = ParsedConstant.pp_v
+
 let dump_location = function
   | Location_reg (i,r) -> sprintf "%i:%s" i r
   | Location_sreg s -> Misc.dump_symbolic s
@@ -257,3 +259,8 @@ let add_oa_if_none loc p =
     let p = ParsedPteVal.add_oa_if_none oa p in
     Constant.PteVal p
   with Exit -> PteVal p
+
+let mk_instr_val v =
+  match v with
+  | "NOP" -> Constant.Instruction(InstrLit.LIT_NOP)
+  | _ -> Warn.user_error "unexpected {%s} value while parsing an instruction" v

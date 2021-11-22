@@ -1353,7 +1353,34 @@ Monad type:
         r
 
 
-      let initwrites_non_mixed madd env size_env =
+      let make_label (proc: A.proc) (lbl_str: string) : A.location =
+        A.Location_global (A.V.cstToV (Constant.Label (proc, lbl_str)))
+
+      let list_of_initwrites_instr
+          (a2l : int -> Label.Set.t)
+          (proc: A.proc)
+          (code: (int * A.instruction) list) 
+          (init_es: E.event list) =
+        fun init_eiid ->
+          let eiid,es =
+            List.fold_left
+              (fun (_eiid,_es) (addr,instr) ->
+                let lbls = a2l addr in
+                if A.is_overwritable lbls instr then
+                  let lbl_str = Label.Set.min_elt lbls in
+                  let lbl = make_label proc lbl_str in
+                  let instr_v = A.V.cstToV (A.instruction_to_value instr) in
+                  let eiid,ew =
+                    make_one_init_event
+                      (E.Act.mk_init_write lbl MachSize.Word instr_v) _eiid in
+                  (eiid,ew::_es)
+                else
+                  (_eiid,_es))
+              (init_eiid,init_es)
+              code in
+          (eiid, es)
+
+      let initwrites_non_mixed madd env size_env other_es =
         let env =
           if kvm then (if dbg then debug_add_initpte else add_initpte) env
           else env in
@@ -1386,7 +1413,7 @@ Monad type:
                     (eiid,ews@es)
                 | _ -> (eiid,ew::es))
               (eiid,[]) env in
-          let es = E.EventSet.of_list es in
+          let es = E.EventSet.of_list (es @ other_es) in
           if dbg then
             begin
               eprintf "Init writes %a\n" E.debug_events es
@@ -1399,7 +1426,7 @@ Monad type:
              (fun (loc,v) -> A.pp_location loc ^ " -> " ^ V.pp_v v)
              env)
 
-      let initwrites_mixed env size_env =
+      let initwrites_mixed env size_env other_es =
         if dbg then begin
             eprintf "Env is: [%s]\n" (debug_env env)
           end ;
@@ -1447,7 +1474,7 @@ Monad type:
                     eiid,ew::es,
                     E.EventSetSet.add (E.EventSet.singleton ew) sca)
               (eiid,[],E.EventSetSet.empty) env in
-          let es = E.EventSet.of_list es in
+          let es = E.EventSet.of_list (es @ other_es) in
           if dbg then begin
               eprintf "Init writes %a\n" E.debug_events es
             end ;
@@ -1468,7 +1495,36 @@ Monad type:
             ((poi,eiid.id),r)
 
       let initwrites madd env size_env =
-        t2code (do_initwrites madd env size_env)
+        t2code (do_initwrites madd env size_env [])
+
+      let initinstructions a2l starts =
+        let t_val = (fun init_eiid ->
+          let (fin_eiid, fin_es) = List.fold_left
+            (fun (cur_eiid, cur_es) (proc, code) ->
+              let new_eiid, new_es = (list_of_initwrites_instr a2l proc code cur_es) cur_eiid
+              in (new_eiid, new_es)
+            )
+            (init_eiid, [])
+            starts in
+          let est = E.EventSet.of_list fin_es in
+          make_one_monad () [] (do_trivial est) fin_eiid
+          ) in
+        t2code t_val
+
+      (* Generates initial writes for both instructions AND data;
+         Combines functionality of initwrites and initinstructions *)
+      let init_writes_and_instr madd env size_env a2l starts =
+        let t_val = (fun init_eiid ->
+          let (fin_eiid, fin_es) = List.fold_left
+            (fun (cur_eiid, cur_es) (proc, code) ->
+              let new_eiid, new_es = (list_of_initwrites_instr a2l proc code cur_es) cur_eiid
+              in (new_eiid, new_es)
+            )
+            (init_eiid, [])
+            starts in
+          (do_initwrites madd env size_env fin_es) fin_eiid
+          ) in
+        t2code t_val
 
     end
 

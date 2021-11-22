@@ -243,7 +243,7 @@ include Pseudo.Make
         let open Constant in
         function
           | Const(Concrete _|ConcreteVector _) as k -> k
-          | Const (Symbolic _|Label _|Tag _|PteVal _ as v) ->
+          | Const (Symbolic _|Label _|Tag _|PteVal _|Instruction _ as v) ->
               Warn.fatal "No constant '%s' allowed" (ParsedConstant.pp_v v)
           | LoadReg _ as l -> l
           | LoadMem (l,mo) ->

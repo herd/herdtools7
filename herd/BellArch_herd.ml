@@ -32,6 +32,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
 
   include NoLevelNorTLBI
 
+  include IFetchTrait.NotImplemented(struct type arch_instruction = instruction end) 
+
   include ArchExtra_herd.Make(C)
       (struct
         module V = V

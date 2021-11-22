@@ -26,7 +26,6 @@ module Make
     module C = TopConf.C
     module ConfLoc = SemExtra.ConfigToArchConfig(C)
     module AArch64 = AArch64Arch_herd.Make(ConfLoc)(V)
-
     module Act = MachAction.Make(ConfLoc)(AArch64)
     include SemExtra.Make(C)(AArch64)(Act)
 
@@ -40,6 +39,7 @@ module Make
     let is_branching = kvm && not (C.variant Variant.NoPteBranch)
     let pte2 = kvm && C.variant Variant.PTE2
     let do_cu = C.variant Variant.ConstrainedUnpredictable
+    let self = C.variant Variant.Self
 
     let check_memtag ins =
       if not memtag then
@@ -1385,6 +1385,19 @@ module Make
           end
 
 (********************)
+(* TODO *)
+(********************)
+
+      let make_label (proc: A.proc) (lbl_str: string) : A.location =
+        A.Location_global (A.V.cstToV (Constant.Label (proc, lbl_str)))
+
+      let read_loc_instr v ii =
+        let loc_instr =
+          make_label ii.A.proc v
+        in
+        M.read_loc false (mk_read MachSize.Word AArch64.N aexp) loc_instr ii
+
+(********************)
 (* Main entry point *)
 (********************)
       (*
@@ -1410,7 +1423,23 @@ module Make
             M.unitT B.Next
               (* Branches *)
         | I_B l ->
-            B.branchT l
+            if not self then
+              B.branchT l
+            else begin
+              match Label.Set.elements ii.A.labels with
+              | hd::_ ->
+                  let instr_v = A.V.cstToV (A.instruction_to_value ii.A.inst) in
+                  M.altT  (
+                    read_loc_instr hd ii
+                    >>= M.eqT instr_v
+                    >>= fun () -> B.branchT l
+                  ) (
+                    read_loc_instr hd ii
+                    >>= M.neqT instr_v
+                    >>= fun () -> M.unitT B.Next
+                  )
+              | [] -> B.branchT l
+            end
 
         | I_BC(c,l)->
             read_reg_ord NZP ii  >>= tr_cond c >>= fun v ->
