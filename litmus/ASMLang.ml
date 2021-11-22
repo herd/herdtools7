@@ -476,7 +476,11 @@ module RegMap = A.RegMap)
             let idx = find_pteval_index p ptevalEnv in
             add_pteval idx
         | Tag _ -> assert false
-        | Instruction _ -> Warn.fatal "FIXME: compile_val_fun functionality for -variant self" 
+        | Instruction InstrLit.LIT_NOP  -> "nop"
+        | Instruction i ->
+           Warn.fatal
+             "compile_val_fun cannot handle instruction value '%s'\n"
+             (InstrLit.pp i)
 
       let compile_init_val_fun = compile_val_fun
 
@@ -488,6 +492,14 @@ module RegMap = A.RegMap)
           | Constant.PteVal p -> p::k
           | _ -> k)
           [] t.Tmpl.init
+
+      let nop_init t =
+        List.exists
+          (fun (_,v) ->
+            match v with
+            | Constant.Instruction InstrLit.LIT_NOP -> true
+            | _ -> false)
+          t.Tmpl.init
 
       let dump_fun chan args0 env globEnv _volatileEnv proc t =
         if debug then debug_globEnv globEnv ;
@@ -512,6 +524,8 @@ module RegMap = A.RegMap)
               | Memory.Indirect ->
                   sprintf "%s **%s" ty x)
             addrs_proc in
+        let nop =
+          if nop_init t then ["ins_t nop"] else [] in
         let params0 =
           List.map
             (fun ((t,n),_) ->
@@ -549,7 +563,9 @@ module RegMap = A.RegMap)
                 with Not_found -> assert false in
               let x = Tmpl.dump_out_reg proc x in
               sprintf "%s *%s" (CType.dump ty) x) t.Tmpl.final in
-        let params =  String.concat "," (params0@labels@addrs@ptes@phys@ptevals@cpys@outs) in
+        let params =
+          String.concat ","
+            (nop@params0@labels@addrs@ptes@phys@ptevals@cpys@outs) in
         LangUtils.dump_code_def chan O.noinline O.mode proc params ;
         do_dump
           args0
@@ -613,6 +629,8 @@ module RegMap = A.RegMap)
 
       let dump_call f_id args0
             _tr_idx chan indent env (_,alignedEnv) _volatileEnv proc t =
+        let nop =
+          if nop_init t then ["getnop()";] else [] in
         let labels = List.map compile_label_call (Tmpl.get_labels t) in
         let addrs_proc,ptes = Tmpl.get_addrs t
         and phys = Tmpl.get_phys_only t in
@@ -638,7 +656,7 @@ module RegMap = A.RegMap)
         and outs = List.map (compile_out_reg_call env proc) t.Tmpl.final in
         let args =
           String.concat ","
-            (args0@labels@addrs@ptevals@addrs_cpy@outs) in
+            (nop@args0@labels@addrs@ptevals@addrs_cpy@outs) in
         LangUtils.dump_code_call chan indent f_id args
 
     end
