@@ -1,0 +1,11 @@
+Test A004 Allowed
+States 2
+1:X0=1; 1:X1=1;
+1:X0=2; 1:X1=1;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (1:X0=2 /\ 1:X1=1)
+Observation A004 Sometimes 1 1
+Hash=af17f10375b7bf8044c929f6f4da4e07
+
