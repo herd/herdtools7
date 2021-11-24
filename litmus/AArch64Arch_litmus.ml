@@ -75,10 +75,10 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
         let warn t1 t2 =
           let open CType in
           match t1,t2 with
-          | Base ("int"|"int32_t"|"uint32_t"
+          | Base ("ins_t"|"int"|"int32_t"|"uint32_t"
                   |"int16_t"|"uint16_t"
                   |"int8_t"|"uint8_t"),
-            Base ("int"|"int32_t"|"uint32_t") -> false
+            Base ("ins_t"|"int"|"int32_t"|"uint32_t") -> false
           | (Base "int",_)|(_,Base "int") -> true
           | _ -> false
 

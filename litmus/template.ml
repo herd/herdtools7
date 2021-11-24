@@ -168,6 +168,7 @@ module Make(O:Config)(A:I) =
     let get_nrets t = t.nrets
     and get_nnops t = t.nnops
 
+    (* Generic function to extract some symbols *)
     let get_gen tr init addrs =
       let set =
         StringSet.union
@@ -183,10 +184,8 @@ module Make(O:Config)(A:I) =
                       end
                   | ConcreteVector vs ->
                       List.fold_right f vs k
-                  | Concrete _|Label _|Tag _|PteVal _ -> k
-                  | Instruction _ ->
-                    Warn.warn_always "FIXME: a possible error due to -variant self" ;
-                    k in
+                  | Concrete _|Label _|Tag _|PteVal _|Instruction _ ->
+                     k in
                   f v k)
                 [] init)) in
       StringSet.elements set
@@ -222,10 +221,7 @@ module Make(O:Config)(A:I) =
           | Label (p,s) -> (p,s)::k
           | ConcreteVector vs ->
               List.fold_right f vs k
-          | Concrete _|Symbolic _|Tag _|PteVal _ -> k
-          | Instruction _ ->
-            Warn.warn_always "FIXME: a possible error due to -variant self" ;
-            k
+          | Concrete _|Symbolic _|Tag _|PteVal _|Instruction _ -> k
           in f v k)
         [] init
 

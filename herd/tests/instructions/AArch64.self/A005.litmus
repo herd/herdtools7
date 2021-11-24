@@ -1,0 +1,24 @@
+AArch64 A005
+(* A0004 Fixed, with L01 and Lself00 merged *)
+"PodWW Irfe PodRR Ifre"
+Generator=diyone7 (version 7.56+02~dev)
+Com=Irf Ifr
+Orig=PodWW Irfe PodRR Ifre
+{
+0:X0=NOP; 0:X1=P1:Lself00; 0:X2=P1:Lself01;
+}
+ P0          | P1        ;
+ STR W0,[X1] | Lself01:  ;
+ STR W0,[X2] | B L00     ;
+             | MOV W0,#2 ;
+             | B Lself00 ;
+             | L00:      ;
+             | MOV W0,#1 ;
+             | Lself00:  ;
+             | B L02     ;
+             | MOV W1,#2 ;
+             | B L03     ;
+             | L02:      ;
+             | MOV W1,#1 ;
+             | L03:      ;
+exists (1:X0=2 /\ 1:X1=1)

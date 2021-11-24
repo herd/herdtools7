@@ -1,4 +1,4 @@
-Test A3 Allowed
+Test A003 Allowed
 States 2
 0:X2=0;
 0:X2=1;
@@ -6,6 +6,6 @@ Ok
 Witnesses
 Positive: 1 Negative: 1
 Condition exists (0:X2=1)
-Observation A3 Sometimes 1 1
-Hash=54905ef3fc487d2b57608693b0b5fbea
+Observation A003 Sometimes 1 1
+Hash=d667ef56712c52f047c986962a317d89
 

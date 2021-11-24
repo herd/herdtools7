@@ -1,4 +1,4 @@
-Test A1 Forbidden
+Test A001 Forbidden
 States 2
 0:X2=0;
 0:X2=1;
@@ -6,6 +6,6 @@ No
 Witnesses
 Positive: 1 Negative: 1
 Condition ~exists (0:X2=1)
-Observation A1 Sometimes 1 1
-Hash=64572da32f3acf9ec6248d0f77b40cce
+Observation A001 Sometimes 1 1
+Hash=116be2f8c45818a4c863280ecf0deabd
 

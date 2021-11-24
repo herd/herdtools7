@@ -44,7 +44,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     open A64
 
 (* Nop instr code *)
-    let nop = "0x14000001"
+    let nop = "NOP"
 
 (* Utilities *)
     let next_reg x = A64.alloc_reg x

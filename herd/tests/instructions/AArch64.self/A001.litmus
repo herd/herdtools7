@@ -1,4 +1,4 @@
-AArch64 A1
+AArch64 A001
 
 {
 0:X0=NOP; 0:X1=P0:l1; 0:X2=0;
@@ -6,7 +6,7 @@ AArch64 A1
 
       P0       ;
 l1:l2:B l0     ;
-MOV X2, #1     ;
+MOV W2, #1     ;
 l0:            ;
 STR W0, [X1]   ;
 
