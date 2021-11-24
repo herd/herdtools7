@@ -303,9 +303,9 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     type ifetch_instruction = instruction
 
-    let is_overwritable labels i =
+    let is_overwritable i =
       match i with
-      | I_B _ | I_NOP -> not (Label.Set.is_empty labels)
+      | I_B _ | I_NOP -> true
       | _ -> false
 
     let instruction_to_value i =

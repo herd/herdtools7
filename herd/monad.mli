@@ -239,19 +239,6 @@ module type S =
         (unit t -> unit t) ->
           (A.location * A.V.v) list -> A.size_env -> unit code
 
-      (* Generate a code monad for initial instructions *)
-      val initinstructions :
-        (int -> Label.Set.t) ->
-          (A.proc * ((int * A.instruction) list)) list -> unit code
-
-      (* Generate a code monad for initial events for instructions and data;
-         combines the functionality of initwrites and initinstructions *)
-      val init_writes_and_instr :
-        (unit t -> unit t) ->
-            (A.location * A.V.v) list -> A.size_env ->
-        (int -> Label.Set.t) ->
-          (A.proc * ((int * A.instruction) list)) list -> unit code
-
     end
 
 (* Operations *)

@@ -1388,13 +1388,11 @@ module Make
 (* TODO *)
 (********************)
 
-      let make_label (proc: A.proc) (lbl_str: string) : A.location =
-        A.Location_global (A.V.cstToV (Constant.Label (proc, lbl_str)))
+      let make_label_value proc lbl_str =
+        A.V.cstToV (Constant.Label (proc, lbl_str))
 
       let read_loc_instr v ii =
-        let loc_instr =
-          make_label ii.A.proc v
-        in
+        let loc_instr = A.Location_global (make_label_value ii.A.proc v) in
         M.read_loc false (mk_read MachSize.Word AArch64.N aexp) loc_instr ii
 
 (********************)
@@ -1426,9 +1424,10 @@ module Make
             if not self then
               B.branchT l
             else begin
-              match Label.Set.elements ii.A.labels with
-              | hd::_ ->
-                  let instr_v = A.V.cstToV (A.instruction_to_value ii.A.inst) in
+              match Label.norm ii.A.labels with
+              | Some hd ->
+                  let instr_v =
+                    A.V.cstToV (A.instruction_to_value ii.A.inst) in
                   M.altT  (
                     read_loc_instr hd ii
                     >>= M.eqT instr_v
@@ -1438,7 +1437,7 @@ module Make
                     >>= M.neqT instr_v
                     >>= fun () -> M.unitT B.Next
                   )
-              | [] -> B.branchT l
+              | None -> B.branchT l
             end
 
         | I_BC(c,l)->
@@ -1817,7 +1816,12 @@ module Make
             !(movk var rd k os ii)
 
         | I_ADDR (r,lbl) ->
-            !(write_reg r (V.nameToV lbl) ii)
+            let v =
+              if self then (* lbl msut be a code label *)
+                make_label_value ii.A.proc (ii.A.norm_lbl lbl)
+              else (* lbl must be a data location *)
+                V.nameToV lbl in
+            !(write_reg r v ii)
         | I_SXTW(rd,rs) ->
             !(read_reg_ord_sz MachSize.Word rs ii >>=
              sxtw_op >>= fun v -> write_reg rd v ii)

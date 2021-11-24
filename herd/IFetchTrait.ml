@@ -1,6 +1,6 @@
 module type S = sig
     type ifetch_instruction
-    val is_overwritable : Label.Set.t -> ifetch_instruction -> bool
+    val is_overwritable : ifetch_instruction -> bool
     val instruction_to_value : ifetch_instruction -> ('scalar,'pte) Constant.t
 end
 
@@ -9,7 +9,7 @@ S with type ifetch_instruction = I.arch_instruction
   = struct
     type ifetch_instruction = I.arch_instruction
 
-    let is_overwritable _ _ =
+    let is_overwritable _ =
         Warn.fatal "Functionality not implemented for -variant self"
 
     let instruction_to_value _  =

@@ -61,7 +61,7 @@ module type S = sig
       proc       : proc;
       program_order_index   : program_order_index;
       inst : I.arch_instruction;
-      labels : Label.Set.t;
+      labels : Label.Set.t; norm_lbl : Label.t -> Label.t;
       env : ii_env;
     }
 
@@ -111,6 +111,7 @@ module type S = sig
   val pp_nice_state :
       state -> string (* delim, as in String.concat  *)
         -> (location -> v -> string) -> string
+  val map_state : (v -> v) -> state -> state
 
   val build_state : (location * (TestType.t * v)) list -> state
   val build_concrete_state : (location * int) list -> state
@@ -212,11 +213,9 @@ module type S = sig
 (* Code memory is a mapping from labels to sequences of instructions, too far from actual machine, maybe *)
   type code = (int * I.arch_instruction) list
 
-  module LabelMap : Map.S with type key = string
-
 
 (* Program loaded in memory *)
-  type program = code LabelMap.t
+  type program = code Label.Map.t
 
 (* A starting address per proc *)
   type start_points = (proc * code) list
@@ -284,7 +283,7 @@ module Make(C:Config) (I:I) : S with module I = I
           proc       : proc;
           program_order_index   : program_order_index;
           inst : I.arch_instruction ;
-          labels : Label.Set.t ;
+          labels : Label.Set.t ; norm_lbl : Label.t -> Label.t ;
           env : ii_env ;
         }
 
@@ -492,6 +491,7 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let dump_state st = do_dump_state Misc.identity st
 
+      let map_state f st = State.map f st
 (******************)
 (* Register state *)
 (******************)
@@ -974,16 +974,9 @@ module Make(C:Config) (I:I) : S with module I = I
 
       type code = (int * I.arch_instruction) list
 
-      module LabelMap =
-        Map.Make
-          (struct
-            type t = string
-            let compare = String.compare
-          end)
 
-
-          (* Programm loaded in memory *)
-      type program = code LabelMap.t
+      (* Programm loaded in memory *)
+      type program = code Label.Map.t
 
             (* A starting address per proc *)
       type start_points = (proc * code) list
