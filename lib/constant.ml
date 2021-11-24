@@ -244,13 +244,17 @@ let rec map_scalar f = function
 | Concrete s -> Concrete (f s)
 | ConcreteVector cs -> ConcreteVector (List.map (map_scalar f) cs)
 
+let rec map_label f = function
+  | Label (p,lbl) -> Label (p,f lbl)
+  | ConcreteVector cs -> ConcreteVector (List.map (map_label f) cs)
+  | Symbolic _|Concrete _ |Tag _|PteVal _|Instruction _ as m -> m
+
 let rec map f_scalar f_pteval = function
 | Symbolic _ | Label _ | Tag _ | Instruction _ as m -> m
 | PteVal p -> PteVal (f_pteval p)
 | Concrete s -> Concrete (f_scalar s)
 | ConcreteVector cs ->
    ConcreteVector (List.map (map f_scalar f_pteval) cs)
-
 
 let do_mk_virtual s = Virtual { default_symbolic_data with name=s; }
 

@@ -91,6 +91,7 @@ val pp_old :
 
 (* Do nothing on non-scalar *)
 val map_scalar : ('a -> 'b) -> ('a,'pte) t -> ('b,'pte) t
+val map_label : (Label.t -> Label.t) -> ('s,'pte) t -> ('s,'pte) t
 val map : ('a -> 'b) -> ('c -> 'd) -> ('a,'c) t -> ('b,'d) t
 
 val mk_sym_virtual : string -> ('scalar,'pte) t
