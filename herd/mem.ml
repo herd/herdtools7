@@ -287,7 +287,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                 (fun ps (addr,i) ->
                 if A.is_overwritable i then
                   let lbls = labels_of_instr addr in
-                  (lbls,(proc,i))::ps
+                  if Label.Set.is_empty lbls then ps
+                  else (lbls,(proc,i))::ps
                 else ps)
                 ps code)
             [] starts
@@ -299,7 +300,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             List.fold_left
               (fun m (lbls,_) ->
                 match Label.norm lbls with
-                | None -> m (* should not occur *)
+                | None -> assert false (* as lbls is non-empty *)
                 | Some lbl0 ->
                     Label.Set.fold
                       (fun lbl m -> Label.Map.add lbl lbl0 m)
@@ -307,7 +308,23 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
               Label.Map.empty lbls2i in
           fun lbl ->
             try Label.Map.find lbl m
-            with Not_found -> assert false
+            with
+            | Not_found ->
+                try
+                  match Label.Map.find lbl p with
+                  | [] ->
+                      Warn.user_error
+                        "Final label %s cannot be overwritten"
+                        (Label.pp lbl)
+                  | (_,i)::_ ->
+                      Warn.user_error
+                        "Instruction %s:%s cannot be overwritten"                                       (Label.pp lbl)
+                        (A.dump_instruction i)
+                with
+                | Not_found ->
+                    Warn.user_error
+                      "Label %s is undefined, yet it is used as constant"
+                      (Label.pp lbl)
         else fun lbl -> lbl in
 
       let norm_val = (* Normalize labels in values *)
@@ -366,12 +383,32 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       else
         Ok (tgt,seen) in
 
+      (* All memory locations in a test, with initial values *)
+      let env0 = get_all_mem_locs test in
+
       let wrap proc inst addr env m poi =
+        let addr2v =
+          if self then
+            fun s ->
+            try (* Look for label to overwritable instruction *)
+                V.Val (Constant.Label (proc,norm_lbl s))
+            with e -> (* No, look for data location *)
+                let v =  A.V.nameToV s in
+                if
+                  List.exists
+                    (fun (a,_) ->
+                      match a with
+                      | A.Location_global a -> A.V.compare v a=0
+                      | _ -> false)
+                    env0
+                then v else (* No code nor data, deliver code error *)
+                  raise e
+          else A.V.nameToV in
         let ii =
            { A.program_order_index = poi;
              proc = proc; inst = inst;
              labels = labels_of_instr addr;
-             norm_lbl;
+             addr2v;
              env = env; } in
         if dbg && not (Label.Set.is_empty ii.A.labels) then
           eprintf "Instruction %s has labels {%s}\n"
@@ -447,8 +484,6 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         else
           EM.zerocodeT
       in
-
-      let env0 = get_all_mem_locs test in
 
 (* Build code monad for one given set of events to add *)
       let set_of_all_instr_events madd =

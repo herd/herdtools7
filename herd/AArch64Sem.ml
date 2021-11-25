@@ -1816,12 +1816,8 @@ module Make
             !(movk var rd k os ii)
 
         | I_ADDR (r,lbl) ->
-            let v =
-              if self then (* lbl msut be a code label *)
-                make_label_value ii.A.proc (ii.A.norm_lbl lbl)
-              else (* lbl must be a data location *)
-                V.nameToV lbl in
-            !(write_reg r v ii)
+           !(write_reg r  (ii.A.addr2v lbl) ii)
+
         | I_SXTW(rd,rs) ->
             !(read_reg_ord_sz MachSize.Word rs ii >>=
              sxtw_op >>= fun v -> write_reg rd v ii)

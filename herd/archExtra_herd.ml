@@ -61,7 +61,8 @@ module type S = sig
       proc       : proc;
       program_order_index   : program_order_index;
       inst : I.arch_instruction;
-      labels : Label.Set.t; norm_lbl : Label.t -> Label.t;
+      labels : Label.Set.t;
+      addr2v : string -> I.V.v;
       env : ii_env;
     }
 
@@ -282,9 +283,10 @@ module Make(C:Config) (I:I) : S with module I = I
       type inst_instance_id = {
           proc       : proc;
           program_order_index   : program_order_index;
-          inst : I.arch_instruction ;
-          labels : Label.Set.t ; norm_lbl : Label.t -> Label.t ;
-          env : ii_env ;
+          inst : I.arch_instruction;
+          labels : Label.Set.t;
+          addr2v : string -> I.V.v;
+          env : ii_env;
         }
 
 
