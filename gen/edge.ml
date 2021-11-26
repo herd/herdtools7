@@ -109,6 +109,7 @@ module type S = sig
 
 (* Does source and target events have the same or different locations? *)
   val loc_sd : edge -> sd
+  val is_diff: edge -> bool
 
 (* Internal (same proc) or external edge (different procs) *)
   val get_ie : edge -> ie
@@ -158,6 +159,11 @@ and type atom = F.atom
 and module PteVal = F.PteVal
 and type rmw = F.rmw = struct
   let do_self = Cfg.variant Variant_gen.Self
+  let do_mixed =
+    Cfg.variant Variant_gen.Mixed || Cfg.variant Variant_gen.FullMixed
+  let do_disjoint = Cfg.variant Variant_gen.MixedDisjoint
+  let do_strict_overlap = Cfg.variant Variant_gen.MixedStrictOverlap
+
   let debug = false
   open Code
 
@@ -386,6 +392,15 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
   | Insert _ -> NoDir
   | Node d -> Dir d
 
+  let do_loc_sd e = match e with
+  | Po (sd,_,_) | Fenced (_,sd,_,_) | Dp (_,sd,_) -> sd
+  | Insert _|Node _|Fr _|Ws _|Rf _|Hat|Rmw _|Id|Leave _|Back _
+  | Ifr _| Irf _ -> Same
+
+  let do_is_diff e = match do_loc_sd e with
+  | Same -> false
+  | Diff -> true
+
 let fold_tedges_compat f r =
   let r = fold_ie (fun ie -> f (Ws ie)) r in
   let r =
@@ -428,7 +443,12 @@ let fold_tedges f r =
   let fold_atomo_list aos f k =
     List.fold_right (fun a k -> f (Some a) k) aos k
 
-  let do_fold_edges fold_tedges f =
+  let overlap_atoms strict a1 a2 =
+    match a1,a2 with
+    | (None,_)|(_,None) -> true
+    | Some a1,Some a2 -> F.overlap_atoms strict a1 a2
+
+    let do_fold_edges fold_tedges f =
    fold_atomo
       (fun a1 ->
         fold_atomo
@@ -460,7 +480,13 @@ let fold_tedges f r =
                  | _ ->
                      let d1 = do_dir_src te
                      and d2 = do_dir_tgt te in
-                     if applies_atom a1 d1 && applies_atom a2 d2 then
+                     if
+                       applies_atom a1 d1 &&
+                       applies_atom a2 d2 &&
+                       (do_disjoint ||
+                        do_is_diff te ||
+                        overlap_atoms do_strict_overlap a1 a2)
+                     then
                        f {a1; a2; edge=te;} k
                      else begin
                        if debug then
@@ -626,16 +652,14 @@ let fold_tedges f r =
 
   let pp_edges es = String.concat " " (List.map pp_edge es)
 
-
-
-let do_set_tgt d e = match e  with
+  let do_set_tgt d e = match e  with
   | Po(sd,src,_) -> Po (sd,src,Dir d)
   | Fenced(f,sd,src,_) -> Fenced(f,sd,src,Dir d)
   | Dp (dp,sd,_) -> Dp (dp,sd,Dir d)
   | Rf _ | Hat|Irf _|Ifr _
   | Insert _|Id|Node _|Ws _|Fr _|Rmw _|Leave _|Back _-> e
 
-and do_set_src d e = match e with
+  and do_set_src d e = match e with
   | Po(sd,_,tgt) -> Po(sd,Dir d,tgt)
   | Fenced(f,sd,_,tgt) -> Fenced(f,sd,Dir d,tgt)
   | Fr _|Hat|Dp _|Ifr _|Irf _
@@ -644,11 +668,8 @@ and do_set_src d e = match e with
   let set_tgt d e = { e with edge = do_set_tgt d e.edge ; }
   and set_src d e = { e with edge = do_set_src d e.edge ; }
 
-  let loc_sd e = match e.edge with
-  | Po (sd,_,_) | Fenced (_,sd,_,_) | Dp (_,sd,_) -> sd
-  | Insert _|Node _|Fr _|Ws _|Rf _|Hat|Rmw _|Id|Leave _|Back _
-  | Ifr _| Irf _ -> Same
-
+  let loc_sd e = do_loc_sd e.edge
+  and is_diff e = do_is_diff e.edge
 
   let get_ie e = match e.edge with
   | Id |Po _|Dp _|Fenced _|Rmw _ -> Int
@@ -755,15 +776,62 @@ and do_set_src d e = match e with
     end
 
   let set_a1 e a = match e.edge with
-  | Node _ -> { e with a1=a; a2=a;}
+  | Node _|Id -> { e with a1=a; a2=a;}
   | _ -> { e with a1=a;}
 
   let set_a2 e a = match e.edge with
-  | Node _ -> { e with a1=a; a2=a;}
+  | Node _|Id  -> { e with a1=a; a2=a;}
   | _ -> { e with a2=a;}
 
+  let merge_id e1 e2 = match e1.edge,e2.edge with
+    | Id,Id ->
+        begin
+          let a1 = e1.a2 and a2 = e2.a1 in
+          match a1,a2 with
+          | None,None -> Some e1
+          | (None,(Some _ as a))|((Some _ as a),None) ->
+              Some { e1 with a1=a; a2=a; }
+          | Some a1,Some a2 ->
+              begin
+                match F.merge_atoms a1 a2 with
+                | None -> None (* Merge impossible, will fail later *)
+                | Some _ as a ->
+                    Some { e1 with a1=a; a2=a; }
+              end
+        end
+    | _ -> None
+
+  let merge_ids =
+    let rec do_rec fst = function
+      | [] -> fst,[]
+      | [lst] ->
+          begin
+            match merge_id lst fst with
+            | None -> fst,[lst]
+            | Some e -> e,[]
+          end
+      | e1::(e2::es as k) ->
+          begin
+            match merge_id e1 e2 with
+            | None ->
+                let fst,k = do_rec fst k in
+                fst,e1::k
+            | Some e -> do_rec fst (e::es)
+          end in
+    let rec do_fst = function
+      | []|[_] as es -> es
+      | e1::(e2::es as k) ->
+          begin
+            match merge_id e1 e2 with
+            | None ->
+                let fst,k = do_rec e1 k in
+                fst::k
+            | Some e -> do_fst (e::es)
+          end in
+    do_fst
+
 (*
- resolve_pair e1 e2, merges the end annotatin of e1 with
+ resolve_pair e1 e2, merges the end annotation of e1 with
  the start annotation of e2.
  Warning: resolve_pair cannot fail, instead it must leave
  e1 and e2 as they are...
@@ -792,8 +860,10 @@ and do_set_src d e = match e with
           | Some _ as a ->
               set_a2 e1 a,set_a1 e2 a
           end in
-    if dbg > 0 then
-      eprintf "<%s,%s>\n" (debug_edge e1) (debug_edge e2) ;
+    if dbg > 0 then begin
+      let e1,e2 = r in
+      eprintf "<%s,%s>\n" (debug_edge e1) (debug_edge e2)
+    end ;
     r
 
   (* Function merge_pair merges two versions of the same edge with
@@ -828,7 +898,21 @@ and do_set_src d e = match e with
 
   let remove_id = List.filter (fun e -> not (is_id e.edge))
 
-  let resolve_edges es0 = match es0 with
+
+  let check_mixed =
+    if not do_mixed || do_disjoint then fun _ -> ()
+    else
+      List.iter
+        (fun e ->
+          if not (do_is_diff e.edge ||
+                    overlap_atoms do_strict_overlap e.a1 e.a2) then
+            Warn.fatal
+              "Non overlapping accesses in %s, allow with `-variant MixedDisjoint`"
+              (pp_edge e))
+
+  let resolve_edges es0 =
+    let es0 = merge_ids es0 in
+    match es0 with
   | []|[_] -> es0
   | e::es ->
       let rec do_rec e es = match e.edge with
@@ -860,7 +944,10 @@ and do_set_src d e = match e with
             with exn ->
               eprintf "Failure <%s,%s>\n" (debug_edge fst) (debug_edge e) ;
               raise exn in
-      remove_id (e::es)
+      let es = remove_id (e::es) in
+      if dbg > 0 then eprintf "REMOVE Id: %s\n" (pp_edges es) ;
+      check_mixed es ;
+      es
 
 (********************)
 (* Atomic variation *)

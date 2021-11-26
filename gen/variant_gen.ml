@@ -22,6 +22,10 @@ type t =
   | Mixed
 (* Lift the default restriction of mixed-size annotation to depth one *)
   | FullMixed
+(* Allow non-overlapping mixed accesses *)
+  | MixedDisjoint
+(* Require strict overlap *)
+  | MixedStrictOverlap
 (* Self-modifying code *)
   | Self
 (* MTE = Memory tagging *)
@@ -38,14 +42,18 @@ type t =
   | ConstrainedUnpredictable
 
 let tags =
- ["AsAmo";"ConstsInInit";"Mixed";"FullMixed";"Self"; "MemTag";
-  "NoVolatile"; "Morello"; "kvm"; "Neon"; "ConstrainedUnpredictable"; ]
+  ["AsAmo";"ConstsInInit";
+   "Mixed";"FullMixed";"MixedDisjoint"; "MixedStrictOverlap";
+   "Self"; "MemTag";
+   "NoVolatile"; "Morello"; "kvm"; "Neon"; "ConstrainedUnpredictable"; ]
 
 let parse tag = match Misc.lowercase tag with
 | "asamo" -> Some AsAmo
 | "constsininit" -> Some ConstsInInit
 | "mixed" -> Some Mixed
 | "fullmixed" -> Some FullMixed
+| "mixeddisjoint"|"disjoint" -> Some MixedDisjoint
+| "mixedstrictoverlap"|"strictoverlap" -> Some MixedStrictOverlap
 | "self" -> Some Self
 | "memtag" -> Some MemTag
 | "novolatile" -> Some NoVolatile
@@ -60,6 +68,8 @@ let pp = function
   | ConstsInInit -> "ConstsInInit"
   | Mixed -> "Mixed"
   | FullMixed -> "FullMixed"
+  | MixedDisjoint -> "MixedDisjoint"
+  | MixedStrictOverlap -> "MixedStrictOverlap"
   | Self -> "Self"
   | MemTag -> "MemTag"
   | NoVolatile -> "NoVolatile"

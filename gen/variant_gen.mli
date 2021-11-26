@@ -22,6 +22,10 @@ type t =
   | Mixed
 (* Lift the default restriction of mixed-size annotation to depth one *)
   | FullMixed
+(* Allow non-overlapping mixed accesses *)
+  | MixedDisjoint
+(* Require strict overlap *)
+  | MixedStrictOverlap
 (* Self-modifying code *)
   | Self
 (* MTE = Memory tagging *)
