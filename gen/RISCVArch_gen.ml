@@ -115,6 +115,11 @@ module Make
 
    let merge_atoms a1 a2 = if a1=a2 then Some a1 else None
 
+   let overlap_atoms strict a1 a2 =
+     match a1,a2 with
+     | ((MO _|Atomic _),_)|(_,(MO _|Atomic _)) -> true
+     | Mixed m1,Mixed m2 -> MachMixed.overlap strict m1 m2
+
    let atom_to_bank _ = Code.Ord
 
    let tr_value ao v = match ao with

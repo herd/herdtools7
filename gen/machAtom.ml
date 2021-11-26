@@ -66,6 +66,10 @@ module Make(C:Config) = struct
 
   let merge_atoms a1 a2 = if a1 = a2 then Some a1 else None
 
+  let overlap_atoms strict a1 a2 = match a1,a2 with
+    | ((Atomic|Reserve),_)|(_,(Atomic|Reserve)) -> true
+    | Mixed sz1,Mixed sz2 -> MachMixed.overlap strict sz1 sz2
+
 (* Single memory bank *)
   let atom_to_bank _ = Code.Ord
 

@@ -27,6 +27,16 @@ type t = sz * offset
 let equal (sz1,o1) (sz2,o2) =
   MachSize.equal sz1 sz2 && Misc.int_eq o1 o2
 
+let disjoint (l1,h1) (l2,h2) =
+   l1 < l2 && h1 <= l2 || l2 < l1 && h2 <= l1
+
+let tr (sz,o) = (o,o+MachSize.nbytes sz)
+
+let overlap strict a1 a2 =
+  let i1 = tr a1 and i2 = tr a2 in
+  not (disjoint i1 i2) &&
+  (not (strict && equal a1 a2))
+
 module Make(C:Config) = struct
 
   open Printf
@@ -68,6 +78,7 @@ module type ValsConfig = sig
 end
 
 module Vals(C:ValsConfig) = struct
+
   let correct_offset = match C.endian with
   | Little -> fun _ o -> o
   | Big ->

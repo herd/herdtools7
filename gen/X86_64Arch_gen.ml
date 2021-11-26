@@ -112,6 +112,10 @@ module Make
             check_nt a sz1
         | _,_ -> if a1=a2 then Some a1 else None
 
+      let overlap_atoms strict a1 a2 = match a1,a2 with
+        | ((_,None),_)|(_,(_,None)) -> true
+        | (_,Some m1),(_,Some m2) -> MachMixed.overlap strict m1 m2
+
       let atom_to_bank _ = Code.Ord
 
 (**************)

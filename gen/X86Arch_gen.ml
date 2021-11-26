@@ -36,6 +36,8 @@ let compare_atom = compare
 
 let merge_atoms Atomic Atomic = Some Atomic
 
+let overlap_atoms _ _ _ = true
+
 let pp_plain = Code.plain
 
 let pp_as_a = None

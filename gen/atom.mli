@@ -43,6 +43,8 @@ module type S = sig
   val worth_final : atom -> bool
   val varatom_dir : Code.dir -> (atom option -> 'a -> 'a) -> 'a -> 'a
   val merge_atoms : atom -> atom -> atom option
+(* boolean commands strict overlap check, ie no equality *)
+  val overlap_atoms : bool -> atom -> atom -> bool
 (* Memory bank *)
   val atom_to_bank : atom -> SIMD.atom Code.bank
 (* Value computation, for mixed size *)
