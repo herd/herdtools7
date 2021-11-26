@@ -191,6 +191,8 @@ let applies_atom (a,_) d = match a,d with
    let compare_atom = compare
    let equal_atom a1 a2 = a1 = a2
 
+   let access_atom (_,m) = m
+
    let fold_mixed f r =
      if do_mixed then
        Mixed.fold_mixed
@@ -314,10 +316,10 @@ let applies_atom (a,_) d = match a,d with
    | _,_ ->
        if equal_atom a1 a2 then Some a1 else None
 
-   let overlap_atoms strict a1 a2 = match a1,a2 with
+   let overlap_atoms a1 a2 = match a1,a2 with
      | ((_,None),(_,_))|((_,_),(_,None)) -> true
      | ((_,Some sz1),(_,Some sz2)) ->
-         MachMixed.overlap strict sz1 sz2
+         MachMixed.overlap  sz1 sz2
 
    let neon_as_integers =
      let open SIMD in

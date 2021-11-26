@@ -24,8 +24,7 @@ type t = MachSize.sz * offset
 
 val equal : t -> t -> bool
 
-(* Boolean argument commands strict overlap check (i.e. different) *)
-val overlap : bool -> t -> t -> bool
+val overlap : t -> t -> bool
 
 module Make :
   functor (C:Config) ->

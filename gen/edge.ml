@@ -443,12 +443,18 @@ let fold_tedges f r =
   let fold_atomo_list aos f k =
     List.fold_right (fun a k -> f (Some a) k) aos k
 
-  let overlap_atoms strict a1 a2 =
+  let overlap_atoms a1 a2 =
     match a1,a2 with
     | (None,_)|(_,None) -> true
-    | Some a1,Some a2 -> F.overlap_atoms strict a1 a2
+    | Some a1,Some a2 -> F.overlap_atoms a1 a2
 
-    let do_fold_edges fold_tedges f =
+  let same_mixed_access_atoms a1 a2 = match a1,a2 with
+    | (None,_)|(_,None) -> false
+    | Some a1,Some a2 ->
+        Misc.opt_eq MachMixed.equal
+          (F.access_atom a1) (F.access_atom a2)
+
+  let do_fold_edges fold_tedges f =
    fold_atomo
       (fun a1 ->
         fold_atomo
@@ -483,9 +489,9 @@ let fold_tedges f r =
                      if
                        applies_atom a1 d1 &&
                        applies_atom a2 d2 &&
-                       (do_disjoint ||
-                        do_is_diff te ||
-                        overlap_atoms do_strict_overlap a1 a2)
+                       (do_is_diff te ||
+                          (do_disjoint || overlap_atoms a1 a2) ||
+                          (not (do_strict_overlap && same_mixed_access_atoms a1 a2)))
                      then
                        f {a1; a2; edge=te;} k
                      else begin
@@ -904,11 +910,21 @@ let fold_tedges f r =
     else
       List.iter
         (fun e ->
-          if not (do_is_diff e.edge ||
-                    overlap_atoms do_strict_overlap e.a1 e.a2) then
-            Warn.fatal
-              "Non overlapping accesses in %s, allow with `-variant MixedDisjoint`"
-              (pp_edge e))
+          if not (do_is_diff e.edge) then
+            begin
+              if overlap_atoms e.a1 e.a2 then
+                begin
+                  if do_strict_overlap then
+                    if same_mixed_access_atoms e.a1 e.a2 then
+                      Warn.fatal
+                        "Identical mixed access in %s and `-variant MixedStrictOverlap` mode"
+                        (pp_edge e)
+                end
+              else
+                Warn.fatal
+                  "Non overlapping accesses in %s, allow with `-variant MixedDisjoint`"
+            (pp_edge e)
+            end)
 
   let resolve_edges es0 =
     let es0 = merge_ids es0 in

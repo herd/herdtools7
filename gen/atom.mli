@@ -34,6 +34,7 @@ module type S = sig
   val default_atom : atom
   val applies_atom : atom -> Code.dir -> bool
   val compare_atom : atom -> atom -> int
+  val access_atom : atom -> MachMixed.t option
   val pp_plain : string
   val pp_as_a : atom option
   val pp_atom : atom -> string
@@ -43,8 +44,7 @@ module type S = sig
   val worth_final : atom -> bool
   val varatom_dir : Code.dir -> (atom option -> 'a -> 'a) -> 'a -> 'a
   val merge_atoms : atom -> atom -> atom option
-(* boolean commands strict overlap check, ie no equality *)
-  val overlap_atoms : bool -> atom -> atom -> bool
+  val overlap_atoms : atom -> atom -> bool
 (* Memory bank *)
   val atom_to_bank : atom -> SIMD.atom Code.bank
 (* Value computation, for mixed size *)

@@ -85,6 +85,10 @@ module Make
 
    let compare_atom = compare
 
+   let access_atom = function
+     | MO _|Atomic _ -> None
+     | Mixed m -> Some m
+
    let fold_mixed f k = Mixed.fold_mixed (fun  mix r -> f (Mixed mix) r) k
 
    let fold_mo f k =
@@ -115,10 +119,10 @@ module Make
 
    let merge_atoms a1 a2 = if a1=a2 then Some a1 else None
 
-   let overlap_atoms strict a1 a2 =
+   let overlap_atoms a1 a2 =
      match a1,a2 with
      | ((MO _|Atomic _),_)|(_,(MO _|Atomic _)) -> true
-     | Mixed m1,Mixed m2 -> MachMixed.overlap strict m1 m2
+     | Mixed m1,Mixed m2 -> MachMixed.overlap m1 m2
 
    let atom_to_bank _ = Code.Ord
 

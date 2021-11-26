@@ -129,6 +129,7 @@ let pp_atom a =  pp_annots a
 let compare_atom a1 a2 =
   Misc.list_compare String.compare a1 a2
 
+let access_atom _ = None
 
 let fold_annots eg f r =
   List.fold_left
@@ -195,7 +196,7 @@ let varatom_dir = match varatom with
 
 let merge_atoms a1 a2 = if a2 = a1 then Some a1 else None
 
-let overlap_atoms _ _ _ = true
+let overlap_atoms _ _ = true
 
 let atom_to_bank _ = Code.Ord
 

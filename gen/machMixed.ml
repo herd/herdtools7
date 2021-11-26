@@ -32,10 +32,9 @@ let disjoint (l1,h1) (l2,h2) =
 
 let tr (sz,o) = (o,o+MachSize.nbytes sz)
 
-let overlap strict a1 a2 =
+let overlap a1 a2 =
   let i1 = tr a1 and i2 = tr a2 in
-  not (disjoint i1 i2) &&
-  (not (strict && equal a1 a2))
+  not (disjoint i1 i2)
 
 module Make(C:Config) = struct
 
