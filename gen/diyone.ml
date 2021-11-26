@@ -109,10 +109,10 @@ module Make(O:Config) (M:Builder.S) =
           let nprocs = Normer.get_nprocs es in
           let scope =  get_scope nprocs in
           match name with
-          | None -> dump_stdout ?scope (M.E.resolve_edges es)
+          | None -> dump_stdout ?scope es
           | Some name ->
               let name = add_suffix name in
-              dump_file name ?scope (M.E.resolve_edges es)
+              dump_file name ?scope es
 
     module P = LineUtils.Make(M.E)
 
