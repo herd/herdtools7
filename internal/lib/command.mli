@@ -48,3 +48,29 @@ val run_status :
   ?stdin:(out_channel -> unit) ->
   ?stdout:(in_channel -> unit) ->
   ?stderr:(in_channel -> unit) -> string -> string list -> int
+
+module NonBlock : sig
+
+(** Non blocking execution of command:
+ * input (stdin) and outputs (stdout and stderr) are seen as non-blocking
+ * line-oriented channels. This assumes that the underlying stdlib
+ * functions behave properly as regards their internal structures
+ * when would-block conditions are met. *)
+
+(** [run ~stdin ~stdout ~stderr bin args] runs the binary [bin] with arguments [args].
+ *  The optional parameters [~stdin], [~stdout], and [~stderr] are functions
+ *  that handle channels as suites of lines.
+ *  It raises [Error] on error or non-zero exit code. *)
+val run :
+  ?stdin:(unit -> string option) ->
+  ?stdout:(string -> unit) ->
+  ?stderr:(string -> unit) -> string -> string list -> unit
+
+(** Same as [run] above, does not raise [Error] on non-zero exit
+  * code. Returns exit code *)
+val run_status :
+  ?stdin:(unit -> string option) ->
+  ?stdout:(string -> unit) ->
+  ?stderr:(string -> unit) -> string -> string list -> int
+
+end

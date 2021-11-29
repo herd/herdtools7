@@ -32,6 +32,12 @@ module Fun : sig
    *  raises an exception [e], [e] is re-raised as [Finally_raised e].
    *  It is equivalent to [Fun.protect] from OCaml >= 4.08. *)
   val protect : finally:(unit -> unit) -> (unit -> 'a) -> 'a
+
+  (** [open_out_protect f name] applies f to a channel
+   *  to file whose name is [name]. Close the file under
+      all circumstances. *)
+  val open_out_protect : (out_channel -> 'a) -> string -> 'a
+
 end
 
 module List : sig
@@ -82,4 +88,10 @@ module Option : sig
    * For example, [to_ocaml_string String.to_ocaml_string (Some "hello")]
    * returns ["Some (\"hello\")"]. *)
   val to_ocaml_string : ('a -> string) -> 'a option -> string
+end
+
+module Iter : sig
+  type 'a t = unit -> 'a option
+
+  val of_list : 'a list -> 'a t
 end

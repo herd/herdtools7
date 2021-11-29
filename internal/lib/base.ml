@@ -38,6 +38,11 @@ module Fun = struct
     in
     finally' () ;
     ret
+
+  let open_out_protect f name =
+    let out = open_out name in
+    protect ~finally:(fun () -> close_out out) (fun () -> f out)
+
 end
 
 module List = struct
@@ -97,4 +102,15 @@ module String = struct
   include String
 
   let to_ocaml_string s = Printf.sprintf "%S" s
+end
+
+module Iter = struct
+  type 'a t = unit -> 'a option
+
+  let of_list xs =
+    let r = ref xs in
+    fun () ->
+      match !r with
+      | [] -> None
+      | x::xs -> r := xs ; Some x
 end
