@@ -45,6 +45,22 @@ module type S = sig
        event_structures : (int * S.M.VC.cnstrnts * S.event_structure) list ;
      }
 
+(** [glommed_event_structures t] performs "instruction semantics".
+ *  Argument [t] is a test.
+ *  The function returns a pair whose first component is a set (list)
+ *  of "abstract"  event structures. In such structures, most values
+ *  (and locations) are not resolved yet. Hence the [S.M.VC.cnstrnts]
+ *  second component. Those are equations to be solved once
+ *  some read-from relation on memory is selected by function
+ *  [calculate_rf_with_cnstrnts] (see below).
+ *
+ *  Second component of the returned pair is the test itself,
+ *  which can be slightly modified (noticeably in the case of
+ *  `-variant self`, initial values of overwitable code locations
+ *  are added.
+ *
+ *  This modified test *must* be used in the following. *)
+
   val glommed_event_structures : S.test -> result * S.test
 
 
