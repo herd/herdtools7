@@ -1,0 +1,14 @@
+AArch64 A012
+{
+0:X2=0;
+0:X0=NOP;
+}
+      P0       ;
+  ADR X3,L1    ;
+  STR W0,[X3]  ;
+L1:            ;
+  B L0         ;
+  ADD W2,W2,#1 ;
+L0:            ;
+exists (0:X2=0)
+

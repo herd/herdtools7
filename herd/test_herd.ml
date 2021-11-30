@@ -38,7 +38,7 @@ type
      extra_data : MiscParser.extra_data ;
      access_size : MachSize.sz list ;
      proc_info : proc_info ;
-   }
+    }
 
 (* Name and nothing else *)
 let simple_name test = test.name.Name.name
@@ -210,7 +210,7 @@ module Make(A:Arch_herd.S) =
        arch = A.arch ;
        name = empty_name ;
        info = [] ;
-       program = A.LabelMap.empty ;
+       program = Label.Map.empty ;
        nice_prog = [] ;
        start_points = [] ;
        init_state = A.state_empty;

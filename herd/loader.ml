@@ -48,15 +48,15 @@ and type start_points = A.start_points =
 	mem,(addr,ins)::start
     | A.Label (lbl,ins) ->
 	let mem,start = load_ins addr mem ins code in
-	if A.LabelMap.mem lbl mem then
+	if Label.Map.mem lbl mem then
 	  Warn.user_error
 	    "Label %s occurs more that once" lbl ;
-	A.LabelMap.add lbl start mem,start
+	Label.Map.add lbl start mem,start
     | A.Symbolic _
     | A.Macro (_,_) -> assert false
 
     let rec load = function
-    | [] -> A.LabelMap.empty,[]
+    | [] -> Label.Map.empty,[]
     | ((proc,_),code)::prog ->
 	let addr = 1000 * (proc+1) in
 	let mem,starts = load prog in

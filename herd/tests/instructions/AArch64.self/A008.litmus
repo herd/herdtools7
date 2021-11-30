@@ -1,0 +1,10 @@
+AArch64 A008
+(* Illegal test *)
+{
+0:X2=0;
+1:X0=NOP; 1:X1=P0:L1;
+}
+      P0       | P1          ;
+L1:            | STR W0,[X1] ;
+exists (0:X2=0)
+

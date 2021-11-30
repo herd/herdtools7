@@ -1,0 +1,1 @@
+Warning: File "./herd/tests/instructions/AArch64.self/A010.litmus": Instruction L1:ADD W2,W2,#1 cannot be overwritten (User error)

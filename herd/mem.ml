@@ -42,10 +42,26 @@ module type S = sig
 
   type result =
      {
-      event_structures : (int * S.M.VC.cnstrnts * S.event_structure) list ;
+       event_structures : (int * S.M.VC.cnstrnts * S.event_structure) list ;
      }
 
-  val glommed_event_structures : S.test -> result
+(** [glommed_event_structures t] performs "instruction semantics".
+ *  Argument [t] is a test.
+ *  The function returns a pair whose first component is a set (list)
+ *  of "abstract"  event structures. In such structures, most values
+ *  (and locations) are not resolved yet. Hence the [S.M.VC.cnstrnts]
+ *  second component. Those are equations to be solved once
+ *  some read-from relation on memory is selected by function
+ *  [calculate_rf_with_cnstrnts] (see below).
+ *
+ *  Second component of the returned pair is the test itself,
+ *  which can be slightly modified (noticeably in the case of
+ *  `-variant self`, initial values of overwitable code locations
+ *  are added.
+ *
+ *  This modified test *must* be used in the following. *)
+
+  val glommed_event_structures : S.test -> result * S.test
 
 
 
@@ -264,20 +280,113 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         | (addr,_)::_ ->
             let ins_lbls = IntMap.safe_find Label.Set.empty addr res in
             IntMap.add addr (Label.Set.add lbl ins_lbls) res in
-        A.LabelMap.fold one_label p IntMap.empty in
+        Label.Map.fold one_label p IntMap.empty in
 
       let labels_of_instr i =
         IntMap.safe_find Label.Set.empty i instr2labels in
+
+(**********************************************************)
+(* In mode `-variant self` test init_state is changed:    *)
+(*  1. Normalize labels in values                         *)
+(*  2. Add initialisation of overwritable instructions    *)
+(* Labels have to be normalized because only one memory   *)
+(* location holds the instruction that can be pointed to  *)
+(* by several labels. Read and write events *must* use a  *)
+(* canonical location (label).                            *)
+(**********************************************************)
+
+      let lbls2i = (* Overwritable instructions, with labels *)
+        if self then
+          List.fold_left
+            (fun ps (proc,code) ->
+              List.fold_left
+                (fun ps (addr,i) ->
+                if A.is_overwritable i then
+                  let lbls = labels_of_instr addr in
+                  if Label.Set.is_empty lbls then ps
+                  else (lbls,(proc,i))::ps
+                else ps)
+                ps code)
+            [] starts
+        else [] in
+
+      let norm_lbl = (* Normalize labels, useful in `-variant self` *)
+        if self then
+          let m =
+            List.fold_left
+              (fun m (lbls,_) ->
+                match Label.norm lbls with
+                | None -> assert false (* as lbls is non-empty *)
+                | Some lbl0 ->
+                    Label.Set.fold
+                      (fun lbl m -> Label.Map.add lbl lbl0 m)
+                      lbls m)
+              Label.Map.empty lbls2i in
+          fun lbl ->
+            try Label.Map.find lbl m
+            with
+            | Not_found ->
+                try
+                  match Label.Map.find lbl p with
+                  | [] ->
+                      Warn.user_error
+                        "Final label %s cannot be overwritten"
+                        (Label.pp lbl)
+                  | (_,i)::_ ->
+                      Warn.user_error
+                        "Instruction %s:%s cannot be overwritten"                                       (Label.pp lbl)
+                        (A.dump_instruction i)
+                with
+                | Not_found ->
+                    Warn.user_error
+                      "Label %s is undefined, yet it is used as constant"
+                      (Label.pp lbl)
+        else fun lbl -> lbl in
+
+      let norm_val = (* Normalize labels in values *)
+        if self then
+          fun v ->
+            match v with
+            | V.Val c -> V.Val (Constant.map_label norm_lbl c)
+            | _ -> v
+        else fun v -> v in
+
+      let test =
+        if self then
+          let open Test_herd in
+          let init_state =
+            (* Change labels into their canonical representants *)
+            A.map_state norm_val test.init_state in
+          let init_state =
+            (* Add initialisation of overwritable instructions *)
+            List.fold_left
+              (fun env (lbls,(proc,i)) ->
+                match Label.norm lbls with
+                | None -> assert false (* as lbls is non-empty *)
+                | Some lbl ->
+                    let loc =
+                      A.Location_global
+                        (A.V.cstToV (Constant.Label (proc, lbl)))
+                    and v = A.V.Val (A.instruction_to_value i) in
+                    A.state_add env loc v)
+              init_state lbls2i in
+          { test with init_state; }
+        else
+          test in
+
+(*****************************************************)
+(* Build events monad, _i.e._ run code in some sense *)
+(*****************************************************)
 
       let see seen lbl =
         let x = try Imap.find lbl seen with Not_found -> 0 in
         let seen = Imap.add lbl (x+1) seen in
         x+1,seen in
 
-    let fetch_code seen addr_jmp lbl =
-      let tgt =
-        try A.LabelMap.find lbl p
-        with Not_found ->
+      let fetch_code seen addr_jmp lbl =
+        let tgt =
+          try Label.Map.find lbl p
+          with Not_found ->
           Warn.user_error
             "Segmentation fault (kidding, label %s not found)" lbl in
       if is_back_jump addr_jmp tgt then
@@ -290,12 +399,37 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       else
         Ok (tgt,seen) in
 
+      (* All memory locations in a test, with initial values *)
+      let env0 = get_all_mem_locs test in
+
       let wrap proc inst addr env m poi =
+        let addr2v =
+          if self then
+            fun s ->
+            try (* Look for label to overwritable instruction *)
+                V.Val (Constant.Label (proc,norm_lbl s))
+            with e -> (* No, look for data location *)
+                let v =  A.V.nameToV s in
+                if
+                  List.exists
+                    (fun (a,_) ->
+                      match a with
+                      | A.Location_global a -> A.V.compare v a=0
+                      | _ -> false)
+                    env0
+                then v else (* No code nor data, deliver code error *)
+                  raise e
+          else A.V.nameToV in
         let ii =
            { A.program_order_index = poi;
              proc = proc; inst = inst;
              labels = labels_of_instr addr;
+             addr2v;
              env = env; } in
+        if dbg && not (Label.Set.is_empty ii.A.labels) then
+          eprintf "Instruction %s has labels {%s}\n"
+            (A.dump_instruction inst)
+            (Label.Set.pp_str ","  Label.pp ii.A.labels) ;
         m ii in
 
       let rec add_next_instr re_exec proc env seen addr inst nexts =
@@ -341,12 +475,12 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       | S.B.CondJump (v,lbl) ->
           EM.condJumpT v
             (add_lbl proc env seen addr lbl)
-            (add_code proc env seen nexts) 
+            (add_code proc env seen nexts)
       in
 
 (* Code monad returns a boolean. When false the code must be discarded.
    See also add_instr in eventsMonad.ml *)
-      let jump_start proc env code =     
+      let jump_start proc env code =
         add_code proc env Imap.empty code in
 
 (* As name suggests, add events of one thread *)
@@ -361,17 +495,11 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 (* Initial events, some additional events from caller in madd *)
       let make_inits madd env size_env =
         let module MI = EM.Mixed(C) in
-        if self then begin
-          if C.initwrites then      
-            MI.init_writes_and_instr madd env size_env labels_of_instr starts
-          else MI.initinstructions labels_of_instr starts
-        end else begin
-          if C.initwrites then
-            MI.initwrites madd env size_env
-          else EM.zerocodeT end
+        if C.initwrites then
+          MI.initwrites madd env size_env
+        else
+          EM.zerocodeT
       in
-
-      let env0 = get_all_mem_locs test in
 
 (* Build code monad for one given set of events to add *)
       let set_of_all_instr_events madd =
@@ -438,7 +566,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
            List.filter
              (fun (_,es) -> count_spurious es.E.events <= max)
              r in
-      { event_structures=index r 0; }
+      { event_structures=index r 0; },test
 
 
 (*******************)
@@ -535,8 +663,11 @@ let match_reg_events es =
     let get_rf_value test read rf = match rf with
     | S.Init ->
         let loc = get_loc read in
-        begin try A.look_address_in_state test.Test_herd.init_state loc
-        with A.LocUndetermined -> assert false end
+        let look_address =
+          A.look_address_in_state test.Test_herd.init_state in
+        begin
+          try look_address loc with A.LocUndetermined -> assert false
+        end
     | S.Store e -> get_written e
 
 (* Add a constraint for two values *)
@@ -573,7 +704,14 @@ let match_reg_events es =
               let v_loaded = get_read load in
               let v_stored = get_rf_value test load rf in
               try add_eq v_loaded v_stored csn
-              with Contradiction -> assert false)
+              with Contradiction ->
+                let loc = Misc.as_some (E.location_of load) in
+                Printf.eprintf
+                  "Contradiction on reg %s: %s vs. %s\n"
+                  (A.pp_location loc)
+                  (A.V.pp_v v_loaded)
+                  (A.V.pp_v v_stored) ;
+                assert false)
           rfm csn in
       match VC.solve csn with
       | VC.NoSolns ->

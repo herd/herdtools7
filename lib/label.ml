@@ -37,3 +37,5 @@ type next = Any | Next | To of t
 
 module Set = StringSet
 module Map = StringMap
+
+let norm lbls = try Some (Set.min_elt lbls) with Not_found -> None

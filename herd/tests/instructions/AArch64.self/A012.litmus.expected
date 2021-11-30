@@ -1,0 +1,11 @@
+Test A012 Allowed
+States 2
+0:X2=0;
+0:X2=1;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (0:X2=0)
+Observation A012 Sometimes 1 1
+Hash=866e8ca7d9d70e7a5bc48c3f9c657975
+

@@ -346,6 +346,10 @@ module Make(O:Config)(M:XXXMem.S) =
 
 (* Driver *)
     let run start_time test =
+
+      let { MC.event_structures=rfms;  },test =
+        MC.glommed_event_structures test in
+
       let cstr = T.find_our_constraint test in
 
       let restrict_faults =
@@ -364,8 +368,6 @@ module Make(O:Config)(M:XXXMem.S) =
         AM.state_restrict_locs O.outcomereads dlocs tenv senv fsc,
         restrict_faults flts in
 
-      let { MC.event_structures=rfms;  } =
-        MC.glommed_event_structures test in
 (* Open *)
       let ochan = open_dot test in
 (* So small a race condition... *)
