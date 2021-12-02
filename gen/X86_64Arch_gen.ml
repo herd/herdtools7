@@ -56,6 +56,8 @@ module Make
 
       let compare_atom = compare
 
+      let access_atom (_,sz) = sz
+
       let pp_plain = Code.plain
 
       let pp_as_a = None
@@ -111,6 +113,10 @@ module Make
         | ((a,sz1),(Plain,sz2)) when sz1=sz2 ->
             check_nt a sz1
         | _,_ -> if a1=a2 then Some a1 else None
+
+      let overlap_atoms a1 a2 = match a1,a2 with
+        | ((_,None),_)|(_,(_,None)) -> true
+        | (_,Some m1),(_,Some m2) -> MachMixed.overlap m1 m2
 
       let atom_to_bank _ = Code.Ord
 

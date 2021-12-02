@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2018-present Institut National de Recherche en Informatique et *)
+(* Copyright 2015-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,36 +14,40 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type t =
- (* RISCV: tagged accesses as amo's with x0 as arg (load) or result (store) *)
-  | AsAmo
-  | ConstsInInit
-(* Mixed size -> diy specific *)
-  | Mixed
-(* Lift the default restriction of mixed-size annotation to depth one *)
-  | FullMixed
-(* Allow non-overlapping mixed accesses *)
-  | MixedDisjoint
-(* Require strict overlap *)
-  | MixedStrictOverlap
-(* Self-modifying code *)
-  | Self
-(* MTE = Memory tagging *)
-  | MemTag
-(* C: Prevents the use of Volatile to capture bugs in compilation *)
-  | NoVolatile
-(* Morello C64 instruction set *)
-  | Morello
-(* Explicit virtual memory *)
-  | KVM
-(* Neon AArch64 extension *)
-  | Neon
-(* Constrained Unpredictable, ie generate tests thar may exhibit
-   such behaviours. Typically LDXR / STXR of different size or address. *)
-  | ConstrainedUnpredictable
+module type Config = sig
+  val naturalsize : MachSize.sz option
+  val fullmixed : bool
+end
 
-val tags : string list
+type offset = int
+type t = MachSize.sz * offset
 
-val parse : string -> t option
+val equal : t -> t -> bool
 
-val pp : t -> string
+val overlap : t -> t -> bool
+
+module Make :
+  functor (C:Config) ->
+  sig
+
+    val pp_mixed : t -> string
+
+    val fold_mixed : (t -> 'a -> 'a) -> 'a -> 'a
+
+    val tr_value : MachSize.sz -> int -> int
+  end
+
+module type ValsConfig = sig
+  val naturalsize : unit -> MachSize.sz
+  val endian : Endian.t
+end
+
+module Vals :
+  functor(C:ValsConfig) ->
+  sig
+    val overwrite_value :
+      int (* old *) -> MachSize.sz -> offset -> int (* write *) -> int
+
+    val extract_value : int -> MachSize.sz -> offset -> int
+
+  end

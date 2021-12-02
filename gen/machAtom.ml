@@ -50,6 +50,10 @@ module Make(C:Config) = struct
 
   let compare_atom = compare
 
+  let access_atom = function
+    | Atomic|Reserve -> None
+    | Mixed m -> Some m
+
   let fold_mixed f r = Mixed.fold_mixed (fun mix r -> f (Mixed mix) r) r
   let fold_non_mixed f r =  f Reserve (f Atomic r)
 
@@ -65,6 +69,10 @@ module Make(C:Config) = struct
   let varatom_dir _d f = f None
 
   let merge_atoms a1 a2 = if a1 = a2 then Some a1 else None
+
+  let overlap_atoms a1 a2 = match a1,a2 with
+    | ((Atomic|Reserve),_)|(_,(Atomic|Reserve)) -> true
+    | Mixed sz1,Mixed sz2 -> MachMixed.overlap  sz1 sz2
 
 (* Single memory bank *)
   let atom_to_bank _ = Code.Ord

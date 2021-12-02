@@ -36,6 +36,8 @@ let applies_atom a d = match a,d with
 
 let compare_atom = Misc.polymorphic_compare
 
+let access_atom _ = None
+
 let pp_plain = Code.plain
 let pp_as_a = Some SC
 let pp_atom = pp_mem_order_short
@@ -56,6 +58,8 @@ let worth_final _ = false
 let varatom_dir _d f = f None
 
 let merge_atoms a1 a2 = if a1=a2 then Some a1 else None
+
+let overlap_atoms _ _ = true
 
 let atom_to_bank _ = Code.Ord
 
