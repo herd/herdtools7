@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2019-present Institut National de Recherche en Informatique et *)
+(* Copyright 2021-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,18 +14,18 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Use one one kind of RMW is avaiable *)
-type rmw = unit
+(** Signature of Rmw helper modules *)
 
-let pp_rmw () = ""
+module type S = sig
+  type rmw
+  type rmw_atom
 
-let fold_rmw f r = f () r
-
-let applies_atom_rmw () ar aw = match ar,aw with
-| None,None -> true
-| _,_ -> false
-
-let show_rmw_reg () = false
-
-let compute_rmw rmw old co_cell  = match rmw with
-| _ -> old+co_cell
+  val pp_rmw : bool (* backward compatibility *) -> rmw -> string
+  val is_one_instruction : rmw -> bool
+  val fold_rmw : (rmw -> 'a -> 'a) -> 'a -> 'a
+  (* Second round of fold, for rmw with back compatible name *)
+  val fold_rmw_compat : (rmw -> 'a -> 'a) -> 'a -> 'a
+  val applies_atom_rmw : rmw -> rmw_atom option -> rmw_atom option -> bool
+  val show_rmw_reg : rmw -> bool
+  val compute_rmw : rmw  -> int -> int -> int
+end

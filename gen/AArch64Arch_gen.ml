@@ -532,14 +532,20 @@ let pp_dp = function
 (* Read-Modify-Write *)
 type rmw =  LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas
 
+type rmw_atom = atom (* Enforced by Rmw.S signature *)
+
 let pp_aop op =  Misc.capitalize (Misc.lowercase (pp_aop op))
 
-let pp_rmw = function
-  | LrSc -> ""
-  | Swp -> "Swp"
-  | Cas -> "Cas"
-  | LdOp op -> sprintf "Ld%s" (pp_aop op)
-  | StOp op -> sprintf "St%s" (pp_aop op)
+let pp_rmw compat = function
+  | LrSc -> if compat then "Rmw" else "LxSx"
+  | Swp -> "Amo.Swp"
+  | Cas -> "Amo.Cas"
+  | LdOp op -> sprintf "Amo.Ld%s" (pp_aop op)
+  | StOp op -> sprintf "Amo.St%s" (pp_aop op)
+
+let is_one_instruction = function
+  | LrSc -> false
+  | LdOp _ | StOp _ | Swp | Cas -> true
 
 let fold_aop f r =
   let r = f A_ADD r in
@@ -555,6 +561,8 @@ let fold_rmw f r =
   let r = fold_aop (fun op r -> f (LdOp op) r) r in
   let r = fold_aop (fun op r -> f (StOp op) r) r in
   r
+
+let fold_rmw_compat f r = f LrSc r
 
 (* Check legal anotation for AMO instructions and LxSx pairs *)
 

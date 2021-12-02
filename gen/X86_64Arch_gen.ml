@@ -228,11 +228,11 @@ module Make
       let fst_dp _ = assert false
       let sequence_dp _ _ = assert false
 
-          (*******)
-          (* RWM *)
-          (*******)
+      (*******)
+      (* RWM *)
+      (*******)
 
-      include OneRMW
+      include Exch.Exch(struct type arch_atom = atom end)
       include NoEdge
 
       include

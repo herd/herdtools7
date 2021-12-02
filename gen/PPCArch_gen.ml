@@ -99,7 +99,7 @@ module Make(C:Config)  =
 (*******)
 (* RWM *)
 (*******)
-    include OneRMW
+    include Exch.LxSx(struct type arch_atom = atom end)
     include NoEdge
 
     include

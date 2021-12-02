@@ -305,10 +305,7 @@ and type rmw = F.rmw = struct
     | Dp (dp,sd,e) -> sprintf "Dp%s%s%s"
           (F.pp_dp dp) (pp_sd sd) (pp_extr e)
     | Hat -> "Hat"
-    | Rmw rmw-> begin match F.pp_rmw rmw with
-      | "" -> if compat then "Rmw" else "LxSx" (* Backward compatibility *)
-      | s -> sprintf "Amo.%s" s
-    end
+    | Rmw rmw-> F.pp_rmw compat   rmw
     | Leave c -> sprintf "%sLeave" (pp_com c)
     | Back c -> sprintf "%sBack" (pp_com c)
     | Id -> "Id"
@@ -403,8 +400,7 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
 
 let fold_tedges_compat f r =
   let r = fold_ie (fun ie -> f (Ws ie)) r in
-  let r =
-    F.fold_rmw (fun rmw r -> if Misc.string_eq (F.pp_rmw rmw) "" then f (Rmw rmw) r else r) r
+  let r = F.fold_rmw_compat (fun rmw -> f (Rmw rmw)) r
   in r
 
 let fold_tedges f r =
@@ -453,6 +449,24 @@ let fold_tedges f r =
     | Some a1,Some a2 ->
         Misc.opt_eq MachMixed.equal
           (F.access_atom a1) (F.access_atom a2)
+
+  (* By "AMO" it is meant that the edge compiles into one instruction *)
+  let do_is_amo e = match e with
+    | Rmw rmw -> true || F.is_one_instruction rmw
+    | Id|Hat|Rf _|Fr _|Ws _|Po _
+    | Fenced _|Dp _
+    | Leave _|Back _|Insert _|Node _
+    | Irf _|Ifr _
+      -> false
+
+  let ok_mixed e a1 a2 =
+    if do_is_amo e then
+      (* For amo instruction, identical accesses are forced in all situations *)
+      same_mixed_access_atoms a1 a2
+    else (* Situation is controled by variant for other relaxations *)
+      do_is_diff e || do_disjoint ||
+      (overlap_atoms a1 a2 && not (do_strict_overlap && same_mixed_access_atoms a1 a2))
+
 
   let do_fold_edges fold_tedges f =
    fold_atomo
@@ -904,27 +918,21 @@ let fold_tedges f r =
 
   let remove_id = List.filter (fun e -> not (is_id e.edge))
 
-
   let check_mixed =
     if not do_mixed || do_disjoint then fun _ -> ()
     else
       List.iter
         (fun e ->
-          if not (do_is_diff e.edge) then
-            begin
-              if overlap_atoms e.a1 e.a2 then
-                begin
-                  if do_strict_overlap then
-                    if same_mixed_access_atoms e.a1 e.a2 then
-                      Warn.fatal
-                        "Identical mixed access in %s and `-variant MixedStrictOverlap` mode"
-                        (pp_edge e)
-                end
-              else
-                Warn.fatal
-                  "Non overlapping accesses in %s, allow with `-variant MixedDisjoint`"
-            (pp_edge e)
-            end)
+          if not (ok_mixed e.edge e.a1 e.a2) then begin
+            if same_mixed_access_atoms e.a1 e.a2 then
+              Warn.fatal
+                "Identical mixed access in %s and `-variant MixedStrictOverlap` mode"
+                (pp_edge e)
+            else
+              Warn.fatal
+                "Non overlapping accesses in %s, allow with `-variant MixedDisjoint`"
+                (pp_edge e)
+          end)
 
   let resolve_edges es0 =
     let es0 = merge_ids es0 in

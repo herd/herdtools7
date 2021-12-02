@@ -85,7 +85,8 @@ let pp_dp = function
 (*******)
 (* RWM *)
 (*******)
-include OneRMW
+include Exch.LxSx(struct type arch_atom = atom end)
+
 include NoEdge
 
   include

@@ -1,0 +1,12 @@
+Test MP+dmb.syh2w0+amo.casa.h0h0-poh0w0 Allowed
+States 3
+1:X1=0x0; 1:X3=0x0; [y]=0x1010101;
+1:X1=0x0; 1:X3=0x1010000; [y]=0x1010101;
+1:X1=0x101; 1:X3=0x1010000; [y]=0x1010202;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists ([y]=0x1010202 /\ 1:X1=0x101 /\ 1:X3=0x0)
+Observation MP+dmb.syh2w0+amo.casa.h0h0-poh0w0 Never 0 3
+Hash=a4d1bfb7a54a88d64361142ea1c4bd33
+

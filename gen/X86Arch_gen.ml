@@ -112,7 +112,7 @@ let sequence_dp _ _ = assert false
 (* RWM *)
 (*******)
 
-include OneRMW
+include Exch.Exch(struct type arch_atom = atom end)
 include NoEdge
 
 include

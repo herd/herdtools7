@@ -200,7 +200,7 @@ let pp_dp = function
   | CTRL -> "Ctrl"
   | CTRLISYNC -> "CtrlFenceI"
 
-include OneRMW
+include Exch.Exch(struct type arch_atom = atom end)
 include NoEdge
 
 include

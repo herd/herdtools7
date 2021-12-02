@@ -14,12 +14,49 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Use when one kind of RMW is avaiable *)
+(** The only RMW is exchange *)
 
-type rmw = unit
+module
+  Make
+    (I:
+       sig
+         type atom
+         val pp : string
+         val is_one_instruction : bool
+       end) =
+  struct
+    type rmw = unit
+    type rmw_atom = I.atom
 
-val pp_rmw : rmw -> string
-val fold_rmw : (rmw -> 'a -> 'a) -> 'a -> 'a
-val applies_atom_rmw : rmw -> 'a option -> 'a option -> bool
-val show_rmw_reg : rmw -> bool
-val compute_rmw : rmw  -> int -> int -> int
+    let pp_rmw compat () = if compat then "Rmw" else I.pp
+
+    let is_one_instruction _ = I.is_one_instruction
+
+    let fold_rmw f r = f () r
+    let fold_rmw_compat f r = f () r
+
+    let applies_atom_rmw () ar aw = match ar,aw with
+      | None,None -> true
+      | _,_ -> false
+
+    let show_rmw_reg () = false
+
+    let compute_rmw () _old co_cell  = co_cell
+  end
+
+module  LxSx(A:sig type arch_atom end) = struct
+  include Make
+    (struct
+      type atom = A.arch_atom
+      let pp = "LxSx"
+      let is_one_instruction = false
+    end)
+end
+module  Exch(A:sig type arch_atom end) = struct
+  include Make
+  (struct
+      type atom = A.arch_atom
+      let pp = "Exch"
+      let is_one_instruction = true
+    end)
+end

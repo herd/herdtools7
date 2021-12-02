@@ -281,7 +281,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let cs,st = emit_pair p st rR rW rA in
       Some rR,init,csi@cs,st
 
-    let emit_rmw () = emit_exch
+    let emit_rmw _ = emit_exch
 
     let calc0 =
       if Cfg.realdep then
@@ -381,7 +381,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | CTRL -> emit_exch_ctrl false st p init er ew rd
     | CTRLISYNC -> emit_exch_ctrl true st p init er ew rd
 
-    let emit_rmw_dep () st p init er ew dp rd =
+    let emit_rmw_dep _ st p init er ew dp rd =
       let r,init,cs,st = emit_exch_dep  st p init er ew dp rd in
       Some r,init,cs,st
 
