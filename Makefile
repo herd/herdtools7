@@ -186,6 +186,8 @@ test::
 test:: diy-test-mixed
 
 LDS:="Amo.Cas,Amo.LdAdd,Amo.LdClr,Amo.LdEor,Amo.LdSet"
+LDSPLUS:="LxSx",$(LDS)
+
 diy-test-mixed:
 	@ echo
 	$(HERD_DIYCROSS_REGRESSION_TEST) \
@@ -195,6 +197,8 @@ diy-test-mixed:
 		-libdir-path ./herd/libdir \
 		-expected-dir ./herd/tests/diycross/AArch64.mixed \
 		-conf ./herd/tests/diycross/AArch64.mixed/mixed.cfg \
+		-diycross-arg -ua \
+		-diycross-arg 0 \
 		-diycross-arg -obs \
 		-diycross-arg oo \
 		-diycross-arg -arch \
@@ -204,7 +208,7 @@ diy-test-mixed:
 		-diycross-arg -hexa \
 		-diycross-arg Hat \
 		-diycross-arg h0 \
-		-diycross-arg $(LDS) \
+		-diycross-arg $(LDSPLUS) \
 		-diycross-arg h0 \
 		-diycross-arg Rfi \
 		-diycross-arg w0 \
