@@ -59,11 +59,8 @@ module Make
          | Ws Ext -> Some "coe"
          | Fr Ext -> Some "fre"
          | Rmw rmw ->
-             let pp =
-               match Misc.lowercase (A.pp_rmw rmw) with
-               | "" -> "rmw"
-               | s -> sprintf "amo.%s" s in
-             Some pp
+            (* Note: backward compatible item ("rmw") in names *)
+            Some (Misc.lowercase (A.pp_rmw true rmw))
          | Leave c -> Some ("["^pp_com c)
          | Back c -> Some (pp_com c^"]")
          | Insert f -> Some (sprintf "[%s]" (Misc.lowercase (A.pp_fence f)))

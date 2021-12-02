@@ -188,7 +188,7 @@ test:: diy-test-mixed
 LDS:="Amo.Cas,Amo.LdAdd,Amo.LdClr,Amo.LdEor,Amo.LdSet"
 LDSPLUS:="LxSx",$(LDS)
 
-diy-test-mixed:
+diy-test-mixed::
 	@ echo
 	$(HERD_DIYCROSS_REGRESSION_TEST) \
 		-j $(J) \
@@ -226,3 +226,32 @@ diy-test-mixed:
 		-diycross-arg PodWR \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64.mixed diycross7 tests: OK"
+
+diy-test-mixed::
+	@ echo
+	$(HERD_DIYCROSS_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-diycross-path $(DIYCROSS) \
+		-libdir-path ./herd/libdir \
+		-expected-dir ./herd/tests/diycross/AArch64.mixed.strict \
+		-conf ./herd/tests/diycross/AArch64.mixed.strict/mixed.cfg \
+		-diycross-arg -arch \
+		-diycross-arg AArch64 \
+		-diycross-arg -ua \
+		-diycross-arg 0 \
+		-diycross-arg -variant \
+		-diycross-arg mixed,MixedStrictOverlap \
+		-diycross-arg -hexa \
+		-diycross-arg h0,h2,w0 \
+		-diycross-arg Amo.CasAP,LxSxAP \
+		-diycross-arg h0,h2,w0  \
+		-diycross-arg PodWR \
+		-diycross-arg w0,h0 \
+		-diycross-arg Fre \
+		-diycross-arg w0,h2 \
+		-diycross-arg FencedWW \
+		-diycross-arg w0,h0,h2 \
+		-diycross-arg Rfe \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64.mixed.strict diycross7 tests: OK"

@@ -111,6 +111,7 @@ type atom_pte =
   | Set of w_pte
   | SetRel of w_pte
 type neon_sizes = SIMD.atom
+
 type atom_acc =
   | Plain of capa_opt | Acq of capa_opt | AcqPc of capa_opt | Rel of capa_opt
   | Atomic of atom_rw | Tag | CapaTag | CapaSeal | Pte of atom_pte | Neon of neon_sizes
@@ -189,6 +190,7 @@ let applies_atom (a,_) d = match a,d with
      | Some m -> sprintf "%s.%s" pp_acc  (Mixed.pp_mixed m)
 
    let compare_atom = compare
+
    let equal_atom a1 a2 = a1 = a2
 
    let access_atom (_,m) = m
@@ -532,14 +534,20 @@ let pp_dp = function
 (* Read-Modify-Write *)
 type rmw =  LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas
 
+type rmw_atom = atom (* Enforced by Rmw.S signature *)
+
 let pp_aop op =  Misc.capitalize (Misc.lowercase (pp_aop op))
 
-let pp_rmw = function
-  | LrSc -> ""
-  | Swp -> "Swp"
-  | Cas -> "Cas"
-  | LdOp op -> sprintf "Ld%s" (pp_aop op)
-  | StOp op -> sprintf "St%s" (pp_aop op)
+let pp_rmw compat = function
+  | LrSc -> if compat then "Rmw" else "LxSx"
+  | Swp -> "Amo.Swp"
+  | Cas -> "Amo.Cas"
+  | LdOp op -> sprintf "Amo.Ld%s" (pp_aop op)
+  | StOp op -> sprintf "Amo.St%s" (pp_aop op)
+
+let is_one_instruction = function
+  | LrSc -> false
+  | LdOp _ | StOp _ | Swp | Cas -> true
 
 let fold_aop f r =
   let r = f A_ADD r in
@@ -556,6 +564,8 @@ let fold_rmw f r =
   let r = fold_aop (fun op r -> f (StOp op) r) r in
   r
 
+let fold_rmw_compat f r = f LrSc r
+
 (* Check legal anotation for AMO instructions and LxSx pairs *)
 
 let ok_rw ar aw =
@@ -570,18 +580,10 @@ let ok_w  ar aw =
     -> true
   | _ -> false
 
-let same_mixed a1 a2 = match a1,a2 with
-  |(None,None)
-  |(None,Some (_,None))
-  |(Some (_,None),None)
-  |((Some (_,None),Some (_,None)))
-   -> true
-  | Some (_,Some sz1),Some (_,Some sz2) -> MachMixed.equal sz1 sz2
-  |(None,Some (_,Some _))
-  |(Some (_,Some _),None)
-  |(Some (_, None), Some (_, Some _))
-  |(Some (_,Some _),Some (_,None))
-   -> false
+let same_mixed (a1:atom option) (a2:atom option) =
+  let a1 = Misc.seq_opt access_atom a1
+  and a2 = Misc.seq_opt access_atom a2 in
+  Misc.opt_eq MachMixed.equal a1 a2
 
 let applies_atom_rmw rmw ar aw = match rmw with
   | LrSc ->

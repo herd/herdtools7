@@ -305,10 +305,7 @@ and type rmw = F.rmw = struct
     | Dp (dp,sd,e) -> sprintf "Dp%s%s%s"
           (F.pp_dp dp) (pp_sd sd) (pp_extr e)
     | Hat -> "Hat"
-    | Rmw rmw-> begin match F.pp_rmw rmw with
-      | "" -> if compat then "Rmw" else "LxSx" (* Backward compatibility *)
-      | s -> sprintf "Amo.%s" s
-    end
+    | Rmw rmw-> F.pp_rmw compat   rmw
     | Leave c -> sprintf "%sLeave" (pp_com c)
     | Back c -> sprintf "%sBack" (pp_com c)
     | Id -> "Id"
@@ -403,8 +400,7 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
 
 let fold_tedges_compat f r =
   let r = fold_ie (fun ie -> f (Ws ie)) r in
-  let r =
-    F.fold_rmw (fun rmw r -> if Misc.string_eq (F.pp_rmw rmw) "" then f (Rmw rmw) r else r) r
+  let r = F.fold_rmw_compat (fun rmw -> f (Rmw rmw)) r
   in r
 
 let fold_tedges f r =
@@ -448,11 +444,28 @@ let fold_tedges f r =
     | (None,_)|(_,None) -> true
     | Some a1,Some a2 -> F.overlap_atoms a1 a2
 
-  let same_mixed_access_atoms a1 a2 = match a1,a2 with
-    | (None,_)|(_,None) -> false
-    | Some a1,Some a2 ->
-        Misc.opt_eq MachMixed.equal
-          (F.access_atom a1) (F.access_atom a2)
+  let same_access_atoms a1 a2 =
+    Misc.opt_eq MachMixed.equal
+      (Misc.seq_opt F.access_atom a1) (Misc.seq_opt F.access_atom a2)
+
+  let do_is_rmw e = match e with
+    | Rmw _ -> true
+    | Id|Hat|Rf _|Fr _|Ws _|Po _
+    | Fenced _|Dp _
+    | Leave _|Back _|Insert _|Node _
+    | Irf _|Ifr _
+      -> false
+
+  let ok_non_rmw e a1 a2 =
+    do_is_diff e || do_disjoint ||
+    (overlap_atoms a1 a2 &&
+     not (do_strict_overlap && same_access_atoms a1 a2))
+
+  let ok_mixed e a1 a2 =
+    (do_is_rmw e) || (* For rmw instruction any accesses is a priori ok *)
+    (* Situation is controled by variant for other relaxations *)
+     ok_non_rmw e a1 a2
+
 
   let do_fold_edges fold_tedges f =
    fold_atomo
@@ -489,9 +502,9 @@ let fold_tedges f r =
                      if
                        applies_atom a1 d1 &&
                        applies_atom a2 d2 &&
-                       (do_is_diff te ||
-                          (do_disjoint || overlap_atoms a1 a2) ||
-                          (not (do_strict_overlap && same_mixed_access_atoms a1 a2)))
+                       (Misc.is_none (Misc.map_opt F.access_atom a1) &&
+                        Misc.is_none (Misc.map_opt F.access_atom a2)||
+                       ok_non_rmw te a1 a2)
                      then
                        f {a1; a2; edge=te;} k
                      else begin
@@ -904,27 +917,21 @@ let fold_tedges f r =
 
   let remove_id = List.filter (fun e -> not (is_id e.edge))
 
-
   let check_mixed =
     if not do_mixed || do_disjoint then fun _ -> ()
     else
       List.iter
         (fun e ->
-          if not (do_is_diff e.edge) then
-            begin
-              if overlap_atoms e.a1 e.a2 then
-                begin
-                  if do_strict_overlap then
-                    if same_mixed_access_atoms e.a1 e.a2 then
-                      Warn.fatal
-                        "Identical mixed access in %s and `-variant MixedStrictOverlap` mode"
-                        (pp_edge e)
-                end
-              else
-                Warn.fatal
-                  "Non overlapping accesses in %s, allow with `-variant MixedDisjoint`"
-            (pp_edge e)
-            end)
+          if not (ok_mixed e.edge e.a1 e.a2) then begin
+            if same_access_atoms e.a1 e.a2 then
+              Warn.fatal
+                "Identical mixed access in %s and `-variant MixedStrictOverlap` mode"
+                (pp_edge e)
+            else
+              Warn.fatal
+                "Non overlapping accesses in %s, allow with `-variant MixedDisjoint`"
+                (pp_edge e)
+          end)
 
   let resolve_edges es0 =
     let es0 = merge_ids es0 in
