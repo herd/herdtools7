@@ -36,7 +36,7 @@ let applies_atom a d = match a,d with
 
 let compare_atom = Misc.polymorphic_compare
 
-let access_atom _ = None
+include MachMixed.No
 
 let pp_plain = Code.plain
 let pp_as_a = Some SC

@@ -116,6 +116,8 @@ type atom_acc =
   | Plain of capa_opt | Acq of capa_opt | AcqPc of capa_opt | Rel of capa_opt
   | Atomic of atom_rw | Tag | CapaTag | CapaSeal | Pte of atom_pte | Neon of neon_sizes
 
+let  plain = Plain None
+
 type atom = atom_acc * MachMixed.t option
 
 let default_atom = Atomic PP,None
@@ -193,7 +195,12 @@ let applies_atom (a,_) d = match a,d with
 
    let equal_atom a1 a2 = a1 = a2
 
-   let access_atom (_,m) = m
+   include
+     MachMixed.Util
+       (struct
+         type at = atom_acc
+         let plain = plain
+       end)
 
    let fold_mixed f r =
      if do_mixed then
@@ -581,8 +588,8 @@ let ok_w  ar aw =
   | _ -> false
 
 let same_mixed (a1:atom option) (a2:atom option) =
-  let a1 = Misc.seq_opt access_atom a1
-  and a2 = Misc.seq_opt access_atom a2 in
+  let a1 = get_access_atom a1
+  and a2 = get_access_atom a2 in
   Misc.opt_eq MachMixed.equal a1 a2
 
 let applies_atom_rmw rmw ar aw = match rmw with

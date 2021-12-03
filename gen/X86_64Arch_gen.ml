@@ -56,7 +56,12 @@ module Make
 
       let compare_atom = compare
 
-      let access_atom (_,sz) = sz
+      include
+        MachMixed.Util
+          (struct
+            type at = atom_acc
+            let plain = Plain
+          end)
 
       let pp_plain = Code.plain
 

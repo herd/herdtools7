@@ -54,7 +54,13 @@ end
 module Make(C:Config) (A:Arch_gen.S) = struct
   module A = A
 
-  module E =  Edge.Make(C)(A)
+  module E =
+    Edge.Make
+      (struct
+        let variant = C.variant
+        let naturalsize = TypBase.get_size C.typ
+      end)
+      (A)
 
   type check = E.edge list list -> bool
 

@@ -16,7 +16,11 @@
 
 (* Edges, ie specifications of an event pair in a model relation  *)
 
-module Config = struct let variant _ = false end
+module Config =
+  struct
+    let variant _ = false
+    let naturalsize = TypBase.get_size TypBase.default
+  end
 
 let dbg = 0
 
@@ -150,7 +154,14 @@ module type S = sig
 end
 
 
-module Make(Cfg:sig val variant : Variant_gen.t -> bool end)(F:Fence.S) : S
+module
+  Make
+    (Cfg:
+       sig
+         val variant : Variant_gen.t -> bool
+         val naturalsize : MachSize.sz
+       end)
+    (F:Fence.S) : S
 with
 type fence = F.fence
 and type dp = F.dp
@@ -158,6 +169,7 @@ and module SIMD = F.SIMD
 and type atom = F.atom
 and module PteVal = F.PteVal
 and type rmw = F.rmw = struct
+  let ()  = ignore (Cfg.naturalsize)
   let do_self = Cfg.variant Variant_gen.Self
   let do_mixed =
     Cfg.variant Variant_gen.Mixed || Cfg.variant Variant_gen.FullMixed
@@ -445,8 +457,7 @@ let fold_tedges f r =
     | Some a1,Some a2 -> F.overlap_atoms a1 a2
 
   let same_access_atoms a1 a2 =
-    Misc.opt_eq MachMixed.equal
-      (Misc.seq_opt F.access_atom a1) (Misc.seq_opt F.access_atom a2)
+    Misc.opt_eq MachMixed.equal (F.get_access_atom a1) (F.get_access_atom a2)
 
   let do_is_rmw e = match e with
     | Rmw _ -> true
@@ -502,8 +513,8 @@ let fold_tedges f r =
                      if
                        applies_atom a1 d1 &&
                        applies_atom a2 d2 &&
-                       (Misc.is_none (Misc.map_opt F.access_atom a1) &&
-                        Misc.is_none (Misc.map_opt F.access_atom a2)||
+                       (Misc.is_none (F.get_access_atom a1) &&
+                        Misc.is_none (F.get_access_atom a2)||
                        ok_non_rmw te a1 a2)
                      then
                        f {a1; a2; edge=te;} k
@@ -915,6 +926,17 @@ let fold_tedges f r =
       let e = set_tgt tgt (set_src src e1) in
       { e with a1 = merge_atomo e1.a1 e2.a1; a2 = merge_atomo e1.a2 e2.a2; }
 
+  let default_access = Cfg.naturalsize,0
+
+  let replace_plain_atom a = match F.get_access_atom a with
+    | Some _ -> a
+    | None -> F.set_access_atom a default_access
+
+  let replace_plain e =
+    let a1 = replace_plain_atom e.a1
+    and a2 = replace_plain_atom e.a2 in
+    { e with a1; a2; }
+    
   let remove_id = List.filter (fun e -> not (is_id e.edge))
 
   let check_mixed =
@@ -969,6 +991,7 @@ let fold_tedges f r =
               raise exn in
       let es = remove_id (e::es) in
       if dbg > 0 then eprintf "REMOVE Id: %s\n" (pp_edges es) ;
+      let es = if do_mixed then List.map replace_plain es else es in
       check_mixed es ;
       es
 

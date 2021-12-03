@@ -34,7 +34,7 @@ let applies_atom a d = match a,d with
 
 let compare_atom = compare
 
-let access_atom Atomic = None
+include MachMixed.No
 
 let merge_atoms Atomic Atomic = Some Atomic
 

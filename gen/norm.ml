@@ -21,6 +21,7 @@ let arch = ref `PPC
 let lowercase = ref false
 let bell = ref None
 let variant = ref (fun (_:Variant_gen.t) -> false)
+let typ = ref TypBase.default
 let args = ref []
 
 let opts =
@@ -43,6 +44,13 @@ let opts =
         true)
     Variant_gen.tags
     (sprintf "specify variant")::
+        Util.parse_tag
+    "-type"
+    (fun tag -> match TypBase.parse tag with
+    | None -> false
+    | Some a -> typ := a ; true)
+    TypBase.tags
+    (sprintf "specify base type, default %s" (TypBase.pp !typ))::
   []
 
 
@@ -51,6 +59,7 @@ module type Config = sig
   val lowercase : bool
   val sufname : string option
   val variant : Variant_gen.t -> bool
+  val naturalsize : MachSize.sz
 end
 
 module Make(Co:Config) (A:Fence.S) = struct
@@ -83,6 +92,7 @@ let () =
     let lowercase = !lowercase
     let sufname = None
     let variant = !variant
+    let naturalsize = TypBase.get_size !typ
   end in
   let module Build = Make(Co) in
   (match !arch with

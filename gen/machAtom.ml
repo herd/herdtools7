@@ -50,10 +50,18 @@ module Make(C:Config) = struct
 
   let compare_atom = compare
 
-  let access_atom = function
-    | Atomic|Reserve -> None
-    | Mixed m -> Some m
+  let get_access_atom a =
+    match a with
+    | None
+    | Some (Atomic|Reserve) -> None
+    | Some (Mixed m) -> Some m
 
+  let set_access_atom a sz =
+    Some
+      (match a with
+       | None|Some (Mixed _) -> Mixed sz
+       | Some (Atomic|Reserve as a) -> a) 
+               
   let fold_mixed f r = Mixed.fold_mixed (fun mix r -> f (Mixed mix) r) r
   let fold_non_mixed f r =  f Reserve (f Atomic r)
 

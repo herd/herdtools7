@@ -51,3 +51,18 @@ module Vals :
     val extract_value : int -> MachSize.sz -> offset -> int
 
   end
+
+(** Utilities for atoms supplemented with mixed accesses *)
+module Util : functor
+  (I:sig type at val plain : at end) ->
+sig
+  val get_access_atom : (I.at * t option) option -> t option
+  val set_access_atom : (I.at * t option) option -> t -> (I.at * t option) option
+end
+
+module No : sig
+  val get_access_atom :
+    'atom option -> t option
+  val set_access_atom :
+    'atom option -> t -> 'atom option
+end
