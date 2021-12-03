@@ -368,11 +368,24 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
          | Code _ -> Warn.fatal "No code location for X86_64"
          end
 
-    let emit_exch st _p init er ew =
-      let rA,st = next_reg st in
-      rA,init,
-      pseudo  (emit_sta mach_size (Code.as_data er.C.loc) rA ew.C.v),
-      st
+    let get_access_exch er ew =
+      let szr = get_access_atom er.C.atom
+      and szw = get_access_atom ew.C.atom in
+      if not (Misc.opt_eq MachMixed.equal szr szw) then
+        Warn.fatal "Exchange instruction with different accesses" ;
+      szw
+
+    let emit_exch st p init er ew =
+      let loc = Code.as_data er.C.loc in
+      let v = ew.C.v in
+      match get_access_exch er ew with
+      | None ->
+          let rA,st = next_reg st in
+          rA,init,
+          pseudo  (emit_sta mach_size loc rA v),
+          st
+      | Some (sz,o) ->
+          emit_sta_mixed sz o st p init loc v
 
     let emit_rmw () st p init er ew  =
       let rR,init,cs,st = emit_exch st p init er ew in

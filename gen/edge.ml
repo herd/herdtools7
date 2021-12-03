@@ -459,13 +459,10 @@ let fold_tedges f r =
   let same_access_atoms a1 a2 =
     Misc.opt_eq MachMixed.equal (F.get_access_atom a1) (F.get_access_atom a2)
 
-  let do_is_rmw e = match e with
-    | Rmw _ -> true
-    | Id|Hat|Rf _|Fr _|Ws _|Po _
-    | Fenced _|Dp _
-    | Leave _|Back _|Insert _|Node _
-    | Irf _|Ifr _
-      -> false
+  (* For rmw instruction any accesses is a priori.
+     However identical accesses are forced for rmw instructions *)
+  let ok_rmw rmw a1 a2 =
+    not (F.is_one_instruction rmw) || same_access_atoms a1 a2
 
   let ok_non_rmw e a1 a2 =
     do_is_diff e || do_disjoint ||
@@ -473,9 +470,13 @@ let fold_tedges f r =
      not (do_strict_overlap && same_access_atoms a1 a2))
 
   let ok_mixed e a1 a2 =
-    (do_is_rmw e) || (* For rmw instruction any accesses is a priori ok *)
+    match e with
+    | Rmw rmw ->
+    (* Specific case *)
+        ok_rmw rmw a1 a2
+    | _ ->
     (* Situation is controled by variant for other relaxations *)
-     ok_non_rmw e a1 a2
+        ok_non_rmw e a1 a2
 
 
   let do_fold_edges fold_tedges f =
@@ -936,7 +937,7 @@ let fold_tedges f r =
     let a1 = replace_plain_atom e.a1
     and a2 = replace_plain_atom e.a2 in
     { e with a1; a2; }
-    
+
   let remove_id = List.filter (fun e -> not (is_id e.edge))
 
   let check_mixed =
@@ -945,14 +946,20 @@ let fold_tedges f r =
       List.iter
         (fun e ->
           if not (ok_mixed e.edge e.a1 e.a2) then begin
-            if same_access_atoms e.a1 e.a2 then
-              Warn.fatal
-                "Identical mixed access in %s and `-variant MixedStrictOverlap` mode"
-                (pp_edge e)
-            else
-              Warn.fatal
-                "Non overlapping accesses in %s, allow with `-variant MixedDisjoint`"
-                (pp_edge e)
+              match e.edge with
+              | Rmw _ ->
+                  Warn.fatal
+                    "Illegal mixed-size Rmw edge: %s"
+                    (pp_edge e)
+              | _ ->
+                  if same_access_atoms e.a1 e.a2 then
+                    Warn.fatal
+                      "Identical mixed access in %s and `-variant MixedStrictOverlap` mode"
+                      (pp_edge e)
+                  else
+                    Warn.fatal
+                      "Non overlapping accesses in %s, allow with `-variant MixedDisjoint`"
+                      (pp_edge e)
           end)
 
   let resolve_edges es0 =
@@ -990,8 +997,8 @@ let fold_tedges f r =
               eprintf "Failure <%s,%s>\n" (debug_edge fst) (debug_edge e) ;
               raise exn in
       let es = remove_id (e::es) in
-      if dbg > 0 then eprintf "REMOVE Id: %s\n" (pp_edges es) ;
       let es = if do_mixed then List.map replace_plain es else es in
+      if dbg > 0 then eprintf "Check Mixed: %s\n" (pp_edges es) ;
       check_mixed es ;
       es
 
