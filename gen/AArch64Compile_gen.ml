@@ -1817,7 +1817,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
 
     let get_strx_result k = function
-      | I_STXR (_,_,r,_,_)  -> r::k
+      | I_STXR (_,_,r,_,_)|I_STXRBH (_,_,r,_,_)
+        -> r::k
       | _ -> k
 
     let get_strx_result_pseudo k = pseudo_fold  get_strx_result k
