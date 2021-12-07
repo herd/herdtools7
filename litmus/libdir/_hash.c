@@ -50,10 +50,19 @@ static void pp_hash_ok(FILE *fp,hash_t *t,char **group) {
 }
 #endif
 
+static void log_init(log_t *p) {
+  uint32_t *q = (uint32_t *)p ;
+
+  for (int k = sizeof(log_t)/sizeof(uint32_t) ; k > 0 ; k--)
+    *q++ = -1 ;
+}
 
 static void hash_init(hash_t *t) {
   t->nhash = 0 ;
-  for (int k = 0 ; k < HASHSZ ; k++) t->t[k].c = 0 ;
+  for (int k = 0 ; k < HASHSZ ; k++) {
+    t->t[k].c = 0 ;
+    log_init(&t->t[k].key) ;
+  }
 }
 
 /*

@@ -43,6 +43,7 @@ static void instance_init (ctx_t *p, int id, intmax_t *mem) {
   p->id = id ;
   p->mem = mem ;
   hash_init(&p->t) ;
+  log_init(&p->out) ;
   barrier_init(&p->b,N) ;
 #ifdef KVM
 #ifdef SOME_VARS
