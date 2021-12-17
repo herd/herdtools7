@@ -1,0 +1,12 @@
+Test MP+pow0l.w0+addra.h0h0 Allowed
+States 3
+1:X1=0x0; 1:X3=0x0;
+1:X1=0x0; 1:X3=0x101;
+1:X1=0x101; 1:X3=0x101;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (1:X1=0x101 /\ 1:X3=0x0)
+Observation MP+pow0l.w0+addra.h0h0 Never 0 3
+Hash=a95c693ff8dca4aa3b58de9d4b5ef088
+

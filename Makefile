@@ -255,3 +255,55 @@ diy-test-mixed::
 		-diycross-arg Rfe \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64.mixed.strict diycross7 tests: OK"
+
+diy-test-mixed:: v32 v64
+
+v32:
+	@ echo
+	$(HERD_DIYCROSS_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-diycross-path $(DIYCROSS) \
+		-libdir-path ./herd/libdir \
+		-expected-dir ./herd/tests/diycross/AArch64.mixed.v32 \
+		-conf ./herd/tests/diycross/AArch64.mixed.strict/mixed.cfg \
+		-diycross-arg -arch \
+		-diycross-arg AArch64 \
+		-diycross-arg -variant \
+		-diycross-arg mixed \
+		-diycross-arg -hexa \
+		-diycross-arg PodWW \
+		-diycross-arg RfeLA \
+		-diycross-arg h0,h2,w0 \
+		-diycross-arg DpDatadW,DpAddrdR,DpAddrdW \
+		-diycross-arg A,P,L \
+		-diycross-arg h0,h2,w0 \
+		-diycross-arg Coe,Fre \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64.mixed.v32 diycross7 tests: OK"
+
+v64:
+	@ echo
+	$(HERD_DIYCROSS_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-diycross-path $(DIYCROSS) \
+		-libdir-path ./herd/libdir \
+		-expected-dir ./herd/tests/diycross/AArch64.mixed.v64 \
+		-conf ./herd/tests/diycross/AArch64.mixed.strict/mixed.cfg \
+		-diycross-arg -arch \
+		-diycross-arg AArch64 \
+		-diycross-arg -variant \
+		-diycross-arg mixed \
+		-diycross-arg -hexa \
+		-diycross-arg -type \
+		-diycross-arg uint64_t \
+		-diycross-arg PodWW \
+		-diycross-arg RfeLA \
+		-diycross-arg w0,w4,q0 \
+		-diycross-arg DpDatadW,DpAddrdR,DpAddrdW \
+		-diycross-arg A,P,L \
+		-diycross-arg w0,w4,q0 \
+		-diycross-arg Coe,Fre \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64.mixed.v64 diycross7 tests: OK"
