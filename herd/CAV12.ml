@@ -308,11 +308,11 @@ module Make
                 if diff_proc p then
                   let open E in
                   match get_mem_dir x, get_mem_dir y with
-                  | Dir.R,Dir.R -> assert false
-                  | Dir.R,Dir.W ->
+                  | Dir.R,Dir.R| Dir.R,Dir.F| Dir.F,Dir.R| Dir.F,Dir.F -> assert false
+                  | Dir.R,Dir.W| Dir.F,Dir.W ->
                       ({ SE.nature = SE.Exe ; event = x ; },
                        { SE.nature = SE.Prop (get_proc x) ; event = y ; })::k
-                  | Dir.W,Dir.R ->
+                  | Dir.W,Dir.R| Dir.W,Dir.F ->
                       ({ SE.nature = SE.Prop (get_proc y) ; event = x ; },
                        { SE.nature = SE.Exe ; event = y ; })::k
                   | Dir.W,Dir.W ->

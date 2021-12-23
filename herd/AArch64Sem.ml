@@ -153,6 +153,11 @@ module Make
       let read_reg_data sz = read_reg_sz sz true
       let read_reg_tag is_data =  read_reg is_data
 
+(* Fetch of an instruction, i.e., a read from a label *)
+      let mk_fetch an loc v =
+        let ac = Act.access_of_location_std loc in
+        Act.Access (Dir.F, loc, v, an, AArch64.nexp_annot, MachSize.Word, ac)
+
 (* Basic write, to register  *)
       let mk_write sz an anexp ac v loc =
         Act.Access (Dir.W, loc, v, an, anexp, sz, ac)
@@ -572,7 +577,7 @@ module Make
                    "valid:1 && db:1"
                  else
                    "valid:1 && af:1 && db:1"
-              | Dir.R ->
+              | Dir.R | Dir.F ->
                  if ha then "valid:1"
                  else "valid:1 && af:1" in
             let m = append_commit m (Some msg) ii in
@@ -599,7 +604,7 @@ module Make
                  else if ha then
                    add_setbits (is_zero ipte.af_v) "af:0" set_af m
                  else m
-              | Dir.R ->
+              | Dir.R | Dir.F ->
                   if ha then
                    add_setbits (is_zero ipte.af_v) "af:0" set_af m
                  else m in
@@ -643,21 +648,21 @@ module Make
               let cond_R pte_v =
                 m_op Op.Or (is_zero pte_v.valid_v) (is_zero pte_v.af_v) in
               let cond = match dir with (* No mercy, check all flags *)
-              | Dir.R -> cond_R
+              | Dir.R | Dir.F -> cond_R
               | Dir.W ->
                   fun pte_v ->
                     m_op Op.Or (cond_R pte_v) (is_zero pte_v.db_v) in
               check_cond cond
             else if (tthm && ha && not hd) then (* HW managment of AF *)
               let cond = match dir with (* Do not check AF *)
-              | Dir.R -> fun pte_v -> is_zero pte_v.valid_v
+              | Dir.R | Dir.F -> fun pte_v -> is_zero pte_v.valid_v
               | Dir.W ->
                   fun pte_v ->
                     m_op Op.Or (is_zero pte_v.valid_v) (is_zero pte_v.db_v) in
               check_cond cond
             else (* HW management of AF and DB *)
               let cond = match dir with (* Do not check AF *)
-              | Dir.R -> fun pte_v -> is_zero pte_v.valid_v
+              | Dir.R | Dir.F -> fun pte_v -> is_zero pte_v.valid_v
               | Dir.W ->
 (* Check DB when dirty bit management disabled for this page *)
                   fun pte_v ->
@@ -819,7 +824,7 @@ module Make
         if
           some_ha &&
             (let v = C.variant Variant.PhantomOnLoad in
-             match dir with Dir.W -> not v | Dir.R -> v)
+             match dir with Dir.W -> not v | Dir.R | Dir.F -> v)
         then
           (m >>|
              M.altT (test_and_set_af_succeeds a E.IdSpurious) (M.unitT ())) >>=
@@ -1384,6 +1389,27 @@ module Make
               (read_reg_ord rd ii) mzero AArch64.N ii
           end
 
+      let do_ic op rd ii =
+        if AArch64Base.IC.all op then (* IC IALLU *)
+          M.mk_singleton_es (Act.IC (op, None)) ii >>! B.Next
+        else 
+        begin (* IC IVAU *)
+          let ic_loc op a ii =
+            let mk_act loc = Act.IC (op,Some loc) in
+            let loc = A.Location_global a in
+            M.mk_singleton_es (mk_act loc) ii in
+          let mop _ac a = ic_loc op a ii in
+          let dir = Dir.W in
+          lift_memop dir false
+            (fun ac ma _mv -> (* value fake here *)
+              if Access.is_physical ac then
+                M.bind_ctrldata ma (mop ac)
+              else
+                ma >>= mop ac)
+            (to_perms "r" MachSize.Word)
+            (read_reg_ord rd ii) mzero AArch64.N ii
+        end
+
 (********************)
 (* TODO *)
 (********************)
@@ -1393,7 +1419,7 @@ module Make
 
       let read_loc_instr v ii =
         let loc_instr = A.Location_global (make_label_value ii.A.proc v) in
-        M.read_loc false (mk_read MachSize.Word AArch64.N aexp) loc_instr ii
+        M.read_loc false (mk_fetch AArch64.N) loc_instr ii
 
 (********************)
 (* Main entry point *)
@@ -1431,10 +1457,12 @@ module Make
                   M.altT  (
                     read_loc_instr hd ii
                     >>= M.eqT instr_v
+                    >>= fun () -> (M.mk_singleton_es (Act.NoAction) ii)
                     >>= fun () -> B.branchT l
                   ) (
                     read_loc_instr hd ii
                     >>= M.neqT instr_v
+                    >>= fun () -> (M.mk_singleton_es (Act.NoAction) ii)
                     >>= fun () -> M.unitT B.Next
                   )
               | None -> B.branchT l
@@ -1968,8 +1996,10 @@ module Make
             !(read_reg_ord rd ii >>= fun a -> do_inv op a ii)
 (* Data cache instructions *)
         | I_DC (op,rd) -> do_dc op rd ii
+(* Instruction-cache maintenance instruction *)
+        | I_IC (op,rd) -> do_ic op rd ii
 (*  Cannot handle *)
-        | (I_RBIT _|I_MRS _|I_LDP _|I_STP _|I_IC _
+        | (I_RBIT _|I_MRS _|I_LDP _|I_STP _
         | I_BL _|I_BLR _|I_BR _|I_RET _
         | I_LD1M _|I_ST1M _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)

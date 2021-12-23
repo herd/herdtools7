@@ -1136,7 +1136,7 @@ let match_reg_events es =
           | Dir.W ->
               let old = StringMap.safe_find [] x ws in
               rs,StringMap.add x ((g,idx,sz,es)::old) ws
-          | Dir.R -> (g,x,idx,sz,es)::rs,ws)
+          | Dir.R | Dir.F -> (g,x,idx,sz,es)::rs,ws)
           ([],StringMap.empty) ms in
       let ws =
         StringMap.map

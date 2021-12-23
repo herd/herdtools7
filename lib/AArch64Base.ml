@@ -402,12 +402,15 @@ module IC = struct
 
   type op = { funct:funct; typ:typ; point:point; domain:domain; }
   let ivau = { funct=I; typ=VA; point=U; domain=NO; }
+  let iallu = { funct=I; typ=ALL; point=U; domain=NO; }
 
   let pp_op op =
     pp_funct op.funct ^
     pp_typ op.typ ^
     pp_point op.point ^
     pp_domain op.domain
+
+  let all op = match op.typ with | VA -> false | ALL -> true
 end
 
 module DC = struct
