@@ -319,7 +319,7 @@ let find_node_prev p n =
       else do_rec m in
   do_rec n
 
-(*  n and m are on the same thread, n beging before me *)
+(*  n and m are on the same thread, n being strictly before m *)
   let po_pred n m =
     if dbg then
       eprintf "po_pred: n=[%a], m=[%a]\n%!" debug_node n debug_node m ;
@@ -328,12 +328,13 @@ let find_node_prev p n =
     if p == m then true
     else if E.is_ext p.edge || p.next == n then false
     else do_rec p.next in
-  do_rec n
+  do_rec n.next
 
 let find_prev_code_write n =
   let rec do_rec m =
     if dbg then
-      eprintf "find_prev_code_write, node %a\n%!" debug_node m ;
+      eprintf "find_prev_code_write, n=%a m=%a\n%!"
+        debug_node n debug_node m ;
     let e = m.evt in
     match e.loc,E.safe_dir m.edge with
     | Code c,Some W ->
