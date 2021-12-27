@@ -169,7 +169,10 @@ module Make(V:Constant.S)(C:Config) =
 (* Load and Store *)
 
     let ldr_memo t = Misc.lowercase (ldr_memo t)
+    let ldrbh_memo bh t = Misc.lowercase (ldrbh_memo bh t)
     let str_memo t = Misc.lowercase (str_memo t)
+    let strbh_memo bh t = Misc.lowercase (strbh_memo bh t)
+
 
     let load memo v rD rA kr os = match v,kr,os with
     | V32,K 0, S_NOEXT ->
