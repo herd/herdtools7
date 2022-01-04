@@ -71,7 +71,7 @@ show wco,base_fr
 
 (* Auxiliary *)
 
-let fe = [IF] ; (same-instr \ [IF])
+let fe = [IF] ; (same-instance \ (same-instance;[IF]))
 let fpo = [IF] ; fe ; my_po ; fe^-1 ; [IF]
 
 let scl = loc (* FIXME: assuming for now that all locations on different cache lines *)   

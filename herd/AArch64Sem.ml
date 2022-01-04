@@ -1394,20 +1394,12 @@ module Make
           M.mk_singleton_es (Act.IC (op, None)) ii >>! B.Next
         else 
         begin (* IC IVAU *)
-          let ic_loc op a ii =
-            let mk_act loc = Act.IC (op,Some loc) in
+          read_reg_ord rd ii
+          >>= fun a ->
             let loc = A.Location_global a in
-            M.mk_singleton_es (mk_act loc) ii in
-          let mop _ac a = ic_loc op a ii in
-          let dir = Dir.W in
-          lift_memop dir false
-            (fun ac ma _mv -> (* value fake here *)
-              if Access.is_physical ac then
-                M.bind_ctrldata ma (mop ac)
-              else
-                ma >>= mop ac)
-            (to_perms "r" MachSize.Word)
-            (read_reg_ord rd ii) mzero AArch64.N ii
+            let act = Act.IC (op,Some loc) in
+            M.mk_singleton_es act ii
+          >>! B.Next
         end
 
 (********************)
