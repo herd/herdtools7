@@ -477,7 +477,7 @@ let lift_proc_info i evts =
     let add e1 e2 d1 d2 k =
       match d1, d2 with
       | Dir.W,Dir.W -> E.EventRel.add (e1,e2) k
-      | Dir.R,Dir.R| Dir.R,Dir.F| Dir.F,Dir.R| Dir.F,Dir.F ->
+      | (Dir.R|Dir.F),(Dir.R|Dir.F) ->
           begin match
             find_source rfmap e1,
             find_source rfmap e2
@@ -488,14 +488,14 @@ let lift_proc_info i evts =
           | S.Init,_ -> k
           | _,S.Init -> raise Exit
           end
-      | Dir.R,Dir.W| Dir.F,Dir.W ->
+      | (Dir.R|Dir.F),Dir.W ->
           begin match
             find_source rfmap e1
           with
           | S.Store w1 -> E.EventRel.add (w1,e2) k
           | S.Init -> k
           end
-      | Dir.W,Dir.R| Dir.W,Dir.F ->
+      | Dir.W,(Dir.R|Dir.F) ->
           begin match
             find_source rfmap e2
           with

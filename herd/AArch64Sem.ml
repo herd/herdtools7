@@ -155,7 +155,7 @@ module Make
 
 (* Fetch of an instruction, i.e., a read from a label *)
       let mk_fetch an loc v =
-        let ac = Act.access_of_location_std loc in
+        let ac = Access.VIR in (* Instruction fetch seen as ordinary, non PTE, access *)
         Act.Access (Dir.F, loc, v, an, AArch64.nexp_annot, MachSize.Word, ac)
 
 (* Basic write, to register  *)
