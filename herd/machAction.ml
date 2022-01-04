@@ -257,8 +257,7 @@ end = struct
   | _ -> false
 
   let is_mem_load a = match a with
-  | Access (R,A.Location_global _,_,_,_,_,_)
-  | Access (F,A.Location_global _,_,_,_,_,_)
+  | Access ((R|F),A.Location_global _,_,_,_,_,_)
   | Amo (A.Location_global _,_,_,_,_,_,_)
     -> true
   | Arch a ->
@@ -401,11 +400,11 @@ end = struct
   let is_store a = match a with
   | Access (W,_,_,_,_,_,_)|Amo _ -> true
   | Arch a -> A.ArchAction.is_load a
-  | Access (R,_,_,_,_,_,_) | Access (F,_,_,_,_,_,_) | Barrier _ | Commit _
+  | Access ((R|F),_,_,_,_,_,_) | Barrier _ | Commit _
   | Fault _ | TooFar _ | Inv _ | DC _ | IC _ | NoAction -> false
 
   let is_load a = match a with
-  | Access (R,_,_,_,_,_,_) | Access (F,_,_,_,_,_,_) | Amo _ -> true
+  | Access ((R|F),_,_,_,_,_,_) | Amo _ -> true
   | Arch a -> A.ArchAction.is_store a
   | Access (W,_,_,_,_,_,_) | Barrier _ | Commit _ | Fault _ | TooFar _ | Inv _
   | DC _| IC _ | NoAction -> false
