@@ -129,7 +129,7 @@ let pp_atom a =  pp_annots a
 let compare_atom a1 a2 =
   Misc.list_compare String.compare a1 a2
 
-let access_atom _ = None
+include MachMixed.No
 
 let fold_annots eg f r =
   List.fold_left
@@ -261,7 +261,7 @@ let var_fence f = match varatom with
 (********)
 
 include ClassicDep
-include OneRMW
+include NoRmw.Make(struct type arch_atom = atom end)
 include NoEdge
 include
     ArchExtra_gen.Make

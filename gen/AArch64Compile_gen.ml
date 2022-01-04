@@ -132,10 +132,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let eor sz r1 r2 r3 = I_OP3 (sz,EOR,r1,r2,RV (sz,r3), S_NOEXT)
     let eor_simd r1 r2 = I_EOR_SIMD (r1,r2,r2)
     let andi sz r1 r2 k = I_OP3 (sz,AND,r1,r2,K k, S_NOEXT)
-    let addi r1 r2 k = I_OP3 (vloc,ADD,r1,r2,K k, S_NOEXT)
     let incr r = I_OP3 (V32,ADD,r,r,K 1, S_NOEXT)
     let lsri64 r1 r2 k = I_OP3 (V64,LSR,r1,r2,K k, S_NOEXT)
-    let addi_64 r1 r2 k = I_OP3 (V64,ADD,r1,r2,K k, S_NOEXT)
+    let do_addi v r1 r2 k = I_OP3 (v,ADD,r1,r2,K k, S_NOEXT)
+    let addi = do_addi vloc
+    let addi_64 = do_addi V64
     let add v r1 r2 r3 = I_OP3 (v,ADD,r1,r2,RV (v,r3), S_NOEXT)
     let add_simd r1 r2 = I_ADD_SIMD (r1,r1,r2)
     let do_add64 v r1 r2 r3 =
@@ -384,6 +385,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | Some Capability -> assert do_morello ; [gcvalue r r]
     | None -> []
 
+    let do_emit_load_idx_var load_idx v1 v2  st p init x idx =
+      let rA,st = next_reg st in
+      let rB,init,st = U.next_init st p init x in
+      let ins,st = load_idx v1 v2 st rA rB idx in
+      rA,init,pseudo ins ,st
+
     module LOAD(L:L) =
       struct
 
@@ -456,13 +463,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let emit_load_not_value st p init x v =
           emit_load_not st p init x (fun r -> cmpi r v)
 
-        let emit_load_idx_var v1 v2  st p init x idx =
-          let rA,st = next_reg st in
-          let rB,init,st = U.next_init st p init x in
-          let ins,st = L.load_idx v1 v2 st rA rB idx in
-          rA,init,pseudo ins ,st
+        let emit_load_idx_var = do_emit_load_idx_var L.load_idx
 
-        let emit_load_idx = emit_load_idx_var L.sz0 L.sz0
       end
 
     let wrap_st emit st r1 r2 =
@@ -1354,15 +1356,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 LDAR.emit_load_idx_var vloc vdep st p init loc r2 in
               Some r,init, Instruction c::cs,st
           | R,Some (Acq a,Some (sz,o)) ->
-              let module L =
-                LOAD
-                  (struct
-                    type sz = MachSize.sz
-                    let sz0 = sz
-                    let load sz = ldar_mixed AA sz o
-                    let load_idx sz _ = do_ldar_mixed_idx vdep AA sz o
-                  end) in
-              let r,init,cs,st = L.emit_load_idx st p init loc r2 in
+             let load =
+               do_emit_load_idx_var
+                 (fun sz _ ->  do_ldar_mixed_idx vdep AA sz o)
+                 sz sz in
+              let r,init,cs,st = load st p init loc r2 in
               let cs2 = emit_ldr_addon a r in
               Some r,init,Instruction c::cs@pseudo cs2,st
           | R,Some (AcqPc _,None) ->
@@ -1370,15 +1368,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 LDAPR.emit_load_idx_var vloc vdep st p init loc r2 in
               Some r,init, Instruction c::cs,st
           | R,Some (AcqPc a,Some (sz,o)) ->
-              let module L =
-                LOAD
-                  (struct
-                    type sz = MachSize.sz
-                    let sz0 = sz
-                    let load sz = ldar_mixed AQ sz o
-                    let load_idx sz _ = do_ldar_mixed_idx vdep AQ sz o
-                  end) in
-              let r,init,cs,st = L.emit_load_idx st p init loc r2 in
+             let load =
+               do_emit_load_idx_var
+                 (fun sz _ ->  do_ldar_mixed_idx vdep AQ sz o)
+                 sz sz in
+              let r,init,cs,st = load st p init loc r2 in
               let cs2 = emit_ldr_addon a r in
               Some r,init,Instruction c::cs@pseudo cs2,st
           | R,Some (Rel _,_) ->
@@ -1457,32 +1451,26 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let r,init,cs,st = emit_sta_mixed_idx sz o rw st p init loc r2 e.C.v in
               Some r,init,Instruction c::cs,st
           | R,Some (Plain a,Some (sz,o)) ->
-              let module L =
-                LOAD
-                  (struct
-                    type sz = MachSize.sz
-                    let sz0 = sz
-                    let load sz st r1 r2 = [ldr_mixed r1 r2 sz o],st
-                    let load_idx sz _ st r1 r2 idx =
-                      let cs = [ldr_mixed_idx vdep r1 r2 idx sz] in
-                      let cs = match o with
-                      | 0 -> cs
-                      | _ -> addi_64 idx idx o::cs in
-                      cs,st
-                  end) in
-              let r,init,cs,st = L.emit_load_idx st p init loc r2 in
-              let cs2 = emit_ldr_addon a r in
-              Some r,init,Instruction c::cs@pseudo cs2,st
+             let load_idx sz _ st r1 r2 idx =
+               let cs = [ldr_mixed_idx vdep r1 r2 idx sz] in
+               let cs = match o with
+                 | 0 -> cs
+                 | _ -> do_addi vdep idx idx o::cs in
+               cs,st in
+             let load = do_emit_load_idx_var load_idx sz sz in
+             let r,init,cs,st = load st p init loc r2 in
+             let cs2 = emit_ldr_addon a r in
+             Some r,init,Instruction c::cs@pseudo cs2,st
           | W,Some (Plain a,Some (sz,o)) ->
               let module S =
                 STORE
                   (struct
                     let store = wrap_st (str_mixed sz o)
                     let store_idx st r1 r2 idx =
-                      let cs = [str_mixed_idx sz V64 r1 r2 idx] in
+                      let cs = [str_mixed_idx sz vdep r1 r2 idx] in
                       let cs = match o with
                       | 0 -> cs
-                      | _ -> addi_64 idx idx o::cs in
+                      | _ -> do_addi vdep idx idx o::cs in
                       cs,st
                   end) in
               let rA,init,cs_mov,st = U.emit_mov_sz sz st p init e.C.v in
@@ -1730,7 +1718,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let tr_atom = function
       | Some ((Tag|Pte _),_) -> V64
-      | _ -> vloc
+      | at ->
+         begin match A64.get_access_atom at with
+         | Some (sz,_) -> sz2v sz
+         | None -> vloc
+         end
 
     let emit_access_dep st p init e dp r1 n1 =
       let e1 = n1.C.evt in

@@ -16,7 +16,11 @@
 
 (* Edges, ie specifications of an event pair in a model relation  *)
 
-module Config = struct let variant _ = false end
+module Config =
+  struct
+    let variant _ = false
+    let naturalsize = TypBase.get_size TypBase.default
+  end
 
 let dbg = 0
 
@@ -150,7 +154,14 @@ module type S = sig
 end
 
 
-module Make(Cfg:sig val variant : Variant_gen.t -> bool end)(F:Fence.S) : S
+module
+  Make
+    (Cfg:
+       sig
+         val variant : Variant_gen.t -> bool
+         val naturalsize : MachSize.sz
+       end)
+    (F:Fence.S) : S
 with
 type fence = F.fence
 and type dp = F.dp
@@ -158,6 +169,7 @@ and module SIMD = F.SIMD
 and type atom = F.atom
 and module PteVal = F.PteVal
 and type rmw = F.rmw = struct
+  let ()  = ignore (Cfg.naturalsize)
   let do_self = Cfg.variant Variant_gen.Self
   let do_mixed =
     Cfg.variant Variant_gen.Mixed || Cfg.variant Variant_gen.FullMixed
@@ -305,10 +317,7 @@ and type rmw = F.rmw = struct
     | Dp (dp,sd,e) -> sprintf "Dp%s%s%s"
           (F.pp_dp dp) (pp_sd sd) (pp_extr e)
     | Hat -> "Hat"
-    | Rmw rmw-> begin match F.pp_rmw rmw with
-      | "" -> if compat then "Rmw" else "LxSx" (* Backward compatibility *)
-      | s -> sprintf "Amo.%s" s
-    end
+    | Rmw rmw-> F.pp_rmw compat   rmw
     | Leave c -> sprintf "%sLeave" (pp_com c)
     | Back c -> sprintf "%sBack" (pp_com c)
     | Id -> "Id"
@@ -403,8 +412,7 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
 
 let fold_tedges_compat f r =
   let r = fold_ie (fun ie -> f (Ws ie)) r in
-  let r =
-    F.fold_rmw (fun rmw r -> if Misc.string_eq (F.pp_rmw rmw) "" then f (Rmw rmw) r else r) r
+  let r = F.fold_rmw_compat (fun rmw -> f (Rmw rmw)) r
   in r
 
 let fold_tedges f r =
@@ -448,11 +456,28 @@ let fold_tedges f r =
     | (None,_)|(_,None) -> true
     | Some a1,Some a2 -> F.overlap_atoms a1 a2
 
-  let same_mixed_access_atoms a1 a2 = match a1,a2 with
-    | (None,_)|(_,None) -> false
-    | Some a1,Some a2 ->
-        Misc.opt_eq MachMixed.equal
-          (F.access_atom a1) (F.access_atom a2)
+  let same_access_atoms a1 a2 =
+    Misc.opt_eq MachMixed.equal (F.get_access_atom a1) (F.get_access_atom a2)
+
+  (* For rmw instruction any accesses is a priori.
+     However identical accesses are forced for rmw instructions *)
+  let ok_rmw rmw a1 a2 =
+    not (F.is_one_instruction rmw) || same_access_atoms a1 a2
+
+  let ok_non_rmw e a1 a2 =
+    do_is_diff e || do_disjoint ||
+    (overlap_atoms a1 a2 &&
+     not (do_strict_overlap && same_access_atoms a1 a2))
+
+  let ok_mixed e a1 a2 =
+    match e with
+    | Rmw rmw ->
+    (* Specific case *)
+        ok_rmw rmw a1 a2
+    | _ ->
+    (* Situation is controled by variant for other relaxations *)
+        ok_non_rmw e a1 a2
+
 
   let do_fold_edges fold_tedges f =
    fold_atomo
@@ -489,9 +514,9 @@ let fold_tedges f r =
                      if
                        applies_atom a1 d1 &&
                        applies_atom a2 d2 &&
-                       (do_is_diff te ||
-                          (do_disjoint || overlap_atoms a1 a2) ||
-                          (not (do_strict_overlap && same_mixed_access_atoms a1 a2)))
+                       (Misc.is_none (F.get_access_atom a1) &&
+                        Misc.is_none (F.get_access_atom a2)||
+                       ok_non_rmw te a1 a2)
                      then
                        f {a1; a2; edge=te;} k
                      else begin
@@ -902,29 +927,40 @@ let fold_tedges f r =
       let e = set_tgt tgt (set_src src e1) in
       { e with a1 = merge_atomo e1.a1 e2.a1; a2 = merge_atomo e1.a2 e2.a2; }
 
-  let remove_id = List.filter (fun e -> not (is_id e.edge))
+  let default_access = Cfg.naturalsize,0
 
+  let replace_plain_atom a = match F.get_access_atom a with
+    | Some _ -> a
+    | None -> F.set_access_atom a default_access
+
+  let replace_plain e =
+    let a1 = replace_plain_atom e.a1
+    and a2 = replace_plain_atom e.a2 in
+    { e with a1; a2; }
+
+  let remove_id = List.filter (fun e -> not (is_id e.edge))
 
   let check_mixed =
     if not do_mixed || do_disjoint then fun _ -> ()
     else
       List.iter
         (fun e ->
-          if not (do_is_diff e.edge) then
-            begin
-              if overlap_atoms e.a1 e.a2 then
-                begin
-                  if do_strict_overlap then
-                    if same_mixed_access_atoms e.a1 e.a2 then
-                      Warn.fatal
-                        "Identical mixed access in %s and `-variant MixedStrictOverlap` mode"
-                        (pp_edge e)
-                end
-              else
-                Warn.fatal
-                  "Non overlapping accesses in %s, allow with `-variant MixedDisjoint`"
-            (pp_edge e)
-            end)
+          if not (ok_mixed e.edge e.a1 e.a2) then begin
+              match e.edge with
+              | Rmw _ ->
+                  Warn.fatal
+                    "Illegal mixed-size Rmw edge: %s"
+                    (pp_edge e)
+              | _ ->
+                  if same_access_atoms e.a1 e.a2 then
+                    Warn.fatal
+                      "Identical mixed access in %s and `-variant MixedStrictOverlap` mode"
+                      (pp_edge e)
+                  else
+                    Warn.fatal
+                      "Non overlapping accesses in %s, allow with `-variant MixedDisjoint`"
+                      (pp_edge e)
+          end)
 
   let resolve_edges es0 =
     let es0 = merge_ids es0 in
@@ -961,7 +997,8 @@ let fold_tedges f r =
               eprintf "Failure <%s,%s>\n" (debug_edge fst) (debug_edge e) ;
               raise exn in
       let es = remove_id (e::es) in
-      if dbg > 0 then eprintf "REMOVE Id: %s\n" (pp_edges es) ;
+      let es = if do_mixed then List.map replace_plain es else es in
+      if dbg > 0 then eprintf "Check Mixed: %s\n" (pp_edges es) ;
       check_mixed es ;
       es
 

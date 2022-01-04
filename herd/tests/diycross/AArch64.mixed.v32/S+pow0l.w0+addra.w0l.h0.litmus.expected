@@ -1,0 +1,12 @@
+Test S+pow0l.w0+addra.w0l.h0 Allowed
+States 3
+1:X1=0x0; [x]=0x2020101;
+1:X1=0x0; [x]=0x2020202;
+1:X1=0x1010101; [x]=0x2020101;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists ([x]=0x2020202 /\ 1:X1=0x1010101)
+Observation S+pow0l.w0+addra.w0l.h0 Never 0 3
+Hash=1d3dc02bc3e41cfece6f0981b797a052
+

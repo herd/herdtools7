@@ -36,7 +36,7 @@ let applies_atom a d = match a,d with
 
 let compare_atom = Misc.polymorphic_compare
 
-let access_atom _ = None
+include MachMixed.No
 
 let pp_plain = Code.plain
 let pp_as_a = Some SC
@@ -226,14 +226,6 @@ let pp_dp = function
   | DATA -> "Data"
   | CTRL -> "Ctrl"
 
-include OneRMW
-
-let applies_atom_rmw () ar aw = match ar,aw with
-  | (Some Con,_)
-  | (None,_)
-  | (_,Some Con)
-  | (_,None)
-    -> false
-  | Some a1,Some a2 -> compare_atom a1 a2 = 0
+include Exch.Exch(struct type arch_atom = MemOrder.t end)
 
 include NoEdge

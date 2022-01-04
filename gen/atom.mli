@@ -34,7 +34,8 @@ module type S = sig
   val default_atom : atom
   val applies_atom : atom -> Code.dir -> bool
   val compare_atom : atom -> atom -> int
-  val access_atom : atom -> MachMixed.t option
+  val get_access_atom : atom option -> MachMixed.t option
+  val set_access_atom : atom option -> MachMixed.t -> atom option
   val pp_plain : string
   val pp_as_a : atom option
   val pp_atom : atom -> string

@@ -85,9 +85,16 @@ module Make
 
    let compare_atom = compare
 
-   let access_atom = function
-     | MO _|Atomic _ -> None
-     | Mixed m -> Some m
+   let get_access_atom = function
+     | None
+     | Some (MO _|Atomic _) -> None
+     | Some (Mixed m) -> Some m
+
+   let set_access_atom a sz =
+     Some
+       (match a with
+        | None|Some (Mixed _) -> Mixed sz
+        | Some (MO _|Atomic _ as a) -> a)
 
    let fold_mixed f k = Mixed.fold_mixed (fun  mix r -> f (Mixed mix) r) k
 
@@ -200,7 +207,7 @@ let pp_dp = function
   | CTRL -> "Ctrl"
   | CTRLISYNC -> "CtrlFenceI"
 
-include OneRMW
+include Exch.Exch(struct type arch_atom = atom end)
 include NoEdge
 
 include

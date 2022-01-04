@@ -1,0 +1,15 @@
+Test MP+dmb.syw0w0+rmwa.h0h0-poh0h0 Allowed
+States 6
+1:X1=0x0; 1:X3=0x0; 1:X4=0x0; [y]=0x1010101;
+1:X1=0x0; 1:X3=0x0; 1:X4=0x101; [y]=0x1010101;
+1:X1=0x0; 1:X3=0x1; 1:X4=0x0; [y]=0x1010101;
+1:X1=0x0; 1:X3=0x1; 1:X4=0x101; [y]=0x1010101;
+1:X1=0x101; 1:X3=0x0; 1:X4=0x101; [y]=0x1010202;
+1:X1=0x101; 1:X3=0x1; 1:X4=0x101; [y]=0x1010101;
+No
+Witnesses
+Positive: 0 Negative: 6
+Condition exists ([y]=0x1010202 /\ 1:X3=0x0 /\ 1:X1=0x101 /\ 1:X4=0x0)
+Observation MP+dmb.syw0w0+rmwa.h0h0-poh0h0 Never 0 6
+Hash=ffa4655ba6cb546439d7bf11649c35a4
+

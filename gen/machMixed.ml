@@ -114,3 +114,24 @@ module Vals(C:ValsConfig) = struct
     r
 
 end
+
+(** Utilities for atoms supplemented with mixed accesses *)
+
+module Util(I:sig type at val plain : at end) =
+  struct
+    let get_access_atom = function
+      | None -> None
+      | Some (_,m) -> m
+
+   let set_access_atom a acc =
+     Some
+       (match a with
+        | None -> (I.plain,Some acc)
+        | Some (a,_) -> (a,Some acc))
+  end
+
+module No =
+  struct
+    let get_access_atom _ = None
+    let set_access_atom a _ = a
+  end

@@ -48,7 +48,14 @@ module Make(O:Config) : Builder.S
         include CArch_gen
         let deftype = O.typ
       end
-      module E = Edge.Make(Edge.Config)(A)
+
+      module E =
+        Edge.Make
+          (struct
+            let variant = O.variant
+            let naturalsize = TypBase.get_size O.typ
+          end)
+          (A)
 
       let () = match O.show with
       | Some s -> begin E.show s ; exit 0 end
