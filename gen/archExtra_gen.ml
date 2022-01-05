@@ -62,6 +62,8 @@ module type S = sig
 (***********************)
 
   type st
+  val debug_env : st -> string
+
   val st0 : st
 
   val alloc_reg : st -> arch_reg * st
@@ -207,6 +209,10 @@ with type arch_reg = I.arch_reg and type special = I.special
         (* For fresh addresses *)
         next_addr : int; }
 
+  let debug_env st =
+    LocMap.pp_str
+      (fun loc t -> sprintf "%s->%s" (pp_location loc) (TypBase.pp t))
+      st.env
 
   let st0 =
     { regs = I.free_registers;

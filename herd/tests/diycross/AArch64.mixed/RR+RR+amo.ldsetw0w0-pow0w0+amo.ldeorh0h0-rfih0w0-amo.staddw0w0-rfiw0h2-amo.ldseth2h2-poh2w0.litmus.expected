@@ -13,5 +13,5 @@ Witnesses
 Positive: 1 Negative: 7
 Condition exists ([y]=0x3030303 /\ 0:X1=0x0 /\ 0:X3=0x0 /\ 1:X1=0x0 /\ 1:X4=0x202 /\ 1:X7=0x0)
 Observation RR+RR+amo.ldsetw0w0-pow0w0+amo.ldeorh0h0-rfih0w0-amo.staddw0w0-rfiw0h2-amo.ldseth2h2-poh2w0 Sometimes 1 7
-Hash=465a878c141b77ad9cf2b3ab5bdec6c0
+Hash=1f4738a7086fe13180bb2dcb3983be8e
 

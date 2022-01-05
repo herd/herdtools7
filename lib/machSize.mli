@@ -44,6 +44,9 @@ val min : sz -> sz -> sz
 
 val pred : sz -> sz
 
+(* Promote sizes lower then word to word *)
+val at_least_word : sz -> sz
+
 module Tag : sig
   type t = Auto | Size of sz
   val tags : string list

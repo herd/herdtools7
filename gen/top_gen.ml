@@ -808,6 +808,10 @@ let pp_pointer t =
 *)
 
 let dump_init chan inits env =
+  let locs_init =
+    List.fold_left
+      (fun k (loc,_) -> A.LocSet.add loc k)
+      A.LocSet.empty inits in
   fprintf chan "{" ;
   let pp =
     A.LocMap.fold
@@ -816,11 +820,13 @@ let dump_init chan inits env =
         | IntArray sz ->
            sprintf "int %s[%d];" (A.pp_location loc) sz::k
         | Typ t ->
-           let open TypBase in
-           let open MachSize in
-           match t with
-           | Int|Std (Signed,Word) -> k
-           | _ -> sprintf "%s %s;" (TypBase.pp t) (A.pp_location loc)::k)
+            if A.LocSet.mem loc locs_init then k
+            else
+              let open TypBase in
+              let open MachSize in
+              match t with
+              | Int|Std (Signed,Word) -> k
+              | _ -> sprintf "%s %s;" (TypBase.pp t) (A.pp_location loc)::k)
       env [] in
   begin match pp with
   | [] -> ()
@@ -832,7 +838,20 @@ let dump_init chan inits env =
     | (left,loc)::rem ->
         let p = get_proc left in
         if p <> q then fprintf chan "\n" else fprintf chan " " ;
-        fprintf chan "%s%s;" (A.pp_location left)
+        fprintf chan "%s%s%s;"
+          (match loc with
+           | Some _ ->
+               begin
+                 try
+                   let t =
+                     match A.LocMap.find left env with
+                     | Typ t -> t
+                     | _ -> raise Not_found in
+                   TypBase.pp t ^ " "
+                 with Not_found -> ""
+               end
+           | None -> "")
+          (A.pp_location left)
           (match loc with
           | Some v -> sprintf "=%s" (A.pp_initval v)
           | None -> "") ;
