@@ -139,28 +139,40 @@ module Make(C:Config)(E:Extra) = struct
       | CType.Array (t,_) -> Some t
       | _ -> None
       with Not_found -> None in
+
     let global_args =
       List.map
         (fun (x,t) ->
-          let idx = tr_idx t "_i" in
-          let cast = match is_array_of x with
-          | Some t -> sprintf "(%s *)" t
-          | None -> "" in
-          let amper = match List.assoc x globEnv with
-          | CType.Base "mtx_t" -> ""
-          | _ -> "&" in
-          match C.memory with
-         | Memory.Direct ->
-             sprintf "%s%s_a->%s[%s]" cast amper (CTarget.fmt_reg x) idx
-         | Memory.Indirect ->
-             sprintf "%s_a->%s[%s]" cast (CTarget.fmt_reg x) idx)
+          match C.mode with
+          | Mode.Std ->
+              let idx = tr_idx t "_i" in
+              let cast = match is_array_of x with
+                | Some t -> sprintf "(%s *)" t
+                | None -> "" in
+              let amper = match List.assoc x globEnv with
+                | CType.Base "mtx_t" -> ""
+                | _ -> "&" in
+              begin
+                match C.memory with
+                | Memory.Direct ->
+                    sprintf "%s%s_a->%s[%s]" cast amper (CTarget.fmt_reg x) idx
+                | Memory.Indirect ->
+                    sprintf "%s_a->%s[%s]" cast (CTarget.fmt_reg x) idx
+              end
+          | Mode.Kvm|Mode.PreSi ->
+              CTarget.fmt_reg x)
         t.CTarget.inputs
-          and out_args =
-            List.map
-              (fun x -> sprintf "&_a->%s" (CTarget.compile_out_reg proc x))
-              t.CTarget.finals in
-          let args = String.concat "," (args0@global_args@out_args) in
-          LangUtils.dump_code_call chan indent f_id args
+    and out_args =
+      List.map
+        (fun x ->
+        match C.mode with
+        | Mode.Std ->
+            sprintf "&_a->%s" (CTarget.compile_out_reg proc x)
+        | Mode.PreSi|Mode.Kvm ->
+            sprintf "&_log->%s" (CTarget.dump_out_reg proc x))
+        t.CTarget.finals in
+    let args = String.concat "," (args0@global_args@out_args) in
+    LangUtils.dump_code_call chan indent f_id args
 
 
   let dump chan indent env (globEnv,_) _envVolatile proc t =
