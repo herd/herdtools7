@@ -93,11 +93,10 @@ module Check =
   CheckName.Make
     (struct
       let verbose = verbose
-      let check v =  if npar <= 1 then v else []
-      let rename = check rename
-      let select = check select
-      let names = check names
-      let excl = check excl
+      let rename = rename
+      let select = select
+      let names = names
+      let excl = excl
     end)
 
 let fnames = match !logs with
