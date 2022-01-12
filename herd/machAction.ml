@@ -513,7 +513,7 @@ end = struct
     and ifetch_sets =
       if self then
         ("IF",is_ifetch)::
-        ("no-loc", 
+        ("no-loc",
           fun a -> match location_of a with
             | Some _ -> false
             | None -> true)::[]

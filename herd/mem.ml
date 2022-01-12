@@ -271,6 +271,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     let glommed_event_structures (test:S.test) =
       let p = test.Test_herd.program in
       let starts = test.Test_herd.start_points in
+      let return_labels = test.Test_herd.return_labels in
       let procs = List.map fst starts in
 
       let instr2labels =
@@ -284,6 +285,12 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
       let labels_of_instr i =
         IntMap.safe_find Label.Set.empty i instr2labels in
+
+      let return_label_of_instr i =
+        try
+          Some (IntMap.find i return_labels)
+        with
+          Not_found -> None in
 
 (**********************************************************)
 (* In mode `-variant self` test init_state is changed:    *)
@@ -424,6 +431,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
            { A.program_order_index = poi;
              proc = proc; inst = inst;
              labels = labels_of_instr addr;
+             link_label = return_label_of_instr addr;
              addr2v;
              env = env; } in
         if dbg && not (Label.Set.is_empty ii.A.labels) then

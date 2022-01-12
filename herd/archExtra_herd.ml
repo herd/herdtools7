@@ -62,6 +62,7 @@ module type S = sig
       program_order_index   : program_order_index;
       inst : I.arch_instruction;
       labels : Label.Set.t;
+      link_label : Label.t option;
       addr2v : string -> I.V.v;
       env : ii_env;
     }
@@ -221,6 +222,9 @@ module type S = sig
 (* A starting address per proc *)
   type start_points = (proc * code) list
 
+(* A mapping from instruction addresses to labels of the instructions after them *)
+  type return_labels = Label.t IntMap.t
+
 
 (* Constraints *)
   type prop =  (location,v) ConstrGen.prop
@@ -285,6 +289,7 @@ module Make(C:Config) (I:I) : S with module I = I
           program_order_index   : program_order_index;
           inst : I.arch_instruction;
           labels : Label.Set.t;
+          link_label : Label.t option;
           addr2v : string -> I.V.v;
           env : ii_env;
         }
@@ -982,6 +987,9 @@ module Make(C:Config) (I:I) : S with module I = I
 
             (* A starting address per proc *)
       type start_points = (proc * code) list
+
+      (* A mapping from instruction addresses to labels of the instructions after them *)
+      type return_labels = Label.t IntMap.t
 
 
             (* Constraints *)

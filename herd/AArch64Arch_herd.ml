@@ -303,6 +303,10 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     type ifetch_instruction = instruction
 
+    let is_link = function
+      | I_BL _ | I_BLR _ -> true
+      | _ -> false
+
     let is_overwritable i =
       match i with
       | I_B _ | I_NOP -> true
@@ -310,7 +314,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     let instruction_to_value i =
       match i with
-      | I_B lbl -> 
+      | I_B lbl ->
         Constant.Instruction(InstrLit.LIT_B(lbl))
       | I_NOP -> Constant.Instruction(InstrLit.LIT_NOP)
       | _ -> Warn.user_error "Functionality not implemented for -variant self: converting {%s} into a constant" (pp_instruction PPMode.Ascii i)

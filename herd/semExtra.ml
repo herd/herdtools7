@@ -55,10 +55,11 @@ module type S = sig
 
   type nice_prog = A.nice_prog
   type start_points = A.start_points
+  type return_labels = A.return_labels
 
   type proc_info = Test_herd.proc_info
   type test =
-      (program, nice_prog, start_points,
+      (program, nice_prog, start_points, return_labels,
        state, A.size_env, A.type_env,
        prop, location, A.RLocSet.t, A.FaultAtomSet.t) Test_herd.t
 
@@ -225,10 +226,11 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     type program = A.program
     type nice_prog = A.nice_prog
     type start_points = A.start_points
+    type return_labels = A.return_labels
 
     type proc_info = Test_herd.proc_info
     type test =
-      (program, nice_prog, start_points, state,
+      (program, nice_prog, start_points, return_labels, state,
        A.size_env, A.type_env,
        prop, location, A.RLocSet.t, A.FaultAtomSet.t) Test_herd.t
 
@@ -438,6 +440,7 @@ type concrete =
 
     type pp_barrier = { barrier:barrier ; pp:string; }
 
+    let is_link = A.is_link
     let is_overwritable = A.is_overwritable
     let instruction_to_value = A.instruction_to_value
 

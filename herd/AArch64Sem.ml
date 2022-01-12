@@ -1392,7 +1392,7 @@ module Make
       let do_ic op rd ii =
         if AArch64Base.IC.all op then (* IC IALLU *)
           M.mk_singleton_es (Act.IC (op, None)) ii >>! B.Next
-        else 
+        else
         begin (* IC IVAU *)
           read_reg_ord rd ii
           >>= fun a ->
@@ -1444,16 +1444,18 @@ module Make
             else begin
               match Label.norm ii.A.labels with
               | Some hd ->
-                  let instr_v =
+                  let b_val =
+                    A.V.cstToV (A.instruction_to_value ii.A.inst) in
+                  let nop_val =
                     A.V.cstToV (A.instruction_to_value ii.A.inst) in
                   M.altT  (
                     read_loc_instr hd ii
-                    >>= M.eqT instr_v
+                    >>= M.eqT b_val
                     >>= fun () -> (M.mk_singleton_es (Act.NoAction) ii)
                     >>= fun () -> B.branchT l
                   ) (
                     read_loc_instr hd ii
-                    >>= M.neqT instr_v
+                    >>= M.neqT b_val
                     >>= fun () -> (M.mk_singleton_es (Act.NoAction) ii)
                     >>= fun () -> M.unitT B.Next
                   )
@@ -1463,6 +1465,55 @@ module Make
         | I_BC(c,l)->
             read_reg_ord NZP ii  >>= tr_cond c >>= fun v ->
               commit_bcc ii >>= fun () -> B.bccT v l
+
+        | I_BL l as i ->
+          if not self then
+            Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
+          else begin
+            match ii.A.link_label with
+            | Some ret_lbl ->
+              let ret_lbl_v = A.V.cstToV (Constant.Label (ii.A.proc, ret_lbl)) in
+              write_reg AArch64Base.linkreg ret_lbl_v ii
+              >>= fun () -> B.branchT l
+            | None ->
+              assert false (* mem.ml ought to ensure link_label is set *)
+          end
+        | I_BR r as i ->
+          if not self then
+            Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
+          else begin
+            read_reg_ord r ii
+            >>= (function
+              | M.A.V.Val(Constant.Label (_, l)) -> B.branchT l
+              | _ -> Warn.fatal "Register value treated as a label")
+          end
+        | I_BLR r as i ->
+          if not self then
+            Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
+          else begin
+            match ii.A.link_label with
+            | Some ret_lbl ->
+              let ret_lbl_v = A.V.cstToV (Constant.Label (ii.A.proc, ret_lbl)) in
+              write_reg AArch64Base.linkreg ret_lbl_v ii
+              >>= fun () -> read_reg_ord r ii
+              >>= (function
+              | M.A.V.Val(Constant.Label (_, l)) -> B.branchT l
+              | _ -> Warn.fatal "Register value treated as a label")
+            | None ->
+              assert false (* mem.ml ought to ensure link_label is set *)
+          end
+        | I_RET _ro as i ->
+          if not self then
+            Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
+          else begin
+            let r = match _ro with
+            | None -> AArch64Base.linkreg
+            | Some r -> r in
+            read_reg_ord r ii
+            >>= (function
+              | M.A.V.Val(Constant.Label (_, l)) -> B.branchT l
+              | _ -> Warn.fatal "Register value treated as a label")
+          end
 
         | I_CBZ(_,r,l) ->
             (read_reg_ord r ii)
@@ -1992,7 +2043,7 @@ module Make
         | I_IC (op,rd) -> do_ic op rd ii
 (*  Cannot handle *)
         | (I_RBIT _|I_MRS _|I_LDP _|I_STP _
-        | I_BL _|I_BLR _|I_BR _|I_RET _
+        (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | I_LD1M _|I_ST1M _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
         )
