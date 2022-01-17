@@ -1,0 +1,10 @@
+AArch64 S03
+(* This test should fail, as overwriting the addition instruction
+   not well defined *)
+{
+1:X0=P0:L0; 1:X1=NOP;
+}
+  P0          |   P1        ;
+L0:           | STR W1,[X0] ;
+ ADD W0,W0,#1 |             ;
+locations [0:X0;]

@@ -187,7 +187,10 @@ type concrete =
   type barrier = A.barrier
   type pp_barrier = { barrier:barrier ; pp:string; }
 
-  include IFetchTrait.S with type ifetch_instruction := instruction
+  include
+    IFetchTrait.S
+    with type ifetch_instruction := instruction
+     and type ifetch_reg := A.reg
 
 end
 

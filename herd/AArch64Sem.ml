@@ -1410,7 +1410,8 @@ module Make
         A.V.cstToV (Constant.Label (proc, lbl_str))
 
       let read_loc_instr v ii =
-        let loc_instr = A.Location_global (make_label_value ii.A.proc v) in
+        let loc_instr =
+          A.Location_global (make_label_value ii.A.fetch_proc v) in
         M.read_loc false (mk_fetch AArch64.N) loc_instr ii
 
 (********************)
@@ -1445,8 +1446,6 @@ module Make
               match Label.norm ii.A.labels with
               | Some hd ->
                   let b_val =
-                    A.V.cstToV (A.instruction_to_value ii.A.inst) in
-                  let nop_val =
                     A.V.cstToV (A.instruction_to_value ii.A.inst) in
                   M.altT  (
                     read_loc_instr hd ii
@@ -1485,7 +1484,12 @@ module Make
             read_reg_ord r ii
             >>= (function
               | M.A.V.Val(Constant.Label (_, l)) -> B.branchT l
-              | _ -> Warn.fatal "Register value treated as a label")
+              | M.A.V.Var(_) -> Warn.fatal
+                "unsupported argument for the instruction %s \
+                (a statically known label expected)" (AArch64.dump_instruction i)
+              | _ -> Warn.fatal
+                "illegal argument for the instruction %s \
+                (a label expected)" (AArch64.dump_instruction i)  )
           end
         | I_BLR r as i ->
           if not self then
@@ -1498,7 +1502,12 @@ module Make
               >>= fun () -> read_reg_ord r ii
               >>= (function
               | M.A.V.Val(Constant.Label (_, l)) -> B.branchT l
-              | _ -> Warn.fatal "Register value treated as a label")
+              | M.A.V.Var(_) -> Warn.fatal
+                "unsupported argument for the instruction %s \
+                (a statically known label expected)" (AArch64.dump_instruction i)
+              | _ -> Warn.fatal
+                "illegal argument for the instruction %s \
+                (a label expected)" (AArch64.dump_instruction i) )
             | None ->
               assert false (* mem.ml ought to ensure link_label is set *)
           end
@@ -1512,7 +1521,12 @@ module Make
             read_reg_ord r ii
             >>= (function
               | M.A.V.Val(Constant.Label (_, l)) -> B.branchT l
-              | _ -> Warn.fatal "Register value treated as a label")
+              | M.A.V.Var(_) -> Warn.fatal
+                "unsupported argument for the instruction %s \
+                (a statically known label expected)" (AArch64.dump_instruction i)
+              | _ -> Warn.fatal
+                "illegal argument for the instruction %s \
+                (a label expected)" (AArch64.dump_instruction i) )
           end
 
         | I_CBZ(_,r,l) ->

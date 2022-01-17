@@ -1,0 +1,17 @@
+Test S02 Allowed
+States 8
+0:X9=0; 1:X9=1; 2:X9=2;
+0:X9=0; 1:X9=1; 2:X9=3;
+0:X9=0; 1:X9=2; 2:X9=2;
+0:X9=0; 1:X9=2; 2:X9=3;
+0:X9=1; 1:X9=1; 2:X9=2;
+0:X9=1; 1:X9=1; 2:X9=3;
+0:X9=1; 1:X9=2; 2:X9=2;
+0:X9=1; 1:X9=2; 2:X9=3;
+Ok
+Witnesses
+Positive: 1 Negative: 7
+Condition exists (0:X9=0 /\ 1:X9=1 /\ 2:X9=2)
+Observation S02 Sometimes 1 7
+Hash=8b2fa650454ef4f7024c0dc9cc9a64e6
+

@@ -1,0 +1,10 @@
+Test S01 Required
+States 1
+0:X9=1; 1:X9=2; 2:X9=3;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X9=1 /\ 1:X9=2 /\ 2:X9=3)
+Observation S01 Always 1 0
+Hash=81f5e7d804d89650b8d619831117d0c5
+

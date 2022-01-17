@@ -1,0 +1,20 @@
+AArch64 S02
+Stable=X9
+{
+0:X0 = P1:f ;
+2:X0 = P1:f ;
+3:X0 = P1:f ;
+3:X1 = NOP ;
+}
+P0        | P1           | P2        | P3          ;
+MOV W9,#0 | MOV W9,#1    | MOV w9,#2 | STR W1,[X0] ;
+BLR X0    | BL f         | BLR X0    |             ;
+          | B L1         |           |             ;
+          |f:            |           |             ;
+          | B L0         |           |             ;
+          | RET          |           |             ;
+          |L0:           |           |             ;
+          | ADD W9,W9,#1 |           |             ;
+          | RET          |           |             ;
+          |L1:           |           |             ;
+exists 0:X9=0 /\ 1:X9=1 /\ 2:X9=2
