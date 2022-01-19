@@ -178,6 +178,10 @@ let pred = function
   | Quad -> Word
   | S128 -> Quad
 
+let at_least_word = function
+  | Quad|S128 as sz -> sz
+  | Word|Short|Byte -> Word
+
 module Tag = struct
 
   type t = Auto | Size of sz

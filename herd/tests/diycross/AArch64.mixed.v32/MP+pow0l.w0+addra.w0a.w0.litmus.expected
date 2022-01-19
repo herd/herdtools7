@@ -8,5 +8,5 @@ Witnesses
 Positive: 0 Negative: 3
 Condition exists (1:X1=0x1010101 /\ 1:X3=0x0)
 Observation MP+pow0l.w0+addra.w0a.w0 Never 0 3
-Hash=cf4badf0e28a55c41acea787c4eda838
+Hash=68f4145d7e6baf46cf119f735743589f
 
