@@ -1,0 +1,14 @@
+AArch64 MTE-CoWR+FAULT
+{
+x=1;
+0:X1=x:green;
+0:X3=x:red;
+0:X5=x:green;
+}
+ P0             ;
+    STG X3,[X1] ;
+L0: LDR X0,[X5] ;
+
+locations [0:X0;]    
+exists ~fault(P0:L0,x)
+

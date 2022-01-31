@@ -1,0 +1,12 @@
+AArch64 MTE-CoRR+READ+FAULT
+{
+x=1;
+0:X0=x:red;
+0:X1=x:red;
+1:X0=x;
+1:X3=x:red;
+}
+P0              | P1         ;
+L0: LDR W3,[X0] | STG X3,[X0];
+L1: LDR W4,[X1] |            ;
+exists(~fault(P0:L0,x) /\ fault(P0:L1,x))

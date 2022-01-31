@@ -10,3 +10,17 @@ LDR-STZG2 Allowed
 coWR-mte Forbidden
 Wt+RtWtRt Forbidden
 RtWtRt+WztWzt Forbidden
+MTE-CoRR+READ+FAULT Allowed
+MTE-CoRR+READS Allowed
+MTE-CoRW1+FAULT Forbidden
+MTE-CoRW2+FAULT Forbidden
+MTE-CoRW2+READ Forbidden
+MTE-CoWR+FAULT Forbidden
+MTE-CoWR+READ Forbidden
+MTE-CoWW Forbidden
+MTE-LDRLDR Allowed
+MTE-LDRSTGLDR Forbidden
+MTE-RFI Required
+MTE-CoRW1+READ Required
+#MTE-CoRR+addr+READS Forbidden
+#MTE-CoRR+dmb.ld+READS Forbidden
