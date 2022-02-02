@@ -19,7 +19,7 @@
 
 inline static void selfbar(void *p) {
   asm __volatile__
-    ("dc civac,%[p]\n\t" "dsb sy\n\t" "ic ivau,%[p]\n\t" "dsb sy\n\t" "isb"
+    ("dc cvau,%[p]\n\t" "dsb ish\n\t" "ic ivau,%[p]\n\t" "dsb ish\n\t" "isb"
      ::[p]"r"(p): "memory");
 }
 
