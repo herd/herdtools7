@@ -348,7 +348,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                   Warn.user_error
                     "Label %s is undefined, yet it is used as constant"
                     (Label.pp lbl)
-        else fun lbl -> lbl in
+        else
+          (* Normalisation reduced to label existence check *)
+          fun lbl -> ignore (Label.Map.find lbl p) ; lbl in
 
       let norm_val = (* Normalize labels in values *)
         if self then
@@ -409,30 +411,34 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       (* All memory locations in a test, with initial values *)
       let env0 = get_all_mem_locs test in
 
-      let wrap fetch_proc proc inst addr env m poi =
-        let addr2v =
-          if self then
-            fun s ->
-            try (* Look for label to overwritable instruction *)
-                V.Val (Constant.Label (proc,norm_lbl s))
-            with e -> (* No, look for data location *)
-                let v =  A.V.nameToV s in
-                if
-                  List.exists
-                    (fun (a,_) ->
-                      match a with
-                      | A.Location_global a -> A.V.compare v a=0
-                      | _ -> false)
-                    env0
-                then v else (* No code nor data, deliver code error *)
-                  raise e
-          else A.V.nameToV in
+        let addr2v proc s =
+          try (* Look for label to overwritable instruction *)
+            V.Val (Constant.Label (proc,norm_lbl s))
+          with
+            e -> (* No, look for data location *)
+              let v =  A.V.nameToV s in
+              if
+                List.exists
+                  (fun (a,_) ->
+                    match a with
+                    | A.Location_global a -> A.V.compare v a=0
+                    | _ -> false)
+                  env0
+              then v else (* No code nor data, check error *)
+                match e with
+                | Not_found ->
+                    Warn.user_error
+                      " Symbole %s is not a code label nor a location"
+                      s
+                | e -> raise e in
+
+        let wrap fetch_proc proc inst addr env m poi =
         let ii =
            { A.program_order_index = poi;
              proc = proc; fetch_proc; inst = inst;
              labels = labels_of_instr addr;
              link_label = return_label_of_instr addr;
-             addr2v;
+             addr2v=addr2v proc;
              env = env; } in
         if dbg then
           Printf.eprintf "%s env=%s\n"
@@ -462,6 +468,10 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             | No -> szo
             | St -> None
             | Ld sz -> Some sz in
+          let env =
+            match branch with
+            | S.B.NextSet (r,v) -> A.set_reg r v env
+            | _ -> env in
           next_instr
             re_exec inst fetch_proc proc { A.regs=env; lx_sz=szo; }
             seen addr nexts branch
@@ -490,7 +500,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             EM.unitcodeT false
           end else
             add_next_instr true fetch_proc proc env seen addr inst nexts
-      | S.B.Next -> add_code fetch_proc proc env seen nexts
+      | S.B.Next|S.B.NextSet _ ->
+          add_code fetch_proc proc env seen nexts
       | S.B.Jump lbl ->
           add_lbl proc env seen addr lbl
       | S.B.CondJump (v,lbl) ->
