@@ -1750,13 +1750,6 @@ module Make
                 lbls ;
               O.o ""
           end
-        end else begin
-          List.iter
-            (fun  (_,(_,v)) -> match v with
-            |  Constant.Label _ ->
-                Warn.user_error "label values require \"-variant self\" mode"
-            | _ ->  ())
-            test.T.src.MiscParser.init
         end ;
         let aligned_env =
           List.filter
