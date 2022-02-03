@@ -152,6 +152,8 @@ let pair_compare cmpx cmpy (x1,y1) (x2,y2) =
   | 0 -> cmpy y1 y2
   | r -> r
 
+let pair_eq eqx eqy (x1,y1) (x2,y2) =  eqx x1 x2 &&  eqy y1 y2
+
 let rec list_compare cmp xs ys = match xs,ys with
   | [],[] -> 0
   | [],_::_ -> -1
