@@ -377,24 +377,35 @@ type P.code = MiscParser.proc * A.pseudo list)
         (fun k lbl -> Label.Full.Set.add (p,lbl) k)
         k lbls
 
+    let init_targets init =
+      List.fold_left
+        (fun k (_,v) ->
+          match v with
+          | Constant.Label (_,lbl) ->
+              Label.Set.add lbl k
+          |Concrete _|ConcreteVector _
+          |Symbolic _|Tag _|PteVal _|Instruction _
+           -> k)
+        Label.Set.empty init
+
     let prog_targets prog =
       List.fold_right code_targets prog Label.Full.Set.empty
 
     let pp_full = Label.Full.Set.pp_str "," Label.Full.pp
 
-    let escaping_labels prog =
+    let escaping_labels init prog =
       let defs = all_labels prog
       and uses = prog_targets prog in
-      let esc = Label.Full.Set.diff uses defs in
+      let esc_prog = Label.Full.Set.diff uses defs in
       if do_self then begin
-        if not (Label.Full.Set.is_empty esc) then
+        if not (Label.Full.Set.is_empty esc_prog) then
           Warn.user_error
             "Code to code branches {%s} not possible with `-variant self`, change for initial values"
-          (pp_full esc)
-      end ;
+          (pp_full esc_prog)
+        end ;
       Label.Full.Set.fold
         (fun (_,lbl) -> Label.Set.add lbl)
-        esc Label.Set.empty
+        esc_prog (init_targets init)
 
 (* Translate labls to integers (local labels), when possible *)
     let rec lblmap_pseudo no c m i = match i with
@@ -594,7 +605,7 @@ type P.code = MiscParser.proc * A.pseudo list)
 
     let mk_templates procs_user ty_env name stable_info init code observed =
       let esc =
-        if O.numeric_labels then escaping_labels code
+        if O.numeric_labels then escaping_labels init code
         else Label.Set.empty in
       let outs =
         List.map
@@ -738,8 +749,9 @@ type P.code = MiscParser.proc * A.pseudo list)
         with Not_found -> StringMap.empty in
       let ty_env = ty_env1,ty_env2 in
       let code = List.map (fun ((p,_),c) -> p,c) code in
+      let label_init = A.get_label_init initenv in
       let code =
-        if do_self || is_pte then
+        if do_self || is_pte || Misc.consp label_init then
           let do_append_nop = is_pte && do_precise in
           List.map (fun (p,c) ->
             let nop = A.Instruction A.nop in

@@ -71,6 +71,10 @@ typedef struct global_t {
   /* Topology */
   const int *inst, *role ;
   const char **group ;
+#ifdef SOME_LABELS
+  /* Some labels as constants */
+  code_labels_t lbl;
+#endif
   /* memory */
   intmax_t *mem ;
   /* Cache control */
@@ -102,6 +106,9 @@ static void init_global(global_t *g) {
   g->inst = inst;
   g->role = role;
   g->group = group;
+#ifdef SOME_LABELS
+  code_labels_init(&g->lbl);
+#endif
 #ifdef ACTIVE
   g->active = active;
 #endif

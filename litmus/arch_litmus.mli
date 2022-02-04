@@ -59,6 +59,7 @@ module type Base = sig
   val arch : Archs.t
 
   val find_in_state : location -> state -> V.v
+  val get_label_init : state -> Label.Full.full list
   val pp_reg : reg -> string
   val type_reg : reg -> CType.t
 

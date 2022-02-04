@@ -21,6 +21,7 @@ module type Config = sig
   val mode : Mode.t
   val asmcommentaslabel : bool
   val noinline : bool
+  val variant : Variant_litmus.t -> bool
 end
 
 module type I = sig
@@ -47,6 +48,8 @@ module RegSet = A.RegSet and
 module RegMap = A.RegMap)
     (AL:Arch_litmus.S)
     = struct
+
+      let do_self = O.variant Variant_litmus.Self
 
       type arch_reg = Tmpl.arch_reg
       type t = Tmpl.t
@@ -578,10 +581,17 @@ module RegMap = A.RegMap)
         ()
 
       let compile_label_call (p,lbl) =
-        OutUtils.(
-        sprintf "&_a->%s[_i*_a->%s+_a->%s+%s]"
-          (fmt_code p) (fmt_code_size p)
-          (fmt_prelude p) (fmt_lbl_offset p lbl))
+        let open OutUtils in
+        if do_self then
+          sprintf "&_a->%s[_i*_a->%s+_a->%s+%s]"
+            (fmt_code p) (fmt_code_size p)
+            (fmt_prelude p) (fmt_lbl_offset p lbl)
+        else
+          match O.mode with
+          | Mode.Std ->
+              sprintf "_a->%s" (fmt_lbl_var p lbl)
+          | Mode.PreSi|Mode.Kvm ->
+              sprintf "_g->lbl.%s" (fmt_lbl_var p lbl)
 
       let indirect_star =
         let open Memory in

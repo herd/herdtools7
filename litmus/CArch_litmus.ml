@@ -94,6 +94,7 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
     | (loc2,v)::rem ->
         if location_compare loc loc2 = 0 then v
         else find_in_state loc rem
+  let get_label_init _ = []
 
   let pp_reg x = x
 

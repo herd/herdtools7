@@ -267,6 +267,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
       let mode = Mode.Std
       let asmcommentaslabel = false
       let noinline = false
+      let variant _ = false
     end
 
     module ALang = struct

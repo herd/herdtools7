@@ -150,7 +150,17 @@ module Make
            also dumping types used for alignment. *)
         val dump_vars_types : bool -> T.t -> unit
 
-       (* Same output as shell script in (normal) shell driver mode *)
+        (* Dump definition of struct fields that point in code*)
+        val define_label_fields : Label.Full.full list -> unit
+
+        (* Dump initialisation code of label constants,
+           first argument is a pointer to struct *)
+        val initialise_labels : string -> Label.Full.full list -> unit
+
+        (* Dump definition of label offsets, _i.e_ offset from code start *)
+        val define_label_offsets : T.t -> Label.Full.full list -> unit
+
+        (* Same output as shell script in (normal) shell driver mode *)
         val prelude : Name.t -> T.t -> unit
 
         (* Dump results *)
@@ -491,7 +501,50 @@ module Make
           begin match globs with _::_ -> O.o "" | [] -> () end ;
           ()
 
+(* Definition of label constant fields *)
+        let define_label_fields lbls =
+          match lbls with
+          | [] -> ()
+          | _::_ ->
+              let pp =
+                List.map
+                  (fun (p,lbl) -> "*" ^ OutUtils.fmt_lbl_var p lbl)
+                  lbls in
+              O.fi "ins_t %s;" (String.concat "," pp)
 
+(* Label constant initialisation *)
+        let initialise_labels ptr label_init =
+          let open OutUtils in
+          let procs =
+            List.fold_left
+              (fun k (p,_) -> IntSet.add p k)
+              IntSet.empty label_init in
+          IntSet.iter
+            (fun p ->
+              O.fi "size_t %s = prelude_size((ins_t *)code%i);"
+                (fmt_prelude p) p)
+            procs ;
+          List.iter
+            (fun (p,lbl) ->
+              O.fi
+                "%s->%s = ((ins_t *)code%i)+%s+%s;" ptr
+                (fmt_lbl_var p lbl) p
+                (fmt_prelude p) (fmt_lbl_offset p lbl))
+            label_init
+
+(* Output offset of labels *)
+        let define_label_offsets test lbls =
+          match lbls with
+          | [] -> ()
+          | _::_ ->
+              let find p lbl = find_label_offset p lbl test in
+              List.iter
+                (fun (p,lbl) ->
+                  let off = find p lbl in
+                  O.f "static const int %s = %i;"
+                    (OutUtils.fmt_lbl_offset p lbl) off)
+                lbls ;
+              O.o ""
 
         open Preload
 
