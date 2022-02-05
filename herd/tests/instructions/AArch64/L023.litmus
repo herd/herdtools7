@@ -1,0 +1,17 @@
+AArch64 L023
+Stable=X9
+(* Inter thread function calls *)
+{
+}
+  P0          | P1           ;
+ MOV W9,#4    | ADR X1,Linc  ;
+ BL Ldec      | MOV W9,#4    ;
+ BL Ldec      | BLR X1       ;
+ MOV W0,W9    | BLR X1       ;
+ B Lzero      | MOV W0,W9    ;
+Linc:         | B Lone       ;
+ ADD W9,W9,#1 |Ldec:         ;
+ RET          | SUB W9,W9,#1 ;
+Lzero:        | RET          ;
+              |Lone:         ;
+forall 0:X0=2 /\ 1:X0=6
