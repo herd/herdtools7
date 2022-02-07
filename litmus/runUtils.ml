@@ -93,21 +93,25 @@ let get_gcc_opts =
   let std_opts = sprintf "-Wall %s" std_opt ^  O.gccopts in
   let opts =
     let open TargetOS in
+    match target_os, O.mode with
+    | _, Mode.Kvm
+    | (Mac|Android8), _ ->
+       std_opts
+    | _ ->
+       std_opts ^ " -pthread"
+  in
+  let opts =
+    let open TargetOS in
     match target_os with
-    | Mac|Android8 -> begin match O.word with
-      | Word.W64 -> std_opts ^ " -m64"
-      | Word.W32 -> std_opts ^ " -m32"
-      | Word.WXX -> std_opts
-    end
-    | Linux|FreeBsd -> begin match O.word with
-      | Word.W64 -> std_opts ^ " -m64 -pthread"
-      | Word.W32 -> std_opts ^ " -m32 -pthread"
-      | Word.WXX -> std_opts ^ " -pthread"
+    | Mac|Android8|Linux|FreeBsd -> begin match O.word with
+      | Word.W64 -> opts ^ " -m64"
+      | Word.W32 -> opts ^ " -m32"
+      | Word.WXX -> opts
     end
     | AIX -> begin match O.word with
-      | Word.W64 -> std_opts ^ " -maix64 -pthread"
-      | Word.W32 -> std_opts ^ " -maix32 -pthread"
-      | Word.WXX -> std_opts ^ " -pthread"
+      | Word.W64 -> opts ^ " -maix64"
+      | Word.W32 -> opts ^ " -maix32"
+      | Word.WXX -> opts
     end in
 
   let opts = match O.affinity with
