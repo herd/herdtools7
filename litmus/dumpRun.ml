@@ -111,7 +111,11 @@ end = struct
     let gcc_opts =
       if do_self then LexO.tr RU.get_gcc_opts
       else RU.get_gcc_opts in
-    fprintf chan "GCC=%s\n" Cfg.gcc ;
+    match Cfg.mode with
+    | Mode.Std|Mode.PreSi ->
+       fprintf chan "CC=%s\n" Cfg.gcc ;
+    | Mode.Kvm ->
+       () ;
     fprintf chan "GCCOPTS=%s\n" gcc_opts ;
     let link_opts = RU.get_link_opts in
     fprintf chan "LINKOPTS=%s\n" link_opts ;
