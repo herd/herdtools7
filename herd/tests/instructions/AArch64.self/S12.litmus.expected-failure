@@ -1,0 +1,1 @@
+Warning: File "./herd/tests/instructions/AArch64.self/S12.litmus": unsupported argument for the indirect branch instruction BLR X2 (must be a statically known label)

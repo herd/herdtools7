@@ -1,1 +1,0 @@
-Warning: File "./herd/tests/instructions/AArch64.self/S03.litmus": Instruction L0:ADD W0,W0,#1 cannot be overwritten (User error)

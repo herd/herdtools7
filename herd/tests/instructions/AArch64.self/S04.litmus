@@ -1,0 +1,11 @@
+AArch64 S04
+{
+0:X0=0; 0:X1=P0:L0; 0:X30=P0:L1;
+}
+    P0           ;
+  RET X1         ;
+  MOV X0, #1     ;
+L1:              ;
+  MOV X0, #2     ;
+L0:              ;
+forall (0:X0=0)

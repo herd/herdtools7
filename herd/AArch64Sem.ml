@@ -1402,9 +1402,13 @@ module Make
           >>! B.Next
         end
 
-(********************)
-(* TODO *)
-(********************)
+(*********************)
+(* Instruction fetch *)
+(*********************)
+
+      let supported_with_self i =
+        if not self then
+          Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
 
       let make_label_value proc lbl_str =
         A.V.cstToV (Constant.Label (proc, lbl_str))
@@ -1413,6 +1417,19 @@ module Make
         let loc_instr =
           A.Location_global (make_label_value ii.A.fetch_proc v) in
         M.read_loc false (mk_fetch AArch64.N) loc_instr ii
+
+(*********************)
+(* Branches *)
+(*********************)
+
+      let do_indirect_jump i = function
+        | M.A.V.Val(Constant.Label (_, l)) -> B.branchT l
+        | M.A.V.Var(_) -> Warn.fatal
+            "unsupported argument for the indirect branch instruction %s \
+            (must be a statically known label)" (AArch64.dump_instruction i)
+        | _ -> Warn.fatal
+            "illegal argument for the indirect branch instruction %s \
+            (must be a label)" (AArch64.dump_instruction i)
 
 (********************)
 (* Main entry point *)
@@ -1466,9 +1483,8 @@ module Make
               commit_bcc ii >>= fun () -> B.bccT v l
 
         | I_BL l as i ->
-          if not self then
-            Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
-          else begin
+          supported_with_self i;
+          begin
             match ii.A.link_label with
             | Some ret_lbl ->
               let ret_lbl_v = A.V.cstToV (Constant.Label (ii.A.proc, ret_lbl)) in
@@ -1478,55 +1494,31 @@ module Make
               assert false (* mem.ml ought to ensure link_label is set *)
           end
         | I_BR r as i ->
-          if not self then
-            Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
-          else begin
+          supported_with_self i ;
+          begin
             read_reg_ord r ii
-            >>= (function
-              | M.A.V.Val(Constant.Label (_, l)) -> B.branchT l
-              | M.A.V.Var(_) -> Warn.fatal
-                "unsupported argument for the instruction %s \
-                (a statically known label expected)" (AArch64.dump_instruction i)
-              | _ -> Warn.fatal
-                "illegal argument for the instruction %s \
-                (a label expected)" (AArch64.dump_instruction i)  )
+            >>= do_indirect_jump i
           end
         | I_BLR r as i ->
-          if not self then
-            Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
-          else begin
+          supported_with_self i ;
+          begin
             match ii.A.link_label with
             | Some ret_lbl ->
               let ret_lbl_v = A.V.cstToV (Constant.Label (ii.A.proc, ret_lbl)) in
               write_reg AArch64Base.linkreg ret_lbl_v ii
               >>= fun () -> read_reg_ord r ii
-              >>= (function
-              | M.A.V.Val(Constant.Label (_, l)) -> B.branchT l
-              | M.A.V.Var(_) -> Warn.fatal
-                "unsupported argument for the instruction %s \
-                (a statically known label expected)" (AArch64.dump_instruction i)
-              | _ -> Warn.fatal
-                "illegal argument for the instruction %s \
-                (a label expected)" (AArch64.dump_instruction i) )
+              >>= do_indirect_jump i
             | None ->
               assert false (* mem.ml ought to ensure link_label is set *)
           end
         | I_RET _ro as i ->
-          if not self then
-            Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
-          else begin
+          supported_with_self i ;
+          begin
             let r = match _ro with
             | None -> AArch64Base.linkreg
             | Some r -> r in
             read_reg_ord r ii
-            >>= (function
-              | M.A.V.Val(Constant.Label (_, l)) -> B.branchT l
-              | M.A.V.Var(_) -> Warn.fatal
-                "unsupported argument for the instruction %s \
-                (a statically known label expected)" (AArch64.dump_instruction i)
-              | _ -> Warn.fatal
-                "illegal argument for the instruction %s \
-                (a label expected)" (AArch64.dump_instruction i) )
+            >>= do_indirect_jump i
           end
 
         | I_CBZ(_,r,l) ->

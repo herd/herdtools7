@@ -1,0 +1,10 @@
+AArch64 S10
+{
+0:X0=0;
+}
+    P0           |   P1;
+  BR L0          |   B L1       ;
+                 | L0:          ;
+                 |   MOV X0, #1 ;
+                 | L1:          ;
+locations [0:X0; 1:X0;]
