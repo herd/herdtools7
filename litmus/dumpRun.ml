@@ -253,7 +253,7 @@ let dump_shell_kvm_dorun out_chan e =
   fprintf out_chan "  EXE=$1\n" ;
   fprintf out_chan "  shift\n" ;
   fprintf out_chan "  OPTS=\"$@\"\n" ;
-  fprintf out_chan "  ${KVM_RUN} ${TDIR}/${EXE} -cpu host -smp %i -append \"${OPTS}\"\n"
+  fprintf out_chan "  ${KVM_RUN} ${TDIR}/${EXE} -smp %i -append \"${OPTS}\"\n"
     (match Cfg.avail with
      | Some e -> e
      | None ->
