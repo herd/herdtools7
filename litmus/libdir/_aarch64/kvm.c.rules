@@ -2,10 +2,10 @@ clean:
 	/bin/rm -f *.o *.s *.t *.elf *.flat *~ *.t $(H)
 
 %.s: %.c
-	$(GCC) -DASS $(GCCOPTS) -S $<
+	$(CC) -DASS $(GCCOPTS) -S $<
 
 %.o: %.c
-	$(GCC) $(GCCOPTS) -c -o $@ $<
+	$(CC) $(GCCOPTS) -c -o $@ $<
 
 %.t: %.s
 	awk -f show.awk $< > $@
@@ -16,7 +16,7 @@ clean:
 %.elf: LDFLAGS = -nostdlib -pie -n
 
 run.elf: run.o $(OBJ) utils.o kvm_timeofday.o $(FLATLIBS) $(SRCDIR)/arm/flat.lds $(cstart.o)
-	$(GCC) $(CFLAGS) -c -o $(@:.elf=.aux.o) $(SRCDIR)/lib/auxinfo.c \
+	$(CC) $(CFLAGS) -c -o $(@:.elf=.aux.o) $(SRCDIR)/lib/auxinfo.c \
 		-DPROGNAME=\"$(@:.elf=.flat)\" -DAUXFLAGS=$(AUXFLAGS)
 	$(LD) $(LDFLAGS) -o $@ -T $(SRCDIR)/arm/flat.lds \
 		$(filter %.o, $^) $(FLATLIBS) $(@:.elf=.aux.o)

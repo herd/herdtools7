@@ -2,10 +2,10 @@ clean:
 	/bin/rm -f *.o *.s *.t *.elf *.flat *~ *.t $(H)
 
 %.s: %.c
-	$(GCC) -DASS $(GCCOPTS) -S $<
+	$(CC) -DASS $(GCCOPTS) -S $<
 
 %.o: %.c
-	$(GCC) $(GCCOPTS) -c -o $@ $<
+	$(CC) $(GCCOPTS) -c -o $@ $<
 
 %.t: %.s
 	awk -f show.awk $< > $@
@@ -14,7 +14,7 @@ clean:
 	sh toh.sh $< > $@
 
 run.elf: run.o $(OBJ) utils.o kvm_timeofday.o $(FLATLIBS) $(SRCDIR)/x86/flat.lds $(cstart.o)
-	$(GCC) $(GCCOPTS) -nostdlib -o $@ -Wl,-T,$(SRCDIR)/x86/flat.lds $(filter %.o, $^) $(FLATLIBS)
+	$(CC) $(GCCOPTS) -nostdlib -o $@ -Wl,-T,$(SRCDIR)/x86/flat.lds $(filter %.o, $^) $(FLATLIBS)
 	@chmod a-x $@
 
 %.flat: %.elf

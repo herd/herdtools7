@@ -5,15 +5,15 @@ cleansource:
 	/bin/rm -f *.o *.c *.h *.s *~
 
 %.s: %.c
-	$(GCC) $(GCCOPTS) -S $<
+	$(CC) $(GCCOPTS) -S $<
 %.o: %.c
 %.o: %.s
-	$(GCC) $(GCCOPTS) -c -o $@ $<
+	$(CC) $(GCCOPTS) -c -o $@ $<
 %.t: %.s
 	awk -f show.awk $< > $@
 
 %.elf: %.o utils.o kvm_timeofday.o $(FLATLIBS) $(SRCDIR)/x86/flat.lds $(cstart.o)
-	$(GCC) $(GCCOPTS) -nostdlib -o $@ -Wl,-T,$(SRCDIR)/x86/flat.lds  $(filter %.o, $^) $(FLATLIBS)
+	$(CC) $(GCCOPTS) -nostdlib -o $@ -Wl,-T,$(SRCDIR)/x86/flat.lds  $(filter %.o, $^) $(FLATLIBS)
 	@chmod a-x $@
 
 %.flat: %.elf
