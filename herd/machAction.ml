@@ -373,8 +373,8 @@ end = struct
         | _ -> None
         end
 
-  let is_implicit_pte_read = function
-  | Access (R,_,_,_,_,_,Access.PTE) -> true
+  let is_pte_access = function
+  | Access (_,_,_,_,_,_,Access.PTE) -> true
   | _ -> false
 
   let lift_explicit_predicate p act = match act with

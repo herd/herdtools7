@@ -352,14 +352,18 @@ module Make
                  "NDATA", (fun e -> not (is_data_port e));])) in
       let m =
         if kvm then begin
-            let impl_pte_reads =
+            let pte_accesses =
               E.EventSet.filter
-                (fun e -> E.Act.is_implicit_pte_read e.E.action)
+                (fun e -> E.Act.is_pte_access e.E.action)
                 (Lazy.force mem_evts) in
             let evts_map =
               E.EventSet.fold
                 (fun e evts_map ->
-                  let pteval_v = E.read_of e in
+                  let pteval_v =
+                    match E.read_of e with
+                    | Some _ as v -> v
+                    | _ -> E.written_of e
+                  in
                   let attrs =
                     let open Constant in
                     match pteval_v with
@@ -373,7 +377,7 @@ module Make
                       let evts_w_attr = E.EventSet.add e evts_w_attr in
                       let evts_map = StringMap.add attr evts_w_attr evts_map in
                       evts_map) attrs evts_map)
-                impl_pte_reads StringMap.empty in
+                pte_accesses StringMap.empty in
             I.add_sets m
               (StringMap.fold
                  (fun k v l -> ("PTE" ^ k, lazy v) :: l) evts_map [])
