@@ -125,28 +125,28 @@ module Make (C:Sem.Config)(V:Value.S)
       let build_semantics ii =
         let build_semantics_inner ii =
           match ii.A.inst with
-          | BellBase.Pnop -> M.unitT B.Next
+          | BellBase.Pnop -> B.nextT
           | BellBase.Pld(r,addr_op,[("deref"|"lderef")]) when compat ->
               solve_addr_op addr_op ii >>=
               fun addr -> read_mem nat_sz addr ["once"] ii >>=
                 fun v -> write_reg r v ii >>*=
-                  fun () -> create_barrier ["rb_dep"] None ii >>! B.Next
+                  fun () -> create_barrier ["rb_dep"] None ii >>= B.next1T
           | BellBase.Pld(r,addr_op,s) ->
               solve_addr_op addr_op ii >>=
               (fun addr -> read_mem nat_sz addr s ii) >>=
-              (fun v -> write_reg r v ii) >>! B.Next
+              (fun v -> write_reg r v ii) >>= B.next1T
 
           | BellBase.Pst(addr_op, roi, s) ->
               let s = match s with
               | ["assign"] when compat -> ["release"]
               | _ -> s in
-              (solve_addr_op addr_op ii >>|
-              read_roi true roi ii) >>=
-              (fun (addr,v) -> write_mem nat_sz addr v s ii) >>!
-              B.Next
+              (solve_addr_op addr_op ii >>| read_roi true roi ii)
+              >>= fun (addr,v) -> write_mem nat_sz addr v s ii
+              >>= B.next1T
+
 
           | BellBase.Pfence(BellBase.Fence (s,o)) ->
-              create_barrier s o ii >>! B.Next
+              create_barrier s o ii >>= B.next1T
 
           | BellBase.Pcall _ ->
               Warn.fatal "Obsolete 'call' instruction in BellSem\n"
@@ -158,9 +158,10 @@ module Make (C:Sem.Config)(V:Value.S)
                 (fun x -> (read_mem_atom nat_sz x s ii) >>=
                   (fun v_read ->
                     (tr_op ~stack:[(r,v_read)] ii op) >>=
-                    (fun v -> write_reg r v_read ii >>|
-                    write_mem_atom nat_sz x v s ii))) >>!
-                B.Next
+                      (fun v ->
+                        write_reg r v_read ii >>|
+                          write_mem_atom nat_sz x v s ii)))
+                >>= fun ((),()) -> B.nextT
               else begin
                 rloc >>=
                 (fun x ->
@@ -168,7 +169,7 @@ module Make (C:Sem.Config)(V:Value.S)
                   and r2 = tr_op ii op
                   and w1 = fun v -> write_mem_atom nat_sz x v s ii
                   and w2 = fun v -> write_reg r v ii in
-                  M.exch r1 r2 w1 w2) >>! B.Next
+                  M.exch r1 r2 w1 w2) >>= fun ((),()) -> B.nextT
               end
           | BellBase.Pbranch(Some r,lbl,_) ->
               (read_reg false r ii) >>=
@@ -177,7 +178,7 @@ module Make (C:Sem.Config)(V:Value.S)
           | BellBase.Pbranch(None ,lbl,_) ->  B.branchT lbl
 
           | BellBase.Pmov(r,op) ->
-              (tr_mov r op ii) >>! B.Next
+              (tr_mov r op ii) >>= B.next1T
 
         in
         M.addT (A.next_po_index ii.A.program_order_index) (build_semantics_inner ii)

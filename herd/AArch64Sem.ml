@@ -169,6 +169,11 @@ module Make
             (mk_write quad AArch64.N aexp Access.REG v)
             (A.Location_reg (ii.A.proc,r)) ii
 
+      let write_reg_dest r v ii = match r with
+        | AArch64.ZR -> M.unitT V.zero
+        | _ ->
+            write_reg r v ii >>= fun () -> M.unitT v
+
       let write_reg_morello r v ii =
         if not morello then
           Warn.user_error "capabilities require -variant morello" ;
@@ -696,8 +701,9 @@ module Make
 
 (* Save value read in register rd *)
       let do_read_mem sz an anexp ac rd a ii =
-        do_read_mem_ret sz an anexp ac a ii >>=
-        fun v -> write_reg_sz_non_mixed sz rd v ii >>! B.Next
+        do_read_mem_ret sz an anexp ac a ii
+        >>= fun v -> write_reg_sz_non_mixed sz rd v ii
+        >>= fun () -> B.nextT
 
       let read_mem sz = do_read_mem sz AArch64.N
       let read_mem_acquire sz = do_read_mem sz AArch64.A
@@ -802,20 +808,20 @@ module Make
           (fun _ ma ->
             let mm = mop Access.PHY ma in
             delayed_check_tags a_virt ma ii
-              (mm  >>! B.Next)
+              (mm  >>= M.ignore >>= B.next1T)
               (let mfault = mk_fault a_virt ii None in
               if C.precision then  mfault >>! B.Exit
-              else (mfault >>| mm) >>! B.Next))
+              else (mfault >>| mm) >>= M.ignore >>= B.next1T))
 
       let lift_memtag_virt mop ma ii =
         M.delay_kont "5" ma
           (fun a_virt ma  ->
             let mm = mop Access.VIR (ma >>= fun a -> loc_extract a) in
             delayed_check_tags a_virt ma ii
-              (mm  >>! B.Next)
+              (mm  >>= M.ignore >>= B.next1T)
               (let mfault = ma >>= fun a -> mk_fault a ii None in
               if C.precision then  mfault >>! B.Exit
-              else (mfault >>| mm) >>! B.Next))
+              else (mfault >>| mm) >>= M.ignore >>= B.next1T))
 
 
       let some_ha = dirty.DirtyBit.some_ha || dirty.DirtyBit.some_hd
@@ -838,7 +844,7 @@ module Make
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb a ma an ii
             ((let m = mop Access.PTE ma in
-              fire_spurious_af dir a m) >>! B.Next)
+              fire_spurious_af dir a m) >>= M.ignore >>= B.next1T)
             mphy
             mfault in
         M.delay_kont "6" ma
@@ -847,7 +853,7 @@ module Make
              fun a ma ->
              match Act.access_of_location_std (A.Location_global a) with
              | Access.VIR|Access.PTE -> maccess a ma
-             | ac -> mop ac ma >>! B.Next)
+             | ac -> mop ac ma >>= M.ignore >>= B.next1T)
 
       let lift_morello mop perms ma mv ii =
         let mfault msg ma mv =
@@ -863,7 +869,7 @@ module Make
                 check_morello_sealed a ma mv
                   (fun ma mv ->
                     check_morello_perms a ma mv perms
-                      (fun ma mv -> mok ma mv >>! B.Next)
+                      (fun ma mv -> mok ma mv >>= M.ignore >>= B.next1T)
                       (mfault "CapPerms"))
                   (mfault "CapSeal"))
               (mfault "CapTag"))
@@ -898,15 +904,17 @@ module Make
                 M.choiceT c
                   (mop Access.PHY ma)
                   (fire_spurious_af dir a_virt (mop Access.PHY_PTE ma))
-                >>! B.Next
+                >>= M.ignore >>= B.next1T
               else
-                fun ma _a -> mop Access.PHY ma >>! B.Next in
+                fun ma _a ->
+                mop Access.PHY ma
+                >>= M.ignore >>= B.next1T in
             lift_kvm dir updatedb mop ma an ii mphy
           else
-            mop Access.VIR ma >>! B.Next
+            mop Access.VIR ma >>= M.ignore >>= B.next1T
 
-(* Generic load *)
       let do_ldr sz an mop ma ii =
+(* Generic load *)
         lift_memop Dir.R true
           (fun ac ma _mv -> (* value fake here *)
             if Access.is_physical ac then
@@ -1175,18 +1183,18 @@ module Make
       (* Neon extension, memory accesses return B.Next, as they cannot fail *)
       let simd_ldr sz addr rd ii =
         do_read_mem_ret sz AArch64.N aexp Access.VIR addr ii >>= fun v ->
-        write_reg_neon_sz sz rd v ii >>! B.Next
+        write_reg_neon_sz sz rd v ii >>= B.next1T
 
       let simd_str sz rs rd kr s ii =
         get_ea rs kr s ii >>|
         read_reg_neon true rd ii >>= fun (addr,v) ->
-        write_mem sz aexp Access.VIR addr v ii >>! B.Next
+        write_mem sz aexp Access.VIR addr v ii >>= B.next1T
 
       let simd_str_p sz rs rd k ii =
         read_reg_ord rs ii >>|
         read_reg_neon true rd ii >>= fun (addr,v) ->
         write_mem sz aexp Access.VIR addr v ii >>|
-        post_kr rs addr k ii >>! B.Next
+        post_kr rs addr k ii >>= B.next2T
 
       let simd_ldp var addr1 rd1 rd2 ii =
         let open AArch64Base in
@@ -1196,8 +1204,8 @@ module Make
         M.add addr1 os >>= fun addr2 ->
         simd_ldr access_size addr2 rd2 ii)) >>=
         fun (b1,b2) ->
-          assert (b1=B.Next && b2=B.Next) ;
-          M.unitT B.Next
+          assert (b1=B.Next []&& b2=B.Next []) ;
+          B.nextT
 
       let simd_stp var addr1 rd1 rd2 ii =
         let open AArch64Base in
@@ -1208,7 +1216,7 @@ module Make
         (neon_sz_k var >>= fun os ->
         M.add addr1 os >>|
         read_reg_neon true rd2 ii >>= fun (addr2,v2) ->
-        write_mem access_size aexp Access.VIR addr2 v2 ii)) >>! B.Next
+        write_mem access_size aexp Access.VIR addr2 v2 ii)) >>= B.next2T
 
       let movi_v r k shift ii =
         let open AArch64Base in
@@ -1277,7 +1285,7 @@ module Make
               "illegal instruction %s"
               (AArch64.dump_instruction (I_MOVZ (sz, rd, k, os)))
         end
-        >>= fun v -> write_reg rd v ii
+        >>= fun v -> write_reg_dest rd v ii
 
       let m_movk msk v1 v2 =
         M.op Op.AndNot2 v2 msk >>= M.op Op.Or v1
@@ -1308,7 +1316,7 @@ module Make
             (pp_barrel_shift "," s pp_imm)
             (pp_variant var)
         end
-        >>= fun v -> write_reg rd v ii
+        >>= fun v -> write_reg_dest rd v ii
 
       let csel_op op v =
         let open AArch64Base in
@@ -1372,7 +1380,7 @@ module Make
 
       let do_dc op rd ii =
         if AArch64Base.DC.sw op then
-          M.mk_singleton_es (Act.DC (op, None)) ii >>! B.Next
+          M.mk_singleton_es (Act.DC (op, None)) ii >>= B.next1T
         else begin
             (* TODO: The size for DC should be a cache line *)
             let mop _ac a = dc_loc op a ii in
@@ -1391,7 +1399,7 @@ module Make
 
       let do_ic op rd ii =
         if AArch64Base.IC.all op then (* IC IALLU *)
-          M.mk_singleton_es (Act.IC (op, None)) ii >>! B.Next
+          M.mk_singleton_es (Act.IC (op, None)) ii >>= B.next1T
         else
         begin (* IC IVAU *)
           read_reg_ord rd ii
@@ -1399,7 +1407,7 @@ module Make
             let loc = A.Location_global a in
             let act = Act.IC (op,Some loc) in
             M.mk_singleton_es act ii
-          >>! B.Next
+          >>= B.next1T
         end
 
 (*********************)
@@ -1442,11 +1450,13 @@ module Make
          of code instructions would be ignored. See issue #287.
        *)
 
-      let (!!!!) (m1:(unit list list * unit) M.t) = m1 >>! B.Next
-      let (!!!) (m1:(unit list * unit) M.t) = m1 >>! B.Next
-      let (!!) (m1:(unit * unit) M.t) = m1 >>! B.Next
-      let (!) (m1:unit M.t) = m1 >>! B.Next
-      let (:=) (m1:unit M.t) r v = m1 >>! B.NextSet (r,v)
+      let (!!!!) (m1:(unit list list * unit) M.t) =
+        m1 >>= M.ignore >>= B.next1T
+      let (!!!) (m1:(unit list * unit) M.t) =
+        m1 >>= M.ignore >>= B.next1T
+      let (!!) (m1:(unit * unit) M.t) = m1 >>= B.next2T
+      let (!) (m1:unit M.t) = m1 >>= B.next1T
+      let nextSet = B.nextSetT
       (* And now, just forget about >>! *)
       let (>>!) (_:unit) (_:unit) = ()
 
@@ -1455,7 +1465,7 @@ module Make
           AArch64Base.(
         match ii.A.inst with
         | I_NOP ->
-            M.unitT B.Next
+            B.nextT
               (* Branches *)
         | I_B l ->
             if not self then
@@ -1474,7 +1484,7 @@ module Make
                     read_loc_instr hd ii
                     >>= M.neqT b_val
                     >>= fun () -> (M.mk_singleton_es (Act.NoAction) ii)
-                    >>= fun () -> M.unitT B.Next
+                    >>= B.next1T
                   )
               | None -> B.branchT l
             end
@@ -1516,18 +1526,18 @@ module Make
             read_reg_ord r ii
             >>= do_indirect_jump i
 
-
         | I_CBZ(_,r,l) ->
             (read_reg_ord r ii)
               >>= is_zero
               >>= fun v -> commit_bcc ii
-                  >>= fun () -> B.bccT v l
+              >>= fun () -> B.bccT v l
 
         | I_CBNZ(_,r,l) ->
             (read_reg_ord r ii)
               >>= is_not_zero
               >>= fun v -> commit_bcc ii
-                  >>= fun () -> B.bccT v l
+              >>= fun () -> B.bccT v l
+
         | I_TBZ(_,r,k,l) ->
             (read_reg_ord r ii)
               >>= M.op1 (Op.ReadBit k)
@@ -1877,24 +1887,30 @@ module Make
 
         (* Operations *)
         | I_MOV(var,r,K k) ->
-            !(mask32 var
-               (fun k -> write_reg r k ii)
-               (V.intToV k))
+            mask32 var
+               (fun k ->
+                 write_reg_dest r k ii
+                 >>= nextSet r)
+               (V.intToV k)
         | I_MOV(var,r1,RV (_,r2)) ->
             let sz = tr_variant var in
-            !(read_reg_ord_sz sz r2 ii >>= fun v -> write_reg r1 v ii)
+            read_reg_ord_sz sz r2 ii
+            >>= fun v -> write_reg_dest r1 v ii
+            >>= nextSet r1
         | I_MOVZ(var,rd,k,os) ->
-            !(movz var rd k os ii)
+           movz var rd k os ii >>= nextSet rd
         | I_MOVK(var,rd,k,os) ->
-            !(movk var rd k os ii)
+            movk var rd k os ii >>= nextSet rd
 
         | I_ADDR (r,lbl) ->
-            let v = ii.A.addr2v lbl in
-           (write_reg r  (ii.A.addr2v lbl) ii := r) v
+            write_reg_dest r (ii.A.addr2v lbl) ii
+            >>= nextSet r
 
         | I_SXTW(rd,rs) ->
-            !(read_reg_ord_sz MachSize.Word rs ii >>=
-             sxtw_op >>= fun v -> write_reg rd v ii)
+            read_reg_ord_sz MachSize.Word rs ii
+            >>=  sxtw_op
+            >>= fun v -> write_reg_dest rd v ii
+            >>= nextSet rd
 
         | I_OP3(ty,op,rd,rn,kr,os) ->
             let sz = tr_variant ty in
@@ -1928,7 +1944,7 @@ module Make
                   (pp_variant ty)
                   (pp_op op)
             end in
-            !!(begin match kr with
+            (begin match kr with
             | RV (_,r) when reg_compare r rn = 0 -> (* register variant*)
                 (* Keep sharing here, otherwise performance penalty on address
                    dependency by r^r in mixed size mode *)
@@ -1984,14 +2000,22 @@ module Make
                   end
               end >>=
               (let m v =
-                 (write_reg rd v ii) >>|
+                 (write_reg_dest rd v ii) >>|
                    (match op with
                     | ADDS|SUBS|ANDS|BICS
-                      -> is_zero v >>= fun v -> write_reg NZP v ii
+                      ->
+                        is_zero v
+                        >>= fun v -> write_reg_dest NZP v ii
+                        >>= fun v -> M.unitT (Some v)
                     | ADD|EOR|ORR|AND|SUB|ASR|LSR|LSL|BIC
-                      -> M.unitT ()) in
+                      -> M.unitT None) in
                mask32 ty m))
-
+            >>= fun (v,wo) ->
+            begin match wo with
+            | None -> B.nextSetT rd v
+            | Some w ->
+                M.unitT (B.Next [rd,v; NZP,w])
+            end
       (* Barrier *)
         | I_FENCE b ->
             !(create_barrier b ii)

@@ -118,10 +118,10 @@ module Make (C:Sem.Config)(V:Value.S)
 
       let check_flag_op mf op ii =
         mf ii >>*= fun b ->  M.choiceT b (op ii) (M.unitT ())
-        >>! B.Next
+        >>= B.next1T
 
       let checkZ op c ii = match c with
-      | ARM.AL -> op ii >>! B.Next
+      | ARM.AL -> op ii >>= B.next1T
       | ARM.NE ->
           check_flag_op
             (fun ii -> read_reg_ord ARM.Z ii >>= flip_flag) op ii
@@ -136,7 +136,7 @@ module Make (C:Sem.Config)(V:Value.S)
       let build_semantics ii =
         M.addT (A.next_po_index ii.A.program_order_index)
           begin match ii.A.inst with
-          | ARM.I_NOP -> M.unitT B.Next
+          | ARM.I_NOP -> B.nextT
           | ARM.I_ADD (set,rd,rs,v) ->
               ((read_reg_ord rs ii)
                  >>=
@@ -147,7 +147,7 @@ module Make (C:Sem.Config)(V:Value.S)
                  (write_reg rd vres ii)
                    >>|
                    write_flags set vres (V.intToV 0) ii))
-                >>! B.Next
+                >>= B.next2T
           | ARM.I_SUB (set,rd,rs,v) ->
               ((read_reg_ord rs ii)
                  >>=
@@ -158,7 +158,7 @@ module Make (C:Sem.Config)(V:Value.S)
                  (write_reg rd vres ii)
                    >>|
                    write_flags set vres (V.intToV 0) ii))
-                >>! B.Next
+                >>= B.next2T
           | ARM.I_ADD3 (set,rd,rn,rm) ->
               (((read_reg_ord  rn ii) >>| (read_reg_ord rm ii))
                  >>=
@@ -169,7 +169,7 @@ module Make (C:Sem.Config)(V:Value.S)
                    write_reg rd vd ii
                      >>|
                      write_flags set vd (V.intToV 0) ii)))
-                >>! B.Next
+                >>= B.next2T
           | ARM.I_SUB3 (set,rd,rn,rm) ->
               (((read_reg_ord  rn ii) >>| (read_reg_ord rm ii))
                  >>=
@@ -180,7 +180,7 @@ module Make (C:Sem.Config)(V:Value.S)
                    write_reg rd vd ii
                      >>|
                      write_flags set vd (V.intToV 0) ii)))
-                >>! B.Next
+                >>= B.next2T
           | ARM.I_AND (set,rd,rs,v) ->
               ((read_reg_ord  rs ii)
                  >>=
@@ -191,7 +191,7 @@ module Make (C:Sem.Config)(V:Value.S)
                  write_reg  rd vres ii
                    >>|
                    write_flags set vres (V.intToV 0) ii))
-                >>! B.Next
+                >>= B.next2T
           | ARM.I_B lbl -> B.branchT lbl
           | ARM.I_BEQ (lbl) ->
               read_reg_ord ARM.Z ii >>=
@@ -209,13 +209,13 @@ module Make (C:Sem.Config)(V:Value.S)
                  >>=
                (fun vr ->
                  write_flags ARM.SetFlags vr (V.intToV v) ii))
-                >>! B.Next
+                >>= B.next1T
           | ARM.I_CMP (r1,r2) ->
               (((read_reg_ord  r1 ii)  >>| (read_reg_ord  r2 ii))
                  >>=
                (fun (v1,v2) ->
                  write_flags ARM.SetFlags v1 v2 ii))
-                >>! B.Next
+                >>= B.next1T
           |  ARM.I_LDR (rt,rn,c) ->
               let ldr ii =
                 (read_reg_ord  rn ii)
@@ -232,7 +232,7 @@ module Make (C:Sem.Config)(V:Value.S)
                   write_reg ARM.RESADDR vn ii >>|
                   (read_mem_atomic nat_sz vn ii >>=
                    fun v -> write_reg  rt v ii)) in
-              ldr ii >>! B.Next
+              ldr ii >>= B.next2T
           |  ARM.I_LDR3 (rt,rn,rm,c) ->
               let ldr3 ii =
                 ((read_reg_ord  rn ii) >>| (read_reg_ord  rm ii))
@@ -290,16 +290,16 @@ module Make (C:Sem.Config)(V:Value.S)
                    write_reg  r3 v3 ii
                      >>|
                      write_flags set v3 (V.intToV 0) ii)))
-                >>! B.Next
+                >>= B.next2T
           | ARM.I_DMB o ->
               (create_barrier (ARM.DMB o) ii)
-                >>! B.Next
+                >>= B.next1T
           | ARM.I_DSB o ->
               (create_barrier (ARM.DSB o) ii)
-                >>! B.Next
+                >>= B.next1T
           | ARM.I_ISB ->
               (create_barrier ARM.ISB ii)
-                >>! B.Next
+                >>= B.next1T
           | ARM.I_SADD16 _ ->
               Warn.user_error "SADD16 not implemented"
           | ARM.I_SEL _ ->

@@ -39,6 +39,7 @@ module type S =
     val zeroT        : 'a t
     val zerocodeT        : 'a code
     val unitT        : 'a -> 'a t
+    val ignore : 'a -> unit t
     val unitcodeT        : 'a -> 'a code
     val delay_kont : string -> 'a t -> ('a ->  'a t -> 'b t) -> 'b t
     val delay : 'a t -> ('a * 'a t) t

@@ -174,7 +174,8 @@ module Make (C:Sem.Config)(V:Value.S)
            M.addT (PPC.Location_reg (proc,rD)) (M.op op vA vB)
              >>= (fun (l,v) ->
                write_loc nat_sz l v ii >>|
-               flags with_flags 0 v V.zero ii))) >>! B.Next
+                 flags with_flags 0 v V.zero ii)))
+        >>= B.next2T
 
           (* operations RD <- RA op im *)
       let op2regi ii op with_flags rD rA im =
@@ -184,7 +185,8 @@ module Make (C:Sem.Config)(V:Value.S)
            M.addT (PPC.Location_reg (proc,rD)) (M.op op vA im) >>=
            (fun (l,v) ->
              write_loc nat_sz l v ii >>|
-             flags with_flags 0 v V.zero ii))) >>! B.Next
+               flags with_flags 0 v V.zero ii)))
+        >>= B.next2T
 
 
       let bcc_yes cr bit ii lbl =
@@ -199,7 +201,7 @@ module Make (C:Sem.Config)(V:Value.S)
       let build_semantics ii =
         M.addT (A.next_po_index ii.A.program_order_index)
           begin match ii.A.inst with
-          | PPC.Pnop -> M.unitT B.Next
+          | PPC.Pnop -> B.nextT
 (* 3 regs ops *)
           |  PPC.Padd (set,rD,rA,rB) ->
               op3regs ii Op.Add set rD rA rB
@@ -225,15 +227,13 @@ module Make (C:Sem.Config)(V:Value.S)
                 op3regs ii Op.Or PPC.DontSetCR0 rD rS rS
               else
                 read_reg_ord rS ii >>=
-                fun v -> write_reg rD v ii >>!
-                  B.Next
+                fun v -> write_reg rD v ii >>= B.next1T
 (* 2 reg + immediate *)
           | PPC.Pli (rD,v)
           | PPC.Paddi (rD,PPC.Ireg (PPC.GPR0),v) ->
 (* Believe it or not Power ISA, p. 62 says so,
    In addi r,GPR0,v GPR0 is interpreted as constant 0 ! *)
-              write_reg rD (V.intToV v) ii >>!
-              B.Next
+              write_reg rD (V.intToV v) ii >>= B.next1T
           |  PPC.Paddi (rD,rA,simm) ->
               op2regi ii Op.Add false rD rA (V.intToV simm)
           |  PPC.Pori (rD,rA,simm) ->
@@ -259,14 +259,13 @@ module Make (C:Sem.Config)(V:Value.S)
 (* Compare, to result in any cr *)
           | PPC.Pcmpwi (cr,rA,v) ->
               read_reg_ord rA ii >>=
-              fun vA -> flags true cr vA (V.intToV v) ii >>!
-                B.Next
+              fun vA -> flags true cr vA (V.intToV v) ii >>= B.next1T
           | PPC.Pcmpw (cr,rA,rB) ->
               (read_reg_ord rA ii >>| read_reg_ord rB ii) >>=
-              fun (vA,vB) -> flags true cr vA vB ii >>! B.Next
+              fun (vA,vB) -> flags true cr vA vB ii >>= B.next1T
           | PPC.Pmfcr rA ->
               read_reg_ord (PPC.CRField 0) ii >>=
-              fun v -> write_reg rA v ii >>! B.Next
+              fun v -> write_reg rA v ii >>= B.next1T
 (* memory loads/stores *)
           | PPC.Pload(sz,rD,d,rA) ->
               read_reg_ord rA ii >>=
@@ -274,9 +273,7 @@ module Make (C:Sem.Config)(V:Value.S)
                 M.add aA (V.intToV d) >>=
                 fun a ->
                   read_addr sz a ii >>=
-                  fun v ->
-                    write_reg rD v ii >>!
-                    B.Next
+                  fun v -> write_reg rD v ii >>= B.next1T
           | PPC.Plwzu (rD,d,rA) ->
               read_reg_ord rA ii >>=
               fun aA ->
@@ -284,32 +281,32 @@ module Make (C:Sem.Config)(V:Value.S)
                 (fun a ->
                   let load = read_addr Word a ii >>= fun v ->  write_reg rD v ii in
                   if rA <> PPC.r0 && rA <> rD then
-                    (write_reg rA a ii >>| load) >>! B.Next
-                  else load >>! B.Next)
+                    (write_reg rA a ii >>| load) >>= B.next2T
+                  else load >>= B.next1T)
           | PPC.Ploadx(sz,rD,rA,rB) ->
               (read_reg_or_zero false rA ii >>| read_reg_ord rB ii) >>=
               fun (aA,aB) ->
                 M.add aA aB >>=
                 fun a ->
                   read_addr sz a ii >>=
-                  fun v -> write_reg rD v ii >>! B.Next
+                  fun v -> write_reg rD v ii >>= B.next1T
           | PPC.Pstore(sz,rS,d,rA) ->
               (read_reg_data rS ii >>| read_reg_ord rA ii) >>=
               (fun (vS,aA) ->
                 M.add aA (V.intToV d) >>=
-                fun a -> write_addr sz a vS ii >>! B.Next)
+                fun a -> write_addr sz a vS ii >>= B.next1T)
           | PPC.Pstwu(rS,d,rA) ->
               if rA <> PPC.r0 then
                 M.stu
                   (read_reg_data rS ii)
                   (read_reg_ord rA ii >>= fun a -> M.add a (V.intToV d))
                   (fun a -> write_reg rA a ii)
-                  (fun (vS,a) -> write_addr Word a vS ii) >>! B.Next
+                  (fun (vS,a) -> write_addr Word a vS ii) >>= B.next1T
               else
                 (read_reg_data rS ii >>| read_reg_ord rA ii) >>=
                 (fun (vS,aA) ->
                   M.add aA (V.intToV d) >>=
-                  fun a -> write_addr Word a vS ii >>! B.Next)
+                  fun a -> write_addr Word a vS ii >>= B.next1T)
 
           | PPC.Pstorex(sz,rS,rA,rB) ->
               (read_reg_data rS ii
@@ -318,7 +315,7 @@ module Make (C:Sem.Config)(V:Value.S)
                     >>| read_reg_ord rB ii)) >>=
               (fun (vS,(aA,aB)) ->
                 M.add aA aB  >>=
-                fun a -> write_addr sz a vS ii >>! B.Next)
+                fun a -> write_addr sz a vS ii >>= B.next1T)
           | PPC.Plwarx(rD,rA,rB) ->
               (read_reg_or_zero false rA ii >>| read_reg_ord rB ii) >>=
               fun (aA,aB) ->
@@ -326,7 +323,7 @@ module Make (C:Sem.Config)(V:Value.S)
                 (fun a ->
                   write_reg PPC.RES V.one ii >>| write_reg PPC.RESADDR a ii >>|
                   (read_addr_res Word a ii >>=  fun v -> write_reg rD v ii))
-                  >>! B.Next
+                  >>= fun (((),()),()) -> B.nextT
           | PPC.Pstwcx(rS,rA,rB) ->
               ((read_reg_data rS ii >>|
               read_reg_data PPC.RES ii >>| read_reg_data PPC.RESADDR ii)
@@ -336,23 +333,26 @@ module Make (C:Sem.Config)(V:Value.S)
                 M.add aA aB  >>=
                 fun a ->
                   M.altT
-                    ((write_reg PPC.RES V.zero ii >>| flags_res false ii) >>! B.Next)
-                    (write_reg PPC.RES V.zero ii >>| (write_addr_conditional Word a vS vR aR ii >>|
-                    flags_res true ii) >>! B.Next)
+                    ((write_reg PPC.RES V.zero ii >>| flags_res false ii)
+                     >>= B.next2T)
+                    (write_reg PPC.RES V.zero ii
+                     >>| (write_addr_conditional Word a vS vR aR ii
+                          >>| flags_res true ii)
+                     >>= fun ((),((),())) -> B.nextT)
           |PPC.Peieio  ->
-              create_barrier PPC.Eieio ii >>! B.Next
+              create_barrier PPC.Eieio ii >>= B.next1T
           |PPC.Psync   ->
-              create_barrier PPC.Sync ii >>! B.Next
+              create_barrier PPC.Sync ii >>= B.next1T
           |PPC.Plwsync ->
-              create_barrier PPC.Lwsync ii >>! B.Next
+              create_barrier PPC.Lwsync ii >>= B.next1T
           |PPC.Pisync  ->
-              create_barrier PPC.Isync ii >>! B.Next
+              create_barrier PPC.Isync ii >>= B.next1T
           |PPC.Pdcbf (_rA,_rB) ->
-              M.unitT B.Next
+              B.nextT
           | PPC.Pcomment _ ->
               Warn.warn_always "Instruction %s interpreted as a NOP"
                 (PPC.dump_instruction ii.A.inst);
-              M.unitT B.Next
+              B.nextT
           | PPC.Pnor (_, _, _, _)
           | PPC.Pneg (_, _, _)
           | PPC.Pslw (_, _, _, _)

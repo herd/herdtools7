@@ -470,7 +470,10 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             | Ld sz -> Some sz in
           let env =
             match branch with
-            | S.B.NextSet (r,v) -> A.set_reg r v env
+            | S.B.Next bds ->
+                List.fold_right
+                  (fun (r,v) -> A.set_reg r v)
+                  bds env
             | _ -> env in
           next_instr
             re_exec inst fetch_proc proc { A.regs=env; lx_sz=szo; }
@@ -487,7 +490,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             let m ii =
               EM.addT
                 (A.next_po_index ii.A.program_order_index)
-                (EM.tooFar lbl ii S.B.Next) in
+                (EM.tooFar lbl ii (S.B.Next [])) in
             wrap tgt_proc proc inst addr env m >>> fun _ -> EM.unitcodeT true
         | No (_,[]) -> assert false (* Backward jump cannot be to end of code *)
         | Ok ((tgt_proc,code),seen) -> add_code tgt_proc proc env seen code
@@ -500,7 +503,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             EM.unitcodeT false
           end else
             add_next_instr true fetch_proc proc env seen addr inst nexts
-      | S.B.Next|S.B.NextSet _ ->
+      | S.B.Next _ ->
           add_code fetch_proc proc env seen nexts
       | S.B.Jump lbl ->
           add_lbl proc env seen addr lbl
