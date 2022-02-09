@@ -1,0 +1,12 @@
+AArch64 S08
+{
+0:X0=0; 0:X30=P0:L0;
+}
+    P0           ;
+  B L1           ;
+L0:              ;
+  MOV X0, #1     ;
+  RET            ;
+L1:              ;
+  BL L0          ;
+forall (0:X0=1)

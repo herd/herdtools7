@@ -254,9 +254,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_FENCE _
       | I_IC _|I_DC _|I_TLBI _
       | I_NOP|I_TBZ _|I_TBNZ _
-        -> []
       | I_BL _ | I_BLR _ | I_RET _
-        -> all_regs
+        -> [] (* For -variant self only ? *)
       | I_LDR (_,r,_,_,_)|I_LDRBH (_,r,_,_)
       | I_LDUR (_,r,_,_)
       | I_LDAR (_,_,r,_) |I_LDARBH (_,_,r,_)
@@ -303,6 +302,12 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     type ifetch_instruction = instruction
 
+    type ifetch_reg = reg
+
+    let is_link = function
+      | I_BL _ | I_BLR _ -> Some linkreg
+      | _ -> None
+
     let is_overwritable i =
       match i with
       | I_B _ | I_NOP -> true
@@ -310,7 +315,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     let instruction_to_value i =
       match i with
-      | I_B lbl -> 
+      | I_B lbl ->
         Constant.Instruction(InstrLit.LIT_B(lbl))
       | I_NOP -> Constant.Instruction(InstrLit.LIT_NOP)
       | _ -> Warn.user_error "Functionality not implemented for -variant self: converting {%s} into a constant" (pp_instruction PPMode.Ascii i)

@@ -1,0 +1,12 @@
+AArch64 S11
+{
+[x]=P0:L0;
+0:X0=0; 0:X1=x;
+}
+    P0           ;
+  LDR X2, [X1]   ;
+  BR X2          ;
+  MOV X0, #1     ;
+L0:              ;
+locations [0:X0; 0:X30;]
+forall (0:X0=0)

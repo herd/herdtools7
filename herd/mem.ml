@@ -43,16 +43,20 @@ module type S = sig
   type result =
      {
        event_structures : (int * S.M.VC.cnstrnts * S.event_structure) list ;
+       overwritable_labels : Label.Set.t ;
      }
 
 (** [glommed_event_structures t] performs "instruction semantics".
  *  Argument [t] is a test.
- *  The function returns a pair whose first component is a set (list)
- *  of "abstract"  event structures. In such structures, most values
- *  (and locations) are not resolved yet. Hence the [S.M.VC.cnstrnts]
- *  second component. Those are equations to be solved once
- *  some read-from relation on memory is selected by function
- *  [calculate_rf_with_cnstrnts] (see below).
+ *  The function returns a pair whose first component is a record.
+ *
+ *  It includes a set (list) of "abstract"  event structures. In such
+ *  structures, most values (and locations) are not resolved yet. Hence the
+ *  [S.M.VC.cnstrnts] second component. Those are equations to be solved
+ *  once some read-from relation on memory is selected by the function
+ *  [calculate_rf_with_cnstrnts] (see below). The record also includes
+ *  additional processing information to pass on to calculate_rf_with_cnstrnts,
+ *  which is the set of labels that are allowed to be addressed by stores.
  *
  *  Second component of the returned pair is the test itself,
  *  which can be slightly modified (noticeably in the case of
@@ -90,7 +94,7 @@ module type S = sig
 
 
   val calculate_rf_with_cnstrnts :
-      S.test -> S.event_structure -> S.M.VC.cnstrnts ->
+      S.test -> Label.Set.t -> S.event_structure -> S.M.VC.cnstrnts ->
         (S.concrete -> 'a -> 'a ) -> (* kont *)
           'a -> 'a
 
@@ -205,6 +209,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     type result =
         {
          event_structures : (int * S.M.VC.cnstrnts * S.event_structure) list ;
+         overwritable_labels : Label.Set.t ;
         }
 
 (* All (virtual) locations from init state *)
@@ -271,10 +276,11 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     let glommed_event_structures (test:S.test) =
       let p = test.Test_herd.program in
       let starts = test.Test_herd.start_points in
+      let return_labels = test.Test_herd.return_labels in
       let procs = List.map fst starts in
 
       let instr2labels =
-        let one_label lbl code res = match code with
+        let one_label lbl (_,code) res = match code with
         | [] -> res (* Luc, it is legal to have nothing after label *)
 (*            assert false (*jade: case where there's nothing after the label*) *)
         | (addr,_)::_ ->
@@ -284,6 +290,12 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
       let labels_of_instr i =
         IntMap.safe_find Label.Set.empty i instr2labels in
+
+      let return_label_of_instr i =
+        try
+          Some (IntMap.find i return_labels)
+        with
+          Not_found -> None in
 
 (**********************************************************)
 (* In mode `-variant self` test init_state is changed:    *)
@@ -295,20 +307,24 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 (* canonical location (label).                            *)
 (**********************************************************)
 
-      let lbls2i = (* Overwritable instructions, with labels *)
+      (* lbls2i -- overwritable instructions, with labels          *)
+      (* overwritable_labels -- the set of labels of instructions  *)
+      (*                        that are allowed to be overwritten *)
+      let lbls2i, overwritable_labels =
         if self then
           List.fold_left
-            (fun ps (proc,code) ->
+            (fun (ps, ls)  (proc,code) ->
               List.fold_left
-                (fun ps (addr,i) ->
-                if A.is_overwritable i then
-                  let lbls = labels_of_instr addr in
-                  if Label.Set.is_empty lbls then ps
-                  else (lbls,(proc,i))::ps
-                else ps)
-                ps code)
-            [] starts
-        else [] in
+                (fun (ps, ls) (addr,i) ->
+                  if A.is_overwritable i then
+                    let lbls = labels_of_instr addr in
+                    if Label.Set.is_empty lbls then
+                      ps,ls
+                    else (lbls,(proc,i))::ps, Label.Set.union lbls ls
+                  else ps,ls)
+                (ps,ls) code)
+            ([], Label.Set.empty) starts
+        else [], Label.Set.empty in
 
       let norm_lbl = (* Normalize labels, useful in `-variant self` *)
         if self then
@@ -326,21 +342,12 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             try Label.Map.find lbl m
             with
             | Not_found ->
-                try
-                  match Label.Map.find lbl p with
-                  | [] ->
-                      Warn.user_error
-                        "Final label %s cannot be overwritten"
-                        (Label.pp lbl)
-                  | (_,i)::_ ->
-                      Warn.user_error
-                        "Instruction %s:%s cannot be overwritten"                                       (Label.pp lbl)
-                        (A.dump_instruction i)
-                with
-                | Not_found ->
-                    Warn.user_error
-                      "Label %s is undefined, yet it is used as constant"
-                      (Label.pp lbl)
+                if Label.Map.mem lbl p then
+                  lbl
+                else
+                  Warn.user_error
+                    "Label %s is undefined, yet it is used as constant"
+                    (Label.pp lbl)
         else fun lbl -> lbl in
 
       let norm_val = (* Normalize labels in values *)
@@ -383,13 +390,13 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         let seen = Imap.add lbl (x+1) seen in
         x+1,seen in
 
-      let fetch_code seen addr_jmp lbl =
-        let tgt =
+      let fetch_code seen proc_jmp addr_jmp lbl =
+        let (proc_tgt,code) as tgt =
           try Label.Map.find lbl p
           with Not_found ->
           Warn.user_error
             "Segmentation fault (kidding, label %s not found)" lbl in
-      if is_back_jump addr_jmp tgt then
+      if Misc.int_eq proc_jmp proc_tgt && is_back_jump addr_jmp code then
         let x,seen = see seen lbl in
         if x > C.unroll then begin
             W.warn "loop unrolling limit reached: %s" lbl;
@@ -402,7 +409,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       (* All memory locations in a test, with initial values *)
       let env0 = get_all_mem_locs test in
 
-      let wrap proc inst addr env m poi =
+      let wrap fetch_proc proc inst addr env m poi =
         let addr2v =
           if self then
             fun s ->
@@ -422,20 +429,33 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           else A.V.nameToV in
         let ii =
            { A.program_order_index = poi;
-             proc = proc; inst = inst;
+             proc = proc; fetch_proc; inst = inst;
              labels = labels_of_instr addr;
+             link_label = return_label_of_instr addr;
              addr2v;
              env = env; } in
+        if dbg then
+          Printf.eprintf "%s env=%s\n"
+            (A.dump_instruction ii.A.inst)
+            (A.pp_reg_state ii.A.env.A.regs) ;
         if dbg && not (Label.Set.is_empty ii.A.labels) then
           eprintf "Instruction %s has labels {%s}\n"
             (A.dump_instruction inst)
             (Label.Set.pp_str ","  Label.pp ii.A.labels) ;
         m ii in
 
-      let rec add_next_instr re_exec proc env seen addr inst nexts =
-        wrap proc inst addr env SM.build_semantics >>> fun branch ->
+      let rec add_next_instr re_exec fetch_proc proc env seen addr inst nexts =
+        wrap fetch_proc proc inst addr env SM.build_semantics >>> fun branch ->
           let { A.regs=env; lx_sz=szo; } = env in
-          let env = A.kill_regs (A.killed inst) env
+          let env =
+            let env = A.kill_regs (A.killed inst) env in
+            match A.is_link inst with
+            | None -> env
+            | Some r ->
+                let ret_lab = return_label_of_instr addr in
+                A.set_reg r
+                  (A.V.cstToV (Constant.Label (proc,Misc.as_some ret_lab)))
+                  env
           and szo =
             let open MachSize in
             match A.get_lx_sz inst with
@@ -443,45 +463,46 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             | St -> None
             | Ld sz -> Some sz in
           next_instr
-            re_exec inst proc { A.regs=env; lx_sz=szo; }
+            re_exec inst fetch_proc proc { A.regs=env; lx_sz=szo; }
             seen addr nexts branch
 
-      and add_code proc env seen nexts = match nexts with
+      and add_code fetch_proc proc env seen nexts = match nexts with
       | [] -> EM.unitcodeT true
       | (addr,inst)::nexts ->
-          add_next_instr false proc env seen addr inst nexts
+          add_next_instr false fetch_proc proc env seen addr inst nexts
 
       and add_lbl proc env seen addr_jmp lbl =
-        match fetch_code seen addr_jmp lbl with
-        | No ((addr,inst)::_) ->
+        match fetch_code seen proc addr_jmp lbl with
+        | No (tgt_proc,(addr,inst)::_) ->
             let m ii =
               EM.addT
                 (A.next_po_index ii.A.program_order_index)
                 (EM.tooFar lbl ii S.B.Next) in
-            wrap proc inst addr env m >>> fun _ -> EM.unitcodeT true
-        | No [] -> assert false (* Backward jump cannot be to end of code *)
-        | Ok (code,seen) -> add_code proc env seen code
+            wrap tgt_proc proc inst addr env m >>> fun _ -> EM.unitcodeT true
+        | No (_,[]) -> assert false (* Backward jump cannot be to end of code *)
+        | Ok ((tgt_proc,code),seen) -> add_code tgt_proc proc env seen code
 
-      and next_instr re_exec inst proc env seen addr nexts b = match b with
+      and next_instr re_exec inst fetch_proc proc env seen addr nexts b =
+        match b with
       | S.B.Exit -> EM.unitcodeT true
       | S.B.ReExec ->
           if re_exec then begin
             EM.unitcodeT false
           end else
-            add_next_instr true proc env seen addr inst nexts
-      | S.B.Next -> add_code proc env seen nexts
+            add_next_instr true fetch_proc proc env seen addr inst nexts
+      | S.B.Next -> add_code fetch_proc proc env seen nexts
       | S.B.Jump lbl ->
           add_lbl proc env seen addr lbl
       | S.B.CondJump (v,lbl) ->
           EM.condJumpT v
             (add_lbl proc env seen addr lbl)
-            (add_code proc env seen nexts)
+            (add_code fetch_proc proc env seen nexts)
       in
 
 (* Code monad returns a boolean. When false the code must be discarded.
    See also add_instr in eventsMonad.ml *)
       let jump_start proc env code =
-        add_code proc env Imap.empty code in
+        add_code proc proc env Imap.empty code in
 
 (* As name suggests, add events of one thread *)
       let add_events_for_a_processor env (proc,code) evts =
@@ -566,7 +587,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
            List.filter
              (fun (_,es) -> count_spurious es.E.events <= max)
              r in
-      { event_structures=index r 0; },test
+      { event_structures=index r 0; overwritable_labels; },test
 
 
 (*******************)
@@ -1136,7 +1157,7 @@ let match_reg_events es =
           | Dir.W ->
               let old = StringMap.safe_find [] x ws in
               rs,StringMap.add x ((g,idx,sz,es)::old) ws
-          | Dir.R -> (g,x,idx,sz,es)::rs,ws)
+          | Dir.R | Dir.F -> (g,x,idx,sz,es)::rs,ws)
           ([],StringMap.empty) ms in
       let ws =
         StringMap.map
@@ -1823,8 +1844,39 @@ let match_reg_events es =
         | None -> assert false)
         (E.mem_of es.E.events)
 
+    let check_ifetch_limitations test es owls =
+      let stores = E.EventSet.filter E.is_mem_store es.E.events in
+      let program = test.Test_herd.program in
+      E.EventSet.iter (fun e ->
+        match E.location_of e with
+        | Some (A.Location_global (V.Val(Constant.Label(_, lbl))) as loc) ->
+          if Label.Set.mem lbl owls then begin
+            if false then (* insert a proper test here *)
+              Warn.user_error "Illegal store to '%s'; overwrite with the given argument not supported"
+              (A.pp_location loc)
+          end else begin
+            try
+              match Label.Map.find lbl program with
+              | (_,[]) ->
+                  Warn.user_error
+                    "Final label %s cannot be overwritten"
+                    (Label.pp lbl)
+              | (_,(_,i)::_) ->
+                  Warn.user_error
+                    "Instruction %s:%s cannot be overwritten"
+                    (Label.pp lbl)
+                    (A.dump_instruction i)
+            with
+            | Not_found ->
+                Warn.user_error
+                  "Label %s is undefined, yet it is used as constant"
+                  (Label.pp lbl)
+            end
+        | _ ->
+          ()
+      ) stores
 
-    let calculate_rf_with_cnstrnts test es cs kont res =
+    let calculate_rf_with_cnstrnts test owls es cs kont res =
       match solve_regs test es cs with
       | None -> res
       | Some (es,rfm,cs) ->
@@ -1848,6 +1900,7 @@ let match_reg_events es =
                   when_unsolved test es rfm cs res
               | _ ->
                   check_symbolic_locations test es ;
+                  if self then check_ifetch_limitations test es owls ;
                   if (mixed && not unaligned) then check_aligned test es ;
                   if A.reject_mixed && not (mixed || memtag || morello) then
                     check_sizes test es ;

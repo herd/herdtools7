@@ -20,11 +20,13 @@ module type S = sig
   type nice_prog
   type program
   type start_points
+  type return_labels
 
-  val load : nice_prog -> program * start_points
+  val load : nice_prog -> program * start_points * return_labels
 end
 
 module Make : functor (A:Arch_herd.S) -> S
 with type nice_prog = A.nice_prog
 and type program = A.program
 and type start_points = A.start_points
+and type return_labels = A.return_labels

@@ -1,0 +1,9 @@
+AArch64 S17
+{
+0:X0=0; 0:X1=NOP;
+}
+    P0           ;
+  BR X1          ;
+  MOV X0, #1     ;
+L0:              ;
+forall (0:X0=0)

@@ -1,0 +1,79 @@
+(* Isolating IC IALLU events *)
+
+let IC_all = IC & no-loc
+let IC_loc = IC \ IC_all
+
+(* Utilities for combining co's *)
+
+(* Compute linearisations per locations *)
+let co_locs (pco,wss) =
+  let rec do_locs wss = match wss with
+  || {} -> {}
+  || ws ++ wss ->
+      linearisations(ws | IC_all, pco) ++ do_locs(wss)
+  end in do_locs(wss)
+
+(* Cross product linearisations *)
+let cross =
+  let rec do_cross (k,ys,oss) = match oss with
+  || {} -> ys ++ k
+  || os ++ oss ->
+       let rec call_rec (k,os) = match os with
+       || {} -> k
+       || o ++ os ->
+           call_rec (do_cross (k,o | ys,oss),os)
+       end in
+       call_rec (k,os)
+  end in
+  fun oss -> do_cross ({},0,oss)
+
+(* Generate co's that extend partial order pco *)
+let generate_orders(s,pco) = cross (co_locs (pco,partition s))
+let generate_cos(pco) = generate_orders(W|DC|IC_loc,pco)
+
+let cobase = co0
+with wco from generate_cos(cobase)
+
+let co = ([W] ; wco ; [W]) & loc
+
+(* From now, co is a coherence order *)
+let coi = co & int
+let coe = co \ coi
+
+(* Custom program order *)
+
+let my_po = po \ ((IF * _ )|(_ * IF))
+let my_po-loc = my_po & loc
+
+unshow po, my_po-loc
+show my_po
+
+(* Custom reads-from *)
+
+let irf = rf ; [IF]
+let ifr = (irf^-1; co) & loc
+
+show irf, ifr
+
+let base_rf = rf \ irf
+let base_rfi = base_rf & int
+let base_rfe = base_rf \ base_rfi
+
+unshow rf
+show base_rf
+
+(* Compute fr *)
+let base_fr = ((base_rf^-1) ; co) \ id
+let base_fri = base_fr & int
+let base_fre = base_fr \ base_fri
+
+show wco,base_fr
+
+(* Auxiliary *)
+
+let fe = [IF] ; (same-instance \ (same-instance;[IF]))
+let fpo = [IF] ; fe ; my_po ; fe^-1 ; [IF]
+
+let scl = loc (* FIXME: assuming for now that all locations on different cache lines *)   
+
+show fe,fpo

@@ -17,7 +17,7 @@
 type proc_info = (string * int list) list
 
 type
-  ('prog,'nice_prog,'start,'state,
+  ('prog,'nice_prog,'start,'ret,'state,
    'size_env, 'type_env,
    'prop,'loc,'locset,'fset) t =
     {
@@ -27,6 +27,7 @@ type
      program : 'prog ;
      nice_prog : 'nice_prog ;
      start_points : 'start ;
+     return_labels : 'ret ;
      init_state : 'state ;
      size_env : 'size_env ; type_env : 'type_env ;
      filter : 'prop option ;
@@ -59,7 +60,7 @@ module Make(A:Arch_herd.S) =
   struct
 
     type result =
-      (A.program, A.nice_prog, A.start_points, A.state,
+      (A.program, A.nice_prog, A.start_points, A.return_labels, A.state,
        A.size_env, A.type_env,
        A.prop, A.location, A.RLocSet.t,A.FaultAtomSet.t) t
 
@@ -147,7 +148,7 @@ module Make(A:Arch_herd.S) =
            extra_data = extra_data ;
          } = t in
 
-      let prog,starts = Load.load nice_prog in
+      let prog,starts,rets = Load.load nice_prog in
       let init_state = A.build_state init in
       let type_env = A.build_type_env init in
       let flocs,ffaults = LocationsItem.locs_and_faults locs in
@@ -181,6 +182,7 @@ module Make(A:Arch_herd.S) =
        program = prog ;
        nice_prog = nice_prog ;
        start_points = starts ;
+       return_labels = rets ;
        init_state = init_state ;
        filter = filter ;
        cond = final ;
@@ -213,6 +215,7 @@ module Make(A:Arch_herd.S) =
        program = Label.Map.empty ;
        nice_prog = [] ;
        start_points = [] ;
+       return_labels = IntMap.empty ;
        init_state = A.state_empty;
        size_env = A.size_env_empty ;
        type_env = A.type_env_empty ;

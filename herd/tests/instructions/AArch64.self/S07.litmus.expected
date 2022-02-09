@@ -1,0 +1,10 @@
+Test S07 Required
+States 1
+0:X0=1; 0:X1=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1 /\ 0:X1=1)
+Observation S07 Always 1 0
+Hash=b6ea8bdb583a961cb90d0f3db030527e
+

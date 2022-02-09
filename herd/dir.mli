@@ -16,6 +16,6 @@
 
 (** Directions for memory accesses: read or write. *)
 
-type dirn = R | W
+type dirn = R | W | F
 
 val pp_dirn : dirn -> string

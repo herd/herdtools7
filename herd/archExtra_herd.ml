@@ -52,16 +52,19 @@ module type S = sig
 
   type reg_state
   val reg_state_empty : reg_state
+  val pp_reg_state : reg_state -> string
 
   (* Register contents (when known) X size of last load exclusive *)
 
   type ii_env =  { regs:reg_state; lx_sz:MachSize.sz option; }
 
   type inst_instance_id = {
-      proc       : proc;
+      fetch_proc : proc; (* Fetching source *)
+      proc       : proc; (* Current thread *)
       program_order_index   : program_order_index;
       inst : I.arch_instruction;
       labels : Label.Set.t;
+      link_label : Label.t option;
       addr2v : string -> I.V.v;
       env : ii_env;
     }
@@ -135,6 +138,7 @@ module type S = sig
 
   val build_reg_state : proc -> state -> reg_state
   val look_reg : I.arch_reg -> reg_state -> I.V.v option
+  val set_reg : I.arch_reg -> v -> reg_state -> reg_state
   val kill_regs : I.arch_reg list -> reg_state -> reg_state
 
 (****************)
@@ -216,10 +220,13 @@ module type S = sig
 
 
 (* Program loaded in memory *)
-  type program = code Label.Map.t
+  type program = (proc * code) Label.Map.t
 
 (* A starting address per proc *)
   type start_points = (proc * code) list
+
+(* A mapping from instruction addresses to labels of the instructions after them *)
+  type return_labels = Label.t IntMap.t
 
 
 (* Constraints *)
@@ -278,13 +285,19 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let reg_state_empty = RegMap.empty
 
+      let pp_reg_state =
+        RegMap.pp_str_delim "; "
+          (fun r v -> Printf.sprintf "%s->%s" (I.pp_reg r) (I.V.pp_v v))
+
       type ii_env =  { regs:reg_state; lx_sz:MachSize.sz option; }
 
       type inst_instance_id = {
+          fetch_proc : proc;
           proc       : proc;
           program_order_index   : program_order_index;
           inst : I.arch_instruction;
           labels : Label.Set.t;
+          link_label : Label.t option;
           addr2v : string -> I.V.v;
           env : ii_env;
         }
@@ -508,7 +521,7 @@ module Make(C:Config) (I:I) : S with module I = I
           st RegMap.empty
 
       let look_reg r st = try Some (RegMap.find r st) with Not_found -> None
-
+      let set_reg r v st = RegMap.add r v st
       let kill_regs rs st =  List.fold_right RegMap.remove rs st
 
 (****************)
@@ -978,10 +991,13 @@ module Make(C:Config) (I:I) : S with module I = I
 
 
       (* Programm loaded in memory *)
-      type program = code Label.Map.t
+      type program = (proc * code) Label.Map.t
 
             (* A starting address per proc *)
       type start_points = (proc * code) list
+
+      (* A mapping from instruction addresses to labels of the instructions after them *)
+      type return_labels = Label.t IntMap.t
 
 
             (* Constraints *)

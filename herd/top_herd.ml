@@ -152,7 +152,7 @@ module Make(O:Config)(M:XXXMem.S) =
 
 
 (* rfmap generation and processing, from pre-candidates *)
-    let iter_rfms test rfms kont k =
+    let iter_rfms test rfms owls kont k =
       let kont =
         if O.verbose > 0 then
           fun conc k ->
@@ -163,7 +163,7 @@ module Make(O:Config)(M:XXXMem.S) =
       let k =
         List.fold_left
           (fun res (_i,cs,es) ->
-            MC.calculate_rf_with_cnstrnts test es cs
+            MC.calculate_rf_with_cnstrnts test owls es cs
               kont res)
           k rfms in
       k
@@ -347,7 +347,7 @@ module Make(O:Config)(M:XXXMem.S) =
 (* Driver *)
     let run start_time test =
 
-      let { MC.event_structures=rfms;  },test =
+      let { MC.event_structures=rfms; MC.overwritable_labels=owls; },test =
         MC.glommed_event_structures test in
 
       let cstr = T.find_our_constraint test in
@@ -403,7 +403,7 @@ module Make(O:Config)(M:XXXMem.S) =
              SL.check_event_structure test rfms kfail (fun _ c -> c)
           (model_kont ochan test final_state_restrict_locs cstr) start
         else
-        try iter_rfms test rfms call_model start
+        try iter_rfms test rfms owls call_model start
         with
         | Over c -> c
         | e ->
