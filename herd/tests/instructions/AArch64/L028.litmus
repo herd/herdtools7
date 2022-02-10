@@ -1,0 +1,16 @@
+AArch64 L028
+{
+(* Backward conditional branch on concrete value ->
+   Complete loop unrolling for a cheap price.
+   Good behaviour, to be kept as much as possible. *)
+}
+  P0          ;
+ MOV W0,#10   ;
+ MOV W1,#0    ;
+L0:           ;
+ ADD W1,W1,#1 ;
+ SUB W0,W0,#1 ;
+ CBNZ W0,L0   ;
+
+forall 0:X1=10
+

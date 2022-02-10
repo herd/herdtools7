@@ -1,0 +1,10 @@
+Test L028 Required
+States 1
+0:X1=10;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=10)
+Observation L028 Always 1 0
+Hash=d9cf89f288c06952427657d9d317a82c
+

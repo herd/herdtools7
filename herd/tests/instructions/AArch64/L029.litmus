@@ -1,0 +1,18 @@
+AArch64 L029
+(* Forward conditional branch on concrete values ->
+   loop unrolling pruned. Overcome in future versions? *)
+{
+
+}
+  P0          ;
+ MOV W0,#10   ;
+ MOV W1,#0    ;
+L1:           ;
+ ADD W1,W1,#1 ;
+ SUB W0,W0,#1 ;
+ CBZ W0,L0    ;
+ B L1         ;
+L0:           ; 
+
+forall 0:X1=10
+
