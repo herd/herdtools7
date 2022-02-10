@@ -512,11 +512,7 @@ end = struct
 
     and ifetch_sets =
       if self then
-        ("IF",is_ifetch)::
-        ("no-loc",
-          fun a -> match location_of a with
-            | Some _ -> false
-            | None -> true)::[]
+        ("IF",is_ifetch)::[]
       else []
 
     in
@@ -527,6 +523,7 @@ end = struct
     ("IC",is_ic)::
     ("CI",is_ci)::
     ("C",is_c)::("I",is_i)::
+    ("no-loc", fun a -> Misc.is_none (location_of a))::
     (if kvm then
       fun k ->
         ("PA",is_PA_access)::
