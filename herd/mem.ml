@@ -389,24 +389,29 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
       let see seen lbl =
         let x = try Imap.find lbl seen with Not_found -> 0 in
-        let seen = Imap.add lbl (x+1) seen in
-        x+1,seen in
+        let x = x+1 in
+        let seen = Imap.add lbl x seen in
+        x,seen in
 
-      let fetch_code seen proc_jmp addr_jmp lbl =
+      let fetch_code check_back seen proc_jmp addr_jmp lbl =
         let (proc_tgt,code) as tgt =
           try Label.Map.find lbl p
           with Not_found ->
           Warn.user_error
             "Segmentation fault (kidding, label %s not found)" lbl in
-      if Misc.int_eq proc_jmp proc_tgt && is_back_jump addr_jmp code then
-        let x,seen = see seen lbl in
-        if x > C.unroll then begin
-            W.warn "loop unrolling limit reached: %s" lbl;
-            No tgt
-          end else
-          Ok (tgt,seen)
-      else
-        Ok (tgt,seen) in
+        if (* Limit jump threshold to non determined jumps ? *)
+          Misc.int_eq proc_jmp proc_tgt
+          && check_back
+          && is_back_jump addr_jmp code
+        then
+          let x,seen = see seen lbl in
+          if x > C.unroll then begin
+              W.warn "loop unrolling limit reached: %s" lbl;
+              No tgt
+            end else
+            Ok (tgt,seen)
+        else
+          Ok (tgt,seen) in
 
       (* All memory locations in a test, with initial values *)
       let env0 = get_all_mem_locs test in
@@ -484,8 +489,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       | (addr,inst)::nexts ->
           add_next_instr false fetch_proc proc env seen addr inst nexts
 
-      and add_lbl proc env seen addr_jmp lbl =
-        match fetch_code seen proc addr_jmp lbl with
+      and add_lbl check_back proc env seen addr_jmp lbl =
+        match fetch_code check_back seen proc addr_jmp lbl with
         | No (tgt_proc,(addr,inst)::_) ->
             let m ii =
               EM.addT
@@ -506,10 +511,10 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       | S.B.Next _ ->
           add_code fetch_proc proc env seen nexts
       | S.B.Jump lbl ->
-          add_lbl proc env seen addr lbl
+          add_lbl true proc env seen addr lbl
       | S.B.CondJump (v,lbl) ->
           EM.condJumpT v
-            (add_lbl proc env seen addr lbl)
+            (add_lbl (not (V.is_var_determined v)) proc env seen addr lbl)
             (add_code fetch_proc proc env seen nexts)
       in
 
