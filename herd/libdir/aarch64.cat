@@ -120,7 +120,7 @@ let aob = rmw
 
 (* Barrier-ordered-before *)
 let bob = po; [dmb.full]; po
-        | po; ([A];amo;[L]); po
+        | [range([A];amo;[L])]; po 
 	| [L]; po; [A]
 	| [R\NoRet]; po; [dmb.ld]; po
 	| [A | Q]; po
