@@ -12,7 +12,7 @@
  * Author: Will Deacon <will.deacon@arm.com>
  * Author: Jade Alglave <jade.alglave@arm.com>
  *
- * Copyright (C) 2016-2020, Arm Ltd.
+ * Copyright (C) 2016-2022, Arm Ltd.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -116,7 +116,7 @@ let dob = addr | data
 
 (* Atomic-ordered-before *)
 let aob = rmw
-	| [range(rmw)]; lrs; [A | Q]
+	| rmw; lrs; [A | Q]
 
 (* Barrier-ordered-before *)
 let bob = po; [dmb.full]; po
