@@ -31,3 +31,14 @@ module Set : MySet.S with type elt = string
 module Map : MyMap.S with type key = string
 
 val norm : Set.t -> t option
+
+module Full :
+  sig
+    type full = Proc.t * t
+
+    val pp : full -> string
+    val equal : full -> full -> bool
+    val compare : full -> full -> int
+
+    module Set : MySet.S with type elt = full
+  end

@@ -62,10 +62,13 @@ module Make
     (O:Indent.S)
     (Lang:Language.S
     with type arch_reg = T.A.reg and type t = A.Out.t
-    and module RegMap = T.A.RegMap) : sig
+         and module RegMap = T.A.RegMap)
+       : sig
       val dump : Name.t -> T.t -> unit
     end = struct
-      let do_ascall = Cfg.ascall || Cfg.is_kvm
+  module LocMake(CfgLoc:sig val label_init : Label.Full.full list end) = struct
+    let do_ascall =
+      Cfg.ascall || Cfg.is_kvm || Misc.consp CfgLoc.label_init
       let do_precise = Cfg.precision
       let do_dynalloc =
         let open Alloc in
@@ -235,9 +238,31 @@ module Make
 
 (* Memory barrier *)
       let dump_mbar_def () =
+        O.o "" ;
         O.o "/* Full memory barrier */" ;
-        Insert.insert O.o "mbar.c" ;
-        O.o ""
+        Insert.insert O.o "mbar.c" ; O.o "" ;
+        begin
+          match CfgLoc.label_init with
+          | [] -> ()
+          | _::_ ->
+              O.o "/* Code analysis */" ;
+              O.o "#define SOME_LABELS 1" ;
+              Insert.insert O.o "instruction.h" ;
+              O.o "" ;
+              Insert.insert O.o "getnop.c" ;
+              O.o "" ;
+              ObjUtil.insert_lib_file O.o "_find_ins.c" ;
+              O.o "" ;
+              O.o "static size_t prelude_size(ins_t *p) { \
+                   return find_ins(getnop(),p,0)+1; }" ;
+              O.o "" ;
+              O.o "typedef struct {" ;
+              UD.define_label_fields CfgLoc.label_init ;
+              O.o "} code_labels_t;" ;
+              O.o "" ;
+              O.o "static void code_labels_init(code_labels_t *p);" ;
+              O.o "" ;
+        end
 
 (* Fault handler *)
       let filter_fault_lbls =
@@ -1283,7 +1308,7 @@ module Make
               | Tag _|Symbolic _ ->
                   Warn.user_error "Litmus cannot handle this initial value %s"
                     (A.V.pp_v v)
-              | PteVal _ -> assert false 
+              | PteVal _ -> assert false
               | Instruction _ -> Warn.fatal "FIXME: dump_run_thread functionality for -variant self"
               in
             match at with
@@ -1516,7 +1541,7 @@ module Make
         O.oii "break; }" ;
         ()
 
-      let dump_run_def env test some_ptr stats procs_user =
+      let dump_run_def  env test some_ptr stats procs_user =
         let faults = U.get_faults test in
         O.o "/*************/" ;
         O.o "/* Test code */" ;
@@ -1526,6 +1551,16 @@ module Make
           List.iter
             (dump_thread_code procs_user env)
             test.T.code
+        end ;
+        begin match CfgLoc.label_init with
+        | [] -> ()
+        | _::_ ->
+            UD.define_label_offsets test CfgLoc.label_init ;
+            O.o "" ;
+            O.o "static void code_labels_init(code_labels_t *p) {" ;
+            UD.initialise_labels "p" CfgLoc.label_init ;
+            O.o "}" ;
+            O.o ""
         end ;
         O.o "inline static int do_run(thread_ctx_t *_c, param_t *_p,global_t *_g) {" ;
         if not do_ascall then begin match faults with
@@ -1847,7 +1882,7 @@ module Make
         O.o "" ;
         ObjUtil.insert_lib_file O.o "_main.c" ;
         ()
-
+  end
 (***************)
 (* Entry point *)
 (***************)
@@ -1863,6 +1898,12 @@ module Make
               "Cannot run test %s with %d threads on %s available cores"
               doc.Name.name n pp_avail
           end ;
+        let module MLoc =
+          LocMake
+            (struct
+              let label_init = A.get_label_init test.T.init
+            end) in
+        let open MLoc in
         let db = DirtyBit.get test.T.info
         and procs_user = ProcsUser.get test.T.info in
         ObjUtil.insert_lib_file O.o "header.txt" ;

@@ -1,0 +1,16 @@
+AArch64 L022
+(* Intra-thread subroutine calls *)
+{
+
+}
+  P0          | P1           ;
+ MOV W0,#4    | ADR X1,Ldec  ;
+ BL Linc      | MOV W0,#4    ;
+ BL Linc      | BLR X1       ;
+ B Lzero      | BLR X1       ;
+Linc:         | B Lone       ;
+ ADD W0,W0,#1 |Ldec:         ;
+ RET          | SUB W0,W0,#1 ;
+Lzero:        | RET          ;
+              |Lone:         ;
+forall 0:X0=6 /\ 1:X0=2

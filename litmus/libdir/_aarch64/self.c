@@ -13,6 +13,7 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
+
 /***********************************/
 /* Support for self-modifying code */
 /***********************************/
@@ -25,24 +26,6 @@ inline static void selfbar(void *p) {
 
 inline static void isync(void) {
   asm __volatile__ ("isb" ::: "memory");
-}
-
-
-static ins_t getret(void) {
-  ins_t *x1;
-  ins_t r;
-  asm __volatile__ (
-  "adr %[x1],0f\n\t"
-  "ldr %w[x2],[%[x1]]\n\t"
-  "b 1f\n"
-  "0:\n\t"
-  "ret\n"
-  "1:\n"
-:[x1] "=&r" (x1),[x2] "=&r" (r)
-:
-: "cc","memory"
-);
-  return r;
 }
 
 static uint32_t cache_line_size;

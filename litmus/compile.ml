@@ -61,7 +61,7 @@ module Generic (A : Arch_litmus.Base)
         | Constant.Tag _ -> tag
         | Constant.PteVal _ -> pteval_t
         | Constant.Instruction _ ->
-          Warn.fatal "FIXME: typeof functionality for -variant self" 
+          Warn.fatal "FIXME: typeof functionality for -variant self"
 
       let misc_to_c loc = function
         | TestType.TyDef when A.is_pte_loc loc -> pteval_t
@@ -349,21 +349,82 @@ type P.code = MiscParser.proc * A.pseudo list)
 (* Assoc label -> small number *)
 (*******************************)
 
-    let rec lblmap_pseudo c m i = match i with
+(* All labels *)
+    let rec ins_labels k i  = match i with
+      | A.Nop
+      | A.Instruction _
+      | A.Symbolic _
+      | A.Macro _ -> k
+      | A.Label (lbl,i) ->
+          ins_labels (lbl::k) i
+
+    let code_labels (p,c) k =
+      let lbls =  List.fold_left ins_labels [] c in
+      List.fold_left
+        (fun k lbl -> Label.Full.Set.add (p,lbl) k)
+        k lbls
+
+    let all_labels prog =
+      List.fold_right code_labels prog Label.Full.Set.empty
+
+(* All target labels *)
+
+    let ins_target = A.fold_labels (fun k lbl -> lbl::k)
+
+    let code_targets (p,c) k =
+      let lbls = List.fold_left ins_target [] c in
+      List.fold_left
+        (fun k lbl -> Label.Full.Set.add (p,lbl) k)
+        k lbls
+
+    let init_targets init =
+      List.fold_left
+        (fun k (_,v) ->
+          match v with
+          | Constant.Label (_,lbl) ->
+              Label.Set.add lbl k
+          |Concrete _|ConcreteVector _
+          |Symbolic _|Tag _|PteVal _|Instruction _
+           -> k)
+        Label.Set.empty init
+
+    let prog_targets prog =
+      List.fold_right code_targets prog Label.Full.Set.empty
+
+    let pp_full = Label.Full.Set.pp_str "," Label.Full.pp
+
+    let escaping_labels init prog =
+      let defs = all_labels prog
+      and uses = prog_targets prog in
+      let esc_prog = Label.Full.Set.diff uses defs in
+      if do_self then begin
+        if not (Label.Full.Set.is_empty esc_prog) then
+          Warn.user_error
+            "Code to code branches {%s} not possible with `-variant self`, change for initial values"
+          (pp_full esc_prog)
+        end ;
+      Label.Full.Set.fold
+        (fun (_,lbl) -> Label.Set.add lbl)
+        esc_prog (init_targets init)
+
+(* Translate labls to integers (local labels), when possible *)
+    let rec lblmap_pseudo no c m i = match i with
     | A.Nop|A.Instruction _ -> c,m
     | A.Label(lbl,i) ->
-        let m = StringMap.add lbl c m in
-        lblmap_pseudo (c+1) m i
+        let m =
+          if Label.Set.mem lbl no then m
+          else Label.Map.add lbl c m in
+        lblmap_pseudo no (c+1) m i
     | A.Symbolic _ (*no symbolic in litmus *)
     | A.Macro _ -> assert false
 
-    let lblmap_code =
+    let lblmap_code no =
       let rec do_rec c m = function
         | [] -> m
         | i::code ->
-            let c,m = lblmap_pseudo c m i in
+            let c,m = lblmap_pseudo no c m i in
             do_rec c m code in
-      do_rec 0 StringMap.empty
+      do_rec 0 Label.Map.empty
 
 (*******************************)
 (* Count specific instructions *)
@@ -385,7 +446,7 @@ type P.code = MiscParser.proc * A.pseudo list)
 
     exception CannotIntern
 
-    let tr_label_fail m lbl =  sprintf "%i" (StringMap.find lbl m)
+    let tr_label_fail m lbl =  sprintf "%i" (Label.Map.find lbl m)
 
     let tr_label m lbl =
       try
@@ -403,12 +464,12 @@ type P.code = MiscParser.proc * A.pseudo list)
       | ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _
         -> raise CannotIntern
       | Instruction _ ->
-        Warn.fatal "FIXME: as_int functionality for -variant self" 
+        Warn.fatal "FIXME: as_int functionality for -variant self"
 
-    let compile_pseudo_code code k =
+    let compile_pseudo_code no code k =
       let m =
-        if O.numeric_labels then lblmap_code code
-        else StringMap.empty in
+        if O.numeric_labels then lblmap_code no code
+        else Label.Map.empty in
 
       let tr_lab seen lbl =
         try
@@ -436,8 +497,8 @@ type P.code = MiscParser.proc * A.pseudo list)
             ins @ k in
       do_rec StringSet.empty code
 
-    let compile_code user code =
-      let code = compile_pseudo_code code [] in
+    let compile_code no user code =
+      let code = compile_pseudo_code no code [] in
       let code =
         if O.timeloop > 0 then C.emit_loop code
         else code in
@@ -543,6 +604,9 @@ type P.code = MiscParser.proc * A.pseudo list)
     let compile_final _proc observed = RegSet.elements observed
 
     let mk_templates procs_user ty_env name stable_info init code observed =
+      let esc =
+        if O.numeric_labels then escaping_labels init code
+        else Label.Set.empty in
       let outs =
         List.map
           (fun (proc,code) ->
@@ -551,7 +615,7 @@ type P.code = MiscParser.proc * A.pseudo list)
             let addrs = extract_addrs code in
             let stable = stable_regs code in
             let code =
-              compile_code
+              compile_code esc
                 (List.exists (Proc.equal proc) procs_user) code in
             proc,addrs,stable,code,nrets,nnops)
           code in
@@ -685,8 +749,9 @@ type P.code = MiscParser.proc * A.pseudo list)
         with Not_found -> StringMap.empty in
       let ty_env = ty_env1,ty_env2 in
       let code = List.map (fun ((p,_),c) -> p,c) code in
+      let label_init = A.get_label_init initenv in
       let code =
-        if do_self || is_pte then
+        if do_self || is_pte || Misc.consp label_init then
           let do_append_nop = is_pte && do_precise in
           List.map (fun (p,c) ->
             let nop = A.Instruction A.nop in

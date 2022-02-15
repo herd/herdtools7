@@ -79,6 +79,8 @@ val opt_compare : ('a -> 'a -> int) -> 'a option -> 'a option -> int
 val opt_eq : ('a -> 'a -> bool) -> 'a option -> 'a option -> bool
 val pair_compare :
     ('a -> 'a -> int) -> ('b -> 'b -> int) -> 'a * 'b -> 'a * 'b -> int
+val pair_eq :
+  ('a -> 'a -> bool) -> ('b -> 'b -> bool) -> 'a * 'b -> 'a * 'b -> bool
 val list_compare : ('a -> 'a -> int) -> 'a list -> 'a list -> int
 val list_eq : ('a -> 'a -> bool) -> 'a list -> 'a list -> bool
 

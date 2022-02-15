@@ -1,0 +1,19 @@
+AArch64 L024
+Stable=X9
+(* Subroutine calls. Addresses as initial values *)
+{
+0:X1=P0:Linc; 0:X3=P1:Ldec;
+1:X1=P0:Linc; 1:X3=P1:Ldec;
+}
+  P0          | P1           ;
+ MOV W9,#4    | MOV W9,#4    ;
+ BLR X1       | BLR X3       ;
+ BLR X3       | BLR X1       ;
+ BL  Linc     | BL Ldec      ;
+ B Lzero      | B Lone       ;
+Linc:         |Ldec:         ;
+ ADD W9,W9,#1 | SUB W9,W9,#1 ;
+ RET          | RET          ;
+Lzero:        |Lone:         ;
+ MOV W0,W9    | MOV W0,W9    ;
+forall 0:X0=5 /\ 1:X0=3

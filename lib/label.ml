@@ -20,6 +20,8 @@ type t = string
 
 let pp = Misc.identity
 
+let equal = String.equal
+
 let compare = String.compare
 
 let lab_count = ref 0
@@ -39,3 +41,19 @@ module Set = StringSet
 module Map = StringMap
 
 let norm lbls = try Some (Set.min_elt lbls) with Not_found -> None
+
+module Full =
+  struct
+    type full = Proc.t * t
+
+    let pp (p,lbl) = Printf.sprintf "%s:%s" (Proc.pp p) (pp lbl)
+    let equal = Misc.pair_eq Proc.equal equal
+    and compare = Misc.pair_compare Proc.compare compare
+
+    module Set =
+      MySet.Make
+        (struct
+          type t = full
+          let compare = compare
+        end)
+  end

@@ -90,7 +90,10 @@ module Make
     and module RegMap = T.A.RegMap) : sig
       val dump : Name.t -> T.t -> unit
     end = struct
-
+  module MakeLoc
+           (CfgLoc:
+              sig val label_init : Label.Full.full list
+              end) = struct
       module G = Global_litmus
       module C = T.C
       open Constant
@@ -98,7 +101,11 @@ module Make
 
 (* Options *)
       let do_self = Cfg.variant Variant_litmus.Self
-      let do_ascall = Cfg.ascall || do_self
+      let do_label_init = Misc.consp CfgLoc.label_init
+      let do_ascall =
+        (* Self-modifing code or label constants in iit section
+           implils `-ascall true` mode *)
+        Cfg.ascall || do_self || do_label_init
 
       open Speedcheck
       let do_vp = Cfg.verbose_prelude
@@ -664,18 +671,24 @@ module Make
           O.o "inline static void mcautious(void) { mbar(); }" ;
           O.o ""
         end ;
-        if do_self then begin
+        if do_self || do_label_init then begin
           Insert.insert O.o "instruction.h" ;
           O.o "" ;
           Insert.insert O.o "getnop.c" ;
           O.o "" ;
-          Insert.insert O.o "self.c"
+          if do_self then begin
+            Insert.insert O.o "getret.c" ;
+            O.o "" ;
+            Insert.insert O.o "self.c" ;
+            O.o ""
+          end
         end
+
 (* All of them *)
 
       let dump_threads test =
         (* mbar *)
-        dump_mbar_def () ;
+        dump_mbar_def ();
         (* Barrier *)
         barrier_def () ;
         (* Preload *)
@@ -1372,11 +1385,13 @@ module Make
             O.fx indent "_a->%s = _a->%s;" (tag_malloc a) a ;
             O.fx indent "_a->%s = %s(_a->%s,sizeof(*_a->%s));" a alg a a
         in
-        if do_self then begin
+        if do_self || do_label_init then begin
           ObjUtil.insert_lib_file O.o "_find_ins.c" ;
           O.o "" ;
-          O.o "static size_t code_size(ins_t *p,int skip) { return find_ins(getret(),p,skip)+1; }" ;
-          O.o "" ;
+          if do_self then begin
+            O.o "static size_t code_size(ins_t *p,int skip) { return find_ins(getret(),p,skip)+1; }" ;
+            O.o ""
+          end ;
           O.o "static size_t prelude_size(ins_t *p) { return find_ins(getnop(),p,0)+1; }" ;
           O.o ""
         end ;
@@ -1502,11 +1517,11 @@ module Make
           O.oi "_a->_scratch = malloc_check(_a->_p->max_idx*sizeof(*(_a->_scratch)));"
         end ;
         if do_self then begin
+          let open OutUtils in
           O.oi "size_t _sz;";
           List.iter
             (fun (n,(t,_)) ->
-              let open OutUtils in
-              O.fi "_a->%s = code_size((ins_t *)code%i,%i);"
+              if do_self then O.fi "_a->%s = code_size((ins_t *)code%i,%i);"
                 (fmt_code_size n) n (A.Out.get_nrets t) ;
               O.fi "_a->%s = prelude_size((ins_t *)code%i);"
                 (fmt_prelude n) n ;
@@ -1514,6 +1529,8 @@ module Make
                 (fmt_code_size n) ;
               O.fi "_a->code%i = mmap_exec(_sz);" n)
             test.T.code
+        end else begin
+          UD.initialise_labels "_a" CfgLoc.label_init
         end ;
         O.o "}" ;
         O.o "" ;
@@ -1724,40 +1741,8 @@ module Make
         | [] -> ()
         | _::_ as cs -> O.f "%s\n\n" (String.concat "\n" cs)
         end ;
-        if do_self then begin
-          let src = test.T.src in
-          let lbls =
-            List.fold_left
-              (fun k (_,(_,v)) -> match v with
-              | Constant.Label (p,lbl) ->
-                  if not
-                      (List.exists
-                         (fun (p0,lbl0) ->
-                           Misc.int_eq p p0 && Misc.string_eq lbl lbl0)
-                         k)
-                  then (p,lbl)::k else k
-              | _ -> k)
-              [] src.MiscParser.init in
-          begin match lbls with
-          | [] -> ()
-          | _::_ ->
-              let find p lbl = U.find_label_offset p lbl test in
-              List.iter
-                (fun (p,lbl) ->
-                  let off = find p lbl in
-                  O.f "static const int %s = %i;"
-                    (OutUtils.fmt_lbl_offset p lbl) off)
-                lbls ;
-              O.o ""
-          end
-        end else begin
-          List.iter
-            (fun  (_,(_,v)) -> match v with
-            |  Constant.Label _ ->
-                Warn.user_error "label values require \"-variant self\" mode"
-            | _ ->  ())
-            test.T.src.MiscParser.init
-        end ;
+        (* Note: does nothing when no label is here *)
+        UD.define_label_offsets test CfgLoc.label_init ;
         let aligned_env =
           List.filter
             (fun (a,_) -> U.is_aligned a env)
@@ -2416,7 +2401,9 @@ module Make
             O.fi "size_t code%i_sz,%s;" n (OutUtils.fmt_prelude n) ;
             O.fi "ins_t *code%i;" n
           done
-        end ;
+        end else begin
+            UD.define_label_fields CfgLoc.label_init
+        end;
         O.o "} ctx_t;" ;
         O.o "" ;
         if do_staticalloc then begin
@@ -2912,10 +2899,17 @@ module Make
         end ;
         O.o "}" ;
         ()
+  end
 
       let dump doc test =
         ObjUtil.insert_lib_file O.o "header.txt" ;
 (* Minimal type environemnt *)
+        let module MLoc =
+          MakeLoc
+            (struct
+              let label_init = A.get_label_init test.T.init
+            end) in
+        let open MLoc in
         let env = U.build_env test in
         dump_header test ;
         dump_read_timebase () ;

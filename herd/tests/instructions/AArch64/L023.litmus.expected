@@ -1,0 +1,10 @@
+Test L023 Required
+States 1
+0:X0=2; 1:X0=6;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=2 /\ 1:X0=6)
+Observation L023 Always 1 0
+Hash=8856c43c5b6a9875448e43abff247e66
+

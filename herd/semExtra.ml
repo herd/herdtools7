@@ -174,7 +174,7 @@ type concrete =
 (* Branches *)
 (************)
   module B : Branch.S
-  with type v = v and type 'a monad = 'a M.t
+  with type reg = A.reg and type v = v and type 'a monad = 'a M.t
   type branch = B.t
 
   val gone_toofar : concrete -> bool

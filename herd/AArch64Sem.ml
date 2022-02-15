@@ -1446,6 +1446,7 @@ module Make
       let (!!!) (m1:(unit list * unit) M.t) = m1 >>! B.Next
       let (!!) (m1:(unit * unit) M.t) = m1 >>! B.Next
       let (!) (m1:unit M.t) = m1 >>! B.Next
+      let (:=) (m1:unit M.t) r v = m1 >>! B.NextSet (r,v)
       (* And now, just forget about >>! *)
       let (>>!) (_:unit) (_:unit) = ()
 
@@ -1482,25 +1483,22 @@ module Make
             read_reg_ord NZP ii  >>= tr_cond c >>= fun v ->
               commit_bcc ii >>= fun () -> B.bccT v l
 
-        | I_BL l as i ->
-          supported_with_self i;
-          begin
-            match ii.A.link_label with
-            | Some ret_lbl ->
-              let ret_lbl_v = A.V.cstToV (Constant.Label (ii.A.proc, ret_lbl)) in
-              write_reg AArch64Base.linkreg ret_lbl_v ii
-              >>= fun () -> B.branchT l
-            | None ->
-              assert false (* mem.ml ought to ensure link_label is set *)
-          end
+        | I_BL l ->
+            begin
+              match ii.A.link_label with
+              | Some ret_lbl ->
+                  let ret_lbl_v =
+                    A.V.cstToV (Constant.Label (ii.A.proc, ret_lbl)) in
+                  write_reg AArch64Base.linkreg ret_lbl_v ii
+                  >>= fun () -> B.branchT l
+              | None ->
+                  assert false (* mem.ml ought to ensure link_label is set *)
+            end
+
         | I_BR r as i ->
-          supported_with_self i ;
-          begin
-            read_reg_ord r ii
-            >>= do_indirect_jump i
-          end
+            read_reg_ord r ii >>= do_indirect_jump i
+
         | I_BLR r as i ->
-          supported_with_self i ;
           begin
             match ii.A.link_label with
             | Some ret_lbl ->
@@ -1512,14 +1510,12 @@ module Make
               assert false (* mem.ml ought to ensure link_label is set *)
           end
         | I_RET _ro as i ->
-          supported_with_self i ;
-          begin
             let r = match _ro with
             | None -> AArch64Base.linkreg
             | Some r -> r in
             read_reg_ord r ii
             >>= do_indirect_jump i
-          end
+
 
         | I_CBZ(_,r,l) ->
             (read_reg_ord r ii)
@@ -1893,7 +1889,8 @@ module Make
             !(movk var rd k os ii)
 
         | I_ADDR (r,lbl) ->
-           !(write_reg r  (ii.A.addr2v lbl) ii)
+            let v = ii.A.addr2v lbl in
+           (write_reg r  (ii.A.addr2v lbl) ii := r) v
 
         | I_SXTW(rd,rs) ->
             !(read_reg_ord_sz MachSize.Word rs ii >>=

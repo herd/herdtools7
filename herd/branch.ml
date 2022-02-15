@@ -18,6 +18,8 @@
 
 module type S = sig
   type lbl = string
+(* From arch *)
+  type reg
   type v
 (* t monad controls the branch machinery *)
   type 'a monad
@@ -26,6 +28,8 @@ module type S = sig
   type t =
     (* continue in sequence *)
     | Next
+    (* continue in sequence, setting register *)
+    | NextSet of reg * v
     (* jump to arg *)
     | Jump of lbl
     (* if v is one, jump to address, otherwise continue in sequence *)
@@ -47,12 +51,14 @@ end
 module Make(M:Monad.S) = struct
 
   type lbl = string
+  type reg = M.A.reg
   type v = M.A.V.v
   type 'a monad = 'a M.t
 
   type t =
     (* continue in sequence *)
     | Next
+    | NextSet of reg * v
     (* jump to arg *)
     | Jump of lbl
     (* if v is one, jump to address, otherwise continue in sequence *)
@@ -66,6 +72,7 @@ module Make(M:Monad.S) = struct
 
 
   let nextT = M.unitT Next
+  let nextSetT r v = M.unitT (NextSet (r,v))
   let branchT lbl = M.unitT (Jump lbl)
   let bccT v lbl = M.unitT (CondJump (v,lbl))
 end
