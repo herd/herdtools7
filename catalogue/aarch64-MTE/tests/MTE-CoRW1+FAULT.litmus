@@ -1,0 +1,14 @@
+AArch64 MTE-CoRW1+FAULT
+Variant=Precise
+{
+x=1;
+0:X0=x:red;
+0:X1=x:green;
+0:X5=x:red;
+}
+ P0             ;
+L0: LDR X3,[X0] ;
+    STG X5,[X1] ;
+locations [0:X3;]    
+exists ~fault(P0:L0,x)
+

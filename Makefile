@@ -183,6 +183,16 @@ test::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-mixed tests: OK"
 
+mte-test:
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64-MTE/tests/kinds.txt \
+		-shelf-path catalogue/aarch64-MTE/shelf.py \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 catalogue aarch64-MTE tests: OK"
+
 test:: diy-test-mixed
 
 LDS:="Amo.Cas,Amo.LdAdd,Amo.LdClr,Amo.LdEor,Amo.LdSet"
