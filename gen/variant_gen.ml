@@ -35,7 +35,7 @@ type t =
 (* Morello C64 instruction set *)
   | Morello
 (* Explicit virtual memory *)
-  | KVM
+  | KVM | FullKVM
 (* Neon AArch64 extension *)
   | Neon
 (* Constrained Unpredictable *)
@@ -45,7 +45,8 @@ let tags =
   ["AsAmo";"ConstsInInit";
    "Mixed";"FullMixed";"MixedDisjoint"; "MixedStrictOverlap";
    "Self"; "MemTag";
-   "NoVolatile"; "Morello"; "kvm"; "Neon"; "ConstrainedUnpredictable"; ]
+   "NoVolatile"; "Morello"; "kvm"; "FullKvm";
+   "Neon"; "ConstrainedUnpredictable"; ]
 
 let parse tag = match Misc.lowercase tag with
 | "asamo" -> Some AsAmo
@@ -59,6 +60,7 @@ let parse tag = match Misc.lowercase tag with
 | "novolatile" -> Some NoVolatile
 | "morello" -> Some Morello
 | "kvm" -> Some KVM
+| "fullkvm" -> Some FullKVM
 | "neon" -> Some Neon
 | "constrainedunpredictable"|"cu" -> Some ConstrainedUnpredictable
 | _ -> None
@@ -75,5 +77,9 @@ let pp = function
   | NoVolatile -> "NoVolatile"
   | Morello -> "Morello"
   | KVM -> "kvm"
+  | FullKVM -> "FullKvm"
   | Neon -> "Neon"
   | ConstrainedUnpredictable -> "ConstrainedUnpredictable"
+
+let is_mixed v = v Mixed || v FullMixed
+let is_kvm v = v KVM || v FullKVM

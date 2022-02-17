@@ -107,6 +107,10 @@ let parse_fences fs = List.fold_right parse_fence fs []
     and ls = C.R.expand_relax_macros ls in
     let lr = var_atom lr
     and ls = var_atom ls in
+    if O.verbose > 0 then begin
+      Printf.eprintf
+        "expanded relax=%s\n" (C.R.pp_relax_list lr)
+    end ;
     M.gen ~relax:lr ~safe:ls n
 
   let er e = ERS [plain_edge e]
@@ -192,6 +196,15 @@ let () =
   let relax_list = split !Config.relaxs
   and safe_list = split !Config.safes  in
 
+  let () =
+    if !Config.verbose > 0 then begin
+      let relaxs =
+        match relax_list with
+        | None -> []
+        | Some xs -> xs in
+      Printf.eprintf "parsed relax=%s\n"
+        (String.concat " " (List.map LexUtil.pp relaxs))
+    end in
   let cpp = match !Config.arch with `CPP -> true  |  _ -> false in
 
   let module Co = struct
@@ -259,7 +272,7 @@ let () =
     let variant = !Config.variant
   end in
   let module T = Top_gen.Make(Co) in
-  let f = match !Config.arch with
+  let go = match !Config.arch with
   | `PPC ->
       let module M = Make(T(PPCCompile_gen.Make(C)(PPCArch_gen.Config)))(Co) in
     M.go
@@ -294,7 +307,7 @@ let () =
       let module M = Make(CCompile_gen.Make(CoC))(Co) in
       M.go in
   try
-    f !Config.size relax_list safe_list ;
+    go !Config.size relax_list safe_list ;
     exit 0
   with
   | Misc.Fatal msg | Misc.UserError msg->

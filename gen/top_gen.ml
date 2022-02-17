@@ -616,7 +616,7 @@ let max_set = IntSet.max_elt
 
   let do_memtag = O.variant Variant_gen.MemTag
   let do_morello = O.variant Variant_gen.Morello
-  let do_kvm = O.variant Variant_gen.KVM
+  let do_kvm = Variant_gen.is_kvm O.variant
 
   let compile_cycle ok n =
     let open Config in

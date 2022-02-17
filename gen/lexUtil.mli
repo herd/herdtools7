@@ -20,5 +20,6 @@ type t =
   | One of string
   | Seq of string list
 
+val pp : t -> string
 val split : string -> t list
 val just_split : string -> string list

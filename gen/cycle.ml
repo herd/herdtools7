@@ -127,7 +127,7 @@ module Make (O:Config) (E:Edge.S) :
   let dbg = false
   let do_memtag = O.variant Variant_gen.MemTag
   let do_morello = O.variant Variant_gen.Morello
-  let do_kvm = O.variant Variant_gen.KVM
+  let do_kvm = Variant_gen.is_kvm O.variant
   let do_neon = O.variant Variant_gen.Neon
 
   type fence = E.fence

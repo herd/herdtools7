@@ -35,7 +35,7 @@ type t =
 (* Morello C64 instruction set *)
   | Morello
 (* Explicit virtual memory *)
-  | KVM
+  | KVM | FullKVM
 (* Neon AArch64 extension *)
   | Neon
 (* Constrained Unpredictable, ie generate tests thar may exhibit
@@ -47,3 +47,6 @@ val tags : string list
 val parse : string -> t option
 
 val pp : t -> string
+
+val is_mixed : (t -> bool) -> bool
+val is_kvm : (t -> bool) -> bool
