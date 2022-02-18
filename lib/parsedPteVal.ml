@@ -53,7 +53,9 @@ let pp_comma = apply_not_empty (sprintf ", %s")
 let mk_pp pp_oa { p_oa; p_kv; p_attrs; } =
   sprintf
     "(%s%s%s)"
-    (match p_oa with None -> "" | Some oa -> pp_oa oa)
+    (match p_oa with
+     | None -> ""
+     | Some oa -> sprintf "oa:%s" (pp_oa oa))
     (pp_comma
        (StringMap.pp_str_delim ", "
           (fun k v -> sprintf "%s:%s" k v)
