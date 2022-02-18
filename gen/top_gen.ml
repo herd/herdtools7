@@ -888,11 +888,9 @@ let fmt_cols =
   let dump_test_channel chan t =
     fprintf chan "%s %s\n" (Archs.pp A.arch) t.name ;
     if t.com <>  "" then fprintf chan "\"%s\"\n" t.com ;
-    let info =
-      if do_kvm then ("Variant","precise")::t.info else t.info in
     List.iter
       (fun (k,v) -> fprintf chan "%s=%s\n" k v)
-      info ;
+      t.info ;
     Hint.dump O.hout t.name t.info ;
     dump_init chan t.init t.env ;
     dump_code chan t.prog ;
