@@ -61,6 +61,8 @@ module type S = sig
 (* Find, may raise Not_found *)
   val find_node : (node -> bool) -> node -> node
   val find_node_prev : (node -> bool) -> node -> node
+(* First node a strict po-predecessor of second node. *)
+  val po_pred : node -> node -> bool
   val find_prev_code_write : node -> string
 
   val find_edge : (edge -> bool) -> node -> node

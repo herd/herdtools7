@@ -292,8 +292,12 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       | _-> false
 
     let check_here n = match n.C.C.evt.C.C.bank with
-    | Pte ->
-        Misc.is_some (find_next_pte_write n)
+      | Pte ->
+         begin
+           match find_next_pte_write n with
+           | None -> false
+           | Some m -> not (m == n || C.C.po_pred m n)
+         end
     | Ord|Tag|CapaTag|CapaSeal|VecReg _ ->
         check_edge n.C.C.edge.C.E.edge && not (is_load_init n.C.C.evt)
 

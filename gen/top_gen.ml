@@ -628,6 +628,12 @@ let max_set = IntSet.max_elt
     let lsts = U.last_map cos0 in
     let cos = U.compute_cos cos0 in
     let last_ptes = if do_kvm then C.last_ptes n else [] in
+    if O.verbose > 1 then
+      Printf.eprintf "Last_Ptes: %s\n"
+        (String.concat ","
+           (List.map
+              (fun (loc,v) ->
+                Printf.sprintf "%s->%s" loc (C.PteVal.pp v)) last_ptes)) ;
     let no_local_ptes = StringSet.of_list (List.map fst last_ptes) in
     if O.verbose > 1 then U.pp_coherence cos0 ;
     let loc_writes = U.comp_loc_writes n in
