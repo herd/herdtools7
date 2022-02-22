@@ -86,11 +86,11 @@ module type S = sig
 (* Resolve edge direction and build cycle *)
  val resolve_edges : edge list -> edge list * node
 
-(* Finish edge cycle, adding complete events *)
-  val finish : node -> unit
+(* Finish edge cycle, adding complete events, returns initial environment *)
+  val finish : node -> (string * Code.v) list
 
 (* Composition of the two more basic steps above *)
-  val make : edge list -> edge list * node
+  val make : edge list -> edge list * node * Code.env
 
 (* split cycle amoungst processors *)
   val split_procs : node -> node list list
@@ -102,7 +102,7 @@ module type S = sig
   val last_ptes : node -> (string * PteVal.t) list
 
 (* All locations *)
-  val get_globals : node -> string list
+  val get_globals : ?init:Code.env -> node -> string list
 
 (* All (modified) code labels *)
   val get_labels : node -> string list
@@ -450,11 +450,11 @@ module CoSt = struct
   let (<<) f g = fun x -> f (g x)
   and (<!) f x = f x
 
-  let create sz =
+  let create ?(init=0) sz =
     let map  =
-      M.add Tag 0 <<  M.add CapaTag 0 <<
-      M.add CapaSeal 0 << M.add Ord 0 <! M.empty
-    and co_cell = Array.make (if sz <= 0 then 1 else sz) 0 in
+      M.add Tag init <<  M.add CapaTag init <<
+      M.add CapaSeal init << M.add Ord init <! M.empty
+    and co_cell = Array.make (if sz <= 0 then 1 else sz) init in
     { map; co_cell;  }
 
   let find_no_fail key map =
@@ -720,8 +720,10 @@ let set_same_loc st n0 =
 
   let tr_value e v = E.tr_value e.atom v
 
-  let rec do_set_write_val st pte_val = function
-    | [] -> ()
+(* do_set_write_val returns true when variale next_x has been used
+   and should thus be initialised *)
+  let rec do_set_write_val next_x_ok st pte_val = function
+    | [] -> next_x_ok
     | n::ns ->
         begin if Code.is_data n.evt.loc then
           begin if do_memtag then
@@ -755,14 +757,14 @@ let set_same_loc st n0 =
                    let st = CoSt.set_co st CapaTag evt_null.ctag in
                    let e,st = CoSt.set_cell st n in
                    n.evt <- e ;
-                   do_set_write_val st pte_val ns
+                   do_set_write_val next_x_ok st pte_val ns
                 | Tag|CapaTag|CapaSeal ->
                    let st = CoSt.next_co st bank in
                    let v = CoSt.get_co st bank in
                    n.evt <- { n.evt with v = v; } ;
                    let e,st = CoSt.set_tcell st n.evt in
                    n.evt <- e ;
-                   do_set_write_val st pte_val ns
+                   do_set_write_val next_x_ok st pte_val ns
                 | VecReg a ->
                    let st = CoSt.step_simd st a in
                    let cell = CoSt.get_cell st in
@@ -772,41 +774,59 @@ let set_same_loc st n0 =
                        | (v::_)::_ -> v
                        | _ -> assert false in
                    n.evt <- { n.evt with vecreg; cell;v;} ;
-                   do_set_write_val st pte_val ns
+                   do_set_write_val next_x_ok st pte_val ns
                 | Pte ->
-                    let pte_val =
-                      if do_kvm then begin
-                        let next_loc () =
-                          match n.evt.loc with
-                          | Code.Data x ->
+                   let next_x_pred = ref false in
+                   let pte_val =
+                     if do_kvm then begin
+                         let next_loc () =
+                           match n.evt.loc with
+                           | Code.Data x ->
                               begin try
-                                let m =
-                                  find_node
-                                    (fun m -> match m.evt.loc with
-                                    | Code.Data y -> not (Misc.string_eq x y)
-                                    | _-> false) n in
-                                Code.as_data m.evt.loc
-                              with Not_found -> next_x end
-                          | Code.Code _ -> assert false in
-                        E.set_pteval n.evt.atom pte_val next_loc
-                      end else pte_val in
-                    n.evt <- { n.evt with pte = pte_val; } ;
-                    do_set_write_val st pte_val ns
+                                  let m =
+                                    find_node
+                                      (fun m ->
+                                        match m.evt.loc with
+                                        | Code.Data y ->
+                                           not (Misc.string_eq x y)
+                                        | _-> false) n in
+                                  Code.as_data m.evt.loc
+                                with Not_found ->
+                                  next_x_pred := true ; next_x end
+                           | Code.Code _ -> assert false in
+                         E.set_pteval n.evt.atom pte_val next_loc
+                       end else pte_val in
+                   n.evt <- { n.evt with pte = pte_val; } ;
+                   do_set_write_val (!next_x_pred || next_x_ok) st pte_val ns
                 end
             | Code _ ->
-               do_set_write_val st pte_val ns
+               do_set_write_val next_x_ok st pte_val ns
             end
-        | Some (R|J) |None -> do_set_write_val st pte_val ns
+        | Some (R|J) |None -> do_set_write_val next_x_ok st pte_val ns
         end
 
   let set_all_write_val nss =
-    List.iter
-      (fun ns -> match ns with
-      | [] -> ()
-      | n::_ ->
-         let sz = get_wide_list ns in
-         do_set_write_val (CoSt.create sz) (pte_val_init n.evt.loc) ns)
-      nss
+    let _,initvals =
+      List.fold_right
+        (fun ns (k,env as r) ->
+          match ns with
+          | [] -> r
+          | n::_ ->
+              let loc = n.evt.loc in
+              let sz = get_wide_list ns in
+              let i = if do_kvm then k else 0 in
+              let next_x_ok =
+                do_set_write_val
+                  false
+                  (CoSt.create ~init:i sz)
+                  (pte_val_init loc) ns in
+              let env = if do_kvm then (Code.as_data loc,k)::env else env in
+              if next_x_ok then
+                k+8,(next_x,k+4)::env
+              else
+                k+4,env)
+        nss (0,[]) in
+    initvals
 
   let set_write_v n =
     let nss =
@@ -827,8 +847,8 @@ let set_same_loc st n0 =
             | E.Id -> assert false) n in
         split_one_loc m
       with Exit -> Warn.fatal "Cannot set write values" in
-    set_all_write_val nss ;
-    nss
+    let initvals = set_all_write_val nss in
+    nss,initvals
 
 (* Loop over every node and set the expected value from the previous node *)
 let set_dep_v nss =
@@ -941,8 +961,13 @@ let finish n =
     debug_cycle stderr n
   end ;
 (* Set write values *)
-  let by_loc = set_write_v n in
+  let by_loc,initvals = set_write_v n in
   if O.verbose > 1 then begin
+    eprintf "INITIAL VALUES: %s\n"
+      (String.concat "; "
+         (List.map
+            (fun (loc,k) -> sprintf "%s->%d" loc k)
+            initvals)) ;
     eprintf "WRITE VALUES\n" ;
     debug_cycle stderr n
   end ;
@@ -960,7 +985,7 @@ let finish n =
                 (Code.pp_loc loc) v) vs))
   end ;
   if O.variant Variant_gen.Self then check_fetch n ;
-  ()
+  initvals
 
 
 (* Re-extract edges, with irelevant directions solved *)
@@ -983,8 +1008,8 @@ let resolve_edges = function
 
 let make es =
   let es,c = resolve_edges es in
-  let () = finish c in
-  es,c
+  let initvals = finish c in
+  es,c,initvals
 
 (*************************)
 (* Gather events by proc *)
@@ -1251,10 +1276,13 @@ let rec group_rec x ns = function
     StringSet.elements (StringSet.of_list locs)
 
 
-  let get_globals m =
-    get_rec
-      (fun loc k -> match loc with Data loc -> loc::k | Code _ -> k)
-      m
+  let get_globals ?(init=[]) m =
+    let init = List.map (fun (loc,_) -> loc) init in
+    let code =
+      get_rec
+        (fun loc k -> match loc with Data loc -> loc::k | Code _ -> k)
+        m in
+    StringSet.elements (StringSet.of_list (init@code))
 
   let get_labels m =
     get_rec

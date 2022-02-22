@@ -54,7 +54,7 @@ module type S = sig
   type init = (location * initval option) list
 
 (* complete init with necessary information *)
-  val complete_init : init -> init
+  val complete_init : Code.env -> init -> init
 
 
 (***********************)
@@ -160,7 +160,18 @@ with type arch_reg = I.arch_reg and type special = I.special
   | None -> xs
   | Some x -> StringSet.add x xs
 
-  let complete_init i =
+  let ppo = function
+    | None -> "-"
+    | Some v -> pp_initval v
+
+  let _pp_env env =
+    String.concat ", "
+       (List.map (fun (loc,v) -> pp_location loc ^ "->" ^ ppo v) env)
+
+  let complete_init iv i =
+    let i =
+      List.fold_left
+        (fun env (loc,v) -> (Loc loc,Some (S (string_of_int v)))::env) i iv in
     let already_here =
       List.fold_left
         (fun k (loc,v) ->
@@ -186,10 +197,12 @@ with type arch_reg = I.arch_reg and type special = I.special
           | None -> k in
           k)
         StringSet.empty i in
-    StringSet.fold
-      (fun x i -> (Loc x,None)::i)
-      (StringSet.diff refer already_here)
-      i
+    let i =
+      StringSet.fold
+        (fun x i -> (Loc x,None)::i)
+        (StringSet.diff refer already_here)
+        i in
+    i
 
   module RegMap =
     MyMap.Make

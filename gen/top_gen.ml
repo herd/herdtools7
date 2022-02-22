@@ -618,7 +618,7 @@ let max_set = IntSet.max_elt
   let do_morello = O.variant Variant_gen.Morello
   let do_kvm = Variant_gen.is_kvm O.variant
 
-  let compile_cycle ok n =
+  let compile_cycle ok initvals n =
     let open Config in
     Label.reset () ;
     let env_wide = C.get_wide n in
@@ -717,7 +717,7 @@ let max_set = IntSet.max_elt
                 A.LocMap.add loc (Typ t) m)
             env f in
         let env =
-          let globals = C.get_globals n in
+          let globals = C.get_globals ~init:initvals n in
           let typ =
             if do_morello
             then TypBase.Std (TypBase.Unsigned,MachSize.S128)
@@ -790,7 +790,7 @@ let max_set = IntSet.max_elt
               F.run evts m
           | Cycle -> F.check f
           | Observe -> F.observe f in
-        let i = if do_kvm then A.complete_init i else i in
+        let i = if do_kvm then A.complete_init initvals i else i in
         (i,c,fc flts,env),
         (U.compile_prefetch_ios (List.length obsc) ios,
          U.compile_coms splitted)
@@ -938,9 +938,9 @@ let tr_labs m env =
 let do_self =  O.variant Variant_gen.Self
 
 let test_of_cycle name
-  ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope es c =
+  ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope ?(init=[]) es c =
   let com = match com with None -> pp_edges es | Some com -> com in
-  let (init,prog,final,env),(prf,coms) = compile_cycle check c in
+  let (init,prog,final,env),(prf,coms) = compile_cycle check init c in
   let archinfo = Comp.get_archinfo c in
   let m_labs = num_labels prog in
   let init = tr_labs m_labs init in
@@ -962,8 +962,8 @@ let make_test name ?com ?info ?check ?scope es =
   try
     if O.verbose > 1 then eprintf "**Test %s**\n" name ;
     if O.verbose > 2 then eprintf "**Cycle %s**\n" (pp_edges es) ;
-    let es,c = C.make es in
-    test_of_cycle name ?com ?info ?check ?scope es c
+    let es,c,init = C.make es in
+    test_of_cycle name ?com ?info ?check ?scope ~init es c
   with
   | Misc.Fatal msg|Misc.UserError msg ->
       Warn.fatal "Test %s [%s] failed:\n%s" name (pp_edges es) msg
