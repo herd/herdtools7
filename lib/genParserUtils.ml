@@ -91,5 +91,13 @@ let call_parser name lexbuf lex parse =
                match item with
                | Loc (rloc,_) -> rloc::k
                | Fault _ -> k)
+(* It should be normal to replace the above clause by this one:
+ *              | Fault (_,x) ->
+ *                 ConstrGen.Loc (MiscParser.Location_global x)::k
+ * As the occurence of a fault in location field or in condition would
+ * then yield the same hashes. However, we refrain from doing this
+ * as we have many some old hashes in litmus logs and that teh discrepancy
+ * is not that annoying.
+ *)
               locs []))
         (ConstrGen.fold_constr get_locs_atom c MiscParser.RLocSet.empty)
