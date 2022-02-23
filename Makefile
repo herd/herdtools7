@@ -160,12 +160,13 @@ diy-test:
 
 
 J=4
+test:: cata-test
 
-test::
+cata-test::
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
 		-j $(J) \
-		-herd-timeout 1.0 \
+		-herd-timeout 16.0 \
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
 		-kinds-path catalogue/aarch64/tests/kinds.txt \
@@ -173,7 +174,7 @@ test::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64 tests: OK"
 
-test::
+cata-test::
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
 		-herd-path $(HERD) \
@@ -182,6 +183,17 @@ test::
 		-shelf-path catalogue/aarch64-mixed/shelf.py \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-mixed tests: OK"
+
+cata-test::
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64-pick/tests/desired-kinds.txt \
+		-shelf-path catalogue/aarch64-pick/shelf.py \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 catalogue aarch64 tests: OK"
 
 mte-test:
 	@ echo
