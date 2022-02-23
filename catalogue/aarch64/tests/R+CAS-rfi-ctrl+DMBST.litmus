@@ -1,0 +1,16 @@
+AArch64 R+CAS-rfi-ctrl+DMBST
+"Amo.Cas Rfi DpCtrldW Coe DMB.STdWW Rfe"
+{
+0:X0=x; 0:X5=y;
+1:X1=y; 1:X3=x;
+}
+P0 | P1 ;
+MOV W1,#1 | MOV W0,#2 ;
+MOV W2,#2 | STR W0,[X1] ;
+CAS W1,W2,[X0] | DMB ST ;
+LDR W3,[X0] | MOV W2,#1 ;
+CBNZ W3,LC00 | STR W2,[X3] ;
+LC00: | ;
+MOV W4,#1 | ;
+STR W4,[X5] | ;
+exists (x=2 /\ y=2 /\ 0:X1=1 /\ 0:X3=2)
