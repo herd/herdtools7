@@ -110,9 +110,15 @@ let rmw = lxsx | amo
 (* Dependency-ordered-before *)
 let dob = addr | data
 	| ctrl; [W]
-	| (ctrl | (addr; po)); [ISB]; po; [R]
+	| (ctrl | (addr; po)); [ISB]; po; [M]
 	| addr; po; [W]
 	| (addr | data); lrs
+show ctrl;[M] as ctrl
+
+(* Pick-ordered-before *)
+let pob = pick-dep; [W]
+        | (pick-ctrl-dep | pick-addr-dep; po); [ISB]; po; [M]
+        | pick-addr-dep; [M]; po; [W]
 
 (* Atomic-ordered-before *)
 let aob = rmw
@@ -128,23 +134,26 @@ let bob = po; [dmb.full]; po
 	| po; [L]
 
 (* Tag-ordered-before *)
-let tob = [R & T]; intrinsic; [M \ T]
+let tob = [R & T]; iico_data; [PoD]; iico_ctrl; [M \ T]
 
 (* Locally-ordered-before *)
 let rec lob = lws; si
             | dob
+            | pob
             | aob
             | bob
             | tob
             | lob; lob
+let pick-lob = pick-basic-dep; lob; [W]
 
 (* Ordered-before *)
 let rec ob = obs; si
         | lob
+        | pick-lob
 	| ob; ob
 
 (* Tag-location-ordered *)
-let tlo = [R & T]; intrinsic; loc; intrinsic^-1; [R & T]
+let tlo = [R & T]; tob; loc; tob^-1; [R & T]
 
 (* Internal visibility requirement *)
 let po-loc =
