@@ -115,7 +115,6 @@ and run_status ?stdin ?stdout ?stderr bin args =
 module NonBlock = struct
 
   let output_line out line =
-    let open Unix in
     try
       let line = line ^ "\n" in
       output_string out line ;
@@ -134,7 +133,6 @@ module NonBlock = struct
     | _ -> assert false
 
   let input_lines f chan =
-    let open Unix in
     try
       while true do
         let () = f (input_line chan) in ()
