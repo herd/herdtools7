@@ -485,9 +485,9 @@ let overwrite_value v ao w = match ao with
 
 type strength = Strong | Weak
 let fold_strength f r = f Strong (f Weak r)
-
+type sync = Sync | NoSync
 type fence = | Barrier of barrier | CacheSync of strength * bool |
-               Shootdown of mBReqDomain * TLBI.op
+               Shootdown of mBReqDomain * TLBI.op * sync
 
 let is_isync = function
   | Barrier ISB -> true
@@ -503,9 +503,14 @@ let compare_fence b1 b2 = match b1,b2 with
    | 0 -> compare s1 s2
    | r -> r
     end
-| Shootdown (dom1,op1),Shootdown (dom2,op2) ->
+| Shootdown (dom1,op1,sync1),Shootdown (dom2,op2,sync2) ->
     begin match compare dom1 dom2 with
-   | 0 -> compare op1 op2
+    | 0 ->
+       begin
+         match compare op1 op2 with
+         | 0 -> compare sync1 sync2
+         | r -> r
+       end
    | r -> r
     end
 | (Shootdown _,(Barrier _|CacheSync _))
@@ -520,14 +525,20 @@ let add_dot f x = match f x with
 | "" -> ""
 | s -> "." ^ s
 
+let pp_sync = function
+  | NoSync -> ""
+  | Sync -> "-sync"
+
 let pp_fence f = match f with
 | Barrier f -> do_pp_barrier "." f
-| CacheSync (s,isb) -> sprintf "CacheSync%s%s"
-      (match s with Strong -> "Strong" | Weak -> "")
-      (if isb then "Isb" else "")
-| Shootdown (d,op) ->
-    sprintf "TLBI%s%s"
-      (add_dot TLBI.short_pp_op op) (add_dot pp_domain d)
+| CacheSync (s,isb) ->
+   sprintf "CacheSync%s%s"
+     (match s with Strong -> "Strong" | Weak -> "")
+     (if isb then "Isb" else "")
+| Shootdown (d,op,sync) ->
+   let tlbi = "TLBI" ^ pp_sync sync in
+   sprintf "%s%s%s" tlbi
+     (add_dot TLBI.short_pp_op op) (add_dot pp_domain d)
 
 let fold_cumul_fences f k =
    do_fold_dmb_dsb C.moreedges (fun b k -> f (Barrier b) k) k
@@ -543,7 +554,10 @@ let fold_shootdown =
     fun f k ->
       fold_op
         (fun op k ->
-          fold_domain (fun d k -> f (Shootdown(d,op)) k) k)
+          fold_domain
+            (fun d k ->
+              f (Shootdown(d,op,Sync))
+                (f (Shootdown(d,op,NoSync)) k)) k)
         k
   else fun _f k -> k
 

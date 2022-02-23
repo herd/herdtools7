@@ -1335,15 +1335,18 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
          I_FENCE (DSB (ISH,FULL))::
          (if isb then [I_FENCE ISB] else []))
 
-    let emit_shootdown dom op r =
-      pseudo
-        (I_FENCE (DSB(dom,FULL))::
-         I_TLBI(op,r)::
-         I_FENCE (DSB(dom,FULL))::[])
+    let emit_shootdown dom op sync r =
+      match sync with
+      | Sync ->
+         pseudo
+           (I_FENCE (DSB(dom,FULL))::
+            I_TLBI(op,r)::I_FENCE (DSB(dom,FULL))::[])
+      | NoSync ->
+         pseudo (I_TLBI(op,r)::[])
 
     let emit_fence st p init n f = match f with
     | Barrier f -> init,[Instruction (I_FENCE f)],st
-    | Shootdown(dom,op) ->
+    | Shootdown(dom,op,sync) ->
         let loc = match n.C.evt.C.loc with
         | Data loc -> loc
         | Code _ -> Warn.user_error "TLBI/CacheSync" in
@@ -1358,7 +1361,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let r1,st = tempo1 st in
               let cs = [Instruction (lsri64 r1 r 12)] in
               r1,init,cs,st in
-        let cs = emit_shootdown dom op r in
+        let cs = emit_shootdown dom op sync r in
         init,csr@cs,st
     | CacheSync (s,isb) ->
         try
