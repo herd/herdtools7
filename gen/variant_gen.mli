@@ -36,6 +36,8 @@ type t =
   | Morello
 (* Explicit virtual memory *)
   | KVM | FullKVM
+(* Do not  observe faults, in KVM mode *)
+  | NoFault
 (* Neon AArch64 extension *)
   | Neon
 (* Constrained Unpredictable, ie generate tests thar may exhibit

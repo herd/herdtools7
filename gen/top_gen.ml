@@ -730,7 +730,8 @@ let max_set = IntSet.max_elt
               else A.LocMap.add loc typ m)
             env globals in
         let flts =
-          if do_memtag then
+          if O.variant Variant_gen.NoFault then []
+          else if do_memtag then
             let tagchange =
               let ts =
                 List.fold_left
