@@ -25,6 +25,12 @@ val iter_lines : (string -> unit) -> in_channel -> unit
  *  and returns the list [f l1; ...; f ln]. *)
 val map_lines : (string -> 'a) -> in_channel -> 'a list
 
+(** [map_opt_lines f chan] applies function [f] to each line of in_channel [chan],
+ *  and returns the list [r1; ...; rm], where the [rj]'s are the successul
+ * results of applying [f] to a line in channnel, _i.e._ [f li] returns
+ * [Some rj].  Line order is preserved. *)
+val map_opt_lines : (string -> 'a option              ) -> in_channel -> 'a list
+
 (** [read_lines chan] reads all of in_channel [chan] as lines into a string list. *)
 val read_lines : in_channel -> string list
 
