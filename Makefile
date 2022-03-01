@@ -184,7 +184,7 @@ cata-test::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-mixed tests: OK"
 
-cata-test::
+pick-test::
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
 		-j $(J) \
