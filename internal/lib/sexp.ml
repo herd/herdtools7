@@ -54,6 +54,46 @@ let rec to_string sexp =
 
 (* Parser. *)
 
+(* Strean is deprecated, write our simple stream module *)
+
+module MyStream = struct
+  type t =
+    {chan:in_channel;
+     mutable count: int;
+     mutable nxt: char option;
+     mutable eof:bool; }
+
+  let of_channel chan = { chan; count=0; nxt=None; eof=false; }
+
+  let read_next s =
+    if s.eof then None
+    else
+      let r =
+        try
+          let r = Some (input_char s.chan) in
+          s.count <- s.count+1 ;
+          r
+        with
+        | End_of_file ->
+            s.eof <- true ;
+            close_in_noerr s.chan ;
+            None
+        | e ->
+            close_in_noerr s.chan ;
+            raise e in
+      s.nxt <- r;
+      r
+
+  let peek s = match s.nxt with
+    | Some _ as nxt -> nxt
+    | None -> read_next s
+
+  let junk s = s.nxt <- None
+
+  let count s = s.count
+
+end
+
 let from_dune_channel chan =
   (* This parser is written by hand because this module is used by a script run
    * with the OCaml top-level, and so cannot have any compilation steps, and so
@@ -64,12 +104,12 @@ let from_dune_channel chan =
     | '0' .. '9' | 'a' .. 'z' | 'A' .. 'Z' | '_' | '-' | '+' | ':' | '.' | '/' -> true
     | _ -> false
   in
-  let stream = Stream.of_channel chan in
-  let junk () = Stream.junk stream in
-  let peek () = Stream.peek stream in
+  let stream = MyStream.of_channel chan in
+  let junk () = MyStream.junk stream in
+  let peek () = MyStream.peek stream in
 
   let unexpected_character c =
-    ParseError (Printf.sprintf "Unexpected character %c at char %i" c (Stream.count stream))
+    ParseError (Printf.sprintf "Unexpected character %c at char %i" c (MyStream. count stream))
   in
 
   let rec whitespace () =

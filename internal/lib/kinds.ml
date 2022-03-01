@@ -65,55 +65,10 @@ let to_string ks =
   List.iter append ks ;
   Buffer.contents buf
 
-
-let all_spaces s =
-  let len = String.length s in
-  let rec all_rec j =
-    if j >= len then true
-    else
-      match s.[j] with
-      | ' '|'\t' -> all_rec (j+1)
-      | _ -> false in
-  all_rec 0
-
-let is_comment l = String.length l > 0 && l.[0] = '#'
-
-let from_channel ch =
-  let string_pair_of_line l =
-    let s = Stream.of_string l in
-    let rec whitespace () =
-      match Stream.peek s with
-      | Some (' '|'\t') -> Stream.junk s ; whitespace ()
-      | _ -> ()
-    in
-    let token () =
-      let buf = Buffer.create 16 in
-      let rec token' () =
-        match Stream.peek s with
-        | None | Some (' '|'\t'|'#') -> Buffer.contents buf
-        | Some c -> Buffer.add_char buf c ; Stream.junk s ; token' ()
-      in
-      match token' () with
-      | "" ->  raise (ParseError "empty string")
-      | t -> t
-    in
-    whitespace () ;
-    let first = token () in
-    whitespace () ;
-    let second = token () in
-    whitespace () ;
-    assert (Option.is_none (Stream.peek s)) ;
-    first, second
-  in
-  let parse_line l =
-    if all_spaces l || is_comment l then None
-    else
-      let name, kind = string_pair_of_line l in
-      match ConstrGen.parse_kind kind with
-      | None -> raise (ParseError "expected kind")
-      | Some kind -> Some (name, kind)
-  in
-  Channel.map_opt_lines parse_line ch
+module LR = LexRename.Make(struct let verbose = 0 end)
 
 let of_file path =
-  Filesystem.read_file path from_channel
+  let tbl = LR.read_from_file path ConstrGen.parse_kind in
+  TblRename.fold
+    (fun name (kind,_) k -> (name,kind)::k)
+    tbl []
