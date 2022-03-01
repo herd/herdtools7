@@ -645,9 +645,31 @@ module Make(C:Config) (I:I) : S with module I = I
         with Not_found ->
           let open Constant in
           match loc with
+          | Location_global (I.V.Var _)
+          (* As called from look_address_in_state below *)
+            -> assert false
           | Location_global (I.V.Val (Symbolic (System (PTE,s)))) ->
               I.V.Val (PteVal (I.V.Cst.PteVal.default s))
-          | _ -> I.V.zero
+          | Location_global (I.V.Val (Symbolic (System (TAG,_)))) ->
+              I.V.Val default_tag
+          | Location_global
+              (I.V.Val
+                (Symbolic (System ((PTE2|TLB),_))))
+            ->
+              Warn.user_error
+                "No default value defined for location %s\n"
+                (pp_location loc)
+          | Location_global
+              (I.V.Val
+                 (Concrete _|ConcreteVector _
+                 |Label _|Instruction _|Tag _|PteVal _))
+            ->
+              Warn.user_error
+                "Very strange location (look_address) %s\n"
+                (pp_location loc)
+          | Location_global (I.V.Val (Symbolic (Virtual _|Physical _)))
+          | Location_reg _
+            -> I.V.zero
 
       let get_of_val st a = State.safe_find I.V.zero (Location_global a) st
 
@@ -928,6 +950,7 @@ module Make(C:Config) (I:I) : S with module I = I
                     I.V.op Op.CapaSetTag v ts
                   else v
               | _ ->
+(* No mixed variant combination other than morello implemented *)
                   assert (not (is_global loc)) ;
                   get_in_state loc st
 
