@@ -1237,10 +1237,15 @@ Monad type:
       let add_inittags env =
         let glob,tag =
           List.fold_left
-            (fun (glob,tag as p) (loc,_) -> match loc with
+            (fun (glob,tag as p) (loc,v0) -> match loc with
             | A.Location_global a ->
-                if is_tagloc a then glob,a::tag
-                else a::glob,tag
+                if is_tagloc a then begin
+                  if dbg then
+                    Printf.eprintf
+                      "Explicit initialisation of tag %s to value %s\n"
+                    (V.pp_v a) (V.pp_v v0) ;
+                  glob,a::tag
+                end else a::glob,tag
             | A.Location_reg _ -> p)
             ([],[]) env in
         let tag_set = V.ValueSet.of_list tag in
@@ -1462,6 +1467,9 @@ Monad type:
         | V.Undetermined -> assert false
 
       let do_initwrites madd env =
+        if dbg then
+          Printf.eprintf
+            "Env before additions: %s\n" (debug_env env) ;
         let env = if memtag then add_inittags env else env in
         (if A.is_mixed then initwrites_mixed
         else initwrites_non_mixed madd) env
