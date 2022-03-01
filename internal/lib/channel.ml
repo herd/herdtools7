@@ -28,6 +28,14 @@ let map_lines f chan =
   iter_lines (fun l -> ret := f l :: !ret) chan ;
   List.rev !ret
 
+let map_opt_lines f chan =
+  let ret = ref [] in
+  iter_lines
+    (fun l -> match f l with
+     | None -> ()
+     | Some r -> ret := r :: !ret) chan ;
+  List.rev !ret
+
 let read_lines chan =
   map_lines (fun l -> l) chan
 
