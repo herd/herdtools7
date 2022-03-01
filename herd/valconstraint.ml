@@ -113,7 +113,12 @@ and type state = A.state =
       | Unop (o,a1) ->
           sprintf "%s(%s)"
             (Op.pp_op1 C.hexa V.pp_arch_op1 o) (pp_atom a1)
-      | Binop (o,a1,a2) -> pp_atom a1 ^ Op.pp_op o ^ pp_atom a2
+      | Binop (o,a1,a2) ->
+          if Op.is_infix o then
+            pp_atom a1 ^ Op.pp_op o ^ pp_atom a2
+          else
+            Printf.sprintf "%s(%s,%s)"
+              (Op.pp_op o) (pp_atom a1) (pp_atom a2)
       | Terop (op,a1,a2,a3) ->
 	  Op.pp_op3 op
 	    (pp_atom a1) (pp_atom a2) (pp_atom a3)

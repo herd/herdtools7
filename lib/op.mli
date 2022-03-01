@@ -43,6 +43,8 @@ type op =
 
 val pp_op : op -> string
 
+val is_infix : op -> bool
+
 val pp_ptx_cmp_op : op -> string
 
 (*********)

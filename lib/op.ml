@@ -43,21 +43,21 @@ let pp_op o =
   | And -> "&"
   | Or -> "|"
   | Xor -> "^" (* in C ?? *)
-  | Nor -> "(nor)"
-  | AndNot2 -> "(andnot2)"
-  | CapaAdd -> "(capaadd)"
-  | Alignd -> "(alignd)"
-  | Alignu -> "(alignu)"
-  | Build -> "(build)"
-  | ClrPerm -> "(clrperm)"
-  | CpyType -> "(cpytype)"
-  | CSeal -> "(cseal)"
-  | Cthi -> "(cthi)"
-  | Seal -> "(seal)"
-  | SetValue -> "(setvalue)"
-  | CapaSub -> "(capasub)"
-  | CapaSubs -> "(capasubs)"
-  | Unseal -> "(unseal)"
+  | Nor -> "nor"
+  | AndNot2 -> "andnot2"
+  | CapaAdd -> "capaadd"
+  | Alignd -> "alignd"
+  | Alignu -> "alignu"
+  | Build -> "build"
+  | ClrPerm -> "clrperm"
+  | CpyType -> "cpytype"
+  | CSeal -> "cseal"
+  | Cthi -> "cthi"
+  | Seal -> "seal"
+  | SetValue -> "setvalue"
+  | CapaSub -> "capasub"
+  | CapaSubs -> "capasubs"
+  | Unseal -> "unseal"
   | ShiftLeft -> "<<<" (* In Java ?? *)
   | ShiftRight -> ">>>"
   | Lsr -> ">>>"
@@ -73,7 +73,17 @@ let pp_op o =
   | SetTag -> "settag"
   | CapaSetTag -> "capasettag"
   | SquashMutable -> "squashmutable"
-  | CheckPerms perms -> sprintf "(checkcapa:%s)" perms
+  | CheckPerms perms -> sprintf "checkcapa:%s" perms
+
+let is_infix = function
+  | Add|Sub|Mul|Div|And|Or|Xor|ShiftLeft
+  | ShiftRight|Lsr|Eq|Lt|Gt|Le|Ge|Ne
+    -> true
+  | Nor|AndNot2|ASR|CapaAdd|Alignd|Alignu|Build
+  | ClrPerm|CpyType|CSeal|Cthi|Seal|SetValue
+  | CapaSub|CapaSubs|CapaSetTag|Unseal
+  | Max|Min|SetTag|SquashMutable|CheckPerms _
+    -> false
 
 let pp_ptx_cmp_op = function
   | Eq -> ".eq"
