@@ -7,11 +7,11 @@
  * jade.alglave@arm.com, referring to version number:
  * 814a6fc1610ec1a24f2cbd178e171966375626ac
  * For a textual version of the model, see section B2.3 of the Armv8 ARM:
- *   https://developer.arm.com/docs/ddi0487/latest/arm-architecture-reference-manual-armv8-for-armv8-a-architecture-profile
+ *   https://developer.arm.com/docs/dtri0487/latest/arm-architecture-reference-manual-armv8-for-armv8-a-architecture-profile
  *
  * Author: Jade Alglave <jade.alglave@arm.com>
  *
- * Copyright (C) 2016-2020, Arm Ltd.
+ * Copyright (C) 2016-2022, Arm Ltd.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,31 +40,39 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *)
+catdep (* This option tells that the cat file computes dependencies *)
 
-(* Intrinsic order *)
-let intrinsic = (iico_data|iico_ctrl)+
-
-(* Dependency through register *)
-let rf-reg-no-stxr =
+(* Dependency through registers and memory *)
+let rec dtrm = 
   rf-reg \ ([W & range(lxsx)];rf-reg)
+  | rfi
+  | iico_data 
+  | dtrm; dtrm
 
-let dd =
-  let r = (rf-reg-no-stxr | intrinsic)* in
-  r;rf-reg-no-stxr;r
+let Reg=~M | ~PoD
+(** Data, Address and Control dependencies *)
+let ADDR=NDATA
+let basic-dep =
+   [R|Rreg]; dtrm?
+let data = basic-dep; [DATA]; iico_data; [W]
+let addr = basic-dep; [ADDR]; iico_data; [M]
+let ctrl = basic-dep; [PoD]; po
 
-(* The relation to-PoD is a dependency through register
-   to a point of divergence*)
-let to-PoD = [R]; dd; [PoD]
-
-(** Data and Address dependencies *)
-let data = [R]; dd; [DATA]; intrinsic; [W]
-let addrW = [R]; dd; [NDATA]; intrinsic; [W]
-let addrR =
- let dd-no-interv-PoD = dd \ (to-PoD;dd) in
- [R]; dd-no-interv-PoD; [NDATA]; intrinsic; [R]
-let addr = addrW | addrR
-
-(** Control dependencies *)
-let ctrl = to-PoD; po
+(** Pick dependencies *)
+let pick-basic-dep =
+   [R|Rreg]; dtrm?; [Reg]; iico_ctrl; [Reg]; dtrm? 
+let pick-addr-dep =
+   pick-basic-dep; [ADDR]; iico_data; [M]
+let pick-data-dep =
+   pick-basic-dep; [DATA]; iico_data; [W]
+let pick-ctrl-dep =
+   pick-basic-dep; [PoD]; po
+let pick-dep =
+( 
+   pick-basic-dep | 
+   pick-addr-dep  | 
+   pick-data-dep  |
+   pick-ctrl-dep  
+)
 
 include "aarch64show.cat"

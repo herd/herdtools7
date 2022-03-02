@@ -1,0 +1,17 @@
+AArch64 SB+SWP-rfi-addr+DMBSY
+"PodWR Amo.Swp Rfi DpAddrdR Fre DMB.SYdWR Fre"
+{
+0:X1=x; 0:X2=y; 0:X8=z;
+1:X1=z; 1:X3=x;
+}
+P0                  | P1          ;
+MOV W0,#1           | MOV W0,#1   ;
+STR W0,[X1]         | STR W0,[X1] ;
+MOV W4,#1           | DMB SY      ;
+SWP W4,W3,[X2]      | LDR W2,[X3] ;
+LDR W5,[X2]         |             ;
+EOR W6,W5,W5        |             ;
+LDR W7,[X8,W6,SXTW] |             ;
+exists (0:X3=0 /\ 0:X5=1 /\ 0:X7=0 /\ 1:X2=0)
+
+

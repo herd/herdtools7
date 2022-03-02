@@ -1,0 +1,13 @@
+AArch64 R+CAS+DMBLD
+"PodWR Amo.Cas Coe DMB.SYdWR Fre"
+{
+0:X1=x; 0:X2=y;
+1:X1=y; 1:X3=x;
+}
+P0             | P1          ;
+MOV W0,#1      | MOV W0,#2   ;
+STR W0,[X1]    | STR W0,[X1] ;
+MOV W3,#0      | DMB SY      ;
+MOV W4,#1      | LDR W2,[X3] ;
+CAS W3,W4,[X2] |             ;
+exists (y=2 /\ 0:X3=0 /\ 1:X2=0)

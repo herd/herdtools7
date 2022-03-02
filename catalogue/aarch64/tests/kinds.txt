@@ -2,7 +2,7 @@
 2+2W+dmb.sys   Forbidden
 2+2W           Allowed
 CAS+data1      Allowed
-CAS+data2      Forbidden
+CAS+data2      Allowed 
 LB+BEQ4        Forbidden
 LB+CSEL4       Allowed
 LB+dmb.sy+po   Allowed
@@ -29,3 +29,8 @@ S              Allowed
 SB+dmb.sy+po   Allowed
 SB+dmb.sys     Forbidden
 SB             Allowed
+LB+rel+CAS     Forbidden
+MP+rel+CAS-addr Allowed
+MP+rel+CSEL     Allowed
+MP+rel+CSEL-data Forbidden
+MP+rel+CSEL-addr Allowed 
