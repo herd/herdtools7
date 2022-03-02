@@ -449,8 +449,10 @@ module Make(O:Config)(M:XXXMem.S) =
         let tname = test.Test_herd.name.Name.name in
         let is_bad = has_bad_execs c in
         if not O.badexecs &&  is_bad then raise Exit ;
+(* START NOTWWW *)
 (* Stop interval timer *)
         Itimer.stop O.timeout ;
+(* END NOTWWW *)
 (* Now output *)
         printf "Test %s %s\n" tname (C.dump_as_kind cstr) ;
 (**********)
