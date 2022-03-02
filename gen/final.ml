@@ -122,7 +122,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
               | Code.Same -> true
               | Code.Diff -> false
               end
-          |Insert _|Node _ -> false
+          |Insert _|Store|Node _ -> false
           | Id -> assert false in
         (fun n ->
           let p = C.C.find_non_pseudo_prev n.C.C.prev in

@@ -486,8 +486,23 @@ let max_set = IntSet.max_elt
           i,c@cs,f@fs in
     check_rec
 
+  let compile_store st p init n =
+    let ro,init,c,st = call_emit_access st p init n in
+    assert (ro=None) ;
+    init,c,st
 
-(* Local check of coherence *)
+  let rec compile_stores st p i ns c = match ns with
+    | [] -> i,c,st
+    | n::ns ->
+       let sto = n.C.store in
+       if sto == C.nil then
+         compile_stores st p i ns c
+       else
+         let i,c0,st = compile_store st p i sto in
+         let i,c,st = compile_stores st p i ns c in
+         i,c0@c,st
+
+      (* Local check of coherence *)
 
   let do_add_load st p i f x v =
     let r,i,c,st = Comp.emit_obs Ord st p i x in
@@ -496,9 +511,6 @@ let max_set = IntSet.max_elt
   let do_add_loop st p i f x v w =
     let r,i,c,st = Comp.emit_obs_not_value st p i x v in
     i,c,F.add_final_v p r (IntSet.singleton w) f,st
-
-
-
 
   let rec do_observe_local obs_type st p i code f x prev_v v =
     match obs_type with
@@ -619,6 +631,9 @@ let max_set = IntSet.max_elt
   let do_kvm = Variant_gen.is_kvm O.variant
 
   let compile_cycle ok initvals n =
+    if O.verbose > 0 then begin
+      Printf.eprintf "COMPILE CYCLE:\n%a" C.debug_cycle n
+    end ;
     let open Config in
     Label.reset () ;
     let env_wide = C.get_wide n in
@@ -643,6 +658,7 @@ let max_set = IntSet.max_elt
       | n::ns ->
           let i,c,(m,f),st =
             compile_proc Misc.identity false loc_writes A.st0 p No i n in
+          let i,c,st = compile_stores st p i n c in
           let xenv = Comp.get_xstore_results c in
           let f =
             List.fold_left

@@ -54,9 +54,11 @@ module type S = sig
       mutable edge : edge ;
       mutable next : node ;
       mutable prev : node ;
+      mutable store : node ;
     }
   val nil : node
   val str_node : node -> string
+  val debug_cycle : out_channel ->  node -> unit
 
 (* Find, may raise Not_found *)
   val find_node : (node -> bool) -> node -> node
@@ -68,8 +70,8 @@ module type S = sig
   val find_edge : (edge -> bool) -> node -> node
   val find_edge_prev : (edge -> bool) -> node -> node
 
-  val find_non_insert : node -> node
-  val find_non_insert_prev : node -> node
+  val find_non_insert_store : node -> node
+  val find_non_insert_store_prev : node -> node
 
   val find_non_pseudo : node -> node
   val find_non_pseudo_prev : node -> node
@@ -183,6 +185,7 @@ module Make (O:Config) (E:Edge.S) :
       mutable edge : edge ; (* NB evt is the source of edge *)
       mutable next : node ;
       mutable prev : node ;
+      mutable store : node ;
     }
 
   let debug_dir d = match d with
@@ -230,9 +233,15 @@ module Make (O:Config) (E:Edge.S) :
      edge = E.plain_edge (E.Po (Diff,Irr,Irr)) ;
      next = nil ;
      prev = nil ;
-   }
+     store = nil ;
+    }
 
-  let debug_node chan n =
+  let  debug_node chan n =
+    if n.store != nil then begin
+      let n = n.store in
+      fprintf chan "[%s %s]"
+        (debug_edge n.edge) (debug_evt n.evt)
+    end ;
     fprintf chan "%s -%s->"
       (debug_evt n.evt) (debug_edge n.edge)
 
@@ -253,14 +262,13 @@ module Make (O:Config) (E:Edge.S) :
     do_rec n ;
     flush chan
 
-
-
 let do_alloc_node idx e =
   {
    evt = { evt_null with idx = idx ;} ;
    edge = e ;
    next = nil ;
    prev = nil ;
+   store = nil ;
   }
 
 let alloc_node idx e =
@@ -353,15 +361,15 @@ let find_prev_code_write n =
 let find_edge p = find_node (fun n -> p n.edge)
 let find_edge_prev p = find_node_prev (fun n -> p n.edge)
 
-let non_insert e = not (E.is_insert e.E.edge)
-let find_non_insert m = find_edge non_insert m
-let find_non_insert_prev m = find_edge_prev non_insert m
+let non_insert_store e = not (E.is_insert_store e.E.edge)
+let find_non_insert_store m = find_edge non_insert_store m
+let find_non_insert_store_prev m = find_edge_prev non_insert_store m
 
 let non_pseudo e = E.is_non_pseudo e.E.edge
 let find_non_pseudo m = find_edge non_pseudo m
 let find_non_pseudo_prev m = find_edge_prev non_pseudo m
 
-let is_real_edge e =  non_pseudo e && non_insert e
+let is_real_edge e =  non_pseudo e && non_insert_store e
 
 let find_real_edge_prev = find_edge_prev is_real_edge
 
@@ -548,8 +556,8 @@ let patch_edges n =
   let merge_annotations m =
       let rec do_rec n =
         let e = n.edge in
-        if non_insert e then begin
-          let p = find_non_insert_prev n.prev in
+        if non_insert_store e then begin
+          let p = find_non_insert_store_prev n.prev in
           if O.verbose > 0 then Printf.eprintf "Merge p=%a, n=%a\n"
             debug_node p debug_node n ;
           let pe = p.edge in
@@ -578,17 +586,38 @@ let is_rmw d e = match d with
 | W -> is_rmw_edge e.prev.edge
 | J -> is_rmw_edge e.edge
 
-let set_dir n0 =
+
+
+let remove_store n0 =
+  let n0 =
+    try find_non_insert_store n0
+    with Not_found -> Warn.user_error "I cannot believe it" in
   let rec do_rec m =
-    if non_insert m.edge then begin
+    begin
+      match m.edge.E.edge with
+      | E.Store ->
+         let prev = find_non_insert_store_prev m
+         and next = find_non_insert_store m in
+         prev.next <- next ;
+         next.prev <- prev ;
+         m.evt <- { m.evt with dir = Some W; } ;
+         next.store <- m
+      | _ -> ()
+    end ;
+    if m.next != n0 then do_rec m.next in
+  do_rec n0
+
+ let set_dir n0 =
+  let rec do_rec m =
+    if non_insert_store m.edge then begin
       let my_d =  E.dir_src m.edge in
-      let p = find_non_insert_prev m.prev in
+      let p = find_non_insert_store_prev m.prev in
       if E.is_node m.edge.E.edge then begin (* perform sanity checks specific to Node pseudo-edge *)
         if E.is_node p.edge.E.edge then begin
           Warn.fatal "Double 'Node' pseudo edge %s %s"
           (E.pp_edge p.edge) (E.pp_edge m.edge)
         end ;
-        let n = find_non_insert m.next in
+        let n = find_non_insert_store m.next in
         if not (E.is_ext p.edge && E.is_ext n.edge) then
            Warn.fatal "Node pseudo edge %s appears in-between  %s..%s (one neighbour at least must be an external edge)"
            (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
@@ -671,6 +700,10 @@ let set_diff_loc st n0 =
       end else next_loc m.edge st in
     m.evt <- { m.evt with loc=loc ; bank=E.atom_to_bank m.evt.atom; } ;
 (*    eprintf "LOC SET: %a [p=%a]\n%!" debug_node m debug_node p; *)
+    if m.store != nil then begin
+      m.store.evt <-
+        { m.store.evt with loc=loc ; bank=Ord; }
+    end ;
     if m.next != n0 then do_rec st p.next m.next
     else begin
       if m.evt.loc = n0.evt.loc then
@@ -690,6 +723,10 @@ let set_same_loc st n0 =
   let loc,st = next_loc n1.edge st in
   let rec do_rec m =
     m.evt <- { m.evt with loc=loc; bank=E.atom_to_bank m.evt.atom; } ;
+    if m.store != nil then begin
+      m.store.evt <-
+        { m.store.evt with loc=loc; bank=Ord; }
+    end ;
     if m.next != n0 then do_rec m.next in
   do_rec n0 ;
   st
@@ -720,12 +757,25 @@ let set_same_loc st n0 =
 
   let tr_value e v = E.tr_value e.atom v
 
-(* do_set_write_val returns true when variale next_x has been used
+  let set_write_val_ord st n =
+    let st = CoSt.next_co st Ord in
+    let v = CoSt.get_co st Ord in
+    n.evt <- { n.evt with v = tr_value n.evt v; } ;
+    (* Writing Ord resets morello tag *)
+    let st = CoSt.set_co st CapaTag evt_null.ctag in
+    let e,st = CoSt.set_cell st n in
+    n.evt <- e ;
+    st
+
+(* do_set_write_val returns true when variable next_x has been used
    and should thus be initialised *)
   let rec do_set_write_val next_x_ok st pte_val = function
     | [] -> next_x_ok
     | n::ns ->
-        begin if Code.is_data n.evt.loc then
+       let st =
+         if n.store == nil then st
+         else set_write_val_ord st n.store in
+       begin if Code.is_data n.evt.loc then
           begin if do_memtag then
             let tag = CoSt.get_co st Tag in
             n.evt <- { n.evt with tag=tag; }
@@ -750,13 +800,7 @@ let set_same_loc st n0 =
                 let bank = n.evt.bank in
                 begin match bank with
                 | Ord ->
-                   let st = CoSt.next_co st Ord in
-                   let v = CoSt.get_co st Ord in
-                   n.evt <- { n.evt with v = tr_value n.evt v; } ;
-                   (* Writing Ord resets morello tag *)
-                   let st = CoSt.set_co st CapaTag evt_null.ctag in
-                   let e,st = CoSt.set_cell st n in
-                   n.evt <- e ;
+                   let st = set_write_val_ord st n in
                    do_set_write_val next_x_ok st pte_val ns
                 | Tag|CapaTag|CapaSeal ->
                    let st = CoSt.next_co st bank in
@@ -843,7 +887,7 @@ let set_same_loc st n0 =
             (fun m -> match m.prev.edge.E.edge with
             | E.Fr _|E.Rf _|E.Ws _|E.Leave _|E.Back _
             | E.Hat|E.Rmw _|E.Irf _|E.Ifr _ -> true
-            | E.Po _|E.Dp _|E.Fenced _|E.Insert _|E.Node _ -> false
+            | E.Po _|E.Dp _|E.Fenced _|E.Insert _|E.Store|E.Node _ -> false
             | E.Id -> assert false) n in
         split_one_loc m
       with Exit -> Warn.fatal "Cannot set write values" in
@@ -881,6 +925,9 @@ let do_set_read_v =
   let rec do_rec st cell pte_cell = function
     | [] -> cell.(0),pte_cell
     | n::ns ->
+        let cell =
+          if n.store == nil then cell
+          else n.store.evt.cell in
         let bank = n.evt.bank in
         begin match n.evt.dir with
         | Some R ->
@@ -995,6 +1042,9 @@ let extract_edges n =
       if m.next == n then []
       else do_rec m.next in
     let k = m.edge::k in
+    let k =
+      if m.store == nil then k
+      else E.plain_edge m.store.edge.E.edge::k in
     k in
   do_rec n
 
@@ -1003,6 +1053,7 @@ let resolve_edges = function
   | es ->
       let c = build_cycle es in
       merge_annotations c ;
+      remove_store c ;
       set_dir c ;
       extract_edges c,c
 
@@ -1114,7 +1165,11 @@ let merge_changes n nss =
       | [] -> ()
       | ns::nss ->
           List.iter
-            (fun n -> n.evt <- { n.evt with proc = k; })
+            (fun n ->
+              if n.store != nil then begin
+                n.store.evt <-  { n.store.evt with proc = k; }
+              end ;
+              n.evt <- { n.evt with proc = k; })
             ns ;
           num_rec (k+1) nss in
     num_rec 0 nss ;
@@ -1176,7 +1231,13 @@ let rec group_rec x ns = function
             E.is_node m.edge.E.edge || not (pbank m.evt.bank)
           then k else (e.loc,m)::k
       | None| Some R | Some J -> k in
-      k in
+      if m.store == nil then k
+      else begin
+        let e = m.store.evt in
+        if pbank e.bank then
+          (e.loc,m.store)::k
+        else k
+      end in
     do_rec n
 
   let get_ord_writes =
@@ -1214,17 +1275,22 @@ let rec group_rec x ns = function
         let tag_ws = if do_memtag then
           List.map get_tag_locs (get_ord_writes n) else [] in
         let ws = ord_ws@tag_ws in
-(*
-        List.iter
-          (fun (loc,n) ->
-            eprintf "LOC=%s, node=%a\n" (Code.pp_loc loc) debug_node n)
-          ws ;
-*)
+        if O.verbose > 1 then
+          List.iter
+            (fun (loc,n) ->
+              eprintf "LOC=%s, node=%a\n" (Code.pp_loc loc) debug_node n)
+            ws ;
         let r = by_loc ws in
         List.fold_right
           (fun (loc,ws) k -> match ws with
           | [] -> k
-          | [_] -> (loc,ws)::k
+          | [ns] ->
+             if O.verbose > 1 then
+               Printf.eprintf "Standard write sequence on %s: %s\n"
+                 (Code.pp_loc loc)
+                 (String.concat " "
+                    (List.map str_node ns)) ;
+             (loc,ws)::k
           | _ ->
               List.iter
                 (fun ns -> eprintf "[%a]\n" debug_nodes ns)
