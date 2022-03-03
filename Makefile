@@ -194,7 +194,8 @@ cata-test::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-mixed tests: OK"
 
-pick-test::
+cata-test:: pick-test
+pick-test:
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
 		-j $(J) \
@@ -203,7 +204,7 @@ pick-test::
 		-kinds-path catalogue/aarch64-pick/tests/desired-kinds.txt \
 		-shelf-path catalogue/aarch64-pick/shelf.py \
 		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 catalogue aarch64 tests: OK"
+	@ echo "herd7 catalogue aarch64-pick tests: OK"
 
 mte-test:
 	@ echo
