@@ -231,7 +231,7 @@ and pline bds fs abs = parse
      let p = poolize loc v in
      pline (p::bds) fs abs lexbuf }
 | blank* fault blank*
-    '(' blank* ('P'? (num as proc)) (':' (label as lbl))? blank* ','
+    '(' blank* ('P'? (num as proc)) (':' (name as lbl))? blank* ','
      ((loc|new_loc) as loc) (':' alpha+)? blank* (* skip optional tag *)
       (',' [^')']*)?  (* skip optional comment *)
       ')' blank* ';'
@@ -240,7 +240,7 @@ and pline bds fs abs = parse
      let f = (to_proc proc,lbl),loc in
      let f = HashedFault.as_hashed f in
      pline bds (f::fs) abs lexbuf }
-| blank* '~' fault blank* '(' blank* ('P'? (num as proc)) (':' (label as lbl))? blank* ','
+| blank* '~' fault blank* '(' blank* ('P'? (num as proc)) (':' (name as lbl))? blank* ','
     ((loc|new_loc) as loc) blank* ')' blank* ';'
     {
      let loc = Constant.old2new loc in
