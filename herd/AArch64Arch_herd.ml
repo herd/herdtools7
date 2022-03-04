@@ -116,18 +116,30 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
         ]
       else []
 
-    let dirty_sets =
-
+    let pteval_pred_sets =
          let read_only =
            (fun t p ->
              let open DirtyBit in
              let open AArch64PteVal in
-             let af = p.af=1
+             let valid = p.valid=1
+             and af = p.af=1
              and db = p.db=1
              and dbm = p.dbm=1 in
+             valid &&
              (af || not af && t.my_ha ()) &&
-             (db && (not (t.my_hd ()) || dbm))) in
-             [ "ReadOnly",read_only; ]
+             (db && (not (t.my_hd ()) || dbm)))
+         and tlb_uncacheable =
+           (fun t p ->
+             let open DirtyBit in
+             let open AArch64PteVal in
+             let invalid = p.valid=0
+             and af = p.af=1 in
+             (invalid || not (t.my_ha () || af)))
+         in
+         [
+           "ReadOnly",read_only;
+           "TLBUncacheable",tlb_uncacheable;
+         ]
 
     let is_isync = is_barrier ISB
     let pp_isync = "isb"

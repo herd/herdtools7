@@ -26,7 +26,7 @@ module type A = sig
   val pp_annot : lannot -> string
   include Explicit.S
   val pteval_sets : (string * (V.Cst.PteVal.t -> bool)) list
-  val dirty_sets : (string * (DirtyBit.my_t -> V.Cst.PteVal.t -> bool)) list
+  val pteval_pred_sets : (string * (DirtyBit.my_t -> V.Cst.PteVal.t -> bool)) list
 
   val is_atomic : lannot -> bool
   val is_isync : barrier -> bool
@@ -598,7 +598,7 @@ end = struct
       [("inv-domain",inv_domain_act); ("alias",alias_act);]
     else []
 
-  let arch_dirty =
+  let arch_pte_sets =
     if kvm then
       let check_pred f d  =
         fun act ->
@@ -607,7 +607,7 @@ end = struct
           | None -> false
           | Some pteval -> f d pteval) in
       List.map
-        (fun (key,f) -> key,check_pred f) A.dirty_sets
+        (fun (key,f) -> key,check_pred f) A.pteval_pred_sets
     else []
 
   let is_isync act = match act with

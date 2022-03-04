@@ -244,6 +244,6 @@ end = struct
      "Ftotal",is_total_barrier;]
 
   let arch_rels = []
-  let arch_dirty = []
+  let arch_pte_sets = []
 
 end

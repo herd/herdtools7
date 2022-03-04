@@ -385,7 +385,7 @@ module Make
              E.Act.arch_sets) in
     let m = (* To be deprecated *)
       if kvm then
-          let mevt = match I.get_set m "PTEV" with
+          let mevt = match I.get_set m "PTE" with
             | Some mevt -> mevt
             | None -> (* Must exists *) assert false in
           I.add_sets m
@@ -411,7 +411,7 @@ module Make
                           a d e.E.action)
                      (Lazy.force mevt)
                  end)
-               E.Act.arch_dirty)
+               E.Act.arch_pte_sets)
         else m in
 (* Override arch specific fences *)
       let m =
