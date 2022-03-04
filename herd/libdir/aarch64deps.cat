@@ -49,14 +49,14 @@ let rec dtrm =
   | iico_data 
   | dtrm; dtrm
 
-let Reg=~M | ~PoD
+let Reg=~M | ~B
 (** Data, Address and Control dependencies *)
 let ADDR=NDATA
 let basic-dep =
    [R|Rreg]; dtrm?
 let data = basic-dep; [DATA]; iico_data; [W]
 let addr = basic-dep; [ADDR]; iico_data; [M]
-let ctrl = basic-dep; [PoD]; po
+let ctrl = basic-dep; [BCC]; po
 
 (** Pick dependencies *)
 let pick-basic-dep =
@@ -66,7 +66,7 @@ let pick-addr-dep =
 let pick-data-dep =
    pick-basic-dep; [DATA]; iico_data; [W]
 let pick-ctrl-dep =
-   pick-basic-dep; [PoD]; po
+   pick-basic-dep; [BCC]; po
 let pick-dep =
 ( 
    pick-basic-dep | 

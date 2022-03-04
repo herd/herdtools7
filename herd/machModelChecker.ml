@@ -344,8 +344,9 @@ module Make
                   fun e -> E.EventSet.mem e (Lazy.force ws)); ])
              (List.map
                 (fun (k,p) -> k,lazy (E.EventSet.filter p evts))
-                ["C", E.is_commit;
-                 "PoD", E.is_commit_bcc;
+                ["B", E.is_commit;
+                 "BCC", E.is_bcc;
+                 "PRED", E.is_pred;
                  "F", E.is_barrier;
                  "DATA", is_data_port;
                  "NDATA", (fun e -> not (is_data_port e));])) in

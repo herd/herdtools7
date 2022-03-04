@@ -188,14 +188,14 @@ end = struct
 
   let same_barrier_id _ _ = false
 
-(* Commits *)
-  let is_commit_bcc  a = match a with
+(* Commits, bcc only *)
+  let is_bcc a = match a with
   | Commit -> true
   | _ -> false
 
-  let is_commit_pred  _a = false (* No predicated instructions... *)
+  let is_pred _ = false
 
-  let is_pod a = is_commit_bcc a
+  let is_commit = is_bcc
 
 (* Unroll control *)
   let toofar msg = TooFar msg
@@ -239,10 +239,11 @@ end = struct
   let is_isync _a = false
 
   let arch_sets =
-    ["X",is_atomic;
+    [
+      "X",is_atomic;
      "RMW",is_atomic;
-     "Ftotal",is_total_barrier;]
-
+     "Ftotal",is_total_barrier;
+    ]
   let arch_rels = []
   let arch_dirty = []
 

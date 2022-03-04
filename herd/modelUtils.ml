@@ -37,7 +37,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
 
   let evt_relevant x =
     E.is_mem x || E.is_commit x || E.is_barrier x
-    || E.is_additional_mem x || E.is_pod x
+    || E.is_additional_mem x
 
   let is_mem_load_total e =
     (is_mem_kvm e && E.is_load e) || E.is_additional_mem_load e
@@ -120,9 +120,9 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
         (S.seq dd_pre last_addr) in
     let po = U.po_iico conc.S.str in
     let ctrl_one = (* For bcc: from commit to event by po *)
-      S.restrict E.is_commit_bcc evt_relevant po
+      S.restrict E.is_bcc evt_relevant po
     and ctrl_two = (* For predicated instruction from commit to event by iico *)
-      S.restrict E.is_commit_pred evt_relevant (U.iico conc.S.str)
+      S.restrict E.is_pred evt_relevant (U.iico conc.S.str)
     and ctrl_three = (* For structured if from event to event by instruction control *)
       S.restrict is_load_total evt_relevant conc.S.str.E.control in
     let ctrl =

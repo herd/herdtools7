@@ -126,11 +126,9 @@ val same_instance : event -> event -> bool
   val is_isync : event -> bool
 
 (* Commit *)
-  val is_commit_bcc : event -> bool
-  val is_commit_pred : event -> bool
+  val is_bcc : event -> bool
+  val is_pred : event -> bool
   val is_commit : event -> bool
-
-  val is_pod : event -> bool
 
 (* Too much unrolling *)
   val is_toofar : event -> bool
@@ -622,15 +620,9 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let is_isync e = Act.is_isync e.action
 
 (* Commits *)
-    let is_commit_bcc e = Act.is_commit_bcc e.action
-    let is_commit_pred e = Act.is_commit_pred e.action
-    let is_commit e =
-      let act = e.action in
-      Act.is_commit_bcc act ||  Act.is_commit_pred act
-
-    let is_pod e =
-      let act = e.action in
-      Act.is_pod act || is_commit e
+    let is_bcc e = Act.is_bcc e.action
+    let is_pred e = Act.is_pred e.action
+    let is_commit e = Act.is_commit e.action
 
 (*  Unrolling control *)
     let is_toofar e = Act.is_toofar e.action
@@ -1022,7 +1014,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 
     let inst_code_comp_spec es1 es2 es3 =
       let outs = get_output es1 in
-      begin match EventSet.as_singleton (EventSet.filter is_pod es1.events) with
+      begin match EventSet.as_singleton (EventSet.filter is_bcc es1.events) with
       | Some pod ->
           let succs = EventRel.succs es1.intra_causality_data pod in
           if not (EventSet.equal succs outs) then

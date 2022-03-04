@@ -170,9 +170,10 @@ end = struct
         (if sz = MachSize.Word then "" else MachSize.pp_short sz)
         (V.pp C.hexa v)
   | Barrier b -> A.pp_barrier_short b
-  | Commit (_,m) ->
-     Printf.sprintf "Branching%s"
-       (match m with None -> "" | Some txt -> "("^txt^")")
+  | Commit (b,m) ->
+      Printf.sprintf "Branching(%s)%s"
+        (if b then "bcc" else "pred")
+        (match m with None -> "" | Some txt -> "("^txt^")")
   | Amo (loc,v1,v2,an,exp_an,sz,_) ->
       Printf.sprintf "RMW(%s)%s%s%s(%s>%s)"
         (A.pp_annot an)
@@ -451,17 +452,17 @@ end = struct
 
   let same_barrier_id _ _ = assert false
 
-(* Commits *)
+(* Commits aka "branching events" *)
 
-  let is_commit_bcc a = match a with
+  let is_bcc a = match a with
   | Commit (b,_) -> b
   | _ -> false
 
-  let is_commit_pred a = match a with
+  let is_pred a = match a with
   | Commit (b,_) -> not b
   | _ -> false
 
-  let is_pod a = match a with
+  let is_commit a = match a with
   | Commit _ -> true
   | _ -> false
 

@@ -256,9 +256,9 @@ end = struct
   let same_barrier_id _ _ = assert false
 
 (* (No) commits *)
-  let is_commit_bcc _ = false
-  let is_commit_pred _ = false
-  let is_pod _ = false
+  let is_bcc _ = false
+  let is_pred _ = false
+  let is_commit _ = false
 
 (* Unrolling control *)
   let toofar msg = TooFar msg
