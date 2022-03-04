@@ -28,13 +28,12 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     let pp_barrier_short = pp_barrier
     let reject_mixed = true
 
-    type annot = A | XA | L | XL | X | N | Q | XQ | NoRet | T | S
+    type annot = A | XA | L | XL | X | N | Q | XQ | NoRet | S
     type nexp =  AF|DB|AFDB|Other
     type explicit = Exp | NExp of nexp
     type lannot = annot
 
     let empty_annot = N
-    let tag_annot = T
     let exp_annot = Exp
     let nexp_annot = NExp Other
 
@@ -70,10 +69,6 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | L | XL -> true
       | _ -> false
 
-    let is_tag = function
-      | T -> true
-      | _ -> false
-
     let is_explicit = function
       | Exp -> true
       | _ -> false
@@ -100,7 +95,6 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       "Q",  is_acquire_pc;
       "L",  is_release;
       "NoRet", is_noreturn;
-      "T", is_tag;
       "S", is_speculated;
     ]
 
@@ -148,7 +142,6 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | X -> "*"
       | N -> ""
       | NoRet -> "NoRet"
-      | T -> "Tag"
       | S -> "^s"
 
     let pp_explicit = function

@@ -540,7 +540,7 @@ module Make
         | Q|XQ -> XQ
         | L|XL -> XL
         | X|N  -> X
-        |NoRet|T|S -> X (* Does it occur? *)
+        |NoRet|S -> X (* Does it occur? *)
 
       let an_pte =
         let open AArch64 in
@@ -549,7 +549,7 @@ module Make
         | Q|XQ -> Q
         | L|XL -> L
         | X|N -> N
-        | NoRet|T|S -> N
+        | NoRet|S -> N
 
 
       let check_ptw proc dir updatedb a_virt ma an ii mdirect mok mfault =
