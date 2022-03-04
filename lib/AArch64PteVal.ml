@@ -22,9 +22,7 @@ module Attrs = struct
   (* By default we assume the attributes of the memory malloc would
      return on Linux. This is architecture specific, however, for now,
      translation is supported only for AArch64. *)
-  let default =
-    StringSet.of_list
-      [ "Normal" ; "Inner-shareable"; "Inner-write-back"; "Outer-write-back" ]
+  let default = StringSet.empty
 
   let compare a1 a2 = StringSet.compare a1 a2
   let eq a1 a2 = StringSet.equal a1 a2
