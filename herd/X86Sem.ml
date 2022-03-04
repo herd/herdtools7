@@ -144,14 +144,6 @@ module Make (C:Sem.Config)(V : Value.S)
           >>! ()
 
 (* Exchange *)
-(*
-  let xchg ea1 ea2 ii =
-  (lval_ea ea1 ii >>| lval_ea ea2 ii) >>=
-  fun (l1,l2) ->
-  (read_loc l1 ii >>| read_loc l2 ii) >>=
-  fun (v1,v2) ->
-  (write_loc l1 v2 ii >>| write_loc l2 v1 ii) >>! B.Next
- *)
 
       let xchg sz ea1 ea2 ii =
         (lval_ea ea1 ii >>| lval_ea ea2 ii) >>=
@@ -160,7 +152,7 @@ module Make (C:Sem.Config)(V : Value.S)
           and r2 = read_loc_atomic sz true l2 ii
           and w1 = fun v -> write_loc_atomic sz l1 v ii
           and w2 = fun v -> write_loc_atomic sz l2 v ii in
-          M.exch r1 r2 w1 w2) >>! B.Next
+          M.exch r1 r2 w1 w2) >>= B.next2T
 
       let do_op sz locked o ea op ii =
         (lval_ea ea ii >>=
@@ -171,12 +163,12 @@ module Make (C:Sem.Config)(V : Value.S)
           M.op o v_ea v_op >>=
           fun v_result ->
             (write_loc_gen sz locked loc v_result ii >>|
-            write_all_flags v_result V.zero ii) >>! B.Next
+            write_all_flags v_result V.zero ii) >>= B.next2T
 
       let build_semantics ii =
         let rec build_semantics_inner locked ii =
           match ii.A.inst with
-          |  X86.I_NOP -> M.unitT B.Next
+          |  X86.I_NOP -> B.nextT
           |  X86.I_XOR (ea,op) -> do_op nat_sz locked Op.Xor ea op ii
           |  X86.I_OR (ea,op) -> do_op nat_sz locked Op.Or ea op ii
           |  X86.I_ADD (ea,op) -> do_op nat_sz locked Op.Add ea op ii
@@ -190,9 +182,9 @@ module Make (C:Sem.Config)(V : Value.S)
               | _ -> assert false in
               (lval_ea ea ii >>| rval_op sz locked op ii) >>=
               fun (loc,v_op) ->
-                write_loc_gen sz locked loc v_op ii >>! B.Next
+                write_loc_gen sz locked loc v_op ii >>= B.next1T
           |  X86.I_READ (op) ->
-              rval_op nat_sz locked op ii >>! B.Next
+              rval_op nat_sz locked op ii >>= fun _ -> M.unitT () >>= B.next1T
           |  X86.I_DEC (ea) ->
               lval_ea ea ii >>=
               fun loc -> read_loc_gen nat_sz true locked loc ii >>=
@@ -201,7 +193,8 @@ module Make (C:Sem.Config)(V : Value.S)
                   fun v ->
                     (write_loc_gen nat_sz locked loc v ii >>|
                     write_sf v V.zero ii >>|
-                    write_zf v V.zero ii) >>! B.Next
+                    write_zf v V.zero ii) >>= fun (((),()),()) -> B.nextT
+                                                     
           | X86.I_INC (ea) ->
               lval_ea ea ii >>=
               fun loc -> read_loc_gen  nat_sz true locked loc ii >>=
@@ -210,17 +203,17 @@ module Make (C:Sem.Config)(V : Value.S)
                   fun v ->
                     (write_loc_gen  nat_sz locked loc v ii >>|
                     write_sf v V.zero ii >>|
-                    write_zf v V.zero ii) >>! B.Next
+                    write_zf v V.zero ii) >>= fun (((),()),()) -> B.nextT
           |  X86.I_CMP (ea,op) ->
               (rval_ea nat_sz locked ea ii >>| rval_op nat_sz locked op ii) >>=
               fun (v_ea,v_op) ->
-                write_all_flags v_ea v_op ii >>! B.Next
+                write_all_flags v_ea v_op ii >>= B.next1T
           | X86.I_CMOVC (r,ea) ->
               read_reg false X86.CF ii >>*=
               (fun vcf ->
                 M.choiceT vcf
-                  (rval_ea  nat_sz locked ea ii >>= fun vea -> write_reg r vea ii >>! B.Next)
-                  (M.unitT B.Next))
+                  (rval_ea  nat_sz locked ea ii >>= fun vea -> write_reg r vea ii >>= B.next1T)
+                  B.nextT)
           |  X86.I_JMP lbl -> M.unitT (B.Jump lbl)
 
 (* Conditional branZch, I need to look at doc for
@@ -274,18 +267,18 @@ module Make (C:Sem.Config)(V : Value.S)
               (lval_ea ea ii >>| read_reg false X86.CF ii) >>=
               fun (loc,cf) ->
                 flip_flag cf >>=
-                fun v -> write_loc nat_sz loc v ii >>! B.Next
+                fun v -> write_loc nat_sz loc v ii >>= B.next1T
           | X86.I_XCHG (ea1,ea2) ->
               xchg  nat_sz  ea1 ea2 ii
           | X86.I_XCHG_UNLOCKED (ea1,ea2) ->
               xchg  nat_sz ea1 ea2 ii
           | X86.I_CMPXCHG (_,_) -> Warn.fatal "I_CMPXCHG not implemented"
           | X86.I_LFENCE ->
-              create_barrier X86.Lfence ii >>! B.Next
+              create_barrier X86.Lfence ii >>= B.next1T
           | X86.I_SFENCE ->
-              create_barrier X86.Sfence ii >>! B.Next
+              create_barrier X86.Sfence ii >>= B.next1T
           | X86.I_MFENCE ->
-              create_barrier X86.Mfence ii >>! B.Next
+              create_barrier X86.Mfence ii >>= B.next1T
           |  X86.I_MOVSD -> Warn.fatal "I_MOVSD not implemented"
         in
         M.addT

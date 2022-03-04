@@ -207,14 +207,6 @@ module Make (C:Sem.Config)(V : Value.S)
         >>! ()
 
       (* Exchange *)
-      (*
-    let xchg ea1 ea2 ii =
-      (lval_ea ea1 ii >>| lval_ea ea2 ii) >>=
-      fun (l1,l2) ->
-        (read_loc l1 ii >>| read_loc l2 ii) >>=
-        fun (v1,v2) ->
-          (write_loc l1 v2 ii >>| write_loc l2 v1 ii) >>! B.Next
-       *)
 
       let xchg sz ea1 ea2 ii =
         (lval_ea ea1 ii >>| lval_ea ea2 ii) >>=
@@ -223,7 +215,7 @@ module Make (C:Sem.Config)(V : Value.S)
             and r2 = read_loc_atomic sz true l2 ii
             and w1 = fun v -> write_loc_atomic sz l1 v ii
             and w2 = fun v -> write_loc_atomic sz l2 v ii in
-            M.exch r1 r2 w1 w2) >>! B.Next
+            M.exch r1 r2 w1 w2) >>= B.next2T
 
       let cmpxchg sz locked ea r ii =
         lval_ea ea ii >>= fun loc_ea -> read_loc_gen sz true locked loc_ea ii >>=
@@ -236,7 +228,7 @@ module Make (C:Sem.Config)(V : Value.S)
             M.choiceT vcf
               (write_loc_gen sz locked loc_ea v_r ii)
               (write_loc_gen sz locked loc_ra v_ea ii))
-                     >>! B.Next
+                     >>= B.next1T
 
       let do_op sz locked x86_op ea op ii =
         let module A = X86_64 in
@@ -253,7 +245,7 @@ module Make (C:Sem.Config)(V : Value.S)
           M.op o v_ea v_op >>=
           fun v_result ->
           (write_loc_gen sz locked loc v_result ii >>|
-             write_all_flags v_result V.zero ii) >>! B.Next
+             write_all_flags v_result V.zero ii) >>= B.next2T
 
       let clflush opt ea ii =
         lval_ea ea ii >>= fun a ->
@@ -263,23 +255,23 @@ module Make (C:Sem.Config)(V : Value.S)
       let build_semantics ii =
         let rec build_semantics_inner locked ii =
           match ii.A.inst with
-          | X86_64.I_NOP -> M.unitT B.Next
+          | X86_64.I_NOP -> B.nextT
           | X86_64.I_EFF_OP (X86_64.I_CMP, sz, ea, op) ->
              let sz = inst_size_to_mach_size sz in
              (rval_ea sz locked ea ii >>| rval_op sz locked op ii) >>=
                fun (v_ea,v_op) ->
-               write_all_flags v_ea v_op ii >>! B.Next
+               write_all_flags v_ea v_op ii >>= B.next1T
           | X86_64.I_EFF_OP (X86_64.I_MOV, sz, ea, op) ->
              let sz = inst_size_to_mach_size sz in
              (lval_ea ea ii >>| rval_op sz locked op ii) >>=
                fun (loc,v_op) ->
-               write_loc_gen sz locked loc v_op ii >>! B.Next
+               write_loc_gen sz locked loc v_op ii >>= B.next1T
 (* TODO add NTI annotation, at movnti is an ordinary store *)
           | X86_64.I_MOVNTI (sz,ea,r) ->
               let sz = inst_size_to_mach_size sz in
               (lval_ea ea ii >>| read_reg true r ii) >>=
               fun (loc,v) ->
-              write_loc_gen sz X86_64.NonTemporal loc v ii >>! B.Next
+              write_loc_gen sz X86_64.NonTemporal loc v ii >>= B.next1T
           | X86_64.I_EFF_OP (x86_op, sz, ea, op) ->
              let sz = inst_size_to_mach_size sz in
              do_op sz locked x86_op ea op ii (* Problem, it's not always xor but the parameter of I_EFF_OP *)
@@ -288,7 +280,7 @@ module Make (C:Sem.Config)(V : Value.S)
              (lval_ea ea ii >>| read_reg false (X86_64.Flag X86_64.CF) ii) >>=
                fun (loc,cf) ->
                flip_flag cf >>=
-               fun v -> write_loc sz plain loc v ii >>! B.Next
+               fun v -> write_loc sz plain loc v ii >>= B.next1T
           | X86_64.I_EFF (inst, sz, ea) ->
              let sz = inst_size_to_mach_size sz in
              lval_ea ea ii >>=
@@ -301,18 +293,18 @@ module Make (C:Sem.Config)(V : Value.S)
                fun v ->
                (write_loc_gen sz locked loc v ii >>|
                   write_sf v V.zero ii >>|
-                  write_zf v V.zero ii) >>! B.Next
+                  write_zf v V.zero ii) >>= B.next3T
           | X86_64.I_CMOVC (sz,r,ea) ->
              let sz = inst_size_to_mach_size sz in
              read_reg false (X86_64.Flag X86_64.CF) ii >>*=
                (fun vcf ->
                  M.choiceT vcf
-                   (rval_ea  sz locked ea ii >>= fun vea -> write_reg r vea ii >>! B.Next)
-                   (M.unitT B.Next))
-          |  X86_64.I_JMP lbl -> M.unitT (B.Jump lbl)
+                   (rval_ea  sz locked ea ii >>= fun vea -> write_reg r vea ii >>= B.next1T)
+                   B.nextT)
+          |  X86_64.I_JMP lbl -> B.branchT lbl
 
-          (* Conditional branZch, I need to look at doc for
-   interpretation of conditions *)
+          (* Conditional branch, I need to look at doc for
+             interpretation of conditions *)
           |  X86_64.I_JCC (X86_64.C_LE,lbl) ->
               read_reg false (X86_64.Flag X86_64.SF) ii >>=
                 (* control, data ? no event generated after this read anyway *)
@@ -365,9 +357,9 @@ module Make (C:Sem.Config)(V : Value.S)
              let sz = inst_size_to_mach_size sz in
              cmpxchg sz locked ea r ii
           | X86_64.I_FENCE f ->
-              create_barrier f ii >>! B.Next
+              create_barrier f ii >>= B.next1T
           | X86_64.I_CLFLUSH (opt,ea) ->
-              clflush opt ea ii >>! B.Next
+              clflush opt ea ii >>= B.next1T
           | X86_64.I_MOVD _
           | X86_64.I_MOVNTDQA _ as i ->
               Warn.fatal "X86_64Sem.ml: Instruction %s not implemented" (X86_64.dump_instruction i)

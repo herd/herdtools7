@@ -97,17 +97,17 @@ module Make (C:Sem.Config)(V:Value.S)
       let build_semantics ii =
         M.addT (A.next_po_index ii.A.program_order_index)
           begin match ii.A.inst with
-          | MIPS.NOP -> M.unitT B.Next
+          | MIPS.NOP -> B.nextT
           | MIPS.LI (r,k) ->
-              write_reg r (V.intToV k) ii >>! B.Next
+              write_reg r (V.intToV k) ii >>= B.next1T
           | MIPS.OP (op,r1,r2,r3) ->
               (read_reg_ord r2 ii >>|  read_reg_ord r3 ii) >>=
               (fun (v1,v2) -> M.op (tr_op op) v1 v2) >>=
-              (fun v -> write_reg r1 v ii) >>! B.Next
+              (fun v -> write_reg r1 v ii) >>= B.next1T
           | MIPS.OPI (op,r1,r2,k) ->
               read_reg_ord r2 ii >>=
               fun v -> M.op (tr_op op) v (V.intToV k) >>=
-                fun v -> write_reg r1 v ii >>! B.Next
+                fun v -> write_reg r1 v ii >>= B.next1T
           | MIPS.B lbl -> B.branchT lbl
           | MIPS.BC (cond,r1,r2,lbl) ->
               (read_reg_ord r1 ii >>| read_reg_ord r2 ii) >>=
@@ -131,12 +131,12 @@ module Make (C:Sem.Config)(V:Value.S)
               read_reg_ord r2 ii >>=
               (fun a -> M.add a (V.intToV k)) >>=
               (fun ea -> read_mem nat_sz ea ii) >>=
-              (fun v -> write_reg r1 v ii) >>! B.Next
+              (fun v -> write_reg r1 v ii)  >>= B.next1T
           | MIPS.SW (r1,k,r2) ->
               (read_reg_data r1 ii >>| read_reg_ord r2 ii) >>=
               (fun (d,a) ->
                 (M.add a (V.intToV k)) >>=
-                (fun ea -> write_mem nat_sz ea d ii)) >>! B.Next
+                (fun ea -> write_mem nat_sz ea d ii)) >>= B.next1T
           | MIPS.LL (r1,k,r2) ->
               read_reg_ord r2 ii >>=
               (fun a ->
@@ -144,7 +144,7 @@ module Make (C:Sem.Config)(V:Value.S)
                  (fun ea ->
                    write_reg MIPS.RESADDR ea ii >>|
                    (read_mem_atomic nat_sz ea ii >>= fun v -> write_reg r1 v ii))))
-                >>! B.Next
+                >>= B.next2T
           | MIPS.SC (r1,k,r2) ->
               (read_reg_ord MIPS.RESADDR ii >>|
               read_reg_data r1 ii >>|
@@ -157,9 +157,9 @@ module Make (C:Sem.Config)(V:Value.S)
                     (write_reg r1 V.zero ii) (* Failure *)
                     ((write_reg r1 V.one ii
                         >>| write_mem_atomic nat_sz ea v resa ii) >>! ())))
-                >>! B.Next
+                >>=  B.next2T
           | MIPS.SYNC ->
-              create_barrier MIPS.Sync ii >>! B.Next
+              create_barrier MIPS.Sync ii >>= B.next1T
           end
 
       let spurious_setaf _ = assert false

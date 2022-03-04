@@ -138,6 +138,8 @@ Monad type:
       fun eiid_next ->
         eiid_next, (Evt.singleton (v, [], E.empty_event_structure), None)
 
+    let ignore _ = unitT ()
+
     let unitcodeT (v : 'a) : 'a code =
       fun eiid_next ->
         eiid_next, (Evt.singleton (v, [], E.empty_event_structure), None)

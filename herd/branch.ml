@@ -26,10 +26,8 @@ module type S = sig
 
 (* Branch information, result of our instruction semantics *)
   type t =
-    (* continue in sequence *)
-    | Next
-    (* continue in sequence, setting register *)
-    | NextSet of reg * v
+    (* continue in sequence, setting registers *)
+    | Next of (reg * v) list
     (* jump to arg *)
     | Jump of lbl
     (* if v is one, jump to address, otherwise continue in sequence *)
@@ -41,6 +39,10 @@ module type S = sig
 
 (* Next instruction in sequence *)
   val nextT : t monad
+  val next1T : unit -> t monad
+  val next2T : (unit * unit) -> t monad
+  val next3T : ((unit * unit) * unit) -> t monad
+  val nextSetT : reg -> v -> t monad
 (* Non-conditional branch *)
   val branchT : lbl ->  t monad
 (* Conditional branch *)
@@ -57,8 +59,7 @@ module Make(M:Monad.S) = struct
 
   type t =
     (* continue in sequence *)
-    | Next
-    | NextSet of reg * v
+    | Next of (reg * v) list
     (* jump to arg *)
     | Jump of lbl
     (* if v is one, jump to address, otherwise continue in sequence *)
@@ -71,8 +72,11 @@ module Make(M:Monad.S) = struct
 (* Utilities *)
 
 
-  let nextT = M.unitT Next
-  let nextSetT r v = M.unitT (NextSet (r,v))
+  let nextT = M.unitT (Next [])
+  let next1T () = nextT
+  let next2T ((),()) = nextT
+  let next3T (((),()),()) = nextT
+  let nextSetT r v = M.unitT (Next [r,v])
   let branchT lbl = M.unitT (Jump lbl)
   let bccT v lbl = M.unitT (CondJump (v,lbl))
 end

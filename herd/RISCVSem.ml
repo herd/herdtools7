@@ -47,6 +47,7 @@ module Make (C:Sem.Config)(V:Value.S)
       let (>>!) = M.(>>!)
       let (>>::) = M.(>>::)
 
+
       let unimplemented op = Warn.user_error "RISCV operation %s is not implemented (yet)" op
 
       let tr_opi op = match op with
@@ -254,19 +255,19 @@ module Make (C:Sem.Config)(V:Value.S)
           | RISCV.OpI (op,r1,r2,k) ->
               read_reg_ord r2 ii >>=
               fun v -> M.op (tr_opi op) v (V.intToV k) >>=
-                fun v -> write_reg r1 v ii >>! B.Next
+                fun v -> write_reg r1 v ii >>= B.next1T
           | RISCV.OpIW (op,r1,r2,k) ->
               read_reg_ord r2 ii >>=
               fun v -> M.op (tr_opiw op) v (V.intToV k) >>=
-                fun v -> write_reg r1 v ii >>! B.Next
+                fun v -> write_reg r1 v ii >>= B.next1T
           | RISCV.Op (op,r1,r2,r3) ->
               (read_reg_ord r2 ii >>|  read_reg_ord r3 ii) >>=
               (fun (v1,v2) -> M.op (tr_op op) v1 v2) >>=
-              (fun v -> write_reg r1 v ii) >>! B.Next
+              (fun v -> write_reg r1 v ii) >>= B.next1T
           | RISCV.OpW (op,r1,r2,r3) ->
               (read_reg_ord r2 ii >>|  read_reg_ord r3 ii) >>=
               (fun (v1,v2) -> M.op (tr_opw op) v1 v2) >>=
-              (fun v -> write_reg r1 v ii) >>! B.Next
+              (fun v -> write_reg r1 v ii) >>= B.next1T
 
           | RISCV.J lbl -> B.branchT lbl
           | RISCV.Bcc (cond,r1,r2,lbl) ->
@@ -279,7 +280,7 @@ module Make (C:Sem.Config)(V:Value.S)
                 (fun a -> M.add a (V.intToV k)) >>=
                 (fun ea -> read_mem (tr_sz sz) mo ea ii) >>=
                 (fun v -> write_reg r1 v ii) in
-              if specialX0 then mk_load mo >>! B.Next
+              if specialX0 then mk_load mo >>= B.next1T
               else if asfence then
                 let open RISCV in
                 let ld =  match mo with
@@ -292,8 +293,8 @@ module Make (C:Sem.Config)(V:Value.S)
                     ld >>*= fun () -> create_barrier (Fence (R,RW)) ii
                 | Rlx|Rel -> ld
                 | Sc -> assert false in
-                ld >>! B.Next
-              else mk_load mo >>! B.Next
+                ld >>= B.next1T
+              else mk_load mo >>= B.next1T
 
           | RISCV.Store (sz,mo,r1,k,r2) ->
               let mk_store mo =
@@ -301,7 +302,7 @@ module Make (C:Sem.Config)(V:Value.S)
                 (fun (d,a) ->
                   (M.add a (V.intToV k)) >>=
                   (fun ea -> write_mem (tr_sz sz) mo ea d ii)) in
-              if specialX0 then mk_store mo >>! B.Next
+              if specialX0 then mk_store mo >>= B.next1T
               else if asfence then
                 let open RISCV in
                 let sd () =  mk_store Rlx in
@@ -310,13 +311,16 @@ module Make (C:Sem.Config)(V:Value.S)
                 | AcqRel -> create_barrier (Fence (RW,RW)) ii >>*= sd
                 | Acq|Rlx -> sd ()
                 | Sc -> assert false in
-                sd >>! B.Next
-              else  mk_store mo >>! B.Next
+                sd >>= B.next1T
+              else  mk_store mo >>= B.next1T
           | RISCV.LoadReserve  ((RISCV.Double|RISCV.Word as sz),mo,r1,r2) ->
               read_reg_ord r2 ii >>=
               (fun ea ->
-                write_reg RISCV.RESADDR ea ii >>|
-                (read_mem_atomic (tr_sz sz) mo ea ii >>= fun v -> write_reg r1 v ii)) >>! B.Next
+                write_reg RISCV.RESADDR ea ii
+                >>|
+                  (read_mem_atomic (tr_sz sz) mo ea ii
+                   >>= fun v -> write_reg r1 v ii))
+              >>= B.next2T
           | RISCV.StoreConditional
               ((RISCV.Double|RISCV.Word as sz),mo,r1,r2,r3) ->
               M.riscv_store_conditional
@@ -325,12 +329,13 @@ module Make (C:Sem.Config)(V:Value.S)
                 (read_reg_ord r3 ii)
                 (write_reg RISCV.RESADDR V.zero ii)
                 (fun v -> write_reg_success r1 v ii)
-                (fun ea resa v -> write_mem_conditional (tr_sz sz) mo ea v resa ii) >>!
-              B.Next
+                (fun ea resa v ->
+                  write_mem_conditional (tr_sz sz) mo ea v resa ii)
+              >>= B.next1T
           | RISCV.Amo (op,sz,mo,r1,r2,r3) ->
-              amo (tr_sz sz) op mo r1 r2 r3 ii >>! B.Next
+              amo (tr_sz sz) op mo r1 r2 r3 ii >>= B.next1T
           | RISCV.FenceIns b ->
-              create_barrier b ii >>! B.Next
+              create_barrier b ii >>= B.next1T
           | ins -> Warn.fatal "RISCV, instruction '%s' not handled" (RISCV.dump_instruction ins)
           end
 

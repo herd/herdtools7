@@ -49,6 +49,7 @@ module Make (Conf:Config)(V:Value.S)
       let (>>!) = M.(>>!)
       let (>>>) = M.cseq
       let (>>>>) = M.(>>>>)
+      let next0 = B.Next []
 
       module MOorAN = MemOrderOrAnnot
       let a_once = ["once"]
@@ -361,7 +362,8 @@ module Make (Conf:Config)(V:Value.S)
         | C.While(c,t,n) ->
             build_cond c ii >>>>
             begin
-              let else_branch = M.unitT (ii.A.program_order_index, B.Next)
+              let else_branch =
+                M.unitT (ii.A.program_order_index, next0)
               and then_branch =
                 if n >= Conf.unroll then
                   mk_toofar "While" ii >>= fun () -> M.unitT (ii.A.program_order_index, B.Exit)
@@ -371,14 +373,14 @@ module Make (Conf:Config)(V:Value.S)
                     {ii with A.program_order_index = prog_order; A.inst = C.While(c,t,n+1);} in
               fun ret -> M.choiceT ret then_branch else_branch
             end
-        | C.DeclReg _ ->  M.unitT (ii.A.program_order_index, B.Next)
+        | C.DeclReg _ ->  M.unitT (ii.A.program_order_index, next0)
         | C.CastExpr e ->
             build_semantics_expr true e ii >>=
-            fun _ ->  M.unitT (ii.A.program_order_index, B.Next)
+            fun _ ->  M.unitT (ii.A.program_order_index, next0)
         | C.StoreReg(_,r,e) ->
             build_semantics_expr true e ii >>=
             fun v -> write_reg r v ii >>=
-              fun _ ->  M.unitT (ii.A.program_order_index, B.Next)
+              fun _ ->  M.unitT (ii.A.program_order_index, next0)
         | C.StoreMem(loc,e,mo) ->
             (begin
               let open MemOrderOrAnnot in
@@ -392,7 +394,7 @@ module Make (Conf:Config)(V:Value.S)
             end >>|
             build_semantics_expr true e ii) >>=
             fun (l,v) -> write_mem mo l v ii >>=
-              fun _ -> M.unitT (ii.A.program_order_index, B.Next)
+              fun _ -> M.unitT (ii.A.program_order_index, next0)
 (* C11 mutex, not sure about them... *)
         | C.Lock (l,k) ->
             build_semantics_expr false l ii >>=
@@ -404,20 +406,20 @@ module Make (Conf:Config)(V:Value.S)
             | C.MutexLinux ->
                 linux_lock l ii
             end
-                >>= fun () -> M.unitT (ii.A.program_order_index, B.Next)
+                >>= fun () -> M.unitT (ii.A.program_order_index, next0)
         | C.Unlock (l,k) ->
             build_semantics_expr false l ii >>=
             fun l ->
               M.mk_singleton_es (Act.Unlock (A.Location_global l,k)) ii
-                >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
+                >>= fun _ -> M.unitT (ii.A.program_order_index, next0)
 (********************)
         | C.AtomicOp  (eloc,op,e) ->
             build_atomic_op C.OpReturn a_noreturn a_once eloc op e ii
-              >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
+              >>= fun _ -> M.unitT (ii.A.program_order_index, next0)
 (********************)
         | C.Fence(mo) ->
             M.mk_fence (Act.Fence mo) ii
-              >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
+              >>= fun _ -> M.unitT (ii.A.program_order_index, next0)
 (********************)
         | C.InstrSRCU(e,a,oe) ->
             build_semantics_expr false e ii >>|
@@ -427,13 +429,13 @@ module Make (Conf:Config)(V:Value.S)
               >>=
             fun (l,v) ->
               M.mk_singleton_es (Act.SRCU (A.Location_global l,a,v)) ii
-                >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
+                >>= fun _ -> M.unitT (ii.A.program_order_index, next0)
 (********************)
           | C.Symb _ -> Warn.fatal "No symbolic instructions allowed."
           | C.PCall (f,_) -> Warn.fatal "Procedure call %s in CSem" f
 
       and build_semantics_list insts ii = match insts with
-      | [] -> M.unitT (ii.A.program_order_index, B.Next)
+      | [] -> M.unitT (ii.A.program_order_index, next0)
       | inst :: insts ->
           let ii = {ii with A.inst=inst; } in
           build_semantics ii >>> fun (prog_order, _branch) ->
