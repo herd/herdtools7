@@ -175,6 +175,10 @@ let common_specs () =
               (function
                | FullMixed -> false
                |  v-> ov v)
+          | KVM ->  (* Special case: KVM cancels FullKVM  *)
+              (function
+               | FullKVM -> false
+               |  v-> ov v)
           | _ -> ov in
         variant := (fun v -> v = v0 || ov v) ;
         true)

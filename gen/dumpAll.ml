@@ -291,9 +291,9 @@ module Make(Config:Config)(T:Builder.S)
 
 (* Dump from cycle, with specified scope tree *)
       let dump_test_st keep_name
-          all_chan check cycle info relaxed env n c mk_st res =
+          all_chan check init cycle info relaxed env n c mk_st res =
         (* Build test (we need number of procs...) *)
-        let t = T.test_of_cycle n ~info:info ~check:check cycle.orig c in
+        let t = T.test_of_cycle n ~info:info ~check:check ~init cycle.orig c in
         let st = mk_st (T.get_nprocs t) in
         let n =
           if keep_name then n
@@ -306,7 +306,7 @@ module Make(Config:Config)(T:Builder.S)
             env; dup; relaxed= T.R.SetSet.add relaxed res.relaxed; } in
         do_dump_test all_chan t res
 
-      let dump_test all_chan check cycle mk_info mk_name mk_scope c res =
+      let dump_test all_chan check init cycle mk_info mk_name mk_scope c res =
         let n,env = match mk_name cycle.orig with
         | None ->
             let fam = mk_base cycle.orig in
@@ -321,7 +321,7 @@ module Make(Config:Config)(T:Builder.S)
         match Config.scope with
         | Scope.No ->
             let n,dup = dup_name res.dup n in
-            let t = T.test_of_cycle n ~info:info ~check:check cycle.orig c in
+            let t = T.test_of_cycle n ~info:info ~check:check ~init cycle.orig c in
             let res =
               { res with
                 env; dup; relaxed= T.R.SetSet.add relaxed res.relaxed; } in
@@ -332,14 +332,14 @@ module Make(Config:Config)(T:Builder.S)
               | None -> false,T.A.ScopeGen.default
               | Some st -> true,(fun _ -> st)) in
             dump_test_st
-              keep_name all_chan check
+              keep_name all_chan check init
               cycle info relaxed env n c mk_st res
         | Scope.One st ->
-            dump_test_st false all_chan check cycle info relaxed env n c
+            dump_test_st false all_chan check init cycle info relaxed env n c
               (fun _ -> st) res
         | Scope.Gen scs ->
             let t =
-              T.test_of_cycle n ~info:info ~check:check cycle.orig c in
+              T.test_of_cycle n ~info:info ~check:check ~init cycle.orig c in
             let res =
               { res with
                 env; relaxed= T.R.SetSet.add relaxed res.relaxed; } in
@@ -354,7 +354,7 @@ module Make(Config:Config)(T:Builder.S)
               res
         | Scope.All ->
             let t =
-              T.test_of_cycle n ~info:info ~check:check cycle.orig c in
+              T.test_of_cycle n ~info:info ~check:check ~init cycle.orig c in
             let res =
               { res with
                 env; relaxed= T.R.SetSet.add relaxed res.relaxed; } in
@@ -374,14 +374,14 @@ module Make(Config:Config)(T:Builder.S)
             let es,c = T.C.resolve_edges es in
             let seen,nes,sigs = have_seen r.sigs es in
             if seen then Warn.fatal "Duplicate" ;
-            T.C.finish c ;
-            dump_test all_chan check { orig = es ; norm = nes }
+            let init = T.C.finish c in
+            dump_test all_chan check init { orig = es ; norm = nes }
               mk_info mk_name mk_scope c { r with sigs = sigs; }
         else
           fun all_chan check es mk_info mk_name mk_scope r ->
             let es,c = T.C.resolve_edges es in
-            T.C.finish c ;
-            dump_test all_chan check { orig = es ; norm = es ; }
+            let init = T.C.finish c in
+            dump_test all_chan check init { orig = es ; norm = es ; }
               mk_info mk_name mk_scope c r
 
       let check_dump all_chan check es mk_info mk_name mk_scope res =

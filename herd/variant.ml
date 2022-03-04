@@ -61,7 +61,8 @@ type t =
   | Exp
 (* Instruction-fetch support (AKA "self-modifying code" mode) *)
   | Self
-
+  (* Test something *)
+  | Test
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
@@ -69,7 +70,7 @@ let tags =
    "tagcheckprecise"; "tagcheckunprecise"; "precise"; "imprecise";
    "toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
-   "exp"; "self";]
+   "exp"; "self"; "test"; ]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -104,6 +105,7 @@ let parse s = match Misc.lowercase s with
 | "constrainedunpredictable"|"cu" -> Some ConstrainedUnpredictable
 | "exp" -> Some Exp
 | "self" -> Some Self
+| "test" -> Some Test
 | _ -> None
 
 let pp = function
@@ -139,6 +141,7 @@ let pp = function
   | ConstrainedUnpredictable -> "ConstrainedUnpredictable"
   | Exp -> "exp"
   | Self -> "self"
+  | Test -> "test"
 
 let compare = compare
 

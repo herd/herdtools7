@@ -61,6 +61,8 @@ type v = int
 type proc = Proc.t
 let pp_proc p = Proc.pp p
 
+type env = (string * v) list
+
 (* Direction of event *)
 type dir = W | R | J
 

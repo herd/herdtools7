@@ -171,8 +171,7 @@ and module PteVal = F.PteVal
 and type rmw = F.rmw = struct
   let ()  = ignore (Cfg.naturalsize)
   let do_self = Cfg.variant Variant_gen.Self
-  let do_mixed =
-    Cfg.variant Variant_gen.Mixed || Cfg.variant Variant_gen.FullMixed
+  let do_mixed = Variant_gen.is_mixed Cfg.variant
   let do_disjoint = Cfg.variant Variant_gen.MixedDisjoint
   let do_strict_overlap = Cfg.variant Variant_gen.MixedStrictOverlap
 
@@ -717,7 +716,6 @@ let fold_tedges f r =
   let as_integers e = F.as_integers e.a1
 
   let can_precede_dirs  x y = match x.edge,y.edge with
-  | (Id,Id) -> false
   | (Id,_)|(_,Id) -> true
   | (Insert _,Insert _) -> false
   | _,_ ->
@@ -754,7 +752,6 @@ let fold_tedges f r =
   | Some a1,Some a2 -> compat_atoms a1 a2
 
   let can_precede x y = can_precede_dirs  x y && can_precede_atoms x y
-
 
 (*************************************************************)
 (* Expansion of irrelevant direction specifications in edges *)

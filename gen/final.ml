@@ -82,7 +82,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
   end = functor (O:Config) -> functor (C:ArchRun.S) ->
   struct
 
-    let do_kvm = O.variant Variant_gen.KVM
+    let do_kvm = Variant_gen.is_kvm O.variant
 
     type v = I of int | S of string | P of C.A.PteVal.t
     let pte_def = P (C.A.PteVal.default "*")

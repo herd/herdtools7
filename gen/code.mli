@@ -37,6 +37,8 @@ type v = int
 type proc = Proc.t
 val pp_proc : proc -> string
 
+type env = (string * v) list
+
 (* Direction of event *)
 type dir = W | R | J
 

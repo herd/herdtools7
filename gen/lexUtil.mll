@@ -23,6 +23,10 @@ type t =
   | One of string
   | Seq of string list
 
+let pp = function
+| One s -> Printf.sprintf "One(%s)" s
+| Seq ss ->
+  Printf.sprintf "Seq(%s)" (String.concat "," ss)
 }
 let blank = [','' ''\t''\n''\r']
 let not_blank = [^','' ''\t''\n''\r' '[' ']']

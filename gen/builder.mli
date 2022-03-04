@@ -44,13 +44,14 @@ module type S = sig
 
   val make_test :
       string -> ?com:string -> ?info:Code.info -> ?check:check ->
-       ?scope:BellInfo.scopes  -> edge list -> test
+      ?scope:BellInfo.scopes ->
+      edge list -> test
 
 (* Build test from cycle *)
   val test_of_cycle :
       string ->
         ?com:string -> ?info:Code.info -> ?check:check ->
-          ?scope:BellInfo.scopes ->
+          ?scope:BellInfo.scopes -> ?init:Code.env ->
             edge list -> node -> test
 
 (* Dump the given test *)

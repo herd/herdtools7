@@ -32,10 +32,10 @@ module Make
 let do_self = C.variant Variant_gen.Self
 let do_tag = C.variant Variant_gen.MemTag
 let do_morello = C.variant Variant_gen.Morello
-let do_kvm = C.variant Variant_gen.KVM
+let do_fullkvm = C.variant Variant_gen.FullKVM
+let do_kvm = do_fullkvm || C.variant Variant_gen.KVM
 let do_neon = C.variant Variant_gen.Neon
-let do_mixed =
-  C.variant Variant_gen.Mixed || C.variant Variant_gen.FullMixed
+let do_mixed = Variant_gen.is_mixed  C.variant
 let do_cu = C.variant Variant_gen.ConstrainedUnpredictable
 
 open Code
@@ -105,11 +105,42 @@ end
 type atom_rw =  PP | PL | AP | AL
 type capa = Capability
 type capa_opt = capa option
-type w_pte = AF | DB | OA | DBM | VALID
+
+module WPTE = struct
+
+  type t = AF | DB | OA | DBM | VALID
+
+  let all= [AF; DB; OA; DBM; VALID;]
+
+  let compare w1 w2 = match w1,w2 with
+  | (AF,AF) | (DB,DB) | (OA,OA) | (DBM,DBM) | (VALID,VALID)
+    -> 0
+  | (AF,(DB|OA|DBM|VALID))
+  | (DB,(OA|DBM|VALID))
+  | (OA,(DBM|VALID))
+  | (DBM,VALID)
+    -> -1
+  | ((DB|OA|DBM|VALID),AF)
+  | ((OA|DBM|VALID),DB)
+  | ((DBM|VALID),OA)
+  | (VALID,DBM)
+      -> 1
+
+   let pp = function
+     | AF -> "AF"
+     | DB -> "DB"
+     | DBM -> "DBM"
+     | VALID -> "VA"
+     | OA -> "OA"
+end
+
+module WPTESet = MySet.Make(WPTE)
+
 type atom_pte =
   | Read|ReadAcq|ReadAcqPc
-  | Set of w_pte
-  | SetRel of w_pte
+  | Set of  WPTESet.t
+  | SetRel of  WPTESet.t
+
 type neon_sizes = SIMD.atom
 
 type atom_acc =
@@ -146,12 +177,7 @@ let applies_atom (a,_) d = match a,d with
      | None -> ""
      | Some Capability -> "c"
 
-   let pp_w_pte = function
-     | AF -> "AF"
-     | DB -> "DB"
-     | DBM -> "DBM"
-     | VALID -> "VA"
-     | OA -> "OA"
+   let pp_w_pte ws = WPTESet.pp_str "." WPTE.pp ws
 
    let pp_atom_pte = function
      | Read -> ""
@@ -210,10 +236,31 @@ let applies_atom (a,_) d = match a,d with
      else
        r
 
+   let fold_all_subsets f =
+     let rec fold_rec xs k r = match xs with
+       | [] -> if WPTESet.is_empty k then r else f k r
+       | x::xs ->
+          let r = fold_rec xs (WPTESet.add x k) r in
+          fold_rec xs k r in
+     fold_rec WPTE.all WPTESet.empty
+
+   let fold_small_subsets f =
+     let rec fold_rec xs r =
+       match xs with
+       | [] -> r
+       | x::xs ->
+          let sx = WPTESet.singleton x in
+          List.fold_right
+            (fun y r -> f (WPTESet.add y sx) r)
+            xs (f sx (fold_rec xs r)) in
+     fold_rec WPTE.all
+
+   let fold_subsets = if do_fullkvm then  fold_all_subsets else fold_small_subsets
+
    let fold_pte f r =
      if do_kvm then
-       let g field r = f (Set field) (f (SetRel field) r) in
-       let r = g AF (g DB (g DBM (g VALID (g OA r)))) in
+       let g fs r = f (Set fs) (f (SetRel fs) r) in
+       let r = fold_subsets g r in
        f Read (f ReadAcq (f ReadAcqPc r))
      else r
 
@@ -299,10 +346,13 @@ let applies_atom (a,_) d = match a,d with
    | ((Pte (Set set|SetRel set),None),(Rel None,None))
    | ((Rel None,None),(Pte (Set set|SetRel set),None))
        -> Some (Pte (SetRel set),None)
+   | (Pte (Set set1),None),(Pte (Set set2),None)
+       -> Some (Pte (Set (WPTESet.union  set1 set2)),None)
    | ((Pte (Set set1),None),(Pte (SetRel set2),None))
    | ((Pte (SetRel set1),None),(Pte (Set set2),None))
-       when set1=set2 ->
-         Some (Pte (SetRel set1),None)
+   | ((Pte (SetRel set1),None),(Pte (SetRel set2),None))
+       ->
+         Some (Pte (SetRel (WPTESet.union set1 set2)),None)
 (* Add size when (ordinary) annotation equal *)
    | ((Acq None as a,None),(Acq None,(Some _ as sz)))
    | ((Acq None as a,(Some _ as sz)),(Acq None,None))
@@ -395,19 +445,22 @@ let overwrite_value v ao w = match ao with
 
     let compare = AArch64PteVal.compare
 
-    let do_setpteval a f p =
+    let do_setpteval a f p loc =
       let open AArch64PteVal in
-      let f = match f with
+      let fs = match f with
         | Set f|SetRel f -> f
         | Read|ReadAcq|ReadAcqPc ->
-            Warn.user_error "Atom %s is not a pteval write" (pp_atom a) in
-      match f with
-      | AF -> fun _loc -> { p with af = 1-p.af; }
-      | DB -> fun _loc -> { p with db = 1-p.db; }
-      | DBM -> fun _loc -> { p with dbm = 1-p.dbm; }
-      | VALID -> fun _loc -> { p with valid = 1-p.valid; }
-      | OA -> fun loc ->
-              { p with oa=OutputAddress.PHY (loc ()); }
+           Warn.user_error "Atom %s is not a pteval write" (pp_atom a) in
+      WPTESet.fold
+        (fun f p ->
+          let open WPTE in
+          match f with
+          | AF -> { p with af = 1-p.af; }
+          | DB -> { p with db = 1-p.db; }
+          | DBM -> { p with dbm = 1-p.dbm; }
+          | VALID -> { p with valid = 1-p.valid; }
+          | OA -> { p with oa=OutputAddress.PHY (loc ()); })
+      fs p
 
     let set_pteval a p =
       match a with
@@ -432,9 +485,9 @@ let overwrite_value v ao w = match ao with
 
 type strength = Strong | Weak
 let fold_strength f r = f Strong (f Weak r)
-
+type sync = Sync | NoSync
 type fence = | Barrier of barrier | CacheSync of strength * bool |
-               Shootdown of mBReqDomain * TLBI.op
+               Shootdown of mBReqDomain * TLBI.op * sync
 
 let is_isync = function
   | Barrier ISB -> true
@@ -450,9 +503,14 @@ let compare_fence b1 b2 = match b1,b2 with
    | 0 -> compare s1 s2
    | r -> r
     end
-| Shootdown (dom1,op1),Shootdown (dom2,op2) ->
+| Shootdown (dom1,op1,sync1),Shootdown (dom2,op2,sync2) ->
     begin match compare dom1 dom2 with
-   | 0 -> compare op1 op2
+    | 0 ->
+       begin
+         match compare op1 op2 with
+         | 0 -> compare sync1 sync2
+         | r -> r
+       end
    | r -> r
     end
 | (Shootdown _,(Barrier _|CacheSync _))
@@ -467,14 +525,20 @@ let add_dot f x = match f x with
 | "" -> ""
 | s -> "." ^ s
 
+let pp_sync = function
+  | NoSync -> ""
+  | Sync -> "-sync"
+
 let pp_fence f = match f with
 | Barrier f -> do_pp_barrier "." f
-| CacheSync (s,isb) -> sprintf "CacheSync%s%s"
-      (match s with Strong -> "Strong" | Weak -> "")
-      (if isb then "Isb" else "")
-| Shootdown (d,op) ->
-    sprintf "TLBI%s%s"
-      (add_dot TLBI.short_pp_op op) (add_dot pp_domain d)
+| CacheSync (s,isb) ->
+   sprintf "CacheSync%s%s"
+     (match s with Strong -> "Strong" | Weak -> "")
+     (if isb then "Isb" else "")
+| Shootdown (d,op,sync) ->
+   let tlbi = "TLBI" ^ pp_sync sync in
+   sprintf "%s%s%s" tlbi
+     (add_dot TLBI.short_pp_op op) (add_dot pp_domain d)
 
 let fold_cumul_fences f k =
    do_fold_dmb_dsb C.moreedges (fun b k -> f (Barrier b) k) k
@@ -490,7 +554,10 @@ let fold_shootdown =
     fun f k ->
       fold_op
         (fun op k ->
-          fold_domain (fun d k -> f (Shootdown(d,op)) k) k)
+          fold_domain
+            (fun d k ->
+              f (Shootdown(d,op,Sync))
+                (f (Shootdown(d,op,NoSync)) k)) k)
         k
   else fun _f k -> k
 

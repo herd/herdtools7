@@ -59,6 +59,8 @@ type t =
   | Exp
 (* Instruction-fetch support (AKA "self-modifying code" mode) *)
   | Self
+(* Test something *)
+  | Test
 
 val compare : t -> t -> int
 val tags : string list
