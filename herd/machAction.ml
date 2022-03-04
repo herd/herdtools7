@@ -520,9 +520,9 @@ end = struct
     ("FAULT",is_fault)::
     ("TLBI",is_inv)::
     ("DC",is_dc)::
-    ("IC",is_ic)::
-    ("CI",is_ci)::
-    ("C",is_c)::("I",is_i)::
+    ("DC-IC",is_ic)::
+    ("DC-CI",is_ci)::
+    ("DC-C",is_c)::("DC-I",is_i)::
     ("no-loc", fun a -> Misc.is_none (location_of a))::
     (if kvm then
       fun k ->

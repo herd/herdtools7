@@ -337,7 +337,6 @@ module Make
                  "SPEC", is_spec;
                  "EXEC", (fun e -> not (is_spec e));
                  "AMO",E.is_amo;
-                 "I", E.is_mem_store_init;
                  "SPURIOUS", E.is_spurious;
                  "IW", E.is_mem_store_init;
                  "FW",

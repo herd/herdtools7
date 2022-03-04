@@ -311,11 +311,6 @@ end = struct
   | Fence (MO mo) -> mo=target
   | _ -> false
 
-  let fence_matches target a = match a with
-  | Fence (AN [a]) -> a=target
-  | _ -> false
-
-
 (* Architecture-specific sets *)
 
   let arch_sets = [
@@ -331,9 +326,6 @@ end = struct
     "RLX", mo_matches MemOrder.Rlx;
     "CON", mo_matches MemOrder.Con;
  (* For C11 RCU, Linux RCU implemented with bell file !! *)
-    "Sync-rcu", fence_matches "sync-rcu";
-    "Rcu-lock", fence_matches "rcu-lock";
-    "Rcu-unlock", fence_matches "rcu-unlock";
     "A",old_is_atomic;
     "NA",(fun a -> not (old_is_atomic a));
     "annot", (fun a -> match a with

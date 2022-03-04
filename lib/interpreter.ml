@@ -527,14 +527,22 @@ module Make
       f_rec sets
 
 (* Go on *)
-    let add_vals mk =
-      List.fold_right (fun (k,v) -> StringMap.add k (mk v))
+    let add_vals_once mk =
+      List.fold_right
+        (fun (k,v) m ->
+          if StringMap.mem k m then
+            Warn.warn_always
+              "redefining key '%s' in cat interpreter initial environment"
+              k ;
+          StringMap.add k (mk v) m)
 
     let env_from_ienv (sets,rels) =
       let vals =
-        add_vals (fun v -> lazy (Set (Lazy.force v))) sets StringMap.empty in
+        add_vals_once
+          (fun v -> lazy (Set (Lazy.force v))) sets StringMap.empty in
       let vals =
-        add_vals (fun v -> lazy (Rel (Lazy.force v))) rels vals in
+        add_vals_once
+          (fun v -> lazy (Rel (Lazy.force v))) rels vals in
       { env_empty with vals; }
 
 (* Primitive added internally to actual env *)
