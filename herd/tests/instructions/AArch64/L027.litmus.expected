@@ -1,0 +1,11 @@
+Test L027 Forbidden
+States 2
+1:X0=0; 1:X2=0;
+1:X0=1; 1:X2=1;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition ~exists (1:X0=1 /\ 1:X2=0)
+Observation L027 Never 0 2
+Hash=db7dfd01d68a001374c2ab0b97fa30c4
+

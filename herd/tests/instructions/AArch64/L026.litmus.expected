@@ -1,0 +1,12 @@
+Test L026 Allowed
+States 3
+1:X0=0; 1:X2=0;
+1:X0=1; 1:X2=0;
+1:X0=1; 1:X2=1;
+Ok
+Witnesses
+Positive: 1 Negative: 2
+Condition exists (1:X0=1 /\ 1:X2=0)
+Observation L026 Sometimes 1 2
+Hash=acd89e5742726dac250bdb0839c7d013
+

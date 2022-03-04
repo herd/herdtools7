@@ -91,9 +91,9 @@ module type S = sig
   val same_barrier_id : action -> action -> bool
 
 (* Commits *)
-  val is_commit_bcc : action -> bool
-  val is_commit_pred : action -> bool
-  val is_pod : action -> bool
+  val is_bcc : action -> bool
+  val is_pred : action -> bool
+  val is_commit : action -> bool
 
 (* Unrolling control *)
   val toofar : string -> action
