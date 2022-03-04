@@ -27,7 +27,7 @@ endef
 define make-book
 $(WWW_CATALOGUE)/$1/:
 	mkdir -p $(WWW_CATALOGUE)
-	rsync -a --delete $(HERD_CATALOGUE)/$1/ $(WWW_CATALOGUE)/$1/
+	rsync -a --copy-unsafe-links --delete $(HERD_CATALOGUE)/$1/ $(WWW_CATALOGUE)/$1/
 
 .PHONY:: $(WWW_CATALOGUE)/$1/
 endef
