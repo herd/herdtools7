@@ -30,24 +30,35 @@ let file_ok f =
   Filename.check_suffix f ".def" ||
   Filename.check_suffix f ".cfg"
 
-let all_files m d =
-  assert (Sys.is_directory(d)) ;
-  let fs = Sys.readdir d in
-  let mr = ref m in
-  for k=0 to Array.length fs-1 do
-    let f = fs.(k) in
-    if file_ok f && not (StringMap.mem f !mr) then begin
-      mr := StringMap.add f d !mr
-    end
-  done ;
-  !mr
-
 let read_file f =
   let chan = open_in f in
   let len = in_channel_length chan in
   let cts = really_input_string chan len in
   close_in chan ;
   cts
+
+let same_file d1 d2 f =
+  let f1 = Filename.concat d1 f
+  and f2 = Filename.concat d2 f in
+  read_file f1 = read_file f2
+
+let all_files m d =
+  assert (Sys.is_directory(d)) ;
+  let fs = Sys.readdir d in
+  let mr = ref m in
+  for k=0 to Array.length fs-1 do
+    let f = fs.(k) in
+    if file_ok f then begin
+      if  not (StringMap.mem f !mr) then begin
+        mr := StringMap.add f d !mr
+     end else
+       let old = StringMap.find f !mr in
+       if not (same_file old d f) then
+         Printf.eprintf "%s ignored (%s already here)\n"
+           (Filename.concat d f)  (Filename.concat old f)
+    end
+  done ;
+  !mr
 
 let bind d f =
   let g = Filename.concat d f in

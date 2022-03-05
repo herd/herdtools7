@@ -1,0 +1,16 @@
+AArch64 MTE-RW+WR+amo.ldeoral-polp+dmb.sytq
+"Amo.LdEorAL PodWWLP CoePT DMB.SYdWRTQ HatQA"
+Generator=diyone7 (version 7.56+02~dev)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Co Fr
+Orig=Amo.LdEorAL PodWWLP CoePT DMB.SYdWRTQ HatQA
+{
+0:X0=x:green; 0:X4=y:green;
+1:X0=y:red; 1:X1=y:green; 1:X2=x:green;
+}
+ P0                 | P1            ;
+ MOV W2,#1          | STG X0,[X1]   ;
+ LDEORAL W2,W1,[X0] | DMB SY        ;
+ MOV W3,#1          | LDAPR W3,[X2] ;
+ STR W3,[X4]        |               ;
+exists ([tag(y)]=:red /\ 0:X1=0 /\ 1:X3=0) /\ ~fault (P0,y)

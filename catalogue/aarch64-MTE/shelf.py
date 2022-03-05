@@ -1,6 +1,7 @@
 record = "AArch64"
 
 cats = [
+    "cats/aarch64.cat",
     "cats/aarch64-MTE.cat",
     ]
 
@@ -34,4 +35,5 @@ illustrative_tests = [
     "tests/MTE-LDRLDR.litmus",
     "tests/MTE-LDRSTGLDR.litmus",
     "tests/MTE-RFI.litmus",
+    "tests/MTE-RW+WR+amo.ldeoral-polp+dmb.sytq.litmus",
 ]
