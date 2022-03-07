@@ -101,7 +101,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | V64 -> Quad
       | V32 -> Word
 
-    let mov r i = I_MOV (vloc,r,K i)
+    let do_movi vdep r i = I_MOV (vdep,r,K i)
+    let mov = do_movi vloc
 
     let mov_mixed sz r i =
       let sz =
@@ -133,7 +134,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let cbz r1 lbl = I_CBZ (vloc,r1,lbl)
     let do_cbnz v r1 lbl = I_CBNZ (v,r1,lbl)
     let cbnz = do_cbnz vloc
-    let cmpi r i = I_OP3 (vloc,SUBS,ZR,r,K i, S_NOEXT)
+    let do_cmpi v r i =  I_OP3 (v,SUBS,ZR,r,K i, S_NOEXT)
+    let cmpi r i = do_cmpi vloc r i
+    let do_csel v r1 r2 r3 = I_CSEL (v,r1,r2,r3,EQ,Cpy)
+    let do_cinc v r1 r2 r3 = I_CSEL (v,r1,r2,r3,EQ,Inc)
     let cmp r1 r2 = I_OP3 (vloc,SUBS,ZR,r1,RV (vloc,r2), S_NOEXT)
     let bne lbl = I_BC (NE,lbl)
     let eor sz r1 r2 r3 = I_OP3 (sz,EOR,r1,r2,RV (sz,r3), S_NOEXT)
@@ -1375,15 +1379,24 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
 
 (* Dependencies *)
-    let calc0 vdep =
+    let calc0  =
       if Cfg.realdep then
-        fun dst src ->  andi vdep dst src 128
+        fun vdep dst src -> andi vdep dst src 128
       else
-        fun dst src -> eor vdep dst src src
+        fun vdep dst src -> eor vdep dst src src
 
-    let emit_access_dep_addr vdep st p init e rd =
+    let calc0_gen csel st vdep = match csel with
+      | NoCsel -> fun src dst -> [calc0 vdep src dst],st
+      | OkCsel ->
+         fun dst src ->
+           let r3,st = next_reg st in
+           let r4,st = next_reg st in
+           [do_movi vdep r3 1; do_cmpi vdep src 0;
+            do_csel vdep dst r3 r4; andi vdep dst dst 2;],st
+
+    let emit_access_dep_addr csel vdep st p init e rd =
       let r2,st = next_reg st in
-      let c =  calc0 vdep r2 rd in
+      let cs0,st =  calc0_gen csel st vdep r2 rd in
       match e.C.dir,e.C.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some d,Data loc ->
@@ -1402,11 +1415,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | R,None ->
               let r,init,cs,st =
                 LDR.emit_load_idx_var vloc vdep st p init loc r2 in
-              Some r,init, Instruction c::cs,st
+              Some r,init, pseudo cs0@cs,st
           | R,Some (Acq _,None) ->
               let r,init,cs,st =
                 LDAR.emit_load_idx_var vloc vdep st p init loc r2 in
-              Some r,init, Instruction c::cs,st
+              Some r,init, pseudo cs0@cs,st
           | R,Some (Acq a,Some (sz,o)) ->
              let load =
                do_emit_load_idx_var
@@ -1415,11 +1428,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                  sz sz in
               let r,init,cs,st = load st p init loc r2 in
               let cs2 = emit_ldr_addon a r in
-              Some r,init,Instruction c::cs@pseudo cs2,st
+              Some r,init,pseudo cs0@cs@pseudo cs2,st
           | R,Some (AcqPc _,None) ->
               let r,init,cs,st =
                 LDAPR.emit_load_idx_var vloc vdep st p init loc r2 in
-              Some r,init, Instruction c::cs,st
+              Some r,init, pseudo cs0@cs,st
           | R,Some (AcqPc a,Some (sz,o)) ->
              let load =
                do_emit_load_idx_var
@@ -1428,19 +1441,19 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                  sz sz in
               let r,init,cs,st = load st p init loc r2 in
               let cs2 = emit_ldr_addon a r in
-              Some r,init,Instruction c::cs@pseudo cs2,st
+              Some r,init,pseudo cs0@cs@pseudo cs2,st
           | R,Some (Rel _,_) ->
               Warn.fatal "No load release"
           | R,Some (Atomic rw,None) ->
               let r,init,cs,st = do_emit_lda_idx vdep (tr_rw rw) st p init loc r2 in
-              Some r,init, Instruction c::cs,st
+              Some r,init, pseudo cs0@cs,st
           | R,Some (Atomic rw,Some (sz,o)) ->
               let r,init,cs,st =
                 do_emit_lda_mixed_idx vdep sz o rw st p init loc r2 in
-              Some r,init, Instruction c::cs,st
+              Some r,init, pseudo cs0@cs,st
           | R,Some (Tag,None) ->
               let r,init,cs,st = LDG.emit_load_idx vdep st p init loc r2 in
-              Some r,init, Instruction c::cs,st
+              Some r,init, pseudo cs0@cs,st
           | R,Some (Tag,Some _) -> assert false
           | R,Some (CapaTag,None) ->
               (* TODO: don't waste r2 *)
@@ -1456,9 +1469,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | R,Some (Neon n,None) ->
               let c = sxtw r2 rd in
               let r3,st = next_reg st in
-              let c1 = calc0 V64 r3 r2 in
+              let cs0,st = calc0_gen csel st V64 r3 r2 in
               let rB,init,cs,st = LDN.emit_load_idx n st p init loc r3 in
-              Some rB,init,Instruction c::Instruction c1::cs,st
+              Some rB,init,Instruction c::pseudo cs0@cs,st
           | R,Some (Neon _,Some _) -> assert false
           | W,None ->
               let module STR =
@@ -1470,7 +1483,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                     let emit_mov = U.emit_mov
                   end) in
               let init,cs,st = STR.emit_store_idx st p init loc r2 e.C.v None C.evt_null in
-              None,init,Instruction c::cs,st
+              None,init,pseudo cs0@cs,st
           | W,Some (Rel _,None) ->
               let module STLR =
                 STORE
@@ -1482,7 +1495,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                       let emit_mov = U.emit_mov
                   end) in
               let init,cs,st = STLR.emit_store_idx st p init loc r2 e.C.v None C.evt_null in
-              None,init,Instruction c::cs,st
+              None,init,pseudo cs0@cs,st
           | W,Some (Rel a,Some (sz,o)) ->
               let module S =
                 STORE
@@ -1497,16 +1510,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                       let emit_mov = emit_mov_sz sz
                   end) in
               let init,cs,st = S.emit_store_idx st p init loc r2 e.C.v a e in
-              None,init,Instruction c::cs,st
+              None,init,pseudo cs0@cs,st
           | W,Some (Acq _,_) -> Warn.fatal "No store acquire"
           | W,Some (AcqPc _,_) -> Warn.fatal "No store acquirePc"
           | W,Some (Atomic rw,None) ->
               let r,init,cs,st =
                 emit_sta_idx (tr_rw rw) st p init loc r2 e.C.v in
-              Some r,init,Instruction c::cs,st
+              Some r,init,pseudo cs0@cs,st
           | W,Some (Atomic rw,Some (sz,o)) ->
               let r,init,cs,st = emit_sta_mixed_idx sz o rw st p init loc r2 e.C.v in
-              Some r,init,Instruction c::cs,st
+              Some r,init,pseudo cs0@cs,st
           | R,Some (Plain a,Some (sz,o)) ->
              let load_idx sz _ st r1 r2 idx =
                let cs = [ldr_mixed_idx vdep r1 r2 idx sz] in
@@ -1518,7 +1531,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                do_emit_load_idx_var next_reg_sz load_idx sz sz in
              let r,init,cs,st = load st p init loc r2 in
              let cs2 = emit_ldr_addon a r in
-             Some r,init,Instruction c::cs@pseudo cs2,st
+             Some r,init,pseudo cs0@cs@pseudo cs2,st
           | W,Some (Plain a,Some (sz,o)) ->
               let module S =
                 STORE
@@ -1533,18 +1546,18 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                     let emit_mov = emit_mov_sz sz
                   end) in
               let init,cs,st = S.emit_store_idx st p init loc r2 e.C.v a e in
-              None,init,Instruction c::cs,st
+              None,init,pseudo cs0@cs,st
           | W,Some (Tag, None) ->
               let init,cs,st = STG.emit_store_idx vdep st p init e r2 in
-              None,init,Instruction c::cs,st
+              None,init,pseudo cs0@cs,st
           | (W,(Some (Pte (Set _),None))) ->
               let init,cs,st =
                 emit_set_pteval_idx false vdep r2 st p init e.C.pte (Misc.add_pte loc) in
-              None,init,Instruction c::cs,st
+              None,init,pseudo cs0@cs,st
           | (W,(Some (Pte (SetRel _),None))) ->
               let init,cs,st =
                 emit_set_pteval_idx true vdep r2 st p init e.C.pte (Misc.add_pte loc) in
-              None,init,Instruction c::cs,st
+              None,init,pseudo cs0@cs,st
           | (R,(Some (Pte (Read|ReadAcq|ReadAcqPc as rk),None)))
             ->
               let emit = match rk with
@@ -1556,7 +1569,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let rA,init,st = U.next_init st p init loc in
               let rA,cs1,st = do_sum_addr vdep st rA r2 in
               let r,init,cs,st = emit A64.V64 st p init rA in
-              Some r,init,Instruction c::pseudo cs1@cs,st
+              Some r,init,pseudo cs0@pseudo cs1@cs,st
          | (W|R) as d,Some (Pte _,_ as a) ->
              Warn.fatal
                "Annotation %s does not apply to direction %s"
@@ -1580,26 +1593,26 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | W,Some (Neon n,None) ->
               let c = sxtw r2 rd in
               let r3,st = next_reg st in
-              let c1 = calc0 V64 r3 r2 in
+              let cs1,st = calc0_gen csel st V64 r3 r2 in
               let init,cs,st = STN.emit_store_idx n st p init loc r3 e.C.v in
-              None,init,Instruction c::Instruction c1::cs,st
+              None,init,Instruction c::pseudo cs0@pseudo cs1@cs,st
           | W,Some (Neon _,Some _) -> assert false
           | J,_ -> emit_joker st init
           | _,Some (Plain _,None) -> assert false
           end
       | _,Code _ -> Warn.fatal "No dependency to code location"
 
-    let do_emit_addr_dep vdep st p init loc rd =
+    let do_emit_addr_dep csel vdep st p init loc rd =
       let r2,st = next_reg st in
-      let c = calc0 vdep r2 rd in
+      let cs0,st = calc0_gen csel st vdep r2 rd in
       let rA,init,st = U.next_init st p init loc in
       let rA,csum,st = do_sum_addr vdep st rA r2 in
-      rA,init,pseudo (c::csum),st
+      rA,init,pseudo (cs0@csum),st
 
-    let emit_addr_dep = do_emit_addr_dep vloc
+    let emit_addr_dep csel = do_emit_addr_dep csel vloc
 
-    let emit_exch_dep_addr st p init er ew rd =
-      let rA,init,caddr,st =  emit_addr_dep  st p init (add_tag (as_data er.C.loc) 0) rd in
+    let emit_exch_dep_addr csel st p init er ew rd =
+      let rA,init,caddr,st =  emit_addr_dep csel st p init (add_tag (as_data er.C.loc) 0) rd in
       let rR,st = next_reg st in
       let rW,init,csi,st = U.emit_mov st p init ew.C.v in
       let arw = check_arw_lxsx er ew in
@@ -1608,7 +1621,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       csi@caddr@cs,
       st
 
-    let emit_access_dep_data vdep st p init e  r1 =
+    let emit_access_dep_data csel vdep st p init e  r1 =
       let atom = match e.C.atom with
       | None -> None
       | Some (a,m) -> begin match a with
@@ -1628,19 +1641,18 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let r2,st = next_reg st in
             match atom with
             | Some (Tag,None) ->
+                let cs0,st = calc0_gen csel st vdep r2 r1 in
                 let rA,init,st = U.next_init st p init (add_tag loc e.C.v) in
                 let rB,cB,st = sum_addr st rA r2 in
-                rB,pseudo (calc0 vdep r2 r1::cB),init,st
+                rB,pseudo (cs0@cB),init,st
             | Some (_,Some (sz,_)) ->
+                let cs0,st = calc0_gen csel st vdep r2 r1 in
                 let rA,init,csA,st = emit_mov_sz sz st p init e.C.v in
-                let cs2 =
-                  [Instruction (calc0 vdep r2 r1) ;
-                   Instruction (add (sz2v sz) r2 r2 rA); ] in
+                let cs2 = pseudo (cs0@[add (sz2v sz) r2 r2 rA]) in
                 r2,csA@cs2,init,st
             | Some (CapaSeal,None) ->
-                let cs2 =
-                  [Instruction (calc0 vdep r2 r1) ;
-                   Instruction (addi r2 r2 e.C.ord); ] in
+                let cs0,st = calc0_gen csel st vdep r2 r1 in
+                let cs2 = pseudo (cs0@[addi r2 r2 e.C.ord]) in
                 r2,cs2,init,st
             | Some (Pte _,None) ->
                 let rA,init,st = U.emit_pteval st p init e.C.pte in
@@ -1649,12 +1661,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   | A64.V128 ->
                       Warn.fatal "128 bit dependency to pte access"
                   | A64.V64 ->
-                      [Instruction (calc0 A64.V64 r2 r1)],st
+                      calc0_gen csel st A64.V64 r2 r1
                   | A64.V32 ->
                       let r3,st = tempo1 st in
-                      [Instruction (sxtw r3 r1);
-                       Instruction (calc0 A64.V64 r2 r3);],st in
-                let cs2 = cs@[Instruction (add A64.V64 r2 r2 rA);] in
+                      let cs0,st = calc0_gen csel st A64.V64 r2 r3 in
+                      sxtw r3 r1::cs0,st in
+                let cs2 = pseudo cs@[Instruction (add A64.V64 r2 r2 rA);] in
                 r2,cs2,init,st
             | Some (Neon _,None) ->
                 let r2,st = next_vreg st in
@@ -1670,12 +1682,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   | (V128,_)|(_,V128) ->
                       Warn.fatal "dependance from 128 bits access"
                   | (V32,V32)|(V64,V64)|(V64,V32) ->
-                      [Instruction (calc0 vdep r2 r1);],st
+                     calc0_gen csel st vdep r2 r1
                   | (V32,V64) ->
                       let r3,st = tempo1 st in
-                      [Instruction (calc0 vdep r3 r1);
-                       Instruction (sxtw r2 r3);],st in
-                let cs2 = cs2@[Instruction (addi r2 r2 e.C.v);] in
+                      let cs,st = calc0_gen csel st vdep r3 r1 in
+                      sxtw r2 r3::cs,st in
+                let cs2 = pseudo cs2@[Instruction (addi r2 r2 e.C.v);] in
                 r2,cs2,init,st in
 
           let loc = add_tag loc e.C.tag in
@@ -1755,7 +1767,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | _,Code _ -> Warn.fatal "Not Yet (%s,dep_data)" (C.debug_evt e)
 
     let is_ctrlisync = function
-      | CTRLISYNC -> true
+      | D.CTRLISYNC -> true
       | _ -> false
 
     let insert_isb isb cs1 cs2 =
@@ -1766,13 +1778,23 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let lab = Label.next_label "LC" in
       let c = [Instruction (do_cbnz vdep r lab); Label (lab,Nop);] in c
 
-    let emit_access_ctrl vdep isb st p init e r1 =
-      let c = emit_ctrl vdep r1 in
+    let emit_ctrl_gen csel st vdep r = match csel with
+      | NoCsel -> emit_ctrl vdep r,st
+      | OkCsel ->
+         let r2,st = next_reg st in
+         let r3,st = next_reg st in
+         pseudo
+           [do_cmpi vdep r 0; do_cinc vdep r2 r3 r2;]@
+           emit_ctrl vdep r2,
+         st
+
+    let emit_access_ctrl csel vdep isb st p init e r1 =
+      let c,st = emit_ctrl_gen csel st vdep r1 in
       let ropt,init,cs,st = emit_access st p init e in
       ropt,init,insert_isb isb c cs,st
 
-    let emit_exch_ctrl isb st p init er ew r1 =
-      let c = emit_ctrl vloc r1 in
+    let emit_exch_ctrl csel isb st p init er ew r1 =
+      let c,st = emit_ctrl_gen csel st vloc r1 in
       let ropt,init,cs,st = emit_exch st p init er ew in
       ropt,init,insert_isb isb c cs,st
 
@@ -1784,55 +1806,56 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
          | None -> vloc
          end
 
-    let emit_access_dep st p init e dp r1 n1 =
+    let emit_access_dep st p init e (dp,csel) r1 n1 =
       let e1 = n1.C.evt in
       let at1 = e1.C.atom in
       let vdep = tr_atom at1 in
       match dp with
-      | ADDR -> emit_access_dep_addr vdep st p init e r1
-      | DATA -> emit_access_dep_data vdep st p init e r1
-      | CTRL -> emit_access_ctrl vdep false st p init e r1
-      | CTRLISYNC -> emit_access_ctrl vdep true st p init e r1
+      | D.ADDR -> emit_access_dep_addr csel vdep st p init e r1
+      | D.DATA -> emit_access_dep_data csel vdep st p init e r1
+      | D.CTRL -> emit_access_ctrl csel vdep false st p init e r1
+      | D.CTRLISYNC -> emit_access_ctrl csel vdep true st p init e r1
 
-    let emit_exch_dep st p init er ew dp rd = match dp with
-    | ADDR -> emit_exch_dep_addr   st p init er ew rd
-    | DATA -> Warn.fatal "not data dependency to RMW"
-    | CTRL -> emit_exch_ctrl false st p init er ew rd
-    | CTRLISYNC -> emit_exch_ctrl true st p init er ew rd
+    let emit_exch_dep st p init er ew (dp,csel) rd = match dp with
+    | D.ADDR -> emit_exch_dep_addr csel  st p init er ew rd
+    | D.DATA -> Warn.fatal "not data dependency to RMW"
+    | D.CTRL -> emit_exch_ctrl csel false st p init er ew rd
+    | D.CTRLISYNC -> emit_exch_ctrl csel true st p init er ew rd
 
-    let emit_ldop_dep ins ins_mixed  st p init er ew dp rd = match dp with
-    | ADDR ->
-        let rA,init,caddr,st = emit_addr_dep st p init (add_tag (as_data er.C.loc) 0) rd in
+    let emit_ldop_dep ins ins_mixed  st p init er ew (dp,csel) rd =
+      match dp with
+    | D.ADDR ->
+        let rA,init,caddr,st = emit_addr_dep csel st p init (add_tag (as_data er.C.loc) 0) rd in
         let rR,init,cs,st = do_emit_ldop_rA ins ins_mixed st p init er ew rA in
         rR,init,caddr@cs,st
-    | CTRL|CTRLISYNC ->
+    | D.CTRL|D.CTRLISYNC ->
         let c = emit_ctrl vloc rd in
         let rR,init,cs,st = do_emit_ldop ins ins_mixed st p init er ew in
         rR,init,insert_isb (is_ctrlisync dp) c cs,st
-    | DATA -> Warn.fatal "Data dependency to LDOP"
+    | D.DATA -> Warn.fatal "Data dependency to LDOP"
 
-    let emit_cas_dep  st p init er ew dp rd = match dp with
-    | ADDR ->
-        let rA,init,caddr,st = emit_addr_dep st p init (add_tag (as_data er.C.loc) 0) rd in
+    let emit_cas_dep  st p init er ew (dp,csel) rd = match dp with
+    | D.ADDR ->
+        let rA,init,caddr,st = emit_addr_dep csel st p init (add_tag (as_data er.C.loc) 0) rd in
         let rR,init,cs,st = emit_cas_rA st p init er ew rA in
         rR,init,caddr@cs,st
-    | CTRL|CTRLISYNC ->
-        let c = emit_ctrl vloc rd in
+    | D.CTRL|D.CTRLISYNC ->
+        let c,st = emit_ctrl_gen csel st vloc rd in
         let rR,init,cs,st = emit_cas st p init er ew in
         rR,init,insert_isb (is_ctrlisync dp) c cs,st
-    | DATA -> Warn.fatal "Data dependency to CAS"
+    | D.DATA -> Warn.fatal "Data dependency to CAS"
 
-    let emit_stop_dep  op st p init er ew dp rd = match dp with
-    | ADDR ->
+    let emit_stop_dep  op st p init er ew (dp,csel) rd = match dp with
+    | D.ADDR ->
         let rA,init,caddr,st =
-          emit_addr_dep st p init (add_tag (as_data er.C.loc) 0) rd in
+          emit_addr_dep csel st p init (add_tag (as_data er.C.loc) 0) rd in
         let rR,init,cs,st = emit_stop_rA op st p init er ew rA in
         rR,init,caddr@cs,st
-    | CTRL|CTRLISYNC ->
-        let c = emit_ctrl vloc rd in
+    | D.CTRL|D.CTRLISYNC ->
+        let c,st = emit_ctrl_gen csel st vloc rd in
         let rR,init,cs,st = emit_stop op st p init er ew in
         rR,init,insert_isb (is_ctrlisync dp) c cs,st
-    | DATA -> Warn.fatal "Data dependency to STOP"
+    | D.DATA -> Warn.fatal "Data dependency to STOP"
 
 
     let map_some_dp f st p init er ew dp rd =
