@@ -22,7 +22,7 @@ module type DiyConfig = sig
   include DumpAll.Config
   val choice : Code.check
   val variant : Variant_gen.t -> bool
-  val prefix : LexUtil.t list option
+  val prefix : LexUtil.t list list
   val cumul :   LexUtil.t list Config.cumul
   val max_ins : int
   val upto : bool
@@ -52,9 +52,7 @@ let parse_fences fs = List.fold_right parse_fence fs []
 
     type relax = C.R.relax
 
-    let prefix = match O.prefix with
-    | None -> []
-    | Some ps -> parse_relaxs ps
+    let prefix = List.map parse_relaxs O.prefix
 
     let variant = O.variant
 
@@ -230,7 +228,7 @@ let () =
 (* Specific *)
     open Config
     let choice = !Config.mode
-    let prefix =  split !Config.prefix
+    let prefix =  List.rev_map LexUtil.split !Config.prefix
     let variant = !Config.variant
     let cumul = match !Config.cumul with
     | Empty -> Empty

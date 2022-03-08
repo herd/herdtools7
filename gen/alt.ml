@@ -24,7 +24,7 @@ module type AltConfig = sig
   val max_ins : int
   val choice : check
   type relax
-  val prefix : relax list
+  val prefix : relax list list
   val variant : Variant_gen.t -> bool
   type fence
   val cumul : fence list Config.cumul
@@ -317,7 +317,8 @@ module Make(C:Builder.S)
     let minint suff = c_minint 0 suff
 
 (* Prefix *)
-    let prefix_expanded = C.R.expand_relax_seq O.prefix
+    let prefix_expanded =
+      List.flatten (List.map C.R.expand_relax_seq O.prefix)
     let () =
       if O.verbose > 0 && O.prefix <> [] then begin
         eprintf "Prefixes:\n" ;
