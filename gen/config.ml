@@ -25,7 +25,7 @@ let arch = ref (`PPC: Archs.t)
 let typ = ref TypBase.default
 let hexa = ref false
 let tarfile = ref None
-let prefix = ref None
+let prefix = ref []
 let safes = ref None
 let relaxs = ref None
 let name = ref None
@@ -275,8 +275,8 @@ let speclist () =
     sprintf "<n> max number of edges per proc (default %i)" !max_ins)::
    ("-one", Arg.Unit (fun _ -> one := true),
     "<relax-list> specify a sole cycle")::
-  ("-prefix", Arg.String (fun s -> prefix := Some s),
-    "<relax-list> specify a prefix for cycles")::
+  ("-prefix", Arg.String (fun s -> prefix := s :: !prefix),
+    "<relax-list> specify a prefix for cycles, can be repeated")::
    ("-relax", Arg.String (fun s -> relaxs := Some s),
     "<relax-list> specify a relax list")::
    ("-mix", Arg.Bool (fun b -> mix := b),

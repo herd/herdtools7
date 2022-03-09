@@ -597,13 +597,51 @@ let var_fence f r = f default r
 (********)
 (* Deps *)
 (********)
-include Dep
 
-let pp_dp = function
+module D = Dep
+
+type csel = OkCsel|NoCsel
+
+type dp = D.dp * csel
+
+let fold_dpr f r =
+  D.fold_dpr
+    (fun d r -> f (d,NoCsel) (f (d,OkCsel) r))
+    r
+let fold_dpw f r =
+  D.fold_dpw
+    (fun d r -> f (d,NoCsel) (f (d,OkCsel) r))
+    r
+
+let pp_ddp =
+  let open D in
+  function
   | ADDR -> "Addr"
   | DATA -> "Data"
   | CTRL -> "Ctrl"
   | CTRLISYNC -> "CtrlIsb"
+
+let pp_dp (d,c) = match c with
+  | NoCsel ->  pp_ddp d
+  | OkCsel -> pp_ddp d^"Csel"
+
+let lift_dd = Misc.app_opt (fun d -> d,NoCsel)
+let ddr_default = lift_dd D.ddr_default
+let ddw_default = lift_dd D.ddw_default
+let ctrlr_default = lift_dd  D.ctrlr_default
+let ctrlw_default = lift_dd  D.ctrlw_default
+
+let lift_pred p (d,_) = p d
+let is_ctrlr dc = lift_pred D.is_ctrlr dc
+let is_addr dc = lift_pred D.is_addr dc
+
+let fst_dp (d,c) = match c with
+  | NoCsel -> List.map (fun d -> (d,NoCsel)) (D.fst_dp d)
+  | OkCsel -> []
+
+let sequence_dp (d1,c1) (d2,c2) = match c1 with
+  | NoCsel -> List.map (fun d -> d,c2) (D.sequence_dp d1 d2)
+  | OkCsel -> []
 
 (* Read-Modify-Write *)
 type rmw =  LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas
