@@ -119,7 +119,7 @@ test::
 		-conf ./herd/tests/instructions/AArch64.MTE/mte.cfg \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 MTE instructions tests: OK"
-	  
+
 test::
 	@ echo
 	$(HERD_REGRESSION_TEST) \
@@ -157,7 +157,6 @@ diy-test:
 		-diycross-arg 'Rfe,Fre,Coe' \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 diycross7 tests: OK"
-
 
 J=4
 test:: cata-test
@@ -329,3 +328,24 @@ v64:
 		-diycross-arg Coe,Fre \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64.mixed.v64 diycross7 tests: OK"
+
+test:: diy-store-test
+diy-store-test:
+	@ echo
+	$(HERD_DIYCROSS_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-diycross-path $(DIYCROSS) \
+		-libdir-path ./herd/libdir \
+		-expected-dir ./herd/tests/diycross/AArch64.store \
+		-diycross-arg -obs \
+		-diycross-arg four \
+		-diycross-arg -arch \
+		-diycross-arg AArch64 \
+		-diycross-arg 'Fenced**' \
+		-diycross-arg 'Rfe,Fre,Coe' \
+		-diycross-arg 'DpAddrdR,DpDatadW' \
+		-diycross-arg 'Pos**' \
+		-diycross-arg 'Store' \
+		-diycross-arg 'Rfe,Fre,Coe' \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 diycross7.store tests: OK"

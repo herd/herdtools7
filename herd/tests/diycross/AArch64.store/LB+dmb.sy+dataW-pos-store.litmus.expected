@@ -1,0 +1,15 @@
+Test LB+dmb.sy+dataW-pos-store Allowed
+States 6
+0:X1=0; 1:X1=0; [x]=3;
+0:X1=0; 1:X1=1; [x]=3;
+0:X1=1; 1:X1=0; [x]=3;
+0:X1=2; 1:X1=0; [x]=3;
+0:X1=2; 1:X1=1; [x]=3;
+0:X1=3; 1:X1=0; [x]=3;
+No
+Witnesses
+Positive: 0 Negative: 6
+Condition exists ([x]=3 /\ 0:X1=3 /\ 1:X1=1)
+Observation LB+dmb.sy+dataW-pos-store Never 0 6
+Hash=46dd84898474c77fc610d54a530de7f7
+
