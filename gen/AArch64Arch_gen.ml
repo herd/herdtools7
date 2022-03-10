@@ -538,10 +538,13 @@ let pp_fence f = match f with
 | Shootdown (d,op,sync) ->
    let tlbi = "TLBI" ^ pp_sync sync in
    sprintf "%s%s%s" tlbi
-     (add_dot TLBI.short_pp_op op) (add_dot pp_domain d)
+     (add_dot TLBI.short_pp_op op)
+     (match sync with
+      | NoSync -> ""
+      | Sync -> add_dot pp_domain d)
 
 let fold_cumul_fences f k =
-   do_fold_dmb_dsb C.moreedges (fun b k -> f (Barrier b) k) k
+   do_fold_dmb_dsb do_kvm C.moreedges (fun b k -> f (Barrier b) k) k
 
 let fold_shootdown =
   if do_kvm then
@@ -571,7 +574,7 @@ let fold_cachesync =
 let fold_all_fences f k =
   let k = fold_shootdown f k in
   let k = fold_cachesync f k in
-  fold_barrier C.moreedges (fun b k -> f (Barrier b) k) k
+  fold_barrier do_kvm C.moreedges (fun b k -> f (Barrier b) k) k
 
 
 let fold_some_fences f k =

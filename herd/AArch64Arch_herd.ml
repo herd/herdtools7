@@ -83,7 +83,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | _ -> false
 
     let barrier_sets =
-      do_fold_dmb_dsb true
+      do_fold_dmb_dsb false true
         (fun b k ->
           let tag = pp_barrier_dot b in
           (tag,is_barrier b)::k)
