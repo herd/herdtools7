@@ -317,8 +317,8 @@ module Make(C:Builder.S)
     let minint suff = c_minint 0 suff
 
 (* Prefix *)
-    let prefix_expanded =
-      List.flatten (List.map C.R.expand_relax_seq O.prefix)
+    let prefix_expanded = List.flatten (List.map C.R.expand_relax_seq O.prefix)
+
     let () =
       if O.verbose > 0 && O.prefix <> [] then begin
         eprintf "Prefixes:\n" ;
@@ -327,6 +327,7 @@ module Make(C:Builder.S)
             eprintf "  %s\n" (C.R.pp_relax_list rs))
           prefix_expanded
       end
+
     let prefixes = List.map edges_ofs prefix_expanded
 
     let rec mk_can_prefix = function
