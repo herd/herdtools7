@@ -61,8 +61,12 @@ type t =
   | Exp
 (* Instruction-fetch support (AKA "self-modifying code" mode) *)
   | Self
-  (* Test something *)
+(* Test something *)
   | Test
+(* One hundred tests *)
+  | T of int
+
+
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
@@ -70,7 +74,7 @@ let tags =
    "tagcheckprecise"; "tagcheckunprecise"; "precise"; "imprecise";
    "toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
-   "exp"; "self"; "test"; ]
+   "exp"; "self"; "test"; "T[0-9][0-9]"]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -106,7 +110,16 @@ let parse s = match Misc.lowercase s with
 | "exp" -> Some Exp
 | "self" -> Some Self
 | "test" -> Some Test
-| _ -> None
+| s ->
+   if String.length s = 3 then
+     match s.[0],s.[1],s.[2] with
+     | 't', ('0'..'9' as c1),('0'..'9' as c2) ->
+        let n =
+          (Char.code c1 - Char.code '0')*10 +
+            (Char.code c2 - Char.code '0') in
+        Some (T n)
+     | _ -> None
+   else None
 
 let pp = function
   | Success -> "success"
@@ -142,6 +155,7 @@ let pp = function
   | Exp -> "exp"
   | Self -> "self"
   | Test -> "test"
+  | T n -> Printf.sprintf "T%02i" n
 
 let compare = compare
 
