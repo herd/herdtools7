@@ -52,7 +52,10 @@ let parse_fences fs = List.fold_right parse_fence fs []
 
     type relax = C.R.relax
 
-    let prefix = List.map parse_relaxs O.prefix
+    let prefix =
+      match List.map parse_relaxs O.prefix with
+      | [] -> [[]] (* No prefix <=> one empty prefix *)
+      | pss -> pss
 
     let variant = O.variant
 
