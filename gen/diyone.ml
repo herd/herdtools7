@@ -135,10 +135,16 @@ module Make(O:Config) (M:Builder.S) =
         let pp_rs = List.map LexUtil.split pp_rs in
         let pp_rs = List.concat pp_rs in
         let rs = List.map M.R.parse_relax pp_rs in
+        if O.verbose > 0 then
+          Printf.eprintf
+            "Parsed relaxs: %s\n" (M.R.pp_relax_list rs) ;
         let es =
           List.fold_right
             (fun r k -> M.R.edges_of r @ k)
             rs [] in
+        if O.verbose > 0 then
+          Printf.eprintf
+            "Parsed edges: %s\n" (M.E.pp_edges es) ;
         match es with
         | [] ->
             let dump_names =

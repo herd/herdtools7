@@ -1,0 +1,15 @@
+Test MP+dmb.sy+addrR-pos-store Allowed
+States 6
+1:X1=0; 1:X3=1; 1:X5=1; [x]=1;
+1:X1=0; 1:X3=1; 1:X5=1; [x]=2;
+1:X1=0; 1:X3=1; 1:X5=2; [x]=2;
+1:X1=0; 1:X3=2; 1:X5=2; [x]=2;
+1:X1=1; 1:X3=1; 1:X5=1; [x]=1;
+1:X1=1; 1:X3=2; 1:X5=2; [x]=2;
+No
+Witnesses
+Positive: 0 Negative: 6
+Condition exists ([x]=2 /\ 1:X1=1 /\ 1:X3=0 /\ 1:X5=1)
+Observation MP+dmb.sy+addrR-pos-store Never 0 6
+Hash=87fa6a4609f1907b491f1563f5314d5a
+

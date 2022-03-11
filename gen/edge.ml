@@ -57,6 +57,7 @@ module type S = sig
 (* Fake edges *)
     | Id              (* Annotation on access *)
     | Insert of fence (* Insert some code     *)
+    | Store           (* Add store at thread code start *)
     | Node of dir     (* Isolated event       *)
 (* fancy *)
     | Hat
@@ -66,7 +67,7 @@ module type S = sig
 
   val is_id : tedge -> bool
   val is_node : tedge -> bool
-  val is_insert : tedge -> bool
+  val is_insert_store : tedge -> bool
   val is_non_pseudo : tedge -> bool
   val compute_rmw : rmw -> int -> int -> int
 
@@ -220,6 +221,7 @@ and type rmw = F.rmw = struct
     | Back of com
     | Id
     | Insert of fence
+    | Store
     | Node of dir
     | Hat
     | Rmw of rmw
@@ -228,12 +230,12 @@ and type rmw = F.rmw = struct
 
   let is_id = function
     | Id -> true
-    | Insert _|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Store|Insert _|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _
     | Irf _|Ifr _ -> false
 
-  let is_insert = function
-    | Insert _ -> true
+  let is_insert_store = function
+    | Store|Insert _ -> true
     | Id|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _
     | Irf _|Ifr _ -> false
@@ -242,10 +244,10 @@ and type rmw = F.rmw = struct
     | Node _ -> true
     | Id|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Insert _
-     | Irf _|Ifr _ -> false
+    | Store|Irf _|Ifr _ -> false
 
   let is_non_pseudo = function
-    | Insert _ |Id|Node _-> false
+    | Store|Insert _ |Id|Node _-> false
     | Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _
     | Irf _|Ifr _ -> true
@@ -321,6 +323,7 @@ and type rmw = F.rmw = struct
     | Back c -> sprintf "%sBack" (pp_com c)
     | Id -> "Id"
     | Insert f -> F.pp_fence f
+    | Store -> "Store"
     | Node W -> "Write"
     | Node R -> "Read"
     | Node J -> assert false
@@ -388,6 +391,7 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
   | Leave c|Back c -> do_dir_tgt_com c
   | Id -> not_that e "do_dir_tgt"
   | Insert _ -> NoDir
+  | Store -> Dir W
   | Node d -> Dir d
 
 
@@ -398,11 +402,12 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
   | Leave c|Back c -> do_dir_src_com c
   | Id -> not_that e "do_dir_src"
   | Insert _ -> NoDir
+  | Store -> Dir W
   | Node d -> Dir d
 
   let do_loc_sd e = match e with
   | Po (sd,_,_) | Fenced (_,sd,_,_) | Dp (_,sd,_) -> sd
-  | Insert _|Node _|Fr _|Ws _|Rf _|Hat|Rmw _|Id|Leave _|Back _
+  | Insert _|Store|Node _|Fr _|Ws _|Rf _|Hat|Rmw _|Id|Leave _|Back _
   | Ifr _| Irf _ -> Same
 
   let do_is_diff e = match do_loc_sd e with
@@ -427,6 +432,7 @@ let fold_tedges f r =
   let r = F.fold_rmw (fun rmw -> f (Rmw rmw)) r in
   let r = fold_sd_extr_extr (fun sd e1 e2 r -> f (Po (sd,e1,e2)) r) r in
   let r = F.fold_all_fences (fun fe -> f (Insert fe)) r in
+  let r = f Store r in
   let r =
     F.fold_all_fences
       (fun fe ->
@@ -500,7 +506,7 @@ let fold_tedges f r =
                          f e k
                      | _,_ -> k
                  end
-                 | Insert _|Node _ ->
+                 | Insert _|Node _|Store  ->
                      begin match a1,a2 with
                      | None,None ->
                          let e =  { a1; a2;edge=te; } in
@@ -687,13 +693,13 @@ let fold_tedges f r =
   | Fenced(f,sd,src,_) -> Fenced(f,sd,src,Dir d)
   | Dp (dp,sd,_) -> Dp (dp,sd,Dir d)
   | Rf _ | Hat|Irf _|Ifr _
-  | Insert _|Id|Node _|Ws _|Fr _|Rmw _|Leave _|Back _-> e
+  | Insert _|Store|Id|Node _|Ws _|Fr _|Rmw _|Leave _|Back _-> e
 
   and do_set_src d e = match e with
   | Po(sd,_,tgt) -> Po(sd,Dir d,tgt)
   | Fenced(f,sd,_,tgt) -> Fenced(f,sd,Dir d,tgt)
   | Fr _|Hat|Dp _|Ifr _|Irf _
-  | Insert _|Id|Node _|Ws _|Rf _|Rmw _|Leave _|Back _ -> e
+  | Insert _|Store|Id|Node _|Ws _|Rf _|Rmw _|Leave _|Back _ -> e
 
   let set_tgt d e = { e with edge = do_set_tgt d e.edge ; }
   and set_src d e = { e with edge = do_set_src d e.edge ; }
@@ -705,7 +711,7 @@ let fold_tedges f r =
   | Id |Po _|Dp _|Fenced _|Rmw _ -> Int
   | Rf ie|Fr ie|Ws ie|Irf ie|Ifr ie -> ie
   | Leave _|Back _|Hat -> Ext
-  | Insert _|Node _ -> Int
+  | Insert _|Store|Node _ -> Int
 
   type full_ie = IE of ie | LeaveBack
 
@@ -767,7 +773,7 @@ let fold_tedges f r =
 
   let do_expand_edge e f =
     match e.edge with
-    | Insert _|Id|Node _|Rf _ | Fr _ | Ws _
+    | Insert _|Store|Id|Node _|Rf _ | Fr _ | Ws _
     | Hat |Rmw _|Dp _|Leave _|Back _|Ifr _|Irf _
       -> f e
     | Po(sd,e1,e2) ->
@@ -793,11 +799,11 @@ let fold_tedges f r =
   let expand_edges es f = do_expand_edges (List.rev es) f []
 
 (* resolve *)
-  let rec find_non_insert = function
+  let rec find_non_insert_store = function
     | [] -> raise Not_found
     | e::es -> begin match e.edge with
-      | Insert _ ->
-          let bef,ni,aft = find_non_insert es in
+      | Insert _|Store ->
+          let bef,ni,aft = find_non_insert_store es in
           e::bef,ni,aft
       | _ ->
           [],e,es
@@ -965,20 +971,20 @@ let fold_tedges f r =
   | []|[_] -> es0
   | e::es ->
       let rec do_rec e es = match e.edge with
-      | Insert _ ->
+      | Insert _|Store ->
           let fst,nxt,es = do_recs es in
           fst,e,nxt::es
       | _ ->
           begin try
-            let es0,e1,es1 = find_non_insert es in
+            let es0,e1,es1 = find_non_insert_store es in
             let e,e1 = resolve_pair e e1 in
             let fst,f,es = do_recs (es0@(e1::es1)) in
             fst,e,f::es
           with Not_found -> try
-            let _,e1,_ = find_non_insert es0 in
+            let _,e1,_ = find_non_insert_store es0 in
             let e,e1 = resolve_pair e e1 in
             e1,e,es
-          with Not_found -> Warn.user_error "No non-insert node in cycle"
+          with Not_found -> Warn.user_error "No non-insert-store node in cycle"
           end
       and do_recs = function
 (* This case is handled by Not_found handler above *)

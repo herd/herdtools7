@@ -68,6 +68,7 @@ module Make
          | Irf Int -> Some "irfi"
          | Ifr Ext -> Some "ifre"
          | Ifr Int -> Some "ifri"
+         | Store -> Some "store"
          | Node _ -> assert false
          | _ -> None
 
@@ -76,14 +77,14 @@ module Make
            -> true
          |Rf _|Ws _|Fr _
          |Id|Hat|Leave _|Back _
-         |Insert _|Node _|Rmw _|Irf _|Ifr _
+         |Insert _|Store|Node _|Rmw _|Irf _|Ifr _
            -> false
        and ambiguous_source = function
          | Po _|Fenced _
            -> true
          |Dp _| Rf _|Ws _|Fr _
          |Id|Hat|Leave _|Back _
-         |Insert _|Node _|Rmw _|Irf _|Ifr _
+         |Insert _|Store|Node _|Rmw _|Irf _|Ifr _
            -> false
 
        let plain  = Misc.lowercase (A.pp_plain)

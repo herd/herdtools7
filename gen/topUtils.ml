@@ -136,8 +136,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     let io_of_thread n = match n with
     | []|[_] -> None
     | n0::rem ->
-        let n0 = C.C.find_non_insert n0
-        and n1 = C.C.find_non_insert_prev (Misc.last rem) in
+        let n0 = C.C.find_non_insert_store n0
+        and n1 = C.C.find_non_insert_store_prev (Misc.last rem) in
         Some (io_of_node n0,io_of_node n1)
 
     let io_of_detour _n = None

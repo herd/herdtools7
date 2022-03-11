@@ -1,0 +1,14 @@
+Test S+dmb.sy+addrR-pos-store Allowed
+States 5
+1:X1=0; 1:X3=1; [x]=2;
+1:X1=0; 1:X3=1; [x]=3;
+1:X1=0; 1:X3=3; [x]=2;
+1:X1=1; 1:X3=1; [x]=2;
+1:X1=1; 1:X3=3; [x]=2;
+No
+Witnesses
+Positive: 0 Negative: 6
+Condition exists ([x]=3 /\ 1:X1=1 /\ 1:X3=0)
+Observation S+dmb.sy+addrR-pos-store Never 0 6
+Hash=b02e1f5e5cc2f56cffc34792b3ef7c76
+

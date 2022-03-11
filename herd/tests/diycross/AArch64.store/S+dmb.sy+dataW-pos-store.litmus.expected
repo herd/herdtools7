@@ -1,0 +1,12 @@
+Test S+dmb.sy+dataW-pos-store Allowed
+States 3
+1:X1=0; [x]=3;
+1:X1=0; [x]=4;
+1:X1=1; [x]=3;
+No
+Witnesses
+Positive: 0 Negative: 6
+Condition exists ([x]=4 /\ 1:X1=1)
+Observation S+dmb.sy+dataW-pos-store Never 0 6
+Hash=9b9f360bfb20364426a9d2e633d7a612
+
