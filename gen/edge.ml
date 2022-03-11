@@ -173,7 +173,7 @@ and type rmw = F.rmw = struct
   let ()  = ignore (Cfg.naturalsize)
   let do_self = Cfg.variant Variant_gen.Self
   let do_mixed = Variant_gen.is_mixed Cfg.variant
-  let do_kvm = Cfg.variant Variant_gen.KVM
+  let do_kvm =  Variant_gen.is_kvm Cfg.variant
   let do_disjoint = Cfg.variant Variant_gen.MixedDisjoint
   let do_strict_overlap = Cfg.variant Variant_gen.MixedStrictOverlap
 

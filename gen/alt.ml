@@ -39,6 +39,7 @@ module Make(C:Builder.S)
     =
   struct
     let mixed = Variant_gen.is_mixed O.variant
+    let do_kvm = Variant_gen.is_kvm  O.variant
     module D = DumpAll.Make(O) (C)
     open C.E
     open C.R
@@ -240,14 +241,33 @@ module Make(C:Builder.S)
         | _,_ -> false
       else fun _ _ -> true
 
+    let rec hd_non_insert = function
+      | [] -> assert false
+      | [x] -> x
+      | x::xs ->
+          if C.E.is_insert_store x.C.E.edge then hd_non_insert xs
+          else x
+    let last_non_insert xs = hd_non_insert (List.rev xs)
+
     let do_compat safes po_safe xs ys =
-      (*
-      eprintf "do_compat '%s' '%s'\n"
-        (C.E.pp_edges xs)
-        (C.E.pp_edgesq ys) ;
-      *)
       let x = Misc.last xs and y = List.hd ys in
-      C.E.can_precede x y && check_mixed x y && pair_ok safes po_safe xs ys x y
+      let r =
+        C.E.can_precede x y
+        && check_mixed x y
+        && pair_ok safes po_safe xs ys x y
+        &&
+          begin
+            if do_kvm then
+              C.E.can_precede (hd_non_insert xs) (last_non_insert ys)
+            else true
+          end in
+      if O.verbose > 2 then begin
+        eprintf "do_compat '%s' '%s' = %b\n"
+          (C.E.pp_edges xs)
+          (C.E.pp_edges ys) r
+      end ;
+      r
+
 
     let can_precede safes po_safe (_,xs) k = match k with
     | [] -> true
