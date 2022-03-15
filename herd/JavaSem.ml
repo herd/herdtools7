@@ -1,0 +1,161 @@
+(* Java instruction semantics *)
+
+module Make
+	(Conf:Sem.Config)
+	(V:Value.S) = struct
+
+	module Java = JavaArch_herd.Make(SemExtra.ConfigToArchConfig(Conf))(V)
+	module Act = JavaAction.Make(Java)
+
+	include SemExtra.Make(Conf)(Java)(Act)
+
+	let barriers = []
+	let isync = None
+
+	let nat_sz = V.Cst.Scalar.machsize
+
+	let atomic_pair_allowed e1 e2 = (e1.E.iiid == e2.E.iiid)
+
+	module Mixed(SZ : ByteSize.S) = struct
+
+      let (>>=)   = M.(>>=)
+      let (>>*=)  = M.(>>*=)
+      let (>>|)   = M.(>>|)
+      let (>>!)   = M.(>>!)
+      let (>>>)   = M.cseq
+      let (>>>>)  = M.(>>>>)
+
+      let no_mo = AccessModes.NA
+
+      let read_loc is_data mo =
+        M.read_loc is_data (fun loc v -> Act.Access (Dir.R, loc, v, mo, nat_sz))
+
+      let  read_exchange is_data vstored mo =
+        M.read_loc is_data (fun loc v -> Act.RMW (loc,v,vstored,mo,nat_sz))
+
+      let read_reg is_data r ii =
+        read_loc is_data no_mo (A.Location_reg (ii.A.proc,r)) ii
+
+      let read_mem is_data mo a =
+        read_loc is_data mo (A.Location_global a)
+
+      let read_mem_atomic is_data a loc =
+        M.read_loc is_data
+          (fun loc v -> Act.Access (Dir.R, loc, v,  a, nat_sz))
+          (A.Location_global loc)
+
+      let read_mem_atomic_known is_data a loc v =
+        M.read_loc is_data
+          (fun loc _v -> Act.Access (Dir.R, loc, v,  a, nat_sz))
+          (A.Location_global loc)
+
+      let write_loc mo loc v ii =
+        M.mk_singleton_es (Act.Access (Dir.W, loc, v, mo, nat_sz)) ii >>! v
+
+      let write_reg r v ii = write_loc no_mo (A.Location_reg (ii.A.proc,r)) v ii
+      let write_mem mo a  = write_loc mo (A.Location_global a)
+      let write_mem_atomic a loc v ii =
+        M.mk_singleton_es
+          (Act.Access (Dir.W, A.Location_global loc, v, a, nat_sz)) ii >>! v
+
+      let fetch_op op v am l ii =
+          M.fetch op v
+          (fun v vstored ->
+            Act.RMW (A.Location_global l, v, vstored, am, nat_sz))
+            ii
+
+      let rec build_semantics_expr is_data e ii : V.v M.t =
+        match e with
+        | JavaBase.LoadReg reg -> read_reg is_data reg ii
+
+        | JavaBase.LoadMem (vh, am) -> (read_reg is_data vh ii) >>=
+                              (fun l -> read_mem is_data am l ii)
+
+        | JavaBase.Const i -> M.unitT (V.maybevToV (ParsedConstant.intToV i))
+
+        | JavaBase.Op (op, e1, e2) ->
+              (build_semantics_expr is_data e1 ii >>|
+              build_semantics_expr is_data e2 ii) >>= fun (v1, v2) ->
+              M.op op v1 v2
+
+        | JavaBase.Rmw (vh, (op, am), e) ->
+              (read_reg is_data vh ii) >>|
+              (build_semantics_expr true e ii) >>=
+              (fun (l , v) -> fetch_op op v am l ii)
+
+        | JavaBase.CAS (vh, (read_am, write_am), expect, dest) ->
+              (read_reg is_data vh ii) >>= fun loc_vh ->
+              (build_semantics_expr true expect ii) >>= fun v_expect ->
+              (read_mem true read_am loc_vh ii) >>*= fun v_vh ->
+              M.altT
+                ((M.neqT v_vh v_expect) >>! v_vh)
+                ((build_semantics_expr true dest ii) >>= fun v_dest ->
+                    (M.mk_singleton_es
+                    (Act.RMW (A.Location_global loc_vh,
+                      v_expect, v_dest, 
+                            (match read_am , write_am with
+                              | AccessModes.Acquire, AccessModes.Plain -> read_am
+                              | AccessModes.Plain, AccessModes.Release -> write_am
+                              | _ -> write_am), nat_sz))
+                    ii) >>! v_expect)
+
+      let build_cond e ii =
+        let open Op in
+        let e = match e with
+        | JavaBase.Op (_,_,_) -> e
+        | _ -> JavaBase.Op (Ne,e,Java.Const 0) in
+        build_semantics_expr false e ii
+
+      let rec build_semantics ii : (A.program_order_index * B.t) M.t =
+        let ii =
+            {ii with A.program_order_index = A.next_po_index ii.A.program_order_index} in
+
+            match ii.A.inst with
+            | JavaBase.StoreReg (reg, exp) -> (
+                        (build_semantics_expr true exp ii) >>=
+                        (fun v -> write_reg reg v ii) >>=
+                        (fun _ -> M.unitT (ii.A.program_order_index, B.Next [])))
+            | JavaBase.StoreMem (vh, am, e) -> (
+                    (read_reg false vh ii) >>|
+                    (build_semantics_expr true e ii) >>=
+                    (fun (l, v) -> write_mem am l v ii) >>=
+                    (fun _ -> M.unitT (ii.A.program_order_index, B.Next [])))
+            | JavaBase.If (grd, thn, Some e) -> (
+                    build_cond grd ii >>>> fun ret ->
+                        let ii' = {
+                            ii with A.program_order_index =
+                            A.next_po_index ii.A.program_order_index;
+                        } in
+                        let then_branch = build_semantics {ii' with A.inst = thn} in
+                        let else_branch = build_semantics {ii' with A.inst = e} in
+                        M.choiceT ret then_branch else_branch
+                )
+            | JavaBase.If (grd, thn, None) -> (
+                    build_cond grd ii >>>> fun ret ->
+                        let ii' = {
+                            ii with A.program_order_index =
+                            A.next_po_index ii.A.program_order_index;
+                        } in
+                        let then_branch = build_semantics {ii' with A.inst = thn} in
+                        M.choiceT ret then_branch (build_semantics_list [] ii)
+                )
+
+            | JavaBase.Seq ins_lst ->
+                    build_semantics_list ins_lst ii
+            | JavaBase.Fence mo -> M.mk_fence (Act.Fence mo) ii
+                                    >>= fun _ -> M.unitT
+                                  (ii.A.program_order_index, B.Next [])
+            | _ -> assert false (* others are not implemented yet *)
+
+    and build_semantics_list insts ii =
+        match insts with
+        | [] -> M.unitT (ii.A.program_order_index, B.Next [])
+        | hd :: tl ->
+            let ii = {ii with A.inst = hd; } in
+            (build_semantics ii) >>> fun (prog_order, _branch) ->
+                build_semantics_list tl {ii with A.program_order_index = prog_order;}
+    
+    let spurious_setaf _ = assert false
+
+    end
+end

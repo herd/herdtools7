@@ -60,8 +60,6 @@ type t =
   | Self
 (* Test something *)
   | Test
-(* One hundred tests *)
-  | T of int
 
 val compare : t -> t -> int
 val tags : string list

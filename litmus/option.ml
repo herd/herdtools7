@@ -207,7 +207,8 @@ let get_default arch = match arch with
 | `CPP
 | `LISA
 | `GPU_PTX
-| `OpenCL -> assert false
+| `OpenCL 
+| `JAVA -> assert false
 
 let replace_config f =
   let g = !mod_config in

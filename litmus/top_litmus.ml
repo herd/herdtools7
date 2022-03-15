@@ -594,7 +594,7 @@ end = struct
                end in
              let module X = Make'(Cfg)(Arch') in
              X.compile
-          | `CPP | `LISA -> assert false
+          | `CPP | `LISA | `JAVA -> assert false
         in
         aux arch cycles hash_env name in_chan out_chan splitted
       end else begin (* Excluded explicitely, (check_tname), do not warn *)

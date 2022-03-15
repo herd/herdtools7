@@ -60,12 +60,8 @@ type t =
   | Exp
 (* Instruction-fetch support (AKA "self-modifying code" mode) *)
   | Self
-(* Test something *)
+  (* Test something *)
   | Test
-(* One hundred tests *)
-  | T of int
-
-
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
@@ -73,7 +69,7 @@ let tags =
     Precision.tags @
    ["toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
-   "exp"; "self"; "test"; "T[0-9][0-9]"]
+   "exp"; "self"; "test"; ]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -156,7 +152,6 @@ let pp = function
   | Exp -> "exp"
   | Self -> "self"
   | Test -> "test"
-  | T n -> Printf.sprintf "T%02i" n
 
 let compare = compare
 
