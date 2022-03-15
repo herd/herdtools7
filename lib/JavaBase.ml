@@ -148,6 +148,7 @@ let rec dump_instruction  i =
 
 
 let dump_parsedInstruction = dump_instruction
+and dump_instruction_hash = dump_instruction
 
 let pp_instruction _mode = dump_instruction
 

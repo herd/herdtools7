@@ -381,7 +381,7 @@ module Top (TopConf:Config) = struct
         let module JavaS  = JavaSem.Make(Conf)(Int64Value) in
         let module JavaM  = JavaMem.Make(ModelConfig)(JavaS) in
         let module P      = JavaGenParser_lib.Make (Conf) (Java) (JavaLexParse) in
-        let module X      = Make (JavaS) (P) (NoCheck) (JavaM) in
+        let module X      = Make (JavaS) (P) (NoCheck) (JavaM) (Conf) in
         
         X.run dirty start_time name chan env splitted
 

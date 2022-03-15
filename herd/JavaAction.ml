@@ -117,6 +117,8 @@ end = struct
   | Access (_,A.Location_global _,_,_,sz) -> sz
   | _ -> assert false
 
+  let is_pte_access _ = false
+
   let is_mem_store a = match a with
   | Access (W,A.Location_global _,_,_,_)
   | RMW (A.Location_global _,_,_,_,_)
@@ -179,13 +181,9 @@ end = struct
     (is_mem a1 && is_mem a2) || (is_reg_any a1 && is_reg_any a2)
 
 
-(*   let is_commit_bcc _ = false
-  let is_commit_pred _ = false *)
   let arch_rels = []
   let arch_dirty = []
-(*   let is_pod _ = false *)
   let is_explicit _ = true
-  let is_implicit_pte_read _ = false
   let is_fault _ = false
   let is_tag _ = false
   let toofar msg = TooFar msg

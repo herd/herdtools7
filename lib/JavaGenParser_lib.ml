@@ -59,8 +59,8 @@ end
 
 module DumpJava = struct
   open JavaAst
-  type code = (int * string list option) * JavaBase.pseudo list
-  let dump_prog ((proc, _) , body) =
+  type code = MiscParser.proc * JavaBase.pseudo list
+  let dump_prog ((proc, _, _) , body) =
     let body_str =
       let unwrapped = (List.map (fun ps -> match ps with
                                           | JavaBase.Instruction i -> i
@@ -171,7 +171,7 @@ struct
     let all_locs = U.get_visible_locs locs final in
 
     (* transform from JavaAST.threadBody to a pair with the same content *)
-    let prog =  List.map (fun p -> ((p.JavaAst.proc, None), p.JavaAst.body)) prog in
+    let prog =  List.map (fun p -> ((p.JavaAst.proc, None, MiscParser.Main), p.JavaAst.body)) prog in
 
 
     (* The output of the parser *)
