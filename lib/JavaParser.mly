@@ -24,16 +24,15 @@ open Misc
 %token <string> VARHANDLE
 %token <int> PROC
 %token LPAR RPAR COMMA LBRACE RBRACE
-%token INT DOUBLE
+%token INT
 
 %token <int> CONSTANT
-%token NULL
-%token SEMI COLON EQ EQ_OP NEQ_OP LT LE GT GE DOT
+%token SEMI EQ EQ_OP NEQ_OP LT LE GT GE DOT
 %token XOR OR
 %token AND
 %token ADD SUB
 %token MUL DIV
-%token WHILE IF ELSE
+%token IF ELSE
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
 %token <AccessModes.t> WRITE
