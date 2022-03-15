@@ -1,0 +1,9 @@
+"Uniproc model"
+
+include "fences.cat"
+include "cos.cat"
+
+irreflexive (fr;rf);po as CoRR
+
+
+
