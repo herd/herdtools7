@@ -62,7 +62,7 @@ module type S = sig
   val to_fault : action -> A.fault option
   val get_mem_dir : action -> Dir.dirn
   val get_mem_size : action -> MachSize.sz
-  val is_implicit_pte_read : action -> bool
+  val is_pte_access : action -> bool
   val is_explicit : action ->bool
 
 (* relative to the registers of the given proc *)

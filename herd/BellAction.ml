@@ -114,7 +114,7 @@ end = struct
   let is_additional_mem _ = false
 
   (* Unimplemented *)
-  let is_implicit_pte_read _ = assert false
+  let is_pte_access _ = assert false
 
   (* All accesses are explicit *)
   let is_explicit _ = true
