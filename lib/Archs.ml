@@ -69,12 +69,14 @@ type t = [
   | `C
   | `CPP
   | `LISA
+  | `JAVA
 ]
 
 let tags =
   "C"
   ::"CPP"
   ::"LISA"
+  :: "JAVA"
   ::System.tags
 
 let parse s = match System.parse s with
@@ -86,6 +88,7 @@ let parse s = match System.parse s with
         Warn.warn_always "Bell is deprecated, use LISA instead";
         Some `LISA
       | "LISA" -> Some `LISA
+      | "JAVA" | "Java" -> Some `JAVA
       | _ -> None
   end
   | a -> a
@@ -94,6 +97,7 @@ let pp = function
   | `C -> "C"
   | `CPP -> "C++"
   | `LISA -> "LISA"
+  | `JAVA -> "Java"
   | #System.arch as a -> System.pp a
 
 let aarch64 = `AArch64
@@ -106,12 +110,13 @@ let c = `C
 let cpp = `CPP
 let lisa = `LISA
 let x86_64 = `X86_64
+let java = `JAVA
 
 let compare = compare
 
 let get_sysarch a ca = match a with
   | #System.arch as a -> a
-  |`CPP|`LISA -> `Unknown
+  |`CPP|`LISA | `JAVA -> `Unknown
   | `C -> ca
 
 let check_carch a = match a with

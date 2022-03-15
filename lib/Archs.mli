@@ -47,6 +47,7 @@ type t = [
   | `C
   | `CPP
   | `LISA
+  | `JAVA
   ]
 
 val tags : string list
@@ -64,6 +65,7 @@ val  x86 : t
 val  riscv : t
 val  c : t
 val  cpp : t
+val  java : t
 val  lisa : t
 val  x86_64 : t
 

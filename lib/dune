@@ -1,4 +1,4 @@
-(ocamllex AArch64Lexer ARMLexer BellLexer CLexer lexHint lexOutMapping lexRename lexSplit lexUtils MIPSLexer modelLexer PPCLexer RISCVLexer scopeLexer splitter stateLexer X86Lexer X86_64Lexer echo dirtyBit lexScan)
+(ocamllex AArch64Lexer ARMLexer BellLexer CLexer lexHint lexOutMapping lexRename lexSplit lexUtils MIPSLexer modelLexer PPCLexer RISCVLexer scopeLexer splitter stateLexer X86Lexer X86_64Lexer echo dirtyBit lexScan JavaLexer)
 
 
 
@@ -10,6 +10,7 @@
 (menhir (modules X86_64Parser) (flags  --fixed-exception))
 (menhir (modules modelParser) (flags  --fixed-exception))
 (menhir (modules RISCVParser) (flags  --fixed-exception))
+(menhir (modules JavaParser) (flags  --fixed-exception))
 (menhir (modules stateParser) (flags  --explain --fixed-exception))
 
 (menhir (modules procRules scopeRules  BellExtraRules AArch64Parser)
