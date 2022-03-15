@@ -144,6 +144,9 @@ end = struct
         end in
         let module X = Make (Bell) (BellLexParse) in
         X.zyva chan splitted
+
+    | `JAVA 
+
     | `CPP as a -> Warn.fatal "no support for arch '%s'" (Archs.pp a)
     | `C ->
         let module C = CBase in
@@ -328,6 +331,9 @@ module Tops
             end in
             let module X = Make (Bell) (BellLexParse) in
             X.zyva
+
+        | `JAVA 
+        
         | `CPP as a -> Warn.fatal "no support for arch '%s'" (Archs.pp a)
         | `C ->
             let module C = CBase in

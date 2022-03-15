@@ -306,7 +306,9 @@ let () =
         let typ = !Config.typ
       end in
       let module M = Make(CCompile_gen.Make(CoC))(Co) in
-      M.go in
+      M.go 
+  | `JAVA -> assert false 
+  in
   try
     go !Config.size relax_list safe_list ;
     exit 0

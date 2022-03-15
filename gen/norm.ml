@@ -127,5 +127,6 @@ let () =
       M.zyva
   | `C | `CPP ->
       let module M = Build(CArch_gen) in
-      M.zyva)
+      M.zyva
+  | `JAVA -> assert false)
     args

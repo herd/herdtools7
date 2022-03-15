@@ -132,5 +132,6 @@ let () =
   | `C ->
       let module M = Make(CArch_gen) in
       M.zyva
-  | `CPP -> Warn.fatal "CCP arch in atomize")
+  | `CPP -> Warn.fatal "CCP arch in atomize"
+  | `JAVA -> Warn.fatal "JAVA arch in atomize")
      pp_es

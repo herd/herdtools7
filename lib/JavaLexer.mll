@@ -114,7 +114,6 @@ rule token = parse
 | ';' { SEMI }
 | ',' { COMMA }
 | "||" { OR }
-| ':' { COLON }
 | '*' { MUL }
 | '/' { DIV }
 | '+' { ADD }
@@ -125,7 +124,6 @@ rule token = parse
 | ')' { RPAR }
 | '{' { LBRACE }
 | '}' { RBRACE }
-| "while" { WHILE }
 | "if"    { IF }
 | "else"  { ELSE }
 | '=' { EQ }

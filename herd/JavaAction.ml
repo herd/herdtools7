@@ -105,9 +105,9 @@ end = struct
   | Access (R,A.Location_reg (q,_),_,_,_) -> p = q
   | _ -> false
 
-  let is_reg_any a = match a with
+  (* let is_reg_any a = match a with
   | Access (_,A.Location_reg _,_,_,_) -> true
-  | _ -> false
+  | _ -> false *)
 
   let get_mem_dir a = match a with
   | Access (d,A.Location_global _,_,_,_) -> d
@@ -179,11 +179,11 @@ end = struct
     (is_mem a1 && is_mem a2) || (is_reg_any a1 && is_reg_any a2)
 
 
-  let is_commit_bcc _ = false
-  let is_commit_pred _ = false
+(*   let is_commit_bcc _ = false
+  let is_commit_pred _ = false *)
   let arch_rels = []
   let arch_dirty = []
-  let is_pod _ = false
+(*   let is_pod _ = false *)
   let is_explicit _ = true
   let is_implicit_pte_read _ = false
   let is_fault _ = false
@@ -251,6 +251,6 @@ let undetermined_vars_in_action a =
     "O", mo_matches AccessModes.Opaque
  ]
 
-  let arch_fences = []
+  (* let arch_fences = [] *)
 
 end
