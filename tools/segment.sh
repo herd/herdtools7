@@ -73,6 +73,7 @@ fi
 # create the config files
 whole=""
 for ((i=0; i<${seg_size}; i++)); do
+    cd src && rm -rf src${i} && mkdir src${i} && cd ..
     for aspect in "${array2[@]:(i*${relax_size}+1):${relax_size}}"; do
         whole+="$aspect "
     done
@@ -86,7 +87,7 @@ $ol
 
 -name Armv8-MIXED-ext-forbidden-$i-
 
--relaxlist Rfe Fre Wse Hat $whole" >./src/${filename}${i}.conf
+-relaxlist Rfe Fre Wse Hat $whole" >./src/src${i}/${filename}${i}.conf
     whole=""
 done
 
@@ -94,34 +95,15 @@ done
 for ((i=0; i<${seg_size}; i++)); do
     if [ $timeout -eq 0 ]
     then
-        diy7 -conf ./src/${filename}${i}.conf
+        diy7 -o ./src/src${i} -conf ./src/src${i}/${filename}${i}.conf
     else
-       diy7 -conf ./src/${filename}${i}.conf& read -t $timeout || kill $!
+        diy7 -o ./src/src${i} -conf ./src/src${i}/${filename}${i}.conf& read -t $timeout || kill $!
     fi
 done
 
 
-# read @all to get version information
-text_test=""
-contents=$(cat @all)
-echo "$text_test" >@all
 
-count=0
-while read -r line
-do
-    ((count++))
-    if [ $count = 1 ]
-    then
-       echo "$line" | awk  -F '-relaxlist' -v relaxations="$relaxations" '{print $1 FS " " relaxations}' >> @all
-    else
-        echo "$line" >> @all
-    fi
-done <<< "$contents"
-
-
-
-# construct @all file
-for file in *.litmus; do
-    echo "$file\n" >>@all
+for ((i=0; i<${seg_size}; i++)); do
+    echo "./src/src${i}/@all" >>@all
+    echo "\n" >>@all
 done
-
