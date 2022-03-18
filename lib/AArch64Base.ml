@@ -349,22 +349,25 @@ type barrier =
   | DSB of mBReqDomain*mBReqTypes
   | ISB
 
-let fold_barrier_option more f k =
+let fold_barrier_option kvm more f k =
   if more then
     fold_domain
       (fun d k ->
         fold_type (fun t k -> f d t k) k)
       k
   else
+    let k =
+      if kvm then fold_type (fun t k -> f ISH t k) k
+      else k in
     fold_type (fun t k -> f SY t k) k
 
-let do_fold_dmb_dsb more f k =
-  fold_barrier_option more
+let do_fold_dmb_dsb kvm more f k =
+  fold_barrier_option kvm more
     (fun d t k -> f (DMB (d,t)) (f (DSB (d,t)) k))
     k
 
-let fold_barrier more f k =
-  let k = do_fold_dmb_dsb more f k in
+let fold_barrier kvm more f k =
+  let k = do_fold_dmb_dsb kvm more f k in
   let k = f ISB k in
   k
 

@@ -173,6 +173,7 @@ and type rmw = F.rmw = struct
   let ()  = ignore (Cfg.naturalsize)
   let do_self = Cfg.variant Variant_gen.Self
   let do_mixed = Variant_gen.is_mixed Cfg.variant
+  let do_kvm =  Variant_gen.is_kvm Cfg.variant
   let do_disjoint = Cfg.variant Variant_gen.MixedDisjoint
   let do_strict_overlap = Cfg.variant Variant_gen.MixedStrictOverlap
 
@@ -723,7 +724,7 @@ let fold_tedges f r =
 
   let can_precede_dirs  x y = match x.edge,y.edge with
   | (Id,_)|(_,Id) -> true
-  | (Insert _,Insert _) -> false
+  | (Insert _,Insert _) -> do_kvm
   | _,_ ->
       begin match dir_tgt x,dir_src y with
       | (Irr,Irr) -> false

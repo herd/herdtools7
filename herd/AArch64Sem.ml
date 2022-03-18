@@ -53,7 +53,7 @@ module Make
 
 (* Barrier pretty print *)
     let barriers =
-      let bs = AArch64Base.do_fold_dmb_dsb true (fun h t -> h::t) []
+      let bs = AArch64Base.do_fold_dmb_dsb false true (fun h t -> h::t) []
       in List.map
         (fun b ->
           { barrier = b;
