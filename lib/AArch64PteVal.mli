@@ -65,6 +65,7 @@ val pp_hash : t -> string (* Backward compatibility for test hashes *)
 (* Litmus *)
 val fields : string list
 val default_fields : string list
+val norm : string StringMap.t -> string StringMap.t
 val dump_pack : (string -> string) -> t -> string
 val as_physical : t -> string option
 val as_flags : t -> string option

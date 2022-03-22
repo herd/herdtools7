@@ -32,3 +32,4 @@ val eq : t -> t -> bool
 
 val pp_old : t -> string
 val pp : t -> string
+val pp_norm : (string StringMap.t -> string StringMap.t) -> t -> string

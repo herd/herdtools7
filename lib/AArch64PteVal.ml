@@ -79,8 +79,9 @@ let of_pte s = { prot_default with  oa=OutputAddress.PTE s; el0=0; }
 let pp_field ok pp eq ac p k =
   let f = ac p in if not ok && eq f (ac prot_default) then k else pp f::k
 
+(* hexa arg is ignored, as it would complicate normalisation *)
 let pp_int_field _hexa ok name =
-  let pp_int = (* if hexa then sprintf "0x%x" else *) sprintf "%d" in
+  let pp_int = sprintf "%d" in
   pp_field ok (fun v -> sprintf "%s:%s" name (pp_int v)) Misc.int_eq
 
 let pp_valid hexa ok = pp_int_field hexa ok "valid" (fun p -> p.valid)
@@ -98,13 +99,17 @@ let is_default t =  eq_props prot_default t
    (1) Fields older than el0 are always printed.
    (2) Fields from el0 (included) are printed if non-default. *)
 
-let do_pp hexa showall old_oa p =
-  let k = pp_attrs false p [] in
+let pp_fields hexa showall p k =
   let k = pp_el0 hexa false p k in
   let k = pp_valid hexa showall p k in
   let k = pp_dbm hexa showall p k in
   let k = pp_db hexa showall p k in
   let k = pp_af hexa showall p k in
+  k
+
+let do_pp hexa showall old_oa p =
+  let k = pp_attrs false p [] in
+  let k = pp_fields hexa showall p k in
   let k =
     sprintf "oa:%s"
       ((if old_oa then OutputAddress.pp_old
@@ -177,6 +182,26 @@ and default_fields =
   let p = prot_default in
   let ds = [p.af; p.db; p.dbm; p.valid;p.el0;] in
   List.map (Printf.sprintf "%i") ds
+
+let norm =
+  let default =
+    try
+      List.fold_right2
+        (fun k v -> StringMap.add k v)
+        fields
+        default_fields
+        StringMap.empty
+    with Invalid_argument _ -> assert false in
+  fun kvs ->
+  StringMap.fold
+    (fun k v m ->
+      try
+        let v0 = StringMap.find k default in
+        if Misc.string_eq v v0 then m
+        else StringMap.add k v m
+      with
+      | Not_found -> StringMap.add k v m)
+    kvs StringMap.empty
 
 let dump_pack pp_oa p =
   sprintf

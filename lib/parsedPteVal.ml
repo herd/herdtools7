@@ -63,8 +63,10 @@ let mk_pp pp_oa { p_oa; p_kv; p_attrs; } =
     (pp_comma (StringSet.pp_str ", " Misc.identity p_attrs))
 
 let pp_old = mk_pp OutputAddress.pp_old
-and pp = mk_pp OutputAddress.pp
-
+and pp = mk_pp  OutputAddress.pp
+let pp_norm norm p =
+  let p = { p with p_kv=norm p.p_kv; } in
+  pp p
 
 let compare p1 p2 =
   match Misc.opt_compare OutputAddress.compare p1.p_oa p2.p_oa with

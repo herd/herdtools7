@@ -62,7 +62,7 @@ module Dump(O:DumpConfig) = struct
 
   let pp_atom a = match a with
   | LV (rl,v) ->
-      sprintf "%s=%s" (dump_rloc pp_loc rl) (ToolsConstant.pp O.hexa v)
+      sprintf "%s=%s" (dump_rloc pp_loc rl) (ToolsConstant.pp_norm O.hexa v)
   | LL (l1,l2) ->
       sprintf "%s=%s" (pp_loc l1) (pp_loc l2)
   | FF f ->
