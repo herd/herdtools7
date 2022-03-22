@@ -73,7 +73,7 @@ let norm_pteval s =
   let lex = Lexing.from_string s in
   try
     let p0 = StateParser.pteval StateLex.token lex in
-    ParsedPteVal.pp p0
+    ParsedPteVal.pp_norm AArch64PteVal.norm p0
   with
   | LexMisc.Error _
   | Parsing.Parse_error

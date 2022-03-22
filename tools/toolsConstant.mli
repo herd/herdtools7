@@ -17,6 +17,7 @@
 type v = (Int64Scalar.t,ParsedPteVal.t) Constant.t
 
 val pp : bool (* hexa *) -> v -> string
+val pp_norm : bool (* hexa *) -> v -> string
 val pp_v : v -> string
 
 val compare : v -> v -> int
