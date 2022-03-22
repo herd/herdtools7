@@ -101,6 +101,7 @@ module Make
             let emitprintf = Cfg.stdio
             let ctr = Fmt.I32
             let no_file = Cfg.is_kvm
+            let brittle = Cfg.is_kvm
           end)(O)
 
       let timebase_possible =

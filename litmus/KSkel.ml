@@ -90,6 +90,7 @@ module Make
           let emitprintf = true
           let ctr = Fmt.I64
           let no_file = false
+          let brittle = false
         end)(O)
     module UD = U.Dump(O)(EPF)
 

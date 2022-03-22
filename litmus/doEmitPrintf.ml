@@ -20,6 +20,7 @@ module type Config = sig
   val emitprintf : bool
   val ctr : Fmt.int_ty
   val no_file : bool
+  val brittle : bool
 end
 module Make(Cfg:Config)(O:Indent.S) : EmitPrintf.S = struct
 
@@ -74,18 +75,59 @@ module Make(Cfg:Config)(O:Indent.S) : EmitPrintf.S = struct
         fmt in
     sprintf "\"%s\"" (String.concat "" xs)
 
+  let all_string =
+    List.for_all
+      (function
+       | Conv String|Lit _ -> true
+       | Conv (Char|Float|Int _)|Percent -> false)
 
-  let emit_printf out i fmt args =
-    begin
-      if Cfg.no_file then
-        O.fx i "printf(%s%s);" (pp_fmt (LexFmt.lex fmt))
-      else
-        O.fx i "fprintf(%s,%s%s);" out (pp_fmt (LexFmt.lex fmt))
-    end
+  let emit_strings put i =
+    let rec emit_rec fmt args = match fmt,args with
+      | [],[] -> ()
+      | f::fmt,a::rem ->
+         let a,args =
+           match f with
+           | Conv String -> a,rem
+           | Lit lit -> sprintf "%S" lit,args
+           | _ -> assert false in
+         O.ox i (put a) ;
+         emit_rec fmt args
+      | f::fmt,[]  ->
+         let a =
+           match f with
+           | Lit lit -> sprintf "%S" lit
+           | _ -> assert false in
+         O.ox i (put a) ;
+         emit_rec fmt []
+      | ([],_::_) -> assert false in
+    emit_rec
+
+  let do_emit_printf out i fmt args =
+    (if Cfg.no_file then
+       O.fx i "printf(%s%s);" (pp_fmt fmt)
+     else
+       O.fx i "fprintf(%s,%s%s);" out (pp_fmt fmt))
       (String.concat ""
          (List.fold_right
             (fun a k -> ","::a::k)
             args []))
+
+  let emit_printf =
+    if Cfg.brittle then
+(* Some printf implementations fail on long strings.
+   As a workaround, avoid printf when output consists of strings. *)
+      fun out i fmt args ->
+        let fmt = LexFmt.lex fmt in
+        if Cfg.brittle && all_string fmt then
+          let put =
+            if Cfg.no_file then fun a -> "puts(" ^ a ^ ");"
+            else fun a -> "fputs(" ^ a ^ "," ^ out ^");" in
+          emit_strings put i fmt args
+        else
+          do_emit_printf out i fmt args
+    else
+      fun out i fmt args ->
+        do_emit_printf out i (LexFmt.lex fmt) args
 
   let tr_int_conv = function
     | Int_i  -> ""
