@@ -33,7 +33,8 @@ let AcqRel = AcqRel|Sc (* Compat *)
 let AQ = (Acq|AcqRel)
 and RL = (Rel|AcqRel)
 let AMO = try AMO with (R & W) (* Compat *)
-let RCsc = (Acq|Rel|AcqRel) & (AMO|X)
+(* All AMO ops have RCsc annotations *)
+let RCsc = (Acq|Rel|AcqRel|AMO) & (AMO|X)
 (*************)
 (* ppo rules *)
 (*************)
@@ -55,6 +56,10 @@ and r11 = [M];ctrl;[W]
 (* Pipeline Dependencies *)
 and r12 = [M];(addr|data);[W];rfi;[R]
 and r13 = [M];addr;[M];po;[W]
+(* All loads have RCpc Acquire *)
+and r14 = [R];po;[M]
+(* All stores have RCpc Release *)
+and r15 = [M];po;[W]
 
 let ppo =
   r1
@@ -70,3 +75,5 @@ let ppo =
 | r11
 | r12
 | r13
+| r14
+| r15
