@@ -759,12 +759,14 @@ let max_set = IntSet.max_elt
             if do_morello
             then TypBase.Std (TypBase.Unsigned,MachSize.S128)
             else O.typ in
-        let typ = Typ typ in
+          let typ loc =
+            if Misc.is_pte loc then Typ TypBase.Pteval
+            else Typ typ in
           List.fold_left
-            (fun m loc ->
-              let loc = A.Loc loc in
+            (fun m _loc ->
+              let loc = A.Loc _loc in
               if A.LocMap.mem loc m then m
-              else A.LocMap.add loc typ m)
+              else A.LocMap.add loc (typ _loc) m)
             env globals in
         let flts =
           if O.variant Variant_gen.NoFault then []
@@ -851,6 +853,18 @@ let pp_pointer t =
   | _ -> sprintf "%s* " (TypBase.pp t)
 *)
 
+let _pp_env env =
+  Printf.eprintf "Types:" ;
+  A.LocMap.iter
+    (fun loc t ->
+      Printf.eprintf " %s->%s"
+        (A.pp_location loc)
+        (match t with
+         | Typ t -> TypBase.pp t
+         | _ -> "?"))
+    env ;
+  Printf.eprintf "\n" ;
+  ()
 let dump_init chan inits env =
   let locs_init =
     List.fold_left

@@ -49,6 +49,7 @@ val get_attrs : t -> string list
 (* Default value *)
 val prot_default : t (* Fields only *)
 val default : string -> t (* Physical address + default fields *)
+val invalid : string -> t (* Physical address + default fields -invalid *)
 val of_pte : string -> t (* Default value for pte page table entry *)
 
 (* Flags have default values *)

@@ -19,6 +19,7 @@ module type S = sig
   type t
   val pp : t -> string
   val default : string -> t
+  val invalid : string -> t
   val compare : t -> t -> int
   val set_pteval : pte_atom -> t -> (unit -> string) -> t
 end
@@ -28,6 +29,7 @@ module No(A:sig type arch_atom end) = struct
   type t = string
   let pp a = a
   let default s = s
+  let invalid s = s
   let compare _ _ = 0
   let set_pteval _ p _ = p
 end

@@ -66,7 +66,14 @@ let pp_v ?(hexa=false) =
 type proc = Proc.t
 let pp_proc p = Proc.pp p
 
-type env = (string * v) list
+type initv = V of v | VPte of bool * string (* bool=false <=> invalid *)
+type env = (string * initv) list
+
+let pp_initv = function
+  | V i -> Printf.sprintf "%d" i
+  | VPte (valid,loc) ->
+      Printf.sprintf "PTE(%s,%s)"
+        loc (if valid then "valid" else "invalid")
 
 (* Direction of event *)
 type dir = W | R | J

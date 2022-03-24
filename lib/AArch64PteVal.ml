@@ -69,6 +69,9 @@ let prot_default =
     valid=1; af=1; db=1; dbm=0; el0=1; attrs=Attrs.default; }
 
 let default s = { prot_default with  oa=OutputAddress.PHY s; }
+and invalid s =
+  { prot_default with oa=OutputAddress.PHY s; valid = 0; }
+
 
 (* Page table entries for pointers into the page table
    have el0 flag unset. Namely, page table access from
