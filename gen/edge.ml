@@ -723,7 +723,8 @@ let fold_tedges f r =
   let as_integers e = F.as_integers e.a1
 
   let can_precede_dirs  x y = match x.edge,y.edge with
-  | (Id,_)|(_,Id) -> true
+  | (Store,Store) -> false
+  | (Id,_)|(_,Id)|(Store,_)|(_,Store) -> true
   | (Insert _,Insert _) -> do_kvm
   | _,_ ->
       begin match dir_tgt x,dir_src y with
