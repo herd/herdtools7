@@ -595,9 +595,14 @@ module Make(C:Builder.S)
     let secret_gen relax safe n =
       let relax = expand_relaxs C.ppo relax
       and safe = expand_relaxs C.ppo safe in
+      if O.verbose > 0 then begin
+        eprintf "** Relax0 **\n" ;
+        debug_rs stderr relax ;
+        eprintf "** Safe0 **\n" ;
+        debug_rs stderr safe
+      end ;
       let relax_set = C.R.Set.of_list relax
       and safe_set = C.R.Set.of_list safe in
-
       let relax = C.R.Set.elements relax_set
       and safe = C.R.Set.elements (C.R.Set.diff safe_set relax_set) in
       if O.verbose > 0 then begin
