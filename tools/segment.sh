@@ -105,5 +105,4 @@ done
 
 for ((i=0; i<${seg_size}; i++)); do
     echo "./src/src${i}/@all" >>@all
-    echo "\n" >>@all
 done
