@@ -37,6 +37,7 @@ module type S = sig
   (* Computing on page table entries *)
   val orop : pteval -> scalar -> pteval option
   val andnot2 : pteval -> scalar -> pteval option
+  val andop : pteval -> scalar -> scalar option
 
   (* Masking some structured constant *)
   val mask : cst -> MachSize.sz -> cst option
@@ -54,5 +55,6 @@ module No(Cst:Constant.S) = struct
   let shift_address_right _ _ = None
   let orop _ _ = None
   let andnot2 _ _ = None
+  let andop _ _ = None
   let mask _ _ = None
 end
