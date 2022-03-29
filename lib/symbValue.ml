@@ -122,14 +122,14 @@ module
 
   let pp_unop hexa = Op.pp_op1 hexa ArchOp.pp_op1
 
-  let unop op_op op v1 = 
+  let unop op_op op v1 =
   match v1 with
     | Val (Concrete i1) ->
         Val (Concrete (op i1))
     | Val (ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _ as x) ->
         Warn.user_error "Illegal operation %s on %s"
           (pp_unop true op_op) (Cst.pp_v x)
-    | Val (Instruction _ as x) -> 
+    | Val (Instruction _ as x) ->
       Warn.warn_always "FIXME: operation %s on %s suspicious with -variant self"
           (pp_unop true op_op) (Cst.pp_v x) ;
       v1
@@ -337,6 +337,20 @@ module
   | _,_ ->
       binop Op.Lsr (fun x y -> Scalar.shift_right_logical x (Scalar.to_int y))
         v1 v2
+
+  and andop v1 v2 = match v1,v2 with
+    | (Val (PteVal p),Val (Concrete v))
+    | (Val (Concrete v),Val (PteVal p))
+      ->
+       begin match ArchOp.andop p v with
+       | Some v -> Val (Concrete v)
+       | None  ->
+          Warn.user_error
+            "Illegal operation %s on constants %s and %s"
+            (Op.pp_op Op.And) (pp_v v1) (pp_v v2)
+       end
+    |  _,_ ->
+        binop Op.And Scalar.logand v1 v2
 
   and andnot2 v1 v2 = match v1,v2 with
     | Val (PteVal p),Val (Concrete v) ->
@@ -776,7 +790,7 @@ module
   | Sub -> sub
   | Mul -> binop op (Scalar.mul)
   | Div -> binop op (Scalar.div)
-  | And -> binop op (Scalar.logand)
+  | And -> andop
   | ASR ->
           binop op (fun x y -> Scalar.shift_right_arithmetic x (Scalar.to_int y))
   | Or -> orop

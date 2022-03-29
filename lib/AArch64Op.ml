@@ -99,35 +99,59 @@ module Make(S:Scalar.S) =
       else None
 
     let mask_valid = S.one
+    let mask_el0 = S.shift_left S.one 6
     let mask_db = S.shift_left S.one 7
     let mask_af = S.shift_left S.one 10
     let mask_dbm = S.shift_left S.one 51
     let mask_all_neg =
       S.lognot
-        (S.logor
-           (S.logor mask_valid  mask_db)
-           (S.logor  mask_af  mask_dbm))
+        (S.logor mask_el0
+           (S.logor
+              (S.logor mask_valid  mask_db)
+              (S.logor  mask_af  mask_dbm)))
 
     let is_zero v = S.equal S.zero v
     let is_set v m = not (is_zero (S.logand v m))
 
     let orop p m =
-      if is_set m  mask_all_neg then None
+      if is_set m mask_all_neg then None
       else
         let p = if is_set m mask_valid then { p with valid=1; } else p in
+        let p = if is_set m mask_el0 then { p with el0=1; } else p in
         let p = if is_set m mask_db then { p with db=0; } else p in
         let p = if is_set m mask_af then { p with af=1; } else p in
         let p = if is_set m mask_dbm then { p with dbm=1; } else p in
         Some p
 
     and andnot2 p m =
-      if is_set m  mask_all_neg then None
+      if is_set m mask_all_neg then None
       else
         let p = if is_set m mask_valid then { p with valid=0; } else p in
+        let p = if is_set m mask_el0 then { p with el0=0; } else p in
         let p = if is_set m mask_db then { p with db=1; } else p in
         let p = if is_set m mask_af then { p with af=0; } else p in
         let p = if is_set m mask_dbm then { p with dbm=0; } else p in
         Some p
+
+    and andop p m =
+      let r = S.zero in
+      let r =
+        if is_set m mask_valid && p.valid=1
+        then S.logor r mask_valid else r  in
+      let r =
+        if is_set m mask_el0 && p.el0=1
+        then S.logor r mask_el0 else r  in
+      let r =
+        if is_set m mask_db && p.db=0;
+        then S.logor r mask_db else r  in
+      let r =
+        if is_set m mask_af &&  p.af=1;
+        then S.logor r mask_af else r  in
+      let r =
+        if is_set m mask_dbm && p.dbm=1
+        then S.logor r mask_dbm else r  in
+      Some r
+
 
     let mask c sz =
       let open MachSize in
