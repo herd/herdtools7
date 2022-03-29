@@ -600,12 +600,9 @@ module Make
               | Dir.W ->
                  if hd && updatedb then
                    add_setbits
-                     (m_op Op.And (is_zero ipte.af_v) (is_zero ipte.db_v))
-                     "af:0 && db:0"
-                     set_afdb
-                     (add_setbits
-                        (is_zero ipte.db_v) "db:0" set_db
-                        (add_setbits (is_zero ipte.af_v) "af:0" set_af m))
+                     (m_op Op.Or (is_zero ipte.af_v) (is_zero ipte.db_v))
+                     "af:0 || db:0"
+                     set_afdb m
                  else if ha then
                    add_setbits (is_zero ipte.af_v) "af:0" set_af m
                  else m
