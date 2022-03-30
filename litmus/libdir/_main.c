@@ -50,7 +50,7 @@ int RUN(int argc,char **argv,FILE *out) {
 #endif
   init_global(glo_ptr);
 #ifdef KVM
-  feature_check();
+  if (!feature_check()) return -1;
 #endif
 #ifdef OUT
   opt_t def = { 0, NUMBER_OF_RUN, SIZE_OF_TEST, AVAIL, NEXE, };

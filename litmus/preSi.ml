@@ -1931,31 +1931,36 @@ module Make
         if Cfg.is_kvm then begin
           match db with
           | None ->
-             O.o "static void feature_check(void) { }"
+             O.o "static int feature_check(void) { return 1; }"
           | Some db ->
              let open DirtyBit in
              let to_check,msg  =
                if db.some_hd then Some "0b0010","dirty bit"
                else if db.some_ha then  Some "0b0001","access flag"
                else None,"" in
-             O.o "static void feature_check(void) {" ;
+             O.o "static int feature_check(void) {" ;
              (* Check if hardware features are present *)
              List.iter
                (fun (p,name) ->
-                 if T.code_exists p test then
-                   O.fi "if (!check_%s()) fatal(\"Test %s, required hardware feature '%s' not available on this system\");" name doc.Name.name name)
+                 if T.code_exists p test then begin
+                   O.fi "if (!check_%s()) {" name ;
+                   O.fii "puts(\"Test %s, required hardware feature '%s' not available on this system\\n\");" doc.Name.name name ;
+                   O.fii "return 0;" ;
+                   O.oi "}"
+                 end)
                A.features ;
              (* Check ability to enable features *)
              begin match to_check with
              | None -> ()
              | Some b ->
                 O.oi "uint64_t v = get_hafdbs();" ;
-                O.fi "if (v  >= %s) return;" b ;
+                O.fi "if (v  >= %s) return 1;" b ;
                 O.oi "printf(\"HAFDBS is %lx\\n\",v);" ;
                 O.fi
-                  "fatal(\"Test %s, hardware management of %s not available on this system\");"
+                  "puts(\"Test %s, hardware management of %s not available on this system\\n\");"
                   doc.Name.name msg
              end ;
+             O.oi "return 0;" ;
              O.o "}" ;
              O.o ""
           end ;
