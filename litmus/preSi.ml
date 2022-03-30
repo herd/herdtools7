@@ -1366,18 +1366,18 @@ module Make
                   begin match Misc.Simple.assoc x bds with
                   | P phy ->
                       O.fii
-                        "(void)litmus_set_pte(_vars->pte_%s,_vars->saved_pte_%s);"
-                        x phy
+                        "(void)litmus_set_pte_safe(%s,_vars->pte_%s,_vars->saved_pte_%s);"
+                        x x phy
                   | Z ->
-                      O.fii "(void)litmus_set_pte(_vars->pte_%s,litmus_set_pte_invalid(*_vars->pte_%s));" x x
+                      O.fii "(void)litmus_set_pte_safe(%s,_vars->pte_%s,litmus_set_pte_invalid(*_vars->pte_%s));" x x x
                   | V (o,pteval) ->
                       let is_default = A.V.PteVal.is_default pteval in
                       if not (o = None && is_default) then begin
                         let arg = match o with
                         | None -> sprintf "_vars->saved_pte_%s" x
                         | Some s -> sprintf "_vars->saved_pte_%s" s in
-                        O.fii "(void)litmus_set_pte(_vars->pte_%s,%s);"
-                          x (PU.dump_pteval_flags arg pteval);
+                        O.fii "(void)litmus_set_pte_safe(%s,_vars->pte_%s,%s);"
+                          x x (PU.dump_pteval_flags arg pteval);
                         List.iter
                           (fun attr ->
                             let attr = sprintf "attr_%s" (MyName.name_as_symbol attr) in
@@ -1445,7 +1445,7 @@ module Make
               let pte = OutUtils.fmt_pte_kvm a
               and phy = OutUtils.fmt_phy_kvm a in
               let rhs =
-                sprintf "litmus_set_pte(%s,%s)" pte phy in
+                sprintf "litmus_set_pte_safe(%s,%s,%s)" a pte phy in
               let lhs =
                 if StringSet.mem a ptes then
                   sprintf  "_log_ptr->%s = " (OutUtils.fmt_pte_tag a)
@@ -1931,31 +1931,36 @@ module Make
         if Cfg.is_kvm then begin
           match db with
           | None ->
-             O.o "static void feature_check(void) { }"
+             O.o "static int feature_check(void) { return 1; }"
           | Some db ->
              let open DirtyBit in
              let to_check,msg  =
                if db.some_hd then Some "0b0010","dirty bit"
                else if db.some_ha then  Some "0b0001","access flag"
                else None,"" in
-             O.o "static void feature_check(void) {" ;
+             O.o "static int feature_check(void) {" ;
              (* Check if hardware features are present *)
              List.iter
                (fun (p,name) ->
-                 if T.code_exists p test then
-                   O.fi "if (!check_%s()) fatal(\"Test %s, required hardware feature '%s' not available on this system\");" name doc.Name.name name)
+                 if T.code_exists p test then begin
+                   O.fi "if (!check_%s()) {" name ;
+                   O.fii "puts(\"Test %s, required hardware feature '%s' not available on this system\\n\");" doc.Name.name name ;
+                   O.fii "return 0;" ;
+                   O.oi "}"
+                 end)
                A.features ;
              (* Check ability to enable features *)
              begin match to_check with
              | None -> ()
              | Some b ->
                 O.oi "uint64_t v = get_hafdbs();" ;
-                O.fi "if (v  >= %s) return;" b ;
+                O.fi "if (v  >= %s) return 1;" b ;
                 O.oi "printf(\"HAFDBS is %lx\\n\",v);" ;
                 O.fi
-                  "fatal(\"Test %s, hardware management of %s not available on this system\");"
+                  "puts(\"Test %s, hardware management of %s not available on this system\\n\");"
                   doc.Name.name msg
              end ;
+             O.oi "return 0;" ;
              O.o "}" ;
              O.o ""
           end ;

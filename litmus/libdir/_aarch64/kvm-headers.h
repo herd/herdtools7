@@ -56,6 +56,18 @@ static inline pteval_t litmus_set_pte(pteval_t *p,pteval_t v) {
 #endif
   return w ;
 }
+
+static const uint64_t msk_valid = 0x1UL;
+
+/* Safe pte update, with BBM sequence */
+static inline pteval_t litmus_set_pte_safe(void *p,pteval_t *q,pteval_t v) {
+  pteval_t w = v & ~msk_valid ;
+  pteval_t r = litmus_set_pte(q,w);
+  litmus_flush_tlb(p);
+  (void)litmus_set_pte(q,v); /* Last flush_tlb to be performed explicitly */
+  return r ;
+}
+
 /* Field access */
 
 static inline uint64_t litmus_get_field(pteval_t x,int low,int sz) {
@@ -87,10 +99,9 @@ static inline int litmus_same_oa(pteval_t p,pteval_t q) {
 }
 
 static inline pteval_t litmus_set_pte_invalid(pteval_t old) {
-  return old & ~((pteval_t)1) ;
+  return old & ~msk_valid ;
 }
 
-static const uint64_t msk_valid = 0x1UL;
 static const uint64_t msk_af = 0x400UL;
 static const uint64_t msk_dbm = 0x8000000000000UL;
 static const uint64_t msk_db = 0x80UL;
