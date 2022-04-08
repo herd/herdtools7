@@ -37,6 +37,7 @@ module Top
     (Opt:
        sig
          val verbose : int
+         val back : bool
          val action : Action.t
          val check_name : string -> bool
        end) =
@@ -100,12 +101,12 @@ module Top
         LexHashLog.Make
           (struct
             let verbose = Opt.verbose
-
+            let back = Opt.back
             let ppinfo = match Opt.action with
             | Check ->
                 fun pos name ->
                   printf
-	            "%a: hash mismatch for test %s\n" Pos.pp_pos pos name
+	            "%a: hash mismatch for test %s\n%!" Pos.pp_pos pos name
             | Rewrite ->
                 if Opt.verbose > 0 then
                   fun pos name ->
@@ -140,6 +141,7 @@ module Top
 
 
 let verbose = ref 0
+let back = ref false
 let action = ref Action.Check
 let names = ref []
 let rename = ref []
@@ -157,6 +159,7 @@ let () =
   Arg.parse
     [
      "-v",Arg.Unit (fun () -> incr verbose), " be verbose";
+     "-back", Arg.Unit (fun () -> back := true), " backward compatibility";
      parse_select tests;
      parse_rename rename;
      parse_names names;
@@ -184,6 +187,7 @@ module X =
   Top
     (struct
       let verbose = !verbose
+      let back = !back
       let action = !action
       let check_name n = Check.ok n
     end)
