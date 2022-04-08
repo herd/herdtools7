@@ -20,6 +20,7 @@ open Printf
 
 module type Config = sig
   val verbose : int
+  val back : bool (* Backward compatibility *)
   val ppinfo : Lexing.position -> string -> unit
   val env : string StringMap.t
   val map : (string->string) StringMap.t
@@ -100,7 +101,7 @@ rule main keep same out name = parse
     {
      let line = "" in
      let same = match name with
-     | Some n ->
+     | Some n when C.back ->
           begin try
             let env_hash = StringMap.find n C.env in
             let pos = lexbuf.Lexing.lex_curr_p in
@@ -115,7 +116,7 @@ rule main keep same out name = parse
              out keep line ;
            same
          end
-     | None -> same in
+     | None|Some _ -> same in
      out keep line ;
      incr_lineno lexbuf ;
      main keep same out name lexbuf

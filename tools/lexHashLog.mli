@@ -16,6 +16,7 @@
 
 module type Config = sig
   val verbose : int
+  val back : bool (* Backward compatibility *)
   val ppinfo : Lexing.position -> string -> unit
   val env : string StringMap.t
   val map : (string->string) StringMap.t
