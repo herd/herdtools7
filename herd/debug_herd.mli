@@ -28,6 +28,7 @@ type t = {
   pretty : bool ;
   mixed : bool ;
   files : bool ;
+  timeout : bool ;
   }
 
 val none : t
