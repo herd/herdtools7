@@ -20,7 +20,7 @@ let dbg = false
 
 let name = ref ""
 
-let set_signal timeout f =
+let set_signal timeout f dbg =
   match timeout with
   | None -> ()
   | Some _ ->

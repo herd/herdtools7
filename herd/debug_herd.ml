@@ -28,6 +28,7 @@ type t = {
     pretty : bool ;
     mixed : bool ;
     files : bool ;
+    timeout : bool ;
   }
 
 let tags =
@@ -43,6 +44,7 @@ let tags =
   "pretty";
   "mixed";
   "files";
+  "timeout"
 ]
 
 let none =
@@ -58,6 +60,7 @@ let none =
    pretty = false ;
    mixed = false ;
    files = false ;
+   timeout = false ;
  }
 
 let parse t tag = match tag with
@@ -72,4 +75,5 @@ let parse t tag = match tag with
   | "pretty" -> Some { t with pretty = true ;}
   | "mixed" -> Some { t with mixed = true ;}
   | "files"|"file" -> Some { t with files = true ;}
+  | "timeout" -> Some { t with timeout = true ;}
   | _ -> None

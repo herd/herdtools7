@@ -18,8 +18,9 @@
 
 
 (** [set_signal timeout handle] set signal handle for timer.
-  * Argument timeout is an option, if [None] do nothing. *)
-val set_signal : float option -> (int -> unit) -> unit
+  * Argument timeout is an option, if [None] do nothing
+  * Argument debug is default false, if [true] print timeout debug *)
+val set_signal : float option -> (int -> unit) -> bool -> unit
 
 (** [start timeout] start interval for the given period.
   * Argument timeout is an option, if [None] do nothing,

@@ -671,7 +671,10 @@ let () =
 
 (* If interval timer enabled and triggered,
    then stop test with not output at all *)
-    Itimer.set_signal Config.timeout (fun _ -> raise Misc.Timeout) ;
+    Itimer.set_signal
+      Config.timeout
+      (fun _ -> raise Misc.Timeout)
+      !debug.Debug_herd.timeout;
     Misc.fold_argv_or_stdin
       (fun name seen ->
         try from_file name seen
