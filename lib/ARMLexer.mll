@@ -45,6 +45,8 @@ rule token = parse
 | ':' { COLON }
 | "add" | "ADD"   { I_ADD }
 | "adds" | "ADDS"   { I_ADDS }
+| "sub" | "SUB"   { I_SUB }
+| "subs" | "SUBS"   { I_SUBS }
 | "and" | "AND"   { I_AND }
 | "ands" | "ANDS"   { I_ANDS }
 | "bne" | "BNE"   { I_BNE }
