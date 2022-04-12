@@ -1,0 +1,8 @@
+ARM A001
+{
+0:R0=x;
+}
+  P0          ;
+ LDR R1,[R0]  ;
+ SUB R2,R1,#1 ;
+locations [0:R2;]

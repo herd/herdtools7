@@ -1,0 +1,13 @@
+ARM A002
+{
+0:R0=x;
+int y=1;
+1:R0=y;
+}
+  P0           |  P1           ;
+ LDR R1,[R0]   | LDR R1,[R0]   ;
+ SUBS R2,R1,#1 | SUBS R2,R1,#1 ;
+ BEQ L0        | BNE L1        ;
+ MOV R2,#2     | MOV R2,#2     ;
+L0:            |L1:            ; 
+forall 0:R2=2 /\ 1:R2=2

@@ -545,7 +545,8 @@ module Make(C:Config) (I:I) : S with module I = I
         let open TestType in
         match t with
         | Atomic b|Ty b|TyArray (b,_) -> is_signed b
-        | TyDef|TyDefPointer|Pointer _ -> false
+        | TyDef -> true
+        | TyDefPointer|Pointer _ -> false
 
       let build_state bds =
         List.fold_left
