@@ -800,15 +800,21 @@ module Make
   addresses. Thus the resulting monads will possess
   extra dependencies w.r.t the simple case.
  *)
+      let lift_fault mfault mm = (* This is memtag fault handling *)
+        let open Precision in
+        match C.precision with
+        | Precise -> mfault >>! B.Exit
+        | Skip -> Warn.fatal "Memtag extension has no 'Skip' fault handling mode"
+        | Imprecise ->
+           (mfault >>| mm) >>= M.ignore >>= B.next1T
+
       let lift_memtag_phy mop a_virt ma ii =
         M.delay_kont "4" ma
           (fun _ ma ->
             let mm = mop Access.PHY ma in
             delayed_check_tags a_virt ma ii
               (mm  >>= M.ignore >>= B.next1T)
-              (let mfault = mk_fault a_virt ii None in
-              if C.precision then  mfault >>! B.Exit
-              else (mfault >>| mm) >>= M.ignore >>= B.next1T))
+              (lift_fault (mk_fault a_virt ii None) mm))
 
       let lift_memtag_virt mop ma ii =
         M.delay_kont "5" ma
@@ -816,9 +822,7 @@ module Make
             let mm = mop Access.VIR (ma >>= fun a -> loc_extract a) in
             delayed_check_tags a_virt ma ii
               (mm  >>= M.ignore >>= B.next1T)
-              (let mfault = ma >>= fun a -> mk_fault a ii None in
-              if C.precision then  mfault >>! B.Exit
-              else (mfault >>| mm) >>= M.ignore >>= B.next1T))
+              (lift_fault (ma >>= fun a -> mk_fault a ii None) mm))
 
 
       let some_ha = dirty.DirtyBit.some_ha || dirty.DirtyBit.some_hd
@@ -837,7 +841,14 @@ module Make
       let lift_kvm dir updatedb mop ma an ii mphy =
         let mfault ma a =
           insert_commit_to_fault ma (fun _ -> mk_fault a ii None) ii
-          >>! if C.precision then B.Exit else B.ReExec in
+          >>!
+            begin
+              let open Precision in
+              match C.precision with
+              | Precise -> B.Exit
+              | Skip -> B.Next []
+              | Imprecise -> B.ReExec
+            end in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb a ma an ii
             ((let m = mop Access.PTE ma in

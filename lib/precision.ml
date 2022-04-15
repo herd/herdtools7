@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2019-present Institut National de Recherche en Informatique et *)
+(* Copyright 2022-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -15,12 +15,30 @@
 (****************************************************************************)
 
 type t =
-  | Self (* Self modifying code *)
-  | Precise of Precision.t
+  | Imprecise (* Do nothing special *)
+  | Precise   (* Jump to end of code *)
+  | Skip      (* Skip instruction *)
 
-val tags : string list
-val parse : string -> t option
-val pp : t -> string
-val ok : t -> Archs.t -> bool
-val compare : t -> t -> int
-val set_precision : Precision.t ref -> t -> bool
+let default = Imprecise
+
+let tags =  ["imprecise"; "precise"; "faultToNext"; ]
+
+let parse s = match s with
+  | "imprecise" -> Some Imprecise
+  | "precise" -> Some Precise
+  | "faulttonext"|"skip" -> Some Skip
+  | _ -> None
+
+let pp = function
+  | Imprecise -> "imprecise"
+  | Precise -> "precise"
+  | Skip -> "skip"
+
+let is_precise = function
+  | Precise -> true
+  | Imprecise|Skip -> false
+
+let is_skip = function
+  | Skip -> true
+  | Imprecise|Precise -> false
+      

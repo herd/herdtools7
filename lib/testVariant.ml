@@ -24,12 +24,12 @@ module
         val compare : t -> t -> int
       end
       val info : MiscParser.info
-      val precision : bool
+      val precision : Precision.t
       val variant : Opt.t -> bool
-      val set_precision : bool ref -> Opt.t -> bool
+      val set_precision : Precision.t ref -> Opt.t -> bool
     end) : sig
       type t = Var.Opt.t
-      val precision : bool
+      val precision : Precision.t
       val variant : Var.Opt.t -> bool
     end= struct
       type t = Var.Opt.t

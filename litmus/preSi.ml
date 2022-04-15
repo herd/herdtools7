@@ -42,7 +42,7 @@ module type Config = sig
   val cacheflush : bool
   val exit_cond : bool
   include DumpParams.Config
-  val precision : bool
+  val precision : Precision.t
   val variant : Variant_litmus.t -> bool
 end
 
@@ -67,10 +67,14 @@ module Make
       val dump : Name.t -> T.t -> unit
     end = struct
   module LocMake(CfgLoc:sig val label_init : Label.Full.full list end) = struct
+
     let do_ascall =
       Cfg.ascall || Cfg.is_kvm || Misc.consp CfgLoc.label_init
-      let do_precise = Cfg.precision
-      let do_dynalloc =
+
+    let do_precise = Precision.is_precise Cfg.precision
+    and do_skip = Precision.is_skip Cfg.precision
+
+    let do_dynalloc =
         let open Alloc in
         match Cfg.alloc with
         | Dynamic -> true
@@ -308,8 +312,10 @@ module Make
             O.o "#define PRECISE 1" ;
             O.o "ins_t *label_ret[NTHREADS];" ;
             O.o ""
+          end else if do_skip then begin
+            O.o "#define FAULT_SKIP 1" ;
+            O.o ""
           end ;
-
           let insert_ins_ops () =
             ObjUtil.insert_lib_file O.o "_find_ins.c" ;
             O.o "" ;
