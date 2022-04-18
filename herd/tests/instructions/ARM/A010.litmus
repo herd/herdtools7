@@ -1,0 +1,9 @@
+ARM A010
+
+(* Test LDR Offset *)
+{ int x[2] = {1,2}; 0:R0=x }
+
+P0;
+  LDR R1, [R0,#4];
+
+forall (0:R1 = 2)

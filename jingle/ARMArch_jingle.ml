@@ -27,15 +27,38 @@ let match_instr subs pattern instr = match pattern,instr with
       add_subs
         [Cst(m,i); Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
         subs
+  | I_ORR(_,r1,r2,MetaConst.Meta m),I_ORR(_,r1',r2',i) ->
+      add_subs
+        [Cst(m,i); Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
+        subs
+  | I_LDM2(r1,r2,r3,i),I_LDM2(r1',r2',r3',i') when i = i' ->
+      add_subs
+        [Reg(sr_name r1,r1');Reg(sr_name r2,r2');Reg(sr_name r3,r3')]
+        subs
+  | I_LDM3(r1,r2,r3,r4,i),I_LDM3(r1',r2',r3',r4',i') when i = i' ->
+      add_subs
+        [Reg(sr_name r1,r1');Reg(sr_name r2,r2');
+         Reg(sr_name r3,r3');Reg(sr_name r4,r4')]
+        subs
   | I_ADD(_,r1,r2,MetaConst.Int i),I_ADD(_,r1',r2',i')
+  | I_LDRO(r1,r2,MetaConst.Int i,_),I_LDRO(r1',r2',i',_)
   | I_SUB(_,r1,r2,MetaConst.Int i),I_SUB(_,r1',r2',i')
   | I_AND(_,r1,r2,MetaConst.Int i),I_AND(_,r1',r2',i') when i=i'->
+      add_subs
+        [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
+        subs
+  | I_ORR(_,r1,r2,MetaConst.Int i),I_ORR(_,r1',r2',i') when i=i'->
       add_subs
         [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
         subs
   | I_ADD3(_,r1,r2,r3),I_ADD3(_,r1',r2',r3')
   | I_SUB3(_,r1,r2,r3),I_SUB3(_,r1',r2',r3')
   | I_XOR(_,r1,r2,r3),I_XOR(_,r1',r2',r3') ->
+      add_subs
+        [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg(sr_name r3,r3')]
+        subs
+  | I_LDRD(r1,r2,r3,Some (MetaConst.Int k)),
+    I_LDRD(r1',r2',r3', Some k') when k = k' ->
       add_subs
         [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg(sr_name r3,r3')]
         subs
@@ -72,6 +95,9 @@ let match_instr subs pattern instr = match pattern,instr with
         subs
   | I_MOVI(r,MetaConst.Int i,c),I_MOVI(r',i',c') when i=i' && c=c' ->
       add_subs [Reg(sr_name r,r')] subs
+  | I_MOVW(r,MetaConst.Int i),I_MOVW(r',i')
+  | I_MOVT(r,MetaConst.Int i),I_MOVT(r',i') when i=i' ->
+      add_subs [Reg(sr_name r,r')] subs
   | I_DMB b,I_DMB b'
   | I_DSB b,I_DSB b' when b = b' ->
      Some subs
@@ -104,6 +130,11 @@ let match_instr subs pattern instr = match pattern,instr with
           fun r1 -> conv_reg r2 >>
           fun r2 -> find_cst v >!
           fun v -> I_AND(f,r1,r2,v)
+      | I_ORR(f,r1,r2,v) ->
+          conv_reg r1 >>
+          fun r1 -> conv_reg r2 >>
+          fun r2 -> find_cst v >!
+          fun v -> I_ORR(f,r1,r2,v)
       | I_ADD3(f,r1,r2,r3) ->
           conv_reg r1 >> fun r1 ->
           conv_reg r2 >> fun r2 ->
@@ -125,6 +156,9 @@ let match_instr subs pattern instr = match pattern,instr with
           find_lab l >! fun l ->I_BEQ l
       | I_BNE l ->
           find_lab l >! fun l -> I_BNE l
+      | I_BX(r) ->
+          conv_reg r >! fun r ->
+          I_BX(r)
       | I_CB(b,r,l) ->
           conv_reg r >> fun r ->
           find_lab l >! fun l ->
@@ -145,6 +179,33 @@ let match_instr subs pattern instr = match pattern,instr with
           conv_reg r1 >> fun r1 ->
           conv_reg r2 >! fun r2 ->
           I_LDR(r1,r2,c)
+      | I_LDM2(r1,r2,r3,i) ->
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >> fun r2 ->
+          conv_reg r3 >! fun r3 ->
+          I_LDM2(r1,r2,r3,i)
+      | I_LDM3(r1,r2,r3,r4,i) ->
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >> fun r2 ->
+          conv_reg r3 >> fun r3 ->
+          conv_reg r4 >! fun r4 ->
+          I_LDM3(r1,r2,r3,r4,i)
+      | I_LDRO(r1,r2,v,c) ->
+          conv_reg r1 >>
+          fun r1 -> conv_reg r2 >>
+          fun r2 -> find_cst v >!
+          fun v -> I_LDRO(r1,r2,v,c)
+      | I_LDRD(r1,r2,r3,Some v) ->
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >> fun r2 ->
+          conv_reg r3 >> fun r3 ->
+          find_cst v >! fun v ->
+          I_LDRD(r1,r2,r3,Some v)
+      | I_LDRD(r1,r2,r3,None) ->
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >> fun r2 ->
+          conv_reg r3 >! fun r3 ->
+          I_LDRD(r1,r2,r3,None)
       | I_STR(r1,r2,c) ->
           conv_reg r1 >> fun r1 ->
           conv_reg r2 >! fun r2 ->
@@ -172,6 +233,14 @@ let match_instr subs pattern instr = match pattern,instr with
           conv_reg r >> fun r ->
           find_cst v >! fun v ->
           I_MOVI(r,v,c)
+      | I_MOVW(r,v) ->
+          conv_reg r >> fun r ->
+          find_cst v >! fun v ->
+          I_MOVW(r,v)
+      | I_MOVT(r,v) ->
+          conv_reg r >> fun r ->
+          find_cst v >! fun v ->
+          I_MOVT(r,v)
       | I_NOP
       | I_DMB _
       | I_DSB _

@@ -1,0 +1,10 @@
+ARM A012
+
+(* Test MOVT Instr - simply moving 0 into upper bits *)
+(* should be idempotent - NOP *)
+{ 0:R0 = 0}
+
+P0;
+MOVT R0, #0;
+
+forall 0:R0=0x00000

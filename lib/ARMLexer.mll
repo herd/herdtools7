@@ -21,6 +21,58 @@ open LexMisc
 open ARMParser
 module ARM = ARMBase
 module LU = LexUtils.Make(O)
+
+let check_name name =
+match name with
+| "add" | "ADD" -> I_ADD
+| "adds" | "ADDS"   -> I_ADDS
+| "bx" | "BX" -> I_BX
+| "sub" | "SUB"   -> I_SUB
+| "subs" | "SUBS" -> I_SUBS
+| "and" | "AND"   -> I_AND
+| "orr" | "ORR"   -> I_ORR
+| "ands" | "ANDS"   -> I_ANDS
+| "bne" | "BNE"   -> I_BNE
+| "beq" | "BEQ"   -> I_BEQ
+| "cbz" | "CBZ"   -> I_CBZ
+| "cbnz" | "CBNZ"   -> I_CBNZ
+| "cmp" | "CMP"   -> I_CMP
+| "ldr" | "LDR"   -> I_LDR
+| "ldm" | "LDM"   -> I_LDM
+| "ldrd" | "LDRD"   -> I_LDRD
+| "ldmib" | "LDMIB"   -> I_LDMIB
+| "ldrex" | "LDREX"   -> I_LDREX
+| "ldrne" | "LDRNE"   -> I_LDRNE
+| "ldreq" | "LDREQ"   -> I_LDREQ
+| "str" | "STR"   -> I_STR
+| "strne" | "STRNE"   -> I_STRNE
+| "streq" | "STREQ"   -> I_STREQ
+| "strex" | "STREX" -> I_STREX
+| "mov" | "MOV"   -> I_MOV
+| "movw" | "MOVW" -> I_MOVW
+| "movt" | "MOVT" -> I_MOVT
+| "movne" | "MOVNE"   -> I_MOVNE
+| "moveq" | "MOVEQ"   -> I_MOVEQ
+| "xor" | "XOR"   -> I_XOR
+| "eor" | "EOR"   -> I_XOR
+| "eors" | "EORS" -> I_XOR
+| "dmb" | "DMB"   -> I_DMB
+| "dsb" | "DSB"   -> I_DSB
+| "isb" | "ISB"   -> I_ISB
+| "b" | "B" -> I_B
+| "sy" | "SY" -> I_SY
+| "st" | "ST" -> I_ST
+| "ish" | "ISH" -> I_ISH
+| "ishst" | "ISHST" -> I_ISHST
+| "nsh" | "NSH" -> I_NSH
+| "nshst" | "NSHST" -> I_NSHST
+| "osh" | "OSH" -> I_OSH
+| "oshst" | "OSHST" -> I_OSHST
+| _  -> begin match ARM.parse_reg name with
+  | Some r -> ARCH_REG r
+  | None -> NAME name
+  end
+
 }
 let digit = [ '0'-'9' ]
 let alpha = [ 'a'-'z' 'A'-'Z']
@@ -42,49 +94,11 @@ rule token = parse
 | '|' { PIPE }
 | '[' { LBRK }
 | ']' { RBRK }
+| '{' { LPAREN }
+| '}' { RPAREN }
 | ':' { COLON }
-| "add" | "ADD"   { I_ADD }
-| "adds" | "ADDS"   { I_ADDS }
-| "sub" | "SUB"   { I_SUB }
-| "subs" | "SUBS"   { I_SUBS }
-| "and" | "AND"   { I_AND }
-| "ands" | "ANDS"   { I_ANDS }
-| "bne" | "BNE"   { I_BNE }
-| "beq" | "BEQ"   { I_BEQ }
-| "cbz" | "CBZ"   { I_CBZ }
-| "cbnz" | "CBNZ"   { I_CBNZ }
-| "cmp" | "CMP"   { I_CMP }
-| "ldr" | "LDR"   { I_LDR }
-| "ldrex" | "LDREX"   { I_LDREX }
-| "ldrne" | "LDRNE"   { I_LDRNE }
-| "ldreq" | "LDREQ"   { I_LDREQ }
-| "str" | "STR"   { I_STR }
-| "strne" | "STRNE"   { I_STRNE }
-| "streq" | "STREQ"   { I_STREQ }
-| "strex" | "STREX" { I_STREX }
-| "mov" | "MOV"   { I_MOV }
-| "movne" | "MOVNE"   { I_MOVNE }
-| "moveq" | "MOVEQ"   { I_MOVEQ }
-| "xor" | "XOR"   { I_XOR }
-| "eor" | "EOR"   { I_XOR }
-| "eors" | "EORS"   { I_XOR }
-| "dmb" | "DMB"   { I_DMB }
-| "dsb" | "DSB"   { I_DSB }
-| "isb" | "ISB"   { I_ISB }
-| "b" | "B" { I_B }
-| "sy" | "SY" { I_SY }
-| "st" | "ST" { I_ST }
-| "ish" | "ISH" { I_ISH }
-| "ishst" | "ISHST" { I_ISHST }
-| "nsh" | "NSH" { I_NSH }
-| "nshst" | "NSHST" { I_NSHST }
-| "osh" | "OSH" { I_OSH }
-| "oshst" | "OSHST" { I_OSHST }
 | "codevar:" (name as x) { CODEVAR x }
-| name as x
-  { match ARM.parse_reg x with
-  | Some r -> ARCH_REG r
-  | None -> NAME x }
+| name as x { check_name x }
 | eof { EOF }
 | ""  { error "ARM lexer" lexbuf }
 
