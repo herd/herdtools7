@@ -17,14 +17,14 @@
 (** Reaction to faults, tag common to litmus and herd *)
 
 type t =
-  | Imprecise (* Do nothing special *)
-  | Precise   (* Jump to end of code *)
-  | Skip      (* Skip instruction *)
+  | Handled (* Do nothing special *)
+  | Fatal   (* Jump to end of code *)
+  | Skip    (* Skip instruction *)
 
 val default : t
 val tags : string list
 val parse : string -> t option
 val pp : t -> string
 
-val is_precise : t -> bool
+val is_fatal : t -> bool
 val is_skip : t -> bool

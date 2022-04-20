@@ -15,30 +15,30 @@
 (****************************************************************************)
 
 type t =
-  | Imprecise (* Do nothing special *)
-  | Precise   (* Jump to end of code *)
-  | Skip      (* Skip instruction *)
+  | Handled (* Do nothing special *)
+  | Fatal   (* Jump to end of code *)
+  | Skip    (* Skip instruction *)
 
-let default = Imprecise
+let default = Handled
 
-let tags =  ["imprecise"; "precise"; "faultToNext"; ]
+let tags =  ["handled"; "fatal"; "faultToNext"; ]
 
 let parse s = match s with
-  | "imprecise" -> Some Imprecise
-  | "precise" -> Some Precise
+  | "imprecise"|"handled" -> Some Handled
+  | "precise"|"fatal" -> Some Fatal
   | "faulttonext"|"skip" -> Some Skip
   | _ -> None
 
 let pp = function
-  | Imprecise -> "imprecise"
-  | Precise -> "precise"
-  | Skip -> "skip"
+  | Handled -> "handled"
+  | Fatal -> "fatal"
+  | Skip -> "faulToNext"
 
-let is_precise = function
-  | Precise -> true
-  | Imprecise|Skip -> false
+let is_fatal = function
+  | Fatal -> true
+  | Handled|Skip -> false
 
 let is_skip = function
   | Skip -> true
-  | Imprecise|Precise -> false
-      
+  | Handled|Fatal -> false
+

@@ -71,7 +71,7 @@ module Make
     let do_ascall =
       Cfg.ascall || Cfg.is_kvm || Misc.consp CfgLoc.label_init
 
-    let do_precise = Precision.is_precise Cfg.precision
+    let do_precise = Precision.is_fatal Cfg.precision
     and do_skip = Precision.is_skip Cfg.precision
 
     let do_dynalloc =

@@ -297,7 +297,7 @@ type P.code = MiscParser.proc * A.pseudo list)
     open Constant
 
     let do_self = O.variant Variant_litmus.Self
-    and do_precise = Precision.is_precise O.precision
+    and do_precise = Precision.is_fatal O.precision
     let is_pte =
       let open Mode in
       match O.mode with

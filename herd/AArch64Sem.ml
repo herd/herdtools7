@@ -803,9 +803,9 @@ module Make
       let lift_fault mfault mm = (* This is memtag fault handling *)
         let open Precision in
         match C.precision with
-        | Precise -> mfault >>! B.Exit
+        | Fatal -> mfault >>! B.Exit
         | Skip -> Warn.fatal "Memtag extension has no 'Skip' fault handling mode"
-        | Imprecise ->
+        | Handled ->
            (mfault >>| mm) >>= M.ignore >>= B.next1T
 
       let lift_memtag_phy mop a_virt ma ii =
@@ -845,9 +845,9 @@ module Make
             begin
               let open Precision in
               match C.precision with
-              | Precise -> B.Exit
+              | Fatal -> B.Exit
               | Skip -> B.Next []
-              | Imprecise -> B.ReExec
+              | Handled -> B.ReExec
             end in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb a ma an ii
