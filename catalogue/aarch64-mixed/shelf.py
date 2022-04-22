@@ -1,13 +1,7 @@
-record = "AArch64"
+record = "AArch64-mixed"
 
 cats = [
-    "cats/aarch64-v07.cat",
-    "cats/aarch64-v06.cat",
-    "cats/aarch64-v05.cat",
-    "cats/aarch64-v04.cat",
-    "cats/aarch64-v03.cat",
-    "cats/aarch64-v02.cat",
-    "cats/aarch64-v01.cat",
+    "cats/aarch64.cat",
     ]
 
 cfgs = [

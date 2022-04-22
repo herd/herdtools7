@@ -2,7 +2,7 @@ record = "AArch64-Pick"
 
 
 cats = [
-  "cats/aarch64-pick.cat",
+  "cats/aarch64.cat",
   ]
 
 cfgs = [
