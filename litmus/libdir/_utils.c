@@ -806,7 +806,7 @@ void parse_cmd(int argc, char **argv, cmd_t *d, cmd_t *p) {
 /* Concurrency utilities */
 /*************************/
 
-/* phread based mutex */
+/* pthread based mutex */
 
 pm_t *pm_create(void) {
   pm_t *p = malloc_check(sizeof(*p)) ;
@@ -831,7 +831,7 @@ void pm_unlock(pm_t *m) {
   if (ret) { errexit("mutex_unlock",ret) ; }
 }
 
-/* phread condition */
+/* pthread condition */
 
 static pc_t *do_pc_create(void) {
   pc_t *p = malloc_check(sizeof(*p)) ;
@@ -1033,7 +1033,7 @@ void *op_get(op_t *p) {
 
 void launch(pthread_t *th, f_t *f, void *a) {
   int e = pthread_create(th,NULL,f,a);
-  if (e) errexit("phread_create",e);
+  if (e) errexit("pthread_create",e);
 }
 
 void *join(pthread_t *th) {
@@ -1047,13 +1047,13 @@ static void do_launch_detached(f_t *f, void *a) {
   pthread_t th;
   pthread_attr_t attr;
   int e = pthread_attr_init(&attr);
-  if (e) errexit("phread_attr",e);
+  if (e) errexit("pthread_attr",e);
   e = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
   if (e) errexit("pthread_attr_setdetachstate",e);
   e = pthread_create(&th,&attr,f,a);
-  if (e) errexit("phread_create",e);
+  if (e) errexit("pthread_create",e);
   e = pthread_attr_destroy(&attr);
-  if (e) errexit("phread_attr_destroy",e);
+  if (e) errexit("pthread_attr_destroy",e);
 }
 
 /* Detached */
