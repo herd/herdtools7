@@ -50,7 +50,7 @@ module type CommonConfig = sig
   val c11 : bool
   val c11_fence : bool
   val ascall : bool
-  val precision : bool
+  val precision : Precision.t
   val variant : Variant_litmus.t -> bool
   val nocatch : bool
   val stdio : bool

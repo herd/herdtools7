@@ -36,8 +36,7 @@ type t =
   | DontCheckMixed
 (* Tags *)
   | MemTag
-  | TagCheckPrecise
-  | TagCheckUnprecise
+  | TagPrecise of Precision.t (* Fault handling *)
   | TooFar
   | Morello
   | Neon
@@ -70,9 +69,9 @@ type t =
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
-   "mixed";"dontcheckmixed";"weakpredicated"; "memtag";
-   "tagcheckprecise"; "tagcheckunprecise"; "precise"; "imprecise";
-   "toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
+   "mixed";"dontcheckmixed";"weakpredicated"; "memtag";]@
+    Precision.tags @
+   ["toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
    "exp"; "self"; "test"; "T[0-9][0-9]"]
 
@@ -93,8 +92,6 @@ let parse s = match Misc.lowercase s with
 | "dontcheckmixed" -> Some DontCheckMixed
 | "notweakpredicated"|"notweakpred" -> Some NotWeakPredicated
 | "tagmem"|"memtag" -> Some MemTag
-| "tagcheckprecise"|"precise" -> Some TagCheckPrecise
-| "tagcheckimprecise"|"imprecise" -> Some TagCheckUnprecise
 | "toofar" -> Some TooFar
 | "morello" -> Some Morello
 | "neon" -> Some Neon
@@ -111,15 +108,20 @@ let parse s = match Misc.lowercase s with
 | "self" -> Some Self
 | "test" -> Some Test
 | s ->
-   if String.length s = 3 then
-     match s.[0],s.[1],s.[2] with
-     | 't', ('0'..'9' as c1),('0'..'9' as c2) ->
-        let n =
-          (Char.code c1 - Char.code '0')*10 +
-            (Char.code c2 - Char.code '0') in
-        Some (T n)
-     | _ -> None
-   else None
+   begin
+     match Precision.parse s with
+     | Some p -> Some (TagPrecise p)
+     | None ->
+        if String.length s = 3 then
+          match s.[0],s.[1],s.[2] with
+          | 't', ('0'..'9' as c1),('0'..'9' as c2) ->
+             let n =
+               (Char.code c1 - Char.code '0')*10 +
+                 (Char.code c2 - Char.code '0') in
+             Some (T n)
+          | _ -> None
+        else None
+   end
 
 let pp = function
   | Success -> "success"
@@ -138,8 +140,7 @@ let pp = function
   | DontCheckMixed -> "DontCheckMixed"
   | NotWeakPredicated -> "NotWeakPredicated"
   | MemTag -> "memtag"
-  | TagCheckPrecise -> "TagCheckPrecise"
-  | TagCheckUnprecise -> "TagCheckImprecise"
+  | TagPrecise p -> Precision.pp p
   | TooFar -> "TooFar"
   | Morello -> "Morello"
   | Neon -> "Neon"
@@ -178,12 +179,6 @@ let get_switch a v f =
   let d = get_default a v in
   if f v then not d else d
 
-let set_precision r tag =
-    try
-      r :=
-        (match tag with
-        | TagCheckPrecise -> true
-        | TagCheckUnprecise -> false
-        | _ -> raise Exit) ;
-      true
-    with Exit -> false
+let set_precision r tag = match tag with
+  | TagPrecise p -> r := p ; true
+  | _ -> false
