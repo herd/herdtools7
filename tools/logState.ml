@@ -73,6 +73,16 @@ type topology = HashedString.t * Int64.t
 type parsed_topologies = topology list
 
 type sts = parsed_sts (* + sorted *)
+
+let rec do_equal_states xs ys = match xs,ys with
+  | [],[] -> true
+  | (_::_,[])|([],_::_) -> false
+  | x::xs,y::ys ->
+     x.p_st == y.p_st && (* Ignore counts, outcomes are hash-consed *)
+     do_equal_states xs ys
+
+let equal_states sts1 sts2 = do_equal_states sts1.p_sts sts2.p_sts
+
 type topologies = parsed_topologies (* + sorted *)
 
 type kind = Allow | Require | Forbid | NoKind | ErrorKind | Undefined
@@ -114,6 +124,11 @@ type test =
    time : float option ;
    topologies : topologies ;
  }
+
+let equal_test t1 t2 =
+  Misc.string_eq t1.tname t2.tname
+  && Misc.opt_eq Misc.string_eq t1.hash t2.hash
+  && equal_states t1.states t2.states
 
 type t =
   { name : string  ;   (* Name of the log file *)
@@ -1051,7 +1066,7 @@ let union_litmus name t1 t2 =
       end
 
 let union_equals name t1 t2 =
-  if t1 = t2 then t1
+  if equal_test t1 t2 then t1
   else begin
     W.warn "Different results for test %s in file %s" t1.tname name ;
     union_litmus name t1 t2
