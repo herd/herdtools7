@@ -106,6 +106,7 @@ val mk_sym_pte : string -> ('scalar,'pte,'instr) t
 val mk_sym_pte2 : string -> ('scalar,'pte,'instr) t
 val mk_sym_pa : string -> ('scalar,'pte,'instr) t
 val old2new : string -> string
+val mk_sym_with_index : string -> int -> ('scalar,'pte,'instr) t
 
 val mk_vec : int -> ('scalar,'pte,'instr) t list -> ('scalar,'pte,'instr) t
 val mk_replicate : int -> ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t

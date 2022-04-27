@@ -1,6 +1,6 @@
 Test V43 Required
 States 1
-0:X0=x+4; [y]=1; [z]=2;
+0:X0=x[4]; [y]=1; [z]=2;
 Ok
 Witnesses
 Positive: 1 Negative: 0

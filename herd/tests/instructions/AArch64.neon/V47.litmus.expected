@@ -1,6 +1,6 @@
 Test V47 Required
 States 1
-0:X0=x+8; 0:X2=32;
+0:X0=x[8]; 0:X2=32;
 Ok
 Witnesses
 Positive: 1 Negative: 0
