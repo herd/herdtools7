@@ -387,6 +387,8 @@ module Make(C:Config) (I:I) : S with module I = I
           None
       | Location_global (I.V.Var _ as v) ->
           Some v
+      | Location_global (I.V.Pair _) ->
+          assert false
 
       let undetermined_vars_in_loc l =  match l with
       | Location_reg _ -> I.V.ValueSet.empty
@@ -661,7 +663,8 @@ module Make(C:Config) (I:I) : S with module I = I
                 "No default value defined for location %s\n"
                 (pp_location loc)
           | Location_global
-              (I.V.Val
+              (I.V.Pair _
+               |I.V.Val
                  (Concrete _|ConcreteVector _
                  |Label _|Instruction _|Tag _|PteVal _))
             ->

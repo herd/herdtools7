@@ -120,19 +120,19 @@ and type state = A.state =
             Printf.sprintf "%s(%s,%s)"
               (Op.pp_op o) (pp_atom a1) (pp_atom a2)
       | Terop (op,a1,a2,a3) ->
-	  Op.pp_op3 op
-	    (pp_atom a1) (pp_atom a2) (pp_atom a3)
+          Op.pp_op3 op
+            (pp_atom a1) (pp_atom a2) (pp_atom a3)
 
     let pp_rvalue e = pp_expr e
 
     let pp_cnstrnt cnstr =  match cnstr  with
       | Assign (v,rval) ->
-	  (V.pp C.hexa v) ^ ":=" ^(pp_rvalue rval)
+          (V.pp C.hexa v) ^ ":=" ^(pp_rvalue rval)
       | Failed e  -> sprintf "Failed %s" (Printexc.to_string e)
 
     let pp_cnstrnts lst =
       String.concat "\n"
-	(List.map pp_cnstrnt lst)
+        (List.map pp_cnstrnt lst)
 
     type solution = V.solution
 
@@ -146,22 +146,22 @@ and type state = A.state =
       let pp_cns cns = match cns with
       | [] -> ""
       | _::_ ->
-	  "\nUnsolved equations:\n" ^
-	  (pp_cnstrnts cns) in
+          "\nUnsolved equations:\n" ^
+          (pp_cnstrnts cns) in
 
       fun soln -> match soln with
       | NoSolns -> "No solutions"
       | Maybe (sol,cns) ->
-	  let sol_pped =
-	    let bds =
-	      V.Solution.fold
-		(fun v i k -> (v,i)::k)
-		sol [] in
-	    String.concat ", "
-	      (List.map
-		 (fun (v,i) -> V.pp_csym v ^ "<-" ^ V.pp C.hexa i) bds) in
+          let sol_pped =
+            let bds =
+              V.Solution.fold
+                (fun v i k -> (v,i)::k)
+                sol [] in
+            String.concat ", "
+              (List.map
+                 (fun (v,i) -> V.pp_csym v ^ "<-" ^ V.pp C.hexa i) bds) in
 
-	  sol_pped ^ pp_cns cns
+          sol_pped ^ pp_cns cns
 
 (**************************************)
 (* Initial phase: normalize variables *)
@@ -180,9 +180,10 @@ and type state = A.state =
     end
     module Part = Partition.Make (OV)
 
-    let add_var t v = match v with
+    let rec add_var t v = match v with
     | V.Val _ -> t
     | V.Var x -> Part.add t x
+    | V.Pair (v1,v2) -> add_var (add_var t v1) v2
 
     let add_var_loc t loc = match A.undetermined_vars_in_loc_opt loc with
     | None -> t
@@ -216,12 +217,12 @@ and type state = A.state =
 
 (* Simplify equations *)
 
-    let  subst_atom m v = match v with
-    | V.Val _ -> v
-    | V.Var x ->
-        try V.Var (Part.Sol.find x m)
-        with Not_found -> v
-
+    let subst_atom m v =
+      V.map_csym
+        (fun x ->
+          try V.Var (Part.Sol.find x m)
+          with Not_found -> V.Var x)
+        v
     let subst_expr m = map_expr (subst_atom m)
 
     let subst_cn m cn k = match cn with
@@ -279,17 +280,17 @@ and type state = A.state =
     | Assign (v,e) ->
        begin
          try
-	   let e = mk_atom_from_expr e in
-	   begin match e with
-	   | Atom w ->
-	      if V.is_var_determined v && V.is_var_determined w then
-	        if V.compare v w = 0 then k
-	        else raise Contradiction
-	      else
-	        Assign (v,e)::k
-	   | ReadInit _
-	     | Unop _|Binop _|Terop _ -> Assign (v,e)::k
-	   end
+           let e = mk_atom_from_expr e in
+           begin match e with
+           | Atom w ->
+              if V.is_var_determined v && V.is_var_determined w then
+                if V.compare v w = 0 then k
+                else raise Contradiction
+              else
+                Assign (v,e)::k
+           | ReadInit _
+             | Unop _|Binop _|Terop _ -> Assign (v,e)::k
+           end
          (* Delay failure to preserve potential contradiction *)
          with
          | Contradiction|Misc.Timeout as e -> raise e
@@ -306,19 +307,21 @@ and type state = A.state =
 
 (* Phase 3, substitution *)
 
-    let simplify_vars_in_atom soln v = match v with
-    | V.Val _ -> v
-    | V.Var sym ->
-        try V.Val (V.Solution.find sym soln) with Not_found -> v
+    let simplify_vars_in_atom soln v =
+      V.map_csym
+        (fun x ->
+          try V.Val (V.Solution.find x soln)
+          with Not_found -> V.Var x)
+        v
 
     let simplify_vars_in_expr soln = map_expr (simplify_vars_in_atom soln)
 
     let simplify_vars_in_cnstrnt soln cn =
       match cn with
       | Assign (v,rval) ->
-	  let v = simplify_vars_in_atom soln v in
-	  let rval = simplify_vars_in_expr soln rval in
-	  Assign (v,rval)
+          let v = simplify_vars_in_atom soln v in
+          let rval = simplify_vars_in_expr soln rval in
+          Assign (v,rval)
       | Failed _ -> cn
 
 
@@ -341,19 +344,20 @@ and type state = A.state =
     (* can occur in spite of variable normalization (ternary if) *)
     | Assign (_,(Unop _|Binop _|Terop _|ReadInit _)) -> empty
     | Failed _ -> empty
+    | Assign (V.Pair _,_)|Assign (_,Atom (V.Pair _)) -> assert false
 
 (* merge of solutions, with consistency check *)
     let merge sol1 sol2 =
       V.Solution.fold
-	(fun v i k ->
-	  try
-	    let i' = V.Solution.find v sol2 in
-	    if V.Cst.compare i i' = 0 then
-	      V.Solution.add v i k
-	    else
-	      raise Contradiction
-	  with Not_found -> V.Solution.add v i k)
-	sol1 sol2
+        (fun v i k ->
+          try
+            let i' = V.Solution.find v sol2 in
+            if V.Cst.compare i i' = 0 then
+              V.Solution.add v i k
+            else
+              raise Contradiction
+          with Not_found -> V.Solution.add v i k)
+        sol1 sol2
 
 let solve_cnstrnts =
   List.fold_left
@@ -385,12 +389,12 @@ let check_failed cns =
       let solns = solve_cnstrnts cns in
       if V.Solution.is_empty solns then begin
         check_failed cns ;
-	solns_final,cns
+        solns_final,cns
       end else
-	(* Phase 3, and iteration *)
-	let cns =  simplify_vars_in_cnstrnts solns cns
-	and solns_final = compose_sols solns solns_final in
-	solve_step cns solns_final
+        (* Phase 3, and iteration *)
+        let cns =  simplify_vars_in_cnstrnts solns cns
+        and solns_final = compose_sols solns solns_final in
+        solve_step cns solns_final
 
     let add_vars_solns m solns0 =
       Part.Sol.fold
@@ -405,18 +409,18 @@ let check_failed cns =
 
     let solve lst =
       if C.debug then begin
-	prerr_endline "** Solve **" ;
-	eprintf "%s\n" (pp_cnstrnts lst) ; flush stderr
+        prerr_endline "** Solve **" ;
+        eprintf "%s\n" (pp_cnstrnts lst) ; flush stderr
       end ;
       let m,lst = normalize_vars lst in
       let sol =
-	try
-	  let solns,lst = solve_step lst V.Solution.empty in
+        try
+          let solns,lst = solve_step lst V.Solution.empty in
           let solns = add_vars_solns m solns in
-	  Maybe (solns,lst)
-	with Contradiction -> NoSolns in
+          Maybe (solns,lst)
+        with Contradiction -> NoSolns in
       if C.debug then begin
-	eprintf "Solutions: %s\n" (pp_answer sol) ; flush stderr
+        eprintf "Solutions: %s\n" (pp_answer sol) ; flush stderr
       end ;
       sol
 

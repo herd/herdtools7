@@ -46,18 +46,18 @@ module
   type v =
     | Var of csym
     | Val of cst
-(* A symbolic constant, computations much reduced on them... *)
+    | Pair of v * v (* Used internally for stp instruction *)
+
+  (* A symbolic constant, computations much reduced on them... *)
   let fresh_var () = Var (gensym ())
 
   let from_var v = Var v
 
-  let as_var = function
-    | Var v -> Some v
-    | Val _ -> None
-
-  let do_pp pp_val = function
+  let rec do_pp pp_val = function
   | Var s -> pp_csym s
   | Val x -> pp_val x
+  | Pair (v1,v2) ->
+      sprintf "(%s,%s)" (do_pp pp_val v1) (do_pp pp_val v2)
 
   let pp hexa = do_pp (Cst.pp hexa)
 
@@ -70,13 +70,28 @@ module
     match (v1,v2) with
     | Val x1,Val x2 -> Cst.compare x1 x2 = 0
     | (Var _,_)
-    | (_,Var _) -> true  (* WARNING: May want to optimize later *)
+    | (_,Var _)
+    | (Pair _,Pair _)
+      -> true  (* WARNING: May want to optimize later *)
+    | (Pair _,Val _)
+    | (Val _,Pair _)
+      -> false
 
-  let compare v1 v2 = match v1,v2 with
+  let rec compare v1 v2 = match v1,v2 with
   | Val i1,Val i2 -> Cst.compare i1 i2
   | Var i1,Var i2 -> compare_csym i1 i2
-  | Val _,Var _ -> 1
-  | Var _,Val _ -> -1
+  | Pair (v1,v2),Pair (w1,w2) ->
+      begin
+        match compare v1 w1 with
+        | 0 -> compare v2 w2
+        | r -> r
+      end
+  | ((Pair _|Val _),Var _)
+  | (Pair _,Val _)
+    -> 1
+  | (Var _,(Val _|Pair _))
+  | (Val _,Pair _)
+    -> -1
 
 
   let intToV i  = Val (Cst.intToV i)
@@ -88,7 +103,7 @@ module
 
   let as_symbol = function
     | Val v -> Cst.vToName v
-    | Var _ -> assert false
+    | Var _|Pair _ -> assert false
 
   let zero = Val Cst.zero
   and one = Val Cst.one
@@ -105,10 +120,12 @@ module
 
   let is_zero v = match v with
   | Val cst -> Cst.eq cst Cst.zero
+  | Pair _ -> false
   | Var _ -> raise  Undetermined
 
   let is_one v = match v with
   | Val cst ->  Cst.eq cst Cst.one
+  | Pair _ -> false
   | Var _ -> raise  Undetermined
 
   let protect_is p v =  try p v with Undetermined -> false
@@ -118,8 +135,9 @@ module
     | Val (ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _|Instruction _ as x) ->
         Warn.user_error "Illegal operation on %s" (Cst.pp_v x)
     | Var _ -> raise Undetermined
+    | Pair _ -> assert false
 
-  let pp_unop hexa = Op.pp_op1 hexa ArchOp.pp_op1
+  let pp_unop = Op.pp_op1 true ArchOp.pp_op1
 
   let unop op_op op v1 =
   match v1 with
@@ -127,12 +145,13 @@ module
         Val (Concrete (op i1))
     | Val (ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _ as x) ->
         Warn.user_error "Illegal operation %s on %s"
-          (pp_unop true op_op) (Cst.pp_v x)
+          (pp_unop op_op) (Cst.pp_v x)
     | Val (Instruction _ as x) ->
       Warn.warn_always "FIXME: operation %s on %s suspicious with -variant self"
-          (pp_unop true op_op) (Cst.pp_v x) ;
+          (pp_unop op_op) (Cst.pp_v x) ;
       v1
     | Var _ -> raise Undetermined
+    | Pair _ -> assert false
 
   let binop op_op op v1 v2 = match v1,v2 with
   | Val (Concrete i1), Val (Concrete i2) ->
@@ -143,6 +162,8 @@ module
         (Op.pp_op op_op) (Cst.pp_v c1) (Cst.pp_v c2)
   | (Var _,_)|(_,Var _)
     -> raise Undetermined
+  | (Pair _,_)|(_,Pair _)
+    -> assert false
 
   (* Morello operators. *)
   (* NB: These may perform arithmetic on the capability of a Symbolic Virtual
@@ -167,8 +188,9 @@ module
         Val (Concrete (op (scalar_of_cap c)))
     | Val cst ->
         Warn.user_error "Illegal operation %s on %s"
-          (pp_unop true op_op) (Cst.pp_v cst)
+          (pp_unop op_op) (Cst.pp_v cst)
     | Var _ -> raise Undetermined
+    | Pair _ -> assert false
 
   (* Concrete,Concrete -> Concrete
      Symbolic,Concrete -> Symbolic *)
@@ -181,6 +203,7 @@ module
           (Op.pp_op op_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
   | (Var _,_)|(_,Var _)
     -> raise Undetermined
+  | (Pair _,_)|(_,Pair _) -> assert false
 
   (* Concrete,Concrete -> Concrete
      Concrete,Symbolic -> Concrete *)
@@ -193,6 +216,7 @@ module
           (Op.pp_op op_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
   | (Var _,_)|(_,Var _)
     -> raise Undetermined
+  | (Pair _,_)|(_,Pair _) -> assert false
 
   let mk_val_virtual s = Val (Symbolic (Virtual s))
 
@@ -215,11 +239,12 @@ module
           (Op.pp_op op_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
   | (Var _,_)|(_,Var _)
     -> raise Undetermined
-
+  | (Pair _,_)|(_,Pair _) -> assert false
   (* Concrete,Concrete -> Concrete
      Concrete,Symbolic -> Concrete
      Symbolic,Concrete -> Concrete
      Symbolic,Symbolic -> Concrete *)
+
   let binop_cs_cs_c op_op op v1 v2 = match v1,v2 with
   | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
   | (Val (Concrete i),Val (Symbolic (Virtual {cap=c;_}))) ->
@@ -233,6 +258,7 @@ module
           (Op.pp_op op_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
   | (Var _,_)|(_,Var _)
     -> raise Undetermined
+  | (Pair _,_)|(_,Pair _) -> assert false
 
 (* specific binops, with some specific cases for symbolic constants *)
 
@@ -281,6 +307,7 @@ module
   | Val (ConcreteVector _|Symbolic (System _)|Label _|Tag _|PteVal _|Instruction _ as c) ->
       Warn.user_error "Illegal addition on constants %s +%d" (Cst.pp_v c) k
   | Var _ -> raise Undetermined
+  | Pair _ -> assert false
 
   and orop v1 v2 =
     if protect_is is_zero v1 then v2
@@ -425,6 +452,7 @@ module
         (Cst.pp_v cst1)  (Cst.pp_v cst2)
   | (Var _,_)|(_,Var _) ->
       raise Undetermined
+  | (Pair _,_)|(_,Pair _) -> assert false
 
   let op_tagged op_op op v = match v with
   |  Val (Symbolic (Virtual ({offset=o;_} as a))) -> Val (op a o)
@@ -432,6 +460,7 @@ module
           |Concrete _|Label _|Tag _|ConcreteVector _|PteVal _|Instruction _)
      -> Warn.user_error "Illegal tagged operation %s on %s" op_op (pp_v v)
   | Var _ -> raise Undetermined
+  | Pair _ -> assert false
 
   (*  Returns the location of the tag associated to a location *)
   let op_tagloc f {name=a;_} _ =
@@ -444,6 +473,7 @@ module
   | Val (Concrete _|ConcreteVector _|Symbolic (System _)|Label _|Tag _|PteVal _|Instruction _) ->
       Warn.user_error "Illegal tagloc on %s" (pp_v v)
   | Var _ -> raise Undetermined
+  | Pair _ -> assert false
 
   let check_ctag = function
     | Val (Symbolic (Virtual {name=s;_})) -> Misc.check_ctag s
@@ -451,6 +481,7 @@ module
     | Var _
     | Val (Concrete _|ConcreteVector _|Label _|Tag _|PteVal _|Instruction _) ->
         Warn.fatal "Illegal check_ctag" (* NB: not an user error *)
+    | Pair _ -> assert false
 
   (* Decompose tagged locations *)
   let op_tagextract {tag=t;_} _ = match t with
@@ -468,6 +499,7 @@ module
   |  Val (Concrete _|ConcreteVector _|Label _|Tag _|Symbolic _|PteVal _|Instruction _) ->
       Warn.user_error "Illegal %s on %s" op_op (pp_v v)
   | Var _ -> raise Undetermined
+  | Pair _ -> assert false
 
   let pteloc v = match v with
   | Val (Symbolic (Virtual {name=a;_})) -> Val (Symbolic (System (PTE,a)))
@@ -475,6 +507,7 @@ module
   | Val (Concrete _|ConcreteVector _|Label _|Tag _|Symbolic _|PteVal _|Instruction _) ->
       Warn.user_error "Illegal pteloc on %s" (pp_v v)
   | Var _ -> raise Undetermined
+  | Pair _ -> assert false
 
   let offset v = match v with
   | Val (Symbolic (Virtual {offset=o;_}|Physical (_,o))) -> intToV o
@@ -482,6 +515,7 @@ module
   | Val (Concrete _|ConcreteVector _|Label _|Tag _|PteVal _|Instruction _) ->
       Warn.user_error "Illegal offset on %s" (pp_v v)
   | Var _ -> raise Undetermined
+  | Pair _ -> assert false
 
   let op_tlbloc {name=a;_} = Symbolic (System (TLB,a))
   let tlbloc = op_pte_tlb "tlbloc" op_tlbloc
@@ -489,10 +523,12 @@ module
   let is_virtual v = match v with
   | Val c -> Constant.is_virtual c
   | Var _ -> raise Undetermined
+  | Pair _ -> assert false
 
   let as_virtual v = match v with
   | Val c -> Constant.as_virtual c
   | Var _ -> raise Undetermined
+  | Pair _ -> assert false
 
   let is_virtual_v v =  if is_virtual v then one else zero
 
@@ -606,6 +642,7 @@ module
         Warn.user_error "Illegal capaadd on %s and %s" (pp_v v1) (pp_v v2)
     | (Var _,_)|(_,Var _)
       -> raise Undetermined
+  | (Pair _,_)|(_,Pair _) -> assert false
 
   let capasub c decrement =
     let result = Cst.Scalar.logor (hi64 c) (lo64 (Cst.Scalar.sub c decrement)) in
@@ -691,6 +728,7 @@ module
         Warn.user_error "Illegal setvalue on %s and %s" (pp_v v1) (pp_v v2)
     | (Var _,_)|(_,Var _)
       -> raise Undetermined
+  | (Pair _,_)|(_,Pair _) -> assert false
 
   let clrperm c x =
     let result = andnot c (Cst.Scalar.shift_right_logical x 110) in
@@ -719,6 +757,13 @@ module
   | Val (Symbolic (Virtual s)) -> mk_val_virtual {s with cap=0L}
   | Val cst -> Warn.user_error "Illegal capastrip on %s" (Cst.pp_v cst)
   | Var _ -> raise Undetermined
+  | Pair _ -> assert false
+
+  let pair_op op f v = match v with
+    | Pair (v1,v2) -> f (v1,v2)
+    | _ ->
+        Warn.fatal "Illegal pair operation $s on %s"
+          (pp_unop op) (pp_v v)
 
   let op1 op =
     let open! Cst.Scalar in
@@ -759,6 +804,8 @@ module
     | PTELoc -> pteloc
     | Offset -> offset
     | IsVirtual -> is_virtual_v
+    | Fst -> pair_op op (fun (v,_) -> v)
+    | Snd -> pair_op op (fun (_,v) -> v)
     | ArchOp1 op ->
         (function
          | Var _ -> raise Undetermined
@@ -769,7 +816,8 @@ module
                    Warn.user_error "Illegal operation %s on %s"
                      (ArchOp.pp_op1 true op) (pp_v v)
                | Some c -> Val c
-             end)
+             end
+         | Pair _ -> assert false)
 
   let op op = match op with
   | Add -> add
@@ -824,6 +872,7 @@ module
   | Val (ConcreteVector _|Symbolic _ |Label _|Tag _ | PteVal _|Instruction _ as s) ->
       Warn.user_error "illegal if on symbolic constant %s" (Cst.pp_v s)
   | Var _ -> raise Undetermined
+  | Pair _ -> assert false
 
   module OrderedValue = struct
     type t = v
@@ -842,28 +891,45 @@ module
 
   type solution = v Solution.t
 
-  let is_var_determined v = match v with
+  let rec is_var_determined v = match v with
   | Var _ -> false
   | Val _ -> true
+  | Pair (v1,v2) ->
+      is_var_determined v1 && is_var_determined v2
 
-  let undetermined_vars v = match v with
+  let rec undetermined_vars v = match v with
   | Var _ -> ValueSet.singleton v
   | Val _ -> ValueSet.empty
+  | Pair (v1,v2) ->
+      ValueSet.union
+        (undetermined_vars v1) (undetermined_vars v2)
 
-  let determined_val v = match v with
-  | Var _ -> None
-  | Val i -> Some i
+  let rec map_csym f v =
+    match v with
+    | Var x -> f x
+    | Val _ -> v
+    | Pair (v1,v2) -> Pair (map_csym f v1,map_csym f v2)
 
-  let simplify_var soln v = match v with
-  | Val _ -> v
-  | Var x ->  try Solution.find  x soln with Not_found -> v
+  let simplify_var soln v =
+    map_csym
+      (fun x ->
+        try Solution.find  x soln with Not_found -> Var x)
+    v
 
-(* Convenience *)
+  (* Convenience *)
 
-  let map_const f v =
+  let rec map_const f v =
     match v with
     | Var _ -> v
     | Val c -> Val (f c)
+    | Pair (v1,v2) -> Pair (map_const f v1,map_const f v2)
 
   let map_scalar f = map_const (Constant.map_scalar f)
+
+  let rec map_csym f v =
+    match v with
+    | Var x -> f x
+    | Val _ -> v
+    | Pair (v1,v2) -> Pair (map_csym f v1,map_csym f v2)
+
 end

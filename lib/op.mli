@@ -75,6 +75,7 @@ type 'aop op1 =
   | TLBLoc (* get TLB entry from location *)
   | PTELoc (* get PTE entry from location *)
   | Offset (* get offset from base (symbolic) location *)
+  | Fst | Snd (* Destructuring pairs *)
   | ArchOp1 of 'aop
 
 val pp_op1 : bool -> (bool -> 'aop -> string) -> 'aop op1 -> string

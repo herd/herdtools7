@@ -645,13 +645,15 @@ let add_finals es =
       | ew::stores ->
           let last =
             List.fold_right
-              (fun ew0 _k ->
+              (fun ew0 ew ->
                 if U.is_before_strict es ew0 ew then ew
                 else begin
                   (* If writes to a given register by a given thread
                      are not totally ordered, it gets weird to define
                      the last or 'final'register write *)
-                  assert (U.is_before_strict es ew ew0) ;
+                  if not (U.is_before_strict es ew ew0) then
+                    Warn.fatal
+                      "Ambiguous po for register %s" (A.pp_location loc) ;
                   ew0
                 end)
               stores ew in

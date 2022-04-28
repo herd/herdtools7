@@ -105,7 +105,7 @@ end = struct
 
 (* precondition: v is a constant symbol *)
   let access_of_value v = match v with
-  | V.Var _ -> assert false
+  | V.Var _|V.Pair _ -> assert false
   | V.Val cst -> access_of_constant cst
 
   let access_of_location_init = function
@@ -582,6 +582,8 @@ end = struct
             -> None
           | Some (A.V.Var _) ->
               Warn.fatal "Cannot decide alias on variables"
+          | Some (A.V.Pair _) ->
+              assert false
         and is_amo = function
           | Amo _ -> true
           | _ -> false in

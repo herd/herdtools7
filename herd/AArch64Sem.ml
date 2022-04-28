@@ -334,7 +334,7 @@ module Make
         M.op Op.Ne x V.zero >>= fun cond ->
         M.choiceT cond (mok ma mv) (mfault ma mzero)
 
-      let check_morello_sealed a ma mv  mok mfault =
+      let check_morello_sealed a ma mv mok mfault =
         M.op1 Op.CheckSealed a >>= fun x ->
         M.op Op.Ne x V.zero >>= fun cond ->
         M.choiceT cond (mfault ma mzero) (mok ma mv)
@@ -933,22 +933,20 @@ module Make
           ma mzero an ii
 
 (* Generic store *)
-      let do_str sz an ma mv ii =
+      let do_str mop sz an ma mv ii =
         lift_memop Dir.W true
           (fun ac ma mv ->
             if is_branching && Access.is_physical ac then
               (* additional ctrl dep on address *)
               M.bind_ctrldata_data ma mv
-                (fun a v ->
-                  do_write_mem sz an aexp ac a v ii)
+                (fun a v -> mop ac a v ii)
             else if morello then
               (* additional ctrl dep on address and data *)
               do_insert_commit (ma >>| mv)
-                (fun (a,v) -> do_write_mem sz an aexp ac a v ii)
+                (fun (a,v) -> mop ac a v ii)
                 ii
             else
-              (ma >>| mv) >>= fun (a,v) ->
-              do_write_mem sz an aexp ac a v ii)
+              (ma >>| mv) >>= fun (a,v) -> mop ac a v ii)
           (to_perms "w" sz) ma mv an ii
 
 (***********************)
@@ -993,6 +991,8 @@ module Make
 
       let get_ea_noext rs kr ii = get_ea rs kr AArch64.S_NOEXT ii
 
+      let add_size a sz = M.add a (V.intToV (MachSize.nbytes sz))
+
       let post_kr rA addr kr ii =
         let open AArch64Base in
         let get_k = match kr with
@@ -1007,6 +1007,16 @@ module Make
         do_ldr sz AArch64.N
           (fun ac a -> do_read_mem sz AArch64.N aexp ac rd a ii)
           (get_ea rs kr s ii) ii
+
+      and ldp sz rd1 rd2 rs kr ii =
+        do_ldr sz AArch64.N
+          (fun ac a ->
+            do_read_mem sz AArch64.N aexp ac rd1 a ii >>|
+            begin
+              add_size a sz >>=
+              fun a -> do_read_mem sz AArch64.N aexp ac rd2 a ii
+            end)
+          (get_ea_noext rs kr ii) ii
 
       and ldar sz t rd rs ii =
         let open AArch64 in
@@ -1036,11 +1046,25 @@ module Make
               ma ii)
 
       and str sz rs rd kr s ii =
-        do_str sz AArch64.N
+        do_str (do_write_mem sz AArch64.N aexp)
+          sz AArch64.N
           (get_ea rd kr s ii) (read_reg_data sz rs ii) ii
 
+      and stp sz rs1 rs2 rd kr ii =
+        do_str
+          (fun ac a v ii ->
+            (M.op1 Op.Fst v >>=
+             fun  v -> do_write_mem sz AArch64.N aexp ac a v ii) >>|
+             ((add_size a sz >>| M.op1 Op.Snd v) >>=
+              fun (a,v) -> do_write_mem sz AArch64.N aexp ac a v ii))
+          sz AArch64.N
+          (get_ea_noext rd kr ii)
+          ((read_reg_data sz rs1 ii >>| read_reg_data sz rs2 ii) >>=
+          fun (v1,v2) -> M.unitT (V.Pair (v1,v2)))
+          ii
+
       and stlr sz rs rd ii =
-        do_str sz AArch64.L
+        do_str (do_write_mem sz AArch64.L aexp) sz AArch64.L
           (read_reg_ord rd ii) (read_reg_data sz rs ii) ii
 
       and stxr sz t rr rs rd ii =
@@ -2076,6 +2100,11 @@ module Make
         | I_DC (op,rd) -> do_dc op rd ii
 (* Instruction-cache maintenance instruction *)
         | I_IC (op,rd) -> do_ic op rd ii
+(* Load/Store pairs *)
+        | I_LDP (TT,v,r1,r2,r3,kr) ->
+            ldp (tr_variant v) r1 r2 r3 kr ii
+        | I_STP (TT,v,r1,r2,r3,kr) ->
+            stp (tr_variant v) r1 r2 r3 kr ii
 (*  Cannot handle *)
         | (I_RBIT _|I_MRS _|I_LDP _|I_STP _
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
