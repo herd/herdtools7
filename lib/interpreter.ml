@@ -1282,6 +1282,7 @@ module Make
             | Unv -> Unv
             | Rel r -> Rel (E.EventRel.inverse r)
             | ClassRel r -> ClassRel (ClassRel.inverse r)
+            | Pair (v1,v2) -> Pair (v2,v1)
             | v -> error_rel env.EV.silent (get_loc e) v
             end
         | Op1 (_,ToId,e) ->
