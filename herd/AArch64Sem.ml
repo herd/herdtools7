@@ -1050,18 +1050,29 @@ module Make
           sz AArch64.N
           (get_ea rd kr s ii) (read_reg_data sz rs ii) ii
 
-      and stp sz rs1 rs2 rd kr ii =
-        do_str
-          (fun ac a v ii ->
-            (M.op1 Op.Fst v >>=
-             fun  v -> do_write_mem sz AArch64.N aexp ac a v ii) >>|
-             ((add_size a sz >>| M.op1 Op.Snd v) >>=
-              fun (a,v) -> do_write_mem sz AArch64.N aexp ac a v ii))
-          sz AArch64.N
-          (get_ea_noext rd kr ii)
-          ((read_reg_data sz rs1 ii >>| read_reg_data sz rs2 ii) >>=
-          fun (v1,v2) -> M.unitT (V.Pair (v1,v2)))
-          ii
+      and stp =
+        if C.variant Variant.Test then
+          fun sz rs1 rs2 rd kr ii ->
+          begin
+            get_ea rd kr AArch64.S_NOEXT ii >>= fun a ->
+            (read_reg_data sz rs1 ii >>= fun v ->
+            do_write_mem sz AArch64.N aexp Access.VIR a v ii) >>|
+            ((add_size a sz >>| read_reg_data sz rs2 ii) >>= fun (a,v) ->
+             do_write_mem sz AArch64.N aexp Access.VIR a v ii)
+          end >>= B.next2T
+        else
+          fun sz rs1 rs2 rd kr ii ->
+          do_str
+            (fun ac a v ii ->
+              (M.op1 Op.Fst v >>=
+                 fun  v -> do_write_mem sz AArch64.N aexp ac a v ii) >>|
+                ((add_size a sz >>| M.op1 Op.Snd v) >>=
+                   fun (a,v) -> do_write_mem sz AArch64.N aexp ac a v ii))
+            sz AArch64.N
+            (get_ea_noext rd kr ii)
+            ((read_reg_data sz rs1 ii >>| read_reg_data sz rs2 ii) >>=
+               fun (v1,v2) -> M.unitT (V.Pair (v1,v2)))
+            ii
 
       and stlr sz rs rd ii =
         do_str (do_write_mem sz AArch64.L aexp) sz AArch64.L
