@@ -36,11 +36,18 @@ module X =
       module V = ToolsConstant
       type v = V.v
       type state = v M.t
-      let state_mem env loc v =
-        try
-          let w = M.find loc env in
-          V.compare v w = 0
-        with Not_found -> assert false
+      let state_mem env loc v = match loc with
+        | ConstrGen.Loc loc ->
+          begin
+            try
+              let w = M.find loc env in
+              V.compare v w = 0
+            with Not_found -> assert false
+          end
+        | ConstrGen.Deref _ ->
+            Warn.fatal
+              "Array access %s in CondUtils.state_mem"
+              (ConstrGen.dump_rloc MiscParser.dump_location loc)
       let state_eqloc _ _ _ = assert false
       let state_fault _env _f = assert false
 
