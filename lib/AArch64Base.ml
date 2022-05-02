@@ -639,11 +639,21 @@ let ldr_memo = function
   | AX -> "LDAXR"
   | AQ -> "LDAPR"
 
+type ldxp_type = XP|AXP
+
+let ldxp_memo = function
+  | XP -> "LDXP"
+  | AXP -> "LDAXP"
+
 type st_type = YY | LY
 
 let str_memo = function
   | YY -> "STXR"
   | LY -> "STLXR"
+
+let stxp_memo = function
+  | YY -> "STXP"
+  | LY -> "STLXP"
 
 type rmw_type = RMW_P | RMW_A | RMW_L | RMW_AL
 
@@ -786,9 +796,11 @@ type 'k kinstruction =
   | I_LDP of temporal * variant * reg * reg * reg * 'k kr
   | I_STP of temporal * variant * reg * reg * reg * 'k kr
   | I_LDAR of variant * ld_type * reg * reg
+  | I_LDXP of variant * ldxp_type * reg * reg * reg
   | I_STR of variant * reg * reg * 'k kr * 'k s
   | I_STLR of variant * reg * reg
   | I_STXR of variant * st_type * reg * reg * reg
+  | I_STXP of variant * st_type * reg * reg * reg * reg
 (* Morello *)
   | I_ALIGND of reg * reg * 'k kr
   | I_ALIGNU of reg * reg * 'k kr
@@ -1051,6 +1063,19 @@ let do_pp_instruction m =
     pp_vreg v r2 ^ ",[" ^
     pp_xreg r3 ^ "]" in
 
+  let pp_ldxp memo v r1 r2 r3 =
+    pp_memo memo ^ " "
+    ^ pp_wreg r1 ^","
+    ^ pp_vreg v r2 ^ ",["
+    ^ pp_xreg r3 ^ "]" in
+
+  let pp_stxp memo v r1 r2 r3 r4 =
+    pp_memo memo ^ " "
+    ^ pp_wreg r1 ^","
+    ^ pp_vreg v r2 ^ ","
+    ^ pp_vreg v r3 ^ ",["
+    ^ pp_xreg r4 ^ "]" in
+
   fun i -> match i with
   | I_NOP -> "NOP"
 (* Branches *)
@@ -1096,6 +1121,8 @@ let do_pp_instruction m =
       pp_mem (ldr_memo t) v r1 r2 m.k0
   | I_LDARBH (bh,t,r1,r2) ->
       pp_mem (ldrbh_memo bh t)  V32 r1 r2 m.k0
+  | I_LDXP (v,t,r1,r2,r3) ->
+      pp_ldxp (ldxp_memo t) v r1 r2 r3
   | I_STR (v,r1,r2,k,S_NOEXT) ->
       pp_mem "STR" v r1 r2 k
   | I_STR (v,r1,r2,k,s) ->
@@ -1103,7 +1130,9 @@ let do_pp_instruction m =
   | I_STLR (v,r1,r2) ->
       pp_mem "STLR" v r1 r2 m.k0
   | I_STXR (v,t,r1,r2,r3) ->
-      pp_stxr (str_memo t) v r1 r2 r3
+     pp_stxr (str_memo t) v r1 r2 r3
+  | I_STXP (v,t,r1,r2,r3,r4) ->
+     pp_stxp (stxp_memo t) v r1 r2 r3 r4
   | I_LDRBH (bh,r1,r2,k) ->
       pp_mem ("LDR"^pp_bh bh) V32 r1 r2 k
   | I_STRBH (bh,r1,r2,k) ->
@@ -1408,6 +1437,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDP_P_SIMD (_,_,r1,r2,r3,_) | I_LDP_SIMD (_,_,r1,r2,r3,_)
   | I_STP_P_SIMD (_,_,r1,r2,r3,_) | I_STP_SIMD (_,_,r1,r2,r3,_)
   | I_EOR_SIMD (r1,r2,r3) | I_ADD_SIMD (r1,r2,r3) | I_ADD_SIMD_S (r1,r2,r3)
+  | I_LDXP (_,_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_LDP (_,_,r1,r2,r3,kr)
   | I_STP (_,_,r1,r2,r3,kr)
@@ -1419,7 +1449,8 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDOP (_,_,_,r1,r2,r3)
   | I_LDOPBH (_,_,_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
-
+  | I_STXP (_,_,r1,r2,r3,r4)
+    -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_reg r4 c)))
 
 let map_regs f_reg f_symb =
 
@@ -1472,6 +1503,8 @@ let map_regs f_reg f_symb =
      I_LDAR (v,t,map_reg r1,map_reg r2)
   | I_LDARBH (bh,t,r1,r2) ->
      I_LDARBH (bh,t,map_reg r1,map_reg r2)
+  | I_LDXP (v,t,r1,r2,r3) ->
+     I_LDXP (v,t,map_reg r1,map_reg r2,map_reg r3)
   | I_STR (v,r1,r2,k,s) ->
       I_STR (v,map_reg r1,map_reg r2,k,s)
   | I_STLR (v,r1,r2) ->
@@ -1482,6 +1515,8 @@ let map_regs f_reg f_symb =
       I_STXR (v,t,map_reg r1,map_reg r2,map_reg r3)
   | I_STXRBH (bh,t,r1,r2,r3) ->
       I_STXRBH (bh,t,map_reg r1,map_reg r2,map_reg r3)
+  | I_STXP (v,t,r1,r2,r3,r4) ->
+     I_STXP (v,t,map_reg r1,map_reg r2,map_reg r3,map_reg r4)
 (* Neon Extension Loads and Stores *)
   | I_LD1 (r1,i,r2,kr) ->
       I_LD1 (map_reg r1, i, map_reg r2, map_kr kr)
@@ -1734,6 +1769,7 @@ let get_next = function
   | I_MOV_S _
   | I_MOVI_V _ | I_MOVI_S _
   | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
+  | I_LDXP _|I_STXP _
     -> [Label.Next;]
 
 include Pseudo.Make
@@ -1794,6 +1830,7 @@ include Pseudo.Make
         | I_UNSEAL _
         | I_MOV_VE _ | I_MOV_V _ | I_MOV_TG _ | I_MOV_FG _
         | I_MOV_S _
+        | I_LDXP _| I_STXP _
             as keep -> keep
         | I_LDR (v,r1,r2,kr,s) -> I_LDR (v,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_LDUR (v,r1,r2,None) -> I_LDUR (v,r1,r2,None)
@@ -1883,7 +1920,7 @@ include Pseudo.Make
         | I_LDUR_SIMD _ | I_STUR_SIMD _
         | I_TLBI (_,_)
           -> 1
-        | I_LDP _|I_STP _
+        | I_LDP _|I_STP _|I_LDXP _|I_STXP _
         | I_CAS _ | I_CASBH _
         | I_SWP _ | I_SWPBH _
         | I_LDOP _ | I_LDOPBH _

@@ -187,10 +187,10 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | _ -> assert false (* Unsupported arrangement specifier *)
 
     let mem_access_size = function
-      | I_LDR (v,_,_,_,_) | I_LDP (_,v,_,_,_,_)
+      | I_LDR (v,_,_,_,_) | I_LDP (_,v,_,_,_,_) | I_LDXP (v,_,_,_,_)
       | I_LDUR (v,_,_,_)  | I_LDR_P(v,_,_,_)
       | I_STR (v,_,_,_,_) | I_STLR (v,_,_) | I_STXR (v,_,_,_,_)
-      | I_STP (_,v,_,_,_,_)
+      | I_STP (_,v,_,_,_,_) | I_STXP (v,_,_,_,_,_)
       | I_CAS (v,_,_,_,_) | I_SWP (v,_,_,_,_)
       | I_LDOP (_,v,_,_,_,_) | I_STOP (_,v,_,_,_) ->
           Some (tr_variant v)
@@ -253,7 +253,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDUR (_,r,_,_)
       | I_LDAR (_,_,r,_) |I_LDARBH (_,_,r,_)
       | I_SWP (_,_,_,r,_) | I_SWPBH (_,_,_,r,_)
-      | I_STXR (_,_,r,_,_) | I_STXRBH (_,_,r,_,_)
+      | I_STXR (_,_,r,_,_) | I_STXP (_,_,r,_,_, _) | I_STXRBH (_,_,r,_,_)
       | I_CAS (_,_,r,_,_) | I_CASBH (_,_,r,_,_)
       | I_LDOP (_,_,_,_,r,_) | I_LDOPBH (_,_,_,_,r,_)
       | I_MOV (_,r,_) | I_MOVZ (_,r,_,_) | I_MOVK (_,r,_,_)
@@ -265,6 +265,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MRS (r,_)
         -> [r]
       | I_LDR_P (_,r1,r2,_) | I_LDP (_,_,r1,r2,_,_)
+      | I_LDXP (_,_,r1,r2,_)
         -> [r1;r2;]
       | I_LD1 _|I_LD1M _|I_LD1R _|I_LD2 _
       | I_LD2M _|I_LD2R _|I_LD3 _|I_LD3M _
