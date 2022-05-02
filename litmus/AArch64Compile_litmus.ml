@@ -315,6 +315,21 @@ module Make(V:Constant.S)(C:Config) =
     | V128,_
     | _,RV (V128,_) -> assert false
 
+    let loadx_pair memo v rD1 rD2 rA = match v with
+      | V32 ->
+         { empty_ins with
+           memo= sprintf "%s ^wo0,^wo1,[^i0]" memo;
+           inputs=[rA];
+           outputs=[rD1;rD2;];
+           reg_env=[(rA,voidstar);(rD1,word);(rD2,word);]; }
+      | V64 ->
+        { empty_ins with
+           memo= sprintf "%s ^o0,^o1,[^i0]" memo;
+           inputs=[rA];
+           outputs=[rD1;rD2;];
+           reg_env=[(rA,voidstar);(rD1,quad);(rD2,quad);]; }
+      | V128 -> assert false
+
     let store_pair memo v rD1 rD2 rA kr = match v,kr with
     | V32,K 0 ->
         { empty_ins with
@@ -362,6 +377,23 @@ module Make(V:Constant.S)(C:Config) =
     | V128,_
     | _,RV (V128,_) -> assert false
 
+    let storex_pair memo v rs rt1 rt2 rn =
+      match v with
+      | V32 ->
+         { empty_ins with
+           memo=memo^ " ^wo0,^wi0,^wi1,[^i2]";
+           inputs=[rt1; rt2; rn;];
+           outputs=[rs;];
+           reg_env=[ rn,voidstar; rs,word; rt1,word; rt2,word;];
+         }
+      | V64 ->
+         { empty_ins with
+           memo=memo^ " ^wo0,^i0,^i1,[^i2]";
+           inputs=[rt1; rt2; rn;];
+           outputs=[rs;];
+           reg_env=[ rn,voidstar; rs,word; rt1,quad; rt2,quad; ];
+         }
+      | V128 -> assert false
 
     let zr v = match v with
     | V32 -> "wzr"
@@ -1187,8 +1219,12 @@ module Make(V:Constant.S)(C:Config) =
     | I_LDR_P (v,r1,r2,k1) -> load_p "ldr" v r1 r2 k1::k
     | I_LDP (t,v,r1,r2,r3,kr) ->
         load_pair (match t with TT -> "ldp" | NT -> "ldnp") v r1 r2 r3 kr::k
+    | I_LDXP (v,t,r1,r2,r3) ->
+       loadx_pair (Misc.lowercase (ldxp_memo t)) v r1 r2 r3::k
     | I_STP (t,v,r1,r2,r3,kr) ->
         store_pair (match t with TT -> "stp" | NT -> "stnp") v r1 r2 r3 kr::k
+    | I_STXP (v,t,r1,r2,r3,r4) ->
+        storex_pair (Misc.lowercase (stxp_memo t)) v r1 r2 r3 r4::k
     | I_LDRBH (B,r1,r2,kr,s) -> load "ldrb" V32 r1 r2 kr (default_shift kr s)::k
     | I_LDRBH (H,r1,r2,kr,s) -> load "ldrh" V32 r1 r2 kr (default_shift kr s)::k
     | I_LDAR (v,t,r1,r2) -> load (ldr_memo t) v r1 r2 k0 S_NOEXT::k

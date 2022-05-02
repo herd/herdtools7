@@ -2194,7 +2194,7 @@ module Make
         | I_STP (TT,v,r1,r2,r3,kr) ->
             stp (tr_variant v) r1 r2 r3 kr ii
 (*  Cannot handle *)
-        | (I_RBIT _|I_MRS _|I_LDP _|I_STP _
+        | (I_LDXP _|I_STXP _|I_RBIT _|I_MRS _|I_LDP _|I_STP _
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | I_LD1M _|I_ST1M _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
