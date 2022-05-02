@@ -674,7 +674,7 @@ let dump_threads _tname env test =
       O.oi "smp_mb();" ;
       O.oi "wake_up(wq);" ;
       O.oi "smp_mb();" ;
-      O.oi "do_exit(0);" ;
+      O.oi "return 0;" ;
       O.o "}" ;
       O.o "" ;
       ())
