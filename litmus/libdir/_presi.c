@@ -157,7 +157,7 @@ uint32_t rand_k (uint32_t *st,uint32_t k) {
 
 void launch(pthread_t *th, f_t *f, void *a) {
   int e = pthread_create(th,NULL,f,a);
-  if (e) errexit("phread_create",e);
+  if (e) errexit("pthread_create",e);
 }
 
 void *join(pthread_t *th) {
