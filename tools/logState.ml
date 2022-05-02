@@ -436,8 +436,7 @@ module LC =
 
       type state = st_concrete
 
-
-      let rec bds_assoc  bds loc = match bds.Hashcons.node with
+      let rec bds_assoc bds loc = match bds.Hashcons.node with
       | HashedEnv.Nil -> Warn.fatal "No value for location %s" loc
       | HashedEnv.Cons (p,r) ->
           if Misc.string_eq loc (HashedBinding.get_loc p) then
@@ -445,11 +444,11 @@ module LC =
           else
             bds_assoc r loc
 
-
       let state_mem st loc v =
         let open HashedState in
         let {S.e=bds; _;} = as_t st in
-        let v_bound_pp = bds_assoc bds (MiscParser.dump_location  loc) in
+        let v_bound_pp =
+          bds_assoc bds (ConstrGen.dump_rloc MiscParser.dump_location  loc) in
         try (* Ints are treated differently to abstract away radix *)
           let i = Int64.of_string v_bound_pp in
           ToolsConstant.eq v (Constant.Concrete i)
