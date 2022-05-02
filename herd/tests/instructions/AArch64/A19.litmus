@@ -1,0 +1,8 @@
+AArch64 A19
+(* Tests unscaled load, given a symbolic location, no offset*)
+{ int64_t t[2] = {1,2}; 0:X1=t; uint64_t 0:X0; }
+
+P0;
+  LDUR X0, [X1,#8];
+
+forall (0:X0=2)(* Symbolic locations, we can't do much here*)
