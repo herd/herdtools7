@@ -159,6 +159,7 @@ module type S =
 
 (* Parallel composition *)
     val (>>|) : 'a t -> 'b t -> ('a * 'b)  t
+    val para_atomic :  'a t -> 'b t -> ('a * 'b)  t (* For single copy atomic memory accesses *)
     val (>>::) : 'a t -> 'a list t -> 'a list t
     val (|||) : unit t -> unit t -> unit t
 

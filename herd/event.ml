@@ -299,6 +299,10 @@ val same_instance : event -> event -> bool
   val para_comp : bool (* check disjointness *)
     -> event_structure -> event_structure -> event_structure option
 
+(* Memory events in arguments form one atomic access => build a sca *)
+  val para_atomic :
+    event_structure -> event_structure -> event_structure option
+
 (* sequential composition, add data dependency *)
 
   val (=*$=) : (* second es entries are minimal evts for iico_data *)
@@ -1122,6 +1126,13 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let para_comp check =
       if check then check_disjoint do_para_comp
       else fun es1 es2 -> Some (do_para_comp es1 es2)
+
+    let para_atomic es1 es2 =
+      let m1 = EventSet.filter is_mem es1.events
+      and m2 = EventSet.filter is_mem es2.events in
+      Misc.app_opt
+        (fun r -> { r with sca = EventSetSet.add (EventSet.union m1 m2) r.sca; })
+        (para_comp true es1 es2)
 
 (* Composition with intra_causality_data from first to second *)
     let data_comp mini_loc mkOut es1 es2 =

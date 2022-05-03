@@ -77,6 +77,7 @@ module Make
       let (>>*==) = M.(>>*==)
       let (>>**==) = M.(>>**==)
       let (>>|) = M.(>>|)
+      let (>>||) = M.para_atomic
       let (>>!) = M.(>>!)
       let (>>::) = M.(>>::)
 
@@ -1018,6 +1019,18 @@ module Make
             end)
           (get_ea_noext rs kr ii) ii
 
+      and ldxp sz t rd1 rd2 rs ii =
+        let open AArch64 in
+        let an = match t with XP -> X | AXP -> XA in
+        do_ldr sz an
+          (fun ac a ->
+            read_mem_reserve sz an aexp ac rd1 a ii >>||
+            begin
+              add_size a sz >>= fun a ->
+              do_read_mem sz an aexp ac rd2 a ii
+            end)
+          (read_reg_ord rs ii) ii
+
       and ldar sz t rd rs ii =
         let open AArch64 in
         let an = match t with
@@ -1078,11 +1091,11 @@ module Make
         do_str (do_write_mem sz AArch64.L aexp) sz AArch64.L
           (read_reg_ord rd ii) (read_reg_data sz rs ii) ii
 
-      and stxr sz t rr rs rd ii =
+      and do_stxr ms mw sz t rr rd ii  =
         let open AArch64Base in
         let an = match t with
-        | YY -> AArch64.X
-        | LY -> AArch64.XL in
+          | YY -> AArch64.X
+          | LY -> AArch64.XL in
         lift_memop Dir.W true
           (fun ac ma mv ->
             let must_fail =
@@ -1094,17 +1107,34 @@ module Make
                    (* Some, must fail when size differ and cu is disallowed *)
                    not (do_cu || MachSize.equal szr sz)
               end in
-                M.aarch64_store_conditional must_fail
+            M.aarch64_store_conditional must_fail
               (read_reg_ord ResAddr ii)
-              mv
-              ma
+              mv ma
               (write_reg ResAddr V.zero ii)
               (fun v -> write_reg rr v ii)
-              (fun ea resa v ->
-                write_mem_atomic sz an aexp ac ea v resa ii))
-          (to_perms "w" sz)
-          (read_reg_ord rd ii)
-          (read_reg_data sz rs ii) an ii
+              (mw an ac))
+              (to_perms "w" sz)
+              (read_reg_ord rd ii)
+              ms an ii
+
+      let stxr sz t rr rs rd ii =
+        do_stxr
+          (read_reg_data sz rs ii)
+          (fun an ac ea resa v  -> write_mem_atomic sz an aexp ac ea v resa ii)
+          sz t rr rd ii
+
+      let stxp sz t rr rs1 rs2 rd ii =
+        do_stxr
+          ((read_reg_data sz rs1 ii >>| read_reg_data sz rs2 ii) >>= fun (v1,v2) ->
+           M.unitT (V.Pair (v1,v2)))
+        (fun an ac ea resa v ->
+          begin
+            (M.op1 Op.Fst v >>= fun v ->  write_mem_atomic sz an aexp ac ea v resa ii) >>||
+              ((add_size ea sz >>| M.op1 Op.Snd v) >>= fun (a,v) ->
+               check_morello_for_write
+                 (fun a -> check_mixed_write_mem sz an aexp ac a v ii) a v ii)
+          end >>!  ())
+        sz t rr rd ii
 
 (* AMO instructions *)
       let rmw_amo_read sz rmw =
@@ -2116,8 +2146,12 @@ module Make
             ldp (tr_variant v) r1 r2 r3 kr ii
         | I_STP (TT,v,r1,r2,r3,kr) ->
             stp (tr_variant v) r1 r2 r3 kr ii
-(*  Cannot handle *)
-        | (I_LDXP _|I_STXP _|I_RBIT _|I_MRS _|I_LDP _|I_STP _
+        | I_LDXP (v,t,r1,r2,r3) ->
+            ldxp (tr_variant v) t r1 r2 r3 ii
+      | I_STXP (v,t,r1,r2,r3,r4) ->
+            stxp (tr_variant v) t r1 r2 r3 r4 ii
+      (*  Cannot handle *)
+        | (I_RBIT _|I_MRS _|I_LDP _|I_STP _
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | I_LD1M _|I_ST1M _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)

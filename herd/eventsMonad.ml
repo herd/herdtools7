@@ -657,6 +657,8 @@ Monad type:
     let (>>|) : 'a t -> 'b t -> ('a * 'b)  t
         = fun s1 s2 -> combi (fun v1 v2 -> (v1,v2)) (fun es1 es2 -> es1 =|= es2) s1 s2
 
+    let para_atomic s1 s2 = combi (fun v1 v2 -> (v1,v2)) E.para_atomic s1 s2
+
     let (>>::) : 'a t -> 'a list t -> 'a list  t
         = fun s1 s2 -> combi (fun v1 v2 -> v1::v2) (fun es1 es2 -> es1 =|= es2) s1 s2
 
