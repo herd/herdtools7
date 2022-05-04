@@ -1,8 +1,5 @@
 opam-version: "2.0"
-name: "herdtools7"
-version: "7.56.1"
 synopsis: "The herdtools suite for simulating and studying weak memory models"
-description: ""
 maintainer: "Luc Maranget <Luc.Maranget@inria.fr>"
 authors: [
   "Luc Maranget <Luc.Maranget@inria.fr>"
@@ -19,6 +16,5 @@ install: ["sh" "./dune-install.sh" "%{prefix}%"]
 depends: [
   "ocaml" {>= "4.05.0"}
   "dune"  {>= "1.4" }
-  "ocamlfind" { build }
-  "menhir" {>= "20180530"}
+  "menhir" {>= "20181026"}
 ]
