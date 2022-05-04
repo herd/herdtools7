@@ -147,6 +147,8 @@ let opt_eq eq x y = match x,y with
 | Some x,Some y -> eq x y
 | (None,Some _)|(Some _,None) -> false
 
+let pair x y = x,y
+
 let pair_compare cmpx cmpy (x1,y1) (x2,y2) =
   match cmpx x1 x2 with
   | 0 -> cmpy y1 y2
