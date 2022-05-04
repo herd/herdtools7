@@ -45,9 +45,10 @@ module type S =
     val delay : 'a t -> ('a * 'a t) t
 
 (* Data composition, entry for snd monad: minimals for iico_data *)
-    val (>>=) : 'a t -> ('a -> 'b t) -> ('b) t
-
+    val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+    val data_input_next : 'a t -> ('a -> 'b t) -> 'b t (* Input to second arg *)
     val (>>==) : 'a t -> ('a -> 'b t) -> 'b t (* Output events stay in first arg *)
+
 (* Control composition *)
     val (>>*=) : 'a t -> ('a -> 'b t) -> 'b t
     val (>>*==) : 'a t -> ('a -> 'b t) -> 'b t (* Output events stay in first argument *)
@@ -159,6 +160,8 @@ module type S =
 
 (* Parallel composition *)
     val (>>|) : 'a t -> 'b t -> ('a * 'b)  t
+    val para_atomic :  'a t -> 'b t -> ('a * 'b)  t (* For single copy atomic memory accesses *)
+    val para_input_right : 'a t -> 'b t -> ('a * 'b)  t (* Input in second argument *)
     val (>>::) : 'a t -> 'a list t -> 'a list t
     val (|||) : unit t -> unit t -> unit t
 
