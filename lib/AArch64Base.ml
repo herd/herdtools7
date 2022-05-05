@@ -794,10 +794,11 @@ type 'k kinstruction =
 (* sufficiently different (and semantically interesting) to need a new inst *)
   | I_LDR_P of variant * reg * reg * 'k
   | I_LDP of temporal * variant * reg * reg * reg * 'k kr
-  | I_STP of temporal * variant * reg * reg * reg * 'k kr
+  | I_LDPSW of reg * reg * reg * 'k kr
   | I_LDAR of variant * ld_type * reg * reg
   | I_LDXP of variant * ldxp_type * reg * reg * reg
   | I_STR of variant * reg * reg * 'k kr * 'k s
+  | I_STP of temporal * variant * reg * reg * reg * 'k kr
   | I_STLR of variant * reg * reg
   | I_STXR of variant * st_type * reg * reg * reg
   | I_STXP of variant * st_type * reg * reg * reg * reg
@@ -1117,6 +1118,8 @@ let do_pp_instruction m =
       pp_mem_post "LDR" v r1 r2 k
   | I_LDP (t,v,r1,r2,r3,k) ->
       pp_memp (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 k
+  | I_LDPSW (r1,r2,r3,k) ->
+      pp_memp "LDPSW" V64 r1 r2 r3 k
   | I_STP (t,v,r1,r2,r3,k) ->
       pp_memp (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 k
   | I_LDAR (v,t,r1,r2) ->
@@ -1448,6 +1451,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDXP (_,_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_LDP (_,_,r1,r2,r3,kr)
+  | I_LDPSW (r1,r2,r3,kr)
   | I_STP (_,_,r1,r2,r3,kr)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_kr kr c)))
   | I_CAS (_,_,r1,r2,r3)
@@ -1505,6 +1509,8 @@ let map_regs f_reg f_symb =
      I_LDR_P (v,map_reg r1, map_reg r2, k)
   | I_LDP (t,v,r1,r2,r3,kr) ->
      I_LDP (t,v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
+  | I_LDPSW (r1,r2,r3,kr) ->
+     I_LDPSW (map_reg r1,map_reg r2,map_reg r3,map_kr kr)
   | I_STP (t,v,r1,r2,r3,kr) ->
      I_STP (t,v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
   | I_LDAR (v,t,r1,r2) ->
@@ -1725,6 +1731,7 @@ let get_next = function
   | I_LDUR _
   | I_LDR_P _
   | I_LDP _
+  | I_LDPSW _
   | I_STP _
   | I_STR _
   | I_LDAR _
@@ -1845,6 +1852,7 @@ include Pseudo.Make
         | I_LDUR (v,r1,r2,Some(k)) -> I_LDUR (v,r1,r2,Some(k_tr k))
         | I_LDR_P (v,r1,r2,k) -> I_LDR_P (v,r1,r2,k_tr k)
         | I_LDP (t,v,r1,r2,r3,kr) -> I_LDP (t,v,r1,r2,r3,kr_tr kr)
+        | I_LDPSW (r1,r2,r3,kr) -> I_LDPSW (r1,r2,r3,kr_tr kr)
         | I_STP (t,v,r1,r2,r3,kr) -> I_STP (t,v,r1,r2,r3,kr_tr kr)
         | I_STR (v,r1,r2,kr,s) -> I_STR (v,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_STG (r1,r2,kr) -> I_STG (r1,r2,kr_tr kr)
@@ -1930,7 +1938,7 @@ include Pseudo.Make
         | I_LDUR_SIMD _ | I_STUR_SIMD _
         | I_TLBI (_,_)
           -> 1
-        | I_LDP _|I_STP _|I_LDXP _|I_STXP _
+        | I_LDP _|I_LDPSW _|I_STP _|I_LDXP _|I_STXP _
         | I_CAS _ | I_CASBH _
         | I_SWP _ | I_SWPBH _
         | I_LDOP _ | I_LDOPBH _

@@ -187,6 +187,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | _ -> assert false (* Unsupported arrangement specifier *)
 
     let mem_access_size = function
+      | I_LDPSW _ -> Some (tr_variant V32)
       | I_LDR (v,_,_,_,_) | I_LDP (_,v,_,_,_,_) | I_LDXP (v,_,_,_,_)
       | I_LDUR (v,_,_,_)  | I_LDR_P(v,_,_,_)
       | I_STR (v,_,_,_,_) | I_STLR (v,_,_) | I_STXR (v,_,_,_,_)
@@ -218,7 +219,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_NOP|I_B _|I_BR _|I_BC (_, _)|I_CBZ (_, _, _)
       | I_CBNZ (_, _, _)|I_BL _|I_BLR _|I_RET _|I_LDAR (_, _, _, _)
       | I_TBNZ(_,_,_,_) | I_TBZ (_,_,_,_) | I_MOVZ (_,_,_,_) | I_MOVK(_,_,_,_)
-      |I_MOV (_, _, _)|I_SXTW (_, _)|I_OP3 (_, _, _, _, _, _)
+      | I_MOV (_, _, _)|I_SXTW (_, _)|I_OP3 (_, _, _, _, _, _)
       | I_ADR (_, _)|I_RBIT (_, _, _)|I_FENCE _
       | I_CSEL (_, _, _, _, _, _)|I_IC (_, _)|I_DC (_, _)|I_MRS (_, _)
       | I_STG _ | I_STZG _ | I_LDG _
@@ -265,7 +266,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MRS (r,_)
         -> [r]
       | I_LDR_P (_,r1,r2,_) | I_LDP (_,_,r1,r2,_,_)
-      | I_LDXP (_,_,r1,r2,_)
+      | I_LDPSW (r1,r2,_,_) | I_LDXP (_,_,r1,r2,_)
         -> [r1;r2;]
       | I_LD1 _|I_LD1M _|I_LD1R _|I_LD2 _
       | I_LD2M _|I_LD2R _|I_LD3 _|I_LD3M _
@@ -309,7 +310,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MOV_V _|I_MOV_TG _|I_MOV_FG _
       | I_MOV_S _|I_MOVI_V _|I_MOVI_S _
       | I_EOR_SIMD _|I_ADD_SIMD _|I_ADD_SIMD_S _
-      | I_LDR_P _|I_LDP _|I_STP _
+      | I_LDR_P _|I_LDP _|I_LDPSW _|I_STP _
       | I_STR _|I_STLR _|I_ALIGND _|I_ALIGNU _
       | I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
       | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _

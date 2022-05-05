@@ -2232,7 +2232,7 @@ module Make
       | I_STXP (v,t,r1,r2,r3,r4) ->
             stxp (tr_variant v) t r1 r2 r3 r4 ii
       (*  Cannot handle *)
-        | (I_RBIT _|I_MRS _|I_LDP _|I_STP _
+        | (I_RBIT _|I_MRS _|I_LDP _|I_STP _|I_LDPSW _
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | I_LD1M _|I_ST1M _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)

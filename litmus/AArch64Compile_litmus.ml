@@ -315,6 +315,23 @@ module Make(V:Constant.S)(C:Config) =
     | V128,_
     | _,RV (V128,_) -> assert false
 
+    let ldpsw rD1 rD2 rA kr =
+      let memo = "ldpsw" in
+      match kr with
+      | K 0 ->
+         { empty_ins with
+           memo=memo ^ " ^o0,^o1,[^i0]";
+           inputs=[rA];
+           outputs=[rD1;rD2;];
+           reg_env=[rA,voidstar;(rD1,quad);(rD2,quad);]; }
+      | K k ->
+         { empty_ins with
+          memo=memo ^ sprintf " ^o0,^o1,[^i0,#%i]" k;
+          inputs=[rA];
+          outputs=[rD1;rD2;];
+          reg_env=[rA,voidstar; (rD1,quad);(rD2,quad);]; }
+      | _ -> assert false
+
     let loadx_pair memo v rD1 rD2 rA = match v with
       | V32 ->
          { empty_ins with
@@ -1219,6 +1236,8 @@ module Make(V:Constant.S)(C:Config) =
     | I_LDR_P (v,r1,r2,k1) -> load_p "ldr" v r1 r2 k1::k
     | I_LDP (t,v,r1,r2,r3,kr) ->
         load_pair (match t with TT -> "ldp" | NT -> "ldnp") v r1 r2 r3 kr::k
+    | I_LDPSW (r1,r2,r3,kr) ->
+       ldpsw r1 r2 r3 kr::k
     | I_LDXP (v,t,r1,r2,r3) ->
        loadx_pair (Misc.lowercase (ldxp_memo t)) v r1 r2 r3::k
     | I_STP (t,v,r1,r2,r3,kr) ->

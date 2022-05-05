@@ -64,6 +64,7 @@ match name with
 | "ldr"|"LDR" -> LDR
 | "ldur"|"LDUR" -> LDUR
 | "ldp"|"LDP" -> LDP
+| "ldpsw"|"LDPSW" -> LDPSW
 | "ldnp"|"LDNP" -> LDNP
 | "stp"|"STP" -> STP
 | "stnp"|"STNP" -> STNP
