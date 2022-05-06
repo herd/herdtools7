@@ -26,5 +26,5 @@ cpdir () {
   rm -rf $TO && mkdir -p $TO && ( cd $FROM && cp -r . $TO )
 }
 
-VERSION=$(grep "^version:" herdtools7.opam | cut -d ":" -f 2 | cut -d '"' -f 2)
+VERSION=$(cat VERSION.txt)
 REV=$(git rev-parse HEAD 2>/dev/null || echo exported)
