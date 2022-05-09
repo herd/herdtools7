@@ -59,6 +59,7 @@ val same_instance : event -> event -> bool
   val pp_instance   : event -> string
   val pp_action     : event -> string
   val debug_event : out_channel -> event -> unit
+  val debug_event_str : event -> string
 
 (***************************)
 (* Procs and program order *)
@@ -510,6 +511,9 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 
     let debug_event chan e =
       fprintf chan
+        "(eeid=%s action=%s)" (pp_eiid e) (pp_action e)
+    let debug_event_str e =
+      sprintf
         "(eeid=%s action=%s)" (pp_eiid e) (pp_action e)
 
 (* Utility functions to pick out components *)

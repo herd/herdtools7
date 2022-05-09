@@ -51,10 +51,6 @@ module
 
   let from_var v = Var v
 
-  let as_var = function
-    | Var v -> Some v
-    | Val _ -> None
-
   let do_pp pp_val = function
   | Var s -> pp_csym s
   | Val x -> pp_val x
@@ -119,7 +115,7 @@ module
         Warn.user_error "Illegal operation on %s" (Cst.pp_v x)
     | Var _ -> raise Undetermined
 
-  let pp_unop hexa = Op.pp_op1 hexa ArchOp.pp_op1
+  let pp_unop = Op.pp_op1 true ArchOp.pp_op1
 
   let unop op_op op v1 =
   match v1 with
@@ -127,10 +123,10 @@ module
         Val (Concrete (op i1))
     | Val (ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _ as x) ->
         Warn.user_error "Illegal operation %s on %s"
-          (pp_unop true op_op) (Cst.pp_v x)
+          (pp_unop op_op) (Cst.pp_v x)
     | Val (Instruction _ as x) ->
       Warn.warn_always "FIXME: operation %s on %s suspicious with -variant self"
-          (pp_unop true op_op) (Cst.pp_v x) ;
+          (pp_unop op_op) (Cst.pp_v x) ;
       v1
     | Var _ -> raise Undetermined
 
@@ -167,7 +163,7 @@ module
         Val (Concrete (op (scalar_of_cap c)))
     | Val cst ->
         Warn.user_error "Illegal operation %s on %s"
-          (pp_unop true op_op) (Cst.pp_v cst)
+          (pp_unop op_op) (Cst.pp_v cst)
     | Var _ -> raise Undetermined
 
   (* Concrete,Concrete -> Concrete
@@ -850,15 +846,20 @@ module
   | Var _ -> ValueSet.singleton v
   | Val _ -> ValueSet.empty
 
-  let determined_val v = match v with
-  | Var _ -> None
-  | Val i -> Some i
 
-  let simplify_var soln v = match v with
-  | Val _ -> v
-  | Var x ->  try Solution.find  x soln with Not_found -> v
+  let map_csym f v =
+    match v with
+    | Var x -> f x
+    | Val _ -> v
 
-(* Convenience *)
+  let simplify_var soln v =
+    map_csym
+      (fun x ->
+        try Solution.find  x soln with Not_found -> Var x)
+    v
+
+  (* Convenience *)
+
 
   let map_const f v =
     match v with
@@ -866,4 +867,6 @@ module
     | Val c -> Val (f c)
 
   let map_scalar f = map_const (Constant.map_scalar f)
+
+
 end
