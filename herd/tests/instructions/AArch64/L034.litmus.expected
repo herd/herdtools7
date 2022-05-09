@@ -1,0 +1,10 @@
+Test L034 Required
+States 1
+0:X0=-1; 0:X1=-2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=-1 /\ 0:X1=-2)
+Observation L034 Always 1 0
+Hash=36b5e9a6b6768daa952dbf3142b17072
+
