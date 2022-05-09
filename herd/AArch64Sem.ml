@@ -224,17 +224,26 @@ module Make
         neon_replicate v nelem esize v >>= fun new_val -> write_reg_neon_sz sz r new_val ii
       | _ -> assert false
 
-      let write_reg_sz sz r v ii = match r with
+      let do_write_reg_sz op sz r v ii = match r with
       | AArch64.ZR -> M.unitT ()
       | _ -> match sz with
         | MachSize.S128 -> write_reg_morello r v ii
         | MachSize.Quad when not morello -> write_reg r v ii
         | MachSize.Quad|MachSize.Word|MachSize.Short|MachSize.Byte ->
-            M.op1 (Op.Mask sz) v >>= fun v -> write_reg r v ii
+            M.op1 (op sz) v >>= fun v -> write_reg r v ii
+
+      let write_reg_sz = do_write_reg_sz (fun sz -> Op.Mask sz)
+      and write_reg_sz_sxt = do_write_reg_sz (fun sz -> Op.Sxt sz)
 
       let write_reg_sz_non_mixed =
         if mixed then fun _sz -> write_reg
         else write_reg_sz
+
+      and write_reg_sz_non_mixed_sxt =
+        if mixed then
+          fun sz r v ii ->
+          M.op1 (Op.Sxt sz) v >>= fun v -> write_reg r v ii
+        else write_reg_sz_sxt
 
 (* Emit commit event *)
       let commit_bcc ii = M.mk_singleton_es (Act.Commit (true,None)) ii
@@ -706,6 +715,11 @@ module Make
         >>= fun v -> write_reg_sz_non_mixed sz rd v ii
         >>= fun () -> B.nextT
 
+      and do_read_mem_sxt sz an anexp ac rd a ii =
+        do_read_mem_ret sz an anexp ac a ii
+        >>= fun v -> write_reg_sz_non_mixed_sxt sz rd v ii
+        >>= fun () -> B.nextT
+
       let read_mem sz = do_read_mem sz AArch64.N
       let read_mem_acquire sz = do_read_mem sz AArch64.A
       let read_mem_acquire_pc sz = do_read_mem sz AArch64.Q
@@ -1027,6 +1041,17 @@ module Make
             end)
           (get_ea_noext rs kr ii) ii
 
+      and ldpsw rd1 rd2 rs kr ii =
+        let mem_sz =  MachSize.Word in
+        do_ldr MachSize.Word AArch64.N
+          (fun ac a ->
+            do_read_mem_sxt mem_sz AArch64.N aexp ac rd1 a ii >>|
+            begin
+              add_size a mem_sz >>=
+              fun a -> do_read_mem_sxt mem_sz AArch64.N aexp ac rd2 a ii
+            end)
+          (get_ea_noext rs kr ii) ii
+
       and ldxp sz t rd1 rd2 rs ii =
         let open AArch64 in
         let an = match t with XP -> X | AXP -> XA in
@@ -1072,19 +1097,19 @@ module Make
           (get_ea rd kr s ii) (read_reg_data sz rs ii) ii
 
       and stp =
-          let (>>>) = M.data_input_next in
-          fun sz rs1 rs2 rd kr ii ->
-          do_str
-            (fun ac a _ ii ->
-              (read_reg_data sz rs1 ii >>> fun v ->
-               do_write_mem sz AArch64.N aexp ac a v ii) >>|
+        let (>>>) = M.data_input_next in
+        fun sz rs1 rs2 rd kr ii ->
+        do_str
+          (fun ac a _ ii ->
+            (read_reg_data sz rs1 ii >>> fun v ->
+             do_write_mem sz AArch64.N aexp ac a v ii) >>|
               (add_size a sz >>= fun a ->
                read_reg_data sz rs2 ii >>> fun v ->
                do_write_mem sz AArch64.N aexp ac a v ii))
-            sz AArch64.N
-            (get_ea_noext rd kr ii)
-            (M.unitT V.zero)
-            ii
+          sz AArch64.N
+          (get_ea_noext rd kr ii)
+          (M.unitT V.zero)
+          ii
 
       and stlr sz rs rd ii =
         do_str (do_write_mem sz AArch64.L aexp) sz AArch64.L
@@ -2225,6 +2250,8 @@ module Make
 (* Load/Store pairs *)
         | I_LDP (TT,v,r1,r2,r3,kr) ->
             ldp (tr_variant v) r1 r2 r3 kr ii
+        | I_LDPSW (r1,r2,r3,kr) ->
+            ldpsw r1 r2 r3 kr ii
         | I_STP (TT,v,r1,r2,r3,kr) ->
             stp (tr_variant v) r1 r2 r3 kr ii
         | I_LDXP (v,t,r1,r2,r3) ->
@@ -2232,7 +2259,7 @@ module Make
       | I_STXP (v,t,r1,r2,r3,r4) ->
             stxp (tr_variant v) t r1 r2 r3 r4 ii
       (*  Cannot handle *)
-        | (I_RBIT _|I_MRS _|I_LDP _|I_STP _|I_LDPSW _
+        | (I_RBIT _|I_MRS _|I_LDP _|I_STP _
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | I_LD1M _|I_ST1M _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
