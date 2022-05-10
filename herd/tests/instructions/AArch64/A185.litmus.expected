@@ -1,0 +1,10 @@
+Test A185 Required
+States 1
+0:X0=1; 0:X1=2; 1:X0=2; 1:X1=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1 /\ 0:X1=2 /\ 1:X0=2 /\ 1:X1=1)
+Observation A185 Always 1 0
+Hash=e9b676005c1f5a58e99d7a63485b8acc
+
