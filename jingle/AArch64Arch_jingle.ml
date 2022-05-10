@@ -39,6 +39,14 @@ include Arch.MakeArch(struct
     | S_SXTW, S_SXTW | S_UXTW, S_UXTW | S_NOEXT, S_NOEXT -> Some subs
     | _ -> None
 
+  let match_prepost p1 p2 subs = match p1,p2 with
+    | (Pre,Pre)
+    | (Post,Post)
+      -> Some subs
+    | (Pre,Post)
+    | (Post,Pre)
+      -> None
+
   let match_instr subs pattern instr = match pattern,instr with
     | I_NOP,I_NOP -> Some subs
     | I_FENCE fp,I_FENCE fi when fp = fi
@@ -70,9 +78,10 @@ include Arch.MakeArch(struct
         add_subs
           [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg(sr_name r3,r3')]
           subs
-    | I_LDR_P(_,r1,r2,k),I_LDR_P(_,r1',r2',k')
+    | I_LDR_P(p1,_,r1,r2,k),I_LDR_P(p2,_,r1',r2',k')
       ->
         match_kr subs (K k) (K k') >>>
+        match_prepost p1 p2 >>>
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
     | I_LDUR(_,r1,r2,None),I_LDUR(_,r1',r2',None)
       -> add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')] subs
@@ -204,11 +213,11 @@ include Arch.MakeArch(struct
         find_shift s >> fun s ->
         expl_kr kr >! fun kr ->
         I_LDR(a,r1,r2,kr,s)
-    | I_LDR_P(a,r1,r2,k) ->
+    | I_LDR_P(p,a,r1,r2,k) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
         find_cst k >! fun k ->
-        I_LDR_P(a,r1,r2,k)
+        I_LDR_P(p,a,r1,r2,k)
     | I_LDUR(a,r1,r2,Some(k)) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

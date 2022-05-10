@@ -717,20 +717,23 @@ module Make
         else
           m a
 
-      (* Post-Indexed load immediate.
+      (* Pre-Post-Indexed load immediate.
          Note: a (effective address) can be physical address,
-         while postindex must apply to virtual address. *)
-      let read_mem_postindexed a_virt sz an anexp ac rd rs k a ii =
+         while pre or postindex must apply to virtual address. *)
+      let read_mem_prepostindexed p a_virt sz an anexp ac rd rs k a ii =
         let m a =
-          begin
-            (M.add a_virt (V.intToV k) >>= fun b -> write_reg rs b ii)
-            >>| do_read_mem sz an anexp ac rd a ii
-          end >>= fun ((),r) -> M.unitT r in
+          let upd b =
+            match p with
+            | AArch64.Post ->
+               M.add b (V.intToV k) >>= fun b -> write_reg rs b ii
+            | AArch64.Pre ->
+               write_reg rs b ii in
+          (upd a_virt >>| do_read_mem sz an anexp ac rd a ii)
+           >>= fun ((),r) -> M.unitT r in
         if morello then
           M.op1 Op.CapaStrip a >>= m
         else
           m a
-
 
 (* Write *)
       let check_mixed_write_mem sz an anexp ac a v ii =
@@ -1026,13 +1029,18 @@ module Make
             read aexp ac rd a ii)
           (read_reg_ord rs ii)  ii
 
-      and ldr_p sz rd rs k ii = (* load post-index *)
+      and ldr_p p sz rd rs k ii = (* load pre-post-index *)
         M.delay_kont "ldr_p"
-          (read_reg_ord rs ii)
+          (match p with
+           | AArch64.Post ->
+              read_reg_ord rs ii
+           | AArch64.Pre ->
+              read_reg_ord rs ii >>= fun a -> M.add a (V.intToV k))
           (fun a_virt ma ->
             do_ldr sz AArch64.N
               (fun ac a ->
-                read_mem_postindexed a_virt sz AArch64.N aexp ac rd rs k a ii)
+                read_mem_prepostindexed
+                  p a_virt sz AArch64.N aexp ac rd rs k a ii)
               ma ii)
 
       and str sz rs rd kr s ii =
@@ -1566,10 +1574,10 @@ module Make
         | I_LDRBH (bh, rd, rs, kr) ->
             let sz = bh_to_sz bh in
             ldr sz rd rs kr S_NOEXT ii
-        | I_LDR_P(var,rd,rs,k) ->
+        | I_LDR_P(p,var,rd,rs,k) ->
             assert (k >= -256 && k <= 255);
             let sz = tr_variant var in
-            ldr_p sz rd rs k ii
+            ldr_p p sz rd rs k ii
         | I_LDUR(var,rd,rs,k) ->
             let sz = tr_variant var in
             let k = AArch64.K (match k with Some k -> k | None -> 0) in

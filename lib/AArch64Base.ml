@@ -631,6 +631,9 @@ let tr_simd_variant = function
 type 'k kr = K of 'k | RV of variant * reg
 let k0 = K 0
 
+(* Pre or Post index *)
+type prepost_t = Pre | Post
+
 type ld_type = AA | XX | AX | AQ
 
 let ldr_memo = function
@@ -782,7 +785,7 @@ type 'k kinstruction =
   | I_ADD_SIMD_S of reg * reg * reg
 (* Post-indexed load with immediate - like a writeback *)
 (* sufficiently different (and semantically interesting) to need a new inst *)
-  | I_LDR_P of variant * reg * reg * 'k
+  | I_LDR_P of prepost_t * variant * reg * reg * 'k
   | I_LDP of temporal * variant * reg * reg * reg * 'k kr
   | I_STP of temporal * variant * reg * reg * reg * 'k kr
   | I_LDAR of variant * ld_type * reg * reg
@@ -971,9 +974,14 @@ let do_pp_instruction m =
     ",[" ^ pp_xreg ra ^ pp_kr false false kr ^
     pp_barrel_shift "," s (m.pp_k) ^ "]" in
 
-  let pp_mem_post memo v rt ra k =
-    pp_memo memo ^ " " ^ pp_vreg v rt ^
-    ",[" ^ pp_xreg ra ^ "]" ^ m.pp_k k in
+  let pp_mem_prepost memo p v rt ra k =
+    match p with
+    | Post ->
+       pp_memo memo ^ " " ^ pp_vreg v rt ^
+         ",[" ^ pp_xreg ra ^ "]," ^ m.pp_k k
+    | Pre ->
+       pp_memo memo ^ " " ^ pp_vreg v rt ^
+         ",[" ^ pp_xreg ra ^ "," ^ m.pp_k k ^ "]!" in
 
   let pp_memp memo v r1 r2 ra kr =
     pp_memo memo ^ " " ^
@@ -1086,8 +1094,8 @@ let do_pp_instruction m =
       sprintf "LDUR %s, [%s]" (pp_reg r1) (pp_reg r2)
   | I_LDUR (_,r1,r2,Some(k)) ->
       sprintf "LDUR %s, [%s, %s]" (pp_reg r1) (pp_reg r2) (m.pp_k k)
-  | I_LDR_P (v,r1,r2,k) ->
-      pp_mem_post "LDR" v r1 r2 k
+  | I_LDR_P (p,v,r1,r2,k) ->
+      pp_mem_prepost "LDR" p v r1 r2 k
   | I_LDP (t,v,r1,r2,r3,k) ->
       pp_memp (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 k
   | I_STP (t,v,r1,r2,r3,k) ->
@@ -1374,7 +1382,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
   | I_STOP (_,_,_,r1,r2) | I_STOPBH (_,_,_,r1,r2)
-  | I_RBIT (_,r1,r2) | I_LDR_P (_, r1, r2, _) | I_LDUR (_, r1, r2, _)
+  | I_RBIT (_,r1,r2) | I_LDR_P (_, _, r1, r2, _) | I_LDUR (_, r1, r2, _)
   | I_LDG (r1,r2,_) | I_STZG (r1,r2,_) | I_STG (r1,r2,_)
   | I_CHKEQ (r1,r2) | I_CLRTAG (r1,r2) | I_GC (_,r1,r2) | I_LDCT (r1,r2)
   | I_STCT (r1,r2)
@@ -1462,8 +1470,8 @@ let map_regs f_reg f_symb =
      I_LDR (v,map_reg r1,map_reg r2,map_kr kr,os)
   | I_LDUR (v,r1,r2,k) ->
      I_LDUR (v,map_reg r1,map_reg r2,k)
-  | I_LDR_P (v,r1,r2,k) ->
-     I_LDR_P (v,map_reg r1, map_reg r2, k)
+  | I_LDR_P (p,v,r1,r2,k) ->
+     I_LDR_P (p,v,map_reg r1, map_reg r2, k)
   | I_LDP (t,v,r1,r2,r3,kr) ->
      I_LDP (t,v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
   | I_STP (t,v,r1,r2,r3,kr) ->
@@ -1798,7 +1806,7 @@ include Pseudo.Make
         | I_LDR (v,r1,r2,kr,s) -> I_LDR (v,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_LDUR (v,r1,r2,None) -> I_LDUR (v,r1,r2,None)
         | I_LDUR (v,r1,r2,Some(k)) -> I_LDUR (v,r1,r2,Some(k_tr k))
-        | I_LDR_P (v,r1,r2,k) -> I_LDR_P (v,r1,r2,k_tr k)
+        | I_LDR_P (p,v,r1,r2,k) -> I_LDR_P (p,v,r1,r2,k_tr k)
         | I_LDP (t,v,r1,r2,r3,kr) -> I_LDP (t,v,r1,r2,r3,kr_tr kr)
         | I_STP (t,v,r1,r2,r3,kr) -> I_STP (t,v,r1,r2,r3,kr_tr kr)
         | I_STR (v,r1,r2,kr,s) -> I_STR (v,r1,r2,kr_tr kr,ap_shift k_tr s)

@@ -22,6 +22,11 @@ let check_op3 op kr =
   match op,kr with
   |(A.BIC|A.BICS),A.K _ -> raise Parsing.Parse_error
   | _ -> ()
+
+type 'a somebang =
+  | Nothing
+  | Bang
+  | Here of 'a
 %}
 
 %token EOF
@@ -44,7 +49,7 @@ let check_op3 op kr =
 %token <string> CODEVAR
 %token <int> PROC
 
-%token SEMI COMMA PIPE COLON LCRL RCRL LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
+%token SEMI COMMA PIPE COLON BANG LCRL RCRL LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
 %token SXTW
 
 /* Inline Barrel Shift Operands */
@@ -238,6 +243,11 @@ k0:
 | { None }
 | COMMA k { Some $2}
 
+k0bang:
+| { Nothing }
+| BANG { Bang }
+| COMMA k { Here $2}
+
 kr:
 | k { A.K $1 }
 | xreg { A.RV (A.V64,$1) }
@@ -373,14 +383,23 @@ instr:
   { let v,r = $2 in A.I_TBZ (v,r,MetaConst.Int $4,$6) }
 /* Memory */
 /* must differentiate between regular and post-indexed load */
-| LDR reg COMMA LBRK cxreg kr0 RBRK k0
+| LDR reg COMMA LBRK cxreg kr0 RBRK k0bang
   { let v,r    = $2 in
     let kr, os = $6 in
     match $8 with
-    | Some post when kr = A.K MetaConst.zero ->
-      A.I_LDR_P (v,r,$5,post)
-    | _ ->
-      A.I_LDR (v,r,$5,kr,os) }
+    | Here post when kr = A.K MetaConst.zero ->
+      A.I_LDR_P (A.Post,v,r,$5,post)
+    | Bang ->
+       begin
+         match kr,os with
+         |  A.K k,A.S_NOEXT ->
+           A.I_LDR_P (A.Pre,v,r,$5,k)
+         | _ ->
+            raise Parsing.Parse_error
+       end
+    | Nothing ->
+       A.I_LDR (v,r,$5,kr,os)
+    | _ -> raise Parsing.Parse_error }
 | LDUR reg COMMA LBRK cxreg k0 RBRK
   { let v,r = $2 in A.I_LDUR (v,r,$5,$6)}
 | ldp_instr wreg COMMA wreg COMMA LBRK cxreg kr0_no_shift RBRK

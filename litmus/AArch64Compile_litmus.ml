@@ -252,16 +252,22 @@ module Make(V:Constant.S)(C:Config) =
           reg_env=add_q rB@[rA,voidstar;rD,word]; }
     | _,_,_ -> assert false
 
-    let load_p memo v rD rA k = match v with
+    let load_p memo p v rD rA k = match v with
     | V32 ->
         { empty_ins with
-          memo= sprintf "%s ^wo0,[^i0],#%i" memo k;
+          memo=
+            (match p with
+            | Post -> sprintf "%s ^wo0,[^i0],#%i" memo k
+            | Pre ->  sprintf "%s ^wo0,[^i0,#%i]!" memo k);
           inputs=[rA];
           outputs=[rD;rA;];
           reg_env=[(rA,voidstar);(rD,word)];}
     | V64 ->
         { empty_ins with
-          memo=memo ^ sprintf " ^o0,[^i0],#%i" k;
+          memo=
+            (match p with
+            | Post -> sprintf "%s ^o0,[^i0],#%i" memo k
+            | Pre ->  sprintf "%s ^o0,[^i0,#%i]!" memo k);
           inputs=[rA];
           outputs=[rD;rA;];
           reg_env=[rA,voidstar; rD,quad;]; }
@@ -1161,7 +1167,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_LDR (v,r1,r2,kr,os) -> load "ldr" v r1 r2 kr os::k
     | I_LDUR (v,r1,r2,Some(k')) -> load "ldur" v r1 r2 (K k') S_NOEXT ::k
     | I_LDUR (v,r1,r2,None) -> load "ldur" v r1 r2 (K 0) S_NOEXT ::k
-    | I_LDR_P (v,r1,r2,k1) -> load_p "ldr" v r1 r2 k1::k
+    | I_LDR_P (p,v,r1,r2,k1) -> load_p "ldr" p v r1 r2 k1::k
     | I_LDP (t,v,r1,r2,r3,kr) ->
         load_pair (match t with TT -> "ldp" | NT -> "ldnp") v r1 r2 r3 kr::k
     | I_STP (t,v,r1,r2,r3,kr) ->
