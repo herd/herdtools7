@@ -119,7 +119,7 @@ end = struct
     | A.Location_reg _ -> REG
     | A.Location_global (V.Val (Symbolic (Virtual _))|V.Var _)
       -> VIR
-    | A.Location_global (V.Val (Symbolic ((System (PTE,_))))) as loc
+    | A.Location_global (V.Val (Symbolic ((System ((PTE|PTE2),_))))) as loc
         ->
           if kvm then Access.PTE
           else Warn.fatal "PTE %s while -variant kvm is not active"
@@ -537,13 +537,25 @@ end = struct
 
   let arch_rels =
     if kvm then
+
       let inv_domain_act =
+
+        let is_pt_loc act =
+          match location_of act with
+          | Some loc ->
+             let open Constant in
+             begin
+               match A.symbol loc with
+               | Some (System (PTE,_)) -> true
+               | _ -> false
+             end
+          | None -> false in
 
         let inv_domain_sym a1 a2 =
           let open Constant in
           match a1,a2 with
-          | ((Virtual {name=s1;_}|Physical (s1,_)|System (PTE,s1)),System (TLB,s2))
-          | (System (TLB,s2),(Virtual {name=s1;_}|Physical (s1,_)|System (PTE,s1)))
+          | (System ((PTE),s1),System (TLB,s2))
+          | (System (TLB,s2),System ((PTE),s1))
             -> Misc.string_eq s1 s2
           | _,_ -> false in
 
@@ -557,12 +569,7 @@ end = struct
 
         fun act1 act2 -> match act1,act2 with
         | (act,Inv (_,None))|(Inv (_, None),act)
-          ->
-            is_mem act &&
-            begin match location_of act with
-            | Some (A.Location_global _) ->  true
-            | Some _|None -> false
-            end
+          ->  is_pt_loc act
         | (e,Inv (_,Some loc1))|(Inv (_, Some loc1),e)
           ->
             is_mem e &&
