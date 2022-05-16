@@ -767,7 +767,7 @@ type P.code = MiscParser.proc * A.pseudo list)
           let rs =
             List.fold_left
               (fun k r -> match A.parse_reg r with
-              | None -> Warn.warn_always "'%s' i snot a register" r ; k
+              | None -> Warn.warn_always "'%s' is not a register" r ; k
               | Some r -> r::k)
               [] rs in
           A.RegSet.of_list rs in
