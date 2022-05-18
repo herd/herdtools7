@@ -49,6 +49,10 @@ end
 module Make(O:Config) =
 struct
 
+let is_std = match O.mode with
+  | Mode.Std -> true
+  | Mode.PreSi|Mode.Kvm -> false
+
 (* Check dontrun file *)
 let file_base doc =
   let base = Filename.basename doc.Name.file in
@@ -151,22 +155,24 @@ let report_parameters out =
   | s ->   pf "/* gcc link options: %s */" s
   end ;
   pf "/* barrier: %s */" pp_barrier_loc ;
-  pf "/* launch: %s */"  (Launch.pp O.launch) ;
-  pf "/* affinity: %s */" (Affinity.pp O.affinity) ;
-  begin match O.logicalprocs with
-  | None -> ()
-  | Some xs ->
-      pf "/* procs: {%s} */" (LexSplit.pp_ints xs)
+  if is_std then begin
+    pf "/* launch: %s */"  (Launch.pp O.launch) ;
+    pf "/* affinity: %s */" (Affinity.pp O.affinity) ;
+    begin match O.logicalprocs with
+    | None -> ()
+    | Some xs ->
+       pf "/* procs: {%s} */" (LexSplit.pp_ints xs)
+    end ;
+    pf "/* memory: %s */" (Memory.pp O.memory) ;
+    begin match O.stride with
+    | Stride.No -> ()
+    | Stride.Adapt | Stride.St _ ->  pf "/* stride: %s */" (Stride.pp O.stride)
+    end ;
+    pf "/* safer: %s */" (Safer.pp O.safer) ;
+    pf "/* preload: %s */" (Preload.pp O.preload) ;
+    pf "/* speedcheck: %s */" (Speedcheck.pp O.speedcheck) ;
   end ;
   pf "/* alloc: %s */" (Alloc.pp O.alloc) ;
-  pf "/* memory: %s */" (Memory.pp O.memory) ;
-  begin match O.stride with
-  | Stride.No -> ()
-  | Stride.Adapt | Stride.St _ ->  pf "/* stride: %s */" (Stride.pp O.stride)
-  end ;
-  pf "/* safer: %s */" (Safer.pp O.safer) ;
-  pf "/* preload: %s */" (Preload.pp O.preload) ;
-  pf "/* speedcheck: %s */" (Speedcheck.pp O.speedcheck) ;
   begin match O.avail with
   | Some n -> pf "/* proc used: %i */" n
   | None -> ()

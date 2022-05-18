@@ -110,6 +110,7 @@ typedef struct {
   int size_of_test;
   int avail ;
   int n_exe ;
+  int delay ;
 } opt_t ;
 
 char **parse_opt(int argc,char **argv,opt_t *def, opt_t *p) ;

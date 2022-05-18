@@ -53,18 +53,30 @@ int RUN(int argc,char **argv,FILE *out) {
   if (!feature_check()) return -1;
 #endif
 #ifdef OUT
-  opt_t def = { 0, NUMBER_OF_RUN, SIZE_OF_TEST, AVAIL, NEXE, };
-  opt_t d = def ;
-  char *prog = argv[0] ;
-  char **p = parse_opt(argc,argv,&def,&d) ;
-  int n_exe = d.n_exe ;
-  if (d.avail < AVAIL) n_exe = d.avail / N ;
-  if (n_exe < 1) n_exe = 1 ;
-  if (n_exe > NEXE) n_exe = NEXE ;
+#ifdef HAVE_TIMEBASE
+  const int delta_tb = DELTA_TB;
+#else
+  const int delta_tb = 0;
+#endif
+  opt_t def = { 0, NUMBER_OF_RUN, SIZE_OF_TEST, AVAIL, NEXE, delta_tb, };
+  opt_t d = def;
+  char *prog = argv[0];
+  char **p = parse_opt(argc,argv,&def,&d);
+  int n_exe = d.n_exe;
+  if (d.avail < AVAIL) n_exe = d.avail / N;
+#ifdef HAVE_TIMEBASE
+  if (d.delay < NSTEPS-1) d.delay = NSTEPS-1;
+#endif
+  if (n_exe < 1) n_exe = 1;
+  if (n_exe > NEXE) n_exe = NEXE;
   glo_ptr->verbose = d.verbose;
   glo_ptr->nexe = n_exe;
   glo_ptr->nruns = d.max_run;
   glo_ptr->size = d.size_of_test;
+#ifdef HAVE_TIMEBASE
+  glo_ptr->delay = d.delay;
+  glo_ptr->step = d.delay/(NSTEPS-1);
+#endif
   if (glo_ptr->verbose) {
 #ifdef NOSTDIO
     emit_string(stderr,prog);
@@ -79,13 +91,13 @@ int RUN(int argc,char **argv,FILE *out) {
     fprintf(stderr,"%s: n=%d, r=%d, s=%d\n",prog,glo_ptr->nexe,glo_ptr->nruns,glo_ptr->size);
 #endif
   }
-  parse_param(prog,glo_ptr->parse,PARSESZ,p) ;
+  parse_param(prog,glo_ptr->parse,PARSESZ,p);
 #ifdef PRELUDE
-  prelude(out) ;
+  prelude(out);
 #endif
   tsc_t start = timeofday();
 #endif
-  for (int id=0; id < AVAIL ; id++) {
+  for (int id=0; id < AVAIL; id++) {
     arg[id].id = id;
     arg[id].g = glo_ptr;
   }
@@ -107,7 +119,7 @@ int RUN(int argc,char **argv,FILE *out) {
   for (int k = 0 ; k < HASHSZ ; k++) {
     entry_t *e = &glo_ptr->hash.t[k];
     if (e->ok) {
-      p_true += e->c ;
+      p_true += e->c;
     } else {
       p_false += e->c;
     }
