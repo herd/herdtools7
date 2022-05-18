@@ -84,6 +84,7 @@ typedef struct global_t {
   /* Runtime control */
   int verbose ;
   int size,nruns,nexe,noccs ;
+  int delay,step ;
   /* Synchronisation for all threads */
   sense_t gb ;
   /* Count 'interesting' outcomes */

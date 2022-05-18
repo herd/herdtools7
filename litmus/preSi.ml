@@ -214,13 +214,12 @@ module Make
 (* Delays *)
 (**********)
 
-      let nsteps = 5
+      let nsteps = 9
 
       let dump_delay_def () =
         if have_timebase then begin
           O.f "#define NSTEPS %i" nsteps ;
           O.f "#define NSTEPS2 ((NSTEPS-1)/2)" ;
-          O.o "#define STEP (DELTA_TB/(NSTEPS-1))"
         end
 
 
@@ -1293,9 +1292,9 @@ module Make
         end ;
         (* Delays *)
         if have_timebase then begin
-          O.oii "int _delay = DELTA_TB;" ;
+          O.oii "int _delay = _g->delay;" ;
           if proc <> 0 then
-            O.fii "_delay += (_p->d%i - (NSTEPS-1)/2)*STEP;" proc
+            O.fii "_delay += (_p->d%i - (NSTEPS-1)/2)*_g->step;" proc
         end ;
         (* Initialize them *)
         List.iter
