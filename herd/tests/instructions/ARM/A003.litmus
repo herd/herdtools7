@@ -1,0 +1,13 @@
+ARM SB004
+
+(* classic SB004 test, should not see final state in outcomes*)
+{
+0:R2=x; 0:R3=y;
+1:R2=y; 1:R3=x;
+}
+ P0           | P1           ;
+ MOV R0,#1    | MOV R0,#1    ;
+ STR R0,[R2]  | STR R0,[R2]  ;
+ DMB ISH      | DMB ISH      ;
+ LDR R1,[R3]  | LDR R1,[R3]  ;
+exists (0:R1=0 /\ 1:R1=0)

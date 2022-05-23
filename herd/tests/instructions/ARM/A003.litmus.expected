@@ -1,0 +1,12 @@
+Test SB004 Allowed
+States 3
+0:R1=0; 1:R1=1;
+0:R1=1; 1:R1=0;
+0:R1=1; 1:R1=1;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (0:R1=0 /\ 1:R1=0)
+Observation SB004 Never 0 3
+Hash=8bd18640a71f5f8da4d4f2fe719284e3
+
