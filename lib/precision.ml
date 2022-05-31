@@ -25,8 +25,8 @@ let default = Handled
 let tags =  ["handled"; "fatal"; "loadsfatal"; "faultToNext"; ]
 
 let parse s = match s with
-  | "imprecise"|"handled" -> Some Handled
-  | "precise"|"fatal" -> Some Fatal
+  | "imprecise"|"handled"|"asynchronous"|"async" -> Some Handled
+  | "precise"|"fatal"|"synchronous"|"sync" -> Some Fatal
   | "loadsfatal"|"asymmetric"|"asym" -> Some LoadsFatal
   | "faulttonext"|"skip" -> Some Skip
   | _ -> None
