@@ -17,9 +17,10 @@
 (** Reaction to faults, tag common to litmus and herd *)
 
 type t =
-  | Handled (* Do nothing special *)
-  | Fatal   (* Jump to end of code *)
-  | Skip    (* Skip instruction *)
+  | Handled      (* Do nothing special *)
+  | Fatal        (* Jump to end of code *)
+  | LoadsFatal   (* Only faults on loads jump to end of code, stores do nothing *)
+  | Skip         (* Skip instruction *)
 
 val default : t
 val tags : string list

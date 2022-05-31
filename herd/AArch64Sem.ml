@@ -800,29 +800,32 @@ module Make
   addresses. Thus the resulting monads will possess
   extra dependencies w.r.t the simple case.
  *)
-      let lift_fault mfault mm = (* This is memtag fault handling *)
+      let lift_fault mfault mm dir = (* This is memtag fault handling *)
         let open Precision in
         match C.precision with
         | Fatal -> mfault >>! B.Exit
+        | LoadsFatal -> (match dir with
+            | Dir.R | Dir.F -> mfault >>! B.Exit
+            | Dir.W -> (mfault >>| mm) >>= M.ignore >>= B.next1T)
         | Skip -> Warn.fatal "Memtag extension has no 'Skip' fault handling mode"
         | Handled ->
            (mfault >>| mm) >>= M.ignore >>= B.next1T
 
-      let lift_memtag_phy mop a_virt ma ii =
+      let lift_memtag_phy dir mop a_virt ma ii =
         M.delay_kont "4" ma
           (fun _ ma ->
             let mm = mop Access.PHY ma in
             delayed_check_tags a_virt ma ii
               (mm  >>= M.ignore >>= B.next1T)
-              (lift_fault (mk_fault a_virt ii None) mm))
+              (lift_fault (mk_fault a_virt ii None) mm dir))
 
-      let lift_memtag_virt mop ma ii =
+      let lift_memtag_virt dir mop ma ii =
         M.delay_kont "5" ma
           (fun a_virt ma  ->
             let mm = mop Access.VIR (ma >>= fun a -> loc_extract a) in
             delayed_check_tags a_virt ma ii
               (mm  >>= M.ignore >>= B.next1T)
-              (lift_fault (ma >>= fun a -> mk_fault a ii None) mm))
+              (lift_fault (ma >>= fun a -> mk_fault a ii None) mm dir))
 
 
       let some_ha = dirty.DirtyBit.some_ha || dirty.DirtyBit.some_hd
@@ -846,6 +849,9 @@ module Make
               let open Precision in
               match C.precision with
               | Fatal -> B.Exit
+              | LoadsFatal -> (match dir with
+                  | Dir.R | Dir.F -> B.Exit
+                  | Dir.W -> B.ReExec)
               | Skip -> B.Next []
               | Handled -> B.ReExec
             end in
@@ -900,9 +906,9 @@ module Make
           if memtag then
             begin
               if kvm then
-                let mphy = (fun ma a -> lift_memtag_phy mop a ma ii) in
+                let mphy = (fun ma a -> lift_memtag_phy dir mop a ma ii) in
                 lift_kvm dir updatedb mop ma an ii mphy
-              else lift_memtag_virt mop ma ii
+              else lift_memtag_virt dir mop ma ii
             end
           else if kvm then
             let mphy =

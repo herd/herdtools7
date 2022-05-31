@@ -15,30 +15,33 @@
 (****************************************************************************)
 
 type t =
-  | Handled (* Do nothing special *)
-  | Fatal   (* Jump to end of code *)
-  | Skip    (* Skip instruction *)
+  | Handled      (* Do nothing special *)
+  | Fatal        (* Jump to end of code *)
+  | LoadsFatal   (* Only faults on loads jump to end of code, stores do nothing *)
+  | Skip         (* Skip instruction *)
 
 let default = Handled
 
-let tags =  ["handled"; "fatal"; "faultToNext"; ]
+let tags =  ["handled"; "fatal"; "loadsfatal"; "faultToNext"; ]
 
 let parse s = match s with
   | "imprecise"|"handled" -> Some Handled
   | "precise"|"fatal" -> Some Fatal
+  | "loadsfatal"|"asymmetric"|"asym" -> Some LoadsFatal
   | "faulttonext"|"skip" -> Some Skip
   | _ -> None
 
 let pp = function
   | Handled -> "handled"
   | Fatal -> "fatal"
+  | LoadsFatal -> "loadsfatal"
   | Skip -> "faulToNext"
 
 let is_fatal = function
   | Fatal -> true
-  | Handled|Skip -> false
+  | Handled|LoadsFatal|Skip -> false
 
 let is_skip = function
   | Skip -> true
-  | Handled|Fatal -> false
+  | Handled|Fatal|LoadsFatal -> false
 
