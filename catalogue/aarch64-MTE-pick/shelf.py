@@ -1,7 +1,7 @@
 record = "AArch64-MTE-Pick"
 
 cats = [
-    "cats/aarch64-pick.cat",
+    "cats/aarch64.cat",
     ]
 
 cfgs = [
