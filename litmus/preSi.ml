@@ -309,7 +309,7 @@ module Make
           O.o "" ;
           if do_precise then begin
             O.o "#define PRECISE 1" ;
-            O.o "ins_t *label_ret[NTHREADS];" ;
+            O.o "static ins_t *label_ret[NTHREADS];" ;
             O.o ""
           end else if do_skip then begin
             O.o "#define FAULT_SKIP 1" ;
