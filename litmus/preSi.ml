@@ -72,7 +72,6 @@ module Make
       Cfg.ascall || Cfg.is_kvm || Misc.consp CfgLoc.label_init
 
     let do_precise = Precision.is_fatal Cfg.precision
-    and do_skip = Precision.is_skip Cfg.precision
 
     let do_dynalloc =
         let open Alloc in
@@ -307,13 +306,17 @@ module Make
           O.o "" ;
           Insert.insert O.o "instruction.h" ;
           O.o "" ;
-          if do_precise then begin
-            O.o "#define PRECISE 1" ;
-            O.o "static ins_t *label_ret[NTHREADS];" ;
-            O.o ""
-          end else if do_skip then begin
-            O.o "#define FAULT_SKIP 1" ;
-            O.o ""
+          begin
+            let open Precision in
+            match Cfg.precision with
+            | Fatal ->
+               O.o "#define PRECISE 1" ;
+               O.o "static ins_t *label_ret[NTHREADS];" ;
+               O.o ""
+            | Skip ->
+               O.o "#define FAULT_SKIP 1" ;
+               O.o ""
+            | Handled -> ()
           end ;
           let insert_ins_ops () =
             ObjUtil.insert_lib_file O.o "_find_ins.c" ;
