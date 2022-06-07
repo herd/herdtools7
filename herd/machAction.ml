@@ -337,6 +337,14 @@ end = struct
     | DC _ | IC _ | Arch _ | NoAction
       -> false
 
+  let is_faulting_read = function
+    | Fault (_,_,Dir.R,_,_) -> true
+    | _ -> false
+
+  let is_faulting_write = function
+    | Fault (_,_,Dir.W,_,_) -> true
+    | _ -> false
+
   let to_fault = function
     | Fault (i,A.Location_global x,_,_,msg) -> Some ((i.A.proc,i.A.labels),x,msg)
     | Fault _ | Access _ | Amo _ | Commit _ | Barrier _ | TooFar _ | Inv _
@@ -522,6 +530,8 @@ end = struct
     in
     ("T",is_tag)::
     ("FAULT",is_fault)::
+    ("FAULT-RD",is_faulting_read)::
+    ("FAULT-WR",is_faulting_write)::
     ("TLBI",is_inv)::
     ("DC",is_dc)::
     ("DC-IC",is_ic)::
