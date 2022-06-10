@@ -1539,6 +1539,10 @@ separated list of candidate relaxations.
 In mix mode, upper bound on the number of different candidate
 relaxations tested together.
 Default is~$100$
+\item[{\tt -minrelax <n>}]
+In mix mode, lower bound on the number of different candidate
+relaxations tested together.
+Default is~$1$. Bounds are included: `-minrelax 3 -maxrelax 3` produces tests from cycles with exactly three different candidate relaxations. Notice that each of the different canidate relaxations can be repeated.
 \item[{\tt -safe <relax-list>}] Set safe list. Default is empty.
 \item[{\tt -mode (critical|sc|free|uni)}]
 Control generation  of cycles, default~\opt{sc}.
