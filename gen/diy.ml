@@ -53,6 +53,7 @@ let parse_fences fs = List.fold_right parse_fence fs []
     type relax = C.R.relax
     let mix = !Config.mix
     let max_relax = !Config.max_relax
+    let min_relax = !Config.min_relax
 
     let prefix =
       match List.map parse_relaxs O.prefix with
