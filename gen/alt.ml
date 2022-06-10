@@ -22,6 +22,8 @@ module type AltConfig = sig
   include DumpAll.Config
   val upto : bool
   val max_ins : int
+  val mix : bool
+  val max_relax : int
   val choice : check
   type relax
   val prefix : relax list list
@@ -463,7 +465,7 @@ module Make(C:Builder.S)
           call_rec prefix
             (fun po_safe suff k ->
               let rs = extract_relaxs suff in
-              if List.length rs > !Config.max_relax then k
+              if List.length rs > O.max_relax then k
               else f rs po_safe suff k)
             aset po_safe in
 
@@ -505,7 +507,7 @@ module Make(C:Builder.S)
       | [] ->
           no_relax safe n [] k
       | _  ->
-          if !Config.mix && !Config.max_relax > 1 then
+          if O.mix && O.max_relax > 1 then
             all_relax k
           else
             choose_relax relax k
