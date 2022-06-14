@@ -1190,19 +1190,50 @@ module Make
 
       (* Neon extension, memory accesses return B.Next, as they cannot fail *)
       let simd_ldr sz addr rd ii =
-        do_read_mem_ret sz AArch64.N aexp Access.VIR addr ii >>= fun v ->
-        write_reg_neon_sz sz rd v ii >>= B.next1T
+        (* If this is a 128-bit load, treat it as a 2x64 bit load *)
+        if sz == MachSize.S128 then
+          M.op Op.Add addr (V.intToV 8) >>= fun addr_hi ->
+
+          do_read_mem_ret MachSize.Quad AArch64.N aexp Access.VIR addr ii >>= fun v_lo ->
+          do_read_mem_ret MachSize.Quad AArch64.N aexp Access.VIR addr_hi ii >>= fun v_hi ->
+
+          M.op1 (Op.LeftShift 64) v_hi >>= fun v_hi_shifted ->
+          M.op Op.Or v_lo v_hi_shifted >>= fun v ->
+
+          write_reg_neon_sz MachSize.S128 rd v ii >>= B.next1T
+        else
+          do_read_mem_ret sz AArch64.N aexp Access.VIR addr ii >>= fun v ->
+          write_reg_neon_sz sz rd v ii >>= B.next1T
 
       let simd_str sz rs rd kr s ii =
+        (* If this is a 128-bit store, treat it as a 2x64 bit store *)
         get_ea rs kr s ii >>|
-        read_reg_neon true rd ii >>= fun (addr,v) ->
-        write_mem sz aexp Access.VIR addr v ii >>= B.next1T
+        read_reg_neon true rd ii >>= fun (addr, v) ->
+        if sz == MachSize.S128 then
+          let addr_lo = addr in
+          M.op Op.Add addr_lo (V.intToV 8) >>= fun addr_hi ->
+          M.op1 (Op.Mask MachSize.Quad) v >>|
+          M.op1 (Op.LogicalRightShift 64) v >>= fun (v_lo, v_hi) ->
+            write_mem MachSize.Quad aexp Access.VIR addr_lo v_lo ii >>|
+            write_mem MachSize.Quad aexp Access.VIR addr_hi v_hi ii >>= B.next2T
+        else
+          write_mem sz aexp Access.VIR addr v ii >>= B.next1T
 
       let simd_str_p sz rs rd k ii =
         read_reg_ord rs ii >>|
         read_reg_neon true rd ii >>= fun (addr,v) ->
-        write_mem sz aexp Access.VIR addr v ii >>|
-        post_kr rs addr k ii >>= B.next2T
+        if sz == MachSize.S128 then
+          let addr_lo = addr in
+          M.op Op.Add addr_lo (V.intToV 8) >>= fun addr_hi ->
+          M.op1 (Op.Mask MachSize.Quad) v >>|
+          M.op1 (Op.LogicalRightShift 64) v >>= fun (v_lo, v_hi) ->
+
+          write_mem MachSize.Quad aexp Access.VIR addr_lo v_lo ii >>|
+          write_mem MachSize.Quad aexp Access.VIR addr_hi v_hi ii >>|
+          post_kr rs addr k ii >>= B.next3T
+        else
+          write_mem sz aexp Access.VIR addr v ii >>|
+          post_kr rs addr k ii >>= B.next2T
 
       let simd_ldp var addr1 rd1 rd2 ii =
         let open AArch64Base in
@@ -1218,13 +1249,32 @@ module Make
       let simd_stp var addr1 rd1 rd2 ii =
         let open AArch64Base in
         let access_size = tr_simd_variant var in
-        ((read_reg_neon true rd1 ii >>= fun v1 ->
-        write_mem access_size aexp Access.VIR addr1 v1 ii)
-        >>|
-        (neon_sz_k var >>= fun os ->
-        M.add addr1 os >>|
-        read_reg_neon true rd2 ii >>= fun (addr2,v2) ->
-        write_mem access_size aexp Access.VIR addr2 v2 ii)) >>= B.next2T
+        if access_size == MachSize.S128 then
+          read_reg_neon true rd1 ii >>|
+          read_reg_neon true rd2 ii >>= fun (v1, v2) ->
+
+          M.op Op.Add addr1 (V.intToV 8) >>= fun addr2 ->
+          M.op Op.Add addr2 (V.intToV 8) >>= fun addr3 ->
+          M.op Op.Add addr3 (V.intToV 8) >>= fun addr4 ->
+
+          M.op1 (Op.Mask MachSize.Quad) v1 >>|
+          M.op1 (Op.LogicalRightShift 64) v1 >>= fun (v1_lo, v1_hi) ->
+
+          M.op1 (Op.Mask MachSize.Quad) v2 >>|
+          M.op1 (Op.LogicalRightShift 64) v2 >>= fun (v2_lo, v2_hi) ->
+
+          write_mem MachSize.Quad aexp Access.VIR addr1 v1_lo ii >>|
+          write_mem MachSize.Quad aexp Access.VIR addr2 v1_hi ii >>|
+          write_mem MachSize.Quad aexp Access.VIR addr3 v2_lo ii >>|
+          write_mem MachSize.Quad aexp Access.VIR addr4 v2_hi ii >>= B.next4T
+        else
+          ((read_reg_neon true rd1 ii >>= fun v1 ->
+          write_mem access_size aexp Access.VIR addr1 v1 ii)
+          >>|
+          (neon_sz_k var >>= fun os ->
+          M.add addr1 os >>|
+          read_reg_neon true rd2 ii >>= fun (addr2,v2) ->
+          write_mem access_size aexp Access.VIR addr2 v2 ii)) >>= B.next2T
 
       let movi_v r k shift ii =
         let open AArch64Base in
