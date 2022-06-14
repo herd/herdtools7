@@ -16,7 +16,7 @@ let crel_id = toid(CREL)
 let cacq_id = toid(CACQ)
 let sc_id = toid(SC)
 
-let asw = I * (M \ I)
+let asw = IW * (M \ IW)
 
 include "filters.cat"
 include "cos.cat"
