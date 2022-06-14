@@ -284,9 +284,9 @@ let speclist () =
     sprintf
       "<bool> mix relaxations when several are given (default %b)" !mix)::
    ("-maxrelax",   Arg.Int (fun n -> mix := true ; max_relax := n),
-    sprintf "<n> test  up to <n> different relaxations together (default %i). Implies -mix true " !max_relax)::
+    sprintf "<n> test  up to <n> different relaxations together (default %i). Implies -mix true." !max_relax)::
    ("-minrelax",   Arg.Int (fun n -> mix := true ; min_relax := n),
-    sprintf "<n> test relaxations considering <n> or more different relaxations (default %i). Implies -mix true " !max_relax)::
+    sprintf "<n> test relaxations considering <n> or more different relaxations (default %i). Implies -mix true." !min_relax)::
    ("-safe", Arg.String (fun s -> safes := Some s),
     "<relax-list> specify a safe list")::
    ("-relaxlist", Arg.String (fun s -> safes := Some s),
