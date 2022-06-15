@@ -268,11 +268,11 @@ module Make
 
       let neon_sz_k var = let open AArch64Base in
       match var with
-      | VSIMD8   -> M.unitT (V.intToV 1)
-      | VSIMD16  -> M.unitT (V.intToV 2)
-      | VSIMD32  -> M.unitT (V.intToV 4)
-      | VSIMD64  -> M.unitT (V.intToV 8)
-      | VSIMD128 -> M.unitT (V.intToV 16)
+      | VSIMD8   -> (V.intToV 1)
+      | VSIMD16  -> (V.intToV 2)
+      | VSIMD32  -> (V.intToV 4)
+      | VSIMD64  -> (V.intToV 8)
+      | VSIMD128 -> (V.intToV 16)
 
 (******************)
 (* Memory Tagging *)
@@ -1188,107 +1188,120 @@ module Make
           (read_reg_data sz rs ii)
           an ii
 
+      (* Utility that performes an 128-bit load as two independent 64-bit
+       * loads. Used by Neon instructions. *)
+      let do_read_mem_2x64b_ret an anexp ac addr1 ii =
+        do_read_mem_ret MachSize.Quad an anexp Access.VIR addr1 ii >>|
+        begin
+          M.add addr1 (neon_sz_k AArch64Base.VSIMD64) >>= fun addr2 ->
+          do_read_mem_ret MachSize.Quad an anexp ac addr2 ii
+        end >>= fun (v_lo, v_hi) ->
+        M.op1 (Op.LeftShift 64) v_hi >>= fun v_hi_shifted ->
+        M.op Op.Or v_lo v_hi_shifted
+
+      (* Utility that performes an 128-bit store as two independent 64-bit
+       * stores. Used by Neon instructions. *)
+      let write_mem_2x64b anexp ac addr1 v ii =
+        begin
+          M.op1 (Op.Mask MachSize.Quad) v >>= fun v_lo ->
+          write_mem MachSize.Quad anexp ac addr1 v_lo ii
+        end >>|
+        begin
+          M.add addr1 (neon_sz_k AArch64Base.VSIMD64) >>|
+          M.op1 (Op.LogicalRightShift 64) v >>= fun (addr2, v_hi) ->
+          write_mem MachSize.Quad anexp ac addr2 v_hi ii
+        end
+
       (* Neon extension, memory accesses return B.Next, as they cannot fail *)
-      let simd_ldr sz addr1 rd ii =
-        (* If this is a 128-bit load, treat it as a 2x64-bit load *)
-        if sz == MachSize.S128 then
-          do_read_mem_ret MachSize.Quad AArch64.N aexp Access.VIR addr1 ii >>|
-          (
-            M.add addr1 (V.intToV 8) >>= fun addr2 ->
-            do_read_mem_ret MachSize.Quad AArch64.N aexp Access.VIR addr2 ii
-          ) >>= fun (v_lo, v_hi) ->
-          M.op1 (Op.LeftShift 64) v_hi >>= fun v_hi_shifted ->
-          M.op Op.Or v_lo v_hi_shifted >>= fun v ->
-          write_reg_neon_sz MachSize.S128 rd v ii >>= B.next1T
-        else
-          do_read_mem_ret sz AArch64.N aexp Access.VIR addr1 ii >>= fun v ->
-          write_reg_neon_sz sz rd v ii >>= B.next1T
+      let simd_ldr sz addr rd ii =
+        begin
+          if sz == MachSize.S128 then
+            (* Neon memory instructions are not single-copy atomic, but they
+             * are single-copy atomic for each of the two 64-bit quantities
+             * they access. *)
+            do_read_mem_2x64b_ret AArch64.N aexp Access.VIR addr ii
+          else
+            do_read_mem_ret sz AArch64.N aexp Access.VIR addr ii
+        end >>= fun v ->
+        write_reg_neon_sz sz rd v ii >>= B.next1T
 
       let simd_str sz rs rd kr s ii =
         get_ea rs kr s ii >>|
-        read_reg_neon true rd ii >>= fun (addr1, v) ->
+        read_reg_neon true rd ii >>= fun (addr, v) ->
         if sz == MachSize.S128 then
-          (* If this is a 128-bit store, treat it as a 2x64-bit store *)
-          (
-            M.op1 (Op.Mask MachSize.Quad) v >>= fun v_lo ->
-            write_mem MachSize.Quad aexp Access.VIR addr1 v_lo ii
-          ) >>|
-          (
-            M.add addr1 (V.intToV 8) >>|
-            M.op1 (Op.LogicalRightShift 64) v >>= fun (addr2, v_hi) ->
-            write_mem MachSize.Quad aexp Access.VIR addr2 v_hi ii
-          ) >>= B.next2T
+          (* Neon memory instructions are not single-copy atomic, but they
+           * are single-copy atomic for each of the two 64-bit quantities
+           * they access. *)
+          write_mem_2x64b aexp Access.VIR addr v ii >>= B.next2T
         else
-          write_mem sz aexp Access.VIR addr1 v ii >>= B.next1T
+          write_mem sz aexp Access.VIR addr v ii >>= B.next1T
 
       let simd_str_p sz rs rd k ii =
         read_reg_ord rs ii >>|
-        read_reg_neon true rd ii >>= fun (addr1, v) ->
+        read_reg_neon true rd ii >>= fun (addr, v) ->
         if sz == MachSize.S128 then
-          (* If this is a 128-bit store, treat it as a 2x64-bit store *)
-          (
-            M.op1 (Op.Mask MachSize.Quad) v >>= fun v_lo ->
-            write_mem MachSize.Quad aexp Access.VIR addr1 v_lo ii
-          ) >>|
-          (
-            M.add addr1 (V.intToV 8) >>|
-            M.op1 (Op.LogicalRightShift 64) v >>= fun (addr2, v_hi) ->
-            write_mem MachSize.Quad aexp Access.VIR addr2 v_hi ii
-          ) >>|
-          post_kr rs addr1 k ii >>= B.next3T
+          (* Neon memory instructions are not single-copy atomic, but they
+           * are single-copy atomic for each of the two 64-bit quantities
+           * they access. *)
+          write_mem_2x64b aexp Access.VIR addr v ii >>|
+          post_kr rs addr k ii >>= B.next3T
         else
-          write_mem sz aexp Access.VIR addr1 v ii >>|
-          post_kr rs addr1 k ii >>= B.next2T
+          write_mem sz aexp Access.VIR addr v ii >>|
+          post_kr rs addr k ii >>= B.next2T
 
       let simd_ldp var addr1 rd1 rd2 ii =
         let open AArch64Base in
-        let access_size = tr_simd_variant var in
-        (simd_ldr access_size addr1 rd1 ii >>|
-        (neon_sz_k var >>= fun os ->
-        M.add addr1 os >>= fun addr2 ->
-        simd_ldr access_size addr2 rd2 ii)) >>=
-        fun (b1,b2) ->
-          assert (b1=B.Next []&& b2=B.Next []) ;
-          B.nextT
+        let sz = tr_simd_variant var in
+        if sz == MachSize.S128 then
+          (* Neon memory instructions are not single-copy atomic, but they
+           * are single-copy atomic for each of the two 64-bit quantities
+           * they access. *)
+          begin
+            do_read_mem_2x64b_ret AArch64.N aexp Access.VIR addr1 ii >>= fun v1 ->
+            write_reg_neon_sz sz rd1 v1 ii
+          end >>|
+          begin
+            M.add addr1 (neon_sz_k var) >>= fun addr2 ->
+            do_read_mem_2x64b_ret AArch64.N aexp Access.VIR addr2 ii >>= fun v2 ->
+            write_reg_neon_sz sz rd2 v2 ii
+          end >>= B.next2T
+        else
+          begin
+            do_read_mem_ret sz AArch64.N aexp Access.VIR addr1 ii >>= fun v1 ->
+            write_reg_neon_sz sz rd1 v1 ii
+          end >>|
+          begin
+            M.add addr1 (neon_sz_k var) >>= fun addr2 ->
+            do_read_mem_ret sz AArch64.N aexp Access.VIR addr2 ii >>= fun v2 ->
+            write_reg_neon_sz sz rd2 v2 ii
+          end >>= B.next2T
 
       let simd_stp var addr1 rd1 rd2 ii =
         let open AArch64Base in
-        let access_size = tr_simd_variant var in
-        if access_size == MachSize.S128 then
-          (* If this is a 2x128-bit store, treat it as a 4x64-bit store *)
-          (
+        let sz = tr_simd_variant var in
+        if sz == MachSize.S128 then
+          (* Neon memory instructions are not single-copy atomic, but they
+           * are single-copy atomic for each of the two 64-bit quantities
+           * they access. *)
+          begin
             read_reg_neon true rd1 ii >>= fun v1 ->
-            (
-              M.op1 (Op.Mask MachSize.Quad) v1 >>= fun v1_lo ->
-              write_mem MachSize.Quad aexp Access.VIR addr1 v1_lo ii
-            ) >>|
-            (
-              M.add addr1 (V.intToV 8) >>|
-              M.op1 (Op.LogicalRightShift 64) v1 >>= fun (addr2, v1_hi) ->
-              write_mem MachSize.Quad aexp Access.VIR addr2 v1_hi ii
-            )
-          ) >>|
-          (
-            read_reg_neon true rd2 ii >>= fun v2 ->
-            (
-              M.add addr1 (V.intToV 16) >>|
-              M.op1 (Op.Mask MachSize.Quad) v2 >>= fun (addr3, v2_lo) ->
-              write_mem MachSize.Quad aexp Access.VIR addr3 v2_lo ii
-            ) >>|
-            (
-              M.add addr1 (V.intToV 24) >>|
-              M.op1 (Op.LogicalRightShift 64) v2 >>= fun (addr4, v2_hi) ->
-              write_mem MachSize.Quad aexp Access.VIR addr4 v2_hi ii
-           )
-          ) >>= fun ((a, b), (c, d)) -> B.next4T (((a, b), c), d)
+            write_mem_2x64b aexp Access.VIR addr1 v1 ii
+          end >>|
+          begin
+            M.add addr1 (neon_sz_k var) >>|
+            read_reg_neon true rd2 ii >>= fun (addr2, v2) ->
+            write_mem_2x64b aexp Access.VIR addr2 v2 ii
+          end >>= fun ((a, b), (c, d)) -> B.next4T (((a, b), c), d)
         else
-          ((read_reg_neon true rd1 ii >>= fun v1 ->
-          write_mem access_size aexp Access.VIR addr1 v1 ii)
-          >>|
-          (neon_sz_k var >>= fun os ->
-          M.add addr1 os >>|
-          read_reg_neon true rd2 ii >>= fun (addr2,v2) ->
-          write_mem access_size aexp Access.VIR addr2 v2 ii)) >>= B.next2T
+          begin
+            read_reg_neon true rd1 ii >>= fun v1 ->
+            write_mem sz aexp Access.VIR addr1 v1 ii
+          end >>|
+          begin
+            M.add addr1 (neon_sz_k var) >>|
+            read_reg_neon true rd2 ii >>= fun (addr2, v2) ->
+            write_mem sz aexp Access.VIR addr2 v2 ii
+          end >>= B.next2T
 
       let movi_v r k shift ii =
         let open AArch64Base in
