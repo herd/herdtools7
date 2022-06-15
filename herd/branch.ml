@@ -42,6 +42,7 @@ module type S = sig
   val next1T : unit -> t monad
   val next2T : (unit * unit) -> t monad
   val next3T : ((unit * unit) * unit) -> t monad
+  val next4T : (((unit * unit) * unit) * unit) -> t monad
   val nextSetT : reg -> v -> t monad
 (* Non-conditional branch *)
   val branchT : lbl ->  t monad
@@ -76,6 +77,7 @@ module Make(M:Monad.S) = struct
   let next1T () = nextT
   let next2T ((),()) = nextT
   let next3T (((),()),()) = nextT
+  let next4T ((((),()),()), ()) = nextT
   let nextSetT r v = M.unitT (Next [r,v])
   let branchT lbl = M.unitT (Jump lbl)
   let bccT v lbl = M.unitT (CondJump (v,lbl))
