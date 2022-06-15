@@ -1,0 +1,10 @@
+Test A100 Required
+States 1
+[x]=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([x]=1)
+Observation A100 Always 1 0
+Hash=e9af5da7f48c174199e8b3acbf2c33cb
+

@@ -391,10 +391,10 @@ instr:
   { $1 A.V32 $2 $4 $7 $8 }
 | stp_instr xreg COMMA xreg COMMA LBRK cxreg kr0_no_shift RBRK
   { $1 A.V64 $2 $4 $7 $8 }
-| LDRB wreg COMMA LBRK cxreg kr0_no_shift RBRK
-  { A.I_LDRBH (A.B,$2,$5,$6) }
-| LDRH wreg COMMA LBRK cxreg kr0_no_shift RBRK
-  { A.I_LDRBH (A.H,$2,$5,$6) }
+| LDRB wreg COMMA LBRK cxreg kr0 RBRK
+  { let (kr, s) = $6 in A.I_LDRBH (A.B,$2,$5,kr,s) }
+| LDRH wreg COMMA LBRK cxreg kr0 RBRK
+  { let (kr, s) = $6 in A.I_LDRBH (A.H,$2,$5,kr,s) }
 | LDAR reg COMMA LBRK cxreg RBRK
   { let v,r = $2 in A.I_LDAR (v,A.AA,r,$5) }
 | LDARB wreg COMMA LBRK cxreg RBRK
@@ -422,10 +422,10 @@ instr:
 | STR reg COMMA LBRK cxreg kr0 RBRK
   { let (v,r)   = $2 in
     let (kr,os) = $6 in A.I_STR (v,r,$5,kr,os) }
-| STRB wreg COMMA LBRK cxreg kr0_no_shift RBRK
-  { A.I_STRBH (A.B,$2,$5,$6) }
-| STRH wreg COMMA LBRK cxreg kr0_no_shift RBRK
-  { A.I_STRBH (A.H,$2,$5,$6) }
+| STRB wreg COMMA LBRK cxreg kr0 RBRK
+  { let (kr,os) = $6 in A.I_STRBH (A.B,$2,$5,kr,os) }
+| STRH wreg COMMA LBRK cxreg kr0 RBRK
+  { let (kr, os) = $6 in A.I_STRBH (A.H,$2,$5,kr,os) }
 | STLR reg COMMA LBRK cxreg RBRK
   { let v,r = $2 in A.I_STLR (v,r,$5) }
 | STLRB wreg COMMA LBRK cxreg RBRK

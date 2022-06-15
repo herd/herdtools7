@@ -1,0 +1,10 @@
+Test A185 Allowed
+States 1
+0:X0=-64;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=-64)
+Observation A185 Always 1 0
+Hash=7ca2b108bf266be0b0ed25d0887ebcd9
+

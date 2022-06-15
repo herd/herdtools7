@@ -1,0 +1,9 @@
+AArch64 A07
+
+(* Tests ldrh (register), SXTW *)
+{ uint64_t 0:X0; 0:X1=x; uint64_t x; 0:X2=0; }
+
+P0;
+  LDRH W0, [X1, X2, SXTW];
+
+exists (0:X0=0)

@@ -807,9 +807,9 @@ type 'k kinstruction =
   | I_STCT of reg * reg
   | I_UNSEAL of reg * reg * reg
 (* Idem for bytes and half words *)
-  | I_LDRBH of bh * reg * reg * 'k kr
+  | I_LDRBH of bh * reg * reg * 'k kr * 'k s
   | I_LDARBH of bh * ld_type * reg * reg
-  | I_STRBH of bh * reg * reg * 'k kr
+  | I_STRBH of bh * reg * reg * 'k kr * 'k s
   | I_STLRBH of bh * reg * reg
   | I_STXRBH of bh * st_type * reg * reg * reg
 (* CAS *)
@@ -1104,10 +1104,10 @@ let do_pp_instruction m =
       pp_mem "STLR" v r1 r2 m.k0
   | I_STXR (v,t,r1,r2,r3) ->
       pp_stxr (str_memo t) v r1 r2 r3
-  | I_LDRBH (bh,r1,r2,k) ->
-      pp_mem ("LDR"^pp_bh bh) V32 r1 r2 k
-  | I_STRBH (bh,r1,r2,k) ->
-      pp_mem ("STR"^pp_bh bh) V32 r1 r2 k
+  | I_LDRBH (bh,r1,r2,k, s) ->
+      pp_mem_shift ("LDR"^pp_bh bh) V32 r1 r2 k s
+  | I_STRBH (bh,r1,r2,k, s) ->
+      pp_mem_shift ("STR"^pp_bh bh) V32 r1 r2 k s
   | I_STLRBH (bh,r1,r2) ->
       pp_mem ("STLR"^pp_bh bh) V32 r1 r2 m.k0
   | I_STXRBH (bh,t,r1,r2,r3) ->
@@ -1385,7 +1385,7 @@ let fold_regs (f_regs,f_sregs) =
     -> fold_reg r1 (fold_reg r2 c)
   | I_LDR (_,r1,r2,kr,_) | I_STR (_,r1,r2,kr,_)
   | I_OP3 (_,_,r1,r2,kr,_)
-  | I_LDRBH (_,r1,r2,kr) | I_STRBH (_,r1,r2,kr)
+  | I_LDRBH (_,r1,r2,kr,_) | I_STRBH (_,r1,r2,kr,_)
   | I_ALIGND (r1,r2,kr) | I_ALIGNU (r1,r2,kr)
   | I_LD1 (r1,_,r2,kr) | I_LD1R (r1,r2,kr)
   | I_ST1 (r1,_,r2,kr)
@@ -1597,10 +1597,10 @@ let map_regs f_reg f_symb =
   | I_UNSEAL (r1,r2,r3) ->
       I_UNSEAL(map_reg r1,map_reg r2,map_reg r3)
 (* Byte and Half loads and stores *)
-  | I_LDRBH (v,r1,r2,kr) ->
-     I_LDRBH (v,map_reg r1,map_reg r2,map_kr kr)
-  | I_STRBH (v,r1,r2,kr) ->
-     I_STRBH (v,map_reg r1,map_reg r2,map_kr kr)
+  | I_LDRBH (v,r1,r2,kr,os) ->
+     I_LDRBH (v,map_reg r1,map_reg r2,map_kr kr,os)
+  | I_STRBH (v,r1,r2,kr,os) ->
+     I_STRBH (v,map_reg r1,map_reg r2,map_kr kr,os)
 (* CAS *)
   | I_CAS (v,rmw,r1,r2,r3) ->
       I_CAS (v,rmw,map_reg r1,map_reg r2,map_reg r3)
@@ -1805,8 +1805,10 @@ include Pseudo.Make
         | I_STG (r1,r2,kr) -> I_STG (r1,r2,kr_tr kr)
         | I_STZG (r1,r2,kr) -> I_STZG (r1,r2,kr_tr kr)
         | I_LDG (r1,r2,kr) -> I_LDG (r1,r2,kr_tr kr)
-        | I_LDRBH (v,r1,r2,kr) -> I_LDRBH (v,r1,r2,kr_tr kr)
-        | I_STRBH (v,r1,r2,kr) -> I_STRBH (v,r1,r2,kr_tr kr)
+        | I_LDRBH (v,r1,r2,kr,s) ->
+            I_LDRBH (v,r1,r2,kr_tr kr,ap_shift k_tr s)
+        | I_STRBH (v,r1,r2,kr,s) ->
+            I_STRBH (v,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_TBNZ (v,r1,k,lbl) -> I_TBNZ (v,r1,k_tr k, lbl)
         | I_TBZ (v,r1,k,lbl) -> I_TBZ (v,r1,k_tr k, lbl)
         | I_MOV (v,r,k) -> I_MOV (v,r,kr_tr k)

@@ -1,0 +1,9 @@
+AArch64 A16
+
+(* Tests ldrh (register), overflowing load*)
+{ int16_t 0:X0 = 0; 0:X1=x; int16_t x = 65537; 0:X2=0; }
+
+P0;
+  LDRH W0, [X1, X2, SXTW];
+
+exists (x=1)

@@ -167,8 +167,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let ldr_mixed r1 r2 sz o =
       let open MachSize in
       match sz with
-      | Byte -> I_LDRBH (B,r1,r2,K o)
-      | Short -> I_LDRBH (H,r1,r2,K o)
+      | Byte -> I_LDRBH (B,r1,r2,K o, S_NOEXT)
+      | Short -> I_LDRBH (H,r1,r2,K o, S_NOEXT)
       | Word -> I_LDR (V32,r1,r2,K o, S_NOEXT)
       | Quad -> I_LDR (V64,r1,r2,K o, S_NOEXT)
       | S128 -> I_LDR (V128,r1,r2,K o, S_NOEXT)
@@ -201,8 +201,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let ldr_mixed_idx v r1 r2 idx sz  =
       let open MachSize in
       match sz with
-      | Byte -> I_LDRBH (B,r1,r2,RV (v,idx))
-      | Short -> I_LDRBH (H,r1,r2,RV (v,idx))
+      | Byte -> I_LDRBH (B,r1,r2,RV (v,idx), S_NOEXT)
+      | Short -> I_LDRBH (H,r1,r2,RV (v,idx), S_NOEXT)
       | Word -> I_LDR (V32,r1,r2,RV (v,idx), S_NOEXT)
       | Quad -> I_LDR (V64,r1,r2,RV (v,idx), S_NOEXT)
       | S128 -> I_LDR (V128,r1,r2,RV (v,idx), S_NOEXT)
@@ -210,8 +210,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let str_mixed sz o r1 r2 =
       let open MachSize in
       match sz with
-      | Byte -> I_STRBH (B,r1,r2,K o)
-      | Short -> I_STRBH (H,r1,r2,K o)
+      | Byte -> I_STRBH (B,r1,r2,K o, S_NOEXT)
+      | Short -> I_STRBH (H,r1,r2,K o, S_NOEXT)
       | Word -> I_STR (V32,r1,r2,K o, S_NOEXT)
       | Quad -> I_STR (V64,r1,r2,K o, S_NOEXT)
       | S128 -> I_STR (V128,r1,r2,K o, S_NOEXT)
@@ -271,8 +271,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let str_mixed_idx sz v r1 r2 idx  =
       let open MachSize in
       match sz with
-      | Byte -> I_STRBH (B,r1,r2,RV (v,idx))
-      | Short -> I_STRBH (H,r1,r2,RV (v,idx))
+      | Byte -> I_STRBH (B,r1,r2,RV (v,idx), S_NOEXT)
+      | Short -> I_STRBH (H,r1,r2,RV (v,idx), S_NOEXT)
       | Word -> I_STR (V32,r1,r2,RV (v,idx), S_NOEXT)
       | Quad -> I_STR (V64,r1,r2,RV (v,idx), S_NOEXT)
       | S128 -> I_STR (V128,r1,r2,RV (v,idx), S_NOEXT)

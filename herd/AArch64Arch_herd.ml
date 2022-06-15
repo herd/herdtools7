@@ -210,8 +210,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LD4 (rs,_,_,_) | I_LD4R (rs,_,_) | I_ST4 (rs,_,_,_)
       | I_LD4M (rs,_,_) | I_ST4M (rs,_,_) ->
           Some (simd_mem_access_size rs)
-      | I_LDRBH (v,_,_,_) | I_LDARBH (v,_,_,_)
-      | I_STRBH (v,_,_,_) | I_STLRBH (v,_,_) | I_STXRBH (v,_,_,_,_)
+      | I_LDRBH (v,_,_,_,_) | I_LDARBH (v,_,_,_)
+      | I_STRBH (v,_,_,_,_) | I_STLRBH (v,_,_) | I_STXRBH (v,_,_,_,_)
       | I_CASBH (v,_,_,_,_) | I_SWPBH (v,_,_,_,_)
       | I_LDOPBH (_,v,_,_,_,_) | I_STOPBH (_,v,_,_,_) ->
           Some (bh_to_sz v)
@@ -249,7 +249,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_NOP|I_TBZ _|I_TBNZ _
       | I_BL _ | I_BLR _ | I_RET _
         -> [] (* For -variant self only ? *)
-      | I_LDR (_,r,_,_,_)|I_LDRBH (_,r,_,_)
+      | I_LDR (_,r,_,_,_)|I_LDRBH (_,r,_,_,_)
       | I_LDUR (_,r,_,_)
       | I_LDAR (_,_,r,_) |I_LDARBH (_,_,r,_)
       | I_SWP (_,_,_,r,_) | I_SWPBH (_,_,_,r,_)

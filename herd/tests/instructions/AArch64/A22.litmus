@@ -1,0 +1,9 @@
+AArch64 A22
+
+(* Tests strh (register), LSL*)
+{ int16_t 0:X0 = 1; 0:X1=x; uint64_t x; 0:X2=0; }
+
+P0;
+  STRH W0, [X1, X2, LSL #0];
+
+exists (x=1)

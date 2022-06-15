@@ -84,13 +84,13 @@ module Make(V:Constant.S)(C:Config) =
       | S_UXTW -> "UXTW"
       | S_NOEXT  -> ""
 
-(* handle the temporary hack to accept `ins ..,[X1,W2]`
+(* handle `ins ..,[X1,W2]` with no barrel shifter
    as a shorthand for `ins ..,[X1,W2,SXTW]`.
    Applies to instructions LDRB and LDRH *)
 
-    let default_shift = function
-      | RV (V32,_) -> S_SXTW
-      | _ -> S_NOEXT
+    let default_shift kr s = match kr,s with
+      | RV (V32,_),S_NOEXT -> S_SXTW
+      | _,s -> s
 
 (************************)
 (* Template compilation *)
@@ -1166,13 +1166,13 @@ module Make(V:Constant.S)(C:Config) =
         load_pair (match t with TT -> "ldp" | NT -> "ldnp") v r1 r2 r3 kr::k
     | I_STP (t,v,r1,r2,r3,kr) ->
         store_pair (match t with TT -> "stp" | NT -> "stnp") v r1 r2 r3 kr::k
-    | I_LDRBH (B,r1,r2,kr) -> load "ldrb" V32 r1 r2 kr (default_shift kr)::k
-    | I_LDRBH (H,r1,r2,kr) -> load "ldrh" V32 r1 r2 kr (default_shift kr)::k
+    | I_LDRBH (B,r1,r2,kr,s) -> load "ldrb" V32 r1 r2 kr (default_shift kr s)::k
+    | I_LDRBH (H,r1,r2,kr,s) -> load "ldrh" V32 r1 r2 kr (default_shift kr s)::k
     | I_LDAR (v,t,r1,r2) -> load (ldr_memo t) v r1 r2 k0 S_NOEXT::k
     | I_LDARBH (bh,t,r1,r2) -> load (ldrbh_memo bh t) V32 r1 r2 k0 S_NOEXT::k
-    | I_STR (v,r1,r2,kr,s) -> store "str" v r1 r2 kr s::k
-    | I_STRBH (B,r1,r2,kr) -> store "strb" V32 r1 r2 kr S_NOEXT::k
-    | I_STRBH (H,r1,r2,kr) -> store "strh" V32 r1 r2 kr S_NOEXT::k
+    | I_STR (v,r1,r2,kr, s) -> store "str" v r1 r2 kr s::k
+    | I_STRBH (B,r1,r2,kr,s) -> store "strb" V32 r1 r2 kr s::k
+    | I_STRBH (H,r1,r2,kr,s) -> store "strh" V32 r1 r2 kr s::k
     | I_STLR (v,r1,r2) -> store "stlr" v r1 r2 k0 S_NOEXT::k
     | I_STLRBH (B,r1,r2) -> store "stlrb" V32 r1 r2 k0 S_NOEXT::k
     | I_STLRBH (H,r1,r2) -> store "stlrh" V32 r1 r2 k0 S_NOEXT::k

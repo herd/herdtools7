@@ -1,0 +1,10 @@
+Test A104 Required
+States 1
+[x]=0x100; [y]=0x0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([x]=0x100 /\ [y]=0x0)
+Observation A104 Always 1 0
+Hash=2a2d0c7db89f18d0a0f72781c23d0dd0
+

@@ -1,0 +1,9 @@
+AArch64 A13
+
+(* Tests strb (register), LSL 1*)
+{ int8_t 0:X0 = 128; 0:X1=x; uint64_t x; 0:X2=0; }
+
+P0;
+  STRB W0, [X1, X2, LSL 1];
+
+exists (x=128)
