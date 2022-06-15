@@ -1234,7 +1234,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k
     | I_MOVZ (v,rd,i,os) -> movz v rd i os::k
     | I_MOVK (v,rd,i,os) -> movk  v rd i os::k
-    | I_ADDR (r,lbl) -> adr tr_lab r lbl::k
+    | I_ADR (r,lbl) -> adr tr_lab r lbl::k
     | I_RBIT (v,rd,rs) -> rbit v rd rs::k
     | I_SXTW (r1,r2) -> sxtw r1 r2::k
     | I_OP3 (v,SUBS,ZR,r,K i, S_NOEXT) ->  cmpk v r i::k

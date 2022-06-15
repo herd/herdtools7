@@ -829,7 +829,7 @@ type 'k kinstruction =
   | I_MOVK of variant * reg * 'k * 'k s
   | I_SXTW of reg * reg
   | I_OP3 of variant * op * reg * reg * 'k kr * 'k s
-  | I_ADDR of reg * lbl
+  | I_ADR of reg * lbl
   | I_RBIT of variant * reg * reg
 (* Barrier *)
   | I_FENCE of barrier
@@ -1289,8 +1289,8 @@ let do_pp_instruction m =
       pp_rri (pp_op op) v r1 r2 k
   | I_OP3 (v,op,r1,r2,kr, s) ->
       pp_rrkr (pp_op op) v r1 r2 kr ^ pp_barrel_shift "," s (m.pp_k)
-  | I_ADDR (r,lbl) ->
-      sprintf "ADDR %s,%s" (pp_xreg r) (pp_label lbl)
+  | I_ADR (r,lbl) ->
+      sprintf "ADR %s,%s" (pp_xreg r) (pp_label lbl)
   | I_RBIT (v,rd,rs) ->
       sprintf "RBIT %s,%s" (pp_vreg v rd) (pp_vreg v rs)
 (* Barrier *)
@@ -1365,7 +1365,7 @@ let fold_regs (f_regs,f_sregs) =
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
   | I_MOV (_,r,_) | I_MOVZ (_,r,_,_) | I_MOVK (_,r,_,_)
-  | I_ADDR (r,_) | I_IC (_,r) | I_DC (_,r) | I_MRS (r,_)
+  | I_ADR (r,_) | I_IC (_,r) | I_DC (_,r) | I_MRS (r,_)
   | I_TBNZ (_,r,_,_) | I_TBZ (_,r,_,_)
   | I_CHKSLD r | I_CHKTGD r
   | I_MOVI_V (r,_,_) | I_MOVI_S (_,r,_)
@@ -1631,8 +1631,8 @@ let map_regs f_reg f_symb =
       I_SXTW (map_reg r1,map_reg r2)
   | I_OP3 (v,op,r1,r2,kr,os) ->
       I_OP3 (v,op,map_reg r1,map_reg r2,map_kr kr,os)
-  | I_ADDR (r,lbl) ->
-      I_ADDR (map_reg r,lbl)
+  | I_ADR (r,lbl) ->
+      I_ADR (map_reg r,lbl)
   | I_RBIT (v,r1,r2) ->
       I_RBIT (v,map_reg r1,map_reg r2)
 (* Conditinal select *)
@@ -1707,7 +1707,7 @@ let get_next = function
   | I_LDOPBH _
   | I_STOP _
   | I_STOPBH _
-  | I_ADDR _
+  | I_ADR _
   | I_RBIT _
   | I_IC _
   | I_DC _
@@ -1783,7 +1783,7 @@ include Pseudo.Make
         | I_LDOPBH _
         | I_STOP _
         | I_STOPBH _
-        | I_ADDR _
+        | I_ADR _
         | I_RBIT _
         | I_IC _
         | I_DC _
@@ -1919,7 +1919,7 @@ include Pseudo.Make
         | I_OP3 _
         | I_FENCE _
         | I_CSEL _
-        | I_ADDR _
+        | I_ADR _
         | I_RBIT _
 (*        | I_TLBI (_,ZR) *)
         | I_MRS _
@@ -1951,7 +1951,7 @@ include Pseudo.Make
         | I_TBNZ (_,_,_,lbl)
         | I_TBZ (_,_,_,lbl)
         | I_BL lbl
-        | I_ADDR (_,lbl)
+        | I_ADR (_,lbl)
           -> f k lbl
         | _ -> k
 
@@ -1963,7 +1963,7 @@ include Pseudo.Make
         | I_CBNZ (v,r,lbl) -> I_CBNZ (v,r,f lbl)
         | I_TBNZ (v,r,k,lbl) -> I_TBNZ (v,r,k,f lbl)
         | I_TBZ (v,r,k,lbl) -> I_TBZ (v,r,k,f lbl)
-        | I_ADDR (r,lbl) -> I_ADDR (r, f lbl)
+        | I_ADR (r,lbl) -> I_ADR (r, f lbl)
         | ins -> ins
     end)
 
