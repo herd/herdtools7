@@ -1191,7 +1191,7 @@ module Make
       (* Utility that performes an 128-bit load as two independent 64-bit
        * loads. Used by Neon instructions. *)
       let do_read_mem_2x64b_ret an anexp ac addr1 ii =
-        do_read_mem_ret MachSize.Quad an anexp Access.VIR addr1 ii >>|
+        do_read_mem_ret MachSize.Quad an anexp ac addr1 ii >>|
         begin
           M.add addr1 (neon_sz_k AArch64Base.VSIMD64) >>= fun addr2 ->
           do_read_mem_ret MachSize.Quad an anexp ac addr2 ii
