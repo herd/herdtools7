@@ -457,9 +457,11 @@ module Make(C:Builder.S)
       let po_safe = extract_po safe in
       let fence_safe = extract_fence safe in
       let po_safe = po_safe,fence_safe in
+
       let rec choose_relax rs k = match rs with
       | [] -> k
       | r0::rs -> (* Build simple cycles for relaxation r0 *)
+
           let call_rec = call_rec prefix (f [fst r0]) aset po_safe  in
 
 (* Add a safe edge to suffix *)
