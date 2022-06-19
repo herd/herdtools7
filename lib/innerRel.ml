@@ -600,6 +600,7 @@ and module Elts = MySet.Make(O) =
       do_aux
 
     let fold_topos_ext kont res nodes edges =
+      let edges = transitive_closure edges in
       let count_succ = make_count nodes edges in
       let set_preds = make_preds nodes edges in
       let ws =
@@ -613,10 +614,8 @@ and module Elts = MySet.Make(O) =
       try all_topos_kont es vb (fun k res -> kont (order_to_rel k) res) res
       with Cyclic -> kfail vb
 
-    let all_topos2 = fold_topos_ext Misc.cons []
-
     let all_topos verbose nodes edges =
-      let nss = all_topos2 nodes edges in
+      let nss = fold_topos_ext Misc.cons [] nodes edges in
       if verbose then begin
         let nres = List.length nss in
         if nres > 1023 then begin

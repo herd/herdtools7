@@ -42,7 +42,7 @@ let dsb.st=dsb.st & WW
 
 
 (* Common, all arm barriers are strong *)
-let strong = dmb|dsb|dmb.st|dsb.st
+let strong = dmb|dsb|dmb.st|dsb.st|dmb.ish
 let light = 0
 
 include "ppc-checks.cat"

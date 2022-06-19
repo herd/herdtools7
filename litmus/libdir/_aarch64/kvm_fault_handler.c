@@ -8,6 +8,10 @@ static void fault_handler(struct pt_regs *regs,unsigned int esr) {
   record_fault(w,read_elr_el1(),read_far());
 #ifdef PRECISE
   regs->pc = (u64)label_ret[w->proc];
+#else
+#ifdef FAULT_SKIP
+  regs->pc += 4;
+#endif
 #endif
 }
 

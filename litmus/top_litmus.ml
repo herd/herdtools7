@@ -57,7 +57,7 @@ module type CommonConfig = sig
   val c11 : bool
   val c11_fence : bool
   val ascall : bool
-  val precision : bool
+  val precision : Precision.t
   val variant : Variant_litmus.t -> bool
   val nocatch : bool
   val stdio : bool
@@ -116,7 +116,7 @@ module type Config = sig
   val noccs : int
   val timelimit : float option
   val check_nstates : string -> int option
-  val precision : bool
+  val precision : Precision.t
   (* End of additions *)
   include Skel.Config
   include Run_litmus.Config

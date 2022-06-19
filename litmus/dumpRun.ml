@@ -696,9 +696,9 @@ let dump_c_cont xcode arch sources utils nts =
             (fun k sz ->
               let open Topology in
               O.o "" ;
-              O.f "const int *inst_%d;" k ;
-              O.f "const int *role_%d;" k ;
-              O.f "const char **group_%d;" k ;
+              O.f "extern const int *inst_%d;" k ;
+              O.f "extern const int *role_%d;" k ;
+              O.f "extern const char **group_%d;" k ;
               O.f "#define scansz_%d %d" k sz.scansz ;
               O.f "#define scanline_%d %d" k sz.scanline)
             m)

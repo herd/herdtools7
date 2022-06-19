@@ -19,7 +19,7 @@ module type Config = sig
   val timeloop : int
   val barrier : Barrier.t
   val mode : Mode.t
-  val precision : bool
+  val precision : Precision.t
   val variant : Variant_litmus.t -> bool
 end
 
@@ -28,7 +28,7 @@ module Default = struct
   let timeloop = 0
   let barrier = Barrier.UserFence
   let mode = Mode.Std
-  let precision = false
+  let precision = Precision.default
   let variant _ = false
 end
 
@@ -297,7 +297,7 @@ type P.code = MiscParser.proc * A.pseudo list)
     open Constant
 
     let do_self = O.variant Variant_litmus.Self
-    and do_precise = O.precision
+    and do_precise = Precision.is_fatal O.precision
     let is_pte =
       let open Mode in
       match O.mode with

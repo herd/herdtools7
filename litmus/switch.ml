@@ -160,12 +160,6 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
                 if cx > cy then px else py)
               p0 rem in
           r
-    let do_implies p1 p2 = match p1,p2 with
-    | Or [],_ -> And []
-    | And [],_ -> p2
-    | _,Or [] -> Not p1
-    | _,And [] -> p1
-    | _,_ -> Implies (p1,p2)
 
     let do_or p1 p2 = match p1,p2 with
     | Or ps1,Or ps2 -> Or (ps1@ps2)
@@ -182,9 +176,11 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
     | _,_ -> And [p1;p2]
 
     let do_not = function
-      | Or [] -> And []
-      | And [] -> Or []
-      | p -> Not p
+    | Or [] -> And []
+    | And [] -> Or []
+    | p -> Not p
+
+    let do_implies p1 p2 = do_or (do_not p1) p2
 
     let atom_pos loc v loc0 v0 =
       if  I.Loc.compare loc loc0 = 0 then

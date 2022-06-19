@@ -42,7 +42,7 @@ module type Config = sig
   val cacheflush : bool
   val exit_cond : bool
   include DumpParams.Config
-  val precision : bool
+  val precision : Precision.t
   val variant : Variant_litmus.t -> bool
 end
 
@@ -67,10 +67,13 @@ module Make
       val dump : Name.t -> T.t -> unit
     end = struct
   module LocMake(CfgLoc:sig val label_init : Label.Full.full list end) = struct
+
     let do_ascall =
       Cfg.ascall || Cfg.is_kvm || Misc.consp CfgLoc.label_init
-      let do_precise = Cfg.precision
-      let do_dynalloc =
+
+    let do_precise = Precision.is_fatal Cfg.precision
+
+    let do_dynalloc =
         let open Alloc in
         match Cfg.alloc with
         | Dynamic -> true
@@ -210,13 +213,12 @@ module Make
 (* Delays *)
 (**********)
 
-      let nsteps = 5
+      let nsteps = 9
 
       let dump_delay_def () =
         if have_timebase then begin
           O.f "#define NSTEPS %i" nsteps ;
           O.f "#define NSTEPS2 ((NSTEPS-1)/2)" ;
-          O.o "#define STEP (DELTA_TB/(NSTEPS-1))"
         end
 
 
@@ -304,12 +306,18 @@ module Make
           O.o "" ;
           Insert.insert O.o "instruction.h" ;
           O.o "" ;
-          if do_precise then begin
-            O.o "#define PRECISE 1" ;
-            O.o "ins_t *label_ret[NTHREADS];" ;
-            O.o ""
+          begin
+            let open Precision in
+            match Cfg.precision with
+            | Fatal ->
+               O.o "#define PRECISE 1" ;
+               O.o "static ins_t *label_ret[NTHREADS];" ;
+               O.o ""
+            | Skip ->
+               O.o "#define FAULT_SKIP 1" ;
+               O.o ""
+            | Handled -> ()
           end ;
-
           let insert_ins_ops () =
             ObjUtil.insert_lib_file O.o "_find_ins.c" ;
             O.o "" ;
@@ -1287,9 +1295,9 @@ module Make
         end ;
         (* Delays *)
         if have_timebase then begin
-          O.oii "int _delay = DELTA_TB;" ;
+          O.oii "int _delay = _g->delay;" ;
           if proc <> 0 then
-            O.fii "_delay += (_p->d%i - (NSTEPS-1)/2)*STEP;" proc
+            O.fii "_delay += (_p->d%i - (NSTEPS-1)/2)*_g->step;" proc
         end ;
         (* Initialize them *)
         List.iter

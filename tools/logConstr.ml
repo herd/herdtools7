@@ -123,7 +123,7 @@ module type I = sig
 
   type state
 
-  val state_mem : state -> MiscParser.location -> v -> bool
+  val state_mem : state -> MiscParser.location ConstrGen.rloc -> v -> bool
   val state_eqloc : state -> MiscParser.location -> MiscParser.location -> bool
   val state_fault : state -> v Fault.atom -> bool
 end
@@ -150,10 +150,7 @@ end  =
 
 
     let rec check_prop p state = match p with
-    | Atom (LV (Loc l,v)) -> I.state_mem state l v
-    | Atom (LV (Deref _,_)) ->
-        prerr_endline "TODO" ;
-        assert false
+    | Atom (LV (x,v)) -> I.state_mem state x v
     | Atom (LL (l1,l2)) -> I.state_eqloc state l1 l2
     | Atom (FF f) -> I.state_fault state f
     | Not p -> not (check_prop p state)

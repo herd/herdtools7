@@ -103,8 +103,8 @@ module Make
 
       let mk_read_std = mk_read quad AArch64.N
 
-      let mk_fault a ii msg =
-        M.mk_singleton_es (Act.Fault (ii,A.Location_global a,msg)) ii
+      let mk_fault a dir annot ii msg =
+        M.mk_singleton_es (Act.Fault (ii,A.Location_global a,dir,annot,msg)) ii
 
       let read_loc v is_data = M.read_loc is_data (mk_read v AArch64.N aexp)
 
@@ -534,9 +534,9 @@ module Make
 
          *)
 
-      let mk_pte_fault a ma ii =
+      let mk_pte_fault a ma dir an ii =
         insert_commit_to_fault ma
-          (fun _ -> mk_fault a ii (Some "EL0")) ii >>! B.Exit
+          (fun _ -> mk_fault a dir an ii (Some "EL0"))  ii >>! B.Exit
 
       let an_xpte =
         let open AArch64 in
@@ -680,7 +680,7 @@ module Make
           M.choiceT cond mvirt
             (* Non-virtual accesses are disallowed from EL0.
                For instance, user code cannot access the page table. *)
-            (if is_el0 then mk_pte_fault a_virt ma ii
+            (if is_el0 then mk_pte_fault a_virt ma dir an ii
              else mdirect)
 
 (* Read memory, return value read *)
@@ -800,25 +800,29 @@ module Make
   addresses. Thus the resulting monads will possess
   extra dependencies w.r.t the simple case.
  *)
-      let lift_memtag_phy mop a_virt ma ii =
+      let lift_fault mfault mm = (* This is memtag fault handling *)
+        let open Precision in
+        match C.precision with
+        | Fatal -> mfault >>! B.Exit
+        | Skip -> Warn.fatal "Memtag extension has no 'Skip' fault handling mode"
+        | Handled ->
+           (mfault >>| mm) >>= M.ignore >>= B.next1T
+
+      let lift_memtag_phy mop a_virt ma dir an ii =
         M.delay_kont "4" ma
           (fun _ ma ->
             let mm = mop Access.PHY ma in
             delayed_check_tags a_virt ma ii
               (mm  >>= M.ignore >>= B.next1T)
-              (let mfault = mk_fault a_virt ii None in
-              if C.precision then  mfault >>! B.Exit
-              else (mfault >>| mm) >>= M.ignore >>= B.next1T))
+              (lift_fault (mk_fault a_virt dir an ii None) mm))
 
-      let lift_memtag_virt mop ma ii =
+      let lift_memtag_virt mop ma dir an ii =
         M.delay_kont "5" ma
           (fun a_virt ma  ->
             let mm = mop Access.VIR (ma >>= fun a -> loc_extract a) in
             delayed_check_tags a_virt ma ii
               (mm  >>= M.ignore >>= B.next1T)
-              (let mfault = ma >>= fun a -> mk_fault a ii None in
-              if C.precision then  mfault >>! B.Exit
-              else (mfault >>| mm) >>= M.ignore >>= B.next1T))
+              (lift_fault (ma >>= fun a -> mk_fault a dir an ii None) mm))
 
 
       let some_ha = dirty.DirtyBit.some_ha || dirty.DirtyBit.some_hd
@@ -836,8 +840,15 @@ module Make
 
       let lift_kvm dir updatedb mop ma an ii mphy =
         let mfault ma a =
-          insert_commit_to_fault ma (fun _ -> mk_fault a ii None) ii
-          >>! if C.precision then B.Exit else B.ReExec in
+          insert_commit_to_fault ma (fun _ -> mk_fault a dir an ii None) ii
+          >>!
+            begin
+              let open Precision in
+              match C.precision with
+              | Fatal -> B.Exit
+              | Skip -> B.Next []
+              | Handled -> B.ReExec
+            end in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb a ma an ii
             ((let m = mop Access.PTE ma in
@@ -852,11 +863,11 @@ module Make
              | Access.VIR|Access.PTE -> maccess a ma
              | ac -> mop ac ma >>= M.ignore >>= B.next1T)
 
-      let lift_morello mop perms ma mv ii =
+      let lift_morello mop perms ma mv dir an ii =
         let mfault msg ma mv =
           do_insert_commit
             (ma >>| mv)
-            (fun (a,_v) -> mk_fault a ii (Some msg)) ii  >>! B.Exit in
+            (fun (a,_v) -> mk_fault a dir an ii (Some msg)) ii  >>! B.Exit in
         M.delay_kont "morello" ma
           (fun a ma ->
             (* Notice: virtual access only, beaause morello # kvm *)
@@ -883,15 +894,15 @@ module Make
 
       let lift_memop dir updatedb mop perms ma mv an ii =
         if morello then
-          lift_morello mop perms ma mv ii
+          lift_morello mop perms ma mv dir an ii
         else
           let mop = apply_mv mop mv in
           if memtag then
             begin
               if kvm then
-                let mphy = (fun ma a -> lift_memtag_phy mop a ma ii) in
+                let mphy = (fun ma a -> lift_memtag_phy mop a ma dir an ii) in
                 lift_kvm dir updatedb mop ma an ii mphy
-              else lift_memtag_virt mop ma ii
+              else lift_memtag_virt mop ma dir an ii
             end
           else if kvm then
             let mphy =
@@ -1146,7 +1157,7 @@ module Make
           (to_perms "rw" sz)
           (read_reg_ord rn ii)
           (read_reg_data sz rt ii)
-          ii
+          Dir.W (rmw_to_read rmw) ii
 
       let ldop op sz rmw rs rt rn ii =
         let open AArch64 in
@@ -1853,7 +1864,7 @@ module Make
               (to_perms "tw" MachSize.S128)
               (read_reg_ord rn ii)
               (read_reg_data MachSize.Quad rt ii)
-              ii
+              Dir.W AArch64.N ii
         | I_LDCT(rt,rn) ->
             check_morello ii ;
             (* NB: only 1 access implemented out of the 4 *)
@@ -1872,6 +1883,7 @@ module Make
               (to_perms "r" MachSize.S128)
               (read_reg_ord rn ii)
               mzero
+              Dir.R AArch64.N
               ii
         | I_UNSEAL(rd,rn,rm) ->
             check_morello ii ;

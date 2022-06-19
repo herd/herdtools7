@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2019-present Institut National de Recherche en Informatique et *)
+(* Copyright 2022-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,13 +14,17 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type t =
-  | Self (* Self modifying code *)
-  | Precise of Precision.t
+(** Reaction to faults, tag common to litmus and herd *)
 
+type t =
+  | Handled (* Do nothing special *)
+  | Fatal   (* Jump to end of code *)
+  | Skip    (* Skip instruction *)
+
+val default : t
 val tags : string list
 val parse : string -> t option
 val pp : t -> string
-val ok : t -> Archs.t -> bool
-val compare : t -> t -> int
-val set_precision : Precision.t ref -> t -> bool
+
+val is_fatal : t -> bool
+val is_skip : t -> bool

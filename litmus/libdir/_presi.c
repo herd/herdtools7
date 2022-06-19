@@ -157,7 +157,7 @@ uint32_t rand_k (uint32_t *st,uint32_t k) {
 
 void launch(pthread_t *th, f_t *f, void *a) {
   int e = pthread_create(th,NULL,f,a);
-  if (e) errexit("phread_create",e);
+  if (e) errexit("pthread_create",e);
 }
 
 void *join(pthread_t *th) {
@@ -219,10 +219,13 @@ static void usage_opt(char *prog,opt_t *d) {
   fprintf(stderr,"usage: %s (options)* (parameters)*\n",prog) ;
   fprintf(stderr,"%s","  -v      be verbose\n") ;
   fprintf(stderr,"%s","  -q      be quiet\n") ;
-  fprintf(stderr,"  -a <n>  consider that <n> cores are available (default %i)\n",d->avail) ;
-  fprintf(stderr,"  -n <n>  run n tests concurrently (default %i)\n",d->n_exe) ;
-  fprintf(stderr,"  -r <n>  perform n external runs (default %i)\n",d->max_run) ;
-  fprintf(stderr,"  -s <n>  perform n internal runs (default %i)\n",d->size_of_test) ;
+  fprintf(stderr,"  -a <n>  consider that <n> cores are available (default %d)\n",d->avail) ;
+  fprintf(stderr,"  -n <n>  run n tests concurrently (default %d)\n",d->n_exe) ;
+  fprintf(stderr,"  -r <n>  perform n external runs (default %d)\n",d->max_run) ;
+  fprintf(stderr,"  -s <n>  perform n internal runs (default %d)\n",d->size_of_test) ;
+  if (d->delay > 0) {
+    fprintf(stderr,"  -tb <n> time base delay  (default %d)\n",d->delay) ;
+  }
   exit(2) ;
 }
 
@@ -262,6 +265,11 @@ char **parse_opt(int argc,char **argv,opt_t *d, opt_t *p) {
       if (!*argv) usage_opt(prog,d) ;
       p->n_exe = argint_opt(prog,argv[0],d) ;
       if (p->n_exe < 1) p->n_exe = 1 ;
+    } else if (strcmp(*argv,"-tb") == 0 && d->delay > 0) {
+      --argc ; ++argv ;
+      if (!*argv) usage_opt(prog,d) ;
+      p->delay = argint_opt(prog,argv[0],d) ;
+      if (p->delay < 1) p->delay = 1 ;
     } else usage_opt(prog,d);
   }
 }

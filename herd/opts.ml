@@ -42,7 +42,7 @@ let speedcheck = ref Speed.False
 let archcheck = ref true
 let optace = ref None
 let variant = ref (fun _ -> false)
-let precision = ref false
+let precision = ref Precision.default
 
 module OptS = struct
   include Variant

@@ -56,7 +56,7 @@ module Make (C:Config) (A : A) : sig
 (* Atomic modify, (location,value read, value written, annotation *)
     | Amo of A.location * A.V.v * A.V.v * A.lannot * A.explicit * MachSize.sz * Access.t
 (* NB: Amo used in some arch only (e.g., Arm, RISCV) *)
-    | Fault of A.inst_instance_id * A.location * string option
+    | Fault of A.inst_instance_id * A.location * Dir.dirn * A.lannot * string option
 (* Unrolling control *)
     | TooFar of string
 (* TLB Invalidate event, operation (for print and level), address, if any.
@@ -119,7 +119,7 @@ end = struct
     | A.Location_reg _ -> REG
     | A.Location_global (V.Val (Symbolic (Virtual _))|V.Var _)
       -> VIR
-    | A.Location_global (V.Val (Symbolic ((System (PTE,_))))) as loc
+    | A.Location_global (V.Val (Symbolic ((System ((PTE|PTE2),_))))) as loc
         ->
           if kvm then Access.PTE
           else Warn.fatal "PTE %s while -variant kvm is not active"
@@ -139,7 +139,7 @@ end = struct
     | Amo of
         A.location * A.V.v * A.V.v * A.lannot * A.explicit *
         MachSize.sz * Access.t
-    | Fault of A.inst_instance_id * A.location * string option
+    | Fault of A.inst_instance_id * A.location * Dir.dirn * A.lannot * string option
     | TooFar of string
     | Inv of A.TLBI.op * A.location option
     | DC of AArch64Base.DC.op * A.location option
@@ -180,11 +180,13 @@ end = struct
         (A.pp_explicit exp_an)
         (A.pp_location loc) (MachSize.pp_short sz)
         (V.pp C.hexa v1) (V.pp C.hexa v2)
-  | Fault (ii,loc,msg) ->
-      Printf.sprintf "Fault(proc:%s,poi:%s,loc:%s%s)"
+  | Fault (ii,loc,d,an,msg) ->
+      Printf.sprintf "Fault(proc:%s,poi:%s,%s,loc:%s%s%s)"
         (A.pp_proc ii.A.proc)
         (A.pp_prog_order_index ii.A.program_order_index)
+        (pp_dirn d)
         (A.pp_location_old loc)
+        (A.pp_annot an)
         (match msg with
          | None -> ""
          | Some msg -> Printf.sprintf ",type:%s" msg)
@@ -235,7 +237,7 @@ end = struct
   let location_of a = match a with
   | Access (_, l, _,_,_,_,_)
   | Amo (l,_,_,_,_,_,_)
-  | Fault (_,l,_)
+  | Fault (_,l,_,_,_)
   | Inv (_,Some l)
   | DC(_,Some l)
   | IC(_,Some l)
@@ -335,8 +337,16 @@ end = struct
     | DC _ | IC _ | Arch _ | NoAction
       -> false
 
+  let is_faulting_read = function
+    | Fault (_,_,Dir.R,_,_) -> true
+    | _ -> false
+
+  let is_faulting_write = function
+    | Fault (_,_,Dir.W,_,_) -> true
+    | _ -> false
+
   let to_fault = function
-    | Fault (i,A.Location_global x,msg) -> Some ((i.A.proc,i.A.labels),x,msg)
+    | Fault (i,A.Location_global x,_,_,msg) -> Some ((i.A.proc,i.A.labels),x,msg)
     | Fault _ | Access _ | Amo _ | Commit _ | Barrier _ | TooFar _ | Inv _
     | DC _ | IC _ | Arch _ | NoAction
       -> None
@@ -487,7 +497,8 @@ end = struct
       List.map
         (fun (tag,p) ->
           let p act = match act with
-          | Access(_,_,_,annot,_,_,_)|Amo (_,_,_,annot,_,_,_) -> p annot
+          | Access(_,_,_,annot,_,_,_)|Amo (_,_,_,annot,_,_,_)
+          | Fault (_,_,_,annot,_)-> p annot
           | Arch a -> p (A.ArchAction.get_lannot a)
           | _ -> false
           in tag,p) A.annot_sets
@@ -519,6 +530,8 @@ end = struct
     in
     ("T",is_tag)::
     ("FAULT",is_fault)::
+    ("FAULT-RD",is_faulting_read)::
+    ("FAULT-WR",is_faulting_write)::
     ("TLBI",is_inv)::
     ("DC",is_dc)::
     ("DC-IC",is_ic)::
@@ -537,13 +550,25 @@ end = struct
 
   let arch_rels =
     if kvm then
+
       let inv_domain_act =
+
+        let is_pt_loc act =
+          match location_of act with
+          | Some loc ->
+             let open Constant in
+             begin
+               match A.symbol loc with
+               | Some (System (PTE,_)) -> true
+               | _ -> false
+             end
+          | None -> false in
 
         let inv_domain_sym a1 a2 =
           let open Constant in
           match a1,a2 with
-          | ((Virtual {name=s1;_}|Physical (s1,_)|System (PTE,s1)),System (TLB,s2))
-          | (System (TLB,s2),(Virtual {name=s1;_}|Physical (s1,_)|System (PTE,s1)))
+          | (System ((PTE),s1),System (TLB,s2))
+          | (System (TLB,s2),System ((PTE),s1))
             -> Misc.string_eq s1 s2
           | _,_ -> false in
 
@@ -557,12 +582,7 @@ end = struct
 
         fun act1 act2 -> match act1,act2 with
         | (act,Inv (_,None))|(Inv (_, None),act)
-          ->
-            is_mem act &&
-            begin match location_of act with
-            | Some (A.Location_global _) ->  true
-            | Some _|None -> false
-            end
+          ->  is_pt_loc act
         | (e,Inv (_,Some loc1))|(Inv (_, Some loc1),e)
           ->
             is_mem e &&
@@ -643,9 +663,9 @@ end = struct
         let v1 = V.simplify_var soln v1 in
         let v2 = V.simplify_var soln v2 in
         Amo (loc,v1,v2,an,exp_an,sz,t)
-    | Fault (ii,loc,msg) ->
+    | Fault (ii,loc,d,a,msg) ->
         let loc = A.simplify_vars_in_loc soln loc in
-        Fault(ii,loc,msg)
+        Fault(ii,loc,d,a,msg)
     | Inv (op,oloc) ->
         let oloc = Misc.app_opt (A.simplify_vars_in_loc soln) oloc in
         Inv (op,oloc)

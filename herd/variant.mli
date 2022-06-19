@@ -34,8 +34,7 @@ type t =
  (* Do not check (and reject early) mixed size tests in non-mixed-size mode *)
   | DontCheckMixed
   | MemTag           (* Memory Tagging *)
-  | TagCheckPrecise
-  | TagCheckUnprecise
+  | TagPrecise of Precision.t (* Fault handling *)
   | TooFar         (* Do not discard candidates with TooFar events *)
   | Morello
   | Neon
@@ -75,5 +74,4 @@ val get_default :  Archs.t -> t -> bool
 (* Get value for switchable variant *)
 val get_switch : Archs.t -> t -> (t -> bool) -> bool
 
-(* set precision *)
-val set_precision : bool ref -> t -> bool
+val set_precision : Precision.t ref -> t -> bool

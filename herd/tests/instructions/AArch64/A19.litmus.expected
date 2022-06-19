@@ -1,0 +1,10 @@
+Test A19 Required
+States 1
+0:X0=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=2)
+Observation A19 Always 1 0
+Hash=513393febe8e91d350053aa3ce4fb159
+

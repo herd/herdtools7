@@ -38,6 +38,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let barrier_sets =
       [
        "DMB",is_barrier (DMB SY);
+       "DMB.ISH",is_barrier (DMB ISH);
        "DSB",is_barrier (DSB SY);
        "DMB.ST",is_barrier (DMB ST);
        "DSB.ST",is_barrier (DSB ST);

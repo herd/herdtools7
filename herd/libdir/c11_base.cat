@@ -13,7 +13,7 @@ include "c11_cos.cat"
 include "c11_los.cat"
 
 
-let asw = I * (M \ I)
+let asw = IW * (M \ IW)
 let sb = po
 let mo = co
 
