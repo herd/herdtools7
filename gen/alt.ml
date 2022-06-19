@@ -360,11 +360,42 @@ module Make(C:Builder.S)
 
     let can_prefix prefix = mk_can_prefix prefix
 
+    let lof_ess ess =
+      List.fold_right
+           (fun (_,es) ->
+             List.fold_right
+               (fun e k -> pp_edge e::k)
+               es)
+           ess []
+
+    let rec check2 es l rl =
+      match l,rl with
+      | _::_,[] | [],_::_ | [],[] ->  false (* should pass a warning, this case shouldn't be possible*)
+      | h::_, hr::[] -> if h=hr then begin false end else true
+      | _::[], _::_ -> true (* no wraparound implemented as cycle is still being built*)
+      | h::t, hr::tr -> if h = hr then begin check2 es t tr end else true
+
+    let check_cycle r suff =
+      let reject = [["DpAddrdR";"Amo.StAdd"];["Rfe";"DpAddrdR"]] in
+      let r_f = fun (_,es) -> List.fold_right (fun e k -> pp_edge e::k) es [] in
+      let r_first = String.concat "" (r_f r) in
+      let rec f rej= match rej with
+        | h::t -> if (List.hd h) = r_first then begin
+          let rs = lof_ess (r::suff) in
+          let truth = check2 rs (List.tl rs) (List.tl h) in
+          if truth then f t else false
+          end
+          else f t
+        | [] -> true in
+      f reject
+
+
     let call_rec prefix f0 safes po_safe over n r suff f_rec k =
       if
         can_precede safes po_safe r suff &&
         minprocs suff <= O.nprocs &&
-        minint (r::suff) <= O.max_ins-1
+        minint (r::suff) <= O.max_ins-1 &&
+        check_cycle r suff
       then
         let suff = r::suff
         and n = n-sz r in
@@ -426,11 +457,9 @@ module Make(C:Builder.S)
       let po_safe = extract_po safe in
       let fence_safe = extract_fence safe in
       let po_safe = po_safe,fence_safe in
-
       let rec choose_relax rs k = match rs with
       | [] -> k
       | r0::rs -> (* Build simple cycles for relaxation r0 *)
-
           let call_rec = call_rec prefix (f [fst r0]) aset po_safe  in
 
 (* Add a safe edge to suffix *)

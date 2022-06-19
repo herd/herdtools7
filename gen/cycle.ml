@@ -1048,28 +1048,10 @@ let extract_edges n =
     k in
   do_rec n
 
-let rec check_cycle es l rl = match l,rl with
-  | _::_,[] | [],_::_ | [],[] -> Warn.fatal "no reject list or cycle"
-  | h::_, hr::[] -> if h=hr then begin eprintf "cycle rejected"; Warn.fatal "cycle rejected" end else ()
-  | h::[], hr::tr -> if h=hr then begin check_cycle es es tr end else ()
-  | h::t, hr::tr -> if h = hr then begin check_cycle es t tr end else ()
-
 let resolve_edges = function
   | [] -> Warn.fatal "No edges at all!"
   | es ->
       let c = build_cycle es in
-      let rej_cycle = ["Rfe";"DpAddrdR"] in
-      let str_es = (List.map (fun a -> E.pp_tedge a) (List.map (fun a -> a.E.edge) es)) in
-      (*List.iter (fun a -> eprintf "%s " a) (str_es);
-      eprintf "\n";*)
-      let rec testing acc=
-        match acc with
-        | h::t -> if  h = (List.hd rej_cycle)  then begin eprintf "Rfe detected\n"; check_cycle str_es t (List.tl rej_cycle);
-          testing t end
-          else begin
-            testing t end
-        | [] -> () in
-      testing str_es;
       merge_annotations c ;
       remove_store c ;
       set_dir c ;
