@@ -1,0 +1,18 @@
+AArch64 V48
+(* Tests 128-bit Neon loads *)
+{
+    uint64_t x[2] = {0x1122334455667788, 0x2233445566778899};
+    uint64_t* 0:X0 = &x;
+
+    uint64_t 0:X1;
+    uint64_t 0:X2;
+
+    uint128_t 0:V0.2D;
+}
+
+P0              ;
+LDR Q0, [X0]    ;
+MOV X1, V0.D[0] ;
+MOV X2, V0.D[1] ;
+
+forall(0:X1 = 0x1122334455667788 /\ 0:X2 = 0x2233445566778899)

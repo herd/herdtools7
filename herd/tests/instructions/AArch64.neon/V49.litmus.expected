@@ -1,0 +1,10 @@
+Test V49 Required
+States 1
+x[0]=1234605616436508552; x[1]=2464388554683811993;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x[0]=1234605616436508552 /\ x[1]=2464388554683811993)
+Observation V49 Always 1 0
+Hash=84e8b8d401cc91d9839ed3d3930fa801
+

@@ -89,7 +89,7 @@ test::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 instructions tests: OK"
 
-test:: test.mixed
+test:: test.mixed test.neon
 test.mixed:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
@@ -100,7 +100,7 @@ test.mixed:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 mixed instructions tests: OK"
 
-test::
+test.neon::
 	@ echo
 	$(HERD_REGRESSION_TEST) \
 		-herd-path $(HERD) \
