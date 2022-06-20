@@ -31,6 +31,9 @@ module Make
 
     let dirty = match TopConf.dirty with | None -> DirtyBit.soft | Some d -> d
     let mixed = AArch64.is_mixed
+    (* We need to be aware of endianness for 128-bit Neon LDR/STR, because
+     * these are always little endian *)
+    let endian = AArch64.endian
     let memtag = C.variant Variant.MemTag
     let morello = C.variant Variant.Morello
     let neon = C.variant Variant.Neon
@@ -1195,21 +1198,35 @@ module Make
         begin
           M.add addr1 (neon_sz_k AArch64Base.VSIMD64) >>= fun addr2 ->
           do_read_mem_ret MachSize.Quad an anexp ac addr2 ii
-        end >>= fun (v_lo, v_hi) ->
+        end >>= fun (v1, v2) ->
+        let v_lo, v_hi = match endian with
+          (* Because an 128-bit Neon LDR is allowed to be broken up into
+           * 64-bit loads, this means that we do need to take endianness into
+           * account *)
+          | Endian.Little -> v1, v2
+          | Endian.Big -> v2, v1 in
         M.op1 (Op.LeftShift 64) v_hi >>= fun v_hi_shifted ->
         M.op Op.Or v_lo v_hi_shifted
 
       (* Utility that performes an 128-bit store as two independent 64-bit
        * stores. Used by Neon instructions. *)
       let write_mem_2x64b anexp ac addr1 v ii =
+        let compute_lo = M.op1 (Op.Mask MachSize.Quad) v in
+        let compute_hi = M.op1 (Op.LogicalRightShift 64) v in
+        let (compute_v1, compute_v2) = match endian with
+          (* Because an 128-bit Neon STR is allowed to be broken up into
+           * 64-bit loads, this means that we do need to take endianness into
+           * account *)
+          | Endian.Little -> compute_lo, compute_hi
+          | Endian.Big -> compute_hi, compute_lo in
         begin
-          M.op1 (Op.Mask MachSize.Quad) v >>= fun v_lo ->
-          write_mem MachSize.Quad anexp ac addr1 v_lo ii
+          compute_v1 >>= fun v1 ->
+          write_mem MachSize.Quad anexp ac addr1 v1 ii
         end >>|
         begin
           M.add addr1 (neon_sz_k AArch64Base.VSIMD64) >>|
-          M.op1 (Op.LogicalRightShift 64) v >>= fun (addr2, v_hi) ->
-          write_mem MachSize.Quad anexp ac addr2 v_hi ii
+          compute_v2 >>= fun (addr2, v2) ->
+          write_mem MachSize.Quad anexp ac addr2 v2 ii
         end
 
       (* Neon extension, memory accesses return B.Next, as they cannot fail *)
@@ -1252,29 +1269,21 @@ module Make
       let simd_ldp var addr1 rd1 rd2 ii =
         let open AArch64Base in
         let sz = tr_simd_variant var in
-        if sz == MachSize.S128 then
-          (* Neon memory instructions are not single-copy atomic, but they
-           * are single-copy atomic for each of the two 64-bit quantities
-           * they access. *)
-          begin
-            do_read_mem_2x64b_ret AArch64.N aexp Access.VIR addr1 ii >>= fun v1 ->
-            write_reg_neon_sz sz rd1 v1 ii
-          end >>|
-          begin
-            M.add addr1 (neon_sz_k var) >>= fun addr2 ->
-            do_read_mem_2x64b_ret AArch64.N aexp Access.VIR addr2 ii >>= fun v2 ->
-            write_reg_neon_sz sz rd2 v2 ii
-          end >>= B.next2T
-        else
-          begin
-            do_read_mem_ret sz AArch64.N aexp Access.VIR addr1 ii >>= fun v1 ->
-            write_reg_neon_sz sz rd1 v1 ii
-          end >>|
-          begin
-            M.add addr1 (neon_sz_k var) >>= fun addr2 ->
-            do_read_mem_ret sz AArch64.N aexp Access.VIR addr2 ii >>= fun v2 ->
-            write_reg_neon_sz sz rd2 v2 ii
-          end >>= B.next2T
+        let mem_op = begin
+          if sz == MachSize.S128 then
+            do_read_mem_2x64b_ret
+          else
+            do_read_mem_ret sz
+        end in
+        begin
+          mem_op AArch64.N aexp Access.VIR addr1 ii >>= fun v1 ->
+          write_reg_neon_sz sz rd1 v1 ii
+        end >>|
+        begin
+          M.add addr1 (neon_sz_k var) >>= fun addr2 ->
+          mem_op AArch64.N aexp Access.VIR addr2 ii >>= fun v2 ->
+          write_reg_neon_sz sz rd2 v2 ii
+        end >>= B.next2T
 
       let simd_stp var addr1 rd1 rd2 ii =
         let open AArch64Base in
