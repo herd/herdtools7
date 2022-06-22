@@ -139,22 +139,27 @@ let parse_fences fs = List.fold_right parse_fence fs []
     | None -> None
     | Some xs -> Some (parse_edges xs)
 
-  let go n (*size*)  ?(orl= Some []) olr ols (*relax and safe lists*) =
+  let orl_opt = function
+    | None -> []
+    | Some xs -> xs
+
+  let go n (*size*)  ?(orl = Some []) olr ols (*relax and safe lists*) =
+    let orl = orl_opt orl in
     match O.choice with
     | Sc|Critical|Free|Ppo|Transitive|Total|MixedCheck ->
         begin match olr,ols with
         | None,None -> M.gen n
-        | None,Some ls -> gen [] ls n ~rl:(Option.get orl)
-        | Some lr,None -> gen lr [] n ~rl:(Option.get orl)
-        | Some lr,Some ls -> gen lr ls n ~rl:(Option.get orl)
+        | None,Some ls -> gen [] ls n ~rl:orl
+        | Some lr,None -> gen lr [] n ~rl:orl
+        | Some lr,Some ls -> gen lr ls n ~rl:orl
         end
     | Thin -> gen_thin n
     | Uni ->
         begin match olr,ols with
         | None,None -> gen_uni n
-        | None,Some ls -> gen [] ls n ~rl:(Option.get orl)
-        | Some lr,None -> gen lr [] n ~rl:(Option.get orl)
-        | Some lr,Some ls -> gen lr ls n ~rl:(Option.get orl)
+        | None,Some ls -> gen [] ls n ~rl:orl
+        | Some lr,None -> gen lr [] n ~rl:orl
+        | Some lr,Some ls -> gen lr ls n ~rl:orl
         end
 end
 
