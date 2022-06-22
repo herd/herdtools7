@@ -50,6 +50,7 @@ let optcoherence = ref false
 let bell = ref None
 let scope = ref Scope.No
 let variant = ref (fun (_:Variant_gen.t) -> false)
+let rejects = ref None
 
 let info = ref ([]:MiscParser.info)
 let add_info_line line = match LexScan.info line with
@@ -291,6 +292,8 @@ let speclist () =
     "<relax-list> specify a safe list")::
    ("-relaxlist", Arg.String (fun s -> safes := Some s),
     "<relax-list> specify a list of relaxations of interest")::
+   ("-rejectlist", Arg.String (fun s -> rejects := Some s),
+   "<reject-list> specify a list of relaxation combinations to reject from generation")::
    []
 
 let varatom = ref ([] : string list)
