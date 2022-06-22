@@ -106,16 +106,18 @@ let parse_fences fs = List.fold_right parse_fence fs []
         List.fold_left
           (var_relax V.varatom_one) []
 
-  let gen lr ls n =
+  let gen lr ls ?(rl= []) n =
     let lr = C.R.expand_relax_macros lr
-    and ls = C.R.expand_relax_macros ls in
+    and ls = C.R.expand_relax_macros ls
+    and rl = C.R.expand_relax_macros rl in
     let lr = var_atom lr
-    and ls = var_atom ls in
+    and ls = var_atom ls
+    and rl = var_atom rl in
     if O.verbose > 0 then begin
       Printf.eprintf
         "expanded relax=%s\n" (C.R.pp_relax_list lr)
     end ;
-    M.gen ~relax:lr ~safe:ls n
+    M.gen ~relax:lr ~safe:ls ~reject:rl n
 
   let er e = ERS [plain_edge e]
 
@@ -137,22 +139,22 @@ let parse_fences fs = List.fold_right parse_fence fs []
     | None -> None
     | Some xs -> Some (parse_edges xs)
 
-  let go n (*size*) olr ols (*relax and safe lists*)  =
+  let go n (*size*)  ?(orl= Some []) olr ols (*relax and safe lists*) =
     match O.choice with
     | Sc|Critical|Free|Ppo|Transitive|Total|MixedCheck ->
         begin match olr,ols with
         | None,None -> M.gen n
-        | None,Some ls -> gen [] ls n
-        | Some lr,None -> gen lr [] n
-        | Some lr,Some ls -> gen lr ls n
+        | None,Some ls -> gen [] ls n ~rl:(Option.get orl)
+        | Some lr,None -> gen lr [] n ~rl:(Option.get orl)
+        | Some lr,Some ls -> gen lr ls n ~rl:(Option.get orl)
         end
     | Thin -> gen_thin n
     | Uni ->
         begin match olr,ols with
         | None,None -> gen_uni n
-        | None,Some ls -> gen [] ls n
-        | Some lr,None -> gen lr [] n
-        | Some lr,Some ls -> gen lr ls n
+        | None,Some ls -> gen [] ls n ~rl:(Option.get orl)
+        | Some lr,None -> gen lr [] n ~rl:(Option.get orl)
+        | Some lr,Some ls -> gen lr ls n ~rl:(Option.get orl)
         end
 end
 
@@ -198,7 +200,8 @@ let () =
   | Some s -> exec_conf s
   end;
   let relax_list = split !Config.relaxs
-  and safe_list = split !Config.safes  in
+  and safe_list = split !Config.safes
+  and reject_list = split !Config.rejects in
 
   let () =
     if !Config.verbose > 0 then begin
@@ -313,7 +316,7 @@ let () =
   | `JAVA -> assert false 
   in
   try
-    go !Config.size relax_list safe_list ;
+    go !Config.size relax_list safe_list ~orl:reject_list;
     exit 0
   with
   | Misc.Fatal msg | Misc.UserError msg->
