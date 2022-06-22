@@ -570,9 +570,6 @@ module Make(C:Builder.S)
       let rs = RelaxSet.diff rs (RelaxSet.of_list r0) in
       RelaxSet.elements rs
 
-    let debug_rs chan rs =
-      List.iter (fun r -> fprintf chan "%s\n" (pp_relax r)) rs
-
     let last_check_call _rset _sset aset f rs po_safe res k =
       match res with
       | [] -> k
@@ -621,11 +618,13 @@ module Make(C:Builder.S)
           zyva_prefix prefixes aset relax safe n ~reject:rej
             (last_check_call rset sset aset f))
 
+    let debug_rs chan rs =
+      List.iter (fun r -> fprintf chan "%s\n" (pp_relax r)) rs
+
     let secret_gen relax safe  ?(reject=[]) n =
       let relax = expand_relaxs C.ppo relax
       and safe = expand_relaxs C.ppo safe
       and reject = expand_relaxs C.ppo reject in
-      (*debug_rs stderr reject;*)
       if O.verbose > 0 then begin
         eprintf "** Relax0 **\n" ;
         debug_rs stderr relax ;
@@ -633,8 +632,7 @@ module Make(C:Builder.S)
         debug_rs stderr safe
       end ;
       let relax_set = C.R.Set.of_list relax
-      and safe_set = C.R.Set.of_list safe
-      (*and reject_set = C.R.Set.of_list reject *)in
+      and safe_set = C.R.Set.of_list safe in
       let relax = C.R.Set.elements relax_set
       and safe = C.R.Set.elements (C.R.Set.diff safe_set relax_set)
 (*      and reject = C.R.Set.elements reject_set *)in
