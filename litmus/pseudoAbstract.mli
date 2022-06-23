@@ -18,7 +18,7 @@ module type S = sig
   type ins
   type code
 
-  val find_offset : code list -> int -> string -> int
+  val find_offset : code list -> Proc.t -> MiscParser.func -> string -> int
   val dump_prog : code -> string list
   val print_prog : out_channel -> code list -> unit
   val dump_prog_lines : code list -> string list

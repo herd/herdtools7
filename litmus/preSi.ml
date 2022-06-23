@@ -1581,7 +1581,7 @@ module Make
               | None ->
                   O.fii "labels.%s = (ins_t *) &&CODE%d;" (tag_code f) p
               | Some lbl ->
-                  let off = U.find_label_offset p lbl test in
+                  let off = U.find_label_offset p MiscParser.Main lbl test in
                   O.fii "labels.%s = ((ins_t *)&&CODE%d) + %d;" (tag_code f) p off)
               faults ;
             O.oi "}" ;
@@ -1662,7 +1662,7 @@ module Make
               List.iter
                 (fun ((p,lbl),_ as f) ->
                   let lbl = Misc.as_some lbl in
-                  let off = U.find_label_offset p lbl test+1 in (* +1 because of added inital nop *)
+                  let off = U.find_label_offset p MiscParser.Main lbl test+1 in (* +1 because of added inital nop *)
                   let lhs = sprintf "labels.%s" (tag_code f)
                   and rhs =
                     sprintf "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,0)+%d"

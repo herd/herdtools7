@@ -77,7 +77,7 @@ struct
   let load prog =
     let rec load_iter num = function
     | [] -> Label.Map.empty,[],IntMap.empty,num
-    | ((proc,_),code)::prog ->
+    | ((proc,_,_),code)::prog ->
       let addr = 1000 * (proc+1) in
       let mem,starts,rets,new_num = load_iter num prog in
       let fin_mem,start,fin_rets,fin_num = load_code proc addr mem rets new_num code in

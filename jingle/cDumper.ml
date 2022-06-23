@@ -145,7 +145,7 @@ let extract_decl init i prog =
 
 let code init prog =
   let open CAst in
-  List.map (fun ((i,_),p) ->
+  List.map (fun ((i,_,_),p) ->
 	    let params = get_params init i in
 	    let decls =  extract_decl init i (unwrap_pseudo p)
 	    in Test { proc = i;

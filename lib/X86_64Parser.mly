@@ -60,8 +60,8 @@ semi_opt:
 | SEMI { () }
 
 proc_list:
-| PROC SEMI  {[$1,None]}
-| PROC PIPE proc_list  { ($1,None)::$3 }
+| PROC SEMI  {[$1,None,MiscParser.Main]}
+| PROC PIPE proc_list  { ($1,None,MiscParser.Main)::$3 }
 
 iol_list :
 |  instr_option_list SEMI

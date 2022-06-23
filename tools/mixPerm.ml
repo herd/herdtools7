@@ -41,9 +41,9 @@ end =
 
     let perm_prog p prog =
       let n = Array.length p in
-      let t = Array.make n ((-1,None),[]) in
+      let t = Array.make n ((-1,None,MiscParser.Main),[]) in
       List.iter
-        (fun ((i,ao),code) -> let idx = p.(i) in t.(idx) <- (idx,ao),code)
+        (fun ((i,ao,f),code) -> let idx = p.(i) in t.(idx) <- (idx,ao,f),code)
         prog ;
       Array.to_list t
 

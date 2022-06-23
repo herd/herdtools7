@@ -18,11 +18,15 @@
 
 open Printf
 
-type proc = int * string list option
+type func = Main | FaultHandler
+type proc = Proc.t * string list option * func
 
-let pp_proc (p,ao) =
+let pp_proc (p,ao,f) =
   sprintf
-    "P%i%s" p
+    "P%i%s%s" p
+    (match f with
+     | Main -> ""
+     | FaultHandler -> ".F")
     (match ao with
     | None -> ""
     | Some a -> sprintf ":%s" (String.concat "," a))

@@ -133,7 +133,7 @@ module Make
       val pte_in_outs : env -> T.t -> bool
       val ptr_pte_in_outs : env -> T.t -> bool
       val get_faults : T.t -> A.V.v Fault.atom list
-      val find_label_offset : Proc.t -> string -> T.t -> int
+      val find_label_offset : Proc.t -> MiscParser.func -> string -> T.t -> int
 
 (* Instructions *)
       val do_store : CType.t -> string -> string -> string
@@ -445,9 +445,9 @@ module Make
         and inf = test.T.ffaults in
         inc@inf
 
-      let find_label_offset p lbl test =
+      let find_label_offset p f lbl test =
         try
-          T.find_offset test.T.src.MiscParser.prog p lbl
+          T.find_offset test.T.src.MiscParser.prog p f lbl
         with Not_found ->
           let v = Constant.Label (p,lbl) in
           Warn.user_error "Non-existant label %s" (A.V.pp_v v)
@@ -537,7 +537,7 @@ module Make
           match lbls with
           | [] -> ()
           | _::_ ->
-              let find p lbl = find_label_offset p lbl test in
+              let find p lbl = find_label_offset p MiscParser.Main lbl test in
               List.iter
                 (fun (p,lbl) ->
                   let off = find p lbl in

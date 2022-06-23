@@ -168,7 +168,7 @@ end =
 
     let shift_constr k = ConstrGen.map_constr (shift_atom k)
 
-    let shift_prog k prog =  List.map (fun ((i,ao),code) -> (i+k,ao),code) prog
+    let shift_prog k prog =  List.map (fun ((i,ao,func),code) -> (i+k,ao,func),code) prog
 
     let shift k t =
       { t with

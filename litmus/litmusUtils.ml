@@ -74,13 +74,13 @@ module Pseudo(A:Arch_litmus.S) = struct
     let pp = List.map dump_prog prog in
     Misc.pp_prog chan pp
 
-  let rec find_code p = function
+  let rec find_code p func = function
     | [] -> assert false
-    | ((q,_),is)::rem ->
-        if Misc.int_eq p q then is else find_code p rem
+    | ((q,_,f),is)::rem ->
+        if Proc.equal p q && f = func then is else find_code p func rem
 
-  let find_offset code p lbl =
-    let is = find_code p code in
+  let find_offset code p f lbl =
+    let is = find_code p f code in
     A.find_offset lbl is
 
   let code_exists p (_,c) = A.code_exists p c

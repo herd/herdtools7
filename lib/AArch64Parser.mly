@@ -108,7 +108,7 @@ let check_op3 op kr =
 %token STG STZG LDG
 %token ALIGND ALIGNU BUILD CHKEQ CHKSLD CHKTGD CLRTAG CPY CPYTYPE CPYVALUE CSEAL
 %token LDCT SEAL STCT UNSEAL
-%type <(int * string list option) list * (AArch64Base.parsedPseudo) list list * MiscParser.extra_data> main
+%type <MiscParser.proc list * (AArch64Base.parsedPseudo) list list * MiscParser.extra_data> main
 %type <AArch64Base.parsedPseudo list> instr_option_seq
 
 %start  main

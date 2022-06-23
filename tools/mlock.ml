@@ -433,7 +433,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
                 changed := false ;
                 let prog =
                   List.map
-                    (fun ((i,_) as proc,ps) ->
+                    (fun ((i,_,_) as proc,ps) ->
                       let vs,ps = expand_pseudo_code ps in
                       StringSet.fold (fun v k -> Location_reg (i,v)::k) vs [],
                       (proc,ps))

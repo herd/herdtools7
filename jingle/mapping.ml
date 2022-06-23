@@ -231,7 +231,7 @@ module Make(C:Config) = struct
     (pseudo_p,env)
 
   let reg_mapping =
-    List.map (fun ((i,_),(b,_)) ->
+    List.map (fun ((i,_,_),(b,_)) ->
       (i,
        (List.map (fun (sr,tr) ->
          (Source.pp_reg sr,Target.pp_reg tr))
@@ -239,7 +239,7 @@ module Make(C:Config) = struct
 
   let addr_init =
     let open MiscParser in
-    List.fold_left (fun acc ((i,_),(b,_)) ->
+    List.fold_left (fun acc ((i,_,_),(b,_)) ->
       acc@
       (List.map (fun (sa,tr) ->
         (Location_reg(i,Target.pp_reg tr),

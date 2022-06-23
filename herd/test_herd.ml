@@ -165,7 +165,7 @@ module Make(A:Arch_herd.S) =
       let proc_info =
         let m =
           List.fold_left
-            (fun m ((p,ao),_) -> match ao with
+            (fun m ((p,ao,_),_) -> match ao with
             | None -> m
             | Some ans ->
                 List.fold_left

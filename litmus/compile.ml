@@ -752,7 +752,7 @@ type P.code = MiscParser.proc * A.pseudo list)
             StringMap.empty (InfoAlign.parse ps)
         with Not_found -> StringMap.empty in
       let ty_env = ty_env1,ty_env2 in
-      let code = List.map (fun ((p,_),c) -> p,c) code in
+      let code = List.map (fun ((p,_,_f),c) -> p,c) code in
       let label_init = A.get_label_init initenv in
       let code =
         if do_self || is_pte || Misc.consp label_init then
