@@ -442,7 +442,7 @@ module Make(C:Builder.S)
       fun e1 e2 -> Dir2Set.mem (e1,e2) d2
 
 
-    let zyva prefix aset relax safe n f ?(reject= []) =
+    let zyva prefix aset relax safe reject n f =
 (*      let safes = C.R.Set.of_list safe in *)
       let relax = edges_ofs relax in
       let safe = edges_ofs safe in
@@ -601,27 +601,27 @@ module Make(C:Builder.S)
     let last_minute ess =
       not (List.exists (fun es -> List.length es > O.max_ins) ess)
 
-    let rec zyva_prefix prefixes aset relax safe n  ?(reject=[]) f k =
+    let rec zyva_prefix prefixes aset relax safe reject n f k =
       match prefixes with
       | [] -> k
       | pref::rem ->
-         zyva pref aset relax safe n f ~reject:reject
-            (zyva_prefix rem aset relax safe n f k ~reject:reject)
+         zyva pref aset relax safe reject n f
+            (zyva_prefix rem aset relax safe reject n f k )
 
-    let do_gen relax safe ?(rej=[]) n =
+    let do_gen relax safe rej n =
       let sset = C.R.Set.of_list safe in
       let rset = C.R.Set.of_list relax in
       let aset = C.R.Set.union sset rset in
       D.all
         ~check:last_minute
         (fun f ->
-          zyva_prefix prefixes aset relax safe n ~reject:rej
+          zyva_prefix prefixes aset relax safe rej n
             (last_check_call rset sset aset f))
 
     let debug_rs chan rs =
       List.iter (fun r -> fprintf chan "%s\n" (pp_relax r)) rs
 
-    let secret_gen relax safe  ?(reject=[]) n =
+    let secret_gen relax safe reject n =
       let relax = expand_relaxs C.ppo relax
       and safe = expand_relaxs C.ppo safe
       and reject = expand_relaxs C.ppo reject in
@@ -642,7 +642,7 @@ module Make(C:Builder.S)
         eprintf "** Safe **\n" ;
         debug_rs stderr safe
       end ;
-      do_gen relax safe n ~rej:reject
+      do_gen relax safe reject n
 
 (**********************)
 (* Default edge lists *)
@@ -685,8 +685,8 @@ module Make(C:Builder.S)
       let k = er (Hat)::k in
       k
 
-    let gen ?(relax=relax) ?(safe=safe) ?(reject= []) n =
-      try secret_gen relax safe ~reject:reject n
+    let gen ?(relax=relax) ?(safe=safe) ?(reject=[]) n =
+      try secret_gen relax safe reject n
       with e ->
         eprintf "Exc: '%s'\n" (Printexc.to_string e) ;
         raise e

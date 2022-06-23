@@ -106,7 +106,7 @@ let parse_fences fs = List.fold_right parse_fence fs []
         List.fold_left
           (var_relax V.varatom_one) []
 
-  let gen lr ls ?(rl= []) n =
+  let gen lr ls rl n =
     let lr = C.R.expand_relax_macros lr
     and ls = C.R.expand_relax_macros ls
     and rl = C.R.expand_relax_macros rl in
@@ -124,7 +124,7 @@ let parse_fences fs = List.fold_right parse_fence fs []
   let gen_thin n =
     let lr = [er (Rf Int); er (Rf Ext)]
     and ls = [PPO] in
-    M.gen ~relax:lr ~safe:ls n
+    M.gen ~relax:lr ~safe:ls  n
 
 
   let gen_uni n =
@@ -143,23 +143,23 @@ let parse_fences fs = List.fold_right parse_fence fs []
     | None -> []
     | Some xs -> xs
 
-  let go n (*size*)  ?(orl = Some []) olr ols (*relax and safe lists*) =
+  let go n (*size*) orl olr ols (*relax and safe lists*) =
     let orl = orl_opt orl in
     match O.choice with
     | Sc|Critical|Free|Ppo|Transitive|Total|MixedCheck ->
         begin match olr,ols with
         | None,None -> M.gen n
-        | None,Some ls -> gen [] ls n ~rl:orl
-        | Some lr,None -> gen lr [] n ~rl:orl
-        | Some lr,Some ls -> gen lr ls n ~rl:orl
+        | None,Some ls -> gen [] ls orl n
+        | Some lr,None -> gen lr [] orl n
+        | Some lr,Some ls -> gen lr ls orl n
         end
     | Thin -> gen_thin n
     | Uni ->
         begin match olr,ols with
         | None,None -> gen_uni n
-        | None,Some ls -> gen [] ls n ~rl:orl
-        | Some lr,None -> gen lr [] n ~rl:orl
-        | Some lr,Some ls -> gen lr ls n ~rl:orl
+        | None,Some ls -> gen [] ls orl n
+        | Some lr,None -> gen lr [] orl n
+        | Some lr,Some ls -> gen lr ls orl n
         end
 end
 
@@ -321,7 +321,7 @@ let () =
   | `JAVA -> assert false 
   in
   try
-    go !Config.size relax_list safe_list ~orl:reject_list;
+    go !Config.size reject_list relax_list safe_list ;
     exit 0
   with
   | Misc.Fatal msg | Misc.UserError msg->
