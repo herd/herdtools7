@@ -619,7 +619,6 @@ type P.code = MiscParser.proc * A.pseudo list)
                 (List.exists (Proc.equal proc) procs_user) code in
             proc,addrs,stable,code,nrets,nnops)
           code in
-      let pecs = outs in
       List.map
         (fun (proc,addrs,stable,code,nrets,nnops) ->
           let addrs,ptes =
@@ -642,26 +641,31 @@ type P.code = MiscParser.proc * A.pseudo list)
               | Some r -> RegSet.add r k
               | _ -> k)
               observed RegSet.empty in
-          let my_ty_env =
+          let ty_env =
             A.LocMap.fold
               (fun loc t k -> match loc with
               | A.Location_reg (p,r) when Misc.int_eq p proc ->
                   (r,t)::k
               | _ -> k)
               ty_env [] in
+          let init = compile_init proc init observed_proc code in
+          let final = compile_final proc observed_proc in
+          let addrs = StringSet.elements addrs in
+          let stable =
+               A.RegSet.inter
+                 (A.RegSet.union stable stable_info)
+                 (A.Out.all_regs code final) in
+          let stable = A.RegSet.elements stable in
           proc,
-          let t =
-            { init = compile_init proc init observed_proc code ;
-              addrs = StringSet.elements addrs ;
-              ptes = StringSet.elements ptes ;
-              stable = [];
-              final = compile_final proc observed_proc;
-              all_clobbers;
-              code = code; name=name; nrets; nnops;
-              ty_env = my_ty_env;
-            } in
-          { t with stable = A.RegSet.elements (A.RegSet.inter (A.RegSet.union stable stable_info) (A.Out.all_regs t)) ; })
-        pecs
+          { init ;
+            addrs ;
+            ptes = StringSet.elements ptes ;
+            stable;
+            final;
+            all_clobbers;
+            code; name; nrets; nnops;
+            ty_env;
+          }) outs
 
     let _pp_env env =
       StringMap.pp_str

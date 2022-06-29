@@ -113,7 +113,7 @@ module RegMap = A.RegMap)
 
       let dump_inputs args0 compile_val chan t trashed =
         let stable = RegSet.of_list t.Tmpl.stable in
-        let all = Tmpl.all_regs t in
+        let all = Tmpl.all_regs t.Tmpl.code t.Tmpl.final in
         let init_set =
             (List.fold_right
                (fun (reg,_) -> RegSet.add reg) t.Tmpl.init RegSet.empty) in
@@ -191,7 +191,7 @@ module RegMap = A.RegMap)
         let final = RegSet.of_list t.Tmpl.final in
         if debug then
           eprintf "P%i: stable={%s}, final={%s}, all={%s}\n"
-            proc (pp_regs stable) (pp_regs final) (pp_regs (Tmpl.all_regs t));
+            proc (pp_regs stable) (pp_regs final) (pp_regs (Tmpl.all_regs t.Tmpl.code t.Tmpl.final));
         let outs =
           String.concat ","
             (List.fold_right
