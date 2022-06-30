@@ -209,6 +209,8 @@ module Make(V:Constant.S)(C:Config) =
 
     let user_mode = [] and kernel_mode = []
 
+    let fault_handler_prologue = [] and fault_handler_epilogue = []
+
     let compile_ins tr_lab ins k = match ins with
     | I_NOP -> { empty_ins with memo = "nop"; }::k
 (* Arithmetic *)

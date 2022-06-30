@@ -262,6 +262,8 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
 
     let user_mode = [] and kernel_mode = []
 
+    let fault_handler_prologue = [] and fault_handler_epilogue = []
+
     let rec do_compile_ins tr_lab ins = match ins with
     | I_NOP ->
         { empty_ins with memo = "nop"; }

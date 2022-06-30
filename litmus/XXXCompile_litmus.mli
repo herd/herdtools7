@@ -24,6 +24,8 @@ module type S = sig
   val emit_loop : A.Out.ins list -> A.Out.ins list
   val user_mode : A.Out.ins list
   val kernel_mode : A.Out.ins list
+  val fault_handler_prologue : A.Out.ins list
+  val fault_handler_epilogue : A.Out.ins list
   val compile_ins :
       (Label.t -> string) ->
         A.instruction ->  A.Out.ins list -> A.Out.ins list

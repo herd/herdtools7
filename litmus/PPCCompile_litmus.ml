@@ -221,6 +221,8 @@ module Make(V:Constant.S)(C:Config) =
 
     let user_mode = [] and kernel_mode = []
 
+    let fault_handler_prologue = [] and fault_handler_epilogue = []
+
     let do_compile_ins tr_lab ins k = match tr_ins ins with
     | Pnop -> { empty_ins with memo="nop"; }::k
     | Pmr (rD,rS) -> mr rD rS::k

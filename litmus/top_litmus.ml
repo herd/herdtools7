@@ -423,6 +423,7 @@ end = struct
           let asmcomment = OT.asmcomment
           let hexa = OT.hexa
           let mode = OT.mode
+          let precision = TestConf.precision
         end in
         let module Cfg = struct
           include OT
