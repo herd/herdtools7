@@ -358,7 +358,7 @@ type P.code = MiscParser.proc * A.pseudo list)
       | A.Label (lbl,i) ->
           ins_labels (lbl::k) i
 
-    let code_labels (p,c) k =
+    let code_labels (p,_,c) k =
       let lbls =  List.fold_left ins_labels [] c in
       List.fold_left
         (fun k lbl -> Label.Full.Set.add (p,lbl) k)
@@ -371,7 +371,7 @@ type P.code = MiscParser.proc * A.pseudo list)
 
     let ins_target = A.fold_labels (fun k lbl -> lbl::k)
 
-    let code_targets (p,c) k =
+    let code_targets (p,_,c) k =
       let lbls = List.fold_left ins_target [] c in
       List.fold_left
         (fun k lbl -> Label.Full.Set.add (p,lbl) k)
@@ -607,20 +607,30 @@ type P.code = MiscParser.proc * A.pseudo list)
       let esc =
         if O.numeric_labels then escaping_labels init code
         else Label.Set.empty in
+      let mains,fhandlers =
+        List.partition (fun (_,func,_) -> func=MiscParser.Main) code in
       let outs =
         List.map
-          (fun (proc,code) ->
+          (fun (proc,_,code) ->
             let nrets = count_ret code in
             let nnops = count_nop code in
             let addrs = extract_addrs code in
             let stable = stable_regs code in
-            let code =
-              compile_code esc
-                (List.exists (Proc.equal proc) procs_user) code in
-            proc,addrs,stable,code,nrets,nnops)
-          code in
+            let is_user = (List.exists (Proc.equal proc) procs_user) in
+            let code = compile_code esc is_user code in
+            let fhandler,addrs =
+              try
+                let (_,_,c) = List.find (fun (p,_,_) -> Proc.equal p proc) fhandlers in
+                let addrs = G.Set.union (extract_addrs c) addrs in
+                let code = compile_code esc false c in
+                C.fault_handler_prologue@code@C.fault_handler_epilogue,addrs
+              with Not_found ->
+                [],addrs
+            in
+            proc,addrs,stable,code,fhandler,nrets,nnops)
+          mains in
       List.map
-        (fun (proc,addrs,stable,code,nrets,nnops) ->
+        (fun (proc,addrs,stable,code,fhandler,nrets,nnops) ->
           let addrs,ptes =
             G.Set.fold
               (fun s (a,p) -> match s with
@@ -663,7 +673,7 @@ type P.code = MiscParser.proc * A.pseudo list)
             stable;
             final;
             all_clobbers;
-            code; name; nrets; nnops;
+            code; fhandler; name; nrets; nnops;
             ty_env;
           }) outs
 
@@ -752,17 +762,17 @@ type P.code = MiscParser.proc * A.pseudo list)
             StringMap.empty (InfoAlign.parse ps)
         with Not_found -> StringMap.empty in
       let ty_env = ty_env1,ty_env2 in
-      let code = List.map (fun ((p,_,_f),c) -> p,c) code in
+      let code = List.map (fun ((p,_,f),c) -> p,f,c) code in
       let label_init = A.get_label_init initenv in
       let code =
         if do_self || is_pte || Misc.consp label_init then
           let do_append_nop = is_pte && do_precise in
-          List.map (fun (p,c) ->
+          List.map (fun (p,f,c) ->
             let nop = A.Instruction A.nop in
             let c = A.Instruction A.nop::c in
             let c =
               if do_append_nop then c@[nop] else c in
-            p,c) code
+            p,f,c) code
         else code in
       let stable_info = match MiscParser.get_info  t MiscParser.stable_key with
       | None -> A.RegSet.empty

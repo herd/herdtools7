@@ -372,49 +372,51 @@ module RegMap = A.RegMap)
             indent env proc t
         end
 
+      let dump_code chan proc func code =
+        let dump_ins k ins =
+          begin match ins.Tmpl.label with
+          | Some _ ->
+             fprintf chan "\"%s_litmus_P%i%s_%i\\n\"\n" Tmpl.comment proc func k
+          | None ->
+             fprintf chan "\"%s_litmus_P%i%s_%i\\n%s\"\n" Tmpl.comment proc func k
+               (if ins.Tmpl.comment then "" else "\\t")
+          end;
+          fprintf chan "\"%s\\n\"\n" (Tmpl.to_string ins) ;
+          k + 1 in
+        fprintf chan "\"%s%s\\n\"\n" (LangUtils.start_comment Tmpl.comment proc) func ;
+        let _ = List.fold_left dump_ins 0 code in
+        fprintf chan "\"%s%s\\n\"\n" (LangUtils.end_comment Tmpl.comment proc) func
+
+      let dump_code_labels chan proc func code =
+        let dump_ins k ins =
+          fprintf chan "\"%s\\n\"\n" (Tmpl.to_string ins) ;
+          k + 1 in
+        fprintf chan "\"%s%s:\\n\"\n" (LangUtils.start_label proc) func ;
+        let _ = List.fold_left dump_ins 0 code in
+        fprintf chan "\"%s%s:\\n\"\n" (LangUtils.end_label proc) func
+
+      let dump_main chan proc code =
+        if O.asmcommentaslabel then
+          dump_code_labels chan proc "" code
+        else
+          dump_code chan proc "" code
+
+      let dump_fh chan proc code =
+        if O.asmcommentaslabel then
+          dump_code_labels chan proc ".F" code
+        else
+          dump_code chan proc ".F" code
+
       let do_dump args0 compile_val compile_addr compile_cpy compile_out_reg
           chan indent env proc t =
-        let rec dump_ins k ts = match ts with
-        | [] -> ()
-        | t::ts ->
-            begin if not O.asmcommentaslabel then
-              match t.Tmpl.label with
-              | Some _ ->
-                  fprintf chan "\"%s_litmus_P%i_%i\\n\"\n" Tmpl.comment proc k
-              | None ->
-                  fprintf chan "\"%s_litmus_P%i_%i\\n%s\"\n"
-                    Tmpl.comment proc k
-                    (if t.Tmpl.comment then "" else "\\t")
-            end ;
-            fprintf chan "\"%s\\n\"\n" (Tmpl.to_string t) ;
-(*
-  fprintf chan "\"%-20s%c_litmus_P%i_%i\\n\\t\"\n"
-  (to_string t) A.comment proc k ;
- *)
-            dump_ins (k+1) ts in
         let trashed = Tmpl.trashed_regs t in
         before_dump args0
          compile_out_reg compile_val compile_cpy chan indent env proc t trashed;
         fprintf chan "asm __volatile__ (\n" ;
         fprintf chan "\"\\n\"\n" ;
-        begin if O.asmcommentaslabel then
-          fprintf chan "\"%s:\\n\"\n"
-            (LangUtils.start_label proc)
-        else
-          fprintf chan "\"%s\\n\"\n"
-            (LangUtils.start_comment Tmpl.comment proc)
-        end ;
-        begin match t.Tmpl.code with
-        | [] -> fprintf chan "\"\"\n"
-        | code -> dump_ins 0 code
-        end ;
-        begin if O.asmcommentaslabel then
-          fprintf chan "\"%s:\\n\"\n"
-            (LangUtils.end_label proc)
-        else
-          fprintf chan "\"%s\\n\\t\"\n"
-            (LangUtils.end_comment Tmpl.comment proc)
-        end ;
+        dump_main chan proc t.Tmpl.code ;
+        if t.Tmpl.fhandler <> [] then
+          dump_fh chan proc t.Tmpl.fhandler ;
         dump_outputs args0 compile_addr compile_out_reg chan proc t trashed ;
         dump_inputs args0 compile_val chan t trashed ;
         dump_clobbers chan t  ;
@@ -505,6 +507,9 @@ module RegMap = A.RegMap)
           t.Tmpl.init
 
       let dump_fun chan args0 env globEnv _volatileEnv proc t =
+        let args0 = match t.Tmpl.fhandler with
+          | [] -> args0
+          | _ -> { args0 with Template.trashed=["tr0"] } in
         if debug then debug_globEnv globEnv ;
         let ptevalEnv = extract_ptevals t in
         let labels = Tmpl.get_labels t in

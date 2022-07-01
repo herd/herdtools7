@@ -80,6 +80,7 @@ module type S = sig
       stable : arch_reg list; (* stable registers, ie must be self-allocated by gcc *)
       final : arch_reg list ;
       code : ins list;
+      fhandler : ins list ;
       name : Name.t ;
       all_clobbers : arch_reg list;
       nrets : int ; (* number of return instruction in code *)
@@ -158,6 +159,7 @@ module Make(O:Config)(A:I) =
         stable : arch_reg list;
         final : arch_reg list ;
         code : ins list;
+        fhandler : ins list ;
         name : Name.t ;
         all_clobbers : arch_reg list;
         nrets : int ; nnops : int ;
