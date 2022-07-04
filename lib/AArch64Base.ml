@@ -860,7 +860,8 @@ let pp_hash m = match m with
 
 let pp_k m v = pp_hash m ^ string_of_int v
 
-type 'k basic_pp = { pp_k : 'k -> string; zerop : 'k -> bool; k0 : 'k kr }
+type 'k basic_pp =
+  { compat : bool; pp_k : 'k -> string; zerop : 'k -> bool; k0 : 'k kr }
 
 
 let pp_memo memo = memo
@@ -918,6 +919,7 @@ let pp_gc = function
   | GCVALUE -> "GCVALUE"
 
 module MakePP(C:sig val is_morello : bool end) = struct
+
 let do_pp_instruction m =
   let pp_rrr memo v rt rn rm =
     pp_memo memo ^ " " ^ pp_vreg v rt ^ "," ^
@@ -1290,7 +1292,9 @@ let do_pp_instruction m =
   | I_OP3 (v,op,r1,r2,kr, s) ->
       pp_rrkr (pp_op op) v r1 r2 kr ^ pp_barrel_shift "," s (m.pp_k)
   | I_ADR (r,lbl) ->
-      sprintf "ADR %s,%s" (pp_xreg r) (pp_label lbl)
+     sprintf "%s %s,%s"
+       (if m.compat then "ADDR" else "ADR")
+       (pp_xreg r) (pp_label lbl)
   | I_RBIT (v,rd,rs) ->
       sprintf "RBIT %s,%s" (pp_vreg v rd) (pp_vreg v rs)
 (* Barrier *)
@@ -1321,7 +1325,7 @@ let do_pp_instruction m =
   | I_LDG (rt,rn,kr) ->
       pp_mem "LDG" V64 rt rn kr
 
-let m_int = { pp_k = string_of_int ;
+let m_int = { compat = false ; pp_k = string_of_int ;
               zerop = (function 0 -> true | _ -> false);
               k0 = k0; }
 
@@ -1332,9 +1336,13 @@ let dump_instruction =
   do_pp_instruction
     {m_int with pp_k = (fun v -> "#" ^ string_of_int v); }
 
+let dump_instruction_hash =
+  do_pp_instruction
+    {m_int with compat=true; pp_k = (fun v -> "#" ^ string_of_int v); }
+
 let dump_parsedInstruction =
   do_pp_instruction
-    {  pp_k = MetaConst.pp_prefix "#";
+    {  compat = false; pp_k = MetaConst.pp_prefix "#";
        zerop = (fun k -> MetaConst.compare MetaConst.zero k = 0);
        k0 = K MetaConst.zero; }
 end

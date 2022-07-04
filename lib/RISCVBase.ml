@@ -351,6 +351,8 @@ let pp_instruction m =
 let dump_instruction = do_pp_instruction {pp_k = (fun v -> sprintf "%i" v)}
 and dump_parsedInstruction = do_pp_instruction {pp_k = MetaConst.pp; }
 
+let dump_instruction_hash = dump_instruction
+
 (****************************)
 (* Symbolic registers stuff *)
 (****************************)

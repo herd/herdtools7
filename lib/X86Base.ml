@@ -276,6 +276,8 @@ let dump_instruction =
     { immediate = (fun v -> "$" ^ string_of_int v) ;
       comma = "," ; }
 
+let dump_instruction_hash = dump_instruction
+
 (****************************)
 (* Symbolic registers stuff *)
 (****************************)

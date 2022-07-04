@@ -265,6 +265,7 @@ let pp_instruction m =
 
 let dump_instruction = pp_instruction Ascii
 
+let dump_instruction_hash = dump_instruction
 
 (****************************)
 (* Symbolic registers stuff *)

@@ -366,7 +366,7 @@ let do_fold_addrs f =
 let fold_addrs f i = do_fold_addrs (fun s -> f (ParsedConstant.nameToV s)) i
 let dump_instruction i = do_dump_instruction (sprintf "%i") i
 let dump_parsedInstruction i = do_dump_instruction MetaConst.pp i
-
+let dump_instruction_hash = dump_instruction
 let pp_instruction _m = dump_instruction
 
 (* 100 registers are probably enough *)

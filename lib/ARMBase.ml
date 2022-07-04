@@ -295,6 +295,8 @@ let dump_instruction =
 and dump_parsedInstruction =
   do_pp_instruction  {pp_k = MetaConst.pp_prefix "#"; }
 
+let dump_instruction_hash = dump_instruction
+
 (****************************)
 (* Symbolic registers stuff *)
 (****************************)

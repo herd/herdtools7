@@ -213,7 +213,7 @@ module Make(A:ArchBase.S)
       let dump_pseudo =
         let rec dump_rec p k = match p with
         | A.Nop -> k
-        | A.Instruction i -> A.dump_instruction i::k
+        | A.Instruction i -> A.dump_instruction_hash i::k
         | A.Label (lbl,p) -> sprintf "%s:" lbl::dump_rec p k
         | A.Symbolic s -> sprintf "codevar:%s" s::k
         | A.Macro _ -> assert false (* applied after macro expansion *) in
