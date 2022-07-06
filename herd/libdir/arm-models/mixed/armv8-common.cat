@@ -41,11 +41,12 @@
 
 include "armv8-util.cat"
 
+
 (* Coherence-after *)
 let ca = fr | co
 
 (* Local read successor *)
-let lrs = [W]; po-loc \ intervening-write(po-loc); [R]
+let lrs = [W]; (po-loc \ (po-loc;[W];po-loc)) ; [R]
 
 (* Local write successor *)
 let lws = po-loc; [W]
@@ -59,35 +60,49 @@ let rmw = lxsx | amo
 (* Dependency-ordered-before *)
 let dob = addr | data
 	| ctrl; [W]
-	| (ctrl | (addr; po)); [ISB]; po; [R]
+	| (ctrl | (addr; po)); [ISB]; po; [M]
 	| addr; po; [W]
 	| (addr | data); lrs
+show ctrl;[M] as ctrl
+
+(* Pick-ordered-before *)
+let pob = pick-dep; [W]
+        | (pick-ctrl-dep | pick-addr-dep; po); [ISB]; po; [M]
+        | pick-addr-dep; [M]; po; [W]
 
 (* Atomic-ordered-before *)
 let aob = rmw
-	| [W & range(rmw)]; lrs; [A | Q]
+	| rmw; lrs; [A | Q]
 
 (* Barrier-ordered-before *)
 let bob = po; [dmb.full]; po
-        | po; ([A];amo;[L]); po
+        | [range([A];amo;[L])]; po
 	| [L]; po; [A]
-	| [R]; po; [dmb.ld]; po
+	| [R\NoRet]; po; [dmb.ld]; po
 	| [A | Q]; po
 	| [W]; po; [dmb.st]; po; [W]
 	| po; [L]
 
 (* Tag-ordered-before *)
-let tob = [R & T]; intrinsic; [M \ T]
+let tob = [R & T]; iico_data; [PRED]; iico_ctrl; [M \ T]
 
 (* Locally-ordered-before *)
 let rec lob = lws; si
-        | dob
-	| aob
-	| bob
-        | tob
-	| lob; lob
+            | dob
+            | pob
+            | aob
+            | bob
+            | tob
+            | lob; lob
+let pick-lob = pick-basic-dep; lob; [W]
+
+(* Tag-location-ordered *)
+let tlo = [R & T]; tob; loc; tob^-1; [R & T]
 
 (* Internal visibility requirement *)
+let po-loc =
+  let Exp = M\domain(tob) in
+  (po-loc & Exp*Exp) | (po & tlo)
 acyclic po-loc | ca | rf as internal
 
 (* Atomic: Basic LDXR/STXR constraint to forbid intervening writes. *)
