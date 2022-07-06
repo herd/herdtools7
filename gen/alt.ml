@@ -360,26 +360,17 @@ module Make(C:Builder.S)
 
     let can_prefix prefix = mk_can_prefix prefix
 
-    let rec check2 l rl =
-      match l,rl with
-      | _::_,[] | [],_::_ | [],[] ->  false (* should pass a warning, this case shouldn't be possible*)
-      | h::_, hr::[] -> if h=hr then begin false end else true
-      | _::[], _::_ -> true (* no wraparound implemented as cycle is still being built*)
-      | h::t, hr::tr -> if h = hr then begin check2 t tr end else true
+    let rec is_prefix l rl =
+      match rl,l with
+      | hrl::trl, hl::tl -> if hl = hrl then  is_prefix tl trl else false
+      | [], _ -> true (* end of rl before or at the end of l *)
+      | _, [] -> false (* end of l before end of rl*)
 
 
     let check_cycle rsuff rl =
       let rsuff = List.map (fun (_,rr) -> rr) rsuff in
       let rsuff = List.concat rsuff in
-      let r_first = List.hd rsuff in
-      let rec f rej= match rej with
-        | h::t -> if (List.hd h) = r_first then begin
-          let truth = check2 (List.tl rsuff) (List.tl h) in
-          if truth then f t else false
-          end
-          else f t
-        | [] -> true in
-      f rl
+      not (List.exists (fun rl ->  is_prefix rsuff rl) rl)
 
 
     let call_rec prefix f0 safes po_safe over n r suff f_rec k ?(reject=[])=
@@ -446,8 +437,7 @@ module Make(C:Builder.S)
 (*      let safes = C.R.Set.of_list safe in *)
       let relax = edges_ofs relax in
       let safe = edges_ofs safe in
-      let reject = edges_ofs reject in
-      let reject = List.map ( fun (_,a) -> a) reject in
+      let reject = List.map (fun a -> edges_of a) reject in
       let po_safe = extract_po safe in
       let fence_safe = extract_fence safe in
       let po_safe = po_safe,fence_safe in

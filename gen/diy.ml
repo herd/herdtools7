@@ -124,7 +124,7 @@ let parse_fences fs = List.fold_right parse_fence fs []
   let gen_thin n =
     let lr = [er (Rf Int); er (Rf Ext)]
     and ls = [PPO] in
-    M.gen ~relax:lr ~safe:ls  n
+    M.gen ~relax:lr ~safe:ls n
 
 
   let gen_uni n =
