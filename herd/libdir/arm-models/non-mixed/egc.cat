@@ -38,17 +38,29 @@
  *)
 "Armv8 External global completion requirement, not mixed-size"
 
+catdep
+
 include "armv8-common.cat"
 
-let gc-req = (W * _) | (R * _) & ((range(rfe) * _) | (rfi^-1; lob))
-let preorder-gcb = IM0 | lob & gc-req
+let gc-req = (W * _) | (R * _) & ((range(rfe) * _) | (rfi^-1; local-hw-reqs))
+let preorder-gcb = IM0 | local-hw-reqs & gc-req
+let preorder-gcb-lift = lift(M,preorder-gcb)
 
 with gcb from linearisations(M, preorder-gcb)
 ~empty gcb
 
-let gcbl = gcb & loc
-let rf-gcb = (W * R) & gcbl \ intervening-write(gcbl)
+let gcbl = gcb & same-loc
+let rf-gcb = (W * (Exp & R)) & gcbl
+    & ~intervening(W,gcbl)
+    & ~(intervening(W,gcbl);[Exp & R]; po-loc)
 let co-gcb = (W * W) & gcbl
 
 call equal(rf, rf-gcb)
 call equal(co, co-gcb)
+
+flag ~empty (if "vmsa" then _ else 0)
+  as external-global-completion-requirement-does-not-support-variant-vmsa
+flag ~empty (if "ifetch" then _ else 0)
+  as external-global-completion-requirement-does-not-support-variant-ifetch
+flag ~empty (if "memtag" then _ else 0)
+  as external-global-completion-requirement-does-not-support-variant-memtag

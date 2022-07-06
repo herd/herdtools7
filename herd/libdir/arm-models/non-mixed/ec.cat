@@ -38,18 +38,29 @@
  *)
 "Armv8 External completion requirement, not mixed-size"
 
+catdep
+
 include "armv8-common.cat"
 
-let preorder-cb = IM0 | lob
+let preorder-cb = IM0 | local-hw-reqs
 
 with cb from linearisations(M,preorder-cb)
 ~empty cb
 
-let cbl = cb & loc
-let rf-fwd = (W*R) & po-loc & cbl^-1 \ intervening-write(po-loc)
-let rf-nfwd = (W*R) & cbl \ intervening-write(cbl | po-loc)
+let cbl = cb & same-loc
+let rf-fwd = (W*(Exp&R)) & lrs & cbl^-1
+    & ~(intervening(W,cbl); [Exp & R]; po-loc)  (* exclude the cases of load hazards *)
+let rf-nfwd = (W*(Exp&R)) & cbl
+    & ~(cbl; [W]; lrs) (* exclude Write Effects outdated by the local predecessor, see rf-fwd *)
+    & ~intervening(W,cbl) (* exclude Write Effects that are not the most recent in Completed-before *)
+    & ~(intervening(W,cbl); [Exp & R]; po-loc)  (* exclude the cases of load hazards *)
 let rf-cb = rf-fwd | rf-nfwd
 let co-cb = cbl & (W*W)
 
 call equal(rf, rf-cb) as rfeq
 call equal(co, co-cb) as cbeq
+
+flag ~empty (if "vmsa" then _ else 0)
+  as external-completion-requirement-does-not-support-variant-vmsa
+flag ~empty (if "ifetch" then _ else 0)
+  as external-completion-requirement-does-not-support-variant-ifetch
