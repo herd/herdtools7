@@ -31,6 +31,14 @@ let pp_proc (p,ao,f) =
     | None -> ""
     | Some a -> sprintf ":%s" (String.concat "," a))
 
+let count_procs prog =
+  List.fold_left
+    (fun n (((_,_,f):proc),_) ->
+      match f with
+      | Main -> n+1
+      | FaultHandler -> n)
+    0 prog
+
 type maybev = ParsedConstant.v
 
 type reg = string (* Registers not yet parsed *)

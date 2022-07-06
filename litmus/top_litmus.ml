@@ -324,7 +324,7 @@ end = struct
         let allocate parsed =
           let module Alloc = SymbReg.Make(AllocArch) in
           Alloc.allocate_regs parsed in
-        Utils.compile P.parse List.length Comp.compile allocate
+        Utils.compile P.parse MiscParser.count_procs Comp.compile allocate
     end
 
 
