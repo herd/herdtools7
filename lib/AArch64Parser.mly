@@ -243,16 +243,20 @@ kr:
 | xreg { A.RV (A.V64,$1) }
 | wreg  { A.RV (A.V32,$1) }
 
-kr_shift:
+kr_shift_address:
 | k                { A.K $1, A.S_NOEXT }
 | xreg             { (A.RV (A.V64,$1)),  A.S_NOEXT }
-| wreg             { (A.RV (A.V32,$1)),  A.S_NOEXT }
 | wreg COMMA shift { (A.RV (A.V32, $1)), $3 }
 | xreg COMMA shift { (A.RV (A.V64, $1)), $3 }
 
+kr_shift:
+| kr_shift_address { $1 }
+| wreg { (A.RV (A.V32,$1)),  A.S_NOEXT }
+
+(* For address argument only *)
 kr0:
 | { A.K (MetaConst.zero), A.S_NOEXT }
-| COMMA kr_shift { $2 }
+| COMMA kr_shift_address { $2 }
 
 kr0_no_shift:
 | { A.K (MetaConst.zero) }
