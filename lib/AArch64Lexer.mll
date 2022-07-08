@@ -447,6 +447,7 @@ match name with
 | "dbgdtr_el0"|"DBGDTR_EL0" -> SYSREG A.DBGDTR_EL0
 | "dbgdtrrx_el0"|"DBGDTRRX_EL0" -> SYSREG A.DBGDTRRX_EL0
 | "Dbgdtrtx_el0"|"DBGDTRTX_EL0" -> SYSREG A.DBGDTRTX_EL0
+| "elr_el1"|"ELR_EL1" -> SYSREG A.ELR_EL1
 | _ ->
     begin match A.parse_wreg name with
     | Some r -> ARCH_WREG r

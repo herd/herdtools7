@@ -55,6 +55,26 @@ let arrange_specifier =
   (0,8),".B"    ; (0,16),".H"  ; (0,32),".S" ; (0,64),".D";
 ]
 
+(********************)
+(* System registers *)
+(*  (Some of...)    *)
+(********************)
+
+type sysreg =
+  CTR_EL0 | DCIZ_EL0 |
+  MDCCSR_EL0 | DBGDTR_EL0 |
+  DBGDTRRX_EL0 | DBGDTRTX_EL0 |
+  ELR_EL1
+
+let pp_sysreg = function
+  | CTR_EL0 -> "CTR_EL0"
+  | DCIZ_EL0 -> "DCIZ_EL0"
+  | MDCCSR_EL0 -> "MDCCSR_EL0"
+  | DBGDTR_EL0 -> "DBGDTR_EL0"
+  | DBGDTRRX_EL0 -> "DBGDTRRX_EL0"
+  | DBGDTRTX_EL0 -> "DBGDTRTX_EL0"
+  | ELR_EL1 -> "ELR_EL1"
+
 type reg =
   | ZR
   | Ireg of gpr
@@ -66,6 +86,7 @@ type reg =
   | NZP
   | SP
   | ResAddr
+  | SysReg of sysreg
 
 let gprs =
 [
@@ -94,6 +115,7 @@ let vec_regs =
 let vregs = List.map (fun v -> Vreg (v,(4,32))) vec_regs
 
 let linkreg = Ireg R30
+let elr_el1 = SysReg ELR_EL1
 
 let cgprs =
 [
@@ -267,6 +289,7 @@ let pp_xreg r = match r with
 | Internal i -> Printf.sprintf "i%i" i
 | NZP -> "NZP"
 | ResAddr -> "Res"
+| SysReg sreg -> pp_sysreg sreg
 | _ -> try List.assoc r regs with Not_found -> assert false
 
 let pp_simd_vector_reg r = match r with
@@ -568,24 +591,6 @@ let fold_domain f k =
       -> false
 
 end
-
-(********************)
-(* System registers *)
-(*  (Some of...)    *)
-(********************)
-
-type sysreg =
-    CTR_EL0 | DCIZ_EL0 |
-    MDCCSR_EL0 | DBGDTR_EL0 |
-    DBGDTRRX_EL0 | DBGDTRTX_EL0
-
-let pp_sysreg = function
-  | CTR_EL0 -> "CTR_EL0"
-  | DCIZ_EL0 -> "DCIZ_EL0"
-  | MDCCSR_EL0 -> "MDCCSR_EL0"
-  | DBGDTR_EL0 -> "DBGDTR_EL0"
-  | DBGDTRRX_EL0 -> "DBGDTRRX_EL0"
-  | DBGDTRTX_EL0 -> "DBGDTRTX_EL0"
 
 (****************)
 (* Instructions *)
@@ -1394,7 +1399,7 @@ let fold_regs (f_regs,f_sregs) =
   | Vreg _ -> f_regs reg y_reg,y_sreg
   | SIMDreg _ -> f_regs reg y_reg,y_sreg
   | Symbolic_reg reg ->  y_reg,f_sregs reg y_sreg
-  | Internal _ | NZP | ZR | SP | ResAddr | Tag _ -> y_reg,y_sreg in
+  | Internal _ | NZP | ZR | SP | ResAddr | Tag _ | SysReg _ -> y_reg,y_sreg in
 
   let fold_kr kr y = match kr with
   | K _ -> y
@@ -1471,7 +1476,7 @@ let map_regs f_reg f_symb =
   | Vreg _ -> f_reg reg
   | SIMDreg _ -> f_reg reg
   | Symbolic_reg reg -> f_symb reg
-  | Internal _ | ZR | SP | NZP | ResAddr | Tag _-> reg in
+  | Internal _ | ZR | SP | NZP | ResAddr | Tag _ | SysReg _ -> reg in
 
   let map_kr kr = match kr with
   | K _ -> kr
