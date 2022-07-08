@@ -1705,6 +1705,9 @@ module Make
             read_reg_ord r ii
             >>= do_indirect_jump i
 
+        | I_ERET ->
+           read_reg_ord AArch64.elr_el1 ii >>= do_indirect_jump ii.A.inst
+
         | I_CBZ(_,r,l) ->
             (read_reg_ord r ii)
               >>= is_zero

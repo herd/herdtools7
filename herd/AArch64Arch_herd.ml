@@ -217,7 +217,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDOPBH (_,v,_,_,_,_) | I_STOPBH (_,v,_,_,_) ->
           Some (bh_to_sz v)
       | I_NOP|I_B _|I_BR _|I_BC (_, _)|I_CBZ (_, _, _)
-      | I_CBNZ (_, _, _)|I_BL _|I_BLR _|I_RET _|I_LDAR (_, _, _, _)
+      | I_CBNZ (_, _, _)|I_BL _|I_BLR _|I_RET _|I_ERET|I_LDAR (_, _, _, _)
       | I_TBNZ(_,_,_,_) | I_TBZ (_,_,_,_) | I_MOVZ (_,_,_,_) | I_MOVK(_,_,_,_)
       | I_MOV (_, _, _)|I_SXTW (_, _)|I_OP3 (_, _, _, _, _, _)
       | I_ADR (_, _)|I_RBIT (_, _, _)|I_FENCE _
@@ -248,7 +248,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_FENCE _
       | I_IC _|I_DC _|I_TLBI _
       | I_NOP|I_TBZ _|I_TBNZ _
-      | I_BL _ | I_BLR _ | I_RET _
+      | I_BL _ | I_BLR _ | I_RET _ | I_ERET
         -> [] (* For -variant self only ? *)
       | I_LDR (_,r,_,_,_)|I_LDRBH (_,r,_,_,_)
       | I_LDUR (_,r,_,_)
@@ -297,7 +297,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_STXR _|I_STXRBH _ | I_STXP _ -> MachSize.St
       | I_LDAR (_, (AA|AQ), _, _)|I_LDARBH (_, (AA|AQ), _, _)
       | I_NOP|I_B _|I_BR _|I_BC _|I_CBZ _|I_CBNZ _
-      | I_TBNZ _|I_TBZ _|I_BL _|I_BLR _|I_RET _
+      | I_TBNZ _|I_TBZ _|I_BL _|I_BLR _|I_RET _|I_ERET
       | I_LDR _|I_LDUR _|I_LD1 _
       | I_LD1M _|I_LD1R _|I_LD2 _|I_LD2M _
       | I_LD2R _|I_LD3 _|I_LD3M _|I_LD3R _

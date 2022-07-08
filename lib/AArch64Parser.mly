@@ -53,7 +53,7 @@ let check_op3 op kr =
 /* Instructions */
 %token NOP HINT HLT
 %token B BR BEQ BNE BGE BGT BLE BLT CBZ CBNZ EQ NE GE GT LE LT TBZ TBNZ
-%token BL BLR RET
+%token BL BLR RET ERET
 %token LDR LDP LDNP LDPSW STP STNP LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token LD1 LD1R LD2 LD2R LD3 LD3R LD4 LD4R ST1 ST2 ST3 ST4 STUR /* Neon load/store */
 %token CMP MOV MOVZ MOVK MOVI ADR
@@ -363,6 +363,7 @@ instr:
 | BLR xreg { A.I_BLR $2 }
 | RET  { A.I_RET None }
 | RET xreg { A.I_RET (Some $2) }
+| ERET { A.I_ERET }
 | BEQ label_addr { A.I_BC (A.EQ,$2) }
 | BNE label_addr { A.I_BC (A.NE,$2) }
 | BLE NAME { A.I_BC (A.LE,$2) }

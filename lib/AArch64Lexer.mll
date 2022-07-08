@@ -44,6 +44,7 @@ match name with
 | "bl"  | "BL"  -> BL
 | "blr"  | "BLR"  -> BLR
 | "ret"  | "RET" -> RET
+| "eret"  | "ERET" -> ERET
 | "ne"  | "NE"  -> NE
 | "eq"  | "EQ"  -> EQ
 | "ge"  | "GE"  -> GE

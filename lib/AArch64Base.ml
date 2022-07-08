@@ -751,6 +751,7 @@ type 'k kinstruction =
   | I_TBZ of variant * reg * 'k * lbl
   | I_BL of lbl | I_BLR of reg
   | I_RET of reg option
+  | I_ERET
 (* Load and Store *)
   | I_LDR of variant * reg * reg * 'k kr * 'k s
   | I_LDUR of variant * reg * reg * 'k option
@@ -1111,6 +1112,8 @@ let do_pp_instruction m =
       "RET"
   | I_RET (Some r) ->
       sprintf "RET %s" (pp_xreg r)
+  | I_ERET ->
+     "ERET"
 
 (* Load and Store *)
   | I_LDR (v,r1,r2,k,S_NOEXT) ->
@@ -1411,7 +1414,7 @@ let fold_regs (f_regs,f_sregs) =
   | RV (_,r) -> fold_reg r y in
 
   fun c ins -> match ins with
-  | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None
+  | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None | I_ERET
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
   | I_MOV (_,r,_) | I_MOVZ (_,r,_,_) | I_MOVK (_,r,_,_)
@@ -1496,6 +1499,7 @@ let map_regs f_reg f_symb =
   | I_FENCE _
   | I_BL _
   | I_RET None
+  | I_ERET
     -> ins
   | I_CBZ (v,r,lbl) ->
       I_CBZ (v,map_reg r,lbl)
@@ -1747,7 +1751,7 @@ let get_next = function
   | I_TBZ (_,_,_,lbl)
   | I_BL lbl
     -> [Label.Next; Label.To lbl;]
-  | I_BLR _|I_BR _|I_RET _ -> [Label.Any]
+  | I_BLR _|I_BR _|I_RET _ |I_ERET -> [Label.Any]
   | I_NOP
   | I_LDR _
   | I_LDUR _
@@ -1839,6 +1843,7 @@ include Pseudo.Make
         | I_BL _
         | I_BLR _
         | I_RET _
+        | I_ERET
         | I_LDAR _
         | I_LDARBH _
         | I_STLR _
@@ -1984,6 +1989,7 @@ include Pseudo.Make
         | I_B _ | I_BR _
         | I_BL _ | I_BLR _
         | I_RET _
+        | I_ERET
         | I_BC _
         | I_CBZ _
         | I_CBNZ _
