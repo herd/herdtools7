@@ -279,6 +279,8 @@ module Make
       and tag_log f =  SkelUtil.dump_fatom_tag A.V.pp_v_old f
       and dump_addr_idx s = sprintf "_idx_%s" s
 
+      let has_custom_fault_handlers test =
+        List.exists (fun (_p,(code,_)) -> A.Out.has_fault_handler code) test.T.code
 
       let dump_fault_handler doc test =
         if have_fault_handler then begin
@@ -1286,6 +1288,8 @@ module Make
           (_vars,inits) (proc,(out,(_outregs,envVolatile)))  =
         let user_mode = List.exists (Proc.equal proc) procs_user in
         if dbg then eprintf "P%i: inits={%s}\n" proc (String.concat "," inits) ;
+        if Misc.consp faults && has_custom_fault_handlers test then
+          Warn.user_error "Post condition cannot check for faults when using custom fault handlers" ;
         let have_faults = have_fault_handler && Misc.consp faults in
         let my_regs = U.select_proc proc env in
         let addrs = A.Out.get_addrs_only out in (* accessed in code *)

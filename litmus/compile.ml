@@ -21,6 +21,7 @@ module type Config = sig
   val mode : Mode.t
   val precision : Precision.t
   val variant : Variant_litmus.t -> bool
+  val driver : Driver.t
 end
 
 module Default = struct
@@ -30,6 +31,7 @@ module Default = struct
   let mode = Mode.Std
   let precision = Precision.default
   let variant _ = false
+  let driver = Driver.Shell
 end
 
 let get_fmt hexa base = match CType.get_fmt hexa base with
@@ -609,6 +611,10 @@ type P.code = MiscParser.proc * A.pseudo list)
         else Label.Set.empty in
       let mains,fhandlers =
         List.partition (fun (_,func,_) -> func=MiscParser.Main) code in
+      if List.length fhandlers > 1 then
+        Warn.user_error "Only one process can have a custom fault handler" ;
+      if fhandlers <> [] && O.driver = Driver.C then
+        Warn.user_error "The C driver doesn't support custom fault handlers" ;
       let outs =
         List.map
           (fun (proc,_,code) ->
@@ -621,6 +627,8 @@ type P.code = MiscParser.proc * A.pseudo list)
             let fhandler,addrs =
               try
                 let (_,_,c) = List.find (fun (p,_,_) -> Proc.equal p proc) fhandlers in
+                if is_user then
+                  Warn.user_error "Process %d running in userspace cannot have fault handler" proc ;
                 let addrs = G.Set.union (extract_addrs c) addrs in
                 let code = compile_code esc false c in
                 C.fault_handler_prologue@code@C.fault_handler_epilogue,addrs

@@ -37,3 +37,4 @@ val get_nnops : t -> int
 val get_addrs_only : t -> string list
 val get_addrs : t -> string list * string list
 val out_code : out_channel -> code -> unit
+val has_fault_handler : t -> bool

@@ -45,3 +45,5 @@ let get_addrs_only t = List.map fst t.inputs
 let get_addrs t = get_addrs_only t,[]
 
 let out_code chan code = Printf.fprintf chan "%s\n" code
+
+let has_fault_handler _ = false

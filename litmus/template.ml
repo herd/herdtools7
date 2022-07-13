@@ -120,6 +120,8 @@ module type S = sig
       (CType.t -> CType.t -> bool)-> (* fail *)
         (CType.t -> CType.t -> bool)->  (* warn *)
           t -> CType.t RegMap.t
+
+  val has_fault_handler : t -> bool
 end
 
 module Make(O:Config)(A:I) =
@@ -416,4 +418,5 @@ module Make(O:Config)(A:I) =
           m tst.code in
       m
 
+    let has_fault_handler t = t.fhandler <> []
   end

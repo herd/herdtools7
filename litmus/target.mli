@@ -28,4 +28,5 @@ module type S = sig
   val addr_cpy_name : string -> int -> string
   val dump_v : V.v -> string
   val dump_init_val : V.v -> string
+  val has_fault_handler : t -> bool
 end
