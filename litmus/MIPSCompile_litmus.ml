@@ -111,9 +111,7 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
 
     let emit_loop _k = assert false
 
-    let user_mode = [] and kernel_mode = []
-
-    let fault_handler_prologue = [] and fault_handler_epilogue = []
+    include Handler.No(struct type ins = A.Out.ins end)
 
     let compile_ins tr_lab ins k = match ins with
     | NOP -> { empty_ins with memo = "nop"; }::k

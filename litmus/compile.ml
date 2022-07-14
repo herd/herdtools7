@@ -307,7 +307,6 @@ type P.code = MiscParser.proc * A.pseudo list)
       | Kvm -> true
 
     module G = Global_litmus
-    module A = A
     module V = A.V
     module Constr = T.C
     module Generic = Generic(A)(Constr)
@@ -611,10 +610,8 @@ type P.code = MiscParser.proc * A.pseudo list)
         else Label.Set.empty in
       let mains,fhandlers =
         List.partition (fun (_,func,_) -> func=MiscParser.Main) code in
-      if List.length fhandlers > 1 then
-        Warn.user_error "Only one process can have a custom fault handler" ;
       if fhandlers <> [] && O.driver = Driver.C then
-        Warn.user_error "The C driver doesn't support custom fault handlers" ;
+        Warn.warn_always "The C driver has experimental support for custom fault handlers" ;
       let outs =
         List.map
           (fun (proc,_,code) ->
@@ -631,7 +628,13 @@ type P.code = MiscParser.proc * A.pseudo list)
                   Warn.user_error "Process %d running in userspace cannot have fault handler" proc ;
                 let addrs = G.Set.union (extract_addrs c) addrs in
                 let code = compile_code esc false c in
-                C.fault_handler_prologue@code@C.fault_handler_epilogue,addrs
+                let asmhandler =
+                  let open Driver in
+                  match O.driver with
+                  | C|Shell -> Some proc
+                  | XCode ->
+                     Warn.user_error "No custom handler for XCode" in
+                C.fault_handler_prologue asmhandler@code@C.fault_handler_epilogue,addrs
               with Not_found ->
                 [],addrs
             in

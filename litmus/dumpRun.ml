@@ -189,7 +189,8 @@ let run_tests names out_chan =
             | None -> ()
             | Some exp -> fprintf exp "%s\n" name
             end ;
-            a,(doc::docs),(src::srcs),cycles,hash_env,IntSet.add nt nts
+            a,(doc::docs),(src::srcs),cycles,hash_env,
+            IntSet.add nt nts
         | Absent a -> a,docs,srcs,cycles,hash_env,nts
         | Interrupted (a,e) ->
             let msg =  match e with
@@ -436,18 +437,19 @@ let dump_c xcode names =
     (fun out_chan ->
       let module O = Indent.Make(struct let hexa = Cfg.hexa let out = out_chan end) in
       O.o "#include <stdlib.h>" ;
-      begin match Cfg.mode with
-      | Mode.Std|Mode.PreSi ->
-         if Cfg.stdio then
-           O.o "#include <stdio.h>"
-         else
-           O.o "#include \"litmus_io.h\"" ;
-         if Cfg.sleep > 0 then  O.o "#include <unistd.h>"
-      | Mode.Kvm ->
-         O.o "#include \"kvm-headers.h\"" ;
-         O.o "#include \"utils.h\"" ;
-         if Cfg.sleep > 0 then
-           O.o "#include <asm/delay.h>"
+      begin
+        match Cfg.mode with
+        | Mode.Std|Mode.PreSi ->
+           if Cfg.stdio then
+             O.o "#include <stdio.h>"
+           else
+             O.o "#include \"litmus_io.h\"" ;
+           if Cfg.sleep > 0 then  O.o "#include <unistd.h>"
+        | Mode.Kvm ->
+           O.o "#include \"kvm-headers.h\"" ;
+           O.o "#include \"utils.h\"" ;
+           if Cfg.sleep > 0 then
+             O.o "#include <asm/delay.h>"
       end ;
       begin match Cfg.threadstyle with
       | ThreadStyle.Cached -> O.o "extern void set_pool(void);"
@@ -455,7 +457,8 @@ let dump_c xcode names =
       end ;
       O.o "" ;
       O.o "/* Declarations of tests entry points */" ;
-      let arch,docs,srcs,utils,nts = run_tests names out_chan in
+      let arch,docs,srcs,utils,nts =
+        run_tests names out_chan in
       let module C = struct
         include Cfg
         include (val (get_arch arch) : ArchConf)
@@ -556,7 +559,7 @@ let dump_c_cont xcode arch sources utils nts =
   let shared_topology = Cfg.alloc = Alloc.Dynamic in
   let sources = List.map Filename.basename  sources in
   let utils =
-    if shared_topology then utils@["topology.c"]
+    if shared_topology then utils@[Tar.outname "topology.c"]
     else utils in
 (* Makefile *)
   let infile = not xcode in

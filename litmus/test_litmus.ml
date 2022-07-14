@@ -50,6 +50,9 @@ module type S = sig
 
   val find_our_constraint : t -> C.cond
   val get_nprocs : t -> int
+  val has_asmhandler : t -> bool
+  val has_defaulthandler : t -> bool
+  val partition_asmhandlers : t -> int list * int list
 
   module D : CoreDumper.S
     with
@@ -93,6 +96,27 @@ struct
   let find_our_constraint test = test.condition
 
   let get_nprocs t = List.length t.code
+
+  let has_asmhandler t =
+    List.exists
+      (fun (_,(c,_)) -> A.Out.has_asmhandler c)
+      t.code
+
+  let has_defaulthandler t =
+    List.exists
+      (fun (_,(c,_)) -> not (A.Out.has_asmhandler c))
+      t.code
+
+  let partition_asmhandlers t =
+    let _,ok,no =
+      List.fold_left
+        (fun (i,ok,no) (_,(c,_)) ->
+          if A.Out.has_asmhandler c then
+            i+1,i::ok,no
+          else
+            i+1,ok,i::no)
+        (0,[],[]) t.code in
+    ok,no
 
   module D =
     struct

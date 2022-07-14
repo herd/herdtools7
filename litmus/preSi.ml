@@ -267,7 +267,8 @@ module Make
               O.o "" ;
         end
 
-(* Fault handler *)
+
+      (* Fault handler *)
       let filter_fault_lbls =
         List.filter
           (fun ((_,o),_) -> Misc.is_some o)
@@ -279,166 +280,221 @@ module Make
       and tag_log f =  SkelUtil.dump_fatom_tag A.V.pp_v_old f
       and dump_addr_idx s = sprintf "_idx_%s" s
 
-      let has_custom_fault_handlers test =
-        List.exists (fun (_p,(code,_)) -> A.Out.has_fault_handler code) test.T.code
+      let dump_vector_table name el1h_sync =
+        O.f "static ins_t *get_vector_table%s(void) {" name ;
+        O.oi "ins_t *r;" ;
+        O.oi "asm __volatile__ (" ;
+        List.iter
+          (fun ins -> O.fi "\"%s\\n\"" ins)
+          (A.vector_table el1h_sync) ;
+        O.oi ":\"=r\" (r));" ;
+        O.oi "return r;" ;
+        O.o "}" ;
+        O.o ""
 
       let dump_fault_handler doc test =
         if have_fault_handler then begin
-          O.o "/* Fault Handling */" ;
-          O.o "#define HAVE_FAULT_HANDLER 1" ;
-          O.o "" ;
-          O.o "typedef struct { int instance,proc; } who_t;" ;
-          O.o "" ;
-          if do_dynalloc then begin
-            O.o "static count_t *nfaults;" ;
-            O.o "static who_t *whoami;" ;
-            O.o "" ;
-            O.o "static void alloc_fault_handler(void) {" ;
-            O.oi "nfaults = malloc_check(NTHREADS*sizeof(*nfaults));" ;
-            O.oi "whoami = malloc_check(AVAIL*sizeof(*whoami));" ;
-            O.o "}" ;
-            O.o "" ;
-            O.o "static void free_fault_handler(void) {" ;
-            O.oi "free(whoami); free(nfaults);" ;
-            O.o "}"
-          end else begin
-            O.o "static count_t nfaults[NTHREADS];" ;
-            O.o "static who_t whoami[AVAIL];"
-          end ;
-          O.o "" ;
-          Insert.insert O.o "instruction.h" ;
-          O.o "" ;
-          begin
-            let open Precision in
-            match Cfg.precision with
-            | Fatal ->
-               O.o "#define PRECISE 1" ;
-               O.o "static ins_t *label_ret[NTHREADS];" ;
-               O.o ""
-            | Skip ->
-               O.o "#define FAULT_SKIP 1" ;
-               O.o ""
-            | Handled -> ()
-            | LoadsFatal ->
-               Warn.user_error "No asymetric mode for litmus kvm variant"
-          end ;
-          let insert_ins_ops () =
-            ObjUtil.insert_lib_file O.o "_find_ins.c" ;
-            O.o "" ;
-            Insert.insert O.o "getnop.c" ;
-            O.o "" in
-
-          let faults = U.get_faults test in
-          begin match faults with
-          | [] -> if do_precise then insert_ins_ops ()
+          let ok,no = T.partition_asmhandlers test in
+          begin match no with
           | _::_ ->
-              O.o "#define SEE_FAULTS 1" ;
-              O.o "" ;
-              begin match filter_fault_lbls faults with
-              | [] ->
-                  if do_precise then insert_ins_ops ()
-              | faults ->
-                  insert_ins_ops () ;
-                  O.o "typedef struct {" ;
-                  O.fi "ins_t %s;"
-                    (String.concat ","
-                       (List.map (fun f -> sprintf "*%s" (tag_code f)) faults)) ;
-                  O.o "} labels_t;" ;
-                  O.o "" ;
-                  O.o "static labels_t labels;" ;
+             O.o "/* Fault Handling */" ;
+             O.o "#define HAVE_FAULT_HANDLER 1" ;
+             O.o "" ;
+             O.o "typedef struct { int instance,proc; } who_t;" ;
+             O.o "" ;
+             if do_dynalloc then begin
+                 O.o "static count_t *nfaults;" ;
+                 O.o "static who_t *whoami;" ;
+                 O.o "" ;
+                 O.o "static void alloc_fault_handler(void) {" ;
+                 O.oi "nfaults = malloc_check(NTHREADS*sizeof(*nfaults));" ;
+                 O.oi "whoami = malloc_check(AVAIL*sizeof(*whoami));" ;
+                 O.o "}" ;
+                 O.o "" ;
+                 O.o "static void free_fault_handler(void) {" ;
+                 O.oi "free(whoami); free(nfaults);" ;
+                 O.o "}"
+               end else begin
+                 O.o "static count_t nfaults[NTHREADS];" ;
+                 O.o "static who_t whoami[AVAIL];"
+               end ;
+             O.o "" ;
+             Insert.insert O.o "instruction.h" ;
+             O.o "" ;
+             begin
+               let open Precision in
+               match Cfg.precision with
+               | Fatal ->
+                  O.o "#define PRECISE 1" ;
+                  O.o "static ins_t *label_ret[NTHREADS];" ;
                   O.o ""
-              end ;
-              O.o "typedef struct {" ;
-              O.fi "int %s;" (String.concat "," (List.map tag_seen faults)) ;
-              O.o "} see_fault_t;" ;
-              O.o "" ;
-              if do_dynalloc then begin
-                O.o "static see_fault_t **see_fault;" ;
-                O.o "static vars_t **vars_ptr;" ;
+               | Skip ->
+                  O.o "#define FAULT_SKIP 1" ;
+                  O.o ""
+               | Handled -> ()
+               | LoadsFatal ->
+                  Warn.user_error "No asymetric mode for litmus kvm variant"
+             end ;
+             let insert_ins_ops () =
+               ObjUtil.insert_lib_file O.o "_find_ins.c" ;
+               O.o "" ;
+               Insert.insert O.o "getnop.c" ;
+               O.o "" in
+
+             let faults = U.get_faults test in
+             begin match faults with
+             | [] -> if do_precise then insert_ins_ops ()
+             | _::_ ->
+                O.o "#define SEE_FAULTS 1" ;
                 O.o "" ;
-                O.o "static void alloc_see_faults(void) {" ;
-                O.oi "see_fault = malloc_check(NEXE*sizeof(*see_fault));" ;
-                O.oi "vars_ptr = malloc_check(NEXE*sizeof(*vars_ptr));" ;
+                begin match filter_fault_lbls faults with
+                | [] ->
+                   if do_precise then insert_ins_ops ()
+                | faults ->
+                   insert_ins_ops () ;
+                   O.o "typedef struct {" ;
+                   O.fi "ins_t %s;"
+                     (String.concat ","
+                        (List.map (fun f -> sprintf "*%s" (tag_code f)) faults)) ;
+                   O.o "} labels_t;" ;
+                   O.o "" ;
+                   O.o "static labels_t labels;" ;
+                  O.o ""
+                end ;
+                O.o "typedef struct {" ;
+                O.fi "int %s;" (String.concat "," (List.map tag_seen faults)) ;
+                O.o "} see_fault_t;" ;
+                O.o "" ;
+                if do_dynalloc then begin
+                    O.o "static see_fault_t **see_fault;" ;
+                    O.o "static vars_t **vars_ptr;" ;
+                    O.o "" ;
+                    O.o "static void alloc_see_faults(void) {" ;
+                    O.oi "see_fault = malloc_check(NEXE*sizeof(*see_fault));" ;
+                    O.oi "vars_ptr = malloc_check(NEXE*sizeof(*vars_ptr));" ;
+                    O.o "}" ;
+                    O.o "" ;
+                    O.o "static void free_see_faults(void) {" ;
+                    O.oi "free(see_fault); free(vars_ptr);" ;
+                    O.o "}"
+                  end else begin
+                    O.o "static see_fault_t *see_fault[NEXE];" ;
+                    O.o "static vars_t *vars_ptr[NEXE];"
+                  end ;
+                O.o "" ;
+                O.o "static void init_see_fault(see_fault_t *p) {" ;
+                List.iter
+                  (fun f -> O.fi "p->%s = 0;" (tag_seen f))
+                  faults ;
                 O.o "}" ;
                 O.o "" ;
-                O.o "static void free_see_faults(void) {" ;
-                O.oi "free(see_fault); free(vars_ptr);" ;
-                O.o "}"
-              end else begin
-                O.o "static see_fault_t *see_fault[NEXE];" ;
-                O.o "static vars_t *vars_ptr[NEXE];"
-              end ;
-              O.o "" ;
-              O.o "static void init_see_fault(see_fault_t *p) {" ;
-              List.iter
-                (fun f -> O.fi "p->%s = 0;" (tag_seen f))
-                faults ;
-              O.o "}" ;
-              O.o "" ;
+             end ;
+             O.o "static void record_fault(who_t *w,ins_t *pc,void *loc) {" ;
+             begin match faults with
+             | [] -> ()
+             | _ ->
+                O.oi "int i = w->instance;" ;
+                O.oi "int idx_loc = idx_addr(loc,vars_ptr[i]);" ;
+                O.oi "see_fault_t *sf = see_fault[i];" ;
+                O.oi "switch (w->proc) {" ;
+                Misc.group_iter
+                  (fun ((p,_),_) ((q,_),_) -> Misc.int_eq p q)
+                  (fun ((p,_),_) fs ->
+                    O.fi "case %d: {" p ;
+                    Misc.group_iteri
+                      (fun (_,v) (_,w) -> A.V.compare v w = 0)
+                      (fun k (_,v) fs ->
+                        let prf = if k > 0 then "else if" else "if"
+                        and test =
+                          sprintf "idx_loc == %s"
+                            (dump_addr_idx (A.V.pp_v_old v)) in
+                        O.fii "%s (%s) {" prf test ;
+                        let no_lbl ((_,o),_) = Misc.is_none o in
+                        let no,fs = List.partition no_lbl fs in
+                        begin match no with
+                        | [] -> ()
+                        | f::_ ->
+                           O.fiii "atomic_inc_fetch(&sf->%s);" (tag_seen f) ;
+                        end ;
+                        List.iteri
+                          (fun k f  ->
+                            let prf = if k > 0 then "} else if" else "if"
+                            and test = sprintf "pc == labels.%s" (tag_code f)
+                            and act =  sprintf "atomic_inc_fetch(&sf->%s)" (tag_seen f) in
+                            O.fiii "%s (%s) {" prf test ;
+                            O.fiv "%s;" act)
+                          fs ;
+                        if Misc.consp fs then O.fiii "}" ;
+                        O.fii "}")
+                      fs ;
+                    O.oii "break;" ;
+                    O.oi "}")
+                  faults ;
+                O.oi "}" ;
+             end ;
+             O.oi "atomic_inc_fetch(&nfaults[w->proc]);" ;
+             O.o "}" ;
+             O.o "" ;
+             Insert.insert O.o "kvm_fault_handler.c" ;
+             O.o "" ;
+             if not (T.has_asmhandler test) then begin
+               O.o "static void pp_faults(void) {" ;
+               O.oi "count_t total=0;" ;
+               O.oi "for (int k=0 ; k < NTHREADS; k++) { total += nfaults[k]; }" ;
+               O.oi "if (total > 0) {" ;
+               O.fii "printf(\"Faults %s %%\"PCTR\"\",total);"  doc.Name.name ;
+               O.oii "for (int k = 0 ; k < NTHREADS ; k++) {" ;
+               O.oiii "count_t c = nfaults[k];" ;
+               let fmt = " P%d:%\"PCTR\"" in
+               O.fiii "if (c > 0) printf(\"%s\",k,c);" fmt;
+               O.oii "}" ;
+               O.oii "printf(\"\\n\");" ;
+               O.oi "}" ;
+               O.o "}" ;
+               O.o ""
+             end
+          | [] ->
+             begin match ok with
+             | [] -> ()
+             | _::_ ->
+                Insert.insert O.o "instruction.h";
+                O.o ""
+             end ;
           end ;
-          O.o "static void record_fault(who_t *w,ins_t *pc,void *loc) {" ;
-          begin match faults with
-          | [] -> ()
-          | _ ->
-              O.oi "int i = w->instance;" ;
-              O.oi "int idx_loc = idx_addr(loc,vars_ptr[i]);" ;
-              O.oi "see_fault_t *sf = see_fault[i];" ;
-              O.oi "switch (w->proc) {" ;
-              Misc.group_iter
-                (fun ((p,_),_) ((q,_),_) -> Misc.int_eq p q)
-                (fun ((p,_),_) fs ->
-                  O.fi "case %d: {" p ;
-                  Misc.group_iteri
-                    (fun (_,v) (_,w) -> A.V.compare v w = 0)
-                    (fun k (_,v) fs ->
-                      let prf = if k > 0 then "else if" else "if"
-                      and test =
-                        sprintf "idx_loc == %s"
-                          (dump_addr_idx (A.V.pp_v_old v)) in
-                      O.fii "%s (%s) {" prf test ;
-                      let no_lbl ((_,o),_) = Misc.is_none o in
-                      let no,fs = List.partition no_lbl fs in
-                      begin match no with
-                      | [] -> ()
-                      | f::_ ->
-                          O.fiii "atomic_inc_fetch(&sf->%s);" (tag_seen f) ;
-                      end ;
-                      List.iteri
-                        (fun k f  ->
-                          let prf = if k > 0 then "} else if" else "if"
-                          and test = sprintf "pc == labels.%s" (tag_code f)
-                          and act =  sprintf "atomic_inc_fetch(&sf->%s)" (tag_seen f) in
-                          O.fiii "%s (%s) {" prf test ;
-                          O.fiv "%s;" act)
-                        fs ;
-                      if Misc.consp fs then O.fiii "}" ;
-                      O.fii "}")
-                    fs ;
-                  O.oii "break;" ;
-                  O.oi "}")
-                faults ;
-              O.oi "}" ;
+          List.iter
+            (fun p ->
+              dump_vector_table (sprintf "%d" p) (sprintf "asm_handler%d" p))
+            ok ;
+          Insert.insert O.o "asmhandler.c" ;
+          O.o "" ;
+          begin match ok with
+          | [] ->
+             O.o "static void set_fault_vector(int role) { }"
+          | _::_ ->
+             O.o "static void set_fault_vector(int role) {" ;
+             O.oi "ins_t *r = NULL;" ;
+             O.oi "switch(role) {" ;
+             List.iter
+               (fun p ->
+                 O.fi "case %d:" p ;
+                 O.fii "r = get_vector_table%d();" p ;
+                 O.oii "break;")
+               ok ;
+             begin match no with
+             | [] -> ()
+             | _::_ ->
+                O.oi "default:" ;
+                O.oii "{" ;
+                O.oiii "extern ins_t vector_table;" ;
+                O.oiii "r = &vector_table;" ;
+                O.oii "}"
+             end ;
+             O.oi "}" ;
+             O.oi "exceptions_init_test(r);" ;
+             O.o "}"
           end ;
-          O.oi "atomic_inc_fetch(&nfaults[w->proc]);" ;
-          O.o "}" ;
-          O.o "" ;
-          Insert.insert O.o "kvm_fault_handler.c" ;
-          O.o "" ;
-          O.o "static void pp_faults(void) {" ;
-          O.oi "count_t total=0;" ;
-          O.oi "for (int k=0 ; k < NTHREADS; k++) { total += nfaults[k]; }" ;
-          O.oi "if (total > 0) {" ;
-          O.fii "printf(\"Faults %s %%\"PCTR\"\",total);"  doc.Name.name ;
-          O.oii "for (int k = 0 ; k < NTHREADS ; k++) {" ;
-          O.oiii "count_t c = nfaults[k];" ;
-          let fmt = " P%d:%\"PCTR\"" in
-          O.fiii "if (c > 0) printf(\"%s\",k,c);" fmt;
-          O.oii "}" ;
-          O.oii "printf(\"\\n\");" ;
-          O.oi "}" ;
-          O.o "}" ;
           O.o ""
-       end
+          end
 
 (* User mode *)
       let dump_user_stacks procs_user = match procs_user with
@@ -1290,9 +1346,11 @@ module Make
           (_vars,inits) (proc,(out,(_outregs,envVolatile)))  =
         let user_mode = List.exists (Proc.equal proc) procs_user in
         if dbg then eprintf "P%i: inits={%s}\n" proc (String.concat "," inits) ;
-        if Misc.consp faults && has_custom_fault_handlers test then
+        if Misc.consp faults && T.has_asmhandler test then
           Warn.user_error "Post condition cannot check for faults when using custom fault handlers" ;
-        let have_faults = have_fault_handler && Misc.consp faults in
+        let have_faults =
+          not (T.has_asmhandler test) &&
+          have_fault_handler && Misc.consp faults in
         let my_regs = U.select_proc proc env in
         let addrs = A.Out.get_addrs_only out in (* accessed in code *)
         O.fi "case %i: {" proc ;
@@ -1642,7 +1700,9 @@ module Make
         O.oi "return _ok;" ;
         O.o "}" ;
         O.o "" ;
-        if Cfg.is_kvm then begin
+        if T.has_asmhandler test && not (T.has_defaulthandler test) then
+          O.o "static void init_labels(void) { }"
+        else if Cfg.is_kvm then begin
           let init_rets nop_defined =
             if do_precise then begin
               if not nop_defined then O.oi "ins_t nop = getnop();" ;
@@ -1843,11 +1903,16 @@ module Make
         if Misc.consp procs_user then begin
             O.oi "set_user_stack(id);"
         end ;
-        if have_fault_handler then begin
-            if Misc.consp procs_user then begin
-                O.o "/* Fault handlers installation depends on user stacks */"
-            end ;
-            O.oi "install_fault_handler(id);"
+        if have_fault_handler && T.has_defaulthandler test then begin
+          if Misc.consp procs_user then begin
+              O.o "/* Fault handlers installation depends on user stacks */"
+          end ;
+          O.oi "install_fault_handler(id);" ;
+          if not (T.has_asmhandler test) then begin
+            (* Set vector table once for all, as it does not depend on role *)
+             O.oi "extern ins_t vector_table;" ;
+             O.oi "exceptions_init_test(&vector_table);"
+          end ;
         end ;
         if not Cfg.is_kvm then begin
           O.oi
