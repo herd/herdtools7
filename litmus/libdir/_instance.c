@@ -173,5 +173,6 @@ static void set_role(global_t *g,thread_ctx_t *c,int part) {
     c->ctx = NULL ;
     c->role = -1 ;
   }
+  set_fault_vector(c->role);
   barrier_wait(&g->gb) ;
 }

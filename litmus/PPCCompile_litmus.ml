@@ -219,9 +219,7 @@ module Make(V:Constant.S)(C:Config) =
           cmpwi loop_idx 0;
           bcc tr_nolab Gt lbl1; ]
 
-    let user_mode = [] and kernel_mode = []
-
-    let fault_handler_prologue = [] and fault_handler_epilogue = []
+    include Handler.No(struct type ins = A.Out.ins end)
 
     let do_compile_ins tr_lab ins k = match tr_ins ins with
     | Pnop -> { empty_ins with memo="nop"; }::k

@@ -90,6 +90,7 @@ module type S = sig
 
   val get_nrets : t -> int
   val get_nnops : t -> int
+  val has_asmhandler : t -> bool
   val get_addrs_only : t -> string list
   val get_phys_only : t -> string list
   val get_addrs : t -> string list * string list (* addresses X ptes *)
@@ -171,6 +172,7 @@ module Make(O:Config)(A:I) =
 
     let get_nrets t = t.nrets
     and get_nnops t = t.nnops
+    and has_asmhandler t = Misc.consp t.fhandler
 
     (* Generic function to extract some symbols *)
     let get_gen tr init addrs =

@@ -40,6 +40,7 @@ let compile_presi_out_ptr_reg proc reg =
 
 let get_nrets _ = 0
 let get_nnops _ = 0
+let has_asmhandler _ = false
 
 let get_addrs_only t = List.map fst t.inputs
 let get_addrs t = get_addrs_only t,[]
