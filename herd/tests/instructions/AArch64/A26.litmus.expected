@@ -1,0 +1,10 @@
+Test A26 Required
+States 1
+0:X0=-1; 0:X2=255; 0:X4=4294967295; 0:X6=255;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=-1 /\ 0:X2=255 /\ 0:X4=4294967295 /\ 0:X6=255)
+Observation A26 Always 1 0
+Hash=15ee72abb5d901119b6ff48bf8054b79
+

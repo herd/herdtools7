@@ -828,6 +828,7 @@ type 'k kinstruction =
   | I_UNSEAL of reg * reg * reg
 (* Idem for bytes and half words *)
   | I_LDRBH of bh * reg * reg * 'k kr * 'k s
+  | I_LDRS of variant * bh * reg * reg
   | I_LDARBH of bh * ld_type * reg * reg
   | I_STRBH of bh * reg * reg * 'k kr * 'k s
   | I_STLRBH of bh * reg * reg
@@ -1139,6 +1140,8 @@ let do_pp_instruction m =
       pp_mem (ldrbh_memo bh t)  V32 r1 r2 m.k0
   | I_LDXP (v,t,r1,r2,r3) ->
       pp_ldxp (ldxp_memo t) v r1 r2 r3
+  | I_LDRS (v,bh,r1,r2) ->
+      sprintf "%s %s,[%s]" ("LDRS"^pp_bh bh) (pp_vreg v r1) (pp_xreg r2)
   | I_STR (v,r1,r2,k,S_NOEXT) ->
       pp_mem "STR" v r1 r2 k
   | I_STR (v,r1,r2,k,s) ->
@@ -1426,7 +1429,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_TLBI (_,r)
     -> fold_reg r c
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
-  | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
+  | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2) | I_LDRS (_,_,r1,r2)
   | I_STOP (_,_,_,r1,r2) | I_STOPBH (_,_,_,r1,r2)
   | I_RBIT (_,r1,r2) | I_LDR_P (_, r1, r2, _) | I_LDUR (_, r1, r2, _)
   | I_LDG (r1,r2,_) | I_STZG (r1,r2,_) | I_STG (r1,r2,_)
@@ -1535,6 +1538,8 @@ let map_regs f_reg f_symb =
      I_LDARBH (bh,t,map_reg r1,map_reg r2)
   | I_LDXP (v,t,r1,r2,r3) ->
      I_LDXP (v,t,map_reg r1,map_reg r2,map_reg r3)
+  | I_LDRS (v,bh,r1,r2) ->
+     I_LDRS (v,bh,map_reg r1,map_reg r2)
   | I_STR (v,r1,r2,k,s) ->
       I_STR (v,map_reg r1,map_reg r2,k,s)
   | I_STLR (v,r1,r2) ->
@@ -1763,6 +1768,7 @@ let get_next = function
   | I_STR _
   | I_LDAR _
   | I_LDARBH _
+  | I_LDRS _
   | I_STLR _
   | I_STLRBH _
   | I_STXR _
@@ -1847,6 +1853,7 @@ include Pseudo.Make
         | I_ERET
         | I_LDAR _
         | I_LDARBH _
+        | I_LDRS _
         | I_STLR _
         | I_STLRBH _
         | I_STXR _
@@ -1956,7 +1963,7 @@ include Pseudo.Make
       | _ -> assert false
 
       let get_naccesses ins = match ins with
-        | I_LDR _ | I_LDAR _ | I_LDARBH _ | I_LDUR _
+        | I_LDR _ | I_LDAR _ | I_LDARBH _ | I_LDUR _ | I_LDRS _
         | I_STR _ | I_STLR _ | I_STLRBH _ | I_STXR _
         | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
         | I_STG _ | I_LDG _

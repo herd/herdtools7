@@ -1,0 +1,10 @@
+Test A25 Allowed
+States 1
+0:X0=0;
+No
+Witnesses
+Positive: 0 Negative: 1
+Condition exists (0:X0=65536)
+Observation A25 Never 0 1
+Hash=9ec1aadd808402a3c54362081a9a7e21
+

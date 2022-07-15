@@ -55,6 +55,7 @@ let check_op3 op kr =
 %token B BR BEQ BNE BGE BGT BLE BLT CBZ CBNZ EQ NE GE GT LE LT TBZ TBNZ
 %token BL BLR RET ERET
 %token LDR LDP LDNP LDPSW STP STNP LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
+%token LDRSB LDRSH
 %token LD1 LD1R LD2 LD2R LD3 LD3R LD4 LD4R ST1 ST2 ST3 ST4 STUR /* Neon load/store */
 %token CMP MOV MOVZ MOVK MOVI ADR
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH LDXP LDAXP
@@ -418,6 +419,10 @@ instr:
   { let (kr, s) = $6 in A.I_LDRBH (A.B,$2,$5,kr,s) }
 | LDRH wreg COMMA LBRK cxreg kr0 RBRK
   { let (kr, s) = $6 in A.I_LDRBH (A.H,$2,$5,kr,s) }
+| LDRSB reg COMMA LBRK cxreg RBRK
+  { let (v, s) = $2 in A.I_LDRS (v,A.B,s,$5) }
+| LDRSH reg COMMA LBRK cxreg RBRK
+  { let (v, s) = $2 in A.I_LDRS (v,A.H,s,$5) }
 | LDAR reg COMMA LBRK cxreg RBRK
   { let v,r = $2 in A.I_LDAR (v,A.AA,r,$5) }
 | LDARB wreg COMMA LBRK cxreg RBRK

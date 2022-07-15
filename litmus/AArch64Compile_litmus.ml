@@ -1278,6 +1278,8 @@ module Make(V:Constant.S)(C:Config) =
         storex_pair (Misc.lowercase (stxp_memo t)) v r1 r2 r3 r4::k
     | I_LDRBH (B,r1,r2,kr,s) -> load "ldrb" V32 r1 r2 kr (default_shift kr s)::k
     | I_LDRBH (H,r1,r2,kr,s) -> load "ldrh" V32 r1 r2 kr (default_shift kr s)::k
+    | I_LDRS (var,B,r1,r2) -> load "ldrsb" var r1 r2 (K 0) (default_shift (K 0) S_NOEXT)::k
+    | I_LDRS (var,H,r1,r2) -> load "ldrsh" var r1 r2 (K 0) (default_shift (K 0) S_NOEXT)::k
     | I_LDAR (v,t,r1,r2) -> load (ldr_memo t) v r1 r2 k0 S_NOEXT::k
     | I_LDARBH (bh,t,r1,r2) -> load (ldrbh_memo bh t) V32 r1 r2 k0 S_NOEXT::k
     | I_STR (v,r1,r2,kr, s) -> store "str" v r1 r2 kr s::k

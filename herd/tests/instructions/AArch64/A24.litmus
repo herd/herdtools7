@@ -1,0 +1,11 @@
+AArch64 A24
+
+(* Tests ldrsb instruction *)
+{ int64_t 0:X0 =1; 0:X1 = x; int8_t x = 127; }
+
+P0;
+  LDRSB X0, [X1];
+  MOV X2, #1;
+  ADD X0, X0, X2;
+
+forall (0:X0=128 /\ [x]=127)

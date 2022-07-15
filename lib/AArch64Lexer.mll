@@ -71,6 +71,8 @@ match name with
 | "stnp"|"STNP" -> STNP
 | "ldrb"|"LDRB" -> LDRB
 | "ldrh"|"LDRH" -> LDRH
+| "ldrsb"|"LDRSB" -> LDRSB
+| "ldrsh"|"LDRSH" -> LDRSH
 | "ldar"|"LDAR" -> LDAR
 | "ldarb"|"LDARB" -> LDARB
 | "ldarh"|"LDARH" -> LDARH

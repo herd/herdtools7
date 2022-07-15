@@ -1,0 +1,10 @@
+Test A24 Required
+States 1
+0:X0=128; [x]=127;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=128 /\ [x]=127)
+Observation A24 Always 1 0
+Hash=0cc381c605cf2eb655154d31987318ae
+
