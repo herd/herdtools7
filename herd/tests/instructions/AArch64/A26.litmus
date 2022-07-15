@@ -1,0 +1,9 @@
+AArch64 A26
+(* Tests load exclusive register, symbolic location, no offset*)
+{ 0:X1=x; int64_t x; int64_t 0:X0; }
+
+P0;
+  LDXR X0, [X1];
+
+forall (0:X0=0)
+

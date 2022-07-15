@@ -1,0 +1,11 @@
+Test A43 Required
+States 2
+0:X3=0; [z]=3;
+0:X3=1; [z]=2;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall ([z]=2 /\ 0:X3=1 \/ [z]=3 /\ 0:X3=0)
+Observation A43 Always 2 0
+Hash=0c9a68bee99067fc763ca3ee77fca8c6
+

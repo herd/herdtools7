@@ -1,0 +1,9 @@
+AArch64 A27
+(* Tests load acquire register, symbolic location, no offset*)
+{ 0:X1=x; int64_t x; int64_t 0:X0; }
+
+P0;
+  LDAR X0, [X1];
+
+exists (0:X0=0)
+

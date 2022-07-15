@@ -1,0 +1,13 @@
+AArch64 A159
+(* Tests load exclusive register, symbolic location, no offset*)
+(* Equivalent to A24, but testing mixed mode *)
+
+Variant=mixed
+
+{ uint64_t 0:X0; 0:X1=x; uint64_t x; }
+
+P0;
+  LDXR X0, [X1];
+
+forall (0:X0=0)
+

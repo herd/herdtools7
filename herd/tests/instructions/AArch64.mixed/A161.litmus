@@ -1,0 +1,14 @@
+AArch64 A161
+(* Test load exclusive; Store exclusive, symbolic location *)
+(* Equivalent to A43 but testing mixed mode *)
+
+Variant=mixed
+
+ { 0:X4=z; uint64_t z=2; }
+
+P0;
+  LDXR X0, [X4];
+  ADD X0, X0, #1;
+  STXR W3, X0, [X4];
+
+forall ((z=2 /\ 0:X3=1) \/ (z=3 /\ 0:X3=0))
