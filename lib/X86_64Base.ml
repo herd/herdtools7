@@ -497,6 +497,8 @@ let pp_instruction m i =
 
 let dump_instruction = do_pp_instruction ascii_m
 
+let dump_instruction_hash = dump_instruction
+
 (****************************)
 (* Symbolic registers stuff *)
 (****************************)

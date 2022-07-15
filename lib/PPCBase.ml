@@ -410,7 +410,7 @@ let pp_instruction _m ins = do_pp_instruction string_of_int ins
 
 let dump_instruction ins = do_pp_instruction string_of_int ins
 and dump_parsedInstruction ins = do_pp_instruction MetaConst.pp  ins
-
+let dump_instruction_hash = dump_instruction
 (**********************)
 (* Symbolic reg stuff *)
 (**********************)

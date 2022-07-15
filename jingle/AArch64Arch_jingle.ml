@@ -164,10 +164,10 @@ include Arch.MakeArch(struct
         find_cst k >> fun k ->
         find_shift s >! fun s->
         I_MOVK(a,r,k,s)
-    | I_ADDR (r,lbl) ->
+    | I_ADR (r,lbl) ->
         conv_reg r >> fun r ->
         find_lab lbl >! fun lbl ->
-        I_ADDR (r,lbl)
+        I_ADR (r,lbl)
     | I_RBIT (v,r1,r2) ->
         conv_reg r1 >> fun r1 -> conv_reg r2 >! fun r2 -> I_RBIT (v,r1,r2)
     | I_LDAR(a,b,r1,r2) ->

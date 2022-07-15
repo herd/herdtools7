@@ -219,7 +219,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_CBNZ (_, _, _)|I_BL _|I_BLR _|I_RET _|I_LDAR (_, _, _, _)
       | I_TBNZ(_,_,_,_) | I_TBZ (_,_,_,_) | I_MOVZ (_,_,_,_) | I_MOVK(_,_,_,_)
       |I_MOV (_, _, _)|I_SXTW (_, _)|I_OP3 (_, _, _, _, _, _)
-      | I_ADDR (_, _)|I_RBIT (_, _, _)|I_FENCE _
+      | I_ADR (_, _)|I_RBIT (_, _, _)|I_FENCE _
       | I_CSEL (_, _, _, _, _, _)|I_IC (_, _)|I_DC (_, _)|I_MRS (_, _)
       | I_STG _ | I_STZG _ | I_LDG _
       | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _
@@ -259,7 +259,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MOV (_,r,_) | I_MOVZ (_,r,_,_) | I_MOVK (_,r,_,_)
       | I_SXTW (r,_)
       | I_OP3 (_,_,r,_,_,_)
-      | I_ADDR (r,_)
+      | I_ADR (r,_)
       | I_RBIT (_,r,_)
       | I_CSEL (_,r,_,_,_,_)
       | I_MRS (r,_)

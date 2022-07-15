@@ -1911,7 +1911,7 @@ module Make
         | I_MOVK(var,rd,k,os) ->
             movk var rd k os ii >>= nextSet rd
 
-        | I_ADDR (r,lbl) ->
+        | I_ADR (r,lbl) ->
             write_reg_dest r (ii.A.addr2v lbl) ii
             >>= nextSet r
 

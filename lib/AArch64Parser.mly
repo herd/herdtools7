@@ -961,7 +961,7 @@ instr:
 | MOVK wreg COMMA k COMMA LSL k
   { A.I_MOVK (A.V32,$2,$4, A.S_LSL $7) }
 | ADR xreg COMMA NAME
-  { A.I_ADDR ($2,$4) }
+  { A.I_ADR ($2,$4) }
 | SXTW xreg COMMA wreg
   { A.I_SXTW ($2,$4) }
 /* Special handling for ASR/LSL/LSR operation */

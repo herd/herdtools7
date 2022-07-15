@@ -220,7 +220,7 @@ let rec do_dump_instruction indent =
 
 let dump_instruction = do_dump_instruction ""
 let dump_parsedInstruction = dump_instruction
-
+let dump_instruction_hash = dump_instruction
 let pp_instruction _mode = dump_instruction
 
 let allowed_for_symb = List.map (fun x -> "r"^(string_of_int x))

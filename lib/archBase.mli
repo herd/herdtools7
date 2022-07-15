@@ -45,8 +45,12 @@ module type S = sig
   type instruction
 
   val pp_instruction : PPMode.t -> instruction -> string
+
   (* Shorthand for parsable dump *)
   val dump_instruction : instruction -> string
+
+  (* Shorthand used for hash computation *)
+  val dump_instruction_hash : instruction -> string
 
   (*************************************)
   (* All this needed for symbolic regs *)
