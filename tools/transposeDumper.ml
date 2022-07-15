@@ -91,7 +91,7 @@ end = struct
     (* Procs *)
     let prog = t.prog in
     List.iter
-      (fun ((p,_) as proc,code) ->
+      (fun ((p,_,_) as proc,code) ->
         dump_sep chan (MiscParser.pp_proc proc) ;
         begin match dump_proc_state p code t.init with
         | Some st ->

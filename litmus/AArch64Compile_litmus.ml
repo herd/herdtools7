@@ -22,6 +22,7 @@ module type Config = sig
   val asmcomment : string option
   val hexa : bool
   val mode : Mode.t
+  val precision : Precision.t
 end
 
 module Make(V:Constant.S)(C:Config) =
@@ -1142,6 +1143,28 @@ module Make(V:Constant.S)(C:Config) =
       List.map (fun s -> { empty_ins with memo=s;}) ins
 
     let kernel_mode = [{ empty_ins with memo="svc #471"}]
+
+    let fault_handler_prologue =
+      [ { empty_ins with memo="b 1f"; };
+        { empty_ins with memo=".globl el1h_sync"; label=Some ""; };
+        { empty_ins with memo="el1h_sync:"; label=Some "el1h_sync"; } ]
+
+    and fault_handler_epilogue =
+      let ins =
+        if Precision.is_skip C.precision then
+          [ "mrs %[tr0],elr_el1" ;
+            "add %[tr0],%[tr0],#4" ;
+            "msr elr_el1,%[tr0]" ;
+            "eret" ]
+        else if Precision.is_fatal C.precision then
+          [ "mrs %[tr0],elr_el1" ;
+            "adr %[tr0],1f";
+            "msr elr_el1,%[tr0]";
+            "eret" ]
+        else
+          [ "eret" ] in
+      let ins = List.map (fun s -> { empty_ins with memo=s;}) ins in
+      ins@[ {empty_ins with memo="1:"; label=Some "1"; } ]
 
     let compile_ins tr_lab ins k = match ins with
     | I_NOP -> { empty_ins with memo = "nop"; }::k

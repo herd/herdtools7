@@ -37,7 +37,7 @@ module type S = sig
   type t =
     { init : A.state ;
       info : MiscParser.info ;
-      code : (int * (A.Out.t * (A.reg type_env * env_volatile))) list ;
+      code : (Proc.t * (A.Out.t * (A.reg type_env * env_volatile))) list ;
       condition : C.cond ;
       filter : C.prop option ;
       globals : string type_env ;
@@ -55,7 +55,7 @@ module type S = sig
     with
       type test =  (A.fullstate, P.code list, C.prop, A.location, A.V.v)  MiscParser.result
 
-  val find_offset : P.code list -> int -> string -> int
+  val find_offset : P.code list -> Proc.t -> MiscParser.func -> string -> int
   val code_exists : (P.ins -> bool) -> t -> bool
 end
 
@@ -79,7 +79,7 @@ struct
   type t =
     { init : A.state ;
       info : MiscParser.info ;
-      code : (int * (A.Out.t * (A.reg type_env * env_volatile))) list ;
+      code : (Proc.t * (A.Out.t * (A.reg type_env * env_volatile))) list ;
       condition : C.cond ;
       filter : C.prop option ;
       globals : string type_env ; (* Virtual addresses only *)
@@ -133,7 +133,7 @@ struct
           end)
     end
 
-  let find_offset code p lbl = P.find_offset code p lbl
+  let find_offset = P.find_offset
 
   let code_exists p t =
     let src = t.src in

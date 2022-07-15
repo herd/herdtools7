@@ -88,13 +88,21 @@ module Make
 (************************)
 
     let check_procs procs =
-      Misc.iteri
-        (fun k (p,_) ->
-          if k <> p then
-            Warn.fatal "Processes must be P0, P1, ...")
-        procs
+      let rec iter_rec i xs = match xs with
+        | [] -> ()
+        | (p,_,MiscParser.Main)::xs ->
+           if i = p then
+             iter_rec (i + 1) xs
+           else
+             Warn.fatal "Processes must be P0, P1, ..."
+        | (p,_,MiscParser.FaultHandler)::xs ->
+           if i >= p then
+             iter_rec i xs
+           else
+             Warn.fatal "Fault Handler for an undefined process"
+      in iter_rec 0 procs
 
- let check_regs procs = U.check_regs (List.map fst procs)
+ let check_regs procs = U.check_regs (List.map (fun (p,_,_) -> p) procs)
 
 (*******************)
 (* Macro expansion *)

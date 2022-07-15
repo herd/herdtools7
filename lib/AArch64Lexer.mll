@@ -484,6 +484,8 @@ rule token = parse
 | '#'? ('-' ? num as x) { NUM (int_of_string x) }
 | 'P' (num as x)
     { PROC (int_of_string x) }
+| 'P' (num as x) ".F"
+    { PROCFH (int_of_string x) }
 | ['w''W']'%' (name as name) { SYMB_WREG name }
 | ['x''X']?'%' (name as name) { SYMB_XREG name }
 | ['c''C']?'%' (name as name) { SYMB_CREG name }

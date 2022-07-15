@@ -21,6 +21,7 @@ module type Config = sig
   val mode : Mode.t
   val precision : Precision.t
   val variant : Variant_litmus.t -> bool
+  val driver : Driver.t
 end
 
 module Default = struct
@@ -30,6 +31,7 @@ module Default = struct
   let mode = Mode.Std
   let precision = Precision.default
   let variant _ = false
+  let driver = Driver.Shell
 end
 
 let get_fmt hexa base = match CType.get_fmt hexa base with
@@ -358,7 +360,7 @@ type P.code = MiscParser.proc * A.pseudo list)
       | A.Label (lbl,i) ->
           ins_labels (lbl::k) i
 
-    let code_labels (p,c) k =
+    let code_labels (p,_,c) k =
       let lbls =  List.fold_left ins_labels [] c in
       List.fold_left
         (fun k lbl -> Label.Full.Set.add (p,lbl) k)
@@ -371,7 +373,7 @@ type P.code = MiscParser.proc * A.pseudo list)
 
     let ins_target = A.fold_labels (fun k lbl -> lbl::k)
 
-    let code_targets (p,c) k =
+    let code_targets (p,_,c) k =
       let lbls = List.fold_left ins_target [] c in
       List.fold_left
         (fun k lbl -> Label.Full.Set.add (p,lbl) k)
@@ -607,21 +609,36 @@ type P.code = MiscParser.proc * A.pseudo list)
       let esc =
         if O.numeric_labels then escaping_labels init code
         else Label.Set.empty in
+      let mains,fhandlers =
+        List.partition (fun (_,func,_) -> func=MiscParser.Main) code in
+      if List.length fhandlers > 1 then
+        Warn.user_error "Only one process can have a custom fault handler" ;
+      if fhandlers <> [] && O.driver = Driver.C then
+        Warn.user_error "The C driver doesn't support custom fault handlers" ;
       let outs =
         List.map
-          (fun (proc,code) ->
+          (fun (proc,_,code) ->
             let nrets = count_ret code in
             let nnops = count_nop code in
             let addrs = extract_addrs code in
             let stable = stable_regs code in
-            let code =
-              compile_code esc
-                (List.exists (Proc.equal proc) procs_user) code in
-            proc,addrs,stable,code,nrets,nnops)
-          code in
-      let pecs = outs in
+            let is_user = (List.exists (Proc.equal proc) procs_user) in
+            let code = compile_code esc is_user code in
+            let fhandler,addrs =
+              try
+                let (_,_,c) = List.find (fun (p,_,_) -> Proc.equal p proc) fhandlers in
+                if is_user then
+                  Warn.user_error "Process %d running in userspace cannot have fault handler" proc ;
+                let addrs = G.Set.union (extract_addrs c) addrs in
+                let code = compile_code esc false c in
+                C.fault_handler_prologue@code@C.fault_handler_epilogue,addrs
+              with Not_found ->
+                [],addrs
+            in
+            proc,addrs,stable,code,fhandler,nrets,nnops)
+          mains in
       List.map
-        (fun (proc,addrs,stable,code,nrets,nnops) ->
+        (fun (proc,addrs,stable,code,fhandler,nrets,nnops) ->
           let addrs,ptes =
             G.Set.fold
               (fun s (a,p) -> match s with
@@ -642,26 +659,31 @@ type P.code = MiscParser.proc * A.pseudo list)
               | Some r -> RegSet.add r k
               | _ -> k)
               observed RegSet.empty in
-          let my_ty_env =
+          let ty_env =
             A.LocMap.fold
               (fun loc t k -> match loc with
               | A.Location_reg (p,r) when Misc.int_eq p proc ->
                   (r,t)::k
               | _ -> k)
               ty_env [] in
+          let init = compile_init proc init observed_proc code in
+          let final = compile_final proc observed_proc in
+          let addrs = StringSet.elements addrs in
+          let stable =
+               A.RegSet.inter
+                 (A.RegSet.union stable stable_info)
+                 (A.Out.all_regs code final) in
+          let stable = A.RegSet.elements stable in
           proc,
-          let t =
-            { init = compile_init proc init observed_proc code ;
-              addrs = StringSet.elements addrs ;
-              ptes = StringSet.elements ptes ;
-              stable = [];
-              final = compile_final proc observed_proc;
-              all_clobbers;
-              code = code; name=name; nrets; nnops;
-              ty_env = my_ty_env;
-            } in
-          { t with stable = A.RegSet.elements (A.RegSet.inter (A.RegSet.union stable stable_info) (A.Out.all_regs t)) ; })
-        pecs
+          { init ;
+            addrs ;
+            ptes = StringSet.elements ptes ;
+            stable;
+            final;
+            all_clobbers;
+            code; fhandler; name; nrets; nnops;
+            ty_env;
+          }) outs
 
     let _pp_env env =
       StringMap.pp_str
@@ -748,17 +770,17 @@ type P.code = MiscParser.proc * A.pseudo list)
             StringMap.empty (InfoAlign.parse ps)
         with Not_found -> StringMap.empty in
       let ty_env = ty_env1,ty_env2 in
-      let code = List.map (fun ((p,_),c) -> p,c) code in
+      let code = List.map (fun ((p,_,f),c) -> p,f,c) code in
       let label_init = A.get_label_init initenv in
       let code =
         if do_self || is_pte || Misc.consp label_init then
           let do_append_nop = is_pte && do_precise in
-          List.map (fun (p,c) ->
+          List.map (fun (p,f,c) ->
             let nop = A.Instruction A.nop in
             let c = A.Instruction A.nop::c in
             let c =
               if do_append_nop then c@[nop] else c in
-            p,c) code
+            p,f,c) code
         else code in
       let stable_info = match MiscParser.get_info  t MiscParser.stable_key with
       | None -> A.RegSet.empty
@@ -767,7 +789,7 @@ type P.code = MiscParser.proc * A.pseudo list)
           let rs =
             List.fold_left
               (fun k r -> match A.parse_reg r with
-              | None -> Warn.warn_always "'%s' i snot a register" r ; k
+              | None -> Warn.warn_always "'%s' is not a register" r ; k
               | Some r -> r::k)
               [] rs in
           A.RegSet.of_list rs in

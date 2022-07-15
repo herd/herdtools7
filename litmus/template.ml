@@ -80,6 +80,7 @@ module type S = sig
       stable : arch_reg list; (* stable registers, ie must be self-allocated by gcc *)
       final : arch_reg list ;
       code : ins list;
+      fhandler : ins list ;
       name : Name.t ;
       all_clobbers : arch_reg list;
       nrets : int ; (* number of return instruction in code *)
@@ -113,12 +114,14 @@ module type S = sig
   module RegSet : MySet.S with type elt = arch_reg
   module RegMap : MyMap.S with type key = arch_reg
 
-  val all_regs : t -> RegSet.t
+  val all_regs : ins list -> arch_reg list -> RegSet.t
   val trashed_regs : t -> RegSet.t
   val get_reg_env :
       (CType.t -> CType.t -> bool)-> (* fail *)
         (CType.t -> CType.t -> bool)->  (* warn *)
           t -> CType.t RegMap.t
+
+  val has_fault_handler : t -> bool
 end
 
 module Make(O:Config)(A:I) =
@@ -158,6 +161,7 @@ module Make(O:Config)(A:I) =
         stable : arch_reg list;
         final : arch_reg list ;
         code : ins list;
+        fhandler : ins list ;
         name : Name.t ;
         all_clobbers : arch_reg list;
         nrets : int ; nnops : int ;
@@ -359,10 +363,10 @@ module Make(O:Config)(A:I) =
     module RegSet = A.RegSet
     module RegMap = A.RegMap
 
-    let all_regs t =
+    let all_regs code final =
       let all_ins ins =
         RegSet.union (RegSet.of_list (ins.inputs@ins.outputs)) in
-      List.fold_right all_ins t.code  (RegSet.of_list t.final)
+      List.fold_right all_ins code  (RegSet.of_list final)
 
 
     let trashed_regs t =
@@ -414,4 +418,5 @@ module Make(O:Config)(A:I) =
           m tst.code in
       m
 
+    let has_fault_handler t = t.fhandler <> []
   end

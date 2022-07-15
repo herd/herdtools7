@@ -78,7 +78,7 @@ end = struct
     begin match t.extra_data with
     | CExtra pss ->
         List.iter2
-          (fun ((i,_),code) ps ->
+          (fun ((i,_,_),code) ps ->
             Out.fprintf chan "\nP%i(%s) {\n" i (dump_params ps) ;
             List.iter
               (fun pseudo ->

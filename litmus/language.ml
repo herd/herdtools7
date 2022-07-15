@@ -26,7 +26,7 @@ module type S = sig
     CType.t RegMap.t ->
     (string * CType.t) list ->
     string list ->
-    int ->
+    Proc.t ->
     t ->
     unit
 
@@ -39,7 +39,7 @@ module type S = sig
     CType.t RegMap.t ->
     ((string * CType.t) list * (string * CType.t) list) ->
     string list ->
-    int ->
+    Proc.t ->
     t ->
     unit
 
@@ -50,7 +50,7 @@ module type S = sig
     CType.t RegMap.t ->
     ((string * CType.t) list * (string * CType.t) list) ->
     string list ->
-    int ->
+    Proc.t ->
     t ->
     unit
 end

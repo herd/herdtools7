@@ -51,7 +51,7 @@ semi_opt:
 
 proc_list:
 | ps=separated_nonempty_list(PIPE,PROC) SEMI
-    { List.map (fun p -> p,None) ps }
+    { List.map (fun p -> p,None,MiscParser.Main) ps }
 
 iol_list :
 |  instr_option_list SEMI

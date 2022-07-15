@@ -138,10 +138,13 @@ module Make(O:Config)(A:Arch_tools.S) =
       let pp_ao = function
         | None -> ""
         | Some a -> ":" ^ String.concat "," a in
-      let pp_proc s chan (p,ao) =
+      let pp_f = function
+        | MiscParser.Main -> ""
+        | MiscParser.FaultHandler -> ".f" in
+      let pp_proc s chan (p,ao,f) =
         let th =
-          if O.texmacros then sprintf "\\myth{%i%s}" p (pp_ao ao)
-          else sprintf "Thread %i%s" p (pp_ao ao) in
+          if O.texmacros then sprintf "\\myth{%i%s%s}" p (pp_ao ao) (pp_f f)
+          else sprintf "Thread %i%s%s" p (pp_ao ao) (pp_f f) in
         fprintf chan
           "\\multicolumn{1}{%sc|}{\\makebox[%s][c]{%s}}"
           s width th in

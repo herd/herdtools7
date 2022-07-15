@@ -167,7 +167,7 @@ module Do
             fname in
         List.map (L.macros_expand ms) in
 
-    let prog =  List.map (fun p -> (p.CAst.proc,None),expand_body p.CAst.body) prog in
+    let prog =  List.map (fun p -> (p.CAst.proc,None,MiscParser.Main),expand_body p.CAst.body) prog in
 (*
     List.iter
       (fun (p,code) ->

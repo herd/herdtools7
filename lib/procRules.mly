@@ -16,13 +16,16 @@
 (****************************************************************************)
 %}
 
+%token <int> PROCFH
+
 %%
 
 proc_annot:
 | COLON os=separated_list(COMMA,NAME) { os }
 
 proc_annotated:
-| p=PROC os=option(proc_annot) { p,os }
+| p=PROCFH os=option(proc_annot) { p,os,MiscParser.FaultHandler }
+| p=PROC os=option(proc_annot) { p,os,MiscParser.Main }
 
 %public proc_list:
 | separated_nonempty_list(PIPE,proc_annotated) SEMI { $1 }

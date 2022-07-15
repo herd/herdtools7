@@ -17,7 +17,8 @@
 (** The basic types of architectures and semantics, just parsed *)
 
 (* Processor name with optional annotations *)
-type proc = int * string list option
+type func = Main | FaultHandler
+type proc = Proc.t * string list option * func
 
 val pp_proc : proc -> string
 

@@ -223,7 +223,7 @@ and type pseudo = A.pseudo
     (* Perform allocation of symbolic registers to real ones *)
     let envs =
       List.map2
-	(fun ((p,_),_) (regs_p,symbs_p) ->
+	(fun ((p,_,_),_) (regs_p,symbs_p) ->
 	  let regs_cstr =
 	    ProcRegSet.fold
 	      (fun (q,reg) k ->

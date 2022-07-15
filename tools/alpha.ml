@@ -157,7 +157,7 @@ struct
 
   let rec alpha_prog ma mt apcs pcs = match apcs,pcs with
   | _,[] -> [],ProcRegMap.empty
-  | [],((p,_) as id,c)::pcs ->
+  | [],((p,_,_) as id,c)::pcs ->
       let c,cm =
         alpha_code
           (A.ProcMap.safe_find A.RegSet.empty p ma)
@@ -165,7 +165,7 @@ struct
           [] c in
       let pcs,m = alpha_prog ma mt [] pcs in
       (id,c)::pcs,add_reg_map p cm m
-  | (_,ac)::apcs,((p,_) as id,c)::pcs ->
+  | (_,ac)::apcs,((p,_,_) as id,c)::pcs ->
       let c,cm =
         alpha_code
           (A.ProcMap.safe_find A.RegSet.empty p ma)
