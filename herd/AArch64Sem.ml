@@ -1563,9 +1563,9 @@ module Make
         | I_LDR(var,rd,rs,kr,s) ->
             let sz = tr_variant var in
             ldr sz rd rs kr s ii
-        | I_LDRBH (bh, rd, rs, kr) ->
+        | I_LDRBH (bh, rd, rs, kr, s) ->
             let sz = bh_to_sz bh in
-            ldr sz rd rs kr S_NOEXT ii
+            ldr sz rd rs kr s ii
         | I_LDR_P(var,rd,rs,k) ->
             assert (k >= -256 && k <= 255);
             let sz = tr_variant var in
@@ -1584,8 +1584,8 @@ module Make
         | I_STR(var,rs,rd,kr,os) ->
             str (tr_variant var) rs rd kr os ii
 
-        | I_STRBH(bh,rs,rd,kr) ->
-            str (bh_to_sz bh) rs rd kr S_NOEXT ii
+        | I_STRBH(bh,rs,rd,kr, s) ->
+            str (bh_to_sz bh) rs rd kr s ii
 
         | I_STLR(var,rs,rd) ->
             stlr (tr_variant var) rs rd ii

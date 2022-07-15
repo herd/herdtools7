@@ -1,0 +1,11 @@
+AArch64 A104
+(* Strb register, with offset, symbolic location *)
+
+Variant=mixed
+
+ { uint32_t x; 0:x0=1; 0:x2=x; 0:x3=1;}
+
+P0;
+  STRB W0, [X2, X3];
+
+forall (x=256 /\ y=0)

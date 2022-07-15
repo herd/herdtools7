@@ -1,0 +1,10 @@
+Test A107 Allowed
+States 1
+0:X0=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=0)
+Observation A107 Always 1 0
+Hash=b3b5d8702bd55bdb0a378dfc95625659
+

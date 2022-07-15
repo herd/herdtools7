@@ -1,0 +1,10 @@
+Test A113 Required
+States 1
+[x]=0x100000000;
+No
+Witnesses
+Positive: 0 Negative: 1
+Condition forall ([x]=0x0)
+Observation A113 Never 0 1
+Hash=4004151daf47c1c13517281d9010dc3e
+

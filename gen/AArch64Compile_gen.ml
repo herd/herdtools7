@@ -131,6 +131,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     module U = GenUtils.Make(Cfg)(A)(Extra)
 
+    let idx_ext = function
+      | A64.V32 -> S_SXTW
+      | A64.V64  -> S_NOEXT
+      | A64.V128 -> assert false (* ? *)
+
+
     let cbz r1 lbl = I_CBZ (vloc,r1,lbl)
     let do_cbnz v r1 lbl = I_CBNZ (v,r1,lbl)
     let cbnz = do_cbnz vloc
@@ -151,10 +157,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let add v r1 r2 r3 = I_OP3 (v,ADD,r1,r2,RV (v,r3), S_NOEXT)
     let add_simd r1 r2 = I_ADD_SIMD (r1,r1,r2)
     let do_add64 v r1 r2 r3 =
-      let ext = match v with
-      | V128 -> assert false
-      | V64 -> S_NOEXT
-      | V32 -> S_SXTW in
+      let ext = idx_ext v in
       I_OP3 (V64,ADD,r1,r2,RV (v,r3), ext)
     let do_addcapa r1 r2 r3 = I_OP3 (V128,ADD,r1,r2,RV (V64,r3), S_NOEXT)
     let gctype r1 r2 = I_GC (GCTYPE,r1,r2)
@@ -167,8 +170,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let ldr_mixed r1 r2 sz o =
       let open MachSize in
       match sz with
-      | Byte -> I_LDRBH (B,r1,r2,K o)
-      | Short -> I_LDRBH (H,r1,r2,K o)
+      | Byte -> I_LDRBH (B,r1,r2,K o, S_NOEXT)
+      | Short -> I_LDRBH (H,r1,r2,K o, S_NOEXT)
       | Word -> I_LDR (V32,r1,r2,K o, S_NOEXT)
       | Quad -> I_LDR (V64,r1,r2,K o, S_NOEXT)
       | S128 -> I_LDR (V128,r1,r2,K o, S_NOEXT)
@@ -181,7 +184,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let ldxr r1 r2 = I_LDAR (vloc,XX,r1,r2)
     let ldaxr r1 r2 = I_LDAR (vloc,AX,r1,r2)
     let sxtw r1 r2 = I_SXTW (r1,r2)
-    let do_ldr_idx v1 v2 r1 r2 idx = I_LDR (v1,r1,r2,RV (v2,idx),S_NOEXT)
+
+    let do_ldr_idx v1 v2 r1 r2 idx =
+      I_LDR (v1,r1,r2,RV (v2,idx),idx_ext v2)
+
     let ldn n rs rt =
       let open SIMD in
       match n with
@@ -201,17 +207,17 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let ldr_mixed_idx v r1 r2 idx sz  =
       let open MachSize in
       match sz with
-      | Byte -> I_LDRBH (B,r1,r2,RV (v,idx))
-      | Short -> I_LDRBH (H,r1,r2,RV (v,idx))
-      | Word -> I_LDR (V32,r1,r2,RV (v,idx), S_NOEXT)
-      | Quad -> I_LDR (V64,r1,r2,RV (v,idx), S_NOEXT)
-      | S128 -> I_LDR (V128,r1,r2,RV (v,idx), S_NOEXT)
+      | Byte -> I_LDRBH (B,r1,r2,RV (v,idx), idx_ext v)
+      | Short -> I_LDRBH (H,r1,r2,RV (v,idx),idx_ext v)
+      | Word -> I_LDR (V32,r1,r2,RV (v,idx), idx_ext v)
+      | Quad -> I_LDR (V64,r1,r2,RV (v,idx), idx_ext v)
+      | S128 -> I_LDR (V128,r1,r2,RV (v,idx),idx_ext v)
 
     let str_mixed sz o r1 r2 =
       let open MachSize in
       match sz with
-      | Byte -> I_STRBH (B,r1,r2,K o)
-      | Short -> I_STRBH (H,r1,r2,K o)
+      | Byte -> I_STRBH (B,r1,r2,K o, S_NOEXT)
+      | Short -> I_STRBH (H,r1,r2,K o, S_NOEXT)
       | Word -> I_STR (V32,r1,r2,K o, S_NOEXT)
       | Quad -> I_STR (V64,r1,r2,K o, S_NOEXT)
       | S128 -> I_STR (V128,r1,r2,K o, S_NOEXT)
@@ -223,7 +229,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let do_stlr v r1 r2 = I_STLR (v,r1,r2)
     let stlr = do_stlr vloc
 
-    let do_str_idx v r1 r2 idx = I_STR (vloc,r1,r2,RV (v,idx), S_NOEXT)
+    let do_str_idx v r1 r2 idx = I_STR (vloc,r1,r2,RV (v,idx), idx_ext v)
     let str_idx = do_str_idx vloc
     let stxr r1 r2 r3 = I_STXR (vloc,YY,r1,r2,r3)
     let stlxr r1 r2 r3 = I_STXR (vloc,LY,r1,r2,r3)
@@ -271,11 +277,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let str_mixed_idx sz v r1 r2 idx  =
       let open MachSize in
       match sz with
-      | Byte -> I_STRBH (B,r1,r2,RV (v,idx))
-      | Short -> I_STRBH (H,r1,r2,RV (v,idx))
-      | Word -> I_STR (V32,r1,r2,RV (v,idx), S_NOEXT)
-      | Quad -> I_STR (V64,r1,r2,RV (v,idx), S_NOEXT)
-      | S128 -> I_STR (V128,r1,r2,RV (v,idx), S_NOEXT)
+      | Byte -> I_STRBH (B,r1,r2,RV (v,idx),idx_ext v)
+      | Short -> I_STRBH (H,r1,r2,RV (v,idx),idx_ext v)
+      | Word -> I_STR (V32,r1,r2,RV (v,idx),idx_ext v)
+      | Quad -> I_STR (V64,r1,r2,RV (v,idx),idx_ext v)
+      | S128 -> I_STR (V128,r1,r2,RV (v,idx),idx_ext v)
 
     let swp_mixed sz a rS rT rN =
       let open MachSize in

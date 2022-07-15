@@ -1,0 +1,10 @@
+AArch64 A11
+
+(* Tests strb (register), UXTW - overflow on 8 bit store gives value 0 as expected*)
+(* Same as A09 but with a bump on the value in X0 *)
+{ int8_t 0:X0 = 256; 0:X1=x; uint64_t x; 0:X2=0; }
+
+P0;
+  STRB W0, [X1, X2, UXTW];
+
+exists (x=0)

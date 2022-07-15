@@ -1,0 +1,11 @@
+AArch64 A113
+(* strh immediate, with offset, symbolic location *)
+
+Variant=mixed
+
+ { 0:x0=1; 0:x2=x; uint64_t x;}
+
+P0;
+  STRH W0, [X2, #4];
+
+forall (x=0)

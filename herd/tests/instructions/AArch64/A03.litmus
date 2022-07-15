@@ -1,0 +1,8 @@
+AArch64 A03
+(* Tests ldrb (register), LSL *)
+{ uint64_t 0:X0; 0:X1=x; uint64_t x; 0:X2=0; }
+
+P0;
+  LDRB W0, [X1, X2, LSL #0];
+
+exists (0:X0=0)

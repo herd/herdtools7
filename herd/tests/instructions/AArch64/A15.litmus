@@ -1,0 +1,9 @@
+AArch64 A15
+
+(* Tests ldrb (register), overflowing load*)
+{ int8_t 0:X0 = 0; 0:X1=x; int8_t x = 257; 0:X2=0; }
+
+P0;
+  LDRB W0, [X1, X2, SXTW];
+
+exists (x=1)

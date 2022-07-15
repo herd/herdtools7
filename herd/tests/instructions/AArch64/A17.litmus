@@ -1,0 +1,9 @@
+AArch64 A17
+
+(* Tests strh (register), SXTW*)
+{ int16_t 0:X0 = 44; 0:X1=x; uint64_t x; 0:X2=0; }
+
+P0;
+  STRB W0, [X1, X2, SXTW];
+
+exists (x=44)

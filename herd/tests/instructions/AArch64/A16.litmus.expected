@@ -1,0 +1,10 @@
+Test A16 Allowed
+States 1
+[x]=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists ([x]=1)
+Observation A16 Always 1 0
+Hash=93da6aa75832b7c6974bd86e28a99740
+

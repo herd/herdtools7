@@ -1,0 +1,10 @@
+Test A21 Allowed
+States 1
+[x]=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists ([x]=1)
+Observation A21 Always 1 0
+Hash=8ed3e3f747c3d00608cfadbe8207e682
+

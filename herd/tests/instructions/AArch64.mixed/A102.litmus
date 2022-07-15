@@ -1,0 +1,11 @@
+AArch64 A102
+(* strb immediate, with offset, symbolic location *)
+
+Variant=mixed
+
+ { 0:x0=1; 0:x2=x; uint64_t x = 0; }
+
+P0;
+  STRB W0, [X2, #4];
+
+forall (x=4294967296)
