@@ -89,7 +89,7 @@ test::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 instructions tests: OK"
 
-test:: test.mixed test.neon
+test:: test.mixed
 test.mixed:
 	@ echo
 	$(HERD_REGRESSION_TEST) \

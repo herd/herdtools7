@@ -1,10 +1,10 @@
 Test V55 Required
 States 1
-0:X0=x; x[0]=1234605616436508552; x[1]=2464388554683811993; x[2]=3694171492931115434; x[3]=4923954431178418875;
+0:X0=x; x[0]=1; x[1]=2; x[2]=3; x[3]=4;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (x[0]=1234605616436508552 /\ x[1]=2464388554683811993 /\ x[2]=3694171492931115434 /\ x[3]=4923954431178418875 /\ 0:X0=x)
+Condition forall (x[0]=1 /\ x[1]=2 /\ x[2]=3 /\ x[3]=4 /\ 0:X0=x)
 Observation V55 Always 1 0
-Hash=ef8da46b2397b781aed23c95fceb66ee
+Hash=c23c33d1de5adc9094f5b03bae2c1cdb
 
