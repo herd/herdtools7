@@ -26,6 +26,13 @@ module type S = sig
   val load : nice_prog -> program * start_points * return_labels
 end
 
+let func_size = 1000
+let proc_size = 10000
+
+let func_start_addr proc = function
+  | MiscParser.Main -> (proc + 1) * proc_size
+  | MiscParser.FaultHandler -> (proc + 1) * proc_size + func_size
+
 module Make(A:Arch_herd.S) : S
   with type nice_prog = A.nice_prog
    and type program = A.program
@@ -77,11 +84,20 @@ struct
   let load prog =
     let rec load_iter = function
     | [] -> Label.Map.empty,[],IntMap.empty
-    | ((proc,_,_),code)::prog ->
-      let addr = 1000 * (proc+1) in
-      let mem,starts,rets = load_iter prog in
-      let fin_mem,start,fin_rets = load_code proc addr mem rets code in
-      fin_mem,(proc,start)::starts,fin_rets in
-    load_iter prog
+    | ((proc,_,func),code)::prog ->
+       let mem,starts,rets = load_iter prog in
+       let addr = func_start_addr proc func in
+       let fin_mem,start,fin_rets = load_code proc addr mem rets code in
+       fin_mem,(proc,func,start)::starts,fin_rets in
+    let mem,starts,codes = load_iter prog in
+    let mains,fhandlers =
+      List.partition (fun (_,func,_) -> func=MiscParser.Main) starts in
+    let add_fhandler (proc,_,start) =
+      let fhandler = List.find_opt (fun (p,_,_) -> p=proc) fhandlers in
+      match fhandler with
+      | Some (_,_,fh_start) ->
+         (proc,start,Some fh_start)
+      | None -> (proc,start,None) in
+    mem,List.map add_fhandler mains,codes
 
 end

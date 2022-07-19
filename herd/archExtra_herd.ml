@@ -50,13 +50,45 @@ module type S = sig
   val zero_po_index : program_order_index
   val next_po_index : program_order_index -> program_order_index
 
+  include Location.S with type loc_reg := I.arch_reg and type loc_global := v
+
   type reg_state
   val reg_state_empty : reg_state
   val pp_reg_state : reg_state -> string
 
+  (*********************************)
+  (* Components of test structures *)
+  (*********************************)
+
+  (* Test structures represent programmes loaded in memory
+   and ready to start, plus some items that describe
+   the test, such as its name (cf. Test.mli) *)
+
+
+  (* Code memory is a mapping from labels to sequences of instructions, too far from actual machine, maybe *)
+  type code = (int * I.arch_instruction) list
+
+
+  (* Program loaded in memory *)
+  type program = (proc * code) Label.Map.t
+
+  (* A starting address per proc *)
+  type start_points = (proc * code * code option) list
+
+  (* A mapping from instruction addresses to labels of the instructions after them *)
+  type return_labels = Label.t IntMap.t
+
+  (* Constraints *)
+  type prop =  (location,v) ConstrGen.prop
+  type constr = prop ConstrGen.constr
+
   (* Register contents (when known) X size of last load exclusive *)
 
-  type ii_env =  { regs:reg_state; lx_sz:MachSize.sz option; }
+  type ii_env =  {
+      regs:reg_state;
+      lx_sz:MachSize.sz option;
+      fh_code:code option;
+    }
 
   type inst_instance_id = {
       fetch_proc : proc; (* Fetching source *)
@@ -76,8 +108,6 @@ module type S = sig
       inst_instance_id -> inst_instance_id -> bool
 
   val pp_global : global_loc -> string
-  include Location.S
-  with type loc_reg := I.arch_reg and type loc_global := v
   val pp_location_old : location -> string
 
   val symbol : location -> Constant.symbol option
@@ -206,34 +236,6 @@ module type S = sig
       RLocSet.t -> type_env -> size_env -> state -> rstate
   end
 
-(*********************************)
-(* Components of test structures *)
-(*********************************)
-
-(* Test structures represent programmes loaded in memory
-   and ready to start, plus some items that describe
-   the test, such as its name (cf. Test.mli) *)
-
-
-(* Code memory is a mapping from labels to sequences of instructions, too far from actual machine, maybe *)
-  type code = (int * I.arch_instruction) list
-
-
-(* Program loaded in memory *)
-  type program = (proc * code) Label.Map.t
-
-(* A starting address per proc *)
-  type start_points = (proc * code) list
-
-(* A mapping from instruction addresses to labels of the instructions after them *)
-  type return_labels = Label.t IntMap.t
-
-
-(* Constraints *)
-  type prop =  (location,v) ConstrGen.prop
-  type constr = prop ConstrGen.constr
-
-
 end
 
 module type Config = sig
@@ -274,6 +276,21 @@ module Make(C:Config) (I:I) : S with module I = I
       let zero_po_index = 0
       let next_po_index po = po + 1
 
+      let pp_global = I.V.pp C.hexa
+
+      module LocArg =
+        struct
+          type arch_reg = I.arch_reg
+          let pp_reg = I.pp_reg
+          let reg_compare = I.reg_compare
+
+          type arch_global = v
+          let pp_global = pp_global
+          let global_compare = I.V.compare
+        end
+
+      include Location.Make (LocArg)
+
       module RegOrd = struct
         type t = I.arch_reg
         let compare = I.reg_compare
@@ -289,7 +306,34 @@ module Make(C:Config) (I:I) : S with module I = I
         RegMap.pp_str_delim "; "
           (fun r v -> Printf.sprintf "%s->%s" (I.pp_reg r) (I.V.pp_v v))
 
-      type ii_env =  { regs:reg_state; lx_sz:MachSize.sz option; }
+      (*********************************)
+      (* Components of test structures *)
+      (*********************************)
+
+      (* Code memory is a mapping from globals locs, to instructions *)
+
+      type code = (int * I.arch_instruction) list
+
+
+      (* Programm loaded in memory *)
+      type program = (proc * code) Label.Map.t
+
+      (* A starting address per proc *)
+      type start_points = (proc * code * code option) list
+
+      (* A mapping from instruction addresses to labels of the instructions after them *)
+      type return_labels = Label.t IntMap.t
+
+
+      (* Constraints *)
+      type prop =  (location,v) ConstrGen.prop
+      type constr = prop ConstrGen.constr
+
+      type ii_env =  {
+          regs:reg_state;
+          lx_sz:MachSize.sz option;
+          fh_code:code option;
+        }
 
       type inst_instance_id = {
           fetch_proc : proc;
@@ -304,25 +348,12 @@ module Make(C:Config) (I:I) : S with module I = I
 
 
       let inst_instance_compare i1 i2 = match Misc.int_compare i1.proc i2.proc with
-      | 0 -> Misc.int_compare i1.program_order_index i2.program_order_index
+      | 0 -> begin
+            Misc.int_compare i1.program_order_index i2.program_order_index
+        end
       | r -> r
 
       let same_instruction i1 i2 = i1.inst == i2.inst
-
-      let pp_global = I.V.pp C.hexa
-
-      module LocArg =
-        struct
-          type arch_reg = I.arch_reg
-          let pp_reg = I.pp_reg
-          let reg_compare = I.reg_compare
-
-          type arch_global = v
-          let pp_global = pp_global
-          let global_compare = I.V.compare
-        end
-
-      include Location.Make (LocArg)
 
       let symbol loc =
         let open Constant in
@@ -1004,28 +1035,5 @@ module Make(C:Config) (I:I) : S with module I = I
           else  state_restrict_locs_non_mixed
 
       end
-
-(*********************************)
-(* Components of test structures *)
-(*********************************)
-
-(* Code memory is a mapping from globals locs, to instructions *)
-
-      type code = (int * I.arch_instruction) list
-
-
-      (* Programm loaded in memory *)
-      type program = (proc * code) Label.Map.t
-
-            (* A starting address per proc *)
-      type start_points = (proc * code) list
-
-      (* A mapping from instruction addresses to labels of the instructions after them *)
-      type return_labels = Label.t IntMap.t
-
-
-            (* Constraints *)
-      type prop =  (location,v) ConstrGen.prop
-      type constr = prop ConstrGen.constr
 
     end

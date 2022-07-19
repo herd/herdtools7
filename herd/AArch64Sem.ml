@@ -108,7 +108,10 @@ module Make
       let mk_read_std = mk_read quad AArch64.N
 
       let mk_fault a dir annot ii msg =
-        M.mk_singleton_es (Act.Fault (ii,A.Location_global a,dir,annot,msg)) ii
+        let fh = match ii.A.env.A.fh_code with
+          | Some _ -> true
+          | None -> false in
+        M.mk_singleton_es (Act.Fault (ii,A.Location_global a,dir,annot,fh,msg)) ii
 
       let read_loc v is_data = M.read_loc is_data (mk_read v AArch64.N aexp)
 
@@ -860,18 +863,8 @@ module Make
 
       let lift_kvm dir updatedb mop ma an ii mphy =
         let mfault ma a =
-          insert_commit_to_fault ma (fun _ -> mk_fault a dir an ii None) ii
-          >>!
-            begin
-              let open Precision in
-              match C.precision with
-              | Fatal -> B.Exit
-              | LoadsFatal -> (match dir with
-                  | Dir.R | Dir.F -> B.Exit
-                  | Dir.W -> B.ReExec)
-              | Skip -> B.Next []
-              | Handled -> B.ReExec
-            end in
+          insert_commit_to_fault ma (fun _ -> mk_fault a dir an ii None) ii >>!
+            B.Fault dir in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb a ma an ii
             ((let m = mop Access.PTE ma in
@@ -1706,7 +1699,11 @@ module Make
             >>= do_indirect_jump i
 
         | I_ERET ->
-           read_reg_ord AArch64.elr_el1 ii >>= do_indirect_jump ii.A.inst
+           let eret_to_addr = function
+             | M.A.V.Val(Constant.Label (_, l)) -> B.branchT l
+             | _ ->
+                Warn.fatal "Cannot determine ERET target" in
+           read_reg_ord AArch64.elr_el1 ii >>= eret_to_addr
 
         | I_CBZ(_,r,l) ->
             (read_reg_ord r ii)
