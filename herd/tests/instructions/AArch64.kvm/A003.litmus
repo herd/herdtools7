@@ -1,0 +1,14 @@
+AArch64 A003
+Variant=handled
+{
+x=1;
+[PTE(x)]=(oa:PA(x),valid:0);
+0:X1=x;
+0:X2=0;
+1:X0=(oa:PA(x),valid:1);
+1:X1=PTE(x)
+}
+ P0          | P1          ;
+ LDR W0,[X1] | STR X0,[X1] ;
+ MOV W2, #1  |             ;
+ forall(0:X0=1 /\ 0:X2=1)

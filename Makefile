@@ -131,6 +131,17 @@ test::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 variant -self instructions tests: OK"
 
+test:: test.kvm
+test.kvm:
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64.kvm \
+		-conf ./herd/tests/instructions/AArch64.kvm/kvm.cfg \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 KVM instructions tests: OK"
+
 test::
 	@ echo
 	$(HERD_REGRESSION_TEST) \
