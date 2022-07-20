@@ -1,0 +1,34 @@
+AArch64 V56
+"An 128-bit store need not be SCA in its entirety"
+{
+    uint64_t x[2];
+
+    uint64_t* 0:X0 = &x;
+    uint64_t* 1:X0 = &x;
+    uint64_t* 2:X0 = &x;
+
+    uint128_t 0:V0.2D = 0;
+
+    uint64_t 0:X1 = 1;
+    uint64_t 0:X2 = 2;
+
+    uint64_t 1:X1;
+    uint64_t 1:X2;
+
+    uint64_t 2:X1;
+    uint64_t 2:X2;
+}
+
+(* If a 128-bit SIMD store was SCA, then for two 64-bit loads with a load
+ * barrier inbetween, if the first load observed part of the store, then the
+ * other load should also observe the "other" part of the store *)
+
+P0              | P1               | P2               ;
+MOV V0.D[0], X1 | LDR X1, [X0]     | LDR X2, [X0, #8] ;
+MOV V0.D[1], X2 | DMB ISHLD        | DMB ISHLD        ;
+STR Q0, [X0]    | LDR X2, [X0, #8] | LDR X1, [X0]     ;
+
+exists(
+    (1:X1 = 1 /\ 1:X2 != 2) \/
+    (2:X2 = 2 /\ 2:X1 != 1)
+)

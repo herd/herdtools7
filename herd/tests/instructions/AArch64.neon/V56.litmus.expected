@@ -1,0 +1,25 @@
+Test V56 Allowed
+States 15
+1:X1=0; 1:X2=0; 2:X1=0; 2:X2=0;
+1:X1=0; 1:X2=0; 2:X1=0; 2:X2=2;
+1:X1=0; 1:X2=0; 2:X1=1; 2:X2=0;
+1:X1=0; 1:X2=0; 2:X1=1; 2:X2=2;
+1:X1=0; 1:X2=2; 2:X1=0; 2:X2=0;
+1:X1=0; 1:X2=2; 2:X1=0; 2:X2=2;
+1:X1=0; 1:X2=2; 2:X1=1; 2:X2=0;
+1:X1=0; 1:X2=2; 2:X1=1; 2:X2=2;
+1:X1=1; 1:X2=0; 2:X1=0; 2:X2=0;
+1:X1=1; 1:X2=0; 2:X1=1; 2:X2=0;
+1:X1=1; 1:X2=0; 2:X1=1; 2:X2=2;
+1:X1=1; 1:X2=2; 2:X1=0; 2:X2=0;
+1:X1=1; 1:X2=2; 2:X1=0; 2:X2=2;
+1:X1=1; 1:X2=2; 2:X1=1; 2:X2=0;
+1:X1=1; 1:X2=2; 2:X1=1; 2:X2=2;
+Ok
+Witnesses
+Positive: 6 Negative: 9
+Flag Assuming-common-inner-shareable-domain
+Condition exists (1:X1=1 /\ not (1:X2=2) \/ 2:X2=2 /\ not (2:X1=1))
+Observation V56 Sometimes 6 9
+Hash=2838dacac7cba036ce5f68c4ed07182d
+
