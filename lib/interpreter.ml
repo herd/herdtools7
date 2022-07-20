@@ -1148,6 +1148,12 @@ module Make
         V.Rel r
     | _ -> arg_mismatch ()
 
+    and same_oaRel arg = match arg with
+    | V.Rel r ->
+        let r = E.EventRel.filter (fun (e1,e2) -> (U.same_oa e1 e2)) r in
+        V.Rel r
+    | _ -> arg_mismatch ()
+
     and check_two pred arg = match arg with
       | V.Tuple [V.Set ws; V.Rel prec; ] ->
           let m = E.EventRel.M.to_map prec in
@@ -1173,6 +1179,7 @@ module Make
         [
           "at-least-one-writable",at_least_one_writable;
           "oa-changes",oa_changes;
+          "same-oa",same_oaRel;
           "different-values",different_values;
          "fromto",fromto ks;
          "classes-loc",partition;
