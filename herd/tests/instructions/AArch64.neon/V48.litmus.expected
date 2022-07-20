@@ -1,0 +1,10 @@
+Test V48 Required
+States 1
+0:X1=1; 0:X2=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=1 /\ 0:X2=2)
+Observation V48 Always 1 0
+Hash=035c21a806594e9692c65c9480a3ba1b
+

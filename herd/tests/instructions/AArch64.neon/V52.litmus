@@ -1,0 +1,20 @@
+AArch64 V52
+(* Tests 128-bit Neon loads with post-increment *)
+{
+    uint64_t x[2] = {1, 2};
+    uint64_t* 0:X0 = &x;
+
+    uint64_t 0:X1;
+    uint64_t 0:X2;
+
+    uint128_t 0:V0.2D;
+    uint128_t 0:V1.2D;
+}
+
+P0                 ;
+LDR Q0, [X0], #16  ;
+MOV X1, V0.D[0]    ;
+MOV X2, V0.D[1]    ;
+ADD X0, X0, #-16   ;
+
+forall(0:X1 = 1 /\ 0:X2 = 2 /\ 0:X0 = x)

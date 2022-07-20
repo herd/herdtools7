@@ -1,0 +1,10 @@
+Test V55 Required
+States 1
+0:X0=x; x[0]=1; x[1]=2; x[2]=3; x[3]=4;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x[0]=1 /\ x[1]=2 /\ x[2]=3 /\ x[3]=4 /\ 0:X0=x)
+Observation V55 Always 1 0
+Hash=c23c33d1de5adc9094f5b03bae2c1cdb
+

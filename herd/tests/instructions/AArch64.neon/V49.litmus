@@ -1,0 +1,18 @@
+AArch64 V49
+(* Tests 128-bit Neon stores *)
+{
+    uint64_t x[2];
+    uint64_t* 0:X0 = &x;
+
+    uint64_t 0:X1 = 1;
+    uint64_t 0:X2 = 2;
+
+    uint128_t 0:V0.2D;
+}
+
+P0              ;
+MOV V0.D[0], X1 ;
+MOV V0.D[1], X2 ;
+STR Q0, [X0]    ;
+
+forall(x[0] = 1 /\ x[1] = 2)

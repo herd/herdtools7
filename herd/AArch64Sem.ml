@@ -31,6 +31,9 @@ module Make
 
     let dirty = match TopConf.dirty with | None -> DirtyBit.soft | Some d -> d
     let mixed = AArch64.is_mixed
+    (* We need to be aware of endianness for 128-bit Neon LDR/STR, because
+     * these are always little endian *)
+    let endian = AArch64.endian
     let memtag = C.variant Variant.MemTag
     let morello = C.variant Variant.Morello
     let neon = C.variant Variant.Neon
@@ -268,11 +271,11 @@ module Make
 
       let neon_sz_k var = let open AArch64Base in
       match var with
-      | VSIMD8   -> M.unitT (V.intToV 1)
-      | VSIMD16  -> M.unitT (V.intToV 2)
-      | VSIMD32  -> M.unitT (V.intToV 4)
-      | VSIMD64  -> M.unitT (V.intToV 8)
-      | VSIMD128 -> M.unitT (V.intToV 16)
+      | VSIMD8   -> (V.intToV 1)
+      | VSIMD16  -> (V.intToV 2)
+      | VSIMD32  -> (V.intToV 4)
+      | VSIMD64  -> (V.intToV 8)
+      | VSIMD128 -> (V.intToV 16)
 
 (******************)
 (* Memory Tagging *)
@@ -1188,43 +1191,121 @@ module Make
           (read_reg_data sz rs ii)
           an ii
 
+      (* Utility that performes an `N`-bit load as two independent `N/2`-bit
+       * loads. Used by 128-bit Neon LDR.
+       *
+       * This instruction is endianness-aware (i.e. performing an 128-bit
+       * load as two 64-bit loads will take the endianness of the CPU into
+       * account). This is, indeed, a difference in semantics with Neon
+       * with respect to, e.g., `LDR` vs `LD1`. *)
+      let do_read_mem_2_ops_ret sz an anexp ac addr1 ii =
+        let open MachSize in
+        assert (sz != MachSize.Byte);
+        let sz_half = MachSize.pred sz in
+        do_read_mem_ret sz_half an anexp ac addr1 ii >>|
+        begin
+          M.add addr1 (V.intToV (nbytes sz_half)) >>= fun addr2 ->
+          do_read_mem_ret sz_half an anexp ac addr2 ii
+        end >>= fun (v1, v2) ->
+        let v_lo, v_hi = match endian with
+          (* Because an 128-bit Neon STR is allowed to be broken up into
+           * 64-bit loads, this means that we do need to take endianness into
+           * account *)
+          | Endian.Little -> v1, v2
+          | Endian.Big -> v2, v1 in
+        M.op1 (Op.LeftShift (nbits sz_half)) v_hi >>= fun v_hi_shifted ->
+        M.op Op.Or v_lo v_hi_shifted
+
+      (* Utility that performes an `N`-bit store as two independent `N/2`-bit
+       * stores. Used by Neon instructions. *)
+      let write_mem_2_ops sz anexp ac addr1 v ii =
+        let open MachSize in
+        assert (sz != MachSize.Byte);
+        let sz_half = MachSize.pred sz in
+        let comp_lo = M.op1 (Op.Mask sz_half) v in
+        let comp_hi = M.op1 (Op.LogicalRightShift (nbits sz_half)) v in
+        let (comp_v1, comp_v2) = match endian with
+          (* Because an 128-bit Neon STR is allowed to be broken up into
+           * 64-bit loads, this means that we do need to take endianness into
+           * account *)
+          | Endian.Little -> comp_lo, comp_hi
+          | Endian.Big -> comp_hi, comp_lo in
+        begin
+          comp_v1 >>= fun v1 ->
+          write_mem sz_half anexp ac addr1 v1 ii
+        end >>|
+        begin
+          M.add addr1 (V.intToV (nbytes sz_half)) >>|
+          comp_v2 >>= fun (addr2, v2) ->
+          write_mem sz_half anexp ac addr2 v2 ii
+        end
+
       (* Neon extension, memory accesses return B.Next, as they cannot fail *)
       let simd_ldr sz addr rd ii =
-        do_read_mem_ret sz AArch64.N aexp Access.VIR addr ii >>= fun v ->
-        write_reg_neon_sz sz rd v ii >>= B.next1T
+        (* 128-bit Neon LDR/STR and friends are split into two 64-bit
+         * single-copy atomic accesses. *)
+        let mem_op = begin
+          if sz == MachSize.S128 then do_read_mem_2_ops_ret else do_read_mem_ret
+        end in
+        mem_op sz AArch64.N aexp Access.VIR addr ii >>= fun v ->
+        write_reg_neon_sz sz rd v ii
 
       let simd_str sz rs rd kr s ii =
         get_ea rs kr s ii >>|
-        read_reg_neon true rd ii >>= fun (addr,v) ->
-        write_mem sz aexp Access.VIR addr v ii >>= B.next1T
+        read_reg_neon true rd ii >>= fun (addr, v) ->
+        if sz == MachSize.S128 then
+          write_mem_2_ops sz aexp Access.VIR addr v ii >>= B.next2T
+        else
+          write_mem sz aexp Access.VIR addr v ii >>= B.next1T
 
       let simd_str_p sz rs rd k ii =
         read_reg_ord rs ii >>|
-        read_reg_neon true rd ii >>= fun (addr,v) ->
-        write_mem sz aexp Access.VIR addr v ii >>|
-        post_kr rs addr k ii >>= B.next2T
+        read_reg_neon true rd ii >>= fun (addr, v) ->
+        if sz == MachSize.S128 then
+          (* 128-bit Neon LDR/STR and friends are split into two 64-bit
+           * single-copy atomic accesses. *)
+          write_mem_2_ops sz aexp Access.VIR addr v ii >>|
+          post_kr rs addr k ii >>= B.next3T
+        else
+          write_mem sz aexp Access.VIR addr v ii >>|
+          post_kr rs addr k ii >>= B.next2T
 
       let simd_ldp var addr1 rd1 rd2 ii =
         let open AArch64Base in
-        let access_size = tr_simd_variant var in
-        (simd_ldr access_size addr1 rd1 ii >>|
-        (neon_sz_k var >>= fun os ->
-        M.add addr1 os >>= fun addr2 ->
-        simd_ldr access_size addr2 rd2 ii)) >>=
-        fun (b1,b2) ->
-          assert (b1=B.Next []&& b2=B.Next []) ;
-          B.nextT
+        let sz = tr_simd_variant var in
+        simd_ldr sz addr1 rd1 ii >>|
+        begin
+          M.add addr1 (neon_sz_k var) >>= fun addr2 ->
+          simd_ldr sz addr2 rd2 ii
+        end >>= B.next2T
 
       let simd_stp var addr1 rd1 rd2 ii =
         let open AArch64Base in
-        let access_size = tr_simd_variant var in
-        ((read_reg_neon true rd1 ii >>= fun v1 ->
-        write_mem access_size aexp Access.VIR addr1 v1 ii)
-        >>|
-        (neon_sz_k var >>= fun os ->
-        M.add addr1 os >>|
-        read_reg_neon true rd2 ii >>= fun (addr2,v2) ->
-        write_mem access_size aexp Access.VIR addr2 v2 ii)) >>= B.next2T
+        let sz = tr_simd_variant var in
+        if sz == MachSize.S128 then
+          (* 128-bit Neon LDR/STR are not single-copy atomic, but they
+           * are single-copy atomic for each of the two 64-bit quantities
+           * they access. This means that a 2x128-bit LDP/STP with Neon
+           * registers results in 4 single-copy atomic accesses. *)
+          begin
+            read_reg_neon true rd1 ii >>= fun v1 ->
+            write_mem_2_ops sz aexp Access.VIR addr1 v1 ii
+          end >>|
+          begin
+            M.add addr1 (neon_sz_k var) >>|
+            read_reg_neon true rd2 ii >>= fun (addr2, v2) ->
+            write_mem_2_ops sz aexp Access.VIR addr2 v2 ii
+          end >>= fun ((a, b), (c, d)) -> B.next4T (((a, b), c), d)
+        else
+          begin
+            read_reg_neon true rd1 ii >>= fun v1 ->
+            write_mem sz aexp Access.VIR addr1 v1 ii
+          end >>|
+          begin
+            M.add addr1 (neon_sz_k var) >>|
+            read_reg_neon true rd2 ii >>= fun (addr2, v2) ->
+            write_mem sz aexp Access.VIR addr2 v2 ii
+          end >>= B.next2T
 
       let movi_v r k shift ii =
         let open AArch64Base in
@@ -1706,18 +1787,17 @@ module Make
         | I_LDR_SIMD(var,r1,rA,kr,s) ->
             let access_size = tr_simd_variant var in
             get_ea rA kr s ii >>= fun addr ->
-            simd_ldr access_size addr r1 ii
+            simd_ldr access_size addr r1 ii >>= B.next1T
         | I_LDR_P_SIMD(var,r1,rA,k) ->
             let access_size = tr_simd_variant var in
             read_reg_ord rA ii >>= fun addr ->
             simd_ldr access_size addr r1 ii >>|
-            post_kr rA addr (K k) ii >>=
-            fun (b,_) -> M.unitT b
+            post_kr rA addr (K k) ii >>= B.next2T
         | I_LDUR_SIMD(var,r1,rA,k) ->
             let access_size = tr_simd_variant var and
             k = K (match k with Some k -> k | None -> 0) in
             (get_ea rA k S_NOEXT ii >>= fun addr ->
-            simd_ldr access_size addr r1 ii)
+            simd_ldr access_size addr r1 ii) >>= B.next1T
         | I_STR_SIMD(var,r1,rA,kr,s) ->
             let access_size = tr_simd_variant var in
             simd_str access_size rA r1 kr s ii

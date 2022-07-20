@@ -1,0 +1,10 @@
+Test V53 Required
+States 1
+0:X0=x; x[0]=1; x[1]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x[0]=1 /\ x[1]=2 /\ 0:X0=x)
+Observation V53 Always 1 0
+Hash=9251f6b3063469d8a1911781f0e5a546
+
