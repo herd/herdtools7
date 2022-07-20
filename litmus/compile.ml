@@ -673,7 +673,7 @@ type P.code = MiscParser.proc * A.pseudo list)
           let stable =
                A.RegSet.inter
                  (A.RegSet.union stable stable_info)
-                 (A.Out.all_regs code final) in
+                 (A.Out.all_regs code fhandler final) in
           let stable = A.RegSet.elements stable in
           proc,
           { init ;
