@@ -610,8 +610,6 @@ type P.code = MiscParser.proc * A.pseudo list)
         else Label.Set.empty in
       let mains,fhandlers =
         List.partition (fun (_,func,_) -> func=MiscParser.Main) code in
-      if fhandlers <> [] && O.driver = Driver.C then
-        Warn.warn_always "The C driver has experimental support for custom fault handlers" ;
       let outs =
         List.map
           (fun (proc,_,code) ->
