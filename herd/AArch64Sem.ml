@@ -803,10 +803,13 @@ module Make
   addresses. Thus the resulting monads will possess
   extra dependencies w.r.t the simple case.
  *)
-      let lift_fault mfault mm = (* This is memtag fault handling *)
+      let lift_fault mfault mm dir = (* This is memtag fault handling *)
         let open Precision in
         match C.precision with
         | Fatal -> mfault >>! B.Exit
+        | LoadsFatal -> (match dir with
+            | Dir.R | Dir.F -> mfault >>! B.Exit
+            | Dir.W -> (mfault >>| mm) >>= M.ignore >>= B.next1T)
         | Skip -> Warn.fatal "Memtag extension has no 'Skip' fault handling mode"
         | Handled ->
            (mfault >>| mm) >>= M.ignore >>= B.next1T
@@ -817,7 +820,7 @@ module Make
             let mm = mop Access.PHY ma in
             delayed_check_tags a_virt ma ii
               (mm  >>= M.ignore >>= B.next1T)
-              (lift_fault (mk_fault a_virt dir an ii None) mm))
+              (lift_fault (mk_fault a_virt dir an ii None) mm dir))
 
       let lift_memtag_virt mop ma dir an ii =
         M.delay_kont "5" ma
@@ -825,8 +828,7 @@ module Make
             let mm = mop Access.VIR (ma >>= fun a -> loc_extract a) in
             delayed_check_tags a_virt ma ii
               (mm  >>= M.ignore >>= B.next1T)
-              (lift_fault (ma >>= fun a -> mk_fault a dir an ii None) mm))
-
+              (lift_fault (ma >>= fun a -> mk_fault a dir an ii None) mm dir))
 
       let some_ha = dirty.DirtyBit.some_ha || dirty.DirtyBit.some_hd
 
@@ -849,6 +851,9 @@ module Make
               let open Precision in
               match C.precision with
               | Fatal -> B.Exit
+              | LoadsFatal -> (match dir with
+                  | Dir.R | Dir.F -> B.Exit
+                  | Dir.W -> B.ReExec)
               | Skip -> B.Next []
               | Handled -> B.ReExec
             end in

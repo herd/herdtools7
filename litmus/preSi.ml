@@ -319,6 +319,8 @@ module Make
                O.o "#define FAULT_SKIP 1" ;
                O.o ""
             | Handled -> ()
+            | LoadsFatal ->
+               Warn.user_error "No asymetric mode for litmus kvm variant"
           end ;
           let insert_ins_ops () =
             ObjUtil.insert_lib_file O.o "_find_ins.c" ;
