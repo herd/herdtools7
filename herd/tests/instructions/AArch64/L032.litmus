@@ -1,0 +1,18 @@
+AArch64 MP+STLXP+LDAXP
+{
+uint64_t x[2] ;
+uint64_t y[2] ;
+0:X0=x; 0:X6=y;
+1:X0=x; 1:X6=y;
+uint64_t 1:X1; uint64_t 1:X2;
+uint64_t 1:X3; uint64_t 1:X4;
+}
+  P0                 | P1                 ;
+ MOV X1,#1           | LDAXP X1,X2,[X6]   ;
+ MOV X2,#2           | STXP W9,X1,X2,[X6] ;
+ STP X1,X2,[X0]      | LDP X3,X4,[X0]     ;
+ MOV X5,#1           |                    ;
+ LDXP X2,X3,[X6]     |                    ;
+ STLXP W9,X5,X5,[X6] |                    ;
+locations [1:X9;]
+exists (0:X9=0 /\ 1:X1=1 /\ 1:X2=1 /\ not (1:X3=1 /\ 1:X4=2))

@@ -80,6 +80,7 @@ module Make
       let (>>*==) = M.(>>*==)
       let (>>**==) = M.(>>**==)
       let (>>|) = M.(>>|)
+      let (>>||) = M.para_atomic
       let (>>!) = M.(>>!)
       let (>>::) = M.(>>::)
 
@@ -223,17 +224,26 @@ module Make
         neon_replicate v nelem esize v >>= fun new_val -> write_reg_neon_sz sz r new_val ii
       | _ -> assert false
 
-      let write_reg_sz sz r v ii = match r with
+      let do_write_reg_sz op sz r v ii = match r with
       | AArch64.ZR -> M.unitT ()
       | _ -> match sz with
         | MachSize.S128 -> write_reg_morello r v ii
         | MachSize.Quad when not morello -> write_reg r v ii
         | MachSize.Quad|MachSize.Word|MachSize.Short|MachSize.Byte ->
-            M.op1 (Op.Mask sz) v >>= fun v -> write_reg r v ii
+            M.op1 (op sz) v >>= fun v -> write_reg r v ii
+
+      let write_reg_sz = do_write_reg_sz (fun sz -> Op.Mask sz)
+      and write_reg_sz_sxt = do_write_reg_sz (fun sz -> Op.Sxt sz)
 
       let write_reg_sz_non_mixed =
         if mixed then fun _sz -> write_reg
         else write_reg_sz
+
+      and write_reg_sz_non_mixed_sxt =
+        if mixed then
+          fun sz r v ii ->
+          M.op1 (Op.Sxt sz) v >>= fun v -> write_reg r v ii
+        else write_reg_sz_sxt
 
 (* Emit commit event *)
       let commit_bcc ii = M.mk_singleton_es (Act.Commit (true,None)) ii
@@ -337,7 +347,7 @@ module Make
         M.op Op.Ne x V.zero >>= fun cond ->
         M.choiceT cond (mok ma mv) (mfault ma mzero)
 
-      let check_morello_sealed a ma mv  mok mfault =
+      let check_morello_sealed a ma mv mok mfault =
         M.op1 Op.CheckSealed a >>= fun x ->
         M.op Op.Ne x V.zero >>= fun cond ->
         M.choiceT cond (mfault ma mzero) (mok ma mv)
@@ -705,6 +715,11 @@ module Make
         >>= fun v -> write_reg_sz_non_mixed sz rd v ii
         >>= fun () -> B.nextT
 
+      and do_read_mem_sxt sz an anexp ac rd a ii =
+        do_read_mem_ret sz an anexp ac a ii
+        >>= fun v -> write_reg_sz_non_mixed_sxt sz rd v ii
+        >>= fun () -> B.nextT
+
       let read_mem sz = do_read_mem sz AArch64.N
       let read_mem_acquire sz = do_read_mem sz AArch64.A
       let read_mem_acquire_pc sz = do_read_mem sz AArch64.Q
@@ -941,22 +956,20 @@ module Make
           ma mzero an ii
 
 (* Generic store *)
-      let do_str sz an ma mv ii =
+      let do_str mop sz an ma mv ii =
         lift_memop Dir.W true
           (fun ac ma mv ->
             if is_branching && Access.is_physical ac then
               (* additional ctrl dep on address *)
               M.bind_ctrldata_data ma mv
-                (fun a v ->
-                  do_write_mem sz an aexp ac a v ii)
+                (fun a v -> mop ac a v ii)
             else if morello then
               (* additional ctrl dep on address and data *)
               do_insert_commit (ma >>| mv)
-                (fun (a,v) -> do_write_mem sz an aexp ac a v ii)
+                (fun (a,v) -> mop ac a v ii)
                 ii
             else
-              (ma >>| mv) >>= fun (a,v) ->
-              do_write_mem sz an aexp ac a v ii)
+              (ma >>| mv) >>= fun (a,v) -> mop ac a v ii)
           (to_perms "w" sz) ma mv an ii
 
 (***********************)
@@ -1001,6 +1014,8 @@ module Make
 
       let get_ea_noext rs kr ii = get_ea rs kr AArch64.S_NOEXT ii
 
+      let add_size a sz = M.add a (V.intToV (MachSize.nbytes sz))
+
       let post_kr rA addr kr ii =
         let open AArch64Base in
         let get_k = match kr with
@@ -1015,6 +1030,39 @@ module Make
         do_ldr sz AArch64.N
           (fun ac a -> do_read_mem sz AArch64.N aexp ac rd a ii)
           (get_ea rs kr s ii) ii
+
+      and ldp sz rd1 rd2 rs kr ii =
+        do_ldr sz AArch64.N
+          (fun ac a ->
+            do_read_mem sz AArch64.N aexp ac rd1 a ii >>|
+            begin
+              add_size a sz >>=
+              fun a -> do_read_mem sz AArch64.N aexp ac rd2 a ii
+            end)
+          (get_ea_noext rs kr ii) ii
+
+      and ldpsw rd1 rd2 rs kr ii =
+        let mem_sz =  MachSize.Word in
+        do_ldr MachSize.Word AArch64.N
+          (fun ac a ->
+            do_read_mem_sxt mem_sz AArch64.N aexp ac rd1 a ii >>|
+            begin
+              add_size a mem_sz >>=
+              fun a -> do_read_mem_sxt mem_sz AArch64.N aexp ac rd2 a ii
+            end)
+          (get_ea_noext rs kr ii) ii
+
+      and ldxp sz t rd1 rd2 rs ii =
+        let open AArch64 in
+        let an = match t with XP -> X | AXP -> XA in
+        do_ldr sz an
+          (fun ac a ->
+            read_mem_reserve sz an aexp ac rd1 a ii >>||
+            begin
+              add_size a sz >>= fun a ->
+              do_read_mem sz an aexp ac rd2 a ii
+            end)
+          (read_reg_ord rs ii) ii
 
       and ldar sz t rd rs ii =
         let open AArch64 in
@@ -1044,18 +1092,34 @@ module Make
               ma ii)
 
       and str sz rs rd kr s ii =
-        do_str sz AArch64.N
+        do_str (do_write_mem sz AArch64.N aexp)
+          sz AArch64.N
           (get_ea rd kr s ii) (read_reg_data sz rs ii) ii
 
+      and stp =
+        let (>>>) = M.data_input_next in
+        fun sz rs1 rs2 rd kr ii ->
+        do_str
+          (fun ac a _ ii ->
+            (read_reg_data sz rs1 ii >>> fun v ->
+             do_write_mem sz AArch64.N aexp ac a v ii) >>|
+              (add_size a sz >>= fun a ->
+               read_reg_data sz rs2 ii >>> fun v ->
+               do_write_mem sz AArch64.N aexp ac a v ii))
+          sz AArch64.N
+          (get_ea_noext rd kr ii)
+          (M.unitT V.zero)
+          ii
+
       and stlr sz rs rd ii =
-        do_str sz AArch64.L
+        do_str (do_write_mem sz AArch64.L aexp) sz AArch64.L
           (read_reg_ord rd ii) (read_reg_data sz rs ii) ii
 
-      and stxr sz t rr rs rd ii =
+      and do_stxr ms mw sz t rr rd ii  =
         let open AArch64Base in
         let an = match t with
-        | YY -> AArch64.X
-        | LY -> AArch64.XL in
+          | YY -> AArch64.X
+          | LY -> AArch64.XL in
         lift_memop Dir.W true
           (fun ac ma mv ->
             let must_fail =
@@ -1067,17 +1131,38 @@ module Make
                    (* Some, must fail when size differ and cu is disallowed *)
                    not (do_cu || MachSize.equal szr sz)
               end in
-                M.aarch64_store_conditional must_fail
+            M.aarch64_store_conditional must_fail
               (read_reg_ord ResAddr ii)
-              mv
-              ma
+              mv ma
               (write_reg ResAddr V.zero ii)
               (fun v -> write_reg rr v ii)
-              (fun ea resa v ->
-                write_mem_atomic sz an aexp ac ea v resa ii))
-          (to_perms "w" sz)
-          (read_reg_ord rd ii)
-          (read_reg_data sz rs ii) an ii
+              (mw an ac))
+              (to_perms "w" sz)
+              (read_reg_ord rd ii)
+              ms an ii
+
+      let stxr sz t rr rs rd ii =
+        do_stxr
+          (read_reg_data sz rs ii)
+          (fun an ac ea resa v  -> write_mem_atomic sz an aexp ac ea v resa ii)
+          sz t rr rd ii
+
+      let stxp sz t rr rs1 rs2 rd ii =
+        let (>>>) = M.data_input_next in
+        do_stxr
+          (M.unitT (V.zero))
+          (fun an ac ea resa _ ->
+            begin
+              (read_reg_data sz rs1 ii >>> fun v ->
+               write_mem_atomic sz an aexp ac ea v resa ii)
+              >>||
+                (add_size ea sz >>= fun a ->
+                 read_reg_data sz rs2 ii >>> fun v ->
+                 check_morello_for_write
+                   (fun a ->
+                     check_mixed_write_mem sz an aexp ac a v ii) a v ii)
+            end >>!  ())
+        sz t rr rd ii
 
 (* AMO instructions *)
       let rmw_amo_read sz rmw =
@@ -2162,7 +2247,18 @@ module Make
         | I_DC (op,rd) -> do_dc op rd ii
 (* Instruction-cache maintenance instruction *)
         | I_IC (op,rd) -> do_ic op rd ii
-(*  Cannot handle *)
+(* Load/Store pairs *)
+        | I_LDP (TT,v,r1,r2,r3,kr) ->
+            ldp (tr_variant v) r1 r2 r3 kr ii
+        | I_LDPSW (r1,r2,r3,kr) ->
+            ldpsw r1 r2 r3 kr ii
+        | I_STP (TT,v,r1,r2,r3,kr) ->
+            stp (tr_variant v) r1 r2 r3 kr ii
+        | I_LDXP (v,t,r1,r2,r3) ->
+            ldxp (tr_variant v) t r1 r2 r3 ii
+      | I_STXP (v,t,r1,r2,r3,r4) ->
+            stxp (tr_variant v) t r1 r2 r3 r4 ii
+      (*  Cannot handle *)
         | (I_RBIT _|I_MRS _|I_LDP _|I_STP _
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | I_LD1M _|I_ST1M _) as i ->

@@ -227,15 +227,15 @@ module Make
         end in
       let unv = lazy begin E.EventRel.cartesian evts evts  end in
       let ks = { I.id; unv; evts; conc; po;} in
-      let calc_si sca = begin
-        if mixed || morello then
+      let calc_si sca =
+        let r =
           E.EventRel.unions
             (E.EventSetSet.map_list
                (fun sm -> E.EventRel.cartesian sm sm)
-               sca)
+               sca) in
+        if mixed || morello then r
         else
-          E.EventRel.set_to_rln (Lazy.force mem_evts)
-      end in
+          E.EventRel.union r (E.EventRel.set_to_rln (Lazy.force mem_evts)) in
       let si = lazy begin calc_si conc.S.str.E.sca end
       in
       let aligned =

@@ -54,11 +54,11 @@ let check_op3 op kr =
 %token NOP HINT HLT
 %token B BR BEQ BNE BGE BGT BLE BLT CBZ CBNZ EQ NE GE GT LE LT TBZ TBNZ
 %token BL BLR RET
-%token LDR LDP LDNP STP STNP LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
+%token LDR LDP LDNP LDPSW STP STNP LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token LD1 LD1R LD2 LD2R LD3 LD3R LD4 LD4R ST1 ST2 ST3 ST4 STUR /* Neon load/store */
 %token CMP MOV MOVZ MOVK MOVI ADR
-%token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH
-%token STXR STXRB STXRH STLXR STLXRB STLXRH
+%token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH LDXP LDAXP
+%token STXR STXRB STXRH STLXR STLXRB STLXRH STXP STLXP
 %token <AArch64Base.op> OP
 %token <AArch64Base.sc> SC
 %token <AArch64Base.gc> GC
@@ -391,10 +391,28 @@ instr:
   { $1 A.V32 $2 $4 $7 $8 }
 | ldp_instr xreg COMMA xreg COMMA LBRK cxreg kr0_no_shift RBRK
   { $1 A.V64 $2 $4 $7 $8 }
+| LDPSW xreg COMMA xreg COMMA LBRK cxreg kr0_no_shift RBRK
+  { A.I_LDPSW ($2,$4,$7,$8) }
+| LDXP wreg COMMA wreg COMMA LBRK cxreg RBRK
+  { A.I_LDXP (A.V32,A.XP,$2,$4,$7) }
+| LDXP xreg COMMA xreg COMMA LBRK cxreg RBRK
+  { A.I_LDXP (A.V64,A.XP,$2,$4,$7) }
+| LDAXP wreg COMMA wreg COMMA LBRK cxreg RBRK
+  { A.I_LDXP (A.V32,A.AXP,$2,$4,$7) }
+| LDAXP xreg COMMA xreg COMMA LBRK cxreg RBRK
+  { A.I_LDXP (A.V64,A.AXP,$2,$4,$7) }
 | stp_instr wreg COMMA wreg COMMA LBRK cxreg kr0_no_shift RBRK
   { $1 A.V32 $2 $4 $7 $8 }
 | stp_instr xreg COMMA xreg COMMA LBRK cxreg kr0_no_shift RBRK
   { $1 A.V64 $2 $4 $7 $8 }
+| STXP wreg COMMA wreg COMMA wreg COMMA LBRK cxreg RBRK
+  { A.I_STXP (A.V32,A.YY,$2,$4,$6,$9) }
+| STXP wreg COMMA xreg COMMA xreg COMMA LBRK cxreg RBRK
+  { A.I_STXP (A.V64,A.YY,$2,$4,$6,$9) }
+| STLXP wreg COMMA wreg COMMA wreg COMMA LBRK cxreg RBRK
+  { A.I_STXP (A.V32,A.LY,$2,$4,$6,$9) }
+| STLXP wreg COMMA xreg COMMA xreg COMMA LBRK cxreg RBRK
+  { A.I_STXP (A.V64,A.LY,$2,$4,$6,$9) }
 | LDRB wreg COMMA LBRK cxreg kr0 RBRK
   { let (kr, s) = $6 in A.I_LDRBH (A.B,$2,$5,kr,s) }
 | LDRH wreg COMMA LBRK cxreg kr0 RBRK

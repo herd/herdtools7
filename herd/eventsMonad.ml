@@ -213,6 +213,8 @@ Monad type:
     let (>>=) : 'a t -> ('a -> 'b t) -> ('b) t
         = fun s f -> data_comp (=*$=) s f
 
+    let data_input_next s f = data_comp E.data_input_next s f
+
     let (>>==) : 'a t -> ('a -> 'b t) -> ('b) t
         = fun s f -> data_comp (=$$=) s f
 
@@ -655,10 +657,14 @@ Monad type:
         (eiid,(s3act,spec3))
 
     let (>>|) : 'a t -> 'b t -> ('a * 'b)  t
-        = fun s1 s2 -> combi (fun v1 v2 -> (v1,v2)) (fun es1 es2 -> es1 =|= es2) s1 s2
+        = fun s1 s2 -> combi Misc.pair (fun es1 es2 -> es1 =|= es2) s1 s2
+
+    let para_atomic s1 s2 = combi Misc.pair E.para_atomic s1 s2
+
+    let para_input_right s1 s2 = combi Misc.pair E.para_input_right s1 s2
 
     let (>>::) : 'a t -> 'a list t -> 'a list  t
-        = fun s1 s2 -> combi (fun v1 v2 -> v1::v2) (fun es1 es2 -> es1 =|= es2) s1 s2
+        = fun s1 s2 -> combi (Misc.cons) (fun es1 es2 -> es1 =|= es2) s1 s2
 
 (* Parallel composition no result *)
     let (|||) : unit t -> unit t -> unit t

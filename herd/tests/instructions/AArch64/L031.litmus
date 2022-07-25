@@ -1,0 +1,16 @@
+AArch64 L031
+{
+uint64_t t[2] ;
+0:X2=t; 1:X2=t;
+uint64_t 0:X3; uint64_t 0:X4;
+uint64_t 1:X3; uint64_t 1:X4;
+}
+  P0                |  P1                ;
+ MOV X0,#1          | MOV X0,#3          ;
+ MOV X1,#2          | MOV X1,#4          ;
+ LDXP X3,X4,[X2]    | LDXP X3,X4,[X2]    ;
+ STXP W9,X0,X1,[X2] | STXP W9,X0,X1,[X2] ;
+forall
+(0:X9=0 /\ 1:X9=0) =>
+((1:X3=0 /\ 1:X4=0 /\ 0:X3=3 /\ 0:X4=4 /\ t[0]=1 /\ t[1]=2) \/
+(1:X3=1 /\ 1:X4=2 /\ 0:X3=0 /\ 0:X4=0 /\ t[0]=3 /\ t[1]=4))

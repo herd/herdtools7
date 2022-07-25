@@ -64,6 +64,7 @@ match name with
 | "ldr"|"LDR" -> LDR
 | "ldur"|"LDUR" -> LDUR
 | "ldp"|"LDP" -> LDP
+| "ldpsw"|"LDPSW" -> LDPSW
 | "ldnp"|"LDNP" -> LDNP
 | "stp"|"STP" -> STP
 | "stnp"|"STNP" -> STNP
@@ -81,6 +82,8 @@ match name with
 | "ldaxr"|"LDAXR" -> LDAXR
 | "ldaxrb"|"LDAXRB" -> LDAXRB
 | "ldaxrh"|"LDAXRH" -> LDAXRH
+| "ldxp"|"LDXP" -> LDXP
+| "ldaxp"|"LDAXP" -> LDAXP
 | "str"|"STR" -> STR
 | "stlr"|"STLR" -> STLR
 | "stxr"|"STXR" -> STXR
@@ -93,6 +96,8 @@ match name with
 | "stlxrb"|"STLXRB" -> STLXRB
 | "stxrh"|"STXRH" -> STXRH
 | "stlxrh"|"STLXRH" -> STLXRH
+| "stxp"| "STXP" -> STXP
+| "stlxp"| "STLXP" -> STLXP
 (* Neon Extension Memory *)
 | "ld1" | "LD1" -> LD1
 | "ld1r" | "LD1R" -> LD1R

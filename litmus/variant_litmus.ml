@@ -17,18 +17,21 @@
 type t =
   | Self (* Self modifying code *)
   | Precise of Precision.t
+  | Mixed (* Ignored *)
 
 let compare = compare
 
-let tags = "self"::Precision.tags
+let tags = "self"::"mixed"::Precision.tags
 
 let parse s = match Misc.lowercase s with
 | "self" -> Some Self
+| "mixed" -> Some Mixed
 | tag ->
    Misc.app_opt (fun p -> Precise p) (Precision.parse tag)
 
 let pp = function
   | Self -> "self"
+  | Mixed -> "mixed"
   | Precise p -> Precision.pp p
 
 let ok v a = match v,a with
