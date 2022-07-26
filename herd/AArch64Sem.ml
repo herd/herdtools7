@@ -249,9 +249,9 @@ module Make
         else write_reg_sz_sxt
 
 (* Emit commit event *)
-      let commit_bcc ii = M.mk_singleton_es (Act.Commit (true,None)) ii
+      let commit_bcc ii = M.mk_singleton_es (Act.Commit (Act.Bcc,None)) ii
       and commit_pred_txt txt ii =
-        M.mk_singleton_es (Act.Commit (false,txt)) ii
+        M.mk_singleton_es (Act.Commit (Act.Pred,txt)) ii
 
       let commit_pred ii = commit_pred_txt None ii
 
@@ -1703,7 +1703,11 @@ module Make
              | M.A.V.Val(Constant.Label (_, l)) -> B.branchT l
              | _ ->
                 Warn.fatal "Cannot determine ERET target" in
-           read_reg_ord AArch64.elr_el1 ii >>= eret_to_addr
+           let commit_eret ii =
+             M.mk_singleton_es (Act.Commit (Act.ExcReturn,None)) ii in
+           commit_eret ii >>=
+             fun () -> read_reg_ord AArch64.elr_el1 ii >>=
+             eret_to_addr
 
         | I_CBZ(_,r,l) ->
             (read_reg_ord r ii)

@@ -49,10 +49,13 @@ module type Config = sig
 end
 
 module Make (C:Config) (A : A) : sig
+  type commit_type =
+    | Bcc | Pred | ExcReturn
+
   type action =
     | Access of Dir.dirn * A.location * A.V.v * A.lannot * A.explicit * MachSize.sz * Access.t
     | Barrier of A.barrier
-    | Commit of bool (* true = bcc / false = pred *) * string option
+    | Commit of commit_type * string option
 (* Atomic modify, (location,value read, value written, annotation *)
     | Amo of A.location * A.V.v * A.V.v * A.lannot * A.explicit * MachSize.sz * Access.t
 (* NB: Amo used in some arch only (e.g., Arm, RISCV) *)
@@ -131,11 +134,13 @@ end = struct
           "access_of_location_std on non-standard symbol '%s'"
           (V.pp_v v)
 
+  type commit_type =
+    | Bcc | Pred | ExcReturn
 
   type action =
     | Access of Dir.dirn * A.location * A.V.v * A.lannot * A.explicit * MachSize.sz * Access.t
     | Barrier of A.barrier
-    | Commit of bool * string option
+    | Commit of commit_type * string option
     | Amo of
         A.location * A.V.v * A.V.v * A.lannot * A.explicit *
         MachSize.sz * Access.t
@@ -171,8 +176,11 @@ end = struct
         (V.pp C.hexa v)
   | Barrier b -> A.pp_barrier_short b
   | Commit (b,m) ->
-      Printf.sprintf "Branching(%s)%s"
-        (if b then "bcc" else "pred")
+      Printf.sprintf "%s%s"
+        (match b with
+         | Bcc -> "Branching(bcc)"
+         | Pred -> "Branching(pred)"
+         | ExcReturn -> "ExcReturn")
         (match m with None -> "" | Some txt -> "("^txt^")")
   | Amo (loc,v1,v2,an,exp_an,sz,_) ->
       Printf.sprintf "RMW(%s)%s%s%s(%s>%s)"
@@ -465,12 +473,16 @@ end = struct
 (* Commits aka "branching events" *)
 
   let is_bcc a = match a with
-  | Commit (b,_) -> b
+  | Commit (Bcc,_) -> true
   | _ -> false
 
   let is_pred a = match a with
-  | Commit (b,_) -> not b
+  | Commit (Pred,_) -> true
   | _ -> false
+
+  let is_exc_return a = match a with
+    | Commit (ExcReturn,_) -> true
+    | _ -> false
 
   let is_commit a = match a with
   | Commit _ -> true
@@ -532,6 +544,7 @@ end = struct
     ("FAULT",is_fault)::
     ("FAULT-RD",is_faulting_read)::
     ("FAULT-WR",is_faulting_write)::
+    ("EXC-RET",is_exc_return)::
     ("TLBI",is_inv)::
     ("DC",is_dc)::
     ("DC-IC",is_ic)::
