@@ -629,7 +629,7 @@ type P.code = MiscParser.proc * A.pseudo list)
                 let asmhandler =
                   let open Driver in
                   match O.driver with
-                  | C|Shell -> Some proc
+                  | C|Shell -> proc
                   | XCode ->
                      Warn.user_error "No custom handler for XCode" in
                 C.fault_handler_prologue asmhandler@code@C.fault_handler_epilogue,addrs

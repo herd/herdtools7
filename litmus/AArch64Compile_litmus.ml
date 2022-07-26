@@ -1204,13 +1204,8 @@ module Make(V:Constant.S)(C:Config) =
 
     let kernel_mode = [{ empty_ins with memo="svc #471"}]
 
-    let fault_handler_prologue asmhandler =
-      map_ins
-        ("b 1f"::
-           (match asmhandler with
-            | Some p ->  [sprintf  "asm_handler%d:" p]
-            | None ->
-              [".globl el1h_sync"; "el1h_sync:";]))
+    let fault_handler_prologue p =
+      map_ins ["b 1f";sprintf  "asm_handler%d:" p]
 
     and fault_handler_epilogue =
       let ins =

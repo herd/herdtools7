@@ -22,16 +22,8 @@ module type S = sig
   val user_mode : ins list
   val kernel_mode : ins list
 
-  val fault_handler_prologue : int option -> ins list
+  val fault_handler_prologue : Proc.t -> ins list
   val fault_handler_epilogue : ins list
 end
 
-module No(A:sig type ins end) =
-struct
-  type ins = A.ins
-
-  let user_mode = [] and kernel_mode = []
-
-  let fault_handler_prologue _ = []
-  let fault_handler_epilogue = []
-end
+module No(A:sig type ins end) : S with type ins = A.ins
