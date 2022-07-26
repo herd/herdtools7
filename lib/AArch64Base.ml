@@ -859,6 +859,8 @@ type 'k kinstruction =
   | I_TLBI of TLBI.op * reg
 (* Read system register *)
   | I_MRS of reg * sysreg
+(* Write system register *)
+  | I_MSR of sysreg * reg
 (* Memory Tagging *)
   | I_STG of reg * reg * 'k kr
   | I_STZG of reg * reg * 'k kr
@@ -1354,6 +1356,9 @@ let do_pp_instruction m =
 (* Read System register *)
   | I_MRS (r,sr) ->
       sprintf "MRS %s,%s" (pp_xreg r) (pp_sysreg sr)
+  (* Read System register *)
+  | I_MSR (sr,r) ->
+     sprintf "MSR %s,%s" (pp_sysreg sr) (pp_xreg r)
 (* Memory Tagging *)
   | I_STG (rt,rn,kr) ->
       pp_mem "STG" V64 rt rn kr
@@ -1410,7 +1415,7 @@ let fold_regs (f_regs,f_sregs) =
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
   | I_MOV (_,r,_) | I_MOVZ (_,r,_,_) | I_MOVK (_,r,_,_)
-  | I_ADR (r,_) | I_IC (_,r) | I_DC (_,r) | I_MRS (r,_)
+  | I_ADR (r,_) | I_IC (_,r) | I_DC (_,r)
   | I_TBNZ (_,r,_,_) | I_TBZ (_,r,_,_)
   | I_CHKSLD r | I_CHKTGD r
   | I_MOVI_V (r,_,_) | I_MOVI_S (_,r,_)
@@ -1428,6 +1433,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_MOV_S (_,r1,r2,_)
   | I_LDUR_SIMD (_,r1,r2,_) | I_STUR_SIMD (_,r1,r2,_)
     -> fold_reg r1 (fold_reg r2 c)
+  | I_MRS (r,sr) | I_MSR (sr,r) -> fold_reg (SysReg sr) (fold_reg r c)
   | I_LDR (_,r1,r2,kr,_) | I_STR (_,r1,r2,kr,_)
   | I_OP3 (_,_,r1,r2,kr,_)
   | I_LDRBH (_,r1,r2,kr,_) | I_STRBH (_,r1,r2,kr,_)
@@ -1701,7 +1707,18 @@ let map_regs f_reg f_symb =
       I_TLBI (op,map_reg r)
 (* Read system register *)
   | I_MRS (r,sr) ->
+     let sr =
+       match map_reg (SysReg sr) with
+       | SysReg sr -> sr
+       | _ -> assert false in
       I_MRS (map_reg r,sr)
+(* Write system register *)
+  | I_MSR (sr,r) ->
+     let sr =
+       match map_reg (SysReg sr) with
+       | SysReg sr -> sr
+       | _ -> assert false in
+     I_MSR (sr,map_reg r)
 (* Memory Tagging *)
   | I_STG (r1,r2,k) ->
       I_STG (map_reg r1,map_reg r2,k)
@@ -1767,7 +1784,7 @@ let get_next = function
   | I_IC _
   | I_DC _
   | I_TLBI _
-  | I_MRS _
+  | I_MRS _ | I_MSR _
   | I_STG _| I_STZG _|I_LDG _
   | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
   | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|I_SEAL _|I_STCT _
@@ -1844,7 +1861,7 @@ include Pseudo.Make
         | I_IC _
         | I_DC _
         | I_TLBI _
-        | I_MRS _
+        | I_MRS _ | I_MSR _
         | I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _|I_CPYTYPE _
         | I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|I_SEAL _|I_STCT _
         | I_UNSEAL _
@@ -1982,7 +1999,7 @@ include Pseudo.Make
         | I_ADR _
         | I_RBIT _
 (*        | I_TLBI (_,ZR) *)
-        | I_MRS _
+        | I_MRS _ | I_MSR _
         | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _
         | I_CLRTAG _|I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_SC _|I_SEAL _
         | I_UNSEAL _

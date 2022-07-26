@@ -104,7 +104,7 @@ let check_op3 op kr =
 %token <AArch64Base.DC.op> DC_OP
 %token <AArch64Base.TLBI.op> TLBI_OP
 %token <AArch64Base.sysreg> SYSREG
-%token MRS TST RBIT
+%token MRS MSR TST RBIT
 %token STG STZG LDG
 %token ALIGND ALIGNU BUILD CHKEQ CHKSLD CHKTGD CLRTAG CPY CPYTYPE CPYVALUE CSEAL
 %token LDCT SEAL STCT UNSEAL
@@ -1123,6 +1123,8 @@ instr:
 /* System register */
 | MRS xreg COMMA SYSREG
   { A.I_MRS ($2,$4) }
+| MSR SYSREG COMMA xreg
+  { A.I_MSR ($2,$4) }
 
 fenceopt:
 | SY

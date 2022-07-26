@@ -441,6 +441,7 @@ match name with
     A.TLBI.(TLBI_OP {typ=VMALLS12; level=A.E1; domain=No; })
 (* System registers *)
 | "mrs"|"MRS" -> MRS
+| "msr"|"MSR" -> MSR
 | "ctr_el0"|"CTR_EL0" -> SYSREG A.CTR_EL0
 | "dciz_el0"|"DCIZ_EL0" -> SYSREG A.DCIZ_EL0
 | "mdccsr_el0"|"MDCCSR_EL0" -> SYSREG A.MDCCSR_EL0

@@ -221,7 +221,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_TBNZ(_,_,_,_) | I_TBZ (_,_,_,_) | I_MOVZ (_,_,_,_) | I_MOVK(_,_,_,_)
       | I_MOV (_, _, _)|I_SXTW (_, _)|I_OP3 (_, _, _, _, _, _)
       | I_ADR (_, _)|I_RBIT (_, _, _)|I_FENCE _
-      | I_CSEL (_, _, _, _, _, _)|I_IC (_, _)|I_DC (_, _)|I_MRS (_, _)
+      | I_CSEL (_, _, _, _, _, _)|I_IC (_, _)|I_DC (_, _)|I_MRS (_, _)|I_MSR (_, _)
       | I_STG _ | I_STZG _ | I_LDG _
       | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _
       | I_CLRTAG _|I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SEAL _
@@ -265,6 +265,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_CSEL (_,r,_,_,_,_)
       | I_MRS (r,_)
         -> [r]
+      | I_MSR (sr,_)
+        -> [(SysReg sr)]
       | I_LDR_P (_,r1,r2,_) | I_LDP (_,_,r1,r2,_,_)
       | I_LDPSW (r1,r2,_,_) | I_LDXP (_,_,r1,r2,_)
         -> [r1;r2;]
@@ -321,7 +323,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDOPBH _|I_STOP _|I_STOPBH _
       | I_MOV _|I_MOVZ _|I_MOVK _|I_SXTW _
       | I_OP3 _|I_ADR _|I_RBIT _|I_FENCE _
-      | I_CSEL _|I_IC _|I_DC _|I_TLBI _|I_MRS _
+      | I_CSEL _|I_IC _|I_DC _|I_TLBI _|I_MRS _|I_MSR _
       | I_STG _|I_STZG _|I_LDG _
         -> MachSize.No
 

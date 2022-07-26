@@ -324,6 +324,7 @@ include Arch.MakeArch(struct
     | I_TLBI (op,r) ->
         conv_reg r >! fun r -> I_TLBI (op,r)
     | I_MRS (r,sr) -> conv_reg r >! fun r -> I_MRS (r,sr)
+    | I_MSR (sr,r) -> conv_reg r >! fun r -> I_MSR (sr,r)
     | I_STG (r1,r2,kr) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

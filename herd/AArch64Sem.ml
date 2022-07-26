@@ -2259,6 +2259,11 @@ module Make
       | I_STXP (v,t,r1,r2,r3,r4) ->
             stxp (tr_variant v) t r1 r2 r3 r4 ii
       (*  Cannot handle *)
+        | I_MSR (sreg,xt) ->
+           read_reg_ord_sz MachSize.Quad xt ii
+           >>= fun v -> write_reg_dest (SysReg sreg) v ii
+           >>= nextSet (SysReg sreg)
+(*  Cannot handle *)
         | (I_RBIT _|I_MRS _|I_LDP _|I_STP _
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | I_LD1M _|I_ST1M _) as i ->

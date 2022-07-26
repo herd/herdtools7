@@ -1374,6 +1374,12 @@ module Make(V:Constant.S)(C:Config) =
           sprintf "mrs %s,%s" f (Misc.lowercase (pp_sysreg sr)) in
         {empty_ins with
          memo; outputs=r; reg_env=add_type quad r;}::k
+    | I_MSR (sr,r) ->
+       let r,f = arg1 "xzr" (fun s -> "^o"^s) r in
+       let memo =
+         sprintf "msr %s,%s" (Misc.lowercase (pp_sysreg sr)) f in
+       {empty_ins with
+         memo; outputs=r; reg_env=add_type quad r;}::k
     | I_STG _| I_STZG _|I_LDG _ ->
         Warn.fatal "No litmus output for instruction %s"
           (dump_instruction ins)
