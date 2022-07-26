@@ -184,6 +184,19 @@ Monad type:
     let delay (m:'a t) eiid =
       delay_kont "delay" m (fun v delayed -> unitT (v,delayed)) eiid
 
+    let set_standard_input_output m eiid =
+      let (eiid,(sact,sspec)) = m eiid in
+      let set_std (v,cl,es) =
+        let es =
+          { es with
+            E.input = None; data_input = None;
+            output = None; ctrl_output = None; } in
+        v,cl,es in
+      let set_stds = Evt.map set_std in
+      let sact = set_stds sact
+      and sspec = Misc.map_opt set_stds sspec in
+      eiid,(sact,sspec)
+      
     let (=**=) = E.(=**=)
     let (=*$=) = E.(=*$=)
     let (=$$=) = E.(=$$=)
@@ -225,11 +238,15 @@ Monad type:
 
     let data_input_next s f = data_comp E.data_input_next s f
 
+    let data_input_union s f = data_comp E.data_input_union s f
+
     let (>>==) : 'a t -> ('a -> 'b t) -> ('b) t
         = fun s f -> data_comp (=$$=) s f
 
     let (>>*=) : 'a t -> ('a -> 'b t) -> ('b) t
       = fun s f -> data_comp (=**=) s f
+
+    let control_input_union s f = data_comp E.control_input_union s f
 
     let (>>*==) : 'a t -> ('a -> 'b t) -> ('b) t
         = fun s f -> data_comp (=*$$=) s f

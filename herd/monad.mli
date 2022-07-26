@@ -46,13 +46,21 @@ module type S =
     val delay_kont : string -> 'a t -> ('a ->  'a t -> 'b t) -> 'b t
     val delay : 'a t -> ('a * 'a t) t
 
-(* Data composition, entry for snd monad: minimals for iico_data *)
+    val set_standard_input_output : 'a t -> 'a t
+
+    (* Data composition, entry for snd monad: minimals for iico_data *)
     val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
-    val data_input_next : 'a t -> ('a -> 'b t) -> 'b t (* Input to second arg *)
+ (* Input to second arg *)
+    val data_input_next : 'a t -> ('a -> 'b t) -> 'b t
+ (* Input to both args *)
+    val data_input_union : 'a t -> ('a -> 'b t) -> 'b t
     val (>>==) : 'a t -> ('a -> 'b t) -> 'b t (* Output events stay in first arg *)
 
 (* Control composition *)
     val (>>*=) : 'a t -> ('a -> 'b t) -> 'b t
+(* Input is union of both arg inputs *)
+    val control_input_union :  'a t -> ('a -> 'b t) -> 'b t
+
     val (>>*==) : 'a t -> ('a -> 'b t) -> 'b t (* Output events stay in first argument *)
     val bind_control_set_data_input_first :
       'a t -> ('a -> 'b t) -> 'b t (* Data input fixed in first argumst *)

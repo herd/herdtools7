@@ -322,6 +322,9 @@ val same_instance : event -> event -> bool
   val data_input_next : (* input to second structure *)
     event_structure -> event_structure -> event_structure option
 
+  val data_input_union : (* input to both structures *)
+    event_structure -> event_structure -> event_structure option
+
   val data_to_minimals : (* second es entries are minimal evts all iico *)
       event_structure -> event_structure -> event_structure option
 
@@ -336,6 +339,12 @@ val same_instance : event -> event -> bool
   (* Identical, data input is first argument (usually commit evt) *)
   val bind_control_set_data_input_first :
       event_structure -> event_structure -> event_structure option
+  (* Identical, keep second event structure input as input. *)
+  val control_input_next :
+    event_structure -> event_structure -> event_structure option
+  (* Identical, input is union  *)
+  val control_input_union :
+    event_structure -> event_structure -> event_structure option
 
 (* Identical, keep first event structure data output as output. *)
   val (=*$$=) :
@@ -470,6 +479,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 
     let dbg = C.debug.Debug_herd.monad
     let do_deps = C.variant Variant.Deps
+    let memtag = C.variant Variant.MemTag
     let kvm = C.variant Variant.Kvm
     let is_branching = kvm && not (C.variant Variant.NoPteBranch)
     type eiid = int
@@ -754,6 +764,11 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         aligned : (event * EventSet.t) list ;
       }
 
+    let causality_of es =
+      EventRel.union
+        es.intra_causality_data
+        es.intra_causality_control
+
     let procs_of es = es.procs
 
     let locs_of es = EventSet.fold (fun e k -> match location_of e with Some l -> l::k | None -> k) es.events []
@@ -904,10 +919,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let minimals es =
       match es.input with
       | None ->
-         let intra_causality =
-           EventRel.union
-             es.intra_causality_data es.intra_causality_control in
-         min_evts es.events intra_causality
+         min_evts es.events  (causality_of es)
       | Some evts -> evts
 
     let minimals_no_spurious es =
@@ -919,13 +931,13 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let minimals_avoid aset es =
       match es.input with
       | None ->
+         Printf.eprintf "Minimal avoid, input is none\n%!" ;
          let intra_causality =
-           let r =
-             EventRel.union
-               es.intra_causality_data es.intra_causality_control in
+           let r = causality_of es in
            EventRel.filter (fun (e,_) -> not (EventSet.mem e aset)) r in
          min_evts (EventSet.diff es.events aset) intra_causality
       | Some es ->
+         Printf.eprintf "Minimal avoid, input is {%a}\n%!" debug_events es;
          Warn.warn_always "minimal_avoid with explicit input" ;
          EventSet.diff es aset
 
@@ -947,9 +959,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         r evts
 
     let maximals es =
-      let intra_causality =
-        EventRel.union es.intra_causality_data es.intra_causality_control in
-      max_evts es.events intra_causality
+      max_evts es.events (causality_of es)
 
     let maximals_data es =
       max_evts es.events es.intra_causality_data
@@ -958,9 +968,18 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     | None -> maximals_data es
     | Some o -> o
 
-    let debug_output chan es = match es.output with
-    | None -> fprintf chan "-%a" debug_events (get_output es)
-    | Some es -> debug_events chan es
+    let get_dinput es = match es.input with
+      | None -> minimals es
+      | Some es -> es
+
+    let debug_opt chan (v,f,es) = match v with
+      | None -> fprintf chan "-{%a}" debug_events (f es)
+      | Some es -> debug_events chan es
+
+    let debug_output chan es =
+      fprintf chan "(i=%a, o=%a)"
+        debug_opt (es.input,get_dinput,es)
+        debug_opt (es.output,get_output,es)
 
     let get_ctrl_output es = match es.ctrl_output with
     | None -> maximals es
@@ -1205,14 +1224,25 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       | None -> Some (mk es)
       | Some _ as i -> i
 
-    let force_input =  do_force_input get_input  minimals
+    let force_input tag es1 es2 =
+      let o = do_force_input get_input minimals es2 in
+      if dbg then
+        Printf.eprintf "ForceInput%s %a(%a) %a(%a) -> %a\n%!"
+          tag
+          (debug_opt debug_events) es1.input
+          debug_events es1.events
+          (debug_opt debug_events) es2.input
+          debug_events es2.events
+          (debug_opt debug_events) o ;
+      o
+
     and force_data_input = do_force_input get_data_input minimals_data
 
     let para_input_right es1 es2 =
        let r = union es1 es2 in
        let r =
          { r with
-           input = force_input es2;
+           input = force_input "ParaRight" es1 es2;
            data_input = force_data_input es2;
            output = union_output es1 es2 ;
            ctrl_output = union_ctrl_output es1 es2 ;
@@ -1224,10 +1254,17 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       if is_empty_event_structure  es1 then access es2
       else access es1
 
-    let seq_input = do_seq_input  get_input
+    let seq_input es1 es2 =
+      let o = do_seq_input get_input es1 es2 in
+      if dbg then
+        Printf.eprintf "SeqInput %a(%a) %a(%a) -> %a\n%!"
+          (debug_opt debug_events) es1.input
+          debug_events es1.events
+          (debug_opt debug_events) es2.input
+          debug_events es2.events
+          (debug_opt debug_events) o ;
+      o
     and seq_data_input = do_seq_input  get_data_input
-
-    let data_input_first es1 _es2 = force_data_input es1
 
     let data_comp mini_loc mkOut es1 es2 =
       let r = union es1 es2 in
@@ -1235,7 +1272,11 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         intra_causality_data =
         EventRel.filter
           (* Found that reviewing code, check by assert... *)
-          (fun (e1,e2) -> let b = e1 != e2 in assert b ; b)
+          (fun (e1,e2) ->
+            let b = e1 != e2 in
+            if not b then
+              eprintf "Warning: get rid of event %a\n%!" debug_event e1 ;
+            b)
           (EventRel.union
              r.intra_causality_data
              (EventRel.cartesian (get_output es1) (mini_loc es2))) ;
@@ -1252,9 +1293,34 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       let r = data_comp minimals_data sequence_data_output es1 es2  in
       Some
         { r with
-          input = force_input es2;
+          input = force_input "Next" es1 es2;
           data_input = force_data_input es2;
         }
+
+    let do_union_input_seq access default es1 es2 =
+      if is_empty_event_structure es1 then access es2
+      else if is_empty_event_structure es2 then access es1
+      else Some (EventSet.union (default es1) (default es2))
+
+    let union_input_seq = do_union_input_seq get_input minimals
+    and union_data_input_seq = do_union_input_seq get_data_input minimals_data
+
+    let data_input_union es1 es2 =
+      let r =
+        data_comp
+          (fun es -> min_evts es.events (causality_of es))
+          sequence_data_output es1 es2  in
+      let r =
+        { r with
+          input = union_input_seq es1 es2 ;
+          data_input = union_data_input_seq es1 es2 ;
+        } in
+      if dbg then
+        eprintf "data_input_union %a %a -> %a\n"
+          debug_output es1
+          debug_output es2
+          debug_output r ;
+      Some r
 
     let data_to_minimals =
       check_disjoint (data_comp minimals sequence_data_output)
@@ -1271,7 +1337,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 
 (* Composition with intra_causality_control from first to second *)
 
-    let control_comp  maxi_loc mini_loc mkDataIn mkOut es1 es2 =
+    let control_comp  maxi_loc mini_loc mkOut es1 es2 =
       let r = union es1 es2 in
       { r with
         intra_causality_control =
@@ -1279,7 +1345,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
             r.intra_causality_control
             (EventRel.cartesian (maxi_loc es1) (mini_loc es2)) ;
         input = seq_input es1 es2 ;
-        data_input = mkDataIn es1 es2 ;
+        data_input = seq_data_input es1 es2 ;
         output = mkOut es1 es2;
         ctrl_output = sequence_data_ctrl_output es1 es2;
       }
@@ -1287,13 +1353,41 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 (* Standard *)
     let (=**=) =
       check_disjoint
-        (control_comp get_ctrl_output minimals seq_data_input sequence_control_output)
+        (control_comp get_ctrl_output minimals sequence_control_output)
 
 (* Variant: data input restricted to first argument *)
-      let bind_control_set_data_input_first =
-        check_disjoint
-          (control_comp get_ctrl_output minimals data_input_first sequence_control_output)
+    let bind_control_set_data_input_first es1 es2 =
+      let r = 
+        control_comp
+          get_ctrl_output minimals sequence_control_output
+          es1 es2 in
+      Some { r with data_input = force_data_input es1; }
 
+    (* Variant that sets input on second argument *)
+    let control_input_next es1 es2 =
+      let r =
+        control_comp
+          get_ctrl_output minimals sequence_control_output
+          es1 es2  in
+      Some
+        { r with
+          input = force_input "Next" es1 es2;
+          data_input = force_data_input es2;
+        }
+
+    let control_input_union es1 es2 =
+      if dbg then
+        eprintf "Control_input_union %a %a\n%!"
+          debug_output es1
+          debug_output es2 ;
+      let r =
+        control_comp get_ctrl_output minimals sequence_control_output
+          es1 es2  in
+      Some
+        { r with
+          input = union_input  es1 es2;
+          data_input = union_data_input es1 es2;
+        }
 
 (* Variant that set output on first argumet *)
     let (=*$$=) =
@@ -1302,12 +1396,14 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         if dbg then
           eprintf "CtrlFirst %a %a -> %a\n"  debug_output es1 debug_output es2 debug_events out ;
         Some out in
-      check_disjoint (control_comp get_ctrl_output minimals seq_data_input out)
+      check_disjoint (control_comp get_ctrl_output minimals out)
 
 
 (* Variant that removes some es2 input from iico_ctrl targets *)
     let bind_ctrl_avoid aset es1 es2 =
-      Some (control_comp maximals (minimals_avoid aset) seq_data_input sequence_control_output es1 es2)
+      Some
+        (control_comp maximals (minimals_avoid aset)
+           sequence_control_output es1 es2)
 
     let po_union4 =
       if do_deps then
@@ -1364,7 +1460,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       }
 
 (*  Build es1 -ctrl+data-> es3 <-data- es2 monad.
-    Notice the contrasts in output definition of es1 and es2
+    Notice the contrast in output definition of es1 and es2
     (maximals_commits vs. get_output) *)
 
     let bind_ctrldata_data es1 es2 es3 =
@@ -1426,6 +1522,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 
 (* Specific composition for checking tags *)
     let check_tags a rtag commit =
+      eprintf "Check_tags: commit=%a\n" debug_output commit ;
       { procs= [];
         events = EventSet.union3 a.events rtag.events commit.events;
         speculated =
@@ -1438,7 +1535,9 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           (EventRel.union3
              a.intra_causality_data rtag.intra_causality_data commit.intra_causality_data)
           (EventRel.cartesian (maximals a)
-             (EventSet.union (minimals rtag) (minimals commit)))
+             (EventSet.union
+                (minimals rtag)
+                (minimals commit)))
           (EventRel.cartesian (maximals rtag) (minimals commit));
         intra_causality_control =
         EventRel.union3
@@ -1554,9 +1653,11 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
               wmem.intra_causality_control;wreg.intra_causality_control;];
            if is_amo then EventRel.empty else mem2mem;
            EventRel.cartesian outrreg inwreg;
-           if physical && is_branching then
+           if memtag || (physical && is_branching) then
  (* Notice similarity with data composition.  *)
-             EventRel.cartesian (get_ctrl_output_commits rloc) inmem
+             EventRel.cartesian
+               (get_ctrl_output_commits rloc)
+               (EventSet.union inmem inwreg)
            else EventRel.empty;];
         control =
         EventRel.union5 rloc.control rmem.control rreg.control wmem.control wreg.control;

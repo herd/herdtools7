@@ -107,10 +107,13 @@ module Make
 
       let mk_read_std = mk_read quad AArch64.N
 
+      let has_handler ii =
+        match ii.A.env.A.fh_code with
+        | Some _ -> true
+        | None -> false
+
       let mk_fault a dir annot ii ft msg =
-        let fh = match ii.A.env.A.fh_code with
-          | Some _ -> true
-          | None -> false in
+        let fh = has_handler ii in
         M.mk_singleton_es (Act.Fault (ii,A.Location_global a,dir,annot,fh,ft,msg)) ii
 
       let read_loc v is_data = M.read_loc is_data (mk_read v AArch64.N aexp)
@@ -330,16 +333,29 @@ module Make
 (* Memory accesses *)
 (*******************)
 
-(* Tag checking, MTE *)
+     (* Tag checking, MTE *)
 
-      let delayed_check_tags a_virt ma ii m1 m2 =
-        let (++) = M.bind_ctrl_avoid ma in
-        M.check_tags
-          ma (fun a -> read_tag_mem a ii)
-          (fun tag1 -> tag_extract a_virt  >>= fun tag2 -> M.op Op.Eq tag1 tag2)
-          (commit_pred ii)  ++ fun cond ->  M.choiceT cond m1 m2
+      let delayed_check_tags a_virt a_phy ma ii m1 m2 =
+        let (+++) = M.data_input_union in
+        let rtag  =
+          read_tag_mem (match a_phy with None -> a_virt | Some a -> a) ii in
+        let commit =  commit_pred_txt (Some "color") ii in
+        let choice c ma = M.choiceT c (m1 ma) (m2 ma) in
+        let m =
+          rtag +++ fun tag1 -> tag_extract a_virt +++ fun tag2 ->
+          M.op Op.Eq tag1 tag2 in
+        let m = m +++ fun cond -> commit +++ fun _ -> M.unitT cond in
+        M.delay_kont "check_tags" m
+          (fun c m ->
+            let ma = (* NB output to initial ma *)
+              ma >>==
+                (fun a -> m >>== fun _ ->
+                match a_phy with
+                | None -> loc_extract a
+                | Some _ -> M.unitT a) in
+            choice c ma)
 
-(* Tag checking Morello *)
+      (* Tag checking Morello *)
       let do_append_commit ma txt ii =
         ma >>== fun a -> commit_pred_txt txt ii >>= fun () -> M.unitT a
 
@@ -838,35 +854,45 @@ module Make
   addresses. Thus the resulting monads will possess
   extra dependencies w.r.t the simple case.
  *)
-      let lift_fault mfault mm dir = (* This is memtag fault handling *)
-        let open Precision in
-        match C.precision with
-        | Fatal -> mfault >>! B.Exit
-        | LoadsFatal -> (match dir with
-            | Dir.R -> mfault >>! B.Exit
-            | Dir.W -> (mfault >>| mm) >>= M.ignore >>= B.next1T)
-        | Skip -> Warn.fatal "Memtag extension has no 'Skip' fault handling mode"
-        | Handled ->
-           (mfault >>| mm) >>= M.ignore >>= B.next1T
 
-      let lift_memtag_phy mop a_virt ma dir an ii =
+(*  memtag faults *)
+
+      let lift_fault_virt mfault mm dir ii =
+        if has_handler ii then
+          fun ma -> M.bind_ctrldata ma (fun _ -> mfault >>! B.Fault dir)
+        else
+          let open Precision in
+          match C.precision,dir with
+          | (Fatal,_)|(LoadsFatal,(Dir.R)) ->
+             fun ma -> M.bind_ctrldata ma (fun _ -> mfault >>! B.Exit)
+          | (Handled,_)|(LoadsFatal,Dir.W) ->
+             fun ma ->
+             let ma = ma >>**== (fun a -> mfault >>! a) in
+             mm ma >>! B.Next []
+          | Skip,_ ->
+             fun _ ->
+               Warn.fatal "Memtag extension has no 'Skip' fault handling mode"
+
+      let lift_memtag_phy a_virt mop ma dir an ii =
         M.delay_kont "4" ma
-          (fun _ ma ->
-            let mm = mop Access.PHY ma in
+          (fun a_phy ma ->
+            let mm = mop Access.PHY in
             let ft = Some FaultType.AArch64.TagCheck in
-            delayed_check_tags a_virt ma ii
-              (mm  >>= M.ignore >>= B.next1T)
-              (lift_fault (mk_fault a_virt dir an ii ft None) mm dir))
+            delayed_check_tags a_virt (Some a_phy) ma ii
+              (fun ma -> mm ma >>= M.ignore >>= B.next1T)
+              (lift_fault_virt (mk_fault a_virt dir an ii ft None) mm dir ii))
+
 
       let lift_memtag_virt mop ma dir an ii =
         M.delay_kont "5" ma
           (fun a_virt ma  ->
-            let mm = mop Access.VIR (ma >>= fun a -> loc_extract a) in
+            let mm = mop Access.VIR in
             let ft = Some FaultType.AArch64.TagCheck in
-            delayed_check_tags a_virt ma ii
-              (mm  >>= M.ignore >>= B.next1T)
-              (lift_fault (ma >>= fun a -> mk_fault a dir an ii ft None) mm dir))
+            delayed_check_tags a_virt None ma ii
+              (fun ma -> mm ma >>= M.ignore >>= B.next1T)
+              (lift_fault_virt (mk_fault a_virt dir an ii ft None) mm dir ii))
 
+(* KVM mode *)
       let some_ha = dirty.DirtyBit.some_ha || dirty.DirtyBit.some_hd
 
       let fire_spurious_af dir a m =
@@ -891,7 +917,7 @@ module Make
       let lift_kvm dir updatedb mop ma an ii mphy =
         let mfault ma a ft =
           insert_commit_to_fault ma (fun _ -> mk_fault a dir an ii ft None) ii >>|
-            set_elr_el1 ii >>! B.Fault dir in
+          set_elr_el1 ii >>! B.Fault dir in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb a ma an ii
             ((let m = mop Access.PTE ma in
@@ -944,7 +970,7 @@ module Make
           if memtag then
             begin
               if kvm then
-                let mphy = (fun ma a -> lift_memtag_phy mop a ma dir an ii) in
+                let mphy = (fun ma a -> lift_memtag_phy a mop ma dir an ii) in
                 lift_kvm dir updatedb mop ma an ii mphy
               else lift_memtag_virt mop ma dir an ii
             end
@@ -969,7 +995,7 @@ module Make
 (* Generic load *)
         lift_memop Dir.R true
           (fun ac ma _mv -> (* value fake here *)
-            if Access.is_physical ac then
+            if Access.is_physical ac || memtag  then
               M.bind_ctrldata ma (mop ac)
             else
               ma >>= mop ac)
@@ -980,11 +1006,11 @@ module Make
       let do_str mop sz an ma mv ii =
         lift_memop Dir.W true
           (fun ac ma mv ->
-            if is_branching && Access.is_physical ac then
+            if memtag || (is_branching && Access.is_physical ac) then begin
               (* additional ctrl dep on address *)
               M.bind_ctrldata_data ma mv
                 (fun a v -> mop ac a v ii)
-            else if morello then
+            end else if morello then
               (* additional ctrl dep on address and data *)
               do_insert_commit (ma >>| mv)
                 (fun (a,v) -> mop ac a v ii)
@@ -1066,10 +1092,12 @@ module Make
         let mem_sz =  MachSize.Word in
         do_ldr MachSize.Word AArch64.N
           (fun ac a ->
-            do_read_mem_sxt mem_sz AArch64.N aexp ac rd1 a ii >>|
             begin
-              add_size a mem_sz >>=
-              fun a -> do_read_mem_sxt mem_sz AArch64.N aexp ac rd2 a ii
+              do_read_mem_sxt mem_sz AArch64.N aexp ac rd1 a ii >>|
+              begin
+                add_size a mem_sz >>=
+                fun a -> do_read_mem_sxt mem_sz AArch64.N aexp ac rd2 a ii
+              end
             end)
           (get_ea_noext rs kr ii) ii
 
@@ -1113,9 +1141,13 @@ module Make
               ma ii)
 
       and str sz rs rd kr s ii =
-        do_str (do_write_mem sz AArch64.N aexp)
+        do_str
+          (fun ac a _ ii ->
+            M.data_input_next
+              (read_reg_data sz rs ii)
+              (fun v -> do_write_mem sz AArch64.N aexp ac a v ii))
           sz AArch64.N
-          (get_ea rd kr s ii) (read_reg_data sz rs ii) ii
+          (get_ea rd kr s ii)  (M.unitT V.zero) ii
 
       and stp =
         let (>>>) = M.data_input_next in
