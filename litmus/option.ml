@@ -87,14 +87,6 @@ and get_tar () = match !tar with
 | Some s -> s
 | None -> "**useless**"
 
-let logicalprocs = ref None
-
-let set_logicalprocs s =
-  try
-    logicalprocs := Some (LexSplit.ints s) ;
-  with LexSplit.Error ->
-    raise (Arg.Bad ("bad logical processors mapping: " ^s))
-
 (* Direct references *)
 let crossrun = ref Crossrun.No
 let adbdir = ref "/data/local/tmp"
@@ -122,6 +114,13 @@ let collect = ref Collect.After
 let safer = ref Safer.Write
 let cautious = ref false
 let affinity = ref Affinity.No
+let logicalprocs = ref None
+let set_logicalprocs s =
+  try
+    logicalprocs := Some (LexSplit.ints s) ;
+    affinity := Affinity.Incr 1
+  with LexSplit.Error ->
+    raise (Arg.Bad ("bad logical processors mapping: " ^s))
 let force_affinity = ref false
 let smtmode = ref Smt.No
 let smt = ref 2
