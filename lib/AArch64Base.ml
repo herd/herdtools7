@@ -45,6 +45,22 @@ type vec_reg =
   | V24 | V25 | V26 | V27
   | V28 | V29 | V30 | V31
 
+type sve_reg =
+  | Z0  | Z1  | Z2  | Z3
+  | Z4  | Z5  | Z6  | Z7
+  | Z8  | Z9  | Z10 | Z11
+  | Z12 | Z13 | Z14 | Z15
+  | Z16 | Z17 | Z18 | Z19
+  | Z20 | Z21 | Z22 | Z23
+  | Z24 | Z25 | Z26 | Z27
+  | Z28 | Z29 | Z30 | Z31
+
+type sve_pred_reg =
+  | P0  | P1  | P2  | P3
+  | P4  | P5  | P6  | P7
+  | P8  | P9  | P10 | P11
+  | P12 | P13 | P14 | P15
+
 let arrange_specifier =
 [
   (1,64),".1D"  ; (1,128),".1Q" ;
@@ -61,6 +77,8 @@ type reg =
   | Tag of gpr
   | Vreg of (vec_reg * (int * int))
   | SIMDreg of vec_reg
+  | SveReg of sve_reg
+  | SvePredReg of sve_pred_reg
   | Symbolic_reg of string
   | Internal of int
   | NZP
@@ -69,26 +87,46 @@ type reg =
 
 let gprs =
 [
-  R0 ; R1 ; R2 ; R3 ;
-  R4 ; R5 ; R6 ; R7 ;
-  R8 ; R9 ; R10; R11 ;
-  R12; R13; R14; R15 ;
-  R16; R17; R18; R19 ;
-  R20; R21; R22; R23 ;
-  R24; R25; R26; R27 ;
-  R28; R29; R30;
+ R0 ; R1 ; R2 ; R3 ;
+ R4 ; R5 ; R6 ; R7 ;
+ R8 ; R9 ; R10; R11 ;
+ R12; R13; R14; R15 ;
+ R16; R17; R18; R19 ;
+ R20; R21; R22; R23 ;
+ R24; R25; R26; R27 ;
+ R28; R29; R30;
 ]
 
 let vec_regs =
 [
-  V0 ; V1 ; V2 ; V3 ;
-  V4 ; V5 ; V6 ; V7 ;
-  V8 ; V9 ; V10; V11;
-  V12; V13; V14; V15;
-  V16; V17; V18; V19;
-  V20; V21; V22; V23;
-  V24; V25; V26; V27;
-  V28; V29; V30; V31;
+ V0 ; V1 ; V2 ; V3 ;
+ V4 ; V5 ; V6 ; V7 ;
+ V8 ; V9 ; V10; V11;
+ V12; V13; V14; V15;
+ V16; V17; V18; V19;
+ V20; V21; V22; V23;
+ V24; V25; V26; V27;
+ V28; V29; V30; V31;
+]
+
+let sve_regs =
+[
+  Z0 ,"Z0";  Z1 ,"Z1";  Z2 ,"Z2";  Z3 ,"Z3";
+  Z4 ,"Z4";  Z5 ,"Z5";  Z6 ,"Z6";  Z7 ,"Z7";
+  Z8 ,"Z8";  Z9 ,"Z9";  Z10,"Z10"; Z11,"Z11";
+  Z12,"Z12"; Z13,"Z13"; Z14,"Z14"; Z15,"Z15";
+  Z16,"Z16"; Z17,"Z17"; Z18,"Z18"; Z19,"Z19";
+  Z20,"Z20"; Z21,"Z21"; Z22,"Z22"; Z23,"Z23";
+  Z24,"Z24"; Z25,"Z25"; Z26,"Z26"; Z27,"Z27";
+  Z28,"Z28"; Z29,"Z29"; Z30,"Z30"; Z31,"Z31";
+]
+
+let sve_pred_regs =
+[
+  P0 ,"P0";  P1 ,"P1";  P2 ,"P2";  P3 ,"P3";
+  P4 ,"P4";  P5 ,"P5";  P6 ,"P6";  P7 ,"P7";
+  P8 ,"P8";  P9 ,"P9";  P10,"P10"; P11,"P11";
+  P12,"P12"; P13,"P13"; P14,"P14"; P15,"P15";
 ]
 
 let vregs = List.map (fun v -> Vreg (v,(4,32))) vec_regs
@@ -251,6 +289,14 @@ let parse_simd_reg s =
   try Some (List.assoc (Misc.uppercase s) simd_regs)
   with Not_found -> None
 
+let parse_sve_reg s =
+  try Some (sve_regs |> parse_list |> List.assoc (Misc.uppercase s))
+  with Not_found -> None
+
+let parse_sve_pred_reg s =
+  try Some (sve_pred_regs |> parse_list |> List.assoc (Misc.uppercase s))
+  with Not_found -> None
+
 let parse_reg s = match parse_vreg s with
 | Some v -> Some v
 | None -> parse_xreg s
@@ -275,6 +321,16 @@ let pp_simd_vector_reg r = match r with
   (try List.assoc s arrange_specifier with Not_found -> assert false)
 | _ -> assert false
 
+let pp_sve_reg r = match r with
+| SveReg r' ->
+  (try List.assoc r' sve_regs with Not_found -> assert false)
+| _ -> assert false
+
+let pp_sve_pred_reg r = match r with
+| SvePredReg r' ->
+  (try List.assoc r' sve_pred_regs with Not_found -> assert false)
+| _ -> assert false
+
 let pp_simd_scalar_reg rl r = match r with
 | SIMDreg r -> (try List.assoc r rl with Not_found -> assert false)
 | _ -> assert false
@@ -282,6 +338,8 @@ let pp_simd_scalar_reg rl r = match r with
 let pp_reg r = match r with
 | Vreg _ -> pp_simd_vector_reg r
 | SIMDreg _ -> pp_simd_scalar_reg vvrs r
+| SveReg _ -> pp_sve_reg r
+| SvePredReg _ -> pp_sve_pred_reg r
 | _ -> pp_xreg r
 
 let pp_wreg r = match r with
@@ -628,6 +686,8 @@ let tr_simd_variant = function
   | VSIMD64 -> MachSize.Quad
   | VSIMD128 -> MachSize.S128
 
+type sve_pred_behavior = Zero | Merge
+
 type 'k kr = K of 'k | RV of variant * reg
 let k0 = K 0
 
@@ -780,6 +840,11 @@ type 'k kinstruction =
   | I_EOR_SIMD of reg * reg * reg
   | I_ADD_SIMD of reg * reg * reg
   | I_ADD_SIMD_S of reg * reg * reg
+(* SVE Extension instructions *)
+  | I_LD1_SVE of simd_variant * sve_pred_behavior * reg * reg * reg * 'k kr
+  | I_ST1_SVE of simd_variant * reg * reg * reg * 'k kr
+  | I_WHILELO_SVE of simd_variant * reg * reg * reg
+  | I_DUP_SVE of simd_variant * reg * 'k kr
 (* Post-indexed load with immediate - like a writeback *)
 (* sufficiently different (and semantically interesting) to need a new inst *)
   | I_LDR_P of variant * reg * reg * 'k
@@ -886,6 +951,25 @@ let pp_vsimdreg v r = match v with
 | VSIMD64 -> pp_simd_scalar_reg dvrs r
 | VSIMD128 -> pp_simd_scalar_reg qvrs r
 
+let pp_sve_pred_behavior = function
+| Zero  -> "Z"
+| Merge -> "M"
+
+let pp_sve_insn_suffix = function
+| VSIMD8 -> "B"
+| VSIMD16 -> "H"
+| VSIMD32 -> "S"
+| VSIMD64 -> "D"
+| VSIMD128 -> assert false
+
+let pp_sve_reg_size = function
+| VSIMD8 -> "B"
+| VSIMD16 -> "H"
+| VSIMD32 -> "W"
+| VSIMD64 -> "D"
+| VSIMD128 -> assert false
+
+let pp_sve_reg_with_size v r = sprintf "%s.%s" (pp_reg r) (pp_sve_reg_size v)
 
 let pp_op = function
   | ADD  -> "ADD"
@@ -1324,6 +1408,14 @@ let do_pp_instruction m =
       pp_mem "STZG" V64 rt rn kr
   | I_LDG (rt,rn,kr) ->
       pp_mem "LDG" V64 rt rn kr
+  | I_LD1_SVE (size,pred_behavior,rt,rpred,ra,kr) ->
+      sprintf "LD1%s %s, %s/%s, [%s%s]"
+        (pp_sve_insn_suffix size)
+        (pp_sve_reg_with_size size rt)
+        (pp_reg rpred)
+        (pp_sve_pred_behavior pred_behavior)
+        (pp_xreg ra)
+        (pp_kr true false kr)
 
 let m_int = { compat = false ; pp_k = string_of_int ;
               zerop = (function 0 -> true | _ -> false);
@@ -1361,6 +1453,8 @@ let fold_regs (f_regs,f_sregs) =
   | Ireg _ -> f_regs reg y_reg,y_sreg
   | Vreg _ -> f_regs reg y_reg,y_sreg
   | SIMDreg _ -> f_regs reg y_reg,y_sreg
+  | SveReg _ -> f_regs reg y_reg,y_sreg
+  | SvePredReg _ -> f_regs reg y_reg,y_sreg
   | Symbolic_reg reg ->  y_reg,f_sregs reg y_sreg
   | Internal _ | NZP | ZR | SP | ResAddr | Tag _ -> y_reg,y_sreg in
 
@@ -1427,7 +1521,14 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDOP (_,_,_,r1,r2,r3)
   | I_LDOPBH (_,_,_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
-
+  | I_LD1_SVE (_,_,r1,r2,r3,kr)
+    -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_kr kr c)))
+  | I_ST1_SVE (_,_,_,r1,r2,kr)
+    -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
+  | I_DUP_SVE (_,r1,kr)
+    -> fold_reg r1 (fold_kr kr c)
+  | I_WHILELO_SVE (_,r1,r2,r3)
+    -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
 
 let map_regs f_reg f_symb =
 
@@ -1435,6 +1536,8 @@ let map_regs f_reg f_symb =
   | Ireg _ -> f_reg reg
   | Vreg _ -> f_reg reg
   | SIMDreg _ -> f_reg reg
+  | SveReg _ -> f_reg reg
+  | SvePredReg _ -> f_reg reg
   | Symbolic_reg reg -> f_symb reg
   | Internal _ | ZR | SP | NZP | ResAddr | Tag _-> reg in
 
@@ -1663,6 +1766,15 @@ let map_regs f_reg f_symb =
       I_STZG (map_reg r1,map_reg r2,k)
   | I_LDG (r1,r2,k) ->
       I_LDG (map_reg r1,map_reg r2,k)
+(* SVE *)
+  | I_LD1_SVE (size,pred_behavior,r1,r2,r3,kr) ->
+      I_LD1_SVE (size,pred_behavior,map_reg r1,map_reg r2,map_reg r3,kr)
+  | I_ST1_SVE (size,r1,r2,r3,kr) ->
+      I_ST1_SVE (size,map_reg r1,map_reg r2,map_reg r3,kr)
+  | I_WHILELO_SVE (size,r1,r2,r3) ->
+      I_WHILELO_SVE(size,map_reg r1,map_reg r2,map_reg r3,rk)
+  | I_DUP_SVE(size,r1,kr) ->
+      I_DUP_SVE(size,map_reg r1,kr)
 
 (* No addresses burried in ARM code *)
 let fold_addrs _f c _ins = c
@@ -1742,6 +1854,7 @@ let get_next = function
   | I_MOV_S _
   | I_MOVI_V _ | I_MOVI_S _
   | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
+  | I_LD1_SVE _ | I_ST1_SVE _ | I_WHILELO_SVE _ | I_DUP_SVE _
     -> [Label.Next;]
 
 include Pseudo.Make

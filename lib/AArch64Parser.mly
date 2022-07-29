@@ -37,6 +37,8 @@ let check_op3 op kr =
 %token <AArch64Base.reg> ARCH_SREG
 %token <AArch64Base.reg> ARCH_DREG
 %token <AArch64Base.reg> ARCH_QREG
+%token <AArch64Base.reg> ARCH_ZREG
+%token <AArch64Base.reg> ARCH_PREG
 %token <int> INDEX
 %token <int> NUM
 %token <string> NAME
@@ -45,6 +47,7 @@ let check_op3 op kr =
 %token <int> PROC
 
 %token SEMI COMMA PIPE COLON LCRL RCRL LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
+%token SLASH
 %token SXTW
 
 /* Inline Barrel Shift Operands */
@@ -56,6 +59,7 @@ let check_op3 op kr =
 %token BL BLR RET
 %token LDR LDP LDNP STP STNP LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token LD1 LD1R LD2 LD2R LD3 LD3R LD4 LD4R ST1 ST2 ST3 ST4 STUR /* Neon load/store */
+%token <AArch64Base.simd_variant> LD1_SVE ST1_SVE /* SVE load/store */
 %token CMP MOV MOVZ MOVK MOVI ADR
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH
 %token STXR STXRB STXRH STLXR STLXRB STLXRH
@@ -99,6 +103,10 @@ let check_op3 op kr =
 %token LDUMINB LDUMINAB LDUMINLB LDUMINALB
 %token STUMIN STUMINL STUMINH STUMINLH STUMINB STUMINLB
 */
+
+/* SVE predicate behavior tokens */
+%token <AArch64Base.sve_pred_behavior> SVE_PRED_BEHAVIOR
+
 %token IC DC IVAU TLBI
 %token <AArch64Base.IC.op> IC_OP
 %token <AArch64Base.DC.op> DC_OP
@@ -113,7 +121,6 @@ let check_op3 op kr =
 
 %start  main
 %start instr_option_seq
-
 
 %%
 main:
@@ -223,6 +230,12 @@ dreg:
 
 qreg:
 | ARCH_QREG { $1 }
+
+zreg:
+| ARCH_ZREG { $1 }
+
+preg:
+| ARCH_PREG { $1 }
 
 bhsdregs:
 | breg { A.VSIMD8,$1 }
@@ -551,7 +564,13 @@ instr:
   { A.I_ADD_SIMD ($2,$4,$6) }
 | ADD dreg COMMA dreg COMMA dreg
   { A.I_ADD_SIMD_S ($2,$4,$6)}
-    /* Compare and swap */
+/* SVE */
+| LD1_SVE zreg COMMA preg SLASH SVE_PRED_BEHAVIOR COMMA LBRK cxreg RBRK
+  { }
+| ST1_SVE zreg COMMA preg SLASH COMMA LBRK cxreg RBRK
+  { }
+
+/* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK cxreg zeroopt RBRK
   { A.I_CAS (A.V32,A.RMW_P,$2,$4,$7) }
 | CAS xreg COMMA xreg COMMA  LBRK cxreg zeroopt RBRK

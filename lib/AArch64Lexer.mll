@@ -108,6 +108,17 @@ match name with
 | "st3" | "ST3" -> ST3
 | "st4" | "ST4" -> ST4
 | "movi" | "MOVI" -> MOVI
+(* SVE Extension *)
+| "ld1b"    | "LD1B"    -> LD1B A.VSIMD8
+| "ld1h"    | "LD1H"    -> LD1H A.VSIMD16
+| "ld1w"    | "LD1W"    -> LD1W A.VSIMD32
+| "ld1d"    | "LD1D"    -> LD1D A.VSIMD64
+| "st1b"    | "ST1B"    -> ST1B A.VSIMD8
+| "st1h"    | "ST1H"    -> ST1H A.VSIMD16
+| "st1w"    | "ST1W"    -> ST1W A.VSIMD32
+| "st1d"    | "ST1D"    -> ST1D A.VSIMD64
+| "whilelt" | "WHILELT" -> WHILELT
+| "dup"     | "DUP"     -> DUP
 (* Compare and swap *)
 | "cas"|"CAS" -> CAS
 | "casa"|"CASA" -> CASA
@@ -346,6 +357,9 @@ match name with
 | "seal"|"SEAL" -> SEAL
 | "stct"|"STCT" -> STCT
 | "unseal"|"UNSEAL" -> UNSEAL
+(* SVE predicate behaviors *)
+| "z" | "Z" -> SVE_PRED_BEHAVIOR A.Zero
+| "m" | "M" -> SVE_PRED_BEHAVIOR A.Merge
 (* Misc *)
 | "csel"|"CSEL" -> CSEL
 | "csinc"|"CSINC" -> CSINC
@@ -500,6 +514,7 @@ rule token = parse
 | '(' { LPAR }
 | ')' { RPAR }
 | ':' { COLON }
+| '/' { SLASH }
 | "scopes"  { SCOPES  }
 | "levels"  { LEVELS  }
 | "regions" { REGIONS }
