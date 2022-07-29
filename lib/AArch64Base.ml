@@ -841,8 +841,8 @@ type 'k kinstruction =
   | I_ADD_SIMD of reg * reg * reg
   | I_ADD_SIMD_S of reg * reg * reg
 (* SVE Extension instructions *)
-  | I_LD1_SVE of simd_variant * sve_pred_behavior * reg * reg * reg * 'k kr
-  | I_ST1_SVE of simd_variant * reg * reg * reg * 'k kr
+  | I_LD1_SVE of simd_variant * sve_pred_behavior * reg * reg * reg
+  | I_ST1_SVE of simd_variant * reg * reg * reg
   | I_WHILELO_SVE of simd_variant * reg * reg * reg
   | I_DUP_SVE of simd_variant * reg * 'k kr
 (* Post-indexed load with immediate - like a writeback *)
@@ -1408,14 +1408,28 @@ let do_pp_instruction m =
       pp_mem "STZG" V64 rt rn kr
   | I_LDG (rt,rn,kr) ->
       pp_mem "LDG" V64 rt rn kr
-  | I_LD1_SVE (size,pred_behavior,rt,rpred,ra,kr) ->
-      sprintf "LD1%s %s, %s/%s, [%s%s]"
+  | I_LD1_SVE (size,pred_behavior,rt,rpred,ra) ->
+      sprintf "LD1%s %s, %s/%s, [%s]"
         (pp_sve_insn_suffix size)
         (pp_sve_reg_with_size size rt)
         (pp_reg rpred)
         (pp_sve_pred_behavior pred_behavior)
         (pp_xreg ra)
-        (pp_kr true false kr)
+  | I_ST1_SVE (size,rt,rpred,ra) ->
+      sprintf "ST1%s %s, %s, [%s]"
+        (pp_sve_insn_suffix size)
+        (pp_sve_reg_with_size size rt)
+        (pp_reg rpred)
+        (pp_xreg ra)
+  | I_WHILELO_SVE(size,rt,r1,r2) ->
+      sprintf "WHILELO %s, %s, %s"
+        (pp_sve_reg_with_size size rt)
+        (pp_xreg r1)
+        (pp_xreg r2)
+  | I_DUP_SVE(size,rt,kr) ->
+      sprintf "DUP %s, %s"
+        (pp_sve_reg_with_size size rt)
+        (pp_kr false false kr)
 
 let m_int = { compat = false ; pp_k = string_of_int ;
               zerop = (function 0 -> true | _ -> false);
@@ -1521,10 +1535,10 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDOP (_,_,_,r1,r2,r3)
   | I_LDOPBH (_,_,_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
-  | I_LD1_SVE (_,_,r1,r2,r3,kr)
-    -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_kr kr c)))
-  | I_ST1_SVE (_,_,_,r1,r2,kr)
-    -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
+  | I_LD1_SVE (_,_,r1,r2,r3)
+    -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
+  | I_ST1_SVE (_,_,r1,r2)
+    -> fold_reg r1 (fold_reg r2 c)
   | I_DUP_SVE (_,r1,kr)
     -> fold_reg r1 (fold_kr kr c)
   | I_WHILELO_SVE (_,r1,r2,r3)
@@ -1767,12 +1781,12 @@ let map_regs f_reg f_symb =
   | I_LDG (r1,r2,k) ->
       I_LDG (map_reg r1,map_reg r2,k)
 (* SVE *)
-  | I_LD1_SVE (size,pred_behavior,r1,r2,r3,kr) ->
-      I_LD1_SVE (size,pred_behavior,map_reg r1,map_reg r2,map_reg r3,kr)
-  | I_ST1_SVE (size,r1,r2,r3,kr) ->
-      I_ST1_SVE (size,map_reg r1,map_reg r2,map_reg r3,kr)
+  | I_LD1_SVE (size,pred_behavior,r1,r2,r3) ->
+      I_LD1_SVE (size,pred_behavior,map_reg r1,map_reg r2,map_reg r3)
+  | I_ST1_SVE (size,r1,r2,r3) ->
+      I_ST1_SVE (size,map_reg r1,map_reg r2,map_reg r3)
   | I_WHILELO_SVE (size,r1,r2,r3) ->
-      I_WHILELO_SVE(size,map_reg r1,map_reg r2,map_reg r3,rk)
+      I_WHILELO_SVE(size,map_reg r1,map_reg r2,map_reg r3)
   | I_DUP_SVE(size,r1,kr) ->
       I_DUP_SVE(size,map_reg r1,kr)
 
@@ -1975,6 +1989,11 @@ include Pseudo.Make
         | I_EOR_SIMD (r1,r2,r3) -> I_EOR_SIMD (r1,r2,r3)
         | I_ADD_SIMD (r1,r2,r3) -> I_ADD_SIMD (r1,r2,r3)
         | I_ADD_SIMD_S (r1,r2,r3) -> I_ADD_SIMD_S (r1,r2,r3)
+        | I_LD1_SVE (size,pred_behavior,rt,rpred,ra) ->
+            I_LD1_SVE (size,pred_behavior,rt,rpred,ra)
+        | I_ST1_SVE (size,rt,rpred,ra) -> I_ST1_SVE (size,rt,rpred,ra)
+        | I_WHILELO_SVE(size,rt,r1,r2) -> I_WHILELO_SVE(size,rt,r1,r2)
+        | I_DUP_SVE(size,rt,kr) -> I_DUP_SVE(size,rt,kr_tr kr)
 
       let get_simd_rpt_selem ins rs = match ins with
       | I_LD1M _
@@ -2053,6 +2072,7 @@ include Pseudo.Make
         | I_MOV_S _
         | I_MOVI_V _ | I_MOVI_S _
         | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
+        | I_WHILELO_SVE _ | I_DUP_SVE _
           -> 0
         | I_LD1M (rs, _, _)
         | I_LD2M (rs, _, _)
@@ -2065,6 +2085,10 @@ include Pseudo.Make
           -> let (rpt, selem) = (get_simd_rpt_selem ins rs) in
              let n = get_simd_elements rs in
              rpt * selem * n
+        | I_LD1_SVE _ | I_ST1_SVE _
+          (* SVE instructions can have a huge amount of memory ops, so pick a
+           * reasonably large number. *)
+          -> 100
 
       let fold_labels k f = function
         | I_B lbl

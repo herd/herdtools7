@@ -2162,6 +2162,8 @@ module Make
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | I_LD1M _|I_ST1M _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
+        | I_LD1_SVE _ | I_ST1_SVE _ | I_DUP_SVE _ | I_WHILELO_SVE _ ->
+            Warn.fatal "SVE instructions are not implemented yet"
         )
 
       let spurious_setaf v = test_and_set_af_succeeds v E.IdSpurious

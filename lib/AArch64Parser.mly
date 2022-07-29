@@ -566,9 +566,9 @@ instr:
   { A.I_ADD_SIMD_S ($2,$4,$6)}
 /* SVE */
 | LD1_SVE zreg COMMA preg SLASH SVE_PRED_BEHAVIOR COMMA LBRK cxreg RBRK
-  { }
+  { A.I_LD1_SVE ($1,$6,$2,$4,$9) }
 | ST1_SVE zreg COMMA preg SLASH COMMA LBRK cxreg RBRK
-  { }
+  { A.I_ST1_SVE($1,$2,$4,$8) }
 
 /* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK cxreg zeroopt RBRK

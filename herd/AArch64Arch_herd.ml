@@ -231,6 +231,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MOVI_S _ | I_MOVI_V _
       | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
           -> None
+      | I_LD1_SVE _ | I_ST1_SVE _ | I_DUP_SVE _ | I_WHILELO_SVE _
+          -> Warn.fatal "SVE instructions are not implemented yet"
 
     let all_regs =
       all_gprs@vregs (* Should be enough, only those are tracked *)
@@ -286,6 +288,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_UNSEAL _|I_STG _|I_STZG _|I_LDG _
         ->
          all_regs (* safe approximation *)
+      | I_LD1_SVE _ | I_ST1_SVE _ | I_DUP_SVE _ | I_WHILELO_SVE _
+          -> Warn.fatal "SVE instructions are not implemented yet"
 
     let get_lx_sz = function
       | I_LDAR (var,(XX|AX),_,_) -> MachSize.Ld (tr_variant var)
