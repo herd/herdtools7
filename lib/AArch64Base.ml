@@ -668,6 +668,28 @@ type sc = CLRPERM | CTHI | SCFLGS | SCTAG | SCVALUE
 type variant = V32 | V64 | V128
 type simd_variant = VSIMD8 | VSIMD16 | VSIMD32 | VSIMD64 | VSIMD128
 
+let sve_size_specifiers =
+[
+  VSIMD8,"B"; VSIMD16,"H"; VSIMD32,"S"; VSIMD64,"D"
+]
+
+let parse_sve_reg_sized s =
+  let zlist = parse_list sve_regs in
+  let size_list = parse_list sve_size_specifiers in
+  try let (g1, g2) =
+    ignore (Str.search_forward (Str.regexp "\\(Z[0-9]+\\)\\(\\.[0-9]*[B,D,H,S]\\)") (Misc.uppercase s) 0);
+    (Str.matched_group 1 s, Str.matched_group 2 s);
+    in Some (SveReg (List.assoc g1 zlist), List.assoc g2 size_list)
+  with Not_found -> None
+
+let parse_sve_pred_reg_sized s =
+  let plist = parse_list sve_pred_regs in
+  let size_list = parse_list sve_size_specifiers in
+  try let (g1, g2) =
+    ignore (Str.search_forward (Str.regexp "\\(P[0-9]+\\)\\(\\.[0-9]*[B,D,H,S]\\)") (Misc.uppercase s) 0);
+    (Str.matched_group 1 s, Str.matched_group 2 s);
+    in Some (SvePredReg (List.assoc g1 plist), List.assoc g2 size_list)
+  with Not_found -> None
 
 let pp_variant = function
   | V32 -> "V32"

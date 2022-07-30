@@ -39,6 +39,8 @@ let check_op3 op kr =
 %token <AArch64Base.reg> ARCH_QREG
 %token <AArch64Base.reg> ARCH_ZREG
 %token <AArch64Base.reg> ARCH_PREG
+%token <AArch64Base.reg * AArch64Base.simd_variant> ARCH_ZREG_SIZED
+%token <AArch64Base.reg * AArch64Base.simd_variant> ARCH_PREG_SIZED
 %token <int> INDEX
 %token <int> NUM
 %token <string> NAME
@@ -103,6 +105,9 @@ let check_op3 op kr =
 %token LDUMINB LDUMINAB LDUMINLB LDUMINALB
 %token STUMIN STUMINL STUMINH STUMINLH STUMINB STUMINLB
 */
+
+/* SVE instructions */
+%token WHILELO_SVE DUP_SVE
 
 /* SVE predicate behavior tokens */
 %token <AArch64Base.sve_pred_behavior> SVE_PRED_BEHAVIOR
@@ -234,8 +239,14 @@ qreg:
 zreg:
 | ARCH_ZREG { $1 }
 
+zreg_sized:
+| ARCH_ZREG_SIZED { $1 }
+
 preg:
 | ARCH_PREG { $1 }
+
+preg_sized:
+| ARCH_PREG_SIZED { $1 }
 
 bhsdregs:
 | breg { A.VSIMD8,$1 }
@@ -565,10 +576,19 @@ instr:
 | ADD dreg COMMA dreg COMMA dreg
   { A.I_ADD_SIMD_S ($2,$4,$6)}
 /* SVE */
-| LD1_SVE zreg COMMA preg SLASH SVE_PRED_BEHAVIOR COMMA LBRK cxreg RBRK
-  { A.I_LD1_SVE ($1,$6,$2,$4,$9) }
-| ST1_SVE zreg COMMA preg SLASH COMMA LBRK cxreg RBRK
-  { A.I_ST1_SVE($1,$2,$4,$8) }
+| LD1_SVE zreg_sized COMMA preg SLASH SVE_PRED_BEHAVIOR COMMA LBRK cxreg RBRK
+  { let reg,_ = $2 in A.I_LD1_SVE ($1,$6,reg,$4,$9) }
+| ST1_SVE zreg_sized COMMA preg SLASH COMMA LBRK cxreg RBRK
+  { let reg,_ = $2 in A.I_ST1_SVE($1,reg,$4,$8) }
+| DUP_SVE zreg_sized COMMA kr
+  { let reg,sz = $2 in A.I_DUP_SVE(sz,reg,$4) }
+| WHILELO_SVE preg_sized COMMA reg COMMA reg
+  {
+    let rt,sz = $2 in
+    let _,r1 = $4 in
+    let _,r2 = $6 in
+    A.I_WHILELO_SVE(sz,rt,r1,r2)
+  }
 
 /* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK cxreg zeroopt RBRK
