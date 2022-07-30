@@ -59,6 +59,7 @@ val same_instance : event -> event -> bool
   val pp_instance   : event -> string
   val pp_action     : event -> string
   val debug_event : out_channel -> event -> unit
+  val debug_event_str : event -> string
 
 (***************************)
 (* Procs and program order *)
@@ -209,8 +210,10 @@ val same_instance : event -> event -> bool
       control : EventRel.t ;
       (* Events that lead to the data port of a W *)
       data_ports : EventSet.t ;
-      (* some special output port, i.e. store conditional success as reg write *)
+      (* some special output port,i.e. store conditional success as reg write *)
       success_ports : EventSet.t ;
+      (* Input to structure, by default minimal iico, or iico_data *)
+      input : EventSet.t option ; data_input : EventSet.t option ;
       (* Result of structure, by default maximal iico_data *)
       output : EventSet.t option ;
       (* Control output of structure, by default maximal iico *)
@@ -298,10 +301,23 @@ val same_instance : event -> event -> bool
   val para_comp : bool (* check disjointness *)
     -> event_structure -> event_structure -> event_structure option
 
+(* Memory events in arguments form one atomic access => build a sca *)
+  val para_atomic :
+    event_structure -> event_structure -> event_structure option
+
+(* Input in second argument *)
+  val para_input_right :
+    event_structure -> event_structure -> event_structure option
+
+(***********************************************)
 (* sequential composition, add data dependency *)
+(***********************************************)
 
   val (=*$=) : (* second es entries are minimal evts for iico_data *)
       event_structure -> event_structure -> event_structure option
+
+  val data_input_next : (* input to second structure *)
+    event_structure -> event_structure -> event_structure option
 
   val data_to_minimals : (* second es entries are minimal evts all iico *)
       event_structure -> event_structure -> event_structure option
@@ -320,6 +336,11 @@ val same_instance : event -> event -> bool
 
 (* similar, additionally avoid some evts in target links *)
   val bind_ctrl_avoid : event_set ->  event_structure -> event_structure -> event_structure option
+
+
+(***********************)
+(* Custom compositions *)
+(***********************)
 
 (* Compose three structures s1 s2 and s3 with s1-ctrl+data->s3
      and s2-data->s3 *)
@@ -490,6 +511,9 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 
     let debug_event chan e =
       fprintf chan
+        "(eeid=%s action=%s)" (pp_eiid e) (pp_action e)
+    let debug_event_str e =
+      sprintf
         "(eeid=%s action=%s)" (pp_eiid e) (pp_action e)
 
 (* Utility functions to pick out components *)
@@ -702,7 +726,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         intra_causality_control : EventRel.t ;(* really a (partial order) relation *)
         control : EventRel.t ;
         data_ports : EventSet.t ; success_ports : EventSet.t ;
-        output : EventSet.t option ; ctrl_output : EventSet.t option ;
+        input : EventSet.t option ;
+        data_input : EventSet.t option ;
+        output : EventSet.t option ;
+        ctrl_output : EventSet.t option ;
         sca : EventSetSet.t ;
         mem_accesses : EventSet.t ;
         aligned : (event * EventSet.t) list ;
@@ -726,6 +753,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         control = map_rel es.control ;
         data_ports = map_set es.data_ports ;
         success_ports = map_set es.success_ports ;
+        input = Misc.app_opt map_set es.input ;
+        data_input = Misc.app_opt map_set es.data_input ;
         output = Misc.app_opt map_set es.output ;
         ctrl_output = Misc.app_opt map_set es.ctrl_output ;
         sca = EventSetSet.map map_set es.sca ;
@@ -745,6 +774,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         intra_causality_control = EventRel.empty ;
         control = EventRel.empty ;
         data_ports = EventSet.empty ; success_ports = EventSet.empty ;
+        input = None; data_input = None;
         output = None ; ctrl_output = None ;
         sca = EventSetSet.empty ;
         mem_accesses = EventSet.empty ;
@@ -759,6 +789,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       EventRel.is_empty es.control &&
       EventSet.is_empty es.data_ports &&
       EventSet.is_empty es.success_ports &&
+      Misc.is_none es.input &&
       Misc.is_none es.output &&
       Misc.is_none es.ctrl_output
 
@@ -840,16 +871,25 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       if V.Solution.is_empty soln then es
       else map_event_structure (simplify_vars_in_event soln) es
 
+(********************************)
 (* Event structure manipulation *)
+(********************************)
+
+(* Input *)
+
+    let min_evts evts r =
+      EventRel.fold
+        (fun (_,e) k -> EventSet.remove e k)
+        r evts
+
     let minimals es =
-      let intra_causality =
-        EventRel.union
-          es.intra_causality_data es.intra_causality_control in
-      EventSet.filter
-        (fun e ->
-          EventRel.for_all
-            (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
-        es.events
+      match es.input with
+      | None ->
+         let intra_causality =
+           EventRel.union
+             es.intra_causality_data es.intra_causality_control in
+         min_evts es.events intra_causality
+      | Some evts -> evts
 
     let minimals_no_spurious es =
       EventSet.filter
@@ -858,46 +898,42 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 
 
     let minimals_avoid aset es =
-      let intra_causality =
-        let r =
-          EventRel.union
-            es.intra_causality_data es.intra_causality_control in
-        EventRel.filter (fun (e,_) -> not (EventSet.mem e aset)) r in
-      EventSet.filter
-        (fun e ->
-          EventRel.for_all
-            (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
-        (EventSet.diff es.events aset)
+      match es.input with
+      | None ->
+         let intra_causality =
+           let r =
+             EventRel.union
+               es.intra_causality_data es.intra_causality_control in
+           EventRel.filter (fun (e,_) -> not (EventSet.mem e aset)) r in
+         min_evts (EventSet.diff es.events aset) intra_causality
+      | Some es ->
+         Warn.warn_always "minimal_avoid with explicit input" ;
+         EventSet.diff es aset
 
     let minimals_data es =
-      let intra_causality = es.intra_causality_data in
-      EventSet.filter
-        (fun e ->
-          EventRel.for_all
-            (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
-        es.events
+      match es.data_input with
+      | None -> min_evts es.events es.intra_causality_data
+      | Some evts -> evts
 
     let minimals_data_no_spurious es =
       EventSet.filter
         (fun e -> not (is_spurious e))
         (minimals_data es)
 
+(* Ouput *)
+
+    let max_evts evts r =
+      EventRel.fold
+        (fun (e,_) k -> EventSet.remove e k)
+        r evts
+
     let maximals es =
       let intra_causality =
         EventRel.union es.intra_causality_data es.intra_causality_control in
-      EventSet.filter
-        (fun e ->
-          EventRel.for_all
-            (fun (e1,_) -> e.eiid <> e1.eiid) intra_causality)
-        es.events
+      max_evts es.events intra_causality
 
     let maximals_data es =
-      let intra_causality = es.intra_causality_data in
-      EventSet.filter
-        (fun e ->
-          EventRel.for_all
-            (fun (e1,_) -> e.eiid <> e1.eiid) intra_causality)
-        es.events
+      max_evts es.events es.intra_causality_data
 
     let get_output es = match es.output with
     | None -> maximals_data es
@@ -918,12 +954,14 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 (* Add together event structures  *)
 (**********************************)
 
-(* Checking events sets are disjoint *)
-
+(* Checking events sets are disjoint, disabled *)
     let check_disjoint do_it es1 es2 =
       (*assert (EventSet.disjoint es1.events es2.events) ;*)
       Some (do_it es1 es2)
 
+(************************)
+(* Parallel composition *)
+(************************)
 
     let do_union_output access default es1 es2 =
       match access es1,access es2 with
@@ -943,6 +981,16 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let debug_opt dbg chan = function
       | None -> fprintf chan "None"
       | Some e -> dbg chan e
+
+    let do_union_input = do_union_output
+
+    let get_input es = es.input
+
+    let union_input = do_union_input get_input minimals
+
+    let get_data_input es = es.data_input
+
+    let union_data_input = do_union_input get_data_input minimals_data
 
 (*******************************)
 (* (Data-)Output in sequencing *)
@@ -968,8 +1016,9 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let sequence_control_output _es1 es2 = Some (get_output es2)
 
 (*******************************)
-(* Ctrl_output in sequencing *)
+(* Ctrl_output in sequencing   *)
 (*******************************)
+
     let sequence_data_ctrl_output es1 es2 =
       match es1.ctrl_output,es2.ctrl_output with
       | __,(Some _ as out) -> out
@@ -1002,6 +1051,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         control = EventRel.union es1.control es2.control;
         data_ports = EventSet.union es1.data_ports es2.data_ports;
         success_ports = EventSet.union es1.success_ports es2.success_ports;
+        input = es1.input ;  data_input = es1.data_input ;
         output = es2.output; ctrl_output = es2.ctrl_output ;
         sca = EventSetSet.union es1.sca es2.sca;
         mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses;
@@ -1057,6 +1107,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
             success_ports =
             EventSet.union3
               es1.success_ports es2.success_ports es3.success_ports;
+            input = None; data_input = None ;
             output = None; ctrl_output = None ;
             sca = EventSetSet.union3 es1.sca es2.sca es3.sca;
             mem_accesses =
@@ -1100,6 +1151,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           EventSet.union es1.data_ports es2.data_ports ;
         success_ports =
           EventSet.union es1.success_ports es2.success_ports ;
+       input = None ; data_input = None ;
        output = None; ctrl_output = None ;
        sca = EventSetSet.union es1.sca es2.sca ;
        mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses ;
@@ -1107,9 +1159,12 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       }
 
 (* Parallel composition *)
+
     let do_para_comp es1 es2 =
       let r = union es1 es2 in
       { r with
+        input = union_input es1 es2 ;
+        data_input = union_data_input es1 es2 ;
         output = union_output es1 es2 ;
         ctrl_output = union_ctrl_output es1 es2 ;
       }
@@ -1118,7 +1173,41 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       if check then check_disjoint do_para_comp
       else fun es1 es2 -> Some (do_para_comp es1 es2)
 
+    let para_atomic es1 es2 =
+      let m1 = EventSet.filter is_mem es1.events
+      and m2 = EventSet.filter is_mem es2.events in
+      Misc.app_opt
+        (fun r ->
+          { r with sca = EventSetSet.add (EventSet.union m1 m2) r.sca; })
+        (para_comp true es1 es2)
+
+    let do_force_input get mk es =
+      match get es with
+      | None -> Some (mk es)
+      | Some _ as i -> i
+
+    let force_input =  do_force_input get_input  minimals
+    and force_data_input = do_force_input get_data_input minimals_data
+
+    let para_input_right es1 es2 =
+       let r = union es1 es2 in
+       let r =
+         { r with
+           input = force_input es2;
+           data_input = force_data_input es2;
+           output = union_output es1 es2 ;
+           ctrl_output = union_ctrl_output es1 es2 ;
+         } in
+       Some r
+
 (* Composition with intra_causality_data from first to second *)
+    let do_seq_input access es1 es2 =
+      if is_empty_event_structure  es1 then access es2
+      else access es1
+
+    let seq_input = do_seq_input  get_input
+    and seq_data_input = do_seq_input  get_data_input
+
     let data_comp mini_loc mkOut es1 es2 =
       let r = union es1 es2 in
       { r with
@@ -1129,12 +1218,22 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           (EventRel.union
              r.intra_causality_data
              (EventRel.cartesian (get_output es1) (mini_loc es2))) ;
+        input = seq_input es1 es2 ;
+        data_input = seq_data_input es1 es2 ;
         output = mkOut es1 es2 ;
         ctrl_output = sequence_data_ctrl_output es1 es2 ;
       }
 
     let (=*$=) =
       check_disjoint (data_comp minimals_data sequence_data_output)
+
+    let data_input_next es1 es2 =
+      let r = data_comp minimals_data sequence_data_output es1 es2  in
+      Some
+        { r with
+          input = force_input es2;
+          data_input = force_data_input es2;
+        }
 
     let data_to_minimals =
       check_disjoint (data_comp minimals sequence_data_output)
@@ -1158,6 +1257,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           EventRel.union
             r.intra_causality_control
             (EventRel.cartesian (maxi_loc es1) (mini_loc es2)) ;
+        input = seq_input es1 es2 ;
+        data_input = seq_data_input es1 es2 ;
         output = mkOut es1 es2;
         ctrl_output = sequence_data_ctrl_output es1 es2;
       }
@@ -1224,6 +1325,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
        success_ports =
          EventSet.union3
            es1.success_ports es2.success_ports es3.success_ports;
+       input = None ; data_input = None ;
        output = None; ctrl_output = None ;
        sca = EventSetSet.union3 es1.sca es2.sca es3.sca;
        mem_accesses =
@@ -1250,6 +1352,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           EventRel.union
             r.intra_causality_control
             (EventRel.cartesian (get_ctrl_output_commits es1) input_es3);
+        input = union_input es1 es2;
+        data_input = union_data_input es1 es2;
         output = sequence_data_output es2 es3;
        }
 
@@ -1268,6 +1372,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
             EventRel.union
               r.intra_causality_control
               (EventRel.cartesian ctrl_out1 (minimals_no_spurious es2)) ;
+          input = seq_input es1 es2 ;
+          data_input = seq_data_input es1 es2 ;
           output = Some data_out1 ;
           ctrl_output = Some ctrl_out1 ;
         } in
@@ -1284,6 +1390,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
             EventRel.union
               r.intra_causality_control
               (EventRel.cartesian ctrl_out1 es2.events) ;
+          input = seq_input es1 es2 ;
+          data_input = seq_data_input es1 es2 ;
           output = Some data_out1 ;
           ctrl_output = Some ctrl_out1 ;
         } in
@@ -1318,6 +1426,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         success_ports =
         EventSet.union3
           a.success_ports rtag.success_ports commit.success_ports;
+        input = None ; data_input = None ;
         output = Some (get_output commit);
         ctrl_output = Some (get_ctrl_output commit);
         sca = EventSetSet.union3  a.sca rtag.sca commit.sca;
@@ -1359,7 +1468,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         data_ports =
         EventSet.union4 rs1.data_ports rs2.data_ports ws1.data_ports ws2.data_ports;
         success_ports =
-        EventSet.union4 rs1.success_ports rs2.success_ports ws1.success_ports ws2.success_ports;
+          EventSet.union4 rs1.success_ports rs2.success_ports ws1.success_ports ws2.success_ports;
+        input =  None ; data_input = None ;
         output = None; ctrl_output = None ;
         sca = EventSetSet.union4 rs1.sca rs2.sca ws1.sca ws2.sca;
         mem_accesses =
@@ -1431,6 +1541,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         EventSet.union5
           rloc.success_ports
           rmem.success_ports rreg.success_ports wmem.success_ports wreg.success_ports;
+        input = None; data_input = None;
         output = None; ctrl_output = None ;
         sca = EventSetSet.union5 rloc.sca rmem.sca rreg.sca wmem.sca wreg.sca;
         mem_accesses =
@@ -1494,6 +1605,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         success_ports =
         EventSet.union4
           re.success_ports rloc.success_ports rmem.success_ports wmem.success_ports;
+        input = None; data_input = None;
         output = Some (get_output rmem); ctrl_output = None ;
         sca = EventSetSet.union4 re.sca rloc.sca rmem.sca wmem.sca;
         mem_accesses =
@@ -1537,6 +1649,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         success_ports =
         EventSet.union4
           re.success_ports rloc.success_ports rmem.success_ports wmem.success_ports;
+        input = None; data_input = None;
         output = Some (get_output rmem); ctrl_output = None ;
         sca = EventSetSet.union4 re.sca rloc.sca rmem.sca wmem.sca;
         mem_accesses =
@@ -1590,6 +1703,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         data_ports=
         EventSet.union5 rloc.data_ports rold.data_ports rnew.data_ports
           rmem.data_ports wmem.data_ports;
+        input = None; data_input = None;
         output=Some (get_output rmem); ctrl_output = None ;
         success_ports=
         EventSet.union5 rloc.success_ports rold.success_ports rnew.success_ports
@@ -1635,7 +1749,9 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         data_ports=
         EventSet.union3 rloc.data_ports rold.data_ports rmem.data_ports;
         success_ports=
-        EventSet.union3 rloc.success_ports rold.success_ports rmem.success_ports;
+          EventSet.union3
+            rloc.success_ports rold.success_ports rmem.success_ports;
+        input=None; data_input=None;
         output=Some (get_output rmem); ctrl_output = None ;
         sca = EventSetSet.union3 rloc.sca rold.sca rmem.sca;
         mem_accesses=
@@ -1689,6 +1805,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         EventSet.union5
           loc.success_ports a.success_ports u.success_ports
           rmem.success_ports wmem.success_ports;
+        input=None; data_input=None;
         output =
         Some
           (if retbool then
@@ -1731,6 +1848,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         EventSet.union3 loc.data_ports u.data_ports rmem.data_ports;
         success_ports =
         EventSet.union3 loc.success_ports u.success_ports rmem.success_ports;
+        input=None; data_input=None;
         output =
         Some
           (if retbool then EventSet.union (get_output rmem) (get_output u) else get_output rmem);
@@ -1822,6 +1940,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         EventSet.union
           (EventSet.union3 resa.success_ports data.success_ports addr.success_ports)
           (EventSet.union3 wres.success_ports wresult.success_ports wmem.success_ports);
+        input=None; data_input=None;
         output = Some (EventSet.union (get_output wresult) (get_output wres));
         ctrl_output = None ;
         sca =
@@ -1887,6 +2006,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         EventSet.union4
           rn.mem_accesses rs.mem_accesses
           wrs.mem_accesses rm.mem_accesses;
+        input=None; data_input=None;
         output = Some (maximals wrs);
         ctrl_output = None ;
         aligned = rn.aligned @ rs.aligned @ wrs.aligned @ rm.aligned;
@@ -1965,6 +2085,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         (EventSet.union6
            rn.mem_accesses rs.mem_accesses rt.mem_accesses
            wrs.mem_accesses rm.mem_accesses wm.mem_accesses);
+        input=None; data_input=None;
         output = Some (maximals wrs); ctrl_output = None ;
         aligned =
           rn.aligned @ rs.aligned @ rt.aligned @ wrs.aligned
@@ -2021,6 +2142,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         mem_accesses =
         (EventSet.union4
            rn.mem_accesses rt.mem_accesses rm.mem_accesses wm.mem_accesses);
+        input=None; data_input=None;
         output = None; ctrl_output = None ;
         aligned = rn.aligned @ rt.aligned @ rm.aligned @ wm.aligned ;
       }
@@ -2064,6 +2186,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         EventSet.union4
           rD.success_ports rEA.success_ports
           wEA.success_ports wM.success_ports ;
+        input=None; data_input=None;
         output = None; ctrl_output = None ;
         sca = EventSetSet.union4 rD.sca rEA.sca wEA.sca wM.sca;
         mem_accesses =

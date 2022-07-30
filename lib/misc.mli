@@ -77,6 +77,7 @@ val fmt_percent : string -> string
 
 val opt_compare : ('a -> 'a -> int) -> 'a option -> 'a option -> int
 val opt_eq : ('a -> 'a -> bool) -> 'a option -> 'a option -> bool
+val pair : 'a -> 'b -> 'a * 'b
 val pair_compare :
     ('a -> 'a -> int) -> ('b -> 'b -> int) -> 'a * 'b -> 'a * 'b -> int
 val pair_eq :

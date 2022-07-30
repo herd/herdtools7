@@ -1,0 +1,12 @@
+AArch64 L030
+{
+uint64_t t[2];
+0:X0=t;
+uint64_t 0:X3; uint64_t 0:X4;
+}
+  P0            ; 
+ MOV X1,#1      ;
+ MOV X2,#2      ;
+ STP X1,X2,[X0] ;
+ LDP X3,X4,[X0] ;
+forall 0:X3=1 /\ 0:X4=2; 

@@ -17,6 +17,7 @@
 type t =
   | Self (* Self modifying code *)
   | Precise of Precision.t
+  | Mixed (* Ignored *)
 
 val tags : string list
 val parse : string -> t option

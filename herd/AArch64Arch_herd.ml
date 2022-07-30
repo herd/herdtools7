@@ -187,10 +187,11 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | _ -> assert false (* Unsupported arrangement specifier *)
 
     let mem_access_size = function
-      | I_LDR (v,_,_,_,_) | I_LDP (_,v,_,_,_,_)
+      | I_LDPSW _ -> Some (tr_variant V32)
+      | I_LDR (v,_,_,_,_) | I_LDP (_,v,_,_,_,_) | I_LDXP (v,_,_,_,_)
       | I_LDUR (v,_,_,_)  | I_LDR_P(v,_,_,_)
       | I_STR (v,_,_,_,_) | I_STLR (v,_,_) | I_STXR (v,_,_,_,_)
-      | I_STP (_,v,_,_,_,_)
+      | I_STP (_,v,_,_,_,_) | I_STXP (v,_,_,_,_,_)
       | I_CAS (v,_,_,_,_) | I_SWP (v,_,_,_,_)
       | I_LDOP (_,v,_,_,_,_) | I_STOP (_,v,_,_,_) ->
           Some (tr_variant v)
@@ -218,7 +219,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_NOP|I_B _|I_BR _|I_BC (_, _)|I_CBZ (_, _, _)
       | I_CBNZ (_, _, _)|I_BL _|I_BLR _|I_RET _|I_LDAR (_, _, _, _)
       | I_TBNZ(_,_,_,_) | I_TBZ (_,_,_,_) | I_MOVZ (_,_,_,_) | I_MOVK(_,_,_,_)
-      |I_MOV (_, _, _)|I_SXTW (_, _)|I_OP3 (_, _, _, _, _, _)
+      | I_MOV (_, _, _)|I_SXTW (_, _)|I_OP3 (_, _, _, _, _, _)
       | I_ADR (_, _)|I_RBIT (_, _, _)|I_FENCE _
       | I_CSEL (_, _, _, _, _, _)|I_IC (_, _)|I_DC (_, _)|I_MRS (_, _)
       | I_STG _ | I_STZG _ | I_LDG _
@@ -255,7 +256,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDUR (_,r,_,_)
       | I_LDAR (_,_,r,_) |I_LDARBH (_,_,r,_)
       | I_SWP (_,_,_,r,_) | I_SWPBH (_,_,_,r,_)
-      | I_STXR (_,_,r,_,_) | I_STXRBH (_,_,r,_,_)
+      | I_STXR (_,_,r,_,_) | I_STXP (_,_,r,_,_, _) | I_STXRBH (_,_,r,_,_)
       | I_CAS (_,_,r,_,_) | I_CASBH (_,_,r,_,_)
       | I_LDOP (_,_,_,_,r,_) | I_LDOPBH (_,_,_,_,r,_)
       | I_MOV (_,r,_) | I_MOVZ (_,r,_,_) | I_MOVK (_,r,_,_)
@@ -267,6 +268,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MRS (r,_)
         -> [r]
       | I_LDR_P (_,r1,r2,_) | I_LDP (_,_,r1,r2,_,_)
+      | I_LDPSW (r1,r2,_,_) | I_LDXP (_,_,r1,r2,_)
         -> [r1;r2;]
       | I_LD1 _|I_LD1M _|I_LD1R _|I_LD2 _
       | I_LD2M _|I_LD2R _|I_LD3 _|I_LD3M _
@@ -292,10 +294,40 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
           -> Warn.fatal "SVE instructions are not implemented yet"
 
     let get_lx_sz = function
-      | I_LDAR (var,(XX|AX),_,_) -> MachSize.Ld (tr_variant var)
+      | I_LDAR (var,(XX|AX),_,_)|I_LDXP (var,_,_,_,_) -> MachSize.Ld (tr_variant var)
       | I_LDARBH (bh,(XX|AX),_,_) -> MachSize.Ld (bh_to_sz bh)
-      | I_STXR _|I_STXRBH _ -> MachSize.St
-      | _ -> MachSize.No
+      | I_STXR _|I_STXRBH _ | I_STXP _ -> MachSize.St
+      | I_LDAR (_, (AA|AQ), _, _)|I_LDARBH (_, (AA|AQ), _, _)
+      | I_NOP|I_B _|I_BR _|I_BC _|I_CBZ _|I_CBNZ _
+      | I_TBNZ _|I_TBZ _|I_BL _|I_BLR _|I_RET _
+      | I_LDR _|I_LDUR _|I_LD1 _
+      | I_LD1M _|I_LD1R _|I_LD2 _|I_LD2M _
+      | I_LD2R _|I_LD3 _|I_LD3M _|I_LD3R _
+      | I_LD4 _|I_LD4M _|I_LD4R _|I_ST1 _
+      | I_ST1M _|I_ST2 _|I_ST2M _|I_ST3 _
+      | I_ST3M _|I_ST4 _|I_ST4M _
+      | I_LDP_P_SIMD _|I_STP_P_SIMD _
+      | I_LDP_SIMD _|I_STP_SIMD _
+      | I_LDR_SIMD _|I_LDR_P_SIMD _
+      | I_STR_SIMD _|I_STR_P_SIMD _
+      | I_LDUR_SIMD _|I_STUR_SIMD _|I_MOV_VE _
+      | I_MOV_V _|I_MOV_TG _|I_MOV_FG _
+      | I_MOV_S _|I_MOVI_V _|I_MOVI_S _
+      | I_EOR_SIMD _|I_ADD_SIMD _|I_ADD_SIMD_S _
+      | I_LDR_P _|I_LDP _|I_LDPSW _|I_STP _
+      | I_STR _|I_STLR _|I_ALIGND _|I_ALIGNU _
+      | I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
+      | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _
+      | I_LDCT _|I_SC _|I_SEAL _|I_STCT _
+      | I_UNSEAL _|I_LDRBH _|I_STRBH _
+      | I_STLRBH _|I_CAS _|I_CASBH _
+      | I_SWP _|I_SWPBH _|I_LDOP _
+      | I_LDOPBH _|I_STOP _|I_STOPBH _
+      | I_MOV _|I_MOVZ _|I_MOVK _|I_SXTW _
+      | I_OP3 _|I_ADR _|I_RBIT _|I_FENCE _
+      | I_CSEL _|I_IC _|I_DC _|I_TLBI _|I_MRS _
+      | I_STG _|I_STZG _|I_LDG _
+        -> MachSize.No
 
     type ifetch_instruction = instruction
 

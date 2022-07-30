@@ -45,9 +45,6 @@ val set_cross : string -> unit
 val is_out : unit -> bool
 val get_tar : unit -> string
 
-val logicalprocs : int list option ref
-val set_logicalprocs : string -> unit
-
 (* Direct acccess to references *)
 val crossrun : Crossrun.t ref
 val adbdir : string ref
@@ -75,6 +72,8 @@ val collect : Collect.t ref
 val safer : Safer.t ref
 val cautious : bool ref
 val affinity : Affinity.t ref
+val logicalprocs : int list option ref
+val set_logicalprocs : string -> unit
 val force_affinity : bool ref
 val smtmode : Smt.t ref
 val smt : int ref

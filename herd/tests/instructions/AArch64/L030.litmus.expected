@@ -1,0 +1,10 @@
+Test L030 Required
+States 1
+0:X3=1; 0:X4=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X3=1 /\ 0:X4=2)
+Observation L030 Always 1 0
+Hash=f16872642c4227472a100d48ba699aaf
+

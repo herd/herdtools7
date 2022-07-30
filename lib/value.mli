@@ -45,7 +45,6 @@ module type S =
 (* produce a fresh variable *)
       val fresh_var : unit -> v
       val from_var : csym -> v
-      val as_var : v -> csym option
       val as_symbol : v -> string
 
 (* Equality (for constraint solver) is possible *)
@@ -69,7 +68,7 @@ module type S =
 
       (* The following operations may raise
          exception "Undetermined", if their arguments of
-	 type v are not determined enough to yield a result *)
+         type v are not determined enough to yield a result *)
 
       exception Undetermined
 
@@ -95,12 +94,12 @@ module type S =
 
       val is_var_determined : v -> bool
       val undetermined_vars : v -> ValueSet.t
-      val determined_val : v -> Cst.v option
       val simplify_var : solution -> v -> v
 
 (* Convenience, will do nothing if 'v' argument not adequate *)
       val map_const : (Cst.v -> Cst.v) -> v -> v
       val map_scalar : (Cst.Scalar.t -> Cst.Scalar.t) -> v -> v
+      val map_csym : (csym -> v) -> v -> v
     end
 
 module type AArch64 = S
