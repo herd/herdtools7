@@ -486,7 +486,17 @@ match name with
                             begin match A.parse_sve_pred_reg name with
                             | Some r -> ARCH_PREG (A.SvePredReg r)
                             | None ->
-                                NAME name
+                                begin match A.parse_sve_reg_sized name with
+                                | Some (r, sz) ->
+                                    ARCH_ZREG_SIZED ((A.SveReg r), sz)
+                                | None ->
+                                    begin match A.parse_sve_pred_reg_sized name with
+                                    | Some (r, sz) ->
+                                        ARCH_PREG_SIZED ((A.SvePredReg r), sz)
+                                    | None ->
+                                        NAME name
+                                    end
+                                end
                             end
                         end
                     end

@@ -679,7 +679,7 @@ let parse_sve_reg_sized s =
   try let (g1, g2) =
     ignore (Str.search_forward (Str.regexp "\\(Z[0-9]+\\)\\(\\.[0-9]*[B,D,H,S]\\)") (Misc.uppercase s) 0);
     (Str.matched_group 1 s, Str.matched_group 2 s);
-    in Some (SveReg (List.assoc g1 zlist), List.assoc g2 size_list)
+    in Some (List.assoc g1 zlist, List.assoc g2 size_list)
   with Not_found -> None
 
 let parse_sve_pred_reg_sized s =
@@ -688,7 +688,7 @@ let parse_sve_pred_reg_sized s =
   try let (g1, g2) =
     ignore (Str.search_forward (Str.regexp "\\(P[0-9]+\\)\\(\\.[0-9]*[B,D,H,S]\\)") (Misc.uppercase s) 0);
     (Str.matched_group 1 s, Str.matched_group 2 s);
-    in Some (SvePredReg (List.assoc g1 plist), List.assoc g2 size_list)
+    in Some (List.assoc g1 plist, List.assoc g2 size_list)
   with Not_found -> None
 
 let pp_variant = function
