@@ -1207,9 +1207,14 @@ module Make(V:Constant.S)(C:Config) =
     let fault_handler_prologue p =
       map_ins ["b 1f";sprintf  "asm_handler%d:" p]
 
-    and fault_handler_epilogue =
+    and fault_handler_epilogue code =
       let ins =
-        if Precision.is_skip C.precision then
+        if
+          List.exists
+            (fun i -> i.memo = "eret")
+            code
+        then [] (* handler is complete *)
+        else if Precision.is_skip C.precision then
           [ "mrs %[tr0],elr_el1" ;
             "add %[tr0],%[tr0],#4" ;
             "msr elr_el1,%[tr0]" ;

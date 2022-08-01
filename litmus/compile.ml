@@ -409,25 +409,32 @@ type P.code = MiscParser.proc * A.pseudo list)
         esc_prog (init_targets init)
 
 (* Translate labls to integers (local labels), when possible *)
-    let rec lblmap_pseudo no c m i = match i with
-    | A.Nop|A.Instruction _ -> c,m
+    let rec lblmap_pseudo no cm i = match i with
+    | A.Nop|A.Instruction _ -> cm
     | A.Label(lbl,i) ->
-        let m =
-          if Label.Set.mem lbl no then m
-          else Label.Map.add lbl c m in
-        lblmap_pseudo no (c+1) m i
+       let cm  =
+         let c,m = cm in
+         if Label.Set.mem lbl no then cm
+         else c+1,Label.Map.add lbl c m in
+       lblmap_pseudo no cm i
     | A.Symbolic _ (*no symbolic in litmus *)
     | A.Macro _ -> assert false
 
     let lblmap_code no =
-      let rec do_rec c m = function
-        | [] -> m
+      let rec do_rec cm = function
+        | [] -> cm
         | i::code ->
-            let c,m = lblmap_pseudo no c m i in
-            do_rec c m code in
-      do_rec 0 Label.Map.empty
+            let cm = lblmap_pseudo no cm i in
+            do_rec cm code in
+      fun code co ->
+        let (_,m) as cm = do_rec (0,Label.Map.empty) code in
+        match co with
+        | None -> m
+        | Some code ->
+           let _,m = do_rec cm code in
+           m
 
-(*******************************)
+    (*******************************)
 (* Count specific instructions *)
 (*******************************)
 
@@ -467,9 +474,9 @@ type P.code = MiscParser.proc * A.pseudo list)
       | Instruction _ ->
         Warn.fatal "FIXME: as_int functionality for -variant self"
 
-    let compile_pseudo_code no code k =
+    let compile_pseudo_code no code fhandler =
       let m =
-        if O.numeric_labels then lblmap_code no code
+        if O.numeric_labels then lblmap_code no code fhandler
         else Label.Map.empty in
 
       let tr_lab seen lbl =
@@ -491,23 +498,39 @@ type P.code = MiscParser.proc * A.pseudo list)
       | A.Macro (_,_) -> assert false in
 
       let rec do_rec seen = function
-        | [] -> k
+        | [] -> seen,[]
         | ins::code ->
             let seen,ins = compile_pseudo seen ins in
-            let k = do_rec seen code in
-            ins @ k in
-      do_rec StringSet.empty code
+            let seen,k = do_rec seen code in
+            seen,ins @ k in
+      let seen,code = do_rec StringSet.empty code in
+      match fhandler with
+      | None -> code,[]
+      | Some fhandler ->
+         let _,fhandler = do_rec seen fhandler in
+         code,fhandler
 
-    let compile_code no user code =
-      let code = compile_pseudo_code no code [] in
+    let compile_code proc no user code fhandler =
+      let code,fhandler_c = compile_pseudo_code no code fhandler in
       let code =
         if O.timeloop > 0 then C.emit_loop code
         else code in
-      let code = match O.barrier with
-      | Barrier.TimeBase -> (* C.emit_tb_wait *) code
-      | _ -> code  in
-      if user then C.user_mode@code@C.kernel_mode
-      else code
+      let code =
+        if user then C.user_mode@code@C.kernel_mode
+        else code
+      and fhandler =
+        match fhandler with
+        | None -> fhandler_c
+        | Some _ ->
+           let asmhandler =
+             let open Driver in
+             match O.driver with
+             | C|Shell -> proc
+             | XCode ->
+             Warn.user_error "No custom handler for XCode" in
+           C.fault_handler_prologue asmhandler
+           @fhandler_c@C.fault_handler_epilogue fhandler_c in
+      code,fhandler
 
 
     module RegSet = A.RegSet
@@ -618,23 +641,17 @@ type P.code = MiscParser.proc * A.pseudo list)
             let addrs = extract_addrs code in
             let stable = stable_regs code in
             let is_user = (List.exists (Proc.equal proc) procs_user) in
-            let code = compile_code esc is_user code in
-            let fhandler,addrs =
+            let (code,fhandler),addrs =
               try
                 let (_,_,c) = List.find (fun (p,_,_) -> Proc.equal p proc) fhandlers in
                 if is_user then
                   Warn.user_error "Process %d running in userspace cannot have fault handler" proc ;
                 let addrs = G.Set.union (extract_addrs c) addrs in
-                let code = compile_code esc false c in
-                let asmhandler =
-                  let open Driver in
-                  match O.driver with
-                  | C|Shell -> proc
-                  | XCode ->
-                     Warn.user_error "No custom handler for XCode" in
-                C.fault_handler_prologue asmhandler@code@C.fault_handler_epilogue,addrs
+                let code,fhandler =
+                  compile_code proc esc is_user code (Some c) in
+                (code,fhandler),addrs
               with Not_found ->
-                [],addrs
+                 compile_code proc esc is_user code None,addrs
             in
             proc,addrs,stable,code,fhandler,nrets,nnops)
           mains in

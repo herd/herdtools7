@@ -23,7 +23,7 @@ module type S = sig
   val kernel_mode : ins list
 
   val fault_handler_prologue : Proc.t -> ins list
-  val fault_handler_epilogue : ins list
+  val fault_handler_epilogue : ins list -> ins list
 end
 
 module No(A:sig type ins end) : S with type ins = A.ins
