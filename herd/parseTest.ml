@@ -45,67 +45,62 @@ module NoCheck = struct
   let check parsed= parsed
 end
 
-module Top (TopConf:Config) = struct
-
-  module Make
-      (S:Sem.Semantics)
-      (P:sig
-        type pseudo
-        val parse : in_channel -> Splitter.result ->  pseudo MiscParser.t
-      end with type pseudo = S.A.pseudo)
-      (Check:
-         sig
-           val check : S.A.pseudo MiscParser.t -> S.A.pseudo MiscParser.t
-         end)
-      (M:XXXMem.S with module S = S)
-      (C:Config) =
-    struct
-      module T = Test_herd.Make(S.A)
-
-      let run dirty start_time filename chan env splitted =
-        try
-
-          let parsed = P.parse chan splitted in
-
-          (* Additional checks *)
-          let parsed = Check.check parsed in
-
-
+module Make
+    (S:Sem.Semantics)
+    (P:sig
+      type pseudo
+      val parse : in_channel -> Splitter.result ->  pseudo MiscParser.t
+    end with type pseudo = S.A.pseudo)
+    (Check:
+       sig
+         val check : S.A.pseudo MiscParser.t -> S.A.pseudo MiscParser.t
+       end)
+    (M:XXXMem.S with module S = S)
+    (C:Config) =
+  struct
+    module T = Test_herd.Make(S.A)
+     let run dirty start_time filename chan env splitted =
+      try
+         let parsed = P.parse chan splitted in
+         (* Additional checks *)
+        let parsed = Check.check parsed in
           let name = splitted.Splitter.name in
-          let hash = MiscParser.get_hash parsed in
-          let env = match hash with
-          | None -> env
-          | Some hash ->
-              TestHash.check_env env name.Name.name filename hash in
-          let test = T.build name parsed in
+        let hash = MiscParser.get_hash parsed in
+        let env = match hash with
+        | None -> env
+        | Some hash ->
+            TestHash.check_env env name.Name.name filename hash in
+        let test = T.build name parsed in
 (* Compute basic machine size *)
-          let sz =
-            if S.A.is_mixed then begin match TopConf.byte with
-            | MachSize.Tag.Size sz -> sz
-            | MachSize.Tag.Auto ->
-                let szs = test.Test_herd.access_size in
-                match szs with
-                | [] -> MachSize.Byte
-                | [sz] -> MachSize.pred sz
-                | sz::_ -> sz
-            end else begin
-              (* Cannot that easily check the test not to mix sizes,
-                 as there are several locations in test that may be of
-                 different sizes *)
-              MachSize.Byte
-            end in
+        let sz =
+          if S.A.is_mixed then begin match C.byte with
+          | MachSize.Tag.Size sz -> sz
+          | MachSize.Tag.Auto ->
+              let szs = test.Test_herd.access_size in
+              match szs with
+              | [] -> MachSize.Byte
+              | [sz] -> MachSize.pred sz
+              | sz::_ -> sz
+          end else begin
+            (* Cannot that easily check the test not to mix sizes,
+               as there are several locations in test that may be of
+               different sizes *)
+            MachSize.Byte
+          end in
 (* And run test *)
-          let module T =
-            Top_herd.Make
-              (struct
-                include C
-                let byte = sz
-                let dirty = dirty
-              end)(M) in
-          T.run start_time test ;
-          env
-        with TestHash.Seen -> env
-    end
+        let module T =
+          Top_herd.Make
+            (struct
+              include C
+              let byte = sz
+              let dirty = dirty
+            end)(M) in
+        T.run start_time test ;
+        env
+      with TestHash.Seen -> env
+  end
+
+module Top (TopConf:Config) = struct
 
   module SP =
     Splitter.Make
