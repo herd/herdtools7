@@ -178,7 +178,8 @@ module Top(O:Config)(Tar:Tar.S) = struct
       module Comp = Compile.Make (Compile.Default)(A)(T)(LISAComp)
 
       let compile fname =
-        Utils.compile P.parse List.length Comp.compile (allocate fname)
+        Utils.compile
+          P.parse MiscParser.count_procs Comp.compile (allocate fname)
           fname
     end
 

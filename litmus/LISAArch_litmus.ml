@@ -54,4 +54,5 @@ module Make(V:Constant.S) = struct
       end)
   let features = []
   let nop = Pnop
+  let vector_table _ = []
 end

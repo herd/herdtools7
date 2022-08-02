@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2022-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,16 +14,16 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module type S = sig
-  module A : Arch_litmus.S
+(** Arch dependent code for exception handlers *)
 
-  val is_ret : A.instruction -> bool
-  val is_nop : A.instruction -> bool
-  val extract_addrs : A.instruction -> Global_litmus.Set.t
-  val stable_regs : A.instruction -> A.RegSet.t
-  val emit_loop : A.Out.ins list -> A.Out.ins list
-  include Handler.S with type ins = A.Out.ins
-  val compile_ins :
-      (Label.t -> string) ->
-        A.instruction ->  A.Out.ins list -> A.Out.ins list
+module type S = sig
+  type ins
+
+  val user_mode : ins list
+  val kernel_mode : ins list
+
+  val fault_handler_prologue : Proc.t -> ins list
+  val fault_handler_epilogue : ins list -> ins list
 end
+
+module No(A:sig type ins end) : S with type ins = A.ins

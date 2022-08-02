@@ -77,10 +77,10 @@ module Make(V:Constant.S)(C:Config) =
 
 (* pretty prints barrel shifters *)
     let pp_shifter = function
-      | S_LSL(s) -> Printf.sprintf "LSL #%d" s
-      | S_LSR(s) -> Printf.sprintf "LSR #%d" s
-      | S_MSL(s) -> Printf.sprintf "MSL #%d" s
-      | S_ASR(s) -> Printf.sprintf "ASR #%d" s
+      | S_LSL(s) -> sprintf "LSL #%d" s
+      | S_LSR(s) -> sprintf "LSR #%d" s
+      | S_MSL(s) -> sprintf "MSL #%d" s
+      | S_ASR(s) -> sprintf "ASR #%d" s
       | S_SXTW -> "SXTW"
       | S_UXTW -> "UXTW"
       | S_NOEXT  -> ""
@@ -1181,6 +1181,17 @@ module Make(V:Constant.S)(C:Config) =
 (* Not that useful *)
     let emit_loop _k = assert false
 
+    let tr_ins ins =
+      match ins.[String.length ins-1] with
+      | ':' ->
+         let lab = String.sub ins 0 (String.length ins-1) in
+         { empty_ins with memo = ins; label = Some lab; }
+      | _ -> { empty_ins with memo = ins; }
+
+    let map_ins = List.map tr_ins
+
+    type ins = A.Out.ins
+
     let user_mode =
       let ins =
         ["msr sp_el0,%[sp_usr]";
@@ -1189,18 +1200,21 @@ module Make(V:Constant.S)(C:Config) =
          "msr spsr_el1,xzr";
          "eret";
          "9:"] in
-      List.map (fun s -> { empty_ins with memo=s;}) ins
+      map_ins ins
 
     let kernel_mode = [{ empty_ins with memo="svc #471"}]
 
-    let fault_handler_prologue =
-      [ { empty_ins with memo="b 1f"; };
-        { empty_ins with memo=".globl el1h_sync"; label=Some ""; };
-        { empty_ins with memo="el1h_sync:"; label=Some "el1h_sync"; } ]
+    let fault_handler_prologue p =
+      map_ins ["b 1f";sprintf  "asm_handler%d:" p]
 
-    and fault_handler_epilogue =
+    and fault_handler_epilogue code =
       let ins =
-        if Precision.is_skip C.precision then
+        if
+          List.exists
+            (fun i -> i.memo = "eret")
+            code
+        then [] (* handler is complete *)
+        else if Precision.is_skip C.precision then
           [ "mrs %[tr0],elr_el1" ;
             "add %[tr0],%[tr0],#4" ;
             "msr elr_el1,%[tr0]" ;
@@ -1212,7 +1226,7 @@ module Make(V:Constant.S)(C:Config) =
             "eret" ]
         else
           [ "eret" ] in
-      let ins = List.map (fun s -> { empty_ins with memo=s;}) ins in
+      let ins = map_ins ins in
       ins@[ {empty_ins with memo="1:"; label=Some "1"; } ]
 
     let compile_ins tr_lab ins k = match ins with

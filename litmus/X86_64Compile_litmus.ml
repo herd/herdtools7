@@ -260,9 +260,7 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
       in
            Misc.lowercase inst_str
 
-    let user_mode = [] and kernel_mode = []
-
-    let fault_handler_prologue = [] and fault_handler_epilogue = []
+    include Handler.No(struct type ins = A.Out.ins end)
 
     let rec do_compile_ins tr_lab ins = match ins with
     | I_NOP ->

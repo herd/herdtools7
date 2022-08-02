@@ -90,6 +90,7 @@ module type S = sig
 
   val get_nrets : t -> int
   val get_nnops : t -> int
+  val has_asmhandler : t -> bool
   val get_addrs_only : t -> string list
   val get_phys_only : t -> string list
   val get_addrs : t -> string list * string list (* addresses X ptes *)
@@ -114,7 +115,8 @@ module type S = sig
   module RegSet : MySet.S with type elt = arch_reg
   module RegMap : MyMap.S with type key = arch_reg
 
-  val all_regs : ins list -> arch_reg list -> RegSet.t
+  val all_regs : ins list -> ins list -> arch_reg list -> RegSet.t
+  val all_regs_in_tmpl : t -> RegSet.t
   val trashed_regs : t -> RegSet.t
   val get_reg_env :
       (CType.t -> CType.t -> bool)-> (* fail *)
@@ -171,6 +173,7 @@ module Make(O:Config)(A:I) =
 
     let get_nrets t = t.nrets
     and get_nnops t = t.nnops
+    and has_asmhandler t = Misc.consp t.fhandler
 
     (* Generic function to extract some symbols *)
     let get_gen tr init addrs =
@@ -363,11 +366,13 @@ module Make(O:Config)(A:I) =
     module RegSet = A.RegSet
     module RegMap = A.RegMap
 
-    let all_regs code final =
+    let all_regs code fhandler final =
       let all_ins ins =
         RegSet.union (RegSet.of_list (ins.inputs@ins.outputs)) in
-      List.fold_right all_ins code  (RegSet.of_list final)
+      let k = List.fold_right all_ins code  (RegSet.of_list final) in
+      List.fold_right all_ins fhandler  k
 
+    let all_regs_in_tmpl t = all_regs t.code t.fhandler t.final
 
     let trashed_regs t =
       let trashed_ins ins = RegSet.union (RegSet.of_list ins.outputs) in

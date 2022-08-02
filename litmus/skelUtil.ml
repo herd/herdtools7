@@ -766,7 +766,10 @@ module Make
               EPF.fi fmt ["total / 1000000.0"] ;
               O.oi "fflush(out);"
           | Mode.Kvm ->
-              if Cfg.have_fault_handler then O.oi "pp_faults();" ;
+              if
+                Cfg.have_fault_handler
+                && not (T.has_asmhandler test)
+              then O.oi "pp_faults();" ;
               let s = sprintf "Time %s "  doc.Name.name in
               O.fi "puts(%S);" s ;
               O.oi "emit_double(tsc_millions(total));" ;
