@@ -173,6 +173,10 @@ static void set_role(global_t *g,thread_ctx_t *c,int part) {
     c->ctx = NULL ;
     c->role = -1 ;
   }
+#ifdef KVM  
+#ifdef HAVE_FAULT_HANDLER
   set_fault_vector(c->role);
+#endif
+#endif
   barrier_wait(&g->gb) ;
 }
