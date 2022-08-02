@@ -195,15 +195,15 @@ module Make (C:Sem.Config)(V:Value.S)
           | ARM.I_B lbl -> B.branchT lbl
           | ARM.I_BEQ (lbl) ->
               read_reg_ord ARM.Z ii >>=
-              fun v -> commit true ii >>= fun () -> B.bccT v lbl
+              fun v -> commit Act.Bcc ii >>= fun () -> B.bccT v lbl
           | ARM.I_BNE (lbl) ->
               read_reg_ord ARM.Z ii >>=
-              fun v -> flip_flag v >>= fun vneg -> commit true ii >>=
+              fun v -> flip_flag v >>= fun vneg -> commit Act.Bcc ii >>=
                 fun () -> B.bccT vneg lbl
           | ARM.I_CB (n,r,lbl) ->
               let cond = if n then is_not_zero else is_zero in
               read_reg_ord r ii >>= cond >>=
-              fun v -> commit true ii >>= fun () -> B.bccT v lbl
+              fun v -> commit Act.Bcc ii >>= fun () -> B.bccT v lbl
           | ARM.I_CMPI (r,v) ->
               ((read_reg_ord  r ii)
                  >>=

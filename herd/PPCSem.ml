@@ -100,7 +100,7 @@ module Make (C:Sem.Config)(V:Value.S)
         M.mk_singleton_es (Act.Barrier b) ii
 
       let commit ii =
-        M.mk_singleton_es (Act.Commit (true,None)) ii
+        M.mk_singleton_es (Act.Commit (Act.Bcc,None)) ii
 
       let write_addr a v ii =  write_mem a v ii
 

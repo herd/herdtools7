@@ -49,14 +49,18 @@ module type Config = sig
 end
 
 module Make (C:Config) (A : A) : sig
+  type commit_type =
+    | Bcc | Pred | ExcReturn
+
   type action =
     | Access of Dir.dirn * A.location * A.V.v * A.lannot * A.explicit * MachSize.sz * Access.t
     | Barrier of A.barrier
-    | Commit of bool (* true = bcc / false = pred *) * string option
+    | Commit of commit_type * string option
 (* Atomic modify, (location,value read, value written, annotation *)
     | Amo of A.location * A.V.v * A.V.v * A.lannot * A.explicit * MachSize.sz * Access.t
 (* NB: Amo used in some arch only (e.g., Arm, RISCV) *)
-    | Fault of A.inst_instance_id * A.location * Dir.dirn * A.lannot * string option
+(* bool (fifth) argument is true when modeling fault handler entry *)
+    | Fault of A.inst_instance_id * A.location * Dir.dirn * A.lannot * bool * string option
 (* Unrolling control *)
     | TooFar of string
 (* TLB Invalidate event, operation (for print and level), address, if any.
@@ -131,15 +135,17 @@ end = struct
           "access_of_location_std on non-standard symbol '%s'"
           (V.pp_v v)
 
+  type commit_type =
+    | Bcc | Pred | ExcReturn
 
   type action =
     | Access of Dir.dirn * A.location * A.V.v * A.lannot * A.explicit * MachSize.sz * Access.t
     | Barrier of A.barrier
-    | Commit of bool * string option
+    | Commit of commit_type * string option
     | Amo of
         A.location * A.V.v * A.V.v * A.lannot * A.explicit *
         MachSize.sz * Access.t
-    | Fault of A.inst_instance_id * A.location * Dir.dirn * A.lannot * string option
+    | Fault of A.inst_instance_id * A.location * Dir.dirn * A.lannot * bool * string option
     | TooFar of string
     | Inv of A.TLBI.op * A.location option
     | DC of AArch64Base.DC.op * A.location option
@@ -171,8 +177,11 @@ end = struct
         (V.pp C.hexa v)
   | Barrier b -> A.pp_barrier_short b
   | Commit (b,m) ->
-      Printf.sprintf "Branching(%s)%s"
-        (if b then "bcc" else "pred")
+      Printf.sprintf "%s%s"
+        (match b with
+         | Bcc -> "Branching(bcc)"
+         | Pred -> "Branching(pred)"
+         | ExcReturn -> "ExcReturn")
         (match m with None -> "" | Some txt -> "("^txt^")")
   | Amo (loc,v1,v2,an,exp_an,sz,_) ->
       Printf.sprintf "RMW(%s)%s%s%s(%s>%s)"
@@ -180,8 +189,9 @@ end = struct
         (A.pp_explicit exp_an)
         (A.pp_location loc) (MachSize.pp_short sz)
         (V.pp C.hexa v1) (V.pp C.hexa v2)
-  | Fault (ii,loc,d,an,msg) ->
-      Printf.sprintf "Fault(proc:%s,poi:%s,%s,loc:%s%s%s)"
+  | Fault (ii,loc,d,an,handler,msg) ->
+     Printf.sprintf "%s(proc:%s,poi:%s,%s,loc:%s%s%s)"
+        (if handler then "ExcEntry" else "Fault")
         (A.pp_proc ii.A.proc)
         (A.pp_prog_order_index ii.A.program_order_index)
         (pp_dirn d)
@@ -237,7 +247,7 @@ end = struct
   let location_of a = match a with
   | Access (_, l, _,_,_,_,_)
   | Amo (l,_,_,_,_,_,_)
-  | Fault (_,l,_,_,_)
+  | Fault (_,l,_,_,_,_)
   | Inv (_,Some l)
   | DC(_,Some l)
   | IC(_,Some l)
@@ -338,15 +348,21 @@ end = struct
       -> false
 
   let is_faulting_read = function
-    | Fault (_,_,Dir.R,_,_) -> true
+    | Fault (_,_,Dir.R,_,_,_) -> true
     | _ -> false
 
   let is_faulting_write = function
-    | Fault (_,_,Dir.W,_,_) -> true
+    | Fault (_,_,Dir.W,_,_,_) -> true
     | _ -> false
 
+  let is_exc_entry = function
+    | Fault (_,_,_,_,true,_) -> true
+    | Fault _ | Access _ | Amo _ | Commit _ | Barrier _ | TooFar _ | Inv _
+    | DC _ | IC _ | Arch _ | NoAction
+      -> false
+
   let to_fault = function
-    | Fault (i,A.Location_global x,_,_,msg) -> Some ((i.A.proc,i.A.labels),x,msg)
+    | Fault (i,A.Location_global x,_,_,_,msg) -> Some ((i.A.proc,i.A.labels),x,msg)
     | Fault _ | Access _ | Amo _ | Commit _ | Barrier _ | TooFar _ | Inv _
     | DC _ | IC _ | Arch _ | NoAction
       -> None
@@ -465,12 +481,16 @@ end = struct
 (* Commits aka "branching events" *)
 
   let is_bcc a = match a with
-  | Commit (b,_) -> b
+  | Commit (Bcc,_) -> true
   | _ -> false
 
   let is_pred a = match a with
-  | Commit (b,_) -> not b
+  | Commit (Pred,_) -> true
   | _ -> false
+
+  let is_exc_return a = match a with
+    | Commit (ExcReturn,_) -> true
+    | _ -> false
 
   let is_commit a = match a with
   | Commit _ -> true
@@ -498,7 +518,7 @@ end = struct
         (fun (tag,p) ->
           let p act = match act with
           | Access(_,_,_,annot,_,_,_)|Amo (_,_,_,annot,_,_,_)
-          | Fault (_,_,_,annot,_)-> p annot
+          | Fault (_,_,_,annot,_,_)-> p annot
           | Arch a -> p (A.ArchAction.get_lannot a)
           | _ -> false
           in tag,p) A.annot_sets
@@ -532,6 +552,8 @@ end = struct
     ("FAULT",is_fault)::
     ("FAULT-RD",is_faulting_read)::
     ("FAULT-WR",is_faulting_write)::
+    ("EXC-ENTRY",is_exc_entry)::
+    ("EXC-RET",is_exc_return)::
     ("TLBI",is_inv)::
     ("DC",is_dc)::
     ("DC-IC",is_ic)::
@@ -663,9 +685,9 @@ end = struct
         let v1 = V.simplify_var soln v1 in
         let v2 = V.simplify_var soln v2 in
         Amo (loc,v1,v2,an,exp_an,sz,t)
-    | Fault (ii,loc,d,a,msg) ->
+    | Fault (ii,loc,d,a,h,msg) ->
         let loc = A.simplify_vars_in_loc soln loc in
-        Fault(ii,loc,d,a,msg)
+        Fault(ii,loc,d,a,h,msg)
     | Inv (op,oloc) ->
         let oloc = Misc.app_opt (A.simplify_vars_in_loc soln) oloc in
         Inv (op,oloc)

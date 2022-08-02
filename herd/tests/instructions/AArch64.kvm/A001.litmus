@@ -1,0 +1,12 @@
+AArch64 A001
+Variant=fatal
+{
+x=1;
+[PTE(x)]=(oa:PA(x),valid:0);
+0:X1=x;
+0:X2=0;
+}
+ P0          ;
+ LDR W0,[X1] ;
+ MOV W2, #1  ;
+forall (0:X0=0 /\ 0:X2=0)

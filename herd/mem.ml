@@ -28,6 +28,7 @@ module type CommonConfig = sig
   val check_filter : bool
   val maxphantom : int option
   val variant : Variant.t -> bool
+  val precision : Precision.t
 end
 
 module type Config = sig
@@ -246,7 +247,10 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       let locs = A.LocSet.union locs_final locs_init in
       let locs =
         List.fold_left
-          (fun locs (_,code) ->
+          (fun locs (_,code,fh_code) ->
+            let code = match fh_code with
+              | Some fh_code -> code@fh_code
+              | None -> code in
             List.fold_left
               (fun locs (_,ins) ->
                 A.fold_addrs
@@ -277,7 +281,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       let p = test.Test_herd.program in
       let starts = test.Test_herd.start_points in
       let return_labels = test.Test_herd.return_labels in
-      let procs = List.map fst starts in
+      let procs = List.map (fun (p,_,_) -> p) starts in
 
       let instr2labels =
         let one_label lbl (_,code) res = match code with
@@ -313,7 +317,10 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       let lbls2i, overwritable_labels =
         if self then
           List.fold_left
-            (fun (ps, ls)  (proc,code) ->
+            (fun (ps, ls)  (proc,code,fh_code) ->
+              let code = match fh_code with
+                | Some fh_code -> code@fh_code
+                | None -> code in
               List.fold_left
                 (fun (ps, ls) (addr,i) ->
                   if A.is_overwritable i then
@@ -457,7 +464,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
       let rec add_next_instr re_exec fetch_proc proc env seen addr inst nexts =
         wrap fetch_proc proc inst addr env SM.build_semantics >>> fun branch ->
-          let { A.regs=env; lx_sz=szo; } = env in
+          let { A.regs=env; lx_sz=szo; fh_code } = env in
           let env =
             let env = A.kill_regs (A.killed inst) env in
             match A.is_link inst with
@@ -481,15 +488,15 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                   bds env
             | _ -> env in
           next_instr
-            re_exec inst fetch_proc proc { A.regs=env; lx_sz=szo; }
+            re_exec inst fetch_proc proc { A.regs=env; lx_sz=szo; fh_code}
             seen addr nexts branch
 
-      and add_code fetch_proc proc env seen nexts = match nexts with
+      and add_code re_exec fetch_proc proc env seen nexts = match nexts with
       | [] -> EM.unitcodeT true
       | (addr,inst)::nexts ->
-          add_next_instr false fetch_proc proc env seen addr inst nexts
+          add_next_instr re_exec fetch_proc proc env seen addr inst nexts
 
-      and add_lbl check_back proc env seen addr_jmp lbl =
+      and add_lbl re_exec check_back proc env seen addr_jmp lbl =
         match fetch_code check_back seen proc addr_jmp lbl with
         | No (tgt_proc,(addr,inst)::_) ->
             let m ii =
@@ -498,39 +505,53 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                 (EM.tooFar lbl ii (S.B.Next [])) in
             wrap tgt_proc proc inst addr env m >>> fun _ -> EM.unitcodeT true
         | No (_,[]) -> assert false (* Backward jump cannot be to end of code *)
-        | Ok ((tgt_proc,code),seen) -> add_code tgt_proc proc env seen code
+        | Ok ((tgt_proc,code),seen) -> add_code re_exec tgt_proc proc env seen code
+
+      and add_fault inst dir fetch_proc proc env seen addr nexts =
+        match env.A.fh_code with
+        | Some fh_code ->
+           add_code true fetch_proc proc env seen fh_code
+        | None -> begin
+            let open Precision in
+            match C.precision,dir with
+            | Fatal,_ | LoadsFatal,(Dir.R|Dir.F) -> EM.unitcodeT true
+            | Skip,_ -> add_code false fetch_proc proc env seen nexts
+            | Handled,_ | LoadsFatal,Dir.W ->
+               add_next_instr true fetch_proc proc env seen addr inst nexts
+          end
 
       and next_instr re_exec inst fetch_proc proc env seen addr nexts b =
         match b with
       | S.B.Exit -> EM.unitcodeT true
-      | S.B.ReExec ->
-          if re_exec then begin
-            EM.unitcodeT false
-          end else
-            add_next_instr true fetch_proc proc env seen addr inst nexts
       | S.B.Next _ ->
-          add_code fetch_proc proc env seen nexts
+          add_code re_exec fetch_proc proc env seen nexts
       | S.B.Jump lbl ->
-          add_lbl true proc env seen addr lbl
+          add_lbl re_exec true proc env seen addr lbl
+      | S.B.Fault dir ->
+         if re_exec then
+             EM.unitcodeT false
+         else
+           add_fault inst dir fetch_proc proc env seen addr nexts
       | S.B.CondJump (v,lbl) ->
           EM.condJumpT v
-            (add_lbl (not (V.is_var_determined v)) proc env seen addr lbl)
-            (add_code fetch_proc proc env seen nexts)
+            (add_lbl re_exec (not (V.is_var_determined v)) proc env seen addr lbl)
+            (add_code re_exec fetch_proc proc env seen nexts)
       in
 
 (* Code monad returns a boolean. When false the code must be discarded.
    See also add_instr in eventsMonad.ml *)
       let jump_start proc env code =
-        add_code proc proc env Imap.empty code in
+        add_code false proc proc env Imap.empty code in
 
 (* As name suggests, add events of one thread *)
-      let add_events_for_a_processor env (proc,code) evts =
+      let add_events_for_a_processor env (proc,code,fh_code) evts =
         let env =
           if A.opt_env then A.build_reg_state proc env
           else A.reg_state_empty in
         let evts_proc =
-          jump_start proc { A.regs=env; lx_sz=None; } code in
-        evts_proc |*| evts in
+          jump_start proc { A.regs=env; lx_sz=None; fh_code } code in
+        evts_proc |*| evts
+      in
 
 (* Initial events, some additional events from caller in madd *)
       let make_inits madd env size_env =

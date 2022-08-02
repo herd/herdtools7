@@ -1,0 +1,10 @@
+Test A004 Required
+States 1
+ Fault(P0:L0,x);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0:L0,x))
+Observation A004 Always 1 0
+Hash=abfed1dff47d259c77dbd4bc5cef0cc5
+

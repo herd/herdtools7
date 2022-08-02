@@ -175,7 +175,7 @@ module Make (C:Sem.Config)(V:Value.S)
 
       let create_barrier b ii = M.mk_singleton_es (Act.Barrier b) ii
 
-      let commit ii = M.mk_singleton_es (Act.Commit (true,None)) ii
+      let commit ii = M.mk_singleton_es (Act.Commit (Act.Bcc,None)) ii
 
 (* Compute amo semantics anotations from syntactic  ones,
    Notice that Sc is exclusively semantics, cf. assert false below *)

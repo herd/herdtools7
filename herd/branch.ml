@@ -34,8 +34,8 @@ module type S = sig
     | CondJump of v * lbl
     (* Stop now *)
     | Exit
-    (* Re-execute instruction *)
-    | ReExec
+    (* Raise Fault *)
+    | Fault of Dir.dirn
 
 (* Next instruction in sequence *)
   val nextT : t monad
@@ -67,8 +67,8 @@ module Make(M:Monad.S) = struct
     | CondJump of v * lbl
     (* Stop now *)
     | Exit
-    (* Re-execute instruction *)
-    | ReExec
+    (* Raise Fault *)
+    | Fault of Dir.dirn
 
 (* Utilities *)
 

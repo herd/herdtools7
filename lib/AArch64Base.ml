@@ -55,6 +55,26 @@ let arrange_specifier =
   (0,8),".B"    ; (0,16),".H"  ; (0,32),".S" ; (0,64),".D";
 ]
 
+(********************)
+(* System registers *)
+(*  (Some of...)    *)
+(********************)
+
+type sysreg =
+  CTR_EL0 | DCIZ_EL0 |
+  MDCCSR_EL0 | DBGDTR_EL0 |
+  DBGDTRRX_EL0 | DBGDTRTX_EL0 |
+  ELR_EL1
+
+let pp_sysreg = function
+  | CTR_EL0 -> "CTR_EL0"
+  | DCIZ_EL0 -> "DCIZ_EL0"
+  | MDCCSR_EL0 -> "MDCCSR_EL0"
+  | DBGDTR_EL0 -> "DBGDTR_EL0"
+  | DBGDTRRX_EL0 -> "DBGDTRRX_EL0"
+  | DBGDTRTX_EL0 -> "DBGDTRTX_EL0"
+  | ELR_EL1 -> "ELR_EL1"
+
 type reg =
   | ZR
   | Ireg of gpr
@@ -66,6 +86,7 @@ type reg =
   | NZP
   | SP
   | ResAddr
+  | SysReg of sysreg
 
 let gprs =
 [
@@ -94,6 +115,7 @@ let vec_regs =
 let vregs = List.map (fun v -> Vreg (v,(4,32))) vec_regs
 
 let linkreg = Ireg R30
+let elr_el1 = SysReg ELR_EL1
 
 let cgprs =
 [
@@ -267,6 +289,7 @@ let pp_xreg r = match r with
 | Internal i -> Printf.sprintf "i%i" i
 | NZP -> "NZP"
 | ResAddr -> "Res"
+| SysReg sreg -> pp_sysreg sreg
 | _ -> try List.assoc r regs with Not_found -> assert false
 
 let pp_simd_vector_reg r = match r with
@@ -569,24 +592,6 @@ let fold_domain f k =
 
 end
 
-(********************)
-(* System registers *)
-(*  (Some of...)    *)
-(********************)
-
-type sysreg =
-    CTR_EL0 | DCIZ_EL0 |
-    MDCCSR_EL0 | DBGDTR_EL0 |
-    DBGDTRRX_EL0 | DBGDTRTX_EL0
-
-let pp_sysreg = function
-  | CTR_EL0 -> "CTR_EL0"
-  | DCIZ_EL0 -> "DCIZ_EL0"
-  | MDCCSR_EL0 -> "MDCCSR_EL0"
-  | DBGDTR_EL0 -> "DBGDTR_EL0"
-  | DBGDTRRX_EL0 -> "DBGDTRRX_EL0"
-  | DBGDTRTX_EL0 -> "DBGDTRTX_EL0"
-
 (****************)
 (* Instructions *)
 (****************)
@@ -746,6 +751,7 @@ type 'k kinstruction =
   | I_TBZ of variant * reg * 'k * lbl
   | I_BL of lbl | I_BLR of reg
   | I_RET of reg option
+  | I_ERET
 (* Load and Store *)
   | I_LDR of variant * reg * reg * 'k kr * 'k s
   | I_LDUR of variant * reg * reg * 'k option
@@ -854,6 +860,8 @@ type 'k kinstruction =
   | I_TLBI of TLBI.op * reg
 (* Read system register *)
   | I_MRS of reg * sysreg
+(* Write system register *)
+  | I_MSR of sysreg * reg
 (* Memory Tagging *)
   | I_STG of reg * reg * 'k kr
   | I_STZG of reg * reg * 'k kr
@@ -1104,6 +1112,8 @@ let do_pp_instruction m =
       "RET"
   | I_RET (Some r) ->
       sprintf "RET %s" (pp_xreg r)
+  | I_ERET ->
+     "ERET"
 
 (* Load and Store *)
   | I_LDR (v,r1,r2,k,S_NOEXT) ->
@@ -1349,6 +1359,9 @@ let do_pp_instruction m =
 (* Read System register *)
   | I_MRS (r,sr) ->
       sprintf "MRS %s,%s" (pp_xreg r) (pp_sysreg sr)
+  (* Read System register *)
+  | I_MSR (sr,r) ->
+     sprintf "MSR %s,%s" (pp_sysreg sr) (pp_xreg r)
 (* Memory Tagging *)
   | I_STG (rt,rn,kr) ->
       pp_mem "STG" V64 rt rn kr
@@ -1394,18 +1407,18 @@ let fold_regs (f_regs,f_sregs) =
   | Vreg _ -> f_regs reg y_reg,y_sreg
   | SIMDreg _ -> f_regs reg y_reg,y_sreg
   | Symbolic_reg reg ->  y_reg,f_sregs reg y_sreg
-  | Internal _ | NZP | ZR | SP | ResAddr | Tag _ -> y_reg,y_sreg in
+  | Internal _ | NZP | ZR | SP | ResAddr | Tag _ | SysReg _ -> y_reg,y_sreg in
 
   let fold_kr kr y = match kr with
   | K _ -> y
   | RV (_,r) -> fold_reg r y in
 
   fun c ins -> match ins with
-  | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None
+  | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None | I_ERET
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
   | I_MOV (_,r,_) | I_MOVZ (_,r,_,_) | I_MOVK (_,r,_,_)
-  | I_ADR (r,_) | I_IC (_,r) | I_DC (_,r) | I_MRS (r,_)
+  | I_ADR (r,_) | I_IC (_,r) | I_DC (_,r)
   | I_TBNZ (_,r,_,_) | I_TBZ (_,r,_,_)
   | I_CHKSLD r | I_CHKTGD r
   | I_MOVI_V (r,_,_) | I_MOVI_S (_,r,_)
@@ -1423,6 +1436,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_MOV_S (_,r1,r2,_)
   | I_LDUR_SIMD (_,r1,r2,_) | I_STUR_SIMD (_,r1,r2,_)
     -> fold_reg r1 (fold_reg r2 c)
+  | I_MRS (r,sr) | I_MSR (sr,r) -> fold_reg (SysReg sr) (fold_reg r c)
   | I_LDR (_,r1,r2,kr,_) | I_STR (_,r1,r2,kr,_)
   | I_OP3 (_,_,r1,r2,kr,_)
   | I_LDRBH (_,r1,r2,kr,_) | I_STRBH (_,r1,r2,kr,_)
@@ -1471,7 +1485,7 @@ let map_regs f_reg f_symb =
   | Vreg _ -> f_reg reg
   | SIMDreg _ -> f_reg reg
   | Symbolic_reg reg -> f_symb reg
-  | Internal _ | ZR | SP | NZP | ResAddr | Tag _-> reg in
+  | Internal _ | ZR | SP | NZP | ResAddr | Tag _ | SysReg _ -> reg in
 
   let map_kr kr = match kr with
   | K _ -> kr
@@ -1485,6 +1499,7 @@ let map_regs f_reg f_symb =
   | I_FENCE _
   | I_BL _
   | I_RET None
+  | I_ERET
     -> ins
   | I_CBZ (v,r,lbl) ->
       I_CBZ (v,map_reg r,lbl)
@@ -1696,7 +1711,18 @@ let map_regs f_reg f_symb =
       I_TLBI (op,map_reg r)
 (* Read system register *)
   | I_MRS (r,sr) ->
+     let sr =
+       match map_reg (SysReg sr) with
+       | SysReg sr -> sr
+       | _ -> assert false in
       I_MRS (map_reg r,sr)
+(* Write system register *)
+  | I_MSR (sr,r) ->
+     let sr =
+       match map_reg (SysReg sr) with
+       | SysReg sr -> sr
+       | _ -> assert false in
+     I_MSR (sr,map_reg r)
 (* Memory Tagging *)
   | I_STG (r1,r2,k) ->
       I_STG (map_reg r1,map_reg r2,k)
@@ -1725,7 +1751,7 @@ let get_next = function
   | I_TBZ (_,_,_,lbl)
   | I_BL lbl
     -> [Label.Next; Label.To lbl;]
-  | I_BLR _|I_BR _|I_RET _ -> [Label.Any]
+  | I_BLR _|I_BR _|I_RET _ |I_ERET -> [Label.Any]
   | I_NOP
   | I_LDR _
   | I_LDUR _
@@ -1762,7 +1788,7 @@ let get_next = function
   | I_IC _
   | I_DC _
   | I_TLBI _
-  | I_MRS _
+  | I_MRS _ | I_MSR _
   | I_STG _| I_STZG _|I_LDG _
   | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
   | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|I_SEAL _|I_STCT _
@@ -1817,6 +1843,7 @@ include Pseudo.Make
         | I_BL _
         | I_BLR _
         | I_RET _
+        | I_ERET
         | I_LDAR _
         | I_LDARBH _
         | I_STLR _
@@ -1839,7 +1866,7 @@ include Pseudo.Make
         | I_IC _
         | I_DC _
         | I_TLBI _
-        | I_MRS _
+        | I_MRS _ | I_MSR _
         | I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _|I_CPYTYPE _
         | I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|I_SEAL _|I_STCT _
         | I_UNSEAL _
@@ -1962,6 +1989,7 @@ include Pseudo.Make
         | I_B _ | I_BR _
         | I_BL _ | I_BLR _
         | I_RET _
+        | I_ERET
         | I_BC _
         | I_CBZ _
         | I_CBNZ _
@@ -1977,7 +2005,7 @@ include Pseudo.Make
         | I_ADR _
         | I_RBIT _
 (*        | I_TLBI (_,ZR) *)
-        | I_MRS _
+        | I_MRS _ | I_MSR _
         | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _
         | I_CLRTAG _|I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_SC _|I_SEAL _
         | I_UNSEAL _

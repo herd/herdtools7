@@ -108,7 +108,10 @@ module Make
       let mk_read_std = mk_read quad AArch64.N
 
       let mk_fault a dir annot ii msg =
-        M.mk_singleton_es (Act.Fault (ii,A.Location_global a,dir,annot,msg)) ii
+        let fh = match ii.A.env.A.fh_code with
+          | Some _ -> true
+          | None -> false in
+        M.mk_singleton_es (Act.Fault (ii,A.Location_global a,dir,annot,fh,msg)) ii
 
       let read_loc v is_data = M.read_loc is_data (mk_read v AArch64.N aexp)
 
@@ -246,9 +249,9 @@ module Make
         else write_reg_sz_sxt
 
 (* Emit commit event *)
-      let commit_bcc ii = M.mk_singleton_es (Act.Commit (true,None)) ii
+      let commit_bcc ii = M.mk_singleton_es (Act.Commit (Act.Bcc,None)) ii
       and commit_pred_txt txt ii =
-        M.mk_singleton_es (Act.Commit (false,txt)) ii
+        M.mk_singleton_es (Act.Commit (Act.Pred,txt)) ii
 
       let commit_pred ii = commit_pred_txt None ii
 
@@ -860,18 +863,8 @@ module Make
 
       let lift_kvm dir updatedb mop ma an ii mphy =
         let mfault ma a =
-          insert_commit_to_fault ma (fun _ -> mk_fault a dir an ii None) ii
-          >>!
-            begin
-              let open Precision in
-              match C.precision with
-              | Fatal -> B.Exit
-              | LoadsFatal -> (match dir with
-                  | Dir.R | Dir.F -> B.Exit
-                  | Dir.W -> B.ReExec)
-              | Skip -> B.Next []
-              | Handled -> B.ReExec
-            end in
+          insert_commit_to_fault ma (fun _ -> mk_fault a dir an ii None) ii >>!
+            B.Fault dir in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb a ma an ii
             ((let m = mop Access.PTE ma in
@@ -1705,6 +1698,17 @@ module Make
             read_reg_ord r ii
             >>= do_indirect_jump i
 
+        | I_ERET ->
+           let eret_to_addr = function
+             | M.A.V.Val(Constant.Label (_, l)) -> B.branchT l
+             | _ ->
+                Warn.fatal "Cannot determine ERET target" in
+           let commit_eret ii =
+             M.mk_singleton_es (Act.Commit (Act.ExcReturn,None)) ii in
+           commit_eret ii >>=
+             fun () -> read_reg_ord AArch64.elr_el1 ii >>=
+             eret_to_addr
+
         | I_CBZ(_,r,l) ->
             (read_reg_ord r ii)
               >>= is_zero
@@ -2259,6 +2263,11 @@ module Make
       | I_STXP (v,t,r1,r2,r3,r4) ->
             stxp (tr_variant v) t r1 r2 r3 r4 ii
       (*  Cannot handle *)
+        | I_MSR (sreg,xt) ->
+           read_reg_ord_sz MachSize.Quad xt ii
+           >>= fun v -> write_reg_dest (SysReg sreg) v ii
+           >>= nextSet (SysReg sreg)
+(*  Cannot handle *)
         | (I_RBIT _|I_MRS _|I_LDP _|I_STP _
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | I_LD1M _|I_ST1M _) as i ->

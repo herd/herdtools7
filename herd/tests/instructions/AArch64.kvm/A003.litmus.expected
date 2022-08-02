@@ -1,0 +1,10 @@
+Test A003 Required
+States 1
+0:X0=1; 0:X2=1;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall (0:X0=1 /\ 0:X2=1)
+Observation A003 Always 2 0
+Hash=0f2847d5367fde735ca5ae4a6e03cd9b
+

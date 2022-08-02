@@ -1224,6 +1224,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_BLR r -> blr r::k
     | I_RET None -> { empty_ins with memo="ret"; }::k
     | I_RET (Some r) -> ret r::k
+    | I_ERET -> { empty_ins with memo="eret"; }::k
     | I_BC (c,lbl) -> bcc tr_lab c lbl::k
     | I_CBZ (v,r,lbl) -> cbz tr_lab "cbz" v r lbl::k
     | I_CBNZ (v,r,lbl) -> cbz tr_lab "cbnz" v r lbl::k
@@ -1373,6 +1374,12 @@ module Make(V:Constant.S)(C:Config) =
         let memo =
           sprintf "mrs %s,%s" f (Misc.lowercase (pp_sysreg sr)) in
         {empty_ins with
+         memo; outputs=r; reg_env=add_type quad r;}::k
+    | I_MSR (sr,r) ->
+       let r,f = arg1 "xzr" (fun s -> "^o"^s) r in
+       let memo =
+         sprintf "msr %s,%s" (Misc.lowercase (pp_sysreg sr)) f in
+       {empty_ins with
          memo; outputs=r; reg_env=add_type quad r;}::k
     | I_STG _| I_STZG _|I_LDG _ ->
         Warn.fatal "No litmus output for instruction %s"

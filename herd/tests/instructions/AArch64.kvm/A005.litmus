@@ -1,0 +1,12 @@
+AArch64 A005
+{
+[x]=1;
+[PTE(x)]=(oa:PA(x),valid:0);
+0:X1=x;
+}
+ P0          | P0.F           ;
+ LDR W0,[X1] | MOV W2,#1      ;
+L0:          | ADR X4,L0      ;
+ MOV W3,#1   | MSR ELR_EL1,X4 ;
+             | ERET           ;
+ forall(0:X0=0 /\ 0:X2=1 /\ 0:X3=1)
