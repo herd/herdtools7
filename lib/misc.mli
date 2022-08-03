@@ -127,6 +127,10 @@ val map3 :
     ('a -> 'b -> 'c -> 'd) ->
       'a list -> 'b list -> 'c list -> 'd list
 
+(* Returns a list of pairs prefix * suffix of the argument list,
+   with suffixes of size strictly less than size limit *)
+val cuts : int -> 'a list -> ('a list * 'a list) list
+
 (* strict version of List.for_all *)
 val for_all_strict : ('a -> bool) -> 'a list -> bool
 
