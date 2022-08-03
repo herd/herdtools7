@@ -437,7 +437,6 @@ module Make(C:Builder.S)
 (*      let safes = C.R.Set.of_list safe in *)
       let relax = edges_ofs relax in
       let safe = edges_ofs safe in
-      let reject = List.map (fun a -> edges_of a) reject in
       let po_safe = extract_po safe in
       let fence_safe = extract_fence safe in
       let po_safe = po_safe,fence_safe in
@@ -560,7 +559,32 @@ module Make(C:Builder.S)
       let rs = RelaxSet.diff rs (RelaxSet.of_list r0) in
       RelaxSet.elements rs
 
-    let last_check_call _rset _sset aset f rs po_safe res k =
+    exception Result of bool
+
+(* Is xs a prefix of s@p ? *)
+    let prefix_spanp xs (p,s) =
+      let rec is_prefix xs ys = match xs,ys with
+        | [],_ -> raise (Result true)
+        | _::_,[] -> xs (* xs -> what is still to be matched *)
+        | x::xs,y::ys ->
+           if C.E.compare x y = 0 then is_prefix xs ys
+           else raise (Result false) in
+      try
+        let xs = is_prefix xs s in
+        match is_prefix xs p with
+        | [] -> true (* xs and s@p are equal! *)
+        |  _::_ -> false (* xs larger.. *)
+      with Result b -> b
+
+    let substring_spanp rej pss =
+      List.exists
+        (fun xs ->
+          List.exists
+            (fun ps -> prefix_spanp xs ps)
+            pss)
+      rej
+
+    let last_check_call rej aset f rs po_safe res k =
       match res with
       | [] -> k
       | _ ->
@@ -575,15 +599,31 @@ module Make(C:Builder.S)
                 | Thin | Free | Uni | Critical | Transitive |Total -> false) &&
                 (count_ext le=1 || all_int le || count_changes le < 2) then k
               else begin
-                let mk_info _es =
-                  let ss = build_safe rs res in
-                  let info =
-                    [
-                     "Relax",pp_relax_list rs;
-                     "Safe", pp_relax_list ss;
-                   ] in
-                  info,C.R.Set.of_list rs in
-                f le mk_info D.no_name D.no_scope k
+                  let ok = (* Check for rejected sequenes that span over cycle "cut" *)
+                  let rej = (* Keep non-trivial edge sequences only *)
+                    List.filter
+                      (function
+                       | []|[_] -> false
+                       | _::_::_ -> true)
+                      rej  in
+                  match rej with
+                  | [] -> true
+                  | _::_ ->
+                     let max_sz =
+                       List.fold_left (fun  k xs -> max k (List.length xs)) 0 rej in
+                     let pss = Misc.cuts max_sz le in
+                     not (substring_spanp rej pss) in
+                if ok then
+                  let mk_info _es =
+                    let ss = build_safe rs res in
+                    let info =
+                      [
+                        "Relax",pp_relax_list rs;
+                        "Safe", pp_relax_list ss;
+                      ] in
+                    info,C.R.Set.of_list rs in
+                  f le mk_info D.no_name D.no_scope k
+                else k
               end
             with (Normaliser.CannotNormalise _) -> k
           else k
@@ -602,11 +642,12 @@ module Make(C:Builder.S)
       let sset = C.R.Set.of_list safe in
       let rset = C.R.Set.of_list relax in
       let aset = C.R.Set.union sset rset in
+      let rej = List.map (fun a -> edges_of a) rej in
       D.all
         ~check:last_minute
         (fun f ->
           zyva_prefix prefixes aset relax safe rej n
-            (last_check_call rset sset aset f))
+            (last_check_call rej aset f))
 
     let debug_rs chan rs =
       List.iter (fun r -> fprintf chan "%s\n" (pp_relax r)) rs

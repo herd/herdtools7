@@ -372,6 +372,19 @@ let rec map3 f xs ys zs = match xs,ys,zs with
     f x y z::map3 f xs ys zs
 | _,_,_ -> assert false
 
+let cuts sz0 =
+  let rec do_rec xs = match xs with
+    | [] -> 0,[]
+    | [_] -> 1,[]
+    | x::xs ->
+       let sz,ps = do_rec xs in
+       if sz >= sz0 then
+         sz,List.map (fun (p,s) -> x::p,s) ps
+       else
+         sz+1,
+         ([x],xs)::List.map (fun (p,s) -> x::p,s) ps in
+  fun xs -> let _,r = do_rec xs in r
+
 let rem_dups is_same =
   let rec rem_rec prev = function
     | [] -> []
