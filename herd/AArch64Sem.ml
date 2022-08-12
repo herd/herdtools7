@@ -2275,8 +2275,12 @@ module Make
            read_reg_ord_sz MachSize.Quad xt ii
            >>= fun v -> write_reg_dest (SysReg sreg) v ii
            >>= nextSet (SysReg sreg)
+        | I_MRS (xt,sreg) ->
+          read_reg_ord_sz MachSize.Quad (SysReg sreg) ii
+          >>= fun v -> write_reg_dest xt v ii
+          >>= nextSet (SysReg sreg)
 (*  Cannot handle *)
-        | (I_RBIT _|I_MRS _|I_LDP _|I_STP _
+        | (I_RBIT _|I_LDP _|I_STP _
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | I_LD1M _|I_ST1M _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)

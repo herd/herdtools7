@@ -1,0 +1,13 @@
+AArch64 A006
+{
+[x]=1;
+[PTE(x)]=(oa:PA(x),valid:0);
+0:X1=x;
+}
+ P0          | P0.F           ;
+L0:          | MRS X2,ELR_EL1 ;
+ LDR W0,[X1] | ADR X3,L1      ;
+L1:          | MSR ELR_EL1,X3 ;
+             | ERET           ;
+ locations[0:X2;]
+ forall(0:X0=0)
