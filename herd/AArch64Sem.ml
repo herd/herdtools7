@@ -861,10 +861,18 @@ module Make
             fun (r,_) -> M.unitT r
         else m
 
+      let set_elr_el1 ii =
+        let lbl =
+          match Label.norm ii.A.labels with
+          | Some hd -> hd
+          | None -> "undef" in
+        let lbl_v = A.V.cstToV (Constant.Label (ii.A.proc, lbl)) in
+        write_reg AArch64Base.elr_el1 lbl_v ii
+
       let lift_kvm dir updatedb mop ma an ii mphy =
         let mfault ma a =
-          insert_commit_to_fault ma (fun _ -> mk_fault a dir an ii None) ii >>!
-            B.Fault dir in
+          insert_commit_to_fault ma (fun _ -> mk_fault a dir an ii None) ii >>|
+            set_elr_el1 ii >>! B.Fault dir in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb a ma an ii
             ((let m = mop Access.PTE ma in
