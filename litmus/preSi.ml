@@ -494,6 +494,9 @@ module Make
              O.o "}"
           end ;
           O.o ""
+          end else begin
+            O.o "static void set_fault_vector(int role) { }" ;
+            O.o ""
           end
 
 (* User mode *)
