@@ -861,10 +861,18 @@ module Make
             fun (r,_) -> M.unitT r
         else m
 
+      let set_elr_el1 ii =
+        let lbl =
+          match Label.norm ii.A.labels with
+          | Some hd -> hd
+          | None -> "undef" in
+        let lbl_v = A.V.cstToV (Constant.Label (ii.A.proc, lbl)) in
+        write_reg AArch64Base.elr_el1 lbl_v ii
+
       let lift_kvm dir updatedb mop ma an ii mphy =
         let mfault ma a =
-          insert_commit_to_fault ma (fun _ -> mk_fault a dir an ii None) ii >>!
-            B.Fault dir in
+          insert_commit_to_fault ma (fun _ -> mk_fault a dir an ii None) ii >>|
+            set_elr_el1 ii >>! B.Fault dir in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb a ma an ii
             ((let m = mop Access.PTE ma in
@@ -2267,8 +2275,12 @@ module Make
            read_reg_ord_sz MachSize.Quad xt ii
            >>= fun v -> write_reg_dest (SysReg sreg) v ii
            >>= nextSet (SysReg sreg)
+        | I_MRS (xt,sreg) ->
+          read_reg_ord_sz MachSize.Quad (SysReg sreg) ii
+          >>= fun v -> write_reg_dest xt v ii
+          >>= nextSet (SysReg sreg)
 (*  Cannot handle *)
-        | (I_RBIT _|I_MRS _|I_LDP _|I_STP _
+        | (I_RBIT _|I_LDP _|I_STP _
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | I_LD1M _|I_ST1M _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
