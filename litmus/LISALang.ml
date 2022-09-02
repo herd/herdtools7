@@ -100,7 +100,8 @@ module Make(V:Constant.S) = struct
 
   and compile_out_reg_fun p r = sprintf "*%s" (Tmpl.dump_out_reg p r)
 
-  let dump_fun chan _args0 env globEnv _volatileEnv proc t =
+  let dump_fun ?user chan _args0 env globEnv _volatileEnv proc t =
+    assert (Misc.is_none user) ;
     let addrs_proc = A.Out.get_addrs_only t in
     let addrs =
       List.map

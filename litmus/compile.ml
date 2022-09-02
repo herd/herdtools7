@@ -528,8 +528,8 @@ type P.code = MiscParser.proc * A.pseudo list)
              | C|Shell -> proc
              | XCode ->
              Warn.user_error "No custom handler for XCode" in
-           C.fault_handler_prologue asmhandler
-           @fhandler_c@C.fault_handler_epilogue fhandler_c in
+           C.fault_handler_prologue user asmhandler
+           @fhandler_c@C.fault_handler_epilogue user fhandler_c in
       code,fhandler
 
 

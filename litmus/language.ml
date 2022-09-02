@@ -19,8 +19,8 @@ module type S = sig
   module RegMap : MyMap.S with type key = arch_reg
   type t
 
-(* Function dump *)
   val dump_fun :
+    ?user:bool ->
     out_channel ->
     Template.extra_args ->
     CType.t RegMap.t ->

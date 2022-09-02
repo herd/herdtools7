@@ -22,8 +22,8 @@ module type S = sig
   val user_mode : ins list
   val kernel_mode : ins list
 
-  val fault_handler_prologue : int -> ins list
-  val fault_handler_epilogue : ins list -> ins list
+  val fault_handler_prologue : bool -> int -> ins list
+  val fault_handler_epilogue : bool -> ins list -> ins list
 end
 
 module No(A:sig type ins end) =
@@ -32,6 +32,6 @@ struct
 
   let user_mode = [] and kernel_mode = []
 
-  let fault_handler_prologue _ = []
-  let fault_handler_epilogue _ = []
+  let fault_handler_prologue _ _ = assert false
+  let fault_handler_epilogue _ _ = assert false
 end

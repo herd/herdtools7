@@ -507,10 +507,13 @@ module RegMap = A.RegMap)
             | _ -> false)
           t.Tmpl.init
 
-      let dump_fun chan args0 env globEnv _volatileEnv proc t =
+      let dump_fun ?(user=false) chan args0 env globEnv _volatileEnv proc t =
         let args0 = match t.Tmpl.fhandler with
           | [] -> args0
-          | _ -> { args0 with Template.trashed=["tr0"] } in
+          | _ ->
+             let trashed =
+               if user then ["tr0";"tr1";] else  ["tr0"] in
+             { args0 with Template.trashed=trashed; } in
         if debug then debug_globEnv globEnv ;
         let ptevalEnv = extract_ptevals t in
         let labels = Tmpl.get_labels t in
