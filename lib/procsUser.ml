@@ -30,3 +30,5 @@ let get info =
           | LexScan.Error ->
               Warn.user_error "'%s' is not a list of thread names" p
         end
+
+let is ps p = List.exists  (Proc.equal p) ps
