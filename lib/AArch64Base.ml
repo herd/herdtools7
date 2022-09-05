@@ -64,16 +64,18 @@ type sysreg =
   CTR_EL0 | DCIZ_EL0 |
   MDCCSR_EL0 | DBGDTR_EL0 |
   DBGDTRRX_EL0 | DBGDTRTX_EL0 |
-  ELR_EL1
+  ELR_EL1 | ESR_EL1
 
-let pp_sysreg = function
-  | CTR_EL0 -> "CTR_EL0"
-  | DCIZ_EL0 -> "DCIZ_EL0"
-  | MDCCSR_EL0 -> "MDCCSR_EL0"
-  | DBGDTR_EL0 -> "DBGDTR_EL0"
-  | DBGDTRRX_EL0 -> "DBGDTRRX_EL0"
-  | DBGDTRTX_EL0 -> "DBGDTRTX_EL0"
-  | ELR_EL1 -> "ELR_EL1"
+let sysregs = [
+    CTR_EL0, "CTR_EL0";
+    DCIZ_EL0, "DCIZ_EL0";
+    MDCCSR_EL0, "MDCCSR_EL0";
+    DBGDTR_EL0, "DBGDTR_EL0";
+    DBGDTRRX_EL0, "DBGDTRRX_EL0";
+    DBGDTRTX_EL0, "DBGDTRTX_EL0";
+    ELR_EL1, "ELR_EL1";
+    ESR_EL1, "ESR_EL1";
+  ]
 
 type reg =
   | ZR
@@ -238,26 +240,25 @@ let simd_regs =
   let rs = bvrs @ hvrs @ svrs @ dvrs @ qvrs in
   List.map (fun (r,s) -> s,SIMDreg r) rs
 
-let parse_list rs =
-  List.map (fun (r,s) -> s,r) rs
+let parse_list rs = List.map (fun (r,s) -> s,r) rs
 
-let parse_creg =
-  let plist = parse_list cregs in
-  fun s ->
-    try Some (List.assoc (Misc.uppercase s) plist)
-    with Not_found -> None
+let parse_some plist s =
+  try Some (List.assoc (Misc.uppercase s) plist)
+  with Not_found -> None
+
+let make_parser rs =
+  let plist =  parse_list rs in
+  parse_some plist
+
+let parse_sysreg = make_parser sysregs
+
+let parse_creg = make_parser cregs
 
 let parse_xreg =
   let plist = ("LR",Ireg R30)::parse_list regs in
-  fun s ->
-    try Some (List.assoc (Misc.uppercase s) plist)
-    with Not_found -> None
+  parse_some plist
 
-let parse_wreg =
-  let plist = parse_list wregs in
-  fun s ->
-    try Some (List.assoc (Misc.uppercase s) plist)
-    with Not_found -> None
+let parse_wreg = make_parser wregs
 
 let parse_vreg =
   let vplist = parse_list vvrs
@@ -269,13 +270,13 @@ let parse_vreg =
       in Some (Vreg (List.assoc g1 vplist, List.assoc g2 arplist))
     with Not_found -> None
 
-let parse_simd_reg s =
-  try Some (List.assoc (Misc.uppercase s) simd_regs)
-  with Not_found -> None
+let parse_simd_reg = parse_some simd_regs
 
 let parse_reg s = match parse_vreg s with
 | Some v -> Some v
 | None -> parse_xreg s
+
+let pp_sysreg r = try List.assoc r sysregs with Not_found -> assert false
 
 let pp_creg r = match r with
 | Symbolic_reg r -> "C%" ^ r

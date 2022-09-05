@@ -443,13 +443,6 @@ match name with
 (* System registers *)
 | "mrs"|"MRS" -> MRS
 | "msr"|"MSR" -> MSR
-| "ctr_el0"|"CTR_EL0" -> SYSREG A.CTR_EL0
-| "dciz_el0"|"DCIZ_EL0" -> SYSREG A.DCIZ_EL0
-| "mdccsr_el0"|"MDCCSR_EL0" -> SYSREG A.MDCCSR_EL0
-| "dbgdtr_el0"|"DBGDTR_EL0" -> SYSREG A.DBGDTR_EL0
-| "dbgdtrrx_el0"|"DBGDTRRX_EL0" -> SYSREG A.DBGDTRRX_EL0
-| "Dbgdtrtx_el0"|"DBGDTRTX_EL0" -> SYSREG A.DBGDTRTX_EL0
-| "elr_el1"|"ELR_EL1" -> SYSREG A.ELR_EL1
 | _ ->
     begin match A.parse_wreg name with
     | Some r -> ARCH_WREG r
@@ -473,7 +466,11 @@ match name with
                         | 'Q' -> ARCH_QREG r
                         | _ -> assert false
                         end
-                    | None -> NAME name
+                    | None ->
+                        begin match A.parse_sysreg name with
+                        | Some r -> SYSREG r
+                        | None -> NAME name
+                        end
                     end
                 end
             end
