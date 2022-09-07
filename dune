@@ -1,4 +1,11 @@
-(ignored_subdirs (herd-www))
+(dirs (:standard \ herd-www))
 (env
  (release
 (flags (:standard -w +a-3-4-9-29-33-41-45-60-67-70))))
+
+(install
+ (dirs
+  (herd/libdir as herd)
+  (litmus/libdir as litmus)
+  (jingle/libdir as jingle))
+ (section lib_root))

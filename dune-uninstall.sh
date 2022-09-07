@@ -24,6 +24,3 @@ set -x
 
 # Remove binaries
 dune uninstall --prefix "${prefix}"
-
-# Remove libfiles
-rm -rf "${libdir}"
