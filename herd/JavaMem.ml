@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2013-present Institut National de Recherche en Informatique et *)
+(* Copyright 2015-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,60 +14,40 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Implemented archituctures *)
+(** Entry to models for Java  *)
 
-module System : sig
+module type Config = sig
+  val model : Model.t
+  val bell_model_info : (string * BellModel.info) option
+  include Model.Config
 
-  (* Native architectures *)
-    type arch = [
-    | `AArch64
-    | `ARM
-    | `MIPS
-    | `PPC
-    | `X86
-    | `RISCV
-    | `X86_64
-    ]
-
-  (* Native architecture may be unknown, some features
-     will notbe available *)
-    type t = [ arch | `Unknown ]
-
-    val tags : string list
-
-    val parse : string -> t option
-
-    val pp : t -> string
-
+  val statelessrc11 : bool
 end
 
-(* All implement architectures *)
-type t = [
-    System.arch
-  | `C
-  | `CPP
-  | `LISA
-  | `JAVA
-  ]
+module Make
+    (O:Config)
+    (S:Sem.Semantics)
+ :
+    (XXXMem.S with module S = S)
+    =
+  struct
 
-val tags : string list
+    open Model
 
-val parse : string -> t option
-val pp : t -> string
+    let model = O.model
 
-val compare : t -> t -> int
+    module S = S
 
-val  aarch64 : t
-val  arm : t
-val  mips : t
-val  ppc : t
-val  x86 : t
-val  riscv : t
-val  c : t
-val  cpp : t
-val  java : t
-val  lisa : t
-val  x86_64 : t
-
-val get_sysarch : [< t ] ->  System.t -> System.t
-val check_carch : [< System.t ] -> System.arch
+    let check_event_structure test = match O.model with
+    | Generic m ->
+        let module X =
+            MachModelChecker.Make
+              (struct
+                let m = m
+                include O
+              end)(S) in
+        X.check_event_structure test
+    | File _ -> assert false
+    | m ->
+        Warn.fatal "Model %s not implemented for Java" (Model.pp m)
+end

@@ -303,5 +303,6 @@ let () =
       let module T = CCompile_gen.Make(CoC) in
       let module M = Build(T) in
       M.zyva
+  | `JAVA -> assert false
 )
     pp_es

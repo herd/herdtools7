@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2013-present Institut National de Recherche en Informatique et *)
+(* Copyright 2015-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,60 +14,43 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Implemented archituctures *)
+(** Define Java architecture *)
 
-module System : sig
+module Make (C:Arch_herd.Config) (V:Value.S) = struct
+  
+  include JavaBase
 
-  (* Native architectures *)
-    type arch = [
-    | `AArch64
-    | `ARM
-    | `MIPS
-    | `PPC
-    | `X86
-    | `RISCV
-    | `X86_64
-    ]
+  let is_amo _            = false
+  let pp_barrier_short    = pp_barrier
+  let reject_mixed        = false
+  let mem_access_size _   = None
 
-  (* Native architecture may be unknown, some features
-     will notbe available *)
-    type t = [ arch | `Unknown ]
+  include NoSemEnv
 
-    val tags : string list
+  module V = V
 
-    val parse : string -> t option
+  include NoLevelNorTLBI
 
-    val pp : t -> string
+    include
+      IFetchTrait.NotImplemented
+        (struct
+          type arch_instruction = instruction
+          type arch_reg = reg
+        end)
 
+
+  include ArchExtra_herd.Make(C)
+      (struct
+        module V = V
+        let endian            = endian
+        type arch_reg         = reg
+        let pp_reg            = pp_reg
+        let reg_compare       = reg_compare
+        type arch_instruction = instruction
+        let fromto_of_instr _ = None
+        let get_val _ v       = v
+      end)
+  
+  module MemType=MemoryType.No
+  module Barrier = AllBarrier.No(struct type a = barrier end)
 end
-
-(* All implement architectures *)
-type t = [
-    System.arch
-  | `C
-  | `CPP
-  | `LISA
-  | `JAVA
-  ]
-
-val tags : string list
-
-val parse : string -> t option
-val pp : t -> string
-
-val compare : t -> t -> int
-
-val  aarch64 : t
-val  arm : t
-val  mips : t
-val  ppc : t
-val  x86 : t
-val  riscv : t
-val  c : t
-val  cpp : t
-val  java : t
-val  lisa : t
-val  x86_64 : t
-
-val get_sysarch : [< t ] ->  System.t -> System.t
-val check_carch : [< System.t ] -> System.arch

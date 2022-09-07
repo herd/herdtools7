@@ -368,6 +368,23 @@ module Top (TopConf:Config) = struct
           let module X = Make (CS) (P) (NoCheck) (CM) (Conf) in
           X.run dirty start_time name chan env splitted
       | `CPP as arch -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
+
+      | `JAVA -> 
+        let module Java = JavaArch_herd.Make(ArchConfig)(Int64Value) in
+        let module JavaLexParse = struct
+          type pseudo     = Java.pseudo
+          type token      = JavaParser.token
+          module Lexer    = JavaLexer.Make(LexConfig)
+          let lexer       = Lexer.token
+          let parser      = JavaParser.main
+        end in 
+        let module JavaS  = JavaSem.Make(Conf)(Int64Value) in
+        let module JavaM  = JavaMem.Make(ModelConfig)(JavaS) in
+        let module P      = JavaGenParser_lib.Make (Conf) (Java) (JavaLexParse) in
+        let module X      = Make (JavaS) (P) (NoCheck) (JavaM) (Conf) in
+        
+        X.run dirty start_time name chan env splitted
+
       | `LISA ->
           let module Bell = BellArch_herd.Make(ArchConfig)(Int64Value) in
           let module BellLexParse = struct
