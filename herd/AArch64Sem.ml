@@ -1718,7 +1718,7 @@ module Make
 
         | I_ERET ->
            let eret_to_addr = function
-             | M.A.V.Val(Constant.Label (_, l)) -> B.branchT l
+             | M.A.V.Val(Constant.Label (_, l)) -> B.faultRetT l
              | _ ->
                 Warn.fatal "Cannot determine ERET target" in
            let commit_eret ii =

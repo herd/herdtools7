@@ -36,6 +36,8 @@ module type S = sig
     | Exit
     (* Raise Fault *)
     | Fault of Dir.dirn
+    (* Return from Fault Handler *)
+    | FaultRet of lbl
 
 (* Next instruction in sequence *)
   val nextT : t monad
@@ -48,6 +50,7 @@ module type S = sig
   val branchT : lbl ->  t monad
 (* Conditional branch *)
   val bccT : v -> lbl -> t monad
+  val faultRetT : lbl -> t monad
 end
 
 
@@ -69,6 +72,8 @@ module Make(M:Monad.S) = struct
     | Exit
     (* Raise Fault *)
     | Fault of Dir.dirn
+    (* Return from Fault Handler *)
+    | FaultRet of lbl
 
 (* Utilities *)
 
@@ -81,4 +86,5 @@ module Make(M:Monad.S) = struct
   let nextSetT r v = M.unitT (Next [r,v])
   let branchT lbl = M.unitT (Jump lbl)
   let bccT v lbl = M.unitT (CondJump (v,lbl))
+  let faultRetT lbl = M.unitT (FaultRet lbl)
 end
