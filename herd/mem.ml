@@ -508,20 +508,21 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         | Ok ((tgt_proc,code),seen) -> add_code re_exec tgt_proc proc env seen code
 
       and add_fault re_exec inst dir fetch_proc proc env seen addr nexts =
-        match env.A.fh_code with
-        | Some fh_code ->
+        match env.A.fh_code,re_exec with
+        | Some _, true ->
+           let e = "Fault inside a fault handler" in
+           EM.warncodeT e true
+        | Some fh_code, false ->
            add_code true fetch_proc proc env seen fh_code
-        | None -> begin
-            if re_exec then
-              EM.unitcodeT false
-            else
-              let open Precision in
-              match C.precision,dir with
-              | Fatal,_ | LoadsFatal,(Dir.R|Dir.F) -> EM.unitcodeT true
-              | Skip,_ -> add_code false fetch_proc proc env seen nexts
-              | Handled,_ | LoadsFatal,Dir.W ->
-                 add_next_instr true fetch_proc proc env seen addr inst nexts
-          end
+        | None, true ->
+           EM.unitcodeT false
+        | None, false ->
+           let open Precision in
+           match C.precision,dir with
+           | Fatal,_ | LoadsFatal,(Dir.R|Dir.F) -> EM.unitcodeT true
+           | Skip,_ -> add_code false fetch_proc proc env seen nexts
+           | Handled,_ | LoadsFatal,Dir.W ->
+              add_next_instr true fetch_proc proc env seen addr inst nexts
 
       and next_instr re_exec inst fetch_proc proc env seen addr nexts b =
         match b with
@@ -532,6 +533,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           add_lbl re_exec true proc env seen addr lbl
       | S.B.Fault dir ->
           add_fault re_exec inst dir fetch_proc proc env seen addr nexts
+      | S.B.FaultRet lbl ->
+          add_lbl false true proc env seen addr lbl
       | S.B.CondJump (v,lbl) ->
           EM.condJumpT v
             (add_lbl re_exec (not (V.is_var_determined v)) proc env seen addr lbl)
