@@ -174,11 +174,15 @@ module RegMap = A.RegMap)
               let v = A.V.zero in
               dump_pair reg v::k)
             rem [] in
+        let consts =
+          List.map
+            (fun (tag,v) ->  sprintf "[%s] \"i\" (%s)" tag v)
+            args0.Template.constants in
         let args0 =
           List.map
             (fun (_,(tag,v)) -> sprintf "[%s] \"r\" (%s)" tag v)
             args0.Template.inputs in
-        let out =  (String.concat "," (args0@ins@rem)) in
+        let out =  (String.concat "," (consts@args0@ins@rem)) in
 (*        eprintf "IN: {%s}\n" out ; *)
         fprintf chan ":%s\n" out
 

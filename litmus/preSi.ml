@@ -1315,6 +1315,7 @@ module Make
 (* Thread code, as functions *)
       let dump_thread_code
             procs_user env (proc,(out,(_outregs,envVolatile)))  =
+        Printf.eprintf "Code: %i, %b\n" proc (A.Out.has_asmhandler out) ;
         let myenv = U.select_proc proc env
         and global_env = U.select_global env in
         let global_env =
@@ -1330,7 +1331,14 @@ module Make
           let open Template in
           if user then
             { trashed=["tr0"];
-              inputs=[(CType.word,"cpu"),("sp_usr","user_stack[cpu]")];}
+              inputs=[(CType.word,"cpu"),("sp_usr","user_stack[cpu]")];
+              constants=
+                begin
+                  if A.Out.has_asmhandler out then
+                    ["esr_el1_ec_svc64","ESR_EL1_EC_SVC64";
+                     "esr_el1_ec_shift","ESR_EL1_EC_SHIFT";]
+                  else []
+                end; }
           else no_extra_args in
         Lang.dump_fun ~user
           O.out args0 myenv global_env envVolatile proc out

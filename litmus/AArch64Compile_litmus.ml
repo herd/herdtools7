@@ -1206,8 +1206,8 @@ module Make(V:Constant.S)(C:Config) =
 
     let user_prologue =
       ["mrs %[tr0],esr_el1";
-       "lsr %[tr0],%[tr0],#26";
-       "cmp %[tr0],#21";
+       "lsr %[tr0],%[tr0],#%[esr_el1_ec_shift]";
+       "cmp %[tr0],#%[esr_el1_ec_svc64]";
        "cset %[tr0],ne";
        "lsl %[tr0],%[tr0],#2";
        "adr %[tr1],2f";
