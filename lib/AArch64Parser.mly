@@ -37,6 +37,10 @@ let check_op3 op kr =
 %token <AArch64Base.reg> ARCH_SREG
 %token <AArch64Base.reg> ARCH_DREG
 %token <AArch64Base.reg> ARCH_QREG
+%token <AArch64Base.reg> ARCH_ZREG
+%token <AArch64Base.reg> ARCH_PREG
+%token <AArch64Base.reg * AArch64Base.simd_variant> ARCH_ZREG_SIZED
+%token <AArch64Base.reg * AArch64Base.simd_variant> ARCH_PREG_SIZED
 %token <int> INDEX
 %token <int> NUM
 %token <string> NAME
@@ -45,6 +49,7 @@ let check_op3 op kr =
 %token <int> PROC
 
 %token SEMI COMMA PIPE COLON LCRL RCRL LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
+%token SLASH
 %token SXTW
 
 /* Inline Barrel Shift Operands */
@@ -56,6 +61,7 @@ let check_op3 op kr =
 %token BL BLR RET ERET
 %token LDR LDP LDNP LDPSW STP STNP LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token LD1 LD1R LD2 LD2R LD3 LD3R LD4 LD4R ST1 ST2 ST3 ST4 STUR /* Neon load/store */
+%token <AArch64Base.simd_variant> LD1_SVE ST1_SVE /* SVE load/store */
 %token CMP MOV MOVZ MOVK MOVI ADR
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH LDXP LDAXP
 %token STXR STXRB STXRH STLXR STLXRB STLXRH STXP STLXP
@@ -99,6 +105,13 @@ let check_op3 op kr =
 %token LDUMINB LDUMINAB LDUMINLB LDUMINALB
 %token STUMIN STUMINL STUMINH STUMINLH STUMINB STUMINLB
 */
+
+/* SVE instructions */
+%token WHILELO_SVE DUP_SVE
+
+/* SVE predicate behavior tokens */
+%token <AArch64Base.sve_pred_behavior> SVE_PRED_BEHAVIOR
+
 %token IC DC IVAU TLBI
 %token <AArch64Base.IC.op> IC_OP
 %token <AArch64Base.DC.op> DC_OP
@@ -113,7 +126,6 @@ let check_op3 op kr =
 
 %start  main
 %start instr_option_seq
-
 
 %%
 main:
@@ -223,6 +235,18 @@ dreg:
 
 qreg:
 | ARCH_QREG { $1 }
+
+zreg:
+| ARCH_ZREG { $1 }
+
+zreg_sized:
+| ARCH_ZREG_SIZED { $1 }
+
+preg:
+| ARCH_PREG { $1 }
+
+preg_sized:
+| ARCH_PREG_SIZED { $1 }
 
 bhsdregs:
 | breg { A.VSIMD8,$1 }
@@ -570,7 +594,22 @@ instr:
   { A.I_ADD_SIMD ($2,$4,$6) }
 | ADD dreg COMMA dreg COMMA dreg
   { A.I_ADD_SIMD_S ($2,$4,$6)}
-    /* Compare and swap */
+/* SVE */
+| LD1_SVE zreg_sized COMMA preg SLASH SVE_PRED_BEHAVIOR COMMA LBRK cxreg RBRK
+  { let reg,_ = $2 in A.I_LD1_SVE ($1,$6,reg,$4,$9) }
+| ST1_SVE zreg_sized COMMA preg SLASH COMMA LBRK cxreg RBRK
+  { let reg,_ = $2 in A.I_ST1_SVE($1,reg,$4,$8) }
+| DUP_SVE zreg_sized COMMA kr
+  { let reg,sz = $2 in A.I_DUP_SVE(sz,reg,$4) }
+| WHILELO_SVE preg_sized COMMA reg COMMA reg
+  {
+    let rt,sz = $2 in
+    let _,r1 = $4 in
+    let _,r2 = $6 in
+    A.I_WHILELO_SVE(sz,rt,r1,r2)
+  }
+
+/* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK cxreg zeroopt RBRK
   { A.I_CAS (A.V32,A.RMW_P,$2,$4,$7) }
 | CAS xreg COMMA xreg COMMA  LBRK cxreg zeroopt RBRK

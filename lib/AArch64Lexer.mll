@@ -114,6 +114,17 @@ match name with
 | "st3" | "ST3" -> ST3
 | "st4" | "ST4" -> ST4
 | "movi" | "MOVI" -> MOVI
+(* SVE Extension *)
+| "ld1b"    | "LD1B"    -> LD1_SVE A.VSIMD8
+| "ld1h"    | "LD1H"    -> LD1_SVE A.VSIMD16
+| "ld1w"    | "LD1W"    -> LD1_SVE A.VSIMD32
+| "ld1d"    | "LD1D"    -> LD1_SVE A.VSIMD64
+| "st1b"    | "ST1B"    -> ST1_SVE A.VSIMD8
+| "st1h"    | "ST1H"    -> ST1_SVE A.VSIMD16
+| "st1w"    | "ST1W"    -> ST1_SVE A.VSIMD32
+| "st1d"    | "ST1D"    -> ST1_SVE A.VSIMD64
+| "whilelo" | "WHILELO" -> WHILELO_SVE
+| "dup"     | "DUP"     -> DUP_SVE
 (* Compare and swap *)
 | "cas"|"CAS" -> CAS
 | "casa"|"CASA" -> CASA
@@ -352,6 +363,9 @@ match name with
 | "seal"|"SEAL" -> SEAL
 | "stct"|"STCT" -> STCT
 | "unseal"|"UNSEAL" -> UNSEAL
+(* SVE predicate behaviors *)
+| "z" | "Z" -> SVE_PRED_BEHAVIOR A.Zero
+| "m" | "M" -> SVE_PRED_BEHAVIOR A.Merge
 (* Misc *)
 | "csel"|"CSEL" -> CSEL
 | "csinc"|"CSINC" -> CSINC
@@ -473,7 +487,26 @@ match name with
                         | 'Q' -> ARCH_QREG r
                         | _ -> assert false
                         end
-                    | None -> NAME name
+                    | None ->
+                        begin match A.parse_sve_reg name with
+                        | Some r -> ARCH_ZREG (A.SveReg r)
+                        | None ->
+                            begin match A.parse_sve_pred_reg name with
+                            | Some r -> ARCH_PREG (A.SvePredReg r)
+                            | None ->
+                                begin match A.parse_sve_reg_sized name with
+                                | Some (r, sz) ->
+                                    ARCH_ZREG_SIZED ((A.SveReg r), sz)
+                                | None ->
+                                    begin match A.parse_sve_pred_reg_sized name with
+                                    | Some (r, sz) ->
+                                        ARCH_PREG_SIZED ((A.SvePredReg r), sz)
+                                    | None ->
+                                        NAME name
+                                    end
+                                end
+                            end
+                        end
                     end
                 end
             end
@@ -508,6 +541,7 @@ rule token = parse
 | '(' { LPAR }
 | ')' { RPAR }
 | ':' { COLON }
+| '/' { SLASH }
 | "scopes"  { SCOPES  }
 | "levels"  { LEVELS  }
 | "regions" { REGIONS }
