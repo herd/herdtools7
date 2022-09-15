@@ -211,17 +211,24 @@ module Make (O:Config) (E:Edge.S) :
         (String.concat "," (List.map pp_one e.vecreg))
     else fun _ -> ""
 
+  let debug_val =
+    if O.hexa then sprintf "0x%x"
+    else sprintf "%i"
+
+  let debug_vec v =
+    String.concat ", " (List.map debug_val (Array.to_list v))
+
   let debug_evt e =
     let pp_v =
       match e.bank with
       | Pte -> PteVal.pp e.pte
-      | (Ord|Tag|CapaTag|CapaSeal|VecReg _) ->
-          if O.hexa then sprintf "0x%x" e.v
-          else sprintf "%i" e.v in
-    sprintf "%s%s %s %s%s%s%s"
+      | (Ord|Tag|CapaTag|CapaSeal|VecReg _) -> debug_val e.v in
+    sprintf "%s%s %s %s%s%s%s%s"
       (debug_dir e.dir)
       (debug_atom e.atom)
       (Code.pp_loc e.loc)
+      (match debug_vec e.cell with
+       | "" -> "" | s -> "cell=[" ^ s ^"] ")
       pp_v (debug_tag e) (debug_morello e) (debug_neon e)
 
   let debug_edge = E.pp_edge
@@ -494,11 +501,7 @@ module CoSt = struct
 
   let set_tcell st e = match e.bank with
     | Tag ->
-       let old = st.co_cell.(0) in
-       let cell = E.overwrite_value old e.atom e.v in
-       let co_cell = Array.copy st.co_cell in
-       co_cell.(0) <- cell ;
-       {e with tcell=co_cell;},{ st with co_cell; }
+       {e with tcell=[| e.v; |];},st
     | _ -> e,st
 
   let next_co st bank =

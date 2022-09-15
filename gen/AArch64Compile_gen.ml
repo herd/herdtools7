@@ -746,15 +746,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
       let emit_store st p init e =
         let loc = Code.as_data e.C.loc in
-        let x = add_tag loc e.C.tag
-        and v = add_tag loc e.C.v in
+        let x = Code.add_tag loc e.C.tag
+        and v = Code.add_tag loc e.C.v in
         let rA,init,st = U.next_init st p init v in
         emit_store_reg st p init x rA
 
       let emit_store_idx vaddr st p init e idx =
         let loc = Code.as_data e.C.loc in
-        let x = add_tag loc e.C.tag
-        and v = add_tag loc e.C.v in
+        let x = Code.add_tag loc e.C.tag
+        and v = Code.add_tag loc e.C.v in
         let rA,init,st = U.next_init st p init v in
         let rB,init,st = U.next_init st p init x in
         let rC,c,st = do_sum_addr vaddr st rB idx in
@@ -1044,6 +1044,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         fun loc _ -> Code.add_capability loc 0
       else fun loc _ -> loc
 
+    let get_tagged_loc e = add_tag (as_data e.C.loc) e.C.tag
+
     let emit_access  st p init e = match e.C.dir,e.C.loc with
     | None,_ -> Warn.fatal "AArchCompile.emit_access"
     | Some d,Code lab ->
@@ -1223,7 +1225,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
 
     let emit_exch st p init er ew =
-      let rA,init,st = U.next_init st p init (add_tag (as_data er.C.loc) 0) in
+      let rA,init,st =
+        U.next_init st p init (get_tagged_loc er) in
       let rR,st = next_reg st in
       let rW,init,csi,st = U.emit_mov st p init ew.C.v in
       let arw = check_arw_lxsx er ew in
@@ -1275,7 +1278,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       rR,init,csi@csi2@pseudo (cs@cs2),st
 
     let do_emit_ldop ins ins_mixed st p init er ew =
-      let rA,init,st = U.next_init st p init (add_tag (as_data er.C.loc) 0) in
+      let rA,init,st =
+        U.next_init st p init (get_tagged_loc er) in
       do_emit_ldop_rA ins ins_mixed st p init er ew rA
 
     let emit_swp =  do_emit_ldop swp swp_mixed
@@ -1300,7 +1304,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       rS,init,csS@csS2@csT@csT2@pseudo (cs@cs2),st
 
     let emit_cas  st p init er ew =
-      let rA,init,st = U.next_init st p init (add_tag (as_data er.C.loc) 0) in
+      let rA,init,st =
+        U.next_init st p init (get_tagged_loc er) in
       emit_cas_rA st p init er ew rA
 
     let emit_stop_rA op st p init er ew rA =
@@ -1322,7 +1327,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       None,init,csi@pseudo cs,st
 
     let emit_stop  op st p init er ew =
-      let rA,init,st = U.next_init st p init (add_tag (as_data er.C.loc) 0) in
+      let rA,init,st =
+        U.next_init st p init (get_tagged_loc er) in
       emit_stop_rA op st p init er ew rA
 
     let map_some f st p init er ew =
@@ -1618,7 +1624,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_addr_dep csel = do_emit_addr_dep csel vloc
 
     let emit_exch_dep_addr csel st p init er ew rd =
-      let rA,init,caddr,st =  emit_addr_dep csel st p init (add_tag (as_data er.C.loc) 0) rd in
+      let rA,init,caddr,st =
+        emit_addr_dep csel st p init (get_tagged_loc er) rd in
       let rR,st = next_reg st in
       let rW,init,csi,st = U.emit_mov st p init ew.C.v in
       let arw = check_arw_lxsx er ew in
@@ -1831,7 +1838,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_ldop_dep ins ins_mixed  st p init er ew (dp,csel) rd =
       match dp with
     | D.ADDR ->
-        let rA,init,caddr,st = emit_addr_dep csel st p init (add_tag (as_data er.C.loc) 0) rd in
+       let rA,init,caddr,st =
+         emit_addr_dep csel st p init
+           (get_tagged_loc er) rd in
         let rR,init,cs,st = do_emit_ldop_rA ins ins_mixed st p init er ew rA in
         rR,init,caddr@cs,st
     | D.CTRL|D.CTRLISYNC ->
@@ -1842,7 +1851,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_cas_dep  st p init er ew (dp,csel) rd = match dp with
     | D.ADDR ->
-        let rA,init,caddr,st = emit_addr_dep csel st p init (add_tag (as_data er.C.loc) 0) rd in
+       let rA,init,caddr,st =
+         emit_addr_dep csel st p init (get_tagged_loc er) rd in
         let rR,init,cs,st = emit_cas_rA st p init er ew rA in
         rR,init,caddr@cs,st
     | D.CTRL|D.CTRLISYNC ->
@@ -1854,7 +1864,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_stop_dep  op st p init er ew (dp,csel) rd = match dp with
     | D.ADDR ->
         let rA,init,caddr,st =
-          emit_addr_dep csel st p init (add_tag (as_data er.C.loc) 0) rd in
+          emit_addr_dep csel st p init (get_tagged_loc er) rd in
         let rR,init,cs,st = emit_stop_rA op st p init er ew rA in
         rR,init,caddr@cs,st
     | D.CTRL|D.CTRLISYNC ->
