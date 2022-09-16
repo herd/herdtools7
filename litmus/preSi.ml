@@ -1315,7 +1315,6 @@ module Make
 (* Thread code, as functions *)
       let dump_thread_code
             procs_user env (proc,(out,(_outregs,envVolatile)))  =
-        Printf.eprintf "Code: %i, %b\n" proc (A.Out.has_asmhandler out) ;
         let myenv = U.select_proc proc env
         and global_env = U.select_global env in
         let global_env =
