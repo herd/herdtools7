@@ -86,14 +86,17 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
 
       let nop = I_NOP
 
-      let vector_table name =
+      let vector_table is_user name =
+        let el1h_sync,el0_sync_64 =
+          if is_user then "el1h_sync",name
+          else name,"el0_sync_64" in
         let ventry label k = ".align 7"::Printf.sprintf "b %s" label::k in
         let ( ** ) label k = ventry label k in
         "adr %0,2f"::"b 1f"::
          ".align 11"::"2:"::
          "el1t_sync" ** "el1t_irq" ** "el1t_fiq" ** "el1t_error"
-         ** name ** "el1h_irq" ** "el1h_fiq" ** "el1h_error"
-         ** "el0_sync_64" ** "el0_irq_64" ** "el0_fiq_64" ** "el0_error_64"
+         ** el1h_sync ** "el1h_irq" ** "el1h_fiq" ** "el1h_error"
+         ** el0_sync_64 ** "el0_irq_64" ** "el0_fiq_64" ** "el0_error_64"
          ** "el0_sync_32" ** "el0_irq_32" ** "el0_fiq_32" ** "el0_error_32"
          ** ["1:"]
 

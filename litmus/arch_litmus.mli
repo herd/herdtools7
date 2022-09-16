@@ -64,7 +64,7 @@ module type Base = sig
   val type_reg : reg -> CType.t
 
   val features : ((instruction -> bool) * string) list
-  val vector_table : string -> string list
+  val vector_table : bool -> string -> string list
 
 end
 
@@ -102,5 +102,5 @@ module type S =
 
     val features : ((instruction -> bool) * string) list
     val nop : instruction
-    val vector_table : string -> string list
+    val vector_table : bool -> string -> string list
   end

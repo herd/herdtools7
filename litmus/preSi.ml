@@ -280,13 +280,13 @@ module Make
       and tag_log f =  SkelUtil.dump_fatom_tag A.V.pp_v_old f
       and dump_addr_idx s = sprintf "_idx_%s" s
 
-      let dump_vector_table name el1h_sync =
+      let dump_vector_table is_user name tgt =
         O.f "static ins_t *get_vector_table%s(void) {" name ;
         O.oi "ins_t *r;" ;
         O.oi "asm __volatile__ (" ;
         List.iter
           (fun ins -> O.fi "\"%s\\n\"" ins)
-          (A.vector_table el1h_sync) ;
+          (A.vector_table is_user tgt) ;
         O.oi ":\"=r\" (r));" ;
         O.oi "return r;" ;
         O.o "}" ;
@@ -461,9 +461,12 @@ module Make
                 O.o ""
              end ;
           end ;
+          let procs_user = ProcsUser.get test.T.info in
           List.iter
             (fun p ->
-              dump_vector_table (sprintf "%d" p) (sprintf "asm_handler%d" p))
+              dump_vector_table
+                (ProcsUser.is procs_user p)
+                (sprintf "%d" p) (sprintf "asm_handler%d" p))
             ok ;
           Insert.insert O.o "asmhandler.c" ;
           O.o "" ;
@@ -1312,6 +1315,7 @@ module Make
 (* Thread code, as functions *)
       let dump_thread_code
             procs_user env (proc,(out,(_outregs,envVolatile)))  =
+        Printf.eprintf "Code: %i, %b\n" proc (A.Out.has_asmhandler out) ;
         let myenv = U.select_proc proc env
         and global_env = U.select_global env in
         let global_env =
@@ -1322,13 +1326,22 @@ module Make
                 match t with | Array (b,_) -> Base b | _ -> t in
               loc,t)
             global_env in
+        let user =  ProcsUser.is procs_user proc in
         let args0 =
           let open Template in
-          if List.exists (Proc.equal proc) procs_user then
+          if user then
             { trashed=["tr0"];
-              inputs=[(CType.word,"cpu"),("sp_usr","user_stack[cpu]")];}
+              inputs=[(CType.word,"cpu"),("sp_usr","user_stack[cpu]")];
+              constants=
+                begin
+                  if A.Out.has_asmhandler out then
+                    ["esr_el1_ec_svc64","ESR_EL1_EC_SVC64";
+                     "esr_el1_ec_shift","ESR_EL1_EC_SHIFT";]
+                  else []
+                end; }
           else no_extra_args in
-        Lang.dump_fun O.out args0 myenv global_env envVolatile proc out
+        Lang.dump_fun ~user
+          O.out args0 myenv global_env envVolatile proc out
 
 (* Untouched variables, per thread + responsability *)
       let part_vars test =

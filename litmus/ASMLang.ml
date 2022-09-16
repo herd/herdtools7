@@ -174,11 +174,15 @@ module RegMap = A.RegMap)
               let v = A.V.zero in
               dump_pair reg v::k)
             rem [] in
+        let consts =
+          List.map
+            (fun (tag,v) ->  sprintf "[%s] \"i\" (%s)" tag v)
+            args0.Template.constants in
         let args0 =
           List.map
             (fun (_,(tag,v)) -> sprintf "[%s] \"r\" (%s)" tag v)
             args0.Template.inputs in
-        let out =  (String.concat "," (args0@ins@rem)) in
+        let out =  (String.concat "," (consts@args0@ins@rem)) in
 (*        eprintf "IN: {%s}\n" out ; *)
         fprintf chan ":%s\n" out
 
@@ -507,10 +511,13 @@ module RegMap = A.RegMap)
             | _ -> false)
           t.Tmpl.init
 
-      let dump_fun chan args0 env globEnv _volatileEnv proc t =
+      let dump_fun ?(user=false) chan args0 env globEnv _volatileEnv proc t =
         let args0 = match t.Tmpl.fhandler with
           | [] -> args0
-          | _ -> { args0 with Template.trashed=["tr0"] } in
+          | _ ->
+             let trashed =
+               if user then ["tr0";"tr1";] else  ["tr0"] in
+             { args0 with Template.trashed=trashed; } in
         if debug then debug_globEnv globEnv ;
         let ptevalEnv = extract_ptevals t in
         let labels = Tmpl.get_labels t in

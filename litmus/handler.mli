@@ -22,8 +22,9 @@ module type S = sig
   val user_mode : ins list
   val kernel_mode : ins list
 
-  val fault_handler_prologue : Proc.t -> ins list
-  val fault_handler_epilogue : ins list -> ins list
+  (* First boolean argument reflects user mode *)
+  val fault_handler_prologue : bool -> Proc.t -> ins list
+  val fault_handler_epilogue : bool -> ins list -> ins list
 end
 
 module No(A:sig type ins end) : S with type ins = A.ins

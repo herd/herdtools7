@@ -1204,10 +1204,25 @@ module Make(V:Constant.S)(C:Config) =
 
     let kernel_mode = [{ empty_ins with memo="svc #471"}]
 
-    let fault_handler_prologue p =
-      map_ins ["b 1f";sprintf  "asm_handler%d:" p]
+    let user_prologue =
+      ["mrs %[tr0],esr_el1";
+       "lsr %[tr0],%[tr0],#%[esr_el1_ec_shift]";
+       "cmp %[tr0],#%[esr_el1_ec_svc64]";
+       "cset %[tr0],ne";
+       "lsl %[tr0],%[tr0],#2";
+       "adr %[tr1],2f";
+       "add %[tr1],%[tr1],%[tr0]";
+       "br %[tr1]";
+       "2:";
+       "b 1f";
+      ]
 
-    and fault_handler_epilogue code =
+    let fault_handler_prologue is_user p =
+      map_ins
+        ((fun k -> "b 1f"::sprintf  "asm_handler%d:" p::k)
+        (if is_user then user_prologue else []))
+
+    and fault_handler_epilogue is_user code =
       let ins =
         if
           List.exists
@@ -1220,10 +1235,12 @@ module Make(V:Constant.S)(C:Config) =
             "msr elr_el1,%[tr0]" ;
             "eret" ]
         else if Precision.is_fatal C.precision then
-          [ "mrs %[tr0],elr_el1" ;
-            "adr %[tr0],1f";
-            "msr elr_el1,%[tr0]";
-            "eret" ]
+          (if is_user then []
+           else
+             [ "mrs %[tr0],elr_el1" ;
+               "adr %[tr0],1f";
+               "msr elr_el1,%[tr0]";
+               "eret" ])
         else
           [ "eret" ] in
       let ins = map_ins ins in

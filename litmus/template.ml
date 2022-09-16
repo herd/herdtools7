@@ -49,9 +49,10 @@ end
 
 type extra_args =
   { trashed: string list;
-    inputs: ((CType.t * string) * (string * string)) list; }
+    inputs: ((CType.t * string) * (string * string)) list;
+    constants: (string * string) list; }
 
-let no_extra_args = { trashed=[]; inputs=[];}
+let no_extra_args = { trashed=[]; inputs=[]; constants=[];}
 
 module type S = sig
   module V : Constant.S

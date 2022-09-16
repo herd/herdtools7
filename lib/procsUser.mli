@@ -17,3 +17,6 @@
 (** List of threads in user mode *)
 
 val get : (string * string) list -> Proc.t list
+
+(* Is a particular proc in user mode? *)
+val is :  Proc.t list -> Proc.t -> bool
