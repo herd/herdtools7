@@ -1192,35 +1192,28 @@ module Make(V:Constant.S)(C:Config) =
 
     type ins = A.Out.ins
 
-    let user_mode =
+    let max_handler_label = 1 (* Warning label 0 no other is used in handler code *)
+
+    let user_mode has_handler p =
       let ins =
-        ["msr sp_el0,%[sp_usr]";
-         "adr %[tr0],9f";
-         "msr elr_el1,%[tr0]";
-         "msr spsr_el1,xzr";
-         "eret";
-         "9:"] in
+        (fun k ->
+          "msr sp_el0,%[sp_usr]"
+          ::"adr %[tr0],0f"
+          ::"msr elr_el1,%[tr0]"
+          ::"msr spsr_el1,xzr"
+          ::"eret"
+          ::"0:"
+          ::k)
+          (if has_handler then [sprintf "adr x29,asm_handler%d" p;] else []) in
       map_ins ins
 
-    let kernel_mode = [{ empty_ins with memo="svc #471"}]
-
-    let user_prologue =
-      ["mrs %[tr0],esr_el1";
-       "lsr %[tr0],%[tr0],#%[esr_el1_ec_shift]";
-       "cmp %[tr0],#%[esr_el1_ec_svc64]";
-       "cset %[tr0],ne";
-       "lsl %[tr0],%[tr0],#2";
-       "adr %[tr1],2f";
-       "add %[tr1],%[tr1],%[tr0]";
-       "br %[tr1]";
-       "2:";
-       "b 1f";
-      ]
-
-    let fault_handler_prologue is_user p =
+    let kernel_mode has_handler =
       map_ins
-        ((fun k -> "b 1f"::sprintf  "asm_handler%d:" p::k)
-        (if is_user then user_prologue else []))
+        ((fun k -> if has_handler then "adr x29,0f"::k else k)
+           ["svc #471";])
+
+    let fault_handler_prologue _is_user p =
+      map_ins ["b 0f"; sprintf  "asm_handler%d:" p;]
 
     and fault_handler_epilogue is_user code =
       let ins =
@@ -1238,13 +1231,13 @@ module Make(V:Constant.S)(C:Config) =
           (if is_user then []
            else
              [ "mrs %[tr0],elr_el1" ;
-               "adr %[tr0],1f";
+               "adr %[tr0],0f";
                "msr elr_el1,%[tr0]";
                "eret" ])
         else
           [ "eret" ] in
       let ins = map_ins ins in
-      ins@[ {empty_ins with memo="1:"; label=Some "1"; } ]
+      ins@[ {empty_ins with memo="0:"; label=Some "0"; } ]
 
     let compile_ins tr_lab ins k = match ins with
     | I_NOP -> { empty_ins with memo = "nop"; }::k

@@ -19,8 +19,13 @@
 module type S = sig
   type ins
 
-  val user_mode : ins list
-  val kernel_mode : ins list
+  (* Strictly greater than any label in handler *)
+  val max_handler_label : int
+
+  (* Emit code to and from user mode,
+     boolean argument signals explicit handler *)
+  val user_mode : bool -> Proc.t -> ins list
+  val kernel_mode : bool -> ins list
 
   (* First boolean argument reflects user mode *)
   val fault_handler_prologue : bool -> Proc.t -> ins list

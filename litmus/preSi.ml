@@ -1331,13 +1331,12 @@ module Make
           if user then
             { trashed=["tr0"];
               inputs=[(CType.word,"cpu"),("sp_usr","user_stack[cpu]")];
-              constants=
-                begin
-                  if A.Out.has_asmhandler out then
-                    ["esr_el1_ec_svc64","ESR_EL1_EC_SVC64";
-                     "esr_el1_ec_shift","ESR_EL1_EC_SHIFT";]
-                  else []
-                end; }
+              constants=[];
+              clobbers=
+                if A.Out.has_asmhandler out then
+                  A.user_handler_clobbers
+                else [];
+            }
           else no_extra_args in
         Lang.dump_fun ~user
           O.out args0 myenv global_env envVolatile proc out

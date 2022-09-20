@@ -420,6 +420,8 @@ type P.code = MiscParser.proc * A.pseudo list)
     | A.Symbolic _ (*no symbolic in litmus *)
     | A.Macro _ -> assert false
 
+    let first_label = if is_pte then C.max_handler_label else 0
+
     let lblmap_code no =
       let rec do_rec cm = function
         | [] -> cm
@@ -427,14 +429,14 @@ type P.code = MiscParser.proc * A.pseudo list)
             let cm = lblmap_pseudo no cm i in
             do_rec cm code in
       fun code co ->
-        let (_,m) as cm = do_rec (0,Label.Map.empty) code in
+        let (_,m) as cm = do_rec (first_label,Label.Map.empty) code in
         match co with
         | None -> m
         | Some code ->
            let _,m = do_rec cm code in
            m
 
-    (*******************************)
+(*******************************)
 (* Count specific instructions *)
 (*******************************)
 
@@ -511,12 +513,16 @@ type P.code = MiscParser.proc * A.pseudo list)
          code,fhandler
 
     let compile_code proc no user code fhandler =
+      let has_handler = Misc.is_some fhandler in
       let code,fhandler_c = compile_pseudo_code no code fhandler in
       let code =
         if O.timeloop > 0 then C.emit_loop code
         else code in
       let code =
-        if user then C.user_mode@code@C.kernel_mode
+        if user then
+          C.user_mode has_handler proc
+          @code
+          @C.kernel_mode has_handler
         else code
       and fhandler =
         match fhandler with

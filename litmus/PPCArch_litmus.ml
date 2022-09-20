@@ -91,5 +91,6 @@ module Make (O:Arch_litmus.Config)(V:Constant.S) = struct
 
   let features = []
   let nop = Pnop
-  let vector_table _ _ = []
+
+  include HardwareExtra.No
 end
