@@ -649,9 +649,8 @@ type P.code = MiscParser.proc * A.pseudo list)
             let is_user = ProcsUser.is procs_user proc in
             let (code,fhandler),addrs =
               try
-                let (_,_,c) = List.find (fun (p,_,_) -> Proc.equal p proc) fhandlers in
-                if is_user then
-                  Warn.warn_always "Process %d running in userspace with fault handler" proc ;
+                let (_,_,c) =
+                  List.find (fun (p,_,_) -> Proc.equal p proc) fhandlers in
                 let addrs = G.Set.union (extract_addrs c) addrs in
                 let code,fhandler =
                   compile_code proc esc is_user code (Some c) in
