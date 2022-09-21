@@ -1,4 +1,4 @@
-AArch64 A26
+AArch64 A28
 (* Tests load exclusive register, symbolic location, no offset*)
 { 0:X1=x; int64_t x; int64_t 0:X0; }
 

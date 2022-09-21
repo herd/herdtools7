@@ -1,10 +1,10 @@
-Test A27 Allowed
+Test A29 Allowed
 States 1
 0:X0=0;
 Ok
 Witnesses
 Positive: 1 Negative: 0
 Condition exists (0:X0=0)
-Observation A27 Always 1 0
+Observation A29 Always 1 0
 Hash=051301064723fe3c801c4b4b2ca2682e
 
