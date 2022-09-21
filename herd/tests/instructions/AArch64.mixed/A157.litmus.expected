@@ -1,0 +1,10 @@
+Test A157 Allowed
+States 1
+0:X0=0x0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=0x0)
+Observation A157 Always 1 0
+Hash=12580598dd4d65a207378484b3c51242
+

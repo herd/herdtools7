@@ -1,0 +1,10 @@
+Test A26 Required
+States 1
+0:X0=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=0)
+Observation A26 Always 1 0
+Hash=20a4925d8aa6d710e2b27264e37f0cbc
+

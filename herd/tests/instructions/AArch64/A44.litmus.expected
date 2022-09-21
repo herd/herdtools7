@@ -1,0 +1,12 @@
+Test A44 Required
+States 3
+0:X3=0; [z]=5;
+0:X3=0; [z]=6;
+0:X3=1; [z]=5;
+Ok
+Witnesses
+Positive: 4 Negative: 0
+Condition forall (not ([z]=3 /\ 0:X3=1 \/ [z]=6 /\ 0:X3=1))
+Observation A44 Always 4 0
+Hash=a642f170dc28a5298b2f8424ab1575d7
+

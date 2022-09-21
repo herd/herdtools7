@@ -1,0 +1,11 @@
+AArch64 A43
+(* Test load exclusive; Store exclusive, symbolic location *)
+
+ { 0:X4=z; int64_t z=2 }
+
+P0;
+  LDXR X0, [X4];
+  ADD X0, X0, #1;
+  STXR W3, X0, [X4];
+
+forall ((z=2 /\ 0:X3=1) \/ (z=3 /\ 0:X3=0))

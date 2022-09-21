@@ -1,0 +1,10 @@
+Test A159 Required
+States 1
+0:X0=0x0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=0x0)
+Observation A159 Always 1 0
+Hash=7a373f975e0a3bf459b4577cada7f4df
+

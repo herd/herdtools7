@@ -1,0 +1,13 @@
+AArch64 A157
+(* Tests load acquire register, symbolic location, no offset*)
+(* Equivalent to A22 but testing mixed mode *)
+
+Variant=mixed
+
+{ uint64_t 0:X0; 0:X1=x; uint64_t x; }
+
+P0;
+  LDAR X0, [X1];
+
+exists (0:X0=0)
+

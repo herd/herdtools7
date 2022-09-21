@@ -1,0 +1,11 @@
+Test A161 Required
+States 2
+0:X3=0x0; [z]=0x3;
+0:X3=0x1; [z]=0x2;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall ([z]=0x2 /\ 0:X3=0x1 \/ [z]=0x3 /\ 0:X3=0x0)
+Observation A161 Always 2 0
+Hash=801cdab07257d3e78999199f60244eb9
+
