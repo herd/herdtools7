@@ -1,0 +1,11 @@
+AArch64 A25
+
+(* Tests ldrsh instruction *)
+{ int64_t 0:X0 = 1; 0:X1 = x; int16_t x = 65535; }
+
+P0;
+  LDRSH X0, [X1];
+  MOV X2, #1;
+  ADD X0, X0, X2;
+
+exists (0:X0 = 65536)

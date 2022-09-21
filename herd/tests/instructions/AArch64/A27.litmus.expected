@@ -1,0 +1,10 @@
+Test A27 Required
+States 1
+0:X0=-1; 0:X2=65535; 0:X4=4294967295; 0:X6=65535;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=-1 /\ 0:X2=65535 /\ 0:X4=4294967295 /\ 0:X6=65535)
+Observation A27 Always 1 0
+Hash=93cac7fe5e426154009293d2e2d87ea4
+

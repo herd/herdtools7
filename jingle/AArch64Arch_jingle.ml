@@ -80,6 +80,8 @@ include Arch.MakeArch(struct
       ->
         match_kr subs (K k) (K k') >>>
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
+    | I_LDRS(_,_,r1,r2),I_LDRS(_,_,r1',r2')
+      -> add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')] subs
     | I_LDR(_,r1,r2,kr,s),I_LDR(_,r1',r2',kr',s')
     | I_STR(_,r1,r2,kr,s),I_STR(_,r1',r2',kr',s')
     | I_STRBH(_,r1,r2,kr,s),I_STRBH(_,r1',r2',kr',s')
@@ -256,6 +258,10 @@ include Arch.MakeArch(struct
         find_shift s >> fun s ->
         expl_kr kr >! fun kr ->
         I_LDRBH(a,r1,r2,kr,s)
+    | I_LDRS(a,var,r1,r2) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 ->
+        I_LDRS(a,var,r1,r2)
     | I_STR(a,r1,r2,kr,s) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

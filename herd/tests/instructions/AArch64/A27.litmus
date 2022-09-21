@@ -1,0 +1,15 @@
+AArch64 A27
+
+{
+  0:X1 = x;
+  int16_t x = -1;
+  int64_t 0:X4;
+  int64_t 0:X6;
+}
+
+P0;
+  LDRSH W0,[X1] ;
+  MOV X4,X0     ;
+  LDRH W2,[X1]  ;
+  MOV X6,X2     ;
+forall (0:X0=-1 /\ 0:X2=65535 /\ 0:X4=4294967295 /\ 0:X6=65535)

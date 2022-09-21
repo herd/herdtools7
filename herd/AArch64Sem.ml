@@ -1111,6 +1111,16 @@ module Make
           (get_ea_noext rd kr ii)
           (M.unitT V.zero)
           ii
+      (* Load signed - sign extends to either 32 or 64 bit value*)
+      let ldrs sz var rd rs kr s ii =
+        (* load either 8 or 16 bit value (sz),
+        then sign extend based on register size (var) *)
+        do_ldr sz AArch64.N
+          (fun ac a -> do_read_mem_ret sz AArch64.N aexp ac a ii
+            >>= M.op1 (Op.Sxt sz)
+            >>= fun v2 -> write_reg_sz_non_mixed
+              (AArch64.tr_variant var) rd v2 ii)
+          (get_ea rs kr s ii) ii
 
       and stlr sz rs rd ii =
         do_str (do_write_mem sz AArch64.L aexp) sz AArch64.L
@@ -1749,6 +1759,9 @@ module Make
         | I_LDRBH (bh, rd, rs, kr, s) ->
             let sz = bh_to_sz bh in
             ldr sz rd rs kr s ii
+        | I_LDRS (v, bh, rd, rs) ->
+            let sz = bh_to_sz bh in
+            ldrs sz v rd rs (AArch64.K 0) S_NOEXT ii
         | I_LDR_P(var,rd,rs,k) ->
             assert (k >= -256 && k <= 255);
             let sz = tr_variant var in
