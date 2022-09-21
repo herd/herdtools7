@@ -1,0 +1,13 @@
+Test LB+dmb.sy+amo.ldaddal-polp Allowed
+States 4
+0:X1=0; 1:X1=0; [y]=1;
+0:X1=0; 1:X1=1; [y]=3;
+0:X1=1; 1:X1=0; [y]=1;
+0:X1=1; 1:X1=1; [y]=3;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([y]=3 /\ 0:X1=1 /\ 1:X1=1)
+Observation LB+dmb.sy+amo.ldaddal-polp Sometimes 1 3
+Hash=17bc6369fabbd03dc92fee1a469c1247
+

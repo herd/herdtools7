@@ -1,0 +1,13 @@
+Test S+dmb.sytp+amo.ldaddal-polt Allowed
+States 4
+1:X1=0; [y]=1; [tag(x)]=:blue;
+1:X1=0; [y]=1; [tag(x)]=:red;
+1:X1=1; [y]=3; [tag(x)]=:blue;
+1:X1=1; [y]=3; [tag(x)]=:red;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([tag(x)]=:blue /\ [y]=3 /\ 1:X1=1)
+Observation S+dmb.sytp+amo.ldaddal-polt Sometimes 1 3
+Hash=935319150350fb5621f087696e8ab7e8
+

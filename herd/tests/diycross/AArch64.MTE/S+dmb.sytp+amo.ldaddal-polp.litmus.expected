@@ -1,0 +1,13 @@
+Test S+dmb.sytp+amo.ldaddal-polp Allowed
+States 4
+1:X1=0; [y]=1; [tag(x)]=:red;  ~Fault(P1,x);
+1:X1=0; [y]=1; [tag(x)]=:red; Fault(P1,x:green);
+1:X1=1; [y]=3; [tag(x)]=:red;  ~Fault(P1,x);
+1:X1=1; [y]=3; [tag(x)]=:red; Fault(P1,x:green);
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([tag(x)]=:red /\ [y]=3 /\ 1:X1=1 /\ not (fault(P1,x)))
+Observation S+dmb.sytp+amo.ldaddal-polp Sometimes 1 3
+Hash=1584470bb16be5b8c59c856576584bf7
+

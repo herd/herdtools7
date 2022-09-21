@@ -1,0 +1,13 @@
+Test MP+dmb.sytp+amo.ldaddal-polp Allowed
+States 4
+1:X1=0; 1:X4=0; [y]=1;  ~Fault(P1,x);
+1:X1=0; 1:X4=0; [y]=1; Fault(P1,x:green);
+1:X1=1; 1:X4=0; [y]=3;  ~Fault(P1,x);
+1:X1=1; 1:X4=0; [y]=3; Fault(P1,x:green);
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([y]=3 /\ 1:X1=1 /\ 1:X4=0 /\ not (fault(P1,x)))
+Observation MP+dmb.sytp+amo.ldaddal-polp Sometimes 1 3
+Hash=e3e470b75006d9ccf4635f3d73e234b9
+

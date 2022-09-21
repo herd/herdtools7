@@ -1,0 +1,11 @@
+Test MP+dmb.sypt+amo.ldaddal-polt Allowed
+States 2
+1:X1=0; 1:X3=x:green; [y]=1;  ~Fault(P1,y);
+1:X1=0; 1:X3=x:green; [y]=1; Fault(P1,y:red);
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists ([y]=1 /\ 1:X1=0 /\ 1:X3=x:green /\ not (fault(P1,y)))
+Observation MP+dmb.sypt+amo.ldaddal-polt Sometimes 1 1
+Hash=9b6058dae5ff2ee1392680b3206be720
+
