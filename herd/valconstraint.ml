@@ -56,7 +56,8 @@ module type S = sig
 
   val pp_answer : answer -> string
 
-  val solve : cnstrnt list -> answer
+(* Argument `final` characterises the last call to solver: delayed exception are raised *)
+  val solve : final:bool -> cnstrnt list -> answer
 end
 
 module type Config = sig
@@ -386,7 +387,6 @@ let check_failed cns =
       (* Phase 2, orient constraints S := cst / cst := S *)
       let solns = solve_cnstrnts cns in
       if V.Solution.is_empty solns then begin
-        check_failed cns ;
         solns_final,cns
       end else
         (* Phase 3, and iteration *)
@@ -405,7 +405,7 @@ let check_failed cns =
         m
         (V.Solution.map (fun x -> V.Val x) solns0)
 
-    let solve lst =
+    let solve ~final lst =
       if C.debug then begin
         prerr_endline "** Solve **" ;
         eprintf "%s\n" (pp_cnstrnts lst) ; flush stderr
@@ -414,6 +414,7 @@ let check_failed cns =
       let sol =
         try
           let solns,lst = solve_step lst V.Solution.empty in
+          if final then check_failed lst ;
           let solns = add_vars_solns m solns in
           Maybe (solns,lst)
         with Contradiction -> NoSolns in

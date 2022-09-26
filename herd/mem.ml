@@ -776,7 +776,7 @@ let match_reg_events es =
                   (A.V.pp_v v_stored) ;
                 assert false)
           rfm csn in
-      match VC.solve csn with
+      match VC.solve ~final:false csn with
       | VC.NoSolns ->
          if C.debug.Debug_herd.solver then
            pp_nosol "register" test es rfm ;
@@ -1009,7 +1009,7 @@ let match_reg_events es =
                 loads stores cns in
             if dbg then eprintf "\n%!" ;
             (* And solve *)
-            match VC.solve cns with
+            match VC.solve ~final:true cns with
             | VC.NoSolns ->
                if C.debug.Debug_herd.solver then begin
                  let rfm = add_some_mem loads stores rfm in
@@ -1273,7 +1273,7 @@ let match_reg_events es =
                       (fun load store k -> add_mem_eqs test store load k)
                       tag_loads tag_stores cns in
                   (* And solve *)
-                  match VC.solve cns with
+                  match VC.solve ~final:true cns with
                   | VC.NoSolns -> res
                   | VC.Maybe (sol,cs) ->
                       (* Time to complete rfmap *)
