@@ -144,7 +144,12 @@ Monad type:
       fun eiid_next ->
         eiid_next, (Evt.singleton (v, [], E.empty_event_structure), None)
 
-(* This very special combinator permits to get monad m's result,
+    let failcodeT (e:exn) (v : 'a)  : 'a code =
+      fun eiid_next ->
+      eiid_next,
+      (Evt.singleton (v, [VC.Failed e], E.empty_event_structure), None)
+
+  (* This very special combinator permits to get monad m's result,
    while postponing the usaga of corresponding event structure.
    It proves convenient to express complex dependencies.
    Not compatible with speculation *)
