@@ -36,7 +36,7 @@ end
 module Make(C:Builder.S)
     (O:AltConfig with type relax = C.R.relax and type fence = C.A.fence) :
     sig
-      val gen : ?relax:C.R.relax list -> ?safe:C.R.relax list -> int -> unit
+      val gen : ?relax:C.R.relax list -> ?safe:C.R.relax list -> ?reject:C.R.relax list -> int -> unit
     end
 
     =
@@ -360,11 +360,25 @@ module Make(C:Builder.S)
 
     let can_prefix prefix = mk_can_prefix prefix
 
-    let call_rec prefix f0 safes po_safe over n r suff f_rec k =
+    let rec is_prefix l rl =
+      match rl,l with
+      | hrl::trl, hl::tl -> if hl = hrl then  is_prefix tl trl else false
+      | [], _ -> true (* end of rl before or at the end of l *)
+      | _, [] -> false (* end of l before end of rl*)
+
+
+    let check_cycle rsuff rl =
+      let rsuff = List.map (fun (_,rr) -> rr) rsuff in
+      let rsuff = List.concat rsuff in
+      not (List.exists (fun rl ->  is_prefix rsuff rl) rl)
+
+
+    let call_rec prefix f0 safes po_safe over n r suff f_rec k ?(reject=[])=
       if
         can_precede safes po_safe r suff &&
         minprocs suff <= O.nprocs &&
-        minint (r::suff) <= O.max_ins-1
+        minint (r::suff) <= O.max_ins-1 &&
+        check_cycle (r::suff) reject
       then
         let suff = r::suff
         and n = n-sz r in
@@ -419,7 +433,7 @@ module Make(C:Builder.S)
       fun e1 e2 -> Dir2Set.mem (e1,e2) d2
 
 
-    let zyva prefix aset relax safe n f =
+    let zyva prefix aset relax safe reject n f =
 (*      let safes = C.R.Set.of_list safe in *)
       let relax = edges_ofs relax in
       let safe = edges_ofs safe in
@@ -431,7 +445,7 @@ module Make(C:Builder.S)
       | [] -> k
       | r0::rs -> (* Build simple cycles for relaxation r0 *)
 
-          let call_rec = call_rec prefix (f [fst r0]) aset po_safe  in
+          let call_rec = call_rec prefix (f [fst r0]) aset po_safe ~reject:reject in
 
 (* Add a safe edge to suffix *)
           let rec add_safe over ss n suf k =
@@ -469,7 +483,7 @@ module Make(C:Builder.S)
               let nrs = List.length rs in
               if nrs > O.max_relax || nrs < O.min_relax then k
               else f rs po_safe suff k)
-            aset po_safe in
+            aset po_safe ~reject:reject in
 
 (* Add a one edge to suffix *)
         let rec add_one over rs ss n suf k = match rs,ss with
@@ -498,7 +512,7 @@ module Make(C:Builder.S)
 (* New relax that does not enforce the first edge to be a relax *)
 
 (* As a safety check, generate cycles with no relaxation *)
-      let call_rec = call_rec prefix (f []) aset po_safe in
+      let call_rec = call_rec prefix (f []) aset po_safe ~reject:reject in
       let rec no_relax ss n suf k = match ss with
       | [] -> k
       | s::ss ->
@@ -545,8 +559,33 @@ module Make(C:Builder.S)
       let rs = RelaxSet.diff rs (RelaxSet.of_list r0) in
       RelaxSet.elements rs
 
+    exception Result of bool
 
-    let last_check_call _rset _sset aset f rs po_safe res k =
+(* Is xs a prefix of s@p ? *)
+
+    let prefix_spanp xs (p,s) =
+      let rec is_prefix xs ys = match xs,ys with
+        | [],_ -> raise (Result true)
+        | _::_,[] -> xs (* xs -> what is still to be matched *)
+        | x::xs,y::ys ->
+           if C.E.compare x y = 0 then is_prefix xs ys
+           else raise (Result false) in
+      try
+        let xs = is_prefix xs s in
+        match is_prefix xs p with
+        | [] -> true (* xs and s@p are equal! *)
+        |  _::_ -> false (* xs larger.. *)
+      with Result b -> b
+
+    let substring_spanp rej pss =
+      List.exists
+        (fun xs ->
+          List.exists
+            (fun ps -> prefix_spanp xs ps)
+            pss)
+      rej
+
+    let last_check_call rej aset f rs po_safe res k =
       match res with
       | [] -> k
       | _ ->
@@ -561,45 +600,93 @@ module Make(C:Builder.S)
                 | Thin | Free | Uni | Critical | Transitive |Total -> false) &&
                 (count_ext le=1 || all_int le || count_changes le < 2) then k
               else begin
-                let mk_info _es =
-                  let ss = build_safe rs res in
-                  let info =
-                    [
-                     "Relax",pp_relax_list rs;
-                     "Safe", pp_relax_list ss;
-                   ] in
-                  info,C.R.Set.of_list rs in
-                f le mk_info D.no_name D.no_scope k
+                  let ok = (* Check for rejected sequenes that span over cycle "cut" *)
+                  let rej = (* Keep non-trivial edge sequences only *)
+                    List.filter
+                      (function
+                       | []|[_] -> false
+                       | _::_::_ -> true)
+                      rej  in
+                  match rej with
+                  | [] -> true
+                  | _::_ ->
+                     let max_sz =
+                       List.fold_left (fun  k xs -> max k (List.length xs)) 0 rej in
+                     let pss = Misc.cuts max_sz le in
+                     not (substring_spanp rej pss) in
+                if ok then
+                  let mk_info _es =
+                    let ss = build_safe rs res in
+                    let info =
+                      [
+                        "Relax",pp_relax_list rs;
+                        "Safe", pp_relax_list ss;
+                      ] in
+                    info,C.R.Set.of_list rs in
+                  f le mk_info D.no_name D.no_scope k
+                else k
               end
             with (Normaliser.CannotNormalise _) -> k
           else k
 
-    let last_minute ess =
-      not (List.exists (fun es -> List.length es > O.max_ins) ess)
+    let rec prefixp xs ys =
+      match xs,ys with
+      | [],_ -> true
+      | _::_,[] -> raise Exit
+      | x::xs,y::ys ->
+         C.E.compare x y = 0 && prefixp xs ys
 
-    let rec zyva_prefix prefixes aset relax safe n f k =
+    let rec sublistp xs ys = match ys with
+      | [] -> false
+      | _::rem ->
+         prefixp xs ys || sublistp xs rem
+
+    let substringp xs ys =
+      try sublistp xs ys
+      with Exit ->
+            match xs with
+            | []|[_] -> false
+            | _::_::_ ->
+               let pss = Misc.cuts (List.length xs) ys in
+               List.exists
+                 (fun ps -> prefix_spanp xs ps)
+                 pss
+
+    let last_minute rej ess =
+      not (List.exists (fun es -> List.length es > O.max_ins) ess)
+      && begin
+          match rej with
+          | _::_ ->
+             let es = List.flatten ess  in
+             not (List.exists (fun xs -> substringp xs es) rej)
+          | [] -> true
+        end
+
+    let rec zyva_prefix prefixes aset relax safe reject n f k =
       match prefixes with
       | [] -> k
       | pref::rem ->
-         zyva pref  aset relax safe n f
-            (zyva_prefix rem aset relax safe n f k)
+         zyva pref aset relax safe reject n f
+            (zyva_prefix rem aset relax safe reject n f k )
 
-    let do_gen relax safe n =
+    let do_gen relax safe rej n =
       let sset = C.R.Set.of_list safe in
       let rset = C.R.Set.of_list relax in
       let aset = C.R.Set.union sset rset in
+      let rej = List.map (fun a -> edges_of a) rej in
       D.all
-        ~check:last_minute
+        ~check:(last_minute rej)
         (fun f ->
-          zyva_prefix prefixes aset relax safe n
-            (last_check_call rset sset aset f))
+          zyva_prefix prefixes aset relax safe rej n
+            (last_check_call rej aset f))
 
     let debug_rs chan rs =
       List.iter (fun r -> fprintf chan "%s\n" (pp_relax r)) rs
 
-    let secret_gen relax safe n =
+    let secret_gen relax safe reject n =
       let relax = expand_relaxs C.ppo relax
-      and safe = expand_relaxs C.ppo safe in
+      and safe = expand_relaxs C.ppo safe
+      and reject = expand_relaxs C.ppo reject in
       if O.verbose > 0 then begin
         eprintf "** Relax0 **\n" ;
         debug_rs stderr relax ;
@@ -609,14 +696,15 @@ module Make(C:Builder.S)
       let relax_set = C.R.Set.of_list relax
       and safe_set = C.R.Set.of_list safe in
       let relax = C.R.Set.elements relax_set
-      and safe = C.R.Set.elements (C.R.Set.diff safe_set relax_set) in
+      and safe = C.R.Set.elements (C.R.Set.diff safe_set relax_set)
+(*      and reject = C.R.Set.elements reject_set *)in
       if O.verbose > 0 then begin
         eprintf "** Relax **\n" ;
         debug_rs stderr relax ;
         eprintf "** Safe **\n" ;
         debug_rs stderr safe
       end ;
-      do_gen relax safe n
+      do_gen relax safe reject n
 
 (**********************)
 (* Default edge lists *)
@@ -659,8 +747,8 @@ module Make(C:Builder.S)
       let k = er (Hat)::k in
       k
 
-    let gen ?(relax=relax) ?(safe=safe) n =
-      try secret_gen relax safe n
+    let gen ?(relax=relax) ?(safe=safe) ?(reject=[]) n =
+      try secret_gen relax safe reject n
       with e ->
         eprintf "Exc: '%s'\n" (Printexc.to_string e) ;
         raise e
