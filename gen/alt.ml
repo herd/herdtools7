@@ -562,6 +562,7 @@ module Make(C:Builder.S)
     exception Result of bool
 
 (* Is xs a prefix of s@p ? *)
+
     let prefix_spanp xs (p,s) =
       let rec is_prefix xs ys = match xs,ys with
         | [],_ -> raise (Result true)
@@ -628,8 +629,38 @@ module Make(C:Builder.S)
             with (Normaliser.CannotNormalise _) -> k
           else k
 
-    let last_minute ess =
+    let rec prefixp xs ys =
+      match xs,ys with
+      | [],_ -> true
+      | _::_,[] -> raise Exit
+      | x::xs,y::ys ->
+         C.E.compare x y = 0 && prefixp xs ys
+
+    let rec sublistp xs ys = match ys with
+      | [] -> false
+      | _::rem ->
+         prefixp xs ys || sublistp xs rem
+
+    let substringp xs ys =
+      try sublistp xs ys
+      with Exit ->
+            match xs with
+            | []|[_] -> false
+            | _::_::_ ->
+               let pss = Misc.cuts (List.length xs) ys in
+               List.exists
+                 (fun ps -> prefix_spanp xs ps)
+                 pss
+
+    let last_minute rej ess =
       not (List.exists (fun es -> List.length es > O.max_ins) ess)
+      && begin
+          match rej with
+          | _::_ ->
+             let es = List.flatten ess  in
+             not (List.exists (fun xs -> substringp xs es) rej)
+          | [] -> true
+        end
 
     let rec zyva_prefix prefixes aset relax safe reject n f k =
       match prefixes with
@@ -644,7 +675,7 @@ module Make(C:Builder.S)
       let aset = C.R.Set.union sset rset in
       let rej = List.map (fun a -> edges_of a) rej in
       D.all
-        ~check:last_minute
+        ~check:(last_minute rej)
         (fun f ->
           zyva_prefix prefixes aset relax safe rej n
             (last_check_call rej aset f))
