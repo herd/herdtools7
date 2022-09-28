@@ -163,9 +163,10 @@ arm-test::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 ARM instructions tests: OK"
 
-test:: diy-test
+test::
 
-diy-test:
+diy-test:: diy-test-aarch64
+diy-test-aarch64:
 	@ echo
 	$(HERD_DIYCROSS_REGRESSION_TEST) \
 		-herd-path $(HERD) \
@@ -228,11 +229,12 @@ mte-test:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-MTE tests: OK"
 
-test:: diy-test-mixed
+test:: diy-test
 
 LDS:="Amo.Cas,Amo.LdAdd,Amo.LdClr,Amo.LdEor,Amo.LdSet"
 LDSPLUS:="LxSx",$(LDS)
 
+diy-test:: diy-test-mixed
 diy-test-mixed::
 	@ echo
 	$(HERD_DIYCROSS_REGRESSION_TEST) \
@@ -353,7 +355,7 @@ v64:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64.mixed.v64 diycross7 tests: OK"
 
-test:: diy-store-test
+diy-test:: diy-store-test
 diy-store-test:
 	@ echo
 	$(HERD_DIYCROSS_REGRESSION_TEST) \
@@ -373,3 +375,30 @@ diy-store-test:
 		-diycross-arg 'Rfe,Fre,Coe' \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 diycross7.store tests: OK"
+
+diy-test:: diy-test-mte
+diy-test-mte::
+	@ echo
+	$(HERD_DIYCROSS_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-diycross-path $(DIYCROSS) \
+		-libdir-path ./herd/libdir \
+		-expected-dir ./herd/tests/diycross/AArch64.MTE \
+		-conf ./herd/tests/diycross/AArch64.MTE/MTE.cfg \
+		-diycross-arg -arch \
+		-diycross-arg AArch64 \
+		-diycross-arg -variant \
+		-diycross-arg memtag \
+		-diycross-arg DMB.SYd*W \
+		-diycross-arg T,P \
+		-diycross-arg Rfe \
+		-diycross-arg A \
+		-diycross-arg Amo.LdAdd \
+		-diycross-arg L \
+		-diycross-arg PodW* \
+		-diycross-arg T,P \
+		-diycross-arg Coe,Rfe,Fre \
+		-diycross-arg T,P \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64.MTE diycross7 tests: OK"
