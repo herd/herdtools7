@@ -42,6 +42,7 @@ module type S =
     val ignore : 'a -> unit t
     val unitcodeT        : 'a -> 'a code
     val failcodeT        : exn -> 'a -> 'a code
+    val warncodeT        : string -> 'a -> 'a code
     val delay_kont : string -> 'a t -> ('a ->  'a t -> 'b t) -> 'b t
     val delay : 'a t -> ('a * 'a t) t
 

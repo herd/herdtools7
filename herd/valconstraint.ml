@@ -44,6 +44,7 @@ module type S = sig
   type cnstrnt =
     | Assign of atom * rvalue
     | Failed of exn (* Delay exceptions *)
+    | Warn of string
 
   type cnstrnts = cnstrnt list
   val pp_cnstrnts : cnstrnt list -> string
@@ -102,6 +103,7 @@ and type state = A.state =
     type cnstrnt =
       | Assign of V.v * rvalue
       | Failed of exn
+      | Warn of string
 
     type cnstrnts = cnstrnt list
 
@@ -130,6 +132,7 @@ and type state = A.state =
       | Assign (v,rval) ->
           (V.pp C.hexa v) ^ ":=" ^(pp_rvalue rval)
       | Failed e  -> sprintf "Failed %s" (Printexc.to_string e)
+      | Warn e  -> e
 
     let pp_cnstrnts lst =
       String.concat "\n"
@@ -201,7 +204,7 @@ and type state = A.state =
     let add_vars_cn t cn = match cn with
     | Assign (v,e) ->
         add_vars_expr (add_var t v) e
-    | Failed _ -> t
+    | Failed _ | Warn _ -> t
 
     let add_vars_cns cns = List.fold_left add_vars_cn (Part.create ()) cns
 
@@ -234,7 +237,7 @@ and type state = A.state =
         let v = subst_atom m v
         and e = subst_expr m e in
         Assign (v,e)::k
-    | Failed _ -> cn::k
+    | Failed _ | Warn _ -> cn::k
 
     let subst_cns soln cns = List.fold_right (subst_cn soln) cns []
 
@@ -300,7 +303,7 @@ and type state = A.state =
                 (Printexc.to_string e) ;
             Failed e::k
        end
-    | Failed _ -> cn::k
+    | Failed _ | Warn _ -> cn::k
 
     let check_true_false_constraints cns =
       List.fold_right check_true_false cns []
@@ -322,7 +325,7 @@ and type state = A.state =
           let v = simplify_vars_in_atom soln v in
           let rval = simplify_vars_in_expr soln rval in
           Assign (v,rval)
-      | Failed _ -> cn
+      | Failed _ | Warn _ -> cn
 
 
     let simplify_vars_in_cnstrnts soln cs =
@@ -343,7 +346,7 @@ and type state = A.state =
     | Assign (V.Var _,Atom (V.Var _))
     (* can occur in spite of variable normalization (ternary if) *)
     | Assign (_,(Unop _|Binop _|Terop _|ReadInit _)) -> empty
-    | Failed _ -> empty
+    | Failed _ | Warn _ -> empty
 
 (* merge of solutions, with consistency check *)
     let merge sol1 sol2 =
@@ -371,6 +374,9 @@ let check_failed cns =
   List.iter
     (function
      | Failed e -> raise e
+     | Warn e ->
+        Warn.warn_always "Warning: %s. Legal outcomes may be missing" e;
+        raise Contradiction
      | Assign _ -> ())
   cns
 
