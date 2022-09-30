@@ -1365,9 +1365,11 @@ Monad type:
             if C.variant Variant.PTE2 then
               List.fold_right
                 (fun (loc,_ as bd) env -> match loc with
-                | A.Location_global (V.Val (Symbolic (System (PTE,s))))
-                  ->
-                  bd::(pte2_loc s,pteval_of_pte s)::env
+               | A.Location_global (V.Val (Symbolic (System (PTE,s)))) ->
+                  if StringSet.mem s pte then
+                    bd::env
+                  else
+                    bd::(pte2_loc s,pteval_of_pte s)::env
                | _ -> bd::env)
                 env []
             else env in
