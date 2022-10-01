@@ -30,5 +30,6 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
       end)
   let features = []
   let nop = INop
-  let vector_table _ _ = []
+
+  include HardwareExtra.No
 end

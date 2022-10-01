@@ -106,5 +106,6 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
   let type_reg r = CBase.type_reg r
 
   let features = []
-  let vector_table _ _ = []
+
+  include HardwareExtra.No
 end

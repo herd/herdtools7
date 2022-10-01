@@ -71,11 +71,11 @@ module RegMap = A.RegMap)
       module RegSet = Tmpl.RegSet
       module RegMap = Tmpl.RegMap
 
-      let dump_clobbers chan t =
+      let dump_clobbers chan clobs t =
         fprintf chan ":%s\n"
           (String.concat ","
              (List.map (fun s -> sprintf "\"%s\"" s)
-                ("cc"::"memory"::
+                ("cc"::"memory"::clobs@
                  List.map A.reg_to_string
                    (t.Tmpl.all_clobbers@A.forbidden_regs))))
 
@@ -424,7 +424,7 @@ module RegMap = A.RegMap)
           dump_fh chan proc t.Tmpl.fhandler ;
         dump_outputs args0 compile_addr compile_out_reg chan proc t trashed ;
         dump_inputs args0 compile_val chan t trashed ;
-        dump_clobbers chan t  ;
+        dump_clobbers chan args0.Template.clobbers t  ;
         fprintf chan ");\n" ;
         after_dump compile_out_reg chan indent proc t env;
         ()
