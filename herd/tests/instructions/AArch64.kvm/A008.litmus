@@ -1,0 +1,21 @@
+AArch64 A008
+variant=fatal
+(**
+ * This tests raises the warning
+ * "Fault inside a fault handler. Legal outcomes may be missing"
+ * However, the handler "P0.F" triggers the fault only if
+ * a CoRR violation occurs, which  any model will forbid.
+ *Future fix may get rid of the warning.
+**)
+{
+0:X0=x; 0:X2=z;
+1:X0=x;
+[PTE(z)]=(valid:0);
+}
+ P0          | P1          |   P0.F      ;
+ LDR W1,[X0] | MOV W1,#1   | CBZ W1,L0   ;
+ LDR W3,[X0] | STR W1,[X0] | CBNZ W3,L0  ;
+ LDR W5,[X2] |             | LDR W7,[X2] ;
+             |             |L0:          ;             
+locations [0:X1;0:X3;]
+exists 0:X1=1 /\ 0:X3=0
