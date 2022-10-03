@@ -1230,8 +1230,7 @@ module Make(V:Constant.S)(C:Config) =
         else if Precision.is_fatal C.precision then
           (if is_user then []
            else
-             [ "mrs %[tr0],elr_el1" ;
-               "adr %[tr0],0f";
+             [ "adr %[tr0],0f";
                "msr elr_el1,%[tr0]";
                "eret" ])
         else
