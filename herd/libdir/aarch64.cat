@@ -133,7 +133,7 @@ let bob = po; [dmb.full]; po
 	| po; [L]
 
 (* Tag-ordered-before *)
-let tob = [R & T]; iico_data; [PRED]; iico_ctrl; [M \ T]
+let tob = [R & T]; iico_data; [PRED]; iico_ctrl; [W \ T]
 
 (* Locally-ordered-before *)
 let rec lob = lws; si
