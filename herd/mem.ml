@@ -112,7 +112,7 @@ module type S = sig
   val check_sizes : S.test -> S.event_structure -> unit
 
   val check_rfmap :
-    S.E.event_structure -> S.read_from S.RFMap.t -> bool
+      S.E.event_structure -> S.read_from S.RFMap.t -> bool
 
   val when_unsolved :
       S.test -> S.E.event_structure -> S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> 'a -> 'a
@@ -906,8 +906,12 @@ let match_reg_events es =
       let ok = match C.optace with
         | OptAce.False -> fun _ _ -> true
         | OptAce.True ->
-            let pred = U.is_before_strict es in
-            fun er ew -> not (pred er ew)
+           let pred = U.is_before_strict es
+           and iico = U.iico es in
+           fun er ew ->
+           not
+             (E.is_explicit er && E.is_explicit ew && pred er ew
+              || E.EventRel.mem (er,ew) iico)
         | OptAce.Iico ->
            let iico = U.iico es in
            fun load store -> not (E.EventRel.mem (load,store) iico) in
@@ -1563,9 +1567,11 @@ let match_reg_events es =
              (fun _loc ws k ->
                List.filter
                  (fun w ->
+                   not (E.is_explicit w) ||
                    not
                      (List.exists
-                        (fun w' -> U.is_before_strict es w w') ws))
+                        (fun w' ->
+                          E.is_explicit w' && U.is_before_strict es w w') ws))
                  ws::k)
              loc_stores []
         | OptAce.False|OptAce.Iico ->
@@ -1719,11 +1725,14 @@ let match_reg_events es =
           | OptAce.True ->
             (*jade: looks compatible with speculation, but there might be some
               unforeseen subtlety here so flagging it to be sure*)
-            match U.compute_pco rfm ppoloc with
-            | None -> raise Exit
-            | Some pco -> E.EventRel.union pco0 pco in
+             let ppoloc =
+               E.EventRel.restrict_rel
+                 (fun e1 e2 -> E.is_explicit e1 && E.is_explicit e2)
+                 ppoloc in
+               match U.compute_pco rfm ppoloc with
+               | None -> raise Exit
+               | Some pco -> E.EventRel.union pco0 pco in
 (* Cross product *)
-
         Misc.fold_cross
           possible_finals
           (fun ws res ->
@@ -1800,29 +1809,32 @@ let match_reg_events es =
    Limited to memory, since  generated rfmaps are correct for registers *)
 (* NOTE: this is more like an optimization,
    models should rule out those anyway *)
+
     let check_rfmap es rfm =
       let po_iico = U.is_before_strict es in
-
       S.for_all_in_rfmap
         (fun wt rf -> match wt with
-        | S.Load er when E.is_mem_load er ->
+        | S.Load er when E.is_mem_load er && E.is_explicit er ->
             begin match rf with
             | S.Store ew ->
-                assert (not (po_iico er ew)) ;
+                not (E.is_explicit ew) ||
+                begin
+                  assert (not (po_iico er ew)) ;
                 (* ok by construction, in theory *)
-                not
-                  (E.EventSet.exists
-                     (fun e ->
-                       E.is_store e &&  E.same_location e ew &&
-                       po_iico ew e &&
-                       po_iico e er)
-                     es.E.events)
+                  not
+                    (E.EventSet.exists
+                       (fun e ->
+                         E.is_store e && E.same_location e ew &&
+                         E.is_explicit e && po_iico ew e &&
+                         po_iico e er)
+                       es.E.events)
+                end
             | S.Init ->
                 not
                   (E.EventSet.exists
                      (fun e ->
                        E.is_store e && E.same_location e er &&
-                       po_iico e er)
+                       E.is_explicit e && po_iico e er)
                      es.E.events)
             end
         | _ -> true)
