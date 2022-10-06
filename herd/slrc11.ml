@@ -334,7 +334,7 @@ module Make (M:Cfg)
       let check_cns ex cs =
         let ncs = (List.append cs (make_cnstrnts
                                      {ex with rf = added ex.safe ex.rf})) in
-        match M.S.M.VC.solve ncs with
+        match M.S.M.VC.solve ~final:true ncs with
         | M.S.M.VC.NoSolns -> false
         | _ -> true
 

@@ -1,0 +1,11 @@
+Test A007 Allowed
+States 2
+1:X1=0; 1:X2=1;
+1:X1=1; 1:X2=0;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (1:X2=1)
+Observation A007 Sometimes 1 1
+Hash=0013cab22a273b4ea8fe84264f78039b
+

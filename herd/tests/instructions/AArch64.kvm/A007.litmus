@@ -1,0 +1,12 @@
+AArch64 A007
+{
+ [x]=1;
+ [PTE(x)]=(valid:0);
+ 0:X0=PTE(x);
+ 0:X1=(valid:1,oa:PA(x));
+ 1:X0=x;
+}
+ P0          | P1          | P1.F        ;
+ STR X1,[X0] | LDR W1,[X0] | LDR W2,[X0] ;
+locations[1:X1;]
+exists (1:X2=1)
