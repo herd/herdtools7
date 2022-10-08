@@ -14,8 +14,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-open Lexing
-
 (* Configuration, to change kinds and condition *)
 module type Config = sig
   val debuglexer : bool
@@ -58,7 +56,6 @@ module type S = sig
 end
 
 module DumpJava = struct
-  open JavaAst
   type code = MiscParser.proc * JavaBase.pseudo list
   let dump_prog ((proc, _, _) , body) =
     let body_str =

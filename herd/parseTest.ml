@@ -413,6 +413,22 @@ module Top (TopConf:Config) = struct
           let module P = GenParser.Make (Conf) (Bell) (BellLexParse) in
           let module X = Make (BellS) (P) (BellC) (BellM) (Conf) in
           X.run dirty start_time name chan env splitted
+
+      | `ASL ->
+            let module ASL = GenArch_herd.Make(ASLBase)(ArchConfig)(Int64Value) in
+            let module ASLLexParse = struct
+              type instruction = ASL.parsedPseudo
+              type token       = ASLParser.token
+              module Lexer     = ASLLexer.Make(LexConfig)
+              let lexer        = Lexer.token
+              let parser       = MiscParser.mach2generic ASLParser.pgm
+            end in
+            let module ASLS   = ASLSem.Make(Conf)(Int64Value) in
+            let module ASLM   = CMem.Make(ModelConfig)(ASLS) in
+            let module P      = GenParser.Make (Conf) (ASL) (ASLLexParse) in
+            let module X      = Make (ASLS) (P) (NoCheck) (ASLM) (Conf) in
+
+            X.run dirty start_time name chan env splitted
     end else env
 
 (* Enter here... *)

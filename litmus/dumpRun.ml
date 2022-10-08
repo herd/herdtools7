@@ -85,7 +85,7 @@ end = struct
   let get_arch arch =
     let arch = match arch with
     | `C -> Archs.check_carch Cfg.carch
-    | `OpenCL | `CPP | `LISA | `JAVA -> assert false
+    | `OpenCL | `CPP | `LISA | `JAVA | `ASL -> assert false
     | #Archs.System.arch as a -> a in
     let opt = Option.get_default arch in
     let opt = Cfg.mkopt opt in

@@ -146,7 +146,7 @@ end = struct
         X.zyva chan splitted
 
     | `JAVA 
-
+    | `ASL
     | `CPP as a -> Warn.fatal "no support for arch '%s'" (Archs.pp a)
     | `C ->
         let module C = CBase in

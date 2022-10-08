@@ -70,13 +70,15 @@ type t = [
   | `CPP
   | `LISA
   | `JAVA
+  | `ASL
 ]
 
 let tags =
   "C"
   ::"CPP"
   ::"LISA"
-  :: "JAVA"
+  ::"JAVA"
+  ::"ASL"
   ::System.tags
 
 let parse s = match System.parse s with
@@ -89,6 +91,7 @@ let parse s = match System.parse s with
         Some `LISA
       | "LISA" -> Some `LISA
       | "JAVA" | "Java" -> Some `JAVA
+      | "ASL" | "Asl" -> Some `ASL
       | _ -> None
   end
   | a -> a
@@ -98,6 +101,7 @@ let pp = function
   | `CPP -> "C++"
   | `LISA -> "LISA"
   | `JAVA -> "Java"
+  | `ASL -> "ASL"
   | #System.arch as a -> System.pp a
 
 let aarch64 = `AArch64
@@ -111,12 +115,13 @@ let cpp = `CPP
 let lisa = `LISA
 let x86_64 = `X86_64
 let java = `JAVA
+let asl = `ASL
 
 let compare = compare
 
 let get_sysarch a ca = match a with
   | #System.arch as a -> a
-  |`CPP|`LISA | `JAVA -> `Unknown
+  |`CPP|`LISA | `JAVA | `ASL -> `Unknown
   | `C -> ca
 
 let check_carch a = match a with
