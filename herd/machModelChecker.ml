@@ -332,6 +332,8 @@ module Make
              (are_memtypes
                 ["R", E.is_mem_load;
                  "W", E.is_mem_store;
+                 "Exp", E.is_explicit;
+                 "NExp", E.is_not_explicit;
                  "Rreg", E.is_reg_load_any;
                  "Wreg", E.is_reg_store_any;
                  "SPEC", is_spec;

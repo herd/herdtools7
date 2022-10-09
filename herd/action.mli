@@ -64,6 +64,7 @@ module type S = sig
   val get_mem_size : action -> MachSize.sz
   val is_pte_access : action -> bool
   val is_explicit : action ->bool
+  val is_not_explicit : action ->bool
 
 (* relative to the registers of the given proc *)
   val is_reg_store : action -> A.proc -> bool
