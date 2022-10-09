@@ -41,6 +41,10 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | Exp -> true
       | NExp _ -> false
 
+    and is_not_explicit_annot = function
+      | NExp _ -> true
+      | Exp -> false
+
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
     let is_speculated = function
@@ -69,13 +73,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | L | XL -> true
       | _ -> false
 
-    let is_explicit = function
-      | Exp -> true
-      | _ -> false
-    and is_not_explicit = function
-      | NExp _-> true
-      | _ -> false
-    and is_af = function (* Setting of access flag *)
+    let is_af = function (* Setting of access flag *)
       | NExp (AF|AFDB)-> true
       | _ -> false
     and is_db = function (* Setting of dirty bit flag *)
@@ -99,8 +97,6 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     ]
 
     let explicit_sets = [
-      "Exp", is_explicit;
-      "NExp", is_not_explicit;
       "AF", is_af;
       "DB", is_db;
     ]

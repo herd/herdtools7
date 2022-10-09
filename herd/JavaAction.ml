@@ -183,7 +183,7 @@ end = struct
 
   let arch_rels = []
   let arch_dirty = []
-  let is_explicit _ = true
+
   let is_fault _ = false
   let is_tag _ = false
   let toofar msg = TooFar msg
@@ -194,6 +194,7 @@ end = struct
   let is_pred _ = false
   let is_commit _ = false
 
+  include Explicit.NoAction
 
   let annot_in_list _ _ = false
 

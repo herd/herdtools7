@@ -88,6 +88,7 @@ val same_instance : event -> event -> bool
 (* Page table access *)
   val is_pt : event -> bool
   val is_explicit : event -> bool
+  val is_not_explicit : event -> bool
 (* Tag memory access *)
   val is_tag : event -> bool
   val is_mem_physical : event -> bool
@@ -603,6 +604,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       | Some (A.Location_global (V.Val c)) -> Constant.is_pt c
       | _ -> false
     let is_explicit e = Act.is_explicit e.action
+    let is_not_explicit e = Act.is_not_explicit e.action
     let is_tag e = Act.is_tag e.action
     let is_mem_physical e =
       let open Constant in
