@@ -73,6 +73,10 @@ let rec pp_print_stmt f s =
       fprintf f "@[<3>@[<h>if@ %a@ then@]@ %a@ else@ %a@]" pp_print_expr e
         pp_print_stmt s1 pp_print_stmt s2
 
+let pp_expr e = Format.asprintf "%a" pp_print_expr e
+let pp_lexpr le = Format.asprintf "%a" pp_print_lexpr le
+let pp_stmt s = Format.asprintf "%a" pp_print_stmt s
+
 let main_asl_proc = (0, None, MiscParser.Main)
 
 (* Part Two. ASL definitions inside herd. *)

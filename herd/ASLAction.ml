@@ -42,10 +42,10 @@ end = struct
   let get_mem_size = function Access (_, _, _, sz) -> sz | _ -> assert false
 
   (* Predicates *)
-  let is_mem_store = function Access (W, _, _, _) -> true | _ -> false
-  let is_mem_load = function Access (R, _, _, _) -> true | _ -> false
+  let is_mem_store _ = false
+  let is_mem_load _ = false
   let is_additional_mem_load _ = false
-  let is_mem = function Access _ -> true | _ -> false
+  let is_mem _ = false
   let is_tag _ = false
   let is_additional_mem _ = false
   let is_atomic _ = false
@@ -53,16 +53,17 @@ end = struct
   let is_pte_access _ = false (* What is this? *)
   let is_explicit _ = true (* What is this? *)
 
-  (* No registers *)
-  let is_reg_store _ _ = false
-  let is_reg_load _ _ = false
-  let is_reg _ _ = false
-  let is_reg_store_any _ = false
-  let is_reg_load_any _ = false
-  let is_reg_any _ = false
-  let is_store = is_mem_store
-  let is_load = is_mem_load
-  let compatible_accesses a1 a2 = is_mem a1 && is_mem a2
+  (* Only symbolic registers, no mem, and only one proc *)
+  let is_reg_any a = match a with Access _ -> true | _ -> false
+  let is_store a = match a with Access (W, _, _, _) -> true | _ -> false
+  let is_load a = match a with Access (R, _, _, _) -> true | _ -> false
+  (* *)
+  let is_reg_store a _proc = is_store a
+  let is_reg_load a _proc = is_load a
+  let is_reg a _proc = is_reg_any a
+  let is_reg_store_any a = is_store a
+  let is_reg_load_any a = is_load a
+  let compatible_accesses a1 a2 = is_reg_any a1 && is_reg_any a2
 
   (* For bell annotations *)
   let annot_in_list _ _ = false
