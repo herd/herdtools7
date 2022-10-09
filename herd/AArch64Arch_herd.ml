@@ -75,10 +75,11 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     let is_af = function (* Setting of access flag *)
       | NExp (AF|AFDB)-> true
-      | _ -> false
+      | NExp (DB|Other)|Exp -> false
+
     and is_db = function (* Setting of dirty bit flag *)
       | NExp (DB|AFDB) -> true
-      | _ -> false
+      | NExp (AF|Other)|Exp -> false
 
     let barrier_sets =
       do_fold_dmb_dsb false true
