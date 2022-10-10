@@ -76,7 +76,6 @@ let rec pp_print_stmt f s =
 let pp_expr e = Format.asprintf "%a" pp_print_expr e
 let pp_lexpr le = Format.asprintf "%a" pp_print_lexpr le
 let pp_stmt s = Format.asprintf "%a" pp_print_stmt s
-
 let main_asl_proc = (0, None, MiscParser.Main)
 
 (* Part Two. ASL definitions inside herd. *)
@@ -94,13 +93,9 @@ let parse_reg s = Some s
 let pp_reg x = x
 let reg_compare = String.compare
 
-(* Symbolic registers. For now, I do not know what this is. This is completely copied from JavaBase.ml *)
-let symb_reg_name r =
-  let len = String.length r in
-  assert (len > 0);
-  match r.[0] with '%' -> Some (String.sub r 1 (len - 1)) | _ -> None
-
-let symb_reg r = Printf.sprintf "%%%s" r
+(* Symbolic registers. For now, everything is a symbolic register. *)
+let symb_reg_name r = Some r
+let symb_reg r = r
 let type_reg _r = base_type
 (* End of symbolic registers section. *)
 
