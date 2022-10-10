@@ -58,12 +58,15 @@ type t =
   | Exp
 (* Instruction-fetch support (AKA "self-modifying code" mode) *)
   | Self
+(* Have cat interpreter to optimise generation of co's *)
+  | CosOpt
 (* Test something *)
   | Test
 (* One hundred tests *)
   | T of int
 
 val compare : t -> t -> int
+val equal : t -> t -> bool
 val tags : string list
 val parse : string -> t option
 val pp : t -> string

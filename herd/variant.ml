@@ -60,6 +60,8 @@ type t =
   | Exp
 (* Instruction-fetch support (AKA "self-modifying code" mode) *)
   | Self
+(* Have cat interpreter to optimise generation of co's *)
+  | CosOpt
 (* Test something *)
   | Test
 (* One hundred tests *)
@@ -73,7 +75,7 @@ let tags =
     Precision.tags @
    ["toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
-   "exp"; "self"; "test"; "T[0-9][0-9]"]
+   "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -106,6 +108,7 @@ let parse s = match Misc.lowercase s with
 | "constrainedunpredictable"|"cu" -> Some ConstrainedUnpredictable
 | "exp" -> Some Exp
 | "self" -> Some Self
+| "cos-opt" -> Some CosOpt
 | "test" -> Some Test
 | s ->
    begin
@@ -155,10 +158,12 @@ let pp = function
   | ConstrainedUnpredictable -> "ConstrainedUnpredictable"
   | Exp -> "exp"
   | Self -> "self"
+  | CosOpt -> "cos-opt"
   | Test -> "test"
   | T n -> Printf.sprintf "T%02i" n
 
 let compare = compare
+let equal v1 v2 = compare v1 v2 = 0
 
 let get_default a v =
   try match v with

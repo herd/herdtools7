@@ -32,7 +32,11 @@ module Make
     let mixed = O.variant Variant.Mixed || morello
     let memtag = O.variant Variant.MemTag
     let kvm = O.variant Variant.Kvm
-
+    let optacetrue =
+      let open OptAce in
+      match O.optace with
+      | True -> true
+      | False|Iico -> false
     let bell_fname =  Misc.app_opt (fun (x,_) -> x) O.bell_model_info
     let bell_info = Misc.app_opt (fun (_,x) -> x) O.bell_model_info
 
@@ -60,7 +64,12 @@ module Make
       let doshow = S.O.PC.doshow
       let showraw = S.O.PC.showraw
       let symetric = S.O.PC.symetric
-      let variant = Misc.delay_parse O.variant Variant.parse
+      let variant =
+        let variant =
+          if optacetrue then
+            Misc.(|||) (Variant.equal Variant.CosOpt) O.variant
+          else O.variant in
+        Misc.delay_parse variant Variant.parse
     end
     module U = MemUtils.Make(S)
     module MU = ModelUtils.Make(O)(S)
@@ -303,7 +312,9 @@ module Make
                 E.EventRel.of_pred all_evts all_evts E.same_static_event
               end;
               "same-instance", lazy begin E.EventRel.of_pred all_evts all_evts E.same_instance end;
-              "equiv-spec", lazy begin Equiv.build (Lazy.force rf_reg) all_evts end;
+              "equiv-spec",
+                lazy begin Equiv.build (Lazy.force rf_reg) all_evts end;
+              "pco", lazy conc.S.pco;
             ]))) in
       let m =
         let spec = conc.S.str.E.speculated in
