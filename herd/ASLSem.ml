@@ -19,6 +19,14 @@ module Make (Conf : Sem.Config) (V : Value.S) = struct
     let ( let* ) = M.( >>= )
     let m_add_instr = M.( >>>> )
     let next ii = M.addT (A.next_po_index ii.A.program_order_index) B.nextT
+
+    let next_with_inst ii s =
+      {
+        ii with
+        A.program_order_index = A.next_po_index ii.A.program_order_index;
+        A.inst = s;
+      }
+
     let loc_of_identifier x ii = A.Location_reg (ii.A.proc, x)
 
     (* Real semantic functions *)
@@ -60,9 +68,11 @@ module Make (Conf : Sem.Config) (V : Value.S) = struct
             (fun (poi, _branch) ->
               build_semantics
                 { ii with A.inst = s2; A.program_order_index = poi })
-      | s ->
-          Warn.fatal "Not yet implemented for ASL: statements semantics for %s"
-            (ASLBase.pp_stmt s)
+      | ASLBase.SCond (e, s1, s2) ->
+          let* v = build_semantics_expr e ii in
+          let then_branch = build_semantics (next_with_inst ii s1) in
+          let else_branch = build_semantics (next_with_inst ii s2) in
+          M.choiceT v then_branch else_branch
 
     let spurious_setaf _ = assert false
   end
