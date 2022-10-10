@@ -18,10 +18,15 @@ module Make (Conf : Sem.Config) (V : Value.S) = struct
     let ( let* ) = M.( >>= )
     let m_add_instr = M.( >>>> )
     let next ii = M.addT (A.next_po_index ii.A.program_order_index) B.nextT
+    let loc_of_identifier x ii = A.Location_reg (ii.A.proc, x)
 
-    let rec build_semantics_expr (e : ASLBase.expr) _ii : V.v M.t =
+    let rec build_semantics_expr (e : ASLBase.expr) ii : V.v M.t =
       match e with
       | ASLBase.ELiteral v -> M.unitT (V.maybevToV (ParsedConstant.intToV v))
+      | ASLBase.EVar x ->
+          M.read_loc true
+            (fun loc v -> Act.Access (Dir.R, loc, v, nat_sz))
+            (loc_of_identifier x ii) ii
       | _ ->
           Warn.fatal "Not yet implemented for ASL: expression semantics for %s"
             (ASLBase.pp_expr e)
@@ -29,7 +34,7 @@ module Make (Conf : Sem.Config) (V : Value.S) = struct
     and build_semantics_lexpr (le : ASLBase.lexpr) ii :
         (ASL.location * V.v list) M.t =
       match le with
-      | ASLBase.LEVar x -> M.unitT (A.Location_reg (ii.A.proc, x), [])
+      | ASLBase.LEVar x -> M.unitT (loc_of_identifier x ii, [])
       | _ ->
           Warn.fatal
             "Not yet implemented for ASL: left-expression semantics for %s"
