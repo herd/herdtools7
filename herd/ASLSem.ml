@@ -14,12 +14,14 @@ module Make (Conf : Sem.Config) (V : Value.S) = struct
   let nat_sz = V.Cst.Scalar.machsize
 
   module Mixed (SZ : ByteSize.S) = struct
-    let m_par = M.( >>| )
+    (* Helpers *)
+    let ( and* ) = M.( >>| )
     let ( let* ) = M.( >>= )
     let m_add_instr = M.( >>>> )
     let next ii = M.addT (A.next_po_index ii.A.program_order_index) B.nextT
     let loc_of_identifier x ii = A.Location_reg (ii.A.proc, x)
 
+    (* Real semantic functions *)
     let rec build_semantics_expr (e : ASLBase.expr) ii : V.v M.t =
       match e with
       | ASLBase.ELiteral v -> M.unitT (V.maybevToV (ParsedConstant.intToV v))
@@ -27,6 +29,10 @@ module Make (Conf : Sem.Config) (V : Value.S) = struct
           M.read_loc true
             (fun loc v -> Act.Access (Dir.R, loc, v, nat_sz))
             (loc_of_identifier x ii) ii
+      | ASLBase.EBinop (e1, op, e2) ->
+          let* v1 = build_semantics_expr e1 ii
+          and* v2 = build_semantics_expr e2 ii in
+          M.op op v1 v2
       | _ ->
           Warn.fatal "Not yet implemented for ASL: expression semantics for %s"
             (ASLBase.pp_expr e)
@@ -44,9 +50,8 @@ module Make (Conf : Sem.Config) (V : Value.S) = struct
       match ii.A.inst with
       | ASLBase.SPass -> next ii
       | ASLBase.SAssign (le, e) ->
-          let* v, (loc, _) =
-            m_par (build_semantics_expr e ii) (build_semantics_lexpr le ii)
-          in
+          let* v = build_semantics_expr e ii
+          and* loc, _ = build_semantics_lexpr le ii in
           let* () = M.mk_singleton_es (Act.Access (Dir.W, loc, v, nat_sz)) ii in
           next ii
       | ASLBase.SThen (s1, s2) ->
