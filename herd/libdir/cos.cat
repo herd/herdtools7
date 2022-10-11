@@ -1,7 +1,7 @@
 "Generate co's"
 
 if "cos-opt"
-  include "cos-opt.cat"
+  include "cos-ok-opt.cat"
 else
   include "cos-no-opt.cat"
 end
