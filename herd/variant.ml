@@ -45,6 +45,8 @@ type t =
   | Instances (* Compute dependencies on instruction instances *)
   | Kvm
   | ETS
+(* AArch64: Enhanced Exception Synchronization - FEAT_ExS *)
+  | ExS | EIS | EOS
 (* Do not insert branching event between pte read and accesses *)
   | NoPteBranch
 (* Pte-Squared: all accesses through page table, including PT accesses *)
@@ -101,6 +103,9 @@ let parse s = match Misc.lowercase s with
 | "instances"|"instance" -> Some Instances
 | "kvm" -> Some Kvm
 | "ets" -> Some ETS
+| "exs" -> Some ExS
+| "eis" -> Some EIS
+| "eos" -> Some EOS
 | "noptebranch"|"nobranch" -> Some NoPteBranch
 | "pte2" | "pte-squared" -> Some PTE2
 | "phantomonload" -> Some PhantomOnLoad
@@ -151,6 +156,9 @@ let pp = function
   | Instances -> "Instances"
   | Kvm -> "kvm"
   | ETS -> "ets"
+  | ExS -> "exs"
+  | EIS -> "eis"
+  | EOS -> "eos"
   | NoPteBranch -> "NoPteBranch"
   | PTE2 -> "pte-squared"
   | PhantomOnLoad -> "PhantomOnLoad"
