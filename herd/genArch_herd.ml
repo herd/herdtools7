@@ -16,41 +16,45 @@
 
 (** Define A generic basic architecture *)
 
-module Make (B: ArchBase.S)(C:Arch_herd.Config) (V:Value.S) = struct
-
+module Make (B : ArchBase.S) (C : Arch_herd.Config) (V : Value.S) = struct
   include B
 
-  let is_amo _            = false
-  let pp_barrier_short    = pp_barrier
-  let reject_mixed        = false
-  let mem_access_size _   = None
+  let is_amo _ = false
+  let pp_barrier_short = pp_barrier
+  let reject_mixed = false
+  let mem_access_size _ = None
 
   include NoSemEnv
-
   module V = V
-
   include NoLevelNorTLBI
 
-    include
-      IFetchTrait.NotImplemented
-        (struct
-          type arch_instruction = instruction
-          type arch_reg = reg
-        end)
+  include IFetchTrait.NotImplemented (struct
+    type arch_instruction = instruction
+    type arch_reg = reg
+  end)
 
-
-  include ArchExtra_herd.Make(C)
+  include
+    ArchExtra_herd.Make
+      (C)
       (struct
         module V = V
-        let endian            = Endian.Little
-        type arch_reg         = reg
-        let pp_reg            = pp_reg
-        let reg_compare       = reg_compare
+
+        let endian = Endian.Little
+
+        type arch_reg = reg
+
+        let pp_reg = pp_reg
+        let reg_compare = reg_compare
+
         type arch_instruction = instruction
+
         let fromto_of_instr _ = None
-        let get_val _ v       = v
+        let get_val _ v = v
       end)
 
-  module MemType=MemoryType.No
-  module Barrier = AllBarrier.No(struct type a = barrier end)
+  module MemType = MemoryType.No
+
+  module Barrier = AllBarrier.No (struct
+    type a = barrier
+  end)
 end
