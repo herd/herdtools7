@@ -41,6 +41,14 @@ module Make (Conf : Sem.Config) (V : Value.S) = struct
           let* v1 = build_semantics_expr e1 ii
           and* v2 = build_semantics_expr e2 ii in
           M.op op v1 v2
+      | ASLBase.EGet (e1, e2) ->
+          let* a = build_semantics_expr e1 ii
+          and* i = build_semantics_expr e2 ii in
+          let* i' = M.op Op.ShiftLeft i (V.intToV 2) in
+          let* addr = M.add a i' in
+          M.read_loc true
+            (fun loc v -> Act.Access (Dir.R, loc, v, nat_sz))
+            (A.Location_global addr) ii
       | _ ->
           Warn.fatal "Not yet implemented for ASL: expression semantics for %s"
             (ASLBase.pp_expr e)
