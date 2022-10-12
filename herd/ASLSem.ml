@@ -29,6 +29,13 @@ module Make (Conf : Sem.Config) (V : Value.S) = struct
 
     let loc_of_identifier x ii = A.Location_reg (ii.A.proc, x)
 
+    let compute_addr (a : V.v) (i : V.v) : V.v M.t =
+      let* i' = M.op Op.ShiftLeft i (V.intToV 2) in
+      M.add a i'
+
+    let read_loc loc ii =
+      M.read_loc true (fun loc' v -> Act.Access (Dir.R, loc', v, nat_sz)) loc ii
+
     (* Real semantic functions *)
     let rec build_semantics_expr (e : ASLBase.expr) ii : V.v M.t =
       match e with
@@ -44,31 +51,32 @@ module Make (Conf : Sem.Config) (V : Value.S) = struct
       | ASLBase.EGet (e1, e2) ->
           let* a = build_semantics_expr e1 ii
           and* i = build_semantics_expr e2 ii in
-          let* i' = M.op Op.ShiftLeft i (V.intToV 2) in
-          let* addr = M.add a i' in
-          M.read_loc true
-            (fun loc v -> Act.Access (Dir.R, loc, v, nat_sz))
-            (A.Location_global addr) ii
+          let* addr = compute_addr a i in
+          read_loc (A.Location_global addr) ii
       | _ ->
           Warn.fatal "Not yet implemented for ASL: expression semantics for %s"
             (ASLBase.pp_expr e)
 
-    and build_semantics_lexpr (le : ASLBase.lexpr) ii :
-        (ASL.location * V.v list) M.t =
+    and build_semantics_lexpr (le : ASLBase.lexpr) ii : ASL.location M.t =
       match le with
-      | ASLBase.LEVar x -> M.unitT (loc_of_identifier x ii, [])
-      | _ ->
-          Warn.fatal
-            "Not yet implemented for ASL: left-expression semantics for %s"
-            (ASLBase.pp_lexpr le)
+      | ASLBase.LEVar x -> M.unitT (loc_of_identifier x ii)
+      | ASLBase.LESet (le, e) ->
+          let* a =
+            let* la = build_semantics_lexpr le ii in
+            read_loc la ii
+          and* i = build_semantics_expr e ii in
+          let* addr = compute_addr a i in
+          M.unitT (A.Location_global addr)
 
     and build_semantics ii : (A.program_order_index * B.t) M.t =
       match ii.A.inst with
       | ASLBase.SPass -> next ii
       | ASLBase.SAssign (le, e) ->
           let* v = build_semantics_expr e ii
-          and* loc, _ = build_semantics_lexpr le ii in
-          let* () = M.mk_singleton_es (Act.Access (Dir.W, loc, v, nat_sz)) ii in
+          and* loc = build_semantics_lexpr le ii in
+          let* () =
+            M.write_loc (fun loc' -> Act.Access (Dir.W, loc', v, nat_sz)) loc ii
+          in
           next ii
       | ASLBase.SThen (s1, s2) ->
           m_add_instr
