@@ -136,13 +136,23 @@ let prog =
   else "madd"
 
 let () =
+  let usage =
+    String.concat "\n" [
+        sprintf "Usage: %s [options]* <file1> <file2> ... [<filen>]" prog ;
+        "" ;
+        "Print all litmus tests listed in <file2> ... [<filen>] excluding those " ;
+        "listed in <file1>. <file1> [<file2>] ... [<filen>] can be litmus tests " ;
+        "of lists of litmus tests (e.g., @all)." ;
+        "" ;
+        "Options:" ;
+      ] in
   Arg.parse
     ["-v",Arg.Unit (fun () -> verbose := true), "- be verbose";
      "-t",Arg.Unit (fun () -> tnames := true),"- output test names";
      "-s",Arg.Unit (fun () -> ncheck := true),"- do not add already existing tests with different names";
      "-found",Arg.String (fun s -> found := Some s),"<name> - list already existing tests in file <name>"]
     (fun s -> arg := s :: !arg)
-    (sprintf "Usage: %s [options]* [test]*" prog)
+    usage
 
 let tests = List.rev !arg
 

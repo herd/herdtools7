@@ -113,10 +113,19 @@ let prog =
   else "mdiag"
 
 let () =
+  let usage =
+    String.concat "\n" [
+        sprintf "Usage: %s [options]* [file]*" prog ;
+        "" ;
+        "Parse tests and print diagnostics. Tests can be specified by their file name or " ;
+        "via lists of tests (e.g., @all as) command line arguments or via stdin." ;
+        "" ;
+        "Options:" ;
+      ] in
   Arg.parse
     ["-v",Arg.Unit (fun () -> incr verbose), " be verbose";]
     (fun s -> arg := !arg @ [s])
-    (sprintf "Usage: %s [options]* [test]*" prog)
+    usage
 
 let tests = List.rev !arg
 
