@@ -42,10 +42,17 @@ end = struct
   let get_mem_size = function Access (_, _, _, sz) -> sz | _ -> assert false
 
   (* Predicates *)
-  let is_mem_store _ = false
-  let is_mem_load _ = false
+  let is_mem_store a =
+    match a with Access (W, A.Location_global _, _, _) -> true | _ -> false
+
+  let is_mem_load a =
+    match a with Access (R, A.Location_global _, _, _) -> true | _ -> false
+
   let is_additional_mem_load _ = false
-  let is_mem _ = false
+
+  let is_mem a =
+    match a with Access (_, A.Location_global _, _, _) -> true | _ -> false
+
   let is_tag _ = false
   let is_additional_mem _ = false
   let is_atomic _ = false
@@ -57,13 +64,30 @@ end = struct
   let is_reg_any a = match a with Access _ -> true | _ -> false
   let is_store a = match a with Access (W, _, _, _) -> true | _ -> false
   let is_load a = match a with Access (R, _, _, _) -> true | _ -> false
-  (* *)
-  let is_reg_store a _proc = is_store a
-  let is_reg_load a _proc = is_load a
-  let is_reg a _proc = is_reg_any a
-  let is_reg_store_any a = is_store a
-  let is_reg_load_any a = is_load a
-  let compatible_accesses a1 a2 = is_reg_any a1 && is_reg_any a2
+
+  let is_reg_store a proc =
+    match a with
+    | Access (W, A.Location_reg (proc', _), _, _) -> proc == proc'
+    | _ -> false
+
+  let is_reg_load a proc =
+    match a with
+    | Access (R, A.Location_reg (proc', _), _, _) -> proc == proc'
+    | _ -> false
+
+  let is_reg a proc =
+    match a with
+    | Access (_, A.Location_reg (proc', _), _, _) -> proc == proc'
+    | _ -> false
+
+  let is_reg_store_any a =
+    match a with Access (W, A.Location_reg _, _, _) -> true | _ -> false
+
+  let is_reg_load_any a =
+    match a with Access (R, A.Location_reg _, _, _) -> true | _ -> false
+
+  let compatible_accesses a1 a2 =
+    (is_reg_any a1 && is_reg_any a2) || (is_mem a1 && is_mem a2)
 
   (* For bell annotations *)
   let annot_in_list _ _ = false
