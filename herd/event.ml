@@ -278,7 +278,8 @@ val same_instance : event -> event -> bool
   val same_location : event -> event -> bool
   val same_location_with_faults : event -> event -> bool
   val same_value : event -> event -> bool
-(*  val is_visible_location : A.location -> bool *)
+  val same_low_order_bits : event -> event -> bool
+  (*  val is_visible_location : A.location -> bool *)
 
 (********************************)
 (* Event structure output ports *)
@@ -531,6 +532,11 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     | Some (A.Location_global a) -> Some a
     | _ -> None
 
+    let global_index_of e =  match global_loc_of e with
+      | Some (V.Val (Constant.Symbolic sym)) ->
+         Constant.get_index sym
+      | _-> None
+
     let virtual_loc_of e = match global_loc_of e with
     | Some (A.V.Val c) -> Constant.as_virtual c
     | None|Some (A.V.Var _) -> None
@@ -555,6 +561,11 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let same_value e1 e2 = match value_of e1, value_of e2 with
     | Some v1,Some v2 -> V.compare v1 v2 = 0
     | _,_ -> false
+
+    let same_low_order_bits e1 e2 =
+      match global_index_of e1,global_index_of e2 with
+      | (None,_)|(_,None) -> false
+      | Some i1,Some i2 -> Misc.int_eq i1 i2
 
     let proc_of e = match e.iiid with
     | IdSome {A.proc=p;_} -> Some p
