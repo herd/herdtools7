@@ -282,6 +282,11 @@ module Make
                   E.same_location_with_faults
                   (Lazy.force unv)
               end;
+              "same-low-order-bits", lazy begin
+                E.EventRel.restrict_rel
+                  E.same_low_order_bits
+                  (Lazy.force unv)
+              end;
               "int",lazy begin
                 E.EventRel.restrict_rel E.same_proc_not_init (Lazy.force unv)
               end ;

@@ -49,6 +49,7 @@ type symbol =
   | Physical of string * int       (* symbol, index *)
   | System of (syskind * string)   (* System memory *)
 
+val get_index : symbol -> int option
 val pp_symbol_old : symbol -> string
 val pp_symbol : symbol -> string
 val compare_symbol : symbol -> symbol -> int

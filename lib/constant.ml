@@ -85,6 +85,11 @@ type symbol =
   | Physical of string * int                  (* symbol, index *)
   | System of (syskind * string)              (* System memory *)
 
+let get_index = function
+  | Virtual s -> Some s.offset
+  | Physical (_,o) -> Some o
+  | System _ -> None
+
 let pp_index base o = match o with
 | 0 -> base
 | i -> sprintf "%s+%i" base i
