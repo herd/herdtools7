@@ -1,6 +1,7 @@
 module Make (A : Arch_herd.S) : sig
   type action =
     | Access of Dir.dirn * A.location * A.V.v * MachSize.sz
+    | Declaration of A.location
     | TooFar of string
 
   include Action.S with type action := action and module A = A
@@ -11,6 +12,7 @@ end = struct
 
   type action =
     | Access of Dir.dirn * A.location * A.V.v * MachSize.sz
+    | Declaration of A.location
     | TooFar of string
 
   let mk_init_write l sz v = Access (W, l, v, sz)
@@ -18,6 +20,7 @@ end = struct
   let pp_action = function
     | Access (d, l, v, _sz) ->
         Format.asprintf "%s%s=%s" (pp_dirn d) (A.pp_location l) (V.pp_v v)
+    | Declaration l -> Printf.sprintf "config %s" (A.pp_location l)
     | TooFar s -> Format.asprintf "TooFar: %s" s
 
   (* No isync, no barriers *)
@@ -106,6 +109,7 @@ end = struct
     match a with
     | Access (_, l, v, _) ->
         V.ValueSet.union (A.undetermined_vars_in_loc l) (V.undetermined_vars v)
+    | Declaration l -> A.undetermined_vars_in_loc l
     | TooFar _ -> assert false
 
   let simplify_vars_in_action soln a =
@@ -114,5 +118,6 @@ end = struct
         let l' = A.simplify_vars_in_loc soln l in
         let v' = V.simplify_var soln v in
         Access (d, l', v', sz)
+    | Declaration l -> Declaration (A.simplify_vars_in_loc soln l)
     | TooFar _ -> assert false
 end

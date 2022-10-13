@@ -35,6 +35,9 @@ module Make (Conf : Sem.Config) (V : Value.S) = struct
     let read_loc loc ii =
       M.read_loc true (fun loc' v -> Act.Access (Dir.R, loc', v, nat_sz)) loc ii
 
+    let write_loc loc v ii =
+      M.write_loc (fun loc' -> Act.Access (Dir.W, loc', v, nat_sz)) loc ii
+
     (* Real semantic functions *)
     let rec build_semantics_expr (e : ASLBase.expr) ii : V.v M.t =
       match e with
@@ -70,9 +73,7 @@ module Make (Conf : Sem.Config) (V : Value.S) = struct
       | ASLBase.SAssign (le, e) ->
           let* v = build_semantics_expr e ii
           and* loc = build_semantics_lexpr le ii in
-          let* () =
-            M.write_loc (fun loc' -> Act.Access (Dir.W, loc', v, nat_sz)) loc ii
-          in
+          let* () = write_loc loc v ii in
           nextT ii
       | ASLBase.SThen (s1, s2) ->
           M.cseq
