@@ -1,0 +1,11 @@
+AArch64 A009
+Variant=kvm,PTE2
+TTHM=HA
+{
+ [PTE(x)]=(oa:PA(x));
+ [PTE(PTE(x))]=(oa:PTE(x),af:0);
+ 0:X1=PTE(x);
+}
+ P0          ;
+ LDR X0,[X1] ;
+exists([PTE(PTE(x))]=(oa:PTE(x),af:0));

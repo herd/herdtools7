@@ -1,0 +1,10 @@
+Test A009 Allowed
+States 1
+[PTE(PTE(x))]=(oa:PTE(x));
+No
+Witnesses
+Positive: 0 Negative: 2
+Condition exists ([PTE(PTE(x))]=(oa:PTE(x), af:0))
+Observation A009 Never 0 2
+Hash=0acbe8f9f62851813328209de067d10a
+
