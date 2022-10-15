@@ -162,7 +162,7 @@ let dump_state_atom is_global dump_loc dump_val (loc,(t,v)) =
   | Pointer t ->
       sprintf "%s *%s=%s" t (dump_loc loc) (dump_val v)
   | TyArray (t,sz) ->
-      sprintf "%s %s[%i]" t (dump_loc loc) sz
+      sprintf "%s %s[%i]=%s" t (dump_loc loc) sz (dump_val v)
 
 (* Packed result *)
 type info = (string * string) list
