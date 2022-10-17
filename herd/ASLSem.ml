@@ -17,7 +17,11 @@ module Make (Conf : Sem.Config) (V : Value.S) = struct
     (* Helpers *)
     let ( and* ) = M.( >>| )
     let ( let* ) = M.( >>= )
-    let nextT ii = M.addT (A.next_po_index ii.A.program_order_index) B.nextT
+
+    let nextm ii a =
+      M.addT (A.next_po_index ii.A.program_order_index) (M.unitT a)
+
+    let nextT ii = nextm ii (B.Next [], false)
 
     let next ii =
       {
@@ -67,25 +71,54 @@ module Make (Conf : Sem.Config) (V : Value.S) = struct
           let* addr = compute_addr a i in
           M.unitT (A.Location_global addr)
 
-    and build_semantics ii : (A.program_order_index * B.t) M.t =
-      match ii.A.inst with
+    and build_semantics_stmt s ii : (A.program_order_index * (B.t * bool)) M.t =
+      match s with
       | ASLBase.SPass -> nextT ii
+      | ASLBase.SReturn -> nextm ii (B.Next [], true)
+      | ASLBase.SExit -> nextm ii (B.Exit, true)
       | ASLBase.SAssign (le, e) ->
           let* v = build_semantics_expr e ii
           and* loc = build_semantics_lexpr le ii in
           let* () = write_loc loc v ii in
           nextT ii
       | ASLBase.SThen (s1, s2) ->
-          M.cseq
-            (build_semantics (next_with_inst ii s1))
-            (fun (poi, _branch) ->
-              build_semantics
-                { ii with A.inst = s2; A.program_order_index = poi })
+          M.cseq (build_semantics_stmt s1 ii) (fun (poi, (branch, ret)) ->
+              match (branch, ret) with
+              | _, true -> M.unitT (poi, (branch, ret))
+              | B.PushAndJump (i, l), _ ->
+                  M.unitT (poi, (B.PushAndJump (SThen (i, s2), l), false))
+              | _ ->
+                  build_semantics_stmt s2
+                    { ii with A.program_order_index = poi })
       | ASLBase.SCond (e, s1, s2) ->
           M.( >>*= ) (build_semantics_expr e ii) (fun v ->
-              let then_branch = build_semantics (next_with_inst ii s1) in
-              let else_branch = build_semantics (next_with_inst ii s2) in
+              let then_branch = build_semantics_stmt s1 (next ii) in
+              let else_branch = build_semantics_stmt s2 (next ii) in
               M.choiceT v then_branch else_branch)
+      | ASLBase.SCall (name, args) ->
+          (*
+             Here we iterate on the arguments and place them inside the right registers.
+             No checks are done at runtime, so everything is supposed to work.
+             The iteration is a fold_left on args, inside a paralelization monad.
+             The [acc] argument of the folder, ie the accumulater of the fold operation,
+             is actually a counter for which argument we are at.
+          *)
+          let one_arg i e =
+            let* v = build_semantics_expr e ii in
+            let reg_name = ASLBase.reg_arg name i in
+            write_loc (loc_of_identifier reg_name ii) v ii
+          in
+          let args_ops = List.mapi one_arg args in
+          let folder a b =
+            let* () = a and* () = b in
+            M.unitT ()
+          in
+          let* () = List.fold_left folder (M.unitT ()) args_ops in
+          nextm ii (B.PushAndJump (ASLBase.SPass, name), false)
+
+    and build_semantics ii =
+      let* poi, (branch, _ret) = build_semantics_stmt ii.A.inst ii in
+      M.unitT (poi, branch)
 
     let spurious_setaf _ = assert false
   end

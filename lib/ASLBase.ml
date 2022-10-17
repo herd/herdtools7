@@ -25,9 +25,12 @@ type lexpr = LEVar of identifier | LESet of lexpr * expr
 
 type stmt =
   | SPass
+  | SExit
   | SThen of stmt * stmt
   | SAssign of lexpr * expr
   | SCond of expr * stmt * stmt
+  | SCall of identifier * expr list
+  | SReturn
 
 let stmt_from_list = function
   | [] -> SPass
@@ -65,6 +68,8 @@ let rec pp_print_stmt f s =
   let open Format in
   match s with
   | SPass -> pp_print_string f "Pass"
+  | SExit -> pp_print_string f "Exit"
+  | SReturn -> pp_print_string f "return"
   | SAssign (le, e) ->
       fprintf f "@[<3>%a =@ %a@]" pp_print_lexpr le pp_print_expr e
   | SThen (s1, s2) ->
@@ -72,6 +77,10 @@ let rec pp_print_stmt f s =
   | SCond (e, s1, s2) ->
       fprintf f "@[<3>@[<h>if@ %a@ then@]@ %a@ else@ %a@]" pp_print_expr e
         pp_print_stmt s1 pp_print_stmt s2
+  | SCall (x, args) ->
+      fprintf f "@[<3>%s(%a)@]" x
+        (pp_print_list ~pp_sep:(fun f () -> fprintf f ",@ ") pp_print_expr)
+        args
 
 let pp_expr e = Format.asprintf "%a" pp_print_expr e
 let pp_lexpr le = Format.asprintf "%a" pp_print_lexpr le
@@ -151,10 +160,11 @@ include Pseudo.Make (struct
       | EBinop (e1, _o, e2) -> get_expr (get_expr k e1) e2
       | EGet (e1, e2) -> get_expr (get_expr k e1) e2
     and get_stmt k = function
-      | SPass -> k
+      | SPass | SExit | SReturn -> k
       | SAssign (le, e) -> get_expr (get_lexpr k le) e
       | SThen (s1, s2) -> get_stmt (get_stmt k s2) s1
       | SCond (e, s1, s2) -> get_stmt (get_stmt (get_expr k e) s1) s2
+      | SCall (_, args) -> List.fold_left get_expr k args
     in
 
     fun s -> get_stmt 0 s
@@ -163,3 +173,6 @@ include Pseudo.Make (struct
   let fold_labels acc _f _ins = acc
   let map_labels _f ins = ins
 end)
+
+let reg_arg f_name i = f_name ^ "%" ^ Int.to_string i
+
