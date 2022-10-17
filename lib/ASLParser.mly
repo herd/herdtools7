@@ -3,7 +3,7 @@ open ASLBase
 
 let eminus e = EBinop (ELiteral 0, Op.Sub, e)
 
-let make_pseudo s = ([main_asl_proc], [[Instruction s]])
+let make_pgm sl = ([main_asl_proc], [asl_top_level] :: List.map (fun x -> [x]) sl)
 
 %}
 
@@ -21,6 +21,10 @@ let make_pseudo s = ([main_asl_proc], [[Instruction s]])
 %start pgm
 
 %%
+
+plist(X):
+| xs = delimited(LPAR, separated_list(COMMA, X), RPAR)
+    { xs }
 
 value:
 | INT_LIT   { int_of_string $1}
@@ -63,10 +67,16 @@ lexpr:
 | lexpr LBRACKET expr RBRACKET  { LESet ($1, $3)    }
 
 stmt:
-| PASS                              { SPass }
-| stmt SEMI_COLON stmt              { SThen ($1, $3) }
-| lexpr EQ expr                     { SAssign ($1, $3) }
-| IF expr THEN stmt ELSE stmt END   { SCond($2, $4, $6) }
+| PASS                              { SPass                 }
+| stmt SEMI_COLON stmt              { SThen ($1, $3)        }
+| lexpr EQ expr                     { SAssign ($1, $3)      }
+| IF expr THEN stmt ELSE stmt END   { SCond ($2, $4, $6)    }
+| x=IDENTIFIER args=plist(expr)     { SCall (x, args)       }
+| RETURN                            { SReturn               }
+
+decl:
+| FUNC x=IDENTIFIER args=plist(IDENTIFIER) body=stmt SEMI_COLON? ENDFUNC
+    { make_func x args body }
 
 pgm:
-| stmt SEMI_COLON ? EOF  { make_pseudo $1 }
+| decl* EOF  { make_pgm $1 }

@@ -176,3 +176,17 @@ end)
 
 let reg_arg f_name i = f_name ^ "%" ^ Int.to_string i
 
+let make_func name args_names body =
+  let body' =
+    if List.length args_names == 0 then body
+    else
+      let one_arg i x = SAssign (LEVar x, EVar (reg_arg name i)) in
+      let assign_args = List.mapi one_arg args_names in
+      SThen (stmt_from_list assign_args, body)
+  in
+  let body'' = SThen (body', SReturn) in
+  Label (name, Instruction body'')
+
+let asl_top_level =
+  make_func "__asl_top_level__" []
+    (stmt_from_list [ SCall ("main", []); SExit ])
