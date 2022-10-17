@@ -371,6 +371,8 @@ arrayspec:
 | LBRK loc=location_global RBRK { Location_global loc }
 
 atom_prop:
+| loc=location EQUAL TOK_NOP
+  {Atom (LV (Loc loc,(mk_instr_val "NOP")))}
 | location equal maybev {Atom (LV (Loc $1,$3))}
 | loc=loc_brk equal v=maybev
    {Atom (LV (Loc loc,v))}
