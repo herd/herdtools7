@@ -21,6 +21,7 @@ module type S = sig
 (* From arch *)
   type reg
   type v
+  type inst
 (* t monad controls the branch machinery *)
   type 'a monad
 
@@ -38,6 +39,8 @@ module type S = sig
     | Fault of Dir.dirn
     (* Return from Fault Handler *)
     | FaultRet of lbl
+    (* Push and jump *)
+    | PushAndJump of inst * lbl
 
 (* Next instruction in sequence *)
   val nextT : t monad
@@ -59,6 +62,7 @@ module Make(M:Monad.S) = struct
   type lbl = string
   type reg = M.A.reg
   type v = M.A.V.v
+  type inst = M.A.instruction
   type 'a monad = 'a M.t
 
   type t =
@@ -74,6 +78,8 @@ module Make(M:Monad.S) = struct
     | Fault of Dir.dirn
     (* Return from Fault Handler *)
     | FaultRet of lbl
+    (* Push and jump *)
+    | PushAndJump of inst * lbl
 
 (* Utilities *)
 

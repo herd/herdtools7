@@ -496,7 +496,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       | (addr,inst)::nexts ->
           add_next_instr re_exec fetch_proc proc env seen addr inst nexts
 
-      and add_lbl re_exec check_back proc env seen addr_jmp lbl =
+      and add_lbl re_exec check_back proc env seen addr_jmp nexts take_one lbl =
         match fetch_code check_back seen proc addr_jmp lbl with
         | No (tgt_proc,(addr,inst)::_) ->
             let m ii =
@@ -505,7 +505,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                 (EM.tooFar lbl ii (S.B.Next [])) in
             wrap tgt_proc proc inst addr env m >>> fun _ -> EM.unitcodeT true
         | No (_,[]) -> assert false (* Backward jump cannot be to end of code *)
-        | Ok ((tgt_proc,code),seen) -> add_code re_exec tgt_proc proc env seen code
+        | Ok ((tgt_proc,code),seen) ->
+            let code = if take_one then [List.hd code] else code in
+            add_code re_exec tgt_proc proc env seen (code @ nexts)
 
       and add_fault re_exec inst dir fetch_proc proc env seen addr nexts =
         match env.A.fh_code,re_exec with
@@ -530,15 +532,17 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       | S.B.Next _ ->
           add_code re_exec fetch_proc proc env seen nexts
       | S.B.Jump lbl ->
-          add_lbl re_exec true proc env seen addr lbl
+          add_lbl re_exec true proc env seen addr [] false lbl
       | S.B.Fault dir ->
           add_fault re_exec inst dir fetch_proc proc env seen addr nexts
       | S.B.FaultRet lbl ->
-          add_lbl false true proc env seen addr lbl
+          add_lbl false true proc env seen addr [] false lbl
       | S.B.CondJump (v,lbl) ->
           EM.condJumpT v
-            (add_lbl re_exec (not (V.is_var_determined v)) proc env seen addr lbl)
+            (add_lbl re_exec (not (V.is_var_determined v)) proc env seen addr [] false lbl)
             (add_code re_exec fetch_proc proc env seen nexts)
+      | S.B.PushAndJump (inst, lbl) ->
+          add_lbl re_exec true proc env seen addr ((addr, inst) :: nexts) true lbl
       in
 
 (* Code monad returns a boolean. When false the code must be discarded.
