@@ -753,7 +753,7 @@ module Make
             O.o "" ;
             (*  Translation to indices *)
             let dump_test (s,_) =
-              O.fi "else if (v_addr == p->%s) return %s;"
+              O.fi "else if (p_addr == p->%s) return %s;"
                 s (dump_addr_idx s) ;
               if Cfg.is_kvm then begin
                 O.fi "else if ((pteval_t *)v_addr == p->%s) return %s;"
@@ -761,6 +761,12 @@ module Make
                   (dump_addr_idx (Misc.add_pte s))
               end in
             O.o "static int idx_addr(intmax_t *v_addr,vars_t *p) {" ;
+            begin match test.T.globals with
+            | _::_ when Cfg.is_kvm ->
+               O.oi  "intmax_t *p_addr =" ;
+               O.oii "(intmax_t *)((uintptr_t)v_addr & PAGE_MASK);"
+            | _ -> ()
+            end ;
             O.oi "if (v_addr == NULL) { return 0;}" ;
             List.iter dump_test test.T.globals ;
             O.oi "else { fatal(\"???\"); return -1;}" ;
