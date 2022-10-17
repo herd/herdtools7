@@ -255,26 +255,28 @@ module Make(O:Config)(A:Arch_tools.S) =
           | TyArray _|Atomic _ -> Warn.fatal "Array/Atomic type not implemented...")
       ^ "\\hline \\end{tabular}\n"
 
-    let zero = Constant.Concrete "0"
+    let is_zero = function
+      | Constant.Concrete "0" -> true
+      | _ -> false
 
     let pp_initial_state_flat sc =
       let non_zero_constraints =
         Misc.option_map
 	  (fun (l,(_,v))->
-	    if ParsedConstant.compare v zero = 0 then None
-	    else
+            if is_zero v then None
+            else
               let ppv =
                 if O.texmacros then "\\asm{" ^ pp_v v ^"}"
                 else "\\mbox{" ^ pp_v v ^ "}" in
               Some (" \\mbox{"^ pp_location l ^
-                    "} \\mathord{=} " ^ ppv ^" "))
+                      "} \\mathord{=} " ^ ppv ^" "))
 	  sc in (* That will do *)
       match non_zero_constraints with
       | [] -> None
       | _ ->
           let has_zero =
             List.exists
-              (fun (_,(_,v)) -> ParsedConstant.compare v zero = 0)
+              (fun (_,(_,v)) -> is_zero v)
               sc in
           Some
             begin
