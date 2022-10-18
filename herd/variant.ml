@@ -45,6 +45,8 @@ type t =
   | Instances (* Compute dependencies on instruction instances *)
   | Kvm
   | ETS
+(* AArch64: Enhanced Exception Synchronization - FEAT_ExS *)
+  | ExS | EIS | EOS
 (* Do not insert branching event between pte read and accesses *)
   | NoPteBranch
 (* Pte-Squared: all accesses through page table, including PT accesses *)
@@ -60,6 +62,8 @@ type t =
   | Exp
 (* Instruction-fetch support (AKA "self-modifying code" mode) *)
   | Self
+(* Have cat interpreter to optimise generation of co's *)
+  | CosOpt
 (* Test something *)
   | Test
 (* One hundred tests *)
@@ -73,7 +77,7 @@ let tags =
     Precision.tags @
    ["toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
-   "exp"; "self"; "test"; "T[0-9][0-9]"]
+   "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -99,6 +103,9 @@ let parse s = match Misc.lowercase s with
 | "instances"|"instance" -> Some Instances
 | "kvm" -> Some Kvm
 | "ets" -> Some ETS
+| "exs" -> Some ExS
+| "eis" -> Some EIS
+| "eos" -> Some EOS
 | "noptebranch"|"nobranch" -> Some NoPteBranch
 | "pte2" | "pte-squared" -> Some PTE2
 | "phantomonload" -> Some PhantomOnLoad
@@ -106,6 +113,7 @@ let parse s = match Misc.lowercase s with
 | "constrainedunpredictable"|"cu" -> Some ConstrainedUnpredictable
 | "exp" -> Some Exp
 | "self" -> Some Self
+| "cos-opt" -> Some CosOpt
 | "test" -> Some Test
 | s ->
    begin
@@ -148,6 +156,9 @@ let pp = function
   | Instances -> "Instances"
   | Kvm -> "kvm"
   | ETS -> "ets"
+  | ExS -> "exs"
+  | EIS -> "eis"
+  | EOS -> "eos"
   | NoPteBranch -> "NoPteBranch"
   | PTE2 -> "pte-squared"
   | PhantomOnLoad -> "PhantomOnLoad"
@@ -155,10 +166,12 @@ let pp = function
   | ConstrainedUnpredictable -> "ConstrainedUnpredictable"
   | Exp -> "exp"
   | Self -> "self"
+  | CosOpt -> "cos-opt"
   | Test -> "test"
   | T n -> Printf.sprintf "T%02i" n
 
 let compare = compare
+let equal v1 v2 = compare v1 v2 = 0
 
 let get_default a v =
   try match v with

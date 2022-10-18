@@ -43,6 +43,8 @@ type t =
   | Instances (* Compute dependencies on instruction instances *)
   | Kvm
   | ETS
+(* AArch64: Enhanced Exception Synchronization - FEAT_ExS *)
+  | ExS | EIS | EOS
 (* Do not insert branching event between pte read and accesses *)
   | NoPteBranch
 (* Pte-Squared: all accesses through page table, including PT accesses *)
@@ -58,12 +60,15 @@ type t =
   | Exp
 (* Instruction-fetch support (AKA "self-modifying code" mode) *)
   | Self
+(* Have cat interpreter to optimise generation of co's *)
+  | CosOpt
 (* Test something *)
   | Test
 (* One hundred tests *)
   | T of int
 
 val compare : t -> t -> int
+val equal : t -> t -> bool
 val tags : string list
 val parse : string -> t option
 val pp : t -> string

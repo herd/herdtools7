@@ -409,6 +409,7 @@ end = struct
     | _ -> false
 
   let is_explicit = lift_explicit_predicate A.is_explicit_annot
+  and is_not_explicit = lift_explicit_predicate A.is_not_explicit_annot
 
 (* relative to the registers of the given proc *)
   let is_reg_store a (p:int) = match a with

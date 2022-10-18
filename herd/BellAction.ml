@@ -117,7 +117,7 @@ end = struct
   let is_pte_access _ = assert false
 
   (* All accesses are explicit *)
-  let is_explicit _ = true
+  include Explicit.NoAction
 
   let is_atomic a = match a with
   | Access (_,_,_,true,_,_) ->

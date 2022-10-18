@@ -179,7 +179,7 @@ end = struct
   let is_pte_access _ = assert false
 
   (* All accesses are explicit *)
-  let is_explicit _ = true
+  include Explicit.NoAction
 
   (* The following definition of is_atomic is quite arbitrary. *)
 

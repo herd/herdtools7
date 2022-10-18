@@ -22,15 +22,24 @@ module type S = sig
   val exp_annot : explicit
   val nexp_annot : explicit
   val is_explicit_annot : explicit -> bool
+  val is_not_explicit_annot : explicit -> bool
   val pp_explicit : explicit -> string
   val explicit_sets : (string * (explicit -> bool)) list
 end
 
+(* Default setting: all accesses are explicit *)
 module No = struct
   type explicit = unit
   let exp_annot = ()
   let nexp_annot = ()
   let is_explicit_annot _ = true
+  let is_not_explicit_annot _ = false
   let pp_explicit _ = ""
   let explicit_sets = []
+end
+
+(* Default setting, action level *)
+module NoAction = struct
+  let is_explicit _ = true
+  and is_not_explicit _ = false
 end

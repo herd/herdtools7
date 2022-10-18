@@ -22,8 +22,16 @@ module type S = sig
   val exp_annot : explicit
   val nexp_annot : explicit
   val is_explicit_annot : explicit -> bool
+  val is_not_explicit_annot : explicit -> bool
   val pp_explicit : explicit -> string
   val explicit_sets : (string * (explicit -> bool)) list
 end
 
+(* Default setting: all accesses are explicit *)
 module No : S with type explicit=unit
+
+(* Default setting, action level *)
+module NoAction : sig
+  val is_explicit :'act -> bool
+  val is_not_explicit :'act -> bool
+end
