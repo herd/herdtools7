@@ -1631,10 +1631,8 @@ module Make
       let make_label_value proc lbl_str =
         A.V.cstToV (Constant.Label (proc, lbl_str))
 
-      let read_loc_instr v ii =
-        let loc_instr =
-          A.Location_global (make_label_value ii.A.fetch_proc v) in
-        M.read_loc false (mk_fetch AArch64.N) loc_instr ii
+      let read_loc_instr a ii =
+        M.read_loc false (mk_fetch AArch64.N) a ii
 
 (*********************)
 (* Branches *)
@@ -1683,19 +1681,46 @@ module Make
             else begin
               match Label.norm ii.A.labels with
               | Some hd ->
+                  let a_v = make_label_value ii.A.fetch_proc hd in
+                  let a =
+                    A.Location_global (make_label_value ii.A.fetch_proc hd) in
                   let b_val =
                     A.V.cstToV (A.instruction_to_value ii.A.inst) in
-                  M.altT  (
+                  let nop_val =
+                    A.V.cstToV (A.instruction_to_value I_NOP) in
+                  read_loc_instr a ii
+                  >>= fun v ->
+                    let b_cond = M.op Op.Eq v b_val in
+                    let nop_cond = M.op Op.Eq v nop_val in
+                    b_cond >>*= fun cond -> M.choiceT cond (
+                      commit_pred ii
+                      >>*= fun () -> (M.mk_singleton_es (Act.NoAction) ii)
+                      >>= fun () -> B.branchT l
+                    )(
+                      nop_cond >>*= fun cond -> M.choiceT cond (
+                        commit_pred ii
+                        >>*= fun () ->(M.mk_singleton_es (Act.NoAction) ii)
+                        >>= B.next1T
+                      )(
+                        let (>>!) = M.(>>!) in
+                        let m_fault = mk_fault a_v Dir.F AArch64.N ii (Some "Invalid") in
+                        commit_pred ii
+                        >>*= fun () -> m_fault
+                        >>| set_elr_el1 ii
+                        >>! B.Fault Dir.F
+                      )
+                    )
+                  (* M.altT  (
                     read_loc_instr hd ii
                     >>= M.eqT b_val
                     >>= fun () -> (M.mk_singleton_es (Act.NoAction) ii)
                     >>= fun () -> B.branchT l
-                  ) (
+                  )(
                     read_loc_instr hd ii
-                    >>= M.neqT b_val
+                    >>= M.eqT nop_val
                     >>= fun () -> (M.mk_singleton_es (Act.NoAction) ii)
                     >>= B.next1T
-                  )
+                  ) *)
               | None -> B.branchT l
             end
 
