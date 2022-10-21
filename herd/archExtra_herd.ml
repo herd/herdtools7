@@ -467,8 +467,13 @@ module Make(C:Config) (I:I) : S with module I = I
                 (pp_symbol sym1) (pp_symbol sym2)
 
         let same_id_fault v1 v2 = match v1,v2 with
-          | I.V.Val (Symbolic sym1),I.V.Val (Symbolic sym2)
+          | I.V.Val (Symbolic sym1), I.V.Val (Symbolic sym2)
             -> same_sym_fault sym1 sym2
+          | I.V.Val (Constant.Label (_, l1)),I.V.Val (Constant.Label (_, l2))
+            -> Misc.string_eq l1 l2
+          | I.V.Val (Symbolic _), I.V.Val (Constant.Label (_, _))
+          | I.V.Val (Constant.Label (_, _)), I.V.Val (Symbolic _)
+            -> false
           | _,_
             ->
               Warn.fatal
