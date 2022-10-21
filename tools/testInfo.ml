@@ -35,7 +35,7 @@ module T = struct
           t1 t2
 end
 
-module Make(A:ArchBase.S) = struct
+module Make(A:ArchBase.S)(Pte:PteVal.S) = struct
 
   let zyva name parsed =
     let tname = name.Name.name in

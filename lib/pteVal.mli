@@ -27,6 +27,7 @@ module type S = sig
   val pp_v : t -> string
   val pp_hash : t -> string
   val tr : ParsedPteVal.t -> t
+  val pp_norm : ParsedPteVal.t -> string
 
   val eq : t -> t -> bool
   val compare : t -> t -> int

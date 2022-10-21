@@ -24,7 +24,7 @@ module T : sig
 end
 
 (* Extract information out of parsed test *)
-module Make(A:ArchBase.S) : sig
+module Make(A:ArchBase.S)(Pte:PteVal.S) : sig
   val zyva : Name.t -> A.pseudo MiscParser.t -> T.t
 end
 

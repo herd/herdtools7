@@ -56,6 +56,8 @@ val is_default : t -> bool
 
 (* Finish parsing *)
 val tr : ParsedPteVal.t -> t
+val pp_norm : ParsedPteVal.t -> string
+
 
 (* Pretty print pp [hexa]  *)
 val pp : bool -> t -> string  (* Default field not printed *)

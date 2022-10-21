@@ -15,7 +15,11 @@
 (****************************************************************************)
 
 
-module Make (O:sig val hexa : bool end)(A:ArchBase.S) = struct
+module
+  Make
+    (O:sig val hexa : bool end)
+    (A:ArchBase.S)(Pte:PteVal.S)
+  = struct
   include A
 
   module RegSet =
@@ -37,7 +41,7 @@ module Make (O:sig val hexa : bool end)(A:ArchBase.S) = struct
   let one = ParsedConstant.one
   let symbToV =  ParsedConstant.nameToV
   let maybevToV c = c
-  let pp_v = ParsedConstant.pp O.hexa
+  let pp_v = ParsedConstant.pp_norm O.hexa Pte.pp_norm
 
   type global = ParsedConstant.v
   let maybevToGlobal c = c

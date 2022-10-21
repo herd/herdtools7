@@ -61,7 +61,7 @@ module Top
 
     exception NotOk
 
-    module Make(A:ArchBase.S) = struct
+    module Make(A:ArchBase.S)(Pte:PteVal.S) = struct
 
       let default_cost pgm =
         let nprocs = List.length pgm in

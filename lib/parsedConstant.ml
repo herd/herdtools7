@@ -34,3 +34,4 @@ let pp_v_old v = Constant.pp_old Misc.identity ParsedPteVal.pp v
 
 (* Hexa parameter ignored... *)
 let pp _hexa = pp_v
+let pp_norm _hexa pp_pteval =  Constant.pp Misc.identity pp_pteval

@@ -35,3 +35,6 @@ val pp_v_old : v -> string
 
 (* Hexa parameter ignored... *)
 val pp : bool (* hexa *) -> v -> string
+
+(* Pass specific printer for pteval's *)
+val pp_norm : bool -> (ParsedPteVal.t -> string) -> v -> string
