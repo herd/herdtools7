@@ -362,6 +362,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
           | AArch64Base.Vreg(_,(nelem,esize)) -> neon_getvec nelem esize v
           | _ -> v
 
+          module FaultType = FaultType.AArch64
         end)
 
     module MemType = MemoryType.No

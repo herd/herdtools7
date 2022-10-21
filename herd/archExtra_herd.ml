@@ -29,6 +29,8 @@ module type I = sig
   type arch_instruction
 
   val fromto_of_instr : arch_instruction -> (Label.Set.t * Label.Set.t) option
+
+  module FaultType : FaultType.S
 end
 
 (** Output signature, functionalities added *)
@@ -131,7 +133,7 @@ module type S = sig
 (**********)
 (* Faults *)
 (**********)
-  include Fault.S with type loc_global := v
+  include Fault.S with type loc_global := v and type fault_type := I.FaultType.t
 
 (*********)
 (* State *)
@@ -474,6 +476,8 @@ module Make(C:Config) (I:I) : S with module I = I
               Warn.fatal
                 "Illegal value (%s or %s) in fault"
                 (I.V.pp_v v1) (I.V.pp_v v2)
+
+        type fault_type = I.FaultType.t
       end
 
       include Fault.Make(FaultArg)
@@ -871,7 +875,7 @@ module Make(C:Config) (I:I) : S with module I = I
                   let tr_lab = match lab with
                     | None -> Label.Set.empty
                     | Some lab -> Label.Set.singleton lab in
-                  (" ~"^pp_fault (((p,tr_lab),loc,None))^";")::k)
+                  (" ~"^pp_fault (((p,tr_lab),loc,None,None))^";")::k)
               fobs [] in
           pp_st ^ " " ^
           FaultSet.pp_str " " (fun f -> pp_fault f ^ ";") flts ^

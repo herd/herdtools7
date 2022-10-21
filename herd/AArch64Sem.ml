@@ -107,11 +107,11 @@ module Make
 
       let mk_read_std = mk_read quad AArch64.N
 
-      let mk_fault a dir annot ii msg =
+      let mk_fault a dir annot ii ft msg =
         let fh = match ii.A.env.A.fh_code with
           | Some _ -> true
           | None -> false in
-        M.mk_singleton_es (Act.Fault (ii,A.Location_global a,dir,annot,fh,msg)) ii
+        M.mk_singleton_es (Act.Fault (ii,A.Location_global a,dir,annot,fh,ft,msg)) ii
 
       let read_loc v is_data = M.read_loc is_data (mk_read v AArch64.N aexp)
 
@@ -551,8 +551,9 @@ module Make
          *)
 
       let mk_pte_fault a ma dir an ii =
+        let ft = Some FaultType.AArch64.EXC_DATA_ABORT in
         insert_commit_to_fault ma
-          (fun _ -> mk_fault a dir an ii (Some "EL0"))  ii >>! B.Exit
+          (fun _ -> mk_fault a dir an ii ft (Some "EL0"))  ii >>! B.Exit
 
       let an_xpte =
         let open AArch64 in
@@ -836,17 +837,19 @@ module Make
         M.delay_kont "4" ma
           (fun _ ma ->
             let mm = mop Access.PHY ma in
+            let ft = Some FaultType.AArch64.EXC_TAG_CHECK in
             delayed_check_tags a_virt ma ii
               (mm  >>= M.ignore >>= B.next1T)
-              (lift_fault (mk_fault a_virt dir an ii None) mm dir))
+              (lift_fault (mk_fault a_virt dir an ii ft None) mm dir))
 
       let lift_memtag_virt mop ma dir an ii =
         M.delay_kont "5" ma
           (fun a_virt ma  ->
             let mm = mop Access.VIR (ma >>= fun a -> loc_extract a) in
+            let ft = Some FaultType.AArch64.EXC_TAG_CHECK in
             delayed_check_tags a_virt ma ii
               (mm  >>= M.ignore >>= B.next1T)
-              (lift_fault (ma >>= fun a -> mk_fault a dir an ii None) mm dir))
+              (lift_fault (ma >>= fun a -> mk_fault a dir an ii ft None) mm dir))
 
       let some_ha = dirty.DirtyBit.some_ha || dirty.DirtyBit.some_hd
 
@@ -871,7 +874,8 @@ module Make
 
       let lift_kvm dir updatedb mop ma an ii mphy =
         let mfault ma a =
-          insert_commit_to_fault ma (fun _ -> mk_fault a dir an ii None) ii >>|
+          let ft = Some FaultType.AArch64.EXC_DATA_ABORT in
+          insert_commit_to_fault ma (fun _ -> mk_fault a dir an ii ft None) ii >>|
             set_elr_el1 ii >>! B.Fault dir in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb a ma an ii
@@ -889,9 +893,10 @@ module Make
 
       let lift_morello mop perms ma mv dir an ii =
         let mfault msg ma mv =
+          let ft = None in (* FIXME *)
           do_insert_commit
             (ma >>| mv)
-            (fun (a,_v) -> mk_fault a dir an ii (Some msg)) ii  >>! B.Exit in
+            (fun (a,_v) -> mk_fault a dir an ii ft (Some msg)) ii  >>! B.Exit in
         M.delay_kont "morello" ma
           (fun a ma ->
             (* Notice: virtual access only, beaause morello # kvm *)
