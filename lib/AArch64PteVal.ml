@@ -152,6 +152,10 @@ let tr p =
     { r with attrs; } in
   r
 
+let pp_norm p =
+  let n = tr p in
+  pp_v n
+
 let lex_compare c1 c2 x y  = match c1 x y with
 | 0 -> c2 x y
 | r -> r

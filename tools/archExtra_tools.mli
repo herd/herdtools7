@@ -17,7 +17,9 @@
 
 module Make :
     functor (O : sig val hexa : bool end) ->
-      functor (A:ArchBase.S) -> Arch_tools.S
+      functor (A:ArchBase.S) ->
+        functor (Pte:PteVal.S) ->
+          Arch_tools.S
 with type instruction = A.instruction
 and type reg = A.reg
 and type 'ins kpseudo = 'ins A.kpseudo
