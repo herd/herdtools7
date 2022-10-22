@@ -264,6 +264,18 @@ let prog =
   else "msort"
 
 let () =
+  let usage =
+    String.concat "\n" [
+        (sprintf "Usage: %s [options]* [test]*" prog);
+        "" ;
+        "Sort tests by increasing number of threads. Tests with the same number of " ;
+        "threads are printed in the same order as specified in the input. Tests can be " ;
+        "specified by their file name or lists of tests (e.g., @all) as command line " ;
+        "arguments or via stdin. By default tests with matching hashes appear only ";
+        "once (see also --dups)." ;
+        "" ;
+        "Options:" ;
+      ] in
   Arg.parse
     ["-v",Arg.Unit (fun () -> verbose := true), " be verbose";
      "-d",Arg.Unit (fun () -> duplicates := Keep)," keep duplicates";
@@ -280,7 +292,7 @@ let () =
      CheckName.parse_names names ;
      CheckName.parse_excl excl ;]
     (fun s -> arg := s :: !arg)
-    (sprintf "Usage: %s [options]* [test]*" prog)
+    usage
 
 let tests = !arg
 
