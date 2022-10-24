@@ -227,7 +227,6 @@ end = struct
 
   let read_of a = match a with
   | Access (R,_,v,_,_,_,_)
-  | Access (F,_,v,_,_,_,_)
   | Amo (_,v,_,_,_,_,_)
     -> Some v
   | Arch a -> A.ArchAction.read_of a
@@ -240,7 +239,7 @@ end = struct
   | Amo (_,_,v,_,_,_,_)
     -> Some v
   | Arch a -> A.ArchAction.written_of a
-  | Access (R, _, _, _,_,_,_) | Access (F, _, _, _,_,_,_)
+  | Access (R, _, _, _,_,_,_)
   | Barrier _|Commit _|Fault _
   | TooFar _|Inv _|DC _|IC _|NoAction
     -> None
@@ -271,7 +270,7 @@ end = struct
   | _ -> false
 
   let is_mem_load a = match a with
-  | Access ((R|F),A.Location_global _,_,_,_,_,_)
+  | Access (R,A.Location_global _,_,_,_,_,_)
   | Amo (A.Location_global _,_,_,_,_,_,_)
     -> true
   | Arch a ->
@@ -317,9 +316,17 @@ end = struct
     | Inv _ -> true
     | Access _|Amo _|Commit _|Barrier _|Fault _|TooFar _|DC _|IC _|Arch _|NoAction -> false
 
-  let is_ifetch a = match a with
-    | Access (F,_,_,_,_,_,_)  -> true
-    | _ -> false
+  let is_label a = match a with
+  | Access (_,A.Location_global (A.V.Val c),_,_,_,_,_)
+  | Amo (A.Location_global (A.V.Val c),_,_,_,_,_,_)
+    -> Constant.is_label c
+  | Arch a ->
+     begin
+       match A.ArchAction.location_of a with
+       | Some (A.Location_global (A.V.Val c)) -> Constant.is_label c
+       | _ -> false
+     end
+  | _ -> false
 
   let is_dc = function
     | DC _ -> true
@@ -433,11 +440,11 @@ end = struct
   let is_store a = match a with
   | Access (W,_,_,_,_,_,_)|Amo _ -> true
   | Arch a -> A.ArchAction.is_load a
-  | Access ((R|F),_,_,_,_,_,_) | Barrier _ | Commit _
+  | Access (R,_,_,_,_,_,_) | Barrier _ | Commit _
   | Fault _ | TooFar _ | Inv _ | DC _ | IC _ | NoAction -> false
 
   let is_load a = match a with
-  | Access ((R|F),_,_,_,_,_,_) | Amo _ -> true
+  | Access (R,_,_,_,_,_,_) | Amo _ -> true
   | Arch a -> A.ArchAction.is_store a
   | Access (W,_,_,_,_,_,_) | Barrier _ | Commit _ | Fault _ | TooFar _ | Inv _
   | DC _| IC _ | NoAction -> false
@@ -550,7 +557,8 @@ end = struct
 
     and ifetch_sets =
       if self then
-        ("IF",is_ifetch)::[]
+        (* ("IF",is_ifetch)::[] *)
+        ("INSTR",is_label)::[]
       else []
 
     and fault_sets =
