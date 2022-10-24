@@ -14,6 +14,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type dirn = R | W | F
+type dirn = R | W
 
-let pp_dirn d = match d with R -> "R" | W -> "W" | F -> "F"
+let pp_dirn d = match d with R -> "R" | W -> "W"

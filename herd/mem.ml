@@ -519,7 +519,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         | None, false ->
            let open Precision in
            match C.precision,dir with
-           | Fatal,_ | LoadsFatal,(Dir.R|Dir.F) -> EM.unitcodeT true
+           | Fatal,_ | LoadsFatal,Dir.R -> EM.unitcodeT true
            | Skip,_ -> add_code false fetch_proc proc env seen nexts
            | Handled,_ | LoadsFatal,Dir.W ->
               add_next_instr true fetch_proc proc env seen addr inst nexts
@@ -1206,7 +1206,7 @@ let match_reg_events es =
           | Dir.W ->
               let old = StringMap.safe_find [] x ws in
               rs,StringMap.add x ((g,idx,sz,es)::old) ws
-          | Dir.R | Dir.F -> (g,x,idx,sz,es)::rs,ws)
+          | Dir.R -> (g,x,idx,sz,es)::rs,ws)
           ([],StringMap.empty) ms in
       let ws =
         StringMap.map

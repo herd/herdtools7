@@ -163,7 +163,7 @@ module Make
 (* Fetch of an instruction, i.e., a read from a label *)
       let mk_fetch an loc v =
         let ac = Access.VIR in (* Instruction fetch seen as ordinary, non PTE, access *)
-        Act.Access (Dir.F, loc, v, an, AArch64.nexp_annot, MachSize.Word, ac)
+        Act.Access (Dir.R, loc, v, an, AArch64.nexp_annot, MachSize.Word, ac)
 
 (* Basic write, to register  *)
       let mk_write sz an anexp ac v loc =
@@ -598,7 +598,7 @@ module Make
                    "valid:1 && db:1"
                  else
                    "valid:1 && af:1 && db:1"
-              | Dir.R | Dir.F ->
+              | Dir.R ->
                  if ha then "valid:1"
                  else "valid:1 && af:1" in
             let m = append_commit m (Some msg) ii in
@@ -622,7 +622,7 @@ module Make
                  else if ha then
                    add_setbits (is_zero ipte.af_v) "af:0" set_af m
                  else m
-              | Dir.R | Dir.F ->
+              | Dir.R ->
                   if ha then
                    add_setbits (is_zero ipte.af_v) "af:0" set_af m
                  else m in
@@ -666,21 +666,21 @@ module Make
               let cond_R pte_v =
                 m_op Op.Or (is_zero pte_v.valid_v) (is_zero pte_v.af_v) in
               let cond = match dir with (* No mercy, check all flags *)
-              | Dir.R | Dir.F -> cond_R
+              | Dir.R -> cond_R
               | Dir.W ->
                   fun pte_v ->
                     m_op Op.Or (cond_R pte_v) (is_zero pte_v.db_v) in
               check_cond cond
             else if (tthm && ha && not hd) then (* HW managment of AF *)
               let cond = match dir with (* Do not check AF *)
-              | Dir.R | Dir.F -> fun pte_v -> is_zero pte_v.valid_v
+              | Dir.R -> fun pte_v -> is_zero pte_v.valid_v
               | Dir.W ->
                   fun pte_v ->
                     m_op Op.Or (is_zero pte_v.valid_v) (is_zero pte_v.db_v) in
               check_cond cond
             else (* HW management of AF and DB *)
               let cond = match dir with (* Do not check AF *)
-              | Dir.R | Dir.F -> fun pte_v -> is_zero pte_v.valid_v
+              | Dir.R -> fun pte_v -> is_zero pte_v.valid_v
               | Dir.W ->
 (* Check DB when dirty bit management disabled for this page *)
                   fun pte_v ->
@@ -826,7 +826,7 @@ module Make
         match C.precision with
         | Fatal -> mfault >>! B.Exit
         | LoadsFatal -> (match dir with
-            | Dir.R | Dir.F -> mfault >>! B.Exit
+            | Dir.R -> mfault >>! B.Exit
             | Dir.W -> (mfault >>| mm) >>= M.ignore >>= B.next1T)
         | Skip -> Warn.fatal "Memtag extension has no 'Skip' fault handling mode"
         | Handled ->
@@ -854,7 +854,7 @@ module Make
         if
           some_ha &&
             (let v = C.variant Variant.PhantomOnLoad in
-             match dir with Dir.W -> not v | Dir.R | Dir.F -> v)
+             match dir with Dir.W -> not v | Dir.R -> v)
         then
           (m >>|
              M.altT (test_and_set_af_succeeds a E.IdSpurious) (M.unitT ())) >>=
@@ -1683,11 +1683,11 @@ module Make
                         >>= B.next1T
                       )(
                         let (>>!) = M.(>>!) in
-                        let m_fault = mk_fault a_v Dir.F AArch64.N ii (Some "Invalid") in
+                        let m_fault = mk_fault a_v Dir.R AArch64.N ii (Some "Invalid") in
                         commit_pred ii
                         >>*= fun () -> m_fault
                         >>| set_elr_el1 ii
-                        >>! B.Fault Dir.F
+                        >>! B.Fault Dir.R
                       )
                     )
                   (* M.altT  (
