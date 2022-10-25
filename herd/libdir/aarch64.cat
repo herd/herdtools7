@@ -88,9 +88,6 @@ flag ~empty (dmb.full | dmb.ld | dmb.st) \
 	    (DMB.SY | DMB.LD | DMB.ST | DSB.SY | DSB.LD | DSB.ST)
 	    as Assuming-common-inner-shareable-domain
 
-(* Intrinsic order *)
-let intrinsic = (iico_data|iico_ctrl)+
-
 (* Coherence-after *)
 let ca = fr | co
 
