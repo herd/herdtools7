@@ -88,6 +88,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
           let get_val _ v = v
 
+          module FaultType=FaultType.No
         end)
 
     module MemType=MemoryType.No

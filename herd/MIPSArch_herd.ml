@@ -69,8 +69,9 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 	  type arch_instruction = instruction
           let fromto_of_instr _ = None
 
-      let get_val _ v = v
+          let get_val _ v = v
 
+          module FaultType=FaultType.No
 	end)
 
     module MemType=MemoryType.No

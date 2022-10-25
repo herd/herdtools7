@@ -19,6 +19,7 @@
 
 module type I = sig
   type arch_global
+  type fault_type
   val pp_global : arch_global -> string
   val global_compare : arch_global -> arch_global -> int
 (* Identifiers in faults are considered identical *)
@@ -36,8 +37,9 @@ val map_value : ('v -> 'w) -> 'v atom -> 'w atom
 module type S = sig
 
   type loc_global
+  type fault_type
 
-  type fault = (Proc.t * Label.Set.t) * loc_global * string option
+  type fault = (Proc.t * Label.Set.t) * loc_global * fault_type option * string option
   val pp_fault : fault -> string
 
   module FaultSet : MySet.S with type elt = fault
@@ -50,4 +52,4 @@ module type S = sig
 
 end
 
-module Make : functor (A:I) -> S with type loc_global := A.arch_global
+module Make : functor (A:I) -> S with type loc_global := A.arch_global and type fault_type := A.fault_type
