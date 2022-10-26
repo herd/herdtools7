@@ -350,8 +350,6 @@ module Make
                  "W", E.is_mem_store;
                  "Exp", E.is_explicit;
                  "NExp", E.is_not_explicit;
-                 "Rreg", E.is_reg_load_any;
-                 "Wreg", E.is_reg_store_any;
                  "SPEC", is_spec;
                  "EXEC", (fun e -> not (is_spec e));
                  "AMO",E.is_amo;
@@ -366,6 +364,8 @@ module Make
                  "BCC", E.is_bcc;
                  "PRED", E.is_pred;
                  "F", E.is_barrier;
+                 "Rreg", E.is_reg_load_any;
+                 "Wreg", E.is_reg_store_any;
                  "DATA", is_data_port;
                  "NDATA", (fun e -> not (is_data_port e));])) in
       let m =
