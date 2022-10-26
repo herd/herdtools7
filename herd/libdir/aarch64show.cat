@@ -14,6 +14,3 @@ show rf-reg
 show rf-mem as rf
 unshow fr,co
 show co|fr as ca
-
-(* Intrinsic order *)
-show iico_data | iico_ctrl as intrinsic
