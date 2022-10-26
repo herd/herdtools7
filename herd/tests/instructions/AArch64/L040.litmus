@@ -1,0 +1,16 @@
+AArch64 L040
+(* Cf. L037, here SWP operates on one register, stronger? *)
+{
+0:X1=x; 0:X3=y;
+1:X0=y; 1:X3=x; 1:X4=z;
+}
+ P0          | P1             ;
+ MOV W0,#1   | LDR W1,[X0]    ;
+ STR W0,[X1] | AND W2,W1,#2   ;
+ DMB ST      | ADD W2,W2,#1   ;
+ MOV W2,#1   | SWP W2,W2,[X4] ; 
+ STR W2,[X3] | CBNZ W2,L1     ;
+             | ISB            ;
+             | LDR W7,[X3]    ;
+             |L1:             ;
+exists (1:X1=1 /\ 1:X7=0 /\ 1:X2=0)
