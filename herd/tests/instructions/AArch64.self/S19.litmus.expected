@@ -1,0 +1,10 @@
+Test S19 Forbidden
+States 1
+0:X1=B L1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition ~exists (0:X1=NOP)
+Observation S19 Never 0 1
+Hash=575460720804ab203c8c1e1fe3afe1f7
+

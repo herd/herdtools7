@@ -1,0 +1,9 @@
+AArch64 S18
+{
+}
+  P0          ;
+L0:           ;
+  NOP         ;
+  ADR X0,L0   ;
+  LDR W1,[X0] ;
+forall 0:X1=NOP

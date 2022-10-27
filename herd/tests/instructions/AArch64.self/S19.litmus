@@ -1,0 +1,10 @@
+AArch64 S19
+{
+}
+    P0          ;
+L0:             ;
+ B L1           ;
+L1:             ;
+ ADR X0,L0      ;
+ LDR W1,[X0]    ;
+~exists 0:X1=NOP
