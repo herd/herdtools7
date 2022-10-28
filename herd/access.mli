@@ -17,7 +17,7 @@
 (** All sorts of accesses, redundant with symbol hidden in location,
    when symbol is known, which may not be the case *)
 
-type t = REG | VIR | PHY | PTE | TLB | TAG | PHY_PTE
+type t = REG | VIR | PHY | TLB | TAG
 
 val pp : t -> string
 

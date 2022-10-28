@@ -585,14 +585,14 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             if C.variant Variant.PhantomOnLoad then
               let look_pt rloc k = match rloc with
                 | ConstrGen.Loc (A.Location_global (V.Val c as vloc))
-                when Constant.is_pt c -> vloc::k
+                     when Constant.is_pte c -> vloc::k
                 | _ -> k in
               A.RLocSet.fold look_pt test.Test_herd.observed []
             else (* One spurious update per variable not accessed initially *)
               let add_setaf0 k (loc,v) =
                 match loc with
                 | A.Location_global (V.Val c as vloc) ->
-                   if Constant.is_pt c then
+                   if Constant.is_pte c then
                      match v with
                      | V.Val (Constant.PteVal p)
                            when not (V.Cst.PteVal.is_af p) ->

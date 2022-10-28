@@ -266,10 +266,11 @@ let add_oa_if_none loc p =
   try
     let oa =
       match loc with
-      | Location_global (Symbolic (System (Constant.PTE,s))) ->
-         OutputAddress.PHY s
-      | Location_global (Symbolic (System (Constant.PTE2,s))) ->
-         OutputAddress.PTE s
+      | Location_global (Symbolic (Virtual s)) ->
+         begin match Misc.tr_pte s.name with
+           | Some s -> OutputAddress.PHY s
+           | None -> raise Exit
+         end
       | _ -> raise Exit in
     let p = ParsedPteVal.add_oa_if_none oa p in
     Constant.PteVal p

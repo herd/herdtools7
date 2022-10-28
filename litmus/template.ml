@@ -206,12 +206,7 @@ module Make(O:Config)(A:I) =
           | _ -> None)
         init addrs
 
-    let get_ptes_only {init; ptes; _} =
-      get_gen
-        (function
-          | System (PTE,s) -> Some s
-          | _ -> None)
-        init ptes
+    let get_ptes_only _ = [] (* FIXME *)
 
     let get_phys_only {init; _} =
       get_gen

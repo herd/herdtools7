@@ -78,7 +78,7 @@ let symbolic_data_eq s1 s2 =
   && Int64.equal s1.cap s2.cap
   && Misc.int_eq s1.offset s2.offset
 
-type syskind = PTE|PTE2|TLB|TAG
+type syskind = TLB|TAG
 
 type symbol =
   | Virtual of symbolic_data
@@ -94,23 +94,36 @@ let pp_index base o = match o with
 | 0 -> base
 | i -> sprintf "%s+%i" base i
 
+let rec old2new s =
+  match Misc.tr_pte s with
+  | Some s ->
+     Misc.pp_pte (old2new s)
+  | None ->
+     begin match Misc.tr_physical s with
+     | Some s -> Misc.pp_physical (old2new s)
+     | None -> s
+     end
+
 let pp_symbol_old = function
   | Virtual s -> pp_index (pp_symbolic_data s) s.offset
+  | Physical (s,o) when Misc.is_pte s -> pp_index s o
   | Physical (s,o) -> pp_index (Misc.add_physical s) o
   | System (TLB,s) -> Misc.add_tlb s
-  | System (PTE,s) -> Misc.add_pte s
-  | System (PTE2,s) -> Misc.add_pte (Misc.add_pte s)
   | System (TAG,s) -> sprintf "tag(%s)" s
 
 let pp_symbol = function
+  | Virtual s when Misc.is_pte s.name ->
+     let name = old2new s.name in
+     pp_index (pp_symbolic_data {s with name=name}) s.offset
   | Virtual s -> pp_index (pp_symbolic_data s) s.offset
-  | Physical (s,o) -> pp_index (sprintf "PA(%s)" s) o
+  | Physical (s,o) when Misc.is_pte s -> pp_index (old2new s) o
+  | Physical (s,o) -> pp_index (Misc.pp_physical (old2new s)) o
   | System (TLB,s) -> sprintf "TLB(%s)" s
-  | System (PTE,s) -> sprintf "PTE(%s)" s
-  | System (PTE2,s) -> sprintf "PTE(PTE(%s))" s
   | System (TAG,s) -> sprintf "tag(%s)" s
 
 let compare_symbol sym1 sym2 = match sym1,sym2 with
+| Virtual s1,Virtual s2 when Misc.is_pte s1.name && not (Misc.is_pte s2.name) -> 1
+| Virtual s1,Virtual s2 when not (Misc.is_pte s1.name) && Misc.is_pte s2.name -> -1
 | Virtual s1,Virtual s2 -> compare_symbolic_data s1 s2
 | Physical (s1,o1),Physical (s2,o2) ->
     begin match String.compare s1 s2 with
@@ -147,7 +160,7 @@ let oa2symbol oa =
   | Some s -> Physical (s,0)
   | None ->
      begin match OutputAddress.as_pte oa with
-     | Some s -> System (PTE,s)
+     | Some s -> Physical (Misc.add_pte s, 0)
      | None -> assert false
      end
 
@@ -267,8 +280,19 @@ let rec map f_scalar f_pteval f_instr = function
 
 let do_mk_virtual s = Virtual { default_symbolic_data with name=s; }
 
+let as_virtual s =
+  if Misc.is_physical s || Misc.is_atag s then
+    Warn.user_error "Non-virtual id %s" s ;
+  s
+
+let do_mk_pte s =
+  let s = as_virtual s in
+  do_mk_virtual (Misc.add_pte s)
+
+let mk_sym_pte s = Symbolic (do_mk_pte s)
+
 let do_mk_sym sym = match Misc.tr_pte sym with
-| Some s -> System (PTE,s)
+| Some s -> do_mk_pte s
 | None -> match Misc.tr_atag sym with
   | Some s -> System (TAG,s)
   | None -> match Misc.tr_physical sym with
@@ -278,36 +302,9 @@ let do_mk_sym sym = match Misc.tr_pte sym with
 let mk_sym_virtual s = Symbolic (do_mk_virtual s)
 let mk_sym s = Symbolic (do_mk_sym s)
 
-let as_virtual s =
-  if Misc.is_pte s || Misc.is_physical s || Misc.is_atag s then
-    Warn.user_error "Non-virtual id %s" s ;
-  s
-
-
-let mk_sym_pte s =
-  let s = as_virtual s in
-  Symbolic (System (PTE,s))
-
-let mk_sym_pte2 s =
-  let s = as_virtual s in
-  Symbolic (System (PTE2,s))
-
 let mk_sym_pa s =
   let s = as_virtual s in
   Symbolic (Physical (s,0))
-
-let old2new s =
- match Misc.tr_pte s with
-| Some s ->
-   begin match Misc.tr_pte s with
-   | Some s -> Misc.pp_pte (Misc.pp_pte s)
-   | None -> Misc.pp_pte s
-   end
-| None ->
-   begin match Misc.tr_physical s with
-   | Some s -> Misc.pp_physical s
-   | None -> s
-   end
 
 let mk_vec sz vs =
   assert (sz == (List.length vs));
@@ -353,11 +350,11 @@ let as_symbolic_data =function
 let of_symbolic_data sym = Symbolic (Virtual sym)
 
 let as_pte v = match v with
-| Symbolic (System ((PTE|PTE2),_)) -> Some v
+| Symbolic (Physical (s, 0)) when Misc.is_pte s -> Some v
 | _ -> None
 
-let is_pt v = match v with
-| Symbolic (System ((PTE|PTE2),_)) -> true
+let is_pte v = match v with
+| Symbolic (Physical (s, 0)) -> Misc.is_pte s
 | _ -> false
 
 module type S =  sig

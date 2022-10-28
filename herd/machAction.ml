@@ -90,6 +90,7 @@ end = struct
   open Access
 
   let kvm = C.variant Variant.VMSA
+  let pte2 = C.variant Variant.PTE2
   let self = C.variant Variant.Self
 
   let access_of_constant cst =
@@ -97,7 +98,6 @@ end = struct
     match cst with
     | Symbolic (Virtual _) -> VIR
     | Symbolic (Physical _) -> PHY
-    | Symbolic (System ((PTE|PTE2),_)) -> Access.PTE
     | Symbolic (System (TLB,_)) -> Access.TLB
     | Symbolic (System (TAG,_)) -> Access.TAG
     | Label _ -> VIR
@@ -121,13 +121,17 @@ end = struct
     let open Constant in
     function
     | A.Location_reg _ -> REG
+    | A.Location_global (V.Val (Symbolic (Virtual s))) as loc when Misc.is_pte s.name ->
+       if not kvm then
+         Warn.fatal "PTE %s while -variant kvm is not active"
+           (A.pp_location loc) ;
+       if pte2 then VIR else PHY
     | A.Location_global (V.Val (Symbolic (Virtual _))|V.Var _)
       -> VIR
-    | A.Location_global (V.Val (Symbolic ((System ((PTE|PTE2),_))))) as loc
-        ->
-          if kvm then Access.PTE
-          else Warn.fatal "PTE %s while -variant kvm is not active"
-                 (A.pp_location loc)
+    | A.Location_global (V.Val (Symbolic (Physical (s, 0)))) as loc when Misc.is_pte s ->
+       if kvm then PHY
+       else Warn.fatal "PTE %s while -variant kvm is not active"
+              (A.pp_location loc)
     | A.Location_global (V.Val (Label(_,_)))
       -> VIR
     | A.Location_global v ->
@@ -289,11 +293,11 @@ end = struct
   let is_pt a = match a with
   | Access (_,A.Location_global (A.V.Val c),_,_,_,_,_)
   | Amo (A.Location_global (A.V.Val c),_,_,_,_,_,_)
-    -> Constant.is_pt c
+    -> Constant.is_pte c
   | Arch a ->
      begin
        match A.ArchAction.location_of a with
-       | Some (A.Location_global (A.V.Val c)) -> Constant.is_pt c
+       | Some (A.Location_global (A.V.Val c)) -> Constant.is_pte c
        | _ -> false
      end
   | _ -> false
@@ -389,8 +393,8 @@ end = struct
   | _ -> assert false
 
   let is_PA_access = function
-    | Access (_,_,_,_,_,_,(Access.PHY|Access.PHY_PTE))
-    | Amo  (_,_,_,_,_,_,(Access.PHY|Access.PHY_PTE))
+    | Access (_,_,_,_,_,_,Access.PHY)
+    | Amo  (_,_,_,_,_,_,Access.PHY)
         -> true
     | _ -> false
 
@@ -411,9 +415,12 @@ end = struct
         | _ -> None
         end
 
-  let is_pte_access = function
-  | Access (_,_,_,_,_,_,Access.PTE) -> true
-  | _ -> false
+  let is_pte_access act =
+    let open Constant in
+    match act with
+    | Access (_,A.Location_global (V.Val (Symbolic (Physical (s, 0)))),_,_,_,_,Access.PHY) ->
+       Misc.is_pte s
+    | _ -> false
 
   let lift_explicit_predicate p act = match act with
     | Access(_,_,_,_,e,_,_)|Amo (_,_,_,_,e,_,_) -> p e
@@ -598,7 +605,7 @@ end = struct
              let open Constant in
              begin
                match A.symbol loc with
-               | Some (System (PTE,_)) -> true
+               | Some (Physical (s,0)) -> Misc.is_pte s
                | _ -> false
              end
           | None -> false in
@@ -606,9 +613,12 @@ end = struct
         let inv_domain_sym a1 a2 =
           let open Constant in
           match a1,a2 with
-          | (System ((PTE),s1),System (TLB,s2))
-          | (System (TLB,s2),System ((PTE),s1))
-            -> Misc.string_eq s1 s2
+          | Physical (s1,0), System (TLB,s2)
+          | System (TLB,s2), Physical (s1,0) ->
+             begin match Misc.tr_pte s1 with
+             | Some s1 -> Misc.string_eq s1 s2
+             | None -> false
+             end
           | _,_ -> false in
 
         let inv_domain_loc loc1 loc2 =

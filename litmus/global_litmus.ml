@@ -48,7 +48,6 @@ let tr_symbol =
   function
     | Virtual {name=s; tag=None; cap=0L; offset=0;} -> Addr s
     | Physical (s,0) -> Phy s
-    | System (PTE,s) -> Pte s
     | c ->  Warn.fatal "litmus cannot handle symbol '%s'" (pp_symbol c)
 
 type u = t

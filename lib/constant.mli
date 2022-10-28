@@ -39,8 +39,6 @@ val default_symbolic_data : symbolic_data
 (* Various kinds of system memory *)
 
 type syskind =
-  | PTE  (* Page table entry *)
-  | PTE2 (* Page table entry of page table entry (non-writable) *)
   | TLB  (* TLB key *)
   | TAG  (* Tag for MTE *)
 
@@ -103,7 +101,6 @@ val map :
 val mk_sym_virtual : string -> ('scalar,'pte,'instr) t
 val mk_sym : string -> ('scalar,'pte,'instr) t
 val mk_sym_pte : string -> ('scalar,'pte,'instr) t
-val mk_sym_pte2 : string -> ('scalar,'pte,'instr) t
 val mk_sym_pa : string -> ('scalar,'pte,'instr) t
 val old2new : string -> string
 
@@ -127,7 +124,7 @@ val as_symbolic_data : ('scalar,'pte,'instr) t -> symbolic_data option
 val of_symbolic_data : symbolic_data -> ('scalar,'pte,'instr) t
 
 val as_pte : ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t option
-val is_pt : ('scalar,'pte,'instr)  t -> bool
+val is_pte : ('scalar,'pte,'instr) t -> bool
 
 module type S =  sig
 

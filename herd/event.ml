@@ -627,7 +627,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let is_additional_mem_load e = Act.is_additional_mem_load e.action
     let is_mem e = Act.is_mem e.action
     let is_pt e = match Act.location_of e.action with
-      | Some (A.Location_global (V.Val c)) -> Constant.is_pt c
+      | Some (A.Location_global (V.Val c)) -> Constant.is_pte c
       | _ -> false
     let is_explicit e = Act.is_explicit e.action
     let is_not_explicit e = Act.is_not_explicit e.action

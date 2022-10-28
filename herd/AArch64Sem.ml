@@ -416,12 +416,12 @@ module Make
       let mextract_whole_pte_val an nexp a_pte iiid =
         (M.do_read_loc false
            (fun loc v ->
-             Act.Access (Dir.R,loc,v,an,nexp,quad,Access.PTE))
+             Act.Access (Dir.R,loc,v,an,nexp,quad,Access.PHY))
            (A.Location_global a_pte) iiid)
 
       and write_whole_pte_val an explicit a_pte v iiid =
         M.do_write_loc
-          (mk_write quad an explicit Access.PTE v)
+          (mk_write quad an explicit Access.PHY v)
           (A.Location_global a_pte) iiid
 
 
@@ -923,7 +923,7 @@ module Make
           set_elr_el1 ii >>! B.Fault dir in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb a ma an ii
-            ((let m = mop Access.PTE ma in
+            ((let m = mop Access.PHY ma in
               fire_spurious_af dir a m) >>= M.ignore >>= B.next1T)
             mphy
             mfault in
@@ -932,8 +932,15 @@ module Make
            else
              fun a ma ->
              match Act.access_of_location_std (A.Location_global a) with
-             | Access.VIR|Access.PTE -> maccess a ma
-             | ac -> mop ac ma >>= M.ignore >>= B.next1T)
+             | Access.VIR -> maccess a ma
+             | ac ->
+                let open Constant in
+                let a = match a with
+                  | V.Val (Symbolic (Virtual s)) when Misc.is_pte s.name ->
+                     V.Val (Symbolic (Physical (s.name, 0)))
+                  | _ ->
+                     a in
+                mop ac (M.unitT a) >>= M.ignore >>= B.next1T)
 
       let lift_morello mop perms ma mv dir an ii =
         let mfault msg ma mv =
@@ -992,7 +999,7 @@ module Make
                 M.op1 Op.IsVirtual a_virt >>= fun c ->
                 M.choiceT c
                   (mop Access.PHY ma)
-                  (fire_spurious_af dir a_virt (mop Access.PHY_PTE ma))
+                  (fire_spurious_af dir a_virt (mop Access.PHY ma))
                 >>= M.ignore >>= B.next1T
               else
                 fun ma _a ->

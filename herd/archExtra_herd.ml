@@ -445,23 +445,18 @@ module Make(C:Config) (I:I) : S with module I = I
         let same_sym_fault sym1 sym2 = match sym1,sym2 with
 (* Both ids allowed in fault, compare *)
           |(Virtual {name=s1;_},Virtual {name=s2;_})
-          | (System (PTE,s1),System (PTE,s2))
           | (System (TAG,s1),System (TAG,s2))
            -> Misc.string_eq s1 s2
 (* One id allowed, the other on forbidden, do not match *)
-          | (Virtual _,(System ((PTE|TAG|TLB|PTE2),_)|Physical _))
-          | ((Physical _|System ((PTE|TAG|TLB|PTE2),_)),Virtual _)
-          | (System (PTE,_),System ((TAG|TLB|PTE2),_))
-          | (System ((TAG|TLB|PTE2),_),System (PTE,_))
-          | (System ((TLB|PTE2),_),System (TAG,_))
-          | (System (TAG,_),System ((TLB|PTE2),_))
-          | (Physical _,System ((TAG|PTE),_))
-          | (System ((TAG|PTE),_),Physical _)
+          | (Virtual _,(System ((TAG|TLB),_)|Physical _))
+          | ((Physical _|System ((TAG|TLB),_)),Virtual _)
+          | (System (TLB,_),System (TAG,_))
+          | (System (TAG,_),System (TLB,_))
+          | (Physical _,System (TAG,_))
+          | (System (TAG,_),Physical _)
             -> false
 (* Both forbidden, failure *)
-          | (Physical _|System (TLB,_)),(Physical _|System ((TLB|PTE2),_))
-          | ((System ((PTE2),_)),System (TLB,_))
-          | (System (PTE2,_),(Physical _|System (PTE2,_)))
+          | (Physical _|System (TLB,_)),(Physical _|System (TLB,_))
             ->
               Warn.fatal
                 "Illegal id (%s or %s) in fault"
@@ -690,13 +685,16 @@ module Make(C:Config) (I:I) : S with module I = I
           | Location_global (I.V.Var _)
           (* As called from look_address_in_state below *)
             -> assert false
-          | Location_global (I.V.Val (Symbolic (System (PTE,s)))) ->
-              I.V.Val (PteVal (I.V.Cst.PteVal.default s))
+          | Location_global (I.V.Val (Symbolic (Virtual {name=s; _})))
+          | Location_global (I.V.Val (Symbolic (Physical (s, 0))))
+               when Misc.is_pte s ->
+             let s = Misc.as_some (Misc.tr_pte s) in
+             I.V.Val (PteVal (I.V.Cst.PteVal.default s))
           | Location_global (I.V.Val (Symbolic (System (TAG,_)))) ->
               I.V.Val default_tag
           | Location_global
               (I.V.Val
-                (Symbolic (System ((PTE2|TLB),_))))
+                (Symbolic (System (TLB,_))))
             ->
               Warn.user_error
                 "No default value defined for location %s\n"

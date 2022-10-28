@@ -123,7 +123,9 @@ module
   match v1 with
     | Val (Concrete i1) ->
         Val (Concrete (op i1))
-    | Val (ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _ as x) ->
+    | Val PteVal _ ->
+        raise Undetermined
+    | Val (ConcreteVector _|Symbolic _|Label _|Tag _ as x) ->
         Warn.user_error "Illegal operation %s on %s"
           (pp_unop op_op) (Cst.pp_v x)
     | Val (Instruction _ as x) ->
@@ -469,15 +471,16 @@ module
   | Var _ -> raise Undetermined
 
   let pteloc v = match v with
-  | Val (Symbolic (Virtual {name=a;_})) -> Val (Symbolic (System (PTE,a)))
-  | Val (Symbolic (System (PTE,a))) -> Val (Symbolic (System (PTE2,a)))
+  | Val (Symbolic (Virtual {name=a;_})) -> Val (Symbolic (Physical ((Misc.add_pte a),0)))
   | Val (Concrete _|ConcreteVector _|Label _|Tag _|Symbolic _|PteVal _|Instruction _) ->
+      (* Only Virtual Locations have PTEs *)
       Warn.user_error "Illegal pteloc on %s" (pp_v v)
   | Var _ -> raise Undetermined
 
   let offset v = match v with
+  | Val (Symbolic (Physical (s, 0))) when Misc.is_pte s -> zero
   | Val (Symbolic (Virtual {offset=o;_}|Physical (_,o))) -> intToV o
-  | Val (Symbolic (System ((PTE|PTE2|TLB|TAG),_))) -> zero
+  | Val (Symbolic (System ((TLB|TAG),_))) -> zero
   | Val (Concrete _|ConcreteVector _|Label _|Tag _|PteVal _|Instruction _) ->
       Warn.user_error "Illegal offset on %s" (pp_v v)
   | Var _ -> raise Undetermined
@@ -768,12 +771,10 @@ module
     | ArchOp1 op ->
         (function
          | Var _ -> raise Undetermined
-         | Val c as v ->
+         | Val c ->
              begin
                match ArchOp.do_op1 op c with
-               | None ->
-                   Warn.user_error "Illegal operation %s on %s"
-                     (ArchOp.pp_op1 true op) (pp_v v)
+               | None -> raise Undetermined
                | Some c -> Val c
              end)
 

@@ -1273,7 +1273,7 @@ Monad type:
       let is_pteloc a =
         let open Constant in
         match a with
-        | V.Val (Symbolic (System (PTE,_))) -> true
+        | V.Val (Symbolic (Physical (s,0))) -> Misc.is_pte s
         | _ -> false
 
       let add_inittags env =
@@ -1343,11 +1343,7 @@ Monad type:
 
       let pte_loc s =
         let open Constant in
-        A.Location_global (V.Val (Symbolic (System (PTE,s))))
-
-      let pte2_loc s =
-        let open Constant in
-        A.Location_global (V.Val (Symbolic (System (PTE2,s))))
+        A.Location_global (V.Val (Symbolic (Physical (Misc.add_pte s, 0))))
 
       let phy_loc s o =
         let open Constant in
@@ -1361,10 +1357,16 @@ Monad type:
             | A.Location_global
               (V.Val
                  (Symbolic (Virtual {name=s; tag=None; offset=o;_}))) ->
-               (phy_loc s o,v)::env,
-               (StringSet.add s virt,pte)
-            | A.Location_global (V.Val (Symbolic (System (PTE,s)))) ->
+               if Misc.is_pte s then begin
+                   let v = expand_pteval loc v in
+                   let loc = phy_loc s o in
+                   let s = Misc.as_some (Misc.tr_pte s) in
+                   (loc,v)::env,(virt,StringSet.add s pte)
+               end else
+                 (phy_loc s o,v)::env,(StringSet.add s virt,pte)
+            | A.Location_global (V.Val (Symbolic (Physical (s, 0)))) when Misc.is_pte s ->
                 let v = expand_pteval loc v in
+                let s = Misc.as_some (Misc.tr_pte s) in
                 (loc,v)::env,(virt,StringSet.add s pte)
             | A.Location_global (V.Val (Symbolic (Physical _|Virtual _))) ->
                 Warn.user_error "herd cannot handle initialisation of '%s'"
@@ -1389,10 +1391,10 @@ Monad type:
             if C.variant Variant.PTE2 then
               List.fold_right
                 (fun (loc,_ as bd) env -> match loc with
-                | A.Location_global (V.Val (Symbolic (System (PTE,s))))
-                  ->
-                  bd::(pte2_loc s,pteval_of_pte s)::env
-               | _ -> bd::env)
+                | A.Location_global (V.Val (Symbolic (Physical (s, 0))))
+                     when Misc.is_pte s ->
+                  bd::(pte_loc s,pteval_of_pte (Misc.as_some (Misc.tr_pte s)))::env
+                | _ -> bd::env)
                 env []
             else env in
           env
