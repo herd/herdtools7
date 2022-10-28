@@ -1668,62 +1668,56 @@ module Make
       (* And now, just forget about >>! *)
       let (>>!) (_:unit) (_:unit) = ()
 
+      let check_self is_nop m_me  ii =
+        if not self then m_me
+        else
+          match Label.norm ii.A.labels with
+          | Some hd ->
+             let(>>*=) = M.bind_control_set_data_input_first in
+             (* Shadow default control sequencing operator *)
+             let a_v = make_label_value ii.A.fetch_proc hd in
+             let a =
+               A.Location_global (make_label_value ii.A.fetch_proc hd) in
+             let b_val =
+               A.V.cstToV (A.instruction_to_value ii.A.inst) in
+             let nop_val =
+               A.V.cstToV (A.instruction_to_value AArch64Base.I_NOP) in
+             read_loc_instr a ii
+             >>= fun v ->
+             let b_cond = M.op Op.Eq v b_val in
+             b_cond >>==
+               fun cond ->
+               M.choiceT cond
+                 (commit_pred ii
+                  >>*= fun () -> (M.mk_singleton_es (Act.NoAction) ii)
+                  >>= fun () -> m_me)
+                 (let mfail =
+                    let (>>!) = M.(>>!) in
+                    let m_fault =
+                      mk_fault a_v Dir.R AArch64.N ii None (Some "Invalid") in
+                    commit_pred ii
+                    >>*= fun () -> m_fault >>| set_elr_el1 ii
+                    >>! B.Fault Dir.R in
+                  if  is_nop then mfail
+                  else
+                    M.op Op.Eq v nop_val >>=
+                    fun cond ->
+                      M.choiceT cond
+                        (commit_pred ii
+                         >>*= fun () ->(M.mk_singleton_es (Act.NoAction) ii)
+                         >>= B.next1T)
+                         mfail)
+              | None -> m_me
+
       let build_semantics ii =
         M.addT (A.next_po_index ii.A.program_order_index)
           AArch64Base.(
         match ii.A.inst with
         | I_NOP ->
-            B.nextT
+            check_self true B.nextT ii
               (* Branches *)
         | I_B l ->
-            if not self then
-              B.branchT l
-            else begin
-              match Label.norm ii.A.labels with
-              | Some hd ->
-                  let a_v = make_label_value ii.A.fetch_proc hd in
-                  let a =
-                    A.Location_global (make_label_value ii.A.fetch_proc hd) in
-                  let b_val =
-                    A.V.cstToV (A.instruction_to_value ii.A.inst) in
-                  let nop_val =
-                    A.V.cstToV (A.instruction_to_value I_NOP) in
-                  read_loc_instr a ii
-                  >>= fun v ->
-                    let b_cond = M.op Op.Eq v b_val in
-                    let nop_cond = M.op Op.Eq v nop_val in
-                    b_cond >>*= fun cond -> M.choiceT cond (
-                      commit_pred ii
-                      >>*= fun () -> (M.mk_singleton_es (Act.NoAction) ii)
-                      >>= fun () -> B.branchT l
-                    )(
-                      nop_cond >>*= fun cond -> M.choiceT cond (
-                        commit_pred ii
-                        >>*= fun () ->(M.mk_singleton_es (Act.NoAction) ii)
-                        >>= B.next1T
-                      )(
-                        let (>>!) = M.(>>!) in
-                        let m_fault = mk_fault a_v Dir.R AArch64.N ii (Some "Invalid") in
-                        commit_pred ii
-                        >>*= fun () -> m_fault
-                        >>| set_elr_el1 ii
-                        >>! B.Fault Dir.R
-                      )
-                    )
-                  (* M.altT  (
-                    read_loc_instr hd ii
-                    >>= M.eqT b_val
-                    >>= fun () -> (M.mk_singleton_es (Act.NoAction) ii)
-                    >>= fun () -> B.branchT l
-                  )(
-                    read_loc_instr hd ii
-                    >>= M.eqT nop_val
-                    >>= fun () -> (M.mk_singleton_es (Act.NoAction) ii)
-                    >>= B.next1T
-                  ) *)
-              | None -> B.branchT l
-            end
-
+           check_self false (B.branchT l) ii
         | I_BC(c,l)->
             read_reg_ord NZP ii  >>= tr_cond c >>= fun v ->
               commit_bcc ii >>= fun () -> B.bccT v l

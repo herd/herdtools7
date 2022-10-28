@@ -234,6 +234,8 @@ Monad type:
     let (>>*==) : 'a t -> ('a -> 'b t) -> ('b) t
         = fun s f -> data_comp (=*$$=) s f
 
+    let bind_control_set_data_input_first s f = data_comp E.bind_control_set_data_input_first s f
+
     let bind_ctrl_avoid ma s f = fun eiid ->
       let eiid,(mact,spec) = ma eiid in
       assert(spec = None) ;
