@@ -35,17 +35,19 @@ module type I = sig
   type location
   val dump_location : location -> string
 
+  type fault_type
+  val dump_fault_type : fault_type -> string
 end
 
 module Make(I:I) : sig
   type prog =  (MiscParser.proc * I.A.pseudo list) list
   val dump : out_channel ->
     Name.t ->
-      (I.state, prog, I.prop, I.location, I.v)  MiscParser.result
+      (I.state, prog, I.prop, I.location, I.v, I.fault_type)  MiscParser.result
       -> unit
   val dump_info : out_channel ->
     Name.t ->
-      (I.state, prog, I.prop, I.location, I.v) MiscParser.result
+      (I.state, prog, I.prop, I.location, I.v, I.fault_type) MiscParser.result
       -> unit
 end = struct
   open Printf
@@ -130,7 +132,7 @@ end = struct
                    fprintf chan "%s %s*; " (dump_rloc loc) t
                |  TestType.TyArray _|TestType.Atomic _ -> assert false
                end
-           | Fault f -> fprintf chan "%s; " (Fault.pp_fatom I.dump_v f))
+           | Fault f -> fprintf chan "%s; " (Fault.pp_fatom I.dump_v I.dump_fault_type f))
           locs ;
         fprintf chan "]\n"
     end ;

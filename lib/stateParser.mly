@@ -85,13 +85,13 @@ let mk_lab p s = Label (p,s)
 %start init
 %type <MiscParser.location> main_location
 %start main_location
-%type < (MiscParser.location,MiscParser.maybev) LocationsItem.t list * MiscParser.prop option * MiscParser.constr * (string * MiscParser.quantifier) list> constraints
+%type < (MiscParser.location,MiscParser.maybev,MiscParser.fault_type) LocationsItem.t list * MiscParser.prop option * MiscParser.constr * (string * MiscParser.quantifier) list> constraints
 %start constraints
 %type  <MiscParser.constr> main_constr
 %start main_constr
 %type  <MiscParser.constr> skip_loc_constr
 %start skip_loc_constr
-%type  <(MiscParser.location,MiscParser.maybev) LocationsItem.t list * MiscParser.constr> main_loc_constr
+%type  <(MiscParser.location,MiscParser.maybev,MiscParser.fault_type) LocationsItem.t list * MiscParser.constr> main_loc_constr
 %start main_loc_constr
 %type <MiscParser.prop option> main_filter
 %start main_filter
@@ -261,7 +261,8 @@ fault_loc:
 | TOK_PTE LPAR name=NAME RPAR { Constant.mk_sym_pte name }
 
 fault:
-| FAULT LPAR lbl COMMA fault_loc RPAR { ($3,$5) }
+| FAULT LPAR lbl COMMA fault_loc RPAR { ($3,$5,None) }
+| FAULT LPAR lbl COMMA fault_loc COMMA separated_nonempty_list(COLON, NAME) RPAR { ($3,$5,Some (String.concat ":" $7)) }
 
 
 loc_item:

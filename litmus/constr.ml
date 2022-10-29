@@ -22,12 +22,14 @@ module type Arch = sig
 
   type rlocation = location ConstrGen.rloc
   module RLocSet : MySet.S with type elt = rlocation
+
+  module FaultType : FaultType.S
 end
 
 module type S = sig
   include Arch
 
-  type prop = (location,V.v) ConstrGen.prop
+  type prop = (location,V.v,FaultType.t) ConstrGen.prop
   type cond = prop ConstrGen.constr
 
 (* List of read locations *)
@@ -41,7 +43,7 @@ module type S = sig
   val location_values_prop : prop -> string list
 
 (* All faults *)
-  val get_faults : cond -> V.v Fault.atom list
+  val get_faults : cond -> (V.v,FaultType.t) Fault.atom list
 
 end
 
@@ -50,7 +52,7 @@ open ConstrGen
 module Make(A : Arch) : S with
 module V = A.V and
 type location = A.location and module LocSet = A.LocSet and
-module RLocSet = A.RLocSet =
+module RLocSet = A.RLocSet and module FaultType = A.FaultType =
   struct
     open Constant
 
@@ -61,7 +63,8 @@ module RLocSet = A.RLocSet =
     type rlocation = location ConstrGen.rloc
     module RLocSet = A.RLocSet
 
-    type prop = (location,V.v) ConstrGen.prop
+    module FaultType = A.FaultType
+    type prop = (location,V.v,FaultType.t) ConstrGen.prop
     type cond = prop ConstrGen.constr
 
     let locations_atom a r =
@@ -116,7 +119,7 @@ module RLocSet = A.RLocSet =
       Strings.elements locs
 
     module F = struct
-      type t = A.V.v Fault.atom
+      type t = (A.V.v,FaultType.t) Fault.atom
       let compare = Fault.atom_compare A.V.compare
     end
 

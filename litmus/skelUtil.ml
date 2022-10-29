@@ -64,7 +64,7 @@ let rec nitems t = match t with
 | Volatile t|Atomic t|Const t -> nitems t
 | Base _|Pointer _ -> 1
 
-let dump_fatom_tag d ((p,lbl),v) =
+let dump_fatom_tag d ((p,lbl),v,_) =
   sprintf "fault_P%d%s_%s" p (match lbl with None -> "" | Some lbl -> "_" ^ lbl) (d v)
 
 module PteValUtil(P:PteVal.S) = struct
@@ -80,7 +80,7 @@ module Make
     (Cfg:Config)
     (P:sig type code end)
     (A:Arch_litmus.Base)
-    (T:Test_litmus.S with type P.code = P.code and module A = A) : sig
+    (T:Test_litmus.S with type P.code = P.code and module A = A and module FaultType = A.FaultType) : sig
 
 (* Skeleton utilities, useful for Skel and PreSi *)
 
@@ -112,7 +112,7 @@ module Make
         T.t -> (CType.base -> string) -> A.RLocSet.t -> env
         -> (string * string list) list
       val fmt_outcome : T.t -> (CType.base -> string) -> A.RLocSet.t -> env -> string
-      val fmt_faults : A.V.v Fault.atom list -> string
+      val fmt_faults : (A.V.v, A.FaultType.t) Fault.atom list -> string
 
 (* Globals *)
       exception NotGlobal
@@ -132,7 +132,7 @@ module Make
       val is_rloc_pte : A.rlocation -> env -> bool
       val pte_in_outs : env -> T.t -> bool
       val ptr_pte_in_outs : env -> T.t -> bool
-      val get_faults : T.t -> A.V.v Fault.atom list
+      val get_faults : T.t -> (A.V.v, A.FaultType.t) Fault.atom list
       val find_label_offset : Proc.t -> MiscParser.func -> string -> T.t -> int
 
 (* Instructions *)
@@ -346,7 +346,7 @@ module Make
       let fmt_faults fs =
         String.concat ""
           (List.map
-             (fun f -> sprintf " %s%s;" "%s" (Fault.pp_fatom A.V.pp_v f))
+             (fun f -> sprintf " %s%s;" "%s" (Fault.pp_fatom A.V.pp_v A.FaultType.pp f))
              fs)
 
 (* Locations *)
@@ -471,8 +471,9 @@ module Make
       let pp_atom tr_out a =
         let pp_loc loc = tr_out (A.pp_location loc)
         and pp_loc_brk loc = tr_out (A.pp_location_brk loc)
-        and pp_v v = A.V.pp Cfg.hexa v in
-        ConstrGen.dump_atom pp_loc pp_loc_brk pp_v a
+        and pp_v v = A.V.pp Cfg.hexa v
+        and pp_ft = A.FaultType.pp in
+        ConstrGen.dump_atom pp_loc pp_loc_brk pp_v pp_ft a
 
       let pp_cond test =
         let tr_out = tr_out test in

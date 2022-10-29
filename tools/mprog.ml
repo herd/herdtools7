@@ -60,6 +60,9 @@ module Top
 
             type state = MiscParser.state
 
+            type fault_type = MiscParser.fault_type
+            let dump_fault_type = MiscParser.dump_fault_type
+
             let add_loc v k =
               MiscParser.LocSet.add (MiscParser.Location_global v) k
 
@@ -146,7 +149,7 @@ module Top
 
             let dump_atom a =
               ConstrGen.dump_atom
-                dump_loc MiscParser.dump_location_brk ParsedConstant.pp_v
+                dump_loc MiscParser.dump_location_brk ParsedConstant.pp_v MiscParser.dump_fault_type
                 a
 
             let dump_prop = ConstrGen.prop_to_string dump_atom

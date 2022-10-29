@@ -20,6 +20,7 @@ module type S = sig
   val sets : (string * t list) list
 
   val pp : t -> string (* Pretty print *)
+  val parse : MiscParser.fault_type -> t
 end
 
 module type AArch64Sig = sig

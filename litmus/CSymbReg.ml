@@ -20,19 +20,23 @@ open Printf
 module type S = sig
   type v
   type location
+  type fault_type
 
-  type ('loc,'v) t = ('loc,'v, string CAst.t) MiscParser.r4
+  type ('loc,'v, 'ftype) t = ('loc,'v, string CAst.t,'ftype) MiscParser.r4
 
-  val allocate_regs : (MiscParser.location, MiscParser.maybev) t -> (location,v) t
+  val allocate_regs : (MiscParser.location, MiscParser.maybev, MiscParser.fault_type) t -> (location,v,fault_type) t
 end
 
 module Make (A:Arch_litmus.Base) : S
-with type v = A.V.v and type location = A.location
+with type v = A.V.v and type location = A.location and type fault_type = A.FaultType.t
  = struct
 
    type v = A.V.v
    type location = A.location
-   type ('loc,'v) t = ('loc,'v, string CAst.t) MiscParser.r4
+
+   type fault_type = A.FaultType.t
+
+   type ('loc,'v, 'ftype) t = ('loc,'v, string CAst.t,'ftype) MiscParser.r4
 
    let maybevToV = Constant.map A.V.Scalar.of_string A.V.PteVal.tr
 
@@ -61,19 +65,23 @@ with type v = A.V.v and type location = A.location
 
   let finish_state f_reg = List.map (finish_state_atom f_reg)
 
+  let finish_fault = function
+    | (p,v,None) -> (p,maybevToV v,None)
+    | (p,v,Some ft) -> (p,maybevToV v,Some (A.FaultType.parse ft))
+
   let finish_locations f_reg =
     let open LocationsItem in
     List.map
       (function
         | Loc (loc,t) -> Loc (finish_rloc f_reg loc,t)
-        | Fault f -> Fault (Fault.map_value maybevToV f))
+        | Fault f -> Fault (finish_fault f))
 
   let finish_atom f_reg a =
     let open ConstrGen in
     match a with
     | LV (loc,v) -> LV (finish_rloc f_reg loc, maybevToV v)
     | LL (l1,l2) -> LL (finish_location f_reg l1,finish_location f_reg l2)
-    | FF f -> FF (Fault.map_value maybevToV f)
+    | FF f -> FF (finish_fault f)
 
    let finish_prop f_reg = ConstrGen.map_prop (finish_atom f_reg)
    let finish_constr f_reg = ConstrGen.map_constr (finish_atom f_reg)
@@ -120,7 +128,7 @@ with type v = A.V.v and type location = A.location
     | LV (rloc,_) -> collect_rloc rloc
     | LL (loc1,loc2) ->
         fun c -> collect_location loc1 (collect_location loc2 c)
-    | FF (_,x) -> collect_location (MiscParser.Location_global x)
+    | FF (_,x,_) -> collect_location (MiscParser.Location_global x)
 
    let collect_constr = ConstrGen.fold_constr collect_atom
 

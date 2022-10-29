@@ -20,6 +20,7 @@ module type S = sig
   val sets : (string * t list) list
 
   val pp : t -> string
+  val parse : MiscParser.fault_type -> t
 end
 
 module type AArch64Sig = sig
@@ -63,6 +64,12 @@ module AArch64 = struct
   let pp = function
     | MMU m -> Printf.sprintf "MMU:%s" (pp_mmu_t m)
     | TagCheck -> "TagCheck"
+
+  let parse = function
+    | "MMU:Translation" -> MMU Translation
+    | "MMU:AccessFlag" -> MMU AccessFlag
+    | "MMU:Permission" -> MMU Permission
+    | _ as s -> Warn.user_error "%s not a valid fault type" s
 end
 
 module No = struct
@@ -72,4 +79,5 @@ module No = struct
   let sets = []
 
   let pp () = "Default"
+  let parse _ = Warn.user_error "Fault types not supported"
 end

@@ -27,7 +27,7 @@ module type Dumper = sig
     val dump_info :
       out_channel -> Name.t ->
       (MiscParser.state, (MiscParser.proc * pseudo list) list,
-       MiscParser.prop, MiscParser.location,MiscParser.maybev)
+       MiscParser.prop, MiscParser.location,MiscParser.maybev,MiscParser.fault_type)
         MiscParser.result
       -> unit
 end
@@ -395,7 +395,7 @@ module DefaultDumper(A:ArchBase.S) = struct
 
         let dump_atom a =
           ConstrGen.dump_atom
-            dump_loc MiscParser.dump_location_brk ParsedConstant.pp_v
+            dump_loc MiscParser.dump_location_brk ParsedConstant.pp_v MiscParser.dump_fault_type
             a
 
         let dump_prop = ConstrGen.prop_to_string dump_atom
@@ -403,5 +403,8 @@ module DefaultDumper(A:ArchBase.S) = struct
 
         type location = MiscParser.location
         let dump_location = dump_loc
+
+        type fault_type = MiscParser.fault_type
+        let dump_fault_type = MiscParser.dump_fault_type
       end)
 end

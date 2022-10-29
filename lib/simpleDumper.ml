@@ -30,14 +30,18 @@ module type I = sig
 
   type location
   val dump_location : location -> string
+
+  type fault_type
+  val dump_fault_type : fault_type -> string
 end
 
 
 module Make(I:I) :
 CoreDumper.S with
   type test =
-    (I.state, (MiscParser.proc * I.A.pseudo list) list, I.prop, I.location,I.v)
-      MiscParser.result
+         (I.state, (MiscParser.proc * I.A.pseudo list) list, I.prop, I.location,
+          I.v, I.fault_type)
+           MiscParser.result
 = struct
 
   open Printf
@@ -86,6 +90,9 @@ CoreDumper.S with
 
         type location = I.location
         let dump_location = I.dump_location
+
+        type fault_type = I.fault_type
+        let dump_fault_type = I.dump_fault_type
       end)
 
   include Dump

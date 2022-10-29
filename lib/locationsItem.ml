@@ -14,9 +14,9 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type ('loc,'v) t =
+type ('loc,'v,'ftype) t =
   | Loc of 'loc ConstrGen.rloc * TestType.t
-  | Fault of 'v Fault.atom
+  | Fault of ('v,'ftype) Fault.atom
 
 let fold_loc f i r = match i with
 | Loc (loc,_) -> ConstrGen.fold_rloc f loc r

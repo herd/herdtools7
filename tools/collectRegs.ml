@@ -34,13 +34,13 @@ module Make(A:Arch_tools.S) = struct
     let rs = A.ProcMap.safe_find A.RegSet.empty p m in
     A.ProcMap.add p (A.RegSet.add r rs) m
 
-  let collect_location loc m = match loc with
+  let collect_location (loc : A.location) m = match loc with
   | A.Location_reg (p,r) -> add_proc_reg p r m
   | A.Location_global _ -> m
 
   let collect_state_atom (loc,_) = collect_location loc
 
-  let collect_atom a regs =
+  let collect_atom (a : (A.location, A.v, A.fault_type) ConstrGen.atom) regs =
     let open ConstrGen in
     match a with
     | LV (loc,_) -> ConstrGen.fold_rloc collect_location loc regs
@@ -55,9 +55,9 @@ module Make(A:Arch_tools.S) = struct
     | None -> Misc.identity
     | Some p -> collect_prop p
 
-  let collect_constr = ConstrGen.fold_constr collect_atom
+  let collect_constr : (A.location, A.v, A.fault_type) ConstrGen.prop ConstrGen.constr -> A.RegSet.t A.ProcMap.t -> A.RegSet.t A.ProcMap.t = ConstrGen.fold_constr collect_atom
 
-  let collect_locs = LocationsItem.fold_locs collect_location
+  let collect_locs : (A.location, A.v, A.fault_type) LocationsItem.t list -> A.RegSet.t A.ProcMap.t -> A.RegSet.t A.ProcMap.t = LocationsItem.fold_locs collect_location
 
   open MiscParser
 

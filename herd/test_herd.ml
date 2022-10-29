@@ -74,6 +74,8 @@ module Make(A:Arch_herd.S) =
       let maybevToV = V.maybevToV
       type global = A.V.v
       let maybevToGlobal = V.maybevToV
+
+      module FaultType = A.I.FaultType
     end
 
    module Alloc = SymbReg.Make(ArchAlloc)
@@ -159,8 +161,7 @@ module Make(A:Arch_herd.S) =
       | None -> displayed
       | Some filter ->
           ConstrGen.fold_prop collect_atom filter displayed in
-      let ffaults =
-        A.FaultAtomSet.of_list
+      let ffaults = A.FaultAtomSet.of_list
           (ConstrGen.fold_constr collect_atom_fault final ffaults) in
       let proc_info =
         let m =

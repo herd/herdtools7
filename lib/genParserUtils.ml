@@ -65,7 +65,7 @@ let call_parser name lexbuf lex parse =
       match a with
       | LV (loc,_) -> check_rloc procs loc
       | LL (l1,l2) -> check_loc procs l1 ; check_loc procs l2
-      | FF ((p,_),_) -> check_one_proc procs p
+      | FF ((p,_),_,_) -> check_one_proc procs p
 
     let check_regs procs init locs final =
       List.iter (fun (loc,_) -> check_loc procs  loc) init ;
@@ -80,7 +80,7 @@ let call_parser name lexbuf lex parse =
       | LV (loc,_) -> RLocSet.add loc
       | LL (loc1,loc2) ->
           (fun k -> RLocSet.add (Loc loc1) (RLocSet.add (Loc loc2) k))
-      | FF (_,x) -> RLocSet.add (Loc (MiscParser.Location_global x))
+      | FF (_,x,_) -> RLocSet.add (Loc (MiscParser.Location_global x))
 
     let get_visible_locs locs c =
       MiscParser.RLocSet.union

@@ -30,13 +30,15 @@ module type Arch = sig
   type location =
     | Location_global of global
     | Location_reg of int * reg
+
+  module FaultType : FaultType.S
 end
 
 module Make(A:Arch) : sig
 
-  type ('loc,'v) t = ('loc,'v, A.pseudo) MiscParser.r3
+  type ('loc,'v, 'ftype) t = ('loc,'v, A.pseudo, 'ftype) MiscParser.r3
 
   val allocate_regs :
-    (MiscParser.location, MiscParser.maybev) t -> (A.location,A.v) t
+    (MiscParser.location, MiscParser.maybev, MiscParser.fault_type) t -> (A.location,A.v,A.FaultType.t) t
 
 end

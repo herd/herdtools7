@@ -38,31 +38,31 @@ val match_rloc :
   ('loc -> 'r) -> ('loc -> int -> 'r) -> 'loc rloc -> 'r
 
 (* Type of propositions and constraint *)
-type ('loc,'v) atom =
+type ('loc,'v,'ftype) atom =
   | LV of 'loc rloc * 'v
   | LL of 'loc * 'loc
-  | FF of 'v Fault.atom
+  | FF of ('v,'ftype) Fault.atom
 
 val dump_atom :
-    ('loc -> string) ->  ('loc -> string) -> (('c,'d) Constant.t -> string) ->
-      ('loc,('c,'d) Constant.t) atom -> string
+  ('loc -> string) ->  ('loc -> string) -> (('c,'d) Constant.t -> string) ->
+  ('ftype -> string) -> ('loc,('c,'d) Constant.t,'ftype) atom -> string
 
-type ('loc,'v) prop =
-  | Atom of ('loc, 'v) atom
-  | Not of ('loc,'v) prop
-  | And of ('loc,'v) prop list
-  | Or of ('loc,'v) prop list
-  | Implies of ('loc,'v) prop * ('loc,'v) prop
+type ('loc,'v, 'ftype) prop =
+  | Atom of ('loc, 'v, 'ftype) atom
+  | Not of ('loc,'v,'ftype) prop
+  | And of ('loc,'v,'ftype) prop list
+  | Or of ('loc,'v,'ftype) prop list
+  | Implies of ('loc,'v,'ftype) prop * ('loc,'v,'ftype) prop
 
 type 'prop constr =
     ForallStates of 'prop
   | ExistsState of 'prop
   | NotExistsState of 'prop
 
-type  ('loc,'v) cond = ('loc,'v) prop constr
+type  ('loc,'v,'ftype) cond = ('loc,'v,'ftype) prop constr
 
-val constr_true :  ('loc,'v) cond
-val is_true :  ('loc,'v) cond -> bool
+val constr_true :  ('loc,'v,'ftype) cond
+val is_true :  ('loc,'v,'ftype) cond -> bool
 val is_existential : 'prop constr -> bool
 val prop_of : 'prop constr -> 'prop
 
@@ -84,20 +84,20 @@ val compare_kind : kind -> kind -> int
 (* Polymorphic constraint combinators *)
 
  val fold_prop :
-     (('loc, 'v) atom -> 'a -> 'a) -> ('loc,'v) prop -> 'a -> 'a
+     (('loc, 'v, 'ftype) atom -> 'a -> 'a) -> ('loc,'v,'ftype) prop -> 'a -> 'a
 
  val fold_constr :
-     (('loc, 'v) atom -> 'a -> 'a) -> ('loc,'v) prop constr -> 'a -> 'a
+     (('loc, 'v, 'ftype) atom -> 'a -> 'a) -> ('loc,'v,'ftype) prop constr -> 'a -> 'a
 
 val  map_prop :
-    (('loc1, 'v1) atom -> ('loc2, 'v2) atom) ->
-      ('loc1,'v1) prop ->
-          ('loc2,'v2) prop
+    (('loc1, 'v1, 'ftype1) atom -> ('loc2, 'v2, 'ftype2) atom) ->
+      ('loc1,'v1, 'ftype1) prop ->
+          ('loc2,'v2,'ftype2) prop
 
 val  map_constr :
-    (('loc1, 'v1) atom -> ('loc2, 'v2) atom) ->
-      ('loc1,'v1) prop constr ->
-          ('loc2,'v2) prop constr
+    (('loc1, 'v1, 'ftype1) atom -> ('loc2, 'v2, 'ftype2) atom) ->
+      ('loc1,'v1,'ftype1) prop constr ->
+          ('loc2,'v2,'ftype2) prop constr
 
 (* Pretty print *)
 
@@ -111,16 +111,16 @@ type 'atom pp_arg =
       pp_mbox : string -> string;
       pp_atom : 'atom -> string; }
 
-val pp_prop : ('loc,'v) atom pp_arg -> ('loc,'v) prop  -> string
+val pp_prop : ('loc,'v,'ftype) atom pp_arg -> ('loc,'v,'ftype) prop  -> string
 
 val dump_prop :
-    (('loc, 'v) atom -> string) -> out_channel -> ('loc,'v) prop -> unit
+    (('loc, 'v, 'ftype) atom -> string) -> out_channel -> ('loc,'v,'ftype) prop -> unit
 
 val prop_to_string :
-    (('loc, 'v) atom -> string) -> ('loc,'v) prop -> string
+    (('loc, 'v, 'ftype) atom -> string) -> ('loc,'v,'ftype) prop -> string
 
 val dump_constraints :
-    out_channel -> (('loc, 'v) atom -> string) -> ('loc,'v) prop constr -> unit
+    out_channel -> (('loc,'v,'ftype) atom -> string) -> ('loc,'v,'ftype) prop constr -> unit
 
 val constraints_to_string :
-  (('loc, 'v) atom -> string) -> ('loc,'v) prop constr -> string
+  (('loc, 'v, 'ftype) atom -> string) -> ('loc,'v, 'ftype) prop constr -> string

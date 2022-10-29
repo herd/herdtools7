@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 val dump_locations :
- ('loc -> string) -> ('v -> string) -> ('loc ,'v) LocationsItem.t list -> string
+  ('loc -> string) -> ('v -> string) -> ('ftype -> string) ->
+  ('loc ,'v,'ftype) LocationsItem.t list -> string
 
 val dump_state : ('bd -> string) -> 'bd list list -> string list

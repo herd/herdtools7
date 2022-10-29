@@ -292,7 +292,8 @@ type A.location = A.location and
 module A.LocSet = A.LocSet and
 module A.LocMap = A.LocMap and
 type A.Out.t = A.Out.t and
-type P.code = MiscParser.proc * A.pseudo list)
+type P.code = MiscParser.proc * A.pseudo list and
+module A.FaultType = A.FaultType)
     (C:XXXCompile_litmus.S with module A = A) =
   struct
     open Printf

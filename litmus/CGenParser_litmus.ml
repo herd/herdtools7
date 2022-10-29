@@ -69,7 +69,7 @@ end
 module type S = sig
   val parse : in_channel -> Splitter.result ->
     (MiscParser.state, string CAst.t list,
-     MiscParser.prop, MiscParser.location,MiscParser.maybev) MiscParser.result
+     MiscParser.prop, MiscParser.location,MiscParser.maybev,MiscParser.fault_type) MiscParser.result
 end
 
 

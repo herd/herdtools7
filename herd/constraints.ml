@@ -29,7 +29,7 @@ module type S = sig
 
   type final_state = A.rstate * A.FaultSet.t
 
-  type prop = (A.location,A.V.v) ConstrGen.prop
+  type prop = (A.location,A.V.v,A.I.FaultType.t) ConstrGen.prop
 
   val ptrue : prop
 
@@ -80,7 +80,7 @@ module Make (C:Config) (A : Arch_herd.S) :
 
         module V = A.V
 
-        type prop = (A.location,V.v) ConstrGen.prop
+        type prop = (A.location,A.V.v,A.I.FaultType.t) ConstrGen.prop
 
         let ptrue : prop = And []
 
@@ -94,7 +94,7 @@ module Make (C:Config) (A : Arch_herd.S) :
               A.location_compare l2 loc = 0
           | LV (l,_) ->
               A.location_compare (loc_of_rloc l) loc = 0
-          | FF (_,x) ->
+          | FF (_,x,_) ->
               A.location_compare
                 (A.Location_global x)
                 loc = 0
@@ -314,7 +314,7 @@ module Make (C:Config) (A : Arch_herd.S) :
               pp_equal m ^
               mbox m (pp_loc tr m l2)
           | FF f ->
-              mbox m (Fault.pp_fatom (fun v -> do_add_asm m (V.pp_v v)) f)
+              mbox m (Fault.pp_fatom (fun v -> do_add_asm m (V.pp_v v)) A.I.FaultType.pp f)
 
 (* ascii, parsable dump *)
         let dump_as_kind c = pp_kind (kind_of c)

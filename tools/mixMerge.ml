@@ -159,12 +159,12 @@ end =
       List.map
         (function
           | Loc (l,v) -> Loc (shift_rloc k l,v)
-          | Fault ((i,lbls),x) -> Fault ((i+k,lbls),x))
+          | Fault ((i,lbls),x,ft) -> Fault ((i+k,lbls),x,ft))
 
     let shift_atom k a = match a with
     | LV (l,v) ->  LV (shift_rloc k l,v)
     | LL (a,b) -> LL (shift_location k a,shift_location k b)
-    | FF ((i,lbls),x) -> FF ((i+k,lbls),x)
+    | FF ((i,lbls),x,ft) -> FF ((i+k,lbls),x,ft)
 
     let shift_constr k = ConstrGen.map_constr (shift_atom k)
 

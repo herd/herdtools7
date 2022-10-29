@@ -18,6 +18,12 @@
 
 
 module Make(A:Arch_tools.S) : sig
+  val collect_constr : (A.location, A.v, A.fault_type) ConstrGen.prop ConstrGen.constr ->
+                       A.RegSet.t A.ProcMap.t -> A.RegSet.t A.ProcMap.t
+
+  val collect_locs : (A.location, A.v, A.fault_type) LocationsItem.t list ->
+                     A.RegSet.t A.ProcMap.t -> A.RegSet.t A.ProcMap.t
+
   val collect_code : A.pseudo list -> A.RegSet.t
   val collect : A.test -> A.RegSet.t  A.ProcMap.t
 end

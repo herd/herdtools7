@@ -21,6 +21,7 @@ let comment = "#"
 module Make (O:Arch_litmus.Config)(V:Constant.S) = struct
   include PPCBase
   module V = V
+  module FaultType = FaultType.No
 
   let ireg_to_string r = match r with
   | GPR0 -> "r0"
