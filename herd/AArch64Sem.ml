@@ -551,7 +551,8 @@ module Make
          *)
 
       let mk_pte_fault a ma dir an ii =
-        let ft = Some FaultType.AArch64.EXC_DATA_ABORT in
+        let open FaultType.AArch64 in
+        let ft = Some (MMU Permission) in
         insert_commit_to_fault ma
           (fun _ -> mk_fault a dir an ii ft (Some "EL0"))  ii >>! B.Exit
 
@@ -587,7 +588,22 @@ module Make
         and ha = dirty.ha proc
         and hd = dirty.hd proc in
         let ha = ha || hd in (* As far as we know hd => ha *)
-        let mfault m _a = mfault (get_oa a_virt m) a_virt
+        let mfault (_,ipte) m =
+          let open FaultType.AArch64 in
+          (is_zero ipte.valid_v) >>=
+            (fun c ->
+              M.choiceT c
+                (M.unitT (Some (MMU Translation)))
+                (if ha then
+                   M.unitT (Some (MMU Permission))
+                 else begin
+                   (is_zero ipte.af_v) >>=
+                     (fun c ->
+                       M.choiceT c
+                         (M.unitT (Some (MMU AccessFlag)))
+                         (M.unitT (Some (MMU Permission))))
+                   end) >>=
+                fun t -> mfault (get_oa a_virt m) a_virt t)
         and mok (pte_v,ipte) a_pte m a =
           let m =
             let msg =
@@ -658,7 +674,7 @@ module Make
                only pte value may have changed *)
             let mok ma = mok pair_pte a_pte ma a_virt
 (* a_virt was (if pte2 then a_virt else pte_v.oa_v), why? *)
-            and mno ma =  mfault ma a_virt in
+            and mno ma =  mfault pair_pte ma in
             let check_cond cond =
               do_check_cond ma (check_el0 cond) mno mok in
 
@@ -837,7 +853,7 @@ module Make
         M.delay_kont "4" ma
           (fun _ ma ->
             let mm = mop Access.PHY ma in
-            let ft = Some FaultType.AArch64.EXC_TAG_CHECK in
+            let ft = Some FaultType.AArch64.TagCheck in
             delayed_check_tags a_virt ma ii
               (mm  >>= M.ignore >>= B.next1T)
               (lift_fault (mk_fault a_virt dir an ii ft None) mm dir))
@@ -846,7 +862,7 @@ module Make
         M.delay_kont "5" ma
           (fun a_virt ma  ->
             let mm = mop Access.VIR (ma >>= fun a -> loc_extract a) in
-            let ft = Some FaultType.AArch64.EXC_TAG_CHECK in
+            let ft = Some FaultType.AArch64.TagCheck in
             delayed_check_tags a_virt ma ii
               (mm  >>= M.ignore >>= B.next1T)
               (lift_fault (ma >>= fun a -> mk_fault a dir an ii ft None) mm dir))
@@ -873,8 +889,7 @@ module Make
         write_reg AArch64Base.elr_el1 lbl_v ii
 
       let lift_kvm dir updatedb mop ma an ii mphy =
-        let mfault ma a =
-          let ft = Some FaultType.AArch64.EXC_DATA_ABORT in
+        let mfault ma a ft =
           insert_commit_to_fault ma (fun _ -> mk_fault a dir an ii ft None) ii >>|
             set_elr_el1 ii >>! B.Fault dir in
         let maccess a ma =

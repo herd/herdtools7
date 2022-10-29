@@ -358,8 +358,8 @@ end = struct
     | Fault (_,_,Dir.W,_,_,_,_) -> true
     | _ -> false
 
-  let is_fault_of_type ftype0 = function
-    | Fault (_,_,_,_,_,Some ftype,_) -> ftype = ftype0
+  let is_fault_of_type ftypes = function
+    | Fault (_,_,_,_,_,Some ftype,_) -> List.exists (fun i -> i=ftype) ftypes
     | _ -> false
 
   let is_exc_entry = function
@@ -561,8 +561,8 @@ end = struct
       ("FAULT-WR",is_faulting_write)::
       ("EXC-ENTRY",is_exc_entry)::
       ("EXC-RET",is_exc_return)::
-      List.map
-        (fun (key,p) -> (p,is_fault_of_type key)) A.I.FaultType.sets
+        List.map (fun (s,keys) -> (s,is_fault_of_type keys)) A.I.FaultType.sets
+
     in
     ("T",is_tag)::
     ("TLBI",is_inv)::

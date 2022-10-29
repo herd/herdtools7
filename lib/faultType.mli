@@ -17,15 +17,20 @@
 module type S = sig
   type t
 
-  val sets : (t * string) list
+  val sets : (string * t list) list
 
   val pp : t -> string (* Pretty print *)
 end
 
 module type AArch64Sig = sig
+  type mmu_t =
+    | Translation (* valid: 0 *)
+    | AccessFlag  (* af: 0 *)
+    | Permission  (* db: 0 *)
+
   type t =
-    | EXC_DATA_ABORT
-    | EXC_TAG_CHECK
+    | MMU of mmu_t
+    | TagCheck
 
   include S with type t := t
 end
