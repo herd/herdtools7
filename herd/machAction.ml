@@ -189,11 +189,9 @@ end = struct
         (A.pp_explicit exp_an)
         (A.pp_location loc) (MachSize.pp_short sz)
         (V.pp C.hexa v1) (V.pp C.hexa v2)
-  | Fault (ii,loc,d,an,handler,ftype,msg) ->
-     Printf.sprintf "%s(proc:%s,poi:%s,%s,loc:%s%s%s%s)"
+  | Fault (_,loc,d,an,handler,ftype,msg) ->
+     Printf.sprintf "%s(%s,loc:%s%s%s%s)"
         (if handler then "ExcEntry" else "Fault")
-        (A.pp_proc ii.A.proc)
-        (A.pp_prog_order_index ii.A.program_order_index)
         (pp_dirn d)
         (A.pp_location_old loc)
         (A.pp_annot an)
