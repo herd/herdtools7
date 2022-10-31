@@ -1694,7 +1694,10 @@ module Make
                  (let mfail =
                     let (>>!) = M.(>>!) in
                     let m_fault =
-                      mk_fault a_v Dir.R AArch64.N ii None (Some "Invalid") in
+                      mk_fault
+                        a_v Dir.R AArch64.N ii
+                        (Some FaultType.AArch64.IllegalInstruction)
+                        (Some "Invalid") in
                     commit_pred ii
                     >>*= fun () -> m_fault >>| set_elr_el1 ii
                     >>! B.Fault Dir.R in
