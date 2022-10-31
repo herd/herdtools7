@@ -1,0 +1,15 @@
+AArch64 L038
+(* To be compared with L035, SWP instruction as RMW on W2, stronger? *)
+{
+0:X1=x; 0:X3=y;
+1:X0=y; 1:X3=x; 1:X4=z;
+}
+ P0          | P1                  ;
+ MOV W0,#2   | LDR W1,[X0]         ;
+ STR W0,[X1] | AND W2,W1,#2        ;
+ DMB ST      | ADD W2,W2,#1        ;
+ MOV W2,#1   | SWP W2,W2,[X4]      ; 
+ STR W2,[X3] | MOV W7,#1           ;
+             | AND W6,W2,#2        ;
+             | STR W7,[X3,W6,SXTW] ;
+exists (1:X1=1 /\ [x]=2)
