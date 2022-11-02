@@ -14,9 +14,10 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-include (Hashcons.S with type key = Proc.t * HashedStringOpt.t * HashedString.t)
+include (Hashcons.S with type key = Proc.t * HashedStringOpt.t * HashedString.t * HashedStringOpt.t)
 
 val as_hashed  : Fault_tools.t -> node
 val as_t :  node -> Fault_tools.t
 val as_hash :  node -> int
 val compare :  node ->  node -> int
+val has_fault_type :  node -> bool
