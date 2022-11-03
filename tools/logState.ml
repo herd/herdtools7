@@ -996,7 +996,19 @@ let exclude e t =
 (* Normalize *)
 (*************)
 
-let normalize_sts sts =  List.sort (compare_state true) sts
+(* No duplicates in normalized lists of states *)
+
+let rec  normalize_sts_uniq cmp sts = match sts with
+  | []|[_] -> sts
+  | st1::(st2::_ as sts) ->
+     if cmp st1 st2=0 then
+       normalize_sts_uniq cmp sts
+     else
+       st1::normalize_sts_uniq cmp sts
+
+let normalize_sts_gen cmp sts = normalize_sts_uniq cmp (List.sort cmp sts)
+
+let normalize_sts = normalize_sts_gen (compare_state true)
 
 let normalize_states sts =
   let p_sts = normalize_sts sts in
@@ -1107,7 +1119,7 @@ let normalize name is_litmus ts =
 
 let compare_simple_st st1 st2 = compare st1.Hashcons.tag st2.Hashcons.tag
 
-let norm_states = List.sort  compare_simple_st
+let norm_states = normalize_sts_gen compare_simple_st
 
 let union_same_log_simple merge =
   let rec merge2 xs ys = match xs,ys with
