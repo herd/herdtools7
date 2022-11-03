@@ -1,6 +1,6 @@
 Test B001 Required
 States 1
-0:X5=0; [x]=0; Fault(P0,x:red);
+0:X5=0; [x]=0; Fault(P0,x:red,TagCheck);
 Ok
 Witnesses
 Positive: 1 Negative: 0

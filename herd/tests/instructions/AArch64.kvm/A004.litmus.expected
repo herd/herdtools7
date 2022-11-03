@@ -1,6 +1,6 @@
 Test A004 Required
 States 1
- Fault(P0:L0,x);
+ Fault(P0:L0,x,MMU:Translation);
 Ok
 Witnesses
 Positive: 1 Negative: 0

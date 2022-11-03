@@ -1,9 +1,9 @@
 Test S+dmb.sytp+amo.ldaddal-polp Allowed
 States 4
 1:X1=0; [y]=1; [tag(x)]=:red;  ~Fault(P1,x);
-1:X1=0; [y]=1; [tag(x)]=:red; Fault(P1,x:green);
+1:X1=0; [y]=1; [tag(x)]=:red; Fault(P1,x:green,TagCheck);
 1:X1=1; [y]=3; [tag(x)]=:red;  ~Fault(P1,x);
-1:X1=1; [y]=3; [tag(x)]=:red; Fault(P1,x:green);
+1:X1=1; [y]=3; [tag(x)]=:red; Fault(P1,x:green,TagCheck);
 Ok
 Witnesses
 Positive: 1 Negative: 3
