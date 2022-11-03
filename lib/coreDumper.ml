@@ -37,6 +37,9 @@ module type I = sig
 
   type location
   val dump_location : location -> string
+
+  type fault_type
+  val dump_fault_type : fault_type -> string
 end
 
 module type S = sig
@@ -49,17 +52,17 @@ end
 
 module Make(I:I) :
 S with
-  type test = (I.state, I.prog, I.prop, I.location,I.v) MiscParser.result
+  type test = (I.state, I.prog, I.prop, I.location,I.v,I.fault_type) MiscParser.result
 = struct
 
-  type test = (I.state, I.prog, I.prop, I.location,I.v) MiscParser.result
+  type test = (I.state, I.prog, I.prop, I.location,I.v,I.fault_type) MiscParser.result
 
   open Printf
   open I
   open MiscParser
 
   let dump_locations locs =
-    DumpUtils.dump_locations I.dump_location I.dump_v locs
+    DumpUtils.dump_locations I.dump_location I.dump_v I.dump_fault_type locs
 
   let do_dump withinfo chan doc t =
     fprintf chan "%s %s\n" (Archs.pp I.arch) doc.Name.name ;

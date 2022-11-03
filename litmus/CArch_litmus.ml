@@ -16,6 +16,7 @@
 
 module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) = struct
   module V = Int32Constant
+  module FaultType = FaultType.No
 
   module type SmallBase = sig
     val base_type : CType.t

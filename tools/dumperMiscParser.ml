@@ -49,7 +49,7 @@ module Make(Opt:Opt)(A:ArchBase.S) : CoreDumper.S
 
         let dump_atom a =
           ConstrGen.dump_atom
-            dump_loc MiscParser.dump_location_brk ParsedConstant.pp_v
+            dump_loc MiscParser.dump_location_brk ParsedConstant.pp_v MiscParser.dump_fault_type
             a
 
         let dump_prop = ConstrGen.prop_to_string dump_atom
@@ -57,5 +57,8 @@ module Make(Opt:Opt)(A:ArchBase.S) : CoreDumper.S
 
         type location = MiscParser.location
         let dump_location = dump_loc
+
+        type fault_type = MiscParser.fault_type
+        let dump_fault_type = MiscParser.dump_fault_type
       end)
 end

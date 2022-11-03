@@ -21,11 +21,12 @@ module type S = sig
   type v
   type location
   type pseudo
+  type fault_type
 
-  type ('loc,'v) t = ('loc,'v, pseudo) MiscParser.r3
+  type ('loc,'v,'ftype) t = ('loc,'v, pseudo,'ftype) MiscParser.r3
 
   val allocate_regs :
-    (MiscParser.location, MiscParser.maybev) t -> (location,v) t
+   (MiscParser.location, MiscParser.maybev, MiscParser.fault_type) t -> (location,v,fault_type) t
 end
 
 
@@ -43,18 +44,22 @@ module type Arch = sig
   type location =
     | Location_global of global
     | Location_reg of int * reg
+
+  module FaultType : FaultType.S
 end
 
 module Make (A:Arch) : S
 with type v = A.v
 and type location = A.location
 and type pseudo = A.pseudo
+and type fault_type = A.FaultType.t
  = struct
 
    type v = A.v
    type location = A.location
    type pseudo = A.pseudo
-   type ('loc,'v) t = ('loc,'v, pseudo) MiscParser.r3
+   type fault_type = A.FaultType.t
+   type ('loc,'v,'ftype) t = ('loc,'v, pseudo,'ftype) MiscParser.r3
 
 (******************************************************)
 (* All those to substitute symbolic regs by real ones *)
@@ -79,11 +84,15 @@ and type pseudo = A.pseudo
 
   let finish_state f_reg = List.map (finish_state_atom f_reg)
 
+  let finish_fault = function
+    | (p,v,None) -> (p,A.maybevToV v,None)
+    | (p,v,Some ft) -> (p,A.maybevToV v,Some (A.FaultType.parse ft))
+
   let finish_location_item f =
     let open LocationsItem in
     function
     | Loc (loc,t) -> Loc (ConstrGen.map_rloc f loc,t)
-    | Fault v -> Fault (Fault.map_value A.maybevToV v)
+    | Fault v -> Fault (finish_fault v)
 
   let finish_locations f_reg =
     List.map (finish_location_item (finish_location f_reg))
@@ -94,7 +103,8 @@ and type pseudo = A.pseudo
     match a with
     | LV (loc,v) -> LV (finish_rval f_reg loc, A.maybevToV v)
     | LL (l1,l2) -> LL (finish_location f_reg l1,finish_location f_reg l2)
-    | FF (p,v) -> FF (p,A.maybevToV v)
+    | FF (p,v,None) -> FF (p,A.maybevToV v,None)
+    | FF (p,v,Some ft) -> FF (p,A.maybevToV v,Some (A.FaultType.parse ft))
 
    let finish_prop f_reg = ConstrGen.map_prop (finish_atom f_reg)
 

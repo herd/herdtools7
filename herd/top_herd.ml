@@ -357,7 +357,7 @@ module Make(O:Config)(M:XXXMem.S) =
           A.FaultSet.filter
             (fun flt ->
               A.FaultAtomSet.exists
-                (fun f -> A.check_one_fatom flt f) test.Test_herd.ffaults)
+                (fun ((p,lab),loc,_ftype) -> A.check_one_fatom flt ((p,lab),loc,None)) test.Test_herd.ffaults)
         else fun _ -> A.FaultSet.empty in
 
       let final_state_restrict_locs test fsc =

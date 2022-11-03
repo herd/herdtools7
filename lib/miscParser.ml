@@ -112,9 +112,12 @@ module RLocSet =
       let compare = ConstrGen.compare_rloc location_compare
     end)
 
-type locations = (location,maybev) LocationsItem.t list
+type fault_type = string
+let dump_fault_type ft = ft
 
-type prop = (location, maybev) ConstrGen.prop
+type locations = (location,maybev,fault_type) LocationsItem.t list
+
+type prop = (location, maybev, fault_type) ConstrGen.prop
 type constr = prop ConstrGen.constr
 type quantifier = ConstrGen.kind
 
@@ -176,31 +179,31 @@ type extra_data =
 
 let empty_extra = NoExtra
 
-type ('i, 'p, 'prop, 'loc, 'v) result =
+type ('i, 'p, 'prop, 'loc, 'v, 'ftype) result =
     { info : info ;
       init : 'i ;
       prog : 'p ;
       filter : 'prop option ;
       condition : 'prop ConstrGen.constr ;
-      locations : ('loc,'v) LocationsItem.t list ;
+      locations : ('loc,'v,'ftype) LocationsItem.t list ;
       extra_data : extra_data ;
 }
 
 (* Easier to handle *)
-type ('loc,'v,'ins) r3 =
+type ('loc,'v,'ins,'ftype) r3 =
       (('loc * (TestType.t * 'v)) list,
        (proc * 'ins list) list,
-       ('loc, 'v) ConstrGen.prop,
-       'loc, 'v) result
+       ('loc, 'v, 'ftype) ConstrGen.prop,
+       'loc, 'v, 'ftype) result
 
-type ('loc,'v,'code) r4 =
+type ('loc,'v,'code,'ftype) r4 =
       (('loc * (TestType.t * 'v)) list,
        'code list,
-       ('loc, 'v) ConstrGen.prop,
-       'loc, 'v) result
+       ('loc, 'v, 'ftype) ConstrGen.prop,
+       'loc, 'v, 'ftype) result
 
 (* Result of generic parsing *)
-type 'pseudo t = (state, (proc * 'pseudo list) list, prop, location, maybev) result
+type 'pseudo t = (state, (proc * 'pseudo list) list, prop, location, maybev, fault_type) result
 
 (* Add empty GPU/Bell info to machine parsers *)
 

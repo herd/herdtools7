@@ -34,6 +34,8 @@ end = struct
 (* state *)
   let dump_loc = MiscParser.dump_location
 
+  let dump_fault_type = MiscParser.dump_fault_type
+
   let dump_atom_state a =
     MiscParser.dump_state_atom
       MiscParser.is_global dump_loc ParsedConstant.pp_v a
@@ -55,7 +57,7 @@ end = struct
 (* Propositions *)
   let dump_atom a =
     ConstrGen.dump_atom dump_loc MiscParser.dump_location_brk
-      ParsedConstant.pp_v a
+      ParsedConstant.pp_v dump_fault_type a
 
   let dump_prop = ConstrGen.prop_to_string dump_atom
   let dump_constr = ConstrGen.constraints_to_string dump_atom
@@ -91,7 +93,7 @@ end = struct
           t.prog pss
     | _ -> ()
     end ;
-    let locs = DumpUtils.dump_locations dump_loc ParsedConstant.pp_v t.locations in
+    let locs = DumpUtils.dump_locations dump_loc ParsedConstant.pp_v dump_fault_type t.locations in
     if locs <> "" then Out.fprintf chan "%s\n" locs ;
     begin match t.filter with
     | None -> ()

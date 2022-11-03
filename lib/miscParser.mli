@@ -49,9 +49,12 @@ module LocMap : MyMap.S with type key = location
 type rlocation = location ConstrGen.rloc
 module RLocSet : MySet.S with type elt = rlocation
 
-type locations = (location,maybev) LocationsItem.t list
+type fault_type = string
+val dump_fault_type : fault_type -> string
 
-type prop = (location, maybev) ConstrGen.prop
+type locations = (location,maybev,fault_type) LocationsItem.t list
+
+type prop = (location, maybev, fault_type) ConstrGen.prop
 type constr = prop ConstrGen.constr
 type quantifier = ConstrGen.kind
 
@@ -77,31 +80,31 @@ type extra_data =
 
 val empty_extra : extra_data
 
-type ('i, 'p, 'prop, 'loc, 'v) result =
+type ('i, 'p, 'prop, 'loc, 'v, 'ftype) result =
     { info : info ;
       init : 'i ;
       prog : 'p ;
       filter : 'prop option ;
       condition : 'prop ConstrGen.constr ;
-      locations : ('loc,'v) LocationsItem.t list ;
+      locations : ('loc,'v,'ftype) LocationsItem.t list ;
       extra_data : extra_data ;
     }
 
 (* Easier to handle *)
-type ('loc,'v,'ins) r3 =
+type ('loc,'v,'ins,'ftype) r3 =
        (('loc * (TestType.t * 'v)) list,
        (proc * 'ins list) list,
-       ('loc, 'v) ConstrGen.prop,
-       'loc,'v) result
+       ('loc, 'v, 'ftype) ConstrGen.prop,
+       'loc,'v,'ftype) result
 
-type ('loc,'v,'code) r4 =
+type ('loc,'v,'code,'ftype) r4 =
       (('loc * (TestType.t * 'v)) list,
        'code list,
-       ('loc, 'v) ConstrGen.prop,
-       'loc,'v) result
+       ('loc, 'v,'ftype) ConstrGen.prop,
+       'loc,'v,'ftype) result
 
 (* Result of generic parsing *)
-type 'pseudo t = (state, (proc * 'pseudo list) list, prop, location,maybev) result
+type 'pseudo t = (state, (proc * 'pseudo list) list, prop, location,maybev, fault_type) result
 
 (* Add empty extra info to machine parsers *)
 val mach2generic :
@@ -125,19 +128,18 @@ val key_match : string -> string -> bool
 val digest_mem : string -> bool
 
 (* Extract hash *)
-val get_hash : ('i, 'p, 'c, 'loc, 'v) result -> string option
+val get_hash : ('i, 'p, 'c, 'loc, 'v, 'ftype) result -> string option
 val set_hash :
-    ('i, 'p, 'c, 'loc, 'v) result -> string ->
-      ('i, 'p, 'c, 'loc, 'v) result
+    ('i, 'p, 'c, 'loc, 'v, 'ftype) result -> string ->
+      ('i, 'p, 'c, 'loc, 'v, 'ftype) result
 
 
 (* Extract meta information from key *)
 
 val get_info_on_info : string -> (string * string) list -> string option
 
-val get_info :  ('i, 'p, 'c, 'loc, 'v) result -> string -> string option
+val get_info :  ('i, 'p, 'c, 'loc, 'v, 'ftype) result -> string -> string option
 
 val add_oa_if_none : location -> ParsedPteVal.t -> maybev
 
 val mk_instr_val : string -> ('scalar,'pte) Constant.t
-

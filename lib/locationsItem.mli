@@ -14,16 +14,18 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type ('loc,'v) t = Loc of 'loc ConstrGen.rloc * TestType.t | Fault of 'v Fault.atom
+type ('loc,'v,'ftype) t =
+  | Loc of 'loc ConstrGen.rloc * TestType.t
+  | Fault of ('v,'ftype) Fault.atom
 
-val fold_loc : ('loc -> 'r -> 'r) -> ('loc,'v) t -> 'r -> 'r
-val fold_locs : ('loc -> 'r -> 'r) -> ('loc,'v) t list -> 'r -> 'r
+val fold_loc : ('loc -> 'r -> 'r) -> ('loc,'v,'ftype) t -> 'r -> 'r
+val fold_locs : ('loc -> 'r -> 'r) -> ('loc,'v,'ftype) t list -> 'r -> 'r
 
-val iter_loc : ('loc -> unit) -> ('loc,'v) t -> unit
-val iter_locs : ('loc -> unit) -> ('loc,'v) t list -> unit
+val iter_loc : ('loc -> unit) -> ('loc,'v,'ftype) t -> unit
+val iter_locs : ('loc -> unit) -> ('loc,'v,'ftype) t list -> unit
 
-val map_loc : ('loc -> 'a) -> ('loc,'v) t -> ('a,'v) t
-val map_locs : ('loc -> 'a) -> ('loc,'v) t list -> ('a,'v) t list
+val map_loc : ('loc -> 'a) -> ('loc,'v,'ftype) t -> ('a,'v,'ftype) t
+val map_locs : ('loc -> 'a) -> ('loc,'v,'ftype) t list -> ('a,'v,'ftype) t list
 
 val locs_and_faults :
-  ('loc, 'v) t list -> ('loc ConstrGen.rloc list * 'v Fault.atom list)
+  ('loc, 'v, 'ftype) t list -> ('loc ConstrGen.rloc list * ('v,'ftype) Fault.atom list)

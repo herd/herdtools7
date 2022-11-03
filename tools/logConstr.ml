@@ -20,7 +20,7 @@
 open ConstrGen
 open Printf
 
-type cond = (MiscParser.location,ToolsConstant.v) prop constr
+type cond = (MiscParser.location,ToolsConstant.v,MiscParser.fault_type) prop constr
 
 let foralltrue =  ForallStates (And [])
 
@@ -36,7 +36,7 @@ let rec tr_v v =
 let tr_atom = function
   | LV(loc,v) ->  LV(loc,tr_v v)
   | LL (loc1,loc2) -> LL(loc1,loc2)
-  | FF (p,x) -> FF (p,tr_v x)
+  | FF (p,x,ft) -> FF (p,tr_v x,ft)
 
 let tr_cond c = ConstrGen.map_constr tr_atom c
 
@@ -66,7 +66,7 @@ module Dump(O:DumpConfig) = struct
   | LL (l1,l2) ->
       sprintf "%s=%s" (pp_loc l1) (pp_loc l2)
   | FF f ->
-      Fault.pp_fatom ToolsConstant.pp_v f
+      Fault.pp_fatom ToolsConstant.pp_v (fun x -> x) f
 
   let dump_prop chan = ConstrGen.dump_prop pp_atom chan
   let dump chan = ConstrGen.dump_constraints chan pp_atom
@@ -80,7 +80,7 @@ let get_locs_atom a =
   | LV (loc,_) -> LocSet.add (loc_of_rloc loc)
   | LL (loc1,loc2) ->
       (fun k -> LocSet.add loc1 (LocSet.add loc2 k))
-  | FF (_,x) -> LocSet.add (MiscParser.Location_global x)
+  | FF (_,x,_) -> LocSet.add (MiscParser.Location_global x)
 
 let get_locs c = fold_constr get_locs_atom c LocSet.empty
 
@@ -125,13 +125,13 @@ module type I = sig
 
   val state_mem : state -> MiscParser.location ConstrGen.rloc -> v -> bool
   val state_eqloc : state -> MiscParser.location -> MiscParser.location -> bool
-  val state_fault : state -> v Fault.atom -> bool
+  val state_fault : state -> (v,MiscParser.fault_type) Fault.atom -> bool
 end
 
 module Make(I:I) : sig
 
   type state = I.state
-  type prop =  (MiscParser.location, I.v) ConstrGen.prop
+  type prop =  (MiscParser.location, I.v, MiscParser.fault_type) ConstrGen.prop
   type constr = prop ConstrGen.constr
 
 (* check proposition *)
@@ -145,7 +145,7 @@ end  =
   struct
 
     type state = I.state
-    type prop =  (MiscParser.location, I.v) ConstrGen.prop
+    type prop =  (MiscParser.location, I.v,MiscParser.fault_type) ConstrGen.prop
     type constr = prop ConstrGen.constr
 
 

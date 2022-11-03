@@ -211,9 +211,9 @@ module Make
                 let map_atom = function
                   | LV (loc,v) -> LV (map_rloc loc,v)
                   | LL (loc1,loc2) ->  LL (map_loc loc1,map_loc loc2)
-                  | FF (p,x) ->
+                  | FF (p,x,ft) ->
                       begin match map_loc (Location_global x) with
-                      | Location_global x -> FF (p,x)
+                      | Location_global x -> FF (p,x,ft)
                       | _ -> assert false
                       end
                 in

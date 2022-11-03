@@ -81,7 +81,7 @@ module type S = sig
   type return_labels = Label.t IntMap.t
 
   (* Constraints *)
-  type prop =  (location,v) ConstrGen.prop
+  type prop =  (location,v,I.FaultType.t) ConstrGen.prop
   type constr = prop ConstrGen.constr
 
   (* Register contents (when known) X size of last load exclusive *)
@@ -328,7 +328,7 @@ module Make(C:Config) (I:I) : S with module I = I
 
 
       (* Constraints *)
-      type prop =  (location,v) ConstrGen.prop
+      type prop =  (location,v,I.FaultType.t) ConstrGen.prop
       type constr = prop ConstrGen.constr
 
       type ii_env =  {
@@ -478,6 +478,7 @@ module Make(C:Config) (I:I) : S with module I = I
                 (I.V.pp_v v1) (I.V.pp_v v2)
 
         type fault_type = I.FaultType.t
+        let pp_fault_type = I.FaultType.pp
       end
 
       include Fault.Make(FaultArg)
@@ -867,9 +868,9 @@ module Make(C:Config) (I:I) : S with module I = I
         else
           let noflts =
             FaultAtomSet.fold
-              (fun ((p,lab),loc as fa) k ->
+              (fun ((p,lab),loc,_ftype) k ->
                 if
-                  FaultSet.exists (fun f -> check_one_fatom f fa) flts
+                  FaultSet.exists (fun f -> check_one_fatom f ((p,lab),loc,None)) flts
                 then k
                 else
                   let tr_lab = match lab with

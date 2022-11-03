@@ -37,7 +37,7 @@ module Make(O:Config)(A:Arch_tools.S) =
          name : Name.t ;
          prog : (MiscParser.proc * A.pseudo list) list ;
          init : (A.location * (TestType.t * A.v)) list ;
-         constr : (A.location, A.v) ConstrGen.prop ConstrGen.constr ;
+         constr : (A.location, A.v, A.fault_type) ConstrGen.prop ConstrGen.constr ;
        }
 
     let just_name test = test.name.Name.name
@@ -300,6 +300,9 @@ module Make(O:Config)(A:Arch_tools.S) =
         (fun (l,v) -> "{} "^ pp_binding l v ^"\\\\\n")
       ^ "\\hline \\end{tabular}\n"
 
+    let pp_ft _ft = "" (* FIXME *)
+    let pp_asm_ft ft = pp_asm (pp_ft ft)
+
     open ConstrGen
 
     module Constr = struct
@@ -330,7 +333,7 @@ module Make(O:Config)(A:Arch_tools.S) =
               pp_equal ^
               pp_mbox (pp_location_brk l2) ;
           | FF f ->
-              pp_mbox (Fault.pp_fatom pp_asm_v f)
+              pp_mbox (Fault.pp_fatom pp_asm_v pp_asm_ft f)
         }
 
       let enddollar = sprintf "$%s$"

@@ -26,6 +26,8 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
 
   module V = V
 
+  module FaultType = FaultType.AArch64
+
   let tab = Hashtbl.create 17
   let () = List.iter (fun (r,s) -> Hashtbl.add tab r s) regs
 

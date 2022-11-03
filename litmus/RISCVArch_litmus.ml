@@ -4,6 +4,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
 
   include RISCVBase
   module V = V
+  module FaultType = FaultType.No
 
   let reg_to_string r = match r with
   | Symbolic_reg _|RESADDR -> assert false

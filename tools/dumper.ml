@@ -31,16 +31,19 @@ module Make(A:Arch_tools.S) = struct
 
         type state = state_atom list
 
+        type fault_type = A.fault_type
+        let dump_fault_type _ = "" (* FIXME *)
+
         let dump_state st =
           DumpUtils.dump_state
             dump_state_atom
             (A.env_for_pp st)
 
-        type prop = (A.location,A.v) ConstrGen.prop
+        type prop = (A.location,A.v,fault_type) ConstrGen.prop
 
         let dump_atom a =
           ConstrGen.dump_atom
-            A.pp_location A.pp_location_brk A.pp_v a
+            A.pp_location A.pp_location_brk A.pp_v dump_fault_type a
 
         let dump_prop = ConstrGen.prop_to_string dump_atom
         let dump_constr = ConstrGen.constraints_to_string dump_atom

@@ -465,7 +465,7 @@ module LC =
       let state_fault st f =
         let open HashedFaults in
         let {HashedState.S.f=fs; _;} = HashedState.as_t st in
-        let (p0,lbl0),v0 = f in
+        let (p0,lbl0),v0,_ftype = f in
         let eq_label = match lbl0 with
         | None -> fun _ -> true
         | Some lbl0 ->

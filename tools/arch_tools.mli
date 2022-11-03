@@ -34,8 +34,11 @@ module type S = sig
 
   include Location.S with type loc_reg = reg and type loc_global = global
 
-  type test = (location,v,pseudo) MiscParser.r3
-  type prop = (location,v) ConstrGen.prop
+  module FaultType : FaultType.S
+  type fault_type = FaultType.t
+
+  type test = (location,v,pseudo,fault_type) MiscParser.r3
+  type prop = (location,v,fault_type) ConstrGen.prop
   type constr = prop ConstrGen.constr
 
 end

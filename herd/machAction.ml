@@ -189,11 +189,9 @@ end = struct
         (A.pp_explicit exp_an)
         (A.pp_location loc) (MachSize.pp_short sz)
         (V.pp C.hexa v1) (V.pp C.hexa v2)
-  | Fault (ii,loc,d,an,handler,ftype,msg) ->
-     Printf.sprintf "%s(proc:%s,poi:%s,%s,loc:%s%s%s%s)"
+  | Fault (_,loc,d,an,handler,ftype,msg) ->
+     Printf.sprintf "%s(%s,loc:%s%s%s%s)"
         (if handler then "ExcEntry" else "Fault")
-        (A.pp_proc ii.A.proc)
-        (A.pp_prog_order_index ii.A.program_order_index)
         (pp_dirn d)
         (A.pp_location_old loc)
         (A.pp_annot an)
@@ -358,8 +356,8 @@ end = struct
     | Fault (_,_,Dir.W,_,_,_,_) -> true
     | _ -> false
 
-  let is_fault_of_type ftype0 = function
-    | Fault (_,_,_,_,_,Some ftype,_) -> ftype = ftype0
+  let is_fault_of_type ftypes = function
+    | Fault (_,_,_,_,_,Some ftype,_) -> List.exists (fun i -> i=ftype) ftypes
     | _ -> false
 
   let is_exc_entry = function
@@ -561,8 +559,8 @@ end = struct
       ("FAULT-WR",is_faulting_write)::
       ("EXC-ENTRY",is_exc_entry)::
       ("EXC-RET",is_exc_return)::
-      List.map
-        (fun (key,p) -> (p,is_fault_of_type key)) A.I.FaultType.sets
+        List.map (fun (s,keys) -> (s,is_fault_of_type keys)) A.I.FaultType.sets
+
     in
     ("T",is_tag)::
     ("TLBI",is_inv)::

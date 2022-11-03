@@ -21,6 +21,7 @@ let comment = "#"
 module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
   include X86_64Base
   module V = V
+  module FaultType = FaultType.No
 
   let reg_to_string r = match r with
     | RIP -> "%rip"

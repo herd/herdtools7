@@ -1,9 +1,9 @@
 Test S+dmb.sy+amo.ldaddal-polt Allowed
 States 4
 1:X1=0; [x]=1; [y]=1;  ~Fault(P0,x);
-1:X1=0; [x]=1; [y]=1; Fault(P0,x:red);
+1:X1=0; [x]=1; [y]=1; Fault(P0,x:red,TagCheck);
 1:X1=1; [x]=1; [y]=3;  ~Fault(P0,x);
-1:X1=1; [x]=1; [y]=3; Fault(P0,x:red);
+1:X1=1; [x]=1; [y]=3; Fault(P0,x:red,TagCheck);
 Ok
 Witnesses
 Positive: 1 Negative: 3

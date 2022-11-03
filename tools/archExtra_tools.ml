@@ -69,8 +69,11 @@ module
     | Location_global c -> sprintf "*%s" (ParsedConstant.pp O.hexa c)
     | Location_reg (i,r) -> sprintf "%i:%s" i (pp_reg r)
 
-*)
-  type test = (location,v,pseudo) MiscParser.r3
-  type prop = (location,v) ConstrGen.prop
+ *)
+  module FaultType = FaultType.No
+  type fault_type = FaultType.t
+
+  type test = (location,v,pseudo,fault_type) MiscParser.r3
+  type prop = (location,v,fault_type) ConstrGen.prop
   type constr = prop ConstrGen.constr
 end

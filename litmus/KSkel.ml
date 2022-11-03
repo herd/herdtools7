@@ -43,7 +43,7 @@ module Make
     (P:sig type code end)
     (A:Arch_litmus.Base)
     (MemType:MemoryType.S)
-    (T:Test_litmus.S with type P.code = P.code and module A = A)
+    (T:Test_litmus.S with type P.code = P.code and module A = A and module FaultType = A.FaultType)
     (O:Indent.S)
     (Lang:Language.S
     with type arch_reg = T.A.reg and type t = A.Out.t

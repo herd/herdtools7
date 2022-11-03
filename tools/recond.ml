@@ -80,11 +80,11 @@ module Make(Config:Config)(Out:OutTests.S) =
           "    " in
       ()
 
-    let dump_locs out dump_loc dump_v locs = match locs with
+    let dump_locs out dump_loc dump_v dump_ft locs = match locs with
     | [] -> ()
     | _::_ ->
         Out.fprintf out "%s\n"
-          (DumpUtils.dump_locations dump_loc dump_v locs)
+          (DumpUtils.dump_locations dump_loc dump_v dump_ft locs)
 
     let reparse map =
       if
@@ -184,7 +184,7 @@ module Make(Config:Config)(Out:OutTests.S) =
               if Config.asobserved then begin match cond with
                   | Some (locs,cond) ->
                       dump_filter constr_sec ;
-                      dump_locs out (mk_dump_loc map) ParsedConstant.pp_v locs ;
+                      dump_locs out (mk_dump_loc map) ParsedConstant.pp_v MiscParser.dump_fault_type locs ;
                       dump_observed out (mk_dump_loc map) cond ;
               | None -> assert false
               end else if Config.toexists then begin match cond with
@@ -194,7 +194,7 @@ module Make(Config:Config)(Out:OutTests.S) =
                         echo_cond cond_checked
                     | _ ->
                         dump_filter constr_sec ;
-                        dump_locs out (mk_dump_loc map) ParsedConstant.pp_v locs ;
+                        dump_locs out (mk_dump_loc map) ParsedConstant.pp_v MiscParser.dump_fault_type locs ;
                         D.dump (Out.chan out) (toexists cond) ;
                         Out.fprintf out "\n"
                   end
@@ -202,7 +202,7 @@ module Make(Config:Config)(Out:OutTests.S) =
               end else begin match cond with
               | Some (locs,cond) ->
                   dump_filter constr_sec ;
-                  dump_locs out (mk_dump_loc map) ParsedConstant.pp_v locs ;
+                  dump_locs out (mk_dump_loc map) ParsedConstant.pp_v (fun x -> x) locs ;
                   D.dump (Out.chan out) cond ;
                   Out.fprintf out "\n"
               | None -> ()

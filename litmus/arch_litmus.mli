@@ -67,6 +67,7 @@ module type Base = sig
   val user_handler_clobbers : string list
   val vector_table : bool -> string -> string list
 
+  module FaultType : FaultType.S
 end
 
 module type K = sig
@@ -105,4 +106,6 @@ module type S =
     val nop : instruction
 
     include HardwareExtra.S
+
+    module FaultType : FaultType.S
   end

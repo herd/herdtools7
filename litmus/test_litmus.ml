@@ -21,14 +21,15 @@ end
 module type S = sig
   module A : Arch_litmus.Base
   module C : Constr.S with
-  module V = A.V and
-  type location = A.location and module LocSet = A.LocSet and
-  module RLocSet = A.RLocSet
+           module V = A.V and
+           type location = A.location and module LocSet = A.LocSet and
+           module RLocSet = A.RLocSet and module FaultType = A.FaultType
   module P : PseudoAbstract.S
+  module FaultType : FaultType.S
 
   type src =
     ((A.location * (TestType.t * A.V.v)) list, P.code list,
-          C.prop, A.location, A.V.v)
+          C.prop, A.location, A.V.v, FaultType.t)
          MiscParser.result
 
   type 'a type_env = ('a * CType.t) list
@@ -42,7 +43,7 @@ module type S = sig
       filter : C.prop option ;
       globals : string type_env ;
       flocs : A.location ConstrGen.rloc list ;
-      ffaults : A.V.v Fault.atom list;
+      ffaults : (A.V.v,FaultType.t) Fault.atom list;
       global_code : string list;
       src : src ;
       type_env : CType.t A.LocMap.t * CType.t StringMap.t ;
@@ -56,7 +57,7 @@ module type S = sig
 
   module D : CoreDumper.S
     with
-      type test =  (A.fullstate, P.code list, C.prop, A.location, A.V.v)  MiscParser.result
+      type test =  (A.fullstate, P.code list, C.prop, A.location, A.V.v, FaultType.t)  MiscParser.result
 
   val find_offset : P.code list -> Proc.t -> MiscParser.func -> string -> int
   val code_exists : (P.ins -> bool) -> t -> bool
@@ -65,16 +66,17 @@ end
 
 
 module Make(Cfg:Cfg)(A:Arch_litmus.Base)(P:PseudoAbstract.S) : S
-with module A = A and module P = P =
+with module A = A and module P = P and module FaultType = A.FaultType =
 struct
   module A  = A
   module C = Constr.Make(A)
   module P = P
+  module FaultType = A.FaultType
 
   type 'a type_env = ('a * CType.t) list
   type src =
     ((A.location * (TestType.t * A.V.v)) list, P.code list,
-          C.prop, A.location,A.V.v)
+          C.prop, A.location,A.V.v,A.FaultType.t)
          MiscParser.result
 
   type env_volatile = string list
@@ -87,7 +89,7 @@ struct
       filter : C.prop option ;
       globals : string type_env ; (* Virtual addresses only *)
       flocs : A.location ConstrGen.rloc list ;
-      ffaults : A.V.v Fault.atom list;
+      ffaults : (A.V.v, A.FaultType.t) Fault.atom list;
       global_code : string list;
       src : src ;
       type_env : CType.t A.LocMap.t * CType.t StringMap.t ;
@@ -146,7 +148,7 @@ struct
             type prop = C.prop
 
             let dump_atom a =
-              ConstrGen.dump_atom A.pp_location A.pp_location_brk dump_v a
+              ConstrGen.dump_atom A.pp_location A.pp_location_brk dump_v A.FaultType.pp a
 
             let dump_prop = ConstrGen.prop_to_string dump_atom
             let dump_constr = ConstrGen.constraints_to_string dump_atom
@@ -154,6 +156,8 @@ struct
             type location = A.location
             let dump_location loc = A.pp_location loc
 
+            type fault_type = A.FaultType.t
+            let dump_fault_type = A.FaultType.pp
           end)
     end
 

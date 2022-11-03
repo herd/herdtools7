@@ -37,7 +37,7 @@ type constr = MiscParser.constr
 
 let dump_atom a =
   ConstrGen.dump_atom
-    dump_loc MiscParser.dump_location_brk ParsedConstant.pp_v
+    dump_loc MiscParser.dump_location_brk ParsedConstant.pp_v MiscParser.dump_fault_type
     a
 
 let dump_prop = ConstrGen.prop_to_string dump_atom
@@ -173,7 +173,7 @@ let do_dump withinfo chan doc t =
   prog chan (code t.MiscParser.init t.MiscParser.prog) ;
   let locs =
     DumpUtils.dump_locations
-      dump_location ParsedConstant.pp_v t.MiscParser.locations in
+      dump_location ParsedConstant.pp_v MiscParser.dump_fault_type t.MiscParser.locations in
   if locs <> "" then fprintf chan "%s\n" locs ;
   begin match t.MiscParser.extra_data with
 	| MiscParser.NoExtra|MiscParser.CExtra _ -> ()

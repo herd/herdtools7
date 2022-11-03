@@ -19,6 +19,7 @@ let comment = "//"
 module Make(V:Constant.S) = struct
   include BellBase
   module V = V
+  module FaultType = FaultType.No
 
   let reg_to_string r = match r with
   | GPRreg _ -> pp_reg r

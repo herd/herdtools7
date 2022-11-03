@@ -14,36 +14,62 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(* Memory types of global variables *)
 module type S = sig
   type t
 
-  val sets : (t * string) list
+  val sets : (string * t list) list
 
-  val pp : t -> string (* Pretty print *)
+  val pp : t -> string
+  val parse : MiscParser.fault_type -> t
 end
 
 module type AArch64Sig = sig
+  type mmu_t =
+    | Translation
+    | AccessFlag
+    | Permission
+
   type t =
-    | EXC_DATA_ABORT
-    | EXC_TAG_CHECK
+    | MMU of mmu_t
+    | TagCheck
 
   include S with type t := t
 end
 
 module AArch64 = struct
+  type mmu_t =
+    | Translation
+    | AccessFlag
+    | Permission
+
+  let pp_mmu_t = function
+    | Translation -> "Translation"
+    | AccessFlag -> "AccessFlag"
+    | Permission -> "Permission"
+
   type t =
-    | EXC_DATA_ABORT
-    | EXC_TAG_CHECK
+    | MMU of mmu_t
+    | TagCheck
 
   let sets = [
-      EXC_DATA_ABORT, "EXC-DATA-ABORT";
-      EXC_TAG_CHECK, "EXC-TAG-CHECK";
+      "MMU", [MMU Translation;
+              MMU AccessFlag;
+              MMU Permission];
+      "TagCheck", [TagCheck];
+      "Translation", [MMU Translation];
+      "AccessFlag", [MMU AccessFlag];
+      "Permission", [MMU Permission];
     ]
 
-  let pp ftype0 =
-    let _,s = List.find (fun (ftype,_) -> ftype = ftype0) sets in
-    s
+  let pp = function
+    | MMU m -> Printf.sprintf "MMU:%s" (pp_mmu_t m)
+    | TagCheck -> "TagCheck"
+
+  let parse = function
+    | "MMU:Translation" -> MMU Translation
+    | "MMU:AccessFlag" -> MMU AccessFlag
+    | "MMU:Permission" -> MMU Permission
+    | _ as s -> Warn.user_error "%s not a valid fault type" s
 end
 
 module No = struct
@@ -53,4 +79,5 @@ module No = struct
   let sets = []
 
   let pp () = "Default"
+  let parse _ = Warn.user_error "Fault types not supported"
 end

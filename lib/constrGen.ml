@@ -47,12 +47,12 @@ let match_rloc f g = function
   | Loc loc -> f loc
   | Deref (loc,i) -> g loc i
 
-type ('loc,'v) atom =
+type ('loc,'v,'ftype) atom =
   | LV of 'loc rloc * 'v
   | LL of 'loc * 'loc
-  | FF of 'v Fault.atom
+  | FF of ('v,'ftype) Fault.atom
 
-let dump_atom pp_loc pp_loc_brk pp_v a =
+let dump_atom pp_loc pp_loc_brk pp_v pp_ft a =
   match a with
   | LV (loc,v) ->
       let pp_loc =
@@ -66,21 +66,21 @@ let dump_atom pp_loc pp_loc_brk pp_v a =
         (pp_v v)
   | LL (loc1,loc2) ->
       sprintf "%s=%s" (pp_loc_brk loc1) (pp_loc_brk loc2)
-  | FF f -> Fault.pp_fatom pp_v f
+  | FF f -> Fault.pp_fatom pp_v pp_ft f
 
-type ('l,'v) prop =
-  | Atom of ('l, 'v) atom
-  | Not of ('l,'v) prop
-  | And of ('l,'v) prop list
-  | Or of ('l,'v) prop list
-  | Implies of ('l,'v) prop * ('l,'v) prop
+type ('l,'v,'ftype) prop =
+  | Atom of ('l, 'v, 'ftype) atom
+  | Not of ('l,'v,'ftype) prop
+  | And of ('l,'v,'ftype) prop list
+  | Or of ('l,'v,'ftype) prop list
+  | Implies of ('l,'v,'ftype) prop * ('l,'v,'ftype) prop
 
 type 'prop constr =
     ForallStates of 'prop
   | ExistsState of 'prop
   | NotExistsState of 'prop
 
-type  ('loc,'v) cond = ('loc,'v) prop constr
+type  ('loc,'v,'ftype) cond = ('loc,'v,'ftype) prop constr
 
 let constr_true = ForallStates (And [])
 

@@ -58,7 +58,8 @@ module Make
     (T:Test_litmus.S with
      type P.ins = P.ins
      and type P.code = P.code
-     and module A = A)
+     and module A = A
+     and module FaultType = A.FaultType)
     (O:Indent.S)
     (Lang:Language.S
     with type arch_reg = T.A.reg and type t = A.Out.t
@@ -271,11 +272,11 @@ module Make
       (* Fault handler *)
       let filter_fault_lbls =
         List.filter
-          (fun ((_,o),_) -> Misc.is_some o)
+          (fun ((_,o),_,_) -> Misc.is_some o)
 
       let tag_seen f =
         sprintf "see_%s" (SkelUtil.dump_fatom_tag A.V.pp_v_old f)
-      and tag_code ((p,lbl),_) = sprintf "code_P%d%s" p
+      and tag_code ((p,lbl),_,_) = sprintf "code_P%d%s" p
           (match lbl with None -> assert false | Some lbl -> "_" ^ lbl)
       and tag_log f =  SkelUtil.dump_fatom_tag A.V.pp_v_old f
       and dump_addr_idx s = sprintf "_idx_%s" s
@@ -341,7 +342,7 @@ module Make
                Insert.insert O.o "getnop.c" ;
                O.o "" in
 
-             let faults = U.get_faults test in
+             let faults : (A.V.v, A.FaultType.t) Fault.atom list = U.get_faults test in
              begin match faults with
              | [] -> if do_precise then insert_ins_ops ()
              | _::_ ->
@@ -398,18 +399,18 @@ module Make
                 O.oi "see_fault_t *sf = see_fault[i];" ;
                 O.oi "switch (w->proc) {" ;
                 Misc.group_iter
-                  (fun ((p,_),_) ((q,_),_) -> Misc.int_eq p q)
-                  (fun ((p,_),_) fs ->
+                  (fun ((p,_),_,_) ((q,_),_,_) -> Misc.int_eq p q)
+                  (fun ((p,_),_,_) fs ->
                     O.fi "case %d: {" p ;
                     Misc.group_iteri
-                      (fun (_,v) (_,w) -> A.V.compare v w = 0)
-                      (fun k (_,v) fs ->
+                      (fun (_,v,_) (_,w,_) -> A.V.compare v w = 0)
+                      (fun k (_,v,_) fs ->
                         let prf = if k > 0 then "else if" else "if"
                         and test =
                           sprintf "idx_loc == %s"
                             (dump_addr_idx (A.V.pp_v_old v)) in
                         O.fii "%s (%s) {" prf test ;
-                        let no_lbl ((_,o),_) = Misc.is_none o in
+                        let no_lbl ((_,o),_,_) = Misc.is_none o in
                         let no,fs = List.partition no_lbl fs in
                         begin match no with
                         | [] -> ()
@@ -1516,7 +1517,7 @@ module Make
 (* Collect faults *)
         if Cfg.is_kvm then begin
           List.iter
-            (fun ((p,_),_ as f) ->
+            (fun ((p,_),_,_ as f) ->
               if Proc.compare proc p = 0 then
                 O.fii "_log->%s = _ctx->f.%s?1:0;" (tag_log f) (tag_seen f))
             faults
@@ -1661,7 +1662,7 @@ module Make
         | _::_ ->
             O.oi "if (_c->role == 0 && _c->inst == 0) {" ;
             List.iter
-              (fun ((p,lbl),_ as f) -> match lbl with
+              (fun ((p,lbl),_,_ as f) -> match lbl with
               | None ->
                   O.fii "labels.%s = (ins_t *) &&CODE%d;" (tag_code f) p
               | Some lbl ->
@@ -1746,7 +1747,7 @@ module Make
               O.o "static void init_labels(void) {" ;
               O.oi "ins_t nop = getnop();" ;
               List.iter
-                (fun ((p,lbl),_ as f) ->
+                (fun ((p,lbl),_,_ as f) ->
                   let lbl = Misc.as_some lbl in
                   let off = U.find_label_offset p MiscParser.Main lbl test+1 in (* +1 because of added inital nop *)
                   let lhs = sprintf "labels.%s" (tag_code f)
