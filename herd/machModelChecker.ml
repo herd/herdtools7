@@ -244,7 +244,8 @@ module Make
                sca) in
         if mixed || morello then r
         else
-          E.EventRel.union r (E.EventRel.set_to_rln (Lazy.force mem_evts)) in
+          let si_evts = E.EventSet.filter (fun x -> E.is_mem x || E.is_fault x) evts in
+          E.EventRel.union r (E.EventRel.set_to_rln si_evts) in
       let si = lazy begin calc_si conc.S.str.E.sca end
       in
       let aligned =
