@@ -270,9 +270,7 @@ module Make(O:Config)(M:XXXMem.S) =
                 | PrettyConf.ShowFlag f -> sprintf ", flag %s" f
                 | _ -> "" in
                 let name = Test_herd.readable_name test in
-                let pp_model = match M.model with
-                | Model.Minimal false -> ""
-                | _ -> sprintf "%s" (Model.pp M.model) in
+                let pp_model = sprintf "%s" (Model.pp M.model) in
                 if O.shortlegend then name
                 else if O.showkind then
                   if PC.texmacros then

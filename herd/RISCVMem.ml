@@ -36,15 +36,6 @@ module Make
     module ModelConfig = (O : Model.Config)
 
     let check_event_structure test = match O.model with
-    | Minimal uni ->
-        let module X =
-          Minimal.Make
-            (struct
-              let uniproc = uni
-              include ModelConfig
-            end)
-            (S) in
-        X.check_event_structure test
     | Generic m ->
         let module X =
           MachModelChecker.Make
