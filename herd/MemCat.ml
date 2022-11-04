@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2013-present Institut National de Recherche en Informatique et *)
+(* Copyright 2022-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,10 +14,10 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Entry to models for ARM  *)
-
+(** Simple entry to models: cat models only *)
 module type Config = sig
   val model : Model.t
+  val bell_model_info : (string * BellModel.info) option
   include Model.Config
 end
 
@@ -35,27 +35,16 @@ module S = S
 
     module S = S
 
-    module ModelConfig = (O : Model.Config)
     let model = O.model
 
     let check_event_structure test = match O.model with
-    | CAV12 opt ->
-        let module X =
-          CAV12.Make
-            (struct
-              let opt = opt
-              include ModelConfig
-            end)
-            (S) in
-        X.check_event_structure test
-    | Generic m ->
-        let module X =
-          MachModelChecker.Make
-            (struct
-              let m = m
-              let bell_model_info = None
-              include ModelConfig
+      | Generic m ->
+         let module X =
+           MachModelChecker.Make
+             (struct
+               let m = m
+               include O
              end)(S) in
-        X.check_event_structure test
-    | File _ -> assert false
+         X.check_event_structure test
+      | _ -> failwith "This architecture accepts cat models only."
   end
