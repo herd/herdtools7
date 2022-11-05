@@ -224,7 +224,7 @@ and skip_empty_lines = parse
 and pline bds fs abs = parse
 | blank*
  ((num ':' reg as loc)|(('['?) ((loc|new_loc) as loc) ( ']'?))|(loc '[' num ']' as loc))
-    blank* '=' blank* (('-' ? (num|hexanum))|(name(':'name)?)|new_loc|set|pteval|(':'alpha+) as v)
+    blank* '=' blank* (('-' ? (num|hexanum))|(name(':'name)?)|new_loc|set|pteval|(('P'? num)':'label)|(':'alpha+) as v)
     blank* ';'
     {
      let v = norm_value v in  (* Translate to decimal *)
