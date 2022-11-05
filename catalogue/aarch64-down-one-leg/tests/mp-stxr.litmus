@@ -6,12 +6,11 @@ AArch64 MP-STXR
  P0          		 | P1          ;
  LDR W0,[X1]   		 | MOV W0,#1   ;
  EOR W2,W0,W0            | MOV W1,#2   ;
- ADD X5,X2,X5            | MOV W3,#3   ;
- STR  WZR,[X5]           | STR W0,[X2] ;
+ NOP                     | MOV W3,#3   ;
+ STR  WZR,[X5,W2,SXTW]   | STR W0,[X2] ;
  LDXR  W9,[X5]           | STR W1,[X2] ;
  STXR W2,W9,[X5]         | DMB SY      ;
  EOR W2,W2,W2            | STR W3,[X4] ;
- ADD X4,X2,X4            |             ;
- LDR W3,[X4]             |             ;
+ LDR W3,[X4,W2,SXTW]     |             ;
 exists
 (0:X0=3 /\ 0:X3=1)

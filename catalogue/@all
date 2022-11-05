@@ -1,0 +1,5 @@
+#AArch64 tests usable for non-mixed-size, mixed-size and litmus7
+aarch64-pick/tests/@all
+aarch64/tests/@all
+aarch64-down-one-leg/tests/@all
+

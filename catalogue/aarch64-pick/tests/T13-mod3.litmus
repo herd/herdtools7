@@ -4,13 +4,13 @@ AArch64 T13-mod3
 1:X1=y; 1:X11=x; 1:X5=z;
 }
 P0           | P1               ;
-MOV X0,#1    | LDR X0,[X1]      ;
-STR X0,[X1]  | CMP X0,#1        ;
-MOV X2,#1    | B.NE L0 ;
-             | L0: ;
-STLR X2,[X3] | STR X2,[X5]      ;
-             | LDXR X6, [X5];
-             | STXR W7, X8, [X5];
-             | LDAR X9,[X5]     ;
-             | LDR X10,[X11]    ;
+MOV W0,#1    | LDR W0,[X1]      ;
+STR W0,[X1]  | CMP W0,#1        ;
+MOV W2,#1    | B.NE L0          ;
+STLR W2,[X3] |L0:               ;
+             | STR W2,[X5]      ;
+             | LDXR W6, [X5]    ;
+             | STXR W7, W8, [X5];
+             | LDAR W9,[X5]     ;
+             | LDR W10,[X11]    ;
 exists (1:X0=1 /\ 1:X10=0 /\ 1:X7=0)

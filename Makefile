@@ -1,4 +1,4 @@
-.PHONY: check-deps
+PHONY: check-deps
 
 PREFIX=$$HOME
 D=dune
@@ -66,6 +66,7 @@ endif
 
 
 # Tests.
+TIMEOUT=16.0
 
 test:: | build
 
@@ -182,14 +183,16 @@ diy-test-aarch64:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 diycross7 tests: OK"
 
-J=4
-test:: cata-test
+J=8
 
-cata-test::
+test:: cata-test more-test
+
+cata-test:: cata-aarch64-test
+cata-aarch64-test:
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
 		-j $(J) \
-		-herd-timeout 16.0 \
+		-herd-timeout $(TIMEOUT) \
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
 		-kinds-path catalogue/aarch64/tests/kinds.txt \
@@ -197,7 +200,23 @@ cata-test::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64 tests: OK"
 
-cata-test::
+more-test:: aarch64-test-mixed
+aarch64-test-mixed:
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-timeout $(TIMEOUT) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64/tests/kinds.txt \
+		-shelf-path catalogue/aarch64/shelf.py \
+		-variant mixed \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 catalogue aarch64 tests (mixed mode): OK"
+
+
+cata-test:: mixed-test
+mixed-test:
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
 		-herd-path $(HERD) \
@@ -218,6 +237,20 @@ pick-test:
 		-shelf-path catalogue/aarch64-pick/shelf.py \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-pick tests: OK"
+
+more-test:: pick-test-mixed
+pick-test-mixed:
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-herd-timeout $(TIMEOUT) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64-pick/tests/desired-kinds.txt \
+		-shelf-path catalogue/aarch64-pick/shelf.py \
+		-variant mixed \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 catalogue aarch64-pick tests (mixed mode): OK"
 
 mte-test:
 	@ echo

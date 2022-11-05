@@ -54,7 +54,7 @@ illustrative_tests = [
     "tests/MP+DMB.ST+B-EOR.litmus",
     "tests/MP+DMB.ST+CSEL.litmus",
 #    "tests/PPCOA4b.litmus",
-    "tests/PPOCA.litmus",
+    "tests/PPOCA-catalogue.litmus",
     "tests/PPOCA5b.litmus",
     "tests/PPOCA6b.litmus",
 #    "tests/S-STXR-success.litmus",

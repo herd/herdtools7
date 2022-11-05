@@ -1,4 +1,4 @@
-AArch64 LB+rel+CSEL
+AArch64 LB+rel+pick-by-csel
 {
 0:X10=x; 1:X10=x;
 0:X2=y; 1:X2=y;

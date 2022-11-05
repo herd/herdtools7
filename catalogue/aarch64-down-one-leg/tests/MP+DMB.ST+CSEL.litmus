@@ -7,9 +7,9 @@ P0          | P1                   ;
 MOV W0,#1   | LDR W0,[X3]          ;
 STR W0,[X1] | MOV W4,#4            ;
 DMB ST      | CMP W4,W0            ;
-MOV W2,#1   | MOV X5,#0            ;
-STR W2,[X3] | CSEL X2, XZR, X5, NE ;
-            | LDR W2,[X2,X1]       ;
+MOV W2,#1   | MOV W5,#0            ;
+STR W2,[X3] | CSEL W2, WZR, W5, NE ;
+            | LDR W6,[X1,W2,SXTW]  ;
             | LC00:                ;
 exists
-(1:X0=1 /\ 1:X2=0)
+(1:X0=1 /\ 1:X6=0)
