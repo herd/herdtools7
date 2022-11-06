@@ -245,6 +245,12 @@ let capitalize s = match s with
     String.make 1 (char_uppercase s.[0]) ^
     String.sub s 1 (String.length s-1)
 
+let to_c_name =
+  let tr c = match c with
+    | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> Char.escaped c
+    | _  -> "" in
+  map_string tr
+
 (* Compatibility *)
 let rec find_opt p = function
   | [] -> None

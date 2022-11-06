@@ -59,8 +59,12 @@ module Make (O:Indent.S) (I:CompCondUtils.I) =
             end
         | Atom (LL (loc1,loc2)) ->
             O.fprintf"%s == %s" (dump_loc loc1) (dump_loc loc2)
-        | Atom (FF f) ->
-            O.fprintf "%s" (I.Loc.dump_fatom (V.pp O.hexa) f)
+        | Atom (FF ((_,_,ft) as f)) ->
+           let ft = match ft with
+             | None -> "!= NoFault"
+             | Some ft -> let ft = I.C.FaultType.pp ft in
+                          sprintf "== Fault%s" (Misc.to_c_name ft) in
+           O.fprintf "%s %s" (I.Loc.dump_fatom (V.pp O.hexa) f) ft
         | Not p ->
             O.output "!(" ;
             dump_prop p ;

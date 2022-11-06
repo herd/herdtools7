@@ -42,10 +42,18 @@ let pp_fatom pp_loc =
     | Some lbl -> sprintf "%s:%s" (Proc.pp p) (Label.pp lbl))
     pp_loc
 
-let atom_compare compare ((p1,lbl1),v1,_ft1) ((p2,lbl2),v2,_ft2) = match Proc.compare p1 p2 with
+let atom_compare compare ((p1,lbl1),v1,ft1) ((p2,lbl2),v2,ft2) = match Proc.compare p1 p2 with
 | 0 ->
     begin match Misc.opt_compare String.compare lbl1 lbl2 with
-    | 0 -> compare v1 v2
+    | 0 ->
+       begin match compare v1 v2 with
+       | 0 -> begin match ft1,ft2 with
+              | Some ft1, Some ft2 when ft1 == ft2 -> 0
+              | None, None -> 0
+              | _, _ -> 1
+              end
+       | r -> r
+       end
     | r -> r
     end
 | r -> r
