@@ -13,6 +13,11 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
+(* Authors:                                                                 *)
+(* Jade Alglave, University College London, UK.                             *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Hadrien Renaud, University College London, UK.                           *)
+(****************************************************************************)
 
 (** A monad for event structures *)
 
@@ -1605,4 +1610,21 @@ Monad type:
       List.fold_left
         (fun k (_,vcl,evts) -> (vcl,evts)::k)
         k (Evt.elements es)
+      
+    let force_once (m : 'a t) : 'a t =
+      let res = ref None in
+      let new_m eiid =
+        match !res with
+        | None ->
+            let eiid, v = m eiid in
+            let _evts, evts_specul = v in
+            let () =
+              if Option.is_none evts_specul then ()
+              else Warn.warn_always "Speculated stored events. Results unknown."
+            in
+            let () = res := Some v in
+            (eiid, v)
+        | Some v -> (eiid, v)
+      in
+      new_m
   end

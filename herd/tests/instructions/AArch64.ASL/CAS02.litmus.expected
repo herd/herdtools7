@@ -1,0 +1,10 @@
+Test CAS02 Allowed
+States 1
+0:X1=3; [x]=3;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X1=3 /\ [x]=3)
+Observation CAS02 Always 1 0
+Hash=d4ff1b1a9b2e5bf8ec94b22c54d203a3
+

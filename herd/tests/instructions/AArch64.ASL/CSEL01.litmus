@@ -1,0 +1,15 @@
+AArch64 CSEL01
+(* Basic csel, without really a condition check *)
+
+{
+    0: X1 = 3;
+    0: X2 = 4;
+    0: X8 = 8;
+    0: X9 = 9;
+}
+
+P0 ;
+CMP X8, X9;
+CSEL X3, X1, X2, EQ ;
+
+forall (0: X3 = 3)

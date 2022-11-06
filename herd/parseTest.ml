@@ -13,6 +13,11 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
+(* Authors:                                                                 *)
+(* Jade Alglave, University College London, UK.                             *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Hadrien Renaud, University College London, UK.                           *)
+(****************************************************************************)
 
 (*******************************)
 (* Run a test from source file *)
@@ -226,6 +231,58 @@ module Top (TopConf:Config) = struct
           let module P = GenParser.Make (Conf) (ARM) (ARMLexParse) in
           let module X = Make (ARMS) (P) (NoCheck) (ARMM) (Conf) in
           X.run dirty start_time name chan env splitted
+
+      | `AArch64 when Conf.variant Variant.ASL ->
+          let module AArch64Value = AArch64Value.Make(struct let is_morello = false end) in
+          let module AArch64Make = struct
+            module AArch64SemConf = struct
+              module C = Conf
+
+              let dirty = ModelConfig.dirty
+              let procs_user = ProcsUser.get splitted.Splitter.info
+            end
+
+            module AArch64S = AArch64ASLSem.Make (AArch64SemConf) (AArch64Value)
+            module AArch64 = AArch64S.A
+
+            module AArch64LexParse = struct
+              type instruction = AArch64.parsedPseudo
+              type token = AArch64Parser.token
+
+              module Lexer = AArch64Lexer.Make (struct
+                include LexConfig
+
+                let is_morello = Conf.variant Variant.Morello
+              end)
+
+              let lexer = Lexer.token
+              let parser = (*MiscParser.mach2generic*) AArch64Parser.main
+            end
+
+            module AArch64C =
+              (* TODO: Checking something? *)
+                BellCheck.Make
+                  (struct
+                    let debug = Conf.debug.Debug_herd.barrier
+                    let compat = Conf.variant Variant.BackCompat
+                  end)
+                  (AArch64)
+                (struct
+                  let info = Misc.snd_opt Conf.bell_model_info
+                  let get_id_and_list _ = raise Not_found
+                  let set_list _ _ = assert false
+                  let tr_compat i = i
+                end)
+
+            module AArch64M = MemCat.Make (ModelConfig) (AArch64S)
+            module P = GenParser.Make (Conf) (AArch64) (AArch64LexParse)
+            module X = Make (AArch64S) (P) (AArch64C) (AArch64M) (Conf)
+
+            let run = X.run
+          end in
+
+          AArch64Make.run dirty start_time name chan env splitted
+
       | `AArch64 ->
          let module
              AArch64Make(V:Value.AArch64) = struct
@@ -294,6 +351,7 @@ module Top (TopConf:Config) = struct
            let module AArch64Value = AArch64Value.Make(ConfMorello) in
            let module X = AArch64Make(AArch64Value) in
            X.run dirty start_time name chan env splitted
+
       | `X86 ->
           let module X86Value = Int32Value.Make(X86Base.Instr) in
           let module X86 = X86Arch_herd.Make(ArchConfig)(X86Value) in
@@ -429,6 +487,22 @@ module Top (TopConf:Config) = struct
           let module P = GenParser.Make (Conf) (Bell) (BellLexParse) in
           let module X = Make (BellS) (P) (BellC) (BellM) (Conf) in
           X.run dirty start_time name chan env splitted
+
+    | `ASL ->
+	let module ASLValue = Int64Value.Make(ASLBase.Instr) in
+        let module ASLS = ASLSem.Make(Conf)(ASLValue) in
+	let module ASLA = ASLS.ASL64AH in
+        let module ASLLexParse = struct
+          type instruction = ASLA.parsedPseudo
+          type token = Asllib.Parser.token
+          let lexer = Asllib.Lexer.token
+          let parser = ASLBase.asl_generic_parser
+        end in
+        let module ASLM = MemCat.Make(ModelConfig)(ASLS) in
+        let module P = GenParser.Make (Conf) (ASLA) (ASLLexParse) in
+        let module X = Make (ASLS) (P) (NoCheck) (ASLM) (Conf) in
+        X.run dirty start_time name chan env splitted
+
     end else env
 
 (* Enter here... *)

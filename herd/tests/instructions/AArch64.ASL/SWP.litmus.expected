@@ -1,0 +1,10 @@
+Test swap Required
+States 1
+0:X2=5; [x]=3;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X2=5 /\ [x]=3)
+Observation swap Always 1 0
+Hash=e00539c3d23bb0d4306ed7d0af722dd2
+

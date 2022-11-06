@@ -14,6 +14,13 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+module Types = struct
+  type annot = A | XA | L | XL | X | N | Q | XQ | NoRet | S
+  type nexp =  AF|DB|AFDB|Other
+  type explicit = Exp | NExp of nexp
+  type lannot = annot
+end
+
 module Make (C:Arch_herd.Config)(V:Value.AArch64) =
   struct
 
@@ -28,10 +35,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     let pp_barrier_short = pp_barrier
     let reject_mixed = true
 
-    type annot = A | XA | L | XL | X | N | Q | XQ | NoRet | S
-    type nexp =  AF|DB|AFDB|Other
-    type explicit = Exp | NExp of nexp
-    type lannot = annot
+    include Types
 
     let empty_annot = N
     let exp_annot = Exp

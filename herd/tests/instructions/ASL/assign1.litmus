@@ -1,0 +1,11 @@
+ASL assign1
+
+{}
+
+func main()
+    x = 3
+endfunc
+
+forall (
+    0: x = 3
+)

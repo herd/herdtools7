@@ -159,6 +159,27 @@ test::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 C instructions tests: OK"
 
+test:: test-asl
+test-asl:
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/ASL \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 ASL instructions tests: OK"
+
+test:: test-aarch64-asl
+test-aarch64-asl:
+	@echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64.ASL \
+		-conf ./herd/tests/instructions/AArch64.ASL/asl.cfg \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64+ASL instructions tests: OK"
+
 test:: arm-test
 
 arm-test::

@@ -34,6 +34,7 @@ module Make
     let mixed = O.variant Variant.Mixed || morello
     let memtag = O.variant Variant.MemTag
     let kvm = O.variant Variant.VMSA
+    let asl = O.variant Variant.ASL
     let optacetrue =
       let open OptAce in
       match O.optace with
@@ -218,7 +219,7 @@ module Make
         else
           lazy [] in
       let relevant =
-        if do_deps || catdep then fun _ -> true
+        if do_deps || catdep || asl then fun _ -> true
         else fun e -> not (E.is_reg_any e) in
       let all_evts =  conc.S.str.E.events in
       let evts =

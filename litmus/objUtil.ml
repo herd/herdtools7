@@ -185,7 +185,7 @@ module Make(O:Config)(Tar:Tar.S) =
               cpy' fnames "showLabel" "show" ".awk"
             else
               cpy fnames "show" ".awk"
-        | `CPP|`LISA | `JAVA -> Warn.fatal "no support for arch '%s'" (Archs.pp O.arch)
+        | `CPP|`LISA | `JAVA | `ASL -> Warn.fatal "no support for arch '%s'" (Archs.pp O.arch)
       in
       let fnames = match O.mode with
       | Mode.Kvm -> fnames

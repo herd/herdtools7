@@ -1,0 +1,14 @@
+AArch64 CAS02
+(* CAS, no case *)
+
+{
+    x = 3;
+    0: X1 = 2;
+    0: X2 = 4;
+    0: X3 = x;
+}
+
+P0 ;
+CAS X1, X2, [X3] ;
+
+exists (0: X1 = 3 /\ x = 3)

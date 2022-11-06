@@ -1,0 +1,18 @@
+ASL func1
+
+{}
+
+func f(i)
+    return i
+endfunc
+
+func main()
+    x = 3;
+    y = f(x)
+endfunc
+
+forall (
+    0: x = 3 /\
+    0: y = 3
+)
+

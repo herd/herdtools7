@@ -391,7 +391,7 @@ module Make(O:Config)(M:XXXMem.S) =
            apply their internal functors once *)
         let check_test =
             M.check_event_structure test in
-        let call_model conc =
+        let call_model conc _cs =
           check_test
             conc kfail
             (model_kont ochan test final_state_restrict_locs cstr) in

@@ -1820,8 +1820,7 @@ let get_next = function
   | I_LDXP _|I_STXP _
     -> [Label.Next;]
 
-include Pseudo.Make
-    (struct
+module PseudoI = struct
       type ins = instruction
       type pins = parsedInstruction
       type reg_arg = reg
@@ -2056,7 +2055,9 @@ include Pseudo.Make
         | I_TBZ (v,r,k,lbl) -> I_TBZ (v,r,k,f lbl)
         | I_ADR (r,lbl) -> I_ADR (r, f lbl)
         | ins -> ins
-    end)
+    end
+
+include Pseudo.Make(PseudoI)
 
 (* Atomic-modify instruction *)
 let is_atomic = function
