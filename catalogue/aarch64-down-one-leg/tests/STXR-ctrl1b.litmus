@@ -7,7 +7,8 @@ AArch64 STXR-ctrl1b
  MOV W0,#2   | MOV W2,#2       ;
  STR W0,[X1] | LDR W7,[X8]     ;
              | EOR W6,W7,W7    ;
-             | ADD X0,X6,X0    ;
+             | SXTW X11,W6     ;
+             | ADD X0,X11,X0   ;
  DMB ST      | LDXR W1,[X0]    ;
  MOV W2,#1   | STR W2,[X0]     ;
              | MOV W3,#0       ;

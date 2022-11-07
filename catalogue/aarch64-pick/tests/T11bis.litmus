@@ -4,14 +4,13 @@ AArch64 T11bis
 1:X1=y; 1:X11=x; 1:X5=za;
 }
 P0           | P1               ;
-MOV X0,#2    | LDR X0,[X1]      ;
-STR X0,[X1]  | CMP X0,#1        ;
-MOV X2,#1    | MOV X2,X0 ;
-STLR X2,[X3] | STR X2,[X5]      ;
-	      | LDXR X6,[X5]     ;
-	      | STXR W7,X8,[X5]  ;
-              | LDR X9,[X5]      ;
-	      | EOR X10,X9,X9    ;
-	      | ADD X10,X10,#1   ;
-	      | STR X10,[X11]    ;
+MOV W0,#2    | LDR W0,[X1]      ;
+STR W0,[X1]  | CMP W0,#1        ;
+MOV W2,#1    | MOV W2,W0        ;
+STLR W2,[X3] | STR W2,[X5]      ;
+	     | LDXR W6,[X5]     ;
+	     | STXR W7,W8,[X5]  ;
+             | LDR W9,[X5]      ;
+	     | ORR W10,W9,#1    ;
+             | STR W10,[X11]    ;
 exists (x=2 /\ 1:X0=1 /\ 1:X7=0)

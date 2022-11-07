@@ -64,6 +64,6 @@ illustrative_tests = [
     "tests/Pick2-noWZR.litmus",
     "tests/T15-corrected.litmus",
     "tests/T15-datadep-corrected.litmus",
-    "tests/LB+rel+CSEL.litmus",
+    "tests/LB+rel+pick-by-csel.litmus",
     "tests/LB+rel+CSEL-CSEL.litmus",
 ]

@@ -4,13 +4,13 @@ AArch64 T14B
 1:X1=y; 1:X11=x; 1:X5=za; 1:X8=zb;
 }
 P0           | P1               ;
-MOV X0,#1    | LDR X0,[X1]      ;
-STR X0,[X1]  | CMP X0,#1        ;
-MOV X2,#1    | CSEL X2,X3,X4,EQ ;
-STLR X2,[X3] | STR X2,[X5]      ;
-	      | LDAR X6,[X5]     ;
-	      | LDXR X7,[X8]     ;
-              | STXR W12,X7,[X8] ;
-	      | LDAR X9,[X8]     ;
-	      | LDR X10,[X11]    ;
+MOV W0,#1    | LDR W0,[X1]      ;
+STR W0,[X1]  | CMP W0,#1        ;
+MOV W2,#1    | CSEL W2,W3,W4,EQ ;
+STLR W2,[X3] | STR W2,[X5]      ;
+	     | LDAR W6,[X5]     ;
+	     | LDXR W7,[X8]     ;
+             | STXR W12,W7,[X8] ;
+             | LDAR W9,[X8]     ;
+	     | LDR W10,[X11]    ;
 exists (1:X0=1 /\ 1:X10=0 /\ 1:X12=0)

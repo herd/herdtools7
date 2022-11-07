@@ -52,5 +52,5 @@ Pick2                     Allow
 Pick2-noWZR               Allow
 T15-corrected             Forbid
 T15-datadep-corrected     Forbid
-LB+rel+CSEL               Forbid
+LB+rel+pick-by-csel       Forbid
 LB+rel+CSEL-CSEL          Forbid

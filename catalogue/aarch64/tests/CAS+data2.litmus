@@ -4,13 +4,13 @@ z=1;
 0:X1=x; 0:X3=y;
 1:X1=x; 1:X3=y; 1:X8=z;
 }
- P0                | P1          ;
- NOP               | LDR W0, [X1];
- NOP               | MOV W5, W0;
- MOV W0, #1        | CAS W0, W6, [X8] ;
- STR W0, [X3]      | LDR W0, [X8];
- STLR W0, [X1]     | EOR X0, X0, X0;
- NOP               | ADD X3, X3, X0;
- NOP               | LDR W4, [X3];
+ P0           | P1                  ;
+ NOP          | LDR W0,[X1]         ;
+ NOP          | MOV W5,W0           ;
+ MOV W0,#1    | CAS W0,W6,[X8]      ;
+ STR W0,[X3]  | LDR W0,[X8]         ;
+ STLR W0,[X1] | EOR W0,W0,W0        ;
+ NOP          | LDR W4,[X3,W0,SXTW] ;
+
 exists
 (1:X5=1 /\ 1:X4=0)

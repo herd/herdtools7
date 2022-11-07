@@ -10,7 +10,7 @@ STR W9,[X10]  | CMP W1, #1         ;
 MOV W11,#1    | CSEL W3, W4, W5, EQ;
 STLR W11,[X2] | STR W3, [X6]       ;
               | LDR W9, [X6]       ;
-              | EOR X8, X9, X9     ;
+              | EOR W8, W9, W9     ;
               | ADD W8,W8,#2       ;
               | STR W8,[X10]       ;
 exists(1:X1=1 /\ x=1)

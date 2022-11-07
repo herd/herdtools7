@@ -6,12 +6,13 @@ AArch64 STXR-ctrl2
  P0          | P1              ;
  MOV W0,#2   | MOV W2,#2       ;
  STR W0,[X1] | LDR W7,[X8]     ;
-             | EOR W6,W7,W7    ;
-             | ADD X0,X6,X0    ;
- DMB ST      | LDXR W1,[X0]    ;
- MOV W2,#1   | STXR W3,W2,[X0] ;
+ DMB ST      | EOR W6,W7,W7    ;
+ MOV W2,#1   | SXTW X10,W6     ;
+ STR W2,[X3] | ADD X0,X10,X0   ;
+             | LDXR W1,[X0]    ;
+             | STXR W3,W2,[X0] ;
              | MOV W9,W3       ;
- STR W2,[X3] | CBNZ W9,Fail    ;
+             | CBNZ W9,Fail    ;
              | MOV W4,#1       ;
              | STR W4,[X5]     ;
              | Fail:           ;

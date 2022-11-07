@@ -4,12 +4,12 @@ AArch64 MP+rel+CSEL-addr
 0:X2=y; 1:X2=y;
 1:X6=z;
 }
-P0            | P1                 ;
-MOV W9,#1     | LDR W1, [X2]       ;
-STR W9,[X10]  | CMP W1, #1         ;
-MOV W11,#1    | CSEL W3, W4, W5, EQ;
-STLR W11,[X2] | STR W3, [X6]       ;
-              | LDR W7, [X6]       ;
-              | EOR X8, X7,X7      ;
-              | LDR W9,[X10,X8,SXTW]  ;
+P0            | P1                   ;
+MOV W9,#1     | LDR W1,[X2]          ;
+STR W9,[X10]  | CMP W1,#1            ;
+MOV W11,#1    | CSEL W3,W4,W5,EQ     ;
+STLR W11,[X2] | STR W3,[X6]          ;
+              | LDR W7,[X6]          ;
+              | EOR W8,W7,W7         ;
+              | LDR W9,[X10,W8,SXTW] ;
 exists(1:X1=1 /\ 1:X9=0)

@@ -5,10 +5,8 @@ AArch64 LB+rel+CSEL
 }
 P0           | P1                 ;
 LDR W0,[X5]  | LDR W3,[X4]        ;
-             | CMP X0,#0          ;
-             | MOV X1, #7         ;
-             | CSEL X1, X1, X3, EQ;
-MOV W2,#1    |                    ;
-STLR W2,[X4] |                    ;
+MOV W2,#1    | CMP W0,#0          ;
+STLR W2,[X4] | MOV W1, #7         ;
+             | CSEL W1, W1, W3, EQ;
              | STR W1,[X5]        ;
 exists(0:X0=7 /\ 1:X3=1)
