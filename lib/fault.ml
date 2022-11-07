@@ -146,11 +146,14 @@ module Make(A:I) =
       MySet.Make
         (struct
           type t = fatom
-          let compare ((p0,lbl0),x0,_ft0)  ((p1,lbl1),x1,_ft1) =
+          let compare ((p0,lbl0),x0,ft0)  ((p1,lbl1),x1,ft1) =
             match Proc.compare p0 p1 with
             | 0 ->
                 begin match Misc.opt_compare Label.compare lbl0 lbl1 with
-                | 0 -> A.global_compare x0 x1
+                | 0 -> begin match A.global_compare x0 x1 with
+                       | 0 -> compare_fault_type ft0 ft1
+                       | r -> r
+                       end
                 | r -> r
                 end
             | r -> r
