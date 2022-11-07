@@ -1,4 +1,4 @@
-PHONY: check-deps
+.PHONY: check-deps
 
 PREFIX=$$HOME
 D=dune
