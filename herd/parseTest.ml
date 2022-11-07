@@ -206,7 +206,7 @@ module Top (TopConf:Config) = struct
             let parser = MiscParser.mach2generic PPCParser.main
           end in
           let module PPCS = PPCSem.Make(Conf)(Int64Value) in
-          let module PPCM = PPCMem.Make(ModelConfig)(PPCS) in
+          let module PPCM = MemWithCav12.Make(ModelConfig)(PPCS) in
           let module P = GenParser.Make (Conf) (PPC) (PPCLexParse) in
           let module X = Make (PPCS) (P) (NoCheck) (PPCM) (Conf) in
           X.run dirty start_time name chan env splitted
@@ -220,7 +220,7 @@ module Top (TopConf:Config) = struct
             let parser = MiscParser.mach2generic ARMParser.main
           end in
           let module ARMS = ARMSem.Make(Conf)(Int32Value) in
-          let module ARMM = ARMMem.Make(ModelConfig)(ARMS) in
+          let module ARMM = MemWithCav12.Make(ModelConfig)(ARMS) in
           let module P = GenParser.Make (Conf) (ARM) (ARMLexParse) in
           let module X = Make (ARMS) (P) (NoCheck) (ARMM) (Conf) in
           X.run dirty start_time name chan env splitted
@@ -264,7 +264,7 @@ module Top (TopConf:Config) = struct
                    let tr_compat i = i
                  end)
 
-             module AArch64M = AArch64Mem.Make(ModelConfig)(AArch64S)
+             module AArch64M = MemCat.Make(ModelConfig)(AArch64S)
 
              module P = GenParser.Make (Conf) (AArch64) (AArch64LexParse)
 
@@ -295,7 +295,7 @@ module Top (TopConf:Config) = struct
             let parser = MiscParser.mach2generic X86Parser.main
           end in
           let module X86S = X86Sem.Make(Conf)(Int32Value) in
-          let module X86M = X86Mem.Make(ModelConfig)(X86S) in
+          let module X86M = MemWithCav12.Make(ModelConfig)(X86S) in
           let module P = GenParser.Make (Conf) (X86) (X86LexParse) in
           let module X = Make (X86S) (P) (NoCheck) (X86M) (Conf) in
           X.run dirty start_time name chan env splitted
@@ -310,7 +310,7 @@ module Top (TopConf:Config) = struct
             let parser = MiscParser.mach2generic X86_64Parser.main
           end in
           let module X86_64S = X86_64Sem.Make(Conf)(Int64Value) in
-          let module X86_64M = X86_64Mem.Make(ModelConfig)(X86_64S) in
+          let module X86_64M = MemWithCav12.Make(ModelConfig)(X86_64S) in
           let module P = GenParser.Make(Conf)(X86_64)(X86_64LexParse) in
           let module X = Make(X86_64S)(P)(NoCheck)(X86_64M)(Conf) in
           X.run dirty start_time name chan env splitted
@@ -326,7 +326,7 @@ module Top (TopConf:Config) = struct
             let parser = MiscParser.mach2generic MIPSParser.main
           end in
           let module MIPSS = MIPSSem.Make(Conf)(Int64Value) in
-          let module MIPSM = MIPSMem.Make(ModelConfig)(MIPSS) in
+          let module MIPSM = MemWithCav12.Make(ModelConfig)(MIPSS) in
           let module P = GenParser.Make (Conf) (MIPS) (MIPSLexParse) in
           let module X = Make (MIPSS) (P) (NoCheck) (MIPSM) (Conf) in
           X.run dirty start_time name chan env splitted
@@ -341,7 +341,7 @@ module Top (TopConf:Config) = struct
             let parser = MiscParser.mach2generic RISCVParser.main
           end in
           let module RISCVS = RISCVSem.Make(Conf)(Int64Value) in
-          let module RISCVM = RISCVMem.Make(ModelConfig)(RISCVS) in
+          let module RISCVM = MemCat.Make(ModelConfig)(RISCVS) in
           let module P = GenParser.Make (Conf) (RISCV) (RISCVLexParse) in
           let module X = Make (RISCVS) (P) (NoCheck) (RISCVM) (Conf) in
           X.run dirty start_time name chan env splitted
@@ -369,7 +369,7 @@ module Top (TopConf:Config) = struct
           X.run dirty start_time name chan env splitted
       | `CPP as arch -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
 
-      | `JAVA -> 
+      | `JAVA ->
         let module Java = JavaArch_herd.Make(ArchConfig)(Int64Value) in
         let module JavaLexParse = struct
           type pseudo     = Java.pseudo
@@ -377,12 +377,12 @@ module Top (TopConf:Config) = struct
           module Lexer    = JavaLexer.Make(LexConfig)
           let lexer       = Lexer.token
           let parser      = JavaParser.main
-        end in 
+        end in
         let module JavaS  = JavaSem.Make(Conf)(Int64Value) in
-        let module JavaM  = JavaMem.Make(ModelConfig)(JavaS) in
+        let module JavaM  = MemCat.Make(ModelConfig)(JavaS) in
         let module P      = JavaGenParser_lib.Make (Conf) (Java) (JavaLexParse) in
         let module X      = Make (JavaS) (P) (NoCheck) (JavaM) (Conf) in
-        
+
         X.run dirty start_time name chan env splitted
 
       | `LISA ->

@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2013-present Institut National de Recherche en Informatique et *)
+(* Copyright 2022-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Entry to models for X86  *)
+(** Entry to models for arch that support the CAV12 model  *)
 
 module type Config = sig
   val model : Model.t
@@ -25,29 +25,18 @@ module Make
     (O:Config)
     (S:Sem.Semantics)
  :
-    XXXMem.S with
-module S = S
+    XXXMem.S with module S = S
     =
   struct
 
     open Model
 
-    let model = O.model
-
     module S = S
 
+    let model = O.model
     module ModelConfig = (O : Model.Config)
 
     let check_event_structure test = match O.model with
-    | Minimal uni ->
-        let module X =
-          Minimal.Make
-            (struct
-              let uniproc = uni
-              include ModelConfig
-            end)
-            (S) in
-        X.check_event_structure test
     | CAV12 opt ->
         let module X =
           CAV12.Make
@@ -67,5 +56,4 @@ module S = S
              end)(S) in
         X.check_event_structure test
     | File _ -> assert false
-
-end
+  end

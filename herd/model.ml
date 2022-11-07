@@ -23,15 +23,12 @@ type jade_opt = { jstrongst : bool;}
 
 type t =
   | File of string (* To convey model filename *)
-  | Minimal of bool
   | CAV12 of cav12_opt
   | Generic of AST.t
 
 let tags =
   [
    "cav12";
-   "minimal";
-   "uniproc";
    "<filename>.cat"
   ]
 
@@ -40,8 +37,6 @@ let parse tag =
     Some (File tag)
   else
     match Misc.lowercase tag with
-    | "minimal" -> Some (Minimal false)
-    | "uniproc" -> Some (Minimal true)
     | "cav12" -> Some (CAV12 {cord=true; strongst=true;})
     | "cav12_nocord" -> Some (CAV12 {cord=false; strongst=true;})
     | "cav12_lightst" -> Some (CAV12 {cord=true; strongst=false;})
@@ -49,8 +44,6 @@ let parse tag =
     | _ -> None
 
 let pp = function
-  | Minimal false -> "minimal"
-  | Minimal true -> "uniproc"
   | CAV12 {cord=true; strongst=true;} -> "cav12"
   | CAV12 {cord=false; strongst=true;} -> "cav12_nocord"
   | CAV12 {cord=true; strongst=false;} ->"cav12_lightst"

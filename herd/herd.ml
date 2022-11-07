@@ -535,9 +535,8 @@ let () =
     let optace = match !optace with
     | Some b -> b
     | None -> match model with
-      | Some (Model.Minimal b) -> if b then OptAce.True else OptAce.False
-      | Some (Model.Generic _|Model.File _) -> OptAce.Iico
-      | Some (Model.CAV12 _)|None -> OptAce.False
+      | Some (Model.Generic _|Model.File _)|None -> OptAce.Iico
+      | Some (Model.CAV12 _) -> OptAce.False
     let variant = !variant
     let precision = !precision
     let byte = !byte
