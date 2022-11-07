@@ -163,7 +163,7 @@ module Make
 (* Fetch of an instruction, i.e., a read from a label *)
       let mk_fetch an loc v =
         let ac = Access.VIR in (* Instruction fetch seen as ordinary, non PTE, access *)
-        Act.Access (Dir.F, loc, v, an, AArch64.nexp_annot, MachSize.Word, ac)
+        Act.Access (Dir.R, loc, v, an, AArch64.nexp_annot, MachSize.Word, ac)
 
 (* Basic write, to register  *)
       let mk_write sz an anexp ac v loc =
@@ -615,7 +615,7 @@ module Make
                    "valid:1 && db:1"
                  else
                    "valid:1 && af:1 && db:1"
-              | Dir.R | Dir.F ->
+              | Dir.R ->
                  if ha then "valid:1"
                  else "valid:1 && af:1" in
             let m = append_commit m (Some msg) ii in
@@ -639,7 +639,7 @@ module Make
                  else if ha then
                    add_setbits (is_zero ipte.af_v) "af:0" set_af m
                  else m
-              | Dir.R | Dir.F ->
+              | Dir.R ->
                   if ha then
                    add_setbits (is_zero ipte.af_v) "af:0" set_af m
                  else m in
@@ -683,21 +683,21 @@ module Make
               let cond_R pte_v =
                 m_op Op.Or (is_zero pte_v.valid_v) (is_zero pte_v.af_v) in
               let cond = match dir with (* No mercy, check all flags *)
-              | Dir.R | Dir.F -> cond_R
+              | Dir.R -> cond_R
               | Dir.W ->
                   fun pte_v ->
                     m_op Op.Or (cond_R pte_v) (is_zero pte_v.db_v) in
               check_cond cond
             else if (tthm && ha && not hd) then (* HW managment of AF *)
               let cond = match dir with (* Do not check AF *)
-              | Dir.R | Dir.F -> fun pte_v -> is_zero pte_v.valid_v
+              | Dir.R -> fun pte_v -> is_zero pte_v.valid_v
               | Dir.W ->
                   fun pte_v ->
                     m_op Op.Or (is_zero pte_v.valid_v) (is_zero pte_v.db_v) in
               check_cond cond
             else (* HW management of AF and DB *)
               let cond = match dir with (* Do not check AF *)
-              | Dir.R | Dir.F -> fun pte_v -> is_zero pte_v.valid_v
+              | Dir.R -> fun pte_v -> is_zero pte_v.valid_v
               | Dir.W ->
 (* Check DB when dirty bit management disabled for this page *)
                   fun pte_v ->
@@ -843,7 +843,7 @@ module Make
         match C.precision with
         | Fatal -> mfault >>! B.Exit
         | LoadsFatal -> (match dir with
-            | Dir.R | Dir.F -> mfault >>! B.Exit
+            | Dir.R -> mfault >>! B.Exit
             | Dir.W -> (mfault >>| mm) >>= M.ignore >>= B.next1T)
         | Skip -> Warn.fatal "Memtag extension has no 'Skip' fault handling mode"
         | Handled ->
@@ -873,7 +873,7 @@ module Make
         if
           some_ha &&
             (let v = C.variant Variant.PhantomOnLoad in
-             match dir with Dir.W -> not v | Dir.R | Dir.F -> v)
+             match dir with Dir.W -> not v | Dir.R -> v)
         then
           (m >>|
              M.altT (test_and_set_af_succeeds a E.IdSpurious) (M.unitT ())) >>=
@@ -1631,10 +1631,8 @@ module Make
       let make_label_value proc lbl_str =
         A.V.cstToV (Constant.Label (proc, lbl_str))
 
-      let read_loc_instr v ii =
-        let loc_instr =
-          A.Location_global (make_label_value ii.A.fetch_proc v) in
-        M.read_loc false (mk_fetch AArch64.N) loc_instr ii
+      let read_loc_instr a ii =
+        M.read_loc false (mk_fetch AArch64.N) a ii
 
 (*********************)
 (* Branches *)
@@ -1670,35 +1668,59 @@ module Make
       (* And now, just forget about >>! *)
       let (>>!) (_:unit) (_:unit) = ()
 
+      let check_self is_nop m_me  ii =
+        if not self then m_me
+        else
+          match Label.norm ii.A.labels with
+          | Some hd ->
+             let(>>*=) = M.bind_control_set_data_input_first in
+             (* Shadow default control sequencing operator *)
+             let a_v = make_label_value ii.A.fetch_proc hd in
+             let a =
+               A.Location_global (make_label_value ii.A.fetch_proc hd) in
+             let b_val =
+               A.V.cstToV (A.instruction_to_value ii.A.inst) in
+             let nop_val =
+               A.V.cstToV (A.instruction_to_value AArch64Base.I_NOP) in
+             read_loc_instr a ii
+             >>= fun v ->
+             let b_cond = M.op Op.Eq v b_val in
+             b_cond >>==
+               fun cond ->
+               M.choiceT cond
+                 (commit_pred ii
+                  >>*= fun () -> (M.mk_singleton_es (Act.NoAction) ii)
+                  >>= fun () -> m_me)
+                 (let mfail =
+                    let (>>!) = M.(>>!) in
+                    let m_fault =
+                      mk_fault
+                        a_v Dir.R AArch64.N ii
+                        (Some FaultType.AArch64.IllegalInstruction)
+                        (Some "Invalid") in
+                    commit_pred ii
+                    >>*= fun () -> m_fault >>| set_elr_el1 ii
+                    >>! B.Fault Dir.R in
+                  if  is_nop then mfail
+                  else
+                    M.op Op.Eq v nop_val >>=
+                    fun cond ->
+                      M.choiceT cond
+                        (commit_pred ii
+                         >>*= fun () ->(M.mk_singleton_es (Act.NoAction) ii)
+                         >>= B.next1T)
+                         mfail)
+              | None -> m_me
+
       let build_semantics ii =
         M.addT (A.next_po_index ii.A.program_order_index)
           AArch64Base.(
         match ii.A.inst with
         | I_NOP ->
-            B.nextT
+            check_self true B.nextT ii
               (* Branches *)
         | I_B l ->
-            if not self then
-              B.branchT l
-            else begin
-              match Label.norm ii.A.labels with
-              | Some hd ->
-                  let b_val =
-                    A.V.cstToV (A.instruction_to_value ii.A.inst) in
-                  M.altT  (
-                    read_loc_instr hd ii
-                    >>= M.eqT b_val
-                    >>= fun () -> (M.mk_singleton_es (Act.NoAction) ii)
-                    >>= fun () -> B.branchT l
-                  ) (
-                    read_loc_instr hd ii
-                    >>= M.neqT b_val
-                    >>= fun () -> (M.mk_singleton_es (Act.NoAction) ii)
-                    >>= B.next1T
-                  )
-              | None -> B.branchT l
-            end
-
+           check_self false (B.branchT l) ii
         | I_BC(c,l)->
             read_reg_ord NZP ii  >>= tr_cond c >>= fun v ->
               commit_bcc ii >>= fun () -> B.bccT v l

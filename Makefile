@@ -122,7 +122,8 @@ test::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 MTE instructions tests: OK"
 
-test::
+test:: test.self
+test.self:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
 		-herd-path $(HERD) \

@@ -54,6 +54,8 @@ module type S =
 (* Control composition *)
     val (>>*=) : 'a t -> ('a -> 'b t) -> 'b t
     val (>>*==) : 'a t -> ('a -> 'b t) -> 'b t (* Output events stay in first argument *)
+    val bind_control_set_data_input_first :
+      'a t -> ('a -> 'b t) -> 'b t (* Data input fixed in first argumst *)
 
     (* Control composition, avoid events from first argument) *)
     val bind_ctrl_avoid : 'c t -> 'a t -> ('a -> 'b t) -> 'b t

@@ -1,0 +1,11 @@
+Test S20 Allowed
+States 2
+1:X0=1;
+1:X0=4;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (1:X0=1)
+Observation S20 Sometimes 1 1
+Hash=e566f5afe87c909e98f7bb7b25660da0
+

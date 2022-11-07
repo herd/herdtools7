@@ -331,6 +331,10 @@ val same_instance : event -> event -> bool
 
 (* sequential composition, add control dependency *)
   val (=**=) :
+     event_structure -> event_structure -> event_structure option
+
+  (* Identical, data input is first argument (usually commit evt) *)
+  val bind_control_set_data_input_first :
       event_structure -> event_structure -> event_structure option
 
 (* Identical, keep first event structure data output as output. *)
@@ -1223,6 +1227,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let seq_input = do_seq_input  get_input
     and seq_data_input = do_seq_input  get_data_input
 
+    let data_input_first es1 _es2 = force_data_input es1
+
     let data_comp mini_loc mkOut es1 es2 =
       let r = union es1 es2 in
       { r with
@@ -1265,7 +1271,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 
 (* Composition with intra_causality_control from first to second *)
 
-    let control_comp  maxi_loc mini_loc mkOut es1 es2 =
+    let control_comp  maxi_loc mini_loc mkDataIn mkOut es1 es2 =
       let r = union es1 es2 in
       { r with
         intra_causality_control =
@@ -1273,7 +1279,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
             r.intra_causality_control
             (EventRel.cartesian (maxi_loc es1) (mini_loc es2)) ;
         input = seq_input es1 es2 ;
-        data_input = seq_data_input es1 es2 ;
+        data_input = mkDataIn es1 es2 ;
         output = mkOut es1 es2;
         ctrl_output = sequence_data_ctrl_output es1 es2;
       }
@@ -1281,7 +1287,13 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 (* Standard *)
     let (=**=) =
       check_disjoint
-        (control_comp get_ctrl_output minimals sequence_control_output)
+        (control_comp get_ctrl_output minimals seq_data_input sequence_control_output)
+
+(* Variant: data input restricted to first argument *)
+      let bind_control_set_data_input_first =
+        check_disjoint
+          (control_comp get_ctrl_output minimals data_input_first sequence_control_output)
+
 
 (* Variant that set output on first argumet *)
     let (=*$$=) =
@@ -1290,12 +1302,12 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         if dbg then
           eprintf "CtrlFirst %a %a -> %a\n"  debug_output es1 debug_output es2 debug_events out ;
         Some out in
-      check_disjoint (control_comp get_ctrl_output minimals out)
+      check_disjoint (control_comp get_ctrl_output minimals seq_data_input out)
 
 
 (* Variant that removes some es2 input from iico_ctrl targets *)
     let bind_ctrl_avoid aset es1 es2 =
-      Some (control_comp maximals (minimals_avoid aset) sequence_control_output es1 es2)
+      Some (control_comp maximals (minimals_avoid aset) seq_data_input sequence_control_output es1 es2)
 
     let po_union4 =
       if do_deps then

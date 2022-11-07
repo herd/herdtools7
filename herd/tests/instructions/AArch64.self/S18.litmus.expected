@@ -1,0 +1,10 @@
+Test S18 Required
+States 1
+0:X1=NOP;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=NOP)
+Observation S18 Always 1 0
+Hash=0ec5b76486b4557f5b593bdf869bb5d8
+
