@@ -57,6 +57,9 @@ module AArch64 = struct
       "MMU", [MMU Translation;
               MMU AccessFlag;
               MMU Permission];
+      "Translation", [MMU Translation];
+      "AccessFlag", [MMU AccessFlag];
+      "Permission", [MMU Permission];
       "TagCheck", [TagCheck];
       "IllegalInstruction",[IllegalInstruction];
     ]
