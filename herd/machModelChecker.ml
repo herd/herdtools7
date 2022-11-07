@@ -225,7 +225,8 @@ module Make
       let po =
         choose_spec
           Misc.identity
-          (E.EventRel.filter (fun (e1,e2) -> relevant e1 && relevant e2))
+          (E.EventRel.filter (fun (e1,e2) -> relevant e1 && relevant e2 &&
+                                               not (E.same_instance e1 e2)))
           conc.S.po in
       let id =
         lazy begin
