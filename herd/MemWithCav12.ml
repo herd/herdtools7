@@ -52,6 +52,7 @@ module Make
             (struct
               let m = m
               let bell_model_info = None
+              let wide_po = false
               include ModelConfig
              end)(S) in
         X.check_event_structure test
