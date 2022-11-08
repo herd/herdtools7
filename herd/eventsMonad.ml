@@ -293,20 +293,25 @@ Monad type:
 
     let bind_ctrl_first_outputs s f = data_comp E.bind_ctrl_first_outputs s f
 
-(* Tag check combinator *)
-    let check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v t) -> 'x t -> 'v t
-        = fun ma rtag comp commit ->
-          fun (eiid:eid) ->
-            let eiid,(aact) = ma eiid in
-            let a,acl,aes = Evt.as_singleton_nospecul aact in
-            let eiid,rtagact = rtag a eiid in
-            let eiid,commitact = commit eiid in
-            let tag,rtagcl,rtages = Evt.as_singleton_nospecul rtagact
-            and _,commitcl,commites = Evt.as_singleton_nospecul commitact in
-            let eiid,compact = comp tag eiid in
-            let vcomp,compcl,_ = Evt.as_singleton_nospecul compact in
-            let es = E.check_tags aes rtages commites in
-            eiid,(Evt.singleton (vcomp,acl@rtagcl@commitcl@compcl,es),None)
+
+(* Ad-hoc short-circuit *)
+
+    let short3 p1 p2 m =
+      fun eiid ->
+      let eiid,(acts,specs) = m eiid in
+      let acts =
+        Evt.map
+          (fun (v,cls,es) ->
+            let data3 =
+              let data = es.E.intra_causality_data in
+              let data3 =
+                E.EventRel.filter
+                  (fun (e1,e2) -> p1 e1 && p2 e2)
+                  (E.EventRel.transitive3 data) in
+              E.EventRel.union data data3 in
+            v,cls,{ es with E.intra_causality_data=data3; })
+      acts in
+       eiid,(acts,specs)
 
 (* Exchange combination *)
     let exch : 'a t -> 'a t -> ('a -> 'b t) ->  ('a -> 'c t) ->  ('b * 'c) t

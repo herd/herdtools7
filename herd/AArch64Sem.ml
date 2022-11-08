@@ -344,7 +344,9 @@ module Make
         let m =
           rtag +++ fun tag1 -> tag_extract a_virt +++ fun tag2 ->
           M.op Op.Eq tag1 tag2 in
-        let m = m +++ fun cond -> commit +++ fun _ -> M.unitT cond in
+        let m =
+          let (>>=) = match a_phy with None -> (+++) | Some _ -> (>>=) in
+          m >>= fun cond -> commit +++ fun _ -> M.unitT cond in
         M.delay_kont "check_tags" m
           (fun c m ->
             let ma = (* NB output to initial ma *)
@@ -962,7 +964,13 @@ module Make
 
       let apply_mv mop mv = fun ac ma -> mop ac ma mv
 
-      let lift_memop dir updatedb mop perms ma mv an ii =
+      let is_this_reg_read rA e =
+        match E.location_reg_of e with
+        | None -> false
+        | Some rB -> AArch64.reg_compare rA rB=0
+
+      let lift_memop rA (* Base address register *)
+            dir updatedb mop perms ma mv an ii =
         if morello then
           lift_morello mop perms ma mv dir an ii
         else
@@ -971,7 +979,9 @@ module Make
             begin
               if kvm then
                 let mphy = (fun ma a -> lift_memtag_phy a mop ma dir an ii) in
-                lift_kvm dir updatedb mop ma an ii mphy
+                M.short3
+                  (is_this_reg_read rA) E.is_commit
+                  (lift_kvm dir updatedb mop ma an ii mphy)
               else lift_memtag_virt mop ma dir an ii
             end
           else if kvm then
@@ -991,9 +1001,9 @@ module Make
           else
             mop Access.VIR ma >>= M.ignore >>= B.next1T
 
-      let do_ldr sz an mop ma ii =
+      let do_ldr rA sz an mop ma ii =
 (* Generic load *)
-        lift_memop Dir.R true
+        lift_memop rA  Dir.R true
           (fun ac ma _mv -> (* value fake here *)
             if Access.is_physical ac || memtag  then
               M.bind_ctrldata ma (mop ac)
@@ -1003,8 +1013,8 @@ module Make
           ma mzero an ii
 
 (* Generic store *)
-      let do_str mop sz an ma mv ii =
-        lift_memop Dir.W true
+      let do_str rA mop sz an ma mv ii =
+        lift_memop rA Dir.W true
           (fun ac ma mv ->
             if memtag || (is_branching && Access.is_physical ac) then begin
               (* additional ctrl dep on address *)
@@ -1074,12 +1084,12 @@ module Make
         write_reg rA new_addr ii
 
       let ldr sz rd rs kr s ii = (* load *)
-        do_ldr sz AArch64.N
+        do_ldr rs sz AArch64.N
           (fun ac a -> do_read_mem sz AArch64.N aexp ac rd a ii)
           (get_ea rs kr s ii) ii
 
       and ldp sz rd1 rd2 rs kr ii =
-        do_ldr sz AArch64.N
+        do_ldr rs sz AArch64.N
           (fun ac a ->
             do_read_mem sz AArch64.N aexp ac rd1 a ii >>|
             begin
@@ -1090,7 +1100,7 @@ module Make
 
       and ldpsw rd1 rd2 rs kr ii =
         let mem_sz =  MachSize.Word in
-        do_ldr MachSize.Word AArch64.N
+        do_ldr rs MachSize.Word AArch64.N
           (fun ac a ->
             begin
               do_read_mem_sxt mem_sz AArch64.N aexp ac rd1 a ii >>|
@@ -1104,7 +1114,7 @@ module Make
       and ldxp sz t rd1 rd2 rs ii =
         let open AArch64 in
         let an = match t with XP -> X | AXP -> XA in
-        do_ldr sz an
+        do_ldr rs sz an
           (fun ac a ->
             read_mem_reserve sz an aexp ac rd1 a ii >>||
             begin
@@ -1120,7 +1130,7 @@ module Make
         | AA -> AArch64.A
         | AX -> AArch64.XA
         | AQ -> AArch64.Q in
-        do_ldr sz an
+        do_ldr rs sz an
           (fun ac a ->
             let read =
               match t with
@@ -1135,13 +1145,13 @@ module Make
         M.delay_kont "ldr_p"
           (read_reg_ord rs ii)
           (fun a_virt ma ->
-            do_ldr sz AArch64.N
+            do_ldr rs sz AArch64.N
               (fun ac a ->
                 read_mem_postindexed a_virt sz AArch64.N aexp ac rd rs k a ii)
               ma ii)
 
       and str sz rs rd kr s ii =
-        do_str
+        do_str rd
           (fun ac a _ ii ->
             M.data_input_next
               (read_reg_data sz rs ii)
@@ -1152,7 +1162,7 @@ module Make
       and stp =
         let (>>>) = M.data_input_next in
         fun sz rs1 rs2 rd kr ii ->
-        do_str
+        do_str rd
           (fun ac a _ ii ->
             (read_reg_data sz rs1 ii >>> fun v ->
              do_write_mem sz AArch64.N aexp ac a v ii) >>|
@@ -1167,7 +1177,7 @@ module Make
       let ldrs sz var rd rs kr s ii =
         (* load either 8 or 16 bit value (sz),
         then sign extend based on register size (var) *)
-        do_ldr sz AArch64.N
+        do_ldr rs sz AArch64.N
           (fun ac a -> do_read_mem_ret sz AArch64.N aexp ac a ii
             >>= M.op1 (Op.Sxt sz)
             >>= fun v2 -> write_reg_sz_non_mixed
@@ -1175,7 +1185,7 @@ module Make
           (get_ea rs kr s ii) ii
 
       and stlr sz rs rd ii =
-        do_str (do_write_mem sz AArch64.L aexp) sz AArch64.L
+        do_str rd (do_write_mem sz AArch64.L aexp) sz AArch64.L
           (read_reg_ord rd ii) (read_reg_data sz rs ii) ii
 
       and do_stxr ms mw sz t rr rd ii  =
@@ -1183,7 +1193,7 @@ module Make
         let an = match t with
           | YY -> AArch64.X
           | LY -> AArch64.XL in
-        lift_memop Dir.W true
+        lift_memop rd Dir.W true
           (fun ac ma mv ->
             let must_fail =
               begin
@@ -1247,7 +1257,7 @@ module Make
         | RMW_A | RMW_AL -> A
 
       let swp sz rmw r1 r2 r3 ii =
-        lift_memop Dir.W true (* swp is a write for the purpose of DB *)
+        lift_memop r3 Dir.W true (* swp is a write for the purpose of DB *)
           (fun ac ma mv ->
             let r2 = mv
             and w2 v = write_reg_sz_non_mixed sz r2 v ii
@@ -1267,7 +1277,7 @@ module Make
         let an = rmw_to_read rmw in
         let read_rs = read_reg_data sz rs ii
         and write_rs v = write_reg_sz_non_mixed sz rs v ii in
-        lift_memop Dir.W true
+        lift_memop rn Dir.W true
            (* mv is read new value from reg, not important
               as this code is not executed in morello mode *)
           (fun ac ma mv ->
@@ -1318,7 +1328,7 @@ module Make
       let ldop op sz rmw rs rt rn ii =
         let open AArch64 in
         let an = rmw_to_read rmw in
-        lift_memop Dir.W true
+        lift_memop rn Dir.W true
           (fun ac ma mv ->
             let noret = match rt with | ZR -> true | _ -> false in
             let op = match op with
@@ -1629,7 +1639,7 @@ module Make
             let dir = match op.AArch64Base.DC.funct with
               | AArch64Base.DC.I -> Dir.W
               | _ -> Dir.R in
-            lift_memop dir false
+            lift_memop rd dir false
               (fun ac ma _mv -> (* value fake here *)
                 if Access.is_physical ac then
                   M.bind_ctrldata ma (mop ac)

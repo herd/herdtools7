@@ -124,7 +124,8 @@ module type S =  sig
   val remove_transitive_edges : t -> t
 
 (* Sequence composition of relation *)
-  val sequence : t-> t -> t
+  val sequence : t -> t -> t
+  val transitive3 : t -> t (* returns r;r;r *)
   val sequences : t list -> t
 
 (* Equivalence classes, applies to symetric relations only (unchecked) *)

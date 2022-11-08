@@ -124,6 +124,7 @@ module type S =  sig
 
 (* Sequence composition of relation *)
   val sequence : t-> t -> t
+  val transitive3 : t -> t
   val sequences : t list -> t
 
 (* Equivalence classes, applies to any relation.
@@ -673,15 +674,23 @@ and module Elts = MySet.Make(O) =
 (* Sequence *)
 (************)
 
-    let sequence r1 r2 =
-      let m2 = M.to_map r2 in
+    let append_map r m =
       fold
         (fun (e1,e2) ->
           Elts.fold
             (fun e3 -> add (e1,e3))
-            (M.succs e2 m2))
-        r1 empty
+            (M.succs e2 m))
+        r empty
 
+
+    let sequence r1 r2 =
+      let m2 = M.to_map r2 in
+      append_map r1 m2
+
+    let transitive3 r =
+      let m = M.to_map r in
+      append_map (append_map r m) m
+      
     let rec seq_rec rs = match rs with
     | []|[_] as rs -> rs
     | r1::r2::rs -> sequence r1 r2::seq_rec rs

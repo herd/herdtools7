@@ -85,7 +85,12 @@ module type S =
     (* Identical control dep only, all output from firtst argument *)
     val bind_ctrl_first_outputs : 'a t -> ('a -> 'b t) -> 'b t
 
-    val check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v t) -> 'x t -> 'v t
+    (* Very ad-hoc transformation, [short3 p1 p2 s],
+     * add relation r;r;r where r is intra_causality_data,
+     *  with starting event(s) selected by p1 and final one(s) by p2       
+     *)
+    val short3 : (E.event -> bool) -> (E.event -> bool) -> 'a t -> 'a t
+       
     val exch : 'a t -> 'a t -> ('a -> 'b t) ->  ('a -> 'c t) ->  ('b * 'c) t
 
 (*
