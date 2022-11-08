@@ -44,6 +44,7 @@ module Make
             MachModelChecker.Make
               (struct
                 let m = m
+                let wide_po = true
                 include O
               end)(S) in
         X.check_event_structure test

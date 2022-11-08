@@ -19,6 +19,8 @@
 module type Config = sig
   val m : AST.t
   val bell_model_info : (string * BellModel.info) option
+(* Include events from the same instance in po, essential for the LKMM *)
+  val wide_po : bool
   include Model.Config
 end
 
@@ -225,8 +227,13 @@ module Make
       let po =
         choose_spec
           Misc.identity
-          (E.EventRel.filter (fun (e1,e2) -> relevant e1 && relevant e2 &&
-                                               not (E.same_instance e1 e2)))
+          (E.EventRel.filter
+             (if O.wide_po then
+                (fun (e1,e2) -> relevant e1 && relevant e2)
+              else
+                (fun (e1,e2) ->
+                  relevant e1 && relevant e2 &&
+                 not (E.same_instance e1 e2))))
           conc.S.po in
       let id =
         lazy begin

@@ -379,7 +379,7 @@ module Top (TopConf:Config) = struct
           let parser      = JavaParser.main
         end in
         let module JavaS  = JavaSem.Make(Conf)(Int64Value) in
-        let module JavaM  = MemCat.Make(ModelConfig)(JavaS) in
+        let module JavaM  = CMem.Make(ModelConfig)(JavaS) in
         let module P      = JavaGenParser_lib.Make (Conf) (Java) (JavaLexParse) in
         let module X      = Make (JavaS) (P) (NoCheck) (JavaM) (Conf) in
 
