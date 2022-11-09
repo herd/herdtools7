@@ -859,17 +859,18 @@ module Make
 
 (*  memtag faults *)
 
-      let lift_fault_virt mfault mm dir ii =
+      let lift_fault_memtag mfault mm dir ii =
         if has_handler ii then
           fun ma -> M.bind_ctrldata ma (fun _ -> mfault >>! B.Fault dir)
         else
           let open Precision in
           match C.precision,dir with
           | (Fatal,_)|(LoadsFatal,(Dir.R)) ->
-             fun ma -> M.bind_ctrldata ma (fun _ -> mfault >>! B.Exit)
+             fun ma ->  ma >>*= (fun _ -> mfault >>! B.Exit)
           | (Handled,_)|(LoadsFatal,Dir.W) ->
              fun ma ->
-             let ma = ma >>**== (fun a -> mfault >>! a) in
+             let (>>) = M.bind_ctrl_first_outputs in
+             let ma = ma >> (fun a -> mfault >>! a) in
              mm ma >>! B.Next []
           | Skip,_ ->
              fun _ ->
@@ -882,7 +883,7 @@ module Make
             let ft = Some FaultType.AArch64.TagCheck in
             delayed_check_tags a_virt (Some a_phy) ma ii
               (fun ma -> mm ma >>= M.ignore >>= B.next1T)
-              (lift_fault_virt (mk_fault a_virt dir an ii ft None) mm dir ii))
+              (lift_fault_memtag (mk_fault a_virt dir an ii ft None) mm dir ii))
 
 
       let lift_memtag_virt mop ma dir an ii =
@@ -892,7 +893,7 @@ module Make
             let ft = Some FaultType.AArch64.TagCheck in
             delayed_check_tags a_virt None ma ii
               (fun ma -> mm ma >>= M.ignore >>= B.next1T)
-              (lift_fault_virt (mk_fault a_virt dir an ii ft None) mm dir ii))
+              (lift_fault_memtag (mk_fault a_virt dir an ii ft None) mm dir ii))
 
 (* KVM mode *)
       let some_ha = dirty.DirtyBit.some_ha || dirty.DirtyBit.some_hd
