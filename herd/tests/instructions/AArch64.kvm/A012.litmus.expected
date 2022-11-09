@@ -1,0 +1,10 @@
+Test A012 Required
+States 1
+0:X0=(oa:PTE(x));
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=(oa:PTE(x)))
+Observation A012 Always 1 0
+Hash=556e05a2a13c6548340864f6a60c26ad
+

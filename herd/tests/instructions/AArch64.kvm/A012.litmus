@@ -1,0 +1,8 @@
+AArch64 A012
+{
+ [PTE(x)]=(oa:PTE(x));
+ 0:X1=x;
+}
+ P0          ;
+ LDR X0,[X1] ;
+forall(0:X0=(oa:PTE(x)))
