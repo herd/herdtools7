@@ -1,0 +1,10 @@
+Test A010 Required
+States 1
+ Fault(P0:L0,x,MMU:AccessFlag);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0:L0,x,MMU:AccessFlag))
+Observation A010 Always 1 0
+Hash=e18778764923d960b192d56f6245cf89
+

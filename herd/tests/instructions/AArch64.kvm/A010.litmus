@@ -1,0 +1,10 @@
+AArch64 A010
+Variant=fatal
+{
+ [PTE(x)]=(oa:PA(x),af:0);
+ 0:X1=x;
+}
+ P0          ;
+L0:          ;
+ LDR W0,[X1] ;
+forall(fault(P0:L0,x,MMU:AccessFlag))
