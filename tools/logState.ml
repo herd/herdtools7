@@ -393,6 +393,20 @@ let state_has_fault_type st =
     | Cons (p, st) -> HashedFault.has_fault_type p || fault_type st in
   fault_type f1
 
+(* Select state with the most explicit information.
+ * This works because explicit fault types have been
+ * introduced after explicit fault absence. Thus
+ * the presence of fault type implies that explicit
+ * absent faults are also here (if some fault is
+ * absent, of course).
+ *)
+let select_newer st1 st2 =
+  if st1 == st2 || state_has_fault_type st1 then st1
+  else if state_has_fault_type st2 then st2
+  else
+    (* No state has fault types, select one with explicit absent faults *)
+    select_absent st1 st2
+
 let rec do_diff_states sts1 sts2 sts2_retry do_retry = match sts1,sts2 with
 | [],_ -> []
 | _,[] -> if do_retry then do_diff_states sts1 sts2_retry [] false else sts1
@@ -437,7 +451,7 @@ let rec do_union_states sts1 sts2 =  match sts1,sts2 with
     else if r > 0 then
       st2::do_union_states (st1::sts1) sts2
     else begin
-      let st = select_absent st1 st2 in
+      let st = select_newer st1 st2 in
       let st =
         { st with p_noccs = Int64.add st1.p_noccs  st2.p_noccs ; } in
       st::do_union_states sts1 sts2
