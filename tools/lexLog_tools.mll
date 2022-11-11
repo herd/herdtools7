@@ -240,6 +240,7 @@ and pline bds fs abs = parse
       ')' blank* ';'
     {
      let loc = Constant.old2new loc in
+     let ftype = match ftype with Some "kvm" -> None | _ -> ftype in
      let f = (to_proc proc,lbl),loc,ftype in
      let f = HashedFault.as_hashed f in
      pline bds (f::fs) abs lexbuf }
