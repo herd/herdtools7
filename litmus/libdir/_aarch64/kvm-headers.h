@@ -337,37 +337,3 @@ inline static void reset_hahd_bits(void) {
 }
 
 static inline void litmus_init(void) { reset_hahd_bits(); }
-
-enum fault_type_t {
-  FaultMMUAddressSize = 0,
-  FaultMMUTranslation,
-  FaultMMUAccessFlag,
-  FaultMMUPermission,
-  FaultTagCheck,
-  FaultUnsupported,
-  NoFault,
-  FaultTypes,
-};
-
-const char *fault_type_names[] = {
-  "MMU:AddressSize",
-  "MMU:Translation",
-  "MMU:AccessFlag",
-  "MMU:Permission",
-  "TagCheck",
-  "Unsupported",
-  "NoFault"
-};
-
-enum fault_type_t get_fault_type(unsigned int esr)
-{
-  unsigned int dfsc = esr & 0x3fU;
-  int fault_type = dfsc >> 2;
-  if (esr == -1)
-    return NoFault;
-
-  if (fault_type >= FaultUnsupported)
-    return FaultUnsupported;
-  else
-    return fault_type;
-}

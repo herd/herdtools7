@@ -645,6 +645,10 @@ module Make
         if U.is_rloc_ptr rloc env then dump_rloc_tag_coded rloc
         else  A.dump_rloc_tag rloc
 
+(* Fault types *)
+      let dump_fault_type test =
+        if see_faults test then Insert.insert O.o  "kvm_fault_type.c"
+
 (* Collected locations *)
 
       let fmt_outcome test env locs =
@@ -2021,6 +2025,7 @@ module Make
         dump_user_stacks procs_user ;
         let env = U.build_env test in
         let stats = get_stats test in
+        dump_fault_type test ;
         let some_ptr = dump_outcomes env test in
         dump_fault_handler doc test ;
         dump_cond_def env test ;
