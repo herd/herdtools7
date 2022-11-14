@@ -28,6 +28,7 @@ let conds = ref []
 let inverse = ref false
 let hexa = ref false
 let int32 = ref true
+let faulttype = ref true
 
 let options =
   let open CheckName in
@@ -43,6 +44,7 @@ let options =
   ("-conds",
     Arg.String (fun s -> conds := !conds @ [s]),
    "<name> specify condition to apply to outcomes, can be repeated") ;
+  parse_faulttype faulttype;
   ]
 
 let prog =
@@ -71,6 +73,7 @@ let log = match !logs with
     eprintf "%s takes at most one argument\n" prog ;
     exit 2
 let inverse = !inverse
+let faulttype = !faulttype
 
 module Verbose = struct let verbose = verbose end
 
@@ -95,6 +98,7 @@ module LL =
       let hexa = hexa
       let int32 = int32
       let acceptBig = true
+      let faulttype = faulttype
     end)
 
 module D =

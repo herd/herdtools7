@@ -29,6 +29,7 @@ module type Opt = sig
   val ok : string -> bool
   val pos : string option
   val neg : string option
+  val faulttype : bool
 end
 
 module Make(O:Opt) = struct
@@ -42,12 +43,12 @@ module Make(O:Opt) = struct
         let hexa = false
         let int32 = true
         let acceptBig = true
+        let faulttype = O.faulttype
       end)
 
   module LS = LogState.Make(O)
 
   let read_logs fnames = LL.read_names_simple fnames
-
 
   let cmp_logs fname t1 t2 = match fname with
   | Some fname ->
@@ -96,6 +97,8 @@ let pos = ref None
 let neg = ref None
 let quiet = ref false
 let same = ref false
+let faulttype = ref true
+
 let options =
   [
    ("-v", Arg.Unit (fun _ -> incr verbose),
@@ -113,6 +116,7 @@ let options =
    CheckName.parse_select select;
    CheckName.parse_names names;
    CheckName.parse_excl excl;
+   CheckName.parse_faulttype faulttype;
  ]
 let logs = ref []
 
@@ -144,6 +148,7 @@ module M =
       let ok = Check.ok
       let pos = !pos
       let neg = !neg
+      let faulttype = !faulttype
     end)
 
 let f1,f2 = match !logs with

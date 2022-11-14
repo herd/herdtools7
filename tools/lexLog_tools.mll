@@ -25,6 +25,7 @@ module type Config = sig
   val hexa : bool
   val int32 : bool
   val acceptBig : bool
+  val faulttype : bool
 end
 
 module Make(O:Config) = struct
@@ -240,7 +241,10 @@ and pline bds fs abs = parse
       ')' blank* ';'
     {
      let loc = Constant.old2new loc in
-     let ftype = match ftype with Some "kvm" -> None | _ -> ftype in
+     let ftype =
+       if O.faulttype then
+         match ftype with Some "kvm" -> None | _ -> ftype
+       else None in
      let f = (to_proc proc,lbl),loc,ftype in
      let f = HashedFault.as_hashed f in
      pline bds (f::fs) abs lexbuf }

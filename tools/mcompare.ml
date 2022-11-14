@@ -58,6 +58,7 @@ type runopts =
      opt_cond : bool ;
      hexa : bool ;
      int32 : bool ;
+     faulttype : bool ;
    }
 
 let default_runopts =
@@ -91,6 +92,7 @@ let default_runopts =
    opt_cond = false;
    hexa = false;
    int32 = true;
+   faulttype = true;
  }
 
 let runopts = default_runopts
@@ -105,6 +107,11 @@ let options =
   [
   ("-v", Arg.Unit (fun _ -> incr verb),
    "<non-default> show various diagnostics, repeat to increase verbosity");
+   ("-faulttype",
+    Arg.Bool
+      (delay_ro (fun b ro -> { ro with faulttype = b})),
+    sprintf
+      "<bool> consider fault types, default %b" default_runopts.faulttype);
    ("-big", Arg.Bool (fun b -> acceptBig := b),
     sprintf
       " <bool> do not discard test with many states, default %b" !acceptBig);
@@ -301,6 +308,7 @@ module type Config = sig
   val hexa : bool
   val int32 : bool
   val acceptBig : bool
+  val faulttype : bool
 end
 
 module Verbose = struct let verbose = !verb end
@@ -367,6 +375,7 @@ module Config = struct
   let hexa = runopts.hexa
   let int32 = runopts.int32
   let acceptBig = !acceptBig
+  let faulttype = runopts.faulttype
 end
 
 (************)

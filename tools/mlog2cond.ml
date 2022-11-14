@@ -25,6 +25,7 @@ let optcond = ref false
 let acceptempty = ref false
 let hexa = ref false
 let int32 = ref true
+let faulttype = ref true
 
 let options =
   [
@@ -44,6 +45,7 @@ let options =
       "<bool> output empty conditions, default %b" !acceptempty);
     CheckName.parse_hexa hexa;
     CheckName.parse_int32 int32;
+    CheckName.parse_faulttype faulttype;
   ]
 
 let prog =
@@ -89,6 +91,7 @@ module LL =
       let hexa = hexa
       let int32 = int32
       let acceptBig = false
+      let faulttype = !faulttype
     end)
 
 let acceptempty = !acceptempty

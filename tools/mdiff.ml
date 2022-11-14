@@ -44,6 +44,8 @@ let parse_act r =
   "-act", Arg.String (fun s -> r := act_of_string s),
   "<diff|intersect> either diff or intersect the logs, default diff"
 
+let faulttype = ref true
+
 let options =
   let open CheckName in
   [
@@ -58,6 +60,7 @@ let options =
    parse_select select; parse_names names;
    parse_excl excl;
    parse_act act;
+   parse_faulttype faulttype;
   ]
 
 let prog =
@@ -86,6 +89,7 @@ let verbose = !verbose
 let hexa = !hexa
 let int32 = !int32
 let emptyok = !emptyok
+let faulttype = !faulttype
 
 let log1,log2 = match !logs with
 | [log1;log2;] -> log1,log2
@@ -111,6 +115,7 @@ module LL =
       let hexa = hexa
       let int32 = int32
       let acceptBig = false
+      let faulttype = faulttype
     end)
 
 let readlog log = match log with

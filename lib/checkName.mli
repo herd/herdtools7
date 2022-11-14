@@ -22,7 +22,7 @@ val parse_rename : string list ref ->  Arg.key * Arg.spec * Arg.doc
 val parse_excl : string list ref ->  Arg.key * Arg.spec * Arg.doc
 val parse_hexa : bool ref ->  Arg.key * Arg.spec * Arg.doc
 val parse_int32 : bool ref ->  Arg.key * Arg.spec * Arg.doc
-
+val parse_faulttype : bool ref -> Arg.key * Arg.spec * Arg.doc
 module Make :
   functor
    (I:sig
