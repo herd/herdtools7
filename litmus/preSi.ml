@@ -363,7 +363,7 @@ module Make
                   O.o ""
                 end ;
                 O.o "typedef struct {" ;
-                O.fi "int %s;" (String.concat "," (List.map tag_seen faults)) ;
+                O.fi "unsigned int %s;" (String.concat "," (List.map tag_seen faults)) ;
                 O.o "} see_fault_t;" ;
                 O.o "" ;
                 if do_dynalloc then begin
@@ -385,12 +385,12 @@ module Make
                 O.o "" ;
                 O.o "static void init_see_fault(see_fault_t *p) {" ;
                 List.iter
-                  (fun f -> O.fi "p->%s = 0;" (tag_seen f))
+                  (fun f -> O.fi "p->%s = -1;" (tag_seen f))
                   faults ;
                 O.o "}" ;
                 O.o "" ;
              end ;
-             O.o "static void record_fault(who_t *w,ins_t *pc,void *loc) {" ;
+             O.o "static void record_fault(who_t *w, ins_t *pc, void *loc, unsigned int esr) {" ;
              begin match faults with
              | [] -> ()
              | _ ->
@@ -415,13 +415,13 @@ module Make
                         begin match no with
                         | [] -> ()
                         | f::_ ->
-                           O.fiii "atomic_inc_fetch(&sf->%s);" (tag_seen f) ;
+                           O.fiii "sf->%s = esr;" (tag_seen f) ;
                         end ;
                         List.iteri
                           (fun k f  ->
                             let prf = if k > 0 then "} else if" else "if"
                             and test = sprintf "pc == labels.%s" (tag_code f)
-                            and act =  sprintf "atomic_inc_fetch(&sf->%s)" (tag_seen f) in
+                            and act =  sprintf "sf->%s = esr" (tag_seen f) in
                             O.fiii "%s (%s) {" prf test ;
                             O.fiv "%s;" act)
                           fs ;
@@ -645,6 +645,10 @@ module Make
         if U.is_rloc_ptr rloc env then dump_rloc_tag_coded rloc
         else  A.dump_rloc_tag rloc
 
+(* Fault types *)
+      let dump_fault_type test =
+        if see_faults test then Insert.insert O.o  "kvm_fault_type.c"
+
 (* Collected locations *)
 
       let fmt_outcome test env locs =
@@ -716,7 +720,7 @@ module Make
         begin match faults with
         | [] -> ()
         | fs ->
-            O.fi "int %s;"
+            O.fi "unsigned int %s;"
               (String.concat "," (List.map tag_log fs))
         end ;
         if pad  then O.oi "uint32_t _pad;" ;
@@ -876,16 +880,19 @@ module Make
                 let p2 = String.concat "" p2 in
                 EPF.fi ~out:"chan" (sprintf "%s%s=%s;" prf p1 p2) arg)
           fmt args ;
-        begin match faults with
-        | [] -> () (* Would output 'printf("");', which gcc may reject. *)
-        | _::_ ->
-            let fmt2 = U.fmt_faults faults
-            and args2 =
-              List.map
-                (fun f -> sprintf "p->%s?\"\":\"~\"" (tag_log f))
-                faults in
-            EPF.fi ~out:"chan" fmt2 args2 ;
-        end ;
+        List.iter (fun f ->
+            let (p, loc, _) = f in
+            O.fi "if (p->%s == NoFault)" (tag_log f);
+            (* No fault recorded don't and we bother about printing the type *)
+            let fs = Fault.pp_fatom A.V.pp_v A.FaultType.pp (p, loc, None) in
+            O.fii "puts(\" ~%s;\");" fs;
+            O.fi "else" ;
+            (* Force pp_fatom to call pp_ft *)
+            let pp_ft _ = "%s" in
+            let f = (p, loc, Some "") in
+            let fs = Fault.pp_fatom A.V.pp_v pp_ft f in
+            O.fii "printf(\" %s;\", fault_type_names[p->%s]);" fs (tag_log f)
+          ) faults;
         O.o "}" ;
         O.o "" ;
         let locs = A.RLocSet.elements rlocs in (* Now use lists *)
@@ -1519,7 +1526,7 @@ module Make
           List.iter
             (fun ((p,_),_,_ as f) ->
               if Proc.compare proc p = 0 then
-                O.fii "_log->%s = _ctx->f.%s?1:0;" (tag_log f) (tag_seen f))
+                O.fii "_log->%s = get_fault_type(_ctx->f.%s);" (tag_log f) (tag_seen f))
             faults
         end ;
 (* Synchronise *)
@@ -2018,6 +2025,7 @@ module Make
         dump_user_stacks procs_user ;
         let env = U.build_env test in
         let stats = get_stats test in
+        dump_fault_type test ;
         let some_ptr = dump_outcomes env test in
         dump_fault_handler doc test ;
         dump_cond_def env test ;

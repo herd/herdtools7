@@ -120,7 +120,7 @@ module RLocSet = A.RLocSet and module FaultType = A.FaultType =
 
     module F = struct
       type t = (A.V.v,FaultType.t) Fault.atom
-      let compare = Fault.atom_compare A.V.compare
+      let compare = Fault.atom_compare A.V.compare FaultType.compare
     end
 
     module FSet = MySet.Make(F)

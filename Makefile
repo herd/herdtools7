@@ -112,7 +112,8 @@ test.neon::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 NEON instructions tests: OK"
 
-test::
+test:: test.mte
+test.mte::
 	@ echo
 	$(HERD_REGRESSION_TEST) \
 		-herd-path $(HERD) \

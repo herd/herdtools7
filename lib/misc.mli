@@ -89,6 +89,8 @@ val char_uppercase : char -> char
 val lowercase : string -> string
 val uppercase : string -> string
 val capitalize : string -> string
+(* stip characters to form a valid c variable/type/enum name *)
+val to_c_name : string -> string
 
 (* Backward compatibility *)
 val find_opt : ('a -> bool) -> 'a list -> 'a option

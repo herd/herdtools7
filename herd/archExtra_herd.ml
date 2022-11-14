@@ -484,6 +484,7 @@ module Make(C:Config) (I:I) : S with module I = I
 
         type fault_type = I.FaultType.t
         let pp_fault_type = I.FaultType.pp
+        let fault_type_compare = I.FaultType.compare
       end
 
       include Fault.Make(FaultArg)

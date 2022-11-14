@@ -384,23 +384,58 @@ let select_absent st1 st2 =
   | (_,Cons _) -> st2
   | (Nil,Nil)-> st1
 
-let rec do_diff_states sts1 sts2 =  match sts1,sts2 with
+let state_has_fault_type st =
+  let open HashedState in
+  let open HashedFaults in
+  let {S.e=_; f=f1; a=_;} = as_t st.p_st in
+  let rec fault_type st = match st.Hashcons.node with
+    | Nil -> false
+    | Cons (p, st) -> HashedFault.has_fault_type p || fault_type st in
+  fault_type f1
+
+(* Select state with the most explicit information.
+ * This works because explicit fault types have been
+ * introduced after explicit fault absence. Thus
+ * the presence of fault type implies that explicit
+ * absent faults are also here (if some fault is
+ * absent, of course).
+ *)
+let select_newer st1 st2 =
+  if st1 == st2 || state_has_fault_type st1 then st1
+  else if state_has_fault_type st2 then st2
+  else
+    (* No state has fault types, select one with explicit absent faults *)
+    select_absent st1 st2
+
+let rec do_diff_states sts1 sts2 sts2_retry do_retry = match sts1,sts2 with
 | [],_ -> []
-| _,[] -> sts1
+| _,[] -> if do_retry then do_diff_states sts1 sts2_retry [] false else sts1
 | st1::sts1,st2::sts2 ->
+   (* if st1 and st2 have a fault for the same instruction and the
+    * same location (e.g. fault(P0:L0,x)), where st1 has a fault type
+    * (e.g. fault(P0:L0,x,TagCheck)) and st2 doesn't
+    * (e.g. fault(P0:L0,x)), we consider the two faults
+    * equal. However, it's possible that sts1 might have more states
+    * with the same fault of different type (e.g.,
+    * fault(P0:L0,x,MMU:Translation)). These other states will be
+    * compared against st2 as well. *)
     let r = compare_state false st1 st2 in
     if r < 0 then
-      st1::do_diff_states sts1 (st2::sts2)
+      st1::do_diff_states sts1 (st2::sts2) sts2_retry do_retry
     else if r > 0 then
-      do_diff_states (st1::sts1) sts2
+      do_diff_states (st1::sts1) sts2 sts2_retry do_retry
     else
-      do_diff_states sts1 sts2
+      let sts2_retry, do_retry =
+        match state_has_fault_type st1, state_has_fault_type st2 with
+        | true, false -> st2::sts2_retry, true
+        | _, _ -> sts2_retry, do_retry in
+      do_diff_states sts1 sts2 sts2_retry do_retry
 
 let comp_nouts sts =
   List.fold_left (fun k st -> Int64.add k st.p_noccs) Int64.zero sts
 
 let diff_states sts1 sts2 =
-  let sts = do_diff_states sts1.p_sts sts2.p_sts in
+  let sts = do_diff_states sts1.p_sts sts2.p_sts [] true in
   let n_outs = comp_nouts sts in
   {
    p_nouts = n_outs ;
@@ -416,7 +451,7 @@ let rec do_union_states sts1 sts2 =  match sts1,sts2 with
     else if r > 0 then
       st2::do_union_states (st1::sts1) sts2
     else begin
-      let st = select_absent st1 st2 in
+      let st = select_newer st1 st2 in
       let st =
         { st with p_noccs = Int64.add st1.p_noccs  st2.p_noccs ; } in
       st::do_union_states sts1 sts2
@@ -465,7 +500,7 @@ module LC =
       let state_fault st f =
         let open HashedFaults in
         let {HashedState.S.f=fs; _;} = HashedState.as_t st in
-        let (p0,lbl0),v0,_ftype = f in
+        let (p0,lbl0),v0,ftype0 = f in
         let eq_label = match lbl0 with
         | None -> fun _ -> true
         | Some lbl0 ->
@@ -474,8 +509,9 @@ module LC =
         let rec find fs = match fs.Hashcons.node with
           | Nil -> false
           | Cons (f,fs) ->
-              let ((p,lbl),sym) = HashedFault.as_t f in
-              Misc.int_eq p0 p && eq_label lbl && Misc.string_eq sym sym0 ||
+              let ((p,lbl),sym,ftype) = HashedFault.as_t f in
+              let eq_ft = Fault_tools.equal_ft ftype0 ftype in
+              Misc.int_eq p0 p && eq_label lbl && Misc.string_eq sym sym0 && eq_ft ||
               find fs in
         find fs
 
