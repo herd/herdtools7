@@ -25,6 +25,7 @@ module type I = sig
 
   type fault_type
   val pp_fault_type : fault_type -> string
+  val fault_type_compare : fault_type -> fault_type -> int
 end
 
 type ('loc, 'ftype) atom =  (Proc.t * Label.t option) * 'loc * 'ftype option
@@ -42,16 +43,12 @@ let pp_fatom pp_loc =
     | Some lbl -> sprintf "%s:%s" (Proc.pp p) (Label.pp lbl))
     pp_loc
 
-let atom_compare compare ((p1,lbl1),v1,ft1) ((p2,lbl2),v2,ft2) = match Proc.compare p1 p2 with
+let atom_compare v_compare ft_compare ((p1,lbl1),v1,ft1) ((p2,lbl2),v2,ft2) = match Proc.compare p1 p2 with
 | 0 ->
     begin match Misc.opt_compare String.compare lbl1 lbl2 with
     | 0 ->
-       begin match compare v1 v2 with
-       | 0 -> begin match ft1,ft2 with
-              | Some ft1, Some ft2 when ft1 == ft2 -> 0
-              | None, None -> 0
-              | _, _ -> 1
-              end
+       begin match v_compare v1 v2 with
+       | 0 -> Misc.opt_compare ft_compare ft1 ft2
        | r -> r
        end
     | r -> r
@@ -105,17 +102,10 @@ module Make(A:I) =
     | 0 -> Label.Set.compare lbl1 lbl2
     | r -> r
 
-    let compare_fault_type ftype1 ftype2 = match ftype1, ftype2 with
-      | Some ft1, Some ft2 when ft1 = ft2 -> 0
-      | None, None -> 0
-      | Some _ft1, Some _ft2 -> 1 (* TODO: fault priorities? *)
-      | _, None -> 1
-      | None, _ -> -1
-
     let compare (lbl1,x1,ftype1,msg1) (lbl2,x2,ftype2,msg2) = match compare_lbl lbl1 lbl2 with
     | 0 ->
       begin match A.global_compare x1 x2 with
-      | 0 -> begin match compare_fault_type ftype1 ftype2 with
+      | 0 -> begin match Misc.opt_compare A.fault_type_compare ftype1 ftype2 with
              | 0 -> Misc.opt_compare String.compare msg1 msg2
              | r -> r
              end
@@ -159,7 +149,7 @@ module Make(A:I) =
             | 0 ->
                 begin match Misc.opt_compare Label.compare lbl0 lbl1 with
                 | 0 -> begin match A.global_compare x0 x1 with
-                       | 0 -> compare_fault_type ft0 ft1
+                       | 0 -> Misc.opt_compare A.fault_type_compare ft0 ft1
                        | r -> r
                        end
                 | r -> r

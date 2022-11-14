@@ -21,6 +21,7 @@ module type S = sig
 
   val pp : t -> string (* Pretty print *)
   val parse : MiscParser.fault_type -> t
+  val compare : t -> t -> int
 end
 
 module type AArch64Sig = sig

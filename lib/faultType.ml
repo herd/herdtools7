@@ -21,6 +21,7 @@ module type S = sig
 
   val pp : t -> string
   val parse : MiscParser.fault_type -> t
+  val compare : t -> t -> int
 end
 
 module type AArch64Sig = sig
@@ -77,6 +78,7 @@ module AArch64 = struct
     | "IllegalInstruction" -> IllegalInstruction
     | _ as s -> Warn.user_error "%s not a valid fault type" s
 
+  let compare ft1 ft2 = Misc.polymorphic_compare ft1 ft2
 end
 
 module No = struct
@@ -87,4 +89,5 @@ module No = struct
 
   let pp () = "Default"
   let parse _ = Warn.user_error "Fault types not supported"
+  let compare _ _ = Warn.user_error "Fault types not supported"
 end

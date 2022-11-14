@@ -26,13 +26,15 @@ module type I = sig
 
   type fault_type
   val pp_fault_type : fault_type -> string
+  val fault_type_compare : fault_type -> fault_type -> int
 end
 
 type ('loc, 'ftype) atom =  (Proc.t * Label.t option) * 'loc * 'ftype option
 
 val pp_fatom : ('loc -> string) -> ('ftype -> string) -> ('loc,'ftype) atom -> string
 
-val atom_compare : ('loc -> 'loc -> int) -> ('loc,'ftype) atom -> ('loc,'ftype) atom -> int
+val atom_compare : ('loc -> 'loc -> int) -> ('ftype -> 'ftype -> int) ->
+                   ('loc,'ftype) atom -> ('loc,'ftype) atom -> int
 
 val map_value : ('v -> 'w) -> ('v,'ftype) atom -> ('w,'ftype) atom
 
