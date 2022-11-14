@@ -14,4 +14,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-include SymbConstant.Make(Int64Scalar)(PteVal.No)
+module Make(Instr:Instr.S) = struct
+  include SymbConstant.Make(Int64Scalar)(PteVal.No)(Instr)
+end

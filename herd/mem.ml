@@ -323,7 +323,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                 | None -> code in
               List.fold_left
                 (fun (ps, ls) (addr,i) ->
-                  if A.is_overwritable i then
+                  if A.V.Cst.Instr.is_overwritable i then
                     let lbls = labels_of_instr addr in
                     if Label.Set.is_empty lbls then
                       ps,ls
@@ -383,7 +383,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                     let loc =
                       A.Location_global
                         (A.V.cstToV (Constant.Label (proc, lbl)))
-                    and v = A.V.Val (A.instruction_to_value i) in
+                    and v = A.V.instructionToV i in
                     A.state_add env loc v)
               init_state lbls2i in
           { test with init_state; }

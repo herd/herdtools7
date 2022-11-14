@@ -65,72 +65,79 @@ module SymbolSet : MySet.S with type elt = symbol
 module SymbolMap : MyMap.S with type key = symbol
 
 (* Add scalars *)
-type ('scalar,'pte) t =
+type ('scalar,'pte,'instr) t =
   | Concrete of 'scalar
-  | ConcreteVector of ('scalar,'pte) t list
+  | ConcreteVector of ('scalar,'pte,'instr) t list
   | Symbolic  of symbol
   | Label of Proc.t * string     (* In code *)
   | Tag of string
   | PteVal of 'pte
-  | Instruction of InstrLit.t
+  | Instruction of 'instr
 
 val compare :
   ('scalar -> 'scalar -> int) ->
     ('pte -> 'pte -> int) ->
-      ('scalar,'pte) t -> ('scalar,'pte) t -> int
+      ('instr -> 'instr -> int) ->
+        ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t -> int
 val eq :
   ('scalar -> 'scalar -> bool) ->
     ('pte -> 'pte -> bool) ->
-      ('scalar,'pte) t -> ('scalar,'pte) t -> bool
+        ('instr -> 'instr -> bool) ->
+          ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t -> bool
 
 (* New style: PTE(s), PHY(s), etc. *)
 val pp :
-  ('scalar -> string) ->  ('pte -> string) ->  ('scalar,'pte) t  -> string
+  ('scalar -> string) -> ('pte -> string) -> ('instr -> string) ->
+    ('scalar,'pte,'instr) t  -> string
 (* Old style: pte_s, phy_s, etc. *)
 val pp_old :
-  ('scalar -> string) ->  ('pte -> string) ->  ('scalar,'pte) t  -> string
+  ('scalar -> string) ->  ('pte -> string) -> ('instr -> string) ->
+    ('scalar,'pte,'instr) t  -> string
 
 (* Do nothing on non-scalar *)
-val map_scalar : ('a -> 'b) -> ('a,'pte) t -> ('b,'pte) t
-val map_label : (Label.t -> Label.t) -> ('s,'pte) t -> ('s,'pte) t
-val map : ('a -> 'b) -> ('c -> 'd) -> ('a,'c) t -> ('b,'d) t
+val map_scalar : ('a -> 'b) -> ('a,'pte,'instr) t -> ('b,'pte,'instr) t
+val map_label : (Label.t -> Label.t) -> ('s,'pte,'instr) t -> ('s,'pte,'instr) t
+val map :
+  ('a -> 'b) -> ('c -> 'd) -> ('e -> 'f) -> ('a,'c,'e) t -> ('b,'d,'f) t
 
-val mk_sym_virtual : string -> ('scalar,'pte) t
-val mk_sym : string -> ('scalar,'pte) t
-val mk_sym_pte : string -> ('scalar,'pte) t
-val mk_sym_pte2 : string -> ('scalar,'pte) t
-val mk_sym_pa : string -> ('scalar,'pte) t
+val mk_sym_virtual : string -> ('scalar,'pte,'instr) t
+val mk_sym : string -> ('scalar,'pte,'instr) t
+val mk_sym_pte : string -> ('scalar,'pte,'instr) t
+val mk_sym_pte2 : string -> ('scalar,'pte,'instr) t
+val mk_sym_pa : string -> ('scalar,'pte,'instr) t
 val old2new : string -> string
 
-val mk_vec : int -> ('scalar,'pte) t list -> ('scalar,'pte) t
-val mk_replicate : int -> ('scalar,'pte) t -> ('scalar,'pte) t
+val mk_vec : int -> ('scalar,'pte,'instr) t list -> ('scalar,'pte,'instr) t
+val mk_replicate : int -> ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t
 
-val is_symbol : ('scalar,'pte) t -> bool
-val is_label : ('scalar,'pte) t -> bool
+val is_symbol : ('scalar,'pte,'instr) t -> bool
+val is_label : ('scalar,'pte,'instr) t -> bool
 
 val is_non_mixed_symbol : symbol -> bool
 
-val default_tag : ('scalar,'pte) t
+val default_tag : ('scalar,'pte,'instr) t
 
 (* Check  non-concrete constant (and change type!) *)
-val check_sym : ('a,'pte) t -> ('b,'pte) t
+val check_sym : ('a,'pte,'instr) t -> ('b,'pte,'instr) t
 
-val is_virtual : ('scalar,'pte) t -> bool
-val as_virtual : ('scalar,'pte) t -> string option
-val as_symbol : ('scalar,'pte) t -> symbol option
-val as_symbolic_data : ('scalar,'pte) t -> symbolic_data option
-val of_symbolic_data : symbolic_data -> ('scalar,'pte) t
+val is_virtual : ('scalar,'pte,'instr) t -> bool
+val as_virtual : ('scalar,'pte,'instr) t -> string option
+val as_symbol : ('scalar,'pte,'instr) t -> symbol option
+val as_symbolic_data : ('scalar,'pte,'instr) t -> symbolic_data option
+val of_symbolic_data : symbolic_data -> ('scalar,'pte,'instr) t
 
-val as_pte : ('scalar,'pte) t -> ('scalar,'pte) t option
-val is_pt : ('scalar,'pte) t -> bool
+val as_pte : ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t option
+val is_pt : ('scalar,'pte,'instr)  t -> bool
 
 module type S =  sig
 
   module Scalar : Scalar.S
   module PteVal : PteVal.S
+  module Instr : Instr.S
 
-  type v = (Scalar.t,PteVal.t) t
-  val tr : (string,ParsedPteVal.t) t -> v
+  type v = (Scalar.t,PteVal.t,Instr.t) t
+
+  val tr : (string,ParsedPteVal.t,InstrLit.t) t -> v
   val intToV  : int -> v
   val stringToV  : string -> v
   val nameToV  : string -> v
@@ -144,5 +151,6 @@ module type S =  sig
   val compare : v -> v -> int
   val eq : v -> v -> bool
   val vToName : v -> string
+  val is_nop : v -> bool
 
 end

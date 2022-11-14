@@ -16,15 +16,17 @@
 
 module Make
          (Scalar:Scalar.S)
-         (PteVal:PteVal.S) = struct
+         (PteVal:PteVal.S)
+         (Instr:Instr.S) = struct
 
   module Scalar = Scalar
   module PteVal = PteVal
+  module Instr = Instr
 
-  type v = (Scalar.t,PteVal.t)  Constant.t
+  type v = (Scalar.t,PteVal.t,Instr.t) Constant.t
   open Constant
 
-  let tr c = Constant.map Scalar.of_string PteVal.tr c
+  let tr c = Constant.map Scalar.of_string PteVal.tr Instr.tr c
 
   let intToV i = Concrete (Scalar.of_int i)
   and nameToV s = Constant.mk_sym s
@@ -35,14 +37,18 @@ module Make
   let zero = Concrete Scalar.zero
   and one = Concrete Scalar.one
 
-  let pp hexa =  Constant.pp (Scalar.pp hexa) (PteVal.pp hexa)
-  and pp_unsigned hexa = Constant.pp (Scalar.pp_unsigned hexa) (PteVal.pp hexa)
+  let pp hexa =
+    Constant.pp (Scalar.pp hexa) (PteVal.pp hexa) (Instr.pp)
+  and pp_unsigned hexa =
+    Constant.pp (Scalar.pp_unsigned hexa) (PteVal.pp hexa) (Instr.pp)
 
   let pp_v = pp false
-  let pp_v_old = Constant.pp_old (Scalar.pp false) (PteVal.pp false)
+  let pp_v_old =
+    Constant.pp_old (Scalar.pp false) (PteVal.pp false) (Instr.pp)
 
-  let compare c1 c2 = Constant.compare Scalar.compare PteVal.compare c1 c2
-  let eq c1 c2 = Constant.eq Scalar.equal PteVal.eq c1 c2
+  let compare c1 c2 =
+    Constant.compare Scalar.compare PteVal.compare Instr.compare c1 c2
+  let eq c1 c2 = Constant.eq Scalar.equal PteVal.eq Instr.eq c1 c2
 
 (* For building code symbols. *)
   let vToName = function
@@ -50,4 +56,8 @@ module Make
     | Concrete _|ConcreteVector _ | Label _|Tag _|PteVal _|Instruction _
         -> assert false
 
+  let is_nop = function
+    | Instruction i -> Instr.is_nop i
+    | Symbolic _|Concrete _|ConcreteVector _ | Label _|Tag _|PteVal _
+      -> false
 end

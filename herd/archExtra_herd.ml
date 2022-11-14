@@ -26,9 +26,7 @@ module type I = sig
   val reg_compare : arch_reg -> arch_reg -> int
   val get_val : arch_reg -> V.v -> V.v
 
-  type arch_instruction
-
-  val fromto_of_instr : arch_instruction -> (Label.Set.t * Label.Set.t) option
+  val fromto_of_instr : V.Cst.Instr.t -> (Label.Set.t * Label.Set.t) option
 
   module FaultType : FaultType.S
 end
@@ -68,7 +66,8 @@ module type S = sig
 
 
   (* Code memory is a mapping from labels to sequences of instructions, too far from actual machine, maybe *)
-  type code = (int * I.arch_instruction) list
+  type instr = I.V.Cst.Instr.t
+  type code = (int * instr) list
 
 
   (* Program loaded in memory *)
@@ -96,7 +95,7 @@ module type S = sig
       fetch_proc : proc; (* Fetching source *)
       proc       : proc; (* Current thread *)
       program_order_index   : program_order_index;
-      inst : I.arch_instruction;
+      inst : instr;
       labels : Label.Set.t;
       link_label : Label.t option;
       addr2v : string -> I.V.v;
@@ -313,8 +312,8 @@ module Make(C:Config) (I:I) : S with module I = I
       (*********************************)
 
       (* Code memory is a mapping from globals locs, to instructions *)
-
-      type code = (int * I.arch_instruction) list
+      type instr = I.V.Cst.Instr.t
+      type code = (int * instr) list
 
 
       (* Programm loaded in memory *)
@@ -341,7 +340,7 @@ module Make(C:Config) (I:I) : S with module I = I
           fetch_proc : proc;
           proc       : proc;
           program_order_index   : program_order_index;
-          inst : I.arch_instruction;
+          inst : instr;
           labels : Label.Set.t;
           link_label : Label.t option;
           addr2v : string -> I.V.v;

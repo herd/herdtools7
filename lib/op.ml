@@ -119,6 +119,7 @@ type 'aop op1 =
   | TLBLoc (* get TLB entry from location *)
   | PTELoc (* get PTE entry from location *)
   | Offset (* get offset from base (symbolic) location *)
+  | IsInstr (* Check nature of constant *)
   | ArchOp1 of 'aop
 
 
@@ -147,6 +148,7 @@ let pp_op1 hexa pp_aop o = match o with
 | PTELoc -> "PTEloc"
 | Offset -> "offset"
 | IsVirtual -> "IsVirtual"
+| IsInstr -> "IsInstruction"
 | ArchOp1 aop -> pp_aop hexa aop
 
 (***********)

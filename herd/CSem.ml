@@ -18,7 +18,10 @@ module type Config = sig
   val unroll : int
 end
 
-module Make (Conf:Config)(V:Value.S)
+module
+  Make
+    (Conf:Config)
+    (V:Value.S with type Cst.Instr.t = CBase.instruction)
     =
   struct
 

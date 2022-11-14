@@ -85,7 +85,7 @@ module Make(O:Config)(I:I) : S with module I = I
 
   module I = I
 
-  let maybevToV c = Constant.map I.V.Scalar.of_string I.V.PteVal.tr c
+  let maybevToV c = I.V.tr c
 
   module RegSet =
     MySet.Make

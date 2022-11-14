@@ -442,7 +442,7 @@ end = struct
           | `PPC ->
              begin match OT.usearch with
              | UseArch.Trad ->
-                let module V = Int64Constant in
+                let module V = Int64Constant.Make(PPCBase.Instr) in
                 let module Arch' = PPCArch_litmus.Make(OC)(V) in
                 let module LexParse = struct
                     type instruction = Arch'.parsedPseudo
@@ -471,7 +471,7 @@ end = struct
               *)
              end
           | `X86 ->
-             let module V = Int32Constant in
+             let module V = Int32Constant.Make(X86Base.Instr) in
              let module Arch' = X86Arch_litmus.Make(OC)(V) in
              let module LexParse = struct
                  type instruction = Arch'.pseudo
@@ -484,7 +484,7 @@ end = struct
              let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
              X.compile
           | `X86_64 ->
-             let module V = Int64Constant in
+             let module V = Int64Constant.Make(X86_64Base.Instr) in
              let module Arch' = X86_64Arch_litmus.Make(OC)(V) in
              let module LexParse = struct
                  type instruction = Arch'.pseudo
@@ -505,7 +505,7 @@ end = struct
              let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
              X.compile
           | `ARM ->
-             let module V = Int32Constant in
+             let module V = Int32Constant.Make(ARMBase.Instr) in
              let module Arch' = ARMArch_litmus.Make(OC)(V) in
              let module LexParse = struct
                  type instruction = Arch'.parsedPseudo
@@ -520,7 +520,13 @@ end = struct
           | `AArch64 ->
              begin match OT.usearch with
              | UseArch.Trad ->
-                let module V = SymbConstant.Make(Int64Scalar)(AArch64PteVal) in
+                let module AArch64Instr =
+                  AArch64Base.MakeInstr (* No morello (yet) *)
+                    (struct let is_morello = false end) in
+                let module V =
+                  SymbConstant.Make
+                    (Int64Scalar)(AArch64PteVal)
+                    (AArch64Instr) in
                 let module Arch' = AArch64Arch_litmus.Make(OC)(V) in
                 let module LexParse = struct
                   type instruction = Arch'.parsedPseudo
@@ -551,7 +557,7 @@ end = struct
   X.compile
            *)
           | `MIPS ->
-             let module V = Int64Constant in
+             let module V = Int64Constant.Make(MIPSBase.Instr) in
              let module Arch' = MIPSArch_litmus.Make(OC)(V) in
              let module LexParse = struct
                  type instruction = Arch'.pseudo
@@ -564,7 +570,7 @@ end = struct
              let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
              X.compile
           | `RISCV ->
-             let module V = Int64Constant in
+             let module V = Int64Constant.Make(RISCVBase.Instr) in
              let module Arch' = RISCVArch_litmus.Make(OC)(V) in
              let module LexParse = struct
                  type instruction = Arch'.parsedPseudo

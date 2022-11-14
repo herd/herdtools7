@@ -16,7 +16,10 @@
 
 (** Semantics of Bell *)
 
-module Make (C:Sem.Config)(V:Value.S)
+module
+  Make
+    (C:Sem.Config)
+    (V:Value.S with type Cst.Instr.t = BellBase.instruction)
     =
   struct
     module Bell = BellArch_herd.Make(SemExtra.ConfigToArchConfig(C))(V)

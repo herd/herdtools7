@@ -20,7 +20,7 @@ module Make
       val dirty : DirtyBit.t option
       val procs_user : Proc.t list
     end)
-    (V:Value.AArch64)
+    (V:Value.AArch64 with type Cst.Instr.t = AArch64Base.instruction)
     =
   struct
     module C = TopConf.C
@@ -48,11 +48,11 @@ module Make
       if not memtag then
         Warn.user_error "%s without -variant memtag" ins
 
-    let check_morello ii =
+    let check_morello inst =
       if not morello then
         Warn.user_error
           "morello instruction %s require -variant morello"
-          (AArch64.dump_instruction ii.A.inst)
+          (AArch64.dump_instruction inst)
 
 (* Barrier pretty print *)
     let barriers =
@@ -1667,10 +1667,6 @@ module Make
 (* Instruction fetch *)
 (*********************)
 
-      let supported_with_self i =
-        if not self then
-          Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
-
       let make_label_value proc lbl_str =
         A.V.cstToV (Constant.Label (proc, lbl_str))
 
@@ -1711,59 +1707,12 @@ module Make
       (* And now, just forget about >>! *)
       let (>>!) (_:unit) (_:unit) = ()
 
-      let check_self is_nop m_me  ii =
-        if not self then m_me
-        else
-          match Label.norm ii.A.labels with
-          | Some hd ->
-             let(>>*=) = M.bind_control_set_data_input_first in
-             (* Shadow default control sequencing operator *)
-             let a_v = make_label_value ii.A.fetch_proc hd in
-             let a =
-               A.Location_global (make_label_value ii.A.fetch_proc hd) in
-             let b_val =
-               A.V.cstToV (A.instruction_to_value ii.A.inst) in
-             let nop_val =
-               A.V.cstToV (A.instruction_to_value AArch64Base.I_NOP) in
-             read_loc_instr a ii
-             >>= fun v ->
-             let b_cond = M.op Op.Eq v b_val in
-             b_cond >>==
-               fun cond ->
-               M.choiceT cond
-                 (commit_pred ii
-                  >>*= fun () -> (M.mk_singleton_es (Act.NoAction) ii)
-                  >>= fun () -> m_me)
-                 (let mfail =
-                    let (>>!) = M.(>>!) in
-                    let m_fault =
-                      mk_fault
-                        a_v Dir.R AArch64.N ii
-                        (Some FaultType.AArch64.IllegalInstruction)
-                        (Some "Invalid") in
-                    commit_pred ii
-                    >>*= fun () -> m_fault >>| set_elr_el1 ii
-                    >>! B.Fault Dir.R in
-                  if  is_nop then mfail
-                  else
-                    M.op Op.Eq v nop_val >>=
-                    fun cond ->
-                      M.choiceT cond
-                        (commit_pred ii
-                         >>*= fun () ->(M.mk_singleton_es (Act.NoAction) ii)
-                         >>= B.next1T)
-                         mfail)
-              | None -> m_me
-
-      let build_semantics ii =
-        M.addT (A.next_po_index ii.A.program_order_index)
-          AArch64Base.(
-        match ii.A.inst with
-        | I_NOP ->
-            check_self true B.nextT ii
-              (* Branches *)
-        | I_B l ->
-           check_self false (B.branchT l) ii
+      let do_build_semantics inst ii =
+        let open AArch64Base in
+        match inst with
+        | I_NOP -> B.nextT
+        (* Branches *)
+        | I_B l -> B.branchT l
         | I_BC(c,l)->
             read_reg_ord NZP ii  >>= tr_cond c >>= fun v ->
               commit_bcc ii >>= fun () -> B.bccT v l
@@ -2027,19 +1976,19 @@ module Make
 
         (* Morello instructions *)
         | I_ALIGND(rd,rn,kr) ->
-            check_morello ii ;
+            check_morello inst ;
             !((read_reg_ord_sz MachSize.S128 rn ii >>= match kr with
             | K k -> fun v -> M.op Op.Alignd v (V.intToV k)
             | _ -> assert false
             ) >>= fun v -> write_reg_sz MachSize.S128 rd v ii)
         | I_ALIGNU(rd,rn,kr) ->
-            check_morello ii ;
+            check_morello inst ;
             !((read_reg_ord_sz MachSize.S128 rn ii >>= match kr with
             | K k -> fun v -> M.op Op.Alignu v (V.intToV k)
             | _ -> assert false
             ) >>= fun v -> write_reg_sz MachSize.S128 rd v ii)
         | I_BUILD(rd,rn,rm) ->
-            check_morello ii ;
+            check_morello inst ;
             !(begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
@@ -2047,7 +1996,7 @@ module Make
             M.op Op.Build a b >>= fun v ->
             write_reg_sz MachSize.S128 rd v ii)
         | I_CHKEQ(rn,rm) ->
-            check_morello ii ;
+            check_morello inst ;
             !(begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
@@ -2055,35 +2004,35 @@ module Make
             M.op Op.Eq v1 v2 >>= fun v -> M.op1 (Op.LeftShift 2) v >>= fun v ->
             write_reg NZP v ii)
         | I_CHKSLD(rn) ->
-            check_morello ii ;
+            check_morello inst ;
             !(read_reg_ord_sz MachSize.S128 rn ii >>= fun v ->
             M.op1 Op.CheckSealed v >>= fun v -> write_reg NZP v ii)
         | I_CHKTGD(rn) ->
-            check_morello ii ;
+            check_morello inst ;
             !(read_reg_ord_sz MachSize.S128 rn ii >>= fun v ->
               M.op1 Op.CapaGetTag v >>= fun v -> M.op1 (Op.LeftShift 1) v
               >>= fun v -> write_reg NZP v ii)
         | I_CLRTAG(rd,rn) ->
-            check_morello ii ;
+            check_morello inst ;
             !(read_reg_ord_sz MachSize.S128 rn ii >>= fun (v) ->
             M.op Op.CapaSetTag v V.zero >>= fun v ->
             write_reg_sz MachSize.S128 rd v ii)
         | I_CPYTYPE(rd,rn,rm) ->
-            check_morello ii ;
+            check_morello inst ;
             !(begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
             end >>= fun (v1,v2) -> M.op Op.CpyType v1 v2 >>= fun v ->
             write_reg_sz MachSize.S128 rd v ii)
         | I_CPYVALUE(rd,rn,rm) ->
-            check_morello ii ;
+            check_morello inst ;
             !(begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
             end >>= fun (v1,v2) -> M.op Op.SetValue v1 v2 >>= fun v ->
             write_reg_sz MachSize.S128 rd v ii)
         | I_CSEAL(rd,rn,rm) ->
-            check_morello ii ;
+            check_morello inst ;
             !(begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
@@ -2093,7 +2042,7 @@ module Make
             (* TODO: PSTATE overflow flag would need to be conditionally set *)
             write_reg NZP M.A.V.zero ii)
         | I_GC(op,rd,rn) ->
-            check_morello ii ;
+            check_morello inst ;
             !(read_reg_ord_sz MachSize.S128 rn ii >>= begin fun c -> match op with
             | CFHI -> M.op1 (Op.LogicalRightShift 64) c
             | GCFLGS -> M.op1 (Op.AndK "0xff00000000000000") c
@@ -2106,7 +2055,7 @@ module Make
             | GCVALUE -> M.op1 (Op.Mask MachSize.Quad) c
             end >>= fun v -> write_reg_sz MachSize.Quad rd v ii)
         | I_SC(op,rd,rn,rm) ->
-            check_morello ii ;
+            check_morello inst ;
             !(begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.Quad rm ii
@@ -2125,7 +2074,7 @@ module Make
             end >>= fun v ->
             write_reg_sz MachSize.S128 rd v ii)
         | I_SEAL(rd,rn,rm) ->
-            check_morello ii ;
+            check_morello inst ;
             !(begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
@@ -2133,7 +2082,7 @@ module Make
             M.op Op.Seal a b >>= fun v ->
             write_reg_sz MachSize.S128 rd v ii)
         | I_STCT(rt,rn) ->
-            check_morello ii ;
+            check_morello inst ;
             (* NB: only 1 access implemented out of the 4 *)
             lift_morello
               (fun _ac ma mv ->
@@ -2146,7 +2095,7 @@ module Make
               (read_reg_data MachSize.Quad rt ii)
               Dir.W AArch64.N ii
         | I_LDCT(rt,rn) ->
-            check_morello ii ;
+            check_morello inst ;
             (* NB: only 1 access implemented out of the 4 *)
             lift_morello
               (fun _ac ma _mv ->
@@ -2166,7 +2115,7 @@ module Make
               Dir.R AArch64.N
               ii
         | I_UNSEAL(rd,rn,rm) ->
-            check_morello ii ;
+            check_morello inst ;
             !(begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
@@ -2265,7 +2214,7 @@ module Make
             >>=
               begin match ty with
               | V128 ->
-                  check_morello ii ;
+                  check_morello inst ;
                   begin match op with
                   | ADD -> fun (v1,v2) -> M.op Op.CapaAdd v1 v2
                   | SUB -> fun (v1,v2) -> M.op Op.CapaSub v1 v2
@@ -2382,7 +2331,67 @@ module Make
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | I_LD1M _|I_ST1M _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
-        )
+
+(* At the moment, NOP is the onely instruction that can be used
+ * to overwrite code
+ *)
+
+      let check_self ii =
+        let inst = ii.A.inst in
+        if not (AArch64Base.is_overwritable inst) then
+          do_build_semantics inst ii
+        else match Label.norm ii.A.labels with
+        | None -> do_build_semantics inst ii
+        | Some hd ->
+           let inst_val = V.instructionToV inst in
+           (* Shadow default control sequencing operator *)
+           let(>>*=) = M.bind_control_set_data_input_first in
+           let a_v = make_label_value ii.A.fetch_proc hd in
+           let a = (* Normalised address of instruction *)
+             A.Location_global a_v in
+             read_loc_instr a ii
+             >>= fun actual_val ->
+             M.op Op.Eq actual_val inst_val
+             >>==
+               fun cond ->
+                 M.choiceT cond
+                   (commit_pred ii
+                    >>*= fun () -> M.mk_singleton_es (Act.NoAction) ii
+                    >>= fun () ->
+                      do_build_semantics inst ii )
+                   begin
+                     let mfail =
+                       let (>>!) = M.(>>!) in
+                       let m_fault =
+                         mk_fault
+                           a_v Dir.R AArch64.N ii
+                           (Some FaultType.AArch64.IllegalInstruction)
+                           (Some "Invalid") in
+                       commit_pred ii
+                       >>*= fun () -> m_fault >>| set_elr_el1 ii
+                       >>! B.Fault Dir.R in
+                     match inst with
+                     | AArch64Base.I_NOP -> mfail
+                     | _ ->
+                        let b_cond = M.op1 Op.IsInstr actual_val in
+                        b_cond >>==
+                          fun cond ->
+                          M.choiceT cond
+                            (commit_pred ii
+                             >>*= fun () -> M.mk_singleton_es (Act.NoAction) ii
+                             >>= fun () ->
+                             let inst =
+                               AArch64Base.I_NOP in (* Must be NOP... *)
+                             do_build_semantics inst ii)
+                            mfail
+                   end
+
+      let build_semantics ii =
+        M.addT (A.next_po_index ii.A.program_order_index)
+          begin
+            if self then check_self ii
+            else do_build_semantics ii.A.inst ii
+          end
 
       let spurious_setaf v = test_and_set_af_succeeds v E.IdSpurious
 
