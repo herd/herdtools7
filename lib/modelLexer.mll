@@ -63,6 +63,7 @@ module LU = LexUtils.Make(O)
     (* for bell files *)
     | "instructions" -> INSTRUCTIONS
     | "default" -> DEFAULT
+    | "not" -> LNOT
     | x -> VAR x
 
 
@@ -108,6 +109,7 @@ rule token f = parse
 | '|'   { f Operator "|" ; UNION }
 | "||"  { f Operator "||" ; ALT }
 | '&'   { f Operator "&" ; INTER }
+| "&&"  { f Operator "&&" ; LAND }
 | '*'   { f Operator "*" ; STAR }
 | '~'   { f Operator "~" ; COMP }
 | '+'   { f Operator "+" ; PLUS }
