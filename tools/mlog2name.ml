@@ -61,6 +61,7 @@ module LL =
       let hexa = false
       let int32 = true
       let acceptBig = true
+      let faulttype = true
     end)
 
 let add_name =

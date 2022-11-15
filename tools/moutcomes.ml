@@ -26,7 +26,7 @@ let names = ref []
 let excl = ref []
 let hexa = ref false
 let int32 = ref true
-
+let faulttype = ref true
 let options =
   let open CheckName in
   [
@@ -40,6 +40,7 @@ let options =
      parse_select select;
      parse_names names;
      parse_excl excl;
+     parse_faulttype faulttype;
   ]
 
 let prog =
@@ -66,6 +67,7 @@ let log = match !logs with
 | _ ->
     eprintf "%s takes at most one argument\n" prog ;
     exit 2
+let faulttype = !faulttype
 
 module Verbose = struct let verbose = verbose end
 
@@ -85,6 +87,7 @@ module LL =
       let hexa = hexa
       let int32 = int32
       let acceptBig = true
+      let faulttype = faulttype
     end)
 
 

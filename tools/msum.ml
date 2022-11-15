@@ -28,6 +28,7 @@ let npar = ref 1
 let hexa = ref false
 let int32 = ref true
 let nargs = ref 64
+let faulttype = ref true
 
 let options =
   let open CheckName in
@@ -43,6 +44,7 @@ let options =
    parse_hexa hexa; parse_int32 int32;
    parse_rename rename;
    parse_select select; parse_names names; parse_excl excl;
+   parse_faulttype faulttype;
  ]
 
 let prog =
@@ -69,6 +71,7 @@ let excl = !excl
 let verbose = !verbose
 let hexa = !hexa
 let int32 = !int32
+let faulttype = !faulttype
 
 module Verbose = struct let verbose = verbose end
 
@@ -122,6 +125,7 @@ module LL =
       let hexa = hexa
       let int32 = int32
       let acceptBig = false
+      let faulttype = faulttype
     end)
 
 module D =

@@ -25,6 +25,7 @@ module type Config = sig
   val ok : string -> bool
   val hexa : bool
   val int32 : bool
+  val faulttype : bool
 end
 
 module Make(O:Config) = struct
@@ -38,6 +39,7 @@ module Make(O:Config) = struct
         let hexa = O.hexa
         let int32 = O.int32
         let acceptBig = false
+        let faulttype = O.faulttype
       end)
 
   module LS = LogState.Make(O)
@@ -66,6 +68,7 @@ let names = ref []
 let select = ref []
 let verbose = ref 0
 let shownames = ref true
+let faulttype = ref true
 let log = ref None
 
 let options =
@@ -76,6 +79,7 @@ let options =
    ("-shownames", Arg.Bool (fun b -> shownames := b),
     (sprintf "<bool> show test names in output, default %b" !shownames));
    parse_select select; parse_names names;
+   parse_faulttype faulttype;
  ]
 
 let prog =
@@ -109,6 +113,7 @@ module Config = struct
   let ok = Check.ok
   let hexa = false
   let int32 = true
+  let faulttype = !faulttype
 end
 
 module X = Make(Config)
