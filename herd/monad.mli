@@ -46,13 +46,21 @@ module type S =
     val delay_kont : string -> 'a t -> ('a ->  'a t -> 'b t) -> 'b t
     val delay : 'a t -> ('a * 'a t) t
 
-(* Data composition, entry for snd monad: minimals for iico_data *)
+    val set_standard_input_output : 'a t -> 'a t
+
+    (* Data composition, entry for snd monad: minimals for iico_data *)
     val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
-    val data_input_next : 'a t -> ('a -> 'b t) -> 'b t (* Input to second arg *)
+ (* Input to second arg *)
+    val data_input_next : 'a t -> ('a -> 'b t) -> 'b t
+ (* Input to both args *)
+    val data_input_union : 'a t -> ('a -> 'b t) -> 'b t
     val (>>==) : 'a t -> ('a -> 'b t) -> 'b t (* Output events stay in first arg *)
 
 (* Control composition *)
     val (>>*=) : 'a t -> ('a -> 'b t) -> 'b t
+(* Input is union of both arg inputs *)
+    val control_input_union :  'a t -> ('a -> 'b t) -> 'b t
+
     val (>>*==) : 'a t -> ('a -> 'b t) -> 'b t (* Output events stay in first argument *)
     val bind_control_set_data_input_first :
       'a t -> ('a -> 'b t) -> 'b t (* Data input fixed in first argumst *)
@@ -77,7 +85,12 @@ module type S =
     (* Identical control dep only, all output from firtst argument *)
     val bind_ctrl_first_outputs : 'a t -> ('a -> 'b t) -> 'b t
 
-    val check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v t) -> 'x t -> 'v t
+    (* Very ad-hoc transformation, [short3 p1 p2 s],
+     * add relation r;r;r where r is intra_causality_data,
+     *  with starting event(s) selected by p1 and final one(s) by p2       
+     *)
+    val short3 : (E.event -> bool) -> (E.event -> bool) -> 'a t -> 'a t
+       
     val exch : 'a t -> 'a t -> ('a -> 'b t) ->  ('a -> 'c t) ->  ('b * 'c) t
 
 (*
