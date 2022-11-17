@@ -48,6 +48,7 @@ let tuple_pat = function
 %token INCLUDE
 %token LPAR RPAR BEGIN END LACC RACC LBRAC RBRAC
 %token EMPTY UNDERSCORE SUBSET
+%token LNOT LAND
 %token ALT SEMI UNION INTER COMMA DIFF PLUSPLUS
 %token STAR PLUS OPT INV COMP HAT
 %token LET REC AND WHEN ACYCLIC IRREFLEXIVE TESTEMPTY EQUAL
@@ -69,6 +70,10 @@ let tuple_pat = function
 %right INTER
 %nonassoc STAR PLUS OPT COMP
 %nonassoc HAT
+%left ALT
+%left LAND
+%nonassoc LNOT
+
 %%
 
 main:
@@ -251,11 +256,15 @@ cond:
 | exp EQUAL exp  { Eq ($1,$3) }
 | exp SUBSET exp { Subset ($1,$3) }
 | exp IN exp     { In ($1,$3) }
-| variant        { Variant $1 }
+| variant        { VariantCond $1 }
 
 variant:
-| VARIANT STRING { $2 }
-| STRING { $1 }
+| VARIANT STRING { Variant $2 }
+| STRING { Variant $1 }
+| LNOT variant { OpNot $2 }
+| variant LAND variant { OpAnd ($1,$3) }
+| variant ALT variant { OpOr ($1,$3) }
+| LPAR variant RPAR { $2 }
 
 simple:
 | EMPTY { Konst (mk_loc $loc,Empty RLN) }

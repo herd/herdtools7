@@ -1209,14 +1209,19 @@ module Make
       | Rclass of ClassRel.t
 
 
-    let eval_variant loc v xtrue xfalse =
-      try if O.variant v then xtrue else xfalse
+    let eval_variant loc v =
+      try O.variant v
       with Not_found ->
         Warn.warn_always
           "%a: non-existent variant \"%s\", assumed unset"
           TxtLoc.pp loc v ;
-        xfalse
+        false
 
+    let rec eval_variant_cond loc = function
+      | Variant v -> eval_variant loc v
+      | OpNot v -> not (eval_variant_cond loc v)
+      | OpAnd (v1,v2) -> (eval_variant_cond loc v1) && (eval_variant_cond loc v2)
+      | OpOr (v1,v2) -> (eval_variant_cond loc v1) || (eval_variant_cond loc v2)
 
 (* For all success call kont, accumulating results *)
     let interpret test kfail =
@@ -1708,7 +1713,7 @@ module Make
           | ty ->
               error env.EV.silent loc
                 "cannot perform subset on type '%s'" (pp_typ ty) end
-      | Variant v -> eval_variant loc v true false
+      | VariantCond v -> eval_variant_cond loc v
 
       and eval_app loc env vf va = match vf with
       | Clo f ->
@@ -2172,7 +2177,7 @@ module Make
         (st -> 'a -> 'a) -> 'a -> 'a  =
           fun  (type res) st i kfail kont (res:res) ->  match i with
           | IfVariant (loc,v,ins_true,ins_false) ->
-              let ins = eval_variant loc v ins_true ins_false in
+              let ins = if eval_variant_cond loc v then ins_true else ins_false in
               run st ins kfail kont res
           | Debug (_,e) ->
               if O.debug then begin
