@@ -28,7 +28,7 @@ type t = (string * kind) list
   * are not in reference *)
 val check :
   expected:t -> actual:t ->
-    (string * kind * kind) list * string list
+    (string * kind * kind) list * string list * string list
 
 val compare : t -> t -> int
 
