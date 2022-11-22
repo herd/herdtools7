@@ -1710,9 +1710,11 @@ module Make
       let do_build_semantics inst ii =
         let open AArch64Base in
         match inst with
-        | I_NOP -> B.nextT
+        | I_NOP ->(* Instructions nop and branch below do not generate events, use a placeholder *)
+           !(M.mk_singleton_es (Act.NoAction) ii)
         (* Branches *)
-        | I_B l -> B.branchT l
+        | I_B l ->
+           M.mk_singleton_es (Act.NoAction) ii >>= fun () -> B.branchT l
         | I_BC(c,l)->
             read_reg_ord NZP ii  >>= tr_cond c >>= fun v ->
               commit_bcc ii >>= fun () -> B.bccT v l
@@ -2356,9 +2358,7 @@ module Make
                fun cond ->
                  M.choiceT cond
                    (commit_pred ii
-                    >>*= fun () -> M.mk_singleton_es (Act.NoAction) ii
-                    >>= fun () ->
-                      do_build_semantics inst ii )
+                    >>*= fun () -> do_build_semantics inst ii )
                    begin
                      let mfail =
                        let (>>!) = M.(>>!) in
@@ -2378,11 +2378,9 @@ module Make
                           fun cond ->
                           M.choiceT cond
                             (commit_pred ii
-                             >>*= fun () -> M.mk_singleton_es (Act.NoAction) ii
-                             >>= fun () ->
-                             let inst =
-                               AArch64Base.I_NOP in (* Must be NOP... *)
-                             do_build_semantics inst ii)
+                             >>*= fun () ->
+                               let inst = AArch64Base.I_NOP in (* Must be NOP... *)
+                               do_build_semantics inst ii)
                             mfail
                    end
 
