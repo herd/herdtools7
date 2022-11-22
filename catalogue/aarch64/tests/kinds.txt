@@ -32,5 +32,5 @@ SB             Allowed
 LB+rel+CAS     Forbidden
 MP+rel+CAS-addr Allowed
 MP+rel+CSEL     Allowed
-MP+rel+CSEL-data Forbidden
+#MP+rel+CSEL-data Forbidden
 MP+rel+CSEL-addr Allowed 

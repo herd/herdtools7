@@ -143,14 +143,21 @@ let run_tests ?j ?timeout flags =
     let expected = Kinds.of_file kinds_path in
     let actual =
       herd_kinds_of_permutation ?j ?timeout flags shelf_dir tests p in
-    let diff,miss = Kinds.check ~expected ~actual in
+    let diff,miss,excess = Kinds.check ~expected ~actual in
     if Misc.consp miss then begin
       let pf =
         match miss with
-        | [_] -> Printf.printf "Test %s is not in reference kind file %s\n"
-        | _ -> Printf.printf "Tests %s are not in reference kind file %s\n" in
+        | [_] -> Printf.eprintf "Warning: test %s is not in reference kind file %s\n"
+        | _ -> Printf.eprintf "Warning: tests %s are not in reference kind file %s\n" in
       pf (String.concat "," miss) kinds_path
-    end ;
+      end ;
+     if Misc.consp excess then begin
+      let pf =
+        match miss with
+        | [_] -> Printf.eprintf "Warning: test %s is not in test base\n"
+        | _ -> Printf.eprintf "Warning: tests %s are not in test base\n" in
+      pf (String.concat "," excess) 
+      end ;
     match diff with
     | [] -> true
     | rs ->
