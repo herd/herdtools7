@@ -42,7 +42,8 @@ module Make(S:Scalar.S) =
 
     type scalar = S.t
     type pteval = AArch64PteVal.t
-    type cst = (scalar,pteval) Constant.t
+    type instr = AArch64Base.instruction
+    type cst = (scalar,pteval,instr) Constant.t
 
 
     open AArch64PteVal

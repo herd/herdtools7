@@ -16,7 +16,10 @@
 
 (** Semantics of RISC-V instructions *)
 
-module Make (C:Sem.Config)(V:Value.S)
+module
+  Make
+    (C:Sem.Config)
+    (V:Value.S with type Cst.Instr.t = RISCVBase.instruction)
     =
   struct
     module RISCV = RISCVArch_herd.Make(SemExtra.ConfigToArchConfig(C))(V)

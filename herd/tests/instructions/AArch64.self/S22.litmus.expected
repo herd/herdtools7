@@ -1,0 +1,11 @@
+Test S22 Allowed
+States 2
+0:X3=0;
+0:X3=1;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (0:X3=1)
+Observation S22 Sometimes 1 1
+Hash=587ad449c604e21ebde156dc74ae72c6
+

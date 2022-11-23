@@ -33,10 +33,9 @@ module type S =
 
     val get_lx_sz : instruction -> MachSize.lr_sc
 
-    module V : Value.S
+    module V : Value.S with type Cst.Instr.t = instruction
     include ArchExtra_herd.S with module I.V = V
     and type I.arch_reg = reg
-    and type I.arch_instruction = instruction
 
     include
       IFetchTrait.S

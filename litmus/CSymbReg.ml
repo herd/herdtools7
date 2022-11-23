@@ -38,7 +38,7 @@ with type v = A.V.v and type location = A.location and type fault_type = A.Fault
 
    type ('loc,'v, 'ftype) t = ('loc,'v, string CAst.t,'ftype) MiscParser.r4
 
-   let maybevToV = Constant.map A.V.Scalar.of_string A.V.PteVal.tr
+   let maybevToV = A.V.tr
 
 (******************************************************)
 (* All those to substitute symbolic regs by real ones *)

@@ -482,3 +482,5 @@ include Pseudo.Make
 let get_macro _name = raise Not_found
 
 let hash_pteval _ = assert false
+
+module Instr = Instr.No(struct type instr = instruction end)

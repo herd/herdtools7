@@ -16,7 +16,9 @@
 
 (** Define Bell architecture *)
 
-module Make (C:Arch_herd.Config) (V:Value.S) = struct
+module Make
+         (C:Arch_herd.Config)
+         (V:Value.S with type Cst.Instr.t  = BellBase.instruction) = struct
   include BellBase
   let is_amo = function
     | Prmw _ -> true
@@ -47,8 +49,6 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
         type arch_reg = reg
         let pp_reg = pp_reg
         let reg_compare = reg_compare
-
-        type arch_instruction = instruction
 
         let fromto_of_instr ins = match ins with
           | Pfence(Fence(_,ft)) -> ft

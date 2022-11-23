@@ -130,7 +130,9 @@ module Top(O:Config)(Tar:Tar.S) = struct
 
   module MakeLISA =
     struct
-      module V = Int64Constant
+      module LISAInstr =
+        Instr.No(struct type instr = BellBase.instruction end)
+      module V = Int64Constant.Make(LISAInstr)
       module A = LISAArch_litmus.Make(V)
       module LexParse = struct
         type instruction = A.parsedPseudo
@@ -239,7 +241,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
   end
 
   module MakeX86_64 = struct
-    module V = Int64Constant
+    module V = Int64Constant.Make(X86_64Base.Instr)
     module OC = struct
       include OX
       let asmcomment = None
