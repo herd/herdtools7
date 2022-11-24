@@ -1,0 +1,12 @@
+AArch64 LBNExpNExp+NExpNExp
+TTHM=HA HD
+{
+pte_x=(af:0,db:0,dbm:1); 
+0:X3=x; 1:X3=x;
+x=1;
+}
+P0          | P1         ;
+MOV W4,#2   | LDR W4,[X3]; 
+STR W4,[X3] |            ;
+locations [x;]
+exists(pte_x=(af:1,db:1,dbm:1))

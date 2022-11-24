@@ -1,0 +1,15 @@
+AArch64 STRx+LDRx-ptex+af
+TTHM=HA
+{
+int x; int y; 
+pte_x=(oa:phy_x,af:0);
+pte_y=(oa:phy_x,af:1);
+0:X2=x; 1:X2=y;
+1:X4=pte_x;
+}
+P0          | P1          ;
+MOV W1,#1   | LDR W1,[X2] ;
+STR W1,[X2] | DSB ISH     ;
+            | LDR X3,[X4] ;
+locations [x;]
+exists 1:X1=1 /\ 1:X3=(oa:phy_x,af:0)

@@ -1,0 +1,19 @@
+AArch64 D15347-S+DMBST+DSB-ISB2
+{
+pte_x=(oa:phy_x,db:0,dbm:1); 
+0:X2=pte_x; 1:X2=pte_x;
+0:X1=(oa:phy_y); 
+1:X4=(oa:phy_a); 
+a=0;
+y=1;
+0:X8=z; 
+1:X8=z;
+}
+P0          | P1;
+STR X1,[X2] |               ;
+            | LDR W7,[X8]   ;
+DMB ST      | DSB ISH       ;
+            | ISB           ;
+MOV W7,#1   | L0:STR X4,[X2];
+STR W7,[X8] |               ;
+exists(1:X7=1 /\ pte_x=(oa:phy_y,af:1, db:1, dbm:0, valid:1) /\ x=0)

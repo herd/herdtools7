@@ -1,0 +1,17 @@
+AArch64 WNExpWExp+DSB
+(* Select Hardware management of dirty bit *)
+TTHM=HA HD
+{
+int x; int y;
+0:X0=x; 0:X1=1;
+0:X2=pte_x;
+pte_x=(db:0,dbm:1);
+0:X3=(oa:phy_y,db:0,dbm:1);  
+}
+P0          ;
+STR W1,[X0]; (*sets db=1*)
+DSB ISH     ;
+STR X3,[X2] ; (*overwrites entire ttd, including db*)
+locations [x;y;]
+forall pte_x =  (oa:phy_y,db:0,dbm:1)
+(* will the STR on P0 overwrite the entire ttd? *)

@@ -1,0 +1,72 @@
+"2022-Oct-04: common definitions to both alternative definitions"
+
+catdep
+
+include "armv8-common-defs.cat"
+
+(* TLBI completion *)
+let intervening-dsb(r) =
+  r; [dsb.full]; r
+let tlbi-completion =
+  [TLBI]; (po \ intervening-dsb(po)); [dsb.full]
+let TLBI_C =
+  range(tlbi-completion)
+let tlbic-before =
+  [TLBI_C]; po; [~(M&Imp)]
+  | (if "ETS" then [TLBI_C]; po; [M & Imp] else 0)
+
+let EVENTS =
+  (M\IW) | FAULT | TLBI | TLBI_C
+  | ISB
+
+let IM0 = (IW * (EVENTS\IW))
+  | loc & ((W\FW) * (FW\IW))
+
+let intervening-tlbi ord = ord & inv-domain; [TLBI]; ord & inv-domain
+
+let uncacheable-rf ord =
+  let ord-loc = ord & loc in (
+    ((PTE & W) * (PTE & R & Imp & TLBUncacheable))
+      & ord-loc \ intervening-write(ord-loc)
+  )
+
+let cacheable-fwd-rf-cands ord =
+  let ord-loc = ord & loc in (
+    ((PTE & W) * (PTE & R & Imp & TLBCacheable)) & (
+      po-loc & ord-loc^-1 \ (intervening-tlbi ord)
+    )
+  )
+
+let cacheable-nfwd-rf-cands ord =
+  let ord-loc = ord & loc in (
+    ((PTE & W) * (PTE & R & Imp & TLBCacheable)) & (
+      ord-loc \ (intervening-tlbi ord)
+      | ord-loc & ((intervening-tlbi ord) \ (ord-loc; [W]; (intervening-tlbi ord)) )
+    )
+  )
+
+let make-co ord = ord & loc & (W*W)
+let make-fr (rf-ord, co-ord) = (rf-ord^-1 ; co-ord) \ id
+
+let ImpPTER-ord-before-TLBI ord =
+  [R & PTE & Imp]; (ord; tlbi-completion^-1) & inv-domain; [TLBI]
+
+let TLBI-ord-before-ImpPTER ord =
+  [TLBI]; (ord & inv-domain); [R & PTE & Imp]
+
+let PTE-read-ordered-before ord =
+  [R & PTE & Imp]; (ImpPTER-ord-before-TLBI ord); [TLBI]; po; [dsb.full]; po; [~(M&Imp)]
+  | (if "ETS" then
+    [R & PTE & Imp]; (ImpPTER-ord-before-TLBI ord); [TLBI]; po; [dsb.full]; po; [M&Imp]
+    else 0)
+
+let make-tlbi-ob ord =
+  (PTE-read-ordered-before ord)
+  | tr-ib^-1; (PTE-read-ordered-before ord) & ext
+
+let make-tlbi-ca (ord,fr-ord) =
+  [TLBI]; (TLBI-ord-before-ImpPTER ord); [R & PTE & Imp]; fr-ord; [W & PTE]
+
+(* AXIOM RULING OUT INVALID CB *)
+let tlbi-completion-atomicity ord =
+  tr-ib & (ord & ext & (inv-domain;tlbi-completion); ord & ext)

@@ -1,0 +1,12 @@
+AArch64 RWNExpExp
+{
+int x=1; int y;
+0:X1=x;
+0:X3=(oa:phy_y,db:1);
+0:X4=pte_x;
+pte_x=(oa:phy_x,db:1);
+}
+P0          ;
+LDR W2, [X1];
+STR X3, [X4];
+exists (0:X2=1 /\ pte_x=(oa:phy_y,db:1))

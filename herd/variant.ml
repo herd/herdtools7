@@ -44,7 +44,10 @@ type t =
   | Deps
   | Instances (* Compute dependencies on instruction instances *)
   | Kvm
-  | ETS
+  | VMSA (*Equivalent to KVM*)
+(* AArch64: Enhanced Translation Synchronization - FEAT_ETS, FEAT_ETS2 *)
+  | ETS (*Deprecated*)
+  | ETS2 (*New feature introduced after deprecating ETS*)
 (* AArch64: Enhanced Exception Synchronization - FEAT_ExS *)
   | ExS | EIS | EOS
 (* Do not insert branching event between pte read and accesses *)
@@ -102,7 +105,9 @@ let parse s = match Misc.lowercase s with
 | "deps" -> Some Deps
 | "instances"|"instance" -> Some Instances
 | "kvm" -> Some Kvm
+| "vmsa" -> Some VMSA
 | "ets" -> Some ETS
+| "ets2" -> Some ETS2
 | "exs" -> Some ExS
 | "eis" -> Some EIS
 | "eos" -> Some EOS
@@ -155,7 +160,9 @@ let pp = function
   | Deps -> "Deps"
   | Instances -> "Instances"
   | Kvm -> "kvm"
+  | VMSA -> "vmsa"
   | ETS -> "ets"
+  | ETS2 -> "ets2"
   | ExS -> "exs"
   | EIS -> "eis"
   | EOS -> "eos"

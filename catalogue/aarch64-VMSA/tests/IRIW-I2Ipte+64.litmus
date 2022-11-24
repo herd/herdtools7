@@ -1,0 +1,13 @@
+AArch64 IRIW-I2Ipte+64
+{
+0:X10=pte_x; 3:X10=pte_x;
+0:X1=(oa:phy_y,valid:0);
+3:X2=(oa:phy_z,valid:0);
+1:X4=x; 2:X4=x;
+int64_t x;
+int64_t y=1; int64_t z=2;
+}
+P0           | P1               | P2               | P3          ;
+STR X1,[X10] | L10: LDR X5,[X4] | L21: LDR X5,[X4] | STR X2,[X10];
+             | L11: LDR X6,[X4] | L22: LDR X6,[X4] |             ;
+exists(fault(P1:L10,x) /\ fault(P1:L11,x) /\ fault(P2:L21,x) /\ fault(P2:L22,x) /\ pte_x=(oa:phy_z,valid:0))

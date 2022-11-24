@@ -1,0 +1,9 @@
+AArch64 LDRptex
+{
+int x=1;
+0:X2=pte_x;
+pteval_t 0:X0;
+}
+P0         ;
+LDR X0,[X2] ;
+locations [0:X0;]

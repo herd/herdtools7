@@ -1,0 +1,12 @@
+AArch64 nBBM+LDR
+{
+x=1;
+y=2;
+0:X0=x;
+1:X0=pte_x;
+1:X1=(oa:phy_y)
+}
+P0           | P1           ;
+MOV W1,WZR   | STR X1, [X0] ;
+LDR W1, [X0] |              ;
+exists (0:X1=1 \/ 0:X1=2)

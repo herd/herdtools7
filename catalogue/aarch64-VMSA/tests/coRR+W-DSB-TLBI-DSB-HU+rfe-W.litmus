@@ -1,0 +1,26 @@
+AArch64 coRR+W-DSB-TLBI-DSB-HU+rfe-W
+TTHM=HD
+{
+pte_z=(dbm:1,db:0);
+y=1;
+
+0:X1=x;
+
+1:X3=pte_x;
+1:X0=(oa:phy_x,valid:0);
+1:X1=x;
+1:X5=1;
+1:X6=z;
+
+2:X6=pte_z;
+2:X3=pte_x;
+2:X4=(oa:phy_y);
+}
+P0             | P1              | P2          ;
+L1:LDR W2,[X1] | STR X0,[X3]     | LDR X0,[X6] ;
+L0:LDR W4,[X1] | DSB ISH         | DMB ISH     ;
+               | LSR X9,X1,#12   | STR X4,[X3] ;
+               | TLBI VAAE1IS,X9 |             ;
+               | DSB ISH         |             ;
+               | STR W5,[X6]     |             ;
+exists(0:X2=1/\ 0:X4=0 /\ ~fault(P0:L0,x) /\ 2:X0=(oa:phy_z,db:1,dbm:1))

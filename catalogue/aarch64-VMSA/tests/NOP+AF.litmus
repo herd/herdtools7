@@ -1,0 +1,10 @@
+AArch64 NOP+AF
+TTHM=HA
+{
+int x=0;
+pte_x=(af:0);
+}
+ P0   ;
+NOP   ;
+exists pte_x=(oa:phy_x,af:1)
+

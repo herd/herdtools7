@@ -1,0 +1,20 @@
+AArch64 J2
+{
+pte_x=(valid:0,oa:phy_x);
+  0:X2=pte_x;
+0:X1=(valid:1,oa:phy_x);
+  0:X3=z;
+  x=0;
+  1:X3=z;
+  1:X13=x;
+  y=1;
+}
+P0             |  P1;
+               | MOV W7, #1;
+STR X1,[X2]    | STR W7,[X3]   ;
+DSB SY         | ;
+               | MOV W4, #2 ;
+               | L0:STR W4,[X13];
+LDR W7,[X3]    |               ;
+ 
+exists(0:X7=0 /\ fault(P1:L0,x))

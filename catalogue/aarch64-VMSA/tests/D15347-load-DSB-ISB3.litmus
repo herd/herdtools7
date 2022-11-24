@@ -1,0 +1,16 @@
+AArch64 D15347-load-DSB-ISB3
+{
+pte_x=(valid:0,db:1); 
+0:X2=pte_x;
+0:X1=(oa:phy_y,valid:0,db:1); 
+0:X3=x;
+y=1;
+}
+P0         ;
+MOV W4,#1  ;
+STR X1,[X2];
+DSB ISH    ;
+ISB        ;
+L0:LDR W4,[X3];
+locations[0:X4;]
+exists(fault(P0:L0,x))

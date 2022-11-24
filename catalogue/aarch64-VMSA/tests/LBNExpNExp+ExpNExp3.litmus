@@ -1,0 +1,15 @@
+AArch64 LBNExpNExp+ExpNExp3
+TTHM=HA HD
+{
+pte_x=(db:0,dbm:1);
+0:X3=x;
+1:X6=pte_x;
+1:X4=(db:0,dbm:1,oa:phy_y);
+x=1;
+int y;
+}
+P0          | P1         ;
+MOV W4,#2   | LDR X5,[X6];
+STR W4,[X3] | STR X4,[X6];
+            | LDR X7,[X6];
+exists (1:X5=(oa:phy_x, af:1, db:1, dbm:1, valid:1) /\ y=2 /\ 1:X7=(oa:phy_y, af:1,db:1, dbm:1, valid:1))

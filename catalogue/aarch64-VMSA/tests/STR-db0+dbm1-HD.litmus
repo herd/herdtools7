@@ -1,0 +1,10 @@
+AArch64 STR-db0+dbm1-HD
+TTHM=HA HD
+{
+pte_x=(db:0,dbm:1);
+0:X2=x;
+}
+ P0          ;
+ MOV W0,#1   ;
+ STR W0,[X2] ;
+forall x=1 /\ ~fault(P0,x)

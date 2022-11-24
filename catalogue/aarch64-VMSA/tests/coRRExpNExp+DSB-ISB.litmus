@@ -1,0 +1,18 @@
+AArch64 coRRExpNExp+DSB-ISB
+{
+pte_x=(valid:0);
+0:X1=pte_x; 0:X3=x; 0:X6=(oa:phy_y,db:1); 
+1:X1=pte_x; 
+1:X7=(oa:phy_x,db:1);
+1:X2=(oa:phy_y,db:1); 
+y=1;
+}
+P0          | P1         ;
+            | STR X7,[X1];
+LDR X2,[X1] | STR X2,[X1];
+DSB ISH     |            ;
+ISB         |            ;
+LDR W4,[X3] |            ;
+CMP X2,X6   |            ;
+CSET W5,EQ  |            ;
+exists(0:X5=1 /\ 0:X4=0)

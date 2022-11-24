@@ -1,0 +1,19 @@
+AArch64 MP+shoot+DSB-ISB+VMALL
+{
+0:X2=pte_x;
+0:X1=(oa:phy_y);
+0:X3=x;
+1:X3=x;
+y=1;
+pte_z=(af:1,db:1);
+0:X8=z;
+1:X8=z;
+}
+P0              | P1;
+STR X1,[X2]     | LDR W7,[X8]    ;
+DSB ISH         | DSB SY         ;
+TLBI VMALLE1IS  | ISB            ;
+DSB ISH         | L0: LDR W4,[X3];
+MOV W7,#1       |                ;
+STR W7,[X8]     |                ;
+exists(1:X7=1 /\ 1:X4=0)

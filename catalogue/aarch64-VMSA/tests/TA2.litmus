@@ -1,0 +1,17 @@
+AArch64 TA2
+{
+pte_x=(valid:1);
+0:X3=x;
+0:X1=(oa:phy_x,valid:0);
+0:X2=pte_x;
+}
+P0              ;
+STR X1, [X2]    ;
+DSB ISH         ;
+LSR X9,X3,#12   ;
+TLBI VAAE1IS,X9 ;
+DSB ISH         ;
+ISB             ;
+L0:             ;
+LDR W4,[X3]     ;
+exists(~fault(P0:L0,x))

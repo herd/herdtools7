@@ -1,0 +1,13 @@
+AArch64 STRptex+AF0+BIS
+TTHM=HA
+{
+int x=0; int y=1;
+pte_x=(af:0);
+0:X0=pte_x;
+0:X2=(oa:phy_y,af:0);
+pteval_t 0:X4;
+}
+ P0         ;
+LDR X4,[X0] ;
+STR X2,[X0] ;
+exists pte_x=(oa:phy_x) /\ 0:X4=(oa:phy_x)

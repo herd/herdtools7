@@ -1,0 +1,13 @@
+AArch64 STRx+LDR-STRptex+db2
+TTHM=HA HD
+{
+pte_x=(db:0,dbm:1);
+0:X2=x;
+1:X4=pte_x;
+1:X6=(oa:phy_x,af:0,valid:0);
+xs}
+  P0        | P1             ;
+MOV W1,#1   | LDR X8,[X4]    ;
+L0:         | STR X6,[X4]    ;
+STR W1,[X2] |                ;
+exists(1:X8=(oa:phy_x, dbm:1) /\ x=1 /\ pte_x=(oa:phy_x, dbm:1) /\ ~Fault(P0:L0,x))

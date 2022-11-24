@@ -1,0 +1,24 @@
+AArch64 F9-tps-rrg
+ 
+(* RF + load *)
+ 
+{
+0:X1=(oa:PA(z),valid:1);
+0:X2=PTE(x);
+0:X4=x; 0:X6=y;
+1:X4=x; 1:X6=y;
+x=1;
+z=2;
+}
+ 
+ 
+  P0             |  P1          ;
+STR X1,[X2]     | LDR  W1,[X6] ;
+DSB ISH         |  ;
+LSR X8,X4,#12   |;
+                 | ADD W3, W1, #2;
+TLBI VAAE1IS,X8 | STR W3,[X4]  ;
+DSB ISH         |              ;
+MOV W3,#1       |              ;
+STR W3,[X6]     |              ;
+exists 1:X1=1 /\  x=3 /\ z=3

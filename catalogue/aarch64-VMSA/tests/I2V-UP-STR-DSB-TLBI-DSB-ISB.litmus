@@ -1,0 +1,17 @@
+AArch64 I2V-UP-STR-DSB-TLBI-DSB-ISB
+{
+pte_x=(oa:phy_x,db:0);
+0:X3=pte_x;
+0:X2=(oa:phy_x,db:1);
+0:X4=x;
+0:X1=1;
+}
+P0 ;
+STR X2,[X3]     ;
+DSB ISH         ;
+LSR X9,X4,#12   ;
+TLBI VAAE1IS,X9 ;
+DSB ISH         ;
+ISB             ;
+L0: STR W1,[X4] ;
+exists(fault(P0:L0,x))

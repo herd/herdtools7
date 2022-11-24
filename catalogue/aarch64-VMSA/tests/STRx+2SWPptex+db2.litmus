@@ -1,0 +1,14 @@
+AArch64 STRx+2SWPptex+db2
+TTHM=HA HD
+{
+pte_x=(db:0,dbm:1);
+0:X2=x;
+1:X4=pte_x;
+1:X6=(oa:phy_x,db:0,dbm:1);
+xs}
+  P0        | P1             ;
+MOV W1,#1   | SWP X6,X0,[X4] ; (* clear db atomically *)
+L0:         | SWP X6,X1,[X4] ;
+STR W1,[X2] |                ;
+exists
+1:X0=(oa:phy_x, af:1, db:0, dbm:1, valid:1) /\ 1:X1=(oa:phy_x, af:1, db:1, dbm:1, valid:1) /\ x=1 /\ pte_x=(oa:phy_x, af:1, db:1, dbm:1, valid:1)

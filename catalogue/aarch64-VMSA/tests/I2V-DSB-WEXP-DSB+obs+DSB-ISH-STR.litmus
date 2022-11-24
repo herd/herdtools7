@@ -1,0 +1,21 @@
+AArch64 I2V-DSB-WEXP-DSB+obs+DSB-ISH-STR
+{
+pte_x=(oa:phy_x,valid:0,db:0);
+
+0:X1=pte_x;
+
+0:X0=(oa:phy_x,valid:1,db:0);
+0:X2=(oa:phy_x,valid:1,db:1);
+0:X3=y;
+
+1:X3=y;
+1:X1=x;
+}
+P0             | P1           ;
+ STR X0,[X1]   | LDR W9,[X3]  ;
+ DSB ISH       | DSB ISH      ;
+ STR X2,[X1]   | ISB          ;
+ DSB ISH       |L1:           ;
+ MOV W9,#1     | STR W9,[X1]  ;
+ STR W9,[X3]   |              ;
+exists(1:X9=1 /\ fault(P1:L1,x))

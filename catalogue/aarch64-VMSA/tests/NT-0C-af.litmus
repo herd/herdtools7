@@ -1,0 +1,17 @@
+AArch64 NT-0C-af
+Variant=precise
+TTHM=P0:HA
+{
+pte_x=(af:0);
+0:X2=x; 0:X4=y;
+1:X2=x; 1:X4=y;
+}
+ P0          | P1          ;
+ MOV W0,#1   | MOV W0,#1   ;
+ STR W0,[X2] | STR W0,[X4] ;
+ DMB SY      | DMB ST      ;
+ LDR W1,[X4] | MOV W1,#2   ;
+             |L0:          ;
+             | STR W1,[X2] ;
+locations [x;]
+exists (0:X1=0 /\ fault(P1:L0,x))

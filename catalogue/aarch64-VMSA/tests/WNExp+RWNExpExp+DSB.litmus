@@ -1,0 +1,16 @@
+AArch64 WNExp+RWNExpExp+DSB
+TTHM=HA HD
+{
+0:X0=x; 0:X1=1;
+1:X0=x;
+1:X2=pte_x;
+pte_x=(oa:phy_x,valid:1,af:1,db:0,dbm:1);
+1:X3=(oa:phy_y,valid:1,af:1,db:0,dbm:1);
+int y;
+}
+P0              | P1          ;
+STR W1, [X0]    | LDR W1, [X0];
+                | DSB ISH     ;
+                | STR X3, [X2];
+exists(1:X1=1 /\ pte_x=(oa:phy_y,af:1,db:0,dbm:1,valid:1))
+(* will the STR on P1 overwrite the entire ttd? *)

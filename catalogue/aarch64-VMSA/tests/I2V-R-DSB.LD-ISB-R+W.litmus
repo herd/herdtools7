@@ -1,0 +1,19 @@
+AArch64 I2V-R-DSB.LD-ISB-R+W
+{
+pte_x=(oa:phy_x,valid:0);
+
+0:X3=pte_x;
+
+0:X1=1;
+0:X4=x;
+
+1:X3=pte_x;
+1:X2=(oa:phy_x,valid:1);
+}
+ P0            | P1          ;
+ LDR X2,[X3]   | STR X2,[X3] ;
+ DSB LD        |             ;
+ ISB           |             ;
+L0:            |             ;
+ LDR W1,[X4]   |             ;
+exists(0:X2=(oa:phy_x,valid:1) /\ fault(P0:L0,x))

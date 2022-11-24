@@ -1153,7 +1153,7 @@ Monad type:
 
       let memtag = C.variant Variant.MemTag
       let morello = C.variant Variant.Morello
-      let kvm = C.variant Variant.Kvm
+      let kvm = C.variant Variant.Kvm  || C.variant Variant.VMSA
 
       module AM = A.Mixed(SZ)
 

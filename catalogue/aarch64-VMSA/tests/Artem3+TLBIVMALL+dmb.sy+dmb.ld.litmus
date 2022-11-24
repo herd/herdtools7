@@ -1,0 +1,23 @@
+AArch64 Artem3+TLBIVMALL+dmb.sy+dmb.ld
+{
+0:X1 = pte_x;
+0:X2 = (oa:phy_x,valid:0);
+0:X3 = x;
+0:X4 = y;
+0:X5 = 1;
+0:X6 = z;
+
+1:X0 = (oa:phy_y,valid:0);
+1:X1 = pte_y;
+1:X3 = x;
+
+2:X1 = z;
+2:X3 = y;
+}
+P0              | P1          | P2           ;
+STR X2,[X1]     | STR X0,[X1] | LDR W0,[X1]  ;
+DSB ISH         | DMB ISH     | DMB LD       ;
+TLBI VMALLE1IS  |L1:          |L2:           ;
+DSB ISH         | LDR W2,[X3] | LDR W2,[X3]  ;
+STR W5,[X6]     |             |              ;
+exists(2:X0=1 /\ ~fault(P1:L1,x) /\ ~fault(P2:L2,y))

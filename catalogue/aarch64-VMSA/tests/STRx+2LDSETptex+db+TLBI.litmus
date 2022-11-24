@@ -1,0 +1,20 @@
+AArch64 STRx+2LDSETptex+db+TLBI
+TTHM=HA HD
+{
+pte_x=(db:0,dbm:1);
+0:X2=x; 1:X2=x;
+1:X4=pte_x;
+}
+  P0        | P1               ;
+MOV W1,#1   | MOV X6,#1        ;
+L0:         | LSL X6,X6,#7     ;
+STR W1,[X2] | LDSET X6,X0,[X4] ; (* clear db atomically *)
+            | DSB ISH          ;
+            | LSR X9,X2,#12    ;
+            | TLBI VAAE1IS,X9  ;
+            | DSB ISH          ;
+            | LDSET X6,X1,[X4] ; (* again *)
+exists
+ 1:X0=(oa:phy_x, db:1, dbm:1) /\
+ (1:X1=(oa:phy_x, db:1, dbm:1) \/ pte_x=(oa:phy_x,db:1,dbm:1)) /\
+ x=1 /\ ~fault(P0:L0,x)

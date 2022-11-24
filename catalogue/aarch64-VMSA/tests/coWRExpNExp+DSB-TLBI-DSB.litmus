@@ -1,0 +1,16 @@
+AArch64 coWRExpNExp+DSB-TLBI-DSB
+{
+pte_x=(valid:0);
+0:X1=pte_x;
+0:X2=(oa:phy_x);
+0:X3=x;
+}
+P0;
+STR X2,[X1]    ;
+DSB ISH        ;
+LSR X9,X3,#12  ;
+TLBI VAAE1IS,X9;
+DSB ISH        ;
+L0:LDR X4,[X3] ;
+exists(fault(P0:L0,x))
+

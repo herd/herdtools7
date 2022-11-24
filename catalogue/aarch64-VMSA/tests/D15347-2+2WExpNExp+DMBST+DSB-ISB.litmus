@@ -1,0 +1,19 @@
+AArch64 D15347-2+2WExpNExp+DMBST+DSB-ISB
+TTHM=HD
+{
+pte_x=(db:0,dbm:1); 
+0:X2=pte_x; 1:X2=pte_x;
+0:X1=(oa:phy_y,db:0,dbm:1); 
+1:X3=x;
+y=1;
+pte_z=(af:1,db:1); (* default *)
+0:X8=z; 
+1:X8=z;
+}
+P0          | P1;
+STR X1,[X2] | MOV W7,#2     ;
+            | STR W7,[X8]   ;
+MOV W7,#1   | MOV X4,#1     ;
+            | L0:STR X4,[X3];
+STR W7,[X8] |               ;
+exists(z=2 /\ pte_x=(oa:phy_y,db:0,dbm:1,valid:1) /\ x=1)

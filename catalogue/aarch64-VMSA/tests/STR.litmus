@@ -1,0 +1,9 @@
+AArch64 STR
+(* Test STR+32 is equivalent and accepted by litmus *)
+{
+0:X1=1;
+0:X2=x;
+}
+P0         ;
+STR X1,[X2];
+exists(x=1)

@@ -1,0 +1,13 @@
+AArch64 STRx+SWPptexForbid
+TTHM=HA HD
+{
+pte_x=(valid:1,db:0,dbm:1,oa:phy_x);
+0:X2=x;
+1:X1=(valid:0,oa:phy_x);
+1:X3=pte_x;
+}
+ P0              | P1              ;
+ MOV W0,#1       | SWP X1, X4, [X3];
+ L0: STR W0,[X2] |                 ;
+locations[pte_x;]
+~exists((fault(P0:L0,x) /\ 1:X4=(oa:phy_x,db:0)) \/ (x=1 /\ 1:X4=(oa:phy_x,db:1))) 

@@ -1,0 +1,14 @@
+AArch64 coRRNExpNExpExp+DSB6+BIS
+TTHM=HA HD
+{
+0:X0=x; 0:X1=1; 1:X7=(oa:phy_x,valid:0);
+1:X0=x;
+1:X2=pte_x;
+pte_x=(db:0,dbm:1);
+}
+P0              | P1          ;
+STR W1, [X0]    | LDR W1, [X0];
+                | DSB SY      ;
+                | SWP X7, X3, [X2];
+exists 1:X1=1 /\ 1:X3=(oa:phy_x,db:0,dbm:1)
+(* Forbidden by PTEtoPA on invalid pteval *)

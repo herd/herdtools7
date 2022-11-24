@@ -1,0 +1,10 @@
+AArch64 LDRaf0
+{
+pte_x=(oa:phy_y,af:0);
+0:X2=x;
+y=1;
+}
+P0            ;
+L0:LDR W1,[X2];
+locations[0:X1;]
+forall(fault(P0:L0,x))

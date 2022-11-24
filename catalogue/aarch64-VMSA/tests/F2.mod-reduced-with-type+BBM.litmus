@@ -1,0 +1,18 @@
+AArch64 F2.mod-reduced-with-type+BBM
+{
+[PTE(x)]=(db:0, valid:1);
+0:X7=(oa:PA(x),valid:0); (* invalid entry *)
+0:X1=(oa:PA(x),db:1, valid:1);
+0:X2=PTE(x); 0:X3=x;
+1:X3=x
+}
+P0              | P1               ;
+STR X7,[X2]     |                  ;
+LSR X4,X3,12    |                  ;
+DSB ISH         |                  ;
+TLBI VAAE1IS,X4 |                  ;
+DSB ISH         |                  ;
+STR  X1,[X2]    |    MOV  W4,#1    ;
+                | L1:STR  W4, [X3] ;
+                | L0:STR  W4, [X3] ;
+exists(~fault(P1:L1,x) /\ fault(P1:L0,x,MMU:Permission))

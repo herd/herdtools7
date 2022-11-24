@@ -1,0 +1,16 @@
+AArch64 F4
+{
+[PTE(x)] = (db:0);
+0:X1=(oa:PA(x),db:1);
+0:X2=PTE(x); 0:X3=x; 0:X8=y;
+1:X3=x; 1:X8=y;
+}
+
+P0                  | P1             ;
+    STR  X1,[X2]     |  MOV  W4,#1    ;
+    DSB  ISH         |  STR  W4, [X8] ;
+    LSR  X9,X3,#12   |  DMB  ST       ;
+    TLBI VAAE1IS,X9  |L0:             ;
+    DSB  ISH         |  STR W4, [X3]  ;
+    LDR  W7,[X8]     |                ;
+exists(P0:X7=0 /\ fault(P1:L0,x))

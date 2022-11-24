@@ -1,0 +1,139 @@
+(*
+ * The Armv8 Application Level Memory Model.
+ *
+ * This is a machine-readable, executable and formal artefact, which aims to be
+ * the latest stable version of the Armv8 memory model.
+ * If you have comments on the content of this file, please send an email to
+ * memory-model@arm.com
+ * For a textual version of the model, see section B2.3 of the Armv8 ARM:
+ * https://developer.arm.com/documentation/ddi0487/
+ *
+ * Authors: 
+ * Will Deacon <will.deacon@arm.com>
+ * Jade Alglave <jade.alglave@arm.com>
+ * Nikos Nikoleris <nikos.nikoleris@arm.com>
+ * Artem Khyzha <artem.khyzha@arm.com>
+ * 
+ * Copyright (C) 2016-present, Arm Ltd.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in
+ *       the documentation and/or other materials provided with the
+ *       distribution.
+ *     * Neither the name of ARM nor the names of its contributors may be
+ *       used to endorse or promote products derived from this software
+ *       without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+ * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+ * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *)
+
+include "aarch64util.cat"
+
+(* Translation-intrinsically-before *)
+let tr-ib =
+  [R & PTE & Imp]; iico_data; [B]; iico_ctrl; [M & Exp | MMU & FAULT]
+
+(* Notions of Same Location - PA, VA, and including Fault Effects *)
+let PTE-same-oa =  same-oa(PTE*PTE)
+let same-loc = loc | tr-ib^-1; PTE-same-oa; tr-ib
+let po-loc = po & same-loc
+
+let va-loc = (tr-ib; same-low-order-bits; tr-ib^-1) & loc
+let po-va-loc = po & va-loc
+
+(* Local read successor *)
+let lrs = [W]; (po-loc \ intervening-write(po-loc)) ; [R]
+
+(* Local write successor *)
+let lws = [M]; po-loc; [W | MMU & FAULT]
+
+(* Tag-Check-Intrinsically-Before *)
+let tc-ib = [R & T & Imp]; iico_data; [B]; iico_ctrl; [W\T | T & FAULT]
+
+(* HW PTE Updates permitted only for the AF or DB *)
+let HU = W & PTE & Imp
+assert empty HU \ (AF | DB)
+
+(* CSE-ordered-before *)
+let EXC-ENTRY-CSE = if not "ExS" || "EIS" then EXC-ENTRY else {}
+let EXC-RET-CSE = if not "ExS" || "EOS" then EXC-RET else {}
+let CSE = ISB | EXC-ENTRY-CSE | EXC-RET-CSE
+let CSE-ob = [R & Exp]; ctrl; [CSE]; po?
+
+(* Dependency-ordered-before *)
+let dob = addr | data
+        | ctrl; [W]
+        | (addr; [Exp]; po); [CSE]; po; [R]
+        | CSE-ob; [R]
+        | addr; [Exp]; po; [W]
+        | (addr | data); [Exp]; lrs
+
+(* Pick-ordered-before *)
+let pob = [Exp]; (pick-dep; [W]
+        | (pick-ctrl-dep | pick-addr-dep; [Exp]; po); [CSE]; po; [M]
+        | pick-addr-dep; [M & Exp]; po; [W])
+
+(* Atomic-ordered-before *)
+let aob = rmw
+        | rmw; lrs; [A | Q]
+
+(* DSB-ordered-before *)
+let DSB-ob =
+ [M]; po; [dsb.full]; po; [~(M&Imp)]
+ | (if "ETS2" then [M]; po; [dsb.full]; po; [M & Imp] else 0)
+ | [(R&Exp)\NoRet]; po; [dsb.ld]; po; [~(M&Imp)]
+ | (if "ETS2" then [(R&Exp)\NoRet]; po; [dsb.ld]; po; [M&Imp] else 0)
+ | [W&Exp]; po; [dsb.st]; po; [~(M&Imp)]
+ | (if "ETS2" then [W&Exp]; po; [dsb.st]; po; [M&Imp] else 0)
+
+(* Barrier-ordered-before *)
+let bob = po; [dmb.full]; po
+        | [R\NoRet]; po; [dmb.ld]; po
+        | [W]; po; [dmb.st]; po; [W | MMU & FAULT] 
+        | [range([A];amo;[L])]; po
+        | [L]; po; [A]
+        | [A | Q]; po
+        | po; [L]
+
+(* Locally-ordered-before *)
+let rec lob = lws; si
+            | dob
+            | pob
+            | aob
+            | bob
+            | tc-ib
+            | lob; lob
+let pick-lob = pick-basic-dep; lob; [W]
+
+let TLBUncacheable = MMU & (Translation | AccessFlag)
+
+(* Hardware-required-ordered-before *)
+let rec hw-reqs =
+  tr-ib
+  | [M & Exp]; (lob | pick-lob); [M & Exp | MMU & FAULT] 
+  | [R & T & Imp]; po-loc; [W & T & Exp]
+  | (if "ETS2" then [M & Exp]; po; [TLBUncacheable & FAULT]; tr-ib^-1; [R & Imp & PTE] else 0)
+  | DSB-ob
+  | CSE-ob; [TLBI]
+  | [CSE]; po
+  | [R & PTE & Imp]; po-loc; [W & PTE]
+  | [R & PTE & Imp]; rmw; [HU]
+  | [M & Exp]; po-loc; [TLBUncacheable & FAULT]
+  | hw-reqs; hw-reqs

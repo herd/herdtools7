@@ -1,0 +1,13 @@
+AArch64 coRRExpNExp+DSB-TLBI-DSB2
+{ 
+0:X1=pte_x; 0:X3=x;
+1:X1=pte_x; 1:X2=(oa:phy_x,valid:0);
+}
+P0              | P1         ;
+LDR X2,[X1]     | STR X2,[X1];
+DSB ISH         |            ;
+LSR X9,X3,#12   |            ;
+TLBI VAAE1IS,X9 |            ;
+DSB ISH         |            ;
+L1: LDR W4,[X3] |            ;
+exists(0:X2=(oa:phy_x,valid:0) /\ ~fault(P0:L1,x))

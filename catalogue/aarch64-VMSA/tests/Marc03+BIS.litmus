@@ -1,0 +1,39 @@
+AArch64 Marc03+BIS
+Variant=imprecise
+EL0=P0,P2
+{
+int x =  1 ; (* oldpage *)
+int y =  0 ; (* newpage *)
+int z =  0 ; (* spare PTE *)
+pte_z = (oa:phy_x) ;
+0:X2=x;
+1:X2=x; 1:X4=y;
+1:X6=pte_x; 1:X8=pte_y;
+1:X7=(oa:phy_x,valid:0); (* invalid entry *)
+1:X10=z;
+2:X2=x;
+}
+
+P0          | P1              | P2           ;
+(* 'Break' ie invalidate 'x' VA  *)          
+            | STR X7,[X6]     |              ;
+            | LSR X3,X2,12    |              ;
+            | DSB ISH         |              ;
+            | TLBI VAAE1IS,X3 |              ;
+            | DSB ISH         |              ;
+            | ISB             |              ;
+(* memcopy from old (through 'z')  to new *)
+            | LDR W5,[X10]    |              ;
+            | STR W5,[X4]     |              ;
+(* update 'x' pte *)
+LDR W0,[X2] | LDR X1,[X8]     | MOV W0,2     ;
+LDR W1,[X2] | STR X1,[X6]     | STR W0,[X2]  ;
+            | LSR X3,X2,12    |              ;
+            | DSB ISH         |              ;
+            | TLBI VAAE1IS,X3 |              ;
+            | DSB ISH         |              ;
+            | ISB             |              ;
+locations[1:X5;y;]
+~exists 0:X0=2 /\ 0:X1=1
+
+(* Same as Marc03, but for a missing DMB ISH between memcopy and pte update *)

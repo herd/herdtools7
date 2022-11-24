@@ -1,0 +1,12 @@
+AArch64 LLSC+HA
+TTHM=HA
+{
+int x=0;
+0:X2=x;
+1:X2=x ;
+}
+ P0              | P1          ;
+ MOV W1,#2       | MOV W1,#1   ;
+ LDXR W0,[X2]    | STR W1,[X2] ;
+ STXR W9,W1,[X2] |             ;
+exists (0:X9=0 /\ 0:X0=0 /\ x=2)

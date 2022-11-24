@@ -1,0 +1,14 @@
+AArch64 coRW-DB
+{
+0:X1=pte_x;
+pte_x=(db:0,dbm:1)   ;
+0:X6=(oa:phy_x,db:1) ;
+0:X4=x;
+}
+P0         ;
+MOV W9,#2  ;
+LDR X2,[X1];
+STR W3,[X4];
+CMP X2,X6  ;
+CSET W9,EQ ;
+exists(0:X9=1)

@@ -1,0 +1,17 @@
+AArch64 W1
+{
+x=1;
+y=2;
+
+0:X2=pte_x;
+0:X1=(oa:phy_y);
+0:X8=x;
+
+1:X3=x;
+}
+P0          | P1             ;
+STR X1,[X2] | LDXR W4,[X3]   ; (*reads phy_x*)
+DSB ISH     | MOV W7,#4      ;    
+MOV W7,#3   | STXR W5,W7,[X3]; (*writes phy_y*)
+STR W7,[X8] |                ;
+exists(1:X4=1 /\ y=4)

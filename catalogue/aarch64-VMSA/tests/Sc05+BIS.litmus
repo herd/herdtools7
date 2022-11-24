@@ -1,0 +1,36 @@
+AArch64 Sc05+BIS
+(* While loop without hardware management of AF *)
+Variant=imprecise
+{
+int x; int y; int z;
+0:X1=x; 0:X3=y;
+1:X0=y; 1:X2=x;
+[PTE(x)]=(db:0);
+2:X1=x; 2:X3=PTE(x); 2:X0=(oa:PA(z));
+pteval_t 2:X6;
+}
+
+P0           | P1           | P2               ;
+MOV W0,#1    | LDAR W1,[X0] | MOV X8,#1024     ;
+STR W0,[X1]  | LDR W3,[X2]  | LDR X4,[X3]      ;
+MOV W2,#1    |              | MOV X6,X4        ; 
+STLR W2,[X3] |              |L0:               ;  
+             |              | AND X7, X4, X8   ; 
+             |              | CBZ X7, L1       ; 
+             |              | BIC X2,X4,X8     ;
+             |              | CASAL X6,X2,[X3] ; 
+             |              | CMP X6,X4        ;
+             |              | CSEL X4,X6,X2,NE ;
+             |              | B.NE L0          ;
+             |              | DSB ISH          ;
+             |              | LSR X5,X1,#12    ;
+             |              | TLBI VAAE1IS,X5  ;
+             |              | DSB ISH          ;
+             |              | MOV X6,X4        ; 
+             |              |L1:               ; 
+             |              | CASAL X6,X0,[X3] ; 
+             |              | CMP X4,X6        ;
+             |              | CSEL X4,X6,X4,NE ;
+             |              | B.NE L0          ; 
+locations [Fault(P0,x); Fault(P1,x);]
+exists (1:X1=1 /\ 1:X3=0)

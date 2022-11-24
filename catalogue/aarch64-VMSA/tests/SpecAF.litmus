@@ -1,0 +1,10 @@
+AArch64 SpecAF
+TTHM=HA
+{
+int x=1;
+pte_x=(af:0);
+0:X4=pte_x;
+}
+ P0          ;
+ LDR X1,[X4] ;
+exists 0:X1=(oa:phy_x,af:1)

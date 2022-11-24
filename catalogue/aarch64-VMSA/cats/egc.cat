@@ -1,0 +1,74 @@
+"2022-Sep-27 :: Armv8 External Global Completion requirement, virtual memory"
+
+catdep
+
+include "armv8-common-defs.cat"
+include "alternative-common.cat"
+
+let hw-reqs-addendum =
+  [R & PTE & Imp]; po-loc; [W & PTE]
+  | [R & PTE & Imp]; rmw; [HU]
+  | [M & Exp]; po-loc; [FAULT]
+
+let rec ext-hw-reqs =
+  hw-reqs
+  | hw-reqs-addendum
+  | ext-hw-reqs ; ext-hw-reqs
+
+let gc-req =
+  (W * _)
+  | (R * _) & ((range(rfe) * _) | (rfi^-1; ext-hw-reqs))
+
+let ptw-gc-req=
+  (Imp * _)
+  | (_ * Imp)
+  | ((_ \ M) * _)
+  | (_ * (_ \ M))
+let preorder-gcb = IM0
+    | ext-hw-reqs & gc-req & (Exp * Exp)
+    | (ext-hw-reqs | tlbi-completion | tlbic-before)+ & ptw-gc-req
+    | [M & Exp]; (po-loc \ (po-loc;po-loc)); [W & Exp]
+    | [W & Exp]; (po-loc \ (po-loc;po-loc)); [R & Exp]
+
+with pre-gcb from linearisations(EVENTS, preorder-gcb)
+
+let rec gcb =
+  pre-gcb
+  | IM0
+  | gcb ; gcb
+
+acyclic gcb as gcbemp
+
+let gcbl = gcb & loc
+
+let exp-rf =
+  (W * (R&Exp)) & gcbl
+    \ intervening-write(gcbl)
+    \ (intervening-write(gcbl); [R & Exp]; po-loc)
+
+
+
+
+
+(* To produce rf-cands that pass coRR-pte tests, we disallow reading from stores
+   that a po-earlier read considers outdated
+ *)
+let cacheable-rf-cands = (cacheable-nfwd-rf-cands gcb)
+  \ (gcbl; [W]; (intervening-tlbi gcb); [PTE & R & Imp & TLBCacheable]; po-loc)
+
+include "choices.cat"
+with cacheable-rf from choices (cacheable-rf-cands)
+
+let rf-gcb =
+  exp-rf
+  | (uncacheable-rf gcb)
+  | cacheable-rf
+
+call equal(rf, rf-gcb) as rfeq
+empty (tlbi-completion-atomicity gcb) as tlbi-completion-atomic
+
+let co = make-co gcb
+let fr = make-fr (rf-gcb,co)
+
+(* the following cat file depends on rf, co *)
+include "armv8-common-axioms.cat"

@@ -1,0 +1,25 @@
+AArch64 TwoPhantoms
+TTHM=HA
+(*
+  This test being allowed shows the presence of
+  two phantom updates. As P0 detects the transition
+  from 0 to 1 on af twice.
+*)
+{
+
+int x=0;
+pte_x=(af:0);
+0:X0=pte_x;
+1:X0=pte_x;
+1:X1=(oa:phy_x,af:0);
+}
+  P0        |  P1            ;
+LDR X1,[X0] | SWP X1,X2,[X0] ;
+DSB ISH     |                ;
+LDR X2,[X0] |                ;
+DSB ISH     |                ;
+LDR X3,[X0] |                ;
+exists
+  0:X1=(oa:phy_x,af:1) /\
+  0:X2=(oa:phy_x,af:0) /\
+  0:X3=(oa:phy_x,af:1)

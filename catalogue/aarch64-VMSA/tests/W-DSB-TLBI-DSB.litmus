@@ -1,0 +1,16 @@
+AArch64 W-DSB-TLBI-DSB 
+{
+0:X2=pte_x;
+0:X4=x;
+0:X0=(oa:phy_x,valid:0);
+}
+P0 ;
+STR X0,[X2]    ;
+DSB ISH        ;
+LSR X9,X4,#12  ;
+TLBI VAAE1IS,X9;
+DSB ISH        ;
+L1: LDR X6,[X4];
+exists(fault(P0:L1,x))
+
+

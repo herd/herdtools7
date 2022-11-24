@@ -1,0 +1,17 @@
+AArch64 STRva-STRpte 
+TTHM=HA HD
+{
+pte_x=(oa:phy_a,db:0,dbm:1);
+0:X0=x;
+0:X1=1;
+1:X2=pte_x;
+1:X3=(oa:phy_b,db:0,dbm:1);
+int a; int b;
+}
+P0           | P1;
+STR W1, [X0] | STR X3, [X2];
+locations[a;b;]
+forall(
+(pte_x = (oa:phy_b,db:0,dbm:1) /\ a = 1) \/
+(pte_x = (oa:phy_b,db:1,dbm:1) /\ b = 1)
+)

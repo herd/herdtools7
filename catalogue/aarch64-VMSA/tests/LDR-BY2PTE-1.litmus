@@ -1,0 +1,16 @@
+AArch64 LDR-BY2PTE-1
+TTHM=HA
+{
+  int x = 1 ;
+  pte_x0 = (oa:phy_x, af:0) ;
+  pte_x1 = (oa:phy_x, af:1) ;
+  0:X2=x0 ;
+  1:X2=x1 ;
+  1:X4=pte_x0 ;
+}
+  P0          |  P1         ;
+ LDR W0,[X2]  | MOV W0,#2   ;
+              | STR W0,[X2] ;
+              | DMB SY      ;
+              | LDR X8,[X4] ;
+exists 0:X0=1 /\ 1:X8=(oa:phy_x, af:0)

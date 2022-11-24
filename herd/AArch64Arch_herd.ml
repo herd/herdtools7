@@ -21,7 +21,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       MakeAArch64Base.Make
         (struct let is_morello = C.variant Variant.Morello end)
 
-    let is_kvm = C.variant Variant.Kvm
+    let is_kvm = C.variant Variant.Kvm || C.variant Variant.VMSA
 
 
     let is_amo _ = false

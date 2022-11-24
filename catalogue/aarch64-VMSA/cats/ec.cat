@@ -1,0 +1,56 @@
+"2022-Sep-27 :: Armv8 External completion requirement, virtual memory"
+
+catdep
+
+include "armv8-common-defs.cat"
+include "alternative-common.cat"
+
+let hw-reqs-addendum =
+  [R & PTE & Imp]; po-loc; [W & PTE]
+  | [R & PTE & Imp]; rmw; [HU]
+  | [M & Exp]; po-loc; [FAULT]
+
+let preorder-cb = IM0 | hw-reqs | hw-reqs-addendum | tlbi-completion | tlbic-before
+
+with pre-cb from linearisations(EVENTS,preorder-cb)
+
+let rec cb =
+  pre-cb
+  | IM0
+  | cb ; cb
+
+acyclic cb as cbemp
+
+let cbl = cb & loc
+
+let exp-rf-fwd =
+    (W*(R&Exp)) & po-loc & cbl^-1 \ intervening-write(po-loc)
+let exp-rf-nfwd =
+    (W*(R&Exp)) & cbl \ (intervening-write(cbl | po-loc); [R & Exp]; po-loc?)
+
+let exp-rf =
+  exp-rf-fwd
+  | exp-rf-nfwd
+
+(* To produce rf-cands that pass coRR-pte tests, we disallow reading from stores
+   that a po-earlier read considers outdated
+ *)
+let cacheable-rf-cands = (cacheable-nfwd-rf-cands cb)
+  \ (cbl; [W]; (intervening-tlbi cb); [PTE & R & Imp & TLBCacheable]; po-loc)
+
+include "choices.cat"
+with cacheable-rf from choices cacheable-rf-cands
+
+let rf-cb =
+  exp-rf
+  | (uncacheable-rf cb)
+  | cacheable-rf
+
+call equal(rf, rf-cb) as rfeq
+empty (tlbi-completion-atomicity cb) as tlbi-completion-atomic
+
+let co = make-co cb
+let fr = make-fr (rf-cb,co)
+
+(* the following cat file depends on rf, co *)
+include "armv8-common-axioms.cat"

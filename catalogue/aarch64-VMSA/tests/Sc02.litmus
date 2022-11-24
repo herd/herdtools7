@@ -1,0 +1,24 @@
+AArch64 Sc02
+variant=imprecise
+{
+int x; int y; int z;
+0:X1=x; 0:X3=y;
+1:X0=y; 1:X2=x;
+[PTE(x)]=(db:0);
+2:X1=x; 2:X3=PTE(x);
+2:X0=(oa:PA(z),db:0);
+2:X2=(oa:PA(z));
+}
+ P0           | P1           | P2              ;
+ MOV W0,#1    | LDAR W1,[X0] | STR X0,[X3]     ;
+ STR W0,[X1]  | LDR W3,[X2]  | LSR X5,X1,#12   ;
+ MOV W2,#1    |              | DSB ISH         ;
+ STLR W2,[X3] |              | TLBI VAAE1IS,X5 ;
+              |              | DSB ISH         ;
+              |              | STR X2,[X3]     ;
+              |              | DSB ISH         ;
+              |              | TLBI VAAE1IS,X5 ;
+              |              | DSB ISH         ;
+              
+locations [Fault(P0,x);Fault(P1,x);]
+exists (1:X1=1 /\ 1:X3=0)    

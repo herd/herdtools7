@@ -1,0 +1,17 @@
+AArch64 2+2WNExpExp+NExpNExp
+TTHM=HD
+{
+int z;
+0:X2=x; 1:X4=pte_x;
+0:X3=y; 1:X6=pte_y; 
+1:X5=(oa:phy_z,db:0,dbm:1);
+1:X7=(oa:phy_y,db:0,dbm:1);
+pte_x=(oa:phy_x,db:0,dbm:1);
+pte_y=(oa:phy_y,db:1,dbm:1);
+}
+P0          | P1         ;
+MOV W8,#1   | STR X5,[X4]; 
+STR W8,[X3] | STR X7,[X6];
+MOV W9,#1   |            ;
+STR W9,[X2] |            ;
+exists(x=1 /\ y=1 /\ pte_x=(oa:phy_z,db:0,dbm:1) /\ pte_y=(oa:phy_y,db:1,dbm:1))

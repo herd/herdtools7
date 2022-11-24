@@ -1,0 +1,11 @@
+AArch64 STRv0
+{
+pte_x=(oa:phy_y,valid:0);
+0:X2=x;
+0:X1=1;
+int y;
+}
+P0             ;
+L0: STR W1,[X2];
+locations[0:X2;]
+exists(fault(P0:L0,x))

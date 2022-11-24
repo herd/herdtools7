@@ -1,0 +1,15 @@
+AArch64 LDRx+LDCLRptex+af
+TTHM=HA
+{
+int x=1;
+pte_x=(af:0);
+0:X2=x;
+1:X4=pte_x;
+}
+  P0        | P1               ; 
+L0:         | MOV X1,#1        ;
+LDR W1,[X2] | LDCLR X1,X0,[X4] ; (* Clear bit 0 atomically -> invalid *)
+
+exists
+  0:X1=0 /\ fault(P0:L0,x) /\ pte_x=(oa:phy_x, af:1, db:1, dbm:0, valid:0)
+ /\ 1:X0=(oa:phy_x, af:1, db:1, dbm:0, valid:1)

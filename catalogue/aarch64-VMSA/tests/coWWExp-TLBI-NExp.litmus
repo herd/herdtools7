@@ -1,0 +1,18 @@
+AArch64 coWWExp-TLBI-NExp
+TTHM=HD
+{
+int x; int y;
+0:X1=pte_x;
+pte_x=(oa:phy_x,db:0,dbm:1,valid:1);
+0:X2=(oa:phy_y,db:0,dbm:1,valid:1);
+0:X4=x;
+}
+P0             ;
+STR X2,[X1]    ;
+DSB ISH        ;
+LSR X9,X4,#12  ;  
+TLBI VAAE1IS,X9;
+DSB ISH        ;
+MOV W3,#1      ;
+STR W3,[X4]    ;
+exists(x=1 /\ pte_x=(oa:phy_y,db:0,dbm:1))

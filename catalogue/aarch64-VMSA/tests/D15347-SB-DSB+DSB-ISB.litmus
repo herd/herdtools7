@@ -1,0 +1,22 @@
+AArch64 D15347-SB-DSB+DSB-ISB
+{
+pte_x=(valid:0); 
+0:X2=pte_x;
+0:X1=(oa:phy_y); 
+1:X3=x;
+y=1;
+pte_z=(af:1,db:1); (* default *)
+0:X8=z; 
+1:X8=z;
+}
+P0          | P1;
+STR X1,[X2] | MOV W7,#2     ;
+            | STR W7,[X8]   ;
+DSB ISH     | DSB ISH       ;
+            | ISB           ;
+LDR W7,[X8] | L0:LDR W4,[X3];
+exists(0:X7=0 /\ fault(P1:L0,x))
+(*
+Non-ETS: Forbidden 
+ETS: Forbidden
+*)

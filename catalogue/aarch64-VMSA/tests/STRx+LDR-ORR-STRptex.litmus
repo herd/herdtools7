@@ -1,0 +1,12 @@
+AArch64 STRx+LDR-ORR-STRptex
+{
+0:X2=x;
+1:X4=pte_x;
+}
+  P0        | P1               ; 
+MOV W1,#1   | LDR X3,[X4]      ;
+L0:         | MOV X1,#1        ;
+STR W1,[X2] | LSL X1,X1,#7     ;
+            | ORR X5,X3,X1     ;
+            | STR X5,[X4]      ;
+exists x=0 /\ Fault(P0:L0,x) /\ pte_x=(db:0) /\ 1:X3=(oa:phy_x,db:1)

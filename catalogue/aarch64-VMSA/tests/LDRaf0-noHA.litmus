@@ -1,0 +1,10 @@
+AArch64 LDRaf0-noHA
+{
+0:X1=x;
+0:X2=0;
+x=1;
+pte_x=(af:0);
+}
+P0         ;
+LDR X2,[X1];
+exists(0:X2=1)

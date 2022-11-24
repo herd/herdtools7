@@ -1,0 +1,22 @@
+AArch64 S+dmb.st+dsb.st-tlbi-dsb-isb
+{
+pte_x=(valid:1);
+
+0:X1=(oa:phy_x,valid:0);
+0:X2=pte_x;
+0:X8=y;
+
+1:X8=y;
+1:X3=x;
+}
+P0           | P1;
+STR X1,[X2]  | MOV W7,#2       ;
+DMB ST       | STR W7,[X8]     ;
+MOV W7,#1    | DSB ST          ;
+STR W7,[X8]  | LSR X9,X3,#12   ;
+             | TLBI VAAE1IS,X9 ;
+             | DSB ISH         ;
+             | ISB             ;
+             |L0:              ;
+             | LDR W4,[X3]     ;
+exists(y=2 /\ ~fault(P1:L0,x))

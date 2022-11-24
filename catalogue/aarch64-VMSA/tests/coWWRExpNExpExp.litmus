@@ -1,0 +1,19 @@
+AArch64 coWWRExpNExpExp
+{
+pte_x=(af:1,db:0,dbm:1);
+0:X1=pte_x;
+0:X2=(oa:phy_x);
+0:X3=x;
+0:X5=1;
+}
+P0;
+MOV W9,#2  ;
+STR X2,[X1];
+STR W5,[X3];
+DSB ISH    ;
+LDR X4,[X1];
+CMP X4,X2  ;
+CSET W9,EQ ;
+exists(0:X9=1)
+(* can the load see db=0? *)
+

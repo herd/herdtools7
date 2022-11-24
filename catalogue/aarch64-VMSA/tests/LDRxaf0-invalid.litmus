@@ -1,0 +1,13 @@
+AArch64 LDRxaf0-invalid
+TTHM=HA
+Variant=precise
+
+{
+int x=1;
+pte_x=(af:0,valid:0);
+0:X2=x;
+}
+
+ P0          ;
+LDR W0,[X2]  ;
+forall Fault(P0,x) /\ pte_x=(af:0,valid:0)

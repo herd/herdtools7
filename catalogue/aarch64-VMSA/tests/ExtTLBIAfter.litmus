@@ -1,0 +1,10 @@
+AArch64 ExtTLBIAfter 
+{
+0:X3=x;
+1:X3=x;
+}
+P0              | P1;
+LSR X9,X3,#12   |L0:             ;
+TLBI VAAE1IS,X9 | LDR W4,[X3]    ;
+DSB ISH         |                ;
+exists(1:X4=0)

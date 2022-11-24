@@ -1,0 +1,13 @@
+AArch64 coRR-pte10
+{
+x=1;
+pte_x=(oa:phy_x,valid:0,db:1);
+0:X1=x;
+1:X3=pte_x;
+1:X4=(oa:phy_x,db:1);
+}
+P0             | P1           ;
+L1:LDR W2,[X1] | STR X4, [X3] ;
+L0:LDR W4,[X1] |              ;
+locations[0:X2;0:X4;]
+exists(0:X2=1 /\ 0:X4=0 /\ ~fault(P0:L0,x))

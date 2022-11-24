@@ -1,0 +1,15 @@
+AArch64 NT-12-dmb
+TTHM=P0:HA
+Variant=precise
+{
+pte_x=(af:0);
+x=1;
+0:X0=x; 0:X4=y;
+1:X0=y; 1:X2=pte_x;
+}
+ P0          | P1          ;
+ LDR W1,[X0] | LDR W1,[X0] ;
+ DMB SY      | DMB LD      ;
+ MOV W3,#1   | LDR X3,[X2] ;
+ STR W3,[X4] |             ;
+exists 1:X1=1 /\ 1:X3=(oa:phy_x,af:0)

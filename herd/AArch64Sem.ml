@@ -38,7 +38,7 @@ module Make
     let morello = C.variant Variant.Morello
     let neon = C.variant Variant.Neon
     let is_deps = C.variant Variant.Deps
-    let kvm = C.variant Variant.Kvm
+    let kvm = C.variant Variant.Kvm || C.variant Variant.VMSA
     let is_branching = kvm && not (C.variant Variant.NoPteBranch)
     let pte2 = kvm && C.variant Variant.PTE2
     let do_cu = C.variant Variant.ConstrainedUnpredictable

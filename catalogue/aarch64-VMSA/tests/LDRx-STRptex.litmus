@@ -1,0 +1,13 @@
+AArch64 LDRx-STRptex
+Variant=imprecise
+{
+int x=1;
+int y=2;
+0:X2=pte_x;
+0:X1=(oa:phy_y); 
+0:X3=x;
+}
+P0             ;
+L0:LDR W4,[X3] ;
+STR X1,[X2]    ;
+exists(0:X4=2 /\ pte_x=(oa:phy_y))

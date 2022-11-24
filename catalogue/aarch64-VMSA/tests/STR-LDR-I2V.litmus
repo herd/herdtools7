@@ -1,0 +1,13 @@
+AArch64 STR-LDR-I2V
+{ 
+int x; int y;
+pte_x=(valid:1,db:1);
+0:X2=pte_x;
+0:X1=(oa:phy_y,valid:0,db:1);
+0:X3=x;
+}
+P0         ;
+STR X1,[X2];
+L0:LDR W4,[X3];
+locations[0:X4;]
+exists(fault(P0:L0,x))

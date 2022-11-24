@@ -1,0 +1,41 @@
+AArch64 needTLBI1
+{
+0:X0=pte_x;
+pte_x=(valid:0,oa:phy_x);
+0:X1=(valid:1,oa:phy_y);
+0:X11=x;
+0:X2=(valid:0,oa:phy_z);
+x=0; y=1; z=0;
+}
+P0                ;
+STR X1, [X0]      ;
+DSB ISH           ;
+LSR X21,X11,#12   ;
+TLBI VAE1IS, X21  ;
+DSB ISH           ;
+STR X2, [X0]      ;
+DSB ISH           ;
+L0: LDR W7, [X11] ;
+locations [0:X7;x;pte_x;]
+exists(~fault(P0:L0,x))
+(*
+X0 = a PTE address for x
+X21 = VA of x suitably shifted
+X11 = VA of x
+X1 = valid PTE
+X2 = invalid PTE
+
+Start with an invalid entry in the PTE
+
+STR X1, [X0]
+DSB
+TLBI VAE1IS, X21
+DSB
+STR X2, [X0]
+DSB
+LDR X7, [X11]
+
+The question is whether this is allowed to not abort. In my original text this
+had to abort , since the value being written by the STR X1,[X0] was not
+invalid. But actually it is allowed to abort.  
+*)

@@ -1,0 +1,24 @@
+AArch64 CASAL+FAIL2
+Variant=skip
+{
+int x;
+int y;
+pte_x=(oa:phy_x,db:0);
+0:X1=(oa:phy_x,db:1);
+0:X2=y; 0:X4=PTE(x);
+0:X6=z; 1:X6=z;
+1:X2=y; 
+0:X8=x; 1:X8=x;
+}
+
+  P0             | P1               ;
+ STR X1,[X4]     | LDR W7,[X6]      ;
+ DSB ISH         |                  ;
+ MOV W3,#1       | MOV W1,#0        ;
+ STR W3,[X2]     | MOV W3,#1        ;
+ LSR X9,X8,#12   |                  ;
+ TLBI VAAE1IS,X9 |                  ;
+ DSB ISH         |L0:               ;
+ MOV W5,#1       | CASAL W1,W3,[X8] ;
+ STR W5,[X6]     | LDR W5,[X2]      ;
+exists fault(P1:L0,x) /\ 1:X5=0

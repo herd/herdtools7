@@ -1,0 +1,22 @@
+AArch64 Artem2+TLBIx-HDy+dsb.ish
+TTHM=P1:HD
+{
+pte_y=(oa:phy_y,db:0,dbm:1);
+
+0:X1 = pte_x;
+0:X2 = (oa:phy_x,valid:0);
+0:X3 = x;
+0:X5 = pte_y;
+
+1:X1 = 2;
+1:X2 = y;
+1:X3 = x;
+}
+P0               | P1          ;
+ STR X2,[X1]     | STR W1,[X2] ;
+ DSB ISH         | DSB ISH     ;
+ LSR X9,X3,#12   |L1:          ;
+ TLBI VAAE1IS,X9 | LDR W4,[X3] ;
+ DSB ISH         |             ;
+ LDR X4,[X5]     |             ;
+exists(0:X4=(oa:phy_y,db:0,dbm:1) /\ ~fault(P1:L1,x))

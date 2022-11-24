@@ -1,0 +1,11 @@
+AArch64 LDR-AFv0
+TTHM=HA
+{
+int x=1;
+pte_x = (af:0,valid:0);
+0:X2=x;
+}
+  P0            ;
+L0:             ;
+ LDR   W0,[X2]  ;
+exists pte_x=(af:1,valid:0) /\ fault(P0:L0,x)

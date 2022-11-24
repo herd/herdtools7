@@ -1,0 +1,12 @@
+AArch64 coRWExpNExp
+TTHM=HD
+{
+0:X1=pte_x;
+pte_x=(db:0,dbm:1);
+0:X4=x;
+}
+P0         ;
+LDR X2,[X1];
+MOV W3,#1  ;
+STR W3,[X4];
+exists(0:X2=(oa:phy_x,db:1,dbm:1))
