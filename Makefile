@@ -254,6 +254,7 @@ pick-test-mixed:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-pick tests (mixed mode): OK"
 
+more-test:: mte-test
 mte-test:
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
