@@ -1,0 +1,11 @@
+AArch64 coRTW 
+variant=async
+(* Test LDR-STG *)
+{
+0:X1=x:green; 0:X2=x:red; 0:X3=x:red;
+}
+ P0          ;
+L0:          ;
+ LDR W0,[X3] ;
+ STG X2,[X1] ;
+exists ~fault(P0:L0,x)

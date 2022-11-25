@@ -1,0 +1,10 @@
+AArch64 coRR-TWTR
+variant=async
+{
+0:X0=x:red; 0:X1=x:green;
+1:X0=x:blue; 1:X1=x:red; 1:X3=x:red;
+}
+  P0         |     P1      ;
+ STG X0,[X1] | STG X0,[X1] ;
+             | LDG X2,[X3] ;
+exists 1:X2=x:red /\ [tag(x)]=:blue

@@ -1,0 +1,11 @@
+AArch64 coTR 
+variant=async
+{
+0:X0=x:red; 0:X1=x:green;
+0:X3=x:green;
+}
+ P0          ;
+ STG X0,[X1] ;
+L0:          ;
+ LDR W2,[X3] ;
+exists ~fault (P0:L0,x)

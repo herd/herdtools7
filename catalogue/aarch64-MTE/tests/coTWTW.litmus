@@ -1,0 +1,10 @@
+AArch64 coTWTW
+variant=async
+{
+0:X0=x:red; 0:X1=x:green;
+0:X2=x:blue; 0:X3=x:red;
+}
+ P0          ;
+ STG X0,[X1] ;
+ STG X2,[X3] ;
+exists tag(x)=:red

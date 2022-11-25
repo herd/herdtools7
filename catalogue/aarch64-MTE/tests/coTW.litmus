@@ -1,0 +1,12 @@
+AArch64 coTW 
+variant=async
+{
+0:X0=x:red; 0:X1=x:green;
+0:X3=x:green;
+}
+ P0          ;
+ STG X0,[X1] ;
+ MOV W2,#1   ;
+L0:          ;
+ STR W2,[X3] ;
+exists [x]=1 /\ ~fault (P0:L0,x)

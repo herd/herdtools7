@@ -1,0 +1,13 @@
+AArch64 coRR-T+TW
+varant=async
+{
+0:X0=x:red; 0:X1=x:green;
+1:X1=x:red; 1:X3=x:green
+}
+ P0          | P1          ;
+ STG X0,[X1] | MOV X0,X1   ;
+             | LDG X0,[X1] ;
+             | MOV W2,#1   ;
+             |L1:          ;
+             | STR W2,[X3] ;
+exists [x]=1 /\ 1:X0=x:red /\ ~fault (P1:L1,x)
