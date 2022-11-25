@@ -1,0 +1,12 @@
+AArch64  coRR-TW
+variant=async
+{
+0:X0=x:red; 0:X1=x:green;
+1:X0=x:blue; 1:X1=x:red; 1:X3=x:red;
+}
+ P0          | P1          ;
+ STG X0,[X1] | STG X0,[X1] ;
+             | MOV W2,#1   ;
+             |L0:          ;
+             | STR W2,[X3] ;
+exists [x]=1 /\ [tag(x)]=:blue /\ ~fault (P1:L0,x)
