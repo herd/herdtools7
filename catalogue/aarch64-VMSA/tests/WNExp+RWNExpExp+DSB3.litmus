@@ -1,0 +1,14 @@
+AArch64 WNExp+RWNExpExp+DSB3
+{
+int x; int y;
+0:X1=x; 0:X2=1;
+1:X1=x;
+1:X3=(oa:phy_y,db:1);
+1:X4=pte_x;
+pte_x=(oa:phy_x,db:1)
+}
+P0              | P1          ;
+STR W2, [X1]    | LDR W2, [X1];
+                | DSB ISH     ;
+                | STR X3, [X4];
+exists (1:X2=1 /\ pte_x=(oa:phy_y,db:1))

@@ -1,0 +1,18 @@
+AArch64 coWWWNexpExpNexp+DSB-DSB-TLBI-DSB+VMALL
+{
+0:X1=x;
+0:X5=1;
+0:X2=pte_x;
+pte_x=(db:0,dbm:1);
+0:X3=(oa:phy_x,db:0,dbm:0);
+}
+P0               ;
+STR W5,[X1]      ;  (*sets db=1*)
+DSB ISH          ;
+STR X3,[X2]      ;
+DSB ISH          ;
+TLBI VMALLE1IS   ; 
+DSB ISH          ;
+L0: STR WZR,[X1] ;
+locations [x;]
+exists(fault(P0:L0,x))

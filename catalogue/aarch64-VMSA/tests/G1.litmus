@@ -1,0 +1,16 @@
+AArch64 G1
+{
+0:X1=(oa:PA(z));
+0:X2=PTE(x);
+0:X3=x; 1:X3=x;
+0:X8=y;
+[PTE(y)]=(oa:PA(x));
+}
+  P0             |  P1         ;
+ STR X1,[X2]     | MOV W4,#1   ;
+ DSB ISH         | MOV W5,#2   ;
+ LSR X9,X3,#12   | STR W4,[X3] ;
+ TLBI VAAE1IS,X9 | STR W5,[X3] ;
+ DSB ISH         |             ;
+ LDR W7,[X8]     |             ;
+exists (0:X7=0 /\ z=0 /\ x=2) 

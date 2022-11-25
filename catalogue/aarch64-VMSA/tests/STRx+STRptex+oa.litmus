@@ -1,0 +1,14 @@
+AArch64 STRx+STRptex+oa
+
+{
+int x; int y;
+0:X2=x;
+1:X4=pte_x;
+1:X6=(oa:phy_y);
+}
+
+ P0         | P1          ;
+MOV W0,#1   | STR X6,[X4] ;
+STR W0,[X2] |             ;
+locations [x;y;]
+exists pte_x = (oa:phy_x)

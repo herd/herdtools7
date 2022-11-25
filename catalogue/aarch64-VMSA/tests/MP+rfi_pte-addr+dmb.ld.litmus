@@ -1,0 +1,21 @@
+AArch64 MP+rfi_pte-addr+dmb.ld
+(* an analogy of MP+rfi-addr+dmb.ld, checking if store-to-load forwarding is allowed for implicit PTE reads. (Expectation is that it is Forbid.)  *)
+{
+    x=1;
+    pte_x=(oa:PA(x),valid:0);
+
+    0:X10=(oa:PA(x), valid:1);
+    0:X11=PTE(x);
+    0:X1=x;
+    0:X5=y;
+
+    1:X11=PTE(x);
+    1:X1=x;
+    1:X5=y;}
+P0                  | P1         ;
+STR X10,[X11]       | LDR W4,[X5];
+LDR W2,[X1]         | DMB LD     ;
+EOR W3,W2,W2        | LDR X10,[X11];
+MOV W4,#1           |            ;
+STR W4,[X5,W3,SXTW] |            ;
+exists (~fault(P0,x) /\ 1:X4=1 /\ 1:X10=(oa:PA(x),valid:0))

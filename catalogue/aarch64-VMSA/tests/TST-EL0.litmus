@@ -1,0 +1,12 @@
+AArch64 TST-EL0
+Variant=precise
+EL0=P0
+{
+int x=1;
+pte_x=(el0:0);
+0:X2=x;
+1:X2=x;
+}
+  P0        |  P1         ;
+LDR W0,[X2] | LDR W0,[X2] ;
+forall Fault(P0,x) /\ 0:X0=0 /\ ~Fault(P1,x) /\ 1:X0=1 

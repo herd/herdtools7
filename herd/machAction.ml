@@ -89,7 +89,7 @@ end = struct
   open Dir
   open Access
 
-  let kvm = C.variant Variant.Kvm
+  let kvm = C.variant Variant.VMSA
   let self = C.variant Variant.Self
 
   let access_of_constant cst =

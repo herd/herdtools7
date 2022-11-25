@@ -1,0 +1,21 @@
+AArch64 LDRx-ctrl-DSB-ISB-STRptex-RO
+{
+int x=1;
+int y=2;
+0:X2=pte_x;
+pte_x=(db:0);
+0:X1=(oa:phy_y,db:0);
+0:X3=x;
+}
+P0             ;
+L0:LDR W4,[X3] ;
+AND W5,W4,#4   ; (* W5 is zero *)
+CBNZ W5,LOUT   ;
+DSB ISH        ;
+ISB            ;
+STR X1,[X2]    ;
+LOUT:          ;
+exists(0:X4=2 /\ pte_x=(oa:phy_y, af:1, db:0, dbm:0, valid:1))
+(*
+forall(0:X4=1 /\ pte_x=(oa:phy_y,db:0))
+*)

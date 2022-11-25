@@ -1,0 +1,13 @@
+AArch64 RaR-PTE
+{
+0:X1=x;
+1:X3=pte_x;
+pte_x=(valid:0);
+1:X0=(oa:phy_x,valid:1);
+x=1;
+1:X1=x;
+}
+P0             | P1             ;
+L1:LDR W2,[X1] | STR X0,[X3]    ;
+L0:LDR W4,[X1] |                ;
+exists(0:X2=1 /\ fault(P0:L0,x))

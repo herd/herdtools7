@@ -1,0 +1,21 @@
+AArch64 MP+dmb.sy+addrR-pos-addr+W+PTE
+Variant=imprecise
+{
+0:X1=x; 0:X3=y;
+1:X0=y; 1:X4=z; 1:X8=x;
+2:X0=z;
+int z=1; int a=3;
+3:X0=PTE(z); 3:X2=z;
+3:X1=(oa:PA(z),valid:0);
+3:X3=(oa:PA(a));
+}
+ P0          | P1                  | P2           | P3              ;
+ MOV W0,#1   | LDR W1,[X0]         | MOV W1,#2    | STR X1,[X0]     ;
+ STR W0,[X1] | AND W2,W1,#64       | STR W1,[X0]  | DSB ISH         ;
+ DMB SY      | LDR W3,[X4,W2,SXTW] |              | LSR X4,X2,#12   ;
+ MOV W2,#1   | LDR W5,[X4]         |              | TLBI VAAE1IS,X4 ;
+ STR W2,[X3] | AND W6,W5,#128      |              | DSB ISH         ;
+             | LDR W7,[X8,W6,SXTW] |              | STR X3,[X0]     ;
+locations [1:X3; 1:X5;z;]
+exists (1:X1=1 /\ 1:X7=0)
+/\ not ((1:X3=1 /\ 1:X5=1) \/ (1:X3=2 /\ 1:X5=2) \/ (1:X3=3 /\ 1:X5=3))

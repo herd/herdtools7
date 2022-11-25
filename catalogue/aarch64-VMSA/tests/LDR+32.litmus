@@ -1,0 +1,9 @@
+AArch64 LDR+32
+{
+0:X1=x;
+0:X2=0;
+x=1;
+}
+P0         ;
+LDR W2,[X1];
+exists(0:X2=1)

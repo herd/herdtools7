@@ -1,0 +1,10 @@
+AArch64 STR-db0-noHD+32
+{
+0:X1=0;
+0:X2=x;
+pte_x=(db:0);
+}
+P0         ;
+MOV W1,#1  ;
+STR W1,[X2];
+exists(x=1)

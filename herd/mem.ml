@@ -153,7 +153,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         (* default is checking *)
     let check_mixed =  not (C.variant Variant.DontCheckMixed)
     let do_deps = C.variant Variant.Deps
-    let kvm = C.variant Variant.Kvm
+    let kvm = C.variant Variant.VMSA
     let self = C.variant Variant.Self
 
 (*****************************)

@@ -1,0 +1,19 @@
+AArch64 LDR-BY2PTE-0-LLSC
+TTHM=HA
+Variant=precise
+{
+  int x = 1 ;
+  pte_x0 = (oa:phy_x, af:0) ;
+  pte_x1 = (oa:phy_x, af:1) ;
+  0:X2=x0 ;
+  1:X2=x1 ;
+  1:X4=pte_x0 ;
+  1:X6= (oa:phy_x, valid:0) ;
+}
+  P0          |  P1             ;
+ LDR W0,[X2]  | MOV W0,#2       ;
+              | STR W0,[X2]     ;
+              | DMB SY          ;
+	      | LDXR X8,[X4]    ;
+              | STXR W9,X6,[X4] ;
+exists 0:X0=1 /\ 1:X8=(oa:phy_x, af:0) /\ ~Fault(P0,x0) /\ 1:X9=0

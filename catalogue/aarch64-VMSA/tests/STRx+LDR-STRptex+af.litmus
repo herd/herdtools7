@@ -1,0 +1,17 @@
+AArch64 STRx+LDR-STRptex+af
+TTHM=HA
+{
+pte_x=(af:0);
+0:X2=x;
+1:X4=pte_x;
+1:X6=(oa:phy_x,af:0,valid:0);
+xs}
+  P0        | P1             ;
+MOV W1,#1   | LDR X8,[X4]    ;
+L0:         | STR X6,[X4]    ;
+STR W1,[X2] |                ;
+forall
+   pte_x=(oa:phy_x, af:0, db:1, dbm:0, valid:0) /\
+  (1:X8=(oa:phy_x, af:0, db:1, dbm:0, valid:1) /\
+  (fault(P0:L0,x) /\ x=0 \/ x=1) \/
+  1:X8=(oa:phy_x, af:1, db:1, dbm:0, valid:1) /\ x=1)

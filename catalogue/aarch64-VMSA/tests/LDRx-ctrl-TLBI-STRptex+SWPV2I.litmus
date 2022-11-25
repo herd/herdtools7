@@ -1,0 +1,27 @@
+AArch64 LDRx-ctrl-TLBI-STRptex+SWPV2I
+{
+int x=1;
+int y=2;
+int z=3;
+0:X2=pte_x;
+0:X1=(oa:phy_y);
+0:X6=(oa:phy_x,valid:0);
+0:X3=x;
+1:X1=(oa:phy_z);
+1:X2=pte_x
+}
+P0             | P1              ;
+L0:LDR W4,[X3] | SWP X1,X0,[X2]  ;
+AND W5,W4,#4   |                 ;
+CBNZ W5,LOUT   |                 ;
+ISB            |                 ;
+STR X6,[X2]    |                 ;
+DSB ISH        |                 ;
+LSR X9,X3,#12  |                 ;
+TLBI VAAE1IS,X9|                 ;
+DSB ISH        |                 ;
+ISB            |                 ;
+STR X1,[X2]    |                 ;
+LOUT:          |                 ;
+exists(0:X4=3 /\ pte_x=(oa:phy_z) /\ 1:X0=(oa:phy_y))
+

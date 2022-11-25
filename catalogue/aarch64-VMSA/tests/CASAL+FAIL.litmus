@@ -1,0 +1,17 @@
+AArch64 CASAL+FAIL
+Variant=skip
+{
+int x;
+int y;
+0:X1=(oa:PA(x),db:0);
+0:X2=y; 0:X4=PTE(x);
+1:X2=y; 1:X4=x;
+}
+
+  P0         | P1               ;
+ MOV W3,#1   | MOV W1,#0        ;
+ STR W3,[X2] | MOV W3,#1        ;
+ DSB ISH     |L0:               ;
+ STR X1,[X4] | CASAL W1,w3,[X4] ;
+             | LDR W5,[X2]      ;
+exists fault(P1:L0,x) /\ 1:X5=0

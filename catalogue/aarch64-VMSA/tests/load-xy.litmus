@@ -1,0 +1,13 @@
+AArch64 load-xy
+Variant=precise
+{
+pte_x=(oa:phy_x, valid:1, db:0);
+0:X0 = pte_x;
+0:X3 = (oa:phy_y, valid:1, db:0);
+0:X2=x;
+y=1;
+}
+P0            ;
+L0:LDR W1,[X2];
+STR X3,[X0];
+exists(0:X1=1)

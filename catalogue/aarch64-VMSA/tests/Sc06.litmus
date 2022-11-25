@@ -1,0 +1,32 @@
+AArch64 Sc06
+(* Explicit limitation of loop execution *)
+variant=imprecise
+{
+int x; int y; int z;
+0:X1=x; 0:X3=y;
+1:X0=y; 1:X2=x;
+[PTE(x)]=(db:0);
+2:X1=x; 2:X3=PTE(x); 2:X0=(oa:PA(z));
+uint64_t 2:X8=1024;
+pteval_t 2:X6;
+2:X7=2;
+}
+ P0           | P1           | P2               ;
+ MOV W0,#1    | LDAR W1,[X0] | LDR X4,[X3]      ;
+ STR W0,[X1]  | LDR W3,[X2]  | MOV X6,X4        ;
+ MOV W2,#1    |              |L0:               ;
+ STLR W2,[X3] |              | BIC X2,X4,X8     ;           
+              |              | CASAL X6,X2,[X3] ;     
+              |              | CMP X6,X4        ;
+	      |              | B.EQ L1          ;
+              |              | MOV X4,X6        ;
+              |              | SUB W7,W7,#1     ;
+              |              | CBNZ W7,L0       ;
+              |              |L1:               ;
+              |              | DSB ISH          ;
+              |              | LSR X5,X1,#12    ;
+	      |              | TLBI VAAE1IS,X5  ;
+              |              | DSB ISH          ;
+	      |              | STR X0,[X3]      ;
+locations [Fault(P0,x);Fault(P1,x);2:X6;]
+exists (1:X1=1 /\ 1:X3=0 /\ 2:X7<>0)

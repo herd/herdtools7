@@ -1,0 +1,10 @@
+AArch64 LDRaf0db0dbm1
+TTHM=HA HD
+{
+pte_x=(af:0,db:0,dbm:1);
+0:X3=x;
+x=1;
+}
+P0          ;
+LDR W4,[X3] ;
+exists(0:X4=1)

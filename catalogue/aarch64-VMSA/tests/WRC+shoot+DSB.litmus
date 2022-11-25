@@ -1,0 +1,20 @@
+AArch64 WRC+shoot+DSB
+{
+0:X2=pte_x; 2:X2=pte_x;
+2:X1=(oa:phy_y);
+0:X3=x;
+1:X3=x;
+y=1;
+pte_z=(af:1,db:1);
+0:X8=z;
+1:X8=z;
+}
+P0              | P1             | P2         ;
+LDR X6,[X2]     | LDR W7,[X8]    | STR X1,[X2];
+DSB ISH         | DSB SY         |            ;
+LSR X9,X3,#12   | L0: LDR W4,[X3]|            ;
+TLBI VAAE1IS,X9 |                |            ;
+DSB ISH         |                |            ;
+MOV W7,#1       |                |            ;
+STR W7,[X8]     |                |            ;
+exists(0:X6=(oa:phy_y) /\ 1:X7=1 /\ 1:X4=0)

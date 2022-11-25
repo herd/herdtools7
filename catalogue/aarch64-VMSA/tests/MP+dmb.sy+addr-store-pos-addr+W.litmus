@@ -1,0 +1,18 @@
+AArch64 MP+dmb.sy+addr-store-pos-addr+W
+{
+int z=1;
+0:X1=x; 0:X3=y;
+1:X0=y; 1:X4=z; 1:X8=x;
+2:X0=z;
+}
+ P0          | P1                  | P2          ;
+ MOV W0,#1   | MOV W9,#2           | MOV W1,#3   ;
+ STR W0,[X1] | STR W9,[X4]         | STR W1,[X0] ;
+ DMB SY      | LDR W1,[X0]         |             ;
+ MOV W2,#1   | AND W2,W1,#64       |             ;
+ STR W2,[X3] | LDR W3,[X4,W2,SXTW] |             ;
+             | LDR W5,[X4]         |             ;
+             | AND W6,W5,#128      |             ;
+             | LDR W7,[X8,W6,SXTW] |             ;
+locations [1:X3; 1:X5;]
+exists (1:X1=1 /\ 1:X7=0)

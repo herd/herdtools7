@@ -1,0 +1,19 @@
+AArch64 NT-30-dsbld+dsb
+TTHM=P1:HA
+Variant=precise
+{
+int x=1; int y; int z=2;
+pte_x=(af:0);
+0:X2=y;
+0:X6=pte_x;
+0:X9=(oa:phy_z,af:0);
+1:X2=y; 1:X4=x;
+}
+  P0           | P1           ;
+SWP X9,X7,[X6] | LDR W0,[X2]  ;
+LDR X5,[X6]    | DSB SY       ;
+DSB LD         |L0:           ;
+MOV W0,#1      | LDR W1,[X4]  ;
+STR W0,[X2]    |              ;
+locations [1:X1;]
+exists 0:X7=(oa:phy_x,af:1) /\ 1:X0=1 /\ 1:X1=2

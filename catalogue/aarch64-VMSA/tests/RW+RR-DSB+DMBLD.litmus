@@ -1,0 +1,13 @@
+AArch64 RW+RR-DSB+DMBLD
+TTHM=P0:HD
+{
+0:X1=x; 1:X1=x;
+0:X3=y; 1:X3=y;
+pte_x=(af:0);
+}
+P0          | P1             ;
+LDR W0,[X1] | LDR W2,[X3]    ;
+DSB SY      | DMB LD         ;
+MOV W2,#1   | L0: LDR W0,[X1];
+STR W2,[X3] |                ;
+exists(1:X2=1 /\ fault(P1:L0,x))

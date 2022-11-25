@@ -1,0 +1,21 @@
+AArch64 MP-ISB2+64
+{ 
+pte_x=(valid:0,oa:phy_x);
+0:X2=pte_x;
+0:X1=(valid:1,oa:phy_y);
+0:X3=x; 1:X3=x;
+int64_t x;
+int64_t y=1;
+int64_t z;
+0:X8=z; 1:X8=z;
+int64_t 1:X4;
+int64_t 1:X7;
+}
+P0               | P1;
+STR X1,[X2]      | LDAR X7,[X8]   ;
+DSB SY           | L1: LDR X4,[X3];
+L0: LDAR X4,[X3] |                ;
+MOV X7,#1        |                ;
+STR X7,[X8]      |                ;
+locations [1:X4;]
+exists(fault(P0:L0,x) /\ 1:X7=1 /\ ~fault(P1:L1,x) /\ 1:X4=1)

@@ -1,0 +1,22 @@
+AArch64 coRWWRNExpExpExpExp+DSB-DSB-DSB
+{
+0:X1=x;
+0:X3=pte_x;
+pte_x=(af:0,db:0,dbm:1);
+0:X4=(oa:phy_y,af:0);
+0:X8=(oa:phy_y,af:1,db:1);
+int y;
+}
+P0         ;
+MOV W9,#2  ;
+LDR X2,[X1]; (*sets af=1*)
+DSB ISH    ;
+STR X4,[X3]; (*clears af*)
+DSB ISH    ;
+STR X5,[X1]; (*sets db=1*)
+DSB ISH    ;
+LDR X6,[X3];
+CMP X6,X8  ;
+CSET W9,EQ ;
+exists(0:X9=1)
+

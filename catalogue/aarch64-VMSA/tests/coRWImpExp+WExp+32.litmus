@@ -1,0 +1,14 @@
+AArch64 coRWImpExp+WExp+32
+{
+0:X1=pte_x;
+0:X0=(oa:phy_b);
+1:X1=pte_x;
+1:X0=(oa:phy_a);
+1:X3=x;
+a=1;
+b=2;
+}
+P0          | P1;
+STR X0,[X1] | LDR W2,[X3]; (*could be an STR*)
+            | STR X0,[X1];
+exists(1:X2=2 /\ pte_x=(oa:phy_b)) 

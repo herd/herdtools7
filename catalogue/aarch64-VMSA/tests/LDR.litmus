@@ -1,0 +1,10 @@
+AArch64 LDR
+(* LDR+32 is accepted by litmus *)
+{
+0:X1=x;
+0:X2=0;
+x=1;
+}
+P0         ;
+LDR X2,[X1];
+exists(0:X2=1)

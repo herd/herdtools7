@@ -1,0 +1,21 @@
+AArch64 V2I-W-DSB.ISH-TLBI-DSB.LD-W+RR
+{
+pte_x=(oa:phy_x,valid:1);
+
+0:X2=(oa:phy_x,valid:0);
+0:X3=pte_x;
+0:X1=1;
+0:X4=y;
+0:X9=x;
+
+1:X4=y;
+1:X3=x;
+}
+ P0             | P1          ;
+ STR X2,[X3]    | LDR W2,[X4] ;
+ DSB ISH        | DMB LD      ;
+ LSR X9,X9,#12  |L0:          ;
+ TLBI VAAE1,X9  | LDR W1,[X3] ;
+ DSB LD         |             ;
+ STR W1,[X4]    |             ;
+exists(1:X2=1 /\ ~fault(P1:L0,x))

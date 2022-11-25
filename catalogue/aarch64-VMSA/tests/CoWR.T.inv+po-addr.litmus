@@ -1,0 +1,16 @@
+AArch64 CoWR.T.inv+po-addr
+{
+uint64_t x = 0;              
+uint64_t y = 1;              
+pte_x=(oa:phy_x,valid:0);    
+0:X0=(oa:phy_y,valid:1);     
+0:X1=pte_x;                  
+0:X4=x;                      
+}
+P0 ;
+STR X0,[X1]    ;             
+LDR X2,[X1]    ;             
+EOR X3,X2,X2   ;             
+L0: LDR X5,[X4,X3] ;         
+locations[0:X1;]
+exists(fault(P0:L0,x))       

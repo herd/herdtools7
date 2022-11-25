@@ -24,7 +24,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
   let iico_ctrl_as_dep = match S.A.arch with
   | `AArch64 -> true
   | _ -> false
-  and kvm = O.variant Variant.Kvm
+  and kvm = O.variant Variant.VMSA
 
   let is_mem_kvm =
     if kvm then E.is_mem_physical

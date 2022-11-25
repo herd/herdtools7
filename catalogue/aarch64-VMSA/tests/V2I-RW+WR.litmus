@@ -1,0 +1,20 @@
+AArch64 V2I-RW+WR
+{
+pte_x=(oa:phy_x,valid:1);
+0:X3=pte_x; 1:X3=pte_x;
+1:X2=(oa:phy_y,valid:0);
+0:X4=x; 1:X4=x;
+y=1;
+0:X6=(oa:phy_z,valid:1);
+z=2;
+}
+P0               | P1            ;
+                 | STR X2,[X3]   ;
+LDR X5,[X3]      |               ;
+DSB ISH          |               ;
+LSR X9,X4,#12    |               ;
+TLBI VAAE1IS,X9  |               ;
+DSB ISH          |               ;
+ISB              |               ;
+STR X6,[X3]      | L0: LDR W1,[X4];
+exists(1:X1=2 /\ pte_x=(oa:phy_y,valid:0) /\ 0:X5=(oa:phy_y,valid:0) /\ ~fault(P1:L0,x))

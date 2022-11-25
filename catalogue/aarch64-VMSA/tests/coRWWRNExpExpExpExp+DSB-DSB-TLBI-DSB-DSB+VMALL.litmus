@@ -1,0 +1,22 @@
+AArch64 coRWWRNExpExpExpExp+DSB-DSB-TLBI-DSB-DSB+VMALL
+{
+0:X1=x;
+0:X3=pte_x;
+pte_x=(af:0,db:0,dbm:1);
+0:X4=(oa:phy_x,af:0);
+0:X8=(oa:phy_x,af:1,db:1);
+}
+P0             ;
+MOV W7,#2      ;
+LDR X2,[X1]    ; (*sets af=1*)
+DSB ISH        ;
+STR X4,[X3]    ; (*clears af*)
+DSB ISH        ;
+TLBI VMALLE1IS ; 
+DSB ISH        ;
+STR X5,[X1]    ; (*sets db=1*)
+DSB ISH        ;
+LDR X6,[X3]    ;
+CMP X6,X8      ;
+CSET W7,EQ     ;
+exists(0:X7=1)

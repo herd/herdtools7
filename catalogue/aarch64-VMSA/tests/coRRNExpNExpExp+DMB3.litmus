@@ -1,0 +1,16 @@
+AArch64 coRRNExpNExpExp+DMB3
+TTHM=HA HD 
+{
+0:X0=x; 0:X1=1; 1:X6=(oa:phy_x,db:0,dbm:1);
+1:X0=x;
+1:X2=pte_x;
+pte_x=(db:0,dbm:1);
+}
+P0              | P1          ;
+STR W1, [X0]    | LDR W1, [X0];
+                | DMB ISH     ;
+                | LDR X3, [X2];
+                | CMP X3,X6   ;
+                | CSET W5,EQ  ;
+exists(1:X1=1 /\ 1:X5=0)
+(*can X3 see db=0?*)

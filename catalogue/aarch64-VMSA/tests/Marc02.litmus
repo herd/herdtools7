@@ -1,0 +1,28 @@
+AArch64 Marc02
+Variant=imprecise
+EL0=P0,P2
+{
+int x =  1;   (* oldpage *)
+int y =  0;   (* newpage *)
+0:X2=x;
+1:X2=x; 1:X4=y; 1:X6=pte_x; 1:X8=pte_y;
+2:X2=x;
+}
+
+P0          | P1              | P2           ;
+(* memcopy from x to y *)
+            | LDR W5,[X2]     |              ;
+            | STR W5,[X4]     |              ;
+            | DMB ISH         |              ;
+(* update pte_x        *)
+LDR W0,[X2] | LDR X1,[X8]     | MOV W0,2     ;
+LDR W1,[X2] | STR X1,[X6]     | STR W0,[X2]  ;
+            | LSR X3,X2,12    |              ;
+            | DSB ISH         |              ;
+            | TLBI VAAE1IS,X3 |              ;
+            | DSB ISH         |              ;
+            | ISB             |              ;
+locations[1:X5;y;]
+exists 0:X0=2 /\ 0:X1=1
+
+(*Should be Allowed*)

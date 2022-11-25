@@ -41,8 +41,11 @@ type t =
 (* Branch speculation+ cat computation of dependencies *)
   | Deps
   | Instances (* Compute dependencies on instruction instances *)
-  | Kvm
-  | ETS
+ (*Replaces old KVM -> Virtual memory *)
+  | VMSA
+(* AArch64: Enhanced Translation Synchronization - FEAT_ETS, FEAT_ETS2 *)
+  | ETS (*Deprecated*)
+  | ETS2 (*New feature introduced after deprecating ETS*)
 (* AArch64: Enhanced Exception Synchronization - FEAT_ExS *)
   | ExS | EIS | EOS
 (* Do not insert branching event between pte read and accesses *)

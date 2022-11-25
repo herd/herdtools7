@@ -1,0 +1,17 @@
+AArch64 coRR-pte11+BIS
+{
+0:X1=x;
+1:X3=pte_x;
+pte_x=(db:1);
+1:X4=(oa:phy_y,db:1);
+x=2;
+y=1;
+1:X0=(oa:phy_x,valid:0,db:1);
+1:X1=x;
+}
+P0             | P1             ; 
+L1:LDR W2,[X1] | STR X0,[X3]    ;
+L0:LDR W4,[X1] | DSB ISH        ;
+               | ISB            ;
+               | STR X4,[X3]    ;
+exists 0:X2=2/\ 0:X4=1 /\ ~fault(P0:L0,x) /\ ~fault(P0:L1,x)

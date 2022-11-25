@@ -1,0 +1,10 @@
+AArch64 LDRaf1
+{
+pte_x=(oa:phy_y,af:1);
+0:X2=x;
+y=1;
+}
+P0            ;
+L0:LDR W1,[X2];
+locations[0:X1;]
+exists(0:X1=1 /\ ~fault(P0:L0,x))

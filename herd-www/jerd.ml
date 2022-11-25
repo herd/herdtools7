@@ -55,22 +55,27 @@ let run_herd bell cat litmus cfg =
   end ;
 
   let insert_in_web_output s =
-    Js.Unsafe.fun_call (Js.Unsafe.variable "herd_output") [|Js.Unsafe.inject (Js.string s)|] in
+    Js.Unsafe.fun_call
+      (Js.Unsafe.pure_js_expr "herd_output")
+      [|Js.Unsafe.inject (Js.string s)|] in
   Sys_js.set_channel_flusher stdout insert_in_web_output ;
 
   if not dbg then begin
     let insert_in_web_stderr s =
-      Js.Unsafe.fun_call (Js.Unsafe.variable "herd_stderr") [|Js.Unsafe.inject (Js.string s)|] in
+      Js.Unsafe.fun_call
+        (Js.Unsafe.pure_js_expr "herd_stderr")
+        [|Js.Unsafe.inject (Js.string s)|] in
     Sys_js.set_channel_flusher stderr insert_in_web_stderr
   end ;
   let bell_fname = WebInput.set_bell_str bell
   and cat_fname  = WebInput.set_cat_str cat
   and cfg_fname = WebInput.set_cfg_str cfg
   and litmus_fname = WebInput.set_litmus_str litmus in
-  WebInput.register_autoloader ();
+  WebInput.register_autoloader ();  
   (* web options *)
   outputdir := PrettyConf.StdoutOutput;
   dumpes := false;
+  variant := (fun (_v:Variant.t) -> false);
   load_config cfg_fname;
   show := PrettyConf.ShowAll;
   (* Do not overide default or config settings by default arguments *)
@@ -179,9 +184,8 @@ let run_herd bell cat litmus cfg =
     let optace = match !optace with
     | Some b -> b
     | None -> match model with
-      | Some (Model.Minimal b) -> if b then OptAce.True else OptAce.False
-      | Some (Model.Generic _|Model.File _) -> OptAce.Iico
-      | Some (Model.CAV12 _)|None -> OptAce.False
+      | Some (Model.Generic _|Model.File _)|None -> OptAce.Iico
+      | Some (Model.CAV12 _) -> OptAce.False
     let variant = !variant
     let precision = !precision
     let byte = !byte

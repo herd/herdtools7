@@ -1,0 +1,22 @@
+AArch64 PTE-SimpleETC
+{
+pte_x=(valid:0); (*invalid*)
+0:X2=pte_x;
+0:X1=(oa:phy_x);
+0:X3=x;
+x=1;
+y=0;
+0:X4=y;
+1:X4=y;
+1:X3=x;
+
+}
+P0             | P1            ;
+STR X1, [X2]   |               ;
+DSB SY         |               ;
+ISB            |               ;
+L0:LDR W7,[X3] | LDR W7,[X4]   ;
+DMB SY         |               ;
+STR W7,[X4]    | DMB SY        ;
+               | L1:LDR W1,[X3];
+exists(~fault(P0:L0,x) /\ 0:X7=1 /\ 1:X7=1 /\ fault(P1:L1,x))

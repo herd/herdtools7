@@ -153,7 +153,7 @@ let run_tests ?j ?timeout flags =
       end ;
      if Misc.consp excess then begin
       let pf =
-        match miss with
+        match excess with
         | [_] -> Printf.eprintf "Warning: test %s is not in test base\n"
         | _ -> Printf.eprintf "Warning: tests %s are not in test base\n" in
       pf (String.concat "," excess) 

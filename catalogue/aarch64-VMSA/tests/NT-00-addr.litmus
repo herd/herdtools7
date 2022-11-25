@@ -1,0 +1,19 @@
+AArch64 NT-00-addr
+TTHM=P1:HA
+Variant=precise
+{
+int x=1; int y;
+pte_x=(af:0,valid:0);
+0:X2=y;
+0:X6=pte_x;
+0:X9=(oa:phy_x,af:0,valid:1);
+1:X2=y; 1:X4=x;
+}
+  P0           | P1           ;
+SWP X9,X7,[X6] | LDR W0,[X2]  ;
+LDR X5,[X6]    | DMB LD       ;
+EOR X3,X5,X5   |L0:           ;
+MOV W0,#1      | LDR W1,[X4]  ;
+STR W0,[X2,X3] |              ;
+locations [1:X1;pte_x;]
+exists 0:X5=(oa:phy_x,af:0) /\ 1:X0=1 /\ fault(P1:L0,x)

@@ -1,0 +1,14 @@
+AArch64 D15347-load-invalid
+{
+pte_x=(valid:0); (*invalid*)
+0:X2=pte_x;
+0:X1=(oa:phy_y); 
+0:X3=x;
+y=2;
+}
+P0          ;
+MOV W4,WZR  ;
+STR X1,[X2] ;
+L0:LDR W4,[X3];
+locations[0:X4;]
+exists(fault(P0:L0,x))

@@ -1,0 +1,13 @@
+AArch64 SWPptex+AF0
+TTHM=HA
+{
+int x=0; int y=1;
+pte_x=(af:0);
+0:X0=pte_x;
+0:X2=(oa:phy_y,af:0);
+pteval_t 0:X4;
+}
+ P0            ;
+SWP X2,X4,[X0] ;
+locations [0:X4; pte_x;]
+exists pte_x=(oa:phy_y,af:0) /\ 0:X4=(oa:phy_y,af:1)

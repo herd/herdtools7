@@ -1,0 +1,15 @@
+AArch64 LDRx+LDSETptex+af
+TTHM=HA
+Variant=precise
+{
+int x=1;
+pte_x=(af:0,valid:0);
+0:X2=x;
+1:X4=pte_x;
+}
+  P0        | P1               ; 
+L0:         | MOV X1,#1        ;
+LDR W1,[X2] | LDSET X1,X0,[X4] ; (* Set 1 atomically -> valid *)
+
+locations [Fault(P0:L0,x);pte_x;]
+exists 1:X0=(oa:phy_x, af:1,valid:0)

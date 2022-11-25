@@ -1,0 +1,13 @@
+AArch64 R3+W+32
+{
+0:X0=x;
+1:X5=pte_x;
+1:X4=(oa:phy_y);
+x=1;
+y=2;
+}
+P0          | P1         ;
+LDR W1,[X0] | STR X4,[X5];
+LDR W2,[X0] |            ;
+LDR W3,[X0] |            ;
+exists(0:X1=1 /\ 0:X2=2 /\ 0:X3=1)

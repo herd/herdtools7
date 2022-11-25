@@ -1,0 +1,19 @@
+AArch64 F2.mod-MP-sync
+{
+[PTE(x)]=(db:0, valid:1);
+0:X1=(oa:PA(x),db:1, valid:1);
+0:X2=PTE(x); 0:X3=x;
+1:X3=x;
+0:X5=y; 1:X5=y;
+}
+P0                | P1             ;
+                  |    LDR W0,[X5] ;
+  STR X1,[X2]     |    MOV W4,#1   ;
+  DSB ISH         |    STR W4,[X3] ;
+  LSR X9,X3,#12   | L0:STR W4,[X3] ;
+  TLBI VAAE1IS,X9 |                ;
+  DSB ISH         |                ;
+  LDR W7,[X3]     |                ;
+  MOV W4,#1       |                ;
+  STR W4,[X5]     |                ;
+exists(0:X7=1 /\ 1:X0=1 /\ fault(P1:L0,x))

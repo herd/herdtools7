@@ -1,0 +1,16 @@
+AArch64 LDRx+SWPptex+af
+TTHM=HA
+Variant=precise
+{
+int x=1;
+pte_x=(af:0);
+1:X3=(oa:phy_x,af:0,valid:0);
+0:X2=x;
+1:X4=pte_x;
+pteval_t 1:X2;
+}
+  P0         | P1             ; 
+ LDR X1,[X2] | SWP X3,X2,[X4] ;
+locations [1:X2;Fault(P0,x);]
+exists pte_x=(af:1,valid:0)
+(* Forbid *)

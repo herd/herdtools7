@@ -58,7 +58,7 @@ module Make(O:Config)(M:XXXMem.S) =
     let memtag = O.variant Variant.MemTag
     let morello = O.variant Variant.Morello
     let showtoofar = O.variant Variant.TooFar
-    let kvm = O.variant Variant.Kvm
+    let kvm = O.variant Variant.VMSA
 
 (* Utilities *)
     open Restrict

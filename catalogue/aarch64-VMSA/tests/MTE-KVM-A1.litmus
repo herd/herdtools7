@@ -1,0 +1,13 @@
+AArch64 MTE-KVM-A1.litmus
+Variant=asym
+{
+PTE(y)=(oa:PA(x));
+0:X1=x:green; 0:X0=x:red; 0:X3=y;
+1:X1=y:green; 1:X3=x:green;
+}
+ P0          | P1             ;
+ STG X0,[X1] |LY: LDR W0,[X1] ;
+ DMB ISH     |LX: LDR W2,[X3] ;
+ MOV W2,#1   |                ;
+ STR W2,[X3] |                ;
+locations[1:X0; 1:X2; Fault(P1:LX,x); Fault(P1:LY,y);]

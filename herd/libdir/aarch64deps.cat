@@ -4,14 +4,15 @@
  * This is a machine-readable, executable and formal artefact, which aims to be
  * the latest stable version of the Armv8 memory model.
  * If you have comments on the content of this file, please send an email to
- * jade.alglave@arm.com, referring to version number:
- * 814a6fc1610ec1a24f2cbd178e171966375626ac
+ * memory-model@arm.com
  * For a textual version of the model, see section B2.3 of the Armv8 ARM:
- *   https://developer.arm.com/docs/dtri0487/latest/arm-architecture-reference-manual-armv8-for-armv8-a-architecture-profile
+ *   https://developer.arm.com/docs/ddi0487/
  *
- * Author: Jade Alglave <jade.alglave@arm.com>
+ * Authors: 
+ * Jade Alglave <jade.alglave@arm.com>
+ * Artem Khyzha <artem.khyzha@arm.com>
  *
- * Copyright (C) 2016-2022, Arm Ltd.
+ * Copyright (C) 2016-present, Arm Ltd.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,10 +44,10 @@
 catdep (* This option tells that the cat file computes dependencies *)
 
 (* Dependency through registers and memory *)
-let rec dtrm = 
+let rec dtrm =
   rf-reg \ ([W & range(lxsx)];rf-reg)
   | rfi
-  | iico_data 
+  | iico_data
   | dtrm; dtrm
 
 let Reg=~M | ~B
@@ -54,9 +55,9 @@ let Reg=~M | ~B
 let ADDR=NDATA
 let basic-dep =
    [R|Rreg]; dtrm?
-let data = basic-dep; [DATA]; iico_data; [W]
-let addr = basic-dep; [ADDR]; iico_data; [M]
-let ctrl = basic-dep; [BCC]; po
+let data = (basic-dep; [DATA]; iico_data; [W]) \ same-instance  (* Artem: same-instance subtracted to no longer treat intrinsic dependencies as data/addr/ctrl/pick-dep *)
+let addr = (basic-dep; [ADDR]; iico_data; [M]) \ same-instance
+let ctrl = (basic-dep; [BCC]; po) \ same-instance
 
 (** Pick dependencies *)
 let pick-dtrm = (dtrm|iico_ctrl)+
@@ -70,11 +71,16 @@ let pick-data-dep =
 let pick-ctrl-dep =
    pick-basic-dep; [BCC]; po
 let pick-dep =
-( 
-   pick-basic-dep | 
-   pick-addr-dep  | 
+(
+   pick-basic-dep |
+   pick-addr-dep  |
    pick-data-dep  |
-   pick-ctrl-dep  
-)
+   pick-ctrl-dep
+) \ same-instance
 
 include "aarch64show.cat"
+
+let addr = [Exp]; (addr \ same-instance)
+let data = data \ same-instance
+let ctrl = ctrl \ same-instance
+let pick-dep = pick-dep \ same-instance

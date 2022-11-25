@@ -1,0 +1,19 @@
+AArch64 VW+VW+VW+3R
+{
+int x; int y; int z;
+0:X10=pte_x; 1:X10=pte_x; 2:X10=pte_x; 3:X10=pte_x;
+0:X1=(oa:phy_x,valid:1);
+1:X2=(oa:phy_y,valid:1);
+2:X3=(oa:phy_z,valid:1);
+}
+P0           | P1           | P2           | P3           ;
+STR X1,[X10] | STR X2,[X10] | STR X3,[X10] | LDR X4, [X10];
+             |              |              | LDR X5, [X10];
+             |              |              | LDR X6, [X10];
+exists( (3:X4=(oa:phy_x,valid:1) /\ 3:X5=(oa:phy_y,valid:1) /\ 3:X6=(oa:phy_z,valid:1)) \/
+        (3:X4=(oa:phy_x,valid:1) /\ 3:X5=(oa:phy_z,valid:1) /\ 3:X6=(oa:phy_y,valid:1)) \/
+        (3:X4=(oa:phy_y,valid:1) /\ 3:X5=(oa:phy_x,valid:1) /\ 3:X6=(oa:phy_z,valid:1)) \/
+        (3:X4=(oa:phy_y,valid:1) /\ 3:X5=(oa:phy_z,valid:1) /\ 3:X6=(oa:phy_x,valid:1)) \/
+        (3:X4=(oa:phy_z,valid:1) /\ 3:X5=(oa:phy_x,valid:1) /\ 3:X6=(oa:phy_y,valid:1)) \/
+        (3:X4=(oa:phy_z,valid:1) /\ 3:X5=(oa:phy_y,valid:1) /\ 3:X6=(oa:phy_x,valid:1))
+      )

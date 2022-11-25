@@ -1,0 +1,48 @@
+AArch64 needTLBI2
+Hash=a30a80e9a6b53541a53b7a2d7fa23b62
+{
+0:X0=pte_x;
+pte_x=(valid:0,oa:phy_x);
+0:X1=(valid:1,oa:phy_y);
+0:X11=x;
+0:X2=(valid:0,oa:phy_z);
+x=0; y=1; z=0;
+}
+P0                ;
+STR X1, [X0]      ;
+DSB ISH           ;
+LSR X21,X11,#12   ;
+TLBI VAE1IS, X21  ;
+DSB ISH           ;
+MOV X20, #0       ;
+CBZ X20, over     ;
+LDR X23, [X11]    ;
+over:             ;
+STR X2, [X0]      ;
+DSB ISH           ;
+L0: LDR W7, [X11] ;
+exists(~fault(P0:L0,x))
+
+
+(*
+X0 = a PTE address for x
+X21 = VA of x suitably shifted
+X11 = VA of x
+X1 = valid PTE
+X2 = invalid PTE
+
+
+Start with an invalid entry in the PTE
+
+  STR X1, [X0]
+  DSB
+  TLBI VAE1IS, X21
+  DSB
+  MOV X20, #0
+  CBZ X20, over
+  LDR X23, [X11]  // this is never architecturally executed but could cause the allocation of the valid PTE into the TLB.  
+over
+  STR X2, [X0]
+  DSB
+  LDR X7, [X11]
+*)

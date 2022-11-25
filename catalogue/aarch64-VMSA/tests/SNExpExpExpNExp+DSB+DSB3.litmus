@@ -1,0 +1,14 @@
+AArch64 SNExpExpExpNExp+DSB+DSB3
+TTHM=P0:HD
+{
+0:X1=x; 1:X1=x;
+0:X5=1;
+0:X3=y; 1:X3=y;
+pte_x=(oa:phy_x,af:1,db:0,dbm:1);
+pte_y=(oa:phy_y,af:1,db:1,dbm:1);
+}
+P0               | P1               ;
+L1: STR WZR,[X1] | LDR W4,[X3]      ;
+DSB ISH          | DSB ISH          ;
+STR W5,[X3]      | L0: STR WZR,[X1] ;
+exists(~fault(P0:L1,x) /\ 1:X4=1 /\ fault(P1:L0,x))

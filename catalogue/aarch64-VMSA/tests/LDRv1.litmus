@@ -1,0 +1,11 @@
+AArch64 LDRv1
+(* test LDRv1+32 is equivalent and accepted by litmus *)
+{
+0:X1=x;
+0:X2=0;
+x=1;
+pte_x=(valid:1);
+}
+P0         ;
+LDR X2,[X1];
+exists(0:X2=1)

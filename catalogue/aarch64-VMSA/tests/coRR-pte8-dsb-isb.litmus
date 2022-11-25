@@ -1,0 +1,17 @@
+AArch64 coRR-pte8-dsb-isb
+{
+x=1;
+pte_x=(valid:0);
+
+0:X1=x;
+0:X3=x;
+
+1:X3=pte_x;
+1:X4=(oa:phy_x);
+}
+P0             | P1             ;
+L1:LDR W2,[X1] | STR X4, [X3]   ;
+DSB SY         |                ;
+ISB            |                ;
+L0:LDR W4,[X3] |                ;
+exists(0:X2=1 /\ fault(P0:L0,x))

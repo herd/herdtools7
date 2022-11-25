@@ -1,0 +1,17 @@
+AArch64 I2V-W-DSB.ST-ISB-W
+{
+pte_x=(oa:phy_x,valid:0);
+
+0:X3=pte_x;
+0:X2=(oa:phy_x,valid:1);
+
+0:X1=1;
+0:X4=x;
+}
+ P0            ;
+ STR X2,[X3]   ;
+ DSB ST        ;
+ ISB           ;
+L0:            ;
+ STR W1,[X4]   ;
+exists(fault(P0:L0,x))

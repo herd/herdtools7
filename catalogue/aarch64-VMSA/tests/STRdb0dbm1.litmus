@@ -1,0 +1,11 @@
+AArch64 STRdb0dbm1
+{
+pte_x=(db:1,dbm:1);
+0:X0=x;
+0:X1=pte_x;
+0:X2=(oa:phy_x,db:0,dbm:1);
+}
+P0          ;
+STR X2, [X1]; (* sets db=0 *)
+forall(pte_x=(oa:phy_x,db:0,dbm:1))
+

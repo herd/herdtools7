@@ -1,0 +1,19 @@
+AArch64 coRR-pte9
+{
+0:X1=x;
+1:X3=pte_x;
+pte_x=(db:1);
+1:X4=(oa:phy_y,db:1);
+y=1;
+1:X0=(oa:phy_x,valid:0,db:1);
+1:X1=x;
+}
+P0             | P1             ; 
+L1:LDR W2,[X1] | STR X0,[X3]    ;
+L0:LDR W4,[X1] | DSB ISH        ;
+               | LSR X9,X1,#12  ;
+               | TLBI VAAE1IS,X9;
+               | DSB ISH        ;
+               | STR X4,[X3]    ;
+locations[0:X2;0:X4;]
+exists(0:X2=1/\ 0:X4=0 /\ ~fault(P0:L0,x))

@@ -1,0 +1,15 @@
+AArch64 FauxMP
+TTHM=HA
+{
+int y=0;
+[PTE(y)]=(valid:0);
+0:X2=x; 0:X4=PTE(y);
+0:X1=(oa:PA(y),af:0);
+1:X2=x; 1:X4=PTE(y);
+}
+  P0         |  P1         ;
+ MOV W3,#1   | LDR X1,[X4] ;
+ STR W3,[X2] | DMB LD      ;
+ DMB ST      | LDR W3,[X2] ;
+ STR X1,[X4] |             ;
+exists 1:X1=(oa:PA(y)) /\ 1:X3=0

@@ -1,0 +1,17 @@
+AArch64 LDCLRptex-STRx+db+BIS
+TTHM=HA HD
+{
+int x=0;
+0:X2=x;
+0:X4=pte_x;
+pte_x=(af:0,db:0,dbm:1);
+}
+
+P0                ;
+ MOV X9,#1        ;
+ LDCLR X9,X6,[X4] ;
+ MOV W1,#1        ;
+L0:               ; 
+ STR W1,[X2]      ;
+(* Final pte_x value with db:1 and valid:0, while 0:X6 has db:0 *) 
+exists (0:X6=(oa:phy_x, af:0, db:0, dbm:1) /\ pte_x=(oa:phy_x, af:0, dbm:1, valid:0) /\ x=1 /\ ~fault(P0:L0,x)) \/ (0:X6=(oa:phy_x, db:0, dbm:1) /\ pte_x=(oa:phy_x, dbm:1, valid:0) /\ x=1 /\ ~fault(P0:L0,x))

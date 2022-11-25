@@ -1,0 +1,14 @@
+AArch64 STRv0+db
+TTHM=HA HD
+{
+int x=0;
+0:X2=x;
+pte_x=(af:0,db:0,dbm:1,valid:0);
+}
+
+P0                ;
+ MOV W1,#1        ;
+L0:               ;
+ STR W1,[X2]      ;
+exists
+  x=0 /\ fault(P0:L0,x) /\ pte_x=(oa:phy_x,af:1,db:1,dbm:1,valid:0) 

@@ -1,0 +1,15 @@
+AArch64 RWpte+W
+{
+a=1; int x=0;
+pte_a=(oa:phy_x);
+pte_z=(oa:phy_x) ;
+0:X6=pte_a;
+0:X7=(oa:phy_x,valid:0); (* invalid entry *)
+0:X10=z;
+1:X2=a;
+}
+
+P0              | P1           ;
+STR X7,[X6]     | MOV W0,2     ;
+LDR W5,[X10]    | STR W0,[X2]  ;
+exists a=2 /\ 0:X5=1 

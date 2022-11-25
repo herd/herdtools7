@@ -1,0 +1,18 @@
+AArch64 WRCpte5 
+{
+0:X1=x;
+0:X3=z;
+1:X3=pte_x;
+pte_x=(oa:phy_x,valid:1,af:1,db:1);
+1:X4=(oa:phy_y,valid:1,af:1,db:1);
+2:X3=z;
+2:X1=x;
+y=1;
+}
+P0          | P1           | P2;
+LDR W2,[X1] | STR X4, [X3] | LDR W4, [X3];
+DSB ISH     |              | DSB ISH;
+ISB         |              | ISB;
+MOV W4, #1  |              | LDR W2,[X1];
+STR W4,[X3] |              | ;
+exists(0:X2=1 /\ 2:X4=1 /\ 2:X2=0)

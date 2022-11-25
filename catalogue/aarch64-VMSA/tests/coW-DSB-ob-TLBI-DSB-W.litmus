@@ -1,0 +1,18 @@
+AArch64 coW-DSB-ob-TLBI-DSB-W
+Hash=305db246ed045a29281bf60a7b83ae53
+{
+int a;
+int b;
+0:X1=pte_x;
+0:X4=x;
+0:X0=(oa:phy_a);
+0:X2=(oa:phy_b);
+}
+P0             ;
+STR X0,[X1]    ;
+DSB ST         ;
+LSR X3,X4,12   ;
+TLBI VAAE1IS,X3;
+DSB ISH        ;
+STR X2,[X1]    ;
+exists(pte_x=(oa:phy_b))

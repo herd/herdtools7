@@ -1,0 +1,23 @@
+AArch64 coWWRExpNExpExp+DSB-TLBI-DSB
+{
+pte_x=(af:1,db:0,dbm:1);
+0:X1=pte_x;
+0:X2=(oa:phy_x,af:1,db:0,dbm:1);
+0:X3=x;
+0:X5=1;
+}
+P0;
+MOV W7,#2      ;
+STR X2,[X1]    ;
+DSB ISH        ;
+LSR X9,X3,#12  ;
+TLBI VAAE1IS,X9;
+DSB ISH        ;
+STR W5,[X3]    ;
+DSB ISH        ;
+LDR X4,[X1]    ;
+CMP X4,X2      ;
+CSET W7,EQ     ;
+exists(0:X7=1)
+(* can the load see db=0? *)
+

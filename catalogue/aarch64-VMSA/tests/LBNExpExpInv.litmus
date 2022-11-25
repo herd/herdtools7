@@ -1,0 +1,15 @@
+AArch64 LBNExpExpInv
+TTHM=HA HD
+{
+pte_x=(valid:0); (*invalid*)
+0:X2=pte_x; 1:X2=pte_x;
+0:X1=(oa:phy_y,db:1);
+1:X1=(oa:phy_z,db:1); 
+0:X3=x; 1:X3=x;
+pte_z=(af:1,db:1);
+}
+P0          | P1         ;
+MOV W4,#1   | MOV W4,#1  ; 
+STR W4,[X3] | STR W4,[X3];
+STR X1,[X2] | STR X1,[X2];
+exists(y=1 /\ z=1)

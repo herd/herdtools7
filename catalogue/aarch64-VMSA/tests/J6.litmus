@@ -1,0 +1,23 @@
+AArch64 J6
+ 
+{
+           pte_x=(valid:1,oa:phy_x);
+           0:X2=pte_x;
+           0:X1=(valid:1,oa:phy_y);
+           x=0;
+           1:X13=x;
+           1:X3=x;
+    0:X3=x;
+         y=1;
+          
+}
+ 
+P0             |  P1;
+STR X1,[X2]    | LDR W7,[X3]   ;
+DSB SY         | ;
+LSR X9, X3, #12 | ;
+TLBI VAAE1IS, X9 |;
+DSB SY        |;
+                     | LDR W4,[X13];
+ 
+exists(1:X7=1 /\ 1:X4=0)

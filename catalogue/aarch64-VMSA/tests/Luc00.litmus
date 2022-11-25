@@ -1,0 +1,22 @@
+AArch64 Luc00
+Variant=imprecise
+EL0=P0
+{
+int x=1; int y=2;
+0:X2=x; 1:X2=x;
+1:X4=pte_x;
+1:X6=pte_y;
+1:X8=(oa:phy_x,valid:0);
+
+}
+
+ P0          | P1              ;
+LDR W0,[X2]  | LDR X0,[X6]     ;
+LDR W1,[X2]  | STR X8,[X4]     ;
+             | DSB ISH         ;
+             | LSR X3,X2,#12   ;
+             | TLBI VAAE1IS,X3 ;
+             | DSB ISH         ;
+             | STR X0,[X4]     ;
+exists 0:X0=2 /\ 0:X1=1
+

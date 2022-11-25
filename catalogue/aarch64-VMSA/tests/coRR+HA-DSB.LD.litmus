@@ -1,0 +1,13 @@
+AArch64 coRR+HA-DSB.LD
+TTHM=HA
+{
+pte_x=(oa:phy_x,af:0);
+
+0:X1=x;
+0:X4=pte_x;
+}
+P0           ;
+LDR W2,[X1]  ;
+DSB LD       ;
+LDR X3,[X4]  ;
+exists(0:X3=(oa:phy_x,af:0))
