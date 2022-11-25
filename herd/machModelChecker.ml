@@ -33,7 +33,7 @@ module Make
     let morello = O.variant Variant.Morello
     let mixed = O.variant Variant.Mixed || morello
     let memtag = O.variant Variant.MemTag
-    let kvm = O.variant Variant.Kvm || O.variant Variant.VMSA
+    let kvm = O.variant Variant.VMSA
     let optacetrue =
       let open OptAce in
       match O.optace with

@@ -43,8 +43,8 @@ type t =
 (* Branch speculation+ cat computation of dependencies *)
   | Deps
   | Instances (* Compute dependencies on instruction instances *)
-  | Kvm
-  | VMSA (*Equivalent to KVM*)
+ (*Replaces old KVM -> Virtual memory *)
+  | VMSA
 (* AArch64: Enhanced Translation Synchronization - FEAT_ETS, FEAT_ETS2 *)
   | ETS (*Deprecated*)
   | ETS2 (*New feature introduced after deprecating ETS*)
@@ -76,7 +76,7 @@ type t =
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
-   "mixed";"dontcheckmixed";"weakpredicated"; "memtag";]@
+   "mixed";"dontcheckmixed";"weakpredicated"; "memtag";"vmsa";"kvm";]@
     Precision.tags @
    ["toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
@@ -104,7 +104,7 @@ let parse s = match Misc.lowercase s with
 | "neon" -> Some Neon
 | "deps" -> Some Deps
 | "instances"|"instance" -> Some Instances
-| "kvm" -> Some Kvm
+| "kvm"
 | "vmsa" -> Some VMSA
 | "ets" -> Some ETS
 | "ets2" -> Some ETS2
@@ -159,7 +159,6 @@ let pp = function
   | Neon -> "Neon"
   | Deps -> "Deps"
   | Instances -> "Instances"
-  | Kvm -> "kvm"
   | VMSA -> "vmsa"
   | ETS -> "ets"
   | ETS2 -> "ets2"
