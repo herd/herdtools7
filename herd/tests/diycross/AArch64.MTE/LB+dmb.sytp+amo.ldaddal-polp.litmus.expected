@@ -1,11 +1,12 @@
 Test LB+dmb.sytp+amo.ldaddal-polp Allowed
-States 2
+States 3
 0:X0=x:green; 1:X1=0; [y]=1;
+0:X0=x:green; 1:X1=1; [y]=1;
 0:X0=x:green; 1:X1=1; [y]=3;
 Ok
 Witnesses
-Positive: 1 Negative: 1
+Positive: 1 Negative: 2
 Condition exists ([y]=3 /\ 0:X0=x:green /\ 1:X1=1)
-Observation LB+dmb.sytp+amo.ldaddal-polp Sometimes 1 1
+Observation LB+dmb.sytp+amo.ldaddal-polp Sometimes 1 2
 Hash=35764c17e93b51902564b58bca616e90
 
