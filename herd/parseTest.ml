@@ -276,10 +276,10 @@ module Top (TopConf:Config) = struct
          end in
 (* Markers START/END below are for excluding source when compiling
    the web interface *)
-(* START NOTWWW *)
          let is_morello = Conf.variant Variant.Morello in
          let module ConfMorello =
            struct let is_morello = is_morello end in
+(* START NOTWWW *)
          if Conf.variant Variant.Morello then
            let module
                AArch64Value = CapabilityValue.Make(ConfMorello) in
