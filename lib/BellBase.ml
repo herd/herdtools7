@@ -422,3 +422,5 @@ let tr_compat = function
   | i -> i
 
 let hash_pteval _ = assert false
+
+module Instr = Instr.No(struct type instr = instruction end)

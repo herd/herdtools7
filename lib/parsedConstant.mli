@@ -16,7 +16,7 @@
 
 (** Constants as they are parsed, scalars still are strings, as present in file *)
 
-type v = (string,ParsedPteVal.t) Constant.t
+type v = (string,ParsedPteVal.t,InstrLit.t) Constant.t
 
 val zero : v
 val one : v

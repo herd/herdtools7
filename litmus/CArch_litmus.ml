@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) = struct
-  module V = Int32Constant
+  module V = Int32Constant.Make(CBase.Instr)
   module FaultType = FaultType.No
 
   module type SmallBase = sig

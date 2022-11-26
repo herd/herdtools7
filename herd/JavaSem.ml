@@ -16,9 +16,10 @@
 
 (* Java instruction semantics *)
 
-module Make
-	(Conf:Sem.Config)
-	(V:Value.S) = struct
+module
+  Make
+    (Conf:Sem.Config)
+    (V:Value.S with type Cst.Instr.t = JavaBase.instruction) = struct
 
 	module Java = JavaArch_herd.Make(SemExtra.ConfigToArchConfig(Conf))(V)
 	module Act = JavaAction.Make(Java)
