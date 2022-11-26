@@ -22,7 +22,8 @@ module type S = sig
 
   type scalar
   type pteval
-  type cst = (scalar,pteval) Constant.t
+  type instr
+  type cst = (scalar,pteval,instr) Constant.t
 
   (* Specific operations *)
   val do_op1 : op1 -> cst -> cst option
@@ -49,7 +50,8 @@ module No(Cst:Constant.S) = struct
 
   type scalar = Cst.Scalar.t
   type pteval = Cst.PteVal.t
-  type cst = (scalar,pteval) Constant.t
+  type instr = Cst.Instr.t
+  type cst = (scalar,pteval,instr) Constant.t
 
   let do_op1 _ _ = None
   let shift_address_right _ _ = None

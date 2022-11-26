@@ -1,0 +1,11 @@
+Test S21 Allowed
+States 2
+0:X3=0;
+0:X3=1;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (0:X3=1)
+Observation S21 Sometimes 1 1
+Hash=3959ffccf8d2c829f46dc74ade96b1f8
+

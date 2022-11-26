@@ -479,18 +479,13 @@ module RegMap = A.RegMap)
             sprintf "%s%s"
               (match O.memory with Memory.Direct -> "" | Memory.Indirect -> "*")
               s
-        | Concrete _ -> Tmpl.dump_v v
-        | ConcreteVector _ -> Tmpl.dump_v v
+        | Concrete _ | ConcreteVector _ | Instruction _
+            -> Tmpl.dump_v v
         | Label (p,lbl) -> OutUtils.fmt_lbl_var p lbl
         | PteVal p ->
             let idx = find_pteval_index p ptevalEnv in
             add_pteval idx
         | Tag _ -> assert false
-        | Instruction InstrLit.LIT_NOP  -> "nop"
-        | Instruction i ->
-           Warn.fatal
-             "compile_val_fun cannot handle instruction value '%s'\n"
-             (InstrLit.pp i)
 
       let compile_init_val_fun = compile_val_fun
 
@@ -503,13 +498,7 @@ module RegMap = A.RegMap)
           | _ -> k)
           [] t.Tmpl.init
 
-      let nop_init t =
-        List.exists
-          (fun (_,v) ->
-            match v with
-            | Constant.Instruction InstrLit.LIT_NOP -> true
-            | _ -> false)
-          t.Tmpl.init
+      let nop_init t = List.exists (fun (_,v) -> A.V.is_nop v) t.Tmpl.init
 
       let dump_fun ?(user=false) chan args0 env globEnv _volatileEnv proc t =
         let args0 = match t.Tmpl.fhandler with

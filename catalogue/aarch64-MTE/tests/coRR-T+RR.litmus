@@ -1,4 +1,4 @@
-AArch64 coRR-T 
+AArch64 coRR-T+RR
 variant=async
 {
 0:X0=x:red; 0:X1=x:green;
