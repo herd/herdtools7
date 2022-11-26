@@ -97,11 +97,11 @@ let aob = rmw
 (* DSB-ordered-before *)
 let DSB-ob =
  [M]; po; [dsb.full]; po; [~(M&Imp)]
- | (if "ETS2" then [M]; po; [dsb.full]; po; [M & Imp] else 0)
+ | (if "ETS2" then [M]; po; [dsb.full]; po; [M & PTE & Imp] else 0)
  | [(R&Exp)\NoRet]; po; [dsb.ld]; po; [~(M&Imp)]
- | (if "ETS2" then [(R&Exp)\NoRet]; po; [dsb.ld]; po; [M&Imp] else 0)
+ | (if "ETS2" then [(R&Exp)\NoRet]; po; [dsb.ld]; po; [M & PTE & Imp] else 0)
  | [W&Exp]; po; [dsb.st]; po; [~(M&Imp)]
- | (if "ETS2" then [W&Exp]; po; [dsb.st]; po; [M&Imp] else 0)
+ | (if "ETS2" then [W&Exp]; po; [dsb.st]; po; [M & PTE & Imp] else 0)
 
 (* Barrier-ordered-before *)
 let bob = po; [dmb.full]; po
