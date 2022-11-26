@@ -87,7 +87,7 @@ let rec ob =
     | [R & Exp]; po-loc; [R & Exp]; fre ; [W & Exp]; si
 
     | obs; si
-    | rf & ((Imp*_) | (_*Imp))      
+    | rf & (((PTE & Imp) * _) | (_* (PTE & Imp)))      
     | TLBuncacheable-pred
     | HU-pred
     | [HU]; co | co; [HU]
