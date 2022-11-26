@@ -953,3 +953,5 @@ let get_macro name = Hashtbl.find m_t name
 let get_id_and_list _i = Warn.fatal "get_id_and_list is only for Bell"
 
 let hash_pteval _ = assert false
+
+module Instr = Instr.No(struct type instr = instruction end)

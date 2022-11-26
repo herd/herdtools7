@@ -44,8 +44,8 @@ type ('loc,'v,'ftype) atom =
   | FF of ('v,'ftype) Fault.atom
 
 val dump_atom :
-  ('loc -> string) ->  ('loc -> string) -> (('c,'d) Constant.t -> string) ->
-  ('ftype -> string) -> ('loc,('c,'d) Constant.t,'ftype) atom -> string
+  ('loc -> string) ->  ('loc -> string) -> (('c,'d,'e) Constant.t -> string) ->
+  ('ftype -> string) -> ('loc,('c,'d,'e) Constant.t,'ftype) atom -> string
 
 type ('loc,'v, 'ftype) prop =
   | Atom of ('loc, 'v, 'ftype) atom

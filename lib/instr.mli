@@ -2,9 +2,9 @@
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Luc Maranget, INRIA Paris, France.                                       *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2020-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,12 +14,16 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Symbolic constants *)
+module type S = sig
+  type t
 
-module Make :
-functor (Scalar:Scalar.S) ->
-  functor (PteVal:PteVal.S) ->
-    functor (Instr:Instr.S) ->
-    Constant.S
-    with module Scalar = Scalar and module PteVal = PteVal
-    and module Instr = Instr
+  val compare : t -> t -> int
+  val eq : t -> t -> bool
+  val pp : t -> string
+  val tr : InstrLit.t -> t
+  val is_nop : t -> bool
+  val is_overwritable : t -> bool
+  val can_overwrite : t -> bool
+end
+
+module No : functor (I:sig type instr end) -> S with type t = I.instr

@@ -16,7 +16,10 @@
 
 (** Semantics of MIPS instructions *)
 
-module Make (C:Sem.Config)(V:Value.S)
+module
+  Make
+    (C:Sem.Config)
+    (V:Value.S with type Cst.Instr.t = MIPSBase.instruction)
 =
   struct
     module MIPS = MIPSArch_herd.Make(SemExtra.ConfigToArchConfig(C))(V)

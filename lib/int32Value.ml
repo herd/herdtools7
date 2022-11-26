@@ -14,4 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-include SymbValue.Make(Int32Constant)(ArchOp.No(Int32Constant))
+module Make(Instr:Instr.S) = struct
+  module Int32Cst = Int32Constant.Make(Instr)
+  include SymbValue.Make(Int32Cst)(ArchOp.No(Int32Cst))
+end

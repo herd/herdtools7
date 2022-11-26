@@ -21,7 +21,8 @@ module
     (Cst:Constant.S)
     (ArchOp:ArchOp.S with
        type scalar = Cst.Scalar.t
-       and type pteval = Cst.PteVal.t) = struct
+       and type pteval = Cst.PteVal.t
+       and type instr = Cst.Instr.t) = struct
 
   module Cst = Cst
 
@@ -78,6 +79,7 @@ module
   let intToV i  = Val (Cst.intToV i)
   let stringToV i  = Val (Cst.stringToV i)
   and nameToV s = Val (Cst.nameToV s)
+  and instructionToV i = Val (Constant.Instruction i)
   and cstToV cst = Val cst
 
   let maybevToV c = Val (Cst.tr c)
@@ -254,6 +256,7 @@ module
     | (Val (Symbolic _),Val (Symbolic _))
     | (Val (Label _),Val (Label _))
     | (Val (PteVal _),Val (PteVal _))
+    | (Val (Instruction _),Val (Instruction _))
       ->
         Val (Concrete (Cst.Scalar.of_int (compare  v1 v2)))
     (* 0 is sometime used as invalid PTE, no orpat because warning 57
@@ -491,6 +494,12 @@ module
   | Var _ -> raise Undetermined
 
   let is_virtual_v v =  if is_virtual v then one else zero
+
+  let is_instr_v =
+    function
+    | Val (Constant.Instruction _) -> one
+    | Val _ -> zero
+    | Var _ -> raise Undetermined
 
   let andnot x1 x2 =
     Cst.Scalar.logand x1 (Cst.Scalar.lognot x2)
@@ -755,6 +764,7 @@ module
     | PTELoc -> pteloc
     | Offset -> offset
     | IsVirtual -> is_virtual_v
+    | IsInstr -> is_instr_v
     | ArchOp1 op ->
         (function
          | Var _ -> raise Undetermined

@@ -2074,3 +2074,39 @@ and ephemeral = Internal 3
 let loop_idx = Internal 4
 
 let hash_pteval p = AArch64PteVal.pp_hash (AArch64PteVal.tr p)
+
+let is_overwritable =
+  function
+  | I_NOP | I_B _
+    -> true
+  | _ -> false
+
+let can_overwrite =
+    function
+    | I_NOP -> true
+    | _ -> false
+
+module MakeInstr(C:sig val is_morello:bool end) = struct
+
+  type t = instruction
+
+  let compare = Misc.polymorphic_compare
+  let eq = (=)
+
+  module PP =MakePP(C)
+  let pp = PP.dump_instruction
+
+  let tr =
+    let open InstrLit in
+    function
+    | LIT_NOP -> I_NOP
+    | LIT_B lbl -> I_B lbl
+
+  let is_nop = function
+    | I_NOP -> true
+    | _ -> false
+
+  let is_overwritable = is_overwritable
+  and can_overwrite =  can_overwrite
+
+end

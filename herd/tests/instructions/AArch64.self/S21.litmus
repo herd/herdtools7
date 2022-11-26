@@ -1,0 +1,16 @@
+AArch64 S21
+{
+
+}
+  P0         ;
+L0:          ;
+ NOP         ;
+ ADR X0,L0   ;
+ ADR X1,L1   ;
+ LDR W2,[X0] ;
+ STR W2,[X1] ;
+L1:          ;
+ B L2        ;
+ MOV W3,#1   ;
+L2:          ;
+exists 0:X3=1

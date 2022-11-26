@@ -164,26 +164,27 @@ end
 module SymbolSet = MySet.Make(SC)
 module SymbolMap = MyMap.Make(SC)
 
-type ('scalar,'pte) t =
+type ('scalar,'pte,'instr) t =
   | Concrete of 'scalar
-  | ConcreteVector of ('scalar,'pte) t list
+  | ConcreteVector of ('scalar,'pte,'instr) t list
   | Symbolic  of symbol
   | Label of Proc.t * string     (* In code *)
   | Tag of string
   | PteVal of 'pte
-  | Instruction of InstrLit.t
+  | Instruction of 'instr
 
-let rec compare scalar_compare pteval_compare c1 c2 =
+let rec compare scalar_compare pteval_compare instr_compare c1 c2 =
   match c1,c2 with
   | Concrete i1, Concrete i2 -> scalar_compare i1 i2
   | ConcreteVector v1, ConcreteVector v2 ->
-     Misc.list_compare (compare scalar_compare pteval_compare) v1 v2
+     Misc.list_compare
+       (compare scalar_compare pteval_compare instr_compare) v1 v2
   | Symbolic sym1,Symbolic sym2 -> compare_symbol sym1 sym2
   | Label (p1,s1),Label (p2,s2) ->
       Misc.pair_compare Proc.compare String.compare (p1,s1) (p2,s2)
   | Tag t1,Tag t2 -> String.compare t1 t2
   | PteVal p1,PteVal p2 -> pteval_compare p1 p2
-  | Instruction i1,Instruction i2 -> InstrLit.compare i1 i2
+  | Instruction i1,Instruction i2 -> instr_compare i1 i2
   | (Concrete _,(ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _|Instruction _))
   | (ConcreteVector _,(Symbolic _|Label _|Tag _|PteVal _|Instruction _))
   | (Symbolic _,(Label _|Tag _|PteVal _|Instruction _))
@@ -199,16 +200,16 @@ let rec compare scalar_compare pteval_compare c1 c2 =
   | (ConcreteVector _,Concrete _)
     -> 1
 
-let rec eq scalar_eq pteval_eq c1 c2 = match c1,c2 with
+let rec eq scalar_eq pteval_eq instr_eq c1 c2 = match c1,c2 with
   | Concrete i1, Concrete i2 -> scalar_eq i1 i2
   | ConcreteVector v1, ConcreteVector v2 ->
-     Misc.list_eq (eq scalar_eq pteval_eq) v1 v2
+     Misc.list_eq (eq scalar_eq pteval_eq instr_eq) v1 v2
   | Symbolic s1, Symbolic s2 -> symbol_eq s1 s2
   | Label (p1,s1),Label (p2,s2) ->
       Misc.string_eq  s1 s2 && Misc.int_eq p1 p2
   | Tag t1,Tag t2 -> Misc.string_eq t1 t2
   | PteVal p1,PteVal p2 -> pteval_eq p1 p2
-  | Instruction i1,Instruction i2 -> InstrLit.compare i1 i2 = 0
+  | Instruction i1,Instruction i2 -> instr_eq i1 i2
   | (Instruction _,(Symbolic _|Concrete _|ConcreteVector _|Label _|Tag _|PteVal _))
   | (PteVal _,(Symbolic _|Concrete _|ConcreteVector _|Label _|Tag _|Instruction _))
   | (ConcreteVector _,(Symbolic _|Label _|Tag _|Concrete _|PteVal _|Instruction _))
@@ -218,21 +219,23 @@ let rec eq scalar_eq pteval_eq c1 c2 = match c1,c2 with
   | (Tag _,(Concrete _|Symbolic _|Label _|ConcreteVector _|PteVal _|Instruction _))
     -> false
 
-let rec mk_pp pp_symbol pp_scalar pp_pteval = function
+let rec mk_pp pp_symbol pp_scalar pp_pteval pp_instr = function
     | Concrete i -> pp_scalar i
     | ConcreteVector vs ->
         let s =
           String.concat ","
-            (List.map (mk_pp pp_symbol pp_scalar pp_pteval) vs)
+            (List.map (mk_pp pp_symbol pp_scalar pp_pteval pp_instr) vs)
         in sprintf "{%s}" s
     | Symbolic sym -> pp_symbol sym
     | Label (p,lbl)  -> sprintf "%i:%s" p lbl
     | Tag s -> sprintf ":%s" s
     | PteVal p -> pp_pteval p
-    | Instruction i -> InstrLit.pp i
+    | Instruction i -> pp_instr i
 
-let pp pp_scalar pp_pteval = mk_pp pp_symbol pp_scalar pp_pteval
-and pp_old pp_scalar pp_pteval = mk_pp pp_symbol_old  pp_scalar pp_pteval
+let pp pp_scalar pp_pteval pp_instr =
+  mk_pp pp_symbol pp_scalar pp_pteval pp_instr
+and pp_old pp_scalar pp_pteval pp_instr =
+  mk_pp pp_symbol_old  pp_scalar pp_pteval pp_instr
 
 let _debug = function
 | Concrete _ -> "Concrete _"
@@ -254,12 +257,13 @@ let rec map_label f = function
   | ConcreteVector cs -> ConcreteVector (List.map (map_label f) cs)
   | Symbolic _|Concrete _ |Tag _|PteVal _|Instruction _ as m -> m
 
-let rec map f_scalar f_pteval = function
-| Symbolic _ | Label _ | Tag _ | Instruction _ as m -> m
+let rec map f_scalar f_pteval f_instr = function
+| Symbolic _ | Label _ | Tag _ as m -> m
 | PteVal p -> PteVal (f_pteval p)
+| Instruction i -> Instruction (f_instr i)
 | Concrete s -> Concrete (f_scalar s)
 | ConcreteVector cs ->
-   ConcreteVector (List.map (map f_scalar f_pteval) cs)
+   ConcreteVector (List.map (map f_scalar f_pteval f_instr) cs)
 
 let do_mk_virtual s = Virtual { default_symbolic_data with name=s; }
 
@@ -360,9 +364,11 @@ module type S =  sig
 
   module Scalar : Scalar.S
   module PteVal : PteVal.S
+  module Instr : Instr.S
 
-  type v = (Scalar.t,PteVal.t) t
-  val tr : (string,ParsedPteVal.t) t -> v
+  type v = (Scalar.t,PteVal.t,Instr.t) t
+
+  val tr : (string,ParsedPteVal.t,InstrLit.t) t -> v
   val intToV  : int -> v
   val stringToV  : string -> v
   val nameToV  : string -> v
@@ -376,5 +382,5 @@ module type S =  sig
   val compare : v -> v -> int
   val eq : v -> v -> bool
   val vToName : v -> string
-
+  val is_nop : v -> bool
 end

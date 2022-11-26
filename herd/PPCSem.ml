@@ -16,7 +16,10 @@
 
 (** Semantics of PPC instructions *)
 
-module Make (C:Sem.Config)(V:Value.S)
+module
+  Make
+    (C:Sem.Config)
+    (V:Value.S with type Cst.Instr.t = PPCBase.instruction)
     =
   struct
     open MachSize

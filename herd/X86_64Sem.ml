@@ -16,7 +16,10 @@
 
 (** Semantics of X86_64 instructions *)
 
-module Make (C:Sem.Config)(V : Value.S)
+module
+  Make
+    (C:Sem.Config)
+    (V:Value.S with type Cst.Instr.t = X86_64Base.instruction)
   =
   struct
     module X86_64 = X86_64Arch_herd.Make(SemExtra.ConfigToArchConfig(C))(V)

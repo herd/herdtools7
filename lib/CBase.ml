@@ -440,3 +440,5 @@ let expand ms = match ms with
     pseudo_map (subst env)
 
 let hash_pteval _ = assert false
+
+module Instr = Instr.No(struct type instr = instruction end)

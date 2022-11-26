@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type v = (Int64Scalar.t,ParsedPteVal.t) Constant.t
+type v = (Int64Scalar.t,ParsedPteVal.t,InstrLit.t) Constant.t
 
 val pp : bool (* hexa *) -> v -> string
 val pp_norm : bool (* hexa *) -> v -> string

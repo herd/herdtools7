@@ -46,7 +46,6 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
         type arch_reg         = reg
         let pp_reg            = pp_reg
         let reg_compare       = reg_compare
-        type arch_instruction = instruction
         let fromto_of_instr _ = None
         let get_val _ v       = v
 
