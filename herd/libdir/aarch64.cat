@@ -52,7 +52,7 @@ include "aarch64hwreqs.cat"
 let ca = fr | co
 
 (* Observed-by *)
-let obs = ([M & Exp]; (rf | ca); [M & Exp]) & ext
+let obs = ([M & Exp | R & T & Imp]; (rf | ca); [M & Exp | R & T & Imp]) & ext
 
 (* TLBI-after *)
 include "tlbi-after.cat"
