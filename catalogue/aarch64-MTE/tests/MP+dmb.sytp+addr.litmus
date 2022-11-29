@@ -1,0 +1,17 @@
+AArch64 MP+dmb.sytp+addr
+"DMB.SYdWWTP Rfe DpAddrdR FrePT"
+Cycle=Rfe DpAddrdR FrePT DMB.SYdWWTP
+Generator=diycross7 (version 7.56+02~dev)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=DMB.SYdWWTP Rfe DpAddrdR FrePT
+{
+0:X0=x:red; 0:X1=x:green; 0:X3=y:green;
+1:X0=y:green; 1:X4=x:green;
+}
+ P0          | P1                  ;
+ STG X0,[X1] | LDR W1,[X0]         ;
+ DMB SY      | EOR W2,W1,W1        ;
+ MOV W2,#1   | LDR W3,[X4,W2,SXTW] ;
+ STR W2,[X3] |                     ;
+exists (1:X1=1 /\ 1:X3=0) /\ ~fault (P1,x)

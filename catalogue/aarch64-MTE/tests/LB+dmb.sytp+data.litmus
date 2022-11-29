@@ -1,0 +1,18 @@
+AArch64 LB+dmb.sytp+data
+"DMB.SYdRWTP Rfe DpDatadW RfePT"
+Cycle=Rfe DpDatadW RfePT DMB.SYdRWTP
+Generator=diycross7 (version 7.56+02~dev)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Rf
+Orig=DMB.SYdRWTP Rfe DpDatadW RfePT
+{
+0:X1=x:green; 0:X3=y:green;
+1:X0=y:green; 1:X3=x:green;
+}
+ P0          | P1           ;
+ MOV X0,X1   | LDR W1,[X0]  ;
+ LDG X0,[X1] | EOR W2,W1,W1 ;
+ DMB SY      | ADD W2,W2,#1 ;
+ MOV W2,#1   | STR W2,[X3]  ;
+ STR W2,[X3] |              ;
+exists (0:X0=x:green /\ 1:X1=1)

@@ -1,0 +1,16 @@
+AArch64 R+dsb.sytt+dsb.sytp
+"DSB.SYdWWTT CoeTT DSB.SYdWRTP FrePT"
+Cycle=FrePT DSB.SYdWWTT CoeTT DSB.SYdWRTP
+Generator=diycross7 (version 7.56+02~dev)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Co Fr
+Orig=DSB.SYdWWTT CoeTT DSB.SYdWRTP FrePT
+{
+0:X0=x:red; 0:X1=x:green; 0:X2=y:red; 0:X3=y:green;
+1:X0=y:blue; 1:X1=y:red; 1:X2=x:green;
+}
+ P0          | P1          ;
+ STG X0,[X1] | STG X0,[X1] ;
+ DSB SY      | DSB SY      ;
+ STG X2,[X3] | LDR W3,[X2] ;
+exists ([tag(y)]=:blue /\ 1:X3=0) /\ ~fault (P1,x)

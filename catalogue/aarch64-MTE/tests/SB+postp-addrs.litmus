@@ -1,0 +1,19 @@
+AArch64 SB+postp-addrs
+"PosWRTP DpAddrdR FrePT PosWRTP DpAddrdR FrePT"
+Cycle=DpAddrdR FrePT PosWRTP DpAddrdR FrePT PosWRTP
+Relax=[Fre,T,PosWR]
+Safe=DpAddrdR
+Generator=diy7 (version 7.56+02~dev)
+Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+Com=Fr Fr
+Orig=PosWRTP DpAddrdR FrePT PosWRTP DpAddrdR FrePT
+{
+0:X0=x:red; 0:X1=x:green; 0:X5=y:green;
+1:X0=y:red; 1:X1=y:green; 1:X5=x:green;
+}
+ P0                  | P1                  ;
+ STG X0,[X1]         | STG X0,[X1]         ;
+ LDR W2,[X0]         | LDR W2,[X0]         ;
+ EOR W3,W2,W2        | EOR W3,W2,W2        ;
+ LDR W4,[X5,W3,SXTW] | LDR W4,[X5,W3,SXTW] ;
+exists (0:X2=0 /\ 0:X4=0 /\ 1:X2=0 /\ 1:X4=0) /\ ~(fault (P0,x) \/ fault (P0,y) \/ fault (P1,x) \/ fault (P1,y))

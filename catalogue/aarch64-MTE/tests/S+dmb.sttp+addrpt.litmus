@@ -1,0 +1,17 @@
+AArch64 S+dmb.sttp+addrpt
+"DMB.STdWWTP Rfe DpAddrdWPT CoeTT"
+Cycle=Rfe DpAddrdWPT CoeTT DMB.STdWWTP
+Generator=diycross7 (version 7.56+02~dev)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Co
+Orig=DMB.STdWWTP Rfe DpAddrdWPT CoeTT
+{
+0:X0=x:blue; 0:X1=x:red; 0:X3=y:green;
+1:X0=y:green; 1:X3=x:red; 1:X4=x:green;
+}
+ P0          | P1                ;
+ STG X0,[X1] | LDR W1,[X0]       ;
+ DMB ST      | EOR W2,W1,W1      ;
+ MOV W2,#1   | ADD X5,X4,W2,SXTW ;
+ STR W2,[X3] | STG X3,[X5]       ;
+exists ([tag(x)]=:blue /\ 1:X1=1)

@@ -1,0 +1,17 @@
+AArch64 SB+rfitt-addrtps
+"RfiTT DpAddrdRTP FrePT RfiTT DpAddrdRTP FrePT"
+Generator=diyone7 (version 7.56+02~dev)
+Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+Com=Fr Fr
+Orig=RfiTT DpAddrdRTP FrePT RfiTT DpAddrdRTP FrePT
+{
+0:X0=x:red; 0:X1=x:green; 0:X5=y:green;
+1:X0=y:red; 1:X1=y:green; 1:X5=x:green;
+}
+ P0             | P1             ;
+ STG X0,[X1]    | STG X0,[X1]    ;
+ MOV X2,X0      | MOV X2,X0      ;
+ LDG X2,[X0]    | LDG X2,[X0]    ;
+ EOR X3,X2,X2   | EOR X3,X2,X2   ;
+ LDR W4,[X5,X3] | LDR W4,[X5,X3] ;
+exists (0:X2=x:red /\ 0:X4=0 /\ 1:X2=y:red /\ 1:X4=0) /\ ~(fault (P0,y) \/ fault (P1,x))

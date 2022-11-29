@@ -1,0 +1,18 @@
+AArch64 MP+dmb.st+addrpt
+"DMB.STdWW Rfe DpAddrdRPT FreTP"
+Cycle=Rfe DpAddrdRPT FreTP DMB.STdWW
+Generator=diycross7 (version 7.56+02~dev)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=DMB.STdWW Rfe DpAddrdRPT FreTP
+{
+0:X1=x:green; 0:X3=y:green;
+1:X0=y:green; 1:X4=x:green;
+}
+ P0          | P1                ;
+ MOV W0,#1   | LDR W1,[X0]       ;
+ STR W0,[X1] | EOR W2,W1,W1      ;
+ DMB ST      | MOV X3,X4         ;
+ MOV W2,#1   | ADD X5,X4,W2,SXTW ;
+ STR W2,[X3] | LDG X3,[X5]       ;
+exists (1:X1=1 /\ 1:X3=x:green)

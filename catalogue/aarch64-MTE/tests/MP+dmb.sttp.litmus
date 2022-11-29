@@ -1,0 +1,12 @@
+AArch64 MP+dmb.sttp
+{
+ 0:X1=x:green;
+ 0:X2=x:red;
+ 1:X0=x:red;
+}
+ P0          | P1          ;
+ MOV W0,#1   | LDR W1,[X0] ;
+ STR W0,[X1] |             ;
+ DMB ST      |             ;
+ STG X2,[X1] |             ;
+exists (~fault(P1,x) /\ 1:X1=0)

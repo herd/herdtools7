@@ -1,0 +1,18 @@
+AArch64 SB+dmb.sytp+dsb.sypt
+"DMB.SYdWRTP Fre DSB.SYdWRPT FreTT"
+Cycle=Fre DSB.SYdWRPT FreTT DMB.SYdWRTP
+Generator=diycross7 (version 7.56+02~dev)
+Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+Com=Fr Fr
+Orig=DMB.SYdWRTP Fre DSB.SYdWRPT FreTT
+{
+0:X0=x:red; 0:X1=x:green; 0:X2=y:green;
+1:X1=y:green; 1:X3=x:green;
+}
+ P0          | P1          ;
+ STG X0,[X1] | MOV W0,#1   ;
+ DMB SY      | STR W0,[X1] ;
+ LDR W3,[X2] | DSB SY      ;
+             | MOV X2,X3   ;
+             | LDG X2,[X3] ;
+exists (0:X3=0 /\ 1:X2=x:green)

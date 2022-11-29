@@ -1,0 +1,22 @@
+AArch64 R+postp-addr-addr+postp-addr
+"PosWRTP DpAddrdR DpAddrdW CoePT PosWRTP DpAddrdR FrePT"
+Cycle=DpAddrdW CoePT PosWRTP DpAddrdR FrePT PosWRTP DpAddrdR
+Relax=[Fre,T,PosWR] [Coe,T,PosWR]
+Safe=DpAddrdW DpAddrdR
+Generator=diy7 (version 7.56+02~dev)
+Prefetch=0:x=F,0:z=W,1:z=F,1:x=T
+Com=Co Fr
+Orig=PosWRTP DpAddrdR DpAddrdW CoePT PosWRTP DpAddrdR FrePT
+{
+0:X0=x:red; 0:X1=x:green; 0:X5=y:green; 0:X8=z:green;
+1:X0=z:red; 1:X1=z:green; 1:X5=x:green;
+}
+ P0                  | P1                  ;
+ STG X0,[X1]         | STG X0,[X1]         ;
+ LDR W2,[X0]         | LDR W2,[X0]         ;
+ EOR W3,W2,W2        | EOR W3,W2,W2        ;
+ LDR W4,[X5,W3,SXTW] | LDR W4,[X5,W3,SXTW] ;
+ EOR W6,W4,W4        |                     ;
+ MOV W7,#1           |                     ;
+ STR W7,[X8,W6,SXTW] |                     ;
+exists ([tag(z)]=:red /\ 0:X2=0 /\ 1:X2=1 /\ 1:X4=0) /\ ~(fault (P0,x) \/ fault (P0,z) \/ fault (P1,x) \/ fault (P1,z))
