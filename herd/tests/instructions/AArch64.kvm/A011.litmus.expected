@@ -1,10 +1,10 @@
 Test A011 Required
 States 1
-  ~Fault(P0:L0,x);
-No
+ Fault(P0:L0,x,MMU:Permission);
+Ok
 Witnesses
-Positive: 0 Negative: 1
+Positive: 1 Negative: 0
 Condition forall (fault(P0:L0,x,MMU:Permission))
-Observation A011 Never 0 1
-Hash=0ce82b2c508dd1c0e0e77f8b639ef65c
+Observation A011 Always 1 0
+Hash=f6a789da14367c3011386455e4dc8532
 
