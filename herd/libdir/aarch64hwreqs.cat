@@ -65,7 +65,7 @@ let lrs = [W]; (po-loc \ intervening-write(po-loc)) ; [R]
 let lws = [M]; po-loc; [W | MMU & FAULT]
 
 (* Tag-Check-Intrinsically-Before *)
-let tc-ib = [R & T & Imp]; iico_data; [B]; iico_ctrl; [W\T | T & FAULT]
+let tc-ib = [R & T & Imp]; iico_data; [B]; iico_ctrl; [(W & Exp) \ T | TagCheck & FAULT]
 
 (* HW PTE Updates permitted only for the AF or DB *)
 let HU = W & PTE & Imp
@@ -97,11 +97,11 @@ let aob = rmw
 (* DSB-ordered-before *)
 let DSB-ob =
  [M]; po; [dsb.full]; po; [~(M&Imp)]
- | (if "ETS2" then [M]; po; [dsb.full]; po; [M & Imp] else 0)
+ | (if "ETS2" then [M]; po; [dsb.full]; po; [M & PTE & Imp] else 0)
  | [(R&Exp)\NoRet]; po; [dsb.ld]; po; [~(M&Imp)]
- | (if "ETS2" then [(R&Exp)\NoRet]; po; [dsb.ld]; po; [M&Imp] else 0)
+ | (if "ETS2" then [(R & Exp) \ NoRet]; po; [dsb.ld]; po; [M & PTE & Imp] else 0)
  | [W&Exp]; po; [dsb.st]; po; [~(M&Imp)]
- | (if "ETS2" then [W&Exp]; po; [dsb.st]; po; [M&Imp] else 0)
+ | (if "ETS2" then [W & Exp]; po; [dsb.st]; po; [M & PTE & Imp] else 0)
 
 (* Barrier-ordered-before *)
 let bob = po; [dmb.full]; po
@@ -118,7 +118,6 @@ let rec lob = lws; si
             | pob
             | aob
             | bob
-            | tc-ib
             | lob; lob
 let pick-lob = pick-basic-dep; lob; [W]
 
@@ -127,8 +126,8 @@ let TLBUncacheable = MMU & (Translation | AccessFlag)
 (* Hardware-required-ordered-before *)
 let rec hw-reqs =
   tr-ib
-  | [M & Exp]; (lob | pick-lob); [M & Exp | MMU & FAULT] 
-  | [R & T & Imp]; po-loc; [W & T & Exp]
+  | tc-ib
+  | [M & Exp | R & T & Imp]; (lob | pick-lob); [M & Exp | R & T & Imp | FAULT & (TagCheck | MMU)]
   | (if "ETS2" then [M & Exp]; po; [TLBUncacheable & FAULT]; tr-ib^-1; [R & Imp & PTE] else 0)
   | DSB-ob
   | CSE-ob; [TLBI]

@@ -1,0 +1,18 @@
+AArch64 S+dsb.sy+datatp
+"DSB.SYdWW RfePT DpDatadWTP Coe"
+Cycle=Coe DSB.SYdWW RfePT DpDatadWTP
+Generator=diycross7 (version 7.56+02~dev)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Co
+Orig=DSB.SYdWW RfePT DpDatadWTP Coe
+{
+0:X1=x:green; 0:X3=y:green;
+1:X1=y:green; 1:X3=x:green;
+}
+ P0          | P1           ;
+ MOV W0,#2   | MOV X0,X1    ;
+ STR W0,[X1] | LDG X0,[X1]  ;
+ DSB SY      | EOR X2,X0,X0 ;
+ MOV W2,#1   | ADD W2,W2,#1 ;
+ STR W2,[X3] | STR W2,[X3]  ;
+exists ([x]=2 /\ 1:X0=y:green)

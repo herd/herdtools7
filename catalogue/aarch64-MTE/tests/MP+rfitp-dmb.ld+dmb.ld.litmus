@@ -1,0 +1,17 @@
+AArch64 MP+rfitp-dmb.ld+dmb.ld
+"RfiTP DMB.LDdRW Rfe DMB.LDdRR FrePT"
+Generator=diyone7 (version 7.56+02~dev)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=RfiTP DMB.LDdRW Rfe DMB.LDdRR FrePT
+{
+0:X0=x:red; 0:X1=x:green; 0:X4=y:green;
+1:X0=y:green; 1:X2=x:green;
+}
+ P0          | P1          ;
+ STG X0,[X1] | LDR W1,[X0] ;
+ LDR W2,[X0] | DMB LD      ;
+ DMB LD      | LDR W3,[X2] ;
+ MOV W3,#1   |             ;
+ STR W3,[X4] |             ;
+exists (0:X2=0 /\ 1:X1=1 /\ 1:X3=0) /\ ~(fault (P0,x) \/ fault (P1,x))

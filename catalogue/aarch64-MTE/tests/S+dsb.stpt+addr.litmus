@@ -1,0 +1,17 @@
+AArch64 S+dsb.stpt+addr
+"DSB.STdWWPT RfeTP DpAddrdW Coe"
+Cycle=Coe DSB.STdWWPT RfeTP DpAddrdW
+Generator=diycross7 (version 7.56+02~dev)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Co
+Orig=DSB.STdWWPT RfeTP DpAddrdW Coe
+{
+0:X1=x:green; 0:X2=y:red; 0:X3=y:green;
+1:X0=y:red; 1:X4=x:green;
+}
+ P0          | P1                  ;
+ MOV W0,#2   | LDR W1,[X0]         ;
+ STR W0,[X1] | EOR W2,W1,W1        ;
+ DSB ST      | MOV W3,#1           ;
+ STG X2,[X3] | STR W3,[X4,W2,SXTW] ;
+exists ([x]=2 /\ 1:X1=0) /\ ~fault (P1,y)

@@ -1,0 +1,17 @@
+AArch64 S+dsb.sypt+dmb.ldpt
+"DSB.SYdWWPT RfeTP DMB.LDdRWPT CoeTP"
+Cycle=DMB.LDdRWPT CoeTP DSB.SYdWWPT RfeTP
+Generator=diycross7 (version 7.56+02~dev)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Co
+Orig=DSB.SYdWWPT RfeTP DMB.LDdRWPT CoeTP
+{
+0:X1=x:red; 0:X2=y:red; 0:X3=y:green;
+1:X0=y:red; 1:X2=x:red; 1:X3=x:green;
+}
+ P0          | P1          ;
+ MOV W0,#1   | LDR W1,[X0] ;
+ STR W0,[X1] | DMB LD      ;
+ DSB SY      | STG X2,[X3] ;
+ STG X2,[X3] |             ;
+exists ([x]=1 /\ 1:X1=0) /\ ~(fault (P0,x) \/ fault (P1,y))

@@ -1,0 +1,11 @@
+AArch64 MP+posTP+pos
+{
+0:X0=x:red; 0:X1=x:green;
+1:X0=x:red; 1:X2=x:green;
+}
+ P0          | P1          ;
+ STG X0,[X1] | LDR W1,[X0] ;
+ MOV W2,#1   | LDR W3,[X2] ;
+ STR W2,[X0] |             ;
+
+exists (1:X1=1 /\ 1:X3=0) /\ ~(fault (P0,x) \/ fault (P1,x))

@@ -1,0 +1,17 @@
+AArch64 LB+dsb.sytt+addr
+"DSB.SYdRWTT RfeTP DpAddrdW RfePT"
+Cycle=DpAddrdW RfePT DSB.SYdRWTT RfeTP
+Generator=diycross7 (version 7.56+02~dev)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Rf
+Orig=DSB.SYdRWTT RfeTP DpAddrdW RfePT
+{
+0:X1=x:green; 0:X2=y:red; 0:X3=y:green;
+1:X0=y:red; 1:X4=x:green;
+}
+ P0          | P1                  ;
+ MOV X0,X1   | LDR W1,[X0]         ;
+ LDG X0,[X1] | EOR W2,W1,W1        ;
+ DSB SY      | MOV W3,#1           ;
+ STG X2,[X3] | STR W3,[X4,W2,SXTW] ;
+exists (0:X0=x:green /\ 1:X1=0) /\ ~fault (P1,y)

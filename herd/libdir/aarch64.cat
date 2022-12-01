@@ -52,7 +52,7 @@ include "aarch64hwreqs.cat"
 let ca = fr | co
 
 (* Observed-by *)
-let obs = ([M & Exp]; (rf | ca); [M & Exp]) & ext
+let obs = ([M & Exp | R & T & Imp]; (rf | ca); [M & Exp | R & T & Imp]) & ext
 
 (* TLBI-after *)
 include "tlbi-after.cat"
@@ -61,7 +61,7 @@ with tlbi-after from (pte-tlbi-pairs hw-reqs)
 (* TTD-read-ordered-before *)
 let TTD-read-ordered-before =
   tlbi-after; [TLBI]; po; [dsb.full]; po; [~(M&Imp)]
-  | (if "ETS2" then tlbi-after; [TLBI]; po; [dsb.full]; po; [M & Imp] else 0)
+  | (if "ETS2" then tlbi-after; [TLBI]; po; [dsb.full]; po; [M & PTE & Imp] else 0)
 
 (* TLBI-Ordered-Before *)
 let tlbi-ob =
@@ -87,7 +87,7 @@ let rec ob =
     | [R & Exp]; po-loc; [R & Exp]; fre ; [W & Exp]; si
 
     | obs; si
-    | rf & ((Imp*_) | (_*Imp))      
+    | [PTE & Imp]; rf | rf; [PTE & Imp]
     | TLBuncacheable-pred
     | HU-pred
     | [HU]; co | co; [HU]
@@ -102,6 +102,7 @@ irreflexive ob as external
 
 (* Internal visibility requirements *)
 irreflexive [R & Exp]; (po-loc | rmw); [W & Exp]; rfi; [R & Exp] as coRW1-Exp
+irreflexive [R & T & Imp]; po-loc; [W & T & Exp]; rfi; [R & T & Imp] as coRW1-MTE
 irreflexive [W & Exp]; po-loc; [W & Exp]; (ca & int); [W & Exp] as coWW-Exp
 irreflexive [W & Exp]; po-loc; [R & Exp]; (ca & int); [W & Exp] as coWR-Exp
 irreflexive [W & Exp & T]; po-loc; [R & Imp & T]; (ca & int) as coWR-MTE

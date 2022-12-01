@@ -1,0 +1,16 @@
+AArch64 2+2W+dmb.sytt+dsb.sttt
+"DMB.SYdWWTT CoeTT DSB.STdWWTT CoeTT"
+Cycle=CoeTT DMB.SYdWWTT CoeTT DSB.STdWWTT
+Generator=diycross7 (version 7.56+02~dev)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Co Co
+Orig=DMB.SYdWWTT CoeTT DSB.STdWWTT CoeTT
+{
+0:X0=x:blue; 0:X1=x:red; 0:X2=y:red; 0:X3=y:green;
+1:X0=y:blue; 1:X1=y:red; 1:X2=x:red; 1:X3=x:green;
+}
+ P0          | P1          ;
+ STG X0,[X1] | STG X0,[X1] ;
+ DMB SY      | DSB ST      ;
+ STG X2,[X3] | STG X2,[X3] ;
+exists ([tag(x)]=:blue /\ [tag(y)]=:blue)

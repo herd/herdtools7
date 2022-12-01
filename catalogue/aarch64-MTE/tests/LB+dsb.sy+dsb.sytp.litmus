@@ -1,0 +1,18 @@
+AArch64 LB+dsb.sy+dsb.sytp
+"DSB.SYdRW RfePT DSB.SYdRWTP Rfe"
+Cycle=Rfe DSB.SYdRW RfePT DSB.SYdRWTP
+Generator=diycross7 (version 7.56+02~dev)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Rf
+Orig=DSB.SYdRW RfePT DSB.SYdRWTP Rfe
+{
+0:X0=x:green; 0:X3=y:green;
+1:X1=y:green; 1:X3=x:green;
+}
+ P0          | P1          ;
+ LDR W1,[X0] | MOV X0,X1   ;
+ DSB SY      | LDG X0,[X1] ;
+ MOV W2,#1   | DSB SY      ;
+ STR W2,[X3] | MOV W2,#1   ;
+             | STR W2,[X3] ;
+exists (0:X1=1 /\ 1:X0=y:green)
