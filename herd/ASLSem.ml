@@ -219,7 +219,7 @@ struct
       return []
 
     let read_pstate_nzcv (ii, poi) () =
-      let r = ASLBase.ArchReg AArch64Base.NZP in
+      let r = ASLBase.ArchReg AArch64Base.NZCV in
       let* sgn_v =
         read_loc true (A.Location_reg (ii.A.proc, r)) (use_ii_with_poi ii poi)
       in
@@ -227,7 +227,7 @@ struct
       return [ AST.VInt v ]
 
     let write_pstate_nzcv (ii, poi) v =
-      let r = ASLBase.ArchReg AArch64Base.NZP in
+      let r = ASLBase.ArchReg AArch64Base.NZCV in
       let* sgn_v = sgn_of_nzcv (value_to_v v) in
       let* () =
         write_loc (A.Location_reg (ii.A.proc, r)) sgn_v (use_ii_with_poi ii poi)

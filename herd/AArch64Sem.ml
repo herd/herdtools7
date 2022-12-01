@@ -1717,7 +1717,7 @@ module Make
         | I_B l ->
            M.mk_singleton_es (Act.NoAction) ii >>= fun () -> B.branchT l
         | I_BC(c,l)->
-            read_reg_ord NZP ii  >>= tr_cond c >>= fun v ->
+            read_reg_ord NZCV ii  >>= tr_cond c >>= fun v ->
               commit_bcc ii >>= fun () -> B.bccT v l
 
         | I_BL l ->
@@ -2005,16 +2005,16 @@ module Make
               read_reg_ord_sz MachSize.S128 rm ii
             end >>= fun (v1,v2) ->
             M.op Op.Eq v1 v2 >>= fun v -> M.op1 (Op.LeftShift 2) v >>= fun v ->
-            write_reg NZP v ii)
+            write_reg NZCV v ii)
         | I_CHKSLD(rn) ->
             check_morello inst ;
             !(read_reg_ord_sz MachSize.S128 rn ii >>= fun v ->
-            M.op1 Op.CheckSealed v >>= fun v -> write_reg NZP v ii)
+            M.op1 Op.CheckSealed v >>= fun v -> write_reg NZCV v ii)
         | I_CHKTGD(rn) ->
             check_morello inst ;
             !(read_reg_ord_sz MachSize.S128 rn ii >>= fun v ->
               M.op1 Op.CapaGetTag v >>= fun v -> M.op1 (Op.LeftShift 1) v
-              >>= fun v -> write_reg NZP v ii)
+              >>= fun v -> write_reg NZCV v ii)
         | I_CLRTAG(rd,rn) ->
             check_morello inst ;
             !(read_reg_ord_sz MachSize.S128 rn ii >>= fun (v) ->
@@ -2043,7 +2043,7 @@ module Make
             M.op Op.CSeal v1 v2 >>= fun v ->
             write_reg_sz MachSize.S128 rd v ii >>= fun _ ->
             (* TODO: PSTATE overflow flag would need to be conditionally set *)
-            write_reg NZP M.A.V.zero ii)
+            write_reg NZCV M.A.V.zero ii)
         | I_GC(op,rd,rn) ->
             check_morello inst ;
             !(read_reg_ord_sz MachSize.S128 rn ii >>= begin fun c -> match op with
@@ -2246,7 +2246,7 @@ module Make
                     | ADDS|SUBS|ANDS|BICS
                       ->
                         is_zero v
-                        >>= fun v -> write_reg_dest NZP v ii
+                        >>= fun v -> write_reg_dest NZCV v ii
                         >>= fun v -> M.unitT (Some v)
                     | ADD|EOR|ORR|AND|SUB|ASR|LSR|LSL|BIC
                       -> M.unitT None) in
@@ -2255,7 +2255,7 @@ module Make
             begin match wo with
             | None -> B.nextSetT rd v
             | Some w ->
-                M.unitT (B.Next [rd,v; NZP,w])
+                M.unitT (B.Next [rd,v; NZCV,w])
             end
       (* Barrier *)
         | I_FENCE b ->
@@ -2267,14 +2267,14 @@ module Make
             | Cpy -> fun m -> m
             | Inc|Inv|Neg -> mask32 var in
             !(if not (C.variant Variant.NotWeakPredicated) then
-              read_reg_ord NZP ii >>= tr_cond c >>*= fun v ->
+              read_reg_ord NZCV ii >>= tr_cond c >>*= fun v ->
                 M.choiceT v
                   (read_reg_data sz r2 ii >>= fun v -> write_reg r1 v ii)
                   (read_reg_data sz r3 ii >>=
                      csel_op op >>= mask (fun v ->  write_reg r1 v ii))
             else
               begin
-                (read_reg_ord NZP ii >>= tr_cond c) >>|  read_reg_data sz r2 ii >>| read_reg_data sz r3 ii
+                (read_reg_ord NZCV ii >>= tr_cond c) >>|  read_reg_data sz r2 ii >>| read_reg_data sz r3 ii
               end >>= fun ((v,v2),v3) ->
               M.condPredT v
                 (M.unitT ())
