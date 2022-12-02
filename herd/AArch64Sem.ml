@@ -2238,45 +2238,51 @@ module Make
                         (AArch64.pp_op op)
                   end
               | _ ->
-                let get_res =
-                  match op with
-                  | ADD | ADDS -> fun (v1, v2) -> M.add v1 v2
-                  | EOR -> fun (v1, v2) -> M.op Op.Xor v1 v2
-                  | ORR -> fun (v1, v2) -> M.op Op.Or v1 v2
-                  | SUB | SUBS -> fun (v1, v2) -> M.op Op.Sub v1 v2
-                  | AND | ANDS -> fun (v1, v2) -> M.op Op.And v1 v2
-                  | ASR -> fun (v1, v2) -> M.op Op.ASR v1 v2
-                  | LSR -> fun (v1, v2) -> M.op Op.Lsr v1 v2
-                  | LSL -> fun (v1, v2) -> M.op Op.ShiftLeft v1 v2
-                  | BIC | BICS -> fun (v1, v2) -> M.op Op.AndNot2 v1 v2
-                in
-                let set_flags =
-                  match op with
-                  | ADD | EOR | ORR | SUB | AND | ASR | LSR | LSL | BIC -> None
-                  | ADDS ->
-                    let get_flags res _v1 _v2 =
-                      M.op Op.Eq V.zero res
-                    in Some get_flags
-                  | SUBS ->
-                    let get_flags res _v1 _v2 =
-                      M.op Op.Eq V.zero res
-                    in Some get_flags
-                  | ANDS | BICS ->
-                    let get_flags res _v1 _v2 =
-                      M.op Op.Eq V.zero res
-                    in Some get_flags
-                in
-                match set_flags with
-                | None -> write_reg_no_flags get_res
-                | Some get_flags ->
-                    let do_write_flags flags = write_reg_dest NZCV flags ii in
-                    let return_flags flags = M.unitT (Some flags) in
-                    let compute_and_write_flags res v1 v2 =
-                      get_flags res v1 v2 >>= do_write_flags >>= return_flags
+                  let get_res =
+                    match op with
+                    | ADD | ADDS -> fun (v1, v2) -> M.add v1 v2
+                    | EOR -> fun (v1, v2) -> M.op Op.Xor v1 v2
+                    | ORR -> fun (v1, v2) -> M.op Op.Or v1 v2
+                    | SUB | SUBS -> fun (v1, v2) -> M.op Op.Sub v1 v2
+                    | AND | ANDS -> fun (v1, v2) -> M.op Op.And v1 v2
+                    | ASR -> fun (v1, v2) -> M.op Op.ASR v1 v2
+                    | LSR -> fun (v1, v2) -> M.op Op.Lsr v1 v2
+                    | LSL -> fun (v1, v2) -> M.op Op.ShiftLeft v1 v2
+                    | BIC | BICS -> fun (v1, v2) -> M.op Op.AndNot2 v1 v2
+                  in
+                  let set_flags =
+                    let compute_nz res =
+                      let compute_z2 res =
+                        M.op Op.Eq V.zero res >>= M.op1 (Op.LeftShift 1)
+                      in
+                      let compute_n res = M.op Op.Lt V.zero res in
+                      compute_z2 res >>| compute_n res >>= fun (z2, n) ->
+                      M.op Op.And z2 n
                     in
-                    fun (v1, v2) ->
-                      with_correct_size get_res (v1, v2) >>= fun res ->
-                      do_write_reg res >>| compute_and_write_flags res v1 v2
+                    match op with
+                    | ADD | EOR | ORR | SUB | AND | ASR | LSR | LSL | BIC ->
+                        None
+                    | ADDS ->
+                        let get_flags res _v1 _v2 = compute_nz res in
+                        Some get_flags
+                    | SUBS ->
+                        let get_flags res _v1 _v2 = compute_nz res in
+                        Some get_flags
+                    | ANDS | BICS ->
+                        let get_flags res _v1 _v2 = compute_nz res in
+                        Some get_flags
+                  in
+                  match set_flags with
+                  | None -> write_reg_no_flags get_res
+                  | Some get_flags ->
+                      let do_write_flags flags = write_reg_dest NZCV flags ii in
+                      let return_flags flags = M.unitT (Some flags) in
+                      let compute_and_write_flags res v1 v2 =
+                        get_flags res v1 v2 >>= do_write_flags >>= return_flags
+                      in
+                      fun (v1, v2) ->
+                        with_correct_size get_res (v1, v2) >>= fun res ->
+                        do_write_reg res >>| compute_and_write_flags res v1 v2
             end)
             >>= fun (v,wo) ->
             begin match wo with
