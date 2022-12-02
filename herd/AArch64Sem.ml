@@ -838,6 +838,75 @@ module Make
         | AArch64.LE -> is_le
         | AArch64.LT -> is_lt
 
+(* Arithmetic flags handling *)
+
+      let op_set_flags op ty =
+        let open AArch64Base in
+        (* Utils for writing formulas
+           - operators start by their underlying operation
+           - `~` following the operator means it takes real values
+           - `=` following the operator means it takes monads
+        *)
+        let sign_bit_into n =
+          let shift = match ty with V32 -> 31 | V64 -> 63 | V128 -> 127 in
+          M.op1 (Op.LogicalRightShift (shift - n))
+        in
+        let ( let* ) = M.( >>= ) in
+        let ( !> ) = M.op1 Op.Not in
+        let ( &~ ) x y = M.op Op.And x y in
+        let ( |~ ) x y = M.op Op.Or x y in
+        let ( +~ ) x y = M.op Op.Xor x y in
+        let ( &= ) m1 m2 = m1 >>| m2 >>= fun (x, y) -> x &~ y in
+        let ( |= ) m1 m2 = m1 >>| m2 >>= fun (x, y) -> x |~ y in
+        let ( &=~ ) m1 x = m1 >>= ( &~ ) x in
+        let compute_nz res =
+          let compute_z2 res =
+            M.op Op.Eq V.zero res >>= M.op1 (Op.LeftShift 1)
+          in
+          let compute_n = sign_bit_into 0 in
+          compute_z2 res |= compute_n res
+        in
+        match op with
+        | ADD | EOR | ORR | SUB | AND | ASR | LSR | LSL | BIC -> None
+        | ADDS ->
+            let compute_c res x y =
+              (* From Hacker's delight, unsigned overflow is equal to:
+                 (x & y) | ((x | y) & !res)
+              *)
+              x &~ y |= (x |~ y &= !>res) >>= sign_bit_into 2
+            in
+            let compute_v res x y =
+              (* From Hacker's delight, signed overflow is equal to:
+                 (res + x) & (res + y)
+              *)
+              res +~ x &= res +~ y >>= sign_bit_into 3
+            in
+            let get_flags res v1 v2 =
+              compute_nz res |= compute_c res v1 v2 |= compute_v res v1 v2
+            in
+            Some get_flags
+        | SUBS ->
+            let compute_c res x y =
+              (* From Hacker's delight, unsigned overflow is equal to:
+                  (!x & y) | ((!x | y) & res)
+              *)
+              let* nx = !>x in
+              nx &~ y |= (nx |~ y &=~ res) >>= sign_bit_into 2
+            in
+            let compute_v res x y =
+              (* From Hacker's delight, unsigned overflow is equal to:
+                 (x + y) & (res + x)
+              *)
+              x +~ y &= res +~ x >>= sign_bit_into 3
+            in
+            let get_flags res v1 v2 =
+              compute_nz res |= compute_c res v1 v2 |= compute_v res v1 v2
+            in
+            Some get_flags
+        | ANDS | BICS ->
+            let get_flags res _v1 _v2 = compute_nz res in
+            Some get_flags
+
 (* Page tables and TLBs *)
       let do_inv op a ii = inv_loc op (A.Location_global a) ii
 
@@ -2216,9 +2285,7 @@ module Make
             end
             >>=
             begin
-              let with_correct_size f arg =
-                f arg >>= mask32 ty M.unitT
-              in
+              let with_correct_size f arg = f arg >>= mask32 ty M.unitT in
               let do_write_reg v = write_reg_dest rd v ii in
               let write_reg_no_flags f arg =
                 let without_flags v = M.unitT (v, None) in
@@ -2226,18 +2293,17 @@ module Make
               in
               match ty with
               | V128 ->
-                  check_morello inst ;
+                  check_morello inst;
                   write_reg_no_flags
-                  begin match op with
-                  | ADD -> fun (v1,v2) -> M.op Op.CapaAdd v1 v2
-                  | SUB -> fun (v1,v2) -> M.op Op.CapaSub v1 v2
-                  | SUBS -> fun (v1,v2) -> M.op Op.CapaSubs v1 v2 
-                  | _ ->
-                      Warn.fatal
-                        "Operation '%s' is not available in morello mode"
-                        (AArch64.pp_op op)
-                  end
-              | _ ->
+                    (match op with
+                    | ADD -> fun (v1, v2) -> M.op Op.CapaAdd v1 v2
+                    | SUB -> fun (v1, v2) -> M.op Op.CapaSub v1 v2
+                    | SUBS -> fun (v1, v2) -> M.op Op.CapaSubs v1 v2
+                    | _ ->
+                        Warn.fatal
+                          "Operation '%s' is not available in morello mode"
+                          (AArch64.pp_op op))
+              | _ -> (
                   let get_res =
                     match op with
                     | ADD | ADDS -> fun (v1, v2) -> M.add v1 v2
@@ -2250,29 +2316,7 @@ module Make
                     | LSL -> fun (v1, v2) -> M.op Op.ShiftLeft v1 v2
                     | BIC | BICS -> fun (v1, v2) -> M.op Op.AndNot2 v1 v2
                   in
-                  let set_flags =
-                    let compute_nz res =
-                      let compute_z2 res =
-                        M.op Op.Eq V.zero res >>= M.op1 (Op.LeftShift 1)
-                      in
-                      let compute_n res = M.op Op.Lt V.zero res in
-                      compute_z2 res >>| compute_n res >>= fun (z2, n) ->
-                      M.op Op.And z2 n
-                    in
-                    match op with
-                    | ADD | EOR | ORR | SUB | AND | ASR | LSR | LSL | BIC ->
-                        None
-                    | ADDS ->
-                        let get_flags res _v1 _v2 = compute_nz res in
-                        Some get_flags
-                    | SUBS ->
-                        let get_flags res _v1 _v2 = compute_nz res in
-                        Some get_flags
-                    | ANDS | BICS ->
-                        let get_flags res _v1 _v2 = compute_nz res in
-                        Some get_flags
-                  in
-                  match set_flags with
+                  match op_set_flags op ty with
                   | None -> write_reg_no_flags get_res
                   | Some get_flags ->
                       let do_write_flags flags = write_reg_dest NZCV flags ii in
@@ -2282,7 +2326,7 @@ module Make
                       in
                       fun (v1, v2) ->
                         with_correct_size get_res (v1, v2) >>= fun res ->
-                        do_write_reg res >>| compute_and_write_flags res v1 v2
+                        do_write_reg res >>| compute_and_write_flags res v1 v2)
             end)
             >>= fun (v,wo) ->
             begin match wo with
