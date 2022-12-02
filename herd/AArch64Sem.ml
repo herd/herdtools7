@@ -2215,42 +2215,69 @@ module Make
                   end
             end
             >>=
-              begin match ty with
+            begin
+              let with_correct_size f arg =
+                f arg >>= mask32 ty M.unitT
+              in
+              let do_write_reg v = write_reg_dest rd v ii in
+              let write_reg_no_flags f arg =
+                let without_flags v = M.unitT (v, None) in
+                with_correct_size f arg >>= do_write_reg >>= without_flags
+              in
+              match ty with
               | V128 ->
                   check_morello inst ;
+                  write_reg_no_flags
                   begin match op with
                   | ADD -> fun (v1,v2) -> M.op Op.CapaAdd v1 v2
                   | SUB -> fun (v1,v2) -> M.op Op.CapaSub v1 v2
-                  | SUBS -> fun (v1,v2) -> M.op Op.CapaSubs v1 v2
+                  | SUBS -> fun (v1,v2) -> M.op Op.CapaSubs v1 v2 
                   | _ ->
                       Warn.fatal
                         "Operation '%s' is not available in morello mode"
                         (AArch64.pp_op op)
                   end
               | _ ->
-                  begin match op with
-                  | ADD|ADDS -> fun (v1,v2) -> M.add v1 v2
-                  | EOR -> fun (v1,v2) -> M.op Op.Xor v1 v2
-                  | ORR -> fun (v1,v2) -> M.op Op.Or v1 v2
-                  | SUB|SUBS -> fun (v1,v2) -> M.op Op.Sub v1 v2
-                  | AND|ANDS -> fun (v1,v2) -> M.op Op.And v1 v2
+                let get_res =
+                  match op with
+                  | ADD | ADDS -> fun (v1, v2) -> M.add v1 v2
+                  | EOR -> fun (v1, v2) -> M.op Op.Xor v1 v2
+                  | ORR -> fun (v1, v2) -> M.op Op.Or v1 v2
+                  | SUB | SUBS -> fun (v1, v2) -> M.op Op.Sub v1 v2
+                  | AND | ANDS -> fun (v1, v2) -> M.op Op.And v1 v2
                   | ASR -> fun (v1, v2) -> M.op Op.ASR v1 v2
-                  | LSR -> fun (v1,v2) -> M.op Op.Lsr v1 v2
-                  | LSL -> fun (v1,v2) -> M.op Op.ShiftLeft v1 v2
-                  | BIC|BICS -> fun (v1,v2) -> M.op Op.AndNot2 v1 v2
-                  end
-              end >>=
-              (let m v =
-                 (write_reg_dest rd v ii) >>|
-                   (match op with
-                    | ADDS|SUBS|ANDS|BICS
-                      ->
-                        is_zero v
-                        >>= fun v -> write_reg_dest NZCV v ii
-                        >>= fun v -> M.unitT (Some v)
-                    | ADD|EOR|ORR|AND|SUB|ASR|LSR|LSL|BIC
-                      -> M.unitT None) in
-               mask32 ty m))
+                  | LSR -> fun (v1, v2) -> M.op Op.Lsr v1 v2
+                  | LSL -> fun (v1, v2) -> M.op Op.ShiftLeft v1 v2
+                  | BIC | BICS -> fun (v1, v2) -> M.op Op.AndNot2 v1 v2
+                in
+                let set_flags =
+                  match op with
+                  | ADD | EOR | ORR | SUB | AND | ASR | LSR | LSL | BIC -> None
+                  | ADDS ->
+                    let get_flags res _v1 _v2 =
+                      M.op Op.Eq V.zero res
+                    in Some get_flags
+                  | SUBS ->
+                    let get_flags res _v1 _v2 =
+                      M.op Op.Eq V.zero res
+                    in Some get_flags
+                  | ANDS | BICS ->
+                    let get_flags res _v1 _v2 =
+                      M.op Op.Eq V.zero res
+                    in Some get_flags
+                in
+                match set_flags with
+                | None -> write_reg_no_flags get_res
+                | Some get_flags ->
+                    let do_write_flags flags = write_reg_dest NZCV flags ii in
+                    let return_flags flags = M.unitT (Some flags) in
+                    let compute_and_write_flags res v1 v2 =
+                      get_flags res v1 v2 >>= do_write_flags >>= return_flags
+                    in
+                    fun (v1, v2) ->
+                      with_correct_size get_res (v1, v2) >>= fun res ->
+                      do_write_reg res >>| compute_and_write_flags res v1 v2
+            end)
             >>= fun (v,wo) ->
             begin match wo with
             | None -> B.nextSetT rd v
