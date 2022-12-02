@@ -320,6 +320,7 @@ module Make
               "aligned",aligned;
               "iico_data", lazy conc.S.str.E.intra_causality_data;
               "iico_ctrl", lazy conc.S.str.E.intra_causality_control;
+              "iico_order", lazy conc.S.str.E.intra_causality_order;
               "rf-reg", rf_reg ;
               "same-instr", lazy begin E.EventRel.of_pred all_evts all_evts E.same_instruction end;
               "same-static",

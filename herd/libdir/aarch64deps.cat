@@ -60,7 +60,7 @@ let addr = (basic-dep; [ADDR]; iico_data; [M]) \ same-instance
 let ctrl = (basic-dep; [BCC]; po) \ same-instance
 
 (** Pick dependencies *)
-let pick-dtrm = (dtrm|iico_ctrl)+
+let pick-dtrm = (dtrm|iico_ctrl|iico_order)+
 
 let pick-basic-dep =
    [R|Rreg];  pick-dtrm?
