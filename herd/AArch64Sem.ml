@@ -822,21 +822,24 @@ module Make
             >>! ())
         a v ii
 
-      let flip_flag v = M.op Op.Xor v V.one
-      let is_zero v = M.op Op.Eq v V.zero
-      let is_not_zero v = M.op Op.Ne v V.zero
-      let is_ge v = M.op Op.Ge v V.zero
-      let is_gt v = M.op Op.Gt v V.zero
-      let is_le v = M.op Op.Le v V.zero
-      let is_lt v = M.op Op.Lt v V.zero
-
-      let tr_cond = function
-        | AArch64.NE -> is_zero
-        | AArch64.EQ -> is_not_zero
-        | AArch64.GE -> is_ge
-        | AArch64.GT -> is_gt
-        | AArch64.LE -> is_le
-        | AArch64.LT -> is_lt
+      let tr_cond =
+        let n = M.op1 (Op.ReadBit 0) in
+        let z = M.op1 (Op.ReadBit 1) in
+        let _c = M.op1 (Op.ReadBit 2) in
+        let v = M.op1 (Op.ReadBit 3) in
+        let ( ! ) f flags = f flags >>= M.op1 Op.Not in
+        let make_op op f1 f2 flags = f1 flags >>| f2 flags >>= fun (v1, v2) -> M.op op v1 v2 in
+        let ( == ) = make_op Op.Eq in
+        let ( || ) = make_op Op.Or in
+        let ( && ) = make_op Op.And in
+        let ( <> ) = make_op Op.Xor in (* Should also work with Op.Ne but we are following Hacker's delight.*)
+        function
+        | AArch64.NE -> !z
+        | AArch64.EQ -> z
+        | AArch64.GE -> n == v
+        | AArch64.GT -> (n == v) && !z
+        | AArch64.LE -> (n <> v) || z
+        | AArch64.LT -> n <> v
 
 (* Arithmetic flags handling *)
 
