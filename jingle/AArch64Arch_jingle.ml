@@ -144,7 +144,7 @@ include Arch.MakeArch(struct
       | K k ->
           find_cst k >! fun k -> K k in
     function
-    | (I_FENCE _|I_NOP|I_RET None|I_ERET) as i -> unitT i
+    | (I_FENCE _|I_NOP|I_RET None|I_ERET|I_UDF _) as i -> unitT i
     | I_B l ->
         find_lab l >! fun l -> I_B l
     | I_BR r ->

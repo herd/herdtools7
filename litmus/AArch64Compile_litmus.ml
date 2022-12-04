@@ -1498,6 +1498,9 @@ module Make(V:Constant.S)(C:Config) =
       I_SEAL _|I_STCT _|I_UNSEAL _ ->
         Warn.fatal "No litmus output for instruction %s"
             (dump_instruction ins)
+    | I_UDF _ ->
+       { empty_ins with memo = "udf"; }::k
+
 
     let no_tr lbl = lbl
     let branch_neq r i lab k = cmpk V32 r i::bcc no_tr NE lab::k
