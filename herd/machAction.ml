@@ -60,7 +60,9 @@ module Make (C:Config) (A : A) : sig
     | Amo of A.location * A.V.v * A.V.v * A.lannot * A.explicit * MachSize.sz * Access.t
 (* NB: Amo used in some arch only (e.g., Arm, RISCV) *)
 (* bool (fifth) argument is true when modeling fault handler entry *)
-    | Fault of A.inst_instance_id * A.location * Dir.dirn * A.lannot * bool * A.I.FaultType.t option * string option
+    | Fault of
+        A.inst_instance_id * A.location option * Dir.dirn
+        * A.lannot * bool * A.I.FaultType.t option * string option
 (* Unrolling control *)
     | TooFar of string
 (* TLB Invalidate event, operation (for print and level), address, if any.
@@ -147,7 +149,9 @@ end = struct
     | Amo of
         A.location * A.V.v * A.V.v * A.lannot * A.explicit *
         MachSize.sz * Access.t
-    | Fault of A.inst_instance_id * A.location * Dir.dirn * A.lannot * bool * A.I.FaultType.t option * string option
+    | Fault of
+        A.inst_instance_id * A.location option
+        * Dir.dirn * A.lannot * bool * A.I.FaultType.t option * string option
     | TooFar of string
     | Inv of A.TLBI.op * A.location option
     | DC of AArch64Base.DC.op * A.location option
@@ -192,17 +196,13 @@ end = struct
         (A.pp_location loc) (MachSize.pp_short sz)
         (V.pp C.hexa v1) (V.pp C.hexa v2)
   | Fault (_,loc,d,an,handler,ftype,msg) ->
-     Printf.sprintf "%s(%s,loc:%s%s%s%s)"
+     Printf.sprintf "%s(%s%s%s%s%s)"
         (if handler then "ExcEntry" else "Fault")
         (pp_dirn d)
-        (A.pp_location_old loc)
+        (Misc.pp_opt_arg (fun loc -> "loc:" ^ A.pp_location_old loc) loc)
         (A.pp_annot an)
-        (match ftype with
-         | None -> ""
-         | Some ftype -> Printf.sprintf ",%s" (A.I.FaultType.pp ftype))
-        (match msg with
-         | None -> ""
-         | Some msg -> Printf.sprintf ",type:%s" msg)
+        (Misc.pp_opt_arg A.I.FaultType.pp ftype)
+        (Misc.pp_opt_arg (Printf.sprintf "type:%s") msg)
   | TooFar msg -> Printf.sprintf "TooFar:%s" msg
   | Inv (op,None) ->
       Printf.sprintf "TLBI(%s)" (A.TLBI.pp_op op)
@@ -249,13 +249,15 @@ end = struct
   let location_of a = match a with
   | Access (_, l, _,_,_,_,_)
   | Amo (l,_,_,_,_,_,_)
-  | Fault (_,l,_,_,_,_,_)
+  | Fault (_,Some l,_,_,_,_,_)
   | Inv (_,Some l)
   | DC(_,Some l)
   | IC(_,Some l)
     -> Some l
   | Arch a -> A.ArchAction.location_of a
-  | Barrier _ |Commit _ | TooFar _| Inv (_,None) | DC (_,None) | IC (_,None) | NoAction -> None
+  | Barrier _ |Commit _ | TooFar _ | Fault (_,None,_,_,_,_,_)
+  | Inv (_,None) | DC (_,None) | IC (_,None) | NoAction
+    -> None
 
 (* relative to memory *)
   let is_mem_arch_action a =
@@ -376,7 +378,10 @@ end = struct
       -> false
 
   let to_fault = function
-    | Fault (i,A.Location_global x,_,_,_,t,msg) -> Some ((i.A.proc,i.A.labels),x,t,msg)
+    | Fault (i,Some (A.Location_global x),_,_,_,t,msg) ->
+       Some ((i.A.proc,i.A.labels),Some x,t,msg)
+    | Fault (i,None,_,_,_,t,msg) ->
+       Some ((i.A.proc,i.A.labels),None,t,msg)
     | Fault _ | Access _ | Amo _ | Commit _ | Barrier _ | TooFar _ | Inv _
     | DC _ | IC _ | Arch _ | NoAction
       -> None
@@ -709,7 +714,7 @@ end = struct
         let v2 = V.simplify_var soln v2 in
         Amo (loc,v1,v2,an,exp_an,sz,t)
     | Fault (ii,loc,d,a,h,t,msg) ->
-        let loc = A.simplify_vars_in_loc soln loc in
+        let loc = Misc.map_opt (A.simplify_vars_in_loc soln) loc in
         Fault(ii,loc,d,a,h,t,msg)
     | Inv (op,oloc) ->
         let oloc = Misc.app_opt (A.simplify_vars_in_loc soln) oloc in

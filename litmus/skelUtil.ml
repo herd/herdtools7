@@ -68,7 +68,11 @@ let rec nitems t = match t with
 | Base _|Pointer _ -> 1
 
 let dump_fatom_tag d ((p,lbl),v,_) =
-  sprintf "fault_P%d%s_%s" p (match lbl with None -> "" | Some lbl -> "_" ^ lbl) (d v)
+  sprintf "fault_P%d%s%s" p
+    (match lbl with None -> "" | Some lbl -> "_" ^ lbl)
+    (match v with
+     | None -> ""
+     | Some v -> "_" ^ d v)
 
 module PteValUtil(P:PteVal.S) = struct
 

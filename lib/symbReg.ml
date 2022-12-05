@@ -85,8 +85,8 @@ and type fault_type = A.FaultType.t
   let finish_state f_reg = List.map (finish_state_atom f_reg)
 
   let finish_fault = function
-    | (p,v,None) -> (p,A.maybevToV v,None)
-    | (p,v,Some ft) -> (p,A.maybevToV v,Some (A.FaultType.parse ft))
+    | (p,v,ft) ->
+       (p,Misc.map_opt A.maybevToV v,Misc.map_opt A.FaultType.parse ft)
 
   let finish_location_item f =
     let open LocationsItem in
@@ -103,8 +103,9 @@ and type fault_type = A.FaultType.t
     match a with
     | LV (loc,v) -> LV (finish_rval f_reg loc, A.maybevToV v)
     | LL (l1,l2) -> LL (finish_location f_reg l1,finish_location f_reg l2)
-    | FF (p,v,None) -> FF (p,A.maybevToV v,None)
-    | FF (p,v,Some ft) -> FF (p,A.maybevToV v,Some (A.FaultType.parse ft))
+    | FF (p,v,fr) ->
+       FF (p,Misc.map_opt A.maybevToV v, Misc.map_opt A.FaultType.parse fr)
+
 
    let finish_prop f_reg = ConstrGen.map_prop (finish_atom f_reg)
 

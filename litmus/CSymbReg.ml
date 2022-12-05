@@ -65,9 +65,9 @@ with type v = A.V.v and type location = A.location and type fault_type = A.Fault
 
   let finish_state f_reg = List.map (finish_state_atom f_reg)
 
-  let finish_fault = function
-    | (p,v,None) -> (p,maybevToV v,None)
-    | (p,v,Some ft) -> (p,maybevToV v,Some (A.FaultType.parse ft))
+  let finish_fault =
+    fun (p,v,ft) ->
+    (p,Misc.map_opt maybevToV v, Misc.map_opt A.FaultType.parse ft)
 
   let finish_locations f_reg =
     let open LocationsItem in
@@ -128,7 +128,8 @@ with type v = A.V.v and type location = A.location and type fault_type = A.Fault
     | LV (rloc,_) -> collect_rloc rloc
     | LL (loc1,loc2) ->
         fun c -> collect_location loc1 (collect_location loc2 c)
-    | FF (_,x,_) -> collect_location (MiscParser.Location_global x)
+    | FF (_,None,_) -> Misc.identity
+    | FF (_,Some x,_) -> collect_location (MiscParser.Location_global x)
 
    let collect_constr = ConstrGen.fold_constr collect_atom
 

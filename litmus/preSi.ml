@@ -285,6 +285,7 @@ module Make
 
       let tag_seen f =
         sprintf "see_%s" (SkelUtil.dump_fatom_tag A.V.pp_v_old f)
+
       and tag_code ((p,lbl),_,_) = sprintf "code_P%d%s" p
           (match lbl with None -> assert false | Some lbl -> "_" ^ lbl)
       and tag_log f =  SkelUtil.dump_fatom_tag A.V.pp_v_old f
@@ -373,24 +374,28 @@ module Make
                   O.o ""
                 end ;
                 O.o "typedef struct {" ;
-                O.fi "unsigned int %s;" (String.concat "," (List.map tag_seen faults)) ;
+                O.fi "unsigned int %s;"
+                  (String.concat "," (List.map tag_seen faults)) ;
                 O.o "} see_fault_t;" ;
                 O.o "" ;
+                let has_vars = Misc.consp test.T.globals in
                 if do_dynalloc then begin
                     O.o "static see_fault_t **see_fault;" ;
-                    O.o "static vars_t **vars_ptr;" ;
+                    if has_vars then O.o "static vars_t **vars_ptr;" ;
                     O.o "" ;
                     O.o "static void alloc_see_faults(void) {" ;
                     O.oi "see_fault = malloc_check(NEXE*sizeof(*see_fault));" ;
-                    O.oi "vars_ptr = malloc_check(NEXE*sizeof(*vars_ptr));" ;
+                    if has_vars then
+                      O.oi "vars_ptr = malloc_check(NEXE*sizeof(*vars_ptr));" ;
                     O.o "}" ;
                     O.o "" ;
                     O.o "static void free_see_faults(void) {" ;
-                    O.oi "free(see_fault); free(vars_ptr);" ;
+                    O.oi "free(see_fault);" ;
+                    if has_vars then O.oi "free(vars_ptr);" ;
                     O.o "}"
                   end else begin
                     O.o "static see_fault_t *see_fault[NEXE];" ;
-                    O.o "static vars_t *vars_ptr[NEXE];"
+                    if has_vars then O.o "static vars_t *vars_ptr[NEXE];"
                   end ;
                 O.o "" ;
                 O.o "static void init_see_fault(see_fault_t *p) {" ;
@@ -404,40 +409,55 @@ module Make
              begin match faults with
              | [] -> ()
              | _ ->
+                let test_labels fs =
+                  let no_lbl ((_,o),_,_) = Misc.is_none o in
+                  let no,fs = List.partition no_lbl fs in
+                  begin match no with
+                  | [] -> ()
+                  | f::_ ->
+                     O.fiii "sf->%s = esr;" (tag_seen f) ;
+                  end ;
+                  List.iteri
+                    (fun k f  ->
+                      let prf = if k > 0 then "} else if" else "if"
+                      and test = sprintf "pc == labels.%s" (tag_code f)
+                      and act =  sprintf "sf->%s = esr" (tag_seen f) in
+                      O.fiii "%s (%s) {" prf test ;
+                      O.fiv "%s;" act)
+                    fs ;
+                  if Misc.consp fs then O.fiii "}" ;
+                  O.fii "}" in
                 O.oi "int i = w->instance;" ;
-                O.oi "int idx_loc = idx_addr(loc,vars_ptr[i]);" ;
+                if
+                  List.exists
+                    (fun (_,o,_) -> Misc.is_some o)
+                    faults
+                then
+                  O.oi "int idx_loc = idx_addr(loc,vars_ptr[i]);" ;
                 O.oi "see_fault_t *sf = see_fault[i];" ;
                 O.oi "switch (w->proc) {" ;
                 Misc.group_iter
                   (fun ((p,_),_,_) ((q,_),_,_) -> Misc.int_eq p q)
                   (fun ((p,_),_,_) fs ->
                     O.fi "case %d: {" p ;
+                    let no_id (_,o,_) = Misc.is_none o in
+                    let none,some = List.partition no_id fs in
+                    O.oii "{" ;
+                    test_labels none ;
                     Misc.group_iteri
-                      (fun (_,v,_) (_,w,_) -> A.V.compare v w = 0)
+                      (fun (_,v,_) (_,w,_) ->
+                        Misc.opt_compare A.V.compare v w = 0)
                       (fun k (_,v,_) fs ->
                         let prf = if k > 0 then "else if" else "if"
                         and test =
-                          sprintf "idx_loc == %s"
-                            (dump_addr_idx (A.V.pp_v_old v)) in
+                          match v with
+                          | None -> assert false
+                          | Some v ->
+                             sprintf "idx_loc == %s"
+                               (dump_addr_idx (A.V.pp_v_old v)) in
                         O.fii "%s (%s) {" prf test ;
-                        let no_lbl ((_,o),_,_) = Misc.is_none o in
-                        let no,fs = List.partition no_lbl fs in
-                        begin match no with
-                        | [] -> ()
-                        | f::_ ->
-                           O.fiii "sf->%s = esr;" (tag_seen f) ;
-                        end ;
-                        List.iteri
-                          (fun k f  ->
-                            let prf = if k > 0 then "} else if" else "if"
-                            and test = sprintf "pc == labels.%s" (tag_code f)
-                            and act =  sprintf "sf->%s = esr" (tag_seen f) in
-                            O.fiii "%s (%s) {" prf test ;
-                            O.fiv "%s;" act)
-                          fs ;
-                        if Misc.consp fs then O.fiii "}" ;
-                        O.fii "}")
-                      fs ;
+                        test_labels fs)
+                      some ;
                     O.oii "break;" ;
                     O.oi "}")
                   faults ;
@@ -775,18 +795,23 @@ module Make
                   (OutUtils.fmt_pte_tag s)
                   (dump_addr_idx (Misc.add_pte s))
               end in
-            O.o "static int idx_addr(intmax_t *v_addr,vars_t *p) {" ;
-            begin match test.T.globals with
-            | _::_ when Cfg.is_kvm ->
-               O.oi  "intmax_t *p_addr =" ;
-               O.oii "(intmax_t *)((uintptr_t)v_addr & PAGE_MASK);"
-            | _ -> ()
+            begin
+              match test.T.globals with
+              | [] -> ()
+              | _::_ ->
+                 O.o "static int idx_addr(intmax_t *v_addr,vars_t *p) {" ;
+                 begin match test.T.globals with
+                 | _::_ when Cfg.is_kvm ->
+                    O.oi  "intmax_t *p_addr =" ;
+                    O.oii "(intmax_t *)((uintptr_t)v_addr & PAGE_MASK);"
+                 | _ -> ()
+                 end ;
+                 O.oi "if (v_addr == NULL) { return 0;}" ;
+                 List.iter dump_test test.T.globals ;
+                 O.oi "else { fatal(\"???\"); return -1;}" ;
+                 O.o "}" ;
+                 O.o ""
             end ;
-            O.oi "if (v_addr == NULL) { return 0;}" ;
-            List.iter dump_test test.T.globals ;
-            O.oi "else { fatal(\"???\"); return -1;}" ;
-            O.o "}" ;
-            O.o "" ;
 (* Pretty-print indices *)
             if some_ptr then begin
               O.f "static const char *pretty_addr[%s+1] = {\"0\",%s};"

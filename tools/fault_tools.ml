@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type t = ((Proc.t * string option) * string * string option)
+type t = ((Proc.t * string option) * string option * string option)
 
 let warn_once = ref true
 
@@ -32,10 +32,11 @@ let equal_ft ft1 ft2 = match ft1, ft2 with
 let equal ((p1,lab1),x1,ft1) ((p2,lab2),x2,ft2) =
   Proc.equal p1 p2 &&
   Misc.opt_eq Misc.string_eq lab1 lab2 &&
-  Misc.string_eq x1 x2 &&
+  Misc.opt_eq Misc.string_eq x1 x2 &&
   equal_ft ft1 ft2
 
 let pp ((p,lab),v,ft) =
-  Printf.sprintf "fault(%s%s,%s%s)"
-    (Proc.pp p) (match lab with None -> "" | Some lab -> ":"^lab) v
+  Printf.sprintf "fault(%s%s%s%s)"
+    (Proc.pp p) (match lab with None -> "" | Some lab -> ":"^lab)
+    (match v with None -> "" | Some v -> ","^v)
     (match ft with None -> "" | Some ft -> ","^ft)

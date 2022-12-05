@@ -41,3 +41,6 @@ end
 module AArch64 : AArch64Sig
 
 module No : S
+
+(* For parse disambiguation  *)
+val is : string -> bool

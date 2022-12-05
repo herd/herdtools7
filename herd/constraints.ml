@@ -36,7 +36,7 @@ module type S = sig
   type constr = prop ConstrGen.constr
 
 (* Does loc appears in constr ? *)
-  val loc_in : A.location -> constr -> bool
+(*  val loc_in : A.location -> constr -> bool *)
 
   val foralltrue : constr
 
@@ -94,7 +94,8 @@ module Make (C:Config) (A : Arch_herd.S) :
               A.location_compare l2 loc = 0
           | LV (l,_) ->
               A.location_compare (loc_of_rloc l) loc = 0
-          | FF (_,x,_) ->
+          | FF (_,None,_) -> false
+          | FF (_,Some x,_) ->
               A.location_compare
                 (A.Location_global x)
                 loc = 0
@@ -108,7 +109,7 @@ module Make (C:Config) (A : Arch_herd.S) :
 
         and loc_in_props loc =  List.exists (loc_in_prop loc)
 
-        let loc_in loc c = match c with
+        let _loc_in loc c = match c with
         | ForallStates p
         | ExistsState p
         | NotExistsState p -> loc_in_prop loc p

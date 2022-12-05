@@ -78,6 +78,8 @@ module AArch64 = struct
     | "IllegalInstruction" -> IllegalInstruction
     | _ as s -> Warn.user_error "%s not a valid fault type" s
 
+  let is s = try ignore (parse s); true  with  _ -> false
+
   let compare ft1 ft2 = Misc.polymorphic_compare ft1 ft2
 end
 
@@ -91,3 +93,5 @@ module No = struct
   let parse _ = Warn.user_error "Fault types not supported"
   let compare _ _ = Warn.user_error "Fault types not supported"
 end
+
+let is = AArch64.is

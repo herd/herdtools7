@@ -160,7 +160,9 @@ static void set_role(global_t *g,thread_ctx_t *c,int part) {
     whoami[c->id].proc = c->role ;
 #ifdef SEE_FAULTS
     if (c->role == 0) {
+#ifdef SOME_VARS
       vars_ptr[inst] = &c->ctx->v;
+#endif
       see_fault[inst] = &c->ctx->f;
     }
 #endif
