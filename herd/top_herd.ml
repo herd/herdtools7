@@ -356,12 +356,15 @@ module Make(O:Config)(M:XXXMem.S) =
       let cstr = T.find_our_constraint test in
 
       let restrict_faults =
-        if memtag || morello || kvm then
+        if A.FaultAtomSet.is_empty test.Test_herd.ffaults then
+          fun _ -> A.FaultSet.empty
+        else
           A.FaultSet.filter
             (fun flt ->
               A.FaultAtomSet.exists
-                (fun ((p,lab),loc,_ftype) -> A.check_one_fatom flt ((p,lab),loc,None)) test.Test_herd.ffaults)
-        else fun _ -> A.FaultSet.empty in
+                (fun ((p,lab),loc,_ftype) ->
+                  A.check_one_fatom flt ((p,lab),loc,None)) test.Test_herd.ffaults) in
+
 
       let final_state_restrict_locs test fsc =
         let dlocs = S.displayed_rlocations test

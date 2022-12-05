@@ -1420,13 +1420,15 @@ let match_reg_events es =
           | _,_ -> k)
           rfm test.Test_herd.init_state in
       st,
-      if memtag || morello || kvm  then
+      if A.FaultAtomSet.is_empty test.Test_herd.ffaults then
+        A.FaultSet.empty
+      else
         E.EventSet.fold
-          (fun e k -> match E.to_fault e with
-          | Some f -> A.FaultSet.add f k
-          | None -> k)
+          (fun e k ->
+            match E.to_fault e with
+            | Some f -> A.FaultSet.add f k
+            | None -> k)
           es A.FaultSet.empty
-      else A.FaultSet.empty
 
 
 (* View before relations easily available, from po_iico and rfmap *)
