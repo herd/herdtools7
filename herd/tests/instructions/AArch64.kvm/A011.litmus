@@ -7,5 +7,5 @@ Variant=fatal
  P0          ;
  MOV W0,#1   ;
 L0:          ;
- LDR W0,[X1] ;
+ STR W0,[X1] ;
 forall(fault(P0:L0,x,MMU:Permission))
