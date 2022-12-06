@@ -16,10 +16,8 @@
 {
 module Make(O:LexUtils.Config) = struct
 
-open Lexing
-open LexMisc
 open JavaParser
-open JavaBase
+
 exception Error
 
 let tr_name = function
