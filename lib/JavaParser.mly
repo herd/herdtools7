@@ -16,7 +16,6 @@
 
 %{
 open JavaBase
-open Misc
 %}
 
 %token EOF
