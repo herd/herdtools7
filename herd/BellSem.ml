@@ -125,7 +125,7 @@ module
       let tr_mov r op ii =
         (tr_op ii op) >>= (fun v -> write_reg r v ii)
 
-      let build_semantics ii =
+      let build_semantics _ ii =
         let build_semantics_inner ii =
           match ii.A.inst with
           | BellBase.Pnop -> B.nextT

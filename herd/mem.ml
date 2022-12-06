@@ -461,9 +461,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             (A.dump_instruction inst)
             (Label.Set.pp_str ","  Label.pp ii.A.labels) ;
         m ii in
-
+      let  sem_instr =  SM.build_semantics test in
       let rec add_next_instr re_exec fetch_proc proc env seen addr inst nexts =
-        wrap fetch_proc proc inst addr env SM.build_semantics >>> fun branch ->
+        wrap fetch_proc proc inst addr env sem_instr >>> fun branch ->
           let { A.regs=env; lx_sz=szo; fh_code } = env in
           let env =
             let env = A.kill_regs (A.killed inst) env in

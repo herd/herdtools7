@@ -168,7 +168,7 @@ module
             (write_loc_gen sz locked loc v_result ii >>|
             write_all_flags v_result V.zero ii) >>= B.next2T
 
-      let build_semantics ii =
+      let build_semantics _ ii =
         let rec build_semantics_inner locked ii =
           match ii.A.inst with
           |  X86.I_NOP -> B.nextT

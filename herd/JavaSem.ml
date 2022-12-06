@@ -123,7 +123,7 @@ module
         | _ -> JavaBase.Op (Ne,e,Java.Const 0) in
         build_semantics_expr false e ii
 
-      let rec build_semantics ii : (A.program_order_index * B.t) M.t =
+      let rec build_semantics test ii : (A.program_order_index * B.t) M.t =
         let ii =
             {ii with A.program_order_index = A.next_po_index ii.A.program_order_index} in
 
@@ -143,8 +143,8 @@ module
                             ii with A.program_order_index =
                             A.next_po_index ii.A.program_order_index;
                         } in
-                        let then_branch = build_semantics {ii' with A.inst = thn} in
-                        let else_branch = build_semantics {ii' with A.inst = e} in
+                        let then_branch = build_semantics test {ii' with A.inst = thn} in
+                        let else_branch = build_semantics test {ii' with A.inst = e} in
                         M.choiceT ret then_branch else_branch
                 )
             | JavaBase.If (grd, thn, None) -> (
@@ -153,24 +153,25 @@ module
                             ii with A.program_order_index =
                             A.next_po_index ii.A.program_order_index;
                         } in
-                        let then_branch = build_semantics {ii' with A.inst = thn} in
-                        M.choiceT ret then_branch (build_semantics_list [] ii)
+                        let then_branch = build_semantics test {ii' with A.inst = thn} in
+                        M.choiceT ret then_branch
+                          (build_semantics_list test [] ii)
                 )
 
             | JavaBase.Seq ins_lst ->
-                    build_semantics_list ins_lst ii
+                    build_semantics_list test ins_lst ii
             | JavaBase.Fence mo -> M.mk_fence (Act.Fence mo) ii
                                     >>= fun _ -> M.unitT
                                   (ii.A.program_order_index, B.Next [])
             | _ -> assert false (* others are not implemented yet *)
 
-    and build_semantics_list insts ii =
+    and build_semantics_list test insts ii =
         match insts with
         | [] -> M.unitT (ii.A.program_order_index, B.Next [])
         | hd :: tl ->
             let ii = {ii with A.inst = hd; } in
-            (build_semantics ii) >>> fun (prog_order, _branch) ->
-                build_semantics_list tl {ii with A.program_order_index = prog_order;}
+            (build_semantics test ii) >>> fun (prog_order, _branch) ->
+                build_semantics_list test tl {ii with A.program_order_index = prog_order;}
     
     let spurious_setaf _ = assert false
 

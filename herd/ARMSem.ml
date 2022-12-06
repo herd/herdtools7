@@ -136,7 +136,7 @@ module
       | ARM.SetFlags -> write_flag ARM.Z Op.Eq v1 v2 ii
       | ARM.DontSetFlags -> M.unitT ()
 
-      let build_semantics ii =
+      let build_semantics _ ii =
         M.addT (A.next_po_index ii.A.program_order_index)
           begin match ii.A.inst with
           | ARM.I_NOP -> B.nextT
