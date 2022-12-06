@@ -1677,11 +1677,16 @@ module Make
 (* Branches *)
 (*********************)
 
-      let do_indirect_jump i = function
+      let do_indirect_jump test i = function
         | M.A.V.Val(Constant.Label (_, l)) -> B.branchT l
-        | M.A.V.Var(_) -> Warn.fatal
-            "unsupported argument for the indirect branch instruction %s \
-            (must be a statically known label)" (AArch64.dump_instruction i)
+        | M.A.V.Var(_) as v ->
+           let lbls = get_exported_labels test in
+           if Label.Full.Set.is_empty lbls then
+             Warn.fatal
+               "Could find no potential target for indirect branch %s \
+                (potential targets are statically known labels)" (AArch64.dump_instruction i)
+           else
+             B.indirectBranchT v lbls
         | _ -> Warn.fatal
             "illegal argument for the indirect branch instruction %s \
             (must be a label)" (AArch64.dump_instruction i)
@@ -1707,7 +1712,7 @@ module Make
       (* And now, just forget about >>! *)
       let (>>!) (_:unit) (_:unit) = ()
 
-      let do_build_semantics inst ii =
+      let do_build_semantics test inst ii =
         let open AArch64Base in
         match inst with
         | I_NOP ->(* Instructions nop and branch below do not generate events, use a placeholder *)
@@ -1732,7 +1737,7 @@ module Make
             end
 
         | I_BR r as i ->
-            read_reg_ord r ii >>= do_indirect_jump i
+            read_reg_ord r ii >>= do_indirect_jump test i
 
         | I_BLR r as i ->
           begin
@@ -1741,7 +1746,7 @@ module Make
               let ret_lbl_v = A.V.cstToV (Constant.Label (ii.A.proc, ret_lbl)) in
               write_reg AArch64Base.linkreg ret_lbl_v ii
               >>= fun () -> read_reg_ord r ii
-              >>= do_indirect_jump i
+              >>= do_indirect_jump test i
             | None ->
               assert false (* mem.ml ought to ensure link_label is set *)
           end
@@ -1750,7 +1755,7 @@ module Make
             | None -> AArch64Base.linkreg
             | Some r -> r in
             read_reg_ord r ii
-            >>= do_indirect_jump i
+            >>= do_indirect_jump test i
 
         | I_ERET ->
            let eret_to_addr = function
@@ -2338,12 +2343,12 @@ module Make
  * to overwrite code
  *)
 
-      let check_self ii =
+      let check_self test ii =
         let inst = ii.A.inst in
         if not (AArch64Base.is_overwritable inst) then
-          do_build_semantics inst ii
+          do_build_semantics test inst ii
         else match Label.norm ii.A.labels with
-        | None -> do_build_semantics inst ii
+        | None -> do_build_semantics test inst ii
         | Some hd ->
            let inst_val = V.instructionToV inst in
            (* Shadow default control sequencing operator *)
@@ -2358,7 +2363,7 @@ module Make
                fun cond ->
                  M.choiceT cond
                    (commit_pred ii
-                    >>*= fun () -> do_build_semantics inst ii )
+                    >>*= fun () -> do_build_semantics test inst ii )
                    begin
                      let mfail =
                        let (>>!) = M.(>>!) in
@@ -2380,15 +2385,15 @@ module Make
                             (commit_pred ii
                              >>*= fun () ->
                                let inst = AArch64Base.I_NOP in (* Must be NOP... *)
-                               do_build_semantics inst ii)
+                               do_build_semantics test inst ii)
                             mfail
                    end
 
-      let build_semantics _ ii =
+      let build_semantics test ii =
         M.addT (A.next_po_index ii.A.program_order_index)
           begin
-            if self then check_self ii
-            else do_build_semantics ii.A.inst ii
+            if self then check_self test ii
+            else do_build_semantics test ii.A.inst ii
           end
 
       let spurious_setaf v = test_and_set_af_succeeds v E.IdSpurious

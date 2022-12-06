@@ -39,7 +39,7 @@ module type S = sig
 
   include Types
 
-(* Lifting of Oufold/map *)
+(* Lifting of fold/map *)
   val pseudo_map : ('a -> 'b) -> 'a kpseudo -> 'b kpseudo
   val pseudo_fold : ('a -> 'b -> 'a) -> 'a -> 'b kpseudo -> 'a
   val pseudo_iter : ('a -> unit) -> 'a kpseudo -> unit

@@ -112,6 +112,8 @@ val mk_replicate : int -> ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t
 
 val is_symbol : ('scalar,'pte,'instr) t -> bool
 val is_label : ('scalar,'pte,'instr) t -> bool
+(* Extract label, if any *)
+val as_label :  ('scalar,'pte,'instr)  t -> Label.Full.full option
 
 val is_non_mixed_symbol : symbol -> bool
 
@@ -128,6 +130,8 @@ val of_symbolic_data : symbolic_data -> ('scalar,'pte,'instr) t
 
 val as_pte : ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t option
 val is_pt : ('scalar,'pte,'instr)  t -> bool
+
+
 
 module type S =  sig
 

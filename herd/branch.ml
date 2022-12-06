@@ -32,6 +32,8 @@ module type S = sig
     | Jump of lbl
     (* if v is one, jump to address, otherwise continue in sequence *)
     | CondJump of v * lbl
+    (* Indirect Jump, with potential targets *)
+    | IndirectJump of v * Label.Full.Set.t
     (* Stop now *)
     | Exit
     (* Raise Fault *)
@@ -48,6 +50,8 @@ module type S = sig
   val nextSetT : reg -> v -> t monad
 (* Non-conditional branch *)
   val branchT : lbl ->  t monad
+(* Indirect branch *)
+  val  indirectBranchT : v -> Label.Full.Set.t -> t monad
 (* Conditional branch *)
   val bccT : v -> lbl -> t monad
   val faultRetT : lbl -> t monad
@@ -68,6 +72,8 @@ module Make(M:Monad.S) = struct
     | Jump of lbl
     (* if v is one, jump to address, otherwise continue in sequence *)
     | CondJump of v * lbl
+    (* Indirect Jump, with potential targets *)
+    | IndirectJump of v * Label.Full.Set.t
     (* Stop now *)
     | Exit
     (* Raise Fault *)
@@ -85,6 +91,7 @@ module Make(M:Monad.S) = struct
   let next4T ((((),()),()), ()) = nextT
   let nextSetT r v = M.unitT (Next [r,v])
   let branchT lbl = M.unitT (Jump lbl)
+  let indirectBranchT v lbls = M.unitT (IndirectJump (v,lbls))
   let bccT v lbl = M.unitT (CondJump (v,lbl))
   let faultRetT lbl = M.unitT (FaultRet lbl)
 end

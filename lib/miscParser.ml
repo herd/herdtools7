@@ -21,6 +21,8 @@ open Printf
 type func = Main | FaultHandler
 type proc = Proc.t * string list option * func
 
+let proc_num (p,_,_) = p
+
 let pp_proc (p,ao,f) =
   sprintf
     "P%i%s%s" p

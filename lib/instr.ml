@@ -22,7 +22,8 @@ module type S = sig
   val tr : InstrLit.t -> t
   val is_nop : t -> bool
   val is_overwritable : t -> bool
-  val can_overwrite : t -> bool    
+  val can_overwrite : t -> bool
+  val get_exported_label : t -> Label.t option
 end
 
 module No (I:sig type instr end) = struct
@@ -39,6 +40,6 @@ module No (I:sig type instr end) = struct
   let is_nop _ = fail "is_nop"
   let is_overwritable _ = false
   let can_overwrite _ = false
-
+  let get_exported_label _ = None
 end                    
                                      

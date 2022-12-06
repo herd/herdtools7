@@ -1,0 +1,10 @@
+Test S12 Required
+States 1
+0:X0=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=2)
+Observation S12 Always 1 0
+Hash=e560b8b2a90cc1dcdea4dea559c59773
+

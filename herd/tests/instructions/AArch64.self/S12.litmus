@@ -6,7 +6,10 @@ AArch64 S12
     P0           ;
   LDR X2, [X1]   ;
   BLR X2         ;
-  MOV X0, #1     ;
+  ADD W0,W0,#1   ;
+  B L1           ;
 L0:              ;
-locations [0:X0; 0:X30;]
-forall (0:X0=0)
+  MOV W0,#1      ;
+  RET            ;
+L1:              ;
+forall (0:X0=2)

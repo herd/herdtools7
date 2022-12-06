@@ -1,0 +1,10 @@
+Test S11 Required
+States 1
+0:X0=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=0)
+Observation S11 Always 1 0
+Hash=fcc1e5d4ee75340562e126e03098c057
+
