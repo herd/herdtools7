@@ -29,6 +29,7 @@ type flags = {
   diycross      : path ;
   diycross_args : string list ;
   expected_dir  : path ;
+  variants      : string list ;
 }
 
 
@@ -61,7 +62,8 @@ let show_tests ?j flags =
   | None ->
       let command_of_litmus litmus =
         TestHerd.herd_command
-          ~bell:None ~cat:None ~variants:[]
+          ~bell:None ~cat:None
+          ~variants:flags.variants
           ~conf:flags.herd_conf
           ~libdir:flags.libdir
           flags.herd
@@ -73,7 +75,8 @@ let show_tests ?j flags =
       let index = Filename.concat tmp_dir "@all" in
       let args =
         TestHerd.herd_args
-          ~bell:None ~cat:None ~variants:[]
+          ~bell:None ~cat:None
+          ~variants:flags.variants
           ~conf:flags.herd_conf
           ~libdir:flags.libdir
           ~timeout:None in
@@ -116,7 +119,7 @@ let run_tests ?j flags =
          (fun (l, e) ->
            TestHerd.herd_output_matches_expected ~bell:None ~cat:None
              ~conf:flags.herd_conf
-             ~variants:[]
+             ~variants:flags.variants
              ~libdir:flags.libdir
              flags.herd l e "" "")
          les
@@ -124,7 +127,7 @@ let run_tests ?j flags =
        ignore
          (TestHerd.run_herd_concurrent  ~bell:None ~cat:None
             ~conf:flags.herd_conf
-            ~variants:[]
+            ~variants:flags.variants
             ~libdir:flags.libdir
             flags.herd ~j:j litmus_paths) ;
        List.map
@@ -167,7 +170,7 @@ let promote_tests ?j flags =
         let output_of_litmus l =
           TestHerd.run_herd ~bell:None ~cat:None
             ~conf:flags.herd_conf
-            ~variants:[]
+            ~variants:flags.variants
             ~libdir:flags.libdir
             flags.herd [l] in
         List.map (fun l -> output_of_litmus l) litmus_paths
@@ -175,7 +178,7 @@ let promote_tests ?j flags =
      ignore
        (TestHerd.run_herd_concurrent  ~bell:None ~cat:None
           ~conf:flags.herd_conf
-          ~variants:[]
+          ~variants:flags.variants
           ~libdir:flags.libdir
           flags.herd ~j:j litmus_paths) ;
      List.map
@@ -208,6 +211,7 @@ let () =
   let diycross = ref "" in
   let expected_dir = ref "" in
   let diycross_args = ref [] in
+  let variants = ref [] in
 
   (* Optional arguments. *)
   let conf = ref None in
@@ -221,6 +225,7 @@ let () =
     Args.is_dir  ("-expected-dir",  Arg.Set_string expected_dir,   "path to directory of .expected files to test against") ;
     "-diycross-arg", Args.append_string diycross_args,  "one argument for diycross (cumulative)" ;
     Args.is_file ("-conf", Args.set_string_option conf,   "path to config file to pass to herd7") ;
+                  "-variant",     Args.append_string variants,   "variant to pass to herd7" ;
     Args.npar j ;
   ] in
   Arg.parse options (fun a -> anon_args := a :: !anon_args) usage ;
@@ -247,6 +252,7 @@ let () =
     diycross = !diycross ;
     diycross_args = !diycross_args ;
     expected_dir = !expected_dir ;
+    variants = !variants ;
 
     } in
   let j = !j in
