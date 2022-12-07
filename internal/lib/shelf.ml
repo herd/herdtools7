@@ -64,7 +64,8 @@ let python = lazy
         Command.run ~stdout:dev_null ~stderr:dev_null p ["--version"] ;
         true
       with
-        Command.Error _ -> false
+        | Unix.Unix_error _ -> false
+        | Command.Error _ -> false
     in
     match List.find_opt exists ["python"; "python3"] with
     | Some p -> p

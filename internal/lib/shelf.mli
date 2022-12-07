@@ -35,3 +35,7 @@ val to_ocaml_string : t -> string
 (** [of_file path] reads a Shelf from a shelf.py file.
  *  It can raise [ParseError]. *)
 val of_file : string -> t
+
+(** For testing purposes, this is the name of a valid python progam name.
+    This might fail at runtime if no such thing is found. *)
+val python : string Lazy.t

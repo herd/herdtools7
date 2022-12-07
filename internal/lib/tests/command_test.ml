@@ -106,7 +106,7 @@ let tests = [
       )
   );
   "Command.run ~stdout ~stderr", (fun () ->
-    let bin = "python" in
+    let bin = Lazy.force Shelf.python in
     let args = [
       "-c" ;
       "import sys; sys.stdout.write('mew\\n'); sys.stderr.write('purr\\n')" ;
