@@ -332,7 +332,7 @@ module Make (TopConf : TopConfS) (V : Value.AArch64) = struct
           if _dbg then
             Printf.eprintf "\t- constraints: %s\n" (ASLVC.pp_cnstrnts cs)
         in
-        M.mk_singleton_es_eq Act.NoAction (tr_cnstrnts cs) ii
+        M.restrict (tr_cnstrnts cs)
       in
       let events =
         match StringMap.find_opt "AArch64" set_pp with

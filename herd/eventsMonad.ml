@@ -1073,6 +1073,8 @@ Monad type:
       make_one_event_structure a ii ++
       make_one_monad () eqs
 
+    let restrict cs = make_one_monad () cs E.empty_event_structure
+
     (******************************************************)
     (* Some basic event structures, read, write, fence... *)
     (******************************************************)

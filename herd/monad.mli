@@ -53,6 +53,9 @@ module type S =
 
     val set_standard_input_output : 'a t -> 'a t
 
+    (* [restrict constraints] is an empty monad with the constraints [constraints] *)
+    val restrict : VC.cnstrnts -> unit t
+
     (* Data composition, entry for snd monad: minimals for iico_data *)
     val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
  (* Input to second arg *)
