@@ -91,7 +91,6 @@ let rec stmt_from_list = function
   | [ x ] -> x
   | h :: t -> SThen (h, stmt_from_list t)
 
-
 (*****************************************************************************)
 (*                                                                           *)
 (*                                 Serialize                                 *)

@@ -25,6 +25,7 @@ module Make
 struct
   module ConfLoc = struct
     include SemExtra.ConfigToArchConfig (C)
+
     let default_to_symb = C.variant Variant.ASL
   end
 

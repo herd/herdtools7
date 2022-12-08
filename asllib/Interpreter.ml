@@ -73,10 +73,7 @@ module Make (B : Backend.S) = struct
       add_seq (Seq.map (fun (x, f) -> (x, SpecialFunc f)) s)
 
     let find_opt_value name env =
-      Option.bind (find_opt name env) (function Value v -> Some v | _ -> None)
-
-    let mem_value name env = Option.is_some (find_opt_value name env)
-    let find_value name env = Option.get (find_opt_value name env)
+      match find_opt name env with Some (Value v) -> Some v | _ -> None
   end
 
   module LEnv = AST.IMap
@@ -195,15 +192,18 @@ module Make (B : Backend.S) = struct
     let open AST in
     function
     | ELiteral v -> return v
-    | EVar x when GEnv.mem_value x genv -> return (GEnv.find_value x genv)
-    | EVar x when GEnv.mem x genv ->
-        let* vl = eval_func (fst env) x [] in
-        one_return_value x vl
-    | EVar x when LEnv.mem x lenv ->
-        let v = LEnv.find x lenv in
-        let* () = on_read_identifier x scope v in
-        return v
-    | EVar x -> fatal ("Unknown identifier: " ^ x)
+    | EVar x -> (
+        match GEnv.find_opt x genv with
+        | Some (GEnv.Value v) -> return v
+        | Some _ ->
+            let* vl = eval_func (fst env) x [] in
+            one_return_value x vl
+        | None -> (
+            match LEnv.find_opt x lenv with
+            | Some v ->
+                let* () = on_read_identifier x scope v in
+                return v
+            | None -> fatal ("Unknown identifier: " ^ x)))
     | EBinop (op, e1, e2) ->
         let* v1 = eval_expr env scope is_data e1
         and* v2 = eval_expr env scope is_data e2 in
@@ -223,17 +223,20 @@ module Make (B : Backend.S) = struct
     let genv, lenv = env in
     let open AST in
     function
-    | LEVar x when GEnv.mem_value x genv ->
-        fatal ("Global variables are not supported yet. Cannot assign to " ^ x)
-    | LEVar x when GEnv.mem x genv ->
-        return (fun v ->
-            let* _ = eval_func genv x [ v ] in
-            continue env)
-    | LEVar x ->
-        return (fun v ->
-            let* () = on_write_identifier x scope v in
-            let lenv = LEnv.add x v lenv in
-            continue (genv, lenv))
+    | LEVar x -> (
+        match GEnv.find_opt x genv with
+        | Some (GEnv.Value _) ->
+            fatal
+              ("Global variables are not supported yet. Cannot assign to " ^ x)
+        | Some _ ->
+            return (fun v ->
+                let* _ = eval_func genv x [ v ] in
+                continue env)
+        | None ->
+            return (fun v ->
+                let* () = on_write_identifier x scope v in
+                let lenv = LEnv.add x v lenv in
+                continue (genv, lenv)))
     | LESet (x, args) ->
         let* vargs = prod_map (eval_expr env scope false) args in
         return (fun v ->
