@@ -143,17 +143,31 @@ let hash_pteval _ = assert false
 (*                                                                           *)
 (*****************************************************************************)
 
-let build_ast_from_file f =
-  let lexbuf = Lexing.from_channel (open_in f) in
+let memoize f =
+  let table = Hashtbl.create 17 in
+  fun s ->
+    match Hashtbl.find_opt table s with
+    | Some r -> r
+    | None ->
+        let r = f s in
+        let () = Hashtbl.add table s r in
+        r
+
+let do_build_ast_from_file fname chan =
+  let lexbuf = Lexing.from_channel chan in
   let () =
     lexbuf.Lexing.lex_curr_p <-
-      { lexbuf.Lexing.lex_curr_p with Lexing.pos_fname = f }
+      { lexbuf.Lexing.lex_curr_p with Lexing.pos_fname = fname }
   in
   try Asllib.Parser.ast Asllib.Lexer.token lexbuf with
   | Asllib.Parser.Error ->
       Warn.fatal "%s: Cannot parse." (Pos.str_pos lexbuf.Lexing.lex_curr_p)
   | Asllib.Lexer.LexerError ->
       Warn.fatal "%s: unknown token." (Pos.str_pos lexbuf.Lexing.lex_curr_p)
+
+let build_ast_from_file =
+  let protected_f s = Misc.input_protect (do_build_ast_from_file s) s in
+  memoize protected_f
 
 let asl_generic_parser lexer lexbuf =
   let ast =

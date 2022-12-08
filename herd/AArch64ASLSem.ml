@@ -118,33 +118,33 @@ module Make (TopConf : TopConfS) (V : Value.AArch64) = struct
       let open AArch64Base in
       function NE -> 0 | EQ -> 1 | GE -> 2 | GT -> 3 | LE -> 4 | LT -> 5
 
+    let pseudocode_fname = Filename.concat "asl-pseudocode"
+
     let decode_inst ii =
       let r2i = ASLBase.arch_reg_to_int in
       let open AArch64Base in
       match ii.A.inst with
-      | I_NOP -> Some ("./herd/tests/asl-pseudocode/nop.asl", [])
+      | I_NOP -> Some (pseudocode_fname "nop.asl", [])
       | I_OP3 (_ty, ADD, rd, rn, RV (_, rm), _os) ->
           Some
-            ( "./herd/tests/asl-pseudocode/add.asl",
+            ( "asl-pseudocode/add.asl",
               [ ("d", r2i rd); ("n", r2i rn); ("m", r2i rm) ] )
       | I_SWP (_v, _rmw, r1, r2, r3) ->
           Some
-            ( "./herd/tests/asl-pseudocode/swp.asl",
+            ( pseudocode_fname "swp.asl",
               [ ("s", r2i r1); ("t", r2i r2); ("n", r2i r3) ] )
       | I_CAS (_v, _rmw, rs, rt, rn) ->
           Some
-            ( "./herd/tests/asl-pseudocode/cas.asl",
+            ( pseudocode_fname "cas.asl",
               [ ("s", r2i rs); ("t", r2i rt); ("n", r2i rn) ] )
       | I_CSEL (_, rd, rn, rm, c, _) ->
           Some
-            ( "./herd/tests/asl-pseudocode/csel.asl",
+            ( pseudocode_fname "csel.asl",
               [
                 ("d", r2i rd); ("n", r2i rn); ("m", r2i rm); ("cond", tr_cond c);
               ] )
       | I_MOV (_, rt, RV (_, rs)) ->
-          Some
-            ( "./herd/tests/asl-pseudocode/mov.asl",
-              [ ("s", r2i rs); ("t", r2i rt) ] )
+          Some (pseudocode_fname "mov.asl", [ ("s", r2i rs); ("t", r2i rt) ])
       | i ->
           let () =
             if _dbg then
@@ -183,6 +183,7 @@ module Make (TopConf : TopConfS) (V : Value.AArch64) = struct
         List.filter_map one_reg AArch64Base.xregs
       in
       let init = init_args @ init_env in
+      let fname = ASLConf.libfind fname in
       let prog =
         let ast = ASLBase.build_ast_from_file fname in
         [ ((0, None, MiscParser.Main), [ ASLBase.Instruction ast ]) ]
