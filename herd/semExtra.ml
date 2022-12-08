@@ -77,6 +77,9 @@ module type S = sig
   val displayed_rlocations : test -> rloc_set
   val is_non_mixed_symbol : test -> Constant.symbol -> bool
 
+(* "Exported" labels, i.e. labels that can find their way to registers *)
+  val get_exported_labels : test -> Label.Full.Set.t
+
   type event = E.event
   type event_structure = E.event_structure
   type event_set = E.EventSet.t
@@ -285,6 +288,44 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
       | Virtual sd -> is_non_mixed_symbol_virtual test sd
       | Physical (s,o) -> is_non_mixed_offset test s o
       | System ((PTE|PTE2|TLB|TAG),_)  -> true
+
+(* Exported labels:
+ * Labels from init environments ( + transfered to registers?)                   *)
+    let get_exported_labels (test:test) =
+      let open Test_herd in
+      let init =
+        let { init_state=st; _ } = test in
+        A.state_fold
+          (fun _ v k ->
+            match v with
+            | V.Val cst ->
+               begin
+                 match Constant.as_label cst with
+                 | Some lbl -> Label.Full.Set.add lbl k
+                 | None -> k
+               end
+            | V.Var _ -> k)
+          st Label.Full.Set.empty
+      and code =
+        let { nice_prog=prog; _ } = test in
+        List.fold_left
+          (fun k (p,code) ->
+            List.fold_left
+              (fun k i ->
+                A.pseudo_fold
+                  (fun k i ->
+                    match A.V.Cst.Instr.get_exported_label i with
+                    | None -> k
+                    | Some lbl ->
+                       Label.Full.Set.add (MiscParser.proc_num p,lbl) k)
+                  k i)
+              k code)
+          Label.Full.Set.empty prog in
+     Label.Full.Set.union init code
+
+(**********)
+(* Events *)
+(**********)
 
     type event = E.event
 

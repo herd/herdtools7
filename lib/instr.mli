@@ -24,6 +24,7 @@ module type S = sig
   val is_nop : t -> bool
   val is_overwritable : t -> bool
   val can_overwrite : t -> bool
+  val get_exported_label : t -> Label.t option
 end
 
 module No : functor (I:sig type instr end) -> S with type t = I.instr

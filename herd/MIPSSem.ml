@@ -97,7 +97,7 @@ module
 
 (* Entry point *)
 
-      let build_semantics ii =
+      let build_semantics _ ii =
         M.addT (A.next_po_index ii.A.program_order_index)
           begin match ii.A.inst with
           | MIPS.NOP -> B.nextT

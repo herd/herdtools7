@@ -29,7 +29,8 @@ module type Semantics =
     val atomic_pair_allowed : event -> event -> bool
 (* Instruction semantics, highly arch dependant *)
     module Mixed(SZ:ByteSize.S) : sig
-      val build_semantics : A.inst_instance_id -> (A.program_order_index * branch) M.t
+      val build_semantics :
+        test -> A.inst_instance_id -> (A.program_order_index * branch) M.t
       val spurious_setaf : A.V.v -> unit M.t
     end
   end

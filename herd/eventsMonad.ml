@@ -800,6 +800,27 @@ Monad type:
 
     let condJumpT = if do_deps then speculT else choiceT
 
+    let indirectJumpT v lbls g =
+      assert (not do_deps) ;
+      (* One *)
+      let do_one (p,lbl) eiid =
+        let eiid,(act,_) = g lbl eiid in
+        let f (r,cs,es) =
+          let cs =
+            VC.Assign (v,VC.Atom (V.Val (Constant.Label (p,lbl))))::cs in
+          r,cs,es in
+        eiid,(Evt.map f act,None) in
+      (* Rec *)
+      let rec do_rec lbls eiid =
+        match lbls with
+        | [] -> assert false (* Caught earlier, in ArchSem module *)
+        | [lbl] -> do_one lbl eiid
+        | lbl::lbls ->
+           let eiid,(act,_) = do_one lbl eiid in
+           let eiid,(acts,_) = do_rec lbls eiid in
+           eiid,(Evt.union act acts,None) in
+        do_rec (Label.Full.Set.elements lbls)
+
     let speculPredT v pod l r =
       fun eiid ->
         let eiid,pod = pod eiid in

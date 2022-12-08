@@ -255,7 +255,7 @@ module
         M.mk_singleton_es
           (Act.Arch (X86_64.ArchAction.ClFlush (opt,a))) ii
 
-      let build_semantics ii =
+      let build_semantics _ ii =
         let rec build_semantics_inner locked ii =
           match ii.A.inst with
           | X86_64.I_NOP -> B.nextT

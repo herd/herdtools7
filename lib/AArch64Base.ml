@@ -2075,16 +2075,18 @@ let loop_idx = Internal 4
 
 let hash_pteval p = AArch64PteVal.pp_hash (AArch64PteVal.tr p)
 
-let is_overwritable =
-  function
-  | I_NOP | I_B _
-    -> true
+let is_overwritable = function
+  | I_NOP | I_B _  -> true
   | _ -> false
 
-let can_overwrite =
-    function
-    | I_NOP -> true
-    | _ -> false
+let can_overwrite = function
+  | I_NOP -> true
+  | _ -> false
+
+let get_exported_label = function
+  | I_ADR (_,lbl) -> Some lbl
+  | _ -> None
+
 
 module MakeInstr(C:sig val is_morello:bool end) = struct
 
@@ -2108,5 +2110,5 @@ module MakeInstr(C:sig val is_morello:bool end) = struct
 
   let is_overwritable = is_overwritable
   and can_overwrite =  can_overwrite
-
+  and get_exported_label = get_exported_label
 end

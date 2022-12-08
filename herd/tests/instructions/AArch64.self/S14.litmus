@@ -1,4 +1,5 @@
 AArch64 S14
+Stable=X0
 {
 [x]=P1:L1;
 0:X0=0;     0:X1=x;

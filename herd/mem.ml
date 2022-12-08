@@ -461,9 +461,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             (A.dump_instruction inst)
             (Label.Set.pp_str ","  Label.pp ii.A.labels) ;
         m ii in
-
+      let  sem_instr =  SM.build_semantics test in
       let rec add_next_instr re_exec fetch_proc proc env seen addr inst nexts =
-        wrap fetch_proc proc inst addr env SM.build_semantics >>> fun branch ->
+        wrap fetch_proc proc inst addr env sem_instr >>> fun branch ->
           let { A.regs=env; lx_sz=szo; fh_code } = env in
           let env =
             let env = A.kill_regs (A.killed inst) env in
@@ -537,8 +537,12 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           add_lbl false true proc env seen addr lbl
       | S.B.CondJump (v,lbl) ->
           EM.condJumpT v
-            (add_lbl re_exec (not (V.is_var_determined v)) proc env seen addr lbl)
+            (add_lbl re_exec (not (V.is_var_determined v))
+               proc env seen addr lbl)
             (add_code re_exec fetch_proc proc env seen nexts)
+      | S.B.IndirectJump (v,lbls) ->
+         EM.indirectJumpT v lbls
+           (add_lbl re_exec true proc env seen addr)
       in
 
 (* Code monad returns a boolean. When false the code must be discarded.
@@ -1860,8 +1864,15 @@ let match_reg_events es =
                 let sz0 = E.get_mem_size e0 in
                 List.iter
                   (fun e ->
-                    if sz0 <> E.get_mem_size e then
-                      Warn.user_error "Illegal mixed-size test")
+                    let sz =  E.get_mem_size e in
+                    if sz0 <> sz then begin
+                      Printf.eprintf
+                        "Size mismatch %a vs. %a, ie %s vs. %s\n"
+                        E.debug_event e0
+                        E.debug_event e
+                        (MachSize.pp sz0) (MachSize.pp sz);
+                      Warn.user_error "Illegal mixed-size test"
+                    end)
                   es
             end)
           loc_mems
@@ -1959,7 +1970,9 @@ let match_reg_events es =
                   check_symbolic_locations test es ;
                   if self then check_ifetch_limitations test es owls ;
                   if (mixed && not unaligned) then check_aligned test es ;
-                  if A.reject_mixed && not (mixed || memtag || morello) then
+                  if A.reject_mixed
+                     && not (mixed || memtag || morello)
+                  then
                     check_sizes test es ;
                   if C.debug.Debug_herd.solver && C.verbose > 0 then begin
                     let module PP = Pretty.Make(S) in

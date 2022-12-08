@@ -338,20 +338,20 @@ module
         | _ -> C.Op (Ne,e,C.Const zero) in
         build_semantics_expr false e ii
 
-      let rec build_semantics ii : (A.program_order_index * B.t) M.t =
+      let rec build_semantics test ii : (A.program_order_index * B.t) M.t =
         let ii =
           {ii with A.program_order_index = A.next_po_index ii.A.program_order_index;} in
         match ii.A.inst with
         | C.Seq (insts,_) ->
-            build_semantics_list insts ii
+            build_semantics_list test insts ii
         | C.If(c,t,Some e) ->
             build_cond c ii >>>> fun ret ->
               let ii' =
                 {ii with A.program_order_index =
                  A.next_po_index ii.A.program_order_index;}
               in
-              let then_branch = build_semantics {ii' with A.inst = t} in
-              let else_branch = build_semantics {ii' with A.inst = e} in
+              let then_branch = build_semantics test {ii' with A.inst = t} in
+              let else_branch = build_semantics test {ii' with A.inst = e} in
               M.choiceT ret then_branch else_branch
 
         | C.If(c,t,None) ->
@@ -360,8 +360,8 @@ module
                 {ii with A.program_order_index =
                  A.next_po_index ii.A.program_order_index;}
               in
-              let then_branch = build_semantics {ii' with A.inst = t} in
-              M.choiceT ret then_branch (build_semantics_list [] ii)
+              let then_branch = build_semantics test {ii' with A.inst = t} in
+              M.choiceT ret then_branch (build_semantics_list test [] ii)
         | C.While(c,t,n) ->
             build_cond c ii >>>>
             begin
@@ -371,8 +371,9 @@ module
                 if n >= Conf.unroll then
                   mk_toofar "While" ii >>= fun () -> M.unitT (ii.A.program_order_index, B.Exit)
                 else
-                  build_semantics {ii with A.inst = t} >>> fun (prog_order, _branch) ->
-                  build_semantics
+                  build_semantics test
+                    {ii with A.inst = t} >>> fun (prog_order, _branch) ->
+                  build_semantics test
                     {ii with A.program_order_index = prog_order; A.inst = C.While(c,t,n+1);} in
               fun ret -> M.choiceT ret then_branch else_branch
             end
@@ -437,12 +438,12 @@ module
           | C.Symb _ -> Warn.fatal "No symbolic instructions allowed."
           | C.PCall (f,_) -> Warn.fatal "Procedure call %s in CSem" f
 
-      and build_semantics_list insts ii = match insts with
+      and build_semantics_list test insts ii = match insts with
       | [] -> M.unitT (ii.A.program_order_index, next0)
       | inst :: insts ->
           let ii = {ii with A.inst=inst; } in
-          build_semantics ii >>> fun (prog_order, _branch) ->
-            build_semantics_list insts {ii with  A.program_order_index = prog_order;}
+          build_semantics test ii >>> fun (prog_order, _branch) ->
+            build_semantics_list test insts {ii with  A.program_order_index = prog_order;}
 
       let spurious_setaf _ = assert false
 

@@ -322,6 +322,10 @@ let is_symbol = function
 let is_label = function
   | Label _ -> true
   | Concrete _|ConcreteVector _|Symbolic _|Tag _ |PteVal _|Instruction _ -> false
+let as_label = function
+  | Label (p,lbl) -> Some (p,lbl)
+  | Concrete _|ConcreteVector _|Symbolic _|Tag _ |PteVal _|Instruction _
+    -> None
 
 let is_non_mixed_symbol = function
   | Virtual {offset=idx;_}
@@ -359,6 +363,7 @@ let as_pte v = match v with
 let is_pt v = match v with
 | Symbolic (System ((PTE|PTE2),_)) -> true
 | _ -> false
+
 
 module type S =  sig
 

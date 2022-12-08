@@ -252,7 +252,7 @@ module
 (* Entry point *)
       let tr_sz = RISCV.tr_width
 
-      let build_semantics ii =
+      let build_semantics _ ii =
         M.addT (A.next_po_index ii.A.program_order_index)
           begin match ii.A.inst with
           | RISCV.OpI (op,r1,r2,k) ->

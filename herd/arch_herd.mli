@@ -23,6 +23,7 @@ module type S =
   sig
 
     include ArchBase.S
+
     val is_amo : instruction -> bool
     val pp_barrier_short : barrier -> string
     val reject_mixed : bool (* perform a check that rejects mixed-size tests *)

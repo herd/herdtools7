@@ -194,6 +194,8 @@ module type S =
     val choiceT : A.V.v -> 'a t -> 'a t -> 'a t
     val condPredT : A.V.v -> unit t -> 'a t -> 'a t -> 'a t
     val condJumpT : A.V.v -> 'a code -> 'a code -> 'a code
+    val indirectJumpT :
+      A.V.v -> Label.Full.Set.t -> (Label.t -> 'a code) -> 'a code
 
     val altT : 'a t -> 'a t -> 'a t
 

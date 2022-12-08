@@ -334,18 +334,6 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_BL _ | I_BLR _ -> Some linkreg
       | _ -> None
 
-    let is_overwritable i =
-      match i with
-      | I_B _ | I_NOP -> true
-      | _ -> false
-
-    let instruction_to_value i =
-      match i with
-      | I_B lbl ->
-        Constant.Instruction(InstrLit.LIT_B(lbl))
-      | I_NOP -> Constant.Instruction(InstrLit.LIT_NOP)
-      | _ -> Warn.user_error "Functionality not implemented for -variant self: converting {%s} into a constant" (pp_instruction PPMode.Ascii i)
-
     include ArchExtra_herd.Make(C)
         (struct
           module V = V

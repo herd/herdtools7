@@ -8,5 +8,4 @@ AArch64 S11
   BR X2          ;
   MOV X0, #1     ;
 L0:              ;
-locations [0:X0; 0:X30;]
 forall (0:X0=0)
