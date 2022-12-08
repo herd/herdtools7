@@ -1,0 +1,12 @@
+AArch64 L041
+Orig=DSB.STdWR Fre DSB.STdWR Fre
+{
+0:X1=x; 0:X2=y;
+1:X1=y; 1:X2=x;
+}
+ P0          | P1          ;
+ MOV W0,#1   | MOV W0,#1   ;
+ STR W0,[X1] | STR W0,[X1] ;
+ DSB ST      | DSB ST      ;
+ LDR W3,[X2] | LDR W3,[X2] ;
+exists (0:X3=0 /\ 1:X3=0)

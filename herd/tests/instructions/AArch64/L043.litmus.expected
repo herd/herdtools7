@@ -1,0 +1,13 @@
+Test L043 Allowed
+States 4
+1:X1=0; 1:X6=0; [y]=1;
+1:X1=0; 1:X6=1; [y]=1;
+1:X1=1; 1:X6=0; [y]=2;
+1:X1=1; 1:X6=1; [y]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([y]=2 /\ 1:X1=1 /\ 1:X6=0)
+Observation L043 Sometimes 1 3
+Hash=9359b760dad505f9b96c16d567fce7b5
+
