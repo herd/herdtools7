@@ -277,9 +277,9 @@ struct
       let scope = ("main", 0) in
       let one_arg x =
         let reg = ASLBase.ASLLocalId (scope, x) in
-        let v = A.look_reg reg ii.A.env.A.regs in
-        if Option.is_some v then AST.VInt (Option.get v)
-        else Warn.fatal "Undefined args for main function: %s" x
+        match A.look_reg reg ii.A.env.A.regs with
+        | Some v -> AST.VInt v
+        | None -> Warn.fatal "Undefined args for main function: %s" x
       in
       List.map one_arg arg_names
 

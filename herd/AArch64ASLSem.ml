@@ -213,11 +213,13 @@ module Make (TopConf : TopConfS) (V : Value.AArch64) = struct
     let csym_tbl = ref IMap.empty
 
     let tr_v = function
-      | ASLValue.Var s when IMap.mem s !csym_tbl -> IMap.find s !csym_tbl
-      | ASLValue.Var s ->
-          let v = V.fresh_var () in
-          csym_tbl := IMap.add s v !csym_tbl;
-          v
+      | ASLValue.Var s -> (
+          match IMap.find_opt s !csym_tbl with
+          | Some v -> v
+          | None ->
+              let v = V.fresh_var () in
+              csym_tbl := IMap.add s v !csym_tbl;
+              v)
       | ASLValue.Val (Constant.Concrete i) ->
           V.intToV (ASLValue.Cst.Scalar.to_int i)
       | ASLValue.Val (Constant.Symbolic symb) -> V.Val (Constant.Symbolic symb)
@@ -232,14 +234,15 @@ module Make (TopConf : TopConfS) (V : Value.AArch64) = struct
       | _ -> None
 
     let tr_action ii =
-      let ( let+ ) o f = Option.map f o in
       let an = AArch64.N in
       let exp = AArch64.Exp in
       function
-      | ASLAct.Access (dir, loc, v, sz) ->
-          let+ loc = tr_loc ii loc in
-          let ac = Act.access_of_location_std loc in
-          Act.Access (dir, loc, tr_v v, an, exp, sz, ac)
+      | ASLAct.Access (dir, loc, v, sz) -> (
+          match tr_loc ii loc with
+          | None -> None
+          | Some loc ->
+              let ac = Act.access_of_location_std loc in
+              Some (Act.Access (dir, loc, tr_v v, an, exp, sz, ac)))
       | ASLAct.NoAction -> Some Act.NoAction
       | ASLAct.TooFar msg -> Some (Act.TooFar msg)
 
@@ -320,7 +323,11 @@ module Make (TopConf : TopConfS) (V : Value.AArch64) = struct
     let tr_execution ii (_conc, cs, set_pp, vbpp) =
       let () = if _dbg then Printf.eprintf "Translating event structure:\n" in
       let constraints =
-        let cs = Option.get cs in
+        let cs =
+          match cs with
+          | Some cs -> cs
+          | None -> Warn.fatal "Execution error in AArch64/ASL translation"
+        in
         let () =
           if _dbg then
             Printf.eprintf "\t- constraints: %s\n" (ASLVC.pp_cnstrnts cs)
@@ -328,8 +335,9 @@ module Make (TopConf : TopConfS) (V : Value.AArch64) = struct
         M.mk_singleton_es_eq Act.NoAction (tr_cnstrnts cs) ii
       in
       let events =
-        Option.fold ~none:Seq.empty ~some:ESet.to_seq
-          (StringMap.find_opt "AArch64" set_pp)
+        match StringMap.find_opt "AArch64" set_pp with
+        | None -> Seq.empty
+        | Some s -> ESet.to_seq s
       in
       let () = if _dbg then Printf.eprintf "\t- events: " in
       let event_list = List.of_seq events in
