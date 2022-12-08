@@ -495,4 +495,5 @@ module ConfigToArchConfig(C:Config) : ArchExtra_herd.Config =
     let brackets = C.PC.brackets
     let variant = C.variant
     let endian = C.endian
+    let default_to_symb = false
   end

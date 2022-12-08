@@ -246,6 +246,7 @@ module type Config = sig
   val brackets : bool
   val variant : Variant.t -> bool
   val endian : Endian.t option
+  val default_to_symb: bool
 end
 
 module Make(C:Config) (I:I) : S with module I = I
@@ -273,8 +274,6 @@ module Make(C:Config) (I:I) : S with module I = I
 
       type program_order_index = int
       let pp_prog_order_index = string_of_int
-
-      let default_to_symb = C.variant Variant.ASL
 
       let zero_po_index = 0
       let next_po_index po = po + 1
@@ -688,7 +687,7 @@ module Make(C:Config) (I:I) : S with module I = I
         try get_val loc (State.find loc st)
         with Not_found ->
           let open Constant in
-          if default_to_symb then I.V.fresh_var () else
+          if C.default_to_symb then I.V.fresh_var () else
           match loc with
           | Location_global (I.V.Var _)
           (* As called from look_address_in_state below *)

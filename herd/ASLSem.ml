@@ -23,7 +23,10 @@ module Make
     (C : Sem.Config)
     (V : Value.S with type Cst.Instr.t = ASLBase.instruction) =
 struct
-  module ConfLoc = SemExtra.ConfigToArchConfig (C)
+  module ConfLoc = struct
+    include SemExtra.ConfigToArchConfig (C)
+    let default_to_symb = C.variant Variant.ASL
+  end
 
   module ASL64AH = struct
     include GenericArch_herd.Make (ASLBase) (ConfLoc) (V)

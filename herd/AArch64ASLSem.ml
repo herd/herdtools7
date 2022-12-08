@@ -50,9 +50,6 @@ module Make (TopConf : TopConfS) (V : Value.AArch64) = struct
   module Mixed (SZ : ByteSize.S) = struct
     module AArch64Mixed = AArch64S.Mixed (SZ)
 
-    let with_asl_variant v =
-      match v with Variant.ASL -> true | _ -> TopConf.C.variant v
-
     let aarch64_iico =
       StringSet.of_list
         [ aarch64_iico_ctrl; aarch64_iico_data; aarch64_iico_order ]
@@ -67,10 +64,7 @@ module Make (TopConf : TopConfS) (V : Value.AArch64) = struct
         let showevents = PrettyConf.AllEvents
         let showpo = true
         let showraw = aarch64_iico
-        let variant = with_asl_variant
       end
-
-      let variant = with_asl_variant
     end
 
     module ASLValue = Int64Value.Make (ASLBase.Instr)
