@@ -2,6 +2,10 @@
 
 PREFIX=$$HOME
 D=dune
+#Limit parallelism of some expensive operations
+J=8
+
+
 #For building with ocamlbuild set
 #D=ocb
 
@@ -46,7 +50,7 @@ dune-clean:
 
 versions:
 	@ sh ./version-gen.sh $(PREFIX)
-	@ dune build --workspace dune-workspace.versions @all
+	@ dune build -j $(J) --workspace dune-workspace.versions @all
 
 
 # Dependencies.
@@ -184,8 +188,6 @@ diy-test-aarch64:
 		-diycross-arg 'Rfe,Fre,Coe' \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 diycross7 tests: OK"
-
-J=8
 
 test:: cata-test more-test
 
