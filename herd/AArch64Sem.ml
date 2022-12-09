@@ -822,6 +822,13 @@ module Make
             >>! ())
         a v ii
 
+(* Page tables and TLBs *)
+      let do_inv op a ii = inv_loc op (A.Location_global a) ii
+
+(************************)
+(* Conditions and flags *)
+(************************)
+
       let tr_cond =
         let n = M.op1 (Op.ReadBit 0) in
         let z = M.op1 (Op.ReadBit 1) in
@@ -846,72 +853,52 @@ module Make
       let op_set_flags op ty =
         let open AArch64Base in
         (* Utils for writing formulas
-           - operators start by their underlying operation
-           - `~` following the operator means it takes real values
-           - `=` following the operator means it takes monads
+           - We use a base functionnal type, this surely impacts performance,
+             but clarity is improved.
+           - We surcharge common operators to use our own functionnal
+             types.
+           - The main values come from the three arguments passed to every functions
+           - The performance cost is never on operations that do not set flags,
+             and mainly on ADDS/SUBS. It consists on an extra monad for every
+             variable used.
         *)
-        let sign_bit_into n =
-          let shift = match ty with V32 -> 31 | V64 -> 63 | V128 -> 127 in
-          M.op1 (Op.LogicalRightShift (shift - n))
+        (* Main variables *)
+        let res v0 _v1 _v2 = M.unitT v0 in
+        let x _v0 v1 _v2 = M.unitT v1 in
+        let y _v0 _v1 v2 = M.unitT v2 in
+        (* Operators on those variables *)
+        let make_op op f1 f2 v0 v1 v2 =
+          f1 v0 v1 v2 >>| f2 v0 v1 v2 >>= fun (a, b) -> M.op op a b
         in
-        let ( let* ) = M.( >>= ) in
-        let ( !> ) = M.op1 Op.Not in
-        let ( &~ ) x y = M.op Op.And x y in
-        let ( |~ ) x y = M.op Op.Or x y in
-        let ( +~ ) x y = M.op Op.Xor x y in
-        let ( &= ) m1 m2 = m1 >>| m2 >>= fun (x, y) -> x &~ y in
-        let ( |= ) m1 m2 = m1 >>| m2 >>= fun (x, y) -> x |~ y in
-        let ( &=~ ) m1 x = m1 >>= ( &~ ) x in
-        let compute_nz res =
-          let compute_z2 res =
-            M.op Op.Eq V.zero res >>= M.op1 (Op.LeftShift 1)
-          in
-          let compute_n = sign_bit_into 0 in
-          compute_z2 res |= compute_n res
+        let make_op1 fop f v0 v1 v2 = f v0 v1 v2 >>= fop in
+        let ( ! ) = make_op1 (M.op1 Op.Not) in
+        let ( & ) = make_op Op.And in
+        let ( || ) = make_op Op.Or in
+        let ( + ) = make_op Op.Xor in
+        let ( === ) f v = make_op1 (M.op Op.Eq v) f in
+        let ( << ) f i = make_op1 (M.op1 (Op.LeftShift i)) f in
+        let sign_bit = MachSize.nbits (AArch64Base.tr_variant ty) - 1 in
+        let read_sign_bit = make_op1 (M.op1 (Op.ReadBit sign_bit)) in
+        let ( ---> ) f i = read_sign_bit f << i in
+        (* Computation of nz flags *)
+        let compute_nz =
+          let compute_z2 = res === V.zero << 1 in
+          let compute_n = read_sign_bit res in
+          compute_z2 || compute_n
         in
+        (* Operation specific computations
+           For specific formulae, see Hacker's Delight, 2-13.*)
         match op with
         | ADD | EOR | ORR | SUB | AND | ASR | LSR | LSL | BIC -> None
+        | ANDS | BICS -> Some compute_nz
         | ADDS ->
-            let compute_c res x y =
-              (* From Hacker's delight, unsigned overflow is equal to:
-                 (x & y) | ((x | y) & !res)
-              *)
-              x &~ y |= (x |~ y &= !>res) >>= sign_bit_into 2
-            in
-            let compute_v res x y =
-              (* From Hacker's delight, signed overflow is equal to:
-                 (res + x) & (res + y)
-              *)
-              res +~ x &= res +~ y >>= sign_bit_into 3
-            in
-            let get_flags res v1 v2 =
-              compute_nz res |= compute_c res v1 v2 |= compute_v res v1 v2
-            in
-            Some get_flags
+            let compute_c = ((x & y) || ((x || y) & !res)) ---> 2 in
+            let compute_v = ((res + x) & (res + y)) ---> 3 in
+            Some (compute_nz || compute_c || compute_v)
         | SUBS ->
-            let compute_c res x y =
-              (* From Hacker's delight, unsigned overflow is equal to:
-                  (!x & y) | ((!x | y) & res)
-              *)
-              let* nx = !>x in
-              nx &~ y |= (nx |~ y &=~ res) >>= sign_bit_into 2
-            in
-            let compute_v res x y =
-              (* From Hacker's delight, unsigned overflow is equal to:
-                 (x + y) & (res + x)
-              *)
-              x +~ y &= res +~ x >>= sign_bit_into 3
-            in
-            let get_flags res v1 v2 =
-              compute_nz res |= compute_c res v1 v2 |= compute_v res v1 v2
-            in
-            Some get_flags
-        | ANDS | BICS ->
-            let get_flags res _v1 _v2 = compute_nz res in
-            Some get_flags
-
-(* Page tables and TLBs *)
-      let do_inv op a ii = inv_loc op (A.Location_global a) ii
+            let compute_c = ((!x & y) || ((!x || y) & res)) ---> 2 in
+            let compute_v = ((x + y) & (res + x)) ---> 3 in
+            Some (compute_nz || compute_c || compute_v)
 
 (***************************)
 (* Various lift functions. *)
