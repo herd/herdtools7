@@ -13,6 +13,11 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
+(* Authors:                                                                 *)
+(* Jade Alglave, University College London, UK.                             *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Hadrien Renaud, University College London, UK.                           *)
+(****************************************************************************)
 
 type t =
   | Success     (* Riscv Model with explicit success dependency *)
@@ -69,6 +74,8 @@ type t =
   | Test
 (* One hundred tests *)
   | T of int
+(* ASL Processing *)
+  | ASL
 
 val compare : t -> t -> int
 val equal : t -> t -> bool

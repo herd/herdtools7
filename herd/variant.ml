@@ -13,6 +13,11 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
+(* Authors:                                                                 *)
+(* Jade Alglave, University College London, UK.                             *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Hadrien Renaud, University College London, UK.                           *)
+(****************************************************************************)
 
 type t =
   | Success     (* Riscv Model with explicit success dependency *)
@@ -71,6 +76,8 @@ type t =
   | Test
 (* One hundred tests *)
   | T of int
+(* ASL processing *)
+  | ASL
 
 
 let tags =
@@ -80,7 +87,7 @@ let tags =
     Precision.tags @
    ["toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
-   "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"]
+   "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"; "asl"]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -120,6 +127,7 @@ let parse s = match Misc.lowercase s with
 | "self" -> Some Self
 | "cos-opt" -> Some CosOpt
 | "test" -> Some Test
+| "asl" -> Some ASL
 | s ->
    begin
      match Precision.parse s with
@@ -175,6 +183,7 @@ let pp = function
   | CosOpt -> "cos-opt"
   | Test -> "test"
   | T n -> Printf.sprintf "T%02i" n
+  | ASL -> "ASL"
 
 let compare = compare
 let equal v1 v2 = compare v1 v2 = 0

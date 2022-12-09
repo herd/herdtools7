@@ -13,6 +13,11 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
+(* Authors:                                                                 *)
+(* Jade Alglave, University College London, UK.                             *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Hadrien Renaud, University College London, UK.                           *)
+(****************************************************************************)
 
 (** A monad for event structures *)
 
@@ -47,6 +52,9 @@ module type S =
     val delay : 'a t -> ('a * 'a t) t
 
     val set_standard_input_output : 'a t -> 'a t
+
+    (* [restrict constraints] is an empty monad with the constraints [constraints] *)
+    val restrict : VC.cnstrnts -> unit t
 
     (* Data composition, entry for snd monad: minimals for iico_data *)
     val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
@@ -281,4 +289,7 @@ module type S =
     type output = VC.cnstrnts * evt_struct
 
     val get_output  : 'a code -> output list -> output list
+
+    (* Force executed only once. *)
+    val force_once : 'a t -> 'a t
   end

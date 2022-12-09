@@ -249,7 +249,7 @@ let () =
         let module T = CCompile_gen.Make(CoC) in
         let module M = Make(C)(T) in
         M.zyva
-    | `JAVA -> assert false
+    | `JAVA | `ASL -> assert false
     end pp_es
         with
         | Misc.Exit -> ()

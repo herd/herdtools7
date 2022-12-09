@@ -1,0 +1,22 @@
+ASL func02
+(* Some basic getters/setters *)
+
+{}
+
+func X_get(i)
+    return i
+endfunc
+
+func X_set(i, v)
+    pass
+endfunc
+
+func main()
+    X_set[2] = 3;
+    x = X_get[3]
+endfunc
+
+forall (
+    0: x = 3
+)
+

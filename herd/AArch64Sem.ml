@@ -15,11 +15,7 @@
 (****************************************************************************)
 
 module Make
-    (TopConf:sig
-      module C : Sem.Config
-      val dirty : DirtyBit.t option
-      val procs_user : Proc.t list
-    end)
+    (TopConf:AArch64Sig.Config)
     (V:Value.AArch64 with type Cst.Instr.t = AArch64Base.instruction)
     =
   struct

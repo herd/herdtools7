@@ -1,0 +1,15 @@
+(ocamllex Lexer)
+
+(menhir
+ (modules Parser)
+ (flags --unused-tokens))
+
+(library
+ (name asllib)
+ (modules AST Backend Interpreter Parser Lexer Native)
+ (modules_without_implementation Backend))
+
+(executable
+ (public_name asli)
+ (libraries asllib)
+ (modules asli))

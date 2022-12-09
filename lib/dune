@@ -28,6 +28,6 @@
 (library
  (name herdtools)
  (wrapped false)
- (libraries str)
+ (libraries str asllib)
  (modules_without_implementation sign outTests AST CAst Scalar archBase archDump
    PPMode name value))

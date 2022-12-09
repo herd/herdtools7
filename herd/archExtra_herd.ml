@@ -246,6 +246,7 @@ module type Config = sig
   val brackets : bool
   val variant : Variant.t -> bool
   val endian : Endian.t option
+  val default_to_symb: bool
 end
 
 module Make(C:Config) (I:I) : S with module I = I
@@ -686,6 +687,7 @@ module Make(C:Config) (I:I) : S with module I = I
         try get_val loc (State.find loc st)
         with Not_found ->
           let open Constant in
+          if C.default_to_symb then I.V.fresh_var () else
           match loc with
           | Location_global (I.V.Var _)
           (* As called from look_address_in_state below *)
