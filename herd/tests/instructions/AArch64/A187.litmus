@@ -1,0 +1,18 @@
+AArch64 A187
+(* B.cond instructions, relies on CMP  *)
+
+ { 0:X0=1; }
+
+P0;
+  CMP W0, #1;
+  B.NE foo;
+  B.CS foo;
+  B.MI foo;
+  B.VS foo;
+  B.HI foo;
+  B.LT foo;
+  B.GT foo;
+  ADD W0, W0, #1;
+  foo: NOP;
+
+forall (0:X0=2)

@@ -900,7 +900,7 @@ module Make
           f1 v0 v1 v2 >>| f2 v0 v1 v2 >>= fun (a, b) -> M.op op a b
         in
         let make_op1 fop f v0 v1 v2 = f v0 v1 v2 >>= fop in
-        let ( ! ) = make_op1 (M.op1 Op.Not) in
+        let ( ! ) = make_op1 (M.op1 Op.Inv) in
         let ( & ) = make_op Op.And in
         let ( || ) = make_op Op.Or in
         let ( + ) = make_op Op.Xor in
