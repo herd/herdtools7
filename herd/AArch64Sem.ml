@@ -830,23 +830,52 @@ module Make
 (************************)
 
       let tr_cond =
+        (* Utils for writing formulas:
+           Here we do operations on functions that will generate the
+           underlying monadic operations. We first define our fake variables,
+           then a few logical operations on those.*)
+        (* Variables *)
         let n = M.op1 (Op.ReadBit 0) in
         let z = M.op1 (Op.ReadBit 1) in
-        let _c = M.op1 (Op.ReadBit 2) in
+        let c = M.op1 (Op.ReadBit 2) in
         let v = M.op1 (Op.ReadBit 3) in
-        let ( ! ) f flags = f flags >>= M.op1 Op.Not in
-        let make_op op f1 f2 flags = f1 flags >>| f2 flags >>= fun (v1, v2) -> M.op op v1 v2 in
+        let true_ = fun _flags -> M.unitT V.one in
+        (* Operators *)
+        (* Note: I use [!a] as a shortcut for [a == 0],
+           and [a] as a shortcut for [a == 1]
+           (the expended version is the one written in the ARM ARM). *)
+        let ( ! ) f flags = f flags >>= M.op Op.Eq V.zero in
+        let make_op op f1 f2 flags =
+          f1 flags >>| f2 flags >>= fun (v1, v2) -> M.op op v1 v2
+        in
         let ( == ) = make_op Op.Eq in
         let ( || ) = make_op Op.Or in
         let ( && ) = make_op Op.And in
-        let ( <> ) = make_op Op.Xor in (* Should also work with Op.Ne but we are following Hacker's delight.*)
+        (* Note : I use [a <> b] as a shortcut for [!a == b]
+           (the expended version is the one written in the ARM ARM). *)
+        let ( <> ) = make_op Op.Xor in
+        let open AArch64Base in
+        (* The real operations, as defined by the ARM ARM. *)
         function
-        | AArch64.NE -> !z
-        | AArch64.EQ -> z
-        | AArch64.GE -> n == v
-        | AArch64.GT -> (n == v) && !z
-        | AArch64.LE -> (n <> v) || z
-        | AArch64.LT -> n <> v
+        | NE -> !z
+        | EQ -> z
+        | GE -> n == v
+        | GT -> n == v && !z
+        (* Note: for LE, the ARM ARM gives [!(!z && n == v)] here,
+           but I've applied De Morgan's law. *)
+        | LE -> n <> v || z
+        | LT -> n <> v
+        | CS -> c
+        | CC -> !c
+        | MI -> n
+        | PL -> !n
+        | VS -> v
+        | VC -> !v
+        | HI -> c && !z
+        (* Note: for LS, the ARM ARM gives [!(c && !z)] here,
+           but I've applied De Morgan's law. *)
+        | LS -> !c || z
+        | AL -> true_
 
 (* Arithmetic flags handling *)
 
