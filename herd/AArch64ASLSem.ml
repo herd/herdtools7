@@ -17,27 +17,11 @@
 (* Hadrien Renaud, University College London, UK.                           *)
 (****************************************************************************)
 
-module type Config = sig
-  include GenParser.Config
-  include Top_herd.CommonConfig
-  include Sem.Config
-
-  val libfind : string -> string
-  val byte : MachSize.Tag.t
-end
-
-module type TopConfS = sig
-  module C : Config
-
-  val dirty : DirtyBit.t option
-  val procs_user : Proc.t list
-end
-
 let aarch64_iico_ctrl = "aarch64_iico_ctrl"
 let aarch64_iico_data = "aarch64_iico_data"
 let aarch64_iico_order = "aarch64_iico_order"
 
-module Make (TopConf : TopConfS) (V : Value.AArch64) = struct
+module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
   module AArch64S = AArch64Sem.Make (TopConf) (V)
   include AArch64S
 

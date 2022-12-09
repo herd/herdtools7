@@ -6,4 +6,4 @@
    )
    (public_names herd7)
    (libraries unix herdtools)
-   (modules_without_implementation action arch_herd monad sem XXXMem))
+   (modules_without_implementation AArch64Sig action arch_herd monad sem XXXMem))
