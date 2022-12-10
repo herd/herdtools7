@@ -125,34 +125,6 @@ struct
           let* v' = M.op1 Op.Not v in
           return (value_of_vbitvector v')
 
-    let nzcv_of_sgn v =
-      let* n = M.op Op.Le v V.zero
-      and* z =
-        M.op Op.Eq v V.zero
-        (*
-           and* c = carry, or unsigned overflow
-           and* v = sign overflow
-        *)
-      in
-      let* z2 = M.op1 (Op.LeftShift 1) z in
-      M.op Op.Or n z2
-
-    let sgn_of_nzcv v =
-      let* n = M.op1 (Op.ReadBit 0) v
-      and* z =
-        M.op1 (Op.ReadBit 1) v
-        (*
-         and* c = M.op1 (Op.ReadBit 2)
-         and* v = M.op2 (Op.ReadBit 3)
-      *)
-      in
-      let* not_z = M.op Op.Eq z V.zero
-      and* sgn =
-        let* n2 = M.op Op.Mul V.two n in
-        M.op Op.Sub n2 V.one
-      in
-      M.op Op.Mul not_z sgn
-
     let write_loc loc v =
       M.write_loc (fun loc -> Act.Access (Dir.W, loc, v, MachSize.Quad)) loc
 
@@ -219,19 +191,13 @@ struct
       return []
 
     let read_pstate_nzcv (ii, poi) () =
-      let r = ASLBase.ArchReg AArch64Base.NZCV in
-      let* sgn_v =
-        read_loc true (A.Location_reg (ii.A.proc, r)) (use_ii_with_poi ii poi)
-      in
-      let* v = nzcv_of_sgn sgn_v in
+      let loc = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.NZCV) in
+      let* v = read_loc true loc (use_ii_with_poi ii poi) in
       return [ AST.VInt v ]
 
     let write_pstate_nzcv (ii, poi) v =
-      let r = ASLBase.ArchReg AArch64Base.NZCV in
-      let* sgn_v = sgn_of_nzcv (value_to_v v) in
-      let* () =
-        write_loc (A.Location_reg (ii.A.proc, r)) sgn_v (use_ii_with_poi ii poi)
-      in
+      let loc = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.NZCV) in
+      let* () = write_loc loc (value_to_v v) (use_ii_with_poi ii poi) in
       return []
 
     let pair a b = (a, b)

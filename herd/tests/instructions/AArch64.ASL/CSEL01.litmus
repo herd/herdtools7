@@ -12,4 +12,4 @@ P0 ;
 CMP X8, X9;
 CSEL X3, X1, X2, EQ ;
 
-forall (0: X3 = 3)
+forall (0: X3 = 4)

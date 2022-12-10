@@ -1,3 +1,20 @@
+// We do not yet support bitfield reading, so we have to do this instead
+func PSTATE_N()
+  return read_pstate_nzcv() AND 1
+endfunc
+
+func PSTATE_Z()
+  return (read_pstate_nzcv() AND 2) >> 1
+endfunc
+
+func PSTATE_C()
+  return (read_pstate_nzcv() AND 4) >> 2
+endfunc
+
+func PSTATE_V()
+  return (read_pstate_nzcv() AND 8) >> 3
+endfunc
+
 func ConditionHolds(cond)
 
     // Current code for ConditionHolds in Armv8a
@@ -18,23 +35,30 @@ func ConditionHolds(cond)
     // if cond<0> == '1' && cond != '1111' then
     // result = !result;
 
-    // However, herd does not support all this, so we can only use this
+    // However, we do not yet support bitfields reading
 
-    pstate_nzcv = read_pstate_nzcv();
-    // Condition supported now :  NE | EQ | GE | GT | LE | LT
-    if cond == 0 then // NE
-        result = pstate_nzcv AND 2 == 0
-    else if cond == 1 then // EQ
-        result = pstate_nzcv AND 2 == 2
-    else if cond == 2 then // GE
-        result = pstate_nzcv AND 1 == 0
-    else if cond == 3 then // GT
-        result = pstate_nzcv AND 3 == 0
-    else if cond == 4 then // LE
-        result = pstate_nzcv AND 1 == 1
-    else if cond == 5 then // LT
-        result = pstate_nzcv AND 3 == 1
-    else pass end end end end end end;
+    mcond = cond AND 14 ; // ie cond<3:1>
+    if mcond == 0 then                       // EQ or NE
+        result = PSTATE_Z == 1
+    else if mcond == 2 then                  // CS or CC
+        result = PSTATE_C == 1
+    else if mcond == 4 then                  // MI or PL
+        result = PSTATE_N == 1
+    else if mcond == 6 then                  // VS or VC
+        result = PSTATE_V == 1
+    else if mcond == 8 then                  // HI or LS
+        result = ( PSTATE_C == 1 ) && ( PSTATE_Z == 0 )
+    else if mcond == 10 then                  // GE or LT
+        result = ( PSTATE_N == PSTATE_V )
+    else if mcond == 12 then                  // GT or LE
+        result = ( PSTATE_N == PSTATE_V ) && ( PSTATE_Z == 0 )
+    else                                     // AL
+        result = 1
+    end end end end end end end;
+
+    if ((cond AND 1) == 1) && (cond != 15) then
+        result = !result 
+    else pass end;
 
     return result
 endfunc

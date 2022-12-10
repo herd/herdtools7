@@ -166,7 +166,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
         List.map one_arg args
       in
       let init_env =
-        let one_reg (r, _s) =
+        let one_reg r =
           let loc = MiscParser.Location_reg (proc, AArch64Base.pp_reg r) in
           match A.look_reg r ii.A.env.A.regs with
           | None -> None
@@ -180,7 +180,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
               Some (loc, (TestType.TyDef, Constant.Symbolic s))
           | _ -> None
         in
-        List.filter_map one_reg AArch64Base.xregs
+        List.filter_map one_reg ASLBase.arch_regs
       in
       let init = init_args @ init_env in
       let fname = ASLConf.libfind fname in
