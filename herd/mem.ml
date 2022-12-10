@@ -862,16 +862,13 @@ let match_reg_events es =
 (* Our rather loose rfmaps can induce a cycle in
    causality. Check this. *)
     let rfmap_is_cyclic es rfm =
-      let both =
-        E.EventRel.union
-          es.E.intra_causality_data
-          es.E.intra_causality_control in
+      let iico = E.iico es in
       let causality =
         S.RFMap.fold
           (fun load store k -> match load,store with
           | S.Load er,S.Store ew -> E.EventRel.add (ew,er) k
           | _,_ -> k)
-          rfm both in
+          rfm iico in
       match E.EventRel.get_cycle causality with
       | None -> prerr_endline "no cycle"; false
       | Some cy ->

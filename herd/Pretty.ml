@@ -310,12 +310,12 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     add_ea "iico_data"
       { def_ea with color="black" ; }
       { def_ea with color="black" ; } ;
-    add_ea "iico_control"
-      { def_ea with color="grey" ; }
-      { def_ea with color="grey" ; } ;
     add_ea "iico_ctrl"
       { def_ea with color="grey" ; }
       { def_ea with color="grey" ; } ;
+    add_ea "iico_order"
+      { def_ea with color="darkgrey" ; }
+      { def_ea with color="darkgrey" ; } ;
     add_eas ["After";]
       {color="orange" ; style = extra_thick ; }
       {color="black" ; style= extra_thick ; } ;
@@ -386,8 +386,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
 
 
   let order_events es by_proc_and_poi =
-    let iico =
-      S.union es.E.intra_causality_data es.E.intra_causality_control in
+    let iico = E.iico es in
     let iicos = E.proj_rel es iico in
     let rs =
       List.map2
@@ -437,8 +436,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   let siwidth = PC.siwidth
 
   let order_events_mult es by_proc_and_poi =
-    let iico =
-      S.union es.E.intra_causality_data es.E.intra_causality_control in
+    let iico = E.iico es in
     let  by_proc_and_poi =
       List.map
         (fun ess ->
@@ -509,10 +507,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
 
  let make_visible_po_nodeps es by_proc_and_poi =
     let intra =
-      E.EventRel.transitive_closure
-        (E.EventRel.union
-           es.E.intra_causality_data
-           es.E.intra_causality_control) in
+      E.EventRel.transitive_closure (E.iico es) in
     let min_max_list =
       List.map
         (List.map
@@ -533,10 +528,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
 (* Deps mode *)
   let make_visible_po_deps es by_proc_and_poi =
    let iico =
-      E.EventRel.transitive_closure
-         (E.EventRel.union
-           es.E.intra_causality_data
-           es.E.intra_causality_control) in
+      E.EventRel.transitive_closure (E.iico es) in
     let _,po0 = es.E.po in
     let po = E.EventRel.diff po0 iico in
     let po = E.EventRel.remove_transitive_edges po in
@@ -1328,6 +1320,12 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
             (pp_node_eiid e) (pp_node_eiid e')
             "iico_ctrl" false false)
         es.E.intra_causality_control ;
+      E.EventRel.pp chan ""
+        (fun chan (e,e') ->
+          pp_edge chan
+            (pp_node_eiid e) (pp_node_eiid e')
+            "iico_order" false false)
+        es.E.intra_causality_order ;
 
 
 (****************)
@@ -1520,7 +1518,10 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       intra_causality_data = select_rel
         es.E.intra_causality_data;
       intra_causality_control = select_rel
-        es.E.intra_causality_control; }
+        es.E.intra_causality_control;
+      intra_causality_order = select_rel
+        es.E.intra_causality_order;
+    }
 
   let select_rfmap rfm =
     S.RFMap.fold
