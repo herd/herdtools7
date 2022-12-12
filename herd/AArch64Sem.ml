@@ -1776,16 +1776,26 @@ module Make
 (* Branches *)
 (*********************)
 
-      let do_indirect_jump test i = function
-        | M.A.V.Val(Constant.Label (_, l)) -> B.branchT l
-        | M.A.V.Var(_) as v ->
-           let lbls = get_exported_labels test in
-           if Label.Full.Set.is_empty lbls then
-             Warn.fatal
-               "Could find no potential target for indirect branch %s \
-                (potential targets are statically known labels)" (AArch64.dump_instruction i)
-           else
-             B.indirectBranchT v lbls
+      let v2tgt =
+        let open Constant in
+        function
+        | M.A.V.Val(Label (_, lbl)) -> Some (B.Lbl lbl)
+        | M.A.V.Val (Concrete i) -> Some (B.Addr (M.A.V.Cst.Scalar.to_int i))
+        | _ -> None
+
+      let do_indirect_jump test bds i v =
+        match  v2tgt v with
+        | Some tgt -> M.unitT (B.Jump (tgt,bds))
+        | None ->
+           match v with
+           | M.A.V.Var(_) as v ->
+              let lbls = get_exported_labels test in
+              if Label.Full.Set.is_empty lbls then
+                Warn.fatal
+                  "Could find no potential target for indirect branch %s \
+                   (potential targets are statically known labels)" (AArch64.dump_instruction i)
+              else
+                B.indirectBranchT v lbls bds
         | _ -> Warn.fatal
             "illegal argument for the indirect branch instruction %s \
             (must be a label)" (AArch64.dump_instruction i)
@@ -1824,37 +1834,25 @@ module Make
               commit_bcc ii >>= fun () -> B.bccT v l
 
         | I_BL l ->
-            begin
-              match ii.A.link_label with
-              | Some ret_lbl ->
-                  let ret_lbl_v =
-                    A.V.cstToV (Constant.Label (ii.A.proc, ret_lbl)) in
-                  write_reg AArch64Base.linkreg ret_lbl_v ii
-                  >>= fun () -> B.branchT l
-              | None ->
-                  assert false (* mem.ml ought to ensure link_label is set *)
-            end
+           let v_ret = V.intToV (ii.A.addr + 4) in
+           write_reg AArch64Base.linkreg v_ret ii >>=
+           fun () -> M.unitT (B.Jump (B.Lbl l,[AArch64Base.linkreg,v_ret]))
 
         | I_BR r as i ->
-            read_reg_ord r ii >>= do_indirect_jump test i
+            read_reg_ord r ii >>= do_indirect_jump test [] i
 
         | I_BLR r as i ->
-          begin
-            match ii.A.link_label with
-            | Some ret_lbl ->
-              let ret_lbl_v = A.V.cstToV (Constant.Label (ii.A.proc, ret_lbl)) in
-              write_reg AArch64Base.linkreg ret_lbl_v ii
-              >>= fun () -> read_reg_ord r ii
-              >>= do_indirect_jump test i
-            | None ->
-              assert false (* mem.ml ought to ensure link_label is set *)
-          end
-        | I_RET _ro as i ->
-            let r = match _ro with
+           let v_ret = V.intToV (ii.A.addr + 4) in
+           write_reg AArch64Base.linkreg v_ret ii
+           >>= fun () -> read_reg_ord r ii
+           >>= do_indirect_jump test [AArch64Base.linkreg,v_ret] i
+
+        | I_RET ro as i ->
+            let r = match ro with
             | None -> AArch64Base.linkreg
             | Some r -> r in
             read_reg_ord r ii
-            >>= do_indirect_jump test i
+            >>= do_indirect_jump test [] i
 
         | I_ERET ->
            let eret_to_addr = function

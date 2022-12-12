@@ -55,11 +55,11 @@ module type S = sig
 
   type nice_prog = A.nice_prog
   type start_points = A.start_points
-  type return_labels = A.return_labels
+  type code_segment = A.code_segment
 
   type proc_info = Test_herd.proc_info
   type test =
-      (program, nice_prog, start_points, return_labels,
+      (program, nice_prog, start_points, code_segment,
        state, A.size_env, A.type_env,
        prop, location, A.RLocSet.t, A.FaultAtomSet.t) Test_herd.t
 
@@ -190,10 +190,6 @@ type concrete =
   type barrier = A.barrier
   type pp_barrier = { barrier:barrier ; pp:string; }
 
-include
-  IFetchTrait.S
-    with type ifetch_instruction := instruction
-    and type ifetch_reg := A.reg
 end
 
 module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
@@ -231,11 +227,11 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     type program = A.program
     type nice_prog = A.nice_prog
     type start_points = A.start_points
-    type return_labels = A.return_labels
+    type code_segment = A.code_segment
 
     type proc_info = Test_herd.proc_info
     type test =
-      (program, nice_prog, start_points, return_labels, state,
+      (program, nice_prog, start_points, code_segment, state,
        A.size_env, A.type_env,
        prop, location, A.RLocSet.t, A.FaultAtomSet.t) Test_herd.t
 
@@ -482,8 +478,6 @@ type concrete =
     type barrier = A.barrier
 
     type pp_barrier = { barrier:barrier ; pp:string; }
-
-    let is_link = A.is_link
 
   end
 

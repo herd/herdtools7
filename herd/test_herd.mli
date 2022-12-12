@@ -28,7 +28,7 @@ type
      program : 'prog ;
      nice_prog : 'nice_prog ;
      start_points : 'start ;
-     return_labels : 'ret ;
+     code_segment : 'ret ;
      init_state : 'state ; size_env : 'size_env ; type_env : 'type_env ;
      filter : 'prop option ;
      cond : 'prop ConstrGen.constr ;
@@ -67,7 +67,7 @@ module Make(A:Arch_herd.S) : sig
       (A.program,
        A.nice_prog,
        A.start_points,
-       A.return_labels,
+       A.code_segment,
        A.state,
        A.size_env,
        A.type_env,

@@ -27,7 +27,7 @@ type
      program : 'prog ;
      nice_prog : 'nice_prog ;
      start_points : 'start ;
-     return_labels : 'ret ;
+     code_segment : 'ret ;
      init_state : 'state ;
      size_env : 'size_env ; type_env : 'type_env ;
      filter : 'prop option ;
@@ -60,7 +60,7 @@ module Make(A:Arch_herd.S) =
   struct
 
     type result =
-      (A.program, A.nice_prog, A.start_points, A.return_labels, A.state,
+      (A.program, A.nice_prog, A.start_points, A.code_segment, A.state,
        A.size_env, A.type_env,
        A.prop, A.location, A.RLocSet.t,A.FaultAtomSet.t) t
 
@@ -183,7 +183,7 @@ module Make(A:Arch_herd.S) =
        program = prog ;
        nice_prog = nice_prog ;
        start_points = starts ;
-       return_labels = rets ;
+       code_segment = rets ;
        init_state = init_state ;
        filter = filter ;
        cond = final ;
@@ -216,7 +216,7 @@ module Make(A:Arch_herd.S) =
        program = Label.Map.empty ;
        nice_prog = [] ;
        start_points = [] ;
-       return_labels = IntMap.empty ;
+       code_segment = IntMap.empty ;
        init_state = A.state_empty;
        size_env = A.size_env_empty ;
        type_env = A.type_env_empty ;
