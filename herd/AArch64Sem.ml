@@ -908,10 +908,10 @@ module Make
         let ( << ) f i = make_op1 (M.op1 (Op.LeftShift i)) f in
         let sign_bit = MachSize.nbits (AArch64Base.tr_variant ty) - 1 in
         let read_sign_bit = make_op1 (M.op1 (Op.ReadBit sign_bit)) in
-        let ( ---> ) f i = read_sign_bit f << i in
+        let ( ---> ) f i = ( read_sign_bit f ) << i in
         (* Computation of nz flags *)
         let compute_nz =
-          let compute_z2 = res === V.zero << 1 in
+          let compute_z2 = ( res === V.zero ) << 1 in
           let compute_n = read_sign_bit res in
           compute_z2 || compute_n
         in
@@ -925,7 +925,18 @@ module Make
             let compute_v = ((res + x) & (res + y)) ---> 3 in
             Some (compute_nz || compute_c || compute_v)
         | SUBS ->
-            let compute_c = ((!x & y) || ((!x || y) & res)) ---> 2 in
+          (*
+            This is the formula give by Hacker's Delight for the carry in an
+            unsigned substraction:
+              (!x & y) || ((!x || y) & res)
+            But I use the formula given by Hacker's Delight for the carry in an
+            unsiged addition, with y replaced by !y, as the Arm ARM specifies
+            the substraction as:
+              x - y := x + !y + 1
+            This gives the following formula, which seams to produce the same
+            results as hardware:
+          *)
+            let compute_c = ((x & !y) || ((x || !y) & !res)) ---> 2 in
             let compute_v = ((x + y) & (res + x)) ---> 3 in
             Some (compute_nz || compute_c || compute_v)
 
