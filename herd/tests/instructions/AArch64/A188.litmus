@@ -8,10 +8,10 @@ P0;
   B.LE foo;
   B.LT foo;
   B.EQ foo;
-  B.CS foo;
+  B.CC foo;
   B.MI foo;
   B.VS foo;
-  B.HI foo;
+  B.LS foo;
   ADD W0, W0, #1;
   foo: NOP;
 

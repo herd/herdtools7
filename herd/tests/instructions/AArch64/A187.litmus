@@ -6,7 +6,7 @@ AArch64 A187
 P0;
   CMP W0, #1;
   B.NE foo;
-  B.CS foo;
+  B.CC foo;
   B.MI foo;
   B.VS foo;
   B.HI foo;

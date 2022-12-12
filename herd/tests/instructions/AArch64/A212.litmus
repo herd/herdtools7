@@ -1,0 +1,21 @@
+AArch64 A212
+(* SUBS test, uses CSET *)
+
+{
+    0: X1 = -1;
+    0: X2 = 0;
+}
+
+P0 ;
+SUBS W0, W1, W2;
+CSET W3, MI; (* Fetch N *)
+CSET W4, EQ; (* Fetch Z *)
+CSET W5, CS; (* Fetch C *)
+CSET W6, VS; (* Fetch V *)
+
+forall (
+    0: X3 = 1 /\
+    0: X4 = 0 /\
+    0: X5 = 1 /\
+    0: X6 = 0
+)
