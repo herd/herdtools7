@@ -882,9 +882,9 @@ module Make
       let op_set_flags op ty =
         let open AArch64Base in
         (* Utils for writing formulas
-           - We use a base functionnal type, this surely impacts performance,
+           - We use a base functional type, this surely impacts performance,
              but clarity is improved.
-           - We surcharge common operators to use our own functionnal
+           - We surcharge common operators to use our own functional
              types.
            - The main values come from the three arguments passed to every functions
            - The performance cost is never on operations that do not set flags,
@@ -927,13 +927,13 @@ module Make
         | SUBS ->
           (*
             This is the formula give by Hacker's Delight for the carry in an
-            unsigned substraction:
+            unsigned subtraction:
               (!x & y) || ((!x || y) & res)
             But I use the formula given by Hacker's Delight for the carry in an
-            unsiged addition, with y replaced by !y, as the Arm ARM specifies
-            the substraction as:
+            unsigned addition, with y replaced by !y, as the Arm ARM specifies
+            the subtraction as:
               x - y := x + !y + 1
-            This gives the following formula, which seams to produce the same
+            This gives the following formula, which seems to produce the same
             results as hardware:
           *)
             let compute_c = ((x & !y) || ((x || !y) & !res)) ---> 2 in
