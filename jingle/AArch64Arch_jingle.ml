@@ -39,20 +39,30 @@ include Arch.MakeArch(struct
     | S_SXTW, S_SXTW | S_UXTW, S_UXTW | S_NOEXT, S_NOEXT -> Some subs
     | _ -> None
 
+  let match_lbl lp li subs =
+    let open BranchTarget in
+    match lp,li with
+    | Lbl lp,Lbl li -> add_subs [Lab(lp,li)] subs
+    | Offset ip,Offset ii
+         when Misc.int_eq ip ii -> Some subs
+    | _,_ -> None
+
   let match_instr subs pattern instr = match pattern,instr with
     | I_NOP,I_NOP -> Some subs
     | I_FENCE fp,I_FENCE fi when fp = fi
                             -> Some subs
 
     | I_B lp, I_B li
-      -> add_subs [Lab(lp,li)] subs
+      -> match_lbl lp li subs
 
     | I_BC(cp,lp), I_BC(ci,li) when cp = ci
-                               -> add_subs [Lab(lp,li)] subs
+      -> match_lbl lp li subs
 
     | I_CBZ(_,r,lp),I_CBZ(_,r',li)
     | I_CBNZ(_,r,lp),I_CBNZ(_,r',li)
-      ->  add_subs [Reg(sr_name r,r'); Lab(lp,li)] subs
+      ->
+       match_lbl lp li subs >>> add_subs [Reg(sr_name r,r')]
+
     | I_MOV(_,r,kr),I_MOV(_,r',kr') ->
         match_kr subs kr kr' >>> add_subs [Reg(sr_name r,r');]
 
@@ -99,7 +109,13 @@ include Arch.MakeArch(struct
 
   let expl_instr subs =
     let conv_reg = conv_reg subs in
-    let find_lab = find_lab subs in
+
+    let find_lab lbl =
+      let open BranchTarget in
+      match lbl with
+      | Lbl lbl -> find_lab subs lbl >! fun lbl -> Lbl lbl
+      | Offset _ as tgt -> unitT tgt in
+
     let find_cst = find_cst subs in
     let find_shift = function
       | S_LSL(n) ->

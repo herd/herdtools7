@@ -180,6 +180,8 @@ type concrete =
   with type reg = A.reg and type v = v and type 'a monad = 'a M.t
   type branch = B.t
 
+  val tgt2tgt : A.inst_instance_id -> BranchTarget.t -> B.tgt
+
   val gone_toofar : concrete -> bool
 
 (************)
@@ -466,6 +468,10 @@ type concrete =
 (************)
     module B = Branch.Make(M)
     type branch = B.t
+
+    let tgt2tgt ii = function
+      | BranchTarget.Lbl lbl -> B.Lbl lbl
+      | BranchTarget.Offset o -> B.Addr (ii.A.addr + o)
 
     let gone_toofar { str; _ } =
       try E.EventSet.exists E.is_toofar str.E.events

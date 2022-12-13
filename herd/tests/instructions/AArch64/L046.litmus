@@ -1,0 +1,9 @@
+AArch64 L046
+{
+}
+
+  P0          ;
+ B .+8        ;
+ MOV W0,#1    ;
+ ADD W0,W0,#1 ;
+forall 0:X0=1

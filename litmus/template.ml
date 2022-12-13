@@ -61,7 +61,10 @@ module type S = sig
   val comment : string
   type arch_reg
 
-  type flow = Any | Next | Branch of string
+  type flow = Any | Next | Branch of string | Disp of int
+
+  val add_next : flow -> flow list
+
   type ins =
       { memo:string ; inputs:arch_reg list ;  outputs:arch_reg list;
         reg_env: (arch_reg * CType.t) list; (* Register typing [ARMv8] *)
@@ -140,7 +143,12 @@ module Make(O:Config)(A:I) =
 
     type arch_reg = A.arch_reg
 
-    type flow = Any | Next | Branch of string
+    type flow = Any | Next | Branch of string | Disp of int
+
+    let add_next b = match b with
+      | Next|Any|Disp _ -> [b;]
+      | Branch _ -> [Next; b;]
+
     type ins =
         { memo:string ; inputs:arch_reg list ;  outputs:arch_reg list;
           reg_env: (arch_reg * CType.t) list; (* Register typing [ARMv8] *)

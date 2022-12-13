@@ -2,9 +2,9 @@
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris, France.                                       *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2020-present Institut National de Recherche en Informatique et *)
+(* Copyright 2022-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,12 +14,12 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type t =
-    | LIT_B of int
-    | LIT_NOP
+(** Branch target for instruction *)
 
+type t = Lbl of Label.t | Offset of int
+
+val pp_offset : int -> string
 val pp : t -> string
 
-val compare : t -> t -> int
-
-val eq : t -> t -> bool
+val tgt2next : t -> Label.next
+val tgt_cons : Label.next -> t -> Label.next list 

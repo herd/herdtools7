@@ -1,0 +1,10 @@
+Test L047 Required
+States 1
+0:X1=4;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=4)
+Observation L047 Always 1 0
+Hash=892006658248b757256dcb5df65edcd0
+

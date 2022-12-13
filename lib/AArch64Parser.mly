@@ -44,7 +44,7 @@ let check_op3 op kr =
 %token <string> CODEVAR
 %token <int> PROC
 
-%token SEMI COMMA PIPE COLON LCRL RCRL LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
+%token SEMI COMMA PIPE COLON DOT LCRL RCRL LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
 %token SXTW
 
 /* Inline Barrel Shift Operands */
@@ -113,7 +113,7 @@ let check_op3 op kr =
 %token LDCT SEAL STCT UNSEAL
 %type <MiscParser.proc list * (AArch64Base.parsedPseudo) list list * MiscParser.extra_data> main
 %type <AArch64Base.parsedPseudo list> instr_option_seq
-
+%type  <AArch64Base.parsedInstruction> instr
 %start  main
 %start instr_option_seq
 
@@ -362,7 +362,8 @@ cond:
 | AL { A.AL }
 
 label_addr:
-| NAME      { $1 }
+| NAME      { BranchTarget.Lbl $1 }
+| DOT NUM   { BranchTarget.Offset $2 }
 
 instr:
 | NOP { A.I_NOP }
@@ -1005,7 +1006,7 @@ instr:
 | MOVK wreg COMMA k COMMA LSL k
   { A.I_MOVK (A.V32,$2,$4, A.S_LSL $7) }
 | ADR xreg COMMA NAME
-  { A.I_ADR ($2,$4) }
+  { A.I_ADR ($2,BranchTarget.Lbl $4) }
 | SXTW xreg COMMA wreg
   { A.I_SXTW ($2,$4) }
 /* Special handling for ASR/LSL/LSR operation */

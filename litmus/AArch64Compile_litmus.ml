@@ -116,10 +116,19 @@ module Make(V:Constant.S)(C:Config) =
       | LE -> "le"
       | AL -> "al"
 
+    let dump_tgt tr_lab =
+      let open BranchTarget in
+      function
+      | Lbl lbl -> Branch lbl,A.Out.dump_label (tr_lab lbl)
+      | Offset o ->
+         if o mod 4 <>0 then  Warn.user_error "Non aligned branch" ;
+         Disp (o/4),"." ^ pp_offset o
+
     let b tr_lab lbl =
+      let b,lbl = dump_tgt tr_lab lbl in
       { empty_ins with
-        memo = sprintf "b %s" (A.Out.dump_label (tr_lab lbl)) ;
-        branch=[Branch lbl] ; }
+        memo = sprintf "b %s" lbl;
+        branch=[b;]; }
 
     let br r =
       { empty_ins with
@@ -134,10 +143,12 @@ module Make(V:Constant.S)(C:Config) =
         branch=[Any] ; }
 
     let bl tr_lab lbl =
+      let b,lbl = dump_tgt tr_lab lbl in
       { empty_ins with
-        memo = sprintf "bl %s" (A.Out.dump_label (tr_lab lbl)) ;
+        memo = sprintf "bl %s" lbl;
         inputs=[]; outputs=[];
-        branch=[Next;Branch lbl] ; clobbers=[linkreg;]; }
+        branch= add_next b;
+        clobbers=[linkreg;]; }
 
     let blr r =
       { empty_ins with
@@ -147,34 +158,36 @@ module Make(V:Constant.S)(C:Config) =
         branch=[Any] ;  clobbers=[linkreg;]; }
 
     let bcc tr_lab cond lbl =
+      let b,lbl = dump_tgt tr_lab lbl in
       { empty_ins with
-        memo = sprintf "b.%s %s"
-          (pp_cond cond) (A.Out.dump_label (tr_lab lbl)) ;
-        branch=[Next; Branch lbl] ; }
+        memo = sprintf "b.%s %s" (pp_cond cond) lbl ;
+        branch=add_next b; }
 
     let cbz tr_lab memo v r lbl =
+      let b,lbl = dump_tgt tr_lab lbl in
       let memo =
         sprintf
           (match v with
           | V32 -> "%s ^wi0,%s"
           | V64 -> "%s ^i0,%s"
           | V128 -> assert false)
-          memo (A.Out.dump_label (tr_lab lbl)) in
+          memo lbl in
       { empty_ins with
         memo; inputs=[r;]; outputs=[];
-        branch=[Next; Branch lbl] ; }
+        branch=add_next b; }
 
     let tbz tr_lab memo v r k lbl =
+      let b,lbl = dump_tgt tr_lab lbl in
       let memo =
         sprintf
           (match v with
           | V32 -> "%s ^wi0,#%d, %s"
           | V64 -> "%s ^i0, #%d, %s"
           | V128 -> assert false)
-          memo k (A.Out.dump_label (tr_lab lbl)) in
+          memo k lbl in
       { empty_ins with
         memo; inputs=[r;]; outputs=[];
-        branch=[Next; Branch lbl] ; }
+        branch=add_next b ; }
 
 (* Load and Store *)
 
@@ -1022,9 +1035,10 @@ module Make(V:Constant.S)(C:Config) =
         [r;])}
 
     let adr tr_lab r lbl =
+      let _,lbl = dump_tgt tr_lab lbl in
       let r,f = arg1 "xzr" (fun s -> "^o"^s) r in
       { empty_ins with
-        memo = sprintf "adr %s,%s" f (A.Out.dump_label (tr_lab lbl));
+        memo = sprintf "adr %s,%s" f lbl;
         outputs=r; reg_env=add_v r; }
 
     let do_movr memo v r1 r2 = match v with
@@ -1247,7 +1261,7 @@ module Make(V:Constant.S)(C:Config) =
       let ins = map_ins ins in
       ins@[ {empty_ins with memo="0:"; label=Some "0"; } ]
 
-    let compile_ins tr_lab ins k = match ins with
+      let compile_ins tr_lab ins k = match ins with
     | I_NOP -> { empty_ins with memo = "nop"; }::k
 (* Branches *)
     | I_B lbl -> b tr_lab lbl::k

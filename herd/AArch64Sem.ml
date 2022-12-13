@@ -1828,15 +1828,17 @@ module Make
            !(M.mk_singleton_es (Act.NoAction) ii)
         (* Branches *)
         | I_B l ->
-           M.mk_singleton_es (Act.NoAction) ii >>= fun () -> B.branchT l
+           M.mk_singleton_es (Act.NoAction) ii
+           >>= fun () -> M.unitT (B.Jump (tgt2tgt ii l,[]))
         | I_BC(c,l)->
-            read_reg_ord NZCV ii  >>= tr_cond c >>= fun v ->
-              commit_bcc ii >>= fun () -> B.bccT v l
-
+           read_reg_ord NZCV ii
+           >>= tr_cond c
+           >>= fun v -> commit_bcc ii
+           >>= fun () -> M.unitT (B.CondJump (v,tgt2tgt  ii l))
         | I_BL l ->
            let v_ret = V.intToV (ii.A.addr + 4) in
-           write_reg AArch64Base.linkreg v_ret ii >>=
-           fun () -> M.unitT (B.Jump (B.Lbl l,[AArch64Base.linkreg,v_ret]))
+           write_reg AArch64Base.linkreg v_ret ii
+           >>= fun () -> M.unitT (B.Jump (tgt2tgt ii l,[AArch64Base.linkreg,v_ret]))
 
         | I_BR r as i ->
             read_reg_ord r ii >>= do_indirect_jump test [] i
@@ -1869,26 +1871,26 @@ module Make
             (read_reg_ord r ii)
               >>= is_zero
               >>= fun v -> commit_bcc ii
-              >>= fun () -> B.bccT v l
+              >>= fun () -> M.unitT (B.CondJump (v,tgt2tgt ii l))
 
         | I_CBNZ(_,r,l) ->
             (read_reg_ord r ii)
               >>= is_not_zero
               >>= fun v -> commit_bcc ii
-              >>= fun () -> B.bccT v l
+              >>= fun () -> M.unitT (B.CondJump (v,tgt2tgt ii l))
 
         | I_TBZ(_,r,k,l) ->
             (read_reg_ord r ii)
               >>= M.op1 (Op.ReadBit k)
               >>= is_zero
               >>= fun v -> commit_bcc ii
-                  >>= fun () -> B.bccT v l
+              >>= fun () -> M.unitT (B.CondJump (v,tgt2tgt ii l))
         | I_TBNZ(_,r,k,l) ->
             (read_reg_ord r ii)
               >>= M.op1 (Op.ReadBit k)
               >>= is_not_zero
               >>= fun v -> commit_bcc ii
-                  >>= fun () -> B.bccT v l
+              >>= fun () -> M.unitT (B.CondJump (v,tgt2tgt ii l))
 
                       (* Load and Store *)
         | I_LDR(var,rd,rs,kr,s) ->
@@ -2244,9 +2246,13 @@ module Make
         | I_MOVK(var,rd,k,os) ->
             movk var rd k os ii >>= nextSet rd
 
-        | I_ADR (r,lbl) ->
-            write_reg_dest r (ii.A.addr2v lbl) ii
-            >>= nextSet r
+        | I_ADR (r,tgt) ->
+           let v =
+             let open BranchTarget in
+             match tgt with
+             | Lbl lbl -> ii.A.addr2v lbl
+             | Offset o -> V.intToV (ii.A.addr + o) in
+           write_reg_dest r v ii >>= nextSet r
 
         | I_SXTW(rd,rs) ->
             read_reg_ord_sz MachSize.Word rs ii

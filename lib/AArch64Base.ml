@@ -597,7 +597,7 @@ end
 (* Instructions *)
 (****************)
 
-type lbl = Label.t
+type lbl = BranchTarget.t
 
 (* At type of writing, condition codes are specified in the ARM ARM, section C1.2.4, table C1-1 *)
 type condition =
@@ -898,7 +898,11 @@ type 'k kinstruction =
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
 
-let pp_label i = i
+let pp_label =
+  let open BranchTarget in
+  function
+  | Lbl lbl -> Label.pp lbl
+  | Offset o -> "." ^ BranchTarget.pp_offset o
 
 open PPMode
 
@@ -1783,15 +1787,18 @@ let norm_ins ins = ins
 let is_data _ _ = assert false
 
 (* Instruction continuation *)
-let get_next = function
-  | I_B lbl -> [Label.To lbl;]
+
+let get_next =
+  let open BranchTarget in
+  function
+  | I_B lbl -> [tgt2next lbl;]
   | I_BC (_,lbl)
   | I_CBZ (_,_,lbl)
   | I_CBNZ (_,_,lbl)
   | I_TBNZ (_,_,_,lbl)
   | I_TBZ (_,_,_,lbl)
   | I_BL lbl
-    -> [Label.Next; Label.To lbl;]
+    -> tgt_cons Label.Next lbl
   | I_BLR _|I_BR _|I_RET _ |I_ERET -> [Label.Any]
   | I_NOP
   | I_LDR _
@@ -2077,10 +2084,22 @@ module PseudoI = struct
         | I_TBZ (_,_,_,lbl)
         | I_BL lbl
         | I_ADR (_,lbl)
-          -> f k lbl
+          ->
+           begin
+             let open BranchTarget in
+             match lbl with
+             | Lbl lbl -> f k lbl
+             | Offset _ -> k
+           end
         | _ -> k
 
-      let map_labels f = function
+      let map_labels f =
+        let f =
+          let open BranchTarget in
+          function
+          | Lbl lbl -> Lbl (f lbl)
+          | Offset _ as o -> o in
+        function
         | I_B lbl -> I_B (f lbl)
         | I_BL lbl -> I_BL (f lbl)
         | I_BC (c,lbl) -> I_BC (c,f lbl)
@@ -2120,7 +2139,7 @@ let can_overwrite = function
   | _ -> false
 
 let get_exported_label = function
-  | I_ADR (_,lbl) -> Some lbl
+  | I_ADR (_,BranchTarget.Lbl lbl) -> Some lbl
   | _ -> None
 
 
@@ -2138,7 +2157,7 @@ module MakeInstr(C:sig val is_morello:bool end) = struct
     let open InstrLit in
     function
     | LIT_NOP -> I_NOP
-    | LIT_B lbl -> I_B lbl
+    | LIT_B o -> I_B (BranchTarget.Offset o)
 
   let is_nop = function
     | I_NOP -> true

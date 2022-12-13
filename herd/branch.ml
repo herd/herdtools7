@@ -26,6 +26,7 @@ module type S = sig
 
 (* Branch information, result of our instruction semantics *)
   type tgt = Lbl of lbl | Addr of int
+
   type bds = (reg * v) list
   type t =
     (* continue in sequence, setting registers *)

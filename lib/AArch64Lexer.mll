@@ -506,7 +506,7 @@ rule token = parse
 | [' ''\t''\r'] { token lexbuf }
 | '\n'      { incr_lineno lexbuf; token lexbuf }
 | "(*"      { LU.skip_comment lexbuf ; token lexbuf }
-| '#'? ('-' ? num as x) { NUM (int_of_string x) }
+| '#'? (('-'|'+') ? num as x) { NUM (int_of_string x) }
 | 'P' (num as x)
     { PROC (int_of_string x) }
 | 'P' (num as x) ".F"
@@ -525,6 +525,7 @@ rule token = parse
 | '(' { LPAR }
 | ')' { RPAR }
 | ':' { COLON }
+| '.' { DOT }
 | "scopes"  { SCOPES  }
 | "levels"  { LEVELS  }
 | "regions" { REGIONS }

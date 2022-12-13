@@ -558,7 +558,9 @@ module A.FaultType = A.FaultType)
    by real code. This is standard live-in calculation *)
 
 (* One instruction *)
-    let live_in_ins ins (env,live_in_next) =
+    let int_label k = Printf.sprintf "_%d" k
+
+    let live_in_ins i ins (env,live_in_next) =
       let live_out =
         List.fold_left
           (fun k flow ->
@@ -570,9 +572,17 @@ module A.FaultType = A.FaultType)
                     (fun _ rs k -> rs::k)
                     env [live_in_next;] in
                 RegSet.unions rss
+            | Disp j ->
+               let lbl = int_label (i+j) in
+               begin
+                 try LabEnv.find lbl env
+                 with Not_found -> assert false
+               end
             | Branch lbl ->
-                try LabEnv.find lbl env
-                with Not_found -> RegSet.empty in
+               begin
+                 try LabEnv.find lbl env
+                 with Not_found -> RegSet.empty
+               end in
             RegSet.union rs k)
           RegSet.empty ins.branch in
       let live_in =
@@ -582,29 +592,51 @@ module A.FaultType = A.FaultType)
 (* Conditional instruction, a la ARM *)
              (if ins.cond then RegSet.empty
              else RegSet.of_list ins.outputs)) in
+      let env =
+        let lbl = int_label i in
+        if LabEnv.mem lbl env then LabEnv.add lbl live_in env
+        else env in
       (match ins.label with
       | None -> env
       | Some lbl -> LabEnv.add lbl live_in env),
       live_in
 
 (* One sequence of instruction *)
-    let live_in_code code env live_in_final =
-      List.fold_right live_in_ins code (env,live_in_final)
+    let live_in_code t env live_in_final =
+      let rec do_rec k =
+        if k >= Array.length t then (env,live_in_final)
+        else live_in_ins k t.(k) (do_rec (k+1)) in
+      do_rec 0
 
     let debug = false
 (* Fixpoint *)
     let comp_fix  code live_in_final =
+      let t = Array.of_list code in
       if debug then
         eprintf "FINAL: {%a}\n" pp_reg_set live_in_final ;
       let rec do_rec env0 =
-        let env,r = live_in_code code env0 live_in_final in
+        let env,r = live_in_code t env0 live_in_final in
         if debug then
           eprintf "FIX: {%a}\n" pp_reg_set r ;
         let c =
           LabEnv.compare RegSet.compare env env0 in
         if c = 0 then r
         else do_rec env in
-      do_rec LabEnv.empty
+      let env0 =
+        let rec do_rec k env =
+          if k >= Array.length t then env
+          else
+            let env =
+              List.fold_left
+                (fun env -> function
+                  | Disp i ->LabEnv.add (int_label (k+i)) RegSet.empty env
+                  | Next|Branch _|Any -> env)
+                env t.(k).branch in
+            do_rec (k+1) env in
+        do_rec 0
+          (LabEnv.add
+             (int_label (Array.length t)) live_in_final LabEnv.empty) in
+      do_rec env0
 
     let comp_initset proc initenv code inputs_final =
       let reg_set  = comp_fix code inputs_final in
