@@ -1,0 +1,12 @@
+Test L041 Allowed
+States 3
+0:X3=0; 1:X3=1;
+0:X3=1; 1:X3=0;
+0:X3=1; 1:X3=1;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (0:X3=0 /\ 1:X3=0)
+Observation L041 Never 0 3
+Hash=b3943926fd253c62a988c8b6a25ddfdd
+

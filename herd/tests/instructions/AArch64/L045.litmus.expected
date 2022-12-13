@@ -1,0 +1,13 @@
+Test L045 Allowed
+States 4
+0:X1=0; 1:X1=0; 1:X4=0; [y]=1;
+0:X1=0; 1:X1=1; 1:X4=0; [y]=2;
+0:X1=1; 1:X1=0; 1:X4=0; [y]=1;
+0:X1=1; 1:X1=1; 1:X4=0; [y]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([y]=2 /\ 0:X1=1 /\ 1:X1=1 /\ 1:X4=0)
+Observation L045 Sometimes 1 3
+Hash=b554dbbcf6abfbb3161a8c7ca301e99b
+
