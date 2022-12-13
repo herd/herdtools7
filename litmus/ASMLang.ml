@@ -130,6 +130,7 @@ module RegMap = A.RegMap)
             in_outputs
         end ;
 
+
         let dump_pair reg v =
           let dump_v = compile_val in
           let dump_v = (* catch those addresses that are saved in a variable *)
@@ -138,13 +139,25 @@ module RegMap = A.RegMap)
               | Constant.Symbolic _ -> copy_name (Tmpl.tag_reg reg)
               | _ -> dump_v v)
             else dump_v  in
+
+          let dump_v_typed v =
+            try
+              let ty = List.assoc reg t.Tmpl.ty_env in
+              sprintf "(%s)(%s)" (CType.dump ty) (dump_v v)
+            with Not_found -> dump_v v in
+
           if RegSet.mem reg in_outputs then begin
             match A.internal_init reg with
-            | None -> sprintf "\"%s\" (%s)" (tag_reg_def reg) (dump_v v)
+            | None ->
+               sprintf "\"%s\" (%s)" (tag_reg_def reg)
+                 (dump_v_typed v)
             | Some (s,_) -> sprintf "\"%s\" (%s)" (tag_reg_def reg) s
           end else match A.internal_init reg with
           | None ->
-              sprintf "%s \"%s\" (%s)" (tag_reg_def reg) (strip_equal (A.reg_class reg)) (dump_v v)
+              sprintf "%s \"%s\" (%s)"
+                (tag_reg_def reg)
+                (strip_equal (A.reg_class reg))
+                (dump_v_typed v)
           | Some (s,_) ->
               sprintf "%s \"%s\" (%s)" (tag_reg_def reg) (strip_equal (A.reg_class reg)) s in
 
