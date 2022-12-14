@@ -308,10 +308,12 @@ module Top (TopConf:Config) = struct
                  let module X = AArch64Make(AArch64Value) in
                  X.run dirty start_time name chan env splitted
            end in
+(* START NOTWWW *)
          if Conf.variant Variant.ASL then
            let module Run =  Top(AArch64ASLSem.Make) in
            Run.run ()
          else
+(* END NOTWWW *)
            let module Run = Top(AArch64Sem.Make) in
            Run.run ()
 
@@ -450,7 +452,7 @@ module Top (TopConf:Config) = struct
           let module P = GenParser.Make (Conf) (Bell) (BellLexParse) in
           let module X = Make (BellS) (P) (BellC) (BellM) (Conf) in
           X.run dirty start_time name chan env splitted
-
+(* START NOTWWW *)
     | `ASL ->
        let module ASLValue = Int64Value.Make(ASLBase.Instr) in
        let module ASLS = ASLSem.Make(Conf)(ASLValue) in
@@ -465,7 +467,7 @@ module Top (TopConf:Config) = struct
        let module P = GenParser.Make (Conf) (ASLA) (ASLLexParse) in
        let module X = Make (ASLS) (P) (NoCheck) (ASLM) (Conf) in
        X.run dirty start_time name chan env splitted
-
+(* END NOTWWW *)
     end else env
 
 (* Enter here... *)
