@@ -100,7 +100,23 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
 
     let tr_cond =
       let open AArch64Base in
-      function NE -> 0 | EQ -> 1 | GE -> 2 | GT -> 3 | LE -> 4 | LT -> 5
+      (* Cf ARM Architecture Reference Manual, section C1.2.4, table C1-1 *)
+      function
+      | EQ -> 0b0000
+      | NE -> 0b0001
+      | CS -> 0b0010
+      | CC -> 0b0011
+      | MI -> 0b0100
+      | PL -> 0b0101
+      | VS -> 0b0110
+      | VC -> 0b0111
+      | HI -> 0b1000
+      | LS -> 0b1001
+      | GE -> 0b1010
+      | LT -> 0b1011
+      | GT -> 0b1100
+      | LE -> 0b1101
+      | AL -> 0b1111 (* Also possible [0b1110] *)
 
     let pseudocode_fname = Filename.concat "asl-pseudocode"
 
@@ -150,7 +166,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
         List.map one_arg args
       in
       let init_env =
-        let one_reg (r, _s) =
+        let one_reg r =
           let loc = MiscParser.Location_reg (proc, AArch64Base.pp_reg r) in
           match A.look_reg r ii.A.env.A.regs with
           | None -> None
@@ -164,7 +180,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
               Some (loc, (TestType.TyDef, Constant.Symbolic s))
           | _ -> None
         in
-        List.filter_map one_reg AArch64Base.xregs
+        List.filter_map one_reg ASLBase.arch_regs
       in
       let init = init_args @ init_env in
       let fname = ASLConf.libfind fname in

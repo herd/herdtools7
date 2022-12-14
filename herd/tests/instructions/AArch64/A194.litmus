@@ -1,0 +1,21 @@
+AArch64 A194
+(* ADDS test, uses CSET *)
+
+{
+    int64_t 0: X1 = -9223372036854775808; (* Smallest negative integer, i.e. [-2^63].*)
+    int64_t 0: X2 = -3;
+}
+
+P0 ;
+ADDS X0, X1, X2;
+CSET w3, MI; (* Fetch N *)
+CSET w4, EQ; (* Fetch Z *)
+CSET w5, CS; (* Fetch C *)
+CSET w6, VS; (* Fetch V *)
+
+forall (
+    0: X3 = 0 /\
+    0: X4 = 0 /\
+    0: X5 = 1 /\
+    0: X6 = 1
+)

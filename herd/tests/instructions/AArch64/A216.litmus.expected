@@ -1,0 +1,10 @@
+Test A216 Required
+States 1
+0:X3=0; 0:X4=0; 0:X5=1; 0:X6=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X3=0 /\ 0:X4=0 /\ 0:X5=1 /\ 0:X6=1)
+Observation A216 Always 1 0
+Hash=16997fa8f66c088036e097a7011ba390
+

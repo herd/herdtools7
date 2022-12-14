@@ -52,7 +52,9 @@ let check_op3 op kr =
 
 /* Instructions */
 %token NOP HINT HLT
-%token B BR BEQ BNE BGE BGT BLE BLT CBZ CBNZ EQ NE GE GT LE LT TBZ TBNZ
+%token B BR CBZ CBNZ TBZ TBNZ
+%token EQ NE GE GT LE LT CS CC MI PL VS VC HI LS AL
+%token BEQ BNE BGE BGT BLE BLT BCS BCC BMI BPL BVS BVC BHI BLS BAL
 %token BL BLR RET ERET
 %token LDR LDP LDNP LDPSW STP STNP LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token LDRSB LDRSH
@@ -349,6 +351,15 @@ cond:
 | GT { A.GT }
 | LE { A.LE }
 | LT { A.LT }
+| CS { A.CS }
+| CC { A.CC }
+| MI { A.MI }
+| PL { A.PL }
+| VS { A.VS }
+| VC { A.VC }
+| HI { A.HI }
+| LS { A.LS }
+| AL { A.AL }
 
 label_addr:
 | NAME      { $1 }
@@ -365,12 +376,21 @@ instr:
 | RET  { A.I_RET None }
 | RET xreg { A.I_RET (Some $2) }
 | ERET { A.I_ERET }
-| BEQ label_addr { A.I_BC (A.EQ,$2) }
-| BNE label_addr { A.I_BC (A.NE,$2) }
-| BLE NAME { A.I_BC (A.LE,$2) }
-| BLT NAME { A.I_BC (A.LT,$2) }
-| BGE NAME { A.I_BC (A.GE,$2) }
-| BGT NAME { A.I_BC (A.GT,$2) }
+| BEQ label_addr { A.I_BC (A.EQ, $2) }
+| BNE label_addr { A.I_BC (A.NE, $2) }
+| BLE label_addr { A.I_BC (A.LE, $2) }
+| BLT label_addr { A.I_BC (A.LT, $2) }
+| BGE label_addr { A.I_BC (A.GE, $2) }
+| BGT label_addr { A.I_BC (A.GT, $2) }
+| BCS label_addr { A.I_BC (A.CS, $2) }
+| BCC label_addr { A.I_BC (A.CC, $2) }
+| BMI label_addr { A.I_BC (A.MI, $2) }
+| BPL label_addr { A.I_BC (A.PL, $2) }
+| BVS label_addr { A.I_BC (A.VS, $2) }
+| BVC label_addr { A.I_BC (A.VC, $2) }
+| BHI label_addr { A.I_BC (A.HI, $2) }
+| BLS label_addr { A.I_BC (A.LS, $2) }
+| BAL label_addr { A.I_BC (A.AL, $2) }
 | CBZ reg COMMA label_addr { let v,r = $2 in A.I_CBZ (v,r,$4) }
 | CBNZ reg COMMA label_addr { let v,r = $2 in A.I_CBNZ (v,r,$4) }
 | TBNZ reg COMMA NUM COMMA label_addr

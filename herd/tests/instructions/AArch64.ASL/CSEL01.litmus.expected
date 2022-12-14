@@ -1,10 +1,10 @@
 Test CSEL01 Required
 States 1
-0:X3=3;
+0:X3=4;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (0:X3=3)
+Condition forall (0:X3=4)
 Observation CSEL01 Always 1 0
 Hash=13c92d13fd5393a9b2c261f56d0a8f95
 

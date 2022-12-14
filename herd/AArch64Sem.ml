@@ -822,24 +822,123 @@ module Make
             >>! ())
         a v ii
 
-      let flip_flag v = M.op Op.Xor v V.one
-      let is_zero v = M.op Op.Eq v V.zero
-      let is_not_zero v = M.op Op.Ne v V.zero
-      let is_ge v = M.op Op.Ge v V.zero
-      let is_gt v = M.op Op.Gt v V.zero
-      let is_le v = M.op Op.Le v V.zero
-      let is_lt v = M.op Op.Lt v V.zero
-
-      let tr_cond = function
-        | AArch64.NE -> is_zero
-        | AArch64.EQ -> is_not_zero
-        | AArch64.GE -> is_ge
-        | AArch64.GT -> is_gt
-        | AArch64.LE -> is_le
-        | AArch64.LT -> is_lt
-
 (* Page tables and TLBs *)
       let do_inv op a ii = inv_loc op (A.Location_global a) ii
+
+(************************)
+(* Conditions and flags *)
+(************************)
+
+      let tr_cond =
+        (* Utils for writing formulas:
+           Here we do operations on functions that will generate the
+           underlying monadic operations. We first define our fake variables,
+           then a few logical operations on those.*)
+        (* Variables *)
+        let n = M.op1 (Op.ReadBit 0) in
+        let z = M.op1 (Op.ReadBit 1) in
+        let c = M.op1 (Op.ReadBit 2) in
+        let v = M.op1 (Op.ReadBit 3) in
+        let true_ = fun _flags -> M.unitT V.one in
+        (* Operators *)
+        (* Note: I use [!a] as a shortcut for [a == 0],
+           and [a] as a shortcut for [a == 1]
+           (the expended version is the one written in the ARM ARM). *)
+        let ( ! ) f flags = f flags >>= M.op Op.Eq V.zero in
+        let make_op op f1 f2 flags =
+          f1 flags >>| f2 flags >>= fun (v1, v2) -> M.op op v1 v2
+        in
+        let ( == ) = make_op Op.Eq in
+        let ( || ) = make_op Op.Or in
+        let ( && ) = make_op Op.And in
+        (* Note : I use [a <> b] as a shortcut for [!a == b]
+           (the expended version is the one written in the ARM ARM). *)
+        let ( <> ) = make_op Op.Xor in
+        let open AArch64Base in
+        (* The real operations, as defined by the ARM ARM. *)
+        function
+        | NE -> !z
+        | EQ -> z
+        | GE -> n == v
+        | GT -> n == v && !z
+        (* Note: for LE, the ARM ARM gives [!(!z && n == v)] here,
+           but I've applied De Morgan's law. *)
+        | LE -> n <> v || z
+        | LT -> n <> v
+        | CS -> c
+        | CC -> !c
+        | MI -> n
+        | PL -> !n
+        | VS -> v
+        | VC -> !v
+        | HI -> c && !z
+        (* Note: for LS, the ARM ARM gives [!(c && !z)] here,
+           but I've applied De Morgan's law. *)
+        | LS -> !c || z
+        | AL -> true_
+
+(* Arithmetic flags handling *)
+
+      let op_set_flags op ty =
+        let open AArch64Base in
+        (* Utils for writing formulas
+           - We use a base functional type, this surely impacts performance,
+             but clarity is improved.
+           - We surcharge common operators to use our own functional
+             types.
+           - The main values come from the three arguments passed to every functions
+           - The performance cost is never on operations that do not set flags,
+             and mainly on ADDS/SUBS. It consists on an extra monad for every
+             variable used.
+        *)
+        (* Main variables *)
+        let res v0 _v1 _v2 = M.unitT v0 in
+        let x _v0 v1 _v2 = M.unitT v1 in
+        let y _v0 _v1 v2 = M.unitT v2 in
+        (* Operators on those variables *)
+        let make_op op f1 f2 v0 v1 v2 =
+          f1 v0 v1 v2 >>| f2 v0 v1 v2 >>= fun (a, b) -> M.op op a b
+        in
+        let make_op1 fop f v0 v1 v2 = f v0 v1 v2 >>= fop in
+        let ( ! ) = make_op1 (M.op1 Op.Inv) in
+        let ( & ) = make_op Op.And in
+        let ( || ) = make_op Op.Or in
+        let ( + ) = make_op Op.Xor in
+        let ( === ) f v = make_op1 (M.op Op.Eq v) f in
+        let ( << ) f i = make_op1 (M.op1 (Op.LeftShift i)) f in
+        let sign_bit = MachSize.nbits (AArch64Base.tr_variant ty) - 1 in
+        let read_sign_bit = make_op1 (M.op1 (Op.ReadBit sign_bit)) in
+        let ( ---> ) f i = ( read_sign_bit f ) << i in
+        (* Computation of nz flags *)
+        let compute_nz =
+          let compute_z2 = ( res === V.zero ) << 1 in
+          let compute_n = read_sign_bit res in
+          compute_z2 || compute_n
+        in
+        (* Operation specific computations
+           For specific formulae, see Hacker's Delight, 2-13.*)
+        match op with
+        | ADD | EOR | ORR | SUB | AND | ASR | LSR | LSL | BIC -> None
+        | ANDS | BICS -> Some compute_nz
+        | ADDS ->
+            let compute_c = ((x & y) || ((x || y) & !res)) ---> 2 in
+            let compute_v = ((res + x) & (res + y)) ---> 3 in
+            Some (compute_nz || compute_c || compute_v)
+        | SUBS ->
+          (*
+            This is the formula give by Hacker's Delight for the carry in an
+            unsigned subtraction:
+              (!x & y) || ((!x || y) & res)
+            But I use the formula given by Hacker's Delight for the carry in an
+            unsigned addition, with y replaced by !y, as the Arm ARM specifies
+            the subtraction as:
+              x - y := x + !y + 1
+            This gives the following formula, which seems to produce the same
+            results as hardware:
+          *)
+            let compute_c = ((x & !y) || ((x || !y) & !res)) ---> 2 in
+            let compute_v = ((x + y) & (res + x)) ---> 3 in
+            Some (compute_nz || compute_c || compute_v)
 
 (***************************)
 (* Various lift functions. *)
@@ -1717,7 +1816,7 @@ module Make
         | I_B l ->
            M.mk_singleton_es (Act.NoAction) ii >>= fun () -> B.branchT l
         | I_BC(c,l)->
-            read_reg_ord NZP ii  >>= tr_cond c >>= fun v ->
+            read_reg_ord NZCV ii  >>= tr_cond c >>= fun v ->
               commit_bcc ii >>= fun () -> B.bccT v l
 
         | I_BL l ->
@@ -2005,16 +2104,16 @@ module Make
               read_reg_ord_sz MachSize.S128 rm ii
             end >>= fun (v1,v2) ->
             M.op Op.Eq v1 v2 >>= fun v -> M.op1 (Op.LeftShift 2) v >>= fun v ->
-            write_reg NZP v ii)
+            write_reg NZCV v ii)
         | I_CHKSLD(rn) ->
             check_morello inst ;
             !(read_reg_ord_sz MachSize.S128 rn ii >>= fun v ->
-            M.op1 Op.CheckSealed v >>= fun v -> write_reg NZP v ii)
+            M.op1 Op.CheckSealed v >>= fun v -> write_reg NZCV v ii)
         | I_CHKTGD(rn) ->
             check_morello inst ;
             !(read_reg_ord_sz MachSize.S128 rn ii >>= fun v ->
               M.op1 Op.CapaGetTag v >>= fun v -> M.op1 (Op.LeftShift 1) v
-              >>= fun v -> write_reg NZP v ii)
+              >>= fun v -> write_reg NZCV v ii)
         | I_CLRTAG(rd,rn) ->
             check_morello inst ;
             !(read_reg_ord_sz MachSize.S128 rn ii >>= fun (v) ->
@@ -2043,7 +2142,7 @@ module Make
             M.op Op.CSeal v1 v2 >>= fun v ->
             write_reg_sz MachSize.S128 rd v ii >>= fun _ ->
             (* TODO: PSTATE overflow flag would need to be conditionally set *)
-            write_reg NZP M.A.V.zero ii)
+            write_reg NZCV M.A.V.zero ii)
         | I_GC(op,rd,rn) ->
             check_morello inst ;
             !(read_reg_ord_sz MachSize.S128 rn ii >>= begin fun c -> match op with
@@ -2215,47 +2314,55 @@ module Make
                   end
             end
             >>=
-              begin match ty with
+            begin
+              let with_correct_size f arg = f arg >>= mask32 ty M.unitT in
+              let do_write_reg v = write_reg_dest rd v ii in
+              let write_reg_no_flags f arg =
+                let without_flags v = M.unitT (v, None) in
+                with_correct_size f arg >>= do_write_reg >>= without_flags
+              in
+              match ty with
               | V128 ->
-                  check_morello inst ;
-                  begin match op with
-                  | ADD -> fun (v1,v2) -> M.op Op.CapaAdd v1 v2
-                  | SUB -> fun (v1,v2) -> M.op Op.CapaSub v1 v2
-                  | SUBS -> fun (v1,v2) -> M.op Op.CapaSubs v1 v2
-                  | _ ->
-                      Warn.fatal
-                        "Operation '%s' is not available in morello mode"
-                        (AArch64.pp_op op)
-                  end
-              | _ ->
-                  begin match op with
-                  | ADD|ADDS -> fun (v1,v2) -> M.add v1 v2
-                  | EOR -> fun (v1,v2) -> M.op Op.Xor v1 v2
-                  | ORR -> fun (v1,v2) -> M.op Op.Or v1 v2
-                  | SUB|SUBS -> fun (v1,v2) -> M.op Op.Sub v1 v2
-                  | AND|ANDS -> fun (v1,v2) -> M.op Op.And v1 v2
-                  | ASR -> fun (v1, v2) -> M.op Op.ASR v1 v2
-                  | LSR -> fun (v1,v2) -> M.op Op.Lsr v1 v2
-                  | LSL -> fun (v1,v2) -> M.op Op.ShiftLeft v1 v2
-                  | BIC|BICS -> fun (v1,v2) -> M.op Op.AndNot2 v1 v2
-                  end
-              end >>=
-              (let m v =
-                 (write_reg_dest rd v ii) >>|
-                   (match op with
-                    | ADDS|SUBS|ANDS|BICS
-                      ->
-                        is_zero v
-                        >>= fun v -> write_reg_dest NZP v ii
-                        >>= fun v -> M.unitT (Some v)
-                    | ADD|EOR|ORR|AND|SUB|ASR|LSR|LSL|BIC
-                      -> M.unitT None) in
-               mask32 ty m))
+                  check_morello inst;
+                  write_reg_no_flags
+                    (match op with
+                    | ADD -> fun (v1, v2) -> M.op Op.CapaAdd v1 v2
+                    | SUB -> fun (v1, v2) -> M.op Op.CapaSub v1 v2
+                    | SUBS -> fun (v1, v2) -> M.op Op.CapaSubs v1 v2
+                    | _ ->
+                        Warn.fatal
+                          "Operation '%s' is not available in morello mode"
+                          (AArch64.pp_op op))
+              | _ -> (
+                  let get_res =
+                    match op with
+                    | ADD | ADDS -> fun (v1, v2) -> M.add v1 v2
+                    | EOR -> fun (v1, v2) -> M.op Op.Xor v1 v2
+                    | ORR -> fun (v1, v2) -> M.op Op.Or v1 v2
+                    | SUB | SUBS -> fun (v1, v2) -> M.op Op.Sub v1 v2
+                    | AND | ANDS -> fun (v1, v2) -> M.op Op.And v1 v2
+                    | ASR -> fun (v1, v2) -> M.op Op.ASR v1 v2
+                    | LSR -> fun (v1, v2) -> M.op Op.Lsr v1 v2
+                    | LSL -> fun (v1, v2) -> M.op Op.ShiftLeft v1 v2
+                    | BIC | BICS -> fun (v1, v2) -> M.op Op.AndNot2 v1 v2
+                  in
+                  match op_set_flags op ty with
+                  | None -> write_reg_no_flags get_res
+                  | Some get_flags ->
+                      let do_write_flags flags = write_reg_dest NZCV flags ii in
+                      let return_flags flags = M.unitT (Some flags) in
+                      let compute_and_write_flags res v1 v2 =
+                        get_flags res v1 v2 >>= do_write_flags >>= return_flags
+                      in
+                      fun (v1, v2) ->
+                        with_correct_size get_res (v1, v2) >>= fun res ->
+                        do_write_reg res >>| compute_and_write_flags res v1 v2)
+            end)
             >>= fun (v,wo) ->
             begin match wo with
             | None -> B.nextSetT rd v
             | Some w ->
-                M.unitT (B.Next [rd,v; NZP,w])
+                M.unitT (B.Next [rd,v; NZCV,w])
             end
       (* Barrier *)
         | I_FENCE b ->
@@ -2267,14 +2374,14 @@ module Make
             | Cpy -> fun m -> m
             | Inc|Inv|Neg -> mask32 var in
             !(if not (C.variant Variant.NotWeakPredicated) then
-              read_reg_ord NZP ii >>= tr_cond c >>*= fun v ->
+              read_reg_ord NZCV ii >>= tr_cond c >>*= fun v ->
                 M.choiceT v
                   (read_reg_data sz r2 ii >>= fun v -> write_reg r1 v ii)
                   (read_reg_data sz r3 ii >>=
                      csel_op op >>= mask (fun v ->  write_reg r1 v ii))
             else
               begin
-                (read_reg_ord NZP ii >>= tr_cond c) >>|  read_reg_data sz r2 ii >>| read_reg_data sz r3 ii
+                (read_reg_ord NZCV ii >>= tr_cond c) >>|  read_reg_data sz r2 ii >>| read_reg_data sz r3 ii
               end >>= fun ((v,v2),v3) ->
               M.condPredT v
                 (M.unitT ())

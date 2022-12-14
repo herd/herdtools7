@@ -1,0 +1,21 @@
+AArch64 A199
+(* ADDS test, uses CSET *)
+
+{
+    0: X1 = 2;
+    0: X2 = 2147483647; (* biggest signed number, i.e. [2 ^ 31 - 1].*)
+}
+
+P0 ;
+ADDS W0, W1, W2;
+CSET W3, MI; (* Fetch N *)
+CSET W4, EQ; (* Fetch Z *)
+CSET W5, CS; (* Fetch C *)
+CSET W6, VS; (* Fetch V *)
+
+forall (
+    0: X3 = 1 /\
+    0: X4 = 0 /\
+    0: X5 = 0 /\
+    0: X6 = 1
+)

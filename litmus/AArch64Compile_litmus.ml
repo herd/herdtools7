@@ -102,10 +102,19 @@ module Make(V:Constant.S)(C:Config) =
     let pp_cond = function
       | EQ -> "eq"
       | NE -> "ne"
+      | CS -> "cs"
+      | CC -> "cc"
+      | MI -> "mi"
+      | PL -> "pl"
+      | VS -> "vs"
+      | VC -> "vc"
+      | HI -> "hi"
+      | LS -> "ls"
       | GE -> "ge"
+      | LT -> "lt"
       | GT -> "gt"
       | LE -> "le"
-      | LT -> "lt"
+      | AL -> "al"
 
     let b tr_lab lbl =
       { empty_ins with

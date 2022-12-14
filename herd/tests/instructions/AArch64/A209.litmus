@@ -1,0 +1,21 @@
+AArch64 A209
+(* SUBS test, uses CSET *)
+
+{
+    int64_t 0: X1 = -2;
+    int64_t 0: X2 = 0x7FFFFFFFFFFFFFFF ; (* biggest signed number, i.e. [2 ^ 63 - 1].*)
+}
+
+P0 ;
+SUBS X0, X1, X2;
+CSET w3, MI; (* Fetch N *)
+CSET w4, EQ; (* Fetch Z *)
+CSET w5, CS; (* Fetch C *)
+CSET w6, VS; (* Fetch V *)
+
+forall (
+    0: X3 = 0 /\
+    0: X4 = 0 /\
+    0: X5 = 1 /\
+    0: X6 = 1
+)

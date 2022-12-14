@@ -85,7 +85,7 @@ type reg =
   | SIMDreg of vec_reg
   | Symbolic_reg of string
   | Internal of int
-  | NZP
+  | NZCV
   | SP
   | ResAddr
   | SysReg of sysreg
@@ -281,14 +281,14 @@ let pp_sysreg r = try List.assoc r sysregs with Not_found -> assert false
 let pp_creg r = match r with
 | Symbolic_reg r -> "C%" ^ r
 | Internal i -> Printf.sprintf "i%i" i
-| NZP -> "NZP"
+| NZCV -> "NZCV"
 | ResAddr -> "Res"
 | _ -> try List.assoc r cregs with Not_found -> assert false
 
 let pp_xreg r = match r with
 | Symbolic_reg r -> "X%" ^ r
 | Internal i -> Printf.sprintf "i%i" i
-| NZP -> "NZP"
+| NZCV -> "NZCV"
 | ResAddr -> "Res"
 | SysReg sreg -> pp_sysreg sreg
 | _ -> try List.assoc r regs with Not_found -> assert false
@@ -311,7 +311,7 @@ let pp_reg r = match r with
 let pp_wreg r = match r with
 | Symbolic_reg r -> "W%" ^ r
 | Internal i -> Printf.sprintf "i%i" i
-| NZP -> "NZP"
+| NZCV -> "NZCV"
 | ResAddr -> "Res"
 | _ -> try List.assoc r wregs with Not_found -> assert false
 
@@ -599,7 +599,24 @@ end
 
 type lbl = Label.t
 
-type condition = NE | EQ | GE | GT | LE | LT
+(* At type of writing, condition codes are specified in the ARM ARM, section C1.2.4, table C1-1 *)
+type condition =
+  | EQ (** Equal *)
+  | NE (** Non Equal *)
+  | CS (** Carry Set or unsigned higher or same, or HS *)
+  | CC (** Carry Clear or unsigned lower, or LO *)
+  | MI (** Negative, MInus *)
+  | PL (** Positive or zero, PLus *)
+  | VS (** V Set, signed overflow *)
+  | VC (** V Clear, no signed overflow *)
+  | HI (** Unsigned HIgher *)
+  | LS (** Unsigned Lower or Same *)
+  | GE (** Signed Greater or Equal *)
+  | LT (** Signed Less Than *)
+  | GT (** Signed Greater Than *)
+  | LE (** Signed Less or Equal *)
+  | AL (** Always executed *)
+  (* | NV (** Always executed *) *)
 
 let inverse_cond = function
   | NE -> EQ
@@ -608,6 +625,15 @@ let inverse_cond = function
   | LT -> GE
   | GE -> GT
   | GT -> LE
+  | CS -> CC
+  | CC -> CS
+  | MI -> PL
+  | PL -> MI
+  | VS -> VC
+  | VC -> VS
+  | HI -> LS
+  | LS -> HI
+  | AL -> AL
 
 type op =
   ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | EOR | ASR | LSR | LSL | BICS | BIC
@@ -890,12 +916,21 @@ type 'k basic_pp =
 let pp_memo memo = memo
 
 let pp_cond = function
-  | NE -> "NE"
   | EQ -> "EQ"
-  | GT -> "GT"
+  | NE -> "NE"
+  | CS -> "CS"
+  | CC -> "CC"
+  | MI -> "MI"
+  | PL -> "PL"
+  | VS -> "VS"
+  | VC -> "VC"
+  | HI -> "HI"
+  | LS -> "LS"
   | GE -> "GE"
   | LT -> "LT"
+  | GT -> "GT"
   | LE -> "LE"
+  | AL -> "AL"
 
 let pp_vreg v r = match v with
 | V32 -> pp_wreg r
@@ -1411,7 +1446,7 @@ let fold_regs (f_regs,f_sregs) =
   | Vreg _ -> f_regs reg y_reg,y_sreg
   | SIMDreg _ -> f_regs reg y_reg,y_sreg
   | Symbolic_reg reg ->  y_reg,f_sregs reg y_sreg
-  | Internal _ | NZP | ZR | SP | ResAddr | Tag _ | SysReg _ -> y_reg,y_sreg in
+  | Internal _ | NZCV | ZR | SP | ResAddr | Tag _ | SysReg _ -> y_reg,y_sreg in
 
   let fold_kr kr y = match kr with
   | K _ -> y
@@ -1489,7 +1524,7 @@ let map_regs f_reg f_symb =
   | Vreg _ -> f_reg reg
   | SIMDreg _ -> f_reg reg
   | Symbolic_reg reg -> f_symb reg
-  | Internal _ | ZR | SP | NZP | ResAddr | Tag _ | SysReg _ -> reg in
+  | Internal _ | ZR | SP | NZCV | ResAddr | Tag _ | SysReg _ -> reg in
 
   let map_kr kr = match kr with
   | K _ -> kr
