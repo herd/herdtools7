@@ -69,6 +69,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
       let byte = SZ.byte
       let cache_type = TopConf.cache_type
       let dirty = TopConf.dirty
+      let initwrites = false
     end
 
     module MC = Mem.Make (MCConf) (ASLS)
