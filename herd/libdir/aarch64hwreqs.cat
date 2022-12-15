@@ -130,7 +130,7 @@ let rec hw-reqs =
   | [M & Exp | R & T & Imp]; (lob | pick-lob); [M & Exp | R & T & Imp | FAULT & (TagCheck | MMU)]
   | (if "ETS2" then [M & Exp]; po; [TLBUncacheable & FAULT]; tr-ib^-1; [R & Imp & PTE] else 0)
   | DSB-ob
-  | CSE-ob; [TLBI]
+  | CSE-ob
   | [CSE]; po
   | [R & PTE & Imp]; po-loc; [W & PTE]
   | [R & PTE & Imp]; rmw; [HU]
