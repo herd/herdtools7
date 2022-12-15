@@ -11,10 +11,9 @@ cfgs = [
 illustrative_tests = [
     "tests/MP-pte.litmus",
     "tests/load-valid.litmus",
-    "tests/LDRxaf0-invalid.litmus",    
+    "tests/LDRxaf0-invalid.litmus",
     "tests/miniMarc03.litmus",
-# Cannot compare pte any longer, got to fix.
-#    "tests/coRW-DB.litmus",
+    "tests/coRW-DB.litmus",
     "tests/coRR-pte9.litmus",
     "tests/V2I.litmus",
     "tests/STRva-STRpte2.litmus",

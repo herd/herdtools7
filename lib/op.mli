@@ -40,6 +40,10 @@ type op =
   | SetTag
   | SquashMutable
   | CheckPerms of string
+(* Change non-integer to integer given as second argument.
+ * If argument is integer, it is left as is.
+ *)
+  | ToInteger
 
 val pp_op : op -> string
 

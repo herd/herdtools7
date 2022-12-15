@@ -725,6 +725,13 @@ module
   | Val cst -> Warn.user_error "Illegal capastrip on %s" (Cst.pp_v cst)
   | Var _ -> raise Undetermined
 
+  let optointeger v1 v2 =
+    match v1,v2 with
+    | Val (Concrete _),_ -> v1
+    | (Var _,_)|(_,Var _) -> raise Undetermined
+    | Val _,Val (Concrete _) -> v2
+    | _,_ ->
+       Warn.user_error "Illegal ToInteger on %s and %s" (pp_v v1) (pp_v v2)
   let op1 op =
     let open! Cst.Scalar in
     match op with
@@ -824,6 +831,7 @@ module
   | CapaSetTag -> binop_cs_c op (fun c x -> Cst.Scalar.set_tag (scalar_to_bool x) c)
   | SquashMutable -> fun v1 v2 -> binop_cs_cs op cap_squash_post_load_cap v2 v1
   | CheckPerms perms -> binop_cs_cs_c op (check_perms perms)
+  | ToInteger -> optointeger
 
   let op3 If v1 v2 v3 = match v1 with
   | Val (Concrete x) -> if scalar_to_bool x then v2 else v3
