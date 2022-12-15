@@ -507,7 +507,7 @@ FL                                             Allowed
 I2V-DSB-WEXP-DSB+obs+DSB-ISH-STR               Allowed
 FM                                             Forbidden
 FJ                                             Allowed
-FG                                             Allowed
+FG                                             Forbidden
 FI                                             Forbidden
 FH                                             Forbidden
 FD                                             Forbidden
@@ -601,7 +601,7 @@ D15347-M-load-shoot+acq-po                     Forbidden
 D15347-M-load-shoot+ctrl                       Allowed
 D15347-M-load-shoot-noscope+DMB.LD             Allowed
 D15347-M-load-shoot+DMB.LD                     Forbidden
-D15347-M-load-shoot+ctrlisb                    Allowed
+D15347-M-load-shoot+ctrlisb                    Forbidden
 D15347-M-load-shoot+addr                       Allowed
 D15347-2+2WExpExp+DMBST+DSB-ISB2               Forbidden
 D15347-2+2WExpExp+DMBST+DSB-ISB                Forbidden
