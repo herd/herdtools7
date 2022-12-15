@@ -63,11 +63,11 @@ func ConditionHolds(cond::bits(4)) => boolean
     return result
 end
 
-func main(d::integer, n::integer, m::integer, cond::integer)
+func main(d::integer, n::integer, m::integer, cond::integer, datasize::integer)
 	if ConditionHolds(cond) then
-		result = read_register(n)
+		result = read_register(n, datasize)
 	else
-		result = read_register(m)
+		result = read_register(m, datasize)
 	end;
-    write_register(d, result)
+    write_register(d, datasize, result)
 end

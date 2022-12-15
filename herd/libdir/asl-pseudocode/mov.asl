@@ -1,5 +1,5 @@
 
-func main(t::integer, s::integer)
-    write_register(t, read_register(s))
+func main(t::integer, s::integer, datasize::integer)
+    write_register(t, datasize, read_register(s, datasize))
 end
 

@@ -100,12 +100,11 @@ module Make (C : Sem.Config) = struct
       | NEG -> M.op Op.Sub V.zero
       | NOT -> M.op1 Op.Not
 
-    let write_loc loc v =
-      M.write_loc (fun loc -> Act.Access (Dir.W, loc, v, MachSize.Quad)) loc
+    let write_loc sz loc v =
+      M.write_loc (fun loc -> Act.Access (Dir.W, loc, v, sz)) loc
 
-    let read_loc is_data =
-      M.read_loc is_data (fun loc v ->
-          Act.Access (Dir.R, loc, v, MachSize.Quad))
+    let read_loc sz is_data =
+      M.read_loc is_data (fun loc v -> Act.Access (Dir.R, loc, v, sz))
 
     let loc_of_scoped_id ii x scope =
       A.Location_reg (ii.A.proc, ASLBase.ASLLocalId (scope, x))
@@ -122,42 +121,54 @@ module Make (C : Sem.Config) = struct
 
     let v_to_int = function
       | V.Val (Constant.Concrete i) -> V.Cst.Scalar.to_int i
-      | v ->
-          Warn.fatal "Cannot use a register from symbolic value: %s" (V.pp_v v)
+      | v -> Warn.fatal "Cannot concretise symbolic value: %s" (V.pp_v v)
 
     let virtual_to_loc_reg rv ii =
       let i = v_to_int rv in
       let arch_reg = AArch64Base.Ireg (List.nth AArch64Base.gprs (i - 1)) in
       A.Location_reg (ii.A.proc, ASLBase.ArchReg arch_reg)
 
-    let read_register (ii, poi) rval =
+    let datasize_to_machsize v =
+      match v_to_int v with
+      | 32 -> MachSize.Word
+      | 64 -> MachSize.Quad
+      | 128 -> MachSize.S128
+      | _ -> Warn.fatal "Cannot access a register with size %s" (V.pp_v v)
+
+    let read_register (ii, poi) rval datasize =
       let loc = virtual_to_loc_reg rval ii in
-      let* v = read_loc true loc (use_ii_with_poi ii poi) in
+      let sz = datasize_to_machsize datasize in
+      let* v = read_loc sz true loc (use_ii_with_poi ii poi) in
       return [ v ]
 
-    let write_register (ii, poi) rval v =
+    let write_register (ii, poi) rval datasize v =
       let loc = virtual_to_loc_reg rval ii in
-      let* () = write_loc loc v (use_ii_with_poi ii poi) in
+      let sz = datasize_to_machsize datasize in
+      let* () = write_loc sz loc v (use_ii_with_poi ii poi) in
       return []
 
-    let read_memory (ii, poi) addr =
+    let read_memory (ii, poi) addr datasize =
+      let sz = datasize_to_machsize datasize in
       let* v =
-        read_loc true (A.Location_global addr) (use_ii_with_poi ii poi)
+        read_loc sz true (A.Location_global addr) (use_ii_with_poi ii poi)
       in
       return [ v ]
 
-    let write_memory (ii, poi) addr v =
-      let* () = write_loc (A.Location_global addr) v (use_ii_with_poi ii poi) in
+    let write_memory (ii, poi) addr datasize value =
+      let sz = datasize_to_machsize datasize in
+      let* () =
+        write_loc sz (A.Location_global addr) value (use_ii_with_poi ii poi)
+      in
       return []
 
     let read_pstate_nzcv (ii, poi) () =
       let loc = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.NZCV) in
-      let* v = read_loc true loc (use_ii_with_poi ii poi) in
+      let* v = read_loc MachSize.Quad true loc (use_ii_with_poi ii poi) in
       return [ v ]
 
     let write_pstate_nzcv (ii, poi) v =
       let loc = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.NZCV) in
-      let* () = write_loc loc v (use_ii_with_poi ii poi) in
+      let* () = write_loc MachSize.Quad loc v (use_ii_with_poi ii poi) in
       return []
 
     let pair a b = (a, b)
@@ -178,12 +189,17 @@ module Make (C : Sem.Config) = struct
       | [] | [ _ ] | _ :: _ :: _ :: _ ->
           Warn.fatal "Arity error for function %s." name
 
+    let arity_three name f =
+      pair name @@ function
+      | [ x; y; z ] -> f x y z
+      | _ -> Warn.fatal "Arity error for function %s." name
+
     let extra_funcs ii_env =
       [
-        arity_one "read_register" (read_register ii_env);
-        arity_two "write_register" (write_register ii_env);
-        arity_one "read_memory" (read_memory ii_env);
-        arity_two "write_memory" (write_memory ii_env);
+        arity_two "read_register" (read_register ii_env);
+        arity_three "write_register" (write_register ii_env);
+        arity_two "read_memory" (read_memory ii_env);
+        arity_three "write_memory" (write_memory ii_env);
         arity_zero "read_pstate_nzcv" (read_pstate_nzcv ii_env);
         arity_one "write_pstate_nzcv" (write_pstate_nzcv ii_env);
       ]

@@ -122,30 +122,51 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
 
     let decode_inst ii =
       let r2i = ASLBase.arch_reg_to_int in
+      let tr_ty ty = MachSize.nbits (AArch64Base.tr_variant ty) in
       let pseudocode_fname = Filename.concat "asl-pseudocode" in
       let open AArch64Base in
       match ii.A.inst with
       | I_NOP -> Some (pseudocode_fname "nop.asl", [])
-      | I_SWP (V64, RMW_P, Ireg r1, Ireg r2, Ireg r3) ->
+      | I_SWP (v, RMW_P, Ireg r1, Ireg r2, Ireg r3) ->
           Some
             ( pseudocode_fname "swp.asl",
-              [ ("s", r2i r1); ("t", r2i r2); ("n", r2i r3) ] )
-      | I_CAS (V64, RMW_P, Ireg rs, Ireg rt, Ireg rn) ->
+              [
+                ("s", r2i r1);
+                ("t", r2i r2);
+                ("n", r2i r3);
+                ("datasize", tr_ty v);
+              ] )
+      | I_CAS (v, RMW_P, Ireg rs, Ireg rt, Ireg rn) ->
           Some
             ( pseudocode_fname "cas.asl",
-              [ ("s", r2i rs); ("t", r2i rt); ("n", r2i rn) ] )
-      | I_CSEL (V64, Ireg rd, Ireg rn, Ireg rm, c, Cpy) ->
+              [
+                ("s", r2i rs);
+                ("t", r2i rt);
+                ("n", r2i rn);
+                ("datasize", tr_ty v);
+              ] )
+      | I_CSEL (v, Ireg rd, Ireg rn, Ireg rm, c, Cpy) ->
           Some
             ( pseudocode_fname "csel.asl",
               [
-                ("d", r2i rd); ("n", r2i rn); ("m", r2i rm); ("cond", tr_cond c);
+                ("d", r2i rd);
+                ("n", r2i rn);
+                ("m", r2i rm);
+                ("cond", tr_cond c);
+                ("datasize", tr_ty v);
               ] )
-      | I_MOV (V64, Ireg rt, RV (V64, Ireg rs)) ->
-          Some (pseudocode_fname "mov.asl", [ ("s", r2i rs); ("t", r2i rt) ])
-      | I_LDR (V64, Ireg rt, Ireg rn, K 0, S_NOEXT) ->
-          Some (pseudocode_fname "load.asl", [ ("t", r2i rt); ("n", r2i rn) ])
-      | I_STR (V64, Ireg rt, Ireg rn, K 0, S_NOEXT) ->
-          Some (pseudocode_fname "store.asl", [ ("t", r2i rt); ("n", r2i rn) ])
+      | I_MOV (v, Ireg rt, RV (V64, Ireg rs)) ->
+          Some
+            ( pseudocode_fname "mov.asl",
+              [ ("s", r2i rs); ("t", r2i rt); ("datasize", tr_ty v) ] )
+      | I_LDR (v, Ireg rt, Ireg rn, K 0, S_NOEXT) ->
+          Some
+            ( pseudocode_fname "load.asl",
+              [ ("t", r2i rt); ("n", r2i rn); ("datasize", tr_ty v) ] )
+      | I_STR (v, Ireg rt, Ireg rn, K 0, S_NOEXT) ->
+          Some
+            ( pseudocode_fname "store.asl",
+              [ ("t", r2i rt); ("n", r2i rn); ("datasize", tr_ty v) ] )
       | i ->
           let () =
             if _dbg then
