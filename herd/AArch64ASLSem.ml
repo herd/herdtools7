@@ -407,6 +407,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
       in
       match decode_inst ii with
       | None -> AArch64Mixed.build_semantics test ii
+      | Some _ when AArch64.is_mixed -> AArch64Mixed.build_semantics test ii
       | Some (fname, args) -> (
           let test = fake_test ii fname args in
           let model = build_model_from_file "asl.cat" in
