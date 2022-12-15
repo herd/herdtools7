@@ -314,18 +314,20 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
     let tr_cnstrnts = List.map tr_cnstrnt
 
     let event_to_monad ii event =
-      let { ASLE.action; _ } = event in
+      let { ASLE.action; ASLE.iiid; _ } = event in
       let () =
         if _dbg then
           Printf.eprintf "%s:%s" (ASLE.pp_eiid event) (ASLAct.pp_action action)
       in
-      match tr_action ii action with
-      | Some action' ->
+      match (iiid, tr_action ii action) with
+      | ASLE.IdInit, _ | _, None ->
+          let () = if _dbg then Printf.eprintf ", " in
+          None
+      | _, Some action' ->
           let () =
             if _dbg then Printf.eprintf "(=%s), " (Act.pp_action action')
           in
           Some (event, M.force_once (M.mk_singleton_es action' ii))
-      | None -> None
 
     let rel_to_monad event_to_monad_map comb rel =
       let one_pair (e1, e2) =
