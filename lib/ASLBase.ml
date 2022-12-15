@@ -38,8 +38,7 @@ let arch_reg_to_int =
     | h :: _ when compare elt h == 0 -> pos
     | _ :: t -> index_of elt (pos + 1) t
   in
-  function
-  | AArch64Base.Ireg r -> index_of r 1 AArch64Base.gprs | _ -> assert false
+  fun r -> index_of r 1 AArch64Base.gprs
 
 (*****************************************************************************)
 (*                                                                           *)
