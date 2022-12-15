@@ -33,6 +33,7 @@ type op =
   | SetTag
   | SquashMutable
   | CheckPerms of string
+  | ToInteger
 
 let pp_op o =
   match o with
@@ -74,6 +75,7 @@ let pp_op o =
   | CapaSetTag -> "capasettag"
   | SquashMutable -> "squashmutable"
   | CheckPerms perms -> sprintf "checkcapa:%s" perms
+  | ToInteger -> "ToInteger"
 
 let is_infix = function
   | Add|Sub|Mul|Div|And|Or|Xor|ShiftLeft
@@ -83,6 +85,7 @@ let is_infix = function
   | ClrPerm|CpyType|CSeal|Cthi|Seal|SetValue
   | CapaSub|CapaSubs|CapaSetTag|Unseal
   | Max|Min|SetTag|SquashMutable|CheckPerms _
+  | ToInteger
     -> false
 
 let pp_ptx_cmp_op = function

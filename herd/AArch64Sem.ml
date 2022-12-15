@@ -911,9 +911,9 @@ module Make
         let ( ---> ) f i = ( read_sign_bit f ) << i in
         (* Computation of nz flags *)
         let compute_nz =
-          let compute_z2 = ( res === V.zero ) << 1 in
+          let compute_z = ( res === V.zero ) << 1 in
           let compute_n = read_sign_bit res in
-          compute_z2 || compute_n
+          compute_z || compute_n
         in
         (* Operation specific computations
            For specific formulae, see Hacker's Delight, 2-13.*)
@@ -921,6 +921,8 @@ module Make
         | ADD | EOR | ORR | SUB | AND | ASR | LSR | LSL | BIC -> None
         | ANDS | BICS -> Some compute_nz
         | ADDS ->
+            let x = make_op Op.ToInteger x res
+            and y = make_op Op.ToInteger y (fun _ _ _ -> mzero) in
             let compute_c = ((x & y) || ((x || y) & !res)) ---> 2 in
             let compute_v = ((res + x) & (res + y)) ---> 3 in
             Some (compute_nz || compute_c || compute_v)
@@ -936,6 +938,8 @@ module Make
             This gives the following formula, which seems to produce the same
             results as hardware:
           *)
+            let x = make_op Op.ToInteger x res
+            and y = make_op Op.ToInteger y (fun _ _ _ -> mzero) in
             let compute_c = ((x & !y) || ((x || !y) & !res)) ---> 2 in
             let compute_v = ((x + y) & (res + x)) ---> 3 in
             Some (compute_nz || compute_c || compute_v)
