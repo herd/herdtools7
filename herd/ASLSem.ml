@@ -49,6 +49,10 @@ module Make (C : Sem.Config) = struct
     let ( and* ) = M.( >>| )
     let return = M.unitT
 
+    (**************************************************************************)
+    (* ASL-PO handling                                                        *)
+    (**************************************************************************)
+
     let incr (poi : A.program_order_index ref) : A.program_order_index =
       let i = !poi in
       let () = poi := A.next_po_index i in
@@ -58,6 +62,10 @@ module Make (C : Sem.Config) = struct
       let program_order_index = incr poi in
       { ii with A.program_order_index }
 
+    (**************************************************************************)
+    (* Values handling                                                        *)
+    (**************************************************************************)
+
     let parsed_ast_to_ast =
       let value_of_int i = V.intToV i in
       let value_of_bool b = if b then V.one else V.zero in
@@ -65,6 +73,49 @@ module Make (C : Sem.Config) = struct
       let value_of_string = V.stringToV in
       Asllib.ASTUtils.tr_values value_of_int value_of_bool value_of_real
         value_of_string
+
+    let v_to_int = function
+      | V.Val (Constant.Concrete i) -> V.Cst.Scalar.to_int i
+      | v -> Warn.fatal "Cannot concretise symbolic value: %s" (V.pp_v v)
+
+    let datasize_to_machsize v =
+      match v_to_int v with
+      | 32 -> MachSize.Word
+      | 64 -> MachSize.Quad
+      | 128 -> MachSize.S128
+      | _ -> Warn.fatal "Cannot access a register with size %s" (V.pp_v v)
+
+    (**************************************************************************)
+    (* Special monad interations                                              *)
+    (**************************************************************************)
+
+    let resize_from_quad = function
+      | MachSize.Quad -> return
+      | sz -> M.op1 (Op.Mask sz)
+
+    let write_loc sz loc v ii =
+      let* resized_v = resize_from_quad sz v in
+      let mk_action loc' = Act.Access (Dir.W, loc', resized_v, sz) in
+      M.write_loc mk_action loc ii
+
+    let read_loc sz is_data loc ii =
+      let mk_action loc' v' = Act.Access (Dir.R, loc', v', sz) in
+      let* v = M.read_loc is_data mk_action loc ii in
+      resize_from_quad sz v
+
+    let loc_of_scoped_id ii x scope =
+      A.Location_reg (ii.A.proc, ASLBase.ASLLocalId (scope, x))
+
+    let loc_of_arch_reg ii r = A.Location_reg (ii.A.proc, ASLBase.ArchReg r)
+
+    let read_arch_reg sz is_data r ii =
+      read_loc sz is_data (loc_of_arch_reg ii r) ii
+
+    let write_arch_reg sz r v ii = write_loc sz (loc_of_arch_reg ii r) v ii
+
+    (**************************************************************************)
+    (* ASL-Backend implementation                                             *)
+    (**************************************************************************)
 
     let choice m1 m2 m3 = M.( >>*= ) m1 (fun v -> M.choiceT v m2 m3)
 
@@ -100,15 +151,6 @@ module Make (C : Sem.Config) = struct
       | NEG -> M.op Op.Sub V.zero
       | NOT -> M.op1 Op.Not
 
-    let write_loc sz loc v =
-      M.write_loc (fun loc -> Act.Access (Dir.W, loc, v, sz)) loc
-
-    let read_loc sz is_data =
-      M.read_loc is_data (fun loc v -> Act.Access (Dir.R, loc, v, sz))
-
-    let loc_of_scoped_id ii x scope =
-      A.Location_reg (ii.A.proc, ASLBase.ASLLocalId (scope, x))
-
     let on_write_identifier (ii, poi) x scope v =
       let loc = loc_of_scoped_id ii x scope in
       let action = Act.Access (Dir.W, loc, v, MachSize.Quad) in
@@ -119,21 +161,14 @@ module Make (C : Sem.Config) = struct
       let action = Act.Access (Dir.R, loc, v, MachSize.Quad) in
       M.mk_singleton_es action (use_ii_with_poi ii poi)
 
-    let v_to_int = function
-      | V.Val (Constant.Concrete i) -> V.Cst.Scalar.to_int i
-      | v -> Warn.fatal "Cannot concretise symbolic value: %s" (V.pp_v v)
+    (**************************************************************************)
+    (* Primitives and helpers                                                 *)
+    (**************************************************************************)
 
     let virtual_to_loc_reg rv ii =
       let i = v_to_int rv in
       let arch_reg = AArch64Base.Ireg (List.nth AArch64Base.gprs (i - 1)) in
       A.Location_reg (ii.A.proc, ASLBase.ArchReg arch_reg)
-
-    let datasize_to_machsize v =
-      match v_to_int v with
-      | 32 -> MachSize.Word
-      | 64 -> MachSize.Quad
-      | 128 -> MachSize.S128
-      | _ -> Warn.fatal "Cannot access a register with size %s" (V.pp_v v)
 
     let read_register (ii, poi) rval datasize =
       let loc = virtual_to_loc_reg rval ii in
@@ -171,6 +206,11 @@ module Make (C : Sem.Config) = struct
       let* () = write_loc MachSize.Quad loc v (use_ii_with_poi ii poi) in
       return []
 
+    (**************************************************************************)
+    (* ASL environment                                                        *)
+    (**************************************************************************)
+
+    (* Helpers *)
     let pair a b = (a, b)
 
     let arity_zero name f =
@@ -194,6 +234,7 @@ module Make (C : Sem.Config) = struct
       | [ x; y; z ] -> f x y z
       | _ -> Warn.fatal "Arity error for function %s." name
 
+    (* Primitives *)
     let extra_funcs ii_env =
       [
         arity_two "read_register" (read_register ii_env);
@@ -204,6 +245,7 @@ module Make (C : Sem.Config) = struct
         arity_one "write_pstate_nzcv" (write_pstate_nzcv ii_env);
       ]
 
+    (* Main function arguments *)
     let fetch_main_args (ii, _poi) =
       let func_opt =
         Misc.find_opt
@@ -224,6 +266,10 @@ module Make (C : Sem.Config) = struct
         | None -> Warn.fatal "Undefined args for main function: %s" x
       in
       List.map one_arg arg_names
+
+    (**************************************************************************)
+    (* Execution                                                              *)
+    (**************************************************************************)
 
     let build_semantics _t ii =
       let ii_env = (ii, ref ii.A.program_order_index) in
