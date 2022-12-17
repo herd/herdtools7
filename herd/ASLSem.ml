@@ -19,10 +19,9 @@
 
 module AST = Asllib.AST
 
-module Make
-    (C : Sem.Config)
-    (V : Value.S with type Cst.Instr.t = ASLBase.instruction) =
-struct
+module Make (C : Sem.Config) = struct
+  module V = ASLValue.V
+
   module ConfLoc = struct
     include SemExtra.ConfigToArchConfig (C)
 

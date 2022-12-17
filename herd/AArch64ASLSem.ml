@@ -51,8 +51,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
       end
     end
 
-    module ASLValue = Int64Value.Make (ASLBase.Instr)
-    module ASLS = ASLSem.Make (ASLConf) (ASLValue)
+    module ASLS = ASLSem.Make (ASLConf)
+    module ASLV = ASLS.V
     module ASLA = ASLS.A
     module ASLAct = ASLS.Act
     module ASLE = ASLS.E
@@ -215,19 +215,18 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
     let csym_tbl = ref IMap.empty
 
     let tr_v = function
-      | ASLValue.Var s -> (
+      | ASLV.Var s -> (
           match IMap.find_opt s !csym_tbl with
           | Some v -> v
           | None ->
               let v = V.fresh_var () in
               csym_tbl := IMap.add s v !csym_tbl;
               v)
-      | ASLValue.Val (Constant.Concrete i) ->
-          V.intToV (ASLValue.Cst.Scalar.to_int i)
-      | ASLValue.Val (Constant.Symbolic symb) -> V.Val (Constant.Symbolic symb)
+      | ASLV.Val (Constant.Concrete i) -> V.intToV (ASLV.Cst.Scalar.to_int i)
+      | ASLV.Val (Constant.Symbolic symb) -> V.Val (Constant.Symbolic symb)
       | v ->
           Warn.fatal "AArch64.ASL does not know how to translate: %s"
-            (ASLValue.pp_v v)
+            (ASLV.pp_v v)
 
     let tr_loc ii = function
       | ASLA.Location_global x -> Some (A.Location_global (tr_v x))
