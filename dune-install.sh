@@ -21,8 +21,3 @@ readonly libdir="${prefix}/share/herdtools7"
 
 # Copy binaries
 dune install --prefix "${prefix}"
-
-# Copy libfiles
-cpdir herd/libdir   "${libdir}/herd"
-cpdir litmus/libdir "${libdir}/litmus"
-cpdir jingle/libdir "${libdir}/jingle"
