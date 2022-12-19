@@ -6,8 +6,8 @@
 
 (library
  (name asllib)
- (modules AST Backend Interpreter Parser Lexer Native)
- (modules_without_implementation Backend))
+ (modules AST ASTUtils Backend Interpreter Parser Lexer Native Serialize PP)
+ (modules_without_implementation Backend AST))
 
 (executable
  (public_name asli)

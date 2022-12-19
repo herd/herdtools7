@@ -65,57 +65,57 @@ module NativeBackend = struct
 
   let choice (c : value m) (m_true : 'b m) (m_false : 'b m) : 'b m =
     bind c (function
-      | AST.VBool true -> m_true
-      | AST.VBool false -> m_false
+      | AST.V_Bool true -> m_true
+      | AST.V_Bool false -> m_false
       | _ -> fail (TypeError "Boolean expected."))
 
   let fatal msg = fail (InterpreterError msg)
 
   let binop op v1 v2 =
-    let vint v = return (VInt v) in
-    let vbool v = return (VBool v) in
-    let vreal r = return (VReal r) in
+    let vint v = return (V_Int v) in
+    let vbool v = return (V_Bool v) in
+    let vreal r = return (V_Real r) in
     match (op, v1, v2) with
     (* int -> int -> int *)
-    | PLUS, VInt v1, VInt v2 -> vint (v1 + v2)
-    | MUL, VInt v1, VInt v2 -> vint (v1 * v2)
-    | MINUS, VInt v1, VInt v2 -> vint (v1 - v2)
-    | DIV, VInt v1, VInt v2 -> vint (v1 / v2)
+    | PLUS, V_Int v1, V_Int v2 -> vint (v1 + v2)
+    | MUL, V_Int v1, V_Int v2 -> vint (v1 * v2)
+    | MINUS, V_Int v1, V_Int v2 -> vint (v1 - v2)
+    | DIV, V_Int v1, V_Int v2 -> vint (v1 / v2)
     (* int -> int -> bool*)
-    | EQ_OP, VInt v1, VInt v2 -> vbool (v1 == v2)
-    | NEQ, VInt v1, VInt v2 -> vbool (v1 <> v2)
-    | LEQ, VInt v1, VInt v2 -> vbool (v1 <= v2)
-    | LT, VInt v1, VInt v2 -> vbool (v1 < v2)
-    | GEQ, VInt v1, VInt v2 -> vbool (v1 >= v2)
-    | GT, VInt v1, VInt v2 -> vbool (v1 > v2)
+    | EQ_OP, V_Int v1, V_Int v2 -> vbool (v1 == v2)
+    | NEQ, V_Int v1, V_Int v2 -> vbool (v1 <> v2)
+    | LEQ, V_Int v1, V_Int v2 -> vbool (v1 <= v2)
+    | LT, V_Int v1, V_Int v2 -> vbool (v1 < v2)
+    | GEQ, V_Int v1, V_Int v2 -> vbool (v1 >= v2)
+    | GT, V_Int v1, V_Int v2 -> vbool (v1 > v2)
     (* bool -> bool -> bool *)
-    | BAND, VBool b1, VBool b2 -> vbool (b1 && b2)
-    | BOR, VBool b1, VBool b2 -> vbool (b1 || b2)
-    | BEQ, VBool b1, VBool b2 -> vbool (b1 == b2)
-    | IMPL, VBool b1, VBool b2 -> vbool ((not b1) || b2)
-    | EQ_OP, VBool b1, VBool b2 -> vbool (b1 == b2)
-    | NEQ, VBool b1, VBool b2 -> vbool (b1 <> b2)
+    | BAND, V_Bool b1, V_Bool b2 -> vbool (b1 && b2)
+    | BOR, V_Bool b1, V_Bool b2 -> vbool (b1 || b2)
+    | BEQ, V_Bool b1, V_Bool b2 -> vbool (b1 == b2)
+    | IMPL, V_Bool b1, V_Bool b2 -> vbool ((not b1) || b2)
+    | EQ_OP, V_Bool b1, V_Bool b2 -> vbool (b1 == b2)
+    | NEQ, V_Bool b1, V_Bool b2 -> vbool (b1 <> b2)
     (* real -> real -> real *)
-    | PLUS, VReal v1, VReal v2 -> vreal (v1 +. v2)
-    | MUL, VReal v1, VReal v2 -> vreal (v1 *. v2)
-    | MINUS, VReal v1, VReal v2 -> vreal (v1 -. v2)
-    | DIV, VReal v1, VReal v2 -> vreal (v1 /. v2)
+    | PLUS, V_Real v1, V_Real v2 -> vreal (v1 +. v2)
+    | MUL, V_Real v1, V_Real v2 -> vreal (v1 *. v2)
+    | MINUS, V_Real v1, V_Real v2 -> vreal (v1 -. v2)
+    | DIV, V_Real v1, V_Real v2 -> vreal (v1 /. v2)
     (* real -> real -> bool *)
-    | EQ_OP, VReal v1, VReal v2 -> vbool (v1 == v2)
-    | NEQ, VReal v1, VReal v2 -> vbool (v1 <> v2)
-    | LEQ, VReal v1, VReal v2 -> vbool (v1 <= v2)
-    | LT, VReal v1, VReal v2 -> vbool (v1 < v2)
-    | GEQ, VReal v1, VReal v2 -> vbool (v1 >= v2)
-    | GT, VReal v1, VReal v2 -> vbool (v1 > v2)
+    | EQ_OP, V_Real v1, V_Real v2 -> vbool (v1 == v2)
+    | NEQ, V_Real v1, V_Real v2 -> vbool (v1 <> v2)
+    | LEQ, V_Real v1, V_Real v2 -> vbool (v1 <= v2)
+    | LT, V_Real v1, V_Real v2 -> vbool (v1 < v2)
+    | GEQ, V_Real v1, V_Real v2 -> vbool (v1 >= v2)
+    | GT, V_Real v1, V_Real v2 -> vbool (v1 > v2)
     | _ ->
         fail
           (InterpreterError "Operation not yet implemented for native backend.")
 
   let unop op v =
     match (op, v) with
-    | NEG, VInt i -> return (VInt ~-i)
-    | NEG, VReal r -> return (VReal ~-.r)
-    | BNOT, VBool b -> return (VBool (not b))
+    | NEG, V_Int i -> return (V_Int ~-i)
+    | NEG, V_Real r -> return (V_Real ~-.r)
+    | BNOT, V_Bool b -> return (V_Bool (not b))
     | _ -> assert false
 
   let on_write_identifier _x _scope _value = return ()
@@ -125,5 +125,8 @@ end
 module NativeInterpreter = Interpreter.Make (NativeBackend)
 
 let of_parsed_ast =
-  AST.tr_values value_of_vint value_of_vbool value_of_vreal (fun s ->
-      VBitVector (int_of_string s))
+  ASTUtils.tr_values
+    (fun i -> V_Int i)
+    (fun b -> V_Bool b)
+    (fun r -> V_Real r)
+    (fun s -> V_BitVector (int_of_string s))

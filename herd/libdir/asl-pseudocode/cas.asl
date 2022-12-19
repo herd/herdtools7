@@ -1,4 +1,4 @@
-func main(s, t, n)
+func main(s :: integer, t::integer, n::integer)
     address = read_register(n);
     compare_value = read_register(s);
     new_value = read_register(t);
@@ -9,4 +9,4 @@ func main(s, t, n)
         pass
     end;
     write_register(s, old_value)
-endfunc
+end

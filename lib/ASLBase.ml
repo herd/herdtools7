@@ -116,9 +116,9 @@ let barrier_compare = A64B.barrier_compare
 type parsedInstruction = parsed_ast
 type instruction = parsed_ast
 
-let pp_instruction _ppmode ast = AST.PP.parsed_t_to_string ast
+let pp_instruction _ppmode ast = Asllib.PP.parsed_t_to_string ast
 let dump_instruction a = pp_instruction PPMode.Ascii a
-let dump_instruction_hash = AST.Serialize.parsed_t_to_string
+let dump_instruction_hash = Asllib.Serialize.parsed_t_to_string
 let allowed_for_symb = List.map to_reg A64B.allowed_for_symb
 let fold_regs _ ab _ = ab
 let map_regs _ _ i = i
