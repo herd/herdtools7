@@ -61,19 +61,20 @@ struct
 
     let parsed_ast_to_ast =
       let open AST in
-      let value_of_int i = VInt (V.intToV i) in
-      let value_of_bool b = if b then VBool V.one else VBool V.zero in
+      let value_of_int i = V_Int (V.intToV i) in
+      let value_of_bool b = if b then V_Bool V.one else V_Bool V.zero in
       let value_of_real _r = Warn.fatal "Cannot parse reals yet." in
-      let value_of_string s = VBitVector (V.stringToV s) in
-      tr_values value_of_int value_of_bool value_of_real value_of_string
+      let value_of_string s = V_BitVector (V.stringToV s) in
+      Asllib.ASTUtils.tr_values value_of_int value_of_bool value_of_real
+        value_of_string
 
     let value_to_v =
       let open AST in
       function
-      | VInt v -> v
-      | VBool v -> v
-      | VBitVector v -> v
-      | _ -> Warn.fatal "Type error, operation not autorized."
+      | V_Int v -> v
+      | V_Bool v -> v
+      | V_BitVector v -> v
+      | _ -> Warn.fatal "Type error, operation not authorized."
 
     let choice m1 m2 m3 =
       M.( >>*= ) m1 (fun value ->
@@ -85,7 +86,7 @@ struct
       let raise f v1 v2 =
         let i1 = value_to_v v1 and i2 = value_to_v v2 in
         let* i = f i1 i2 in
-        return (value_of_vint i)
+        return (V_Int i)
       in
       let op =
         match op with
@@ -117,13 +118,13 @@ struct
       match op with
       | BNOT ->
           let* v' = M.op Op.Eq v V.zero in
-          return (value_of_vbool v')
+          return (V_Bool v')
       | NEG ->
           let* v' = M.op Op.Sub V.zero v in
-          return (value_of_vint v')
+          return (V_Int v')
       | NOT ->
           let* v' = M.op1 Op.Not v in
-          return (value_of_vbitvector v')
+          return (V_BitVector v')
 
     let write_loc loc v =
       M.write_loc (fun loc -> Act.Access (Dir.W, loc, v, MachSize.Quad)) loc
@@ -166,7 +167,7 @@ struct
           (A.Location_reg (ii.A.proc, ASLBase.ArchReg r))
           (use_ii_with_poi ii poi)
       in
-      return [ AST.VInt v ]
+      return [ AST.V_Int v ]
 
     let write_register (ii, poi) rval to_write =
       let v = value_to_v to_write in
@@ -181,7 +182,7 @@ struct
       let* v =
         read_loc true (A.Location_global address) (use_ii_with_poi ii poi)
       in
-      return [ AST.VInt v ]
+      return [ AST.V_Int v ]
 
     let write_memory (ii, poi) addr value =
       let address = value_to_v addr and value = value_to_v value in
@@ -193,7 +194,7 @@ struct
     let read_pstate_nzcv (ii, poi) () =
       let loc = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.NZCV) in
       let* v = read_loc true loc (use_ii_with_poi ii poi) in
-      return [ AST.VInt v ]
+      return [ AST.V_Int v ]
 
     let write_pstate_nzcv (ii, poi) v =
       let loc = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.NZCV) in
@@ -232,19 +233,19 @@ struct
       let func_opt =
         Misc.find_opt
           (function
-            | AST.Func (name, _, _) -> String.equal "main" name | _ -> false)
+            | AST.D_Func f -> String.equal "main" f.AST.name | _ -> false)
           ii.A.inst
       in
       let arg_names =
         match func_opt with
-        | Some (AST.Func (_, args, _)) -> args
+        | Some (AST.D_Func f) -> f.AST.args
         | _ -> Warn.fatal "No function main defined."
       in
       let scope = ("main", 0) in
-      let one_arg x =
+      let one_arg (x, _ty) =
         let reg = ASLBase.ASLLocalId (scope, x) in
         match A.look_reg reg ii.A.env.A.regs with
-        | Some v -> AST.VInt v
+        | Some v -> AST.V_Int v
         | None -> Warn.fatal "Undefined args for main function: %s" x
       in
       List.map one_arg arg_names

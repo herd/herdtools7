@@ -3,18 +3,18 @@ ASL func02
 
 {}
 
-func X_get(i)
+func X_get(i::integer) => integer
     return i
-endfunc
+end
 
-func X_set(i, v)
+func X_set(i::integer, v::integer)
     pass
-endfunc
+end
 
 func main()
     X_set[2] = 3;
     x = X_get[3]
-endfunc
+end
 
 forall (
     0: x = 3

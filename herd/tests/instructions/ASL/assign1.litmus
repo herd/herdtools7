@@ -4,7 +4,7 @@ ASL assign1
 
 func main()
     x = 3
-endfunc
+end
 
 forall (
     0: x = 3

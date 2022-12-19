@@ -1,21 +1,21 @@
 // We do not yet support bitfield reading, so we have to do this instead
-func PSTATE_V()
+func PSTATE_V() => bits(1)
   return read_pstate_nzcv() AND 1
-endfunc
+end
 
-func PSTATE_C()
+func PSTATE_C() => bits(1)
   return (read_pstate_nzcv() AND 2) >> 1
-endfunc
+end
 
-func PSTATE_Z()
+func PSTATE_Z() => bits(1)
   return (read_pstate_nzcv() AND 4) >> 2
-endfunc
+end
 
-func PSTATE_N()
+func PSTATE_N() => bits(1)
   return (read_pstate_nzcv() AND 8) >> 3
-endfunc
+end
 
-func ConditionHolds(cond)
+func ConditionHolds(cond::bits(4)) => boolean
 
     // Current code for ConditionHolds in Armv8a
 
@@ -61,13 +61,13 @@ func ConditionHolds(cond)
     else pass end;
 
     return result
-endfunc
+end
 
-func main(d, n, m, cond)
+func main(d::integer, n::integer, m::integer, cond::integer)
 	if ConditionHolds(cond) then
 		result = read_register(n)
 	else
 		result = read_register(m)
 	end;
     write_register(d, result)
-endfunc
+end

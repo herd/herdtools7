@@ -29,6 +29,8 @@ end
 module Make (B : Backend.S) = struct
   module B = B
   open B
+  module IMap = ASTUtils.IMap
+  module ISet = ASTUtils.ISet
 
   type sfunc = value list -> value list m
   type ast = value AST.t
@@ -45,7 +47,7 @@ module Make (B : Backend.S) = struct
       let* li = List.fold_left one (return []) li in
       return (List.rev li)
 
-  let value_of_int i : value = AST.VInt (vint_of_int i)
+  let value_of_int i : value = AST.V_Int (vint_of_int i)
 
   (*****************************************************************************)
   (*                                                                           *)
@@ -54,14 +56,14 @@ module Make (B : Backend.S) = struct
   (*****************************************************************************)
 
   module GEnv = struct
-    include AST.IMap
+    include ASTUtils.IMap
 
     type elt =
       | Value of value
       | Func of int ref * value AST.func
       | SpecialFunc of sfunc
 
-    type t = elt AST.IMap.t
+    type t = elt IMap.t
 
     let add_value name v = add name (Value v)
     let add_seq_value s = add_seq (Seq.map (fun (x, v) -> (x, Value v)) s)
@@ -76,7 +78,7 @@ module Make (B : Backend.S) = struct
       match find_opt name env with Some (Value v) -> Some v | _ -> None
   end
 
-  module LEnv = AST.IMap
+  module LEnv = IMap
 
   type genv = GEnv.t
   type lenv = value LEnv.t
@@ -94,10 +96,11 @@ module Make (B : Backend.S) = struct
       (counter + 1, genv)
     in
     let build_decl acc = function
-      | AST.Enum ids -> List.fold_left build_one acc ids
+      | AST.D_TypeDecl (_name, AST.T_Enum ids) ->
+          List.fold_left build_one acc ids
       | _ -> acc
     in
-    let _, genv = List.fold_left build_decl (0, AST.IMap.empty) ast in
+    let _, genv = List.fold_left build_decl (0, IMap.empty) ast in
     genv
 
   type build_status =
@@ -110,42 +113,42 @@ module Make (B : Backend.S) = struct
       match GEnv.find_opt_value name genv with
       | Some v -> return (v, acc)
       | None -> (
-          match AST.IMap.find_opt name acc with
+          match IMap.find_opt name acc with
           | Some (AlreadyEvaluated v) -> return (v, acc)
           | Some (NotYetEvaluated e) ->
               let* v, acc = eval_expr acc e in
-              return (v, AST.IMap.add name (AlreadyEvaluated v) acc)
+              return (v, IMap.add name (AlreadyEvaluated v) acc)
           | _ -> fatal ("Unknown constant " ^ name))
     and eval_expr acc e =
       let open AST in
       match e with
-      | ELiteral v -> return (v, acc)
-      | EVar x -> eval_one acc x
-      | EUnop (op, e') ->
+      | E_Literal v -> return (v, acc)
+      | E_Var x -> eval_one acc x
+      | E_Unop (op, e') ->
           let* v', acc = eval_expr acc e' in
           let* v = B.unop op v' in
           return (v, acc)
-      | EBinop (op, e1, e2) ->
+      | E_Binop (op, e1, e2) ->
           let* v1, acc = eval_expr acc e1 in
           let* v2, acc = eval_expr acc e2 in
           let* v = B.binop op v1 v2 in
           return (v, acc)
-      | ECond (e1, e2, e3) ->
+      | E_Cond (e1, e2, e3) ->
           let* v, acc = eval_expr acc e1 in
           choice (return v) (eval_expr acc e2) (eval_expr acc e3)
-      | EGet _ | ECall _ ->
+      | E_Get _ | E_Call _ ->
           fatal "Function calling in constants is not yet implemented"
     in
     let init_acc =
       let one_decl acc = function
-        | AST.GlobalConst (name, e) -> AST.IMap.add name (NotYetEvaluated e) acc
+        | AST.D_GlobalConst (name, e) -> IMap.add name (NotYetEvaluated e) acc
         | _ -> acc
       in
-      List.fold_left one_decl AST.IMap.empty ast
+      List.fold_left one_decl IMap.empty ast
     in
     let eval_all acc =
       let one_decl acc = function
-        | AST.GlobalConst (name, _e) ->
+        | AST.D_GlobalConst (name, _e) ->
             let* acc = acc in
             let* _, acc = eval_one acc name in
             return acc
@@ -155,7 +158,7 @@ module Make (B : Backend.S) = struct
     in
     let collect acc =
       let* acc = acc in
-      let acc_items = AST.IMap.to_seq acc in
+      let acc_items = IMap.to_seq acc in
       let one_item = function
         | name, AlreadyEvaluated v -> (name, v)
         | _ -> assert false
@@ -169,7 +172,7 @@ module Make (B : Backend.S) = struct
   let build_funcs ast genv =
     List.to_seq ast
     |> Seq.filter_map (function
-         | AST.Func (name, args, body) -> Some (name, (name, args, body))
+         | AST.D_Func func -> Some (func.AST.name, func)
          | _ -> None)
     |> fun s -> GEnv.add_seq_func s genv
 
@@ -191,8 +194,8 @@ module Make (B : Backend.S) = struct
     let genv, lenv = env in
     let open AST in
     function
-    | ELiteral v -> return v
-    | EVar x -> (
+    | E_Literal v -> return v
+    | E_Var x -> (
         match GEnv.find_opt x genv with
         | Some (GEnv.Value v) -> return v
         | Some _ ->
@@ -204,17 +207,17 @@ module Make (B : Backend.S) = struct
                 let* () = on_read_identifier x scope v in
                 return v
             | None -> fatal ("Unknown identifier: " ^ x)))
-    | EBinop (op, e1, e2) ->
+    | E_Binop (op, e1, e2) ->
         let* v1 = eval_expr env scope is_data e1
         and* v2 = eval_expr env scope is_data e2 in
         binop op v1 v2
-    | EUnop (op, e) ->
+    | E_Unop (op, e) ->
         let* v = eval_expr env scope is_data e in
         unop op v
-    | ECond (e1, e2, e3) ->
+    | E_Cond (e1, e2, e3) ->
         let eval_ = eval_expr env scope is_data in
         choice (eval_ e1) (eval_ e2) (eval_ e3)
-    | EGet (name, args) | ECall (name, args) ->
+    | E_Get (name, args) | E_Call (name, args) ->
         let* vargs = prod_map (eval_expr env scope is_data) args in
         let* returned = eval_func (fst env) name vargs in
         one_return_value name returned
@@ -246,24 +249,24 @@ module Make (B : Backend.S) = struct
   and eval_stmt (env : env) scope =
     let open AST in
     function
-    | SPass -> continue env
-    | SAssign (le, e) ->
+    | S_Pass -> continue env
+    | S_Assign (le, e) ->
         let* v = eval_expr env scope true e
         and* setter = eval_lexpr env scope le in
         setter v
-    | SReturn es ->
+    | S_Return es ->
         let* vs = prod_map (eval_expr env scope true) es in
         return (Returning vs)
-    | SThen (s1, s2) ->
+    | S_Then (s1, s2) ->
         bind_seq (eval_stmt env scope s1) (fun r1 ->
             match r1 with
             | Continuing lenv -> eval_stmt (fst env, lenv) scope s2
             | Returning vs -> return (Returning vs))
-    | SCall (name, args) ->
+    | S_Call (name, args) ->
         let* vargs = prod_map (eval_expr env scope true) args in
         let* _ = eval_func (fst env) name vargs in
         continue env
-    | SCond (e, s1, s2) ->
+    | S_Cond (e, s1, s2) ->
         choice
           (eval_expr env scope true e)
           (eval_stmt env scope s1) (eval_stmt env scope s2)
@@ -273,15 +276,16 @@ module Make (B : Backend.S) = struct
     | None -> fatal ("Unknown function: " ^ name)
     | Some (GEnv.Value _) -> fatal ("Cannot call value " ^ name)
     | Some (GEnv.SpecialFunc f) -> f args
-    | Some (GEnv.Func (_, (_, arg_names, _)))
-      when List.compare_lengths args arg_names <> 0 ->
+    | Some (GEnv.Func (_, { AST.args = arg_decls; _ }))
+      when List.compare_lengths args arg_decls <> 0 ->
         fatal ("Bad number of arguments for function " ^ name)
-    | Some (GEnv.Func (r, (_, arg_names, body))) -> (
+    | Some (GEnv.Func (r, { AST.args = arg_decls; body; _ })) -> (
         let scope = (name, !r) in
         let () = r := !r + 1 in
-        let one_arg x v = AST.(SAssign (LEVar x, ELiteral v)) in
+        let one_arg (x, _type_desc) v = AST.(S_Assign (LEVar x, E_Literal v)) in
         let body =
-          AST.SThen (AST.stmt_from_list (List.map2 one_arg arg_names args), body)
+          AST.S_Then
+            (ASTUtils.stmt_from_list (List.map2 one_arg arg_decls args), body)
         in
         let* res = eval_stmt (genv, LEnv.empty) scope body in
         match res with Continuing _ -> return [] | Returning vs -> return vs)
