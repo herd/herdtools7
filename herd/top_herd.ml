@@ -172,14 +172,18 @@ module Make(O:Config)(M:XXXMem.S) =
     let open_dot test =
       match O.outputdir with
       | PrettyConf.NoOutputdir ->
-          if S.O.PC.gv || S.O.PC.evince then
+         begin
+           match S.O.PC.view with
+           | Some _ ->
             begin try
               let f,chan = Filename.open_temp_file "herd" ".dot" in
               Some (chan,f)
             with  Sys_error msg ->
               W.warn "Cannot create temporary file: %s" msg ;
               None
-            end else None
+            end
+           | None -> None
+         end
       | PrettyConf.StdoutOutput ->
          let fname = Test_herd.basename test in
          fprintf stdout "\nDOTBEGIN %s\n" fname;
@@ -380,7 +384,7 @@ module Make(O:Config)(M:XXXMem.S) =
               (fun (_i,_cs,es) -> PP.dump_es chan test es)
               rfms ;
             close_dot ochan ;
-            if S.O.PC.gv || S.O.PC.evince then begin
+            if Misc.is_some S.O.PC.view then begin
               let module SH = Show.Make(S.O.PC) in
               SH.show_file fname
             end ;

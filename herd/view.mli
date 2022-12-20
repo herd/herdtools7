@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2022-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,16 +14,10 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Show dot files as Postscript, controlled by '-view viewer' option *)
-module Generator : functor (O:PrettyConf.S) -> sig
-  val generator : string
-end
+(** 'view' tags, command display of images *)
 
-module Make : functor (O:PrettyConf.S)  -> sig
-(* Fork a gv window to show that file *)
-val show_file : string -> unit
+type t = GV | Evince | Preview
 
-(* Idem, but show the graph produced by the argument function *)
-val show : (out_channel -> unit) -> unit
-
-end
+val tags : string list
+val parse : string -> t option
+val pp : t -> string

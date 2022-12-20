@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2022-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,16 +14,17 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Show dot files as Postscript, controlled by '-view viewer' option *)
-module Generator : functor (O:PrettyConf.S) -> sig
-  val generator : string
-end
+type t = GV | Evince | Preview
 
-module Make : functor (O:PrettyConf.S)  -> sig
-(* Fork a gv window to show that file *)
-val show_file : string -> unit
+let tags = ["gv"; "evince"; "preview"; ]
 
-(* Idem, but show the graph produced by the argument function *)
-val show : (out_channel -> unit) -> unit
+let parse tag = match Misc.lowercase tag with
+| "gv" -> Some GV
+| "evince" -> Some Evince
+| "preview" -> Some Preview
+| _ -> None
 
-end
+let pp = function
+  | GV -> "gv"
+  | Evince -> "evince"
+  | Preview -> "preview"
