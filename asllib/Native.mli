@@ -26,9 +26,7 @@ val pp_err : out_channel -> err -> unit
 
 module NativeBackend :
   Backend.S
-    with type vint = int
-     and type vbool = bool
-     and type vbitvector = int
+    with type value = (int, bool, float, int) AST.value
      and type 'a m = unit -> ('a, err) result
      and type loc = string
 

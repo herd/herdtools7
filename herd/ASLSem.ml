@@ -60,71 +60,46 @@ struct
       { ii with A.program_order_index }
 
     let parsed_ast_to_ast =
-      let open AST in
-      let value_of_int i = V_Int (V.intToV i) in
-      let value_of_bool b = if b then V_Bool V.one else V_Bool V.zero in
+      let value_of_int i = V.intToV i in
+      let value_of_bool b = if b then V.one else V.zero in
       let value_of_real _r = Warn.fatal "Cannot parse reals yet." in
-      let value_of_string s = V_BitVector (V.stringToV s) in
+      let value_of_string = V.stringToV in
       Asllib.ASTUtils.tr_values value_of_int value_of_bool value_of_real
         value_of_string
 
-    let value_to_v =
-      let open AST in
-      function
-      | V_Int v -> v
-      | V_Bool v -> v
-      | V_BitVector v -> v
-      | _ -> Warn.fatal "Type error, operation not authorized."
-
-    let choice m1 m2 m3 =
-      M.( >>*= ) m1 (fun value ->
-          let v = value_to_v value in
-          M.choiceT v m2 m3)
+    let choice m1 m2 m3 = M.( >>*= ) m1 (fun v -> M.choiceT v m2 m3)
 
     let binop op =
       let open AST in
-      let raise f v1 v2 =
-        let i1 = value_to_v v1 and i2 = value_to_v v2 in
-        let* i = f i1 i2 in
-        return (V_Int i)
-      in
-      let op =
-        match op with
-        | AND -> Op.And
-        | BAND -> Op.And (* TODO: convert to C style bool first? *)
-        | BEQ -> Op.Eq (* TODO: convert to C style bool first? *)
-        | BOR -> Op.Or (* TODO: convert to C style bool first? *)
-        | DIV -> Op.Div
-        | EOR -> Op.Xor
-        | EQ_OP -> Op.Eq
-        | GT -> Op.Gt
-        | GEQ -> Op.Ge
-        | LT -> Op.Lt
-        | LEQ -> Op.Le
-        | MINUS -> Op.Sub
-        | MUL -> Op.Mul
-        | NEQ -> Op.Ne
-        | OR -> Op.Or
-        | PLUS -> Op.Add
-        | SHL -> Op.ShiftLeft
-        | SHR -> Op.ShiftRight
-        | IMPL | MOD | RDIV -> Warn.fatal "Not yet implemented operation."
-      in
-      raise (M.op op)
-
-    let unop op v =
-      let open AST in
-      let v = value_to_v v in
+      M.op
+      @@
       match op with
-      | BNOT ->
-          let* v' = M.op Op.Eq v V.zero in
-          return (V_Bool v')
-      | NEG ->
-          let* v' = M.op Op.Sub V.zero v in
-          return (V_Int v')
-      | NOT ->
-          let* v' = M.op1 Op.Not v in
-          return (V_BitVector v')
+      | AND -> Op.And
+      | BAND -> Op.And (* TODO: convert to C style bool first? *)
+      | BEQ -> Op.Eq (* TODO: convert to C style bool first? *)
+      | BOR -> Op.Or (* TODO: convert to C style bool first? *)
+      | DIV -> Op.Div
+      | EOR -> Op.Xor
+      | EQ_OP -> Op.Eq
+      | GT -> Op.Gt
+      | GEQ -> Op.Ge
+      | LT -> Op.Lt
+      | LEQ -> Op.Le
+      | MINUS -> Op.Sub
+      | MUL -> Op.Mul
+      | NEQ -> Op.Ne
+      | OR -> Op.Or
+      | PLUS -> Op.Add
+      | SHL -> Op.ShiftLeft
+      | SHR -> Op.ShiftRight
+      | IMPL | MOD | RDIV -> Warn.fatal "Not yet implemented operation."
+
+    let unop op =
+      let open AST in
+      match op with
+      | BNOT -> M.op Op.Eq V.zero
+      | NEG -> M.op Op.Sub V.zero
+      | NOT -> M.op1 Op.Not
 
     let write_loc loc v =
       M.write_loc (fun loc -> Act.Access (Dir.W, loc, v, MachSize.Quad)) loc
@@ -137,15 +112,11 @@ struct
       A.Location_reg (ii.A.proc, ASLBase.ASLLocalId (scope, x))
 
     let on_write_identifier (ii, poi) x scope v =
-      let ii = use_ii_with_poi ii poi in
-      let v = value_to_v v in
       let loc = loc_of_scoped_id ii x scope in
       let action = Act.Access (Dir.W, loc, v, MachSize.Quad) in
       M.mk_singleton_es action (use_ii_with_poi ii poi)
 
     let on_read_identifier (ii, poi) x scope v =
-      let ii = use_ii_with_poi ii poi in
-      let v = value_to_v v in
       let loc = loc_of_scoped_id ii x scope in
       let action = Act.Access (Dir.R, loc, v, MachSize.Quad) in
       M.mk_singleton_es action (use_ii_with_poi ii poi)
@@ -155,50 +126,39 @@ struct
       | v ->
           Warn.fatal "Cannot use a register from symbolic value: %s" (V.pp_v v)
 
-    let virtual_to_arch_reg rval =
-      let rv = value_to_v rval in
+    let virtual_to_loc_reg rv ii =
       let i = v_to_int rv in
-      AArch64Base.Ireg (List.nth AArch64Base.gprs (i - 1))
+      let arch_reg = AArch64Base.Ireg (List.nth AArch64Base.gprs (i - 1)) in
+      A.Location_reg (ii.A.proc, ASLBase.ArchReg arch_reg)
 
     let read_register (ii, poi) rval =
-      let r = virtual_to_arch_reg rval in
-      let* v =
-        read_loc true
-          (A.Location_reg (ii.A.proc, ASLBase.ArchReg r))
-          (use_ii_with_poi ii poi)
-      in
-      return [ AST.V_Int v ]
+      let loc = virtual_to_loc_reg rval ii in
+      let* v = read_loc true loc (use_ii_with_poi ii poi) in
+      return [ v ]
 
-    let write_register (ii, poi) rval to_write =
-      let v = value_to_v to_write in
-      let r = ASLBase.ArchReg (virtual_to_arch_reg rval) in
-      let* () =
-        write_loc (A.Location_reg (ii.A.proc, r)) v (use_ii_with_poi ii poi)
-      in
+    let write_register (ii, poi) rval v =
+      let loc = virtual_to_loc_reg rval ii in
+      let* () = write_loc loc v (use_ii_with_poi ii poi) in
       return []
 
     let read_memory (ii, poi) addr =
-      let address = value_to_v addr in
       let* v =
-        read_loc true (A.Location_global address) (use_ii_with_poi ii poi)
+        read_loc true (A.Location_global addr) (use_ii_with_poi ii poi)
       in
-      return [ AST.V_Int v ]
+      return [ v ]
 
-    let write_memory (ii, poi) addr value =
-      let address = value_to_v addr and value = value_to_v value in
-      let* () =
-        write_loc (A.Location_global address) value (use_ii_with_poi ii poi)
-      in
+    let write_memory (ii, poi) addr v =
+      let* () = write_loc (A.Location_global addr) v (use_ii_with_poi ii poi) in
       return []
 
     let read_pstate_nzcv (ii, poi) () =
       let loc = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.NZCV) in
       let* v = read_loc true loc (use_ii_with_poi ii poi) in
-      return [ AST.V_Int v ]
+      return [ v ]
 
     let write_pstate_nzcv (ii, poi) v =
       let loc = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.NZCV) in
-      let* () = write_loc loc (value_to_v v) (use_ii_with_poi ii poi) in
+      let* () = write_loc loc v (use_ii_with_poi ii poi) in
       return []
 
     let pair a b = (a, b)
@@ -245,7 +205,7 @@ struct
       let one_arg (x, _ty) =
         let reg = ASLBase.ASLLocalId (scope, x) in
         match A.look_reg reg ii.A.env.A.regs with
-        | Some v -> AST.V_Int v
+        | Some v -> v
         | None -> Warn.fatal "Undefined args for main function: %s" x
       in
       List.map one_arg arg_names
@@ -253,16 +213,12 @@ struct
     let build_semantics _t ii =
       let ii_env = (ii, ref ii.A.program_order_index) in
       let module ASLBackend = struct
-        type vint = V.v
-        type vbool = V.v
-        type vreal = unit (* Not yet implemented *)
-        type vbitvector = V.v (* A ~small~ approximation *)
-        type value = (vint, vbool, vreal, vbitvector) AST.value
+        type value = V.v
         type 'a m = 'a M.t
         type loc = string (* To be confirmed *)
         type scope = string * int
 
-        let vint_of_int = V.intToV
+        let v_of_int = V.intToV
         let bind_data = M.( >>= )
         let bind_seq = M.cseq
         let prod = M.( >>| )
