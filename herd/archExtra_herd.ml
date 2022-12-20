@@ -71,13 +71,13 @@ module type S = sig
 
 
   (* Program loaded in memory *)
-  type program = (proc * code) Label.Map.t
+  type program = int Label.Map.t
 
   (* A starting address per proc *)
   type start_points = (proc * code * code option) list
 
-  (* A mapping from instruction addresses to labels of the instructions after them *)
-  type return_labels = Label.t IntMap.t
+  (* A mapping from code addresses to code *)
+  type code_segment = (proc * code) IntMap.t
 
   (* Constraints *)
   type prop =  (location,v,I.FaultType.t) ConstrGen.prop
@@ -97,7 +97,7 @@ module type S = sig
       program_order_index   : program_order_index;
       inst : instr;
       labels : Label.Set.t;
-      link_label : Label.t option;
+      addr : int;
       addr2v : string -> I.V.v;
       env : ii_env;
     }
@@ -318,14 +318,13 @@ module Make(C:Config) (I:I) : S with module I = I
 
 
       (* Programm loaded in memory *)
-      type program = (proc * code) Label.Map.t
+      type program = int Label.Map.t
 
       (* A starting address per proc *)
       type start_points = (proc * code * code option) list
 
-      (* A mapping from instruction addresses to labels of the instructions after them *)
-      type return_labels = Label.t IntMap.t
-
+      (* Mapping from code addresses to code *)
+      type code_segment = (proc * code) IntMap.t
 
       (* Constraints *)
       type prop =  (location,v,I.FaultType.t) ConstrGen.prop
@@ -343,7 +342,7 @@ module Make(C:Config) (I:I) : S with module I = I
           program_order_index   : program_order_index;
           inst : instr;
           labels : Label.Set.t;
-          link_label : Label.t option;
+          addr : int ;
           addr2v : string -> I.V.v;
           env : ii_env;
         }

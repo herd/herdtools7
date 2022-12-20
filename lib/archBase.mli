@@ -79,10 +79,6 @@ module type S = sig
   val norm_ins : instruction -> instruction
 
 
-  (* Instruction continuation *)
-  val get_next : instruction -> Label.next list
-
-
   include Pseudo.S
    with type ins = instruction
    and type pins = parsedInstruction

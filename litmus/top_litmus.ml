@@ -523,8 +523,7 @@ end = struct
                 let module AArch64Instr =
                   AArch64Base.MakeInstr (* No morello (yet) *)
                     (struct let is_morello = false end) in
-                let module V =
-                  SymbConstant.Make
+                let module V =                  SymbConstant.Make
                     (Int64Scalar)(AArch64PteVal)
                     (AArch64Instr) in
                 let module Arch' = AArch64Arch_litmus.Make(OC)(V) in

@@ -1,11 +1,12 @@
 Test S14 Required
-States 2
-0:X0=1;
+States 3
 0:X0=2;
+0:X0=3;
+0:X0=4;
 Ok
 Witnesses
-Positive: 2 Negative: 0
-Condition forall (0:X0=1 \/ 0:X0=2)
-Observation S14 Always 2 0
-Hash=f5745b75390974982880b367237ad016
+Positive: 4 Negative: 0
+Condition forall (0:X0=2 \/ 0:X0=3 \/ 0:X0=4)
+Observation S14 Always 4 0
+Hash=037d336cd00d0983446ae270e9369843
 

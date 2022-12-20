@@ -35,13 +35,9 @@ module type S =
     val get_lx_sz : instruction -> MachSize.lr_sc
 
     module V : Value.S with type Cst.Instr.t = instruction
+
     include ArchExtra_herd.S with module I.V = V
     and type I.arch_reg = reg
-
-    include
-      IFetchTrait.S
-      with type ifetch_instruction = instruction
-         and type ifetch_reg = reg
 
 (* Levels are abstract, for AArch64, they are E0 to E3 *)
     type level

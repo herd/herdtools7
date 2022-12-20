@@ -1,0 +1,9 @@
+AArch64 L047
+{
+0:X0=2;
+}
+  P0            ;
+  ADD W1,W1,#2  ;
+  SUBS W0,W0,#1 ;
+  CBNZ W0,.-8   ;
+forall (0:X1=4)

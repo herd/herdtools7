@@ -80,8 +80,8 @@ module type I = sig
   val get_naccesses : ins -> int
 (* fold/map over labels in instructions,
    used for label normalisation *)
-  val fold_labels : 'a -> ('a -> string -> 'a) -> ins -> 'a
-  val map_labels : (string -> string) -> ins -> ins
+  val fold_labels : 'a -> ('a -> Label.t -> 'a) -> ins -> 'a
+  val map_labels : (Label.t -> Label.t) -> ins -> ins
 
 end
 
@@ -98,7 +98,7 @@ struct
 (* Parsed instructions, ie instructions enriched with labels *)
   type 'ins kpseudo =
     | Nop
-    | Label of string * 'ins kpseudo
+    | Label of Label.t * 'ins kpseudo
     | Instruction of 'ins
     | Macro of string * reg_arg list
     | Symbolic of string

@@ -36,11 +36,6 @@ module Make (B : ArchBaseHerd) (C : Arch_herd.Config) (V : Value.S) = struct
   let reject_mixed = false
   let mem_access_size _ = None
 
-  include IFetchTrait.NotImplemented (struct
-    type arch_instruction = instruction
-    type arch_reg = reg
-  end)
-
   include
     ArchExtra_herd.Make
       (C)

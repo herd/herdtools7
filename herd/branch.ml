@@ -17,7 +17,7 @@
 (** Branching in code *)
 
 module type S = sig
-  type lbl = string
+  type lbl = Label.t
 (* From arch *)
   type reg
   type v
@@ -25,21 +25,24 @@ module type S = sig
   type 'a monad
 
 (* Branch information, result of our instruction semantics *)
+  type tgt = Lbl of lbl | Addr of int
+
+  type bds = (reg * v) list
   type t =
     (* continue in sequence, setting registers *)
-    | Next of (reg * v) list
+    | Next of bds
     (* jump to arg *)
-    | Jump of lbl
+    | Jump of tgt * bds
     (* if v is one, jump to address, otherwise continue in sequence *)
-    | CondJump of v * lbl
+    | CondJump of v * tgt
     (* Indirect Jump, with potential targets *)
-    | IndirectJump of v * Label.Full.Set.t
+    | IndirectJump of v * Label.Full.Set.t * bds
     (* Stop now *)
     | Exit
     (* Raise Fault *)
     | Fault of Dir.dirn
     (* Return from Fault Handler *)
-    | FaultRet of lbl
+    | FaultRet of tgt
 
 (* Next instruction in sequence *)
   val nextT : t monad
@@ -51,7 +54,7 @@ module type S = sig
 (* Non-conditional branch *)
   val branchT : lbl ->  t monad
 (* Indirect branch *)
-  val  indirectBranchT : v -> Label.Full.Set.t -> t monad
+  val  indirectBranchT : v -> Label.Full.Set.t -> bds -> t monad
 (* Conditional branch *)
   val bccT : v -> lbl -> t monad
   val faultRetT : lbl -> t monad
@@ -59,27 +62,29 @@ end
 
 
 module Make(M:Monad.S) = struct
-
-  type lbl = string
+  type lbl = Label.t
   type reg = M.A.reg
   type v = M.A.V.v
   type 'a monad = 'a M.t
 
+  type tgt = Lbl of lbl | Addr of int
+  type bds = (reg * v) list
+
   type t =
     (* continue in sequence *)
-    | Next of (reg * v) list
+    | Next of bds
     (* jump to arg *)
-    | Jump of lbl
+    | Jump of tgt * bds
     (* if v is one, jump to address, otherwise continue in sequence *)
-    | CondJump of v * lbl
+    | CondJump of v * tgt
     (* Indirect Jump, with potential targets *)
-    | IndirectJump of v * Label.Full.Set.t
+    | IndirectJump of v * Label.Full.Set.t * bds
     (* Stop now *)
     | Exit
     (* Raise Fault *)
     | Fault of Dir.dirn
     (* Return from Fault Handler *)
-    | FaultRet of lbl
+    | FaultRet of tgt
 
 (* Utilities *)
 
@@ -90,8 +95,8 @@ module Make(M:Monad.S) = struct
   let next3T (((),()),()) = nextT
   let next4T ((((),()),()), ()) = nextT
   let nextSetT r v = M.unitT (Next [r,v])
-  let branchT lbl = M.unitT (Jump lbl)
-  let indirectBranchT v lbls = M.unitT (IndirectJump (v,lbls))
-  let bccT v lbl = M.unitT (CondJump (v,lbl))
-  let faultRetT lbl = M.unitT (FaultRet lbl)
+  let branchT tgt = M.unitT (Jump (Lbl tgt,[]))
+  let indirectBranchT v lbls bds = M.unitT (IndirectJump (v,lbls,bds))
+  let bccT v lbl = M.unitT (CondJump (v,Lbl lbl))
+  let faultRetT lbl = M.unitT (FaultRet (Lbl lbl))
 end

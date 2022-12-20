@@ -137,15 +137,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | A64.V128 -> assert false (* ? *)
 
 
-    let cbz r1 lbl = I_CBZ (vloc,r1,lbl)
-    let do_cbnz v r1 lbl = I_CBNZ (v,r1,lbl)
+    let cbz r1 lbl = I_CBZ (vloc,r1,BranchTarget.Lbl lbl)
+    let do_cbnz v r1 lbl = I_CBNZ (v,r1,BranchTarget.Lbl lbl)
     let cbnz = do_cbnz vloc
     let do_cmpi v r i =  I_OP3 (v,SUBS,ZR,r,K i, S_NOEXT)
     let cmpi r i = do_cmpi vloc r i
     let do_csel v r1 r2 r3 = I_CSEL (v,r1,r2,r3,EQ,Cpy)
     let do_cinc v r1 r2 r3 = I_CSEL (v,r1,r2,r3,EQ,Inc)
     let cmp r1 r2 = I_OP3 (vloc,SUBS,ZR,r1,RV (vloc,r2), S_NOEXT)
-    let bne lbl = I_BC (NE,lbl)
+    let b lbl = I_B (BranchTarget.Lbl lbl)
+    let bne lbl = I_BC (NE,BranchTarget.Lbl lbl)
     let eor sz r1 r2 r3 = I_OP3 (sz,EOR,r1,r2,RV (sz,r3), S_NOEXT)
     let eor_simd r1 r2 = I_EOR_SIMD (r1,r2,r2)
     let andi sz r1 r2 k = I_OP3 (sz,AND,r1,r2,K k, S_NOEXT)
@@ -444,9 +445,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let lab0 = Label.next_label "L" in
           let lab1 = Label.next_label "L" in
           let cs =
-            Label (lab,Instruction (I_B lab0))::
+            Label (lab,Instruction (b lab0))::
             Instruction (mov rA 2)::
-            Instruction (I_B lab1)::
+            Instruction (b lab1)::
             Label (lab0,Instruction (mov rA 1))::
             Label (lab1,Nop)::
             [] in

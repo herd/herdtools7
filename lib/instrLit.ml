@@ -15,17 +15,17 @@
 (****************************************************************************)
 
 type t =
-    | LIT_B of string
+    | LIT_B of int
     | LIT_NOP
 
 let pp = function
-    | LIT_B(label) -> Printf.sprintf "B %s" label
+    | LIT_B o -> Printf.sprintf "B .%s" (BranchTarget.pp_offset o)
     | LIT_NOP -> "NOP"
 
 let compare i1 i2 =
     match (i1, i2) with
     | (LIT_B(l1), LIT_B(l2)) ->
-        String.compare l1 l2
+        Misc.int_compare l1 l2
     | (LIT_NOP, LIT_NOP) -> 0
     | (LIT_B(_), LIT_NOP) -> -1
     | (LIT_NOP, LIT_B(_)) -> 1

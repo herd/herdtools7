@@ -52,13 +52,6 @@ module Make
 
     include NoLevelNorTLBI
 
-    include
-      IFetchTrait.NotImplemented
-        (struct
-          type arch_instruction = instruction
-          type arch_reg = reg
-        end)
-
     include ArchExtra_herd.Make(C)
 	(struct
 	  module V = V

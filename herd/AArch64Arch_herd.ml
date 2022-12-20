@@ -330,14 +330,6 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_STG _|I_STZG _|I_LDG _
         -> MachSize.No
 
-    type ifetch_instruction = instruction
-
-    type ifetch_reg = reg
-
-    let is_link = function
-      | I_BL _ | I_BLR _ -> Some linkreg
-      | _ -> None
-
     include ArchExtra_herd.Make(C)
         (struct
           module V = V
