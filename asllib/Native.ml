@@ -47,7 +47,7 @@ module NativeBackend = struct
 
   module SIMap = Map.Make (ScopedIdentifiers)
 
-  let vint_of_int i = i
+  let v_of_int i = AST.V_Int i
 
   let bind (vm : 'a m) (f : 'a -> 'b m) : 'b m =
    fun () -> Result.bind (vm ()) (fun v -> f v ())

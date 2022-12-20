@@ -18,16 +18,12 @@
 (****************************************************************************)
 
 module type S = sig
-  type vint
-  type vbool
-  type vreal
-  type vbitvector
   type 'a m
   type loc
-  type value = (vint, vbool, vreal, vbitvector) AST.value
+  type value
   type scope = AST.identifier * int
 
-  val vint_of_int : int -> vint
+  val v_of_int : int -> value
   val bind_data : 'a m -> ('a -> 'b m) -> 'b m
   val bind_seq : 'a m -> ('a -> 'b m) -> 'b m
   val prod : 'a m -> 'b m -> ('a * 'b) m

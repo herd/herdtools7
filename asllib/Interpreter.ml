@@ -47,8 +47,6 @@ module Make (B : Backend.S) = struct
       let* li = List.fold_left one (return []) li in
       return (List.rev li)
 
-  let value_of_int i : value = AST.V_Int (vint_of_int i)
-
   (*****************************************************************************)
   (*                                                                           *)
   (*                       Global constants environment                        *)
@@ -92,7 +90,7 @@ module Make (B : Backend.S) = struct
 
   let build_enums (ast : ast) : genv =
     let build_one (counter, genv) name =
-      let genv = GEnv.add_value name (value_of_int counter) genv in
+      let genv = GEnv.add_value name (v_of_int counter) genv in
       (counter + 1, genv)
     in
     let build_decl acc = function
