@@ -28,7 +28,6 @@ module NativeBackend :
   Backend.S
     with type value = (int, bool, float, int) AST.value
      and type 'a m = unit -> ('a, err) result
-     and type loc = string
 
 module NativeInterpreter : Interpreter.S with module B = NativeBackend
 

@@ -35,7 +35,6 @@ module NativeBackend = struct
   type vreal = float
   type vbitvector = int
   type 'a m = unit -> ('a, err) result
-  type loc = string
   type value = (vint, vbool, vreal, vbitvector) AST.value
   type scope = AST.identifier * int
 

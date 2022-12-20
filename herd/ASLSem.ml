@@ -215,7 +215,6 @@ struct
       let module ASLBackend = struct
         type value = V.v
         type 'a m = 'a M.t
-        type loc = string (* To be confirmed *)
         type scope = string * int
 
         let v_of_int = V.intToV
