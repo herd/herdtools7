@@ -19,7 +19,6 @@
 
 module type S = sig
   type 'a m
-  type loc
   type value
   type scope = AST.identifier * int
 
