@@ -364,7 +364,6 @@ let is_pt v = match v with
 | Symbolic (System ((PTE|PTE2),_)) -> true
 | _ -> false
 
-
 module type S =  sig
 
   module Scalar : Scalar.S

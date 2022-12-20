@@ -39,7 +39,7 @@ int RUN(int argc,char **argv,FILE *out) {
 #endif
 #endif
   global_t *glo_ptr = malloc_check(sizeof(global_t));
-  glo_ptr->mem = malloc_check(MEMSZ*sizeof(*glo_ptr->mem)) ;
+  glo_ptr->mem = malloc_check(MEMSZ*sizeof(*glo_ptr->mem));
   zyva_t *arg = malloc_check(AVAIL*sizeof(*arg));
 #ifndef KVM
   pthread_t *th = malloc_check(AVAIL*sizeof(*th));
@@ -101,6 +101,7 @@ int RUN(int argc,char **argv,FILE *out) {
     arg[id].id = id;
     arg[id].g = glo_ptr;
   }
+  init_getinstrs();
 #ifdef KVM
   init_labels();
   on_cpus(zyva, arg);

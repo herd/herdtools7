@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2021-present Institut National de Recherche en Informatique et *)
+(* Copyright 2022-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -15,9 +15,25 @@
 (****************************************************************************)
 
 module Make(C:sig val is_morello : bool end) = struct
-  module AArch64I = AArch64Instr.Make(C)
-  module AArch64Cst =
-    SymbConstant.Make(Int64Scalar)(AArch64PteVal)(AArch64I)
+
+  module Lexer =
+    AArch64Lexer.Make
+      (struct
+        let debug = false
+        let is_morello = C.is_morello
+       end)
+
+  let parse_instr s =
+    let lexbuf = Lexing.from_string s in
+    let pi =
+      GenParserUtils.call_parser
+        "AArch64Instr" lexbuf Lexer.token AArch64Parser.one_instr in
+    AArch64Base.PseudoI.parsed_tr pi
+
   include
-    SymbValue.Make(AArch64Cst)(AArch64Op.Make(Int64Scalar))
+    AArch64Base.MakeInstr
+      (struct
+        let is_morello = C.is_morello
+        let parser = parse_instr
+      end)
 end

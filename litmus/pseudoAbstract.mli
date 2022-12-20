@@ -18,9 +18,12 @@ module type S = sig
   type ins
   type code
 
-  val find_offset : code list -> Proc.t -> MiscParser.func -> string -> int
+  val find_offset : code list -> Proc.t -> string -> int
   val dump_prog : code -> string list
   val print_prog : out_channel -> code list -> unit
   val dump_prog_lines : code list -> string list
   val code_exists : (ins -> bool) -> code -> bool
+  val exported_labels_code :  code list  ->  Label.Full.Set.t
+  val from_labels :
+      Label.Full.Set.t -> code list  -> (Label.Full.full * ins) list
 end

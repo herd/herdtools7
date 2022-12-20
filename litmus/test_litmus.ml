@@ -19,12 +19,13 @@ module type Cfg = sig
 end
 
 module type S = sig
-  module A : Arch_litmus.Base
+  type instruction
+  module A : Arch_litmus.Base with type instruction = instruction
   module C : Constr.S with
            module V = A.V and
            type location = A.location and module LocSet = A.LocSet and
            module RLocSet = A.RLocSet and module FaultType = A.FaultType
-  module P : PseudoAbstract.S
+  module P : PseudoAbstract.S with type ins = A.instruction
   module FaultType : FaultType.S
 
   type src =
@@ -59,15 +60,24 @@ module type S = sig
     with
       type test =  (A.fullstate, P.code list, C.prop, A.location, A.V.v, FaultType.t)  MiscParser.result
 
-  val find_offset : P.code list -> Proc.t -> MiscParser.func -> string -> int
+  val find_offset : P.code list -> Proc.t -> string -> int
   val code_exists : (P.ins -> bool) -> t -> bool
+  val get_exported_labels_init_code :
+      A.state -> P.code list ->  Label.Full.Set.t
+  val get_exported_labels : t -> Label.Full.Set.t
+  val from_labels : t -> (Label.Full.full * P.ins) list
 end
 
 
 
-module Make(Cfg:Cfg)(A:Arch_litmus.Base)(P:PseudoAbstract.S) : S
-with module A = A and module P = P and module FaultType = A.FaultType =
+module Make(Cfg:Cfg)(A:Arch_litmus.Base)
+(P:PseudoAbstract.S with type ins = A.instruction) : S
+with type instruction = A.instruction
+and module A = A
+and module P = P
+and module FaultType = A.FaultType =
 struct
+  type instruction = A.instruction
   module A  = A
   module C = Constr.Make(A)
   module P = P
@@ -167,4 +177,26 @@ struct
     let src = t.src in
     let code = src.MiscParser.prog in
     List.exists (P.code_exists p) code
+
+  let get_exported_labels_init =
+    let open Constant in
+    List.fold_left
+      (fun k (_,v) ->
+        match v with
+        | Label (p,lbl) -> Label.Full.Set.add (p,lbl) k
+        | _ -> k)
+      Label.Full.Set.empty
+
+  let get_exported_labels_init_code init prog =
+    Label.Full.Set.union
+      (P.exported_labels_code prog)
+      (get_exported_labels_init init)
+
+  let get_exported_labels  { init; src; } =
+     get_exported_labels_init_code  init src.MiscParser.prog
+
+  let from_labels { init; src; } =
+    let lbls = get_exported_labels_init_code init src.MiscParser.prog in
+    P.from_labels lbls src.MiscParser.prog
+
 end

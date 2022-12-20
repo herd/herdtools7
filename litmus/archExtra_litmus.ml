@@ -68,7 +68,6 @@ module type S = sig
 
   val find_in_state : location -> state -> I.V.v
 
-  val get_label_init : state -> Label.Full.full list
 end
 
 module type Config = sig
@@ -138,6 +137,7 @@ module Make(O:Config)(I:I) : S with module I = I
         module RegMap = RegMap
       end)
 
+
   let dump_loc_tag loc =
     let module G = Global_litmus in
     match loc with
@@ -176,13 +176,4 @@ module Make(O:Config)(I:I) : S with module I = I
         if location_compare loc loc2 = 0 then v
         else find_in_state loc rem
 
-  let get_label_init st =
-    let lbls =
-      List.fold_left
-        (fun k (_,v) ->
-          match v with
-          | Constant.Label (p,lbl) ->
-              Label.Full.Set.add (p,lbl) k
-          | _ -> k) Label.Full.Set.empty st in
-    Label.Full.Set.elements lbls
 end

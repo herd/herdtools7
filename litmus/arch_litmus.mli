@@ -21,12 +21,14 @@ end
 (* Abstract signature of architectures *)
 
 module type Base = sig
-  module V : Constant.S
 
   val base_type : CType.t
 
   type reg
   type instruction
+  val dump_instruction : instruction -> string
+
+  module V : Constant.S with type Instr.t = instruction
 
   module RegSet : MySet.S with type elt = reg
   module RegMap : MyMap.S with type key = reg
@@ -59,7 +61,6 @@ module type Base = sig
   val arch : Archs.t
 
   val find_in_state : location -> state -> V.v
-  val get_label_init : state -> Label.Full.full list
   val pp_reg : reg -> string
   val type_reg : reg -> CType.t
 
@@ -68,6 +69,9 @@ module type Base = sig
   val vector_table : bool -> string -> string list
 
   module FaultType : FaultType.S
+
+  module GetInstr : GetInstr.S with type t = instruction
+
 end
 
 module type K = sig
@@ -94,8 +98,10 @@ end
 
 module type S =
   sig
+
     include ArchBase.S
-    module V : Constant.S
+
+    module V : Constant.S with type Instr.t = instruction
 
     val reg_to_string : reg -> string
 
@@ -108,4 +114,7 @@ module type S =
     include HardwareExtra.S
 
     module FaultType : FaultType.S
+
+    module GetInstr : GetInstr.S with type t = instruction
+
   end

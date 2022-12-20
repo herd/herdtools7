@@ -2,9 +2,9 @@
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Luc Maranget, INRIA Paris, France.                                       *)
 (*                                                                          *)
-(* Copyright 2021-present Institut National de Recherche en Informatique et *)
+(* Copyright 2020-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,10 +14,19 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make(C:sig val is_morello : bool end) = struct
-  module AArch64I = AArch64Instr.Make(C)
-  module AArch64Cst =
-    SymbConstant.Make(Int64Scalar)(AArch64PteVal)(AArch64I)
-  include
-    SymbValue.Make(AArch64Cst)(AArch64Op.Make(Int64Scalar))
+module type S = sig
+  type t
+
+  val self_instrs : t list (* Mandatory for `-variant self` mode *)
+
+  val instr_name : t -> string
+  val fun_name : t -> string
+  val dump_instr :
+    (('a,'b,t) Constant.t -> string) -> ('a,'b,t) Constant.t -> string
+
+  module Make : functor (O:Indent.S) -> sig val dump : t -> unit end
 end
+
+module No :
+  functor (I : sig type instr end) -> S with type t = I.instr
+

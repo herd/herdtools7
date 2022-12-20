@@ -131,8 +131,6 @@ val of_symbolic_data : symbolic_data -> ('scalar,'pte,'instr) t
 val as_pte : ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t option
 val is_pt : ('scalar,'pte,'instr)  t -> bool
 
-
-
 module type S =  sig
 
   module Scalar : Scalar.S

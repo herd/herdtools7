@@ -574,7 +574,9 @@ module Make(C:Config) (I:I) : S with module I = I
       let mem_access_size_of_t t =
         let open TestType in
         match t with
-        | Atomic b|Ty b|TyArray (b,_) -> size_of_t b
+        | Atomic b|Ty b|TyArray (b,_) ->
+           if b = "ins_t" then MachSize.Word (* Ok for most archs... *)
+           else size_of_t b
         | TyDef -> size_of_t TestType.default
         | TyDefPointer|Pointer _ -> I.V.Cst.Scalar.machsize
 

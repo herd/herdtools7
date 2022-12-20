@@ -70,7 +70,7 @@ let mk_lab p s = Label (p,s)
 %token TOK_PTE TOK_PA
 %token TOK_TAG
 %token TOK_NOP
-
+%token <string> INSTR
 %token PTX_REG_DEC
 %token <string> PTX_REG_TYPE
 
@@ -202,13 +202,15 @@ atom:
 | location {($1,ParsedConstant.zero)}
 | left_loc EQUAL maybev_label {($1,$3)}
 
-
+instr:
+| TOK_NOP { None }
+| i=INSTR { Some i }
 atom_init:
 | atom { let x,v = $1 in x,(TyDef,v) }
 | typ=NAME loc=left_loc  { (loc, (Ty typ,ParsedConstant.zero)) }
 | ATOMIC typ=NAME loc=left_loc { loc,(Atomic typ,ParsedConstant.zero)}
-| loc=left_loc EQUAL TOK_NOP
-  { (loc,(Ty "ins_t", mk_instr_val "NOP")) }
+| loc=left_loc EQUAL i=instr  { (loc,(Ty "ins_t", mk_instr_val i)) }
+| NAME loc=left_loc EQUAL i=instr  { (loc,(Ty "ins_t", mk_instr_val i)) }
 | typ=NAME loc=left_loc EQUAL v=maybev { (loc,(Ty typ,v))}
 | typ=NAME loc=left_loc EQUAL ATOMICINIT LPAR v=maybev RPAR
    { (loc,(Ty typ,v))}
@@ -372,8 +374,8 @@ arrayspec:
 | LBRK loc=location_global RBRK { Location_global loc }
 
 atom_prop:
-| loc=location EQUAL TOK_NOP
-  {Atom (LV (Loc loc,(mk_instr_val "NOP")))}
+| loc=location EQUAL i=instr
+  {Atom (LV (Loc loc,(mk_instr_val i)))}
 | location equal maybev {Atom (LV (Loc $1,$3))}
 | loc=loc_brk equal v=maybev
    {Atom (LV (Loc loc,v))}

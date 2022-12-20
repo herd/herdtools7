@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 type t =
-    | LIT_B of int
+    | LIT_INSTR of string
     | LIT_NOP
 
 val pp : t -> string

@@ -2450,55 +2450,84 @@ module Make
         | I_LD1M _|I_ST1M _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
 
-(* At the moment, NOP is the onely instruction that can be used
- * to overwrite code
+(* Compute a safe set of instructions that can
+ * overwrite another. By convention, those are
+ * instructions pointed to by "exported" labels.
  *)
+      let get_overwriting_instrs lbls test =
+        let init_instrs =
+          AArch64.state_fold
+            (fun _ v k ->
+              match v with
+              | V.Val (Constant.Instruction i) -> i::k
+              | _ -> k)
+            test.Test_herd.init_state []
+        and  code_instrs =
+          List.map
+            (fun (_,i) -> i)
+            (AArch64.from_labels lbls test.Test_herd.nice_prog) in
+        init_instrs@code_instrs
 
+
+(* Test all possible instructions, when appropriate *)
       let check_self test ii =
+        let module InstrSet = AArch64.V.Cst.Instr.Set in
         let inst = ii.A.inst in
         if not (AArch64Base.is_overwritable inst) then
           do_build_semantics test inst ii
-        else match Label.norm ii.A.labels with
-        | None -> do_build_semantics test inst ii
-        | Some hd ->
-           let inst_val = V.instructionToV inst in
-           (* Shadow default control sequencing operator *)
-           let(>>*=) = M.bind_control_set_data_input_first in
-           let a_v = make_label_value ii.A.fetch_proc hd in
-           let a = (* Normalised address of instruction *)
-             A.Location_global a_v in
-             read_loc_instr a ii
-             >>= fun actual_val ->
-             M.op Op.Eq actual_val inst_val
-             >>==
-               fun cond ->
-                 M.choiceT cond
-                   (commit_pred ii
-                    >>*= fun () -> do_build_semantics test inst ii )
-                   begin
-                     let mfail =
-                       let (>>!) = M.(>>!) in
-                       let m_fault =
-                         mk_fault
-                           a_v Dir.R AArch64.N ii
-                           (Some FaultType.AArch64.IllegalInstruction)
-                           (Some "Invalid") in
-                       commit_pred ii
-                       >>*= fun () -> m_fault >>| set_elr_el1 ii
-                       >>! B.Fault Dir.R in
-                     match inst with
-                     | AArch64Base.I_NOP -> mfail
-                     | _ ->
-                        let b_cond = M.op1 Op.IsInstr actual_val in
-                        b_cond >>==
-                          fun cond ->
-                          M.choiceT cond
-                            (commit_pred ii
-                             >>*= fun () ->
-                               let inst = AArch64Base.I_NOP in (* Must be NOP... *)
-                               do_build_semantics test inst ii)
-                            mfail
-                   end
+        else
+          let lbls = get_exported_labels test in
+          let is_exported =
+            Label.Set.exists
+              (fun lbl ->
+                Label.Full.Set.exists
+                  (fun (_,lbl0) -> Misc.string_eq lbl lbl0)
+                  lbls)
+              ii.A.labels in
+          if is_exported then
+            match Label.norm ii.A.labels with
+            | None -> assert false
+            | Some hd ->
+                let insts =
+                  InstrSet.of_list
+                    (get_overwriting_instrs lbls test) in
+                let insts =
+                  InstrSet.add inst
+                    (InstrSet.filter AArch64.can_overwrite insts) in
+                if false then
+                  Printf.eprintf "%s: {%s}\n%!"
+                    (Label.pp hd)
+                    (String.concat ","
+                       (List.map AArch64.V.Cst.Instr.pp
+                          (InstrSet.elements insts))) ;
+                (* Shadow default control sequencing operator *)
+                let(>>*=) = M.bind_control_set_data_input_first in
+                let a_v = make_label_value ii.A.fetch_proc hd in
+                let a = (* Normalised address of instruction *)
+                  A.Location_global a_v in
+                read_loc_instr a ii
+                  >>= fun actual_val ->
+                    InstrSet.fold
+                      (fun inst k ->
+                        M.op Op.Eq actual_val (V.instructionToV inst) >>==
+                        fun cond -> M.choiceT cond
+                            (commit_pred ii >>*=
+                             fun () -> do_build_semantics test inst ii)
+                            k)
+                      insts
+                      begin
+(* Anything else than a legit instruction is a failure *)
+                        let (>>!) = M.(>>!) in
+                        let m_fault =
+                          mk_fault
+                            a_v Dir.R AArch64.N ii
+                            (Some FaultType.AArch64.IllegalInstruction)
+                            (Some "Invalid") in
+                        commit_pred ii
+                          >>*= fun () -> m_fault >>| set_elr_el1 ii
+                            >>! B.Fault Dir.R
+                      end
+          else do_build_semantics test inst ii
 
       let build_semantics test ii =
         M.addT (A.next_po_index ii.A.program_order_index)
