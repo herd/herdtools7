@@ -85,7 +85,8 @@ ocb-test:
 	@ echo
 	./ocb-test.sh
 
-test::
+test:: test.aarch64
+test.aarch64:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
 		-herd-path $(HERD) \
