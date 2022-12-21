@@ -73,6 +73,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
     end
 
     module MC = Mem.Make (MCConf) (ASLS)
+    module MU = MemUtils.Make (ASLS)
 
     let check_event_structure model =
       let module MemConfig = struct
@@ -348,11 +349,6 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
     let tr_execution ii (_conc, cs, set_pp, vbpp) =
       let () = if _dbg then Printf.eprintf "Translating event structure:\n" in
       let constraints =
-        let cs =
-          match cs with
-          | Some cs -> cs
-          | None -> Warn.fatal "Execution error in AArch64/ASL translation"
-        in
         let () =
           if _dbg then
             Printf.eprintf "\t- constraints: %s\n" (ASLVC.pp_cnstrnts cs)
@@ -412,24 +408,37 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
           let test = fake_test ii fname args in
           let model = build_model_from_file "asl.cat" in
           let check_event_structure = check_event_structure model in
-          let ( { MC.event_structures = rfms; MC.overwritable_labels = owls },
-                test ) =
+          let { MC.event_structures = rfms; _ }, test =
             MC.glommed_event_structures test
           in
-          let kfail li = li in
-          let ksuccess (conc : ASLS.concrete) _fsc
-              ((set_pp, vbpp) : ASLS.set_pp Lazy.t * ASLS.rel_pp Lazy.t) _flags
-              (cs, li) =
-            (None, (conc, cs, Lazy.force set_pp, Lazy.force vbpp) :: li)
+          let rfms_with_regs =
+            let solve_regs (_i, cs, es) = MC.solve_regs test es cs in
+            List.filter_map solve_regs rfms
           in
-          let call_model conc cs (_, li) =
-            check_event_structure test conc kfail ksuccess (Some cs, li)
-          in
-          let _, conc_and_pp =
-            List.fold_left
-              (fun res (_i, cs, es) ->
-                MC.calculate_rf_with_cnstrnts test owls es cs call_model res)
-              (None, []) rfms
+          let conc_and_pp =
+            let check_rfm li (es, rfm, cs) =
+              let po = MU.po_iico es in
+              let pos =
+                let mem_evts = ASLE.mem_of es.ASLE.events in
+                ASLE.EventRel.of_pred mem_evts mem_evts (fun e1 e2 ->
+                    ASLE.same_location e1 e2 && ASLE.EventRel.mem (e1, e2) po)
+              in
+              let conc =
+                {
+                  ASLS.conc_zero with
+                  ASLS.str = es;
+                  ASLS.rfmap = rfm;
+                  ASLS.po;
+                  ASLS.pos;
+                }
+              in
+              let kfail li = li in
+              let ksuccess conc _fs (out_sets, out_show) _flags li =
+                (conc, cs, Lazy.force out_sets, Lazy.force out_show) :: li
+              in
+              check_event_structure test conc kfail ksuccess li
+            in
+            List.fold_left check_rfm [] rfms_with_regs
           in
           let monads = List.map (tr_execution ii) conc_and_pp in
           match monads with
