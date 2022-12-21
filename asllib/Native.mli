@@ -17,17 +17,19 @@
 (* Hadrien Renaud, University College London, UK.                           *)
 (****************************************************************************)
 
+type value = (int, bool, float, int) AST.value
+
 type err =
   | UnknownIdentifier of string
   | TypeError of string
   | InterpreterError of string
+  | NonIndexableValue of value
+  | IndexOutOfBounds of (int * value)
 
 val pp_err : out_channel -> err -> unit
 
 module NativeBackend :
-  Backend.S
-    with type value = (int, bool, float, int) AST.value
-     and type 'a m = unit -> ('a, err) result
+  Backend.S with type value = value and type 'a m = unit -> ('a, err) result
 
 module NativeInterpreter : Interpreter.S with module B = NativeBackend
 

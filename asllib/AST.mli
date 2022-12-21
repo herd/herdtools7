@@ -60,6 +60,9 @@ type ('i, 'b, 'r, 'bv) value =
   | V_Bool of 'b
   | V_Real of 'r
   | V_BitVector of 'bv
+  | V_Tuple of ('i, 'b, 'r, 'bv) value list
+  | V_Record of (identifier * ('i, 'b, 'r, 'bv) value) list
+  | V_Exception of (identifier * ('i, 'b, 'r, 'bv) value) list
 
 type parsed_value = (int, bool, float, string) value
 (** Type of parsed values by the module Parser.mly *)

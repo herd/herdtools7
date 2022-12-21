@@ -30,3 +30,4 @@ val parsed_t_to_string : parsed_t -> string
 
 val pp_type_desc : Format.formatter -> type_desc -> unit
 val pp_typed_identifier : Format.formatter -> typed_identifier -> unit
+val type_desc_to_string : type_desc -> string
