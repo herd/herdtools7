@@ -30,6 +30,17 @@ module type S = sig
   val choice : value m -> 'b m -> 'b m -> 'b m
   (** choice is a boolean if operator *)
 
+  (* Special operations with vectors *)
+
+  val create_vector : AST.type_desc -> value list -> value m
+  (** Creates a vector, with possible names for the fields *)
+
+  val get_i : int -> value -> value m
+  (** [get_i i vec] returns value at index [i] inside [vec].*)
+
+  val set_i : int -> value -> value -> value m
+  (** [set_i i v vec] returns [vec] with index [i] replaced by [v].*)
+
   val return : 'a -> 'a m
   val fatal : string -> 'a m
   val binop : AST.binop -> value -> value -> value m

@@ -17,15 +17,37 @@
 (* Hadrien Renaud, University College London, UK.                           *)
 (****************************************************************************)
 
+type value = (int, bool, float, int) AST.value
+
+let pp_value =
+  Format.asprintf "%a"
+  @@ PP.pp_value Format.pp_print_int Format.pp_print_bool Format.pp_print_float
+       Format.pp_print_int
+
 type err =
   | UnknownIdentifier of string
   | TypeError of string
   | InterpreterError of string
+  | NonIndexableValue of value
+  | IndexOutOfBounds of (int * value)
 
 let pp_err chan = function
   | UnknownIdentifier x -> Printf.fprintf chan "Unknown identifier %s" x
   | TypeError msg -> Printf.fprintf chan "Type error: %s" msg
   | InterpreterError msg -> Printf.fprintf chan "Interpreter error: %s" msg
+  | NonIndexableValue value ->
+      Printf.fprintf chan "Non indexable value: %s" (pp_value value)
+  | IndexOutOfBounds (i, v) ->
+      Printf.fprintf chan "Index %d out of bounds for value %s" i (pp_value v)
+
+let list_update i f li =
+  let rec aux acc i li =
+    match (li, i) with
+    | [], _ -> raise (Invalid_argument "list_update")
+    | h :: t, 0 -> List.rev_append acc (f h :: t)
+    | h :: t, i -> aux (h :: acc) (i - 1) t
+  in
+  aux [] i li
 
 open AST
 
@@ -46,7 +68,7 @@ module NativeBackend = struct
 
   module SIMap = Map.Make (ScopedIdentifiers)
 
-  let v_of_int i = AST.V_Int i
+  let v_of_int i = V_Int i
 
   let bind (vm : 'a m) (f : 'a -> 'b m) : 'b m =
    fun () -> Result.bind (vm ()) (fun v -> f v ())
@@ -119,13 +141,58 @@ module NativeBackend = struct
 
   let on_write_identifier _x _scope _value = return ()
   let on_read_identifier _x _scope _value = return ()
+  let v_tuple li = return (V_Tuple li)
+  let v_record li = return (V_Record li)
+  let v_exception li = return (V_Exception li)
+
+  let get_i i vec =
+    try
+      match vec with
+      | V_Tuple li -> List.nth li i |> return
+      | V_Record li -> List.nth li i |> snd |> return
+      | V_Exception li -> List.nth li i |> snd |> return
+      | v -> fail (NonIndexableValue v)
+    with Invalid_argument _ -> fail (IndexOutOfBounds (i, vec))
+
+  let set_i i vec v =
+    let field_update i v li =
+      let update_field v (name, _v) = (name, v) in
+      list_update i (update_field v) li
+    in
+    try
+      match vec with
+      | V_Tuple li -> list_update i (Fun.const v) li |> v_tuple
+      | V_Record li -> field_update i v li |> v_record
+      | V_Exception li -> field_update i v li |> v_exception
+      | _ -> fail (NonIndexableValue vec)
+    with Invalid_argument _ -> fail (IndexOutOfBounds (i, vec))
+
+  let create_vector ty li =
+    let assoc_name_val (name, _ty) v = (name, v) in
+    let assoc_names_values = List.map2 assoc_name_val in
+    match ty with
+    | T_Tuple _ -> v_tuple li
+    | T_Record field_types -> assoc_names_values field_types li |> v_record
+    | T_Exception field_types ->
+        assoc_names_values field_types li |> v_exception
+    | ty ->
+        fail
+          (InterpreterError
+             ("Cannot create a vector of type " ^ PP.type_desc_to_string ty))
 end
 
 module NativeInterpreter = Interpreter.Make (NativeBackend)
 
 let of_parsed_ast =
+  let tr_fields tr =
+    let tr_one (name, value) = (name, tr value) in
+    List.map tr_one
+  in
   ASTUtils.tr_values
     (fun i -> V_Int i)
     (fun b -> V_Bool b)
     (fun r -> V_Real r)
     (fun s -> V_BitVector (int_of_string s))
+    (fun tr li -> V_Tuple (List.map tr li))
+    (fun tr li -> V_Record (tr_fields tr li))
+    (fun tr li -> V_Exception (tr_fields tr li))

@@ -50,7 +50,19 @@ let pp_binop : binop -> string = function
 
 let pp_unop = function BNOT -> "BNOT" | NOT -> "NOT" | NEG -> "NEG"
 
-let pp_value pp_int pp_bool pp_real pp_bv f = function
+let rec pp_value pp_int pp_bool pp_real pp_bv f =
+  let pp_v = pp_value pp_int pp_bool pp_real pp_bv in
+  let pp_field_assoc =
+    let pp_one f (name, value) =
+      addb f "(";
+      addb f name;
+      addb f " ";
+      pp_v f value;
+      addb f ")"
+    in
+    pp_list pp_one
+  in
+  function
   | V_Int i ->
       addb f "(VInt ";
       addb f (pp_int i);
@@ -66,6 +78,18 @@ let pp_value pp_int pp_bool pp_real pp_bv f = function
   | V_BitVector bv ->
       addb f "(VBitVector ";
       addb f (pp_bv bv);
+      addb f ")"
+  | V_Tuple li ->
+      addb f "(VTuple ";
+      pp_list pp_v f li;
+      addb f ")"
+  | V_Record li ->
+      addb f "(VRecord ";
+      pp_field_assoc f li;
+      addb f ")"
+  | V_Exception li ->
+      addb f "(VException ";
+      pp_field_assoc f li;
       addb f ")"
 
 let pp_string = addb

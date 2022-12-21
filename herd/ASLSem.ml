@@ -49,6 +49,11 @@ module Make (C : Sem.Config) = struct
     let ( and* ) = M.( >>| )
     let return = M.unitT
 
+    let as_constant = function
+      | V.Val c -> c
+      | V.Var _ as v ->
+          Warn.fatal "Cannot convert value %s into constant" (V.pp_v v)
+
     (**************************************************************************)
     (* ASL-PO handling                                                        *)
     (**************************************************************************)
@@ -71,8 +76,16 @@ module Make (C : Sem.Config) = struct
       let value_of_bool b = if b then V.one else V.zero in
       let value_of_real _r = Warn.fatal "Cannot parse reals yet." in
       let value_of_string = V.stringToV in
+      let value_of_tuple tr li =
+        let li = List.map (fun v -> tr v |> as_constant) li in
+        V.Val (Constant.ConcreteVector li)
+      in
+      let value_of_record tr li =
+        let li = List.map (fun (_, v) -> tr v |> as_constant) li in
+        V.Val (Constant.ConcreteVector li)
+      in
       Asllib.ASTUtils.tr_values value_of_int value_of_bool value_of_real
-        value_of_string
+        value_of_string value_of_tuple value_of_record value_of_record
 
     let v_to_int = function
       | V.Val (Constant.Concrete i) -> V.Cst.Scalar.to_int i
@@ -160,6 +173,38 @@ module Make (C : Sem.Config) = struct
       let loc = loc_of_scoped_id ii x scope in
       let action = Act.Access (Dir.R, loc, v, MachSize.Quad) in
       M.mk_singleton_es action (use_ii_with_poi ii poi)
+
+    let create_vector _ty li =
+      let li = List.map as_constant li in
+      return (V.Val (Constant.ConcreteVector li))
+
+    let get_i i = function
+      | V.Val (Constant.ConcreteVector li) as v -> (
+          match List.nth_opt li i with
+          | None ->
+              Warn.user_error "Index %d out of bounds for value %s" i (V.pp_v v)
+          | Some v -> return (V.Val v))
+      | v -> Warn.user_error "Trying to index non-indexable value %s" (V.pp_v v)
+
+    let list_update i v li =
+      let rec aux acc i li =
+        match (li, i) with
+        | [], _ -> None
+        | _ :: t, 0 -> Some (List.rev_append acc (v :: t))
+        | h :: t, i -> aux (h :: acc) (i - 1) t
+      in
+      aux [] i li
+
+    let set_i i v vec =
+      match (vec, v) with
+      | V.Val (Constant.ConcreteVector li), V.Val c -> (
+          match list_update i c li with
+          | None ->
+              Warn.user_error "Index %d out of bounds for value %s" i
+                (V.pp_v vec)
+          | Some li -> return (V.Val (Constant.ConcreteVector li)))
+      | _ ->
+          Warn.user_error "Trying to index non-indexable value %s" (V.pp_v vec)
 
     (**************************************************************************)
     (* Primitives and helpers                                                 *)
@@ -289,6 +334,9 @@ module Make (C : Sem.Config) = struct
         let on_read_identifier = on_read_identifier ii_env
         let binop = binop
         let unop = unop
+        let create_vector = create_vector
+        let get_i = get_i
+        let set_i = set_i
       end in
       let module ASLInterpreter = Asllib.Interpreter.Make (ASLBackend) in
       let ast = parsed_ast_to_ast ii.A.inst in

@@ -59,6 +59,7 @@ let infer_values = function
   | V_Real _ -> T_Real
   | V_BitVector s ->
       T_Bits (BitWidth_Determined (E_Literal (V_Int (String.length s))))
+  | _ -> assert false
 
 let check_bitvector s = function T_Bits _ as t -> t | _ -> type_error s
 let check_integer s = function T_Int _ as t -> t | _ -> type_error s

@@ -28,11 +28,19 @@ let binop_to_string : binop -> string = function
 
 let unop_to_string = function BNOT -> "!" | NEG -> "-" | NOT -> "NOT"
 
-let pp_value pp_int pp_bool pp_real pp_bv f = function
+let rec pp_value pp_int pp_bool pp_real pp_bv f =
+  let pp_v = pp_value pp_int pp_bool pp_real pp_bv in
+  let pp_print_field_assoc f =
+    let pp_one f (name, value) = fprintf f "@[%s = %a@]" name pp_v value in
+    fprintf f "{ @[%a@] }" (pp_print_list ~pp_sep:pp_comma pp_one)
+  in
+  function
   | V_Int i -> pp_int f i
   | V_Bool b -> pp_bool f b
   | V_Real r -> pp_real f r
   | V_BitVector bv -> pp_bv f bv
+  | V_Tuple li -> fprintf f "(@[%a@])" (pp_print_list ~pp_sep:pp_comma pp_v) li
+  | V_Record li | V_Exception li -> pp_print_field_assoc f li
 
 let pp_parsed_value =
   pp_value pp_print_int pp_print_bool pp_print_float pp_print_string
@@ -137,6 +145,7 @@ let pp_decl pp_v f = function
 let pp_t pp_v = pp_print_list ~pp_sep:pp_print_space (pp_decl pp_v)
 let pp_parsed_t = pp_t pp_parsed_value
 let t_to_string_pp pp_v = asprintf "%a" (pp_t pp_v)
+let type_desc_to_string = asprintf "%a" pp_type_desc
 
 let t_to_string v_to_string =
   let pp_v f v = pp_print_string f (v_to_string v) in

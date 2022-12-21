@@ -23,12 +23,16 @@ let use_expr include_funcs : 'v expr -> ISet.t =
   in
   use_ ISet.empty
 
-let tr_values tr_int tr_bool tr_real tr_bitvector =
+let tr_values tr_int tr_bool tr_real tr_bitvector create_tuple create_record
+    create_exception =
   let rec value_ = function
     | V_Int i -> tr_int i
     | V_Bool b -> tr_bool b
     | V_BitVector s -> tr_bitvector s
     | V_Real r -> tr_real r
+    | V_Tuple li -> create_tuple value_ li
+    | V_Record li -> create_record value_ li
+    | V_Exception li -> create_exception value_ li
   and expr_ = function
     | E_Literal v -> E_Literal (value_ v)
     | E_Var x -> E_Var x
