@@ -64,7 +64,7 @@ module Make
     (C:Config) =
   struct
     module T = Test_herd.Make(S.A)
-     let run dirty start_time filename chan env splitted =
+     let run cache_type dirty start_time filename chan env splitted =
       try
          let parsed = P.parse chan splitted in
          (* Additional checks *)
@@ -98,6 +98,7 @@ module Make
             (struct
               include C
               let byte = sz
+              let cache_type = cache_type
               let dirty = dirty
             end)(M) in
         T.run start_time test ;
@@ -174,6 +175,7 @@ module Top (TopConf:Config) = struct
         | _ -> m in
         check_arch_model arch m in
 
+      let cache_type = CacheType.get splitted.Splitter.info in
       let dirty = DirtyBit.get splitted.Splitter.info in
 
       let module ModelConfig = struct
@@ -196,6 +198,7 @@ module Top (TopConf:Config) = struct
         let libfind = Conf.libfind
         let variant = Conf.variant
         let dirty = dirty
+        let cache_type = cache_type
         let statelessrc11 = Conf.statelessrc11
       end in
       let module ArchConfig = SemExtra.ConfigToArchConfig(Conf) in
@@ -215,7 +218,7 @@ module Top (TopConf:Config) = struct
           let module PPCM = MemWithCav12.Make(ModelConfig)(PPCS) in
           let module P = GenParser.Make (Conf) (PPC) (PPCLexParse) in
           let module X = Make (PPCS) (P) (NoCheck) (PPCM) (Conf) in
-          X.run dirty start_time name chan env splitted
+          X.run cache_type dirty start_time name chan env splitted
       | `ARM ->
           let module ARMValue = Int32Value.Make(ARMBase.Instr) in
           let module ARM = ARMArch_herd.Make(ArchConfig)(ARMValue) in
@@ -230,7 +233,7 @@ module Top (TopConf:Config) = struct
           let module ARMM = MemWithCav12.Make(ModelConfig)(ARMS) in
           let module P = GenParser.Make (Conf) (ARM) (ARMLexParse) in
           let module X = Make (ARMS) (P) (NoCheck) (ARMM) (Conf) in
-          X.run dirty start_time name chan env splitted
+          X.run cache_type dirty start_time name chan env splitted
 
       | `AArch64 ->
          let module Top (MakeSem:AArch64Sig.MakeSemantics) =
@@ -260,6 +263,7 @@ module Top (TopConf:Config) = struct
                module AArch64SemConf = struct
                  module C = Conf
                  let dirty = ModelConfig.dirty
+                 let cache_type = ModelConfig.cache_type
                  let procs_user = ProcsUser.get splitted.Splitter.info
                end
 
@@ -297,16 +301,16 @@ module Top (TopConf:Config) = struct
                if is_morello then
                  let module  AArch64Value = CapabilityValue.Make(ConfMorello) in
                  let module X = AArch64Make(AArch64Value) in
-                 X.run dirty start_time name chan env splitted
+                 X.run cache_type dirty start_time name chan env splitted
                else if Conf.variant Variant.Neon then
                  let module AArch64Value = Uint128Value.Make(ConfMorello) in
                  let module X = AArch64Make(AArch64Value) in
-                 X.run dirty start_time name chan env splitted
+                 X.run cache_type dirty start_time name chan env splitted
                else
 (* END NOTWWW *)
                  let module AArch64Value = AArch64Value.Make(ConfMorello) in
                  let module X = AArch64Make(AArch64Value) in
-                 X.run dirty start_time name chan env splitted
+                 X.run cache_type dirty start_time name chan env splitted
            end in
 (* START NOTWWW *)
          if Conf.variant Variant.ASL then
@@ -331,7 +335,7 @@ module Top (TopConf:Config) = struct
           let module X86M = MemWithCav12.Make(ModelConfig)(X86S) in
           let module P = GenParser.Make (Conf) (X86) (X86LexParse) in
           let module X = Make (X86S) (P) (NoCheck) (X86M) (Conf) in
-          X.run dirty start_time name chan env splitted
+          X.run cache_type dirty start_time name chan env splitted
 
       | `X86_64 ->
           let module X86_64Value = Int64Value.Make(X86_64Base.Instr) in
@@ -347,7 +351,7 @@ module Top (TopConf:Config) = struct
           let module X86_64M = MemWithCav12.Make(ModelConfig)(X86_64S) in
           let module P = GenParser.Make(Conf)(X86_64)(X86_64LexParse) in
           let module X = Make(X86_64S)(P)(NoCheck)(X86_64M)(Conf) in
-          X.run dirty start_time name chan env splitted
+          X.run cache_type dirty start_time name chan env splitted
 
 
       | `MIPS ->
@@ -364,7 +368,7 @@ module Top (TopConf:Config) = struct
           let module MIPSM = MemWithCav12.Make(ModelConfig)(MIPSS) in
           let module P = GenParser.Make (Conf) (MIPS) (MIPSLexParse) in
           let module X = Make (MIPSS) (P) (NoCheck) (MIPSM) (Conf) in
-          X.run dirty start_time name chan env splitted
+          X.run cache_type dirty start_time name chan env splitted
 
       | `RISCV ->
           let module RISCVValue = Int64Value.Make(RISCVBase.Instr) in
@@ -380,7 +384,7 @@ module Top (TopConf:Config) = struct
           let module RISCVM = MemCat.Make(ModelConfig)(RISCVS) in
           let module P = GenParser.Make (Conf) (RISCV) (RISCVLexParse) in
           let module X = Make (RISCVS) (P) (NoCheck) (RISCVM) (Conf) in
-          X.run dirty start_time name chan env splitted
+          X.run cache_type dirty start_time name chan env splitted
       | `C ->
           let module CValue = Int32Value.Make(CBase.Instr) in
           let module C = CArch_herd.Make(ArchConfig)(CValue) in
@@ -403,7 +407,7 @@ module Top (TopConf:Config) = struct
           let module CM = CMem.Make(ModelConfig)(CS) in
           let module P = CGenParser_lib.Make (Conf) (C) (CLexParse) in
           let module X = Make (CS) (P) (NoCheck) (CM) (Conf) in
-          X.run dirty start_time name chan env splitted
+          X.run cache_type dirty start_time name chan env splitted
       | `CPP as arch -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
 
       | `JAVA ->
@@ -421,7 +425,7 @@ module Top (TopConf:Config) = struct
         let module P      = JavaGenParser_lib.Make (Conf) (Java) (JavaLexParse) in
         let module X      = Make (JavaS) (P) (NoCheck) (JavaM) (Conf) in
 
-        X.run dirty start_time name chan env splitted
+        X.run cache_type dirty start_time name chan env splitted
 
       | `LISA ->
           let module LISAValue = Int64Value.Make(BellBase.Instr) in
@@ -451,7 +455,7 @@ module Top (TopConf:Config) = struct
               end) in
           let module P = GenParser.Make (Conf) (Bell) (BellLexParse) in
           let module X = Make (BellS) (P) (BellC) (BellM) (Conf) in
-          X.run dirty start_time name chan env splitted
+          X.run cache_type dirty start_time name chan env splitted
 (* START NOTWWW *)
     | `ASL ->
        let module ASLValue = Int64Value.Make(ASLBase.Instr) in
@@ -466,7 +470,7 @@ module Top (TopConf:Config) = struct
        let module ASLM = MemCat.Make(ModelConfig)(ASLS) in
        let module P = GenParser.Make (Conf) (ASLA) (ASLLexParse) in
        let module X = Make (ASLS) (P) (NoCheck) (ASLM) (Conf) in
-       X.run dirty start_time name chan env splitted
+       X.run cache_type dirty start_time name chan env splitted
 (* END NOTWWW *)
     end else env
 

@@ -2,9 +2,9 @@
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Luc Maranget, INRIA Paris, France.                                       *)
 (*                                                                          *)
-(* Copyright 2022-present Institut National de Recherche en Informatique et *)
+(* Copyright 2020-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,33 +14,20 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Signatures of AArch64 "Sem" modules *)
+(** Explicit annotation for accesses, non-explicit accesses are more of less
+    accesses added by, e.g. the virtual memory system. *)
 
-module type SubConfig = sig
-  include GenParser.Config
-  include Top_herd.CommonConfig
-  include Sem.Config
-
-  val libfind : string -> string
-  val byte : MachSize.Tag.t
+module type S = sig
+  type cofeat
+  val no_cofeat : cofeat
+  val pp_cofeat : cofeat -> string
+  val cofeat_sets : (string * (cofeat -> bool)) list
 end
 
-module type Config = sig
-  module C : SubConfig
-  val cache_type : CacheType.t option
-  val dirty : DirtyBit.t option
-  val procs_user : Proc.t list
+(* Default setting: all accesses are explicit *)
+module No = struct
+  type cofeat=unit
+  let no_cofeat = ()
+  let pp_cofeat _ = ""
+  let cofeat_sets = []
 end
-
-module type Semantics =
-  Sem.Semantics
-  with type A.instruction = AArch64Base.instruction
-  and type A.parsedInstruction = AArch64Base.parsedInstruction
-  and type A.reg = AArch64Base.reg
-  and type 'ins A.kpseudo = 'ins AArch64Base.kpseudo
-
-
-module type MakeSemantics =
-  functor(C:Config) ->
-  functor(V:Value.AArch64) ->
-  Semantics with module A.V = V

@@ -47,6 +47,7 @@ module Make (C:Arch_herd.Config) (V:Value.S)
     let pp_annot annot =
       if annot then "*" else ""
 
+    include CoFeat.No
     include Explicit.No
     include PteValSets.No
 

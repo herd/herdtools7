@@ -67,6 +67,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
       include ASLConf
 
       let byte = SZ.byte
+      let cache_type = TopConf.cache_type
       let dirty = TopConf.dirty
     end
 
@@ -85,6 +86,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
         let strictskip = true
         let through = Model.ThroughAll
         let cycles = StringSet.empty
+        let cache_type = TopConf.cache_type
         let dirty = TopConf.dirty
       end in
       let module ASL64M = MemCat.Make (MemConfig) (ASLS) in
@@ -236,13 +238,14 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
     let tr_action ii =
       let an = AArch64.N in
       let exp = AArch64.Exp in
+      let cti = AArch64.CT_None in
       function
       | ASLAct.Access (dir, loc, v, sz) -> (
           match tr_loc ii loc with
           | None -> None
           | Some loc ->
               let ac = Act.access_of_location_std loc in
-              Some (Act.Access (dir, loc, tr_v v, an, exp, sz, ac)))
+              Some (Act.Access (dir, loc, tr_v v, an, exp, sz, ac, cti)))
       | ASLAct.NoAction -> Some Act.NoAction
       | ASLAct.TooFar msg -> Some (Act.TooFar msg)
 

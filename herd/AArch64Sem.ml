@@ -25,6 +25,9 @@ module Make
     module Act = MachAction.Make(ConfLoc)(AArch64)
     include SemExtra.Make(C)(AArch64)(Act)
 
+    let cache_type = match TopConf.cache_type with
+      | None -> CacheType.default
+      | Some ct -> ct
     let dirty = match TopConf.dirty with | None -> DirtyBit.soft | Some d -> d
     let mixed = AArch64.is_mixed
     (* We need to be aware of endianness for 128-bit Neon LDR/STR, because
@@ -92,14 +95,14 @@ module Make
       and is_not_zero v = M.op Op.Ne v V.zero
 
 (* Ordinary access action *)
-      let access_anexp anexp d loc v ac =
-        Act.Access (d,loc,v,AArch64.N,anexp,quad,ac)
+      let access_anexp anexp d loc v ac dic_idc =
+        Act.Access (d,loc,v,AArch64.N,anexp,quad,ac, dic_idc)
       let access_ord d loc v ac = access_anexp aexp d loc v ac
 
 (* Basic read, from register *)
       let mk_read sz an anexp loc v =
         let ac = Act.access_of_location_std loc in
-        Act.Access (Dir.R, loc, v, an, anexp, sz, ac)
+        Act.Access (Dir.R, loc, v, an, anexp, sz, ac, AArch64.no_cofeat)
 
       let mk_read_std = mk_read quad AArch64.N
 
@@ -162,17 +165,31 @@ module Make
 (* Fetch of an instruction, i.e., a read from a label *)
       let mk_fetch an loc v =
         let ac = Access.VIR in (* Instruction fetch seen as ordinary, non PTE, access *)
-        Act.Access (Dir.R, loc, v, an, AArch64.nexp_annot, MachSize.Word, ac)
+        Act.Access (Dir.R, loc, v, an, AArch64.nexp_annot, MachSize.Word, ac, AArch64.CT_None)
+
+      let mk_cache_type_info dir loc ii =
+        match dir,loc with
+        | (Dir.W,A.Location_reg _)
+        | (Dir.R,_) -> AArch64.CT_None
+        | (Dir.W,_) ->
+          let open CacheType in
+          let dic = cache_type.dic ii.A.proc
+          and idc = cache_type.idc ii.A.proc in
+          match dic,idc with
+          | true,true   -> AArch64.CT_DIC_IDC
+          | false,true  -> AArch64.CT_IDC
+          | false,false -> AArch64.CT_None
+          | true,false  -> Warn.fatal "Illegal combination of cache-type register values for %s" (AArch64.pp_proc ii.A.proc)
 
 (* Basic write, to register  *)
-      let mk_write sz an anexp ac v loc =
-        Act.Access (Dir.W, loc, v, an, anexp, sz, ac)
+      let mk_write sz an anexp ac v loc dic_idc =
+        Act.Access (Dir.W, loc, v, an, anexp, sz, ac, dic_idc)
 
       let write_reg r v ii = match r with
       | AArch64.ZR -> M.unitT ()
       | _ ->
           M.write_loc
-            (mk_write quad AArch64.N aexp Access.REG v)
+            (fun loc -> mk_write quad AArch64.N aexp Access.REG v loc AArch64.CT_None)
             (A.Location_reg (ii.A.proc,r)) ii
 
       let write_reg_dest r v ii = match r with
@@ -184,7 +201,7 @@ module Make
         if not morello then
           Warn.user_error "capabilities require -variant morello" ;
         M.write_loc
-          (mk_write MachSize.S128  AArch64.N aexp Access.REG v)
+          (fun loc -> mk_write MachSize.S128  AArch64.N aexp Access.REG v loc AArch64.CT_None)
           (A.Location_reg (ii.A.proc,r)) ii
 
       let neon_setlane old_val idx esize v =
@@ -210,7 +227,7 @@ module Make
           (* Clear unused register bits (zero extend) *)
           M.op1 (Op.Mask sz) v >>= fun v ->
           let location = A.Location_reg (ii.A.proc,vr) in
-          M.write_loc (mk_write MachSize.S128 AArch64.N aexp Access.REG v) location ii
+          M.write_loc (fun loc -> mk_write MachSize.S128 AArch64.N aexp Access.REG v loc AArch64.CT_None) location ii
 
       let write_reg_neon = write_reg_neon_sz MachSize.S128
 
@@ -301,16 +318,17 @@ module Make
 (*  Low level tag access *)
       let do_read_tag a ii =
         M.read_loc false
-          (fun loc v -> access_ord Dir.R loc v Access.TAG)
+          (fun loc v -> access_ord Dir.R loc v Access.TAG AArch64.CT_None)
           (A.Location_global a) ii
       and do_read_tag_nexp a ii =
         M.read_loc false
-          (fun loc v -> access_anexp AArch64.nexp_annot Dir.R loc v Access.TAG)
+          (fun loc v -> access_anexp AArch64.nexp_annot Dir.R loc v Access.TAG AArch64.CT_None)
           (A.Location_global a) ii
       and do_write_tag a v ii =
         let loc = A.Location_global a in
+        let cti = mk_cache_type_info Dir.W loc ii in
         M.mk_singleton_es
-          (access_ord Dir.W loc v Access.TAG)
+          (access_ord Dir.W loc v Access.TAG cti)
           ii
 
       let do_read_morello_tag a ii =
@@ -412,13 +430,15 @@ module Make
       let mextract_whole_pte_val an nexp a_pte iiid =
         (M.do_read_loc false
            (fun loc v ->
-             Act.Access (Dir.R,loc,v,an,nexp,quad,Access.PTE))
+             Act.Access (Dir.R,loc,v,an,nexp,quad,Access.PTE, AArch64.CT_None))
            (A.Location_global a_pte) iiid)
 
       and write_whole_pte_val an explicit a_pte v iiid =
+        let pte_loc = (A.Location_global a_pte) in
+        let cti = AArch64.CT_None (* mk_cache_type_info Dir.W pte_loc iiid *) in
         M.do_write_loc
-          (mk_write quad an explicit Access.PTE v)
-          (A.Location_global a_pte) iiid
+          (fun loc -> mk_write quad an explicit Access.PTE v loc cti)
+          pte_loc iiid
 
 
       let op_of_set = function
@@ -736,7 +756,7 @@ module Make
           if mixed then begin
               Mixed.read_mixed false sz (fun sz -> mk_read sz an anexp) a ii
             end else begin
-              let mk_act loc v =  Act.Access (Dir.R,loc,v,an,anexp,sz,ac) in
+              let mk_act loc v =  Act.Access (Dir.R,loc,v,an,anexp,sz,ac, AArch64.CT_None) in
               let loc = A.Location_global a in
               M.read_loc false mk_act loc ii
             end in
@@ -786,13 +806,15 @@ module Make
 
 (* Write *)
       let check_mixed_write_mem sz an anexp ac a v ii =
+        let cti = mk_cache_type_info Dir.W (A.Location_global a) ii in (* even if the effective address ends up being different, the access is to a global location *)
         if mixed then begin
             Mixed.write_mixed sz
-              (fun sz loc v -> mk_write sz an anexp ac v loc)
+              (fun sz loc v ->
+                  mk_write sz an anexp ac v loc cti)
               a v ii
           end else
           M.write_loc
-            (mk_write sz an anexp ac v) (A.Location_global a) ii
+            (fun loc -> mk_write sz an anexp ac v loc cti) (A.Location_global a) ii
 
       let check_morello_for_write m a v ii =
         if morello then
