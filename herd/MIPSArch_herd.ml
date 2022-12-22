@@ -36,7 +36,6 @@ module Make
 
     include Explicit.No
     include PteValSets.No
-    include CoFeat.No
 
     let is_isync _ = false
     let pp_isync = "???"

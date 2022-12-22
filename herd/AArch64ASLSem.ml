@@ -238,14 +238,13 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
     let tr_action ii =
       let an = AArch64.N in
       let exp = AArch64.Exp in
-      let cti = AArch64.CT_None in
       function
       | ASLAct.Access (dir, loc, v, sz) -> (
           match tr_loc ii loc with
           | None -> None
           | Some loc ->
               let ac = Act.access_of_location_std loc in
-              Some (Act.Access (dir, loc, tr_v v, an, exp, sz, ac, cti)))
+              Some (Act.Access (dir, loc, tr_v v, an, exp, sz, ac)))
       | ASLAct.NoAction -> Some Act.NoAction
       | ASLAct.TooFar msg -> Some (Act.TooFar msg)
 

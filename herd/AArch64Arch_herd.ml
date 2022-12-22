@@ -18,7 +18,6 @@ module Types = struct
   type annot = A | XA | L | XL | X | N | Q | XQ | NoRet | S
   type nexp =  AF|DB|AFDB|Other
   type explicit = Exp | NExp of nexp
-  type cofeat = CT_None | CT_IDC | CT_DIC_IDC
   type lannot = annot
 end
 
@@ -41,8 +40,6 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     let empty_annot = N
     let exp_annot = Exp
     let nexp_annot = NExp Other
-
-    let no_cofeat = CT_None
 
     let is_explicit_annot = function
       | Exp -> true
@@ -88,14 +85,6 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | NExp (DB|AFDB) -> true
       | NExp (AF|Other)|Exp -> false
 
-    let is_dic_store = function
-      | CT_DIC_IDC -> true
-      | CT_IDC | CT_None -> false
-
-    and is_idc_store = function
-      | CT_DIC_IDC | CT_IDC -> true
-      | CT_None -> false
-
     let barrier_sets =
       do_fold_dmb_dsb false true
         (fun b k ->
@@ -115,11 +104,6 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     let explicit_sets = [
       "AF", is_af;
       "DB", is_db;
-    ]
-
-    let cofeat_sets = [
-      "DIC", is_dic_store;
-      "IDC", is_idc_store;
     ]
 
     let pteval_sets =
@@ -167,11 +151,6 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | NExp AF-> "NExpAF"
       | NExp DB-> "NExpDB"
       | NExp AFDB-> "NExpAFDB"
-
-    let pp_cofeat = function
-      | CT_None ->    ""
-      | CT_IDC ->     "IDC"
-      | CT_DIC_IDC -> "DIC+IDC"
 
     module V = V
 

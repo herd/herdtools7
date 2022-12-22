@@ -47,7 +47,6 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
 
     include Explicit.No
     include PteValSets.No
-    include CoFeat.No
 
     let is_isync _ = false
     let pp_isync = "???"

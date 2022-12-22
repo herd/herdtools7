@@ -52,7 +52,7 @@ module
 
       let mk_read sz ato loc v =
         let ac = Act.access_of_location_std loc in
-        Act.Access (Dir.R, loc, v, ato, (), sz, ac, X86.no_cofeat)
+        Act.Access (Dir.R, loc, v, ato, (), sz, ac)
 
       let read_loc sz is_d = M.read_loc is_d (mk_read sz false)
 
@@ -78,39 +78,39 @@ module
       let write_loc_gen sz locked loc v ii = match loc with
       |  A.Location_global _ ->
           M.mk_singleton_es
-            (Act.Access (Dir.W, loc, v, locked, (), sz, Access.VIR, X86.no_cofeat))
+            (Act.Access (Dir.W, loc, v, locked, (), sz, Access.VIR))
             ii
       | _ ->
           M.mk_singleton_es
             (Act.Access
-               (Dir.W, loc, v, locked, (), nat_sz, Access.VIR, X86.no_cofeat))
+               (Dir.W, loc, v, locked, (), nat_sz, Access.VIR))
             ii
 
       let write_loc sz loc v ii =
         let ac = Act.access_of_location_std loc in
         M.mk_singleton_es
-          (Act.Access (Dir.W, loc, v, false, (), sz, ac, X86.no_cofeat))
+          (Act.Access (Dir.W, loc, v, false, (), sz, ac))
           ii
 
       let write_reg r v ii =
         M.mk_singleton_es
-          (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, (), nat_sz, Access.REG, X86.no_cofeat))
+          (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, (), nat_sz, Access.REG))
           ii
 
       let write_mem sz a v ii  =
         M.mk_singleton_es
-          (Act.Access (Dir.W, A.Location_global a, v, false, (), sz, Access.VIR, X86.no_cofeat))
+          (Act.Access (Dir.W, A.Location_global a, v, false, (), sz, Access.VIR))
           ii
 
       let write_mem_atomic sz a v ii =
         M.mk_singleton_es
-          (Act.Access (Dir.W, A.Location_global a, v, true, (), sz, Access.VIR, X86.no_cofeat))
+          (Act.Access (Dir.W, A.Location_global a, v, true, (), sz, Access.VIR))
           ii
 
       let write_loc_atomic sz loc v ii =
         let ac = Act.access_of_location_std loc in
         M.mk_singleton_es
-          (Act.Access (Dir.W, loc, v, (is_global loc), (), sz, ac, X86.no_cofeat))
+          (Act.Access (Dir.W, loc, v, (is_global loc), (), sz, ac))
           ii
 
       let write_flag r o v1 v2 ii =
@@ -197,7 +197,7 @@ module
                     (write_loc_gen nat_sz locked loc v ii >>|
                     write_sf v V.zero ii >>|
                     write_zf v V.zero ii) >>= fun (((),()),()) -> B.nextT
-
+                                                     
           | X86.I_INC (ea) ->
               lval_ea ea ii >>=
               fun loc -> read_loc_gen  nat_sz true locked loc ii >>=

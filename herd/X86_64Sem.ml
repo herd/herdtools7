@@ -60,7 +60,7 @@ module
 
       let mk_read sz an loc v =
         let ac = Act.access_of_location_std loc in
-        Act.Access (Dir.R, loc, v, an, (), sz, ac, X86_64.no_cofeat)
+        Act.Access (Dir.R, loc, v, an, (), sz, ac)
 
       let read_loc sz is_d = M.read_loc is_d (mk_read sz X86_64.Plain)
 
@@ -129,7 +129,7 @@ module
 
       let mk_write sz an loc v =
         let ac = Act.access_of_location_std loc in
-        Act.Access (Dir.W, loc, v, an, (), sz, ac, X86_64.no_cofeat)
+        Act.Access (Dir.W, loc, v, an, (), sz, ac)
 
       let write_loc sz an loc v ii =
         M.mk_singleton_es (mk_write sz an loc v) ii
