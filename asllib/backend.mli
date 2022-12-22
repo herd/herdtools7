@@ -22,6 +22,7 @@ module type S = sig
   type value
   type scope = AST.identifier * int
 
+  val v_of_parsed_v : AST.value -> value
   val v_of_int : int -> value
   val bind_data : 'a m -> ('a -> 'b m) -> 'b m
   val bind_seq : 'a m -> ('a -> 'b m) -> 'b m

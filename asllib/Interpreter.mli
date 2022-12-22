@@ -17,14 +17,26 @@
 (* Hadrien Renaud, University College London, UK.                           *)
 (****************************************************************************)
 
+type 'body primitive = {
+  name : string;
+  args : AST.type_desc list;
+  body : 'body;
+  return_type : AST.type_desc option;
+}
+(** Primitives are special functions that have a body as an ocaml function,
+    and thus are not interpreted but executed by the interpreter. *)
+
 module type S = sig
   module B : Backend.S
 
-  type ast = B.value AST.t
-  type sfunc = B.value list -> B.value list B.m
+  type body = B.value list -> B.value list B.m
 
-  val run : ast -> (string * sfunc) list -> B.value list -> B.value list B.m
-  (** [run spec_lib ast args] runs the function main of the ast, in an environment build from the ast and spec_lib. *)
+  val run : AST.t -> body primitive list -> B.value list -> B.value list B.m
+  (** [run spec_lib ast args] runs the function main of the ast, in an
+      environment build from the ast and spec_lib.
+      The primitives signatures will be passed by the interpreter to the type-
+      checker with [D_Primitive].
+  *)
 end
 
 module Make (B : Backend.S) : S with module B = B

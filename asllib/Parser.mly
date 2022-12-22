@@ -26,7 +26,7 @@
 %token <string> INT_LIT REAL_LIT BITVECTOR_LIT
 %token <bool> BOOL_LIT
 
-%type <AST.parsed_t> ast
+%type <AST.t> ast
 
 %nonassoc BNOT NOT
 %left MINUS

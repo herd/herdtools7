@@ -17,12 +17,7 @@
 (* Hadrien Renaud, University College London, UK.                           *)
 (****************************************************************************)
 
-type value = (int, bool, float, int) AST.value
-
-let pp_value =
-  Format.asprintf "%a"
-  @@ PP.pp_value Format.pp_print_int Format.pp_print_bool Format.pp_print_float
-       Format.pp_print_int
+open AST
 
 type err =
   | UnknownIdentifier of string
@@ -36,9 +31,10 @@ let pp_err chan = function
   | TypeError msg -> Printf.fprintf chan "Type error: %s" msg
   | InterpreterError msg -> Printf.fprintf chan "Interpreter error: %s" msg
   | NonIndexableValue value ->
-      Printf.fprintf chan "Non indexable value: %s" (pp_value value)
+      Printf.fprintf chan "Non indexable value: %s" (PP.value_to_string value)
   | IndexOutOfBounds (i, v) ->
-      Printf.fprintf chan "Index %d out of bounds for value %s" i (pp_value v)
+      Printf.fprintf chan "Index %d out of bounds for value %s" i
+        (PP.value_to_string v)
 
 let list_update i f li =
   let rec aux acc i li =
@@ -49,15 +45,9 @@ let list_update i f li =
   in
   aux [] i li
 
-open AST
-
 module NativeBackend = struct
-  type vint = int
-  type vbool = bool
-  type vreal = float
-  type vbitvector = int
   type 'a m = unit -> ('a, err) result
-  type value = (vint, vbool, vreal, vbitvector) AST.value
+  type value = AST.value
   type scope = AST.identifier * int
 
   module ScopedIdentifiers = struct
@@ -69,6 +59,7 @@ module NativeBackend = struct
   module SIMap = Map.Make (ScopedIdentifiers)
 
   let v_of_int i = V_Int i
+  let v_of_parsed_v = Fun.id
 
   let bind (vm : 'a m) (f : 'a -> 'b m) : 'b m =
    fun () -> Result.bind (vm ()) (fun v -> f v ())
@@ -182,17 +173,3 @@ module NativeBackend = struct
 end
 
 module NativeInterpreter = Interpreter.Make (NativeBackend)
-
-let of_parsed_ast =
-  let tr_fields tr =
-    let tr_one (name, value) = (name, tr value) in
-    List.map tr_one
-  in
-  ASTUtils.tr_values
-    (fun i -> V_Int i)
-    (fun b -> V_Bool b)
-    (fun r -> V_Real r)
-    (fun s -> V_BitVector (int_of_string s))
-    (fun tr li -> V_Tuple (List.map tr li))
-    (fun tr li -> V_Record (tr_fields tr li))
-    (fun tr li -> V_Exception (tr_fields tr li))

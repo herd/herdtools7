@@ -17,13 +17,19 @@
 (* Hadrien Renaud, University College London, UK.                           *)
 (****************************************************************************)
 
+type 'body primitive = {
+  name : string;
+  args : AST.type_desc list;
+  body : 'body;
+  return_type : AST.type_desc option;
+}
+
 module type S = sig
   module B : Backend.S
 
-  type ast = B.value AST.t
-  type sfunc = B.value list -> B.value list B.m
+  type body = B.value list -> B.value list B.m
 
-  val run : ast -> (string * sfunc) list -> B.value list -> B.value list B.m
+  val run : AST.t -> body primitive list -> B.value list -> B.value list B.m
 end
 
 module Make (B : Backend.S) = struct
@@ -32,8 +38,7 @@ module Make (B : Backend.S) = struct
   module IMap = ASTUtils.IMap
   module ISet = ASTUtils.ISet
 
-  type sfunc = value list -> value list m
-  type ast = value AST.t
+  type body = B.value list -> B.value list B.m
 
   let ( let* ) = B.bind_data
   let ( and* ) = B.prod
@@ -58,8 +63,8 @@ module Make (B : Backend.S) = struct
 
     type elt =
       | Value of value
-      | Func of int ref * value AST.func
-      | SpecialFunc of sfunc
+      | Func of int ref * AST.func
+      | SpecialFunc of body primitive
 
     type t = elt IMap.t
 
@@ -70,7 +75,7 @@ module Make (B : Backend.S) = struct
       add_seq (Seq.map (fun (x, f) -> (x, Func (ref 0, f))) s)
 
     let add_seq_special_func s =
-      add_seq (Seq.map (fun (x, f) -> (x, SpecialFunc f)) s)
+      add_seq (Seq.map (fun f -> (f.name, SpecialFunc f)) s)
 
     let find_opt_value name env =
       match find_opt name env with Some (Value v) -> Some v | _ -> None
@@ -88,7 +93,7 @@ module Make (B : Backend.S) = struct
   (*                                                                           *)
   (*****************************************************************************)
 
-  let build_enums (ast : ast) : genv =
+  let build_enums (ast : AST.t) : genv =
     let build_one (counter, genv) name =
       let genv = GEnv.add_value name (v_of_int counter) genv in
       (counter + 1, genv)
@@ -101,12 +106,14 @@ module Make (B : Backend.S) = struct
     let _, genv = List.fold_left build_decl (0, IMap.empty) ast in
     genv
 
-  type build_status =
-    | NotYetEvaluated of value AST.expr
-    | AlreadyEvaluated of value
+  type build_status = NotYetEvaluated of AST.expr | AlreadyEvaluated of value
 
   (* build every constant and make an global env *)
-  let build_consts (ast : ast) genv : genv m =
+  let build_consts (ast : AST.t) genv : genv m =
+    (* In the following, acc is the current status of evaluation, i.e. it maps
+       every global variable to either its build_status, that is its value if
+       it has been evaluated, or its expression otherwise. This is why we have
+       to use it every time we could use a variable. *)
     let rec eval_one acc name =
       match GEnv.find_opt_value name genv with
       | Some v -> return (v, acc)
@@ -120,7 +127,7 @@ module Make (B : Backend.S) = struct
     and eval_expr acc e =
       let open AST in
       match e with
-      | E_Literal v -> return (v, acc)
+      | E_Literal v -> return (v_of_parsed_v v, acc)
       | E_Var x -> eval_one acc x
       | E_Unop (op, e') ->
           let* v', acc = eval_expr acc e' in
@@ -192,7 +199,7 @@ module Make (B : Backend.S) = struct
     let genv, lenv = env in
     let open AST in
     function
-    | E_Literal v -> return v
+    | E_Literal v -> v_of_parsed_v v |> return
     | E_Var x -> (
         match GEnv.find_opt x genv with
         | Some (GEnv.Value v) -> return v
@@ -216,7 +223,7 @@ module Make (B : Backend.S) = struct
         let eval_ = eval_expr env scope is_data in
         choice (eval_ e1) (eval_ e2) (eval_ e3)
     | E_Get (name, args) | E_Call (name, args) ->
-        let* vargs = prod_map (eval_expr env scope is_data) args in
+        let vargs = List.map (eval_expr env scope is_data) args in
         let* returned = eval_func (fst env) name vargs in
         one_return_value name returned
 
@@ -231,7 +238,7 @@ module Make (B : Backend.S) = struct
               ("Global variables are not supported yet. Cannot assign to " ^ x)
         | Some _ ->
             return (fun v ->
-                let* _ = eval_func genv x [ v ] in
+                let* _ = eval_func genv x [ return v ] in
                 continue env)
         | None ->
             return (fun v ->
@@ -239,9 +246,9 @@ module Make (B : Backend.S) = struct
                 let lenv = LEnv.add x v lenv in
                 continue (genv, lenv)))
     | LESet (x, args) ->
-        let* vargs = prod_map (eval_expr env scope false) args in
+        let vargs = List.map (eval_expr env scope false) args in
         return (fun v ->
-            let* _ = eval_func genv x (vargs @ [ v ]) in
+            let* _ = eval_func genv x (vargs @ [ return v ]) in
             continue env)
 
   and eval_stmt (env : env) scope =
@@ -261,7 +268,7 @@ module Make (B : Backend.S) = struct
             | Continuing lenv -> eval_stmt (fst env, lenv) scope s2
             | Returning vs -> return (Returning vs))
     | S_Call (name, args) ->
-        let* vargs = prod_map (eval_expr env scope true) args in
+        let vargs = List.map (eval_expr env scope true) args in
         let* _ = eval_func (fst env) name vargs in
         continue env
     | S_Cond (e, s1, s2) ->
@@ -269,29 +276,33 @@ module Make (B : Backend.S) = struct
           (eval_expr env scope true e)
           (eval_stmt env scope s1) (eval_stmt env scope s2)
 
-  and eval_func genv name args =
+  and eval_func genv name (args : value m list) =
     match GEnv.find_opt name genv with
     | None -> fatal ("Unknown function: " ^ name)
     | Some (GEnv.Value _) -> fatal ("Cannot call value " ^ name)
-    | Some (GEnv.SpecialFunc f) -> f args
+    | Some (GEnv.SpecialFunc { body; _ }) ->
+        let* args = prod_map Fun.id args in
+        body args
     | Some (GEnv.Func (_, { AST.args = arg_decls; _ }))
       when List.compare_lengths args arg_decls <> 0 ->
         fatal ("Bad number of arguments for function " ^ name)
     | Some (GEnv.Func (r, { AST.args = arg_decls; body; _ })) -> (
         let scope = (name, !r) in
         let () = r := !r + 1 in
-        let one_arg (x, _type_desc) v = AST.(S_Assign (LEVar x, E_Literal v)) in
-        let body =
-          AST.S_Then
-            (ASTUtils.stmt_from_list (List.map2 one_arg arg_decls args), body)
+        let one_arg (x, _type_desc) v =
+          let* v = v in
+          let* () = on_write_identifier x scope v in
+          return (x, v)
         in
-        let* res = eval_stmt (genv, LEnv.empty) scope body in
+        let* bindings = List.map2 one_arg arg_decls args |> prod_map Fun.id in
+        let lenv = List.to_seq bindings |> LEnv.of_seq in
+        let* res = eval_stmt (genv, lenv) scope body in
         match res with Continuing _ -> return [] | Returning vs -> return vs)
 
-  let run (ast : ast) std_lib_extras (main_args : value list) : value list m =
+  let run (ast : AST.t) std_lib_extras (main_args : value list) : value list m =
     let genv = build_enums ast in
     let* genv = build_consts ast genv in
     let genv = build_funcs ast genv in
     let genv = GEnv.add_seq_special_func (List.to_seq std_lib_extras) genv in
-    eval_func genv "main" main_args
+    eval_func genv "main" (List.map return main_args)
 end

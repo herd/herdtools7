@@ -1,6 +1,7 @@
 open AST
 
 type buffer = Buffer.t
+type 'a printer = buffer -> 'a -> unit
 
 let addb buf s = Buffer.add_string buf s
 
@@ -24,6 +25,23 @@ let pp_list pp_elt buf =
 let pp_option none pp_some buf = function
   | None -> addb buf none
   | Some elt -> pp_some buf elt
+
+let pp_pair pp_left pp_right f (left, right) =
+  addb f "(";
+  pp_left f left;
+  addb f " ";
+  pp_right f right;
+  addb f ")"
+
+let pp_string = addb
+let pp_int f i = addb f (string_of_int i)
+let pp_float f x = addb f (string_of_float x)
+let pp_bool f b = addb f (if b then "true" else "false")
+
+let pp_bitvector f s =
+  addb f "'";
+  addb f s;
+  addb f "'"
 
 let pp_binop : binop -> string = function
   | AND -> "AND"
@@ -50,38 +68,26 @@ let pp_binop : binop -> string = function
 
 let pp_unop = function BNOT -> "BNOT" | NOT -> "NOT" | NEG -> "NEG"
 
-let rec pp_value pp_int pp_bool pp_real pp_bv f =
-  let pp_v = pp_value pp_int pp_bool pp_real pp_bv in
-  let pp_field_assoc =
-    let pp_one f (name, value) =
-      addb f "(";
-      addb f name;
-      addb f " ";
-      pp_v f value;
-      addb f ")"
-    in
-    pp_list pp_one
-  in
-  function
+let rec pp_value f = function
   | V_Int i ->
       addb f "(VInt ";
-      addb f (pp_int i);
+      pp_int f i;
       addb f ")"
   | V_Bool b ->
       addb f "(VBool ";
-      addb f (pp_bool b);
+      pp_bool f b;
       addb f ")"
   | V_Real r ->
       addb f "(VReal ";
-      addb f (pp_real r);
+      pp_float f r;
       addb f ")"
   | V_BitVector bv ->
       addb f "(VBitVector ";
-      addb f (pp_bv bv);
+      pp_bitvector f bv;
       addb f ")"
   | V_Tuple li ->
       addb f "(VTuple ";
-      pp_list pp_v f li;
+      pp_list pp_value f li;
       addb f ")"
   | V_Record li ->
       addb f "(VRecord ";
@@ -92,19 +98,12 @@ let rec pp_value pp_int pp_bool pp_real pp_bv f =
       pp_field_assoc f li;
       addb f ")"
 
-let pp_string = addb
-let pp_parsed_int = string_of_int
-let pp_parsed_bool = string_of_bool
-let pp_parsed_real = string_of_float
-let pp_parsed_bitvector s = s
+and pp_field_assoc f = pp_list (pp_pair pp_string pp_value) f
 
-let pp_parsed_value =
-  pp_value pp_parsed_int pp_parsed_bool pp_parsed_real pp_parsed_bitvector
-
-let rec pp_expr pp_v f = function
+let rec pp_expr f = function
   | E_Literal v ->
       addb f "(ELiteral ";
-      pp_v f v;
+      pp_value f v;
       addb f ")"
   | E_Var x ->
       addb f "(EVar ";
@@ -114,38 +113,38 @@ let rec pp_expr pp_v f = function
       addb f "(EBinop ";
       addb f (pp_binop op);
       addb f " ";
-      pp_expr pp_v f e1;
+      pp_expr f e1;
       addb f " ";
-      pp_expr pp_v f e2;
+      pp_expr f e2;
       addb f ")"
   | E_Unop (op, e) ->
       addb f "(EUnop ";
       addb f (pp_unop op);
       addb f " ";
-      pp_expr pp_v f e;
+      pp_expr f e;
       addb f ")"
   | E_Call (name, args) ->
       addb f "(ECall ";
       addb f name;
       addb f " ";
-      pp_expr_list pp_v f args;
+      pp_expr_list f args;
       addb f ")"
   | E_Get (name, args) ->
       addb f "(EGet ";
       addb f name;
       addb f " ";
-      pp_expr_list pp_v f args;
+      pp_expr_list f args;
       addb f ")"
   | E_Cond (e1, e2, e3) ->
       addb f "(ECond ";
-      pp_expr pp_v f e1;
+      pp_expr f e1;
       addb f " ";
-      pp_expr pp_v f e2;
+      pp_expr f e2;
       addb f " ";
-      pp_expr pp_v f e3;
+      pp_expr f e3;
       addb f ")"
 
-and pp_expr_list pp_v = pp_list (pp_expr pp_v)
+and pp_expr_list f = pp_list pp_expr f
 
 let pp_fields_assoc pp_key pp_type_desc =
   let pp_one f (key, type_desc) =
@@ -180,7 +179,7 @@ let rec pp_type_desc f = function
       addb f ")"
   | T_Array (e, elt_type) ->
       addb f "(T_Array ";
-      pp_expr pp_parsed_value f e;
+      pp_expr f e;
       addb f " ";
       pp_type_desc f elt_type;
       addb f ")"
@@ -208,13 +207,13 @@ and pp_int_constraint =
   let pp_one f = function
     | Constraint_Exact v ->
         addb f "(Constraint_Exact ";
-        pp_expr pp_parsed_value f v;
+        pp_expr f v;
         addb f ")"
     | Constraint_Range (bot, top) ->
         addb f "(Constraint_Range ";
-        pp_expr pp_parsed_value f bot;
+        pp_expr f bot;
         addb f " ";
-        pp_expr pp_parsed_value f top;
+        pp_expr f top;
         addb f ")"
   in
   pp_list pp_one
@@ -222,7 +221,7 @@ and pp_int_constraint =
 and pp_bits_constraint f = function
   | BitWidth_Determined i ->
       addb f "(BitWidth_Determined ";
-      pp_expr pp_parsed_value f i;
+      pp_expr f i;
       addb f ")"
   | BitWidth_ConstrainedFormType ty ->
       addb f "(BitWidth_ConstrainedFormType ";
@@ -240,7 +239,7 @@ let pp_typed_identifier f (identifier, type_desc) =
   pp_type_desc f type_desc;
   addb f ")"
 
-let pp_lexpr pp_v f = function
+let pp_lexpr f = function
   | LEVar x ->
       addb f "(LEVar ";
       addb f x;
@@ -249,43 +248,43 @@ let pp_lexpr pp_v f = function
       addb f "(LESet ";
       addb f name;
       addb f " ";
-      pp_expr_list pp_v f args;
+      pp_expr_list f args;
       addb f ")"
 
-let rec pp_stmt pp_v f = function
+let rec pp_stmt f = function
   | S_Pass -> addb f "SPass"
   | S_Then (s1, s2) ->
       addb f "(SThen ";
-      pp_stmt pp_v f s1;
+      pp_stmt f s1;
       addb f " ";
-      pp_stmt pp_v f s2;
+      pp_stmt f s2;
       addb f ")"
   | S_Assign (le, e) ->
       addb f "(SAssign ";
-      pp_lexpr pp_v f le;
+      pp_lexpr f le;
       addb f " ";
-      pp_expr pp_v f e;
+      pp_expr f e;
       addb f ")"
   | S_Call (name, args) ->
       addb f "(SCall ";
       addb f name;
       addb f " ";
-      pp_expr_list pp_v f args;
+      pp_expr_list f args;
       addb f ")"
   | S_Cond (e, s1, s2) ->
       addb f "(SCond ";
-      pp_expr pp_v f e;
+      pp_expr f e;
       addb f " ";
-      pp_stmt pp_v f s1;
+      pp_stmt f s1;
       addb f " ";
-      pp_stmt pp_v f s2;
+      pp_stmt f s2;
       addb f ")"
   | S_Return el ->
       addb f "(SReturn ";
-      pp_expr_list pp_v f el;
+      pp_expr_list f el;
       addb f ")"
 
-let pp_decl pp_v f = function
+let pp_decl f = function
   | D_Func { name; args; body; return_type } ->
       addb f "(Func ";
       addb f name;
@@ -297,13 +296,13 @@ let pp_decl pp_v f = function
       | Some return_type ->
           pp_type_desc f return_type;
           addb f " ");
-      pp_stmt pp_v f body;
+      pp_stmt f body;
       addb f ")"
   | D_GlobalConst (x, e) ->
       addb f "(GlobalConst ";
       addb f x;
       addb f " ";
-      pp_expr pp_v f e;
+      pp_expr f e;
       addb f ")"
   | D_TypeDecl (name, type_desc) ->
       addb f "(TypeDecl ";
@@ -311,16 +310,22 @@ let pp_decl pp_v f = function
       addb f " ";
       pp_type_desc f type_desc;
       addb f ")"
+  | D_Primitive { name; args; return_type; _ } ->
+      addb f "(Primitive ";
+      addb f name;
+      addb f " (";
+      pp_list pp_typed_identifier f args;
+      addb f ")";
+      (match return_type with
+      | None -> ()
+      | Some return_type ->
+          addb f " ";
+          pp_type_desc f return_type);
+      addb f ")"
 
-let pp_t pp_v f ast =
+let pp_t f ast =
   addb f "(Asllib.AST ";
-  pp_list (pp_decl pp_v) f ast;
+  pp_list pp_decl f ast;
   addb f ")"
 
-let pp_parsed_t = pp_t pp_parsed_value
-
-let t_to_string value_to_string ast =
-  let pp_v f v = addb f (value_to_string v) in
-  with_buf @@ fun b -> pp_t pp_v b ast
-
-let parsed_t_to_string ast = with_buf @@ fun b -> pp_parsed_t b ast
+let t_to_string ast = with_buf @@ fun b -> pp_t b ast
