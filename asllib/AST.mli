@@ -17,10 +17,6 @@
 (* Hadrien Renaud, University College London, UK.                           *)
 (****************************************************************************)
 
-(** The main types of this modules are parametric in function of the runtime
-    value types ['v]. Types are considered determined at compile time, and thus
-    are not dependent on this value type. *)
-
 (** Operations on base value of arity one. *)
 type unop =
   | BNOT  (** Boolean inversion *)
@@ -54,30 +50,28 @@ type binop =
 type identifier = string
 (** Type of local identifiers in the AST. *)
 
-(** Main value type, parametric on its base values *)
-type ('i, 'b, 'r, 'bv) value =
-  | V_Int of 'i
-  | V_Bool of 'b
-  | V_Real of 'r
-  | V_BitVector of 'bv
-  | V_Tuple of ('i, 'b, 'r, 'bv) value list
-  | V_Record of (identifier * ('i, 'b, 'r, 'bv) value) list
-  | V_Exception of (identifier * ('i, 'b, 'r, 'bv) value) list
+type bitvector = string
+(** Type of bitvector string as just parsed *)
 
-type parsed_value = (int, bool, float, string) value
-(** Type of parsed values by the module Parser.mly *)
+(** Main value type, parametric on its base values *)
+type value =
+  | V_Int of int
+  | V_Bool of bool
+  | V_Real of float
+  | V_BitVector of bitvector
+  | V_Tuple of value list
+  | V_Record of (identifier * value) list
+  | V_Exception of (identifier * value) list
 
 (** Expressions. Parametric on the type of literals. *)
-type 'v expr =
-  | E_Literal of 'v
+type expr =
+  | E_Literal of value
   | E_Var of identifier
-  | E_Binop of binop * 'v expr * 'v expr
-  | E_Unop of unop * 'v expr
-  | E_Call of identifier * 'v expr list
-  | E_Get of identifier * 'v expr list
-  | E_Cond of 'v expr * 'v expr * 'v expr
-
-type parsed_expr = parsed_value expr
+  | E_Binop of binop * expr * expr
+  | E_Unop of unop * expr
+  | E_Call of identifier * expr list
+  | E_Get of identifier * expr list
+  | E_Cond of expr * expr * expr
 
 type type_desc =
   | T_Int of int_constraints option
@@ -88,7 +82,7 @@ type type_desc =
   | T_Bit
   | T_Enum of enum_type_desc
   | T_Tuple of type_desc list
-  | T_Array of parsed_expr * type_desc
+  | T_Array of expr * type_desc
   | T_Record of record_type_desc
   | T_Exception of record_type_desc
   | T_ZType of type_desc
@@ -98,46 +92,45 @@ and enum_type_desc = identifier list
 and record_type_desc = (identifier * type_desc) list
 
 and int_constraint =
-  | Constraint_Exact of parsed_expr
-  | Constraint_Range of (parsed_expr * parsed_expr)
+  | Constraint_Exact of expr
+  | Constraint_Range of (expr * expr)
 
 and int_constraints = int_constraint list
 
 and bits_constraint =
-  | BitWidth_Determined of parsed_expr
+  | BitWidth_Determined of expr
   | BitWidth_ConstrainedFormType of type_desc
   | BitWidth_Constrained of int_constraints
 
 and typed_identifier = identifier * type_desc
 
 (** Type of left-hand side of assignments. *)
-type 'v lexpr = LEVar of identifier | LESet of identifier * 'v expr list
+type lexpr = LEVar of identifier | LESet of identifier * expr list
 
 (** Statements. Parametric on the type of literals in expressions. *)
-type 'v stmt =
+type stmt =
   | S_Pass
-  | S_Then of 'v stmt * 'v stmt
-  | S_Assign of 'v lexpr * 'v expr
-  | S_Call of identifier * 'v expr list
-  | S_Return of 'v expr list
-  | S_Cond of 'v expr * 'v stmt * 'v stmt
+  | S_Then of stmt * stmt
+  | S_Assign of lexpr * expr
+  | S_Call of identifier * expr list
+  | S_Return of expr list
+  | S_Cond of expr * stmt * stmt
 
-type 'v func = {
+type func = {
   name : identifier;
   args : typed_identifier list;
-  body : 'v stmt;
+  body : stmt;
   return_type : type_desc option;
 }
-(** Declared functions. Parametric on the type of literals in the body. *)
 
 (** Declarations, ie. top level statement in a asl file. *)
-type 'v decl =
-  | D_Func of 'v func
-  | D_GlobalConst of identifier * 'v expr
+type decl =
+  | D_Func of func
+  | D_GlobalConst of identifier * expr
   | D_TypeDecl of identifier * type_desc
+  | D_Primitive of func
+(* [D_Primitive] is a placeholder for typechecking primitive calls. Only the
+   function signature is relevant here. *)
 
-type 'v t = 'v decl list
+type t = decl list
 (** Main AST type. *)
-
-type parsed_t = parsed_value t
-(** Type of parsed ast by the module Parser.mly *)

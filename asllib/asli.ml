@@ -66,11 +66,10 @@ let () =
   let f = Sys.argv.(1) in
   let () = Printf.printf "\r                                           \r" in
   let () = Printf.printf "Parsing %s...\n" f in
-  let parsed_ast = build_ast_from_file f in
+  let ast = build_ast_from_file f in
   let () = Printf.printf "Found the following AST:\n" in
-  let () = Format.printf "%a\n\n@?" PP.pp_parsed_t parsed_ast in
+  let () = Format.printf "%a\n\n@?" PP.pp_t ast in
   let () = Printf.printf "Typing %s...\n" f in
-  let _ = typing parsed_ast in
+  let _ = typing ast in
   let () = Printf.printf "Running %s...\n" f in
-  let native_ast = Native.of_parsed_ast parsed_ast in
-  exec native_ast
+  exec ast

@@ -71,21 +71,23 @@ module Make (C : Sem.Config) = struct
     (* Values handling                                                        *)
     (**************************************************************************)
 
-    let parsed_ast_to_ast =
-      let value_of_int i = V.intToV i in
-      let value_of_bool b = if b then V.one else V.zero in
-      let value_of_real _r = Warn.fatal "Cannot parse reals yet." in
-      let value_of_string = V.stringToV in
-      let value_of_tuple tr li =
-        let li = List.map (fun v -> tr v |> as_constant) li in
-        V.Val (Constant.ConcreteVector li)
-      in
-      let value_of_record tr li =
+    let v_of_parsed_v =
+      let open AST in
+      let rec tr = function
+        | V_Int i -> V.intToV i
+        | V_Bool b -> if b then V.one else V.zero
+        | V_Real _f -> Warn.fatal "Cannot use reals yet."
+        | V_BitVector bv -> V.stringToV bv
+        | V_Tuple li ->
+            let li = List.map (fun v -> tr v |> as_constant) li in
+            V.Val (Constant.ConcreteVector li)
+        | V_Record li -> value_of_record li
+        | V_Exception li -> value_of_record li
+      and value_of_record li =
         let li = List.map (fun (_, v) -> tr v |> as_constant) li in
         V.Val (Constant.ConcreteVector li)
       in
-      Asllib.ASTUtils.tr_values value_of_int value_of_bool value_of_real
-        value_of_string value_of_tuple value_of_record value_of_record
+      tr
 
     let v_to_int = function
       | V.Val (Constant.Concrete i) -> V.Cst.Scalar.to_int i
@@ -255,39 +257,48 @@ module Make (C : Sem.Config) = struct
     (* ASL environment                                                        *)
     (**************************************************************************)
 
-    (* Helpers *)
-    let pair a b = (a, b)
+    (* It could be far nicer with a GADT, but for another time ... *)
 
-    let arity_zero name f =
-      pair name @@ function
+    (* Helpers *)
+    let build_primitive name args return_type body =
+      let open Asllib.Interpreter in
+      { name; args; body; return_type }
+
+    let arity_zero name return_type f =
+      build_primitive name [] return_type @@ function
       | [] -> f ()
       | _ :: _ -> Warn.fatal "Arity error for function %s." name
 
-    let arity_one name f =
-      pair name @@ function
+    let arity_one name args return_type f =
+      build_primitive name args return_type @@ function
       | [ x ] -> f x
       | [] | _ :: _ :: _ -> Warn.fatal "Arity error for function %s." name
 
-    let arity_two name f =
-      pair name @@ function
+    let arity_two name args return_type f =
+      build_primitive name args return_type @@ function
       | [ x; y ] -> f x y
       | [] | [ _ ] | _ :: _ :: _ :: _ ->
           Warn.fatal "Arity error for function %s." name
 
-    let arity_three name f =
-      pair name @@ function
+    let arity_three name arg_types return_type f =
+      build_primitive name arg_types return_type @@ function
       | [ x; y; z ] -> f x y z
       | _ -> Warn.fatal "Arity error for function %s." name
 
     (* Primitives *)
     let extra_funcs ii_env =
+      let open AST in
+      let d = T_Int None in
+      let reg = T_Int None in
+      let data = T_Int None in
       [
-        arity_two "read_register" (read_register ii_env);
-        arity_three "write_register" (write_register ii_env);
-        arity_two "read_memory" (read_memory ii_env);
-        arity_three "write_memory" (write_memory ii_env);
-        arity_zero "read_pstate_nzcv" (read_pstate_nzcv ii_env);
-        arity_one "write_pstate_nzcv" (write_pstate_nzcv ii_env);
+        arity_two "read_register" [ reg; d ] (Some data) (read_register ii_env);
+        arity_three "write_register" [ reg; d; reg ] None
+          (write_register ii_env);
+        arity_two "read_memory" [ reg; d ] (Some data) (read_memory ii_env);
+        arity_three "write_memory" [ reg; d; data ] None (write_memory ii_env);
+        arity_zero "read_pstate_nzcv" (Some data) (read_pstate_nzcv ii_env);
+        arity_one "write_pstate_nzcv" [ data ] None (write_pstate_nzcv ii_env);
       ]
 
     (* Main function arguments *)
@@ -324,6 +335,7 @@ module Make (C : Sem.Config) = struct
         type scope = string * int
 
         let v_of_int = V.intToV
+        let v_of_parsed_v = v_of_parsed_v
         let bind_data = M.( >>= )
         let bind_seq = M.cseq
         let prod = M.( >>| )
@@ -339,9 +351,9 @@ module Make (C : Sem.Config) = struct
         let set_i = set_i
       end in
       let module ASLInterpreter = Asllib.Interpreter.Make (ASLBackend) in
-      let ast = parsed_ast_to_ast ii.A.inst in
       let* _ =
-        ASLInterpreter.run ast (extra_funcs ii_env) (fetch_main_args ii_env)
+        ASLInterpreter.run ii.A.inst (extra_funcs ii_env)
+          (fetch_main_args ii_env)
       in
       M.addT !(snd ii_env) B.nextT
 

@@ -14,5 +14,5 @@ type typing_error =
 
 exception TypingError of typing_error
 
-val infer : tenv -> scope -> AST.parsed_expr -> AST.type_desc
-val build_tenv : AST.parsed_t -> tenv
+val infer : tenv -> scope -> AST.expr -> AST.type_desc
+val build_tenv : AST.t -> tenv
