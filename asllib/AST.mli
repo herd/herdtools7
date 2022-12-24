@@ -70,42 +70,58 @@ type expr =
   | E_Binop of binop * expr * expr
   | E_Unop of unop * expr
   | E_Call of identifier * expr list
-  | E_Get of identifier * expr list
+  | E_Getter of identifier * expr list
   | E_Cond of expr * expr * expr
+  | E_GetField of expr * identifier * type_annot
+  | E_Record of type_desc * (identifier * expr) list * type_annot
 
-type type_desc =
+(** Type annotations are way for the typing system to annotate
+    special nodes of the AST. They are for internal use only. *)
+and type_annot = TA_None | TA_InferredStructure of type_desc
+
+(** Type descriptors.*)
+and type_desc =
   | T_Int of int_constraints option
   | T_Real
   | T_String
   | T_Bool
   | T_Bits of bits_constraint
   | T_Bit
-  | T_Enum of enum_type_desc
+  | T_Enum of identifier list
   | T_Tuple of type_desc list
   | T_Array of expr * type_desc
-  | T_Record of record_type_desc
-  | T_Exception of record_type_desc
+  | T_Record of typed_identifier list
+  | T_Exception of typed_identifier list
   | T_ZType of type_desc
-  | T_Named of identifier
+      (** A Z-type correcponds to a type with a possible null value.*)
+  | T_Named of identifier  (** A type variable. *)
 
-and enum_type_desc = identifier list
-and record_type_desc = (identifier * type_desc) list
-
+(** A constraint on an integer part. *)
 and int_constraint =
   | Constraint_Exact of expr
+      (** Exactly this value, as given by a statically evaluable expression. *)
   | Constraint_Range of (expr * expr)
+      (** In the range of these two statically evaluable values.*)
 
 and int_constraints = int_constraint list
+(** The int_constraints represent the union of the individual constraints.*)
 
+(** The width of a bitvector can be constrained in multiple ways. *)
 and bits_constraint =
-  | BitWidth_Determined of expr
+  | BitWidth_Determined of expr  (** Statically evaluable expression. *)
   | BitWidth_ConstrainedFormType of type_desc
+      (** Constrained by the domain of another type. *)
   | BitWidth_Constrained of int_constraints
+      (** Constrained directly by a constraint on its width. *)
 
 and typed_identifier = identifier * type_desc
+(** An identifier declared with its type. *)
 
 (** Type of left-hand side of assignments. *)
-type lexpr = LEVar of identifier | LESet of identifier * expr list
+type lexpr =
+  | LE_Var of identifier
+  | LE_Setter of identifier * expr list
+  | LE_SetField of lexpr * identifier * type_annot
 
 (** Statements. Parametric on the type of literals in expressions. *)
 type stmt =
@@ -122,6 +138,8 @@ type func = {
   body : stmt;
   return_type : type_desc option;
 }
+(** Function types in the AST. For the moment, they represent getters, setters,
+    functions, procedures and primitives. *)
 
 (** Declarations, ie. top level statement in a asl file. *)
 type decl =

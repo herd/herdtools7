@@ -41,6 +41,8 @@ module Make (B : Backend.S) = struct
   type body = B.value list -> B.value list B.m
 
   let ( let* ) = B.bind_data
+  let map_data a b = B.bind_data a (fun x -> return (b x))
+  let ( ||> ) = map_data
   let ( and* ) = B.prod
 
   let prod_map f =
@@ -54,38 +56,103 @@ module Make (B : Backend.S) = struct
 
   (*****************************************************************************)
   (*                                                                           *)
+  (*                             Records handling                              *)
+  (*                                                                           *)
+  (*****************************************************************************)
+
+  let make_record ty fields =
+    let ty_fields =
+      match ty with
+      | AST.T_Record ty_fields -> ASTUtils.canonical_fields ty_fields
+      | _ -> assert false
+    in
+    let fields = ASTUtils.canonical_fields fields in
+    let values = List.map snd fields in
+    let eq_field (x, _) (y, _) = String.equal x y in
+    if List.for_all2 eq_field ty_fields fields then create_vector ty values
+    else
+      fatal
+        ("Type error: bad fields passed for type " ^ PP.type_desc_to_string ty)
+
+  let index_of_field_in_record x ty =
+    let rec list_index i = function
+      | [] -> None
+      | (y, _) :: t -> if String.equal x y then Some i else list_index (i + 1) t
+    in
+    match ty with
+    | AST.T_Record li -> (
+        match list_index 0 li with
+        | Some i -> return i
+        | None ->
+            fatal
+              (Format.asprintf "@[<hv>Cannot get field %s of type@ %a@]" x
+                 PP.pp_type_desc ty))
+    | _ ->
+        fatal
+          (Format.asprintf "@[<hv>Cannot index type@ %a@]" PP.pp_type_desc ty)
+
+  (*****************************************************************************)
+  (*                                                                           *)
   (*                       Global constants environment                        *)
   (*                                                                           *)
   (*****************************************************************************)
 
-  module GEnv = struct
-    include ASTUtils.IMap
-
-    type elt =
-      | Value of value
-      | Func of int ref * AST.func
-      | SpecialFunc of body primitive
-
-    type t = elt IMap.t
-
-    let add_value name v = add name (Value v)
-    let add_seq_value s = add_seq (Seq.map (fun (x, v) -> (x, Value v)) s)
-
-    let add_seq_func s =
-      add_seq (Seq.map (fun (x, f) -> (x, Func (ref 0, f))) s)
-
-    let add_seq_special_func s =
-      add_seq (Seq.map (fun f -> (f.name, SpecialFunc f)) s)
-
-    let find_opt_value name env =
-      match find_opt name env with Some (Value v) -> Some v | _ -> None
-  end
-
-  module LEnv = IMap
-
-  type genv = GEnv.t
-  type lenv = value LEnv.t
+  type func = Func of int ref * AST.func | Primitive of body primitive
+  type genv = value IMap.t * func IMap.t
+  type lenv = value IMap.t
   type env = genv * lenv
+
+  let add_primitives primitives funcs =
+    let one_primitive primitive = (primitive.name, Primitive primitive) in
+    primitives |> List.to_seq |> Seq.map one_primitive
+    |> Fun.flip IMap.add_seq funcs
+
+  (*****************************************************************************)
+  (*                                                                           *)
+  (*                         Type annotations handling                         *)
+  (*                                                                           *)
+  (*****************************************************************************)
+
+  let type_of_ta = function
+    | AST.TA_None -> fatal "Interpreter error. Type inference step incomplete."
+    | AST.TA_InferredStructure ty -> return ty
+
+  let type_annotation ast sfuncs =
+    let add_fake_primitives =
+      let fake_funcs =
+        let one_sfunc { name; args; return_type; _ } =
+          let one_arg i ty = ("arg" ^ string_of_int i, ty) in
+          let args = List.mapi one_arg args in
+          AST.(D_Func { name; args; body = S_Pass; return_type })
+        in
+        List.map one_sfunc sfuncs
+      in
+      List.rev_append fake_funcs
+    in
+    let annotate ast =
+      let open Typing in
+      try annotate_ast ast |> return
+      with TypingError err -> (
+        fatal
+        @@
+        match err with
+        | NotYetImplemented s -> "Typing -- Not yet implemented: " ^ s
+        | UndefinedIdentifier s -> "Undefined identifier '" ^ s ^ "'."
+        | TypeError s -> "Type error: " ^ s)
+    in
+    let remove_fake_primitives =
+      let primitive_names =
+        let one_sfunc { name; _ } = name in
+        sfuncs |> List.to_seq |> Seq.map one_sfunc |> ASTUtils.ISet.of_seq
+      in
+      let is_primitive = function
+        | AST.(D_Func { name; _ }) ->
+            not (ASTUtils.ISet.mem name primitive_names)
+        | _ -> true
+      in
+      List.filter is_primitive
+    in
+    ast |> add_fake_primitives |> annotate ||> remove_fake_primitives
 
   (*****************************************************************************)
   (*                                                                           *)
@@ -93,29 +160,29 @@ module Make (B : Backend.S) = struct
   (*                                                                           *)
   (*****************************************************************************)
 
-  let build_enums (ast : AST.t) : genv =
-    let build_one (counter, genv) name =
-      let genv = GEnv.add_value name (v_of_int counter) genv in
-      (counter + 1, genv)
+  let build_enums (ast : AST.t) globals =
+    let build_one (counter, globals) name =
+      let globals = IMap.add name (v_of_int counter) globals in
+      (counter + 1, globals)
     in
     let build_decl acc = function
       | AST.D_TypeDecl (_name, AST.T_Enum ids) ->
           List.fold_left build_one acc ids
       | _ -> acc
     in
-    let _, genv = List.fold_left build_decl (0, IMap.empty) ast in
+    let _, genv = List.fold_left build_decl (0, globals) ast in
     genv
 
   type build_status = NotYetEvaluated of AST.expr | AlreadyEvaluated of value
 
   (* build every constant and make an global env *)
-  let build_consts (ast : AST.t) genv : genv m =
+  let build_consts (ast : AST.t) globals =
     (* In the following, acc is the current status of evaluation, i.e. it maps
        every global variable to either its build_status, that is its value if
        it has been evaluated, or its expression otherwise. This is why we have
        to use it every time we could use a variable. *)
     let rec eval_one acc name =
-      match GEnv.find_opt_value name genv with
+      match IMap.find_opt name globals with
       | Some v -> return (v, acc)
       | None -> (
           match IMap.find_opt name acc with
@@ -141,7 +208,18 @@ module Make (B : Backend.S) = struct
       | E_Cond (e1, e2, e3) ->
           let* v, acc = eval_expr acc e1 in
           choice (return v) (eval_expr acc e2) (eval_expr acc e3)
-      | E_Get _ | E_Call _ ->
+      | E_Record (_, li, ta) ->
+          let one_field m (x, e) =
+            let* acc, li = m in
+            let* v, acc = eval_expr acc e in
+            return (acc, (x, v) :: li)
+          in
+          let* acc, fields_rev = List.fold_left one_field (return (acc, [])) li
+          and* ty = type_of_ta ta in
+          let* v = make_record ty (List.rev fields_rev) in
+          return (v, acc)
+      | E_GetField _ -> fatal "Not Yet Implemented: get field"
+      | E_Getter _ | E_Call _ ->
           fatal "Function calling in constants is not yet implemented"
     in
     let init_acc =
@@ -163,27 +241,22 @@ module Make (B : Backend.S) = struct
     in
     let collect acc =
       let* acc = acc in
-      let acc_items = IMap.to_seq acc in
       let one_item = function
         | name, AlreadyEvaluated v -> (name, v)
         | _ -> assert false
       in
-      let new_items = Seq.map one_item acc_items in
-      let genv = GEnv.add_seq_value new_items genv in
-      return genv
+      acc |> IMap.to_seq |> Seq.map one_item
+      |> Fun.flip IMap.add_seq globals
+      |> return
     in
     collect (eval_all (return init_acc))
 
-  let build_funcs ast genv =
+  let build_funcs ast funcs =
     List.to_seq ast
     |> Seq.filter_map (function
-         | AST.D_Func func -> Some (func.AST.name, func)
+         | AST.D_Func func -> Some (func.AST.name, Func (ref 0, func))
          | _ -> None)
-    |> fun s -> GEnv.add_seq_func s genv
-
-  type eval_res = Returning of value list | Continuing of lenv
-
-  let continue ((_genv, lenv) : env) = return (Continuing lenv)
+    |> Fun.flip IMap.add_seq funcs
 
   (*****************************************************************************)
   (*                                                                           *)
@@ -191,27 +264,32 @@ module Make (B : Backend.S) = struct
   (*                                                                           *)
   (*****************************************************************************)
 
+  type eval_res = Returning of value list | Continuing of lenv
+
+  let continue ((_genv, lenv) : env) = return (Continuing lenv)
+
   let one_return_value name = function
     | [ v ] -> return v
     | _ -> fatal ("Return arrity error for function " ^ name)
 
   let rec eval_expr (env : env) scope is_data =
-    let genv, lenv = env in
+    let (globals, funcs), lenv = env in
     let open AST in
     function
     | E_Literal v -> v_of_parsed_v v |> return
     | E_Var x -> (
-        match GEnv.find_opt x genv with
-        | Some (GEnv.Value v) -> return v
-        | Some _ ->
-            let* vl = eval_func (fst env) x [] in
-            one_return_value x vl
+        match IMap.find_opt x globals with
+        | Some v -> return v
         | None -> (
-            match LEnv.find_opt x lenv with
-            | Some v ->
-                let* () = on_read_identifier x scope v in
-                return v
-            | None -> fatal ("Unknown identifier: " ^ x)))
+            if IMap.mem x funcs then
+              let* vl = eval_func (fst env) x [] in
+              one_return_value x vl
+            else
+              match IMap.find_opt x lenv with
+              | Some v ->
+                  let* () = on_read_identifier x scope v in
+                  return v
+              | None -> fatal ("Unknown identifier: " ^ x)))
     | E_Binop (op, e1, e2) ->
         let* v1 = eval_expr env scope is_data e1
         and* v2 = eval_expr env scope is_data e2 in
@@ -222,42 +300,66 @@ module Make (B : Backend.S) = struct
     | E_Cond (e1, e2, e3) ->
         let eval_ = eval_expr env scope is_data in
         choice (eval_ e1) (eval_ e2) (eval_ e3)
-    | E_Get (name, args) | E_Call (name, args) ->
+    | E_Getter (name, args) | E_Call (name, args) ->
         let vargs = List.map (eval_expr env scope is_data) args in
         let* returned = eval_func (fst env) name vargs in
         one_return_value name returned
+    | E_Record (_, li, ta) ->
+        let one_field (x, e) =
+          let* v = eval_expr env scope is_data e in
+          return (x, v)
+        in
+        let* fields = prod_map one_field li and* ty = type_of_ta ta in
+        make_record ty fields
+    | E_GetField (e, x, ta) ->
+        let* vec = eval_expr env scope is_data e
+        and* i =
+          let* ty = type_of_ta ta in
+          index_of_field_in_record x ty
+        in
+        B.get_i i vec
 
   and eval_lexpr (env : env) scope =
-    let genv, lenv = env in
     let open AST in
+    let genv, lenv = env in
     function
-    | LEVar x -> (
-        match GEnv.find_opt x genv with
-        | Some (GEnv.Value _) ->
-            fatal
-              ("Global variables are not supported yet. Cannot assign to " ^ x)
+    | LE_Var x -> (
+        match IMap.find_opt x (snd genv) with
         | Some _ ->
-            return (fun v ->
-                let* _ = eval_func genv x [ return v ] in
-                continue env)
+            fun v ->
+              let* _ = eval_func genv x [ v ] in
+              continue env
         | None ->
-            return (fun v ->
-                let* () = on_write_identifier x scope v in
-                let lenv = LEnv.add x v lenv in
-                continue (genv, lenv)))
-    | LESet (x, args) ->
+            fun v ->
+              let* v = v in
+              let* () = on_write_identifier x scope v in
+              let lenv = IMap.add x v lenv in
+              continue (genv, lenv))
+    | LE_Setter (x, args) ->
         let vargs = List.map (eval_expr env scope false) args in
-        return (fun v ->
-            let* _ = eval_func genv x (vargs @ [ return v ]) in
-            continue env)
+        fun v ->
+          let* _ = eval_func genv x (vargs @ [ v ]) in
+          continue env
+    | LE_SetField (le, x, ta) ->
+        let setter = eval_lexpr env scope le in
+        fun m ->
+          let* new_v = m
+          and* i =
+            let* ty = type_of_ta ta in
+            index_of_field_in_record x ty
+          and* vec =
+            let e = ASTUtils.expr_of_lexpr le in
+            eval_expr env scope true e
+          in
+          B.set_i i new_v vec |> setter
 
   and eval_stmt (env : env) scope =
     let open AST in
     function
     | S_Pass -> continue env
     | S_Assign (le, e) ->
-        let* v = eval_expr env scope true e
-        and* setter = eval_lexpr env scope le in
+        let v = eval_expr env scope true e
+        and setter = eval_lexpr env scope le in
         setter v
     | S_Return es ->
         let* vs = prod_map (eval_expr env scope true) es in
@@ -277,16 +379,15 @@ module Make (B : Backend.S) = struct
           (eval_stmt env scope s1) (eval_stmt env scope s2)
 
   and eval_func genv name (args : value m list) =
-    match GEnv.find_opt name genv with
+    match IMap.find_opt name (snd genv) with
     | None -> fatal ("Unknown function: " ^ name)
-    | Some (GEnv.Value _) -> fatal ("Cannot call value " ^ name)
-    | Some (GEnv.SpecialFunc { body; _ }) ->
+    | Some (Primitive { body; _ }) ->
         let* args = prod_map Fun.id args in
         body args
-    | Some (GEnv.Func (_, { AST.args = arg_decls; _ }))
+    | Some (Func (_, { AST.args = arg_decls; _ }))
       when List.compare_lengths args arg_decls <> 0 ->
         fatal ("Bad number of arguments for function " ^ name)
-    | Some (GEnv.Func (r, { AST.args = arg_decls; body; _ })) -> (
+    | Some (Func (r, { AST.args = arg_decls; body; _ })) -> (
         let scope = (name, !r) in
         let () = r := !r + 1 in
         let one_arg (x, _type_desc) v =
@@ -295,14 +396,13 @@ module Make (B : Backend.S) = struct
           return (x, v)
         in
         let* bindings = List.map2 one_arg arg_decls args |> prod_map Fun.id in
-        let lenv = List.to_seq bindings |> LEnv.of_seq in
+        let lenv = List.to_seq bindings |> IMap.of_seq in
         let* res = eval_stmt (genv, lenv) scope body in
         match res with Continuing _ -> return [] | Returning vs -> return vs)
 
-  let run (ast : AST.t) std_lib_extras (main_args : value list) : value list m =
-    let genv = build_enums ast in
-    let* genv = build_consts ast genv in
-    let genv = build_funcs ast genv in
-    let genv = GEnv.add_seq_special_func (List.to_seq std_lib_extras) genv in
-    eval_func genv "main" (List.map return main_args)
+  let run (ast : AST.t) primitives (main_args : value list) : value list m =
+    let* ast = type_annotation ast primitives in
+    let funcs = IMap.empty |> build_funcs ast |> add_primitives primitives in
+    let* globals = IMap.empty |> build_enums ast |> build_consts ast in
+    eval_func (globals, funcs) "main" (List.map return main_args)
 end

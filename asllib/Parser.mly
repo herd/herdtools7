@@ -43,7 +43,14 @@ plist(X):
     { xs }
 
 value:
-| INT_LIT   { AST.V_Int (int_of_string $1) }
+| INT_LIT
+    { AST.V_Int (int_of_string $1) }
+| BOOL_LIT
+    { AST.V_Bool $1 }
+| REAL_LIT
+    { AST.V_Real (float_of_string $1) }
+| BITVECTOR_LIT
+    { AST.V_BitVector $1 }
 
 %inline unop:
 | BNOT { AST.BNOT }
@@ -71,6 +78,10 @@ value:
 | SHL { AST.SHL }
 | SHR { AST.SHR }
 
+field_assign:
+| x=IDENTIFIER EQ e=expr
+  { (x, e) }
+
 expr:
 | v=value
     { AST.E_Literal v }
@@ -87,7 +98,11 @@ expr:
 | LPAR e=expr RPAR
     { e }
 | x=IDENTIFIER LBRACKET args=separated_list(COMMA, expr) RBRACKET
-    { AST.E_Get (x, args) }
+    { AST.E_Getter (x, args) }
+| t=IDENTIFIER LBRACE fields=separated_list(COMMA, field_assign) RBRACE
+    { AST.E_Record (AST.T_Named t, fields, AST.TA_None) }
+| e=expr DOT x=IDENTIFIER
+    { AST.E_GetField (e, x, AST.TA_None) }
 
 int_constraint_elt:
 | e=expr
@@ -147,9 +162,11 @@ type_desc:
 
 lexpr:
 | x=IDENTIFIER
-    { AST.LEVar x }
+    { AST.LE_Var x }
 | x=IDENTIFIER LBRACKET args=separated_list(COMMA, expr) RBRACKET
-    { AST.LESet (x, args) }
+    { AST.LE_Setter (x, args) }
+| le=lexpr DOT x=IDENTIFIER
+    { AST.LE_SetField (le, x, AST.TA_None) }
 
 stmt:
 | PASS
