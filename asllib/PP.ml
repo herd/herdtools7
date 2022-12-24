@@ -4,6 +4,7 @@ open AST
 type 'a printer = Format.formatter -> 'a -> unit
 
 let pp_comma f () = fprintf f ",@ "
+let pp_comma_list pp_elt f = pp_print_list ~pp_sep:pp_comma pp_elt f
 
 let binop_to_string : binop -> string = function
   | AND -> "AND"
@@ -33,15 +34,14 @@ let unop_to_string = function BNOT -> "!" | NEG -> "-" | NOT -> "NOT"
 let rec pp_value f =
   let pp_print_field_assoc f =
     let pp_one f (name, value) = fprintf f "@[%s = %a@]" name pp_value value in
-    fprintf f "{ @[%a@] }" (pp_print_list ~pp_sep:pp_comma pp_one)
+    fprintf f "{ @[%a@] }" (pp_comma_list pp_one)
   in
   function
   | V_Int i -> pp_print_int f i
   | V_Bool b -> pp_print_bool f b
   | V_Real r -> pp_print_float f r
   | V_BitVector bv -> pp_print_string f bv
-  | V_Tuple li ->
-      fprintf f "(@[%a@])" (pp_print_list ~pp_sep:pp_comma pp_value) li
+  | V_Tuple li -> fprintf f "(@[%a@])" (pp_comma_list pp_value) li
   | V_Record li | V_Exception li -> pp_print_field_assoc f li
 
 let rec pp_expr f = function
@@ -52,14 +52,20 @@ let rec pp_expr f = function
         e2
   | E_Unop (u, e) -> fprintf f "(%s %a)" (unop_to_string u) pp_expr e
   | E_Call (name, args) -> fprintf f "@[<hov 2>%s(%a)@]" name pp_expr_list args
-  | E_Get (name, args) -> fprintf f "@[<hov 2>%s[%a]@]" name pp_expr_list args
+  | E_Getter (name, args) ->
+      fprintf f "@[<hov 2>%s[%a]@]" name pp_expr_list args
   | E_Cond (e1, e2, e3) ->
       fprintf f "@[<hv>@[<h>if %a@ then@]@;<1 2>%a@ else@;<1 2>%a@ end@]"
         pp_expr e1 pp_expr e2 pp_expr e3
+  | E_GetField (e, x, _ta) -> fprintf f "@[%a@,.%s@]" pp_expr e x
+  | E_Record (ty, li, _ta) ->
+      let pp_one f (x, e) = fprintf f "@[<h>%s =@ %a@]" x pp_expr e in
+      fprintf f "@[<hv>%a {@;<1 2>%a@,}@]" pp_type_desc ty
+        (pp_comma_list pp_one) li
 
-and pp_expr_list f = pp_print_list ~pp_sep:pp_comma pp_expr f
+and pp_expr_list f = pp_comma_list pp_expr f
 
-let rec pp_type_desc f = function
+and pp_type_desc f = function
   | T_Int None -> pp_print_string f "integer"
   | T_Int (Some int_constraint) ->
       fprintf f "@[integer {%a}@]" pp_int_constraints int_constraint
@@ -88,13 +94,13 @@ and pp_record_type_desc f =
   let pp_one f (field_name, field_type) =
     fprintf f "%s::%a" field_name pp_type_desc field_type
   in
-  pp_print_list ~pp_sep:pp_comma pp_one f
+  pp_comma_list pp_one f
 
 and pp_int_constraint f = function
   | Constraint_Exact x -> pp_expr f x
   | Constraint_Range (x, y) -> fprintf f "%a..%a" pp_expr x pp_expr y
 
-and pp_int_constraints f = pp_print_list ~pp_sep:pp_comma pp_int_constraint f
+and pp_int_constraints f = pp_comma_list pp_int_constraint f
 
 and pp_bits_constraint f = function
   | BitWidth_Determined i -> pp_expr f i
@@ -104,9 +110,10 @@ and pp_bits_constraint f = function
 let pp_typed_identifier f (name, type_desc) =
   fprintf f "%s::%a" name pp_type_desc type_desc
 
-let pp_lexpr f = function
-  | LEVar x -> pp_print_string f x
-  | LESet (x, args) -> fprintf f "%s[%a]" x pp_expr_list args
+let rec pp_lexpr f = function
+  | LE_Var x -> pp_print_string f x
+  | LE_Setter (x, args) -> fprintf f "%s[%a]" x pp_expr_list args
+  | LE_SetField (le, x, _ta) -> fprintf f "@[%a@,.%s@]" pp_lexpr le x
 
 let rec pp_stmt f = function
   | S_Pass -> pp_print_string f "pass"
@@ -126,7 +133,7 @@ let pp_decl f =
       | Some return_type -> fprintf f "@ => %a" pp_type_desc return_type
       | None -> ()
     in
-    let pp_args = pp_print_list ~pp_sep:pp_comma pp_typed_identifier in
+    let pp_args = pp_comma_list pp_typed_identifier in
     fprintf f "@[<h>func %s(%a)%a@]" name pp_args args pp_return_type_opt
       return_type
   in

@@ -40,22 +40,6 @@ let build_ast_from_file f =
       Printf.eprintf "%a: unknown token." pp_pos lexbuf.Lexing.lex_curr_p;
       exit 1
 
-let typing ast =
-  let open Typing in
-  try build_tenv ast with
-  | TypingError (NotYetImplemented s) ->
-      Printf.eprintf "Typing error: not yet implemented - %s" s;
-      exit 1
-  | TypingError (UndefinedIdentifier x) ->
-      Printf.eprintf "Undefined identifier %s" x;
-      exit 1
-  | TypingError (TypeError s) ->
-      Printf.eprintf "Type error: %s" s;
-      exit 1
-  | TypingError (Internal_InvalidScope s) ->
-      Printf.eprintf "Typing internal error: bad scope '%s'" s;
-      exit 1
-
 let exec ast =
   let open Native in
   match NativeInterpreter.run ast [] [] () with
@@ -69,7 +53,5 @@ let () =
   let ast = build_ast_from_file f in
   let () = Printf.printf "Found the following AST:\n" in
   let () = Format.printf "%a\n\n@?" PP.pp_t ast in
-  let () = Printf.printf "Typing %s...\n" f in
-  let _ = typing ast in
   let () = Printf.printf "Running %s...\n" f in
   exec ast

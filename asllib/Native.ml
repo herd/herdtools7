@@ -145,7 +145,7 @@ module NativeBackend = struct
       | v -> fail (NonIndexableValue v)
     with Invalid_argument _ -> fail (IndexOutOfBounds (i, vec))
 
-  let set_i i vec v =
+  let set_i i v vec =
     let field_update i v li =
       let update_field v (name, _v) = (name, v) in
       list_update i (update_field v) li

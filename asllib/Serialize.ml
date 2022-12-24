@@ -129,7 +129,7 @@ let rec pp_expr f = function
       addb f " ";
       pp_expr_list f args;
       addb f ")"
-  | E_Get (name, args) ->
+  | E_Getter (name, args) ->
       addb f "(EGet ";
       addb f name;
       addb f " ";
@@ -143,10 +143,22 @@ let rec pp_expr f = function
       addb f " ";
       pp_expr f e3;
       addb f ")"
+  | E_GetField (e, x, _ta) ->
+      addb f "(EGetField ";
+      pp_expr f e;
+      addb f " ";
+      addb f x;
+      addb f ")"
+  | E_Record (ty, li, _ta) ->
+      addb f "(ERecord ";
+      pp_type_desc f ty;
+      addb f " ";
+      pp_list (pp_pair pp_string pp_expr) f li;
+      addb f ")"
 
 and pp_expr_list f = pp_list pp_expr f
 
-let pp_fields_assoc pp_key pp_type_desc =
+and pp_fields_assoc pp_key pp_type_desc =
   let pp_one f (key, type_desc) =
     addb f "(";
     pp_key f key;
@@ -156,7 +168,7 @@ let pp_fields_assoc pp_key pp_type_desc =
   in
   pp_list pp_one
 
-let rec pp_type_desc f = function
+and pp_type_desc f = function
   | T_Int constraint_opt ->
       addb f "(T_Int ";
       pp_option "unconstrainted" pp_int_constraint f constraint_opt;
@@ -203,7 +215,7 @@ let rec pp_type_desc f = function
 and pp_enum_type_desc = pp_list pp_string
 and pp_record_type_desc f = pp_fields_assoc pp_string pp_type_desc f
 
-and pp_int_constraint =
+and pp_int_constraint f =
   let pp_one f = function
     | Constraint_Exact v ->
         addb f "(Constraint_Exact ";
@@ -216,7 +228,7 @@ and pp_int_constraint =
         pp_expr f top;
         addb f ")"
   in
-  pp_list pp_one
+  pp_list pp_one f
 
 and pp_bits_constraint f = function
   | BitWidth_Determined i ->
@@ -239,16 +251,22 @@ let pp_typed_identifier f (identifier, type_desc) =
   pp_type_desc f type_desc;
   addb f ")"
 
-let pp_lexpr f = function
-  | LEVar x ->
+let rec pp_lexpr f = function
+  | LE_Var x ->
       addb f "(LEVar ";
       addb f x;
       addb f ")"
-  | LESet (name, args) ->
+  | LE_Setter (name, args) ->
       addb f "(LESet ";
       addb f name;
       addb f " ";
       pp_expr_list f args;
+      addb f ")"
+  | LE_SetField (le, x, _ta) ->
+      addb f "(LESetField ";
+      pp_lexpr f le;
+      addb f " ";
+      addb f x;
       addb f ")"
 
 let rec pp_stmt f = function

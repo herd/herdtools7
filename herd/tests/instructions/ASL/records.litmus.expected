@@ -1,0 +1,10 @@
+Test records Required
+States 1
+0:main.0.x=3; 0:main.0.y=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:main.0.x=3 /\ 0:main.0.y=1)
+Observation records Always 1 0
+Hash=3afa20505af5db09824103f05da5b7a8
+
