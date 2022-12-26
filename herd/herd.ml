@@ -179,12 +179,18 @@ let options = [
   ("-suffix", Arg.String (fun s -> suffix := s),
    "<suf> add <suf> at the end of the base of generated files") ;
   parse_bool "-dumpes" Opts.dumpes "dump event structures";
+  begin let module ParseView = ParseTag.Make(View) in
+  ParseView.parse_opt "-view" PP.view
+    "fork specified viewer to show output graphs" end ;
   ( "-gv",
-    Arg.Unit (fun _ -> PP.gv := true),
-    "<non-default>  fork gv to show output graphs") ;
+    Arg.Unit (fun _ -> PP.view := Some View.GV),
+    "<non-default>  alias for -view gv") ;
   ( "-evince",
-    Arg.Unit (fun _ -> PP.evince := true),
-    "<non-default>  fork evince to show output graphs") ;
+    Arg.Unit (fun _ -> PP.view := Some View.Evince),
+    "<non-default>  alias for -view evince") ;
+  ( "-preview",
+    Arg.Unit (fun _ -> PP.view := Some View.Preview),
+    "<non-default>  alias for -view preview") ;
   ("-unroll",
    Arg.Int (fun x -> unroll := x),
    sprintf "<int> branch unrolling upper limit, default %i" !unroll);
@@ -550,8 +556,7 @@ let () =
       let verbose = verbose
       let dotmode = !PP.dotmode
       let dotcom = !PP.dotcom
-      let gv = !PP.gv
-      let evince = !PP.evince
+      let view = !PP.view
       let showevents = !PP.showevents
       let texmacros = !PP.texmacros
       let tikz = !PP.tikz

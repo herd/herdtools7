@@ -63,8 +63,7 @@ module type S = sig
   val debug : bool
   val verbose : int
   val dotcom : dotcom option
-  val gv : bool
-  val evince : bool
+  val view : View.t option
   val dotmode : dotmode
   val showevents : showevents
   val texmacros : bool

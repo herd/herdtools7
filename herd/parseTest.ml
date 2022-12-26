@@ -183,7 +183,7 @@ module Top (TopConf:Config) = struct
           begin match Conf.outputdir with
           | PrettyConf.StdoutOutput | PrettyConf.Outputdir _ -> true
           | _ -> false
-          end || Conf.PC.gv || Conf.PC.evince || Conf.variant Variant.MemTag
+          end || Misc.is_some Conf.PC.view || Conf.variant Variant.MemTag
               || Conf.variant Variant.Morello
         let through = Conf.through
         let debug = Conf.debug.Debug_herd.barrier

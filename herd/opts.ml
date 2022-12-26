@@ -80,8 +80,7 @@ module PP = struct
   open PrettyConf
   let dotmode =  ref Plain
   let dotcom = ref None
-  let gv = ref false
-  let evince = ref false
+  let view = ref None
   let showevents = ref NonRegEvents
   let texmacros = ref false
   let tikz = ref false
