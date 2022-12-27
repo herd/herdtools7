@@ -6,6 +6,6 @@ AArch64 S11
     P0           ;
   LDR X2, [X1]   ;
   BR X2          ;
-  MOV X0, #1     ;
+  MOV W0, #1     ;
 L0:              ;
 forall (0:X0=0)

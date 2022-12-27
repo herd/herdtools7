@@ -5,7 +5,7 @@ AArch64 S08
     P0           ;
   B L1           ;
 L0:              ;
-  MOV X0, #1     ;
+  MOV W0, #1     ;
   RET            ;
 L1:              ;
   BL L0          ;

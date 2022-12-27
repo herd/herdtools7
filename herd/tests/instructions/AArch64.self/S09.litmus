@@ -4,8 +4,8 @@ AArch64 S09
 }
     P0           |   P1;
   BLR X2         |   B L1       ;
-  MOV X1, #1     | L0:          ;
-                 |   MOV X0, #1 ;
+  MOV W1, #1     | L0:          ;
+                 |   MOV W0, #1 ;
                  |   RET        ;
                  | L1:          ;
 forall (0:X0=1/\0:X1=1)
