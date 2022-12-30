@@ -110,6 +110,7 @@ module type S = sig
   val edgeattrs : DotEdgeAttr.t
   val doshow : StringSet.t
   val unshow : StringSet.t
+  val noid : StringSet.t
   val symetric : StringSet.t
   val classes : string option
   val showraw : StringSet.t

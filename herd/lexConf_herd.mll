@@ -252,6 +252,8 @@ let handle_key main key arg = match key with
      lex_stringsetfun PP.add_doshow arg
 | "unshow" ->
      lex_stringsetfun PP.add_unshow arg
+| "noid" ->
+     lex_stringset PP.noid arg
 | "symetric" ->
      lex_stringset PP.symetric arg
 | "classes" ->

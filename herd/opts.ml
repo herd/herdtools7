@@ -140,6 +140,7 @@ module PP = struct
     unshow := StringSet.union u !unshow ;
     doshow := StringSet.diff !doshow u
 
+  let noid = ref StringSet.empty
   let symetric = ref StringSet.empty
   let classes = ref None
   let showraw = ref StringSet.empty

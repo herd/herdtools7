@@ -640,7 +640,9 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
         (fun (n1,n2 as p) infos (m_yes,m_no) ->
           let yes,no =
             List.partition
-              (fun i -> StringSet.mem i.ikey PC.symetric)
+              (fun i ->
+                StringSet.mem i.ikey PC.symetric ||
+                StringSet.mem i.ikey PC.noid)
               infos in
           let m_yes =
             let q =
@@ -881,7 +883,18 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
             tags)
         stes in
     let vbss =
-      List.filter (fun (tag,_) -> not (StringSet.mem tag PC.unshow)) vbss in
+      List.fold_right
+        (fun (tag,r) k ->
+          if StringSet.mem tag PC.unshow then k
+          else
+            let r =
+              if StringSet.mem tag PC.noid then
+                E.EventRel.filter
+                  (fun (e1,e2) -> not (E.event_equal e1 e2))
+                  r
+              else r in
+            (tag,r)::k)
+        vbss [] in
     let pl = fprintf chan "%s\n"
     and pf fmt = fprintf chan fmt in
 
@@ -1459,28 +1472,26 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
 (* A bunch of arrows *)
     pl "" ;
     pl "/* The viewed-before edges */" ;
-    if true then begin
-      if dbg then begin
-        let ns = List.map fst vbss in
-        eprintf "Names: {%s}\n" (String.concat "," ns)
-      end ;
-      List.iter
-        (fun (label,vbs) ->
-          if dbg then eprintf "label=%s\n%!" label;
-          E.EventRel.pp chan ""
-            (fun chan (e,e') ->
-              do_pp_edge chan (pp_node_eiid e) (pp_node_eiid e') label
-(* Overides default color... *)
-                (fun s -> { s with color="brown" ; })
-(* Overides any style given *)
-                (if (try "mo" = String.sub label 0 2 with Invalid_argument _ -> false) && E.is_mem_store e && E.is_mem_store e' then "" (*"penwidth=10.0"*) else "")
-(* Extra attributes, overrides nothing *)
-                ""
-                (last_thread e e' || is_up e e' || is_back e e')
-                (is_even e e'))
-            vbs)
-        vbss
+    if dbg then begin
+      let ns = List.map fst vbss in
+      eprintf "Names: {%s}\n" (String.concat "," ns)
     end ;
+    List.iter
+      (fun (label,vbs) ->
+        if dbg then eprintf "label=%s\n%!" label;
+        E.EventRel.pp chan ""
+          (fun chan (e,e') ->
+            do_pp_edge chan (pp_node_eiid e) (pp_node_eiid e') label
+(* Overides default color... *)
+              (fun s -> { s with color="brown" ; })
+(* Overides any style given *)
+              (if (try "mo" = String.sub label 0 2 with Invalid_argument _ -> false) && E.is_mem_store e && E.is_mem_store e' then "" (*"penwidth=10.0"*) else "")
+(* Extra attributes, overrides nothing *)
+              ""
+              (last_thread e e' || is_up e e' || is_back e e')
+              (is_even e e'))
+          vbs)
+      vbss ;
     dump_pairs chan ;
     pl "}"
 

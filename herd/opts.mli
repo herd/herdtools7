@@ -125,6 +125,7 @@ module PP : sig
   val unshow : StringSet.t ref
   val add_doshow : StringSet.t -> unit
   val add_unshow : StringSet.t -> unit
+  val noid : StringSet.t ref
   val symetric : StringSet.t ref
   val classes : string option ref
   val showraw : StringSet.t ref
