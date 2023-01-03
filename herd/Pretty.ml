@@ -67,6 +67,8 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   module PC = S.O.PC
   let dbg = false
 
+  let pc_symetric = StringSet.union PC.symetric PC.noid
+
 (* One init *)
   let one_init = match PC.graph with
   | Graph.Columns -> PC.oneinit
@@ -640,9 +642,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
         (fun (n1,n2 as p) infos (m_yes,m_no) ->
           let yes,no =
             List.partition
-              (fun i ->
-                StringSet.mem i.ikey PC.symetric ||
-                StringSet.mem i.ikey PC.noid)
+              (fun i -> StringSet.mem i.ikey pc_symetric)
               infos in
           let m_yes =
             let q =
@@ -697,7 +697,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       (fun (n1,n2) infos ->
         let all_syms =
           List.for_all
-            (fun i -> StringSet.mem i.ikey PC.symetric)
+            (fun i -> StringSet.mem i.ikey pc_symetric)
             infos in
         let colors = compute_colors (List.map (fun i -> i.icolor) infos)
         and lbl = String.concat "" (fmt_merged_labels infos) in
@@ -755,7 +755,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       else checklabel lbl)
       (pp_edge_label movelbl lbl) ;
 
-    if StringSet.mem lbl PC.symetric then pp_attr chan "arrowhead" "none" ;
+    if StringSet.mem lbl pc_symetric then pp_attr chan "arrowhead" "none" ;
     if not (overridden "color") then begin
       pp_attr chan "color" color ;
       if not (PC.tikz) then
@@ -800,7 +800,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       =
     try
       if StringSet.mem lbl PC.unshow then raise Exit ;
-      let is_symetric = StringSet.mem lbl PC.symetric in
+      let is_symetric = StringSet.mem lbl pc_symetric in
       if is_symetric then begin
         if known_edge n1 n2 lbl then raise Exit ;
         record_edge_seen n1 n2 lbl
