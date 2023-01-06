@@ -89,12 +89,20 @@ let norm_pteval s =
  + Other values need not being normalised
  *)
 
-let norm_value s =
+let norm_one_value s =
   assert (String.length s > 0) ;
   match s.[0] with
   | '(' -> norm_pteval s
-  | '0'..'9' -> to_xxx s
+  | '-'|'0'..'9' -> to_xxx s
   | _ ->  Constant.old2new s
+
+let rec norm_value s =
+  assert (String.length s > 0) ;
+  match s.[0] with
+  | '{' ->
+      let elts = List.map norm_value (LexSplit.split_array s) in
+      Printf.sprintf "{%s}" (String.concat "," elts)
+  | _ -> norm_one_value s
 
 let norm_loc s = Constant.old2new s
 
