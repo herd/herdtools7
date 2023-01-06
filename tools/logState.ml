@@ -479,16 +479,44 @@ module LC =
           else
             bds_assoc r loc
 
+(*
+ * Comparaison is string-based, except for integers, which are parsed.
+ * That way, radix is abstracted away.
+ *)
+
+      let rec value_eq vcond v =
+        let open Constant in
+        match vcond with
+        | Concrete _ ->
+            begin try
+              let i = Int64.of_string v in
+              ToolsConstant.eq vcond (Constant.Concrete i)
+            with Failure _ ->
+              Warn.fatal
+                "Comparing constant %s against integer"
+                v
+            end
+        | ConcreteVector vconds ->
+            let vs = LexSplit.split_array v in
+            value_eqs vconds vs
+        | _ ->
+            let vcond = ToolsConstant.pp false vcond in
+            Misc.string_eq vcond v
+
+      and value_eqs vconds vs = match vconds,vs with
+      | [],[] -> true
+      | ([],_)|(_,[])
+ (* Could be a failure, as arrays are of fixed length *)
+        -> false
+      | vcond::vconds,v::vs ->
+          value_eq vcond v && value_eqs vconds vs
+
       let state_mem st loc v =
         let open HashedState in
         let {S.e=bds; _;} = as_t st in
         let v_bound_pp =
           bds_assoc bds (ConstrGen.dump_rloc MiscParser.dump_location  loc) in
-        try (* Ints are treated differently to abstract away radix *)
-          let i = Int64.of_string v_bound_pp in
-          ToolsConstant.eq v (Constant.Concrete i)
-        with Failure _ ->
-          Misc.string_eq v_bound_pp (ToolsConstant.pp false v)
+        value_eq v v_bound_pp
 
       let state_eqloc st loc1 loc2 =
         let open HashedState in
