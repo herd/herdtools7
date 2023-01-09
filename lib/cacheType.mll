@@ -65,7 +65,7 @@ let get info =
  | Some s ->
     try
       let xs = all [] (Lexing.from_string s) in
-      let idcs = List.filter (function (_,(IDC|DIC)) -> true) xs
+      let idcs = xs
       and dics = List.filter (function (_,DIC) -> true | _ -> false) xs in
       let idc =
         if List.exists (function (None,(IDC|DIC)) -> true | _ -> false) idcs then
@@ -87,5 +87,5 @@ let get info =
           fun proc -> List.exists (Misc.int_eq proc) xs in
       Some { dic; idc; }
     with Error ->
-      Warn.user_error "Incorrect dirty bit managment specification '%s'" s
+      Warn.user_error "Incorrect cache-type feature specification '%s'" s
 }
