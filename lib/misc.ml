@@ -119,13 +119,6 @@ let rec pop_last x = function
       let lst,xs = pop_last y ys in
       lst,x::xs
 
-let rec option_map f xs = match xs with
-| [] -> []
-| x::xs ->
-   match f x with
-   | None -> option_map f xs
-   | Some y -> y :: option_map f xs
-
 let map_string f s =
   let b = Buffer.create (String.length s) in
   for k=0 to String.length s-1 do

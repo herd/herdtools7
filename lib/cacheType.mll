@@ -65,7 +65,7 @@ let get info =
           (fun _ -> true)
         else
           let xs =
-            Misc.option_map
+            List.filter_map
               (function (Some _ as p,(IDC|DIC)) -> p | _ -> None)
               idcs in
           fun proc -> List.exists (Misc.int_eq proc) xs
@@ -74,7 +74,7 @@ let get info =
           (fun _ -> true)
         else
           let xs =
-            Misc.option_map
+            List.filter_map
               (function (Some _ as p,DIC) -> p | _ -> None)
               dics in
           fun proc -> List.exists (Misc.int_eq proc) xs in

@@ -69,7 +69,7 @@ let get info =
       let has = List.filter (function (_,(HA|HD)) -> true | _ -> false) xs
       and hds = List.filter (function (_,HD) -> true | _ -> false) xs in
       let soft =
-        Misc.option_map
+        List.filter_map
           (function (Some _ as p,SW) -> p | _ -> None)
           xs in
       let tthm p = not (List.exists (Misc.int_eq p) soft) in
@@ -78,7 +78,7 @@ let get info =
           true,fun _ -> true
         else
           let xs =
-            Misc.option_map
+            List.filter_map
               (function (Some _ as p,(HA|HD)) -> p | _ -> None)
               has in
           false,fun proc -> List.exists (Misc.int_eq proc) xs
@@ -87,7 +87,7 @@ let get info =
           true,(fun _ -> true)
         else
           let xs =
-            Misc.option_map
+            List.filter_map
               (function (Some _ as p,HD) -> p | _ -> None)
               hds in
           false,fun proc -> List.exists (Misc.int_eq proc) xs in
