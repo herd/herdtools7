@@ -1,0 +1,9 @@
+AArch64 L049
+{
+0:X0=instr:"B.EQ .+8";
+0:X2=NOP;
+}
+  P0        ;
+ CMP W0,W2  ;
+ CSET W4,NE ;
+forall 0:X4=1 /\ not (0:X0=instr:"B.EQ .+4")

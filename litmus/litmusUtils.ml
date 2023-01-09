@@ -79,9 +79,32 @@ module Pseudo(A:Arch_litmus.S) = struct
     | ((q,_,f),is)::rem ->
         if Proc.equal p q && f = func then is else find_code p func rem
 
-  let find_offset code p f lbl =
-    let is = find_code p f code in
+  let find_offset code p lbl =
+    let is = find_code p MiscParser.Main code in
     A.find_offset lbl is
 
   let code_exists p (_,c) = A.code_exists p c
+
+
+(* Extract "exported" labels from code.
+ * Those are defined as the argument of instruction
+ * that store a label into a register, as does
+ * ARM "ADR" instruction.
+ *)
+
+  let exported_labels_code prog =
+    let lbls =
+      List.fold_left
+        (fun k (p,code) ->
+          A.fold_pseudo_code
+            (fun k i ->
+              match A.V.Instr.get_exported_label i with
+              | None -> k
+              | Some lbl -> (MiscParser.proc_num p,lbl)::k)
+            k code)
+        [] prog in
+    Label.Full.Set.of_list lbls
+
+  let from_labels lbls prog = A.from_labels lbls prog
+
 end

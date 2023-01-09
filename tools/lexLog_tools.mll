@@ -126,6 +126,7 @@ let loc = name | ('$' (alpha+|digit+))
 let new_loc =
 (("PTE"|"PA") ' '* '(' ' '* (name| "PTE" ' '* '(' ' '* name ' '* ')') ' '* ')')
 | ("tag" ' '* '(' ' '* (name ' '* ')'))
+let instr = "instr:" '"' [^'"']* '"'
 let fault_type = alpha+ (':' alpha+)?
 let blank = [' ' '\t']
 let testname  = (alpha|digit|'_' | '/' | '.' | '-' | '+' | '[' | ']')+
@@ -234,7 +235,7 @@ and skip_empty_lines = parse
 and pline bds fs abs = parse
 | blank*
  ((num ':' reg as loc)|(('['?) ((loc|new_loc) as loc) ( ']'?))|(loc '[' num ']' as loc))
-    blank* '=' blank* (('-' ? (num|hexanum))|(name(':'name)?)|new_loc|set|pteval|(('P'? num)':'label)|(':'alpha+) as v)
+    blank* '=' blank* (('-' ? (num|hexanum))|(name(':'name)?)|new_loc|set|pteval|(('P'? num)':'label)|(':'alpha+)|instr as v)
     blank* ';'
     {
      let v = norm_value v in  (* Translate to decimal *)
@@ -269,7 +270,7 @@ and pline bds fs abs = parse
 and skip_pline = parse
 | blank*
  ((num ':' reg)|(('['?) (loc) ( ']'?))|(loc '[' num ']'))
-    blank* '=' blank* (('-' ? (num|hexanum))|name|set)
+    blank* '=' blank* (('-' ? (num|hexanum))|name|set|instr)
     blank* ';'
 | blank* fault blank* '(' blank* ('P'? num) ':' label blank* ','
     loc blank* ')' blank* ';'

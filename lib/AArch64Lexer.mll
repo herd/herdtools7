@@ -39,27 +39,27 @@ match name with
 (* Halt instructions are used by Debug mode, not needed here - NOP *)
 | "hlt" | "HLT" -> HLT
 (* Branch *)
-| "b"  | "B"  -> B
+| "b"  | "B"  -> TOK_B
 | "br"  | "BR"  -> BR
 | "bl"  | "BL"  -> BL
 | "blr"  | "BLR"  -> BLR
 | "ret"  | "RET" -> RET
 | "eret"  | "ERET" -> ERET
-| "ne"  | "NE"  -> NE
-| "eq"  | "EQ"  -> EQ
-| "ge"  | "GE"  -> GE
-| "gt"  | "GT"  -> GT
-| "le"  | "LE"  -> LE
-| "lt"  | "LT"  -> LT
-| "cs"  | "CS"  -> CS
-| "cc"  | "CC"  -> CC
-| "mi"  | "MI"  -> MI
-| "pl"  | "PL"  -> PL
-| "vs"  | "VS"  -> VS
-| "vc"  | "VC"  -> VC
-| "hi"  | "HI"  -> HI
-| "ls"  | "LS"  -> LS
-| "al"  | "AL"  -> AL
+| "ne"  | "NE"  -> TOK_NE
+| "eq"  | "EQ"  -> TOK_EQ
+| "ge"  | "GE"  -> TOK_GE
+| "gt"  | "GT"  -> TOK_GT
+| "le"  | "LE"  -> TOK_LE
+| "lt"  | "LT"  -> TOK_LT
+| "cs"  | "CS"  -> TOK_CS
+| "cc"  | "CC"  -> TOK_CC
+| "mi"  | "MI"  -> TOK_MI
+| "pl"  | "PL"  -> TOK_PL
+| "vs"  | "VS"  -> TOK_VS
+| "vc"  | "VC"  -> TOK_VC
+| "hi"  | "HI"  -> TOK_HI
+| "ls"  | "LS"  -> TOK_LS
+| "al"  | "AL"  -> TOK_AL
 | "b.eq" | "B.EQ" -> BEQ
 | "b.ne" | "B.NE" -> BNE
 | "b.ge" | "B.GE" -> BGE
@@ -319,8 +319,8 @@ match name with
 | "stzg"|"STZG" -> STZG
 | "ldg"|"LDG" -> LDG
 (* Operations *)
-| "sxtw"|"SXTW" -> SXTW
-| "uxtw"|"UXTW" -> UXTW
+| "sxtw"|"SXTW" -> TOK_SXTW
+| "uxtw"|"UXTW" -> TOK_UXTW
 | "mov"|"MOV" -> MOV
 | "movz"|"MOVZ" -> MOVZ
 | "movk"|"MOVK" -> MOVK
@@ -339,13 +339,13 @@ match name with
 (* Some arithmetic instruction have their own lexeme,
    for parser to handle then in special ways *)
 (* Also used as barrel shift *)
-| "asr" | "ASR" -> ASR
-| "lsl" | "LSL" -> LSL
-| "lsr" | "LSR" -> LSR
+| "asr" | "ASR" -> TOK_ASR
+| "lsl" | "LSL" -> TOK_LSL
+| "lsr" | "LSR" -> TOK_LSR
 (* SUB, SUBS, ADD have 128 bits semantics*)
-| "sub"|"SUB" -> SUB
-| "subs"|"SUBS" -> SUBS
-| "add"|"ADD" -> ADD
+| "sub"|"SUB" -> TOK_SUB
+| "subs"|"SUBS" -> TOK_SUBS
+| "add"|"ADD" -> TOK_ADD
 (* Morello *)
 | "alignd"|"ALIGND" -> ALIGND
 | "alignu"|"ALIGNU" -> ALIGNU
@@ -379,24 +379,24 @@ match name with
 | "csneg"|"CSNEG" -> CSNEG
 | "cset"|"CSET" -> CSET
 (* Fences *)
-| "dmb"|"DMB" -> DMB
-| "dsb"|"DSB" -> DSB
-| "isb"|"ISB" -> ISB
+| "dmb"|"DMB" -> TOK_DMB
+| "dsb"|"DSB" -> TOK_DSB
+| "isb"|"ISB" -> TOK_ISB
 (* Fence Operands *)
-| "sy"|"SY" ->SY
-| "st"|"ST" -> ST
-| "ld"|"LD" -> LD
-| "osh"|"OSH" -> OSH
-| "oshst"|"OSHST" -> OSHST
-| "oshld"|"OSHLD" -> OSHLD
-| "ish"|"ISH" -> ISH
-| "ishst"|"ISHST" -> ISHST
-| "ishld"|"ISHLD" -> ISHLD
-| "nsh"|"NSH" -> NSH
-| "nshst"|"NSHST" -> NSHST
-| "nshld"|"NSHLD" -> NSHLD
+| "sy"|"SY" -> TOK_SY
+| "st"|"ST" -> TOK_ST
+| "ld"|"LD" -> TOK_LD
+| "osh"|"OSH" -> TOK_OSH
+| "oshst"|"OSHST" -> TOK_OSHST
+| "oshld"|"OSHLD" -> TOK_OSHLD
+| "ish"|"ISH" -> TOK_ISH
+| "ishst"|"ISHST" -> TOK_ISHST
+| "ishld"|"ISHLD" -> TOK_ISHLD
+| "nsh"|"NSH" -> TOK_NSH
+| "nshst"|"NSHST" -> TOK_NSHST
+| "nshld"|"NSHLD" -> TOK_NSHLD
 (* inline barrel shift operands *)
-| "msl" | "MSL" -> MSL
+| "msl" | "MSL" -> TOK_MSL
 (* Cache maintenance *)
 | "ic"|"IC" -> IC
 | "dc"|"DC" -> DC

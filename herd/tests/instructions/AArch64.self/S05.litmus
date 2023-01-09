@@ -4,6 +4,6 @@ AArch64 S05
 }
     P0           ;
   RET            ;
-  MOV X0, #1     ;
+  MOV W0, #1     ;
 L0:              ;
 forall (0:X0=0)

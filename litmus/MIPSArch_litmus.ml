@@ -54,4 +54,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
   let nop = NOP
 
   include HardwareExtra.No
+
+  module GetInstr = GetInstr.No(struct type instr = instruction end)
+
 end

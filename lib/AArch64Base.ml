@@ -2130,20 +2130,45 @@ let loop_idx = Internal 4
 
 let hash_pteval p = AArch64PteVal.pp_hash (AArch64PteVal.tr p)
 
+(* For performance reasons, overwritable sites are limited *)
 let is_overwritable = function
-  | I_NOP | I_B _  -> true
+  |I_NOP| I_B _|I_BC _|I_BL _|I_CBNZ _
+  |I_CBZ _|I_FENCE ISB|I_TBNZ _|I_TBZ _
+   -> true
   | _ -> false
 
-let can_overwrite = function
-  | I_NOP -> true
-  | _ -> false
+(*
+ * The set of overwriting instruction is more extensive.
+ * Only branches to explicit labels are excluded, as their direct
+ * execution would differ in herd and litmus.
+ *)
+
+let can_overwrite =
+  let open BranchTarget in
+  function
+  | I_B (Lbl _)
+  | I_BC (_,Lbl _)
+  | I_BL (Lbl _)
+  | I_CBNZ (_,_,Lbl _) | I_CBZ (_,_,Lbl _)
+  | I_FENCE ISB
+  | I_TBNZ (_,_,_,Lbl _)
+  | I_TBZ (_,_,_,Lbl _)
+    -> false
+  | _ ->
+     true
 
 let get_exported_label = function
   | I_ADR (_,BranchTarget.Lbl lbl) -> Some lbl
   | _ -> None
 
 
-module MakeInstr(C:sig val is_morello:bool end) = struct
+module
+  MakeInstr
+    (C:
+       sig
+         val is_morello : bool
+         val parser : string -> instruction
+       end) = struct
 
   type t = instruction
 
@@ -2151,13 +2176,18 @@ module MakeInstr(C:sig val is_morello:bool end) = struct
   let eq = (=)
 
   module PP =MakePP(C)
-  let pp = PP.dump_instruction
+
+  let pp = function
+    | I_NOP ->  "NOP"
+    | i -> sprintf "instr:%S" (PP.dump_instruction i)
 
   let tr =
     let open InstrLit in
     function
     | LIT_NOP -> I_NOP
-    | LIT_B o -> I_B (BranchTarget.Offset o)
+    | LIT_INSTR s -> C.parser s
+
+  let nop = Some I_NOP
 
   let is_nop = function
     | I_NOP -> true
@@ -2166,4 +2196,11 @@ module MakeInstr(C:sig val is_morello:bool end) = struct
   let is_overwritable = is_overwritable
   and can_overwrite =  can_overwrite
   and get_exported_label = get_exported_label
+
+  module Set =
+    MySet.Make
+      (struct
+        type t = instruction
+        let compare = compare
+      end)
 end

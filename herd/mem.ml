@@ -278,12 +278,15 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
     type ('a,'b) fetch_r = Ok of 'a * 'b | No of 'a
 
+    let segfault =
+      Warn.user_error
+        "Segmentation fault (kidding, label %s not found)"
+
     let glommed_event_structures (test:S.test) =
       let prog = test.Test_herd.program in
       let starts = test.Test_herd.start_points in
       let code_segment = test.Test_herd.code_segment in
       let procs = List.map (fun (p,_,_) -> p) starts in
-
       let labels_of_instr =
         let instr2labels =
           let one_label lbl addr res =
@@ -291,7 +294,11 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             IntMap.add addr (Label.Set.add lbl ins_lbls) res in
           Label.Map.fold one_label prog IntMap.empty in
         fun addr -> IntMap.safe_find Label.Set.empty addr instr2labels in
-
+      let exported_labels = S.get_exported_labels test in
+      let is_exported_label lbl =
+        Label.Full.Set.exists
+          (fun (_,lbl0) -> Misc.string_eq lbl lbl0)
+           exported_labels in
 (**********************************************************)
 (* In mode `-variant self` test init_state is changed:    *)
 (*  1. Normalize labels in values                         *)
@@ -314,16 +321,33 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                 | None -> code in
               List.fold_left
                 (fun (ps, ls) (addr,i) ->
-                  if A.V.Cst.Instr.is_overwritable i then
-                    let lbls = labels_of_instr addr in
-                    if Label.Set.is_empty lbls then
-                      ps,ls
-                    else (lbls,(proc,i))::ps, Label.Set.union lbls ls
+                  let lbls = labels_of_instr addr in
+                  let is_overwritable = A.V.Cst.Instr.is_overwritable i in
+                  if
+                    Label.Set.exists is_exported_label lbls ||
+                    is_overwritable
+                  then
+                    if Label.Set.is_empty lbls then ps,ls
+                    else
+                      (lbls,(proc,i))::ps,
+                      (if is_overwritable then Label.Set.union lbls ls else ls)
                   else ps,ls)
                 (ps,ls) code)
             ([], Label.Set.empty) starts
-        else [], Label.Set.empty in
-
+        else (* For Adr to work *)
+          let lbl2code lbl =
+            IntMap.find (Label.Map.find lbl prog) code_segment in
+          let ps =
+            Label.Full.Set.fold
+              (fun (_,lab) ps ->
+                try begin
+                  match lbl2code lab with
+                  | (p,(_,i)::_) ->
+                      (Label.Set.singleton lab,(p,i))::ps
+                  | (_,[]) -> ps
+                end with Not_found -> ps)
+              exported_labels [] in
+          ps,Label.Set.empty in
       let norm_lbl = (* Normalize labels, useful in `-variant self` *)
         if self then
           let m =
@@ -359,27 +383,27 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         else fun v -> v in
 
       let test =
-        if self then
-          let open Test_herd in
-          let init_state =
-            (* Change labels into their canonical representants *)
-            A.map_state norm_val test.init_state in
-          let init_state =
-            (* Add initialisation of overwritable instructions *)
-            List.fold_left
-              (fun env (lbls,(proc,i)) ->
-                match Label.norm lbls with
-                | None -> assert false (* as lbls is non-empty *)
-                | Some lbl ->
-                    let loc =
-                      A.Location_global
-                        (A.V.cstToV (Constant.Label (proc, lbl)))
-                    and v = A.V.instructionToV i in
-                    A.state_add env loc v)
-              init_state lbls2i in
-          { test with init_state; }
-        else
-          test in
+        match lbls2i with
+        | [] -> test
+        | _::_ ->
+            let open Test_herd in
+            let init_state =
+              (* Change labels into their canonical representants *)
+              A.map_state norm_val test.init_state in
+            let init_state =
+              (* Add initialisation of overwritable instructions *)
+              List.fold_left
+                (fun env (lbls,(proc,i)) ->
+                  match Label.norm lbls with
+                  | None -> assert false (* as lbls is non-empty *)
+                  | Some lbl ->
+                      let loc =
+                        A.Location_global
+                          (A.V.cstToV (Constant.Label (proc, lbl)))
+                      and v = A.V.instructionToV i in
+                      A.state_add env loc v)
+                init_state lbls2i in
+            { test with init_state; } in
 
 (*****************************************************)
 (* Build events monad, _i.e._ run code in some sense *)
@@ -429,9 +453,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
            begin try
              let addr = Label.Map.find  lbl prog in
              fetch_addr check_back seen proc_jmp addr_jmp (Some lbl) addr
-           with Not_found ->
-             Warn.user_error
-               "Segmentation fault (kidding, label %s not found)" lbl
+           with Not_found -> segfault lbl
            end
         | B.Addr addr ->
            fetch_addr check_back seen proc_jmp addr_jmp None addr in
@@ -976,7 +998,7 @@ let match_reg_events es =
                             "mixed-size test rejected (symbol %s), consider option -variant mixed"
                             (A.pp_location loc)
                     | None ->
-                       Warn.fatal "Non symbolic location: '%s'\n"
+                       Warn.fatal "Non symbolic location wth initial write: '%s'\n"
                          (A.pp_location loc)
                     end
                 | _ -> assert false
@@ -1909,13 +1931,10 @@ let match_reg_events es =
     let check_symbolic_locations _test es =
       E.EventSet.iter
         (fun e -> match E.location_of e with
-        | Some (A.Location_global (V.Val cst)) when Constant.is_symbol cst
-              -> ()
-        | Some (A.Location_global (V.Val cst)) when Constant.is_label cst
-              ->
-              if not self then
-                Warn.user_error "Non-symbolic memory access via a label found on '%s'"
-                  (A.pp_location (A.Location_global (V.Val cst)))
+        | Some (A.Location_global (V.Val cst)) when
+            Constant.is_symbol cst ||
+            Constant.is_label cst
+            -> ()
         | Some loc ->
             Warn.user_error "Non-symbolic memory access found on '%s'"
               (A.pp_location loc)
@@ -1934,22 +1953,24 @@ let match_reg_events es =
               Warn.user_error "Illegal store to '%s'; overwrite with the given argument not supported"
               (A.pp_location loc)
           end else begin
-            try
-              match IntMap.find (Label.Map.find lbl program) code_segment with
-              | (_,[]) ->
-                  Warn.user_error
-                    "Final label %s cannot be overwritten"
-                    (Label.pp lbl)
-              | (_,(_,i)::_) ->
-                  Warn.user_error
-                    "Instruction %s:%s cannot be overwritten"
-                    (Label.pp lbl)
-                    (A.dump_instruction i)
-            with
-            | Not_found ->
-                Warn.user_error
-                  "Label %s is undefined, yet it is used as constant"
-                  (Label.pp lbl)
+            if not (E.is_mem_store_init e) then begin
+              try
+                match IntMap.find (Label.Map.find lbl program) code_segment with
+                | (_,[]) ->
+                   Warn.user_error
+                     "Final label %s cannot be overwritten"
+                     (Label.pp lbl)
+                | (_,(_,i)::_) ->
+                   Warn.user_error
+                     "Instruction %s:%s cannot be overwritten"
+                     (Label.pp lbl)
+                     (A.dump_instruction i)
+              with
+              | Not_found ->
+                 Warn.user_error
+                   "Label %s is undefined, yet it is used as constant"
+                   (Label.pp lbl)
+              end
             end
         | _ ->
           ()

@@ -33,6 +33,8 @@ module type Types = sig
 
   type pseudo = ins kpseudo
   type parsedPseudo = pins kpseudo
+
+  type 'ins prog = (MiscParser.proc * 'ins kpseudo list) list
 end
 
 module type S = sig
@@ -44,9 +46,13 @@ module type S = sig
   val pseudo_fold : ('a -> 'b -> 'a) -> 'a -> 'b kpseudo -> 'a
   val pseudo_iter : ('a -> unit) -> 'a kpseudo -> unit
 
+(* Fold over instructions in code *)
+  val fold_pseudo_code : ('a -> 'b -> 'a ) -> 'a -> 'b kpseudo list -> 'a
+
 (* Fold/Map over labels *)
   val fold_labels : ('a -> string -> 'a) -> 'a -> pseudo -> 'a
   val map_labels : (string -> string) -> pseudo -> pseudo
+
 
 (* For printing the program, code per processor *)
   type nice_prog = (MiscParser.proc * pseudo list) list
@@ -65,6 +71,11 @@ module type S = sig
 
 (* Does exist some instruction s.t. predicate yields true *)
   val code_exists : (ins -> bool) -> pseudo list -> bool
+
+(* Get instructions pointed to by a set of labels *)
+  val from_labels :
+      Label.Full.Set.t -> 'ins prog -> (Label.Full.full * 'ins) list
+
 end
 
 
@@ -105,6 +116,8 @@ struct
 
   type pseudo = ins kpseudo
   type parsedPseudo = pins kpseudo
+  type 'ins prog = (MiscParser.proc * 'ins kpseudo list) list
+
 
 (* Fold/Map lifting *)
   let rec pseudo_map f ins = match ins with
@@ -124,6 +137,7 @@ struct
   let pseudo_exists p = pseudo_fold (fun b i -> b || p i) false
   let pseudo_iter f ins = pseudo_fold (fun () ins -> f ins) () ins
 
+  let fold_pseudo_code f = List.fold_left (pseudo_fold f)
 
 (* Fold/Map over labels *)
 
@@ -171,4 +185,35 @@ struct
       | ins::code -> pseudo_exists p ins || exists code in
     exists
 
+(* Extract instructions pointed by label set *)
+
+  let rec add_next_instr lbl code k =
+    match code with
+    | [] -> k
+    | (Nop|Label (_,Nop))::code -> add_next_instr lbl code k
+    | (Label (_,Instruction i)|Instruction i)::_ -> (lbl,i)::k
+    | Label (_,i)::code -> add_next_instr lbl (i::code) k
+    | (Symbolic _|Macro _)::_ -> assert false
+
+  let from_labels_code lbls p code =
+    let rec do_rec code k =
+      match code with
+      | [] -> k
+      | Label (lbl,_)::rem ->
+          let full_lbl = (p,lbl) in
+          let k =
+           if Label.Full.Set.mem full_lbl lbls then
+             add_next_instr full_lbl code k
+           else k in
+         do_rec rem k
+      | _::rem ->
+         do_rec rem k in
+    do_rec code
+
+  let from_labels lbls prog =
+    if Label.Full.Set.is_empty lbls then []
+    else
+      List.fold_left
+        (fun k (p,code) -> from_labels_code lbls (MiscParser.proc_num p) code k)
+        [] prog
 end

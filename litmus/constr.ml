@@ -45,6 +45,8 @@ module type S = sig
 (* All faults *)
   val get_faults : cond -> (V.v,FaultType.t) Fault.atom list
 
+(* Collect instructions *)
+  val get_instrs: cond -> V.Instr.Set.t
 end
 
 open ConstrGen
@@ -102,11 +104,10 @@ module RLocSet = A.RLocSet and module FaultType = A.FaultType =
       | LV (_,v) ->
             let rec f v k = match v with
             | Symbolic (Virtual {name=s;offset=0;tag=None;_}) -> Strings.add s k
-            | Concrete _|PteVal _ -> k
+            | Concrete _|PteVal _|Instruction _ -> k
             | ConcreteVector vs ->
                 List.fold_right f vs k
-            | Label _|Symbolic _|Tag _ -> assert false
-            | Instruction _ -> Warn.fatal "FIXME: atom_values functionality for -variant self" in
+            | Label _|Symbolic _|Tag _ -> assert false in
             f v k
       | LL _|FF _ -> k
 
@@ -132,5 +133,13 @@ module RLocSet = A.RLocSet and module FaultType = A.FaultType =
     let get_faults c =
       let fs = fold_constr add_fault c FSet.empty in
       FSet.elements fs
+
+
+    let get_instrs c =
+      let fold_atom a k = match a with
+        | LV (_,Constant.Instruction i) -> V.Instr.Set.add i k
+        | LV _ | LL _ | FF _ -> k in
+      ConstrGen.fold_constr fold_atom c V.Instr.Set.empty
+
 
   end

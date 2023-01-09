@@ -21,10 +21,13 @@ module type S = sig
   val eq : t -> t -> bool
   val pp : t -> string
   val tr : InstrLit.t -> t
+  val nop : t option
   val is_nop : t -> bool
   val is_overwritable : t -> bool
   val can_overwrite : t -> bool
   val get_exported_label : t -> Label.t option
+
+  module Set : MySet.S with type elt = t
 end
 
 module No : functor (I:sig type instr end) -> S with type t = I.instr

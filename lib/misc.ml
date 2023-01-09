@@ -135,6 +135,7 @@ let map_string f s =
 
 let fmt_percent s = map_string (function | '%' -> "%%" | c -> String.make 1 c) s
 
+let skip_spaces s = map_string (function | ' ' -> "" | c -> String.make 1 c) s
 
 let opt_compare cmp x y = match x,y with
 | None,None -> 0

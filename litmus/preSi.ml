@@ -56,7 +56,8 @@ module Make
     (P:sig type ins type code end)
     (A:Arch_litmus.Base with type instruction = P.ins)
     (T:Test_litmus.S with
-     type P.ins = P.ins
+     type instruction = A.instruction
+     and type P.ins = P.ins
      and type P.code = P.code
      and module A = A
      and module FaultType = A.FaultType)
@@ -67,10 +68,12 @@ module Make
        : sig
       val dump : Name.t -> T.t -> unit
     end = struct
-  module LocMake(CfgLoc:sig val label_init : Label.Full.full list end) = struct
 
-    let do_ascall =
-      Cfg.ascall || Cfg.is_kvm || Misc.consp CfgLoc.label_init
+    module LocMake(CfgLoc:sig val label_init : Label.Full.Set.t end) = struct
+
+    let do_label_init = not (Label.Full.Set.is_empty CfgLoc.label_init)
+
+    let do_ascall = Cfg.ascall || Cfg.is_kvm || do_label_init
 
     let do_precise = Precision.is_fatal Cfg.precision
 
@@ -135,6 +138,8 @@ module Make
         let exit_cond = Cfg.exit_cond
         let have_fault_handler = have_fault_handler
         let do_stats = do_stats
+        let sysarch = Cfg.sysarch
+        let variant = Cfg.variant
       end
 
       module U = SkelUtil.Make(UCfg)(P)(A)(T)
@@ -245,28 +250,23 @@ module Make
         O.o "" ;
         O.o "/* Full memory barrier */" ;
         Insert.insert O.o "mbar.c" ; O.o "" ;
-        begin
-          match CfgLoc.label_init with
-          | [] -> ()
-          | _::_ ->
-              O.o "/* Code analysis */" ;
-              O.o "#define SOME_LABELS 1" ;
-              Insert.insert O.o "instruction.h" ;
-              O.o "" ;
-              Insert.insert O.o "getnop.c" ;
-              O.o "" ;
-              ObjUtil.insert_lib_file O.o "_find_ins.c" ;
-              O.o "" ;
-              O.o "static size_t prelude_size(ins_t *p) { \
-                   return find_ins(getnop(),p,0)+1; }" ;
-              O.o "" ;
-              O.o "typedef struct {" ;
-              UD.define_label_fields CfgLoc.label_init ;
-              O.o "} code_labels_t;" ;
-              O.o "" ;
-              O.o "static void code_labels_init(code_labels_t *p);" ;
-              O.o "" ;
-        end
+        if not (Label.Full.Set.is_empty CfgLoc.label_init) then begin
+          O.o "/* Code analysis */" ;
+          O.o "#define SOME_LABELS 1" ;
+          O.o "" ;
+          ObjUtil.insert_lib_file O.o "_find_ins.c" ;
+          O.o "" ;
+          O.o "static size_t prelude_size(ins_t *p) { return find_ins(getnop(),p,0)+1; }" ;
+          O.o "" ;
+          O.o "typedef struct {" ;
+          UD.define_label_fields CfgLoc.label_init ;
+          O.o "} code_labels_t;" ;
+          O.o "" ;
+          O.o "static void code_labels_init(code_labels_t *p);" ;
+          O.o "" ;
+        end ;
+        ()
+
 
 
       (* Fault handler *)
@@ -498,7 +498,7 @@ module Make
              O.o "}"
           end ;
           O.o ""
-          end else begin
+          end else if Cfg.is_kvm then begin
             O.o "static void set_fault_vector(int role) { }" ;
             O.o ""
           end
@@ -818,6 +818,7 @@ module Make
                   test.T.globals)) ;
           O.o ""
         end ;
+        UD.dump_opcode env test ;
         O.o "/* Dump of outcome */" ;
         O.o "static void pp_log(FILE *chan,log_t *p) {"  ;
         let fmt = fmt_outcome test env rlocs
@@ -842,8 +843,11 @@ module Make
                     (fun f -> sprintf "unpack_%s(%s)" f v)
                     A.V.PteVal.fields in
                 Some v,fs
-            | _ ->
-                None,[sprintf "p->%s" (A.dump_rloc_tag rloc)])
+            | t ->
+                None,
+                [(if CType.is_ins_t t then sprintf "pretty_opcode(p->%s)"
+                 else sprintf "p->%s")
+                   (A.dump_rloc_tag rloc)])
             rlocs in
         let fst = ref true in
         List.iter2
@@ -933,7 +937,12 @@ module Make
             (struct
 
               let with_ok = true
+
               module C = T.C
+
+              let dump_with_instr v =
+                A.GetInstr.dump_instr (T.C.V.pp O.hexa) v
+
               let dump_value loc v = match v with
               | Constant.Symbolic _ -> dump_addr_idx (T.C.V.pp O.hexa v)
               | Constant.PteVal p ->
@@ -945,8 +954,9 @@ module Make
                       if CType.is_pte t && C.V.eq C.V.zero v then
                         "NULL_PACKED"
                       else
-                        T.C.V.pp O.hexa v
-                  | None ->  T.C.V.pp O.hexa v
+                        dump_with_instr v
+                  | None ->
+                     dump_with_instr v
                   end
 
               module Loc = struct
@@ -1653,15 +1663,15 @@ module Make
             (dump_thread_code procs_user env)
             test.T.code
         end ;
-        begin match CfgLoc.label_init with
-        | [] -> ()
-        | _::_ ->
-            UD.define_label_offsets test CfgLoc.label_init ;
-            O.o "" ;
-            O.o "static void code_labels_init(code_labels_t *p) {" ;
-            UD.initialise_labels "p" CfgLoc.label_init ;
-            O.o "}" ;
-            O.o ""
+        (* Notice: initialise the "nop" global variable before others *)
+        UD.dump_init_getinstrs test ;
+        if do_label_init then begin
+          UD.define_label_offsets test CfgLoc.label_init ;
+          O.o "" ;
+          O.o "static void code_labels_init(code_labels_t *p) {" ;
+          UD.initialise_labels "p" CfgLoc.label_init ;
+          O.o "}" ;
+          O.o ""
         end ;
         O.o "inline static int do_run(thread_ctx_t *_c, param_t *_p,global_t *_g) {" ;
         if not do_ascall then begin match faults with
@@ -1673,7 +1683,7 @@ module Make
               | None ->
                   O.fii "labels.%s = (ins_t *) &&CODE%d;" (tag_code f) p
               | Some lbl ->
-                  let off = U.find_label_offset p MiscParser.Main lbl test in
+                  let off = U.find_label_offset p  lbl test in
                   O.fii "labels.%s = ((ins_t *)&&CODE%d) + %d;" (tag_code f) p off)
               faults ;
             O.oi "}" ;
@@ -1756,7 +1766,7 @@ module Make
               List.iter
                 (fun ((p,lbl),_,_ as f) ->
                   let lbl = Misc.as_some lbl in
-                  let off = U.find_label_offset p MiscParser.Main lbl test+1 in (* +1 because of added inital nop *)
+                  let off = U.find_label_offset p lbl test+1 in (* +1 because of added inital nop *)
                   let lhs = sprintf "labels.%s" (tag_code f)
                   and rhs =
                     sprintf "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,0)+%d"
@@ -2009,13 +2019,14 @@ module Make
         let module MLoc =
           LocMake
             (struct
-              let label_init = A.get_label_init test.T.init
+              let label_init = T.get_exported_labels test
             end) in
         let open MLoc in
         let db = DirtyBit.get test.T.info
         and procs_user = ProcsUser.get test.T.info in
         ObjUtil.insert_lib_file O.o "header.txt" ;
         dump_header test ;
+        UD.dump_getinstrs test ;
         dump_delay_def () ;
         dump_read_timebase () ;
         dump_mbar_def () ;

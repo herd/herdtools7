@@ -22,10 +22,13 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
     val base_type : CType.t
 
     type reg = string
-    type instruction
+    type instruction = CBase.instruction
+    val dump_instruction : instruction -> string
+
   end
 
   include (CBase : SmallBase)
+
   module RegSet = StringSet
   module RegMap = StringMap
 
@@ -109,4 +112,6 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
   let features = []
 
   include HardwareExtra.No
+
+  module GetInstr = GetInstr.No(struct type instr = instruction end)
 end

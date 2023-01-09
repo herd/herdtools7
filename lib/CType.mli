@@ -32,7 +32,9 @@ val voidstar : t
 val word : t
 val quad : t
 val int128 : t
+val pteval_t : t
 val pte : t
+val ins_t : t
 
 val dump : t -> string
 val debug : t -> string
@@ -45,6 +47,8 @@ val is_ptr : t -> bool
 val is_pte : t -> bool
 val is_array : t -> bool
 val is_atomic : t -> bool
+val is_ins_t : t -> bool
+
 val strip_atomic : t -> t
 val strip_volatile : t -> t
 val strip_const : t -> t

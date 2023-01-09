@@ -18,12 +18,15 @@ module type S = sig
   type t
   val compare : t -> t -> int
   val eq : t -> t -> bool
-  val pp : t -> string                      
+  val pp : t -> string
   val tr : InstrLit.t -> t
+  val nop : t option
   val is_nop : t -> bool
   val is_overwritable : t -> bool
   val can_overwrite : t -> bool
   val get_exported_label : t -> Label.t option
+
+  module Set : MySet.S with type elt = t
 end
 
 module No (I:sig type instr end) = struct
@@ -37,9 +40,17 @@ module No (I:sig type instr end) = struct
   let pp _ = fail ""
   let tr i =
     fail ("litteral instruction " ^ InstrLit.pp i)
+  let nop = None
   let is_nop _ = fail "is_nop"
   let is_overwritable _ = false
   let can_overwrite _ = false
   let get_exported_label _ = None
-end                    
-                                     
+
+  module Set =
+    MySet.Make
+      (struct
+        type t = I.instr
+        let compare = compare
+      end)
+end
+

@@ -74,6 +74,7 @@ val delay_parse : ('v -> 'r) -> ('i -> 'v option) -> 'i -> 'r
 
 val map_string : (char -> string) -> string -> string
 val fmt_percent : string -> string
+val skip_spaces : string -> string
 
 val opt_compare : ('a -> 'a -> int) -> 'a option -> 'a option -> int
 val opt_eq : ('a -> 'a -> bool) -> 'a option -> 'a option -> bool

@@ -41,7 +41,8 @@ let get_fmt hexa base = match CType.get_fmt hexa base with
 let base =  CType.Base "int"
 let pointer = CType.Pointer base
 
-module Generic (A : Arch_litmus.Base)
+module Generic
+    (A : Arch_litmus.Base)
     (C:Constr.S
     with type location = A.location and module LocSet = A.LocSet) = struct
 
@@ -53,7 +54,8 @@ module Generic (A : Arch_litmus.Base)
       let code_pointer = Pointer (Base "ins_t")
       let tag = Base "tag_t"
       let base_array sz = CType.Array ("int", sz)
-      let pteval_t = Base "pteval_t"
+      let pteval_t = CType.pteval_t
+      let ins_t = CType.ins_t
 
       let typeof = function
         | Constant.Concrete _ -> base
@@ -62,8 +64,7 @@ module Generic (A : Arch_litmus.Base)
         | Constant.Label _ -> code_pointer
         | Constant.Tag _ -> tag
         | Constant.PteVal _ -> pteval_t
-        | Constant.Instruction _ ->
-          Warn.fatal "FIXME: typeof functionality for -variant self"
+        | Constant.Instruction _ -> ins_t
 
       let misc_to_c loc = function
         | TestType.TyDef when A.is_pte_loc loc -> pteval_t
@@ -286,6 +287,7 @@ module Make
     (O:Config)
     (A:Arch_litmus.S)
     (T:Test_litmus.S with
+type instruction = A.instruction and
 module A.V = A.V and
 type A.reg = A.reg and
 type A.location = A.location and
@@ -469,13 +471,6 @@ module A.FaultType = A.FaultType)
       { empty_ins with
         memo=sprintf "%s:" (A.Out.dump_label (tr_label m lbl)) ;
         label = Some lbl ; branch=[Next] ; }
-
-    let as_int = function
-      | Concrete i -> i
-      | ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _
-        -> raise CannotIntern
-      | Instruction _ ->
-        Warn.fatal "FIXME: as_int functionality for -variant self"
 
     let compile_pseudo_code no code fhandler =
       let m =
@@ -826,10 +821,10 @@ module A.FaultType = A.FaultType)
             StringMap.empty (InfoAlign.parse ps)
         with Not_found -> StringMap.empty in
       let ty_env = ty_env1,ty_env2 in
+      let label_init = T.get_exported_labels_init_code initenv code in
       let code = List.map (fun ((p,_,f),c) -> p,f,c) code in
-      let label_init = A.get_label_init initenv in
       let code =
-        if do_self || is_pte || Misc.consp label_init then
+        if do_self || is_pte || not (Label.Full.Set.is_empty label_init) then
           let do_append_nop = is_pte && do_precise in
           List.map (fun (p,f,c) ->
             let nop = A.Instruction A.nop in

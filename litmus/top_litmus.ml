@@ -347,6 +347,8 @@ end = struct
           include DumpCAst
           let find_offset _ _ _ = Warn.user_error "No label value in C"
           let code_exists _ _ = assert false
+          let exported_labels_code _ = Label.Full.Set.empty
+          let from_labels _ _ = []
         end
 
       module Lang =
@@ -521,7 +523,7 @@ end = struct
              begin match OT.usearch with
              | UseArch.Trad ->
                 let module AArch64Instr =
-                  AArch64Base.MakeInstr (* No morello (yet) *)
+                  AArch64Instr.Make (* No morello (yet) *)
                     (struct let is_morello = false end) in
                 let module V =                  SymbConstant.Make
                     (Int64Scalar)(AArch64PteVal)

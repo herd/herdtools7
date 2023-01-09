@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 module Make(C:sig val is_morello : bool end) = struct
-  module AArch64Instr = AArch64Base.MakeInstr(C)
+  module AArch64Instr = AArch64Instr.Make(C)
   module CapOp = AArch64Op.Make(CapabilityScalar)
   include
     SymbValue.Make

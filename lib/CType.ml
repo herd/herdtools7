@@ -32,9 +32,9 @@ let voidstar = Pointer void
 let word = Base "int"
 let quad = Base "int64_t"
 let int128 = Array ("int",4) (* Why not Base "int128_t"? *)
-let pteval = Base "pteval_t"
-let pte = Pointer pteval
-
+let pteval_t = Base "pteval_t"
+let pte = Pointer pteval_t
+let ins_t = Base "ins_t"
 
 let rec  dump = function
   | Base s -> s
@@ -61,6 +61,7 @@ type fmt = Direct of string | Macro of string
 let fmt10 = function
   | "atomic_t"
   | "int"|"char" ->  Some (Direct "d")
+  | "ins_t" -> Some (Direct "s")
   | "long" -> Some (Direct "ld")
   | "int8_t" -> Some (Macro  "PRIi8")
   | "uint8_t" -> Some (Macro  "PRIu8")
@@ -88,6 +89,7 @@ let fmt16 = function
   | "uint64_t" -> Some (Macro  "PRIx64")
   | "intprt_t" -> Some (Macro "PRIxPTR")
   | "uintprt_t" -> Some (Macro "PRIxPTR")
+  | "ins_t" -> Some (Direct "s")
   | _ -> None
 
 let get_fmt hexa = if hexa then fmt16 else fmt10
@@ -111,6 +113,11 @@ let rec is_atomic = function
   | Volatile t | Const t -> is_atomic t
   | Atomic _ -> true
   | Array _ | Base _ | Pointer _ -> false
+
+let rec is_ins_t = function
+  | Base "ins_t" -> true
+  | Atomic t | Volatile t | Const t -> is_ins_t t
+  | Array _|Base _|Pointer _ -> false
 
 let rec strip_atomic = function
   | Volatile t -> Volatile (strip_atomic t)

@@ -1,0 +1,14 @@
+AArch64 L050
+{
+0:X0=instr:"B.EQ .+8";
+ins_t 0:X2;
+}
+  P0         ;
+L0:          ;
+ B .+4       ;
+ ADR X1,L0   ;
+ LDR W2,[X1] ;
+ CMP W0,W2   ;
+ CSET W4,NE  ;
+locations [0:X2;]
+forall 0:X4=1 /\ 0:X0=instr:"B.EQ .+8"

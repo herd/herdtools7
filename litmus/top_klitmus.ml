@@ -77,7 +77,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
       with type arch_reg = A.Out.arch_reg
       and type t = A.Out.t
       and module RegMap = A.RegMap)
-      (Pseudo:PseudoAbstract.S) =
+      (Pseudo:PseudoAbstract.S with type ins = A.instruction) =
     struct
       module T = Test_litmus.Make(O)(A)(Pseudo)
       module O = struct
@@ -197,10 +197,12 @@ module Top(O:Config)(Tar:Tar.S) = struct
     end
     module Pseudo =
       struct
-        type ins
+        type ins = CBase.instruction
         include DumpCAst
         let find_offset _ _ _ =  Warn.user_error "No label value in C"
         let code_exists _ _ = false
+        let exported_labels_code _ = Label.Full.Set.empty
+        let from_labels _ _ = []
       end
     module Lang = CLang.Make(CLang.DefaultConfig)
         (struct

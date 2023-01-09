@@ -123,7 +123,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     for k=0 to String.length s-1 do
       let c = s.[k] in
       begin match c with
-      | '\\' -> Buffer.add_char buff '\\'
+      | '\\'|'"' -> Buffer.add_char buff '\\'
       | _ -> ()
       end ;
       Buffer.add_char buff c

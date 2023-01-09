@@ -83,7 +83,9 @@ module Make
     (Cfg:sig include Config val sysarch : Archs.System.t end)
     (P:sig type code end)
     (A:Arch_litmus.Base)
-    (T:Test_litmus.S with type P.code = P.code and module A = A and module FaultType = A.FaultType)
+    (T:Test_litmus.S with
+     type instruction = A.instruction and
+     type P.code = P.code and module A = A and module FaultType = A.FaultType)
     (O:Indent.S)
     (Lang:Language.S
     with type arch_reg = T.A.reg and type t = A.Out.t
@@ -92,7 +94,7 @@ module Make
     end = struct
   module MakeLoc
            (CfgLoc:
-              sig val label_init : Label.Full.full list
+              sig val label_init : Label.Full.Set.t
               end) = struct
       module G = Global_litmus
       module C = T.C
@@ -101,10 +103,10 @@ module Make
 
 (* Options *)
       let do_self = Cfg.variant Variant_litmus.Self
-      let do_label_init = Misc.consp CfgLoc.label_init
+      let do_label_init = not (Label.Full.Set.is_empty CfgLoc.label_init)
       let do_ascall =
-        (* Self-modifing code or label constants in iit section
-           implils `-ascall true` mode *)
+        (* Self-modifing code or label constants in init section
+           implies `-ascall true` mode *)
         Cfg.ascall || do_self || do_label_init
 
       open Speedcheck
@@ -272,9 +274,12 @@ module Make
         let exit_cond = Cfg.exit_cond
         let have_fault_handler = false
         let do_stats = false
+        let sysarch = Cfg.sysarch
+        let variant = Cfg.variant
       end
 
       module U = SkelUtil.Make(UCfg)(P)(A)(T)
+
       module EPF =
         DoEmitPrintf.Make
           (struct
@@ -361,9 +366,11 @@ module Make
                (fun v -> sprintf "%s," (dump_a_v v))
                vs in
            sprintf "{%s}" (String.concat "" pps)
-        | Symbolic _|Label _|Tag _|PteVal _ -> assert false
-        | Instruction _ ->
-          Warn.fatal "FIXME: dump_a_v functionality for -variant self"
+        | Symbolic _|Tag _|PteVal _ -> assert false
+        | Label _ ->
+            Warn.user_error
+              "Labels cannot be used as initial values of memory locations"
+        | Instruction i -> A.GetInstr.instr_name i
 
 (* Dump left & right values when context is available *)
 
@@ -672,18 +679,11 @@ module Make
           O.o "inline static void mcautious(void) { mbar(); }" ;
           O.o ""
         end ;
-        if do_self || do_label_init then begin
-          Insert.insert O.o "instruction.h" ;
-          O.o "" ;
-          Insert.insert O.o "getnop.c" ;
-          O.o "" ;
-          if do_self then begin
-            Insert.insert O.o "getret.c" ;
-            O.o "" ;
-            Insert.insert O.o "self.c" ;
-            O.o ""
-          end
+        if do_self then begin
+          Insert.insert O.o "self.c" ;
+          O.o ""
         end
+
 
 (* All of them *)
 
@@ -881,7 +881,7 @@ module Make
             module C = C
  (* Location argument ignored, may be useful for null pointer.
     See preSi.ml for location argument usage *)
-            let dump_value _loc = C.V.pp O.hexa
+            let dump_value _loc = A.GetInstr.dump_instr (C.V.pp O.hexa)
             module Loc = struct
               type location = A.location
               type t = A.rlocation
@@ -943,6 +943,7 @@ module Make
                (List.map (fun (s,_) -> sprintf "\"%s\"," s) test.T.globals)) ;
           O.o "" ;
         end ;
+        UD.dump_opcode env test ;
 (* Outcome collection *)
         O.o "/**********************/" ;
         O.o "/* Outcome collection */" ;
@@ -1078,8 +1079,10 @@ module Make
                            (CType.dump (register_type rloc (CType.Base t)))
                            sloc k::pp_rec (k+1) in
                      String.concat "," (pp_rec 0)
+                 | t when CType.is_ins_t t ->
+                    sprintf "pretty_opcode(o[%s_f])" sloc
                  | t ->
-                     sprintf "(%s)o[%s_f]"
+                    sprintf "(%s)o[%s_f]"
                        (CType.dump (register_type rloc t)) sloc)
                (A.RLocSet.elements outs)) in
         O.fi "fprintf(fhist,%s,%s);" fmt args ;
@@ -1393,9 +1396,10 @@ module Make
             O.o "static size_t code_size(ins_t *p,int skip) { return find_ins(getret(),p,skip)+1; }" ;
             O.o ""
           end ;
-          O.o "static size_t prelude_size(ins_t *p) { return find_ins(getnop(),p,0)+1; }" ;
+          O.o "static size_t prelude_size(ins_t *p) { return find_ins(nop,p,0)+1; }" ;
           O.o ""
         end ;
+        UD.dump_init_getinstrs test ;
         O.f "static void init(ctx_t *_a%s) {"
           (if do_staticalloc then ",int id" else "") ;
         O.oi "int size_of_test = _a->_p->size_of_test;" ;
@@ -2471,6 +2475,8 @@ module Make
         end ;
 (* Starting time *)
         O.oi "tsc_t start = timeofday();" ;
+(* Initialise instruction code variables *)
+        O.oi "init_getinstrs();" ;
 (* Parameters recorded in param_t structure *)
         O.oi "param_t prm ;" ;
         O.o "/* Set some parameters */" ;
@@ -2908,11 +2914,12 @@ module Make
         let module MLoc =
           MakeLoc
             (struct
-              let label_init = A.get_label_init test.T.init
+              let label_init = T.get_exported_labels test
             end) in
         let open MLoc in
         let env = U.build_env test in
         dump_header test ;
+        UD.dump_getinstrs test ;
         dump_read_timebase () ;
         dump_threads test ;
         if mk_dsa test then dump_topology doc test ;

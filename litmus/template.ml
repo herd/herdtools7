@@ -99,7 +99,8 @@ module type S = sig
   val get_addrs_only : t -> string list
   val get_phys_only : t -> string list
   val get_addrs : t -> string list * string list (* addresses X ptes *)
-  val get_labels : t -> (int * string) list
+  val get_labels : t -> Label.Full.full list
+  val get_instructions : t -> V.Instr.t list
   val fmt_reg : arch_reg -> string
   val dump_label : string -> string
   val emit_label : (string -> string) -> string -> ins
@@ -231,16 +232,31 @@ module Make(O:Config)(A:I) =
     let get_addrs t =
       get_addrs_only t,get_ptes_only t
 
-    let get_labels { init; _} =
-      List.fold_left
-        (fun k (_,v) ->
-          let rec f v k = match v with
-          | Label (p,s) -> (p,s)::k
-          | ConcreteVector vs ->
-              List.fold_right f vs k
-          | Concrete _|Symbolic _|Tag _|PteVal _|Instruction _ -> k
-          in f v k)
-        [] init
+    let get_constants get {init;_} =
+      let rec f v k = match v with
+        | ConcreteVector vs ->
+           List.fold_right f vs k
+        | _ ->
+           begin
+             match get v with
+             | Some r -> r::k
+             | None -> k
+           end in
+      List.fold_left (fun k (_,v) -> f v k) [] init
+
+    let get_labels t =
+      get_constants
+        (function
+         | Label (p,s) -> Some (p,s)
+         | _ -> None)
+        t
+
+    let get_instructions t =
+      get_constants
+        (function
+         | Instruction i -> Some i
+         | _ -> None)
+        t
 
     let get_stable { stable; _} = stable
 

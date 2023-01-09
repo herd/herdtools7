@@ -43,7 +43,9 @@ module Make
     (P:sig type code end)
     (A:Arch_litmus.Base)
     (MemType:MemoryType.S)
-    (T:Test_litmus.S with type P.code = P.code and module A = A and module FaultType = A.FaultType)
+    (T:Test_litmus.S with
+     type instruction = A.instruction and
+     type P.code = P.code and module A = A and module FaultType = A.FaultType)
     (O:Indent.S)
     (Lang:Language.S
     with type arch_reg = T.A.reg and type t = A.Out.t
@@ -81,6 +83,8 @@ module Make
       let exit_cond = false
       let have_fault_handler = false
       let do_stats = false
+      let sysarch = Cfg.sysarch
+      let variant _ = false (* No variant (yet ?) *)
     end
 
     module U = SkelUtil.Make(UCfg)(P)(A)(T)

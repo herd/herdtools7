@@ -57,4 +57,6 @@ module Make(V:Constant.S) = struct
   let nop = Pnop
 
   include HardwareExtra.No
+
+  module GetInstr = GetInstr.No(struct type instr=instruction end)
 end

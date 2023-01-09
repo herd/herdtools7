@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 module Make(C:sig val is_morello : bool end) = struct
-  module AArch64Instr = AArch64Base.MakeInstr(C)
+  module AArch64Instr = AArch64Instr.Make(C)
   module AArch64Cst =
     SymbConstant.Make(Uint128Scalar)(AArch64PteVal)(AArch64Instr)
   include

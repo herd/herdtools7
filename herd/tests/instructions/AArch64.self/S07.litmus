@@ -5,9 +5,9 @@ AArch64 S07
     P0           ;
   B L1           ;
 L0:              ;
-  MOV X0, #1     ;
+  MOV W0, #1     ;
   RET            ;
 L1:              ;
   BL L0          ;
-  MOV X1, #1     ;
+  MOV W1, #1     ;
 forall (0:X0=1/\0:X1=1)
