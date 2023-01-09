@@ -49,13 +49,6 @@ let default =
   let f _ = false in
   { dic=f; idc=f; }
 
-let filter_opt f =
-  List.fold_left
-    (fun k p -> match f p with
-    | None -> k
-    | Some x -> x::k)
-    []
-
 let get info =
  match
    MiscParser.get_info_on_info
@@ -72,7 +65,7 @@ let get info =
           (fun _ -> true)
         else
           let xs =
-            filter_opt
+            Misc.option_map
               (function (Some _ as p,(IDC|DIC)) -> p | _ -> None)
               idcs in
           fun proc -> List.exists (Misc.int_eq proc) xs
@@ -81,7 +74,7 @@ let get info =
           (fun _ -> true)
         else
           let xs =
-            filter_opt
+            Misc.option_map
               (function (Some _ as p,DIC) -> p | _ -> None)
               dics in
           fun proc -> List.exists (Misc.int_eq proc) xs in

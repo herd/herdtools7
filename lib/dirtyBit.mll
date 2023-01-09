@@ -57,14 +57,6 @@ let soft =
     some_ha=false; some_hd=false;
     all_ha=false; all_hd=false; }
 
-
-let filter_opt f =
-  List.fold_left
-    (fun k p -> match f p with
-    | None -> k
-    | Some x -> x::k)
-    []
-
 let get info =
  match
    MiscParser.get_info_on_info
@@ -77,7 +69,7 @@ let get info =
       let has = List.filter (function (_,(HA|HD)) -> true | _ -> false) xs
       and hds = List.filter (function (_,HD) -> true | _ -> false) xs in
       let soft =
-        filter_opt
+        Misc.option_map
           (function (Some _ as p,SW) -> p | _ -> None)
           xs in
       let tthm p = not (List.exists (Misc.int_eq p) soft) in
@@ -86,7 +78,7 @@ let get info =
           true,fun _ -> true
         else
           let xs =
-            filter_opt
+            Misc.option_map
               (function (Some _ as p,(HA|HD)) -> p | _ -> None)
               has in
           false,fun proc -> List.exists (Misc.int_eq proc) xs
@@ -95,7 +87,7 @@ let get info =
           true,(fun _ -> true)
         else
           let xs =
-            filter_opt
+            Misc.option_map
               (function (Some _ as p,HD) -> p | _ -> None)
               hds in
           false,fun proc -> List.exists (Misc.int_eq proc) xs in
