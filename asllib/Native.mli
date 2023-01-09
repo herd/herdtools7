@@ -26,7 +26,9 @@ type err =
 
 val pp_err : out_channel -> err -> unit
 
+exception NativeInterpreterExn of err
+
 module NativeBackend :
-  Backend.S with type value = AST.value and type 'a m = unit -> ('a, err) result
+  Backend.S with type value = AST.value and type 'a m = unit -> 'a
 
 module NativeInterpreter : Interpreter.S with module B = NativeBackend

@@ -97,12 +97,20 @@ expr:
     { AST.E_Call (x, args) }
 | LPAR e=expr RPAR
     { e }
-| x=IDENTIFIER LBRACKET args=separated_list(COMMA, expr) RBRACKET
-    { AST.E_Getter (x, args) }
+| e=expr LBRACKET slices=separated_list(COMMA, slice) RBRACKET
+    { AST.E_Slice (e, slices) }
 | t=IDENTIFIER LBRACE fields=separated_list(COMMA, field_assign) RBRACE
     { AST.E_Record (AST.T_Named t, fields, AST.TA_None) }
 | e=expr DOT x=IDENTIFIER
     { AST.E_GetField (e, x, AST.TA_None) }
+
+slice:
+| e=expr
+    { AST.Slice_Single e }
+| e1=expr COLON e2=expr
+    { AST.Slice_Range (e1, e2) }
+| e1=expr PLUS_COLON e2=expr
+    { AST.Slice_Length (e1, e2) }
 
 int_constraint_elt:
 | e=expr
@@ -163,8 +171,8 @@ type_desc:
 lexpr:
 | x=IDENTIFIER
     { AST.LE_Var x }
-| x=IDENTIFIER LBRACKET args=separated_list(COMMA, expr) RBRACKET
-    { AST.LE_Setter (x, args) }
+| le=lexpr LBRACKET slices=separated_list(COMMA, slice) RBRACKET
+    { AST.LE_Slice (le, slices) }
 | le=lexpr DOT x=IDENTIFIER
     { AST.LE_SetField (le, x, AST.TA_None) }
 

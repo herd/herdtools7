@@ -52,8 +52,8 @@ let rec pp_expr f = function
         e2
   | E_Unop (u, e) -> fprintf f "(%s %a)" (unop_to_string u) pp_expr e
   | E_Call (name, args) -> fprintf f "@[<hov 2>%s(%a)@]" name pp_expr_list args
-  | E_Getter (name, args) ->
-      fprintf f "@[<hov 2>%s[%a]@]" name pp_expr_list args
+  | E_Slice (e, args) ->
+      fprintf f "@[<hov 2>%a[%a]@]" pp_expr e pp_slice_list args
   | E_Cond (e1, e2, e3) ->
       fprintf f "@[<hv>@[<h>if %a@ then@]@;<1 2>%a@ else@;<1 2>%a@ end@]"
         pp_expr e1 pp_expr e2 pp_expr e3
@@ -64,6 +64,13 @@ let rec pp_expr f = function
         (pp_comma_list pp_one) li
 
 and pp_expr_list f = pp_comma_list pp_expr f
+
+and pp_slice f = function
+  | Slice_Single e -> pp_expr f e
+  | Slice_Range (e1, e2) -> fprintf f "@[<h>%a@,:%a@]" pp_expr e1 pp_expr e2
+  | Slice_Length (e1, e2) -> fprintf f "@[<h>%a@,+:%a@]" pp_expr e1 pp_expr e2
+
+and pp_slice_list f = pp_comma_list pp_slice f
 
 and pp_type_desc f = function
   | T_Int None -> pp_print_string f "integer"
@@ -112,7 +119,7 @@ let pp_typed_identifier f (name, type_desc) =
 
 let rec pp_lexpr f = function
   | LE_Var x -> pp_print_string f x
-  | LE_Setter (x, args) -> fprintf f "%s[%a]" x pp_expr_list args
+  | LE_Slice (le, args) -> fprintf f "%a[%a]" pp_lexpr le pp_slice_list args
   | LE_SetField (le, x, _ta) -> fprintf f "@[%a@,.%s@]" pp_lexpr le x
 
 let rec pp_stmt f = function

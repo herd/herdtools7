@@ -208,6 +208,12 @@ module Make (C : Sem.Config) = struct
       | _ ->
           Warn.user_error "Trying to index non-indexable value %s" (V.pp_v vec)
 
+    let read_from_bitvector _positions _bv =
+      Warn.fatal "Not yet implemented: bitvectors operations."
+
+    let write_to_bitvector _positions _v _w =
+      Warn.fatal "Not yet implemented: bitvectors operations."
+
     (**************************************************************************)
     (* Primitives and helpers                                                 *)
     (**************************************************************************)
@@ -349,6 +355,8 @@ module Make (C : Sem.Config) = struct
         let create_vector = create_vector
         let get_i = get_i
         let set_i = set_i
+        let read_from_bitvector = read_from_bitvector
+        let write_to_bitvector = write_to_bitvector
       end in
       let module ASLInterpreter = Asllib.Interpreter.Make (ASLBackend) in
       let* _ =

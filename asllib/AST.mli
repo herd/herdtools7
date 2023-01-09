@@ -70,10 +70,15 @@ type expr =
   | E_Binop of binop * expr * expr
   | E_Unop of unop * expr
   | E_Call of identifier * expr list
-  | E_Getter of identifier * expr list
+  | E_Slice of expr * slice list
   | E_Cond of expr * expr * expr
   | E_GetField of expr * identifier * type_annot
   | E_Record of type_desc * (identifier * expr) list * type_annot
+
+and slice =
+  | Slice_Single of expr
+  | Slice_Range of expr * expr (* end first because ASL *)
+  | Slice_Length of expr * expr (* start, length *)
 
 (** Type annotations are way for the typing system to annotate
     special nodes of the AST. They are for internal use only. *)
@@ -120,7 +125,7 @@ and typed_identifier = identifier * type_desc
 (** Type of left-hand side of assignments. *)
 type lexpr =
   | LE_Var of identifier
-  | LE_Setter of identifier * expr list
+  | LE_Slice of lexpr * slice list
   | LE_SetField of lexpr * identifier * type_annot
 
 (** Statements. Parametric on the type of literals in expressions. *)

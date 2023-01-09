@@ -129,11 +129,11 @@ let rec pp_expr f = function
       addb f " ";
       pp_expr_list f args;
       addb f ")"
-  | E_Getter (name, args) ->
-      addb f "(EGet ";
-      addb f name;
+  | E_Slice (e, args) ->
+      addb f "(ESlice ";
+      pp_expr f e;
       addb f " ";
-      pp_expr_list f args;
+      pp_slice_list f args;
       addb f ")"
   | E_Cond (e1, e2, e3) ->
       addb f "(ECond ";
@@ -157,6 +157,22 @@ let rec pp_expr f = function
       addb f ")"
 
 and pp_expr_list f = pp_list pp_expr f
+and pp_slice_list f = pp_list pp_slice f
+
+and pp_slice f = function
+  | Slice_Single e -> pp_expr f e
+  | Slice_Range (e1, e2) ->
+      addb f "(SliceRange ";
+      pp_expr f e1;
+      addb f " ";
+      pp_expr f e2;
+      addb f ")"
+  | Slice_Length (e1, e2) ->
+      addb f "(SliceLength ";
+      pp_expr f e1;
+      addb f " ";
+      pp_expr f e2;
+      addb f ")"
 
 and pp_fields_assoc pp_key pp_type_desc =
   let pp_one f (key, type_desc) =
@@ -256,11 +272,11 @@ let rec pp_lexpr f = function
       addb f "(LEVar ";
       addb f x;
       addb f ")"
-  | LE_Setter (name, args) ->
-      addb f "(LESet ";
-      addb f name;
+  | LE_Slice (le, args) ->
+      addb f "(LESlice ";
+      pp_lexpr f le;
       addb f " ";
-      pp_expr_list f args;
+      pp_slice_list f args;
       addb f ")"
   | LE_SetField (le, x, _ta) ->
       addb f "(LESetField ";

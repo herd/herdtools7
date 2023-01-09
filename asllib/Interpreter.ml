@@ -41,8 +41,6 @@ module Make (B : Backend.S) = struct
   type body = B.value list -> B.value list B.m
 
   let ( let* ) = B.bind_data
-  let map_data a b = B.bind_data a (fun x -> return (b x))
-  let ( ||> ) = map_data
   let ( and* ) = B.prod
 
   let prod_map f =
@@ -82,7 +80,7 @@ module Make (B : Backend.S) = struct
     match ty with
     | AST.T_Record li -> (
         match list_index 0 li with
-        | Some i -> return i
+        | Some i -> i
         | None ->
             fatal
               (Format.asprintf "@[<hv>Cannot get field %s of type@ %a@]" x
@@ -98,7 +96,7 @@ module Make (B : Backend.S) = struct
   (*****************************************************************************)
 
   type func = Func of int ref * AST.func | Primitive of body primitive
-  type genv = value IMap.t * func IMap.t
+  type genv = { consts : AST.value IMap.t; funcs : func IMap.t }
   type lenv = value IMap.t
   type env = genv * lenv
 
@@ -115,7 +113,7 @@ module Make (B : Backend.S) = struct
 
   let type_of_ta = function
     | AST.TA_None -> fatal "Interpreter error. Type inference step incomplete."
-    | AST.TA_InferredStructure ty -> return ty
+    | AST.TA_InferredStructure ty -> ty
 
   let type_annotation ast sfuncs =
     let add_fake_primitives =
@@ -131,7 +129,7 @@ module Make (B : Backend.S) = struct
     in
     let annotate ast =
       let open Typing in
-      try annotate_ast ast |> return
+      try annotate_ast ast
       with TypingError err -> (
         fatal
         @@
@@ -152,7 +150,7 @@ module Make (B : Backend.S) = struct
       in
       List.filter is_primitive
     in
-    ast |> add_fake_primitives |> annotate ||> remove_fake_primitives
+    ast |> add_fake_primitives |> annotate |> remove_fake_primitives
 
   (*****************************************************************************)
   (*                                                                           *)
@@ -162,7 +160,7 @@ module Make (B : Backend.S) = struct
 
   let build_enums (ast : AST.t) globals =
     let build_one (counter, globals) name =
-      let globals = IMap.add name (v_of_int counter) globals in
+      let globals = IMap.add name (AST.V_Int counter) globals in
       (counter + 1, globals)
     in
     let build_decl acc = function
@@ -173,7 +171,9 @@ module Make (B : Backend.S) = struct
     let _, genv = List.fold_left build_decl (0, globals) ast in
     genv
 
-  type build_status = NotYetEvaluated of AST.expr | AlreadyEvaluated of value
+  type build_status =
+    | NotYetEvaluated of AST.expr
+    | AlreadyEvaluated of AST.value
 
   (* build every constant and make an global env *)
   let build_consts (ast : AST.t) globals =
@@ -181,75 +181,33 @@ module Make (B : Backend.S) = struct
        every global variable to either its build_status, that is its value if
        it has been evaluated, or its expression otherwise. This is why we have
        to use it every time we could use a variable. *)
-    let rec eval_one acc name =
-      match IMap.find_opt name globals with
-      | Some v -> return (v, acc)
-      | None -> (
-          match IMap.find_opt name acc with
-          | Some (AlreadyEvaluated v) -> return (v, acc)
-          | Some (NotYetEvaluated e) ->
-              let* v, acc = eval_expr acc e in
-              return (v, IMap.add name (AlreadyEvaluated v) acc)
-          | _ -> fatal ("Unknown constant " ^ name))
-    and eval_expr acc e =
-      let open AST in
-      match e with
-      | E_Literal v -> return (v_of_parsed_v v, acc)
-      | E_Var x -> eval_one acc x
-      | E_Unop (op, e') ->
-          let* v', acc = eval_expr acc e' in
-          let* v = B.unop op v' in
-          return (v, acc)
-      | E_Binop (op, e1, e2) ->
-          let* v1, acc = eval_expr acc e1 in
-          let* v2, acc = eval_expr acc e2 in
-          let* v = B.binop op v1 v2 in
-          return (v, acc)
-      | E_Cond (e1, e2, e3) ->
-          let* v, acc = eval_expr acc e1 in
-          choice (return v) (eval_expr acc e2) (eval_expr acc e3)
-      | E_Record (_, li, ta) ->
-          let one_field m (x, e) =
-            let* acc, li = m in
-            let* v, acc = eval_expr acc e in
-            return (acc, (x, v) :: li)
-          in
-          let* acc, fields_rev = List.fold_left one_field (return (acc, [])) li
-          and* ty = type_of_ta ta in
-          let* v = make_record ty (List.rev fields_rev) in
-          return (v, acc)
-      | E_GetField _ -> fatal "Not Yet Implemented: get field"
-      | E_Getter _ | E_Call _ ->
-          fatal "Function calling in constants is not yet implemented"
-    in
-    let init_acc =
-      let one_decl acc = function
-        | AST.D_GlobalConst (name, e) -> IMap.add name (NotYetEvaluated e) acc
-        | _ -> acc
+    let acc =
+      let one_decl = function
+        | AST.D_GlobalConst (name, e) -> Some (name, NotYetEvaluated e)
+        | _ -> None
       in
-      List.fold_left one_decl IMap.empty ast
-    in
-    let eval_all acc =
-      let one_decl acc = function
-        | AST.D_GlobalConst (name, _e) ->
-            let* acc = acc in
-            let* _, acc = eval_one acc name in
-            return acc
-        | _ -> acc
+      let add_decls =
+        ast |> List.to_seq |> Seq.filter_map one_decl |> IMap.add_seq
       in
-      List.fold_left one_decl acc ast
+      let one_glob v = AlreadyEvaluated v in
+      globals |> IMap.map one_glob |> add_decls |> ref
     in
-    let collect acc =
-      let* acc = acc in
-      let one_item = function
-        | name, AlreadyEvaluated v -> (name, v)
-        | _ -> assert false
-      in
-      acc |> IMap.to_seq |> Seq.map one_item
-      |> Fun.flip IMap.add_seq globals
-      |> return
+
+    let rec env_lookup name =
+      match IMap.find_opt name !acc with
+      | Some (AlreadyEvaluated v) -> v
+      | Some (NotYetEvaluated e) ->
+          let v = eval_expr e in
+          acc := IMap.add name (AlreadyEvaluated v) !acc;
+          v
+      | None -> fatal ("Unknown constant " ^ name)
+    and eval_expr e = StaticInterpreter.static_eval env_lookup e in
+
+    let one_decl = function
+      | AST.D_GlobalConst (name, _) -> Some (name, env_lookup name)
+      | _ -> None
     in
-    collect (eval_all (return init_acc))
+    ast |> List.to_seq |> Seq.filter_map one_decl |> IMap.of_seq
 
   let build_funcs ast funcs =
     List.to_seq ast
@@ -272,17 +230,24 @@ module Make (B : Backend.S) = struct
     | [ v ] -> return v
     | _ -> fatal ("Return arrity error for function " ^ name)
 
+  let slices_to_exprs : AST.slice list -> AST.expr list =
+    let tr_one_slice = function
+      | AST.Slice_Single e -> e
+      | _ -> fatal "Cannot call getter with slices arguments."
+    in
+    List.map tr_one_slice
+
   let rec eval_expr (env : env) scope is_data =
-    let (globals, funcs), lenv = env in
+    let genv, lenv = env in
     let open AST in
     function
     | E_Literal v -> v_of_parsed_v v |> return
     | E_Var x -> (
-        match IMap.find_opt x globals with
-        | Some v -> return v
+        match IMap.find_opt x genv.consts with
+        | Some v -> return (v_of_parsed_v v)
         | None -> (
-            if IMap.mem x funcs then
-              let* vl = eval_func (fst env) x [] in
+            if IMap.mem x genv.funcs then
+              let* vl = eval_func genv x [] in
               one_return_value x vl
             else
               match IMap.find_opt x lenv with
@@ -300,31 +265,57 @@ module Make (B : Backend.S) = struct
     | E_Cond (e1, e2, e3) ->
         let eval_ = eval_expr env scope is_data in
         choice (eval_ e1) (eval_ e2) (eval_ e3)
-    | E_Getter (name, args) | E_Call (name, args) ->
+    | E_Slice (E_Var x, slices) when IMap.mem x genv.funcs ->
+        let args = slices_to_exprs slices in
+        eval_expr env scope is_data (E_Call (x, args))
+    | E_Slice (e, slices) ->
+        let positions = eval_slices slices in
+        let* v = eval_expr env scope is_data e in
+        B.read_from_bitvector positions v
+    | E_Call (name, args) ->
         let vargs = List.map (eval_expr env scope is_data) args in
-        let* returned = eval_func (fst env) name vargs in
+        let* returned = eval_func genv name vargs in
         one_return_value name returned
     | E_Record (_, li, ta) ->
         let one_field (x, e) =
           let* v = eval_expr env scope is_data e in
           return (x, v)
         in
-        let* fields = prod_map one_field li and* ty = type_of_ta ta in
-        make_record ty fields
+        let* fields = prod_map one_field li in
+        make_record (type_of_ta ta) fields
     | E_GetField (e, x, ta) ->
-        let* vec = eval_expr env scope is_data e
-        and* i =
-          let* ty = type_of_ta ta in
-          index_of_field_in_record x ty
-        in
+        let i = type_of_ta ta |> index_of_field_in_record x in
+        let* vec = eval_expr env scope is_data e in
         B.get_i i vec
+
+  and eval_slices slices =
+    let module SI = StaticInterpreter in
+    let eval_expr e =
+      SI.static_eval (fun _s -> assert false) e |> function
+      | AST.V_Int i -> i
+      | v -> raise (SI.StaticInterpreterError (SI.TypeError (v, "integer")))
+    in
+    let slice_to_positions =
+      let interval bot len = List.init len (( + ) bot) in
+      function
+      | AST.Slice_Single e -> [ eval_expr e ]
+      | AST.Slice_Range (etop, ebot) ->
+          let pbot = eval_expr ebot and ptop = eval_expr etop in
+          interval pbot (ptop - pbot + 1)
+      | AST.Slice_Length (ebot, elength) ->
+          let pbot = eval_expr ebot and plength = eval_expr elength in
+          interval pbot plength
+    in
+    try slices |> List.map slice_to_positions |> List.concat
+    with SI.StaticInterpreterError e ->
+      fatal (SI.static_interpreter_error_to_string e)
 
   and eval_lexpr (env : env) scope =
     let open AST in
     let genv, lenv = env in
     function
     | LE_Var x -> (
-        match IMap.find_opt x (snd genv) with
+        match IMap.find_opt x genv.funcs with
         | Some _ ->
             fun v ->
               let* _ = eval_func genv x [ v ] in
@@ -335,18 +326,28 @@ module Make (B : Backend.S) = struct
               let* () = on_write_identifier x scope v in
               let lenv = IMap.add x v lenv in
               continue (genv, lenv))
-    | LE_Setter (x, args) ->
-        let vargs = List.map (eval_expr env scope false) args in
-        fun v ->
-          let* _ = eval_func genv x (vargs @ [ v ]) in
+    | LE_Slice (LE_Var x, slices) ->
+        let args =
+          slices_to_exprs slices |> List.map (eval_expr env scope true)
+        in
+        fun m ->
+          let* _ = eval_func genv x (args @ [ m ]) in
           continue env
-    | LE_SetField (le, x, ta) ->
+    | LE_Slice (le, slices) ->
         let setter = eval_lexpr env scope le in
+        let positions = eval_slices slices in
+        fun m ->
+          let* v = m
+          and* bv =
+            let e = ASTUtils.expr_of_lexpr le in
+            eval_expr env scope true e
+          in
+          B.write_to_bitvector positions v bv |> setter
+    | LE_SetField (le, x, ta) ->
+        let setter = eval_lexpr env scope le
+        and i = index_of_field_in_record x (type_of_ta ta) in
         fun m ->
           let* new_v = m
-          and* i =
-            let* ty = type_of_ta ta in
-            index_of_field_in_record x ty
           and* vec =
             let e = ASTUtils.expr_of_lexpr le in
             eval_expr env scope true e
@@ -378,8 +379,8 @@ module Make (B : Backend.S) = struct
           (eval_expr env scope true e)
           (eval_stmt env scope s1) (eval_stmt env scope s2)
 
-  and eval_func genv name (args : value m list) =
-    match IMap.find_opt name (snd genv) with
+  and eval_func (genv : genv) name (args : value m list) : value list m =
+    match IMap.find_opt name genv.funcs with
     | None -> fatal ("Unknown function: " ^ name)
     | Some (Primitive { body; _ }) ->
         let* args = prod_map Fun.id args in
@@ -401,8 +402,8 @@ module Make (B : Backend.S) = struct
         match res with Continuing _ -> return [] | Returning vs -> return vs)
 
   let run (ast : AST.t) primitives (main_args : value list) : value list m =
-    let* ast = type_annotation ast primitives in
+    let ast = type_annotation ast primitives in
     let funcs = IMap.empty |> build_funcs ast |> add_primitives primitives in
-    let* globals = IMap.empty |> build_enums ast |> build_consts ast in
-    eval_func (globals, funcs) "main" (List.map return main_args)
+    let consts = IMap.empty |> build_enums ast |> build_consts ast in
+    eval_func { consts; funcs } "main" (List.map return main_args)
 end

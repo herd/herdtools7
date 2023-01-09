@@ -6,7 +6,7 @@
 
 (library
  (name asllib)
- (modules AST ASTUtils Backend Interpreter Parser Lexer Native Typing Serialize PP)
+ (modules AST ASTUtils Backend Interpreter Parser Lexer Native Typing Serialize PP StaticInterpreter)
  (modules_without_implementation Backend AST))
 
 (executable

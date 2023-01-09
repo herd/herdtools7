@@ -72,7 +72,7 @@ module type S = sig
   (** Other operations *)
   (*-------------------*)
 
-  val fatal : string -> 'a m
+  val fatal : string -> 'a
   (** On error, the interpreter exits the computation by using fatal. *)
 
   val binop : AST.binop -> value -> value -> value m
@@ -91,4 +91,10 @@ module type S = sig
   val on_write_identifier : AST.identifier -> scope -> value -> unit m
   (** [on_write_identifier] is called when a value is read from the local
       environment.*)
+
+  val read_from_bitvector : int list -> value -> value m
+  (** Read a slice (represented by a list of positions) from a bitvector. *)
+
+  val write_to_bitvector : int list -> value -> value -> value m
+  (** [write_to_bitvector positions w v] writes the bits of [w] into [v] at the specified positions. *)
 end
