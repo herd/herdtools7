@@ -42,9 +42,10 @@ let build_ast_from_file f =
 
 let exec ast =
   let open Native in
-  match NativeInterpreter.run ast [] [] () with
-  | Ok _li -> Printf.printf "Ran ok.\n"
-  | Error err -> Printf.printf "%a\n" pp_err err
+  try
+    let _ = NativeInterpreter.run ast [] [] () in
+    Printf.printf "Ran ok.\n"
+  with NativeInterpreterExn e -> Printf.printf "%a\n" pp_err e
 
 let () =
   let f = Sys.argv.(1) in

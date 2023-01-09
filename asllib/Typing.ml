@@ -28,22 +28,22 @@ type genv = type_desc IMap.t
 type func_sig = type_desc list * type_desc option
 (** Type signature for functions, some kind of an arrow type. *)
 
-type tenv = genv * func_sig IMap.t
+type tenv = { globals : genv; funcs : func_sig IMap.t }
 (** The global type environment, with types for every globally available
     identifier, i.e. variables, named types or functions .*)
 
 type lenv = type_desc IMap.t
 (** The local type environment, with types for all locally declared variables. *)
 
-let lookup_opt ((genv, funcs) : tenv) (lenv : lenv) x =
+let lookup_opt (tenv : tenv) (lenv : lenv) x =
   let open IMap in
   match find_opt x lenv with
   | Some ty -> Some ty
   | None -> (
-      match find_opt x genv with
+      match find_opt x tenv.globals with
       | Some ty -> Some ty
       | None -> (
-          match find_opt x funcs with
+          match find_opt x tenv.funcs with
           | Some ([], Some ty) -> Some ty
           | _ -> None))
 
@@ -52,8 +52,8 @@ let lookup tenv lenv x =
   | Some ty -> ty
   | None -> undefined_identifier x
 
-let lookup_return_type ((_genv, funcs) : tenv) x =
-  match IMap.find_opt x funcs with
+let lookup_return_type (tenv : tenv) x =
+  match IMap.find_opt x tenv.funcs with
   | Some (_, Some ty) -> ty
   | Some (_, None) ->
       type_error @@ "Function " ^ x
@@ -113,6 +113,22 @@ let check_num s = function
   | (T_Int _ | T_Bits _ | T_Real) as t -> t
   | _ -> type_error s
 
+let slices_length =
+  let plus e1 e2 = E_Binop (PLUS, e1, e2) in
+  let minus e1 e2 = E_Binop (MINUS, e1, e2) in
+  let e_of_int i = E_Literal (V_Int i) in
+  let sum = function
+    | [] -> e_of_int 0
+    | [ x ] -> x
+    | h :: t -> List.fold_left plus h t
+  in
+  let slice_length = function
+    | Slice_Single _ -> e_of_int 1
+    | Slice_Length (_, e) -> e
+    | Slice_Range (e1, e2) -> minus e1 e2
+  in
+  fun li -> List.map slice_length li |> sum
+
 let infer_values = function
   | V_Int i -> T_Int (Some [ Constraint_Exact (E_Literal (V_Int i)) ])
   | V_Bool _ -> T_Bool
@@ -126,8 +142,13 @@ let rec infer tenv lenv = function
   | E_Var n -> lookup tenv lenv n
   | E_Binop (op, e1, e2) -> infer_op op tenv lenv e1 e2
   | E_Unop (unop, e) -> infer_unop unop tenv lenv e
-  | E_Call (name, _args) | E_Getter (name, _args) ->
+  | E_Call (name, _) -> lookup_return_type tenv name
+  | E_Slice (E_Var name, _) when IMap.mem name tenv.funcs ->
       lookup_return_type tenv name
+  | E_Slice (e, slices) -> (
+      match infer tenv lenv e with
+      | T_Bits _c -> T_Bits (BitWidth_Determined (slices_length slices))
+      | t -> type_error ("Cannot slice a " ^ PP.type_desc_to_string t))
   | E_Cond (_e1, e2, e3) -> (
       match infer tenv lenv e2 with
       | T_Int None -> T_Int None
@@ -142,7 +163,7 @@ let rec infer tenv lenv = function
       | TA_InferredStructure ty -> field_type x ty)
   | E_Record (ty, _, ta) -> (
       match ta with
-      | TA_None -> get_structure (fst tenv) ty
+      | TA_None -> get_structure tenv.globals ty
       | TA_InferredStructure ty -> ty)
 
 and infer_op op =
@@ -184,7 +205,13 @@ and infer_unop op tenv lenv e =
 
 let rec infer_lexpr tenv lenv = function
   | LE_Var x -> lookup tenv lenv x
-  | LE_Setter (x, _) -> lookup_return_type tenv x
+  | LE_Slice (LE_Var x, _) when IMap.mem x tenv.funcs ->
+      lookup_return_type tenv x
+  | LE_Slice (le, slices) -> (
+      match infer_lexpr tenv lenv le with
+      | T_Bits _ -> T_Bits (BitWidth_Determined (slices_length slices))
+      | t ->
+          type_error ("Cannot set slices of a type" ^ PP.type_desc_to_string t))
   | LE_SetField (_, field, TA_InferredStructure ty) -> field_type field ty
   | LE_SetField (le, field, TA_None) ->
       infer_lexpr tenv lenv le |> field_type field
@@ -202,28 +229,34 @@ let rec annotate_expr tenv lenv e =
   | E_Binop (op, e1, e2) -> E_Binop (op, tr e1, tr e2)
   | E_Unop (op, e) -> E_Unop (op, tr e)
   | E_Call (x, args) -> E_Call (x, List.map tr args)
-  | E_Getter (x, args) -> E_Getter (x, List.map tr args)
+  | E_Slice (e, slices) -> E_Slice (tr e, annotate_slices tenv lenv slices)
   | E_Cond (e1, e2, e3) -> E_Cond (tr e1, tr e2, tr e3)
   | E_GetField (e, field, _ta) ->
       let e = tr e in
       let ty = infer tenv lenv e in
       E_GetField (e, field, TA_InferredStructure ty)
   | E_Record (ty, fields, _ta) ->
-      let ta = get_structure (fst tenv) ty
+      let ta = get_structure tenv.globals ty
       and fields =
         let one_field (name, e) = (name, tr e) in
         List.map one_field fields
       in
       E_Record (ty, fields, TA_InferredStructure ta)
 
+and annotate_slices tenv lenv =
+  let tr_one = function
+    | Slice_Single e -> Slice_Single (annotate_expr tenv lenv e)
+    | Slice_Range (e1, e2) ->
+        Slice_Range (annotate_expr tenv lenv e1, annotate_expr tenv lenv e2)
+    | Slice_Length (e1, e2) ->
+        Slice_Length (annotate_expr tenv lenv e1, annotate_expr tenv lenv e2)
+  in
+  List.map tr_one
+
 let rec annotate_lexpr tenv lenv = function
   | LE_Var x -> LE_Var x
-  | LE_Setter (x, args) ->
-      let args =
-        let one_arg e = annotate_expr tenv lenv e in
-        List.map one_arg args
-      in
-      LE_Setter (x, args)
+  | LE_Slice (le, slices) ->
+      LE_Slice (annotate_lexpr tenv lenv le, annotate_slices tenv lenv slices)
   | LE_SetField (le, field, _ta) ->
       let le = annotate_lexpr tenv lenv le in
       let ty = infer_lexpr tenv lenv le in
@@ -258,10 +291,11 @@ let rec annotate_stmt tenv lenv s =
       let s2, lenv = annotate_stmt tenv lenv s2 in
       (S_Cond (e, s1, s2), lenv)
 
-let annotate_func tenv (f : AST.func) : AST.func =
+let annotate_func (tenv : tenv) (f : AST.func) : AST.func =
   let lenv =
-    let one_arg (name, ty) = (name, get_structure (fst tenv) ty) in
-    f.args |> List.to_seq |> Seq.map one_arg |> IMap.of_seq in
+    let one_arg (name, ty) = (name, get_structure tenv.globals ty) in
+    f.args |> List.to_seq |> Seq.map one_arg |> IMap.of_seq
+  in
   let body, _lenv = annotate_stmt tenv lenv f.body in
   { f with body }
 
@@ -321,10 +355,10 @@ let build_genv : AST.t -> genv =
 (******************************************************************************)
 
 let annotate_ast ast =
-  let genv = build_genv ast in
-  let funcs = build_funcs genv ast in
+  let globals = build_genv ast in
+  let funcs = build_funcs globals ast in
   let one_decl = function
-    | D_Func f -> D_Func (annotate_func (genv, funcs) f)
+    | D_Func f -> D_Func (annotate_func { globals; funcs } f)
     | d -> d
   in
   List.map one_decl ast

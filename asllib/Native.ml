@@ -45,8 +45,10 @@ let list_update i f li =
   in
   aux [] i li
 
+exception NativeInterpreterExn of err
+
 module NativeBackend = struct
-  type 'a m = unit -> ('a, err) result
+  type 'a m = unit -> 'a
   type value = AST.value
   type scope = AST.identifier * int
 
@@ -62,16 +64,13 @@ module NativeBackend = struct
   let v_of_parsed_v = Fun.id
 
   let bind (vm : 'a m) (f : 'a -> 'b m) : 'b m =
-   fun () -> Result.bind (vm ()) (fun v -> f v ())
-
-  let prod (r1 : 'a m) (r2 : 'b m) : ('a * 'b) m =
    fun () ->
-    match (r1 (), r2 ()) with
-    | Error e, _ | _, Error e -> Error e
-    | Ok v1, Ok v2 -> Ok (v1, v2)
+    let v = vm () in
+    f v ()
 
-  let return : 'a -> 'a m = fun v () -> Result.ok v
-  let fail : err -> 'a m = fun e () -> Result.error e
+  let prod (r1 : 'a m) (r2 : 'b m) : ('a * 'b) m = fun () -> (r1 (), r2 ())
+  let return v () = v
+  let fail err = raise (NativeInterpreterExn err)
   let bind_data = bind
   let bind_seq = bind
 
@@ -82,54 +81,8 @@ module NativeBackend = struct
       | _ -> fail (TypeError "Boolean expected."))
 
   let fatal msg = fail (InterpreterError msg)
-
-  let binop op v1 v2 =
-    let vint v = return (V_Int v) in
-    let vbool v = return (V_Bool v) in
-    let vreal r = return (V_Real r) in
-    match (op, v1, v2) with
-    (* int -> int -> int *)
-    | PLUS, V_Int v1, V_Int v2 -> vint (v1 + v2)
-    | MUL, V_Int v1, V_Int v2 -> vint (v1 * v2)
-    | MINUS, V_Int v1, V_Int v2 -> vint (v1 - v2)
-    | DIV, V_Int v1, V_Int v2 -> vint (v1 / v2)
-    (* int -> int -> bool*)
-    | EQ_OP, V_Int v1, V_Int v2 -> vbool (v1 == v2)
-    | NEQ, V_Int v1, V_Int v2 -> vbool (v1 <> v2)
-    | LEQ, V_Int v1, V_Int v2 -> vbool (v1 <= v2)
-    | LT, V_Int v1, V_Int v2 -> vbool (v1 < v2)
-    | GEQ, V_Int v1, V_Int v2 -> vbool (v1 >= v2)
-    | GT, V_Int v1, V_Int v2 -> vbool (v1 > v2)
-    (* bool -> bool -> bool *)
-    | BAND, V_Bool b1, V_Bool b2 -> vbool (b1 && b2)
-    | BOR, V_Bool b1, V_Bool b2 -> vbool (b1 || b2)
-    | BEQ, V_Bool b1, V_Bool b2 -> vbool (b1 == b2)
-    | IMPL, V_Bool b1, V_Bool b2 -> vbool ((not b1) || b2)
-    | EQ_OP, V_Bool b1, V_Bool b2 -> vbool (b1 == b2)
-    | NEQ, V_Bool b1, V_Bool b2 -> vbool (b1 <> b2)
-    (* real -> real -> real *)
-    | PLUS, V_Real v1, V_Real v2 -> vreal (v1 +. v2)
-    | MUL, V_Real v1, V_Real v2 -> vreal (v1 *. v2)
-    | MINUS, V_Real v1, V_Real v2 -> vreal (v1 -. v2)
-    | DIV, V_Real v1, V_Real v2 -> vreal (v1 /. v2)
-    (* real -> real -> bool *)
-    | EQ_OP, V_Real v1, V_Real v2 -> vbool (v1 == v2)
-    | NEQ, V_Real v1, V_Real v2 -> vbool (v1 <> v2)
-    | LEQ, V_Real v1, V_Real v2 -> vbool (v1 <= v2)
-    | LT, V_Real v1, V_Real v2 -> vbool (v1 < v2)
-    | GEQ, V_Real v1, V_Real v2 -> vbool (v1 >= v2)
-    | GT, V_Real v1, V_Real v2 -> vbool (v1 > v2)
-    | _ ->
-        fail
-          (InterpreterError "Operation not yet implemented for native backend.")
-
-  let unop op v =
-    match (op, v) with
-    | NEG, V_Int i -> return (V_Int ~-i)
-    | NEG, V_Real r -> return (V_Real ~-.r)
-    | BNOT, V_Bool b -> return (V_Bool (not b))
-    | _ -> assert false
-
+  let binop op v1 v2 () = StaticInterpreter.binop op v1 v2
+  let unop op v () = StaticInterpreter.unop op v
   let on_write_identifier _x _scope _value = return ()
   let on_read_identifier _x _scope _value = return ()
   let v_tuple li = return (V_Tuple li)
@@ -170,6 +123,23 @@ module NativeBackend = struct
         fail
           (InterpreterError
              ("Cannot create a vector of type " ^ PP.type_desc_to_string ty))
+
+  let as_bitvector_string = function
+    | V_BitVector bits -> bits
+    | _ -> fail (TypeError "Unsupported operation on bitvectors: slicing")
+
+  let bitvector_of_string s = return (V_BitVector s)
+
+  let read_from_bitvector positions bv =
+    List.to_seq positions
+    |> Seq.map (String.get (as_bitvector_string bv))
+    |> String.of_seq |> bitvector_of_string
+
+  let write_to_bitvector positions bits bv =
+    let result = Bytes.of_string (as_bitvector_string bv) in
+    let bits = bits |> as_bitvector_string |> String.to_seq |> List.of_seq in
+    let () = List.iter2 (Bytes.set result) positions bits in
+    bitvector_of_string (Bytes.to_string result)
 end
 
 module NativeInterpreter = Interpreter.Make (NativeBackend)
