@@ -25,6 +25,9 @@ module Make
     module Act = MachAction.Make(ConfLoc)(AArch64)
     include SemExtra.Make(C)(AArch64)(Act)
 
+    let cache_type = match TopConf.cache_type with
+      | None -> CacheType.default
+      | Some ct -> ct
     let dirty = match TopConf.dirty with | None -> DirtyBit.soft | Some d -> d
     let mixed = AArch64.is_mixed
     (* We need to be aware of endianness for 128-bit Neon LDR/STR, because

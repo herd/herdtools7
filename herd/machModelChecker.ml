@@ -35,6 +35,7 @@ module Make
     let memtag = O.variant Variant.MemTag
     let kvm = O.variant Variant.VMSA
     let asl = O.variant Variant.ASL
+    let self = O.variant Variant.Self
     let optacetrue =
       let open OptAce in
       match O.optace with
@@ -450,6 +451,26 @@ module Make
                  end)
                E.Act.arch_dirty)
         else m in
+    let m = (* ifetch DIC/IDC *)
+      if self then
+        let dic_pred, idc_pred =
+          let open CacheType in
+            match O.cache_type with
+            | None ->
+                (fun _ -> false), (fun _ -> false)
+            | Some cache_type ->
+                cache_type.dic, cache_type.idc in
+        let mk_from_pred pred = lazy begin
+          E.EventSet.filter
+            (fun e -> E.is_mem_store e &&
+              match E.proc_of e with
+              | Some proc -> pred proc
+              | None -> true)
+            (Lazy.force mem_evts)
+        end in
+        let dic_set, idc_set = (mk_from_pred dic_pred),(mk_from_pred idc_pred) in
+        I.add_sets m [("DIC", dic_set);("IDC", idc_set)]
+      else m in
 (* Override arch specific fences *)
       let m =
         I.add_rels m

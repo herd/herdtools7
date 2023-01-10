@@ -67,7 +67,6 @@ val app_opt : ('a -> 'b) -> 'a option -> 'b option
 val check_opt : ('a -> unit) -> 'a option -> unit
 val snd_opt : ('a * 'b) option -> 'b option
 val map_opt : ('a -> 'b) -> 'a option -> 'b option
-val option_map : ('a -> 'b option) -> 'a list -> 'b list
 val app_opt_def : 'b -> ('a -> 'b) -> 'a option -> 'b
 val app_opt2 : ('v -> 'r) -> (unit -> 'r) -> ('i -> 'v option) -> 'i -> 'r
 val delay_parse : ('v -> 'r) -> ('i -> 'v option) -> 'i -> 'r

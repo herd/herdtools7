@@ -117,6 +117,7 @@ val hash_key : string
 val stable_key : string
 val align_key : string
 val tthm_key : string
+val cache_type_key : string
 val variant_key : string
 val user_key : string
 val el0_key : string
