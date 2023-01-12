@@ -47,12 +47,56 @@ let exec ast =
     Printf.printf "Ran ok.\n"
   with NativeInterpreterExn e -> Printf.printf "%a\n" pp_err e
 
+type args = {
+  exec : bool;
+  file : string;
+  print_ast : bool;
+  print_serialized : bool;
+}
+
+let parse_args : unit -> args =
+  let target_file = ref "" in
+  let exec = ref true in
+  let print_ast = ref false in
+  let print_serialized = ref false in
+  let speclist =
+    [
+      ("--only-parse", Arg.Clear exec, "Do not execute the asl program.");
+      ("--parse-only", Arg.Clear exec, "Do not execute the asl program.");
+      ("--exec", Arg.Set exec, "Execute the asl program.");
+      ( "--print",
+        Arg.Set print_ast,
+        "Print the parsed AST to stdout before executing it." );
+      ( "--serialize",
+        Arg.Set print_serialized,
+        "Print the parsed AST to stdout in the serialized format." );
+    ]
+  in
+  let anon_fun = ( := ) target_file in
+  let usage_msg =
+    "ASL parser and interpreter.\n\nUSAGE:\n\tasli [OPTIONS] [FILE]\n\n"
+  in
+  fun () ->
+    let () = Arg.parse speclist anon_fun usage_msg in
+    {
+      exec = !exec;
+      file = !target_file;
+      print_ast = !print_ast;
+      print_serialized = !print_serialized;
+    }
+
 let () =
-  let f = Sys.argv.(1) in
-  let () = Printf.printf "\r                                           \r" in
-  let () = Printf.printf "Parsing %s...\n" f in
-  let ast = build_ast_from_file f in
-  let () = Printf.printf "Found the following AST:\n" in
-  let () = Format.printf "%a\n\n@?" PP.pp_t ast in
-  let () = Printf.printf "Running %s...\n" f in
-  exec ast
+  let () = Printf.printf "\r                                             \r" in
+
+  let args = parse_args () in
+  let ast = build_ast_from_file args.file in
+
+  let () = if args.print_ast then Format.printf "%a" PP.pp_t ast in
+
+  let () =
+    if args.print_serialized then print_string (Serialize.t_to_string ast)
+  in
+
+  let () = if args.exec then exec ast in
+
+  ()
