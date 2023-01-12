@@ -44,7 +44,7 @@ let exec ast =
   let open Native in
   try
     let _ = NativeInterpreter.run ast [] [] () in
-    Printf.printf "Ran ok.\n"
+    ()
   with NativeInterpreterExn e -> Printf.printf "%a\n" pp_err e
 
 type args = {
