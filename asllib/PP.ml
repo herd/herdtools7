@@ -123,11 +123,11 @@ let rec pp_lexpr f = function
   | LE_SetField (le, x, _ta) -> fprintf f "@[%a@,.%s@]" pp_lexpr le x
 
 let rec pp_stmt f = function
-  | S_Pass -> pp_print_string f "pass"
-  | S_Then (s1, s2) -> fprintf f "%a ;@ %a" pp_stmt s1 pp_stmt s2
-  | S_Assign (le, e) -> fprintf f "@[<h 2>%a =@ %a@]" pp_lexpr le pp_expr e
-  | S_Call (name, args) -> fprintf f "@[<hov 2>%s(%a)@]" name pp_expr_list args
-  | S_Return el -> fprintf f "return %a" pp_expr_list el
+  | S_Pass -> pp_print_string f "pass;"
+  | S_Then (s1, s2) -> fprintf f "%a@ %a" pp_stmt s1 pp_stmt s2
+  | S_Assign (le, e) -> fprintf f "@[<h 2>%a =@ %a;@]" pp_lexpr le pp_expr e
+  | S_Call (name, args) -> fprintf f "@[<hov 2>%s(%a);@]" name pp_expr_list args
+  | S_Return el -> fprintf f "return %a;" pp_expr_list el
   | S_Cond (e, s1, s2) ->
       fprintf f
         "@[<hv>@[<h>if %a@ then@]@;\
@@ -146,13 +146,20 @@ let pp_decl f =
   in
   function
   | D_Func func ->
-      fprintf f "@[<hv>%a@;<1 2>%a@ end@]" pp_func_sig func pp_stmt func.body
-  | D_GlobalConst (x, e) -> fprintf f "@[const %s@ = %a@]" x pp_expr e
+      fprintf f "@[<v>%a@ begin@;<1 2>@[<v>%a@]@ end@]" pp_func_sig func pp_stmt
+        func.body
+  | D_GlobalConst (x, e) -> fprintf f "@[const %s@ = %a;@]" x pp_expr e
   | D_TypeDecl (x, type_desc) ->
-      fprintf f "@[type %s of %a@]" x pp_type_desc type_desc
+      fprintf f "@[type %s of %a;@]" x pp_type_desc type_desc
   | D_Primitive func -> fprintf f "@[<h>%a ;@]" pp_func_sig func
 
-let pp_t = pp_print_list ~pp_sep:pp_print_space pp_decl
+let pp_t f =
+  let pp_blank_line f () =
+    pp_print_space f ();
+    pp_print_cut f ()
+  in
+  fprintf f "@[<v>%a@]" (pp_print_list ~pp_sep:pp_blank_line pp_decl)
+
 let type_desc_to_string = asprintf "%a" pp_type_desc
 let t_to_string = asprintf "%a" pp_t
 let value_to_string = asprintf "%a" pp_value
