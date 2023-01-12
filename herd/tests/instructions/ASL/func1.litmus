@@ -3,12 +3,14 @@ ASL func1
 {}
 
 func f(i::integer) => integer
-    return i
+begin
+    return i;
 end
 
 func main()
+begin
     x = 3;
-    y = f(x)
+    y = f(x);
 end
 
 forall (

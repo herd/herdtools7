@@ -1,3 +1,4 @@
 func main()
-  pass
+begin
+  pass;
 end

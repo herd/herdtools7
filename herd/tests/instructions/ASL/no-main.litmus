@@ -3,5 +3,6 @@ ASL no-main
 {}
 
 func blablabla() => integer
-  return 3
+begin
+  return 3;
 end

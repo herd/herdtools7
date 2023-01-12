@@ -331,7 +331,7 @@ module Make (B : Backend.S) = struct
           slices_to_exprs slices |> List.map (eval_expr env scope true)
         in
         fun m ->
-          let* _ = eval_func genv x (args @ [ m ]) in
+          let* _ = eval_func genv x (m :: args) in
           continue env
     | LE_Slice (le, slices) ->
         let setter = eval_lexpr env scope le in

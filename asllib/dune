@@ -1,8 +1,6 @@
 (ocamllex Lexer)
 
-(menhir
- (modules Parser)
- (flags --unused-tokens))
+(menhir (modules Parser))
 
 (library
  (name asllib)
