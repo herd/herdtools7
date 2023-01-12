@@ -133,6 +133,13 @@ let rec pp_stmt f = function
         "@[<hv>@[<h>if %a@ then@]@;\
          <1 2>@[<hv>%a@]@ else@;\
          <1 2>@[<hv>%a@]@ end@]" pp_expr e pp_stmt s1 pp_stmt s2
+  | S_Case (e, case_li) ->
+      let pp_case_alt f (exprs, s) =
+        fprintf f "@[when @[%a@]:@ %a@]" pp_expr_list exprs pp_stmt s
+      in
+      fprintf f "@[<v 2>case %a of@ %a@;<1 -2>end@]" pp_expr e
+        (pp_print_list ~pp_sep:pp_print_space pp_case_alt)
+        case_li
 
 let pp_decl f =
   let pp_func_sig f { name; args; return_type; _ } =

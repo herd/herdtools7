@@ -378,6 +378,7 @@ module Make (B : Backend.S) = struct
         choice
           (eval_expr env scope true e)
           (eval_stmt env scope s1) (eval_stmt env scope s2)
+    | S_Case (e, cases) -> ASTUtils.case_to_conds e cases |> eval_stmt env scope
 
   and eval_func (genv : genv) name (args : value m list) : value list m =
     match IMap.find_opt name genv.funcs with

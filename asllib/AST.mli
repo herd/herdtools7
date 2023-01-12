@@ -136,6 +136,9 @@ type stmt =
   | S_Call of identifier * expr list
   | S_Return of expr list
   | S_Cond of expr * stmt * stmt
+  | S_Case of expr * case_alt list
+
+and case_alt = expr list * stmt
 
 type func = {
   name : identifier;
