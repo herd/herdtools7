@@ -4,16 +4,19 @@ ASL func02
 {}
 
 func X_get(i::integer) => integer
-    return i
+begin
+    return i;
 end
 
 func X_set(i::integer, v::integer)
-    pass
+begin
+    pass;
 end
 
 func main()
+begin
     X_set[2] = 3;
-    x = X_get[3]
+    x = X_get[3];
 end
 
 forall (

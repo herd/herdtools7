@@ -31,127 +31,64 @@ let incr_lineno lexbuf =
 open Parser
 
 let tr_name s = match s with
-| "AND" -> AND
-| "UNKNOWN" -> UNKNOWN
-| "array" -> ARRAY
-| "assumes" -> ASSUMES
-| "call" -> CALL
-| "class" -> CLASS
-| "do" -> DO
-| "end" -> END
-| "endevent" -> ENDEVENT
-| "endif" -> ENDIF
-| "endproperty" -> ENDPROPERTY
-| "endtry" -> ENDTRY
-| "exception" -> EXCEPTION
-| "feature" -> FEATURE
-| "gives" -> GIVES
-| "import" -> IMPORT
-| "invariant" -> INVARIANT
-| "map" -> MAP
-| "newmap" -> NEWMAP
-| "parallel" -> PARALLEL
-| "private" -> PRIVATE
-| "public" -> PUBLIC
-| "requires" -> REQUIRES
-| "set" -> SET
-| "string" -> STRING
-| "throw" -> THROW
-| "typeof" -> TYPEOF
-| "var" -> VAR
-| "with" -> WITH
-| "DIV" -> DIV
-| "NOT" -> NOT
-| "UNSTABLE" -> UNSTABLE
-| "as" -> AS
-| "bit" -> BIT
-| "case" -> CASE
-| "config" -> CONFIG
-| "downto" -> DOWNTO
-| "endcase" -> ENDCASE
-| "endfor" -> ENDFOR
-| "endmodule" -> ENDMODULE
-| "endrule" -> ENDRULE
-| "endwhile" -> ENDWHILE
-| "export" -> EXPORT
-| "for" -> FOR
-| "if" -> IF
-| "integer" -> INTEGER
-| "is" -> IS
-| "module" -> MODULE
-| "of" -> OF
-| "pass" -> PASS
-| "profile" -> PROFILE
-| "real" -> REAL
-| "rethrow" -> RETHROW
-| "setter" -> SETTER
-| "subtypes" -> SUBTYPES
-| "to" -> TO
-| "union" -> UNION
-| "when" -> WHEN
-| "ztype" -> ZTYPE
-| "EOR" -> EOR
-| "IN" -> IN
-| "OR" -> OR
-| "SAMPLE" -> SAMPLE
-| "_" -> ANY
-| "any" -> ANY
-| "assert" -> ASSERT
-| "assume" -> ASSUME
-| "bits" -> BITS
-| "boolean" -> BOOLEAN
-| "cast" -> CAST
-| "catch" -> CATCH
-| "constant" -> CONSTANT
-| "dict" -> DICT
-| "else" -> ELSE
-| "elsif" -> ELSIF
-| "endcatch" -> ENDCATCH
-| "endclass" -> ENDCLASS
-| "endfunc" -> ENDFUNC
-| "endgetter" -> ENDGETTER
-| "endnamespace" -> ENDNAMESPACE
-| "endpackage" -> ENDPACKAGE
-| "endsetter" -> ENDSETTER
-| "endtemplate" -> ENDTEMPLATE
-| "enumeration" -> ENUMERATION
-| "event" -> EVENT
-| "extends" -> EXTENDS
-| "extern" -> EXTERN
-| "func" -> FUNC
-| "getter" -> GETTER
-| "iff" -> IFF
-| "implies" -> IMPLIES
-| "intersect" -> INTERSECT
-| "intrinsic" -> INTRINSIC
-| "let" -> LET
-| "list" -> LIST
-| "Mem" -> MEM
-| "namespace" -> NAMESPACE
-| "newevent" -> NEWEVENT
-| "otherwise" -> OTHERWISE
-| "package" -> PACKAGE
-| "port" -> PORT
-| "pragma" -> PRAGMA
-| "PSTATE" -> PSTATE
-| "property" -> PROPERTY
-| "protected" -> PROTECTED
-| "record" -> RECORD
-| "repeat" -> REPEAT
-| "return" -> RETURN
-| "rule" -> RULE
-| "shared" -> SHARED
-| "signal" -> SIGNAL
-| "template" -> TEMPLATE
-| "then" -> THEN
-| "try" -> TRY
-| "type" -> TYPE
-| "until" -> UNTIL
-| "using" -> USING
-| "where" -> WHERE
-| "while" -> WHILE
-| "X" -> X
-| x -> IDENTIFIER x
+| "AND"           -> AND
+| "array"         -> ARRAY
+| "as"            -> AS
+| "assert"        -> ASSERT
+| "begin"         -> BEGIN
+| "bit"           -> BIT
+| "bits"          -> BITS
+| "boolean"       -> BOOLEAN
+| "case"          -> CASE
+| "catch"         -> CATCH
+| "config"        -> CONFIG
+| "constant"      -> CONSTANT
+| "DIV"           -> DIV
+| "do"            -> DO
+| "downto"        -> DOWNTO
+| "else"          -> ELSE
+| "elsif"         -> ELSIF
+| "end"           -> END
+| "enumeration"   -> ENUMERATION
+| "EOR"           -> EOR
+| "exception"     -> EXCEPTION
+| "FALSE"         -> BOOL_LIT false
+| "for"           -> FOR
+| "func"          -> FUNC
+| "getter"        -> GETTER
+| "if"            -> IF
+| "IN"            -> IN
+| "integer"       -> INTEGER
+| "let"           -> LET
+| "MOD"           -> MOD
+| "NOT"           -> NOT
+| "of"            -> OF
+| "OR"            -> OR
+| "otherwise"     -> OTHERWISE
+| "pass"          -> PASS
+| "pragma"        -> PRAGMA
+| "real"          -> REAL
+| "record"        -> RECORD
+| "repeat"        -> REPEAT
+| "return"        -> RETURN
+| "setter"        -> SETTER
+| "string"        -> STRING
+| "subtypes"      -> SUBTYPES
+| "then"          -> THEN
+| "throw"         -> THROW
+| "to"            -> TO
+| "try"           -> TRY
+| "TRUE"          -> BOOL_LIT true
+| "type"          -> TYPE
+| "UNKNOWN"       -> UNKNOWN
+| "until"         -> UNTIL
+| "var"           -> VAR
+| "when"          -> WHEN
+| "where"         -> WHERE
+| "while"         -> WHILE
+| "with"          -> WITH
+| "ztype"         -> ZTYPE
+| x               -> IDENTIFIER x
 
 }
 
@@ -167,50 +104,49 @@ let mask_lit = '\'' ['0' '1' 'x' ' ']* '\''
 let identifier = (alpha | '_') (alpha|digit|'_')*
 
 rule token = parse
-    | '\n'              { incr_lineno lexbuf; token lexbuf }
-    | [' ''\t''\r']+    { token lexbuf }
-    | "//" [^'\n']*     { token lexbuf }
-    | int_lit as lxm    { INT_LIT(lxm) }
-    | hex_lit as lxm    { INT_LIT(lxm) }
-    | real_lit as lxm   { REAL_LIT(lxm) }
-    | bitvector_lit as lxm    { BITVECTOR_LIT(lxm) }
-    | "TRUE"            { BOOL_LIT(true) }
-    | "FALSE"           { BOOL_LIT(false) }
-    | '!'    { BNOT }
-    | ','    { COMMA }
-    | '<'    { LT }
-    | ">>"    { SHR }
-    | "&&"    { BAND }
-    | "-->"    { IMPL }
-    | "<<"    { SHL }
-    | ']'    { RBRACKET }
-    | ')'    { RPAR }
-    | ".."    { SLICING }
-    | '='    { EQ }
-    | '{'    { LBRACE }
-    | "!="    { NEQ }
-    | '-'    { MINUS }
-    | "<->"    { BEQ }
-    | '['    { LBRACKET }
-    | '('    { LPAR }
-    | '.'    { DOT }
-    | "<="    { LEQ }
-    | '^'    { POW }
-    | '*'    { MUL }
-    | '/'    { RDIV }
-    | "=="    { EQ_OP }
-    | "||"    { BOR }
-    | '+'    { PLUS }
-    | ':'    { COLON }
-    | "=>"    { ARROW }
-    | '}'    { RBRACE }
-    | "++"    { CONCAT }
-    | "::"    { COLON_COLON }
-    | '>'    { GT }
-    | "+:"    { PLUS_COLON }
-    | ';'    { SEMI_COLON }
-    | ">="    { GEQ }
-    | '%'     { MOD }
-    | identifier as lxm { tr_name lxm }
-    | eof               { EOF }
-    | ""     { raise LexerError }
+    | '\n'                    { incr_lineno lexbuf; token lexbuf }
+    | [' ''\t''\r']+          { token lexbuf                     }
+    | "//" [^'\n']*           { token lexbuf                     }
+    | int_lit as lxm          { INT_LIT(int_of_string lxm)       }
+    | hex_lit as lxm          { INT_LIT(int_of_string lxm)       }
+    | real_lit as lxm         { REAL_LIT(float_of_string lxm)    }
+    | string_lit as lxm       { STRING_LIT(lxm)                  }
+    | bitvector_lit as lxm    { BITVECTOR_LIT(lxm)               }
+    | mask_lit as lxm         { MASK_LIT(lxm)                    }
+    | '!'                     { BNOT                             }
+    | ','                     { COMMA                            }
+    | '<'                     { LT                               }
+    | ">>"                    { SHR                              }
+    | "&&"                    { BAND                             }
+    | "-->"                   { IMPL                             }
+    | "<<"                    { SHL                              }
+    | ']'                     { RBRACKET                         }
+    | ')'                     { RPAR                             }
+    | ".."                    { SLICING                          }
+    | '='                     { EQ                               }
+    | '{'                     { LBRACE                           }
+    | "!="                    { NEQ                              }
+    | '-'                     { MINUS                            }
+    | "<->"                   { BEQ                              }
+    | '['                     { LBRACKET                         }
+    | '('                     { LPAR                             }
+    | '.'                     { DOT                              }
+    | "<="                    { LEQ                              }
+    | '^'                     { POW                              }
+    | '*'                     { MUL                              }
+    | '/'                     { RDIV                             }
+    | "=="                    { EQ_OP                            }
+    | "||"                    { BOR                              }
+    | '+'                     { PLUS                             }
+    | ':'                     { COLON                            }
+    | "=>"                    { ARROW                            }
+    | '}'                     { RBRACE                           }
+    | "++"                    { CONCAT                           }
+    | "::"                    { COLON_COLON                      }
+    | '>'                     { GT                               }
+    | "+:"                    { PLUS_COLON                       }
+    | ';'                     { SEMI_COLON                       }
+    | ">="                    { GEQ                              }
+    | identifier as lxm       { tr_name lxm                      }
+    | eof                     { EOF                              }
+    | ""                      { raise LexerError                 }
