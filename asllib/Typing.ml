@@ -290,6 +290,15 @@ let rec annotate_stmt tenv lenv s =
       let s1, lenv = annotate_stmt tenv lenv s1 in
       let s2, lenv = annotate_stmt tenv lenv s2 in
       (S_Cond (e, s1, s2), lenv)
+  | S_Case (e, cases) ->
+      let e = annotate_expr tenv lenv e in
+      let annotate_case (acc, lenv) (es, s) =
+        let es = List.map (annotate_expr tenv lenv) es in
+        let s, lenv = annotate_stmt tenv lenv s in
+        ((es, s) :: acc, lenv)
+      in
+      let cases, lenv = List.fold_left annotate_case ([], lenv) cases in
+      (S_Case (e, cases), lenv)
 
 let annotate_func (tenv : tenv) (f : AST.func) : AST.func =
   let lenv =

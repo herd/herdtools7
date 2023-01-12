@@ -306,13 +306,15 @@ let bits_constraint ==
 let pattern_set == ioption(BNOT); braced(pattern_list)
 let pattern_list == nclist(pattern)
 let pattern ==
-  | MINUS;                <>
-  | expr;                 <>
-  | MASK_LIT;             <>
-  | expr; SLICING; expr;  <>
-  | LEQ; expr;            <>
-  | GEQ; expr;            <>
-  | pattern_set;          <>
+  | expr
+  | unimplemented_expr(
+    | MINUS;                <>
+    | MASK_LIT;             <>
+    | expr; SLICING; expr;  <>
+    | LEQ; expr;            <>
+    | GEQ; expr;            <>
+    | pattern_set;          <>
+  )
 
 let fields_opt == { [] } | braced(tclist(typed_identifier))
 
@@ -414,7 +416,7 @@ let assign(x, y) == ~=x ; EQ ; ~=y ; <AST.S_Assign>
 
 let direction == TO | DOWNTO
 
-let alt == WHEN; pattern_list; ioption(WHERE; expr); COLON; stmt_list
+let alt == WHEN; ~=pattern_list; ioption(WHERE; expr); COLON; ~=stmt_list; <>
 let otherwise == OTHERWISE; COLON; stmt_list
 let otherwise_opt == ioption(otherwise)
 let catcher ==
@@ -423,12 +425,12 @@ let catcher ==
 
 let stmt ==
   | terminated_by(END,
-    | IF; e=expr; THEN; s1=stmt_list; s2=s_else; <AST.S_Cond>
+    | IF; e=expr; THEN; s1=stmt_list; s2=s_else;    <AST.S_Cond>
+    | CASE; e=expr; OF; ~=list(alt); otherwise_opt; <AST.S_Case>
 
     | unimplemented_stmt(
       | FOR; IDENTIFIER; EQ; expr; direction; expr; DO; stmt_list;    <>
       | WHILE; expr; DO; stmt_list;                                   <>
-      | CASE; expr; OF; ioption(nonempty_list(alt)); otherwise_opt;   <>
       | TRY; stmt_list; CATCH; nonempty_list(catcher); otherwise_opt; <>
     )
   )

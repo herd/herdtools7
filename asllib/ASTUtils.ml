@@ -47,3 +47,28 @@ let rec expr_of_lexpr = function
   | LE_Var x -> E_Var x
   | LE_Slice (le, args) -> E_Slice (expr_of_lexpr le, args)
   | LE_SetField (le, x, ta) -> E_GetField (expr_of_lexpr le, x, ta)
+
+let fresh_var =
+  let i = ref 0 in
+  fun s ->
+    let () = incr i in
+    s ^ "$" ^ string_of_int !i
+
+let rec big_union = function
+  | [] -> E_Literal (V_Bool true)
+  | [ e ] -> e
+  | h :: t -> E_Binop (BOR, h, big_union t)
+
+let case_to_conds =
+  let rec cases_to_cond x = function
+    | [] -> S_Pass
+    | (es, s) :: t ->
+        let conds = List.map (fun e -> E_Binop (EQ_OP, E_Var x, e)) es in
+        S_Cond (big_union conds, s, cases_to_cond x t)
+  in
+  fun e cases ->
+    match e with
+    | E_Var y -> cases_to_cond y cases
+    | _ ->
+        let x = fresh_var "case" in
+        S_Then (S_Assign (LE_Var x, e), cases_to_cond x cases)

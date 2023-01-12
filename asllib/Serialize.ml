@@ -317,6 +317,19 @@ let rec pp_stmt f = function
       addb f "(SReturn ";
       pp_expr_list f el;
       addb f ")"
+  | S_Case (e, cases) ->
+      addb f "(SCase ";
+      pp_expr f e;
+      addb f " ";
+      let pp_case f (es, s) =
+        addb f "((";
+        pp_expr_list f es;
+        addb f ") ";
+        pp_stmt f s;
+        addb f ")"
+      in
+      pp_list pp_case f cases;
+      addb f ")"
 
 let pp_decl f = function
   | D_Func { name; args; body; return_type } ->

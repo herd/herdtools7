@@ -41,24 +41,16 @@ begin
 
   // However, we do not yet support bitfields reading
 
-  mcond = cond AND 14 ; // ie cond<3:1>
-  if mcond == 0 then                       // EQ or NE
-    result = PSTATE_Z == 1;
-  else if mcond == 2 then                  // CS or CC
-    result = PSTATE_C == 1;
-  else if mcond == 4 then                  // MI or PL
-    result = PSTATE_N == 1;
-  else if mcond == 6 then                  // VS or VC
-    result = PSTATE_V == 1;
-  else if mcond == 8 then                  // HI or LS
-    result = ( PSTATE_C == 1 ) && ( PSTATE_Z == 0 );
-  else if mcond == 10 then                  // GE or LT
-    result = ( PSTATE_N == PSTATE_V );
-  else if mcond == 12 then                  // GT or LE
-    result = ( PSTATE_N == PSTATE_V ) && ( PSTATE_Z == 0 );
-  else                                     // AL
-    result = 1;
-  end end end end end end end
+  case cond AND 14 of      // ie cond<3:1>
+    when 0 : result = PSTATE_Z == 1;                                  // EQ or NE
+    when 2 : result = PSTATE_C == 1;                                  // MI or PL
+    when 4 : result = PSTATE_N == 1;                                  // MI or PL
+    when 6 : result = PSTATE_V == 1;                                  // VS or VC
+    when 8 : result = ( PSTATE_C == 1 ) && ( PSTATE_Z == 0 );         // HI or LS
+    when 10: result = ( PSTATE_N == PSTATE_V );                       // GE or LT
+    when 12: result = ( PSTATE_N == PSTATE_V ) && ( PSTATE_Z == 0 );  // GT or LE
+    when 14: result = 1;                                              // AL
+  end
 
   if ((cond AND 1) == 1) && (cond != 15) then
     result = !result;
