@@ -139,6 +139,7 @@ module Make
         let have_fault_handler = have_fault_handler
         let do_stats = do_stats
         let sysarch = Cfg.sysarch
+        let c11 = Cfg.c11
         let variant = Cfg.variant
       end
 
@@ -249,7 +250,7 @@ module Make
       let dump_mbar_def () =
         O.o "" ;
         O.o "/* Full memory barrier */" ;
-        Insert.insert O.o "mbar.c" ; O.o "" ;
+        UD.dump_mbar_def () ;
         if not (Label.Full.Set.is_empty CfgLoc.label_init) then begin
           O.o "/* Code analysis */" ;
           O.o "#define SOME_LABELS 1" ;

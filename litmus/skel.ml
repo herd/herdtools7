@@ -60,7 +60,6 @@ module type Config = sig
   val pldw : bool
   val cacheflush : bool
   val c11 : bool
-  val c11_fence : bool
   val ascall : bool
   val variant : Variant_litmus.t -> bool
   val stdio : bool
@@ -275,6 +274,7 @@ module Make
         let have_fault_handler = false
         let do_stats = false
         let sysarch = Cfg.sysarch
+        let c11 = Cfg.c11
         let variant = Cfg.variant
       end
 
@@ -673,7 +673,7 @@ module Make
       let dump_mbar_def () =
         O.o "" ;
         O.o "/* Full memory barrier */" ;
-        Insert.insert O.o "mbar.c" ;
+        UD.dump_mbar_def () ;
         if Cfg.cautious then begin
           O.o "" ;
           O.o "inline static void mcautious(void) { mbar(); }" ;
