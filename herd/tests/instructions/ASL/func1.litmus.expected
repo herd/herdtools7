@@ -6,5 +6,5 @@ Witnesses
 Positive: 1 Negative: 0
 Condition forall (0:main.0.x=3 /\ 0:main.0.y=3)
 Observation func1 Always 1 0
-Hash=dd9a57a935e0b18c49007be7151beb79
+Hash=5fafeb4102aaaeca2790d8dd8d09a219
 
