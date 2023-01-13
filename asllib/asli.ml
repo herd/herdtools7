@@ -86,8 +86,6 @@ let parse_args : unit -> args =
     }
 
 let () =
-  let () = Printf.printf "\r                                             \r" in
-
   let args = parse_args () in
   let ast = build_ast_from_file args.file in
 
