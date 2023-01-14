@@ -51,6 +51,17 @@
 let func (name, args, return_type, body) =
   AST.(D_Func { name; args; return_type; body })
 
+let getter (name, args, return_type, body) =
+  let name = ASTUtils.getter_name name
+  and return_type = Some(return_type) in
+  AST.(D_Func { name; args; return_type; body })
+
+let setter (name, args, new_val, body) =
+  let args = new_val :: args
+  and name = ASTUtils.setter_name name
+  and return_type = None in
+  AST.(D_Func { name; args; return_type; body })
+
 %}
 
 (* ------------------------------------------------------------------------
@@ -472,23 +483,20 @@ let subtype_opt == ioption(SUBTYPES; type_desc)
 let unimplemented_decl(x) ==
   x ; { AST.(D_GlobalConst ("-", E_Literal (V_Int 0))) }
 
-let accessers_args_opt == { [] } | bracketed(clist(typed_identifier))
 let opt_type_identifier == pair(IDENTIFIER, ty_opt)
-let parameters_opt == { [] } | braced(clist(opt_type_identifier))
 let return_type == ARROW; type_desc
-
-let func_decl(keyword, args, return_type) ==
-  keyword ; ~=IDENTIFIER; parameters_opt; ~=args; ~=return_type;
-  BEGIN; ~=stmt_list; END ; <func>
+let params_opt == { [] } | braced(clist(opt_type_identifier))
+let access_args_opt == { [] } | bracketed(clist(typed_identifier))
+let func_args == plist(typed_identifier)
+let func_body == delimited(BEGIN, stmt_list, END)
 
 let decl ==
-  | func_decl(FUNC, plist(typed_identifier), ioption(return_type))
-  | func_decl(GETTER, accessers_args_opt, some(return_type))
-  | func_decl(
-      SETTER,
-      args=accessers_args_opt; EQ; to_write=typed_identifier; { to_write :: args },
-      { None }
-  )
+  | FUNC  ; ~=IDENTIFIER; params_opt; ~=func_args; ~=ioption(return_type);
+        ~=func_body; <func>
+  | GETTER; ~=IDENTIFIER; params_opt; ~=access_args_opt; ~=return_type;
+        ~=func_body; <getter>
+  | SETTER; ~=IDENTIFIER; params_opt; ~=access_args_opt; EQ; ~=typed_identifier;
+        ~=func_body; <setter>
 
   | terminated_by(SEMI_COLON,
     | storage_keyword; x=IDENTIFIER; ty_opt; EQ; e=expr; <AST.D_GlobalConst>

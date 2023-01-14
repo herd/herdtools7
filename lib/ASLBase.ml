@@ -69,7 +69,7 @@ let parse_local_id =
   let find_opt n s =
     try Some (Str.matched_group n s) with Not_found -> None
   in
-  let regexp = Str.regexp {|\([A-Za-z_]+\)\.\([0-9]+\)\.\([A-Za-z_]+\)|} in
+  let regexp = Str.regexp {|\([A-Za-z0-9_-]+\)\.\([0-9]+\)\.\([A-Za-z0-9_-]+\)|} in
   fun s ->
     if Str.string_match regexp s 0 then
       let* x1 = find_opt 1 s and* x2 = find_opt 2 s and* x3 = find_opt 3 s in

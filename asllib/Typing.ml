@@ -222,18 +222,49 @@ let rec infer_lexpr tenv lenv = function
 (*                                                                            *)
 (******************************************************************************)
 
+let should_reduce_to_call tenv name slices =
+  let args =
+    try Some (List.map ASTUtils.slice_as_single slices)
+    with Invalid_argument _ -> None
+  in
+  match args with
+  | None -> None
+  | Some args -> (
+      match IMap.find_opt name tenv.funcs with
+      | None -> None
+      | Some _ -> Some (name, args))
+
+let getter_should_reduce_to_call tenv x slices =
+  let name = ASTUtils.getter_name x in
+  should_reduce_to_call tenv name slices
+
+let setter_should_reduce_to_call tenv x slices e =
+  let name = ASTUtils.setter_name x and slices = Slice_Single e :: slices in
+  should_reduce_to_call tenv name slices
+
 let rec annotate_expr tenv lenv e =
   let tr = annotate_expr tenv lenv in
   match e with
-  | (E_Literal _ | E_Var _) as e -> e
+  | E_Literal _ as e -> e
+  | E_Var x -> (
+      match getter_should_reduce_to_call tenv x [] with
+      | None -> E_Var x
+      | Some (name, args) -> E_Call (name, args) |> tr)
   | E_Binop (op, e1, e2) -> E_Binop (op, tr e1, tr e2)
   | E_Unop (op, e) -> E_Unop (op, tr e)
   | E_Call (x, args) -> E_Call (x, List.map tr args)
-  | E_Slice (e, slices) -> E_Slice (tr e, annotate_slices tenv lenv slices)
+  | E_Slice (e, slices) -> (
+      let reduced =
+        match e with
+        | E_Var x -> getter_should_reduce_to_call tenv x slices
+        | _ -> None
+      in
+      match reduced with
+      | Some (name, args) -> E_Call (name, args) |> tr
+      | None -> E_Slice (tr e, annotate_slices tenv lenv slices))
   | E_Cond (e1, e2, e3) -> E_Cond (tr e1, tr e2, tr e3)
   | E_GetField (e, field, _ta) ->
-      let e = tr e in
-      let ty = infer tenv lenv e in
+      let e = tr e and ty = infer tenv lenv e in
       E_GetField (e, field, TA_InferredStructure ty)
   | E_Record (ty, fields, _ta) ->
       let ta = get_structure tenv.globals ty
@@ -269,19 +300,30 @@ let rec annotate_stmt tenv lenv s =
       let s1, lenv = annotate_stmt tenv lenv s1 in
       let s2, lenv = annotate_stmt tenv lenv s2 in
       (S_Then (s1, s2), lenv)
-  | S_Assign (le, e) ->
-      let e = annotate_expr tenv lenv e and le = annotate_lexpr tenv lenv le in
-      let lenv =
+  | S_Assign (le, e) -> (
+      let reduced =
         match le with
-        | LE_Var x -> (
-            match lookup_opt tenv lenv x with
-            | Some _ -> lenv
-            | None ->
-                let ty = infer tenv lenv e in
-                IMap.add x ty lenv)
-        | _ -> lenv
+        | LE_Var x -> setter_should_reduce_to_call tenv x [] e
+        | LE_Slice (LE_Var x, slices) ->
+            setter_should_reduce_to_call tenv x slices e
+        | _ -> None
       in
-      (S_Assign (le, e), lenv)
+      match reduced with
+      | Some (name, args) -> S_Call (name, args) |> annotate_stmt tenv lenv
+      | None ->
+          let e = annotate_expr tenv lenv e
+          and le = annotate_lexpr tenv lenv le in
+          let lenv =
+            match le with
+            | LE_Var x -> (
+                match lookup_opt tenv lenv x with
+                | Some _ -> lenv (* Already declared *)
+                | None ->
+                    let ty = infer tenv lenv e in
+                    IMap.add x ty lenv)
+            | _ -> lenv
+          in
+          (S_Assign (le, e), lenv))
   | S_Call (x, args) ->
       (S_Call (x, List.map (annotate_expr tenv lenv) args), lenv)
   | S_Return es -> (S_Return (List.map (annotate_expr tenv lenv) es), lenv)

@@ -52,7 +52,7 @@ let fresh_var =
   let i = ref 0 in
   fun s ->
     let () = incr i in
-    s ^ "$" ^ string_of_int !i
+    s ^ "-" ^ string_of_int !i
 
 let rec big_union = function
   | [] -> E_Literal (V_Bool true)
@@ -72,3 +72,14 @@ let case_to_conds =
     | _ ->
         let x = fresh_var "case" in
         S_Then (S_Assign (LE_Var x, e), cases_to_cond x cases)
+
+let slice_as_single = function
+  | Slice_Single e -> e
+  | _ -> raise @@ Invalid_argument "slice_as_single"
+
+let setter_name = ( ^ ) "setter-"
+let getter_name = ( ^ ) "getter-"
+
+let num_args = function
+  | 0 -> Fun.id
+  | n -> fun name -> name ^ "-" ^ string_of_int n

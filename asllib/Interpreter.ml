@@ -230,13 +230,6 @@ module Make (B : Backend.S) = struct
     | [ v ] -> return v
     | _ -> fatal ("Return arrity error for function " ^ name)
 
-  let slices_to_exprs : AST.slice list -> AST.expr list =
-    let tr_one_slice = function
-      | AST.Slice_Single e -> e
-      | _ -> fatal "Cannot call getter with slices arguments."
-    in
-    List.map tr_one_slice
-
   let rec eval_expr (env : env) scope is_data =
     let genv, lenv = env in
     let open AST in
@@ -246,10 +239,6 @@ module Make (B : Backend.S) = struct
         match IMap.find_opt x genv.consts with
         | Some v -> return (v_of_parsed_v v)
         | None -> (
-            if IMap.mem x genv.funcs then
-              let* vl = eval_func genv x [] in
-              one_return_value x vl
-            else
               match IMap.find_opt x lenv with
               | Some v ->
                   let* () = on_read_identifier x scope v in
@@ -265,9 +254,6 @@ module Make (B : Backend.S) = struct
     | E_Cond (e1, e2, e3) ->
         let eval_ = eval_expr env scope is_data in
         choice (eval_ e1) (eval_ e2) (eval_ e3)
-    | E_Slice (E_Var x, slices) when IMap.mem x genv.funcs ->
-        let args = slices_to_exprs slices in
-        eval_expr env scope is_data (E_Call (x, args))
     | E_Slice (e, slices) ->
         let positions = eval_slices slices in
         let* v = eval_expr env scope is_data e in
@@ -315,24 +301,11 @@ module Make (B : Backend.S) = struct
     let genv, lenv = env in
     function
     | LE_Var x -> (
-        match IMap.find_opt x genv.funcs with
-        | Some _ ->
-            fun v ->
-              let* _ = eval_func genv x [ v ] in
-              continue env
-        | None ->
             fun v ->
               let* v = v in
               let* () = on_write_identifier x scope v in
               let lenv = IMap.add x v lenv in
               continue (genv, lenv))
-    | LE_Slice (LE_Var x, slices) ->
-        let args =
-          slices_to_exprs slices |> List.map (eval_expr env scope true)
-        in
-        fun m ->
-          let* _ = eval_func genv x (m :: args) in
-          continue env
     | LE_Slice (le, slices) ->
         let setter = eval_lexpr env scope le in
         let positions = eval_slices slices in
