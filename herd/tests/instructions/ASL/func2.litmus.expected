@@ -1,10 +1,10 @@
 Test func02 Required
 States 1
-0:main.0.x=3;
+0:setter-X_set.0.internal_i=2; 0:setter-X_set.0.internal_v=3; 0:main.0.x=4;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (0:main.0.x=3)
+Condition forall (0:main.0.x=4 /\ 0:setter-X_set.0.internal_i=2 /\ 0:setter-X_set.0.internal_v=3)
 Observation func02 Always 1 0
-Hash=9fa4cf4696fb3c378b69f7b0395ec9e7
+Hash=e9e545dca122963e32557ed6cd66b011
 
