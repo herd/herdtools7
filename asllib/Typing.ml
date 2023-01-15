@@ -28,7 +28,10 @@ type genv = type_desc IMap.t
 type func_sig = type_desc list * type_desc option
 (** Type signature for functions, some kind of an arrow type. *)
 
-type tenv = { globals : genv; funcs : func_sig IMap.t }
+type func_tr = (type_desc list * AST.identifier) list IMap.t
+(** function renaming to get unique identifiers. *)
+
+type tenv = { globals : genv; funcs : func_sig IMap.t; func_tr : func_tr }
 (** The global type environment, with types for every globally available
     identifier, i.e. variables, named types or functions .*)
 
@@ -59,6 +62,31 @@ let lookup_return_type (tenv : tenv) x =
       type_error @@ "Function " ^ x
       ^ " does not return anything, cannot be used in an expression."
   | None -> undefined_identifier x
+
+module FunctionRenaming = struct
+  let has_arg_clash l1 l2 = List.compare_lengths l1 l2 = 0
+
+  let add_new_func tr_table name arg_types =
+    match IMap.find_opt name !tr_table with
+    | None ->
+        tr_table := IMap.add name [ (arg_types, name) ] !tr_table;
+        name
+    | Some assoc_list ->
+        let name' = name ^ "-" ^ string_of_int (List.length assoc_list) in
+        tr_table := IMap.add name ((arg_types, name') :: assoc_list) !tr_table;
+        name'
+
+  let find_name tr_table name arg_types =
+    match IMap.find_opt name tr_table with
+    | None -> name
+    | Some assoc_list -> (
+        let finder (arg_types', _) = has_arg_clash arg_types' arg_types in
+        match List.find_opt finder assoc_list with
+        | None -> name
+        | Some (_, name') -> name')
+
+  let new_tr_table () = ref IMap.empty
+end
 
 (******************************************************************************)
 (*                                                                            *)
@@ -252,7 +280,11 @@ let rec annotate_expr tenv lenv e =
       | Some (name, args) -> E_Call (name, args) |> tr)
   | E_Binop (op, e1, e2) -> E_Binop (op, tr e1, tr e2)
   | E_Unop (op, e) -> E_Unop (op, tr e)
-  | E_Call (x, args) -> E_Call (x, List.map tr args)
+  | E_Call (x, args) ->
+      let args = List.map tr args in
+      let arg_types = List.map (infer tenv lenv) args in
+      let x' = FunctionRenaming.find_name tenv.func_tr x arg_types in
+      E_Call (x', List.map tr args)
   | E_Slice (e, slices) -> (
       let reduced =
         match e with
@@ -348,7 +380,10 @@ let annotate_func (tenv : tenv) (f : AST.func) : AST.func =
     f.args |> List.to_seq |> Seq.map one_arg |> IMap.of_seq
   in
   let body, _lenv = annotate_stmt tenv lenv f.body in
-  { f with body }
+  let name =
+    FunctionRenaming.find_name tenv.func_tr f.name (List.map snd f.args)
+  in
+  { f with body; name }
 
 (******************************************************************************)
 (*                                                                            *)
@@ -356,7 +391,8 @@ let annotate_func (tenv : tenv) (f : AST.func) : AST.func =
 (*                                                                            *)
 (******************************************************************************)
 
-let build_funcs genv : AST.t -> func_sig IMap.t =
+let build_funcs genv : AST.t -> func_sig IMap.t * func_tr =
+  let tr_table_ref = FunctionRenaming.new_tr_table () in
   let one_func = function
     | D_Func { name; args; return_type; body = _ } ->
         let args =
@@ -367,10 +403,13 @@ let build_funcs genv : AST.t -> func_sig IMap.t =
           | None -> None
           | Some ty -> Some (get_structure genv ty)
         in
-        Some (name, (args, return_type))
+        let name' = FunctionRenaming.add_new_func tr_table_ref name args in
+        Some (name', (args, return_type))
     | _ -> None
   in
-  fun ast -> List.to_seq ast |> Seq.filter_map one_func |> IMap.of_seq
+  fun ast ->
+    let funcs = List.to_seq ast |> Seq.filter_map one_func |> IMap.of_seq in
+    (funcs, !tr_table_ref)
 
 let reduce_genv : genv -> genv =
   let should_reduce genv = function
@@ -407,9 +446,7 @@ let build_genv : AST.t -> genv =
 
 let annotate_ast ast =
   let globals = build_genv ast in
-  let funcs = build_funcs globals ast in
-  let one_decl = function
-    | D_Func f -> D_Func (annotate_func { globals; funcs } f)
-    | d -> d
-  in
+  let funcs, func_tr = build_funcs globals ast in
+  let annotate_func = annotate_func { globals; funcs; func_tr } in
+  let one_decl = function D_Func f -> D_Func (annotate_func f) | d -> d in
   List.map one_decl ast

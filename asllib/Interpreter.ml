@@ -239,11 +239,11 @@ module Make (B : Backend.S) = struct
         match IMap.find_opt x genv.consts with
         | Some v -> return (v_of_parsed_v v)
         | None -> (
-              match IMap.find_opt x lenv with
-              | Some v ->
-                  let* () = on_read_identifier x scope v in
-                  return v
-              | None -> fatal ("Unknown identifier: " ^ x)))
+            match IMap.find_opt x lenv with
+            | Some v ->
+                let* () = on_read_identifier x scope v in
+                return v
+            | None -> fatal ("Unknown identifier: " ^ x)))
     | E_Binop (op, e1, e2) ->
         let* v1 = eval_expr env scope is_data e1
         and* v2 = eval_expr env scope is_data e2 in
@@ -300,12 +300,12 @@ module Make (B : Backend.S) = struct
     let open AST in
     let genv, lenv = env in
     function
-    | LE_Var x -> (
-            fun v ->
-              let* v = v in
-              let* () = on_write_identifier x scope v in
-              let lenv = IMap.add x v lenv in
-              continue (genv, lenv))
+    | LE_Var x ->
+        fun v ->
+          let* v = v in
+          let* () = on_write_identifier x scope v in
+          let lenv = IMap.add x v lenv in
+          continue (genv, lenv)
     | LE_Slice (le, slices) ->
         let setter = eval_lexpr env scope le in
         let positions = eval_slices slices in
