@@ -55,7 +55,6 @@ module type CommonConfig = sig
   val makevar : string list
   val gcc : string
   val c11 : bool
-  val c11_fence : bool
   val ascall : bool
   val precision : Precision.t
   val variant : Variant_litmus.t -> bool
@@ -436,7 +435,9 @@ end = struct
           let sysarch =
             match arch,Archs.get_sysarch arch  OT.carch with
             | `C,`Unknown->
-                  Warn.fatal "Test %s not performed because -carch is not given but required while using C arch" tname
+                if not OT.c11 then
+                Warn.user_error "Test %s in C not performed, because no option -carch <arch> or -c11 true is present" tname ;
+                `Unknown
             | _,a -> a
           let noinline = true
           end in
@@ -596,7 +597,7 @@ end = struct
                       | `AArch64 -> AArch64Arch_litmus.comment
                       | `MIPS -> MIPSArch_litmus.comment
                       | `RISCV -> RISCVArch_litmus.comment
-                      | `Unknown -> assert false
+                      | `Unknown -> "#"
                       end
                end in
              let module X = Make'(Cfg)(Arch') in

@@ -27,7 +27,7 @@ module System : sig
     | `X86
     | `RISCV
     | `X86_64
-    ]
+   ]
 
   (* Native architecture may be unknown, some features
      will notbe available *)

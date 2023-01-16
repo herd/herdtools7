@@ -84,6 +84,7 @@ module Make
       let have_fault_handler = false
       let do_stats = false
       let sysarch = Cfg.sysarch
+      let c11 = false
       let variant _ = false (* No variant (yet ?) *)
     end
 

@@ -26,6 +26,7 @@ module type Config = sig
   val have_fault_handler : bool
   val do_stats : bool
   val sysarch : Archs.System.t
+  val c11 : bool
   val variant : Variant_litmus.t -> bool
 end
 
@@ -153,7 +154,9 @@ module Make
       module Dump : functor (O:Indent.S) -> functor(EPF:EmitPrintf.S) -> sig
         (* Some small dump functions common std/presi *)
 
-        (* Dump (typedef) array types, boolean argument commands
+        val dump_mbar_def : unit -> unit
+
+       (* Dump (typedef) array types, boolean argument commands
            also dumping types used for alignment. *)
         val dump_vars_types : bool -> T.t -> unit
 
@@ -236,10 +239,18 @@ module Make
 
       let cast_constant env loc v =
         let t = find_rloc_type loc env in
-        do_mask
-          (if CType.signed t then A.V.Scalar.sxt else A.V.Scalar.mask)
-          (CType.base_size t)
-          v
+        let sz_t = CType.base_size t in
+        let mask_ok =
+          match sz_t with
+          | None -> false
+          | Some sz_t ->
+              MachSize.compare sz_t A.V.Scalar.machsize <= 0 in
+        if mask_ok then
+          do_mask
+            (if CType.signed t then A.V.Scalar.sxt else A.V.Scalar.mask)
+            sz_t
+            v
+        else v
 
       let is_aligned loc (_,env) =
         try ignore (StringMap.find loc env) ; true with Not_found -> false
@@ -543,6 +554,15 @@ module Make
         from_code,from_others
 
       module Dump (O:Indent.S) (EPF:EmitPrintf.S) = struct
+
+        let dump_mbar_def () =
+          if Cfg.c11 && Cfg.sysarch = `Unknown then begin
+            O.o "inline static void mbar(void) {" ;
+            O.oi "atomic_thread_fence(memory_order_seq_cst);";
+            O.o "}" ;
+          end else
+            let module Insert =  ObjUtil.Insert(Cfg) in
+            Insert.insert O.o "mbar.c"
 
         let dump_vars_types dump_align test =
           let _,env = build_env test in
