@@ -155,7 +155,8 @@ let pp_decl f =
   | D_Func func ->
       fprintf f "@[<v>%a@ begin@;<1 2>@[<v>%a@]@ end@]" pp_func_sig func pp_stmt
         func.body
-  | D_GlobalConst (x, e) -> fprintf f "@[const %s@ = %a;@]" x pp_expr e
+  | D_GlobalConst (x, ty, e) ->
+      fprintf f "@[const %s@ :: %a@ = %a;@]" x pp_type_desc ty pp_expr e
   | D_TypeDecl (x, type_desc) ->
       fprintf f "@[type %s of %a;@]" x pp_type_desc type_desc
   | D_Primitive func -> fprintf f "@[<h>%a ;@]" pp_func_sig func

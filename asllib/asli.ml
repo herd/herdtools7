@@ -89,7 +89,7 @@ let () =
   let args = parse_args () in
   let ast = build_ast_from_file args.file in
 
-  let () = if args.print_ast then Format.printf "%a" PP.pp_t ast in
+  let () = if args.print_ast then Format.printf "%a@." PP.pp_t ast in
 
   let () =
     if args.print_serialized then print_string (Serialize.t_to_string ast)

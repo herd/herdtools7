@@ -183,7 +183,7 @@ module Make (B : Backend.S) = struct
        to use it every time we could use a variable. *)
     let acc =
       let one_decl = function
-        | AST.D_GlobalConst (name, e) -> Some (name, NotYetEvaluated e)
+        | AST.D_GlobalConst (name, _ty, e) -> Some (name, NotYetEvaluated e)
         | _ -> None
       in
       let add_decls =
@@ -204,7 +204,7 @@ module Make (B : Backend.S) = struct
     and eval_expr e = StaticInterpreter.static_eval env_lookup e in
 
     let one_decl = function
-      | AST.D_GlobalConst (name, _) -> Some (name, env_lookup name)
+      | AST.D_GlobalConst (name, _, _) -> Some (name, env_lookup name)
       | _ -> None
     in
     ast |> List.to_seq |> Seq.filter_map one_decl |> IMap.of_seq

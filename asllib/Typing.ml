@@ -433,6 +433,7 @@ let reduce_genv : genv -> genv =
 let build_genv : AST.t -> genv =
   let one_decl = function
     | D_TypeDecl (name, ty) -> Some (name, ty)
+    | D_GlobalConst (name, ty, _) -> Some (name, ty)
     | _ -> None
   in
   fun ast ->

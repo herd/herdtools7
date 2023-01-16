@@ -190,7 +190,8 @@ let pp_decl f = function
       bprintf f "D_Func { name=%S; args=%a; body=%a; return_type=%a }" name
         (pp_pair_list pp_string pp_type_desc)
         args pp_stmt body (pp_option pp_type_desc) return_type
-  | D_GlobalConst (x, e) -> bprintf f "D_GlobalConst (%S, %a)" x pp_expr e
+  | D_GlobalConst (x, ty, e) ->
+      bprintf f "D_GlobalConst (%S, %a, %a)" x pp_type_desc ty pp_expr e
   | D_TypeDecl (name, type_desc) ->
       bprintf f "D_TypeDecl (%S, %a)" name pp_type_desc type_desc
   | D_Primitive { name; args; return_type; body = _ } ->
