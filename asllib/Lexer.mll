@@ -99,54 +99,54 @@ let hex_lit = '0' 'x' (digit | hex_alpha) ('_' | digit | hex_alpha)*
 let real_lit = digit ('_' | digit)* '.' digit ('_' | digit)*
 let alpha = ['a'-'z' 'A'-'Z']
 let string_lit = '"' [^ '"']* '"'
-let bitvector_lit = '\'' ['0' '1' 'z' ' ']* '\''
-let mask_lit = '\'' ['0' '1' 'x' ' ']* '\''
+let bits = ['0' '1' 'z' ' ']*
+let mask = ['0' '1' 'x' ' ']*
 let identifier = (alpha | '_') (alpha|digit|'_')*
 
 rule token = parse
-    | '\n'                    { incr_lineno lexbuf; token lexbuf }
-    | [' ''\t''\r']+          { token lexbuf                     }
-    | "//" [^'\n']*           { token lexbuf                     }
-    | int_lit as lxm          { INT_LIT(int_of_string lxm)       }
-    | hex_lit as lxm          { INT_LIT(int_of_string lxm)       }
-    | real_lit as lxm         { REAL_LIT(float_of_string lxm)    }
-    | string_lit as lxm       { STRING_LIT(lxm)                  }
-    | bitvector_lit as lxm    { BITVECTOR_LIT(lxm)               }
-    | mask_lit as lxm         { MASK_LIT(lxm)                    }
-    | '!'                     { BNOT                             }
-    | ','                     { COMMA                            }
-    | '<'                     { LT                               }
-    | ">>"                    { SHR                              }
-    | "&&"                    { BAND                             }
-    | "-->"                   { IMPL                             }
-    | "<<"                    { SHL                              }
-    | ']'                     { RBRACKET                         }
-    | ')'                     { RPAR                             }
-    | ".."                    { SLICING                          }
-    | '='                     { EQ                               }
-    | '{'                     { LBRACE                           }
-    | "!="                    { NEQ                              }
-    | '-'                     { MINUS                            }
-    | "<->"                   { BEQ                              }
-    | '['                     { LBRACKET                         }
-    | '('                     { LPAR                             }
-    | '.'                     { DOT                              }
-    | "<="                    { LEQ                              }
-    | '^'                     { POW                              }
-    | '*'                     { MUL                              }
-    | '/'                     { RDIV                             }
-    | "=="                    { EQ_OP                            }
-    | "||"                    { BOR                              }
-    | '+'                     { PLUS                             }
-    | ':'                     { COLON                            }
-    | "=>"                    { ARROW                            }
-    | '}'                     { RBRACE                           }
-    | "++"                    { CONCAT                           }
-    | "::"                    { COLON_COLON                      }
-    | '>'                     { GT                               }
-    | "+:"                    { PLUS_COLON                       }
-    | ';'                     { SEMI_COLON                       }
-    | ">="                    { GEQ                              }
-    | identifier as lxm       { tr_name lxm                      }
-    | eof                     { EOF                              }
-    | ""                      { raise LexerError                 }
+    | '\n'                     { incr_lineno lexbuf; token lexbuf }
+    | [' ''\t''\r']+           { token lexbuf                     }
+    | "//" [^'\n']*            { token lexbuf                     }
+    | int_lit as lxm           { INT_LIT(int_of_string lxm)       }
+    | hex_lit as lxm           { INT_LIT(int_of_string lxm)       }
+    | real_lit as lxm          { REAL_LIT(float_of_string lxm)    }
+    | '"' ([^ '"']* as lxm) '"' { STRING_LIT(lxm)                  }
+    | '\'' (bits as lxm) '\''  { BITVECTOR_LIT(lxm)               }
+    | '\'' (mask as lxm) '\''  { MASK_LIT(lxm)                    }
+    | '!'                      { BNOT                             }
+    | ','                      { COMMA                            }
+    | '<'                      { LT                               }
+    | ">>"                     { SHR                              }
+    | "&&"                     { BAND                             }
+    | "-->"                    { IMPL                             }
+    | "<<"                     { SHL                              }
+    | ']'                      { RBRACKET                         }
+    | ')'                      { RPAR                             }
+    | ".."                     { SLICING                          }
+    | '='                      { EQ                               }
+    | '{'                      { LBRACE                           }
+    | "!="                     { NEQ                              }
+    | '-'                      { MINUS                            }
+    | "<->"                    { BEQ                              }
+    | '['                      { LBRACKET                         }
+    | '('                      { LPAR                             }
+    | '.'                      { DOT                              }
+    | "<="                     { LEQ                              }
+    | '^'                      { POW                              }
+    | '*'                      { MUL                              }
+    | '/'                      { RDIV                             }
+    | "=="                     { EQ_OP                            }
+    | "||"                     { BOR                              }
+    | '+'                      { PLUS                             }
+    | ':'                      { COLON                            }
+    | "=>"                     { ARROW                            }
+    | '}'                      { RBRACE                           }
+    | "++"                     { CONCAT                           }
+    | "::"                     { COLON_COLON                      }
+    | '>'                      { GT                               }
+    | "+:"                     { PLUS_COLON                       }
+    | ';'                      { SEMI_COLON                       }
+    | ">="                     { GEQ                              }
+    | identifier as lxm        { tr_name lxm                      }
+    | eof                      { EOF                              }
+    | ""                       { raise LexerError                 }
