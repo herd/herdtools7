@@ -48,11 +48,16 @@ module Make (C : Sem.Config) = struct
     let ( let* ) = M.( >>= )
     let ( and* ) = M.( >>| )
     let return = M.unitT
+    let ( >>= ) = M.( >>= )
 
-    let as_constant = function
-      | V.Val c -> c
-      | V.Var _ as v ->
-          Warn.fatal "Cannot convert value %s into constant" (V.pp_v v)
+    let big_op op default =
+      let folder m1 m2 =
+        let* v1 = m1 and* v2 = m2 in
+        op v1 v2
+      in
+      function [] -> default | h :: t -> List.fold_left folder h t
+
+    let big_or = big_op (M.op Op.Or) (return V.one)
 
     (**************************************************************************)
     (* ASL-PO handling                                                        *)
@@ -71,13 +76,35 @@ module Make (C : Sem.Config) = struct
     (* Values handling                                                        *)
     (**************************************************************************)
 
+    let as_constant = function
+      | V.Val c -> c
+      | V.Var _ as v ->
+          Warn.fatal "Cannot convert value %s into constant" (V.pp_v v)
+
+    let mask_of_positions =
+      let to_v s = V.Val (Constant.Concrete s) in
+      let open V.Cst.Scalar in
+      let folder s pos = shift_left one pos |> logor s in
+      fun positions -> List.fold_left folder zero positions |> to_v
+
     let v_of_parsed_v =
       let open AST in
       let rec tr = function
         | V_Int i -> V.intToV i
         | V_Bool b -> if b then V.one else V.zero
         | V_Real _f -> Warn.fatal "Cannot use reals yet."
-        | V_BitVector bv -> V.stringToV bv
+        | V_BitVector bv ->
+            let n = String.length bv in
+            let add_pos (acc, i) =
+              let i = i + 1 in
+              function
+              | '1' -> (n - i :: acc, i)
+              | _ -> (acc, i)
+            in
+            let positions, _ =
+              bv |> String.to_seq |> Seq.fold_left add_pos ([], 0)
+            in
+            mask_of_positions positions
         | V_Tuple li ->
             let li = List.map (fun v -> tr v |> as_constant) li in
             V.Val (Constant.ConcreteVector li)
@@ -208,11 +235,19 @@ module Make (C : Sem.Config) = struct
       | _ ->
           Warn.user_error "Trying to index non-indexable value %s" (V.pp_v vec)
 
-    let read_from_bitvector _positions _bv =
-      Warn.fatal "Not yet implemented: bitvectors operations."
+    let get_and_shift w pos_out pos_in =
+      M.op1 (Op.ReadBit pos_in) w >>= M.op1 (Op.LeftShift pos_out)
 
-    let write_to_bitvector _positions _v _w =
-      Warn.fatal "Not yet implemented: bitvectors operations."
+    let read_from_bitvector positions bvs =
+      List.mapi (get_and_shift bvs) positions |> big_or
+
+    let write_to_bitvector positions w v =
+      let mask = mask_of_positions positions in
+      let* erased_v = M.op Op.AndNot2 v mask in
+      let shifted_bits = List.mapi (get_and_shift w) positions in
+      let* to_write = big_or shifted_bits in
+      let* res = M.op Op.Or to_write erased_v in
+      return res
 
     (**************************************************************************)
     (* Primitives and helpers                                                 *)
