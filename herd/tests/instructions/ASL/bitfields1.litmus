@@ -1,0 +1,46 @@
+ASL bitfields1
+
+{}
+
+type MyBits of bits(5) {
+  [2:0] a,
+  [3:1] b,
+  [4:0] c,
+  [4  ] e,
+};
+
+func constructor(b:: bits(5)) => MyBits
+begin
+  return b;
+end
+
+func get_b(b::MyBits) => bits(3)
+begin
+  return b.b;
+end
+
+func set_e(b::MyBits, e::bits(1)) => MyBits
+begin
+  b.e = e;
+  return b;
+end
+
+func main()
+begin
+  a = constructor('10101');
+  b = if get_b(a) == '010' then 1 else 0;
+  c = set_e(a, '0');
+  d = if c.e == '0' then 1 else 0;
+  e = if c.c == '00101' then 1 else 0;
+  // e = if c.c == '00101' then 1 else 0;
+end
+
+locations [0: b; 0: c; 0: d; 0: c_c]
+
+forall (
+     0: b = 1
+  /\ 0: d = 1
+  /\ 0: e = 1
+)
+
+
