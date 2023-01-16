@@ -481,7 +481,7 @@ let s_else :=
 
 let subtype_opt == ioption(SUBTYPES; type_desc)
 let unimplemented_decl(x) ==
-  x ; { AST.(D_GlobalConst ("-", E_Literal (V_Int 0))) }
+  x ; { AST.(D_GlobalConst ("-", T_Int None, E_Literal (V_Int 0))) }
 
 let opt_type_identifier == pair(IDENTIFIER, ty_opt)
 let return_type == ARROW; type_desc
@@ -499,11 +499,12 @@ let decl ==
         ~=func_body; <setter>
 
   | terminated_by(SEMI_COLON,
-    | storage_keyword; x=IDENTIFIER; ty_opt; EQ; e=expr; <AST.D_GlobalConst>
-    | TYPE; x=IDENTIFIER; OF; t=type_desc; subtype_opt; <AST.D_TypeDecl>
+    | storage_keyword; x=IDENTIFIER; t=as_ty; EQ; e=expr; <AST.D_GlobalConst>
+    | TYPE; x=IDENTIFIER; OF; t=type_desc; subtype_opt;   <AST.D_TypeDecl>
 
     | unimplemented_decl(
       | VAR; typed_identifier;                                            <>
+      | storage_keyword; IDENTIFIER; EQ; expr;                            <>
       | PRAGMA; IDENTIFIER; clist(expr);                                  <>
       | TYPE; IDENTIFIER; SUBTYPES; type_desc; ioption(WITH; fields_opt); <>
     )

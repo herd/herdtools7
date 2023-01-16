@@ -152,7 +152,7 @@ type func = {
 (** Declarations, ie. top level statement in a asl file. *)
 type decl =
   | D_Func of func
-  | D_GlobalConst of identifier * expr
+  | D_GlobalConst of identifier * type_desc * expr
   | D_TypeDecl of identifier * type_desc
   | D_Primitive of func
 (* [D_Primitive] is a placeholder for typechecking primitive calls. Only the
