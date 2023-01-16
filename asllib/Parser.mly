@@ -337,28 +337,29 @@ let slice ==
   | e1=expr; COLON; e2=expr;      <AST.Slice_Range>
   | e1=expr; PLUS_COLON; e2=expr; <AST.Slice_Length>
 
-(* Bitfields -- Not yet implemented *)
+(* Bitfields *)
 let bitfields == ioption(braced(tclist(bitfield)))
-let bitfield == ~=nslices ; ~=IDENTIFIER ; ~=bitfield_spec; <>
+let bitfield == ~=nslices ; ~=IDENTIFIER ; bitfield_spec; <>
+(* Bitfield spec -- not yet implemented *)
 let bitfield_spec ==
   | as_ty; <>
   | bitfields ; <>
 
 (* Also called ty in grammar.bnf *)
 let type_desc :=
-  | INTEGER; c = ioption(int_constraints);      <AST.T_Int>
-  | REAL;                                       { AST.T_Real }
-  | BOOLEAN;                                    { AST.T_Bool }
-  | STRING;                                     { AST.T_String }
-  | BIT;                                        { AST.T_Bit }
-  | BITS; ~=pared(bits_constraint); bitfields;  <AST.T_Bits>
-  | ENUMERATION; l=braced(tclist(IDENTIFIER));  <AST.T_Enum>
-  | l=plist(type_desc);                         <AST.T_Tuple>
-  | ARRAY; e=bracketed(expr); OF; t=type_desc;  <AST.T_Array>
-  | RECORD; l=fields_opt;                       <AST.T_Record>
-  | EXCEPTION; l=fields_opt;                    <AST.T_Exception>
-  | ZTYPE; t=pared(type_desc);                  <AST.T_ZType>
-  | name=IDENTIFIER;                            <AST.T_Named>
+  | INTEGER; c = ioption(int_constraints);        <AST.T_Int>
+  | REAL;                                         { AST.T_Real }
+  | BOOLEAN;                                      { AST.T_Bool }
+  | STRING;                                       { AST.T_String }
+  | BIT;                                          { AST.T_Bit }
+  | BITS; ~=pared(bits_constraint); ~=bitfields;  <AST.T_Bits>
+  | ENUMERATION; l=braced(tclist(IDENTIFIER));    <AST.T_Enum>
+  | l=plist(type_desc);                           <AST.T_Tuple>
+  | ARRAY; e=bracketed(expr); OF; t=type_desc;    <AST.T_Array>
+  | RECORD; l=fields_opt;                         <AST.T_Record>
+  | EXCEPTION; l=fields_opt;                      <AST.T_Exception>
+  | ZTYPE; t=pared(type_desc);                    <AST.T_ZType>
+  | name=IDENTIFIER;                              <AST.T_Named>
 
 (* Constructs on type_desc *)
 

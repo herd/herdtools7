@@ -94,15 +94,40 @@ end
 (*                                                                            *)
 (******************************************************************************)
 
-let field_type x = function
-  | T_Record li as tvec -> (
+let slices_length =
+  let plus e1 e2 = E_Binop (PLUS, e1, e2) in
+  let minus e1 e2 = E_Binop (MINUS, e1, e2) in
+  let e_of_int i = E_Literal (V_Int i) in
+  let sum = function
+    | [] -> e_of_int 0
+    | [ x ] -> x
+    | h :: t -> List.fold_left plus h t
+  in
+  let slice_length = function
+    | Slice_Single _ -> e_of_int 1
+    | Slice_Length (_, e) -> e
+    | Slice_Range (e1, e2) -> minus e1 e2
+  in
+  fun li -> List.map slice_length li |> sum
+
+let field_type x ty =
+  match ty with
+  | T_Record li -> (
       match List.assoc_opt x li with
       | Some ty -> ty
       | None ->
           type_error
             (Format.asprintf "@[No such field as '%s' on type@ %a.@]" x
-               PP.pp_type_desc tvec))
-  | ty ->
+               PP.pp_type_desc ty))
+  | T_Bits (_, Some fields) -> (
+      match List.find_opt (fun (_, y) -> String.equal x y) fields with
+      | Some (slices, _) ->
+          T_Bits (BitWidth_Determined (slices_length slices), None)
+      | None ->
+          type_error
+            (Format.asprintf "@[Cannot get bitfield %s on type@ %a.@]" x
+               PP.pp_type_desc ty))
+  | _ ->
       type_error
         (Format.asprintf "@[Cannot get field %s on type@ %a.@]" x
            PP.pp_type_desc ty)
@@ -141,28 +166,12 @@ let check_num s = function
   | (T_Int _ | T_Bits _ | T_Real) as t -> t
   | _ -> type_error s
 
-let slices_length =
-  let plus e1 e2 = E_Binop (PLUS, e1, e2) in
-  let minus e1 e2 = E_Binop (MINUS, e1, e2) in
-  let e_of_int i = E_Literal (V_Int i) in
-  let sum = function
-    | [] -> e_of_int 0
-    | [ x ] -> x
-    | h :: t -> List.fold_left plus h t
-  in
-  let slice_length = function
-    | Slice_Single _ -> e_of_int 1
-    | Slice_Length (_, e) -> e
-    | Slice_Range (e1, e2) -> minus e1 e2
-  in
-  fun li -> List.map slice_length li |> sum
-
 let infer_values = function
   | V_Int i -> T_Int (Some [ Constraint_Exact (E_Literal (V_Int i)) ])
   | V_Bool _ -> T_Bool
   | V_Real _ -> T_Real
   | V_BitVector s ->
-      T_Bits (BitWidth_Determined (E_Literal (V_Int (String.length s))))
+      T_Bits (BitWidth_Determined (E_Literal (V_Int (String.length s))), None)
   | _ -> assert false
 
 let rec infer tenv lenv = function
@@ -175,7 +184,7 @@ let rec infer tenv lenv = function
       lookup_return_type tenv name
   | E_Slice (e, slices) -> (
       match infer tenv lenv e with
-      | T_Bits _c -> T_Bits (BitWidth_Determined (slices_length slices))
+      | T_Bits _ -> T_Bits (BitWidth_Determined (slices_length slices), None)
       | t -> type_error ("Cannot slice a " ^ PP.type_desc_to_string t))
   | E_Cond (_e1, e2, e3) -> (
       match infer tenv lenv e2 with
@@ -237,7 +246,7 @@ let rec infer_lexpr tenv lenv = function
       lookup_return_type tenv x
   | LE_Slice (le, slices) -> (
       match infer_lexpr tenv lenv le with
-      | T_Bits _ -> T_Bits (BitWidth_Determined (slices_length slices))
+      | T_Bits _ -> T_Bits (BitWidth_Determined (slices_length slices), None)
       | t ->
           type_error ("Cannot set slices of a type" ^ PP.type_desc_to_string t))
   | LE_SetField (_, field, TA_InferredStructure ty) -> field_type field ty

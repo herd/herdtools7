@@ -90,7 +90,7 @@ and type_desc =
   | T_Real
   | T_String
   | T_Bool
-  | T_Bits of bits_constraint
+  | T_Bits of bits_constraint * bitfields option
   | T_Bit
   | T_Enum of identifier list
   | T_Tuple of type_desc list
@@ -118,6 +118,8 @@ and bits_constraint =
       (** Constrained by the domain of another type. *)
   | BitWidth_Constrained of int_constraints
       (** Constrained directly by a constraint on its width. *)
+
+and bitfields = (slice list * identifier) list
 
 and typed_identifier = identifier * type_desc
 (** An identifier declared with its type. *)

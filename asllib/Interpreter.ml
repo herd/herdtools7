@@ -52,6 +52,13 @@ module Make (B : Backend.S) = struct
       let* li = List.fold_left one (return []) li in
       return (List.rev li)
 
+  let list_index f =
+    let rec aux i = function
+      | [] -> None
+      | h :: t -> if f h then Some i else aux (i + 1) t
+    in
+    aux 0
+
   (*****************************************************************************)
   (*                                                                           *)
   (*                             Records handling                              *)
@@ -72,22 +79,10 @@ module Make (B : Backend.S) = struct
       fatal
         ("Type error: bad fields passed for type " ^ PP.type_desc_to_string ty)
 
-  let index_of_field_in_record x ty =
-    let rec list_index i = function
-      | [] -> None
-      | (y, _) :: t -> if String.equal x y then Some i else list_index (i + 1) t
-    in
-    match ty with
-    | AST.T_Record li -> (
-        match list_index 0 li with
-        | Some i -> i
-        | None ->
-            fatal
-              (Format.asprintf "@[<hv>Cannot get field %s of type@ %a@]" x
-                 PP.pp_type_desc ty))
-    | _ ->
-        fatal
-          (Format.asprintf "@[<hv>Cannot index type@ %a@]" PP.pp_type_desc ty)
+  let record_index_of_field x li =
+    match list_index (fun (y, _) -> String.equal x y) li with
+    | Some i -> i
+    | None -> assert false
 
   (*****************************************************************************)
   (*                                                                           *)
@@ -269,10 +264,24 @@ module Make (B : Backend.S) = struct
         in
         let* fields = prod_map one_field li in
         make_record (type_of_ta ta) fields
-    | E_GetField (e, x, ta) ->
-        let i = type_of_ta ta |> index_of_field_in_record x in
-        let* vec = eval_expr env scope is_data e in
-        B.get_i i vec
+    | E_GetField (e, x, ta) -> (
+        match type_of_ta ta with
+        | T_Record li ->
+            let i = record_index_of_field x li in
+            let* vec = eval_expr env scope is_data e in
+            B.get_i i vec
+        | T_Bits (_, Some fields) as ty -> (
+            match List.find_opt (fun (_, y) -> String.equal x y) fields with
+            | Some (slices, _) ->
+                eval_expr env scope is_data (E_Slice (e, slices))
+            | None ->
+                fatal
+                  (Format.asprintf "@[Cannot get bitfield %s of type %a.@]" x
+                     PP.pp_type_desc ty))
+        | ty ->
+            fatal
+              (Format.asprintf "@[<hv>Cannot get field %s of type@ %a@]" x
+                 PP.pp_type_desc ty))
 
   and eval_slices slices =
     let module SI = StaticInterpreter in
@@ -316,16 +325,29 @@ module Make (B : Backend.S) = struct
             eval_expr env scope true e
           in
           B.write_to_bitvector positions v bv |> setter
-    | LE_SetField (le, x, ta) ->
-        let setter = eval_lexpr env scope le
-        and i = index_of_field_in_record x (type_of_ta ta) in
-        fun m ->
-          let* new_v = m
-          and* vec =
-            let e = ASTUtils.expr_of_lexpr le in
-            eval_expr env scope true e
-          in
-          B.set_i i new_v vec |> setter
+    | LE_SetField (le, x, ta) -> (
+        match type_of_ta ta with
+        | T_Record li ->
+            let setter = eval_lexpr env scope le in
+            let i = record_index_of_field x li in
+            fun m ->
+              let* new_v = m
+              and* vec =
+                let e = ASTUtils.expr_of_lexpr le in
+                eval_expr env scope true e
+              in
+              B.set_i i new_v vec |> setter
+        | T_Bits (_, Some fields) as ty -> (
+            match List.find_opt (fun (_, y) -> String.equal x y) fields with
+            | Some (slices, _) -> eval_lexpr env scope (LE_Slice (le, slices))
+            | None ->
+                fatal
+                  (Format.asprintf "@[<hv>Cannot set field %s of type@ %a@]" x
+                     PP.pp_type_desc ty))
+        | ty ->
+            fatal
+              (Format.asprintf "@[<hv>Cannot set field %s of type@ %a@]" x
+                 PP.pp_type_desc ty))
 
   and eval_stmt (env : env) scope =
     let open AST in

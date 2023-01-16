@@ -126,8 +126,10 @@ and pp_type_desc f = function
   | T_Real -> addb f "T_Real"
   | T_String -> addb f "T_String"
   | T_Bool -> addb f "T_Bool"
-  | T_Bits bits_constraint ->
-      bprintf f "T_Bits (%a)" pp_bits_constraint bits_constraint
+  | T_Bits (bits_constraint, fields) ->
+      let pp_fields = pp_option @@ pp_list @@ pp_pair pp_slice_list pp_string in
+      bprintf f "T_Bits (%a, %a)" pp_bits_constraint bits_constraint pp_fields
+        fields
   | T_Bit -> addb f "T_Bit"
   | T_Enum enum_type_desc ->
       addb f "T_Enum ";

@@ -124,7 +124,7 @@ module NativeBackend = struct
           (InterpreterError
              ("Cannot create a vector of type " ^ PP.type_desc_to_string ty))
 
-  let as_bitvector_string = function
+  let as_bits_str = function
     | V_BitVector bits -> bits
     | _ -> fail (TypeError "Unsupported operation on bitvectors: slicing")
 
@@ -132,14 +132,25 @@ module NativeBackend = struct
 
   let read_from_bitvector positions bv =
     List.to_seq positions
-    |> Seq.map (String.get (as_bitvector_string bv))
+    |> Seq.map (String.get (as_bits_str bv))
     |> String.of_seq |> bitvector_of_string
 
   let write_to_bitvector positions bits bv =
-    let result = Bytes.of_string (as_bitvector_string bv) in
-    let bits = bits |> as_bitvector_string |> String.to_seq |> List.of_seq in
-    let () = List.iter2 (Bytes.set result) positions bits in
-    bitvector_of_string (Bytes.to_string result)
+    let result = Bytes.of_string (as_bits_str bv) in
+    let to_write = bits |> as_bits_str |> String.to_seq |> List.of_seq in
+    match List.compare_lengths positions to_write with
+    | 0 ->
+        let () = List.iter2 (Bytes.set result) positions to_write in
+        bitvector_of_string (Bytes.to_string result)
+    | _ ->
+        fail
+          (TypeError
+             Format.(
+               asprintf
+                 "@[<2>Cannot set to '%s'@ bits '%s'@ at positions [@%a@]."
+                 (as_bits_str bv) (as_bits_str bits)
+                 (pp_print_list ~pp_sep:pp_print_space pp_print_int)
+                 positions))
 end
 
 module NativeInterpreter = Interpreter.Make (NativeBackend)

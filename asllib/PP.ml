@@ -40,7 +40,7 @@ let rec pp_value f =
   | V_Int i -> pp_print_int f i
   | V_Bool b -> pp_print_bool f b
   | V_Real r -> pp_print_float f r
-  | V_BitVector bv -> pp_print_string f bv
+  | V_BitVector bv -> fprintf f "'%s'" bv
   | V_Tuple li -> fprintf f "(@[%a@])" (pp_comma_list pp_value) li
   | V_Record li | V_Exception li -> pp_print_field_assoc f li
 
@@ -80,8 +80,15 @@ and pp_type_desc f = function
   | T_String -> pp_print_string f "T_String"
   | T_Bit -> pp_print_string f "T_Bit"
   | T_Bool -> pp_print_string f "T_Bool"
-  | T_Bits bits_constraint ->
+  | T_Bits (bits_constraint, None) ->
       fprintf f "@[bits(%a)@]" pp_bits_constraint bits_constraint
+  | T_Bits (bits_constraint, Some fields) ->
+      let pp_bitfield f (slices, name) =
+        fprintf f "@[<h>[%a]@ %s@]" pp_slice_list slices name
+      in
+      fprintf f "@[<hv>bits(%a)@ {@,%a@,}@]" pp_bits_constraint bits_constraint
+        (pp_comma_list pp_bitfield)
+        fields
   | T_Enum enum_type_desc ->
       fprintf f "@[enumeration {%a}@]"
         (pp_print_list pp_print_string)
