@@ -40,18 +40,12 @@ let build_ast_from_file f =
       Printf.eprintf "%a: unknown token." pp_pos lexbuf.Lexing.lex_curr_p;
       exit 1
 
-let exec ast =
-  let open Native in
-  try
-    let _ = NativeInterpreter.run ast [] [] () in
-    ()
-  with NativeInterpreterExn e -> Printf.printf "%a\n" pp_err e
-
 type args = {
   exec : bool;
   file : string;
   print_ast : bool;
   print_serialized : bool;
+  print_typed : bool;
 }
 
 let parse_args : unit -> args =
@@ -59,9 +53,9 @@ let parse_args : unit -> args =
   let exec = ref true in
   let print_ast = ref false in
   let print_serialized = ref false in
+  let print_typed = ref false in
   let speclist =
     [
-      ("--only-parse", Arg.Clear exec, "Do not execute the asl program.");
       ("--parse-only", Arg.Clear exec, "Do not execute the asl program.");
       ("--exec", Arg.Set exec, "Execute the asl program.");
       ( "--print",
@@ -70,6 +64,9 @@ let parse_args : unit -> args =
       ( "--serialize",
         Arg.Set print_serialized,
         "Print the parsed AST to stdout in the serialized format." );
+      ( "--print-typed",
+        Arg.Set print_typed,
+        "Print the parsed AST after typing and before executing it." );
     ]
   in
   let anon_fun = ( := ) target_file in
@@ -83,7 +80,15 @@ let parse_args : unit -> args =
       file = !target_file;
       print_ast = !print_ast;
       print_serialized = !print_serialized;
+      print_typed = !print_typed;
     }
+
+let or_exit f =
+  match Error.intercept f () with
+  | Ok res -> res
+  | Error e ->
+      Format.eprintf "%a@." Error.pp_error e;
+      exit 1
 
 let () =
   let args = parse_args () in
@@ -95,6 +100,16 @@ let () =
     if args.print_serialized then print_string (Serialize.t_to_string ast)
   in
 
-  let () = if args.exec then exec ast in
+  let () =
+    if args.print_typed then
+      let annotated_ast = or_exit (fun () -> Typing.annotate_ast ast) in
+      Format.printf "%a@." PP.pp_t annotated_ast
+  in
+
+  let () =
+    if args.exec then
+      let _ = or_exit (fun () -> Native.NativeInterpreter.run ast [] [] ()) in
+      ()
+  in
 
   ()

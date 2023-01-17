@@ -19,23 +19,6 @@
 
 open AST
 
-type err =
-  | UnknownIdentifier of string
-  | TypeError of string
-  | InterpreterError of string
-  | NonIndexableValue of value
-  | IndexOutOfBounds of (int * value)
-
-let pp_err chan = function
-  | UnknownIdentifier x -> Printf.fprintf chan "Unknown identifier %s" x
-  | TypeError msg -> Printf.fprintf chan "Type error: %s" msg
-  | InterpreterError msg -> Printf.fprintf chan "Interpreter error: %s" msg
-  | NonIndexableValue value ->
-      Printf.fprintf chan "Non indexable value: %s" (PP.value_to_string value)
-  | IndexOutOfBounds (i, v) ->
-      Printf.fprintf chan "Index %d out of bounds for value %s" i
-        (PP.value_to_string v)
-
 let list_update i f li =
   let rec aux acc i li =
     match (li, i) with
@@ -45,7 +28,8 @@ let list_update i f li =
   in
   aux [] i li
 
-exception NativeInterpreterExn of err
+let fatal = Error.fatal
+let mismatch_type v types = fatal (Error.MismatchType (v, types))
 
 module NativeBackend = struct
   type 'a m = unit -> 'a
@@ -70,17 +54,16 @@ module NativeBackend = struct
 
   let prod (r1 : 'a m) (r2 : 'b m) : ('a * 'b) m = fun () -> (r1 (), r2 ())
   let return v () = v
-  let fail err = raise (NativeInterpreterExn err)
   let bind_data = bind
   let bind_seq = bind
 
   let choice (c : value m) (m_true : 'b m) (m_false : 'b m) : 'b m =
+    let open AST in
     bind c (function
-      | AST.V_Bool true -> m_true
-      | AST.V_Bool false -> m_false
-      | _ -> fail (TypeError "Boolean expected."))
+      | V_Bool true -> m_true
+      | V_Bool false -> m_false
+      | v -> mismatch_type v [ T_Bool ])
 
-  let fatal msg = fail (InterpreterError msg)
   let binop op v1 v2 () = StaticInterpreter.binop op v1 v2
   let unop op v () = StaticInterpreter.unop op v
   let on_write_identifier _x _scope _value = return ()
@@ -88,28 +71,26 @@ module NativeBackend = struct
   let v_tuple li = return (V_Tuple li)
   let v_record li = return (V_Record li)
   let v_exception li = return (V_Exception li)
+  let indexables = [ T_Tuple []; T_Record []; T_Exception [] ]
+  let non_indexable_error v = mismatch_type v indexables
 
   let get_i i vec =
-    try
-      match vec with
-      | V_Tuple li -> List.nth li i |> return
-      | V_Record li -> List.nth li i |> snd |> return
-      | V_Exception li -> List.nth li i |> snd |> return
-      | v -> fail (NonIndexableValue v)
-    with Invalid_argument _ -> fail (IndexOutOfBounds (i, vec))
+    match vec with
+    | V_Tuple li -> List.nth li i |> return
+    | V_Record li -> List.nth li i |> snd |> return
+    | V_Exception li -> List.nth li i |> snd |> return
+    | v -> non_indexable_error v
 
   let set_i i v vec =
     let field_update i v li =
       let update_field v (name, _v) = (name, v) in
       list_update i (update_field v) li
     in
-    try
-      match vec with
-      | V_Tuple li -> list_update i (Fun.const v) li |> v_tuple
-      | V_Record li -> field_update i v li |> v_record
-      | V_Exception li -> field_update i v li |> v_exception
-      | _ -> fail (NonIndexableValue vec)
-    with Invalid_argument _ -> fail (IndexOutOfBounds (i, vec))
+    match vec with
+    | V_Tuple li -> list_update i (Fun.const v) li |> v_tuple
+    | V_Record li -> field_update i v li |> v_record
+    | V_Exception li -> field_update i v li |> v_exception
+    | v -> non_indexable_error v
 
   let create_vector ty li =
     let assoc_name_val (name, _ty) v = (name, v) in
@@ -119,14 +100,11 @@ module NativeBackend = struct
     | T_Record field_types -> assoc_names_values field_types li |> v_record
     | T_Exception field_types ->
         assoc_names_values field_types li |> v_exception
-    | ty ->
-        fail
-          (InterpreterError
-             ("Cannot create a vector of type " ^ PP.type_desc_to_string ty))
+    | ty -> fatal @@ Error.ConflictingTypes (indexables, ty)
 
   let as_bits_str = function
     | V_BitVector bits -> bits
-    | _ -> fail (TypeError "Unsupported operation on bitvectors: slicing")
+    | v -> mismatch_type v [ ASTUtils.default_t_bits ]
 
   let bitvector_of_string s = return (V_BitVector s)
 
@@ -138,19 +116,8 @@ module NativeBackend = struct
   let write_to_bitvector positions bits bv =
     let result = Bytes.of_string (as_bits_str bv) in
     let to_write = bits |> as_bits_str |> String.to_seq |> List.of_seq in
-    match List.compare_lengths positions to_write with
-    | 0 ->
-        let () = List.iter2 (Bytes.set result) positions to_write in
-        bitvector_of_string (Bytes.to_string result)
-    | _ ->
-        fail
-          (TypeError
-             Format.(
-               asprintf
-                 "@[<2>Cannot set to '%s'@ bits '%s'@ at positions [@%a@]."
-                 (as_bits_str bv) (as_bits_str bits)
-                 (pp_print_list ~pp_sep:pp_print_space pp_print_int)
-                 positions))
+    let () = List.iter2 (Bytes.set result) positions to_write in
+    bitvector_of_string (Bytes.to_string result)
 end
 
 module NativeInterpreter = Interpreter.Make (NativeBackend)
