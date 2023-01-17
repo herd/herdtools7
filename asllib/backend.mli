@@ -72,9 +72,6 @@ module type S = sig
   (** Other operations *)
   (*-------------------*)
 
-  val fatal : string -> 'a
-  (** On error, the interpreter exits the computation by using fatal. *)
-
   val binop : AST.binop -> value -> value -> value m
   (** Evaluates the binary operation on those two values. *)
 

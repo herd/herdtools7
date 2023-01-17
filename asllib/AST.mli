@@ -142,12 +142,14 @@ type stmt =
 
 and case_alt = expr list * stmt
 
-type func = {
+type ('body, 'arg) func_skeleton = {
   name : identifier;
-  args : typed_identifier list;
-  body : stmt;
+  args : 'arg list;
+  body : 'body;
   return_type : type_desc option;
 }
+
+type func = (stmt, typed_identifier) func_skeleton
 (** Function types in the AST. For the moment, they represent getters, setters,
     functions, procedures and primitives. *)
 

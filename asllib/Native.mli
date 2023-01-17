@@ -17,17 +17,6 @@
 (* Hadrien Renaud, University College London, UK.                           *)
 (****************************************************************************)
 
-type err =
-  | UnknownIdentifier of string
-  | TypeError of string
-  | InterpreterError of string
-  | NonIndexableValue of AST.value
-  | IndexOutOfBounds of (int * AST.value)
-
-val pp_err : out_channel -> err -> unit
-
-exception NativeInterpreterExn of err
-
 module NativeBackend :
   Backend.S with type value = AST.value and type 'a m = unit -> 'a
 

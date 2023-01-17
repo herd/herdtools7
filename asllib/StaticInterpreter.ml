@@ -1,31 +1,22 @@
 open AST
 
-type static_interpreter_error =
-  | UnsupportedBinop of binop * value * value
-  | UnsupportedUnop of unop * value
-  | UnsupportedExpr of expr
-  | TypeError of value * string
+let fatal = Error.fatal
 
-exception StaticInterpreterError of static_interpreter_error
+let value_as_int = function
+  | V_Int i -> i
+  | v -> fatal (Error.MismatchType (v, [ T_Int None ]))
 
-let error e = raise (StaticInterpreterError e)
-
-let pp_static_interpreter_error f =
-  let open Format in
-  function
-  | UnsupportedBinop (op, v1, v2) ->
-      fprintf f "@[Unsupported binop %s for values@ %a@ and %a.@]"
-        (PP.binop_to_string op) PP.pp_value v1 PP.pp_value v2
-  | UnsupportedUnop (op, v) ->
-      fprintf f "@[Unsupported unop %s for value@ %a.@]" (PP.unop_to_string op)
-        PP.pp_value v
-  | UnsupportedExpr e -> fprintf f "@[Unsupported expression %a.@]" PP.pp_expr e
-  | TypeError (v, s) ->
-      fprintf f "@[Expected type %s@ for@ value@ %a.@]" s PP.pp_value v
-
-let static_interpreter_error_to_string =
-  Format.asprintf "@[Static interpreter error:@ %a@]"
-    pp_static_interpreter_error
+let int_to_bitvector =
+  (* Inspired by https://discuss.ocaml.org/t/pretty-printing-binary-ints/9062/7 *)
+  let int_size = Sys.int_size - 1 in
+  (* Should be enough *)
+  let buf = Bytes.create int_size in
+  fun n ->
+    for i = 0 to int_size - 1 do
+      let pos = int_size - 1 - i in
+      Bytes.set buf pos (if n land (1 lsl i) != 0 then '1' else '0')
+    done;
+    Bytes.to_string buf
 
 let binop op v1 v2 =
   match (op, v1, v2) with
@@ -60,14 +51,14 @@ let binop op v1 v2 =
   | LT, V_Real v1, V_Real v2 -> V_Bool (v1 < v2)
   | GEQ, V_Real v1, V_Real v2 -> V_Bool (v1 >= v2)
   | GT, V_Real v1, V_Real v2 -> V_Bool (v1 > v2)
-  | _ -> error (UnsupportedBinop (op, v1, v2))
+  | _ -> fatal (Error.UnsupportedBinop (op, v1, v2))
 
 let unop op v =
   match (op, v) with
   | NEG, V_Int i -> V_Int ~-i
   | NEG, V_Real r -> V_Real ~-.r
   | BNOT, V_Bool b -> V_Bool (not b)
-  | _ -> error (UnsupportedUnop (op, v))
+  | _ -> fatal (Error.UnsupportedUnop (op, v))
 
 let static_eval (env : string -> value) : expr -> value =
   let rec expr_ = function
@@ -79,6 +70,31 @@ let static_eval (env : string -> value) : expr -> value =
     | E_Unop (op, e) ->
         let v = expr_ e in
         unop op v
-    | e -> error (UnsupportedExpr e)
+    | E_Slice (e', slices) as e ->
+        let v = expr_ e' in
+        let bv =
+          match v with
+          | V_Int i -> int_to_bitvector i
+          | V_BitVector bv -> bv
+          | _ -> fatal (Error.UnsupportedExpr e)
+        in
+        let n = String.length bv in
+        let slice_of = function
+          | Slice_Single i ->
+              let i = expr_ i |> value_as_int in
+              String.sub bv i 1
+          | Slice_Length (start, length) ->
+              let start = expr_ start |> value_as_int |> ( - ) n
+              and length = expr_ length |> value_as_int in
+              String.sub bv start length
+          | Slice_Range (endp, start) ->
+              let start = expr_ start |> value_as_int |> ( - ) n
+              and endp = expr_ endp |> value_as_int |> ( - ) n in
+              let length = start - endp + 1 and real_start = endp - 1 in
+              String.sub bv real_start length
+        in
+        slices |> List.map slice_of |> String.concat "" |> fun bv ->
+        V_BitVector bv
+    | e -> fatal (Error.UnsupportedExpr e)
   in
   expr_

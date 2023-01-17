@@ -1,16 +1,13 @@
 open AST
 module IMap = ASTUtils.IMap
 
-type typing_error =
-  | NotYetImplemented of string
-  | UndefinedIdentifier of string
-  | TypeError of string
+let fatal = Error.fatal
+let not_yet_implemented s = fatal (Error.NotYetImplemented s)
+let undefined_identifier x = fatal (Error.UndefinedIdentifier x)
+let bad_field x ty = fatal (Error.BadField (x, ty))
 
-exception TypingError of typing_error
-
-let not_yet_implemented s = raise (TypingError (NotYetImplemented s))
-let type_error s = raise (TypingError (TypeError s))
-let undefined_identifier x = raise (TypingError (UndefinedIdentifier x))
+let conflict expected provided =
+  fatal (Error.ConflictingTypes (expected, provided))
 
 (******************************************************************************)
 (*                                                                            *)
@@ -58,9 +55,7 @@ let lookup tenv lenv x =
 let lookup_return_type (tenv : tenv) x =
   match IMap.find_opt x tenv.funcs with
   | Some (_, Some ty) -> ty
-  | Some (_, None) ->
-      type_error @@ "Function " ^ x
-      ^ " does not return anything, cannot be used in an expression."
+  | Some (_, None) -> fatal @@ Error.MismatchedReturnValue x
   | None -> undefined_identifier x
 
 module FunctionRenaming = struct
@@ -113,24 +108,13 @@ let slices_length =
 let field_type x ty =
   match ty with
   | T_Record li -> (
-      match List.assoc_opt x li with
-      | Some ty -> ty
-      | None ->
-          type_error
-            (Format.asprintf "@[No such field as '%s' on type@ %a.@]" x
-               PP.pp_type_desc ty))
+      match List.assoc_opt x li with Some ty -> ty | None -> bad_field x ty)
   | T_Bits (_, Some fields) -> (
       match List.find_opt (fun (_, y) -> String.equal x y) fields with
       | Some (slices, _) ->
           T_Bits (BitWidth_Determined (slices_length slices), None)
-      | None ->
-          type_error
-            (Format.asprintf "@[Cannot get bitfield %s on type@ %a.@]" x
-               PP.pp_type_desc ty))
-  | _ ->
-      type_error
-        (Format.asprintf "@[Cannot get field %s on type@ %a.@]" x
-           PP.pp_type_desc ty)
+      | None -> bad_field x ty)
+  | _ -> bad_field x ty
 
 let get_structure (genv : genv) : type_desc -> type_desc =
   let rec get = function
@@ -159,12 +143,17 @@ let get_structure (genv : genv) : type_desc -> type_desc =
 (*                                                                            *)
 (******************************************************************************)
 
-let check_bitvector s = function T_Bits _ as t -> t | _ -> type_error s
-let check_integer s = function T_Int _ as t -> t | _ -> type_error s
+let check_bitvector = function
+  | T_Bits _ as t -> t
+  | ty -> conflict [ ASTUtils.default_t_bits ] ty
 
-let check_num s = function
+let check_integer = function
+  | T_Int _ as t -> t
+  | ty -> conflict [ T_Int None ] ty
+
+let check_num = function
   | (T_Int _ | T_Bits _ | T_Real) as t -> t
-  | _ -> type_error s
+  | ty -> conflict [ T_Int None; ASTUtils.default_t_bits; T_Real ] ty
 
 let infer_values = function
   | V_Int i -> T_Int (Some [ Constraint_Exact (E_Literal (V_Int i)) ])
@@ -172,7 +161,7 @@ let infer_values = function
   | V_Real _ -> T_Real
   | V_BitVector s ->
       T_Bits (BitWidth_Determined (E_Literal (V_Int (String.length s))), None)
-  | _ -> assert false
+  | _ -> not_yet_implemented "static complex values"
 
 let rec infer tenv lenv = function
   | E_Literal v -> infer_values v
@@ -184,8 +173,9 @@ let rec infer tenv lenv = function
       lookup_return_type tenv name
   | E_Slice (e, slices) -> (
       match infer tenv lenv e with
-      | T_Bits _ -> T_Bits (BitWidth_Determined (slices_length slices), None)
-      | t -> type_error ("Cannot slice a " ^ PP.type_desc_to_string t))
+      | T_Bits _ | T_Int _ ->
+          T_Bits (BitWidth_Determined (slices_length slices), None)
+      | t -> conflict [ ASTUtils.default_t_bits; T_Int None ] t)
   | E_Cond (_e1, e2, e3) -> (
       match infer tenv lenv e2 with
       | T_Int None -> T_Int None
@@ -205,40 +195,22 @@ let rec infer tenv lenv = function
 
 and infer_op op =
   match op with
-  | AND | EOR | OR -> bitwise_op op
-  | BAND | BEQ | BOR | IMPL | EQ_OP | NEQ | GT | GEQ | LT | LEQ -> bool_op op
-  | DIV | MOD | SHL | SHR -> int_int_op op
-  | MINUS | MUL | PLUS -> num_num_op op
+  | AND | EOR | OR -> bitwise_op
+  | BAND | BEQ | BOR | IMPL | EQ_OP | NEQ | GT | GEQ | LT | LEQ -> bool_op
+  | DIV | MOD | SHL | SHR -> int_int_op
+  | MINUS | MUL | PLUS -> num_num_op
   | RDIV -> not_yet_implemented "Real operations"
 
-and bool_op _ _ _ _ _ = T_Bool
-
-and bitwise_op op tenv lenv e1 _e2 =
-  infer tenv lenv e1
-  |> check_bitvector
-       ("Operator " ^ PP.binop_to_string op ^ " works on bitvectors.")
-
-and int_int_op op tenv lenv e1 _e2 =
-  infer tenv lenv e1
-  |> check_integer ("Operator " ^ PP.binop_to_string op ^ " works on integers.")
-
-and num_num_op op tenv lenv e1 _e2 =
-  infer tenv lenv e1
-  |> check_num
-       ("Operator " ^ PP.binop_to_string op
-      ^ " works on either bitvectors, integers or reals.")
+and bool_op _ _ _ _ = T_Bool
+and bitwise_op tenv lenv e1 _e2 = infer tenv lenv e1 |> check_bitvector
+and int_int_op tenv lenv e1 _e2 = infer tenv lenv e1 |> check_integer
+and num_num_op tenv lenv e1 _e2 = infer tenv lenv e1 |> check_num
 
 and infer_unop op tenv lenv e =
   match op with
   | BNOT -> T_Bool
-  | NOT ->
-      infer tenv lenv e
-      |> check_bitvector
-           ("Operator " ^ PP.unop_to_string op ^ " only work on bitvectors.")
-  | NEG ->
-      infer tenv lenv e
-      |> check_integer
-           ("Operator " ^ PP.unop_to_string op ^ " only work on integers.")
+  | NOT -> infer tenv lenv e |> check_bitvector
+  | NEG -> infer tenv lenv e |> check_integer
 
 let rec infer_lexpr tenv lenv = function
   | LE_Var x -> lookup tenv lenv x
@@ -247,8 +219,7 @@ let rec infer_lexpr tenv lenv = function
   | LE_Slice (le, slices) -> (
       match infer_lexpr tenv lenv le with
       | T_Bits _ -> T_Bits (BitWidth_Determined (slices_length slices), None)
-      | t ->
-          type_error ("Cannot set slices of a type" ^ PP.type_desc_to_string t))
+      | t -> conflict [ ASTUtils.default_t_bits ] t)
   | LE_SetField (_, field, TA_InferredStructure ty) -> field_type field ty
   | LE_SetField (le, field, TA_None) ->
       infer_lexpr tenv lenv le |> field_type field
@@ -269,15 +240,22 @@ let should_reduce_to_call tenv name slices =
   | Some args -> (
       match IMap.find_opt name tenv.funcs with
       | None -> None
-      | Some _ -> Some (name, args))
+      | Some (arg_types, return_type) -> (
+          match List.compare_lengths arg_types args with
+          | 0 -> Some (name, args, return_type)
+          | _ -> None))
 
 let getter_should_reduce_to_call tenv x slices =
   let name = ASTUtils.getter_name x in
-  should_reduce_to_call tenv name slices
+  match should_reduce_to_call tenv name slices with
+  | Some (name, args, Some _) -> Some (name, args)
+  | Some (_, _, None) | None -> None
 
 let setter_should_reduce_to_call tenv x slices e =
   let name = ASTUtils.setter_name x and slices = Slice_Single e :: slices in
-  should_reduce_to_call tenv name slices
+  match should_reduce_to_call tenv name slices with
+  | Some (name, args, _) -> Some (name, args)
+  | None -> None
 
 let rec annotate_expr tenv lenv e =
   let tr = annotate_expr tenv lenv in
@@ -305,7 +283,8 @@ let rec annotate_expr tenv lenv e =
       | None -> E_Slice (tr e, annotate_slices tenv lenv slices))
   | E_Cond (e1, e2, e3) -> E_Cond (tr e1, tr e2, tr e3)
   | E_GetField (e, field, _ta) ->
-      let e = tr e and ty = infer tenv lenv e in
+      let e = tr e in
+      let ty = infer tenv lenv e in
       E_GetField (e, field, TA_InferredStructure ty)
   | E_Record (ty, fields, _ta) ->
       let ta = get_structure tenv.globals ty
@@ -370,25 +349,32 @@ let rec annotate_stmt tenv lenv s =
   | S_Return es -> (S_Return (List.map (annotate_expr tenv lenv) es), lenv)
   | S_Cond (e, s1, s2) ->
       let e = annotate_expr tenv lenv e in
-      let s1, lenv = annotate_stmt tenv lenv s1 in
-      let s2, lenv = annotate_stmt tenv lenv s2 in
+      let s1, lenv = try_annotate_stmt tenv lenv s1 in
+      let s2, lenv = try_annotate_stmt tenv lenv s2 in
       (S_Cond (e, s1, s2), lenv)
   | S_Case (e, cases) ->
       let e = annotate_expr tenv lenv e in
       let annotate_case (acc, lenv) (es, s) =
         let es = List.map (annotate_expr tenv lenv) es in
-        let s, lenv = annotate_stmt tenv lenv s in
+        let s, lenv = try_annotate_stmt tenv lenv s in
         ((es, s) :: acc, lenv)
       in
       let cases, lenv = List.fold_left annotate_case ([], lenv) cases in
       (S_Case (e, cases), lenv)
+
+and try_annotate_stmt tenv lenv s =
+  match Error.intercept (fun () -> annotate_stmt tenv lenv s) () with
+  | Ok res -> res
+  | Error e ->
+      Format.eprintf "@[<hv 3>Ignoring type error:@ %a@]@." Error.pp_error e;
+      (s, lenv)
 
 let annotate_func (tenv : tenv) (f : AST.func) : AST.func =
   let lenv =
     let one_arg (name, ty) = (name, get_structure tenv.globals ty) in
     f.args |> List.to_seq |> Seq.map one_arg |> IMap.of_seq
   in
-  let body, _lenv = annotate_stmt tenv lenv f.body in
+  let body, _lenv = try_annotate_stmt tenv lenv f.body in
   let name =
     FunctionRenaming.find_name tenv.func_tr f.name (List.map snd f.args)
   in

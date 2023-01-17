@@ -1,0 +1,37 @@
+ASL assign3
+(* Testing some slicing in constants *)
+
+{}
+
+constant CondEQ :: bits(4) = 0x0[3:0];
+constant CondNE :: bits(4) = 0x1[3:0];
+constant CondCS :: bits(4) = 0x2[3:0];
+constant CondCC :: bits(4) = 0x3[3:0];
+constant CondMI :: bits(4) = 0x4[3:0];
+constant CondPL :: bits(4) = 0x5[3:0];
+constant CondVS :: bits(4) = 0x6[3:0];
+constant CondVC :: bits(4) = 0x7[3:0];
+constant CondHI :: bits(4) = 0x8[3:0];
+constant CondLS :: bits(4) = 0x9[3:0];
+constant CondGE :: bits(4) = 0xA[3:0];
+constant CondLT :: bits(4) = 0xB[3:0];
+constant CondGT :: bits(4) = 0xC[3:0];
+constant CondLE :: bits(4) = 0xD[3:0];
+constant CondAL :: bits(4) = 0xE[3:0];
+constant CondNV :: bits(4) = 0xF[3:0];
+
+func main()
+begin
+  let eq = if CondEQ == '0000' then 1 else 0;
+  let ne = if CondNE == '0001' then 1 else 0;
+  let lt = if CondLT == '1011' then 1 else 0;
+  let al = if CondAL == '1110' then 1 else 0;
+end
+
+forall (
+     0: eq = 1
+  /\ 0: ne = 1
+  /\ 0: lt = 1
+  /\ 0: al = 1
+)
+

@@ -50,7 +50,7 @@ forall(
      0: a = 3
   /\ 0: b = 3
   /\ 0: c = 7
-  /\ 0: f3.0.f3_internal = 12
-  /\ 0: f4.0.f4_internal = 15
+  /\ 0: setter-f3.0.f3_internal = 12
+  /\ 0: setter-f4.0.f4_internal = 15
 )
 

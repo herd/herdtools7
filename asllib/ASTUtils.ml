@@ -83,3 +83,5 @@ let getter_name = ( ^ ) "getter-"
 let num_args = function
   | 0 -> Fun.id
   | n -> fun name -> name ^ "-" ^ string_of_int n
+
+let default_t_bits = T_Bits (BitWidth_Constrained [], None)

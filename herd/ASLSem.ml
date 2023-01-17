@@ -97,9 +97,7 @@ module Make (C : Sem.Config) = struct
             let n = String.length bv in
             let add_pos (acc, i) =
               let i = i + 1 in
-              function
-              | '1' -> (n - i :: acc, i)
-              | _ -> (acc, i)
+              function '1' -> ((n - i) :: acc, i) | _ -> (acc, i)
             in
             let positions, _ =
               bv |> String.to_seq |> Seq.fold_left add_pos ([], 0)
@@ -302,8 +300,7 @@ module Make (C : Sem.Config) = struct
 
     (* Helpers *)
     let build_primitive name args return_type body =
-      let open Asllib.Interpreter in
-      { name; args; body; return_type }
+      AST.{ name; args; body; return_type }
 
     let arity_zero name return_type f =
       build_primitive name [] return_type @@ function
@@ -382,7 +379,6 @@ module Make (C : Sem.Config) = struct
         let prod = M.( >>| )
         let choice = choice
         let return = M.unitT
-        let fatal msg = Warn.fatal "%s" msg
         let on_write_identifier = on_write_identifier ii_env
         let on_read_identifier = on_read_identifier ii_env
         let binop = binop
@@ -394,9 +390,14 @@ module Make (C : Sem.Config) = struct
         let write_to_bitvector = write_to_bitvector
       end in
       let module ASLInterpreter = Asllib.Interpreter.Make (ASLBackend) in
-      let* _ =
+      let exec () =
         ASLInterpreter.run ii.A.inst (extra_funcs ii_env)
           (fetch_main_args ii_env)
+      in
+      let* _ =
+        match Asllib.Error.intercept exec () with
+        | Ok m -> m
+        | Error err -> Asllib.Error.error_to_string err |> Warn.fatal "%s"
       in
       M.addT !(snd ii_env) B.nextT
 
