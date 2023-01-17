@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2013-present Institut National de Recherche en Informatique et *)
+(* Copyright 2023-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,10 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Run a test from source file, dispatch on tests architecture *)
-
-module Top :
-  functor (C : RunTest.Config) ->
-  sig
-    val from_file : string -> TestHash.env -> TestHash.env
-  end
+module Make :
+functor(Conf:RunTest.Config) ->
+  functor(ModelConfig:MemWithCav12.Config) -> sig
+    val run : RunTest.runfun
+end
