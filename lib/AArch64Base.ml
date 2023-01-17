@@ -1117,7 +1117,7 @@ let do_pp_instruction m =
 
   let pp_ldxp memo v r1 r2 r3 =
     pp_memo memo ^ " "
-    ^ pp_wreg r1 ^","
+    ^ (if m.compat then pp_wreg r1 else pp_vreg v r1) ^","
     ^ pp_vreg v r2 ^ ",["
     ^ pp_xreg r3 ^ "]" in
 
