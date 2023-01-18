@@ -44,8 +44,8 @@ module Make(Conf:RunTest.Config)(ModelConfig:MemCat.Config) = struct
  * when compiling the web interface
  *)
 
-(* START NOTWWW *)
         let run =
+(* START NOTWWW *)
           if is_morello then
             let module  AArch64Value = CapabilityValue.Make(ConfMorello) in
             let module X = AArch64Make(AArch64Value) in
