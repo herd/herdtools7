@@ -448,15 +448,15 @@ let stmt ==
   )
   | terminated_by(SEMI_COLON,
     | PASS; pass
-    | RETURN;         { AST.S_Return [   ] }
-    | RETURN; e=expr; { AST.S_Return [ e ] }
-    | x=IDENTIFIER; args=plist(expr); <AST.S_Call>
+    | RETURN;                               { AST.S_Return [   ] }
+    | RETURN; e=expr;                       { AST.S_Return [ e ] }
+    | x=IDENTIFIER; args=plist(expr);       < AST.S_Call         >
+    | ASSERT; e=expr;                       < AST.S_Assert       >
 
     | assign(lexpr, expr)
     | assignment_keyword; assign(~=le_var; ty_opt; <>, expr)
 
     | unimplemented_stmt(
-      | ASSERT; expr;                                                       <>
       | THROW; ioption(expr);                                               <>
       | REPEAT; stmt_list; UNTIL; expr;                                     <>
       (* We have to manually expend the list otherwise we have a shift/reduce conflict. *)

@@ -13,6 +13,7 @@ type error =
   | MismatchType of value * type_desc list
   | NotYetImplemented of string
   | ConflictingTypes of type_desc list * type_desc
+  | AssertionFailed of expr
 
 exception ASLException of error
 
@@ -69,7 +70,8 @@ let pp_error =
         fprintf f "Type error:@ %a does@ not@ subtype@ any@ of:@ %a."
           pp_type_desc provided
           (pp_comma_list pp_type_desc)
-          expected);
+          expected
+    | AssertionFailed e -> fprintf f "Assertion failed:@ %a" pp_expr e);
     pp_close_box f ()
 
 let error_to_string = Format.asprintf "%a" pp_error

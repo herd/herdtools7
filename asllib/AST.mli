@@ -139,6 +139,7 @@ type stmt =
   | S_Return of expr list
   | S_Cond of expr * stmt * stmt
   | S_Case of expr * case_alt list
+  | S_Assert of expr
 
 and case_alt = expr list * stmt
 

@@ -51,6 +51,9 @@ let binop op v1 v2 =
   | LT, V_Real v1, V_Real v2 -> V_Bool (v1 < v2)
   | GEQ, V_Real v1, V_Real v2 -> V_Bool (v1 >= v2)
   | GT, V_Real v1, V_Real v2 -> V_Bool (v1 > v2)
+  (* bits -> bits -> bits *)
+  | EQ_OP, V_BitVector b1, V_BitVector b2 -> V_Bool (String.equal b1 b2)
+  | NEQ, V_BitVector b1, V_BitVector b2 -> V_Bool (not @@ String.equal b1 b2)
   | _ -> fatal (Error.UnsupportedBinop (op, v1, v2))
 
 let unop op v =

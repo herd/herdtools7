@@ -342,6 +342,10 @@ module Make (B : Backend.S) = struct
           (eval_expr env scope true e)
           (eval_stmt env scope s1) (eval_stmt env scope s2)
     | S_Case (e, cases) -> ASTUtils.case_to_conds e cases |> eval_stmt env scope
+    | S_Assert e ->
+        let v = eval_expr env scope true e in
+        let* b = B.choice v (return true) (return false) in
+        if b then continue env else fatal @@ Error.AssertionFailed e
 
   and eval_func (genv : genv) name (args : B.value m list) : B.value list m =
     match IMap.find_opt name genv.funcs with
