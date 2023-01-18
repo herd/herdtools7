@@ -101,7 +101,7 @@ let from_dune_channel chan =
 
   let printable c =
     match c with
-    | '0' .. '9' | 'a' .. 'z' | 'A' .. 'Z' | '_' | '-' | '+' | ':' | '.' | '/' -> true
+    | '0' .. '9' | 'a' .. 'z' | 'A' .. 'Z' | '_' | '-' | '+' | ':' | '.' | '/' | '*' | '\\'  | '%' | '{' | '}' -> true
     | _ -> false
   in
   let stream = MyStream.of_channel chan in
