@@ -186,6 +186,7 @@ let rec pp_stmt f = function
       bprintf f "S_Case (%a, %a)" pp_expr e
         (pp_pair_list pp_expr_list pp_stmt)
         cases
+  | S_Assert e -> bprintf f "S_Assert (%a)" pp_expr e
 
 let pp_decl f = function
   | D_Func { name; args; body; return_type } ->

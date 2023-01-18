@@ -361,6 +361,7 @@ let rec annotate_stmt tenv lenv s =
       in
       let cases, lenv = List.fold_left annotate_case ([], lenv) cases in
       (S_Case (e, cases), lenv)
+  | S_Assert e -> (S_Assert (annotate_expr tenv lenv e), lenv)
 
 and try_annotate_stmt tenv lenv s =
   match Error.intercept (fun () -> annotate_stmt tenv lenv s) () with

@@ -15,5 +15,4 @@ let tests testdir =
   in
   Sys.readdir testdir |> Array.to_list |> List.filter_map process_filename
 
-let () =
-  exec_tests @@ tests Sys.argv.(1)
+let () = exec_tests @@ tests Sys.argv.(1)
