@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2013-present Institut National de Recherche en Informatique et *)
+(* Copyright 2023-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,10 +14,25 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Run a test from source file, dispatch on tests architecture *)
-
-module Top :
-  functor (C : RunTest.Config) ->
-  sig
-    val from_file : string -> TestHash.env -> TestHash.env
+module Make(Conf:RunTest.Config)(ModelConfig:CMem.Config) = struct
+  module LexConfig = struct
+    let debug = Conf.debug.Debug_herd.lexer
   end
+  module ArchConfig = SemExtra.ConfigToArchConfig(Conf)
+  module JavaValue = Int64Value.Make(JavaBase.Instr)
+  module Java = JavaArch_herd.Make(ArchConfig)(JavaValue)
+  module JavaLexParse = struct
+    type pseudo     = Java.pseudo
+    type token      = JavaParser.token
+    module Lexer    = JavaLexer.Make(LexConfig)
+    let lexer       = Lexer.token
+    let parser      = JavaParser.main
+  end
+  module JavaS  = JavaSem.Make(Conf)(JavaValue)
+  module JavaM  = CMem.Make(ModelConfig)(JavaS)
+  module P      = JavaGenParser_lib.Make (Conf) (Java) (JavaLexParse)
+  module X      = RunTest.Make (JavaS) (P) (JavaM) (Conf)
+  let run = X.run
+end
+
+

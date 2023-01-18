@@ -21,6 +21,7 @@
 (* Configuration, to change kinds and condition *)
 module type Config = sig
   val debuglexer : bool
+  val verbose : int
   val check_kind : string -> ConstrGen.kind option
   val check_cond : string -> string option
   val macros : string option
@@ -29,6 +30,7 @@ end
 
 module DefaultConfig = struct
   let debuglexer = false
+  let verbose = 0
   let check_kind _ = None
   let check_cond _ = None
   let macros = None

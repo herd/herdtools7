@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2013-present Institut National de Recherche en Informatique et *)
+(* Copyright 2023-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,10 +14,24 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Run a test from source file, dispatch on tests architecture *)
-
-module Top :
-  functor (C : RunTest.Config) ->
-  sig
-    val from_file : string -> TestHash.env -> TestHash.env
+module Make(Conf:RunTest.Config)(ModelConfig:MemWithCav12.Config) = struct
+  module LexConfig = struct
+    let debug = Conf.debug.Debug_herd.lexer
   end
+  module ArchConfig = SemExtra.ConfigToArchConfig(Conf)
+  module ARMValue = Int32Value.Make(ARMBase.Instr)
+  module ARM = ARMArch_herd.Make(ArchConfig)(ARMValue)
+  module ARMLexParse = struct
+    type instruction = ARM.parsedPseudo
+    type token = ARMParser.token
+    module Lexer = ARMLexer.Make(LexConfig)
+    let lexer = Lexer.token
+    let parser = MiscParser.mach2generic ARMParser.main
+  end
+  module ARMS = ARMSem.Make(Conf)(ARMValue)
+  module ARMM = MemWithCav12.Make(ModelConfig)(ARMS)
+  module P = GenParser.Make (Conf) (ARM) (ARMLexParse)
+  module X = RunTest.Make (ARMS) (P) (ARMM) (Conf)
+  let run = X.run
+end
+
