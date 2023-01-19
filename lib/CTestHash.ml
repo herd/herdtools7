@@ -21,7 +21,7 @@
 module type Input = sig
   type code
 
-  val dump_prog : code -> string list
+  val dump_prog : bool -> code -> string list
 end
 
 module Make(P:Input)
@@ -41,7 +41,7 @@ module Make(P:Input)
 (* Code digest *)
 
       let digest_code code =
-        let code = List.map P.dump_prog code in
+        let code = List.map (P.dump_prog true) code in
         let pp =  Misc.string_of_prog code in
         debug "CODE" pp ;
         Digest.string pp

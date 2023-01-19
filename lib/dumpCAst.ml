@@ -16,7 +16,7 @@
 
 type code = string CAst.t
 
-let dump_prog cfun =
+let dump_prog preserve_hashes cfun =
   let f = function
     | CAst.Test { CAst.params; body; proc = i } ->
         let string_of_ty ty = CType.dump ty ^ "*" in
@@ -24,14 +24,17 @@ let dump_prog cfun =
           Printf.sprintf "%s %s" (string_of_ty param_ty) param_name
         in
         let params = String.concat ", " (List.map f params) in
-        (* void return type make this valid C, the parser accepts it*)
-        Printf.sprintf "void P%i(%s) {\n%s\n}\n" i params body
+        if preserve_hashes then
+          Printf.sprintf "P%i(%s) {\n%s\n}\n" i params body
+        else
+          (* void return type make this valid C, the parser accepts it*)
+          Printf.sprintf "void P%i(%s) {\n%s\n}\n" i params body
     | CAst.Global x -> Printf.sprintf "{%s}\n\n" x
   in
   [f cfun]
 
 let dump_prog_lines prog =
-  let pp = List.map dump_prog prog in
+  let pp = List.map (dump_prog true) prog in
   let pp = List.concat pp in
   List.map (Printf.sprintf "%s\n") pp
 

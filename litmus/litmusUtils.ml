@@ -63,15 +63,15 @@ module Pseudo(A:Arch_litmus.S) = struct
         f
         (String.concat "," (List.map A.pp_reg regs))
 
-  let dump_prog (p,is) = MiscParser.pp_proc  p::List.map fmt_io is
+  let dump_prog _ (p,is) = MiscParser.pp_proc  p::List.map fmt_io is
 
   let dump_prog_lines prog =
-    let pp = List.map dump_prog prog in
+    let pp = List.map (dump_prog true) prog in
     let pp = Misc.lines_of_prog pp in
     List.map (Printf.sprintf "%s;") pp
 
   let print_prog chan prog =
-    let pp = List.map dump_prog prog in
+    let pp = List.map (dump_prog true) prog in
     Misc.pp_prog chan pp
 
   let rec find_code p func = function

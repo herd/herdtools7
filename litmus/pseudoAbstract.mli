@@ -19,7 +19,7 @@ module type S = sig
   type code
 
   val find_offset : code list -> Proc.t -> string -> int
-  val dump_prog : code -> string list
+  val dump_prog : bool -> code -> string list
   val print_prog : out_channel -> code list -> unit
   val dump_prog_lines : code list -> string list
   val code_exists : (ins -> bool) -> code -> bool

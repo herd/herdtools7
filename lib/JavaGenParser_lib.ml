@@ -58,7 +58,7 @@ end
 module DumpJava = struct
 
   type code = MiscParser.proc * JavaBase.pseudo list
-  let dump_prog ((proc, _, _) , body) =
+  let dump_prog _ ((proc, _, _) , body) =
     let body_str =
       let unwrapped = (List.map (fun ps -> match ps with
                                           | JavaBase.Instruction i -> i
@@ -68,7 +68,7 @@ module DumpJava = struct
     [ (Printf.sprintf "Thread%d {\n%s\n}" proc body_str) ]
 
   let dump_prog_lines prog =
-      let pp = List.map dump_prog prog in
+      let pp = List.map (dump_prog true) prog in
       let pp = List.concat pp in
       List.map (Printf.sprintf "%s\n") pp
 
