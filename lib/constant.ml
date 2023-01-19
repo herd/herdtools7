@@ -278,6 +278,12 @@ let do_mk_sym sym = match Misc.tr_pte sym with
 let mk_sym_virtual s = Symbolic (do_mk_virtual s)
 let mk_sym s = Symbolic (do_mk_sym s)
 
+let mk_sym_with_index s i =
+  Symbolic
+    (Virtual
+      {default_symbolic_data
+      with name=s; offset=i})
+
 let as_virtual s =
   if Misc.is_pte s || Misc.is_physical s || Misc.is_atag s then
     Warn.user_error "Non-virtual id %s" s ;
