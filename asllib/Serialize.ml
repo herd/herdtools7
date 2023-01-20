@@ -34,14 +34,6 @@ let pp_pair pp_left pp_right f (left, right) =
 
 let pp_pair_list pp_left pp_right = pp_list (pp_pair pp_left pp_right)
 let pp_string f = bprintf f "%S"
-let pp_int f i = addb f (string_of_int i)
-let pp_float f = bprintf f "%F"
-let pp_bool f = bprintf f "%B"
-
-let pp_bitvector f s =
-  addb f "'";
-  addb f s;
-  addb f "'"
 
 let pp_binop : binop -> string = function
   | AND -> "AND"
@@ -69,18 +61,12 @@ let pp_binop : binop -> string = function
 let pp_unop = function BNOT -> "BNOT" | NOT -> "NOT" | NEG -> "NEG"
 
 let rec pp_value f = function
-  | V_Int i ->
-      addb f "V_Int ";
-      pp_int f i
-  | V_Bool b ->
-      addb f "V_Bool ";
-      pp_bool f b
-  | V_Real r ->
-      addb f "V_Real ";
-      pp_float f r
+  | V_Int i -> bprintf f "V_Int %d" i
+  | V_Bool b -> bprintf f "V_Bool %B" b
+  | V_Real r -> bprintf f "V_Real %F" r
   | V_BitVector bv ->
-      addb f "V_BitVector ";
-      pp_bitvector f bv
+      bprintf f "V_BitVector (Asllib.Bitvector.of_string %s)"
+        (Bitvector.to_string bv)
   | V_Tuple li ->
       addb f "V_Tuple ";
       pp_list pp_value f li

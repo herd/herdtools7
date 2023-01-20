@@ -235,7 +235,7 @@ module Make (B : Backend.S) = struct
         let eval_ = eval_expr env scope is_data in
         B.choice (eval_ e1) (eval_ e2) (eval_ e3)
     | E_Slice (e, slices) ->
-        let positions = eval_slices slices in
+        let positions = eval_slices env slices in
         let* v = eval_expr env scope is_data e in
         B.read_from_bitvector positions v
     | E_Call (name, args) ->
@@ -262,25 +262,13 @@ module Make (B : Backend.S) = struct
             | None -> fatal @@ Error.BadField (x, ty))
         | ty -> fatal @@ Error.BadField (x, ty))
 
-  and eval_slices slices =
-    let module SI = StaticInterpreter in
-    let eval_expr e =
-      SI.static_eval (fun _s -> assert false) e |> function
-      | V_Int i -> i
-      | v -> fatal @@ Error.MismatchType (v, [ T_Int None ])
+  and eval_slices (genv, _lenv) =
+    let si_env s =
+      match IMap.find_opt s genv.consts with
+      | Some v -> v
+      | None -> fatal @@ Error.UndefinedIdentifier s
     in
-    let slice_to_positions =
-      let interval bot len = List.init len (( + ) bot) in
-      function
-      | Slice_Single e -> [ eval_expr e ]
-      | Slice_Range (etop, ebot) ->
-          let pbot = eval_expr ebot and ptop = eval_expr etop in
-          interval pbot (ptop - pbot + 1)
-      | Slice_Length (ebot, elength) ->
-          let pbot = eval_expr ebot and plength = eval_expr elength in
-          interval pbot plength
-    in
-    slices |> List.map slice_to_positions |> List.concat
+    StaticInterpreter.slices_to_positions si_env
 
   and eval_lexpr (env : env) scope =
     let genv, lenv = env in
@@ -293,7 +281,7 @@ module Make (B : Backend.S) = struct
           continue (genv, lenv)
     | LE_Slice (le, slices) ->
         let setter = eval_lexpr env scope le in
-        let positions = eval_slices slices in
+        let positions = eval_slices env slices in
         fun m ->
           let* v = m
           and* bv =

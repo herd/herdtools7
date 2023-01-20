@@ -30,6 +30,9 @@ let incr_lineno lexbuf =
 
 open Parser
 
+let bitvector_lit lxm =
+  BITVECTOR_LIT (Bitvector.of_string lxm)
+
 let tr_name s = match s with
 | "AND"           -> AND
 | "array"         -> ARRAY
@@ -111,7 +114,7 @@ rule token = parse
     | hex_lit as lxm           { INT_LIT(int_of_string lxm)       }
     | real_lit as lxm          { REAL_LIT(float_of_string lxm)    }
     | '"' ([^ '"']* as lxm) '"' { STRING_LIT(lxm)                  }
-    | '\'' (bits as lxm) '\''  { BITVECTOR_LIT(lxm)               }
+    | '\'' (bits as lxm) '\''  { bitvector_lit lxm                }
     | '\'' (mask as lxm) '\''  { MASK_LIT(lxm)                    }
     | '!'                      { BNOT                             }
     | ','                      { COMMA                            }

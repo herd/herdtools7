@@ -50,15 +50,12 @@ type binop =
 type identifier = string
 (** Type of local identifiers in the AST. *)
 
-type bitvector = string
-(** Type of bitvector string as just parsed *)
-
 (** Main value type, parametric on its base values *)
 type value =
   | V_Int of int
   | V_Bool of bool
   | V_Real of float
-  | V_BitVector of bitvector
+  | V_BitVector of Bitvector.t
   | V_Tuple of value list
   | V_Record of (identifier * value) list
   | V_Exception of (identifier * value) list

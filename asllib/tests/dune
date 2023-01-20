@@ -13,8 +13,8 @@
     (run %{test} asl/required)))
 
 (tests
-  (names static)
-  (modules static)
+  (names static bitvector)
+  (modules static bitvector)
   (modes native)
   (libraries asllib test_helpers))
 

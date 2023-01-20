@@ -89,17 +89,18 @@ end
 (*                                                                            *)
 (******************************************************************************)
 
+let expr_of_int i = E_Literal (V_Int i)
+
 let slices_length =
   let plus e1 e2 = E_Binop (PLUS, e1, e2) in
   let minus e1 e2 = E_Binop (MINUS, e1, e2) in
-  let e_of_int i = E_Literal (V_Int i) in
   let sum = function
-    | [] -> e_of_int 0
+    | [] -> expr_of_int 0
     | [ x ] -> x
     | h :: t -> List.fold_left plus h t
   in
   let slice_length = function
-    | Slice_Single _ -> e_of_int 1
+    | Slice_Single _ -> expr_of_int 1
     | Slice_Length (_, e) -> e
     | Slice_Range (e1, e2) -> minus e1 e2
   in
@@ -155,12 +156,13 @@ let check_num = function
   | (T_Int _ | T_Bits _ | T_Real) as t -> t
   | ty -> conflict [ T_Int None; ASTUtils.default_t_bits; T_Real ] ty
 
+let t_bits_bitwidth e = T_Bits (BitWidth_Determined e, None)
+
 let infer_values = function
-  | V_Int i -> T_Int (Some [ Constraint_Exact (E_Literal (V_Int i)) ])
+  | V_Int i -> T_Int (Some [ Constraint_Exact (expr_of_int i) ])
   | V_Bool _ -> T_Bool
   | V_Real _ -> T_Real
-  | V_BitVector s ->
-      T_Bits (BitWidth_Determined (E_Literal (V_Int (String.length s))), None)
+  | V_BitVector bv -> Bitvector.length bv |> expr_of_int |> t_bits_bitwidth
   | _ -> not_yet_implemented "static complex values"
 
 let rec infer tenv lenv = function
@@ -173,8 +175,7 @@ let rec infer tenv lenv = function
       lookup_return_type tenv name
   | E_Slice (e, slices) -> (
       match infer tenv lenv e with
-      | T_Bits _ | T_Int _ ->
-          T_Bits (BitWidth_Determined (slices_length slices), None)
+      | T_Bits _ | T_Int _ -> slices_length slices |> t_bits_bitwidth
       | t -> conflict [ ASTUtils.default_t_bits; T_Int None ] t)
   | E_Cond (_e1, e2, e3) -> (
       match infer tenv lenv e2 with
@@ -218,7 +219,7 @@ let rec infer_lexpr tenv lenv = function
       lookup_return_type tenv x
   | LE_Slice (le, slices) -> (
       match infer_lexpr tenv lenv le with
-      | T_Bits _ -> T_Bits (BitWidth_Determined (slices_length slices), None)
+      | T_Bits _ -> slices_length slices |> t_bits_bitwidth
       | t -> conflict [ ASTUtils.default_t_bits ] t)
   | LE_SetField (_, field, TA_InferredStructure ty) -> field_type field ty
   | LE_SetField (le, field, TA_None) ->

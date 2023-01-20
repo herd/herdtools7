@@ -34,10 +34,10 @@ let build_ast_from_file f =
   in
   try Parser.ast Lexer.token lexbuf with
   | Parser.Error ->
-      Printf.eprintf "%a: Cannot parse." pp_pos lexbuf.Lexing.lex_curr_p;
+      Printf.eprintf "%a: Cannot parse.\n" pp_pos lexbuf.Lexing.lex_curr_p;
       exit 1
   | Lexer.LexerError ->
-      Printf.eprintf "%a: unknown token." pp_pos lexbuf.Lexing.lex_curr_p;
+      Printf.eprintf "%a: unknown token.\n" pp_pos lexbuf.Lexing.lex_curr_p;
       exit 1
 
 type args = {

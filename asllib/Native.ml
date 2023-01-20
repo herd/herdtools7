@@ -102,22 +102,19 @@ module NativeBackend = struct
         assoc_names_values field_types li |> v_exception
     | ty -> fatal @@ Error.ConflictingTypes (indexables, ty)
 
-  let as_bits_str = function
+  let as_bitvector = function
     | V_BitVector bits -> bits
     | v -> mismatch_type v [ ASTUtils.default_t_bits ]
 
-  let bitvector_of_string s = return (V_BitVector s)
+  let bitvector_to_value bv = return (V_BitVector bv)
 
   let read_from_bitvector positions bv =
-    List.to_seq positions
-    |> Seq.map (String.get (as_bits_str bv))
-    |> String.of_seq |> bitvector_of_string
+    let bv = as_bitvector bv in
+    Bitvector.extract_slice bv positions |> bitvector_to_value
 
   let write_to_bitvector positions bits bv =
-    let result = Bytes.of_string (as_bits_str bv) in
-    let to_write = bits |> as_bits_str |> String.to_seq |> List.of_seq in
-    let () = List.iter2 (Bytes.set result) positions to_write in
-    bitvector_of_string (Bytes.to_string result)
+    let bv = as_bitvector bv and bits = as_bitvector bits in
+    Bitvector.write_slice bv bits positions |> bitvector_to_value
 end
 
 module NativeInterpreter = Interpreter.Make (NativeBackend)
