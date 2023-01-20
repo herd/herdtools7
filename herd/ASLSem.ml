@@ -93,16 +93,7 @@ module Make (C : Sem.Config) = struct
         | V_Int i -> V.intToV i
         | V_Bool b -> if b then V.one else V.zero
         | V_Real _f -> Warn.fatal "Cannot use reals yet."
-        | V_BitVector bv ->
-            let n = String.length bv in
-            let add_pos (acc, i) =
-              let i = i + 1 in
-              function '1' -> ((n - i) :: acc, i) | _ -> (acc, i)
-            in
-            let positions, _ =
-              bv |> String.to_seq |> Seq.fold_left add_pos ([], 0)
-            in
-            mask_of_positions positions
+        | V_BitVector bv -> Asllib.Bitvector.to_int bv |> V.intToV
         | V_Tuple li ->
             let li = List.map (fun v -> tr v |> as_constant) li in
             V.Val (Constant.ConcreteVector li)
@@ -237,9 +228,11 @@ module Make (C : Sem.Config) = struct
       M.op1 (Op.ReadBit pos_in) w >>= M.op1 (Op.LeftShift pos_out)
 
     let read_from_bitvector positions bvs =
+      let positions = List.rev positions in
       List.mapi (get_and_shift bvs) positions |> big_or
 
     let write_to_bitvector positions w v =
+      let positions = List.rev positions in
       let mask = mask_of_positions positions in
       let* erased_v = M.op Op.AndNot2 v mask in
       let shifted_bits = List.mapi (get_and_shift w) positions in

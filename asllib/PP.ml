@@ -40,7 +40,7 @@ let rec pp_value f =
   | V_Int i -> pp_print_int f i
   | V_Bool b -> pp_print_bool f b
   | V_Real r -> pp_print_float f r
-  | V_BitVector bv -> fprintf f "'%s'" bv
+  | V_BitVector bv -> Bitvector.pp_t f bv
   | V_Tuple li -> fprintf f "(@[%a@])" (pp_comma_list pp_value) li
   | V_Record li | V_Exception li -> pp_print_field_assoc f li
 

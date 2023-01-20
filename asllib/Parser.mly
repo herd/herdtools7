@@ -80,7 +80,7 @@ let setter (name, args, new_val, body) =
 %token WHERE WHILE WITH ZTYPE
 
 %token <string> IDENTIFIER STRING_LIT MASK_LIT
-%token <string> BITVECTOR_LIT
+%token <Bitvector.t> BITVECTOR_LIT
 %token <int> INT_LIT
 %token <float> REAL_LIT
 %token <bool> BOOL_LIT

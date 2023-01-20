@@ -6,18 +6,6 @@ let value_as_int = function
   | V_Int i -> i
   | v -> fatal (Error.MismatchType (v, [ T_Int None ]))
 
-let int_to_bitvector =
-  (* Inspired by https://discuss.ocaml.org/t/pretty-printing-binary-ints/9062/7 *)
-  let int_size = Sys.int_size - 1 in
-  (* Should be enough *)
-  let buf = Bytes.create int_size in
-  fun n ->
-    for i = 0 to int_size - 1 do
-      let pos = int_size - 1 - i in
-      Bytes.set buf pos (if n land (1 lsl i) != 0 then '1' else '0')
-    done;
-    Bytes.to_string buf
-
 let binop op v1 v2 =
   match (op, v1, v2) with
   (* int -> int -> int *)
@@ -52,8 +40,8 @@ let binop op v1 v2 =
   | GEQ, V_Real v1, V_Real v2 -> V_Bool (v1 >= v2)
   | GT, V_Real v1, V_Real v2 -> V_Bool (v1 > v2)
   (* bits -> bits -> bits *)
-  | EQ_OP, V_BitVector b1, V_BitVector b2 -> V_Bool (String.equal b1 b2)
-  | NEQ, V_BitVector b1, V_BitVector b2 -> V_Bool (not @@ String.equal b1 b2)
+  | EQ_OP, V_BitVector b1, V_BitVector b2 -> V_Bool (Bitvector.equal b1 b2)
+  | NEQ, V_BitVector b1, V_BitVector b2 -> V_Bool (not @@ Bitvector.equal b1 b2)
   | _ -> fatal (Error.UnsupportedBinop (op, v1, v2))
 
 let unop op v =
@@ -63,7 +51,7 @@ let unop op v =
   | BNOT, V_Bool b -> V_Bool (not b)
   | _ -> fatal (Error.UnsupportedUnop (op, v))
 
-let static_eval (env : string -> value) : expr -> value =
+let rec static_eval (env : string -> value) : expr -> value =
   let rec expr_ = function
     | E_Literal v -> v
     | E_Var x -> env x
@@ -74,30 +62,29 @@ let static_eval (env : string -> value) : expr -> value =
         let v = expr_ e in
         unop op v
     | E_Slice (e', slices) as e ->
-        let v = expr_ e' in
         let bv =
-          match v with
-          | V_Int i -> int_to_bitvector i
+          match expr_ e' with
+          | V_Int i -> Bitvector.of_int i
           | V_BitVector bv -> bv
           | _ -> fatal (Error.UnsupportedExpr e)
-        in
-        let n = String.length bv in
-        let slice_of = function
-          | Slice_Single i ->
-              let i = expr_ i |> value_as_int in
-              String.sub bv i 1
-          | Slice_Length (start, length) ->
-              let start = expr_ start |> value_as_int |> ( - ) n
-              and length = expr_ length |> value_as_int in
-              String.sub bv start length
-          | Slice_Range (endp, start) ->
-              let start = expr_ start |> value_as_int |> ( - ) n
-              and endp = expr_ endp |> value_as_int |> ( - ) n in
-              let length = start - endp + 1 and real_start = endp - 1 in
-              String.sub bv real_start length
-        in
-        slices |> List.map slice_of |> String.concat "" |> fun bv ->
-        V_BitVector bv
+        and positions = slices_to_positions env slices in
+        V_BitVector (Bitvector.extract_slice bv positions)
     | e -> fatal (Error.UnsupportedExpr e)
   in
   expr_
+
+and slices_to_positions env =
+  let eval_to_int e = static_eval env e |> value_as_int in
+  let slice_to_positions =
+    let interval top len = List.init len (( - ) top) in
+    function
+    | Slice_Single e -> [ eval_to_int e ]
+    | Slice_Range (etop, ebot) ->
+        let pbot = eval_to_int ebot and ptop = eval_to_int etop in
+        interval ptop (ptop - pbot + 1)
+    | Slice_Length (ebot, elength) ->
+        let pbot = eval_to_int ebot and plength = eval_to_int elength in
+        let ptop = pbot + plength - 1 in
+        interval ptop plength
+  in
+  fun slices -> slices |> List.map slice_to_positions |> List.concat
