@@ -147,3 +147,14 @@ let sxt sz = function
 
 let get_tag _t = assert false
 let set_tag _b _t = assert false
+
+let convert_to_int = function
+  | S_Int _ as s -> s
+  | S_Bool false -> S_Int Int64.zero
+  | S_Bool true -> S_Int Int64.one
+  | S_BitVector bv -> S_Int (BV.to_int64 bv)
+
+let try_extract_slice s positions =
+  match s with
+  | S_BitVector bv -> Some (S_BitVector (BV.extract_slice bv positions))
+  | _ -> None
