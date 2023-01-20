@@ -102,6 +102,7 @@ val map :
 
 val mk_sym_virtual : string -> ('scalar,'pte,'instr) t
 val mk_sym : string -> ('scalar,'pte,'instr) t
+val mk_sym_with_index : string -> int -> ('scalar, 'pte, 'instr) t
 val mk_sym_pte : string -> ('scalar,'pte,'instr) t
 val mk_sym_pte2 : string -> ('scalar,'pte,'instr) t
 val mk_sym_pa : string -> ('scalar,'pte,'instr) t
