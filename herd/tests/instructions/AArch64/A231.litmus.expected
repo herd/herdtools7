@@ -1,0 +1,10 @@
+Test A231 Required
+States 1
+x={0,1};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x={0,1})
+Observation A231 Always 1 0
+Hash=f56333b7d77cb91353fa20ce0fe5a6f1
+

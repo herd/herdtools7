@@ -1,0 +1,9 @@
+AArch64 A232
+
+(* Tests Store Post-indexed write*)
+{ 0:X1 = 3; 0:X2 = x; int x[2] ={1,2}; }
+
+P0;
+  STR WZR,[X2],#0 ;
+  STR W1,[X2], #0 ;
+forall x={3,2}
