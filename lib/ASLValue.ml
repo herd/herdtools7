@@ -1,4 +1,4 @@
-module ASLConstant = SymbConstant.Make (Int64Scalar) (PteVal.No) (ASLBase.Instr)
+module ASLConstant = SymbConstant.Make (ASLScalar) (PteVal.No) (ASLBase.Instr)
 module ASLScalar = ASLConstant.Scalar
 module ASLPteVal = ASLConstant.PteVal
 module ASLInstr = ASLConstant.Instr

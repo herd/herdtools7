@@ -21,7 +21,8 @@ module type S = sig
   type  t
   val machsize : MachSize.sz
 
-  val zero : t val one : t
+  val zero : t
+  val one : t
 
   val of_string : string -> t
   val pp : bool -> t -> string
