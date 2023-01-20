@@ -1,5 +1,4 @@
 module ASLConstant = SymbConstant.Make (ASLScalar) (PteVal.No) (ASLBase.Instr)
-module ASLScalar = ASLConstant.Scalar
 module ASLPteVal = ASLConstant.PteVal
 module ASLInstr = ASLConstant.Instr
 
@@ -16,21 +15,40 @@ module ASLArchOp = struct
   type pteval = ASLPteVal.t
   type instr = ASLInstr.t
   type cst = ASLConstant.v
-  type op1 = Set of int * cst | Get of int
+  type op1 = Set of int * cst | Get of int | BVSlice of int list | ToInt
 
   let pp_op1 hexa = function
     | Set (i, v) -> Printf.sprintf "Set(%d, %s)" i (ASLConstant.pp hexa v)
     | Get i -> Printf.sprintf "Get(%d)" i
+    | BVSlice positions ->
+        Printf.sprintf "Slice(%s)" @@ String.concat ", "
+        @@ List.map string_of_int positions
+    | ToInt -> "ToInt"
 
-  let do_op1 op = function
-    | Constant.ConcreteVector li -> (
-        match op with
-        | Get i -> List.nth_opt li i
-        | Set (i, elt) -> (
-            match list_set i elt li with
-            | Some li' -> Some (Constant.ConcreteVector li')
-            | None -> None))
-    | _ -> None
+  let do_op1 =
+    let ( let* ) = Option.bind in
+    let return_concrete s = Some (Constant.Concrete s) in
+    let as_concrete = function Constant.Concrete v -> Some v | _ -> None in
+    let as_concrete_vector = function
+      | Constant.ConcreteVector v -> Some v
+      | _ -> None
+    in
+    fun op cst ->
+      match op with
+      | Get i ->
+          let* vec = as_concrete_vector cst in
+          List.nth_opt vec i
+      | Set (i, elt) ->
+          let* vec = as_concrete_vector cst in
+          let* vec' = list_set i elt vec in
+          Some (Constant.ConcreteVector vec')
+      | ToInt ->
+          let* s = as_concrete cst in
+          return_concrete (ASLScalar.convert_to_int s)
+      | BVSlice positions ->
+          let* s = as_concrete cst in
+          let* s' = ASLScalar.try_extract_slice s positions in
+          return_concrete s'
 
   let shift_address_right _ _ = None
   let orop _ _ = None

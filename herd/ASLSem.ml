@@ -81,29 +81,21 @@ module Make (C : Sem.Config) = struct
       | V.Var _ as v ->
           Warn.fatal "Cannot convert value %s into constant" (V.pp_v v)
 
-    let mask_of_positions =
-      let to_v s = V.Val (Constant.Concrete s) in
-      let open V.Cst.Scalar in
-      let folder s pos = shift_left one pos |> logor s in
-      fun positions -> List.fold_left folder zero positions |> to_v
-
     let v_of_parsed_v =
       let open AST in
+      let open ASLScalar in
+      let concrete v = Constant.Concrete v in
+      let vector li = Constant.ConcreteVector li in
       let rec tr = function
-        | V_Int i -> V.intToV i
-        | V_Bool b -> if b then V.one else V.zero
+        | V_Int i -> S_Int (Int64.of_int i) |> concrete
+        | V_Bool b -> S_Bool b |> concrete
+        | V_BitVector bv -> S_BitVector bv |> concrete
+        | V_Tuple li -> List.map tr li |> vector
+        | V_Record li -> List.map (fun (_, v) -> tr v) li |> vector
+        | V_Exception li -> List.map (fun (_, v) -> tr v) li |> vector
         | V_Real _f -> Warn.fatal "Cannot use reals yet."
-        | V_BitVector bv -> Asllib.Bitvector.to_int bv |> V.intToV
-        | V_Tuple li ->
-            let li = List.map (fun v -> tr v |> as_constant) li in
-            V.Val (Constant.ConcreteVector li)
-        | V_Record li -> value_of_record li
-        | V_Exception li -> value_of_record li
-      and value_of_record li =
-        let li = List.map (fun (_, v) -> tr v |> as_constant) li in
-        V.Val (Constant.ConcreteVector li)
       in
-      tr
+      fun v -> V.Val (tr v)
 
     let v_to_int = function
       | V.Val (Constant.Concrete i) -> V.Cst.Scalar.to_int i
@@ -224,21 +216,20 @@ module Make (C : Sem.Config) = struct
       | _ ->
           Warn.user_error "Trying to index non-indexable value %s" (V.pp_v vec)
 
-    let get_and_shift w pos_out pos_in =
-      M.op1 (Op.ReadBit pos_in) w >>= M.op1 (Op.LeftShift pos_out)
-
     let read_from_bitvector positions bvs =
-      let positions = List.rev positions in
-      List.mapi (get_and_shift bvs) positions |> big_or
+      let arch_op1 = ASLValue.ASLArchOp.BVSlice positions in
+      M.op1 (Op.ArchOp1 arch_op1) bvs
 
     let write_to_bitvector positions w v =
-      let positions = List.rev positions in
-      let mask = mask_of_positions positions in
-      let* erased_v = M.op Op.AndNot2 v mask in
-      let shifted_bits = List.mapi (get_and_shift w) positions in
-      let* to_write = big_or shifted_bits in
-      let* res = M.op Op.Or to_write erased_v in
-      return res
+      let bv_src, bv_dst =
+        match (w, v) with
+        | ( V.Val (Constant.Concrete (ASLScalar.S_BitVector bv_src)),
+            V.Val (Constant.Concrete (ASLScalar.S_BitVector bv_dst)) ) ->
+            (bv_src, bv_dst)
+        | _ -> Warn.fatal "Not yet implemented: writing to symbolic bitvector"
+      in
+      let bv_res = Asllib.Bitvector.write_slice bv_dst bv_src positions in
+      return (V.Val (Constant.Concrete (ASLScalar.S_BitVector bv_res)))
 
     (**************************************************************************)
     (* Primitives and helpers                                                 *)
