@@ -115,6 +115,10 @@ module NativeBackend = struct
   let write_to_bitvector positions bits bv =
     let bv = as_bitvector bv and bits = as_bitvector bits in
     Bitvector.write_slice bv bits positions |> bitvector_to_value
+
+  let concat_bitvectors bvs =
+    let bvs = List.map as_bitvector bvs in
+    Bitvector.concat bvs |> bitvector_to_value
 end
 
 module NativeInterpreter = Interpreter.Make (NativeBackend)

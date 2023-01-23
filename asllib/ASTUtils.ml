@@ -32,6 +32,7 @@ let use_expr include_funcs : expr -> ISet.t =
     | E_Cond (e1, e2, e3) -> use_ (use_ (use_ acc e1) e3) e2
     | E_GetField (e, _, _ta) -> use_ acc e
     | E_Record (_ty, li, _ta) -> List.fold_left use_field acc li
+    | E_Concat es -> List.fold_left use_ acc es
   and use_field acc (_, e) = use_ acc e
   and use_slice acc = function
     | Slice_Single e -> use_ acc e

@@ -193,6 +193,15 @@ let rec infer tenv lenv = function
       match ta with
       | TA_None -> get_structure tenv.globals ty
       | TA_InferredStructure ty -> ty)
+  | E_Concat es ->
+      let get_length acc e =
+        match infer tenv lenv e with
+        | T_Bits (BitWidth_Determined l, _) -> E_Binop (PLUS, acc, l)
+        | T_Bits _ -> not_yet_implemented "bitvector length inference"
+        | t -> conflict [ ASTUtils.default_t_bits ] t
+      in
+      let length = List.fold_left get_length (expr_of_int 0) es in
+      t_bits_bitwidth length
 
 and infer_op op =
   match op with
@@ -294,6 +303,7 @@ let rec annotate_expr tenv lenv e =
         List.map one_field fields
       in
       E_Record (ty, fields, TA_InferredStructure ta)
+  | E_Concat es -> E_Concat (List.map tr es)
 
 and annotate_slices tenv lenv =
   let tr_one = function

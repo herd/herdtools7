@@ -280,6 +280,7 @@ let expr :=
   | x=IDENTIFIER; args=plist(expr);            <AST.E_Call>
   | e=expr; ~=slices;                          <AST.E_Slice>
   | e=expr; DOT; x=IDENTIFIER; ~=without_ta;   <AST.E_GetField>
+  | ~=bracketed(nclist(expr));                 <AST.E_Concat>
 
   | t=IDENTIFIER; fields=braced(clist(field_assign));
       { AST.E_Record (AST.T_Named t, fields, AST.TA_None) }
@@ -292,7 +293,6 @@ let expr :=
       | expr; IN; pattern_set;                    <>
       | UNKNOWN; COLON_COLON; type_desc;          <>
       | expr; DOT; bracketed(nclist(IDENTIFIER)); <>
-      | bracketed(nclist(expr));                  <>
     )
 
 (* ------------------------------------------------------------------------

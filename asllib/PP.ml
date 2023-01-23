@@ -62,6 +62,8 @@ let rec pp_expr f = function
       let pp_one f (x, e) = fprintf f "@[<h>%s =@ %a@]" x pp_expr e in
       fprintf f "@[<hv>%a {@;<1 2>%a@,}@]" pp_type_desc ty
         (pp_comma_list pp_one) li
+  | E_Concat es ->
+      fprintf f "@[<hv 2>[%a]@]" pp_expr_list es
 
 and pp_expr_list f = pp_comma_list pp_expr f
 

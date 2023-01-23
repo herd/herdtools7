@@ -1,4 +1,4 @@
-(** BitVector type *)
+(* BitVector type *)
 
 (*
    Notations:
@@ -9,6 +9,12 @@
       - m = length mod 8 : the number of bits of the trailing character.
 
  *)
+
+(* --------------------------------------------------------------------------
+
+                              Main type definition
+
+   --------------------------------------------------------------------------*)
 
 type t = int * string
 (** A bitvector is given by its length in bits and its containing data.
@@ -23,21 +29,53 @@ type t = int * string
 
 *)
 
+(* Accessors. *)
 let length = fst
 let data = snd
+
+(* --------------------------------------------------------------------------
+
+                                    Helpers
+
+   --------------------------------------------------------------------------*)
+
+(* Constant. *)
 let code_0 = Char.code '0'
+let char_0 = Char.chr 0
+
+(* Mask for the last character, given by [length mod 8]. *)
 let last_char_mask m = (1 lsl m) - 1
+
+(* [read_bit_raw i c] reads bit at index [i] in character [c]. *)
 let read_bit_raw i c = (Char.code c lsr i) land 1
+
+(* [read_bit i c] is the printable character representing bit [i] in
+   character [c]. *)
 let read_bit i c = Char.chr (read_bit_raw i c + code_0)
+
+(* [set_bit_raw i dst b] sets the [i]-th bit of [dst] to [b]. *)
 let set_bit_raw i dst b = dst land lnot (1 lsl i) lor (b lsl i)
 
+(* [set_bit src_pos dst_pos src dst] sets the [dst_pos]-th bit of [pos] to the [src_pos]-th bit of [src]. *)
 let set_bit src_pos dst_pos src dst =
   read_bit_raw src_pos src |> set_bit_raw dst_pos dst |> Char.chr
 
-let pp_data f data =
+(* Debug printer. *)
+let _pp_data f (length, data) =
   let open Format in
-  pp_print_string f "0x";
+  pp_print_int f length;
+  pp_print_char f 'x';
   String.iter (fun c -> fprintf f "%x" @@ Char.code c) data
+
+let create_data_bytes length =
+  let n = length / 8 and m = length mod 8 in
+  Bytes.create (if m = 0 then n else n + 1)
+
+(* --------------------------------------------------------------------------
+
+                              Printers and conversions
+
+   --------------------------------------------------------------------------*)
 
 let pp_t =
   let open Format in
@@ -134,7 +172,7 @@ let of_string s =
 let of_int s =
   let length = Sys.int_size - 1 in
   let n = length / 8 and m = length mod 8 in
-  let result = Bytes.create (if m = 0 then n else n + 1) in
+  let result = Bytes.make (if m = 0 then n else n + 1) char_0 in
   for i = 0 to n - 1 do
     let c = (s lsr (8 * i)) land 255 in
     Bytes.set result i (Char.chr c)
@@ -146,13 +184,21 @@ let of_int s =
   (length, Bytes.unsafe_to_string result)
 
 let of_int64 s =
-  let result = Bytes.create 8 in
+  let result = create_data_bytes 64 in
   for i = 0 to 7 do
     Int64.shift_right_logical s (8 * i)
     |> Int64.logand 255L |> Int64.to_int |> Char.chr |> Bytes.set result i
   done;
   (64, Bytes.unsafe_to_string result)
 
+(* --------------------------------------------------------------------------
+
+                                    Operations
+
+   --------------------------------------------------------------------------*)
+
+(** [remask bv] ensures that the extra bits on the trailing character are '0'.
+    It edits in place the string, so to use with prudence. *)
 let remask (length, data) =
   let n = length / 8 and m = length mod 8 in
   if m == 0 then (length, data)
@@ -168,10 +214,11 @@ let remask (length, data) =
 let ensure_equal_length length1 length2 =
   if length1 = length2 then length1 else raise (Invalid_argument "bitwise_op")
 
+(* [bitwise_op Int.logand bv1 bv2] computes the bitwise and on bv1 and bv2. *)
 let bitwise_op int_op (length1, data1) (length2, data2) =
   let length = ensure_equal_length length1 length2 in
   let n = length / 8 and m = length mod 8 in
-  let result = Bytes.create length in
+  let result = create_data_bytes length in
   for i = 0 to n - 1 do
     let d1 = String.get data1 i |> Char.code
     and d2 = String.get data2 i |> Char.code in
@@ -187,23 +234,6 @@ let bitwise_op int_op (length1, data1) (length2, data2) =
   else ();
   (length, Bytes.unsafe_to_string result)
 
-let folded_char_op folder default (length1, data1) (length2, data2) =
-  let length = ensure_equal_length length1 length2 in
-  let n = length / 8 and m = length mod 8 in
-  let state = ref default in
-  for i = 0 to n - 1 do
-    let d1 = String.get data1 i |> Char.code
-    and d2 = String.get data2 i |> Char.code in
-    state := folder !state d1 d2
-  done;
-  if m <> 0 then
-    let mask = last_char_mask m in
-    let d1 = String.get data1 n |> Char.code |> ( land ) mask
-    and d2 = String.get data2 n |> Char.code |> ( land ) mask in
-    state := folder !state d1 d2
-  else ();
-  !state
-
 let lognot (length, data) =
   let bnot c = c |> Char.code |> lnot |> ( land ) 0xff |> Char.chr in
   let ndata = String.map bnot data in
@@ -213,35 +243,101 @@ let logand = bitwise_op ( land )
 let logor = bitwise_op ( lor )
 let logxor bv1 bv2 = bitwise_op ( lxor ) bv1 bv2 |> remask
 
-let equal =
-  let folder prev d1 d2 = prev && d1 = d2 in
-  fun (length1, data1) (length2, data2) ->
-    length1 = length2
-    && folded_char_op folder true (length1, data1) (length2, data2)
+let equal bv1 bv2 =
+  length bv1 == length bv2
+  && (* let bv1 = remask bv1 and bv2 = remask bv2 in *)
+  String.equal (data bv1) (data bv2)
 
 let compare bv1 bv2 =
   match Int.compare (length bv1) (length bv2) with
   | 0 ->
-      let bv1 = remask bv1 and bv2 = remask bv2 in
+      (* let bv1 = remask bv1 and bv2 = remask bv2 in *)
       String.compare (data bv1) (data bv2)
   | i -> i
 
-let extract_slice (_length, data) positions =
-  let buf = Buffer.create (List.length positions) in
-  let read_and_add pos =
-    String.get data (pos / 8) |> read_bit (pos mod 8) |> Buffer.add_char buf
-  in
-  let () = List.iter read_and_add positions in
-  let printed = Buffer.contents buf in
-  of_string printed
+(* --------------------------------------------------------------------------
 
-let write_slice (length_dst, data_dst) (_length_src, data_src) positions =
-  let result = Bytes.of_string data_dst in
-  let read_and_edit pos_src pos_dst =
-    let c_src = String.get data_src (pos_src / 8)
-    and c_dst = Bytes.get result (pos_dst / 8) |> Char.code in
-    let new_char_dst = set_bit (pos_src mod 8) (pos_dst mod 8) c_src c_dst in
-    Bytes.set result (pos_dst / 8) new_char_dst
+                                    Slices
+
+   --------------------------------------------------------------------------*)
+
+(* Write into dst at position pos_dst the bit of src at position pos_src. *)
+let copy_bit dst src pos_src pos_dst =
+  let c_src = String.get src (pos_src / 8)
+  and c_dst = Bytes.get dst (pos_dst / 8) |> Char.code in
+  let new_char_dst = set_bit (pos_src mod 8) (pos_dst mod 8) c_src c_dst in
+  Bytes.set dst (pos_dst / 8) new_char_dst
+
+let extract_slice (_length_src, data_src) positions =
+  let length = List.length positions in
+  let result = create_data_bytes length in
+  (* Same effect than [List.rev positions], as we build those from the end. *)
+  let copy_bit_here i pos = copy_bit result data_src pos (length - 1 - i) in
+  let () = List.iteri copy_bit_here positions in
+  remask (length, Bytes.unsafe_to_string result)
+
+let write_slice (length_dst, data_dst) (length_src, data_src) positions =
+  let () =
+    if List.length positions != length_src then
+      raise (Invalid_argument "Bitvector.write_slice")
   in
-  let () = List.iteri read_and_edit positions in
-  (length_dst, Bytes.unsafe_to_string result)
+  let result = Bytes.of_string data_dst in
+  (* Same effect than [List.rev positions], as we build those from the end. *)
+  let copy_bit_here i pos = copy_bit result data_src (length_src - 1 - i) pos in
+  let () = List.iteri copy_bit_here positions in
+  remask (length_dst, Bytes.unsafe_to_string result)
+
+let read_char_offset offset =
+  let next_mask = last_char_mask offset in
+  let offset' = 8 - offset in
+  fun prec_c next_c ->
+    let prec_bits = (Char.code prec_c lsr offset') land 0xff
+    and next_bits = (Char.code next_c land next_mask) lsl offset in
+    next_bits lor prec_bits |> Char.chr
+
+let copy_into dst (length_src, data_src) offset =
+  let length_dst = offset + length_src in
+  let n_src = length_src / 8 and m_src = length_src mod 8 in
+  let n_dst = length_dst / 8 and m_dst = length_dst mod 8 in
+  let n_off = offset / 8 and m_off = offset mod 8 in
+  let () =
+    if m_off = 0 then
+      Bytes.blit_string data_src 0 dst n_off (String.length data_src)
+    else
+      (* We have an offset of m_off on every char.
+
+         First handle the last written char, by hand because no offset has to
+         be applied to the read character. *)
+      let prec_c = Bytes.get dst n_off and next_c = String.get data_src 0 in
+      let prec_bits = Char.code prec_c land last_char_mask m_off
+      and next_bits = (Char.code next_c lsl m_off) land 0xff in
+      next_bits lor prec_bits |> Char.chr |> Bytes.set dst n_off;
+
+      (* Next body *)
+      for i = n_off + 1 to n_dst - 1 do
+        (* 0 already handled, n2 - 1 handled after *)
+        let i_src = i - n_off in
+        let prec_c = String.get data_src i_src in
+        let next_c = String.get data_src (i_src + 1) in
+        Bytes.set dst i @@ read_char_offset m_off prec_c next_c
+      done;
+
+      (* Last written char *)
+      if m_dst != 0 && n_dst > n_off then
+        if m_dst > m_src then
+          let prec_c = String.get data_src (n_src - 1)
+          and next_c =
+            if m_src != 0 then String.get data_src n_src else char_0
+          in
+          Bytes.set dst n_dst @@ read_char_offset m_off prec_c next_c
+        else
+          let prec_c = String.get data_src n_src and next_c = char_0 in
+          Bytes.set dst n_dst @@ read_char_offset m_off prec_c next_c
+  in
+  length_dst
+
+let concat bvs =
+  let length = List.fold_left (fun acc bv -> acc + length bv) 0 bvs in
+  let result = create_data_bytes length in
+  let _ = List.fold_right (copy_into result) bvs 0 in
+  (length, Bytes.unsafe_to_string result)
