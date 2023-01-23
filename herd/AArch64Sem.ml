@@ -786,7 +786,6 @@ module Make
         else
           m a
 
-
 (* Write *)
       let check_mixed_write_mem sz an anexp ac a v ii =
         if mixed then begin
@@ -814,6 +813,14 @@ module Make
       let write_mem_release sz = do_write_mem sz AArch64.L
       let write_mem_amo sz = do_write_mem sz AArch64.X
       let write_mem_amo_release sz = do_write_mem sz AArch64.XL
+
+      let write_mem_postindexed a_virt rA k sz an anexp ac a v ii =
+        begin
+          M.para_input_right
+            (M.add a_virt (V.intToV k) >>= fun b -> write_reg rA b ii)
+            (do_write_mem sz an anexp ac a v ii)
+        end >>! ()
+
 
 (* Write atomic *)
       let write_mem_atomic sz an anexp ac a v resa ii =
@@ -1263,15 +1270,19 @@ module Make
           (get_ea rd kr s ii)  (M.unitT V.zero) ii
 
       (* Store - post-indexed write *)
-      and str_post var r1 rd k ii =
-        let open AArch64Base in
-        let sz = tr_variant var in
-        (read_reg_ord r1 ii >>| read_reg_ord rd ii)
-          >>= fun (v1,a) ->
-            (write_mem sz aexp Access.VIR a v1 ii)
-            >>| (M.add a (V.intToV k)
-                >>= fun v -> write_reg rd v ii)
-        >>= fun _ -> B.nextT
+      and str_post sz rs rd k ii =
+        M.delay_kont "str_post"
+          (read_reg_ord rd ii)
+          (fun a_virt ma ->
+            do_str rd
+              (fun ac a _ ii ->
+                M.add a_virt (V.intToV k) >>= fun b -> write_reg rd b ii
+        >>|
+                M.data_input_next
+                  (read_reg_data sz rs ii)
+                  (fun v -> do_write_mem sz AArch64.N aexp ac a v ii))
+              sz AArch64.N
+              ma (M.unitT V.zero) ii)
 
       and stp =
         let (>>>) = M.data_input_next in
@@ -1934,8 +1945,8 @@ module Make
         | I_STR(var,rs,rd,kr,os) ->
             str (tr_variant var) rs rd kr os ii
 
-        | I_STR_P(sz, rs, rd, k) ->
-            str_post sz rs rd k ii
+        | I_STR_P(var, rs, rd, k) ->
+            str_post (tr_variant var) rs rd k ii
 
         | I_STRBH(bh,rs,rd,kr, s) ->
             str (bh_to_sz bh) rs rd kr s ii

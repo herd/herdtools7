@@ -244,7 +244,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       match i with
       | I_B _| I_BR _
       | I_BC _ | I_CBZ _ | I_CBNZ _
-      | I_STP _ | I_STR _ | I_STR_P _ | I_STLR _
+      | I_STP _ | I_STR _ | I_STLR _
       | I_STRBH _ | I_STLRBH _
       | I_STOP _ | I_STOPBH _
       | I_FENCE _
@@ -267,6 +267,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_RBIT (_,r,_)
       | I_CSEL (_,r,_,_,_,_)
       | I_MRS (r,_)
+      | I_STR_P (_,_,r,_)
         -> [r]
       | I_MSR (sr,_)
         -> [(SysReg sr)]
