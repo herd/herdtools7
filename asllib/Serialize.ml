@@ -95,6 +95,9 @@ let rec pp_expr f = function
       bprintf f "E_Record (%a, %a, None)" pp_type_desc ty
         (pp_pair_list pp_string pp_expr)
         li
+  | E_Concat es ->
+      addb f "E_Concat ";
+      pp_list pp_expr f es
 
 and pp_expr_list f = pp_list pp_expr f
 and pp_slice_list f = pp_list pp_slice f

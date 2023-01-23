@@ -231,6 +231,15 @@ module Make (C : Sem.Config) = struct
       let bv_res = Asllib.Bitvector.write_slice bv_dst bv_src positions in
       return (V.Val (Constant.Concrete (ASLScalar.S_BitVector bv_res)))
 
+    let concat_bitvectors bvs =
+      let as_concrete_bv = function
+        | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)) -> bv
+        | _ ->
+            Warn.fatal "Not yet implemented: concatenating symbolic bitvectors."
+      in
+      let bv_res = Asllib.Bitvector.concat (List.map as_concrete_bv bvs) in
+      return (V.Val (Constant.Concrete (ASLScalar.S_BitVector bv_res)))
+
     (**************************************************************************)
     (* Primitives and helpers                                                 *)
     (**************************************************************************)
@@ -372,6 +381,7 @@ module Make (C : Sem.Config) = struct
         let set_i = set_i
         let read_from_bitvector = read_from_bitvector
         let write_to_bitvector = write_to_bitvector
+        let concat_bitvectors = concat_bitvectors
       end in
       let module ASLInterpreter = Asllib.Interpreter.Make (ASLBackend) in
       let exec () =

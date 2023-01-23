@@ -94,4 +94,7 @@ module type S = sig
 
   val write_to_bitvector : int list -> value -> value -> value m
   (** [write_to_bitvector positions w v] writes the bits of [w] into [v] at the specified positions. *)
+
+  val concat_bitvectors : value list -> value m
+  (** Similar to Bitvector.concat, but monadic style obviously. *)
 end

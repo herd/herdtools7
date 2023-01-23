@@ -71,6 +71,7 @@ type expr =
   | E_Cond of expr * expr * expr
   | E_GetField of expr * identifier * type_annot
   | E_Record of type_desc * (identifier * expr) list * type_annot
+  | E_Concat of expr list
 
 and slice =
   | Slice_Single of expr

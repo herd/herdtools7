@@ -261,6 +261,9 @@ module Make (B : Backend.S) = struct
                 eval_expr env scope is_data (E_Slice (e, slices))
             | None -> fatal @@ Error.BadField (x, ty))
         | ty -> fatal @@ Error.BadField (x, ty))
+    | E_Concat es ->
+        let* values = prod_map (eval_expr env scope is_data) es in
+        B.concat_bitvectors values
 
   and eval_slices (genv, _lenv) =
     let si_env s =
