@@ -1,0 +1,10 @@
+Test A232 Required
+States 1
+x={3,2};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x={3,2})
+Observation A232 Always 1 0
+Hash=2aa35c0ee79ddc793486c00dfbccac10
+

@@ -786,7 +786,6 @@ module Make
         else
           m a
 
-
 (* Write *)
       let check_mixed_write_mem sz an anexp ac a v ii =
         if mixed then begin
@@ -1261,6 +1260,21 @@ module Make
               (fun v -> do_write_mem sz AArch64.N aexp ac a v ii))
           sz AArch64.N
           (get_ea rd kr s ii)  (M.unitT V.zero) ii
+
+      (* Store - post-indexed write *)
+      and str_post sz rs rd k ii =
+        M.delay_kont "str_post"
+          (read_reg_ord rd ii)
+          (fun a_virt ma ->
+            do_str rd
+              (fun ac a _ ii ->
+                M.add a_virt (V.intToV k) >>= fun b -> write_reg rd b ii
+        >>|
+                M.data_input_next
+                  (read_reg_data sz rs ii)
+                  (fun v -> do_write_mem sz AArch64.N aexp ac a v ii))
+              sz AArch64.N
+              ma (M.unitT V.zero) ii)
 
       and stp =
         let (>>>) = M.data_input_next in
@@ -1922,6 +1936,9 @@ module Make
 
         | I_STR(var,rs,rd,kr,os) ->
             str (tr_variant var) rs rd kr os ii
+
+        | I_STR_P(var, rs, rd, k) ->
+            str_post (tr_variant var) rs rd k ii
 
         | I_STRBH(bh,rs,rd,kr, s) ->
             str (bh_to_sz bh) rs rd kr s ii

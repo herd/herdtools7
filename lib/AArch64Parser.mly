@@ -477,9 +477,12 @@ instr:
   { I_LDARBH (B,AQ,$2,$5) }
 | LDAPRH wreg COMMA LBRK cxreg RBRK
   { I_LDARBH (H,AQ,$2,$5) }
-| STR reg COMMA LBRK cxreg kr0 RBRK
+| STR reg COMMA LBRK cxreg kr0 RBRK k0
   { let (v,r)   = $2 in
-    let (kr,os) = $6 in I_STR (v,r,$5,kr,os) }
+    match $6, $8 with
+    (* post-indexed writes do not have shifters *)
+    | (_,S_NOEXT), Some s -> I_STR_P (v,r,$5,s)
+    | (kr,os),_ -> I_STR (v,r,$5,kr,os) }
 | STRB wreg COMMA LBRK cxreg kr0 RBRK
   { let (kr,os) = $6 in I_STRBH (B,$2,$5,kr,os) }
 | STRH wreg COMMA LBRK cxreg kr0 RBRK

@@ -1,0 +1,11 @@
+AArch64 A230
+
+(* Tests Store Post-indexed write*)
+{ 0:X1 = 0; 0:X2 = x; int64_t x[2] ={1,2}; }
+
+P0;
+  STR X1, [X2], #8;
+  STR X1, [X2];
+  ADD X2, X2, #-8;
+
+forall (x[0] = 0 /\ x[1] = 0 /\ 0:X2=x)

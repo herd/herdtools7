@@ -192,6 +192,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDR (v,_,_,_,_) | I_LDP (_,v,_,_,_,_) | I_LDXP (v,_,_,_,_)
       | I_LDUR (v,_,_,_)  | I_LDR_P(v,_,_,_)
       | I_STR (v,_,_,_,_) | I_STLR (v,_,_) | I_STXR (v,_,_,_,_)
+      | I_STR_P (v,_,_,_)
       | I_STP (_,v,_,_,_,_) | I_STXP (v,_,_,_,_,_)
       | I_CAS (v,_,_,_,_) | I_SWP (v,_,_,_,_)
       | I_LDOP (_,v,_,_,_,_) | I_STOP (_,v,_,_,_) ->
@@ -266,6 +267,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_RBIT (_,r,_)
       | I_CSEL (_,r,_,_,_,_)
       | I_MRS (r,_)
+      | I_STR_P (_,_,r,_)
         -> [r]
       | I_MSR (sr,_)
         -> [(SysReg sr)]
@@ -316,6 +318,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MOV_S _|I_MOVI_V _|I_MOVI_S _
       | I_EOR_SIMD _|I_ADD_SIMD _|I_ADD_SIMD_S _
       | I_LDR_P _|I_LDP _|I_LDPSW _|I_STP _
+      | I_STR_P _
       | I_STR _|I_STLR _|I_ALIGND _|I_ALIGNU _
       | I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
       | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _

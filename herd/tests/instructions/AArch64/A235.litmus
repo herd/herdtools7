@@ -1,0 +1,11 @@
+AArch64 C
+Variant=morello
+
+{
+int x=1;
+0:X1=x;
+}
+
+  P0           ;
+  STR WZR,[C1] ;
+forall [x]=0

@@ -1,0 +1,10 @@
+AArch64 A231
+
+(* Tests Store Post-indexed write*)
+{ 0:X1 = 0; 0:X2 = x; int x[2] ={1,2}; }
+
+P0;
+  STR W1,[X2],#4 ;
+  ADD W1,W1,#1   ;
+  STR W1,[X2],#4 ;
+forall x={0,1}
