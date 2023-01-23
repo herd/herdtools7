@@ -223,6 +223,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_TBNZ(_,_,_,_) | I_TBZ (_,_,_,_) | I_MOVZ (_,_,_,_) | I_MOVK(_,_,_,_)
       | I_MOV (_, _, _)|I_SXTW (_, _)|I_OP3 (_, _, _, _, _, _)
       | I_ADR (_, _)|I_RBIT (_, _, _)|I_FENCE _
+      | I_SBFM (_,_,_,_,_) | I_UBFM (_,_,_,_,_)
       | I_CSEL (_, _, _, _, _, _)|I_IC (_, _)|I_DC (_, _)|I_MRS (_, _)|I_MSR (_, _)
       | I_STG _ | I_STZG _ | I_LDG _
       | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _
@@ -245,6 +246,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_B _| I_BR _
       | I_BC _ | I_CBZ _ | I_CBNZ _
       | I_STP _ | I_STR _ | I_STLR _
+      | I_UBFM _ | I_SBFM _
       | I_STRBH _ | I_STLRBH _
       | I_STOP _ | I_STOPBH _
       | I_FENCE _
@@ -303,6 +305,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDAR (_, (AA|AQ), _, _)|I_LDARBH (_, (AA|AQ), _, _)
       | I_NOP|I_B _|I_BR _|I_BC _|I_CBZ _|I_CBNZ _
       | I_TBNZ _|I_TBZ _|I_BL _|I_BLR _|I_RET _|I_ERET
+      | I_UBFM _ | I_SBFM _
       | I_LDR _|I_LDUR _|I_LD1 _
       | I_LD1M _|I_LD1R _|I_LD2 _|I_LD2M _
       | I_LD2R _|I_LD3 _|I_LD3M _|I_LD3R _

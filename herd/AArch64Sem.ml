@@ -1687,6 +1687,36 @@ module Make
         end
         >>= fun v -> write_reg_dest rd v ii
 
+      let xbfm signed v rd rn kr ks ii =
+        let open AArch64Base in
+        let sz = tr_variant v in
+        let regsize = match v with
+        | V32 -> 32
+        | V64 -> 64
+        | _ -> assert false in
+        let hex_mask = begin
+          let f = if ks >= kr then
+            (fun v -> if v < kr || v > ks then "0" else "1")
+            else
+            (fun v -> if v > ks then "0" else "1") in
+          let bitmask = List.rev (List.init regsize f) in
+          let dec_mask = Int64.of_string
+            (Printf.sprintf "0b%s" (String.concat "" bitmask)) in
+          Printf.sprintf "0x%Lx" dec_mask
+        end in
+        let shift_sz = if ks >= kr then kr else regsize-kr in
+        let shift_op = if ks >= kr then Op.ShiftRight else Op.ShiftLeft in
+        let sxt v = if signed
+          then sxtw_op v
+          else M.unitT v in
+        read_reg_data sz rn ii
+        >>= M.op1 (Op.AndK hex_mask)
+        >>= sxt
+        >>= fun v -> M.op shift_op v (V.intToV shift_sz)
+        >>= sxt
+        >>= fun v -> write_reg rd v ii
+        >>= B.next1T
+
       let csel_op op v =
         let open AArch64Base in
         match op with
@@ -2417,6 +2447,9 @@ module Make
                 (write_reg r1 v2 ii)
                 (csel_op op v3 >>= mask (fun v ->  write_reg r1 v ii)))
 
+        | I_SBFM (v,rd,rn,kr,ks) -> xbfm true v rd rn kr ks ii
+        | I_UBFM (v,rd,rn,kr,ks) -> xbfm false v rd rn kr ks ii
+
         (* Swap *)
         | I_SWP (v,rmw,r1,r2,r3) -> swp (tr_variant v) rmw r1 r2 r3 ii
         | I_SWPBH (v,rmw,r1,r2,r3) -> swp (bh_to_sz v) rmw r1 r2 r3 ii
@@ -2491,7 +2524,7 @@ module Make
 (*  Cannot handle *)
         | (I_RBIT _|I_LDP _|I_STP _
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
-        | I_LD1M _|I_ST1M _) as i ->
+        | I_LD1M _|I_ST1M _) as i->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
 
 (* Compute a safe set of instructions that can

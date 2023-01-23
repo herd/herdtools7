@@ -877,6 +877,8 @@ type 'k kinstruction =
   | I_MOVZ of variant * reg * 'k * 'k s
   | I_MOVK of variant * reg * 'k * 'k s
   | I_SXTW of reg * reg
+  | I_SBFM of variant * reg * reg * 'k * 'k
+  | I_UBFM of variant * reg * reg * 'k * 'k
   | I_OP3 of variant * op * reg * reg * 'k kr * 'k s
   | I_ADR of reg * lbl
   | I_RBIT of variant * reg * reg
@@ -1371,6 +1373,10 @@ let do_pp_instruction m =
         (pp_barrel_shift "," s (m.pp_k))
   | I_SXTW (r1,r2) ->
       sprintf "SXTW %s,%s" (pp_xreg r1) (pp_wreg r2)
+  | I_UBFM (_,r1,r2,k1,k2) ->
+      sprintf "UBFM %s,%s,%s,%s" (pp_reg r1) (pp_reg r2) (m.pp_k k1) (m.pp_k k2)
+  | I_SBFM (_,r1,r2,k1,k2) ->
+      sprintf "SBFM %s,%s,%s,%s" (pp_reg r1) (pp_reg r2) (m.pp_k k1) (m.pp_k k2)
   | I_OP3 (v,SUBS,ZR,r,K k, S_NOEXT) ->
       pp_ri "CMP" v r k
   | I_OP3 (v,SUBS,ZR,r2,RV (v3,r3), s) when v=v3->
@@ -1476,6 +1482,7 @@ let fold_regs (f_regs,f_sregs) =
     -> fold_reg r c
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2) | I_LDRS (_,_,r1,r2)
+  | I_SBFM (_,r1,r2,_,_) | I_UBFM (_,r1,r2,_,_)
   | I_STOP (_,_,_,r1,r2) | I_STOPBH (_,_,_,r1,r2)
   | I_RBIT (_,r1,r2) | I_LDR_P (_, r1, r2, _) | I_LDUR (_, r1, r2, _)
   | I_LDG (r1,r2,_) | I_STZG (r1,r2,_) | I_STG (r1,r2,_)
@@ -1747,6 +1754,10 @@ let map_regs f_reg f_symb =
       I_MOVK (v,map_reg r,k,s)
   | I_SXTW (r1,r2) ->
       I_SXTW (map_reg r1,map_reg r2)
+  | I_SBFM (v,r1,r2,k1,k2) ->
+      I_SBFM (v,map_reg r1, map_reg r2, k1, k2)
+  | I_UBFM (v,r1,r2,k1,k2) ->
+      I_UBFM (v,map_reg r1, map_reg r2, k1, k2)
   | I_OP3 (v,op,r1,r2,kr,os) ->
       I_OP3 (v,op,map_reg r1,map_reg r2,map_kr kr,os)
   | I_ADR (r,lbl) ->
@@ -1831,6 +1842,8 @@ let get_next =
   | I_MOVZ _
   | I_MOVK _
   | I_SXTW _
+  | I_SBFM _
+  | I_UBFM _
   | I_OP3 _
   | I_FENCE _
   | I_CSEL _
@@ -1949,6 +1962,10 @@ module PseudoI = struct
             I_LDRBH (v,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_STRBH (v,r1,r2,kr,s) ->
             I_STRBH (v,r1,r2,kr_tr kr,ap_shift k_tr s)
+        | I_SBFM (v,r1,r2,k1,k2) ->
+            I_SBFM (v,r1,r2,k_tr k1, k_tr k2)
+        | I_UBFM (v,r1,r2,k1,k2) ->
+            I_UBFM (v,r1,r2,k_tr k1, k_tr k2)
         | I_TBNZ (v,r1,k,lbl) -> I_TBNZ (v,r1,k_tr k, lbl)
         | I_TBZ (v,r1,k,lbl) -> I_TBZ (v,r1,k_tr k, lbl)
         | I_MOV (v,r,k) -> I_MOV (v,r,kr_tr k)
@@ -2059,6 +2076,8 @@ module PseudoI = struct
         | I_MOVZ _
         | I_MOVK _
         | I_SXTW _
+        | I_SBFM _
+        | I_UBFM _
         | I_OP3 _
         | I_FENCE _
         | I_CSEL _

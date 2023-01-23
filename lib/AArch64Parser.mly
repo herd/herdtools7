@@ -47,6 +47,8 @@ let check_op3 op kr =
 %token SEMI COMMA PIPE COLON DOT LCRL RCRL LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
 %token TOK_SXTW
 
+%token SXTW SBFM UBFM
+
 /* Inline Barrel Shift Operands */
 %token TOK_LSL TOK_LSR TOK_ASR TOK_MSL TOK_UXTW
 
@@ -1032,6 +1034,16 @@ instr:
   { I_OP3 (V64, LSL, $2, $4, $6, S_NOEXT) }
 | TOK_LSR xreg COMMA xreg COMMA kr
   { I_OP3 (V64, LSR, $2, $4, $6, S_NOEXT) }
+| SXTW xreg COMMA wreg
+  { I_SXTW ($2,$4) }
+| SBFM xreg COMMA xreg COMMA k COMMA k
+  { I_SBFM (V64,$2,$4,$6,$8) }
+| SBFM wreg COMMA wreg COMMA k COMMA k
+  { I_SBFM (V32,$2,$4,$6,$8) }
+| UBFM xreg COMMA xreg COMMA k COMMA k
+  { I_UBFM (V64,$2,$4,$6,$8) }
+| UBFM wreg COMMA wreg COMMA k COMMA k
+  { I_UBFM (V32,$2,$4,$6,$8) }
 | OP xreg COMMA xreg COMMA kxr
   { check_op3 $1 $6 ; I_OP3 (V64,$1,$2,$4,$6, S_NOEXT) }
 | OP xreg COMMA xreg COMMA kr COMMA shift
