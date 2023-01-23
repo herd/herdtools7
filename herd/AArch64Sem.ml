@@ -814,14 +814,6 @@ module Make
       let write_mem_amo sz = do_write_mem sz AArch64.X
       let write_mem_amo_release sz = do_write_mem sz AArch64.XL
 
-      let write_mem_postindexed a_virt rA k sz an anexp ac a v ii =
-        begin
-          M.para_input_right
-            (M.add a_virt (V.intToV k) >>= fun b -> write_reg rA b ii)
-            (do_write_mem sz an anexp ac a v ii)
-        end >>! ()
-
-
 (* Write atomic *)
       let write_mem_atomic sz an anexp ac a v resa ii =
         check_morello_for_write
