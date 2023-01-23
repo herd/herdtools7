@@ -267,6 +267,12 @@ module
     | (Val cst,Val (PteVal _))
         when Cst.eq cst Cst.zero ->
           Val (Cst.one)
+    | (Val (Symbolic (Virtual ({offset=o;_} as sym))),Val (Concrete d)) ->
+        let d = Cst.Scalar.to_int d in
+        Val (Symbolic (Virtual {sym with offset=o-d}))
+    | (Val (Symbolic (Physical (s,o))),Val (Concrete d)) ->
+        let d = Cst.Scalar.to_int d in
+        Val (Symbolic (Physical (s,o-d)))
     | _,_
       ->
         binop Op.Sub Cst.Scalar.sub v1 v2
