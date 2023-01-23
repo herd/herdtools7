@@ -204,7 +204,7 @@ let plist(x) == pared(clist(x))
 
 (* A parenthesised comma-separated list with at least 2 elements. *)
 let plist2(x) == pared(
-  ~=x; COMMA; ~=separated_nonempty_list(COMMA, x); <List.cons>
+  ~=x; COMMA; li=separated_nonempty_list(COMMA, x); { x :: li }
 )
 
 (* ------------------------------------------------------------------------
@@ -281,6 +281,7 @@ let expr :=
   | e=expr; ~=slices;                          <AST.E_Slice>
   | e=expr; DOT; x=IDENTIFIER; ~=without_ta;   <AST.E_GetField>
   | ~=bracketed(nclist(expr));                 <AST.E_Concat>
+  | ~=plist2(expr);                            <AST.E_Tuple>
 
   | t=IDENTIFIER; fields=braced(clist(field_assign));
       { AST.E_Record (AST.T_Named t, fields, AST.TA_None) }
@@ -289,7 +290,6 @@ let expr :=
   | terminated(expr, type_assertion)
 
   | unimplemented_expr(
-      | plist2(expr);                             <>
       | expr; IN; pattern_set;                    <>
       | UNKNOWN; COLON_COLON; type_desc;          <>
       | expr; DOT; bracketed(nclist(IDENTIFIER)); <>
@@ -382,14 +382,13 @@ let type_assertion ==
 
 (* Left-hand-side expressions and helpers *)
 let le_var == ~=IDENTIFIER ; <AST.LE_Var>
-let lexpr_ignore == { AST.LE_Var "-" }
+let lexpr_ignore == { AST.LE_Ignore }
 let unimplemented_lexpr(x) == x ; lexpr_ignore
 
 let lexpr ==
   | MINUS; lexpr_ignore
   | lexpr_atom
-
-  | unimplemented_lexpr( pared(nclist(lexpr)) )
+  | ~=pared(nclist(lexpr)); <AST.LE_TupleUnpack>
 
 let lexpr_atom :=
   | le_var
@@ -407,14 +406,9 @@ let lexpr_atom :=
 
 let decl_item ==
   terminated(
-    | IDENTIFIER;               <>
-    | pared(nclist(decl_item)); <>
-    | MINUS;                    <>
-  , ty_opt)
-let unimplemented_decl_item ==
-  terminated(
-    | pared(nclist(decl_item)); <>
-    | MINUS;                    <>
+    | le_var
+    | MINUS; lexpr_ignore
+    | ~=pared(nclist(decl_item)); <AST.LE_TupleUnpack>
   , ty_opt)
 
 (* ------------------------------------------------------------------------- *)
@@ -448,13 +442,12 @@ let stmt ==
   )
   | terminated_by(SEMI_COLON,
     | PASS; pass
-    | RETURN;                               { AST.S_Return [   ] }
-    | RETURN; e=expr;                       { AST.S_Return [ e ] }
-    | x=IDENTIFIER; args=plist(expr);       < AST.S_Call         >
-    | ASSERT; e=expr;                       < AST.S_Assert       >
+    | RETURN; ~=ioption(expr);              < AST.S_Return >
+    | x=IDENTIFIER; args=plist(expr);       < AST.S_Call   >
+    | ASSERT; e=expr;                       < AST.S_Assert >
 
     | assign(lexpr, expr)
-    | assignment_keyword; assign(~=le_var; ty_opt; <>, expr)
+    | assignment_keyword; assign(decl_item, expr)
 
     | unimplemented_stmt(
       | THROW; ioption(expr);                                               <>
@@ -462,7 +455,6 @@ let stmt ==
       (* We have to manually expend the list otherwise we have a shift/reduce conflict. *)
       | VAR; IDENTIFIER;                            as_ty;                  <>
       | VAR; IDENTIFIER; COMMA; nclist(IDENTIFIER); as_ty;                  <>
-      | assignment_keyword; unimplemented_decl_item; EQ; expr;              <>
       | PRAGMA; IDENTIFIER; clist(expr);                                    <>
     )
   )

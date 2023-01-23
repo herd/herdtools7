@@ -33,6 +33,7 @@ let use_expr include_funcs : expr -> ISet.t =
     | E_GetField (e, _, _ta) -> use_ acc e
     | E_Record (_ty, li, _ta) -> List.fold_left use_field acc li
     | E_Concat es -> List.fold_left use_ acc es
+    | E_Tuple es -> List.fold_left use_ acc es
   and use_field acc (_, e) = use_ acc e
   and use_slice acc = function
     | Slice_Single e -> use_ acc e
@@ -48,6 +49,8 @@ let rec expr_of_lexpr = function
   | LE_Var x -> E_Var x
   | LE_Slice (le, args) -> E_Slice (expr_of_lexpr le, args)
   | LE_SetField (le, x, ta) -> E_GetField (expr_of_lexpr le, x, ta)
+  | LE_Ignore -> E_Var "-"
+  | LE_TupleUnpack les -> E_Tuple (List.map expr_of_lexpr les)
 
 let fresh_var =
   let i = ref 0 in
