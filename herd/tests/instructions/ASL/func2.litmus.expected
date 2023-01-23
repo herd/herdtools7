@@ -6,5 +6,5 @@ Witnesses
 Positive: 1 Negative: 0
 Condition forall (0:main.0.x=4 /\ 0:setter-X_set.0.internal_i=2 /\ 0:setter-X_set.0.internal_v=3)
 Observation func02 Always 1 0
-Hash=e9e545dca122963e32557ed6cd66b011
+Hash=8fec5118fd117a031ddd3f112929a520
 

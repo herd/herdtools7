@@ -98,6 +98,9 @@ let rec pp_expr f = function
   | E_Concat es ->
       addb f "E_Concat ";
       pp_list pp_expr f es
+  | E_Tuple es ->
+      addb f "E_Tuple ";
+      pp_expr_list f es
 
 and pp_expr_list f = pp_list pp_expr f
 and pp_slice_list f = pp_list pp_slice f
@@ -160,6 +163,10 @@ let rec pp_lexpr f = function
       bprintf f "LE_Slice (%a, %a)" pp_lexpr le pp_slice_list args
   | LE_SetField (le, x, _ta) ->
       bprintf f "LE_SetField (%a, %S, None)" pp_lexpr le x
+  | LE_Ignore -> addb f "LE_Ignore"
+  | LE_TupleUnpack les ->
+      addb f "LE_TupleUnpack ";
+      pp_list pp_lexpr f les
 
 let rec pp_stmt f = function
   | S_Pass -> addb f "SPass"
@@ -168,9 +175,7 @@ let rec pp_stmt f = function
   | S_Call (name, args) -> bprintf f "S_Call (%S, %a)" name pp_expr_list args
   | S_Cond (e, s1, s2) ->
       bprintf f "S_Cond (%a, %a, %a)" pp_expr e pp_stmt s1 pp_stmt s2
-  | S_Return el ->
-      addb f "S_Return ";
-      pp_expr_list f el
+  | S_Return e -> bprintf f "S_Return (%a)" (pp_option pp_expr) e
   | S_Case (e, cases) ->
       bprintf f "S_Case (%a, %a)" pp_expr e
         (pp_pair_list pp_expr_list pp_stmt)

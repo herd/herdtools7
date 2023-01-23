@@ -211,6 +211,8 @@ module Make (B : Backend.S) = struct
     | [ v ] -> return v
     | _ -> fatal @@ Error.MismatchedReturnValue name
 
+  let lexpr_is_var = function LE_Var _ | LE_Ignore -> true | _ -> false
+
   let rec eval_expr (env : env) scope is_data =
     let genv, lenv = env in
     function
@@ -264,6 +266,7 @@ module Make (B : Backend.S) = struct
     | E_Concat es ->
         let* values = prod_map (eval_expr env scope is_data) es in
         B.concat_bitvectors values
+    | E_Tuple _ -> fatal @@ Error.NotYetImplemented "tuple construction"
 
   and eval_slices (genv, _lenv) =
     let si_env s =
@@ -276,12 +279,13 @@ module Make (B : Backend.S) = struct
   and eval_lexpr (env : env) scope =
     let genv, lenv = env in
     function
+    | LE_Ignore -> fun _ -> return env
     | LE_Var x ->
         fun v ->
           let* v = v in
           let* () = B.on_write_identifier x scope v in
           let lenv = IMap.add x v lenv in
-          continue (genv, lenv)
+          return (genv, lenv)
     | LE_Slice (le, slices) ->
         let setter = eval_lexpr env scope le in
         let positions = eval_slices env slices in
@@ -309,16 +313,61 @@ module Make (B : Backend.S) = struct
             | Some (slices, _) -> eval_lexpr env scope (LE_Slice (le, slices))
             | None -> fatal @@ Error.BadField (x, ty))
         | ty -> fatal @@ Error.BadField (x, ty))
+    | LE_TupleUnpack les ->
+        fun v ->
+          let* v = v in
+          let mapper (i, le) =
+            let setter = eval_lexpr env scope le in
+            let w = B.get_i i v in
+            setter w
+          in
+          let* envs = prod_map mapper (List.mapi (fun i le -> (i, le)) les) in
+          let on_conflict _x v1 _v2 = Some v1 in
+          (* TODO: handle union of genv *)
+          let folder lenv (_genv, lenv2) = IMap.union on_conflict lenv lenv2 in
+          let lenv = List.fold_left folder lenv envs in
+          return (fst env, lenv)
 
   and eval_stmt (env : env) scope = function
     | S_Pass -> continue env
+    | S_Assign (LE_TupleUnpack les, E_Call (name, args))
+      when List.for_all lexpr_is_var les ->
+        let vargs = List.map (eval_expr env scope true) args in
+        let* returned_values = eval_func (fst env) name vargs in
+        if List.compare_lengths les returned_values != 0 then
+          let () =
+            Format.eprintf "%s returned %d values@." name
+              (List.length returned_values)
+          in
+          fatal @@ Error.MismatchedReturnValue name
+        else
+          let mapper x v =
+            let x =
+              match x with
+              | LE_Var x -> x
+              | LE_Ignore -> "-"
+              | _ -> assert false
+            in
+            let* () = B.on_write_identifier x scope v in
+            return (x, v)
+          in
+          let assignments = List.map2 mapper les returned_values in
+          let* assignments = prod_map Fun.id assignments in
+          let add_to_lenv lenv (x, v) = IMap.add x v lenv in
+          let lenv = List.fold_left add_to_lenv (snd env) assignments in
+          continue (fst env, lenv)
     | S_Assign (le, e) ->
         let v = eval_expr env scope true e
         and setter = eval_lexpr env scope le in
-        setter v
-    | S_Return es ->
+        let* env = setter v in
+        continue env
+    | S_Return (Some (E_Tuple es)) ->
         let* vs = prod_map (eval_expr env scope true) es in
         return (Returning vs)
+    | S_Return (Some e) ->
+        let* v = eval_expr env scope true e in
+        return (Returning [ v ])
+    | S_Return None -> return (Returning [])
     | S_Then (s1, s2) ->
         B.bind_seq (eval_stmt env scope s1) (fun r1 ->
             match r1 with

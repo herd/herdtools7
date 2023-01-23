@@ -202,6 +202,7 @@ let rec infer tenv lenv = function
       in
       let length = List.fold_left get_length (expr_of_int 0) es in
       t_bits_bitwidth length
+  | E_Tuple es -> T_Tuple (List.map (infer tenv lenv) es)
 
 and infer_op op =
   match op with
@@ -233,6 +234,8 @@ let rec infer_lexpr tenv lenv = function
   | LE_SetField (_, field, TA_InferredStructure ty) -> field_type field ty
   | LE_SetField (le, field, TA_None) ->
       infer_lexpr tenv lenv le |> field_type field
+  | LE_Ignore -> not_yet_implemented "Type inference of '-'"
+  | LE_TupleUnpack les -> T_Tuple (List.map (infer_lexpr tenv lenv) les)
 
 (******************************************************************************)
 (*                                                                            *)
@@ -304,6 +307,7 @@ let rec annotate_expr tenv lenv e =
       in
       E_Record (ty, fields, TA_InferredStructure ta)
   | E_Concat es -> E_Concat (List.map tr es)
+  | E_Tuple es -> E_Tuple (List.map tr es)
 
 and annotate_slices tenv lenv =
   let tr_one = function
@@ -323,6 +327,9 @@ let rec annotate_lexpr tenv lenv = function
       let le = annotate_lexpr tenv lenv le in
       let ty = infer_lexpr tenv lenv le in
       LE_SetField (le, field, TA_InferredStructure ty)
+  | LE_Ignore -> LE_Ignore
+  | LE_TupleUnpack les ->
+      LE_TupleUnpack (List.map (annotate_lexpr tenv lenv) les)
 
 let rec annotate_stmt tenv lenv s =
   match s with
@@ -357,7 +364,8 @@ let rec annotate_stmt tenv lenv s =
           (S_Assign (le, e), lenv))
   | S_Call (x, args) ->
       (S_Call (x, List.map (annotate_expr tenv lenv) args), lenv)
-  | S_Return es -> (S_Return (List.map (annotate_expr tenv lenv) es), lenv)
+  | S_Return (Some e) -> (S_Return (Some (annotate_expr tenv lenv e)), lenv)
+  | S_Return None -> (S_Return None, lenv)
   | S_Cond (e, s1, s2) ->
       let e = annotate_expr tenv lenv e in
       let s1, lenv = try_annotate_stmt tenv lenv s1 in

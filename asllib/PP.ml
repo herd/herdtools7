@@ -62,8 +62,8 @@ let rec pp_expr f = function
       let pp_one f (x, e) = fprintf f "@[<h>%s =@ %a@]" x pp_expr e in
       fprintf f "@[<hv>%a {@;<1 2>%a@,}@]" pp_type_desc ty
         (pp_comma_list pp_one) li
-  | E_Concat es ->
-      fprintf f "@[<hv 2>[%a]@]" pp_expr_list es
+  | E_Concat es -> fprintf f "@[<hv 2>[%a]@]" pp_expr_list es
+  | E_Tuple es -> fprintf f "@[<hv 2>(%a)@]" pp_expr_list es
 
 and pp_expr_list f = pp_comma_list pp_expr f
 
@@ -130,13 +130,16 @@ let rec pp_lexpr f = function
   | LE_Var x -> pp_print_string f x
   | LE_Slice (le, args) -> fprintf f "%a[%a]" pp_lexpr le pp_slice_list args
   | LE_SetField (le, x, _ta) -> fprintf f "@[%a@,.%s@]" pp_lexpr le x
+  | LE_Ignore -> pp_print_string f "-"
+  | LE_TupleUnpack les -> fprintf f "@[%a@]" (pp_comma_list pp_lexpr) les
 
 let rec pp_stmt f = function
   | S_Pass -> pp_print_string f "pass;"
   | S_Then (s1, s2) -> fprintf f "%a@ %a" pp_stmt s1 pp_stmt s2
   | S_Assign (le, e) -> fprintf f "@[<h 2>%a =@ %a;@]" pp_lexpr le pp_expr e
   | S_Call (name, args) -> fprintf f "@[<hov 2>%s(%a);@]" name pp_expr_list args
-  | S_Return el -> fprintf f "return %a;" pp_expr_list el
+  | S_Return (Some e) -> fprintf f "return %a;" pp_expr e
+  | S_Return None -> fprintf f "return;"
   | S_Cond (e, s1, s2) ->
       fprintf f
         "@[<hv>@[<h>if %a@ then@]@;\

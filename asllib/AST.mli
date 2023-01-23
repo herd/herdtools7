@@ -72,6 +72,7 @@ type expr =
   | E_GetField of expr * identifier * type_annot
   | E_Record of type_desc * (identifier * expr) list * type_annot
   | E_Concat of expr list
+  | E_Tuple of expr list
 
 and slice =
   | Slice_Single of expr
@@ -124,9 +125,11 @@ and typed_identifier = identifier * type_desc
 
 (** Type of left-hand side of assignments. *)
 type lexpr =
+  | LE_Ignore
   | LE_Var of identifier
   | LE_Slice of lexpr * slice list
   | LE_SetField of lexpr * identifier * type_annot
+  | LE_TupleUnpack of lexpr list
 
 (** Statements. Parametric on the type of literals in expressions. *)
 type stmt =
@@ -134,7 +137,7 @@ type stmt =
   | S_Then of stmt * stmt
   | S_Assign of lexpr * expr
   | S_Call of identifier * expr list
-  | S_Return of expr list
+  | S_Return of expr option
   | S_Cond of expr * stmt * stmt
   | S_Case of expr * case_alt list
   | S_Assert of expr
