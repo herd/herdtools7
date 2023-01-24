@@ -38,7 +38,8 @@ let rec pp_value f =
   in
   function
   | V_Int i -> pp_print_int f i
-  | V_Bool b -> pp_print_bool f b
+  | V_Bool true -> pp_print_string f "TRUE"
+  | V_Bool false -> pp_print_string f "FALSE"
   | V_Real r -> pp_print_float f r
   | V_BitVector bv -> Bitvector.pp_t f bv
   | V_Tuple li -> fprintf f "(@[%a@])" (pp_comma_list pp_value) li
@@ -55,8 +56,8 @@ let rec pp_expr f = function
   | E_Slice (e, args) ->
       fprintf f "@[<hov 2>%a[%a]@]" pp_expr e pp_slice_list args
   | E_Cond (e1, e2, e3) ->
-      fprintf f "@[<hv>@[<h>if %a@ then@]@;<1 2>%a@ else@;<1 2>%a@ end@]"
-        pp_expr e1 pp_expr e2 pp_expr e3
+      fprintf f "@[<hv>@[<h>if %a@ then@]@;<1 2>%a@ else@;<1 2>%a@]" pp_expr e1
+        pp_expr e2 pp_expr e3
   | E_GetField (e, x, _ta) -> fprintf f "@[%a@,.%s@]" pp_expr e x
   | E_Record (ty, li, _ta) ->
       let pp_one f (x, e) = fprintf f "@[<h>%s =@ %a@]" x pp_expr e in
@@ -78,25 +79,26 @@ and pp_type_desc f = function
   | T_Int None -> pp_print_string f "integer"
   | T_Int (Some int_constraint) ->
       fprintf f "@[integer {%a}@]" pp_int_constraints int_constraint
-  | T_Real -> pp_print_string f "T_Real"
-  | T_String -> pp_print_string f "T_String"
-  | T_Bit -> pp_print_string f "T_Bit"
-  | T_Bool -> pp_print_string f "T_Bool"
+  | T_Real -> pp_print_string f "real"
+  | T_String -> pp_print_string f "string"
+  | T_Bit -> pp_print_string f "bit"
+  | T_Bool -> pp_print_string f "boolean"
   | T_Bits (bits_constraint, None) ->
       fprintf f "@[bits(%a)@]" pp_bits_constraint bits_constraint
   | T_Bits (bits_constraint, Some fields) ->
       let pp_bitfield f (slices, name) =
         fprintf f "@[<h>[%a]@ %s@]" pp_slice_list slices name
       in
-      fprintf f "@[<hv>bits(%a)@ {@,%a@,}@]" pp_bits_constraint bits_constraint
+      fprintf f "bits (%a)@ {@[<hv 1>@,%a@]@,}" pp_bits_constraint
+        bits_constraint
         (pp_comma_list pp_bitfield)
         fields
   | T_Enum enum_type_desc ->
       fprintf f "@[enumeration {%a}@]"
-        (pp_print_list pp_print_string)
+        (pp_comma_list pp_print_string)
         enum_type_desc
   | T_Tuple type_desc_list ->
-      fprintf f "@[(%a)@]" (pp_print_list pp_type_desc) type_desc_list
+      fprintf f "@[(%a)@]" (pp_comma_list pp_type_desc) type_desc_list
   | T_Array (e, elt_type) ->
       fprintf f "@[array [%a] of %a@]" pp_expr e pp_type_desc elt_type
   | T_Record record_type_desc ->
@@ -131,7 +133,7 @@ let rec pp_lexpr f = function
   | LE_Slice (le, args) -> fprintf f "%a[%a]" pp_lexpr le pp_slice_list args
   | LE_SetField (le, x, _ta) -> fprintf f "@[%a@,.%s@]" pp_lexpr le x
   | LE_Ignore -> pp_print_string f "-"
-  | LE_TupleUnpack les -> fprintf f "@[%a@]" (pp_comma_list pp_lexpr) les
+  | LE_TupleUnpack les -> fprintf f "@[( %a )@]" (pp_comma_list pp_lexpr) les
 
 let rec pp_stmt f = function
   | S_Pass -> pp_print_string f "pass;"
@@ -147,31 +149,61 @@ let rec pp_stmt f = function
          <1 2>@[<hv>%a@]@ end@]" pp_expr e pp_stmt s1 pp_stmt s2
   | S_Case (e, case_li) ->
       let pp_case_alt f (exprs, s) =
-        fprintf f "@[when @[%a@]:@ %a@]" pp_expr_list exprs pp_stmt s
+        match exprs with
+        | [] -> fprintf f "@[<hv 2>otherwise:@ @[<hv>%a@]@]" pp_stmt s
+        | _ ->
+            fprintf f "@[<hv 2>when @[<h>%a@]:@ @[<hv>%a@]@]" pp_expr_list exprs
+              pp_stmt s
       in
       fprintf f "@[<v 2>case %a of@ %a@;<1 -2>end@]" pp_expr e
         (pp_print_list ~pp_sep:pp_print_space pp_case_alt)
         case_li
-  | S_Assert e -> fprintf f "@[<2>assert@ %a]" pp_expr e
+  | S_Assert e -> fprintf f "@[<2>assert@ %a;@]" pp_expr e
+
+(* Copied from stdlib 4.13 *)
+let string_is_prefix ~prefix s =
+  let open String in
+  let len_s = length s and len_pre = length prefix in
+  let rec aux i =
+    if i = len_pre then true
+    else if unsafe_get s i <> unsafe_get prefix i then false
+    else aux (i + 1)
+  in
+  len_s >= len_pre && aux 0
+
+let string_remove_prefix ~prefix s =
+  String.sub s (String.length prefix) (String.length s - String.length prefix)
 
 let pp_decl f =
   let pp_func_sig f { name; args; return_type; _ } =
+    let pp_args = pp_comma_list pp_typed_identifier in
     let pp_return_type_opt f = function
-      | Some return_type -> fprintf f "@ => %a" pp_type_desc return_type
+      | Some return_type -> fprintf f "@;<1 -2>=> %a" pp_type_desc return_type
       | None -> ()
     in
-    let pp_args = pp_comma_list pp_typed_identifier in
-    fprintf f "@[<h>func %s(%a)%a@]" name pp_args args pp_return_type_opt
-      return_type
+    if string_is_prefix ~prefix:"getter-" name then
+      let name = string_remove_prefix ~prefix:"getter-" name in
+      fprintf f "@[<hv 4>getter %s [@,%a]%a@]" name pp_args args
+        pp_return_type_opt return_type
+    else if string_is_prefix ~prefix:"setter-" name then
+      let name = string_remove_prefix ~prefix:"getter-" name in
+      let new_v, args =
+        match args with [] -> assert false | h :: t -> (h, t)
+      in
+      fprintf f "@[<hv 4>setter %s [@,%a]@ = %a@]" name pp_args args
+        pp_typed_identifier new_v
+    else
+      fprintf f "@[<hv 4>func %s (@,%a)%a@]" name pp_args args
+        pp_return_type_opt return_type
   in
   function
   | D_Func func ->
       fprintf f "@[<v>%a@ begin@;<1 2>@[<v>%a@]@ end@]" pp_func_sig func pp_stmt
         func.body
   | D_GlobalConst (x, ty, e) ->
-      fprintf f "@[const %s@ :: %a@ = %a;@]" x pp_type_desc ty pp_expr e
+      fprintf f "@[<2>constant %s@ :: %a@ = %a;@]" x pp_type_desc ty pp_expr e
   | D_TypeDecl (x, type_desc) ->
-      fprintf f "@[type %s of %a;@]" x pp_type_desc type_desc
+      fprintf f "@[<2>type %s of %a;@]" x pp_type_desc type_desc
   | D_Primitive func -> fprintf f "@[<h>%a ;@]" pp_func_sig func
 
 let pp_t f =

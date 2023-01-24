@@ -114,7 +114,10 @@ module Make (C : Sem.Config) = struct
 
     let resize_from_quad = function
       | MachSize.Quad -> return
-      | sz -> M.op1 (Op.Mask sz)
+      | sz -> (
+          function
+          | V.Val (Constant.Symbolic _) as v -> return v
+          | v -> M.op1 (Op.Mask sz) v)
 
     let write_loc sz loc v ii =
       let* resized_v = resize_from_quad sz v in
@@ -140,39 +143,44 @@ module Make (C : Sem.Config) = struct
     (* ASL-Backend implementation                                             *)
     (**************************************************************************)
 
-    let choice m1 m2 m3 = M.( >>*= ) m1 (fun v -> M.choiceT v m2 m3)
+    let choice m1 m2 m3 =
+      M.( >>*= ) m1 (fun b ->
+          let* v = M.op1 (Op.ArchOp1 ASLValue.ASLArchOp.ToInt) b in
+          M.choiceT v m2 m3)
 
     let binop op =
       let open AST in
-      M.op
-      @@
+      let to_bool op v1 v2 =
+        let* v = op v1 v2 in
+        M.op1 (Op.ArchOp1 ASLValue.ASLArchOp.ToBool) v
+      in
       match op with
-      | AND -> Op.And
-      | BAND -> Op.And (* TODO: convert to C style bool first? *)
-      | BEQ -> Op.Eq (* TODO: convert to C style bool first? *)
-      | BOR -> Op.Or (* TODO: convert to C style bool first? *)
-      | DIV -> Op.Div
-      | EOR -> Op.Xor
-      | EQ_OP -> Op.Eq
-      | GT -> Op.Gt
-      | GEQ -> Op.Ge
-      | LT -> Op.Lt
-      | LEQ -> Op.Le
-      | MINUS -> Op.Sub
-      | MUL -> Op.Mul
-      | NEQ -> Op.Ne
-      | OR -> Op.Or
-      | PLUS -> Op.Add
-      | SHL -> Op.ShiftLeft
-      | SHR -> Op.ShiftRight
+      | AND -> M.op Op.And
+      | BAND -> M.op Op.And
+      | BEQ -> M.op Op.Eq |> to_bool
+      | BOR -> M.op Op.Or
+      | DIV -> M.op Op.Div
+      | EOR -> M.op Op.Xor
+      | EQ_OP -> M.op Op.Eq |> to_bool
+      | GT -> M.op Op.Gt |> to_bool
+      | GEQ -> M.op Op.Ge |> to_bool
+      | LT -> M.op Op.Lt |> to_bool
+      | LEQ -> M.op Op.Le |> to_bool
+      | MINUS -> M.op Op.Sub
+      | MUL -> M.op Op.Mul
+      | NEQ -> M.op Op.Ne |> to_bool
+      | OR -> M.op Op.Or
+      | PLUS -> M.op Op.Add
+      | SHL -> M.op Op.ShiftLeft
+      | SHR -> M.op Op.ShiftRight
       | IMPL | MOD | RDIV -> Warn.fatal "Not yet implemented operation."
 
     let unop op =
       let open AST in
       match op with
-      | BNOT -> M.op Op.Eq V.zero
+      | BNOT -> M.op1 Op.Inv
       | NEG -> M.op Op.Sub V.zero
-      | NOT -> M.op1 Op.Not
+      | NOT -> M.op1 Op.Inv
 
     let on_write_identifier (ii, poi) x scope v =
       let loc = loc_of_scoped_id ii x scope in
@@ -288,8 +296,6 @@ module Make (C : Sem.Config) = struct
     (**************************************************************************)
     (* ASL environment                                                        *)
     (**************************************************************************)
-
-    (* It could be far nicer with a GADT, but for another time ... *)
 
     (* Helpers *)
     let build_primitive name args return_type body =
