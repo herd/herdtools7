@@ -1,7 +1,7 @@
-AArch64 231
+AArch64 236
 
 (* Tests MVN Register instruction *)
-{ int 0:X1 = 0; 0:X2 = 1}
+{ int64_t 0:X1 = 0; int64_t 0:X2 = 1}
 
 P0;
   MVN X0, X1;

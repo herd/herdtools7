@@ -1,10 +1,10 @@
-Test 231 Required
+Test 236 Required
 States 1
 0:X0=1; 0:X3=0;
 Ok
 Witnesses
 Positive: 1 Negative: 0
 Condition forall (0:X0=1 /\ 0:X3=0)
-Observation 231 Always 1 0
-Hash=b9605ce7883f52a8a12f561f585c0e98
+Observation 236 Always 1 0
+Hash=b9c665de4673f641bb24662356b1f3ee
 
