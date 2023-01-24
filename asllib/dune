@@ -3,11 +3,18 @@
 (menhir (modules Parser))
 
 (library
- (name asllib)
- (modules (:standard \ asli))
+(name asllib)
+ (modules (:standard \ asli bundler))
  (modules_without_implementation Backend AST))
 
 (executable
  (public_name asli)
  (libraries asllib)
  (modules asli))
+
+(executable
+  (public_name aslbundler)
+  (name bundler)
+  (libraries asllib)
+  (modules bundler))
+

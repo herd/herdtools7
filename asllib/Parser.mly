@@ -62,6 +62,8 @@ let setter (name, args, new_val, body) =
   and return_type = None in
   AST.(D_Func { name; args; return_type; body })
 
+let opn_start stmt = [ func ("main", [], None, stmt) ]
+
 %}
 
 (* ------------------------------------------------------------------------
@@ -154,6 +156,10 @@ let setter (name, args, new_val, body) =
 
 %type <AST.t> ast
 %start ast
+
+(* This start-point is for .opn files in arm-pseudocodes for instructions. *)
+%type <AST.t> opn
+%start opn
 
 %%
 
@@ -432,7 +438,9 @@ let catcher ==
 let stmt ==
   | terminated_by(END,
     | IF; e=expr; THEN; s1=stmt_list; s2=s_else;    <AST.S_Cond>
-    | CASE; e=expr; OF; ~=list(alt); otherwise_opt; <AST.S_Case>
+    | CASE; ~=expr; OF; alt=list(alt);              <AST.S_Case>
+    | CASE; e=expr; OF; alt=list(alt); ~=otherwise;
+        { AST.S_Case (e, alt @ [ ([], otherwise) ]) }
 
     | unimplemented_stmt(
       | FOR; IDENTIFIER; EQ; expr; direction; expr; DO; stmt_list;    <>
@@ -481,7 +489,7 @@ let return_type == ARROW; type_desc
 let params_opt == { [] } | braced(clist(opt_type_identifier))
 let access_args_opt == { [] } | bracketed(clist(typed_identifier))
 let func_args == plist(typed_identifier)
-let func_body == delimited(BEGIN, stmt_list, END)
+let func_body == delimited(ioption(BEGIN), stmt_list, END)
 
 let decl ==
   | FUNC  ; ~=IDENTIFIER; params_opt; ~=func_args; ~=ioption(return_type);
@@ -496,6 +504,7 @@ let decl ==
     | TYPE; x=IDENTIFIER; OF; t=type_desc; subtype_opt;   <AST.D_TypeDecl>
 
     | unimplemented_decl(
+      | storage_keyword; MINUS; ty_opt; EQ; expr;                         <>
       | VAR; typed_identifier;                                            <>
       | storage_keyword; IDENTIFIER; EQ; expr;                            <>
       | PRAGMA; IDENTIFIER; clist(expr);                                  <>
@@ -505,3 +514,4 @@ let decl ==
 
 let ast := terminated(nonempty_list(decl), EOF)
 
+let opn := ~=stmt; <opn_start>
