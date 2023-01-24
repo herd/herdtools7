@@ -17,29 +17,43 @@ let inv_mask =
   let one_char = function '0' -> '1' | '1' -> '0' | c -> c in
   String.map one_char
 
-let use_expr include_funcs : expr -> ISet.t =
-  let rec use_ acc = function
+let used_identifiers : AST.t -> ISet.t =
+  let rec use_e acc = function
     | E_Literal _ -> acc
     | E_Var x -> ISet.add x acc
-    | E_Binop (_op, e1, e2) -> use_ (use_ acc e2) e1
-    | E_Unop (_op, e) -> use_ acc e
+    | E_Binop (_op, e1, e2) -> use_e (use_e acc e2) e1
+    | E_Unop (_op, e) -> use_e acc e
     | E_Call (x, args) ->
-        let acc = if include_funcs then ISet.add x acc else acc in
-        List.fold_left use_ acc args
+        let acc = ISet.add x acc in
+        List.fold_left use_e acc args
     | E_Slice (e, args) ->
-        let acc = use_ acc e in
+        let acc = use_e acc e in
         List.fold_left use_slice acc args
-    | E_Cond (e1, e2, e3) -> use_ (use_ (use_ acc e1) e3) e2
-    | E_GetField (e, _, _ta) -> use_ acc e
+    | E_Cond (e1, e2, e3) -> use_e (use_e (use_e acc e1) e3) e2
+    | E_GetField (e, _, _ta) -> use_e acc e
     | E_Record (_ty, li, _ta) -> List.fold_left use_field acc li
-    | E_Concat es -> List.fold_left use_ acc es
-    | E_Tuple es -> List.fold_left use_ acc es
-  and use_field acc (_, e) = use_ acc e
+    | E_Concat es -> List.fold_left use_e acc es
+    | E_Tuple es -> List.fold_left use_e acc es
+  and use_field acc (_, e) = use_e acc e
   and use_slice acc = function
-    | Slice_Single e -> use_ acc e
-    | Slice_Length (e1, e2) | Slice_Range (e1, e2) -> use_ (use_ acc e1) e2
+    | Slice_Single e -> use_e acc e
+    | Slice_Length (e1, e2) | Slice_Range (e1, e2) -> use_e (use_e acc e1) e2
+  and use_s acc = function
+    | S_Pass | S_Return None -> acc
+    | S_Then (s1, s2) -> use_s (use_s acc s1) s2
+    | S_Assert e | S_Return (Some e) -> use_e acc e
+    | S_Assign (le, e) -> use_le (use_e acc e) le
+    | S_Call (x, args) -> List.fold_left use_e (ISet.add x acc) args
+    | S_Cond (e, s1, s2) -> use_s (use_s (use_e acc e) s2) s1
+    | S_Case (e, cases) -> List.fold_left use_case (use_e acc e) cases
+  and use_case acc (es, stmt) = List.fold_left use_e (use_s acc stmt) es
+  and use_le acc _le = acc
+  and use_decl acc = function
+    | D_Func { body; _ } -> use_s acc body
+    | D_GlobalConst (_name, _ty, e) -> use_e acc e
+    | _ -> acc
   in
-  use_ ISet.empty
+  List.fold_left use_decl ISet.empty
 
 let canonical_fields li =
   let compare (x, _) (y, _) = String.compare x y in
