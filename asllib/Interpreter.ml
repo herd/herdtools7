@@ -328,34 +328,35 @@ module Make (B : Backend.S) = struct
           let lenv = List.fold_left folder lenv envs in
           return (fst env, lenv)
 
+  and multi_assign env scope les values =
+    if List.compare_lengths les values != 0 then
+      fatal
+      @@ Error.BadArity ("tuple construction", List.length les, List.length values)
+    else
+      let mapper x v =
+        let x =
+          match x with LE_Var x -> x | LE_Ignore -> "-" | _ -> assert false
+        in
+        let* () = B.on_write_identifier x scope v in
+        return (x, v)
+      in
+      let assignments = List.map2 mapper les values in
+      let* assignments = prod_map Fun.id assignments in
+      let add_to_lenv lenv (x, v) = IMap.add x v lenv in
+      let lenv = List.fold_left add_to_lenv (snd env) assignments in
+      continue (fst env, lenv)
+
   and eval_stmt (env : env) scope = function
     | S_Pass -> continue env
     | S_Assign (LE_TupleUnpack les, E_Call (name, args))
       when List.for_all lexpr_is_var les ->
         let vargs = List.map (eval_expr env scope true) args in
         let* returned_values = eval_func (fst env) name vargs in
-        if List.compare_lengths les returned_values != 0 then
-          let () =
-            Format.eprintf "%s returned %d values@." name
-              (List.length returned_values)
-          in
-          fatal @@ Error.MismatchedReturnValue name
-        else
-          let mapper x v =
-            let x =
-              match x with
-              | LE_Var x -> x
-              | LE_Ignore -> "-"
-              | _ -> assert false
-            in
-            let* () = B.on_write_identifier x scope v in
-            return (x, v)
-          in
-          let assignments = List.map2 mapper les returned_values in
-          let* assignments = prod_map Fun.id assignments in
-          let add_to_lenv lenv (x, v) = IMap.add x v lenv in
-          let lenv = List.fold_left add_to_lenv (snd env) assignments in
-          continue (fst env, lenv)
+        multi_assign env scope les returned_values
+    | S_Assign (LE_TupleUnpack les, E_Tuple exprs)
+      when List.for_all lexpr_is_var les ->
+        let* values = prod_map (eval_expr env scope true) exprs in
+        multi_assign env scope les values
     | S_Assign (le, e) ->
         let v = eval_expr env scope true e
         and setter = eval_lexpr env scope le in
