@@ -31,6 +31,7 @@ module type Config = sig
   val cpp : bool
   val scope : Scope.t
   val info : MiscParser.info
+  val stdout: bool
 end
 
 module Make(Config:Config)(T:Builder.S)
@@ -280,9 +281,12 @@ module Make(Config:Config)(T:Builder.S)
         let n = T.get_name t in
         let src =
           sprintf "%s.%s" n (if Config.cpp then "c" else "litmus") in
-        tar_output_protect
-          (fun chan -> T.dump_test_channel chan t)
-          src ;
+        if Config.stdout then
+          T.dump_test_channel stdout t
+        else
+          tar_output_protect
+            (fun chan -> T.dump_test_channel chan t)
+            src ;
 (* And litmus file name in @all file *)
         fprintf all_chan "%s\n" src ;
         if Config.verbose > 0 then eprintf "Test: %s\n" n ;
@@ -427,8 +431,13 @@ module Make(Config:Config)(T:Builder.S)
             res
 (* Exported *)
       let all ?(check=(fun _ -> true)) gen =
-        tar_output_protect
-          (fun all_chan ->
+        let output f =
+          if Config.stdout then
+            f stderr
+          else
+            tar_output_protect f "@all"
+        and print = if Config.stdout then eprintf else printf in
+        output (fun all_chan ->
             fprintf all_chan
               "# %s\n" (String.concat " " (Array.to_list Sys.argv)) ;
             fprintf all_chan "# Version %s, Revision: %s\n"
@@ -441,9 +450,8 @@ module Make(Config:Config)(T:Builder.S)
             if
               T.R.SetSet.exists (fun r -> not (T.R.Set.is_empty r)) res.relaxed
             then
-              printf "Relaxations tested: %a\n"
-                T.R.pp_set_set res.relaxed)
-          "@all" ;
+              print "Relaxations tested: %a\n"
+                T.R.pp_set_set res.relaxed) ;
         Tar.tar () ;
         Hint.close_out Config.hout
 

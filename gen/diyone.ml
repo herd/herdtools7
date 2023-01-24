@@ -232,6 +232,8 @@ let () =
     let neg = !Config.neg
     let typ = !Config.typ
     let hexa = !Config.hexa
+    let stdout = !Config.stdout
+    let cycleonly = !Config.cycleonly
 (* Specific *)
     let norm = !norm
     let cpp = cpp

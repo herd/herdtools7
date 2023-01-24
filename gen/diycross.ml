@@ -183,7 +183,9 @@ let () =
       let sufname = !Config.sufname
       let addnum = !Config.addnum
       let numeric = !Config.numeric
-     let lowercase = !Config.lowercase
+      let lowercase = !Config.lowercase
+      let stdout = !Config.stdout
+      let cycleonly = !Config.cycleonly
 (* Specific *)
       let varatom = !Config.varatom
       let same_loc =

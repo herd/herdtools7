@@ -36,6 +36,7 @@ module type Config = sig
   val typ : TypBase.t
   val hexa : bool
   val variant : Variant_gen.t -> bool
+  val cycleonly: bool
 end
 
 module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
@@ -908,7 +909,7 @@ let fmt_cols =
     let pp = fmt_cols code in
     Misc.pp_prog chan pp
 
-  let dump_test_channel chan t =
+  let dump_test_channel_full chan t =
     fprintf chan "%s %s\n" (Archs.pp A.arch) t.name ;
     if t.com <>  "" then fprintf chan "\"%s\"\n" t.com ;
     List.iter
@@ -924,6 +925,15 @@ let fmt_cols =
     end ;
     F.dump_final chan t.final ;
     ()
+  
+  let dump_test_channel chan t =
+    if O.cycleonly then
+      if t.com <> "" then
+        fprintf chan "%s\n" t.com
+      else
+       Warn.fatal "-cycleonly=true requested but no cycle generated"
+    else
+      dump_test_channel_full chan t
 
   let num_labels =
 
