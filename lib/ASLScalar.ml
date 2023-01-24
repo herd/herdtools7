@@ -63,43 +63,51 @@ let equal s1 s2 =
 let add s1 s2 =
   match (s1, s2) with
   | S_Int i1, S_Int i2 -> S_Int (Int64.add i1 i2)
-  | _ -> raise (Invalid_argument "ASLScalar.add")
+  | _ ->
+      Warn.fatal "ASLScalar invalid op: %s add %s" (pp false s1) (pp false s2)
 
 let sub s1 s2 =
   match (s1, s2) with
   | S_Int i1, S_Int i2 -> S_Int (Int64.sub i1 i2)
-  | _ -> raise (Invalid_argument "ASLScalar.sub")
+  | _ ->
+      Warn.fatal "ASLScalar invalid op: %s sub %s" (pp false s1) (pp false s2)
 
 let mul s1 s2 =
   match (s1, s2) with
   | S_Int i1, S_Int i2 -> S_Int (Int64.mul i1 i2)
-  | _ -> raise (Invalid_argument "ASLScalar.mul")
+  | _ ->
+      Warn.fatal "ASLScalar invalid op: %s mul %s" (pp false s1) (pp false s2)
 
 let div s1 s2 =
   match (s1, s2) with
   | S_Int i1, S_Int i2 -> S_Int (Int64.div i1 i2)
-  | _ -> raise (Invalid_argument "ASLScalar.div")
+  | _ ->
+      Warn.fatal "ASLScalar invalid op: %s div %s" (pp false s1) (pp false s2)
 
 let logor s1 s2 =
   match (s1, s2) with
   | S_Int i1, S_Int i2 -> S_Int (Int64.logor i1 i2)
   | S_Bool b1, S_Bool b2 -> S_Bool (b1 || b2)
   | S_BitVector bv1, S_BitVector bv2 -> S_BitVector (BV.logor bv1 bv2)
-  | _ -> raise (Invalid_argument "ASLScalar.logor")
+  | _ -> Warn.fatal "ASLScalar invalid op: %s OR %s" (pp false s1) (pp false s2)
 
 let logand s1 s2 =
   match (s1, s2) with
   | S_Int i1, S_Int i2 -> S_Int (Int64.logand i1 i2)
   | S_Bool b1, S_Bool b2 -> S_Bool (b1 && b2)
   | S_BitVector bv1, S_BitVector bv2 -> S_BitVector (BV.logand bv1 bv2)
-  | _ -> raise (Invalid_argument "ASLScalar.logand")
+  | _ ->
+      Warn.fatal "ASLScalar invalid op: %s logand %s" (pp false s1)
+        (pp false s2)
 
 let logxor s1 s2 =
   match (s1, s2) with
   | S_Int i1, S_Int i2 -> S_Int (Int64.logxor i1 i2)
   | S_Bool b1, S_Bool b2 -> S_Bool (b1 != b2)
   | S_BitVector bv1, S_BitVector bv2 -> S_BitVector (BV.logxor bv1 bv2)
-  | _ -> raise (Invalid_argument "ASLScalar.logxor")
+  | _ ->
+      Warn.fatal "ASLScalar invalid op: %s logxor %s" (pp false s1)
+        (pp false s2)
 
 let lognot = function
   | S_Int i -> S_Int (Int64.lognot i)
@@ -108,43 +116,42 @@ let lognot = function
 
 let shift_left = function
   | S_Int i -> fun k -> S_Int (Int64Scalar.shift_left i k)
-  | _ -> raise (Invalid_argument "ASLScalar.shift_left")
+  | s1 -> Warn.fatal "ASLScalar invalid op: %s shift_left" (pp false s1)
 
 let shift_right_logical = function
   | S_Int i -> fun k -> S_Int (Int64Scalar.shift_right_logical i k)
-  | _ -> raise (Invalid_argument "ASLScalar.shift_right_logical")
+  | s1 ->
+      Warn.fatal "ASLScalar invalid op: %s shift_right_logical" (pp false s1)
 
 let shift_right_arithmetic = function
   | S_Int i -> fun k -> S_Int (Int64Scalar.shift_right_arithmetic i k)
-  | _ -> raise (Invalid_argument "ASLScalar.shift_right_arithmetic")
+  | s1 ->
+      Warn.fatal "ASLScalar invalid op: %s shift_right_arithmetic" (pp false s1)
 
 let addk = function
   | S_Int i -> fun k -> S_Int (Int64Scalar.addk i k)
-  | _ -> raise (Invalid_argument "ASLScalar.addk")
+  | s1 -> Warn.fatal "ASLScalar invalid op: %s addk" (pp false s1)
 
 let bit_at i1 = function
   | S_Int i2 -> S_Int (Int64Scalar.bit_at i1 i2)
   | S_BitVector bv -> S_BitVector (BV.extract_slice bv [ i1 ])
-  | S_Bool _ -> raise (Invalid_argument "ASLScalar.bit_at")
+  | s1 -> Warn.fatal "ASLScalar invalid op: %s bit_at" (pp false s1)
 
 let lt s1 s2 =
   match (s1, s2) with
   | S_Int i1, S_Int i2 -> Int64Scalar.lt i1 i2
-  | _ -> raise (Invalid_argument "ASLScalar.lt")
+  | _ -> Warn.fatal "ASLScalar invalid op: %s lt %s" (pp false s1) (pp false s2)
 
 let le s1 s2 =
   match (s1, s2) with
   | S_Int i1, S_Int i2 -> Int64Scalar.le i1 i2
-  | _ -> raise (Invalid_argument "ASLScalar.le")
+  | _ -> Warn.fatal "ASLScalar invalid op: %s le %s" (pp false s1) (pp false s2)
 
 let mask sz = function
   | S_Int i -> S_Int (Int64Scalar.mask sz i)
-  | _ -> raise (Invalid_argument "ASLScalar.mask")
+  | s -> Warn.fatal "ASLScalar invalid op: _ mask %s" (pp false s)
 
-let sxt sz = function
-  | S_Int i -> S_Int (Int64Scalar.sxt sz i)
-  | _ -> raise (Invalid_argument "ASLScalar.sxt")
-
+let sxt sz = function S_Int i -> S_Int (Int64Scalar.sxt sz i) | s -> s
 let get_tag _t = assert false
 let set_tag _b _t = assert false
 
@@ -154,7 +161,14 @@ let convert_to_int = function
   | S_Bool true -> S_Int Int64.one
   | S_BitVector bv -> S_Int (BV.to_int64 bv)
 
+let convert_to_bool = function
+  | S_Int i -> S_Bool (not (Int64.equal i 0L))
+  | S_Bool b -> S_Bool b
+  | S_BitVector _ as s ->
+      Warn.fatal "ASLScalar invalid op: to_bool %s" (pp false s)
+
 let try_extract_slice s positions =
   match s with
   | S_BitVector bv -> Some (S_BitVector (BV.extract_slice bv positions))
+  | S_Int i -> Some (S_BitVector (BV.extract_slice (BV.of_int64 i) positions))
   | _ -> None

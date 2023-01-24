@@ -15,7 +15,13 @@ module ASLArchOp = struct
   type pteval = ASLPteVal.t
   type instr = ASLInstr.t
   type cst = ASLConstant.v
-  type op1 = Set of int * cst | Get of int | BVSlice of int list | ToInt
+
+  type op1 =
+    | Set of int * cst
+    | Get of int
+    | BVSlice of int list
+    | ToInt
+    | ToBool
 
   let pp_op1 hexa = function
     | Set (i, v) -> Printf.sprintf "Set(%d, %s)" i (ASLConstant.pp hexa v)
@@ -24,6 +30,7 @@ module ASLArchOp = struct
         Printf.sprintf "Slice(%s)" @@ String.concat ", "
         @@ List.map string_of_int positions
     | ToInt -> "ToInt"
+    | ToBool -> "ToBool"
 
   let do_op1 =
     let ( let* ) = Option.bind in
@@ -45,6 +52,9 @@ module ASLArchOp = struct
       | ToInt ->
           let* s = as_concrete cst in
           return_concrete (ASLScalar.convert_to_int s)
+      | ToBool ->
+          let* s = as_concrete cst in
+          return_concrete (ASLScalar.convert_to_bool s)
       | BVSlice positions ->
           let* s = as_concrete cst in
           let* s' = ASLScalar.try_extract_slice s positions in

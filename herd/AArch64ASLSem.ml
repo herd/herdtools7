@@ -244,7 +244,9 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
               let v = V.fresh_var () in
               csym_tbl := IMap.add s v !csym_tbl;
               v)
-      | ASLV.Val (Constant.Concrete i) -> V.intToV (ASLV.Cst.Scalar.to_int i)
+      | ASLV.Val (Constant.Concrete i) ->
+          V.Val
+            (Constant.Concrete (V.Cst.Scalar.of_int64 (ASLScalar.to_int64 i)))
       | ASLV.Val (Constant.Symbolic symb) -> V.Val (Constant.Symbolic symb)
       | v ->
           Warn.fatal "AArch64.ASL does not know how to translate: %s"
@@ -269,50 +271,92 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
       | ASLAct.NoAction -> Some Act.NoAction
       | ASLAct.TooFar msg -> Some (Act.TooFar msg)
 
+    let tr_arch_op =
+      let open ASLValue.ASLArchOp in
+      let atom v = M.VC.Atom v in
+      let declare e acc =
+        let name = V.fresh_var () in
+        (name, M.VC.Assign (name, e) :: acc)
+      in
+      fun op acc v ->
+      let v = tr_v v in
+      match op with
+      | ToInt -> (atom v, acc)
+      | ToBool -> (M.VC.Binop (Op.Ne, V.zero, v), acc)
+      | BVSlice positions -> (
+          let extract_bit_to dst_pos src_pos acc =
+            let bit = M.VC.Unop (Op.ReadBit src_pos, v) in
+            if dst_pos = 0 then (bit, acc)
+            else
+              let nbit, acc = declare bit acc in
+              (M.VC.Unop (Op.LeftShift dst_pos, nbit), acc)
+          in
+          let folder (prec, acc, i) pos =
+            let w, acc = extract_bit_to i pos acc in
+            let nw, acc = declare w acc in
+            let nprec, acc = declare prec acc in
+            (M.VC.Binop (Op.Or, nw, nprec), acc, i + 1)
+          in
+          match positions with
+          | [] -> (V.zero |> atom, acc)
+          | [ x ] -> extract_bit_to 0 x acc
+          | h :: t ->
+              let first, acc = extract_bit_to 0 h acc in
+              let w, acc, _ = List.fold_left folder (first, acc, 1) t in
+              (w, acc))
+      | _ -> Warn.fatal "Not yet implemented: translation of vector operations."
+
     let tr_op1 =
       let open Op in
       function
-      | ArchOp1 _ -> assert false
-      | Not -> Not
-      | SetBit i -> SetBit i
-      | UnSetBit i -> UnSetBit i
-      | ReadBit i -> ReadBit i
-      | LeftShift i -> LeftShift i
-      | LogicalRightShift i -> LogicalRightShift i
-      | ArithRightShift i -> ArithRightShift i
-      | AddK i -> AddK i
-      | AndK i -> AndK i
-      | Inv -> Inv
-      | Mask sz -> Mask sz
-      | Sxt sz -> Sxt sz
-      | TagLoc -> TagLoc
-      | CapaTagLoc -> CapaTagLoc
-      | TagExtract -> TagExtract
-      | LocExtract -> LocExtract
-      | UnSetXBits (nbBits, from) -> UnSetXBits (nbBits, from)
-      | CapaGetTag -> CapaGetTag
-      | CheckSealed -> CheckSealed
-      | CapaStrip -> CapaStrip
-      | TLBLoc -> TLBLoc
-      | PTELoc -> PTELoc
-      | Offset -> Offset
-      | IsVirtual -> IsVirtual
-      | IsInstr -> IsInstr
+      | ArchOp1 op -> tr_arch_op op
+      | op ->
+          let new_op =
+            match op with
+            | ArchOp1 _ -> assert false
+            | Not -> Not
+            | SetBit i -> SetBit i
+            | UnSetBit i -> UnSetBit i
+            | ReadBit i -> ReadBit i
+            | LeftShift i -> LeftShift i
+            | LogicalRightShift i -> LogicalRightShift i
+            | AddK i -> AddK i
+            | AndK i -> AndK i
+            | Inv -> Inv
+            | Mask sz -> Mask sz
+            | Sxt sz -> Sxt sz
+            | TagLoc -> TagLoc
+            | CapaTagLoc -> CapaTagLoc
+            | TagExtract -> TagExtract
+            | LocExtract -> LocExtract
+            | UnSetXBits (nbBits, from) -> UnSetXBits (nbBits, from)
+            | CapaGetTag -> CapaGetTag
+            | CheckSealed -> CheckSealed
+            | CapaStrip -> CapaStrip
+            | TLBLoc -> TLBLoc
+            | PTELoc -> PTELoc
+            | Offset -> Offset
+            | IsVirtual -> IsVirtual
+            | IsInstr -> IsInstr
+          in
+          fun acc v -> (M.VC.Unop (new_op, tr_v v), acc)
 
-    let tr_expr = function
-      | ASLVC.Atom a -> M.VC.Atom (tr_v a)
+    let tr_expr acc = function
+      | ASLVC.Atom a -> (M.VC.Atom (tr_v a), acc)
       | ASLVC.ReadInit _ -> assert false
-      | ASLVC.Unop (op, v) -> M.VC.Unop (tr_op1 op, tr_v v)
-      | ASLVC.Binop (op, a1, a2) -> M.VC.Binop (op, tr_v a1, tr_v a2)
+      | ASLVC.Unop (op, v) -> tr_op1 op acc v
+      | ASLVC.Binop (op, a1, a2) -> (M.VC.Binop (op, tr_v a1, tr_v a2), acc)
       | ASLVC.Terop (op, a1, a2, a3) ->
-          M.VC.Terop (op, tr_v a1, tr_v a2, tr_v a3)
+          (M.VC.Terop (op, tr_v a1, tr_v a2, tr_v a3), acc)
 
-    let tr_cnstrnt = function
-      | ASLVC.Warn s -> M.VC.Warn s
-      | ASLVC.Failed e -> M.VC.Failed e
-      | ASLVC.Assign (la, ex) -> M.VC.Assign (tr_v la, tr_expr ex)
+    let tr_cnstrnt acc = function
+      | ASLVC.Warn s -> M.VC.Warn s :: acc
+      | ASLVC.Failed e -> M.VC.Failed e :: acc
+      | ASLVC.Assign (la, ex) ->
+          let expr, acc = tr_expr acc ex in
+          M.VC.Assign (tr_v la, expr) :: acc
 
-    let tr_cnstrnts = List.map tr_cnstrnt
+    let tr_cnstrnts cs = List.fold_left tr_cnstrnt [] cs
 
     let event_to_monad ii event =
       let { ASLE.action; ASLE.iiid; _ } = event in

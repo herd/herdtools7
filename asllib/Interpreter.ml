@@ -379,9 +379,10 @@ module Make (B : Backend.S) = struct
         let* _ = eval_func (fst env) name vargs in
         continue env
     | S_Cond (e, s1, s2) ->
-        B.choice
-          (eval_expr env scope true e)
-          (eval_stmt env scope s1) (eval_stmt env scope s2)
+        let* s =
+          B.choice (eval_expr env scope true e) (return s1) (return s2)
+        in
+        eval_stmt env scope s
     | S_Case (e, cases) -> ASTUtils.case_to_conds e cases |> eval_stmt env scope
     | S_Assert e ->
         let v = eval_expr env scope true e in
