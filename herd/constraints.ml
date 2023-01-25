@@ -120,8 +120,9 @@ module Make (C:Config) (A : Arch_herd.S) :
             let rec do_rec = function
               | Atom (LV (rloc,v)) ->
                  let t = look_type rloc in
-                 let w = look_val rloc
-                 and v = A.mask_type t v in
+                 let w = look_val rloc in
+                 let v = A.mask_type t v
+                 and w = A.mask_type t w in
                  if dbg then
                    Printf.eprintf "Loc:(%s:%s) -> %s = %s\n"
                      (A.pp_rlocation rloc) (TestType.pp t)
