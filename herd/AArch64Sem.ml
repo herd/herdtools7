@@ -2349,7 +2349,7 @@ module Make
                     | ADD | ADDS -> fun (v1, v2) -> M.add v1 v2
                     | EOR -> fun (v1, v2) -> M.op Op.Xor v1 v2
                     | ORR -> fun (v1, v2) -> M.op Op.Or v1 v2
-                    | ORN -> fun (v1, v2) -> M.op1 Op.Not v2
+                    | ORN -> fun (v1, v2) -> M.op1 Op.Inv v2
                       >>= fun v2 -> M.op Op.Or v1 v2
                     | SUB | SUBS -> fun (v1, v2) -> M.op Op.Sub v1 v2
                     | AND | ANDS -> fun (v1, v2) -> M.op Op.And v1 v2

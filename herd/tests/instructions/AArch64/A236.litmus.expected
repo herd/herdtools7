@@ -1,10 +1,10 @@
 Test 236 Required
 States 1
-0:X0=1; 0:X3=0;
-Ok
+0:X0=-1; 0:X3=-2;
+No
 Witnesses
-Positive: 1 Negative: 0
-Condition forall (0:X0=1 /\ 0:X3=0)
-Observation 236 Always 1 0
-Hash=b9c665de4673f641bb24662356b1f3ee
+Positive: 0 Negative: 1
+Condition forall (0:X0=-1 /\ 0:X3=-2)
+Observation 236 Never 0 1
+Hash=fd13589b80e6516b9a7a601adfcee81d
 

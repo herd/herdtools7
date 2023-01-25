@@ -1,9 +1,13 @@
 AArch64 236
+hexa=true
 
 (* Tests MVN Register instruction *)
-{ int64_t 0:X1 = 0; int64_t 0:X2 = 1}
+(* Remember inverting 00 -> 11 which is 0 to -1 in 2s complement *)
+{ int64_t 0:X1 = 0; int64_t 0:X2 = 1;
+  int64_t 0:X3 }
 
 P0;
   MVN X0, X1;
   MVN X3, X2;
-forall (0:X0 = 1 /\ 0:X3 = 0)
+
+forall (0:X0 = -1 /\ 0:X3 = -2)

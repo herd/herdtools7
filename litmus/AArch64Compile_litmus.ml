@@ -1146,8 +1146,9 @@ module Make(V:Constant.S)(C:Config) =
           and r2,f2 = arg1 "xzr" (fun s -> "^i"^s) r2 in
           { empty_ins with
             memo=sprintf "%s %s,%s" memo f1 f2;
-            inputs=r1;
-            outputs=r2; reg_env = add_q (r1@r2);}
+            inputs=r2;
+            outputs=r1; reg_env = add_q (r1@r2);}
+      | V128 -> assert false
 
     let op3 v op rD rA kr s =
       let memo = memo_of_op op in
