@@ -1,17 +1,17 @@
 // We do not yet support bitfield reading, so we have to do this instead
-func PSTATE_N()
+func PSTATE_V()
   return read_pstate_nzcv() AND 1
 endfunc
 
-func PSTATE_Z()
+func PSTATE_C()
   return (read_pstate_nzcv() AND 2) >> 1
 endfunc
 
-func PSTATE_C()
+func PSTATE_Z()
   return (read_pstate_nzcv() AND 4) >> 2
 endfunc
 
-func PSTATE_V()
+func PSTATE_N()
   return (read_pstate_nzcv() AND 8) >> 3
 endfunc
 
