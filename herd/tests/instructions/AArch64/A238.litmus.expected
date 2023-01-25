@@ -1,0 +1,10 @@
+Test 238 Required
+States 1
+0:X0=-1; 0:X1=-2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=-1 /\ 0:X1=-2)
+Observation 238 Always 1 0
+Hash=8b86d7765222bf3ed08820a6afe93356
+
