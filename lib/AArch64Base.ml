@@ -636,7 +636,7 @@ let inverse_cond = function
   | AL -> AL
 
 type op =
-  ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | EOR | ASR | LSR | LSL | BICS | BIC
+  ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | ORN | EOR | ASR | LSR | LSL | BICS | BIC
 type gc = CFHI | GCFLGS | GCPERM | GCSEAL | GCTAG | GCTYPE | GCVALUE
 type sc = CLRPERM | CTHI | SCFLGS | SCTAG | SCVALUE
 type variant = V32 | V64 | V128
@@ -955,6 +955,7 @@ let pp_op = function
   | ADDS -> "ADDS"
   | EOR  -> "EOR"
   | ORR  -> "ORR"
+  | ORN  -> "ORN"
   | SUB  -> "SUB"
   | SUBS -> "SUBS"
   | AND  -> "AND"
@@ -1375,6 +1376,8 @@ let do_pp_instruction m =
       pp_rr "CMP" v r2 r3 ^ (pp_barrel_shift "," s m.pp_k)
   | I_OP3 (v,ANDS,ZR,r,(K _ as kr), S_NOEXT) ->
       pp_rkr "TST" v r kr
+  | I_OP3 (v,ORN,r1,ZR,RV (_,r2), S_NOEXT) ->
+      pp_rr "MVN" v r1 r2
   | I_OP3 (v,op,r1,r2,K k, S_NOEXT) ->
       pp_rri (pp_op op) v r1 r2 k
   | I_OP3 (v,op,r1,r2,kr, s) ->

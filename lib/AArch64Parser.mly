@@ -60,7 +60,7 @@ let check_op3 op kr =
 %token LDR LDP LDNP LDPSW STP STNP LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token LDRSB LDRSH
 %token LD1 LD1R LD2 LD2R LD3 LD3R LD4 LD4R ST1 ST2 ST3 ST4 STUR /* Neon load/store */
-%token CMP MOV MOVZ MOVK MOVI ADR
+%token CMP MOV MOVZ MOVK MOVI ADR MVN
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH LDXP LDAXP
 %token STXR STXRB STXRH STLXR STLXRB STLXRH STXP STLXP
 %token <AArch64Base.op> OP
@@ -1021,6 +1021,10 @@ instr:
   { I_ADR ($2,BranchTarget.Lbl $4) }
 | TOK_SXTW xreg COMMA wreg
   { I_SXTW ($2,$4) }
+| MVN wreg COMMA wreg
+  { I_OP3 (V32,ORN,$2,ZR,RV (V32,$4), S_NOEXT) }
+| MVN xreg COMMA xreg
+  { I_OP3 (V64,ORN,$2,ZR,RV (V64,$4), S_NOEXT) }
 /* Special handling for ASR/LSL/LSR operation */
 | TOK_ASR xreg COMMA xreg COMMA kr
   { I_OP3 (V64, ASR, $2, $4, $6, S_NOEXT) }

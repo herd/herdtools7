@@ -1,0 +1,11 @@
+AArch64 237
+
+(* Tests ORN Register instruction *)
+{ int64_t 0:X1 = 0; int64_t 0:X2 = 1;
+  int64_t 0:X0; int64_t 0:X3; }
+
+P0;
+  ORN X0, X1, X1;
+  ORN X3, X1, X2;
+
+forall (0:X0 = -1 /\ 0:X3 = -2)
