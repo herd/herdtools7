@@ -64,7 +64,7 @@ type sysreg =
   CTR_EL0 | DCIZ_EL0 |
   MDCCSR_EL0 | DBGDTR_EL0 |
   DBGDTRRX_EL0 | DBGDTRTX_EL0 |
-  ELR_EL1 | ESR_EL1
+  ELR_EL1 | ESR_EL1 | SYS_NZCV
 
 let sysregs = [
     CTR_EL0, "CTR_EL0";
@@ -75,6 +75,7 @@ let sysregs = [
     DBGDTRTX_EL0, "DBGDTRTX_EL0";
     ELR_EL1, "ELR_EL1";
     ESR_EL1, "ESR_EL1";
+    SYS_NZCV, "NZCV";
   ]
 
 type reg =
