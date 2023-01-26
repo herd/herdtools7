@@ -65,7 +65,7 @@ let rec pp_value f = function
   | V_Bool b -> bprintf f "V_Bool %B" b
   | V_Real r -> bprintf f "V_Real %F" r
   | V_BitVector bv ->
-      bprintf f "V_BitVector (Asllib.Bitvector.of_string %s)"
+      bprintf f "V_BitVector (Asllib.Bitvector.of_string %S)"
         (Bitvector.to_string bv)
   | V_Tuple li ->
       addb f "V_Tuple ";
