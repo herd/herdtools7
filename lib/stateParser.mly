@@ -58,6 +58,7 @@ let mk_lab p s = Label (p,s)
 %token <string> NAME
 %token <string> DOLLARNAME
 %token <string> NUM
+%token <string> VALUE
 
 %token TRUE FALSE
 %token EQUAL NOTEQUAL EQUALEQUAL
@@ -146,6 +147,7 @@ pteval:
 
 maybev_notag:
 | NUM  { Concrete $1 }
+| VALUE { Concrete $1 }
 | location_global { $1 }
 /* conflicts with location_reg:
 | NUM COLON NAME { mk_sym_morello $1 $3 "0" }
