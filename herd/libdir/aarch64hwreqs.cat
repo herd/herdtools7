@@ -72,7 +72,7 @@ let HU = W & PTE & Imp
 assert empty HU \ (AF | DB)
 
 (* CSE-ordered-before *)
-let EXC-ENTRY-CSE = if not "ExS" || "EIS" then EXC-ENTRY else {}
+let EXC-ENTRY-CSE = EXC-ENTRY
 let EXC-RET-CSE = if not "ExS" || "EOS" then EXC-RET else {}
 let CSE = ISB | EXC-ENTRY-CSE | EXC-RET-CSE
 let CSE-ob = [R & Exp]; ctrl; [CSE]; po?
@@ -136,4 +136,5 @@ let rec hw-reqs =
   | [R & PTE & Imp]; rmw; [HU]
   | [M & Exp]; po-loc; [TLBUncacheable & FAULT]
   | [R & Exp]; addr; [TLBI]
+  | [R & Exp]; ctrl; [HU]
   | hw-reqs; hw-reqs
