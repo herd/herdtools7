@@ -1,0 +1,10 @@
+Test CSEL02 Required
+States 1
+0:X3=3;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X3=3)
+Observation CSEL02 Always 1 0
+Hash=8a42bc6397f293907681f3d2c0d28bff
+

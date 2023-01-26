@@ -1,0 +1,10 @@
+AArch64 L053
+{
+uint64_t 0:X0;
+}
+  P0         ;
+CMP W1,#0    ;
+MRS X0,NZCV  ;
+LSR X0,X0,28 ;
+forall 0:X0=6
+

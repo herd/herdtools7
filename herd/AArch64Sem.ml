@@ -837,10 +837,10 @@ module Make
            underlying monadic operations. We first define our fake variables,
            then a few logical operations on those.*)
         (* Variables *)
-        let n = M.op1 (Op.ReadBit 0) in
-        let z = M.op1 (Op.ReadBit 1) in
-        let c = M.op1 (Op.ReadBit 2) in
-        let v = M.op1 (Op.ReadBit 3) in
+        let n = M.op1 (Op.ReadBit 3) in
+        let z = M.op1 (Op.ReadBit 2) in
+        let c = M.op1 (Op.ReadBit 1) in
+        let v = M.op1 (Op.ReadBit 0) in
         let true_ = fun _flags -> M.unitT V.one in
         (* Operators *)
         (* Note: I use [!a] as a shortcut for [a == 0],
@@ -913,8 +913,8 @@ module Make
         let ( ---> ) f i = ( read_sign_bit f ) << i in
         (* Computation of nz flags *)
         let compute_nz =
-          let compute_z = ( res === V.zero ) << 1 in
-          let compute_n = read_sign_bit res in
+          let compute_z = ( res === V.zero ) << 2 in
+          let compute_n = read_sign_bit res << 3 in
           compute_z || compute_n
         in
         (* Operation specific computations
@@ -925,8 +925,8 @@ module Make
         | ADDS ->
             let x = make_op Op.ToInteger x res
             and y = make_op Op.ToInteger y (fun _ _ _ -> mzero) in
-            let compute_c = ((x & y) || ((x || y) & !res)) ---> 2 in
-            let compute_v = ((res + x) & (res + y)) ---> 3 in
+            let compute_c = ((x & y) || ((x || y) & !res)) ---> 1 in
+            let compute_v = ((res + x) & (res + y)) ---> 0 in
             Some (compute_nz || compute_c || compute_v)
         | SUBS ->
           (*
@@ -942,8 +942,8 @@ module Make
           *)
             let x = make_op Op.ToInteger x res
             and y = make_op Op.ToInteger y (fun _ _ _ -> mzero) in
-            let compute_c = ((x & !y) || ((x || !y) & !res)) ---> 2 in
-            let compute_v = ((x + y) & (res + x)) ---> 3 in
+            let compute_c = ((x & !y) || ((x || !y) & !res)) ---> 1 in
+            let compute_v = ((x + y) & (res + x)) ---> 0 in
             Some (compute_nz || compute_c || compute_v)
 
 (***************************)
@@ -2454,15 +2454,38 @@ module Make
             stp (tr_variant v) r1 r2 r3 kr ii
         | I_LDXP (v,t,r1,r2,r3) ->
             ldxp (tr_variant v) t r1 r2 r3 ii
-      | I_STXP (v,t,r1,r2,r3,r4) ->
+        | I_STXP (v,t,r1,r2,r3,r4) ->
             stxp (tr_variant v) t r1 r2 r3 r4 ii
-      (*  Cannot handle *)
+(*
+ * Read/Write system registers.
+ * Notice thar NZCV is special:
+ * Our NZCV register is a direct representation of
+ * PSTATE.<N,Z,C,V>, while SYS_NZCV is here only
+ * as an argument to the MRS and MSR instructions.
+ *)
         | I_MSR (sreg,xt) ->
            read_reg_ord_sz MachSize.Quad xt ii
-           >>= fun v -> write_reg_dest (SysReg sreg) v ii
-           >>= nextSet (SysReg sreg)
+           >>=
+             begin
+               match sreg with
+               | SYS_NZCV ->
+                  fun v -> M.op1 (Op.LogicalRightShift 28) v
+                  >>= M.op1 (Op.AndK "0b1111")
+                  >>= fun v -> write_reg_dest NZCV v ii
+                  >>= nextSet NZCV
+               | _ ->
+                  fun v -> write_reg_dest (SysReg sreg) v ii
+                  >>= nextSet (SysReg sreg)
+             end
         | I_MRS (xt,sreg) ->
-          read_reg_ord_sz MachSize.Quad (SysReg sreg) ii
+          begin
+            match sreg with
+            | SYS_NZCV ->
+               read_reg_ord NZCV ii
+               >>= M.op1 (Op.LeftShift 28)
+            | _ ->
+               read_reg_ord_sz MachSize.Quad (SysReg sreg) ii
+          end
           >>= fun v -> write_reg_dest xt v ii
           >>= nextSet (SysReg sreg)
 (*  Cannot handle *)
