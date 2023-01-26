@@ -45,6 +45,11 @@ let to_int64 = function
   | S_Bool false -> Int64.zero
   | S_BitVector bv -> BV.to_int64 bv
 
+let to_native_value = function
+  | S_Int i -> AST.V_Int (Int64.to_int i)
+  | S_Bool b -> AST.V_Bool b
+  | S_BitVector bv -> AST.V_BitVector bv
+
 let compare s1 s2 =
   match (s1, s2) with
   | S_Int i1, S_Int i2 -> Int64.compare i1 i2

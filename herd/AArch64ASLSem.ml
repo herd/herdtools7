@@ -279,32 +279,33 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
         (name, M.VC.Assign (name, e) :: acc)
       in
       fun op acc v ->
-      let v = tr_v v in
-      match op with
-      | ToInt -> (atom v, acc)
-      | ToBool -> (M.VC.Binop (Op.Ne, V.zero, v), acc)
-      | BVSlice positions -> (
-          let extract_bit_to dst_pos src_pos acc =
-            let bit = M.VC.Unop (Op.ReadBit src_pos, v) in
-            if dst_pos = 0 then (bit, acc)
-            else
-              let nbit, acc = declare bit acc in
-              (M.VC.Unop (Op.LeftShift dst_pos, nbit), acc)
-          in
-          let folder (prec, acc, i) pos =
-            let w, acc = extract_bit_to i pos acc in
-            let nw, acc = declare w acc in
-            let nprec, acc = declare prec acc in
-            (M.VC.Binop (Op.Or, nw, nprec), acc, i + 1)
-          in
-          match positions with
-          | [] -> (V.zero |> atom, acc)
-          | [ x ] -> extract_bit_to 0 x acc
-          | h :: t ->
-              let first, acc = extract_bit_to 0 h acc in
-              let w, acc, _ = List.fold_left folder (first, acc, 1) t in
-              (w, acc))
-      | _ -> Warn.fatal "Not yet implemented: translation of vector operations."
+        let v = tr_v v in
+        match op with
+        | ToInt -> (atom v, acc)
+        | ToBool -> (M.VC.Binop (Op.Ne, V.zero, v), acc)
+        | BVSlice positions -> (
+            let extract_bit_to dst_pos src_pos acc =
+              let bit = M.VC.Unop (Op.ReadBit src_pos, v) in
+              if dst_pos = 0 then (bit, acc)
+              else
+                let nbit, acc = declare bit acc in
+                (M.VC.Unop (Op.LeftShift dst_pos, nbit), acc)
+            in
+            let folder (prec, acc, i) pos =
+              let w, acc = extract_bit_to i pos acc in
+              let nw, acc = declare w acc in
+              let nprec, acc = declare prec acc in
+              (M.VC.Binop (Op.Or, nw, nprec), acc, i + 1)
+            in
+            match positions with
+            | [] -> (V.zero |> atom, acc)
+            | [ x ] -> extract_bit_to 0 x acc
+            | h :: t ->
+                let first, acc = extract_bit_to 0 h acc in
+                let w, acc, _ = List.fold_left folder (first, acc, 1) t in
+                (w, acc))
+        | _ ->
+            Warn.fatal "Not yet implemented: translation of vector operations."
 
     let tr_op1 =
       let open Op in

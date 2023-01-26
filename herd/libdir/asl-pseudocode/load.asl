@@ -1,4 +1,4 @@
-func main(t::integer, n::integer, datasize::integer)
+func main()
 begin
   address = read_register(n, 64);
   data = read_memory(address, datasize);

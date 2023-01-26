@@ -59,7 +59,9 @@ type reg = ASLLocalId of scope * AST.identifier | ArchReg of A64B.reg
 let is_local = function ASLLocalId _ -> true | _ -> false
 let to_arch_reg = function ASLLocalId _ -> assert false | ArchReg r -> r
 let to_reg r = ArchReg r
-let default_scope = ("main", 0)
+let main_scope = ("main", 0)
+let default_scope = main_scope
+let scope_equal (s1, nb1) (s2, nb2) = String.equal s1 s2 && nb1 = nb2
 
 let parse_local_id =
   let ( let* ) = Option.bind in

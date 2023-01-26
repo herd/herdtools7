@@ -14,7 +14,7 @@ let build_consts () =
     D_Func { name = "main"; body = S_Pass; args = []; return_type = None }
   in
   let ast = main :: consts in
-  let _ = Native.NativeInterpreter.run ast [] [] () in
+  let _ = Native.NativeInterpreter.run ast [] () in
   ()
 
 let () = exec_tests [ ("build_consts", build_consts) ]

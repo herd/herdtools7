@@ -59,7 +59,7 @@ begin
   return result;
 end
 
-func main(d::integer, n::integer, m::integer, cond::integer, datasize::integer)
+func main()
 begin
 	if ConditionHolds(cond) then
 		result = read_register(n, datasize);

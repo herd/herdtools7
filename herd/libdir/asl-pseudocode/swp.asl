@@ -1,4 +1,4 @@
-func main(s::integer, t::integer, n::integer, datasize::integer)
+func main()
 begin
     store_value = read_register(s, datasize);
     address = read_register(n, 64);

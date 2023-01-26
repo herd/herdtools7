@@ -27,7 +27,7 @@ module type S = sig
   type body = B.value list -> B.value list B.m
   type primitive = (body, type_desc) func_skeleton
 
-  val run : t -> primitive list -> B.value list -> B.value list B.m
+  val run : t -> primitive list -> B.value list B.m
 end
 
 module Make (B : Backend.S) = struct
@@ -331,7 +331,8 @@ module Make (B : Backend.S) = struct
   and multi_assign env scope les values =
     if List.compare_lengths les values != 0 then
       fatal
-      @@ Error.BadArity ("tuple construction", List.length les, List.length values)
+      @@ Error.BadArity
+           ("tuple construction", List.length les, List.length values)
     else
       let mapper x v =
         let x =
@@ -411,9 +412,9 @@ module Make (B : Backend.S) = struct
         let* res = eval_stmt (genv, lenv) scope body in
         match res with Continuing _ -> return [] | Returning vs -> return vs)
 
-  let run (ast : t) primitives (main_args : B.value list) : B.value list m =
+  let run (ast : t) primitives : B.value list m =
     let ast = type_annotation ast primitives in
     let funcs = IMap.empty |> build_funcs ast |> add_primitives primitives in
     let consts = IMap.empty |> build_enums ast |> build_consts ast in
-    eval_func { consts; funcs } "main" (List.map return main_args)
+    eval_func { consts; funcs } "main" []
 end

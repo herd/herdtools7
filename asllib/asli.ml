@@ -108,7 +108,7 @@ let () =
 
   let () =
     if args.exec then
-      let _ = or_exit (fun () -> Native.NativeInterpreter.run ast [] [] ()) in
+      let _ = or_exit (fun () -> Native.NativeInterpreter.run ast [] ()) in
       ()
   in
 

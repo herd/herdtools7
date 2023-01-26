@@ -23,8 +23,8 @@ module type S = sig
   type body = B.value list -> B.value list B.m
   type primitive = (body, AST.type_desc) AST.func_skeleton
 
-  val run : AST.t -> primitive list -> B.value list -> B.value list B.m
-  (** [run spec_lib ast args] runs the function main of the ast, in an
+  val run : AST.t -> primitive list -> B.value list B.m
+  (** [run spec_lib ast] runs the function main of the ast, in an
       environment build from the ast and spec_lib.
       The primitives signatures will be passed by the interpreter to the type-
       checker with [D_Primitive].
