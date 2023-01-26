@@ -81,6 +81,11 @@ module Make (C : Sem.Config) = struct
       | V.Var _ as v ->
           Warn.fatal "Cannot convert value %s into constant" (V.pp_v v)
 
+    let v_to_parsed_v = function
+      | V.Val (Constant.Concrete s) -> ASLScalar.to_native_value s
+      | v ->
+          Warn.fatal "Cannot convert value %s into a native value." (V.pp_v v)
+
     let v_of_parsed_v =
       let open AST in
       let open ASLScalar in
@@ -339,26 +344,42 @@ module Make (C : Sem.Config) = struct
       ]
 
     (* Main function arguments *)
-    let fetch_main_args (ii, _poi) =
-      let func_opt =
-        Misc.find_opt
-          (function
-            | AST.D_Func f -> String.equal "main" f.AST.name | _ -> false)
-          ii.A.inst
+    let main_env (ii, _poi) =
+      let assign x v =
+        let open Asllib.AST in
+        S_Assign (LE_Var x, E_Literal (v_to_parsed_v v))
       in
-      let arg_names =
-        match func_opt with
-        | Some (AST.D_Func f) -> f.AST.args
-        | _ -> Warn.fatal "No function main defined."
+      let folder reg v acc =
+        let open ASLBase in
+        match reg with
+        | ASLLocalId (scope, x) ->
+            if scope_equal main_scope scope then assign x v :: acc else acc
+        | _ -> acc
       in
-      let scope = ("main", 0) in
-      let one_arg (x, _ty) =
-        let reg = ASLBase.ASLLocalId (scope, x) in
-        match A.look_reg reg ii.A.env.A.regs with
-        | Some v -> v
-        | None -> Warn.fatal "Undefined args for main function: %s" x
-      in
-      List.map one_arg arg_names
+      let to_assign = A.fold_reg_state folder ii.A.env.A.regs [] in
+      Asllib.ASTUtils.stmt_from_list to_assign
+
+    let rec list_remove_opt f acc = function
+      | [] -> None
+      | h :: t ->
+          if f h then Some (h, List.rev_append acc t)
+          else list_remove_opt f (h :: acc) t
+
+    let add_main_env_to_ast (ii, _poi) =
+      let open AST in
+      match main_env (ii, _poi) with
+      | S_Pass -> ii.A.inst
+      | s -> (
+          let is_main = function
+            | D_Func f -> String.equal "main" f.name
+            | _ -> false
+          in
+          match list_remove_opt is_main [] ii.A.inst with
+          | Some (D_Func f, ast) ->
+              let body = S_Then (s, f.body) in
+              let main_func = D_Func { f with body } in
+              main_func :: ast
+          | _ -> ii.A.inst)
 
     (**************************************************************************)
     (* Execution                                                              *)
@@ -390,10 +411,8 @@ module Make (C : Sem.Config) = struct
         let concat_bitvectors = concat_bitvectors
       end in
       let module ASLInterpreter = Asllib.Interpreter.Make (ASLBackend) in
-      let exec () =
-        ASLInterpreter.run ii.A.inst (extra_funcs ii_env)
-          (fetch_main_args ii_env)
-      in
+      let ast = add_main_env_to_ast ii_env in
+      let exec () = ASLInterpreter.run ast (extra_funcs ii_env) in
       let* _ =
         match Asllib.Error.intercept exec () with
         | Ok m -> m

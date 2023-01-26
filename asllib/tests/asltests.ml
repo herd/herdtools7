@@ -1,7 +1,7 @@
 open Asllib
 open Test_helpers.Helpers
 
-let interprete ast = Native.NativeInterpreter.run ast [] [] ()
+let interprete ast = Native.NativeInterpreter.run ast [] ()
 
 let process_test path () =
   let ast = build_ast_from_file path in

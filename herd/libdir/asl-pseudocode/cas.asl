@@ -1,4 +1,4 @@
-func main(s :: integer, t::integer, n::integer, datasize::integer)
+func main()
 begin
     address = read_register(n, 64);
     compare_value = read_register(s, datasize);
