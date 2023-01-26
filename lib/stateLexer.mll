@@ -80,6 +80,7 @@ rule token = parse
 | "_Atomic" { ATOMIC }
 | "ATOMIC_INIT" { ATOMICINIT }
 | "instr:" '"' ([^'"']+ as i) '"' { INSTR i }
+| '`' ([^'`']+ as i) '`' { VALUE i }
 (*for GPU*)
 | ".reg" {PTX_REG_DEC}
 | ".s32" as x
