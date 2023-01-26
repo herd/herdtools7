@@ -2,10 +2,18 @@ open AST
 module ISet = Set.Make (String)
 module IMap = Map.Make (String)
 
-let rec stmt_from_list = function
-  | [] -> S_Pass
-  | [ x ] -> x
-  | h :: t -> S_Then (h, stmt_from_list t)
+let stmt_from_list =
+  let rec one_step acc = function
+    | [] -> List.rev acc
+    | [ x ] -> List.rev (x :: acc)
+    | s1 :: s2 :: t -> one_step (S_Then (s1, s2) :: acc) t
+  in
+  let rec aux = function
+    | [] -> S_Pass
+    | [ x ] -> x
+    | l -> aux @@ one_step [] l
+  in
+  fun l -> List.filter (function S_Pass -> false | _ -> true) l |> aux
 
 let mask_from_set_bits_positions size pos =
   let buf = Bytes.make size '0' in
