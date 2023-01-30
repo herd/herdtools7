@@ -288,7 +288,8 @@ module Make(Config:Config)(T:Builder.S)
             (fun chan -> T.dump_test_channel chan t)
             src ;
 (* And litmus file name in @all file *)
-        fprintf all_chan "%s\n" src ;
+        if not Config.stdout then
+          fprintf all_chan "%s\n" src ;
         if Config.verbose > 0 then eprintf "Test: %s\n" n ;
 (*    printf "%s: %s\n" n (pp_edges cycle.orig) ; *)
         { res with ntests = res.ntests+1; }

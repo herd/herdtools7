@@ -239,7 +239,7 @@ let () =
     let addnum = !Config.addnum
     let numeric = !Config.numeric
     let lowercase = !Config.lowercase
-    let stdout = !Config.stdout
+    let stdout = if !Config.cycleonly then true else !Config.stdout
     let cycleonly = !Config.cycleonly
 (* Specific *)
     open Config

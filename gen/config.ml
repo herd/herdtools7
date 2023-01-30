@@ -253,7 +253,7 @@ let common_specs () =
    ("-no", Arg.String (fun s -> no := Some s),
      "<fname> do not generate tests for these cycles")::
   ("-stdout", Arg.Bool (fun b ->  stdout := b),
-    "output to stdout (default false)")::
+    "output to stdout. If Cycleonly is true, then this is implied to be true. (default false)")::
   ("-cycleonly", Arg.Bool (fun b ->  cycleonly := b),
     "output only cycle, i.e. no litmus body (default false)")::
   []

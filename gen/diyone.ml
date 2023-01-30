@@ -232,7 +232,7 @@ let () =
     let neg = !Config.neg
     let typ = !Config.typ
     let hexa = !Config.hexa
-    let stdout = !Config.stdout
+    let stdout = if !Config.cycleonly then true else !Config.stdout
     let cycleonly = !Config.cycleonly
 (* Specific *)
     let norm = !norm
