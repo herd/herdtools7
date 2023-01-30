@@ -63,6 +63,8 @@ include Arch.MakeArch(struct
       ->
        match_lbl lp li subs >>> add_subs [Reg(sr_name r,r')]
 
+    | I_LDR_L(_,r,BranchTarget.Lbl lp), I_LDR_L(_,r',BranchTarget.Lbl li)
+      ->  add_subs [Reg(sr_name r,r'); Lab(lp,li)] subs
     | I_MOV(_,r,kr),I_MOV(_,r',kr') ->
         match_kr subs kr kr' >>> add_subs [Reg(sr_name r,r');]
 
@@ -230,6 +232,10 @@ include Arch.MakeArch(struct
         conv_reg r2 >> fun r2 ->
         find_cst k >! fun k ->
         I_LDR_P(a,r1,r2,k)
+    | I_LDR_L (v,r,lbl) ->
+        conv_reg r >> fun r ->
+        find_lab lbl >! fun lbl ->
+        I_LDR_L (v,r,lbl)
     | I_LDUR(a,r1,r2,Some(k)) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

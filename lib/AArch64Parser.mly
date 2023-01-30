@@ -419,6 +419,8 @@ instr:
       I_LDR (v,r,$5,kr,os) }
 | LDUR reg COMMA LBRK cxreg k0 RBRK
   { let v,r = $2 in I_LDUR (v,r,$5,$6)}
+| LDR reg COMMA label_addr
+  { let v,r = $2 in I_LDR_L (v,r,$4) }
 | ldp_instr wreg COMMA wreg COMMA LBRK cxreg kr0_no_shift RBRK
   { $1 V32 $2 $4 $7 $8 }
 | ldp_instr xreg COMMA xreg COMMA LBRK cxreg kr0_no_shift RBRK

@@ -1,0 +1,10 @@
+Test 245 Required
+States 1
+0:X0=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1)
+Observation 245 Always 1 0
+Hash=37fdb0982d00be334beb0228502b8491
+

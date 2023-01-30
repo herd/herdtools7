@@ -1,0 +1,8 @@
+AArch64 245
+
+{ int64_t 0:X0 = 0; int64_t x = 1}
+
+P0;
+LDR X0, x;
+
+forall (0:X0 = 1)

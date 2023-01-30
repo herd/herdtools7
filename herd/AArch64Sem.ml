@@ -1225,6 +1225,13 @@ module Make
             end)
           (read_reg_ord rs ii) ii
 
+      (* Load literal *)
+      and ldr_lit var rd lbl ii =
+        (* We do not use the reg size as we load a word *)
+        let open AArch64Base in
+        M.unitT (ii.A.addr2v lbl)
+        >>= fun a -> read_mem (tr_variant var) aexp Access.VIR rd a ii
+
       and ldar sz t rd rs ii =
         let open AArch64 in
         let an = match t with
@@ -1916,6 +1923,8 @@ module Make
         | I_LDRBH (bh, rd, rs, kr, s) ->
             let sz = bh_to_sz bh in
             ldr sz rd rs kr s ii
+        | I_LDR_L(var,rd,BranchTarget.Lbl lbl) ->
+            ldr_lit var rd lbl ii
         | I_LDRS (v, bh, rd, rs) ->
             let sz = bh_to_sz bh in
             ldrs sz v rd rs (AArch64.K 0) S_NOEXT ii
@@ -2489,7 +2498,7 @@ module Make
           >>= fun v -> write_reg_dest xt v ii
           >>= nextSet (SysReg sreg)
 (*  Cannot handle *)
-        | (I_RBIT _|I_LDP _|I_STP _
+        | (I_RBIT _|I_LDP _|I_STP _|I_LDR_L _
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | I_LD1M _|I_ST1M _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)

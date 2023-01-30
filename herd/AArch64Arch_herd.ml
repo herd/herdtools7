@@ -191,6 +191,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDPSW _ -> Some (tr_variant V32)
       | I_LDR (v,_,_,_,_) | I_LDP (_,v,_,_,_,_) | I_LDXP (v,_,_,_,_)
       | I_LDUR (v,_,_,_)  | I_LDR_P(v,_,_,_)
+      | I_LDR_L(v,_,_)
       | I_STR (v,_,_,_,_) | I_STLR (v,_,_) | I_STXR (v,_,_,_,_)
       | I_STR_P (v,_,_,_)
       | I_STP (_,v,_,_,_,_) | I_STXP (v,_,_,_,_,_)
@@ -255,6 +256,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDR (_,r,_,_,_)|I_LDRBH (_,r,_,_,_)
       | I_LDRS (_,_,r,_)
       | I_LDUR (_,r,_,_)
+      | I_LDR_L (_,r,_)
       | I_LDAR (_,_,r,_) |I_LDARBH (_,_,r,_)
       | I_SWP (_,_,_,r,_) | I_SWPBH (_,_,_,r,_)
       | I_STXR (_,_,r,_,_) | I_STXP (_,_,r,_,_, _) | I_STXRBH (_,_,r,_,_)
@@ -303,7 +305,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDAR (_, (AA|AQ), _, _)|I_LDARBH (_, (AA|AQ), _, _)
       | I_NOP|I_B _|I_BR _|I_BC _|I_CBZ _|I_CBNZ _
       | I_TBNZ _|I_TBZ _|I_BL _|I_BLR _|I_RET _|I_ERET
-      | I_LDR _|I_LDUR _|I_LD1 _
+      | I_LDR _|I_LDUR _|I_LD1 _|I_LDR_L _
       | I_LD1M _|I_LD1R _|I_LD2 _|I_LD2M _
       | I_LD2R _|I_LD3 _|I_LD3M _|I_LD3R _
       | I_LD4 _|I_LD4M _|I_LD4R _|I_ST1 _
