@@ -283,6 +283,13 @@ k0_no_shift:
 | { K (MetaConst.zero) }
 | COMMA k { K $2 }
 
+kr0_no_shift_opt:
+| { None }
+| COMMA k { Some (K $2) }
+| COMMA xreg { Some (RV (V64,$2)) }
+| COMMA wreg { Some (RV (V32,$2)) }
+| COMMA wreg COMMA TOK_SXTW { Some (RV (V32,$2)) }
+
 /* Beware: for w-indexed accesses SXTW is considered always present.
    Far from ideal, one simple to get correct assembly output for
    the litmus tool. */
@@ -419,10 +426,30 @@ instr:
       I_LDR (v,r,$5,kr,os) }
 | LDUR reg COMMA LBRK cxreg k0 RBRK
   { let v,r = $2 in I_LDUR (v,r,$5,$6)}
-| ldp_instr wreg COMMA wreg COMMA LBRK cxreg kr0_no_shift RBRK
-  { $1 V32 $2 $4 $7 $8 }
-| ldp_instr xreg COMMA xreg COMMA LBRK cxreg kr0_no_shift RBRK
-  { $1 V64 $2 $4 $7 $8 }
+| ldp_instr wreg COMMA wreg COMMA LBRK cxreg kr0_no_shift_opt RBRK k0
+  { match ($8, $10) with
+    | Some s, None -> $1 V32 $2 $4 $7 s
+    | None, Some p -> I_LDP_P (TT, V32, $2, $4, $7, p)
+    | None, None -> $1 V32 $2 $4 $7 (K (MetaConst.zero))
+    | _,_ -> raise Parsing.Parse_error }
+| ldp_instr xreg COMMA xreg COMMA LBRK cxreg kr0_no_shift_opt RBRK k0
+  { match ($8, $10) with
+    | Some s, None -> $1 V64 $2 $4 $7 s
+    | None, Some p -> I_LDP_P (TT, V64, $2, $4, $7, p)
+    | None, None -> $1 V64 $2 $4 $7 (K (MetaConst.zero))
+    | _,_ -> raise Parsing.Parse_error }
+| stp_instr wreg COMMA wreg COMMA LBRK cxreg kr0_no_shift_opt RBRK k0
+  { match ($8, $10) with
+    | Some s, None -> $1 V32 $2 $4 $7 s
+    | None, Some p -> I_STP_P (TT, V32, $2, $4, $7, p)
+    | None, None -> $1 V32 $2 $4 $7 (K (MetaConst.zero))
+    | _,_ -> raise Parsing.Parse_error }
+| stp_instr xreg COMMA xreg COMMA LBRK cxreg kr0_no_shift_opt RBRK k0
+  { match ($8, $10) with
+    | Some s, None -> $1 V64 $2 $4 $7 s
+    | None, Some p -> I_STP_P (TT, V64, $2, $4, $7, p)
+    | None, None -> $1 V64 $2 $4 $7 (K (MetaConst.zero))
+    | _,_ -> raise Parsing.Parse_error }
 | LDPSW xreg COMMA xreg COMMA LBRK cxreg kr0_no_shift RBRK
   { I_LDPSW ($2,$4,$7,$8) }
 | LDXP wreg COMMA wreg COMMA LBRK cxreg RBRK
@@ -433,10 +460,6 @@ instr:
   { I_LDXP (V32,AXP,$2,$4,$7) }
 | LDAXP xreg COMMA xreg COMMA LBRK cxreg RBRK
   { I_LDXP (V64,AXP,$2,$4,$7) }
-| stp_instr wreg COMMA wreg COMMA LBRK cxreg kr0_no_shift RBRK
-  { $1 V32 $2 $4 $7 $8 }
-| stp_instr xreg COMMA xreg COMMA LBRK cxreg kr0_no_shift RBRK
-  { $1 V64 $2 $4 $7 $8 }
 | STXP wreg COMMA wreg COMMA wreg COMMA LBRK cxreg RBRK
   { I_STXP (V32,YY,$2,$4,$6,$9) }
 | STXP wreg COMMA xreg COMMA xreg COMMA LBRK cxreg RBRK
