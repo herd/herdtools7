@@ -929,7 +929,7 @@ let fmt_cols =
   let dump_test_channel chan t =
     if O.cycleonly then
       if t.com <> "" then
-        fprintf chan "%s\n" t.com
+        fprintf chan "%s: %s\n" t.name t.com
       else
        Warn.fatal "-cycleonly=true requested but no cycle generated"
     else
