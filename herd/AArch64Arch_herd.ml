@@ -246,7 +246,6 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_B _| I_BR _
       | I_BC _ | I_CBZ _ | I_CBNZ _
       | I_STP _ | I_STR _ | I_STLR _
-      | I_UBFM _ | I_SBFM _
       | I_STRBH _ | I_STLRBH _
       | I_STOP _ | I_STOPBH _
       | I_FENCE _
@@ -270,6 +269,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_CSEL (_,r,_,_,_,_)
       | I_MRS (r,_)
       | I_STR_P (_,_,r,_)
+      | I_UBFM (_,r,_,_,_) | I_SBFM (_,r,_,_,_)
         -> [r]
       | I_MSR (sr,_)
         -> [(SysReg sr)]
