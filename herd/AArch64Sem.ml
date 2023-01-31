@@ -1687,6 +1687,23 @@ module Make
         end
         >>= fun v -> write_reg_dest rd v ii
 
+(*
+ * "Sign"-extend high-order bit of pattern.\
+ * Notice that computation can be performed on 64bits,
+ * masking is performed later, while writing
+ * into register.
+ *)
+
+      let xtmsb imms v =
+        let hsb = 63 in
+        let msk =
+          String.concat ""
+            ("0b1"::Misc.replicate imms "0") in
+        M.op1 (Op.AndK msk) v >>=
+        M.op1 (Op.LeftShift (hsb-imms)) >>=
+        M.op1 (Op.ArithRightShift (hsb-imms)) >>=
+        M.op Op.Or v
+
       let xbfm signed v rd rn kr ks ii =
         let open AArch64Base in
         let sz = tr_variant v in
@@ -1706,14 +1723,16 @@ module Make
         end in
         let shift_sz = if ks >= kr then kr else regsize-kr in
         let shift_op = if ks >= kr then Op.ShiftRight else Op.ShiftLeft in
-        let sxt v = if signed
-          then sxtw_op v
-          else M.unitT v in
         read_reg_data sz rn ii
         >>= M.op1 (Op.AndK hex_mask)
-        >>= sxt
         >>= fun v -> M.op shift_op v (V.intToV shift_sz)
-        >>= sxt
+        >>=
+          begin
+            if signed then
+              xtmsb
+                (if ks >= kr then ks-kr else regsize-kr+ks)
+            else fun v -> M.unitT v
+          end
         >>= fun v -> write_reg rd v ii
         >>= B.next1T
 

@@ -62,6 +62,7 @@ type 'aop op1 =
   | ReadBit of int
   | LeftShift of int
   | LogicalRightShift of int
+  | ArithRightShift of int
   | AddK of int
   | AndK of string
   | Mask of MachSize.sz

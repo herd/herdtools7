@@ -258,6 +258,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
       | ReadBit i -> ReadBit i
       | LeftShift i -> LeftShift i
       | LogicalRightShift i -> LogicalRightShift i
+      | ArithRightShift i -> ArithRightShift i
       | AddK i -> AddK i
       | AndK i -> AndK i
       | Inv -> Inv
