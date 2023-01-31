@@ -1,0 +1,20 @@
+AArch64 A228
+
+(* Same as 234 but using wregs*)
+(* Test UBFM/SBFM wreg*)
+
+{ uint32_t 0:X20 = 0xFFFFFFFF;
+  uint32_t 0:X21 = 0xFFFFFFFF;
+  int32_t 0:X22  = 0x00000000;
+  int32_t 0:X23  = 0x00000000;
+  uint32_t 0:X19 = 0x55667788;
+  int32_t 0:X18  = 0xAA998878; }
+
+P0;
+  UBFM W20, W19, #4, #31;
+  UBFM W21, W19, #24, #7;
+  SBFM W22, W18, #4, #31;
+  SBFM W23, W18, #24, #7;
+
+forall (0:X20 = 0x5566778 /\ 0:X21 = 0x8800
+  /\ 0:X22 = 0xFAA99887 /\ 0:X23 = 0x7800)
