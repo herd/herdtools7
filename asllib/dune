@@ -1,11 +1,14 @@
 (ocamllex Lexer)
+(ocamllex SimpleLexer0)
 
 (menhir (modules Parser))
+(menhir (modules Parser0) (flags --unused-tokens --table))
 
 (library
-(name asllib)
+ (name asllib)
  (modules (:standard \ asli bundler))
- (modules_without_implementation Backend AST))
+ (modules_without_implementation Backend AST)
+ (libraries menhirLib))
 
 (executable
  (public_name asli)

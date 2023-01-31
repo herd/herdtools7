@@ -142,6 +142,9 @@ let rec pp_stmt f = function
   | S_Call (name, args) -> fprintf f "@[<hov 2>%s(%a);@]" name pp_expr_list args
   | S_Return (Some e) -> fprintf f "return %a;" pp_expr e
   | S_Return None -> fprintf f "return;"
+  | S_Cond (e, s1, S_Pass) ->
+      fprintf f "@[<hv>@[<h>if %a@ then@]@;<1 2>@[<hv>%a@]@ end@]" pp_expr e
+        pp_stmt s1
   | S_Cond (e, s1, s2) ->
       fprintf f
         "@[<hv>@[<h>if %a@ then@]@;\

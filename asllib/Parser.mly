@@ -64,6 +64,11 @@ let setter (name, args, new_val, body) =
 
 let opn_start stmt = [ func ("main", [], None, stmt) ]
 
+let build_dot_fields (e, fields) =
+    let open AST in
+    let one_field f = E_GetField (e, f, TA_None) in
+    E_Concat (List.map one_field fields)
+
 %}
 
 (* ------------------------------------------------------------------------
@@ -288,6 +293,7 @@ let expr :=
   | e=expr; DOT; x=IDENTIFIER; ~=without_ta;   <AST.E_GetField>
   | ~=bracketed(nclist(expr));                 <AST.E_Concat>
   | ~=plist2(expr);                            <AST.E_Tuple>
+  | ~=expr; DOT; ~=bracketed(nclist(IDENTIFIER)); <build_dot_fields>
 
   | t=IDENTIFIER; fields=braced(clist(field_assign));
       { AST.E_Record (AST.T_Named t, fields, AST.TA_None) }
@@ -298,7 +304,6 @@ let expr :=
   | unimplemented_expr(
       | expr; IN; pattern_set;                    <>
       | UNKNOWN; COLON_COLON; type_desc;          <>
-      | expr; DOT; bracketed(nclist(IDENTIFIER)); <>
     )
 
 (* ------------------------------------------------------------------------
