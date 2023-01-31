@@ -1109,7 +1109,7 @@ module Make(V:Constant.S)(C:Config) =
 
     let xbfm s v r1 r2 k1 k2 = match v with
     | V32 ->
-        let r1,fm1,r2,fm2 = args2 "wzr" (fun s -> "wi"^s) r1 r2 in
+        let r1,fm1,r2,fm2 = args2 "wzr" (fun s -> "^wi"^s) r1 r2 in
         let rs = r1 @ r2 in
         { empty_ins with
           memo = sprintf "%s %s,%s,#%i,#%i" s fm1 fm2 k1 k2;
