@@ -758,6 +758,8 @@ module
         unop  op (fun s -> Cst.Scalar.shift_left s k)
     | LogicalRightShift k ->
         unop op (fun s -> Cst.Scalar.shift_right_logical s k)
+    | ArithRightShift k ->
+        unop op (fun s -> Cst.Scalar.shift_right_arithmetic s k)
     | AddK k -> add_konst k
     | AndK k -> unop op (fun s -> Cst.Scalar.logand s (Cst.Scalar.of_string k))
     | Mask sz -> maskop op sz

@@ -1107,6 +1107,21 @@ module Make(V:Constant.S)(C:Config) =
         memo = "sxtw ^o0,^wi0";
         inputs = [r2;]; outputs=[r1;]; reg_env=[r1,quad; r2,word];}
 
+    let xbfm s v r1 r2 k1 k2 = match v with
+    | V32 ->
+        let r1,fm1,r2,fm2 = args2 "wzr" (fun s -> "^wi"^s) r1 r2 in
+        let rs = r1 @ r2 in
+        { empty_ins with
+          memo = sprintf "%s %s,%s,#%i,#%i" s fm1 fm2 k1 k2;
+          inputs = rs; reg_env=List.map (fun r -> r,word) rs;}
+    | V64 ->
+        let r1,fm1,r2,fm2 = args2 "xzr" (fun s -> "^i"^s) r1 r2 in
+        let rs = r1 @ r2 in
+        { empty_ins with
+          memo = sprintf "%s %s,%s,#%i,#%i" s fm1 fm2 k1 k2;
+          inputs = rs; reg_env=List.map (fun r -> r,quad) rs;}
+    | V128 -> assert false
+
     let cmpk v r k = match v with
     | V32 ->
         { empty_ins with
@@ -1399,6 +1414,8 @@ module Make(V:Constant.S)(C:Config) =
     | I_ADR (r,lbl) -> adr tr_lab r lbl::k
     | I_RBIT (v,rd,rs) -> rbit v rd rs::k
     | I_SXTW (r1,r2) -> sxtw r1 r2::k
+    | I_SBFM (v,r1,r2,k1,k2) -> xbfm "sbfm" v r1 r2 k1 k2::k
+    | I_UBFM (v,r1,r2,k1,k2) -> xbfm "ubfm" v r1 r2 k1 k2::k
     | I_OP3 (v,SUBS,ZR,r,K i, S_NOEXT) ->  cmpk v r i::k
     | I_OP3 (v,SUBS,ZR,r2,RV (v3,r3), s) when v=v3->  cmp v r2 r3 s::k
     | I_OP3 (v,ANDS,ZR,r,K i, S_NOEXT) -> tst v r i::k

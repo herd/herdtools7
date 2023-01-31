@@ -1,0 +1,10 @@
+Test L054 Required
+States 1
+0:X1=6; 0:X2=4294967294; 0:X4=6; 0:X5=18446744073709551614;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=6 /\ 0:X2=4294967294 /\ 0:X4=6 /\ 0:X5=-2)
+Observation L054 Always 1 0
+Hash=98590e7e429ae3daba24ca030cd1c0a9
+
