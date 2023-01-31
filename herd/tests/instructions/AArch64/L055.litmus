@@ -1,0 +1,19 @@
+AArch64 L055
+{
+uint32_t 0:X0=0xFE;
+uint32_t 0:X1;
+uint32_t 0:X2;
+uint64_t 0:X3=0xFE;
+uint64_t 0:X4;
+uint64_t 0:X5;
+}
+    P0           ;
+UBFM W1,W0,#4,#2 ;
+SBFM W2,W0,#4,#2 ;
+UBFM X4,X3,#4,#2 ;
+SBFM X5,X3,#4,#2 ;
+
+
+forall
+0:X1=0x60000000 /\ 0:X2=0xe0000000 /\
+0:X4=0x6000000000000000 /\ 0:X5=0xe000000000000000
