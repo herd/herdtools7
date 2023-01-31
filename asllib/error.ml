@@ -14,6 +14,8 @@ type error =
   | NotYetImplemented of string
   | ConflictingTypes of type_desc list * type_desc
   | AssertionFailed of expr
+  | CannotParse of Lexing.position
+  | UnknownSymbol of Lexing.position
 
 exception ASLException of error
 
@@ -24,6 +26,11 @@ let pp_error =
   let open Format in
   let open PP in
   let pp_comma_list = pp_print_list ~pp_sep:(fun f () -> fprintf f ",@ ") in
+  let pp_pos f pos =
+    let open Lexing in
+    fprintf f "@[<h>File %s,@ line %2d,@ char %2d@]" pos.pos_fname pos.pos_lnum
+      (pos.pos_cnum - pos.pos_bol)
+  in
   fun f e ->
     pp_open_box f 2;
     (match e with
@@ -71,7 +78,9 @@ let pp_error =
           pp_type_desc provided
           (pp_comma_list pp_type_desc)
           expected
-    | AssertionFailed e -> fprintf f "Assertion failed:@ %a" pp_expr e);
+    | AssertionFailed e -> fprintf f "Assertion failed:@ %a" pp_expr e
+    | CannotParse pos -> fprintf f "%a@ -- Cannot parse" pp_pos pos
+    | UnknownSymbol pos -> fprintf f "%a@ -- Unknown symbol" pp_pos pos);
     pp_close_box f ()
 
 let error_to_string = Format.asprintf "%a" pp_error

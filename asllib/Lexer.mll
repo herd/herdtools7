@@ -21,13 +21,6 @@
 
 exception LexerError
 
-(* From herdtool's LexMisc *)
-let incr_lineno lexbuf =
-  let open Lexing in
-  let pos = lexbuf.lex_curr_p in
-  let n = pos.pos_lnum + 1 in
-  lexbuf.lex_curr_p <- { pos with pos_lnum = n; pos_bol = pos.pos_cnum }
-
 open Parser
 
 let bitvector_lit lxm =
@@ -107,7 +100,7 @@ let mask = ['0' '1' 'x' ' ']*
 let identifier = (alpha | '_') (alpha|digit|'_')*
 
 rule token = parse
-    | '\n'                     { incr_lineno lexbuf; token lexbuf }
+    | '\n'                     { Lexing.new_line lexbuf; token lexbuf }
     | [' ''\t''\r']+           { token lexbuf                     }
     | "//" [^'\n']*            { token lexbuf                     }
     | int_lit as lxm           { INT_LIT(int_of_string lxm)       }
