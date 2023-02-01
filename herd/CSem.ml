@@ -381,9 +381,12 @@ module
         | C.CastExpr e ->
             build_semantics_expr true e ii >>=
             fun _ ->  M.unitT (ii.A.program_order_index, next0)
-        | C.StoreReg(_,r,e) ->
+        | C.StoreReg(_,Some r,e) ->
             build_semantics_expr true e ii >>=
             fun v -> write_reg r v ii >>=
+              fun _ ->  M.unitT (ii.A.program_order_index, next0)
+        | C.StoreReg(_,None,e) ->
+            build_semantics_expr true e ii >>=
               fun _ ->  M.unitT (ii.A.program_order_index, next0)
         | C.StoreMem(loc,e,mo) ->
             (begin

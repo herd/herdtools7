@@ -1,0 +1,10 @@
+Test C03 Required
+States 1
+[y]=0x1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([y]=0x1)
+Observation C03 Always 1 0
+Hash=71a98e010b15b2b87bfe01c34e457390
+

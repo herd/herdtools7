@@ -113,7 +113,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
         let v = sprintf "d%i" nxt in
         nxt+1,StringSet.singleton v,
         StoreReg
-          (None,v,ECall ("xchg_acquire",[e;Const const_one]))
+          (None,Some v,ECall ("xchg_acquire",[e;Const const_one]))
     | Unlock (e,_)|PCall ("spin_unlock",[e]) ->
         let e = tr_expr e in
         nxt,StringSet.empty,

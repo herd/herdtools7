@@ -1,0 +1,9 @@
+C C03
+
+{}
+
+P0 (int* y) {
+  atomic_fetch_add_explicit(y,1,memory_order_seq_cst);
+}
+
+forall y=1
