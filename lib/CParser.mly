@@ -67,11 +67,9 @@ open MemOrderOrAnnot
 %left ADD SUB
 %left STAR DIV
 %nonassoc CAST
-%nonassoc PREC_BASE
 %left ECALL
 %left ESRCU
 %left SEMI
-%right IDENTIFIER
 
 %type <(CBase.pseudo list) CAst.test list> deep_main
 %start deep_main
@@ -100,14 +98,18 @@ void:
 | VOID { Base "void" }
 
 
+typ_par:
+|t=typ { t }
+| LPAR t=typ RPAR { t }
+
 typ:
 | typ_ptr { $1 }
-| typ VOLATILE { Volatile $1 }
-| typ CONST { CType.Const $1 }
+| typ_par VOLATILE { Volatile $1 }
+| typ_par CONST { CType.Const $1 }
 | ATOMIC base { Atomic $2 }
-| VOLATILE base0 { Volatile $2 }
-| CONST base0 { Const $2 }
-| base { $1 }
+| VOLATILE base { Volatile $2 }
+| CONST base { Const $2 }
+| base0 { $1 }
 
 base0:
 | ATOMIC_TYPE { Atomic (Base $1) }
@@ -119,9 +121,10 @@ base0:
 | ty_attr LONG { Base ($1 ^ "long") }
 
 
+
 base:
 | base0 { $1 }
-| LPAR typ RPAR %prec PREC_BASE { $2 }
+| LPAR typ RPAR  { $2 }
 
 ty_attr:
 | { "" }
@@ -180,7 +183,7 @@ expr0:
 | LPAR expr RPAR { $2 }
 
 expr1:
-| LPAR typ RPAR expr %prec CAST { $4 }
+| LPAR typ RPAR e=expr %prec CAST { e }
 | STAR LPAR typ RPAR IDENTIFIER { LoadMem (LoadReg $5,AN []) }
 | STAR LPAR expr RPAR { LoadMem ($3,AN []) }
 | LOAD LBRACE annot_list RBRACE LPAR expr RPAR { LoadMem($6,AN $3) }
