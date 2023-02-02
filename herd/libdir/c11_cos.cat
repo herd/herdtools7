@@ -4,7 +4,7 @@ include "cross.cat"
 
 let invrf = rf^-1
 let mobase = co0
-with mo from generate_orders(W&(A|I),mobase)
+with mo from generate_orders(W&(A|IW),mobase)
 
 (* From now, mo is a coherence order *)
 let moi = mo & int
