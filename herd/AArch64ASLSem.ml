@@ -123,7 +123,9 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
       | AL -> 0b1111 (* Also possible [0b1110] *)
 
     let decode_inst ii =
-      let r2i = ASLBase.arch_reg_to_int in
+      let i2v i = ParsedConstant.intToV i in
+      let r2v r = i2v @@ ASLBase.arch_reg_to_int r in
+      let s2v s = Constant.Concrete s in
       let tr_ty ty = MachSize.nbits (AArch64Base.tr_variant ty) in
       let pseudocode_fname = Filename.concat "asl-pseudocode" in
       let open AArch64Base in
@@ -133,42 +135,54 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
           Some
             ( pseudocode_fname "swp.asl",
               [
-                ("s", r2i r1);
-                ("t", r2i r2);
-                ("n", r2i r3);
-                ("datasize", tr_ty v);
+                ("s", r2v r1);
+                ("t", r2v r2);
+                ("n", r2v r3);
+                ("datasize", tr_ty v |> i2v);
               ] )
       | I_CAS (v, RMW_P, Ireg rs, Ireg rt, Ireg rn) ->
           Some
             ( pseudocode_fname "cas.asl",
               [
-                ("s", r2i rs);
-                ("t", r2i rt);
-                ("n", r2i rn);
-                ("datasize", tr_ty v);
+                ("s", r2v rs);
+                ("t", r2v rt);
+                ("n", r2v rn);
+                ("datasize", tr_ty v |> i2v);
               ] )
       | I_CSEL (v, Ireg rd, Ireg rn, Ireg rm, c, Cpy) ->
           Some
             ( pseudocode_fname "csel.asl",
               [
-                ("d", r2i rd);
-                ("n", r2i rn);
-                ("m", r2i rm);
-                ("cond", tr_cond c);
-                ("datasize", tr_ty v);
+                ("d", r2v rd);
+                ("n", r2v rn);
+                ("m", r2v rm);
+                ("cond", tr_cond c |> i2v);
+                ("datasize", tr_ty v |> i2v);
               ] )
-      | I_MOV (v, Ireg rt, RV (V64, Ireg rs)) ->
+      | I_MOV (v, Ireg rt, RV (v', Ireg rs)) when v = v' ->
           Some
-            ( pseudocode_fname "mov.asl",
-              [ ("s", r2i rs); ("t", r2i rt); ("datasize", tr_ty v) ] )
+            ( pseudocode_fname "orr_reg.asl",
+              [
+                ("n", s2v "31");
+                ("m", r2v rs);
+                ("datasize", tr_ty v |> i2v);
+                ("d", r2v rt);
+                ("shift_type", s2v "0");
+                (* This is not a valid shift_type so it will just skip this altogether *)
+                ("shift_amount", s2v "0");
+                ("invert", s2v "FALSE");
+                (* This is very unstable, as every edit either of the code or of the order in which constants are parsed might break this. *)
+                ("op", s2v "6");
+                ("setflags", s2v "FALSE");
+              ] )
       | I_LDR (v, Ireg rt, Ireg rn, K 0, S_NOEXT) ->
           Some
             ( pseudocode_fname "load.asl",
-              [ ("t", r2i rt); ("n", r2i rn); ("datasize", tr_ty v) ] )
+              [ ("t", r2v rt); ("n", r2v rn); ("datasize", tr_ty v |> i2v) ] )
       | I_STR (v, Ireg rt, Ireg rn, K 0, S_NOEXT) ->
           Some
             ( pseudocode_fname "store.asl",
-              [ ("t", r2i rt); ("n", r2i rn); ("datasize", tr_ty v) ] )
+              [ ("t", r2v rt); ("n", r2v rn); ("datasize", tr_ty v |> i2v) ] )
       | i ->
           let () =
             if _dbg then
@@ -185,7 +199,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
         let one_arg (x, i) =
           let r = ASLBase.ASLLocalId (scope, x) in
           let loc = MiscParser.Location_reg (proc, ASLBase.pp_reg r) in
-          (loc, (TestType.TyDef, ParsedConstant.intToV i))
+          (loc, (TestType.TyDef, i))
         in
         List.map one_arg args
       in
@@ -209,7 +223,17 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
       let init = init_args @ init_env in
       let fname = ASLConf.libfind fname in
       let prog =
-        let ast = ASLBase.build_ast_from_file fname in
+        let version =
+          if C.variant (Variant.ASLVersion `ASLv0) then `ASLv0
+          else if C.variant (Variant.ASLVersion `ASLv1) then `ASLv1
+          else `Any
+        in
+        let () =
+          if _dbg || true then
+            Format.eprintf "Trying with ASL parser for version %a.@."
+              Asllib.PP.pp_version version
+        in
+        let ast = ASLBase.build_ast_from_file version fname in
         [ ((0, None, MiscParser.Main), [ ASLBase.Instruction ast ]) ]
       in
       let t =
@@ -228,7 +252,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
       in
       let test = ASLTH.build name t in
       let () =
-        if _dbg then
+        if _dbg || true then
           Printf.eprintf "Building fake test with initial state:\n\t%s\n"
             (ASLA.dump_state test.Test_herd.init_state)
       in

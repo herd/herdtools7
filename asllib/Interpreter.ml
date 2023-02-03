@@ -41,6 +41,7 @@ module Make (B : Backend.S) = struct
   type primitive = (body, ty) func_skeleton
 
   let ( let* ) = B.bind_data
+  let ( ==>> ) = B.bind_data
   let ( and* ) = B.prod
   let return = B.return
 
@@ -186,11 +187,18 @@ module Make (B : Backend.S) = struct
       | None -> fatal_from pos @@ Error.UndefinedIdentifier name
     and eval_expr e = StaticInterpreter.static_eval (env_lookup e) e in
 
-    let one_decl = function
-      | D_GlobalConst (name, _, pos) -> Some (name, env_lookup pos name)
-      | _ -> None
+    let () =
+      let one_decl = function
+        | D_GlobalConst (name, _, pos) ->
+            let _ = env_lookup pos name in
+            ()
+        | _ -> ()
+      in
+      List.iter one_decl ast
     in
-    ast |> List.to_seq |> Seq.filter_map one_decl |> IMap.of_seq
+
+    let one_glob = function AlreadyEvaluated v -> v | _ -> assert false in
+    IMap.map one_glob !acc
 
   let build_funcs ast funcs =
     List.to_seq ast
@@ -240,8 +248,8 @@ module Make (B : Backend.S) = struct
         let eval_ = eval_expr env scope is_data in
         B.choice (eval_ e1) (eval_ e2) (eval_ e3)
     | E_Slice (e', slices) ->
-        let positions = eval_slices env (to_pos e) slices in
-        let* v = eval_expr env scope is_data e' in
+        let* positions = eval_slices env (to_pos e) scope slices
+        and* v = eval_expr env scope is_data e' in
         B.read_from_bitvector positions v
     | E_Call (name, args) ->
         let vargs = List.map (eval_expr env scope is_data) args in
@@ -274,13 +282,24 @@ module Make (B : Backend.S) = struct
         B.concat_bitvectors values
     | E_Tuple _ -> fatal_from e @@ Error.NotYetImplemented "tuple construction"
 
-  and eval_slices (genv, _lenv) pos =
-    let si_env s =
-      match IMap.find_opt s genv.consts with
-      | Some v -> v
-      | None -> Error.fatal_from pos @@ Error.UndefinedIdentifier s
+  and eval_slices env pos scope =
+    let eval_one = function
+      | Slice_Single e ->
+          let* v = eval_expr env scope false e in
+          return (v, B.v_of_int 1)
+      | Slice_Range (etop, ebot) ->
+          let* vtop = eval_expr env scope false etop
+          and* vbot = eval_expr env scope false ebot in
+          let* length =
+            B.binop MINUS vtop vbot ==>> B.binop PLUS (B.v_of_int 1)
+          in
+          return (vbot, length)
+      | Slice_Length (ebot, elength) ->
+          let* vbot = eval_expr env scope false ebot
+          and* vlength = eval_expr env scope false elength in
+          return (vbot, vlength)
     in
-    StaticInterpreter.slices_to_positions si_env
+    prod_map eval_one
 
   and eval_lexpr (env : env) scope le =
     let genv, lenv = env in
@@ -294,13 +313,10 @@ module Make (B : Backend.S) = struct
           return (genv, lenv)
     | LE_Slice (le', slices) ->
         let setter = eval_lexpr env scope le' in
-        let positions = eval_slices env (to_pos le) slices in
         fun m ->
           let* v = m
-          and* bv =
-            let e = ASTUtils.expr_of_lexpr le' in
-            eval_expr env scope true e
-          in
+          and* positions = eval_slices env (to_pos le) scope slices
+          and* bv = ASTUtils.expr_of_lexpr le' |> eval_expr env scope true in
           B.write_to_bitvector positions v bv |> setter
     | LE_SetField (le', x, ta) -> (
         let ty = type_of_ta le ta in
@@ -311,8 +327,7 @@ module Make (B : Backend.S) = struct
             fun m ->
               let* new_v = m
               and* vec =
-                let e = ASTUtils.expr_of_lexpr le' in
-                eval_expr env scope true e
+                ASTUtils.expr_of_lexpr le' |> eval_expr env scope true
               in
               B.set_i i new_v vec |> setter
         | T_Bits (_, Some fields) -> (
@@ -362,6 +377,7 @@ module Make (B : Backend.S) = struct
   and eval_stmt (env : env) scope s =
     match s.desc with
     | S_Pass -> continue env
+    | S_TypeDecl _ -> continue env
     | S_Assign
         ({ desc = LE_TupleUnpack les; _ }, { desc = E_Call (name, args); _ })
       when List.for_all lexpr_is_var les ->

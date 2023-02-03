@@ -34,10 +34,10 @@ let arch_reg_to_int =
   let rec index_of elt pos li =
     match li with
     | [] -> raise Not_found
-    | h :: _ when compare elt h == 0 -> pos
+    | h :: _ when compare elt h = 0 -> pos
     | _ :: t -> index_of elt (pos + 1) t
   in
-  fun r -> index_of r 1 AArch64Base.gprs
+  fun r -> index_of r 0 AArch64Base.gprs
 
 (*****************************************************************************)
 (*                                                                           *)
@@ -159,30 +159,20 @@ let memoize f =
         let () = Hashtbl.add table s r in
         r
 
-let do_build_ast_from_file fname chan =
-  let lexbuf = Lexing.from_channel chan in
-  let () =
-    lexbuf.Lexing.lex_curr_p <-
-      { lexbuf.Lexing.lex_curr_p with Lexing.pos_fname = fname }
-  in
-  try Asllib.Parser.ast Asllib.Lexer.token lexbuf with
-  | Asllib.Parser.Error ->
-      Warn.fatal "%s: Cannot parse." (Pos.str_pos lexbuf.Lexing.lex_curr_p)
-  | Asllib.Lexer.LexerError ->
-      Warn.fatal "%s: unknown token." (Pos.str_pos lexbuf.Lexing.lex_curr_p)
+let do_build_ast_from_file version fname =
+  match Asllib.Builder.from_file_multi_version version fname with
+  | Error e -> raise (Misc.Fatal (Asllib.Error.error_to_string e))
+  | Ok ast -> ast
 
-let build_ast_from_file =
-  let protected_f s = Misc.input_protect (do_build_ast_from_file s) s in
-  memoize protected_f
+let build_ast_from_file version = memoize (do_build_ast_from_file version)
 
-let asl_generic_parser lexer lexbuf =
-  let ast =
-    try Asllib.Parser.ast lexer lexbuf with
-    | Asllib.Parser.Error -> raise Parsing.Parse_error
-    | Asllib.Lexer.LexerError ->
-        LexMisc.error "Unknown token in ASL program" lexbuf
-  in
-  ([ (0, None, MiscParser.Main) ], [ [ Instruction ast ] ], MiscParser.NoExtra)
+let asl_generic_parser version lexer lexbuf =
+  match Asllib.Builder.from_lexer_lexbuf version lexer lexbuf with
+  | Error e -> raise (Misc.Fatal (Asllib.Error.error_to_string e))
+  | Ok ast ->
+      ( [ (0, None, MiscParser.Main) ],
+        [ [ Instruction ast ] ],
+        MiscParser.NoExtra )
 
 module Instr = Instr.No (struct
   type instr = instruction

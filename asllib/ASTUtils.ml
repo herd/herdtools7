@@ -51,6 +51,14 @@ let inv_mask =
   let one_char = function '0' -> '1' | '1' -> '0' | c -> c in
   String.map one_char
 
+let slices_to_positions as_int =
+  let one_slice (start, length) =
+    let start = as_int start and length = as_int length in
+    (* Reversed interval *)
+    List.init length (( - ) (start + length - 1))
+  in
+  fun positions -> List.map one_slice positions |> List.flatten
+
 let used_identifiers : AST.t -> ISet.t =
   let rec use_e acc e =
     match e.desc with
@@ -82,6 +90,7 @@ let used_identifiers : AST.t -> ISet.t =
     | S_Call (x, args) -> List.fold_left use_e (ISet.add x acc) args
     | S_Cond (e, s1, s2) -> use_s (use_s (use_e acc e) s2) s1
     | S_Case (e, cases) -> List.fold_left use_case (use_e acc e) cases
+    | S_TypeDecl (x, t) -> acc
   and use_case acc { desc = es, stmt; _ } =
     List.fold_left use_e (use_s acc stmt) es
   and use_le acc _le = acc

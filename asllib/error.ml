@@ -19,6 +19,8 @@ type error =
 
 exception ASLException of error annotated
 
+type 'a result = ('a, error annotated) Result.t
+
 let fatal e = raise (ASLException e)
 let fatal_from pos e = fatal (ASTUtils.add_pos_from pos e)
 
@@ -37,6 +39,9 @@ let pp_error =
     let pp_char_num f { pos_cnum; pos_bol; _ } =
       pp_print_int f (pos_cnum - pos_bol)
     in
+    if pos_start = dummy_pos || pos_end = dummy_pos then
+      ()
+    else (
     pp_open_hovbox f 2;
     fprintf f "File %s,@ " pos_start.pos_fname;
     if String.equal pos_start.pos_fname pos_end.pos_fname then
@@ -54,11 +59,13 @@ let pp_error =
     else
       fprintf f "line %d,@ character %a:" pos_start.pos_lnum pp_char_num
         pos_start;
-    close_box ()
+    pp_close_box f ();
+    pp_print_space f ()
+  )
   in
   let pp_type_desc f ty = pp_ty f (ASTUtils.add_dummy_pos ty) in
   fun f e ->
-    fprintf f "@[<v 0>%a@ @[<2>Error:@ " pp_pos e;
+    fprintf f "@[<v 0>%a@[<2>ASL error:@ " pp_pos e;
     (match e.desc with
     | UnsupportedBinop (op, v1, v2) ->
         fprintf f "Unsupported binop %s for values@ %a@ and %a."

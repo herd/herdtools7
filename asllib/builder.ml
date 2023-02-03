@@ -1,5 +1,8 @@
 open Lexing
 
+type version = [ `ASLv0 | `ASLv1 ]
+type version_selector = [ `ASLv0 | `ASLv1 | `Any ]
+
 let from_lexbuf version lexbuf =
   let open Error in
   let cannot_parse lexbuf =
@@ -14,9 +17,8 @@ let from_lexbuf version lexbuf =
       | Parser.Error -> cannot_parse lexbuf
       | Lexer.LexerError -> unknown_symbol lexbuf)
   | `ASLv0 -> (
-      try Gparser0.parse Lexer0.token lexbuf with
-      | Parser0.Error -> cannot_parse lexbuf
-      | SimpleLexer0.LexerError -> unknown_symbol lexbuf)
+      try Gparser0.parse Lexer0.token lexbuf
+      with Parser0.Error -> cannot_parse lexbuf)
 
 let close_after chan f =
   try
@@ -24,7 +26,7 @@ let close_after chan f =
     close_in chan;
     res
   with e ->
-    close_in chan;
+    close_in_noerr chan;
     raise e
 
 let open_file filename =
@@ -42,3 +44,21 @@ let from_file_result version f =
   let res = Error.intercept (fun () -> from_lexbuf version lexbuf) () in
   close_in chan;
   res
+
+let from_lexer_lexbuf version _lexer lexbuf =
+  Error.intercept (fun () -> from_lexbuf version lexbuf) ()
+
+let from_file_multi_version = function
+  | `Any -> (
+      fun fname ->
+        match from_file_result `ASLv0 fname with
+        | Error e ->
+            let () =
+              Format.eprintf
+                "@[Ignoring error on parser v0: %a.@ Trying with parser v1 \
+                 ...@]@."
+                Error.pp_error e
+            in
+            from_file_result `ASLv1 fname
+        | Ok ast -> Ok ast)
+  | #version as version -> from_file_result version

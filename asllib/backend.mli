@@ -58,7 +58,7 @@ module type S = sig
   (** choice is a boolean if operator. *)
 
   (** Special operations with vectors *)
-  (*----------------------------------*)
+  (*  --------------------------------*)
 
   val create_vector : AST.ty -> value list -> value m
   (** Creates a vector, with possible names for the fields *)
@@ -70,7 +70,7 @@ module type S = sig
   (** [set_i i v vec] returns [vec] with index [i] replaced by [v].*)
 
   (** Other operations *)
-  (*-------------------*)
+  (*  -----------------*)
 
   val binop : AST.binop -> value -> value -> value m
   (** Evaluates the binary operation on those two values. *)
@@ -89,10 +89,10 @@ module type S = sig
   (** [on_write_identifier] is called when a value is read from the local
       environment.*)
 
-  val read_from_bitvector : int list -> value -> value m
+  val read_from_bitvector : (value * value) list -> value -> value m
   (** Read a slice (represented by a list of positions) from a bitvector. *)
 
-  val write_to_bitvector : int list -> value -> value -> value m
+  val write_to_bitvector : (value * value) list -> value -> value -> value m
   (** [write_to_bitvector positions w v] writes the bits of [w] into [v] at the specified positions. *)
 
   val concat_bitvectors : value list -> value m

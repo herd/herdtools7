@@ -160,6 +160,8 @@ let rec pp_stmt f s =
         (pp_print_list ~pp_sep:pp_print_space pp_case_alt)
         case_li
   | S_Assert e -> fprintf f "@[<2>assert@ %a;@]" pp_expr e
+  | S_TypeDecl (x, t) -> fprintf f "@[<2>var %s :: %a;@]" x pp_ty t
+
 
 (* Copied from stdlib 4.13 *)
 let string_is_prefix ~prefix s =
@@ -216,3 +218,7 @@ let pp_t f =
 let ty_to_string = asprintf "%a" pp_ty
 let t_to_string = asprintf "%a" pp_t
 let value_to_string = asprintf "%a" pp_value
+
+let pp_version f version =
+  pp_print_string f
+  @@ match version with `ASLv0 -> "ASLv0" | `ASLv1 -> "ASLv1" | `Any -> "any"

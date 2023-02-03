@@ -1,8 +1,6 @@
 {
 open Parser0       (* The type token is defined in parser.mli *)
 
-exception LexerError
-
 let names_to_tokens = [
   ( "AArch32", QUALIFIER "AArch32");
   ( "AArch64", QUALIFIER "AArch64");
@@ -53,7 +51,9 @@ let names_to_tokens = [
   ( "__write", UU_WRITE );
   ( "array", ARRAY );
   ( "assert", ASSERT );
+  ( "bit", BIT );
   ( "bits", BITS );
+  ( "boolean", BOOLEAN );
   ( "case", CASE );
   ( "catch", CATCH );
   ( "constant", CONSTANT );
@@ -63,10 +63,12 @@ let names_to_tokens = [
   ( "elsif", ELSIF );
   ( "enumeration", ENUMERATION );
   ( "for", FOR );
+  ( "integer", INTEGER);
   ( "if", IF );
   ( "is", IS );
   ( "of", OF );
   ( "otherwise", OTHERWISE );
+  ( "real", REAL);
   ( "record", RECORD );
   ( "repeat", REPEAT );
   ( "return", RETURN );
@@ -91,26 +93,52 @@ let tr_name =
 
 let string_of_token = function
   | AND -> "AND"
+  | ARRAY -> "array"
+  | ASSERT -> "assert"
+  | BIT -> "bit"
+  | BITS -> "bits"
+  | BOOLEAN -> "boolean"
+  | CASE -> "case"
+  | CATCH -> "catch"
+  | CONSTANT -> "constant"
   | CONSTRAINED_UNPRED -> "CONSTRAINED_UNPREDICTABLE"
   | DIV -> "DIV"
+  | DO -> "do"
+  | DOWNTO -> "downto"
+  | ELSE -> "else"
+  | ELSIF -> "elsif"
+  | ENUMERATION -> "enumeration"
   | EOR -> "EOR"
-  | IMPLEM_DEFINED -> "IMPLEMENTATION_DEFINED"
-  | IN -> "IN"
+  | FOR -> "for"
+  | IF -> "if"
   | IFF -> "IFF"
+  | IMPLEM_DEFINED -> "IMPLEMENTATION_DEFINED"
   | IMPLIES -> "IMPLIES"
+  | IN -> "IN"
+  | INTEGER -> "integer"
+  | IS -> "is"
   | MOD -> "MOD"
   | NOT -> "NOT"
+  | OF -> "of"
   | OR -> "OR"
+  | OTHERWISE -> "otherwise"
   | QUOT -> "QUOT"
+  | REAL -> "real"
+  | RECORD -> "record"
   | REM -> "REM"
+  | REPEAT -> "repeat"
+  | RETURN -> "return"
   | SEE -> "SEE"
+  | THEN -> "then"
+  | THROW -> "throw"
+  | TO -> "to"
+  | TRY -> "try"
+  | TYPE -> "type"
+  | TYPEOF -> "typeof"
   | UNDEFINED -> "UNDEFINED"
   | UNKNOWN -> "UNKNOWN"
   | UNPREDICTABLE -> "UNPREDICTABLE"
-  | UU_EXCEPTIONTAKEN -> "__ExceptionTaken"
-  | UU_NOP -> "__NOP"
-  | UU_UNALLOCATED -> "__UNALLOCATED"
-  | UU_UNPREDICTABLE -> "__UNPREDICTABLE"
+  | UNTIL -> "until"
   | UU_ARRAY -> "__array"
   | UU_BUILTIN -> "__builtin"
   | UU_CONDITIONAL -> "__conditional"
@@ -118,6 +146,7 @@ let string_of_token = function
   | UU_DECODE -> "__decode"
   | UU_ENCODING -> "__encoding"
   | UU_EVENT -> "__event"
+  | UU_EXCEPTIONTAKEN -> "__ExceptionTaken"
   | UU_EXECUTE -> "__execute"
   | UU_FIELD -> "__field"
   | UU_FUNCTION -> "__function"
@@ -125,79 +154,56 @@ let string_of_token = function
   | UU_INSTRUCTION -> "__instruction"
   | UU_INSTRUCTION_SET -> "__instruction_set"
   | UU_MAP -> "__map"
-  | UU_NEWMAP -> "__newmap"
   | UU_NEWEVENT -> "__newevent"
+  | UU_NEWMAP -> "__newmap"
+  | UU_NOP -> "__NOP"
+  | UU_OPCODE -> "__opcode"
   | UU_OPERATOR_ONE -> "__operator1"
   | UU_OPERATOR_TWO -> "__operator2"
-  | UU_OPCODE -> "__opcode"
   | UU_POSTDECODE -> "__postdecode"
   | UU_READWRITE -> "__readwrite"
   | UU_REGISTER -> "__register"
+  | UU_UNALLOCATED -> "__UNALLOCATED"
+  | UU_UNPREDICTABLE -> "__UNPREDICTABLE"
   | UU_UNPREDICTABLE_UNLESS -> "__unpredictable_unless"
   | UU_WRITE -> "__write"
-  | ARRAY -> "array"
-  | ASSERT -> "assert"
-  | BITS -> "bits"
-  | CASE -> "case"
-  | CATCH -> "catch"
-  | CONSTANT -> "constant"
-  | DO -> "do"
-  | DOWNTO -> "downto"
-  | ELSE -> "else"
-  | ELSIF -> "elsif"
-  | ENUMERATION -> "enumeration"
-  | FOR -> "for"
-  | IF -> "if"
-  | IS -> "is"
-  | OF -> "of"
-  | OTHERWISE -> "otherwise"
-  | RECORD -> "record"
-  | REPEAT -> "repeat"
-  | RETURN -> "return"
-  | THEN -> "then"
-  | THROW -> "throw"
-  | TO -> "to"
-  | TRY -> "try"
-  | TYPE -> "type"
-  | TYPEOF -> "typeof"
-  | UNTIL -> "until"
   | WHEN -> "when"
   | WHILE -> "while"
   (* Operators *)
+  | AMP -> "&"
+  | AMP_AMP -> "&&"
   | BANG -> "!"
   | BANG_EQ -> "!="
-  | AMP_AMP -> "&&"
-  | AMP -> "&"
-  | LPAREN -> "("
-  | RPAREN -> ")"
-  | STAR -> "*"
-  | PLUS_PLUS -> "++"
-  | PLUS -> "+"
-  | PLUS_COLON -> "+:"
+  | BAR_BAR -> "||"
+  | CARET -> "^"
+  | COLON -> ":"
   | COMMA -> ","
-  | MINUS -> "-"
   | DOT -> "."
   | DOT_DOT -> ".."
-  | SLASH -> "/"
-  | COLON -> ":"
-  | SEMICOLON -> ";"
-  | LT -> "<"
-  | LT_LT -> "<<"
-  | LT_EQ -> "<="
   | EQ -> "="
   | EQ_EQ -> "=="
   | EQ_GT -> "=>"
   | GT -> ">"
   | GT_EQ -> ">="
   | GT_GT -> ">>"
-  | LBRACK -> "["
-  | RBRACK -> "]"
-  | CARET -> "^"
   | LBRACE -> "{"
   | LBRACE_LBRACE -> "{{"
-  | BAR_BAR -> "||"
+  | LBRACK -> "["
+  | LPAREN -> "("
+  | LT -> "<"
+  | LT_EQ -> "<="
+  | LT_LT -> "<<"
+  | MINUS -> "-"
+  | PLUS -> "+"
+  | PLUS_COLON -> "+:"
+  | PLUS_PLUS -> "++"
   | RBRACE -> "}"
   | RBRACE_RBRACE -> "}}"
+  | RBRACK -> "]"
+  | RPAREN -> ")"
+  | SEMICOLON -> ";"
+  | SLASH -> "/"
+  | STAR -> "*"
     (* Literals *)
   | STRING_LIT (s) -> "\"" ^ s ^ "\""
   | BITS_LIT bv -> Bitvector.to_string bv
@@ -236,13 +242,13 @@ rule token = parse
     (* delimiters *)
     | '!'            { BANG       }
     | '!' '='        { BANG_EQ    }
-    | '&' '&'        { AMP_AMP }
     | '&'            { AMP  }
+    | '&' '&'        { AMP_AMP }
     | '('            { LPAREN     }
     | ')'            { RPAREN     }
     | '*'            { STAR       }
-    | '+' '+'        { PLUS_PLUS  }
     | '+'            { PLUS       }
+    | '+' '+'        { PLUS_PLUS  }
     | '+' ':'        { PLUS_COLON }
     | ','            { COMMA      }
     | '-'            { MINUS      }
@@ -269,7 +275,11 @@ rule token = parse
     | '}'            { RBRACE     }
     | '}' '}'        { RBRACE_RBRACE }
     | eof            { EOF        }
-    | _              { raise LexerError }
+    | _
+      {
+        let p1 = Lexing.lexeme_start_p lexbuf and p2 = Lexing.lexeme_end_p lexbuf in
+        Error.fatal_here p1 p2 Error.UnknownSymbol
+      }
 
 and comment depth = parse
       '/' '*' { comment (depth+1) lexbuf }

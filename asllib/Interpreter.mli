@@ -28,6 +28,10 @@ module type S = sig
       environment build from the ast and spec_lib.
       The primitives signatures will be passed by the interpreter to the type-
       checker with [D_Primitive].
+
+      Primitives should include:
+      - [Len] that returns a bitvector length as in integer (needed for
+        parameters inlining if you are using dependently typed functions)
   *)
 end
 

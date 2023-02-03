@@ -14,7 +14,8 @@ bits(64) _R[integer n]
 // =======
 
 bits(N) Zeros(integer N)
-    return 0[N-1:0]; // Edited by Hadrien
+    return Replicate('0',N);
+
 
 // ZeroExtend()
 // ============
@@ -176,6 +177,14 @@ bits(N) ShiftReg(integer reg, ShiftType shiftype, integer amount, integer N)
         when ShiftType_ROR result = ROR(result, amount);
     return result;
 
+// ----------------------------------------------------------------------------
+// From aarch64/instrs/logicalop/LogicalOp
+
+// LogicalOp
+// =========
+// Logical instruction types.
+
+enumeration LogicalOp   {LogicalOp_AND, LogicalOp_EOR, LogicalOp_ORR};
 
 // -----------------------------------------------------------------------------
 // Main entrypoint
@@ -184,7 +193,7 @@ bits(N) ShiftReg(integer reg, ShiftType shiftype, integer amount, integer N)
 // From aarch64/instrs/integer/logical/decode_logical.ash
 // From aarch64/instrs/integer/logical/execute_logical.ash
 
-func DecodeSpecificInstructions()
+DecodeSpecificInstructions()
     integer d = UInt(Rd);
     integer n = UInt(Rn);
     integer m = UInt(Rm);
@@ -202,7 +211,7 @@ func DecodeSpecificInstructions()
     integer shift_amount = UInt(imm6);
     boolean invert = (N == '1');
 
-func main()
+main()
     bits(datasize) operand1 = X[n, datasize];
     bits(datasize) operand2 = ShiftReg(m, shift_type, shift_amount, datasize);
     bits(datasize) result;
@@ -218,4 +227,3 @@ func main()
         PSTATE.<N,Z,C,V> = result<datasize-1>:IsZeroBit(result):'00';
 
     X[d, datasize] = result;
-end

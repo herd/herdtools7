@@ -1,4 +1,5 @@
 AArch64 MOV
+variant=ASLv0
 
 {
     0: X1 = 2

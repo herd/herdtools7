@@ -20,3 +20,4 @@ val t_to_string : t -> string
 val pp_ty : ty printer
 val pp_typed_identifier : typed_identifier printer
 val ty_to_string : ty -> string
+val pp_version : [ `ASLv0 | `ASLv1 | `Any ] printer

@@ -106,6 +106,10 @@ module Make (C : Sem.Config) = struct
       | V.Val (Constant.Concrete i) -> V.Cst.Scalar.to_int i
       | v -> Warn.fatal "Cannot concretise symbolic value: %s" (V.pp_v v)
 
+    let v_to_bv = function
+      | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)) -> bv
+      | v -> Warn.fatal "Cannot construct a bitvector out of %s." (V.pp_v v)
+
     let datasize_to_machsize v =
       match v_to_int v with
       | 32 -> MachSize.Word
@@ -230,6 +234,7 @@ module Make (C : Sem.Config) = struct
           Warn.user_error "Trying to index non-indexable value %s" (V.pp_v vec)
 
     let read_from_bitvector positions bvs =
+      let positions = Asllib.ASTUtils.slices_to_positions v_to_int positions in
       let arch_op1 = ASLValue.ASLArchOp.BVSlice positions in
       M.op1 (Op.ArchOp1 arch_op1) bvs
 
@@ -241,6 +246,7 @@ module Make (C : Sem.Config) = struct
             (bv_src, bv_dst)
         | _ -> Warn.fatal "Not yet implemented: writing to symbolic bitvector"
       in
+      let positions = Asllib.ASTUtils.slices_to_positions v_to_int positions in
       let bv_res = Asllib.Bitvector.write_slice bv_dst bv_src positions in
       return (V.Val (Constant.Concrete (ASLScalar.S_BitVector bv_res)))
 
@@ -259,7 +265,7 @@ module Make (C : Sem.Config) = struct
 
     let virtual_to_loc_reg rv ii =
       let i = v_to_int rv in
-      let arch_reg = AArch64Base.Ireg (List.nth AArch64Base.gprs (i - 1)) in
+      let arch_reg = AArch64Base.Ireg (List.nth AArch64Base.gprs i) in
       A.Location_reg (ii.A.proc, ASLBase.ArchReg arch_reg)
 
     let read_register (ii, poi) rval datasize =
@@ -298,6 +304,18 @@ module Make (C : Sem.Config) = struct
       let* () = write_loc MachSize.Quad loc v (use_ii_with_poi ii poi) in
       return []
 
+    let len = function
+      | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)) ->
+          return [ V.intToV (Asllib.Bitvector.length bv) ]
+      | v ->
+          Warn.fatal "Cannot find the length of a non-concrete bitvector: %s."
+            (V.pp_v v)
+
+    let replicate bv v =
+      let i = v_to_int v and bv = v_to_bv bv in
+      let res = List.init i (Fun.const bv) |> Asllib.Bitvector.concat in
+      return [ V.Val (Constant.Concrete (ASLScalar.S_BitVector res)) ]
+
     (**************************************************************************)
     (* ASL environment                                                        *)
     (**************************************************************************)
@@ -334,6 +352,9 @@ module Make (C : Sem.Config) = struct
       let d = T_Int None |> with_pos in
       let reg = T_Int None |> with_pos in
       let data = T_Int None |> with_pos in
+      let bv =
+        T_Bits (BitWidth_Determined (E_Var "N" |> with_pos), None) |> with_pos
+      in
       [
         arity_two "read_register" [ reg; d ] (Some data) (read_register ii_env);
         arity_three "write_register" [ reg; d; reg ] None
@@ -342,6 +363,8 @@ module Make (C : Sem.Config) = struct
         arity_three "write_memory" [ reg; d; data ] None (write_memory ii_env);
         arity_zero "read_pstate_nzcv" (Some data) (read_pstate_nzcv ii_env);
         arity_one "write_pstate_nzcv" [ data ] None (write_pstate_nzcv ii_env);
+        arity_one "Len" [ bv ] (Some d) len;
+        arity_two "Replicate" [ bv; d ] (Some bv) replicate;
       ]
 
     (* Main function arguments *)

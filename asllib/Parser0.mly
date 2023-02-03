@@ -34,36 +34,11 @@
 %token ARRAY
 %token ASSERT
 %token BANG
+%token BANG_EQ
 %token BAR_BAR
+%token BIT
 %token BITS
-%token UU_ARRAY
-%token UU_BUILTIN
-%token UU_CONDITIONAL
-%token UU_CONFIG
-%token UU_DECODE
-%token UU_ENCODING
-%token UU_EXCEPTIONTAKEN
-%token UU_EXECUTE
-%token UU_EVENT
-%token UU_FIELD
-%token UU_FUNCTION
-%token UU_GUARD
-%token UU_INSTRUCTION
-%token UU_INSTRUCTION_SET
-%token UU_MAP
-%token UU_NOP
-%token UU_NEWEVENT
-%token UU_NEWMAP
-%token UU_OPCODE
-%token UU_OPERATOR_ONE
-%token UU_OPERATOR_TWO
-%token UU_POSTDECODE
-%token UU_READWRITE
-%token UU_REGISTER
-%token UU_UNALLOCATED
-%token UU_UNPREDICTABLE_UNLESS
-%token UU_UNPREDICTABLE
-%token UU_WRITE
+%token BOOLEAN
 %token CARET
 %token CASE
 %token CATCH
@@ -91,11 +66,12 @@
 %token GT_EQ
 %token GT_GT
 %token IF
-%token IMPLEM_DEFINED
-%token IN
 %token IFF
+%token IMPLEM_DEFINED
 %token IMPLIES
+%token IN
 %token INDENT
+%token INTEGER
 %token IS
 %token LBRACE
 %token LBRACE_LBRACE
@@ -106,18 +82,18 @@
 %token LT_LT
 %token MINUS
 %token MOD
-%token BANG_EQ
 %token NOT
 %token OF
 %token OR
 %token OTHERWISE
 %token PLUS
-%token PLUS_PLUS
 %token PLUS_COLON
+%token PLUS_PLUS
 %token QUOT
 %token RBRACE
 %token RBRACE_RBRACE
 %token RBRACK
+%token REAL
 %token RECORD
 %token REM
 %token REPEAT
@@ -137,6 +113,34 @@
 %token UNKNOWN
 %token UNPREDICTABLE
 %token UNTIL
+%token UU_ARRAY
+%token UU_BUILTIN
+%token UU_CONDITIONAL
+%token UU_CONFIG
+%token UU_DECODE
+%token UU_ENCODING
+%token UU_EVENT
+%token UU_EXCEPTIONTAKEN
+%token UU_EXECUTE
+%token UU_FIELD
+%token UU_FUNCTION
+%token UU_GUARD
+%token UU_INSTRUCTION
+%token UU_INSTRUCTION_SET
+%token UU_MAP
+%token UU_NEWEVENT
+%token UU_NEWMAP
+%token UU_NOP
+%token UU_OPCODE
+%token UU_OPERATOR_ONE
+%token UU_OPERATOR_TWO
+%token UU_POSTDECODE
+%token UU_READWRITE
+%token UU_REGISTER
+%token UU_UNALLOCATED
+%token UU_UNPREDICTABLE
+%token UU_UNPREDICTABLE_UNLESS
+%token UU_WRITE
 %token WHEN
 %token WHILE
 
@@ -217,9 +221,15 @@ let ty :=
   )
 
 let ty_non_tuple ==
-  | ~=tident; < AST.T_Named >
+  | INTEGER;  { AST.T_Int None  }
+  | REAL;     { AST.T_Real      }
+  | BIT;      { AST.T_Bit       }
+  | BOOLEAN;  { AST.T_Bool      }
+  | ~=tident; < AST.T_Named     >
+
   | BITS; e=pared(expr); { AST.(T_Bits (AST.BitWidth_Determined e, None)) }
   (* | tident; pared(clist(expr)); <> *)
+
   | unimplemented_ty (
     | TYPEOF; pared(expr); <>
     | ARRAY; bracketed(ixtype); OF; ty; <>
@@ -241,8 +251,13 @@ let qualident == ioption(QUALIFIER; DOT); ident
 let unimplemented_expr(x) == x; { AST.(E_Literal (V_Bool true)) }
 let without_ta == { AST.TA_None }
 
-let expr := binop_expr(expr, binop_or_concat)
 let sexpr := binop_expr(sexpr, abinop)
+let expr :=
+  | binop_expr(expr, binop)
+  | annotated (
+      e1=expr; COLON; e2=expr;
+          { AST.E_Concat [ e1; e2 ] }
+  )
 
 let binop_expr(e, b) ==
   | pared(expr)
@@ -305,15 +320,22 @@ let getter_decl ==
   | ~=ty; name=qualident; body=opt_indented_block; SEMICOLON; EOL;
     {
       let return_type = Some(ty)
+      and name = ASTUtils.getter_name name
       and args = [] in
       AST.(D_Func { name; args; return_type; body })
     }
   | return_type=some(ty); name=qualident; args=bracketed(clist(formal)); body=func_body;
-    { AST.(D_Func { name; args; return_type; body })}
+    {
+      let name = ASTUtils.getter_name name in
+      AST.(D_Func { name; args; return_type; body })
+    }
 
 let setter_decl ==
   name=qualident; args=loption(bracketed(clist(sformal))); EQ; ~=ty; ~=ident; body=func_body;
-    { AST.(D_Func { name; body; return_type=None; args=(ident, ty) :: args }) }
+    {
+      let name = ASTUtils.setter_name name in
+      AST.(D_Func { name; body; return_type=None; args=(ident, ty) :: args })
+    }
 
 let procedure_decl ==
   name=qualident; args=pared(clist(formal)); body=func_body;
@@ -515,8 +537,3 @@ let binop ==
   | LT ;    { AST.LT }
   | GT ;    { AST.GT }
 
-let binop_or_concat ==
-  | binop
-  | unimplemented_binop (
-    | COLON
-  )

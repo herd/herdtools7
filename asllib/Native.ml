@@ -110,14 +110,19 @@ module NativeBackend = struct
     | V_BitVector bits -> bits
     | v -> mismatch_type v [ ASTUtils.default_t_bits ]
 
+  let as_int = function V_Int i -> i | v -> mismatch_type v [ T_Int None ]
   let bitvector_to_value bv = return (V_BitVector bv)
 
   let read_from_bitvector positions bv =
-    let bv = as_bitvector bv in
-    Bitvector.extract_slice bv positions |> bitvector_to_value
+    let bv' = as_bitvector bv
+    and positions = ASTUtils.slices_to_positions as_int positions in
+    let res = Bitvector.extract_slice bv' positions in
+    bitvector_to_value res
 
   let write_to_bitvector positions bits bv =
-    let bv = as_bitvector bv and bits = as_bitvector bits in
+    let bv = as_bitvector bv
+    and bits = as_bitvector bits
+    and positions = ASTUtils.slices_to_positions as_int positions in
     Bitvector.write_slice bv bits positions |> bitvector_to_value
 
   let concat_bitvectors bvs =

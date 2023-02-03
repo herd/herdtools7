@@ -195,6 +195,7 @@ let rec pp_stmt =
           (pp_list (pp_annotated (pp_pair pp_expr_list pp_stmt)))
           cases
     | S_Assert e -> bprintf f "S_Assert (%a)" pp_expr e
+    | S_TypeDecl (x, t) -> bprintf f "S_TypeDecl (%S, %a)" x pp_ty t
   in
   fun f s -> pp_annotated pp_desc f s
 

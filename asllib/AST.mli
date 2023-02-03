@@ -179,6 +179,7 @@ and lexpr = lexpr_desc annotated
 type stmt_desc =
   | S_Pass
   | S_Then of stmt * stmt
+  | S_TypeDecl of identifier * ty
   | S_Assign of lexpr * expr
   | S_Call of identifier * expr list
   | S_Return of expr option

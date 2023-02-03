@@ -282,7 +282,9 @@ let should_reduce_to_call tenv name slices =
 let getter_should_reduce_to_call tenv x slices =
   let name = ASTUtils.getter_name x in
   match should_reduce_to_call tenv name slices with
-  | Some (name, args, Some _) -> Some (name, args)
+  | Some (name, args, Some _) ->
+      let () = Format.eprintf "Getter %S should reduce to call.@." name in
+      Some (name, args)
   | Some (_, _, None) | None -> None
 
 let setter_should_reduce_to_call tenv x slices e =
@@ -421,15 +423,41 @@ and try_annotate_stmt tenv lenv s =
   match Error.intercept (fun () -> annotate_stmt tenv lenv s) () with
   | Ok res -> res
   | Error e ->
-      Format.eprintf "@[<hv 3>Ignoring type error:@ %a@]@." Error.pp_error e;
+      Format.eprintf "@[<hv 3>Ignoring type error:@ %a@ in stmt@ %a@]@."
+        Error.pp_error e PP.pp_stmt s;
       (s, lenv)
 
 let annotate_func (tenv : tenv) (f : AST.func) : AST.func =
+  (* Resolve dependently typed indentifiers in the arguments. *)
+  let inlined_parameters =
+    let here desc =
+      let pos = f.body.pos_start in
+      ASTUtils.annotated desc pos pos
+    in
+    let get_parameter (x, ty) =
+      match ty.desc with
+      | T_Bits (BitWidth_Determined { desc = E_Var y; _ }, _) ->
+          let le = LE_Var y |> here
+          and e = E_Call ("Len", [ E_Var x |> here ]) |> here in
+          Some (S_Assign (le, e) |> here)
+      | _ -> None
+    in
+    List.filter_map get_parameter f.args
+  in
+  (* Inline parameters inside the body function. *)
+  let body =
+    match inlined_parameters with
+    | [] -> f.body
+    | li ->
+        S_Then (ASTUtils.stmt_from_list li, f.body)
+        |> ASTUtils.add_pos_from f.body
+  in
+  (* Build typing local environment. *)
   let lenv =
     let one_arg (name, ty) = (name, get_structure tenv.globals ty) in
     f.args |> List.to_seq |> Seq.map one_arg |> IMap.of_seq
   in
-  let body, _lenv = try_annotate_stmt tenv lenv f.body in
+  let body, _lenv = try_annotate_stmt tenv lenv body in
   let name =
     FunctionRenaming.find_name tenv.func_tr f.name (List.map snd f.args)
   in
