@@ -5,6 +5,8 @@ module IMap = Map.Make (String)
 let dummy_pos = Lexing.dummy_pos
 let annotated desc pos_start pos_end = { desc; pos_start; pos_end }
 let add_dummy_pos desc = annotated desc dummy_pos dummy_pos
+let dummy_annotated = add_dummy_pos ()
+let to_pos pos = { pos with desc = () }
 
 let add_pos_from_st pos desc =
   if pos.desc == desc then pos else { pos with desc }

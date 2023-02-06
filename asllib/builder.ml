@@ -2,8 +2,12 @@ open Lexing
 
 let from_lexbuf version lexbuf =
   let open Error in
-  let cannot_parse lexbuf = fatal @@ CannotParse lexbuf.lex_curr_p in
-  let unknown_symbol lexbuf = fatal @@ UnknownSymbol lexbuf.lex_curr_p in
+  let cannot_parse lexbuf =
+    fatal_here lexbuf.lex_start_p lexbuf.lex_curr_p CannotParse
+  in
+  let unknown_symbol lexbuf =
+    fatal_here lexbuf.lex_start_p lexbuf.lex_curr_p UnknownSymbol
+  in
   match version with
   | `ASLv1 -> (
       try Parser.ast Lexer.token lexbuf with

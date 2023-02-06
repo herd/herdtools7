@@ -23,11 +23,8 @@
 
    ------------------------------------------------------------------------- *)
 
-type 'a annotated = {
-  desc : 'a;
-  pos_start : Lexing.position;
-  pos_end : Lexing.position;
-}
+type position = Lexing.position
+type 'a annotated = { desc : 'a; pos_start : position; pos_end : position }
 
 (* -------------------------------------------------------------------------
 

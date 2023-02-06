@@ -19,7 +19,8 @@
 
 open AST
 
-let fatal = Error.fatal
+let fatal_from = Error.fatal_from
+let to_pos = ASTUtils.to_pos
 
 module type S = sig
   module B : Backend.S
@@ -65,7 +66,7 @@ module Make (B : Backend.S) = struct
   (*                                                                           *)
   (*****************************************************************************)
 
-  let make_record ty fields =
+  let make_record pos ty fields =
     let ty_fields =
       match ty.desc with
       | T_Record ty_fields -> ASTUtils.canonical_fields ty_fields
@@ -78,12 +79,12 @@ module Make (B : Backend.S) = struct
       List.compare_lengths ty_fields fields == 0
       && List.for_all2 eq_field ty_fields fields
     then B.create_vector ty values
-    else fatal @@ Error.BadFields (List.map fst fields, ty)
+    else fatal_from pos @@ Error.BadFields (List.map fst fields, ty)
 
-  let record_index_of_field x li ty =
+  let record_index_of_field pos x li ty =
     match list_index (fun (y, _) -> String.equal x y) li with
     | Some i -> i
-    | None -> fatal @@ Error.BadField (x, ty)
+    | None -> fatal_from pos @@ Error.BadField (x, ty)
 
   (*****************************************************************************)
   (*                                                                           *)
@@ -107,8 +108,8 @@ module Make (B : Backend.S) = struct
   (*                                                                           *)
   (*****************************************************************************)
 
-  let type_of_ta = function
-    | TA_None -> fatal Error.TypeInferenceNeeded
+  let type_of_ta pos = function
+    | TA_None -> fatal_from pos Error.TypeInferenceNeeded
     | TA_InferredStructure ty -> ty
 
   let type_annotation ast sfuncs =
@@ -175,18 +176,18 @@ module Make (B : Backend.S) = struct
       globals |> IMap.map one_glob |> add_decls |> ref
     in
 
-    let rec env_lookup name =
+    let rec env_lookup pos name =
       match IMap.find_opt name !acc with
       | Some (AlreadyEvaluated v) -> v
       | Some (NotYetEvaluated e) ->
           let v = eval_expr e in
           acc := IMap.add name (AlreadyEvaluated v) !acc;
           v
-      | None -> fatal @@ Error.UndefinedIdentifier name
-    and eval_expr e = StaticInterpreter.static_eval env_lookup e in
+      | None -> fatal_from pos @@ Error.UndefinedIdentifier name
+    and eval_expr e = StaticInterpreter.static_eval (env_lookup e) e in
 
     let one_decl = function
-      | D_GlobalConst (name, _, _) -> Some (name, env_lookup name)
+      | D_GlobalConst (name, _, pos) -> Some (name, env_lookup pos name)
       | _ -> None
     in
     ast |> List.to_seq |> Seq.filter_map one_decl |> IMap.of_seq
@@ -208,9 +209,9 @@ module Make (B : Backend.S) = struct
 
   let continue ((_genv, lenv) : env) = return (Continuing lenv)
 
-  let one_return_value name = function
+  let one_return_value pos name = function
     | [ v ] -> return v
-    | _ -> fatal @@ Error.MismatchedReturnValue name
+    | _ -> fatal_from pos @@ Error.MismatchedReturnValue name
 
   let lexpr_is_var le =
     match le.desc with LE_Var _ | LE_Ignore -> true | _ -> false
@@ -227,7 +228,7 @@ module Make (B : Backend.S) = struct
             | Some v ->
                 let* () = B.on_read_identifier x scope v in
                 return v
-            | None -> fatal @@ Error.UndefinedIdentifier x))
+            | None -> fatal_from e @@ Error.UndefinedIdentifier x))
     | E_Binop (op, e1, e2) ->
         let* v1 = eval_expr env scope is_data e1
         and* v2 = eval_expr env scope is_data e2 in
@@ -238,26 +239,26 @@ module Make (B : Backend.S) = struct
     | E_Cond (e1, e2, e3) ->
         let eval_ = eval_expr env scope is_data in
         B.choice (eval_ e1) (eval_ e2) (eval_ e3)
-    | E_Slice (e, slices) ->
-        let positions = eval_slices env slices in
-        let* v = eval_expr env scope is_data e in
+    | E_Slice (e', slices) ->
+        let positions = eval_slices env (to_pos e) slices in
+        let* v = eval_expr env scope is_data e' in
         B.read_from_bitvector positions v
     | E_Call (name, args) ->
         let vargs = List.map (eval_expr env scope is_data) args in
-        let* returned = eval_func genv name vargs in
-        one_return_value name returned
+        let* returned = eval_func genv name (to_pos e) vargs in
+        one_return_value e name returned
     | E_Record (_, li, ta) ->
         let one_field (x, e) =
           let* v = eval_expr env scope is_data e in
           return (x, v)
         in
         let* fields = prod_map one_field li in
-        make_record (type_of_ta ta) fields
+        make_record e (type_of_ta e ta) fields
     | E_GetField (e', x, ta) -> (
-        let ty = type_of_ta ta in
+        let ty = type_of_ta e ta in
         match ty.desc with
         | T_Record li ->
-            let i = record_index_of_field x li ty in
+            let i = record_index_of_field e x li ty in
             let* vec = eval_expr env scope is_data e' in
             B.get_i i vec
         | T_Bits (_, Some fields) -> (
@@ -266,18 +267,18 @@ module Make (B : Backend.S) = struct
                 E_Slice (e', slices)
                 |> ASTUtils.add_pos_from e
                 |> eval_expr env scope is_data
-            | None -> fatal @@ Error.BadField (x, ty))
-        | _ -> fatal @@ Error.BadField (x, ty))
+            | None -> fatal_from e @@ Error.BadField (x, ty))
+        | _ -> fatal_from e @@ Error.BadField (x, ty))
     | E_Concat es ->
         let* values = prod_map (eval_expr env scope is_data) es in
         B.concat_bitvectors values
-    | E_Tuple _ -> fatal @@ Error.NotYetImplemented "tuple construction"
+    | E_Tuple _ -> fatal_from e @@ Error.NotYetImplemented "tuple construction"
 
-  and eval_slices (genv, _lenv) =
+  and eval_slices (genv, _lenv) pos =
     let si_env s =
       match IMap.find_opt s genv.consts with
       | Some v -> v
-      | None -> fatal @@ Error.UndefinedIdentifier s
+      | None -> Error.fatal_from pos @@ Error.UndefinedIdentifier s
     in
     StaticInterpreter.slices_to_positions si_env
 
@@ -293,7 +294,7 @@ module Make (B : Backend.S) = struct
           return (genv, lenv)
     | LE_Slice (le', slices) ->
         let setter = eval_lexpr env scope le' in
-        let positions = eval_slices env slices in
+        let positions = eval_slices env (to_pos le) slices in
         fun m ->
           let* v = m
           and* bv =
@@ -302,11 +303,11 @@ module Make (B : Backend.S) = struct
           in
           B.write_to_bitvector positions v bv |> setter
     | LE_SetField (le', x, ta) -> (
-        let ty = type_of_ta ta in
+        let ty = type_of_ta le ta in
         match ty.desc with
         | T_Record li ->
             let setter = eval_lexpr env scope le' in
-            let i = record_index_of_field x li ty in
+            let i = record_index_of_field le x li ty in
             fun m ->
               let* new_v = m
               and* vec =
@@ -319,8 +320,8 @@ module Make (B : Backend.S) = struct
             | Some (slices, _) ->
                 LE_Slice (le', slices)
                 |> ASTUtils.add_pos_from le |> eval_lexpr env scope
-            | None -> fatal @@ Error.BadField (x, ty))
-        | _ -> fatal @@ Error.BadField (x, ty))
+            | None -> fatal_from le @@ Error.BadField (x, ty))
+        | _ -> fatal_from le @@ Error.BadField (x, ty))
     | LE_TupleUnpack les ->
         fun v ->
           let* v = v in
@@ -336,9 +337,9 @@ module Make (B : Backend.S) = struct
           let lenv = List.fold_left folder lenv envs in
           return (fst env, lenv)
 
-  and multi_assign env scope les values =
+  and multi_assign env scope pos les values =
     if List.compare_lengths les values != 0 then
-      fatal
+      fatal_from pos
       @@ Error.BadArity
            ("tuple construction", List.length les, List.length values)
     else
@@ -365,12 +366,12 @@ module Make (B : Backend.S) = struct
         ({ desc = LE_TupleUnpack les; _ }, { desc = E_Call (name, args); _ })
       when List.for_all lexpr_is_var les ->
         let vargs = List.map (eval_expr env scope true) args in
-        let* returned_values = eval_func (fst env) name vargs in
-        multi_assign env scope les returned_values
+        let* returned_values = eval_func (fst env) name (to_pos s) vargs in
+        multi_assign env scope s les returned_values
     | S_Assign ({ desc = LE_TupleUnpack les; _ }, { desc = E_Tuple exprs; _ })
       when List.for_all lexpr_is_var les ->
         let* values = prod_map (eval_expr env scope true) exprs in
-        multi_assign env scope les values
+        multi_assign env scope s les values
     | S_Assign (le, e) ->
         let v = eval_expr env scope true e
         and setter = eval_lexpr env scope le in
@@ -390,7 +391,7 @@ module Make (B : Backend.S) = struct
             | Returning vs -> return (Returning vs))
     | S_Call (name, args) ->
         let vargs = List.map (eval_expr env scope true) args in
-        let* _ = eval_func (fst env) name vargs in
+        let* _ = eval_func (fst env) name (to_pos s) vargs in
         continue env
     | S_Cond (e, s1, s2) ->
         let* s =
@@ -401,17 +402,19 @@ module Make (B : Backend.S) = struct
     | S_Assert e ->
         let v = eval_expr env scope true e in
         let* b = B.choice v (return true) (return false) in
-        if b then continue env else fatal @@ Error.AssertionFailed e
+        if b then continue env else fatal_from e @@ Error.AssertionFailed e
 
-  and eval_func (genv : genv) name (args : B.value m list) : B.value list m =
+  and eval_func (genv : genv) name pos (args : B.value m list) : B.value list m
+      =
     match IMap.find_opt name genv.funcs with
-    | None -> fatal @@ Error.UndefinedIdentifier name
+    | None -> fatal_from pos @@ Error.UndefinedIdentifier name
     | Some (Primitive { body; _ }) ->
         let* args = prod_map Fun.id args in
         body args
     | Some (Func (_, { args = arg_decls; _ }))
       when List.compare_lengths args arg_decls <> 0 ->
-        fatal @@ Error.BadArity (name, List.length arg_decls, List.length args)
+        fatal_from pos
+        @@ Error.BadArity (name, List.length arg_decls, List.length args)
     | Some (Func (r, { args = arg_decls; body; _ })) -> (
         let scope = (name, !r) in
         let () = r := !r + 1 in
@@ -429,5 +432,5 @@ module Make (B : Backend.S) = struct
     let ast = type_annotation ast primitives in
     let funcs = IMap.empty |> build_funcs ast |> add_primitives primitives in
     let consts = IMap.empty |> build_enums ast |> build_consts ast in
-    eval_func { consts; funcs } "main" []
+    eval_func { consts; funcs } "main" ASTUtils.dummy_annotated []
 end

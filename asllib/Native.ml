@@ -28,8 +28,10 @@ let list_update i f li =
   in
   aux [] i li
 
-let fatal = Error.fatal
-let mismatch_type v types = fatal (Error.MismatchType (v, types))
+let fatal_from = Error.fatal_from
+
+let mismatch_type v types =
+  Error.fatal_unknown_pos (Error.MismatchType (v, types))
 
 module NativeBackend = struct
   type 'a m = unit -> 'a
@@ -64,8 +66,10 @@ module NativeBackend = struct
       | V_Bool false -> m_false
       | v -> mismatch_type v [ T_Bool ])
 
-  let binop op v1 v2 () = StaticInterpreter.binop op v1 v2
-  let unop op v () = StaticInterpreter.unop op v
+  let binop op v1 v2 () =
+    StaticInterpreter.binop ASTUtils.dummy_annotated op v1 v2
+
+  let unop op v () = StaticInterpreter.unop ASTUtils.dummy_annotated op v
   let on_write_identifier _x _scope _value = return ()
   let on_read_identifier _x _scope _value = return ()
   let v_tuple li = return (V_Tuple li)
@@ -100,7 +104,7 @@ module NativeBackend = struct
     | T_Record field_types -> assoc_names_values field_types li |> v_record
     | T_Exception field_types ->
         assoc_names_values field_types li |> v_exception
-    | _ -> fatal @@ Error.ConflictingTypes (indexables, ty)
+    | _ -> fatal_from ty @@ Error.ConflictingTypes (indexables, ty)
 
   let as_bitvector = function
     | V_BitVector bits -> bits
