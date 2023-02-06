@@ -2,6 +2,8 @@ open AST
 
 type 'a printer = Format.formatter -> 'a -> unit
 
+val pp_pos : 'a annotated printer
+
 val pp_value : value printer
 (** Print a value from its components.*)
 
@@ -20,3 +22,4 @@ val t_to_string : t -> string
 val pp_ty : ty printer
 val pp_typed_identifier : typed_identifier printer
 val ty_to_string : ty -> string
+val pp_version : [ `ASLv0 | `ASLv1 | `Any ] printer

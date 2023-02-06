@@ -103,11 +103,19 @@ module Make (C : Sem.Config) = struct
       fun v -> V.Val (tr v)
 
     let v_to_int = function
+      | V.Val (Constant.Concrete (ASLScalar.S_Int i)) -> Some (Int64.to_int i)
+      | _ -> None
+
+    let v_as_int = function
       | V.Val (Constant.Concrete i) -> V.Cst.Scalar.to_int i
       | v -> Warn.fatal "Cannot concretise symbolic value: %s" (V.pp_v v)
 
+    let v_to_bv = function
+      | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)) -> bv
+      | v -> Warn.fatal "Cannot construct a bitvector out of %s." (V.pp_v v)
+
     let datasize_to_machsize v =
-      match v_to_int v with
+      match v_as_int v with
       | 32 -> MachSize.Word
       | 64 -> MachSize.Quad
       | 128 -> MachSize.S128
@@ -149,9 +157,11 @@ module Make (C : Sem.Config) = struct
     (**************************************************************************)
 
     let choice m1 m2 m3 =
-      M.( >>*= ) m1 (fun b ->
-          let* v = M.op1 (Op.ArchOp1 ASLValue.ASLArchOp.ToInt) b in
-          M.choiceT v m2 m3)
+      M.( >>*= ) m1 (function
+        | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) -> if b then m2 else m3
+        | b ->
+            let* v = M.op1 (Op.ArchOp1 ASLValue.ASLArchOp.ToInt) b in
+            M.choiceT v m2 m3)
 
     let binop op =
       let open AST in
@@ -183,7 +193,12 @@ module Make (C : Sem.Config) = struct
     let unop op =
       let open AST in
       match op with
-      | BNOT -> M.op1 Op.Inv
+      | BNOT -> (
+          function
+          | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) ->
+              V.Val (Constant.Concrete (ASLScalar.S_Bool (not b))) |> return
+          | v -> M.op1 Op.Not v >>= M.op1 (Op.ArchOp1 ASLValue.ASLArchOp.ToBool)
+          )
       | NEG -> M.op Op.Sub V.zero
       | NOT -> M.op1 Op.Inv
 
@@ -230,6 +245,7 @@ module Make (C : Sem.Config) = struct
           Warn.user_error "Trying to index non-indexable value %s" (V.pp_v vec)
 
     let read_from_bitvector positions bvs =
+      let positions = Asllib.ASTUtils.slices_to_positions v_as_int positions in
       let arch_op1 = ASLValue.ASLArchOp.BVSlice positions in
       M.op1 (Op.ArchOp1 arch_op1) bvs
 
@@ -241,37 +257,56 @@ module Make (C : Sem.Config) = struct
             (bv_src, bv_dst)
         | _ -> Warn.fatal "Not yet implemented: writing to symbolic bitvector"
       in
+      let positions = Asllib.ASTUtils.slices_to_positions v_as_int positions in
       let bv_res = Asllib.Bitvector.write_slice bv_dst bv_src positions in
       return (V.Val (Constant.Concrete (ASLScalar.S_BitVector bv_res)))
 
     let concat_bitvectors bvs =
-      let as_concrete_bv = function
-        | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)) -> bv
-        | _ ->
-            Warn.fatal "Not yet implemented: concatenating symbolic bitvectors."
+      let bvs =
+        let filter = function
+          | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)) ->
+              Asllib.Bitvector.length bv > 0
+          | _ -> true
+        in
+        List.filter filter bvs
       in
-      let bv_res = Asllib.Bitvector.concat (List.map as_concrete_bv bvs) in
-      return (V.Val (Constant.Concrete (ASLScalar.S_BitVector bv_res)))
+      match bvs with
+      | [ x ] -> return x
+      | [ V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)); V.Var x ]
+        when Asllib.Bitvector.to_int bv = 0 ->
+          return (V.Var x)
+      | bvs ->
+          let as_concrete_bv = function
+            | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)) -> bv
+            | _ ->
+                Warn.fatal
+                  "Not yet implemented: concatenating symbolic bitvectors: \
+                   [%s]."
+                  (String.concat "," (List.map V.pp_v bvs))
+          in
+          let bv_res = Asllib.Bitvector.concat (List.map as_concrete_bv bvs) in
+          return (V.Val (Constant.Concrete (ASLScalar.S_BitVector bv_res)))
 
     (**************************************************************************)
     (* Primitives and helpers                                                 *)
     (**************************************************************************)
 
     let virtual_to_loc_reg rv ii =
-      let i = v_to_int rv in
-      let arch_reg = AArch64Base.Ireg (List.nth AArch64Base.gprs (i - 1)) in
-      A.Location_reg (ii.A.proc, ASLBase.ArchReg arch_reg)
+      let i = v_as_int rv in
+      if i >= List.length AArch64Base.gprs || i < 0 then
+        Warn.fatal "Invalid register number: %d" i
+      else
+        let arch_reg = AArch64Base.Ireg (List.nth AArch64Base.gprs i) in
+        A.Location_reg (ii.A.proc, ASLBase.ArchReg arch_reg)
 
-    let read_register (ii, poi) rval datasize =
+    let read_register (ii, poi) rval =
       let loc = virtual_to_loc_reg rval ii in
-      let sz = datasize_to_machsize datasize in
-      let* v = read_loc sz true loc (use_ii_with_poi ii poi) in
+      let* v = read_loc MachSize.Quad true loc (use_ii_with_poi ii poi) in
       return [ v ]
 
-    let write_register (ii, poi) rval datasize v =
+    let write_register (ii, poi) v rval =
       let loc = virtual_to_loc_reg rval ii in
-      let sz = datasize_to_machsize datasize in
-      let* () = write_loc sz loc v (use_ii_with_poi ii poi) in
+      let* () = write_loc MachSize.Quad loc v (use_ii_with_poi ii poi) in
       return []
 
     let read_memory (ii, poi) addr datasize =
@@ -288,15 +323,87 @@ module Make (C : Sem.Config) = struct
       in
       return []
 
+    let default_ProcState_fields =
+      let zeros length =
+        Constant.Concrete
+          (ASLScalar.S_BitVector (Asllib.Bitvector.zeros length))
+      and zero =
+        Constant.Concrete (ASLScalar.S_BitVector Asllib.Bitvector.zero)
+      in
+      [
+        ("D", zero);
+        ("A", zero);
+        ("I", zero);
+        ("F", zero);
+        ("EXLOCK", zero);
+        ("PAN", zero);
+        ("UAO", zero);
+        ("DIT", zero);
+        ("TCO", zero);
+        ("PM", zero);
+        ("PPEND", zero);
+        ("BTYPE", zeros 2);
+        ("ZA", zero);
+        ("SM", zero);
+        ("ALLINT", zero);
+        ("SS", zero);
+        ("IL", zero);
+        ("EL", zeros 2);
+        ("nRW", zero);
+        ("SP", zero);
+        ("Q", zero);
+        ("GE", zeros 4);
+        ("SSBS", zero);
+        ("IT", zeros 8);
+        ("J", zero);
+        ("T", zero);
+        ("E", zero);
+        ("M", zeros 5);
+      ]
+
     let read_pstate_nzcv (ii, poi) () =
+      let to_cst bv = Constant.Concrete (ASLScalar.S_BitVector bv) |> return in
+      let to_bit v =
+        M.choiceT v (to_cst Asllib.Bitvector.one) (to_cst Asllib.Bitvector.zero)
+      in
       let loc = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.NZCV) in
       let* v = read_loc MachSize.Quad true loc (use_ii_with_poi ii poi) in
-      return [ v ]
+      let v = match v with V.Val _ -> v | _ -> V.zero in
+      let* n = M.op1 (Op.ReadBit 3) v >>= to_bit
+      and* z = M.op1 (Op.ReadBit 2) v >>= to_bit
+      and* c = M.op1 (Op.ReadBit 1) v >>= to_bit
+      and* v = M.op1 (Op.ReadBit 0) v >>= to_bit in
+      let fields =
+        ("N", n) :: ("Z", z) :: ("C", c) :: ("V", v) :: default_ProcState_fields
+        |> Asllib.ASTUtils.canonical_fields |> List.map snd
+      in
+      return [ V.Val (Constant.ConcreteVector fields) ]
 
     let write_pstate_nzcv (ii, poi) v =
       let loc = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.NZCV) in
       let* () = write_loc MachSize.Quad loc v (use_ii_with_poi ii poi) in
       return []
+
+    let replicate bv v =
+      let return_bv res =
+        return [ V.Val (Constant.Concrete (ASLScalar.S_BitVector res)) ]
+      in
+      match v_as_int v with
+      | 0 -> Asllib.Bitvector.of_string "" |> return_bv
+      | 1 -> return [ bv ]
+      | i ->
+          let bv = v_to_bv bv in
+          List.init i (Fun.const bv) |> Asllib.Bitvector.concat |> return_bv
+
+    let uint bv =
+      let* res = M.op1 (Op.ArchOp1 ASLValue.ASLArchOp.ToInt) bv in
+      return [ res ]
+
+    let sint bv =
+      let* nbv = M.op1 Op.Not bv in
+      let* ni = M.op1 (Op.ArchOp1 ASLValue.ASLArchOp.ToInt) nbv in
+      let* res = M.op1 (Op.AddK 1) ni in
+      return [ res ]
 
     (**************************************************************************)
     (* ASL environment                                                        *)
@@ -304,7 +411,19 @@ module Make (C : Sem.Config) = struct
 
     (* Helpers *)
     let build_primitive name args return_type body =
-      AST.{ name; args; body; return_type }
+      let parameters =
+        let open AST in
+        let get_param t =
+          match t.desc with
+          | T_Bits (BitWidth_Determined { desc = E_Var x; _ }, _) ->
+              Some (x, None)
+          | _ -> None
+        in
+        args |> List.filter_map get_param (* |> List.sort String.compare *)
+      and args =
+        List.mapi (fun i arg_ty -> ("arg_" ^ string_of_int i, arg_ty)) args
+      in
+      AST.{ name; args; body; return_type; parameters }
 
     let arity_zero name return_type f =
       build_primitive name [] return_type @@ function
@@ -333,55 +452,35 @@ module Make (C : Sem.Config) = struct
       let with_pos = Asllib.ASTUtils.add_dummy_pos in
       let d = T_Int None |> with_pos in
       let reg = T_Int None |> with_pos in
-      let data = T_Int None |> with_pos in
+      let var x = E_Var x |> with_pos in
+      let lit x = E_Literal (V_Int x) |> with_pos in
+      let bv x = T_Bits (BitWidth_Determined x, None) |> with_pos in
+      let bv_var x = bv @@ var x in
+      let bv_lit x = bv @@ lit x in
+      let mul x y = E_Binop (MUL, x, y) |> with_pos in
+      let t_named x = T_Named x |> with_pos in
+      let getter = Asllib.ASTUtils.getter_name in
+      let setter = Asllib.ASTUtils.setter_name in
       [
-        arity_two "read_register" [ reg; d ] (Some data) (read_register ii_env);
-        arity_three "write_register" [ reg; d; reg ] None
-          (write_register ii_env);
-        arity_two "read_memory" [ reg; d ] (Some data) (read_memory ii_env);
-        arity_three "write_memory" [ reg; d; data ] None (write_memory ii_env);
-        arity_zero "read_pstate_nzcv" (Some data) (read_pstate_nzcv ii_env);
-        arity_one "write_pstate_nzcv" [ data ] None (write_pstate_nzcv ii_env);
+        arity_one (getter "_R") [ reg ]
+          (Some (bv_lit 64))
+          (read_register ii_env);
+        arity_two (setter "_R") [ bv_lit 64; reg ] None (write_register ii_env);
+        arity_two "read_memory" [ reg; d ] (Some d) (read_memory ii_env);
+        arity_three "write_memory" [ reg; d; d ] None (write_memory ii_env);
+        arity_zero (getter "PSTATE")
+          (Some (t_named "ProcState"))
+          (read_pstate_nzcv ii_env);
+        arity_one (setter "PSTATE")
+          [ t_named "ProcState" ]
+          None (write_pstate_nzcv ii_env);
+        arity_two "Replicate"
+          [ bv_var "N"; d ]
+          (Some (bv (mul (var "N") (var "arg_1"))))
+          replicate;
+        arity_one "UInt" [ bv_var "N" ] (Some d) uint;
+        arity_one "SInt" [ bv_var "N" ] (Some d) uint;
       ]
-
-    (* Main function arguments *)
-    let main_env (ii, _poi) =
-      let with_pos = Asllib.ASTUtils.add_dummy_pos in 
-      let assign x v =
-        let open Asllib.AST in
-        with_pos (S_Assign (with_pos (LE_Var x), with_pos (E_Literal (v_to_parsed_v v))))
-      in
-      let folder reg v acc =
-        let open ASLBase in
-        match reg with
-        | ASLLocalId (scope, x) ->
-            if scope_equal main_scope scope then assign x v :: acc else acc
-        | _ -> acc
-      in
-      let to_assign = A.fold_reg_state folder ii.A.env.A.regs [] in
-      Asllib.ASTUtils.stmt_from_list to_assign
-
-    let rec list_remove_opt f acc = function
-      | [] -> None
-      | h :: t ->
-          if f h then Some (h, List.rev_append acc t)
-          else list_remove_opt f (h :: acc) t
-
-    let add_main_env_to_ast (ii, _poi) =
-      let open AST in
-      match main_env (ii, _poi) with
-      | { desc = S_Pass; _ } -> ii.A.inst
-      | s -> (
-          let is_main = function
-            | D_Func f -> String.equal "main" f.name
-            | _ -> false
-          in
-          match list_remove_opt is_main [] ii.A.inst with
-          | Some (D_Func f, ast) ->
-              let body = Asllib.ASTUtils.add_pos_from f.body (S_Then (s, f.body)) in
-              let main_func = D_Func { f with body } in
-              main_func :: ast
-          | _ -> ii.A.inst)
 
     (**************************************************************************)
     (* Execution                                                              *)
@@ -394,8 +493,10 @@ module Make (C : Sem.Config) = struct
         type 'a m = 'a M.t
         type scope = string * int
 
+        let debug_value = V.pp_v
         let v_of_int = V.intToV
         let v_of_parsed_v = v_of_parsed_v
+        let v_to_int = v_to_int
         let bind_data = M.( >>= )
         let bind_seq = M.cseq
         let prod = M.( >>| )
@@ -413,8 +514,7 @@ module Make (C : Sem.Config) = struct
         let concat_bitvectors = concat_bitvectors
       end in
       let module ASLInterpreter = Asllib.Interpreter.Make (ASLBackend) in
-      let ast = add_main_env_to_ast ii_env in
-      let exec () = ASLInterpreter.run ast (extra_funcs ii_env) in
+      let exec () = ASLInterpreter.run ii.A.inst (extra_funcs ii_env) in
       let* _ =
         match Asllib.Error.intercept exec () with
         | Ok m -> m

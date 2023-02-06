@@ -14,27 +14,30 @@ type error =
   | NotYetImplemented of string
   | ConflictingTypes of type_desc list * ty
   | AssertionFailed of expr
-  | CannotParse of Lexing.position
-  | UnknownSymbol of Lexing.position
+  | CannotParse
+  | UnknownSymbol
 
-exception ASLException of error
+exception ASLException of error annotated
+
+type 'a result = ('a, error annotated) Result.t
 
 let fatal e = raise (ASLException e)
+let fatal_from pos e = fatal (ASTUtils.add_pos_from pos e)
+
+let fatal_here pos_start pos_end e =
+  fatal (ASTUtils.annotated e pos_start pos_end)
+
+let fatal_unknown_pos e = fatal (ASTUtils.add_dummy_pos e)
 let intercept f () = try Ok (f ()) with ASLException e -> Error e
 
 let pp_error =
   let open Format in
   let open PP in
   let pp_comma_list = pp_print_list ~pp_sep:(fun f () -> fprintf f ",@ ") in
-  let pp_pos f pos =
-    let open Lexing in
-    fprintf f "@[<h>File %s,@ line %2d,@ char %2d@]" pos.pos_fname pos.pos_lnum
-      (pos.pos_cnum - pos.pos_bol)
-  in
   let pp_type_desc f ty = pp_ty f (ASTUtils.add_dummy_pos ty) in
   fun f e ->
-    pp_open_box f 2;
-    (match e with
+    fprintf f "@[<v 0>@[<h>%a:@]@ @[<2>ASL error:@ " pp_pos e;
+    (match e.desc with
     | UnsupportedBinop (op, v1, v2) ->
         fprintf f "Unsupported binop %s for values@ %a@ and %a."
           (binop_to_string op) pp_value v1 pp_value v2
@@ -80,8 +83,9 @@ let pp_error =
           (pp_comma_list pp_type_desc)
           expected
     | AssertionFailed e -> fprintf f "Assertion failed:@ %a" pp_expr e
-    | CannotParse pos -> fprintf f "%a@ -- Cannot parse" pp_pos pos
-    | UnknownSymbol pos -> fprintf f "%a@ -- Unknown symbol" pp_pos pos);
+    | CannotParse -> pp_print_string f "Cannot parse."
+    | UnknownSymbol -> pp_print_string f "Unknown symbol.");
+    pp_close_box f ();
     pp_close_box f ()
 
 let error_to_string = Format.asprintf "%a" pp_error

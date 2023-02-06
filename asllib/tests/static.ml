@@ -13,7 +13,14 @@ let build_consts () =
     List.map (fun (name, e) -> D_GlobalConst (name, !!(T_Int None), e)) values
   in
   let main =
-    D_Func { name = "main"; body = !!S_Pass; args = []; return_type = None }
+    D_Func
+      {
+        name = "main";
+        body = !!S_Pass;
+        args = [];
+        parameters = [];
+        return_type = None;
+      }
   in
   let ast = main :: consts in
   let _ = Native.NativeInterpreter.run ast [] () in

@@ -23,11 +23,8 @@
 
    ------------------------------------------------------------------------- *)
 
-type 'a annotated = {
-  desc : 'a;
-  pos_start : Lexing.position;
-  pos_end : Lexing.position;
-}
+type position = Lexing.position
+type 'a annotated = { desc : 'a; pos_start : position; pos_end : position }
 
 (* -------------------------------------------------------------------------
 
@@ -94,17 +91,30 @@ type value =
 type expr_desc =
   | E_Literal of value
   | E_Var of identifier
+  | E_Typed of expr * ty
   | E_Binop of binop * expr * expr
   | E_Unop of unop * expr
-  | E_Call of identifier * expr list
+  | E_Call of identifier * expr list * (identifier * expr) list
   | E_Slice of expr * slice list
   | E_Cond of expr * expr * expr
   | E_GetField of expr * identifier * type_annot
   | E_Record of ty * (identifier * expr) list * type_annot
   | E_Concat of expr list
   | E_Tuple of expr list
+  | E_Unknown of ty
+  | E_Pattern of expr * pattern
 
 and expr = expr_desc annotated
+
+and pattern =
+  | Pattern_All
+  | Pattern_Any of pattern list
+  | Pattern_Geq of expr
+  | Pattern_Leq of expr
+  | Pattern_Mask of string
+  | Pattern_Not of pattern
+  | Pattern_Range of expr * expr (* lower -> upper, included *)
+  | Pattern_Single of expr
 
 and slice =
   | Slice_Single of expr
@@ -172,6 +182,7 @@ and typed_identifier = identifier * ty
 type lexpr_desc =
   | LE_Ignore
   | LE_Var of identifier
+  | LE_Typed of lexpr * ty
   | LE_Slice of lexpr * slice list
   | LE_SetField of lexpr * identifier * type_annot
   | LE_TupleUnpack of lexpr list
@@ -182,15 +193,16 @@ and lexpr = lexpr_desc annotated
 type stmt_desc =
   | S_Pass
   | S_Then of stmt * stmt
+  | S_TypeDecl of identifier * ty
   | S_Assign of lexpr * expr
-  | S_Call of identifier * expr list
+  | S_Call of identifier * expr list * (identifier * expr) list
   | S_Return of expr option
   | S_Cond of expr * stmt * stmt
   | S_Case of expr * case_alt list
   | S_Assert of expr
 
 and stmt = stmt_desc annotated
-and case_alt = (expr list * stmt) annotated
+and case_alt = (pattern * stmt) annotated
 
 (* -------------------------------------------------------------------------
 
@@ -198,14 +210,15 @@ and case_alt = (expr list * stmt) annotated
 
    ------------------------------------------------------------------------- *)
 
-type ('body, 'arg) func_skeleton = {
+type 'body func_skeleton = {
   name : identifier;
-  args : 'arg list;
+  parameters : (identifier * ty option) list;
+  args : typed_identifier list;
   body : 'body;
   return_type : ty option;
 }
 
-type func = (stmt, typed_identifier) func_skeleton
+type func = stmt func_skeleton
 (** Function types in the AST. For the moment, they represent getters, setters,
     functions, procedures and primitives. *)
 

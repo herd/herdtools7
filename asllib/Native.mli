@@ -21,3 +21,5 @@ module NativeBackend :
   Backend.S with type value = AST.value and type 'a m = unit -> 'a
 
 module NativeInterpreter : Interpreter.S with module B = NativeBackend
+
+val interprete : AST.t -> AST.value list

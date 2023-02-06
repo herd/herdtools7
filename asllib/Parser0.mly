@@ -26,6 +26,7 @@
 %token <Bitvector.t> BITS_LIT
 %token <int> INT_LIT
 %token <float> REAL_LIT
+%token <bool> BOOL_LIT
 %token <string> QUALIFIER
 
 %token AMP
@@ -34,36 +35,11 @@
 %token ARRAY
 %token ASSERT
 %token BANG
+%token BANG_EQ
 %token BAR_BAR
+%token BIT
 %token BITS
-%token UU_ARRAY
-%token UU_BUILTIN
-%token UU_CONDITIONAL
-%token UU_CONFIG
-%token UU_DECODE
-%token UU_ENCODING
-%token UU_EXCEPTIONTAKEN
-%token UU_EXECUTE
-%token UU_EVENT
-%token UU_FIELD
-%token UU_FUNCTION
-%token UU_GUARD
-%token UU_INSTRUCTION
-%token UU_INSTRUCTION_SET
-%token UU_MAP
-%token UU_NOP
-%token UU_NEWEVENT
-%token UU_NEWMAP
-%token UU_OPCODE
-%token UU_OPERATOR_ONE
-%token UU_OPERATOR_TWO
-%token UU_POSTDECODE
-%token UU_READWRITE
-%token UU_REGISTER
-%token UU_UNALLOCATED
-%token UU_UNPREDICTABLE_UNLESS
-%token UU_UNPREDICTABLE
-%token UU_WRITE
+%token BOOLEAN
 %token CARET
 %token CASE
 %token CATCH
@@ -91,11 +67,12 @@
 %token GT_EQ
 %token GT_GT
 %token IF
-%token IMPLEM_DEFINED
-%token IN
 %token IFF
+%token IMPLEM_DEFINED
 %token IMPLIES
+%token IN
 %token INDENT
+%token INTEGER
 %token IS
 %token LBRACE
 %token LBRACE_LBRACE
@@ -106,18 +83,18 @@
 %token LT_LT
 %token MINUS
 %token MOD
-%token BANG_EQ
 %token NOT
 %token OF
 %token OR
 %token OTHERWISE
 %token PLUS
-%token PLUS_PLUS
 %token PLUS_COLON
+%token PLUS_PLUS
 %token QUOT
 %token RBRACE
 %token RBRACE_RBRACE
 %token RBRACK
+%token REAL
 %token RECORD
 %token REM
 %token REPEAT
@@ -137,6 +114,34 @@
 %token UNKNOWN
 %token UNPREDICTABLE
 %token UNTIL
+%token UU_ARRAY
+%token UU_BUILTIN
+%token UU_CONDITIONAL
+%token UU_CONFIG
+%token UU_DECODE
+%token UU_ENCODING
+%token UU_EVENT
+%token UU_EXCEPTIONTAKEN
+%token UU_EXECUTE
+%token UU_FIELD
+%token UU_FUNCTION
+%token UU_GUARD
+%token UU_INSTRUCTION
+%token UU_INSTRUCTION_SET
+%token UU_MAP
+%token UU_NEWEVENT
+%token UU_NEWMAP
+%token UU_NOP
+%token UU_OPCODE
+%token UU_OPERATOR_ONE
+%token UU_OPERATOR_TWO
+%token UU_POSTDECODE
+%token UU_READWRITE
+%token UU_REGISTER
+%token UU_UNALLOCATED
+%token UU_UNPREDICTABLE
+%token UU_UNPREDICTABLE_UNLESS
+%token UU_WRITE
 %token WHEN
 %token WHILE
 
@@ -144,23 +149,41 @@
 %type <AST.stmt> simple_stmt_list
 %type <AST.stmt> stmts
 %type <AST.t> ast
+%type <AST.t> opn
 %start ast
+%start opn
 
 %nonassoc ELSE
 %left COLON
-%left AMP_AMP BAR_BAR
+%left AMP_AMP BAR_BAR IMPLIES
 %left EQ_EQ BANG_EQ
-%nonassoc GT_EQ LT_EQ LT GT
+%nonassoc GT_EQ LT_EQ LT GT IN
 %left PLUS MINUS EOR AND OR
 %left STAR SLASH MOD LT_LT GT_GT DIV
 %left CARET
 %nonassoc BANG NOT
-%nonassoc IN
-%left DOT LBRACK
+%left LBRACK
+%left DOT
 
 %%
 
-let ast := list(EOL); terminated (list(decl), EOF)
+let filter(x) == ~=x; { List.filter_map Fun.id x }
+let some(x) == ~=x; < Some >
+
+let ast := list(EOL); terminated (filter(list(decl)), EOF)
+
+let opn := list(EOL); body=list(stmts); EOF;
+    {
+      AST.[
+        D_Func {
+          name = "main";
+          args = [];
+          parameters = [];
+          body = ASTUtils.stmt_from_list body;
+          return_type = None;
+        }
+      ]
+    }
 
 let decl ==
   | variable_decl
@@ -172,28 +195,30 @@ let decl ==
 
 let annotated(x) == desc = x; { AST.{ desc; pos_start=$symbolstartpos; pos_end=$endpos }}
 
-let unimplemented_decl(x) ==
-  x=annotated(x) ; { AST.(D_GlobalConst ("-", ASTUtils.add_pos_from x @@ T_Int None, ASTUtils.add_pos_from x @@ E_Literal (V_Int 0))) }
+let unimplemented_decl(x) == x; { None }
+let unimplemented_ty(x) == x; { AST.(T_Bits (BitWidth_Determined (E_Literal (V_Int 0) |> ASTUtils.add_dummy_pos), None)) }
+
 
 let type_decl ==
-  | terminated_by(SEMICOLON; EOL,
-    | TYPE; ~=tidentdecl; EQ; ~=ty; < AST.D_TypeDecl >
-    | RECORD; x=tidentdecl; fields=annotated(braced(nlist(field)));
-      { AST.(D_TypeDecl (x, ASTUtils.add_pos_from fields (T_Record fields.desc))) }
-    | ENUMERATION; x=tidentdecl; li=annotated(braced(clist(ident)));
-      { AST.(D_TypeDecl (x, ASTUtils.add_pos_from li (T_Enum li.desc))) }
+  some (
+    | terminated_by(SEMICOLON; EOL,
+      | TYPE; ~=tidentdecl; EQ; ~=ty; < AST.D_TypeDecl >
+      | RECORD; x=tidentdecl; fields=annotated(braced(nlist(field)));
+        { AST.(D_TypeDecl (x, ASTUtils.add_pos_from fields (T_Record fields.desc))) }
+      | ENUMERATION; x=tidentdecl; li=annotated(braced(ntclist(ident)));
+        { AST.(D_TypeDecl (x, ASTUtils.add_pos_from li (T_Enum li.desc))) }
 
-    | unimplemented_decl(
-      | TYPE; tidentdecl; <>
+      | TYPE; t=tidentdecl; ty=annotated(unimplemented_ty(<>));
+        { AST.D_TypeDecl (t, ty) }
     )
-  )
 
-  | TYPE; x=tidentdecl; IS; li=annotated(pared(nclist(field_ns))); EOL;
-    { AST.(D_TypeDecl (x, ASTUtils.add_pos_from li (T_Record li.desc))) }
+    | TYPE; x=tidentdecl; IS; li=annotated(pared(ntclist(field_ns))); EOL;
+      { AST.(D_TypeDecl (x, ASTUtils.add_pos_from li (T_Record li.desc))) }
+  )
 
 let tidentdecl ==
   | ident
-  | QUALIFIER; DOT; ident
+  | q=QUALIFIER; DOT; i=ident; { q ^ "_" ^ i }
 
 let field == terminated(field_ns, SEMICOLON)
 let field_ns == t=ty; x=ident; { (x, t) }
@@ -206,9 +231,10 @@ let nlist(x) == nonempty_list(x)
 let nclist(x) == separated_nonempty_list(COMMA, x)
 let nnclist(x) == h=x; COMMA; t=nclist(x); { h::t }
 let terminated_by (y, x) == terminated(x, y)
-let some(x) == ~=x; < Some >
 
-let unimplemented_ty(x) == x; { AST.T_Named "Unimplemented" }
+let ntclist(x) :=
+    | ~=x; ioption(COMMA);      { [ x ]  }
+    | ~=x; COMMA; t=ntclist(x); { x :: t }
 
 let ty :=
   annotated (
@@ -217,9 +243,15 @@ let ty :=
   )
 
 let ty_non_tuple ==
-  | ~=tident; < AST.T_Named >
+  | INTEGER;  { AST.T_Int None  }
+  | REAL;     { AST.T_Real      }
+  | BIT;      { AST.T_Bit       }
+  | BOOLEAN;  { AST.T_Bool      }
+  | ~=tident; < AST.T_Named     >
+
   | BITS; e=pared(expr); { AST.(T_Bits (AST.BitWidth_Determined e, None)) }
   (* | tident; pared(clist(expr)); <> *)
+
   | unimplemented_ty (
     | TYPEOF; pared(expr); <>
     | ARRAY; bracketed(ixtype); OF; ty; <>
@@ -231,40 +263,50 @@ let ixtype ==
 
 let tident ==
   | typeident
-  | QUALIFIER; DOT; typeident
+  | q=QUALIFIER; DOT; i=typeident; { q ^ "_" ^ i }
 
 let typeident == typeid
 let typeid == ident
 let ident == IDENTIFIER
-let qualident == ioption(QUALIFIER; DOT); ident
+let qualident ==
+    | q=QUALIFIER; DOT; i=ident; { q ^ "_" ^ i }
+    | ident
+    | RECORD; { "record" }
 
 let unimplemented_expr(x) == x; { AST.(E_Literal (V_Bool true)) }
 let without_ta == { AST.TA_None }
+let nargs == { [] }
 
-let expr := binop_expr(expr, binop_or_concat)
 let sexpr := binop_expr(sexpr, abinop)
+let expr :=
+  | binop_expr(expr, binop)
+  | annotated (
+      e1=expr; COLON; e2=expr;
+          { AST.E_Concat [ e1; e2 ] }
+  )
 
 let binop_expr(e, b) ==
   | pared(expr)
   | annotated (
-      | ~=literal_expression;                 < AST.E_Literal   >
-      | ~=qualident;                          < AST.E_Var       >
-      | ~=qualident; ~=pared(clist(expr));    < AST.E_Call      >
-      | ~=unop; ~=e;                          < AST.E_Unop      >
-      | e1=e; op=b; e2=e;                     { AST.E_Binop (op, e1, e2) }
-      | ~=pared(nnclist(expr));               < AST.E_Tuple     >
-      | IF; c=expr; THEN; e=expr; ~=e_else;   < AST.E_Cond      >
-      | ~=e; DOT; ~=ident; ~=without_ta;      < AST.E_GetField  >
-      | ~=e; DOT; ~=bracketed(clist(ident));  < tr_get_fields   >
-      | ~=e; ~=bracketed(clist(slice));       < AST.E_Slice     >
+      | ~=literal_expression;                       < AST.E_Literal   >
+      | ~=qualident;                                < AST.E_Var       >
+      | ~=qualident; ~=pared(clist(expr)); ~=nargs; < AST.E_Call      >
+      | ~=unop; ~=e;                                < AST.E_Unop      >
+      | e1=e; op=b; e2=e;                           { AST.E_Binop (op, e1, e2) }
+      | ~=pared(nnclist(expr));                     < AST.E_Tuple     >
+      | IF; c=expr; THEN; e=expr; ~=e_else;         < AST.E_Cond      >
+      | ~=e; DOT; ~=ident; ~=without_ta;            < AST.E_GetField  >
+      | ~=e; DOT; ~=bracketed(clist(ident));        < tr_get_fields   >
+      | ~=e; ~=bracketed(clist(slice));             < AST.E_Slice     >
+      | ~=bracketed(clist(expr));                   < AST.E_Concat    >
+      | ~=e; IN; ~=pattern;                         < AST.E_Pattern   >
+      | ~=annotated(ty_non_tuple); UNKNOWN;         < AST.E_Unknown   >
       (*
       | ~=e; LT; ~=clist(slice); GT;          < AST.E_Slice     >
       *)
 
       | unimplemented_expr(
-        | ty_non_tuple; UNKNOWN; <>
         | ty_non_tuple; IMPLEM_DEFINED; ioption(STRING_LIT); <>
-        | e; IN; pattern; <>
       )
     )
 
@@ -279,6 +321,7 @@ let slice ==
 let unimplemented_literal_expression(x) == x; { AST.V_Bool false }
 
 let literal_expression ==
+  | ~=BOOL_LIT;      < AST.V_Bool       >
   | ~=INT_LIT;       < AST.V_Int        >
   | ~=REAL_LIT;      < AST.V_Real       >
   | ~=BITS_LIT;      < AST.V_BitVector  >
@@ -289,7 +332,10 @@ let literal_expression ==
 
 let variable_decl ==
   terminated_by (SEMICOLON; EOL,
-    | CONSTANT; t=ty; x=qualident; EQ; e=expr; { AST.D_GlobalConst (x, t, e) }
+    | some (
+        ioption(CONSTANT); t=ty; x=qualident; EQ; e=expr;
+          { AST.D_GlobalConst (x, t, e) }
+      )
 
     | unimplemented_decl (
       | ty; qualident; <>
@@ -298,35 +344,75 @@ let variable_decl ==
   )
 
 let function_decl ==
-  return_type=some(ty); name=qualident; args=pared(clist(formal)); body=func_body;
-    { AST.(D_Func { name; args; return_type; body }) }
+  | some (
+      ~=ty; name=qualident; args=pared(clist(formal)); body=indented_block;
+        {
+          let return_type = Some ty
+          and parameters = [] in
+          AST.(D_Func { name; args; return_type; body; parameters })
+        }
+    )
+  | unimplemented_decl (
+      some(ty); qualident; pared(clist(formal)); ioption(SEMICOLON); EOL
+    )
 
 let getter_decl ==
-  | ~=ty; name=qualident; body=opt_indented_block; SEMICOLON; EOL;
-    {
-      let return_type = Some(ty)
-      and args = [] in
-      AST.(D_Func { name; args; return_type; body })
-    }
-  | return_type=some(ty); name=qualident; args=bracketed(clist(formal)); body=func_body;
-    { AST.(D_Func { name; args; return_type; body })}
+  | some (
+    | ~=ty; name=qualident; body = indented_block;
+      {
+        let return_type = Some(ty)
+        and name = ASTUtils.getter_name name
+        and args = []
+        and parameters = [] in
+        AST.(D_Func { name; args; return_type; body; parameters })
+      }
+    | ~=ty; name=qualident; body=opt_indented_block; SEMICOLON; EOL;
+      {
+        let return_type = Some(ty)
+        and name = ASTUtils.getter_name name
+        and args = []
+        and parameters = [] in
+        AST.(D_Func { name; args; return_type; body; parameters })
+      }
+    | ~=ty; name=qualident; args=bracketed(clist(formal)); body=indented_block;
+      {
+        let name = ASTUtils.getter_name name
+        and return_type = Some (ty)
+        and parameters = [] in
+        AST.(D_Func { name; args; return_type; body; parameters })
+      }
+  )
+  | unimplemented_decl (
+      ty; qualident; bracketed(clist(formal)); ioption(SEMICOLON); EOL
+  )
 
+let setter_args == loption(bracketed(clist(sformal)))
 let setter_decl ==
-  name=qualident; args=loption(bracketed(clist(sformal))); EQ; ~=ty; ~=ident; body=func_body;
-    { AST.(D_Func { name; body; return_type=None; args=(ident, ty) :: args }) }
+  some (
+    name=qualident; args=setter_args; EQ; ~=ty; ~=ident; body=indented_block;
+      {
+        let name = ASTUtils.setter_name name
+        and args = (ident, ty) :: args in
+        AST.(D_Func { name; body; return_type=None; args; parameters = [] })
+      }
+  )
+  | unimplemented_decl (
+      qualident; setter_args; EQ; ty; ident; ioption(SEMICOLON); EOL
+    )
 
 let procedure_decl ==
-  name=qualident; args=pared(clist(formal)); body=func_body;
-    { AST.(D_Func { name; args; body; return_type=None }) }
+  | some (
+      name=qualident; args=pared(clist(formal)); body=indented_block;
+        { AST.(D_Func { name; args; body; return_type=None; parameters = [] }) }
+    )
+  | unimplemented_decl (
+      qualident; pared(clist(formal)); ioption(SEMICOLON); EOL
+    )
 
 let sformal == t=ty; ioption(AMP); x=ident; { (x, t) }
 let formal == t=ty; x=ident; { (x, t) }
 
 let s_eol == EOL; { ASTUtils.s_pass }
-
-let func_body ==
-  | indented_block
-  | ioption(SEMICOLON); s_eol
 
 let opt_indented_block ==
   | indented_block
@@ -359,9 +445,9 @@ let simple_stmt_list == ~=nlist(simple_stmt); < ASTUtils.stmt_from_list >
 let simple_stmt ==
   | assignment_stmt
   | annotated ( terminated_by (SEMICOLON,
-    | ~=qualident; ~=pared(clist(expr));  < AST.S_Call >
-    | RETURN; ~=ioption(expr);            < AST.S_Return >
-    | ASSERT; ~=expr;                     < AST.S_Assert >
+    | ~=qualident; ~=pared(clist(expr)); ~=nargs; < AST.S_Call >
+    | RETURN; ~=ioption(expr);                    < AST.S_Return >
+    | ASSERT; ~=expr;                             < AST.S_Assert >
 
     | unimplemented_stmts (
       | UNPREDICTABLE; ioption(pared(<>)); <>
@@ -379,19 +465,30 @@ let simple_stmt ==
 let assignment_stmt ==
   annotated (
     terminated_by(SEMICOLON,
-      |               ~=           lexpr ; EQ; ~=expr; < AST.S_Assign >
-      | ty_non_tuple; ~=annotated(le_var); EQ; ~=expr; < AST.S_Assign >
-      | CONSTANT; ty; ~=annotated(le_var); EQ; ~=expr; < AST.S_Assign >
-
-      | unimplemented_stmts (
-        | ty_non_tuple; nclist(ident); <>
-      )
+      |                       ~=lexpr; EQ; ~=expr; < AST.S_Assign >
+      |                ~=typed_le_var; EQ; ~=expr; < AST.S_Assign >
+      | CONSTANT;      ~=typed_le_var; EQ; ~=expr; < AST.S_Assign >
+      | CONSTANT; ~=annotated(le_var); EQ; ~=expr; < AST.S_Assign >
     )
   )
+  | t=annotated(ty_non_tuple); li=nclist(annotated(ident)); SEMICOLON;
+      {
+        let one_var x =
+          let le = AST.LE_Var x.AST.desc |> ASTUtils.add_pos_from x in
+          let e = AST.E_Unknown t |> ASTUtils.add_pos_from x in
+          AST.S_Assign (le, e) |> ASTUtils.add_pos_from x
+        in
+        List.map one_var li |> ASTUtils.stmt_from_list
+      }
 
 let le_var == ~=qualident; < AST.LE_Var >
 let lexpr_ignore == { AST.LE_Ignore }
 let unimplemented_lexpr(x) == x; lexpr_ignore
+
+let typed_le_var ==
+  annotated (
+    t=annotated(ty_non_tuple); le=annotated(le_var); { AST.LE_Typed (le, t) }
+  )
 
 let lexpr :=
   annotated (
@@ -430,20 +527,17 @@ let conditional_stmt ==
   (* The first two cases of asl.ott are united in this simpler rule. *)
   | IF; ~=expr; THEN; ~=possibly_empty_block; ~=s_else;       < AST.S_Cond >
   | IF; ~=expr; THEN; ~=simple_stmt_list; ~=simple_else; EOL; < AST.S_Cond >
-  | CASE; ~=expr; OF; EOL; INDENT; ~=alt_otherwise; DEDENT;   < AST.S_Case >
+  | CASE; ~=expr; OF; EOL; INDENT; ~=list(alt); DEDENT;   < AST.S_Case >
 
 let s_elsif == annotated ( ELSIF; ~=expr; THEN; ~=possibly_empty_block; <> )
 let s_else == ~=list(s_elsif); ~=ioption(ELSE; possibly_empty_block); < build_stmt_conds >
 
 let alt ==
   annotated (
-    | WHEN; ~=nclist(pattern); opt_altcond; ~=possibly_empty_block; <>
-    | WHEN; ~=nclist(pattern); opt_altcond; ~=simple_if_stmt; <>
+    | WHEN; ~=pattern_list; opt_altcond; ~=possibly_empty_block; <>
+    | WHEN; ~=pattern_list; opt_altcond; ~=simple_if_stmt; <>
+    | OTHERWISE; s=possibly_empty_block; { (AST.Pattern_All, s) }
   )
-
-let alt_otherwise ==
-  | list(alt)
-  | li=list(alt); ~=otherwise; { li @ [ ASTUtils.add_pos_from otherwise ([], otherwise.desc) ] }
 
 let otherwise == annotated (OTHERWISE; possibly_empty_block)
 
@@ -452,21 +546,24 @@ let opt_altcond ==
   | EQ_GT; <>
   | AND; expr; EQ_GT; <>
 
+let pattern_list == ~=nclist(pattern); < AST.Pattern_Any >
 let pattern ==
-  annotated (
-    | ~=literal_expression; < AST.E_Literal >
-    | ~=qualident;          < AST.E_Var     >
+    | MINUS; { AST.Pattern_All }
+    | ~=MASK_LIT; < AST.Pattern_Mask >
 
-    | unimplemented_expr (
-      | MASK_LIT; <>
-      | MINUS; <>
-      | pared(nclist(pattern)); <>
-      | braced(nclist(apattern)); <>
-    )
-  )
+    | ~=annotated (
+      | ~=literal_expression; < AST.E_Literal >
+      | ~=qualident; < AST.E_Var >
+    ); < AST.Pattern_Single >
 
-let apattern == expr; <> | expr; DOT_DOT; expr; <>
+    | braced(apattern_list)
 
+let apattern_list == ~=nclist(apattern); < AST.Pattern_Any >
+let apattern ==
+  | ~=expr; < AST.Pattern_Single >
+  | e1=expr; DOT_DOT; e2=expr; < AST.Pattern_Range >
+  | MINUS; { AST.Pattern_All }
+  | ~=MASK_LIT; < AST.Pattern_Mask >
 
 let repetitive_stmt ==
   | FOR; ident; EQ; expr; direction; expr; indented_block; <>
@@ -481,30 +578,31 @@ let catch_stmt ==
 let catcher == WHEN; expr; opt_indented_block; <>
 
 let unop ==
-  | BANG ;  { AST.BNOT }
+  | BANG  ; { AST.BNOT }
   | MINUS ; { AST.NEG }
-  | NOT ;   { AST.NOT }
+  | NOT   ; { AST.NOT }
 
 let unimplemented_binop(x) == x ; { AST.PLUS }
 
 let abinop ==
-  | AND ;   { AST.AND }
-  | AMP_AMP ;  { AST.BAND }
-  | BAR_BAR ;   { AST.BOR }
-  | DIV ;   { AST.DIV }
-  | EOR ;   { AST.EOR }
-  | EQ_EQ ; { AST.EQ_OP }
-  | BANG_EQ ;   { AST.NEQ }
-  | GT_EQ ;   { AST.GEQ }
-  | LT_EQ ;   { AST.LEQ }
-  | PLUS ;  { AST.PLUS }
-  | MINUS ; { AST.MINUS }
-  | MOD ;   { AST.MOD }
-  | STAR ;  { AST.MUL }
-  | OR ;    { AST.OR }
-  | SLASH ;  { AST.RDIV }
-  | LT_LT ;   { AST.SHL }
-  | GT_GT ;   { AST.SHR }
+  | AND        ; { AST.AND    }
+  | AMP_AMP    ; { AST.BAND   }
+  | BAR_BAR    ; { AST.BOR    }
+  | DIV        ; { AST.DIV    }
+  | EOR        ; { AST.EOR    }
+  | EQ_EQ      ; { AST.EQ_OP  }
+  | BANG_EQ    ; { AST.NEQ    }
+  | GT_EQ      ; { AST.GEQ    }
+  | IMPLIES    ; { AST.IMPL   }
+  | LT_EQ      ; { AST.LEQ    }
+  | PLUS       ; { AST.PLUS   }
+  | MINUS      ; { AST.MINUS  }
+  | MOD        ; { AST.MOD    }
+  | STAR       ; { AST.MUL    }
+  | OR         ; { AST.OR     }
+  | SLASH      ; { AST.RDIV   }
+  | LT_LT      ; { AST.SHL    }
+  | GT_GT      ; { AST.SHR    }
 
   | unimplemented_binop(
     | CARET
@@ -512,11 +610,6 @@ let abinop ==
 
 let binop ==
   | abinop
-  | LT ;    { AST.LT }
-  | GT ;    { AST.GT }
+  | LT         ; { AST.LT     }
+  | GT         ; { AST.GT     }
 
-let binop_or_concat ==
-  | binop
-  | unimplemented_binop (
-    | COLON
-  )

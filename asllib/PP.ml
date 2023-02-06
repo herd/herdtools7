@@ -1,10 +1,50 @@
 open Format
 open AST
 
+(* Copied from stdlib 4.13 *)
+let string_is_prefix ~prefix s =
+  let open String in
+  let len_s = length s and len_pre = length prefix in
+  let rec aux i =
+    if i = len_pre then true
+    else if unsafe_get s i <> unsafe_get prefix i then false
+    else aux (i + 1)
+  in
+  len_s >= len_pre && aux 0
+
+let string_remove_prefix ~prefix s =
+  String.sub s (String.length prefix) (String.length s - String.length prefix)
+
 type 'a printer = Format.formatter -> 'a -> unit
 
 let pp_comma f () = fprintf f ",@ "
 let pp_comma_list pp_elt f = pp_print_list ~pp_sep:pp_comma pp_elt f
+
+let pp_pos f { pos_start; pos_end; _ } =
+  let open Lexing in
+  let pp_char_num f { pos_cnum; pos_bol; _ } =
+    pp_print_int f (pos_cnum - pos_bol)
+  in
+  if pos_start = dummy_pos || pos_end = dummy_pos then ()
+  else (
+    pp_open_hovbox f 2;
+    fprintf f "File %s,@ " pos_start.pos_fname;
+    if String.equal pos_start.pos_fname pos_end.pos_fname then
+      if pos_start.pos_lnum = pos_end.pos_lnum then
+        if pos_start.pos_cnum = pos_end.pos_cnum then
+          fprintf f "line %d,@ character %a" pos_start.pos_lnum pp_char_num
+            pos_start
+        else
+          fprintf f "line %d,@ characters %a to %a" pos_start.pos_lnum
+            pp_char_num pos_start pp_char_num pos_end
+      else
+        fprintf f "line %d,@ character %a@ to@ line %2d,@ character %a"
+          pos_start.pos_lnum pp_char_num pos_start pos_end.pos_lnum pp_char_num
+          pos_end
+    else
+      fprintf f "line %d,@ character %a" pos_start.pos_lnum pp_char_num
+        pos_start;
+    pp_close_box f ())
 
 let binop_to_string : binop -> string = function
   | AND -> "AND"
@@ -19,7 +59,7 @@ let binop_to_string : binop -> string = function
   | IMPL -> "-->"
   | LT -> "<"
   | LEQ -> "<="
-  | MOD -> "%"
+  | MOD -> "MOD"
   | MINUS -> "-"
   | MUL -> "*"
   | NEQ -> "!="
@@ -49,11 +89,16 @@ let rec pp_expr f e =
   match e.desc with
   | E_Literal v -> pp_value f v
   | E_Var x -> pp_print_string f x
+  | E_Typed (e, ty) -> fprintf f "@[%a@ as %a@]" pp_expr e pp_ty ty
   | E_Binop (b, e1, e2) ->
       fprintf f "(@[<hov 2>%a@ %s %a@])" pp_expr e1 (binop_to_string b) pp_expr
         e2
   | E_Unop (u, e) -> fprintf f "(%s %a)" (unop_to_string u) pp_expr e
-  | E_Call (name, args) -> fprintf f "@[<hov 2>%s(%a)@]" name pp_expr_list args
+  | E_Call (name, args, _) ->
+      if string_is_prefix ~prefix:ASTUtils.getter_prefix name then
+        let name = string_remove_prefix ~prefix:ASTUtils.getter_prefix name in
+        fprintf f "@[<hov 2>%s[%a]@]" name pp_expr_list args
+      else fprintf f "@[<hov 2>%s(%a)@]" name pp_expr_list args
   | E_Slice (e, args) ->
       fprintf f "@[<hov 2>%a[%a]@]" pp_expr e pp_slice_list args
   | E_Cond (e1, e2, e3) ->
@@ -65,6 +110,8 @@ let rec pp_expr f e =
       fprintf f "@[<hv>%a {@;<1 2>%a@,}@]" pp_ty ty (pp_comma_list pp_one) li
   | E_Concat es -> fprintf f "@[<hv 2>[%a]@]" pp_expr_list es
   | E_Tuple es -> fprintf f "@[<hv 2>(%a)@]" pp_expr_list es
+  | E_Unknown ty -> fprintf f "@[<h>UNKNOWN ::@ %a@]" pp_ty ty
+  | E_Pattern (e, p) -> fprintf f "@[<hv 2>%a@ IN %a@]" pp_expr e pp_pattern p
 
 and pp_expr_list f = pp_comma_list pp_expr f
 
@@ -72,6 +119,18 @@ and pp_slice f = function
   | Slice_Single e -> pp_expr f e
   | Slice_Range (e1, e2) -> fprintf f "@[<h>%a@,:%a@]" pp_expr e1 pp_expr e2
   | Slice_Length (e1, e2) -> fprintf f "@[<h>%a@,+:%a@]" pp_expr e1 pp_expr e2
+
+and pp_pattern f = function
+  | Pattern_All -> pp_print_string f "-"
+  | Pattern_Any li -> fprintf f "@[{%a}@]" (pp_comma_list pp_pattern) li
+  | Pattern_Geq e -> fprintf f "@[>= %a@]" pp_expr e
+  | Pattern_Leq e -> fprintf f "@[<= %a@]" pp_expr e
+  | Pattern_Mask s -> fprintf f "'%s'" s
+  | Pattern_Not (Pattern_Any li) ->
+      fprintf f "@[!{%a}@]" (pp_comma_list pp_pattern) li
+  | Pattern_Not p -> fprintf f "@[!{%a}@]" pp_pattern p
+  | Pattern_Range (e1, e2) -> fprintf f "@[%a .. %a@]" pp_expr e1 pp_expr e2
+  | Pattern_Single e -> pp_expr f e
 
 and pp_slice_list f = pp_comma_list pp_slice f
 
@@ -95,11 +154,14 @@ and pp_ty f t =
         (pp_comma_list pp_bitfield)
         fields
   | T_Enum enum_ty ->
-      fprintf f "@[enumeration {%a}@]" (pp_comma_list pp_print_string) enum_ty
+      fprintf f "@[<hov 2>enumeration {@,%a@;<0 -2>}@]"
+        (pp_comma_list pp_print_string)
+        enum_ty
   | T_Tuple ty_list -> fprintf f "@[(%a)@]" (pp_comma_list pp_ty) ty_list
   | T_Array (e, elt_type) ->
       fprintf f "@[array [%a] of %a@]" pp_expr e pp_ty elt_type
-  | T_Record record_ty -> fprintf f "@[record {%a}@]" pp_record_ty record_ty
+  | T_Record record_ty ->
+      fprintf f "@[<hv 2>record {@,%a@;<0 -2>}@]" pp_record_ty record_ty
   | T_Exception record_ty ->
       fprintf f "@[exception {%a}@]" pp_record_ty record_ty
   | T_ZType ty -> fprintf f "ZType(%a)" pp_ty ty
@@ -127,6 +189,7 @@ let pp_typed_identifier f (name, ty) = fprintf f "%s::%a" name pp_ty ty
 let rec pp_lexpr f le =
   match le.desc with
   | LE_Var x -> pp_print_string f x
+  | LE_Typed (le, ty) -> fprintf f "%a :: %a" pp_lexpr le pp_ty ty
   | LE_Slice (le, args) -> fprintf f "%a[%a]" pp_lexpr le pp_slice_list args
   | LE_SetField (le, x, _ta) -> fprintf f "@[%a@,.%s@]" pp_lexpr le x
   | LE_Ignore -> pp_print_string f "-"
@@ -137,7 +200,12 @@ let rec pp_stmt f s =
   | S_Pass -> pp_print_string f "pass;"
   | S_Then (s1, s2) -> fprintf f "%a@ %a" pp_stmt s1 pp_stmt s2
   | S_Assign (le, e) -> fprintf f "@[<h 2>%a =@ %a;@]" pp_lexpr le pp_expr e
-  | S_Call (name, args) -> fprintf f "@[<hov 2>%s(%a);@]" name pp_expr_list args
+  | S_Call (name, args, _) ->
+      if string_is_prefix ~prefix:ASTUtils.setter_prefix name then
+        let name = string_remove_prefix ~prefix:ASTUtils.setter_prefix name in
+        let v, args = match args with [] -> assert false | h :: t -> (h, t) in
+        fprintf f "@[<hov 2>%s[%a] = %a;@]" name pp_expr_list args pp_expr v
+      else fprintf f "@[<hov 2>%s(%a);@]" name pp_expr_list args
   | S_Return (Some e) -> fprintf f "return %a;" pp_expr e
   | S_Return None -> fprintf f "return;"
   | S_Cond (e, s1, { desc = S_Pass; _ }) ->
@@ -149,31 +217,19 @@ let rec pp_stmt f s =
          <1 2>@[<hv>%a@]@ else@;\
          <1 2>@[<hv>%a@]@ end@]" pp_expr e pp_stmt s1 pp_stmt s2
   | S_Case (e, case_li) ->
-      let pp_case_alt f { desc = exprs, s; _ } =
-        match exprs with
-        | [] -> fprintf f "@[<hv 2>otherwise:@ @[<hv>%a@]@]" pp_stmt s
-        | _ ->
-            fprintf f "@[<hv 2>when @[<h>%a@]:@ @[<hv>%a@]@]" pp_expr_list exprs
-              pp_stmt s
+      let pp_case_alt f { desc = p, s; _ } =
+        match p with
+        | Pattern_All -> fprintf f "@[<hv 2>otherwise:@ @[<hv>%a@]@]" pp_stmt s
+        | Pattern_Any li ->
+            fprintf f "@[<hv 2>when @[<h>%a@]:@ @[<hv>%a@]@]"
+              (pp_comma_list pp_pattern) li pp_stmt s
+        | _ -> fprintf f "@[<hv 2>when %a:@ @[<hv>%a@]@]" pp_pattern p pp_stmt s
       in
       fprintf f "@[<v 2>case %a of@ %a@;<1 -2>end@]" pp_expr e
         (pp_print_list ~pp_sep:pp_print_space pp_case_alt)
         case_li
   | S_Assert e -> fprintf f "@[<2>assert@ %a;@]" pp_expr e
-
-(* Copied from stdlib 4.13 *)
-let string_is_prefix ~prefix s =
-  let open String in
-  let len_s = length s and len_pre = length prefix in
-  let rec aux i =
-    if i = len_pre then true
-    else if unsafe_get s i <> unsafe_get prefix i then false
-    else aux (i + 1)
-  in
-  len_s >= len_pre && aux 0
-
-let string_remove_prefix ~prefix s =
-  String.sub s (String.length prefix) (String.length s - String.length prefix)
+  | S_TypeDecl (x, t) -> fprintf f "@[<2>var %s :: %a;@]" x pp_ty t
 
 let pp_decl f =
   let pp_func_sig f { name; args; return_type; _ } =
@@ -182,12 +238,12 @@ let pp_decl f =
       | Some return_type -> fprintf f "@;<1 -2>=> %a" pp_ty return_type
       | None -> ()
     in
-    if string_is_prefix ~prefix:"getter-" name then
-      let name = string_remove_prefix ~prefix:"getter-" name in
+    if string_is_prefix ~prefix:ASTUtils.getter_prefix name then
+      let name = string_remove_prefix ~prefix:ASTUtils.getter_prefix name in
       fprintf f "@[<hv 4>getter %s [@,%a]%a@]" name pp_args args
         pp_return_type_opt return_type
-    else if string_is_prefix ~prefix:"setter-" name then
-      let name = string_remove_prefix ~prefix:"getter-" name in
+    else if string_is_prefix ~prefix:ASTUtils.setter_prefix name then
+      let name = string_remove_prefix ~prefix:ASTUtils.setter_prefix name in
       let new_v, args =
         match args with [] -> assert false | h :: t -> (h, t)
       in
@@ -216,3 +272,7 @@ let pp_t f =
 let ty_to_string = asprintf "%a" pp_ty
 let t_to_string = asprintf "%a" pp_t
 let value_to_string = asprintf "%a" pp_value
+
+let pp_version f version =
+  pp_print_string f
+  @@ match version with `ASLv0 -> "ASLv0" | `ASLv1 -> "ASLv1" | `Any -> "any"
