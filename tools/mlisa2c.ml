@@ -145,7 +145,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
 
   let  tr_ins = function
     | Pld (r,a,(["once"]|[]|["acquire"] as an)) ->
-        StoreReg (Some CType.word,tr_reg r,tr_load (tr_an an) a)
+        StoreReg (Some CType.word,Some (tr_reg r),tr_load (tr_an an) a)
     | Pst (a,k,(["once"]|[]|["release"] as an)) -> tr_store (tr_an an) a k
     | Pfence (BellBase.Fence (["mb"|"rmb"|"wmb" as f],_)) -> tr_fence f
     | Pfence (BellBase.Fence (["sync"],None)) when O.action = Linux ->

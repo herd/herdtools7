@@ -67,7 +67,9 @@ open MemOrderOrAnnot
 %left ADD SUB
 %left STAR DIV
 %nonassoc CAST
-%nonassoc PREC_BASE
+%left ECALL
+%left ESRCU
+%left SEMI
 
 %type <(CBase.pseudo list) CAst.test list> deep_main
 %start deep_main
@@ -96,14 +98,18 @@ void:
 | VOID { Base "void" }
 
 
+typ_par:
+|t=typ { t }
+| LPAR t=typ RPAR { t }
+
 typ:
 | typ_ptr { $1 }
-| typ VOLATILE { Volatile $1 }
-| typ CONST { CType.Const $1 }
+| typ_par VOLATILE { Volatile $1 }
+| typ_par CONST { CType.Const $1 }
 | ATOMIC base { Atomic $2 }
-| VOLATILE base0 { Volatile $2 }
-| CONST base0 { Const $2 }
-| base { $1 }
+| VOLATILE base { Volatile $2 }
+| CONST base { Const $2 }
+| base0 { $1 }
 
 base0:
 | ATOMIC_TYPE { Atomic (Base $1) }
@@ -115,9 +121,10 @@ base0:
 | ty_attr LONG { Base ($1 ^ "long") }
 
 
+
 base:
 | base0 { $1 }
-| LPAR typ RPAR %prec PREC_BASE { $2 }
+| LPAR typ RPAR  { $2 }
 
 ty_attr:
 | { "" }
@@ -137,7 +144,11 @@ declaration:
 | typ IDENTIFIER SEMI { DeclReg ($1,$2) }
 
 initialisation:
-| typ IDENTIFIER EQ expr { StoreReg (Some $1,$2,$4) ; }
+| typ IDENTIFIER EQ expr { StoreReg (Some $1,Some $2,$4) ; }
+| expr_only { $1 }
+
+expr_only:
+| e=expr { StoreReg(None,None,e) }
 
 atomic_op:
 | ADD { Op.Add }
@@ -172,11 +183,11 @@ expr0:
 | LPAR expr RPAR { $2 }
 
 expr1:
-| LPAR typ RPAR expr %prec CAST { $4 }
+| LPAR typ RPAR e=expr %prec CAST { e }
 | STAR LPAR typ RPAR IDENTIFIER { LoadMem (LoadReg $5,AN []) }
 | STAR LPAR expr RPAR { LoadMem ($3,AN []) }
 | LOAD LBRACE annot_list RBRACE LPAR expr RPAR { LoadMem($6,AN $3) }
-| SRCU LBRACE annot_list RBRACE LPAR expr RPAR { ExpSRCU($6,$3) }
+| SRCU LBRACE annot_list RBRACE LPAR expr RPAR %prec ESRCU { ExpSRCU($6,$3) }
 | LD_EXPLICIT LPAR expr COMMA MEMORDER RPAR { LoadMem($3,MO $5) }
 | expr STAR expr { Op(Op.Mul,$1,$3) }
 | expr ADD expr { Op(Op.Add,$1,$3) }
@@ -199,7 +210,7 @@ expr1:
   { CmpExchange($6,$8,$10,$3) }
 | ATOMIC_FETCH_EXPLICIT LPAR expr COMMA expr COMMA MEMORDER RPAR
   { Fetch($3, $1, $5, $7) }
-| IDENTIFIER LPAR args RPAR
+| IDENTIFIER LPAR args RPAR %prec ECALL
   { ECall ($1,$3) }
 | WCAS LPAR expr COMMA expr COMMA expr RPAR
   { ECas ($3,$5,$7,SC,SC,false) }
@@ -245,7 +256,7 @@ instruction:
 | initialisation SEMI
   { $1 }
 | IDENTIFIER EQ expr SEMI
-  { StoreReg(None,$1,$3) }
+  { StoreReg(None,Some $1,$3) }
 | LPAR VOID RPAR expr SEMI
   { CastExpr $4 }
 | STAR location EQ expr SEMI
