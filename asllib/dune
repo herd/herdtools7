@@ -8,6 +8,7 @@
  (name asllib)
  (modules (:standard \ asli bundler))
  (modules_without_implementation Backend AST)
+ (flags -w -40-42)
  (libraries menhirLib))
 
 (executable
