@@ -15,24 +15,24 @@ let conflict expected provided =
 (*                                                                            *)
 (******************************************************************************)
 
-type genv = type_desc IMap.t
+type genv = ty IMap.t
 (** Type environment for all globally declared identifiers.
     Note that this is shared between named_types and global variables, but not
     functions, getter, setters, and all subprograms.
     In asl-semantics, it is refered to as Γ.T : TypeModel.
 *)
 
-type func_sig = type_desc list * type_desc option
+type func_sig = ty list * ty option
 (** Type signature for functions, some kind of an arrow type. *)
 
-type func_tr = (type_desc list * AST.identifier) list IMap.t
+type func_tr = (ty list * AST.identifier) list IMap.t
 (** function renaming to get unique identifiers. *)
 
 type tenv = { globals : genv; funcs : func_sig IMap.t; func_tr : func_tr }
 (** The global type environment, with types for every globally available
     identifier, i.e. variables, named types or functions .*)
 
-type lenv = type_desc IMap.t
+type lenv = ty IMap.t
 (** The local type environment, with types for all locally declared variables. *)
 
 let lookup_opt (tenv : tenv) (lenv : lenv) x =
@@ -89,11 +89,15 @@ end
 (*                                                                            *)
 (******************************************************************************)
 
-let expr_of_int i = E_Literal (V_Int i)
+let expr_of_int i = ASTUtils.literal (V_Int i)
+let add_dummy_pos = ASTUtils.add_dummy_pos
+let add_pos_from = ASTUtils.add_pos_from_st
+let get_desc { desc; _ } = desc
 
 let slices_length =
-  let plus e1 e2 = E_Binop (PLUS, e1, e2) in
-  let minus e1 e2 = E_Binop (MINUS, e1, e2) in
+  let open ASTUtils in
+  let plus = binop PLUS in
+  let minus = binop MINUS in
   let sum = function
     | [] -> expr_of_int 0
     | [ x ] -> x
@@ -107,30 +111,32 @@ let slices_length =
   fun li -> List.map slice_length li |> sum
 
 let field_type x ty =
-  match ty with
+  match ty.desc with
   | T_Record li -> (
       match List.assoc_opt x li with Some ty -> ty | None -> bad_field x ty)
   | T_Bits (_, Some fields) -> (
       match List.find_opt (fun (_, y) -> String.equal x y) fields with
       | Some (slices, _) ->
           T_Bits (BitWidth_Determined (slices_length slices), None)
+          |> add_dummy_pos
       | None -> bad_field x ty)
   | _ -> bad_field x ty
 
-let get_structure (genv : genv) : type_desc -> type_desc =
-  let rec get = function
+let get_structure (genv : genv) : ty -> ty =
+  (* TODO: rethink to have physical equality when structural equality? *)
+  let rec get ty =
+    let with_pos = add_pos_from ty in
+    match ty.desc with
     | T_Named x -> (
         match IMap.find_opt x genv with
         | None -> undefined_identifier x
         | Some ty -> get ty)
-    | (T_Int _ | T_Real | T_String | T_Bool | T_Bits _ | T_Bit | T_Enum _) as ty
-      ->
-        ty
-    | T_Tuple subtypes -> T_Tuple (List.map get subtypes)
-    | T_Array (e, t) -> T_Array (e, get t)
-    | T_Record fields -> T_Record (get_fields fields)
-    | T_Exception fields -> T_Exception (get_fields fields)
-    | T_ZType ty -> T_ZType (get ty)
+    | T_Int _ | T_Real | T_String | T_Bool | T_Bits _ | T_Bit | T_Enum _ -> ty
+    | T_Tuple subtypes -> T_Tuple (List.map get subtypes) |> with_pos
+    | T_Array (e, t) -> T_Array (e, get t) |> with_pos
+    | T_Record fields -> T_Record (get_fields fields) |> with_pos
+    | T_Exception fields -> T_Exception (get_fields fields) |> with_pos
+    | T_ZType ty -> T_ZType (get ty) |> with_pos
   and get_fields fields =
     let one_field (name, t) = (name, get t) in
     let fields = List.map one_field fields in
@@ -144,47 +150,55 @@ let get_structure (genv : genv) : type_desc -> type_desc =
 (*                                                                            *)
 (******************************************************************************)
 
-let check_bitvector = function
-  | T_Bits _ as t -> t
-  | ty -> conflict [ ASTUtils.default_t_bits ] ty
+let check_bitvector ty =
+  match ty.desc with
+  | T_Bits _ -> ty
+  | _ -> conflict [ ASTUtils.default_t_bits ] ty
 
-let check_integer = function
-  | T_Int _ as t -> t
-  | ty -> conflict [ T_Int None ] ty
+let check_integer ty =
+  match ty.desc with T_Int _ -> ty | _ -> conflict [ T_Int None ] ty
 
-let check_num = function
-  | (T_Int _ | T_Bits _ | T_Real) as t -> t
-  | ty -> conflict [ T_Int None; ASTUtils.default_t_bits; T_Real ] ty
+let check_num ty =
+  match ty.desc with
+  | T_Int _ | T_Bits _ | T_Real -> ty
+  | _ -> conflict [ T_Int None; ASTUtils.default_t_bits; T_Real ] ty
 
 let t_bits_bitwidth e = T_Bits (BitWidth_Determined e, None)
 
 let infer_values = function
-  | V_Int i -> T_Int (Some [ Constraint_Exact (expr_of_int i) ])
-  | V_Bool _ -> T_Bool
-  | V_Real _ -> T_Real
-  | V_BitVector bv -> Bitvector.length bv |> expr_of_int |> t_bits_bitwidth
+  | V_Int i ->
+      T_Int (Some [ Constraint_Exact (expr_of_int i) ]) |> add_dummy_pos
+  | V_Bool _ -> T_Bool |> add_dummy_pos
+  | V_Real _ -> T_Real |> add_dummy_pos
+  | V_BitVector bv ->
+      Bitvector.length bv |> expr_of_int |> t_bits_bitwidth |> add_dummy_pos
   | _ -> not_yet_implemented "static complex values"
 
-let rec infer tenv lenv = function
+let rec infer tenv lenv e =
+  match e.desc with
   | E_Literal v -> infer_values v
   | E_Var n -> lookup tenv lenv n
   | E_Binop (op, e1, e2) -> infer_op op tenv lenv e1 e2
   | E_Unop (unop, e) -> infer_unop unop tenv lenv e
   | E_Call (name, _) -> lookup_return_type tenv name
-  | E_Slice (E_Var name, _) when IMap.mem name tenv.funcs ->
+  | E_Slice ({ desc = E_Var name; _ }, _) when IMap.mem name tenv.funcs ->
       lookup_return_type tenv name
   | E_Slice (e, slices) -> (
-      match infer tenv lenv e with
-      | T_Bits _ | T_Int _ -> slices_length slices |> t_bits_bitwidth
-      | t -> conflict [ ASTUtils.default_t_bits; T_Int None ] t)
+      let ty = infer tenv lenv e in
+      match ty.desc with
+      | T_Bits _ | T_Int _ ->
+          slices_length slices |> t_bits_bitwidth |> add_dummy_pos
+      | _ -> conflict [ ASTUtils.default_t_bits; T_Int None ] ty)
   | E_Cond (_e1, e2, e3) -> (
-      match infer tenv lenv e2 with
-      | T_Int None -> T_Int None
+      let ty2 = infer tenv lenv e2 in
+      match ty2.desc with
+      | T_Int None -> T_Int None |> add_dummy_pos
       | T_Int (Some c2) -> (
-          match infer tenv lenv e3 with
-          | T_Int (Some c3) -> T_Int (Some (c2 @ c3))
-          | _ -> T_Int None)
-      | t -> t)
+          let ty3 = infer tenv lenv e3 in
+          match ty3.desc with
+          | T_Int (Some c3) -> T_Int (Some (c2 @ c3)) |> add_dummy_pos
+          | _ -> T_Int None |> add_dummy_pos)
+      | _ -> ty2)
   | E_GetField (e, x, ta) -> (
       match ta with
       | TA_None -> infer tenv lenv e |> field_type x
@@ -195,14 +209,15 @@ let rec infer tenv lenv = function
       | TA_InferredStructure ty -> ty)
   | E_Concat es ->
       let get_length acc e =
-        match infer tenv lenv e with
-        | T_Bits (BitWidth_Determined l, _) -> E_Binop (PLUS, acc, l)
+        let ty = infer tenv lenv e in
+        match ty.desc with
+        | T_Bits (BitWidth_Determined l, _) -> ASTUtils.binop PLUS acc l
         | T_Bits _ -> not_yet_implemented "bitvector length inference"
-        | t -> conflict [ ASTUtils.default_t_bits ] t
+        | _ -> conflict [ ASTUtils.default_t_bits ] ty
       in
       let length = List.fold_left get_length (expr_of_int 0) es in
-      t_bits_bitwidth length
-  | E_Tuple es -> T_Tuple (List.map (infer tenv lenv) es)
+      t_bits_bitwidth length |> add_dummy_pos
+  | E_Tuple es -> T_Tuple (List.map (infer tenv lenv) es) |> add_dummy_pos
 
 and infer_op op =
   match op with
@@ -212,30 +227,33 @@ and infer_op op =
   | MINUS | MUL | PLUS -> num_num_op
   | RDIV -> not_yet_implemented "Real operations"
 
-and bool_op _ _ _ _ = T_Bool
+and bool_op _ _ _ _ = T_Bool |> add_dummy_pos
 and bitwise_op tenv lenv e1 _e2 = infer tenv lenv e1 |> check_bitvector
 and int_int_op tenv lenv e1 _e2 = infer tenv lenv e1 |> check_integer
 and num_num_op tenv lenv e1 _e2 = infer tenv lenv e1 |> check_num
 
 and infer_unop op tenv lenv e =
   match op with
-  | BNOT -> T_Bool
+  | BNOT -> T_Bool |> add_dummy_pos
   | NOT -> infer tenv lenv e |> check_bitvector
   | NEG -> infer tenv lenv e |> check_integer
 
-let rec infer_lexpr tenv lenv = function
+let rec infer_lexpr tenv lenv le =
+  match le.desc with
   | LE_Var x -> lookup tenv lenv x
-  | LE_Slice (LE_Var x, _) when IMap.mem x tenv.funcs ->
+  | LE_Slice ({ desc = LE_Var x; _ }, _) when IMap.mem x tenv.funcs ->
       lookup_return_type tenv x
-  | LE_Slice (le, slices) -> (
-      match infer_lexpr tenv lenv le with
-      | T_Bits _ -> slices_length slices |> t_bits_bitwidth
-      | t -> conflict [ ASTUtils.default_t_bits ] t)
+  | LE_Slice (le', slices) -> (
+      let ty = infer_lexpr tenv lenv le' in
+      match ty.desc with
+      | T_Bits _ -> slices_length slices |> t_bits_bitwidth |> add_dummy_pos
+      | _ -> conflict [ ASTUtils.default_t_bits ] ty)
   | LE_SetField (_, field, TA_InferredStructure ty) -> field_type field ty
   | LE_SetField (le, field, TA_None) ->
       infer_lexpr tenv lenv le |> field_type field
   | LE_Ignore -> not_yet_implemented "Type inference of '-'"
-  | LE_TupleUnpack les -> T_Tuple (List.map (infer_lexpr tenv lenv) les)
+  | LE_TupleUnpack les ->
+      T_Tuple (List.map (infer_lexpr tenv lenv) les) |> add_dummy_pos
 
 (******************************************************************************)
 (*                                                                            *)
@@ -270,14 +288,17 @@ let setter_should_reduce_to_call tenv x slices e =
   | Some (name, args, _) -> Some (name, args)
   | None -> None
 
-let rec annotate_expr tenv lenv e =
+let rec annotate_expr tenv lenv e : expr =
   let tr = annotate_expr tenv lenv in
-  match e with
-  | E_Literal _ as e -> e
+  let tr_desc d = add_pos_from e d |> tr |> get_desc in
+  add_pos_from e
+  @@
+  match e.desc with
+  | E_Literal _ -> e.desc
   | E_Var x -> (
       match getter_should_reduce_to_call tenv x [] with
-      | None -> E_Var x
-      | Some (name, args) -> E_Call (name, args) |> tr)
+      | None -> e.desc
+      | Some (name, args) -> E_Call (name, args) |> tr_desc)
   | E_Binop (op, e1, e2) -> E_Binop (op, tr e1, tr e2)
   | E_Unop (op, e) -> E_Unop (op, tr e)
   | E_Call (x, args) ->
@@ -285,15 +306,15 @@ let rec annotate_expr tenv lenv e =
       let arg_types = List.map (infer tenv lenv) args in
       let x' = FunctionRenaming.find_name tenv.func_tr x arg_types in
       E_Call (x', List.map tr args)
-  | E_Slice (e, slices) -> (
+  | E_Slice (e', slices) -> (
       let reduced =
-        match e with
+        match e'.desc with
         | E_Var x -> getter_should_reduce_to_call tenv x slices
         | _ -> None
       in
       match reduced with
-      | Some (name, args) -> E_Call (name, args) |> tr
-      | None -> E_Slice (tr e, annotate_slices tenv lenv slices))
+      | Some (name, args) -> E_Call (name, args) |> tr_desc
+      | None -> E_Slice (tr e', annotate_slices tenv lenv slices))
   | E_Cond (e1, e2, e3) -> E_Cond (tr e1, tr e2, tr e3)
   | E_GetField (e, field, _ta) ->
       let e = tr e in
@@ -319,8 +340,11 @@ and annotate_slices tenv lenv =
   in
   List.map tr_one
 
-let rec annotate_lexpr tenv lenv = function
-  | LE_Var x -> LE_Var x
+let rec annotate_lexpr tenv lenv le =
+  add_pos_from le
+  @@
+  match le.desc with
+  | LE_Var _ -> le.desc
   | LE_Slice (le, slices) ->
       LE_Slice (annotate_lexpr tenv lenv le, annotate_slices tenv lenv slices)
   | LE_SetField (le, field, _ta) ->
@@ -332,7 +356,14 @@ let rec annotate_lexpr tenv lenv = function
       LE_TupleUnpack (List.map (annotate_lexpr tenv lenv) les)
 
 let rec annotate_stmt tenv lenv s =
-  match s with
+  let tr_desc d =
+    add_pos_from s d |> annotate_stmt tenv lenv |> fun ({ desc; _ }, lenv) ->
+    (desc, lenv)
+  in
+  let add_pos (desc, lenv) = (add_pos_from s desc, lenv) in
+  add_pos
+  @@
+  match s.desc with
   | S_Pass -> (S_Pass, lenv)
   | S_Then (s1, s2) ->
       let s1, lenv = annotate_stmt tenv lenv s1 in
@@ -340,19 +371,19 @@ let rec annotate_stmt tenv lenv s =
       (S_Then (s1, s2), lenv)
   | S_Assign (le, e) -> (
       let reduced =
-        match le with
+        match le.desc with
         | LE_Var x -> setter_should_reduce_to_call tenv x [] e
-        | LE_Slice (LE_Var x, slices) ->
+        | LE_Slice ({ desc = LE_Var x; _ }, slices) ->
             setter_should_reduce_to_call tenv x slices e
         | _ -> None
       in
       match reduced with
-      | Some (name, args) -> S_Call (name, args) |> annotate_stmt tenv lenv
+      | Some (name, args) -> S_Call (name, args) |> tr_desc
       | None ->
           let e = annotate_expr tenv lenv e
           and le = annotate_lexpr tenv lenv le in
           let lenv =
-            match le with
+            match le.desc with
             | LE_Var x -> (
                 match lookup_opt tenv lenv x with
                 | Some _ -> lenv (* Already declared *)
@@ -373,10 +404,11 @@ let rec annotate_stmt tenv lenv s =
       (S_Cond (e, s1, s2), lenv)
   | S_Case (e, cases) ->
       let e = annotate_expr tenv lenv e in
-      let annotate_case (acc, lenv) (es, s) =
+      let annotate_case (acc, lenv) case =
+        let es, s = case.desc in
         let es = List.map (annotate_expr tenv lenv) es in
         let s, lenv = try_annotate_stmt tenv lenv s in
-        ((es, s) :: acc, lenv)
+        (add_pos_from case (es, s) :: acc, lenv)
       in
       let cases, lenv = List.fold_left annotate_case ([], lenv) cases in
       (S_Case (e, cases), lenv)
@@ -428,7 +460,7 @@ let build_funcs genv : AST.t -> func_sig IMap.t * func_tr =
 
 let reduce_genv : genv -> genv =
   let should_reduce genv = function
-    | x, T_Named y -> (
+    | x, { desc = T_Named y; _ } -> (
         match IMap.find_opt y genv with
         | None -> undefined_identifier y
         | Some z -> Some (x, z))

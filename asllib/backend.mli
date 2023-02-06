@@ -60,7 +60,7 @@ module type S = sig
   (** Special operations with vectors *)
   (*----------------------------------*)
 
-  val create_vector : AST.type_desc -> value list -> value m
+  val create_vector : AST.ty -> value list -> value m
   (** Creates a vector, with possible names for the fields *)
 
   val get_i : int -> value -> value m
