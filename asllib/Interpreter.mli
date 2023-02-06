@@ -21,7 +21,7 @@ module type S = sig
   module B : Backend.S
 
   type body = B.value list -> B.value list B.m
-  type primitive = (body, AST.type_desc) AST.func_skeleton
+  type primitive = (body, AST.ty) AST.func_skeleton
 
   val run : AST.t -> primitive list -> B.value list B.m
   (** [run spec_lib ast] runs the function main of the ast, in an

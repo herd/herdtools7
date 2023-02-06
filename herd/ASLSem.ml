@@ -330,9 +330,10 @@ module Make (C : Sem.Config) = struct
     (* Primitives *)
     let extra_funcs ii_env =
       let open AST in
-      let d = T_Int None in
-      let reg = T_Int None in
-      let data = T_Int None in
+      let with_pos = Asllib.ASTUtils.add_dummy_pos in
+      let d = T_Int None |> with_pos in
+      let reg = T_Int None |> with_pos in
+      let data = T_Int None |> with_pos in
       [
         arity_two "read_register" [ reg; d ] (Some data) (read_register ii_env);
         arity_three "write_register" [ reg; d; reg ] None
@@ -345,9 +346,10 @@ module Make (C : Sem.Config) = struct
 
     (* Main function arguments *)
     let main_env (ii, _poi) =
+      let with_pos = Asllib.ASTUtils.add_dummy_pos in 
       let assign x v =
         let open Asllib.AST in
-        S_Assign (LE_Var x, E_Literal (v_to_parsed_v v))
+        with_pos (S_Assign (with_pos (LE_Var x), with_pos (E_Literal (v_to_parsed_v v))))
       in
       let folder reg v acc =
         let open ASLBase in
@@ -368,7 +370,7 @@ module Make (C : Sem.Config) = struct
     let add_main_env_to_ast (ii, _poi) =
       let open AST in
       match main_env (ii, _poi) with
-      | S_Pass -> ii.A.inst
+      | { desc = S_Pass; _ } -> ii.A.inst
       | s -> (
           let is_main = function
             | D_Func f -> String.equal "main" f.name
@@ -376,7 +378,7 @@ module Make (C : Sem.Config) = struct
           in
           match list_remove_opt is_main [] ii.A.inst with
           | Some (D_Func f, ast) ->
-              let body = S_Then (s, f.body) in
+              let body = Asllib.ASTUtils.add_pos_from f.body (S_Then (s, f.body)) in
               let main_func = D_Func { f with body } in
               main_func :: ast
           | _ -> ii.A.inst)

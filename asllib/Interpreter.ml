@@ -25,7 +25,7 @@ module type S = sig
   module B : Backend.S
 
   type body = B.value list -> B.value list B.m
-  type primitive = (body, type_desc) func_skeleton
+  type primitive = (body, ty) func_skeleton
 
   val run : t -> primitive list -> B.value list B.m
 end
@@ -37,7 +37,7 @@ module Make (B : Backend.S) = struct
 
   type 'a m = 'a B.m
   type body = B.value list -> B.value list m
-  type primitive = (body, type_desc) func_skeleton
+  type primitive = (body, ty) func_skeleton
 
   let ( let* ) = B.bind_data
   let ( and* ) = B.prod
@@ -67,7 +67,7 @@ module Make (B : Backend.S) = struct
 
   let make_record ty fields =
     let ty_fields =
-      match ty with
+      match ty.desc with
       | T_Record ty_fields -> ASTUtils.canonical_fields ty_fields
       | _ -> assert false
     in
@@ -80,10 +80,10 @@ module Make (B : Backend.S) = struct
     then B.create_vector ty values
     else fatal @@ Error.BadFields (List.map fst fields, ty)
 
-  let record_index_of_field x li =
+  let record_index_of_field x li ty =
     match list_index (fun (y, _) -> String.equal x y) li with
     | Some i -> i
-    | None -> fatal @@ Error.BadField (x, T_Record li)
+    | None -> fatal @@ Error.BadField (x, ty)
 
   (*****************************************************************************)
   (*                                                                           *)
@@ -117,7 +117,7 @@ module Make (B : Backend.S) = struct
         let one_sfunc { name; args; return_type; _ } =
           let one_arg i ty = ("arg" ^ string_of_int i, ty) in
           let args = List.mapi one_arg args in
-          D_Func { name; args; body = S_Pass; return_type }
+          D_Func { name; args; body = ASTUtils.s_pass; return_type }
         in
         List.map one_sfunc sfuncs
       in
@@ -148,7 +148,8 @@ module Make (B : Backend.S) = struct
       (counter + 1, globals)
     in
     let build_decl acc = function
-      | D_TypeDecl (_name, T_Enum ids) -> List.fold_left build_one acc ids
+      | D_TypeDecl (_name, { desc = T_Enum ids; _ }) ->
+          List.fold_left build_one acc ids
       | _ -> acc
     in
     let _, genv = List.fold_left build_decl (0, globals) ast in
@@ -211,11 +212,12 @@ module Make (B : Backend.S) = struct
     | [ v ] -> return v
     | _ -> fatal @@ Error.MismatchedReturnValue name
 
-  let lexpr_is_var = function LE_Var _ | LE_Ignore -> true | _ -> false
+  let lexpr_is_var le =
+    match le.desc with LE_Var _ | LE_Ignore -> true | _ -> false
 
-  let rec eval_expr (env : env) scope is_data =
+  let rec eval_expr (env : env) scope is_data e =
     let genv, lenv = env in
-    function
+    match e.desc with
     | E_Literal v -> B.v_of_parsed_v v |> return
     | E_Var x -> (
         match IMap.find_opt x genv.consts with
@@ -251,18 +253,21 @@ module Make (B : Backend.S) = struct
         in
         let* fields = prod_map one_field li in
         make_record (type_of_ta ta) fields
-    | E_GetField (e, x, ta) -> (
-        match type_of_ta ta with
+    | E_GetField (e', x, ta) -> (
+        let ty = type_of_ta ta in
+        match ty.desc with
         | T_Record li ->
-            let i = record_index_of_field x li in
-            let* vec = eval_expr env scope is_data e in
+            let i = record_index_of_field x li ty in
+            let* vec = eval_expr env scope is_data e' in
             B.get_i i vec
-        | T_Bits (_, Some fields) as ty -> (
+        | T_Bits (_, Some fields) -> (
             match List.find_opt (fun (_, y) -> String.equal x y) fields with
             | Some (slices, _) ->
-                eval_expr env scope is_data (E_Slice (e, slices))
+                E_Slice (e', slices)
+                |> ASTUtils.add_pos_from e
+                |> eval_expr env scope is_data
             | None -> fatal @@ Error.BadField (x, ty))
-        | ty -> fatal @@ Error.BadField (x, ty))
+        | _ -> fatal @@ Error.BadField (x, ty))
     | E_Concat es ->
         let* values = prod_map (eval_expr env scope is_data) es in
         B.concat_bitvectors values
@@ -276,9 +281,9 @@ module Make (B : Backend.S) = struct
     in
     StaticInterpreter.slices_to_positions si_env
 
-  and eval_lexpr (env : env) scope =
+  and eval_lexpr (env : env) scope le =
     let genv, lenv = env in
-    function
+    match le.desc with
     | LE_Ignore -> fun _ -> return env
     | LE_Var x ->
         fun v ->
@@ -286,33 +291,36 @@ module Make (B : Backend.S) = struct
           let* () = B.on_write_identifier x scope v in
           let lenv = IMap.add x v lenv in
           return (genv, lenv)
-    | LE_Slice (le, slices) ->
-        let setter = eval_lexpr env scope le in
+    | LE_Slice (le', slices) ->
+        let setter = eval_lexpr env scope le' in
         let positions = eval_slices env slices in
         fun m ->
           let* v = m
           and* bv =
-            let e = ASTUtils.expr_of_lexpr le in
+            let e = ASTUtils.expr_of_lexpr le' in
             eval_expr env scope true e
           in
           B.write_to_bitvector positions v bv |> setter
-    | LE_SetField (le, x, ta) -> (
-        match type_of_ta ta with
+    | LE_SetField (le', x, ta) -> (
+        let ty = type_of_ta ta in
+        match ty.desc with
         | T_Record li ->
-            let setter = eval_lexpr env scope le in
-            let i = record_index_of_field x li in
+            let setter = eval_lexpr env scope le' in
+            let i = record_index_of_field x li ty in
             fun m ->
               let* new_v = m
               and* vec =
-                let e = ASTUtils.expr_of_lexpr le in
+                let e = ASTUtils.expr_of_lexpr le' in
                 eval_expr env scope true e
               in
               B.set_i i new_v vec |> setter
-        | T_Bits (_, Some fields) as ty -> (
+        | T_Bits (_, Some fields) -> (
             match List.find_opt (fun (_, y) -> String.equal x y) fields with
-            | Some (slices, _) -> eval_lexpr env scope (LE_Slice (le, slices))
+            | Some (slices, _) ->
+                LE_Slice (le', slices)
+                |> ASTUtils.add_pos_from le |> eval_lexpr env scope
             | None -> fatal @@ Error.BadField (x, ty))
-        | ty -> fatal @@ Error.BadField (x, ty))
+        | _ -> fatal @@ Error.BadField (x, ty))
     | LE_TupleUnpack les ->
         fun v ->
           let* v = v in
@@ -336,7 +344,10 @@ module Make (B : Backend.S) = struct
     else
       let mapper x v =
         let x =
-          match x with LE_Var x -> x | LE_Ignore -> "-" | _ -> assert false
+          match x.desc with
+          | LE_Var x -> x
+          | LE_Ignore -> "-"
+          | _ -> assert false
         in
         let* () = B.on_write_identifier x scope v in
         return (x, v)
@@ -347,14 +358,16 @@ module Make (B : Backend.S) = struct
       let lenv = List.fold_left add_to_lenv (snd env) assignments in
       continue (fst env, lenv)
 
-  and eval_stmt (env : env) scope = function
+  and eval_stmt (env : env) scope s =
+    match s.desc with
     | S_Pass -> continue env
-    | S_Assign (LE_TupleUnpack les, E_Call (name, args))
+    | S_Assign
+        ({ desc = LE_TupleUnpack les; _ }, { desc = E_Call (name, args); _ })
       when List.for_all lexpr_is_var les ->
         let vargs = List.map (eval_expr env scope true) args in
         let* returned_values = eval_func (fst env) name vargs in
         multi_assign env scope les returned_values
-    | S_Assign (LE_TupleUnpack les, E_Tuple exprs)
+    | S_Assign ({ desc = LE_TupleUnpack les; _ }, { desc = E_Tuple exprs; _ })
       when List.for_all lexpr_is_var les ->
         let* values = prod_map (eval_expr env scope true) exprs in
         multi_assign env scope les values
@@ -363,7 +376,7 @@ module Make (B : Backend.S) = struct
         and setter = eval_lexpr env scope le in
         let* env = setter v in
         continue env
-    | S_Return (Some (E_Tuple es)) ->
+    | S_Return (Some { desc = E_Tuple es; _ }) ->
         let* vs = prod_map (eval_expr env scope true) es in
         return (Returning vs)
     | S_Return (Some e) ->
@@ -384,7 +397,7 @@ module Make (B : Backend.S) = struct
           B.choice (eval_expr env scope true e) (return s1) (return s2)
         in
         eval_stmt env scope s
-    | S_Case (e, cases) -> ASTUtils.case_to_conds e cases |> eval_stmt env scope
+    | S_Case _ -> ASTUtils.case_to_conds s |> eval_stmt env scope
     | S_Assert e ->
         let v = eval_expr env scope true e in
         let* b = B.choice v (return true) (return false) in

@@ -95,12 +95,12 @@ module NativeBackend = struct
   let create_vector ty li =
     let assoc_name_val (name, _ty) v = (name, v) in
     let assoc_names_values = List.map2 assoc_name_val in
-    match ty with
+    match ty.desc with
     | T_Tuple _ -> v_tuple li
     | T_Record field_types -> assoc_names_values field_types li |> v_record
     | T_Exception field_types ->
         assoc_names_values field_types li |> v_exception
-    | ty -> fatal @@ Error.ConflictingTypes (indexables, ty)
+    | _ -> fatal @@ Error.ConflictingTypes (indexables, ty)
 
   let as_bitvector = function
     | V_BitVector bits -> bits

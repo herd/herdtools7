@@ -2,18 +2,42 @@ open AST
 module ISet = Set.Make (String)
 module IMap = Map.Make (String)
 
-let stmt_from_list =
+let dummy_pos = Lexing.dummy_pos
+let annotated desc pos_start pos_end = { desc; pos_start; pos_end }
+let add_dummy_pos desc = annotated desc dummy_pos dummy_pos
+
+let add_pos_from_st pos desc =
+  if pos.desc == desc then pos else { pos with desc }
+
+let with_pos_from_st pos { desc; _ } = add_pos_from_st pos desc
+let map_desc_st f thing = f thing |> add_pos_from_st thing
+let add_pos_from pos desc = { pos with desc }
+let with_pos_from pos { desc; _ } = add_pos_from pos desc
+let map_desc f thing = f thing |> add_pos_from thing
+
+let map2_desc f thing1 thing2 =
+  {
+    desc = f thing1 thing2;
+    pos_start = thing1.pos_start;
+    pos_end = thing2.pos_end;
+  }
+
+let s_pass = add_dummy_pos S_Pass
+let s_then = map2_desc (fun s1 s2 -> S_Then (s1, s2))
+
+let stmt_from_list : stmt list -> stmt =
+  let is_not_s_pass = function { desc = S_Pass; _ } -> false | _ -> true in
   let rec one_step acc = function
     | [] -> List.rev acc
     | [ x ] -> List.rev (x :: acc)
-    | s1 :: s2 :: t -> one_step (S_Then (s1, s2) :: acc) t
+    | s1 :: s2 :: t -> one_step (s_then s1 s2 :: acc) t
   in
   let rec aux = function
-    | [] -> S_Pass
+    | [] -> add_dummy_pos S_Pass
     | [ x ] -> x
     | l -> aux @@ one_step [] l
   in
-  fun l -> List.filter (function S_Pass -> false | _ -> true) l |> aux
+  fun l -> List.filter is_not_s_pass l |> aux
 
 let mask_from_set_bits_positions size pos =
   let buf = Bytes.make size '0' in
@@ -26,7 +50,8 @@ let inv_mask =
   String.map one_char
 
 let used_identifiers : AST.t -> ISet.t =
-  let rec use_e acc = function
+  let rec use_e acc e =
+    match e.desc with
     | E_Literal _ -> acc
     | E_Var x -> ISet.add x acc
     | E_Binop (_op, e1, e2) -> use_e (use_e acc e2) e1
@@ -46,7 +71,8 @@ let used_identifiers : AST.t -> ISet.t =
   and use_slice acc = function
     | Slice_Single e -> use_e acc e
     | Slice_Length (e1, e2) | Slice_Range (e1, e2) -> use_e (use_e acc e1) e2
-  and use_s acc = function
+  and use_s acc s =
+    match s.desc with
     | S_Pass | S_Return None -> acc
     | S_Then (s1, s2) -> use_s (use_s acc s1) s2
     | S_Assert e | S_Return (Some e) -> use_e acc e
@@ -54,7 +80,8 @@ let used_identifiers : AST.t -> ISet.t =
     | S_Call (x, args) -> List.fold_left use_e (ISet.add x acc) args
     | S_Cond (e, s1, s2) -> use_s (use_s (use_e acc e) s2) s1
     | S_Case (e, cases) -> List.fold_left use_case (use_e acc e) cases
-  and use_case acc (es, stmt) = List.fold_left use_e (use_s acc stmt) es
+  and use_case acc { desc = es, stmt; _ } =
+    List.fold_left use_e (use_s acc stmt) es
   and use_le acc _le = acc
   and use_decl acc = function
     | D_Func { body; _ } -> use_s acc body
@@ -67,12 +94,20 @@ let canonical_fields li =
   let compare (x, _) (y, _) = String.compare x y in
   List.sort compare li
 
-let rec expr_of_lexpr = function
-  | LE_Var x -> E_Var x
-  | LE_Slice (le, args) -> E_Slice (expr_of_lexpr le, args)
-  | LE_SetField (le, x, ta) -> E_GetField (expr_of_lexpr le, x, ta)
-  | LE_Ignore -> E_Var "-"
-  | LE_TupleUnpack les -> E_Tuple (List.map expr_of_lexpr les)
+let literal v = E_Literal v |> add_dummy_pos
+let var_ x = E_Var x |> add_dummy_pos
+let binop op = map2_desc (fun e1 e2 -> E_Binop (op, e1, e2))
+
+let expr_of_lexpr : lexpr -> expr =
+  let rec aux le =
+    match le.desc with
+    | LE_Var x -> E_Var x
+    | LE_Slice (le, args) -> E_Slice (map_desc aux le, args)
+    | LE_SetField (le, x, ta) -> E_GetField (map_desc aux le, x, ta)
+    | LE_Ignore -> E_Var "-"
+    | LE_TupleUnpack les -> E_Tuple (List.map (map_desc aux) les)
+  in
+  map_desc aux
 
 let fresh_var =
   let i = ref 0 in
@@ -81,23 +116,31 @@ let fresh_var =
     s ^ "-" ^ string_of_int !i
 
 let rec big_union = function
-  | [] -> E_Literal (V_Bool true)
+  | [] -> literal (V_Bool true)
   | [ e ] -> e
-  | h :: t -> E_Binop (BOR, h, big_union t)
+  | h :: t -> binop BOR h (big_union t)
 
-let case_to_conds =
+let case_to_conds : stmt -> stmt =
+  let eq_x x = map_desc (fun e -> E_Binop (EQ_OP, var_ x, e)) in
   let rec cases_to_cond x = function
-    | [] -> S_Pass
-    | (es, s) :: t ->
-        let conds = List.map (fun e -> E_Binop (EQ_OP, E_Var x, e)) es in
-        S_Cond (big_union conds, s, cases_to_cond x t)
+    | [] -> s_pass
+    | case :: t -> map_desc (one_case x t) case
+  and one_case x t { desc = es, s; _ } =
+    let conds = List.map (eq_x x) es in
+    S_Cond (big_union conds, s, cases_to_cond x t)
   in
-  fun e cases ->
-    match e with
-    | E_Var y -> cases_to_cond y cases
-    | _ ->
-        let x = fresh_var "case" in
-        S_Then (S_Assign (LE_Var x, e), cases_to_cond x cases)
+  map_desc @@ fun s ->
+  match s.desc with
+  | S_Case ({ desc = E_Var y; _ }, cases) -> (cases_to_cond y cases).desc
+  | S_Case (e, cases) ->
+      let x = fresh_var "case" in
+      let assign =
+        let pos = e.pos_start in
+        let le = annotated (LE_Var x) pos pos in
+        annotated (S_Assign (le, e)) pos e.pos_end
+      in
+      S_Then (assign, cases_to_cond x cases)
+  | _ -> raise (Invalid_argument "case_to_conds")
 
 let slice_as_single = function
   | Slice_Single e -> e

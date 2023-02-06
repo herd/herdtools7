@@ -2,22 +2,23 @@
 %{
 
   let build_expr_conds =
-    let folder (c, e_then) e_else = AST.E_Cond (c, e_then, e_else) in
-    fun (elseifs, e) -> List.fold_right folder elseifs e
+    let open AST in
+    let make_cond { desc = (c, e_then); _ } e_else = AST.E_Cond (c, e_then, e_else) in
+    fun (elseifs, e) -> List.fold_right (ASTUtils.map2_desc make_cond) elseifs e
 
   let tr_get_fields (e, fields) =
     let open AST in
-    let one_field f = E_GetField (e, f, TA_None) in
+    let one_field f = E_GetField (e, f, TA_None) |> ASTUtils.add_dummy_pos in
     E_Concat (List.map one_field fields)
 
   let build_stmt_conds (s_elsifs, s_else) =
     let open AST in
     let s_else = match s_else with
     | Some s -> s
-    | None -> S_Pass
+    | None -> ASTUtils.s_pass
     in
-    let folder (c, s_then) s_else = AST.S_Cond (c, s_then, s_else) in
-    List.fold_right folder s_elsifs s_else
+    let folder { desc = (c, s_then); _ } s_else = AST.S_Cond (c, s_then, s_else) in
+    List.fold_right (ASTUtils.map2_desc folder) s_elsifs s_else
 
 %}
 
@@ -169,24 +170,26 @@ let decl ==
   | setter_decl
   | type_decl
 
+let annotated(x) == desc = x; { AST.{ desc; pos_start=$symbolstartpos; pos_end=$endpos }}
+
 let unimplemented_decl(x) ==
-  x ; { AST.(D_GlobalConst ("-", T_Int None, E_Literal (V_Int 0))) }
+  x=annotated(x) ; { AST.(D_GlobalConst ("-", ASTUtils.add_pos_from x @@ T_Int None, ASTUtils.add_pos_from x @@ E_Literal (V_Int 0))) }
 
 let type_decl ==
   | terminated_by(SEMICOLON; EOL,
     | TYPE; ~=tidentdecl; EQ; ~=ty; < AST.D_TypeDecl >
-    | RECORD; x=tidentdecl; fields=braced(nlist(field));
-      { AST.(D_TypeDecl (x, T_Record fields)) }
-    | ENUMERATION; x=tidentdecl; li=braced(clist(ident));
-      { AST.(D_TypeDecl (x, T_Enum li)) }
+    | RECORD; x=tidentdecl; fields=annotated(braced(nlist(field)));
+      { AST.(D_TypeDecl (x, ASTUtils.add_pos_from fields (T_Record fields.desc))) }
+    | ENUMERATION; x=tidentdecl; li=annotated(braced(clist(ident)));
+      { AST.(D_TypeDecl (x, ASTUtils.add_pos_from li (T_Enum li.desc))) }
 
     | unimplemented_decl(
       | TYPE; tidentdecl; <>
     )
   )
 
-  | TYPE; x=tidentdecl; IS; li=pared(nclist(field_ns)); EOL;
-    { AST.(D_TypeDecl (x, T_Record li)) }
+  | TYPE; x=tidentdecl; IS; li=annotated(pared(nclist(field_ns))); EOL;
+    { AST.(D_TypeDecl (x, ASTUtils.add_pos_from li (T_Record li.desc))) }
 
 let tidentdecl ==
   | ident
@@ -208,8 +211,10 @@ let some(x) == ~=x; < Some >
 let unimplemented_ty(x) == x; { AST.T_Named "Unimplemented" }
 
 let ty :=
-  | ty_non_tuple
-  | ~=pared(nnclist(ty)); < AST.T_Tuple >
+  annotated (
+    | ty_non_tuple
+    | ~=pared(nnclist(ty)); < AST.T_Tuple >
+  )
 
 let ty_non_tuple ==
   | ~=tident; < AST.T_Named >
@@ -241,27 +246,29 @@ let sexpr := binop_expr(sexpr, abinop)
 
 let binop_expr(e, b) ==
   | pared(expr)
-  | ~=literal_expression;                 < AST.E_Literal   >
-  | ~=qualident;                          < AST.E_Var       >
-  | ~=qualident; ~=pared(clist(expr));    < AST.E_Call      >
-  | ~=unop; ~=e;                          < AST.E_Unop      >
-  | e1=e; op=b; e2=e;                     { AST.E_Binop (op, e1, e2) }
-  | ~=pared(nnclist(expr));               < AST.E_Tuple     >
-  | IF; c=expr; THEN; e=expr; ~=e_else;   < AST.E_Cond      >
-  | ~=e; DOT; ~=ident; ~=without_ta;      < AST.E_GetField  >
-  | ~=e; DOT; ~=bracketed(clist(ident));  < tr_get_fields   >
-  | ~=e; ~=bracketed(clist(slice));       < AST.E_Slice     >
-  (*
-  | ~=e; LT; ~=clist(slice); GT;          < AST.E_Slice     >
-  *)
+  | annotated (
+      | ~=literal_expression;                 < AST.E_Literal   >
+      | ~=qualident;                          < AST.E_Var       >
+      | ~=qualident; ~=pared(clist(expr));    < AST.E_Call      >
+      | ~=unop; ~=e;                          < AST.E_Unop      >
+      | e1=e; op=b; e2=e;                     { AST.E_Binop (op, e1, e2) }
+      | ~=pared(nnclist(expr));               < AST.E_Tuple     >
+      | IF; c=expr; THEN; e=expr; ~=e_else;   < AST.E_Cond      >
+      | ~=e; DOT; ~=ident; ~=without_ta;      < AST.E_GetField  >
+      | ~=e; DOT; ~=bracketed(clist(ident));  < tr_get_fields   >
+      | ~=e; ~=bracketed(clist(slice));       < AST.E_Slice     >
+      (*
+      | ~=e; LT; ~=clist(slice); GT;          < AST.E_Slice     >
+      *)
 
-  | unimplemented_expr(
-    | ty_non_tuple; UNKNOWN; <>
-    | ty_non_tuple; IMPLEM_DEFINED; ioption(STRING_LIT); <>
-    | e; IN; pattern; <>
-  )
+      | unimplemented_expr(
+        | ty_non_tuple; UNKNOWN; <>
+        | ty_non_tuple; IMPLEM_DEFINED; ioption(STRING_LIT); <>
+        | e; IN; pattern; <>
+      )
+    )
 
-let e_elseif == ELSIF; c=expr; THEN; e=expr; <>
+let e_elseif == annotated ( ELSIF; c=expr; THEN; e=expr; <> )
 let e_else == ~=list(e_elseif); ELSE; ~=expr; < build_expr_conds >
 
 let slice ==
@@ -315,7 +322,7 @@ let procedure_decl ==
 let sformal == t=ty; ioption(AMP); x=ident; { (x, t) }
 let formal == t=ty; x=ident; { (x, t) }
 
-let s_eol == EOL; { AST.S_Pass }
+let s_eol == EOL; { ASTUtils.s_pass }
 
 let func_body ==
   | indented_block
@@ -342,14 +349,16 @@ let stmts ==
 
 (* Always terminated by EOL *)
 let simple_stmts ==
-  | ~=simple_stmt_list; ~=simple_if_stmt; < AST.S_Then >
+  | annotated (
+    ~=simple_stmt_list; ~=simple_if_stmt; < AST.S_Then >
+  )
   | terminated(simple_stmt_list, EOL)
 
 let simple_stmt_list == ~=nlist(simple_stmt); < ASTUtils.stmt_from_list >
 
 let simple_stmt ==
   | assignment_stmt
-  | terminated_by (SEMICOLON,
+  | annotated ( terminated_by (SEMICOLON,
     | ~=qualident; ~=pared(clist(expr));  < AST.S_Call >
     | RETURN; ~=ioption(expr);            < AST.S_Return >
     | ASSERT; ~=expr;                     < AST.S_Assert >
@@ -365,16 +374,18 @@ let simple_stmt ==
       | SEE; ident; <>
       | THROW; ident; <>
     )
-  )
+  ))
 
 let assignment_stmt ==
-  terminated_by(SEMICOLON,
-    |               ~= lexpr; EQ; ~=expr; < AST.S_Assign >
-    | ty_non_tuple; ~=le_var; EQ; ~=expr; < AST.S_Assign >
-    | CONSTANT; ty; ~=le_var; EQ; ~=expr; < AST.S_Assign >
+  annotated (
+    terminated_by(SEMICOLON,
+      |               ~=           lexpr ; EQ; ~=expr; < AST.S_Assign >
+      | ty_non_tuple; ~=annotated(le_var); EQ; ~=expr; < AST.S_Assign >
+      | CONSTANT; ty; ~=annotated(le_var); EQ; ~=expr; < AST.S_Assign >
 
-    | unimplemented_stmts (
-      | ty_non_tuple; nclist(ident); <>
+      | unimplemented_stmts (
+        | ty_non_tuple; nclist(ident); <>
+      )
     )
   )
 
@@ -383,28 +394,36 @@ let lexpr_ignore == { AST.LE_Ignore }
 let unimplemented_lexpr(x) == x; lexpr_ignore
 
 let lexpr :=
-  | MINUS; lexpr_ignore
-  | le_var
-  | ~=lexpr; DOT; ~=ident; ~=without_ta;  < AST.LE_SetField >
-  | ~=lexpr; ~=bracketed(clist(slice));   < AST.LE_Slice    >
-  | ~=lexpr; LT; ~=clist(slice); GT;      < AST.LE_Slice    >
-  | ~=pared(nclist(lexpr));               < AST.LE_TupleUnpack >
+  annotated (
+    | MINUS; lexpr_ignore
+    | le_var
+    | ~=lexpr; DOT; ~=ident; ~=without_ta;  < AST.LE_SetField >
+    | ~=lexpr; ~=bracketed(clist(slice));   < AST.LE_Slice    >
+    | ~=lexpr; LT; ~=clist(slice); GT;      < AST.LE_Slice    >
+    | ~=pared(nclist(lexpr));               < AST.LE_TupleUnpack >
 
-  | unimplemented_lexpr (
-    | lexpr; DOT; bracketed(clist(ident)); <>
-    | bracketed(nclist(lexpr)); <>
+    | unimplemented_lexpr (
+      | lexpr; DOT; bracketed(clist(ident)); <>
+      | bracketed(nclist(lexpr)); <>
+    )
   )
 
-let simple_if_stmt == IF; ~=expr; THEN; ~=simple_stmt_list; ~=simple_else_opt; EOL; < AST.S_Cond >
+let simple_if_stmt ==
+    annotated (
+      IF; ~=expr; THEN; ~=simple_stmt_list; ~=simple_else_opt; EOL; < AST.S_Cond >
+    )
+
 let simple_else_opt == ~=list(simple_elsif); ~=ioption(ELSE; simple_stmt_list); < build_stmt_conds >
 let simple_else     == ~=list(simple_elsif); ~=   some(ELSE; simple_stmt_list); < build_stmt_conds >
-let simple_elsif == ELSIF; ~=expr; THEN; ~=simple_stmt_list; <>
+let simple_elsif == annotated ( ELSIF; ~=expr; THEN; ~=simple_stmt_list; <> )
 
 let compound_stmt ==
-  | conditional_stmt
-  |  unimplemented_stmts (
-    | repetitive_stmt; <>
-    | catch_stmt; <>
+  annotated (
+    | conditional_stmt
+    |  unimplemented_stmts (
+      | repetitive_stmt; <>
+      | catch_stmt; <>
+    )
   )
 
 let conditional_stmt ==
@@ -413,18 +432,20 @@ let conditional_stmt ==
   | IF; ~=expr; THEN; ~=simple_stmt_list; ~=simple_else; EOL; < AST.S_Cond >
   | CASE; ~=expr; OF; EOL; INDENT; ~=alt_otherwise; DEDENT;   < AST.S_Case >
 
-let s_elsif == ELSIF; ~=expr; THEN; ~=possibly_empty_block; <>
+let s_elsif == annotated ( ELSIF; ~=expr; THEN; ~=possibly_empty_block; <> )
 let s_else == ~=list(s_elsif); ~=ioption(ELSE; possibly_empty_block); < build_stmt_conds >
 
 let alt ==
-  | WHEN; ~=nclist(pattern); opt_altcond; ~=possibly_empty_block; <>
-  | WHEN; ~=nclist(pattern); opt_altcond; ~=simple_if_stmt; <>
+  annotated (
+    | WHEN; ~=nclist(pattern); opt_altcond; ~=possibly_empty_block; <>
+    | WHEN; ~=nclist(pattern); opt_altcond; ~=simple_if_stmt; <>
+  )
 
 let alt_otherwise ==
   | list(alt)
-  | li=list(alt); ~=otherwise; { li @ [ ([], otherwise) ] }
+  | li=list(alt); ~=otherwise; { li @ [ ASTUtils.add_pos_from otherwise ([], otherwise.desc) ] }
 
-let otherwise == OTHERWISE; possibly_empty_block
+let otherwise == annotated (OTHERWISE; possibly_empty_block)
 
 let opt_altcond ==
   | <>
@@ -432,14 +453,16 @@ let opt_altcond ==
   | AND; expr; EQ_GT; <>
 
 let pattern ==
-  | ~=literal_expression; < AST.E_Literal >
-  | ~=qualident;          < AST.E_Var     >
+  annotated (
+    | ~=literal_expression; < AST.E_Literal >
+    | ~=qualident;          < AST.E_Var     >
 
-  | unimplemented_expr (
-    | MASK_LIT; <>
-    | MINUS; <>
-    | pared(nclist(pattern)); <>
-    | braced(nclist(apattern)); <>
+    | unimplemented_expr (
+      | MASK_LIT; <>
+      | MINUS; <>
+      | pared(nclist(pattern)); <>
+      | braced(nclist(apattern)); <>
+    )
   )
 
 let apattern == expr; <> | expr; DOT_DOT; expr; <>

@@ -52,7 +52,8 @@ let unop op v =
   | _ -> fatal (Error.UnsupportedUnop (op, v))
 
 let rec static_eval (env : string -> value) : expr -> value =
-  let rec expr_ = function
+  let rec expr_ e =
+    match e.desc with
     | E_Literal v -> v
     | E_Var x -> env x
     | E_Binop (op, e1, e2) ->
@@ -61,7 +62,7 @@ let rec static_eval (env : string -> value) : expr -> value =
     | E_Unop (op, e) ->
         let v = expr_ e in
         unop op v
-    | E_Slice (e', slices) as e ->
+    | E_Slice (e', slices) ->
         let bv =
           match expr_ e' with
           | V_Int i -> Bitvector.of_int i
@@ -69,7 +70,7 @@ let rec static_eval (env : string -> value) : expr -> value =
           | _ -> fatal (Error.UnsupportedExpr e)
         and positions = slices_to_positions env slices in
         V_BitVector (Bitvector.extract_slice bv positions)
-    | e -> fatal (Error.UnsupportedExpr e)
+    | _ -> fatal (Error.UnsupportedExpr e)
   in
   expr_
 

@@ -1,8 +1,8 @@
 open AST
 
 type error =
-  | BadField of string * type_desc
-  | BadFields of string list * type_desc
+  | BadField of string * ty
+  | BadFields of string list * ty
   | TypeInferenceNeeded
   | UndefinedIdentifier of identifier
   | MismatchedReturnValue of string
@@ -12,7 +12,7 @@ type error =
   | UnsupportedExpr of expr
   | MismatchType of value * type_desc list
   | NotYetImplemented of string
-  | ConflictingTypes of type_desc list * type_desc
+  | ConflictingTypes of type_desc list * ty
   | AssertionFailed of expr
   | CannotParse of Lexing.position
   | UnknownSymbol of Lexing.position
@@ -31,6 +31,7 @@ let pp_error =
     fprintf f "@[<h>File %s,@ line %2d,@ char %2d@]" pos.pos_fname pos.pos_lnum
       (pos.pos_cnum - pos.pos_bol)
   in
+  let pp_type_desc f ty = pp_ty f (ASTUtils.add_dummy_pos ty) in
   fun f e ->
     pp_open_box f 2;
     (match e with
@@ -51,12 +52,12 @@ let pp_error =
           (pp_comma_list pp_type_desc)
           li
     | BadField (s, ty) ->
-        fprintf f "Cannot get field '%s'@ on type %a." s pp_type_desc ty
+        fprintf f "Cannot get field '%s'@ on type %a." s pp_ty ty
     | BadFields (fields, ty) ->
         fprintf f
           "Fields mismatch for creating a value of type %a@ -- Passed fields \
            are:@ %a"
-          pp_type_desc ty
+          pp_ty ty
           (pp_print_list ~pp_sep:pp_print_space pp_print_string)
           fields
     | TypeInferenceNeeded ->
@@ -72,10 +73,10 @@ let pp_error =
     | NotYetImplemented s -> pp_print_text f @@ "Not yet implemented: " ^ s
     | ConflictingTypes ([ expected ], provided) ->
         fprintf f "Type error:@ a subtype of@ %a@ was expected,@ provided %a."
-          pp_type_desc expected pp_type_desc provided
+          pp_type_desc expected pp_ty provided
     | ConflictingTypes (expected, provided) ->
-        fprintf f "Type error:@ %a does@ not@ subtype@ any@ of:@ %a."
-          pp_type_desc provided
+        fprintf f "Type error:@ %a does@ not@ subtype@ any@ of:@ %a." pp_ty
+          provided
           (pp_comma_list pp_type_desc)
           expected
     | AssertionFailed e -> fprintf f "Assertion failed:@ %a" pp_expr e
