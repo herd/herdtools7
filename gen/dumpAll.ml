@@ -445,7 +445,7 @@ module Make(Config:Config)(T:Builder.S)
               Version.version Version.rev ;
             let res =  gen (check_dump all_chan check) empty_t in
             flush stderr ;
-            printf
+            print
               "Generator produced %d tests\n%!"
               res.ntests ;
             if
