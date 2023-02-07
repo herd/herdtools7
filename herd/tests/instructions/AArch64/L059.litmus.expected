@@ -1,0 +1,10 @@
+Test L059 Required
+States 1
+0:X0=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1)
+Observation L059 Always 1 0
+Hash=2395520d6f37fe762fc77b0c7a639309
+

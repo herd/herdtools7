@@ -1,0 +1,10 @@
+AArch64 L061
+(* branch to instruction address with .section name *)
+
+{ 0:X0 = 1; }
+  P0            ;
+  B .text       ;
+  ADD W0, W0, #1;
+.text: NOP      ;
+
+forall (0:X0 = 1)
