@@ -25,6 +25,7 @@ module Make(O:Tar.Option) = struct
   let open_all () = do_open "@all"
   let open_file name = do_open name
   let close chan = close_out chan
+  let remove name = MySys.remove (T.outname name)
   let put_char = output_char
   let fprintf chan fmt = Printf.fprintf chan fmt
   let tar = T.tar

@@ -436,7 +436,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
           filter = None;
           condition = ConstrGen.ExistsState (ConstrGen.And []);
           locations = [];
-          extra_data = MiscParser.empty_extra;
+          extra_data = MiscParser.empty_extra ;
         }
       in
       let name =

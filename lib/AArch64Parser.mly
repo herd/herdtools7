@@ -142,7 +142,7 @@ let mk_instrp instr v r1 r2 ra ko kb =
 %%
 main:
 | semi_opt proc_list iol_list scopes_and_memory_map EOF
-   { $2,$3,MiscParser.BellExtra $4 }
+   { $2,$3,[MiscParser.BellExtra $4] }
 
 semi_opt:
 | { () }

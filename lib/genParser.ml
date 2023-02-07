@@ -181,7 +181,7 @@ module Make
          filter = filter;
          condition = final;
          locations = locs;
-         extra_data ;
+         extra_data = extra_data ;
        } in
       let name  = name.Name.name in
       let parsed =

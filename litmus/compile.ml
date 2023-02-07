@@ -838,8 +838,8 @@ module A.FaultType = A.FaultType)
       let bellinfo =
         let open MiscParser in
         match extra_data with
-        | NoExtra|CExtra _ -> None
-        | BellExtra i -> Some i in
+        | [BellExtra i] -> Some i
+        | _ -> None in
       let code_typed = type_outs ty_env1 code in
       let flocs,ffaults = LocationsItem.locs_and_faults locs in
         { T.init = initenv ;
