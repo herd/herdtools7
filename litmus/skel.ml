@@ -93,7 +93,9 @@ module Make
     end = struct
   module MakeLoc
            (CfgLoc:
-              sig val label_init : Label.Full.Set.t
+              sig
+                val label_init : Label.Full.Set.t
+                val need_prelude : bool
               end) = struct
       module G = Global_litmus
       module C = T.C
@@ -1389,7 +1391,7 @@ module Make
             O.fx indent "_a->%s = _a->%s;" (tag_malloc a) a ;
             O.fx indent "_a->%s = %s(_a->%s,sizeof(*_a->%s));" a alg a a
         in
-        if do_self || do_label_init then begin
+        if do_self || CfgLoc.need_prelude then begin
           ObjUtil.insert_lib_file O.o "_find_ins.c" ;
           O.o "" ;
           if do_self then begin
@@ -2914,7 +2916,10 @@ module Make
         let module MLoc =
           MakeLoc
             (struct
-              let label_init = T.get_exported_labels test
+              let label_init = T.get_init_labels test
+              let need_prelude =
+                not (Label.Full.Set.is_empty label_init)
+                || Misc.consp (T.from_labels test)
             end) in
         let open MLoc in
         let env = U.build_env test in

@@ -48,6 +48,7 @@ int RUN(int argc,char **argv,FILE *out) {
   global_t *glo_ptr = &global;
   glo_ptr->mem = mem;
 #endif
+  init_getinstrs();
   init_global(glo_ptr);
 #ifdef KVM
   if (!feature_check()) return -1;
@@ -101,7 +102,6 @@ int RUN(int argc,char **argv,FILE *out) {
     arg[id].id = id;
     arg[id].g = glo_ptr;
   }
-  init_getinstrs();
 #ifdef KVM
   init_labels();
   on_cpus(zyva, arg);

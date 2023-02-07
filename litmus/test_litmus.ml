@@ -64,6 +64,7 @@ module type S = sig
   val code_exists : (P.ins -> bool) -> t -> bool
   val get_exported_labels_init_code :
       A.state -> P.code list ->  Label.Full.Set.t
+  val get_init_labels : t -> Label.Full.Set.t
   val get_exported_labels : t -> Label.Full.Set.t
   val from_labels : t -> (Label.Full.full * P.ins) list
 end
@@ -191,6 +192,8 @@ struct
     Label.Full.Set.union
       (P.exported_labels_code prog)
       (get_exported_labels_init init)
+
+  let get_init_labels { init; } = get_exported_labels_init init
 
   let get_exported_labels  { init; src; _ } =
      get_exported_labels_init_code  init src.MiscParser.prog

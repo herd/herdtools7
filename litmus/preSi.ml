@@ -69,7 +69,13 @@ module Make
       val dump : Name.t -> T.t -> unit
     end = struct
 
-    module LocMake(CfgLoc:sig val label_init : Label.Full.Set.t end) = struct
+    module
+      LocMake
+        (CfgLoc:
+           sig
+             val label_init : Label.Full.Set.t
+             val need_prelude : bool
+           end) = struct
 
     let do_label_init = not (Label.Full.Set.is_empty CfgLoc.label_init)
 
@@ -251,13 +257,15 @@ module Make
         O.o "" ;
         O.o "/* Full memory barrier */" ;
         UD.dump_mbar_def () ;
-        if not (Label.Full.Set.is_empty CfgLoc.label_init) then begin
-          O.o "/* Code analysis */" ;
-          O.o "#define SOME_LABELS 1" ;
-          O.o "" ;
+        if CfgLoc.need_prelude then begin
           ObjUtil.insert_lib_file O.o "_find_ins.c" ;
           O.o "" ;
-          O.o "static size_t prelude_size(ins_t *p) { return find_ins(getnop(),p,0)+1; }" ;
+          O.o "static size_t prelude_size(ins_t *p) { return find_ins(nop,p,0)+1; }" ;
+          O.o "" ;
+        end ;
+        if do_label_init then begin
+          O.o "/* Code analysis */" ;
+          O.o "#define SOME_LABELS 1" ;
           O.o "" ;
           O.o "typedef struct {" ;
           UD.define_label_fields CfgLoc.label_init ;
@@ -266,7 +274,7 @@ module Make
           O.o "static void code_labels_init(code_labels_t *p);" ;
           O.o "" ;
         end ;
-        ()
+        CfgLoc.need_prelude
 
 
 
@@ -294,7 +302,7 @@ module Make
         O.o "}" ;
         O.o ""
 
-      let dump_fault_handler doc test =
+      let dump_fault_handler find_ins_inserted doc test =
         if have_fault_handler then begin
           let ok,no = T.partition_asmhandlers test in
           begin match no with
@@ -337,11 +345,12 @@ module Make
                | LoadsFatal ->
                   Warn.user_error "No asymetric mode for litmus kvm variant"
              end ;
+
              let insert_ins_ops () =
-               ObjUtil.insert_lib_file O.o "_find_ins.c" ;
-               O.o "" ;
-               Insert.insert O.o "getnop.c" ;
-               O.o "" in
+               if not find_ins_inserted then begin
+                 ObjUtil.insert_lib_file O.o "_find_ins.c" ;
+                 O.o ""
+               end in
 
              let faults : (A.V.v, A.FaultType.t) Fault.atom list = U.get_faults test in
              begin match faults with
@@ -1742,9 +1751,8 @@ module Make
         if T.has_asmhandler test && not (T.has_defaulthandler test) then
           O.o "static void init_labels(void) { }"
         else if Cfg.is_kvm then begin
-          let init_rets nop_defined =
+          let init_rets () =
             if do_precise then begin
-              if not nop_defined then O.oi "ins_t nop = getnop();" ;
               List.iter
                 (fun (p,(t,_)) ->
                   let rhs = sprintf
@@ -1758,12 +1766,11 @@ module Make
           begin match filter_fault_lbls faults with
           | [] ->
               O.o "static void init_labels(void) {" ;
-              init_rets false ;
+              init_rets () ;
               O.o "}" ;
               O.o ""
           | faults ->
               O.o "static void init_labels(void) {" ;
-              O.oi "ins_t nop = getnop();" ;
               List.iter
                 (fun ((p,lbl),_,_ as f) ->
                   let lbl = Misc.as_some lbl in
@@ -1774,7 +1781,7 @@ module Make
                       (LangUtils.code_fun p) (LangUtils.code_fun p) off in
                   O.fi "%s = %s;" lhs rhs)
                 faults ;
-              init_rets true ;
+              init_rets () ;
               O.o "}" ;
               O.o ""
           end
@@ -2020,7 +2027,10 @@ module Make
         let module MLoc =
           LocMake
             (struct
-              let label_init = T.get_exported_labels test
+              let label_init = T.get_init_labels test
+              let need_prelude =
+                not (Label.Full.Set.is_empty label_init)
+                || Misc.consp (T.from_labels test)
             end) in
         let open MLoc in
         let db = DirtyBit.get test.T.info
@@ -2030,7 +2040,7 @@ module Make
         UD.dump_getinstrs test ;
         dump_delay_def () ;
         dump_read_timebase () ;
-        dump_mbar_def () ;
+        let find_ins_inserted = dump_mbar_def () in
         dump_cache_def () ;
         dump_barrier_def () ;
         dump_topology doc test ;
@@ -2039,7 +2049,7 @@ module Make
         let stats = get_stats test in
         dump_fault_type test ;
         let some_ptr = dump_outcomes env test in
-        dump_fault_handler doc test ;
+        dump_fault_handler find_ins_inserted doc test ;
         dump_cond_def env test ;
         dump_parameters env test ;
         dump_hash_def doc.Name.name env test ;
