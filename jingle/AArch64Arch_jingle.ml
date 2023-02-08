@@ -348,6 +348,13 @@ include Arch.MakeArch(struct
         conv_reg r2 >> fun r2 ->
         conv_reg r3 >! fun r3 ->
         I_CASBH(v,a,r1,r2,r3)
+    | I_CASP (v,a,r1,r2,r3,r4,r5) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >> fun r3 ->
+        conv_reg r4 >> fun r4 ->
+        conv_reg r5 >! fun r5 ->
+        I_CASP(v,a,r1,r2,r3,r4,r5)
     | I_SWP (v,a,r1,r2,r3) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

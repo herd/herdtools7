@@ -1451,6 +1451,46 @@ module Make
           (to_perms "rw" sz) (read_reg_ord rn ii) (read_reg_data sz rt ii)
         an ii
 
+      let casp sz rmw rs1 rs2 rt1 rt2 rn ii =
+        let an = rmw_to_read rmw in
+        let (>>>) = M.data_input_next in
+        let read_rs = read_reg_data sz rs1 ii
+          >>| read_reg_data sz rs2 ii
+        and write_rs (v1,v2) = write_reg_sz_non_mixed sz rs1 v1 ii
+          >>| write_reg_sz_non_mixed sz rs2 v2 ii
+          >>= fun _ -> M.unitT () in
+        lift_memop rn Dir.W true
+          (fun ac ma _ ->
+            let is_phy = Access.is_physical ac in
+             M.altT
+              (let read_mem a = do_read_mem_ret sz an aexp ac a ii
+                >>| (add_size a sz
+                >>= fun a -> do_read_mem_ret sz an aexp ac a ii) in
+               let neqp (v1,v2) (x1,x2) =
+                 M.op Op.Eq v1 x1 >>| M.op Op.Eq v2 x2
+                 >>= fun (b1,b2) -> M.op Op.And b1 b2
+                 >>= M.eqT V.zero in
+               M.aarch64_cas_no is_phy ma read_rs write_rs read_mem neqp)
+              (let read_rt = read_reg_data sz rt1 ii
+                >>| read_reg_data sz rt2 ii
+               and read_mem a = rmw_amo_read sz rmw ac a ii
+                >>| (add_size a sz
+                >>= fun a -> rmw_amo_read sz rmw ac a ii)
+               and write_mem a (v1,v2) =
+                   rmw_amo_write sz rmw ac a v1 ii
+                   >>| (add_size a sz >>= fun a2 ->
+                       rmw_amo_write sz rmw ac a2 v2 ii)
+                   >>= fun _ -> M.unitT ()
+               and eqp (v1,v2) (x1,x2) =
+                 M.eqT v1 x1 >>| M.eqT v2 x2
+                 >>= fun _ -> M.unitT () in
+               M.aarch64_cas_ok is_phy ma read_rs read_rt write_rs
+                 read_mem write_mem eqp))
+          (to_perms "rw" sz)
+          (read_reg_ord rn ii)
+          (read_reg_data sz rt1 ii >>> fun _ -> read_reg_data sz rt2 ii)
+        an ii
+
       (* Temporary morello variation of CAS *)
       let cas_morello sz rmw rs rt rn ii =
         (* As morello and kvm are incompatible, all accesses are virtual *)
@@ -2526,6 +2566,8 @@ module Make
             (* TODO: unify cas functions *)
             let cas = if morello then cas_morello else cas in
             cas (bh_to_sz v) rmw rs rt rn ii
+        | I_CASP (v,rmw,rs1,rs2,rt1,rt2,rn) ->
+            casp (tr_variant v) rmw rs1 rs2 rt1 rt2 rn ii
 (* Fetch and Op *)
         | I_STOP (op,v,w,rs,rn) ->
             ldop op (tr_variant v) (w_to_rmw w) rs ZR rn ii

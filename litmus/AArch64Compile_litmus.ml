@@ -991,6 +991,7 @@ module Make(V:Constant.S)(C:Config) =
       | V32 -> word | V64 -> quad | V128 -> assert false
 
     let cas_memo rmw = Misc.lowercase (cas_memo rmw)
+    let casp_memo rmw = Misc.lowercase (casp_memo rmw)
     let casbh_memo bh rmw = Misc.lowercase (casbh_memo bh rmw)
 
     let cas memo v r1 r2 r3 =
@@ -1007,6 +1008,19 @@ module Make(V:Constant.S)(C:Config) =
         memo = sprintf "%s %s,%s,[^i%s]" memo f1 f2 idx;
         inputs = r1@r2@[r3]; outputs = r1;
         reg_env = (r3,voidstar)::add_type t (r1@r2); }
+
+    let casp memo v r1 r2 r3 r4 r5 =
+      let t = type_of_variant v in
+      let rs1,rs2,rs3,rs4,rs5 = match v with
+      (* How to output even consecutive registers? *)
+      (* Assembler needs this proprty*)
+      | V32 -> "^wi0","^wi1","^wi2","^wi3", "^i4"
+      | V64 -> "^i0", "^i1", "^i2", "^i3", "^i4"
+      | V128 -> assert false in
+      { empty_ins with
+        memo = sprintf "%s %s,%s,%s,%s,[%s]" memo rs1 rs2 rs3 rs4 rs5;
+        inputs = [r1;r2;r3;r4;r5]; outputs = [r1;r2;r3;r4;r5];
+        reg_env = (r5,voidstar)::add_type t [r1;r2;r3;r4]@add_type quad [r5] }
 
 (* Swap *)
     let swp_memo rmw = Misc.lowercase (swp_memo rmw)
@@ -1391,6 +1405,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_STXR (v,t,r1,r2,r3) -> stxr (str_memo t) v r1 r2 r3::k
     | I_STXRBH (bh,t,r1,r2,r3) -> stxr (strbh_memo bh t) V32 r1 r2 r3::k
     | I_CAS (v,rmw,r1,r2,r3) -> cas (cas_memo rmw) v r1 r2 r3::k
+    | I_CASP (v,rmw,r1,r2,r3,r4,r5) -> casp (casp_memo rmw) v r1 r2 r3 r4 r5::k
     | I_CASBH (bh,rmw,r1,r2,r3) -> cas (casbh_memo bh rmw) V32 r1 r2 r3::k
     | I_SWP (v,rmw,r1,r2,r3) -> swp (swp_memo rmw) v r1 r2 r3::k
     | I_SWPBH (bh,rmw,r1,r2,r3) -> swp (swpbh_memo bh rmw) V32 r1 r2 r3::k

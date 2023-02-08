@@ -148,6 +148,10 @@ match name with
 | "casab"|"CASAB" -> CASAB
 | "caslb"|"CASLB" -> CASLB
 | "casalb"|"CASALB" -> CASALB
+| "casp" | "CASP" -> CASP
+| "caspa" | "CASPA" -> CASPA
+| "caspl" | "CASPL" -> CASPL
+| "caspal" | "CASPAL" -> CASPAL
 (* Swap *)
 | "swp"|"SWP" -> SWP
 | "swpa"|"SWPA" -> SWPA
