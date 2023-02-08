@@ -75,7 +75,7 @@ type instruction =
   | While of expression * instruction * int (* number of unrollings *)
   | CastExpr of expression
   | DeclReg of CType.t * reg
-  | StoreReg of CType.t option * reg * expression
+  | StoreReg of CType.t option * reg option * expression (* None reg does not store result*)
   | StoreMem of expression * expression * MemOrderOrAnnot.t
   | Lock of expression * mutex_kind
   | Unlock of expression * mutex_kind
@@ -184,9 +184,12 @@ let rec do_dump_instruction indent =
       sprintf "%swhile (%s) " indent (dump_expr e) ^
       do_dump_instruction indent i
   | CastExpr e -> pindent "(void)%s;" (dump_expr e)
-  | StoreReg(None,r,e) ->
+  (* if we provide no reg, just evaluate the expression*)
+  | StoreReg(_,None,e) ->
+     pindent "%s;" (dump_expr e)
+  | StoreReg(None,Some r,e) ->
      pindent "%s = %s;" r (dump_expr e)
-  | StoreReg(Some t,r,e) ->
+  | StoreReg(Some t,Some r,e) ->
      pindent "%s %s = %s;" (CType.dump t) r (dump_expr e)
   | DeclReg(t,r) ->
      pindent "%s %s;" (CType.dump t) r
@@ -411,17 +414,18 @@ let rec subst env i = match i with
     While (subst_expr env e, subst env  i,n)
 | CastExpr e ->
     CastExpr (subst_expr env e)
-| StoreReg (ot,r,e) ->
+| StoreReg (ot,None,e) -> StoreReg (ot,None,subst_expr env e)
+| StoreReg (ot,Some r,e) ->
     let e = subst_expr env e in
     begin try
       match StringMap.find r env.args with
-      | LoadReg r -> StoreReg (ot,r,e)
+      | LoadReg r -> StoreReg (ot,Some r,e)
       | LoadMem (loc,mo) -> StoreMem (loc,e,mo)
       | e ->
           Warn.user_error
             "Bad lvalue '%s' while substituting macro argument %s"
             (dump_expr e) r
-    with Not_found -> StoreReg (ot,r,e) end
+    with Not_found -> StoreReg (ot,Some r,e) end
 | StoreMem (loc,e,mo) ->
     StoreMem (subst_expr env loc,subst_expr env e,mo)
 | Lock (loc,k) -> Lock (subst_expr env loc,k)

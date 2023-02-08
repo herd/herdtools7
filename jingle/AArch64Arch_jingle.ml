@@ -80,6 +80,14 @@ include Arch.MakeArch(struct
         add_subs
           [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg(sr_name r3,r3')]
           subs
+    | I_UBFM(_,r1,r2,k1,k2),I_UBFM(_,r1',r2',k1',k2')
+    | I_SBFM(_,r1,r2,k1,k2),I_SBFM(_,r1',r2',k1',k2')
+      ->
+        begin match (match_kr subs (K k1) (K k1'),
+        match_kr subs (K k2) (K k2')) with
+        | Some(x),Some(_) -> Some(x)
+        | _ -> None end  >>>
+        add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
     | I_LDR_P(_,r1,r2,k),I_LDR_P(_,r1',r2',k')
       ->
         match_kr subs (K k) (K k') >>>
@@ -208,6 +216,18 @@ include Arch.MakeArch(struct
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >! fun r2 ->
         I_SXTW(r1,r2)
+    | I_SBFM(a,r1,r2,k1,k2) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        find_cst k1 >> fun k1 ->
+        find_cst k2 >! fun k2 ->
+        I_SBFM(a,r1,r2,k1,k2)
+    | I_UBFM(a,r1,r2,k1,k2) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        find_cst k1 >> fun k1 ->
+        find_cst k2 >! fun k2 ->
+        I_UBFM(a,r1,r2,k1,k2)
     | I_STXR(a,b,r1,r2,r3) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

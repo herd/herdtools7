@@ -322,6 +322,8 @@ match name with
 (* Operations *)
 | "sxtw"|"SXTW" -> TOK_SXTW
 | "uxtw"|"UXTW" -> TOK_UXTW
+| "ubfm"|"UBFM" -> UBFM
+| "sbfm"|"SBFM" -> SBFM
 | "mov"|"MOV" -> MOV
 | "movz"|"MOVZ" -> MOVZ
 | "movk"|"MOVK" -> MOVK

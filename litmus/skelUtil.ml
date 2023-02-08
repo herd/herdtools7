@@ -247,7 +247,8 @@ module Make
               MachSize.compare sz_t A.V.Scalar.machsize <= 0 in
         if mask_ok then
           do_mask
-            (if CType.signed t then A.V.Scalar.sxt else A.V.Scalar.mask)
+            (if CType.signed t && not Cfg.hexa then A.V.Scalar.sxt
+             else A.V.Scalar.mask)
             sz_t
             v
         else v

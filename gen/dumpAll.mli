@@ -29,6 +29,7 @@ module type Config = sig
   val cpp : bool
   val scope : Scope.t
   val info : MiscParser.info
+  val stdout: bool
 end
 
 module Make(Config:Config) (T:Builder.S) : sig

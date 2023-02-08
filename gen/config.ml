@@ -51,6 +51,8 @@ let bell = ref None
 let scope = ref Scope.No
 let variant = ref (fun (_:Variant_gen.t) -> false)
 let rejects = ref None
+let stdout = ref false
+let cycleonly = ref false
 
 let info = ref ([]:MiscParser.info)
 let add_info_line line = match LexScan.info line with
@@ -250,6 +252,10 @@ let common_specs () =
      sprintf "<i> size of integer added to base name that yield test names (default %i)" !fmt)::
    ("-no", Arg.String (fun s -> no := Some s),
      "<fname> do not generate tests for these cycles")::
+  ("-stdout", Arg.Bool (fun b ->  stdout := b),
+    "output to stdout. If Cycleonly is true, then this is implied to be true. (default false)")::
+  ("-cycleonly", Arg.Bool (fun b ->  cycleonly := b),
+    "output only cycle, i.e. no litmus body (default false)")::
   []
 
 let numeric = ref true

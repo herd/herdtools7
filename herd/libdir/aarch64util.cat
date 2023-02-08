@@ -100,10 +100,6 @@ end
 (* Intervening write *)
 let intervening-write(r) = r; [W]; r
 
-(* Properties of single-copy atomic accesses *)
-let si = sm
-show (sm \ id) \ (I * I) as si
-
 (* Renaming default herd names *)
 let Imp = NExp
 let SPONTANEOUS = SPURIOUS

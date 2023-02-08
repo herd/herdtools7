@@ -20,7 +20,7 @@ You can change PREFIX by editing the Makefile, or by running ``make ...`` as ``m
 Requirements
 ------------
 
-- OCaml (version >= 4.05.0)
+- OCaml (version >= 4.08.0)
 - dune
 - menhir (version >= 20180530)
 

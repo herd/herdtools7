@@ -105,6 +105,7 @@ type 'aop op1 =
   | ReadBit of int
   | LeftShift of int
   | LogicalRightShift of int
+  | ArithRightShift of int
   | AddK of int
   | AndK of string
   | Mask of MachSize.sz
@@ -134,6 +135,7 @@ let pp_op1 hexa pp_aop o = match o with
 | ReadBit i -> sprintf "readbit%i" i
 | LeftShift i -> sprintf "<<[%i]" i
 | LogicalRightShift i -> sprintf ">>>[%i]" i
+| ArithRightShift i -> sprintf ">>[%i]" i
 | AddK i  -> (if hexa then sprintf "+[0x%x]" else sprintf "+[%i]") i
 | AndK i  -> sprintf "&[%s]" i
 | Inv -> "~"
