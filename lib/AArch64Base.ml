@@ -829,6 +829,8 @@ type 'k kinstruction =
   | I_LDR_P of variant * reg * reg * 'k
   | I_LDP of temporal * variant * reg * reg * reg * 'k kr
   | I_LDPSW of reg * reg * reg * 'k kr
+  | I_LDP_P of temporal * variant * reg * reg * reg * 'k
+  | I_STP_P of temporal * variant * reg * reg * reg * 'k
   | I_LDAR of variant * ld_type * reg * reg
   | I_LDXP of variant * ldxp_type * reg * reg * reg
   | I_STR of variant * reg * reg * 'k kr * 'k s
@@ -1044,6 +1046,12 @@ let do_pp_instruction m =
     pp_memo memo ^ " " ^ pp_vreg v rt ^
     (if m.compat then ",[" ^ pp_xreg ra ^ "]" else",[" ^ pp_xreg ra ^ "],") ^ m.pp_k k in
 
+  let pp_memp_post memo v r1 r2 ra k =
+    pp_memo memo ^ " " ^ pp_vreg v r1 ^
+    "," ^ pp_vreg v r2  ^
+    ", [" ^ pp_xreg ra ^ "]" ^
+    (if m.compat then m.pp_k k else "," ^ (m.pp_k k)) in
+
   let pp_memp memo v r1 r2 ra kr =
     pp_memo memo ^ " " ^
     pp_vreg v r1 ^ "," ^
@@ -1176,8 +1184,12 @@ let do_pp_instruction m =
       pp_memp (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 k
   | I_LDPSW (r1,r2,r3,k) ->
       pp_memp "LDPSW" V64 r1 r2 r3 k
+  | I_LDP_P (_,v,r1,r2,r3,k) ->
+      pp_memp_post "LDP" v r1 r2 r3 k
   | I_STP (t,v,r1,r2,r3,k) ->
       pp_memp (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 k
+  | I_STP_P (_,v,r1,r2,r3,k) ->
+      pp_memp_post "STP" v r1 r2 r3 k
   | I_LDAR (v,t,r1,r2) ->
       pp_mem (ldr_memo t) v r1 r2 m.k0
   | I_LDARBH (bh,t,r1,r2) ->
@@ -1515,7 +1527,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_STXR (_,_,r1,r2,r3) | I_STXRBH (_,_,r1,r2,r3)
   | I_BUILD (r1,r2,r3) | I_CPYTYPE (r1,r2,r3) | I_CPYVALUE (r1,r2,r3)
   | I_CSEAL (r1,r2,r3) | I_SEAL (r1,r2,r3) | I_UNSEAL (r1,r2,r3)
-  | I_SC (_,r1,r2,r3)
+  | I_SC (_,r1,r2,r3) | I_LDP_P (_,_,r1,r2,r3,_) | I_STP_P (_,_,r1,r2,r3,_)
   | I_LDP_P_SIMD (_,_,r1,r2,r3,_) | I_LDP_SIMD (_,_,r1,r2,r3,_)
   | I_STP_P_SIMD (_,_,r1,r2,r3,_) | I_STP_SIMD (_,_,r1,r2,r3,_)
   | I_EOR_SIMD (r1,r2,r3) | I_ADD_SIMD (r1,r2,r3) | I_ADD_SIMD_S (r1,r2,r3)
@@ -1585,6 +1597,10 @@ let map_regs f_reg f_symb =
      I_LDPSW (map_reg r1,map_reg r2,map_reg r3,map_kr kr)
   | I_STP (t,v,r1,r2,r3,kr) ->
      I_STP (t,v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
+  | I_LDP_P (t,v,r1,r2,r3,k) ->
+     I_LDP_P (t,v,map_reg r1,map_reg r2,map_reg r3,k)
+  | I_STP_P (t,v,r1,r2,r3,k) ->
+     I_STP_P (t,v,map_reg r1,map_reg r2,map_reg r3,k)
   | I_LDAR (v,t,r1,r2) ->
      I_LDAR (v,t,map_reg r1,map_reg r2)
   | I_LDARBH (bh,t,r1,r2) ->
@@ -1826,7 +1842,9 @@ let get_next =
   | I_LDR_P _
   | I_LDP _
   | I_LDPSW _
+  | I_LDP_P _
   | I_STP _
+  | I_STP_P _
   | I_STR _
   | I_STR_P _
   | I_LDAR _
@@ -1953,6 +1971,8 @@ module PseudoI = struct
         | I_LDP (t,v,r1,r2,r3,kr) -> I_LDP (t,v,r1,r2,r3,kr_tr kr)
         | I_LDPSW (r1,r2,r3,kr) -> I_LDPSW (r1,r2,r3,kr_tr kr)
         | I_STP (t,v,r1,r2,r3,kr) -> I_STP (t,v,r1,r2,r3,kr_tr kr)
+        | I_LDP_P (t,v,r1,r2,r3,k) -> I_LDP_P (t,v,r1,r2,r3,k_tr k)
+        | I_STP_P (t,v,r1,r2,r3,k) -> I_STP_P (t,v,r1,r2,r3,k_tr k)
         | I_STR (v,r1,r2,kr,s) -> I_STR (v,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_STR_P (v,r1,r2,s) -> I_STR_P (v,r1,r2, k_tr s)
         | I_STG (r1,r2,kr) -> I_STG (r1,r2,kr_tr kr)
@@ -2053,6 +2073,7 @@ module PseudoI = struct
         | I_ST2 _
           -> 2
         | I_LDR_P _ (* reads, stores, then post-index stores *)
+        | I_LDP_P _|I_STP_P _
         | I_LDP_P_SIMD _ | I_STP_P_SIMD _
         | I_LDR_P_SIMD _ | I_STR_P_SIMD _
         | I_LD3 _ | I_LD3R _

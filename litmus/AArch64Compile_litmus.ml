@@ -369,6 +369,22 @@ module Make(V:Constant.S)(C:Config) =
            reg_env=[(rA,voidstar);(rD1,quad);(rD2,quad);]; }
       | V128 -> assert false
 
+    let load_pair_post memo v rD1 rD2 rA k = match v with
+    | V32 ->
+        { empty_ins with
+          memo= sprintf "%s ^wo0,^wo1,[^i0],#%i" memo k;
+          inputs=[rA];
+          outputs=[rD1;rD2;];
+          reg_env=[(rA,voidstar);(rD1,word);(rD2,word);];}
+    | V64 ->
+        { empty_ins with
+          memo=memo ^ sprintf " ^o0,^o1,[^i0],#%i" k;
+          inputs=[rA];
+          outputs=[rD1;rD2;];
+          reg_env=[rA,voidstar; (rD1,quad);(rD2,quad);]; }
+    | V128 -> assert false
+
+
     let store_pair memo v rD1 rD2 rA kr = match v,kr with
     | V32,K 0 ->
         { empty_ins with
@@ -433,6 +449,21 @@ module Make(V:Constant.S)(C:Config) =
            reg_env=[ rn,voidstar; rs,word; rt1,quad; rt2,quad; ];
          }
       | V128 -> assert false
+
+    let store_pair_post memo v rD1 rD2 rA k = match v with
+    | V32->
+        { empty_ins with
+          memo= sprintf "%s ^wi1,^wi2,[^i0],#%i" memo k;
+          inputs=[rA;rD1;rD2;];
+          outputs=[];
+          reg_env=[(rA,voidstar);(rD1,word);(rD2,word);];}
+    | V64 ->
+        { empty_ins with
+          memo=memo ^ sprintf " ^i1,^i2,[^i0],#%i" k;
+          inputs=[rA;rD1;rD2;];
+          outputs=[];
+          reg_env=[rA,voidstar; (rD1,quad);(rD2,quad);]; }
+    | V128 -> assert false
 
     let zr v = match v with
     | V32 -> "wzr"
@@ -1344,6 +1375,10 @@ module Make(V:Constant.S)(C:Config) =
     | I_LDRBH (H,r1,r2,kr,s) -> load "ldrh" V32 r1 r2 kr (default_shift kr s)::k
     | I_LDRS (var,B,r1,r2) -> load "ldrsb" var r1 r2 (K 0) (default_shift (K 0) S_NOEXT)::k
     | I_LDRS (var,H,r1,r2) -> load "ldrsh" var r1 r2 (K 0) (default_shift (K 0) S_NOEXT)::k
+    | I_LDP_P (t,v,r1,r2,r3,kr) ->
+        load_pair_post (match t with TT -> "ldp" | NT -> "ldnp") v r1 r2 r3 kr::k
+    | I_STP_P (t,v,r1,r2,r3,kr) ->
+        store_pair_post (match t with TT -> "stp" | NT -> "stnp") v r1 r2 r3 kr::k
     | I_LDAR (v,t,r1,r2) -> load (ldr_memo t) v r1 r2 k0 S_NOEXT::k
     | I_LDARBH (bh,t,r1,r2) -> load (ldrbh_memo bh t) V32 r1 r2 k0 S_NOEXT::k
     | I_STR (v,r1,r2,kr, s) -> store "str" v r1 r2 kr s::k

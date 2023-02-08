@@ -1225,6 +1225,22 @@ module Make
             end)
           (read_reg_ord rs ii) ii
 
+      (* Load pair - post-indexed write *)
+      and ldp_post sz rd1 rd2 ra k ii =
+        M.delay_kont "ldp_post"
+          (read_reg_ord ra ii)
+          (fun a_virt ma ->
+            do_ldr ra sz AArch64.N
+          (fun ac a ->
+            (M.add a_virt (V.intToV k) >>=
+              fun b -> write_reg ra b ii) >>|
+            (do_read_mem sz AArch64.N aexp ac rd1 a ii >>|
+            begin
+              add_size a sz >>=
+              fun a -> do_read_mem sz AArch64.N aexp ac rd2 a ii
+            end))
+              ma ii)
+
       and ldar sz t rd rs ii =
         let open AArch64 in
         let an = match t with
@@ -1290,6 +1306,25 @@ module Make
           (get_ea_noext rd kr ii)
           (M.unitT V.zero)
           ii
+
+      and stp_post sz r1 r2 rd kr ii =
+        let (>>>) = M.data_input_next in
+        M.delay_kont "str_pair_post"
+          (read_reg_ord rd ii)
+          (fun a_virt ma ->
+          do_str rd
+            (fun ac a _ ii ->
+              (M.add a_virt (V.intToV kr) >>=
+                fun b -> write_reg rd b ii) >>|
+              ((read_reg_data sz r1 ii >>> fun v ->
+               do_write_mem sz AArch64.N aexp ac a v ii) >>|
+                (add_size a sz >>= fun a ->
+                 read_reg_data sz r2 ii >>> fun v ->
+                 do_write_mem sz AArch64.N aexp ac a v ii)))
+            sz AArch64.N
+            ma (M.unitT V.zero)
+            ii)
+
       (* Load signed - sign extends to either 32 or 64 bit value*)
       let ldrs sz var rd rs kr s ii =
         (* load either 8 or 16 bit value (sz),
@@ -1982,6 +2017,8 @@ module Make
         | I_LDARBH(bh,t,rd,rs) ->
             let sz = bh_to_sz bh in
             ldar sz t rd rs ii
+        | I_LDP_P(_, var, rd1, rd2, ra, kr) ->
+            ldp_post (tr_variant var) rd1 rd2 ra kr ii
 
         | I_STR(var,rs,rd,kr,os) ->
             str (tr_variant var) rs rd kr os ii
@@ -1991,6 +2028,8 @@ module Make
 
         | I_STRBH(bh,rs,rd,kr, s) ->
             str (bh_to_sz bh) rs rd kr s ii
+        | I_STP_P(_, var, r1, r2, rd, kr) ->
+            stp_post (tr_variant var) r1 r2 rd kr ii
 
         | I_STLR(var,rs,rd) ->
             stlr (tr_variant var) rs rd ii

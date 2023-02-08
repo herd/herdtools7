@@ -1,0 +1,10 @@
+AArch64 A240
+
+(* Tests Store pair Post-indexed write*)
+{ int64_t 0:X1 = 5; int64_t 0:X2 = 6; int64_t 0:X3 = x; int64_t x[4] ={1,2,3,4}; }
+
+P0;
+  STP X1, X2, [X3], #16;
+  ADD X3, X3, #-16;
+
+forall (x[0] = 5 /\ x[1] = 6 /\ 0:X3=x)
