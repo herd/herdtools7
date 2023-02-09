@@ -193,7 +193,7 @@ struct
       (P.exported_labels_code prog)
       (get_exported_labels_init init)
 
-  let get_init_labels { init; } = get_exported_labels_init init
+  let get_init_labels { init; _ } = get_exported_labels_init init
 
   let get_exported_labels  { init; src; _ } =
      get_exported_labels_init_code  init src.MiscParser.prog
