@@ -95,10 +95,16 @@ module type S =
 
     (* Very ad-hoc transformation, [short3 p1 p2 s],
      * add relation r;r;r where r is intra_causality_data,
-     *  with starting event(s) selected by p1 and final one(s) by p2       
+     *  with starting event(s) selected by p1 and final one(s) by p2
      *)
     val short3 : (E.event -> bool) -> (E.event -> bool) -> 'a t -> 'a t
-       
+
+    (* Another ad-hoc transformation. [upOneRW p m]
+     * Let r be iico_data, e1 and e2 be events s.t. p is true, e1 is 1 read e2 is a write,
+     * and there exists e0, s.r. e1 -r-> e0 -r-> e2, then replace e0 -r0-> e2 by e1 -r-> e2.
+     *)
+    val upOneRW : (E.event -> bool) -> 'a t -> 'a t
+
     val exch : 'a t -> 'a t -> ('a -> 'b t) ->  ('a -> 'c t) ->  ('b * 'c) t
 
 (*

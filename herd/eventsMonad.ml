@@ -300,7 +300,6 @@ Monad type:
 
 
 (* Ad-hoc short-circuit *)
-
     let short3 p1 p2 m =
       fun eiid ->
       let eiid,(acts,specs) = m eiid in
@@ -317,6 +316,35 @@ Monad type:
             v,cls,{ es with E.intra_causality_data=data3; })
       acts in
        eiid,(acts,specs)
+
+(* Ad-hoc upOne *)
+    let upOneRW p m =
+      fun eiid ->
+        let eiid,(acts,specs) = m eiid in
+        let acts =
+          Evt.map
+            (fun (v,cls,es) ->
+              let data = es.E.intra_causality_data in
+              let data =
+                E.EventRel.fold
+                  (fun (e1,e0) k ->
+                    if p e1 && E.is_load e1 then
+                      E.EventRel.fold
+                        (fun (f0,e2) k ->
+                          if
+                            E.event_equal e0 f0 &&
+                            p e2 && E.is_store e2
+                          then
+                            E.EventRel.add
+                              (e1,e2)
+                              (E.EventRel.remove (e0,e2) k)
+                          else k)
+                        data k
+                    else k)
+                  data data in
+              v,cls,{ es with E.intra_causality_data=data; })
+            acts in
+        eiid,(acts,specs)
 
 (* Exchange combination *)
     let exch : 'a t -> 'a t -> ('a -> 'b t) ->  ('a -> 'c t) ->  ('b * 'c) t
