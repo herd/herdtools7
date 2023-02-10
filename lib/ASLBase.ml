@@ -18,7 +18,6 @@
 (****************************************************************************)
 
 module A64B = AArch64Base
-module AST = Asllib.AST
 
 (*****************************************************************************)
 (*                                                                           *)
@@ -26,7 +25,7 @@ module AST = Asllib.AST
 (*                                                                           *)
 (*****************************************************************************)
 
-type scope = AST.identifier * int
+type scope = Asllib.AST.identifier * int
 
 let pp_scope (enclosure, call_nb) = Printf.sprintf "%s.%d" enclosure call_nb
 
@@ -54,7 +53,7 @@ let endian = A64B.endian
 (* Basic arch types and their basic operations *)
 (***********************************************)
 
-type reg = ASLLocalId of scope * AST.identifier | ArchReg of A64B.reg
+type reg = ASLLocalId of scope * Asllib.AST.identifier | ArchReg of A64B.reg
 
 let is_local = function ASLLocalId _ -> true | _ -> false
 let to_arch_reg = function ASLLocalId _ -> assert false | ArchReg r -> r
@@ -115,8 +114,8 @@ type barrier = A64B.barrier
 let pp_barrier = A64B.pp_barrier
 let barrier_compare = A64B.barrier_compare
 
-type parsedInstruction = AST.t
-type instruction = AST.t
+type parsedInstruction = Asllib.AST.t
+type instruction = Asllib.AST.t
 
 let pp_instruction _ppmode ast = Asllib.PP.t_to_string ast
 let dump_instruction a = pp_instruction PPMode.Ascii a
@@ -159,15 +158,18 @@ let memoize f =
         let () = Hashtbl.add table s r in
         r
 
-let do_build_ast_from_file version fname =
-  match Asllib.Builder.from_file_multi_version version fname with
+let do_build_ast_from_file ?ast_type version fname =
+  match Asllib.Builder.from_file_multi_version ?ast_type version fname with
   | Error e -> raise (Misc.Fatal (Asllib.Error.error_to_string e))
   | Ok ast -> ast
 
-let build_ast_from_file version = memoize (do_build_ast_from_file version)
+let build_ast_from_file ?(ast_type : Asllib.Builder.ast_type option) version =
+  memoize (do_build_ast_from_file ?ast_type version)
 
 let asl_generic_parser version lexer lexbuf =
-  match Asllib.Builder.from_lexer_lexbuf version lexer lexbuf with
+  match
+    Asllib.Builder.from_lexer_lexbuf ~ast_type:`Ast version lexer lexbuf
+  with
   | Error e -> raise (Misc.Fatal (Asllib.Error.error_to_string e))
   | Ok ast ->
       ( [ (0, None, MiscParser.Main) ],

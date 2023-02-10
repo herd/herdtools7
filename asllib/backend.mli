@@ -25,6 +25,9 @@ module type S = sig
   type value
   (** The runtime values that the interpreter should use. *)
 
+  val debug_value : value -> string
+  (** A printer for value, should only be used for debugging. *)
+
   val v_of_parsed_v : AST.value -> value
   (** [v_of_parsed_v] constructs a value from a parsed value.
       Note that the prefered method to create records or any complex values
@@ -33,6 +36,10 @@ module type S = sig
   val v_of_int : int -> value
   (** [v_of_int] is used to convert raw integers arising from the interpretation,
       and not parsed values. *)
+
+  val v_to_int : value -> int option
+  (** [v_to_int v] returns, if possible, an integer corresponding to the value.
+      Should be called only on values of type integer. *)
 
   (* Monadic operators *)
   (*-------------------*)

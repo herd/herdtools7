@@ -34,6 +34,7 @@ let pp_pair pp_left pp_right f (left, right) =
 
 let pp_pair_list pp_left pp_right = pp_list (pp_pair pp_left pp_right)
 let pp_string f = bprintf f "%S"
+let pp_id_assoc pp_elt = pp_pair_list pp_string pp_elt
 let pp_annotated f buf { desc; _ } = bprintf buf "annot (%a)" f desc
 
 let pp_binop : binop -> string = function
@@ -66,8 +67,7 @@ let rec pp_value f = function
   | V_Bool b -> bprintf f "V_Bool %B" b
   | V_Real r -> bprintf f "V_Real %F" r
   | V_BitVector bv ->
-      bprintf f "V_BitVector (Asllib.Bitvector.of_string %S)"
-        (Bitvector.to_string bv)
+      bprintf f "V_BitVector (Bitvector.of_string %S)" (Bitvector.to_string bv)
   | V_Tuple li ->
       addb f "V_Tuple ";
       pp_list pp_value f li
@@ -84,10 +84,13 @@ let rec pp_expr =
   let pp_desc f = function
     | E_Literal v -> bprintf f "E_Literal (%a)" pp_value v
     | E_Var x -> bprintf f "E_Var %S" x
+    | E_Typed (e, t) -> bprintf f "E_Typed (%a, %a)" pp_expr e pp_ty t
     | E_Binop (op, e1, e2) ->
         bprintf f "E_Binop (%s, %a, %a)" (pp_binop op) pp_expr e1 pp_expr e2
     | E_Unop (op, e) -> bprintf f "E_Unop (%s, %a)" (pp_unop op) pp_expr e
-    | E_Call (name, args) -> bprintf f "E_Call (%S, %a)" name pp_expr_list args
+    | E_Call (name, args, named_args) ->
+        bprintf f "E_Call (%S, %a, %a)" name pp_expr_list args
+          (pp_id_assoc pp_expr) named_args
     | E_Slice (e, args) ->
         bprintf f "E_Slice (%a, %a)" pp_expr e pp_slice_list args
     | E_Cond (e1, e2, e3) ->
@@ -95,15 +98,15 @@ let rec pp_expr =
     | E_GetField (e, x, _ta) ->
         bprintf f "E_GetField (%a, %S, None)" pp_expr e x
     | E_Record (ty, li, _ta) ->
-        bprintf f "E_Record (%a, %a, None)" pp_ty ty
-          (pp_pair_list pp_string pp_expr)
-          li
+        bprintf f "E_Record (%a, %a, None)" pp_ty ty (pp_id_assoc pp_expr) li
     | E_Concat es ->
         addb f "E_Concat ";
         pp_list pp_expr f es
     | E_Tuple es ->
         addb f "E_Tuple ";
         pp_expr_list f es
+    | E_Unknown ty -> bprintf f "E_Unknown (%a)" pp_ty ty
+    | E_Pattern (e, p) -> bprintf f "E_Pattern (%a, %a)" pp_expr e pp_pattern p
   in
   fun f e -> pp_annotated pp_desc f e
 
@@ -116,6 +119,19 @@ and pp_slice f = function
       bprintf f "Slice_Range (%a, %a)" pp_expr e1 pp_expr e2
   | Slice_Length (e1, e2) ->
       bprintf f "Slice_Length (%a, %a)" pp_expr e1 pp_expr e2
+
+and pp_pattern f = function
+  | Pattern_All -> addb f "Pattern_All"
+  | Pattern_Any li ->
+      addb f "Pattern_Any ";
+      pp_list pp_pattern f li
+  | Pattern_Geq e -> bprintf f "Pattern_Geq (%a)" pp_expr e
+  | Pattern_Leq e -> bprintf f "Pattern_Leq (%a)" pp_expr e
+  | Pattern_Mask s -> bprintf f "Pattern_Mask %S" s
+  | Pattern_Not p -> bprintf f "Pattern_Not (%a)" pp_pattern p
+  | Pattern_Range (e1, e2) ->
+      bprintf f "Pattern_Range (%a, %a)" pp_expr e1 pp_expr e2
+  | Pattern_Single e -> bprintf f "Pattern_Single (%a)" pp_expr e
 
 and pp_ty =
   let pp_desc f = function
@@ -141,10 +157,10 @@ and pp_ty =
         bprintf f "T_Array (%a, %a)" pp_expr e pp_ty elt_type
     | T_Record li ->
         addb f "T_Record ";
-        pp_pair_list pp_string pp_ty f li
+        pp_id_assoc pp_ty f li
     | T_Exception li ->
         addb f "T_Exception ";
-        pp_pair_list pp_string pp_ty f li
+        pp_id_assoc pp_ty f li
     | T_ZType type_desc -> bprintf f "T_ZType (%a)" pp_ty type_desc
     | T_Named identifier -> bprintf f "T_Named %S" identifier
   in
@@ -170,6 +186,7 @@ let pp_typed_identifier = pp_pair pp_string pp_ty
 let rec pp_lexpr =
   let pp_desc f = function
     | LE_Var x -> bprintf f "LE_Var %S" x
+    | LE_Typed (le, t) -> bprintf f "E_Typed (%a, %a)" pp_lexpr le pp_ty t
     | LE_Slice (le, args) ->
         bprintf f "LE_Slice (%a, %a)" pp_lexpr le pp_slice_list args
     | LE_SetField (le, x, _ta) ->
@@ -186,13 +203,15 @@ let rec pp_stmt =
     | S_Pass -> addb f "SPass"
     | S_Then (s1, s2) -> bprintf f "S_Then (%a, %a)" pp_stmt s1 pp_stmt s2
     | S_Assign (le, e) -> bprintf f "S_Assign (%a, %a)" pp_lexpr le pp_expr e
-    | S_Call (name, args) -> bprintf f "S_Call (%S, %a)" name pp_expr_list args
+    | S_Call (name, args, named_args) ->
+        bprintf f "S_Call (%S, %a, %a)" name pp_expr_list args
+          (pp_id_assoc pp_expr) named_args
     | S_Cond (e, s1, s2) ->
         bprintf f "S_Cond (%a, %a, %a)" pp_expr e pp_stmt s1 pp_stmt s2
     | S_Return e -> bprintf f "S_Return (%a)" (pp_option pp_expr) e
     | S_Case (e, cases) ->
         bprintf f "S_Case (%a, %a)" pp_expr e
-          (pp_list (pp_annotated (pp_pair pp_expr_list pp_stmt)))
+          (pp_list (pp_annotated (pp_pair pp_pattern pp_stmt)))
           cases
     | S_Assert e -> bprintf f "S_Assert (%a)" pp_expr e
     | S_TypeDecl (x, t) -> bprintf f "S_TypeDecl (%S, %a)" x pp_ty t
@@ -200,22 +219,20 @@ let rec pp_stmt =
   fun f s -> pp_annotated pp_desc f s
 
 let pp_decl f = function
-  | D_Func { name; args; body; return_type } ->
-      bprintf f "D_Func { name=%S; args=%a; body=%a; return_type=%a }" name
-        (pp_pair_list pp_string pp_ty)
-        args pp_stmt body (pp_option pp_ty) return_type
+  | D_Func { name; args; body; return_type; parameters = _ } ->
+      bprintf f
+        "D_Func { name=%S; args=%a; body=%a; return_type=%a; parameters=[] }"
+        name (pp_id_assoc pp_ty) args pp_stmt body (pp_option pp_ty) return_type
   | D_GlobalConst (x, ty, e) ->
       bprintf f "D_GlobalConst (%S, %a, %a)" x pp_ty ty pp_expr e
   | D_TypeDecl (name, type_desc) ->
       bprintf f "D_TypeDecl (%S, %a)" name pp_ty type_desc
-  | D_Primitive { name; args; return_type; body = _ } ->
+  | D_Primitive { name; args; return_type; body = _; parameters = _ } ->
       bprintf f "D_Primitive { name=%S; args=%a; body=S_Pass; return_type=%a }"
-        name
-        (pp_pair_list pp_string pp_ty)
-        args (pp_option pp_ty) return_type
+        name (pp_id_assoc pp_ty) args (pp_option pp_ty) return_type
 
 let pp_t f ast =
-  addb f "let open Asllib.AST in let annot = Asllib.ASTUtils.add_dummy_pos in ";
+  addb f "let open AST in let annot = ASTUtils.add_dummy_pos in ";
   pp_list pp_decl f ast
 
 let t_to_string ast = with_buf @@ fun b -> pp_t b ast

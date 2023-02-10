@@ -1,0 +1,10 @@
+AArch64 NOP
+(* ASL variant test *)
+variant ASL
+
+{}
+
+P0;
+NOP;
+
+

@@ -119,6 +119,14 @@ let rec pop_last x = function
       let lst,xs = pop_last y ys in
       lst,x::xs
 
+let pop_filter_opt =
+  let rec aux f acc = function
+    | [] -> None, List.rev acc
+    | h :: t ->
+        if f h then Some h, List.rev_append acc t else aux f (h :: acc) t
+  in
+  fun f -> aux f []
+
 let map_string f s =
   let b = Buffer.create (String.length s) in
   for k=0 to String.length s-1 do

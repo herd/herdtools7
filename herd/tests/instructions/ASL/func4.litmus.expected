@@ -6,5 +6,5 @@ Witnesses
 Positive: 1 Negative: 0
 Condition forall (0:main.0.a=0 /\ 0:main.0.b=1 /\ 0:main.0.c=5)
 Observation func4 Always 1 0
-Hash=719bf53af24052334545f6763939199b
+Hash=abd5f234c5cb20b251585c2ebec3f3f2
 

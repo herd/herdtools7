@@ -25,7 +25,7 @@ type offside_state = {
   mutable next : Parser0.token; (* next token *)
 }
 
-let token : Lexing.lexbuf -> Parser0.token =
+let token () : Lexing.lexbuf -> Parser0.token =
   let state = { stack = [ 0 ]; parens = 0; newline = false; next = EOL } in
 
   let pushStack (col : int) : Parser0.token =
@@ -91,9 +91,11 @@ let token : Lexing.lexbuf -> Parser0.token =
           DEDENT)
       else useToken ()
     in
-    (*
-      let () = Printf.eprintf "Producing token %s\n" (SimpleLexer0.string_of_token res) in
-     *)
+
+    let () =
+      if false then
+        Printf.eprintf "Producing token %s\n" (SimpleLexer0.string_of_token res)
+    in
     res
   in
   getToken

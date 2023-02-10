@@ -1,6 +1,11 @@
 {
 open Parser0       (* The type token is defined in parser.mli *)
 
+let int_of_string_no_fail s =
+  match int_of_string_opt s with
+  | None -> 0
+  | Some i -> i
+
 let names_to_tokens = [
   ( "AArch32", QUALIFIER "AArch32");
   ( "AArch64", QUALIFIER "AArch64");
@@ -62,6 +67,7 @@ let names_to_tokens = [
   ( "else", ELSE );
   ( "elsif", ELSIF );
   ( "enumeration", ENUMERATION );
+  ( "FALSE", BOOL_LIT false);
   ( "for", FOR );
   ( "integer", INTEGER);
   ( "if", IF );
@@ -75,6 +81,7 @@ let names_to_tokens = [
   ( "then", THEN );
   ( "throw", THROW );
   ( "to", TO );
+  ( "TRUE", BOOL_LIT true);
   ( "try", TRY );
   ( "type", TYPE );
   ( "typeof", TYPEOF );
@@ -205,6 +212,7 @@ let string_of_token = function
   | SLASH -> "/"
   | STAR -> "*"
     (* Literals *)
+  | BOOL_LIT b -> if b then "TRUE" else "FALSE"
   | STRING_LIT (s) -> "\"" ^ s ^ "\""
   | BITS_LIT bv -> Bitvector.to_string bv
   | MASK_LIT s -> "'" ^ s ^ "'"
@@ -231,13 +239,13 @@ rule token = parse
     | '/' '*'                     { comment 1 lexbuf }
 
     (* numbers, strings and identifiers *)
-    | '"' ([^'"']* as s) '"'                { STRING_LIT(s)                     }
-    | '\'' ['0' '1' ' ']* '\''       as lxm { BITS_LIT(Bitvector.of_string lxm) }
-    | '\'' (['0' '1' 'x' ' ']* as s) '\''   { MASK_LIT(s)                       }
-    | hex_lit                        as lxm { INT_LIT(int_of_string lxm)        }
-    | ['0'-'9']+ '.' ['0'-'9']+      as lxm { REAL_LIT(float_of_string lxm)     }
-    | ['0'-'9']+                     as lxm { INT_LIT(int_of_string lxm)        }
-    | identifier                     as lxm { tr_name (lxm)                     }
+    | '"' ([^'"']* as s) '"'                { STRING_LIT (s)                      }
+    | '\'' ['0' '1' ' ']* '\''       as lxm { BITS_LIT (Bitvector.of_string lxm)  }
+    | '\'' (['0' '1' 'x' ' ']* as s) '\''   { MASK_LIT (s)                        }
+    | hex_lit                        as lxm { INT_LIT (int_of_string_no_fail lxm) }
+    | ['0'-'9']+ '.' ['0'-'9']+      as lxm { REAL_LIT(float_of_string lxm)       }
+    | ['0'-'9']+                     as lxm { INT_LIT(int_of_string lxm)          }
+    | identifier                     as lxm { tr_name (lxm)                       }
 
     (* delimiters *)
     | '!'            { BANG       }

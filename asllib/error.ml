@@ -34,38 +34,9 @@ let pp_error =
   let open Format in
   let open PP in
   let pp_comma_list = pp_print_list ~pp_sep:(fun f () -> fprintf f ",@ ") in
-  let pp_pos f { pos_start; pos_end; _ } =
-    let open Lexing in
-    let pp_char_num f { pos_cnum; pos_bol; _ } =
-      pp_print_int f (pos_cnum - pos_bol)
-    in
-    if pos_start = dummy_pos || pos_end = dummy_pos then
-      ()
-    else (
-    pp_open_hovbox f 2;
-    fprintf f "File %s,@ " pos_start.pos_fname;
-    if String.equal pos_start.pos_fname pos_end.pos_fname then
-      if pos_start.pos_lnum = pos_end.pos_lnum then
-        if pos_start.pos_cnum = pos_end.pos_cnum then
-          fprintf f "line %d,@ character %a:" pos_start.pos_lnum pp_char_num
-            pos_start
-        else
-          fprintf f "line %d,@ characters@ %a@ to@ %a:" pos_start.pos_lnum
-            pp_char_num pos_start pp_char_num pos_end
-      else
-        fprintf f "line %d,@ character %a@ to@ line@ %2d,@ character %a:"
-          pos_start.pos_lnum pp_char_num pos_start pos_end.pos_lnum pp_char_num
-          pos_end
-    else
-      fprintf f "line %d,@ character %a:" pos_start.pos_lnum pp_char_num
-        pos_start;
-    pp_close_box f ();
-    pp_print_space f ()
-  )
-  in
   let pp_type_desc f ty = pp_ty f (ASTUtils.add_dummy_pos ty) in
   fun f e ->
-    fprintf f "@[<v 0>%a@[<2>ASL error:@ " pp_pos e;
+    fprintf f "@[<v 0>@[<h>%a:@]@ @[<2>ASL error:@ " pp_pos e;
     (match e.desc with
     | UnsupportedBinop (op, v1, v2) ->
         fprintf f "Unsupported binop %s for values@ %a@ and %a."

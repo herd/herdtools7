@@ -48,6 +48,8 @@ module NativeBackend = struct
 
   let v_of_int i = V_Int i
   let v_of_parsed_v = Fun.id
+  let v_to_int = function V_Int i -> Some i | _ -> None
+  let debug_value = PP.value_to_string
 
   let bind (vm : 'a m) (f : 'a -> 'b m) : 'b m =
    fun () ->
@@ -130,4 +132,91 @@ module NativeBackend = struct
     Bitvector.concat bvs |> bitvector_to_value
 end
 
+module NativeStdlib = struct
+  open NativeBackend
+
+  let replicate = function
+    | [ V_BitVector bv; V_Int n ] ->
+        [ V_BitVector (Bitvector.concat @@ List.init n (Fun.const bv)) ]
+        |> return
+    | [ V_BitVector _; v ] ->
+        Error.fatal_unknown_pos @@ Error.MismatchType (v, [ T_Int None ])
+    | [ v; _ ] ->
+        Error.fatal_unknown_pos
+        @@ Error.MismatchType (v, [ ASTUtils.default_t_bits ])
+    | li ->
+        Error.fatal_unknown_pos
+        @@ Error.BadArity ("Replicate", 2, List.length li)
+
+  let bitcount = function
+    | [ V_BitVector bv ] -> [ V_Int (Bitvector.bitcount bv) ] |> return
+    | [ v ] ->
+        Error.fatal_unknown_pos
+        @@ Error.MismatchType (v, [ ASTUtils.default_t_bits ])
+    | li ->
+        Error.fatal_unknown_pos
+        @@ Error.BadArity ("Replicate", 1, List.length li)
+
+  let uint = function
+    | [ V_BitVector bv ] -> [ V_Int (Bitvector.to_int bv) ] |> return
+    | [ v ] ->
+        Error.fatal_unknown_pos
+        @@ Error.MismatchType (v, [ ASTUtils.default_t_bits ])
+    | li ->
+        Error.fatal_unknown_pos
+        @@ Error.BadArity ("Replicate", 1, List.length li)
+
+  let sint = function
+    | [ V_BitVector bv ] -> [ V_Int (Bitvector.to_int_signed bv) ] |> return
+    | [ v ] ->
+        Error.fatal_unknown_pos
+        @@ Error.MismatchType (v, [ ASTUtils.default_t_bits ])
+    | li ->
+        Error.fatal_unknown_pos
+        @@ Error.BadArity ("Replicate", 1, List.length li)
+
+  let primitives =
+    let with_pos = ASTUtils.add_dummy_pos in
+    let t_bits e = T_Bits (BitWidth_Determined e, None) |> with_pos in
+    let e_var x = E_Var x |> with_pos in
+    let integer = T_Int None |> with_pos in
+    [
+      {
+        name = "Replicate";
+        parameters = [ ("N", Some integer) ];
+        args = [ ("x", t_bits (e_var "N")); ("M", integer) ];
+        body = replicate;
+        return_type = Some (t_bits (ASTUtils.binop MUL (e_var "N") (e_var "M")));
+      };
+      {
+        name = "BitCount";
+        parameters = [ ("N", Some integer) ];
+        args = [ ("x", t_bits (e_var "N")) ];
+        body = bitcount;
+        return_type = Some integer;
+      };
+      {
+        name = "UInt";
+        parameters = [ ("N", Some integer) ];
+        args = [ ("x", t_bits (e_var "N")) ];
+        body = uint;
+        return_type = Some integer;
+      };
+      {
+        name = "SInt";
+        parameters = [ ("N", Some integer) ];
+        args = [ ("x", t_bits (e_var "N")) ];
+        body = sint;
+        return_type = Some integer;
+      };
+    ]
+
+  let stdlib = []
+end
+
 module NativeInterpreter = Interpreter.Make (NativeBackend)
+
+let interprete ast =
+  NativeInterpreter.run
+    (List.rev_append NativeStdlib.stdlib ast)
+    NativeStdlib.primitives ()

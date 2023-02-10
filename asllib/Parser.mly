@@ -51,22 +51,6 @@
 open AST
 open ASTUtils
 
-let func (name, args, return_type, body) =
-  D_Func { name; args; return_type; body }
-
-let getter (name, args, return_type, body) =
-  let name = getter_name name
-  and return_type = Some(return_type) in
-  D_Func { name; args; return_type; body }
-
-let setter (name, args, new_val, body) =
-  let args = new_val :: args
-  and name = setter_name name
-  and return_type = None in
-  D_Func { name; args; return_type; body }
-
-let opn_start stmt = [ func ("main", [], None, stmt) ]
-
 let build_dot_fields (e, fields) =
     let one_field f = E_GetField (e, f, TA_None) in
     let one_field s = add_pos_from e @@ one_field s in
@@ -281,6 +265,7 @@ let binop ==
 
 let unimplemented_expr(x) == annotated ( x ; { E_Literal (V_Bool false) })
 let field_assign == separated_pair(IDENTIFIER, EQ, expr)
+let nargs == { [] }
 
 let e_else :=
   | ELSE; expr
@@ -295,24 +280,23 @@ let expr :=
     | e1=expr; op=binop; e2=expr;                   { E_Binop (op, e1, e2) }
     | op=unop; e=expr;                              < E_Unop               >
     | IF; e1=expr; THEN; e2=expr; ~=e_else;         < E_Cond               >
-    | x=IDENTIFIER; args=plist(expr);               < E_Call               >
+    | x=IDENTIFIER; args=plist(expr); ~=nargs;      < E_Call               >
     | e=expr; ~=slices;                             < E_Slice              >
     | e=expr; DOT; x=IDENTIFIER; ~=without_ta;      < E_GetField           >
     | ~=bracketed(nclist(expr));                    < E_Concat             >
     | ~=plist2(expr);                               < E_Tuple              >
     | ~=expr; DOT; ~=bracketed(nclist(IDENTIFIER)); < build_dot_fields     >
+    | ~=expr; AS; ~=ty;                             < E_Typed              >
+    | ~=expr; AS; ~=implicit_t_int;                 < E_Typed              >
+
+    | ~=expr; IN; ~=pattern_set;                    < E_Pattern            >
+    | UNKNOWN; COLON_COLON; ~=ty;                   < E_Unknown            >
 
     | t=annotated(IDENTIFIER); fields=braced(clist(field_assign));
         { E_Record (add_pos_from t (T_Named t.desc), fields, TA_None) }
   )
 
   | pared(expr)
-  | terminated(expr, type_assertion)
-
-  | unimplemented_expr (
-      | expr; IN; pattern_set;             <>
-      | UNKNOWN; COLON_COLON; ty;          <>
-  )
 
 (* ------------------------------------------------------------------------
 
@@ -332,19 +316,18 @@ let bits_constraint ==
   | MINUS ; COLON_COLON ; t = ty ;  < BitWidth_ConstrainedFormType  >
   | c = int_constraints ;           < BitWidth_Constrained          >
 
-(* Pattern sets -- Not yet implemented *)
-let pattern_set == ioption(BNOT); braced(pattern_list)
-let pattern_list == nclist(pattern)
+let pattern_set ==
+  | BNOT; ~=braced(pattern_list); < Pattern_Not >
+  | braced(pattern_list)
+let pattern_list == ~=nclist(pattern); < Pattern_Any >
 let pattern ==
-  | expr
-  | unimplemented_expr (
-    | MINUS;                <>
-    | MASK_LIT;             <>
-    | expr; SLICING; expr;  <>
-    | LEQ; expr;            <>
-    | GEQ; expr;            <>
-    | pattern_set;          <>
-  )
+  | ~=expr; < Pattern_Single >
+  | e1=expr; SLICING; e2=expr; < Pattern_Range >
+  | MINUS; { Pattern_All }
+  | LEQ; ~=expr; < Pattern_Leq >
+  | GEQ; ~=expr; < Pattern_Geq >
+  | ~=MASK_LIT; < Pattern_Mask >
+  | pattern_set
 
 let fields_opt == { [] } | braced(tclist(typed_identifier))
 
@@ -387,11 +370,7 @@ let as_ty == COLON_COLON; ty
 let typed_identifier == pair(IDENTIFIER, as_ty)
 let ty_opt == ioption(as_ty)
 let without_ta == { TA_None }
-let type_assertion ==
-  preceded(AS,
-    | ty
-    | annotated ( ~=some(int_constraints) ; <T_Int> )
-  )
+let implicit_t_int == annotated ( ~=some(int_constraints) ; <T_Int> )
 
 
 (* ------------------------------------------------------------------------
@@ -416,6 +395,7 @@ let lexpr_atom :=
   | le_var
   | le=annotated(lexpr_atom); ~=slices; <LE_Slice>
   | le=annotated(lexpr_atom); DOT; field=IDENTIFIER; ~=without_ta; <LE_SetField>
+  | le=annotated(lexpr_atom); ty=as_ty; <LE_Typed>
 
   | unimplemented_lexpr(
     | lexpr; DOT; bracketed(clist(IDENTIFIER)); <>
@@ -447,10 +427,12 @@ let assign(x, y) == ~=x ; EQ ; ~=y ; <S_Assign>
 let direction == TO | DOWNTO
 
 let alt == annotated (
-  WHEN; ~=pattern_list; ioption(WHERE; expr); COLON; ~=stmt_list; <>
+  | WHEN; ~=pattern_list; ioption(WHERE; expr); COLON; ~=stmt_list; <>
+  | OTHERWISE; COLON; s=stmt_list; { (Pattern_All, s) }
 )
-let otherwise == annotated(OTHERWISE; COLON; stmt_list)
-let otherwise_opt == ioption(otherwise)
+
+let otherwise == annotated( OTHERWISE; COLON; stmt_list)
+let otherwise_opt == ioption(otherwise); <>
 let catcher ==
   | WHEN; IDENTIFIER; as_ty; COLON; stmt_list
   | WHEN; ty;                COLON; stmt_list
@@ -460,8 +442,6 @@ let stmt ==
     | terminated_by(END,
       | IF; e=expr; THEN; s1=stmt_list; s2=s_else;    <S_Cond>
       | CASE; ~=expr; OF; alt=list(alt);              <S_Case>
-      | CASE; e=expr; OF; alt=list(alt); ~=otherwise;
-          { S_Case (e, alt @ [ map_desc (fun o -> ([], o.desc)) otherwise ]) }
 
       | unimplemented_stmt(
         | FOR; IDENTIFIER; EQ; expr; direction; expr; DO; stmt_list;    <>
@@ -471,9 +451,9 @@ let stmt ==
     )
     | terminated_by(SEMI_COLON,
       | PASS; pass
-      | RETURN; ~=ioption(expr);              < S_Return >
-      | x=IDENTIFIER; args=plist(expr);       < S_Call   >
-      | ASSERT; e=expr;                       < S_Assert >
+      | RETURN; ~=ioption(expr);                  < S_Return >
+      | x=IDENTIFIER; args=plist(expr); ~=nargs;  < S_Call   >
+      | ASSERT; e=expr;                           < S_Assert >
 
       | assign(lexpr, expr)
       | assignment_keyword; assign(decl_item, expr)
@@ -519,12 +499,41 @@ let func_args == plist(typed_identifier)
 let func_body == delimited(ioption(BEGIN), stmt_list, END)
 
 let decl ==
-  | FUNC  ; ~=IDENTIFIER; params_opt; ~=func_args; ~=ioption(return_type);
-        ~=func_body; <func>
-  | GETTER; ~=IDENTIFIER; params_opt; ~=access_args_opt; ~=return_type;
-        ~=func_body; <getter>
-  | SETTER; ~=IDENTIFIER; params_opt; ~=access_args_opt; EQ; ~=typed_identifier;
-        ~=func_body; <setter>
+  | FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args;
+      return_type=ioption(return_type); body=func_body;
+      {
+        D_Func {
+          name;
+          parameters = params_opt;
+          args = func_args;
+          body;
+          return_type
+        }
+      }
+  | GETTER; name=IDENTIFIER; ~=params_opt; ~=access_args_opt; ret=return_type;
+      ~=func_body;
+      {
+        D_Func
+          {
+            name = ASTUtils.getter_name name;
+            parameters = params_opt;
+            args = access_args_opt;
+            return_type = Some ret;
+            body = func_body;
+          }
+      }
+  | SETTER; name=IDENTIFIER; ~=params_opt; ~=access_args_opt; EQ; v=typed_identifier;
+      ~=func_body;
+      {
+        D_Func
+          {
+            name = ASTUtils.setter_name name;
+            parameters = params_opt;
+            args = v :: access_args_opt;
+            return_type = None;
+            body = func_body;
+          }
+      }
 
   | terminated_by(SEMI_COLON,
     | storage_keyword; x=IDENTIFIER; t=as_ty; EQ; e=expr; <D_GlobalConst>
@@ -539,6 +548,18 @@ let decl ==
     )
   )
 
-let ast := terminated(nonempty_list(decl), EOF)
+let ast := terminated(list(decl), EOF)
 
-let opn := ~=stmt; <opn_start>
+let opn := body=stmt;
+    {
+      [
+        D_Func
+          {
+            name = "main";
+            args = [];
+            parameters = [];
+            body;
+            return_type = None;
+          }
+      ]
+    }

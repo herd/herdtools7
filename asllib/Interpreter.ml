@@ -21,12 +21,13 @@ open AST
 
 let fatal_from = Error.fatal_from
 let to_pos = ASTUtils.to_pos
+let _warn = false
 
 module type S = sig
   module B : Backend.S
 
   type body = B.value list -> B.value list B.m
-  type primitive = (body, ty) func_skeleton
+  type primitive = body func_skeleton
 
   val run : t -> primitive list -> B.value list B.m
 end
@@ -38,21 +39,32 @@ module Make (B : Backend.S) = struct
 
   type 'a m = 'a B.m
   type body = B.value list -> B.value list m
-  type primitive = (body, ty) func_skeleton
+  type primitive = body func_skeleton
 
   let ( let* ) = B.bind_data
-  let ( ==>> ) = B.bind_data
+  let ( |||> ) = B.bind_data
   let ( and* ) = B.prod
+  let ( ||| ) = B.prod
   let return = B.return
+  let ( ||> ) m f = m |||> fun v -> return (f v)
+  let pair x y = (x, y)
 
   let prod_map f =
     let one acc elt =
       let* v = f elt and* li = acc in
       return (v :: li)
     in
-    fun li ->
-      let* li = List.fold_left one (return []) li in
-      return (List.rev li)
+    function
+    | [] -> return [] | li -> List.fold_left one (return []) li ||> List.rev
+
+  let prod_map2 f =
+    let one acc elt1 elt2 =
+      let* v = f elt1 elt2 and* li = acc in
+      return (v :: li)
+    in
+    fun li1 li2 -> List.fold_left2 one (return []) li1 li2 ||> List.rev
+
+  let prod li = prod_map Fun.id li
 
   let list_index f =
     let rec aux i = function
@@ -94,9 +106,24 @@ module Make (B : Backend.S) = struct
   (*****************************************************************************)
 
   type func = Func of int ref * AST.func | Primitive of primitive
-  type genv = { consts : value IMap.t; funcs : func IMap.t }
+
+  type genv = {
+    consts : value IMap.t;
+        (** Union of the following fields of the ElabModel:
+        - G_C, i.e. the global immutable compile-time constant storage (ie constant)
+        - G_L, i.e. the global immutable execution-time constant storage (ie let)
+        - G_P, i.e. the global immutable ~in between~ constant storage (ie config)
+     *)
+    funcs : func IMap.t;
+        (** The field P of the ElabModel, i.e. the declared subprograms. *)
+  }
+  (** The global part of the ElabModel. *)
+
   type lenv = B.value IMap.t
+  (** The local part of the ElabModel. *)
+
   type env = genv * lenv
+  (** [env] shoud contain all the informations of the semantics elab model. *)
 
   let add_primitives primitives funcs =
     let one_primitive primitive = (primitive.name, Primitive primitive) in
@@ -116,10 +143,8 @@ module Make (B : Backend.S) = struct
   let type_annotation ast sfuncs =
     let add_fake_primitives =
       let fake_funcs =
-        let one_sfunc { name; args; return_type; _ } =
-          let one_arg i ty = ("arg" ^ string_of_int i, ty) in
-          let args = List.mapi one_arg args in
-          D_Func { name; args; body = ASTUtils.s_pass; return_type }
+        let one_sfunc { name; args; return_type; parameters; body = _ } =
+          D_Func { name; args; body = ASTUtils.s_pass; return_type; parameters }
         in
         List.map one_sfunc sfuncs
       in
@@ -181,7 +206,14 @@ module Make (B : Backend.S) = struct
       match IMap.find_opt name !acc with
       | Some (AlreadyEvaluated v) -> v
       | Some (NotYetEvaluated e) ->
-          let v = eval_expr e in
+          let v =
+            try eval_expr e
+            with Error.ASLException e ->
+              if _warn then
+                Format.eprintf "@[<2>Ignoring static evaluation error:@ %a@]@."
+                  Error.pp_error e;
+              V_Int 0
+          in
           acc := IMap.add name (AlreadyEvaluated v) !acc;
           v
       | None -> fatal_from pos @@ Error.UndefinedIdentifier name
@@ -207,6 +239,19 @@ module Make (B : Backend.S) = struct
          | _ -> None)
     |> Fun.flip IMap.add_seq funcs
 
+  let build_genv ast primitives =
+    let funcs = IMap.empty |> build_funcs ast |> add_primitives primitives in
+    let consts = IMap.empty |> build_enums ast |> build_consts ast in
+    let () =
+      if false then (
+        Format.eprintf "@[<v 2>Global const env:@ ";
+        IMap.iter
+          (fun name v -> Format.eprintf "@[<h>- %s: %a@]@ " name PP.pp_value v)
+          consts;
+        Format.eprintf "@]@.")
+    in
+    { consts; funcs }
+
   (*****************************************************************************)
   (*                                                                           *)
   (*                       Main interpretation functions                       *)
@@ -228,6 +273,7 @@ module Make (B : Backend.S) = struct
     let genv, lenv = env in
     match e.desc with
     | E_Literal v -> B.v_of_parsed_v v |> return
+    | E_Typed (e, _t) -> eval_expr env scope is_data e
     | E_Var x -> (
         match IMap.find_opt x genv.consts with
         | Some v -> B.v_of_parsed_v v |> return
@@ -251,15 +297,16 @@ module Make (B : Backend.S) = struct
         let* positions = eval_slices env (to_pos e) scope slices
         and* v = eval_expr env scope is_data e' in
         B.read_from_bitvector positions v
-    | E_Call (name, args) ->
-        let vargs = List.map (eval_expr env scope is_data) args in
-        let* returned = eval_func genv name (to_pos e) vargs in
+    | E_Call (name, args, named_args) ->
+        let vargs = List.map (eval_expr env scope is_data) args
+        and nargs =
+          let one_narg (x, e) = (x, eval_expr env scope is_data e) in
+          List.map one_narg named_args
+        in
+        let* returned = eval_func genv name (to_pos e) vargs nargs in
         one_return_value e name returned
     | E_Record (_, li, ta) ->
-        let one_field (x, e) =
-          let* v = eval_expr env scope is_data e in
-          return (x, v)
-        in
+        let one_field (x, e) = eval_expr env scope is_data e ||> pair x in
         let* fields = prod_map one_field li in
         make_record e (type_of_ta e ta) fields
     | E_GetField (e', x, ta) -> (
@@ -278,33 +325,101 @@ module Make (B : Backend.S) = struct
             | None -> fatal_from e @@ Error.BadField (x, ty))
         | _ -> fatal_from e @@ Error.BadField (x, ty))
     | E_Concat es ->
-        let* values = prod_map (eval_expr env scope is_data) es in
-        B.concat_bitvectors values
+        prod_map (eval_expr env scope is_data) es |||> B.concat_bitvectors
     | E_Tuple _ -> fatal_from e @@ Error.NotYetImplemented "tuple construction"
+    | E_Unknown ty -> base_value_of_type env scope ty
+    | E_Pattern (e, p) ->
+        let* v = eval_expr env scope is_data e in
+        eval_pattern env scope e v p
 
-  and eval_slices env pos scope =
+  and eval_slices env _pos scope =
+    let one = B.v_of_int 1 in
     let eval_one = function
-      | Slice_Single e ->
-          let* v = eval_expr env scope false e in
-          return (v, B.v_of_int 1)
+      | Slice_Single e -> eval_expr env scope false e ||> Fun.flip pair one
       | Slice_Range (etop, ebot) ->
           let* vtop = eval_expr env scope false etop
           and* vbot = eval_expr env scope false ebot in
           let* length =
-            B.binop MINUS vtop vbot ==>> B.binop PLUS (B.v_of_int 1)
+            B.binop MINUS vtop vbot |||> B.binop PLUS (B.v_of_int 1)
           in
           return (vbot, length)
       | Slice_Length (ebot, elength) ->
-          let* vbot = eval_expr env scope false ebot
-          and* vlength = eval_expr env scope false elength in
-          return (vbot, vlength)
+          eval_expr env scope false ebot ||| eval_expr env scope false elength
     in
     prod_map eval_one
+
+  and eval_pattern env scope e v = function
+    | Pattern_All -> B.v_of_parsed_v (V_Bool true) |> return
+    | Pattern_Any li ->
+        let folder acc p =
+          let* acc = acc and* b = eval_pattern env scope e v p in
+          B.binop BOR acc b
+        in
+        let init = B.v_of_parsed_v (V_Bool false) |> return in
+        List.fold_left folder init li
+    | Pattern_Geq e -> eval_expr env scope false e |||> B.binop GEQ v
+    | Pattern_Leq e -> eval_expr env scope false e |||> B.binop LEQ v
+    | Pattern_Mask _ ->
+        fatal_from e @@ Error.NotYetImplemented "Bitvector masks"
+    | Pattern_Not p -> eval_pattern env scope e v p |||> B.unop BNOT
+    | Pattern_Range (e1, e2) ->
+        let* b1 = eval_expr env scope false e1 |||> B.binop GEQ v
+        and* b2 = eval_expr env scope false e2 |||> B.binop LEQ v in
+        B.binop BAND b1 b2
+    | Pattern_Single e -> eval_expr env scope false e |||> B.binop EQ_OP v
+
+  and base_value_of_type env scope ty : B.value m =
+    let return_lit v = B.v_of_parsed_v v |> return in
+    let of_constraints _li = return 0 in
+    match ty.desc with
+    | T_Int None -> V_Int 0 |> return_lit
+    | T_Int (Some cs) ->
+        let* n = of_constraints cs in
+        V_Int n |> return_lit
+    | T_Bool -> V_Bool true |> return_lit
+    | T_Bit -> V_BitVector (Bitvector.of_string "1") |> return_lit
+    | T_Bits (cs, _) ->
+        let of_v = function
+          | Some i -> i
+          | None ->
+              let e = E_Unknown ty |> ASTUtils.add_pos_from ty in
+              fatal_from ty @@ Error.UnsupportedExpr e
+        in
+        let* n =
+          match cs with
+          | BitWidth_Constrained cs -> of_constraints cs
+          | BitWidth_ConstrainedFormType t ->
+              base_value_of_type env scope t ||> B.v_to_int ||> of_v
+          | BitWidth_Determined e ->
+              eval_expr env scope false e ||> B.v_to_int ||> of_v
+        in
+        V_BitVector (Bitvector.zeros n) |> return_lit
+    | T_Array (e, t) -> (
+        let* n = eval_expr env scope false e in
+        match B.v_to_int n with
+        | Some i ->
+            let* v = base_value_of_type env scope t in
+            B.create_vector ty (List.init i (Fun.const v))
+        | None -> fatal_from ty @@ Error.UnsupportedExpr e)
+    | T_Enum li ->
+        E_Var (List.hd li)
+        |> ASTUtils.add_pos_from ty |> eval_expr env scope false
+    | T_Named _ -> fatal_from ty @@ Error.TypeInferenceNeeded
+    | T_Tuple li ->
+        prod_map (base_value_of_type env scope) li |||> B.create_vector ty
+    | T_Record li ->
+        let one_field (_, t) = base_value_of_type env scope t in
+        prod_map one_field li |||> B.create_vector ty
+    | T_Exception li ->
+        let one_field (_, t) = base_value_of_type env scope t in
+        prod_map one_field li |||> B.create_vector ty
+    | _ -> assert false
 
   and eval_lexpr (env : env) scope le =
     let genv, lenv = env in
     match le.desc with
     | LE_Ignore -> fun _ -> return env
+    | LE_Typed (le, _t) -> eval_lexpr env scope le
     | LE_Var x ->
         fun v ->
           let* v = v in
@@ -338,19 +453,18 @@ module Make (B : Backend.S) = struct
             | None -> fatal_from le @@ Error.BadField (x, ty))
         | _ -> fatal_from le @@ Error.BadField (x, ty))
     | LE_TupleUnpack les ->
-        fun v ->
-          let* v = v in
-          let mapper (i, le) =
-            let setter = eval_lexpr env scope le in
-            let w = B.get_i i v in
-            setter w
-          in
-          let* envs = prod_map mapper (List.mapi (fun i le -> (i, le)) les) in
+        let assign_each v =
+          let nles = List.mapi pair les in
+          let mapper (i, le) = B.get_i i v |> eval_lexpr env scope le in
+          prod_map mapper nles
+        in
+        let big_union envs =
           let on_conflict _x v1 _v2 = Some v1 in
           (* TODO: handle union of genv *)
           let folder lenv (_genv, lenv2) = IMap.union on_conflict lenv lenv2 in
-          let lenv = List.fold_left folder lenv envs in
-          return (fst env, lenv)
+          List.fold_left folder lenv envs
+        in
+        fun m -> m |||> assign_each ||> big_union ||> pair (fst env)
 
   and multi_assign env scope pos les values =
     if List.compare_lengths les values != 0 then
@@ -368,8 +482,7 @@ module Make (B : Backend.S) = struct
         let* () = B.on_write_identifier x scope v in
         return (x, v)
       in
-      let assignments = List.map2 mapper les values in
-      let* assignments = prod_map Fun.id assignments in
+      let* assignments = prod_map2 mapper les values in
       let add_to_lenv lenv (x, v) = IMap.add x v lenv in
       let lenv = List.fold_left add_to_lenv (snd env) assignments in
       continue (fst env, lenv)
@@ -379,20 +492,21 @@ module Make (B : Backend.S) = struct
     | S_Pass -> continue env
     | S_TypeDecl _ -> continue env
     | S_Assign
-        ({ desc = LE_TupleUnpack les; _ }, { desc = E_Call (name, args); _ })
+        ( { desc = LE_TupleUnpack les; _ },
+          { desc = E_Call (name, args, named_args); _ } )
       when List.for_all lexpr_is_var les ->
-        let vargs = List.map (eval_expr env scope true) args in
-        let* returned_values = eval_func (fst env) name (to_pos s) vargs in
-        multi_assign env scope s les returned_values
+        let vargs = List.map (eval_expr env scope true) args
+        and nargs =
+          List.map (fun (x, e) -> (x, eval_expr env scope true e)) named_args
+        in
+        eval_func (fst env) name (to_pos s) vargs nargs
+        |||> multi_assign env scope s les
     | S_Assign ({ desc = LE_TupleUnpack les; _ }, { desc = E_Tuple exprs; _ })
       when List.for_all lexpr_is_var les ->
-        let* values = prod_map (eval_expr env scope true) exprs in
-        multi_assign env scope s les values
+        prod_map (eval_expr env scope true) exprs
+        |||> multi_assign env scope s les
     | S_Assign (le, e) ->
-        let v = eval_expr env scope true e
-        and setter = eval_lexpr env scope le in
-        let* env = setter v in
-        continue env
+        eval_expr env scope true e |> eval_lexpr env scope le |||> continue
     | S_Return (Some { desc = E_Tuple es; _ }) ->
         let* vs = prod_map (eval_expr env scope true) es in
         return (Returning vs)
@@ -405,28 +519,27 @@ module Make (B : Backend.S) = struct
             match r1 with
             | Continuing lenv -> eval_stmt (fst env, lenv) scope s2
             | Returning vs -> return (Returning vs))
-    | S_Call (name, args) ->
-        let vargs = List.map (eval_expr env scope true) args in
-        let* _ = eval_func (fst env) name (to_pos s) vargs in
+    | S_Call (name, args, named_args) ->
+        let vargs = List.map (eval_expr env scope true) args
+        and nargs =
+          List.map (fun (x, e) -> (x, eval_expr env scope true e)) named_args
+        in
+        let* _ = eval_func (fst env) name (to_pos s) vargs nargs in
         continue env
     | S_Cond (e, s1, s2) ->
-        let* s =
-          B.choice (eval_expr env scope true e) (return s1) (return s2)
-        in
-        eval_stmt env scope s
+        B.choice (eval_expr env scope true e) (return s1) (return s2)
+        |||> eval_stmt env scope
     | S_Case _ -> ASTUtils.case_to_conds s |> eval_stmt env scope
     | S_Assert e ->
         let v = eval_expr env scope true e in
         let* b = B.choice v (return true) (return false) in
         if b then continue env else fatal_from e @@ Error.AssertionFailed e
 
-  and eval_func (genv : genv) name pos (args : B.value m list) : B.value list m
-      =
+  and eval_func (genv : genv) name pos (args : B.value m list) nargs :
+      B.value list m =
     match IMap.find_opt name genv.funcs with
     | None -> fatal_from pos @@ Error.UndefinedIdentifier name
-    | Some (Primitive { body; _ }) ->
-        let* args = prod_map Fun.id args in
-        body args
+    | Some (Primitive { body; _ }) -> prod args |||> body
     | Some (Func (_, { args = arg_decls; _ }))
       when List.compare_lengths args arg_decls <> 0 ->
         fatal_from pos
@@ -439,14 +552,34 @@ module Make (B : Backend.S) = struct
           let* () = B.on_write_identifier x scope v in
           return (x, v)
         in
-        let* bindings = List.map2 one_arg arg_decls args |> prod_map Fun.id in
-        let lenv = List.to_seq bindings |> IMap.of_seq in
+        let one_narg (x, m) =
+          if List.mem_assoc x arg_decls then None else Some (m ||> pair x)
+        in
+        let* lenv =
+          List.map2 one_arg arg_decls args
+          |> List.rev_append (List.filter_map one_narg nargs)
+          |> prod ||> IMap.of_list
+        in
+        let () =
+          if false then (
+            Format.eprintf "@[<v 2>Evaluating %S in initial local env:@ " name;
+            IMap.iter
+              (fun x v -> Format.eprintf "%S = %s@ " x (B.debug_value v))
+              lenv;
+            Format.eprintf "@]@.")
+        in
         let* res = eval_stmt (genv, lenv) scope body in
+        let () =
+          if false then Format.eprintf "Finished evaluating %s.@." name
+        in
         match res with Continuing _ -> return [] | Returning vs -> return vs)
 
   let run (ast : t) primitives : B.value list m =
+    let ast = List.rev_append (Lazy.force Builder.stdlib) ast in
     let ast = type_annotation ast primitives in
-    let funcs = IMap.empty |> build_funcs ast |> add_primitives primitives in
-    let consts = IMap.empty |> build_enums ast |> build_consts ast in
-    eval_func { consts; funcs } "main" ASTUtils.dummy_annotated []
+    let () =
+      if false then Format.eprintf "@[<v 2>Typed AST:@ %a@]@." PP.pp_t ast
+    in
+    let genv = build_genv ast primitives in
+    eval_func genv "main" ASTUtils.dummy_annotated [] []
 end
