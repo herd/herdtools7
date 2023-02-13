@@ -1,0 +1,16 @@
+RISCV A03
+"PodWWPRl RfeRlAq PodRRAqP Fre"
+Generator=diyone7 (version 7.56+03)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=PodWWPRl RfeRlAq PodRRAqP Fre
+{
+0:x6=x; 0:x8=y;
+1:x6=y; 1:x8=x;
+}
+ P0             | P1             ;
+ ori x5,x0,1    | lw.aq x5,0(x6) ;
+ sw x5,0(x6)    | lw x7,0(x8)    ;
+ ori x7,x0,1    |                ;
+ sw.rl x7,0(x8) |                ;
+exists (1:x5=1 /\ 1:x7=0)

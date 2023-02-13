@@ -16,6 +16,6 @@
 
 module Make :
   functor(Conf:RunTest.Config) ->
-    functor(ModelConfig:MemWithCav12.Config) -> sig
+    functor(ModelConfig:MemCat.Config) -> sig
       val run : RunTest.runfun
     end

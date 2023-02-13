@@ -108,7 +108,7 @@ module Top (TopConf:RunTest.Config) = struct
          let module X = MIPSParseTest.Make(Conf)(ModelConfig) in
          X.run cache_type dirty start_time name chan env splitted
       | `RISCV ->
-         let module X = MIPSParseTest.Make(Conf)(ModelConfig) in
+         let module X = RISCVParseTest.Make(Conf)(ModelConfig) in
          X.run cache_type dirty start_time name chan env splitted
       | `C ->
          let module X = CParseTest.Make(Conf)(ModelConfig) in

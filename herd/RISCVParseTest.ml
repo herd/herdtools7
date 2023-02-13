@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make(Conf:RunTest.Config)(ModelConfig:MemWithCav12.Config) = struct
+module Make(Conf:RunTest.Config)(ModelConfig:MemCat.Config) = struct
   module LexConfig = struct
     let debug = Conf.debug.Debug_herd.lexer
   end
@@ -30,7 +30,7 @@ module Make(Conf:RunTest.Config)(ModelConfig:MemWithCav12.Config) = struct
   end
   module RISCVS = RISCVSem.Make(Conf)(RISCVValue)
   module RISCVM = MemCat.Make(ModelConfig)(RISCVS)
-  module P = GenParser.Make (GenParserConf) (RISCV) (RISCVLexParse)
+  module P = GenParser.Make (Conf) (RISCV) (RISCVLexParse)
   module X = RunTest.Make (RISCVS) (P) (RISCVM) (Conf)
   let run = X.run
 end
