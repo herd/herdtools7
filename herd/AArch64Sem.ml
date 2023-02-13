@@ -1066,7 +1066,7 @@ module Make
 
       let apply_mv mop mv = fun ac ma -> mop ac ma mv
 
-      let is_this_reg_read rA e =
+      let is_this_reg rA e =
         match E.location_reg_of e with
         | None -> false
         | Some rB -> AArch64.reg_compare rA rB=0
@@ -1082,7 +1082,7 @@ module Make
               if kvm then
                 let mphy = (fun ma a -> lift_memtag_phy a mop ma dir an ii) in
                 M.short3
-                  (is_this_reg_read rA) E.is_commit
+                  (is_this_reg rA) E.is_commit
                   (lift_kvm dir updatedb mop ma an ii mphy)
               else lift_memtag_virt mop ma dir an ii
             end
@@ -1227,19 +1227,22 @@ module Make
 
       (* Load pair - post-indexed write *)
       and ldp_post sz rd1 rd2 ra k ii =
-        M.delay_kont "ldp_post"
-          (read_reg_ord ra ii)
-          (fun a_virt ma ->
-            do_ldr ra sz AArch64.N
-          (fun ac a ->
-            (M.add a_virt (V.intToV k) >>=
-              fun b -> write_reg ra b ii) >>|
-            (do_read_mem sz AArch64.N aexp ac rd1 a ii >>|
-            begin
-              add_size a sz >>=
-              fun a -> do_read_mem sz AArch64.N aexp ac rd2 a ii
-            end))
-              ma ii)
+        let m =
+          M.delay_kont "ldp_post"
+            (read_reg_ord ra ii)
+            (fun a_virt ma ->
+              do_ldr ra sz AArch64.N
+                (fun ac a ->
+                  (M.add a_virt (V.intToV k) >>=
+                   fun b -> write_reg ra b ii) >>|
+                   (do_read_mem sz AArch64.N aexp ac rd1 a ii >>|
+                   begin
+                     add_size a sz >>=
+                     fun a -> do_read_mem sz AArch64.N aexp ac rd2 a ii
+                   end))
+                ma ii) in
+        if kvm then M.upOneRW (is_this_reg ra) m
+        else m
 
       and ldar sz t rd rs ii =
         let open AArch64 in
@@ -1279,18 +1282,21 @@ module Make
 
       (* Store - post-indexed write *)
       and str_post sz rs rd k ii =
-        M.delay_kont "str_post"
-          (read_reg_ord rd ii)
-          (fun a_virt ma ->
-            do_str rd
-              (fun ac a _ ii ->
-                M.add a_virt (V.intToV k) >>= fun b -> write_reg rd b ii
-        >>|
-                M.data_input_next
-                  (read_reg_data sz rs ii)
-                  (fun v -> do_write_mem sz AArch64.N aexp ac a v ii))
-              sz AArch64.N
-              ma (M.unitT V.zero) ii)
+        let m =
+          M.delay_kont "str_post"
+            (read_reg_ord rd ii)
+            (fun a_virt ma ->
+              do_str rd
+                (fun ac a _ ii ->
+                  M.add a_virt (V.intToV k) >>= fun b -> write_reg rd b ii
+             >>|
+                  M.data_input_next
+                   (read_reg_data sz rs ii)
+                   (fun v -> do_write_mem sz AArch64.N aexp ac a v ii))
+                sz AArch64.N
+                ma (M.unitT V.zero) ii) in
+        if kvm then M.upOneRW (is_this_reg rd) m
+        else m
 
       and stp =
         let (>>>) = M.data_input_next in
