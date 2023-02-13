@@ -1,0 +1,12 @@
+Test A03 Allowed
+States 3
+1:x5=0; 1:x7=0;
+1:x5=0; 1:x7=1;
+1:x5=1; 1:x7=1;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (1:x5=1 /\ 1:x7=0)
+Observation A03 Never 0 3
+Hash=824e55bb8bc1fcfac6078daadc7fb764
+
