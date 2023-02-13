@@ -1,0 +1,10 @@
+Test case1 Required
+States 1
+0:main.0.a=1; 0:main.0.b=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:main.0.a=1 /\ 0:main.0.b=0)
+Observation case1 Always 1 0
+Hash=24f47e232182d427fdd44979d372223e
+

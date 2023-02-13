@@ -1,0 +1,10 @@
+Test func4 Required
+States 1
+0:main.0.a=0; 0:main.0.b=1; 0:main.0.c=5;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:main.0.a=0 /\ 0:main.0.b=1 /\ 0:main.0.c=5)
+Observation func4 Always 1 0
+Hash=0ad8d37db0cf11eb20a135f7f9540476
+

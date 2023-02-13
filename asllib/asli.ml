@@ -34,21 +34,82 @@ let build_ast_from_file f =
   in
   try Parser.ast Lexer.token lexbuf with
   | Parser.Error ->
-      Printf.eprintf "%a: Cannot parse." pp_pos lexbuf.Lexing.lex_curr_p;
+      Printf.eprintf "%a: Cannot parse.\n" pp_pos lexbuf.Lexing.lex_curr_p;
       exit 1
   | Lexer.LexerError ->
-      Printf.eprintf "%a: unknown token." pp_pos lexbuf.Lexing.lex_curr_p;
+      Printf.eprintf "%a: unknown token.\n" pp_pos lexbuf.Lexing.lex_curr_p;
       exit 1
 
-let exec ast =
-  let open Native in
-  match NativeInterpreter.run ast [] [] () with
-  | Ok _li -> Printf.printf "Ran ok.\n"
-  | Error err -> Printf.printf "%a\n" pp_err err
+type args = {
+  exec : bool;
+  file : string;
+  print_ast : bool;
+  print_serialized : bool;
+  print_typed : bool;
+}
+
+let parse_args : unit -> args =
+  let target_file = ref "" in
+  let exec = ref true in
+  let print_ast = ref false in
+  let print_serialized = ref false in
+  let print_typed = ref false in
+  let speclist =
+    [
+      ("--parse-only", Arg.Clear exec, "Do not execute the asl program.");
+      ("--exec", Arg.Set exec, "Execute the asl program.");
+      ( "--print",
+        Arg.Set print_ast,
+        "Print the parsed AST to stdout before executing it." );
+      ( "--serialize",
+        Arg.Set print_serialized,
+        "Print the parsed AST to stdout in the serialized format." );
+      ( "--print-typed",
+        Arg.Set print_typed,
+        "Print the parsed AST after typing and before executing it." );
+    ]
+  in
+  let anon_fun = ( := ) target_file in
+  let usage_msg =
+    "ASL parser and interpreter.\n\nUSAGE:\n\tasli [OPTIONS] [FILE]\n\n"
+  in
+  fun () ->
+    let () = Arg.parse speclist anon_fun usage_msg in
+    {
+      exec = !exec;
+      file = !target_file;
+      print_ast = !print_ast;
+      print_serialized = !print_serialized;
+      print_typed = !print_typed;
+    }
+
+let or_exit f =
+  match Error.intercept f () with
+  | Ok res -> res
+  | Error e ->
+      Format.eprintf "%a@." Error.pp_error e;
+      exit 1
 
 let () =
-  let f = Sys.argv.(1) in
-  let () = Printf.printf "\rParsing and running %s...            \n" f in
-  let parsed_ast = build_ast_from_file f in
-  let native_ast = Native.of_parsed_ast parsed_ast in
-  exec native_ast
+  let args = parse_args () in
+  let ast = build_ast_from_file args.file in
+
+  let () = if args.print_ast then Format.printf "%a@." PP.pp_t ast in
+
+  let () =
+    if args.print_serialized then print_string (Serialize.t_to_string ast)
+  in
+
+  let () =
+    if args.print_typed then
+      let annotated_ast = or_exit (fun () -> Typing.annotate_ast ast) in
+      Format.printf "%a@." PP.pp_t annotated_ast
+  in
+
+  let () =
+    if args.exec then
+      let _ = or_exit (fun () -> Native.NativeInterpreter.run ast [] ()) in
+      ()
+  in
+
+  ()

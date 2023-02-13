@@ -171,6 +171,7 @@ module type S = sig
   val look_reg : I.arch_reg -> reg_state -> I.V.v option
   val set_reg : I.arch_reg -> v -> reg_state -> reg_state
   val kill_regs : I.arch_reg list -> reg_state -> reg_state
+  val fold_reg_state : (I.arch_reg -> v -> 'a -> 'a) -> reg_state -> 'a -> 'a
 
 (****************)
 (* Environments *)
@@ -564,6 +565,7 @@ module Make(C:Config) (I:I) : S with module I = I
       let look_reg r st = try Some (RegMap.find r st) with Not_found -> None
       let set_reg r v st = RegMap.add r v st
       let kill_regs rs st =  List.fold_right RegMap.remove rs st
+      let fold_reg_state = RegMap.fold
 
 (****************)
 (* Environments *)

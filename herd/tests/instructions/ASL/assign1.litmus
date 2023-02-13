@@ -3,8 +3,9 @@ ASL assign1
 {}
 
 func main()
-    x = 3
-endfunc
+begin
+    x = 3;
+end
 
 forall (
     0: x = 3

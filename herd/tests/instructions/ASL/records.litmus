@@ -1,0 +1,43 @@
+ASL records
+
+{}
+
+type R of record {
+  f1::integer,
+  f2::boolean
+};
+
+func constructor (a1::integer, a2::boolean) => R
+begin
+  return R {
+    f1 = a1,
+    f2 = a2
+  };
+end
+
+func inv2 (r::R) => R
+begin
+  r.f2 = !r.f2;
+  return r;
+end
+
+func read_f1 (r::R) => integer
+begin
+  return r.f1;
+end
+
+func read_f2 (r::R) => integer
+begin
+  return r.f2;
+end
+
+func main()
+begin
+  r = constructor (3, TRUE);
+  r = inv2(r);
+  x = read_f1(r);
+  r = inv2(r);
+  assert read_f2(r);
+end
+
+forall (0: x = 3)

@@ -1,5 +1,6 @@
 
-func main(t, s)
-    write_register(t, read_register(s))
-endfunc
+func main()
+begin
+    write_register(t, datasize, read_register(s, datasize));
+end
 

@@ -27,7 +27,6 @@ module AST = Asllib.AST
 (*****************************************************************************)
 
 type scope = AST.identifier * int
-type parsed_ast = AST.parsed_t
 
 let pp_scope (enclosure, call_nb) = Printf.sprintf "%s.%d" enclosure call_nb
 
@@ -38,8 +37,7 @@ let arch_reg_to_int =
     | h :: _ when compare elt h == 0 -> pos
     | _ :: t -> index_of elt (pos + 1) t
   in
-  function
-  | AArch64Base.Ireg r -> index_of r 1 AArch64Base.gprs | _ -> assert false
+  fun r -> index_of r 1 AArch64Base.gprs
 
 (*****************************************************************************)
 (*                                                                           *)
@@ -61,7 +59,9 @@ type reg = ASLLocalId of scope * AST.identifier | ArchReg of A64B.reg
 let is_local = function ASLLocalId _ -> true | _ -> false
 let to_arch_reg = function ASLLocalId _ -> assert false | ArchReg r -> r
 let to_reg r = ArchReg r
-let default_scope = ("main", 0)
+let main_scope = ("main", 0)
+let default_scope = main_scope
+let scope_equal (s1, nb1) (s2, nb2) = String.equal s1 s2 && nb1 = nb2
 
 let parse_local_id =
   let ( let* ) = Option.bind in
@@ -71,7 +71,9 @@ let parse_local_id =
   let find_opt n s =
     try Some (Str.matched_group n s) with Not_found -> None
   in
-  let regexp = Str.regexp {|\([A-Za-z_]+\)\.\([0-9]+\)\.\([A-Za-z_]+\)|} in
+  let regexp =
+    Str.regexp {|\([A-Za-z0-9_-]+\)\.\([0-9]+\)\.\([A-Za-z0-9_-]+\)|}
+  in
   fun s ->
     if Str.string_match regexp s 0 then
       let* x1 = find_opt 1 s and* x2 = find_opt 2 s and* x3 = find_opt 3 s in
@@ -113,12 +115,12 @@ type barrier = A64B.barrier
 let pp_barrier = A64B.pp_barrier
 let barrier_compare = A64B.barrier_compare
 
-type parsedInstruction = parsed_ast
-type instruction = parsed_ast
+type parsedInstruction = AST.t
+type instruction = AST.t
 
-let pp_instruction _ppmode ast = AST.PP.parsed_t_to_string ast
+let pp_instruction _ppmode ast = Asllib.PP.t_to_string ast
 let dump_instruction a = pp_instruction PPMode.Ascii a
-let dump_instruction_hash = AST.Serialize.parsed_t_to_string
+let dump_instruction_hash = Asllib.Serialize.t_to_string
 let allowed_for_symb = List.map to_reg A64B.allowed_for_symb
 let fold_regs _ ab _ = ab
 let map_regs _ _ i = i

@@ -1,0 +1,56 @@
+ASL func3
+(* Test for getters setters. *)
+
+{}
+
+getter f1[] => integer
+begin
+  return 3;
+end
+
+setter f1[] = v :: integer
+begin
+  pass;
+  // Hahaha, as if I was to do anything with the value
+end
+
+getter f2[x::integer] => integer
+begin
+  return f1 + x;
+end
+
+setter f2[x::integer] = v :: integer
+begin
+  f1 = v + x;
+end
+
+setter f3[x::integer] = v :: integer
+begin
+  f3_internal = x;
+end
+
+setter f4[x::integer] = v :: integer
+begin
+  f4_internal = v;
+end
+
+func main()
+begin
+  f1[] = f1[];
+  f1 = f1;
+  a = f1;
+  b = f1[];
+  c = f2[4];
+  f2[5] = 6;
+  f3[12] = 13;
+  f4[14] = 15;
+end
+
+forall(
+     0: a = 3
+  /\ 0: b = 3
+  /\ 0: c = 7
+  /\ 0: setter-f3.0.f3_internal = 12
+  /\ 0: setter-f4.0.f4_internal = 15
+)
+

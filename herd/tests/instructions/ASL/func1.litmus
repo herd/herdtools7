@@ -2,14 +2,16 @@ ASL func1
 
 {}
 
-func f(i)
-    return i
-endfunc
+func f(i::integer) => integer
+begin
+    return i;
+end
 
 func main()
+begin
     x = 3;
-    y = f(x)
-endfunc
+    y = f(x);
+end
 
 forall (
     0: x = 3 /\

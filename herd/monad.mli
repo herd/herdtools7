@@ -37,6 +37,7 @@ module type S =
     and type solution = A.V.solution
     and type location = A.location
     and type state = A.state
+    and type arch_op1 = A.V.arch_op1
 
     type 'a t
 

@@ -50,136 +50,119 @@ type binop =
 type identifier = string
 (** Type of local identifiers in the AST. *)
 
-module ISet : Set.S with type elt = string
-module IMap : Map.S with type key = string
-
 (** Main value type, parametric on its base values *)
-type ('i, 'b, 'r, 'bv) value =
-  | VInt of 'i
-  | VBool of 'b
-  | VReal of 'r
-  | VBitVector of 'bv
-
-type parsed_value = (int, bool, float, string) value
-(** Type of parsed values by the module Parser.mly *)
-
-val value_of_vint : 'i -> ('i, 'b, 'r, 'bv) value
-(** Value constructor for VInt. *)
-
-val value_of_vbool : 'b -> ('i, 'b, 'r, 'bv) value
-(** Value constructor for VBool. *)
-
-val value_of_vreal : 'r -> ('i, 'b, 'r, 'bv) value
-(** Value constructor for VReal. *)
-
-val value_of_vbitvector : 'bv -> ('i, 'b, 'r, 'bv) value
-(** Value constructor for VBitVector. *)
+type value =
+  | V_Int of int
+  | V_Bool of bool
+  | V_Real of float
+  | V_BitVector of Bitvector.t
+  | V_Tuple of value list
+  | V_Record of (identifier * value) list
+  | V_Exception of (identifier * value) list
 
 (** Expressions. Parametric on the type of literals. *)
-type 'v expr =
-  | ELiteral of 'v
-  | EVar of identifier
-  | EBinop of binop * 'v expr * 'v expr
-  | EUnop of unop * 'v expr
-  | ECall of identifier * 'v expr list
-  | EGet of identifier * 'v expr list
-  | ECond of 'v expr * 'v expr * 'v expr
+type expr =
+  | E_Literal of value
+  | E_Var of identifier
+  | E_Binop of binop * expr * expr
+  | E_Unop of unop * expr
+  | E_Call of identifier * expr list
+  | E_Slice of expr * slice list
+  | E_Cond of expr * expr * expr
+  | E_GetField of expr * identifier * type_annot
+  | E_Record of type_desc * (identifier * expr) list * type_annot
+  | E_Concat of expr list
+  | E_Tuple of expr list
+
+and slice =
+  | Slice_Single of expr
+  | Slice_Range of expr * expr (* end first because ASL *)
+  | Slice_Length of expr * expr (* start, length *)
+
+(** Type annotations are way for the typing system to annotate
+    special nodes of the AST. They are for internal use only. *)
+and type_annot = TA_None | TA_InferredStructure of type_desc
+
+(** Type descriptors.*)
+and type_desc =
+  | T_Int of int_constraints option
+  | T_Real
+  | T_String
+  | T_Bool
+  | T_Bits of bits_constraint * bitfields option
+  | T_Bit
+  | T_Enum of identifier list
+  | T_Tuple of type_desc list
+  | T_Array of expr * type_desc
+  | T_Record of typed_identifier list
+  | T_Exception of typed_identifier list
+  | T_ZType of type_desc
+      (** A Z-type correcponds to a type with a possible null value.*)
+  | T_Named of identifier  (** A type variable. *)
+
+(** A constraint on an integer part. *)
+and int_constraint =
+  | Constraint_Exact of expr
+      (** Exactly this value, as given by a statically evaluable expression. *)
+  | Constraint_Range of (expr * expr)
+      (** In the range of these two statically evaluable values.*)
+
+and int_constraints = int_constraint list
+(** The int_constraints represent the union of the individual constraints.*)
+
+(** The width of a bitvector can be constrained in multiple ways. *)
+and bits_constraint =
+  | BitWidth_Determined of expr  (** Statically evaluable expression. *)
+  | BitWidth_ConstrainedFormType of type_desc
+      (** Constrained by the domain of another type. *)
+  | BitWidth_Constrained of int_constraints
+      (** Constrained directly by a constraint on its width. *)
+
+and bitfields = (slice list * identifier) list
+
+and typed_identifier = identifier * type_desc
+(** An identifier declared with its type. *)
 
 (** Type of left-hand side of assignments. *)
-type 'v lexpr = LEVar of identifier | LESet of identifier * 'v expr list
+type lexpr =
+  | LE_Ignore
+  | LE_Var of identifier
+  | LE_Slice of lexpr * slice list
+  | LE_SetField of lexpr * identifier * type_annot
+  | LE_TupleUnpack of lexpr list
 
 (** Statements. Parametric on the type of literals in expressions. *)
-type 'v stmt =
-  | SPass
-  | SThen of 'v stmt * 'v stmt
-  | SAssign of 'v lexpr * 'v expr
-  | SCall of identifier * 'v expr list
-  | SReturn of 'v expr list
-  | SCond of 'v expr * 'v stmt * 'v stmt
+type stmt =
+  | S_Pass
+  | S_Then of stmt * stmt
+  | S_Assign of lexpr * expr
+  | S_Call of identifier * expr list
+  | S_Return of expr option
+  | S_Cond of expr * stmt * stmt
+  | S_Case of expr * case_alt list
+  | S_Assert of expr
 
-type 'v func = identifier * identifier list * 'v stmt
-(** Declared functions. Parametric on the type of literals in the body. *)
+and case_alt = expr list * stmt
+
+type ('body, 'arg) func_skeleton = {
+  name : identifier;
+  args : 'arg list;
+  body : 'body;
+  return_type : type_desc option;
+}
+
+type func = (stmt, typed_identifier) func_skeleton
+(** Function types in the AST. For the moment, they represent getters, setters,
+    functions, procedures and primitives. *)
 
 (** Declarations, ie. top level statement in a asl file. *)
-type 'v decl =
-  | Func of 'v func
-  | Enum of string list
-  | GlobalConst of identifier * 'v expr
+type decl =
+  | D_Func of func
+  | D_GlobalConst of identifier * type_desc * expr
+  | D_TypeDecl of identifier * type_desc
+  | D_Primitive of func
+(* [D_Primitive] is a placeholder for typechecking primitive calls. Only the
+   function signature is relevant here. *)
 
-type 'v t = 'v decl list
+type t = decl list
 (** Main AST type. *)
-
-type parsed_t = parsed_value t
-(** Type of parsed ast by the module Parser.mly *)
-
-(** Machine readable stable and fast serializing functions *)
-module Serialize : sig
-  val pp_value :
-    ('i -> string) ->
-    ('b -> string) ->
-    ('r -> string) ->
-    ('bv -> string) ->
-    Buffer.t ->
-    ('i, 'b, 'r, 'bv) value ->
-    unit
-  (** Print a value from its components.*)
-
-  val pp_parsed_value : Buffer.t -> parsed_value -> unit
-  (** Print a parsed value *)
-
-  val pp_t : (Buffer.t -> 'v -> unit) -> Buffer.t -> 'v t -> unit
-  (** Serialize an AST from printer for a value *)
-
-  val pp_parsed_t : Buffer.t -> parsed_t -> unit
-  (** Serialize a parsed AST.*)
-
-  val t_to_string : ('v -> string) -> 'v t -> string
-  (** [t_to_string v_to_string ast] is a string representing [ast] with values printed with [v_to_string].*)
-
-  val parsed_t_to_string : parsed_t -> string
-  (* Serialize a parsed AST.*)
-end
-
-(** Pretty-printing functions for AST with format.*)
-module PP : sig
-  val pp_value :
-    (Format.formatter -> 'i -> unit) ->
-    (Format.formatter -> 'b -> unit) ->
-    (Format.formatter -> 'r -> unit) ->
-    (Format.formatter -> 'bv -> unit) ->
-    Format.formatter ->
-    ('i, 'b, 'r, 'bv) value ->
-    unit
-  (** Print a value from its components.*)
-
-  val pp_parsed_value : Format.formatter -> parsed_value -> unit
-  (** Print a parsed value *)
-
-  val pp_t :
-    (Format.formatter -> 'v -> unit) -> Format.formatter -> 'v t -> unit
-  (** Print an AST from printer for a value *)
-
-  val pp_parsed_t : Format.formatter -> parsed_t -> unit
-  (** Format a parsed AST.*)
-
-  val t_to_string : ('v -> string) -> 'v t -> string
-  (** [t_to_string v_to_string ast] is a string representing [ast] with values printed with [v_to_string].*)
-
-  val parsed_t_to_string : parsed_t -> string
-  (* Print a parsed AST.*)
-end
-
-val stmt_from_list : 'v stmt list -> 'v stmt
-(** Builder for a serie of SThen. *)
-
-val use_expr : bool -> 'v expr -> ISet.t
-(** use_expr false e is the set of variables used in e. If the first argument is set, function names are added, non-recursively. *)
-
-val tr_values :
-  ('i1 -> ('i2, 'b2, 'r2, 'bv2) value) ->
-  ('b1 -> ('i2, 'b2, 'r2, 'bv2) value) ->
-  ('r1 -> ('i2, 'b2, 'r2, 'bv2) value) ->
-  ('bv1 -> ('i2, 'b2, 'r2, 'bv2) value) ->
-  ('i1, 'b1, 'r1, 'bv1) value t ->
-  ('i2, 'b2, 'r2, 'bv2) value t
-(** A translation function that changes the type of values in an AST *)

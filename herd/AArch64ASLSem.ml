@@ -51,8 +51,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
       end
     end
 
-    module ASLValue = Int64Value.Make (ASLBase.Instr)
-    module ASLS = ASLSem.Make (ASLConf) (ASLValue)
+    module ASLS = ASLSem.Make (ASLConf)
+    module ASLV = ASLS.V
     module ASLA = ASLS.A
     module ASLAct = ASLS.Act
     module ASLE = ASLS.E
@@ -69,9 +69,11 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
       let byte = SZ.byte
       let cache_type = TopConf.cache_type
       let dirty = TopConf.dirty
+      let initwrites = false
     end
 
     module MC = Mem.Make (MCConf) (ASLS)
+    module MU = MemUtils.Make (ASLS)
 
     let check_event_structure model =
       let module MemConfig = struct
@@ -120,33 +122,53 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
       | LE -> 0b1101
       | AL -> 0b1111 (* Also possible [0b1110] *)
 
-    let pseudocode_fname = Filename.concat "asl-pseudocode"
-
     let decode_inst ii =
       let r2i = ASLBase.arch_reg_to_int in
+      let tr_ty ty = MachSize.nbits (AArch64Base.tr_variant ty) in
+      let pseudocode_fname = Filename.concat "asl-pseudocode" in
       let open AArch64Base in
       match ii.A.inst with
       | I_NOP -> Some (pseudocode_fname "nop.asl", [])
-      | I_OP3 (_ty, ADD, rd, rn, RV (_, rm), _os) ->
-          Some
-            ( "asl-pseudocode/add.asl",
-              [ ("d", r2i rd); ("n", r2i rn); ("m", r2i rm) ] )
-      | I_SWP (_v, _rmw, r1, r2, r3) ->
+      | I_SWP (v, RMW_P, Ireg r1, Ireg r2, Ireg r3) ->
           Some
             ( pseudocode_fname "swp.asl",
-              [ ("s", r2i r1); ("t", r2i r2); ("n", r2i r3) ] )
-      | I_CAS (_v, _rmw, rs, rt, rn) ->
+              [
+                ("s", r2i r1);
+                ("t", r2i r2);
+                ("n", r2i r3);
+                ("datasize", tr_ty v);
+              ] )
+      | I_CAS (v, RMW_P, Ireg rs, Ireg rt, Ireg rn) ->
           Some
             ( pseudocode_fname "cas.asl",
-              [ ("s", r2i rs); ("t", r2i rt); ("n", r2i rn) ] )
-      | I_CSEL (_, rd, rn, rm, c, _) ->
+              [
+                ("s", r2i rs);
+                ("t", r2i rt);
+                ("n", r2i rn);
+                ("datasize", tr_ty v);
+              ] )
+      | I_CSEL (v, Ireg rd, Ireg rn, Ireg rm, c, Cpy) ->
           Some
             ( pseudocode_fname "csel.asl",
               [
-                ("d", r2i rd); ("n", r2i rn); ("m", r2i rm); ("cond", tr_cond c);
+                ("d", r2i rd);
+                ("n", r2i rn);
+                ("m", r2i rm);
+                ("cond", tr_cond c);
+                ("datasize", tr_ty v);
               ] )
-      | I_MOV (_, rt, RV (_, rs)) ->
-          Some (pseudocode_fname "mov.asl", [ ("s", r2i rs); ("t", r2i rt) ])
+      | I_MOV (v, Ireg rt, RV (V64, Ireg rs)) ->
+          Some
+            ( pseudocode_fname "mov.asl",
+              [ ("s", r2i rs); ("t", r2i rt); ("datasize", tr_ty v) ] )
+      | I_LDR (v, Ireg rt, Ireg rn, K 0, S_NOEXT) ->
+          Some
+            ( pseudocode_fname "load.asl",
+              [ ("t", r2i rt); ("n", r2i rn); ("datasize", tr_ty v) ] )
+      | I_STR (v, Ireg rt, Ireg rn, K 0, S_NOEXT) ->
+          Some
+            ( pseudocode_fname "store.asl",
+              [ ("t", r2i rt); ("n", r2i rn); ("datasize", tr_ty v) ] )
       | i ->
           let () =
             if _dbg then
@@ -215,19 +237,20 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
     let csym_tbl = ref IMap.empty
 
     let tr_v = function
-      | ASLValue.Var s -> (
+      | ASLV.Var s -> (
           match IMap.find_opt s !csym_tbl with
           | Some v -> v
           | None ->
               let v = V.fresh_var () in
               csym_tbl := IMap.add s v !csym_tbl;
               v)
-      | ASLValue.Val (Constant.Concrete i) ->
-          V.intToV (ASLValue.Cst.Scalar.to_int i)
-      | ASLValue.Val (Constant.Symbolic symb) -> V.Val (Constant.Symbolic symb)
+      | ASLV.Val (Constant.Concrete i) ->
+          V.Val
+            (Constant.Concrete (V.Cst.Scalar.of_int64 (ASLScalar.to_int64 i)))
+      | ASLV.Val (Constant.Symbolic symb) -> V.Val (Constant.Symbolic symb)
       | v ->
           Warn.fatal "AArch64.ASL does not know how to translate: %s"
-            (ASLValue.pp_v v)
+            (ASLV.pp_v v)
 
     let tr_loc ii = function
       | ASLA.Location_global x -> Some (A.Location_global (tr_v x))
@@ -248,64 +271,110 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
       | ASLAct.NoAction -> Some Act.NoAction
       | ASLAct.TooFar msg -> Some (Act.TooFar msg)
 
+    let tr_arch_op =
+      let open ASLValue.ASLArchOp in
+      let atom v = M.VC.Atom v in
+      let declare e acc =
+        let name = V.fresh_var () in
+        (name, M.VC.Assign (name, e) :: acc)
+      in
+      fun op acc v ->
+        let v = tr_v v in
+        match op with
+        | ToInt -> (atom v, acc)
+        | ToBool -> (M.VC.Binop (Op.Ne, V.zero, v), acc)
+        | BVSlice positions -> (
+            let extract_bit_to dst_pos src_pos acc =
+              let bit = M.VC.Unop (Op.ReadBit src_pos, v) in
+              if dst_pos = 0 then (bit, acc)
+              else
+                let nbit, acc = declare bit acc in
+                (M.VC.Unop (Op.LeftShift dst_pos, nbit), acc)
+            in
+            let folder (prec, acc, i) pos =
+              let w, acc = extract_bit_to i pos acc in
+              let nw, acc = declare w acc in
+              let nprec, acc = declare prec acc in
+              (M.VC.Binop (Op.Or, nw, nprec), acc, i + 1)
+            in
+            match positions with
+            | [] -> (V.zero |> atom, acc)
+            | [ x ] -> extract_bit_to 0 x acc
+            | h :: t ->
+                let first, acc = extract_bit_to 0 h acc in
+                let w, acc, _ = List.fold_left folder (first, acc, 1) t in
+                (w, acc))
+        | _ ->
+            Warn.fatal "Not yet implemented: translation of vector operations."
+
     let tr_op1 =
       let open Op in
       function
-      | ArchOp1 _ -> assert false
-      | Not -> Not
-      | SetBit i -> SetBit i
-      | UnSetBit i -> UnSetBit i
-      | ReadBit i -> ReadBit i
-      | LeftShift i -> LeftShift i
-      | LogicalRightShift i -> LogicalRightShift i
-      | ArithRightShift i -> ArithRightShift i
-      | AddK i -> AddK i
-      | AndK i -> AndK i
-      | Inv -> Inv
-      | Mask sz -> Mask sz
-      | Sxt sz -> Sxt sz
-      | TagLoc -> TagLoc
-      | CapaTagLoc -> CapaTagLoc
-      | TagExtract -> TagExtract
-      | LocExtract -> LocExtract
-      | UnSetXBits (nbBits, from) -> UnSetXBits (nbBits, from)
-      | CapaGetTag -> CapaGetTag
-      | CheckSealed -> CheckSealed
-      | CapaStrip -> CapaStrip
-      | TLBLoc -> TLBLoc
-      | PTELoc -> PTELoc
-      | Offset -> Offset
-      | IsVirtual -> IsVirtual
-      | IsInstr -> IsInstr
+      | ArchOp1 op -> tr_arch_op op
+      | op ->
+          let new_op =
+            match op with
+            | ArchOp1 _ -> assert false
+            | Not -> Not
+            | SetBit i -> SetBit i
+            | UnSetBit i -> UnSetBit i
+            | ReadBit i -> ReadBit i
+            | LeftShift i -> LeftShift i
+            | LogicalRightShift i -> LogicalRightShift i
+            | ArithRightShift i -> ArithRightShift i
+            | AddK i -> AddK i
+            | AndK i -> AndK i
+            | Inv -> Inv
+            | Mask sz -> Mask sz
+            | Sxt sz -> Sxt sz
+            | TagLoc -> TagLoc
+            | CapaTagLoc -> CapaTagLoc
+            | TagExtract -> TagExtract
+            | LocExtract -> LocExtract
+            | UnSetXBits (nbBits, from) -> UnSetXBits (nbBits, from)
+            | CapaGetTag -> CapaGetTag
+            | CheckSealed -> CheckSealed
+            | CapaStrip -> CapaStrip
+            | TLBLoc -> TLBLoc
+            | PTELoc -> PTELoc
+            | Offset -> Offset
+            | IsVirtual -> IsVirtual
+            | IsInstr -> IsInstr
+          in
+          fun acc v -> (M.VC.Unop (new_op, tr_v v), acc)
 
-    let tr_expr = function
-      | ASLVC.Atom a -> M.VC.Atom (tr_v a)
+    let tr_expr acc = function
+      | ASLVC.Atom a -> (M.VC.Atom (tr_v a), acc)
       | ASLVC.ReadInit _ -> assert false
-      | ASLVC.Unop (op, v) -> M.VC.Unop (tr_op1 op, tr_v v)
-      | ASLVC.Binop (op, a1, a2) -> M.VC.Binop (op, tr_v a1, tr_v a2)
+      | ASLVC.Unop (op, v) -> tr_op1 op acc v
+      | ASLVC.Binop (op, a1, a2) -> (M.VC.Binop (op, tr_v a1, tr_v a2), acc)
       | ASLVC.Terop (op, a1, a2, a3) ->
-          M.VC.Terop (op, tr_v a1, tr_v a2, tr_v a3)
+          (M.VC.Terop (op, tr_v a1, tr_v a2, tr_v a3), acc)
 
-    let tr_cnstrnt = function
-      | ASLVC.Warn s -> M.VC.Warn s
-      | ASLVC.Failed e -> M.VC.Failed e
-      | ASLVC.Assign (la, ex) -> M.VC.Assign (tr_v la, tr_expr ex)
+    let tr_cnstrnt acc = function
+      | ASLVC.Warn s -> M.VC.Warn s :: acc
+      | ASLVC.Failed e -> M.VC.Failed e :: acc
+      | ASLVC.Assign (la, ex) ->
+          let expr, acc = tr_expr acc ex in
+          M.VC.Assign (tr_v la, expr) :: acc
 
-    let tr_cnstrnts = List.map tr_cnstrnt
+    let tr_cnstrnts cs = List.fold_left tr_cnstrnt [] cs
 
     let event_to_monad ii event =
-      let { ASLE.action; _ } = event in
+      let { ASLE.action; ASLE.iiid; _ } = event in
       let () =
         if _dbg then
           Printf.eprintf "%s:%s" (ASLE.pp_eiid event) (ASLAct.pp_action action)
       in
-      match tr_action ii action with
-      | Some action' ->
+      match (iiid, tr_action ii action) with
+      | ASLE.IdInit, _ | _, None ->
+          let () = if _dbg then Printf.eprintf ", " in
+          None
+      | _, Some action' ->
           let () =
             if _dbg then Printf.eprintf "(=%s), " (Act.pp_action action')
           in
           Some (event, M.force_once (M.mk_singleton_es action' ii))
-      | None -> None
 
     let rel_to_monad event_to_monad_map comb rel =
       let one_pair (e1, e2) =
@@ -326,11 +395,6 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
     let tr_execution ii (_conc, cs, set_pp, vbpp) =
       let () = if _dbg then Printf.eprintf "Translating event structure:\n" in
       let constraints =
-        let cs =
-          match cs with
-          | Some cs -> cs
-          | None -> Warn.fatal "Execution error in AArch64/ASL translation"
-        in
         let () =
           if _dbg then
             Printf.eprintf "\t- constraints: %s\n" (ASLVC.pp_cnstrnts cs)
@@ -385,28 +449,42 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
       in
       match decode_inst ii with
       | None -> AArch64Mixed.build_semantics test ii
+      | Some _ when AArch64.is_mixed -> AArch64Mixed.build_semantics test ii
       | Some (fname, args) -> (
           let test = fake_test ii fname args in
           let model = build_model_from_file "asl.cat" in
           let check_event_structure = check_event_structure model in
-          let ( { MC.event_structures = rfms; MC.overwritable_labels = owls },
-                test ) =
+          let { MC.event_structures = rfms; _ }, test =
             MC.glommed_event_structures test
           in
-          let kfail li = li in
-          let ksuccess (conc : ASLS.concrete) _fsc
-              ((set_pp, vbpp) : ASLS.set_pp Lazy.t * ASLS.rel_pp Lazy.t) _flags
-              (cs, li) =
-            (None, (conc, cs, Lazy.force set_pp, Lazy.force vbpp) :: li)
+          let rfms_with_regs =
+            let solve_regs (_i, cs, es) = MC.solve_regs test es cs in
+            List.filter_map solve_regs rfms
           in
-          let call_model conc cs (_, li) =
-            check_event_structure test conc kfail ksuccess (Some cs, li)
-          in
-          let _, conc_and_pp =
-            List.fold_left
-              (fun res (_i, cs, es) ->
-                MC.calculate_rf_with_cnstrnts test owls es cs call_model res)
-              (None, []) rfms
+          let conc_and_pp =
+            let check_rfm li (es, rfm, cs) =
+              let po = MU.po_iico es in
+              let pos =
+                let mem_evts = ASLE.mem_of es.ASLE.events in
+                ASLE.EventRel.of_pred mem_evts mem_evts (fun e1 e2 ->
+                    ASLE.same_location e1 e2 && ASLE.EventRel.mem (e1, e2) po)
+              in
+              let conc =
+                {
+                  ASLS.conc_zero with
+                  ASLS.str = es;
+                  ASLS.rfmap = rfm;
+                  ASLS.po;
+                  ASLS.pos;
+                }
+              in
+              let kfail li = li in
+              let ksuccess conc _fs (out_sets, out_show) _flags li =
+                (conc, cs, Lazy.force out_sets, Lazy.force out_show) :: li
+              in
+              check_event_structure test conc kfail ksuccess li
+            in
+            List.fold_left check_rfm [] rfms_with_regs
           in
           let monads = List.map (tr_execution ii) conc_and_pp in
           match monads with
