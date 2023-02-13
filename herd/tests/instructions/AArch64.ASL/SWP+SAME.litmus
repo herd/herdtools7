@@ -1,0 +1,15 @@
+AArch64 swap+same
+{
+    x = 5;
+    0: X1 = 3;
+    0: X3 = x;
+}
+
+P0 ;
+SWP X1, X1, [X3] ;
+
+forall (
+    0: X1 = 5 /\
+    x = 3
+)
+
