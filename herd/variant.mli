@@ -78,7 +78,7 @@ type t =
 (* One hundred tests *)
   | T of int
 (* ASL Processing *)
-  (* In AArch64 arch, use ASL to interprete AArch64 instructions when possible. *)
+(* In AArch64 arch, use ASL to interprete AArch64 instructions when possible. *)
   | ASL 
   (* While interpreting ASL litmus test, include AArch64 shared pseudocode. *)
   | ASL_AArch64 
@@ -88,17 +88,17 @@ type t =
   | ASLType of [`Warn|`Silence|`TypeCheck]
 (* Signed Int128 types *)
   | S128
+(* Strict interpretation of variant, e.g. -variant asl,strict *)
+  | Strict
+(* Semi-strict interpretation of variant, e.g. -variant asl,warn *)
+  | Warn
+  | Telechat
 (* Switch Mops default A/B option *)
   | SwitchMops
 (* Switch Mops default Direction for CPY *)
   | SwitchMopsDir
 (* Mops tranfer step size *)
   | MopsSize of MachSize.sz
-(* Strict interpretation of variant, e.g. -variant asl,strict *)
-  | Strict
-(* Semi-strict interpretation of variant, e.g. -variant asl,warn *)
-  | Warn
-  | Telechat
 
 
 val compare : t -> t -> int

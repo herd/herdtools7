@@ -47,6 +47,8 @@ let default_symbolic_data =
    offset = 0 ;
   }
 
+let add_offset s o = { s with offset=s.offset+o; }
+
 let capa_low c = Int64.shift_left (Int64.logand c 0x1ffffffffL)  3
 and capa_high c = Int64.shift_right_logical c 33
 let pp_symbolic_data {name=s; tag=t; cap=c; _} = match t,c with

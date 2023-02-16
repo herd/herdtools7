@@ -30,6 +30,7 @@ type t = {
     files : bool ;
     timeout : bool ;
     exc : bool ;
+    mops : bool ;
   }
 
 let tags =
@@ -47,6 +48,7 @@ let tags =
   "files";
   "timeout";
   "exception";
+  "mops";
 ]
 
 let none =
@@ -64,6 +66,7 @@ let none =
    files = false ;
    timeout = false ;
    exc = false ;
+   mops = false;
  }
 
 let parse t tag = match tag with
@@ -80,4 +83,5 @@ let parse t tag = match tag with
   | "files"|"file" -> Some { t with files = true ;}
   | "timeout" -> Some { t with timeout = true ;}
   | "exception"|"exc" -> Some { t with exc = true ;}
+  | "mops" -> Some { t with mops = true ;}
   | _ -> None

@@ -832,6 +832,14 @@ let pp_barrel_shift sep s pp_k = match s with
   | S_UXTW -> sep ^ "UXTW"
   | S_NOEXT  -> ""
 
+type stage = Prologue | Main | Epilogue
+
+let add_stage memo st =
+  sprintf "%s%c"
+    memo
+    (match st with | Prologue -> 'P'
+    | Main -> 'M' | Epilogue -> 'E')
+
 let pp_imm n = "#" ^ string_of_int n
 
 type 'k kinstruction =
@@ -966,7 +974,13 @@ type 'k kinstruction =
   | I_STG of reg * reg * 'k
   | I_STZG of reg * reg * 'k
   | I_LDG of reg * reg * 'k
+(* Undefined instruction *)
   | I_UDF of 'k
+(* MOPS extension *)
+  | I_CPYF of stage * reg * reg * reg
+  | I_CPY of stage * reg * reg * reg
+  | I_SET of stage * reg * reg * reg
+
 
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
@@ -1173,6 +1187,15 @@ let do_pp_instruction m =
     "{" ^ String.concat ", " (List.map pp_simd_vector_reg rs) ^ "}" ^
     ",[" ^ pp_xreg r2 ^ "]" ^
     pp_kr false false kr in
+
+  let pp_mop fmt memo rd rs rn =
+    sprintf fmt memo (pp_xreg rd)
+      (pp_xreg rs)
+      (pp_xreg rn) in
+
+  let pp_mcpy memo = pp_mop "%s [%s]!,[%s]!,%s!" memo in
+
+  let pp_mset memo = pp_mop "%s [%s]!,%s!,%s" memo in
 
   let pp_rkr memo v r1 kr = match v,kr with
   | _, K k -> pp_ri memo v r1 k
@@ -1527,6 +1550,12 @@ let do_pp_instruction m =
       pp_mem "LDG" V64 rt rn (K k)
   | I_UDF k ->
       sprintf "UDF %s" (m.pp_k k)
+  | I_CPYF (st,rd,rs,rn) ->
+      pp_mcpy (add_stage "CPYF" st) rd rs rn
+  | I_CPY (st,rd,rs,rn) ->
+      pp_mcpy (add_stage "CPY" st) rd rs rn
+  | I_SET (st,rd,rs,rn) ->
+      pp_mset (add_stage "SET" st) rd rs rn
 
 let m_int = { compat = false ; pp_k = string_of_int ;
               zerop = (function 0 -> true | _ -> false);
@@ -1642,6 +1671,9 @@ let fold_regs (f_regs,f_sregs) =
   | I_SWPBH (_,_,r1,r2,r3)
   | I_LDOP (_,_,_,r1,r2,r3)
   | I_LDOPBH (_,_,_,r1,r2,r3)
+  | I_CPYF (_,r1,r2,r3)
+  | I_CPY (_,r1,r2,r3)
+  | I_SET (_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_STXP (_,_,r1,r2,r3,r4)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_reg r4 c)))
@@ -1912,7 +1944,14 @@ let map_regs f_reg f_symb =
   | I_STZG (r1,r2,k) ->
       I_STZG (map_reg r1,map_reg r2,k)
   | I_LDG (r1,r2,k) ->
-      I_LDG (map_reg r1,map_reg r2, k)
+      I_LDG (map_reg r1,map_reg r2,k)
+(* MOPS *)
+  | I_CPYF (st,r1,r2,r3) ->
+     I_CPYF (st,map_reg r1,map_reg r2,map_reg r3)
+  | I_CPY (st,r1,r2,r3) ->
+     I_CPY (st,map_reg r1,map_reg r2,map_reg r3)
+  | I_SET (st,r1,r2,r3) ->
+     I_SET (st,map_reg r1,map_reg r2,map_reg r3)
 
 (* No addresses burried in ARM code *)
 let fold_addrs _f c _ins = c
@@ -2003,6 +2042,7 @@ let get_next =
   | I_MOVI_V _ | I_MOVI_S _
   | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
   | I_LDXP _|I_STXP _|I_UDF _
+  | I_CPYF _ | I_CPY _ | I_SET _
     -> [Label.Next;]
 
 (* Check instruction validity, beyond parsing *)
@@ -2220,7 +2260,7 @@ module PseudoI = struct
         | I_UNSEAL _
         | I_MOV_VE _ | I_MOV_V _ | I_MOV_TG _ | I_MOV_FG _
         | I_MOV_S _
-        | I_LDXP _| I_STXP _
+        | I_LDXP _| I_STXP _ | I_CPYF _ | I_CPY _| I_SET _
             as keep -> keep
         | I_LDR (v,r1,r2,kr,s) -> I_LDR (v,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_LDUR (v,r1,r2,None) -> I_LDUR (v,r1,r2,None)
@@ -2385,6 +2425,8 @@ module PseudoI = struct
           -> let (rpt, selem) = (get_simd_rpt_selem ins rs) in
              let n = get_simd_elements rs in
              rpt * selem * n
+        | I_CPYF _| I_CPY _ -> 8 (* Arbitrary, not very important *)
+        | I_SET _ -> 4 (* Arbitrary, not very important *)
 
       let size_of_ins _ = 4
 

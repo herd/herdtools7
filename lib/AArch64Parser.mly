@@ -55,7 +55,8 @@ let mk_instrp instr v r1 r2 ra ko kb =
 %token <string> CODEVAR
 %token <int> PROC
 
-%token SEMI COMMA PIPE COLON DOT BANG LCRL RCRL LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
+%token SEMI COMMA PIPE COLON DOT LCRL RCRL LBRK RBRK LPAR RPAR BANG
+%token  SCOPES LEVELS REGIONS
 %token TOK_SXTW
 
 %token SXTW SBFM UBFM
@@ -109,6 +110,9 @@ let mk_instrp instr v r1 r2 ra ko kb =
 %token LDSMINB LDSMINAB LDSMINLB LDSMINALB
 %token STSMIN STSMINL STSMINH STSMINLH STSMINB STSMINLB
 %token UDF
+%token <AArch64Base.stage> MCPY
+%token <AArch64Base.stage> CPYF
+%token <AArch64Base.stage> MSET
 /*
 /*
 %token LDUMAX LDUMAXA LDUMAXL LDUMAXAL LDUMAXH LDUMAXAH LDUMAXLH LDUMAXALH
@@ -1284,6 +1288,18 @@ instr:
   { I_MSR ($2,$4) }
 | UDF NUM
   { I_UDF (MetaConst.Int $2) }
+
+/* MOPS */
+| st=CPYF
+  LBRK rd=xreg RBRK BANG COMMA LBRK rs=xreg RBRK BANG COMMA rn=xreg BANG
+  { I_CPYF (st,rd,rs,rn) }
+| st=MCPY
+  LBRK rd=xreg RBRK BANG COMMA LBRK rs=xreg RBRK BANG COMMA rn=xreg BANG
+  { I_CPY (st,rd,rs,rn) }
+| st=MSET
+  LBRK rd=xreg RBRK BANG COMMA rn=xreg BANG COMMA rs=xreg
+  { I_SET (st,rd,rn,rs) }
+
 
 fenceopt:
 | TOK_SY

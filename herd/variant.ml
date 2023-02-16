@@ -160,19 +160,15 @@ let parse s = match Misc.lowercase s with
 | "asltype+silence"-> Some (ASLType `Silence)
 | "asltype+check"  -> Some (ASLType `TypeCheck)
 | "s128" -> Some S128
-<<<<<<< HEAD
-| "strict" -> Some Strict
-| "warn" -> Some Warn
-| "telechat" -> Some Telechat
-||||||| parent of 5ec3316d ([herd] New variants to control MOPS)
-=======
 | "switchmops" -> Some SwitchMops
 | "switchmopsdir" -> Some SwitchMopsDir
 | "bytemops" -> Some (MopsSize MachSize.Byte)
 | "shortmops" -> Some (MopsSize MachSize.Short)
 | "wordmops" -> Some  (MopsSize MachSize.Word)
 | "quadmops" -> Some  (MopsSize MachSize.Quad)
->>>>>>> 5ec3316d ([herd] New variants to control MOPS)
+| "strict" -> Some Strict
+| "warn" -> Some Warn
+| "telechat" -> Some Telechat
 | s ->
    begin
      match Precision.parse s with
@@ -236,15 +232,6 @@ let pp =
   | ASLVersion `ASLv0 -> "ASLv0"
   | ASLVersion `ASLv1 -> "ASLv1"
   | S128 -> "S128"
-<<<<<<< HEAD
-  | Strict -> "strict"
-  | Warn -> "warn"
-  | ASLType `Warn -> "ASLType+Warn"
-  | ASLType `Silence -> "ASLType+Silence"
-  | ASLType `TypeCheck -> "ASLType+Check"
-  | Telechat -> "telechat"
-||||||| parent of 5ec3316d ([herd] New variants to control MOPS)
-=======
   | SwitchMops -> "SwitchMops"
   | SwitchMopsDir -> "SwitchMopsDir"
   | MopsSize MachSize.Byte -> "ByteMops"
@@ -252,8 +239,12 @@ let pp =
   | MopsSize MachSize.Word -> "WordMops"
   | MopsSize MachSize.Quad -> "QuadMops"
   | MopsSize MachSize.S128 -> assert false
-
->>>>>>> 5ec3316d ([herd] New variants to control MOPS)
+  | Strict -> "strict"
+  | Warn -> "warn"
+  | ASLType `Warn -> "ASLType+Warn"
+  | ASLType `Silence -> "ASLType+Silence"
+  | ASLType `TypeCheck -> "ASLType+Check"
+  | Telechat -> "telechat"
 
 let compare = compare
 let equal v1 v2 = compare v1 v2 = 0

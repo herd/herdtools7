@@ -252,6 +252,7 @@ module type Config = sig
   val texmacros : bool
   val hexa : bool
   val brackets : bool
+  val mops_size : MachSize.sz
   val variant : Variant.t -> bool
   val endian : Endian.t option
   val default_to_symb: bool

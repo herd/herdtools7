@@ -549,8 +549,9 @@ let () =
     | None -> match model with
       | Some (Model.Generic _|Model.File _)|None -> OptAce.Iico
       | Some (Model.CAV12 _) -> OptAce.False
-    let variant = !variant
     let precision = !precision
+    let mops_size = !mops_size
+    let variant = !variant
     let byte = !byte
     let endian = !endian
     let outputdir = !outputdir
@@ -662,7 +663,6 @@ let () =
           include Config end) in
     SymbValue.reset_gensym () ;
     T.from_file f in
-
 
 (* Just go *)
 

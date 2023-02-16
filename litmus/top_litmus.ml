@@ -405,8 +405,10 @@ end = struct
             (struct
               module Opt = Variant_litmus
               let set_precision = Variant_litmus.set_precision
+              let set_mops_size _ _ = false
               let info = splitted.Splitter.info
               let precision = OT.precision
+              let mops_size = MachSize.Quad
               let variant = OT.variant
             end) in
         (* Then call appropriate compiler, depending upon arch *)

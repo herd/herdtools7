@@ -44,12 +44,15 @@ let unroll = ref None
 let speedcheck = ref Speed.False
 let archcheck = ref true
 let optace = ref None
-let variant = ref (fun _ -> false)
 let precision = ref Precision.default
+let mops_size = ref MachSize.Quad
+let variant = ref (fun _ -> false)
 
 module OptS = struct
   include Variant
-  let setnow tag = set_precision precision tag
+  let setnow tag =
+    set_precision precision tag ||
+    set_mops_size mops_size tag
 end
 
 let byte = ref MachSize.Tag.Auto

@@ -486,4 +486,19 @@ include Arch.MakeArch(struct
     | I_MOVI_V _ | I_MOVI_S _
     | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
         -> Warn.fatal "Neon instructions are not implemented yet"
+    | I_CPYF (st,r1,r2,r3) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >! fun r3 ->
+        I_CPYF (st,r1,r2,r3)
+    | I_CPY (st,r1,r2,r3) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >! fun r3 ->
+        I_CPY (st,r1,r2,r3)
+    | I_SET (st,r1,r2,r3) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >! fun r3 ->
+        I_SET (st,r1,r2,r3)
 end)

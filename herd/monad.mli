@@ -62,9 +62,11 @@ module type S =
 
     (* Data composition, entry for snd monad: minimals for iico_data *)
     val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+
  (* Input to second arg *)
     val data_input_next : 'a t -> ('a -> 'b t) -> 'b t
- (* Input to both args *)
+
+(* Input to both args *)
     val data_input_union : 'a t -> ('a -> 'b t) -> 'b t
     val (>>==) : 'a t -> ('a -> 'b t) -> 'b t (* Output events stay in first arg *)
 
@@ -98,7 +100,7 @@ module type S =
     (* Same as bind_ctrldata, all output from first argument *)
     val (>>**==) : 'a t -> ('a -> 'b t) -> 'b t
 
-    (* Identical control dep only, all output from firtst argument *)
+    (* Identical control dep only, all output from first argument *)
     val bind_ctrl_first_outputs : 'a t -> ('a -> 'b t) -> 'b t
 
     (* Same as [>>=] but with order deps instead of data between the arguments. *)
@@ -115,6 +117,21 @@ module type S =
      * and there exists e0, s.r. e1 -r-> e0 -r-> e2, then replace e0 -r0-> e2 by e1 -r-> e2.
      *)
     val upOneRW : (E.event -> bool) -> 'a t -> 'a t
+
+    (*
+     * Another ad-hoc transformation: [remove_control p m]
+     * remove control from events identified by
+     * predicate [p]
+     *)
+    val remove_control :
+        (E.event -> E.event ->bool) -> 'a t -> 'a t
+
+    val remove_data :
+        (E.event -> E.event ->bool) -> 'a t -> 'a t
+
+    val add_data :
+        (E.event -> E.event ->bool) -> 'a t -> 'a t
+
 
     val exch : 'a t -> 'a t -> ('a -> 'b t) ->  ('a -> 'c t) ->  ('b * 'c) t
 
@@ -210,15 +227,20 @@ module type S =
     val (>>|) : 'a t -> 'b t -> ('a * 'b)  t
     val para_atomic :  'a t -> 'b t -> ('a * 'b)  t (* For single copy atomic memory accesses *)
     val para_input_right : 'a t -> 'b t -> ('a * 'b)  t (* Input in second argument *)
+    val para_output_left : 'a t -> 'b t -> 'a  t (* Input in second argument *)
+
     val (>>::) : 'a t -> 'a list t -> 'a list t
     val (|||) : unit t -> unit t -> unit t
 
 (*
- *Sequence of memorory events by iico_order.
+ * Sequence of memory events by iico_order.
  * Notice that the combinator is otherwise similar
  * to ``>>|`.
  *)
     val seq_mem : 'a t -> 'b t -> ('a * 'b) t
+
+(* Pure sequence, _i.e_ iico_order composition *)
+    val seq : 'a t -> 'b t -> 'b t
 
     val (|*|)   : bool code -> unit code -> unit code   (* Cross product *)
 (*    val lockT : 'a t -> 'a t *)

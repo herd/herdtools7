@@ -42,13 +42,16 @@ module Top (TopConf:RunTest.Config) = struct
           (struct
             module Opt = Variant
             let set_precision = Variant.set_precision
+            let set_mops_size = Variant.set_mops_size
             let info = splitted.Splitter.info
             let precision = TopConf.precision
+            let mops_size = TopConf.mops_size
             let variant = TopConf.variant
           end)
       (* Override *)
       include TopConf
       let precision = TestConf.precision
+      let mops_size = TestConf.mops_size
       let variant = TestConf.variant
     end in
     if Conf.check_name tname then begin
