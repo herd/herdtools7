@@ -88,11 +88,18 @@ type t =
   | ASLType of [`Warn|`Silence|`TypeCheck]
 (* Signed Int128 types *)
   | S128
+(* Switch Mops default A/B option *)
+  | SwitchMops
+(* Switch Mops default Direction for CPY *)
+  | SwitchMopsDir
+(* Mops tranfer step size *)
+  | MopsSize of MachSize.sz
 (* Strict interpretation of variant, e.g. -variant asl,strict *)
   | Strict
 (* Semi-strict interpretation of variant, e.g. -variant asl,warn *)
   | Warn
   | Telechat
+
 
 val compare : t -> t -> int
 val equal : t -> t -> bool
@@ -107,3 +114,4 @@ val get_default :  Archs.t -> t -> bool
 val get_switch : Archs.t -> t -> (t -> bool) -> bool
 
 val set_precision : Precision.t ref -> t -> bool
+val set_mops_size : MachSize.sz ref -> t -> bool
