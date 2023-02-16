@@ -85,6 +85,8 @@ reg:
 location_global:
 | NAME { Constant.mk_sym $1  }
 | TOK_PTE LPAR NAME RPAR { Constant.mk_sym_pte  $3 }
+| TOK_PTE LPAR proc=PROC COLON name=NAME RPAR
+    { Constant.mk_sym_pte (Constant.Symbol.pp (Constant.Symbol.Label (proc, name))) }
 | TOK_PTE LPAR TOK_PTE LPAR NAME RPAR RPAR { Constant.mk_sym_pte2 $5 }
 | TOK_PA LPAR NAME RPAR { Constant.mk_sym_pa $3 }
 | NAME COLON NAME { mk_sym_tag $1 $3 }
@@ -100,6 +102,8 @@ name_or_num:
 output_address:
 | name=NAME { OutputAddress.parse name }
 | TOK_PA LPAR name=NAME RPAR { OutputAddress.PHY name }
+| TOK_PA LPAR proc=PROC COLON name=NAME RPAR
+    { OutputAddress.PHY (Constant.Symbol.pp (Constant.Symbol.Label (proc, name))) }
 | TOK_PTE LPAR name=NAME RPAR { OutputAddress.PTE name }
 
 prop_tail:
