@@ -33,7 +33,7 @@ module type AArch64Sig = sig
   type t =
     | MMU of mmu_t
     | TagCheck
-    | IllegalInstruction
+    | UndefinedInstruction
 
   include S with type t := t
 end

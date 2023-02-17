@@ -33,7 +33,7 @@ module type AArch64Sig = sig
   type t =
     | MMU of mmu_t
     | TagCheck
-    | IllegalInstruction
+    | UndefinedInstruction
 
   include S with type t := t
 end
@@ -52,7 +52,7 @@ module AArch64 = struct
   type t =
     | MMU of mmu_t
     | TagCheck
-    | IllegalInstruction
+    | UndefinedInstruction
 
   let sets = [
       "MMU", [MMU Translation;
@@ -62,20 +62,20 @@ module AArch64 = struct
       "AccessFlag", [MMU AccessFlag];
       "Permission", [MMU Permission];
       "TagCheck", [TagCheck];
-      "IllegalInstruction",[IllegalInstruction];
+      "UndefinedInstruction",[UndefinedInstruction];
     ]
 
   let pp = function
     | MMU m -> Printf.sprintf "MMU:%s" (pp_mmu_t m)
     | TagCheck -> "TagCheck"
-    | IllegalInstruction -> "IllegalInstruction"
+    | UndefinedInstruction -> "UndefinedInstruction"
 
   let parse = function
     | "MMU:Translation" -> MMU Translation
     | "MMU:AccessFlag" -> MMU AccessFlag
     | "MMU:Permission" -> MMU Permission
     | "TagCheck" -> TagCheck
-    | "IllegalInstruction" -> IllegalInstruction
+    | "UndefinedInstruction" -> UndefinedInstruction
     | _ as s -> Warn.user_error "%s not a valid fault type" s
 
   let is s = try ignore (parse s); true  with  _ -> false

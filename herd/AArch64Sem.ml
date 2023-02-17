@@ -2750,7 +2750,7 @@ module Make
                         let m_fault =
                           mk_fault
                             None Dir.R AArch64.N ii
-                            (Some FaultType.AArch64.IllegalInstruction)
+                            (Some FaultType.AArch64.UndefinedInstruction)
                             (Some "Invalid") in
                         commit_pred ii
                           >>*= fun () -> m_fault >>| set_elr_el1 ii
