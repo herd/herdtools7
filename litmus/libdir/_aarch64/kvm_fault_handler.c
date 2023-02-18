@@ -21,5 +21,6 @@ static void install_fault_handler(int cpu) {
 #ifdef USER_MODE
   struct thread_info *ti = thread_info_sp(user_stack[cpu]);
   ti->exception_handlers[EL0_SYNC_64][ESR_EL1_EC_DABT_EL0] = fault_handler;
+  ti->exception_handlers[EL0_SYNC_64][ESR_EL1_EC_UNKNOWN] = fault_handler;
 #endif
 }
