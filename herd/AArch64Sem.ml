@@ -1226,11 +1226,12 @@ module Make
           (read_reg_ord rs ii) ii
 
       (* Load literal *)
-      and ldr_lit var rd lbl ii =
+      and ldr_lit _ rd lbl ii =
         (* We do not use the reg size as we load a word *)
         let open AArch64Base in
         M.unitT (ii.A.addr2v lbl)
-        >>= fun a -> read_mem (tr_variant var) aexp Access.VIR rd a ii
+        >>= fun a -> write_reg rd a ii
+        >>= B.next1T
 
       and ldar sz t rd rs ii =
         let open AArch64 in

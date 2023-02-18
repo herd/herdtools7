@@ -42,8 +42,11 @@ module Make(V:Constant.S)(C:Config) =
       | A.I_NOP -> true
       | _ -> false
 
-(* No addresses in code *)
-    let extract_addrs _ins = Global_litmus.Set.empty
+(* PC-relative instructions with labels can have addresses and labels *)
+    let extract_addrs ins = match ins with
+      | A.I_ADR (_, BranchTarget.Lbl lbl) -> Global_litmus.Set.singleton (Global_litmus.Addr lbl)
+      | A.I_LDR_L (_,_, BranchTarget.Lbl lbl) -> Global_litmus.Set.singleton (Global_litmus.Addr lbl)
+      | _ -> Global_litmus.Set.empty
 
     let stable_regs _ins = match _ins with
     | I_LD1M (rs,_,_)
@@ -196,14 +199,19 @@ module Make(V:Constant.S)(C:Config) =
     let str_memo t = Misc.lowercase (str_memo t)
     let strbh_memo bh t = Misc.lowercase (strbh_memo bh t)
 
-    let load_literal tr_lab memo v rD lbl = match v with
+    let load_literal memo v rD lbl =
+      let _,f1 = match v with
+      | V32 -> arg1 "wzr" (fun s -> "^wo"^s) rD
+      | V64 -> arg1 "xzr" (fun s -> "^o"^s) rD
+      | V128 -> assert false in
+      match v with
       | V32 ->
           { empty_ins with
-            memo = sprintf "%s ^wo0, %s" memo (A.Out.dump_label (tr_lab lbl));
+            memo = sprintf "%s %s, %%[%s]" memo f1 lbl;
             outputs=[rD]; reg_env=[(rD, word)]; }
       | V64 ->
           { empty_ins with
-            memo = sprintf "%s ^o0, %s" memo (A.Out.dump_label (tr_lab lbl));
+            memo = sprintf "%s %s, %%[%s]" memo f1 lbl;
             outputs=[rD]; reg_env=[(rD, quad)]; }
       | V128 -> assert false
 
@@ -1325,7 +1333,8 @@ module Make(V:Constant.S)(C:Config) =
     | I_LDUR (v,r1,r2,Some(k')) -> load "ldur" v r1 r2 (K k') S_NOEXT ::k
     | I_LDUR (v,r1,r2,None) -> load "ldur" v r1 r2 (K 0) S_NOEXT ::k
     | I_LDR_P (v,r1,r2,k1) -> load_p "ldr" v r1 r2 k1::k
-    | I_LDR_L (v, rd, BranchTarget.Lbl lbl) -> load_literal tr_lab "ldr" v rd lbl::k
+    | I_LDR_L (v, rd, BranchTarget.Lbl lbl) -> load_literal "ldr" v rd lbl::k
+    | I_LDR_L (_, _, _) -> assert false
     | I_LDP (t,v,r1,r2,r3,kr) ->
         load_pair (match t with TT -> "ldp" | NT -> "ldnp") v r1 r2 r3 kr::k
     | I_LDPSW (r1,r2,r3,kr) ->
@@ -1481,7 +1490,7 @@ module Make(V:Constant.S)(C:Config) =
           (dump_instruction ins)
     | I_ALIGND _|I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|
       I_CLRTAG _|I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|
-      I_SEAL _|I_STCT _|I_UNSEAL _|I_LDR_L _ ->
+      I_SEAL _|I_STCT _|I_UNSEAL _->
         Warn.fatal "No litmus output for instruction %s"
             (dump_instruction ins)
 

@@ -59,7 +59,7 @@ module RegMap = A.RegMap)
       let debug = false
 
       let compile_addr_inline = match O.mode with
-      | Mode.Std -> sprintf "_a->%s[_i]"
+      | Mode.Std -> sprintf "_a->%s"
       | Mode.PreSi|Mode.Kvm -> sprintf "*%s"
 
       and compile_addr_fun x = sprintf "*%s" x

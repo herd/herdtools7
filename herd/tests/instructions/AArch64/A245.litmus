@@ -4,5 +4,6 @@ AArch64 245
 
 P0;
 LDR X0, x;
+LDR X0, [X0];
 
-forall (0:X0 = 1)
+forall (0:X0 = 1 /\ x = 1)
