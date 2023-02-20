@@ -154,7 +154,11 @@ module Make
       module PU = SkelUtil.PteValUtil(A.V.PteVal)
 
       let find_addr_type a env = U.find_type (A.location_of_addr a) env
-      let see_faults test =  Misc.consp (U.get_faults test)
+      let see_faults test = Misc.consp (U.get_faults test)
+      let see_faults_with_loc test =
+        List.exists
+          (fun (_,o,_) -> Misc.is_some o)
+          (U.get_faults test)
 
 (***************)
 (* File header *)
@@ -758,8 +762,8 @@ module Make
         O.o "" ;
 (* There are some pointers in log *)
         let some_ptr_pte =  U.ptr_pte_in_outs env test in
-        let do_see_faults = see_faults test in
-        if some_ptr_pte || do_see_faults then begin
+        let do_see_faults_with_loc = see_faults_with_loc test in
+        if some_ptr_pte || do_see_faults_with_loc then begin
           (* To log actual pointers *)
           if some_ptr_pte then begin
             O.o "#define SOME_PTR 1" ;
@@ -774,7 +778,7 @@ module Make
             O.o ""
           end ;
           let some_ptr =  U.ptr_in_outs env test in
-          if some_ptr || do_see_faults then begin
+          if some_ptr || do_see_faults_with_loc then begin
             (* Define indices *)
             List.iteri
               (fun k (a,_) ->
@@ -922,7 +926,7 @@ module Make
         List.iter (fun f ->
             let (p, loc, _) = f in
             O.fi "if (p->%s == NoFault)" (tag_log f);
-            (* No fault recorded don't and we bother about printing the type *)
+            (* No fault record don't and we bother about printing the type *)
             let fs = Fault.pp_fatom A.V.pp_v A.FaultType.pp (p, loc, None) in
             O.fii "puts(\" ~%s;\");" fs;
             O.fi "else" ;
