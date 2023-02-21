@@ -684,9 +684,13 @@ module Make(C:Builder.S)
       List.iter (fun r -> fprintf chan "%s\n" (pp_relax r)) rs
 
     let secret_gen relax safe reject n =
+      let r_nempty = not (relax = []) in
       let relax = expand_relaxs C.ppo relax
       and safe = expand_relaxs C.ppo safe
       and reject = expand_relaxs C.ppo reject in
+      if relax = [] then if r_nempty then begin
+        Warn.fatal "relaxations provided in relaxlist could not be used to generate cycles"
+      end ;
       if O.verbose > 0 then begin
         eprintf "** Relax0 **\n" ;
         debug_rs stderr relax ;
