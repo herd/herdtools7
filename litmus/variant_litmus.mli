@@ -17,6 +17,7 @@
 type t =
   | Self (* Self modifying code *)
   | Precise of Precision.t
+  | S128 (* 128 bit signed ints*)
   | Mixed (* Ignored *)
 
 val tags : string list

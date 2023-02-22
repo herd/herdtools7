@@ -1,0 +1,10 @@
+C C04
+(* Tests 128-bit types *)
+{ }
+
+P0 (__int128_t *y, __uint128_t *a) {
+  __int128_t r1 = *y;
+  __uint128_t r3 = *a;
+}
+
+forall (0:r1 = 0  /\ 0:r3  = 0)

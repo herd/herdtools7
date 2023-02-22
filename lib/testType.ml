@@ -55,6 +55,7 @@ let size_of maximal = function
 | "char"|"int8_t" |"uint8_t" -> MachSize.Byte
 | "short" | "int16_t" | "uint16_t" -> MachSize.Short
 | "int64_t" | "uint64_t" -> MachSize.Quad
+| "__int128_t" | "__uint128_t"
 | "int128_t" | "uint128_t" -> MachSize.S128
 | "intptr_t" | "uintptr_t" | "pteval_t"
   -> maximal (* Maximal size = ptr size *)
