@@ -707,6 +707,7 @@ let w_memo = function
   | W_L -> "L"
 
 let cas_memo rmw = sprintf "CAS%s" (rmw_memo rmw)
+let casp_memo rmw = sprintf "CASP%s" (rmw_memo rmw)
 and swp_memo rmw = sprintf "SWP%s" (rmw_memo rmw)
 
 type atomic_op = A_ADD | A_EOR | A_SET | A_CLR | A_SMAX | A_SMIN
@@ -866,6 +867,7 @@ type 'k kinstruction =
 (* CAS *)
   | I_CAS of variant * rmw_type * reg * reg * reg
   | I_CASBH of bh * rmw_type  * reg * reg * reg
+  | I_CASP of variant * rmw_type * reg * reg * reg * reg * reg
 (* SWP *)
   | I_SWP of variant * rmw_type * reg * reg * reg
   | I_SWPBH of bh * rmw_type  * reg * reg * reg
@@ -1348,6 +1350,8 @@ let do_pp_instruction m =
       sprintf "%s %s,%s,[%s]" (cas_memo rmw) (pp_vreg v r1) (pp_vreg v r2) (pp_xreg r3)
   | I_CASBH (bh,rmw,r1,r2,r3) ->
       sprintf "%s %s,%s,[%s]" (casbh_memo bh rmw) (pp_wreg r1) (pp_wreg r2) (pp_xreg r3)
+  | I_CASP (v,rmw,r1,r2,r3,r4,r5) ->
+      sprintf "%s %s,%s,%s,%s,[%s]" (casp_memo rmw) (pp_vreg v r1) (pp_vreg v r2) (pp_vreg v r3) (pp_vreg v r4) (pp_xreg r5)
 (* SWP *)
   | I_SWP (v,rmw,r1,r2,r3) ->
       sprintf "%s %s,%s,[%s]" (swp_memo rmw) (pp_vreg v r1) (pp_vreg v r2) (pp_xreg r3)
@@ -1546,6 +1550,8 @@ let fold_regs (f_regs,f_sregs) =
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_STXP (_,_,r1,r2,r3,r4)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_reg r4 c)))
+  | I_CASP (_,_,r1,r2,r3,r4,r5)
+    -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_reg r4 (fold_reg r5 c))))
 
 let map_regs f_reg f_symb =
 
@@ -1747,6 +1753,8 @@ let map_regs f_reg f_symb =
       I_CAS (v,rmw,map_reg r1,map_reg r2,map_reg r3)
   | I_CASBH (bh,rmw,r1,r2,r3) ->
       I_CASBH (bh,rmw,map_reg r1,map_reg r2,map_reg r3)
+  | I_CASP (v,rmw,r1,r2,r3,r4,r5) ->
+      I_CASP (v,rmw,map_reg r1, map_reg r2, map_reg r3, map_reg r4, map_reg r5)
 (* SWP *)
   | I_SWP (v,rmw,r1,r2,r3) ->
       I_SWP (v,rmw,map_reg r1,map_reg r2,map_reg r3)
@@ -1867,6 +1875,7 @@ let get_next =
   | I_CSEL _
   | I_CAS _
   | I_CASBH _
+  | I_CASP _
   | I_SWP _
   | I_SWPBH _
   | I_LDOP _
@@ -1945,6 +1954,7 @@ module PseudoI = struct
         | I_CSEL _
         | I_CAS _
         | I_CASBH _
+        | I_CASP _
         | I_SWP _
         | I_SWPBH _
         | I_LDOP _
@@ -2078,6 +2088,7 @@ module PseudoI = struct
         | I_LDR_P_SIMD _ | I_STR_P_SIMD _
         | I_LD3 _ | I_LD3R _
         | I_ST3 _
+        | I_CASP _
           -> 3
         | I_LDCT _ | I_STCT _
         | I_LD4 _ | I_LD4R _
@@ -2166,7 +2177,7 @@ include Pseudo.Make(PseudoI)
 
 (* Atomic-modify instruction *)
 let is_atomic = function
-  | I_CAS _ | I_CASBH _ | I_SWP _ | I_SWPBH _
+  | I_CAS _ | I_CASBH _ | I_SWP _ | I_SWPBH _ | I_CASP _
   | I_LDOP _ | I_LDOPBH _ | I_STOP _ | I_STOPBH _
       -> true
   | _ -> false

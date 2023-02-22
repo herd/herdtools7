@@ -1,0 +1,15 @@
+AArch64 L056
+Stable=X0,X1,X2,X3
+{
+int x[2];
+0:X4=x;
+1:X4=x;
+}
+P0           | P1                    ;
+MOV W1,#1    | MOV W0,#0             ;
+STR W1,[X4]  | MOV W1,#0             ;
+             | MOV W2,#2             ;
+             | MOV W3,#2             ;
+             | CASP W0,W1,W2,W3,[X4] ;
+locations [1:X0;1:X1;]
+forall (x={1,0} \/ x={1,2})

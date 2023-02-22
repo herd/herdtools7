@@ -1,0 +1,11 @@
+Test L056 Required
+States 2
+1:X0=0; 1:X1=0; x={1,2};
+1:X0=1; 1:X1=0; x={1,0};
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall (x={1,0} \/ x={1,2})
+Observation L056 Always 2 0
+Hash=56239ea29c96ee505c91efa59ac63a18
+

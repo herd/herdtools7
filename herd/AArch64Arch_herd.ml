@@ -195,7 +195,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_STR_P (v,_,_,_)
       | I_STP (_,v,_,_,_,_) | I_STXP (v,_,_,_,_,_)
       | I_STP_P (_,v,_,_,_,_) | I_LDP_P (_,v,_,_,_,_)
-      | I_CAS (v,_,_,_,_) | I_SWP (v,_,_,_,_)
+      | I_CAS (v,_,_,_,_) | I_CASP (v,_,_,_,_,_,_) | I_SWP (v,_,_,_,_)
       | I_LDOP (_,v,_,_,_,_) | I_STOP (_,v,_,_,_) ->
           Some (tr_variant v)
       | I_LDR_SIMD (v,_,_,_,_) | I_LDR_P_SIMD (v,_,_,_)
@@ -298,6 +298,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _
       | I_LDCT _|I_SC _|I_SEAL _|I_STCT _
       | I_UNSEAL _|I_STG _|I_STZG _|I_LDG _
+      | I_CASP _
         ->
          all_regs (* safe approximation *)
 
@@ -333,6 +334,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDCT _|I_SC _|I_SEAL _|I_STCT _
       | I_UNSEAL _|I_LDRBH _|I_STRBH _
       | I_STLRBH _|I_CAS _|I_CASBH _
+      | I_CASP _
       | I_SWP _|I_SWPBH _|I_LDOP _
       | I_LDOPBH _|I_STOP _|I_STOPBH _
       | I_MOV _|I_MOVZ _|I_MOVK _|I_SXTW _

@@ -76,6 +76,7 @@ let check_op3 op kr =
 %token TOK_ISH TOK_ISHST TOK_ISHLD
 %token TOK_NSH TOK_NSHST TOK_NSHLD
 %token CAS CASA CASL CASAL CASB CASAB CASLB CASALB CASH CASAH CASLH CASALH
+%token CASP CASPA CASPL CASPAL
 %token SWP SWPA SWPL SWPAL SWPB SWPAB SWPLB SWPALB SWPH SWPAH SWPLH SWPALH
 %token LDADD LDADDA LDADDL LDADDAL LDADDH LDADDAH LDADDLH LDADDALH
 %token LDADDB LDADDAB LDADDLB LDADDALB
@@ -674,6 +675,22 @@ instr:
   { I_CASBH (H,RMW_L,$2,$4,$7) }
 | CASALH wreg COMMA wreg COMMA  LBRK cxreg zeroopt RBRK
   { I_CASBH (H,RMW_AL,$2,$4,$7) }
+| CASP wreg COMMA wreg COMMA wreg COMMA wreg COMMA LBRK xreg RBRK
+  { I_CASP (V32,RMW_P,$2,$4,$6,$8,$11) }
+| CASP xreg COMMA xreg COMMA xreg COMMA xreg COMMA LBRK cxreg zeroopt RBRK
+  { I_CASP (V64,RMW_P,$2,$4,$6,$8,$11) }
+| CASPA wreg COMMA wreg COMMA wreg COMMA wreg COMMA LBRK cxreg zeroopt RBRK
+  { I_CASP (V32,RMW_A,$2,$4,$6,$8,$11) }
+| CASPA xreg COMMA xreg COMMA xreg COMMA xreg COMMA LBRK cxreg zeroopt RBRK
+  { I_CASP (V64,RMW_A,$2,$4,$6,$8,$11) }
+| CASPL wreg COMMA wreg COMMA wreg COMMA wreg COMMA LBRK cxreg zeroopt RBRK
+  { I_CASP (V32,RMW_L,$2,$4,$6,$8,$11) }
+| CASPL xreg COMMA xreg COMMA xreg COMMA xreg COMMA LBRK cxreg zeroopt RBRK
+  { I_CASP (V64,RMW_L,$2,$4,$6,$8,$11) }
+| CASPAL wreg COMMA wreg COMMA wreg COMMA wreg COMMA LBRK cxreg zeroopt RBRK
+  { I_CASP (V32,RMW_AL,$2,$4,$6,$8,$11) }
+| CASPAL xreg COMMA xreg COMMA xreg COMMA xreg COMMA LBRK cxreg zeroopt RBRK
+  { I_CASP (V64,RMW_AL,$2,$4,$6,$8,$11) }
 /* Swap */
 | SWP wreg COMMA wreg COMMA  LBRK cxreg zeroopt RBRK
   { I_SWP (V32,RMW_P,$2,$4,$7) }
