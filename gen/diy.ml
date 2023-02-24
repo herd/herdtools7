@@ -146,7 +146,7 @@ let parse_fences fs = List.fold_right parse_fence fs []
   let go n (*size*) orl olr ols (*relax and safe lists*) =
     let orl = orl_opt orl in
     match O.choice with
-    | Sc|Critical|Free|Ppo|Transitive|Total|MixedCheck ->
+    | Default|Sc|Critical|Free|Ppo|Transitive|Total|MixedCheck ->
         begin match olr,ols with
         | None,None -> M.gen n
         | None,Some ls -> gen [] ls orl n
@@ -277,7 +277,7 @@ let () =
       (match Co.choice  with Uni -> true | _ -> false)
     let unrollatomic = !Config.unrollatomic
     let allow_back = match !Config.mode with
-    | Sc|Critical|Thin -> false
+    | Default|Sc|Critical|Thin -> false
     | _ -> true
     let typ = !Config.typ
     let hexa = !Config.hexa

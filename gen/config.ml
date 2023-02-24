@@ -32,7 +32,7 @@ let name = ref None
 let sufname = ref None
 let canonical_only = ref true
 let conf = ref None
-let mode = ref Sc
+let mode = ref Default
 let mix = ref false
 let max_ins = ref 4
 let eprocs = ref false
@@ -98,6 +98,7 @@ let parse_cond tag = match tag with
 
 let parse_mode s =
   match s with
+    | "default"|"def" -> Default
     | "sc" -> Sc
     | "thin" -> Thin
     | "uni" -> Uni
@@ -107,7 +108,11 @@ let parse_mode s =
     | "transitive"|"trans" -> Transitive
     | "total" -> Total
     | "mixed" -> MixedCheck
-    | _ -> failwith "Wrong mode, choose sc,thin,uni,critical,free,ppo,total,mixed"
+    | _ ->
+        failwith
+          (Printf.sprintf
+             "Wrong mode: choose %s"
+             (String.concat "," Code.checks))
 
 let parse_do_observers s = match s with
 | "avoid"|"false" -> Avoid
@@ -265,7 +270,11 @@ let speclist () =
   ("-num", Arg.Bool (fun b -> numeric := b),
    sprintf "<bool> use numeric names (default %b)" !numeric)::
    ("-mode", Arg.String (fun s -> mode := parse_mode s),
-    "<sc|critical|thin|uni|free|transitive|ppo> running mode (default sc). Modes thin and uni are experimental.")::
+    sprintf
+      "<%s> running mode (default %s). Modes thin and uni are experimental."
+      (String.concat "|" Code.checks)
+      (Code.pp_check !mode)
+   )::
    ("-cumul", Arg.String (fun b -> cumul := parse_cumul b),
     "<s> allow non-explicit fence cumulativity for specified fenced (default all)")::
    ("-conf", Arg.String (fun s -> conf := Some s), "<file> read configuration file")::
