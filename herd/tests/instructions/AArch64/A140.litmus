@@ -1,0 +1,11 @@
+AArch64 A140
+
+Variant=memtag
+(* STZG value from symbolic register into concrete reg INVALID SYNTAX *)
+{ uint64_t X0 = x; uint64_t x:red = 1; %symbolic_reg = 0;
+  }
+
+P0;
+STZG X0, [X1, %symbolic_reg];
+
+exists (0:X0 = x:green)

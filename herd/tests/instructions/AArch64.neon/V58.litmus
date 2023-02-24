@@ -1,0 +1,9 @@
+AArch64 V58
+(* Tests 128-bit Neon pair store with post-increment - register INVALID SYNTAX*)
+{
+}
+
+P0                    ;
+STP Q0, Q1, [X0], Q2  ;
+
+forall(0:X1 = 0)

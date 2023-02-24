@@ -1,0 +1,9 @@
+AArch64 V57
+(* Tests 128-bit Neon pair loads with post-increment - register INVALID SYNTAX*)
+{
+}
+
+P0                    ;
+LDP Q0, Q1, [X0], Q2  ;
+
+forall(0:X1 = 0)

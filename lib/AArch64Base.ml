@@ -1489,19 +1489,20 @@ let fold_regs (f_regs,f_sregs) =
   | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None | I_ERET
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
-  | I_MOV (_,r,_) | I_MOVZ (_,r,_,_) | I_MOVK (_,r,_,_)
+  | I_MOVZ (_,r,_,_) | I_MOVK (_,r,_,_)
   | I_ADR (r,_) | I_IC (_,r) | I_DC (_,r)
   | I_TBNZ (_,r,_,_) | I_TBZ (_,r,_,_)
   | I_CHKSLD r | I_CHKTGD r
   | I_MOVI_V (r,_,_) | I_MOVI_S (_,r,_)
   | I_TLBI (_,r)
     -> fold_reg r c
+  | I_MOV (_,r1,kr)
+    -> fold_reg r1 (fold_kr kr c)
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2) | I_LDRS (_,_,r1,r2)
   | I_SBFM (_,r1,r2,_,_) | I_UBFM (_,r1,r2,_,_)
   | I_STOP (_,_,_,r1,r2) | I_STOPBH (_,_,_,r1,r2)
   | I_RBIT (_,r1,r2) | I_LDR_P (_, r1, r2, _) | I_LDUR (_, r1, r2, _)
-  | I_LDG (r1,r2,_) | I_STZG (r1,r2,_) | I_STG (r1,r2,_)
   | I_CHKEQ (r1,r2) | I_CLRTAG (r1,r2) | I_GC (_,r1,r2) | I_LDCT (r1,r2)
   | I_STCT (r1,r2)
   | I_LDR_P_SIMD (_,r1,r2,_) | I_STR_P_SIMD (_,r1,r2,_) | I_STR_P (_,r1,r2,_)
@@ -1510,6 +1511,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDUR_SIMD (_,r1,r2,_) | I_STUR_SIMD (_,r1,r2,_)
     -> fold_reg r1 (fold_reg r2 c)
   | I_MRS (r,sr) | I_MSR (sr,r) -> fold_reg (SysReg sr) (fold_reg r c)
+  | I_LDG (r1,r2,kr) | I_STZG (r1,r2,kr) | I_STG (r1,r2,kr)
   | I_LDR (_,r1,r2,kr,_) | I_STR (_,r1,r2,kr,_)
   | I_OP3 (_,_,r1,r2,kr,_)
   | I_LDRBH (_,r1,r2,kr,_) | I_STRBH (_,r1,r2,kr,_)
@@ -1532,12 +1534,14 @@ let fold_regs (f_regs,f_sregs) =
   | I_BUILD (r1,r2,r3) | I_CPYTYPE (r1,r2,r3) | I_CPYVALUE (r1,r2,r3)
   | I_CSEAL (r1,r2,r3) | I_SEAL (r1,r2,r3) | I_UNSEAL (r1,r2,r3)
   | I_SC (_,r1,r2,r3) | I_LDP_P (_,_,r1,r2,r3,_) | I_STP_P (_,_,r1,r2,r3,_)
-  | I_LDP_P_SIMD (_,_,r1,r2,r3,_) | I_LDP_SIMD (_,_,r1,r2,r3,_)
-  | I_STP_P_SIMD (_,_,r1,r2,r3,_) | I_STP_SIMD (_,_,r1,r2,r3,_)
+  | I_LDP_P_SIMD (_,_,r1,r2,r3,_)
+  | I_STP_P_SIMD (_,_,r1,r2,r3,_)
   | I_EOR_SIMD (r1,r2,r3) | I_ADD_SIMD (r1,r2,r3) | I_ADD_SIMD_S (r1,r2,r3)
   | I_LDXP (_,_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_LDP (_,_,r1,r2,r3,kr)
+  | I_LDP_SIMD (_,_,r1,r2,r3,kr)
+  | I_STP_SIMD (_,_,r1,r2,r3,kr)
   | I_LDPSW (r1,r2,r3,kr)
   | I_STP (_,_,r1,r2,r3,kr)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_kr kr c)))
@@ -1615,8 +1619,8 @@ let map_regs f_reg f_symb =
      I_LDXP (v,t,map_reg r1,map_reg r2,map_reg r3)
   | I_LDRS (v,bh,r1,r2) ->
      I_LDRS (v,bh,map_reg r1,map_reg r2)
-  | I_STR (v,r1,r2,k,s) ->
-      I_STR (v,map_reg r1,map_reg r2,k,s)
+  | I_STR (v,r1,r2,kr,s) ->
+      I_STR (v,map_reg r1,map_reg r2,map_kr kr,s)
   | I_STR_P (v,r1,r2,s) ->
       I_STR_P (v,map_reg r1,map_reg r2,s)
   | I_STLR (v,r1,r2) ->
@@ -1711,10 +1715,10 @@ let map_regs f_reg f_symb =
   | I_ADD_SIMD_S (r1,r2,r3) ->
       I_ADD_SIMD_S (map_reg r1,map_reg r2,map_reg r3)
 (* Morello *)
-  | I_ALIGND (r1,r2,k) ->
-      I_ALIGND(map_reg r1,map_reg r2,k)
-  | I_ALIGNU (r1,r2,k) ->
-      I_ALIGNU(map_reg r1,map_reg r2,k)
+  | I_ALIGNU (r1,r2,kr) ->
+      I_ALIGNU(map_reg r1,map_reg r2,map_kr kr)
+  | I_ALIGND (r1,r2,kr) ->
+      I_ALIGND (map_reg r1,map_reg r2,map_kr kr)
   | I_BUILD (r1,r2,r3) ->
       I_BUILD(map_reg r1,map_reg r2,map_reg r3)
   | I_CHKEQ (r1,r2) ->
@@ -1770,8 +1774,8 @@ let map_regs f_reg f_symb =
   | I_STOPBH (op,v,rmw,r1,r2) ->
       I_STOPBH (op,v,rmw,map_reg r1,map_reg r2)
 (* Operations *)
-  | I_MOV (v,r,k) ->
-      I_MOV (v,map_reg r,k)
+  | I_MOV (v,r,kr) ->
+      I_MOV (v,map_reg r,map_kr kr)
   | I_MOVZ (v,r,k,s) ->
       I_MOVZ (v,map_reg r,k,s)
   | I_MOVK (v,r,k,s) ->
@@ -1813,12 +1817,12 @@ let map_regs f_reg f_symb =
        | _ -> assert false in
      I_MSR (sr,map_reg r)
 (* Memory Tagging *)
-  | I_STG (r1,r2,k) ->
-      I_STG (map_reg r1,map_reg r2,k)
-  | I_STZG (r1,r2,k) ->
-      I_STZG (map_reg r1,map_reg r2,k)
-  | I_LDG (r1,r2,k) ->
-      I_LDG (map_reg r1,map_reg r2,k)
+  | I_STG (r1,r2,kr) ->
+      I_STG (map_reg r1,map_reg r2,map_kr kr)
+  | I_STZG (r1,r2,kr) ->
+      I_STZG (map_reg r1,map_reg r2,map_kr kr)
+  | I_LDG (r1,r2,kr) ->
+      I_LDG (map_reg r1,map_reg r2,map_kr kr)
 
 (* No addresses burried in ARM code *)
 let fold_addrs _f c _ins = c
