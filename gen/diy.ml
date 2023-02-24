@@ -197,6 +197,13 @@ let exec_conf s =
 let speclist =
   Config.speclist () @ [Config.varatomspec]
 
+let split_cands xs =
+  match
+    List.concat (List.map LexUtil.split xs)
+  with
+  | [] -> None
+  | _::_ as xs -> Some xs
+
 let () =
   Arg.parse speclist get_arg Config.usage_msg;
   begin
@@ -204,8 +211,8 @@ let () =
   | None -> ()
   | Some s -> exec_conf s
   end;
-  let relax_list = split !Config.relaxs
-  and safe_list = split !Config.safes
+  let relax_list = split_cands !Config.relaxs
+  and safe_list = split_cands !Config.safes
   and reject_list = split !Config.rejects in
 
   let () =

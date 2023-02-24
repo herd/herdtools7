@@ -26,8 +26,8 @@ let typ = ref TypBase.default
 let hexa = ref false
 let tarfile = ref None
 let prefix = ref []
-let safes = ref None
-let relaxs = ref None
+let safes = ref []
+let relaxs = ref []
 let name = ref None
 let sufname = ref None
 let canonical_only = ref true
@@ -294,7 +294,7 @@ let speclist () =
     "<relax-list> specify a sole cycle")::
   ("-prefix", Arg.String (fun s -> prefix := s :: !prefix),
     "<relax-list> specify a prefix for cycles, can be repeated")::
-   ("-relax", Arg.String (fun s -> relaxs := Some s),
+   ("-relax", Arg.String (fun s -> relaxs := !relaxs @ [s]),
     "<relax-list> specify a relax list")::
    ("-mix", Arg.Bool (fun b -> mix := b),
     sprintf
@@ -303,9 +303,9 @@ let speclist () =
     sprintf "<n> test  up to <n> different relaxations together (default %i). Implies -mix true." !max_relax)::
    ("-minrelax",   Arg.Int (fun n -> mix := true ; min_relax := n),
     sprintf "<n> test relaxations considering <n> or more different relaxations (default %i). Implies -mix true." !min_relax)::
-   ("-safe", Arg.String (fun s -> safes := Some s),
+   ("-safe", Arg.String (fun s -> safes := !safes @ [s]),
     "<relax-list> specify a safe list")::
-   ("-relaxlist", Arg.String (fun s -> safes := Some s),
+   ("-relaxlist", Arg.String (fun s -> relaxs := !relaxs @[s]),
     "<relax-list> specify a list of relaxations of interest")::
    ("-rejectlist", Arg.String (fun s -> rejects := Some s),
    "<reject-list> specify a list of relaxation combinations to reject from generation")::
