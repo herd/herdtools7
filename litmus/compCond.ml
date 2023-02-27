@@ -59,12 +59,18 @@ module Make (O:Indent.S) (I:CompCondUtils.I) =
             end
         | Atom (LL (loc1,loc2)) ->
             O.fprintf"%s == %s" (dump_loc loc1) (dump_loc loc2)
-        | Atom (FF ((_,_,ft) as f)) ->
-           let ft = match ft with
-             | None -> "!= NoFault"
-             | Some ft -> let ft = I.C.FaultType.pp ft in
-                          sprintf "== Fault%s" (Misc.to_c_name ft) in
-           O.fprintf "%s %s" (I.Loc.dump_fatom (V.pp O.hexa) f) ft
+        | Atom (FF ((proc,lbl),loc,ft)) ->
+           let lbl = match lbl with
+           | Some lbl -> sprintf "P%d_%s" proc lbl
+           | None -> "UNKNOWN"
+           and loc = match loc with
+           | Some loc -> V.pp O.hexa loc
+           | None -> "UNKNOWN"
+           and ft = match ft with
+           | None -> "Unknown"
+           | Some ft -> I.C.FaultType.pp ft in
+           O.fprintf "exists_fault(&p->th_faults[%d], %s, %s, %s)"
+             proc (SkelUtil.instr_symb_id lbl) (SkelUtil.data_symb_id loc) (SkelUtil.fault_id ft) ;
         | Not p ->
             O.output "!(" ;
             dump_prop p ;

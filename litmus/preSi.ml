@@ -74,6 +74,7 @@ module Make
         (CfgLoc:
            sig
              val label_init : Label.Full.Set.t
+             val labels : Label.Full.full list
              val need_prelude : bool
            end) = struct
 
@@ -283,17 +284,8 @@ module Make
 
 
       (* Fault handler *)
-      let filter_fault_lbls =
-        List.filter
-          (fun ((_,o),_,_) -> Misc.is_some o)
-
-      let tag_seen f =
-        sprintf "see_%s" (SkelUtil.dump_fatom_tag A.V.pp_v_old f)
-
       and tag_code ((p,lbl),_,_) = sprintf "code_P%d%s" p
           (match lbl with None -> assert false | Some lbl -> "_" ^ lbl)
-      and tag_log f =  SkelUtil.dump_fatom_tag A.V.pp_v_old f
-      and dump_addr_idx s = sprintf "_idx_%s" s
 
       let dump_vector_table is_user name tgt =
         O.f "static ins_t *get_vector_table%s(void) {" name ;
@@ -357,121 +349,53 @@ module Make
                  O.o ""
                end in
 
-             let faults : (A.V.v, A.FaultType.t) Fault.atom list = U.get_faults test in
+             let faults = U.get_faults test in
              begin match faults with
              | [] -> if do_precise then insert_ins_ops ()
              | _::_ ->
                 O.o "#define SEE_FAULTS 1" ;
                 O.o "" ;
-                begin match filter_fault_lbls faults with
-                | [] ->
-                   if do_precise then insert_ins_ops ()
-                | faults ->
-                   insert_ins_ops () ;
-                   O.o "typedef struct {" ;
-                   O.fi "ins_t %s;"
-                     (String.concat ","
-                        (List.map (fun f -> sprintf "*%s" (tag_code f)) faults)) ;
-                   O.o "} labels_t;" ;
-                   O.o "" ;
-                   O.o "static labels_t labels;" ;
-                  O.o ""
+                begin match CfgLoc.labels with
+                | [] -> if do_precise then insert_ins_ops ()
+                | _ -> insert_ins_ops ()
                 end ;
-                O.o "typedef struct {" ;
-                O.fi "unsigned int %s;"
-                  (String.concat "," (List.map tag_seen faults)) ;
-                O.o "} see_fault_t;" ;
-                O.o "" ;
-                let has_vars = Misc.consp test.T.globals in
                 if do_dynalloc then begin
-                    O.o "static see_fault_t **see_fault;" ;
-                    if has_vars then O.o "static vars_t **vars_ptr;" ;
+                    O.o "static th_faults_info_t **th_faults;" ;
+                    O.o "static vars_t **vars_ptr;" ;
                     O.o "" ;
                     O.o "static void alloc_see_faults(void) {" ;
-                    O.oi "see_fault = malloc_check(NEXE*sizeof(*see_fault));" ;
-                    if has_vars then
-                      O.oi "vars_ptr = malloc_check(NEXE*sizeof(*vars_ptr));" ;
+                    O.oi "th_faults = malloc_check(NEXE*sizeof(*th_faults));" ;
+                    O.oi "vars_ptr = malloc_check(NEXE*sizeof(*vars_ptr));" ;
                     O.o "}" ;
                     O.o "" ;
                     O.o "static void free_see_faults(void) {" ;
-                    O.oi "free(see_fault);" ;
-                    if has_vars then O.oi "free(vars_ptr);" ;
+                    O.oi "free(th_faults);" ;
+                    O.oi "free(vars_ptr);" ;
                     O.o "}"
                   end else begin
-                    O.o "static see_fault_t *see_fault[NEXE];" ;
-                    if has_vars then O.o "static vars_t *vars_ptr[NEXE];"
+                    O.o "static th_faults_info_t *th_faults[NEXE];" ;
+                    O.o "static vars_t *vars_ptr[NEXE];"
                   end ;
                 O.o "" ;
-                O.o "static void init_see_fault(see_fault_t *p) {" ;
-                List.iter
-                  (fun f -> O.fi "p->%s = -1;" (tag_seen f))
-                  faults ;
-                O.o "}" ;
-                O.o "" ;
              end ;
-             O.o "static void record_fault(who_t *w, ins_t *pc, unsigned int esr) {" ;
-             begin match faults with
-             | [] -> ()
-             | _ ->
-                let test_labels fs =
-                  let no_lbl ((_,o),_,_) = Misc.is_none o in
-                  let no,fs = List.partition no_lbl fs in
-                  begin match no with
-                  | [] -> ()
-                  | f::_ ->
-                     O.fiii "sf->%s = esr;" (tag_seen f) ;
-                  end ;
-                  List.iteri
-                    (fun k f  ->
-                      let prf = if k > 0 then "} else if" else "if"
-                      and test = sprintf "pc == labels.%s" (tag_code f)
-                      and act =  sprintf "sf->%s = esr" (tag_seen f) in
-                      O.fiii "%s (%s) {" prf test ;
-                      O.fiv "%s;" act)
-                    fs ;
-                  if Misc.consp fs then O.fiii "}" ;
-                  O.fii "}" in
-                O.oi "int i = w->instance;" ;
-                O.oi "see_fault_t *sf = see_fault[i];" ;
-                if
-                  List.exists
-                    (fun (_,o,_) -> Misc.is_some o)
-                    faults
-                then begin
-                    O.oi "int idx_loc = 0;" ;
-                    O.oi "unsigned long far;" ;
-                    O.oi "if (get_far(esr, &far))" ;
-                    O.oii "idx_loc = idx_addr((intmax_t *)far, vars_ptr[i]);"
-                  end ;
-                O.oi "switch (w->proc) {" ;
-                Misc.group_iter
-                  (fun ((p,_),_,_) ((q,_),_,_) -> Misc.int_eq p q)
-                  (fun ((p,_),_,_) fs ->
-                    O.fi "case %d: {" p ;
-                    let no_id (_,o,_) = Misc.is_none o in
-                    let none,some = List.partition no_id fs in
-                    O.oii "{" ;
-                    test_labels none ;
-                    Misc.group_iteri
-                      (fun (_,v,_) (_,w,_) ->
-                        Misc.opt_compare A.V.compare v w = 0)
-                      (fun k (_,v,_) fs ->
-                        let prf = if k > 0 then "else if" else "if"
-                        and test =
-                          match v with
-                          | None -> assert false
-                          | Some v ->
-                             sprintf "idx_loc == %s"
-                               (dump_addr_idx (A.V.pp_v_old v)) in
-                        O.fii "%s (%s) {" prf test ;
-                        test_labels fs)
-                      some ;
-                    O.oii "break;" ;
-                    O.oi "}")
-                  faults ;
-                O.oi "}" ;
-             end ;
-             O.oi "atomic_inc_fetch(&nfaults[w->proc]);" ;
+             O.o "static inline int log_fault(int proc, int instr_symb, int data_symb, int ftype)" ;
+             O.o "{" ;
+             List.iter (fun f ->
+                 let ((p, lbl), loc, ftype) = f in
+                 let lbl_cond = match lbl with
+                   | None -> ""
+                   | Some s -> sprintf " && instr_symb == %s" (SkelUtil.instr_symb_id (sprintf "P%d_%s" p s))
+                 and loc_cond = match loc with
+                   | None -> ""
+                   | Some s -> sprintf " && data_symb == %s" (SkelUtil.data_symb_id (A.V.pp_v_old s))
+                 and ftype_cond = match ftype with
+                   | None -> ""
+                   | Some s -> sprintf " && ftype == %s" (SkelUtil.fault_id (A.FaultType.pp s))
+                 in
+                 O.fi "if (proc==%d%s%s%s)" p lbl_cond loc_cond ftype_cond;
+                 O.fii "return 1;" ;
+               ) faults;
+             O.fi "return 0;" ;
              O.o "}" ;
              O.o "" ;
              Insert.insert O.o "kvm_fault_handler.c" ;
@@ -685,7 +609,67 @@ module Make
 
 (* Fault types *)
       let dump_fault_type test =
-        if see_faults test then Insert.insert O.o  "kvm_fault_type.c"
+        if see_faults test then begin
+            O.f "#define %-25s 0" (SkelUtil.instr_symb_id "UNKNOWN") ;
+            (* Define indices for labels *)
+            List.iteri
+              (fun i (p,lbl) ->
+                let flbl = sprintf "P%d_%s" p lbl in
+                O.f "#define %-25s  %d" (SkelUtil.instr_symb_id flbl) (i + 1))
+              CfgLoc.labels ;
+            O.o "" ;
+            O.f "static char *instr_symb_name[] = {" ;
+            O.oi "\"UNKNOWN\"," ;
+            (* Define names for inst symbols *)
+            List.iter (fun (_,lbl) -> O.fi "\"%s\"," lbl ) CfgLoc.labels ;
+            O.o "};" ;
+            O.o "" ;
+            begin match CfgLoc.labels with
+            | [] -> ()
+            | _ ->
+               O.o "typedef struct {" ;
+               List.iter (fun (p,lbl) -> O.fi "ins_t *code_P%d_%s;"  p lbl) CfgLoc.labels ;
+               O.o "} labels_t;" ;
+               O.o "" ;
+               O.o "static labels_t labels;" ;
+               O.o ""
+            end ;
+            O.o "static int get_instr_symb_id(const unsigned long pc) {" ;
+            List.iter
+              (fun (p,lbl) ->
+                let flbl = sprintf "P%d_%s" p lbl in
+                O.fi "if (pc == (unsigned long)labels.code_%s)" flbl ;
+                O.fii "return %s;" (SkelUtil.instr_symb_id flbl))
+              CfgLoc.labels ;
+            O.fi "return %s;" (SkelUtil.instr_symb_id "UNKNOWN") ;
+            O.o "};" ;
+            O.o "" ;
+            O.f "#define %-25s 0" (SkelUtil.data_symb_id "UNKNOWN") ;
+            (* Define indices for data *)
+            List.iteri
+              (fun k (a,_) ->
+                let idx = if Cfg.is_kvm then 2*k else k in
+                O.f "#define %-25s  %i" (SkelUtil.data_symb_id a) (idx+1);
+                if Cfg.is_kvm then begin
+                  O.f "#define %-25s  %i"
+                    (SkelUtil.data_symb_id (Misc.add_pte a)) (idx+2)
+                end)
+              test.T.globals ;
+            O.o "" ;
+            O.f "static char *data_symb_name[] = {" ;
+            (* Define names for data symbols *)
+            O.oi "\"UNKNOWN\"," ;
+            List.iter
+              (fun (a,_) ->
+                O.fi "\"%s\"," a ;
+                if Cfg.is_kvm then begin
+                    O.fi "\"%s\"," (Misc.pp_pte a)
+                  end)
+              test.T.globals ;
+            O.o "};" ;
+            O.o "" ;
+            Insert.insert O.o  "kvm_fault_type.c" ;
+          end
 
 (* Collected locations *)
 
@@ -705,7 +689,8 @@ module Make
         O.o "/* Outcomes */" ;
         O.o "/************/" ;
         begin match test.T.globals with
-        | [] -> ()
+        | [] ->
+           O.o "typedef void vars_t;" ;
         | locs ->
             O.o "" ;
             O.o "#define SOME_VARS 1" ;
@@ -757,9 +742,8 @@ module Make
           fields ;
         begin match faults with
         | [] -> ()
-        | fs ->
-            O.fi "unsigned int %s;"
-              (String.concat "," (List.map tag_log fs))
+        | _ ->
+           O.fi "th_faults_info_t th_faults[NTHREADS];"
         end ;
         if pad  then O.oi "uint32_t _pad;" ;
         O.o "} log_t;" ;
@@ -780,47 +764,33 @@ module Make
               rlocs ;
             O.o "} log_ptr_t;" ;
             O.o ""
+            end
           end ;
-          let some_ptr =  U.ptr_in_outs env test in
-          if some_ptr || do_see_faults_with_loc then begin
-            (* Define indices *)
-            List.iteri
-              (fun k (a,_) ->
-                let idx = if Cfg.is_kvm then 2*k+1 else k+1 in
-                O.f "static const int %s = %i;" (dump_addr_idx a) idx ;
-                if Cfg.is_kvm then begin
-                  O.f "static const int %s = %i;"
-                    (dump_addr_idx (Misc.add_pte a)) (2*k+2)
-                end)
-              test.T.globals ;
-            O.o "" ;
+        if see_faults test then begin
             (*  Translation to indices *)
             let dump_test (s,_) =
-              O.fi "else if (p_addr == p->%s) return %s;"
-                s (dump_addr_idx s) ;
+              O.fi "if (p_addr == p->%s) return %s;"
+                s (SkelUtil.data_symb_id s) ;
               if Cfg.is_kvm then begin
-                O.fi "else if ((pteval_t *)v_addr == p->%s) return %s;"
+                O.fi "if ((pteval_t *)v_addr == p->%s) return %s;"
                   (OutUtils.fmt_pte_tag s)
-                  (dump_addr_idx (Misc.add_pte s))
+                  (SkelUtil.data_symb_id (Misc.add_pte s))
               end in
             begin
-              match test.T.globals with
-              | [] -> ()
-              | _::_ ->
-                 O.o "static int idx_addr(intmax_t *v_addr,vars_t *p) {" ;
-                 begin match test.T.globals with
-                 | _::_ when Cfg.is_kvm ->
-                    O.oi  "intmax_t *p_addr =" ;
-                    O.oii "(intmax_t *)((uintptr_t)v_addr & PAGE_MASK);"
-                 | _ -> ()
-                 end ;
-                 O.oi "if (v_addr == NULL) { return 0;}" ;
-                 List.iter dump_test test.T.globals ;
-                 O.oi "else { fatal(\"???\"); return -1;}" ;
-                 O.o "}" ;
-                 O.o ""
+              O.o "static int idx_addr(intmax_t *v_addr,vars_t *p) {" ;
+              begin match test.T.globals with
+              | _::_ when Cfg.is_kvm ->
+                 O.oi  "intmax_t *p_addr =" ;
+                 O.oii "(intmax_t *)((uintptr_t)v_addr & PAGE_MASK);"
+              | _ -> ()
+              end ;
+              List.iter dump_test test.T.globals ;
+              O.oi "fatal(\"Cannot find symbol for faulting address\"); return -1;" ;
+              O.o "}" ;
+              O.o ""
             end ;
 (* Pretty-print indices *)
+            let some_ptr =  U.ptr_in_outs env test in
             if some_ptr then begin
               O.f "static const char *pretty_addr[%s+1] = {\"0\",%s};"
                 (if Cfg.is_kvm then "(2*NVARS)" else "NVARS")
@@ -835,13 +805,12 @@ module Make
                       test.T.globals)) ;
               O.o ""
             end
-          end
         end ;
 (* Now physical pages in output *)
         if Cfg.is_kvm && U.pte_in_outs env test then begin
           List.iteri
             (fun k (a,_) ->
-              O.f "static const int %s = %i;" (dump_addr_idx (Misc.add_physical a)) k)
+              O.f "static const int %s = %i;" (SkelUtil.data_symb_id (Misc.add_physical a)) k)
             test.T.globals ;
           O.o "" ;
           O.o "static int idx_physical(pteval_t v,vars_t *p) {" ;
@@ -849,7 +818,7 @@ module Make
             (fun k (s,_) ->
               let pref = if k=0 then "if" else "else if" in
               O.fi "%s (litmus_same_oa(v,p->saved_pte_%s)) return %s;"
-                pref s (dump_addr_idx (Misc.add_physical s)))
+                pref s (SkelUtil.data_symb_id (Misc.add_physical s)))
             test.T.globals ;
           O.oi "else return NVARS;" ;
           O.o "}" ;
@@ -927,18 +896,22 @@ module Make
                 let p2 = String.concat "" p2 in
                 EPF.fi ~out:"chan" (sprintf "%s%s=%s;" prf p1 p2) arg)
           fmt args ;
+        if List.length faults > 0 then
+          O.fi "pp_log_faults_init();";
         List.iter (fun f ->
-            let (p, loc, _) = f in
-            O.fi "if (p->%s == NoFault)" (tag_log f);
-            (* No fault record don't and we bother about printing the type *)
-            let fs = Fault.pp_fatom A.V.pp_v A.FaultType.pp (p, loc, None) in
-            O.fii "puts(\" ~%s;\");" fs;
-            O.fi "else" ;
-            (* Force pp_fatom to call pp_ft *)
-            let pp_ft _ = "%s" in
-            let f = (p, loc, Some "") in
-            let fs = Fault.pp_fatom A.V.pp_v pp_ft f in
-            O.fii "printf(\" %s;\", fault_type_names[p->%s]);" fs (tag_log f)
+            let ((p, lbl), loc, ft) = f in
+            let lbl = match lbl with
+              | None -> "UNKNOWN"
+              | Some s -> sprintf "P%d_%s" p s
+            and loc = match loc with
+              | None -> "UNKNOWN"
+              | Some s -> A.V.pp_v_old s
+            and ft = match ft with
+              | None -> "Unknown"
+              | Some ft -> A.FaultType.pp ft
+            in
+            O.fi "pp_log_faults(chan, &p->th_faults[%d], %d, %s, %s, %s);" p p
+              (SkelUtil.instr_symb_id lbl) (SkelUtil.data_symb_id loc) (SkelUtil.fault_id ft)
           ) faults;
         O.o "}" ;
         O.o "" ;
@@ -960,12 +933,10 @@ module Make
               end in
             pp_rec 0
         | _ -> do_eq rloc suf in
-        let rec do_eq_faults = function
+        let do_eq_faults = function
           | [] -> O.oii "1;"
-          | f::fs ->
-              let tag = tag_log f in
-              O.fii "p->%s == q->%s &&" tag tag ;
-              do_eq_faults fs in
+          | _ -> O.oii "eq_faults(p->th_faults, q->th_faults);"
+        in
         let rec do_rec = function
           | [] -> do_eq_faults faults
           | x::rem  -> do_eq_array x " &&" ; do_rec rem in
@@ -987,9 +958,9 @@ module Make
                 A.GetInstr.dump_instr (T.C.V.pp O.hexa) v
 
               let dump_value loc v = match v with
-              | Constant.Symbolic _ -> dump_addr_idx (T.C.V.pp O.hexa v)
+              | Constant.Symbolic _ -> SkelUtil.data_symb_id (T.C.V.pp O.hexa v)
               | Constant.PteVal p ->
-                 A.V.PteVal.dump_pack dump_addr_idx p
+                 A.V.PteVal.dump_pack SkelUtil.data_symb_id p
               | _ ->
                   begin match loc with
                   | Some loc ->
@@ -1429,15 +1400,9 @@ module Make
         if dbg then eprintf "P%i: inits={%s}\n" proc (String.concat "," inits) ;
         if Misc.consp faults && T.has_asmhandler test then
           Warn.user_error "Post condition cannot check for faults when using custom fault handlers" ;
-        let have_faults =
-          not (T.has_asmhandler test) &&
-          have_fault_handler && Misc.consp faults in
         let my_regs = U.select_proc proc env in
         let addrs = A.Out.get_addrs_only out in (* accessed in code *)
         O.fi "case %i: {" proc ;
-        if proc = 0 && have_faults then begin
-          O.oii "init_see_fault(&_ctx->f);"
-        end ;
         (* Delays *)
         if have_timebase then begin
           O.oii "int _delay = _g->delay;" ;
@@ -1573,14 +1538,6 @@ module Make
           Lang.dump
             O.out (Indent.as_string Indent.indent2)
             my_regs (global_env,[]) envVolatile proc out
-        end ;
-(* Collect faults *)
-        if Cfg.is_kvm then begin
-          List.iter
-            (fun ((p,_),_,_ as f) ->
-              if Proc.compare proc p = 0 then
-                O.fii "_log->%s = get_fault_type(_ctx->f.%s);" (tag_log f) (tag_seen f))
-            faults
         end ;
 (* Synchronise *)
         O.oii "barrier_wait(_b);" ;
@@ -1754,6 +1711,13 @@ module Make
               globs ;
             ()
         end ;
+        let have_faults =
+          not (T.has_asmhandler test) &&
+            have_fault_handler && Misc.consp faults in
+        if have_faults then begin
+            O.oi "th_faults_info_init(&_ctx->out.th_faults[_role]);" ;
+            ()
+          end ;
         O.oi "barrier_wait(_b);" ;
         O.oi "switch (_role) {" ;
 (* jade: not sure how to integrate the aligned bit into KVM mode:
@@ -1796,28 +1760,19 @@ module Make
                   O.fi "label_ret[%d] = %s;" p rhs)
                 test.T.code
             end in
-          begin match filter_fault_lbls faults with
-          | [] ->
-              O.o "static void init_labels(void) {" ;
-              init_rets () ;
-              O.o "}" ;
-              O.o ""
-          | faults ->
-              O.o "static void init_labels(void) {" ;
-              List.iter
-                (fun ((p,lbl),_,_ as f) ->
-                  let lbl = Misc.as_some lbl in
-                  let off = U.find_label_offset p lbl test+1 in (* +1 because of added inital nop *)
-                  let lhs = sprintf "labels.%s" (tag_code f)
-                  and rhs =
-                    sprintf "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,0)+%d"
-                      (LangUtils.code_fun p) (LangUtils.code_fun p) off in
-                  O.fi "%s = %s;" lhs rhs)
-                faults ;
-              init_rets () ;
-              O.o "}" ;
-              O.o ""
-          end
+          O.o "static void init_labels(void) {" ;
+          if see_faults test then
+            List.iter (fun (p,lbl) ->
+                let off = U.find_label_offset p lbl test+1 in (* +1 because of added inital nop *)
+                let lhs = sprintf "labels.code_P%d_%s" p lbl
+                and rhs =
+                  sprintf "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,0)+%d"
+                    (LangUtils.code_fun p) (LangUtils.code_fun p) off in
+                O.fi "%s = %s;" lhs rhs)
+              CfgLoc.labels ;
+          init_rets () ;
+          O.o "}" ;
+          O.o ""
         end ;
         ()
 
@@ -2061,6 +2016,7 @@ module Make
           LocMake
             (struct
               let label_init = T.get_init_labels test
+              let labels = T.all_labels test
               let need_prelude =
                 not (Label.Full.Set.is_empty label_init)
                 || Misc.consp (T.from_labels test)

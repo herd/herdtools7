@@ -27,9 +27,6 @@ typedef struct {
 #ifdef SOME_VARS
   vars_t v;
 #endif
-#ifdef SEE_FAULTS
-  see_fault_t f;
-#endif
 #ifdef HAVE_TIMEBASE
   tb_t next_tb;
 #endif
@@ -162,8 +159,10 @@ static void set_role(global_t *g,thread_ctx_t *c,int part) {
     if (c->role == 0) {
 #ifdef SOME_VARS
       vars_ptr[inst] = &c->ctx->v;
+#else
+      vars_ptr[inst] = NULL;
 #endif
-      see_fault[inst] = &c->ctx->f;
+      th_faults[inst] = c->ctx->out.th_faults;
     }
 #endif
 #endif
