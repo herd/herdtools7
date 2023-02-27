@@ -130,3 +130,7 @@
 /minimal.cat
 /uniproc.cat
 /x86tso.cat
+/sc.cat
+/cos-no-opt.cat
+/cross.cat
+/stdlib.cat

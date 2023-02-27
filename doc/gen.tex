@@ -1545,8 +1545,8 @@ In mix mode, lower bound on the number of different candidate
 relaxations tested together.
 Default is~$1$. Bounds are included: `-minrelax 3 -maxrelax 3` produces tests from cycles with exactly three different candidate relaxations. Notice that each of the different canidate relaxations can be repeated.
 \item[{\tt -safe <relax-list>}] Add candidates to the safe set. This option can ne repeated, with cumulative effect.
-\item[{\tt -mode (default|sc,thin,uni,critical,free,ppo,total,mixed)}]
-Control generation  of cycles, default~\opt{default}.
+\item[{\tt -mode (default|sc|thin|uni|critical|free|ppo|total|mixed)}]
+Control generation  of cycles, default is~\opt{default}.
 Those tags command the activation of some constraints over cycle
 generation, see \ahrefloc{mode:describe}{below}.
 \item[{\tt -cumul <bool>}]
@@ -1586,7 +1586,7 @@ speaking, \diy{} generates ``some'' cycles and does not generate
 ``all'' cycles up to a certain size. Modes constraint cycle generation.
 
 Regardless of mode, \diy{} is guaranteed not to
-generate redundant communication relaxation in the following sense:
+generate redundant communication candidates in the following sense:
 let us call Com the union of Co, Rf and Fr (the e\vbar{}i specification
 is irrelevant here).
 Co being transitive and by definition of Fr,
