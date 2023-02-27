@@ -36,13 +36,7 @@ let dot_name name_xxx =
   let base = Filename.chop_extension name_xxx in
   base ^ ".dot"
 
-let filebase f =
-  let f = Filename.basename f in
-  let b =
-    try Filename.chop_extension f
-    with Invalid_argument _ -> f in
-  b
-
+let filebase f = Filename.basename f |> Filename.remove_extension
 
 (****************)
 (* basic utils  *)
@@ -50,45 +44,24 @@ let filebase f =
 
 let polymorphic_compare = compare
 
-external int_compare : int -> int -> int = "caml_int_compare"
-let int_eq (x:int) (y:int) = x == y
+let int_compare = Int.compare
+let int_eq = Int.equal
 let max_int (x:int) (y:int) = if x >= y then x else y
-let string_eq (s1:string) (s2:string) = (=) s1 s2
-
-let bool_eq b1 b2 = match b1,b2 with
-| (true,true)|(false,false) -> true
-| (false,true)|(true,false) -> false
-
-external identity : 'a -> 'a = "%identity"
+let string_eq = String.equal
+let bool_eq = Bool.equal
+let identity = Fun.id
 
 let ing _ = ()
 let ing2 _ _ = ()
 
 let not_found () = raise Not_found
 
-let is_none = function
-  | None -> true
-  | Some _ -> false
-
-let is_some = function
-  | None -> false
-  | Some _ -> true
-
-let as_some = function
-  | Some x -> x
-  | None -> assert false
-
-let proj_opt default = function
-  | None -> default
-  | Some x -> x
-
-let seq_opt f = function
-  | Some x -> f x
-  | None -> None
-
-let app_opt f = function
-  | None -> None
-  | Some x -> Some (f x)
+let is_none = Option.is_none
+let is_some = Option.is_some
+let as_some = Option.get
+let proj_opt default = Option.value ~default
+let seq_opt f o = Option.bind o f
+let app_opt = Option.map
 
 let app_opt2 ok no parse s = match parse s with
 | None -> no ()
@@ -96,17 +69,10 @@ let app_opt2 ok no parse s = match parse s with
 
 let delay_parse ok parse = app_opt2 ok not_found parse
 
-let check_opt check = function
-  | None -> ()
-  | Some x -> check x
-
+let check_opt some = Option.fold ~none:() ~some
 let snd_opt p = app_opt snd p
-
 let map_opt = app_opt
-
-let app_opt_def d f = function
-  | None -> d
-  | Some x -> f x
+let app_opt_def none some = Option.fold ~none ~some
 
 let rec last = function
   | [] -> assert false
@@ -138,17 +104,8 @@ let fmt_percent s = map_string (function | '%' -> "%%" | c -> String.make 1 c) s
 
 let skip_spaces s = map_string (function | ' ' -> "" | c -> String.make 1 c) s
 
-let opt_compare cmp x y = match x,y with
-| None,None -> 0
-| None,Some _ -> -1
-| Some _,None -> 1
-| Some x,Some y -> cmp x y
-
-let opt_eq eq x y = match x,y with
-| None,None -> true
-| Some x,Some y -> eq x y
-| (None,Some _)|(Some _,None) -> false
-
+let opt_compare cmp = Option.compare cmp
+let opt_eq eq = Option.equal eq
 let pair x y = x,y
 
 let pair_compare cmpx cmpy (x1,y1) (x2,y2) =
@@ -173,79 +130,10 @@ let rec list_eq eq xs ys = match xs,ys with
   | ([],_::_)|(_::_,[]) -> false
   | x::xs,y::ys -> eq x y && list_eq eq xs ys
 
-(* Avoid String.lowercase warning *)
-let char_lowercase = function
-  | 'A' -> 'a'
-  | 'B' -> 'b'
-  | 'C' -> 'c'
-  | 'D' -> 'd'
-  | 'E' -> 'e'
-  | 'F' -> 'f'
-  | 'G' -> 'g'
-  | 'H' -> 'h'
-  | 'I' -> 'i'
-  | 'J' -> 'j'
-  | 'K' -> 'k'
-  | 'L' -> 'l'
-  | 'M' -> 'm'
-  | 'N' -> 'n'
-  | 'O' -> 'o'
-  | 'P' -> 'p'
-  | 'Q' -> 'q'
-  | 'R' -> 'r'
-  | 'S' -> 's'
-  | 'T' -> 't'
-  | 'U' -> 'u'
-  | 'V' -> 'v'
-  | 'W' -> 'w'
-  | 'X' -> 'x'
-  | 'Y' -> 'y'
-  | 'Z' -> 'z'
-  | c -> c
-
-let char_uppercase = function
-  | 'a' -> 'A'
-  | 'b' -> 'B'
-  | 'c' -> 'C'
-  | 'd' -> 'D'
-  | 'e' -> 'E'
-  | 'f' -> 'F'
-  | 'g' -> 'G'
-  | 'h' -> 'H'
-  | 'i' -> 'I'
-  | 'j' -> 'J'
-  | 'k' -> 'K'
-  | 'l' -> 'L'
-  | 'm' -> 'M'
-  | 'n' -> 'N'
-  | 'o' -> 'O'
-  | 'p' -> 'P'
-  | 'q' -> 'Q'
-  | 'r' -> 'R'
-  | 's' -> 'S'
-  | 't' -> 'T'
-  | 'u' -> 'U'
-  | 'v' -> 'V'
-  | 'w' -> 'W'
-  | 'x' -> 'X'
-  | 'y' -> 'Y'
-  | 'z' -> 'Z'
-  | c -> c
-
-let xcase c s =
-   let r =
-    Bytes.init (String.length s)
-      (fun k -> c (String.unsafe_get s k)) in
-   Bytes.unsafe_to_string r
-
-let lowercase s = xcase char_lowercase s
-let uppercase s = xcase char_uppercase s
-
-let capitalize s = match s with
-| "" -> assert false
-| _ ->
-    String.make 1 (char_uppercase s.[0]) ^
-    String.sub s 1 (String.length s-1)
+let char_uppercase = Char.uppercase_ascii
+let lowercase = String.lowercase_ascii
+let uppercase = String.uppercase_ascii
+let capitalize = String.capitalize_ascii
 
 let to_c_name =
   let tr c = match c with
@@ -254,41 +142,16 @@ let to_c_name =
   map_string tr
 
 (* Compatibility *)
-let rec find_opt p = function
-  | [] -> None
-  | x::xs ->
-      if p x then Some x
-      else find_opt p xs
-
-let split_on_char c s =
-  let len = String.length s in
-  let rec do_rec k0 k =
-    if k >= len then [String.sub s k0 (k-k0) ]
-    else if c = String.unsafe_get s k then
-      String.sub s k0 (k-k0)::do_rec (k+1) (k+1)
-    else do_rec k0 (k+1) in
-  do_rec 0 0
-
-  let filter_map f =
-    let rec aux accu = function
-      | [] -> List.rev accu
-      | x :: l ->
-          match f x with
-          | None -> aux accu l
-          | Some v -> aux (v :: accu) l
-    in
-    aux []
+let find_opt = List.find_opt
+let filter_map = List.filter_map
+let split_on_char = String.split_on_char
 
 (********************)
 (* Position parsing *)
 (********************)
 
 let pos_of_string s =
-  try
-    let k = String.index s ',' in
-    Some
-      (float_of_string (String.sub s 0 k),
-       float_of_string (String.sub s (k + 1) (String.length s-(k+1))))
+  try Scanf.sscanf s "%f,%f" (fun x y -> Some (x, y))
   with _ -> None
 
 (***************)
@@ -355,17 +218,8 @@ let rec interval n m = if n < m then n::interval (n+1) m else []
 let rec replicate n x =
   if n <= 0 then [] else x::replicate (n-1) x
 
-let iteri f =
-  let rec iter_rec i xs = match xs with
-  | [] -> ()
-  | x::xs -> f i x ; iter_rec (i+1) xs in
-  iter_rec 0
-
-let mapi f =
-  let rec map_rec i xs = match xs with
-  | [] -> []
-  | x::xs -> f i x :: map_rec (i+1) xs in
-  map_rec 0
+let iteri = List.iteri
+let mapi = List.mapi
 
 let rev_filter p xs =
   let rec do_rec ys = function
@@ -491,17 +345,7 @@ let array_map2 f xs ys =
   zs
 
 (* strings *)
-
-let rec split_rec buff k =
-  try
-    let i = String.index_from buff k ',' in
-    String.sub buff k (i-k)::split_rec buff (i+1)
-  with
-  | Not_found ->
-      if k >= String.length buff then []
-      else [String.sub buff k (String.length buff - k)]
-
-let split_comma buff = split_rec buff 0
+let split_comma = String.split_on_char ','
 
 (************)
 (* Matrices *)
