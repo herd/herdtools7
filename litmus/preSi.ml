@@ -409,7 +409,7 @@ module Make
                 O.o "}" ;
                 O.o "" ;
              end ;
-             O.o "static void record_fault(who_t *w, ins_t *pc, void *loc, unsigned int esr) {" ;
+             O.o "static void record_fault(who_t *w, ins_t *pc, unsigned int esr) {" ;
              begin match faults with
              | [] -> ()
              | _ ->
@@ -432,13 +432,17 @@ module Make
                   if Misc.consp fs then O.fiii "}" ;
                   O.fii "}" in
                 O.oi "int i = w->instance;" ;
+                O.oi "see_fault_t *sf = see_fault[i];" ;
                 if
                   List.exists
                     (fun (_,o,_) -> Misc.is_some o)
                     faults
-                then
-                  O.oi "int idx_loc = idx_addr(loc,vars_ptr[i]);" ;
-                O.oi "see_fault_t *sf = see_fault[i];" ;
+                then begin
+                    O.oi "int idx_loc = 0;" ;
+                    O.oi "unsigned long far;" ;
+                    O.oi "if (get_far(esr, &far))" ;
+                    O.oii "idx_loc = idx_addr((intmax_t *)far, vars_ptr[i]);"
+                  end ;
                 O.oi "switch (w->proc) {" ;
                 Misc.group_iter
                   (fun ((p,_),_,_) ((q,_),_,_) -> Misc.int_eq p q)
