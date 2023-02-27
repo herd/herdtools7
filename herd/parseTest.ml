@@ -119,9 +119,11 @@ module Top (TopConf:RunTest.Config) = struct
       | `LISA ->
          let module X = LISAParseTest.Make(Conf)(ModelConfig) in
          X.run cache_type dirty start_time name chan env splitted
+(* START NOTWWW *)
       | `ASL ->
          let module X = ASLParseTest.Make(Conf)(ModelConfig) in
          X.run cache_type dirty start_time name chan env splitted
+(* END NOTWWW *)
       | arch -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
     end else env
 
