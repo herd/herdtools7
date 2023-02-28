@@ -45,13 +45,13 @@ val filebase : string -> string
 (* basic misc   *)
 (****************)
 val polymorphic_compare : 'a -> 'a -> int
-external int_compare : int -> int -> int = "caml_int_compare"
+val int_compare : int -> int -> int
 val int_eq : int -> int -> bool
 val max_int : int -> int -> int
 val string_eq : string -> string -> bool
 val bool_eq : bool -> bool -> bool
 
-external identity : 'a -> 'a = "%identity"
+val identity : 'a -> 'a
 (* ignore argument(s) *)
 val ing : 'a -> unit
 val ing2 : 'a -> 'b -> unit
