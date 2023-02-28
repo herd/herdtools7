@@ -16,7 +16,7 @@ for generating simple variations on one test.
 \subsection{Relaxation of Sequential Consistency}
 
 Relaxation is one of the key concepts behind simple analysis of weak memory
-models.  We define a candidate relaxation by reference to
+models.  We define a candidate relaxation (candidate for short) by reference to
 the most natural model of
 parallel execution in shared memory: Sequential Consistency (SC), as defined by
 L.~Lamport \cite{lam79}. A parallel program running on a sequentially
@@ -181,14 +181,14 @@ and that all processors see the same sequence.
 
 
 \label{sec:ws}In \diy{}, the coherence orders are specified indirectly.
-For instance, the candidate relaxation Wse (resp. Wsi) specifies two writes,
+For instance, the candidate relaxation Coe (resp. Coi) specifies two writes,
 performed by different processors (resp. the same processor),
 to the same location~$\ell$, the first write preceding the second in
 the coherence order of~$\ell$.
 The condition of the produced test then selects the specified coherence orders.
 Consider for instance:
 \begin{verbatim}
-% diyone7 -arch X86 -name x86-2+2W Wse PodWW Wse PodWW
+% diyone7 -arch X86 -name x86-2+2W Coe PodWW Coe PodWW
 \end{verbatim}
 The cycle that reveals a violation of the SC memory model is:
 \begin{center}
@@ -277,10 +277,10 @@ Thus, these events operate on the same memory location.
 Target reads its value from source \\\hline
 \tt Rfe      & W      & R      & Different &
 Target reads its value from source  \\\hline
-\tt Wsi      & W      & W      & Same      &
+\tt Coi      & W      & W      & Same      &
 Source precedes target in coherence order
 \\\hline
-\tt Wse      & W      & W      & Different &
+\tt Coe      & W      & W      & Different &
 Source precedes target in coherence order \\\hline
 \tt Fri     & R      & W      & Same      &
 Source reads a value from a write that precedes target in coherence order
@@ -290,7 +290,7 @@ Source reads a value from a write that precedes target in coherence order
 \\\hline
 \end{tabular}
 \end{center}
-
+Notice that ``Ws'' is a deprecated synonym of ``Co''
 
 \subsubsection{Program order candidate relaxations}
 
@@ -328,9 +328,9 @@ In practice, we have:
 \end{tabular}
 \end{center}
 It is to be noticed
-that PosWR, PosWW and PosRW are similar to Rfi, Wsi and~Fri, respectively.
+that PosWR, PosWW and PosRW are similar to Rfi, Coi and~Fri, respectively.
 More precisely, \diy{} is unable to consider a PosWR (or PosWW, or PosRW)
-candidate relaxation as not being also a Rfi (or Wsi, or Fri) candidate
+candidate relaxation as not being also a Rfi (or Coi, or Fri) candidate
 relaxation.
 However, litmus tests conditions may be more informative in the case of
 Rfi and~Fri.
@@ -546,8 +546,8 @@ Rfi to be relaxed.
 Overall, we deduce:
 \begin{itemize}
 \item Candidate relaxations PosWR (Rfi) and PodWR are relaxed
-\item The remaining candidate relaxations PosRR, PodRR, PosWW (Wsi),  PodWW,
-PosRW (Fri), Fre and Wse are safe.
+\item The remaining candidate relaxations PosRR, PodRR, PosWW (Coi),  PodWW,
+PosRW (Fri), Fre and Coe are safe.
 Fence relaxations FencedsWR and FenceddWR are also safe
 and worth testing.
 \end{itemize}
@@ -607,8 +607,8 @@ and~\afile{x86-podwr.conf}.
 \verbatiminput{x86-podwr.conf}
 \end{tabular}
 \end{center}
-Notice that we used the complete safe list in
-\file{x86-rfi.conf} and a reduced list in~\file{x86-podwr.conf}.
+Notice that we used the complete safe set in
+\file{x86-rfi.conf} and a reduced set in~\file{x86-podwr.conf}.
 Tests are to be generated in specific directories.
 %HEVEA To that aim, we provide a convenient archive~\ahref{x86.tar}{\texttt{x86.tar}}.
 \begin{verbatim}
@@ -642,8 +642,8 @@ A simple tool, \readRelax, does the job:
    .
    .
 ** Relaxation summary **
-{Rfi} With {Rfe, Fre, Wse, PodRW, PodRR} {Rfe, Fre, PodRR}\
-{Fre, Wse, PodWW, PodRR} {Fre, PosWW, PodRR, MFencedWR}\
+{Rfi} With {Rfe, Fre, Coe, PodRW, PodRR} {Rfe, Fre, PodRR}\
+{Fre, Coe, PodWW, PodRR} {Fre, PosWW, PodRR, MFencedWR}\
 {Fre, PodWW, PodRR, MFencedWR} {Fre, PodRR} {Fre, PodRR, MFencedWR}
 {PodWR} With {Fre}
 \end{verbatim}
@@ -780,7 +780,7 @@ field of the test.
 Of course, in all cases, we assume that ``false'' dependencies are not
 ``optimised out'' by the assembler or the hardware.
 
-\subsection{\aname{composite}{Composite} relaxations and cumulativity}
+\subsection{\aname{composite}{Composite}\label{composite:sec} relaxations and cumulativity}
 Users may specify a small sequence of single candidate relaxations
 as behaving as a single candidate relaxation to~\diy. The~syntax~is:
 \begin{center}
@@ -838,9 +838,9 @@ are a common event whose processor is new.
 \begin{tabular}{c|c|c|c}
 \diy{} syntax  &  Source & Target  & Detour \\ \hline
 \tt DetourR & R & R & Fre; Rfe \\ \hline
-\tt DetourW & W & R & Wse; Rfe  \\ \hline
-\tt DetourRW & R & W & Fre;Wse \\ \hline
-\tt DetourWW & W & W & Wse;Wse \\ \hline
+\tt DetourW & W & R & Coe; Rfe  \\ \hline
+\tt DetourRW & R & W & Fre;Coe \\ \hline
+\tt DetourWW & W & W & Coe;Coe \\ \hline
 \end{tabular}
 \end{center}
 DetourRR and DetourWR are accepted as synonyms for
@@ -854,7 +854,7 @@ Graphically, we have:
 \img{DetourWW}
 \end{center}
 Finally notice that ``internal'' detours need no special treatement
-as they can be expressed by the sequences ``Fri; Rfi'', ``Wsi;Rfi'', etc.
+as they can be expressed by the sequences ``Fri; Rfi'', ``Coi;Rfi'', etc.
 
 \section{Test\label{diycross:intro} variations with \diycross{}}
 The tool \diycross{} has an interface similar to \diyone,
@@ -912,10 +912,10 @@ IRIW+isyncs.litmus
 We first produce the ``\emph{four writes}'' test~\ahref{2+2W.litmus}{\file{2+2W}}
 for Power:
 \begin{verbatim}
-% diyone7 -name 2+2W -arch PPC PodWW Wse PodWW Wse
+% diyone7 -name 2+2W -arch PPC PodWW Coe PodWW Coe
 % cat 2+2W.litmus
 PPC 2+2W
-"PodWW Wse PodWW Wse"
+"PodWW Coe PodWW Coe"
 { 0:r2=x; 0:r4=y; 1:r2=y; 1:r4=x; }
  P0           | P1           ;
  li r1,2      | li r1,2      ;
@@ -930,7 +930,7 @@ In that section, we argued that the final condition \verb+exists (x=2 /\ y=2)+
 suffices to identify the coherence orders $0$, $1$, $2$
 for locations \texttt{x} and~\texttt{y}.
 As a consequence, a positive final condition reveals the occurrence
-of the specified cycle: Wse PodWW Wse PodWW.
+of the specified cycle: Coe PodWW Coe PodWW.
 
 \subsection{Simple observers}
 \emph{Observers} provide an alternative, perhaps more intuitive,
@@ -941,10 +941,10 @@ identifies the coherence order  $0$, $1$, $2$.
 The command line switch \opt{-obs force} commands the production
 of observers (test \ahref{2+2WObs.litmus}{\file{2+2WObs}}):
 \begin{verbatim}
-% diyone7 -name 2+2WObs -obs force -obstype straight -arch PPC PodWW Wse PodWW Wse
+% diyone7 -name 2+2WObs -obs force -obstype straight -arch PPC PodWW Coe PodWW Coe
 % cat 2+2WObs.litmus
 PPC 2+2WObs
-"PodWW Wse PodWW Wse"
+"PodWW Coe PodWW Coe"
 { 0:r2=x; 1:r2=y; 2:r2=x; 2:r4=y; 3:r2=y; 3:r4=x; }
  P0           | P1           | P2           | P3           ;
  lwz r1,0(r2) | lwz r1,0(r2) | li r1,2      | li r1,2      ;
@@ -985,10 +985,10 @@ Those are selected by the homonymous tags given as arguments to the command
 line switch \opt{-obstype}. For instance, we get the test
 \ahref{2+2WObsFenced.litmus}{\file{2+2WObsFenced}} by:
 \begin{verbatim}
-% diyone7 -name 2+2WObsFenced -obs force -obstype fenced -arch PPC PodWW Wse PodWW Wse
+% diyone7 -name 2+2WObsFenced -obs force -obstype fenced -arch PPC PodWW Coe PodWW Coe
 % cat 2+2WObsFenced.litmus
 PPC 2+2WObsFenced
-"PodWW Wse PodWW Wse"
+"PodWW Coe PodWW Coe"
 { 0:r2=x; 1:r2=y; 2:r2=x; 2:r4=y; 3:r2=y; 3:r4=x; }
  P0           | P1           | P2           | P3           ;
  lwz r1,0(r2) | lwz r1,0(r2) | li r1,2      | li r1,2      ;
@@ -1014,17 +1014,17 @@ With local observers, coherence order is observed by the test threads.
 This implies changing the tests, and some care must be exercised when
 interpreting results.
 
-The idea is as follows: when two threads are connected by a Wse candidate
+The idea is as follows: when two threads are connected by a Coe candidate
 relaxation, meaning that the first thread ends by writing $v$ to some location~$\ell$ and that the second threads starts by writing $v+1$ to the same location~$\ell$, we add an observing read of location~$\ell$ at the end of
 the first thread. Then, reading $v+1$ means that the write by the first thread
 precedes the write by the second thread in $\ell$ coherence order.
 More concretely, we instruct \diy{} generators to emit such local observers
 with option \opt{-obs local}:
 \begin{verbatim}
-% diyone7 -name 2+2WLocal -obs local -obstype straight -arch PPC PodWW Wse PodWW Wse
+% diyone7 -name 2+2WLocal -obs local -obstype straight -arch PPC PodWW Coe PodWW Coe
 % cat 2+2WLocal.litmus
 PPC 2+2WLocal
-"PodWW Wse PodWW Wse"
+"PodWW Coe PodWW Coe"
 {
 0:r2=x; 0:r4=y;
 1:r2=y; 1:r4=x;
@@ -1058,10 +1058,10 @@ For instance, one produces
 the fenced local observer version of \ltest{2+2W}
 as follows:
 \begin{verbatim}
-% diyone7 -name 2+2WLocalFenced -obs local -obstype fenced -arch PPC PodWW Wse PodWW Wse
+% diyone7 -name 2+2WLocalFenced -obs local -obstype fenced -arch PPC PodWW Coe PodWW Coe
 % cat 2+2WLocalFenced.litmus
 PPC 2+2WLocalFenced
-"PodWW Wse PodWW Wse"
+"PodWW Coe PodWW Coe"
 {
 0:r2=x; 0:r4=y;
 1:r2=y; 1:r4=x;
@@ -1079,10 +1079,10 @@ exists
 While one produces
 \ahref{2+2WLocalLoop.litmus}{\ltest{2+2WLocalLoop}}, the looping local observer version of~\ltest{2+2W} as follows:
 \begin{verbatim}
-% diyone7 -name 2+2WLocalLoop -obs local -obstype loop -arch PPC PodWW Wse PodWW Wse
+% diyone7 -name 2+2WLocalLoop -obs local -obstype loop -arch PPC PodWW Coe PodWW Coe
 % cat 2+2WLocalLoop.litmus
 PPC 2+2WLocalLoop
-"PodWW Wse PodWW Wse"
+"PodWW Coe PodWW Coe"
 {
 0:r2=x; 0:r4=y;
 1:r2=y; 1:r4=x;
@@ -1154,10 +1154,10 @@ are three writes to the same location.
 With \diyone, one easily build a three writes test as for instance
 the following~\ahref{W5.litmus}{\file{W5}}:
 \begin{verbatim}
-% diyone7 -obs accept -obstype fenced -arch PPC -name W5 Wse Wse PodWW Wse PodWW
+% diyone7 -obs accept -obstype fenced -arch PPC -name W5 Coe Coe PodWW Coe PodWW
 % cat W5.litmus
 PPC W5
-"Wse Wse PodWW Wse PodWW"
+"Coe Coe PodWW Coe PodWW"
 { 0:r2=y; 1:r2=y; 1:r4=x; 2:r2=x; 2:r4=y; 3:r2=y; }
  P0           | P1           | P2           | P3           ;
  lwz r1,0(r2) | li r1,3      | li r1,2      | li r1,2      ;
@@ -1177,10 +1177,10 @@ while \opt{-obs avoid} would lead to failure.
 With command line switch \opt{-obs local} we get three local observations of coherence,
 which suffice to reconstruct the complete coherence orders:
 \begin{verbatim}
-% diyone7 -obs local -obstype fenced -arch PPC -name W5Local Wse Wse PodWW Wse PodWW
+% diyone7 -obs local -obstype fenced -arch PPC -name W5Local Coe Coe PodWW Coe PodWW
 chi% cat W5Local.litmus
 PPC W5Local
-"Wse Wse PodWW Wse PodWW"
+"Coe Coe PodWW Coe PodWW"
 {
 0:r2=x; 0:r4=y;
 1:r2=y; 1:r4=x;
@@ -1250,11 +1250,11 @@ Here is the list of nicknames and family names for two thread tests:
 \begin{center}
 \begin{tabular}{ll|l}
 \hline
-2+2W & \texttt{WW+WW} & PodWW Wse PodWW Wse \\
+2+2W & \texttt{WW+WW} & PodWW Coe PodWW Coe \\
 LB  & \texttt{RW+RW} & PodRW Rfe PodRW Rfe \\
 MP & \texttt{WW+RR} & PodWW Rfe PodRR Fre \\
-R & \texttt{WW+WR} & PodWW Wse PodWR Fre \\
-S & \texttt{WW+RW} & PodWW Rfe PodRW Wse \\
+R & \texttt{WW+WR} & PodWW Coe PodWR Fre \\
+S & \texttt{WW+RW} & PodWW Rfe PodRW Coe \\
 SB & \texttt{WR+WR} & PodWR Fre PodWR Fre \\
 \hline
 \end{tabular}
@@ -1373,6 +1373,7 @@ Otherwise, \opt{<dest>} is interpreted as the name of an
 existing directory.
 Default is ``\opt{.}'', that is tool output goes into the
 current~directory.
+\item[{\tt -cycleonly <bool>}] When \opt{true}, do not generate the tests themseleves, output their cycles instead. Default is \opt{false}.
 \item[{\tt -obs (accept|avoid|force|local)}] Management of observers,
 default is \opt{avoid}. See Sec.~\ref{sec:obs}.
 \item[{\tt -obstype (fenced|loop|straight)}]
@@ -1530,7 +1531,7 @@ threads, where \opt{<n>} is set above.
 \item[{\tt -prefix <relax-list>}] Specify a prefix for cycles: all cycles will (start with (in fact include) the given sequence of relaxations. The option can be repeated so as to specify several prefixes.
 \item[{\tt -ins <n>}] Reject tests as soon as the code of one thread
 originates from \opt{<n>} edges or more. Default is~$4$.
-\item[{\tt -relax <relax-list>}] Set relax list. Default is empty.
+\item[{\tt -relax <relax-list>}] Add candidates to the relax set.  This option can ne repeated, with cumulative effect.
 The syntax of \opt{<relax-list>} is a comma (or space)
 separated list of candidate relaxations.
 \item[{\tt -mix <bool>}] Mix the elements of the relax list
@@ -1543,9 +1544,9 @@ Default is~$100$
 In mix mode, lower bound on the number of different candidate
 relaxations tested together.
 Default is~$1$. Bounds are included: `-minrelax 3 -maxrelax 3` produces tests from cycles with exactly three different candidate relaxations. Notice that each of the different canidate relaxations can be repeated.
-\item[{\tt -safe <relax-list>}] Set safe list. Default is empty.
-\item[{\tt -mode (critical|sc|free|uni)}]
-Control generation  of cycles, default~\opt{sc}.
+\item[{\tt -safe <relax-list>}] Add candidates to the safe set. This option can ne repeated, with cumulative effect.
+\item[{\tt -mode (default|sc,thin,uni,critical,free,ppo,total,mixed)}]
+Control generation  of cycles, default~\opt{default}.
 Those tags command the activation of some constraints over cycle
 generation, see \ahrefloc{mode:describe}{below}.
 \item[{\tt -cumul <bool>}]
@@ -1553,65 +1554,67 @@ Permit implicit cumulativity,
 \emph{i.e.} authorise building up the sequence Rfe followed by a fence,
 or the reverse. Default is~\opt{true}.
 \end{description}
-The relax and safe lists command the generation of
+The relax and safe sets command the generation of
 cycles as follows:
 \begin{enumerate}
-\item When the relax list is empty,
-cycles are built from the candidate relaxations of the safe list.
-\item When the relax list is of size~$1$,
+\item When the relax set is empty,
+cycles are built from the candidate relaxations of the safe set.
+\item When the relax set is of size~$1$,
 cycles are built from its single element~$r$ and from the elements of
-the safe list. Additionally, the cycle produced contains~$r$ at least once.
+the safe set. Additionally, the cycle produced contains~$r$ at least once.
 \item
-When the relax list is of size~$n$, with~$n > 1$,
+When the relax set is of size~$n$, with~$n > 1$,
 the behaviour of~\diy{} depends on the mix mode:
 \begin{enumerate}
 \item
 By default (\opt{-mix false}),
 \diy{} generates~$n$ independent sets of cycles,
-each set being built with one relaxation from the relax list and all
-the relaxations in the safe list.
-In other words, \diy{} on a relax list of size~$n$ behaves similarly
-to $n$~runs of~\diy{} on each candidate relaxation in the list.
+each set being built with one relaxation from the relax set and all
+the relaxations in the safe set.
+In other words, \diy{} on a relax set of size~$n$ behaves similarly
+to $n$~runs of~\diy{} on each candidate relaxation in the set.
 \item Otherwise (\opt{-mix true}), \diy{} generates cycles that contains
-at least one element from the relax list, including some cycles
-that contain different relaxations from the relax list.
-The cycles will contain at most~$m$ different elements from the relax list,
+at least one element from the relax set, including some cycles
+that contain different relaxations from the relax set.
+The cycles will contain at most~$m$ different elements from the relax set,
 where $m$ is specified with option~``\opt{-maxrelax}~$m$''.
 \end{enumerate}
 \end{enumerate}
 
 \label{mode:describe}Generally
 speaking, \diy{} generates ``some'' cycles and does not generate
-``all'' cycles (up to a certain size \emph{e.g.}).
-In (default) sc mode, \diy{} performs some optimisation,
-most of which we leave unspecified.
-\label{compose:com}As an exception to
-this non-specification, \diy{} in \opt{sc} (default) mode
-is guaranteed not to
-generate redundant elementary communication relaxation in the following sense:
-let us call Com the union of Ws, Rf and Fr (the e\vbar{}i specification
+``all'' cycles up to a certain size. Modes constraint cycle generation.
+
+Regardless of mode, \diy{} is guaranteed not to
+generate redundant communication relaxation in the following sense:
+let us call Com the union of Co, Rf and Fr (the e\vbar{}i specification
 is irrelevant here).
-Ws being transitive and by definition of Fr,
+Co being transitive and by definition of Fr,
 one easily shows that the transitive closure Com+ of Com is the union
-of Com plus [Ws,Rf] (Ws followed by Rf) plus [Fr,Rf].
-As a consequence, maximal subsequences of communication
+of Com plus [Co,Rf] (Co followed by Rf) plus [Fr,Rf].
+As a consequence, maximal sub-sequences of communication
 relaxations in \diy{} cycles are limited
-to  single relaxations (\emph{i.e.} Ws, Rf and Fr)
+to  single relaxations (\emph{i.e.} Co, Rf and Fr)
 and to the above mentioned two sequences
-(\emph{i.e.} [Ws,Rf] and  [Fr,Rf]).
-For instance, [Ws,Ws] and [Fr,Ws] should never appear in \diy{} generated
-cycles.
-However, such subsequences can be generated on an individual basis with
-\diyone, see the example of \file{W5} in Sec~\ref{sec:obs}.
+(\emph{i.e.} [Co,Rf] and  [Fr,Rf]).
+For instance, [Co,Co] and [Fr,Co] should never appear in \diy{} generated
+cycles. However, such sub-sequences can be generated on an individual basis with
+\diyone, see the example of \file{W5} in Sec~\ref{sec:obs},
+or by introducing them as explict composite candidates -- see Section~\ref{composite:sec}.
+
+\label{default:def}In default mode (\opt{default} ), \diy{} performs some optimisations. By optimisation, we mean that some sequences of two candidates are rejected. Generally, the sequence of  two internal candidates is rejected. However some of those compositions are accepted: internal communication (\emph{i,e,} Rfi, Coi and Rfi) with Po or Dp candidates with specification ``d'';
+Rfi with Po with specification ``s''; and Rmw candidates.
+
+\label{sc:def}The sc mode (\opt{-mode sc}) is similar to the default mode. In some sense this mode is more tolerant and may accept more sequences. In particular, it attempts to sequence Po candidates. However, this more relaxed behaviour is balanced by a specific restriction: when some Po candidates are members of the safe set, then sequences that would otherwise be allowed are rejected when their write or read endpoints and their ``s'' or ``d'' status are the same as  the ones of a safe Po~candidate. For instance, if PosWR is part of the safe set, then the sequence of Rfi and PosRR is rejected.
 
 \label{critical:def}%
 In critical mode (\opt{-mode critical}),  cycles are strictly specified as
 follows:
 \begin{enumerate}
 \item Communication candidate relaxations sequences are
-limited to Rf,Fr,Ws,[Ws,Rf] and~[Fr,Rf], as in sc mode.
+limited to Rf,Fr,Co,[Co,Rf] and~[Fr,Rf], as in all other modes.
 \item No two internal\footnote{That is, the source and target
-accesses are by the same processor.} candidate relaxations follow one another.
+accesses are by the same processor.} candidates follow one another.
 \item If the option \opt{-cumul false} is specified,
 \diy{} will not construct
 the sequence of~Rfe followed by a fence (or B-cumulativity) candidate
@@ -1623,14 +1626,15 @@ composite candidate relaxations. For instance, if [Rfi,PodRR]
 is given as a candidate relaxation, the sequence ``Rfi,PodRR'' appears
 in cycles.
 \end{enumerate}
-The cycles described above are the \emph{critical} cycles of~\cite{ss88}.
+In the absence of composite candidates,
+the cycles described above are the \emph{critical} cycles of~\cite{ss88}.
 
 \label{free:def}%
 In free mode (\opt{-mode free}), cycles are strictly specified as
 follows:
 \begin{enumerate}
 \item Communication candidate relaxations sequences are
-limited to Rf,Fr,Ws,[Ws,Rf] and~[Fr,Rf]. However, arbitrary sequences
+limited to Rf,Fr,Co,[Co,Rf] and~[Fr,Rf]. However, arbitrary sequences
 of communication candidates are accepted when they are internal and external
 or external and internal.
 \item Cycles that access one single memory location are rejected.
@@ -1645,6 +1649,13 @@ are restricted in the same manner as for
 \item Sequences of Po candidate relaxation are rejected.
 \end{enumerate}
 
+\label{transitive:def}
+The transitive mode rejects internal sequences that match candidates from the safe set. More specifically the sequence is reduced according to some rules and rejected when the result is a member in the safe set.
+The effect is similar to the sc mode when Po candidates are safe. Reduction rules also consider fences: when a fence is present in the sequence it is compacted into a single fence candidate operating over the endpoints of the sequence, some reductions also apply to Dp candidates for instance a DpCtrl candidate followed by any (internal) candidate reduces to a DpCrl candidate operating over the endpoints of the sequence.
+This mode is experimental and is mostly left unspecified.
+
+The remaining modes are unspecified.
+
 \subsection{\aname{readRelax}{Usage} of \readRelax}
 \readRelax{} is a simple tool to extract relevant information
 out of \litmus{} run logs of tests produced by the \diy{} generator.
@@ -1654,7 +1665,7 @@ For a given run of a given litmus test, the relevant information is:
 \item An optional candidate relaxation, which is the one
 given as argument to \diy~option
 \opt{-relax} at test build time, or none.
-\item The safe list relevant to the given test, \emph{i.e.}
+\item The safe set relevant to the given test, \emph{i.e.}
 the safe candidate relaxations that appear in the tested cycle.
 \end{itemize}
 See \mysec{\ref{readRelax:intro}} for an example.
@@ -1684,16 +1695,16 @@ X002.litmus  X006.litmus  X010.litmus  X014.litmus  X018.litmus  X022.litmus
 Cycles are extracted with \mcycles, which takes the index file \texttt{@all} as argument:
 \begin{verbatim}
 % mcycles7 @all
-X000: Wse PodWR Fre PodWR Fre PodWW
+X000: Coe PodWR Fre PodWR Fre PodWW
 X001: Rfe PodRR Fre PodWR Fre PodWW
-X002: Wse PodWR Fre PodWW
-X003: Wse PodWW Wse PodWR Fre PodWW
-X004: Rfe PodRW Wse PodWR Fre PodWW
+X002: Coe PodWR Fre PodWW
+X003: Coe PodWW Coe PodWR Fre PodWW
+X004: Rfe PodRW Coe PodWR Fre PodWW
 X005: Rfe PodRR Fre PodWW
-X006: Wse PodWW Rfe PodRR Fre PodWW
+X006: Coe PodWW Rfe PodRR Fre PodWW
 X007: Rfe PodRW Rfe PodRR Fre PodWW
-X008: Wse Rfe PodRR Fre PodWW
-X009: Wse PodWW Wse PodWW
+X008: Coe Rfe PodRR Fre PodWW
+X009: Coe PodWW Coe PodWW
 ...
 \end{verbatim}
 The output of \mcycles{} can be piped into \classify{} for family
@@ -1701,9 +1712,9 @@ classification:
 \begin{verbatim}
 % mcycles7 @all | classify7 -arch X86
 2+2W
-  X009 -> 2+2W : PodWW Wse PodWW Wse
+  X009 -> 2+2W : PodWW Coe PodWW Coe
 3.2W
-  X010 -> 3.2W : PodWW Wse PodWW Wse PodWW Wse
+  X010 -> 3.2W : PodWW Coe PodWW Coe PodWW Coe
 3.LB
   X020 -> 3.LB : PodRW Rfe PodRW Rfe PodRW Rfe
 3.SB

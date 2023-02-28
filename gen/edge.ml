@@ -1047,6 +1047,7 @@ let fold_tedges f r =
 
 
 (* compact *)
+
   let seq_sd e1 e2 = match loc_sd e1,loc_sd e2 with
   | Same,Same -> Same
   | _,_ -> Diff

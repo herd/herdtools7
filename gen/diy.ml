@@ -146,7 +146,7 @@ let parse_fences fs = List.fold_right parse_fence fs []
   let go n (*size*) orl olr ols (*relax and safe lists*) =
     let orl = orl_opt orl in
     match O.choice with
-    | Sc|Critical|Free|Ppo|Transitive|Total|MixedCheck ->
+    | Default|Sc|Critical|Free|Ppo|Transitive|Total|MixedCheck ->
         begin match olr,ols with
         | None,None -> M.gen n
         | None,Some ls -> gen [] ls orl n
@@ -197,6 +197,13 @@ let exec_conf s =
 let speclist =
   Config.speclist () @ [Config.varatomspec]
 
+let split_cands xs =
+  match
+    List.concat (List.map LexUtil.split xs)
+  with
+  | [] -> None
+  | _::_ as xs -> Some xs
+
 let () =
   Arg.parse speclist get_arg Config.usage_msg;
   begin
@@ -204,8 +211,8 @@ let () =
   | None -> ()
   | Some s -> exec_conf s
   end;
-  let relax_list = split !Config.relaxs
-  and safe_list = split !Config.safes
+  let relax_list = split_cands !Config.relaxs
+  and safe_list = split_cands !Config.safes
   and reject_list = split !Config.rejects in
 
   let () =
@@ -277,7 +284,7 @@ let () =
       (match Co.choice  with Uni -> true | _ -> false)
     let unrollatomic = !Config.unrollatomic
     let allow_back = match !Config.mode with
-    | Sc|Critical|Thin -> false
+    | Default|Sc|Critical|Thin -> false
     | _ -> true
     let typ = !Config.typ
     let hexa = !Config.hexa

@@ -161,8 +161,8 @@ Finally, it may be interesting to classify the ``\texttt{X}'' tests:
 \begin{verbatim}
 % mcycles7 @all | classify7 -arch X86
 R
-  X003 -> R+po+rfi-po : PodWW Wse Rfi PodRR Fre
-  X006 -> R : PodWW Wse PodWR Fre
+  X003 -> R+po+rfi-po : PodWW Coe Rfi PodRR Fre
+  X006 -> R : PodWW Coe PodWR Fre
 SB
   X000 -> SB+rfi-pos : Rfi PodRR Fre Rfi PodRR Fre
   X001 -> SB+rfi-po+po : Rfi PodRR Fre PodWR Fre
@@ -481,7 +481,7 @@ available in directory \ahref{tst-co}{\texttt{tst-co}}%
 Amongst those $31$~tests, are five tests that may exhibit
 the five ``basic'' uniproc violations.
 Those five basic uniproc violations are three direct contraditions of
-program order and communication candidate relaxations Ws,Rf and~Fr ---
+program order and communication candidate relaxations Co,Rf and~Fr ---
 which we show
 as executions of the tests \basic{WW}, \basic{RW} and~\basic{WR}:
 \begin{center}
@@ -491,7 +491,7 @@ as executions of the tests \basic{WW}, \basic{RW} and~\basic{WR}:
 \end{center}
 plus two contradictions of
 program order and communication candidate relaxation
-sequences Ws;Rf and~Fr;Rf,
+sequences Co;Rf and~Fr;Rf,
 which we show
 as executions of the tests \basic{W+RW} and~\basic{W+RR}:
 \begin{center}
@@ -499,8 +499,8 @@ as executions of the tests \basic{W+RW} and~\basic{W+RR}:
 \img{W+RR}
 \end{center}
 
-Namely, due to the transitivity of Ws and to the definition of Fr
-(that implies $\textrm{Fr;Ws} \subseteq \textrm{Fr}$) all sequences of
+Namely, due to the transitivity of Co and to the definition of Fr
+(that implies $\textrm{Fr;Co} \subseteq \textrm{Fr}$) all sequences of
 communications are covered by the above listed five cases.
 
 \input{MPPOSS.tex}\newcommand{\mpposs}[1]{\ahref{MPPOSS-#1.html}{#1}}%

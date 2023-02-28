@@ -47,6 +47,8 @@ module Make(C:Builder.S)
     open C.E
     open C.R
 
+    let dbg = false
+
     module RelaxSet = C.R.Set
 
     let is_int e = match get_ie e with
@@ -65,37 +67,34 @@ module Make(C:Builder.S)
       | Set fs ->
           (fun f -> List.exists (equal_fence f) fs)
 
-    let choice_sc (po_safe,fence_safe) e1 e2 =
+    let choice_sc po_safe e1 e2 =
       let r = match e1.edge,e2.edge with
 (*
-  Now reject all po;po, except for Rfi.
+  Now accept internal with internal composition
+  when the do not match safe, explicit po candidates.
   A bit rude, maybe...
+
+  Also notice that we are more tolerant for Rfi.
  *)
 (* Assuming Dp is safe *)
-    | Rf Int,Dp _| Dp _,Rf Int -> true
-    | Dp _,Ws Int | Dp _,Fr Int ->
-        not (po_safe (dir_src e1) (dir_tgt e2))
-    | Po _, Dp _ ->
-        not (po_safe (dir_src e1) (dir_tgt e1)) &&
-        not (po_safe (dir_src e1) (dir_tgt e2))
-    | Dp _,Po _ ->
-        not (po_safe (dir_src e2) (dir_tgt e2)) &&
-        not (po_safe (dir_src e1) (dir_tgt e2))
+    | Rf Int,Dp _ | Dp _,Rf Int -> true
+    | Dp (_,sd,_),Ws Int | Dp (_,sd,_),Fr Int ->
+        not (po_safe sd (dir_src e1) (dir_tgt e2))
+    | Po (sd1,_,_), Dp (_,sd2,_) ->
+        not (po_safe sd1 (dir_src e1) (dir_tgt e1)) &&
+        not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
+    | Dp (_,sd1,_),Po (sd2,_,_) ->
+        not (po_safe sd2 (dir_src e2) (dir_tgt e2)) &&
+        not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
 (* Check Po is safe *)
-    | Po _,Po _ ->
-        not (po_safe (dir_src e1) (dir_tgt e2))
-    | Rf Int,Po _ ->
-        po_safe (dir_src e2) (dir_tgt e2) &&
-        not (po_safe (dir_src e1) (dir_tgt e2))
-    | Po _,Rf Int ->
-        po_safe (dir_src e1) (dir_tgt e1) &&
-        not (po_safe (dir_src e1) (dir_tgt e2))
-(* fenced s W R + Dp *)
-    | Fenced(_,Same,_,Dir R), Dp (_,_,Dir R) ->
-        not (fence_safe (dir_src e1) (dir_tgt e2))
-(* Dp + fenced d R _ *)
-    | Dp (_,_,Dir R),Fenced (_,Same,Dir R,_) ->
-        not (fence_safe (dir_src e1) (dir_tgt e2))
+    | Po (sd1,_,_),Po (sd2,_,_) ->
+        not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
+    | Rf Int,Po (sd,_,_) ->
+        po_safe sd (dir_src e2) (dir_tgt e2) &&
+        not (po_safe sd (dir_src e1) (dir_tgt e2))
+    | Po (sd,_,_),Rf Int ->
+        po_safe sd (dir_src e1) (dir_tgt e1) &&
+        not (po_safe sd (dir_src e1) (dir_tgt e2))
 (* Allow Rmw *)
     | (Rmw _,_)|(_,Rmw _) -> true
 (* Added *)
@@ -103,7 +102,28 @@ module Make(C:Builder.S)
         match get_ie e1, get_ie e2 with
         | Int,Int -> false
         | Ext,_|_,Ext -> true  in
-(*      eprintf "Choice: %s %s -> %b\n" (C.E.pp_edge e1) (C.E.pp_edge e2) r ; *)
+      if dbg then
+        eprintf "Choice: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
+      r
+
+    let choice_default e1 e2 =
+      let r = match e1.edge,e2.edge with
+(*
+  Now accept some internal with internal composition
+ *)
+      | (Ws Int|Rf Int|Fr Int|Po (Diff,_,_)),Dp (_,Diff,_)
+      | (Dp (_,Diff,_)|Po (Diff,_,_)),(Ws Int|Rf Int|Fr Int)
+      | Dp (_,Diff,_),Po (Diff,_,_)
+      | Rf Int,Po (Same,_,_)
+      | Po (Same,_,_),Rf Int
+      | (Rmw _,_)|(_,Rmw _) -> true
+      | _,_ ->
+          (* Reject other internal followed by internal sequences *)
+          match get_ie e1, get_ie e2 with
+          | Int,Int -> false
+          | Ext,_|_,Ext -> true  in
+      if dbg then
+        eprintf "Choice: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
       r
 
 (* Check altenance of com/po *)
@@ -199,7 +219,8 @@ module Make(C:Builder.S)
     let iarg f = fun _ _ _ _ -> f
 
     let choose c = match c with
-    | Sc -> (fun _safes po_safe _xs _ys -> choice_sc po_safe)
+    | Sc -> fun _safes po_safe _xs _ys -> choice_sc po_safe
+    | Default -> iarg choice_default
     | MixedCheck -> iarg choice_mixed
     | Critical -> iarg choice_critical
     | Uni -> iarg choice_uni
@@ -407,39 +428,40 @@ module Make(C:Builder.S)
         else f_rec n suff k
       else k
 
-    module Dir2Set =
+    module SdDir2Set =
       MySet.Make
         (struct
-          type t = extr * extr
+          type t = sd * extr * extr
           let compare = Misc.polymorphic_compare
         end)
 
     let extract_po rs =
-      let d2 =
-        List.fold_right
-          (fun (r,_) k -> match r with
-          | ERS [{edge=Po (_,e1,e2); _}] -> Dir2Set.add (e1,e2) k
-          | _ -> k)
-          rs Dir2Set.empty in
-      fun e1 e2 -> Dir2Set.mem (e1,e2) d2
-
-    let extract_fence rs =
-      let d2 =
-        List.fold_right
-          (fun (r,_) k -> match r with
-          | ERS [{edge=Fenced (_,_,e1,e2); _}] -> Dir2Set.add (e1,e2) k
-          | _ -> k)
-          rs Dir2Set.empty in
-      fun e1 e2 -> Dir2Set.mem (e1,e2) d2
-
+      match O.choice with
+      | Sc ->
+          let d2 =
+            List.fold_right
+              (fun (r,_) k -> match r with
+              | ERS [{edge=Po (sd,e1,e2); _}] -> SdDir2Set.add (sd,e1,e2) k
+              | _ -> k)
+              rs SdDir2Set.empty in
+          if dbg then
+            eprintf
+              "PoSafe: {%s}\n"
+              (SdDir2Set.pp_str ","
+                 (fun (sd,e1,e2) -> pp_sd sd ^ "-" ^ pp_extr e1 ^ "-" ^ pp_extr e2)
+                 d2) ;
+          fun sd e1 e2 -> SdDir2Set.mem (sd,e1,e2) d2
+      | m ->
+          fun _ _ _ ->
+            eprintf "Function po_safe called in mode %s\n%!"
+              (pp_check m) ;
+            assert false
 
     let zyva prefix aset relax safe reject n f =
 (*      let safes = C.R.Set.of_list safe in *)
       let relax = edges_ofs relax in
       let safe = edges_ofs safe in
       let po_safe = extract_po safe in
-      let fence_safe = extract_fence safe in
-      let po_safe = po_safe,fence_safe in
 
       let rec choose_relax rs k = match rs with
       | [] -> k
@@ -596,7 +618,7 @@ module Make(C:Builder.S)
             try
               if
                 (match O.choice with
-                | Sc | Ppo | MixedCheck -> true
+                | Default| Sc | Ppo | MixedCheck -> true
                 | Thin | Free | Uni | Critical | Transitive |Total -> false) &&
                 (count_ext le=1 || all_int le || count_changes le < 2) then k
               else begin

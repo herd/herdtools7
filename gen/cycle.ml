@@ -114,7 +114,7 @@ end
 module type Config = sig
   val same_loc : bool
   val verbose : int
-(* allow threads s.t start -> end is against com+ *)
+(* allow threads s.t. start -> end is against com+ *)
   val allow_back : bool
   val naturalsize : MachSize.sz
   val hexa : bool
