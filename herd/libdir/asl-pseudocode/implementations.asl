@@ -179,7 +179,7 @@ func PhysMemWrite(
   value::bits(8*size)
 ) => PhysMemRetStatus
 begin
-  write_memory (desc, size*8, value);
+  write_memory (desc.vaddress, size*8, value);
   return PhysMemRetStatus {
     statuscode = Fault_None,
     extflag = '0',
@@ -194,7 +194,7 @@ func PhysMemRead(
   accdesc::AccessDescriptor
 ) => (PhysMemRetStatus, bits(8*size))
 begin
-  value = read_memory (desc, size*8);
+  value = read_memory (desc.vaddress, size*8);
   ret_status = PhysMemRetStatus {
     statuscode = Fault_None,
     extflag = '0',
@@ -227,3 +227,14 @@ begin
     end
 end
 
+// ClearExclusiveByAddress()
+// =========================
+// Clear the global Exclusives monitors for all PEs EXCEPT processorid if they
+// record any part of the physical address region of size bytes starting at paddress.
+// It is IMPLEMENTATION DEFINED whether the global Exclusives monitor for processorid
+// is also cleared if it records any part of the address region.
+
+func ClearExclusiveByAddress(paddress :: FullAddress, processorid :: integer, size :: integer)
+begin
+  pass;
+end

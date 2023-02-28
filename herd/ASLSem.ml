@@ -405,6 +405,8 @@ module Make (C : Sem.Config) = struct
       let* res = M.op1 (Op.AddK 1) ni in
       return [ res ]
 
+    let processor_id (ii, _poi) () = return [ V.intToV ii.A.proc ]
+
     (**************************************************************************)
     (* ASL environment                                                        *)
     (**************************************************************************)
@@ -479,7 +481,8 @@ module Make (C : Sem.Config) = struct
           (Some (bv (mul (var "N") (var "arg_1"))))
           replicate;
         arity_one "UInt" [ bv_var "N" ] (Some d) uint;
-        arity_one "SInt" [ bv_var "N" ] (Some d) uint;
+        arity_one "SInt" [ bv_var "N" ] (Some d) sint;
+        arity_zero "ProcessorID" (Some d) (processor_id ii_env);
       ]
 
     (**************************************************************************)
