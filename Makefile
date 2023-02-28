@@ -39,7 +39,7 @@ install:
 uninstall:
 	sh ./$(D)-uninstall.sh $(PREFIX)
 
-clean: $(D)-clean
+clean: $(D)-clean clean-asl-pseudocode
 	rm -f Version.ml
 
 ocb-clean:
@@ -472,8 +472,11 @@ diy-test-mte::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64.MTE diycross7 tests: OK"
 
-.PHONY: asl-pseudocode
+.PHONY: asl-pseudocode clean-asl-pseudocode
 asl-pseudocode: herd/libdir/asl-pseudocode/shared_pseudocode.asl
 herd/libdir/asl-pseudocode/shared_pseudocode.asl:
 	@ $(MAKE) -C $(@D) a64 clean-tmp
+
+clean-asl-pseudocode:
+	@ $(MAKE) -C $(@D)/herd/libdir/asl-pseudocode clean
 

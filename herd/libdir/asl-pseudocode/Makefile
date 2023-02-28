@@ -14,28 +14,26 @@ ISA_A64_NAME := ISA_A64_xml_A_profile-2022-12
 ISA_A32_NAME := ISA_AArch32_xml_A_profile-2022-12
 REGS_NAME := SysReg_xml_A_profile-2022-12
 
-STAGING_DIR := build
-
-$(STAGING_DIR):
-	@ mkdir -p $@
+TARGETS := $(ISA_A64_NAME) $(ISA_A32_NAME) $(REGS_NAME)
+TARGETS_TAR_GZ := $(addsuffix .tar.gz,$(TARGETS))
+TARGETS_LOG := $(addsuffix .log,$(TARGETS))
 
 # .SECONDARY does not support wildcards
-.SECONDARY: $(STAGING_DIR)/$(ISA_A64_NAME).tar.gz $(STAGING_DIR)/$(ISA_A32_NAME).tar.gz $(STAGING_DIR)/$(REGS_NAME).tar.gz
-.SECONDARY: $(STAGING_DIR)/$(ISA_A64_NAME) $(STAGING_DIR)/$(ISA_A32_NAME) $(STAGING_DIR)/$(REGS_NAME)
+.SECONDARY: $(TARGETS_TAR_GZ) $(TARGETS)
 
-$(STAGING_DIR)/%.tar.gz: $(STAGING_DIR)
+$(TARGETS_TAR_GZ):
 	@ echo "Downloading ISA from developer.arm.com ..."
-	@ curl $(BASE_URL)/$*.tar.gz --silent --output $@
+	@ curl $(BASE_URL)/$@ --silent --output $@
 
-$(STAGING_DIR)/%: $(STAGING_DIR)/%.tar.gz
+$(TARGETS): %: | %.tar.gz
 	@ echo "Unpacking xml archive ..."
-	@ tar -zxf $< --directory=$(STAGING_DIR)
+	@ tar -zxf $*.tar.gz $*
 
-%.log: $(STAGING_DIR)/%
+$(TARGETS_LOG): %.log: | %
 	@ echo "Copying proprietary notice ..."
-	@ cp $^/xhtml/notice.html .
+	@ cp $*/xhtml/notice.html .
 	@ echo "Extracting ASL pseudocode from xml files ..."
-	@ $(BUNDLER_CMD) -o $(@D) --log-file $@ $^
+	@ $(BUNDLER_CMD) -o $(@D) --log-file $@ $*
 	@ echo "You can find extraction log at $@"
 
 .PHONY: a64 a32 regs
@@ -48,8 +46,8 @@ all: a64 a32 regs
 
 .PHONY: clean-tmp
 clean-tmp:
-	@ rm -fr $(STAGING_DIR)
+	@ rm -fr $(TARGETS) $(TARGETS_TAR_GZ)
 
 .PHONY: clean
 clean: clean-tmp
-	rm -fr aarch64 shared_pseudocode.asl other-instrs $(ISA_A64_NAME).log
+	rm -fr aarch64 shared_pseudocode.asl other-instrs $(TARGETS_LOG)
