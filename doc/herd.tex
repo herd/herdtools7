@@ -118,7 +118,7 @@ This model illustrates several features
 of model definitions:
 \begin{itemize}
 \item New predefined sets: \verb+W+, \verb+R+ and~\verb+M+, which are
-the sets of read events, write events and of memory events, respectively.
+the sets of write events, read events and of memory events, respectively.
 \item The cartesian product operator ``\verb+*+'' that returns the cartesian
 product of two event sets as a relation.
 \item The intersection operator ``\verb+&+'' that operates on sets and
@@ -364,7 +364,7 @@ let allS = linearisations(~IW,preSC)
 \end{verbatim}
 The call \texttt{linearisations($E$,$r$)}, where $E$ is a set of events
 and~$r$ is a relation on events, returns the set of all total
-strict orders defined on~$S$ that extend~$r$. Notice that if~$r$ is cyclic,
+strict orders defined on~$E$ that extend~$r$. Notice that if~$r$ is cyclic,
 the empty set is  returned.
 
 \label{intro:with}We now need to iterate over the set~\verb+allS+.
@@ -446,11 +446,12 @@ For reference we provide our complete model~\afile{lamport.cat}
 \verbatiminput{lamport.cat}
 
 \subsection{Computing \label{sec:cos}coherence orders}
-All the models seen so far include the file \afile{cos.cat} that define
-``coherence relations'', written~\texttt{co}.
-This section describes the file~\texttt{cos.cat}.
-It can be skipped in first reading, as users may find sufficient
-to include the file.
+All the models seen so far include the
+file \ahref{./cos-no-opt.cat}{\texttt{cos.cat}} that define
+``coherence relations'', written~\texttt{co}. This section describes
+a possible computation of coherence orders\footnote{The actual computation of coherence orders slighty differs. Interested readers can look at the
+\afile{cross.cat}~file.}. It can be skipped in first
+reading, as users may find sufficient to include the file.
 
 For a given location~$x$ the coherence order is a total strict order on the
 write events to location~$x$. The coherence relation~\texttt{co} is the union
@@ -508,7 +509,9 @@ where \texttt{W} is the pre-defined set of all writes (including initial
 writes).
 
 For combining the effect of the \texttt{partition} and \texttt{linearisations}
-primitives, we first define a \texttt{map} function that, given a set~$S=
+primitives, we first define a \texttt{map}
+function\footnote{Function \texttt{map} is defined at the end of \herd standard
+library~\afile{stdlib.cat}} that, given a set~$S=
 \{e_1,\ldots,e_n\}$ and a function $f$, returns the set
 $\{f(e_1),\ldots,f(e_n)\}$:
 \begin{verbatim}
@@ -624,7 +627,7 @@ Finally, we generate all possible \texttt{co} relations by:
 let allCo = cross allCoX
 \end{verbatim}
 
-The file~\afile{cos.cat} goes on by iterating over \texttt{allCo} using
+Computation goes on by iterating over \texttt{allCo} using
 the \texttt{with $x$ from~$S$} construct:
 \begin{verbatim}
 with co from allCo
