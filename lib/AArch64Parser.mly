@@ -733,9 +733,9 @@ instr:
 | SWPALH wreg COMMA wreg COMMA  LBRK cxreg zeroopt RBRK
   { I_SWPBH (H,RMW_AL,$2,$4,$7) }
 /* Memory Tagging */
-| STG xreg COMMA LBRK xreg kr0_no_shift RBRK
+| STG xreg COMMA LBRK xreg k0_no_shift RBRK
   { I_STG ($2,$5,$6) }
-| STZG xreg COMMA LBRK xreg kr0_no_shift RBRK
+| STZG xreg COMMA LBRK xreg k0_no_shift RBRK
   { I_STZG ($2,$5,$6) }
 | LDG xreg COMMA LBRK xreg kr0_no_shift RBRK
   { I_LDG ($2,$5,$6) }

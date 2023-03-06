@@ -1,0 +1,10 @@
+AArch64 A135
+
+(* tests STR when write-back value is RV - INVALID SYNTAX *)
+
+{ %symbolic_reg = x; int x = 1}
+
+P0;
+STR X1, [X2], %symbolic_reg;
+
+forall(x=0)

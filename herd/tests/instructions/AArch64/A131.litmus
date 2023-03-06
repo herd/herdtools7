@@ -1,0 +1,11 @@
+AArch64 A131
+
+Variant=memtag
+(* LDG value from symbolic register into concrete reg *)
+{ uint64_t X0; uint64_t %symbolic_reg = x:red; uint64_t x;
+  }
+
+P0;
+LDG X0, [X1, %symbolic_reg];
+
+exists (0:X0 = x:green)

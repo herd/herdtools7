@@ -1,0 +1,11 @@
+AArch64 A137
+
+Variant=morello
+(* tests ALIGNU when value is RV - INVALID SYNTAX *)
+
+{ %symbolic_reg = x; int x = 1}
+
+P0;
+ALIGNU C0, C1, %symbolic_reg;
+
+forall(x=0)
