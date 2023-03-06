@@ -325,17 +325,18 @@ ldp_instr:
 ldp_simd_instr:
 | LDP
   { ( fun v r1 r2 r3 k0 k0' ->
-      match k0' with
-      | Some post ->
-        if k0 = K MetaConst.zero then I_LDP_P_SIMD (TT,v,r1,r2,r3,post)
-        else assert false
-      | None -> I_LDP_SIMD (TT,v,r1,r2,r3,k0)
+      match k0',k0 with
+      | Some post,K k when k = MetaConst.zero ->
+        I_LDP_P_SIMD (TT,v,r1,r2,r3,post)
+      | None,K k -> I_LDP_SIMD (TT,v,r1,r2,r3,k)
+      | _,_ -> assert false
     )}
 | LDNP
   { ( fun v r1 r2 r3 k0 k0' ->
-      match k0' with
-      | None -> I_LDP_SIMD (NT,v,r1,r2,r3,k0)
-      | Some _ -> assert false
+      match k0', k0 with
+      | None,K k -> I_LDP_SIMD (NT,v,r1,r2,r3,k)
+      | _,_-> assert false
+
     )}
 
 stp_instr:
@@ -347,17 +348,17 @@ stp_instr:
 stp_simd_instr:
 | STP
   { ( fun v r1 r2 r3 k0 k0' ->
-      match k0' with
-      | Some post ->
-        if k0 = K MetaConst.zero then I_STP_P_SIMD (TT,v,r1,r2,r3,post)
-        else assert false
-      | None -> I_STP_SIMD (TT,v,r1,r2,r3,k0)
+      match k0',k0 with
+      | Some post, K k when k = MetaConst.zero ->
+          I_STP_P_SIMD (TT,v,r1,r2,r3,post)
+      | None, K k -> I_STP_SIMD (TT,v,r1,r2,r3,k)
+      | _,_ -> assert false
     )}
 | STNP
   { ( fun v r1 r2 r3 k0 k0' ->
-      match k0' with
-      | None -> I_STP_SIMD (NT,v,r1,r2,r3,k0)
-      | Some _ -> assert false
+      match k0',k0 with
+      | None,K k -> I_STP_SIMD (NT,v,r1,r2,r3,k)
+      | _,_ -> assert false
     )}
 
 cond:
@@ -733,12 +734,21 @@ instr:
 | SWPALH wreg COMMA wreg COMMA  LBRK cxreg zeroopt RBRK
   { I_SWPBH (H,RMW_AL,$2,$4,$7) }
 /* Memory Tagging */
-| STG xreg COMMA LBRK xreg k0_no_shift RBRK
-  { I_STG ($2,$5,$6) }
-| STZG xreg COMMA LBRK xreg k0_no_shift RBRK
-  { I_STZG ($2,$5,$6) }
-| LDG xreg COMMA LBRK xreg kr0_no_shift RBRK
-  { I_LDG ($2,$5,$6) }
+| STG xreg COMMA LBRK xreg k0 RBRK
+  { let k = match $6 with
+    | Some k -> k
+    | None -> MetaConst.zero in
+      I_STG ($2,$5,k) }
+| STZG xreg COMMA LBRK xreg k0 RBRK
+  { let k = match $6 with
+    | Some k -> k
+    | None -> MetaConst.zero in
+      I_STZG ($2,$5,k) }
+| LDG xreg COMMA LBRK xreg k0 RBRK
+  { let k = match $6 with
+    | Some k -> k
+    | None -> MetaConst.zero in
+      I_LDG ($2,$5,k) }
 
 /* Fetch and ADD */
 | LDADD wreg COMMA wreg COMMA  LBRK cxreg zeroopt RBRK
@@ -1138,9 +1148,9 @@ instr:
   { I_RBIT (V64,$2,$4) }
 /* Morello */
 | ALIGND creg COMMA creg COMMA k
-  { I_ALIGND ($2,$4,K $6) }
+  { I_ALIGND ($2,$4,$6) }
 | ALIGNU creg COMMA creg COMMA k
-  { I_ALIGNU ($2,$4,K $6) }
+  { I_ALIGNU ($2,$4,$6) }
 | BUILD creg COMMA creg COMMA creg
   { I_BUILD ($2,$4,$6) }
 | CHKEQ creg COMMA creg

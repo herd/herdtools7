@@ -807,8 +807,8 @@ type 'k kinstruction =
   | I_ST4M of reg list * reg * 'k kr
   | I_LDP_P_SIMD of temporal * simd_variant * reg * reg * reg * 'k
   | I_STP_P_SIMD of temporal * simd_variant * reg * reg * reg * 'k
-  | I_LDP_SIMD of temporal * simd_variant * reg * reg * reg * 'k kr
-  | I_STP_SIMD of temporal * simd_variant * reg * reg * reg * 'k kr
+  | I_LDP_SIMD of temporal * simd_variant * reg * reg * reg * 'k
+  | I_STP_SIMD of temporal * simd_variant * reg * reg * reg * 'k
   | I_LDR_SIMD of simd_variant * reg * reg * 'k kr * 'k s
   | I_LDR_P_SIMD of simd_variant * reg * reg * 'k
   | I_STR_SIMD of simd_variant * reg * reg * 'k kr * 'k s
@@ -841,8 +841,8 @@ type 'k kinstruction =
   | I_STXR of variant * st_type * reg * reg * reg
   | I_STXP of variant * st_type * reg * reg * reg * reg
 (* Morello *)
-  | I_ALIGND of reg * reg * 'k kr
-  | I_ALIGNU of reg * reg * 'k kr
+  | I_ALIGND of reg * reg * 'k
+  | I_ALIGNU of reg * reg * 'k
   | I_BUILD of reg * reg * reg
   | I_CHKEQ of reg * reg
   | I_CHKSLD of reg
@@ -899,9 +899,9 @@ type 'k kinstruction =
 (* Write system register *)
   | I_MSR of sysreg * reg
 (* Memory Tagging *)
-  | I_STG of reg * reg * 'k kr
-  | I_STZG of reg * reg * 'k kr
-  | I_LDG of reg * reg * 'k kr
+  | I_STG of reg * reg * 'k
+  | I_STZG of reg * reg * 'k
+  | I_LDG of reg * reg * 'k
 
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
@@ -1077,9 +1077,10 @@ let do_pp_instruction m =
     pp_memo memo ^ " " ^ pp_vsimdreg v r1 ^ "," ^ pp_vsimdreg v r2 ^
     ",[" ^ pp_xreg ra ^ "]" ^ m.pp_k k in
 
-  let pp_smemp memo v r1 r2 ra kr =
+  let pp_smemp memo v r1 r2 ra k =
     pp_memo memo ^ " " ^ pp_vsimdreg v r1 ^ "," ^ pp_vsimdreg v r2 ^
-    ",[" ^ pp_xreg ra ^ pp_kr false false kr ^ "]" in
+    ",[" ^ pp_xreg ra ^ (if m.compat
+      then pp_kr false false (K k) else m.pp_k k)  ^ "]" in
 
   let pp_vmem_shift memo r k s =
     pp_memo memo ^ " " ^ pp_simd_vector_reg r ^ "," ^ m.pp_k k ^
@@ -1265,10 +1266,10 @@ let do_pp_instruction m =
       pp_smemp_post (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 k
   | I_STP_P_SIMD (t,v,r1,r2,r3,k) ->
       pp_smemp_post (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 k
-  | I_LDP_SIMD (t,v,r1,r2,r3,kr) ->
-      pp_smemp (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 kr
-  | I_STP_SIMD (t,v,r1,r2,r3,kr) ->
-      pp_smemp (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 kr
+  | I_LDP_SIMD (t,v,r1,r2,r3,k) ->
+      pp_smemp (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 k
+  | I_STP_SIMD (t,v,r1,r2,r3,k) ->
+      pp_smemp (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 k
   | I_LDR_SIMD (v,r1,r2,k,S_NOEXT) ->
       pp_smem "LDR" v r1 r2 k
   | I_LDR_SIMD (v,r1,r2,k,s) ->
@@ -1314,9 +1315,9 @@ let do_pp_instruction m =
 
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
-      sprintf "ALIGND %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_kr false true k)
+      sprintf "ALIGND %s,%s,%s" (pp_creg r1) (pp_creg r2) (m.pp_k k)
   | I_ALIGNU (r1,r2,k) ->
-      sprintf "ALIGNU %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_kr false true k)
+      sprintf "ALIGNU %s,%s,%s" (pp_creg r1) (pp_creg r2) (m.pp_k k)
   | I_BUILD (r1,r2,r3) ->
       sprintf "BUILD %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_creg r3)
   | I_CHKEQ (r1,r2) ->
@@ -1435,12 +1436,12 @@ let do_pp_instruction m =
   | I_MSR (sr,r) ->
      sprintf "MSR %s,%s" (pp_sysreg sr) (pp_xreg r)
 (* Memory Tagging *)
-  | I_STG (rt,rn,kr) ->
-      pp_mem "STG" V64 rt rn kr
-  | I_STZG (rt,rn,kr) ->
-      pp_mem "STZG" V64 rt rn kr
-  | I_LDG (rt,rn,kr) ->
-      pp_mem "LDG" V64 rt rn kr
+  | I_STG (rt,rn,k) ->
+      pp_mem "STG" V64 rt rn (K k)
+  | I_STZG (rt,rn,k) ->
+      pp_mem "STZG" V64 rt rn (K k)
+  | I_LDG (rt,rn,k) ->
+      pp_mem "LDG" V64 rt rn (K k)
 
 let m_int = { compat = false ; pp_k = string_of_int ;
               zerop = (function 0 -> true | _ -> false);
@@ -1509,13 +1510,13 @@ let fold_regs (f_regs,f_sregs) =
   | I_MOV_VE (r1,_,r2,_) | I_MOV_V (r1,r2) | I_MOV_TG (_,r1,r2,_) | I_MOV_FG (r1,_,_,r2)
   | I_MOV_S (_,r1,r2,_)
   | I_LDUR_SIMD (_,r1,r2,_) | I_STUR_SIMD (_,r1,r2,_)
+  | I_LDG (r1,r2,_) | I_STZG (r1,r2,_) | I_STG (r1,r2,_)
+  | I_ALIGND (r1,r2,_) | I_ALIGNU (r1,r2,_)
     -> fold_reg r1 (fold_reg r2 c)
   | I_MRS (r,sr) | I_MSR (sr,r) -> fold_reg (SysReg sr) (fold_reg r c)
-  | I_LDG (r1,r2,kr) | I_STZG (r1,r2,kr) | I_STG (r1,r2,kr)
   | I_LDR (_,r1,r2,kr,_) | I_STR (_,r1,r2,kr,_)
   | I_OP3 (_,_,r1,r2,kr,_)
   | I_LDRBH (_,r1,r2,kr,_) | I_STRBH (_,r1,r2,kr,_)
-  | I_ALIGND (r1,r2,kr) | I_ALIGNU (r1,r2,kr)
   | I_LD1 (r1,_,r2,kr) | I_LD1R (r1,r2,kr)
   | I_ST1 (r1,_,r2,kr)
   | I_LDR_SIMD (_,r1,r2,kr,_) | I_STR_SIMD(_,r1,r2,kr,_)
@@ -1536,12 +1537,12 @@ let fold_regs (f_regs,f_sregs) =
   | I_SC (_,r1,r2,r3) | I_LDP_P (_,_,r1,r2,r3,_) | I_STP_P (_,_,r1,r2,r3,_)
   | I_LDP_P_SIMD (_,_,r1,r2,r3,_)
   | I_STP_P_SIMD (_,_,r1,r2,r3,_)
+  | I_LDP_SIMD (_,_,r1,r2,r3,_)
+  | I_STP_SIMD (_,_,r1,r2,r3,_)
   | I_EOR_SIMD (r1,r2,r3) | I_ADD_SIMD (r1,r2,r3) | I_ADD_SIMD_S (r1,r2,r3)
   | I_LDXP (_,_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_LDP (_,_,r1,r2,r3,kr)
-  | I_LDP_SIMD (_,_,r1,r2,r3,kr)
-  | I_STP_SIMD (_,_,r1,r2,r3,kr)
   | I_LDPSW (r1,r2,r3,kr)
   | I_STP (_,_,r1,r2,r3,kr)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_kr kr c)))
@@ -1674,10 +1675,10 @@ let map_regs f_reg f_symb =
       I_ST4 (List.map map_reg rs,i,map_reg r2,map_kr kr)
   | I_ST4M (rs,r2,kr) ->
       I_ST4M (List.map map_reg rs,map_reg r2,map_kr kr)
-  | I_LDP_SIMD (t,v,r1,r2,r3,kr) ->
-      I_LDP_SIMD (t,v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
-  | I_STP_SIMD (t,v,r1,r2,r3,kr) ->
-      I_STP_SIMD (t,v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
+  | I_LDP_SIMD (t,v,r1,r2,r3,k) ->
+      I_LDP_SIMD (t,v,map_reg r1,map_reg r2,map_reg r3,k)
+  | I_STP_SIMD (t,v,r1,r2,r3,k) ->
+      I_STP_SIMD (t,v,map_reg r1,map_reg r2,map_reg r3,k)
   | I_LDR_SIMD (v,r1,r2,kr,os) ->
       I_LDR_SIMD (v,map_reg r1,map_reg r2,map_kr kr,os)
   | I_LDR_P_SIMD (v,r1,r2,k) ->
@@ -1715,10 +1716,10 @@ let map_regs f_reg f_symb =
   | I_ADD_SIMD_S (r1,r2,r3) ->
       I_ADD_SIMD_S (map_reg r1,map_reg r2,map_reg r3)
 (* Morello *)
-  | I_ALIGNU (r1,r2,kr) ->
-      I_ALIGNU(map_reg r1,map_reg r2,map_kr kr)
-  | I_ALIGND (r1,r2,kr) ->
-      I_ALIGND (map_reg r1,map_reg r2,map_kr kr)
+  | I_ALIGNU (r1,r2,k) ->
+      I_ALIGNU(map_reg r1,map_reg r2,k)
+  | I_ALIGND (r1,r2,k) ->
+      I_ALIGND (map_reg r1,map_reg r2,k)
   | I_BUILD (r1,r2,r3) ->
       I_BUILD(map_reg r1,map_reg r2,map_reg r3)
   | I_CHKEQ (r1,r2) ->
@@ -1817,12 +1818,12 @@ let map_regs f_reg f_symb =
        | _ -> assert false in
      I_MSR (sr,map_reg r)
 (* Memory Tagging *)
-  | I_STG (r1,r2,kr) ->
-      I_STG (map_reg r1,map_reg r2,map_kr kr)
-  | I_STZG (r1,r2,kr) ->
-      I_STZG (map_reg r1,map_reg r2,map_kr kr)
-  | I_LDG (r1,r2,kr) ->
-      I_LDG (map_reg r1,map_reg r2,map_kr kr)
+  | I_STG (r1,r2,k) ->
+      I_STG (map_reg r1,map_reg r2,k)
+  | I_STZG (r1,r2,k) ->
+      I_STZG (map_reg r1,map_reg r2,k)
+  | I_LDG (r1,r2,k) ->
+      I_LDG (map_reg r1,map_reg r2, k)
 
 (* No addresses burried in ARM code *)
 let fold_addrs _f c _ins = c
@@ -1989,9 +1990,9 @@ module PseudoI = struct
         | I_STP_P (t,v,r1,r2,r3,k) -> I_STP_P (t,v,r1,r2,r3,k_tr k)
         | I_STR (v,r1,r2,kr,s) -> I_STR (v,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_STR_P (v,r1,r2,s) -> I_STR_P (v,r1,r2, k_tr s)
-        | I_STG (r1,r2,kr) -> I_STG (r1,r2,kr_tr kr)
-        | I_STZG (r1,r2,kr) -> I_STZG (r1,r2,kr_tr kr)
-        | I_LDG (r1,r2,kr) -> I_LDG (r1,r2,kr_tr kr)
+        | I_STG (r1,r2,k) -> I_STG (r1,r2,k_tr k)
+        | I_STZG (r1,r2,k) -> I_STZG (r1,r2,k_tr k)
+        | I_LDG (r1,r2,k) -> I_LDG (r1,r2,k_tr k)
         | I_LDRBH (v,r1,r2,kr,s) ->
             I_LDRBH (v,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_STRBH (v,r1,r2,kr,s) ->
@@ -2006,8 +2007,8 @@ module PseudoI = struct
         | I_MOVZ (v,r,k,s) -> I_MOVZ (v,r,k_tr k,ap_shift k_tr s)
         | I_MOVK (v,r,k,s) -> I_MOVK (v,r,k_tr k,ap_shift k_tr s)
         | I_OP3 (v,op,r1,r2,kr,s) -> I_OP3 (v,op,r1,r2,kr_tr kr,ap_shift k_tr s)
-        | I_ALIGND (r1,r2,k) -> I_ALIGND (r1,r2,kr_tr k)
-        | I_ALIGNU (r1,r2,k) -> I_ALIGNU (r1,r2,kr_tr k)
+        | I_ALIGND (r1,r2,k) -> I_ALIGND (r1,r2,k_tr k)
+        | I_ALIGNU (r1,r2,k) -> I_ALIGNU (r1,r2,k_tr k)
         | I_LD1 (r1,i,r2,kr) -> I_LD1 (r1,i,r2,kr_tr kr)
         | I_LD1M (rs,r2,kr) -> I_LD1M (rs,r2,kr_tr kr)
         | I_LD1R (r1,r2,kr) -> I_LD1R (r1,r2,kr_tr kr)
@@ -2030,8 +2031,8 @@ module PseudoI = struct
         | I_ST4M (rs,r2,kr) -> I_ST4M (rs,r2,kr_tr kr)
         | I_LDP_P_SIMD (t,v,r1,r2,r3,k) -> I_LDP_P_SIMD (t,v,r1,r2,r3,k_tr k)
         | I_STP_P_SIMD (t,v,r1,r2,r3,k) -> I_STP_P_SIMD (t,v,r1,r2,r3,k_tr k)
-        | I_LDP_SIMD (t,v,r1,r2,r3,kr) -> I_LDP_SIMD (t,v,r1,r2,r3,kr_tr kr)
-        | I_STP_SIMD (t,v,r1,r2,r3,kr) -> I_STP_SIMD (t,v,r1,r2,r3,kr_tr kr)
+        | I_LDP_SIMD (t,v,r1,r2,r3,k) -> I_LDP_SIMD (t,v,r1,r2,r3,k_tr k)
+        | I_STP_SIMD (t,v,r1,r2,r3,k) -> I_STP_SIMD (t,v,r1,r2,r3,k_tr k)
         | I_LDR_SIMD (v,r1,r2,kr,s) -> I_LDR_SIMD (v,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_LDR_P_SIMD (v,r1,r2,k) -> I_LDR_P_SIMD (v,r1,r2,k_tr k)
         | I_STR_SIMD (v,r1,r2,kr,s) -> I_STR_SIMD (v,r1,r2,kr_tr kr,ap_shift k_tr s)
