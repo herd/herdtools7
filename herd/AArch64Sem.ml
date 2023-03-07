@@ -2083,28 +2083,28 @@ module Make
         | I_STLRBH(bh,rs,rd) ->
             stlr (bh_to_sz bh) rs rd ii
 
-        | I_STZG(rt,rn,kr) ->
+        | I_STZG(rt,rn,k) ->
             check_memtag "STZG" ;
             !!(begin
               (read_reg_data MachSize.Quad rt ii >>= tag_extract) >>|
-              get_ea rn kr AArch64.S_NOEXT ii
+              get_ea rn (K k) AArch64.S_NOEXT ii
             end >>= fun (v,a) ->
               (M.op1 Op.TagLoc a >>| loc_extract a) >>= fun (atag,loc) ->
                 (do_write_tag atag v ii
                  >>| do_write_mem quad AArch64.N aexp Access.VIR loc V.zero ii))
 
-        | I_STG(rt,rn,kr) ->
+        | I_STG(rt,rn,k) ->
             check_memtag "STG" ;
             !(begin
               (read_reg_data quad rt ii >>= tag_extract) >>|
-              get_ea rn kr S_NOEXT ii
+              get_ea rn (K k) S_NOEXT ii
             end >>= fun (v,a) ->
               M.op1 Op.TagLoc a  >>= fun a ->
                 do_write_tag a v ii)
 
-        | I_LDG (rt,rn,kr) ->
+        | I_LDG (rt,rn,k) ->
             check_memtag "LDG" ;
-            !(get_ea rn kr S_NOEXT ii  >>=
+            !(get_ea rn (K k) S_NOEXT ii  >>=
             fun a -> M.op1 Op.TagLoc a >>=
               fun atag -> do_read_tag atag ii
                   >>= fun tag ->
@@ -2218,7 +2218,7 @@ module Make
             k = K (match k with Some k -> k | None -> 0) in
             simd_str access_size rA r1 k S_NOEXT ii
         | I_LDP_SIMD(_,var,r1,r2,r3,k) ->
-            get_ea r3 k S_NOEXT ii >>= fun addr ->
+            get_ea r3 (K k) S_NOEXT ii >>= fun addr ->
             simd_ldp var addr r1 r2 ii
         | I_LDP_P_SIMD(_,var,r1,r2,r3,k) ->
             read_reg_ord r3 ii >>= fun addr ->
@@ -2226,7 +2226,7 @@ module Make
             post_kr r3 addr (K k) ii) >>=
             fun (b,()) -> M.unitT b
         | I_STP_SIMD(_,var,r1,r2,r3,k) ->
-            get_ea r3 k S_NOEXT ii >>= fun addr ->
+            get_ea r3 (K k) S_NOEXT ii >>= fun addr ->
             simd_stp var addr r1 r2 ii
         | I_STP_P_SIMD(_,var,r1,r2,r3,k) ->
             read_reg_ord r3 ii >>= fun addr ->
@@ -2235,18 +2235,16 @@ module Make
             fun (b,()) -> M.unitT b
 
         (* Morello instructions *)
-        | I_ALIGND(rd,rn,kr) ->
+        | I_ALIGND(rd,rn,k) ->
             check_morello inst ;
-            !((read_reg_ord_sz MachSize.S128 rn ii >>= match kr with
-            | K k -> fun v -> M.op Op.Alignd v (V.intToV k)
-            | _ -> assert false
-            ) >>= fun v -> write_reg_sz MachSize.S128 rd v ii)
-        | I_ALIGNU(rd,rn,kr) ->
+            !((read_reg_ord_sz MachSize.S128 rn ii >>=
+            fun v -> M.op Op.Alignd v (V.intToV k))
+            >>= fun v -> write_reg_sz MachSize.S128 rd v ii)
+        | I_ALIGNU(rd,rn,k) ->
             check_morello inst ;
-            !((read_reg_ord_sz MachSize.S128 rn ii >>= match kr with
-            | K k -> fun v -> M.op Op.Alignu v (V.intToV k)
-            | _ -> assert false
-            ) >>= fun v -> write_reg_sz MachSize.S128 rd v ii)
+            !((read_reg_ord_sz MachSize.S128 rn ii >>=
+            fun v -> M.op Op.Alignu v (V.intToV k))
+            >>= fun v -> write_reg_sz MachSize.S128 rd v ii)
         | I_BUILD(rd,rn,rm) ->
             check_morello inst ;
             !(begin

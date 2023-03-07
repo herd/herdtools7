@@ -391,28 +391,30 @@ include Arch.MakeArch(struct
         conv_reg r >! fun r -> I_TLBI (op,r)
     | I_MRS (r,sr) -> conv_reg r >! fun r -> I_MRS (r,sr)
     | I_MSR (sr,r) -> conv_reg r >! fun r -> I_MSR (sr,r)
-    | I_STG (r1,r2,kr) ->
+    | I_STG (r1,r2,k) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        expl_kr kr >! fun kr ->
-        I_STG (r1,r2,kr)
-    | I_STZG (r1,r2,kr) ->
+        find_cst k >! fun k ->
+        I_STG (r1,r2,k)
+    | I_STZG (r1,r2,k) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        expl_kr kr >! fun kr ->
-        I_STZG (r1,r2,kr)
-    | I_LDG (r1,r2,kr) ->
+        find_cst k >! fun k ->
+        I_STZG (r1,r2,k)
+    | I_LDG (r1,r2,k) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        expl_kr kr >! fun kr ->
-        I_LDG (r1,r2,kr)
+        find_cst k >! fun k ->
+        I_LDG (r1,r2,k)
     | I_ALIGND(r1,r2,k) ->
         conv_reg r1 >> fun r1 ->
-        conv_reg r2 >! fun r2 ->
+        conv_reg r2 >> fun r2 ->
+        find_cst k >! fun k ->
         I_ALIGND(r1,r2,k)
     | I_ALIGNU(r1,r2,k) ->
         conv_reg r1 >> fun r1 ->
-        conv_reg r2 >! fun r2 ->
+        conv_reg r2 >> fun r2 ->
+        find_cst k >! fun k ->
         I_ALIGNU(r1,r2,k)
     | I_BUILD(r1,r2,r3) ->
         conv_reg r1 >> fun r1 ->

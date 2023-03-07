@@ -178,7 +178,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | S128 -> I_LDR (V128,r1,r2,K o, S_NOEXT)
 
     let do_ldr v r1 r2 = I_LDR (v,r1,r2,K 0, S_NOEXT)
-    let ldg r1 r2 = I_LDG (r1,r2,K 0)
+    let ldg r1 r2 = I_LDG (r1,r2,0)
     let ldct r1 r2 = I_LDCT(r1,r2)
     let do_ldar vr r1 r2 = I_LDAR (vr,AA,r1,r2)
     let do_ldapr vr r1 r2 = I_LDAR (vr,AQ,r1,r2)
@@ -225,7 +225,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let do_str v r1 r2 = I_STR (v,r1,r2,K 0, S_NOEXT)
     let str = do_str vloc
-    let stg r1 r2 = I_STG (r1,r2,K 0)
+    let stg r1 r2 = I_STG (r1,r2,0)
     let stct r1 r2 = I_STCT(r1,r2)
     let do_stlr v r1 r2 = I_STLR (v,r1,r2)
     let stlr = do_stlr vloc

@@ -1,0 +1,1 @@
+Warning: File "./herd/tests/instructions/AArch64/A131.litmus", line 9, characters 13-26: unexpected '%symbolic_reg' (in prog) (User error)
