@@ -1,0 +1,15 @@
+ASL no data return
+
+{}
+
+func f(x::integer) => integer
+begin
+  let y = x;
+  return 3;
+end
+
+func main()
+begin
+  let a = f (3);
+end
+

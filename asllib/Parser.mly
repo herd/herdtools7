@@ -51,10 +51,7 @@
 open AST
 open ASTUtils
 
-let build_dot_fields (e, fields) =
-    let one_field f = E_GetField (e, f, TA_None) in
-    let one_field s = add_pos_from e @@ one_field s in
-    E_Concat (List.map one_field fields)
+let t_bit = T_Bits (BitWidth_Determined (E_Literal (V_Int 1) |> add_dummy_pos), None)
 
 %}
 
@@ -275,22 +272,22 @@ let expr :=
   annotated (
     (* A union of cexpr, cexpr_cmp, cexpr_add_sub, cepxr mul_div, cexpr_pow,
        bexpr, expr_term, expr_atom *)
-    | ~=value ;                                     < E_Literal            >
-    | ~=IDENTIFIER ;                                < E_Var                >
-    | e1=expr; op=binop; e2=expr;                   { E_Binop (op, e1, e2) }
-    | op=unop; e=expr;                              < E_Unop               >
-    | IF; e1=expr; THEN; e2=expr; ~=e_else;         < E_Cond               >
-    | x=IDENTIFIER; args=plist(expr); ~=nargs;      < E_Call               >
-    | e=expr; ~=slices;                             < E_Slice              >
-    | e=expr; DOT; x=IDENTIFIER; ~=without_ta;      < E_GetField           >
-    | ~=bracketed(nclist(expr));                    < E_Concat             >
-    | ~=plist2(expr);                               < E_Tuple              >
-    | ~=expr; DOT; ~=bracketed(nclist(IDENTIFIER)); < build_dot_fields     >
-    | ~=expr; AS; ~=ty;                             < E_Typed              >
-    | ~=expr; AS; ~=implicit_t_int;                 < E_Typed              >
+    | ~=value ;                                                   < E_Literal            >
+    | ~=IDENTIFIER ;                                              < E_Var                >
+    | e1=expr; op=binop; e2=expr;                                 { E_Binop (op, e1, e2) }
+    | op=unop; e=expr;                                            < E_Unop               >
+    | IF; e1=expr; THEN; e2=expr; ~=e_else;                       < E_Cond               >
+    | x=IDENTIFIER; args=plist(expr); ~=nargs;                    < E_Call               >
+    | e=expr; ~=slices;                                           < E_Slice              >
+    | e=expr; DOT; x=IDENTIFIER;                    ~=without_ta; < E_GetField           >
+    | ~=expr; DOT; ~=bracketed(nclist(IDENTIFIER)); ~=without_ta; < E_GetFields          >
+    | ~=bracketed(nclist(expr));                                  < E_Concat             >
+    | ~=plist2(expr);                                             < E_Tuple              >
+    | ~=expr; AS; ~=ty;                                           < E_Typed              >
+    | ~=expr; AS; ~=implicit_t_int;                               < E_Typed              >
 
-    | ~=expr; IN; ~=pattern_set;                    < E_Pattern            >
-    | UNKNOWN; COLON_COLON; ~=ty;                   < E_Unknown            >
+    | ~=expr; IN; ~=pattern_set;                                  < E_Pattern            >
+    | UNKNOWN; COLON_COLON; ~=ty;                                 < E_Unknown            >
 
     | t=annotated(IDENTIFIER); fields=braced(clist(field_assign));
         { E_Record (add_pos_from t (T_Named t.desc), fields, TA_None) }
@@ -341,7 +338,7 @@ let slice ==
 
 (* Bitfields *)
 let bitfields == ioption(braced(tclist(bitfield)))
-let bitfield == ~=nslices ; ~=IDENTIFIER ; bitfield_spec; <>
+let bitfield == s=nslices ; x=IDENTIFIER ; bitfield_spec; { (x, s) }
 (* Bitfield spec -- not yet implemented *)
 let bitfield_spec==
   | as_ty     ; <>
@@ -354,7 +351,7 @@ let ty :=
     | REAL;                                         { T_Real      }
     | BOOLEAN;                                      { T_Bool      }
     | STRING;                                       { T_String    }
-    | BIT;                                          { T_Bit       }
+    | BIT;                                          { t_bit       }
     | BITS; ~=pared(bits_constraint); ~=bitfields;  < T_Bits      >
     | ENUMERATION; l=braced(tclist(IDENTIFIER));    < T_Enum      >
     | l=plist(ty);                                  < T_Tuple     >
@@ -394,11 +391,11 @@ let lexpr ==
 let lexpr_atom :=
   | le_var
   | le=annotated(lexpr_atom); ~=slices; <LE_Slice>
-  | le=annotated(lexpr_atom); DOT; field=IDENTIFIER; ~=without_ta; <LE_SetField>
   | le=annotated(lexpr_atom); ty=as_ty; <LE_Typed>
+  | le=annotated(lexpr_atom); DOT; field=IDENTIFIER; ~=without_ta; <LE_SetField>
+  | le=annotated(lexpr_atom); DOT; li=bracketed(clist(IDENTIFIER)); ~=without_ta; <LE_SetFields>
 
   | unimplemented_lexpr(
-    | lexpr; DOT; bracketed(clist(IDENTIFIER)); <>
     | bracketed(nclist(lexpr_atom)); <>
   )
 

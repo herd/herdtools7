@@ -34,8 +34,8 @@ module Make
     let mixed = O.variant Variant.Mixed || morello
     let memtag = O.variant Variant.MemTag
     let kvm = O.variant Variant.VMSA
-    let asl = O.variant Variant.ASL
     let self = O.variant Variant.Self
+    let asl = S.A.arch = `ASL
     let optacetrue =
       let open OptAce in
       match O.optace with

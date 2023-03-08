@@ -20,10 +20,10 @@
 module type S = sig
   module B : Backend.S
 
-  type body = B.value list -> B.value list B.m
+  type body = B.value B.m list -> B.value B.m list B.m
   type primitive = body AST.func_skeleton
 
-  val run : AST.t -> primitive list -> B.value list B.m
+  val run : AST.t -> primitive list -> unit B.m
   (** [run spec_lib ast] runs the function main of the ast, in an
       environment build from the ast and spec_lib.
       The primitives signatures will be passed by the interpreter to the type-

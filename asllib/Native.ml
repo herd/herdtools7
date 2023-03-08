@@ -60,6 +60,7 @@ module NativeBackend = struct
   let return v () = v
   let bind_data = bind
   let bind_seq = bind
+  let bind_ctrl = bind
 
   let choice (c : value m) (m_true : 'b m) (m_false : 'b m) : 'b m =
     let open AST in
@@ -135,10 +136,16 @@ end
 module NativeStdlib = struct
   open NativeBackend
 
+  let return_one v = return [ return v ]
+
+  let sync f args () =
+    let args = List.map (fun a -> a ()) args in
+    f args ()
+
   let replicate = function
     | [ V_BitVector bv; V_Int n ] ->
-        [ V_BitVector (Bitvector.concat @@ List.init n (Fun.const bv)) ]
-        |> return
+        V_BitVector (Bitvector.concat @@ List.init n (Fun.const bv))
+        |> return_one
     | [ V_BitVector _; v ] ->
         Error.fatal_unknown_pos @@ Error.MismatchType (v, [ T_Int None ])
     | [ v; _ ] ->
@@ -149,7 +156,7 @@ module NativeStdlib = struct
         @@ Error.BadArity ("Replicate", 2, List.length li)
 
   let bitcount = function
-    | [ V_BitVector bv ] -> [ V_Int (Bitvector.bitcount bv) ] |> return
+    | [ V_BitVector bv ] -> V_Int (Bitvector.bitcount bv) |> return_one
     | [ v ] ->
         Error.fatal_unknown_pos
         @@ Error.MismatchType (v, [ ASTUtils.default_t_bits ])
@@ -158,7 +165,7 @@ module NativeStdlib = struct
         @@ Error.BadArity ("Replicate", 1, List.length li)
 
   let uint = function
-    | [ V_BitVector bv ] -> [ V_Int (Bitvector.to_int bv) ] |> return
+    | [ V_BitVector bv ] -> V_Int (Bitvector.to_int bv) |> return_one
     | [ v ] ->
         Error.fatal_unknown_pos
         @@ Error.MismatchType (v, [ ASTUtils.default_t_bits ])
@@ -167,7 +174,7 @@ module NativeStdlib = struct
         @@ Error.BadArity ("Replicate", 1, List.length li)
 
   let sint = function
-    | [ V_BitVector bv ] -> [ V_Int (Bitvector.to_int_signed bv) ] |> return
+    | [ V_BitVector bv ] -> V_Int (Bitvector.to_int_signed bv) |> return_one
     | [ v ] ->
         Error.fatal_unknown_pos
         @@ Error.MismatchType (v, [ ASTUtils.default_t_bits ])
@@ -185,28 +192,28 @@ module NativeStdlib = struct
         name = "Replicate";
         parameters = [ ("N", Some integer) ];
         args = [ ("x", t_bits (e_var "N")); ("M", integer) ];
-        body = replicate;
+        body = sync replicate;
         return_type = Some (t_bits (ASTUtils.binop MUL (e_var "N") (e_var "M")));
       };
       {
         name = "BitCount";
         parameters = [ ("N", Some integer) ];
         args = [ ("x", t_bits (e_var "N")) ];
-        body = bitcount;
+        body = sync bitcount;
         return_type = Some integer;
       };
       {
         name = "UInt";
         parameters = [ ("N", Some integer) ];
         args = [ ("x", t_bits (e_var "N")) ];
-        body = uint;
+        body = sync uint;
         return_type = Some integer;
       };
       {
         name = "SInt";
         parameters = [ ("N", Some integer) ];
         args = [ ("x", t_bits (e_var "N")) ];
-        body = sint;
+        body = sync sint;
         return_type = Some integer;
       };
     ]

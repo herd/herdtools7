@@ -21,7 +21,7 @@ exception Error
 let blank = [' ''\n''\r''\t']
 let non_blank = [^' ''\n''\r''\t']
 let digit = ['0'-'9']
-let printable = ['0'-'9''a'-'z''A'-'Z'':']
+let printable = [^' ''\n''\r''\t'',']
 rule main = parse
 | ',' | blank+  { main lexbuf }
 | digit+ as lxm { int_of_string lxm :: main lexbuf }

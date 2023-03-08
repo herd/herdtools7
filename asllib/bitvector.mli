@@ -35,6 +35,11 @@ val of_int : int -> t
     corresponds to [i] in little-endian, i.e. index 0 (for slicing operations
     corresponds to [i mod 2]. *)
 
+val of_int_sized : int -> int -> t
+(** [of_int n i] is the bitvector of length [n] that corresponds to [i] in
+    little-endian, i.e. index 0 (for slicing operations corresponds to
+    [i mod 2]. *)
+
 val of_int64 : int64 -> t
 (** [of_int i] is the bitvector of length 64 that corresponds to [i] in
     little-endian, i.e. index 0 (for slicing operations corresponds to
@@ -98,3 +103,6 @@ val ones : int -> t
 
 val zeros : int -> t
 (** [zeros n] is a bitvector of length [n] without any bit set. *)
+
+val is_zeros : t -> bool
+(** [is_zeros bv] is true if every bit of bv is unset. *)

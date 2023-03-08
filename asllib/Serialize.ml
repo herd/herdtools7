@@ -97,6 +97,8 @@ let rec pp_expr =
         bprintf f "E_Cond (%a, %a, %a)" pp_expr e1 pp_expr e2 pp_expr e3
     | E_GetField (e, x, _ta) ->
         bprintf f "E_GetField (%a, %S, None)" pp_expr e x
+    | E_GetFields (e, x, _ta) ->
+        bprintf f "E_GetFields (%a, %a, None)" pp_expr e (pp_list pp_string) x
     | E_Record (ty, li, _ta) ->
         bprintf f "E_Record (%a, %a, None)" pp_ty ty (pp_id_assoc pp_expr) li
     | E_Concat es ->
@@ -142,11 +144,10 @@ and pp_ty =
     | T_Bool -> addb f "T_Bool"
     | T_Bits (bits_constraint, fields) ->
         let pp_fields =
-          pp_option @@ pp_list @@ pp_pair pp_slice_list pp_string
+          pp_option @@ pp_list @@ pp_pair pp_string pp_slice_list
         in
         bprintf f "T_Bits (%a, %a)" pp_bits_constraint bits_constraint pp_fields
           fields
-    | T_Bit -> addb f "T_Bit"
     | T_Enum enum_type_desc ->
         addb f "T_Enum ";
         pp_list pp_string f enum_type_desc
@@ -190,7 +191,10 @@ let rec pp_lexpr =
     | LE_Slice (le, args) ->
         bprintf f "LE_Slice (%a, %a)" pp_lexpr le pp_slice_list args
     | LE_SetField (le, x, _ta) ->
-        bprintf f "LE_SetField (%a, %S, None)" pp_lexpr le x
+        bprintf f "LE_Set_Field (%a, %S, None)" pp_lexpr le x
+    | LE_SetFields (le, x, _ta) ->
+        bprintf f "LE_SetFields (%a, %a, None)" pp_lexpr le (pp_list pp_string)
+          x
     | LE_Ignore -> addb f "LE_Ignore"
     | LE_TupleUnpack les ->
         addb f "LE_TupleUnpack ";

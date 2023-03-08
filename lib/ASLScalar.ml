@@ -70,6 +70,8 @@ let equal s1 s2 =
 let add s1 s2 =
   match (s1, s2) with
   | S_Int i1, S_Int i2 -> S_Int (Int64.add i1 i2)
+  | S_BitVector bv1, S_Int i2 ->
+      S_BitVector (bv1 |> BV.to_int64 |> Int64.add i2 |> BV.of_int64)
   | _ ->
       Warn.fatal "ASLScalar invalid op: %s add %s" (pp false s1) (pp false s2)
 
@@ -160,10 +162,8 @@ let mask sz = function
       let n' = MachSize.nbits sz in
       let n = BV.length bv in
       if n = n' then S_BitVector bv
-      else if n' > n then
-        S_BitVector (BV.concat [ BV.zeros (n' - n); bv ])
-      else
-        S_BitVector (BV.extract_slice bv (List.init n' (( - ) (n' - 1))))
+      else if n' > n then S_BitVector (BV.concat [ BV.zeros (n' - n); bv ])
+      else S_BitVector (BV.extract_slice bv (List.init n' (( - ) (n' - 1))))
   | s -> Warn.fatal "ASLScalar invalid op: _ mask %s" (pp false s)
 
 let sxt sz = function S_Int i -> S_Int (Int64Scalar.sxt sz i) | s -> s
@@ -181,6 +181,12 @@ let convert_to_bool = function
   | S_Bool b -> S_Bool b
   | S_BitVector _ as s ->
       Warn.fatal "ASLScalar invalid op: to_bool %s" (pp false s)
+
+let convert_to_bv = function
+  | S_BitVector _ as bv -> bv
+  | S_Int i -> S_BitVector (BV.of_int64 i)
+  | S_Bool false -> S_BitVector (BV.zeros 64)
+  | S_Bool true -> S_BitVector (BV.concat [ BV.zeros 64; BV.one ])
 
 let try_extract_slice s positions =
   match s with

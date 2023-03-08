@@ -22,4 +22,4 @@ module NativeBackend :
 
 module NativeInterpreter : Interpreter.S with module B = NativeBackend
 
-val interprete : AST.t -> AST.value list
+val interprete : AST.t -> unit

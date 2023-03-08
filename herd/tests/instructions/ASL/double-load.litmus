@@ -1,0 +1,17 @@
+ASL double-load
+
+{
+  x = 3;
+  y = x;
+  0: X1 = y;
+}
+
+func main()
+begin
+  let addr_y = read_register(1);
+  let addr_x = read_memory (addr_y, 64);
+  let data_x = read_memory (addr_x, 64);
+  let three = UInt (data_x);
+end
+
+forall (0: main.0.three = 3)

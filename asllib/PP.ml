@@ -105,6 +105,8 @@ let rec pp_expr f e =
       fprintf f "@[<hv>@[<h>if %a@ then@]@;<1 2>%a@ else@;<1 2>%a@]" pp_expr e1
         pp_expr e2 pp_expr e3
   | E_GetField (e, x, _ta) -> fprintf f "@[%a@,.%s@]" pp_expr e x
+  | E_GetFields (e, xs, _ta) ->
+      fprintf f "@[%a@,.[@[%a@]]@]" pp_expr e (pp_comma_list pp_print_string) xs
   | E_Record (ty, li, _ta) ->
       let pp_one f (x, e) = fprintf f "@[<h>%s =@ %a@]" x pp_expr e in
       fprintf f "@[<hv>%a {@;<1 2>%a@,}@]" pp_ty ty (pp_comma_list pp_one) li
@@ -141,12 +143,11 @@ and pp_ty f t =
       fprintf f "@[integer {%a}@]" pp_int_constraints int_constraint
   | T_Real -> pp_print_string f "real"
   | T_String -> pp_print_string f "string"
-  | T_Bit -> pp_print_string f "bit"
   | T_Bool -> pp_print_string f "boolean"
   | T_Bits (bits_constraint, None) ->
       fprintf f "@[bits(%a)@]" pp_bits_constraint bits_constraint
   | T_Bits (bits_constraint, Some fields) ->
-      let pp_bitfield f (slices, name) =
+      let pp_bitfield f (name, slices) =
         fprintf f "@[<h>[%a]@ %s@]" pp_slice_list slices name
       in
       fprintf f "bits (%a)@ {@[<hv 1>@,%a@]@,}" pp_bits_constraint
@@ -192,6 +193,10 @@ let rec pp_lexpr f le =
   | LE_Typed (le, ty) -> fprintf f "%a :: %a" pp_lexpr le pp_ty ty
   | LE_Slice (le, args) -> fprintf f "%a[%a]" pp_lexpr le pp_slice_list args
   | LE_SetField (le, x, _ta) -> fprintf f "@[%a@,.%s@]" pp_lexpr le x
+  | LE_SetFields (le, li, _ta) ->
+      fprintf f "@[%a@,.@[[%a]@]@]" pp_lexpr le
+        (pp_comma_list pp_print_string)
+        li
   | LE_Ignore -> pp_print_string f "-"
   | LE_TupleUnpack les -> fprintf f "@[( %a )@]" (pp_comma_list pp_lexpr) les
 

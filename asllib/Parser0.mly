@@ -3,13 +3,10 @@
 
   let build_expr_conds =
     let open AST in
-    let make_cond { desc = (c, e_then); _ } e_else = AST.E_Cond (c, e_then, e_else) in
+    let make_cond { desc = (c, e_then); _ } e_else =
+      AST.E_Cond (c, e_then, e_else)
+    in
     fun (elseifs, e) -> List.fold_right (ASTUtils.map2_desc make_cond) elseifs e
-
-  let tr_get_fields (e, fields) =
-    let open AST in
-    let one_field f = E_GetField (e, f, TA_None) |> ASTUtils.add_dummy_pos in
-    E_Concat (List.map one_field fields)
 
   let build_stmt_conds (s_elsifs, s_else) =
     let open AST in
@@ -17,9 +14,16 @@
     | Some s -> s
     | None -> ASTUtils.s_pass
     in
-    let folder { desc = (c, s_then); _ } s_else = AST.S_Cond (c, s_then, s_else) in
+    let folder { desc = (c, s_then); _ } s_else =
+      AST.S_Cond (c, s_then, s_else)
+    in
     List.fold_right (ASTUtils.map2_desc folder) s_elsifs s_else
 
+  let t_bit =
+    let open AST in
+    T_Bits (
+      BitWidth_Determined (E_Literal (V_Int 1) |> ASTUtils.add_dummy_pos),
+      None)
 %}
 
 %token <string> IDENTIFIER STRING_LIT MASK_LIT
@@ -245,10 +249,9 @@ let ty :=
 let ty_non_tuple ==
   | INTEGER;  { AST.T_Int None  }
   | REAL;     { AST.T_Real      }
-  | BIT;      { AST.T_Bit       }
   | BOOLEAN;  { AST.T_Bool      }
   | ~=tident; < AST.T_Named     >
-
+  | BIT;      { t_bit           }
   | BITS; e=pared(expr); { AST.(T_Bits (AST.BitWidth_Determined e, None)) }
   (* | tident; pared(clist(expr)); <> *)
 
@@ -274,7 +277,7 @@ let qualident ==
     | RECORD; { "record" }
 
 let unimplemented_expr(x) == x; { AST.(E_Literal (V_Bool true)) }
-let without_ta == { AST.TA_None }
+let no_ta == { AST.TA_None }
 let nargs == { [] }
 
 let sexpr := binop_expr(sexpr, abinop)
@@ -288,19 +291,19 @@ let expr :=
 let binop_expr(e, b) ==
   | pared(expr)
   | annotated (
-      | ~=literal_expression;                       < AST.E_Literal   >
-      | ~=qualident;                                < AST.E_Var       >
-      | ~=qualident; ~=pared(clist(expr)); ~=nargs; < AST.E_Call      >
-      | ~=unop; ~=e;                                < AST.E_Unop      >
-      | e1=e; op=b; e2=e;                           { AST.E_Binop (op, e1, e2) }
-      | ~=pared(nnclist(expr));                     < AST.E_Tuple     >
-      | IF; c=expr; THEN; e=expr; ~=e_else;         < AST.E_Cond      >
-      | ~=e; DOT; ~=ident; ~=without_ta;            < AST.E_GetField  >
-      | ~=e; DOT; ~=bracketed(clist(ident));        < tr_get_fields   >
-      | ~=e; ~=bracketed(clist(slice));             < AST.E_Slice     >
-      | ~=bracketed(clist(expr));                   < AST.E_Concat    >
-      | ~=e; IN; ~=pattern;                         < AST.E_Pattern   >
-      | ~=annotated(ty_non_tuple); UNKNOWN;         < AST.E_Unknown   >
+      | ~=literal_expression;                         < AST.E_Literal   >
+      | ~=qualident;                                  < AST.E_Var       >
+      | ~=qualident; ~=pared(clist(expr)); ~=nargs;   < AST.E_Call      >
+      | ~=unop; ~=e;                                  < AST.E_Unop      >
+      | e1=e; op=b; e2=e;                             { AST.E_Binop (op, e1, e2) }
+      | ~=pared(nnclist(expr));                       < AST.E_Tuple     >
+      | IF; c=expr; THEN; e=expr; ~=e_else;           < AST.E_Cond      >
+      | ~=e; DOT; ~=ident;                   ~=no_ta; < AST.E_GetField  >
+      | ~=e; DOT; ~=bracketed(clist(ident)); ~=no_ta; < AST.E_GetFields >
+      | ~=e; ~=bracketed(clist(slice));               < AST.E_Slice     >
+      | ~=bracketed(clist(expr));                     < AST.E_Concat    >
+      | ~=e; IN; ~=pattern;                           < AST.E_Pattern   >
+      | ~=annotated(ty_non_tuple); UNKNOWN;           < AST.E_Unknown   >
       (*
       | ~=e; LT; ~=clist(slice); GT;          < AST.E_Slice     >
       *)
@@ -494,13 +497,13 @@ let lexpr :=
   annotated (
     | MINUS; lexpr_ignore
     | le_var
-    | ~=lexpr; DOT; ~=ident; ~=without_ta;  < AST.LE_SetField >
-    | ~=lexpr; ~=bracketed(clist(slice));   < AST.LE_Slice    >
-    | ~=lexpr; LT; ~=clist(slice); GT;      < AST.LE_Slice    >
-    | ~=pared(nclist(lexpr));               < AST.LE_TupleUnpack >
+    | ~=lexpr; ~=bracketed(clist(slice));               < AST.LE_Slice    >
+    | ~=lexpr; LT; ~=clist(slice); GT;                  < AST.LE_Slice    >
+    | ~=pared(nclist(lexpr));                           < AST.LE_TupleUnpack >
+    | ~=lexpr; DOT; ~=ident;                   ~=no_ta; < AST.LE_SetField >
+    | ~=lexpr; DOT; ~=bracketed(clist(ident)); ~=no_ta; < AST.LE_SetFields >
 
     | unimplemented_lexpr (
-      | lexpr; DOT; bracketed(clist(ident)); <>
       | bracketed(nclist(lexpr)); <>
     )
   )
