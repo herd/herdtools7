@@ -421,7 +421,7 @@ let options = [
     "<name> specify kind of tests (can be repeated)");
   ( "-conds",
     Arg.String  (fun s -> conds := !conds @ [s]),
-    "<name> specify conditoins of tests (can be repeated)");
+    "<name> specify conditions of tests (can be repeated)");
 (* Undocumented *)
   parse_bool "-candidates" candidates
   "show complete candidate count in output" ;
