@@ -481,7 +481,7 @@ let fold_tedges f r =
     (* Specific case *)
         ok_rmw rmw a1 a2
     | _ ->
-    (* Situation is controled by variant for other relaxations *)
+    (* Situation is controlled by variant for other relaxations *)
         ok_non_rmw e a1 a2
 
 
