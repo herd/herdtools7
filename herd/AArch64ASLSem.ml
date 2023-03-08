@@ -123,52 +123,122 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
       | AL -> 0b1111 (* Also possible [0b1110] *)
 
     let decode_inst ii =
-      let r2i = ASLBase.arch_reg_to_int in
-      let tr_ty ty = MachSize.nbits (AArch64Base.tr_variant ty) in
-      let pseudocode_fname = Filename.concat "asl-pseudocode" in
+      let open Asllib.AST in
+      let with_pos desc = Asllib.ASTUtils.add_dummy_pos desc in
+      let ( ^= ) x e = S_Assign (LE_Var x |> with_pos, e) |> with_pos in
+      let lit i = E_Literal (V_Int i) |> with_pos in
+      let litb b = E_Literal (V_Bool b) |> with_pos in
+      let var x = E_Var x |> with_pos in
+      let reg r = ASLBase.arch_reg_to_int r |> lit in
+      let variant v = AArch64Base.tr_variant v |> MachSize.nbits |> lit in
+      let cond c = tr_cond c |> lit in
+      let stmt = Asllib.ASTUtils.stmt_from_list in
       let open AArch64Base in
       match ii.A.inst with
-      | I_NOP -> Some (pseudocode_fname "nop.asl", [])
+      | I_NOP ->
+          Some
+            ( "system/hints.opn",
+              stmt [ "op" ^= var "SystemHintOp_NOP" ] )
       | I_SWP (v, RMW_P, Ireg r1, Ireg r2, Ireg r3) ->
           Some
-            ( pseudocode_fname "swp.asl",
-              [
-                ("s", r2i r1);
-                ("t", r2i r2);
-                ("n", r2i r3);
-                ("datasize", tr_ty v);
-              ] )
+            ( "memory/atomicops/swp.opn",
+              stmt
+                [
+                  "s" ^= reg r1;
+                  "t" ^= reg r2;
+                  "n" ^= reg r3;
+                  "datasize" ^= variant v;
+                  "regsize" ^= lit 64;
+                  "acquire" ^= litb false;
+                  "release" ^= litb false;
+                  "tagchecked" ^= litb true;
+                ] )
       | I_CAS (v, RMW_P, Ireg rs, Ireg rt, Ireg rn) ->
           Some
-            ( pseudocode_fname "cas.asl",
-              [
-                ("s", r2i rs);
-                ("t", r2i rt);
-                ("n", r2i rn);
-                ("datasize", tr_ty v);
-              ] )
+            ( "memory/atomicops/cas/single.opn",
+              stmt
+                [
+                  "s" ^= reg rs;
+                  "t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "datasize" ^= variant v;
+                  "regsize" ^= lit 64;
+                  "acquire" ^= litb false;
+                  "release" ^= litb false;
+                  "tagchecked" ^= litb true;
+                ] )
       | I_CSEL (v, Ireg rd, Ireg rn, Ireg rm, c, Cpy) ->
           Some
-            ( pseudocode_fname "csel.asl",
-              [
-                ("d", r2i rd);
-                ("n", r2i rn);
-                ("m", r2i rm);
-                ("cond", tr_cond c);
-                ("datasize", tr_ty v);
-              ] )
-      | I_MOV (v, Ireg rt, RV (V64, Ireg rs)) ->
+            ( "integer/conditional/select.opn",
+              stmt
+                [
+                  "d" ^= reg rd;
+                  "n" ^= reg rn;
+                  "m" ^= reg rm;
+                  "datasize" ^= variant v;
+                  "condition" ^= cond c;
+                  "else_inv" ^= litb false;
+                  "else_inc" ^= litb false;
+                ] )
+      | I_MOV (v, Ireg rt, RV (v', Ireg rs)) when v = v' ->
           Some
-            ( pseudocode_fname "mov.asl",
-              [ ("s", r2i rs); ("t", r2i rt); ("datasize", tr_ty v) ] )
+            ( "integer/logical/shiftedreg.opn",
+              stmt
+                [
+                  "n" ^= lit 31;
+                  "m" ^= reg rs;
+                  "d" ^= reg rt;
+                  "datasize" ^= variant v;
+                  "shift_type" ^= var "ShiftType_LSR";
+                  "shift_amount" ^= lit 0;
+                  "invert" ^= litb false;
+                  "op" ^= var "LogicalOp_ORR";
+                  "setflags" ^= litb false;
+                ] )
       | I_LDR (v, Ireg rt, Ireg rn, K 0, S_NOEXT) ->
           Some
-            ( pseudocode_fname "load.asl",
-              [ ("t", r2i rt); ("n", r2i rn); ("datasize", tr_ty v) ] )
+            ( "memory/single/general/register.opn",
+              stmt
+                [
+                  "t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "m" ^= lit 31 (* i.e. Zero *);
+                  "wback" ^= litb false;
+                  "postindex" ^= litb false;
+                  "extend_type" ^= var "ExtendType_UXTX";
+                  (* ie LSL . *)
+                  "shift" ^= lit 0;
+                  "signed" ^= litb false;
+                  "nontemporal" ^= litb false;
+                  "privileged" ^= litb false;
+                  "memop" ^= var "MemOp_LOAD";
+                  "tagchecked" ^= litb true;
+                  "datasize" ^= variant v;
+                  "regsize" ^= lit 64;
+                ] )
       | I_STR (v, Ireg rt, Ireg rn, K 0, S_NOEXT) ->
           Some
-            ( pseudocode_fname "store.asl",
-              [ ("t", r2i rt); ("n", r2i rn); ("datasize", tr_ty v) ] )
+            ( "memory/single/general/register.opn",
+              stmt
+                [
+                  "wback" ^= litb false;
+                  "postindex" ^= litb false;
+                  "scale" ^= lit 0b11;
+                  "extend_type" ^= var "ExtendType_UXTX";
+                  "shift" ^= lit 0;
+                  "n" ^= reg rn;
+                  "t" ^= reg rt;
+                  "m" ^= lit 31 (* i.e. Zero *);
+                  "nontemporal" ^= litb false;
+                  "privileged" ^= litb false;
+                  "memop" ^= var "MemOp_STORE";
+                  "signed" ^= litb false;
+                  "regsize" ^= lit 64;
+                  "datasize" ^= variant v;
+                  "tagchecked" ^= litb true;
+                  "rt_unknown" ^= litb false;
+                  "wb_unknown" ^= litb false;
+                ] )
       | i ->
           let () =
             if _dbg then
@@ -178,18 +248,9 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
           in
           None
 
-    let fake_test ii fname args =
+    let fake_test ii fname decode =
       let proc = 0 in
-      let init_args =
-        let scope = ("main", 0) in
-        let one_arg (x, i) =
-          let r = ASLBase.ASLLocalId (scope, x) in
-          let loc = MiscParser.Location_reg (proc, ASLBase.pp_reg r) in
-          (loc, (TestType.TyDef, ParsedConstant.intToV i))
-        in
-        List.map one_arg args
-      in
-      let init_env =
+      let init =
         let one_reg r =
           let loc = MiscParser.Location_reg (proc, AArch64Base.pp_reg r) in
           match A.look_reg r ii.A.env.A.regs with
@@ -206,11 +267,41 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
         in
         List.filter_map one_reg ASLBase.arch_regs
       in
-      let init = init_args @ init_env in
-      let fname = ASLConf.libfind fname in
       let prog =
-        let ast = ASLBase.build_ast_from_file fname in
-        [ ((0, None, MiscParser.Main), [ ASLBase.Instruction ast ]) ]
+        let version =
+          if C.variant (Variant.ASLVersion `ASLv0) then `ASLv0
+          else if C.variant (Variant.ASLVersion `ASLv1) then `ASLv1
+          else `Any
+        in
+        let () =
+          if _dbg then
+            Format.eprintf "Trying with ASL parser for version %a.@."
+              Asllib.PP.pp_version version
+        in
+        let build ?ast_type version fname =
+          Filename.concat "asl-pseudocode" fname
+          |> ASLConf.libfind
+          |> ASLBase.build_ast_from_file ?ast_type version
+        in
+        let main =
+          let fname = Filename.concat "aarch64/instrs" fname in
+          let execute = build ~ast_type:`Opn version fname in
+          let open Asllib.AST in
+          match execute with
+          | [ D_Func f ] ->
+              let body = Asllib.ASTUtils.s_then decode f.body in
+              D_Func { f with body }
+          | _ -> assert false
+        in
+        let patches = build `ASLv1 "patches.asl"
+        and custom_implems = build `ASLv1 "implementations.asl"
+        and shared = build `ASLv0 "shared_pseudocode.asl" in
+        let ast =
+          Asllib.ASTUtils.patch
+            ~patches:(List.rev_append custom_implems patches)
+            ~src:shared
+        in
+        [ ((0, None, MiscParser.Main), [ ASLBase.Instruction (main :: ast) ]) ]
       in
       let t =
         {
@@ -457,9 +548,18 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
           let { MC.event_structures = rfms; _ }, test =
             MC.glommed_event_structures test
           in
+          let () =
+            if _dbg then
+              Printf.eprintf "Got rfms back: %d of them.\n%!" (List.length rfms)
+          in
           let rfms_with_regs =
             let solve_regs (_i, cs, es) = MC.solve_regs test es cs in
             List.filter_map solve_regs rfms
+          in
+          let () =
+            if _dbg then
+              Printf.eprintf "With regs solved, still %d rfms.\n%!"
+                (List.length rfms_with_regs)
           in
           let conc_and_pp =
             let check_rfm li (es, rfm, cs) =
@@ -485,6 +585,11 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
               check_event_structure test conc kfail ksuccess li
             in
             List.fold_left check_rfm [] rfms_with_regs
+          in
+          let () =
+            if _dbg then
+              Printf.eprintf "Got %d complete executions.\n%!"
+                (List.length conc_and_pp)
           in
           let monads = List.map (tr_execution ii) conc_and_pp in
           match monads with

@@ -40,6 +40,7 @@ module ASLArchOp = struct
       | Constant.ConcreteVector v -> Some v
       | _ -> None
     in
+    let all_64_bits_positions = List.init 64 (( - ) 63) in
     fun op cst ->
       match op with
       | Get i ->
@@ -49,16 +50,24 @@ module ASLArchOp = struct
           let* vec = as_concrete_vector cst in
           let* vec' = list_set i elt vec in
           Some (Constant.ConcreteVector vec')
-      | ToInt ->
-          let* s = as_concrete cst in
-          return_concrete (ASLScalar.convert_to_int s)
+      | ToInt -> (
+          match cst with
+          | Constant.Concrete s -> ASLScalar.convert_to_int s |> return_concrete
+          | Constant.Symbolic _ -> Some cst
+          | _ -> None)
       | ToBool ->
           let* s = as_concrete cst in
           return_concrete (ASLScalar.convert_to_bool s)
-      | BVSlice positions ->
-          let* s = as_concrete cst in
-          let* s' = ASLScalar.try_extract_slice s positions in
-          return_concrete s'
+      | BVSlice positions -> (
+          match cst with
+          | Constant.Concrete s ->
+              let* s' = ASLScalar.try_extract_slice s positions in
+              return_concrete s'
+          | Constant.Symbolic x ->
+              if Misc.list_eq ( = ) positions all_64_bits_positions then
+                Some (Constant.Symbolic x)
+              else None
+          | _ -> None)
 
   let shift_address_right _ _ = None
   let orop _ _ = None

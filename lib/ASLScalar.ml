@@ -1,7 +1,7 @@
-open Asllib
-module BV = Bitvector
+module BV = Asllib.Bitvector
+module AST = Asllib.AST
 
-type t = S_Int of Int64.t | S_Bool of bool | S_BitVector of Bitvector.t
+type t = S_Int of Int64.t | S_Bool of bool | S_BitVector of BV.t
 
 (* Irrelevant here? *)
 let machsize = MachSize.Quad
@@ -52,6 +52,7 @@ let to_native_value = function
 
 let compare s1 s2 =
   match (s1, s2) with
+  | S_Bool false, S_Int 0L | S_Int 0L, S_Bool false -> 0
   | S_Int i1, S_Int i2 -> Int64.compare i1 i2
   | S_Int _, _ | _, S_Int _ -> 1
   | S_BitVector bv1, S_BitVector bv2 -> BV.compare bv1 bv2
@@ -60,6 +61,7 @@ let compare s1 s2 =
 
 let equal s1 s2 =
   match (s1, s2) with
+  | S_Bool false, S_Int 0L | S_Int 0L, S_Bool false -> true
   | S_Int i1, S_Int i2 -> Int64.equal i1 i2
   | S_Bool b1, S_Bool b2 -> b1 = b2
   | S_BitVector bv1, S_BitVector bv2 -> BV.equal bv1 bv2
@@ -154,6 +156,14 @@ let le s1 s2 =
 
 let mask sz = function
   | S_Int i -> S_Int (Int64Scalar.mask sz i)
+  | S_BitVector bv ->
+      let n' = MachSize.nbits sz in
+      let n = BV.length bv in
+      if n = n' then S_BitVector bv
+      else if n' > n then
+        S_BitVector (BV.concat [ BV.zeros (n' - n); bv ])
+      else
+        S_BitVector (BV.extract_slice bv (List.init n' (( - ) (n' - 1))))
   | s -> Warn.fatal "ASLScalar invalid op: _ mask %s" (pp false s)
 
 let sxt sz = function S_Int i -> S_Int (Int64Scalar.sxt sz i) | s -> s
@@ -174,6 +184,10 @@ let convert_to_bool = function
 
 let try_extract_slice s positions =
   match s with
-  | S_BitVector bv -> Some (S_BitVector (BV.extract_slice bv positions))
-  | S_Int i -> Some (S_BitVector (BV.extract_slice (BV.of_int64 i) positions))
+  | S_BitVector bv ->
+      if List.exists (( <= ) (BV.length bv)) positions then None
+      else Some (S_BitVector (BV.extract_slice bv positions))
+  | S_Int i ->
+      if List.exists (( <= ) 64) positions then None
+      else Some (S_BitVector (BV.extract_slice (BV.of_int64 i) positions))
   | _ -> None

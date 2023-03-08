@@ -255,6 +255,32 @@ let compare bv1 bv2 =
       String.compare (data bv1) (data bv2)
   | i -> i
 
+let string_fold_left f init s =
+  let state = ref init in
+  for i = 0 to String.length s - 1 do
+    state := f !state @@ String.get s i
+  done;
+  !state
+
+let bitcount (_length, data) =
+  (* Inspired by both
+      https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetKernighan
+      https://github.com/backtracking/bitv/blob/master/bitv.ml#L351
+  *)
+  let rec one_byte x = if x = 0 then 0 else 1 + one_byte (x land (x - 1)) in
+  (* Here Filliatre caches the count in an array, but we are not yet there. *)
+  let folder acc c = acc + one_byte (Char.code c) in
+  string_fold_left folder 0 data
+
+let to_int_signed (length, data) =
+  if length = 0 then 0
+  else
+    let n = length / 8 and m = length mod 8 in
+    let data_pos = if m = 0 then n - 1 else n in
+    let sign = String.get data data_pos |> read_bit_raw (m - (1 mod 8)) in
+    if sign = 1 then -to_int (lognot (length - 1, data)) - 1
+    else to_int (length - 1, data)
+
 (* --------------------------------------------------------------------------
 
                                     Slices
@@ -314,7 +340,7 @@ let copy_into dst (length_src, data_src) offset =
       next_bits lor prec_bits |> Char.chr |> Bytes.set dst n_off;
 
       (* Next body *)
-      for i = n_off + 1 to n_dst - 1 do
+      for i = n_off + 1 to n_dst - 2 do
         (* 0 already handled, n2 - 1 handled after *)
         let i_src = i - n_off in
         let prec_c = String.get data_src i_src in
@@ -341,3 +367,22 @@ let concat bvs =
   let result = create_data_bytes length in
   let _ = List.fold_right (copy_into result) bvs 0 in
   (length, Bytes.unsafe_to_string result)
+
+(* --------------------------------------------------------------------------
+
+                              Small utils
+
+   --------------------------------------------------------------------------*)
+
+let zeros length =
+  let n = length / 8 and m = length mod 8 in
+  let data = String.make (if m = 0 then n else n + 1) char_0 in
+  (length, data)
+
+let ones length =
+  let n = length / 8 and m = length mod 8 in
+  let data = String.make (if m = 0 then n else n + 1) (Char.chr 0xff) in
+  remask (length, data)
+
+let zero = zeros 1
+let one = ones 1
