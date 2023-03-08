@@ -137,11 +137,11 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
       match ii.A.inst with
       | I_NOP ->
           Some
-            ( "aarch64/instrs/system/hints.opn",
+            ( "system/hints.opn",
               stmt [ "op" ^= var "SystemHintOp_NOP" ] )
       | I_SWP (v, RMW_P, Ireg r1, Ireg r2, Ireg r3) ->
           Some
-            ( "aarch64/instrs/memory/atomicops/swp.opn",
+            ( "memory/atomicops/swp.opn",
               stmt
                 [
                   "s" ^= reg r1;
@@ -155,7 +155,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
                 ] )
       | I_CAS (v, RMW_P, Ireg rs, Ireg rt, Ireg rn) ->
           Some
-            ( "aarch64/instrs/memory/atomicops/cas/single.opn",
+            ( "memory/atomicops/cas/single.opn",
               stmt
                 [
                   "s" ^= reg rs;
@@ -169,7 +169,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
                 ] )
       | I_CSEL (v, Ireg rd, Ireg rn, Ireg rm, c, Cpy) ->
           Some
-            ( "aarch64/instrs/integer/conditional/select.opn",
+            ( "integer/conditional/select.opn",
               stmt
                 [
                   "d" ^= reg rd;
@@ -182,7 +182,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
                 ] )
       | I_MOV (v, Ireg rt, RV (v', Ireg rs)) when v = v' ->
           Some
-            ( "aarch64/instrs/integer/logical/shiftedreg.opn",
+            ( "integer/logical/shiftedreg.opn",
               stmt
                 [
                   "n" ^= lit 31;
@@ -197,7 +197,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
                 ] )
       | I_LDR (v, Ireg rt, Ireg rn, K 0, S_NOEXT) ->
           Some
-            ( "aarch64/instrs/memory/single/general/register.opn",
+            ( "memory/single/general/register.opn",
               stmt
                 [
                   "t" ^= reg rt;
@@ -218,7 +218,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
                 ] )
       | I_STR (v, Ireg rt, Ireg rn, K 0, S_NOEXT) ->
           Some
-            ( "aarch64/instrs/memory/single/general/register.opn",
+            ( "memory/single/general/register.opn",
               stmt
                 [
                   "wback" ^= litb false;
@@ -284,6 +284,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
           |> ASLBase.build_ast_from_file ?ast_type version
         in
         let main =
+          let fname = Filename.concat "aarch64/instrs" fname in
           let execute = build ~ast_type:`Opn version fname in
           let open Asllib.AST in
           match execute with
