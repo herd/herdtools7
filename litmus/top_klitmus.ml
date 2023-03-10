@@ -203,6 +203,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
         let code_exists _ _ = false
         let exported_labels_code _ = Label.Full.Set.empty
         let from_labels _ _ = []
+        let all_labels _ = []
       end
     module Lang = CLang.Make(CLang.DefaultConfig)
         (struct

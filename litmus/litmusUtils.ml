@@ -107,4 +107,5 @@ module Pseudo(A:Arch_litmus.S) = struct
 
   let from_labels lbls prog = A.from_labels lbls prog
 
+  let all_labels = A.all_labels
 end

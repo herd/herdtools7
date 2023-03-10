@@ -26,4 +26,6 @@ module type S = sig
   val exported_labels_code :  code list  ->  Label.Full.Set.t
   val from_labels :
       Label.Full.Set.t -> code list  -> (Label.Full.full * ins) list
+  val all_labels : code list  -> Label.Full.full list
+
 end
