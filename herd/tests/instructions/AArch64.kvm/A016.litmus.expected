@@ -1,0 +1,10 @@
+Test A016 Allowed
+States 1
+  ~Fault(P0,UndefinedInstruction);
+No
+Witnesses
+Positive: 0 Negative: 1
+Condition exists (fault(P0,UndefinedInstruction))
+Observation A016 Never 0 1
+Hash=c7c806b44e223196ff70c5299d93ef93
+

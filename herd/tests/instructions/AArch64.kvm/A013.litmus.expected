@@ -1,0 +1,10 @@
+Test A013 Required
+States 1
+ Fault(P0:L0,UndefinedInstruction); Fault(P0:L1,x,MMU:Translation); Fault(P0:L2,y,MMU:AccessFlag);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0))
+Observation A013 Always 1 0
+Hash=3bb0ea14af4dd60a39e415c543a44f81
+

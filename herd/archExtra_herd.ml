@@ -881,18 +881,21 @@ module Make(C:Config) (I:I) : S with module I = I
         else
           let noflts =
             FaultAtomSet.fold
-              (fun ((p,lab),loc,_ftype) k ->
+              (fun (((p,lbl),loc,ftype) as f0) k ->
                 if
-                  FaultSet.exists (fun f -> check_one_fatom f ((p,lab),loc,None)) flts
+                  FaultSet.exists (fun f -> check_one_fatom f f0) flts
                 then k
                 else
-                  let tr_lab = match lab with
+                  let tr_lbl = match lbl with
                     | None -> Label.Set.empty
-                    | Some lab -> Label.Set.singleton lab in
-                  (" ~"^pp_fault (((p,tr_lab),loc,None,None))^";")::k)
+                    | Some lbl -> Label.Set.singleton lbl in
+                  (" ~" ^ pp_fault (((p,tr_lbl),loc,ftype,None)) ^ ";")::k)
               fobs [] in
+          let flts = FaultSet.filter
+                       (fun f -> FaultAtomSet.exists (fun f0 -> check_one_fatom f f0) fobs)
+                       flts in
           pp_st ^ " " ^
-          FaultSet.pp_str " " (fun f -> pp_fault f ^ ";") flts ^
+          FaultSet.pp_str " "  (fun f -> pp_fault f ^ ";")  flts ^
           String.concat "" noflts
 
       module StateSet =

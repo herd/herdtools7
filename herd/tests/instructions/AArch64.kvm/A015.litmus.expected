@@ -1,0 +1,10 @@
+Test A015 Required
+States 1
+ Fault(P0,UndefinedInstruction);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0,UndefinedInstruction))
+Observation A015 Always 1 0
+Hash=5c03b2be21b0fa13dbc39816c24b39ef
+
