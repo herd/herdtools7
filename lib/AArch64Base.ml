@@ -828,14 +828,14 @@ type 'k kinstruction =
 (* Post-indexed load with immediate - like a writeback *)
 (* sufficiently different (and semantically interesting) to need a new inst *)
   | I_LDR_P of variant * reg * reg * 'k
-  | I_LDP of temporal * variant * reg * reg * reg * 'k kr
-  | I_LDPSW of reg * reg * reg * 'k kr
+  | I_LDP of temporal * variant * reg * reg * reg * 'k
+  | I_LDPSW of reg * reg * reg * 'k
   | I_LDP_P of temporal * variant * reg * reg * reg * 'k
   | I_STP_P of temporal * variant * reg * reg * reg * 'k
   | I_LDAR of variant * ld_type * reg * reg
   | I_LDXP of variant * ldxp_type * reg * reg * reg
   | I_STR of variant * reg * reg * 'k kr * 'k s
-  | I_STP of temporal * variant * reg * reg * reg * 'k kr
+  | I_STP of temporal * variant * reg * reg * reg * 'k
   | I_STR_P of variant * reg * reg * 'k
   | I_STLR of variant * reg * reg
   | I_STXR of variant * st_type * reg * reg * reg
@@ -1027,12 +1027,15 @@ let do_pp_instruction m =
     pp_memo memo ^ " " ^ pp_vsimdreg VSIMD64 r1 ^ "," ^ pp_vsimdreg VSIMD64 r2
     ^ "," ^ pp_vsimdreg VSIMD64 r3 in
 
+  let pp_k_nz k = if m.zerop k then "" else "," ^ m.pp_k k in
+
   let pp_kr showsxtw showzero kr = match kr with
   | K k when m.zerop k && not showzero -> ""
   | K k -> "," ^ m.pp_k k
   | RV (v,r) ->
       "," ^ pp_vreg v r ^
       (match v with V32 when showsxtw -> ",SXTW" | V32|V64 -> "" | V128 -> assert false) in
+
 
   let pp_mem memo v rt ra kr =
     let pp_addr = if C.is_morello then pp_creg else pp_xreg in
@@ -1054,11 +1057,11 @@ let do_pp_instruction m =
     ", [" ^ pp_xreg ra ^ "]" ^
     (if m.compat then m.pp_k k else "," ^ (m.pp_k k)) in
 
-  let pp_memp memo v r1 r2 ra kr =
+  let pp_memp memo v r1 r2 ra k =
     pp_memo memo ^ " " ^
     pp_vreg v r1 ^ "," ^
     pp_vreg v r2 ^ ",[" ^
-    pp_xreg ra ^ pp_kr true false kr ^ "]" in
+    pp_xreg ra ^  pp_k_nz k ^ "]" in
 
   let pp_smem memo v rt ra kr =
     pp_memo memo ^ " " ^ pp_vsimdreg v rt ^
@@ -1542,10 +1545,10 @@ let fold_regs (f_regs,f_sregs) =
   | I_EOR_SIMD (r1,r2,r3) | I_ADD_SIMD (r1,r2,r3) | I_ADD_SIMD_S (r1,r2,r3)
   | I_LDXP (_,_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
-  | I_LDP (_,_,r1,r2,r3,kr)
-  | I_LDPSW (r1,r2,r3,kr)
-  | I_STP (_,_,r1,r2,r3,kr)
-    -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_kr kr c)))
+  | I_LDP (_,_,r1,r2,r3,_)
+  | I_LDPSW (r1,r2,r3,_)
+  | I_STP (_,_,r1,r2,r3,_)
+    -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_CAS (_,_,r1,r2,r3)
   | I_CASBH (_,_,r1,r2,r3)
   | I_SWP (_,_,r1,r2,r3)
@@ -1602,12 +1605,12 @@ let map_regs f_reg f_symb =
      I_LDUR (v,map_reg r1,map_reg r2,k)
   | I_LDR_P (v,r1,r2,k) ->
      I_LDR_P (v,map_reg r1, map_reg r2, k)
-  | I_LDP (t,v,r1,r2,r3,kr) ->
-     I_LDP (t,v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
-  | I_LDPSW (r1,r2,r3,kr) ->
-     I_LDPSW (map_reg r1,map_reg r2,map_reg r3,map_kr kr)
-  | I_STP (t,v,r1,r2,r3,kr) ->
-     I_STP (t,v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
+  | I_LDP (t,v,r1,r2,r3,k) ->
+     I_LDP (t,v,map_reg r1,map_reg r2,map_reg r3,k)
+  | I_LDPSW (r1,r2,r3,k) ->
+     I_LDPSW (map_reg r1,map_reg r2,map_reg r3,k)
+  | I_STP (t,v,r1,r2,r3,k) ->
+     I_STP (t,v,map_reg r1,map_reg r2,map_reg r3,k)
   | I_LDP_P (t,v,r1,r2,r3,k) ->
      I_LDP_P (t,v,map_reg r1,map_reg r2,map_reg r3,k)
   | I_STP_P (t,v,r1,r2,r3,k) ->
@@ -1983,9 +1986,9 @@ module PseudoI = struct
         | I_LDUR (v,r1,r2,None) -> I_LDUR (v,r1,r2,None)
         | I_LDUR (v,r1,r2,Some(k)) -> I_LDUR (v,r1,r2,Some(k_tr k))
         | I_LDR_P (v,r1,r2,k) -> I_LDR_P (v,r1,r2,k_tr k)
-        | I_LDP (t,v,r1,r2,r3,kr) -> I_LDP (t,v,r1,r2,r3,kr_tr kr)
-        | I_LDPSW (r1,r2,r3,kr) -> I_LDPSW (r1,r2,r3,kr_tr kr)
-        | I_STP (t,v,r1,r2,r3,kr) -> I_STP (t,v,r1,r2,r3,kr_tr kr)
+        | I_LDP (t,v,r1,r2,r3,k) -> I_LDP (t,v,r1,r2,r3,k_tr k)
+        | I_LDPSW (r1,r2,r3,k) -> I_LDPSW (r1,r2,r3,k_tr k)
+        | I_STP (t,v,r1,r2,r3,k) -> I_STP (t,v,r1,r2,r3,k_tr k)
         | I_LDP_P (t,v,r1,r2,r3,k) -> I_LDP_P (t,v,r1,r2,r3,k_tr k)
         | I_STP_P (t,v,r1,r2,r3,k) -> I_STP_P (t,v,r1,r2,r3,k_tr k)
         | I_STR (v,r1,r2,kr,s) -> I_STR (v,r1,r2,kr_tr kr,ap_shift k_tr s)

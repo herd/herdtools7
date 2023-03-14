@@ -259,18 +259,16 @@ include Arch.MakeArch(struct
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >! fun r2 ->
         I_LDUR(a,r1,r2,None)
-    | I_LDP(t,a,r1,r2,r3,kr) ->
+    | I_LDP(t,a,r1,r2,r3,k) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        conv_reg r3 >> fun r3 ->
-        expl_kr kr  >! fun kr ->
-        I_LDP(t,a,r1,r2,r3,kr)
-    | I_LDPSW(r1,r2,r3,kr) ->
+        conv_reg r3 >! fun r3 ->
+        I_LDP(t,a,r1,r2,r3,k)
+    | I_LDPSW(r1,r2,r3,k) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        conv_reg r3 >> fun r3 ->
-        expl_kr kr  >! fun kr ->
-        I_LDPSW(r1,r2,r3,kr)
+        conv_reg r3 >! fun r3 ->
+        I_LDPSW(r1,r2,r3,k)
     | I_LDXP(t,a,r1,r2,r3) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
@@ -282,12 +280,11 @@ include Arch.MakeArch(struct
         conv_reg r3 >> fun r3 ->
         find_cst k >! fun k ->
         I_LDP_P(t,a,r1,r2,r3,k)
-    | I_STP(t,a,r1,r2,r3,kr) ->
+    | I_STP(t,a,r1,r2,r3,k) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        conv_reg r3 >> fun r3 ->
-        expl_kr kr >! fun kr ->
-        I_STP(t,a,r1,r2,r3,kr)
+        conv_reg r3 >! fun r3 ->
+        I_STP(t,a,r1,r2,r3,k)
     | I_STP_P(t,a,r1,r2,r3,k) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

@@ -1173,6 +1173,8 @@ module Make
 
       let get_ea_noext rs kr ii = get_ea rs kr AArch64.S_NOEXT ii
 
+      let get_ea_idx rs k ii = get_ea rs (AArch64.K k) AArch64.S_NOEXT ii
+
       let add_size a sz = M.add a (V.intToV (MachSize.nbytes sz))
 
       let post_kr rA addr kr ii =
@@ -1190,7 +1192,7 @@ module Make
           (fun ac a -> do_read_mem sz AArch64.N aexp ac rd a ii)
           (get_ea rs kr s ii) ii
 
-      and ldp sz rd1 rd2 rs kr ii =
+      and ldp sz rd1 rd2 rs k ii =
         do_ldr rs sz AArch64.N
           (fun ac a ->
             do_read_mem sz AArch64.N aexp ac rd1 a ii >>|
@@ -1198,9 +1200,9 @@ module Make
               add_size a sz >>=
               fun a -> do_read_mem sz AArch64.N aexp ac rd2 a ii
             end)
-          (get_ea_noext rs kr ii) ii
+          (get_ea_idx rs k ii) ii
 
-      and ldpsw rd1 rd2 rs kr ii =
+      and ldpsw rd1 rd2 rs k ii =
         let mem_sz =  MachSize.Word in
         do_ldr rs MachSize.Word AArch64.N
           (fun ac a ->
@@ -1211,7 +1213,7 @@ module Make
                 fun a -> do_read_mem_sxt mem_sz AArch64.N aexp ac rd2 a ii
               end
             end)
-          (get_ea_noext rs kr ii) ii
+          (get_ea_idx rs k ii) ii
 
       and ldxp sz t rd1 rd2 rs ii =
         let open AArch64 in
@@ -1300,7 +1302,7 @@ module Make
 
       and stp =
         let (>>>) = M.data_input_next in
-        fun sz rs1 rs2 rd kr ii ->
+        fun sz rs1 rs2 rd k ii ->
         do_str rd
           (fun ac a _ ii ->
             (read_reg_data sz rs1 ii >>> fun v ->
@@ -1309,7 +1311,7 @@ module Make
                read_reg_data sz rs2 ii >>> fun v ->
                do_write_mem sz AArch64.N aexp ac a v ii))
           sz AArch64.N
-          (get_ea_noext rd kr ii)
+          (get_ea_idx rd k ii)
           (M.unitT V.zero)
           ii
 
