@@ -85,8 +85,10 @@ match name with
 | "ldp"|"LDP" -> LDP
 | "ldpsw"|"LDPSW" -> LDPSW
 | "ldnp"|"LDNP" -> LDNP
+| "ldiapp"|"LDIAPP" -> LDIAPP
 | "stp"|"STP" -> STP
 | "stnp"|"STNP" -> STNP
+| "stilp"|"STILP" -> STILP
 | "ldrb"|"LDRB" -> LDRB
 | "ldrh"|"LDRH" -> LDRH
 | "ldrsb"|"LDRSB" -> LDRSB

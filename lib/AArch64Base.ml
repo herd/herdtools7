@@ -664,6 +664,11 @@ let tr_simd_variant = function
 type 'k kr = K of 'k | RV of variant * reg
 let k0 = K 0
 
+type idx_mode = Idx | PreIdx | PostIdx
+
+type temporal = TT | NT
+type pair_opt = Pa | PaN | PaI
+
 type ld_type = AA | XX | AX | AQ
 
 let ldr_memo = function
@@ -677,6 +682,16 @@ type ldxp_type = XP|AXP
 let ldxp_memo = function
   | XP -> "LDXP"
   | AXP -> "LDAXP"
+
+let ldp_memo = function
+  | Pa -> "LDP"
+  | PaN -> "LDNP"
+  | PaI -> "LDIAPP"
+
+let stp_memo = function
+  | Pa -> "STP"
+  | PaN -> "STNP"
+  | PaI -> "STILP"
 
 type st_type = YY | LY
 
@@ -739,9 +754,6 @@ and stopbh_memo op bh  rmw = sprintf "%s%s" (stop_memo op rmw) (pp_bh bh)
 and ldrbh_memo bh t =  sprintf "%s%s" (ldr_memo t) (pp_bh bh)
 and strbh_memo bh t =  sprintf "%s%s" (str_memo t) (pp_bh bh)
 
-type idx_mode = Idx | PreIdx | PostIdx
-
-type temporal = TT | NT
 type opsel = Cpy | Inc | Inv | Neg
 
 let sel_memo = function
@@ -830,12 +842,12 @@ type 'k kinstruction =
 (* Post-indexed load with immediate - like a writeback *)
 (* sufficiently different (and semantically interesting) to need a new inst *)
   | I_LDR_P of variant * reg * reg * 'k
-  | I_LDP of temporal * variant * reg * reg * reg * 'k * idx_mode
+  | I_LDP of pair_opt * variant * reg * reg * reg * 'k * idx_mode
   | I_LDPSW of reg * reg * reg * 'k * idx_mode
   | I_LDAR of variant * ld_type * reg * reg
   | I_LDXP of variant * ldxp_type * reg * reg * reg
   | I_STR of variant * reg * reg * 'k kr * 'k s
-  | I_STP of temporal * variant * reg * reg * reg * 'k * idx_mode
+  | I_STP of pair_opt * variant * reg * reg * reg * 'k * idx_mode
   | I_STR_P of variant * reg * reg * 'k
   | I_STLR of variant * reg * reg
   | I_STXR of variant * st_type * reg * reg * reg
@@ -1194,11 +1206,11 @@ let do_pp_instruction m =
   | I_LDR_P (v,r1,r2,k) ->
       pp_mem_post "LDR" v r1 r2 k
   | I_LDP (t,v,r1,r2,r3,k,md) ->
-      pp_memp (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 k md
+      pp_memp (ldp_memo t) v r1 r2 r3 k md
   | I_LDPSW (r1,r2,r3,k,md) ->
       pp_memp "LDPSW" V64 r1 r2 r3 k md
   | I_STP (t,v,r1,r2,r3,k,md) ->
-      pp_memp (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 k md
+      pp_memp (stp_memo t) v r1 r2 r3 k md
   | I_LDAR (v,t,r1,r2) ->
       pp_mem (ldr_memo t) v r1 r2 m.k0
   | I_LDARBH (bh,t,r1,r2) ->

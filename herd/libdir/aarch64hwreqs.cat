@@ -109,8 +109,8 @@ let bob = po; [dmb.full]; po
         | [W]; po; [dmb.st]; po; [W | MMU & FAULT] 
         | [range([A];amo;[L])]; po
         | [L]; po; [A]
-        | [A | Q]; po
-        | po; [L]
+        | [A | Q]; (po|iico_order)
+        | (po|iico_order); [L]
 
 (* Locally-ordered-before *)
 let rec lob = lws; sca-class?

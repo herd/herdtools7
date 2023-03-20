@@ -320,6 +320,10 @@ val same_instance : event -> event -> bool
   val para_output_right :
     event_structure -> event_structure -> event_structure option
 
+(* Sequence memory events, otherwise parallel composition *)
+  val seq_mem :
+    event_structure -> event_structure -> event_structure option
+
 (***********************************************)
 (* sequential composition, add data dependency *)
 (***********************************************)
@@ -1262,6 +1266,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 
     and force_data_input = do_force get_data_input minimals_data
 
+(* Parallel composition, input on second monad argument *)
+
     let para_input_right es1 es2 =
        let r = union es1 es2 in
        let r =
@@ -1273,6 +1279,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
          } in
        Some r
 
+(* Parallel composition, do not include first monad argument in output *)
     let para_output_right es1 es2 =
       let r = union es1 es2 in
       let r =
@@ -1281,6 +1288,19 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           data_input = union_data_input es1 es2 ;
           output = Some (get_output es2);
           ctrl_output = union_ctrl_output es1 es2;
+        } in
+      Some r
+
+(* parallel composition with memory event sequencing *)
+    let seq_mem es1 es2 =
+      let r = do_para_comp es1 es2 in
+      let r =
+        { r with
+          intra_causality_order =
+            EventRel.union r.intra_causality_order
+              (EventRel.cartesian
+                 (EventSet.filter is_mem es1.events)
+                 (EventSet.filter is_mem es2.events)) ;
         } in
       Some r
 

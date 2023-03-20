@@ -70,7 +70,8 @@ let mk_instrp instr v r1 r2 ra ko kb =
 %token TOK_CS TOK_CC TOK_MI TOK_PL TOK_VS TOK_VC TOK_HI TOK_LS TOK_AL
 %token BEQ BNE BGE BGT BLE BLT BCS BCC BMI BPL BVS BVC BHI BLS BAL
 %token BL BLR RET ERET
-%token LDR LDP LDNP LDPSW STP STNP LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
+%token LDR LDP LDNP LDPSW LDIAPP STP STNP STILP
+%token LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token LDRSB LDRSH
 %token LD1 LD1R LD2 LD2R LD3 LD3R LD4 LD4R ST1 ST2 ST3 ST4 STUR /* Neon load/store */
 %token CMP MOV MOVZ MOVK MOVI ADR MVN
@@ -343,9 +344,20 @@ zeroopt:
 
 ldp_instr:
 | LDP
-  { (fun v r1 r2 r3 k md -> I_LDP (TT,v,r1,r2,r3,k,md)) }
+  { (fun v r1 r2 r3 k md -> I_LDP (Pa,v,r1,r2,r3,k,md)) }
 | LDNP
-  { (fun v r1 r2 r3 k md -> I_LDP (NT,v,r1,r2,r3,k,md)) }
+  { (fun v r1 r2 r3 k md -> I_LDP (PaN,v,r1,r2,r3,k,md)) }
+| LDIAPP
+  {
+   (fun v r1 r2 r3 k md ->
+     match v,md,k with
+     | (_,Idx,MetaConst.Int 0)
+     | (V32,PostIdx,MetaConst.Int (8))
+     | (V64,PreIdx,MetaConst.Int (16))
+          ->
+            I_LDP (PaI,v,r1,r2,r3,k,md)
+      | _,_,_ -> raise Parsing.Parse_error)
+  }
 
 ldp_simd_instr:
 | LDP
@@ -368,9 +380,20 @@ ldp_simd_instr:
 
 stp_instr:
 | STP
-  { (fun v r1 r2 r3 k md -> I_STP (TT,v,r1,r2,r3,k,md)) }
+  { (fun v r1 r2 r3 k md -> I_STP (Pa,v,r1,r2,r3,k,md)) }
 | STNP
-  { (fun v r1 r2 r3 k md -> I_STP (NT,v,r1,r2,r3,k,md)) }
+  { (fun v r1 r2 r3 k md -> I_STP (PaN,v,r1,r2,r3,k,md)) }
+| STILP
+    {
+     (fun v r1 r2 r3 k md ->
+      match v,md,k with
+      | (_,Idx,MetaConst.Int 0)
+      | (V32,PreIdx,MetaConst.Int (-8))
+      | (V64,PreIdx,MetaConst.Int (-16))
+          ->
+            I_STP (PaI,v,r1,r2,r3,k,md)
+      | _,_,_ -> raise Parsing.Parse_error)
+    }
 
 stp_simd_instr:
 | STP

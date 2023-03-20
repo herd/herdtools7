@@ -1198,6 +1198,10 @@ module Make
                     (fun ac a ->
                       (add_if post k a_virt >>=
                        fun b -> write_reg rs b ii) >>|
+                        let (>>|) =
+                          match an with
+                          | AArch64.Q -> assert post ; M.seq_mem
+                          | _ -> (>>|) in
                        (Read.read_mem sz an aexp ac rd1 a ii >>|
                        begin
                          add_size a sz >>=
@@ -1210,10 +1214,19 @@ module Make
             else m
 
           let ldp tnt sz rd1 rd2 rs k md ii =
-            let an = tnt2annot tnt in
+            let an =
+              let open AArch64 in
+              match tnt with
+              | Pa -> N
+              | PaN -> NTA
+              | PaI -> Q in
             let open AArch64 in
             match md with
             | Idx ->
+                let (>>|) =
+                  match an with
+                  | AArch64.Q -> M.seq_mem
+                  | _ -> (>>|) in
                 do_ldr rs sz AArch64.N
                   (fun ac a ->
                     Read.read_mem sz an aexp ac rd1 a ii >>|
@@ -1242,7 +1255,7 @@ module Make
             (struct
               let read_mem = do_read_mem_sxt
             end) in
-        LDPSW.ldp AArch64.TT MachSize.Word
+        LDPSW.ldp AArch64.Pa MachSize.Word
 
       let ldxp sz t rd1 rd2 rs ii =
         let open AArch64 in
@@ -1321,6 +1334,12 @@ module Make
                   (fun ac a _ ii ->
                     (add_if post k a_virt >>=
                      fun b -> write_reg rd b ii) >>|
+                      let (>>|) =
+                        match an with
+                        | AArch64.L ->
+                           assert (not post) ;
+                           fun m1 m2 -> M.seq_mem m2 m1
+                        | _ -> (>>|) in
                      ((read_reg_data sz rs1 ii >>> fun v ->
                        do_write_mem sz an aexp ac a v ii) >>|
                        (add_size a sz >>= fun a ->
@@ -1336,9 +1355,18 @@ module Make
 
 
       let stp tnt sz rs1 rs2 rd k md ii =
-        let an = tnt2annot tnt in
+        let an =
+          let open AArch64 in
+          match tnt with
+          | Pa -> N
+          | PaN -> NTA
+          | PaI -> L in
         match md with
         | AArch64.Idx ->
+            let (>>|) =
+              match tnt with
+              | AArch64.(Pa|PaN) -> (>>|)
+              | AArch64.PaI -> M.seq_mem in
             let (>>>) = M.data_input_next in
             do_str rd
               (fun ac a _ ii ->
@@ -2616,12 +2644,12 @@ module Make
 (* Instruction-cache maintenance instruction *)
         | I_IC (op,rd) -> do_ic op rd ii
 (* Load/Store pairs *)
-        | I_LDP (tnt,v,r1,r2,r3,k,md) ->
-            ldp tnt (tr_variant v) r1 r2 r3 k md ii
-        | I_LDPSW (r1,r2,r3,k,md) ->
-            ldpsw r1 r2 r3 k md ii
-        | I_STP (tnt,v,r1,r2,r3,k,md) ->
-            stp tnt (tr_variant v) r1 r2 r3 k md ii
+        | I_LDP (tnt,v,r1,r2,r3,kr,md) ->
+            ldp tnt (tr_variant v) r1 r2 r3 kr md ii
+        | I_LDPSW (r1,r2,r3,kr,md) ->
+            ldpsw r1 r2 r3 kr md ii
+        | I_STP (tnt,v,r1,r2,r3,kr,md) ->
+            stp tnt (tr_variant v) r1 r2 r3 kr md ii
         | I_LDXP (v,t,r1,r2,r3) ->
             ldxp (tr_variant v) t r1 r2 r3 ii
         | I_STXP (v,t,r1,r2,r3,r4) ->
@@ -2666,7 +2694,7 @@ module Make
 (*  Cannot handle *)
         | (I_RBIT _
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
-        | I_LD1M _|I_ST1M _) as i->
+        | I_LD1M _|I_ST1M _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
 
 (* Compute a safe set of instructions that can

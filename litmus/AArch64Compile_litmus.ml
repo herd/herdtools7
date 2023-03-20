@@ -290,6 +290,8 @@ module Make(V:Constant.S)(C:Config) =
           reg_env=[rA,voidstar; rD,quad;]; }
     | V128 -> assert false
 
+    let ldp_memo t = Misc.lowercase (ldp_memo t)
+
     let load_pair memo v rD1 rD2 rA kr md = match v,kr,md with
     | V32,0,Idx ->
         { empty_ins with
@@ -357,6 +359,8 @@ module Make(V:Constant.S)(C:Config) =
            outputs=[rD1;rD2;];
            reg_env=[(rA,voidstar);(rD1,quad);(rD2,quad);]; }
       | V128 -> assert false
+
+    let stp_memo t = Misc.lowercase (stp_memo t)
 
     let store_pair memo v rD1 rD2 rA kr md  = match v,kr,md with
     | V32,0,Idx ->
@@ -1339,13 +1343,13 @@ module Make(V:Constant.S)(C:Config) =
     | I_LDUR (v,r1,r2,None) -> load "ldur" v r1 r2 (K 0) S_NOEXT ::k
     | I_LDR_P (v,r1,r2,k1) -> load_p "ldr" v r1 r2 k1::k
     | I_LDP (t,v,r1,r2,r3,kr,md) ->
-        load_pair (match t with TT -> "ldp" | NT -> "ldnp") v r1 r2 r3 kr md::k
+        load_pair (ldp_memo t) v r1 r2 r3 kr md::k
     | I_LDPSW (r1,r2,r3,kr,md) ->
        ldpsw r1 r2 r3 kr md::k
     | I_LDXP (v,t,r1,r2,r3) ->
        loadx_pair (Misc.lowercase (ldxp_memo t)) v r1 r2 r3::k
     | I_STP (t,v,r1,r2,r3,kr,md) ->
-        store_pair (match t with TT -> "stp" | NT -> "stnp") v r1 r2 r3 kr md::k
+        store_pair (stp_memo t) v r1 r2 r3 kr md::k
     | I_STXP (v,t,r1,r2,r3,r4) ->
         storex_pair (Misc.lowercase (stxp_memo t)) v r1 r2 r3 r4::k
     | I_LDRBH (B,r1,r2,kr,s) -> load "ldrb" V32 r1 r2 kr (default_shift kr s)::k

@@ -48,6 +48,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
 (* Utilities *)
     let next_reg x = A64.alloc_reg x
+    let next_reg2 x =
+      let r1,x = next_reg x in
+      let r2,x = next_reg x in
+      r1,r2,x
+
     let next_vreg x = A64.alloc_special x
     let pseudo = List.map (fun i -> Instruction i)
 
@@ -100,6 +105,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | V128 -> S128
       | V64 -> Quad
       | V32 -> Word
+
+    let szloc = v2sz vloc
 
     let do_movi vdep r i = I_MOV (vdep,r,K i)
     let mov = do_movi vloc
@@ -167,6 +174,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let seal r1 r2 r3 = I_SEAL (r1,r2,r3)
     let cseal r1 r2 r3 = I_CSEAL (r1,r2,r3)
     let subi sz r1 r2 k = I_OP3 (sz,SUB,r1,r2,K k, S_NOEXT)
+    let dec r1 r2 = subi vloc r1 r2 1
 
     let ldr_mixed r1 r2 sz o =
       let open MachSize in
@@ -196,6 +204,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | N2 -> I_LD2M (rs,rt,K 0)
       | N3 -> I_LD3M (rs,rt,K 0)
       | N4 -> I_LD4M (rs,rt,K 0)
+
     let ldn_idx n rs rt ro =
       let open SIMD in
       match n with
@@ -383,6 +392,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let ldar_mixed_idx = do_ldar_mixed_idx vloc
 
+    let do_ldp opt r1 r2 rA = I_LDP (opt,vloc,r1,r2,rA,0,Idx)
+    and do_ldxp opt r1 r2 rA = I_LDXP (vloc,opt,r1,r2,rA)
+    let do_stp opt r1 r2 rA = I_STP (opt,vloc,r1,r2,rA,0,Idx)
+    and do_stxp opt r r1 r2 rA = I_STXP (vloc,opt,r,r1,r2,rA)
+
 (*********)
 (* loads *)
 (*********)
@@ -411,6 +425,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rA,st = next_reg_sz st p sz in
       let rB,init,st = U.next_init st p init x in
       rA,init,lift_code [ldr_mixed rA rB sz o],st
+
+    let _emit_load_int_idx o st  _p init rA =
+      let r1,st = next_reg st in
+      r1,init,lift_code [ldr_mixed r1 rA szloc o],st
 
     let emit_ldr_addon a r = match a with
     | Some Capability -> assert do_morello ; [gcvalue r r]
@@ -567,27 +585,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let next_reg = next_reg_sz
         end)
 
-(* For export *)
-    let emit_load_one = LDR.emit_load_one
-    let emit_load = LDR.emit_load
-
-
-    let emit_obs t = match t with
-    | Code.Ord-> emit_load_mixed naturalsize 0
-    | Code.Pte->
-        fun st p init loc ->
-        let r,init,cs,st = LDR.emit_load_var A64.V64 st p init (Misc.add_pte loc) in
-        r,init,cs,st
-    | Code.Tag -> LDG.emit_load
-    | Code.CapaTag -> LDCT.emit_load
-    | Code.CapaSeal -> fun st p init x ->
-      let r,init,cs,st = emit_load_mixed MachSize.S128 0 st p init x in
-      let cs2 = lift_code [gctype r r] in
-      r,init,cs@cs2,st
-    | Code.VecReg n -> LDN.emit_load n
-    let emit_obs_not_value = OBS.emit_load_not_value
-    let emit_obs_not_eq = OBS.emit_load_not_eq
-    let emit_obs_not_zero = OBS.emit_load_not_zero
+(* Load pair *)
 
 
     module LDAR = LOAD
@@ -669,6 +667,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let rA,init,csi,st = emit_mov_sz sz st p init v in
         let init,cs,st = emit_store_reg_mixed sz o st p init x rA a e in
         init,csi@cs,st
+
+    let _emit_store_int_idx o st p init rA v =
+      let r1,init,csi,st = U.emit_mov st p init v in
+      init,csi@pseudo [str_mixed szloc o r1 rA;],st
 
     module STORE(S:S) =
       struct
@@ -810,7 +812,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | (Acq None,Some (sz,_)) -> ldxr_sz AX sz
       | (AcqPc _,_) -> Warn.fatal "AcqPC annotation on xload"
       | (Tag,_)|(CapaTag,_)|(CapaSeal,_) -> Warn.fatal "variant annotation on xload"
-      | _ -> assert false
+      | a ->
+         Warn.fatal "Bad annotation for Lx: %s\n" (A.pp_atom a)
+
 
     and get_xstore = function
       | (Plain None,None) -> stxr
@@ -820,7 +824,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | (Rel Some Capability,None) -> stxr_sz LY MachSize.S128
       | (Rel None,Some (sz,_)) -> stxr_sz LY sz
       | (Tag,_)|(CapaTag,_)|(CapaSeal,_) -> Warn.fatal "variant annotation on xstore"
-      | _ -> assert false
+      | a ->
+         Warn.fatal "Bad annotation for Sx: %s\n" (A.pp_atom a)
 
     let get_xstore_addon (a,_m) r2 r3 e init st p = match a with
     | Plain a
@@ -844,69 +849,137 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let  r2,cs2,st = sumi_addr_gen tempo2 st rA o2 in
         r1,r2,cs1@cs2,st
 
-    let emit_loop_pair (ar,aw as arw) p st init rR rW rA e =
-      let rAR,rAW,cs0,st = get_rmw_addrs arw st rA in
-      let init,cs1,st = get_xstore_addon ar rW rAW e init st p in
-      let lbl = Label.next_label "Loop" in
-      let r,st = tempo3 st in
-      let cs =
-        Label (lbl,Instruction (get_xload ar rR rAR))::
-        lift_code (get_xload_addon ar rR) @ [
-         Instruction (get_xstore aw r rW rAW);
-         Instruction (cbnz r lbl);
-       ] in
-      init,pseudo cs0@cs1@cs,st
+    module
+      ExclusivePair
+        (Load:
+           sig
 
-    let emit_one_pair (ar, aw) p st init r rR rW rAR rAW k e =
-      let ok,st = A.ok_reg st in
-      let init,cs1,st = get_xstore_addon ar rW rAW e init st p in
-      init,
-      cs1@Instruction (get_xload ar rR rAR)::
-      lift_code (get_xload_addon ar rR) @
-      Instruction (get_xstore aw r rW rAW)::
-      Instruction (cbnz r (Label.last p))::
-      (k (Instruction (incr ok))),
-      A.next_ok st
+             type load_regs
+             val load : A.atom -> load_regs -> A.reg -> A.ins list
+             val load_addon : A.atom -> load_regs -> A.ins list
+           end)
+        (Store:
+         sig
+           type store_regs
+           val store : A.atom -> A.reg -> store_regs -> A.reg -> A.ins list
+           val store_addon :
+             A.atom -> store_regs -> A.reg ->
+                 C.event -> A.init -> A.st -> Proc.t ->
+                   A.init * A.pseudo list * A.st
+         end) =
+      struct
 
-    let emit_unroll_pair u (ar, aw as arw) p st init rR rW rA e =
-      let rAR,rAW,cs0,st = get_rmw_addrs arw st rA in
-      let cs0 = pseudo cs0 in
-      if u <= 0 then
-        let r,st = next_reg st in
-        let init,cs1,st = get_xstore_addon ar rW rA e init st p in
-        init,cs0@cs1@pseudo
-                    (get_xload ar rR rAR ::
-                     get_xload_addon ar rR @ [
-                     get_xstore aw r rW rAW;]),
-        st
-      else if u = 1 then
-        let r,st = tempo3 st in
-        let init,cs,st =
-          emit_one_pair arw p st init r rR rW rAR rAW (fun i -> [i]) e in
-        init,cs0@cs,st
-      else
-        let r,st = tempo3 st in
-        let init,cs1,st = get_xstore_addon ar rW rA e init st p in
-        let out = Label.next_label "Go" in
-        let rec do_rec = function
-          | 1 ->
-              emit_one_pair
-                arw p st init r rR rW rAR rAW
-                (fun i ->  [Label (out,Nop);i]) e
-          | u ->
-              let init,cs,st = do_rec (u-1) in
-              init,
-              (Instruction (get_xload ar rR rAR)::
-               lift_code (get_xload_addon ar rR) @
-               Instruction (get_xstore aw r rW rAW)::
-               Instruction (cbz r out)::
-               cs1@cs),st in
-        let init,cs,st = do_rec u in
-        init,cs0@cs,st
+        let emit_xpair ar rR rAR aw r rW rAW =
+          let cs_load = Load.load ar rR rAR
+          and cs_store = Store.store aw r rW rAW in
+          cs_load@Load.load_addon ar rR@cs_store
 
-    let emit_pair = match Cfg.unrollatomic with
-    | None -> emit_loop_pair
-    | Some u -> emit_unroll_pair u
+        let emit_loop_pair (ar,aw as arw) p st init rR rW rA e =
+          let rAR,rAW,cs0,st = get_rmw_addrs arw st rA in
+          let init,cs1,st = Store.store_addon ar rW rAW e init st p in
+          let lbl = Label.next_label "Loop" in
+          let r,st = tempo3 st in
+          let cs =
+            Label (lbl,Nop)
+            ::lift_code (emit_xpair ar rR rAR aw r rW rAW)
+            @[Instruction (cbnz r lbl)] in
+          init,pseudo cs0@cs1@cs,st
+
+        let emit_one_pair (ar, aw) p st init r rR rW rAR rAW k e =
+          let ok,st = A.ok_reg st in
+          let init,cs1,st = Store.store_addon ar rW rAW e init st p in
+          init,
+          cs1
+          @lift_code (emit_xpair ar rR rAR aw r rW rAW)
+          @[Instruction (cbnz r (Label.last p))]
+          @(k (Instruction (incr ok))),
+          A.next_ok st
+
+        let emit_unroll_pair u (ar, aw as arw) p st init rR rW rA e =
+          let rAR,rAW,cs0,st = get_rmw_addrs arw st rA in
+          let cs0 = pseudo cs0 in
+          if u <= 0 then
+            let r,st = next_reg st in
+            let init,cs1,st = Store.store_addon ar rW rA e init st p in
+            init,
+            cs0@cs1
+            @pseudo  (emit_xpair ar rR rAR aw r rW rAW),
+            st
+          else if u = 1 then
+            let r,st = tempo3 st in
+            let init,cs,st =
+              emit_one_pair arw p st init r rR rW rAR rAW (fun i -> [i]) e in
+            init,cs0@cs,st
+          else
+            let r,st = tempo3 st in
+            let init,cs1,st = Store.store_addon ar rW rA e init st p in
+            let out = Label.next_label "Go" in
+            let rec do_rec = function
+              | 1 ->
+                 emit_one_pair
+                   arw p st init r rR rW rAR rAW
+                   (fun i ->  [Label (out,Nop);i]) e
+              | u ->
+                 let init,cs,st = do_rec (u-1) in
+                 init,
+                 pseudo (emit_xpair ar rR rAR aw r rW rAW)
+                 @(Instruction (cbz r out)::cs1@cs),
+                 st in
+            let init,cs,st = do_rec u in
+            init,cs0@cs,st
+
+        let emit_pair = match Cfg.unrollatomic with
+          | None -> emit_loop_pair
+          | Some u -> emit_unroll_pair u
+
+      end
+
+    module XLoad = struct
+      type load_regs = A.reg
+      let  load ar rR rAR = [get_xload ar rR rAR]
+      let load_addon = get_xload_addon
+    end
+
+    module XStore = struct
+      type store_regs = A.reg
+      let store  aw r rW rAW = [get_xstore aw r rW rAW]
+      let store_addon = get_xstore_addon
+    end
+
+    module XSingle = ExclusivePair(XLoad)(XStore)
+
+
+    module XLoadPair = struct
+      type load_regs  = A.reg * A.reg
+      let load ar (r1,r2) rA =
+        let a =
+          match ar with
+          | Pair (Pa,_),None -> XP
+          | Pair (PaI,_),None -> AXP
+          | _ ->
+             Warn.fatal
+               "Illegal %s annotaton on load exclusive pair" (pp_atom ar)  in
+        [do_ldxp a r1 r2 rA; add vloc r1 r2 r1;]
+      let load_addon _ _ =
+        assert (not (do_morello)); []
+    end
+
+    module XStorePair = struct
+      type store_regs =  A.reg * A.reg
+      let store aw r (r1,r2) rA =
+        let a =
+          match aw with
+          | Pair (Pa,_),_ -> YY
+          | Pair (PaI,_),_ -> LY
+          | _ ->
+             Warn.fatal
+               "Illegal %s annotaton on store exclusive pair" (pp_atom aw)  in
+        [dec r2 r1; do_stxp a r r2 r1 rA;]
+      let store_addon _ _ _ _ init st _ =
+        assert (not (do_morello)); init,[],st
+    end
+
+    module XPair = ExclusivePair(XLoadPair)(XStorePair)
 
 (* Translate annotations *)
 
@@ -928,7 +1001,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_pair_mixed sz o rw =
       let arw = match tr_rw rw with
       | (a1,_),(a2,_) -> (a1,Some (sz,o)),(a2,Some (sz,o)) in
-      emit_pair arw
+      XSingle.emit_pair arw
 
 (********************************)
 (* Individual loads and strores *)
@@ -936,7 +1009,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_lda_reg rw st init p rA =
       let rR,st = next_reg st in
-      let _,cs,st = emit_pair rw p st init rR rR rA C.evt_null in
+      let _,cs,st = XSingle.emit_pair rw p st init rR rR rA C.evt_null in
       rR,cs,st
 
     let emit_lda rw st p init loc =
@@ -968,7 +1041,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let do_emit_sta rw st p init rW rA =
       let rR,st = next_reg st in
-      let init,cs,st = emit_pair rw p st init rR rW rA C.evt_null in
+      let init,cs,st = XSingle.emit_pair rw p st init rR rW rA C.evt_null in
       rR,init,cs,st
 
     let emit_sta rw st p init loc v =
@@ -1033,9 +1106,89 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let do_str = if rel then do_stlr else do_str in
       init,pseudo [do_str A64.V64 rB rA],st
 
+(********)
+(* Pair *)
+(********)
+
+    let emit_ldp_reg opt st init rA =
+      let r1,r2,st = next_reg2 st in
+      r1,init,pseudo [do_ldp opt r1 r2 rA;add vloc r1 r1 r2;],st
+
+    let emit_ldp_reg opt idx st _p init rA =
+      match opt,idx with
+      |  _,Both ->
+          emit_ldp_reg opt st init rA
+
+    let emit_ldp opt idx st p init loc =
+      let rA,init,st =  U.next_init st p init loc in
+      emit_ldp_reg opt idx st p init rA
+
+    let emit_ldp_idx_var opt idx vdep st p init loc ridx =
+      let rA,init,st =  U.next_init st p init loc in
+      let rA,csA,st = do_sum_addr vdep st rA ridx in
+      let r,init,cs,st = emit_ldp_reg opt idx st p init rA in
+      r,init,pseudo csA@cs,st
+
+    let do_emit_stp_reg opt st p init v rA =
+      let r1,init,csi1,st = U.emit_mov st p init v in
+      let r2,st = next_reg st in
+      init,csi1@pseudo [dec r2 r1; do_stp opt r2 r1 rA;],st
+
+    let emit_stp_reg opt idx st p init rA e =
+      match opt,idx with
+      | _,Both ->
+          do_emit_stp_reg opt st p init e.C.v rA
+
+    let emit_stp opt idx st p init loc e =
+      let rA,init,st =  U.next_init st p init loc in
+      emit_stp_reg opt idx st p init rA e
+
+    let emit_stp_idx_var opt idx vdep st p init loc e ridx =
+      let rA,init,st =  U.next_init st p init loc in
+      let rA,csA,st = do_sum_addr vdep st rA ridx in
+      let init,cs,st = emit_stp_reg opt idx st p init rA e in
+      init,pseudo csA@cs,st
+
+    let stp_emit_store_reg opt idx st p init loc r1 =
+      let rA,init,st =  U.next_init st p init loc in
+      let r2,st = next_reg st in
+      match idx with
+      | Both ->
+         init,pseudo [dec r2 r1; do_stp opt r2 r1 rA;],st
+
+(**************)
+(* For export *)
+(**************)
+
+    let emit_load_one = LDR.emit_load_one
+    let emit_load = LDR.emit_load
+
+
+    let emit_obs t = match t with
+    | Code.Ord-> emit_load_mixed naturalsize 0
+    | Code.Pte->
+        fun st p init loc ->
+        let r,init,cs,st = LDR.emit_load_var A64.V64 st p init (Misc.add_pte loc) in
+        r,init,cs,st
+    | Code.Tag -> LDG.emit_load
+    | Code.CapaTag -> LDCT.emit_load
+    | Code.CapaSeal -> fun st p init x ->
+      let r,init,cs,st = emit_load_mixed MachSize.S128 0 st p init x in
+      let cs2 = lift_code [gctype r r] in
+      r,init,cs@cs2,st
+    | Code.VecReg n -> LDN.emit_load n
+    | Code.Pair -> emit_ldp Pa Both
+
+
+    let emit_obs_not_value = OBS.emit_load_not_value
+    let emit_obs_not_eq = OBS.emit_load_not_eq
+    let emit_obs_not_zero = OBS.emit_load_not_zero
+
+
 (**********)
 (* Access *)
 (**********)
+
     let emit_joker st init = None,init,[],st
 
     let add_tag =
@@ -1131,10 +1284,17 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let r,init,cs,st = emit_load_mixed MachSize.S128 0 st p init loc in
             Some r,init,cs@lift_code [gctype r r],st
         | R,Some (CapaSeal,Some _) -> assert false
-        | R,Some (Neon n, None) -> let r,init,cs,st = LDN.emit_load n st p init loc in Some r,init,cs,st
+        | R,Some (Neon n, None) ->
+            let r,init,cs,st = LDN.emit_load n st p init loc in
+            Some r,init,cs,st
         | R,Some (Neon _,Some _) -> assert false
+        | R,Some (Pair (opt,idx),None) ->
+          let r,init,cs,st = emit_ldp opt idx st p init loc in
+          Some r,init,cs,st
+        | R,Some (Pair _,Some _) -> assert false
         | W,None ->
-            let init,cs,st = STR.emit_store st p init loc e.C.v None C.evt_null in
+            let init,cs,st =
+              STR.emit_store st p init loc e.C.v None C.evt_null in
             None,init,cs,st
         | W,Some (Rel _,None) ->
             let init,cs,st =
@@ -1169,6 +1329,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Some (Tag,None) ->
             let init,cs,st = STG.emit_store st p init e in
             None,init,cs,st
+        | W,Some (Pair (opt,idx),None) ->
+            let init,cs,st = emit_stp opt idx st p init loc e in
+            None,init,cs,st
+        | W,Some (Pair _,Some _) -> assert false
         | R,Some (Pte (Read|ReadAcq|ReadAcqPc as rk),None) ->
             let emit = match rk with
             | Read -> LDR.emit_load_var
@@ -1216,23 +1380,83 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Some s1,Some s2 ->  MachMixed.equal s1 s2
       | (None,Some _)|(Some _,None) -> false
 
+    let check_cu b =
+      if b then
+        Warn.fatal
+          "Refuse to generate constrained unpredictable, use -variant CU to accept"
+
     let check_arw_lxsx er ew =
       let _,szr as ar = tr_none er.C.atom
       and _,szw as aw = tr_none ew.C.atom in
-      if not (A64.do_cu || same_sz szr szw) then
-        Warn.fatal
-          "Refuse to generate constrained unpredictable, use -variant CU to accept" ;
+      check_cu (not (A64.do_cu || same_sz szr szw)) ;
       ar,aw
 
 
-    let emit_exch st p init er ew =
-      let rA,init,st =
-        U.next_init st p init (get_tagged_loc er) in
+    let emit_addr_simple  st p init er =
+      let rA,init,st = U.next_init st p init (get_tagged_loc er) in
+      rA,init,[],st
+
+    let do_emit_exch1 emit_addr st p init er ew =
+      let rA,init,caddr,st = emit_addr st p init er in
       let rR,st = next_reg st in
       let rW,init,csi,st = U.emit_mov st p init ew.C.v in
       let arw = check_arw_lxsx er ew in
-      let init,cs,st = emit_pair arw p st init rR rW rA ew in
-      rR,init,csi@cs,st
+      let init,cs,st = XSingle.emit_pair arw p st init rR rW rA ew in
+      rR,init,csi@caddr@cs,st
+
+    let emit_exch1 = do_emit_exch1 emit_addr_simple
+
+    let do_emit_exch22 emit_addr st p init er ew =
+      let rA,init,caddr,st = emit_addr st p init er in
+      let rR1,rR2,st = next_reg2 st in
+      let rW1,init,csi,st = U.emit_mov st p init ew.C.v in
+      let rW2,st = next_reg st in
+      let arw = check_arw_lxsx er ew in
+      let init,cs,st =
+        XPair.emit_pair arw p st init (rR1,rR2) (rW1,rW2) rA ew in
+      rR1,init,csi@caddr@cs,st
+
+    let emit_exch22 = do_emit_exch22 emit_addr_simple
+
+    let do_emit_exch21 emit_addr st p init er ew =
+      let rA,init,caddr,st = emit_addr st p init er in
+      let rR1,rR2,st = next_reg2 st in
+      let rW,init,csi,st = U.emit_mov st p init ew.C.v in
+      let arw = check_arw_lxsx er ew in
+      let module X = ExclusivePair(XLoadPair)(XStore) in
+      let init,cs,st =
+        X.emit_pair arw p st init (rR1,rR2) rW rA ew in
+      rR1,init,csi@caddr@cs,st
+
+    let emit_exch21 = do_emit_exch21 emit_addr_simple
+
+    let do_emit_exch12 emit_addr st p init er ew =
+      let rA,init,caddr,st = emit_addr st p init er in
+      let rR,st = next_reg st in
+      let rW1,init,csi,st = U.emit_mov st p init ew.C.v in
+      let rW2,st = next_reg st in
+      let arw = check_arw_lxsx er ew in
+      let module X = ExclusivePair(XLoad)(XStorePair) in
+      let init,cs,st =
+        X.emit_pair arw p st init rR (rW1,rW2) rA ew in
+      rR,init,csi@caddr@cs,st
+
+    let emit_exch12 = do_emit_exch12 emit_addr_simple
+
+    let emit_exch st p init er ew =
+      let ar,_ = tr_none er.C.atom
+      and aw,_ = tr_none ew.C.atom in
+      match ar,aw with
+      | (Pair _,Pair _) ->
+         emit_exch22 st p init er ew
+      | (Pair _,_) ->
+         check_cu (not A64.do_cu) ;
+         emit_exch21 st p init er ew
+      | (_,Pair _) ->
+         check_cu (not A64.do_cu) ;
+         emit_exch12 st p init er ew
+      | _,_ ->
+         emit_exch1 st p init er ew
 
     let do_sz sz1 sz2 =
       if same_sz sz1 sz2 then sz1
@@ -1458,7 +1682,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | R,Some (Rel _,_) ->
               Warn.fatal "No load release"
           | R,Some (Atomic rw,None) ->
-              let r,init,cs,st = do_emit_lda_idx vdep (tr_rw rw) st p init loc r2 in
+              let r,init,cs,st =
+                do_emit_lda_idx vdep (tr_rw rw) st p init loc r2 in
               Some r,init, pseudo cs0@cs,st
           | R,Some (Atomic rw,Some (sz,o)) ->
               let r,init,cs,st =
@@ -1485,7 +1710,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let cs0,st = calc0_gen csel st V64 r3 r2 in
               let rB,init,cs,st = LDN.emit_load_idx n st p init loc r3 in
               Some rB,init,Instruction c::pseudo cs0@cs,st
-          | R,Some (Neon _,Some _) -> assert false
+          | R,Some (Pair (opt,idx),None) ->
+              let r,init,cs,st =
+                emit_ldp_idx_var opt idx vdep st p init loc r2 in
+              Some r,init, pseudo cs0@cs,st
+          | R,Some ((Neon _|Pair _),Some _) -> assert false
           | W,None ->
               let module STR =
                 STORE
@@ -1563,6 +1792,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | W,Some (Tag, None) ->
               let init,cs,st = STG.emit_store_idx vdep st p init e r2 in
               None,init,pseudo cs0@cs,st
+          | W,Some (Pair (opt,idx),None) ->
+              let init,cs,st =
+                emit_stp_idx_var opt idx vdep st p init loc e r2 in
+              None,init, pseudo cs0@cs,st
+          | W,Some (Pair _,_) -> assert false
           | (W,(Some (Pte (Set _),None))) ->
               let init,cs,st =
                 emit_set_pteval_idx false vdep r2 st p init e.C.pte (Misc.add_pte loc) in
@@ -1615,23 +1849,51 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           end
       | _,Code _ -> Warn.fatal "No dependency to code location"
 
-    let do_emit_addr_dep csel vdep st p init loc rd =
+    let emit_addr_dep csel vdep st p init loc rd =
       let r2,st = next_reg st in
       let cs0,st = calc0_gen csel st vdep r2 rd in
       let rA,init,st = U.next_init st p init loc in
       let rA,csum,st = do_sum_addr vdep st rA r2 in
       rA,init,pseudo (cs0@csum),st
 
+    let emit_exch_dep_addr1 csel vdep st p init er ew rd =
+      do_emit_exch1
+        (fun st p init er ->
+          emit_addr_dep csel vdep st p init (get_tagged_loc er) rd)
+        st p init er ew
+
+    let emit_exch_dep_addr22 csel vdep st p init er ew rd =
+      do_emit_exch22
+        (fun st p init er ->
+          emit_addr_dep csel vdep st p init (get_tagged_loc er) rd)
+        st p init er ew
+
+    let emit_exch_dep_addr21 csel vdep st p init er ew rd =
+      do_emit_exch21
+        (fun st p init er ->
+          emit_addr_dep csel vdep st p init (get_tagged_loc er) rd)
+        st p init er ew
+
+    let emit_exch_dep_addr12 csel vdep st p init er ew rd =
+      do_emit_exch12
+        (fun st p init er ->
+          emit_addr_dep csel vdep st p init (get_tagged_loc er) rd)
+        st p init er ew
+
     let emit_exch_dep_addr csel vdep st p init er ew rd =
-      let rA,init,caddr,st =
-        do_emit_addr_dep csel vdep st p init (get_tagged_loc er) rd in
-      let rR,st = next_reg st in
-      let rW,init,csi,st = U.emit_mov st p init ew.C.v in
-      let arw = check_arw_lxsx er ew in
-      let init,cs,st = emit_pair arw p st init rR rW rA ew in
-      rR,init,
-      csi@caddr@cs,
-      st
+      let ar,_ = tr_none er.C.atom
+      and aw,_ = tr_none ew.C.atom in
+      match ar,aw with
+      | (Pair _,Pair _)->
+         emit_exch_dep_addr22 csel vdep st p init er ew rd
+      | (Pair _,_) ->
+         check_cu (not A64.do_cu);
+         emit_exch_dep_addr21 csel vdep st p init er ew rd
+      | (_,Pair _) ->
+         check_cu (not A64.do_cu);
+         emit_exch_dep_addr12 csel vdep st p init er ew rd
+      | _,_ ->
+         emit_exch_dep_addr1 csel vdep st p init er ew rd
 
     let emit_access_dep_data csel vdep st p init e  r1 =
       let atom = match e.C.atom with
@@ -1705,10 +1967,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let loc = add_tag loc e.C.tag in
           begin match atom with
           | None ->
-              let init,cs,st = STR.emit_store_reg st p init loc r2 None C.evt_null in
+              let init,cs,st =
+                STR.emit_store_reg st p init loc r2 None C.evt_null in
               None,init,cs2@cs,st
           | Some (Rel _,None) ->
-              let init,cs,st = STLR.emit_store_reg st p init loc r2 None C.evt_null in
+              let init,cs,st =
+                STLR.emit_store_reg st p init loc r2 None C.evt_null in
               None,init,cs2@cs,st
           | Some (Rel a,Some (sz,o)) ->
               let module S =
@@ -1771,9 +2035,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               None,init,cs2@cs@lift_code [str_mixed MachSize.S128 0 r2 rA],st
           | Some (CapaSeal,Some _) -> assert false
           | Some (Neon n,None) ->
-            let init,cs,st = STN.emit_store_reg n st p init loc [r2] in
-            None,init,cs2@cs,st
+             let init,cs,st = STN.emit_store_reg n st p init loc [r2] in
+             None,init,cs2@cs,st
           | Some (Neon _,Some _) -> assert false
+          | Some (Pair (opt,idx),None) ->
+             let init,cs,st = stp_emit_store_reg opt idx st p init loc r2 in
+             None,init,cs2@cs,st
+          | Some (Pair _,Some _) -> assert false
           end
       | Some J,_ -> emit_joker st init
       | _,Code _ -> Warn.fatal "Not Yet (%s,dep_data)" (C.debug_evt e)
@@ -1841,7 +2109,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       match dp with
     | D.ADDR ->
        let rA,init,caddr,st =
-         do_emit_addr_dep csel vdep st p init
+         emit_addr_dep csel vdep st p init
            (get_tagged_loc er) rd in
         let rR,init,cs,st = do_emit_ldop_rA ins ins_mixed st p init er ew rA in
         rR,init,caddr@cs,st
@@ -1854,7 +2122,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_cas_dep  st p init er ew (dp,csel) vdep rd = match dp with
     | D.ADDR ->
        let rA,init,caddr,st =
-         do_emit_addr_dep csel vdep st p init (get_tagged_loc er) rd in
+         emit_addr_dep csel vdep st p init (get_tagged_loc er) rd in
         let rR,init,cs,st = emit_cas_rA st p init er ew rA in
         rR,init,caddr@cs,st
     | D.CTRL|D.CTRLISYNC ->
@@ -1868,7 +2136,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       match dp with
       | D.ADDR ->
          let rA,init,caddr,st =
-           do_emit_addr_dep csel vdep st p init (get_tagged_loc er) rd in
+           emit_addr_dep csel vdep st p init (get_tagged_loc er) rd in
          let rR,init,cs,st = emit_stop_rA op st p init er ew rA in
          rR,init,caddr@cs,st
       | D.CTRL|D.CTRLISYNC ->
