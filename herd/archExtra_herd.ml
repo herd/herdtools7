@@ -465,8 +465,10 @@ module Make(C:Config) (I:I) : S with module I = I
 (* Compare id in fault and other id, at least one id must be allowed in fault *)
         let same_sym_fault sym1 sym2 = match sym1,sym2 with
 (* Both ids allowed in fault, compare *)
-          |(Virtual {name=s1;_},Virtual {name=s2;_})
-          |(System (PTE,s1),System (PTE,s2))
+          | (Virtual {name=s1;_},Virtual {name=s2;_})
+            -> Symbol.compare s1 s2 = 0
+          | (System (PTE,s1),System (PTE,s2))
+          (* | (System (TAG,s1),System (TAG,s2)) *)
            -> Misc.string_eq s1 s2
 (* One id allowed, the other on forbidden, does not match *)
           | (Virtual _,(System ((PTE|TLB|PTE2),_)|Physical _|TagAddr _))
@@ -487,11 +489,6 @@ module Make(C:Config) (I:I) : S with module I = I
         let same_id_fault v1 v2 = match v1,v2 with
           | I.V.Val (Symbolic sym1), I.V.Val (Symbolic sym2)
             -> same_sym_fault sym1 sym2
-          | I.V.Val (Constant.Label (_, l1)),I.V.Val (Constant.Label (_, l2))
-            -> Misc.string_eq l1 l2
-          | I.V.Val (Symbolic _), I.V.Val (Constant.Label (_, _))
-          | I.V.Val (Constant.Label (_, _)), I.V.Val (Symbolic _)
-            -> false
           | _,_
             ->
               Warn.fatal
@@ -645,7 +642,7 @@ module Make(C:Config) (I:I) : S with module I = I
                   let tag = None in
                   let cap = 0L in
                   let sym_data =
-                    { Constant.name=s ;
+                    { Constant.name=Constant.Symbol.Data s ;
                       tag=tag ;
                       cap=cap ;
                       offset=i*nbytes} in
@@ -730,11 +727,15 @@ module Make(C:Config) (I:I) : S with module I = I
           | Location_global
               (I.V.Val
                  (Concrete _|ConcreteVector _|ConcreteRecord _
-                 |Label _|Instruction _|Frozen _
+                 |Instruction _|Frozen _
                  |Tag _|PteVal _))
             ->
               Warn.user_error
                 "Very strange location (look_address) %s\n"
+                (pp_location loc)
+          | Location_global (I.V.Val (Symbolic (Virtual {name=n;_}))) when Symbol.is_label n ->
+              Warn.user_error
+                "No default value defined for location %s\n"
                 (pp_location loc)
           | Location_global (I.V.Val (Symbolic (Virtual _|Physical _)))
           | Location_reg _ -> reg_default_value
@@ -758,7 +759,7 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let look_size_location env loc =
         match symbolic_data loc with
-        | Some {Constant.name=s;_} -> look_size env s
+        | Some {Constant.name=s;_} -> look_size env (Constant.Symbol.pp s)
         | _ -> assert false
 
       let build_size_env bds =
@@ -766,7 +767,7 @@ module Make(C:Config) (I:I) : S with module I = I
           (fun m (loc,(t,_)) ->
             match symbolic_data loc with
             | Some sym ->
-                StringMap.add sym.Constant.name (mem_access_size_of_t t) m
+                StringMap.add (Constant.Symbol.pp sym.Constant.name) (mem_access_size_of_t t) m
             | _ -> m)
           size_env_empty bds
 
@@ -1034,7 +1035,7 @@ module Make(C:Config) (I:I) : S with module I = I
               | Location_global
                 (I.V.Val (Symbolic (Virtual {name=s; offset=_;_})) as a)
                 ->
-                  let sz = look_size senv s in
+                  let sz = look_size senv (Constant.Symbol.pp s) in
                   let eas = byte_eas sz a in
                   let vs = List.map (get_of_val st) eas in
                   let v = recompose vs in

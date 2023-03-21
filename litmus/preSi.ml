@@ -1541,8 +1541,10 @@ module Make
               | ConcreteRecord _ ->
                   Warn.fatal "Record used as scalar"
               | Symbolic (Virtual {name=s; tag=None; offset=0; _}) ->
-                  sprintf "(%s)_vars->%s" (CType.dump at) s
-              | Label (p,lbl) ->
+                  sprintf "(%s)_vars->%s" (CType.dump at) (Symbol.pp s)
+              (* | Symbolic _ when is_label v ->
+                  Warn.fatal "PreSi mode cannot handle code labels (yet)" *)
+              | Symbolic (Virtual {name=Constant.Symbol.Label(p,lbl);_}) ->
                   sprintf "_vars->labels.%s" (OutUtils.fmt_lbl_var p lbl)
               | Tag _|Symbolic _ ->
                   Warn.user_error "Litmus cannot handle this initial value %s"
