@@ -42,7 +42,7 @@ include Arch.MakeArch(struct
         let c =
           try int_of_string c
           with Failure _ -> Warn.user_error "Int expected" in
-        add_subs [Cst(s, c)] subs
+        add_subs [Cst(Symbol.pp s, c)] subs
     | Const(Concrete s),Const(Concrete c)
       when c=s ->
        Some subs
@@ -152,9 +152,9 @@ include Arch.MakeArch(struct
     in
 
     let rec expl_expr = let open Constant in function
-      | Const(Symbolic (Virtual {name=s;_})) -> find_cst s >! fun k -> Const k
+      | Const(Symbolic (Virtual {name=s;_})) -> find_cst (Symbol.pp s) >! fun k -> Const k
       | Const
-          (Concrete _|ConcreteVector _|Label _|ConcreteRecord _
+          (Concrete _|ConcreteVector _|ConcreteRecord _
            |Tag _|Symbolic _|PteVal _|AddrReg _
            |Instruction _|Frozen _)
         as e -> unitT e

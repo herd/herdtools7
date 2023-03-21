@@ -400,7 +400,7 @@ module Make (Conf : Config) = struct
 
     let binop_mod v1 v2 =
       match (v1, v2) with
-      | ( (V.Val Constant.(Symbolic _ | Label _) | V.Var _),
+      | ( (V.Val Constant.(Symbolic _) | V.Var _),
           V.Val (Constant.Concrete (ASLScalar.S_Int z)) )
         when is_valid_trailing_bits z ->
           return V.zero

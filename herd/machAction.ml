@@ -104,8 +104,6 @@ end = struct
           if kvm then Access.PTE
           else Warn.fatal "PTE %s while -variant kvm is not active"
                  (A.pp_location loc)
-    | A.Location_global (V.Val (Label(_,_)))
-      -> Access.VIR
     | A.Location_global v ->
         Warn.fatal
           "access_of_location_std on non-standard symbol '%s'"
@@ -611,7 +609,7 @@ end = struct
           | Some
               (A.V.Val
                  (ConcreteVector _|Concrete _|Symbolic _|ConcreteRecord _
-                  |Label (_, _)|Tag _|Instruction _|AddrReg _
+                  |Tag _|Instruction _|AddrReg _
                   |Frozen _))
           | None
             -> None

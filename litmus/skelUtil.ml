@@ -583,7 +583,7 @@ end
         try
           T.find_offset_out p lbl test
         with Not_found ->
-          let v = Constant.Label (p,lbl) in
+          let v = Constant.mk_sym_virtual_label p lbl in
           Warn.user_error "Non-existant label %s" (A.V.pp_v v)
 
 (* Instructions *)

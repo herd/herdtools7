@@ -104,8 +104,10 @@ module RLocSet = A.RLocSet and module FaultType = A.FaultType =
       match a with
       | LV (_,v) ->
             let rec f v k = match v with
-            | Symbolic (Virtual {name=s;offset=0;tag=None;_}) -> Strings.add s k
-            | Concrete _|PteVal _|AddrReg _|Instruction _|Label _ -> k
+            | Symbolic (Virtual {name=s;offset=0;tag=None;_}) -> Strings.add (Symbol.pp s) k
+            | Concrete _|PteVal _|AddrReg _|Instruction _ -> k
+            | Symbolic (Virtual {name=s;_}) when Symbol.is_label s
+              -> k
             | ConcreteVector vs ->
                 List.fold_right f vs k
             | ConcreteRecord vs ->
@@ -147,7 +149,8 @@ module RLocSet = A.RLocSet and module FaultType = A.FaultType =
 
     let get_labels c =
       let fold_atom a k = match a with
-        | LV (_,Constant.Label (p, l)) -> Label.Full.Set.add (p, l) k
+        | LV (_,Symbolic (Virtual {name=Symbol.Label(p,l);_}))
+            -> Label.Full.Set.add (p, l) k
         | LV _ | LL _ | FF _ -> k in
       ConstrGen.fold_constr fold_atom c Label.Full.Set.empty
 

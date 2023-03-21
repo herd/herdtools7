@@ -3438,7 +3438,7 @@ Arguments:
 (*********************)
 
       let make_label_value proc lbl_str =
-        A.V.cstToV (Constant.Label (proc, lbl_str))
+        A.V.cstToV (Constant.mk_sym_virtual_label proc lbl_str)
 
       let read_loc_instr a ii =
         M.read_loc Port.No (mk_fetch Annot.N) a ii
@@ -3450,7 +3450,7 @@ Arguments:
       let v2tgt =
         let open Constant in
         function
-        | M.A.V.Val(Label (_, lbl)) -> Some (B.Lbl lbl)
+        | M.A.V.Val (Symbolic (Virtual {name=Symbol.Label (_, lbl); _})) -> Some (B.Lbl lbl)
         | M.A.V.Val (Concrete i) -> Some (B.Addr (M.A.V.Cst.Scalar.to_int i))
         | _ -> None
 
@@ -3628,7 +3628,7 @@ Arguments:
             >>= do_indirect_jump test [] i ii
 
         | I_ERET ->
-            let eret_to_addr v =
+           let eret_to_addr v =
               match v2tgt v with
               | Some tgt -> B.faultRetT tgt
               | _ ->
