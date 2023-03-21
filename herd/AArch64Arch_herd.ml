@@ -123,7 +123,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | V.Val Instruction i -> is_cmodx_restricted_instruction i
       | V.Val
            (Symbolic _|Concrete _|ConcreteVector _|ConcreteRecord _|
-            Label _|Tag _|PteVal _|AddrReg _|Frozen _)
+            Tag _|PteVal _|AddrReg _|Frozen _)
       | V.Var _ -> false
 
     let ifetch_value_sets = [("Restricted-CMODX",is_cmodx_restricted_value)]

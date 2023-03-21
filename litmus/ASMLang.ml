@@ -513,12 +513,12 @@ module RegMap = A.RegMap)
         let open Mode in
         fun env sym ->
           match sym with
-          | Virtual { name; tag=None; cap=0L; offset=0; _ } ->
-              check_memory name
-          | Virtual { name; tag=None; cap=0L; offset; _ } ->
-              let ty = find_global_type name env in
+          | Virtual { name=Symbol.Data s; tag=None; cap=0L; offset=0; _ } ->
+              check_memory s
+          | Virtual { name=Symbol.Data s; tag=None; cap=0L; offset; _ } ->
+              let ty = find_global_type s env in
               if CType.is_array ty then
-                let t = check_memory name in
+                let t = check_memory s in
                 sprintf "&(*%s)[%d]" t offset
               else Constant.pp_symbol_old sym |> check_memory
           | _ -> Constant.pp_symbol_old sym |> check_memory
@@ -529,11 +529,11 @@ module RegMap = A.RegMap)
         | Symbolic (Virtual a)
           when not (PAC.is_canonical a.pac) ->
             Warn.user_error "Litmus cannot initialize a virtual address with a non-canonical PAC field"
+        | Symbolic (Virtual {name=Symbol.Label (p,lbl); _}) -> OutUtils.fmt_lbl_var p lbl
         | Symbolic sym ->
             compile_symbol_fun globEnv sym
         | Concrete _ | ConcreteVector _ | Instruction _
           -> AL.GetInstr.dump_instr Tmpl.dump_v v
-        | Label (p,lbl) -> OutUtils.fmt_lbl_var p lbl
         | PteVal p ->
             let idx = find_pteval_index p ptevalEnv in
             add_pteval idx
