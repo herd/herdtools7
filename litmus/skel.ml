@@ -1765,6 +1765,19 @@ module Make
             let  do_collect =  do_collect_local && (do_safer || proc=0) in
             O.f "static void *P%i(void *_vb) {" proc ;
             O.fi "mbar();" ;
+            if do_self then begin
+              let cache_type = CacheType.get test.T.info in
+              let needs_dic, needs_idc =
+                let open CacheType in
+                  match cache_type with
+                  | None ->
+                      (fun _ -> false), (fun _ -> false)
+                  | Some cache_type ->
+                      cache_type.dic, cache_type.idc in
+              O.fi "check_dic_idc(%d, %d);"
+                (if needs_dic proc then 1 else 0)
+                (if needs_idc proc then 1 else 0)
+            end ;
             if do_collect then O.fi "hist_t *hist = alloc_hist();" ;
             O.fi "parg_t *_b = (parg_t *)_vb;" ;
             O.fi "ctx_t *_a = _b->_a;" ;
