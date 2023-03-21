@@ -158,11 +158,13 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
 
     let fun_name i = sprintf "get%s" (instr_name i)
 
-    let dump_instr dump = function
-      | Constant.Instruction i -> instr_name i
-      | Constant.Label (p, l) ->
-          SkelUtil.instr_symb_id (OutUtils.fmt_lbl_var p l)
-      | v -> dump v
+    let dump_instr dump v =
+      let open Constant in
+      match v with
+      | Instruction i -> instr_name i
+      | Symbolic (Virtual {name=Symbol.Label(p,l);_})
+          -> SkelUtil.instr_symb_id (OutUtils.fmt_lbl_var p l)
+      | _ -> dump v
 
     module Make(O:Indent.S) = struct
 

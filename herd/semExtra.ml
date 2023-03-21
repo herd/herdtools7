@@ -289,7 +289,7 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
       let open Constant in
       match sym.offset with
       | 0 -> true
-      | o -> is_non_mixed_offset test sym.name o
+      | o -> is_non_mixed_offset test (Symbol.pp sym.name) o
 
     let is_non_mixed_symbol test sym =
       let open Constant in
