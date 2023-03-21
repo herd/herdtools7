@@ -538,7 +538,7 @@ let lift_proc_info i evts =
     match si with
     | {Constant.name=s; offset=idx;_}
       ->
-        let sz_s = A.look_size senv s in
+        let sz_s = A.look_size senv (Constant.Symbol.pp s) in
         let nbytes_s = MachSize.nbytes sz_s in
         if MachSize.less_than_or_equal sz_e sz_s then begin
           let ncell = idx / nbytes_s and idx0 = idx mod nbytes_s in

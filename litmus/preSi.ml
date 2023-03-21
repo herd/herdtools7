@@ -1573,8 +1573,8 @@ module Make
           | Symbolic (Virtual a) when not (PAC.is_canonical a.pac) ->
             Warn.user_error "Litmus cannot initialize a virtual address with a non-canonical PAC field"
           | Symbolic (Virtual {name=s; tag=None; offset=0; _}) ->
-            sprintf "(%s)_vars->%s" (CType.dump at) s
-          | Label (p,lbl) ->
+            sprintf "(%s)_vars->%s" (CType.dump at) (Symbol.pp s)
+          | Symbolic (Virtual {name=Constant.Symbol.Label(p,lbl);_}) ->
             sprintf "_vars->labels.%s" (OutUtils.fmt_lbl_var p lbl)
           | Tag _|Symbolic _ ->
             Warn.user_error "Litmus cannot handle this initial value %s"

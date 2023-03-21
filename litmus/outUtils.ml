@@ -66,14 +66,13 @@ module Make(O:Config)(V:Constant.S) = struct
 
   let dump_v_std v = match v with
   | Concrete _ -> V.pp O.hexa v
-  | Symbolic (Virtual {name=a;tag=None;cap=0L;offset=o; _})
+  | Symbolic (Virtual {name=Symbol.Data a;tag=None;cap=0L;offset=o; _})
     -> full_dump_addr a o
   | ConcreteVector _ -> V.pp O.hexa v
   | Instruction _ -> Misc.lowercase (V.pp false v)
   | ConcreteRecord _
   | Tag _
   | Symbolic _
-  | Label _
   | PteVal _
   | AddrReg _
   | Frozen _
