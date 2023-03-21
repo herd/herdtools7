@@ -43,3 +43,15 @@ inline static void selfbar(void *p) {
 inline static void isync(void) {
   asm __volatile__ ("isb" ::: "memory");
 }
+
+inline static void check_dic_idc(int need_dic, int need_idc) {
+  uint64_t ctr_el0;
+  asm volatile ("mrs %0, ctr_el0" : "=r" (ctr_el0));
+  int idc = (ctr_el0 >> 28) & 1;
+  int dic = (ctr_el0 >> 29) & 1;
+  if ((need_dic && !dic) || (need_idc && !idc)) {
+    fprintf(stderr, "Fatal error: hardware does not support the CacheType "
+            "feature IDC=%d, DIC=%d\n", need_idc, need_dic);
+    exit(0);
+  }
+}
