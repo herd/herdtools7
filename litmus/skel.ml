@@ -368,21 +368,24 @@ module Make
 (* Right value, all cases *)
       let rec dump_a_v = function
         | Concrete i ->  A.V.Scalar.pp  Cfg.hexa i
+        | Symbolic _ as v when is_label v ->
+           Warn.user_error
+             "Labels cannot be used as initial values of memory locations"
         | Symbolic (Virtual {name=s;tag=None; offset=0;_}) ->
-            dump_a_addr s
+            dump_a_addr (Symbol.pp s)
         | ConcreteVector vs ->
            let pps =
              List.map
                (fun v -> sprintf "%s," (dump_a_v v))
                vs in
            sprintf "{%s}" (String.concat "" pps)
-        | Symbolic _|Tag _|PteVal _|AddrReg _|Frozen _|ConcreteRecord _ -> assert false
-        | Label (p,lab) ->
+        | Symbolic (Virtual {name=Symbol.Label(p,lab);_}) ->
           if do_self then
             sprintf "&_a->code%i[_i*_a->code%i_sz+_a->prelude%i+%s]" p p p (OutUtils.fmt_lbl_offset p lab)
           else
             sprintf "_a->%s" (OutUtils.fmt_lbl_var p lab)
         | Instruction i -> A.GetInstr.instr_name i
+        | Symbolic _|Tag _|PteVal _|AddrReg _|Frozen _|ConcreteRecord _ -> assert false
 
 (* Dump left & right values when context is available *)
 
@@ -779,7 +782,7 @@ module Make
                         (fun (loc,v) k ->
                           match loc,v with
                           | A.Location_reg(p,_),
-                            Symbolic (Virtual {name=s;_}) when s = a ->
+                            Symbolic (Virtual {name=Symbol.Data s;_}) when s = a ->
                               let cpy = A.Out.addr_cpy_name a p in
                               O.fi "%s* *%s ;" (CType.dump t) cpy ;
                               (cpy,a)::k
@@ -812,7 +815,7 @@ module Make
                 if Cfg.cautious then
                   List.iter
                     (fun (loc,v) -> match loc,v with
-                    | A.Location_reg(p,_),Symbolic (Virtual {name=s;_})
+                    | A.Location_reg(p,_),Symbolic (Virtual {name=Symbol.Data s;_})
                           when Misc.string_eq s a ->
                         let cpy = A.Out.addr_cpy_name a p in
                         O.f "static %s* %s[SIZE_OF_ALLOC];"

@@ -21,9 +21,6 @@ open LocationsItem
 open MiscParser
 open ConstrGen
 
-let mk_sym_tag s t =
-  Symbolic (Virtual {default_symbolic_data with name=s;tag=Some t;})
-
 let do_mk_sym_tagloc s o =
   if
     o < 0 ||
@@ -39,29 +36,7 @@ let mk_sym_tagloc s o =
 
 let mk_sym_tagloc_zero s = do_mk_sym_tagloc s 0
 
-let mk_sym_morello p s t =
-  let p_int = Misc.string_as_int64 p in
-  if
-    not (Int64.equal (Int64.logand p_int 0x7L) 0L)
-    || Int64.compare p_int (Int64.shift_left 1L 36) >= 0
-    || Int64.compare p_int 0L < 0
-    then Printf.eprintf "Warning: incorrect address encoding: %#Lx\n" p_int ;
-  let truncated_perms = Int64.shift_right_logical p_int 3 in
-  let tag = if Misc.string_as_int t <> 0 then 1L else 0L in
-  Symbolic
-    (Virtual
-       {default_symbolic_data
-       with
-       name=s;
-       cap=Int64.logor truncated_perms (Int64.shift_left tag 33); })
-
-let mk_sym_with_index s i =
-  Symbolic
-    (Virtual
-       {default_symbolic_data
-       with name=s; offset=Misc.string_as_int i})
-
-let mk_lab (p, l) = Label (p, l)
+let mk_lab (p,s) = Symbolic (Virtual ({default_symbolic_data with name=Symbol.Label (p,s)}))
 %}
 
 %token EOF
@@ -128,12 +103,12 @@ location_global:
 | TOK_PTE LPAR NAME RPAR { Constant.mk_sym_pte  $3 }
 | TOK_PTE LPAR TOK_PTE LPAR NAME RPAR RPAR { Constant.mk_sym_pte2 $5 }
 | TOK_PA LPAR NAME RPAR { Constant.mk_sym_pa $3 }
-| NAME COLON NAME { mk_sym_tag $1 $3 }
+| NAME COLON NAME { Constant.mk_sym_tag $1 $3 }
 | TOK_TAG LPAR id=NAME RPAR { mk_sym_tagloc_zero id }
 | TOK_TAG LPAR id=NAME PLUS o=NUM RPAR { mk_sym_tagloc id o }
 (* TODO: have MTE and Morello tags be usable at the same time? *)
-| NUM COLON NAME COLON NUM {mk_sym_morello $1 $3 $5}
-| NAME COLON NUM { mk_sym_morello "0" $1 $3 }
+| NUM COLON NAME COLON NUM { Constant.mk_sym_morello $1 $3 $5}
+| NAME COLON NUM { Constant.mk_sym_morello "0" $1 $3 }
 
 name_or_num:
 | NAME { $1 }
@@ -184,11 +159,11 @@ maybev_notag:
 */
 (* TODO: restrict to something like "NUM COLON BOOL"? *)
 | NUM COLON NUM { Concrete ($1 ^ ":" ^ $3) }
-| NAME LBRK NUM RBRK { mk_sym_with_index $1 $3 }
+| NAME LBRK NUM RBRK { Constant.mk_sym_with_index $1 (Misc.string_as_int $3) }
 
 maybev_amper:
 | AMPER NAME { Constant.mk_sym $2 }
-| AMPER NAME LBRK NUM RBRK { mk_sym_with_index $2 $4 }
+| AMPER NAME LBRK NUM RBRK { Constant.mk_sym_with_index $2 (Misc.string_as_int $4)}
 
 maybev:
 | maybev_notag { $1 }

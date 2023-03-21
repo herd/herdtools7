@@ -116,9 +116,9 @@ module Make(O:Config)(I:I) : S with module I = I
   let tr_global (c:ParsedConstant.v) =
     let open Constant in
     match c with
-    | Symbolic sym -> Global_litmus.tr_symbol sym
-    | Tag _|Concrete _|ConcreteVector _|ConcreteRecord _
-    | Label _|PteVal _|AddrReg _|Instruction _
+    | Symbolic sym when not (is_label c) -> Global_litmus.get_base_symbol sym
+    | Symbolic _| Tag _| Concrete _| ConcreteVector _| ConcreteRecord _
+    | PteVal _| AddrReg _| Instruction _
     | Frozen _
       ->
        Warn.fatal "Constant %s cannot be translated to a litmus adress"

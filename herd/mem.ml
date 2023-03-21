@@ -259,8 +259,11 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             try
               match A.V.as_virtual v with
               | Some s ->
-                 let sym = Constant.mk_sym_virtual s in
-                 A.Location_global (A.V.Val sym)::locs
+                  if A.V.is_instrloc v then
+                    locs
+                  else
+                    let sym = Constant.mk_sym_virtual s in
+                      A.Location_global (A.V.Val sym)::locs
               | None -> locs
             with V.Undetermined -> locs)
           init [] in
@@ -275,7 +278,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
            | A.Location_global _ -> true
            | A.Location_reg _ -> false)
           (S.observed_locations test)
-      and locs_init = get_all_locs_init test.Test_herd.init_state in
+      and locs_init = get_all_locs_init test.Test_herd.init_state
+      in
       let () =
         if dbg then begin
           let pp_locs locs =
@@ -308,7 +312,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         A.LocSet.fold
           (fun loc env ->
             try
-              let v = A.look_address_in_state test.Test_herd.init_state loc in
+              let v = A.look_address_in_state test.Test_herd.init_state loc
+              in
               (loc,v)::env
             with A.LocUndetermined -> assert false)
           locs [] in
@@ -428,12 +433,12 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                   match Label.norm lbls with
                   | None -> assert false (* as lbls is non-empty *)
                   | Some lbl ->
-                      let loc =
-                        A.Location_global
-                          (A.V.cstToV (Constant.Label (proc, lbl)))
+                      let symb = Constant.mk_sym_virtual_label proc lbl in
+                      let loc = A.Location_global (A.V.cstToV symb)
                       and v = A.V.instructionToV i in
                       A.state_add env loc v)
-                init_state lbls2i in
+                init_state lbls2i
+            in
             { test with init_state; } in
 
 (*****************************************************)
@@ -493,7 +498,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
         let addr2v proc s =
           try (* Look for label to overwritable instruction *)
-            V.Val (Constant.Label (proc,norm_lbl s))
+            V.Val (Constant.mk_sym_virtual_label proc (norm_lbl s))
           with
             e -> (* No, look for data location *)
               let v =  A.V.nameToV s in
@@ -1144,7 +1149,7 @@ let match_reg_events es =
             let ws =
               let v = S.E.global_loc_of er in
               match v with
-              | None|Some (V.Val (Constant.(Symbolic _|Label _))) -> ws
+              | None|Some (V.Val (Constant.Symbolic _)) -> ws
               | Some v -> NoSymbol v::ws in
             (* Add reading from nowhere for speculated reads *)
             let ws = if is_spec es er then NoWrite::ws else ws in
@@ -1221,12 +1226,21 @@ let match_reg_events es =
       let compat_locs = compatible_locs_mem in
       if self then
         let code_store e =
-        E.is_store e &&
-        match
-          Misc.seq_opt A.global (E.location_of e)
-        with
-        | Some (V.Val (Constant.Label _)|V.Var _) -> true
-        | Some _|None -> false in
+          let open Constant in
+            E.is_mem_store e &&
+            match
+              Misc.seq_opt A.global (E.location_of e)
+            with
+            | Some (V.Var _) -> true
+            | Some (V.Val (Symbolic (Virtual {name=n;_}))) when Symbol.is_label n -> true
+            | Some _|None -> false
+        in
+        (* let code_access e =
+          match
+            Misc.seq_opt A.global (E.location_of e)
+          with
+          | Some (V.Val c) when Constant.is_label c -> true
+          | Some _|None -> false in *)
         (* Select code accesses *)
         let code_loads =
           E.EventSet.filter E.is_ifetch es.E.events
@@ -1272,9 +1286,10 @@ let match_reg_events es =
     let get_base a =
       let open Constant in
       match A.symbolic_data a with
-      | Some ({name=s;_} as sym) ->
+      | Some ({name=n;_} as sym) ->
+          let s = Symbol.pp n in
           let s = if Misc.check_ctag s then Misc.tr_ctag s else s in
-          A.of_symbolic_data {sym with name=s; offset=0;}
+          A.of_symbolic_data {sym with name=Symbol.of_string s; offset=0;}
       | _ -> raise CannotSca
 
 (* Sort same_base *)
@@ -1285,9 +1300,11 @@ let match_reg_events es =
             Misc.seq_opt A.symbolic_data loc2
       with
       | Some {name=s1;offset=i1;_},Some {name=s2;offset=i2;_}
-            when  Misc.string_eq s1 s2 ->
+            when Symbol.equal s1 s2 ->
           Misc.int_compare i1 i2
       | Some {name=s1;_},Some {name=s2;_} when morello ->
+          let s1 = Symbol.pp s1
+          and s2 = Symbol.pp s2 in
           if Misc.check_ctag s1 && Misc.string_eq (Misc.tr_ctag s1) s2 then 1
           else if Misc.check_ctag s2 && Misc.string_eq s1 (Misc.tr_ctag s2) then -1
           else if Misc.check_ctag s1 && Misc.check_ctag s2 && Misc.string_eq s1 s2 then 0
@@ -1376,6 +1393,7 @@ let match_reg_events es =
       let s,idx= match  E.global_loc_of fst with
       |  Some (V.Val (Symbolic (Virtual {name=s; offset=i;_})))
          ->
+           let s = Constant.Symbol.pp s in
            (if morello && Misc.check_ctag s then Misc.tr_ctag s else s),i
       | _ -> raise CannotSca in
       let sz = List.length sca*byte_sz in
@@ -1555,7 +1573,7 @@ let match_reg_events es =
       if kvm then
         (function
          | A.Location_global (V.Val (Symbolic (Physical (s,idx)))) ->
-             let sym = { default_symbolic_data with name=s; offset=idx; } in
+             let sym = { default_symbolic_data with name=Symbol.of_string s; offset=idx; } in
              A.of_symbolic_data sym
          | A.Location_global (V.Val (Symbolic (TagAddr (PHY,s,o)))) ->
              A.Location_global (V.Val (Symbolic (TagAddr (VIR,s,o))))
@@ -1719,7 +1737,7 @@ let match_reg_events es =
                   | A.Location_global
                     (V.Val (Symbolic (Virtual {name=s;_})) as a)
                     ->
-                      let eas = AM.byte_eas (A.look_size senv s) a in
+                      let eas = AM.byte_eas (A.look_size senv (Symbol.pp s)) a in
                       A.LocSet.of_list
                         (List.map (fun a -> A.Location_global a) eas)
                   | _ -> A.LocSet.singleton loc)
@@ -1735,7 +1753,7 @@ let match_reg_events es =
                           (Virtual ({name=s; offset=0; _} as sym))))
                         ->
                         A.LocSet.add
-                          (A.of_symbolic_data {sym with name=Misc.add_ctag s})
+                          (A.of_symbolic_data {sym with name=Symbol.map Misc.add_ctag s})
                           (A.LocSet.singleton loc)
                     | _ -> A.LocSet.singleton loc)
                 locs
@@ -1793,7 +1811,7 @@ let match_reg_events es =
             let open Constant in
             match Misc.seq_opt A.symbolic_data (E.location_of e) with
             | Some {name=s; offset=i; _} ->
-                if Misc.check_ctag s then  Misc.int_compare idx max_int (* always -1 ??? *)
+                if Misc.check_ctag (Constant.Symbol.pp s) then  Misc.int_compare idx max_int (* always -1 ??? *)
                 else  Misc.int_compare idx i
             | _ -> assert false
 
@@ -2091,8 +2109,9 @@ let match_reg_events es =
           (fun e -> E.is_mem_store e && not (E.is_mem_store_init e))
           es.E.events in
       E.EventSet.iter (fun e ->
+          let open Constant in
           match E.location_of e with
-          | Some (A.Location_global (V.Val(Constant.Label(p, lbl)))) ->
+          | Some (A.Location_global (V.Val(Symbolic (Virtual {name=Symbol.Label(p, lbl);_})))) ->
               Warn.user_error
                 "Store to %s:%s requires instruction fetch functionality.\n\
                  Please use `-variant self` as an argument to herd7 to enable it."
@@ -2105,8 +2124,10 @@ let match_reg_events es =
       let program = test.Test_herd.program
       and code_segment = test.Test_herd.code_segment in
       E.EventSet.iter (fun e ->
+        let open Constant in
         match E.location_of e with
-        | Some (A.Location_global (V.Val(Constant.Label(p, lbl))) as loc) ->
+        (* | Some (A.Location_global (V.Val(Constant.Label(p, lbl))) as loc) -> *)
+        | Some (A.Location_global (V.Val(Symbolic (Virtual {name=Symbol.Label (p,lbl);_}))) as loc) ->
           if Label.Set.mem lbl owls then begin
             if false then (* insert a proper test here *)
               Warn.user_error "Illegal store to '%s'; overwrite with the given argument not supported"
