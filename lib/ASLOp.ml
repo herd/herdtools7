@@ -225,30 +225,30 @@ let do_op1 op cst =
       match cst with
       | Constant.Concrete s ->
           ASLScalar.convert_to_int_signed s |> return_concrete
-      | Constant.(Symbolic _|PteVal _|Label _|Instruction _) -> Some cst
+      | Constant.(Symbolic _|PteVal _|Instruction _) -> Some cst
       | _ -> None)
   | ToAArch64 -> (
       match cst with
       | Constant.Concrete s ->
           ASLScalar.convert_to_sint64 s |> return_concrete
-      | Constant.(Symbolic _|PteVal _|Label _|Instruction _) -> Some cst
+      | Constant.(Symbolic _|PteVal _|Instruction _) -> Some cst
       | _ -> None)
   | FromAArch64 -> (
       match cst with
       | Constant.Concrete s ->
           ASLScalar.as_bv_64 s |> return_concrete
-      | Constant.(Symbolic _|PteVal _|Label _|Instruction _) -> Some cst
+      | Constant.(Symbolic _|PteVal _|Instruction _) -> Some cst
       | _ -> None)
   | ToIntU -> (
       match cst with
       | Constant.Concrete s ->
           ASLScalar.convert_to_int_unsigned s |> return_concrete
-      | Constant.(Symbolic _|PteVal _|Label _|Instruction _) -> Some cst
+      | Constant.(Symbolic _|PteVal _|Instruction _) -> Some cst
       | _ -> None)
   | ToBV sz -> (
       match cst,sz with
       | Constant.Concrete s,_ -> ASLScalar.convert_to_bv sz s |> return_concrete
-      | (Constant.(Symbolic _|PteVal _|Label _|Instruction _),64)
+      | (Constant.(Symbolic _|PteVal _|Instruction _),64)
       | (Constant.Instruction _,32) (* Instructions are 32bit wide *)
         -> Some cst
       | _ -> None)
@@ -293,7 +293,7 @@ let do_op1 op cst =
                 if is_address_mask positions then Some cst
                 else None
           end
-      | Constant.(Symbolic _|Label _ as cst) ->
+      | Constant.(Symbolic _ as cst) ->
           if is_address_mask positions || is_mask_64 positions then
             Some cst
           else begin
@@ -344,7 +344,7 @@ let mask c sz =
   let open Constant in
   match c,sz with
 (* The following are 64bits quantities, the last two being virtual addresses *)
-  | ((PteVal _|Symbolic _|Label _),Quad)
+  | ((PteVal _|Symbolic _),Quad)
 (* Non-signed 32bit quantity *)
   | (Instruction _,(Word|Quad))
     -> Some c
