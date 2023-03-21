@@ -202,6 +202,7 @@ module Make(O:Config)(A:I) =
              (List.fold_left
                 (fun k (_,v) ->
                   let rec f v k = match v with
+                  | Symbolic _ when is_label v -> k
                   | Symbolic sym ->
                       begin match tr sym with
                       | Some s -> s::k
@@ -211,7 +212,7 @@ module Make(O:Config)(A:I) =
                       List.fold_right f vs k
                   | ConcreteRecord vs ->
                     StringMap.fold_values f vs k
-                  |Concrete _|Label _|Tag _
+                  |Concrete _|Tag _
                   |PteVal _|AddrReg _|Instruction _|Frozen _
                    -> k in
                   f v k)
@@ -221,7 +222,7 @@ module Make(O:Config)(A:I) =
     let get_addrs_only {init; addrs; _} =
       get_gen
         (function
-          | Virtual {Constant.name=s;_} -> Some s
+          | Virtual {Constant.name=Symbol.Data s;_} -> Some s
           | _ -> None)
         init addrs
 
@@ -262,7 +263,7 @@ module Make(O:Config)(A:I) =
     let get_labels t =
       let lbls = get_constants
         (function
-         | Label (p,s) -> Some (p,s)
+         | Symbolic (Virtual {Constant.name=Symbol.Label (p,s); _}) -> Some (p,s)
          | _ -> None)
         t in
       list_unique lbls

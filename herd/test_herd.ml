@@ -155,8 +155,10 @@ module Make(A:Arch_herd.S) =
       let prog,starts,rets = Load.load nice_prog in
       (* ensure labels in the init list are present in the body of the test*)
       List.iter (fun (_,(_,v)) ->
+        let open Constant in
         match v with
-        | A.V.Val (Constant.Label (p,s)) -> begin
+        | A.V.Val (Symbolic (Virtual {name=Symbol.Label(p,s); _}))
+          -> begin
           if not (Label.Map.mem s prog) then 
             Warn.user_error
               "Label %s not found on P%d, yet it is used in the initialization list" s p end
