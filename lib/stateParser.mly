@@ -21,35 +21,10 @@ open LocationsItem
 open MiscParser
 open ConstrGen
 
-let mk_sym_tag s t =
-  Symbolic (Virtual {default_symbolic_data with name=s;tag=Some t;})
-
 let mk_sym_tagloc s =
   Symbolic (System (TAG, s))
 
-let mk_sym_morello p s t =
-  let p_int = Misc.string_as_int64 p in
-  if
-    not (Int64.equal (Int64.logand p_int 0x7L) 0L)
-    || Int64.compare p_int (Int64.shift_left 1L 36) >= 0
-    || Int64.compare p_int 0L < 0
-    then Printf.eprintf "Warning: incorrect address encoding: %#Lx\n" p_int ;
-  let truncated_perms = Int64.shift_right_logical p_int 3 in
-  let tag = if Misc.string_as_int t <> 0 then 1L else 0L in
-  Symbolic
-    (Virtual
-       {default_symbolic_data
-       with
-       name=s;
-       cap=Int64.logor truncated_perms (Int64.shift_left tag 33); })
-
-let mk_sym_with_index s i =
-  Symbolic
-    (Virtual
-       {default_symbolic_data
-       with name=s; offset=Misc.string_as_int i})
-
-let mk_lab p s = Label (p,s)
+let mk_lab p s = Symbolic (Virtual ({default_symbolic_data with name=Symbol.Label (p,s)}))
 %}
 
 %token EOF
@@ -115,8 +90,8 @@ location_global:
 | NAME COLON NAME { mk_sym_tag $1 $3 }
 | TOK_TAG LPAR NAME RPAR { mk_sym_tagloc $3 }
 (* TODO: have MTE and Morello tags be usable at the same time? *)
-| NUM COLON NAME COLON NUM {mk_sym_morello $1 $3 $5}
-| NAME COLON NUM { mk_sym_morello "0" $1 $3 }
+| NUM COLON NAME COLON NUM { Constant.mk_sym_morello $1 $3 $5}
+| NAME COLON NUM { Constant.mk_sym_morello "0" $1 $3 }
 
 name_or_num:
 | NAME { $1 }
@@ -154,7 +129,7 @@ maybev_notag:
 */
 (* TODO: restrict to something like "NUM COLON BOOL"? *)
 | NUM COLON NUM { Concrete ($1 ^ ":" ^ $3) }
-| NAME LBRK NUM RBRK { mk_sym_with_index $1 $3 }
+| NAME LBRK NUM RBRK { Constant.mk_sym_with_index $1 (Misc.string_as_int $3) }
 
 maybev:
 | maybev_notag { $1 }

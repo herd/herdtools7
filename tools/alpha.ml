@@ -192,13 +192,14 @@ struct
     let noinstr_value () = Warn.user_error "No instruction value for %s" Sys.argv.(0)
 
     let rec collect_value f v k = match v with
-    | Symbolic (Virtual {name=s;_}|System ((PTE|PTE2),s)) -> f s k
+    | Symbolic (Virtual {name=Symbol.Label _; _}) -> nolabel_value ()
+    | Symbolic (Virtual {name=s;_}) -> f (Symbol.pp s) k
+    | Symbolic (System ((PTE|PTE2),s)) -> f s k
     | Concrete _ -> k
     | ConcreteVector vs ->
        List.fold_left (fun k v -> collect_value f v k) k vs
     | ConcreteRecord vs ->
       StringMap.fold_values (collect_value f) vs k
-    | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
     | PteVal _ -> nopte_value ()
     | Instruction _ -> noinstr_value ()
@@ -208,7 +209,8 @@ struct
 
 
     let rec map_value f v = match v with
-    | Symbolic (Virtual sym) -> Symbolic (Virtual {sym with name=f sym.name; })
+    | Symbolic (Virtual {name=Symbol.Label _; _}) -> nolabel_value ()
+    | Symbolic (Virtual sym) -> Symbolic (Virtual {sym with name=Symbol.map f sym.name; })
     | Symbolic (System (PTE,s)) ->  Symbolic (System (PTE,f s))
     | Symbolic (System (PTE2,s)) ->  Symbolic (System (PTE2,f s))
     | Concrete _ -> v
@@ -216,7 +218,6 @@ struct
        ConcreteVector (List.map (map_value f) vs)
     | ConcreteRecord vs ->
        ConcreteRecord (StringMap.map (map_value f) vs)
-    | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
     | PteVal _ -> nopte_value ()
     | Instruction _ -> noinstr_value ()

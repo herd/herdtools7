@@ -497,6 +497,7 @@ module RegMap = A.RegMap)
       let compile_val_fun =
         let open Constant in
         fun ptevalEnv v -> match v with
+        | Symbolic (Virtual {name=Symbol.Label (p,lbl); _}) -> OutUtils.fmt_lbl_var p lbl
         | Symbolic sym ->
             let s = Constant.pp_symbol_old sym in
             sprintf "%s%s"
@@ -504,7 +505,6 @@ module RegMap = A.RegMap)
               s
         | Concrete _ | ConcreteVector _ | Instruction _
           -> AL.GetInstr.dump_instr Tmpl.dump_v v
-        | Label (p,lbl) -> OutUtils.fmt_lbl_var p lbl
         | PteVal p ->
             let idx = find_pteval_index p ptevalEnv in
             add_pteval idx

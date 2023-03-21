@@ -1537,10 +1537,10 @@ module Make
                   Warn.fatal "Vector used as scalar"
               | ConcreteRecord _ ->
                   Warn.fatal "Record used as scalar"
-              | Symbolic (Virtual {name=s; tag=None; offset=0; _}) ->
-                  sprintf "(%s)_vars->%s" (CType.dump at) s
-              | Label _ ->
+              | Symbolic _ when is_label v ->
                   Warn.fatal "PreSi mode cannot handle code labels (yet)"
+              | Symbolic (Virtual {name=s; tag=None; offset=0; _}) ->
+                  sprintf "(%s)_vars->%s" (CType.dump at) (Symbol.pp s)
               | Tag _|Symbolic _ ->
                   Warn.user_error "Litmus cannot handle this initial value %s"
                     (A.V.pp_v v)

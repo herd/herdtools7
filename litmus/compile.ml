@@ -60,8 +60,8 @@ module Generic
       let typeof = function
         | Constant.Concrete _ -> base
         | Constant.ConcreteVector vs -> base_array (List.length vs)
+        | Constant.Symbolic _ as symb when Constant.is_label symb -> code_pointer
         | Constant.Symbolic _ -> pointer
-        | Constant.Label _ -> code_pointer
         | Constant.Tag _ -> tag
         | Constant.PteVal _ -> pteval_t
         | Constant.Instruction _ -> ins_t
@@ -376,7 +376,7 @@ module A.FaultType = A.FaultType)
       List.fold_left
         (fun k (_,v) ->
           match v with
-          | Constant.Label (_,lbl) ->
+          | Symbolic (Virtual {Constant.name=Symbol.Label (_,lbl); _}) ->
               Label.Set.add lbl k
           |Concrete _|ConcreteVector _|ConcreteRecord _
           |Symbolic _|Tag _|PteVal _
@@ -771,7 +771,7 @@ module A.FaultType = A.FaultType)
           (fun (_,(t,v)) env ->
             match t,v with
             | (TestType.TyDef|TestType.TyDefPointer),
-              Constant.Symbolic s ->
+              Constant.Symbolic s when not (Constant.is_label v) ->
                 let a = G.tr_symbol s in
                 begin try
                   let _ = G.Map.find a env in

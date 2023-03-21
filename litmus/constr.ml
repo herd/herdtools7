@@ -103,13 +103,13 @@ module RLocSet = A.RLocSet and module FaultType = A.FaultType =
       match a with
       | LV (_,v) ->
             let rec f v k = match v with
-            | Symbolic (Virtual {name=s;offset=0;tag=None;_}) -> Strings.add s k
+            | Symbolic (Virtual {name=Symbol.Data s;offset=0;tag=None;_}) -> Strings.add s k
             | Concrete _|PteVal _|Instruction _ -> k
             | ConcreteVector vs ->
                 List.fold_right f vs k
             | ConcreteRecord vs ->
                 StringMap.fold_values f vs k
-            | Label _|Symbolic _|Tag _|Frozen _
+            | Symbolic _|Tag _|Frozen _
               -> assert false in
             f v k
       | LL _|FF _ -> k
