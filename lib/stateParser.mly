@@ -105,12 +105,12 @@ location_global:
     { Constant.mk_sym_pte (Constant.Symbol.pp (Constant.Symbol.Label (proc, name))) }
 | TOK_PTE LPAR TOK_PTE LPAR NAME RPAR RPAR { Constant.mk_sym_pte2 $5 }
 | TOK_PA LPAR NAME RPAR { Constant.mk_sym_pa $3 }
-| NAME COLON NAME { mk_sym_tag $1 $3 }
+| NAME COLON NAME { Constant.mk_sym_tag $1 $3 }
 | TOK_TAG LPAR id=NAME RPAR { mk_sym_tagloc_zero id }
 | TOK_TAG LPAR id=NAME PLUS o=NUM RPAR { mk_sym_tagloc id o }
 (* TODO: have MTE and Morello tags be usable at the same time? *)
-| NUM COLON NAME COLON NUM {mk_sym_morello $1 $3 $5}
-| NAME COLON NUM { mk_sym_morello "0" $1 $3 }
+| NUM COLON NAME COLON NUM { Constant.mk_sym_morello $1 $3 $5}
+| NAME COLON NUM { Constant.mk_sym_morello "0" $1 $3 }
 
 name_or_num:
 | NAME { $1 }
