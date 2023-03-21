@@ -534,6 +534,7 @@ rule token = parse
 | ')' { RPAR }
 | ':' { COLON }
 | '.' { DOT }
+| '!' { BANG }
 | "scopes"  { SCOPES  }
 | "levels"  { LEVELS  }
 | "regions" { REGIONS }

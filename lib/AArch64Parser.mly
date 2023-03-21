@@ -22,6 +22,17 @@ let check_op3 op kr =
   match op,kr with
   |(BIC|BICS),K _ -> raise Parsing.Parse_error
   | _ -> ()
+
+type 'k k0_bang = Nada | Bang | Konst of 'k
+
+let mk_instrp instr v r1 r2 ra ko kb =
+  match (ko, kb) with
+    | None, Nada -> instr v r1 r2 ra MetaConst.zero Idx
+    | Some s, Nada -> instr v r1 r2 ra s Idx
+    | None, Konst p -> instr v r1 r2 ra p PostIdx
+    | Some s,Bang -> instr v r1 r2 ra s PreIdx
+    | None,Bang -> instr v r1 r2 ra MetaConst.zero PreIdx
+    | _,_ -> raise Parsing.Parse_error
 %}
 
 %token EOF
@@ -44,7 +55,7 @@ let check_op3 op kr =
 %token <string> CODEVAR
 %token <int> PROC
 
-%token SEMI COMMA PIPE COLON DOT LCRL RCRL LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
+%token SEMI COMMA PIPE COLON DOT BANG LCRL RCRL LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
 %token TOK_SXTW
 
 %token SXTW SBFM UBFM
@@ -250,6 +261,11 @@ k0_opt:
 | { None }
 | COMMA k { Some $2}
 
+k0_bang:
+| { Nada }
+| COMMA k { Konst $2}
+| BANG { Bang }
+
 k0:
 | { MetaConst.zero }
 | COMMA k=k { k }
@@ -326,9 +342,9 @@ zeroopt:
 
 ldp_instr:
 | LDP
-  { (fun v r1 r2 r3 k -> I_LDP (TT,v,r1,r2,r3,k)) }
+  { (fun v r1 r2 r3 k md -> I_LDP (TT,v,r1,r2,r3,k,md)) }
 | LDNP
-  { (fun v r1 r2 r3 k -> I_LDP (NT,v,r1,r2,r3,k)) }
+  { (fun v r1 r2 r3 k md -> I_LDP (NT,v,r1,r2,r3,k,md)) }
 
 ldp_simd_instr:
 | LDP
@@ -351,9 +367,9 @@ ldp_simd_instr:
 
 stp_instr:
 | STP
-  { (fun v r1 r2 r3 k -> I_STP (TT,v,r1,r2,r3,k)) }
+  { (fun v r1 r2 r3 k md -> I_STP (TT,v,r1,r2,r3,k,md)) }
 | STNP
-  { (fun v r1 r2 r3 k -> I_STP (NT,v,r1,r2,r3,k)) }
+  { (fun v r1 r2 r3 k md -> I_STP (NT,v,r1,r2,r3,k,md)) }
 
 stp_simd_instr:
 | STP
@@ -440,32 +456,20 @@ instr:
       I_LDR (v,r,$5,kr,os) }
 | LDUR reg COMMA LBRK cxreg k0_opt RBRK
   { let v,r = $2 in I_LDUR (v,r,$5,$6)}
-| ldp_instr wreg COMMA wreg COMMA LBRK cxreg k0_opt RBRK k0_opt
-  { match ($8, $10) with
-    | Some s, None -> $1 V32 $2 $4 $7 s
-    | None, Some p -> I_LDP_P (TT, V32, $2, $4, $7, p)
-    | None, None -> $1 V32 $2 $4 $7 MetaConst.zero
-    | _,_ -> raise Parsing.Parse_error }
-| ldp_instr xreg COMMA xreg COMMA LBRK cxreg k0_opt RBRK k0_opt
-  { match ($8, $10) with
-    | Some s, None -> $1 V64 $2 $4 $7 s
-    | None, Some p -> I_LDP_P (TT, V64, $2, $4, $7, p)
-    | None, None -> $1 V64 $2 $4 $7 MetaConst.zero
-    | _,_ -> raise Parsing.Parse_error }
-| stp_instr wreg COMMA wreg COMMA LBRK cxreg k0_opt RBRK k0_opt
-  { match ($8, $10) with
-    | Some s, None -> $1 V32 $2 $4 $7 s
-    | None, Some p -> I_STP_P (TT, V32, $2, $4, $7, p)
-    | None, None -> $1 V32 $2 $4 $7 MetaConst.zero
-    | _,_ -> raise Parsing.Parse_error }
-| stp_instr xreg COMMA xreg COMMA LBRK cxreg k0_opt RBRK k0_opt
-  { match ($8, $10) with
-    | Some s, None -> $1 V64 $2 $4 $7 s
-    | None, Some p -> I_STP_P (TT, V64, $2, $4, $7, p)
-    | None, None -> $1 V64 $2 $4 $7 MetaConst.zero
-    | _,_ -> raise Parsing.Parse_error }
-| LDPSW xreg COMMA xreg COMMA LBRK cxreg k0 RBRK
-  { I_LDPSW ($2,$4,$7,$8) }
+
+| instr=ldp_instr r1=wreg COMMA r2=wreg COMMA LBRK ra=cxreg ko=k0_opt RBRK kb=k0_bang
+  { mk_instrp instr V32 r1 r2 ra ko kb }
+| instr=ldp_instr r1=xreg COMMA r2=xreg COMMA LBRK ra=cxreg ko=k0_opt RBRK kb=k0_bang
+  { mk_instrp instr V64 r1 r2 ra ko kb }
+| instr=stp_instr r1=wreg COMMA r2=wreg COMMA LBRK ra=cxreg ko=k0_opt RBRK kb=k0_bang
+  { mk_instrp instr V32 r1 r2 ra ko kb }
+| instr=stp_instr r1=xreg COMMA r2=xreg COMMA LBRK ra=cxreg ko=k0_opt RBRK kb=k0_bang
+  { mk_instrp instr V64 r1 r2 ra ko kb }
+| LDPSW  r1=xreg COMMA r2=xreg COMMA LBRK ra=cxreg ko=k0_opt RBRK kb=k0_bang
+  {
+   let instr _v r1 r2 ra k md = I_LDPSW (r1,r2,ra,k,md) in
+   mk_instrp instr V64 r1 r2 ra ko kb
+  }
 | LDXP wreg COMMA wreg COMMA LBRK cxreg RBRK
   { I_LDXP (V32,XP,$2,$4,$7) }
 | LDXP xreg COMMA xreg COMMA LBRK cxreg RBRK
