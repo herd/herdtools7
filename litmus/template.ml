@@ -202,8 +202,9 @@ module Make(O:Config)(A:I) =
                       end
                   | ConcreteVector vs ->
                       List.fold_right f vs k
-                  | Concrete _|Label _|Tag _|PteVal _|Instruction _ ->
-                     k in
+                  |Concrete _|Label _|Tag _
+                  |PteVal _|Instruction _|Frozen _
+                   -> k in
                   f v k)
                 [] init)) in
       StringSet.elements set

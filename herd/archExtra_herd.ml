@@ -709,7 +709,8 @@ module Make(C:Config) (I:I) : S with module I = I
           | Location_global
               (I.V.Val
                  (Concrete _|ConcreteVector _
-                 |Label _|Instruction _|Tag _|PteVal _))
+                 |Label _|Instruction _|Frozen _
+                 |Tag _|PteVal _))
             ->
               Warn.user_error
                 "Very strange location (look_address) %s\n"
@@ -805,7 +806,7 @@ module Make(C:Config) (I:I) : S with module I = I
              (fun loc ->
                match look loc with
                | I.V.Val c -> c
-               | _ -> Warn.fatal "Non constant value in vector")
+               | I.V.Var v -> I.V.freeze v)
              locs in
          I.V.Val (Constant.ConcreteVector cs)
 
