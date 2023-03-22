@@ -71,7 +71,7 @@ let fmt10 = function
   | "uint32_t" -> Some (Macro  "PRIu32")
   | "int64_t" -> Some (Macro  "PRIi64")
   | "uint64_t" -> Some (Macro  "PRIu64")
-  | "int128_t" | "__int128_t" -> Some (Direct "lld")
+  | "int128_t" | "__int128" -> Some (Direct "lld")
   | "uint128_t" | "__uint128_t" -> Some (Direct "llu")
   | "intprt_t" -> Some (Macro "PRIiPTR")
   | "uintprt_t" -> Some (Macro "PRIuPTR")
@@ -89,7 +89,7 @@ let fmt16 = function
   | "uint32_t" -> Some (Macro  "PRIx32")
   | "int64_t" -> Some (Macro  "PRIx64")
   | "uint64_t" -> Some (Macro  "PRIx64")
-  | "int128_t" | "__int128_t"
+  | "int128_t" | "__int128"
   | "uint128_t" | "__uint128_t"
        -> Some (Direct "llx")
   | "intprt_t" -> Some (Macro "PRIxPTR")
@@ -164,7 +164,7 @@ let same_base t0 t1 = match t0,t1 with
     | ("int32_t","uint32_t")|("uint32_t","int32_t")
     | ("int64_t","uint64_t")|("uint64_t","int64_t")
     | ("int128_t", "uint128_t")|("uint128_t","int128_t")
-    | ("__int128_t", "__uint128_t")|("__uint128_t","__int128_t")
+    | ("__int128", "__uint128")|("__uint128","__int128")
       -> true
     | _,_ -> false
     end
@@ -181,7 +181,7 @@ let rec signed = function
   | Pointer _|Array _ -> false
   | Base
       ("atomic_t"|"int"|"char"|"long"|
-      "int8_t"|"int16_t"|"int32_t"|"int64_t"|"int128_t") -> true
+      "int8_t"|"int16_t"|"int32_t"|"int64_t"|"int128_t"|"__int128") -> true
  | Base _ -> false
 
 (* Best effort *)
@@ -192,7 +192,7 @@ let do_base_size =
   | "short"|"int16_t"|"uint16_t" -> Some Short
   | "int"|"int32_t"|"uint32_t" -> Some Word
   | "int64_t"|"uint64_t" -> Some Quad
-  | "int128_t"|"uint128_t" -> Some S128
+  | "int128_t"|"uint128_t"|"__int128"|"__uint128" -> Some S128
   | _ -> None
 
 let rec base_size t = match t with

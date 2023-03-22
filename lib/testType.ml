@@ -56,6 +56,7 @@ let size_of maximal = function
 | "short" | "int16_t" | "uint16_t" -> MachSize.Short
 | "int64_t" | "uint64_t" -> MachSize.Quad
 | "__int128_t" | "__uint128_t"
+| "__int128" | "__uint128"
 | "int128_t" | "uint128_t" -> MachSize.S128
 | "intptr_t" | "uintptr_t" | "pteval_t"
   -> maximal (* Maximal size = ptr size *)
@@ -68,6 +69,7 @@ let is_signed = function
 | "short"|"int16_t"
 | "int64_t"
 | "int128_t"
+| "__int128"
 | "intptr_t" -> true
 | _ -> false
 

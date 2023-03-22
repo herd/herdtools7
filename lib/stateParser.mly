@@ -213,6 +213,7 @@ atom_init:
 | ATOMIC typ=NAME loc=left_loc { loc,(Atomic typ,ParsedConstant.zero)}
 | loc=left_loc EQUAL i=instr  { (loc,(Ty "ins_t", mk_instr_val i)) }
 | NAME loc=left_loc EQUAL i=instr  { (loc,(Ty "ins_t", mk_instr_val i)) }
+| ATOMIC typ=NAME loc=left_loc EQUAL v=maybev { loc,(Atomic typ,v)}
 | typ=NAME loc=left_loc EQUAL v=maybev { (loc,(Ty typ,v))}
 | typ=NAME loc=left_loc EQUAL ATOMICINIT LPAR v=maybev RPAR
    { (loc,(Ty typ,v))}

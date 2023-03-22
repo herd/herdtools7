@@ -1,0 +1,19 @@
+C C08
+
+(* Test to ensure diy generated tests are accepted by herd - int128*)
+
+{__int128 y; __int128 x;}
+
+P0 (volatile __int128* y,volatile __int128* x) {
+  __int128 r0 = *x;
+  atomic_thread_fence(memory_order_relaxed);
+  *y = 1;
+}
+
+P1 (volatile __int128* y,volatile __int128* x) {
+  __int128 r0 = *y;
+  atomic_thread_fence(memory_order_relaxed);
+  *x = 1;
+}
+
+exists (0:r0=1 /\ 1:r0=1)

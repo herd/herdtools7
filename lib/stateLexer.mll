@@ -92,6 +92,8 @@ rule token = parse
 (* Memory Tagging *)
 | "*" { STAR }
 | '$' (digit+|alpha+) as name { DOLLARNAME name }
+| "__int128" as name { NAME name }
+| "__uint128" as name { NAME name }
 | '_' ? name as name { NAME name }
 | eof { EOF }
 | "<<" { error "<<" lexbuf }
