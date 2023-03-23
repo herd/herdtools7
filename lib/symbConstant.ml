@@ -55,11 +55,13 @@ module Make
 (* For building code symbols. *)
   let vToName = function
     | Symbolic s-> Constant.as_address s
-    | Concrete _|ConcreteVector _ | Label _|Tag _|PteVal _|Instruction _
+    | Concrete _|ConcreteVector _ | Label _|Tag _
+    | PteVal _|Instruction _|Frozen _
         -> assert false
 
   let is_nop = function
     | Instruction i -> Instr.is_nop i
     | Symbolic _|Concrete _|ConcreteVector _ | Label _|Tag _|PteVal _
+    | Frozen _
       -> false
 end

@@ -1429,7 +1429,7 @@ module Make
               | Tag _|Symbolic _ ->
                   Warn.user_error "Litmus cannot handle this initial value %s"
                     (A.V.pp_v v)
-              | PteVal _ -> assert false
+              | PteVal _|Frozen _ -> assert false
               | Instruction _ -> Warn.fatal "FIXME: dump_run_thread functionality for -variant self"
               in
             match at with

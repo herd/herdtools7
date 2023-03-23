@@ -31,7 +31,9 @@ let rec tr_v v =
   match v with
   | Concrete i -> Concrete (Int64.of_string i)
   | ConcreteVector vs -> ConcreteVector (List.map tr_v vs)
-  | Symbolic _|Label _|Tag _|PteVal _|Instruction _ as sym -> sym
+  | Symbolic _|Label _|Tag _
+  | PteVal _|Instruction _|Frozen _
+    as w -> w
 
 let tr_atom = function
   | LV(loc,v) ->  LV(loc,tr_v v)

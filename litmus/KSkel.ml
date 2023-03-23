@@ -340,6 +340,7 @@ module Make
           Warn.user_error "No tag, indexed access, nor pteval for klitmus"
       | Instruction _ ->
           Warn.fatal "FIXME: dump_a_v functionality for -variant self"
+      | Frozen _ -> assert false
 
     let is_align_effective mts env s =
       U.is_aligned s env && Misc.is_none (Misc.Simple.assoc_opt s mts)
