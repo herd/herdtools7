@@ -1,6 +1,6 @@
 Test S19 Forbidden
 States 1
-0:X1=instr:"B L1";
+0:X1=instr:"B .+4";
 Ok
 Witnesses
 Positive: 1 Negative: 0

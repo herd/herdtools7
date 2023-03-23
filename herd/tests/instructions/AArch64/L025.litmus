@@ -2,11 +2,12 @@ AArch64 L025
 Stable=X8,X9
 {
 0:X1=P1:L1;
+1:X1=P0:L0;
 }
   P0          |   P1         ;
  ADR X8,Ret0  | ADR X8,Ret1  ;
  MOV W9,#1    | MOV W9,#2    ;
- BR X1        | B L0         ;
+ BR X1        | BR X1        ;
 Ret0:         |Ret1:         ;
  ADR X8,Out0  | ADR X8,Out1  ;
 L0:           |L1:           ;

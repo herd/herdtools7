@@ -1,11 +1,12 @@
 AArch64 S01
 Stable=X9
 {
+0:X8=P1:f;
 2:X0 = P1:f ;
 }
 P0        | P1           | P2        ;
 MOV W9,#0 | MOV W9,#1    | MOV w9,#2 ;
-BL f      | BL f         | BLR X0    ;
+BLR X8    | BL f         | BLR X0    ;
           | B L1         |           ;
           |f:            |           ;
           | ADD W9,W9,#1 |           ;

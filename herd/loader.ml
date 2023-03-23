@@ -41,41 +41,66 @@ struct
   type start_points = A.start_points
   type code_segment = A.code_segment
 
-  let rec load_code proc addr mem rets = function
+  let rec preload_labels proc addr mem l2p = function
     | [] ->
-       mem,[],IntMap.add addr (proc,[]) rets
-    | ins::code ->
-      load_ins proc addr mem rets code ins
+       mem,l2p
+    | ins::code -> begin
+      match ins with
+      | A.Nop ->
+        preload_labels proc addr mem l2p code
+      | A.Instruction _ ->
+            preload_labels proc (addr+4) mem l2p code
+      | A.Label (lbl,ins) ->
+        let next_mem, next_l2p =
+          if Label.Map.mem lbl mem then
+            Warn.user_error
+              "Label %s occurs more that once" lbl ;
+          Label.Map.add lbl addr mem , Label.Map.add lbl proc l2p in
+          preload_labels proc addr next_mem next_l2p (ins::code)
+      | A.Symbolic _
+      | A.Macro (_,_) -> assert false
+      end
 
-  and load_ins proc addr mem rets code = fun x ->
+  let rec load_code proc addr mem l2p rets = function
+    | [] ->
+       [],IntMap.add addr (proc,[]) rets
+    | ins::code ->
+      load_ins proc addr mem l2p rets code ins
+
+  and load_ins proc addr mem l2p rets code = fun x ->
     match x with
     | A.Nop ->
-      load_code proc addr mem rets code
+      load_code proc addr mem l2p rets code
     | A.Instruction ins ->
-        let new_mem,start,new_rets =
-          load_code proc (addr+4) mem rets code in
-        let new_start = (addr,ins)::start in
+        let start,new_rets =
+          load_code proc (addr+4) mem l2p rets code in
+        let new_ins = A.convert_if_imm_branch proc addr l2p mem ins in
+        let new_start = (addr,new_ins)::start in
         let newer_rets = IntMap.add addr (proc,new_start)  new_rets in
-        new_mem,new_start,newer_rets
-    | A.Label (lbl,ins) ->
-        let mem,start,new_rets =
-          load_ins proc addr mem rets code ins in
-        if Label.Map.mem lbl mem then
-          Warn.user_error
-            "Label %s occurs more that once" lbl ;
-        Label.Map.add lbl addr mem,start,new_rets
+        new_start,newer_rets
+    | A.Label (_,ins) ->
+        let start,new_rets =
+          load_ins proc addr mem l2p rets code ins in
+        start,new_rets
     | A.Symbolic _
     | A.Macro (_,_) -> assert false
 
   let load prog =
-    let rec load_iter = function
-    | [] -> Label.Map.empty,[],IntMap.empty
+    let rec preload_iter = function
+    | [] -> Label.Map.empty,Label.Map.empty
     | ((proc,_,func),code)::prog ->
-       let mem,starts,rets = load_iter prog in
+       let mem,l2p = preload_iter prog in
        let addr = func_start_addr proc func in
-       let fin_mem,start,fin_rets = load_code proc addr mem rets code in
-       fin_mem,(proc,func,start)::starts,fin_rets in
-    let mem,starts,codes = load_iter prog in
+       (preload_labels proc addr mem l2p code) in
+    let mem,l2p = preload_iter prog in
+    let rec load_iter = function
+    | [] -> [],IntMap.empty
+    | ((proc,_,func),code)::prog ->
+       let starts,rets = load_iter prog in
+       let addr = func_start_addr proc func in
+       let start,fin_rets = load_code proc addr mem l2p rets code in
+       (proc,func,start)::starts,fin_rets in
+    let starts,codes = load_iter prog in
     let mains,fhandlers =
       List.partition (fun (_,func,_) -> func=MiscParser.Main) starts in
     let add_fhandler (proc,_,start) =

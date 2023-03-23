@@ -1,0 +1,10 @@
+Test A250 Required
+States 1
+0:X0=1; 1:X0=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (true)
+Observation A250 Always 1 0
+Hash=55cc1072298c3933993a6ebb45116ba8
+

@@ -1,0 +1,10 @@
+Test A251 Required
+States 1
+0:X1=instr:"ADR X0,.+4"; 0:X2=instr:"ADR X0,.+4"; 0:X3=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X3=1)
+Observation A251 Always 1 0
+Hash=cd16e9d6d826980a40f8d0266a83e346
+
