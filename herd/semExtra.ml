@@ -285,16 +285,11 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
                   o mod sz_elt = 0 && o < sz*sz_elt
               | _ -> false
             end
-    let is_non_mixed_symbol_virtual test sym =
-      let open Constant in
-      match sym.offset with
-      | 0 -> true
-      | o -> is_non_mixed_offset test (Symbol.pp sym.name) o
 
-    let is_non_mixed_symbol test sym =
+    let is_non_mixed_symbol test =
       let open Constant in
-      match sym with
-      | Virtual sd -> is_non_mixed_symbol_virtual test sd
+      function
+      | Virtual sym -> is_non_mixed_offset test (Symbol.pp sym.name) sym.offset
       | Physical (s,o) -> is_non_mixed_offset test s o
       | TagAddr _
       | System ((PTE|PTE2|TLB),_)  -> true
