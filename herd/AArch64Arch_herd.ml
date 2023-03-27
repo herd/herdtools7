@@ -15,7 +15,9 @@
 (****************************************************************************)
 
 module Types = struct
-  type annot = A | XA | L | XL | X | N | Q | XQ | NoRet | S
+  type annot =
+      A | XA | L | XL | X | N | Q | XQ | NoRet | S
+    | NTA (* Non-Temporal, avoid clash with NT in AArch64Base *)
   type nexp =  AF|DB|AFDB|Other
   type explicit = Exp | NExp of nexp
   type lannot = annot
@@ -53,6 +55,10 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     let is_speculated = function
       | S -> true
+      | _ -> false
+
+    let is_non_temporal = function
+      | NTA -> true
       | _ -> false
 
     let _is_atomic = function
@@ -99,6 +105,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       "L",  is_release;
       "NoRet", is_noreturn;
       "S", is_speculated;
+      "NT",is_non_temporal;
     ]
 
     let explicit_sets = [
@@ -144,6 +151,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | N -> ""
       | NoRet -> "NoRet"
       | S -> "^s"
+      | NTA -> "NT"
 
     let pp_explicit = function
       | Exp -> if is_kvm && C.verbose > 2 then "Exp" else ""
