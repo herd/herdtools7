@@ -118,6 +118,7 @@ val consp : 'a list -> bool
 val cons : 'a -> 'a list -> 'a list
 val last : 'a list -> 'a
 val pop_last : 'a -> 'a list -> 'a * 'a list
+val pop_filter_opt : ('a -> bool) -> 'a list -> 'a option * 'a list
 val pp_list :
   out_channel -> string -> (out_channel -> 'a -> unit) -> 'a list -> unit
 val rev_iter : ('a -> unit) -> 'a list -> unit

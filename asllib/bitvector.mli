@@ -18,6 +18,9 @@ val to_int : t -> int
 (** Returns an integer representing the bitvector, little-endian. Result
     unspecified if [length > Sys.int_size]. *)
 
+val to_int_signed : t -> int
+(** Returns a signed integer representing the bitvector. *)
+
 val to_int64 : t -> int64
 (** Returns an integer representing the bitvector, little-endian. Result
     unspecified if [length > 64]. *)
@@ -60,6 +63,9 @@ val compare : t -> t -> int
 (** The comparison function for bitvectors, with the same specification as
     [Stdlib.compare]. *)
 
+val bitcount : t -> int
+(** Returns the number of bits set to 1. *)
+
 val extract_slice : t -> int list -> t
 (** [extract_slice src positions] returns a bitvector whose [i]-th bit is the
     bit of [src] whose index is the [i]-th element of [positions].
@@ -80,3 +86,15 @@ val concat : t list -> t
         equal (extract_slice (concat [bv1; bv0]) [ 0 ]) (extract_slice bv0 [ 0 ])
 
  *)
+
+val one : t
+(** A length 1 bitvector with a 1 bit inside. *)
+
+val zero : t
+(** A length 1 bitvector with a 0 bit inside. *)
+
+val ones : int -> t
+(** [ones n] is a bitvector of length [n] with every bit set. *)
+
+val zeros : int -> t
+(** [zeros n] is a bitvector of length [n] without any bit set. *)

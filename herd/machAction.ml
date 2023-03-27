@@ -102,9 +102,11 @@ end = struct
     | Symbolic (System (TAG,_)) -> Access.TAG
     | Label _ -> VIR
     | Tag _
-    | ConcreteVector _|Concrete _|PteVal _|Instruction _ as v ->
-        Warn.fatal "access_of_constant %s as an address"
-          (V.pp_v (V.Val v)) (* assert false *)
+    | ConcreteVector _|Concrete _
+    | PteVal _|Instruction _|Frozen _ as v
+      ->
+       Warn.fatal "access_of_constant %s as an address"
+         (V.pp_v (V.Val v)) (* assert false *)
 
 
 (* precondition: v is a constant symbol *)
@@ -636,7 +638,11 @@ end = struct
           let open Constant in
           function
           | Some (A.V.Val (PteVal v)) -> Some v
-          | Some (A.V.Val (ConcreteVector _|Concrete _|Symbolic _|Label (_, _)|Tag _|Instruction _))
+          | Some
+              (A.V.Val
+                 (ConcreteVector _|Concrete _|Symbolic _
+                  |Label (_, _)|Tag _|Instruction _
+                  |Frozen _))
           | None
             -> None
           | Some (A.V.Var _) ->

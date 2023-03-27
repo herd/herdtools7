@@ -17,6 +17,21 @@
 (* Hadrien Renaud, University College London, UK.                           *)
 (****************************************************************************)
 
+(* -------------------------------------------------------------------------
+
+                                    Utils
+
+   ------------------------------------------------------------------------- *)
+
+type position = Lexing.position
+type 'a annotated = { desc : 'a; pos_start : position; pos_end : position }
+
+(* -------------------------------------------------------------------------
+
+                                   Operations
+
+   ------------------------------------------------------------------------- *)
+
 (** Operations on base value of arity one. *)
 type unop =
   | BNOT  (** Boolean inversion *)
@@ -50,6 +65,12 @@ type binop =
 type identifier = string
 (** Type of local identifiers in the AST. *)
 
+(* -------------------------------------------------------------------------
+
+                                Parsed values
+
+   ------------------------------------------------------------------------- *)
+
 (** Main value type, parametric on its base values *)
 type value =
   | V_Int of int
@@ -60,19 +81,40 @@ type value =
   | V_Record of (identifier * value) list
   | V_Exception of (identifier * value) list
 
+(* -------------------------------------------------------------------------
+
+                                Expressions
+
+   ------------------------------------------------------------------------- *)
+
 (** Expressions. Parametric on the type of literals. *)
-type expr =
+type expr_desc =
   | E_Literal of value
   | E_Var of identifier
+  | E_Typed of expr * ty
   | E_Binop of binop * expr * expr
   | E_Unop of unop * expr
-  | E_Call of identifier * expr list
+  | E_Call of identifier * expr list * (identifier * expr) list
   | E_Slice of expr * slice list
   | E_Cond of expr * expr * expr
   | E_GetField of expr * identifier * type_annot
-  | E_Record of type_desc * (identifier * expr) list * type_annot
+  | E_Record of ty * (identifier * expr) list * type_annot
   | E_Concat of expr list
   | E_Tuple of expr list
+  | E_Unknown of ty
+  | E_Pattern of expr * pattern
+
+and expr = expr_desc annotated
+
+and pattern =
+  | Pattern_All
+  | Pattern_Any of pattern list
+  | Pattern_Geq of expr
+  | Pattern_Leq of expr
+  | Pattern_Mask of string
+  | Pattern_Not of pattern
+  | Pattern_Range of expr * expr (* lower -> upper, included *)
+  | Pattern_Single of expr
 
 and slice =
   | Slice_Single of expr
@@ -81,7 +123,12 @@ and slice =
 
 (** Type annotations are way for the typing system to annotate
     special nodes of the AST. They are for internal use only. *)
-and type_annot = TA_None | TA_InferredStructure of type_desc
+and type_annot = TA_None | TA_InferredStructure of ty
+(* -------------------------------------------------------------------------
+
+                                  Types
+
+   ------------------------------------------------------------------------- *)
 
 (** Type descriptors.*)
 and type_desc =
@@ -92,13 +139,15 @@ and type_desc =
   | T_Bits of bits_constraint * bitfields option
   | T_Bit
   | T_Enum of identifier list
-  | T_Tuple of type_desc list
-  | T_Array of expr * type_desc
+  | T_Tuple of ty list
+  | T_Array of expr * ty
   | T_Record of typed_identifier list
   | T_Exception of typed_identifier list
-  | T_ZType of type_desc
+  | T_ZType of ty
       (** A Z-type correcponds to a type with a possible null value.*)
   | T_Named of identifier  (** A type variable. *)
+
+and ty = type_desc annotated
 
 (** A constraint on an integer part. *)
 and int_constraint =
@@ -113,53 +162,71 @@ and int_constraints = int_constraint list
 (** The width of a bitvector can be constrained in multiple ways. *)
 and bits_constraint =
   | BitWidth_Determined of expr  (** Statically evaluable expression. *)
-  | BitWidth_ConstrainedFormType of type_desc
+  | BitWidth_ConstrainedFormType of ty
       (** Constrained by the domain of another type. *)
   | BitWidth_Constrained of int_constraints
       (** Constrained directly by a constraint on its width. *)
 
 and bitfields = (slice list * identifier) list
 
-and typed_identifier = identifier * type_desc
+and typed_identifier = identifier * ty
 (** An identifier declared with its type. *)
 
+(* -------------------------------------------------------------------------
+
+                        l-expressions and statements
+
+   ------------------------------------------------------------------------- *)
+
 (** Type of left-hand side of assignments. *)
-type lexpr =
+type lexpr_desc =
   | LE_Ignore
   | LE_Var of identifier
+  | LE_Typed of lexpr * ty
   | LE_Slice of lexpr * slice list
   | LE_SetField of lexpr * identifier * type_annot
   | LE_TupleUnpack of lexpr list
 
+and lexpr = lexpr_desc annotated
+
 (** Statements. Parametric on the type of literals in expressions. *)
-type stmt =
+type stmt_desc =
   | S_Pass
   | S_Then of stmt * stmt
+  | S_TypeDecl of identifier * ty
   | S_Assign of lexpr * expr
-  | S_Call of identifier * expr list
+  | S_Call of identifier * expr list * (identifier * expr) list
   | S_Return of expr option
   | S_Cond of expr * stmt * stmt
   | S_Case of expr * case_alt list
   | S_Assert of expr
 
-and case_alt = expr list * stmt
+and stmt = stmt_desc annotated
+and case_alt = (pattern * stmt) annotated
 
-type ('body, 'arg) func_skeleton = {
+(* -------------------------------------------------------------------------
+
+                        Functions and declarations
+
+   ------------------------------------------------------------------------- *)
+
+type 'body func_skeleton = {
   name : identifier;
-  args : 'arg list;
+  parameters : (identifier * ty option) list;
+  args : typed_identifier list;
   body : 'body;
-  return_type : type_desc option;
+  return_type : ty option;
 }
 
-type func = (stmt, typed_identifier) func_skeleton
+type func = stmt func_skeleton
 (** Function types in the AST. For the moment, they represent getters, setters,
     functions, procedures and primitives. *)
 
 (** Declarations, ie. top level statement in a asl file. *)
 type decl =
   | D_Func of func
-  | D_GlobalConst of identifier * type_desc * expr
-  | D_TypeDecl of identifier * type_desc
+  | D_GlobalConst of identifier * ty * expr
+  | D_TypeDecl of identifier * ty
   | D_Primitive of func
 (* [D_Primitive] is a placeholder for typechecking primitive calls. Only the
    function signature is relevant here. *)

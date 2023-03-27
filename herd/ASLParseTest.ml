@@ -24,7 +24,12 @@ module Make (Conf : RunTest.Config) (ModelConfig : MemCat.Config) = struct
     type token = Asllib.Parser.token
 
     let lexer = Asllib.Lexer.token
-    let parser = ASLBase.asl_generic_parser
+
+    let parser =
+      let version =
+        if Conf.variant (Variant.ASLVersion `ASLv0) then `ASLv0 else `ASLv1
+      in
+      ASLBase.asl_generic_parser version
   end
 
   module ASLM = MemCat.Make (ModelConfig) (ASLS)

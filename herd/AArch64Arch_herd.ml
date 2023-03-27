@@ -189,12 +189,11 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     let mem_access_size = function
       | I_LDPSW _ -> Some (tr_variant V32)
-      | I_LDR (v,_,_,_,_) | I_LDP (_,v,_,_,_,_) | I_LDXP (v,_,_,_,_)
+      | I_LDR (v,_,_,_,_) | I_LDP (_,v,_,_,_,_,_) | I_LDXP (v,_,_,_,_)
       | I_LDUR (v,_,_,_)  | I_LDR_P(v,_,_,_)
       | I_STR (v,_,_,_,_) | I_STLR (v,_,_) | I_STXR (v,_,_,_,_)
       | I_STR_P (v,_,_,_)
-      | I_STP (_,v,_,_,_,_) | I_STXP (v,_,_,_,_,_)
-      | I_STP_P (_,v,_,_,_,_) | I_LDP_P (_,v,_,_,_,_)
+      | I_STP (_,v,_,_,_,_,_) | I_STXP (v,_,_,_,_,_)
       | I_CAS (v,_,_,_,_) | I_CASP (v,_,_,_,_,_,_) | I_SWP (v,_,_,_,_)
       | I_LDOP (_,v,_,_,_,_) | I_STOP (_,v,_,_,_) ->
           Some (tr_variant v)
@@ -242,11 +241,19 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     let opt_env = true
 
+    let killed_idx r = function
+      | Idx -> Misc.identity
+      | PostIdx|PreIdx -> fun k -> r::k
+
     let killed i =
       match i with
+      | I_LDP (_,_,r1,r2,ra,_,idx) |I_LDPSW (r1,r2,ra,_,idx) ->
+          killed_idx ra idx [r1; r2;]
+      | I_STP (_,_,_,_,ra,_,idx) ->
+          killed_idx ra idx []
       | I_B _| I_BR _
       | I_BC _ | I_CBZ _ | I_CBNZ _
-      | I_STP _ | I_STR _ | I_STLR _
+      | I_STR _ | I_STLR _
       | I_STRBH _ | I_STLRBH _
       | I_STOP _ | I_STOPBH _
       | I_FENCE _
@@ -270,16 +277,13 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_CSEL (_,r,_,_,_,_)
       | I_MRS (r,_)
       | I_STR_P (_,_,r,_)
-      | I_STP_P (_,_,_,_,r,_)
       | I_UBFM (_,r,_,_,_) | I_SBFM (_,r,_,_,_)
         -> [r]
       | I_MSR (sr,_)
         -> [(SysReg sr)]
-      | I_LDR_P (_,r1,r2,_) | I_LDP (_,_,r1,r2,_,_)
-      | I_LDPSW (r1,r2,_,_) | I_LDXP (_,_,r1,r2,_)
+      | I_LDR_P (_,r1,r2,_)
+      | I_LDXP (_,_,r1,r2,_)
         -> [r1;r2;]
-      | I_LDP_P (_,_,r1,r2,r3,_)
-        -> [r1;r2;r3]
       | I_LD1 _|I_LD1M _|I_LD1R _|I_LD2 _
       | I_LD2M _|I_LD2R _|I_LD3 _|I_LD3M _
       | I_LD3R _|I_LD4 _|I_LD4M _|I_LD4R _
@@ -327,7 +331,6 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_EOR_SIMD _|I_ADD_SIMD _|I_ADD_SIMD_S _
       | I_LDR_P _|I_LDP _|I_LDPSW _|I_STP _
       | I_STR_P _
-      | I_LDP_P _|I_STP_P _
       | I_STR _|I_STLR _|I_ALIGND _|I_ALIGNU _
       | I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
       | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _

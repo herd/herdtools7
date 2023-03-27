@@ -196,7 +196,9 @@ struct
     | Tag _ -> notag_value ()
     | PteVal _ -> nopte_value ()
     | Instruction _ -> noinstr_value ()
-    | Symbolic (Physical _|System ((TLB|TAG),_)) -> assert false
+    | Symbolic (Physical _|System ((TLB|TAG),_))
+    | Frozen _
+      -> assert false
 
 
     let rec map_value f v = match v with
@@ -210,7 +212,8 @@ struct
     | Tag _ -> notag_value ()
     | PteVal _ -> nopte_value ()
     | Instruction _ -> noinstr_value ()
-    | Symbolic (Physical _|System ((TLB|TAG),_)) -> assert false
+    | Frozen _|Symbolic (Physical _|System ((TLB|TAG),_))
+      -> assert false
 
 
     let collect_pseudo f =

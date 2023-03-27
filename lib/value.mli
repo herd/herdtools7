@@ -45,7 +45,10 @@ module type S =
 (* produce a fresh variable *)
       val fresh_var : unit -> v
       val from_var : csym -> v
+
+(* Back to constants *)
       val as_symbol : v -> string
+      val freeze : csym -> Cst.v
 
 (* Equality (for constraint solver) is possible *)
       val equalityPossible : v -> v -> bool
