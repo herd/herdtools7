@@ -449,7 +449,7 @@ For reference we provide our complete model~\afile{lamport.cat}
 All the models seen so far include the
 file \ahref{./cos-no-opt.cat}{\texttt{cos.cat}} that define
 ``coherence relations'', written~\texttt{co}. This section describes
-a possible computation of coherence orders\footnote{The actual computation of coherence orders slighty differs. Interested readers can look at the
+a possible computation of coherence orders\footnote{The actual computation of coherence orders slightly differs. Interested readers can look at the
 \afile{cross.cat}~file.}. It can be skipped in first
 reading, as users may find sufficient to include the file.
 
@@ -853,7 +853,7 @@ can be extracted from sets and pair of events (element of relations)
 from relations.
 
 There are two structured values: tuples of values and sets of values.
-Once should notice that primitive set of events and structured set of events are not the same
+One should notice that primitive set of events and structured set of events are not the same
 thing. In fact, the language prevents the construction of structured set of events.
 Similarily, there are no structured sets of elements of relations, there are only relations.
 
@@ -865,7 +865,7 @@ At startup, pre-defined identifiers are bound to event sets and relations
 over events.
 Those pre-defined identifiers describe a candidate execution
 (in the sense of the memory model).
-Executing the model means allowing or forbiding that candidate
+Executing the model means allowing or forbidding that candidate
 execution.
 
 
@@ -919,8 +919,8 @@ feed reads that read from the initial state\\
 \textrel{DSB.SY},  \textrel{DSB.ST}, \textrel{DSB.ST}, \ldots\\
 \end{desctable}
 \end{figure}
-Specific fence event sets depends on the test architecture,
-their name is always uppercase and derive from the mnemonic of
+Specific fence event sets depend on the test architecture,
+their name is always uppercase and derives from the mnemonic of
 the instruction that generates them.
 The second table of figure~\ref{predefset} shows
 a (non-exhaustive) list.
@@ -936,7 +936,7 @@ $\data$ & data dependency & the value stored by the second (write)
 event depends on
 the value loaded by the first (read) event\\
 $\ctrl$ & control dependency &
-the second event is in a branch controled by the value loaded by the
+the second event is in a branch controlled by the value loaded by the
 commfirst (read) event\\
 $\rmwr$ & read-exclusive write-exclusive pair &
 relate the read and write events emitted
@@ -1420,7 +1420,7 @@ An example of the construct usage is described in Sec.~\ref{intro:with}.
 The construct \synt{\T{include} \T{"}\nt{filename}\T{"}} is interpreted as
 the inclusion of the model contained in the file whose name is given as
 an argument to the \synt{\T{include}} instruction.
-In practice, the list of intructions defined by the included model file
+In practice, the list of instructions defined by the included model file
 are executed.
 The string argument is delimited by double quotes ``\verb+"+'',
 which, of course, are not part of the filename.
@@ -1555,7 +1555,7 @@ Such models must have option \T{withoutco}, so as to
 prevent \herd{} engine from generating all coherence orders.
 Instead, \herd{} will represent initial writes as plain write events
 (\emph{i.e.} option \T{withoutco} implies \T{withinit})
-identify last writes in coherence oders, and pass the model a
+identify last writes in coherence orders, and pass the model a
 reduced~\texttt{co} relation, named \texttt{co0}, that will,
 for any memory location~$x$,
 relate the initial write to~$x$ to all writes to~$x$, and all writes
@@ -1585,7 +1585,7 @@ TODO:
 \subsubsection*{Standard library}
 The standard library is a \cat{} file~\texttt{stdlib.cat}
 which all models include by default.
-It defines a a few convenient relations that are thus
+It defines a few convenient relations that are thus
 available to all models.
 \begin{idtable}
 $\poloc$ & \po{} restricted to the same address &
@@ -1634,8 +1634,8 @@ Notice that for the Power (PPC) (resp. ARM) architecture,
 an additional relation \ctrlisync{} (res. \ctrlisb) is defined.
 The relation \ctrlisync{} reads control +\isync{}.
 It means that the branch to the instruction that generates the
-second event additionnaly contains
-a \texttt{isync} fence preceeding that instruction.
+second event additionally contains
+a \texttt{isync} fence preceding that instruction.
 For reference, here is a possible definition of \ctrlisync:
 \begin{verbatim}
 let ctrlisync  = ctrl & (_ * ISYNC); po
@@ -1690,12 +1690,12 @@ into \textit{base}\textit{suff}\texttt{.dot}. Useful when several \texttt{.dot} 
 \item[{\tt \aname{opt:evince}{-evince}}] Fork the evince document viewer to display execution diagrams. This option provides an alternative to the
 {\tt gv} viewer.
 \item[{\tt -dumpes <bool>}]
-Dump genererated event structures and exit. Default is \opt{false}.
+Dump generated event structures and exit. Default is \opt{false}.
 Event structures will be dumped in a \texttt{.dot} file whose
 name is determined as usual --- See options \opt{-o} and \opt{-suffix} above.
 Optionally the event structures can be displayed with the \opt{-gv} option.
 \item[{\tt -unroll <int>}] The setting \opt{-unroll }$n$ performs backwards
-jumps $n$ times. This is a workaround for one of \herd{} main limitation:
+jumps $n$ times. This is a workaround for one of \herd{} main limitations:
 \herd{} does not really handle loops. Default is~\opt{2}.
 \item[{\tt -hexa <bool>}] Print numbers in hexadecimal. Default is \opt{false}
 (numbers are printed in decimal).
@@ -1716,7 +1716,7 @@ We now describe options that control those three stages.
 
 \begin{description}
 \item[{\tt -model (cav12|minimal|uniproc|<filename>.cat)}]
-Select model, this option accept one tag or one file name
+Select model, this option accepts one tag or one file name
 with extension~\texttt{.cat}.
 Tags instruct \herd{} to select an internal model,
 while file names are read for a model definition.
@@ -1728,7 +1728,7 @@ Documented model tags are:
 \end{itemize}
 
 In fact, \herd{} accepts potentially infinitely many models,
-as models can given in text files in an adhoc language described in
+as models can be given in text files in an adhoc language described in
 Sec.~\ref{herd:language}.
 The \herd{} distribution includes several such models:
 \afile{minimal.cat} and \afile{uniproc.cat}
@@ -1774,8 +1774,8 @@ That is, ``\opt{-skipcheck }\textit{name}$_1$ \opt{-skipcheck }\textit{name}$_2$
 \item [{\tt -strictskip <bool>}] Setting this option (\opt{-strictskip true}),
 will change the behaviour of the previous option \opt{-skipcheck}:
 it will let executions go through when the skipped checks yield
-false and the unskipped checks yield true. This option comes handy
-when one want to observe the executions that fail one (or several) checks
+false and the unskipped checks yield true. This option comes in handy
+when one wants to observe the executions that fail one (or several) checks
 while passing others. Default is \opt{false}.
 
 \item[{\tt -optace <bool>}] Optimise the axiomatic candidate execution stage.
@@ -1825,7 +1825,7 @@ in Sec.~\ref{language:model}.
 Activate variation(s) of models. Most variations are minor change in instruction semantics,
 are used for experimental purpose and remain undocumented. With the exception of tag
 ``\texttt{mixed}'' that command mixed-size mode. Mixed-size mode is appropriate for mixed-size
-tests that performs accesses of different sizes, as well as indexed accesses.
+tests that perform accesses of different sizes, as well as indexed accesses.
 
 \end{description}
 
@@ -1882,7 +1882,7 @@ in pictures. Default is \opt{true}.
 
 \item[{\tt -mono <bool>}] The setting \opt{-mono true} commands monochrome
 pictures. This option acts upon default color selection. Thus, it
-has no effect on colors given explicitely with the
+has no effect on colors given explicitly with the
 \ahrefloc{opt:edgeattr}{\opt{-edgeattr}} option.
 
 \item[{\tt -scale <float>}]
@@ -1942,7 +1942,7 @@ is wanted in modes \opt{free} and~\opt{columns}. Default is~\opt{false}.
 between columns. This may sometime yield a nice edge routing. Default is~\opt{false}
 \item[{\tt -extrachars <float>}] This setting is meaningful in
 \opt{columns} graph mode and for squished nodes.
-When the size of nodes is not fixed (\emph{i.e.} \opt{-fixedsize false} and default), \herd{} computes the width of nodes by counting caracters in node
+When the size of nodes is not fixed (\emph{i.e.} \opt{-fixedsize false} and default), \herd{} computes the width of nodes by counting characters in node
 labels and scaling the result by the font size.
 The setting \opt{-extrachars~}$v$ commands adding the value $v$ before scaling.
 Negative values are of course accepted. Default is \opt{0.0}.
@@ -1958,7 +1958,7 @@ Then we list options that offer some control on which edges are shown.
 We recall that the main controls over the shown and unshown edges are
 the \verb+show+ and \verb+unshow+ directives in model definitions ---
 see Sec.~\ref{show:def}.
-However, some edges can be controled only with options (or configuration
+However, some edges can be controlled only with options (or configuration
 files) and the \opt{-unshow} option proves convenient.
 \begin{description}
 \item[{\tt -showpo <bool>}] Show program order (\textrel{po}) edges.
@@ -1975,7 +1975,7 @@ Do show edges labelled with \textit{name}$_1$,\ldots,\textit{name}$_n$.
 This setting applies when names are bound in model definition.
 \item[{\tt -unshow <\textit{name}$_1$,\ldots,\textit{name}$_n$>}]
 Do not show edges labelled with \textit{name}$_1$,\ldots,\textit{name}$_n$.
-This setting applies at the very last momement and thus cancels any
+This setting applies at the very last moment and thus cancels any
 \verb+show+ directive in model definition and any \opt{-doshow} command
 line~option.
 \end{description}
@@ -1996,7 +1996,7 @@ output files as the value of the attribute, except for \opt{none}.
 \item[{\tt -margin <float|none>}] Specifies the \texttt{margin} attribute of graphs.
 \item[{\tt -pad <float|none>}] Specifies the \texttt{pad} attribute of graphs.
 \item[{\tt -sep <string|none>}] Specifies the \texttt{sep} attribute of graphs.
-Notice that the argument is an arbitray string, so as to allow DOT general
+Notice that the argument is an arbitrary string, so as to allow DOT general
 syntax for this attribute.
 \item[{\tt -fontname <string|none>}] Specifies the graph fontname attribute.
 \item[{\tt -fontsize <int|none>}] Specifies the fontsize attribute~$n$ of all
@@ -2069,7 +2069,7 @@ and \atest{IRIW+syncs}:
 \end{verbatim}
 In the command lines above, \ahrefloc{opt:show}{\opt{-show prop}}
 instructs \herd{} to produce images of the executions that validate
-the final test condtion, while \ahrefloc{opt:doshow}{\opt{-doshow prop}}
+the final test condition, while \ahrefloc{opt:doshow}{\opt{-doshow prop}}
 instructs \herd{} to display the relation named ``\texttt{prop}''.
 In spite of the unfortunate name clashes, those are not to be confused\ldots
 

@@ -103,7 +103,7 @@ information:
 \item For $\po$ edges, we consider whether the locations
 of the events on both sides of the edge are the same or not
 ('s' or 'd'); and the direction of these events (W or~R).
-For instance the two $\po$ edges in the example are PodWR.
+For instance the two $\po$ edges in the example are PodWR
 (program order edge between a write and a read whose locations are
 different).
 \item For $\fr$ edges, we consider whether the processor
@@ -390,7 +390,7 @@ recognized fence prefixes can be listed with the following command:
 Most architectures, and more specifically LISA, support annotations that
 decorate events. The most common such annotation is ``\texttt{X}'' (or ``\texttt{A}'' depending on the architecture)
 for ``atomic'' accesses that will generate atomic accesses, \emph{i.e.}
-load-reserve/store-conditional pairs (lr/sc) or read-modify write instructions.
+load-reserve/store-conditional pairs (lr/sc) or read-modify-write instructions.
 
 As annotations apply to events, they are  pseudo-candidates that
 appear in-between actual candidate relaxations. For instance, consider
@@ -418,7 +418,7 @@ In the ARMv8 assembler code above, one notices the \texttt{STLR} (store release)
 and \texttt{LDAR} (load acquire) instructions.
 
 In AArch64, the ``atomic'' annotation reads~``\texttt{X}'', as ``\texttt{A}''
-stands for ``acquire''. This applies to both stores and loads and generate
+stands for ``acquire''. This applies to both stores and loads and generates
 code snippets that implement ```atomic'' accesses using
 lr/sc pairs.
 \begin{verbatim}
@@ -529,7 +529,7 @@ We describe our technique by the means of an example: X86-TSO.
 Before engaging in testing it is important to categorise
 candidate relaxations as safe or relaxed.
 
-This can done by interpretation of vendor's documentation.
+This can be done by interpretation of vendor's documentation.
 For instance, the iriw test of~\mysec{\ref{iriw}} is the example 7.7 of
 \cite{intel:white}
 ``Stores Are Seen in a Consistent Order by Other Processors'',
@@ -1220,8 +1220,8 @@ candidate relaxations.
 \subsubsection{Family names}
 Cycles (and thus tests) are first grouped by families.
 Family names describe test structure,
-based upon external communication candidates relaxations.
-More specifically, external communication candidates relaxations
+based upon external communication candidate relaxations.
+More specifically, external communication candidate relaxations
 suffice to settle the directions (\texttt{W} or~\texttt{R}) of
 first and last events of threads,
 considering the case when those two events are the same.
@@ -1281,7 +1281,7 @@ consists in one (for \texttt{W} or~\texttt{R}) or two memory accesses
 to different locations (for \texttt{WW}, \texttt{WR} etc.).
 For instance, the \ahref{MP.litmus}{\ltest{MP}} test
 is derived from the cycle ``PodWW Rfe PodRR Fre''.
-Variants are described by tags that illustrates the various
+Variants are described by tags that illustrate the various
 program~order relaxations: they appear after the family name, still with ``\texttt{+}'' as a separation.
 For instance the test derived from ``LwSyncdWW Rfe DpAddrdR Fre''
 is named \ahref{MP+lwsync+addr.litmus}{\ltest{MP+lwsync+addr}}.
@@ -1531,7 +1531,7 @@ threads, where \opt{<n>} is set above.
 \item[{\tt -prefix <relax-list>}] Specify a prefix for cycles: all cycles will (start with (in fact include) the given sequence of relaxations. The option can be repeated so as to specify several prefixes.
 \item[{\tt -ins <n>}] Reject tests as soon as the code of one thread
 originates from \opt{<n>} edges or more. Default is~$4$.
-\item[{\tt -relax <relax-list>}] Add candidates to the relax set.  This option can ne repeated, with cumulative effect.
+\item[{\tt -relax <relax-list>}] Add candidates to the relax set.  This option can be repeated, with cumulative effect.
 The syntax of \opt{<relax-list>} is a comma (or space)
 separated list of candidate relaxations.
 \item[{\tt -mix <bool>}] Mix the elements of the relax list
@@ -1543,7 +1543,7 @@ Default is~$100$
 \item[{\tt -minrelax <n>}]
 In mix mode, lower bound on the number of different candidate
 relaxations tested together.
-Default is~$1$. Bounds are included: `-minrelax 3 -maxrelax 3` produces tests from cycles with exactly three different candidate relaxations. Notice that each of the different canidate relaxations can be repeated.
+Default is~$1$. Bounds are included: `-minrelax 3 -maxrelax 3` produces tests from cycles with exactly three different candidate relaxations. Notice that each of the different candidate relaxations can be repeated.
 \item[{\tt -safe <relax-list>}] Add candidates to the safe set. This option can ne repeated, with cumulative effect.
 \item[{\tt -mode (default|sc|thin|uni|critical|free|ppo|total|mixed)}]
 Control generation  of cycles, default is~\opt{default}.
@@ -1600,7 +1600,7 @@ and to the above mentioned two sequences
 For instance, [Co,Co] and [Fr,Co] should never appear in \diy{} generated
 cycles. However, such sub-sequences can be generated on an individual basis with
 \diyone, see the example of \file{W5} in Sec~\ref{sec:obs},
-or by introducing them as explict composite candidates -- see Section~\ref{composite:sec}.
+or by introducing them as explicit composite candidates -- see Section~\ref{composite:sec}.
 
 \label{default:def}In default mode (\opt{default} ), \diy{} performs some optimisations. By optimisation, we mean that some sequences of two candidates are rejected. Generally, the sequence of  two internal candidates is rejected. However some of those compositions are accepted: internal communication (\emph{i,e,} Rfi, Coi and Rfi) with Po or Dp candidates with specification ``d'';
 Rfi with Po with specification ``s''; and Rmw candidates.
@@ -1808,7 +1808,7 @@ on the store-buffer ``\textsf{SB}'' test:
 SB+rfi-dmb.ld+rfi-addr: Rfi DMB.LDdRR Fre Rfi DpAddrdR Fre
 \end{verbatim}
 Notice that the option \opt{-arch} is mandatory (or defaults to \texttt{PPC}),
-as  candidate relaxations depends on the selected architecture, as illustrated
+as  candidate relaxations depend on the selected architecture, as illustrated
 by the fence candidate \texttt{DMB.LD}\ldots{} above.
 
 \endinput

@@ -1,7 +1,7 @@
 \cutname{litmus.html}
 Traditionally, a \emph{litmus test} is a small parallel program designed
 to exercise the memory model of a parallel, shared-memory, computer.
-Given a litmus test in assembler (X86, X86\_64), Power, ARM, MIPS, RISC-V) \litmus{}
+Given a litmus test in assembler (X86, X86\_64, Power, ARM, MIPS, RISC-V), \litmus{}
 runs the test.
 
 Using \litmus{} thus requires a parallel machine,
@@ -248,7 +248,7 @@ proved quite effective in favouring outcome variability.
 \label{defpreload}If the \emph{random preload mode} is enabled,
 a preliminary loop of size~$s$ reads
 a random subset of the memory locations accessed by~\P{k}.
-Preload have a noticeable effect and teh random preload mode is
+Preload has a noticeable effect and the random preload mode is
 enabled by default.
 Starting from version~5.0, we provide a more precise control
 over preloading memory locations --- See Sec.~\ref{preload:custom}.
@@ -324,7 +324,7 @@ Once satisfactory parameters are found, it is a nuisance to repeat them
 for every experiment.
 Thus, parameters $a$, $r$ and~$s$ can also be set while invoking litmus,
 with the same command line options. In fact those settings command
-he default values of \file{.exe}~files controls.
+the default values of \file{.exe}~files controls.
 Additionally, the synchronisation technique for iterations,
 the memory mode, and several others compile time parameters
 can be selected by appropriate \litmus{} command line options.
@@ -1523,7 +1523,7 @@ In that latter case, the size of allocated arrays depend upon
 compile time defined parameters: the number of available logical processors
 (see option \ahrefloc{avail}{\opt{-a <n>}})
 and the size of a run (see option \ahrefloc{sizeoftest}{\opt{-s <n>}}).
-It remains possible to change those those at execution time, provided
+It remains possible to change those at execution time, provided
 the resulting memory size does not exceed the compile time value.
 Default is \texttt{dynamic} most often and
 static for options \texttt{-mode presi/kvm -driver shell}.
@@ -1554,7 +1554,7 @@ not run the test if invoked once more later.
 \aname{affinity:control}{The} following option commands affinity control:
 \begin{description}
 \item[{\tt -affinity (none|incr<n>|random|custom)}]
-Enable (of disable with tag \opt{none}) affinity control,
+Enable (or disable with tag \opt{none}) affinity control,
 specifying default affinity mode of executables.
 Default is \opt{none}, \emph{i.e.} executables do not
 include affinity control code.
@@ -1666,7 +1666,7 @@ new items are defined in mapping files whose names are arguments to
 the appropriate command line options.
 Mapping files simply are lists of pairs, with one line starting with a test
 name, and the rest of line defining the changed item.
-The changed item may also contains several lines: in that case it should be
+The changed item may also contain several lines: in that case it should be
 included in double quotes~``\texttt{"}.''.
 \begin{description}
 \item[{\tt -names <file>}] Run \litmus{} only on tests whose names are
@@ -1675,13 +1675,13 @@ listed in \texttt{<file>}.
 listed in \texttt{<file>}.
 \item[{\tt -rename <file>}] Change test names.
 \item[{\tt -kinds <file>}] Change test kinds.
-This amonts to changing the quantifier of final conditions, with
+This amounts to changing the quantifier of final conditions, with
 kind \texttt{Allow} being \verb+exists+,
 kind \texttt{Forbid} being \verb+~exists+
 and kind \texttt{Require} being \verb+forall+.
 \item[{\tt -conds <file>}] Change the final condition of tests.
 \item[{\tt -hints <file>}] Change meta-data, or hints.
-Hints command avanced features such as custom affinity
+Hints command advanced features such as custom affinity
 (option \opt{-affinity custom} and Sec.~\ref{affinity:custom})
 and prefech control
 (option \opt{-preload custom} and Sec.~\ref{preload:custom}).
@@ -1873,7 +1873,7 @@ is also observed in kernel mode.
 In this simple example, we compile and run one single test.
 However, usual practice is, as it is for \litmus{}, to compile and run
 several tests at once.
-One achieve this naturally, by supplying several source files as command
+One achieves this naturally, by supplying several source files as command
 line arguments to \klitmus,
 or by using index files, see Sec~\ref{file:argument}.
 
@@ -2020,13 +2020,13 @@ In case the command line argument is \texttt{adapt}, the parameter default
 value will be the number of threads in test.
 
 \item[{\tt -affinity (none|incr<n>|random)}]
-Enable (of disable with tag \opt{none}) affinity control,
+Enable (or disable with tag \opt{none}) affinity control,
 specifying default value of parameter~\opt{affincr};
 with tag \opt{none} yielding a default value of~\texttt{0},
 tag \opt{incr<n>} yielding a default value of~\texttt{<n>},
 and tag \opt{random} yielding a default value of~\opt{-1}.
 Default is none, \emph{i.e.}, modules do not perform affinity control,
-although they include code do do so ---
+although they include code to do so ---
 this is a significant difference with
 \ahref{affinity:control}{litmus7 default}).
 The various tags are interpreted as follows:
@@ -2057,7 +2057,7 @@ listed in \texttt{<file>}.
 listed in \texttt{<file>}.
 \item[{\tt -rename <file>}] Change test names.
 \item[{\tt -rcu (yes|no|only)}]
-Accept or not tests that contains RCU (read-copy-update) primitives,
+Accept or not tests that contain RCU (read-copy-update) primitives,
 which can be quite long to run. Default is \texttt{no}.
 The tags have the following meaning:
 \begin{enumerate}
