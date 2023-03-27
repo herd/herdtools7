@@ -1,12 +1,13 @@
 open AST
 
 let fatal = Error.fatal
+let fatal_from = Error.fatal_from
 
-let value_as_int = function
+let value_as_int pos = function
   | V_Int i -> i
-  | v -> fatal (Error.MismatchType (v, [ T_Int None ]))
+  | v -> fatal_from pos (Error.MismatchType (v, [ T_Int None ]))
 
-let binop op v1 v2 =
+let binop pos op v1 v2 =
   match (op, v1, v2) with
   (* int -> int -> int *)
   | PLUS, V_Int v1, V_Int v2 -> V_Int (v1 + v2)
@@ -42,39 +43,40 @@ let binop op v1 v2 =
   (* bits -> bits -> bits *)
   | EQ_OP, V_BitVector b1, V_BitVector b2 -> V_Bool (Bitvector.equal b1 b2)
   | NEQ, V_BitVector b1, V_BitVector b2 -> V_Bool (not @@ Bitvector.equal b1 b2)
-  | _ -> fatal (Error.UnsupportedBinop (op, v1, v2))
+  | _ -> fatal_from pos (Error.UnsupportedBinop (op, v1, v2))
 
-let unop op v =
+let unop pos op v =
   match (op, v) with
   | NEG, V_Int i -> V_Int ~-i
   | NEG, V_Real r -> V_Real ~-.r
   | BNOT, V_Bool b -> V_Bool (not b)
-  | _ -> fatal (Error.UnsupportedUnop (op, v))
+  | _ -> fatal_from pos (Error.UnsupportedUnop (op, v))
 
 let rec static_eval (env : string -> value) : expr -> value =
-  let rec expr_ = function
+  let rec expr_ e =
+    match e.desc with
     | E_Literal v -> v
     | E_Var x -> env x
     | E_Binop (op, e1, e2) ->
         let v1 = expr_ e1 and v2 = expr_ e2 in
-        binop op v1 v2
+        binop e op v1 v2
     | E_Unop (op, e) ->
         let v = expr_ e in
-        unop op v
-    | E_Slice (e', slices) as e ->
+        unop e op v
+    | E_Slice (e', slices) ->
         let bv =
           match expr_ e' with
           | V_Int i -> Bitvector.of_int i
           | V_BitVector bv -> bv
-          | _ -> fatal (Error.UnsupportedExpr e)
+          | _ -> fatal_from e (Error.UnsupportedExpr e)
         and positions = slices_to_positions env slices in
         V_BitVector (Bitvector.extract_slice bv positions)
-    | e -> fatal (Error.UnsupportedExpr e)
+    | _ -> fatal_from e (Error.UnsupportedExpr e)
   in
   expr_
 
 and slices_to_positions env =
-  let eval_to_int e = static_eval env e |> value_as_int in
+  let eval_to_int e = static_eval env e |> value_as_int e in
   let slice_to_positions =
     let interval top len = List.init len (( - ) top) in
     function

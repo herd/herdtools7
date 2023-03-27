@@ -22,6 +22,17 @@ let check_op3 op kr =
   match op,kr with
   |(BIC|BICS),K _ -> raise Parsing.Parse_error
   | _ -> ()
+
+type 'k k0_bang = Nada | Bang | Konst of 'k
+
+let mk_instrp instr v r1 r2 ra ko kb =
+  match (ko, kb) with
+    | None, Nada -> instr v r1 r2 ra MetaConst.zero Idx
+    | Some s, Nada -> instr v r1 r2 ra s Idx
+    | None, Konst p -> instr v r1 r2 ra p PostIdx
+    | Some s,Bang -> instr v r1 r2 ra s PreIdx
+    | None,Bang -> instr v r1 r2 ra MetaConst.zero PreIdx
+    | _,_ -> raise Parsing.Parse_error
 %}
 
 %token EOF
@@ -44,7 +55,7 @@ let check_op3 op kr =
 %token <string> CODEVAR
 %token <int> PROC
 
-%token SEMI COMMA PIPE COLON DOT LCRL RCRL LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
+%token SEMI COMMA PIPE COLON DOT BANG LCRL RCRL LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
 %token TOK_SXTW
 
 %token SXTW SBFM UBFM
@@ -246,9 +257,18 @@ k:
 | NUM  { MetaConst.Int $1 }
 | META { MetaConst.Meta $1 }
 
-k0:
+k0_opt:
 | { None }
 | COMMA k { Some $2}
+
+k0_bang:
+| { Nada }
+| COMMA k { Konst $2}
+| BANG { Bang }
+
+k0:
+| { MetaConst.zero }
+| COMMA k=k { k }
 
 kr:
 | k { K $1 }
@@ -270,12 +290,14 @@ kr0:
 | { K (MetaConst.zero), S_NOEXT }
 | COMMA kr_shift_address { $2 }
 
+/*
 kr0_no_shift:
 | { K (MetaConst.zero) }
 | COMMA k { K $2 }
 | COMMA xreg { RV (V64,$2) }
 | COMMA wreg { RV (V32,$2) }
 | COMMA wreg COMMA TOK_SXTW { RV (V32,$2) }
+*/
 
 kx0_no_shift:
 | { K (MetaConst.zero) }
@@ -286,12 +308,14 @@ k0_no_shift:
 | { K (MetaConst.zero) }
 | COMMA k { K $2 }
 
+/*
 kr0_no_shift_opt:
 | { None }
 | COMMA k { Some (K $2) }
 | COMMA xreg { Some (RV (V64,$2)) }
 | COMMA wreg { Some (RV (V32,$2)) }
 | COMMA wreg COMMA TOK_SXTW { Some (RV (V32,$2)) }
+*/
 
 /* Beware: for w-indexed accesses SXTW is considered always present.
    Far from ideal, one simple to get correct assembly output for
@@ -318,32 +342,34 @@ zeroopt:
 
 ldp_instr:
 | LDP
-  { (fun v r1 r2 r3 kr -> I_LDP (TT,v,r1,r2,r3,kr)) }
+  { (fun v r1 r2 r3 k md -> I_LDP (TT,v,r1,r2,r3,k,md)) }
 | LDNP
-  { (fun v r1 r2 r3 kr -> I_LDP (NT,v,r1,r2,r3,kr)) }
+  { (fun v r1 r2 r3 k md -> I_LDP (NT,v,r1,r2,r3,k,md)) }
 
 ldp_simd_instr:
 | LDP
   { ( fun v r1 r2 r3 k0 k0' ->
       match k0',k0 with
-      | Some post,K k when k = MetaConst.zero ->
-        I_LDP_P_SIMD (TT,v,r1,r2,r3,post)
-      | None,K k -> I_LDP_SIMD (TT,v,r1,r2,r3,k)
+      | Some post,None ->
+          I_LDP_P_SIMD (TT,v,r1,r2,r3,post)
+      | None,Some k -> I_LDP_SIMD (TT,v,r1,r2,r3,k)
+      | None,None -> I_LDP_SIMD (TT,v,r1,r2,r3,MetaConst.zero)
       | _,_ -> assert false
     )}
 | LDNP
   { ( fun v r1 r2 r3 k0 k0' ->
       match k0', k0 with
-      | None,K k -> I_LDP_SIMD (NT,v,r1,r2,r3,k)
+      | None,Some k -> I_LDP_SIMD (NT,v,r1,r2,r3,k)
+      | None,None -> I_LDP_SIMD (NT,v,r1,r2,r3,MetaConst.zero)
       | _,_-> assert false
 
     )}
 
 stp_instr:
 | STP
-  { (fun v r1 r2 r3 kr -> I_STP (TT,v,r1,r2,r3,kr)) }
+  { (fun v r1 r2 r3 k md -> I_STP (TT,v,r1,r2,r3,k,md)) }
 | STNP
-  { (fun v r1 r2 r3 kr -> I_STP (NT,v,r1,r2,r3,kr)) }
+  { (fun v r1 r2 r3 k md -> I_STP (NT,v,r1,r2,r3,k,md)) }
 
 stp_simd_instr:
 | STP
@@ -420,7 +446,7 @@ instr:
   { let v,r = $2 in I_TBZ (v,r,MetaConst.Int $4,$6) }
 /* Memory */
 /* must differentiate between regular and post-indexed load */
-| LDR reg COMMA LBRK cxreg kr0 RBRK k0
+| LDR reg COMMA LBRK cxreg kr0 RBRK k0_opt
   { let v,r    = $2 in
     let kr, os = $6 in
     match $8 with
@@ -428,34 +454,22 @@ instr:
       I_LDR_P (v,r,$5,post)
     | _ ->
       I_LDR (v,r,$5,kr,os) }
-| LDUR reg COMMA LBRK cxreg k0 RBRK
+| LDUR reg COMMA LBRK cxreg k0_opt RBRK
   { let v,r = $2 in I_LDUR (v,r,$5,$6)}
-| ldp_instr wreg COMMA wreg COMMA LBRK cxreg kr0_no_shift_opt RBRK k0
-  { match ($8, $10) with
-    | Some s, None -> $1 V32 $2 $4 $7 s
-    | None, Some p -> I_LDP_P (TT, V32, $2, $4, $7, p)
-    | None, None -> $1 V32 $2 $4 $7 (K (MetaConst.zero))
-    | _,_ -> raise Parsing.Parse_error }
-| ldp_instr xreg COMMA xreg COMMA LBRK cxreg kr0_no_shift_opt RBRK k0
-  { match ($8, $10) with
-    | Some s, None -> $1 V64 $2 $4 $7 s
-    | None, Some p -> I_LDP_P (TT, V64, $2, $4, $7, p)
-    | None, None -> $1 V64 $2 $4 $7 (K (MetaConst.zero))
-    | _,_ -> raise Parsing.Parse_error }
-| stp_instr wreg COMMA wreg COMMA LBRK cxreg kr0_no_shift_opt RBRK k0
-  { match ($8, $10) with
-    | Some s, None -> $1 V32 $2 $4 $7 s
-    | None, Some p -> I_STP_P (TT, V32, $2, $4, $7, p)
-    | None, None -> $1 V32 $2 $4 $7 (K (MetaConst.zero))
-    | _,_ -> raise Parsing.Parse_error }
-| stp_instr xreg COMMA xreg COMMA LBRK cxreg kr0_no_shift_opt RBRK k0
-  { match ($8, $10) with
-    | Some s, None -> $1 V64 $2 $4 $7 s
-    | None, Some p -> I_STP_P (TT, V64, $2, $4, $7, p)
-    | None, None -> $1 V64 $2 $4 $7 (K (MetaConst.zero))
-    | _,_ -> raise Parsing.Parse_error }
-| LDPSW xreg COMMA xreg COMMA LBRK cxreg kr0_no_shift RBRK
-  { I_LDPSW ($2,$4,$7,$8) }
+
+| instr=ldp_instr r1=wreg COMMA r2=wreg COMMA LBRK ra=cxreg ko=k0_opt RBRK kb=k0_bang
+  { mk_instrp instr V32 r1 r2 ra ko kb }
+| instr=ldp_instr r1=xreg COMMA r2=xreg COMMA LBRK ra=cxreg ko=k0_opt RBRK kb=k0_bang
+  { mk_instrp instr V64 r1 r2 ra ko kb }
+| instr=stp_instr r1=wreg COMMA r2=wreg COMMA LBRK ra=cxreg ko=k0_opt RBRK kb=k0_bang
+  { mk_instrp instr V32 r1 r2 ra ko kb }
+| instr=stp_instr r1=xreg COMMA r2=xreg COMMA LBRK ra=cxreg ko=k0_opt RBRK kb=k0_bang
+  { mk_instrp instr V64 r1 r2 ra ko kb }
+| LDPSW  r1=xreg COMMA r2=xreg COMMA LBRK ra=cxreg ko=k0_opt RBRK kb=k0_bang
+  {
+   let instr _v r1 r2 ra k md = I_LDPSW (r1,r2,ra,k,md) in
+   mk_instrp instr V64 r1 r2 ra ko kb
+  }
 | LDXP wreg COMMA wreg COMMA LBRK cxreg RBRK
   { I_LDXP (V32,XP,$2,$4,$7) }
 | LDXP xreg COMMA xreg COMMA LBRK cxreg RBRK
@@ -504,7 +518,7 @@ instr:
   { I_LDARBH (B,AQ,$2,$5) }
 | LDAPRH wreg COMMA LBRK cxreg RBRK
   { I_LDARBH (H,AQ,$2,$5) }
-| STR reg COMMA LBRK cxreg kr0 RBRK k0
+| STR reg COMMA LBRK cxreg kr0 RBRK k0_opt
   { let (v,r)   = $2 in
     match $6, $8 with
     (* post-indexed writes do not have shifters *)
@@ -573,19 +587,19 @@ instr:
    { I_ST4 ($2, $3, $6, $8) }
 | ST4 vregs4 COMMA LBRK xreg RBRK kx0_no_shift
    { I_ST4M ($2, $5, $7) }
-| ldp_simd_instr sreg COMMA sreg COMMA LBRK xreg k0_no_shift RBRK k0
+| ldp_simd_instr sreg COMMA sreg COMMA LBRK xreg k0_opt RBRK k0_opt
   { $1 VSIMD32 $2 $4 $7 $8 $10 }
-| ldp_simd_instr dreg COMMA dreg COMMA LBRK xreg k0_no_shift RBRK k0
+| ldp_simd_instr dreg COMMA dreg COMMA LBRK xreg k0_opt RBRK k0_opt
   { $1 VSIMD64 $2 $4 $7 $8 $10 }
-| ldp_simd_instr qreg COMMA qreg COMMA LBRK xreg k0_no_shift RBRK k0
+| ldp_simd_instr qreg COMMA qreg COMMA LBRK xreg k0_opt RBRK k0_opt
   { $1 VSIMD128 $2 $4 $7 $8 $10 }
-| stp_simd_instr sreg COMMA sreg COMMA LBRK xreg k0_no_shift RBRK k0
+| stp_simd_instr sreg COMMA sreg COMMA LBRK xreg k0_no_shift RBRK k0_opt
   { $1 VSIMD32 $2 $4 $7 $8 $10 }
-| stp_simd_instr dreg COMMA dreg COMMA LBRK xreg k0_no_shift RBRK k0
+| stp_simd_instr dreg COMMA dreg COMMA LBRK xreg k0_no_shift RBRK k0_opt
   { $1 VSIMD64 $2 $4 $7 $8 $10 }
-| stp_simd_instr qreg COMMA qreg COMMA LBRK xreg k0_no_shift RBRK k0
+| stp_simd_instr qreg COMMA qreg COMMA LBRK xreg k0_no_shift RBRK k0_opt
   { $1 VSIMD128 $2 $4 $7 $8 $10 }
-| LDR scalar_regs COMMA LBRK xreg kr0 RBRK k0
+| LDR scalar_regs COMMA LBRK xreg kr0 RBRK k0_opt
   { let v,r    = $2 in
     let kr, os = $6 in
     match $8 with
@@ -593,10 +607,10 @@ instr:
       I_LDR_P_SIMD (v,r,$5,post)
     | _ ->
       I_LDR_SIMD (v,r,$5,kr,os) }
-| LDUR scalar_regs COMMA LBRK xreg k0 RBRK
+| LDUR scalar_regs COMMA LBRK xreg k0_opt RBRK
   { let v,r = $2 in
     I_LDUR_SIMD (v, r, $5, $6) }
-| STR scalar_regs COMMA LBRK xreg kr0 RBRK k0
+| STR scalar_regs COMMA LBRK xreg kr0 RBRK k0_opt
   { let v,r    = $2 in
     let kr, os = $6 in
     match $8 with
@@ -604,7 +618,7 @@ instr:
       I_STR_P_SIMD (v,r,$5,post)
     | _ ->
       I_STR_SIMD (v,r,$5,kr,os) }
-| STUR scalar_regs COMMA LBRK xreg k0 RBRK
+| STUR scalar_regs COMMA LBRK xreg k0_opt RBRK
   { let v,r = $2 in
     I_STUR_SIMD (v, r, $5, $6) }
 | MOV vreg INDEX COMMA vreg INDEX
@@ -735,20 +749,11 @@ instr:
   { I_SWPBH (H,RMW_AL,$2,$4,$7) }
 /* Memory Tagging */
 | STG xreg COMMA LBRK xreg k0 RBRK
-  { let k = match $6 with
-    | Some k -> k
-    | None -> MetaConst.zero in
-      I_STG ($2,$5,k) }
+   { I_STG ($2,$5,$6) }
 | STZG xreg COMMA LBRK xreg k0 RBRK
-  { let k = match $6 with
-    | Some k -> k
-    | None -> MetaConst.zero in
-      I_STZG ($2,$5,k) }
+   { I_STZG ($2,$5,$6) }
 | LDG xreg COMMA LBRK xreg k0 RBRK
-  { let k = match $6 with
-    | Some k -> k
-    | None -> MetaConst.zero in
-      I_LDG ($2,$5,k) }
+   { I_LDG ($2,$5,$6) }
 
 /* Fetch and ADD */
 | LDADD wreg COMMA wreg COMMA  LBRK cxreg zeroopt RBRK

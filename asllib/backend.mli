@@ -25,6 +25,9 @@ module type S = sig
   type value
   (** The runtime values that the interpreter should use. *)
 
+  val debug_value : value -> string
+  (** A printer for value, should only be used for debugging. *)
+
   val v_of_parsed_v : AST.value -> value
   (** [v_of_parsed_v] constructs a value from a parsed value.
       Note that the prefered method to create records or any complex values
@@ -33,6 +36,10 @@ module type S = sig
   val v_of_int : int -> value
   (** [v_of_int] is used to convert raw integers arising from the interpretation,
       and not parsed values. *)
+
+  val v_to_int : value -> int option
+  (** [v_to_int v] returns, if possible, an integer corresponding to the value.
+      Should be called only on values of type integer. *)
 
   (* Monadic operators *)
   (*-------------------*)
@@ -58,9 +65,9 @@ module type S = sig
   (** choice is a boolean if operator. *)
 
   (** Special operations with vectors *)
-  (*----------------------------------*)
+  (*  --------------------------------*)
 
-  val create_vector : AST.type_desc -> value list -> value m
+  val create_vector : AST.ty -> value list -> value m
   (** Creates a vector, with possible names for the fields *)
 
   val get_i : int -> value -> value m
@@ -70,7 +77,7 @@ module type S = sig
   (** [set_i i v vec] returns [vec] with index [i] replaced by [v].*)
 
   (** Other operations *)
-  (*-------------------*)
+  (*  -----------------*)
 
   val binop : AST.binop -> value -> value -> value m
   (** Evaluates the binary operation on those two values. *)
@@ -89,10 +96,10 @@ module type S = sig
   (** [on_write_identifier] is called when a value is read from the local
       environment.*)
 
-  val read_from_bitvector : int list -> value -> value m
+  val read_from_bitvector : (value * value) list -> value -> value m
   (** Read a slice (represented by a list of positions) from a bitvector. *)
 
-  val write_to_bitvector : int list -> value -> value -> value m
+  val write_to_bitvector : (value * value) list -> value -> value -> value m
   (** [write_to_bitvector positions w v] writes the bits of [w] into [v] at the specified positions. *)
 
   val concat_bitvectors : value list -> value m

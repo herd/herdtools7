@@ -73,6 +73,7 @@ type ('scalar,'pte,'instr) t =
   | Tag of string
   | PteVal of 'pte
   | Instruction of 'instr
+  | Frozen of int (* Frozen symbolic value *)
 
 val compare :
   ('scalar -> 'scalar -> int) ->

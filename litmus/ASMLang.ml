@@ -500,7 +500,7 @@ module RegMap = A.RegMap)
         | PteVal p ->
             let idx = find_pteval_index p ptevalEnv in
             add_pteval idx
-        | Tag _ -> assert false
+        | Tag _|Frozen _ -> assert false
 
       let compile_init_val_fun = compile_val_fun
 

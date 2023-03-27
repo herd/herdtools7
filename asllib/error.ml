@@ -1,8 +1,8 @@
 open AST
 
 type error =
-  | BadField of string * type_desc
-  | BadFields of string list * type_desc
+  | BadField of string * ty
+  | BadFields of string list * ty
   | TypeInferenceNeeded
   | UndefinedIdentifier of identifier
   | MismatchedReturnValue of string
@@ -12,21 +12,32 @@ type error =
   | UnsupportedExpr of expr
   | MismatchType of value * type_desc list
   | NotYetImplemented of string
-  | ConflictingTypes of type_desc list * type_desc
+  | ConflictingTypes of type_desc list * ty
   | AssertionFailed of expr
+  | CannotParse
+  | UnknownSymbol
 
-exception ASLException of error
+exception ASLException of error annotated
+
+type 'a result = ('a, error annotated) Result.t
 
 let fatal e = raise (ASLException e)
+let fatal_from pos e = fatal (ASTUtils.add_pos_from pos e)
+
+let fatal_here pos_start pos_end e =
+  fatal (ASTUtils.annotated e pos_start pos_end)
+
+let fatal_unknown_pos e = fatal (ASTUtils.add_dummy_pos e)
 let intercept f () = try Ok (f ()) with ASLException e -> Error e
 
 let pp_error =
   let open Format in
   let open PP in
   let pp_comma_list = pp_print_list ~pp_sep:(fun f () -> fprintf f ",@ ") in
+  let pp_type_desc f ty = pp_ty f (ASTUtils.add_dummy_pos ty) in
   fun f e ->
-    pp_open_box f 2;
-    (match e with
+    fprintf f "@[<v 0>@[<h>%a:@]@ @[<2>ASL error:@ " pp_pos e;
+    (match e.desc with
     | UnsupportedBinop (op, v1, v2) ->
         fprintf f "Unsupported binop %s for values@ %a@ and %a."
           (binop_to_string op) pp_value v1 pp_value v2
@@ -44,12 +55,12 @@ let pp_error =
           (pp_comma_list pp_type_desc)
           li
     | BadField (s, ty) ->
-        fprintf f "Cannot get field '%s'@ on type %a." s pp_type_desc ty
+        fprintf f "Cannot get field '%s'@ on type %a." s pp_ty ty
     | BadFields (fields, ty) ->
         fprintf f
           "Fields mismatch for creating a value of type %a@ -- Passed fields \
            are:@ %a"
-          pp_type_desc ty
+          pp_ty ty
           (pp_print_list ~pp_sep:pp_print_space pp_print_string)
           fields
     | TypeInferenceNeeded ->
@@ -65,13 +76,16 @@ let pp_error =
     | NotYetImplemented s -> pp_print_text f @@ "Not yet implemented: " ^ s
     | ConflictingTypes ([ expected ], provided) ->
         fprintf f "Type error:@ a subtype of@ %a@ was expected,@ provided %a."
-          pp_type_desc expected pp_type_desc provided
+          pp_type_desc expected pp_ty provided
     | ConflictingTypes (expected, provided) ->
-        fprintf f "Type error:@ %a does@ not@ subtype@ any@ of:@ %a."
-          pp_type_desc provided
+        fprintf f "Type error:@ %a does@ not@ subtype@ any@ of:@ %a." pp_ty
+          provided
           (pp_comma_list pp_type_desc)
           expected
-    | AssertionFailed e -> fprintf f "Assertion failed:@ %a" pp_expr e);
+    | AssertionFailed e -> fprintf f "Assertion failed:@ %a" pp_expr e
+    | CannotParse -> pp_print_string f "Cannot parse."
+    | UnknownSymbol -> pp_print_string f "Unknown symbol.");
+    pp_close_box f ();
     pp_close_box f ()
 
 let error_to_string = Format.asprintf "%a" pp_error

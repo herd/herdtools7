@@ -76,6 +76,7 @@ type t =
   | T of int
 (* ASL Processing *)
   | ASL
+  | ASLVersion of [ `ASLv0 | `ASLv1 ]
 (* Signed Int128 types *)
   | S128
 

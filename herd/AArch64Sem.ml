@@ -93,6 +93,7 @@ module Make
 
       let is_zero v = M.op Op.Eq v V.zero
       and is_not_zero v = M.op Op.Ne v V.zero
+      and add_if ok k = if ok then fun a -> M.add a (V.intToV k) else M.unitT
 
 (* Ordinary access action *)
       let access_anexp anexp d loc v ac =
@@ -1173,6 +1174,8 @@ module Make
 
       let get_ea_noext rs kr ii = get_ea rs kr AArch64.S_NOEXT ii
 
+      let get_ea_idx rs k ii = get_ea rs (AArch64.K k) AArch64.S_NOEXT ii
+
       let add_size a sz = M.add a (V.intToV (MachSize.nbytes sz))
 
       let post_kr rA addr kr ii =
@@ -1190,30 +1193,70 @@ module Make
           (fun ac a -> do_read_mem sz AArch64.N aexp ac rd a ii)
           (get_ea rs kr s ii) ii
 
-      and ldp sz rd1 rd2 rs kr ii =
-        do_ldr rs sz AArch64.N
-          (fun ac a ->
-            do_read_mem sz AArch64.N aexp ac rd1 a ii >>|
-            begin
-              add_size a sz >>=
-              fun a -> do_read_mem sz AArch64.N aexp ac rd2 a ii
-            end)
-          (get_ea_noext rs kr ii) ii
+      module LoadPair
+          (Read:
+             sig
+               val read_mem :
+                   MachSize.sz -> AArch64.lannot -> AArch64.explicit -> Access.t ->
+                     AArch64.reg -> V.v -> M.A.inst_instance_id -> B.t M.t
+             end) =
+        struct
 
-      and ldpsw rd1 rd2 rs kr ii =
-        let mem_sz =  MachSize.Word in
-        do_ldr rs MachSize.Word AArch64.N
-          (fun ac a ->
-            begin
-              do_read_mem_sxt mem_sz AArch64.N aexp ac rd1 a ii >>|
-              begin
-                add_size a mem_sz >>=
-                fun a -> do_read_mem_sxt mem_sz AArch64.N aexp ac rd2 a ii
-              end
-            end)
-          (get_ea_noext rs kr ii) ii
+          let ldp_wback sz rd1 rd2 rs k post ii =
+            let m =
+              M.delay_kont "ldp_wback"
+                (read_reg_ord rs ii >>= add_if (not post) k)
+                (fun a_virt ma ->
+                  do_ldr rs sz AArch64.N
+                    (fun ac a ->
+                      (add_if post k a_virt >>=
+                       fun b -> write_reg rs b ii) >>|
+                       (Read.read_mem sz AArch64.N aexp ac rd1 a ii >>|
+                       begin
+                         add_size a sz >>=
+                         fun a -> Read.read_mem sz AArch64.N aexp ac rd2 a ii
+                       end))
+                    ma ii >>=
+                  fun _ -> add_if post k a_virt >>=
+                    fun a -> M.unitT (B.Next [rs,a])) in
+            if kvm then M.upOneRW (is_this_reg rs) m
+            else m
 
-      and ldxp sz t rd1 rd2 rs ii =
+          let ldp sz rd1 rd2 rs k md ii =
+            let open AArch64 in
+            match md with
+            | Idx ->
+                do_ldr rs sz AArch64.N
+                  (fun ac a ->
+                Read.read_mem sz AArch64.N aexp ac rd1 a ii >>|
+                begin
+                  add_size a sz >>=
+                  fun a -> Read.read_mem sz AArch64.N aexp ac rd2 a ii
+                end)
+                  (get_ea_idx rs k ii) ii
+            | PostIdx ->
+                ldp_wback sz rd1 rd2 rs k true ii
+            | PreIdx ->
+                ldp_wback sz rd1 rd2 rs k false ii
+        end
+
+      let ldp =
+        let module LDP =
+          LoadPair
+            (struct
+              let read_mem = do_read_mem
+            end) in
+        LDP.ldp
+
+      let ldpsw =
+        let module LDPSW =
+          LoadPair
+            (struct
+              let read_mem = do_read_mem_sxt
+            end) in
+        LDPSW.ldp MachSize.Word
+
+      let ldxp sz t rd1 rd2 rs ii =
         let open AArch64 in
         let an = match t with XP -> X | AXP -> XA in
         do_ldr rs sz an
@@ -1224,25 +1267,6 @@ module Make
               do_read_mem sz an aexp ac rd2 a ii
             end)
           (read_reg_ord rs ii) ii
-
-      (* Load pair - post-indexed write *)
-      and ldp_post sz rd1 rd2 ra k ii =
-        let m =
-          M.delay_kont "ldp_post"
-            (read_reg_ord ra ii)
-            (fun a_virt ma ->
-              do_ldr ra sz AArch64.N
-                (fun ac a ->
-                  (M.add a_virt (V.intToV k) >>=
-                   fun b -> write_reg ra b ii) >>|
-                   (do_read_mem sz AArch64.N aexp ac rd1 a ii >>|
-                   begin
-                     add_size a sz >>=
-                     fun a -> do_read_mem sz AArch64.N aexp ac rd2 a ii
-                   end))
-                ma ii) in
-        if kvm then M.upOneRW (is_this_reg ra) m
-        else m
 
       and ldar sz t rd rs ii =
         let open AArch64 in
@@ -1298,38 +1322,51 @@ module Make
         if kvm then M.upOneRW (is_this_reg rd) m
         else m
 
-      and stp =
-        let (>>>) = M.data_input_next in
-        fun sz rs1 rs2 rd kr ii ->
-        do_str rd
-          (fun ac a _ ii ->
-            (read_reg_data sz rs1 ii >>> fun v ->
-             do_write_mem sz AArch64.N aexp ac a v ii) >>|
-              (add_size a sz >>= fun a ->
-               read_reg_data sz rs2 ii >>> fun v ->
-               do_write_mem sz AArch64.N aexp ac a v ii))
-          sz AArch64.N
-          (get_ea_noext rd kr ii)
-          (M.unitT V.zero)
-          ii
 
-      and stp_post sz r1 r2 rd kr ii =
+      let stp_wback =
         let (>>>) = M.data_input_next in
-        M.delay_kont "str_pair_post"
-          (read_reg_ord rd ii)
-          (fun a_virt ma ->
-          do_str rd
-            (fun ac a _ ii ->
-              (M.add a_virt (V.intToV kr) >>=
-                fun b -> write_reg rd b ii) >>|
-              ((read_reg_data sz r1 ii >>> fun v ->
-               do_write_mem sz AArch64.N aexp ac a v ii) >>|
-                (add_size a sz >>= fun a ->
-                 read_reg_data sz r2 ii >>> fun v ->
-                 do_write_mem sz AArch64.N aexp ac a v ii)))
-            sz AArch64.N
-            ma (M.unitT V.zero)
-            ii)
+        fun sz rs1 rs2 rd k post ii ->
+          let m =
+            M.delay_kont "stp_wback"
+              (read_reg_ord rd ii >>= add_if (not post) k)
+              (fun a_virt ma ->
+                do_str rd
+                  (fun ac a _ ii ->
+                    (add_if post k a_virt >>=
+                     fun b -> write_reg rd b ii) >>|
+                     ((read_reg_data sz rs1 ii >>> fun v ->
+                       do_write_mem sz AArch64.N aexp ac a v ii) >>|
+                       (add_size a sz >>= fun a ->
+                         read_reg_data sz rs2 ii >>> fun v ->
+                           do_write_mem sz AArch64.N aexp ac a v ii)))
+                  sz AArch64.N
+                  ma (M.unitT V.zero)
+                  ii >>=
+                fun _ -> add_if post k a_virt >>=
+                  fun a -> M.unitT (B.Next [rd,a])) in
+          if kvm then M.upOneRW (is_this_reg rd) m
+          else m
+
+
+      let stp sz rs1 rs2 rd k md ii =
+        match md with
+        | AArch64.Idx ->
+            let (>>>) = M.data_input_next in
+            do_str rd
+              (fun ac a _ ii ->
+                (read_reg_data sz rs1 ii >>> fun v ->
+                  do_write_mem sz AArch64.N aexp ac a v ii) >>|
+                  (add_size a sz >>= fun a ->
+                    read_reg_data sz rs2 ii >>> fun v ->
+                      do_write_mem sz AArch64.N aexp ac a v ii))
+              sz AArch64.N
+              (get_ea_idx rd k ii)
+              (M.unitT V.zero)
+              ii
+        | AArch64.PostIdx ->
+            stp_wback sz rs1 rs2 rd k true ii
+        | AArch64.PreIdx ->
+            stp_wback sz rs1 rs2 rd k false ii
 
       (* Load signed - sign extends to either 32 or 64 bit value*)
       let ldrs sz var rd rs kr s ii =
@@ -2063,20 +2100,12 @@ module Make
         | I_LDARBH(bh,t,rd,rs) ->
             let sz = bh_to_sz bh in
             ldar sz t rd rs ii
-        | I_LDP_P(_, var, rd1, rd2, ra, kr) ->
-            ldp_post (tr_variant var) rd1 rd2 ra kr ii
-
         | I_STR(var,rs,rd,kr,os) ->
             str (tr_variant var) rs rd kr os ii
-
         | I_STR_P(var, rs, rd, k) ->
             str_post (tr_variant var) rs rd k ii
-
         | I_STRBH(bh,rs,rd,kr, s) ->
             str (bh_to_sz bh) rs rd kr s ii
-        | I_STP_P(_, var, r1, r2, rd, kr) ->
-            stp_post (tr_variant var) r1 r2 rd kr ii
-
         | I_STLR(var,rs,rd) ->
             stlr (tr_variant var) rs rd ii
 
@@ -2583,12 +2612,12 @@ module Make
 (* Instruction-cache maintenance instruction *)
         | I_IC (op,rd) -> do_ic op rd ii
 (* Load/Store pairs *)
-        | I_LDP (TT,v,r1,r2,r3,kr) ->
-            ldp (tr_variant v) r1 r2 r3 kr ii
-        | I_LDPSW (r1,r2,r3,kr) ->
-            ldpsw r1 r2 r3 kr ii
-        | I_STP (TT,v,r1,r2,r3,kr) ->
-            stp (tr_variant v) r1 r2 r3 kr ii
+        | I_LDP (TT,v,r1,r2,r3,kr,md) ->
+            ldp (tr_variant v) r1 r2 r3 kr md ii
+        | I_LDPSW (r1,r2,r3,kr,md) ->
+            ldpsw r1 r2 r3 kr md ii
+        | I_STP (TT,v,r1,r2,r3,kr,md) ->
+            stp (tr_variant v) r1 r2 r3 kr md ii
         | I_LDXP (v,t,r1,r2,r3) ->
             ldxp (tr_variant v) t r1 r2 r3 ii
         | I_STXP (v,t,r1,r2,r3,r4) ->

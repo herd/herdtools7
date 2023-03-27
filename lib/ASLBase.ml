@@ -18,7 +18,6 @@
 (****************************************************************************)
 
 module A64B = AArch64Base
-module AST = Asllib.AST
 
 (*****************************************************************************)
 (*                                                                           *)
@@ -26,7 +25,7 @@ module AST = Asllib.AST
 (*                                                                           *)
 (*****************************************************************************)
 
-type scope = AST.identifier * int
+type scope = Asllib.AST.identifier * int
 
 let pp_scope (enclosure, call_nb) = Printf.sprintf "%s.%d" enclosure call_nb
 
@@ -34,10 +33,10 @@ let arch_reg_to_int =
   let rec index_of elt pos li =
     match li with
     | [] -> raise Not_found
-    | h :: _ when compare elt h == 0 -> pos
+    | h :: _ when compare elt h = 0 -> pos
     | _ :: t -> index_of elt (pos + 1) t
   in
-  fun r -> index_of r 1 AArch64Base.gprs
+  fun r -> index_of r 0 AArch64Base.gprs
 
 (*****************************************************************************)
 (*                                                                           *)
@@ -54,7 +53,7 @@ let endian = A64B.endian
 (* Basic arch types and their basic operations *)
 (***********************************************)
 
-type reg = ASLLocalId of scope * AST.identifier | ArchReg of A64B.reg
+type reg = ASLLocalId of scope * Asllib.AST.identifier | ArchReg of A64B.reg
 
 let is_local = function ASLLocalId _ -> true | _ -> false
 let to_arch_reg = function ASLLocalId _ -> assert false | ArchReg r -> r
@@ -115,8 +114,8 @@ type barrier = A64B.barrier
 let pp_barrier = A64B.pp_barrier
 let barrier_compare = A64B.barrier_compare
 
-type parsedInstruction = AST.t
-type instruction = AST.t
+type parsedInstruction = Asllib.AST.t
+type instruction = Asllib.AST.t
 
 let pp_instruction _ppmode ast = Asllib.PP.t_to_string ast
 let dump_instruction a = pp_instruction PPMode.Ascii a
@@ -159,30 +158,23 @@ let memoize f =
         let () = Hashtbl.add table s r in
         r
 
-let do_build_ast_from_file fname chan =
-  let lexbuf = Lexing.from_channel chan in
-  let () =
-    lexbuf.Lexing.lex_curr_p <-
-      { lexbuf.Lexing.lex_curr_p with Lexing.pos_fname = fname }
-  in
-  try Asllib.Parser.ast Asllib.Lexer.token lexbuf with
-  | Asllib.Parser.Error ->
-      Warn.fatal "%s: Cannot parse." (Pos.str_pos lexbuf.Lexing.lex_curr_p)
-  | Asllib.Lexer.LexerError ->
-      Warn.fatal "%s: unknown token." (Pos.str_pos lexbuf.Lexing.lex_curr_p)
+let do_build_ast_from_file ?ast_type version fname =
+  match Asllib.Builder.from_file_multi_version ?ast_type version fname with
+  | Error e -> raise (Misc.Fatal (Asllib.Error.error_to_string e))
+  | Ok ast -> ast
 
-let build_ast_from_file =
-  let protected_f s = Misc.input_protect (do_build_ast_from_file s) s in
-  memoize protected_f
+let build_ast_from_file ?(ast_type : Asllib.Builder.ast_type option) version =
+  memoize (do_build_ast_from_file ?ast_type version)
 
-let asl_generic_parser lexer lexbuf =
-  let ast =
-    try Asllib.Parser.ast lexer lexbuf with
-    | Asllib.Parser.Error -> raise Parsing.Parse_error
-    | Asllib.Lexer.LexerError ->
-        LexMisc.error "Unknown token in ASL program" lexbuf
-  in
-  ([ (0, None, MiscParser.Main) ], [ [ Instruction ast ] ], MiscParser.NoExtra)
+let asl_generic_parser version lexer lexbuf =
+  match
+    Asllib.Builder.from_lexer_lexbuf ~ast_type:`Ast version lexer lexbuf
+  with
+  | Error e -> raise (Misc.Fatal (Asllib.Error.error_to_string e))
+  | Ok ast ->
+      ( [ (0, None, MiscParser.Main) ],
+        [ [ Instruction ast ] ],
+        MiscParser.NoExtra )
 
 module Instr = Instr.No (struct
   type instr = instruction

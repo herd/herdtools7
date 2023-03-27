@@ -64,6 +64,7 @@ module Make(O:Config)(V:Constant.S) = struct
   | Symbolic _
   | Label _
   | PteVal _
+  | Frozen _
     -> assert false
 
   let dump_v_kvm v = match v with
