@@ -111,9 +111,10 @@ module Make(C:Builder.S)
 (*
   Now accept some internal with internal composition
  *)
-      | (Ws Int|Rf Int|Fr Int|Po (Diff,_,_)),Dp (_,_,_)
+      | (Ws Int|Rf Int|Fr Int),(Dp (_,_,_)|Po (Diff,_,_))
       | (Dp (_,_,_)|Po (Diff,_,_)),(Ws Int|Rf Int|Fr Int)
       | Dp (_,Diff,_),Po (Diff,_,_)
+      | Po (Diff,_,_),Dp (_,Diff,_)
       | Rf Int,Po (Same,_,_)
       | Po (Same,_,_),Rf Int
       | (Rmw _,_)|(_,Rmw _) -> true
