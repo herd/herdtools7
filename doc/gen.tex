@@ -609,12 +609,13 @@ and~\afile{x86-podwr.conf}.
 \end{center}
 Notice that we used the complete safe set in
 \file{x86-rfi.conf} and a reduced set in~\file{x86-podwr.conf}.
+Also notice that the thread length (or number of instructions) is limited in the former case.
 Tests are to be generated in specific directories.
 %HEVEA To that aim, we provide a convenient archive~\ahref{x86.tar}{\texttt{x86.tar}}.
 \begin{verbatim}
 % cd rfi
 % diy7 -conf x86-rfi.conf
-Generator produced 11 tests
+Generator produced 28 tests
 Relaxations tested: {Rfi}
 % cd ../podwr
 % diy7 -conf x86-podwr.conf
@@ -642,9 +643,9 @@ A simple tool, \readRelax, does the job:
    .
    .
 ** Relaxation summary **
-{Rfi} With {Rfe, Fre, Coe, PodRW, PodRR} {Rfe, Fre, PodRR}\
-{Fre, Coe, PodWW, PodRR} {Fre, PosWW, PodRR, MFencedWR}\
-{Fre, PodWW, PodRR, MFencedWR} {Fre, PodRR} {Fre, PodRR, MFencedWR}
+{Rfi} With {Coe, Fre, PodRR, PodRW} {Coe, Fre, PodRR, PodRW, Rfe}\
+ {Coe, Fre, PodRR, PodWW} {Fre, PodRR} {Fre, PodRR, PodWW}\
+ {Fre, PodRR, Rfe}
 {PodWR} With {Fre}
 \end{verbatim}
 The tool \readRelax{} first lists the result of all tests
@@ -1602,7 +1603,7 @@ cycles. However, such sub-sequences can be generated on an individual basis with
 \diyone, see the example of \file{W5} in Sec~\ref{sec:obs},
 or by introducing them as explict composite candidates -- see Section~\ref{composite:sec}.
 
-\label{default:def}In default mode (\opt{default} ), \diy{} performs some optimisations. By optimisation, we mean that some sequences of two candidates are rejected. Generally, the sequence of  two internal candidates is rejected. However some of those compositions are accepted: internal communication (\emph{i,e,} Rfi, Coi and Rfi) with Po or Dp candidates with specification ``d'';
+\label{default:def}In default mode (\opt{default} ), \diy{} performs some optimisations. By optimisation, we mean that some sequences of two candidates are rejected. Generally, the sequence of  two internal candidates is rejected. However some of those compositions are accepted: internal communication (\emph{i.e.} Rfi, Coi and Fri) with Po or Dp candidates with specification ``d'';
 Rfi with Po with specification ``s''; and Rmw candidates.
 
 \label{sc:def}The sc mode (\opt{-mode sc}) is similar to the default mode. In some sense this mode is more tolerant and may accept more sequences. In particular, it attempts to sequence Po candidates. However, this more relaxed behaviour is balanced by a specific restriction: when some Po candidates are members of the safe set, then sequences that would otherwise be allowed are rejected when their write or read endpoints and their ``s'' or ``d'' status are the same as  the ones of a safe Po~candidate. For instance, if PosWR is part of the safe set, then the sequence of Rfi and PosRR is rejected.
