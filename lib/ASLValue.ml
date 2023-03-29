@@ -76,4 +76,4 @@ module ASLArchOp = struct
   let mask _ _ = None
 end
 
-module V = SymbValue.Make (ASLConstant) (ASLArchOp)
+module V = SymbValue.Make (ASLConstant) (ArchOp.OnlyArchOp1 (ASLArchOp))

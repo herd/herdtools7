@@ -26,10 +26,14 @@ module
 
   module Cst = Cst
 
+  type arch_op = ArchOp.op
   type arch_op1 = ArchOp.op1
+
+  let pp_arch_op = ArchOp.pp_op
   let pp_arch_op1 = ArchOp.pp_op1
 
   type op1_t = arch_op1 Op.op1
+  type op_t = arch_op Op.op
 
   open Constant
 
@@ -143,7 +147,7 @@ module
   | Val c1, Val c2 ->
       Warn.user_error
         "Illegal operation %s on constants %s and %s"
-        (Op.pp_op op_op) (Cst.pp_v c1) (Cst.pp_v c2)
+        (Op.pp_op op_op ArchOp.pp_op) (Cst.pp_v c1) (Cst.pp_v c2)
   | (Var _,_)|(_,Var _)
     -> raise Undetermined
 
@@ -181,7 +185,7 @@ module
       Val (Symbolic (Virtual {s with cap=cap_of_scalar (op (scalar_of_cap c) i)}))
   | Val cst1,Val cst2 ->
         Warn.user_error "Illegal operation %s on %s and %s"
-          (Op.pp_op op_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
+          (Op.pp_op op_op ArchOp.pp_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
   | (Var _,_)|(_,Var _)
     -> raise Undetermined
 
@@ -193,7 +197,7 @@ module
       Val (Concrete (op i (scalar_of_cap c)))
   | Val cst1,Val cst2 ->
         Warn.user_error "Illegal operation %s on %s and %s"
-          (Op.pp_op op_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
+          (Op.pp_op op_op ArchOp.pp_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
   | (Var _,_)|(_,Var _)
     -> raise Undetermined
 
@@ -215,7 +219,7 @@ module
         {s with cap=cap_of_scalar (op (scalar_of_cap c1) (scalar_of_cap c2))}
   | Val cst1,Val cst2 ->
         Warn.user_error "Illegal operation %s on %s and %s"
-          (Op.pp_op op_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
+          (Op.pp_op op_op ArchOp.pp_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
   | (Var _,_)|(_,Var _)
     -> raise Undetermined
 
@@ -233,7 +237,7 @@ module
       Val (Concrete (op (scalar_of_cap c1) (scalar_of_cap c2)))
   | Val cst1,Val cst2 ->
         Warn.user_error "Illegal operation %s on %s and %s"
-          (Op.pp_op op_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
+          (Op.pp_op op_op ArchOp.pp_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
   | (Var _,_)|(_,Var _)
     -> raise Undetermined
 
@@ -308,7 +312,7 @@ module
           | None ->
              Warn.user_error
                "Illegal operation %s on constants %s and %s"
-               (Op.pp_op Op.Or) (pp_v v1) (pp_v v2)
+               (Op.pp_op Op.Or ArchOp.pp_op) (pp_v v1) (pp_v v2)
           end
       | _ -> binop_cs_cs Op.Or Cst.Scalar.logor v1 v2
 
@@ -336,7 +340,7 @@ module
          | None ->
             Warn.user_error
               "Illegal operation %s on constants %s and %s"
-              (Op.pp_op Op.Lsr) (pp_v v1) (pp_v v2)
+              (Op.pp_op Op.Lsr ArchOp.pp_op) (pp_v v1) (pp_v v2)
        end
 
 (*
@@ -356,7 +360,7 @@ module
        | None  ->
           Warn.user_error
             "Illegal operation %s on constants %s and %s"
-            (Op.pp_op Op.And) (pp_v v1) (pp_v v2)
+            (Op.pp_op Op.And ArchOp.pp_op) (pp_v v1) (pp_v v2)
        end
     |  _,_ ->
         binop Op.And Cst.Scalar.logand v1 v2
@@ -368,7 +372,7 @@ module
        | None  ->
           Warn.user_error
             "Illegal operation %s on constants %s and %s"
-            (Op.pp_op Op.AndNot2) (pp_v v1) (pp_v v2)
+            (Op.pp_op Op.AndNot2 ArchOp.pp_op) (pp_v v1) (pp_v v2)
        end
   | _,_ ->
       binop Op.AndNot2
@@ -872,6 +876,16 @@ module
   | SquashMutable -> fun v1 v2 -> binop_cs_cs op cap_squash_post_load_cap v2 v1
   | CheckPerms perms -> binop_cs_cs_c op (check_perms perms)
   | ToInteger -> optointeger
+  | ArchOp o -> (
+      fun v1 v2 ->
+        match (v1, v2) with
+        | Var _, _ | _, Var _ -> raise Undetermined
+        | Val c1, Val c2 -> (
+            match ArchOp.do_op o c1 c2 with
+            | Some c -> Val c
+            | None ->
+                Warn.user_error "Illegal operation %s on %s and %s"
+                  (ArchOp.pp_op o) (pp_v v1) (pp_v v2)))
 
   let op3 If v1 v2 v3 = match v1 with
   | Val (Concrete x) -> if scalar_to_bool x then v2 else v3

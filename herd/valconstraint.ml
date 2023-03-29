@@ -29,13 +29,14 @@ module type S = sig
   type cst
   type location
   type state
+  type arch_op
   type arch_op1
 
   type expr =
     | Atom of atom
     | ReadInit of location * state
     | Unop of (arch_op1 Op.op1) * atom
-    | Binop of Op.op * atom * atom
+    | Binop of (arch_op Op.op) * atom * atom
     | Terop of Op.op3 * atom * atom * atom
 
 
@@ -69,6 +70,7 @@ end
 module Make (C:Config) (A:Arch_herd.S) : S
 with type atom = A.V.v
 and type cst = A.V.Cst.v
+and type arch_op = A.V.arch_op
 and type arch_op1 = A.V.arch_op1
 and type solution = A.V.solution
 and type location = A.location
@@ -82,13 +84,14 @@ and type state = A.state =
     type cst = V.Cst.v
     type location = A.location
     type state = A.state
+    type arch_op = V.arch_op
     type arch_op1 = V.arch_op1
 
     type expr =
       | Atom of atom
       | ReadInit of location * state
-      | Unop of (arch_op1 Op.op1) * atom
-      | Binop of Op.op * atom * atom
+      | Unop of V.op1_t * atom
+      | Binop of V.op_t * atom * atom
       | Terop of Op.op3 * atom * atom * atom
 
     let map_expr fv e = match e with
@@ -118,10 +121,10 @@ and type state = A.state =
             (Op.pp_op1 C.hexa V.pp_arch_op1 o) (pp_atom a1)
       | Binop (o,a1,a2) ->
           if Op.is_infix o then
-            pp_atom a1 ^ Op.pp_op o ^ pp_atom a2
+            pp_atom a1 ^ Op.pp_op o V.pp_arch_op ^ pp_atom a2
           else
             Printf.sprintf "%s(%s,%s)"
-              (Op.pp_op o) (pp_atom a1) (pp_atom a2)
+              (Op.pp_op o V.pp_arch_op) (pp_atom a1) (pp_atom a2)
       | Terop (op,a1,a2,a3) ->
           Op.pp_op3 op
             (pp_atom a1) (pp_atom a2) (pp_atom a3)

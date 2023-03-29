@@ -364,7 +364,7 @@ Monad type:
 
 (* Exchange combination *)
 (* NB: first boolean -> physical memory access *)
-    let swp_or_amo : bool -> Op.op option -> ('loc t) ->
+    let swp_or_amo : bool -> A.V.op_t option -> ('loc t) ->
       ('loc -> V.v t) -> V.v t -> ('loc -> V.v -> unit t) -> (V.v -> unit t)
         -> unit t  = fun is_phy op rloc rmem rreg wmem wreg ->
           fun eiid ->
@@ -414,7 +414,7 @@ Monad type:
         (Evt.singleton (w,vlcloc@vclexp@vclrmem@vclwmem,es),None)
 
 (* Amo, similar to exchange *)
-    let amo : Op.op -> 'loc t -> 'v t -> ('loc -> 'w t) -> ('loc -> 'v -> unit t) -> 'w t = fun op rloc rexpr rmem wmem ->
+    let amo : A.V.op_t -> 'loc t -> 'v t -> ('loc -> 'w t) -> ('loc -> 'v -> unit t) -> 'w t = fun op rloc rexpr rmem wmem ->
       fun eiid ->
         let eiid,locm = rloc eiid in
         let eiid,expm = rexpr eiid in

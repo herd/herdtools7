@@ -114,7 +114,7 @@ module Top (TopConf:RunTest.Config) = struct
          let module X = CParseTest.Make(Conf)(ModelConfig) in
          X.run cache_type dirty start_time name chan env splitted
       | `JAVA ->
-         let module X = CParseTest.Make(Conf)(ModelConfig) in
+         let module X = JAVAParseTest.Make(Conf)(ModelConfig) in
          X.run cache_type dirty start_time name chan env splitted
       | `LISA ->
          let module X = LISAParseTest.Make(Conf)(ModelConfig) in

@@ -19,7 +19,7 @@
 module
   Make
     (Conf:Sem.Config)
-    (V:Value.S with type Cst.Instr.t = JavaBase.instruction) = struct
+    (V:Value.S with type Cst.Instr.t = JavaBase.instruction and type arch_op = JavaBase.arch_op) = struct
 
 	module Java = JavaArch_herd.Make(SemExtra.ConfigToArchConfig(Conf))(V)
 	module Act = JavaAction.Make(Java)

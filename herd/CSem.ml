@@ -21,7 +21,7 @@ end
 module
   Make
     (Conf:Config)
-    (V:Value.S with type Cst.Instr.t = CBase.instruction)
+    (V:Value.S with type Cst.Instr.t = CBase.instruction and type arch_op = CBase.arch_op)
     =
   struct
 
