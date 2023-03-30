@@ -319,6 +319,7 @@ match name with
 | "stuminb"|"STUMINB" -> STUMINB
 | "stuminlb"|"STUMINLB" -> STUMINLB
 *)
+| "udf"|"UDF" -> UDF
 (* Memory Tagging *)
 | "stg"|"STG" -> STG
 | "stzg"|"STZG" -> STZG

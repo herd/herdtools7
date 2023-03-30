@@ -80,8 +80,12 @@ module Pseudo(A:Arch_litmus.S) = struct
         if Proc.equal p q && f = func then is else find_code p func rem
 
   let find_offset code p lbl =
-    let is = find_code p MiscParser.Main code in
-    A.find_offset lbl is
+    try
+      let is = find_code p MiscParser.Main code in
+      A.find_offset lbl is
+    with Not_found ->
+      let is = find_code p MiscParser.FaultHandler code in
+      A.find_offset lbl is
 
   let code_exists p (_,c) = A.code_exists p c
 
@@ -107,4 +111,5 @@ module Pseudo(A:Arch_litmus.S) = struct
 
   let from_labels lbls prog = A.from_labels lbls prog
 
+  let all_labels = A.all_labels
 end

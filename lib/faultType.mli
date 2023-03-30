@@ -33,7 +33,7 @@ module type AArch64Sig = sig
   type t =
     | MMU of mmu_t
     | TagCheck
-    | IllegalInstruction
+    | UndefinedInstruction
 
   include S with type t := t
 end
@@ -41,3 +41,6 @@ end
 module AArch64 : AArch64Sig
 
 module No : S
+
+(* For parse disambiguation  *)
+val is : string -> bool

@@ -1,0 +1,13 @@
+AArch64 A015
+Variant=faultToNext
+{
+ [PTE(x)]=(valid:0);
+ [PTE(y)]=(af:0);
+ 0:X1=x;
+ 0:X2=y;
+}
+  P0          ;
+  UDF #0      ;
+  LDR W0,[X1] ;
+  LDR W0,[X2] ;
+forall(fault(P0,UndefinedInstruction))

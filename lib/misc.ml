@@ -74,6 +74,10 @@ let snd_opt p = app_opt snd p
 let map_opt = app_opt
 let app_opt_def none some = Option.fold ~none ~some
 
+let pp_opt_arg pp = function
+| Some x -> "," ^ pp x
+| None -> ""
+
 let rec last = function
   | [] -> assert false
   | [x] -> x

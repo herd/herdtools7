@@ -533,13 +533,19 @@ module LC =
         | None -> fun _ -> true
         | Some lbl0 ->
             Misc.app_opt_def true (Misc.string_eq lbl0) in
-        let sym0 = ToolsConstant.pp_v v0 in
+        let eq_loc = match v0 with
+          | None -> fun _ -> true
+          | Some v0 ->
+             (function
+              | Some sym ->
+                 Misc.string_eq  (ToolsConstant.pp_v v0) sym
+              | None -> true) in
         let rec find fs = match fs.Hashcons.node with
           | Nil -> false
           | Cons (f,fs) ->
               let ((p,lbl),sym,ftype) = HashedFault.as_t f in
               let eq_ft = Fault_tools.equal_ft ftype0 ftype in
-              Misc.int_eq p0 p && eq_label lbl && Misc.string_eq sym sym0 && eq_ft ||
+              Misc.int_eq p0 p && eq_label lbl && eq_ft && eq_loc sym ||
               find fs in
         find fs
 

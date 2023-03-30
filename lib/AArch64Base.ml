@@ -902,6 +902,7 @@ type 'k kinstruction =
   | I_STG of reg * reg * 'k
   | I_STZG of reg * reg * 'k
   | I_LDG of reg * reg * 'k
+  | I_UDF of 'k
 
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
@@ -1447,6 +1448,8 @@ let do_pp_instruction m =
       pp_mem "STZG" V64 rt rn (K k)
   | I_LDG (rt,rn,k) ->
       pp_mem "LDG" V64 rt rn (K k)
+  | I_UDF k ->
+      sprintf "UDF %s" (m.pp_k k)
 
 let m_int = { compat = false ; pp_k = string_of_int ;
               zerop = (function 0 -> true | _ -> false);
@@ -1492,7 +1495,7 @@ let fold_regs (f_regs,f_sregs) =
   | RV (_,r) -> fold_reg r y in
 
   fun c ins -> match ins with
-  | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None | I_ERET
+  | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None | I_ERET | I_UDF _
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
   | I_MOVZ (_,r,_,_) | I_MOVK (_,r,_,_)
@@ -1585,6 +1588,7 @@ let map_regs f_reg f_symb =
   | I_BL _
   | I_RET None
   | I_ERET
+  | I_UDF _
     -> ins
   | I_CBZ (v,r,lbl) ->
       I_CBZ (v,map_reg r,lbl)
@@ -1913,7 +1917,7 @@ let get_next =
   | I_MOV_S _
   | I_MOVI_V _ | I_MOVI_S _
   | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
-  | I_LDXP _|I_STXP _
+  | I_LDXP _|I_STXP _|I_UDF _
     -> [Label.Next;]
 
 module PseudoI = struct
@@ -2043,6 +2047,7 @@ module PseudoI = struct
         | I_EOR_SIMD (r1,r2,r3) -> I_EOR_SIMD (r1,r2,r3)
         | I_ADD_SIMD (r1,r2,r3) -> I_ADD_SIMD (r1,r2,r3)
         | I_ADD_SIMD_S (r1,r2,r3) -> I_ADD_SIMD_S (r1,r2,r3)
+        | I_UDF k -> I_UDF (k_tr k)
 
       let get_simd_rpt_selem ins rs = match ins with
       | I_LD1M _
@@ -2125,6 +2130,7 @@ module PseudoI = struct
         | I_MOV_S _
         | I_MOVI_V _ | I_MOVI_S _
         | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
+        | I_UDF _
           -> 0
         | I_LD1M (rs, _, _)
         | I_LD2M (rs, _, _)

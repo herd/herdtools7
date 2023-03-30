@@ -243,28 +243,34 @@ and pline bds fs abs = parse
      let loc = norm_loc loc in
      let p = poolize loc v in
      pline (p::bds) fs abs lexbuf }
-| blank* fault blank*
-    '(' blank* ('P'? (num as proc)) (':' (name as lbl))? blank* ','
-     ((loc|new_loc) as loc) (':' alpha+)? blank* (* skip optional tag *)
+| blank* ('~'? as neg) fault blank*
+    '(' blank* ('P'? (num as proc)) (':' (name as lbl))? blank*
+     (','((loc|new_loc) as loc) (':' alpha+)?)? blank* (* NB: skip optional tag *)
      (',' blank* (fault_type as ftype))? blank*
-      (',' [^')']*)?  (* skip optional comment *)
+     (',' [^')']*)?  (* skip optional comment *)
       ')' blank* ';'
     {
-     let loc = Constant.old2new loc in
+     let loc,ftype = (* Resolve ambiguity if one args only *)
+       match loc,ftype with
+       | (None,Some v) | (Some v,None)
+         ->
+           if FaultType.is v then None,Some v
+           else Some v,None
+       | (Some _,Some _)|(None,None)
+         ->
+           loc,ftype in
+     let loc = Misc.map_opt Constant.old2new loc in
      let ftype =
        if O.faulttype then
          match ftype with Some "kvm" -> None | _ -> ftype
        else None in
      let f = (to_proc proc,lbl),loc,ftype in
      let f = HashedFault.as_hashed f in
-     pline bds (f::fs) abs lexbuf }
-| blank* '~' fault blank* '(' blank* ('P'? (num as proc)) (':' (name as lbl))? blank* ','
-    ((loc|new_loc) as loc) blank* ')' blank* ';'
-    {
-     let loc = Constant.old2new loc in
-     let f = (to_proc proc,lbl),loc,None in
-     let f = HashedFault.as_hashed f in
-     pline bds fs (f::abs) lexbuf }
+     match neg with
+     | "" ->
+        pline bds (f::fs) abs lexbuf
+     | _ ->
+        pline bds fs (f::abs) lexbuf }
 | blank* ('#' [^'\n']*)?  nl  { incr_lineno lexbuf ; bds,fs,abs }
 | "" { error "pline" lexbuf }
 
@@ -273,7 +279,7 @@ and skip_pline = parse
  ((num ':' reg)|(('['?) (loc) ( ']'?))|(loc '[' num ']'))
     blank* '=' blank* (('-' ? (num|hexanum))|name|name_off|set|instr)
     blank* ';'
-| blank* fault blank* '(' blank* ('P'? num) ':' label blank* ','
+| blank* ('~'?) fault blank* '(' blank* ('P'? num) ':' label blank* ','
     loc blank* ')' blank* ';'
     { skip_pline lexbuf }
 | blank* ('#' [^'\n']*)?  nl  { incr_lineno lexbuf }

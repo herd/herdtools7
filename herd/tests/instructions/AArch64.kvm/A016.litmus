@@ -1,0 +1,11 @@
+AArch64 A016
+Variant=fatal
+{
+ x=1;
+ [PTE(x)]=(valid:0);
+ 0:X1=x;
+}
+  P0          ;
+L0:           ;
+  LDR W0,[X1] ;
+exists(fault(P0,UndefinedInstruction))

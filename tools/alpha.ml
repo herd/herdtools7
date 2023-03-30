@@ -69,7 +69,8 @@ struct
     match a with
     | LV (rloc,_) -> collect_rloc rloc regs
     | LL (loc1,loc2) ->  collect_location loc1 (collect_location loc2 regs)
-    | FF (_,x,_) -> collect_location (A.Location_global x) regs
+    | FF (_,None,_) -> regs
+    | FF (_,Some x,_) -> collect_location (A.Location_global x) regs
 
   let collect_state st = List.fold_right collect_state_atom st
 
@@ -80,7 +81,8 @@ struct
     List.fold_right
       (fun i -> match i with
       | Loc (l,_) -> ConstrGen.fold_rloc collect_location l
-      | Fault (_,x,_) -> collect_location (A.Location_global x))
+      | Fault (_,None,_) -> Misc.identity
+      | Fault (_,Some x,_) -> collect_location (A.Location_global x))
 
 (***************************)
 (* Alpha conversion proper *)
@@ -113,7 +115,8 @@ struct
     match a with
     | LV (rloc,v) -> LV (alpha_rloc f rloc,v)
     | LL (loc1,loc2) -> LL (alpha_location f loc1,alpha_location f loc2)
-    | FF (_,x,_) -> ignore (Constant.check_sym x) ; a
+    | FF (_,None,_) -> a
+    | FF (_,Some x,_) -> ignore (Constant.check_sym x) ; a
 
   let alpha_state_atom f (loc,x) = alpha_location f loc,x
 
@@ -124,7 +127,8 @@ struct
     List.map
       (function
         | Loc (x,t) -> Loc (alpha_rloc f x,t)
-        | Fault (_,x,_) as a -> ignore (Constant.check_sym x); a)
+        | Fault (_,None,_) as a -> a
+        | Fault (_,Some x,_) as a -> ignore (Constant.check_sym x); a)
 
   let alpha_constr f = ConstrGen.map_constr (alpha_atom f)
 
@@ -256,7 +260,8 @@ struct
           collect_rloc f rloc (collect_value f v k)
       | LL (loc1,loc2) ->
           collect_location f loc1 (collect_location f loc2 k)
-      | FF (_,x,_) ->
+      | FF (_,None,_) -> k
+      | FF (_,Some x,_) ->
           collect_location f (A.Location_global x) k
 
     let map_state_atom f (loc,(t,v)) = map_location f loc,(t,map_value f v)
@@ -272,7 +277,7 @@ struct
           LV (my_map_rloc f rloc,map_value f v)
       | LL (loc1,loc2) ->
           LL (map_location f loc1,map_location f loc2)
-      | FF(p,x,ft) -> FF (p,map_global f x,ft)
+      | FF(p,x,ft) -> FF (p,Misc.map_opt (map_global f) x,ft)
 
     let collect_state f = List.fold_right (collect_state_atom f)
 
@@ -289,7 +294,7 @@ struct
       List.map
         (function
           | Loc (x,t) -> Loc (my_map_rloc f x,t)
-          | Fault (p,x,ft)-> Fault (p,map_global f x,ft))
+          | Fault (p,x,ft)-> Fault (p,Misc.map_opt (map_global f) x,ft))
 
     module StringSet = MySet.Make(String)
 

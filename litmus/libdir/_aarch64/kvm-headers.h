@@ -256,19 +256,6 @@ inline static int unpack_dbm(pteval_t v) { return unpack_flag(v,DBM_PACKED); }
 inline static int unpack_valid(pteval_t v) { return unpack_flag(v,VALID_PACKED); }
 inline static int unpack_el0(pteval_t v) { return unpack_flag(v,EL0_PACKED); }
 
-/* Faulty virtual adress in handler */
-inline static void *read_far(void) {
-  void *r ;
-  asm volatile("mrs %0, far_el1": "=r" (r));
-  return r ;
-}
-
-inline static void *read_elr_el1(void) {
-  void *r ;
-  asm volatile("mrs %0, elr_el1": "=r" (r));
-  return r ;
-}
-
 /* Hardware managment of access flag and dirty state */
 
 /* Feature check */

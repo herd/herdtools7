@@ -260,13 +260,26 @@ rloc_typ:
 | rloc NAME { ($1, Ty $2) }
 | rloc NAME STAR { ($1, Pointer $2) }
 
+fault_pte_loc:
+| TOK_PTE LPAR name=NAME RPAR { (Constant.mk_sym_pte name) }
+
 fault_loc:
 | name=NAME { Constant.mk_sym name }
-| TOK_PTE LPAR name=NAME RPAR { Constant.mk_sym_pte name }
+| fl=fault_pte_loc { fl }
 
+composite_faulttype:
+| fst=NAME COLON rem=separated_nonempty_list(COLON,NAME)
+     { String.concat ":" (fst::rem) }
 fault:
-| FAULT LPAR lbl COMMA fault_loc RPAR { ($3,$5,None) }
-| FAULT LPAR lbl COMMA fault_loc COMMA separated_nonempty_list(COLON, NAME) RPAR { ($3,$5,Some (String.concat ":" $7)) }
+| FAULT LPAR lab=lbl RPAR { (lab,None,None) }
+| FAULT LPAR lab=lbl COMMA name=NAME RPAR
+   { if FaultType.is name then (lab,None,Some name)
+     else (lab,Some (Constant.mk_sym name),None) }
+| FAULT LPAR lab=lbl COMMA fl=fault_pte_loc RPAR { (lab,Some fl,None) }
+| FAULT LPAR lab=lbl COMMA ft=composite_faulttype RPAR { (lab,None,Some ft) }
+| FAULT LPAR lab=lbl COMMA fl=fault_loc COMMA
+  ft=separated_nonempty_list(COLON, NAME) RPAR
+    { (lab,Some fl,Some (String.concat ":" ft)) }
 
 
 loc_item:
