@@ -20,6 +20,7 @@ depends: [
   "ocaml" {>= "4.08.0"}
   "dune"  {>= "2.7" }
   "menhir" {>= "20200123"}
+  "feat"
 ]
 depopts: [
   "js_of_ocaml-ppx"

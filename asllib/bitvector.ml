@@ -42,6 +42,7 @@ let data = snd
 (* Constant. *)
 let code_0 = Char.code '0'
 let char_0 = Char.chr 0
+let char_ff = Char.chr 0xff
 
 (* Mask for the last character, given by [length mod 8]. *)
 let last_char_mask m = (1 lsl m) - 1
@@ -77,8 +78,62 @@ let string_for_all p s =
   let rec loop i =
     if i = n then true
     else if p (String.unsafe_get s i) then loop (succ i)
-    else false in
+    else false
+  in
   loop 0
+
+(** [remask bv] ensures that the extra bits on the trailing character are '0'.
+    It edits in place the string, so to use with prudence. *)
+let remask (length, data) =
+  let n = length / 8 and m = length mod 8 in
+  if m == 0 then (length, data)
+  else
+    let trailing_d = String.get data n |> Char.code in
+    let masked_d = trailing_d land last_char_mask m in
+    let new_c = Char.chr masked_d in
+    let buf = Bytes.unsafe_of_string data in
+    let () = Bytes.set buf n new_c in
+    let data = Bytes.unsafe_to_string buf in
+    (length, data)
+
+(* --------------------------------------------------------------------------
+
+                              Signs and extensions
+
+   --------------------------------------------------------------------------*)
+
+let sign_bit (length, data) =
+  let n = length / 8 and m = length mod 8 in
+  let data_pos = if m = 0 then n - 1 else n in
+  let bit_index = (m + 7) mod 8 in
+  String.get data data_pos |> read_bit_raw bit_index
+
+let extend signed nbytes (length, data) =
+  let to_length = 8 * nbytes in
+  let data_length = String.length data in
+  if length > to_length then (to_length, String.sub data 0 nbytes)
+  else if length = to_length then (length, data)
+  else
+    let result =
+      Bytes.extend (Bytes.unsafe_of_string data) 0 (nbytes - data_length)
+    in
+    let neg = signed && sign_bit (length, data) = 1 in
+    let () =
+      if neg then
+        let n = length / 8 and m = length mod 8 in
+        let sign_bit_pos = if m = 0 then n - 1 else n in
+        String.get data sign_bit_pos
+        |> Char.code
+        |> Int.logor [| 0; 0xff; 0xfe; 0xfc; 0xf8; 0xf0; 0xe0; 0xc0 |].(m)
+        |> Char.chr
+        |> Bytes.set result sign_bit_pos
+    in
+    Bytes.fill result data_length (nbytes - data_length)
+      (if neg then char_ff else char_0);
+    (to_length, Bytes.unsafe_to_string result)
+
+let zero_extend = extend false
+let sign_extend = extend true
 
 (* --------------------------------------------------------------------------
 
@@ -139,7 +194,7 @@ let to_int (length, data) =
   else ();
   !result
 
-let to_int64 (length, data) =
+let to_int64_raw (length, data) =
   let result = ref Int64.zero in
   let n = length / 8 and m = length mod 8 in
   for i = 0 to n - 1 do
@@ -151,6 +206,13 @@ let to_int64 (length, data) =
     result := Int64.logor !result (c lsl (n * 8) |> Int64.of_int)
   else ();
   !result
+
+let to_int64_signed bv = bv |> sign_extend 8 |> to_int64_raw
+
+let to_int64_unsigned (length, data) =
+  let _, data = zero_extend 8 (length, data) in
+  let _, data = remask (63, data) in
+  to_int64_raw (64, data)
 
 let of_string s =
   let result = Buffer.create ((String.length s / 8) + 1) in
@@ -208,20 +270,6 @@ let of_int x = of_int64 (Int64.of_int x)
                                     Operations
 
    --------------------------------------------------------------------------*)
-
-(** [remask bv] ensures that the extra bits on the trailing character are '0'.
-    It edits in place the string, so to use with prudence. *)
-let remask (length, data) =
-  let n = length / 8 and m = length mod 8 in
-  if m == 0 then (length, data)
-  else
-    let trailing_d = String.get data n |> Char.code in
-    let masked_d = trailing_d land last_char_mask m in
-    let new_c = Char.chr masked_d in
-    let buf = Bytes.unsafe_of_string data in
-    let () = Bytes.set buf n new_c in
-    let data = Bytes.unsafe_to_string buf in
-    (length, data)
 
 let ensure_equal_length length1 length2 =
   if length1 = length2 then length1 else raise (Invalid_argument "bitwise_op")
@@ -284,14 +332,24 @@ let bitcount (_length, data) =
   let folder acc c = acc + one_byte (Char.code c) in
   string_fold_left folder 0 data
 
+let log2 =
+  let rec loop acc i = if i <= 0 then acc else loop (acc + 1) (i lsr 1) in
+  loop 0
+
+let highest_set_bit (_length, data) =
+  let rec loop i =
+    if i < 0 then 0
+    else
+      let c = String.get data i |> Char.code in
+      if c != 0 then log2 c + (8 * i) else loop (i - 1)
+  in
+  loop (String.length data - 1)
+
 let to_int_signed (length, data) =
   if length = 0 then 0
-  else
-    let n = length / 8 and m = length mod 8 in
-    let data_pos = if m = 0 then n - 1 else n in
-    let sign = String.get data data_pos |> read_bit_raw (m - (1 mod 8)) in
-    if sign = 1 then -to_int (lognot (length - 1, data)) - 1
-    else to_int (length - 1, data)
+  else if sign_bit (length, data) = 1 then
+    -to_int (lognot (length - 1, data)) - 1
+  else to_int (length - 1, data)
 
 (* --------------------------------------------------------------------------
 
@@ -315,10 +373,8 @@ let extract_slice (_length_src, data_src) positions =
   remask (length, Bytes.unsafe_to_string result)
 
 let write_slice (length_dst, data_dst) (length_src, data_src) positions =
-  let () =
-    if List.length positions != length_src then
-      raise (Invalid_argument "Bitvector.write_slice")
-  in
+  let min x y = if x <= y then x else y in
+  let length_src = min (List.length positions) length_src in
   let result = Bytes.of_string data_dst in
   (* Same effect than [List.rev positions], as we build those from the end. *)
   let copy_bit_here i pos = copy_bit result data_src (length_src - 1 - i) pos in
@@ -398,6 +454,7 @@ let ones length =
 
 let zero = zeros 1
 let one = ones 1
+let empty = (0, "")
 
 let is_zeros bv =
   let _length, data = remask bv in

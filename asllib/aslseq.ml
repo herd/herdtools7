@@ -26,10 +26,13 @@ type args = {
   print_ast : bool;
   print_serialized : bool;
   print_typed : bool;
+  show_rules : bool;
   version : [ `ASLv0 | `ASLv1 ];
+  strictness : Typing.strictness;
 }
 
 let parse_args () =
+  let show_rules = ref false in
   let target_files = ref [] in
   let exec = ref true in
   let print_ast = ref false in
@@ -39,29 +42,58 @@ let parse_args () =
   let set_v0 () = version := `ASLv0 in
   let set_v1 () = version := `ASLv1 in
   let opn = ref "" in
+  let strictness = ref None in
+  let set_strictness s () = strictness := Some s in
+
   let speclist =
     [
-      ("--parse-only", Arg.Clear exec, "Do not execute the asl program.");
-      ("--exec", Arg.Set exec, "Execute the asl program.");
+      ("--parse-only", Arg.Clear exec, " Do not execute the asl program.");
+      ("--exec", Arg.Set exec, " Execute the asl program (default).");
       ( "--print",
         Arg.Set print_ast,
-        "Print the parsed AST to stdout before executing it." );
+        " Print the parsed AST to stdout before executing it." );
       ( "--serialize",
         Arg.Set print_serialized,
-        "Print the parsed AST to stdout in the serialized format." );
+        " Print the parsed AST to stdout in the serialized format." );
       ( "--print-typed",
         Arg.Set print_typed,
-        "Print the parsed AST after typing and before executing it." );
-      ("-0", Arg.Unit set_v0, "Use ASLv0 parser.");
-      ("-1", Arg.Unit set_v1, "Use ASLv1 parser. (default)");
-      ("--opn", Arg.Set_string opn, "Parse the following opn file as main.");
+        " Print the parsed AST after typing and before executing it." );
+      ("-0", Arg.Unit set_v0, " Use ASLv0 parser.");
+      ("-1", Arg.Unit set_v1, " Use ASLv1 parser. (default)");
+      ( "--opn",
+        Arg.Set_string opn,
+        "OPN_FILE Parse the following opn file as main." );
+      ( "--no-type-check",
+        Arg.Unit (set_strictness `Silence),
+        " Do not type-check, only perform minimal type-inference. Default for \
+         v0." );
+      ( "--type-check-warn",
+        Arg.Unit (set_strictness `Warn),
+        " Do not type-check, only perform minimal type-inference. Log typing \
+         errors on stderr." );
+      ( "--type-check-strict",
+        Arg.Unit (set_strictness `TypeCheck),
+        " Perform type-checking, Fatal on any type-checking error. Default for \
+         v1." );
+      ( "--show-rules",
+        Arg.Set show_rules,
+        " Instrument the interpreter and log to std rules used." );
     ]
+    |> Arg.align ?limit:None
   in
+
   let anon_fun s = target_files := s :: !target_files in
   let usage_msg =
     "ASL parser and interpreter.\n\nUSAGE:\n\tasli [OPTIONS] [FILE]\n"
   in
   let () = Arg.parse speclist anon_fun usage_msg in
+
+  let strictness =
+    match !strictness with
+    | Some s -> s
+    | None -> ( match !version with `ASLv0 -> `Silence | `ASLv1 -> `TypeCheck)
+  in
+
   let args =
     {
       exec = !exec;
@@ -71,8 +103,11 @@ let parse_args () =
       print_serialized = !print_serialized;
       print_typed = !print_typed;
       version = !version;
+      strictness;
+      show_rules = !show_rules;
     }
   in
+
   let () =
     if
       (not (List.for_all Sys.file_exists args.files))
@@ -122,14 +157,24 @@ let () =
 
   let () =
     if args.print_typed then
-      let annotated_ast = or_exit (fun () -> Typing.annotate_ast ast) in
-      Format.printf "%a@." PP.pp_t annotated_ast
+      let annotated_ast =
+        or_exit (fun () -> Typing.type_check_ast args.strictness ast)
+      in
+      Format.printf "@[<v 2>Typed AST:@ %a@]@." PP.pp_t annotated_ast
   in
 
   let () =
     if args.exec then
-      let _ = or_exit (fun () -> Native.interprete ast) in
-      ()
+      or_exit (fun () ->
+          if args.show_rules then
+            let rules =
+              Native.interprete_with_instrumentation args.strictness ast
+            in
+            Format.printf "@[<v 3>Used rules:@ %a@]@."
+              Format.(
+                pp_print_list ~pp_sep:pp_print_cut Instrumentation.Rule.pp)
+              rules
+          else Native.interprete args.strictness ast)
   in
 
   ()

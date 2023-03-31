@@ -24,7 +24,7 @@ begin
   };
 end
 
-func access_subfieldA(obj::MyRecord) => integer
+func access_subfieldA(obj::MyRecord) => boolean
 begin
   return obj.fieldB.subfieldA;
 end

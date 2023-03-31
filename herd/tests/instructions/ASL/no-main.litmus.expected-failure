@@ -1,2 +1,1 @@
-Warning: File "./herd/tests/instructions/ASL/no-main.litmus": :
-ASL error: Undefined identifier: 'main'
+Warning: File "./herd/tests/instructions/ASL/no-main.litmus": ASL Error: Undefined identifier: 'main'

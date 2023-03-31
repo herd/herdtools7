@@ -23,7 +23,7 @@ let build_consts () =
       }
   in
   let ast = main :: consts in
-  let _ = Native.NativeInterpreter.run ast [] () in
+  let _ = Native.interprete `TypeCheck ast in
   ()
 
 let () = exec_tests [ ("build_consts", build_consts) ]

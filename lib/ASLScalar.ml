@@ -43,7 +43,7 @@ let to_int64 = function
   | S_Int i -> i
   | S_Bool true -> Int64.one
   | S_Bool false -> Int64.zero
-  | S_BitVector bv -> BV.to_int64 bv
+  | S_BitVector bv -> BV.to_int64_signed bv
 
 let to_native_value = function
   | S_Int i -> AST.V_Int (Int64.to_int i)
@@ -71,7 +71,7 @@ let add s1 s2 =
   match (s1, s2) with
   | S_Int i1, S_Int i2 -> S_Int (Int64.add i1 i2)
   | S_BitVector bv1, S_Int i2 ->
-      S_BitVector (bv1 |> BV.to_int64 |> Int64.add i2 |> BV.of_int64)
+      S_BitVector (bv1 |> BV.to_int64_unsigned |> Int64.add i2 |> BV.of_int64)
   | _ ->
       Warn.fatal "ASLScalar invalid op: %s add %s" (pp false s1) (pp false s2)
 
@@ -170,11 +170,17 @@ let sxt sz = function S_Int i -> S_Int (Int64Scalar.sxt sz i) | s -> s
 let get_tag _t = assert false
 let set_tag _b _t = assert false
 
-let convert_to_int = function
+let convert_to_int_signed = function
   | S_Int _ as s -> s
   | S_Bool false -> S_Int Int64.zero
   | S_Bool true -> S_Int Int64.one
-  | S_BitVector bv -> S_Int (BV.to_int64 bv)
+  | S_BitVector bv -> S_Int (BV.to_int64_signed bv)
+
+let convert_to_int_unsigned = function
+  | S_Int _ as s -> s
+  | S_Bool false -> S_Int Int64.zero
+  | S_Bool true -> S_Int Int64.one
+  | S_BitVector bv -> S_Int (BV.to_int64_unsigned bv)
 
 let convert_to_bool = function
   | S_Int i -> S_Bool (not (Int64.equal i 0L))
@@ -197,3 +203,18 @@ let try_extract_slice s positions =
       if List.exists (( <= ) 64) positions then None
       else Some (S_BitVector (BV.extract_slice (BV.of_int64 i) positions))
   | _ -> None
+
+let try_concat s1 s2 =
+  match (s1, s2) with
+  | S_BitVector bv1, S_BitVector bv2 ->
+      Some (S_BitVector (BV.concat [ bv1; bv2 ]))
+  | _ -> None
+
+let try_write_slice positions dst src =
+  match (dst, src) with
+  | S_BitVector dst, S_BitVector src ->
+      if List.exists (( <= ) (BV.length dst)) positions then None
+      else Some (S_BitVector (BV.write_slice dst src positions))
+  | _ -> None
+
+let empty = S_BitVector BV.empty

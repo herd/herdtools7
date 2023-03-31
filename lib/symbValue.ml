@@ -929,10 +929,10 @@ module
     | Val _ -> v
 
   let simplify_var soln v =
-    map_csym
-      (fun x ->
-        try Solution.find  x soln with Not_found -> Var x)
-    v
+    match v with
+    | Var x | Val (Constant.Frozen x) -> (
+        try Solution.find x soln with Not_found -> Var x)
+    | _ -> v
 
   (* Convenience *)
 

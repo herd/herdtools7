@@ -25,4 +25,5 @@ end
 func main()
 begin
   multiple_return_values();
+  // other_tuple_usages();
 end

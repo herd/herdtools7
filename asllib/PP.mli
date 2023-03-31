@@ -12,6 +12,7 @@ val binop_to_string : binop -> string
 val unop_to_string : unop -> string
 val pp_stmt : stmt printer
 val pp_expr : expr printer
+val pp_lexpr : lexpr printer
 
 val pp_t : t printer
 (** Print an AST from printer for a value *)

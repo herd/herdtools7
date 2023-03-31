@@ -1,8 +1,3 @@
-func Len{N::integer}(x :: bits(N)) => integer
-begin
-  return N;
-end
-
 func main()
 begin
   assert Len('11') == 2;

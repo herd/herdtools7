@@ -5,7 +5,7 @@ let process_test path () =
   let ast = build_ast_from_file path in
 
   (* First interprete it. *)
-  let _ = Native.interprete ast in
+  let _ = Native.interprete `TypeCheck ast in
 
   (* Then ensure that printed version is understandable by the parser. *)
   let buffer = Buffer.create 1024 in
@@ -15,7 +15,7 @@ let process_test path () =
   let printed = Buffer.contents buffer in
   let lexbuf = Lexing.from_string printed in
   let ast = Parser.ast Lexer.token lexbuf in
-  let _ = Native.interprete ast in
+  let _ = Native.interprete `TypeCheck ast in
   ()
 
 let tests testdir =

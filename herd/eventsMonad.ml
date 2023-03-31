@@ -42,7 +42,9 @@ and type evt_struct = E.event_structure) =
     module VC =
       Valconstraint.Make
         (struct
-          let hexa = C.hexa let debug = C.debug.Debug_herd.solver
+          let hexa = C.hexa
+          let debug = C.debug.Debug_herd.solver
+          let keep_failed_as_undetermined = C.variant Variant.ASL_AArch64
         end)
         (A)
 

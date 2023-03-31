@@ -1,0 +1,12 @@
+Test LB-pseudo-arch Allowed
+States 3
+0:T0.0.x0=0; 0:T1.0.x1=0;
+0:T0.0.x0=0; 0:T1.0.x1=1;
+0:T0.0.x0=1; 0:T1.0.x1=0;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (0:T0.0.x0=1 /\ 0:T1.0.x1=1)
+Observation LB-pseudo-arch Never 0 3
+Hash=289a7cc89440223df8a76ae3c3cc488d
+

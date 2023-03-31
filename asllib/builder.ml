@@ -90,8 +90,12 @@ let stdlib =
   (* Share code with: lib/myLib ? *)
   let ( / ) = Filename.concat in
   let to_try =
-    [ Version.libdir / "asllib"; "asllib" / "libdir";
-      "/jherd" (* For web interface *)] in
+    [
+      Version.libdir / "asllib";
+      "asllib" / "libdir";
+      "/jherd" (* For web interface *);
+    ]
+  in
   let to_try =
     match Sys.getenv_opt "ASL_LIBDIR" with
     | None -> to_try
@@ -114,5 +118,5 @@ let stdlib =
     (match list_first_opt try_one to_try with
     | Some ast -> ast
     | None ->
-       (* Much better than "raise Not_found" *)
-       assert false)
+        (* Much better than "raise Not_found" *)
+        assert false)
