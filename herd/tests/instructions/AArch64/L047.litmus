@@ -1,4 +1,6 @@
 AArch64 L047
+
+(* PC relative jump - calculates -8 bytes away from instr*)
 {
 0:X0=2;
 }

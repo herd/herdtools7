@@ -1,0 +1,10 @@
+Test L061 Required
+States 1
+0:X0=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1)
+Observation L061 Always 1 0
+Hash=1e56e7a378d422667a5081fc63e22f1e
+
