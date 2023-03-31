@@ -14,11 +14,14 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make(C:sig val is_morello : bool end) = struct
-  module AArch64Instr = AArch64Instr.Make(C)
-  module CapOp = AArch64Op.Make(CapabilityScalar)
+module Make (C : sig
+  val is_morello : bool
+end) : Value.AArch64 = struct
+  module AArch64Instr = AArch64Instr.Make (C)
+  module CapOp = ArchOp.OnlyArchOp1 (AArch64Op.Make (CapabilityScalar))
+
   include
     SymbValue.Make
-      (SymbConstant.Make(CapabilityScalar)(AArch64PteVal)(AArch64Instr))
-      (CapOp)
+      (SymbConstant.Make (CapabilityScalar) (AArch64PteVal) (AArch64Instr))
+         (CapOp)
 end

@@ -20,7 +20,7 @@
 (* Binary *)
 (**********)
 
-type op =
+type 'aop op =
   | Add | Sub | Mul | Div
   | And | Or | Xor | Nor
   | AndNot2
@@ -44,12 +44,13 @@ type op =
  * If argument is integer, it is left as is.
  *)
   | ToInteger
+  | ArchOp of 'aop
 
-val pp_op : op -> string
+val pp_op : 'aop op -> ('aop -> string)-> string
 
-val is_infix : op -> bool
+val is_infix : 'aop op -> bool
 
-val pp_ptx_cmp_op : op -> string
+val pp_ptx_cmp_op : 'aop op -> string
 
 (*********)
 (* Unary *)

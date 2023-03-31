@@ -124,7 +124,7 @@ module type S =
         ('loc -> A.V.v -> unit t) ->  (A.V.v -> unit t) (* Write reg *)
           -> unit t
 
-    val amo_strict : bool -> Op.op -> ('loc t) ->
+    val amo_strict : bool -> A.V.op_t -> ('loc t) ->
       ('loc -> A.V.v t) -> A.V.v t (* read reg *) ->
         ('loc -> A.V.v -> unit t) ->  (A.V.v -> unit t) (* Write reg *)
           -> unit t
@@ -135,7 +135,7 @@ module type S =
 
 (* Weak amo, without control dependency from read read to write reg.
   In fact, the write reg is absent *)
-    val amo : Op.op ->
+    val amo : A.V.op_t ->
       'loc t -> A.V.v t -> ('loc -> A.V.v t) -> ('loc -> A.V.v -> unit t) -> A.V.v t
 
     val linux_cmpexch_ok :
@@ -248,7 +248,7 @@ module type S =
     val mk_fence : E.action -> A.inst_instance_id -> unit t
     (* Fetch and op *)
     val fetch :
-        Op.op -> A.V.v -> (A.V.v -> A.V.v -> E.action) ->
+        A.V.op_t -> A.V.v -> (A.V.v -> A.V.v -> E.action) ->
           A.inst_instance_id -> A.V.v t
 
     (**********************)
@@ -281,7 +281,7 @@ module type S =
 
 (* Operations *)
     val op1 : A.V.op1_t -> A.V.v -> A.V.v t
-    val op : Op.op -> A.V.v -> A.V.v -> A.V.v t
+    val op : A.V.op_t -> A.V.v -> A.V.v -> A.V.v t
     val op3 : Op.op3 -> A.V.v -> A.V.v -> A.V.v -> A.V.v t
     val add : A.V.v -> A.V.v -> A.V.v t
 

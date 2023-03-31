@@ -53,19 +53,25 @@ type mutex_kind = MutexLinux | MutexC11
 
 type return = OpReturn | FetchOp
 
+type arch_op = ArchOp.no_arch_op
+type op = arch_op Op.op
+
+let pp_phantom_archop _ = assert false
+let pp_op op = Op.pp_op op pp_phantom_archop
+
 type expression =
   | Const of ParsedConstant.v
   | LoadReg of reg
   | LoadMem of expression * MemOrderOrAnnot.t
-  | Op of Op.op * expression * expression
+  | Op of op * expression * expression
   | Exchange of expression * expression * MemOrderOrAnnot.t
   | CmpExchange of expression * expression * expression  * MemOrderOrAnnot.annot
-  | Fetch of expression * Op.op * expression * mem_order
+  | Fetch of expression * op * expression * mem_order
   | ECall of string * expression list
   | ECas of expression * expression * expression * mem_order * mem_order * bool
   | TryLock of expression * mutex_kind
   | IsLocked of expression * mutex_kind
-  | AtomicOpReturn of expression * Op.op * expression * return * MemOrderOrAnnot.annot
+  | AtomicOpReturn of expression * op * expression * return * MemOrderOrAnnot.annot
   | AtomicAddUnless of expression * expression * expression * bool (* ret bool *) | ExpSRCU of expression * MemOrderOrAnnot.annot
 
 type instruction =
@@ -79,7 +85,7 @@ type instruction =
   | StoreMem of expression * expression * MemOrderOrAnnot.t
   | Lock of expression * mutex_kind
   | Unlock of expression * mutex_kind
-  | AtomicOp of expression * Op.op * expression
+  | AtomicOp of expression * op * expression
   | InstrSRCU of expression * MemOrderOrAnnot.annot * expression option
   | Symb of string
   | PCall of string * expression list
@@ -113,7 +119,7 @@ let rec dump_expr =
         sprintf "atomic_load_explicit(%s,%s)"
           (dump_expr l) (MemOrder.pp_mem_order mo)
     | Op(op,e1,e2) ->
-        sprintf "%s %s %s" (dump_expr e1) (Op.pp_op op) (dump_expr e2)
+        sprintf "%s %s %s" (dump_expr e1) (pp_op op) (dump_expr e2)
     | Exchange(l,e,MO mo) ->
         sprintf "atomic_exchange_explicit(%s,%s,%s)"
           (dump_expr l) (dump_expr e) (MemOrder.pp_mem_order mo)
@@ -149,7 +155,7 @@ let rec dump_expr =
         sprintf "__atomic_%s{%s}(%s,%s,%s)"
           (match ret with OpReturn -> "op_return" | FetchOp -> "fetch_op")
           (string_of_annot a)
-          (dump_expr loc) (Op.pp_op op) (dump_expr e)
+          (dump_expr loc) (pp_op op) (dump_expr e)
     | AtomicAddUnless (loc,a,u,retbool) ->
         sprintf "%satomic_op_return(%s,%s,%s)"
           (if retbool then "" else "__")

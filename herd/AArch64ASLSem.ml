@@ -362,7 +362,51 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
       | ASLAct.NoAction -> Some Act.NoAction
       | ASLAct.TooFar msg -> Some (Act.TooFar msg)
 
-    let tr_arch_op =
+    let tr_op =
+      let open Op in
+      function
+      | Add -> Add
+      | Sub -> Sub
+      | Mul -> Mul
+      | Div -> Div
+      | And -> And
+      | Or -> Or
+      | Xor -> Xor
+      | Nor -> Nor
+      | AndNot2 -> AndNot2
+      | ASR -> ASR
+      | CapaAdd -> CapaAdd
+      | Alignd -> Alignd
+      | Alignu -> Alignu
+      | Build -> Build
+      | ClrPerm -> ClrPerm
+      | CpyType -> CpyType
+      | CSeal -> CSeal
+      | Cthi -> Cthi
+      | Seal -> Seal
+      | SetValue -> SetValue
+      | CapaSub -> CapaSub
+      | CapaSubs -> CapaSubs
+      | CapaSetTag -> CapaSetTag
+      | Unseal -> Unseal
+      | ShiftLeft -> ShiftLeft
+      | ShiftRight -> ShiftRight
+      | Lsr -> Lsr
+      | Lt -> Lt
+      | Gt -> Gt
+      | Eq -> Eq
+      | Ne -> Ne
+      | Le -> Le
+      | Ge -> Ge
+      | Max -> Max
+      | Min -> Min
+      | SetTag -> SetTag
+      | SquashMutable -> SquashMutable
+      | CheckPerms s -> CheckPerms s
+      | ToInteger -> ToInteger
+      | ArchOp _ -> assert false
+
+    let tr_arch_op1 =
       let open ASLValue.ASLArchOp in
       let atom v = M.VC.Atom v in
       let declare e acc =
@@ -401,7 +445,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
     let tr_op1 =
       let open Op in
       function
-      | ArchOp1 op -> tr_arch_op op
+      | ArchOp1 op -> tr_arch_op1 op
       | op ->
           let new_op =
             match op with
@@ -438,7 +482,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) = struct
       | ASLVC.Atom a -> (M.VC.Atom (tr_v a), acc)
       | ASLVC.ReadInit _ -> assert false
       | ASLVC.Unop (op, v) -> tr_op1 op acc v
-      | ASLVC.Binop (op, a1, a2) -> (M.VC.Binop (op, tr_v a1, tr_v a2), acc)
+      | ASLVC.Binop (op, a1, a2) ->
+          (M.VC.Binop (tr_op op, tr_v a1, tr_v a2), acc)
       | ASLVC.Terop (op, a1, a2, a3) ->
           (M.VC.Terop (op, tr_v a1, tr_v a2, tr_v a3), acc)
 

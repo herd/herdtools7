@@ -18,7 +18,7 @@ open Printf
 
 (*********************)
 
-type op =
+type 'aop op =
   | Add | Sub | Mul | Div
   | And | Or | Xor | Nor | AndNot2
   | ASR
@@ -34,8 +34,9 @@ type op =
   | SquashMutable
   | CheckPerms of string
   | ToInteger
+  | ArchOp of 'aop
 
-let pp_op o =
+let pp_op o pp_aop =
   match o with
   | Add -> "+"
   | Sub -> "-"
@@ -76,6 +77,7 @@ let pp_op o =
   | SquashMutable -> "squashmutable"
   | CheckPerms perms -> sprintf "checkcapa:%s" perms
   | ToInteger -> "ToInteger"
+  | ArchOp aop -> pp_aop aop
 
 let is_infix = function
   | Add|Sub|Mul|Div|And|Or|Xor|ShiftLeft
@@ -86,6 +88,7 @@ let is_infix = function
   | CapaSub|CapaSubs|CapaSetTag|Unseal
   | Max|Min|SetTag|SquashMutable|CheckPerms _
   | ToInteger
+  | ArchOp _
     -> false
 
 let pp_ptx_cmp_op = function

@@ -16,13 +16,14 @@
 
 (** Operations on symbolic values *)
 
-module Make :
-  functor (Cst:Constant.S) ->
-  functor (ArchOp:ArchOp.S
-           with type scalar = Cst.Scalar.t
-           and type pteval = Cst.PteVal.t
-           and type instr = Cst.Instr.t) ->
-  sig
-    include Value.S
-    with module Cst = Cst and type arch_op1 = ArchOp.op1
-  end
+module Make : functor
+  (Cst : Constant.S)
+  (ArchOp : ArchOp.S
+              with type scalar = Cst.Scalar.t
+               and type pteval = Cst.PteVal.t
+               and type instr = Cst.Instr.t)
+  ->
+  Value.S
+    with module Cst = Cst
+     and type arch_op = ArchOp.op
+     and type arch_op1 = ArchOp.op1

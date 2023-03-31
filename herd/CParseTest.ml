@@ -20,7 +20,7 @@
   end
   module ArchConfig = SemExtra.ConfigToArchConfig(Conf)
 
-  module MakeRun (CValue:Value.S with module Cst.Instr=CBase.Instr) = struct
+  module MakeRun (CValue:Value.S with module Cst.Instr=CBase.Instr and type arch_op = CBase.arch_op) = struct
       module CS = CSem.Make(Conf)(CValue)
       module CM = CMem.Make(ModelConfig)(CS)
       module C = CArch_herd.Make(ArchConfig)(CValue)
