@@ -38,8 +38,10 @@ let tr_name s = match s with
 | "uint32_t"
 | "int64_t"
 | "uint64_t"
-| "__int128_t" (* this is the syntax of this type in llvm and gcc *)
-| "__uint128_t" (* same here*)
+| "__int128_t"
+| "__uint128_t"
+| "__int128" (* this is the syntax of this type in llvm and gcc *)
+| "__uint128" (* same here*)
 | "intptr_t"
 | "uintptr_t"
 (* Mutexes *)

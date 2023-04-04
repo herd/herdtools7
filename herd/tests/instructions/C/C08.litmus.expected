@@ -1,0 +1,13 @@
+Test C08 Allowed
+States 3
+0:r0=0x0; 1:r0=0x0;
+0:r0=0x0; 1:r0=0x1;
+0:r0=0x1; 1:r0=0x0;
+Undef
+Witnesses
+Positive: 0 Negative: 3
+Flag *undef*
+Condition exists (0:r0=0x1 /\ 1:r0=0x1)
+Observation C08 Never 0 3
+Hash=df8f2c22043bedfe26ba47135c84a3b0
+

@@ -29,6 +29,7 @@ let tags =
    "int32_t"; "uint32_t";
    "int64_t"; "uint64_t";
    "int128_t"; "uint128_t";
+   "__int128"; "__uint128";
  ]
 
 let parse s = match s with
@@ -43,6 +44,8 @@ let parse s = match s with
 | "uint64_t" -> Some (Std (Unsigned,Quad))
 | "int128_t" -> Some (Std (Signed,S128))
 | "uint128_t" -> Some (Std (Unsigned,S128))
+| "__int128" -> Some (Std (Signed,S128))
+| "__uint128" -> Some (Std (Unsigned,S128))
 | _ -> None
 
 let pp = function
@@ -55,8 +58,8 @@ let pp = function
 | Std (Unsigned,Word) ->  "uint32_t"
 | Std (Signed,Quad) ->  "int64_t"
 | Std (Unsigned,Quad) ->  "uint64_t"
-| Std (Signed,S128) ->  "int128_t"
-| Std (Unsigned,S128) ->  "uint128_t"
+| Std (Signed,S128) ->  "__int128"
+| Std (Unsigned,S128) ->  "__uint128"
 | Pteval -> "pteval_t"
 
 
