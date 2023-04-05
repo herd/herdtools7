@@ -26,6 +26,7 @@ let acceptempty = ref false
 let hexa = ref false
 let int32 = ref true
 let faulttype = ref true
+let neg = ref false
 
 let options =
   [
@@ -43,6 +44,8 @@ let options =
    ("-acceptempty", Arg.Bool (fun b -> acceptempty := b),
     sprintf
       "<bool> output empty conditions, default %b" !acceptempty);
+  ("-neg", Arg.Bool (fun b -> neg := b),
+    "<bool> negate final condition (default false)");
     CheckName.parse_hexa hexa;
     CheckName.parse_int32 int32;
     CheckName.parse_faulttype faulttype;
@@ -96,6 +99,7 @@ module LL =
 
 let acceptempty = !acceptempty
 let quant = if !forall then "forall" else "exists"
+let negate = if !neg then "~" else ""
 let zyva log =
   let test = match log with
   | None -> LL.read_chan "stdin" stdin
@@ -108,14 +112,14 @@ let zyva log =
 
   let pp_cond name bdss =
     let pp = pp_cond bdss in
-    sprintf "%s \"%s %s\"" name quant pp in
+    sprintf "%s \"%s%s %s\"" name negate quant pp in
 
   let dump_test chan t =
     let bdss = LS.get_bindings t.states in
     match bdss with
     | [] ->
         if acceptempty then
-          fprintf chan "%s \"%s false\"\n" t.tname quant
+          fprintf chan "%s \"%s%s false\"\n" t.tname negate quant
     | _ ->
         fprintf chan "%s\n" (pp_cond t.tname bdss) in
 
