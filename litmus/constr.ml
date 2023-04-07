@@ -149,7 +149,7 @@ module RLocSet = A.RLocSet and module FaultType = A.FaultType =
 
     let get_labels c =
       let fold_atom a k = match a with
-        | LV (_,Symbolic (Virtual {name=Symbol.Label(p,l)}))
+        | LV (_,Symbolic (Virtual {name=Symbol.Label(p,l); _}))
             -> Label.Full.Set.add (p, l) k
         | LV _ | LL _ | FF _ -> k in
       ConstrGen.fold_constr fold_atom c Label.Full.Set.empty

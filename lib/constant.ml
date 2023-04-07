@@ -506,7 +506,7 @@ let is_data = function
   | Symbolic (Virtual ({name=n; _})) ->
     Symbol.is_data n
   | Concrete _| ConcreteVector _| ConcreteRecord _| Symbolic _| Tag _|
-    PteVal _| Instruction _| Frozen _ ->
+    PteVal _| AddrReg _|Instruction _| Frozen _ ->
     false
 
 let is_label = function
@@ -518,7 +518,7 @@ let is_label = function
 let is_label_pa = function
   | Symbolic (Physical (s,_)) -> s |> Symbol.of_string |> Symbol.is_label
   | Concrete _ | ConcreteVector _ | ConcreteRecord _ | Symbolic _ | Tag _
-  | PteVal _ | Instruction _ | Frozen _ ->
+  | PteVal _ | AddrReg _| Instruction _ | Frozen _ ->
       false
 
 
