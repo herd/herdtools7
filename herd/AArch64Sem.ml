@@ -167,8 +167,7 @@ module Make
       let read_reg_data sz = read_reg_sz sz true
 
 (* Fetch of an instruction, i.e., a read from a label *)
-      let mk_fetch an loc v =
-        let ac = Access.VIR in (* Instruction fetch seen as ordinary, non PTE, access *)
+      let mk_fetch an ac loc v =
         Act.Access (Dir.R, loc, v, an, AArch64.nexp_annot, MachSize.Word, ac)
 
 (* Basic write, to register  *)
@@ -966,24 +965,24 @@ module Make
              fun _ ->
                Warn.fatal "Memtag extension has no 'Skip' fault handling mode"
 
-      let lift_memtag_phy a_virt mop ma dir an ii =
+      let lift_memtag_phy a_virt mop ma dir an ii kont =
         M.delay_kont "4" ma
           (fun a_phy ma ->
             let mm = mop Access.PHY in
             let ft = Some FaultType.AArch64.TagCheck in
             delayed_check_tags a_virt (Some a_phy) ma ii
-              (fun ma -> mm ma >>= M.ignore >>= B.next1T)
+              (fun ma -> mm ma |> kont)
               (lift_fault_memtag
                  (mk_fault (Some a_virt) dir an ii ft None) mm dir ii))
 
 
-      let lift_memtag_virt mop ma dir an ii =
+      let lift_memtag_virt mop ma dir an ii kont =
         M.delay_kont "5" ma
           (fun a_virt ma  ->
             let mm = mop Access.VIR in
             let ft = Some FaultType.AArch64.TagCheck in
             delayed_check_tags a_virt None ma ii
-              (fun ma -> mm ma >>= M.ignore >>= B.next1T)
+              (fun ma -> mm ma |> kont)
               (lift_fault_memtag
                  (mk_fault (Some a_virt) dir an ii ft None) mm dir ii))
 
@@ -1009,7 +1008,7 @@ module Make
         let lbl_v = A.V.cstToV (Constant.mk_sym_virtual_label ii.A.proc lbl) in
         write_reg AArch64Base.elr_el1 lbl_v ii
 
-      let lift_kvm dir updatedb mop ma an ii mphy =
+      let lift_kvm dir updatedb mop ma an ii mphy branch =
         let mfault ma a ft =
           insert_commit_to_fault ma
             (fun _ -> mk_fault (Some a) dir an ii ft None) ii >>|
@@ -1017,7 +1016,7 @@ module Make
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb a ma an ii
             ((let m = mop Access.PTE ma in
-              fire_spurious_af dir a m) >>= M.ignore >>= B.next1T)
+              fire_spurious_af dir a m) |> branch)
             mphy
             mfault in
         M.delay_kont "6" ma
@@ -1026,9 +1025,9 @@ module Make
              fun a ma ->
              match Act.access_of_location_std (A.Location_global a) with
              | Access.VIR|Access.PTE -> maccess a ma
-             | ac -> mop ac ma >>= M.ignore >>= B.next1T)
+             | ac -> mop ac ma |> branch)
 
-      let lift_morello mop perms ma mv dir an ii =
+      let lift_morello mop perms ma mv dir an ii branch =
         let mfault msg ma mv =
           let ft = None in (* FIXME *)
           do_insert_commit
@@ -1044,7 +1043,7 @@ module Make
                 check_morello_sealed a ma mv
                   (fun ma mv ->
                     check_morello_perms a ma mv perms
-                      (fun ma mv -> mok ma mv >>= M.ignore >>= B.next1T)
+                      (fun ma mv -> mok ma mv |> branch)
                       (mfault "CapPerms"))
                   (mfault "CapSeal"))
               (mfault "CapTag"))
@@ -1064,20 +1063,20 @@ module Make
         | None -> false
         | Some rB -> AArch64.reg_compare rA rB=0
 
-      let lift_memop rA (* Base address register *)
-            dir updatedb mop perms ma mv an ii =
+      let do_lift_memop rA (* Base address register *)
+            dir updatedb mop perms ma mv an ii branch =
         if morello then
-          lift_morello mop perms ma mv dir an ii
+          lift_morello mop perms ma mv dir an ii branch
         else
           let mop = apply_mv mop mv in
           if memtag then
             begin
               if kvm then
-                let mphy = (fun ma a -> lift_memtag_phy a mop ma dir an ii) in
+                let mphy = (fun ma a -> lift_memtag_phy a mop ma dir an ii branch) in
                 M.short3
                   (is_this_reg rA) E.is_commit
-                  (lift_kvm dir updatedb mop ma an ii mphy)
-              else lift_memtag_virt mop ma dir an ii
+                  (lift_kvm dir updatedb mop ma an ii mphy branch)
+              else lift_memtag_virt mop ma dir an ii branch
             end
           else if kvm then
             let mphy =
@@ -1086,15 +1085,17 @@ module Make
                 M.op1 Op.IsVirtual a_virt >>= fun c ->
                 M.choiceT c
                   (mop Access.PHY ma)
-                  (fire_spurious_af dir a_virt (mop Access.PHY_PTE ma))
-                >>= M.ignore >>= B.next1T
+                  (fire_spurious_af dir a_virt (mop Access.PHY_PTE ma)) |> branch
               else
-                fun ma _a ->
-                mop Access.PHY ma
-                >>= M.ignore >>= B.next1T in
-            lift_kvm dir updatedb mop ma an ii mphy
+                fun ma _a -> mop Access.PHY ma |> branch in
+            lift_kvm dir updatedb mop ma an ii mphy branch
           else
-            mop Access.VIR ma >>= M.ignore >>= B.next1T
+            mop Access.VIR ma |> branch
+
+      let lift_memop rA (* Base address register *)
+            dir updatedb mop perms ma mv an ii =
+        do_lift_memop rA dir updatedb mop perms ma mv an ii
+          (fun a -> a >>= M.ignore >>= B.next1T)
 
       let do_ldr rA sz an mop ma ii =
 (* Generic load *)
@@ -1591,7 +1592,7 @@ module Make
           (to_perms "rw" sz)
           (read_reg_ord rn ii)
           (read_reg_data sz rt ii)
-          Dir.W (rmw_to_read rmw) ii
+          Dir.W (rmw_to_read rmw) ii (fun a -> a >>= M.ignore >>= B.next1T)
 
       let ldop op sz rmw rs rt rn ii =
         let open AArch64 in
@@ -2003,8 +2004,10 @@ module Make
       let make_label_value proc lbl_str =
         A.V.cstToV (Constant.mk_sym_virtual_label proc lbl_str)
 
-      let read_loc_instr a ii =
-        M.read_loc false (mk_fetch Annot.N) a ii
+      let read_loc_instr a ac ii =
+        let loc = (* Normalised address of instruction *)
+          A.Location_global a in
+        M.read_loc false (mk_fetch Annot.N ac) loc ii
 
 (*********************)
 (* Branches *)
@@ -2437,7 +2440,7 @@ module Make
               (to_perms "tw" MachSize.S128)
               (read_reg_ord rn ii)
               (read_reg_data MachSize.Quad rt ii)
-              Dir.W Annot.N ii
+              Dir.W Annot.N ii (fun a -> a >>= M.ignore >>= B.next1T)
         | I_LDCT(rt,rn) ->
             check_morello inst ;
             (* NB: only 1 access implemented out of the 4 *)
@@ -2457,7 +2460,7 @@ module Make
               (read_reg_ord rn ii)
               mzero
               Dir.R Annot.N
-              ii
+              ii (fun a -> a >>= M.ignore >>= B.next1T)
         | I_UNSEAL(rd,rn,rm) ->
             check_morello inst ;
             !(begin
@@ -2757,6 +2760,9 @@ module Make
             | _ -> k)
           test.Test_herd.init_state []
 
+      let lift_fetch rA (* Base address register *)
+            dir updatedb mop perms ma mv an ii =
+        do_lift_memop rA dir updatedb mop perms ma mv an ii Fun.id
 
 (* Test all possible instructions, when appropriate *)
       let check_self test ii =
@@ -2782,9 +2788,8 @@ module Make
               (* Shadow default control sequencing operator *)
               let(>>*=) = M.bind_control_set_data_input_first in
               let a_v = make_label_value ii.A.fetch_proc hd in
-              let a = (* Normalised address of instruction *)
-                A.Location_global a_v in
-              read_loc_instr a ii
+              let mop ac a =
+                read_loc_instr a ac ii
                 >>= fun actual_val ->
                   InstrSet.fold
                     (fun inst k ->
@@ -2805,7 +2810,15 @@ module Make
                       commit_pred ii
                         >>*= fun () -> m_fault >>| set_elr_el1 ii
                           >>! B.Fault Dir.R
-                    end
+                    end in
+              lift_fetch AArch64.ZR Dir.R true
+                (fun ac ma _mv -> (* value fake here *)
+                   if Access.is_physical ac  then
+                     M.bind_ctrldata ma (mop ac)
+                   else
+                     ma >>= mop ac)
+                (to_perms "r" MachSize.Word)
+                (M.unitT a_v) mzero Annot.N ii
         else do_build_semantics test inst ii
 
       let build_semantics test ii =
