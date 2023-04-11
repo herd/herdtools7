@@ -34,3 +34,8 @@ MP+rel+CAS-addr Allowed
 MP+rel+CSEL     Allowed
 #MP+rel+CSEL-data Forbidden
 MP+rel+CSEL-addr Allowed 
+CoRR           Forbidden
+CoRW1          Forbidden
+CoRW2          Forbidden
+CoWR           Forbidden
+CoWW           Forbidden
