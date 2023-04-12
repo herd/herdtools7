@@ -273,6 +273,18 @@ pick-test:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-pick tests: OK"
 
+cata-test:: faults-test
+faults-test:
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64-faults/tests/kinds.txt \
+		-shelf-path catalogue/aarch64-faults/shelf.py \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 catalogue aarch64-faults tests: OK"
+
 more-test:: pick-test-mixed
 pick-test-mixed:
 	@ echo

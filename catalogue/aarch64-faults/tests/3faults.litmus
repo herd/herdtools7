@@ -1,0 +1,16 @@
+AArch64 3faults
+Variant=vmsa,faultToNext
+{
+ [PTE(x)]=(valid:0);
+ [PTE(y)]=(af:0);
+ 0:X1=x;
+ 0:X2=y;
+}
+  P0          ;
+L0:           ;
+  UDF #0      ;
+L1:           ;
+  LDR W0,[X1] ;
+L2:           ;
+  LDR W0,[X2] ;
+forall(fault(P0))

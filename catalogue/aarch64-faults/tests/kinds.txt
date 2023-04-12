@@ -1,0 +1,6 @@
+3faults Required
+LDRaf0F Required
+LDRredF Required
+noUDF   Forbid
+STRdb0F Required
+UDF     Required
