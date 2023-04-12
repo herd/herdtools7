@@ -1,0 +1,8 @@
+AArch64 UDF
+Variant=fatal
+{
+}
+  P0          ;
+L0:          ;
+  UDF #0      ;
+forall(Fault(P0:L0,UndefinedInstruction))
