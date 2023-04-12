@@ -1,0 +1,14 @@
+AArch64 CoWR
+"PosWR Fre"
+Cycle=Fre PosWR
+Generator=diycross7 (version 7.56+03)
+Com=Fr
+Orig=PosWR Fre
+{
+0:X1=x;
+}
+ P0          ;
+ MOV W0,#1   ;
+ STR W0,[X1] ;
+ LDR W2,[X1] ;
+exists (0:X2=0)
