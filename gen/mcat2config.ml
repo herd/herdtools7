@@ -70,6 +70,7 @@ module Make
       | An of atom
       | Ext of extr
       | Imp
+      | Lrs
       | PTE
       | Dd of extr*(atom option)
 
@@ -259,7 +260,7 @@ module Make
         | Var (_, var) ->
           if (String.equal var varname) then {varname="recursive";exp_list=[];vartype=Empty}
           else {varname=var;exp_list=[]; vartype=Var}
-        | App (_,exp1,exp2) -> {varname="App:";exp_list=(List.map f (exp1::[exp2]));vartype=Empty}
+        | App (_,_,exp2) -> f exp2
         | _ -> {varname=("empty or: "^(pp_exp expr));exp_list=[];vartype=Empty} in
       f expression
 (* 
@@ -358,7 +359,7 @@ module Make
     *)
 
     and expand_fencedp el =
-    (* expand cumulative macros*)
+    (* expand cumulative macros and steal back annotations for rmw*)
       let open E in
       let rec f e l = 
         match e with
@@ -394,7 +395,16 @@ module Make
               {E.edge=Fenced (fence,sd,e1,extr2); a1=a1; a2=a2}::(f t l)
             | _ -> h::(f (h2::t) l)
           end
-          | _ -> f (h2::t) l
+          | [(Po _);(Rmw _)] ->begin
+            match [h;h2] with
+            | [{E.edge=Po (sd,_,_); a1=a1; a2=poa2;};
+              {E.edge=Rmw a; a1=_; a2=a2;}] ->
+                if (A.applies_atom_rmw a poa2 a2) then
+                  {E.edge=Po (sd,Irr,Irr); a1=a1; a2=None;}::{E.edge=Rmw a; a1=poa2; a2=a2;}::(f t l)
+                else raise (Failed "atoms not applied correctly for rmw")
+            | _ -> h::(f (h2::t) l)
+              end
+          | _ -> h::(f (h2::t) l)
         end
       in f el []
     
@@ -421,13 +431,20 @@ module Make
               | T (Po (_,_,_)) -> E.Po (a,extr1,extr2)
               | T (Dp (dp, _, _)) -> E.Dp (dp,a,extr2)
               | T (Fenced (fence,_,_,_)) -> E.Fenced (fence,a,extr1,extr2)
+              | T (Rmw a) -> if (A.applies_atom_rmw a a1 a2) then (Rmw a) else raise (Failed "atoms not applied correctly for rmw")(* use A.applies atom for checking annotations?*)
               | _ -> raise (Failed "") in
+            if not (a2 = None) then
+            List.map (fun a -> 
+                      {node_val={E.edge=e a;E.a1=a1;E.a2=a2};
+                      branch_list=f t h}
+                      ) [Same; Diff]
+            else
             List.map (fun a -> 
                       {node_val={E.edge=e a;E.a1=a1;E.a2=a2};
                       branch_list=f (h2::t) h}
                       ) [Same; Diff]
           with
-          | Failed _ -> match h.vartype with
+          | Failed s -> match h.vartype with
             | Op2 Inter -> 
               begin try 
                 let h = match_inter h in
@@ -437,6 +454,9 @@ module Make
                 | _ -> raise (Failed "unknown failure in inter\n")
               end
             | Var -> raise (Failed (sprintf "Unknown Variable: %s\n" h.varname))
+            | Lrs ->  [{node_val={E.edge=E.Po (Same, Dir W, Dir R);E.a1=a1;E.a2=a2};
+                        branch_list=f (h2::t) h}]
+            | T _ -> raise (Failed s)
             | _ -> f (h2::t) h
         end
         | h::[] -> 
@@ -472,7 +492,7 @@ module Make
     
     and check_prev a = 
       match a with
-      | Empty -> Some (A.Plain None,None)
+      | Empty -> None (*Some (A.Plain None,None)*)
       | An b -> Some b
       | Dd (_,an) -> an
       | _ -> None
@@ -534,7 +554,7 @@ module Make
         end
         | [] -> [] in
 
-      let tree = apply_expand (tree ast) in
+      let tree = apply_expand (amo::(tree ast)) in
       tree  
     
     (*
@@ -542,7 +562,33 @@ module Make
     helper functions
     ------------------------------------------   
     *)
-    and match_var v = 
+  and lrsc = T (Rmw A.LrSc)
+  and swa = T (Rmw A.Swp)
+  and cas = T (Rmw A.Cas)
+  and ldop = {varname="LdOp";vartype=Op2 AST.Union;
+              exp_list=
+              [{varname="Amo.LdAdd";exp_list=[];vartype=T (Rmw (LdOp A_ADD))};
+              {varname="Amo.LdEor";exp_list=[];vartype=T (Rmw (LdOp  A_EOR ))};
+              {varname="Amo.LdSet";exp_list=[];vartype=T (Rmw (LdOp  A_SET ))};
+              {varname="Amo.LdClr";exp_list=[];vartype=T (Rmw (LdOp  A_CLR ))};
+              {varname="Amo.LdSMax";exp_list=[];vartype=T (Rmw (LdOp  A_SMAX ))};
+              {varname="Amo.LdSMin";exp_list=[];vartype=T (Rmw (LdOp  A_SMIN))}]}
+  and storeop = {varname="StOp";vartype=Op2 AST.Union;
+                exp_list=
+                [{varname="Amo.StAdd";exp_list=[];vartype=T (Rmw (StOp A_ADD))};
+                {varname="Amo.StEor";exp_list=[];vartype=T (Rmw (StOp  A_EOR ))};
+                {varname="Amo.StSet";exp_list=[];vartype=T (Rmw (StOp  A_SET ))};
+                {varname="Amo.StClr";exp_list=[];vartype=T (Rmw (StOp  A_CLR ))};
+                {varname="Amo.StSMax";exp_list=[];vartype=T (Rmw (StOp  A_SMAX ))};
+                {varname="Amo.StSMin";exp_list=[];vartype=T (Rmw (StOp  A_SMIN))}]}
+  and amo = {varname="amo"; vartype=Op2 AST.Union; 
+            exp_list=[
+              ldop;storeop;
+              {varname="Amo.Swp";exp_list=[];vartype=swa};
+              {varname="Amo.Cas";exp_list=[];vartype=cas}
+            ]}
+
+  and match_var v = 
     (* Exp, Imp and PTE have been included as placeholders. rmw has not yet been included*)
     let open A in
     let open E in
@@ -561,6 +607,7 @@ module Make
         | "Imp" -> Imp
         | "PTE" -> PTE
         | "po" -> T (Po (Same,Irr,Irr))
+        | "lrs" -> Lrs
         | "addr" -> T (Dp ((A.D.ADDR,A.NoCsel), Same, Irr))
         | "ctrl" -> T (Dp ((A.D.CTRL,A.NoCsel), Same, Irr))
         | "data" -> T (Dp ((A.D.DATA,A.NoCsel), Same, Irr))
@@ -572,6 +619,7 @@ module Make
         | "DSB.SY" -> T (Fenced (Barrier (DSB (SY,FULL)),Same, Irr, Irr))  
         | "ISB" -> T (Fenced (Barrier (ISB),Same, Irr, Irr))  
         | "rfi" -> T (Rf Int)
+        | "lxsx" -> lrsc
         | "co" | "fr" -> T (Fr Int)
         | _ -> raise (Failed (sprintf "variable not supported: %s\n" v.varname))
       end
