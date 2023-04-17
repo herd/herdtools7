@@ -1,0 +1,17 @@
+AArch64 A017
+variant=fatal
+{
+int x=1 ;
+[PTE(x)]=(valid:0);
+1:X0=x;
+0:X0=PTE(x);
+0:X1=(oa:PA(x),db:0);
+0:X2=(oa:PA(x));
+}
+ P0          | P1         ;
+ STR X1,[X0] | MOV W1,#1  ;
+ STR X2,[X0] |L0:         ;
+             | STR W1,[X0];
+locations [fault(P1:L0,x,MMU:Translation);]
+(* Fix a glitch: line  "~Fault(P1:L0,x,MMU:Translation);"
+   was occuring twice in output *)
