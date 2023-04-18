@@ -70,6 +70,8 @@ module type S = sig
   module FaultSet : MySet.S with type elt = fault
 
   type fatom = (loc_global,fault_type) atom
+
+  val pp_fatom : fatom -> string
   val check_one_fatom : fault -> fatom -> bool
   val check_fatom : FaultSet.t -> fatom -> bool
   module FaultAtomSet : MySet.S with type elt = fatom
@@ -123,6 +125,8 @@ module Make(A:I) =
         end)
 
     type fatom = (loc_global,fault_type) atom
+
+    let pp_fatom = pp_fatom A.pp_global A.pp_fault_type
 
     let check_one_fatom ((p0,lbls0),x0,ftype0,_)  ((p,lblo),x,ftype) =
       Proc.compare p p0 = 0 &&
