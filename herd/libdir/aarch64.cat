@@ -52,16 +52,16 @@ include "aarch64hwreqs.cat"
 let ca = fr | co
 
 (* Observed-by *)
-let obs = ([M & Exp | R & T & Imp]; (rf | ca); [M & Exp | R & T & Imp]) & ext
+let obs = ([Exp & M | Imp & T & R]; (rf | ca); [Exp & M | Imp & T & R]) & ext
 
 (* TLBI-after *)
 include "tlbi-after.cat"
-with tlbi-after from (pte-tlbi-pairs hw-reqs)
+with tlbi-after from (ttd-tlbi-pairs hw-reqs)
 
 (* TTD-read-ordered-before *)
 let TTD-read-ordered-before =
-  tlbi-after; [TLBI]; po; [dsb.full]; po; [~(M&Imp)]
-  | (if "ETS2" then tlbi-after; [TLBI]; po; [dsb.full]; po; [M & PTE & Imp] else 0)
+  tlbi-after; [TLBI]; po; [dsb.full]; po; [~(Imp & M)]
+  | (if "ETS2" then tlbi-after; [TLBI]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
 
 (* TLBI-Ordered-Before *)
 let tlbi-ob =
@@ -71,23 +71,27 @@ let tlbi-ob =
 
 (* TLBI-Coherence-After *)
 let tlbi-ca =
-   [TLBI]; tlbi-after; [R & PTE & Imp]; ca; [W & PTE]
+   [TLBI]; tlbi-after; [Imp & TTD & R]; ca; [W]
 
 (* TLBUncacheable-Predecessor *)
 let TLBuncacheable-pred =
-  [range([TLBUncacheable & FAULT]; tr-ib^-1)]; ca \ intervening-write(ca); [W & PTE & Exp]
+  [range([TLBUncacheable & FAULT]; tr-ib^-1)]; ca \ intervening-write(ca); [Exp & W]
 
 (* Hardware-Update-Predecessor *)
 let HU-pred =
-  [PTE]; ca \ intervening-write(ca); [HU]
+  ca \ intervening-write(ca); [HU]
+
+(* Hazard-Ordered-Before *)
+let haz-ob =
+  [Exp & R]; po-loc; [Exp & R]; fre; [Exp & W]
 
 (* Ordered-before *)
 let rec ob =
      hw-reqs
-    | [R & Exp]; po-loc; [R & Exp]; fre ; [W & Exp]; si
+    | haz-ob
 
-    | obs; si
-    | [PTE & Imp]; rf | rf; [PTE & Imp]
+    | obs; sca-class?
+    | [Imp & TTD]; rf | rf; [Imp & TTD]
     | TLBuncacheable-pred
     | HU-pred
     | [HU]; co | co; [HU]
@@ -101,15 +105,15 @@ let rec ob =
 irreflexive ob as external
 
 (* Internal visibility requirements *)
-irreflexive [R & Exp]; (po-loc | rmw); [W & Exp]; rfi; [R & Exp] as coRW1-Exp
-irreflexive [R & T & Imp]; po-loc; [W & T & Exp]; rfi; [R & T & Imp] as coRW1-MTE
-irreflexive [W & Exp]; po-loc; [W & Exp]; (ca & int); [W & Exp] as coWW-Exp
-irreflexive [W & Exp]; po-loc; [R & Exp]; (ca & int); [W & Exp] as coWR-Exp
-irreflexive [W & Exp & T]; po-loc; [R & Imp & T]; (ca & int) as coWR-MTE
+irreflexive [Exp & R]; (po-loc | rmw); [Exp & W]; rfi; [Exp & R] as coRW1-Exp
+irreflexive [Imp & T & R]; po-loc; [Exp & T & W]; rfi; [Imp & T & R] as coRW1-MTE
+irreflexive [Exp & W]; po-loc; [Exp & W]; (ca & int); [Exp & W] as coWW-Exp
+irreflexive [Exp & W]; po-loc; [Exp & R]; (ca & int); [Exp & W] as coWR-Exp
+irreflexive [Exp & T & W]; po-loc; [Imp & T & R]; (ca & int) as coWR-MTE
 
 (* Atomic: LDXR/STXR, AMO and HU constraint to forbid intervening writes. *)
-empty (rmw & (fr; co)) \ (([Exp]; rmw; [Exp]) & (fri ; [W & Exp]; coi)) as atomic
+empty (rmw & (fr; co)) \ (([Exp]; rmw; [Exp]) & (fri ; [Exp & W]; coi)) as atomic
 
 (* Break Before Make *)
-let BBM = ([PTEV]; ca; [PTEINV]; co; [PTEV])
-flag ~empty (PTE-update-needsBBM & ~BBM) as requires-BBM
+let BBM = ([TTDV]; ca; [TTDINV]; co; [TTDV])
+flag ~empty (TTD-update-needsBBM & ~BBM) as requires-BBM
