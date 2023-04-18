@@ -1618,9 +1618,8 @@ limited to Rf,Fr,Co,[Co,Rf] and~[Fr,Rf], as in all other modes.
 accesses are by the same processor.} candidates follow one another.
 \item If the option \opt{-cumul false} is specified,
 \diy{} will not construct
-the sequence of~Rfe followed by a fence (or B-cumulativity) candidate
-relaxation or
-of a fence (or A-cumulativity) candidate relaxation followed by Rfe.
+the sequence of~Rfe followed by a fence (or A-cumulativity) candidate
+relaxation or of a fence candidate relaxation followed by Rfe (B-cumulativity).
 \item Cycles that access one single memory location are rejected.
 \item None of the rules above applies to the internal sequences of
 composite candidate relaxations. For instance, if [Rfi,PodRR]
