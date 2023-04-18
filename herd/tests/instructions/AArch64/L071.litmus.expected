@@ -1,0 +1,14 @@
+Test L071 Forbidden
+States 5
+1:X1=0; 1:X5=0; 1:X7=0;
+1:X1=0; 1:X5=0; 1:X7=3;
+1:X1=0; 1:X5=1; 1:X7=0;
+1:X1=0; 1:X5=1; 1:X7=3;
+1:X1=1; 1:X5=1; 1:X7=3;
+Ok
+Witnesses
+Positive: 5 Negative: 0
+Condition ~exists (1:X1=1 /\ (1:X5=0 \/ 1:X7=0))
+Observation L071 Never 0 5
+Hash=0d1fa86c49cd53c484104ea9f13bb949
+
