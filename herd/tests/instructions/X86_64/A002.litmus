@@ -1,0 +1,9 @@
+X86_64 A002
+
+(* Tests CD register *)
+{ 0:cs = 0 }
+
+P0;
+  NOP;
+
+forall (0:cs = 0)

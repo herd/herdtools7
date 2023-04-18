@@ -89,6 +89,16 @@ test.riscv:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 RISCV instructions tests: OK"
 
+test:: test.x86_64
+test.x86_64:
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/X86_64 \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 X86_64 instructions tests: OK"
+
 test:: test.mixed
 test.mixed:
 	@ echo

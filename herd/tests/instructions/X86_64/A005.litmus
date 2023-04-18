@@ -1,0 +1,9 @@
+X86_64 A005
+
+(* tests %cs:0x0(%rd,%rs,k) syntax*)
+{}
+
+P0;
+  NOPL %cs:0(%rax,%eax,0);
+
+forall (0:RAX = 0)

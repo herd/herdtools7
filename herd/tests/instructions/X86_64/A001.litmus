@@ -1,0 +1,9 @@
+X86_64 A001
+
+(* Tests RIP register *)
+{ 0:rip = 0 }
+
+P0;
+  NOP;
+
+forall (0:rip = 0)
