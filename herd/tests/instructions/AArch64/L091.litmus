@@ -1,0 +1,20 @@
+AArch64 L091
+variant=QuadMops,mixed
+(* MP Style *)
+{
+int64_t t[2] = { 0x0101010101010101,0x0202020202020202 } ;
+int64_t u[2] = { 0,0 } ;
+0:X2=t;
+0:X0=u;
+int64_t 0:X1=16;
+1:X0=u;
+int64_t 1:X1;
+int64_t 1:X2;
+}
+  P0                   |  P1            ;
+ CPYFP [X0]!,[X2]!,X1! | LDR X1,[X0,#8] ;
+ CPYFM [X0]!,[X2]!,X1! | DMB LD         ;
+ CPYFE [X0]!,[X2]!,X1! | LDR X2,[X0]    ;
+
+exists 1:X1=0x0202020202020202 /\ 1:X2 != 0x0101010101010101
+

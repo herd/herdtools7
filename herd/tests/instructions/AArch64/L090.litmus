@@ -1,0 +1,18 @@
+AArch64 L090
+variant=WordMops,mixed
+(* MP Style *)
+{
+int t[2] = { 0x01010101, 0x02020202 } ;
+int u[2] = { 0,0 } ;
+0:X2=t;
+0:X0=u;
+int64_t 0:X1=8;
+1:X0=u;
+}
+  P0                   |  P1            ;
+ CPYFP [X0]!,[X2]!,X1! | LDR W1,[X0,#4] ;
+ CPYFM [X0]!,[X2]!,X1! | DMB LD         ;
+ CPYFE [X0]!,[X2]!,X1! | LDR W2,[X0]    ;
+
+exists 1:X1= 0x02020202 /\ 1:X2 !=  0x01010101
+
