@@ -193,6 +193,11 @@ module
 (* Copy *)
 (********)
 
+  let seq =
+    if C.variant (Variant.T 0) then
+      fun m1 m2 -> (m1 >>| m2) >>= fun (_,r) -> M.unitT r
+    else M.seq
+
   let cpy_sz = U.mops_size
 
   let do_read_cpy_regs rd rs rn ii =
@@ -287,7 +292,7 @@ module
                 begin
                   match opt with
                   | OptA ->
-                      M.seq
+                      seq
                         (M.add vs vn >>= fun src ->
                           read_misaligned
                             (value_offset src) sz src ii >>= fun data ->
@@ -295,7 +300,7 @@ module
                                 U.write_mem sz dest data ii)
                         (do_rec vd vs (n+delta) (m+delta))
                   | OptB ->
-                      M.seq
+                      seq
                         (read_misaligned
                            (value_offset vs) sz vs ii >>==  fun data ->
                          U.write_mem sz vd data ii)
@@ -430,7 +435,7 @@ module
                 let vn = V.intToV n in
                 if m = 0 then M.unitT (vd,vs,vn)
                 else
-                  M.seq
+                  seq
                     (M.add vs vn >>= fun src ->
                       read_misaligned
                         (value_offset src) sz src ii >>= fun data ->
@@ -446,7 +451,7 @@ module
                 else
                   let m = m-delta and n = n-delta in
                   let vn = V.intToV n in
-                  M.seq
+                  seq
                     (M.add vs vn >>= fun src ->
                       read_misaligned
                         (value_offset src) sz src ii >>= fun data ->
@@ -487,7 +492,7 @@ module
             if m <= 0 then
               M.unitT (vd,vs,V.intToV n)
             else if n_zero then
-              M.seq
+              seq
                 (read_misaligned (value_offset vs) sz vs ii >>= fun data ->
                   U.write_mem sz vd data ii)
                 ((M.add vd vdelta >>| M.add vs vdelta) >>=
@@ -495,7 +500,7 @@ module
             else begin
               let msubs =
                 M.op Op.Sub vd vdelta >>| M.op Op.Sub vs vdelta in
-              M.seq
+              seq
                 (msubs >>= fun (vd,vs) ->
                   read_misaligned (value_offset vs) sz vs ii
                     >>= fun data -> U.write_mem sz vd data ii)
