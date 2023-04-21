@@ -1,5 +1,7 @@
 set -o errexit
 
+. ./defs-mini.sh
+
 # Extract binary names from dune files.
 binaries_of_dune () {
   local readonly kind="${1}"; shift
@@ -53,6 +55,3 @@ cpdir () {
 
   rm -rf "${to}" && mkdir -p "${to}" && ( cd "${from}" && cp -r . "${to}" )
 }
-
-VERSION=$(cat VERSION.txt)
-REV=$(git rev-parse HEAD 2>/dev/null || echo exported)
