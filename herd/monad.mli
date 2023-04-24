@@ -80,6 +80,10 @@ module type S =
     (* Data composition, entry for snd monad: minimals for complete iico *)
     val bind_data_to_minimals : 'a t -> ('a -> 'b t) -> ('b) t
 
+    (* Control compoisition, but output events might be in first event if
+       second is empty. *)
+    val bind_ctrl_seq_data : 'a t -> ('a -> 'b t) -> 'b t
+
     (* Hybrid composition m1 m2 m3, m1 -ctrl+data-> m3 and m2 -data-> m3.
        ctrl+data -> ctrl from maximal commit evts + data from
        monad output *)
@@ -93,6 +97,9 @@ module type S =
 
     (* Identical control dep only, all output from firtst argument *)
     val bind_ctrl_first_outputs : 'a t -> ('a -> 'b t) -> 'b t
+
+    (* Same as [>>=] but with order deps instead of data between the arguments. *)
+    val bind_order : 'a t -> ('a -> 'b t) -> 'b t
 
     (* Very ad-hoc transformation, [short3 p1 p2 s],
      * add relation r;r;r where r is intra_causality_data,
@@ -182,7 +189,13 @@ module type S =
     val aarch64_cas_ok_morello :
         'loc t -> 'v t -> 'v t -> ('loc -> 'v -> unit t) -> unit t
     val stu : 'a t -> 'a t -> ('a -> unit t) -> (('a * 'a) -> unit t) -> unit t
+
+    (* Same as [>>|], but binding style. *)
     val cseq : 'a t -> ('a -> 'b t) -> 'b t
+
+    (* Same as [cseq], but output on right argument. *)
+    val aslseq : 'a t -> ('a -> 'b t) -> 'b t
+
     type poi = int
 
     val add_instr :
@@ -250,6 +263,9 @@ module type S =
     val fetch :
         A.V.op_t -> A.V.v -> (A.V.v -> A.V.v -> E.action) ->
           A.inst_instance_id -> A.V.v t
+
+    (* [as_data_port m] flags all events in [m] as data. *)
+    val as_data_port : 'a t -> 'a t
 
     (**********************)
     (* Morello extensions *)

@@ -86,6 +86,7 @@ let used_identifiers, used_identifiers_stmt =
         List.fold_left use_slice acc args
     | E_Cond (e1, e2, e3) -> use_e (use_e (use_e acc e1) e3) e2
     | E_GetField (e, _, _ta) -> use_e acc e
+    | E_GetFields (e, _, _ta) -> use_e acc e
     | E_Record (_ty, li, _ta) -> List.fold_left use_field acc li
     | E_Concat es -> List.fold_left use_e acc es
     | E_Tuple es -> List.fold_left use_e acc es
@@ -132,6 +133,7 @@ let expr_of_lexpr : lexpr -> expr =
     | LE_Typed (le, t) -> E_Typed (map_desc aux le, t)
     | LE_Slice (le, args) -> E_Slice (map_desc aux le, args)
     | LE_SetField (le, x, ta) -> E_GetField (map_desc aux le, x, ta)
+    | LE_SetFields (le, x, ta) -> E_GetFields (map_desc aux le, x, ta)
     | LE_Ignore -> E_Var "-"
     | LE_TupleUnpack les -> E_Tuple (List.map (map_desc aux) les)
   in

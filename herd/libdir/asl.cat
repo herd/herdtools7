@@ -29,33 +29,11 @@ ASL
 
 let NASLLocal = (M | Wreg | Rreg) \ ASLLocal
 let ASLDATA = DATA
-let ASLNDATA = NDATA
 
 let asl_iico_ctrl = iico_ctrl
 let asl_iico_data = iico_data
 let asl_rf_reg = rf-reg
 let asl_rf = rf
-
-(*****************************************************************************)
-(*                                                                           *)
-(*                                   Utils                                   *)
-(*                                                                           *)
-(*****************************************************************************)
-
-(* Sets manipulation *)
-let map = fun f -> fun S ->
-    match S with
-    || {} -> {}
-    || p ++ S -> (f p) ++ (map f S)
-end
-
-(* Pair manipulation *)
-let fst (a, b) = a
-let snd (a, b) = b
-
-(* domain(rel) --rel--> codomain(rel) *)
-let domain rel = map fst rel
-let codomain rel = map snd rel
 
 (*****************************************************************************)
 (*                                                                           *)
@@ -69,12 +47,12 @@ let asl_fr_reg = ([Rreg] ; po ; [Wreg]) & loc (* loc extended to registers *)
 let asl_fr = ([R] ; po ; [W]) & loc
 
 let asl_data = asl_iico_data | asl_rf_reg
-let asl_deps = asl_data | asl_iico_ctrl
+let asl_deps = asl_data (* | asl_iico_ctrl *)
 let asl_deps_restricted = id | (asl_deps ; ([ASLLocal] ; asl_deps)+)
 
 let aarch64_iico_data = ( asl_deps_restricted ; asl_data+ ) & aarch64
 
-(* Here we do need asl_iico_data after the asl_iico_ctrl as the asl_iico_ctrl 
+(* Here we do need asl_iico_data after the asl_iico_ctrl as the asl_iico_ctrl
     does not propagate inside an asl statement *)
 let aarch64_iico_ctrl = ( asl_deps_restricted ; asl_iico_ctrl ; asl_iico_data* ) & aarch64
 
@@ -92,18 +70,15 @@ let aarch64_intrinsic = aarch64_iico_ctrl | aarch64_iico_data | aarch64_iico_ord
 let AArch64 = NASLLocal
 
 (* DATA and NDATA *)
-let to_data = (asl_deps_restricted ; [DATA] ; asl_iico_data ) & aarch64
-let to_ndata = (asl_deps_restricted ; [NDATA] ; asl_iico_data ) & aarch64
+let to_data = (asl_deps_restricted ; [DATA] ; asl_iico_data ; [W | Wreg]) & aarch64
 
-let Aarch64_DATA = NASLLocal & domain (to_data)
-show [Aarch64_DATA] as AArch64_DATA
-
-let Aarch64_NDATA = NASLLocal & domain (to_ndata)
-show [Aarch64_NDATA] as AArch64_NDATA
+let AArch64_DATA = NASLLocal & domain (to_data)
+show [AArch64_DATA] as AArch64_DATA
+show [DATA] as debug_data
 
 (* TODO *)
 (* B = write to PC *)
-(* BCC = codomain(aarch64_iico_ctrl) & B *)
+(* BCC = range(aarch64_iico_ctrl) & B *)
 (* Pred = BranchTo(VBAR something) ??? *)
 (* F = call to (data memory ?) barrier *)
 

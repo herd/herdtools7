@@ -98,6 +98,7 @@ type expr_desc =
   | E_Slice of expr * slice list
   | E_Cond of expr * expr * expr
   | E_GetField of expr * identifier * type_annot
+  | E_GetFields of expr * identifier list * type_annot
   | E_Record of ty * (identifier * expr) list * type_annot
   | E_Concat of expr list
   | E_Tuple of expr list
@@ -137,7 +138,6 @@ and type_desc =
   | T_String
   | T_Bool
   | T_Bits of bits_constraint * bitfields option
-  | T_Bit
   | T_Enum of identifier list
   | T_Tuple of ty list
   | T_Array of expr * ty
@@ -167,7 +167,7 @@ and bits_constraint =
   | BitWidth_Constrained of int_constraints
       (** Constrained directly by a constraint on its width. *)
 
-and bitfields = (slice list * identifier) list
+and bitfields = (identifier * slice list) list
 
 and typed_identifier = identifier * ty
 (** An identifier declared with its type. *)
@@ -185,6 +185,7 @@ type lexpr_desc =
   | LE_Typed of lexpr * ty
   | LE_Slice of lexpr * slice list
   | LE_SetField of lexpr * identifier * type_annot
+  | LE_SetFields of lexpr * identifier list * type_annot
   | LE_TupleUnpack of lexpr list
 
 and lexpr = lexpr_desc annotated

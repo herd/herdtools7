@@ -78,6 +78,7 @@ type t =
   | T of int
 (* ASL processing *)
   | ASL
+  | ASL_AArch64
   | ASLVersion of [ `ASLv0 | `ASLv1 ]
 (* Signed Int128 types *)
   | S128
@@ -131,6 +132,7 @@ let parse s = match Misc.lowercase s with
 | "cos-opt" -> Some CosOpt
 | "test" -> Some Test
 | "asl" -> Some ASL
+| "asl_aarch64" | "aslaarch64" | "asl+aarch64" -> Some ASL_AArch64
 | "aslv0" | "asl0" | "asl_0" -> Some (ASLVersion `ASLv0)
 | "aslv1" | "asl1" | "asl_1" -> Some (ASLVersion `ASLv1)
 | "s128" -> Some S128
@@ -190,6 +192,7 @@ let pp = function
   | Test -> "test"
   | T n -> Printf.sprintf "T%02i" n
   | ASL -> "ASL"
+  | ASL_AArch64 -> "ASL+AArch64"
   | ASLVersion `ASLv0 -> "ASLv0"
   | ASLVersion `ASLv1 -> "ASLv1"
   | S128 -> "S128"

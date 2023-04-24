@@ -316,6 +316,10 @@ val same_instance : event -> event -> bool
   val para_input_right :
     event_structure -> event_structure -> event_structure option
 
+(* Output in second argument *)
+  val para_output_right :
+    event_structure -> event_structure -> event_structure option
+
 (***********************************************)
 (* sequential composition, add data dependency *)
 (***********************************************)
@@ -357,6 +361,9 @@ val same_instance : event -> event -> bool
 (* similar, additionally avoid some evts in target links *)
   val bind_ctrl_avoid : event_set ->  event_structure -> event_structure -> event_structure option
 
+(* Similar, but if no output in second argument, use first as output *)
+  val bind_ctrl_sequence_data :
+    event_structure -> event_structure -> event_structure option
 
 (***********************)
 (* Custom compositions *)
@@ -377,6 +384,9 @@ val same_instance : event -> event -> bool
   val bind_ctrl_first_outputs :
       event_structure -> event_structure -> event_structure option
 
+(* Order composition, same as [=*$=] but with order dependencies instead of data. *)
+  val bind_order :
+      event_structure -> event_structure -> event_structure option
 
 (* exchange composition :
    xch rx ry wx wy ->
@@ -1233,13 +1243,13 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           { r with sca = EventSetSet.add (EventSet.union m1 m2) r.sca; })
         (para_comp true es1 es2)
 
-    let do_force_input get mk es =
+    let do_force get mk es =
       match get es with
       | None -> Some (mk es)
       | Some _ as i -> i
 
     let force_input tag es1 es2 =
-      let o = do_force_input get_input minimals es2 in
+      let o = do_force get_input minimals es2 in
       if dbg then
         Printf.eprintf "ForceInput%s %a(%a) %a(%a) -> %a\n%!"
           tag
@@ -1250,7 +1260,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           (debug_opt debug_events) o ;
       o
 
-    and force_data_input = do_force_input get_data_input minimals_data
+    and force_data_input = do_force get_data_input minimals_data
 
     let para_input_right es1 es2 =
        let r = union es1 es2 in
@@ -1262,6 +1272,17 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
            ctrl_output = union_ctrl_output es1 es2 ;
          } in
        Some r
+
+    let para_output_right es1 es2 =
+      let r = union es1 es2 in
+      let r =
+        { r with
+          input = union_input es1 es2 ;
+          data_input = union_data_input es1 es2 ;
+          output = Some (get_output es2);
+          ctrl_output = union_ctrl_output es1 es2;
+        } in
+      Some r
 
 (* Composition with intra_causality_data from first to second *)
     let do_seq_input access es1 es2 =
@@ -1412,12 +1433,14 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         Some out in
       check_disjoint (control_comp get_ctrl_output minimals out)
 
-
 (* Variant that removes some es2 input from iico_ctrl targets *)
     let bind_ctrl_avoid aset es1 es2 =
       Some
         (control_comp maximals (minimals_avoid aset)
            sequence_control_output es1 es2)
+
+    let bind_ctrl_sequence_data =
+      check_disjoint (control_comp get_ctrl_output minimals sequence_data_output)
 
     let po_union4 =
       if do_deps then
@@ -1538,6 +1561,15 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           ctrl_output = Some ctrl_out1 ;
         } in
       Some r
+
+    (* Order composition. *)
+    let bind_order es1 es2 =
+      let r = union es1 es2 in
+      let intra_causality_order =
+        EventRel.union r.intra_causality_order
+          (EventRel.cartesian (get_output es1) (minimals es2))
+      in
+      Some { r with intra_causality_order }
 
 (* Multi composition for exchange *)
 

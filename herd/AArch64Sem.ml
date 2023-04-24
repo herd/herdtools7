@@ -25,9 +25,6 @@ module Make
     module Act = MachAction.Make(ConfLoc)(AArch64)
     include SemExtra.Make(C)(AArch64)(Act)
 
-    let cache_type = match TopConf.cache_type with
-      | None -> CacheType.default
-      | Some ct -> ct
     let dirty = match TopConf.dirty with | None -> DirtyBit.soft | Some d -> d
     let mixed = AArch64.is_mixed
     (* We need to be aware of endianness for 128-bit Neon LDR/STR, because
@@ -36,7 +33,6 @@ module Make
     let memtag = C.variant Variant.MemTag
     let morello = C.variant Variant.Morello
     let neon = C.variant Variant.Neon
-    let is_deps = C.variant Variant.Deps
     let kvm = C.variant Variant.VMSA
     let is_branching = kvm && not (C.variant Variant.NoPteBranch)
     let pte2 = kvm && C.variant Variant.PTE2
@@ -73,7 +69,10 @@ module Make
       | AArch64.NT -> AArch64.NTA
 
     (* Semantics proper *)
-    module Mixed(SZ:ByteSize.S) = struct
+    module Mixed(SZ:ByteSize.S) : sig
+      val build_semantics : test -> A.inst_instance_id -> (proc * branch) M.t
+      val spurious_setaf : V.v -> unit M.t
+    end = struct
 
       module Mixed = M.Mixed(SZ)
 
@@ -109,8 +108,6 @@ module Make
         let ac = Act.access_of_location_std loc in
         Act.Access (Dir.R, loc, v, an, anexp, sz, ac)
 
-      let mk_read_std = mk_read quad AArch64.N
-
       let has_handler ii =
         match ii.A.env.A.fh_code with
         | Some _ -> true
@@ -121,8 +118,6 @@ module Make
         let loc = Misc.map_opt (fun a -> A.Location_global a) a in
         M.mk_singleton_es
           (Act.Fault (ii,loc,dir,annot,fh,ft,msg)) ii
-
-      let read_loc v is_data = M.read_loc is_data (mk_read v AArch64.N aexp)
 
       let read_reg is_data r ii = match r with
       | AArch64.ZR -> M.unitT V.zero
@@ -167,7 +162,6 @@ module Make
       let read_reg_ord = read_reg_sz quad false
       let read_reg_ord_sz sz = read_reg_sz sz false
       let read_reg_data sz = read_reg_sz sz true
-      let read_reg_tag is_data =  read_reg is_data
 
 (* Fetch of an instruction, i.e., a read from a label *)
       let mk_fetch an loc v =
@@ -405,10 +399,14 @@ module Make
 
 (* Group pteval components together *)
 
-      type ipte =
-          { pte_v:V.v; oa_v:V.v; af_v:V.v;
-            db_v:V.v; dbm_v:V.v; valid_v:V.v;
-            el0_v:V.v; }
+      type ipte = {
+        oa_v : V.v;
+        af_v : V.v;
+        db_v : V.v;
+        dbm_v : V.v;
+        valid_v : V.v;
+        el0_v : V.v;
+      }
 
       let arch_op1 op = M.op1 (Op.ArchOp1 op)
 
@@ -445,8 +443,7 @@ module Make
              write_whole_pte_val AArch64.X nexp a_pte v iiid)
             (M.unitT ())
 
-      let test_and_set_bit cond =  do_test_and_set_bit M.choiceT cond
-      and test_and_set_bit_succeeds cond =
+      let test_and_set_bit_succeeds cond =
         do_test_and_set_bit (fun c m _ -> M.assertT c m) cond
 
       let bit_is_zero op v = arch_op1 op v >>= is_zero
@@ -459,7 +456,6 @@ module Make
         write_whole_pte_val AArch64.X nexp a_pte v (E.IdSome ii)
 
       let set_af = do_set_bit AArch64.AF
-      and set_db = do_set_bit AArch64.DB
 
       let set_afdb a_pte pte_v ii =
         let nexp = AArch64.NExp AArch64.AFDB in
@@ -470,18 +466,8 @@ module Make
         m_op Op.And
           (bit_is_zero AArch64Op.AF v) (bit_is_not_zero AArch64Op.Valid v)
 
-      let test_and_set_af = test_and_set_bit cond_af AArch64.AF
-
-      and test_and_set_af_succeeds =
+      let test_and_set_af_succeeds =
         test_and_set_bit_succeeds cond_af AArch64.AF
-
-      and test_and_set_db =
-        test_and_set_bit
-          (fun v ->
-            m_op Op.And
-              (bit_is_zero AArch64Op.DB v)
-              (bit_is_not_zero AArch64Op.Valid v))
-          AArch64.DB
 
       let mextract_pte_vals pte_v =
         (extract_oa pte_v >>|
@@ -491,7 +477,7 @@ module Make
         extract_db pte_v >>|
         extract_dbm pte_v) >>=
         (fun (((((oa_v,el0_v),valid_v),af_v),db_v),dbm_v) ->
-          M.unitT {pte_v; oa_v; af_v; db_v; dbm_v; valid_v; el0_v;})
+          M.unitT {oa_v; af_v; db_v; dbm_v; valid_v; el0_v;})
 
       let get_oa a_virt mpte =
         (M.op1 Op.Offset a_virt >>| mpte)
@@ -509,10 +495,6 @@ module Make
       (* Notice the complex dependency >>*==
          from branch to instructions events *)
         m1 >>= fun a -> commit_pred ii >>*== fun _ -> m2 a
-
-      let insert_commit m1 m2 ii =
-        if is_branching || morello then do_insert_commit m1 m2 ii
-        else m1 >>= m2
 
       let do_insert_commit_to_fault m1 m2 ii =
         (* Dependencies to fault are simple: Rpte -data-> Branch -> Fault *)
@@ -764,10 +746,8 @@ module Make
         >>= fun v -> write_reg_sz_non_mixed_sxt sz rd v ii
         >>= fun () -> B.nextT
 
-      let read_mem sz = do_read_mem sz AArch64.N
       let read_mem_acquire sz = do_read_mem sz AArch64.A
       let read_mem_acquire_pc sz = do_read_mem sz AArch64.Q
-      let read_mem_noreturn sz = do_read_mem sz AArch64.NoRet
 
       let read_mem_reserve sz an anexp ac rd a ii =
         let m a =
@@ -817,9 +797,6 @@ module Make
 
 
       let write_mem sz = do_write_mem sz AArch64.N
-      let write_mem_release sz = do_write_mem sz AArch64.L
-      let write_mem_amo sz = do_write_mem sz AArch64.X
-      let write_mem_amo_release sz = do_write_mem sz AArch64.XL
 
 (* Write atomic *)
       let write_mem_atomic sz an anexp ac a v resa ii =
@@ -1181,8 +1158,6 @@ module Make
             (read_reg_ord rs ii >>| read_reg_ord r ii)
             >>= fun (v1,v2) -> shift s v2
             >>= fun v2 -> M.add v1 v2
-
-      let get_ea_noext rs kr ii = get_ea rs kr AArch64.S_NOEXT ii
 
       let get_ea_idx rs k ii = get_ea rs (AArch64.K k) AArch64.S_NOEXT ii
 
@@ -2022,7 +1997,7 @@ module Make
       let (!) (m1:unit M.t) = m1 >>= B.next1T
       let nextSet = B.nextSetT
       (* And now, just forget about >>! *)
-      let (>>!) (_:unit) (_:unit) = ()
+      let [@warning "-32"](>>!) (_:unit) (_:unit) = ()
 
       let do_build_semantics test inst ii =
         let open AArch64Base in

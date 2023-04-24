@@ -81,7 +81,7 @@ let get_structure (genv : genv) : ty -> ty =
         match IMap.find_opt x genv with
         | None -> undefined_identifier ty x
         | Some ty -> get ty)
-    | T_Int _ | T_Real | T_String | T_Bool | T_Bits _ | T_Bit | T_Enum _ -> ty
+    | T_Int _ | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ -> ty
     | T_Tuple subtypes -> T_Tuple (List.map get subtypes) |> with_pos
     | T_Array (e, t) -> T_Array (e, get t) |> with_pos
     | T_Record fields -> T_Record (get_fields fields) |> with_pos
@@ -224,13 +224,17 @@ module FunctionRenaming = struct
             ([], name)
             (* Will trigger runtime exception *)
         | [ (eqs, name') ] -> (eqs_as_exprs eqs, name')
-        | (eqs, name') :: _ ->
+        | (_, name') :: _ as li ->
             let () =
               if _warn then
                 Format.eprintf
-                  "Ambiguous call to %s. Many conflicting declared functions."
+                  "Ambiguous call to %s. Many conflicting declared functions.@."
                   name
             in
+            (* We select all possible equations, hoping that there are no
+               conflicting ones. Args keep precendence over type-equations, so
+               there should not be any conflicts with those. *)
+            let eqs = li |> List.map fst |> List.concat in
             (eqs_as_exprs eqs, name')
         (* If ambiguous, I don't know what happens *))
 
@@ -245,16 +249,17 @@ end
 (******************************************************************************)
 
 let expr_of_int i = ASTUtils.literal (V_Int i)
+let plus = ASTUtils.binop PLUS
+let t_bits_bitwidth e = T_Bits (BitWidth_Determined e, None)
+
+let sum = function
+  | [] -> expr_of_int 0
+  | [ x ] -> x
+  | h :: t -> List.fold_left plus h t
 
 let slices_length =
   let open ASTUtils in
-  let plus = binop PLUS in
   let minus = binop MINUS in
-  let sum = function
-    | [] -> expr_of_int 0
-    | [ x ] -> x
-    | h :: t -> List.fold_left plus h t
-  in
   let slice_length = function
     | Slice_Single _ -> expr_of_int 1
     | Slice_Length (_, e) -> e
@@ -269,12 +274,23 @@ let field_type pos x ty =
       | Some ty -> ty
       | None -> bad_field pos x ty)
   | T_Bits (_, Some fields) -> (
-      match List.find_opt (fun (_, y) -> String.equal x y) fields with
-      | Some (slices, _) ->
-          T_Bits (BitWidth_Determined (slices_length slices), None)
-          |> add_dummy_pos
+      match List.assoc_opt x fields with
+      | Some slices ->
+          slices_length slices |> t_bits_bitwidth |> add_pos_from ty
       | None -> bad_field pos x ty)
   | _ -> bad_field pos x ty
+
+let fields_type pos xs ty =
+  let field_length =
+    match ty.desc with
+    | T_Bits (_, Some fields) -> (
+        fun x ->
+          match List.assoc_opt x fields with
+          | None -> bad_field pos x ty
+          | Some slices -> slices_length slices)
+    | _ -> conflict pos [ ASTUtils.default_t_bits ] ty
+  in
+  List.map field_length xs |> sum |> t_bits_bitwidth |> add_pos_from ty
 
 let rename_ty_eqs (eqs : (AST.identifier * AST.expr) list) ty =
   let mapping = IMap.of_list eqs in
@@ -303,8 +319,6 @@ let check_num pos ty =
   match ty.desc with
   | T_Int _ | T_Bits _ | T_Real -> ty
   | _ -> conflict pos [ T_Int None; ASTUtils.default_t_bits; T_Real ] ty
-
-let t_bits_bitwidth e = T_Bits (BitWidth_Determined e, None)
 
 let infer_value = function
   | V_Int i -> T_Int (Some [ Constraint_Exact (expr_of_int i) ])
@@ -357,6 +371,10 @@ let rec infer tenv lenv e =
       match ta with
       | TA_None -> infer tenv lenv e |> field_type e x
       | TA_InferredStructure ty -> field_type e x ty)
+  | E_GetFields (e, xs, ta) -> (
+      match ta with
+      | TA_None -> infer tenv lenv e |> fields_type e xs
+      | TA_InferredStructure ty -> fields_type e xs ty)
   | E_Record (ty, _, ta) -> (
       match ta with
       | TA_None -> get_structure tenv.globals ty
@@ -372,7 +390,7 @@ let rec infer tenv lenv e =
       let length = List.fold_left get_length (expr_of_int 0) es in
       t_bits_bitwidth length |> add_dummy_pos
   | E_Tuple es -> T_Tuple (List.map (infer tenv lenv) es) |> add_dummy_pos
-  | E_Unknown ty -> ty
+  | E_Unknown ty -> get_structure tenv.globals ty
   | E_Pattern _ -> T_Bool |> ASTUtils.add_pos_from e
 
 and infer_op op =
@@ -407,8 +425,12 @@ let rec infer_lexpr tenv lenv le =
       | T_Bits _ -> slices_length slices |> t_bits_bitwidth |> add_dummy_pos
       | _ -> conflict le [ ASTUtils.default_t_bits ] ty)
   | LE_SetField (_, field, TA_InferredStructure ty) -> field_type le field ty
-  | LE_SetField (le, field, TA_None) ->
-      infer_lexpr tenv lenv le |> field_type le field
+  | LE_SetFields (_, fields, TA_InferredStructure ty) ->
+      fields_type le fields ty
+  | LE_SetField (le, fields, TA_None) ->
+      infer_lexpr tenv lenv le |> field_type le fields
+  | LE_SetFields (le, fields, TA_None) ->
+      infer_lexpr tenv lenv le |> fields_type le fields
   | LE_Ignore -> not_yet_implemented le "Type inference of '-'"
   | LE_TupleUnpack les ->
       T_Tuple (List.map (infer_lexpr tenv lenv) les) |> add_dummy_pos
@@ -419,21 +441,23 @@ let rec infer_lexpr tenv lenv le =
 (*                                                                            *)
 (******************************************************************************)
 
-let should_reduce_to_call tenv name slices =
+let should_reduce_to_call tenv name args =
+  match IMap.find_opt name tenv.funcs with
+  | None -> None
+  | Some (_arg_types, return_type) -> Some (name, args, return_type)
+
+let should_slices_reduce_to_call tenv name slices =
   let args =
     try Some (List.map ASTUtils.slice_as_single slices)
     with Invalid_argument _ -> None
   in
   match args with
   | None -> None
-  | Some args -> (
-      match IMap.find_opt name tenv.funcs with
-      | None -> None
-      | Some (_arg_types, return_type) -> Some (name, args, return_type))
+  | Some args -> should_reduce_to_call tenv name args
 
 let getter_should_reduce_to_call tenv x slices =
   let name = ASTUtils.getter_name x in
-  match should_reduce_to_call tenv name slices with
+  match should_slices_reduce_to_call tenv name slices with
   | Some (name, args, Some _) ->
       let () =
         if false then Format.eprintf "Reducing call from %s to %s.@." x name
@@ -441,15 +465,48 @@ let getter_should_reduce_to_call tenv x slices =
       Some (name, args)
   | Some (_, _, None) | None -> None
 
-let setter_should_reduce_to_call tenv x slices e =
-  let name = ASTUtils.setter_name x and slices = Slice_Single e :: slices in
-  match should_reduce_to_call tenv name slices with
-  | Some (name, args, _) ->
-      let () =
-        if false then Format.eprintf "Reducing call from %s to %s.@." x name
-      in
-      Some (name, args)
-  | None -> None
+let rec setter_should_reduce_to_call_s tenv le e : stmt option =
+  let here d = ASTUtils.add_pos_from le d in
+  let s_then = ASTUtils.s_then in
+  let rec_desc le' e_desc =
+    ASTUtils.add_pos_from le e_desc |> setter_should_reduce_to_call_s tenv le'
+  in
+  let to_expr = ASTUtils.expr_of_lexpr in
+  let with_temp old_le sub_le =
+    let x = ASTUtils.fresh_var "setter_setfield" in
+    let le_x = LE_Var x |> here in
+    match setter_should_reduce_to_call_s tenv sub_le (E_Var x |> here) with
+    | None -> None
+    | Some s ->
+        Some
+          (s_then
+             (s_then
+                (S_Assign (le_x, to_expr sub_le) |> here)
+                (S_Assign (old_le le_x, e) |> here))
+             s)
+  in
+  match le.desc with
+  | LE_Ignore -> None
+  | LE_SetField (sub_le, field, ta) ->
+      let old_le le' = LE_SetField (le', field, ta) |> here in
+      with_temp old_le sub_le
+  | LE_SetFields (sub_le, fields, ta) ->
+      let old_le le' = LE_SetFields (le', fields, ta) |> here in
+      with_temp old_le sub_le
+  | LE_Slice ({ desc = LE_Var x; _ }, slices) -> (
+      let name = ASTUtils.setter_name x and slices = Slice_Single e :: slices in
+      match should_slices_reduce_to_call tenv name slices with
+      | None -> None
+      | Some (name, args, _) -> Some (S_Call (name, args, []) |> here))
+  | LE_Slice (sub_le, slices) ->
+      let old_le le' = LE_Slice (le', slices) |> here in
+      with_temp old_le sub_le
+  | LE_TupleUnpack _ -> None
+  | LE_Typed (le', ty) -> E_Typed (e, ty) |> rec_desc le'
+  | LE_Var x -> (
+      match should_reduce_to_call tenv (ASTUtils.setter_name x) [ e ] with
+      | Some (name, args, _) -> Some (S_Call (name, args, []) |> here)
+      | None -> None)
 
 let rec annotate_expr tenv lenv e : expr =
   let tr = annotate_expr tenv lenv in
@@ -492,10 +549,17 @@ let rec annotate_expr tenv lenv e : expr =
       let e2 = try_annotate_expr tenv lenv e2
       and e3 = try_annotate_expr tenv lenv e3 in
       E_Cond (tr e1, e2, e3)
-  | E_GetField (e, field, _ta) ->
+  | E_GetField (e', field, _ta) -> (
+      let e' = tr e' in
+      let ty = infer tenv lenv e' in
+      match ty.desc with
+      | T_Bits _ -> E_GetFields (e', [ field ], TA_InferredStructure ty)
+      | T_Record _ -> E_GetField (e', field, TA_InferredStructure ty)
+      | _ -> conflict e [ ASTUtils.default_t_bits; T_Record [] ] ty)
+  | E_GetFields (e, fields, _ta) ->
       let e = tr e in
       let ty = infer tenv lenv e in
-      E_GetField (e, field, TA_InferredStructure ty)
+      E_GetFields (e, fields, TA_InferredStructure ty)
   | E_Record (ty, fields, _ta) ->
       let ta = get_structure tenv.globals ty
       and fields =
@@ -506,7 +570,7 @@ let rec annotate_expr tenv lenv e : expr =
   | E_Concat es -> E_Concat (List.map tr es)
   | E_Tuple es -> E_Tuple (List.map tr es)
   | E_Unknown t -> E_Unknown (get_structure tenv.globals t)
-  | E_Pattern (e, p) -> E_Pattern (tr e, p)
+  | E_Pattern (e', p) -> E_Pattern (tr e', p)
 
 and try_annotate_expr tenv lenv e =
   match Error.intercept (fun () -> annotate_expr tenv lenv e) () with
@@ -536,10 +600,16 @@ let rec annotate_lexpr tenv lenv le =
   | LE_Typed (le, t) -> LE_Typed (annotate_lexpr tenv lenv le, t)
   | LE_Slice (le, slices) ->
       LE_Slice (annotate_lexpr tenv lenv le, annotate_slices tenv lenv slices)
-  | LE_SetField (le, field, _ta) ->
-      let le = annotate_lexpr tenv lenv le in
-      let ty = infer_lexpr tenv lenv le in
-      LE_SetField (le, field, TA_InferredStructure ty)
+  | LE_SetField (le', field, _ta) -> (
+      let le' = annotate_lexpr tenv lenv le' in
+      let ty = infer_lexpr tenv lenv le' in
+      match ty.desc with
+      | T_Bits _ -> LE_SetFields (le', [ field ], TA_InferredStructure ty)
+      | _ -> LE_SetField (le', field, TA_InferredStructure ty))
+  | LE_SetFields (le', fields, _ta) ->
+      let le' = annotate_lexpr tenv lenv le' in
+      let ty = infer_lexpr tenv lenv le' in
+      LE_SetFields (le', fields, TA_InferredStructure ty)
   | LE_Ignore -> LE_Ignore
   | LE_TupleUnpack les ->
       LE_TupleUnpack (List.map (annotate_lexpr tenv lenv) les)
@@ -559,15 +629,9 @@ let rec annotate_stmt tenv lenv s =
       let s2, lenv = annotate_stmt tenv lenv s2 in
       (S_Then (s1, s2), lenv)
   | S_Assign (le, e) -> (
-      let reduced =
-        match le.desc with
-        | LE_Var x -> setter_should_reduce_to_call tenv x [] e
-        | LE_Slice ({ desc = LE_Var x; _ }, slices) ->
-            setter_should_reduce_to_call tenv x slices e
-        | _ -> None
-      in
+      let reduced = setter_should_reduce_to_call_s tenv le e in
       match reduced with
-      | Some (name, args) -> S_Call (name, args, []) |> tr_desc
+      | Some { desc = s; _ } -> tr_desc s
       | None ->
           let e = annotate_expr tenv lenv e
           and le = annotate_lexpr tenv lenv le in

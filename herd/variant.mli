@@ -75,8 +75,12 @@ type t =
 (* One hundred tests *)
   | T of int
 (* ASL Processing *)
-  | ASL
-  | ASLVersion of [ `ASLv0 | `ASLv1 ]
+  (* In AArch64 arch, use ASL to interprete AArch64 instructions when possible. *)
+  | ASL 
+  (* While interpreting ASL litmus test, include AArch64 shared pseudocode. *)
+  | ASL_AArch64 
+  (* When using aarch ASL, use ASL version v0 or v1 *)
+  | ASLVersion of [ `ASLv0 | `ASLv1 ] 
 (* Signed Int128 types *)
   | S128
 

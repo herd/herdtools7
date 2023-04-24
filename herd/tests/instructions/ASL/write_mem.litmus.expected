@@ -1,0 +1,10 @@
+Test write-mem Required
+States 1
+[x]='0000000000000000000000000000000000000000000000000000000000000011';
+No
+Witnesses
+Positive: 0 Negative: 1
+Condition forall ([x]=3)
+Observation write-mem Never 0 1
+Hash=e5cf6f5fa120d1d6472eb18e535acb3d
+

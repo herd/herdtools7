@@ -86,7 +86,7 @@ let parse_reg s =
   | None, _ -> parse_local_id s
 
 (** A list of supported AArch64 registers. *)
-let arch_regs = AArch64Base.NZCV :: List.map fst AArch64Base.xregs
+let gregs = List.map fst AArch64Base.xregs
 
 let pp_reg = function
   | ASLLocalId (scope, x) -> pp_scope scope ^ "." ^ x

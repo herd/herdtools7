@@ -127,6 +127,11 @@ Monad type:
     type 'a t =
         eid -> eid * ('a Evt.t * 'a Evt.t option)
 
+    let map_elt (f : 'a Evt.elt -> 'b Evt.elt) (m : 'a t) : 'b t =
+     fun eid ->
+      let eid', (evt, evt_spec) = m eid in
+      (eid', (Evt.map f evt, Option.map (Evt.map f) evt_spec))
+
  (* Code monad slight differs as regardes agument *)
  (* Threading by instruction instance identifier and event id proper *)
 
@@ -265,6 +270,8 @@ Monad type:
       assert (cl=[]) ;
       data_comp (E.bind_ctrl_avoid es.E.events) s f eiid
 
+    let bind_ctrl_seq_data s f = data_comp E.bind_ctrl_sequence_data s f
+
     let bind_data_to_minimals s f =  data_comp E.data_to_minimals s f
 
 (* Triple composition *)
@@ -298,6 +305,7 @@ Monad type:
 
     let bind_ctrl_first_outputs s f = data_comp E.bind_ctrl_first_outputs s f
 
+    let bind_order s f = data_comp E.bind_order s f
 
 (* Ad-hoc short-circuit *)
     let short3 p1 p2 m =
@@ -738,30 +746,23 @@ Monad type:
       = fun  s1 s2 -> combi (fun _ _ -> ()) (=|=) s1 s2
 
 (* Force monad value *)
-    let forceT : 'a -> 'b t -> 'a t =
-      fun v s eiid ->
-        let (eiid,(sact,spec)) = s eiid in
-        let f = fun (_,vcl,es) -> (v,vcl,es) in
-        (eiid,(Evt.map f sact, Misc.app_opt (Evt.map f) spec))
+    let forceT (v : 'a) : 'b t -> 'a t =
+      let f (_, vcl, es) = (v, vcl, es) in
+      map_elt f
 
     let (>>!) s v = forceT v s
 
     let discardT : 'a t -> unit t = fun s eiid -> forceT () s eiid
 
-
 (* Add a value *)
-    let addT : 'a -> 'b t -> ('a * 'b) t
-        = fun v s eiid ->
-          let (eiid1,(sact,spec)) = s eiid in
-          let f = (fun (vin, vcl, es) -> ((v, vin), vcl, es)) in
-          (eiid1,(Evt.map f sact, Misc.app_opt (Evt.map f) spec))
+    let addT (v1: 'a) : 'b t -> ('a * 'b) t =
+      let f (v2, vcl, es) = ((v1, v2), vcl, es) in
+      map_elt f
 
 (* Assert a value *)
-    let assertT : 'A.V.v -> 'a t -> 'a t =
-      fun v m eiid ->
-      let eiid,(acts,spec) = m eiid in
-      let f (r,cs,es) = r,VC.Assign (v,VC.Atom V.one)::cs,es in
-      eiid,(Evt.map f acts,Misc.app_opt (Evt.map f) spec)
+    let assertT (v: A.V.v) : 'a t -> 'a t =
+      let f (r, cs, es) = (r, VC.Assign (v, VC.Atom V.one) :: cs, es) in
+      map_elt f
 
 (* Choosing dependant upon flag, notice that, once determined v is either one or zero *)
     let choiceT =
@@ -925,6 +926,9 @@ Monad type:
 
     let cseq : 'a t -> ('a -> 'b t) -> 'b t = fun s f ->  data_comp (+|+) s f
 
+    let aslseq : 'a t -> ('a -> 'b t) -> 'b t =
+      fun s f -> data_comp E.para_output_right s f
+
     type poi = int
 
 (************************************************)
@@ -1077,6 +1081,10 @@ Monad type:
 
     let add_data_ports st = { st with E.data_ports = st.E.events; }
     let add_success_ports st = { st with E.success_ports = st.E.events; }
+
+    let as_data_port : 'a t -> 'a t =
+      let f (a, cs, es) = (a, cs, add_data_ports es) in
+      fun m -> map_elt f m
 
     let do_make_one_event_structure_data is_data =
       if is_data then

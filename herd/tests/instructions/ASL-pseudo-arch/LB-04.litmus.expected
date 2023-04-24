@@ -1,0 +1,13 @@
+Test LB-pseudo-arch Allowed
+States 4
+0:T0.0.x0=0; 0:T1.0.x1=0;
+0:T0.0.x0=0; 0:T1.0.x1=1;
+0:T0.0.x0=1; 0:T1.0.x1=0;
+0:T0.0.x0=1; 0:T1.0.x1=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (0:T0.0.x0=1 /\ 0:T1.0.x1=1)
+Observation LB-pseudo-arch Sometimes 1 3
+Hash=bb7c97bd88c78edab3ddab591d5fc7ca
+

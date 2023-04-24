@@ -71,6 +71,15 @@ let create_data_bytes length =
   let n = length / 8 and m = length mod 8 in
   Bytes.create (if m = 0 then n else n + 1)
 
+(** [String.for_all] taken directly out of stdlib version 4.13 . *)
+let string_for_all p s =
+  let n = String.length s in
+  let rec loop i =
+    if i = n then true
+    else if p (String.unsafe_get s i) then loop (succ i)
+    else false in
+  loop 0
+
 (* --------------------------------------------------------------------------
 
                               Printers and conversions
@@ -169,8 +178,7 @@ let of_string s =
   else ();
   (length, Buffer.contents result)
 
-let of_int s =
-  let length = Sys.int_size - 1 in
+let of_int_sized length s =
   let n = length / 8 and m = length mod 8 in
   let result = Bytes.make (if m = 0 then n else n + 1) char_0 in
   for i = 0 to n - 1 do
@@ -182,6 +190,8 @@ let of_int s =
     Bytes.set result n (Char.chr c)
   else ();
   (length, Bytes.unsafe_to_string result)
+
+let of_int = of_int_sized (Sys.int_size - 1)
 
 let of_int64 s =
   let result = create_data_bytes 64 in
@@ -386,3 +396,7 @@ let ones length =
 
 let zero = zeros 1
 let one = ones 1
+
+let is_zeros bv =
+  let _length, data = remask bv in
+  string_for_all (( = ) char_0) data

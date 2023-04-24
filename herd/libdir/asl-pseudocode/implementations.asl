@@ -238,3 +238,70 @@ func ClearExclusiveByAddress(paddress :: FullAddress, processorid :: integer, si
 begin
   pass;
 end
+
+
+getter _R [n :: integer] => bits(64)
+begin
+  return read_register(n);
+end
+
+setter _R [n :: integer] = value :: bits(64)
+begin
+  write_register(n, value);
+end
+
+type SCTLRType of bits(64) {
+  [0] M,
+  [1] A,
+  [2] C,
+  [3] SA,
+  [4] SA0,
+  [5] CP15BEN,
+  [6] nAA,
+  [7] ITD,
+  [8] SED,
+  [9] UMA,
+  [10] EnRCTX,
+  [11] EOS,
+  [12] I,
+  [13] EnDB,
+  [14] DZE,
+  [15] UCT,
+  [16] nTWI,
+  [17] RES0,
+  [18] nTWE,
+  [19] WXN,
+  [20] TSCXT,
+  [21] IESB,
+  [22] EIS,
+  [23] SPAN,
+  [24] EOE,
+  [25] EE,
+  [26] UCI,
+  [27] EnDA,
+  [28] nTSLMD,
+  [29] LSMAOE,
+  [30] EnIB,
+  [31] EnIA,
+
+  [35] BT0,
+  [36] BT1,
+  [37] ITFSB,
+  [39:38] TCF0,
+  [41:40] TCF,
+  [42] ATA0,
+  [43] ATA,
+  [44] DSSBS,
+  [45] TWEDEn,
+  [49:46] TWEDEL,
+
+  [54] EnASR,
+  [55] EnAS0,
+  [56] EnALS,
+  [57] EPAN,
+};
+
+getter SCTLR_EL1[] => SCTLRType
+begin
+  return Zeros(64);
+end

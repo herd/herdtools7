@@ -11,7 +11,7 @@
  (modules (:standard \ asli bundler))
  (private_modules Parser0 Gparser0 Lexer0 SimpleLexer0 RepeatableLexer)
  (modules_without_implementation Backend AST)
- (flags -w -40-42)
+ (flags (:standard -w -40-42))
  (libraries menhirLib))
 
 (executable

@@ -562,7 +562,7 @@ module Make(C:Config) (I:I) : S with module I = I
             | _ -> k)
           st RegMap.empty
 
-      let look_reg r st = try Some (RegMap.find r st) with Not_found -> None
+      let look_reg r st = RegMap.find_opt r st
       let set_reg r v st = RegMap.add r v st
       let kill_regs rs st =  List.fold_right RegMap.remove rs st
       let fold_reg_state = RegMap.fold

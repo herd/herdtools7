@@ -58,6 +58,10 @@ module type S = sig
   (** Monadic bind operation. but that only pass internal interpreter data.
       This should not create any data-dependency. *)
 
+  val bind_ctrl : 'a m -> ('a -> 'b m) -> 'b m
+  (** Monadic bind operation, but that creates a control dependency between the\
+      first argument and the result of the second one. *)
+
   val prod : 'a m -> 'b m -> ('a * 'b) m
   (** Monadic product operation, two monads are combined "in parrallel".*)
 

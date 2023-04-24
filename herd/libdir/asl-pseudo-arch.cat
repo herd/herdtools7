@@ -1,0 +1,12 @@
+(* Pseudo-architecture to test ASL dependencies *)
+
+(* 
+   Principle: this peudo-architecture is made to be able to discirminate
+   asl-dependencies in very short litmus tests (in constrast to the full shared
+   aarch64 pseudocode included in an AArch64 litmus test).
+ *)
+
+
+acyclic iico_data | iico_ctrl | rf-reg | rf
+
+

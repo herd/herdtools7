@@ -22,6 +22,7 @@ module ASLArchOp = struct
     | BVSlice of int list
     | ToInt
     | ToBool
+    | ToBV
 
   let pp_op1 hexa = function
     | Set (i, v) -> Printf.sprintf "Set(%d, %s)" i (ASLConstant.pp hexa v)
@@ -31,6 +32,7 @@ module ASLArchOp = struct
         @@ List.map string_of_int positions
     | ToInt -> "ToInt"
     | ToBool -> "ToBool"
+    | ToBV -> "ToBV"
 
   let do_op1 =
     let ( let* ) = Option.bind in
@@ -53,6 +55,11 @@ module ASLArchOp = struct
       | ToInt -> (
           match cst with
           | Constant.Concrete s -> ASLScalar.convert_to_int s |> return_concrete
+          | Constant.Symbolic _ -> Some cst
+          | _ -> None)
+      | ToBV -> (
+          match cst with
+          | Constant.Concrete s -> ASLScalar.convert_to_bv s |> return_concrete
           | Constant.Symbolic _ -> Some cst
           | _ -> None)
       | ToBool ->

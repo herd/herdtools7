@@ -180,6 +180,17 @@ test-asl:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 ASL instructions tests: OK"
 
+test:: test-pseudo-asl
+test-pseudo-asl:
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/ASL-pseudo-arch \
+		-conf ./herd/tests/instructions/ASL-pseudo-arch/pseudo-conf.cfg \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 ASL instructions tests on pseudo-architecture: OK"
+
 test-aarch64-asl: asl-pseudocode
 	@echo
 	$(HERD_REGRESSION_TEST) \
