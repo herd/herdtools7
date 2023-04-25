@@ -1,12 +1,13 @@
 Test L038 Allowed
-States 3
+States 4
 1:X1=0; [x]=1;
 1:X1=0; [x]=2;
 1:X1=1; [x]=1;
-No
+1:X1=1; [x]=2;
+Ok
 Witnesses
-Positive: 0 Negative: 3
+Positive: 1 Negative: 3
 Condition exists (1:X1=1 /\ [x]=2)
-Observation L038 Never 0 3
+Observation L038 Sometimes 1 3
 Hash=c3cc8c9b6c039efe45c1cf847ca493b5
 
