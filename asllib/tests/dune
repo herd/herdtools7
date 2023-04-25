@@ -8,7 +8,7 @@
   (modes native)
   (modules asltests)
   (libraries asllib test_helpers)
-  (deps (glob_files asl/required/*.asl) %{test} ../libdir/stdlib.asl)
+  (deps (glob_files asl/required/*.asl) asltests.ml ../libdir/stdlib.asl)
   (action
     (setenv ASL_LIBDIR %{project_root}/asllib/libdir
       (run %{test} asl/required))))
