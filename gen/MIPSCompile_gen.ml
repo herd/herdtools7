@@ -377,7 +377,7 @@ let emit_joker st init = None,init,[],st
     | DATA -> Warn.fatal "no data depency to RMW"
     | CTRL -> emit_exch_ctrl st p init er ew r1
 
-    let emit_rmw_dep () st p init er ew dp rd =
+    let emit_rmw_dep () st p init er ew dp rd _n =
       let r,init,cs,st = emit_exch_dep  st p init er ew dp rd in
       Some r,init,cs,st
 
