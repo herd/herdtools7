@@ -1,0 +1,11 @@
+Test A015 Allowed
+States 2
+0:X9=0;
+0:X9=1;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (0:X9=0)
+Observation A015 Sometimes 1 1
+Hash=6630f9344320cf27835f71f1bc488e31
+

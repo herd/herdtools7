@@ -67,7 +67,6 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
       include ASLConf
 
       let byte = SZ.byte
-      let cache_type = TopConf.cache_type
       let dirty = TopConf.dirty
       let initwrites = false
     end
@@ -875,7 +874,6 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
         let strictskip = true
         let through = Model.ThroughAll
         let cycles = StringSet.empty
-        let cache_type = TopConf.cache_type
         let dirty = TopConf.dirty
       end in
       let module ASL64M = MemCat.Make (MemConfig) (ASLS) in

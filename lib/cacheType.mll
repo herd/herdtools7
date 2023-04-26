@@ -14,6 +14,9 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+(* DIC and IDC are set per proc for legacy reasons:
+ * they are used to compute hashes of litmus tests
+ *)
 {
 type t =
   {
@@ -27,18 +30,15 @@ exception Error
 
 }
 
-let num = ['0'-'9']+
 let blank = [' ''\t''\r']
 rule all k = parse
-|('P'? (num as x) ':')?
  (['a'-'z''A'-'Z']+ as key)
  {
-  let proc = Misc.app_opt int_of_string x
-  and f = match Misc.lowercase key with
+  let ct = match Misc.lowercase key with
   | "dic" -> DIC
   | "idc" -> IDC
   | _ -> Warn.user_error "'%s' is not a cache-type key, keys are DIC, IDC" key in
-  all ((proc,f)::k) lexbuf }
+  all (ct::k) lexbuf }
 | blank+ { all k lexbuf }
 | eof { k }
 | "" { raise Error }
@@ -58,26 +58,13 @@ let get info =
  | Some s ->
     try
       let xs = all [] (Lexing.from_string s) in
-      let idcs = xs
-      and dics = List.filter (function (_,DIC) -> true | _ -> false) xs in
+      let dic =
+        let dic_exists = List.exists (function DIC -> true | _ -> false) xs in
+          (fun _ -> dic_exists) in
+      (* Note that DIC implies IDC *)
       let idc =
-        if List.exists (function (None,(IDC|DIC)) -> true | _ -> false) idcs then
-          (fun _ -> true)
-        else
-          let xs =
-            List.filter_map
-              (function (Some _ as p,(IDC|DIC)) -> p | _ -> None)
-              idcs in
-          fun proc -> List.exists (Misc.int_eq proc) xs
-      and dic =
-        if List.exists (function (None,DIC) -> true | _ -> false) dics then
-          (fun _ -> true)
-        else
-          let xs =
-            List.filter_map
-              (function (Some _ as p,DIC) -> p | _ -> None)
-              dics in
-          fun proc -> List.exists (Misc.int_eq proc) xs in
+        let idc_or_dic_exists = List.exists (function (IDC|DIC) -> true) xs in
+          (fun _ -> idc_or_dic_exists) in
       Some { dic; idc; }
     with Error ->
       Warn.user_error "Incorrect cache-type feature specification '%s'" s

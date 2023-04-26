@@ -27,7 +27,6 @@ end
 
 module type Config = sig
   module C : SubConfig
-  val cache_type : CacheType.t option
   val dirty : DirtyBit.t option
   val procs_user : Proc.t list
 end

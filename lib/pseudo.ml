@@ -270,13 +270,13 @@ struct
     let rec do_rec addr code k =
       match code with
       | [] -> k
-      | Label (lbl,_)::rem ->
+      | Label (lbl,pseudoi)::rem ->
           let full_lbl = (p,lbl) in
           let k =
            if Label.Full.Set.mem full_lbl lbls then
              add_next_instr m addr full_lbl code k
            else k in
-          do_rec addr rem k
+          do_rec addr (pseudoi::rem) k
       | Instruction ins::rem ->
          do_rec (addr+I.size_of_ins ins)  rem k
       | Nop::rem -> do_rec addr rem k

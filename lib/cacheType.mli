@@ -14,6 +14,9 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+(* DIC and IDC are set per proc for legacy reasons:
+ * they are used to compute hashes of litmus tests
+ *)
 type t =
   {
      dic : Proc.t -> bool;

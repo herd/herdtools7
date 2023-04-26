@@ -35,7 +35,6 @@ module type Config = sig
 end
 
 type runfun =
-  CacheType.t option ->
   DirtyBit.t option ->
   float (* start time *) ->
   string (* file name *) ->
@@ -54,7 +53,7 @@ module Make
     (C:Config) =
   struct
     module T = Test_herd.Make(S.A)
-     let run cache_type dirty start_time filename chan env splitted =
+     let run dirty start_time filename chan env splitted =
       try
          let parsed = P.parse chan splitted in
         let name = splitted.Splitter.name in
@@ -86,7 +85,6 @@ module Make
             (struct
               include C
               let byte = sz
-              let cache_type = cache_type
               let dirty = dirty
             end)(M) in
         T.run start_time test ;

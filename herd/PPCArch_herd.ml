@@ -31,6 +31,8 @@ module Make (C:Arch_herd.Config) (V:Value.S)
     let is_atomic annot = annot
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
+    let ifetch_value_sets = []
+
     let barrier_sets =
       [
        "SYNC",is_barrier Sync;

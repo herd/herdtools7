@@ -1,1 +1,0 @@
-Warning: File "./herd/tests/instructions/AArch64.self/S23.litmus": Instruction L0:STR W1,[X2,#4] cannot be overwritten (User error)

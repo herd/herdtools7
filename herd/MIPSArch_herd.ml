@@ -31,6 +31,8 @@ module Make
     let empty_annot = false
     let is_atomic annot = annot
 
+    let ifetch_value_sets = []
+
     let barrier_sets = ["SYNC",(function Sync -> true);]
 
     let cmo_sets = []

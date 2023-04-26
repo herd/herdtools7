@@ -21,6 +21,7 @@ module type A = sig
 
   type lannot
   val empty_annot : lannot
+  val ifetch_value_sets : (string * (V.v -> bool)) list
   val barrier_sets : (string * (barrier -> bool)) list
   val cmo_sets : (string * (CMO.t -> bool)) list
   val annot_sets : (string * (lannot -> bool)) list
@@ -90,7 +91,7 @@ end = struct
   open Access
 
   let kvm = C.variant Variant.VMSA
-  let self = C.variant Variant.Self
+  let self = C.variant Variant.Ifetch
 
   let access_of_constant cst =
     let open Constant in
@@ -310,18 +311,6 @@ end = struct
     | Inv _ -> true
     | Access _|Amo _|Commit _|Barrier _|Fault _|TooFar _|CMO _|Arch _|NoAction -> false
 
-  let is_label a = match a with
-  | Access (_,A.Location_global (A.V.Val c),_,_,_,_,_)
-  | Amo (A.Location_global (A.V.Val c),_,_,_,_,_,_)
-    -> Constant.is_label c
-  | Arch a ->
-     begin
-       match A.ArchAction.location_of a with
-       | Some (A.Location_global (A.V.Val c)) -> Constant.is_label c
-       | _ -> false
-     end
-  | _ -> false
-
   let is_at_level lvl = function
     | Inv(op,_) -> A.TLBI.is_at_level lvl op
     | _ -> false
@@ -535,9 +524,22 @@ end = struct
 
     and ifetch_sets =
       if self then
-        (* ("IF",is_ifetch)::[] *)
-        ("INSTR",is_label)::[]
-      else []
+        let location_of_is_a_label a =
+          match location_of a with
+          | Some A.Location_global (A.V.Val c) -> Constant.is_label c
+          | _ -> false in
+        let is_ifetch a = (is_mem_load a || is_mem_store a) && location_of_is_a_label a in
+        let check_value a f = match value_of a with
+          | Some v -> f v
+          | _ -> false in
+        let ifetch_value_sets =
+          List.map
+            (fun (tag,p) ->
+              tag, fun a -> is_ifetch a && (check_value a p))
+            A.ifetch_value_sets in
+        ("Instr",is_ifetch)::ifetch_value_sets
+      else
+        []
 
     and fault_sets =
       ("FAULT",is_fault)::

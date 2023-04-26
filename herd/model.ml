@@ -88,7 +88,6 @@ module type Config = sig
   val optace : OptAce.t
   val libfind : string -> string
   val variant : Variant.t -> bool
-  val cache_type : CacheType.t option
   val dirty : DirtyBit.t option
 end
 

@@ -1,0 +1,11 @@
+AArch64 A015
+{
+  0:X0=NOP;0:X1=P0:Lself00; 0:X9=0;
+}
+P0                 ;
+L0:L1: STR W0,[X1];
+Lself00:    ;
+ B Lout     ;
+ MOV W9,#1  ;
+Lout:       ;
+exists 0:X9=0

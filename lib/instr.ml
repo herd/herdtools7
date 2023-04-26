@@ -22,8 +22,9 @@ module type S = sig
   val tr : InstrLit.t -> t
   val nop : t option
   val is_nop : t -> bool
-  val is_overwritable : t -> bool
+
   val can_overwrite : t -> bool
+
   val get_exported_label : t -> Label.t option
 
   module Set : MySet.S with type elt = t
@@ -42,7 +43,6 @@ module No (I:sig type instr end) = struct
     fail ("litteral instruction " ^ InstrLit.pp i)
   let nop = None
   let is_nop _ = fail "is_nop"
-  let is_overwritable _ = false
   let can_overwrite _ = false
   let get_exported_label _ = None
 
@@ -74,7 +74,6 @@ module
       fail ("litteral instruction " ^ InstrLit.pp i)
     let nop = Some I.nop
     let is_nop i = eq i I.nop
-    let is_overwritable _ = false
     let can_overwrite _ = false
     let get_exported_label _ = None
 

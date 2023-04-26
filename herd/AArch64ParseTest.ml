@@ -7,7 +7,7 @@ module Make(Conf:RunTest.Config)(ModelConfig:MemCat.Config) = struct
     let debug = Conf.debug.Debug_herd.lexer
   end
 
-  let run cache_type dirty start_time name chan env splitted =
+  let run dirty start_time name chan env splitted =
 
     let module Top (MakeSem:AArch64Sig.MakeSemantics) =
       struct
@@ -30,7 +30,6 @@ module Make(Conf:RunTest.Config)(ModelConfig:MemCat.Config) = struct
           module AArch64SemConf = struct
             module C = Conf
             let dirty = ModelConfig.dirty
-            let cache_type = ModelConfig.cache_type
             let procs_user = ProcsUser.get splitted.Splitter.info
           end
           module AArch64S = MakeSem(AArch64SemConf)(V)
@@ -64,9 +63,9 @@ module Make(Conf:RunTest.Config)(ModelConfig:MemCat.Config) = struct
 (* START NOTWWW *)
       if Conf.variant Variant.ASL then
         let module Run =  Top(AArch64ASLSem.Make) in
-        Run.run cache_type dirty start_time name chan env splitted
+        Run.run dirty start_time name chan env splitted
       else
 (* END NOTWWW *)
         let module Run = Top(AArch64Sem.Make) in
-        Run.run cache_type dirty start_time name chan env splitted
+        Run.run dirty start_time name chan env splitted
 end

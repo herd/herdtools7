@@ -70,6 +70,9 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | X (Rlx|Rel|Acq|AcqRel)| P (Rlx|Rel|Acq|AcqRel) -> false
 
     let is_barrier b = fun c -> barrier_compare b c = 0
+
+    let ifetch_value_sets = []
+
     let barrier_sets =
       fold_barrier
         (fun f k ->

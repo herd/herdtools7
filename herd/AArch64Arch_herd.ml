@@ -103,6 +103,46 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
            Printf.sprintf "IC(%s%s)" (AArch64Base.IC.pp_op op) loc
     end
 
+    (* Holds of an instruction iff modifying it or with it while it is being
+    * fetched is subject to special restrictions.
+    * Returns false iff its argument is any of:
+    *     B, B.cond, BL, BRK, CBNZ, CBZ, HVC, ISB, NOP, SMC, SVC, TBNZ and TBZ
+    * For the other instructions, a concurrent modification and an execution
+    * represent a conflict. The list is taken from:
+    *     Arm ARM B2.2.5 "Concurrent modification and execution of instructions" 
+    *)
+    let is_cmodx_restricted_instruction = function
+    | I_B _| I_BL _| I_CBNZ _| I_CBZ _| I_FENCE ISB | I_NOP | I_TBNZ _| I_TBZ _
+      -> false
+    | I_ADD_SIMD _| I_ADD_SIMD_S _| I_ADR _| I_ALIGND _| I_ALIGNU _| I_BC _
+    | I_BLR _| I_BR _| I_BUILD _| I_CAS _| I_CASBH _| I_CASP _| I_CHKEQ _| I_CHKSLD _
+    | I_CHKTGD _| I_CLRTAG _| I_CPYTYPE _| I_CPYVALUE _| I_CSEAL _| I_CSEL _| I_DC _
+    | I_EOR_SIMD _| I_ERET| I_FENCE _| I_GC _| I_IC _| I_LD1 _| I_LD1M _| I_LD1R _
+    | I_LD2 _| I_LD2M _| I_LD2R _| I_LD3 _| I_LD3M _| I_LD3R _| I_LD4 _| I_LD4M _
+    | I_LD4R _| I_LDAR _| I_LDARBH _| I_LDCT _| I_LDG _| I_LDOP _| I_LDOPBH _
+    | I_LDP _| I_LDP_P_SIMD _| I_LDP_SIMD _| I_LDPSW _| I_LDR _| I_LDR_P _| I_LDR_P_SIMD _
+    | I_LDR_SIMD _| I_LDRBH _| I_LDRS _| I_LDUR _| I_LDUR_SIMD _| I_LDXP _| I_MOV _
+    | I_MOV_FG _| I_MOV_S _| I_MOV_TG _| I_MOV_V _| I_MOV_VE _| I_MOVI_S _
+    | I_MOVI_V _| I_MOVK _| I_MOVZ _| I_MRS _| I_MSR _| I_OP3 _| I_RBIT _| I_RET _
+    | I_SBFM _| I_SC _| I_SEAL _| I_ST1 _| I_ST1M _| I_ST2 _| I_ST2M _| I_ST3 _
+    | I_ST3M _| I_ST4 _| I_ST4M _| I_STCT _| I_STG _| I_STLR _| I_STLRBH _| I_STOP _
+    | I_STOPBH _| I_STP _| I_STP_P_SIMD _| I_STP_SIMD _| I_STR _| I_STR_P _
+    | I_STR_P_SIMD _| I_STR_SIMD _| I_STRBH _| I_STUR_SIMD _| I_STXP _| I_STXR _
+    | I_STXRBH _| I_STZG _| I_SWP _| I_SWPBH _| I_SXTW _| I_TLBI _| I_UBFM _
+    | I_UDF _| I_UNSEAL _
+      -> true
+
+    let is_cmodx_restricted_value = 
+      let open Constant in
+      function
+      | V.Val Instruction i -> is_cmodx_restricted_instruction i
+      | V.Val
+           (Symbolic _|Concrete _|ConcreteVector _|ConcreteRecord _|
+            Label _|Tag _|PteVal _|Frozen _)
+      | V.Var _ -> false
+
+    let ifetch_value_sets = [("Restricted-CMODX",is_cmodx_restricted_value)]
+
     let barrier_sets =
       do_fold_dmb_dsb false true
         (fun b k ->
