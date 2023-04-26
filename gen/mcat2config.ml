@@ -1,4 +1,5 @@
-(** Create a set of relaxations for diy using a cat file *)
+[@@@warning "-40-42"]
+(* Create a set of relaxations for diy using a cat file *)
 
 
 
@@ -169,25 +170,25 @@ module Make
         let rec f a = 
           match a with
           | Op2 (Seq, expl) -> begin 
-            sprintf "%s" (String.concat ";" (List.map (fun a -> f a) expl));
+            sprintf "[%s]" (String.concat ";" (List.map (fun a -> f a) expl));
           end
           | Op2 (Union, expl) -> begin
             sprintf "(%s)" (String.concat "|" (List.map (fun a -> f a) expl));
           end
           | Op2 (Inter, expl) -> begin
-            sprintf "%s" (String.concat "&" (List.map (fun a -> f a) expl));
+            sprintf "(%s)" (String.concat "&" (List.map (fun a -> f a) expl));
           end
           | Op1 (ToId, expl) -> begin 
             sprintf "[%s]" (f expl);
           end
           | Op2 (Diff, expl) -> begin
-            sprintf "%s" (String.concat "/" (List.map (fun a -> f a) expl));
+            sprintf "(%s)" (String.concat "/" (List.map (fun a -> f a) expl));
           end
           | App (exp1,exp2) -> sprintf "%s[%s]" (f exp1) (f exp2);
           | Var s -> begin
             sprintf "%s" s;
           end
-          | T (_,s) | An (_, s) | Imp s| PTE s | D (_,s )| Ext (_,s)| Empty s -> sprintf "%s" s;
+          | T (_,s) | An (_, s) | Imp s| PTE s | D (_,s )| Ext (_,s)| Empty s | Lrs s-> sprintf "%s" s;
           | _ -> begin 
             raise (Failed (sprintf "Operation not implemented in tree printer"))
           end in
@@ -202,7 +203,7 @@ module Make
       match exp with
       | Op2 (_, expl) -> ff expl
       | Op1 (_, expl) -> ff [expl]
-      | Var s -> ff [exp]
+      | Var _ -> ff [exp]
       | _ -> if O.verbose > 0 then eprintf "Error: let statement not valid\n"; in
       List.iter pp tree
 
@@ -222,8 +223,8 @@ module Make
       *)
       let open AST in
       match ins with
-      | Rec (_,(_,varname,expression) :: _,_) 
-      | Let (_, (_,varname,expression) :: _) -> varname,expression
+      | Rec (_,(_,Pvar (Some varname),expression) :: _,_)
+      | Let (_, (_,Pvar (Some varname),expression) :: _) -> varname,expression
       | _ -> raise (Failed "instruction not supported\n" )
 
     and get_tags tree (varname,expression)  = 
@@ -236,8 +237,6 @@ module Make
       - A tuple containing the variable name and its expression, as string*expr
       *)
       let open AST in
-      let varname = match varname with | Pvar str_var -> str_var | _ -> Some "" in
-      let varname = Option.get varname in
       let ins = match expression with
       | Op (_, op, expl) -> begin
         match op with
@@ -267,18 +266,18 @@ module Make
         (Op2 (op, List.map (get_vars varname tree) expl))
       end
       | Op1 (_, op, exp) -> Op1 (op, get_vars varname tree exp)
-      | Var (_, var) -> begin
+      | Var (a, var) -> begin
         (* check if the variable is the same as its parent variable name (to take out recursion)
            expand variable from other let statements*)
         if (String.equal var varname) then Empty var
         else
-        let br = expand_var tree expression in
+        let br = expand_var tree (a,var) in
         match br with
           | Var (_,var) -> begin
             match_var var
           end
           | Op (_, _, _) -> begin
-            let _,a = get_tags tree (Pvar (Some varname),br) in 
+            let _,a = get_tags tree (varname,br) in
             a
           end
           | _ -> Empty ""
@@ -292,7 +291,15 @@ module Make
 *)
     and apply_expand tree =
       (* Expands the given tree of let statements to produce a new tree with all operations 
-      expanded as necessary, in the expand function
+      expanded as necessary, in the expand function.
+      An expansion entails expanding unions within sequences into a list of sequences.
+      i.e. 
+      [a; (b | c); d ]-> [a;b;d],[a;c;d]
+
+      expansion also unrolls intersections.
+      i.e. inter[a; inter(b;inter(c))] -> inter[a;b;c]
+      the output will be a list of sequences and individual variables
+
       Inputs:
       - tree: the list of let statements to be expanded
       Outputs:
@@ -312,23 +319,31 @@ module Make
     and expand_item input_item =
       (* Expand a chosen expression
         Inputs:
-        - input_item (expression to expand)
+        - input_item, expression to expand
         Output: 
-        - A list of lists of expressions representing all possible expansions of the input expression.
-        Description:  *)
+        - A list of lists of expressions representing a list of possible sequences
+        *)
       match input_item with
       | Op2 (AST.Union, expl) -> List.concat (List.map expand_item expl)  (* union of variables *)
       | Op1 (AST.ToId, expl) -> expand_item expl
-      | Op2 (AST.Inter, _) -> [[unroll_inter input_item]]
+      | Op2 (AST.Inter, _) -> begin
+        let a = unroll_inter input_item in
+        match a with
+        | Op2 (AST.Inter, expl) ->
+        let expl = fold_cross expl in
+        (* fold_cross has to be used to preserve sequence types, and not have them expanded as a list of expressions*)
+        List.map (fun b -> [Op2 (AST.Inter,b)]) (expl)
+        | _ -> raise (Failed "")
+      end
       | Op2 (AST.Seq, expl) -> expand_list expl
       | _ -> [[input_item]]
 
     and expand_list input_item =
       (* Expands a sequence of expressions into all its possible expansions, returning a list of sequences
       Inputs: 
-      - input_item (sequence of expressions to expand)
+      - input_item, expression list representing a single sequence. Single variables are represented as a sequence of length 1
       Output: 
-      - A list of lists of expressions representing all possible expansions of the input list.
+      - A list of lists of expressions representing a list of possible sequences
       *)
       match input_item with
       | [] -> [[]]
@@ -347,29 +362,34 @@ module Make
       Inputs: 
       - exp (expression to expand)
       Output: 
-      - A list of expressions representing all possible expansions of the input expression. 
+      - A list of expressions: the list of expressions here is just a list of expressions, not a sequence. 
       *)
       match exp with
       | Op2 (AST.Union, expl) -> List.concat (List.map expand expl)
+      | Op2 (AST.Inter, expl) ->
+        let expl = fold_cross expl in
+        List.map (fun b -> Op2 (AST.Inter,b)) (expl)
       | Op2 (a, expl) -> List.map (fun b -> Op2 (a,b)) (expand_list expl)
-      | Op1 (a, expl) -> List.concat (expand_item expl)
+      | Op1 (ToId, expl) -> List.concat (expand_item expl)
+      | Op1 (a, _) -> raise (Failed (sprintf "%s not supported\n " (pp_op1 a)))
       | _ -> [exp]
-      
-    and extend_node l ex =
-      let extend_expl (Op2 (expr,expl)) = Op2 (expr,(expl@[ex])) in 
-      List.map extend_expl l
 
-    and expand_var tree (Var (a,var)) = 
+    and expand_var tree (a,var) =
       let open AST in
-      let is_var h = 
-        let (name,_) = h in
-        let varname = match name with | Pvar str_var -> str_var | _ -> Some "" in
-        let varname = Option.get varname in
-        String.equal varname var in
+      let is_var (name, _) = String.equal name var in
       match List.find_opt is_var tree with
-      | Some h -> let _,exp = h in exp
+      | Some (_,exp) -> exp
       | None -> Var (a,var)
 
+    and fold_cross l =
+      match l with
+        | [] -> [[]]
+        | hd::tl ->
+          List.concat (List.map (fun hd_item ->
+            List.map (fun tl_item ->
+              hd_item::tl_item
+            ) (fold_cross tl)
+          ) (expand hd))
     (*
     ------------------------------------------
       match cumulative edges
@@ -447,61 +467,38 @@ module Make
        - tree of edge nodes, representing all possible edge sequences*)
       let open AST in
       let open E in
+      let match_edge h prev h2 branch_list =
+        let a1, a2, extr1, extr2 = extract_diratom prev h2 in
+        let e a = match h with
+        | T (Po (_,_,_),_) -> E.Po (a,extr1,extr2)
+        | T (Dp (dp, _, _),_) -> E.Dp (dp,a,extr2)
+        | T (Fenced (fence,_,_,_),_) -> E.Fenced (fence,a,extr1,extr2)
+        | T (Rmw a,_) -> if (A.applies_atom_rmw a a1 a2) then (Rmw a) else raise (Failed "atoms not applied correctly for rmw")
+        | _ -> raise (Failed "unknown edge") in
+        E.[
+            { node_val = { edge = e Same ; a1 ; a2 }; branch_list = branch_list a2 };
+            { node_val = { edge = e Diff ; a1 ; a2 }; branch_list = branch_list a2 };
+          ] in
       let rec f l prev = 
-        match l with 
-        | h::h2::t -> 
-        begin
-          let a1, a2, extr1, extr2 = extract_diratom prev h2 in
-          try 
-            let e a = match h with
-              | T (Po (_,_,_),_) -> E.Po (a,extr1,extr2)
-              | T (Dp (dp, _, _),_) -> E.Dp (dp,a,extr2)
-              | T (Fenced (fence,_,_,_),_) -> E.Fenced (fence,a,extr1,extr2)
-              | T (Rmw a,_) -> if (A.applies_atom_rmw a a1 a2) then (Rmw a) else raise (Failed "atoms not applied correctly for rmw")
-              | _ -> raise (Failed "") in
-            if not (a2 = None) then
-              List.map (fun a -> 
-                        {node_val={E.edge=e a;E.a1=a1;E.a2=a2};
-                        branch_list=f t h}
-                        ) [Same; Diff]
-            else
-              List .map (fun a -> 
-                        {node_val={E.edge=e a;E.a1=a1;E.a2=a2};
-                        branch_list=f (h2::t) h}
-                        ) [Same; Diff]
-          with
-          | Failed s -> match h with
-            | Op2 (Inter,_) -> 
-              begin try 
-                let h = match_inter h in
-                  f (h2::t) h
-              with
-                | Failed s -> raise (Failed s)
-                | _ -> raise (Failed "unknown failure in inter\n")
-              end
-            | Var name | Empty name -> raise (Failed (sprintf "Unknown Variable: %s\n" name))
-            | Lrs _->  [{node_val={E.edge=E.Po (Same, Dir W, Dir R);E.a1=a1;E.a2=a2};
-                         branch_list=f (h2::t) h}]
-            | T _ -> raise (Failed s)
-            | _ -> f (h2::t) h
-        end
-        | h::[] -> 
-        begin 
-          let a1, a2, extr1, extr2 = extract_diratom prev empty_expr in 
-          try
-            let e a = match h with
-            | T (Po (_,_,_),_) -> E.Po (a,extr1,extr2)
-            | T (Dp (dp, _, _),_) -> E.Dp (dp,a,extr2)
-            | T (Fenced (fence,_,_,_),_) ->E.Fenced (fence,a,extr1,extr2)
-            | _ -> raise (Failed "") in
-            List.map (fun a -> 
-                      {node_val={E.edge= e a; E.a1=a1;E.a2=a2};
-                      branch_list=[]}
-                      ) [Same; Diff]
-          with
-            | Failed _ -> []
-            | _ -> raise (Failed "Unknown fail")
-        end
+        match l with
+        | Op2 (Inter, expl) :: t -> f t (match_inter expl)
+        | (Var name | Empty name):: _ ->
+            raise (Failed (sprintf "Unknown Variable: %s\n" name))
+        | (Lrs _ as h) :: h2 :: t ->
+          let a1, a2, _, _ = extract_diratom prev h2 in
+            [
+              {
+                node_val = E.{ edge = Po (Same, Dir W, Dir R); a1; a2 };
+                branch_list = f (h2 :: t) h;
+              };
+            ]
+        | h::h2::t ->
+          let branch_list a2 =
+            if a2 = None then f (h2 :: t) h
+            else f t h
+          in
+          match_edge h prev h2 branch_list
+        | h::[] -> match_edge h prev empty_expr (fun _ -> [])
         | [] -> raise (Failed "cannot provide empty list")
       in f expl empty_expr
     
@@ -531,7 +528,7 @@ module Make
       | Dd (r,_,_) -> r
       | _ -> Irr
     
-    and match_inter (Op2 (_, expl)) =
+    and match_inter expl =
       match expl with
       | h::h2::h3::[] -> begin
         match (check_if_dir h),h2,h3 with
@@ -541,13 +538,15 @@ module Make
       end
       | _ -> raise (Failed "wrong inter")
    
-    and unroll_inter (Op2 (a, exp)) = 
+    and unroll_inter expr =
     let open AST in
       let f l =
         match l with 
         | Op2 (Inter, expl) -> expl
         | _ -> [l] in
-      Op2 (a,(List.concat (List.map f exp)))
+      match expr with
+      | Op2 (Inter, exp) -> Op2 (Inter,(List.concat (List.map f exp)))
+      | _ -> expr
     
     and extract_diratom prev next =
       let extr1 = check_if_dir prev in
