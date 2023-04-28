@@ -53,6 +53,8 @@ type t =
   | ETS2 (*New feature introduced after deprecating ETS*)
 (* AArch64: Enhanced Exception Synchronization - FEAT_ExS *)
   | ExS | EIS | EOS
+(* AArch64: Large System Extensions 2 - FEAT_LSE2 *)
+  | LSE2
 (* Do not insert branching event between pte read and accesses *)
   | NoPteBranch
 (* Pte-Squared: all accesses through page table, including PT accesses *)

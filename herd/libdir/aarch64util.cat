@@ -115,7 +115,7 @@ end
 let intervening-write(r) = r; [W]; r
 
 (* Properties of single-copy atomic accesses *)
-let sca-class = [M & Exp]; sm; [M & Exp]
+let sca-class = [M & Exp]; sm \ id; [M & Exp]
 
 (* Renaming default herd names *)
 let Imp = NExp

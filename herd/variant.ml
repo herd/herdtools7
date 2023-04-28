@@ -55,6 +55,7 @@ type t =
   | ETS2 (*New feature introduced after deprecating ETS*)
 (* AArch64: Enhanced Exception Synchronization - FEAT_ExS *)
   | ExS | EIS | EOS
+  | LSE2
 (* Do not insert branching event between pte read and accesses *)
   | NoPteBranch
 (* Pte-Squared: all accesses through page table, including PT accesses *)
@@ -133,6 +134,7 @@ let parse s = match Misc.lowercase s with
 | "exs" -> Some ExS
 | "eis" -> Some EIS
 | "eos" -> Some EOS
+| "lse2" -> Some LSE2
 | "noptebranch"|"nobranch" -> Some NoPteBranch
 | "pte2" | "pte-squared" -> Some PTE2
 | "phantomonload" -> Some PhantomOnLoad
@@ -200,6 +202,7 @@ let pp = function
   | ExS -> "exs"
   | EIS -> "eis"
   | EOS -> "eos"
+  | LSE2 -> "lse2"
   | NoPteBranch -> "NoPteBranch"
   | PTE2 -> "pte-squared"
   | PhantomOnLoad -> "PhantomOnLoad"

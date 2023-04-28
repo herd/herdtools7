@@ -1202,9 +1202,10 @@ module Make
                       (add_if post k a_virt >>=
                        fun b -> write_reg rs b ii) >>|
                         let (>>|) =
-                          match an with
-                          | Annot.Q -> assert post ; M.seq_mem
-                          | _ -> (>>|) in
+                          if C.variant Variant.LSE2 then M.para_atomic else begin
+                            match an with
+                            | Annot.Q -> assert post ; M.seq_mem
+                            | _ -> (>>|) end in
                        (Read.read_mem sz an aexp ac rd1 a ii >>|
                        begin
                          add_size a sz >>=
@@ -1228,9 +1229,10 @@ module Make
             match md with
             | Idx ->
                 let (>>|) =
-                  match an with
-                  | Annot.Q -> M.seq_mem
-                  | _ -> (>>|) in
+                  if C.variant Variant.LSE2 then M.para_atomic else begin
+                    match an with
+                    | Annot.Q -> M.seq_mem
+                    | _ -> (>>|) end in
                 do_ldr rs sz Annot.N
                   (fun ac a ->
                     Read.read_mem sz an aexp ac rd1 a ii >>|
@@ -1340,11 +1342,12 @@ module Make
                     (add_if post k a_virt >>=
                      fun b -> write_reg rd b ii) >>|
                       let (>>|) =
-                        match an with
-                        | Annot.L ->
-                           assert (not post) ;
-                           fun m1 m2 -> M.seq_mem m2 m1
-                        | _ -> (>>|) in
+                        if C.variant Variant.LSE2 then M.para_atomic else begin
+                          match an with
+                          | Annot.L ->
+                            assert (not post) ;
+                            fun m1 m2 -> M.seq_mem m2 m1
+                          | _ -> (>>|) end in
                      ((read_reg_data sz rs1 ii >>> fun v ->
                        do_write_mem sz an aexp ac a v ii) >>|
                        (add_size a sz >>= fun a ->
@@ -1370,9 +1373,10 @@ module Make
         match md with
         | AArch64.Idx ->
             let (>>|) =
-              match tnt with
-              | AArch64.(Pa|PaN) -> (>>|)
-              | AArch64.PaI -> M.seq_mem in
+              if C.variant Variant.LSE2 then M.para_atomic else begin
+                match tnt with
+                | AArch64.(Pa|PaN) -> (>>|)
+                | AArch64.PaI -> M.seq_mem end in
             let (>>>) = M.data_input_next in
             do_str rd
               (fun ac a _ ii ->
