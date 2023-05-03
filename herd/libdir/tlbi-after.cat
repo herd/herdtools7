@@ -63,10 +63,12 @@ let CTLBI = TLBI & domain(po; [dsb.full])
 
 (* Compute all possible R&PTE <-> TLBI orders *)
 let all-pte-tlbi =
-  [R&PTE&Imp]; inv-scope; [CTLBI]
+  [Imp & PTE & R]; inv-scope; [CTLBI]
 
 let pte-tlbi-pairs rel =
     let all-pairs = all-pte-tlbi in
     let no-choice = rel & (all-pairs | all-pairs^-1) in
     let need-choosing = all-pairs \ (no-choice | no-choice^-1) in
     add_both_choices ({no-choice},need-choosing)
+
+let ttd-tlbi-pairs = pte-tlbi-pairs

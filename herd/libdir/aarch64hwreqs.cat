@@ -48,11 +48,11 @@ include "aarch64util.cat"
 
 (* Translation-intrinsically-before *)
 let tr-ib =
-  [R & PTE & Imp]; iico_data; [B]; iico_ctrl; [M & Exp | MMU & FAULT]
+  [Imp & TTD & R]; iico_data; [B]; iico_ctrl; [Exp & M | MMU & FAULT]
 
 (* Notions of Same Location - PA, VA, and including Fault Effects *)
-let PTE-same-oa =  same-oa(PTE*PTE)
-let same-loc = loc | tr-ib^-1; PTE-same-oa; tr-ib
+let TTD-same-oa =  same-oa(TTD*TTD)
+let same-loc = loc | tr-ib^-1; TTD-same-oa; tr-ib
 let po-loc = po & same-loc
 
 let va-loc = (tr-ib; same-low-order-bits; tr-ib^-1) & loc
@@ -65,17 +65,17 @@ let lrs = [W]; (po-loc \ intervening-write(po-loc)) ; [R]
 let lws = [M]; po-loc; [W | MMU & FAULT]
 
 (* Tag-Check-Intrinsically-Before *)
-let tc-ib = [R & T & Imp]; iico_data; [B]; iico_ctrl; [(W & Exp) \ T | TagCheck & FAULT]
+let tc-ib = [Imp & T & R]; iico_data; [B]; iico_ctrl; [(Exp & W) \ T | TagCheck & FAULT]
 
-(* HW PTE Updates permitted only for the AF or DB *)
-let HU = W & PTE & Imp
+(* HW TTD Updates permitted only for the AF or DB *)
+let HU = Imp & TTD & W
 assert empty HU \ (AF | DB)
 
 (* CSE-ordered-before *)
 let EXC-ENTRY-CSE = EXC-ENTRY
 let EXC-RET-CSE = if not "ExS" || "EOS" then EXC-RET else {}
 let CSE = ISB | EXC-ENTRY-CSE | EXC-RET-CSE
-let CSE-ob = [R & Exp]; ctrl; [CSE]; po?
+let CSE-ob = [Exp & R]; ctrl; [CSE]; po?
 
 (* Dependency-ordered-before *)
 let dob = addr | data
@@ -88,7 +88,7 @@ let dob = addr | data
 (* Pick-ordered-before *)
 let pob = [Exp]; (pick-dep; [W]
         | (pick-ctrl-dep | pick-addr-dep; [Exp]; po); [CSE]; po; [M]
-        | pick-addr-dep; [M & Exp]; po; [W])
+        | pick-addr-dep; [Exp & M]; po; [W])
 
 (* Atomic-ordered-before *)
 let aob = rmw
@@ -97,11 +97,11 @@ let aob = rmw
 (* DSB-ordered-before *)
 let DSB-ob =
  [M]; po; [dsb.full]; po; [~(M&Imp)]
- | (if "ETS2" then [M]; po; [dsb.full]; po; [M & PTE & Imp] else 0)
+ | (if "ETS2" then [M]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
  | [(R&Exp)\NoRet]; po; [dsb.ld]; po; [~(M&Imp)]
- | (if "ETS2" then [(R & Exp) \ NoRet]; po; [dsb.ld]; po; [M & PTE & Imp] else 0)
+ | (if "ETS2" then [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [Imp & TTD & M] else 0)
  | [W&Exp]; po; [dsb.st]; po; [~(M&Imp)]
- | (if "ETS2" then [W & Exp]; po; [dsb.st]; po; [M & PTE & Imp] else 0)
+ | (if "ETS2" then [Exp & W]; po; [dsb.st]; po; [Imp & TTD & M] else 0)
 
 (* Barrier-ordered-before *)
 let bob = po; [dmb.full]; po
@@ -113,7 +113,7 @@ let bob = po; [dmb.full]; po
         | po; [L]
 
 (* Locally-ordered-before *)
-let rec lob = lws; si
+let rec lob = lws; sca-class?
             | dob
             | pob
             | aob
@@ -127,14 +127,14 @@ let TLBUncacheable = MMU & (Translation | AccessFlag)
 let rec hw-reqs =
   tr-ib
   | tc-ib
-  | [M & Exp | R & T & Imp]; (lob | pick-lob); [M & Exp | R & T & Imp | FAULT & (TagCheck | MMU)]
-  | (if "ETS2" then [M & Exp]; po; [TLBUncacheable & FAULT]; tr-ib^-1; [R & Imp & PTE] else 0)
+  | [Exp & M | Imp & T & R]; (lob | pick-lob); [Exp & M | Imp & T & R | FAULT & (TagCheck | MMU)]
+  | (if "ETS2" then [Exp & M]; po; [TLBUncacheable & FAULT]; tr-ib^-1; [Imp & TTD & R] else 0)
   | DSB-ob
   | CSE-ob
   | [CSE]; po
-  | [R & PTE & Imp]; po-loc; [W & PTE]
-  | [R & PTE & Imp]; rmw; [HU]
-  | [M & Exp]; po-loc; [TLBUncacheable & FAULT]
-  | [R & Exp]; addr; [TLBI]
-  | [R & Exp]; ctrl; [HU]
+  | [Imp & TTD & R]; po-loc; [W]
+  | [Imp & TTD & R]; rmw; [HU]
+  | [Exp & M]; po-loc; [TLBUncacheable & FAULT]
+  | [Exp & R]; addr; [TLBI]
+  | [Exp & R]; ctrl; [HU]
   | hw-reqs; hw-reqs

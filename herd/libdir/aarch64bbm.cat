@@ -82,3 +82,7 @@ let PTE-OA-update-writable = PTE-OA-update &
 let PTE-update-needsBBM = ([PTEV]; ca \ (ca; [PTEV]; ca); [PTEV]) &
   (PTE-MT-update | PTE-SH-update | PTE-ICH-update | PTE-OCH-update | PTE-DT-update
   | PTE-OA-update)
+
+let TTDV = PTEV
+let TTDINV = PTEINV
+let TTD-update-needsBBM = PTE-update-needsBBM

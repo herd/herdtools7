@@ -100,8 +100,11 @@ end
 (* Intervening write *)
 let intervening-write(r) = r; [W]; r
 
+(* Properties of single-copy atomic accesses *)
+let sca-class = [M & Exp]; sm; [M & Exp]
+
 (* Renaming default herd names *)
 let Imp = NExp
 let SPONTANEOUS = SPURIOUS
 let inv-scope = inv-domain
-
+let TTD = PTE
