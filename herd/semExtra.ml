@@ -56,10 +56,11 @@ module type S = sig
   type nice_prog = A.nice_prog
   type start_points = A.start_points
   type code_segment = A.code_segment
+  type entry_points = A.entry_points
 
   type proc_info = Test_herd.proc_info
   type test =
-      (program, nice_prog, start_points, code_segment,
+      (program, nice_prog, start_points, code_segment, entry_points,
        state, A.size_env, A.type_env,
        prop, location, A.RLocSet.t, A.FaultAtomSet.t) Test_herd.t
 
@@ -235,10 +236,11 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     type nice_prog = A.nice_prog
     type start_points = A.start_points
     type code_segment = A.code_segment
+    type entry_points = A.entry_points
 
     type proc_info = Test_herd.proc_info
     type test =
-      (program, nice_prog, start_points, code_segment, state,
+      (program, nice_prog, start_points, code_segment, entry_points, state,
        A.size_env, A.type_env,
        prop, location, A.RLocSet.t, A.FaultAtomSet.t) Test_herd.t
 

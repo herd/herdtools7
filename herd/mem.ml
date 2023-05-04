@@ -288,13 +288,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       let starts = test.Test_herd.start_points in
       let code_segment = test.Test_herd.code_segment in
       let procs = List.map (fun (p,_,_) -> p) starts in
-      let labels_of_instr =
-        let instr2labels =
-          let one_label lbl addr res =
-            let ins_lbls = IntMap.safe_find Label.Set.empty addr res in
-            IntMap.add addr (Label.Set.add lbl ins_lbls) res in
-          Label.Map.fold one_label prog IntMap.empty in
-        fun addr -> IntMap.safe_find Label.Set.empty addr instr2labels in
+      let labels_of_instr = test.Test_herd.entry_points in
       let exported_labels = S.get_exported_labels test in
       let is_exported_label lbl =
         Label.Full.Set.exists
@@ -939,7 +933,7 @@ let match_reg_events es =
    - Not after in program order
     (suppressed when uniproc is not optmised early) *)
 
-    let map_load_possible_stores test es loads stores compat_locs =
+    let map_load_possible_stores test es rfm loads stores compat_locs =
       let ok = match C.optace with
         | OptAce.False -> fun _ _ -> true
         | OptAce.True ->
@@ -999,7 +993,15 @@ let match_reg_events es =
                             "mixed-size test rejected (symbol %s), consider option -variant mixed"
                             (A.pp_location loc)
                     | None ->
-                       Warn.fatal "Non symbolic location wth initial write: '%s'\n"
+                       if dbg then begin
+                        let module PP = Pretty.Make(S) in
+                        eprintf
+                          "Failed to find at least one write for load %a\n%!"
+                          E.debug_event load ;
+                        PP.show_es_rfm test es rfm
+                       end ;
+                       Warn.fatal
+                         "Non symbolic location with no initial write: '%s'\n"
                          (A.pp_location loc)
                     end
                 | _ -> assert false
@@ -1027,7 +1029,7 @@ let match_reg_events es =
 
     let solve_mem_or_res test es rfm cns kont res loads stores compat_locs add_eqs =
       let possible =
-        map_load_possible_stores test es loads stores compat_locs in
+        map_load_possible_stores test es rfm loads stores compat_locs in
       let possible =
         List.map
           (fun (er,ws) ->
@@ -1101,15 +1103,49 @@ let match_reg_events es =
       res
 
     let solve_mem_non_mixed test es rfm cns kont res =
-      let loads =  E.EventSet.filter E.is_mem_load es.E.events
-      and stores = E.EventSet.filter E.is_mem_store es.E.events in
-      if dbg then begin
-        eprintf "Loads : %a\n"E.debug_events loads ;
-        eprintf "Stores: %a\n"E.debug_events stores
-      end ;
       let compat_locs = compatible_locs_mem in
-      solve_mem_or_res test es rfm cns kont res
-        loads stores compat_locs add_mem_eqs
+      if self then
+        let code_access e =
+          match
+            Misc.seq_opt A.global (E.location_of e)
+          with
+          | Some (V.Val (Constant.Label _)) -> true
+          | Some _|None -> false in
+        (* Select code accesses *)
+        let code_loads =
+          E.EventSet.filter
+            (Misc.(&&&) E.is_mem_load code_access) es.E.events
+        and code_stores =
+          E.EventSet.filter
+            (Misc.(&&&) E.is_mem_store code_access) es.E.events in
+        let kont es rfm cns res =
+          (* We get here once code accesses are solved *)
+          let loads =  E.EventSet.filter E.is_mem_load es.E.events
+          and stores = E.EventSet.filter E.is_mem_store es.E.events in
+          let loads =
+            (* Remove code loads that are now solved *)
+            E.EventSet.diff loads code_loads in
+          if dbg then begin
+            eprintf "Left loads : %a\n"E.debug_events loads ;
+            eprintf "All stores: %a\n"E.debug_events stores
+          end ;
+          solve_mem_or_res test es rfm cns kont res
+            loads stores compat_locs add_mem_eqs in
+        if dbg then begin
+            eprintf "Code loads : %a\n"E.debug_events code_loads ;
+            eprintf "Code stores: %a\n"E.debug_events code_stores
+          end ;
+        solve_mem_or_res test es rfm cns kont res
+          code_loads code_stores compat_locs add_mem_eqs
+      else
+        let loads =  E.EventSet.filter E.is_mem_load es.E.events
+        and stores = E.EventSet.filter E.is_mem_store es.E.events in
+        if dbg then begin
+          eprintf "Loads : %a\n"E.debug_events loads ;
+          eprintf "Stores: %a\n"E.debug_events stores
+          end ;
+        solve_mem_or_res test es rfm cns kont res
+          loads stores compat_locs add_mem_eqs
 
 (*************************************)
 (* Mixed-size write-to-load matching *)
@@ -1280,17 +1316,17 @@ let match_reg_events es =
       ms
 
 (* Non-mixed pairing for tags, if any *)
-    let pair_tags test es =
+    let pair_tags test es rfm =
       let tags = E.EventSet.filter E.is_tag es.E.events in
       let loads = E.EventSet.filter E.is_load tags
       and stores = E.EventSet.filter E.is_store tags in
       let m =
-        map_load_possible_stores test es loads stores compatible_locs_mem in
+        map_load_possible_stores test es rfm loads stores compatible_locs_mem in
       m
 
     let solve_mem_mixed test es rfm cns kont res =
       let match_tags = if morello then []
-        else pair_tags test es in
+        else pair_tags test es rfm in
       let tag_loads,tag_possible_stores = List.split match_tags in
       let ms = expose_scas es in
       let rss,wsss = List.split ms in

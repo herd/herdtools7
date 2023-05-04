@@ -1,0 +1,10 @@
+Test A248 Required
+States 1
+0:X1=instr:"B .+4"; 0:X2=instr:"B .+4"; 0:X3=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X3=1)
+Observation A248 Always 1 0
+Hash=1ab162da020db5cac849d14050f1cd9d
+

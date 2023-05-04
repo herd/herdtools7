@@ -34,6 +34,8 @@ end
 (** Output signature, functionalities added *)
 module type S = sig
 
+
+
   val is_mixed : bool
 
   module I : I
@@ -69,6 +71,7 @@ module type S = sig
   type instr = I.V.Cst.Instr.t
   type code = (int * instr) list
 
+  val convert_if_imm_branch : int -> int -> int Label.Map.t -> int Label.Map.t -> instr -> instr
 
   (* Program loaded in memory *)
   type program = int Label.Map.t
@@ -78,6 +81,9 @@ module type S = sig
 
   (* A mapping from code addresses to code *)
   type code_segment = (proc * code) IntMap.t
+
+  (* A mapping from code addresses to sets of labels *)
+  type entry_points = int -> Label.Set.t
 
   (* Constraints *)
   type prop =  (location,v,I.FaultType.t) ConstrGen.prop
@@ -317,6 +323,14 @@ module Make(C:Config) (I:I) : S with module I = I
       type instr = I.V.Cst.Instr.t
       type code = (int * instr) list
 
+      (* This function is a default behaviour for all architectures.
+         When variant -self is enabled, it fails trying to convert a branch
+         instruction to a label into a branch-with-offset representation. *)
+      let convert_if_imm_branch _ _ _ _ i =
+        if C.variant Variant.Self then
+          Warn.fatal "Functionality %s not implemented for -variant self" "convert_if_imm_branch"
+        else
+          i
 
       (* Programm loaded in memory *)
       type program = int Label.Map.t
@@ -326,6 +340,9 @@ module Make(C:Config) (I:I) : S with module I = I
 
       (* Mapping from code addresses to code *)
       type code_segment = (proc * code) IntMap.t
+
+      (* A mapping from code addresses to sets of labels *)
+      type entry_points = int -> Label.Set.t
 
       (* Constraints *)
       type prop =  (location,v,I.FaultType.t) ConstrGen.prop

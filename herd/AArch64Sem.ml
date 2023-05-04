@@ -2421,11 +2421,19 @@ module Make
         | I_MOVK(var,rd,k,os) ->
             movk var rd k os ii >>= nextSet rd
         | I_ADR (r,tgt) ->
-           let v =
+           let lbl = 
              let open BranchTarget in
              match tgt with
-             | Lbl lbl -> ii.A.addr2v lbl
-             | Offset o -> V.intToV (ii.A.addr + o) in
+             | Lbl lbl -> lbl
+             | Offset o ->
+              begin
+              let a = ii.A.addr + o in
+              let lbls = test.Test_herd.entry_points a in
+              match Label.norm lbls with
+              | Some lbl -> lbl
+              | None -> assert false
+              end in
+           let v = ii.A.addr2v lbl in
            write_reg_dest r v ii >>= nextSet r
 
         | I_SXTW(rd,rs) ->

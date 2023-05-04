@@ -1,0 +1,11 @@
+Test A04 Allowed
+States 2
+1:x1=0;
+1:x1=1;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (1:x1=1)
+Observation A04 Sometimes 1 1
+Hash=c75ee04514d0ef3c2b9240089d2c6f30
+
