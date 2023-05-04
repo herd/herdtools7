@@ -458,6 +458,8 @@ include Pseudo.Make
         | OpW (_, _, _, _)|J _|Bcc (_, _, _, _)|FenceIns _
           -> 0
 
+      let size_of_ins _ = 4
+
       let fold_labels k f = function
         | J lbl
         | Bcc (_,_,_,lbl)
@@ -468,14 +470,16 @@ include Pseudo.Make
         |LoadReserve (_, _, _, _)|StoreConditional (_, _, _, _, _)|Amo _|FenceIns _
             -> k
       let map_labels f = function
-        | J lbl -> J (f lbl)
-        | Bcc (cc,r1,r2,lbl) -> Bcc (cc,r1,r2,f lbl)
+        | J lbl -> J (BranchTarget.as_string_fun f lbl)
+        | Bcc (cc,r1,r2,lbl) ->
+           Bcc (cc,r1,r2,BranchTarget.as_string_fun f lbl)
         |INop
         |OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)
         |OpW (_, _, _, _)|Load _|Store _
-        |LoadReserve (_, _, _, _)|StoreConditional (_, _, _, _, _)|Amo _|FenceIns _
-            as ins
-            -> ins
+        |LoadReserve (_, _, _, _)
+        |StoreConditional (_, _, _, _, _)|Amo _|FenceIns _
+         as ins
+         -> ins
 
     end)
 

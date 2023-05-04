@@ -502,7 +502,7 @@ module Make
 
       let find_label_offset p lbl test =
         try
-          T.find_offset test.T.src.MiscParser.prog p lbl
+          T.find_offset_out p lbl test
         with Not_found ->
           let v = Constant.Label (p,lbl) in
           Warn.user_error "Non-existant label %s" (A.V.pp_v v)

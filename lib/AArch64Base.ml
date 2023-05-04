@@ -2144,6 +2144,8 @@ module PseudoI = struct
              let n = get_simd_elements rs in
              rpt * selem * n
 
+      let size_of_ins _ = 4
+
       let fold_labels k f = function
         | I_B lbl
         | I_BC (_,lbl)
@@ -2163,11 +2165,6 @@ module PseudoI = struct
         | _ -> k
 
       let map_labels f =
-        let f =
-          let open BranchTarget in
-          function
-          | Lbl lbl -> Lbl (f lbl)
-          | Offset _ as o -> o in
         function
         | I_B lbl -> I_B (f lbl)
         | I_BL lbl -> I_BL (f lbl)
@@ -2178,6 +2175,7 @@ module PseudoI = struct
         | I_TBZ (v,r,k,lbl) -> I_TBZ (v,r,k,f lbl)
         | I_ADR (r,lbl) -> I_ADR (r, f lbl)
         | ins -> ins
+
     end
 
 include Pseudo.Make(PseudoI)

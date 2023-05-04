@@ -703,6 +703,13 @@ include Pseudo.Make
                 -> get_naccs_eff e
               | I_LOCK i -> get_naccesses i
 
+(* This is incorrect as the size of instructions varies.
+ * However a wrong value should generally be harmless, except
+ * for litmus with option `-variant self` and for initial label
+ * values
+ *)
+            let size_of_ins _ = 4
+
             let rec fold_labels k f = function
               | I_LOCK ins -> fold_labels k f ins
               | I_JMP lbl | I_JCC (_, lbl)-> f k lbl
@@ -713,8 +720,12 @@ include Pseudo.Make
                 -> k
 
             let rec map_labels f ins = match ins with
-              | I_LOCK ins -> I_LOCK (map_labels f ins)
-              | I_JMP lbl | I_JCC (_, lbl) -> I_JMP (f lbl)
+              | I_LOCK ins ->
+                 I_LOCK (map_labels f ins)
+              | I_JMP lbl ->
+                 I_JMP (BranchTarget.as_string_fun f lbl)
+              | I_JCC (cc,lbl) ->
+                 I_JCC (cc,BranchTarget.as_string_fun f lbl)
               | I_NOP | I_EFF_OP _ | I_FENCE _
               | I_EFF_EFF _ | I_EFF _ | I_CMPXCHG _
               | I_CMOVC _|I_MOVNTI _|I_MOVD _|I_MOVNTDQA _

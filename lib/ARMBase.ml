@@ -580,6 +580,7 @@ include Pseudo.Make
         | I_LDRD _
             -> 2
 
+      let size_of_ins _ = 4
 
       let fold_labels k f = function
         | I_B lbl
@@ -589,11 +590,13 @@ include Pseudo.Make
           -> f k lbl
         | _ -> k
 
-      let map_labels f = function
-        | I_B lbl -> I_B (f lbl)
-        | I_BEQ lbl -> I_BEQ (f lbl)
-        | I_BNE lbl -> I_BNE (f lbl)
-        | I_CB (n,r,lbl) -> I_CB (n,r,f lbl)
+      let map_labels f =
+        let open BranchTarget in
+        function
+        | I_B lbl -> I_B (as_string_fun f lbl)
+        | I_BEQ lbl -> I_BEQ (as_string_fun f lbl)
+        | I_BNE lbl -> I_BNE (as_string_fun f lbl)
+        | I_CB (n,r,lbl) -> I_CB (n,r,as_string_fun f lbl)
         | ins -> ins
 
     end)

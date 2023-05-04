@@ -1276,7 +1276,8 @@ module Make(V:Constant.S)(C:Config) =
     let user_mode has_handler p =
       let ins =
         (fun k ->
-          "msr sp_el0,%[sp_usr]"
+          "nop"
+          ::"msr sp_el0,%[sp_usr]"
           ::"adr %[tr0],0f"
           ::"msr elr_el1,%[tr0]"
           ::"msr spsr_el1,xzr"

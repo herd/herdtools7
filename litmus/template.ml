@@ -130,6 +130,8 @@ module type S = sig
           t -> CType.t RegMap.t
 
   val has_fault_handler : t -> bool
+  val find_offset : Label.t -> t -> int
+
 end
 
 module Make(O:Config)(A:I) =
@@ -458,4 +460,23 @@ module Make(O:Config)(A:I) =
       m
 
     let has_fault_handler t = t.fhandler <> []
+
+    type r = Ok of int | No of int
+
+    let rec find_offset_code lbl k code =
+      match code with
+      | [] -> No k
+      | { label=Some lbl0; _}::code ->
+         if Label.equal lbl0 lbl then Ok k
+         else find_offset_code lbl k code
+      | { label=None; _}::code ->
+         find_offset_code lbl (k+1) code
+
+    let find_offset lbl t =
+      match find_offset_code lbl 0 t.code with
+      | Ok off -> off
+      | No sz ->
+         match find_offset_code lbl sz t.fhandler with
+         | Ok off -> off
+         | No _ -> raise Not_found
   end

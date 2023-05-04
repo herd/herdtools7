@@ -756,6 +756,8 @@ include Pseudo.Make
         |Pstmw (_r1,_,_)
             -> 2 (* could be List.length (regs_interval r1), not that important *)
 
+      let size_of_ins _ = 4
+
       let fold_labels k f = function
         | Pb lab
         | Pbcc (_,lab) -> f k lab
@@ -782,9 +784,11 @@ include Pseudo.Make
 
 
 
-      let map_labels f = function
-        | Pb lab -> Pb (f lab)
-        | Pbcc (cc,lab) -> Pbcc (cc,f lab)
+      let map_labels f =
+        let open BranchTarget in
+        function
+        | Pb lab -> Pb (as_string_fun f lab)
+        | Pbcc (cc,lab) -> Pbcc (cc,as_string_fun f lab)
         | Pnop
         | Pdcbf (_, _)
         | Pstwcx (_, _, _)|Plwarx (_, _, _)

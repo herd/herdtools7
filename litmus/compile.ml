@@ -340,16 +340,6 @@ module A.FaultType = A.FaultType)
         code
         A.RegSet.empty
 
-
-
-(**********************************)
-(* Label compilation as an offset *)
-(**********************************)
-
-    let find_offset prog p lbl =
-      let is = List.assoc p prog in
-      A.find_offset lbl is
-
 (*******************************)
 (* Assoc label -> small number *)
 (*******************************)
@@ -399,39 +389,24 @@ module A.FaultType = A.FaultType)
 
     let pp_full = Label.Full.Set.pp_str "," Label.Full.pp
 
-    let escaping_labels init prog =
-      let defs = all_labels prog
-      and uses = prog_targets prog in
-      let esc_prog = Label.Full.Set.diff uses defs in
-      if do_self then begin
-        if not (Label.Full.Set.is_empty esc_prog) then
-          Warn.user_error
-            "Code to code branches {%s} not possible with `-variant self`, change for initial values"
-          (pp_full esc_prog)
-        end ;
-      Label.Full.Set.fold
-        (fun (_,lbl) -> Label.Set.add lbl)
-        esc_prog (init_targets init)
-
 (* Translate labls to integers (local labels), when possible *)
-    let rec lblmap_pseudo no cm i = match i with
+    let rec lblmap_pseudo cm i = match i with
     | A.Nop|A.Instruction _ -> cm
     | A.Label(lbl,i) ->
        let cm  =
          let c,m = cm in
-         if Label.Set.mem lbl no then cm
-         else c+1,Label.Map.add lbl c m in
-       lblmap_pseudo no cm i
+         c+1,Label.Map.add lbl c m in
+       lblmap_pseudo cm i
     | A.Symbolic _ (*no symbolic in litmus *)
     | A.Macro _ -> assert false
 
     let first_label = if is_pte then C.max_handler_label else 0
 
-    let lblmap_code no =
+    let lblmap_code =
       let rec do_rec cm = function
         | [] -> cm
         | i::code ->
-            let cm = lblmap_pseudo no cm i in
+            let cm = lblmap_pseudo cm i in
             do_rec cm code in
       fun code co ->
         let (_,m) as cm = do_rec (first_label,Label.Map.empty) code in
@@ -474,9 +449,9 @@ module A.FaultType = A.FaultType)
         memo=sprintf "%s:" (A.Out.dump_label (tr_label m lbl)) ;
         label = Some lbl ; branch=[Next] ; }
 
-    let compile_pseudo_code no code fhandler =
+    let compile_pseudo_code code fhandler =
       let m =
-        if O.numeric_labels then lblmap_code no code fhandler
+        if O.numeric_labels then lblmap_code code fhandler
         else Label.Map.empty in
 
       let tr_lab seen lbl =
@@ -510,9 +485,29 @@ module A.FaultType = A.FaultType)
          let _,fhandler = do_rec seen fhandler in
          code,fhandler
 
-    let compile_code proc no user code fhandler =
+    let rec pp_pseudo ins k =
+      match ins with
+      | A.Nop -> k
+      | A.Label (lbl,ins) ->
+         (Label.pp lbl ^ ":")
+         ::pp_pseudo ins k
+      | A.Instruction ins ->
+         A.dump_instruction ins::k
+      | A.Macro _|A.Symbolic _
+        -> assert false
+
+    let pp_code code =
+      let k = List.fold_right pp_pseudo code [] in
+      String.concat "; " k
+
+
+    let compile_code proc user code fhandler =
+      let fhandler =
+        match fhandler with
+        | [] -> None
+        | _::_ -> Some fhandler in
       let has_handler = Misc.is_some fhandler in
-      let code,fhandler_c = compile_pseudo_code no code fhandler in
+      let code,fhandler_c = compile_pseudo_code code fhandler in
       let code =
         if O.timeloop > 0 then C.emit_loop code
         else code in
@@ -663,33 +658,19 @@ module A.FaultType = A.FaultType)
 
     let compile_final _proc observed = RegSet.elements observed
 
-    let mk_templates procs_user ty_env name stable_info init code observed =
-      let esc =
-        if O.numeric_labels then escaping_labels init code
-        else Label.Set.empty in
-      let mains,fhandlers =
-        List.partition (fun (_,func,_) -> func=MiscParser.Main) code in
+    let mk_templates procs_user ty_env name stable_info init prog observed =
       let outs =
         List.map
-          (fun (proc,_,code) ->
-            let nrets = count_ret code in
-            let nnops = count_nop code in
-            let addrs = extract_addrs code in
-            let stable = stable_regs code in
+          (fun (proc,(code,fhandler)) ->
             let is_user = ProcsUser.is procs_user proc in
-            let (code,fhandler),addrs =
-              try
-                let (_,_,c) =
-                  List.find (fun (p,_,_) -> Proc.equal p proc) fhandlers in
-                let addrs = G.Set.union (extract_addrs c) addrs in
-                let code,fhandler =
-                  compile_code proc esc is_user code (Some c) in
-                (code,fhandler),addrs
-              with Not_found ->
-                 compile_code proc esc is_user code None,addrs
-            in
+            let nrets = count_ret code in
+            (* For user mode one nop added at the assembly level *)
+            let nnops = count_nop code + (if is_user then 1 else 0) in
+            let addrs =  G.Set.union (extract_addrs code) (extract_addrs fhandler) in
+            let stable = stable_regs code in
+            let code,fhandler =  compile_code proc is_user code fhandler in
             proc,addrs,stable,code,fhandler,nrets,nnops)
-          mains in
+          prog in
       List.map
         (fun (proc,addrs,stable,code,fhandler,nrets,nnops) ->
           let addrs,ptes =
@@ -811,6 +792,7 @@ module A.FaultType = A.FaultType)
             locations = locs ;
             extra_data ;_
           } = t in
+      let procs_user = ProcsUser.get info in
       let initenv = List.map (fun (loc,(_,v)) -> loc,v) init in
       let observed = Generic.all_observed final filter locs in
       let ty_env1 = Generic.build_type_env init final filter locs
@@ -824,17 +806,21 @@ module A.FaultType = A.FaultType)
         with Not_found -> StringMap.empty in
       let ty_env = ty_env1,ty_env2 in
       let label_init = T.get_exported_labels_init_code initenv code in
-      let code = List.map (fun ((p,_,f),c) -> p,f,c) code in
-      let code =
+      let prog = A.code_by_proc code in
+      let prog =
         if do_self || is_pte || not (Label.Full.Set.is_empty label_init) then
           let do_append_nop = is_pte && do_precise in
-          List.map (fun (p,f,c) ->
-            let nop = A.Instruction A.nop in
-            let c = A.Instruction A.nop::c in
-            let c =
-              if do_append_nop then c@[nop] else c in
-            p,f,c) code
-        else code in
+          List.map
+            (fun (p,(c,f)) ->
+              (* Add nop to signal code start *)
+              let is_user = ProcsUser.is procs_user p in
+              let nop = A.Instruction A.nop in
+              (* Except in user mode, where it will be added later *)
+              let c = if not is_user then nop::c else c in
+              let c = (* Append nop for faukt handler to return at end of code *)
+                if do_append_nop then c@[nop] else c in
+              p,(c,f)) prog
+        else prog in
       let stable_info = match MiscParser.get_info  t MiscParser.stable_key with
       | None -> A.RegSet.empty
       | Some s ->
@@ -846,10 +832,9 @@ module A.FaultType = A.FaultType)
               | Some r -> r::k)
               [] rs in
           A.RegSet.of_list rs in
-      let procs_user = ProcsUser.get info in
       let code =
         mk_templates
-          procs_user ty_env1 name stable_info initenv code observed in
+          procs_user ty_env1 name stable_info initenv prog observed in
       let bellinfo =
         let open MiscParser in
         match extra_data with
