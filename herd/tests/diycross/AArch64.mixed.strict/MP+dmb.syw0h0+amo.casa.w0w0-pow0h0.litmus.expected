@@ -5,8 +5,8 @@ States 3
 1:X1=0x101; 1:X3=0x101; [y]=0x2020202;
 No
 Witnesses
-Positive: 0 Negative: 3
+Positive: 0 Negative: 4
 Condition exists ([y]=0x2020202 /\ 1:X1=0x101 /\ 1:X3=0x0)
-Observation MP+dmb.syw0h0+amo.casa.w0w0-pow0h0 Never 0 3
+Observation MP+dmb.syw0h0+amo.casa.w0w0-pow0h0 Never 0 4
 Hash=012860ecc04db3a0c0cca4401aa0a718
 

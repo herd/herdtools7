@@ -36,5 +36,8 @@ LB+CAS-rfi-ctrl+DMBSY.litmus
 R+CAS-rfi-ctrl+DMBST.litmus
 CAS+data2.litmus
 MP+rel+CAS-addr.litmus
+MP+rel+CAS-iico_data-RsRs-addr.litmus
+MP+rel+CAS-iico_data-MRs-addr.litmus
+MP+rel+CAS-iico_data-bothRs-addr.litmus
 SB+CAS-rfi-addr+DMBSY.litmus
 SB+SWP-rfi-addr+DMBSY.litmus

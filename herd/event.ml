@@ -445,7 +445,7 @@ val same_instance : event -> event -> bool
     event_structure ->  event_structure
 
   val aarch64_cas_ok :
-    bool -> (* Physical memory access *)
+    bool (* Physical memory access *) -> [`DataFromRRs | `DataFromRx] ->
     event_structure -> event_structure -> event_structure ->
     event_structure ->  event_structure ->  event_structure ->
     event_structure
@@ -2187,11 +2187,9 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
              EventRel.union
                (EventRel.cartesian (get_ctrl_output_commits rn) input_rm)
            else Misc.identity)
-            (EventRel.union6
+            (EventRel.union4
                rn.intra_causality_control rs.intra_causality_control
-               wrs.intra_causality_control rm.intra_causality_control
-               (EventRel.cartesian (get_ctrl_output rs) input_wrs)      (* C1 *)
-               (EventRel.cartesian (get_ctrl_output rm) input_wrs));    (* C2 *)
+               wrs.intra_causality_control rm.intra_causality_control);
         intra_causality_order =
           EventRel.union4
             rn.intra_causality_order rs.intra_causality_order
@@ -2220,7 +2218,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       }
 
 (* AArch64 CAS, success *)
-    let aarch64_cas_ok is_phy rn rs rt wrs rm wm =
+    let aarch64_cas_ok is_phy prov_data rn rs rt wrs rm wm =
       let input_wrs = minimals wrs
       and input_rm = minimals rm
       and input_wm = minimals wm in
@@ -2246,12 +2244,17 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
              wrs.intra_causality_data
              rm.intra_causality_data
              wm.intra_causality_data)
-          (let output_rn = get_output rn in
+          (let output_rn = get_output rn
+           and output_prov_data = match prov_data with
+             | `DataFromRRs -> get_output rs
+             | `DataFromRx -> get_output rm
+           in
            EventRel.union4
              (EventRel.cartesian output_rn input_rm)          (* D1 *)
-             (EventRel.cartesian (get_output rs) input_wrs)   (* Ds1 *)
              (EventRel.cartesian output_rn input_wm)          (* Ds2 *)
-             (EventRel.cartesian (get_output rt) input_wm));  (* Ds3 *)
+             (EventRel.cartesian (get_output rt) input_wm)    (* Ds3 *)
+             (EventRel.cartesian output_prov_data input_wrs)
+          );
         intra_causality_control =
         EventRel.union
           (EventRel.union6
@@ -2263,13 +2266,14 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
              wm.intra_causality_control)
           (let output_rs = get_ctrl_output rs in
            let output_rm = get_ctrl_output rm in
-           EventRel.union5
+           EventRel.union4
              (if is_branching && is_phy then
                 EventRel.cartesian (get_ctrl_output_commits rn)
                   (EventSet.union input_rm input_wm)
               else EventRel.empty)
-             (EventRel.cartesian output_rs input_wrs)  (* C1 *)
-             (EventRel.cartesian output_rm input_wrs)  (* C2 *)
+             (match prov_data with
+              | `DataFromRRs -> EventRel.cartesian output_rm input_wrs
+              | `DataFromRx -> EventRel.empty)
              (EventRel.cartesian output_rs input_wm)   (* Cs1 *)
              (EventRel.cartesian output_rm input_wm)); (* Cs2 *)
         intra_causality_order =

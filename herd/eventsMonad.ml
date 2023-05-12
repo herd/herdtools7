@@ -592,8 +592,8 @@ Monad type:
       eiid,(acts, None)
 
 (* AArch64 successful cas *)
-    let aarch64_cas_ok
-        (is_physical:bool)
+    let do_aarch64_cas_ok
+        (is_physical:bool) (prov_data: [`DataFromRRs | `DataFromRx])
         (read_rn:'loc t) (read_rs:'v t) (read_rt: 'v t)
         (write_rs:'v-> unit t)
         (read_mem: 'loc -> 'v t) (write_mem: 'loc -> 'v -> unit t)
@@ -619,7 +619,7 @@ Monad type:
             let (),cl_eq,eseq =  Evt.as_singleton_nospecul eqm in
             assert (E.is_empty_event_structure eseq) ;
             let es =
-              E.aarch64_cas_ok is_physical es_rn es_rs es_rt es_wrs es_rm es_wm in
+              E.aarch64_cas_ok is_physical prov_data es_rn es_rs es_rt es_wrs es_rm es_wm in
             let cls = cl_a@cl_cv@cl_nv@cl_rm@cl_wm@cl_wrs@cl_eq  in
             eiid,Evt.add ((),cls,es) acts)
           acts_rn (eiid,Evt.empty) in
@@ -669,6 +669,15 @@ Monad type:
              read_res read_data read_addr cancel_res
              (write_result V.zero)
              write_mem)
+
+    let aarch64_cas_ok (is_physical: bool) (read_rn: 'loc t) (read_rs: 'v t)
+        (read_rt: 'v t) (write_rs: 'v -> unit t) (read_mem: 'loc -> 'v t)
+        (write_mem: 'loc -> 'v -> unit t) (req: 'v -> 'v -> unit t) =
+      let do_ prov_data =
+        do_aarch64_cas_ok is_physical prov_data read_rn read_rs read_rt
+          write_rs read_mem write_mem req
+      in
+      altT (do_ `DataFromRRs) (do_ `DataFromRx)
 
     (* RISCV store conditional may always succeed? *)
     let riscv_store_conditional = aarch64_or_riscv_store_conditional false
