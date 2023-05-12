@@ -1622,11 +1622,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rA,csum,st = do_sum_addr vdep st rA r2 in
       rA,init,pseudo (cs0@csum),st
 
-    let emit_addr_dep csel = do_emit_addr_dep csel vloc
-
-    let emit_exch_dep_addr csel st p init er ew rd =
+    let emit_exch_dep_addr csel vdep st p init er ew rd =
       let rA,init,caddr,st =
-        emit_addr_dep csel st p init (get_tagged_loc er) rd in
+        do_emit_addr_dep csel vdep st p init (get_tagged_loc er) rd in
       let rR,st = next_reg st in
       let rW,init,csi,st = U.emit_mov st p init ew.C.v in
       let arw = check_arw_lxsx er ew in
@@ -1807,8 +1805,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let ropt,init,cs,st = emit_access st p init e in
       ropt,init,insert_isb isb c cs,st
 
-    let emit_exch_ctrl csel isb st p init er ew r1 =
-      let c,st = emit_ctrl_gen csel st vloc r1 in
+    let emit_exch_ctrl csel vdep isb st p init er ew r1 =
+      let c,st = emit_ctrl_gen csel st vdep r1 in
       let ropt,init,cs,st = emit_exch st p init er ew in
       ropt,init,insert_isb isb c cs,st
 
@@ -1820,63 +1818,69 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
          | None -> vloc
          end
 
+    let node2vdep n =
+      let e = n.C.evt in
+      let at = e.C.atom in
+      tr_atom at
+
     let emit_access_dep st p init e (dp,csel) r1 n1 =
-      let e1 = n1.C.evt in
-      let at1 = e1.C.atom in
-      let vdep = tr_atom at1 in
+      let vdep = node2vdep n1 in
       match dp with
       | D.ADDR -> emit_access_dep_addr csel vdep st p init e r1
       | D.DATA -> emit_access_dep_data csel vdep st p init e r1
       | D.CTRL -> emit_access_ctrl csel vdep false st p init e r1
       | D.CTRLISYNC -> emit_access_ctrl csel vdep true st p init e r1
 
-    let emit_exch_dep st p init er ew (dp,csel) rd = match dp with
-    | D.ADDR -> emit_exch_dep_addr csel  st p init er ew rd
+    let emit_exch_dep st p init er ew (dp,csel) vdep rd = match dp with
+    | D.ADDR -> emit_exch_dep_addr csel vdep st p init er ew rd
     | D.DATA -> Warn.fatal "not data dependency to RMW"
-    | D.CTRL -> emit_exch_ctrl csel false st p init er ew rd
-    | D.CTRLISYNC -> emit_exch_ctrl csel true st p init er ew rd
+    | D.CTRL -> emit_exch_ctrl csel vdep false st p init er ew rd
+    | D.CTRLISYNC -> emit_exch_ctrl csel vdep true st p init er ew rd
 
-    let emit_ldop_dep ins ins_mixed  st p init er ew (dp,csel) rd =
+    let emit_ldop_dep ins ins_mixed  st p init er ew (dp,csel) vdep rd =
       match dp with
     | D.ADDR ->
        let rA,init,caddr,st =
-         emit_addr_dep csel st p init
+         do_emit_addr_dep csel vdep st p init
            (get_tagged_loc er) rd in
         let rR,init,cs,st = do_emit_ldop_rA ins ins_mixed st p init er ew rA in
         rR,init,caddr@cs,st
     | D.CTRL|D.CTRLISYNC ->
-        let c = emit_ctrl vloc rd in
+        let c = emit_ctrl vdep rd in
         let rR,init,cs,st = do_emit_ldop ins ins_mixed st p init er ew in
         rR,init,insert_isb (is_ctrlisync dp) c cs,st
     | D.DATA -> Warn.fatal "Data dependency to LDOP"
 
-    let emit_cas_dep  st p init er ew (dp,csel) rd = match dp with
+    let emit_cas_dep  st p init er ew (dp,csel) vdep rd = match dp with
     | D.ADDR ->
        let rA,init,caddr,st =
-         emit_addr_dep csel st p init (get_tagged_loc er) rd in
+         do_emit_addr_dep csel vdep st p init (get_tagged_loc er) rd in
         let rR,init,cs,st = emit_cas_rA st p init er ew rA in
         rR,init,caddr@cs,st
     | D.CTRL|D.CTRLISYNC ->
-        let c,st = emit_ctrl_gen csel st vloc rd in
+        let c,st = emit_ctrl_gen csel st vdep rd in
         let rR,init,cs,st = emit_cas st p init er ew in
         rR,init,insert_isb (is_ctrlisync dp) c cs,st
     | D.DATA -> Warn.fatal "Data dependency to CAS"
 
-    let emit_stop_dep  op st p init er ew (dp,csel) rd = match dp with
-    | D.ADDR ->
-        let rA,init,caddr,st =
-          emit_addr_dep csel st p init (get_tagged_loc er) rd in
-        let rR,init,cs,st = emit_stop_rA op st p init er ew rA in
-        rR,init,caddr@cs,st
-    | D.CTRL|D.CTRLISYNC ->
-        let c,st = emit_ctrl_gen csel st vloc rd in
-        let rR,init,cs,st = emit_stop op st p init er ew in
-        rR,init,insert_isb (is_ctrlisync dp) c cs,st
-    | D.DATA -> Warn.fatal "Data dependency to STOP"
+    let emit_stop_dep  op st p init er ew (dp,csel) rd n =
+      let vdep = node2vdep n in
+      match dp with
+      | D.ADDR ->
+         let rA,init,caddr,st =
+           do_emit_addr_dep csel vdep st p init (get_tagged_loc er) rd in
+         let rR,init,cs,st = emit_stop_rA op st p init er ew rA in
+         rR,init,caddr@cs,st
+      | D.CTRL|D.CTRLISYNC ->
+         let c,st = emit_ctrl_gen csel st vdep rd in
+         let rR,init,cs,st = emit_stop op st p init er ew in
+         rR,init,insert_isb (is_ctrlisync dp) c cs,st
+      | D.DATA -> Warn.fatal "Data dependency to STOP"
 
 
-    let map_some_dp f st p init er ew dp rd =
-      let r,init,cs,st = f  st p init er ew dp rd in
+    let map_some_dp f st p init er ew dp rd n =
+      let vdep = node2vdep n in
+      let r,init,cs,st = f  st p init er ew dp vdep rd in
       Some r,init,cs,st
 
     let emit_rmw_dep rmw = match rmw with

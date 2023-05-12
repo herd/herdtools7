@@ -150,7 +150,7 @@ struct
   let emit_exch_dep _st =
     Warn.fatal "Dependent access is irrelevant for X86"
 
-  let emit_rmw_dep () = emit_exch_dep
+  let emit_rmw_dep () _n = emit_exch_dep
 
   let emit_fence st _ init _ f = match f with
     | MFence -> init,[X86.Instruction I_MFENCE],st

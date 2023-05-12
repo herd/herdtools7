@@ -147,7 +147,7 @@ module U = TopUtils.Make(O)(Comp)
     let e = n.C.evt in
      if e.C.rmw then match e.C.dir with
      | Some R ->
-         Comp.emit_rmw_dep (as_rmw n) st p init e n.C.next.C.evt dp r1
+         Comp.emit_rmw_dep (as_rmw n) st p init e n.C.next.C.evt dp r1 n1
      | Some W|None -> None,init,[],st
      | Some J -> assert false
      else
