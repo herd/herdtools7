@@ -24,7 +24,7 @@
 #define LITMUS_PAGE_SIZE PAGE_SIZE
 
 static inline pteval_t *litmus_tr_pte(void *p) {
-  return mmu_get_pte(mmu_idmap, (uintptr_t)p);
+  return follow_pte(mmu_idmap, (uintptr_t)p);
 }
 
 static inline void litmus_flush_tlb(void *p) {
