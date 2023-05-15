@@ -1,0 +1,11 @@
+AArch64 S24
+{
+ 1:X1=P0:L0;
+ 1:X2=instr:"B .+4";
+}
+  P0          |  P1         ;
+ MOV W3,#1    | STR W2,[X1] ;
+L0:           |             ;
+ B .+8        |             ;
+ ADD W3,W3,#2 |             ;
+exists 0:X3=1
