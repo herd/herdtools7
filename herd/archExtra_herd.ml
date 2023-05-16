@@ -106,6 +106,7 @@ module type S = sig
       addr : int;
       addr2v : string -> I.V.v;
       env : ii_env;
+      in_handler : bool;
     }
 
   val inst_instance_compare :
@@ -363,6 +364,7 @@ module Make(C:Config) (I:I) : S with module I = I
           addr : int ;
           addr2v : string -> I.V.v;
           env : ii_env;
+          in_handler : bool;
         }
 
 

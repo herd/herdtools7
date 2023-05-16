@@ -478,14 +478,16 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                 | e -> raise e in
 
 (* Call instruction semantics proper *)
-        let wrap fetch_proc proc inst addr env m poi =
+        let wrap re_exec fetch_proc proc inst addr env m poi =
         let ii =
            { A.program_order_index = poi;
              proc = proc; fetch_proc; inst = inst;
              labels = labels_of_instr addr;
              addr = addr;
              addr2v=addr2v proc;
-             env = env; } in
+             env = env;
+             in_handler = re_exec;
+           } in
         if dbg then
           Printf.eprintf "%s env=%s\n"
             (A.dump_instruction ii.A.inst)
@@ -498,7 +500,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
       let  sem_instr =  SM.build_semantics test in
       let rec add_next_instr re_exec fetch_proc proc env seen addr inst nexts =
-        wrap fetch_proc proc inst addr env sem_instr >>> fun branch ->
+        wrap re_exec fetch_proc proc inst addr env sem_instr >>> fun branch ->
           let { A.regs=env; lx_sz=szo; fh_code } = env in
           let env = A.kill_regs (A.killed inst) env
           and szo =
@@ -533,7 +535,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
               EM.addT
                 (A.next_po_index ii.A.program_order_index)
                 (EM.tooFar (tgt2lbl tgt) ii (S.B.Next [])) in
-            wrap tgt_proc proc inst addr env m >>> fun _ -> EM.unitcodeT true
+            wrap
+              re_exec tgt_proc proc inst addr env m >>> fun _ -> EM.unitcodeT true
         | No (_,[]) -> assert false (* Backward jump cannot be to end of code *)
         | Ok ((tgt_proc,code),seen) -> add_code re_exec tgt_proc proc env seen code
 

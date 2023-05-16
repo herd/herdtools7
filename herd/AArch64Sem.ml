@@ -584,8 +584,10 @@ module Make
       let check_ptw proc dir updatedb a_virt ma an ii mdirect mok mfault =
 
         let is_el0  = List.exists (Proc.equal proc) TopConf.procs_user in
+
         let check_el0 m =
-          if is_el0 then
+          (* Handler runs at level more priviledged than EL0 *)
+          if not ii.A.in_handler && is_el0 then
                fun pte_v -> m_op Op.Or (is_zero pte_v.el0_v) (m pte_v)
              else m in
 
