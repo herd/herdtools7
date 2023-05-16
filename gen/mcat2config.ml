@@ -74,39 +74,18 @@ module Make
       | PTE of string
       | Dd of extr*(atom option) * string
       | Lrs of string
-    
-    type ast = ( string * expr) list
 
-    let empty_node = ["",Empty ""]
+    type tree = (string * expr) list
     let empty_expr = Empty ""
 
-       (* 
-       ---------------------------------------------------------------
-       Entry point
-       --------------------------------------------------------------- *)
-    let rec get_ast fname =
-      (* Retrieves the AST from a given cat file, prints the relaxations and tree if chosen by the user
-        Inputs:
-          - fname: the name of the cat file
-        Outputs:
-          - Prints the relaxations and tree if chosen by the user
-      *)
-      let _,(_,_,ast)  = Parser.find_parse fname in
-      let tree = get_tree ast in
-      if O.print_tree then begin
-        pp_tree tree;
-        printf "\n\n\n"
-      end;
-      pp_relaxations tree;
-      ()
-    
+
        (* 
        ---------------------------------------------------------------
        Printing functions
        --------------------------------------------------------------- 
        *)
 
-    and pp_relaxations tree = 
+    let rec pp_relaxations tree =
       (* Pretty prints the given list of let statements as DIY relaxations
         Inputs:
           - tree: the list of let statements to pretty print, of type ast
@@ -227,28 +206,6 @@ module Make
       | Let (_, (_,Pvar (Some varname),expression) :: _) -> varname,expression
       | _ -> raise (Failed "instruction not supported\n" )
 
-    and get_tags tree (varname,expression)  = 
-      (* Retrieves the instruction associated with the given variable name and expression
-      Inputs:
-      - tree: the list of let statements in the cat file, as ast type
-      - varname: the name of the variable
-      - expression: the expression associated with the variable, as AST.exp
-      Outputs: 
-      - A tuple containing the variable name and its expression, as string*expr
-      *)
-      let open AST in
-      let ins = match expression with
-      | Op (_, op, expl) -> begin
-        match op with
-        | Union 
-        | Seq 
-        | Inter -> (Op2 (op, List.map (get_vars varname tree) expl))
-        | _ -> raise (Failed (sprintf "%s not supported\n " (pp_op2 op)))
-      end
-      | Var (_,_)-> (get_vars varname tree expression)
-      | _ -> raise (Failed (sprintf "operation not supported\n "))
-      in varname,ins
-
     and get_vars varname tree expression = 
       (* Retrieves an expr of the given AST.exp expression, with all variables 
       replaced as either their E.edge type or replaced with their expressions if they 
@@ -277,7 +234,7 @@ module Make
             match_var var
           end
           | Op (_, _, _) -> begin
-            let _,a = get_tags tree (varname,br) in
+            let a = get_vars varname tree br in
             a
           end
           | _ -> Empty ""
@@ -469,16 +426,16 @@ module Make
       let open E in
       let match_edge h prev h2 branch_list =
         let a1, a2, extr1, extr2 = extract_diratom prev h2 in
-        let e a = match h with
-        | T (Po (_,_,_),_) -> E.Po (a,extr1,extr2)
-        | T (Dp (dp, _, _),_) -> E.Dp (dp,a,extr2)
-        | T (Fenced (fence,_,_,_),_) -> E.Fenced (fence,a,extr1,extr2)
-        | T (Rmw a,_) -> if (A.applies_atom_rmw a a1 a2) then (Rmw a) else raise (Failed "atoms not applied correctly for rmw")
+        let e = match h with
+        | T (Po (_,_,_),_) -> [E.Po(Same,extr1,extr2);E.Po(Diff,extr1,extr2)]
+        | T (Dp (dp, _, _),_) -> [E.Dp (dp,Same,extr2);E.Dp (dp,Diff,extr2)]
+        | T (Fenced (fence,_,_,_),_) -> [E.Fenced (fence,Same,extr1,extr2);E.Fenced (fence,Diff,extr1,extr2)]
+        | T ((Rf ie), _) -> [E.Rf ie]
+        | T ((Fr ie), _) -> [E.Fr ie]
+        | T ((Ws ie), _) -> [E.Ws ie]
+        | T (Rmw rmw,_) -> if (A.applies_atom_rmw rmw a1 a2) then [Rmw rmw] else raise (Failed "atoms not applied correctly for rmw")
         | _ -> raise (Failed "unknown edge") in
-        E.[
-            { node_val = { edge = e Same ; a1 ; a2 }; branch_list = branch_list a2 };
-            { node_val = { edge = e Diff ; a1 ; a2 }; branch_list = branch_list a2 };
-          ] in
+        List.map (fun a -> E.{ node_val = { edge = a ; a1 ; a2 }; branch_list = branch_list a2 }) e in
       let rec f l prev = 
         match l with
         | Op2 (Inter, expl) :: t -> f t (match_inter expl)
@@ -530,6 +487,11 @@ module Make
     
     and match_inter expl =
       match expl with
+      | h::h2::[] -> begin
+        match (check_if_dir h),h2 with
+        | Dir R, An ((A.Tag, None),_) -> Dd (Dir R, Some (A.Tag, None), "tag read")
+        | _ -> raise (Failed "wrong inter")
+      end
       | h::h2::h3::[] -> begin
         match (check_if_dir h),h2,h3 with
         | Dir R, PTE _, Imp _ -> Dd (Dir R, Some (A.Pte A.Read, None), "ImpPTE Read")
@@ -563,22 +525,28 @@ module Make
     entry point for constructing tree
     ------------------------------------------   
     *)
-    and get_tree ast = 
-      let rec tree f l = 
-        match l with
-        | h::t -> begin try
-          (f h)::(tree f t)
-        with
-          | Failed s -> begin 
-            if O.verbose > 0 then 
-              (eprintf "%s" s)
-          end;
-            (tree f t)
-          | _ -> (tree f t)
-        end
-        | [] -> [] in
-      let tree_base = tree get_ins ast in
-      let tree = apply_expand (tree (get_tags tree_base) tree_base) in
+    and ast_to_tree ast : tree =
+      let map_ast f l =
+        List.fold_left
+        (fun acc a ->
+          try
+            f a::acc
+          with
+            | Failed s -> if O.verbose > 0 then (eprintf "%s" s);
+              acc)
+        [] l in
+      let tree_base = map_ast get_ins ast in
+      let map_vars = (map_ast (
+        (*if we want to print tree, then expand the entire AST, otherwise, only expand the desired let statement*)
+        if O.print_tree then
+          fun (varname, expression) -> varname, get_vars varname tree_base expression
+        else
+          fun (varname, expression) ->
+          match List.find_opt (fun name -> String.equal name varname) O.lets_to_print with
+          | Some _ -> varname, get_vars varname tree_base expression
+          | None -> raise (Failed (sprintf "not generating for instruction: %s\n" varname))
+        ) tree_base) in
+      let tree = apply_expand map_vars in
       tree
     
     (*
@@ -635,7 +603,19 @@ module Make
       | "ISB" -> T ((Fenced (Barrier (ISB),Same, Irr, Irr)), v)  
       | "rfi" -> T ((Rf Int), v)
       | "lxsx" -> lrsc
-      | "co" | "fr" -> T ((Fr Int), v)
+      | "co" -> Op2 (AST.Union, [
+        T ((Ws Int), v);
+        T ((Ws Ext), v)
+      ])
+      | "fr" -> Op2 (AST.Union, [
+        T ((Fr Int), v);
+        T ((Fr Ext), v)
+      ])
+      | "fri" -> T ((Fr Int), v)
+      | "fre" -> T ((Fr Ext), v)
+      | "rfe" -> T ((Rf Ext), v)
+      | "coe" -> T ((Ws Ext), v)
+      | "coi" -> T ((Ws Int), v)
       | "amo" -> let _,amo_instr = amo in amo_instr
       | _ -> Empty v
 
@@ -693,7 +673,15 @@ entry
 
 *)
     let zyva name =
-      try get_ast name
+      try
+        let _,(_,_,ast)  = Parser.find_parse name in
+        let tree = ast_to_tree ast in
+        if O.print_tree then begin
+          pp_tree tree;
+          printf "\n\n\n"
+        end;
+        pp_relaxations tree;
+        ()
       with
       | Misc.Fatal msg -> printf "ERROR %s\n%!" msg
       | Misc.Exit -> ()
