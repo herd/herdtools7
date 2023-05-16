@@ -1,0 +1,10 @@
+Test F003 Required
+States 1
+0:X2=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X2=1)
+Observation F003 Always 1 0
+Hash=ab82c40f892da13f020a9c573e484f84
+

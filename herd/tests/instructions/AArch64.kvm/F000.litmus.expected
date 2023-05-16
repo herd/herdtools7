@@ -1,0 +1,10 @@
+Test F000 Required
+States 1
+ Fault(P0:L0,x,MMU:Translation);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0:L0,x))
+Observation F000 Always 1 0
+Hash=fe8d2da69f8d807ca1e67749d58389ea
+
