@@ -1,0 +1,10 @@
+Test F002 Required
+States 1
+ Fault(P0:L0,x,MMU:Permission);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0:L0,x))
+Observation F002 Always 1 0
+Hash=797831f79778fce447669af5b1b2ef4f
+

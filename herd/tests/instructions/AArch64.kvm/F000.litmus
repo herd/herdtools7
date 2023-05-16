@@ -1,0 +1,12 @@
+AArch64 F000
+Variant=fatal
+{
+int x=1;
+0:X0=x;
+[PTE(x)]=(valid:0);
+}
+  P0          ;
+ ADD X0,X0,#0 ;
+L0:           ; 
+ LDR W1,[X0]  ;
+forall fault(P0:L0,x);
