@@ -7,14 +7,13 @@ BOOKS=aarch64  aarch64-mixed aarch64-MTE aarch64-MTE-mixed aarch64-VMSA  aarch64
 #BOOKS=aarch64-ptw #Add some day.
 WWW_CATALOGUE=www/catalogue
 HERD_CATALOGUE=../catalogue
-OCB=ocamlbuild $(JERD_OPT) -cflags -bin-annot,-w,A-4-9-29-45-60-67-70,-g -classic-display $(J)
 PROG=jerd.js
-BYTE=jerd.byte
 WWW_PROG=www/$(PROG)
 WWW_LIB=www/weblib
 JSON_SHELVES=$(foreach book,$(BOOKS),$(WWW_CATALOGUE)/$(book)/shelf.json)
-CATINCLUDES=herd/libdir linux $(foreach b,$(BOOKS),$(HERD_CATALOGUE)/$(b)/cats)
+CATINCLUDES=../herd/libdir linux $(foreach b,$(BOOKS),$(HERD_CATALOGUE)/$(b)/cats)
 CATINCLUDESDEP=$(foreach d,$(CATINCLUDES),$(wildcard $(d)/*.*))
+DUNETGT=../_build/default/herd-www
 all: web
 
 define make-json-shelf
@@ -40,30 +39,23 @@ weblib:
 web: $(JSON_SHELVES) $(PROG) weblib
 	@cp -v $(PROG) www/$(PROG)
 
-#js_of_ocaml --pretty --no-inline --debug-info $(BYTE)
-$(PROG): byte
-	js_of_ocaml $(BYTE)
+$(PROG): catIncludes.ml
+	( cd .. && dune build --release @jerd )
+	cp $(DUNETGT)/jerd.bc.js $(PROG) && chmod u+w $(PROG)
 
 catIncludes.ml: generate_includes.ml $(CATINCLUDESDEP)
 	ocaml ./generate_includes.ml $(CATINCLUDES) > $@
-
-byte native d.byte: catIncludes.ml
-#	sh lib/handle402.sh
-#	make -C herd version
-	$(OCB) $(PROG:.js=.$@)
 
 $(foreach book,$(BOOKS),$(eval $(call make-json-shelf,$(book))))
 $(foreach book,$(BOOKS),$(eval $(call make-book,$(book))))
 
 clean::
-	-$(OCB) -clean
-
-clean::
 	/bin/rm -f *~
-	/bin/rm -f $(PROG) $(BYTE) $(WWW_PROG) catIncludes.ml
+	/bin/rm -f $(PROG) $(WWW_PROG) catIncludes.ml
 	/bin/rm -f $(JSON_SHELVES)
 	/bin/rm -rf $(WWW_LIB)
 
 clean::
+	/bin/rm -rf $(DUNETGT)
 
 .PHONY:: byte native d.byte clean web

@@ -29,12 +29,9 @@ package manager.
 
     % opam install dune menhir
 
-Notice: Compilation with ocamlbuild is possible, by setting D=ocb in Makefile.
-For using ocamlbuild, supplementary software ocamlbuild and ocamlfind are required.
-They can be installed with opam:
-
-     % opam install ocamlfind ocamlbuild
 Make sure to run `eval $(opam config env)` to make tools available in your PATH.
+
+Notice: Compilation with ocamlbuild is not longer possible
 
 Build
 -----
