@@ -602,16 +602,18 @@ module RegMap = A.RegMap)
 
       let compile_label_call (p,lbl) =
         let open OutUtils in
-        if do_self then
-          sprintf "&_a->%s[_i*_a->%s+_a->%s+%s]"
-            (fmt_code p) (fmt_code_size p)
-            (fmt_prelude p) (fmt_lbl_offset p lbl)
-        else
-          match O.mode with
-          | Mode.Std ->
-              sprintf "_a->%s" (fmt_lbl_var p lbl)
-          | Mode.PreSi|Mode.Kvm ->
-              sprintf "_g->lbl.%s" (fmt_lbl_var p lbl)
+        match O.mode,do_self with
+        | Mode.Std,false ->
+           sprintf "_a->%s" (fmt_lbl_var p lbl)
+        | (Mode.PreSi|Mode.Kvm),false ->
+           sprintf "_g->lbl.%s" (fmt_lbl_var p lbl)
+        | Mode.Std,true ->
+           sprintf "&_a->%s[_i*_a->%s+_a->%s+%s]"
+             (fmt_code p) (fmt_code_size p)
+             (fmt_prelude p) (fmt_lbl_offset p lbl)
+        | (Mode.PreSi|Mode.Kvm),true ->
+           sprintf "(ins_t *)_vars->%s+_vars->%s+%s"
+             (fmt_code p) (fmt_prelude p) (fmt_lbl_offset p lbl)
 
       let compile_instr_call i = AL.GetInstr.instr_name i
       let indirect_star =
