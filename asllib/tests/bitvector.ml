@@ -1,6 +1,5 @@
-open Asllib
 open Test_helpers.Helpers
-module BV = Bitvector
+module BV = Asllib.Bitvector
 
 let _debug = false
 
