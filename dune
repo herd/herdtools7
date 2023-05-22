@@ -1,4 +1,10 @@
-(dirs :standard \ herd-www)
+(dirs :standard \ catalogue )
 (env
  (release
 (flags (:standard -w +a-3-4-9-29-33-41-45-60-67-70))))
+(alias
+  (name zyva)
+  (deps (alias internal/all) (alias litmus/all) (alias herd/all)
+        (alias tools/all) (alias jingle/all) (alias gen/all)
+        (alias install)))
+(alias (name jerd) (deps (alias herd-www/all)))

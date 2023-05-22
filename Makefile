@@ -6,44 +6,30 @@ D=dune
 J=8
 
 
-#For building with ocamlbuild set
-#D=ocb
-
 REGRESSION_TEST_MODE = test
 # REGRESSION_TEST_MODE = promote
 # REGRESSION_TEST_MODE = show
 
-ifeq ($(D), dune)
-	DIYCROSS                      = _build/install/default/bin/diycross7
-	HERD                          = _build/install/default/bin/herd7
-	HERD_REGRESSION_TEST          = _build/default/internal/herd_regression_test.exe
-	HERD_DIYCROSS_REGRESSION_TEST = _build/default/internal/herd_diycross_regression_test.exe
-	HERD_CATALOGUE_REGRESSION_TEST = _build/default/internal/herd_catalogue_regression_test.exe
-else
-	DIYCROSS                      = _build/gen/diycross.native
-	HERD                          = _build/herd/herd.native
-	HERD_REGRESSION_TEST          = _build/internal/herd_regression_test.native
-	HERD_DIYCROSS_REGRESSION_TEST = _build/internal/herd_diycross_regression_test.native
-	HERD_CATALOGUE_REGRESSION_TEST = _build/internal/herd_catalogue_regression_test.exe
-endif
+DIYCROSS                      = _build/install/default/bin/diycross7
+HERD                          = _build/install/default/bin/herd7
+HERD_REGRESSION_TEST          = _build/default/internal/herd_regression_test.exe
+HERD_DIYCROSS_REGRESSION_TEST = _build/default/internal/herd_diycross_regression_test.exe
+HERD_CATALOGUE_REGRESSION_TEST = _build/default/internal/herd_catalogue_regression_test.exe
 
 
 all: build
 
 build: | check-deps
-	sh ./$(D)-build.sh $(PREFIX)
+	sh ./dune-build.sh $(PREFIX)
 
 install:
-	sh ./$(D)-install.sh $(PREFIX)
+	sh ./dune-install.sh $(PREFIX)
 
 uninstall:
-	sh ./$(D)-uninstall.sh $(PREFIX)
+	sh ./dune-uninstall.sh $(PREFIX)
 
-clean: $(D)-clean clean-asl-pseudocode
+clean: dune-clean clean-asl-pseudocode
 	rm -f Version.ml
-
-ocb-clean:
-	ocamlbuild -clean
 
 dune-clean:
 	dune clean
@@ -59,31 +45,20 @@ check-deps::
 	$(if $(shell which ocaml),,$(error "Could not find ocaml in PATH"))
 	$(if $(shell which menhir),,$(error "Could not find menhir in PATH; it can be installed with `opam install menhir`."))
 
-ifeq ($(D), dune)
 check-deps::
 	$(if $(shell which dune),,$(error "Could not find dune in PATH; it can be installed with `opam install dune`."))
-else
-check-deps::
-	$(if $(shell which ocamlbuild),,$(error "Could not find ocamlbuild in PATH; it can be installed with `opam install ocamlbuild`."))
-	$(if $(shell which ocamlfind),,$(error "Could not find ocamlfind in PATH; it can be installed with `opam install ocamlfind`."))
-endif
-
 
 # Tests.
 TIMEOUT=16.0
 
 test:: | build
 
-test:: $(D)-test
+test:: dune-test
 	@ echo "OCaml unit tests: OK"
 
 dune-test:
 	@ echo
 	dune runtest --profile=release
-
-ocb-test:
-	@ echo
-	./ocb-test.sh
 
 test:: test.aarch64
 test.aarch64:
