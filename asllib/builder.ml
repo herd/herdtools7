@@ -87,8 +87,11 @@ let rec list_first_opt f = function
   | h :: t -> ( match f h with Some x -> Some x | None -> list_first_opt f t)
 
 let stdlib =
+  (* Share code with: lib/myLib ? *)
   let ( / ) = Filename.concat in
-  let to_try = [ Version.libdir / "asllib"; "asllib" / "libdir" ] in
+  let to_try =
+    [ Version.libdir / "asllib"; "asllib" / "libdir";
+      "/jherd" (* For web interface *)] in
   let to_try =
     match Sys.getenv_opt "ASL_LIBDIR" with
     | None -> to_try
@@ -110,4 +113,6 @@ let stdlib =
   lazy
     (match list_first_opt try_one to_try with
     | Some ast -> ast
-    | None -> raise Not_found)
+    | None ->
+       (* Much better than "raise Not_found" *)
+       assert false)

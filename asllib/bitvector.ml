@@ -191,7 +191,7 @@ let of_int_sized length s =
   else ();
   (length, Bytes.unsafe_to_string result)
 
-let of_int = of_int_sized (Sys.int_size - 1)
+let _of_int = of_int_sized (Sys.int_size - 1)
 
 let of_int64 s =
   let result = create_data_bytes 64 in
@@ -200,6 +200,8 @@ let of_int64 s =
     |> Int64.logand 255L |> Int64.to_int |> Char.chr |> Bytes.set result i
   done;
   (64, Bytes.unsafe_to_string result)
+
+let of_int x = of_int64 (Int64.of_int x)
 
 (* --------------------------------------------------------------------------
 

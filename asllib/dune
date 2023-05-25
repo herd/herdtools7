@@ -2,6 +2,7 @@
 
 (ocamllex Lexer)
 (ocamllex SimpleLexer0)
+(ocamllex splitasl)
 
 (menhir (modules Parser))
 (menhir (modules Parser0) (flags --unused-tokens --table))
