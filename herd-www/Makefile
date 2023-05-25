@@ -3,7 +3,8 @@ BINDIR=$(PREFIX)/bin
 LIBDIR=$(PREFIX)/lib/herd7
 J=-j 8
 JERD_OPT=-use-ocamlfind
-BOOKS=aarch64  aarch64-mixed aarch64-MTE aarch64-MTE-mixed aarch64-VMSA  aarch64-ETS2 aarch64-faults x86 linux
+#BOOKS=ASL aarch64 aarch64-mixed aarch64-MTE aarch64-MTE-mixed aarch64-VMSA  aarch64-ETS2 aarch64-faults x86 linux
+BOOKS=ASL aarch64
 #BOOKS=aarch64-ptw #Add some day.
 WWW_CATALOGUE=www/catalogue
 HERD_CATALOGUE=../catalogue
@@ -44,7 +45,7 @@ $(PROG): catIncludes.ml force
 	cp $(DUNETGT)/jerd.bc.js $(PROG) && chmod u+w $(PROG)
 
 catIncludes.ml: generate_includes.ml $(CATINCLUDESDEP)
-	ocaml ./generate_includes.ml -norec $(CATINCLUDES) > $@
+	ocaml ./generate_includes.ml -rec $(CATINCLUDES) > $@
 
 $(foreach book,$(BOOKS),$(eval $(call make-json-shelf,$(book))))
 $(foreach book,$(BOOKS),$(eval $(call make-book,$(book))))
