@@ -148,23 +148,23 @@ let hash_pteval _ = assert false
 (*                                                                           *)
 (*****************************************************************************)
 
-let memoize f =
+let memoize  f =
   let table = Hashtbl.create 17 in
-  fun s ->
-    match Hashtbl.find_opt table s with
+  fun ?ast_type version s ->
+    let k = ast_type,version,s in
+    match Hashtbl.find_opt table k with
     | Some r -> r
     | None ->
-        let r = f s in
-        let () = Hashtbl.add table s r in
-        r
+       let r = f ?ast_type version s in
+       let () = Hashtbl.add table k r in
+       r
 
 let do_build_ast_from_file ?ast_type version fname =
   match Asllib.Builder.from_file_multi_version ?ast_type version fname with
   | Error e -> raise (Misc.Fatal (Asllib.Error.error_to_string e))
   | Ok ast -> ast
 
-let build_ast_from_file ?(ast_type : Asllib.Builder.ast_type option) version =
-  memoize (do_build_ast_from_file ?ast_type version)
+let build_ast_from_file = memoize do_build_ast_from_file
 
 let asl_generic_parser version lexer lexbuf =
   match

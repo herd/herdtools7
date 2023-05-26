@@ -11,7 +11,7 @@ PROG=jerd.js
 WWW_PROG=www/$(PROG)
 WWW_LIB=www/weblib
 JSON_SHELVES=$(foreach book,$(BOOKS),$(WWW_CATALOGUE)/$(book)/shelf.json)
-CATINCLUDES=../herd/libdir linux $(foreach b,$(BOOKS),$(HERD_CATALOGUE)/$(b)/cats)
+CATINCLUDES=../herd/libdir ../asllib/libdir linux $(foreach b,$(BOOKS),$(HERD_CATALOGUE)/$(b)/cats)
 CATINCLUDESDEP=$(foreach d,$(CATINCLUDES),$(wildcard $(d)/*.*))
 DUNETGT=../_build/default/herd-www
 all: web
@@ -34,17 +34,17 @@ tst:
 	ocaml generate_names.ml $(CATINCLUDES)
 weblib:
 	@echo '** INSTALL ' $(WWW_LIB) && mkdir -p $(WWW_LIB) && cp ./cat.css $(WWW_LIB)
-	@ocaml generate_names.ml $(CATINCLUDES) | while read f; do cp $$f $(WWW_LIB) && cat2html7 $(WWW_LIB)/$$(basename $$f) ; done
+	@ocaml generate_names.ml -norec $(CATINCLUDES) | while read f; do cp $$f $(WWW_LIB) && cat2html7 $(WWW_LIB)/$$(basename $$f) ; done
 
 web: $(JSON_SHELVES) $(PROG) weblib
 	@cp -v $(PROG) www/$(PROG)
 
-$(PROG): catIncludes.ml
+$(PROG): catIncludes.ml force
 	( cd .. && dune build --release @jerd )
 	cp $(DUNETGT)/jerd.bc.js $(PROG) && chmod u+w $(PROG)
 
 catIncludes.ml: generate_includes.ml $(CATINCLUDESDEP)
-	ocaml ./generate_includes.ml $(CATINCLUDES) > $@
+	ocaml ./generate_includes.ml -norec $(CATINCLUDES) > $@
 
 $(foreach book,$(BOOKS),$(eval $(call make-json-shelf,$(book))))
 $(foreach book,$(BOOKS),$(eval $(call make-book,$(book))))
@@ -58,4 +58,4 @@ clean::
 clean::
 	/bin/rm -rf $(DUNETGT)
 
-.PHONY:: byte native d.byte clean web
+.PHONY:: force clean web

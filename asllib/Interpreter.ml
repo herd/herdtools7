@@ -22,6 +22,7 @@ open AST
 let fatal_from = Error.fatal_from
 let to_pos = ASTUtils.to_pos
 let _warn = false
+let _dbg = false
 
 module type S = sig
   module B : Backend.S
@@ -199,12 +200,19 @@ module Make (B : Backend.S) = struct
       | Some (AlreadyEvaluated v) -> v
       | Some (NotYetEvaluated e) ->
           let v =
-            try eval_expr e
+            try
+              eval_expr e
             with Error.ASLException e ->
-              if _warn then
+                  if _dbg || _warn then
                 Format.eprintf "@[<2>Ignoring static evaluation error:@ %a@]@."
                   Error.pp_error e;
               V_Int 0
+               | e ->
+                  if _dbg then
+                    Printf.eprintf
+                      "Evaluating constant %s failed with %s!"
+                      name (Printexc.to_string e) ;
+                  raise e
           in
           acc := IMap.add name (AlreadyEvaluated v) !acc;
           v
@@ -235,7 +243,7 @@ module Make (B : Backend.S) = struct
     let funcs = IMap.empty |> build_funcs ast |> add_primitives primitives in
     let consts = IMap.empty |> build_enums ast |> build_consts ast in
     let () =
-      if false then (
+      if _dbg then (
         Format.eprintf "@[<v 2>Global const env:@ ";
         IMap.iter
           (fun name v -> Format.eprintf "@[<h>- %s: %a@]@ " name PP.pp_value v)
