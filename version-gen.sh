@@ -12,7 +12,7 @@ fi
 
 readonly libdir="${1}/share/herdtools7"
 
-. ./defs-mini.sh
+. ./defs.sh
 
 cat > Version.ml <<EOF
 (* GENERATED, DO NOT EDIT *)

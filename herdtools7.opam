@@ -18,8 +18,11 @@ install: ["sh" "./dune-install.sh" "%{prefix}%"]
 # @todo Add "build-test" field
 depends: [
   "ocaml" {>= "4.08.0"}
-  "dune"  {>= "1.6.3" }
+  "dune"  {>= "2.7" }
   "menhir" {>= "20200123"}
+]
+depopts: [
+  "js_of_ocaml-ppx"
 ]
 conflicts: ["ocaml-option-bytecode-only"]
 url {
