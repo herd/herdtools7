@@ -17,5 +17,5 @@ set -x
 
 ./version-gen.sh "${prefix}"
 
-dune build --profile release @zyva
+dune build --profile release
 
