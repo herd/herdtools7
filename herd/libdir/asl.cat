@@ -1,31 +1,29 @@
-(****************************************************************************)
-(*                           the diy toolsuite                              *)
-(*                                                                          *)
-(* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
-(*                                                                          *)
-(* Copyright 2015-present Institut National de Recherche en Informatique et *)
-(* en Automatique and the authors. All rights reserved.                     *)
-(*                                                                          *)
-(* This software is governed by the CeCILL-B license under French law and   *)
-(* abiding by the rules of distribution of free software. You can use,      *)
-(* modify and/ or redistribute the software under the terms of the CeCILL-B *)
-(* license as circulated by CEA, CNRS and INRIA at the following URL        *)
-(* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
-(****************************************************************************)
-(* Authors:                                                                 *)
-(* Hadrien Renaud, University College London, UK.                           *)
-(****************************************************************************)
+(*
+
+           This is a
+           ________   _______         __      _________ _________
+          |_   ___ \.|_   __ \       /  \    |_   ___  |  _   _  |
+            | |   \. \ | |__) |     / /\ \     | |_  \_|_/ | | \_|
+            | |    | | |  __ /     / ____ \    |  _|       | |
+           _| |___.' /_| |  \ \_ _/ /    \ \_ _| |_       _| |_
+          |________.'|____| |___|____|  |____|_____|     |_____|
+
+          model for
+
+                      ^~^  ,
+                     ('Y') )
+                     /   \/   ASL   __QQ
+                    (\|||/)        (_)_">
+                                  /
+
+          Please do consider this as a work in progress.
+
+ *)
 
 ASL
-(* A draft of a memory model for asl. *)
 
 
-(*****************************************************************************)
-(*                                                                           *)
-(*                                Renamings                                  *)
-(*                                                                           *)
-(*****************************************************************************)
+(* Renamings *)
 
 let NASLLocal = (M | Wreg | Rreg) \ ASLLocal
 let ASLDATA = DATA
@@ -35,11 +33,7 @@ let asl_iico_data = iico_data
 let asl_rf_reg = rf-reg
 let asl_rf = rf
 
-(*****************************************************************************)
-(*                                                                           *)
-(*                              ASL intrinsics                               *)
-(*                                                                           *)
-(*****************************************************************************)
+(* Working relations *)
 
 let aarch64 = NASLLocal * NASLLocal
 
@@ -60,12 +54,7 @@ let aarch64_iico_order = ( asl_fr | asl_fr_reg ) & aarch64
 
 let aarch64_intrinsic = aarch64_iico_ctrl | aarch64_iico_data | aarch64_iico_order
 
-(*****************************************************************************)
-(*                                                                           *)
-(*                           Event set computation                           *)
-(*                                                                           *)
-(*****************************************************************************)
-
+(* Event sets *)
 
 let AArch64 = NASLLocal
 
@@ -82,20 +71,12 @@ show [DATA] as debug_data
 (* Pred = BranchTo(VBAR something) ??? *)
 (* F = call to (data memory ?) barrier *)
 
-(*****************************************************************************)
-(*                                                                           *)
-(*                                   Tests                                   *)
-(*                                                                           *)
-(*****************************************************************************)
+(* Tests *)
 
 acyclic (aarch64_intrinsic | po) as asl_determinism
 
 
-(*****************************************************************************)
-(*                                                                           *)
-(*                                  Display                                  *)
-(*                                                                           *)
-(*****************************************************************************)
+(* Display *)
 
 (*
 show asl_iico_ctrl, asl_iico_data, asl_rf_reg
