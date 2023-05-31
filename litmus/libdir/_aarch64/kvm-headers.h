@@ -15,6 +15,7 @@
 /****************************************************************************/
 
 #include <vmalloc.h>
+#include <alloc_page.h>
 #include <asm-generic/atomic.h>
 #include <asm/smp.h>
 #include <asm/delay.h>

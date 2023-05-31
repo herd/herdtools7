@@ -245,19 +245,26 @@ module Make(O:Config)(A:I) =
            end in
       List.fold_left (fun k (_,v) -> f v k) [] init
 
+    let list_unique lst =
+      List.fold_left
+        (fun l e -> if List.exists (fun elt -> elt = e) l then l else e::l)
+        [] lst
+
     let get_labels t =
-      get_constants
+      let lbls = get_constants
         (function
          | Label (p,s) -> Some (p,s)
          | _ -> None)
-        t
+        t in
+      list_unique lbls
 
     let get_instructions t =
-      get_constants
+      let insts = get_constants
         (function
          | Instruction i -> Some i
          | _ -> None)
-        t
+        t in
+      list_unique insts
 
     let get_stable { stable; _} = stable
 

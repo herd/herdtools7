@@ -36,7 +36,7 @@ typedef struct {
 } ctx_t ;
 
 
-static void instance_init (ctx_t *p, int id, intmax_t *mem) {
+static void instance_init(ctx_t *p, int id, intmax_t *mem) {
   p->id = id ;
   p->mem = mem ;
   hash_init(&p->t) ;
@@ -45,6 +45,14 @@ static void instance_init (ctx_t *p, int id, intmax_t *mem) {
 #ifdef KVM
 #ifdef SOME_VARS
   vars_init(&p->v,mem);
+#endif
+#endif
+}
+
+static void instance_free(ctx_t *p) {
+#ifdef KVM
+#ifdef SOME_VARS
+  vars_free(&p->v);
 #endif
 #endif
 }
@@ -125,6 +133,16 @@ static void init_global(global_t *g) {
     instance_init(&g->ctx[k],k,m) ;
     m += NVARS*LINESZ ;
   }
+}
+
+static void free_global(global_t *g) {
+  for (int k = 0 ; k < NEXE ; k++) {
+    instance_free(&g->ctx[k]);
+  }
+#ifdef DYNALLOC
+  free(g->mem);
+  free(g);
+#endif
 }
 
 /******************/

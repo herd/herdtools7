@@ -130,6 +130,8 @@ module Make
 
       let have_cache = Insert.exists "cache.c"
 
+      let do_self = Cfg.variant Variant_litmus.Self
+
 (*************)
 (* Utilities *)
 (*************)
@@ -262,9 +264,20 @@ module Make
         O.o "" ;
         O.o "/* Full memory barrier */" ;
         UD.dump_mbar_def () ;
-        if CfgLoc.need_prelude then begin
+        let dump_find_ins = do_self || CfgLoc.need_prelude in
+        if dump_find_ins then begin
           ObjUtil.insert_lib_file O.o "_find_ins.c" ;
+          O.o ""
+        end ;
+        if do_self then begin
+          Insert.insert O.o "self.c" ;
           O.o "" ;
+          if Cfg.is_kvm then begin
+            Insert.insert O.o "kvm-self.c" ;
+            O.o "" ;
+          end
+        end ;
+        if CfgLoc.need_prelude then begin
           O.o "static size_t prelude_size(ins_t *p) { return find_ins(nop,p,0)+1; }" ;
           O.o "" ;
         end ;
@@ -279,8 +292,7 @@ module Make
           O.o "static void code_labels_init(code_labels_t *p);" ;
           O.o "" ;
         end ;
-        CfgLoc.need_prelude
-
+        dump_find_ins
 
 
       (* Fault handler *)
@@ -618,7 +630,7 @@ module Make
                 O.f "#define %-25s  %d" (SkelUtil.instr_symb_id flbl) (i + 1))
               CfgLoc.labels ;
             O.o "" ;
-            O.f "static char *instr_symb_name[] = {" ;
+            O.f "static const char *instr_symb_name[] = {" ;
             O.oi "\"UNKNOWN\"," ;
             (* Define names for inst symbols *)
             List.iter (fun (_,lbl) -> O.fi "\"%s\"," lbl ) CfgLoc.labels ;
@@ -656,7 +668,7 @@ module Make
                 end)
               test.T.globals ;
             O.o "" ;
-            O.f "static char *data_symb_name[] = {" ;
+            O.f "static const char *data_symb_name[] = {" ;
             (* Define names for data symbols *)
             O.oi "\"UNKNOWN\"," ;
             List.iter
@@ -688,27 +700,40 @@ module Make
         O.o "/************/" ;
         O.o "/* Outcomes */" ;
         O.o "/************/" ;
-        begin match test.T.globals with
-        | [] ->
+        let dump_vars_loc = function
+          | [] -> ()
+          | locs ->
+             O.fi "intmax_t %s;"
+               (String.concat ","
+                  (List.map (fun (a,_) -> sprintf "*%s" a) locs)) ;
+             if Cfg.is_kvm then begin
+                 O.fi "pteval_t %s;"
+                   (String.concat ","
+                      (List.map
+                         (fun (a,_) ->
+                           let pte = OutUtils.fmt_pte_tag a
+                           and phy = OutUtils.fmt_phy_tag a in
+                           sprintf "*%s,%s" pte phy)
+                         locs))
+               end in
+        let dump_vars_code nprocs =
+          List.iter
+            (fun p ->
+              let open OutUtils in
+              O.fi "ins_t *%s;" (fmt_code p) ;
+              O.fi "size_t %s;" (fmt_prelude p) ;
+              O.fi "size_t %s;" (fmt_code_size p))
+            (Misc.interval 0 nprocs) in
+        begin match test.T.globals,do_self with
+        | [],false ->
            O.o "typedef void vars_t;" ;
-        | locs ->
+        | locs,_ ->
             O.o "" ;
             O.o "#define SOME_VARS 1" ;
             O.o "typedef struct {" ;
-            O.fi "intmax_t %s;"
-              (String.concat ","
-                 (List.map (fun (a,_) -> sprintf "*%s" a) locs)) ;
-            if Cfg.is_kvm then begin
-              O.fi "pteval_t %s;"
-                (String.concat ","
-                   (List.map
-                      (fun (a,_) ->
-                        let pte = OutUtils.fmt_pte_tag a
-                        and phy = OutUtils.fmt_phy_tag a in
-                        sprintf "*%s,%s" pte phy)
-                      locs))
-            end ;
-            O.o "} vars_t;" ;
+            dump_vars_loc locs ;
+            if do_self then dump_vars_code (T.get_nprocs test) ;
+            O.o "} vars_t;"
         end ;
         O.o "" ;
         UD.dump_vars_types false test ;
@@ -1295,12 +1320,14 @@ module Make
           O.f "#define VOFF %d" voff ;
         end ;
         O.o "" ;
-        if Cfg.is_kvm && some_vars test then begin
+        if Cfg.is_kvm && (some_vars test || do_self) then begin
           let has_user = Misc.consp procs_user in
           O.o "static void vars_init(vars_t *_vars,intmax_t *_mem) {" ;
-          O.oi "const size_t _sz = LINE/sizeof(intmax_t);";
-          O.oi "pteval_t *_p;" ;
-          O.o "" ;
+          if some_vars test then begin
+              O.oi "const size_t _sz = LINE/sizeof(intmax_t);";
+              O.oi "pteval_t *_p;" ;
+              O.o ""
+            end ;
           List.iter
             (fun (a,_) ->
               O.fi "_vars->%s = _mem;" a ;
@@ -1313,7 +1340,28 @@ module Make
               O.oi "_mem += _sz ;")
             test.T.globals ;
           if has_user then O.oi "flush_tlb_all();" ;
-          O.o "}"
+          if do_self then begin
+              let open OutUtils in
+              List.iter
+                (fun (n,(t,_)) ->
+                  O.fi "_vars->%s = code_size((ins_t *)%s,%i);"
+                    (fmt_code_size n) (fmt_code n) (A.Out.get_nrets t) ;
+                  O.fi "_vars->%s = prelude_size((ins_t *)%s);"
+                    (fmt_prelude n) (fmt_code n);
+                  O.fi "_vars->%s = memalign_pages(LINE, _vars->%s);"
+                    (fmt_code n) (fmt_code_size n))
+                test.T.code
+            end ;
+          O.o "}" ;
+          O.o "" ;
+          O.o "static void vars_free(vars_t *_vars) {" ;
+          let open OutUtils in
+          List.iter
+            (fun (n,_) ->
+              O.fi "free_pages(_vars->%s);" (fmt_code n))
+            test.T.code ;
+          O.o "}" ;        
+          ()
         end ;
         O.o "" ;
         ObjUtil.insert_lib_file O.o "_instance.c" ;
@@ -1408,7 +1456,10 @@ module Make
           O.oii "int _delay = _g->delay;" ;
           if proc <> 0 then
             O.fii "_delay += (_p->d%i - (NSTEPS-1)/2)*_g->step;" proc
-        end ;
+          end ;
+        if do_self then
+          O.fii "code_init(%s, %s, _vars->%s);" (LangUtils.code_fun_cpy proc)
+            (OutUtils.fmt_code proc) (OutUtils.fmt_code_size proc) ;
         (* Initialize them *)
         List.iter
           (fun a ->
@@ -1529,7 +1580,7 @@ module Make
         (* Dump code *)
         if do_ascall then begin
             Lang.dump_call
-              (LangUtils.code_fun proc)
+              ((if do_self then LangUtils.code_fun_cpy else LangUtils.code_fun) proc)
               (if user_mode then ["_c->id"] else [])
               (fun _ s -> s)
               O.out (Indent.as_string Indent.indent2)
@@ -1652,17 +1703,19 @@ module Make
         O.oii "break; }" ;
         ()
 
-      let dump_run_def  env test some_ptr stats procs_user =
-        let faults = U.get_faults test in
+      let dump_test_code env test procs_user =
         O.o "/*************/" ;
         O.o "/* Test code */" ;
         O.o "/*************/" ;
         O.o "" ;
         if do_ascall then begin
-          List.iter
-            (dump_thread_code procs_user env)
-            test.T.code
-        end ;
+            List.iter
+              (dump_thread_code procs_user env)
+              test.T.code
+          end
+
+      let dump_run_def  env test some_ptr stats procs_user =
+        let faults = U.get_faults test in
         (* Notice: initialise the "nop" global variable before others *)
         UD.dump_init_getinstrs test ;
         if do_label_init then begin
@@ -1695,10 +1748,13 @@ module Make
         O.oi "sense_t *_b = &_ctx->b;" ;
         O.oi "log_t *_log = &_ctx->out;" ;
         if some_ptr then O.oi "log_ptr_t *_log_ptr = &_ctx->out_ptr;" ;
+        begin match test.T.globals,do_self with
+        | [], false -> O.o ""
+        | _, _ -> O.oi "vars_t *_vars = &_ctx->v;"
+        end;
         begin match test.T.globals with
-        | [] -> O.o ""
+        | [] -> ()
         | globs ->
-            O.oi "vars_t *_vars = &_ctx->v;" ;
             (* Define locations *)
             List.iter
               (fun (a,t) ->
@@ -1711,6 +1767,12 @@ module Make
               globs ;
             ()
         end ;
+        if do_self then
+          List.iter
+            (fun p -> O.fi "%s _%s = (%s)_vars->%s;" (LangUtils.code_fun_type p)
+                        (OutUtils.fmt_code p) (LangUtils.code_fun_type p)
+                        (OutUtils.fmt_code p))
+            (Misc.interval 0 (T.get_nprocs test));
         let have_faults =
           not (T.has_asmhandler test) &&
             have_fault_handler && Misc.consp faults in
@@ -2020,6 +2082,7 @@ module Make
               let need_prelude =
                 not (Label.Full.Set.is_empty label_init)
                 || Misc.consp (T.from_labels test)
+                || Cfg.variant Variant_litmus.Self
             end) in
         let open MLoc in
         let db = DirtyBit.get test.T.info
@@ -2043,14 +2106,19 @@ module Make
         dump_parameters env test ;
         dump_hash_def doc.Name.name env test ;
         dump_set_feature test db ;
+        dump_test_code env test procs_user ;
         dump_instance_def procs_user test ;
         dump_run_def env test some_ptr stats procs_user ;
         dump_zyva_def doc.Name.name env test db procs_user ;
         dump_prelude_def doc test ;
         if Cfg.is_kvm then begin
+          O.o "static int feature_check(void) {" ;
+          if do_self then
+            O.oi "cache_line_size = getcachelinesize();" ;
           match db with
           | None ->
-             O.o "static int feature_check(void) { return 1; }"
+             O.oi "return 1;" ;
+             O.o "}"
           | Some db ->
              let open DirtyBit in
              let to_check,msg  =

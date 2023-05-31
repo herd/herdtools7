@@ -127,6 +127,7 @@ int RUN(int argc,char **argv,FILE *out) {
   }
   postlude(out,glo_ptr,p_true,p_false,total);
 #endif
+  free_global(glo_ptr);
 #ifdef DYNALLOC
 #ifdef HAVE_FAULT_HANDLER
 #ifdef SEE_FAULTS
@@ -134,8 +135,6 @@ int RUN(int argc,char **argv,FILE *out) {
 #endif
   free_fault_handler();
 #endif
-  free(glo_ptr->mem);
-  free(glo_ptr);
   free(arg);
 #ifndef KVM
   free(th);
