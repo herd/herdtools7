@@ -54,10 +54,12 @@ module NativeBackend = struct
   let bind (vm : 'a m) (f : 'a -> 'b m) : 'b m = f vm
   let prod (r1 : 'a m) (r2 : 'b m) : ('a * 'b) m = (r1, r2)
   let return v = v
-  let warnT msg v = (* Should not be called... *)
-    Printf.eprintf
-      "Warning: message %s found its way, something is wrong\n" msg ;
+
+  let warnT msg v =
+    (* Should not be called... *)
+    Printf.eprintf "Warning: message %s found its way, something is wrong\n" msg;
     return v
+
   let bind_data = bind
   let bind_seq = bind
   let bind_ctrl = bind
@@ -71,14 +73,15 @@ module NativeBackend = struct
 
   let delay m k = k m m
 
-  let binop op v1 v2 = StaticInterpreter.binop ASTUtils.dummy_annotated op v1 v2
+  let binop op v1 v2 =
+    StaticInterpreter.binop_values ASTUtils.dummy_annotated op v1 v2
 
   let ternary = function
     | V_Bool true -> fun m_true _m_false -> m_true ()
     | V_Bool false -> fun _m_true m_false -> m_false ()
     | v -> mismatch_type v [ T_Bool ]
 
-  let unop op v = StaticInterpreter.unop ASTUtils.dummy_annotated op v
+  let unop op v = StaticInterpreter.unop_values ASTUtils.dummy_annotated op v
   let on_write_identifier _x _scope _value = ()
   let on_read_identifier _x _scope _value = ()
   let v_tuple li = return (V_Tuple li)
@@ -117,6 +120,7 @@ module NativeBackend = struct
 
   let as_bitvector = function
     | V_BitVector bits -> bits
+    | V_Int i -> Bitvector.of_int i
     | v -> mismatch_type v [ ASTUtils.default_t_bits ]
 
   let as_int = function V_Int i -> i | v -> mismatch_type v [ T_Int None ]
@@ -144,37 +148,6 @@ module NativeStdlib = struct
 
   let return_one v = return [ return v ]
 
-  let replicate = function
-    | [ V_BitVector bv; V_Int n ] ->
-        V_BitVector (Bitvector.concat @@ List.init n (Fun.const bv))
-        |> return_one
-    | [ V_BitVector _; v ] ->
-        Error.fatal_unknown_pos @@ Error.MismatchType (v, [ T_Int None ])
-    | [ v; _ ] ->
-        Error.fatal_unknown_pos
-        @@ Error.MismatchType (v, [ ASTUtils.default_t_bits ])
-    | li ->
-        Error.fatal_unknown_pos
-        @@ Error.BadArity ("Replicate", 2, List.length li)
-
-  let highest_set_bit = function
-    | [ V_BitVector bv ] -> V_Int (Bitvector.highest_set_bit bv) |> return_one
-    | [ v ] ->
-        Error.fatal_unknown_pos
-        @@ Error.MismatchType (v, [ ASTUtils.default_t_bits ])
-    | li ->
-        Error.fatal_unknown_pos
-        @@ Error.BadArity ("Replicate", 1, List.length li)
-
-  let bitcount = function
-    | [ V_BitVector bv ] -> V_Int (Bitvector.bitcount bv) |> return_one
-    | [ v ] ->
-        Error.fatal_unknown_pos
-        @@ Error.MismatchType (v, [ ASTUtils.default_t_bits ])
-    | li ->
-        Error.fatal_unknown_pos
-        @@ Error.BadArity ("Replicate", 1, List.length li)
-
   let uint = function
     | [ V_BitVector bv ] -> V_Int (Bitvector.to_int bv) |> return_one
     | [ v ] ->
@@ -195,24 +168,10 @@ module NativeStdlib = struct
 
   let primitives =
     let with_pos = ASTUtils.add_dummy_pos in
-    let t_bits e = T_Bits (BitWidth_Determined e, None) |> with_pos in
+    let t_bits e = T_Bits (BitWidth_Determined e, []) |> with_pos in
     let e_var x = E_Var x |> with_pos in
     let integer = T_Int None |> with_pos in
     [
-      {
-        name = "Replicate";
-        parameters = [ ("N", Some integer) ];
-        args = [ ("x", t_bits (e_var "N")); ("M", integer) ];
-        body = replicate;
-        return_type = Some (t_bits (ASTUtils.binop MUL (e_var "N") (e_var "M")));
-      };
-      {
-        name = "BitCount";
-        parameters = [ ("N", Some integer) ];
-        args = [ ("x", t_bits (e_var "N")) ];
-        body = bitcount;
-        return_type = Some integer;
-      };
       {
         name = "UInt";
         parameters = [ ("N", Some integer) ];
@@ -225,13 +184,6 @@ module NativeStdlib = struct
         parameters = [ ("N", Some integer) ];
         args = [ ("x", t_bits (e_var "N")) ];
         body = sint;
-        return_type = Some integer;
-      };
-      {
-        name = "HighestSetBit";
-        parameters = [ ("N", Some integer) ];
-        args = [ ("x", t_bits (e_var "N")) ];
-        body = highest_set_bit;
         return_type = Some integer;
       };
     ]
@@ -250,6 +202,7 @@ let interprete strictness ast =
   let module C : Interpreter.Config = struct
     let type_checking_strictness = strictness
     let unroll = 0 (* Does not matter, as all computations are performed *)
+
     module Instr = Instrumentation.NoInstr
   end in
   run (module C) ast
@@ -260,6 +213,7 @@ let interprete_with_instrumentation strictness ast =
   let module C = struct
     let type_checking_strictness = strictness
     let unroll = 0
+
     module Instr = Instrumentation.Make (B)
   end in
   run (module C) ast;

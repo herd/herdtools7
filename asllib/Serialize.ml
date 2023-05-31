@@ -143,9 +143,7 @@ and pp_ty =
     | T_String -> addb f "T_String"
     | T_Bool -> addb f "T_Bool"
     | T_Bits (bits_constraint, fields) ->
-        let pp_fields =
-          pp_option @@ pp_list @@ pp_pair pp_string pp_slice_list
-        in
+        let pp_fields = pp_list @@ pp_pair pp_string pp_slice_list in
         bprintf f "T_Bits (%a, %a)" pp_bits_constraint bits_constraint pp_fields
           fields
     | T_Enum enum_type_desc ->
@@ -162,7 +160,6 @@ and pp_ty =
     | T_Exception li ->
         addb f "T_Exception ";
         pp_id_assoc pp_ty f li
-    | T_ZType type_desc -> bprintf f "T_ZType (%a)" pp_ty type_desc
     | T_Named identifier -> bprintf f "T_Named %S" identifier
   in
   fun f s -> pp_annotated pp_desc f s
@@ -187,7 +184,6 @@ let pp_typed_identifier = pp_pair pp_string pp_ty
 let rec pp_lexpr =
   let pp_desc f = function
     | LE_Var x -> bprintf f "LE_Var %S" x
-    | LE_Typed (le, t) -> bprintf f "E_Typed (%a, %a)" pp_lexpr le pp_ty t
     | LE_Slice (le, args) ->
         bprintf f "LE_Slice (%a, %a)" pp_lexpr le pp_slice_list args
     | LE_SetField (le, x, _ta) ->
@@ -201,6 +197,22 @@ let rec pp_lexpr =
         pp_list pp_lexpr f les
   in
   fun f le -> pp_annotated pp_desc f le
+
+let pp_local_decl_keyboard f k =
+  pp_string f
+    (match k with
+    | LDK_Var -> "LDK_Var"
+    | LDK_Constant -> "LDK_Constant"
+    | LDK_Let -> "LDK_Let")
+
+let rec pp_local_decl_item f = function
+  | LDI_Ignore ty_opt -> bprintf f "LDI_Ignore (%a)" (pp_option pp_ty) ty_opt
+  | LDI_Var (s, ty_opt) ->
+      bprintf f "LDI_Var (%S, %a)" s (pp_option pp_ty) ty_opt
+  | LDI_Tuple (ldis, ty_opt) ->
+      bprintf f "LDI_Tuple (%a, %a)"
+        (pp_list pp_local_decl_item)
+        ldis (pp_option pp_ty) ty_opt
 
 let rec pp_stmt =
   let pp_desc f = function
@@ -218,18 +230,15 @@ let rec pp_stmt =
           (pp_list (pp_annotated (pp_pair pp_pattern pp_stmt)))
           cases
     | S_Assert e -> bprintf f "S_Assert (%a)" pp_expr e
-    | S_TypeDecl (x, t) -> bprintf f "S_TypeDecl (%S, %a)" x pp_ty t
-    | S_While (e,s) ->
-        bprintf f "S_While(%a, %a)" pp_expr e pp_stmt s
-    | S_Repeat (s,e) ->
-        bprintf f "S_Repeat(%a, %a)" pp_stmt s pp_expr e
-    | S_For (id,e1,dir,e2,s) ->
-        bprintf f
-          "S_For (%S, %a, %s, %a, %a)"
-          id pp_expr e1
+    | S_While (e, s) -> bprintf f "S_While(%a, %a)" pp_expr e pp_stmt s
+    | S_Repeat (s, e) -> bprintf f "S_Repeat(%a, %a)" pp_stmt s pp_expr e
+    | S_For (id, e1, dir, e2, s) ->
+        bprintf f "S_For (%S, %a, %s, %a, %a)" id pp_expr e1
           (match dir with Up -> "Up" | Down -> "Down")
-          pp_expr e2
-          pp_stmt s
+          pp_expr e2 pp_stmt s
+    | S_Decl (ldk, ldi, e_opt) ->
+        bprintf f "S_Decl (%a, %a, %a)" pp_local_decl_keyboard ldk
+          pp_local_decl_item ldi (pp_option pp_expr) e_opt
   in
   fun f s -> pp_annotated pp_desc f s
 

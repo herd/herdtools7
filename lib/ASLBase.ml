@@ -135,7 +135,6 @@ include Pseudo.Make (struct
 
   let parsed_tr ast = ast
   let get_naccesses _ = -1
-
   let size_of_ins _ = 4
   let fold_labels k _f _i = k
   let map_labels _f i = i
@@ -173,10 +172,7 @@ let asl_generic_parser version lexer lexbuf =
     Asllib.Builder.from_lexer_lexbuf ~ast_type:`Ast version lexer lexbuf
   with
   | Error e -> raise (Misc.Fatal (Asllib.Error.error_to_string e))
-  | Ok ast ->
-      ( [ (0, None, MiscParser.Main) ],
-        [ [ Instruction ast ] ],
-        [] )
+  | Ok ast -> ([ (0, None, MiscParser.Main) ], [ [ Instruction ast ] ], [])
 
 module Instr = Instr.No (struct
   type instr = instruction

@@ -365,12 +365,15 @@ let copy_bit dst src pos_src pos_dst =
   Bytes.set dst (pos_dst / 8) new_char_dst
 
 let extract_slice (_length_src, data_src) positions =
-  let length = List.length positions in
-  let result = create_data_bytes length in
-  (* Same effect than [List.rev positions], as we build those from the end. *)
-  let copy_bit_here i pos = copy_bit result data_src pos (length - 1 - i) in
-  let () = List.iteri copy_bit_here positions in
-  remask (length, Bytes.unsafe_to_string result)
+  try
+    let length = List.length positions in
+    let result = create_data_bytes length in
+    (* Same effect than [List.rev positions], as we build those from the end. *)
+    let copy_bit_here i pos = copy_bit result data_src pos (length - 1 - i) in
+    let () = List.iteri copy_bit_here positions in
+    remask (length, Bytes.unsafe_to_string result)
+  with Invalid_argument msg ->
+    raise (Invalid_argument (Printf.sprintf "exract_sliced (%s)" msg))
 
 let write_slice (length_dst, data_dst) (length_src, data_src) positions =
   let min x y = if x <= y then x else y in
@@ -389,48 +392,54 @@ let read_char_offset offset =
     and next_bits = (Char.code next_c land next_mask) lsl offset in
     next_bits lor prec_bits |> Char.chr
 
+(* Retuns length of destination *)
 let copy_into dst (length_src, data_src) offset =
   let length_dst = offset + length_src in
-  let n_src = length_src / 8 and m_src = length_src mod 8 in
-  let n_dst = length_dst / 8 and m_dst = length_dst mod 8 in
-  let n_off = offset / 8 and m_off = offset mod 8 in
-  let () =
-    if m_off = 0 then
-      Bytes.blit_string data_src 0 dst n_off (String.length data_src)
-    else
-      (* We have an offset of m_off on every char.
+  if length_src <= 0 then length_dst
+  else
+    let n_src = length_src / 8 and m_src = length_src mod 8 in
+    let n_dst = length_dst / 8 and m_dst = length_dst mod 8 in
+    let n_off = offset / 8 and m_off = offset mod 8 in
+    let () =
+      if m_off = 0 then
+        Bytes.blit_string data_src 0 dst n_off (String.length data_src)
+      else
+        (* We have an offset of m_off on every char.
 
-         First handle the last written char, by hand because no offset has to
-         be applied to the read character. *)
-      let prec_c = Bytes.get dst n_off and next_c = String.get data_src 0 in
-      let prec_bits = Char.code prec_c land last_char_mask m_off
-      and next_bits = (Char.code next_c lsl m_off) land 0xff in
-      next_bits lor prec_bits |> Char.chr |> Bytes.set dst n_off;
+           First handle the last written char, by hand because no offset has to
+           be applied to the read character. *)
+        let prec_c = Bytes.get dst n_off and next_c = String.get data_src 0 in
+        let prec_bits = Char.code prec_c land last_char_mask m_off
+        and next_bits = (Char.code next_c lsl m_off) land 0xff in
+        next_bits lor prec_bits |> Char.chr |> Bytes.set dst n_off;
 
-      (* Next body *)
-      for i = n_off + 1 to n_dst - 2 do
-        (* 0 already handled, n2 - 1 handled after *)
-        let i_src = i - n_off in
-        let prec_c = String.get data_src i_src in
-        let next_c = String.get data_src (i_src + 1) in
-        Bytes.set dst i @@ read_char_offset m_off prec_c next_c
-      done;
+        (* Next body *)
+        for i = n_off + 1 to n_dst - 2 do
+          (* 0 already handled, n2 - 1 handled after *)
+          let i_src = i - n_off in
+          let prec_c = String.get data_src i_src in
+          let next_c = String.get data_src (i_src + 1) in
+          Bytes.set dst i @@ read_char_offset m_off prec_c next_c
+        done;
 
-      (* Last written char *)
-      if m_dst != 0 && n_dst > n_off then
-        if m_dst > m_src then
-          let prec_c = String.get data_src (n_src - 1)
-          and next_c =
-            if m_src != 0 then String.get data_src n_src else char_0
-          in
-          Bytes.set dst n_dst @@ read_char_offset m_off prec_c next_c
-        else
-          let prec_c = String.get data_src n_src and next_c = char_0 in
-          Bytes.set dst n_dst @@ read_char_offset m_off prec_c next_c
-  in
-  length_dst
+        (* Last written char *)
+        if m_dst != 0 && n_dst > n_off then
+          if m_dst > m_src then
+            let prec_c = String.get data_src (n_src - 1)
+            and next_c =
+              if m_src != 0 then String.get data_src n_src else char_0
+            in
+            Bytes.set dst n_dst @@ read_char_offset m_off prec_c next_c
+          else
+            let prec_c = String.get data_src n_src and next_c = char_0 in
+            Bytes.set dst n_dst @@ read_char_offset m_off prec_c next_c
+    in
+    length_dst
 
 let concat bvs =
+  (if false then
+     let pp = List.map to_string bvs in
+     Printf.eprintf "Concat %s\n%!" (String.concat "," pp));
   let length = List.fold_left (fun acc bv -> acc + length bv) 0 bvs in
   let result = create_data_bytes length in
   let _ = List.fold_right (copy_into result) bvs 0 in

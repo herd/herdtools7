@@ -31,14 +31,16 @@ end
 
 func incr_subfieldB(obj::MyRecord) => MyRecord
 begin
-  obj.fieldB.subfieldB = obj.fieldB.subfieldB + 1;
-  return obj;
+  var obj2 = obj;
+  obj2.fieldB.subfieldB = obj2.fieldB.subfieldB + 1;
+  return obj2;
 end
 
-func set_fieldC(obj::MyRecord, val::SomeOtherType) => MyRecord
+func set_fieldC(obj::MyRecord, val::integer) => MyRecord
 begin
-  obj.fieldC = val;
-  return obj;
+  var obj2 = obj;
+  obj2.fieldC = val;
+  return obj2;
 end
 
 func build_and_access()

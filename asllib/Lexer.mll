@@ -83,7 +83,6 @@ let tr_name s = match s with
 | "where"         -> WHERE
 | "while"         -> WHILE
 | "with"          -> WITH
-| "ztype"         -> ZTYPE
 | x               -> IDENTIFIER x
 
 }

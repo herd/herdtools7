@@ -20,9 +20,9 @@ end
 
 func main()
 begin
-  a = f();
-  b = f(1);
-  c = f(2, 3);
+  let a = f();
+  let b = f(1);
+  let c = f(2, 3);
 end
 
 forall (

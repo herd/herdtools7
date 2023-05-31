@@ -2,6 +2,8 @@ open AST
 
 type 'a printer = Format.formatter -> 'a -> unit
 
+(* Available from 4.12.0 *)
+val pp_print_seq : ?pp_sep:unit printer -> 'a printer -> 'a Seq.t printer
 val pp_pos : 'a annotated printer
 
 val pp_value : value printer

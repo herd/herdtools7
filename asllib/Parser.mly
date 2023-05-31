@@ -51,7 +51,10 @@
 open AST
 open ASTUtils
 
-let t_bit = T_Bits (BitWidth_Determined (E_Literal (V_Int 1) |> add_dummy_pos), None)
+let t_bit = T_Bits (BitWidth_Determined (E_Literal (V_Int 1) |> add_dummy_pos), [])
+
+let make_ldi_tuple xs ty =
+  LDI_Tuple (List.map (fun x -> LDI_Var (x, None)) xs, Some ty)
 
 %}
 
@@ -68,7 +71,7 @@ let t_bit = T_Bits (BitWidth_Determined (E_Literal (V_Int 1) |> add_dummy_pos), 
 %token MUL NEQ NOT OF OR OTHERWISE PASS PLUS PLUS_COLON POW PRAGMA RBRACE
 %token RBRACKET RDIV REAL RECORD REPEAT RETURN RPAR SEMI_COLON SETTER SHL SHR
 %token SLICING STRING SUBTYPES THEN THROW TO TRY TYPE UNKNOWN UNTIL VAR WHEN
-%token WHERE WHILE WITH ZTYPE
+%token WHERE WHILE WITH
 
 %token <string> IDENTIFIER STRING_LIT MASK_LIT
 %token <Bitvector.t> BITVECTOR_LIT
@@ -194,6 +197,9 @@ let nclist(x) == separated_nonempty_list(COMMA, x)
 (* A comma separated list. *)
 let clist(x) == { [] } | nclist(x)
 
+(* A comma separated list with at least 2 elements. *)
+let clist2(x) == ~=x; COMMA; li=nclist(x); { x :: li }
+
 (* A comma-separated trailing list. *)
 let tclist(x) == trailing_list(COMMA, x)
 
@@ -301,6 +307,8 @@ let expr :=
 
   ------------------------------------------------------------------------- *)
 
+let colon_for_type == COLON | COLON_COLON
+
 (* Constrained types helpers *)
 
 let int_constraints == braced(nclist(int_constraint_elt))
@@ -310,7 +318,7 @@ let int_constraint_elt ==
 
 let bits_constraint ==
   | e = expr ;                      < BitWidth_Determined           >
-  | MINUS ; COLON_COLON ; t = ty ;  < BitWidth_ConstrainedFormType  >
+  | MINUS ; colon_for_type ; t = ty ;  < BitWidth_ConstrainedFormType  >
   | c = int_constraints ;           < BitWidth_Constrained          >
 
 let pattern_set ==
@@ -337,7 +345,7 @@ let slice ==
   | e1=expr; PLUS_COLON; e2=expr; < Slice_Length  >
 
 (* Bitfields *)
-let bitfields == ioption(braced(tclist(bitfield)))
+let bitfields == loption(braced(tclist(bitfield)))
 let bitfield == s=nslices ; x=IDENTIFIER ; bitfield_spec; { (x, s) }
 (* Bitfield spec -- not yet implemented *)
 let bitfield_spec==
@@ -358,12 +366,11 @@ let ty :=
     | ARRAY; e=bracketed(expr); OF; t=ty;           < T_Array     >
     | RECORD; l=fields_opt;                         < T_Record    >
     | EXCEPTION; l=fields_opt;                      < T_Exception >
-    | ZTYPE; t=pared(ty);                           < T_ZType     >
     | name=IDENTIFIER;                              < T_Named     >
   )
 
 (* Constructs on ty *)
-let as_ty == COLON_COLON; ty
+let as_ty == colon_for_type; ty
 let typed_identifier == pair(IDENTIFIER, as_ty)
 let ty_opt == ioption(as_ty)
 let without_ta == { TA_None }
@@ -391,7 +398,6 @@ let lexpr ==
 let lexpr_atom :=
   | le_var
   | le=annotated(lexpr_atom); ~=slices; <LE_Slice>
-  | le=annotated(lexpr_atom); ty=as_ty; <LE_Typed>
   | le=annotated(lexpr_atom); DOT; field=IDENTIFIER; ~=without_ta; <LE_SetField>
   | le=annotated(lexpr_atom); DOT; li=bracketed(clist(IDENTIFIER)); ~=without_ta; <LE_SetFields>
 
@@ -404,17 +410,19 @@ let lexpr_atom :=
    have to declare new variables. *)
 
 let decl_item ==
-  annotated ( terminated (
-    | le_var
-    | MINUS; lexpr_ignore
-    | ~=pared(nclist(decl_item)); <LE_TupleUnpack>
-  , ty_opt))
+  | ~=IDENTIFIER               ; ~=ty_opt ; < LDI_Var    >
+  | MINUS                      ; ~=ty_opt ; < LDI_Ignore >
+  | ~=pared(nclist(decl_item)) ; ~=ty_opt ; < LDI_Tuple  >
 
 (* ------------------------------------------------------------------------- *)
 (* Statement helpers *)
 
-let assignment_keyword == LET | CONSTANT | VAR
-let storage_keyword    == LET | CONSTANT | VAR | CONFIG
+let local_decl_keyword ==
+  | LET       ; { LDK_Let       }
+  | VAR       ; { LDK_Var       }
+  | CONSTANT  ; { LDK_Constant  }
+
+let storage_keyword == LET | CONSTANT | VAR | CONFIG
 
 let pass == { S_Pass }
 let unimplemented_stmt(x) == x ; pass
@@ -428,11 +436,11 @@ let alt == annotated (
   | OTHERWISE; COLON; s=stmt_list; { (Pattern_All, s) }
 )
 
-let otherwise == annotated( OTHERWISE; COLON; stmt_list)
+let otherwise == annotated( OTHERWISE; ARROW; stmt_list)
 let otherwise_opt == ioption(otherwise); <>
 let catcher ==
-  | WHEN; IDENTIFIER; as_ty; COLON; stmt_list
-  | WHEN; ty;                COLON; stmt_list
+  | WHEN; IDENTIFIER; as_ty; ARROW; stmt_list
+  | WHEN; ty;                ARROW; stmt_list
 
 let stmt ==
   annotated (
@@ -448,19 +456,21 @@ let stmt ==
     )
     | terminated_by(SEMI_COLON,
       | PASS; pass
-      | RETURN; ~=ioption(expr);                  < S_Return >
-      | x=IDENTIFIER; args=plist(expr); ~=nargs;  < S_Call   >
-      | ASSERT; e=expr;                           < S_Assert >
+      | RETURN; ~=ioption(expr);                             < S_Return >
+      | x=IDENTIFIER; args=plist(expr); ~=nargs;             < S_Call   >
+      | ASSERT; e=expr;                                      < S_Assert >
+      | ~=lexpr; EQ; ~=expr;                                 < S_Assign >
+      | ~=local_decl_keyword; ~=decl_item; EQ; ~=some(expr); < S_Decl   >
+      | REPEAT; ~=stmt_list; UNTIL; ~=expr;                  < S_Repeat >
 
-      | assign(lexpr, expr)
-      | assignment_keyword; assign(decl_item, expr)
-      | REPEAT; ~=stmt_list; UNTIL; ~=expr;       < S_Repeat >
+      | VAR; x=IDENTIFIER; colon_for_type; ~=ty;
+          { S_Decl (LDK_Var, LDI_Var (x, Some ty), None) }
+      | VAR; xs=clist2(IDENTIFIER); colon_for_type; ~=ty;
+          { S_Decl (LDK_Var, make_ldi_tuple xs ty, None) }
 
       | unimplemented_stmt(
         | THROW; ioption(expr);                                               <>
         (* We have to manually expend the list otherwise we have a shift/reduce conflict. *)
-        | VAR; IDENTIFIER;                            as_ty;                  <>
-        | VAR; IDENTIFIER; COMMA; nclist(IDENTIFIER); as_ty;                  <>
         | PRAGMA; IDENTIFIER; clist(expr);                                    <>
       )
     )
@@ -536,9 +546,11 @@ let decl ==
     | storage_keyword; x=IDENTIFIER; t=as_ty; EQ; e=expr; <D_GlobalConst>
     | TYPE; x=IDENTIFIER; OF; t=ty; subtype_opt;   <D_TypeDecl>
 
+    | VAR; x=IDENTIFIER; t=as_ty;
+      { D_GlobalConst(x, t, E_Unknown t |> ASTUtils.add_pos_from t) }
+
     | unimplemented_decl(
       | storage_keyword; MINUS; ty_opt; EQ; expr;                         <>
-      | VAR; typed_identifier;                                            <>
       | storage_keyword; IDENTIFIER; EQ; expr;                            <>
       | PRAGMA; IDENTIFIER; clist(expr);                                  <>
       | TYPE; IDENTIFIER; SUBTYPES; ty; ioption(WITH; fields_opt);        <>

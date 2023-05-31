@@ -1,189 +1,27 @@
 open AST
-module IMap = ASTUtils.IMap
-module ISet = ASTUtils.ISet
+open ASTUtils
+module SEnv = Env.Static
+open SEnv.Types
 
 let fatal_from = Error.fatal_from
 let not_yet_implemented pos s = fatal_from pos (Error.NotYetImplemented s)
 let undefined_identifier pos x = fatal_from pos (Error.UndefinedIdentifier x)
-let bad_field pos x ty = fatal_from pos (Error.BadField (x, ty))
 
 let conflict pos expected provided =
   fatal_from pos (Error.ConflictingTypes (expected, provided))
-
-let add_dummy_pos = ASTUtils.add_dummy_pos
-let add_pos_from = ASTUtils.add_pos_from
-let get_desc { desc; _ } = desc
 
 (* Control Warning outputs. *)
 let _warn = false
 
 type strictness = [ `Silence | `Warn | `TypeCheck ]
 
-(******************************************************************************)
-(*                                                                            *)
-(*                               Environments                                 *)
-(*                                                                            *)
-(******************************************************************************)
-
-type genv = ty IMap.t
-(** Type environment for all globally declared identifiers.
-    Note that this is shared between named_types and global variables, but not
-    functions, getter, setters, and all subprograms.
-    In asl-semantics, it is refered to as Γ.T : TypeModel.
-*)
-
-type func_sig = (identifier * ty) list * ty option
-(** Type signature for functions, some kind of an arrow type. *)
-
-type func_tr = ((identifier * ty) list * AST.identifier) list IMap.t
-(** function renaming to get unique identifiers. *)
-
-type tenv = { globals : genv; funcs : func_sig IMap.t; func_tr : func_tr }
-(** The global type environment, with types for every globally available
-    identifier, i.e. variables, named types or functions .*)
-
-type lenv = ty IMap.t
-(** The local type environment, with types for all locally declared variables. *)
-
-let lookup_opt (tenv : tenv) (lenv : lenv) x =
-  let open IMap in
-  match find_opt x lenv with
-  | Some ty -> Some ty
-  | None -> (
-      match find_opt x tenv.globals with
-      | Some ty -> Some ty
-      | None -> (
-          match find_opt x tenv.funcs with
-          | Some ([], Some ty) -> Some ty
-          | _ -> None))
-
-let lookup tenv lenv pos x =
-  let () = if false then Format.eprintf "@[Looking up var %S.@]@." x in
-  match lookup_opt tenv lenv x with
-  | Some ty -> ty
-  | None -> undefined_identifier pos x
-
-let lookup_return_type (tenv : tenv) pos x =
-  let () = if false then Format.eprintf "@[Finding return type of %S@]@." x in
-  match IMap.find_opt x tenv.funcs with
-  | Some (_, Some ty) -> ty
-  | Some (_, None) -> fatal_from pos @@ Error.MismatchedReturnValue x
-  | None -> undefined_identifier pos x
-
-(* -------------------------------------------------------------------------
-
-                                Structures
-
-   ------------------------------------------------------------------------- *)
-
-let get_structure (genv : genv) : ty -> ty =
-  (* TODO: rethink to have physical equality when structural equality? *)
-  let rec get ty =
-    let () =
-      if false then Format.eprintf "@[Getting structure of %a.@]@." PP.pp_ty ty
-    in
-    let with_pos = add_pos_from ty in
-    match ty.desc with
-    | T_Named x -> (
-        match IMap.find_opt x genv with
-        | None -> undefined_identifier ty x
-        | Some ty -> get ty)
-    | T_Int _ | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ -> ty
-    | T_Tuple subtypes -> T_Tuple (List.map get subtypes) |> with_pos
-    | T_Array (e, t) -> T_Array (e, get t) |> with_pos
-    | T_Record fields -> T_Record (get_fields fields) |> with_pos
-    | T_Exception fields -> T_Exception (get_fields fields) |> with_pos
-    | T_ZType ty -> T_ZType (get ty) |> with_pos
-  and get_fields fields =
-    let one_field (name, t) = (name, get t) in
-    let fields = List.map one_field fields in
-    ASTUtils.canonical_fields fields
-  in
-  get
-
-(* --------------------------------------------------------------------------
-
-                              Subtyping
-
-   --------------------------------------------------------------------------*)
-
-(** [subtypes tenv t1 t2] is the set of equations that must be validated for
-    [t1] to be a subtype of [t2].
-
-    For example, [integer {3}] is always a subtype of [integer], and thus
-    [subtypes] would return [Some []].
-
-    However, for [integer {3}] to be a subset of [integer {N}], [N] needs to be
-    equal to [3].
-*)
-let rec subtypes tenv t1 t2 =
-  match (t1.desc, t2.desc) with
-  | T_Bits (BitWidth_Determined e1, _), T_Bits (BitWidth_Determined e2, _) ->
-      Some [ (e1, e2) ]
-  | T_Int _, T_Int None -> Some []
-  | T_Int (Some _), T_Int (Some _) ->
-      Some [] (* TODO should we add equations here? *)
-  | T_Real, T_Real | T_String, T_String | T_Bool, T_Bool -> Some []
-  | T_Tuple li1, T_Tuple li2 when List.compare_lengths li1 li2 = 0 ->
-      let rec on_tuples acc li1 li2 =
-        match (li1, li2) with
-        | [], [] -> Some acc
-        | st1 :: h1, st2 :: h2 -> (
-            match subtypes tenv st1 st2 with
-            | None -> None
-            | Some eqs -> on_tuples (List.rev_append eqs acc) h1 h2)
-        | _ -> assert false
-      in
-      on_tuples [] li1 li2
-  | T_Array (e1, st1), T_Array (e2, st2) -> (
-      match subtypes tenv st1 st2 with
-      | None -> None
-      | Some eqs -> Some ((e1, e2) :: eqs))
-  | T_Record li1, T_Record li2 when List.compare_lengths li1 li2 = 0 ->
-      let rec on_fields acc li1 li2 =
-        match (li1, li2) with
-        | [], [] -> Some acc
-        | (x1, _) :: _, (x2, _) :: _ when String.compare x1 x2 != 0 -> None
-        | (_, st1) :: h1, (_, st2) :: h2 -> (
-            match subtypes tenv st1 st2 with
-            | None -> None
-            | Some eqs -> on_fields (List.rev_append eqs acc) h1 h2)
-        | _ -> assert false
-      in
-      on_fields []
-        (ASTUtils.canonical_fields li1)
-        (ASTUtils.canonical_fields li2)
-  | T_Named x, T_Named y when String.compare x y = 0 -> Some []
-  | T_Named _, _ | _, T_Named _ ->
-      subtypes tenv
-        (get_structure tenv.globals t1)
-        (get_structure tenv.globals t2)
-  | T_Enum l1, T_Enum l2 when List.compare_lengths l1 l2 = 0 ->
-      if List.for_all2 String.equal l1 l2 then Some [] else None
-  | _ -> None
-
-let subtypes =
-  if true then subtypes
-  else fun tenv t1 t2 ->
-    let res = subtypes tenv t1 t2 in
-    let () =
-      if false then
-        Format.eprintf "Subtypes %a :< %a : %B.@," PP.pp_ty t1 PP.pp_ty t2
-          (Option.is_some res)
-    in
-    res
-
-let eqs_as_exprs =
-  let one (e1, e2) =
-    match e2.desc with
-    | E_Var x -> Some (x, e1)
-    | _ ->
-        if false && e1.desc <> e2.desc then
-          Format.eprintf "@[Unsupported type equation:@ %a@ == %a.@]@."
-            PP.pp_expr e1 PP.pp_expr e2;
-        None
-  in
-  List.filter_map one
+let rec resolve_root_name (env : env) (ty : ty) : ty =
+  match ty.desc with
+  | T_Named x -> (
+      match IMap.find_opt x env.global.declared_types with
+      | Some ty -> resolve_root_name env ty
+      | None -> undefined_identifier ty x)
+  | _ -> ty
 
 (* -------------------------------------------------------------------------
 
@@ -192,74 +30,143 @@ let eqs_as_exprs =
    ------------------------------------------------------------------------- *)
 
 module FunctionRenaming = struct
-  let has_arg_clash tenv caller callee =
-    if List.compare_lengths caller callee != 0 then None
-    else
-      let rec on_each acc caller callee =
-        match (caller, callee) with
-        | [], [] -> Some acc
-        | t1 :: caller, (_, t2) :: callee -> (
-            match subtypes tenv t1 t2 with
-            | None -> None
-            | Some eqs -> on_each (List.rev_append eqs acc) caller callee)
-        | _ -> None
-      in
-      on_each [] caller callee
+  let has_arg_clash env caller callee =
+    List.compare_lengths caller callee == 0
+    && List.for_all2
+         (fun t_caller (_, t_callee) ->
+           Types.type_clashes env t_caller t_callee)
+         caller callee
 
-  let add_new_func tr_table name arg_types =
-    match IMap.find_opt name !tr_table with
+  let deduce_eqs env =
+    (* Here we assume [has_arg_clash env caller callee] *)
+    (* Thus [List.length caller == List.length callee]. *)
+    let folder prev_eqs caller (_name, callee) =
+      match callee.desc with
+      | T_Bits (BitWidth_Determined { desc = E_Var x; _ }, _) -> (
+          match (Types.get_structure env caller).desc with
+          | T_Bits (BitWidth_Determined e_caller, _) ->
+              (x, e_caller) :: prev_eqs
+          | T_Bits _ -> prev_eqs
+          | _ ->
+              (* We know that callee type_clashes with caller, and that it
+                 cannot be a name. *)
+              assert false)
+      | _ -> prev_eqs
+    in
+    List.fold_left2 folder []
+
+  let set_renamings env' name set =
+    {
+      env' with
+      global =
+        {
+          env'.global with
+          subprogram_renamings =
+            IMap.add name set env'.global.subprogram_renamings;
+        };
+    }
+
+  let add_new_func env name arg_types =
+    match IMap.find_opt name env.global.subprogram_renamings with
     | None ->
-        tr_table := IMap.add name [ (arg_types, name) ] !tr_table;
-        name
-    | Some assoc_list ->
-        let name' = name ^ "-" ^ string_of_int (List.length assoc_list) in
-        tr_table := IMap.add name ((arg_types, name') :: assoc_list) !tr_table;
-        name'
+        let env = set_renamings env name (ISet.singleton name) in
+        (env, name)
+    | Some set ->
+        let name' = name ^ "-" ^ string_of_int (ISet.cardinal set) in
+        let clash =
+          let arg_types = List.map snd arg_types in
+          (not (ISet.is_empty set))
+          && ISet.exists
+               (fun name'' ->
+                 let other_func_sig = IMap.find name'' env.global.subprograms in
+                 has_arg_clash env arg_types other_func_sig.args)
+               set
+        in
+        let () =
+          if clash && _warn then
+            Format.eprintf "Function %s@[(%a)@] is declared multiple times.@."
+              name
+              Format.(
+                pp_print_list
+                  ~pp_sep:(fun f () -> fprintf f ",@ ")
+                  PP.pp_typed_identifier)
+              arg_types
+        in
+        let env = set_renamings env name (ISet.add name' set) in
+        (env, name')
 
-  let find_name_strict loc tenv name caller_arg_types =
+  let find_name_strict loc env name caller_arg_types =
     let () =
       if false then Format.eprintf "Trying to rename call to %S@." name
     in
-    match IMap.find_opt name tenv.func_tr with
-    | None -> undefined_identifier loc name
-    | Some assoc_list -> (
-        let finder (callee_arg_types, name') =
-          match has_arg_clash tenv caller_arg_types callee_arg_types with
-          | None -> None
-          | Some eqs -> Some (eqs, name', callee_arg_types)
+    match IMap.find_opt name env.global.subprogram_renamings with
+    | None -> (
+        match IMap.find_opt name env.global.subprograms with
+        | Some func_sig ->
+            let callee_arg_types = func_sig.args in
+            if has_arg_clash env caller_arg_types callee_arg_types then
+              let () =
+                if false then
+                  Format.eprintf "Found already translated name: %S.@." name
+              in
+              ( deduce_eqs env caller_arg_types callee_arg_types,
+                name,
+                callee_arg_types )
+            else fatal_from loc (Error.NoCallCandidate (name, caller_arg_types))
+        | None -> undefined_identifier loc name)
+    | Some set -> (
+        let finder name' acc =
+          let func_sig = IMap.find name' env.global.subprograms in
+          let callee_arg_types = func_sig.args in
+          if has_arg_clash env caller_arg_types callee_arg_types then
+            ( deduce_eqs env caller_arg_types callee_arg_types,
+              name',
+              callee_arg_types )
+            :: acc
+          else acc
         in
-        match List.filter_map finder assoc_list with
+        match ISet.fold finder set [] with
         | [] -> fatal_from loc (Error.NoCallCandidate (name, caller_arg_types))
-        | [ (eqs, name', callee_arg_types) ] ->
-            (eqs_as_exprs eqs, name', callee_arg_types)
+        | [ (eqs, name', callee_arg_types) ] -> (eqs, name', callee_arg_types)
         | _ :: _ ->
             fatal_from loc
               (Error.TooManyCallCandidates (name, caller_arg_types)))
 
-  let find_name tenv name caller_arg_types =
-    match IMap.find_opt name tenv.func_tr with
-    | None ->
-        let () =
-          if _warn then Format.eprintf "No found function named %s.@." name
+  let find_name env name caller_arg_types =
+    match IMap.find_opt name env.global.subprogram_renamings with
+    | None -> (
+        match IMap.find_opt name env.global.subprograms with
+        | Some func_sig ->
+            let callee_arg_types = func_sig.args in
+            if has_arg_clash env caller_arg_types callee_arg_types then
+              let () =
+                if false then
+                  Format.eprintf "Found already translated name: %S.@." name
+              in
+              (deduce_eqs env caller_arg_types callee_arg_types, name)
+            else ([], name)
+        | None -> ([], name) (* Will trigger runtime exception *))
+    | Some set -> (
+        let finder name' acc =
+          let func_sig = IMap.find name' env.global.subprograms in
+          let callee_arg_types = func_sig.args in
+          if has_arg_clash env caller_arg_types callee_arg_types then
+            (deduce_eqs env caller_arg_types callee_arg_types, name') :: acc
+          else acc
         in
-        ([], name)
-        (* Will trigger runtime exception *)
-    | Some assoc_list -> (
-        let finder (callee_arg_types, name') =
-          match has_arg_clash tenv caller_arg_types callee_arg_types with
-          | None -> None
-          | Some eqs -> Some (eqs, name')
-        in
-        match List.filter_map finder assoc_list with
+        match ISet.fold finder set [] with
         | [] ->
             let () =
               if _warn then
-                Format.eprintf "No found function %s with the right types.@."
+                Format.eprintf
+                  "@[No found function %s with the right types:@ @[%a@]@]@."
                   name
+                  Format.(pp_print_list ~pp_sep:pp_print_space PP.pp_ty)
+                  caller_arg_types
             in
             ([], name)
             (* Will trigger runtime exception *)
-        | [ (eqs, name') ] -> (eqs_as_exprs eqs, name')
+        | [ (eqs, name') ] -> (eqs, name')
         | (_, name') :: _ as li ->
             let () =
               if _warn then
@@ -271,11 +178,8 @@ module FunctionRenaming = struct
                conflicting ones. Args keep precendence over type-equations, so
                there should not be any conflicts with those. *)
             let eqs = li |> List.map fst |> List.concat in
-            (eqs_as_exprs eqs, name')
+            (eqs, name')
         (* If ambiguous, I don't know what happens *))
-
-  let new_tr_table () = ref IMap.empty
-  let to_tr_table tr_table_ref = IMap.map List.rev !tr_table_ref
 end
 
 (******************************************************************************)
@@ -284,228 +188,105 @@ end
 (*                                                                            *)
 (******************************************************************************)
 
-let expr_of_int i = ASTUtils.literal (V_Int i)
-let plus = ASTUtils.binop PLUS
-let t_bits_bitwidth e = T_Bits (BitWidth_Determined e, None)
+let expr_of_int i = literal (V_Int i)
+let plus = binop PLUS
+let t_bits_bitwidth e = T_Bits (BitWidth_Determined e, [])
+
+let reduce_expr env e =
+  try StaticInterpreter.Normalize.normalize env e
+  with StaticInterpreter.NotYetImplemented -> e
+
+let reduce_constants env e =
+  try StaticInterpreter.static_eval env e
+  with
+  | Error.ASLException { desc = Error.UndefinedIdentifier _; _ } as error -> (
+    let () =
+      if false then
+        Format.eprintf
+          "@[<hov>Static evaluation failed. Trying to reduce.@ For %a@ at \
+           %a@]@."
+          PP.pp_expr e PP.pp_pos e
+    in
+    try
+      StaticInterpreter.Normalize.normalize env e
+      |> StaticInterpreter.static_eval env
+    with StaticInterpreter.NotYetImplemented -> raise error)
 
 let sum = function
   | [] -> expr_of_int 0
   | [ x ] -> x
   | h :: t -> List.fold_left plus h t
 
-let slices_length =
-  let open ASTUtils in
+let slices_length env =
   let minus = binop MINUS in
+  let one = expr_of_int 1 in
   let slice_length = function
-    | Slice_Single _ -> expr_of_int 1
+    | Slice_Single _ -> one
     | Slice_Length (_, e) -> e
-    | Slice_Range (e1, e2) -> minus e1 e2
+    | Slice_Range (e1, e2) -> plus one (minus e1 e2)
   in
-  fun li -> List.map slice_length li |> sum
+  fun li -> List.map slice_length li |> sum |> reduce_expr env
 
-let field_type pos x ty =
-  match ty.desc with
-  | T_Record li -> (
-      match List.assoc_opt x li with
-      | Some ty -> ty
-      | None -> bad_field pos x ty)
-  | T_Bits (_, Some fields) -> (
-      match List.assoc_opt x fields with
-      | Some slices ->
-          slices_length slices |> t_bits_bitwidth |> add_pos_from ty
-      | None -> bad_field pos x ty)
-  | _ -> bad_field pos x ty
-
-let fields_type pos xs ty =
-  let field_length =
-    match ty.desc with
-    | T_Bits (_, Some fields) -> (
-        fun x ->
-          match List.assoc_opt x fields with
-          | None -> bad_field pos x ty
-          | Some slices -> slices_length slices)
-    | _ -> conflict pos [ ASTUtils.default_t_bits ] ty
-  in
-  List.map field_length xs |> sum |> t_bits_bitwidth |> add_pos_from ty
+let width_plus env acc w =
+  match (acc, w) with
+  | BitWidth_Determined e1, BitWidth_Determined e2 ->
+      BitWidth_Determined (plus e1 e2 |> reduce_expr env)
+  | BitWidth_Constrained cs1, BitWidth_Determined e2 ->
+      BitWidth_Constrained (constraint_binop PLUS cs1 [ Constraint_Exact e2 ])
+  | BitWidth_Determined e1, BitWidth_Constrained cs2 ->
+      BitWidth_Constrained (constraint_binop PLUS [ Constraint_Exact e1 ] cs2)
+  | BitWidth_Constrained cs1, BitWidth_Constrained cs2 ->
+      BitWidth_Constrained (constraint_binop PLUS cs1 cs2)
+  | _ ->
+      failwith "Not yet implemented: concatening slices constrained from type."
 
 let rename_ty_eqs (eqs : (AST.identifier * AST.expr) list) ty =
-  let mapping = IMap.of_list eqs in
   match ty.desc with
-  | T_Bits (BitWidth_Determined ({ desc = E_Var callee_var; _ } as e), fields)
-    when IMap.mem callee_var mapping ->
-      let new_e = IMap.find callee_var mapping |> ASTUtils.with_pos_from e in
-      T_Bits (BitWidth_Determined new_e, fields) |> add_pos_from ty
+  | T_Bits (BitWidth_Determined e, fields) ->
+      let new_e = subst_expr eqs e in
+      T_Bits (BitWidth_Determined new_e, fields) |> add_pos_from_st ty
   | _ -> ty
-
-let get_bitvector_width loc t =
-  match t.desc with
-  | T_Bits (n, _) -> n
-  | _ -> conflict loc [ ASTUtils.default_t_bits ] t
-
-(******************************************************************************)
-(*                                                                            *)
-(*                   Inference and type-checking helpers                      *)
-(*                                                                            *)
-(******************************************************************************)
-
-let check_bitvector pos ty =
-  match ty.desc with
-  | T_Bits _ -> ty
-  | _ -> conflict pos [ ASTUtils.default_t_bits ] ty
-
-let check_integer pos ty =
-  match ty.desc with T_Int _ -> ty | _ -> conflict pos [ T_Int None ] ty
-
-let check_num pos ty =
-  match ty.desc with
-  | T_Int _ | T_Bits _ | T_Real -> ty
-  | _ -> conflict pos [ T_Int None; ASTUtils.default_t_bits; T_Real ] ty
-
-
-(**********************************************)
-(* Approximate min and max on integer domains *)
-(**********************************************)
-
-let min_constraint = function
-  | Constraint_Exact {desc=E_Literal (V_Int i)}
-  | Constraint_Range ({desc=E_Literal (V_Int i)},_)
-    -> i
-  | _ -> raise Exit
-
-let max_constraint = function
-  | Constraint_Exact {desc=E_Literal (V_Int i)}
-  | Constraint_Range (_,{desc=E_Literal (V_Int i)})
-    -> i
-  | _ -> raise Exit
-
-let min_max_constraints m_constraint m =
-  let rec do_rec = function
-    | [] -> assert false
-    | [c] ->  m_constraint c
-    | c::cs ->
-        let i = m_constraint c
-        and j = do_rec cs in
-        m i j in
-  do_rec
-
-(* NB: functions raise [Exit]if no approximation can be found *)
-let min_constraints = min_max_constraints min_constraint min
-and max_constraints = min_max_constraints max_constraint max
 
 let infer_value = function
   | V_Int i -> T_Int (Some [ Constraint_Exact (expr_of_int i) ])
   | V_Bool _ -> T_Bool
   | V_Real _ -> T_Real
   | V_BitVector bv -> Bitvector.length bv |> expr_of_int |> t_bits_bitwidth
-  | _ -> not_yet_implemented ASTUtils.dummy_annotated "static complex values"
+  | _ -> not_yet_implemented dummy_annotated "static complex values"
 
-let rec infer tenv lenv e =
-  match e.desc with
-  | E_Literal v -> infer_value v |> add_dummy_pos
-  | E_Var n -> lookup tenv lenv e n
-  | E_Typed (_e, t) -> get_structure tenv.globals t
-  | E_Binop (op, e1, e2) -> infer_op op e tenv lenv e1 e2
-  | E_Unop (unop, e') -> infer_unop unop e tenv lenv e'
-  | E_Call (name, args, eqs) -> (
-      match IMap.find_opt name tenv.funcs with
-      | None -> undefined_identifier e ("function " ^ name)
-      | Some (_, None) -> fatal_from e @@ Error.MismatchedReturnValue name
-      | Some (args_types, _return_type) ->
-          let () =
-            if List.compare_lengths args_types args != 0 then
-              fatal_from e
-              @@ Error.BadArity (name, List.length args_types, List.length args)
-          in
-          let eqs =
-            let folder acc (x, _) e = (x, e) :: acc in
-            List.fold_left2 folder eqs args_types args
-          in
-          lookup_return_type tenv e name |> rename_ty_eqs eqs)
-  | E_Slice ({ desc = E_Var name; _ }, _) when IMap.mem name tenv.funcs ->
-      lookup_return_type tenv e name
-  | E_Slice (e, slices) -> (
-      let ty = infer tenv lenv e in
-      match ty.desc with
-      | T_Bits _ | T_Int _ ->
-          slices_length slices |> t_bits_bitwidth |> add_dummy_pos
-      | _ -> conflict e [ ASTUtils.default_t_bits; T_Int None ] ty)
-  | E_Cond (_e1, e2, e3) -> (
-      let ty2 = infer tenv lenv e2 in
-      match ty2.desc with
-      | T_Int None -> T_Int None |> add_dummy_pos
-      | T_Int (Some c2) -> (
-          let ty3 = infer tenv lenv e3 in
-          match ty3.desc with
-          | T_Int (Some c3) -> T_Int (Some (c2 @ c3)) |> add_dummy_pos
-          | _ -> T_Int None |> add_dummy_pos)
-      | _ -> ty2)
-  | E_GetField (e, x, ta) -> (
-      match ta with
-      | TA_None -> infer tenv lenv e |> field_type e x
-      | TA_InferredStructure ty -> field_type e x ty)
-  | E_GetFields (e, xs, ta) -> (
-      match ta with
-      | TA_None -> infer tenv lenv e |> fields_type e xs
-      | TA_InferredStructure ty -> fields_type e xs ty)
-  | E_Record (ty, _, ta) -> (
-      match ta with
-      | TA_None -> get_structure tenv.globals ty
-      | TA_InferredStructure ty -> ty)
-  | E_Concat es ->
-      let get_length acc e =
-        let ty = infer tenv lenv e in
-        match ty.desc with
-        | T_Bits (BitWidth_Determined l, _) -> ASTUtils.binop PLUS acc l
-        | T_Bits _ -> not_yet_implemented e "bitvector length inference"
-        | _ -> conflict e [ ASTUtils.default_t_bits ] ty
-      in
-      let length = List.fold_left get_length (expr_of_int 0) es in
-      t_bits_bitwidth length |> add_dummy_pos
-  | E_Tuple es -> T_Tuple (List.map (infer tenv lenv) es) |> add_dummy_pos
-  | E_Unknown ty -> get_structure tenv.globals ty
-  | E_Pattern _ -> T_Bool |> ASTUtils.add_pos_from e
+(**********************************************)
+(* Approximate min and max on integer domains *)
+(**********************************************)
 
-and infer_op op =
-  match op with
-  | AND | EOR | OR -> bitwise_op
-  | BAND | BEQ | BOR | IMPL | EQ_OP | NEQ | GT | GEQ | LT | LEQ -> bool_op
-  | DIV | MOD | SHL | SHR -> int_int_op
-  | MINUS | MUL | PLUS -> num_num_op
-  | RDIV -> real_op
+exception ConstraintMinMaxTop
 
-and bool_op _ _ _ _ _ = T_Bool |> add_dummy_pos
-and bitwise_op pos tenv lenv e1 _e2 = infer tenv lenv e1 |> check_bitvector pos
-and int_int_op pos tenv lenv e1 _e2 = infer tenv lenv e1 |> check_integer pos
-and num_num_op pos tenv lenv e1 _e2 = infer tenv lenv e1 |> check_num pos
-and real_op pos = not_yet_implemented pos "Real operations"
+let min_constraint env = function
+  | Constraint_Exact e | Constraint_Range (e, _) -> (
+      let e = reduce_expr env e in
+      match e.desc with
+      | E_Literal (V_Int i) -> i
+      | _ -> raise ConstraintMinMaxTop)
 
-and infer_unop op pos tenv lenv e =
-  match op with
-  | BNOT -> T_Bool |> add_dummy_pos
-  | NOT -> infer tenv lenv e |> check_bitvector pos
-  | NEG -> infer tenv lenv e |> check_integer pos
+let max_constraint env = function
+  | Constraint_Exact e | Constraint_Range (_, e) -> (
+      let e = reduce_expr env e in
+      match e.desc with
+      | E_Literal (V_Int i) -> i
+      | _ -> raise ConstraintMinMaxTop)
 
-let rec infer_lexpr tenv lenv le =
-  match le.desc with
-  | LE_Typed (_le, t) -> get_structure tenv.globals t
-  | LE_Var x -> lookup tenv lenv le x
-  | LE_Slice ({ desc = LE_Var x; _ }, _) when IMap.mem x tenv.funcs ->
-      lookup_return_type tenv le x
-  | LE_Slice (le', slices) -> (
-      let ty = infer_lexpr tenv lenv le' in
-      match ty.desc with
-      | T_Bits _ -> slices_length slices |> t_bits_bitwidth |> add_dummy_pos
-      | _ -> conflict le [ ASTUtils.default_t_bits ] ty)
-  | LE_SetField (_, field, TA_InferredStructure ty) -> field_type le field ty
-  | LE_SetFields (_, fields, TA_InferredStructure ty) ->
-      fields_type le fields ty
-  | LE_SetField (le, fields, TA_None) ->
-      infer_lexpr tenv lenv le |> field_type le fields
-  | LE_SetFields (le, fields, TA_None) ->
-      infer_lexpr tenv lenv le |> fields_type le fields
-  | LE_Ignore -> not_yet_implemented le "Type inference of '-'"
-  | LE_TupleUnpack les ->
-      T_Tuple (List.map (infer_lexpr tenv lenv) les) |> add_dummy_pos
+let min_max_constraints m_constraint m =
+  let rec do_rec env = function
+    | [] -> assert false
+    | [ c ] -> m_constraint env c
+    | c :: cs ->
+        let i = m_constraint env c and j = do_rec env cs in
+        m i j
+  in
+  do_rec
+
+(* NB: functions raise [ConstraintMinMaxTop] if no approximation can be found *)
+let min_constraints = min_max_constraints min_constraint min
+and max_constraints = min_max_constraints max_constraint max
 
 (* -------------------------------------------------------------------------
 
@@ -513,23 +294,22 @@ let rec infer_lexpr tenv lenv le =
 
    -------------------------------------------------------------------------- *)
 
-let should_reduce_to_call tenv name args =
-  match IMap.find_opt name tenv.funcs with
+let should_reduce_to_call env name args =
+  match IMap.find_opt name env.global.subprograms with
   | None -> None
-  | Some (_arg_types, return_type) -> Some (name, args, return_type)
+  | Some { return_type; _ } -> Some (name, args, return_type)
 
-let should_slices_reduce_to_call tenv name slices =
+let should_slices_reduce_to_call env name slices =
   let args =
-    try Some (List.map ASTUtils.slice_as_single slices)
-    with Invalid_argument _ -> None
+    try Some (List.map slice_as_single slices) with Invalid_argument _ -> None
   in
   match args with
   | None -> None
-  | Some args -> should_reduce_to_call tenv name args
+  | Some args -> should_reduce_to_call env name args
 
-let getter_should_reduce_to_call tenv x slices =
-  let name = ASTUtils.getter_name x in
-  match should_slices_reduce_to_call tenv name slices with
+let getter_should_reduce_to_call env x slices =
+  let name = getter_name x in
+  match should_slices_reduce_to_call env name slices with
   | Some (name, args, Some _) ->
       let () =
         if false then Format.eprintf "Reducing call from %s to %s.@." x name
@@ -537,17 +317,14 @@ let getter_should_reduce_to_call tenv x slices =
       Some (name, args)
   | Some (_, _, None) | None -> None
 
-let rec setter_should_reduce_to_call_s tenv le e : stmt option =
-  let here d = ASTUtils.add_pos_from le d in
-  let s_then = ASTUtils.s_then in
-  let rec_desc le' e_desc =
-    ASTUtils.add_pos_from le e_desc |> setter_should_reduce_to_call_s tenv le'
-  in
-  let to_expr = ASTUtils.expr_of_lexpr in
+let rec setter_should_reduce_to_call_s env le e : stmt option =
+  let here d = add_pos_from le d in
+  let s_then = s_then in
+  let to_expr = expr_of_lexpr in
   let with_temp old_le sub_le =
-    let x = ASTUtils.fresh_var "setter_setfield" in
+    let x = fresh_var "setter_setfield" in
     let le_x = LE_Var x |> here in
-    match setter_should_reduce_to_call_s tenv sub_le (E_Var x |> here) with
+    match setter_should_reduce_to_call_s env sub_le (E_Var x |> here) with
     | None -> None
     | Some s ->
         Some
@@ -566,17 +343,16 @@ let rec setter_should_reduce_to_call_s tenv le e : stmt option =
       let old_le le' = LE_SetFields (le', fields, ta) |> here in
       with_temp old_le sub_le
   | LE_Slice ({ desc = LE_Var x; _ }, slices) -> (
-      let name = ASTUtils.setter_name x and slices = Slice_Single e :: slices in
-      match should_slices_reduce_to_call tenv name slices with
+      let name = setter_name x and slices = Slice_Single e :: slices in
+      match should_slices_reduce_to_call env name slices with
       | None -> None
       | Some (name, args, _) -> Some (S_Call (name, args, []) |> here))
   | LE_Slice (sub_le, slices) ->
       let old_le le' = LE_Slice (le', slices) |> here in
       with_temp old_le sub_le
   | LE_TupleUnpack _ -> None
-  | LE_Typed (le', ty) -> E_Typed (e, ty) |> rec_desc le'
   | LE_Var x -> (
-      match should_reduce_to_call tenv (ASTUtils.setter_name x) [ e ] with
+      match should_reduce_to_call env (setter_name x) [ e ] with
       | Some (name, args, _) -> Some (S_Call (name, args, []) |> here)
       | None -> None)
 
@@ -591,6 +367,8 @@ module type ANNOTATE_CONFIG = sig
 end
 
 module Annotate (C : ANNOTATE_CONFIG) = struct
+  exception TypingAssumptionFailed
+
   let _warn =
     match C.check with `Warn | `TypeCheck -> true | `Silence -> false
 
@@ -616,13 +394,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             x)
     | `Silence -> ( fun x f -> try f x with Error.ASLException _ -> x)
 
-  let ( let+ ) m f = check m () |> f
+  let[@inline] ( let+ ) m f = check m () |> f
 
-  let both f1 f2 x =
+  let[@inline] both f1 f2 x =
     let _ = f1 x in
     f2 x
 
-  let either f1 f2 x = try f1 x with Error.ASLException _ -> f2 x
+  let either f1 f2 x =
+    try f1 x with TypingAssumptionFailed | Error.ASLException _ -> f2 x
 
   let rec any li x =
     match li with
@@ -630,322 +409,654 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | [ f ] -> f x
     | f :: li -> either f (any li) x
 
+  let assumption_failed () = raise_notrace TypingAssumptionFailed [@@inline]
+  let check_true b fail () = if b then () else fail () [@@inline]
+  let check_true' b = check_true b assumption_failed [@@inline]
+
+  let check_type_satisfies' env t1 t2 () =
+    let () =
+      if false then
+        Format.eprintf "@[<hv 2>Checking %a@ <: %a@]@." PP.pp_ty t1 PP.pp_ty t2
+    in
+    if Types.type_satisfies env t1 t2 then () else assumption_failed ()
+
+  let get_bitvector_width' env t =
+    match (Types.get_structure env t).desc with
+    | T_Bits (n, _) -> n
+    | _ -> assumption_failed ()
+
+  let get_bitvector_width loc env t =
+    try get_bitvector_width' env t
+    with TypingAssumptionFailed -> conflict loc [ default_t_bits ] t
+
+  let get_record_fields loc env t =
+    match (Types.get_structure env t).desc with
+    | T_Record fields -> fields
+    | _ -> conflict loc [ T_Record [] ] t
+
   (** [check_type_satisfies t1 t2] if [t1 <: t2]. *)
-  let check_type_satisfies loc tenv t1 t2 () =
-    match subtypes tenv t1 t2 with
-    | Some _eqs -> ()
-    | None -> conflict loc [ t2.desc ] t1
+  let check_type_satisfies loc env t1 t2 () =
+    if Types.type_satisfies env t1 t2 then () else conflict loc [ t1.desc ] t2
+
+  (** [check_structure_boolean env t1] checks that [t1] has the structure of a boolean. *)
+  let check_structure_boolean loc env t1 () =
+    match (Types.get_structure env t1).desc with
+    | T_Bool -> ()
+    | _ -> conflict loc [ T_Bool ] t1
+
+  let check_structure_bits loc env t () =
+    match (Types.get_structure env t).desc with
+    | T_Bits _ -> ()
+    | _ -> conflict loc [ default_t_bits ] t
+
+  let check_structure_integer loc env t () =
+    match (Types.get_structure env t).desc with
+    | T_Int _ -> ()
+    | _ -> conflict loc [ T_Int None ] t
+
+  let storage_is_pure loc (env : env) s =
+    (* Definition DDYW:
+       Any expression consisting solely of an immutable storage element or a
+       literal value is a statically evaluable expression.
+    *)
+    match IMap.find_opt s env.local.storage_types with
+    | Some (_, (LDK_Constant | LDK_Let)) -> true
+    | Some (_, LDK_Var) -> false
+    | None -> (
+        match IMap.find_opt s env.global.storage_types with
+        | Some (_, (GDK_Constant | GDK_Config | GDK_Let)) -> true
+        | Some (_, GDK_Var) -> false
+        | None -> undefined_identifier loc s)
+
+  let check_pure (env : env) e () =
+    let e = reduce_expr env e in
+    let use_set = use_e ISet.empty e in
+    if ISet.for_all (storage_is_pure e env) use_set then ()
+    else fatal_from e (Error.UnpureExpression e)
+
+  let check_bv_have_same_determined_bitwidth' env t1 t2 () =
+    let n = get_bitvector_width' env t1 and m = get_bitvector_width' env t2 in
+    if bitwidth_equal (StaticInterpreter.equal_in_env env) n m then
+      (* TODO: Check statically evaluable? *) ()
+    else
+      match (n, m) with
+      | BitWidth_Determined e_n, BitWidth_Determined e_m ->
+          if StaticInterpreter.equal_in_env env e_n e_m then ()
+          else assumption_failed ()
+      | _ -> assumption_failed ()
+
+  let check_bv_have_same_determined_bitwidth loc env t1 t2 () =
+    try check_bv_have_same_determined_bitwidth' env t1 t2 ()
+    with TypingAssumptionFailed ->
+      fatal_from loc (Error.UnreconciableTypes (t1, t2))
+
+  let has_bitvector_structure env t =
+    match (Types.get_structure env t).desc with T_Bits _ -> true | _ -> false
 
   let t_bool = T_Bool |> add_dummy_pos
   let t_int = T_Int None |> add_dummy_pos
 
-  let check_binop loc tenv op t1 t2 : ty =
+  let check_binop loc env op t1 t2 : ty =
     let () =
       if false then
         Format.eprintf "Checking binop %s between %a and %a@."
           (PP.binop_to_string op) PP.pp_ty t1 PP.pp_ty t2
     in
-    let with_loc = ASTUtils.add_pos_from loc in
+    let with_loc = add_pos_from loc in
     either
       (fun () ->
         match op with
         | BAND | BOR | BEQ | IMPL ->
-            let+ () = check_type_satisfies loc tenv t1 t_bool in
-            let+ () = check_type_satisfies loc tenv t2 t_bool in
+            let+ () = check_type_satisfies' env t1 t_bool in
+            let+ () = check_type_satisfies' env t2 t_bool in
             T_Bool |> with_loc
         | AND | OR | EOR ->
-            let n = get_bitvector_width loc t1 in
-            let+ () = check_type_satisfies loc tenv t2 t1 in
-            T_Bits (n, None) |> with_loc
+            (* Rule KXMR: If the operands of a primitive operation are
+               bitvectors, the widths of the operands must be equivalent
+               statically evaluable expressions. *)
+            let+ () = check_bv_have_same_determined_bitwidth' env t1 t2 in
+            let n = get_bitvector_width' env t1 in
+            T_Bits (n, []) |> with_loc
+        | (PLUS | MINUS) when has_bitvector_structure env t1 ->
+            (* Rule KXMR: If the operands of a primitive operation are
+               bitvectors, the widths of the operands must be equivalent
+               statically evaluable expressions. *)
+            let+ () =
+              either
+                (check_bv_have_same_determined_bitwidth' env t1 t2)
+                (check_type_satisfies' env t2 t_int)
+            in
+            let n = get_bitvector_width' env t1 in
+            T_Bits (n, []) |> with_loc
         | EQ_OP | NEQ ->
             (* Wrong! *)
             let+ () =
               any
                 [
+                  (* Optimisation. *)
+                  check_true'
+                    (type_equal (StaticInterpreter.equal_in_env env) t1 t2);
+                  (* If an argument of a comparison operation is a constrained
+                     integer then it is treated as an unconstrained integer. *)
                   both
-                    (check_type_satisfies loc tenv t1 t_int)
-                    (check_type_satisfies loc tenv t2 t_int);
+                    (check_type_satisfies' env t1 t_int)
+                    (check_type_satisfies' env t2 t_int);
+                  (* If the arguments of a comparison operation are bitvectors
+                     then they must have the same determined width. *)
+                  check_bv_have_same_determined_bitwidth' env t1 t2;
+                  (* The rest are redundancies from the first equal types
+                     cases, but provided for completeness. *)
                   both
-                    (check_type_satisfies loc tenv t1 t_bool)
-                    (check_type_satisfies loc tenv t2 t_bool);
-                  (fun () ->
-                    let n = get_bitvector_width loc t1 in
-                    check_type_satisfies loc tenv t2
-                      (T_Bits (n, None) |> add_dummy_pos)
-                      ());
+                    (check_type_satisfies' env t1 t_bool)
+                    (check_type_satisfies' env t2 t_bool);
                   (fun () ->
                     match (t1.desc, t2.desc) with
-                    | T_Enum li1, T_Enum li2
-                      when List.compare_lengths li1 li2 = 0
-                           && List.for_all2 String.equal li1 li2 ->
-                        ()
-                    | _ -> fatal_from loc (Error.BadTypesForBinop (op, t1, t2)));
+                    | T_Enum li1, T_Enum li2 ->
+                        check_true' (list_equal String.equal li1 li2) ()
+                    | _ -> assumption_failed ());
                 ]
             in
             T_Bool |> with_loc
         | LEQ | GEQ | GT | LT ->
-            let+ () = check_type_satisfies loc tenv t1 t_int in
-            let+ () = check_type_satisfies loc tenv t2 t_int in
+            let+ () = check_type_satisfies' env t1 t_int in
+            let+ () = check_type_satisfies' env t2 t_int in
             T_Bool |> with_loc
-        | PLUS | MINUS ->
-            either
-              (fun () ->
-                let+ () =
-                  both
-                    (check_type_satisfies loc tenv t1 t_int)
-                    (check_type_satisfies loc tenv t2 t_int)
-                in
-                t_int)
-              (fun () ->
-                let n = get_bitvector_width loc t1 in
-                let t = T_Bits (n, None) |> add_dummy_pos in
-                let+ () =
-                  either
-                    (check_type_satisfies loc tenv t2 t)
-                    (check_type_satisfies loc tenv t2 t_int)
-                in
-                t)
-              ()
-        | MUL | DIV | MOD | SHL | SHR ->
-            let+ () = check_type_satisfies loc tenv t1 t_int in
-            let+ () = check_type_satisfies loc tenv t2 t_int in
-            (* TODO: Work on constraints. *)
-            T_Int None |> with_loc
+        | MUL | DIV | MOD | SHL | SHR | PLUS | MINUS -> (
+            (* TODO: ensure that they mean "has the structure of" instead of
+               "is" *)
+            let struct1 = Types.get_structure env t1
+            and struct2 = Types.get_structure env t2 in
+            match (struct1.desc, struct2.desc) with
+            | T_Int None, T_Int _ | T_Int _, T_Int None ->
+                (* Rule ZYWY: If both operands of an integer binary primitive
+                   operator are integers and at least one of them is an
+                   unconstrained integer then the result shall be an
+                   unconstrained integer. *)
+                (* TODO: check that no other checks are necessary. *)
+                T_Int None |> with_loc
+            | T_Int (Some []), T_Int (Some _) | T_Int (Some _), T_Int (Some [])
+              ->
+                (* Rule BZKW: If both operands of an integer binary primitive
+                   operator are constrained integers and at least one of them
+                   is the under-constrained integer then the result shall be an
+                   under-constrained integer. *)
+                T_Int (Some []) |> with_loc
+            | T_Int (Some cs1), T_Int (Some cs2) ->
+                (* Rule KFYS: If both operands of an integer binary primitive
+                   operation are well-constrained integers, then it shall
+                   return a constrained integer whose constraint is calculated
+                   by applying the operation to all possible value pairs. *)
+                (* TODO: check for division by zero? cf I YHRP: The calculation
+                   of constraints shall cause an error if necessary, for
+                   example where a division by zero occurs, etc. *)
+                T_Int (Some (constraint_binop op cs1 cs2)) |> with_loc
+            | _ -> assumption_failed ())
         | RDIV ->
-            let+ () =
-              check_type_satisfies loc tenv t1 (T_Real |> add_dummy_pos)
-            in
+            let+ () = check_type_satisfies' env t1 (T_Real |> add_dummy_pos) in
             T_Real |> with_loc)
       (fun () -> fatal_from loc (Error.BadTypesForBinop (op, t1, t2)))
       ()
 
-  let check_unop loc tenv op t =
+  let check_unop loc env op t =
     match op with
     | BNOT ->
-        let+ () = check_type_satisfies loc tenv t t_bool in
-        T_Bool |> ASTUtils.add_pos_from loc
+        let+ () = check_type_satisfies loc env t t_bool in
+        T_Bool |> add_pos_from loc
     | NEG ->
-        let+ () = check_type_satisfies loc tenv t t_int in
+        let+ () = check_type_satisfies loc env t t_int in
         (* TODO: work on constraints. *)
-        T_Int None |> ASTUtils.add_pos_from loc
+        T_Int None |> add_pos_from loc
     | NOT ->
         (* TODO: make sure that default_t_bits is type-satisfied by all [bits( * )] types *)
         let+ () =
-          check_type_satisfies loc tenv t
-            (ASTUtils.default_t_bits |> add_dummy_pos)
+          check_type_satisfies loc env t (default_t_bits |> add_dummy_pos)
         in
         t
 
-  let rec annotate_expr_fallback tenv lenv e : expr =
-    let tr = try_annotate_expr tenv lenv in
-    let tr_desc d = add_pos_from e d |> tr |> get_desc in
-    add_pos_from e
-    @@
-    match e.desc with
-    | E_Literal _ -> e.desc
-    | E_Typed (e, t) -> E_Typed (tr e, t)
-    | E_Var x -> (
-        match getter_should_reduce_to_call tenv x [] with
-        | None -> e.desc
-        | Some (name, args) -> E_Call (name, args, []) |> tr_desc)
-    | E_Binop (BAND, e1, e2) ->
-        E_Cond (e1, e2, E_Literal (V_Bool false) |> ASTUtils.add_pos_from e)
-        |> tr_desc
-    | E_Binop (BOR, e1, e2) ->
-        E_Cond (e1, E_Literal (V_Bool true) |> ASTUtils.add_pos_from e, e2)
-        |> tr_desc
-    | E_Binop (op, e1, e2) -> E_Binop (op, tr e1, tr e2)
-    | E_Unop (op, e) -> E_Unop (op, tr e)
-    | E_Call (x, args, named_args) ->
-        let args = List.map tr args in
-        let arg_types = List.map (infer tenv lenv) args in
-        let extra_nargs, x' = FunctionRenaming.find_name tenv x arg_types in
-        let () =
-          if false && not (String.equal x x') then
-            Format.eprintf "Renaming call from %s to %s.@." x x'
-        in
-        E_Call (x', args, List.rev_append named_args extra_nargs)
-    | E_Slice (e', slices) -> (
-        let reduced =
-          match e'.desc with
-          | E_Var x -> getter_should_reduce_to_call tenv x slices
-          | _ -> None
-        in
-        match reduced with
-        | Some (name, args) -> E_Call (name, args, []) |> tr_desc
-        | None -> E_Slice (tr e', annotate_slices tenv lenv slices))
-    | E_Cond (e1, e2, e3) ->
-        let e2 = try_annotate_expr tenv lenv e2
-        and e3 = try_annotate_expr tenv lenv e3 in
-        E_Cond (tr e1, e2, e3)
-    | E_GetField (e', field, _ta) -> (
-        let e' = tr e' in
-        let ty = infer tenv lenv e' in
-        match ty.desc with
-        | T_Bits _ -> E_GetFields (e', [ field ], TA_InferredStructure ty)
-        | T_Record _ -> E_GetField (e', field, TA_InferredStructure ty)
-        | _ -> conflict e [ ASTUtils.default_t_bits; T_Record [] ] ty)
-    | E_GetFields (e, fields, _ta) ->
-        let e = tr e in
-        let ty = infer tenv lenv e in
-        E_GetFields (e, fields, TA_InferredStructure ty)
-    | E_Record (ty, fields, _ta) ->
-        let ta = get_structure tenv.globals ty
-        and fields =
-          let one_field (name, e) = (name, tr e) in
-          List.map one_field fields
-        in
-        E_Record (ty, fields, TA_InferredStructure ta)
-    | E_Concat es -> E_Concat (List.map tr es)
-    | E_Tuple es -> E_Tuple (List.map tr es)
-    | E_Unknown t -> E_Unknown (get_structure tenv.globals t)
-    | E_Pattern (e', p) -> E_Pattern (tr e', p)
-
-  and try_annotate_expr tenv lenv e =
-    best_effort (t_int, e) (fun (_, e) -> annotate_expr tenv lenv e) |> snd
-
-  and annotate_slices tenv lenv =
+  let rec annotate_slices env =
+    (* Rules:
+       - Rule WZCS: The width of a bitslice must be any non-negative,
+         statically evaluable integer expression (including zero).
+       - Rule KTBG: It is an error if any bits selected by a bitslice are not
+         in range for the expression being sliced. If the offset of a bitslice
+         depends on a statically evaluable expression then this shall be
+         checked at compile time. Otherwise a bounds check will occur at
+         execution-time and an implementation defined exception shall be thrown
+         if it fails.
+       TODO: check them
+    *)
     let tr_one = function
-      | Slice_Single e -> Slice_Single (try_annotate_expr tenv lenv e)
-      | Slice_Range (e1, e2) ->
-          Slice_Range
-            (try_annotate_expr tenv lenv e1, try_annotate_expr tenv lenv e2)
-      | Slice_Length (e1, e2) ->
-          Slice_Length
-            (try_annotate_expr tenv lenv e1, try_annotate_expr tenv lenv e2)
+      | Slice_Single e ->
+          (* First rule trivially true. *)
+          (* TODO: try evaluate this at compile time, and check it against sliced
+             expression type. *)
+          let t_e, e = annotate_expr env e in
+          let+ () = check_structure_integer e env t_e in
+          let+ () = check_pure env e in
+          Slice_Single e
+      | Slice_Range (e1, e2) as slice ->
+          let t_e1, e1 = annotate_expr env e1
+          and t_e2, e2 = annotate_expr env e2 in
+          let+ () = check_structure_integer e1 env t_e1 in
+          let+ () = check_structure_integer e2 env t_e2 in
+          let length = slices_length env [ slice ] in
+          let+ () = check_pure env length in
+          Slice_Range (e1, e2)
+      | Slice_Length (offset, length) ->
+          let t_offset, offset = annotate_expr env offset
+          and t_length, length = annotate_expr env length in
+          let+ () = check_structure_integer offset env t_offset in
+          let+ () = check_structure_integer length env t_length in
+          let+ () = check_pure env length in
+          (* TODO: if offset is statically evaluable, check that it is less
+             than sliced expression width. *)
+          Slice_Length (offset, length)
     in
     List.map tr_one
 
-  and annotate_expr tenv lenv e : ty * expr =
+  and annotate_pattern loc env t = function
+    | Pattern_All as p -> p
+    | Pattern_Any li -> Pattern_Any (List.map (annotate_pattern loc env t) li)
+    | Pattern_Not p -> Pattern_Not (annotate_pattern loc env t p)
+    | Pattern_Single e ->
+        let t_e, e = annotate_expr env e in
+        let+ () =
+         fun () ->
+          let t_struct = Types.get_structure env t
+          and t_e_struct = Types.get_structure env t_e in
+          match (t_struct.desc, t_e_struct.desc) with
+          | T_Bool, T_Bool | T_Real, T_Real -> ()
+          | T_Int _, T_Int _ -> ()
+          | T_Bits _, T_Bits _ ->
+              check_bv_have_same_determined_bitwidth loc env t_struct t_e_struct
+                ()
+          (* TODO: Multiple discriminants can be matched at once by forming
+             a tuple of discriminants and a tuple used in the pattern_set.
+             Both tuples must have the same number of elements. A
+             successful pattern match occurs when each discriminant term
+             matches the respective term of the pattern tuple. *)
+          | T_Enum li1, T_Enum li2 when list_equal String.equal li1 li2 -> ()
+          | _ -> fatal_from loc (Error.BadTypesForBinop (EQ_OP, t, t_e))
+        in
+        Pattern_Single e
+    | Pattern_Geq e ->
+        let t_e, e = annotate_expr env e in
+        let+ () = check_pure env e in
+        let+ () =
+          both
+            (check_structure_integer loc env t)
+            (check_structure_integer loc env t_e)
+        in
+        Pattern_Geq e
+    | Pattern_Leq e ->
+        let t_e, e = annotate_expr env e in
+        let+ () = check_pure env e in
+        let+ () =
+          both
+            (check_structure_integer loc env t)
+            (check_structure_integer loc env t_e)
+        in
+        Pattern_Leq e
+    | Pattern_Range (e1, e2) ->
+        let t_e1, e1 = annotate_expr env e1
+        and t_e2, e2 = annotate_expr env e2 in
+        let+ () =
+          both
+            (check_structure_integer loc env t)
+            (both
+               (check_structure_integer loc env t_e1)
+               (check_structure_integer loc env t_e2))
+        in
+        Pattern_Range (e1, e2)
+    | Pattern_Mask _ as p ->
+        (* TODO. *)
+        let+ () =
+          fatal_from loc
+            (Error.NotYetImplemented "Typing masks in pattern matching.")
+        in
+        p
+
+  and annotate_call loc env name args eqs =
+    let () =
+      if false then
+        Format.eprintf "Annotating call to %S at %a.@." name PP.pp_pos loc
+    in
+    let caller_arg_types, args =
+      List.map (annotate_expr env) args |> List.split
+    in
+    let extra_nargs, name, callee_arg_types =
+      either
+        (fun () ->
+          FunctionRenaming.find_name_strict loc env name caller_arg_types)
+        (fun () ->
+          let extra_nargs, name =
+            FunctionRenaming.find_name env name caller_arg_types
+          in
+          match IMap.find_opt name env.global.subprograms with
+          | None -> undefined_identifier loc ("function " ^ name)
+          | Some { return_type = None; _ } ->
+              fatal_from loc @@ Error.MismatchedReturnValue name
+          | Some { args = callee_arg_types; return_type = Some _; _ } ->
+              (extra_nargs, name, callee_arg_types))
+        ()
+    in
+    let eqs = List.rev_append eqs extra_nargs in
+    let () =
+      if List.compare_lengths callee_arg_types args != 0 then
+        fatal_from loc
+        @@ Error.BadArity (name, List.length callee_arg_types, List.length args)
+    in
+    let eqs =
+      let folder acc (x, _) e = (x, e) :: acc in
+      List.fold_left2 folder eqs callee_arg_types args
+    in
+    let () =
+      if false && not (String.equal name name) then
+        Format.eprintf "Renaming call from %s to %s@ at %a.@." name name
+          PP.pp_pos loc
+    in
+    (name, args, eqs)
+
+  and annotate_expr env (e : expr) : ty * expr =
     let () = if false then Format.eprintf "@[Annotating %a@]@." PP.pp_expr e in
+    let here x = add_pos_from e x in
     match e.desc with
-    | E_Literal v -> (infer_value v |> ASTUtils.add_pos_from e, e)
+    | E_Literal v -> (infer_value v |> here, e)
     | E_Typed (e', t) ->
-        let t = get_structure tenv.globals t in
-        let t_e, e'' = annotate_expr tenv lenv e' in
-        let+ () = check_type_satisfies e tenv t t_e in
-        (t, E_Typed (e'', t) |> add_pos_from e)
+        let t_e, e'' = annotate_expr env e' in
+        (* - If type-checking determines that the expression type-satisfies
+             the required type, then no further check is required.
+           - If the expression only fails to type-satisfy the required type
+             because the domain of its type is not a subset of the domain of
+             the required type, an execution-time check that the expression
+             evaluates to a value in the domain of the required type is
+             required. *)
+        best_effort
+          (t, E_Typed (e'', t) |> here)
+          (fun res ->
+            let env' = env in
+            if Types.structural_subtype_satisfies env' t_e t then
+              if Types.domain_subtype_satisfies env' t_e t then (t_e, e'')
+              else res
+            else conflict e [ t.desc ] t_e)
     | E_Var x -> (
         let () = if false then Format.eprintf "Looking at %S.@." x in
-        match getter_should_reduce_to_call tenv x [] with
+        match getter_should_reduce_to_call env x [] with
         | Some (name, args) ->
             let () =
               if false then
                 Format.eprintf "@[Reducing getter %S@ at %a@]@." x PP.pp_pos e
             in
-            E_Call (name, args, []) |> add_pos_from e |> annotate_expr tenv lenv
-        | None ->
+            E_Call (name, args, []) |> here |> annotate_expr env
+        | None -> (
             let () =
               if false then
                 Format.eprintf "@[Choosing not to reduce var %S@ at @[%a@]@]@."
                   x PP.pp_pos e
             in
-            (lookup tenv lenv e x |> get_structure tenv.globals, e))
+            try
+              match IMap.find x env.local.storage_types with
+              | ty, LDK_Constant ->
+                  let v = IMap.find x env.local.constants_values in
+                  let e = E_Literal v |> here in
+                  (ty, e)
+              | ty, _ -> (ty, e)
+            with Not_found -> (
+              try
+                match IMap.find x env.global.storage_types with
+                | ty, GDK_Constant -> (
+                    match IMap.find_opt x env.global.constants_values with
+                    | Some v -> (ty, E_Literal v |> here)
+                    | None -> (ty, e))
+                | ty, _ -> (ty, e)
+              with Not_found ->
+                let () =
+                  if false then
+                    Format.eprintf "@[Cannot find %s in env@ %a.@]@." x
+                      SEnv.PPEnv.pp_env env
+                in
+                undefined_identifier e x)))
     | E_Binop (BAND, e1, e2) ->
-        E_Cond (e1, e2, E_Literal (V_Bool false) |> add_pos_from e)
-        |> add_pos_from e |> annotate_expr tenv lenv
+        E_Cond (e1, e2, E_Literal (V_Bool false) |> here)
+        |> here |> annotate_expr env
     | E_Binop (BOR, e1, e2) ->
-        E_Cond (e1, E_Literal (V_Bool true) |> add_pos_from e, e2)
-        |> add_pos_from e |> annotate_expr tenv lenv
+        E_Cond (e1, E_Literal (V_Bool true) |> here, e2)
+        |> here |> annotate_expr env
     | E_Binop (op, e1, e2) ->
-        let t1, e1' = annotate_expr tenv lenv e1 in
-        let t2, e2' = annotate_expr tenv lenv e2 in
-        let t = check_binop e tenv op t1 t2 in
-        (t, E_Binop (op, e1', e2') |> add_pos_from e)
+        let t1, e1' = annotate_expr env e1 in
+        let t2, e2' = annotate_expr env e2 in
+        let t = check_binop e env op t1 t2 in
+        (t, E_Binop (op, e1', e2') |> here)
     | E_Unop (op, e') ->
-        let t'', e'' = annotate_expr tenv lenv e' in
-        let t = check_unop e tenv op t'' in
-        (t, E_Unop (op, e'') |> add_pos_from e)
+        let t'', e'' = annotate_expr env e' in
+        let t = check_unop e env op t'' in
+        (t, E_Unop (op, e'') |> here)
     | E_Call (name, args, eqs) ->
-        let caller_arg_types, args =
-          List.map (annotate_expr tenv lenv) args |> List.split
+        let name, args, eqs = annotate_call (to_pos e) env name args eqs in
+        let ty =
+          let () =
+            if false then Format.eprintf "@[Finding return type of %S@]@." name
+          in
+          match IMap.find_opt name env.global.subprograms with
+          | Some { return_type = Some ty; _ } -> ty
+          | Some _ -> fatal_from e @@ Error.MismatchedReturnValue name
+          | None -> undefined_identifier e name
         in
-        let name, eqs =
-          best_effort (name, eqs) (fun _ ->
-              let extra_nargs, name, callee_arg_types =
-                either
-                  (fun () ->
-                    FunctionRenaming.find_name_strict e tenv name
-                      caller_arg_types)
-                  (fun () ->
-                    let extra_nargs, name =
-                      FunctionRenaming.find_name tenv name caller_arg_types
-                    in
-                    match IMap.find_opt name tenv.funcs with
-                    | None -> undefined_identifier e ("function " ^ name)
-                    | Some (_, None) ->
-                        fatal_from e @@ Error.MismatchedReturnValue name
-                    | Some (callee_arg_types, _return_type) ->
-                        (extra_nargs, name, callee_arg_types))
-                  ()
-              in
-              let eqs = List.rev_append eqs extra_nargs in
-              let () =
-                if List.compare_lengths callee_arg_types args != 0 then
-                  fatal_from e
-                  @@ Error.BadArity
-                       (name, List.length callee_arg_types, List.length args)
-              in
-              let eqs =
-                let folder acc (x, _) e = (x, e) :: acc in
-                List.fold_left2 folder eqs callee_arg_types args
-              in
-              let () =
-                if false && not (String.equal name name) then
-                  Format.eprintf "Renaming call from %s to %s@ at %a.@." name
-                    name PP.pp_pos e
-              in
-              (name, eqs))
+        (rename_ty_eqs eqs ty, E_Call (name, args, eqs) |> here)
+    | E_Cond (e_cond, e_true, e_false) ->
+        let t_cond, e_cond = annotate_expr env e_cond in
+        let+ () = check_structure_boolean e env t_cond in
+        let t_true, e_true = annotate_expr env e_true
+        and t_false, e_false = annotate_expr env e_false in
+        let t =
+          best_effort t_true (fun _ ->
+              match Types.lowest_common_ancestor env t_true t_false with
+              | None ->
+                  fatal_from e (Error.UnreconciableTypes (t_true, t_false))
+              | Some t -> t)
         in
-        ( lookup_return_type tenv e name |> rename_ty_eqs eqs,
-          E_Call (name, args, eqs) |> add_pos_from e )
-    | _ ->
-        let e = annotate_expr_fallback tenv lenv e in
-        let t = best_effort t_bool (fun _ -> infer tenv lenv e) in
-        (t, e)
-
-  let rec annotate_lexpr_fallback tenv lenv le =
-    add_pos_from le
-    @@
-    match le.desc with
-    | LE_Var _ -> le.desc
-    | LE_Typed (le, t) -> LE_Typed (annotate_lexpr_fallback tenv lenv le, t)
-    | LE_Slice (le, slices) ->
-        LE_Slice
-          ( annotate_lexpr_fallback tenv lenv le,
-            annotate_slices tenv lenv slices )
-    | LE_SetField (le', field, _ta) -> (
-        let le' = annotate_lexpr_fallback tenv lenv le' in
-        let ty = infer_lexpr tenv lenv le' in
-        match ty.desc with
-        | T_Bits _ -> LE_SetFields (le', [ field ], TA_InferredStructure ty)
-        | _ -> LE_SetField (le', field, TA_InferredStructure ty))
-    | LE_SetFields (le', fields, _ta) ->
-        let le' = annotate_lexpr_fallback tenv lenv le' in
-        let ty = infer_lexpr tenv lenv le' in
-        LE_SetFields (le', fields, TA_InferredStructure ty)
-    | LE_Ignore -> LE_Ignore
-    | LE_TupleUnpack les ->
-        LE_TupleUnpack (List.map (annotate_lexpr_fallback tenv lenv) les)
-
-  let rec annotate_lexpr tenv lenv le t_e =
-    match le.desc with
-    | LE_Var x -> (
-        (* TODO: Handle setting global var *)
-        match IMap.find_opt x lenv with
+        (t, E_Cond (e_cond, e_true, e_false) |> here)
+    | E_Tuple li ->
+        let ts, es = List.map (annotate_expr env) li |> List.split in
+        (T_Tuple ts |> here, E_Tuple es |> here)
+    | E_Concat [] ->
+        (T_Bits (BitWidth_Determined (expr_of_int 0), []) |> here, e)
+    | E_Concat (_ :: _ as li) ->
+        let ts, es = List.map (annotate_expr env) li |> List.split in
+        let w =
+          best_effort (BitWidth_Constrained []) (fun _ ->
+              let widths = List.map (get_bitvector_width e env) ts in
+              let wh = List.hd widths and wts = List.tl widths in
+              List.fold_left (width_plus env) wh wts)
+        in
+        (T_Bits (w, []) |> here, E_Concat es |> here)
+    | E_Record (t, fields, _ta) ->
+        (* Rule WBCQ: The identifier in a record expression must be a named type
+           with the structure of a record type, and whose fields have the values
+           given in the field_assignment_list. *)
+        let+ () =
+          check_true (Types.is_named t) (fun () ->
+              failwith "Typing error: should be a named type")
+        in
+        let field_types = get_record_fields e env t in
+        let fields =
+          best_effort fields (fun _ ->
+              (* Rule DYQZ: A record expression shall assign every field of the record. *)
+              if
+                List.for_all
+                  (fun (name, _) -> List.mem_assoc name fields)
+                  field_types
+              then ()
+              else fatal_from e (Error.BadFields (List.map fst fields, t));
+              (* and whose fields have the values given in the field_assignment_list. *)
+              List.map
+                (fun (name, e') ->
+                  let t', e' = annotate_expr env e' in
+                  let t_spec' =
+                    match List.assoc_opt name field_types with
+                    | None -> fatal_from e (Error.BadField (name, t))
+                    | Some t_spec' -> t_spec'
+                  in
+                  (* TODO: No type checking rule exists here, I interprete
+                     Rule LXQZ: A storage element of type S, where S is any
+                     type that does not have the structure of the
+                     under-constrained integer type, may only be assigned
+                     or initialized with a value of type T if T
+                     type-satisfies S. *)
+                  let+ () = check_type_satisfies e env t' t_spec' in
+                  (name, e'))
+                fields)
+        in
+        let ta = TA_InferredStructure (Types.get_structure env t) in
+        (t, E_Record (t, fields, ta) |> here)
+    | E_Unknown t ->
+        let t = Types.get_structure env t in
+        (t, E_Unknown t |> here)
+    | E_Slice (e', slices) -> (
+        let reduced =
+          match e'.desc with
+          | E_Var x -> getter_should_reduce_to_call env x slices
+          | _ -> None
+        in
+        match reduced with
+        | Some (name, args) ->
+            E_Call (name, args, []) |> here |> annotate_expr env
         | None ->
-            (* TODO: we need a better handling of declarations than that. *)
-            let lenv = IMap.add x t_e lenv in
-            (lenv, le)
-        | Some ty ->
-            let+ () = check_type_satisfies le tenv ty t_e in
-            (lenv, le))
-    | LE_Ignore -> (lenv, le)
-    | LE_Typed (le', ty) ->
-        let ty = get_structure tenv.globals ty in
-        (* TODO: what happens when le is already declared in lenv? *)
-        let+ () = check_type_satisfies le tenv ty t_e in
-        annotate_lexpr tenv lenv le' ty
+            let t_e', e' = annotate_expr env e' in
+            let+ () =
+              either
+                (check_structure_bits e env t_e')
+                (check_structure_integer e env t_e')
+            in
+            let w = slices_length env slices in
+            (* TODO: check that:
+               - Rule SNQJ: An expression or subexpression which may result in
+                 a zero-length bitvector must not be side-effecting.
+            *)
+            let slices = best_effort slices (annotate_slices env) in
+            ( T_Bits (BitWidth_Determined w, []) |> here,
+              E_Slice (e', slices) |> here ))
+    | E_GetField (e', field, _ta) -> (
+        let t_e', e' = annotate_expr env e' in
+        let t_e' = resolve_root_name env t_e' in
+        let ta = TA_InferredStructure (Types.get_structure env t_e') in
+        match t_e'.desc with
+        | T_Record fields -> (
+            match List.assoc_opt field fields with
+            | None -> fatal_from e (Error.BadField (field, t_e'))
+            | Some t -> (t, E_GetField (e', field, ta) |> here))
+        | T_Bits (_, bitfields) -> (
+            match List.assoc_opt field bitfields with
+            | None -> fatal_from e (Error.BadField (field, t_e'))
+            | Some slice ->
+                let w = slices_length env slice in
+                (* I think rules KTBG and WZCS (see annotate_slices) do not
+                   need to be checked here, but at type declaration. *)
+                (* TODO: check that:
+                   - Rule SNQJ: An expression or subexpression which may result in
+                     a zero-length bitvector must not be side-effecting.
+                *)
+                ( T_Bits (BitWidth_Determined w, []) |> here,
+                  E_GetFields (e', [ field ], ta) |> here ))
+        | _ -> conflict e [ default_t_bits; T_Record [] ] t_e')
+    | E_GetFields (e', fields, _ta) ->
+        let t_e', e' = annotate_expr env e' in
+        let t_e' = resolve_root_name env t_e' in
+        let bitfields =
+          match t_e'.desc with
+          | T_Bits (_, bitfields) -> bitfields
+          | _ -> conflict e [ default_t_bits ] t_e'
+        in
+        let one_field field =
+          match List.assoc_opt field bitfields with
+          | None -> fatal_from e (Error.BadField (field, t_e'))
+          | Some slices ->
+              (* I think rules KTBG and WZCS (see annotate_slices) do not
+                 need to be checked here, but at type declaration. *)
+              slices_length env slices
+        in
+        let w = List.map one_field fields |> sum |> reduce_expr env in
+        let ta = TA_InferredStructure (Types.get_structure env t_e') in
+        (* TODO: check that:
+           - Rule SNQJ: An expression or subexpression which may result in a
+             zero-length bitvector must not be side-effecting.
+        *)
+        ( T_Bits (BitWidth_Determined w, []) |> here,
+          E_GetFields (e', fields, ta) |> here )
+    | E_Pattern (e', patterns) ->
+        (*
+         Rule ZNDL states that
+
+            The IN operator is equivalent to testing its first operand for
+            equality against each value in the (possibly infinite) set denoted
+            by the second operand, and taking the logical OR of the result.
+            Values denoted by a bitmask_lit comprise all bitvectors that could
+            match the bit-mask. It is not an error if any or all of the values
+            denoted by the first operand can be statically determined to never
+            compare equal with the second operand.
+
+          e IN pattern            is sugar for
+             "-"                      ->          TRUE
+           | e1=expr                  ->          e == e1
+           | bitmask_lit              ->          not yet implemented
+           | e1=expr ".." e2=expr     ->          e1 <= e && e <= e2
+           | "<=" e1=expr             ->          e <= e1
+           | ">=" e1=expr             ->          e >= e1
+           |  { p0 , ... pN }         ->          e IN p0 || ... e IN pN
+           | !{ p0 , ... pN }         ->          not (e IN p0) && ... e IN pN
+
+         We cannot reduce them here (as otherwise e might be evaluated a bad
+         number of times), but we will apply the same typing rules as for those
+         desugared expressions.
+         *)
+        let t_e', e' = annotate_expr env e' in
+        let patterns = best_effort patterns (annotate_pattern e env t_e') in
+        (T_Bool |> here, E_Pattern (e', patterns) |> here)
+
+  let can_assign_to env s t =
+    (* Rules:
+       - GNTS: It is illegal for a storage element whose type has the structure
+         of the under-constrained integer to be assigned a value whose type has
+         the structure of the under-constrained integer.
+       - LXQZ: A storage element of type S, where S is any type that does not have the
+         structure of the under-constrained integer type, may only be
+         assigned or initialized with a value of type T if T type-satisfies S
+    *)
+    (* TODO: incomplete. *)
+    let s_struct = Types.get_structure env s
+    and t_struct = Types.get_structure env t in
+    match (s_struct.desc, t_struct.desc) with
+    | T_Int (Some []), T_Int (Some []) -> false
+    | _ -> Types.type_satisfies env t s
+
+  let check_can_assign_to loc env s t () =
+    if can_assign_to env s t then ()
+    else
+      let () = Format.eprintf "%a <-- %a@." PP.pp_ty s PP.pp_ty t in
+      fatal_from loc (Error.ConflictingTypes ([ s.desc ], t))
+
+  let rec annotate_lexpr env le t_e =
+    let here x = add_pos_from le x in
+    match le.desc with
+    | LE_Var x ->
+        (* TODO: Handle setting global var *)
+        let+ () =
+         fun () ->
+          let ty =
+            match IMap.find_opt x env.local.storage_types with
+            | Some (ty, LDK_Var) -> ty
+            | Some _ -> fatal_from le @@ Error.AssignToImmutable x
+            | None -> (
+                match IMap.find_opt x env.global.storage_types with
+                | Some (ty, _) ->
+                    (* TODO: check that the keyword is a variable. *)
+                    ty
+                | None -> undefined_identifier le x)
+          in
+          check_can_assign_to le env ty t_e ()
+        in
+        le
+    | LE_Ignore -> le
     | LE_TupleUnpack les -> (
         match t_e.desc with
         | T_Tuple sub_tys ->
@@ -954,169 +1065,361 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 (Error.BadArity
                    ("tuple unpacking", List.length sub_tys, List.length les))
             else
-              let folder (lenv, sub_les) sub_le sub_ty =
-                let lenv, sub_le' = annotate_lexpr tenv lenv sub_le sub_ty in
-                (lenv, sub_le' :: sub_les)
-              in
-              let lenv, les' = List.fold_left2 folder (lenv, []) les sub_tys in
-              (lenv, LE_TupleUnpack (List.rev les') |> add_pos_from le)
+              let les' = List.map2 (annotate_lexpr env) les sub_tys in
+              LE_TupleUnpack les' |> here
         | _ -> conflict le [ T_Tuple [] ] t_e)
-    | _ -> (lenv, annotate_lexpr_fallback tenv lenv le)
+    | LE_Slice (le', slices) ->
+        let t_le, _ = expr_of_lexpr le' |> annotate_expr env in
+        let+ () = check_structure_bits le env t_le in
+        let le' = annotate_lexpr env le' t_le in
+        let+ () =
+         fun () ->
+          let length = slices_length env slices |> reduce_expr env in
+          let t = T_Bits (BitWidth_Determined length, []) |> here in
+          check_can_assign_to le env t t_e ()
+        in
+        let slices = best_effort slices (annotate_slices env) in
+        LE_Slice (le', slices) |> here
+    | LE_SetField (le', field, _ta) -> (
+        let t_le', _ = expr_of_lexpr le' |> annotate_expr env in
+        let le' = annotate_lexpr env le' t_le' in
+        let t_le'_struct = Types.get_structure env t_le' in
+        match t_le'_struct.desc with
+        | T_Record fields ->
+            let t =
+              match List.assoc_opt field fields with
+              | None -> fatal_from le (Error.BadField (field, t_le'))
+              | Some t -> t
+            in
+            let+ () = check_can_assign_to le env t t_e in
+            LE_SetField (le', field, TA_InferredStructure t_le'_struct) |> here
+        | T_Bits (_, bitfields) -> (
+            match List.assoc_opt field bitfields with
+            | None -> fatal_from le (Error.BadField (field, t_le'_struct))
+            | Some slice ->
+                let w = slices_length env slice in
+                let t = T_Bits (BitWidth_Determined w, []) |> here in
+                let+ () = check_can_assign_to le env t t_e in
+                LE_SetFields (le', [ field ], TA_InferredStructure t_le'_struct)
+                |> here)
+        | _ -> conflict le [ default_t_bits; T_Record [] ] t_e)
+    | LE_SetFields (le', fields, _ta) ->
+        let t_le', _ = expr_of_lexpr le' |> annotate_expr env in
+        let le' = annotate_lexpr env le' t_le' in
+        let t_le'_struct = Types.get_structure env t_le' in
+        let bitfields =
+          match t_le'_struct.desc with
+          | T_Bits (_, bitfields) -> bitfields
+          | _ -> conflict le [ default_t_bits ] t_le'
+        in
+        let one_field field =
+          match List.assoc_opt field bitfields with
+          | None -> fatal_from le (Error.BadField (field, t_le'_struct))
+          | Some slices -> slices_length env slices
+        in
+        let w = List.map one_field fields |> sum |> reduce_expr env in
+        let t = T_Bits (BitWidth_Determined w, []) |> here in
+        let+ () = check_can_assign_to le env t t_e in
+        LE_SetFields (le', fields, TA_InferredStructure t_le'_struct) |> here
 
-  let rec annotate_stmt tenv lenv s =
+  let can_be_initialized_with env s t =
+    (* Rules:
+       - ZCVD: It is illegal for a storage element whose type has the
+         structure of the under-constrained integer to be initialized with a
+         value whose type has the structure of the under-constrained integer,
+         unless the type is omitted from the declaration (and therefore the
+         type can be unambiguously inferred) or the initialization expression
+         is omitted (and therefore the type is not omitted from the
+         declaration).
+       - LXQZ: A storage element of type S, where S is any type that does not have the
+         structure of the under-constrained integer type, may only be
+         assigned or initialized with a value of type T if T type-satisfies
+         S)
+    *)
+    let s_struct = Types.get_structure env s in
+    match s_struct.desc with
+    | T_Int (Some []) -> (* TODO *) assert false
+    | _ -> Types.type_satisfies env t s
+
+  let check_can_be_initialized_with loc env s t () =
+    if can_be_initialized_with env s t then () else conflict loc [ s.desc ] t
+
+  let check_var_not_in_env loc env x () =
+    if
+      IMap.mem x env.local.storage_types
+      || IMap.mem x env.global.storage_types
+      || IMap.mem x env.global.subprograms
+    then fatal_from loc (Error.AlreadyDeclaredIdentifier x)
+    else ()
+
+  let rec annotate_local_decl_item loc (env : env) ty ldk ldi =
+    let here = add_pos_from loc in
+    match ldi with
+    | LDI_Ignore None -> (env, LE_Ignore |> here)
+    | LDI_Ignore (Some t) ->
+        let+ () = check_can_be_initialized_with loc env t ty in
+        (env, LE_Ignore |> here)
+    | LDI_Var (x, ty_opt) ->
+        let t =
+          best_effort ty (fun _ ->
+              match ty_opt with
+              | None -> ty
+              | Some t ->
+                  let+ () = check_can_be_initialized_with loc env t ty in
+                  t)
+        in
+        (* Rule LCFD: A local declaration shall not declare an identifier
+           which is already in scope at the point of declaration. *)
+        let+ () = check_var_not_in_env loc env x in
+        let env = SEnv.add_local x t ldk env in
+        (env, LE_Var x |> here)
+    | LDI_Tuple ([ ldi ], None) -> annotate_local_decl_item loc env ty ldk ldi
+    | LDI_Tuple (ldis, None) ->
+        let tys =
+          match (Types.get_structure env ty).desc with
+          | T_Tuple tys when List.compare_lengths tys ldis = 0 -> tys
+          | T_Tuple tys ->
+              fatal_from loc
+                (Error.BadArity
+                   ("tuple initialization", List.length tys, List.length ldis))
+          | _ -> conflict loc [ T_Tuple [] ] ty
+        in
+        let env, les =
+          List.fold_left2
+            (fun (env', les) ty' ldi' ->
+              let env', le = annotate_local_decl_item loc env' ty' ldk ldi' in
+              (env', le :: les))
+            (env, []) tys ldis
+        in
+        (env, LE_TupleUnpack (List.rev les) |> here)
+    | LDI_Tuple (_ldis, Some _t) ->
+        (* TODO: I don't know what to do in that case, for me the LRM is
+           ambiguous in this case. *)
+        assert false
+
+  let rec annotate_local_decl_item_uninit loc (env : env) ldi =
+    (* Here implicitely ldk=LDK_Var *)
+    let here s = add_pos_from loc s in
+    match ldi with
+    | LDI_Ignore _ -> (env, S_Pass |> here)
+    | LDI_Var (_, None) ->
+        fatal_from loc
+          (Error.NotYetImplemented "Variable declaration needs a type.")
+    | LDI_Var (x, Some t) ->
+        let+ () = check_var_not_in_env loc env x in
+        let t_struct = Types.get_structure env t in
+        ( SEnv.add_local x t LDK_Var env,
+          S_Assign (LE_Var x |> here, E_Unknown t_struct |> here) |> here )
+    | LDI_Tuple (ldis, None) ->
+        let env, ss =
+          list_fold_left_map (annotate_local_decl_item_uninit loc) env ldis
+        in
+        (env, stmt_from_list ss)
+    | LDI_Tuple (ldis, Some t) ->
+        let env, les =
+          list_fold_left_map
+            (fun env' -> annotate_local_decl_item loc env' t LDK_Var)
+            env ldis
+        in
+        let e = E_Unknown (Types.get_structure env t) |> here in
+        let ss = List.map (fun le -> S_Assign (le, e) |> here) les in
+        (env, stmt_from_list ss)
+
+  let rec annotate_stmt env return_type s =
     let () =
       if false then Format.eprintf "@[<3>Annotating@ @[%a@]@]@." PP.pp_stmt s
     in
-    let tr_desc d =
-      add_pos_from s d |> annotate_stmt tenv lenv |> fun ({ desc; _ }, lenv) ->
-      (desc, lenv)
-    in
-    let add_pos (desc, lenv) = (add_pos_from s desc, lenv) in
-    add_pos
-    @@
+    let here x = add_pos_from s x in
     match s.desc with
-    | S_Pass -> (S_Pass, lenv)
+    | S_Pass -> (s, env)
     | S_Then (s1, s2) ->
-        let s1, lenv = annotate_stmt tenv lenv s1 in
-        let s2, lenv = annotate_stmt tenv lenv s2 in
-        (S_Then (s1, s2), lenv)
+        let s1, env = try_annotate_stmt env return_type s1 in
+        let s2, env = try_annotate_stmt env return_type s2 in
+        (S_Then (s1, s2) |> here, env)
     | S_Assign (le, e) -> (
-        let t_e, e = annotate_expr tenv lenv e in
-        let reduced = setter_should_reduce_to_call_s tenv le e in
+        let t_e, e = annotate_expr env e in
+        let reduced = setter_should_reduce_to_call_s env le e in
         match reduced with
-        | Some { desc = s; _ } -> tr_desc s
+        | Some s -> annotate_stmt env return_type s
         | None ->
-            let lenv, le = annotate_lexpr tenv lenv le t_e in
-            (S_Assign (le, e), lenv))
-    | S_Call (name, args, named_args) ->
-        let arg_types, args =
-          List.map (annotate_expr tenv lenv) args |> List.split
-        in
-        let extra_nargs, name' =
-          FunctionRenaming.find_name tenv name arg_types
-        in
-        (S_Call (name', args, List.rev_append named_args extra_nargs), lenv)
-    | S_Return (Some e) ->
-        let _t_e', e' = annotate_expr tenv lenv e in
-        (* TODO: check that t_e <: return_type *)
-        (S_Return (Some e'), lenv)
-    | S_Return None ->
-        (* TODO: check return type is none *)
-        (S_Return None, lenv)
+            let le = annotate_lexpr env le t_e in
+            (S_Assign (le, e) |> here, env))
+    | S_Call (name, args, eqs) ->
+        let name, args, eqs = annotate_call (to_pos s) env name args eqs in
+        (* TODO: check that call does not returns anything. *)
+        (S_Call (name, args, eqs) |> here, env)
+    | S_Return e_opt -> (
+        (* Rule NYWH: A return statement appearing in a setter or procedure must
+           have no return value expression. *)
+        (* Rule PHNZ: A return statement appearing in a getter or function
+           requires a return value expression that type-satisfies the return
+           type of the subprogram. *)
+        match (return_type, e_opt) with
+        | None, Some _ | Some _, None ->
+            fatal_from s (Error.BadReturnStmt return_type)
+        | None, None -> (S_Return None |> here, env)
+        | Some t, Some e' ->
+            let t_e', e' = annotate_expr env e' in
+            let+ () = check_type_satisfies s env t_e' t in
+            (S_Return (Some e') |> here, env))
     | S_Cond (e, s1, s2) ->
-        let t_cond, e = annotate_expr tenv lenv e in
-        let+ () = check_type_satisfies e tenv t_cond t_bool in
-        let s1, lenv = try_annotate_stmt tenv lenv s1 in
-        let s2, lenv = try_annotate_stmt tenv lenv s2 in
-        (S_Cond (e, s1, s2), lenv)
+        let t_cond, e = annotate_expr env e in
+        let+ () = check_type_satisfies e env t_cond t_bool in
+        let s1 = try_annotate_block env return_type s1 in
+        let s2 = try_annotate_block env return_type s2 in
+        (S_Cond (e, s1, s2) |> here, env)
     | S_Case (e, cases) ->
-        let e = try_annotate_expr tenv lenv e in
-        let annotate_case (acc, lenv) case =
+        let t_e, e = annotate_expr env e in
+        let annotate_case (acc, env) case =
           let p, s = case.desc in
-          let s, lenv = try_annotate_stmt tenv lenv s in
-          (add_pos_from case (p, s) :: acc, lenv)
+          let p = annotate_pattern e env t_e p in
+          let s = try_annotate_block env return_type s in
+          (add_pos_from_st case (p, s) :: acc, env)
         in
-        let cases, lenv = List.fold_left annotate_case ([], lenv) cases in
-        (S_Case (e, List.rev cases), lenv)
+        let cases, env = List.fold_left annotate_case ([], env) cases in
+        (S_Case (e, List.rev cases) |> here, env)
     | S_Assert e ->
-        let t_e', e' = annotate_expr tenv lenv e in
-        let+ () = check_type_satisfies s tenv t_e' t_bool in
-        (S_Assert e', lenv)
-    | S_TypeDecl (x, t) ->
-        (s.desc, IMap.add x (get_structure tenv.globals t) lenv)
-    | S_While (e,s) ->
-        let t,e = annotate_expr tenv lenv e in
-        let+ () = check_type_satisfies e tenv t t_bool in
-        let s,lenv = try_annotate_stmt tenv lenv s in
-        S_While (e,s),lenv
-    | S_Repeat (s,e) ->
-        let s,lenv = try_annotate_stmt tenv lenv s in
-        let t,e = annotate_expr tenv lenv e in
-        let+ () = check_type_satisfies e tenv t t_bool in
-        S_Repeat (s,e),lenv
-    | S_For (id,e1,dir,e2,s) ->
-        let t1,e1 = annotate_expr tenv lenv e1
-        and t2,e2 = annotate_expr tenv lenv e2 in
-        let ty =
-          begin
-            let t1 = check_integer e1 t1
-            and t2 = check_integer e2 t2 in
-            match t1.desc,t2.desc with
-            | T_Int (Some cs1),T_Int (Some cs2)  ->
-                let cso =
-                  try
-                    let cs =
-                      match dir with
-                      | Up ->
-                          let i1 = min_constraints cs1
-                          and i2 = max_constraints cs2 in
-                          if i1 <= i2 then
-                            Constraint_Range (expr_of_int i1,expr_of_int i2)::
-                            cs1
-                          else cs1
-                      | Down ->
-                          let i1 = max_constraints cs1
-                          and i2 = min_constraints cs2 in
-                          if i2 <= i1 then
-                            Constraint_Range (expr_of_int i2,expr_of_int i1)::
-                            cs1
-                          else cs1 in
-                    Some cs
-                  with Exit -> None
-                in T_Int cso
-            | _,_ -> T_Int None
-          end |> add_pos_from s in
-        let lenv = IMap.add id ty lenv in
-        let s,lenv = try_annotate_stmt tenv lenv s in
-        S_For (id,e1,dir,e2,s),lenv
+        let t_e', e' = annotate_expr env e in
+        let+ () = check_type_satisfies s env t_e' t_bool in
+        (S_Assert e' |> here, env)
+    | S_While (e, s) ->
+        let t, e = annotate_expr env e in
+        let+ () = check_type_satisfies e env t t_bool in
+        let s = try_annotate_block env return_type s in
+        (S_While (e, s) |> here, env)
+    | S_Repeat (s, e) ->
+        let s = try_annotate_block env return_type s in
+        let t, e = annotate_expr env e in
+        let+ () = check_type_satisfies e env t t_bool in
+        (S_Repeat (s, e) |> here, env)
+    | S_For (id, e1, dir, e2, s) ->
+        let t1, e1 = annotate_expr env e1 and t2, e2 = annotate_expr env e2 in
+        let+ () = check_structure_integer s env t1 in
+        let+ () = check_structure_integer s env t2 in
+        let cs =
+          match
+            ( (Types.get_structure env t1).desc,
+              (Types.get_structure env t2).desc )
+          with
+          | T_Int None, T_Int _ | T_Int _, T_Int None -> None
+          | T_Int (Some cs1), T_Int (Some cs2) -> (
+              try
+                let bot_cs, top_cs =
+                  match dir with Up -> (cs1, cs2) | Down -> (cs2, cs1)
+                in
+                let bot = min_constraints env bot_cs
+                and top = max_constraints env top_cs in
+                if bot <= top then
+                  Some [ Constraint_Range (expr_of_int bot, expr_of_int top) ]
+                else Some cs1
+              with ConstraintMinMaxTop ->
+                (* TODO: this case is not specified by the LRM. *)
+                None)
+          | _ -> None
+          (* only happens in relaxed type-checking mode because of check_structure_integer earlier. *)
+        in
+        let ty = T_Int cs |> here in
+        let s =
+          let+ () = check_var_not_in_env s env id in
+          let env' = SEnv.add_local id ty LDK_Let env in
+          try_annotate_block env' return_type s
+        in
+        (S_For (id, e1, dir, e2, s) |> here, env)
+    | S_Decl (ldk, ldi, e_opt) -> (
+        match (ldk, e_opt) with
+        | _, Some e ->
+            let t_e, e = annotate_expr env e in
+            let env, le = annotate_local_decl_item s env t_e ldk ldi in
+            (* TODO:
+               - The initialization expression in a local constant declaration
+                 must be a compile-time-constant expression.
+               - A local storage element declared with constant is initialized
+                 with the value of its initialization expression during
+                 compilation.
+               - Initialization expressions in local constant declarations must
+                 be non-side-effecting.
+            *)
+            (S_Assign (le, e) |> here, env)
+        | LDK_Var, None ->
+            (* TODO *)
+            let env, s = annotate_local_decl_item_uninit s env ldi in
+            (s, env)
+        | (LDK_Constant | LDK_Let), None ->
+            (* by construction in Parser. *)
+            assert false)
 
+  and try_annotate_block env return_type s =
+    (*
+        See rule JFRD:
+           A local identifier declared with var, let or constant is in scope
+           from the point immediately after its declaration until the end of the
+           immediately enclosing block.
 
-  and try_annotate_stmt tenv lenv s =
-    best_effort (s, lenv) (fun (s, lenv) -> annotate_stmt tenv lenv s)
+        From that follows that we can discard the environment at the end of an
+        enclosing block.
+    *)
+    best_effort s (fun _ -> annotate_stmt env return_type s |> fst)
 
-  let annotate_func (tenv : tenv) (f : AST.func) : AST.func =
+  and try_annotate_stmt env return_type s =
+    best_effort (s, env) (fun _ -> annotate_stmt env return_type s)
+
+  let annotate_func (env : env) (f : AST.func) : AST.func =
     let () = if false then Format.eprintf "Annotating %s.@." f.name in
     (* Build typing local environment. *)
-    let lenv =
-      let one_arg acc (x, ty) =
-        IMap.add x (get_structure tenv.globals ty) acc
-      in
-      List.fold_left one_arg IMap.empty f.args
+    let env' = { env with local = SEnv.empty_local } in
+    let env' =
+      let one_arg env' (x, ty) = SEnv.add_local x ty LDK_Let env' in
+      List.fold_left one_arg env' f.args
     in
     (* Add dependently typed identifiers. *)
-    let add_dependently_typed_from_ty lenv ty =
+    let add_dependently_typed_from_ty env'' ty =
       match ty.desc with
       | T_Bits (BitWidth_Determined { desc = E_Var x; _ }, _) ->
-          if IMap.mem x lenv then lenv
-          else IMap.add x (T_Int None |> add_dummy_pos) lenv
-      | _ -> lenv
+          if
+            IMap.mem x env''.local.storage_types
+            || IMap.mem x env''.global.storage_types
+          then env''
+          else SEnv.add_local x (T_Int None |> add_dummy_pos) LDK_Let env''
+      | _ -> env''
     in
     (* Resolve dependently typed identifiers in the arguments. *)
-    let lenv =
-      let one_arg acc (_, ty) = add_dependently_typed_from_ty acc ty in
-      List.fold_left one_arg lenv f.args
+    let env' =
+      let one_arg env'' (_, ty) = add_dependently_typed_from_ty env'' ty in
+      List.fold_left one_arg env' f.args
     in
+    (*
     (* Resolve dependently typed identifiers in the result type. *)
-    let lenv =
+    let env' =
       match f.return_type with
-      | None -> lenv
-      | Some t -> add_dependently_typed_from_ty lenv t
+      | None -> env'
+      | Some t -> add_dependently_typed_from_ty env' t
     in
+    *)
     (* Annotate body *)
-    let body, _lenv = try_annotate_stmt tenv lenv f.body in
+    let body = try_annotate_block env' f.return_type f.body in
     (* Optionnally rename the function if needs be *)
-    let one_arg (_x, t) = get_structure tenv.globals t in
-    let args = List.map one_arg f.args in
-    let _, name = FunctionRenaming.find_name tenv f.name args in
-    let () =
-      if false then
-        Format.eprintf "Renaming decl of %s (%a) to %s.@." f.name
-          (Format.pp_print_list PP.pp_ty)
-          args name
+    let name =
+      let args = List.map snd f.args in
+      best_effort f.name
+        (either
+           (fun _ ->
+             let _, name, _ =
+               FunctionRenaming.find_name_strict dummy_annotated env f.name args
+             in
+             let () =
+               if false then
+                 Format.eprintf "Renaming decl of %s (%a) to %s.@." f.name
+                   (Format.pp_print_list PP.pp_ty)
+                   args name
+             in
+             name)
+           (fun _ ->
+             let _, name = FunctionRenaming.find_name env f.name args in
+             name))
     in
     { f with body; name }
 
-  let try_annotate_func tenv f = best_effort f (annotate_func tenv)
+  let try_annotate_func env f = best_effort f (annotate_func env)
 end
 
 module TypeCheck = Annotate (struct
@@ -1137,87 +1440,73 @@ end)
 (*                                                                            *)
 (******************************************************************************)
 
-let build_funcs genv : AST.t -> func_sig IMap.t * func_tr =
-  let one_func tr_table_ref = function
-    | D_Func { name; args; return_type; body = _; parameters = _ } ->
-        let args =
-          let one_arg (x, ty) = (x, get_structure genv ty) in
-          List.map one_arg args
-        and return_type =
-          match return_type with
-          | None -> None
-          | Some ty -> Some (get_structure genv ty)
-        in
-        let name' = FunctionRenaming.add_new_func tr_table_ref name args in
-        Some (name', (args, return_type))
-    | _ -> None
+let declare_one_func func_sig env =
+  let env, name' =
+    try FunctionRenaming.add_new_func env func_sig.name func_sig.args
+    with Error.ASLException e ->
+      if _warn then Error.eprintln e;
+      (env, func_sig.name)
   in
-  let one_func tr_table_ref f =
-    match Error.intercept (fun () -> one_func tr_table_ref f) () with
-    | Ok res -> res
-    | Error e ->
-        if _warn then
-          Format.eprintf
-            "@[<v 2>Ignoring type error:@ %a@;<1 -2>in func:@ @[<v>%a@]@]@."
-            Error.pp_error e PP.pp_t [ f ];
-        None
+  let () =
+    if false then
+      let open Format in
+      eprintf
+        "@[<hov>Adding function %s to env with@ return-type: %a@ and \
+         argtypes:@ %a@."
+        name' (pp_print_option PP.pp_ty) func_sig.return_type
+        (pp_print_list ~pp_sep:pp_print_space PP.pp_typed_identifier)
+        func_sig.args
   in
-  fun ast ->
-    let tr_table_ref = FunctionRenaming.new_tr_table () in
-    let funcs =
-      List.to_seq ast |> Seq.filter_map (one_func tr_table_ref) |> IMap.of_seq
-    in
-    let tr_table = FunctionRenaming.to_tr_table tr_table_ref in
-    let () =
-      if false then (
-        Format.eprintf "@[<v 2>Function env:@ ";
-        IMap.iter
-          (fun name li ->
-            List.iter
-              (fun (arg, name') ->
-                Format.eprintf "- @[<hv 2>%s (-> %s):@ @[<hv>%a@]@]@ " name
-                  name'
-                  (Format.pp_print_list ~pp_sep:Format.pp_print_space
-                     (fun f (_, t) -> PP.pp_ty f t))
-                  arg)
-              li)
-          tr_table;
-        Format.eprintf "@]@.")
-    in
-    (funcs, tr_table)
+  SEnv.add_subprogram name' (Env.ast_func_to_func_sig func_sig) env
 
-let reduce_genv : genv -> genv =
-  let should_reduce genv = function
-    | x, ({ desc = T_Named y; _ } as pos) -> (
-        let () = if false then Format.eprintf "Reducing genv at %S." x in
-        match IMap.find_opt y genv with
-        | None -> undefined_identifier pos y
-        | Some z -> Some (x, z))
-    | _ -> None
-  in
-  let rec reduce genv =
-    let edit_one (genv, _edited) (x, y) = (IMap.add x y genv, true) in
-    let genv, edited =
-      IMap.to_seq genv
-      |> Seq.filter_map (should_reduce genv)
-      |> Seq.fold_left edit_one (genv, false)
-    in
-    if edited then reduce genv else genv
-  in
-  reduce
+let declare_type name ty env =
+  match ty.desc with
+  | T_Enum ids ->
+      let env = SEnv.add_type name ty env in
+      let t = T_Named name |> add_pos_from ty in
+      let add_one_id env x =
+        env
+        |> SEnv.add_global_storage x t GDK_Constant
+        |> SEnv.add_global_constant x
+             (V_Int (IMap.cardinal env.global.constants_values))
+      in
+      List.fold_left add_one_id env ids
+  | _ -> SEnv.add_type name ty env
 
-let build_genv : AST.t -> genv =
-  let one_decl acc = function
-    | D_TypeDecl (name, ({ desc = T_Enum ids; _ } as ty)) ->
-        let acc = IMap.add name ty acc in
-        let id_type = T_Named name |> ASTUtils.add_dummy_pos in
-        let add_one_id acc x = IMap.add x id_type acc in
-        List.fold_left add_one_id acc ids
-    | D_TypeDecl (name, ty) | D_GlobalConst (name, ty, _) ->
-        IMap.add name ty acc
-    | _ -> acc
+let declare_global_constant name ty e env =
+  let env = SEnv.add_global_storage name ty GDK_Constant env in
+  let () = if false then Format.eprintf "Declaring %s@." name in
+  try
+    let v = reduce_constants env e in
+    SEnv.add_global_constant name v env
+  with Error.ASLException err ->
+    if _warn then Error.eprintln err;
+    env
+
+let build_global =
+  let def = function
+    | D_Func { name; _ }
+    | D_GlobalConst (name, _, _)
+    | D_TypeDecl (name, _)
+    | D_Primitive { name; _ } ->
+        name
   in
-  List.fold_left one_decl IMap.empty
+  let use =
+    let use_e e acc = ASTUtils.use_e acc e in
+    let use_ty _ty acc = acc (* TODO *) in
+    fun d ->
+      match d with
+      | D_GlobalConst (_, ty, e) -> ISet.empty |> use_e e |> use_ty ty
+      | D_TypeDecl (_, ty) -> use_ty ty ISet.empty
+      | D_Func _ | D_Primitive _ ->
+          ISet.empty (* TODO: pure functions that can be used in constants? *)
+  in
+  let process_one_decl = function
+    | D_Func func_sig | D_Primitive func_sig -> declare_one_func func_sig
+    | D_GlobalConst (x, ty, e) -> declare_global_constant x ty e
+    | D_TypeDecl (x, ty) -> declare_type x ty
+  in
+  ASTUtils.dag_fold def use process_one_decl
 
 (******************************************************************************)
 (*                                                                            *)
@@ -1225,24 +1514,25 @@ let build_genv : AST.t -> genv =
 (*                                                                            *)
 (******************************************************************************)
 
-let annotate_ast ast =
-  let globals = build_genv ast |> reduce_genv in
-  let funcs, func_tr = build_funcs globals ast in
-  let annotate_func =
-    TypeInferSilence.try_annotate_func { globals; funcs; func_tr }
-  in
+let annotate_ast ast env =
+  let env = build_global ast env in
+  let annotate_func = TypeInferSilence.try_annotate_func env in
   let one_decl = function D_Func f -> D_Func (annotate_func f) | d -> d in
-  List.map one_decl ast
+  (List.map one_decl ast, env)
 
-let type_check_ast strictness ast =
-  let globals = build_genv ast |> reduce_genv in
-  let funcs, func_tr = build_funcs globals ast in
-  let tenv = { globals; funcs; func_tr } in
+let type_check_ast strictness ast env =
+  let env = build_global ast env in
+  let () =
+    if false then
+      Format.eprintf "@[<v>Typing in env:@ %a@]@." Env.Static.PPEnv.pp_env env
+  in
   let annotate =
     match strictness with
     | `TypeCheck -> TypeCheck.annotate_func
     | `Warn -> TypeInferWarn.try_annotate_func
-    | `Silence -> TypeInferSilence.try_annotate_func
+    | `Silence ->
+        if _warn then TypeInferWarn.try_annotate_func
+        else TypeInferSilence.try_annotate_func
   in
-  let one_decl = function D_Func f -> D_Func (annotate tenv f) | d -> d in
-  List.map one_decl ast
+  let one_decl = function D_Func f -> D_Func (annotate env f) | d -> d in
+  (List.map one_decl ast, env)

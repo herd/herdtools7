@@ -27,12 +27,12 @@ end
 
 func main()
 begin
-  a = constructor('10101');
-  b = if get_b(a) == '010' then 1 else 0;
-  c = set_e(a, '0');
-  c_c = c.c;
-  d = if c.e == '0' then 1 else 0;
-  e = if c.c == '00101' then 1 else 0;
+  let a = constructor('10101');
+  let b = if get_b(a) == '010' then 1 else 0;
+  let c = set_e(a, '0');
+  let c_c = c.c;
+  let d = if c.e == '0' then 1 else 0;
+  let e = if c.c == '00101' then 1 else 0;
 end
 
 forall (

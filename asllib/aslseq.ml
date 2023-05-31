@@ -157,8 +157,9 @@ let () =
 
   let () =
     if args.print_typed then
-      let annotated_ast =
-        or_exit (fun () -> Typing.type_check_ast args.strictness ast)
+      let annotated_ast, _ =
+        or_exit (fun () ->
+            Typing.type_check_ast args.strictness ast Env.Static.empty)
       in
       Format.printf "@[<v 2>Typed AST:@ %a@]@." PP.pp_t annotated_ast
   in

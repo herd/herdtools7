@@ -150,10 +150,6 @@ module Make (C : Config) = struct
       | V.Val (Constant.Concrete i) -> V.Cst.Scalar.to_int i
       | v -> Warn.fatal "Cannot concretise symbolic value: %s" (V.pp_v v)
 
-    let v_to_bv = function
-      | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)) -> bv
-      | v -> Warn.fatal "Cannot construct a bitvector out of %s." (V.pp_v v)
-
     let datasize_to_machsize v =
       match v_as_int v with
       | 32 -> MachSize.Word
@@ -390,22 +386,6 @@ module Make (C : Config) = struct
       let* v = v_m >>= to_int_signed in
       write_loc MachSize.Quad loc v (use_ii_with_poi ii poi) >>! []
 
-    let replicate bv_m v_m =
-      let* bv = bv_m and* v = v_m in
-      let return_bv res =
-        V.Val (Constant.Concrete (ASLScalar.S_BitVector res)) |> return
-      in
-      match v_as_int v with
-      | 0 -> Asllib.Bitvector.of_string "" |> return_bv
-      | 1 -> return bv
-      | i ->
-          let bv = v_to_bv bv in
-          List.init i (Fun.const bv) |> Asllib.Bitvector.concat |> return_bv
-
-    let sign_extend v_m n_m =
-      let* v = v_m and* n = n_m in
-      M.op1 (Op.Sxt (datasize_to_machsize n)) v
-
     let uint bv_m = bv_m >>= to_int_unsigned
     let sint bv_m = bv_m >>= to_int_signed
     let processor_id (ii, _poi) () = return (V.intToV ii.A.proc)
@@ -466,23 +446,22 @@ module Make (C : Config) = struct
       let reg = T_Int None |> with_pos in
       let var x = E_Var x |> with_pos in
       let lit x = E_Literal (V_Int x) |> with_pos in
-      let bv x = T_Bits (BitWidth_Determined x, None) |> with_pos in
+      let bv x = T_Bits (BitWidth_Determined x, []) |> with_pos in
       let bv_var x = bv @@ var x in
       let bv_N = bv_var "N" in
       let bv_lit x = bv @@ lit x in
-      let mul x y = E_Binop (MUL, x, y) |> with_pos in
+      let bv_64 = bv_lit 64 in
       let t_named x = T_Named x |> with_pos in
       let getter = Asllib.ASTUtils.getter_name in
       let setter = Asllib.ASTUtils.setter_name in
       [
-        arity_one "read_register" [ reg ]
-          (return_one (bv_lit 64))
+        arity_one "read_register" [ reg ] (return_one bv_64)
           (read_register ii_env);
-        arity_two "write_register"
-          [ bv_lit 64; reg ]
-          return_zero (write_register ii_env);
-        arity_two "read_memory" [ reg; d ] (return_one d) (read_memory ii_env);
-        build_primitive "write_memory" [ reg; d; d ] return_zero
+        arity_two "write_register" [ bv_64; reg ] return_zero
+          (write_register ii_env);
+        arity_two "read_memory" [ bv_64; d ] (return_one bv_64)
+          (read_memory ii_env);
+        build_primitive "write_memory" [ bv_64; d; bv_64 ] return_zero
           (write_memory ii_env);
         arity_zero (getter "PSTATE")
           (return_one (t_named "ProcState"))
@@ -490,17 +469,10 @@ module Make (C : Config) = struct
         arity_one (setter "PSTATE")
           [ t_named "ProcState" ]
           return_zero (write_pstate_nzcv ii_env);
-        arity_zero (getter "SP_EL0") (return_one (bv_lit 64)) (read_sp ii_env);
-        arity_one (setter "SP_EL0") [ bv_lit 64 ] return_zero (write_sp ii_env);
-        arity_two "Replicate" [ bv_N; d ]
-          (return_one (bv (mul (var "N") (var "arg_1"))))
-          replicate;
+        arity_zero (getter "SP_EL0") (return_one bv_64) (read_sp ii_env);
+        arity_one (setter "SP_EL0") [ bv_64 ] return_zero (write_sp ii_env);
         arity_one "UInt" [ bv_N ] (return_one d) uint;
         arity_one "SInt" [ bv_N ] (return_one d) sint;
-        arity_two "SignExtend"
-          [ bv_var "M"; d ]
-          (return_one (bv_var "arg_1"))
-          sign_extend;
         arity_zero "ProcessorID" (return_one d) (processor_id ii_env);
         arity_two "CanPredictFrom" [ bv_N; bv_N ] (return_one bv_N)
           can_predict_from;
@@ -518,10 +490,7 @@ module Make (C : Config) = struct
         type scope = string * int
 
         let debug_value = V.pp_v
-        let is_undetermined = function
-          | V.Var _ -> true
-          | V.Val _ -> false
-
+        let is_undetermined = function V.Var _ -> true | V.Val _ -> false
         let v_of_int = V.intToV
         let v_of_parsed_v = v_of_parsed_v
         let v_to_int = v_to_int
@@ -547,11 +516,13 @@ module Make (C : Config) = struct
       end in
       let module Config = struct
         let type_checking_strictness : Asllib.Typing.strictness =
-          if false then `Warn else `Silence
+          if C.variant (Variant.ASLType `Warn) then `Warn
+          else if C.variant (Variant.ASLType `TypeCheck) then `TypeCheck
+          else `Silence
+
         let unroll =
-          match C.unroll with
-          | None -> Opts.unroll_default `ASL
-          | Some u -> u
+          match C.unroll with None -> Opts.unroll_default `ASL | Some u -> u
+
         module Instr = Asllib.Instrumentation.NoInstr
       end in
       let module ASLInterpreter = Asllib.Interpreter.Make (ASLBackend) (Config)
@@ -566,6 +537,14 @@ module Make (C : Config) = struct
           let patches = build `ASLv1 "patches.asl"
           and custom_implems = build `ASLv1 "implementations.asl"
           and shared = build `ASLv0 "shared_pseudocode.asl" in
+          let shared =
+            List.filter
+              AST.(
+                function
+                | D_Func { name = "Zeros" | "Ones" | "Replicate"; _ } -> false
+                | _ -> true)
+              shared
+          in
           let shared =
             Asllib.ASTUtils.patch
               ~patches:(List.rev_append custom_implems patches)

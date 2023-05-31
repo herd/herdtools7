@@ -155,10 +155,20 @@ let as_chunks = true
 
 let ast (lexer : lexbuf -> token) (lexbuf : lexbuf) : AST.t =
   if as_chunks then
+    let fname = lexbuf.Lexing.lex_curr_p.Lexing.pos_fname in
     let asts =
       Seq.fold_left
-        (fun k chunk ->
-          let ast = ast_chunk (Lexing.from_string chunk) in
+        (fun k (start, chunk) ->
+          if false then
+            Printf.eprintf "Chunk (line %d, file %s) ***\n%s\n***\n%!" start
+              fname chunk;
+          let lexbuf = Lexing.from_string chunk in
+          let lcp = lexbuf.Lexing.lex_curr_p in
+          let lcp =
+            { lcp with Lexing.pos_fname = fname; Lexing.pos_lnum = start }
+          in
+          let lexbuf = { lexbuf with lex_curr_p = lcp } in
+          let ast = ast_chunk lexbuf in
           ast :: k)
         [] (Splitasl.split lexbuf)
     in
