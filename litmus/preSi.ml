@@ -1355,12 +1355,14 @@ module Make
           O.o "}" ;
           O.o "" ;
           O.o "static void vars_free(vars_t *_vars) {" ;
-          let open OutUtils in
-          List.iter
-            (fun (n,_) ->
-              O.fi "free_pages(_vars->%s);" (fmt_code n))
-            test.T.code ;
-          O.o "}" ;        
+          if do_self then begin
+              let open OutUtils in
+              List.iter
+                (fun (n,_) ->
+                  O.fi "free_pages(_vars->%s);" (fmt_code n))
+                test.T.code
+            end ;
+          O.o "}" ;
           ()
         end ;
         O.o "" ;
