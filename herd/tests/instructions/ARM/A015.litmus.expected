@@ -1,0 +1,10 @@
+Test A015 Required
+States 1
+0:R1=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:R1=0)
+Observation A015 Always 1 0
+Hash=a9ec21f13bd133372402c68bc771bc63
+

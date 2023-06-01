@@ -1,0 +1,13 @@
+ARM A015
+
+Stable=IP
+
+(* Test BX instruction *)
+{ 0:R0 = P0:foo}
+
+P0;
+  BX R0;
+  MOV R1, #1;
+foo:        ;
+
+forall (0:R1 = 0)

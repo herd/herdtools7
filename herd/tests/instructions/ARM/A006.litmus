@@ -1,0 +1,10 @@
+ARM A006
+
+(*Tests parsing of IP register - otherwise known as R12*)
+{ 0:R12 = x; x=1}
+
+P0;
+LDR R1, [R12];
+LDR R2, [IP];
+
+forall (0:R1=1 /\ 0:R2=1)

@@ -1,0 +1,9 @@
+ARM A011
+
+(* Test MOVT Instr - simply moving 1 into upper bits *)
+{ 0:R0 = 0 }
+
+P0;
+MOVT R0, #1;
+
+forall 0:R0=0x10000

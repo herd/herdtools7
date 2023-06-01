@@ -54,3 +54,34 @@ module No (I:sig type instr end) = struct
       end)
 end
 
+module
+  WithNop
+    (I:sig
+         type instr
+         val nop : instr
+         val compare : instr -> instr -> int
+       end) =
+  struct
+    type t = I.instr
+
+    let fail msg =
+      Warn.fatal "Functionality %s not implemented for -variant self" msg
+
+    let compare = I.compare
+    let eq i1 i2 = I.compare i1 i2 = 0
+    let pp _ = fail ""
+    let tr i =
+      fail ("litteral instruction " ^ InstrLit.pp i)
+    let nop = Some I.nop
+    let is_nop i = eq i I.nop
+    let is_overwritable _ = false
+    let can_overwrite _ = false
+    let get_exported_label _ = None
+
+    module Set =
+      MySet.Make
+        (struct
+          type t = I.instr
+          let compare = I.compare
+        end)
+  end

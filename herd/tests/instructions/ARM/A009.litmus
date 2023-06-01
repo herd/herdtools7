@@ -1,0 +1,9 @@
+ARM A009
+
+(* Tests LDM (2-reg variant IB) *)
+{ int x[3] = {1,2,3}; 0:R0 = x}
+
+P0;
+  LDMIB R0, { R1, R2 };
+
+forall (0:R1 = 2/\ 0:R2 = 3)

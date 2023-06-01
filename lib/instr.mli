@@ -31,3 +31,12 @@ module type S = sig
 end
 
 module No : functor (I:sig type instr end) -> S with type t = I.instr
+
+module WithNop :
+functor
+  (I:sig
+       type instr
+       val nop : instr
+       val compare : instr -> instr -> int
+     end)
+-> S with type t = I.instr

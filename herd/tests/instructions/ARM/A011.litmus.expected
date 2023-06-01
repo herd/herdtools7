@@ -1,0 +1,10 @@
+Test A011 Required
+States 1
+0:R0=65536;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:R0=65536)
+Observation A011 Always 1 0
+Hash=6c83921ab28398e13c6a9d52e8461687
+

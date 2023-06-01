@@ -1,0 +1,12 @@
+ARM A004
+
+(* Test ORR instruction arm*)
+{ 0:R2 = 1; 0:R5 = 1; 0:R8 = 0; 0:R11= 0; }
+
+P0;
+ORR R1, R2, #1;
+ORR R4, R5, #0;
+ORR R7, R8, #1;
+ORR R10,R11,#0;
+
+forall (0:R1 = 1 /\ 0:R4 = 1 /\ 0:R7 = 1 /\ 0:R10=0)

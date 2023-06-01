@@ -1,0 +1,10 @@
+ARM A008
+
+Stable=R0,R1,R2,R3
+(* Tests LDM (3-reg variant) *)
+{ int x[3] = {1,2,3}; 0:R0 = x}
+
+P0;
+  LDM R0, { R1, R2, R3 };
+
+forall (0:R1 = 1 /\ 0:R2 = 2 /\ 0:R3 = 3)
