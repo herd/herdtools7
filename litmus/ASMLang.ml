@@ -384,7 +384,15 @@ module RegMap = A.RegMap)
                 (A.reg_to_string reg)
                 (match init_val reg t with
                 | None -> ""
-                | Some v -> sprintf " = %s" (compile_val v)))
+                | Some v ->
+                    begin
+                      match v with
+                      | Constant.Symbolic _ ->
+                          sprintf " = (%s)%s"
+                            (CType.dump ty) (compile_val v)
+                      | _ ->
+                          sprintf " = %s" (compile_val v)
+                    end))
           t.Tmpl.stable ;
 
         if O.cautious then begin
