@@ -5,10 +5,11 @@
 static void record_fault(who_t *w, unsigned long pc, unsigned long esr) {
 #ifdef SEE_FAULTS
   th_faults_info_t *th_flts = &th_faults[w->instance][w->proc];
+  labels_t *lbls = &vars_ptr[w->instance]->labels;
   fault_info_t flt;
   unsigned long far;
 
-  flt.instr_symb = get_instr_symb_id(pc);
+  flt.instr_symb = get_instr_symb_id(lbls, pc);
   if (get_far(esr, &far)) {
     flt.data_symb = idx_addr((intmax_t *)far, vars_ptr[w->instance]);
   } else {
@@ -36,7 +37,8 @@ static void fault_handler(struct pt_regs *regs,unsigned int esr) {
 
   record_fault(w, regs->pc, esr);
 #ifdef PRECISE
-  regs->pc = (u64)label_ret[w->proc];
+  labels_t *lbls = &vars_ptr[w->instance]->labels;
+  regs->pc = (u64)lbls->ret[w->proc];
 #else
 #ifdef FAULT_SKIP
   regs->pc += 4;

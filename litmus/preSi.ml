@@ -80,7 +80,8 @@ module Make
 
     let do_label_init = not (Label.Full.Set.is_empty CfgLoc.label_init)
 
-    let do_ascall = Cfg.ascall || Cfg.is_kvm || do_label_init
+    let do_ascall = Cfg.ascall || Cfg.is_kvm || do_label_init ||
+                      Cfg.variant Variant_litmus.Self
 
     let do_precise = Precision.is_fatal Cfg.precision
 
@@ -162,6 +163,7 @@ module Make
         List.exists
           (fun (_,o,_) -> Misc.is_some o)
           (U.get_faults test)
+      let need_labels test = do_precise || Misc.consp CfgLoc.labels || see_faults test
 
 (***************)
 (* File header *)
@@ -264,7 +266,7 @@ module Make
         O.o "" ;
         O.o "/* Full memory barrier */" ;
         UD.dump_mbar_def () ;
-        let dump_find_ins = do_self || CfgLoc.need_prelude in
+        let dump_find_ins = do_self || CfgLoc.need_prelude || do_precise || Misc.consp CfgLoc.labels in
         if dump_find_ins then begin
           ObjUtil.insert_lib_file O.o "_find_ins.c" ;
           O.o ""
@@ -272,16 +274,18 @@ module Make
         if do_self then begin
           Insert.insert O.o "self.c" ;
           O.o "" ;
-          if Cfg.is_kvm then begin
-            Insert.insert O.o "kvm-self.c" ;
-            O.o ""
-          end
+          if Cfg.is_kvm then
+            Insert.insert O.o "kvm-self.c"
+          else
+            Insert.insert O.o "presi-self.c" ;
+          O.o "" ;
         end ;
         if CfgLoc.need_prelude then begin
           ObjUtil.insert_lib_file O.o "_prelude_size.c"
         end ;
         if do_label_init then begin
           O.o "/* Code analysis */" ;
+
           O.o "#define SOME_LABELS 1" ;
           O.o "" ;
           O.o "typedef struct {" ;
@@ -344,7 +348,6 @@ module Make
                match Cfg.precision with
                | Fatal ->
                   O.o "#define PRECISE 1" ;
-                  O.o "static ins_t *label_ret[NTHREADS];" ;
                   O.o ""
                | Skip ->
                   O.o "#define FAULT_SKIP 1" ;
@@ -362,7 +365,23 @@ module Make
 
              let faults = U.get_faults test in
              begin match faults with
-             | [] -> if do_precise then insert_ins_ops ()
+             | [] ->
+                if do_precise then begin
+                    insert_ins_ops () ;
+                    if do_dynalloc then begin
+                        O.o "static vars_t **vars_ptr;" ;
+                        O.o "" ;
+                        O.o "static void alloc_see_faults(void) {" ;
+                        O.oi "vars_ptr = malloc_check(NEXE*sizeof(*vars_ptr));" ;
+                        O.o "}" ;
+                        O.o "" ;
+                        O.o "static void free_see_faults(void) {" ;
+                        O.oi "free(vars_ptr);" ;
+                        O.o "}"
+                      end
+                    else
+                      O.o "static vars_t *vars_ptr[NEXE];"
+                  end
              | _::_ ->
                 O.o "#define SEE_FAULTS 1" ;
                 O.o "" ;
@@ -620,6 +639,13 @@ module Make
 
 (* Fault types *)
       let dump_fault_type test =
+        if need_labels test then begin
+            O.o "typedef struct {" ;
+            List.iter (fun (p,lbl) -> O.fi "ins_t *code_P%d_%s;"  p lbl) CfgLoc.labels ;
+            O.fi "ins_t *ret[N];" ;
+            O.o "} labels_t;" ;
+            O.o ""
+          end ;
         if see_faults test then begin
             O.f "#define %-25s 0" (SkelUtil.instr_symb_id "UNKNOWN") ;
             (* Define indices for labels *)
@@ -635,21 +661,11 @@ module Make
             List.iter (fun (_,lbl) -> O.fi "\"%s\"," lbl ) CfgLoc.labels ;
             O.o "};" ;
             O.o "" ;
-            begin match CfgLoc.labels with
-            | [] -> ()
-            | _ ->
-               O.o "typedef struct {" ;
-               List.iter (fun (p,lbl) -> O.fi "ins_t *code_P%d_%s;"  p lbl) CfgLoc.labels ;
-               O.o "} labels_t;" ;
-               O.o "" ;
-               O.o "static labels_t labels;" ;
-               O.o ""
-            end ;
-            O.o "static int get_instr_symb_id(const unsigned long pc) {" ;
+            O.o "static int get_instr_symb_id(labels_t *lbls, const unsigned long pc) {" ;
             List.iter
               (fun (p,lbl) ->
                 let flbl = sprintf "P%d_%s" p lbl in
-                O.fi "if (pc == (unsigned long)labels.code_%s)" flbl ;
+                O.fi "if (pc == (unsigned long)lbls->code_%s)" flbl ;
                 O.fii "return %s;" (SkelUtil.instr_symb_id flbl))
               CfgLoc.labels ;
             O.fi "return %s;" (SkelUtil.instr_symb_id "UNKNOWN") ;
@@ -732,6 +748,7 @@ module Make
             O.o "typedef struct {" ;
             dump_vars_loc locs ;
             if do_self then dump_vars_code (T.get_nprocs test) ;
+            if need_labels test then O.oi "labels_t labels;" ;
             O.o "} vars_t;"
         end ;
         O.o "" ;
@@ -1319,9 +1336,10 @@ module Make
           O.f "#define VOFF %d" voff ;
         end ;
         O.o "" ;
-        if Cfg.is_kvm && (some_vars test || do_self) then begin
-          let has_user = Misc.consp procs_user in
+        if some_vars test || do_self then begin
           O.o "static void vars_init(vars_t *_vars,intmax_t *_mem) {" ;
+          if Cfg.is_kvm then begin
+          let has_user = Misc.consp procs_user in
           if some_vars test then begin
               O.oi "const size_t _sz = LINE/sizeof(intmax_t);";
               O.oi "pteval_t *_p;" ;
@@ -1338,7 +1356,8 @@ module Make
               end ;
               O.oi "_mem += _sz ;")
             test.T.globals ;
-          if has_user then O.oi "flush_tlb_all();" ;
+          if has_user then O.oi "flush_tlb_all();"
+          end ;
           if do_self then begin
               let open OutUtils in
               List.iter
@@ -1347,8 +1366,13 @@ module Make
                     (fmt_code_size n) (fmt_code n) (A.Out.get_nrets t) ;
                   O.fi "_vars->%s = prelude_size((ins_t *)%s);"
                     (fmt_prelude n) (fmt_code n);
-                  O.fi "_vars->%s = memalign_pages(LINE, _vars->%s);"
-                    (fmt_code n) (fmt_code_size n))
+                  if Cfg.is_kvm then
+                    O.fi "_vars->%s = memalign_pages(LINE, _vars->%s);"
+                      (fmt_code n) (fmt_code_size n)
+                  else
+                    O.fi "_vars->%s = mmap_exec(_vars->%s);"
+                      (fmt_code n) (fmt_code_size n)
+                )
                 test.T.code
             end ;
           O.o "}" ;
@@ -1358,7 +1382,11 @@ module Make
               let open OutUtils in
               List.iter
                 (fun (n,_) ->
-                  O.fi "free_pages(_vars->%s);" (fmt_code n))
+                  if Cfg.is_kvm then
+                    O.fi "free_pages(_vars->%s);" (fmt_code n)
+                  else
+                    O.fi "munmap_exec(_vars->%s, _vars->%s);" (fmt_code n)
+                      (fmt_code_size n))
                 test.T.code
             end ;
           O.o "}" ;
@@ -1461,6 +1489,11 @@ module Make
         if do_self then
           O.fii "code_init(%s, %s, _vars->%s);" (LangUtils.code_fun_cpy proc)
             (OutUtils.fmt_code proc) (OutUtils.fmt_code_size proc) ;
+        if need_labels test then begin
+            if proc = 0 then
+            O.oii "init_labels(_vars);" ;
+            O.oii "barrier_wait(_b);"
+          end ;
         (* Initialize them *)
         List.iter
           (fun a ->
@@ -1729,6 +1762,40 @@ module Make
           O.o "}" ;
           O.o ""
         end ;
+        if need_labels test then begin
+            O.o "static void init_labels(vars_t *_vars) {" ;
+            if do_precise || Misc.consp CfgLoc.labels then
+              O.fi "labels_t *lbls = &_vars->labels;" ;
+            List.iter (fun (p,lbl) ->
+                let off = U.find_label_offset p lbl test in
+                let lhs = sprintf "lbls->code_P%d_%s" p lbl in
+                let proc = if do_self then
+                             sprintf "_vars->%s" (LangUtils.code_fun p)
+                           else
+                             LangUtils.code_fun p in
+                let rhs =
+                  sprintf "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,0)+%d"
+                    proc proc off in
+                O.fi "%s = %s;" lhs rhs)
+              CfgLoc.labels ;
+            if do_precise then begin
+                List.iter
+                  (fun (p,(t,_)) ->
+                    let proc =
+                      if do_self then
+                        sprintf "_vars->%s" (LangUtils.code_fun p)
+                      else
+                        LangUtils.code_fun p in
+                    let rhs = sprintf
+                                "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,%d)"
+                                proc proc
+                                (A.Out.get_nnops t-1) in
+                    O.fi "lbls->ret[%d] = %s;" p rhs)
+                  test.T.code
+              end ;
+            O.o "}" ;
+            O.o ""
+          end ;
         O.o "inline static int do_run(thread_ctx_t *_c, param_t *_p,global_t *_g) {" ;
         if not do_ascall then begin match faults with
         | [] -> ()
@@ -1810,35 +1877,6 @@ module Make
         O.oi "return _ok;" ;
         O.o "}" ;
         O.o "" ;
-        if T.has_asmhandler test && not (T.has_defaulthandler test) then
-          O.o "static void init_labels(void) { }"
-        else if Cfg.is_kvm then begin
-          let init_rets () =
-            if do_precise then begin
-              List.iter
-                (fun (p,(t,_)) ->
-                  let rhs = sprintf
-                      "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,%d)"
-                      (LangUtils.code_fun p)
-                      (LangUtils.code_fun p)
-                      (A.Out.get_nnops t-1) in
-                  O.fi "label_ret[%d] = %s;" p rhs)
-                test.T.code
-            end in
-          O.o "static void init_labels(void) {" ;
-          if see_faults test then
-            List.iter (fun (p,lbl) ->
-                let off = U.find_label_offset p lbl test in
-                let lhs = sprintf "labels.code_P%d_%s" p lbl
-                and rhs =
-                  sprintf "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,0)+%d"
-                    (LangUtils.code_fun p) (LangUtils.code_fun p) off in
-                O.fi "%s = %s;" lhs rhs)
-              CfgLoc.labels ;
-          init_rets () ;
-          O.o "}" ;
-          O.o ""
-        end ;
         ()
 
 (********)
@@ -2114,14 +2152,13 @@ module Make
         dump_run_def env test some_ptr stats procs_user ;
         dump_zyva_def doc.Name.name env test db procs_user ;
         dump_prelude_def doc test ;
+        O.o "static int feature_check(void) {" ;
+        if do_self then
+          O.oi "cache_line_size = getcachelinesize();" ;
         if Cfg.is_kvm then begin
-          O.o "static int feature_check(void) {" ;
-          if do_self then
-            O.oi "cache_line_size = getcachelinesize();" ;
           match db with
           | None ->
              O.oi "return 1;" ;
-             O.o "}"
           | Some db ->
              let open DirtyBit in
              let to_check,msg  =
@@ -2149,10 +2186,12 @@ module Make
                   "puts(\"Test %s, hardware management of %s not available on this system\\n\");"
                   doc.Name.name msg
              end ;
-             O.oi "return 0;" ;
-             O.o "}" ;
-             O.o ""
-          end ;
+             O.oi "return 0;"
+          end
+        else
+          O.oi "return 1;" ;
+        O.o "}" ;
+        O.o "" ;
         dump_main_def doc env test stats ;
         ()
 

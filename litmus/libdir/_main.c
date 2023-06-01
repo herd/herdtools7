@@ -34,7 +34,7 @@ int RUN(int argc,char **argv,FILE *out) {
 #ifdef DYNALLOC
 #ifdef HAVE_FAULT_HANDLER
   alloc_fault_handler();
-#ifdef SEE_FAULTS
+#if defined(SEE_FAULTS) || defined(PRECISE)
   alloc_see_faults();
 #endif
 #endif
@@ -50,9 +50,7 @@ int RUN(int argc,char **argv,FILE *out) {
 #endif
   init_getinstrs();
   init_global(glo_ptr);
-#ifdef KVM
   if (!feature_check()) return -1;
-#endif
 #ifdef OUT
 #ifdef HAVE_TIMEBASE
   const int delta_tb = DELTA_TB;
@@ -103,7 +101,6 @@ int RUN(int argc,char **argv,FILE *out) {
     arg[id].g = glo_ptr;
   }
 #ifdef KVM
-  init_labels();
   on_cpus(zyva, arg);
 #else
   for (int id=0; id < AVAIL ; id++) launch(&th[id],zyva,&arg[id]);
@@ -130,7 +127,7 @@ int RUN(int argc,char **argv,FILE *out) {
   free_global(glo_ptr);
 #ifdef DYNALLOC
 #ifdef HAVE_FAULT_HANDLER
-#ifdef SEE_FAULTS
+#if defined(SEE_FAULTS) || defined(PRECISE)
   free_see_faults();
 #endif
   free_fault_handler();

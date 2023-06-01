@@ -30,6 +30,7 @@ typedef void FILE;
 
 #else
 #include <pthread.h>
+#include <string.h>
 #endif
 
 /********/
@@ -123,5 +124,15 @@ typedef struct {
 } parse_param_t;
 
 void parse_param(char *prog,parse_param_t *p,int sz,char **argv) ;
+
+#ifndef KVM
+
+/********************/
+/* presi self alloc */
+/********************/
+void *mmap_exec(size_t sz) ;
+void munmap_exec(void *p,size_t sz) ;
+
+#endif
 
 #endif
