@@ -2127,7 +2127,6 @@ module Make
                if db.some_hd then Some "0b0010","dirty bit"
                else if db.some_ha then  Some "0b0001","access flag"
                else None,"" in
-             O.o "static int feature_check(void) {" ;
              (* Check if hardware features are present *)
              List.iter
                (fun (p,name) ->
