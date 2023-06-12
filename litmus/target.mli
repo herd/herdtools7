@@ -30,4 +30,5 @@ module type S = sig
   val dump_v : V.v -> string
   val dump_init_val : V.v -> string
   val has_fault_handler : t -> bool
+  val find_offset : Label.t -> t -> int
 end

@@ -370,6 +370,8 @@ include Pseudo.Make
         | LL _
         | SC _ -> 1
 
+      let size_of_ins _ = 4
+
       let fold_labels k f = function
         | B lbl
         | BC (_,_,_,lbl)
@@ -377,10 +379,12 @@ include Pseudo.Make
           -> f k lbl
         | _ -> k
 
-      let map_labels f = function
-        | B lbl -> B (f lbl)
-        | BC (c,r1,r2,lbl) -> BC (c,r1,r2,f lbl)
-        | BCZ (c,r,lbl) -> BCZ (c,r,f lbl)
+      let map_labels f =
+        let open BranchTarget in
+        function
+        | B lbl -> B (as_string_fun f lbl)
+        | BC (c,r1,r2,lbl) -> BC (c,r1,r2,as_string_fun f lbl)
+        | BCZ (c,r,lbl) -> BCZ (c,r,as_string_fun f lbl)
         | ins -> ins
 
     end)

@@ -135,6 +135,8 @@ include Pseudo.Make (struct
 
   let parsed_tr ast = ast
   let get_naccesses _ = -1
+
+  let size_of_ins _ = 4
   let fold_labels k _f _i = k
   let map_labels _f i = i
 end)

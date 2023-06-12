@@ -23,3 +23,5 @@ val pp : t -> string
 
 val tgt2next : t -> Label.next
 val tgt_cons : Label.next -> t -> Label.next list 
+
+val as_string_fun : (t -> t) -> (Label.t -> Label.t)

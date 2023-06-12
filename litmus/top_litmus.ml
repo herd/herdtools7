@@ -242,6 +242,7 @@ end = struct
              Warn.warn_always
                "%stest with more threads (%i) than available (%i) is compiled"
                (Pos.str_pos0 name.Name.file) nprocs navail
+
       let compile
             parse count_procs compile allocate
             cycles hash_env
@@ -344,7 +345,6 @@ end = struct
         struct
           type ins = A'.instruction
           include DumpCAst
-          let find_offset _ _ _ = Warn.user_error "No label value in C"
           let code_exists _ _ = assert false
           let exported_labels_code _ = Label.Full.Set.empty
           let from_labels _ _ = []
@@ -546,19 +546,6 @@ end = struct
              | UseArch.Gen ->
                 assert false
              end
-          (*
-  let module Arch' = AArch64GenArch.Make(OC)(V) in
-  let module LexParse = struct
-  type instruction = Arch'.pseudo
-  type token = AArch64GenParser.token
-  module Lexer = AArch64GenLexer.Make(LexConfig)
-  let lexer = Lexer.token
-  let parser = AArch64GenParser.main
-  end in
-  let module Compile = AArch64GenCompile.Make(V)(OC) in
-  let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
-  X.compile
-           *)
           | `MIPS ->
              let module V = Int64Constant.Make(MIPSBase.Instr) in
              let module Arch' = MIPSArch_litmus.Make(OC)(V) in

@@ -2,6 +2,8 @@ AArch64 A251
 {
   0:X8=P1:L0;
   0:X9=P1:L1;
+  ins_t 0:X1;
+  ins_t 0:X2;
 }
  P0          | P1         ;
  LDR W1,[X8] |  B L2      ;

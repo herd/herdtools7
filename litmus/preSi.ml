@@ -274,12 +274,11 @@ module Make
           O.o "" ;
           if Cfg.is_kvm then begin
             Insert.insert O.o "kvm-self.c" ;
-            O.o "" ;
+            O.o ""
           end
         end ;
         if CfgLoc.need_prelude then begin
-          O.o "static size_t prelude_size(ins_t *p) { return find_ins(nop,p,0)+1; }" ;
-          O.o "" ;
+          ObjUtil.insert_lib_file O.o "_prelude_size.c"
         end ;
         if do_label_init then begin
           O.o "/* Code analysis */" ;
@@ -1827,7 +1826,7 @@ module Make
           O.o "static void init_labels(void) {" ;
           if see_faults test then
             List.iter (fun (p,lbl) ->
-                let off = U.find_label_offset p lbl test+1 in (* +1 because of added inital nop *)
+                let off = U.find_label_offset p lbl test in
                 let lhs = sprintf "labels.code_P%d_%s" p lbl
                 and rhs =
                   sprintf "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,0)+%d"

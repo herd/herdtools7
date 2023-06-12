@@ -404,7 +404,7 @@ module Make(V:Constant.S)(C:Config) =
         A.RegSet.of_list (A.regs_interval r1)
     | _ -> A.RegSet.empty
 
-    let compile_ins is_before ins = do_compile_ins is_before ins
+    let compile_ins tr_lab ins = do_compile_ins tr_lab ins
 
     let branch_diffw r1 r2 lab k = cmpw r1 r2::bcc tr_nolab Ne lab::k
     let branch_neq r i lab k = cmpwi r i::bcc tr_nolab Ne lab::k

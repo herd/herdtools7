@@ -199,7 +199,6 @@ module Top(O:Config)(Tar:Tar.S) = struct
       struct
         type ins = CBase.instruction
         include DumpCAst
-        let find_offset _ _ _ =  Warn.user_error "No label value in C"
         let code_exists _ _ = false
         let exported_labels_code _ = Label.Full.Set.empty
         let from_labels _ _ = []

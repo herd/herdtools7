@@ -60,7 +60,8 @@ module type S = sig
     with
       type test =  (A.fullstate, P.code list, C.prop, A.location, A.V.v, FaultType.t)  MiscParser.result
 
-  val find_offset : P.code list -> Proc.t -> string -> int
+  val find_offset_out : Proc.t -> Label.t -> t -> int
+
   val code_exists : (P.ins -> bool) -> t -> bool
   val get_exported_labels_init_code :
       A.state -> P.code list ->  Label.Full.Set.t
@@ -122,14 +123,14 @@ struct
       t.code
 
   let partition_asmhandlers t =
-    let _,ok,no =
+    let ok,no =
       List.fold_left
-        (fun (i,ok,no) (_,(c,_)) ->
+        (fun (ok,no) (p,(c,_)) ->
           if A.Out.has_asmhandler c then
-            i+1,i::ok,no
+            p::ok,no
           else
-            i+1,ok,i::no)
-        (0,[],[]) t.code in
+            ok,p::no)
+        ([],[]) t.code in
     ok,no
 
   module D =
@@ -173,7 +174,14 @@ struct
           end)
     end
 
-  let find_offset = P.find_offset
+  let find_offset_out p lbl t =
+    let rec find = function
+      | [] -> assert false
+      | (q,(code,_))::rem ->
+         if Proc.equal p q then
+           A.Out.find_offset lbl code
+         else find rem in
+    find t.code
 
   let code_exists p t =
     let src = t.src in

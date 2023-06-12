@@ -22,6 +22,7 @@ type func = Main | FaultHandler
 type proc = Proc.t * string list option * func
 
 let proc_num (p,_,_) = p
+let proc_func (_,_,k) = k
 
 let pp_proc (p,ao,f) =
   sprintf

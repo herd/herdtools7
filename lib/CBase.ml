@@ -344,6 +344,7 @@ include Pseudo.Make
         fun i -> get_rec 0 i
 
 
+      let size_of_ins _ = 1
       let fold_labels acc _f _ins = acc
       let map_labels _f ins = ins
     end)

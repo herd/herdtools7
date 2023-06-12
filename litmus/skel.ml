@@ -1398,8 +1398,8 @@ module Make
             O.o "static size_t code_size(ins_t *p,int skip) { return find_ins(getret(),p,skip)+1; }" ;
             O.o ""
           end ;
-          O.o "static size_t prelude_size(ins_t *p) { return find_ins(nop,p,0)+1; }" ;
-          O.o ""
+          ObjUtil.insert_lib_file O.o "_prelude_size.c" ;
+          ()
         end ;
         UD.dump_init_getinstrs test ;
         O.f "static void init(ctx_t *_a%s) {"

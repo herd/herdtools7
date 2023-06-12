@@ -38,3 +38,7 @@ and tgt_cons t1 = function
   | Offset _ -> [Label.Any]
   
                                       
+let as_string_fun f s =
+  match f (Lbl s) with
+  | Lbl s -> s
+  | Offset _ -> s (* Offset not supported, forget about it *)
