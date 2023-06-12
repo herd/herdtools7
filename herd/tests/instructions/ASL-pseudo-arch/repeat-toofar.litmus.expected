@@ -1,0 +1,12 @@
+Test repeat-toofar Required
+States 3
+0:T0.0.s=0;
+0:T0.0.s=1;
+0:T0.0.s=3;
+Ok
+Witnesses
+Positive: 3 Negative: 0
+Condition forall (true)
+Observation repeat-toofar Always 3 0
+Hash=a9fe742e84b4416ea3c7af1a584e0004
+

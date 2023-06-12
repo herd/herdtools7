@@ -1,0 +1,12 @@
+Test while-toofar Required
+States 3
+0:T0.0.s=0;
+0:T0.0.s=1;
+0:T0.0.s=3;
+Ok
+Witnesses
+Positive: 3 Negative: 0
+Condition forall (true)
+Observation while-toofar Always 3 0
+Hash=86819245101076b2c307999d38623c84
+

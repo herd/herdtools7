@@ -1,0 +1,15 @@
+ASL while2
+
+{ }
+
+func main()
+begin
+  repeat
+    while FALSE do
+      z = 2 ;
+    end
+    x = 2;
+  until x >= 2 ;
+end
+
+forall (0:z=0 /\ 0:x=2)

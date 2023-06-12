@@ -1,0 +1,32 @@
+ASL for-toofar
+
+{
+x = 0;
+0:X1=x;
+}
+
+func T0(x::bits(32))
+begin
+  var s = 0;
+  let imax = UInt(read_memory(x, 32));
+  for i = 1 to imax do
+    s = s + i;
+  end
+end
+
+func T1(x::bits(32))
+begin
+  for k = 1 to 3 do
+    write_memory(x,32,k[2:0]);
+  end
+end
+
+func main()
+begin
+  let x = read_register(1);
+
+  T0(x);
+  T1(x);
+end
+
+locations [0:T0.0.s;]

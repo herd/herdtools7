@@ -1,0 +1,15 @@
+ASL while1
+
+{ }
+
+func main()
+begin
+  x = 3 ;
+  y = 0 ;  
+  while x > 0 do
+    y = y + 2 ;
+    x = x - 1 ;
+  end
+end
+
+forall (0: y = 6 /\ 0:x=0)
