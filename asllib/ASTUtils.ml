@@ -1,15 +1,18 @@
 open AST
+
 module ISet = Set.Make (String)
 
 module IMap : sig
   include Map.S with type key = identifier
 
   val of_list : (key * 'a) list -> 'a t
+
 end = struct
   include Map.Make (String)
 
   let of_list li =
     List.fold_left (fun acc (key, value) -> add key value acc) empty li
+
 end
 
 let dummy_pos = Lexing.dummy_pos
@@ -109,6 +112,10 @@ let used_identifiers, used_identifiers_stmt =
     | S_Cond (e, s1, s2) -> use_s (use_s (use_e acc e) s2) s1
     | S_Case (e, cases) -> List.fold_left use_case (use_e acc e) cases
     | S_TypeDecl _ -> acc
+    | S_For (_,e1,_,e2,s) ->
+        use_s (use_e (use_e acc e1) e2) s
+    | S_While (e,s) | S_Repeat (s,e) ->
+        use_s (use_e acc e) s
   and use_case acc { desc = _p, stmt; _ } = use_s acc stmt
   and use_le acc _le = acc
   and use_decl acc = function

@@ -150,6 +150,10 @@ Monad type:
       fun eiid_next ->
         eiid_next, (Evt.singleton (v, [], E.empty_event_structure), None)
 
+    let warnT msg (v : 'a) : 'a t =
+      fun eiid_next ->
+        eiid_next, (Evt.singleton (v, [VC.Warn msg], E.empty_event_structure), None)
+
     let ignore _ = unitT ()
 
     let unitcodeT (v : 'a) : 'a code =
@@ -167,7 +171,7 @@ Monad type:
       (Evt.singleton (v, [VC.Warn e], E.empty_event_structure), None)
 
   (* This very special combinator permits to get monad m's result,
-   while postponing the usaga of corresponding event structure.
+   while postponing the usage of corresponding event structure.
    It proves convenient to express complex dependencies.
    Not compatible with speculation *)
 
@@ -208,7 +212,7 @@ Monad type:
       let sact = set_stds sact
       and sspec = Misc.map_opt set_stds sspec in
       eiid,(sact,sspec)
-      
+
     let (=**=) = E.(=**=)
     let (=*$=) = E.(=*$=)
     let (=$$=) = E.(=$$=)
@@ -1650,7 +1654,7 @@ Monad type:
       List.fold_left
         (fun k (_,vcl,evts) -> (vcl,evts)::k)
         k (Evt.elements es)
-      
+
     let force_once (m : 'a t) : 'a t =
       let res = ref None in
       let new_m eiid =

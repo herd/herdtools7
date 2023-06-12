@@ -40,6 +40,9 @@ module type Config = sig
 
   val type_checking_strictness : Typing.strictness
   (** The strictness of type-checking. *)
+
+  val unroll : int
+  (** Loop unrolling threshold *)
 end
 
 module Make (B : Backend.S) (C : Config) : S with module B = B

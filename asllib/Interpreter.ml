@@ -38,6 +38,8 @@ module type Config = sig
   module Instr : Instrumentation.INSTR
 
   val type_checking_strictness : Typing.strictness
+
+  val unroll : int
 end
 
 module Make (B : Backend.S) (C : Config) = struct
@@ -141,7 +143,25 @@ module Make (B : Backend.S) (C : Config) = struct
   }
   (** The global part of the ElabModel. *)
 
-  type env = { global : genv; local : B.value IMap.t; scope : B.scope }
+  type int_stack = int list
+
+  let tick_unroll s =
+    match s with
+    | [] -> assert false
+    | x::xs ->
+        let x = x-1 in
+        x,x::xs
+
+  let tick_push xs = C.unroll::xs
+  and tick_push_bis xs = C.unroll-1::xs
+  and tick_pop = function
+     | [] -> assert false
+     | _::xs -> xs
+
+  (** Stack of ints, for limiting loop unrolling *)
+
+  type env =
+      { global : genv; local : B.value IMap.t; scope : B.scope; unroll : int_stack }
   (** [env] shoud contain all the informations of the semantics elab model. *)
 
   (** [add_primitives primitives funcs] augments [funcs] with [primitives]. *)
@@ -365,6 +385,9 @@ module Make (B : Backend.S) (C : Config) = struct
 
   let write_identifier_m env x m =
     B.bind_seq env (fun env -> write_identifier env x m)
+
+  let is_defined env id =
+    IMap.mem id env.global.consts || IMap.mem id env.local
 
   (** [eval_expr env e] is the monadic evaluation  of [e] in [env]. *)
   let rec eval_expr (env : env) (e : expr) : B.value B.m =
@@ -630,11 +653,7 @@ module Make (B : Backend.S) (C : Config) = struct
         return (Returning [ m ]) |: Rule.ReturnOne
     | S_Return None -> return (Returning []) |: Rule.ReturnNone
     | S_Then (s1, s2) ->
-        B.bind_seq (eval_stmt env s1) (fun r1 ->
-            match r1 with
-            | Continuing env -> eval_stmt env s2
-            | Returning vs -> return (Returning vs))
-        |: Rule.Then
+        eval_seq env s1 s2 |:  Rule.Then
     | S_Call (name, args, named_args) ->
         let vargs = List.map (eval_expr env) args
         and nargs = List.map (fun (x, e) -> (x, eval_expr env e)) named_args in
@@ -651,6 +670,100 @@ module Make (B : Backend.S) (C : Config) = struct
         B.bind_ctrl (B.choice v (return true) (return false)) @@ fun b ->
         if b then continue env
         else fatal_from e @@ Error.AssertionFailed e |: Rule.Assert
+    | S_While (e,body) ->
+       let env = { env with unroll = tick_push env.unroll; } in
+       eval_loop true env e body
+    | S_Repeat (body,e) ->
+       eval_seq_kont env body
+         (fun env ->
+           let env = { env with unroll=tick_push_bis env.unroll; } in
+           eval_loop false env e body)
+    | S_For (id,e1,dir,e2,s) ->
+        let* v1  = eval_expr env e1 and* v2 = eval_expr env e2 in
+        (* It is an error to redefine an identifier *)
+        assert (not (is_defined env id)) ; (* By typing *)
+        let undet = B.is_undetermined v1 || B.is_undetermined v2 in
+        let* env = write_identifier env id (B.return v1) in
+        let env =
+          if undet then { env with unroll = tick_push_bis env.unroll; }
+          else env in
+        B.bind_seq
+          (eval_for undet env id v1 dir v2 s)
+          (fun r ->
+            match r with
+            | Returning _  -> return r
+            | Continuing env ->
+                (* Destroy `id` binding *)
+                let env =
+                  { env with
+                    local = IMap.remove id env.local;
+                    unroll = if undet then tick_pop env.unroll else env.unroll;
+                  } in
+                return (Continuing env))
+
+  and eval_loop is_while env e s =
+    B.delay
+      (eval_expr env e >>= if is_while then return else B.unop NOT)
+      (fun b mb ->
+        let stop,env =
+          if B.is_undetermined b then
+            let u,unroll = tick_unroll env.unroll in
+            if u <= 0 then
+              true,{ env with unroll = tick_pop unroll; }
+            else
+              false,{ env with unroll; }
+          else false,env in
+        if stop then
+          B.bind_ctrl
+            mb
+            (fun _ ->
+              B.warnT
+                "Loop unrolling reached limit"
+                (Continuing env))
+        else
+          B.bind_ctrl
+            (B.choice mb
+               (return
+                  (fun env ->
+                    eval_seq_kont env s
+                      (fun env -> eval_loop is_while env e s)))
+               (return continue))
+            (fun f -> f env))
+
+  and eval_for undet (env:env) id v dir v2 s =
+    B.bind_ctrl
+      (B.choice
+         (let* () = B.on_read_identifier id env.scope v in
+         let op = match dir with Up -> LT | Down -> GT in
+         B.binop op v2 v)
+         (return continue)
+         (return
+            (fun env ->
+              (if undet then eval_unroll else eval_seq_kont)
+                env s
+                (fun env ->
+                  let* v =
+                    let* () = B.on_read_identifier id env.scope v in
+                    let op = match dir with Up -> PLUS | Down -> MINUS in
+                    B.binop op v (B.v_of_int 1) in
+                  let* env = write_identifier env id (return v) in
+                  eval_for undet env id v dir v2 s))))
+      (fun k -> k env)
+
+  and eval_unroll env s k =
+    let u,unroll = tick_unroll env.unroll in
+    if u <= 0 then
+      B.warnT "For loop unrolling reached limit" (Continuing env)
+    else eval_seq_kont { env with unroll; } s k
+
+  and eval_seq env (s1:stmt) (s2:stmt) =
+    eval_seq_kont env s1 (fun env -> eval_stmt env s2)
+
+  and eval_seq_kont env s1 k2 =
+    B.bind_seq (eval_stmt env s1) (fun r1 ->
+      match r1 with
+      | Continuing env -> k2 env
+      | Returning vs -> return (Returning vs))
 
   (** [eval_func genv name pos args nargs] evaluate the function named [name]
       in the global environment [genv], with [args] the formal arguments, and
@@ -667,7 +780,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | Some (Func (r, { args = arg_decls; body; _ })) -> (
         let scope = (name, !r) in
         let () = r := !r + 1 in
-        let env = { global = genv; scope; local = IMap.empty } in
+        let env = { global = genv; scope; local = IMap.empty; unroll=[]; } in
         let one_arg envm (x, _) m = write_identifier_m envm x m in
         let envm = List.fold_left2 one_arg (return env) arg_decls args in
         let one_narg envm (x, m) =

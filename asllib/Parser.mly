@@ -421,7 +421,7 @@ let unimplemented_stmt(x) == x ; pass
 
 let assign(x, y) == ~=x ; EQ ; ~=y ; <S_Assign>
 
-let direction == TO | DOWNTO
+let direction == | TO; { AST.Up } | DOWNTO; { AST.Down }
 
 let alt == annotated (
   | WHEN; ~=pattern_list; ioption(WHERE; expr); COLON; ~=stmt_list; <>
@@ -439,10 +439,10 @@ let stmt ==
     | terminated_by(END,
       | IF; e=expr; THEN; s1=stmt_list; s2=s_else;    <S_Cond>
       | CASE; ~=expr; OF; alt=list(alt);              <S_Case>
-
+      | WHILE; ~=expr; DO; ~=stmt_list;               <S_While>
+      | FOR; id=IDENTIFIER; EQ; e1=expr;
+        d=direction; e2=expr; DO; s=stmt_list;        <S_For>
       | unimplemented_stmt(
-        | FOR; IDENTIFIER; EQ; expr; direction; expr; DO; stmt_list;    <>
-        | WHILE; expr; DO; stmt_list;                                   <>
         | TRY; stmt_list; CATCH; nonempty_list(catcher); otherwise_opt; <>
       )
     )
@@ -454,10 +454,10 @@ let stmt ==
 
       | assign(lexpr, expr)
       | assignment_keyword; assign(decl_item, expr)
+      | REPEAT; ~=stmt_list; UNTIL; ~=expr;       < S_Repeat >
 
       | unimplemented_stmt(
         | THROW; ioption(expr);                                               <>
-        | REPEAT; stmt_list; UNTIL; expr;                                     <>
         (* We have to manually expend the list otherwise we have a shift/reduce conflict. *)
         | VAR; IDENTIFIER;                            as_ty;                  <>
         | VAR; IDENTIFIER; COMMA; nclist(IDENTIFIER); as_ty;                  <>

@@ -518,6 +518,10 @@ module Make (C : Config) = struct
         type scope = string * int
 
         let debug_value = V.pp_v
+        let is_undetermined = function
+          | V.Var _ -> true
+          | V.Val _ -> false
+
         let v_of_int = V.intToV
         let v_of_parsed_v = v_of_parsed_v
         let v_to_int = v_to_int
@@ -526,7 +530,9 @@ module Make (C : Config) = struct
         let bind_ctrl = M.bind_ctrl_seq_data
         let prod = M.( >>| )
         let choice = choice
+        let delay m k = M.delay_kont "ASL" m k
         let return = M.unitT
+        let warnT = M.warnT
         let on_write_identifier = on_write_identifier ii_env
         let on_read_identifier = on_read_identifier ii_env
         let binop = binop
@@ -542,7 +548,10 @@ module Make (C : Config) = struct
       let module Config = struct
         let type_checking_strictness : Asllib.Typing.strictness =
           if false then `Warn else `Silence
-
+        let unroll =
+          match C.unroll with
+          | None -> Opts.unroll_default `ASL
+          | Some u -> u
         module Instr = Asllib.Instrumentation.NoInstr
       end in
       let module ASLInterpreter = Asllib.Interpreter.Make (ASLBackend) (Config)
