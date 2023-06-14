@@ -917,3 +917,14 @@ let group_by_int get_key env =
        (IntMap.fold
           (fun _ env_p k -> List.rev env_p::k)
           m []))
+
+
+(* concat_map function taken from List module in the stdlib. Function only appears in Ocaml 4.10
+   , implemented in misc so that the codebase can still compile with Ocaml 4.08.1*)
+let concat_map f l =
+  let rec aux f acc = function
+    | [] -> List.rev acc
+    | x :: l ->
+        let xs = f x in
+        aux f (List.rev_append xs acc) l
+  in aux f [] l
