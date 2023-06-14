@@ -78,75 +78,201 @@ module Make
     | D_atom of extr*(atom option) * string
     | Ext of extr * string
     | Lrs of string
+
+    (*
+    ------------------------------------------
+    helper functions
+    ------------------------------------------
+    *)
+    let match_var v: edge_ir union =
+      (* Exp, Imp and PTE have been included as placeholders. *)
+      let open A in
+      let open E in
+      let matching =
+        match v with
+        | "R"-> [D (R, v)]
+        | "W" -> [D (W, v)]
+        | "M" -> [Ext (Irr, v)]
+        | "L" -> [Atom ((A.Rel None,None), v)]
+        | "P" -> [Atom ((A.plain,None), v)]
+        | "A" -> [Atom ((A.Acq None,None), v)]
+        | "Q" -> [Atom ((A.AcqPc None,None), v)]
+        | "T" -> [Atom ((A.Tag, None), v)]
+        | "Exp" -> [Atom ((A.Pte Read, None), v)]
+        | "Imp" -> [Imp v]
+        | "PTE" -> [PTE v]
+        | "po" -> [Tedge ((Po (Same,Irr,Irr)), v)]
+        | "lrs" -> [Lrs v ]
+        | "addr" -> [Tedge ((Dp ((A.D.ADDR,A.NoCsel), Same, Irr)), v)]
+        | "ctrl" -> [Tedge ((Dp ((A.D.CTRL,A.NoCsel), Same, Irr)), v)]
+        | "data" -> [Tedge ((Dp ((A.D.DATA,A.NoCsel), Same, Irr)), v)]
+        | "DMB.ISH" -> [Tedge ((Fenced (Barrier (DMB (ISH,FULL)) ,Same, Irr, Irr)), v)]
+        | "DMB.OSH" -> [Tedge ((Fenced (Barrier (DMB (OSH,FULL)),Same, Irr, Irr)), v) ]
+        | "DMB.SY" -> [Tedge ((Fenced (Barrier (DMB (SY,FULL)),Same, Irr, Irr)), v) ]
+        | "DSB.ISH" -> [Tedge ((Fenced (Barrier (DSB (ISH,FULL)),Same, Irr, Irr)), v)]
+        | "DSB.OSH" -> [Tedge ((Fenced (Barrier (DSB (OSH,FULL)),Same, Irr, Irr)), v) ]
+        | "DSB.SY" -> [Tedge ((Fenced (Barrier (DSB (SY,FULL)),Same, Irr, Irr)), v)  ]
+        | "ISB" -> [Tedge ((Fenced (Barrier (ISB),Same, Irr, Irr)), v)  ]
+        | "rfi" -> [Tedge ((Rf Int), v)]
+        | "lxsx" -> [Tedge (Rmw A.LrSc, "lrsc")]
+        | "co" -> [
+          Tedge ((Ws Int), v);
+          Tedge ((Ws Ext), v)
+        ]
+        | "fr" -> [
+          Tedge ((Fr Int), v);
+          Tedge ((Fr Ext), v)
+        ]
+        | "fri" -> [Tedge ((Fr Int), v)]
+        | "fre" -> [Tedge ((Fr Ext), v)]
+        | "rfe" -> [Tedge ((Rf Ext), v)]
+        | "coe" -> [Tedge ((Ws Ext), v)]
+        | "coi" -> [Tedge ((Ws Int), v)]
+        | "amo" -> [
+          Tedge (Rmw A.Swp, "Amo.Swp");
+          Tedge (Rmw A.Cas, "Amo.Cas");
+
+          Tedge (Rmw (LdOp A_ADD), "Amo.LdAdd");
+          Tedge (Rmw (LdOp A_EOR), "Amo.LdEor");
+          Tedge (Rmw (LdOp A_SET), "Amo.LdSet");
+          Tedge (Rmw (LdOp A_CLR), "Amo.LdClr");
+
+          Tedge (Rmw (StOp A_ADD), "Amo.StAdd");
+          Tedge (Rmw (StOp A_EOR), "Amo.StEor");
+          Tedge (Rmw (StOp A_SET), "Amo.StSet");
+          Tedge (Rmw (StOp A_CLR), "Amo.StClr")
+        ]
+        | _ -> [Empty v]
+      in Union matching
+
+    let check_dirfroma letl a =
+      match letl with
+      | Some (A.Acq None,None) | Some (A.AcqPc None,None) -> Dir R
+      | Some (A.Rel None,None) -> Dir W
+      | _ -> a
+
+    let pp_exp a =
+      let open AST in
+      match a with
+      | Konst _ -> "Konst"
+      | Tag _ -> "Tag"
+      | Var _ -> "Var"
+      | Op1 _ -> "Op1"
+      | Op _ -> "Op"
+      | App _ -> "App"
+      | Bind _ -> "Bind"
+      | BindRec _  -> "BindRec"
+      | Fun _ -> "Fun"
+      | ExplicitSet _ -> "ExplicitSet"
+      | Match _ -> "Match"
+      | MatchSet _ -> "MatchSet"
+      | Try _ -> "Try"
+      | If _ -> "If"
+
+    let pp_op2 a =
+      let open AST in
+      match a with
+      | Union -> "Union"
+      | Inter -> "Inter"
+      | Diff -> "Diff"
+      | Seq -> "Seq"
+      | Cartesian -> "Cartesian"
+      | Add -> "Add"
+      | Tuple -> "Tuple"
+
+    let pp_op1 a =
+      let open AST in
+      match a with
+      | Plus -> "Plus"
+      | Star -> "Star"
+      | Opt -> "Opt"
+      | Comp -> "Comp"
+      | Inv -> "Inv"
+      | ToId -> "ToId"
+
+    let pp_edge_ir a =
+      match a with
+      | Tedge _ -> "tedge"
+      | D _ -> "D"
+      | Atom _ -> "Atom"
+      | Empty _ -> "Empty"
+      | Imp _ -> "Imp"
+      | PTE _ -> "PTE"
+      | D_atom _ -> "D_atom"
+      | Ext _ -> "ext"
+      | Lrs _ -> "lrs"
+
     let empty_expr = Empty ""
 
+    (* ir, sequence and inter helper functions*)
     let make_sequence expl =
       Sequence expl
-    let make_intersection exp =
+    let intersection_singleton exp =
       Intersection [exp]
+    let concatenate_sequences (Sequence s1) (Sequence s2) =
+      Sequence (s1@s2)
+    let ir_single_inter: var intersection -> ir = fun inter -> Union [ Sequence [ inter ] ]
+    let ir_single_var: var -> ir = fun var -> ir_single_inter (Intersection [ var ])
+    let union_concat_map (f: 'a -> 'b union) (Union xs: 'a union): 'b union =
+      let f' x = let Union ys = f x in ys in
+      Union (Misc.concat_map f' xs)
+    let union_map f (Union xs): 'b union =
+      let f' x = let ys = f x in ys in
+      Union (List.map f' xs)
+    let rec union_fold_cross l f =
+      match l with
+        | [] -> [[]]
+        | hd::tl ->
+          let Union expanded_hd = f hd in
+          let expanded_tl = union_fold_cross tl f in
+          Misc.concat_map (fun hd_item ->
+            List.map (fun tl_item ->
+              hd_item::tl_item
+            ) (expanded_tl)
+          ) (expanded_hd)
 
-       (* 
-       ---------------------------------------------------------------
-       Printing functions
-       --------------------------------------------------------------- 
-       *)
-    let rec pp_relaxations (tree : let_statements) =
-      (* Pretty prints the given list of let statements as DIY relaxations
-        Inputs:
-          - tree: the list of let statements to pretty print, of type ast
-        Outputs: None
-        Side effects: Prints the DIY relaxation to the console
-      *)
-      let tree = var_to_edge tree in
-      let f expl =
-        try
-          let edge = matcher expl in
-          let edge = listofnode edge in
-          let edge = List.map expand_fencedp edge in
-          List.iter (fun e ->
-            match e with
-            | _::[] -> printf "%s " (String.concat "," (List.map E.pp_edge e))
-            | _::_ -> printf "[%s] " (String.concat "," (List.map E.pp_edge e))
-            | [] -> raise (Misc.Fatal "Cannot have empty edge")
-            ) edge;
-        with
-          | NotImplemented msg -> if O.verbose > 0 then eprintf "%s\n" msg;
-      in
-      try
-      List.iter (fun b -> 
-        let (_,p) = (List.find (fun (name,_) -> String.equal name b) tree) in
-        let Union p = p in
-        List.iter f p
-        ) O.lets_to_print
-      with
-      | Not_found -> raise (Misc.Fatal "let statements that were asked for are not in cat file");
+    let rec fold_cross l f =
+      match l with
+        | [] -> [[]]
+        | hd::tl ->
+          let expanded_hd = f hd in
+          let expanded_tl = fold_cross tl f in
+          Misc.concat_map (fun hd_item ->
+            List.map (fun tl_item ->
+              hd_item::tl_item
+            ) (expanded_tl)
+          ) (expanded_hd)
+    let match_inter (Union expl) =
+      match expl with
+      | h::h2::[] -> begin
+        match h,h2 with
+        | D (R,_), Atom ((A.Tag, None),_) -> D_atom (Dir R, Some (A.Tag, None), "tag read")
+        | _ -> raise (NotImplemented "inter not implemented in matcher")
+      end
+      | h::h2::h3::[] -> begin
+        match h,h2,h3 with
+        | D (R,_), PTE _, Imp _ -> D_atom (Dir R, Some (A.Pte A.Read, None), "ImpPTE Read")
+        | D (R,_), Atom ((A.Tag, None),_), Imp _->D_atom (Dir R, Some (A.Tag, None), "ImpTag Read")
+        | _ -> raise (NotImplemented "inter not implemented in matcher")
+      end
+      | _ -> raise (NotImplemented "inter not implemented in matcher")
 
-    and pp_tree (tree: let_statements) : unit =
-      (* This function takes a list of let statements, in the form
-      of string * expression, and prints the expanded tree of the cat file.
-      Inputs:
-        - tree: A list of let statements, as ast type.
-      Outputs: 
-        - None
-      Side effects: The function prints the expanded tree of the cat file.
-    *)
-      let pp_intersection (Intersection exp) =
-        match exp with
-        | h:: [] -> sprintf "%s" h;
-        | h::t -> sprintf "(%s)" (String.concat "&" (h::t));
-        | [] -> raise (Misc.Fatal "Intersection cannot have an empty list") in
-      let pp_sequence (Sequence expl) =
-        sprintf "%s" (String.concat ";" (List.map (fun a -> pp_intersection a) expl)); in
-      let pp (name, Union ins) =
-        printf "\n\n(%s)\n  |" name;
-        printf "%s" (String.concat "\n  |" (List.map (fun a -> pp_sequence a) ins)); in
-      List.iter pp tree
+    let unroll_inter expr : var intersection =
+      let open AST in
+        let rec f l =
+          match l with
+          | Op (_,Inter, expl) -> Misc.concat_map f expl
+          | Var (_,var) -> [var]
+          | _ -> raise (Misc.Fatal "operation in intersection not supported") in
+        match expr with
+        | Op (_,Inter, exp) -> Intersection (Misc.concat_map f exp)
+        | _ -> raise (Misc.Fatal "non intersection passed to unroll inter function")
       (*
     ------------------------------------------
       Parse AST and make into custom type
     ------------------------------------------   
     *)
-    and get_ins ins =
+    let get_ins ins =
       (* Returns the name and expression of the given AST instruction
       Inputs:
         - ins: the AST instruction to extract the name and expression from
@@ -161,13 +287,19 @@ module Make
       | Let (_, (_,Pvar (Some varname),expression) :: _) -> varname,expression
       | _ -> raise (NotImplemented "instruction not supported" )
 
-    and inline_vars varname tree expression =
+    let expand_var tree (a,var) =
+      (* compare a single AST variable and compare to all let statements. If a match is found, return that expression*)
+        let open AST in
+        let is_var (name, _) = String.equal name var in
+        match List.find_opt is_var tree with
+        | Some (_,exp) -> exp
+        | None -> Var (a,var)
+    let rec inline_vars varname tree expression =
       (*identify any vars that are defined as let statements and implement them into AST*)
       let open AST in
       match expression with
-      | Op (a, op, expl) -> begin
-        (Op (a, op, List.map (inline_vars varname tree) expl))
-      end
+      | Op (a, op, expl) ->
+        Op (a, op, List.map (inline_vars varname tree) expl)
       | Op1 (a, op, exp) -> Op1 (a, op, inline_vars varname tree exp)
       | Var (a, var) -> begin
         (* checking a variable against the name of its let statement allows
@@ -177,66 +309,56 @@ module Make
         let br = expand_var tree (a,var) in
         match br with
           | Var (_,_) -> br
-          | Op (_, _, _) -> begin
-            let a = inline_vars varname tree br in
-            a
-          end
+          | Op (_, _, _) -> inline_vars varname tree br
           | _ -> expression
       end
-      | App (_,_,exp2) -> inline_vars varname tree exp2 (*at the moment, only dealing with exp1 = range, where we can ignore it*)
+      | App (_,exp1,exp2) -> begin
+        match exp1 with
+        | Var ( _, "range") ->inline_vars varname tree exp2
+        | _ -> raise (Misc.Fatal "functions other than range currently not supported")
+        end
       | _ -> raise (Misc.Fatal (sprintf "%s: expression not supported" (pp_exp expression)) )
 
-    and expand_var tree (a,var) =
-    (* compare a single AST variable and compare to all let statements. If a match is found, return that expression*)
-      let open AST in
-      let is_var (name, _) = String.equal name var in
-      match List.find_opt is_var tree with
-      | Some (_,exp) -> exp
-      | None -> Var (a,var)
-
-    and var_to_edge tree =
-      (* translate variables in let statements to edge_ir type
-          Inputs:
-            - tree: list of let statemenets
-          Outputs: list of let statements with var replaced by edge_ir in the ir type
-        *)
-        let edges_of_sequence expl =
-          List.concat_map
-          (fun (Sequence seq) ->
-            try
-              List.map make_sequence (fold_cross seq apply_match_var)
-            with
-              | NotImplemented msg -> if O.verbose > 0 then eprintf "%s" msg; []
-          )
-          expl in
-        let edges_of_union let_name =
-          let (name,p) = (List.find (fun (name,_) -> String.equal name let_name) tree) in
-          let Union p = p in
-          name,Union (edges_of_sequence p) in
-        try
-          List.map edges_of_union O.lets_to_print
-        with
-        | Not_found -> raise (Misc.Fatal (sprintf "let statements that were asked for are not in cat file"))
-  
-    and apply_match_var a : edge_ir list =
+    let rec apply_match_var a : edge_ir union =
       match a with
       | Intersection (h::[]) -> begin (* single variables *)
         match_var h
       end
       | Intersection (h::t) -> begin (* Intersections *)
-        let inter_list = List.map make_intersection (h::t) in
-        let new_inters = fold_cross inter_list apply_match_var in
-        List.map match_inter new_inters
+        let inter_list = union_map intersection_singleton (Union (h::t)) in
+        let new_inters = union_map apply_match_var inter_list in
+        union_map match_inter new_inters
       end
       | _ -> raise (Misc.Fatal "cannot have empty intersection")
+
+    let var_to_edge tree =
+      (* translate variables in let statements to edge_ir type
+        Inputs:
+          - tree: list of let statemenets
+        Outputs: list of let statements with var replaced by edge_ir in the ir type
+      *)
+      let edges_of_sequence expl =
+        (fun (Sequence seq) ->
+          try
+            Union (List.map make_sequence (union_fold_cross seq apply_match_var))
+          with
+            | NotImplemented msg -> if O.verbose > 0 then eprintf "%s" msg; Union []
+        )
+        expl in
+      let edges_of_union let_name =
+        let (name,p) = (List.find (fun (name,_) -> String.equal name let_name) tree) in
+        name, union_concat_map edges_of_sequence p in
+      try
+        List.map edges_of_union O.lets_to_print
+      with
+      | Not_found -> raise (Misc.Fatal (sprintf "let statements that were asked for are not in cat file"))
+
       (*
        ---------------------------------------------------------------
        Expand sequences and replace non-primitive variables
        --------------------------------------------------------------- 
 *)
-
-
-    and apply_expand tree : let_statements =
+    let rec apply_expand tree : let_statements =
       (* Expand operations in AST and translate AST to internal representation
       Input:
       - tree : (var * AST.exp) list
@@ -246,13 +368,13 @@ module Make
       let f (name, instr) =
         match instr with
         | AST.Op (_,AST.Seq,_) | AST.Op (_,AST.Inter,_) ->
-          name, Union (expand instr)
+          name, expand instr
         | AST.Op (_,AST.Union,expl) ->
-          name, Union (List.concat_map expand expl)
+          name, union_concat_map expand (Union expl)
         | _ -> raise (Misc.Fatal (sprintf "Expression not supported: %s" (pp_exp instr)))
         in
       List.map f tree
-    and expand_expression input_item : var intersection list list=
+    and expand_expression input_item : ir =
       (* Expand a chosen expression, unrolling intersections, expanding unions and extracting variables from operations
         Inputs:
         - input_item: expression to expand (AST.exp)
@@ -261,18 +383,17 @@ module Make
         *)
       let open AST in
       match input_item with
-      | Op (_,AST.Union, expl) -> List.concat_map expand_expression expl  (* union of variables *)
+      | Op (_,AST.Union, expl) -> union_concat_map expand_expression (Union expl)  (* union of variables *)
       | Op1 (_,AST.ToId, expl) -> expand_expression expl
-      | Op (_,AST.Inter, _) -> [[unroll_inter input_item]]
+      | Op (_,AST.Inter, _) -> ir_single_inter (unroll_inter input_item)
       | Op (_,AST.Seq, expl) -> expand_list expl
       | Op (_,AST.Diff, expl) -> expand_expression (List.hd expl)
       (* here, I am assuming that the edge matched in match_var is not included in the diff*)
       | App (_,_,exp) -> expand_expression exp
-      (* applied functions are currently not supported, here I am assuming that they can be interpreted as the variable the function is being applied to *)
-      | Var (_,var) -> [[Intersection [var]]]
+      | Var (_,var) -> ir_single_var var
       | _ -> raise (Misc.Fatal (sprintf "Expression not supported: %s" (pp_exp input_item)))
 
-    and expand_list input_item : var intersection list list=
+    and expand_list input_item : ir =
       (* apply a fold_cross to a list of AST expressions, preserving their order and calling expand_expression on each expression
       Inputs: 
       - input_item, list of AST expressions. represents a sequence or intersection of variables
@@ -280,51 +401,37 @@ module Make
       - A list of var intersection lists, each var intersection list represents either a sequence of intersections or a single intersection
       *)
       match input_item with
-      | [] -> [[]]
+      | [] -> Union [Sequence[]]
       | hd::tl ->
           let expanded_hd = expand_expression hd in
           let expanded_tl = expand_list tl in
-          List.concat_map (fun hd_item ->
-            List.map (fun tl_item ->
-              hd_item @ tl_item
+          union_concat_map (fun hd_item ->
+            union_map (fun tl_item ->
+              concatenate_sequences hd_item tl_item
             ) expanded_tl
           ) expanded_hd
 
-    and expand exp : 'a sequence list=
+    and expand exp : ir =
       (* construct a list of sequences using the expanded output from expand_list
       Inputs: 
       - exp AST expression to be expanded
       Output: 
       - list of sequences
       *)
-      let open AST in
+      (* let open AST in *)
       try
-      match exp with
-      | Op (_,AST.Union, expl) -> List.concat_map expand expl
-      | Op (_,AST.Inter, expl) ->
-        let expl = expand_list expl in
-        List.map make_sequence expl
-      | Op (_,AST.Seq, expl) -> List.map make_sequence (expand_list expl)
-      | Op1 (_,ToId, expl) -> expand expl
-      | Var (_,var) -> [Sequence [Intersection [var]]]
-      | Op1 (_,a, _) -> raise (Misc.Fatal (sprintf "Expression not supported: %s " (pp_op1 a)))
-      | Op (_,a,_) -> raise (Misc.Fatal (sprintf "Expression not supported: %s" (pp_op2 a)))
-      | _ -> raise (Misc.Fatal (sprintf "Expression not supported: %s" (pp_exp exp)))
+        match exp with
+        | Op (_,AST.Union, expl) -> union_concat_map expand (Union expl)
+        | Op (_,AST.Inter, expl) -> expand_list expl
+        | Op (_,AST.Seq, expl) -> expand_list expl
+        | Op1 (_,ToId, expl) -> expand expl
+        | Var (_,var) -> ir_single_var var
+        | Op1 (_,a, _) -> raise (Misc.Fatal (sprintf "Expression not supported: %s " (pp_op1 a)))
+        | Op (_,a,_) -> raise (Misc.Fatal (sprintf "Expression not supported: %s" (pp_op2 a)))
+        | _ -> raise (Misc.Fatal (sprintf "Expression not supported: %s" (pp_exp exp)))
       with
-      | NotImplemented s -> if O.verbose > 0 then eprintf "%s\n" s; []
+      | NotImplemented s -> if O.verbose > 0 then eprintf "%s\n" s; Union []
       | Misc.Fatal s -> raise (Misc.Fatal ("Fail in expand:"^s))
-
-    and fold_cross l f =
-      match l with
-        | [] -> [[]]
-        | hd::tl ->
-          let expanded_hd = f hd in
-          let expanded_tl = fold_cross tl f in
-          List.concat_map (fun hd_item ->
-            List.map (fun tl_item ->
-              hd_item::tl_item
-            ) (expanded_tl)
-          ) (expanded_hd)
 
     (*
     ------------------------------------------
@@ -332,7 +439,7 @@ module Make
     ------------------------------------------   
     *)
 
-    and expand_fencedp el =
+    let expand_fencedp el =
     (* expand cumulative macros
        Inputs:
        - el: list of edges to expand
@@ -394,8 +501,42 @@ module Make
       - match sequences of edge's into single or composite relaxations
     ------------------------------------------   
     *)
+    let listofnode nodel =
+    (*translate edge_node list into edge list list for printing
+      *)
+      let rec f node =
+        match node.branch_list with
+        | h::t ->
+          Misc.concat_map (fun a ->
+                      List.map (fun b -> node.node_val::b)
+                      (f a)
+                      ) (h::t)
+        | [] -> [[node.node_val]] in
+      Misc.concat_map f nodel
 
-    and matcher (Sequence expl:edge_ir sequence) =
+    let check_prev a =
+      match a with
+      | Empty _ -> None
+      | Atom (b,_) -> Some b
+      | D_atom (_,an,_) -> an
+      | _ -> None
+    let check_if_dir a =
+      match a with
+      | D (a,_) ->  Dir a
+      | Ext (NoDir,_) -> NoDir
+      | D_atom (r,_,_) -> r
+      | _ -> Irr
+
+    let extract_diratom prev next =
+      let extr1 = check_if_dir prev in
+      let extr2 = check_if_dir next in
+
+      let a1 = check_prev prev in
+      let a2 = check_prev next in
+      let extr1 = check_dirfroma a1 extr1 in
+      let extr2 = check_dirfroma a2 extr2 in
+      a1,a2,extr1,extr2
+    let matcher (Sequence expl:edge_ir sequence) =
     (* translate expressions to E.edge type. Expand edges to include Same and Diff
         Inputs:
         - expl: sequence of expressions to create edge / edge list for
@@ -416,7 +557,9 @@ module Make
           if (A.applies_atom_rmw rmw a1 a2) then [Rmw rmw]
           else []
         | _ -> [] in
-        List.map (fun a -> E.{ node_val = { edge = a ; a1 ; a2 }; branch_list = branch_list a2 }) e in
+        match e with
+        | [] -> branch_list None
+        | _ -> List.map (fun a -> E.{ node_val = { edge = a ; a1 ; a2 }; branch_list = branch_list a2 }) e in
       let rec f (l:edge_ir list) prev =
         match l with
         | Empty v :: _ -> raise (NotImplemented (sprintf "variable not implemented in matcher: %s" v))
@@ -438,74 +581,14 @@ module Make
         | [] -> []
       in f expl empty_expr
     
-    and listofnode nodel = 
-      (*translate edge_node list into edge list list for printing
-        *)
-      let rec f node =
-        match node.branch_list with
-        | h::t ->
-          List.concat_map (fun a ->
-                       List.map (fun b -> node.node_val::b)
-                       (f a)
-                       ) (h::t)
-        | [] -> [[node.node_val]] in
-      List.concat_map f nodel
-    
-    and check_prev a = 
-      match a with
-      | Empty _ -> None
-      | Atom (b,_) -> Some b
-      | D_atom (_,an,_) -> an
-      | _ -> None
-    and check_if_dir a =
-      match a with
-      | D (a,_) ->  Dir a
-      | Ext (NoDir,_) -> NoDir
-      | D_atom (r,_,_) -> r
-      | _ -> Irr
-    
-    and match_inter expl =
-      match expl with
-      | h::h2::[] -> begin
-        match h,h2 with
-        | D (R,_), Atom ((A.Tag, None),_) -> D_atom (Dir R, Some (A.Tag, None), "tag read")
-        | _ -> raise (NotImplemented "inter not implemented in matcher")
-      end
-      | h::h2::h3::[] -> begin
-        match h,h2,h3 with
-        | D (R,_), PTE _, Imp _ -> D_atom (Dir R, Some (A.Pte A.Read, None), "ImpPTE Read")
-        | D (R,_), Atom ((A.Tag, None),_), Imp _->D_atom (Dir R, Some (A.Tag, None), "ImpTag Read")
-        | _ -> raise (NotImplemented "inter not implemented in matcher")
-      end
-      | _ -> raise (NotImplemented "inter not implemented in matcher")
 
-      and unroll_inter expr : var intersection =
-        let open AST in
-          let rec f l =
-            match l with
-            | Op (_,Inter, expl) -> List.concat_map f expl
-            | Var (_,var) -> [var]
-            | _ -> raise (Misc.Fatal "operation in intersection not supported") in
-          match expr with
-          | Op (_,Inter, exp) -> Intersection (List.concat_map f exp)
-          | _ -> raise (Misc.Fatal "non intersection passed to unroll inter function")
-
-    and extract_diratom prev next =
-      let extr1 = check_if_dir prev in
-      let extr2 = check_if_dir next in
-      
-      let a1 = check_prev prev in
-      let a2 = check_prev next in
-      let extr1 = check_dirfroma a1 extr1 in
-      let extr2 = check_dirfroma a2 extr2 in
-      a1,a2,extr1,extr2
         
     (*
     ------------------------------------------
     entry point for constructing tree
     ------------------------------------------   
     *)
-    and ast_to_ir ast : let_statements =
+    let ast_to_ir ast : let_statements =
       let map_ast f l =
         List.fold_left
         (fun acc a ->
@@ -516,140 +599,73 @@ module Make
               acc)
         [] l in
       let tree_base = map_ast get_ins ast in
-      let map_vars = (map_ast (
+      let map_vars = map_ast (
         if O.print_tree then
           fun (varname, expression) -> varname, inline_vars varname tree_base expression
         else
           fun (varname, expression) ->
           match List.find_opt (fun name -> String.equal name varname) O.lets_to_print with
           | Some _ -> varname, inline_vars varname tree_base expression
-          | None -> raise (NotImplemented (sprintf "not generating for instruction: %s\n" varname))
-        ) tree_base) in
-      let tree = apply_expand map_vars in
-      tree
+          | None -> raise (Misc.Fatal (sprintf "no let statements found for: %s\n" varname))
+        ) tree_base in
+      apply_expand map_vars
     
-    (*
-    ------------------------------------------
-    helper functions
-    ------------------------------------------   
+      (*
+      ---------------------------------------------------------------
+      Printing functions
+      ---------------------------------------------------------------
+      *)
+    let pp_relaxations (tree : let_statements) =
+      (* Pretty prints the given list of let statements as DIY relaxations
+        Inputs:
+          - tree: the list of let statements to pretty print, of type ast
+        Outputs: None
+        Side effects: Prints the DIY relaxation to the console
+      *)
+      let tree = var_to_edge tree in
+      let f expl =
+        try
+          let edge = matcher expl in
+          let edge = listofnode edge in
+          let edge = List.map expand_fencedp edge in
+          List.iter (fun e ->
+            match e with
+            | _::[] -> printf "%s " (String.concat "," (List.map E.pp_edge e))
+            | _::_ -> printf "[%s] " (String.concat "," (List.map E.pp_edge e))
+            | [] -> raise (Misc.Fatal "Cannot have empty edge")
+            ) edge;
+        with
+          | NotImplemented msg -> if O.verbose > 0 then eprintf "%s\n" msg;
+      in
+      try
+      List.iter (fun b ->
+        let (_,p) = (List.find (fun (name,_) -> String.equal name b) tree) in
+        let Union p = p in
+        List.iter f p
+        ) O.lets_to_print
+      with
+      | Not_found -> raise (Misc.Fatal "let statements that were asked for are not in cat file")
+
+    let pp_tree (tree: let_statements) : unit =
+      (* This function takes a list of let statements, in the form
+      of string * expression, and prints the expanded tree of the cat file.
+      Inputs:
+        - tree: A list of let statements, as ast type.
+      Outputs:
+        - None
+      Side effects: The function prints the expanded tree of the cat file.
     *)
-  and lrsc = Tedge (Rmw A.LrSc, "lrsc")
-
-  and match_var v = 
-    (* Exp, Imp and PTE have been included as placeholders. *)
-    let open A in
-    let open E in
-      match v with
-      | "R"-> [D (R, v)]
-      | "W" -> [D (W, v)]
-      | "M" -> [Ext (Irr, v)]
-      | "L" -> [Atom ((A.Rel None,None), v)]
-      | "P" -> [Atom ((A.plain,None), v)]
-      | "A" -> [Atom ((A.Acq None,None), v)]
-      | "Q" -> [Atom ((A.AcqPc None,None), v)]
-      | "T" -> [Atom ((A.Tag, None), v)]
-      | "Exp" -> [Atom ((A.Pte Read, None), v)]
-      | "Imp" -> [Imp v]
-      | "PTE" -> [PTE v]
-      | "po" -> [Tedge ((Po (Same,Irr,Irr)), v)]
-      | "lrs" -> [Lrs v ]
-      | "addr" -> [Tedge ((Dp ((A.D.ADDR,A.NoCsel), Same, Irr)), v)]
-      | "ctrl" -> [Tedge ((Dp ((A.D.CTRL,A.NoCsel), Same, Irr)), v)]
-      | "data" -> [Tedge ((Dp ((A.D.DATA,A.NoCsel), Same, Irr)), v)]
-      | "DMB.ISH" -> [Tedge ((Fenced (Barrier (DMB (ISH,FULL)) ,Same, Irr, Irr)), v)]
-      | "DMB.OSH" -> [Tedge ((Fenced (Barrier (DMB (OSH,FULL)),Same, Irr, Irr)), v) ]
-      | "DMB.SY" -> [Tedge ((Fenced (Barrier (DMB (SY,FULL)),Same, Irr, Irr)), v) ]
-      | "DSB.ISH" -> [Tedge ((Fenced (Barrier (DSB (ISH,FULL)),Same, Irr, Irr)), v)]
-      | "DSB.OSH" -> [Tedge ((Fenced (Barrier (DSB (OSH,FULL)),Same, Irr, Irr)), v) ]
-      | "DSB.SY" -> [Tedge ((Fenced (Barrier (DSB (SY,FULL)),Same, Irr, Irr)), v)  ]
-      | "ISB" -> [Tedge ((Fenced (Barrier (ISB),Same, Irr, Irr)), v)  ]
-      | "rfi" -> [Tedge ((Rf Int), v)]
-      | "lxsx" -> [lrsc]
-      | "co" -> [
-        Tedge ((Ws Int), v);
-        Tedge ((Ws Ext), v)
-      ]
-      | "fr" -> [
-        Tedge ((Fr Int), v);
-        Tedge ((Fr Ext), v)
-      ]
-      | "fri" -> [Tedge ((Fr Int), v)]
-      | "fre" -> [Tedge ((Fr Ext), v)]
-      | "rfe" -> [Tedge ((Rf Ext), v)]
-      | "coe" -> [Tedge ((Ws Ext), v)]
-      | "coi" -> [Tedge ((Ws Int), v)]
-      | "amo" -> [
-        Tedge (Rmw A.Swp, "Amo.Swp");
-        Tedge (Rmw A.Cas, "Amo.Cas");
-
-        Tedge (Rmw (LdOp A_ADD), "Amo.LdAdd");
-        Tedge (Rmw (LdOp A_EOR), "Amo.LdEor");
-        Tedge (Rmw (LdOp A_SET), "Amo.LdSet");
-        Tedge (Rmw (LdOp A_CLR), "Amo.LdClr");
-
-        Tedge (Rmw (StOp A_ADD), "Amo.StAdd");
-        Tedge (Rmw (StOp A_EOR), "Amo.StEor");
-        Tedge (Rmw (StOp A_SET), "Amo.StSet");
-        Tedge (Rmw (StOp A_CLR), "Amo.StClr")
-      ]
-      | _ -> [Empty v]
-
-    and check_dirfroma letl a = 
-      match letl with
-      | Some (A.Acq None,None) | Some (A.AcqPc None,None) -> Dir R
-      | Some (A.Rel None,None) -> Dir W
-      | _ -> a
-
-    and pp_exp a = 
-      let open AST in 
-      match a with 
-      | Konst _ -> "Konst"
-      | Tag _ -> "Tag"
-      | Var _ -> "Var"
-      | Op1 _ -> "Op1"
-      | Op _ -> "Op"
-      | App _ -> "App"
-      | Bind _ -> "Bind"
-      | BindRec _  -> "BindRec"
-      | Fun _ -> "Fun"
-      | ExplicitSet _ -> "ExplicitSet"
-      | Match _ -> "Match"
-      | MatchSet _ -> "MatchSet"
-      | Try _ -> "Try"
-      | If _ -> "If"
-    
-    and pp_op2 a = 
-      let open AST in
-      match a with
-      | Union -> "Union"
-      | Inter -> "Inter"
-      | Diff -> "Diff"
-      | Seq -> "Seq"
-      | Cartesian -> "Cartesian"
-      | Add -> "Add"
-      | Tuple -> "Tuple"
-
-    and pp_op1 a = 
-      let open AST in 
-      match a with
-      | Plus -> "Plus"
-      | Star -> "Star"
-      | Opt -> "Opt"
-      | Comp -> "Comp"
-      | Inv -> "Inv"
-      | ToId -> "ToId"
-
-    and pp_edge_ir a =
-      match a with
-      | Tedge _ -> "tedge"
-      | D _ -> "D"
-      | Atom _ -> "Atom"
-      | Empty _ -> "Empty"
-      | Imp _ -> "Imp"
-      | PTE _ -> "PTE"
-      | D_atom _ -> "D_atom"
-      | Ext _ -> "ext"
-      | Lrs _ -> "lrs"
+      let pp_intersection (Intersection exp) =
+        match exp with
+        | h::[] -> h;
+        | h::t -> sprintf "(%s)" (String.concat "&" (h::t));
+        | [] -> raise (Misc.Fatal "Intersection cannot have an empty list") in
+      let pp_sequence (Sequence expl) =
+        String.concat ";" (List.map pp_intersection expl) in
+      let pp (name, Union ins) =
+        printf "\n\n(%s)\n  |" name;
+        printf "%s" (String.concat "\n  |" (List.map pp_sequence ins)); in
+      List.iter pp tree
 (*
 ----------------------------------------------
 entry point
@@ -664,10 +680,7 @@ entry point
           pp_tree tree;
           printf "\n\n\n"
         end;
-        printf "\n\n\n";
         pp_relaxations tree;
-        printf "\n";
-        ()
       with
       | Misc.Fatal msg -> printf "ERROR %s\n%!" msg
       | Misc.Exit -> ()
@@ -676,7 +689,6 @@ entry point
 let verbose = ref 0
 let lets_to_print = ref []
 let arg = ref []
-let print_tree = ref false
 let setarg name = arg := !arg @ [name]
 
 let opts =
@@ -684,7 +696,6 @@ let opts =
    "-v",Arg.Unit (fun () -> incr verbose), " be verbose";
    "-let",Arg.String (fun s -> lets_to_print := !lets_to_print @ [s]),
    "<statement> print out selected let statements";
-   "-tree",Arg.Unit (fun () -> print_tree := true), "print expanded cat file";
   ]
 
 let () =
@@ -697,7 +708,7 @@ module Z =
     (struct
       let verbose = !verbose
       let lets_to_print = !lets_to_print
-      let print_tree = !print_tree
+      let print_tree = if verbose > 0 then true else false
     end)
 
 let () = List.iter Z.zyva !arg ; exit 0
