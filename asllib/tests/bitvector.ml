@@ -136,8 +136,8 @@ let test_with_int64 () =
     in
     assert (BV.equal (BV.of_int64 i) (BV.of_string s));
     assert (String.equal (BV.to_string (BV.of_int64 i)) s);
-    assert (Int64.equal i (BV.to_int64 (BV.of_string s)));
-    assert (Int64.equal i (BV.to_int64 (BV.of_int64 i)))
+    assert (Int64.equal i (BV.to_int64_unsigned (BV.of_string s)));
+    assert (Int64.equal i (BV.to_int64_unsigned (BV.of_int64 i)))
   in
   List.iter one
     [
@@ -152,6 +152,29 @@ let test_with_int64 () =
       (0x502L, "10100000010");
       (0x30502L, "110000010100000010");
       (0x20502L, "100000010100000010");
+      (0xffffffffL, "11111111111111111111111111111111");
+      (0xfffffffeL, "11111111111111111111111111111110");
+      (0x2L, "00000000000000000000000000000010");
+    ]
+
+let test_with_int64_signed () =
+  let one (i, s) =
+    let of_s = BV.to_int64_signed (BV.of_string s) in
+    let of_i = BV.to_int64_signed (BV.of_int64 i) in
+    let () =
+      if _debug then
+        Format.eprintf "Comparing %s to %a(i=%s) and %a(s=%s)@."
+          (Int64.to_string i) BV.pp_t (BV.of_int64 i) (Int64.to_string of_i)
+          BV.pp_t (BV.of_string s) (Int64.to_string of_s)
+    in
+    assert (Int64.equal i of_s);
+    assert (Int64.equal i of_i)
+  in
+  List.iter one
+    [
+      (-0x1L, "11111111111111111111111111111111");
+      (-0x2L, "11111111111111111111111111111110");
+      (0x2L, "00000000000000000000000000000010");
     ]
 
 let test_read_slice () =
@@ -250,4 +273,5 @@ let () =
       ("bitvector/read_slice", test_read_slice);
       ("bitvector/write_slice", test_write_slice);
       ("bitvector/concat", test_concat);
+      ("bitvector/signed_int64", test_with_int64_signed);
     ]

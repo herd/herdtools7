@@ -9,16 +9,19 @@
 
 (library
  (name asllib)
- (modules (:standard \ asli bundler))
+ (modules (:standard \ aslseq bundler))
+ (public_name herdtools7.asllib)
  (private_modules Parser0 Gparser0 Lexer0 SimpleLexer0 RepeatableLexer)
  (modules_without_implementation Backend AST)
  (flags (:standard -w -40-42))
  (libraries menhirLib))
 
+(documentation)
+
 (executable
- (public_name asli)
+ (public_name aslseq)
  (libraries asllib)
- (modules asli))
+ (modules aslseq))
 
 (executable
   (public_name aslbundler)

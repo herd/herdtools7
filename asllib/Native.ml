@@ -34,7 +34,7 @@ let mismatch_type v types =
   Error.fatal_unknown_pos (Error.MismatchType (v, types))
 
 module NativeBackend = struct
-  type 'a m = unit -> 'a
+  type 'a m = 'a
   type value = AST.value
   type scope = AST.identifier * int
 
@@ -50,14 +50,9 @@ module NativeBackend = struct
   let v_of_parsed_v = Fun.id
   let v_to_int = function V_Int i -> Some i | _ -> None
   let debug_value = PP.value_to_string
-
-  let bind (vm : 'a m) (f : 'a -> 'b m) : 'b m =
-   fun () ->
-    let v = vm () in
-    f v ()
-
-  let prod (r1 : 'a m) (r2 : 'b m) : ('a * 'b) m = fun () -> (r1 (), r2 ())
-  let return v () = v
+  let bind (vm : 'a m) (f : 'a -> 'b m) : 'b m = f vm
+  let prod (r1 : 'a m) (r2 : 'b m) : ('a * 'b) m = (r1, r2)
+  let return v = v
   let bind_data = bind
   let bind_seq = bind
   let bind_ctrl = bind
@@ -69,12 +64,16 @@ module NativeBackend = struct
       | V_Bool false -> m_false
       | v -> mismatch_type v [ T_Bool ])
 
-  let binop op v1 v2 () =
-    StaticInterpreter.binop ASTUtils.dummy_annotated op v1 v2
+  let binop op v1 v2 = StaticInterpreter.binop ASTUtils.dummy_annotated op v1 v2
 
-  let unop op v () = StaticInterpreter.unop ASTUtils.dummy_annotated op v
-  let on_write_identifier _x _scope _value = return ()
-  let on_read_identifier _x _scope _value = return ()
+  let ternary = function
+    | V_Bool true -> fun m_true _m_false -> m_true ()
+    | V_Bool false -> fun _m_true m_false -> m_false ()
+    | v -> mismatch_type v [ T_Bool ]
+
+  let unop op v = StaticInterpreter.unop ASTUtils.dummy_annotated op v
+  let on_write_identifier _x _scope _value = ()
+  let on_read_identifier _x _scope _value = ()
   let v_tuple li = return (V_Tuple li)
   let v_record li = return (V_Record li)
   let v_exception li = return (V_Exception li)
@@ -138,10 +137,6 @@ module NativeStdlib = struct
 
   let return_one v = return [ return v ]
 
-  let sync f args () =
-    let args = List.map (fun a -> a ()) args in
-    f args ()
-
   let replicate = function
     | [ V_BitVector bv; V_Int n ] ->
         V_BitVector (Bitvector.concat @@ List.init n (Fun.const bv))
@@ -154,6 +149,15 @@ module NativeStdlib = struct
     | li ->
         Error.fatal_unknown_pos
         @@ Error.BadArity ("Replicate", 2, List.length li)
+
+  let highest_set_bit = function
+    | [ V_BitVector bv ] -> V_Int (Bitvector.highest_set_bit bv) |> return_one
+    | [ v ] ->
+        Error.fatal_unknown_pos
+        @@ Error.MismatchType (v, [ ASTUtils.default_t_bits ])
+    | li ->
+        Error.fatal_unknown_pos
+        @@ Error.BadArity ("Replicate", 1, List.length li)
 
   let bitcount = function
     | [ V_BitVector bv ] -> V_Int (Bitvector.bitcount bv) |> return_one
@@ -192,28 +196,35 @@ module NativeStdlib = struct
         name = "Replicate";
         parameters = [ ("N", Some integer) ];
         args = [ ("x", t_bits (e_var "N")); ("M", integer) ];
-        body = sync replicate;
+        body = replicate;
         return_type = Some (t_bits (ASTUtils.binop MUL (e_var "N") (e_var "M")));
       };
       {
         name = "BitCount";
         parameters = [ ("N", Some integer) ];
         args = [ ("x", t_bits (e_var "N")) ];
-        body = sync bitcount;
+        body = bitcount;
         return_type = Some integer;
       };
       {
         name = "UInt";
         parameters = [ ("N", Some integer) ];
         args = [ ("x", t_bits (e_var "N")) ];
-        body = sync uint;
+        body = uint;
         return_type = Some integer;
       };
       {
         name = "SInt";
         parameters = [ ("N", Some integer) ];
         args = [ ("x", t_bits (e_var "N")) ];
-        body = sync sint;
+        body = sint;
+        return_type = Some integer;
+      };
+      {
+        name = "HighestSetBit";
+        parameters = [ ("N", Some integer) ];
+        args = [ ("x", t_bits (e_var "N")) ];
+        body = highest_set_bit;
         return_type = Some integer;
       };
     ]
@@ -221,9 +232,28 @@ module NativeStdlib = struct
   let stdlib = []
 end
 
-module NativeInterpreter = Interpreter.Make (NativeBackend)
+module NativeInterpreter (C : Interpreter.Config) =
+  Interpreter.Make (NativeBackend) (C)
 
-let interprete ast =
-  NativeInterpreter.run
-    (List.rev_append NativeStdlib.stdlib ast)
-    NativeStdlib.primitives ()
+let run (module C : Interpreter.Config) ast =
+  let module I = NativeInterpreter (C) in
+  I.run (List.rev_append NativeStdlib.stdlib ast) NativeStdlib.primitives
+
+let interprete strictness ast =
+  let module C : Interpreter.Config = struct
+    let type_checking_strictness = strictness
+
+    module Instr = Instrumentation.NoInstr
+  end in
+  run (module C) ast
+
+let interprete_with_instrumentation strictness ast =
+  let module B = Instrumentation.SingleSetBuffer in
+  B.reset ();
+  let module C = struct
+    let type_checking_strictness = strictness
+
+    module Instr = Instrumentation.Make (B)
+  end in
+  run (module C) ast;
+  B.get ()

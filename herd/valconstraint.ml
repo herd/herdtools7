@@ -65,6 +65,7 @@ end
 module type Config = sig
   val hexa : bool
   val debug : bool
+  val keep_failed_as_undetermined : bool
 end
 
 module Make (C:Config) (A:Arch_herd.S) : S
@@ -301,10 +302,14 @@ and type state = A.state =
          with
          | Contradiction|Misc.Timeout as e -> raise e
          | e ->
-            if C.debug then
-              eprintf "Delaying exception in solver: %s\n"
-                (Printexc.to_string e) ;
-            Failed e::k
+            if C.keep_failed_as_undetermined then cn :: k
+            else
+              let () =
+                if C.debug then
+                  eprintf "Delaying exception in solver: %s\n"
+                    (Printexc.to_string e)
+              in
+              Failed e :: k
        end
     | Failed _ | Warn _ -> cn::k
 

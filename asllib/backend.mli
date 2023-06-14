@@ -59,7 +59,7 @@ module type S = sig
       This should not create any data-dependency. *)
 
   val bind_ctrl : 'a m -> ('a -> 'b m) -> 'b m
-  (** Monadic bind operation, but that creates a control dependency between the\
+  (** Monadic bind operation, but that creates a control dependency between the
       first argument and the result of the second one. *)
 
   val prod : 'a m -> 'b m -> ('a * 'b) m
@@ -88,6 +88,9 @@ module type S = sig
 
   val unop : AST.unop -> value -> value m
   (** Evaluate this unary operation on this value. *)
+
+  val ternary : value -> (unit -> value m) -> (unit -> value m) -> value m
+  (** [ternary v w1 w2] is w1 if v is true and w2 if v is false *)
 
   type scope = AST.identifier * int
   (** A scope is an unique identifier of the calling site. *)

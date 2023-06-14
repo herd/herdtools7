@@ -150,16 +150,16 @@ let hash_pteval _ = assert false
 (*                                                                           *)
 (*****************************************************************************)
 
-let memoize  f =
+let memoize f =
   let table = Hashtbl.create 17 in
   fun ?ast_type version s ->
-    let k = ast_type,version,s in
+    let k = (ast_type, version, s) in
     match Hashtbl.find_opt table k with
     | Some r -> r
     | None ->
-       let r = f ?ast_type version s in
-       let () = Hashtbl.add table k r in
-       r
+        let r = f ?ast_type version s in
+        let () = Hashtbl.add table k r in
+        r
 
 let do_build_ast_from_file ?ast_type version fname =
   match Asllib.Builder.from_file_multi_version ?ast_type version fname with

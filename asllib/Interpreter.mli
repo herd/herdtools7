@@ -35,4 +35,11 @@ module type S = sig
   *)
 end
 
-module Make (B : Backend.S) : S with module B = B
+module type Config = sig
+  module Instr : Instrumentation.INSTR
+
+  val type_checking_strictness : Typing.strictness
+  (** The strictness of type-checking. *)
+end
+
+module Make (B : Backend.S) (C : Config) : S with module B = B
