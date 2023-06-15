@@ -1,10 +1,12 @@
 open AST
+
 module ISet : Set.S with type elt = identifier
 
 module IMap : sig
   include Map.S with type key = identifier
 
   val of_list : (key * 'a) list -> 'a t
+
 end
 
 val dummy_pos : Lexing.position

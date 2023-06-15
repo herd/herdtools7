@@ -1,0 +1,10 @@
+Test for1 Required
+States 1
+0:main.0.s=110;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:main.0.s=110)
+Observation for1 Always 1 0
+Hash=16917651088d7496ec1436a61f891402
+

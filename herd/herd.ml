@@ -192,8 +192,9 @@ let options = [
     Arg.Unit (fun _ -> PP.view := Some View.Preview),
     "<non-default>  alias for -view preview") ;
   ("-unroll",
-   Arg.Int (fun x -> unroll := x),
-   sprintf "<int> branch unrolling upper limit, default %i" !unroll);
+   Arg.Int (fun x -> unroll := Some x),
+   sprintf "<int> branch unrolling upper limit, default ASL: %i, others: %i"
+     (unroll_default `ASL)  (unroll_default `Others));
   parse_bool "-hexa" PP.hexa "print numbers in hexadecimal";
 (* undocumented *)
   ("-switch",

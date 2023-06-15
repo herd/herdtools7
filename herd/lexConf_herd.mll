@@ -153,7 +153,7 @@ let handle_key main key arg = match key with
 | "strictskip" ->
     lex_bool strictskip arg
 | "unroll" ->
-    lex_int unroll arg
+    lex_int_opt unroll arg
 | "optace" ->
     lex_tag_opt "optace" OptAce.parse OptAce.tags optace arg
 | "archcheck" ->

@@ -383,7 +383,7 @@ let check_failed cns =
     (function
      | Failed e -> raise e
      | Warn e ->
-        Warn.warn_always "%s. Legal outcomes may be missing" e;
+        Warn.warn_always "%s, legal outcomes may be missing" e;
         raise Contradiction
      | Assign _ -> ())
   cns

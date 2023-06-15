@@ -25,7 +25,7 @@
 module type CommonConfig = sig
   val verbose : int
   val optace : OptAce.t
-  val unroll : int
+  val unroll : int option
   val speedcheck : Speed.t
   val debug : Debug_herd.t
   val observed_finals_only : bool
@@ -163,6 +163,10 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     let kvm = C.variant Variant.VMSA
     let self = C.variant Variant.Self
     let asl = C.variant Variant.ASL
+    let unroll =
+      match C.unroll with
+      | None -> Opts.unroll_default A.arch
+      | Some u -> u
 
 (*****************************)
 (* Event structure generator *)
@@ -435,7 +439,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           && is_back_jump addr_jmp addr
         then
           let x,seen = see seen addr in
-          if x > C.unroll then begin
+          if x > unroll then begin
               W.warn "loop unrolling limit reached: %s" (get_label lbl addr);
               No tgt
             end else

@@ -11,7 +11,7 @@ let conflict pos expected provided =
   fatal_from pos (Error.ConflictingTypes (expected, provided))
 
 let add_dummy_pos = ASTUtils.add_dummy_pos
-let add_pos_from = ASTUtils.add_pos_from_st
+let add_pos_from = ASTUtils.add_pos_from
 let get_desc { desc; _ } = desc
 
 (* Control Warning outputs. *)
@@ -360,6 +360,37 @@ let check_num pos ty =
   match ty.desc with
   | T_Int _ | T_Bits _ | T_Real -> ty
   | _ -> conflict pos [ T_Int None; ASTUtils.default_t_bits; T_Real ] ty
+
+
+(**********************************************)
+(* Approximate min and max on integer domains *)
+(**********************************************)
+
+let min_constraint = function
+  | Constraint_Exact {desc=E_Literal (V_Int i)}
+  | Constraint_Range ({desc=E_Literal (V_Int i)},_)
+    -> i
+  | _ -> raise Exit
+
+let max_constraint = function
+  | Constraint_Exact {desc=E_Literal (V_Int i)}
+  | Constraint_Range (_,{desc=E_Literal (V_Int i)})
+    -> i
+  | _ -> raise Exit
+
+let min_max_constraints m_constraint m =
+  let rec do_rec = function
+    | [] -> assert false
+    | [c] ->  m_constraint c
+    | c::cs ->
+        let i = m_constraint c
+        and j = do_rec cs in
+        m i j in
+  do_rec
+
+(* NB: functions raise [Exit]if no approximation can be found *)
+let min_constraints = min_max_constraints min_constraint min
+and max_constraints = min_max_constraints max_constraint max
 
 let infer_value = function
   | V_Int i -> T_Int (Some [ Constraint_Exact (expr_of_int i) ])
@@ -993,6 +1024,52 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (S_Assert e', lenv)
     | S_TypeDecl (x, t) ->
         (s.desc, IMap.add x (get_structure tenv.globals t) lenv)
+    | S_While (e,s) ->
+        let t,e = annotate_expr tenv lenv e in
+        let+ () = check_type_satisfies e tenv t t_bool in
+        let s,lenv = try_annotate_stmt tenv lenv s in
+        S_While (e,s),lenv
+    | S_Repeat (s,e) ->
+        let s,lenv = try_annotate_stmt tenv lenv s in
+        let t,e = annotate_expr tenv lenv e in
+        let+ () = check_type_satisfies e tenv t t_bool in
+        S_Repeat (s,e),lenv
+    | S_For (id,e1,dir,e2,s) ->
+        let t1,e1 = annotate_expr tenv lenv e1
+        and t2,e2 = annotate_expr tenv lenv e2 in
+        let ty =
+          begin
+            let t1 = check_integer e1 t1
+            and t2 = check_integer e2 t2 in
+            match t1.desc,t2.desc with
+            | T_Int (Some cs1),T_Int (Some cs2)  ->
+                let cso =
+                  try
+                    let cs =
+                      match dir with
+                      | Up ->
+                          let i1 = min_constraints cs1
+                          and i2 = max_constraints cs2 in
+                          if i1 <= i2 then
+                            Constraint_Range (expr_of_int i1,expr_of_int i2)::
+                            cs1
+                          else cs1
+                      | Down ->
+                          let i1 = max_constraints cs1
+                          and i2 = min_constraints cs2 in
+                          if i2 <= i1 then
+                            Constraint_Range (expr_of_int i2,expr_of_int i1)::
+                            cs1
+                          else cs1 in
+                    Some cs
+                  with Exit -> None
+                in T_Int cso
+            | _,_ -> T_Int None
+          end |> add_pos_from s in
+        let lenv = IMap.add id ty lenv in
+        let s,lenv = try_annotate_stmt tenv lenv s in
+        S_For (id,e1,dir,e2,s),lenv
+
 
   and try_annotate_stmt tenv lenv s =
     best_effort (s, lenv) (fun (s, lenv) -> annotate_stmt tenv lenv s)

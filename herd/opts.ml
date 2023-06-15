@@ -37,7 +37,10 @@ let conds = ref []
 let model = ref None
 let bell = ref None
 let macros = ref None
-let unroll = ref 2
+let unroll_default = function
+|`ASL -> 4
+| _ -> 2
+let unroll = ref None
 let speedcheck = ref Speed.False
 let archcheck = ref true
 let optace = ref None

@@ -520,8 +520,8 @@ let simple_elsif == annotated ( ELSIF; ~=expr; THEN; ~=simple_stmt_list; <> )
 let compound_stmt ==
   annotated (
     | conditional_stmt
+    | repetitive_stmt
     |  unimplemented_stmts (
-      | repetitive_stmt; <>
       | catch_stmt; <>
     )
   )
@@ -569,11 +569,11 @@ let apattern ==
   | ~=MASK_LIT; < AST.Pattern_Mask >
 
 let repetitive_stmt ==
-  | FOR; ident; EQ; expr; direction; expr; indented_block; <>
-  | WHILE; expr; DO; indented_block; <>
-  | REPEAT; indented_block; UNTIL; expr; SEMICOLON; EOL; <>
+  | FOR; ~=ident; EQ; e1=expr; ~=direction; e2=expr; ~=indented_block; <AST.S_For>
+  | WHILE; ~=expr; DO; ~=indented_block; <AST.S_While>
+  | REPEAT; ~=indented_block; UNTIL; ~=expr; SEMICOLON; EOL; <AST.S_Repeat>
 
-let direction == TO | DOWNTO
+let direction == | TO; { AST.Up } | DOWNTO; { AST.Down }
 
 let catch_stmt ==
   | TRY; indented_block; CATCH; ident; EOL; INDENT; nlist(catcher); ioption(otherwise); DEDENT; <>

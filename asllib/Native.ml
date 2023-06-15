@@ -46,6 +46,7 @@ module NativeBackend = struct
 
   module SIMap = Map.Make (ScopedIdentifiers)
 
+  let is_undetermined _ = false
   let v_of_int i = V_Int i
   let v_of_parsed_v = Fun.id
   let v_to_int = function V_Int i -> Some i | _ -> None
@@ -53,6 +54,10 @@ module NativeBackend = struct
   let bind (vm : 'a m) (f : 'a -> 'b m) : 'b m = f vm
   let prod (r1 : 'a m) (r2 : 'b m) : ('a * 'b) m = (r1, r2)
   let return v = v
+  let warnT msg v = (* Should not be called... *)
+    Printf.eprintf
+      "Warning: message %s found its way, something is wrong\n" msg ;
+    return v
   let bind_data = bind
   let bind_seq = bind
   let bind_ctrl = bind
@@ -63,6 +68,8 @@ module NativeBackend = struct
       | V_Bool true -> m_true
       | V_Bool false -> m_false
       | v -> mismatch_type v [ T_Bool ])
+
+  let delay m k = k m m
 
   let binop op v1 v2 = StaticInterpreter.binop ASTUtils.dummy_annotated op v1 v2
 
@@ -242,7 +249,7 @@ let run (module C : Interpreter.Config) ast =
 let interprete strictness ast =
   let module C : Interpreter.Config = struct
     let type_checking_strictness = strictness
-
+    let unroll = 0 (* Does not matter, as all computations are performed *)
     module Instr = Instrumentation.NoInstr
   end in
   run (module C) ast
@@ -252,7 +259,7 @@ let interprete_with_instrumentation strictness ast =
   B.reset ();
   let module C = struct
     let type_checking_strictness = strictness
-
+    let unroll = 0
     module Instr = Instrumentation.Make (B)
   end in
   run (module C) ast;

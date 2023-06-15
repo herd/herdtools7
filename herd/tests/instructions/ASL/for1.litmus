@@ -1,0 +1,16 @@
+ASL for1
+
+{ }
+
+func main()
+begin
+  s = 0;
+  for i = 1 to 10 do
+    s = s + i ;
+  end
+  for i = 10 downto 1 do
+    s = s + i ;
+  end
+end
+
+forall (0: s = 110)

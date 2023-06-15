@@ -219,6 +219,17 @@ let rec pp_stmt =
           cases
     | S_Assert e -> bprintf f "S_Assert (%a)" pp_expr e
     | S_TypeDecl (x, t) -> bprintf f "S_TypeDecl (%S, %a)" x pp_ty t
+    | S_While (e,s) ->
+        bprintf f "S_While(%a, %a)" pp_expr e pp_stmt s
+    | S_Repeat (s,e) ->
+        bprintf f "S_Repeat(%a, %a)" pp_stmt s pp_expr e
+    | S_For (id,e1,dir,e2,s) ->
+        bprintf f
+          "S_For (%S, %a, %s, %a, %a)"
+          id pp_expr e1
+          (match dir with Up -> "Up" | Down -> "Down")
+          pp_expr e2
+          pp_stmt s
   in
   fun f s -> pp_annotated pp_desc f s
 

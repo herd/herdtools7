@@ -28,6 +28,9 @@ module type S = sig
   val debug_value : value -> string
   (** A printer for value, should only be used for debugging. *)
 
+  val is_undetermined : value -> bool
+  (** [is_undetermined v] returns true when [c] is a non-constant value  *)
+
   val v_of_parsed_v : AST.value -> value
   (** [v_of_parsed_v] constructs a value from a parsed value.
       Note that the prefered method to create records or any complex values
@@ -50,6 +53,9 @@ module type S = sig
   val return : 'a -> 'a m
   (** Monadic constructor. *)
 
+  val warnT : string -> 'a -> 'a m
+  (** Add warning message *)
+
   val bind_data : 'a m -> ('a -> 'b m) -> 'b m
   (** Monadic bind operation, used when data from the first operation is needed
       to compute the second operation. *)
@@ -67,6 +73,11 @@ module type S = sig
 
   val choice : value m -> 'b m -> 'b m -> 'b m
   (** choice is a boolean if operator. *)
+
+  val delay : 'a m -> ('a -> 'a m -> 'b m) -> 'b m
+  (** delay operator spits monad into result ['a] and
+     hidden structure. This permits deciding on
+     the monad value, while using hidden structure later *)
 
   (** Special operations with vectors *)
   (*  --------------------------------*)

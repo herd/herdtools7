@@ -191,6 +191,8 @@ type lexpr_desc =
 and lexpr = lexpr_desc annotated
 
 (** Statements. Parametric on the type of literals in expressions. *)
+type for_direction = Up | Down
+
 type stmt_desc =
   | S_Pass
   | S_Then of stmt * stmt
@@ -201,6 +203,9 @@ type stmt_desc =
   | S_Cond of expr * stmt * stmt
   | S_Case of expr * case_alt list
   | S_Assert of expr
+  | S_For of identifier * expr * for_direction * expr * stmt
+  | S_While of expr * stmt
+  | S_Repeat of stmt * expr
 
 and stmt = stmt_desc annotated
 and case_alt = (pattern * stmt) annotated

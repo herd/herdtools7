@@ -200,6 +200,10 @@ let rec pp_lexpr f le =
   | LE_Ignore -> pp_print_string f "-"
   | LE_TupleUnpack les -> fprintf f "@[( %a )@]" (pp_comma_list pp_lexpr) les
 
+let pp_for_direction  = function
+  | Up -> "to"
+  | Down -> "downto"
+
 let rec pp_stmt f s =
   match s.desc with
   | S_Pass -> pp_print_string f "pass;"
@@ -235,6 +239,23 @@ let rec pp_stmt f s =
         case_li
   | S_Assert e -> fprintf f "@[<2>assert@ %a;@]" pp_expr e
   | S_TypeDecl (x, t) -> fprintf f "@[<2>var %s :: %a;@]" x pp_ty t
+  | S_While (e,s) ->
+      fprintf f
+        "@[<hv>@[<h>while %a@ do@]@;<1 2>@[<hv>%a@]@ end@]"
+        pp_expr e
+        pp_stmt s
+  | S_Repeat (s,e) ->
+      fprintf f
+        "@[<hv 2>repeat@;<1 2>@[<hv>%a@]@;<1 0>@[<h>until@ %a;@]@@]"
+        pp_stmt s
+        pp_expr e
+  | S_For (id,e1,dir,e2,s) ->
+      fprintf f "@[<hv 2>@[<h>for %a=%a %s %a@ do@]@;<1 2>@[<hv>%a@]@ end@]"
+        pp_print_string id
+        pp_expr e1
+        (pp_for_direction dir)
+        pp_expr e2
+        pp_stmt s
 
 let pp_decl f =
   let pp_func_sig f { name; args; return_type; _ } =

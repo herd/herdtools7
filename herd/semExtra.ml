@@ -24,6 +24,7 @@ module type Config = sig
   val precision : Precision.t
   val variant : Variant.t -> bool
   val endian : Endian.t option
+  val unroll : int option
   module PC : PrettyConf.S
 end
 
