@@ -1207,9 +1207,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           (Error.NotYetImplemented "Variable declaration needs a type.")
     | LDI_Var (x, Some t) ->
         let+ () = check_var_not_in_env loc env x in
-        let t_struct = Types.get_structure env t in
+        let v = Types.base_value loc env t in
         ( SEnv.add_local x t LDK_Var env,
-          S_Assign (LE_Var x |> here, E_Unknown t_struct |> here) |> here )
+          S_Assign (LE_Var x |> here, E_Literal v |> here) |> here )
     | LDI_Tuple (ldis, None) ->
         let env, ss =
           list_fold_left_map (annotate_local_decl_item_uninit loc) env ldis
@@ -1494,39 +1494,42 @@ let declare_type name ty env =
 let declare_global_storage gsd env =
   let () = if false then Format.eprintf "Declaring %s@." gsd.name in
   try
-  match gsd with
-  | { keyword = GDK_Constant; initial_value = Some e; ty = None; name } ->
-      let v = reduce_constants env e in
-      let t = infer_value v |> add_pos_from e in
-      declare_const name t v env
-  | { keyword = GDK_Constant; initial_value = Some e; ty = Some ty; name } ->
-      let v = reduce_constants env e in
-      let t = infer_value v |> add_pos_from e in
-      if Types.type_satisfies env t ty then declare_const name ty v env
-      else conflict e [ ty.desc ] t
-  | { keyword = GDK_Constant | GDK_Let; initial_value = None; _ } ->
-      (* Shouldn't happen because of parser construction. *)
-      Error.fatal_unknown_pos
-        (Error.NotYetImplemented
-           "Constants or let-bindings have to be initialized.")
-  | { keyword; initial_value = None; ty = Some ty; name } ->
-      (* Here keyword = GDK_Var or GDK_Config. *)
-      if IMap.mem name env.global.storage_types then
-        Error.fatal_unknown_pos (Error.AlreadyDeclaredIdentifier name)
-      else SEnv.add_global_storage name ty keyword env
-  | { keyword; initial_value = Some e; ty = None; name } ->
-      let t, _e = TypeInferSilence.annotate_expr env e in
-      SEnv.add_global_storage name t keyword env
-  | { keyword; initial_value = Some e; ty = Some ty; name } ->
-      let t, e = TypeInferSilence.annotate_expr env e in
-      if not (Types.type_satisfies env t ty) then conflict e [ ty.desc ] t
-      else SEnv.add_global_storage name ty keyword env
-  | { initial_value = None; ty = None; _ } ->
-      (* Shouldn't happen because of parser construction. *)
-      Error.fatal_unknown_pos
-        (Error.NotYetImplemented
-           "Global storage declaration should have an initial value or a type.")
-with Error.ASLException err -> if _warn then Error.eprintln err; env
+    match gsd with
+    | { keyword = GDK_Constant; initial_value = Some e; ty = None; name } ->
+        let v = reduce_constants env e in
+        let t = infer_value v |> add_pos_from e in
+        declare_const name t v env
+    | { keyword = GDK_Constant; initial_value = Some e; ty = Some ty; name } ->
+        let v = reduce_constants env e in
+        let t = infer_value v |> add_pos_from e in
+        if Types.type_satisfies env t ty then declare_const name ty v env
+        else conflict e [ ty.desc ] t
+    | { keyword = GDK_Constant | GDK_Let; initial_value = None; _ } ->
+        (* Shouldn't happen because of parser construction. *)
+        Error.fatal_unknown_pos
+          (Error.NotYetImplemented
+             "Constants or let-bindings have to be initialized.")
+    | { keyword; initial_value = None; ty = Some ty; name } ->
+        (* Here keyword = GDK_Var or GDK_Config. *)
+        if IMap.mem name env.global.storage_types then
+          Error.fatal_unknown_pos (Error.AlreadyDeclaredIdentifier name)
+        else SEnv.add_global_storage name ty keyword env
+    | { keyword; initial_value = Some e; ty = None; name } ->
+        let t, _e = TypeInferSilence.annotate_expr env e in
+        SEnv.add_global_storage name t keyword env
+    | { keyword; initial_value = Some e; ty = Some ty; name } ->
+        let t, e = TypeInferSilence.annotate_expr env e in
+        if not (Types.type_satisfies env t ty) then conflict e [ ty.desc ] t
+        else SEnv.add_global_storage name ty keyword env
+    | { initial_value = None; ty = None; _ } ->
+        (* Shouldn't happen because of parser construction. *)
+        Error.fatal_unknown_pos
+          (Error.NotYetImplemented
+             "Global storage declaration should have an initial value or a \
+              type.")
+  with Error.ASLException err ->
+    if _warn then Error.eprintln err;
+    env
 
 let build_global =
   let def = function
