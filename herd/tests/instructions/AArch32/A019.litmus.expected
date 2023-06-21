@@ -1,0 +1,13 @@
+Test A019 Allowed
+States 3
+0:R2=0; 1:R0=1;
+0:R2=1; 1:R0=0;
+0:R2=1; 1:R0=1;
+Loop No
+Witnesses
+Positive: 0 Negative: 9
+Flag Assuming-common-inner-shareable-domain
+Condition exists (0:R2=0 /\ 1:R0=0)
+Observation A019 Never 0 9
+Hash=0d88387a17be7a964ab6c4e969f60e5d
+

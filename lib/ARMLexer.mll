@@ -42,12 +42,16 @@ match name with
 | "ldrd" | "LDRD"   -> I_LDRD
 | "ldmib" | "LDMIB"   -> I_LDMIB
 | "ldrex" | "LDREX"   -> I_LDREX
+| "ldaex" | "LDAEX"   -> I_LDAEX
 | "ldrne" | "LDRNE"   -> I_LDRNE
 | "ldreq" | "LDREQ"   -> I_LDREQ
+| "lda" | "LDA" -> I_LDA
 | "str" | "STR"   -> I_STR
 | "strne" | "STRNE"   -> I_STRNE
 | "streq" | "STREQ"   -> I_STREQ
 | "strex" | "STREX" -> I_STREX
+| "stlex" | "STLEX" -> I_STLEX
+| "stl" | "STL" -> I_STL
 | "mov" | "MOV"   -> I_MOV
 | "movw" | "MOVW" -> I_MOVW
 | "movt" | "MOVT" -> I_MOVT

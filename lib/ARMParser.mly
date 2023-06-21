@@ -32,7 +32,7 @@ module A = ARMBase
 /* Instruction tokens */
 
 %token I_ADD I_ADDS I_BX I_SUB I_SUBS I_AND I_ORR I_ANDS I_B I_BEQ I_BNE I_CMP I_MOV I_MOVW I_MOVT I_MOVNE I_MOVEQ I_XOR I_XORS I_DMB I_DSB I_ISB I_CBZ I_CBNZ
-%token I_LDR I_LDREX I_LDRNE I_LDREQ I_LDRD I_LDM I_LDMIB I_STR I_STRNE I_STREQ I_STREX
+%token I_LDR I_LDREX I_LDRNE I_LDREQ I_LDRD I_LDM I_LDMIB I_STR I_STRNE I_STREQ I_STREX I_LDA I_STL I_LDAEX I_STLEX
 %token I_SY I_ST I_ISH I_ISHST I_NSH I_NSHST I_OSH I_OSHST
 %type <MiscParser.proc list * (ARMBase.parsedPseudo) list list> main
 %start  main
@@ -145,6 +145,10 @@ instr:
      { A.I_LDREX ($2,$4) }
   | I_LDREX reg COMMA LBRK reg RBRK
      { A.I_LDREX ($2,$5) }
+  | I_LDAEX reg COMMA LBRK reg RBRK
+     { A.I_LDAEX ($2,$5) }
+  | I_LDA reg COMMA LBRK reg RBRK
+     { A.I_LDA ($2, $5)}
   (* 2-reg and 3-reg variants of LDM for now *)
   | I_LDM reg COMMA LPAREN reg COMMA reg RPAREN
      { A.I_LDM2 ($2, $5, $7, A.NO) }
@@ -184,6 +188,10 @@ instr:
      { A.I_STR3 ($2,$5,$7,A.EQ) }
   | I_STREX reg COMMA reg COMMA LBRK reg RBRK
      { A.I_STREX ($2,$4,$7,A.AL) }
+  | I_STL reg COMMA LBRK reg RBRK
+     { A.I_STL ($2, $5,A.AL) }
+  | I_STLEX reg COMMA reg COMMA LBRK reg RBRK
+     { A.I_STLEX ($2,$4,$7) }
 /* MOVE */
   | I_MOV reg COMMA k
      { A.I_MOVI ($2,$4,A.AL) }
