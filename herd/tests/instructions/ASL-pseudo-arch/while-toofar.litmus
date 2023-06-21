@@ -7,7 +7,7 @@ x = 0;
 
 func T0(x::bits(32))
 begin
-  var s = 0;
+  var s: integer = 0;
   var i = UInt(read_memory(x, 32));
   let j = i;
   while i > 0 do

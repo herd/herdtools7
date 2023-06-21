@@ -93,8 +93,7 @@ val type_clashes : Env.Static.env -> ty -> ty -> bool
     As par Definition VPZZ.
 *)
 
-val subprogram_clashes :
-  Env.Static.env -> 'a func_skeleton -> 'b func_skeleton -> bool
+val subprogram_clashes : Env.Static.env -> 'a func -> 'b func -> bool
 (** Subprogram clashing relation.
 
     As per Definition BTBR.
@@ -105,3 +104,6 @@ val lowest_common_ancestor : Env.Static.env -> ty -> ty -> ty option
 
     As per Rule YZHM.
 *)
+
+val base_value : 'a annotated -> Env.Static.env -> ty -> expr
+(** [base_value env ty] is a base value of [ty]. *)

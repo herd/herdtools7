@@ -18,6 +18,9 @@
 (****************************************************************************)
 
 open AST
+open ASTUtils
+
+let _log = false
 
 let list_update i f li =
   let rec aux acc i li =
@@ -28,14 +31,14 @@ let list_update i f li =
   in
   aux [] i li
 
-let fatal_from = Error.fatal_from
-
 let mismatch_type v types =
   Error.fatal_unknown_pos (Error.MismatchType (v, types))
 
 module NativeBackend = struct
   type 'a m = 'a
   type value = AST.value
+  type primitive = value m list -> value list m
+  type ast = primitive AST.t
   type scope = AST.identifier * int
 
   module ScopedIdentifiers = struct
@@ -55,6 +58,10 @@ module NativeBackend = struct
   let prod (r1 : 'a m) (r2 : 'b m) : ('a * 'b) m = (r1, r2)
   let return v = v
 
+  let v_unknown_of_type ty =
+    Types.base_value dummy_annotated Env.Static.empty ty
+    |> StaticInterpreter.static_eval Env.Static.empty
+
   let warnT msg v =
     (* Should not be called... *)
     Printf.eprintf "Warning: message %s found its way, something is wrong\n" msg;
@@ -72,70 +79,84 @@ module NativeBackend = struct
       | v -> mismatch_type v [ T_Bool ])
 
   let delay m k = k m m
-
-  let binop op v1 v2 =
-    StaticInterpreter.binop_values ASTUtils.dummy_annotated op v1 v2
+  let binop op v1 v2 = StaticInterpreter.binop_values dummy_annotated op v1 v2
 
   let ternary = function
     | V_Bool true -> fun m_true _m_false -> m_true ()
     | V_Bool false -> fun _m_true m_false -> m_false ()
     | v -> mismatch_type v [ T_Bool ]
 
-  let unop op v = StaticInterpreter.unop_values ASTUtils.dummy_annotated op v
-  let on_write_identifier _x _scope _value = ()
-  let on_read_identifier _x _scope _value = ()
+  let unop op v = StaticInterpreter.unop_values dummy_annotated op v
+
+  let on_write_identifier x scope value =
+    if _log then
+      Format.eprintf "Writing %a to %s in %a.@." PP.pp_value value x PP.pp_scope
+        scope
+
+  let on_read_identifier x scope value =
+    if _log then
+      Format.eprintf "Reading %a from %s in %a.@." PP.pp_value value x
+        PP.pp_scope scope
+
   let v_tuple li = return (V_Tuple li)
   let v_record li = return (V_Record li)
   let v_exception li = return (V_Exception li)
-  let indexables = [ T_Tuple []; T_Record []; T_Exception [] ]
-  let non_indexable_error v = mismatch_type v indexables
+  let non_tuple_exception v = mismatch_type v [ T_Tuple [] ]
 
-  let get_i i vec =
+  let doesnt_have_fields_exception v =
+    mismatch_type v [ T_Record []; T_Exception [] ]
+
+  let get_index i vec =
     match vec with
     | V_Tuple li -> List.nth li i |> return
-    | V_Record li -> List.nth li i |> snd |> return
-    | V_Exception li -> List.nth li i |> snd |> return
-    | v -> non_indexable_error v
+    | v -> non_tuple_exception v
 
-  let set_i i v vec =
-    let field_update i v li =
-      let update_field v (name, _v) = (name, v) in
-      list_update i (update_field v) li
-    in
+  let set_index i v vec =
     match vec with
     | V_Tuple li -> list_update i (Fun.const v) li |> v_tuple
-    | V_Record li -> field_update i v li |> v_record
-    | V_Exception li -> field_update i v li |> v_exception
-    | v -> non_indexable_error v
+    | v -> non_tuple_exception v
 
-  let create_vector ty li =
-    let assoc_name_val (name, _ty) v = (name, v) in
-    let assoc_names_values = List.map2 assoc_name_val in
-    match ty.desc with
-    | T_Tuple _ -> v_tuple li
-    | T_Record field_types -> assoc_names_values field_types li |> v_record
-    | T_Exception field_types ->
-        assoc_names_values field_types li |> v_exception
-    | _ -> fatal_from ty @@ Error.ConflictingTypes (indexables, ty)
+  let get_field name record =
+    match record with
+    | V_Record li | V_Exception li -> List.assoc name li
+    | v -> doesnt_have_fields_exception v
+
+  let set_field =
+    let field_update name v li =
+      (name, v) :: List.filter (fun (s, _) -> not (String.equal s name)) li
+    in
+    fun name v record ->
+      match record with
+      | V_Record li -> V_Record (field_update name v li)
+      | V_Exception li -> V_Exception (field_update name v li)
+      | v -> doesnt_have_fields_exception v
+
+  let create_vector = v_tuple
+  let create_record = v_record
+  let create_exception = v_exception
 
   let as_bitvector = function
     | V_BitVector bits -> bits
     | V_Int i -> Bitvector.of_int i
-    | v -> mismatch_type v [ ASTUtils.default_t_bits ]
+    | v -> mismatch_type v [ default_t_bits ]
 
   let as_int = function V_Int i -> i | v -> mismatch_type v [ T_Int None ]
   let bitvector_to_value bv = return (V_BitVector bv)
 
   let read_from_bitvector positions bv =
-    let bv' = as_bitvector bv
-    and positions = ASTUtils.slices_to_positions as_int positions in
-    let res = Bitvector.extract_slice bv' positions in
+    let bv =
+      match bv with
+      | V_BitVector bv -> bv
+      | V_Int i -> Bitvector.of_int i
+      | _ -> mismatch_type bv [ default_t_bits ]
+    and positions = slices_to_positions as_int positions in
+    let res = Bitvector.extract_slice bv positions in
     bitvector_to_value res
 
   let write_to_bitvector positions bits bv =
     let bv = as_bitvector bv
     and bits = as_bitvector bits
-    and positions = ASTUtils.slices_to_positions as_int positions in
+    and positions = slices_to_positions as_int positions in
     Bitvector.write_slice bv bits positions |> bitvector_to_value
 
   let concat_bitvectors bvs =
@@ -151,41 +172,116 @@ module NativeStdlib = struct
   let uint = function
     | [ V_BitVector bv ] -> V_Int (Bitvector.to_int bv) |> return_one
     | [ v ] ->
-        Error.fatal_unknown_pos
-        @@ Error.MismatchType (v, [ ASTUtils.default_t_bits ])
-    | li ->
-        Error.fatal_unknown_pos
-        @@ Error.BadArity ("Replicate", 1, List.length li)
+        Error.fatal_unknown_pos @@ Error.MismatchType (v, [ default_t_bits ])
+    | li -> Error.fatal_unknown_pos @@ Error.BadArity ("UInt", 1, List.length li)
 
   let sint = function
     | [ V_BitVector bv ] -> V_Int (Bitvector.to_int_signed bv) |> return_one
     | [ v ] ->
-        Error.fatal_unknown_pos
-        @@ Error.MismatchType (v, [ ASTUtils.default_t_bits ])
+        Error.fatal_unknown_pos @@ Error.MismatchType (v, [ default_t_bits ])
+    | li -> Error.fatal_unknown_pos @@ Error.BadArity ("SInt", 1, List.length li)
+
+  let print =
+    let print_one = function
+      | V_String s -> Printf.printf "%s " s
+      | v -> Error.fatal_unknown_pos @@ Error.MismatchType (v, [ T_String ])
+    in
+    fun li ->
+      List.iter print_one li;
+      Printf.printf "\n%!";
+      return []
+
+  let dec_str = function
+    | [ V_Int i ] -> V_String (string_of_int i) |> return_one
+    | [ v ] ->
+        Error.fatal_unknown_pos @@ Error.MismatchType (v, [ integer.desc ])
     | li ->
-        Error.fatal_unknown_pos
-        @@ Error.BadArity ("Replicate", 1, List.length li)
+        Error.fatal_unknown_pos @@ Error.BadArity ("DecStr", 1, List.length li)
+
+  let hex_str = function
+    | [ V_Int i ] -> V_String (Printf.sprintf "%x" i) |> return_one
+    | [ v ] ->
+        Error.fatal_unknown_pos @@ Error.MismatchType (v, [ integer.desc ])
+    | li ->
+        Error.fatal_unknown_pos @@ Error.BadArity ("DecStr", 1, List.length li)
+
+  let ascii_range = Constraint_Range (literal (V_Int 0), literal (V_Int 127))
+  let ascii_integer = T_Int (Some [ ascii_range ])
+
+  let ascii_str = function
+    | [ V_Int i ] when 0 <= i && i <= 127 ->
+        V_String (char_of_int i |> String.make 1) |> return_one
+    | [ v ] ->
+        Error.fatal_unknown_pos @@ Error.MismatchType (v, [ ascii_integer ])
+    | li ->
+        Error.fatal_unknown_pos @@ Error.BadArity ("DecStr", 1, List.length li)
 
   let primitives =
-    let with_pos = ASTUtils.add_dummy_pos in
-    let t_bits e = T_Bits (BitWidth_Determined e, []) |> with_pos in
+    let with_pos = add_dummy_pos in
+    let t_bits e = T_Bits (BitWidth_SingleExpr e, []) |> with_pos in
     let e_var x = E_Var x |> with_pos in
-    let integer = T_Int None |> with_pos in
+    let d_func_string i =
+      D_Func
+        {
+          name = "print";
+          parameters = [];
+          args = List.init i (fun j -> ("s" ^ string_of_int j, string));
+          body = SB_Primitive print;
+          return_type = None;
+          subprogram_type = ST_Procedure;
+        }
+    in
     [
-      {
-        name = "UInt";
-        parameters = [ ("N", Some integer) ];
-        args = [ ("x", t_bits (e_var "N")) ];
-        body = uint;
-        return_type = Some integer;
-      };
-      {
-        name = "SInt";
-        parameters = [ ("N", Some integer) ];
-        args = [ ("x", t_bits (e_var "N")) ];
-        body = sint;
-        return_type = Some integer;
-      };
+      D_Func
+        {
+          name = "UInt";
+          parameters = [ ("N", Some integer) ];
+          args = [ ("x", t_bits (e_var "N")) ];
+          body = SB_Primitive uint;
+          return_type = Some integer;
+          subprogram_type = ST_Function;
+        };
+      D_Func
+        {
+          name = "SInt";
+          parameters = [ ("N", Some integer) ];
+          args = [ ("x", t_bits (e_var "N")) ];
+          body = SB_Primitive sint;
+          return_type = Some integer;
+          subprogram_type = ST_Function;
+        };
+      D_Func
+        {
+          name = "DecStr";
+          parameters = [];
+          args = [ ("x", integer) ];
+          body = SB_Primitive dec_str;
+          return_type = Some string;
+          subprogram_type = ST_Function;
+        };
+      D_Func
+        {
+          name = "HexStr";
+          parameters = [];
+          args = [ ("x", integer) ];
+          body = SB_Primitive hex_str;
+          return_type = Some string;
+          subprogram_type = ST_Function;
+        };
+      D_Func
+        {
+          name = "AsciiStr";
+          parameters = [];
+          args = [ ("x", integer) ];
+          body = SB_Primitive ascii_str;
+          return_type = Some string;
+          subprogram_type = ST_Function;
+        };
+      d_func_string 0;
+      d_func_string 1;
+      d_func_string 2;
+      d_func_string 3;
+      d_func_string 4;
     ]
 
   let stdlib = []
@@ -196,7 +292,9 @@ module NativeInterpreter (C : Interpreter.Config) =
 
 let run (module C : Interpreter.Config) ast =
   let module I = NativeInterpreter (C) in
-  I.run (List.rev_append NativeStdlib.stdlib ast) NativeStdlib.primitives
+  let ( @ ) = List.rev_append in
+  let ast = NativeStdlib.stdlib @ NativeStdlib.primitives @ ast in
+  I.run ast
 
 let interprete strictness ast =
   let module C : Interpreter.Config = struct

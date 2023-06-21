@@ -20,19 +20,9 @@
 module type S = sig
   module B : Backend.S
 
-  type body = B.value B.m list -> B.value B.m list B.m
-  type primitive = body AST.func_skeleton
-
-  val run : AST.t -> primitive list -> unit B.m
-  (** [run spec_lib ast] runs the function main of the ast, in an
-      environment build from the ast and spec_lib.
-      The primitives signatures will be passed by the interpreter to the type-
-      checker with [D_Primitive].
-
-      Primitives should include:
-      - [Len] that returns a bitvector length as in integer (needed for
-        parameters inlining if you are using dependently typed functions)
-  *)
+  val run : B.ast -> unit B.m
+  (** [run ast] runs the function main of the ast, in an environment build from
+      the ast. *)
 end
 
 module type Config = sig

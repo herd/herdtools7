@@ -51,7 +51,7 @@
 open AST
 open ASTUtils
 
-let t_bit = T_Bits (BitWidth_Determined (E_Literal (V_Int 1) |> add_dummy_pos), [])
+let t_bit = T_Bits (BitWidth_SingleExpr (E_Literal (V_Int 1) |> add_dummy_pos), [])
 
 let make_ldi_tuple xs ty =
   LDI_Tuple (List.map (fun x -> LDI_Var (x, None)) xs, Some ty)
@@ -73,7 +73,8 @@ let make_ldi_tuple xs ty =
 %token SLICING STRING SUBTYPES THEN THROW TO TRY TYPE UNKNOWN UNTIL VAR WHEN
 %token WHERE WHILE WITH
 
-%token <string> IDENTIFIER STRING_LIT MASK_LIT
+%token <string> IDENTIFIER STRING_LIT
+%token <Bitvector.mask> MASK_LIT
 %token <Bitvector.t> BITVECTOR_LIT
 %token <int> INT_LIT
 %token <float> REAL_LIT
@@ -146,11 +147,11 @@ let make_ldi_tuple xs ty =
 
 (* ------------------------------------------------------------------------- *)
 
-%type <AST.t> ast
+%type <unit AST.t> ast
 %start ast
 
 (* This start-point is for .opn files in arm-pseudocodes for instructions. *)
-%type <AST.t> opn
+%type <unit AST.t> opn
 %start opn
 
 %%
@@ -222,8 +223,7 @@ let value == (* Also called literal_expr in grammar.bnf *)
   | b=BOOL_LIT      ; < V_Bool        >
   | r=REAL_LIT      ; < V_Real        >
   | b=BITVECTOR_LIT ; < V_BitVector   >
-  | STRING_LIT      ; { V_Bool false  }
-  (* Unsupported now: string_lit and hex_lit *)
+  | s=STRING_LIT    ; < V_String      >
 
 let unop ==
   | BNOT  ; { BNOT }
@@ -275,31 +275,37 @@ let e_else :=
   | annotated ( ELSIF; c=expr; THEN; e=expr; ~=e_else; <E_Cond> )
 
 let expr :=
+  | make_expr (expr)
+  | annotated (
+    | ~=plist2(expr);                                             < E_Tuple              >
+  )
+
+let make_expr(sub_expr) ==
   annotated (
     (* A union of cexpr, cexpr_cmp, cexpr_add_sub, cepxr mul_div, cexpr_pow,
        bexpr, expr_term, expr_atom *)
     | ~=value ;                                                   < E_Literal            >
     | ~=IDENTIFIER ;                                              < E_Var                >
-    | e1=expr; op=binop; e2=expr;                                 { E_Binop (op, e1, e2) }
+    | e1=sub_expr; op=binop; e2=expr;                             { E_Binop (op, e1, e2) }
     | op=unop; e=expr;                                            < E_Unop               >
     | IF; e1=expr; THEN; e2=expr; ~=e_else;                       < E_Cond               >
     | x=IDENTIFIER; args=plist(expr); ~=nargs;                    < E_Call               >
-    | e=expr; ~=slices;                                           < E_Slice              >
-    | e=expr; DOT; x=IDENTIFIER;                    ~=without_ta; < E_GetField           >
-    | ~=expr; DOT; ~=bracketed(nclist(IDENTIFIER)); ~=without_ta; < E_GetFields          >
+    | e=sub_expr; ~=slices;                                       < E_Slice              >
+    | e=sub_expr; DOT; x=IDENTIFIER;                              < E_GetField           >
+    | e=sub_expr; DOT; fs=bracketed(nclist(IDENTIFIER));          < E_GetFields          >
     | ~=bracketed(nclist(expr));                                  < E_Concat             >
-    | ~=plist2(expr);                                             < E_Tuple              >
-    | ~=expr; AS; ~=ty;                                           < E_Typed              >
-    | ~=expr; AS; ~=implicit_t_int;                               < E_Typed              >
+    | ~=sub_expr; AS; ~=ty;                                       < E_Typed              >
+    | ~=sub_expr; AS; ~=implicit_t_int;                           < E_Typed              >
 
-    | ~=expr; IN; ~=pattern_set;                                  < E_Pattern            >
+    | ~=sub_expr; IN; ~=pattern_set;                              < E_Pattern            >
+    | e=sub_expr; IN; m=MASK_LIT;                                 { E_Pattern (e, Pattern_Mask m) }
     | UNKNOWN; COLON_COLON; ~=ty;                                 < E_Unknown            >
 
     | t=annotated(IDENTIFIER); fields=braced(clist(field_assign));
-        { E_Record (add_pos_from t (T_Named t.desc), fields, TA_None) }
+        { E_Record (add_pos_from t (T_Named t.desc), fields) }
   )
 
-  | pared(expr)
+  | pared(sub_expr)
 
 (* ------------------------------------------------------------------------
 
@@ -317,21 +323,23 @@ let int_constraint_elt ==
   | e1=expr; SLICING; e2=expr;  < Constraint_Range >
 
 let bits_constraint ==
-  | e = expr ;                      < BitWidth_Determined           >
-  | MINUS ; colon_for_type ; t = ty ;  < BitWidth_ConstrainedFormType  >
-  | c = int_constraints ;           < BitWidth_Constrained          >
+  | e = expr ;                      < BitWidth_SingleExpr           >
+  | MINUS ; colon_for_type ; ~=ty ; < BitWidth_ConstrainedFormType  >
+  | c = int_constraints ;           < BitWidth_Constraints          >
 
+let expr_pattern := make_expr (expr_pattern)
 let pattern_set ==
   | BNOT; ~=braced(pattern_list); < Pattern_Not >
   | braced(pattern_list)
 let pattern_list == ~=nclist(pattern); < Pattern_Any >
-let pattern ==
-  | ~=expr; < Pattern_Single >
-  | e1=expr; SLICING; e2=expr; < Pattern_Range >
+let pattern :=
+  | ~=expr_pattern; < Pattern_Single >
+  | e1=expr_pattern; SLICING; e2=expr; < Pattern_Range >
   | MINUS; { Pattern_All }
   | LEQ; ~=expr; < Pattern_Leq >
   | GEQ; ~=expr; < Pattern_Geq >
   | ~=MASK_LIT; < Pattern_Mask >
+  | ~=plist2(pattern); < Pattern_Tuple >
   | pattern_set
 
 let fields_opt == { [] } | braced(tclist(typed_identifier))
@@ -373,7 +381,6 @@ let ty :=
 let as_ty == colon_for_type; ty
 let typed_identifier == pair(IDENTIFIER, as_ty)
 let ty_opt == ioption(as_ty)
-let without_ta == { TA_None }
 let implicit_t_int == annotated ( ~=some(int_constraints) ; <T_Int> )
 
 
@@ -398,8 +405,8 @@ let lexpr ==
 let lexpr_atom :=
   | le_var
   | le=annotated(lexpr_atom); ~=slices; <LE_Slice>
-  | le=annotated(lexpr_atom); DOT; field=IDENTIFIER; ~=without_ta; <LE_SetField>
-  | le=annotated(lexpr_atom); DOT; li=bracketed(clist(IDENTIFIER)); ~=without_ta; <LE_SetFields>
+  | le=annotated(lexpr_atom); DOT; field=IDENTIFIER; <LE_SetField>
+  | le=annotated(lexpr_atom); DOT; li=bracketed(clist(IDENTIFIER)); <LE_SetFields>
 
   | unimplemented_lexpr(
     | bracketed(nclist(lexpr_atom)); <>
@@ -419,10 +426,13 @@ let decl_item ==
 
 let local_decl_keyword ==
   | LET       ; { LDK_Let       }
-  | VAR       ; { LDK_Var       }
   | CONSTANT  ; { LDK_Constant  }
 
-let storage_keyword == LET | CONSTANT | VAR | CONFIG
+let storage_keyword ==
+  | LET       ; { GDK_Let      }
+  | CONSTANT  ; { GDK_Constant }
+  | VAR       ; { GDK_Var      }
+  | CONFIG    ; { GDK_Config   }
 
 let pass == { S_Pass }
 let unimplemented_stmt(x) == x ; pass
@@ -436,11 +446,9 @@ let alt == annotated (
   | OTHERWISE; COLON; s=stmt_list; { (Pattern_All, s) }
 )
 
-let otherwise == annotated( OTHERWISE; ARROW; stmt_list)
-let otherwise_opt == ioption(otherwise); <>
-let catcher ==
-  | WHEN; IDENTIFIER; as_ty; ARROW; stmt_list
-  | WHEN; ty;                ARROW; stmt_list
+let otherwise == OTHERWISE; ARROW; stmt_list
+let otherwise_opt == ioption(otherwise)
+let catcher == WHEN; ~=ioption(terminated(IDENTIFIER, COLON)); ~=ty; ARROW; ~=stmt_list; <>
 
 let stmt ==
   annotated (
@@ -450,9 +458,7 @@ let stmt ==
       | WHILE; ~=expr; DO; ~=stmt_list;               <S_While>
       | FOR; id=IDENTIFIER; EQ; e1=expr;
         d=direction; e2=expr; DO; s=stmt_list;        <S_For>
-      | unimplemented_stmt(
-        | TRY; stmt_list; CATCH; nonempty_list(catcher); otherwise_opt; <>
-      )
+      | TRY; s=stmt_list; CATCH; c=nonempty_list(catcher); o=otherwise_opt; < S_Try >
     )
     | terminated_by(SEMI_COLON,
       | PASS; pass
@@ -461,17 +467,16 @@ let stmt ==
       | ASSERT; e=expr;                                      < S_Assert >
       | ~=lexpr; EQ; ~=expr;                                 < S_Assign >
       | ~=local_decl_keyword; ~=decl_item; EQ; ~=some(expr); < S_Decl   >
+      | VAR; ldi=decl_item; e=ioption(EQ; expr);             { S_Decl (LDK_Var, ldi, e) }
       | REPEAT; ~=stmt_list; UNTIL; ~=expr;                  < S_Repeat >
+      | THROW; e=expr;                                       { S_Throw (Some (e, None)) }
+      | THROW;                                               { S_Throw None             }
 
-      | VAR; x=IDENTIFIER; colon_for_type; ~=ty;
-          { S_Decl (LDK_Var, LDI_Var (x, Some ty), None) }
       | VAR; xs=clist2(IDENTIFIER); colon_for_type; ~=ty;
           { S_Decl (LDK_Var, make_ldi_tuple xs ty, None) }
 
       | unimplemented_stmt(
-        | THROW; ioption(expr);                                               <>
-        (* We have to manually expend the list otherwise we have a shift/reduce conflict. *)
-        | PRAGMA; IDENTIFIER; clist(expr);                                    <>
+        | PRAGMA; IDENTIFIER; clist(expr);                   <>
       )
     )
   )
@@ -491,11 +496,11 @@ let s_else :=
 
   ------------------------------------------------------------------------- *)
 
-let subtype_opt == ioption(SUBTYPES; ty)
+let subtype_opt == option(SUBTYPES; IDENTIFIER)
 let unimplemented_decl(x) ==
   x ; {
     let e = literal (V_Int 0) and ty = add_dummy_pos (T_Int None) in
-    (D_GlobalConst ("-", ty, e))
+    (D_GlobalStorage { name="-"; keyword=GDK_Constant; ty=Some ty; initial_value = Some e})
   }
 
 let opt_type_identifier == pair(IDENTIFIER, ty_opt)
@@ -506,15 +511,26 @@ let func_args == plist(typed_identifier)
 let func_body == delimited(ioption(BEGIN), stmt_list, END)
 
 let decl ==
-  | FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args;
-      return_type=ioption(return_type); body=func_body;
+  | FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; ~=return_type; body=func_body;
       {
         D_Func {
           name;
           parameters = params_opt;
           args = func_args;
-          body;
-          return_type
+          body = SB_ASL body;
+          return_type = Some return_type;
+          subprogram_type = ST_Function;
+        }
+      }
+  | FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; body=func_body;
+      {
+        D_Func {
+          name;
+          parameters = params_opt;
+          args = func_args;
+          body = SB_ASL body;
+          return_type = None;
+          subprogram_type = ST_Procedure;
         }
       }
   | GETTER; name=IDENTIFIER; ~=params_opt; ~=access_args_opt; ret=return_type;
@@ -522,11 +538,12 @@ let decl ==
       {
         D_Func
           {
-            name = ASTUtils.getter_name name;
+            name;
             parameters = params_opt;
             args = access_args_opt;
             return_type = Some ret;
-            body = func_body;
+            body = SB_ASL func_body;
+            subprogram_type = ST_Getter;
           }
       }
   | SETTER; name=IDENTIFIER; ~=params_opt; ~=access_args_opt; EQ; v=typed_identifier;
@@ -534,26 +551,30 @@ let decl ==
       {
         D_Func
           {
-            name = ASTUtils.setter_name name;
+            name;
             parameters = params_opt;
             args = v :: access_args_opt;
             return_type = None;
-            body = func_body;
+            body = SB_ASL func_body;
+            subprogram_type = ST_Setter;
           }
       }
 
   | terminated_by(SEMI_COLON,
-    | storage_keyword; x=IDENTIFIER; t=as_ty; EQ; e=expr; <D_GlobalConst>
-    | TYPE; x=IDENTIFIER; OF; t=ty; subtype_opt;   <D_TypeDecl>
+    | TYPE; x=IDENTIFIER; OF; t=ty; ~=subtype_opt;       < D_TypeDecl >
+    | TYPE; x=IDENTIFIER; SUBTYPES; s=IDENTIFIER;
+      { D_TypeDecl (x, ASTUtils.add_dummy_pos (T_Named s), Some s) }
 
-    | VAR; x=IDENTIFIER; t=as_ty;
-      { D_GlobalConst(x, t, E_Unknown t |> ASTUtils.add_pos_from t) }
+    | keyword=storage_keyword; name=IDENTIFIER;
+      ty=ioption(as_ty); EQ; initial_value=some(expr);
+      { D_GlobalStorage { keyword; name; ty; initial_value } }
+    | VAR; name=IDENTIFIER; ty=some(as_ty);
+      { D_GlobalStorage { keyword=GDK_Var; name; ty; initial_value=None}}
 
     | unimplemented_decl(
-      | storage_keyword; MINUS; ty_opt; EQ; expr;                         <>
-      | storage_keyword; IDENTIFIER; EQ; expr;                            <>
-      | PRAGMA; IDENTIFIER; clist(expr);                                  <>
-      | TYPE; IDENTIFIER; SUBTYPES; ty; ioption(WITH; fields_opt);        <>
+      | storage_keyword; MINUS; ty_opt; EQ; expr;                <>
+      | PRAGMA; IDENTIFIER; clist(expr);                         <>
+      | TYPE; IDENTIFIER; SUBTYPES; ty; WITH; fields_opt;        <>
     )
   )
 
@@ -567,8 +588,9 @@ let opn := body=stmt;
             name = "main";
             args = [];
             parameters = [];
-            body;
+            body = SB_ASL body;
             return_type = None;
+            subprogram_type = ST_Procedure;
           }
       ]
     }

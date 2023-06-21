@@ -11,18 +11,18 @@ constant C5 :: integer = - C2;
 
 func main()
 begin
-  c1 = C1;
-  c2 = C2;
-  c3 = C3;
-  c4 = C4;
-  c5 = C5;
+  let c1 = C1;
+  let c2 = C2;
+  let c3 = C3;
+  let c4 = C4;
+  let c5 = C5;
 end
 
 forall (
-     0: c1 = 3
-  /\ 0: c2 = 5
-  /\ 0: c3 = 15
-  /\ 0: c4 = 3
-  (* /\ 0: c5 = -5 *)
+     0: main.0.c1 = 3
+  /\ 0: main.0.c2 = 5
+  /\ 0: main.0.c3 = 15
+  /\ 0: main.0.c4 = 3
+  (* /\ 0: main.0.c5 = -5 *)
 )
 

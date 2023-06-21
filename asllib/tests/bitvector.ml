@@ -164,16 +164,16 @@ let test_with_z () =
       if _debug then
         Printf.eprintf "Comparing %s to %s\nand %s to %s\nand %s and %s\n%!"
           (Z.to_string i) s
-          (BV.to_string (BV.of_z len i)) s
-          (Z.to_string i)
-          (Z.to_string ((BV.to_z_unsigned (BV.of_string s))))
+          (BV.to_string (BV.of_z len i))
+          s (Z.to_string i)
+          (Z.to_string (BV.to_z_unsigned (BV.of_string s)))
     in
     assert (BV.equal (BV.of_z len i) (BV.of_string s));
     assert (String.equal (BV.to_string (BV.of_z len i)) ("'" ^ s ^ "'"));
     assert (Z.equal i (BV.to_z_unsigned (BV.of_string s)));
     assert (Z.equal i (BV.to_z_unsigned (BV.of_z len i)))
   in
-    List.iter one
+  List.iter one
     [
       (Z.of_string "0x0", "");
       (Z.of_string "0x0", "0");
@@ -190,17 +190,16 @@ let test_with_z () =
       (Z.of_string "0xffffffff", "11111111111111111111111111111111");
       (Z.of_string "0xfffffffe", "11111111111111111111111111111110");
       (Z.of_string "0x2", "00000000000000000000000000000010");
-    ] ;
-    assert (Z.equal Z.one (BV.to_z_unsigned (BV.of_string "1"))) ;
-    for i = 1 to 17 do
-      let x = BV.of_z i Z.minus_one
-      and y = BV.of_z i (Z.add Z.minus_one (Z.shift_left Z.one i)) in
-      if _debug then
-        Printf.eprintf "%s - %s\n" (BV.debug x) (BV.debug y) ;
-      assert (String.equal (BV.to_string x) (BV.to_string  y)) ;
-      assert (BV.equal y x) ;
-      ()
-    done ;
+    ];
+  assert (Z.equal Z.one (BV.to_z_unsigned (BV.of_string "1")));
+  for i = 1 to 17 do
+    let x = BV.of_z i Z.minus_one
+    and y = BV.of_z i (Z.add Z.minus_one (Z.shift_left Z.one i)) in
+    if _debug then Format.eprintf "%a - %a@." BV.pp_t x BV.pp_t y;
+    assert (String.equal (BV.to_string x) (BV.to_string y));
+    assert (BV.equal y x);
+    ()
+  done;
   ()
 
 let test_with_int64_signed () =
@@ -307,6 +306,30 @@ let test_concat () =
       [ "11110000"; "0101"; "1010"; "011" ];
     ]
 
+let test_mask () =
+  let one (s, m, b) =
+    let () =
+      if _debug then
+        Format.eprintf "Assert %s %s match %s@." s
+          (if b then "does" else "doesn't")
+          m
+    in
+    assert (b == BV.matches (BV.of_string s) (BV.mask_of_string m))
+  in
+  List.iter one
+    [
+      ("10", "xx", true);
+      ("10", "10", true);
+      ("10", "1x", true);
+      ("10", "11", false);
+      ("1", "1", true);
+      ("0", "0", true);
+      ("0", "1", false);
+      ("1", "0", false);
+      ("1", "x", true);
+      ("0", "x", true);
+    ]
+
 let () =
   exec_tests
     [
@@ -321,4 +344,5 @@ let () =
       ("bitvector/write_slice", test_write_slice);
       ("bitvector/concat", test_concat);
       ("bitvector/signed_int64", test_with_int64_signed);
+      ("bitvector/masks", test_mask);
     ]

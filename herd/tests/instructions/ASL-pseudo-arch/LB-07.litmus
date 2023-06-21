@@ -19,8 +19,9 @@ end
 
 func f(read::bits(64)) => bits(64)
 begin
-  read[0] = '1';
-  return read;
+  var t = read;
+  t[0] = '1';
+  return t;
 end
 
 func T1(x::bits(64), y:: bits(64))

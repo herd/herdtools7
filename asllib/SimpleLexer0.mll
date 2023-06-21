@@ -215,7 +215,7 @@ let string_of_token = function
   | BOOL_LIT b -> if b then "TRUE" else "FALSE"
   | STRING_LIT (s) -> "\"" ^ s ^ "\""
   | BITS_LIT bv -> Bitvector.to_string bv
-  | MASK_LIT s -> "'" ^ s ^ "'"
+  | MASK_LIT m -> "'" ^ Bitvector.mask_to_string m ^ "'"
   | INT_LIT i -> string_of_int i
   | REAL_LIT r -> string_of_float r
   | QUALIFIER s -> s
@@ -239,13 +239,13 @@ rule token = parse
     | '/' '*'                     { comment 1 lexbuf }
 
     (* numbers, strings and identifiers *)
-    | '"' ([^'"']* as s) '"'                { STRING_LIT (s)                      }
-    | '\'' ['0' '1' ' ']* '\''       as lxm { BITS_LIT (Bitvector.of_string lxm)  }
-    | '\'' (['0' '1' 'x' ' ']* as s) '\''   { MASK_LIT (s)                        }
-    | hex_lit                        as lxm { INT_LIT (int_of_string_no_fail lxm) }
-    | ['0'-'9']+ '.' ['0'-'9']+      as lxm { REAL_LIT(float_of_string lxm)       }
-    | ['0'-'9']+                     as lxm { INT_LIT(int_of_string lxm)          }
-    | identifier                     as lxm { tr_name (lxm)                       }
+    | '"' ([^'"']* as s) '"'                { STRING_LIT (s)                        }
+    | '\'' ['0' '1' ' ']* '\''       as lxm { BITS_LIT (Bitvector.of_string lxm)    }
+    | '\'' (['0' '1' 'x' ' ']* as s) '\''   { MASK_LIT (Bitvector.mask_of_string s) }
+    | hex_lit                        as lxm { INT_LIT (int_of_string_no_fail lxm)   }
+    | ['0'-'9']+ '.' ['0'-'9']+      as lxm { REAL_LIT(float_of_string lxm)         }
+    | ['0'-'9']+                     as lxm { INT_LIT(int_of_string lxm)            }
+    | identifier                     as lxm { tr_name (lxm)                         }
 
     (* delimiters *)
     | '!'            { BANG       }

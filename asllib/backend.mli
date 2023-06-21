@@ -36,6 +36,9 @@ module type S = sig
       Note that the prefered method to create records or any complex values
       is [create_vector], and should be used for constructing complex values. *)
 
+  val v_unknown_of_type : AST.ty -> value
+  (** [v_unknwon_of_type t] constructs a value from a type. *)
+
   val v_of_int : int -> value
   (** [v_of_int] is used to convert raw integers arising from the interpretation,
       and not parsed values. *)
@@ -82,14 +85,26 @@ module type S = sig
   (** Special operations with vectors *)
   (*  --------------------------------*)
 
-  val create_vector : AST.ty -> value list -> value m
+  val create_vector : value list -> value m
   (** Creates a vector, with possible names for the fields *)
 
-  val get_i : int -> value -> value m
+  val create_record : (AST.identifier * value) list -> value m
+  (** Creates a record, with the indicated names. *)
+
+  val create_exception : (AST.identifier * value) list -> value m
+  (** Creates an exception, with the indicated names. *)
+
+  val get_index : int -> value -> value m
   (** [get_i i vec] returns value at index [i] inside [vec].*)
 
-  val set_i : int -> value -> value -> value m
+  val set_index : int -> value -> value -> value m
   (** [set_i i v vec] returns [vec] with index [i] replaced by [v].*)
+
+  val get_field : string -> value -> value m
+  (** [get_field "foo" v] is the value mapped by "foo" in the record [v]. *)
+
+  val set_field : string -> value -> value -> value m
+  (** [set_field "foo" v record] is [record] with "foo" mapping to [v]. *)
 
   (** Other operations *)
   (*  -----------------*)
@@ -103,14 +118,11 @@ module type S = sig
   val ternary : value -> (unit -> value m) -> (unit -> value m) -> value m
   (** [ternary v w1 w2] is w1 if v is true and w2 if v is false *)
 
-  type scope = AST.identifier * int
-  (** A scope is an unique identifier of the calling site. *)
-
-  val on_read_identifier : AST.identifier -> scope -> value -> unit m
+  val on_read_identifier : AST.identifier -> AST.scope -> value -> unit m
   (** [on_read_identifier] is called when a value is read from the local
       environment.*)
 
-  val on_write_identifier : AST.identifier -> scope -> value -> unit m
+  val on_write_identifier : AST.identifier -> AST.scope -> value -> unit m
   (** [on_write_identifier] is called when a value is read from the local
       environment.*)
 
@@ -122,4 +134,10 @@ module type S = sig
 
   val concat_bitvectors : value list -> value m
   (** Similar to Bitvector.concat, but monadic style obviously. *)
+
+  type primitive = value m list -> value m list m
+  (** primitive types that go with this AST. *)
+
+  type ast = primitive AST.t
+  (** The considered AST type. *)
 end

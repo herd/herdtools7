@@ -1,10 +1,10 @@
 Test func3 Required
 States 1
-0:main.0.a=3; 0:main.0.b=3; 0:main.0.c=7; 0:setter-f3.0.f3_internal=12; 0:setter-f4.0.f4_internal=15;
+0:main.0.a=3; 0:main.0.b=3; 0:main.0.c=7; 0:f3_storage=12; 0:f4_storage=15;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (0:main.0.a=3 /\ 0:main.0.b=3 /\ 0:main.0.c=7 /\ 0:setter-f3.0.f3_internal=12 /\ 0:setter-f4.0.f4_internal=15)
+Condition forall (0:main.0.a=3 /\ 0:main.0.b=3 /\ 0:main.0.c=7 /\ 0:f3_storage=12 /\ 0:f4_storage=15)
 Observation func3 Always 1 0
-Hash=1e9626861cfc27ae3817d881367cb951
+Hash=345b039d1d7a7c5addf8eb282b9d5a41
 

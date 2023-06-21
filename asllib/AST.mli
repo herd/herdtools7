@@ -77,6 +77,7 @@ type value =
   | V_Bool of bool
   | V_Real of float
   | V_BitVector of Bitvector.t
+  | V_String of string
   | V_Tuple of value list
   | V_Record of (identifier * value) list
   | V_Exception of (identifier * value) list
@@ -97,9 +98,9 @@ type expr_desc =
   | E_Call of identifier * expr list * (identifier * expr) list
   | E_Slice of expr * slice list
   | E_Cond of expr * expr * expr
-  | E_GetField of expr * identifier * type_annot
-  | E_GetFields of expr * identifier list * type_annot
-  | E_Record of ty * (identifier * expr) list * type_annot
+  | E_GetField of expr * identifier
+  | E_GetFields of expr * identifier list
+  | E_Record of ty * (identifier * expr) list
   | E_Concat of expr list
   | E_Tuple of expr list
   | E_Unknown of ty
@@ -112,19 +113,18 @@ and pattern =
   | Pattern_Any of pattern list
   | Pattern_Geq of expr
   | Pattern_Leq of expr
-  | Pattern_Mask of string
+  | Pattern_Mask of Bitvector.mask
   | Pattern_Not of pattern
   | Pattern_Range of expr * expr (* lower -> upper, included *)
   | Pattern_Single of expr
+  | Pattern_Tuple of pattern list
 
 and slice =
   | Slice_Single of expr
   | Slice_Range of expr * expr (* end first because ASL *)
-  | Slice_Length of expr * expr (* start, length *)
+  | Slice_Length of expr * expr
+(* start, length *)
 
-(** Type annotations are way for the typing system to annotate
-    special nodes of the AST. They are for internal use only. *)
-and type_annot = TA_None | TA_InferredStructure of ty
 (* -------------------------------------------------------------------------
 
                                   Types
@@ -159,10 +159,10 @@ and int_constraints = int_constraint list
 
 (** The width of a bitvector can be constrained in multiple ways. *)
 and bits_constraint =
-  | BitWidth_Determined of expr  (** Statically evaluable expression. *)
+  | BitWidth_SingleExpr of expr  (** Statically evaluable expression. *)
   | BitWidth_ConstrainedFormType of ty
       (** Constrained by the domain of another type. *)
-  | BitWidth_Constrained of int_constraints
+  | BitWidth_Constraints of int_constraints
       (** Constrained directly by a constraint on its width. *)
 
 and bitfields = (identifier * slice list) list
@@ -181,8 +181,8 @@ type lexpr_desc =
   | LE_Ignore
   | LE_Var of identifier
   | LE_Slice of lexpr * slice list
-  | LE_SetField of lexpr * identifier * type_annot
-  | LE_SetFields of lexpr * identifier list * type_annot
+  | LE_SetField of lexpr * identifier
+  | LE_SetFields of lexpr * identifier list
   | LE_TupleUnpack of lexpr list
 
 and lexpr = lexpr_desc annotated
@@ -210,9 +210,19 @@ type stmt_desc =
   | S_For of identifier * expr * for_direction * expr * stmt
   | S_While of expr * stmt
   | S_Repeat of stmt * expr
+  | S_Throw of (expr * ty option) option
+      (** The ty option is a type annotation added by the type-checker to be
+          matched later with the catch guards. The bigger option is to
+          represent the implicit throw, such as [throw;]. *)
+  | S_Try of stmt * catcher list * stmt option
+      (** The stmt option is the optional otherwise guard. *)
 
 and stmt = stmt_desc annotated
 and case_alt = (pattern * stmt) annotated
+
+and catcher = identifier option * ty * stmt
+(** The optional name of the matched exception, the guard type and the
+    statement to be executed if the guard matches. *)
 
 (* -------------------------------------------------------------------------
 
@@ -220,29 +230,46 @@ and case_alt = (pattern * stmt) annotated
 
    ------------------------------------------------------------------------- *)
 
-type 'body func_skeleton = {
+type subprogram_type = ST_Procedure | ST_Function | ST_Getter | ST_Setter
+type 'p subprogram_body = SB_ASL of stmt | SB_Primitive of 'p
+
+type 'p func = {
   name : identifier;
   parameters : (identifier * ty option) list;
   args : typed_identifier list;
-  body : 'body;
+  body : 'p subprogram_body;
   return_type : ty option;
+  subprogram_type : subprogram_type;
 }
-
-type func = stmt func_skeleton
 (** Function types in the AST. For the moment, they represent getters, setters,
     functions, procedures and primitives. *)
 
 (** Declaration keyword for global storage elements. *)
 type global_decl_keyword = GDK_Constant | GDK_Config | GDK_Let | GDK_Var
 
-(** Declarations, ie. top level statement in a asl file. *)
-type decl =
-  | D_Func of func
-  | D_GlobalConst of identifier * ty * expr
-  | D_TypeDecl of identifier * ty
-  | D_Primitive of func
-(* [D_Primitive] is a placeholder for typechecking primitive calls. Only the
-   function signature is relevant here. *)
+type global_decl = {
+  keyword : global_decl_keyword;
+  name : identifier;
+  ty : ty option;
+  initial_value : expr option;
+}
+(** Global declaration type *)
 
-type t = decl list
+(** Declarations, ie. top level statement in a asl file. *)
+type 'p decl =
+  | D_Func of 'p func
+  | D_GlobalStorage of global_decl
+  | D_TypeDecl of identifier * ty * identifier option
+
+type 'p t = 'p decl list
 (** Main AST type. *)
+
+(* -------------------------------------------------------------------------
+
+                              Miscellaneous
+
+   ------------------------------------------------------------------------- *)
+
+type scope =
+  | Scope_Local of identifier * int
+  | Scope_Global  (** A scope is an unique identifier of the calling site. *)

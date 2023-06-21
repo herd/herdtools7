@@ -4,9 +4,9 @@ ASL assign1
 
 func main()
 begin
-    x = 3;
+    let x = 3;
 end
 
 forall (
-    0: x = 3
+    0: main.0.x = 3
 )

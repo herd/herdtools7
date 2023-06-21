@@ -30,6 +30,7 @@ let rec resolve_root_name (env : env) (ty : ty) : ty =
    ------------------------------------------------------------------------- *)
 
 module FunctionRenaming = struct
+  (* Returns true iff type lists type-clash element-wise. *)
   let has_arg_clash env caller callee =
     List.compare_lengths caller callee == 0
     && List.for_all2
@@ -37,14 +38,23 @@ module FunctionRenaming = struct
            Types.type_clashes env t_caller t_callee)
          caller callee
 
+  (* Return true if two subprogram are forbidden with the same argument types. *)
+  let has_subprogram_type_clash s1 s2 =
+    match (s1, s2) with
+    | ST_Function, _ | _, ST_Function | ST_Procedure, _ | _, ST_Procedure ->
+        true
+    | ST_Getter, ST_Getter | ST_Setter, ST_Setter -> true
+    | ST_Getter, ST_Setter | ST_Setter, ST_Getter -> false
+
+  (* Deduce renamings from match between calling and callee types. *)
   let deduce_eqs env =
     (* Here we assume [has_arg_clash env caller callee] *)
     (* Thus [List.length caller == List.length callee]. *)
     let folder prev_eqs caller (_name, callee) =
       match callee.desc with
-      | T_Bits (BitWidth_Determined { desc = E_Var x; _ }, _) -> (
+      | T_Bits (BitWidth_SingleExpr { desc = E_Var x; _ }, _) -> (
           match (Types.get_structure env caller).desc with
-          | T_Bits (BitWidth_Determined e_caller, _) ->
+          | T_Bits (BitWidth_SingleExpr e_caller, _) ->
               (x, e_caller) :: prev_eqs
           | T_Bits _ -> prev_eqs
           | _ ->
@@ -55,21 +65,10 @@ module FunctionRenaming = struct
     in
     List.fold_left2 folder []
 
-  let set_renamings env' name set =
-    {
-      env' with
-      global =
-        {
-          env'.global with
-          subprogram_renamings =
-            IMap.add name set env'.global.subprogram_renamings;
-        };
-    }
-
-  let add_new_func env name arg_types =
+  let add_new_func env name arg_types subpgm_type =
     match IMap.find_opt name env.global.subprogram_renamings with
     | None ->
-        let env = set_renamings env name (ISet.singleton name) in
+        let env = SEnv.set_renamings name (ISet.singleton name) env in
         (env, name)
     | Some set ->
         let name' = name ^ "-" ^ string_of_int (ISet.cardinal set) in
@@ -79,7 +78,9 @@ module FunctionRenaming = struct
           && ISet.exists
                (fun name'' ->
                  let other_func_sig = IMap.find name'' env.global.subprograms in
-                 has_arg_clash env arg_types other_func_sig.args)
+                 has_subprogram_type_clash subpgm_type
+                   other_func_sig.subprogram_type
+                 && has_arg_clash env arg_types other_func_sig.args)
                set
         in
         let () =
@@ -92,7 +93,7 @@ module FunctionRenaming = struct
                   PP.pp_typed_identifier)
               arg_types
         in
-        let env = set_renamings env name (ISet.add name' set) in
+        let env = SEnv.set_renamings name (ISet.add name' set) env in
         (env, name')
 
   let find_name_strict loc env name caller_arg_types =
@@ -111,7 +112,8 @@ module FunctionRenaming = struct
               in
               ( deduce_eqs env caller_arg_types callee_arg_types,
                 name,
-                callee_arg_types )
+                callee_arg_types,
+                func_sig.return_type )
             else fatal_from loc (Error.NoCallCandidate (name, caller_arg_types))
         | None -> undefined_identifier loc name)
     | Some set -> (
@@ -121,13 +123,15 @@ module FunctionRenaming = struct
           if has_arg_clash env caller_arg_types callee_arg_types then
             ( deduce_eqs env caller_arg_types callee_arg_types,
               name',
-              callee_arg_types )
+              callee_arg_types,
+              func_sig.return_type )
             :: acc
           else acc
         in
         match ISet.fold finder set [] with
         | [] -> fatal_from loc (Error.NoCallCandidate (name, caller_arg_types))
-        | [ (eqs, name', callee_arg_types) ] -> (eqs, name', callee_arg_types)
+        | [ (eqs, name', callee_arg_types, ret_type) ] ->
+            (eqs, name', callee_arg_types, ret_type)
         | _ :: _ ->
             fatal_from loc
               (Error.TooManyCallCandidates (name, caller_arg_types)))
@@ -190,7 +194,7 @@ end
 
 let expr_of_int i = literal (V_Int i)
 let plus = binop PLUS
-let t_bits_bitwidth e = T_Bits (BitWidth_Determined e, [])
+let t_bits_bitwidth e = T_Bits (BitWidth_SingleExpr e, [])
 
 let reduce_expr env e =
   try StaticInterpreter.Normalize.normalize env e
@@ -229,28 +233,42 @@ let slices_length env =
 
 let width_plus env acc w =
   match (acc, w) with
-  | BitWidth_Determined e1, BitWidth_Determined e2 ->
-      BitWidth_Determined (plus e1 e2 |> reduce_expr env)
-  | BitWidth_Constrained cs1, BitWidth_Determined e2 ->
-      BitWidth_Constrained (constraint_binop PLUS cs1 [ Constraint_Exact e2 ])
-  | BitWidth_Determined e1, BitWidth_Constrained cs2 ->
-      BitWidth_Constrained (constraint_binop PLUS [ Constraint_Exact e1 ] cs2)
-  | BitWidth_Constrained cs1, BitWidth_Constrained cs2 ->
-      BitWidth_Constrained (constraint_binop PLUS cs1 cs2)
+  | BitWidth_SingleExpr e1, BitWidth_SingleExpr e2 ->
+      BitWidth_SingleExpr (plus e1 e2 |> reduce_expr env)
+  | BitWidth_Constraints cs1, BitWidth_SingleExpr e2 ->
+      BitWidth_Constraints (constraint_binop PLUS cs1 [ Constraint_Exact e2 ])
+  | BitWidth_SingleExpr e1, BitWidth_Constraints cs2 ->
+      BitWidth_Constraints (constraint_binop PLUS [ Constraint_Exact e1 ] cs2)
+  | BitWidth_Constraints cs1, BitWidth_Constraints cs2 ->
+      BitWidth_Constraints (constraint_binop PLUS cs1 cs2)
   | _ ->
       failwith "Not yet implemented: concatening slices constrained from type."
 
-let rename_ty_eqs (eqs : (AST.identifier * AST.expr) list) ty =
-  match ty.desc with
-  | T_Bits (BitWidth_Determined e, fields) ->
-      let new_e = subst_expr eqs e in
-      T_Bits (BitWidth_Determined new_e, fields) |> add_pos_from_st ty
-  | _ -> ty
+let rename_ty_eqs : (AST.identifier * AST.expr) list -> AST.ty -> AST.ty =
+  let subst_constraint eqs = function
+    | Constraint_Exact e -> Constraint_Exact (subst_expr eqs e)
+    | Constraint_Range (e1, e2) ->
+        Constraint_Range (subst_expr eqs e1, subst_expr eqs e2)
+  in
+  let subst_constraints eqs = List.map (subst_constraint eqs) in
+  fun eqs ty ->
+    match ty.desc with
+    | T_Bits (BitWidth_SingleExpr e, fields) ->
+        let new_e = subst_expr eqs e in
+        T_Bits (BitWidth_SingleExpr new_e, fields) |> add_pos_from_st ty
+    | T_Bits (BitWidth_Constraints constraints, fields) ->
+        let constraints = subst_constraints eqs constraints in
+        T_Bits (BitWidth_Constraints constraints, fields) |> add_pos_from_st ty
+    | T_Int (Some constraints) ->
+        let constraints = subst_constraints eqs constraints in
+        T_Int (Some constraints) |> add_pos_from_st ty
+    | _ -> ty
 
 let infer_value = function
   | V_Int i -> T_Int (Some [ Constraint_Exact (expr_of_int i) ])
   | V_Bool _ -> T_Bool
   | V_Real _ -> T_Real
+  | V_String _ -> T_String
   | V_BitVector bv -> Bitvector.length bv |> expr_of_int |> t_bits_bitwidth
   | _ -> not_yet_implemented dummy_annotated "static complex values"
 
@@ -276,7 +294,7 @@ let max_constraint env = function
 
 let min_max_constraints m_constraint m =
   let rec do_rec env = function
-    | [] -> assert false
+    | [] -> raise ConstraintMinMaxTop (* for underconstraint bitvector types. *)
     | [ c ] -> m_constraint env c
     | c :: cs ->
         let i = m_constraint env c and j = do_rec env cs in
@@ -294,10 +312,8 @@ and max_constraints = min_max_constraints max_constraint max
 
    -------------------------------------------------------------------------- *)
 
-let should_reduce_to_call env name args =
-  match IMap.find_opt name env.global.subprograms with
-  | None -> None
-  | Some { return_type; _ } -> Some (name, args, return_type)
+let should_reduce_to_call env name =
+  IMap.mem name env.global.subprogram_renamings
 
 let should_slices_reduce_to_call env name slices =
   let args =
@@ -305,56 +321,7 @@ let should_slices_reduce_to_call env name slices =
   in
   match args with
   | None -> None
-  | Some args -> should_reduce_to_call env name args
-
-let getter_should_reduce_to_call env x slices =
-  let name = getter_name x in
-  match should_slices_reduce_to_call env name slices with
-  | Some (name, args, Some _) ->
-      let () =
-        if false then Format.eprintf "Reducing call from %s to %s.@." x name
-      in
-      Some (name, args)
-  | Some (_, _, None) | None -> None
-
-let rec setter_should_reduce_to_call_s env le e : stmt option =
-  let here d = add_pos_from le d in
-  let s_then = s_then in
-  let to_expr = expr_of_lexpr in
-  let with_temp old_le sub_le =
-    let x = fresh_var "setter_setfield" in
-    let le_x = LE_Var x |> here in
-    match setter_should_reduce_to_call_s env sub_le (E_Var x |> here) with
-    | None -> None
-    | Some s ->
-        Some
-          (s_then
-             (s_then
-                (S_Assign (le_x, to_expr sub_le) |> here)
-                (S_Assign (old_le le_x, e) |> here))
-             s)
-  in
-  match le.desc with
-  | LE_Ignore -> None
-  | LE_SetField (sub_le, field, ta) ->
-      let old_le le' = LE_SetField (le', field, ta) |> here in
-      with_temp old_le sub_le
-  | LE_SetFields (sub_le, fields, ta) ->
-      let old_le le' = LE_SetFields (le', fields, ta) |> here in
-      with_temp old_le sub_le
-  | LE_Slice ({ desc = LE_Var x; _ }, slices) -> (
-      let name = setter_name x and slices = Slice_Single e :: slices in
-      match should_slices_reduce_to_call env name slices with
-      | None -> None
-      | Some (name, args, _) -> Some (S_Call (name, args, []) |> here))
-  | LE_Slice (sub_le, slices) ->
-      let old_le le' = LE_Slice (le', slices) |> here in
-      with_temp old_le sub_le
-  | LE_TupleUnpack _ -> None
-  | LE_Var x -> (
-      match should_reduce_to_call env (setter_name x) [ e ] with
-      | Some (name, args, _) -> Some (S_Call (name, args, []) |> here)
-      | None -> None)
+  | Some args -> if should_reduce_to_call env name then Some args else None
 
 (******************************************************************************)
 (*                                                                            *)
@@ -429,9 +396,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     try get_bitvector_width' env t
     with TypingAssumptionFailed -> conflict loc [ default_t_bits ] t
 
-  let get_record_fields loc env t =
+  let get_fields loc env t =
     match (Types.get_structure env t).desc with
-    | T_Record fields -> fields
+    | T_Exception fields | T_Record fields -> fields
     | _ -> conflict loc [ T_Record [] ] t
 
   (** [check_type_satisfies t1 t2] if [t1 <: t2]. *)
@@ -453,6 +420,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     match (Types.get_structure env t).desc with
     | T_Int _ -> ()
     | _ -> conflict loc [ T_Int None ] t
+
+  let check_structure_exception loc env t () =
+    let t_struct = Types.get_structure env t in
+    match t_struct.desc with
+    | T_Exception _ -> ()
+    | _ -> conflict loc [ T_Exception [] ] t_struct
 
   let storage_is_pure loc (env : env) s =
     (* Definition DDYW:
@@ -480,7 +453,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       (* TODO: Check statically evaluable? *) ()
     else
       match (n, m) with
-      | BitWidth_Determined e_n, BitWidth_Determined e_m ->
+      | BitWidth_SingleExpr e_n, BitWidth_SingleExpr e_m ->
           if StaticInterpreter.equal_in_env env e_n e_m then ()
           else assumption_failed ()
       | _ -> assumption_failed ()
@@ -602,16 +575,46 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | BNOT ->
         let+ () = check_type_satisfies loc env t t_bool in
         T_Bool |> add_pos_from loc
-    | NEG ->
+    | NEG -> (
         let+ () = check_type_satisfies loc env t t_int in
-        (* TODO: work on constraints. *)
-        T_Int None |> add_pos_from loc
+        match (Types.get_structure env t).desc with
+        | T_Int None -> T_Int None |> add_pos_from loc
+        | T_Int (Some cs) ->
+            let neg e = E_Unop (NEG, e) |> add_pos_from e in
+            let constraint_minus = function
+              | Constraint_Exact e -> Constraint_Exact (neg e)
+              | Constraint_Range (top, bot) ->
+                  Constraint_Range (neg bot, neg top)
+            in
+            T_Int (Some (List.map constraint_minus cs)) |> add_pos_from loc
+        | _ -> (* fail case *) t)
     | NOT ->
-        (* TODO: make sure that default_t_bits is type-satisfied by all [bits( * )] types *)
-        let+ () =
-          check_type_satisfies loc env t (default_t_bits |> add_dummy_pos)
-        in
+        let+ () = check_structure_bits loc env t in
         t
+
+  let can_assign_to env s t =
+    (* Rules:
+       - GNTS: It is illegal for a storage element whose type has the structure
+         of the under-constrained integer to be assigned a value whose type has
+         the structure of the under-constrained integer.
+       - LXQZ: A storage element of type S, where S is any type that does not have the
+         structure of the under-constrained integer type, may only be
+         assigned or initialized with a value of type T if T type-satisfies S
+    *)
+    (* TODO: incomplete. *)
+    let s_struct = Types.get_structure env s
+    and t_struct = Types.get_structure env t in
+    match (s_struct.desc, t_struct.desc) with
+    | T_Int (Some []), T_Int (Some []) -> false
+    | _ -> Types.type_satisfies env t s
+
+  let check_can_assign_to loc env s t () =
+    if can_assign_to env s t then ()
+    else
+      let () =
+        if false then Format.eprintf "%a <-- %a@." PP.pp_ty s PP.pp_ty t
+      in
+      fatal_from loc (Error.ConflictingTypes ([ s.desc ], t))
 
   let rec annotate_slices env =
     (* Rules:
@@ -708,23 +711,33 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                (check_structure_integer loc env t_e2))
         in
         Pattern_Range (e1, e2)
-    | Pattern_Mask _ as p ->
-        (* TODO. *)
+    | Pattern_Mask m as p ->
+        let+ () = check_structure_bits loc env t in
         let+ () =
-          fatal_from loc
-            (Error.NotYetImplemented "Typing masks in pattern matching.")
+          let n = literal (V_Int (Bitvector.mask_length m)) in
+          let t_m = T_Bits (BitWidth_SingleExpr n, []) |> add_pos_from loc in
+          check_type_satisfies loc env t t_m
         in
         p
+    | Pattern_Tuple li -> (
+        let t_struct = Types.get_structure env t in
+        match t_struct.desc with
+        | T_Tuple ts when List.compare_lengths li ts != 0 ->
+            Error.fatal_from loc
+              (Error.BadArity
+                 ("pattern matching on tuples", List.length li, List.length ts))
+        | T_Tuple ts ->
+            Pattern_Tuple (List.map2 (annotate_pattern loc env) ts li)
+        | _ -> conflict loc [ T_Tuple [] ] t)
 
-  and annotate_call loc env name args eqs =
+  and annotate_call loc env name args eqs call_type =
     let () =
       if false then
         Format.eprintf "Annotating call to %S at %a.@." name PP.pp_pos loc
     in
-    let caller_arg_types, args =
-      List.map (annotate_expr env) args |> List.split
-    in
-    let extra_nargs, name, callee_arg_types =
+    let caller_arg_typed = List.map (annotate_expr env) args in
+    let caller_arg_types, args = List.split caller_arg_typed in
+    let extra_nargs, name, callee_arg_types, ret_ty =
       either
         (fun () ->
           FunctionRenaming.find_name_strict loc env name caller_arg_types)
@@ -734,10 +747,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           in
           match IMap.find_opt name env.global.subprograms with
           | None -> undefined_identifier loc ("function " ^ name)
-          | Some { return_type = None; _ } ->
-              fatal_from loc @@ Error.MismatchedReturnValue name
-          | Some { args = callee_arg_types; return_type = Some _; _ } ->
-              (extra_nargs, name, callee_arg_types))
+          | Some { args = callee_arg_types; return_type; _ } ->
+              (extra_nargs, name, callee_arg_types, return_type))
         ()
     in
     let eqs = List.rev_append eqs extra_nargs in
@@ -747,15 +758,52 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         @@ Error.BadArity (name, List.length callee_arg_types, List.length args)
     in
     let eqs =
-      let folder acc (x, _) e = (x, e) :: acc in
-      List.fold_left2 folder eqs callee_arg_types args
+      let folder acc (x, ty) (t_e, e) =
+        match ty.desc with
+        | T_Int _ -> (x, e) :: acc
+        | T_Bits (BitWidth_SingleExpr { desc = E_Var x; _ }, _) -> (
+            match (Types.get_structure env t_e).desc with
+            | T_Bits (BitWidth_SingleExpr e, _) -> (x, e) :: acc
+            | T_Bits _ -> (x, E_Unknown t_e |> add_dummy_pos) :: acc
+            | _ -> acc)
+        | _ -> acc
+      in
+      List.fold_left2 folder eqs callee_arg_types caller_arg_typed
+    in
+    let () =
+      if false then
+        let open Format in
+        eprintf "@[<hov 2>Eqs for this call are: %a@]@."
+          (pp_print_list ~pp_sep:pp_print_space (fun f (name, e) ->
+               fprintf f "%S<--%a" name PP.pp_expr e))
+          eqs
+    in
+    let () =
+      List.iter2
+        (fun (_, callee_arg) caller_arg ->
+          let callee_arg = rename_ty_eqs eqs callee_arg in
+          let () =
+            if false then
+              Format.eprintf "Checking calling arg from %a to %a@." PP.pp_ty
+                caller_arg PP.pp_ty callee_arg
+          in
+          let+ () = check_can_assign_to loc env callee_arg caller_arg in
+          ())
+        callee_arg_types caller_arg_types
     in
     let () =
       if false && not (String.equal name name) then
         Format.eprintf "Renaming call from %s to %s@ at %a.@." name name
           PP.pp_pos loc
     in
-    (name, args, eqs)
+    let ret_ty =
+      match (call_type, ret_ty) with
+      | (ST_Function | ST_Getter), Some ty -> Some (rename_ty_eqs eqs ty)
+      | (ST_Setter | ST_Procedure), None -> None
+      | _ -> fatal_from loc @@ Error.MismatchedReturnValue name
+    in
+    let () = if false then Format.eprintf "Annotated call to %S.@." name in
+    (name, args, eqs, ret_ty)
 
   and annotate_expr env (e : expr) : ty * expr =
     let () = if false then Format.eprintf "@[Annotating %a@]@." PP.pp_expr e in
@@ -776,46 +824,49 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           (fun res ->
             let env' = env in
             if Types.structural_subtype_satisfies env' t_e t then
-              if Types.domain_subtype_satisfies env' t_e t then (t_e, e'')
+              if Types.domain_subtype_satisfies env' t_e t then (t, e'')
               else res
             else conflict e [ t.desc ] t_e)
     | E_Var x -> (
         let () = if false then Format.eprintf "Looking at %S.@." x in
-        match getter_should_reduce_to_call env x [] with
-        | Some (name, args) ->
-            let () =
-              if false then
-                Format.eprintf "@[Reducing getter %S@ at %a@]@." x PP.pp_pos e
-            in
-            E_Call (name, args, []) |> here |> annotate_expr env
-        | None -> (
-            let () =
-              if false then
-                Format.eprintf "@[Choosing not to reduce var %S@ at @[%a@]@]@."
-                  x PP.pp_pos e
-            in
+        if should_reduce_to_call env x then
+          let () =
+            if false then
+              Format.eprintf "@[Reducing getter %S@ at %a@]@." x PP.pp_pos e
+          in
+          let name, args, eqs, ty =
+            annotate_call (to_pos e) env x [] [] ST_Getter
+          in
+          let ty = match ty with Some ty -> ty | None -> assert false in
+          (ty, E_Call (name, args, eqs) |> here)
+        else
+          let () =
+            if false then
+              Format.eprintf "@[Choosing not to reduce var %S@ at @[%a@]@]@." x
+                PP.pp_pos e
+          in
+          try
+            match IMap.find x env.local.storage_types with
+            | ty, LDK_Constant ->
+                let v = IMap.find x env.local.constants_values in
+                let e = E_Literal v |> here in
+                (ty, e)
+            | ty, _ -> (ty, e)
+          with Not_found -> (
             try
-              match IMap.find x env.local.storage_types with
-              | ty, LDK_Constant ->
-                  let v = IMap.find x env.local.constants_values in
-                  let e = E_Literal v |> here in
-                  (ty, e)
+              match IMap.find x env.global.storage_types with
+              | ty, GDK_Constant -> (
+                  match IMap.find_opt x env.global.constants_values with
+                  | Some v -> (ty, E_Literal v |> here)
+                  | None -> (ty, e))
               | ty, _ -> (ty, e)
-            with Not_found -> (
-              try
-                match IMap.find x env.global.storage_types with
-                | ty, GDK_Constant -> (
-                    match IMap.find_opt x env.global.constants_values with
-                    | Some v -> (ty, E_Literal v |> here)
-                    | None -> (ty, e))
-                | ty, _ -> (ty, e)
-              with Not_found ->
-                let () =
-                  if false then
-                    Format.eprintf "@[Cannot find %s in env@ %a.@]@." x
-                      SEnv.PPEnv.pp_env env
-                in
-                undefined_identifier e x)))
+            with Not_found ->
+              let () =
+                if false then
+                  Format.eprintf "@[Cannot find %s in env@ %a.@]@." x
+                    SEnv.PPEnv.pp_env env
+              in
+              undefined_identifier e x))
     | E_Binop (BAND, e1, e2) ->
         E_Cond (e1, e2, E_Literal (V_Bool false) |> here)
         |> here |> annotate_expr env
@@ -832,17 +883,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let t = check_unop e env op t'' in
         (t, E_Unop (op, e'') |> here)
     | E_Call (name, args, eqs) ->
-        let name, args, eqs = annotate_call (to_pos e) env name args eqs in
-        let ty =
-          let () =
-            if false then Format.eprintf "@[Finding return type of %S@]@." name
-          in
-          match IMap.find_opt name env.global.subprograms with
-          | Some { return_type = Some ty; _ } -> ty
-          | Some _ -> fatal_from e @@ Error.MismatchedReturnValue name
-          | None -> undefined_identifier e name
+        let name, args, eqs, ty =
+          annotate_call (to_pos e) env name args eqs ST_Function
         in
-        (rename_ty_eqs eqs ty, E_Call (name, args, eqs) |> here)
+        let ty = match ty with Some ty -> ty | None -> assert false in
+        (ty, E_Call (name, args, eqs) |> here)
     | E_Cond (e_cond, e_true, e_false) ->
         let t_cond, e_cond = annotate_expr env e_cond in
         let+ () = check_structure_boolean e env t_cond in
@@ -860,17 +905,17 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let ts, es = List.map (annotate_expr env) li |> List.split in
         (T_Tuple ts |> here, E_Tuple es |> here)
     | E_Concat [] ->
-        (T_Bits (BitWidth_Determined (expr_of_int 0), []) |> here, e)
+        (T_Bits (BitWidth_SingleExpr (expr_of_int 0), []) |> here, e)
     | E_Concat (_ :: _ as li) ->
         let ts, es = List.map (annotate_expr env) li |> List.split in
         let w =
-          best_effort (BitWidth_Constrained []) (fun _ ->
+          best_effort (BitWidth_Constraints []) (fun _ ->
               let widths = List.map (get_bitvector_width e env) ts in
               let wh = List.hd widths and wts = List.tl widths in
               List.fold_left (width_plus env) wh wts)
         in
         (T_Bits (w, []) |> here, E_Concat es |> here)
-    | E_Record (t, fields, _ta) ->
+    | E_Record (t, fields) ->
         (* Rule WBCQ: The identifier in a record expression must be a named type
            with the structure of a record type, and whose fields have the values
            given in the field_assignment_list. *)
@@ -878,7 +923,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           check_true (Types.is_named t) (fun () ->
               failwith "Typing error: should be a named type")
         in
-        let field_types = get_record_fields e env t in
+        let field_types = get_fields e env t in
         let fields =
           best_effort fields (fun _ ->
               (* Rule DYQZ: A record expression shall assign every field of the record. *)
@@ -907,20 +952,24 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                   (name, e'))
                 fields)
         in
-        let ta = TA_InferredStructure (Types.get_structure env t) in
-        (t, E_Record (t, fields, ta) |> here)
+        (t, E_Record (t, fields) |> here)
     | E_Unknown t ->
         let t = Types.get_structure env t in
         (t, E_Unknown t |> here)
     | E_Slice (e', slices) -> (
         let reduced =
           match e'.desc with
-          | E_Var x -> getter_should_reduce_to_call env x slices
+          | E_Var x ->
+              should_slices_reduce_to_call env x slices |> Option.map (pair x)
           | _ -> None
         in
         match reduced with
         | Some (name, args) ->
-            E_Call (name, args, []) |> here |> annotate_expr env
+            let name, args, eqs, ty =
+              annotate_call (to_pos e) env name args [] ST_Getter
+            in
+            let ty = match ty with Some ty -> ty | None -> assert false in
+            (ty, E_Call (name, args, eqs) |> here)
         | None ->
             let t_e', e' = annotate_expr env e' in
             let+ () =
@@ -934,32 +983,22 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                  a zero-length bitvector must not be side-effecting.
             *)
             let slices = best_effort slices (annotate_slices env) in
-            ( T_Bits (BitWidth_Determined w, []) |> here,
+            ( T_Bits (BitWidth_SingleExpr w, []) |> here,
               E_Slice (e', slices) |> here ))
-    | E_GetField (e', field, _ta) -> (
+    | E_GetField (e', field) -> (
         let t_e', e' = annotate_expr env e' in
         let t_e' = resolve_root_name env t_e' in
-        let ta = TA_InferredStructure (Types.get_structure env t_e') in
         match t_e'.desc with
-        | T_Record fields -> (
+        | T_Exception fields | T_Record fields -> (
             match List.assoc_opt field fields with
             | None -> fatal_from e (Error.BadField (field, t_e'))
-            | Some t -> (t, E_GetField (e', field, ta) |> here))
+            | Some t -> (t, E_GetField (e', field) |> here))
         | T_Bits (_, bitfields) -> (
             match List.assoc_opt field bitfields with
             | None -> fatal_from e (Error.BadField (field, t_e'))
-            | Some slice ->
-                let w = slices_length env slice in
-                (* I think rules KTBG and WZCS (see annotate_slices) do not
-                   need to be checked here, but at type declaration. *)
-                (* TODO: check that:
-                   - Rule SNQJ: An expression or subexpression which may result in
-                     a zero-length bitvector must not be side-effecting.
-                *)
-                ( T_Bits (BitWidth_Determined w, []) |> here,
-                  E_GetFields (e', [ field ], ta) |> here ))
-        | _ -> conflict e [ default_t_bits; T_Record [] ] t_e')
-    | E_GetFields (e', fields, _ta) ->
+            | Some slice -> E_Slice (e', slice) |> here |> annotate_expr env)
+        | _ -> conflict e [ default_t_bits; T_Record []; T_Exception [] ] t_e')
+    | E_GetFields (e', fields) ->
         let t_e', e' = annotate_expr env e' in
         let t_e' = resolve_root_name env t_e' in
         let bitfields =
@@ -970,19 +1009,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let one_field field =
           match List.assoc_opt field bitfields with
           | None -> fatal_from e (Error.BadField (field, t_e'))
-          | Some slices ->
-              (* I think rules KTBG and WZCS (see annotate_slices) do not
-                 need to be checked here, but at type declaration. *)
-              slices_length env slices
+          | Some slices -> slices
         in
-        let w = List.map one_field fields |> sum |> reduce_expr env in
-        let ta = TA_InferredStructure (Types.get_structure env t_e') in
-        (* TODO: check that:
-           - Rule SNQJ: An expression or subexpression which may result in a
-             zero-length bitvector must not be side-effecting.
-        *)
-        ( T_Bits (BitWidth_Determined w, []) |> here,
-          E_GetFields (e', fields, ta) |> here )
+        E_Slice (e', list_concat_map one_field fields)
+        |> here |> annotate_expr env
     | E_Pattern (e', patterns) ->
         (*
          Rule ZNDL states that
@@ -1012,28 +1042,6 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let t_e', e' = annotate_expr env e' in
         let patterns = best_effort patterns (annotate_pattern e env t_e') in
         (T_Bool |> here, E_Pattern (e', patterns) |> here)
-
-  let can_assign_to env s t =
-    (* Rules:
-       - GNTS: It is illegal for a storage element whose type has the structure
-         of the under-constrained integer to be assigned a value whose type has
-         the structure of the under-constrained integer.
-       - LXQZ: A storage element of type S, where S is any type that does not have the
-         structure of the under-constrained integer type, may only be
-         assigned or initialized with a value of type T if T type-satisfies S
-    *)
-    (* TODO: incomplete. *)
-    let s_struct = Types.get_structure env s
-    and t_struct = Types.get_structure env t in
-    match (s_struct.desc, t_struct.desc) with
-    | T_Int (Some []), T_Int (Some []) -> false
-    | _ -> Types.type_satisfies env t s
-
-  let check_can_assign_to loc env s t () =
-    if can_assign_to env s t then ()
-    else
-      let () = Format.eprintf "%a <-- %a@." PP.pp_ty s PP.pp_ty t in
-      fatal_from loc (Error.ConflictingTypes ([ s.desc ], t))
 
   let rec annotate_lexpr env le t_e =
     let here x = add_pos_from le x in
@@ -1075,35 +1083,35 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let+ () =
          fun () ->
           let length = slices_length env slices |> reduce_expr env in
-          let t = T_Bits (BitWidth_Determined length, []) |> here in
+          let t = T_Bits (BitWidth_SingleExpr length, []) |> here in
           check_can_assign_to le env t t_e ()
         in
         let slices = best_effort slices (annotate_slices env) in
         LE_Slice (le', slices) |> here
-    | LE_SetField (le', field, _ta) -> (
+    | LE_SetField (le', field) -> (
         let t_le', _ = expr_of_lexpr le' |> annotate_expr env in
         let le' = annotate_lexpr env le' t_le' in
         let t_le'_struct = Types.get_structure env t_le' in
         match t_le'_struct.desc with
-        | T_Record fields ->
+        | T_Exception fields | T_Record fields ->
             let t =
               match List.assoc_opt field fields with
               | None -> fatal_from le (Error.BadField (field, t_le'))
               | Some t -> t
             in
             let+ () = check_can_assign_to le env t t_e in
-            LE_SetField (le', field, TA_InferredStructure t_le'_struct) |> here
+            LE_SetField (le', field) |> here
         | T_Bits (_, bitfields) -> (
             match List.assoc_opt field bitfields with
             | None -> fatal_from le (Error.BadField (field, t_le'_struct))
             | Some slice ->
                 let w = slices_length env slice in
-                let t = T_Bits (BitWidth_Determined w, []) |> here in
+                let t = T_Bits (BitWidth_SingleExpr w, []) |> here in
                 let+ () = check_can_assign_to le env t t_e in
-                LE_SetFields (le', [ field ], TA_InferredStructure t_le'_struct)
-                |> here)
-        | _ -> conflict le [ default_t_bits; T_Record [] ] t_e)
-    | LE_SetFields (le', fields, _ta) ->
+                let le = LE_Slice (le', slice) |> here in
+                annotate_lexpr env le t_e)
+        | _ -> conflict le [ default_t_bits; T_Record []; T_Exception [] ] t_e)
+    | LE_SetFields (le', fields) ->
         let t_le', _ = expr_of_lexpr le' |> annotate_expr env in
         let le' = annotate_lexpr env le' t_le' in
         let t_le'_struct = Types.get_structure env t_le' in
@@ -1115,12 +1123,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let one_field field =
           match List.assoc_opt field bitfields with
           | None -> fatal_from le (Error.BadField (field, t_le'_struct))
-          | Some slices -> slices_length env slices
+          | Some slices -> slices
         in
-        let w = List.map one_field fields |> sum |> reduce_expr env in
-        let t = T_Bits (BitWidth_Determined w, []) |> here in
-        let+ () = check_can_assign_to le env t t_e in
-        LE_SetFields (le', fields, TA_InferredStructure t_le'_struct) |> here
+        let new_le = LE_Slice (le', list_concat_map one_field fields) |> here in
+        annotate_lexpr env new_le t_e
 
   let can_be_initialized_with env s t =
     (* Rules:
@@ -1153,12 +1159,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     else ()
 
   let rec annotate_local_decl_item loc (env : env) ty ldk ldi =
-    let here = add_pos_from loc in
     match ldi with
-    | LDI_Ignore None -> (env, LE_Ignore |> here)
+    | LDI_Ignore None -> (env, ldi)
     | LDI_Ignore (Some t) ->
         let+ () = check_can_be_initialized_with loc env t ty in
-        (env, LE_Ignore |> here)
+        (env, ldi)
     | LDI_Var (x, ty_opt) ->
         let t =
           best_effort ty (fun _ ->
@@ -1172,7 +1177,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
            which is already in scope at the point of declaration. *)
         let+ () = check_var_not_in_env loc env x in
         let env = SEnv.add_local x t ldk env in
-        (env, LE_Var x |> here)
+        (env, LDI_Var (x, Some t))
     | LDI_Tuple ([ ldi ], None) -> annotate_local_decl_item loc env ty ldk ldi
     | LDI_Tuple (ldis, None) ->
         let tys =
@@ -1184,14 +1189,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                    ("tuple initialization", List.length tys, List.length ldis))
           | _ -> conflict loc [ T_Tuple [] ] ty
         in
-        let env, les =
-          List.fold_left2
-            (fun (env', les) ty' ldi' ->
+        let env, ldis' =
+          List.fold_right2
+            (fun  ty' ldi' (env', les) ->
               let env', le = annotate_local_decl_item loc env' ty' ldk ldi' in
               (env', le :: les))
-            (env, []) tys ldis
+             tys ldis (env, [])
         in
-        (env, LE_TupleUnpack (List.rev les) |> here)
+        (env, LDI_Tuple (ldis', None))
     | LDI_Tuple (_ldis, Some _t) ->
         (* TODO: I don't know what to do in that case, for me the LRM is
            ambiguous in this case. *)
@@ -1207,9 +1212,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           (Error.NotYetImplemented "Variable declaration needs a type.")
     | LDI_Var (x, Some t) ->
         let+ () = check_var_not_in_env loc env x in
-        let t_struct = Types.get_structure env t in
+        let e = Types.base_value loc env t in
         ( SEnv.add_local x t LDK_Var env,
-          S_Assign (LE_Var x |> here, E_Unknown t_struct |> here) |> here )
+          S_Decl (LDK_Var, LDI_Var (x, Some t), Some e) |> here )
     | LDI_Tuple (ldis, None) ->
         let env, ss =
           list_fold_left_map (annotate_local_decl_item_uninit loc) env ldis
@@ -1221,13 +1226,18 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             (fun env' -> annotate_local_decl_item loc env' t LDK_Var)
             env ldis
         in
-        let e = E_Unknown (Types.get_structure env t) |> here in
-        let ss = List.map (fun le -> S_Assign (le, e) |> here) les in
+        let e = Types.base_value loc env t in
+        let ss =
+          List.map (fun ldi -> S_Decl (LDK_Var, ldi, Some e) |> here) les
+        in
         (env, stmt_from_list ss)
 
   let rec annotate_stmt env return_type s =
     let () =
-      if false then Format.eprintf "@[<3>Annotating@ @[%a@]@]@." PP.pp_stmt s
+      if false then
+        match s.desc with
+        | S_Then _ -> ()
+        | _ -> Format.eprintf "@[<3>Annotating@ @[%a@]@]@." PP.pp_stmt s
     in
     let here x = add_pos_from s x in
     match s.desc with
@@ -1240,12 +1250,15 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let t_e, e = annotate_expr env e in
         let reduced = setter_should_reduce_to_call_s env le e in
         match reduced with
-        | Some s -> annotate_stmt env return_type s
+        | Some s -> (s, env)
         | None ->
             let le = annotate_lexpr env le t_e in
             (S_Assign (le, e) |> here, env))
     | S_Call (name, args, eqs) ->
-        let name, args, eqs = annotate_call (to_pos s) env name args eqs in
+        let name, args, eqs, ty =
+          annotate_call (to_pos s) env name args eqs ST_Procedure
+        in
+        let () = assert (ty = None) in
         (* TODO: check that call does not returns anything. *)
         (S_Call (name, args, eqs) |> here, env)
     | S_Return e_opt -> (
@@ -1258,8 +1271,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         | None, Some _ | Some _, None ->
             fatal_from s (Error.BadReturnStmt return_type)
         | None, None -> (S_Return None |> here, env)
-        | Some t, Some e' ->
-            let t_e', e' = annotate_expr env e' in
+        | Some t, Some e ->
+            let t_e', e' = annotate_expr env e in
+            let () =
+              if false then
+                Format.eprintf
+                  "Can I return %a(of type %a) when return_type = %a?@."
+                  PP.pp_expr e PP.pp_ty t_e' PP.pp_ty t
+            in
             let+ () = check_type_satisfies s env t_e' t in
             (S_Return (Some e') |> here, env))
     | S_Cond (e, s1, s2) ->
@@ -1314,7 +1333,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 else Some cs1
               with ConstraintMinMaxTop ->
                 (* TODO: this case is not specified by the LRM. *)
-                None)
+                Some [])
           | _ -> None
           (* only happens in relaxed type-checking mode because of check_structure_integer earlier. *)
         in
@@ -1329,7 +1348,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         match (ldk, e_opt) with
         | _, Some e ->
             let t_e, e = annotate_expr env e in
-            let env, le = annotate_local_decl_item s env t_e ldk ldi in
+            let env, ldi = annotate_local_decl_item s env t_e ldk ldi in
             (* TODO:
                - The initialization expression in a local constant declaration
                  must be a compile-time-constant expression.
@@ -1339,14 +1358,39 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                - Initialization expressions in local constant declarations must
                  be non-side-effecting.
             *)
-            (S_Assign (le, e) |> here, env)
+            (S_Decl (ldk, ldi, Some e) |> here, env)
         | LDK_Var, None ->
-            (* TODO *)
             let env, s = annotate_local_decl_item_uninit s env ldi in
             (s, env)
         | (LDK_Constant | LDK_Let), None ->
             (* by construction in Parser. *)
             assert false)
+    | S_Throw (Some (e, _)) ->
+        let t_e, e = annotate_expr env e in
+        let+ () = check_structure_exception s env t_e in
+        (S_Throw (Some (e, Some t_e)) |> here, env)
+    | S_Throw None ->
+        (* TODO: verify that this is allowed? *)
+        (s, env)
+    | S_Try (s', catchers, otherwise) ->
+        let s' = try_annotate_block env return_type s' in
+        let otherwise =
+          Option.map (try_annotate_block env return_type) otherwise
+        in
+        let catchers = List.map (annotate_catcher env return_type) catchers in
+        (S_Try (s', catchers, otherwise) |> here, env)
+
+  and annotate_catcher env return_type (name_opt, ty, stmt) =
+    let+ () = check_structure_exception ty env ty in
+    let env' =
+      match name_opt with
+      | None -> env
+      | Some name ->
+          let+ () = check_var_not_in_env stmt env name in
+          SEnv.add_local name ty LDK_Let env
+    in
+    let stmt = try_annotate_block env' return_type stmt in
+    (name_opt, ty, stmt)
 
   and try_annotate_block env return_type s =
     (*
@@ -1363,7 +1407,55 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   and try_annotate_stmt env return_type s =
     best_effort (s, env) (fun _ -> annotate_stmt env return_type s)
 
-  let annotate_func (env : env) (f : AST.func) : AST.func =
+  and setter_should_reduce_to_call_s env le e : stmt option =
+    let here d = add_pos_from le d in
+    let s_then = s_then in
+    let to_expr = expr_of_lexpr in
+    let with_temp old_le sub_le =
+      let x = fresh_var "setter_setfield" in
+      let le_x = LE_Var x |> here in
+      match setter_should_reduce_to_call_s env sub_le (E_Var x |> here) with
+      | None -> None
+      | Some s ->
+          let s1, _env1 =
+            S_Assign (le_x, to_expr sub_le) |> here |> annotate_stmt env None
+          and s2, _env2 =
+            S_Assign (old_le le_x, e) |> here |> annotate_stmt env None
+          in
+          Some (s_then (s_then s1 s2) s)
+    in
+    match le.desc with
+    | LE_Ignore -> None
+    | LE_SetField (sub_le, field) ->
+        let old_le le' = LE_SetField (le', field) |> here in
+        with_temp old_le sub_le
+    | LE_SetFields (sub_le, fields) ->
+        let old_le le' = LE_SetFields (le', fields) |> here in
+        with_temp old_le sub_le
+    | LE_Slice ({ desc = LE_Var x; _ }, slices) -> (
+        let slices = Slice_Single e :: slices in
+        match should_slices_reduce_to_call env x slices with
+        | None -> None
+        | Some args ->
+            let name, args, eqs, ret_ty =
+              annotate_call (to_pos le) env x args [] ST_Setter
+            in
+            let () = assert (ret_ty = None) in
+            Some (S_Call (name, args, eqs) |> here))
+    | LE_Slice (sub_le, slices) ->
+        let old_le le' = LE_Slice (le', slices) |> here in
+        with_temp old_le sub_le
+    | LE_TupleUnpack _ -> None
+    | LE_Var x ->
+        if should_reduce_to_call env x then
+          let name, args, eqs, ret_ty =
+            annotate_call (to_pos le) env x [ e ] [] ST_Setter
+          in
+          let () = assert (ret_ty = None) in
+          Some (S_Call (name, args, eqs) |> here)
+        else None
+
+  let annotate_func (env : env) (f : 'p AST.func) : 'p AST.func =
     let () = if false then Format.eprintf "Annotating %s.@." f.name in
     (* Build typing local environment. *)
     let env' = { env with local = SEnv.empty_local } in
@@ -1371,15 +1463,28 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       let one_arg env' (x, ty) = SEnv.add_local x ty LDK_Let env' in
       List.fold_left one_arg env' f.args
     in
+    (* Add explicit parameters *)
+    let env' =
+      let one_param env' (x, ty_opt) =
+        let ty =
+          match ty_opt with
+          | Some ty -> ty
+          | None -> ASTUtils.underconstrained_integer
+        in
+        SEnv.add_local x ty LDK_Let env'
+      in
+      List.fold_left one_param env' f.parameters
+    in
     (* Add dependently typed identifiers. *)
     let add_dependently_typed_from_ty env'' ty =
       match ty.desc with
-      | T_Bits (BitWidth_Determined { desc = E_Var x; _ }, _) ->
-          if
-            IMap.mem x env''.local.storage_types
-            || IMap.mem x env''.global.storage_types
-          then env''
-          else SEnv.add_local x (T_Int None |> add_dummy_pos) LDK_Let env''
+      | T_Bits (BitWidth_SingleExpr { desc = E_Var x; _ }, _) -> (
+          match Env.Static.type_of_opt env x with
+          | Some { desc = T_Int None; _ } ->
+              SEnv.add_local x ASTUtils.underconstrained_integer LDK_Let env''
+          | Some _ -> env''
+          | None ->
+              SEnv.add_local x ASTUtils.underconstrained_integer LDK_Let env'')
       | _ -> env''
     in
     (* Resolve dependently typed identifiers in the arguments. *)
@@ -1387,23 +1492,30 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       let one_arg env'' (_, ty) = add_dependently_typed_from_ty env'' ty in
       List.fold_left one_arg env' f.args
     in
-    (*
     (* Resolve dependently typed identifiers in the result type. *)
     let env' =
       match f.return_type with
       | None -> env'
-      | Some t -> add_dependently_typed_from_ty env' t
+      | Some { desc = T_Bits (BitWidth_SingleExpr { desc = E_Var x; _ }, _); _ }
+        -> (
+          match Env.Static.type_of_opt env x with
+          | Some { desc = T_Int None; _ } ->
+              SEnv.add_local x ASTUtils.underconstrained_integer LDK_Let env'
+          | _ -> env')
+      | _ -> env'
     in
-    *)
     (* Annotate body *)
-    let body = try_annotate_block env' f.return_type f.body in
+    let body =
+      match f.body with SB_ASL body -> body | SB_Primitive _ -> assert false
+    in
+    let body = try_annotate_block env' f.return_type body in
     (* Optionnally rename the function if needs be *)
     let name =
       let args = List.map snd f.args in
       best_effort f.name
         (either
            (fun _ ->
-             let _, name, _ =
+             let _, name, _, _ =
                FunctionRenaming.find_name_strict dummy_annotated env f.name args
              in
              let () =
@@ -1417,9 +1529,22 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
              let _, name = FunctionRenaming.find_name env f.name args in
              name))
     in
-    { f with body; name }
+    { f with body = SB_ASL body; name }
 
   let try_annotate_func env f = best_effort f (annotate_func env)
+
+  let annotate_gsd env gsd =
+    match gsd with
+    | { initial_value = Some e; ty = None; _ } ->
+        let t, e = annotate_expr env e in
+        { gsd with initial_value = Some e; ty = Some t }
+    | { initial_value = Some e; ty = Some t; _ } ->
+        let t', e = annotate_expr env e in
+        let+ () = check_can_be_initialized_with e env t t' in
+        { gsd with initial_value = Some e; ty = Some t }
+    | _ -> gsd
+
+  let try_annotate_gsd env gsd = best_effort gsd (annotate_gsd env)
 end
 
 module TypeCheck = Annotate (struct
@@ -1440,9 +1565,11 @@ end)
 (*                                                                            *)
 (******************************************************************************)
 
-let declare_one_func func_sig env =
+let declare_one_func (func_sig : 'a func) env =
   let env, name' =
-    try FunctionRenaming.add_new_func env func_sig.name func_sig.args
+    try
+      FunctionRenaming.add_new_func env func_sig.name func_sig.args
+        func_sig.subprogram_type
     with Error.ASLException e ->
       if _warn then Error.eprintln e;
       (env, func_sig.name)
@@ -1459,36 +1586,78 @@ let declare_one_func func_sig env =
   in
   SEnv.add_subprogram name' (Env.ast_func_to_func_sig func_sig) env
 
-let declare_type name ty env =
+let declare_const name t v env =
+  if IMap.mem name env.global.storage_types then
+    Error.fatal_unknown_pos (Error.AlreadyDeclaredIdentifier name)
+  else
+    SEnv.add_global_storage name t GDK_Constant env
+    |> SEnv.add_global_constant name v
+
+let declare_type name ty s env =
+  let env =
+    match s with
+    | None -> env
+    | Some s ->
+        if Types.subtype_satisfies env ty (T_Named s |> add_dummy_pos) then
+          SEnv.add_subtype name s env
+        else
+          Error.fatal_unknown_pos (Error.ConflictingTypes ([ T_Named s ], ty))
+  in
   match ty.desc with
   | T_Enum ids ->
       let env = SEnv.add_type name ty env in
       let t = T_Named name |> add_pos_from ty in
       let add_one_id env x =
-        env
-        |> SEnv.add_global_storage x t GDK_Constant
-        |> SEnv.add_global_constant x
-             (V_Int (IMap.cardinal env.global.constants_values))
+        let v = V_Int (IMap.cardinal env.global.constants_values) in
+        declare_const x t v env
       in
       List.fold_left add_one_id env ids
   | _ -> SEnv.add_type name ty env
 
-let declare_global_constant name ty e env =
-  let env = SEnv.add_global_storage name ty GDK_Constant env in
-  let () = if false then Format.eprintf "Declaring %s@." name in
+let declare_global_storage gsd env =
+  let () = if false then Format.eprintf "Declaring %s@." gsd.name in
   try
-    let v = reduce_constants env e in
-    SEnv.add_global_constant name v env
+    match gsd with
+    | { keyword = GDK_Constant; initial_value = Some e; ty = None; name } ->
+        let v = reduce_constants env e in
+        let t = infer_value v |> add_pos_from e in
+        declare_const name t v env
+    | { keyword = GDK_Constant; initial_value = Some e; ty = Some ty; name } ->
+        let v = reduce_constants env e in
+        let t = infer_value v |> add_pos_from e in
+        if Types.type_satisfies env t ty then declare_const name ty v env
+        else conflict e [ ty.desc ] t
+    | { keyword = GDK_Constant | GDK_Let; initial_value = None; _ } ->
+        (* Shouldn't happen because of parser construction. *)
+        Error.fatal_unknown_pos
+          (Error.NotYetImplemented
+             "Constants or let-bindings have to be initialized.")
+    | { keyword; initial_value = None; ty = Some ty; name } ->
+        (* Here keyword = GDK_Var or GDK_Config. *)
+        if IMap.mem name env.global.storage_types then
+          Error.fatal_unknown_pos (Error.AlreadyDeclaredIdentifier name)
+        else SEnv.add_global_storage name ty keyword env
+    | { keyword; initial_value = Some e; ty = None; name } ->
+        let t, _e = TypeInferSilence.annotate_expr env e in
+        SEnv.add_global_storage name t keyword env
+    | { keyword; initial_value = Some e; ty = Some ty; name } ->
+        let t, e = TypeInferSilence.annotate_expr env e in
+        if not (Types.type_satisfies env t ty) then conflict e [ ty.desc ] t
+        else SEnv.add_global_storage name ty keyword env
+    | { initial_value = None; ty = None; _ } ->
+        (* Shouldn't happen because of parser construction. *)
+        Error.fatal_unknown_pos
+          (Error.NotYetImplemented
+             "Global storage declaration should have an initial value or a \
+              type.")
   with Error.ASLException err ->
     if _warn then Error.eprintln err;
     env
 
-let build_global =
+let build_global ast =
   let def = function
-    | D_Func { name; _ }
-    | D_GlobalConst (name, _, _)
-    | D_TypeDecl (name, _)
-    | D_Primitive { name; _ } ->
+    | D_Func { name; _ } | D_GlobalStorage { name; _ } | D_TypeDecl (name, _, _)
+      ->
         name
   in
   let use =
@@ -1496,17 +1665,30 @@ let build_global =
     let use_ty _ty acc = acc (* TODO *) in
     fun d ->
       match d with
-      | D_GlobalConst (_, ty, e) -> ISet.empty |> use_e e |> use_ty ty
-      | D_TypeDecl (_, ty) -> use_ty ty ISet.empty
-      | D_Func _ | D_Primitive _ ->
+      | D_GlobalStorage { initial_value = Some e; ty = Some ty; _ } ->
+          ISet.empty |> use_e e |> use_ty ty
+      | D_GlobalStorage { initial_value = None; ty = Some ty; _ } ->
+          ISet.empty |> use_ty ty
+      | D_GlobalStorage { initial_value = Some e; ty = None; _ } ->
+          ISet.empty |> use_e e
+      | D_GlobalStorage _ -> ISet.empty
+      | D_TypeDecl (_, ty, s) -> use_ty ty (ISet.of_option s)
+      | D_Func _ ->
           ISet.empty (* TODO: pure functions that can be used in constants? *)
   in
   let process_one_decl = function
-    | D_Func func_sig | D_Primitive func_sig -> declare_one_func func_sig
-    | D_GlobalConst (x, ty, e) -> declare_global_constant x ty e
-    | D_TypeDecl (x, ty) -> declare_type x ty
+    | D_Func func_sig -> declare_one_func func_sig
+    | D_GlobalStorage gsd -> declare_global_storage gsd
+    | D_TypeDecl (x, ty, s) -> declare_type x ty s
   in
-  ASTUtils.dag_fold def use process_one_decl
+  ASTUtils.dag_fold def use process_one_decl ast
+
+let rename_primitive env (f : 'a AST.func) =
+  let _, name, _, _ =
+    FunctionRenaming.find_name_strict dummy_annotated env f.name
+      (List.map snd f.args)
+  in
+  { f with name }
 
 (******************************************************************************)
 (*                                                                            *)
@@ -1514,10 +1696,14 @@ let build_global =
 (*                                                                            *)
 (******************************************************************************)
 
-let annotate_ast ast env =
+let annotate_ast (ast : 'a AST.t) env : 'a AST.t * env =
   let env = build_global ast env in
-  let annotate_func = TypeInferSilence.try_annotate_func env in
-  let one_decl = function D_Func f -> D_Func (annotate_func f) | d -> d in
+  let annotate_func f = TypeInferSilence.try_annotate_func env f in
+  let one_decl d =
+    match d with
+    | D_Func ({ body = SB_ASL _; _ } as f) -> D_Func (annotate_func f)
+    | d -> d
+  in
   (List.map one_decl ast, env)
 
 let type_check_ast strictness ast env =
@@ -1526,7 +1712,7 @@ let type_check_ast strictness ast env =
     if false then
       Format.eprintf "@[<v>Typing in env:@ %a@]@." Env.Static.PPEnv.pp_env env
   in
-  let annotate =
+  let annotate_func =
     match strictness with
     | `TypeCheck -> TypeCheck.annotate_func
     | `Warn -> TypeInferWarn.try_annotate_func
@@ -1534,5 +1720,17 @@ let type_check_ast strictness ast env =
         if _warn then TypeInferWarn.try_annotate_func
         else TypeInferSilence.try_annotate_func
   in
-  let one_decl = function D_Func f -> D_Func (annotate env f) | d -> d in
-  (List.map one_decl ast, env)
+  let annotate_gsd =
+    match strictness with
+    | `TypeCheck -> TypeCheck.annotate_gsd
+    | `Warn -> TypeInferWarn.try_annotate_gsd
+    | `Silence -> TypeInferSilence.try_annotate_gsd
+  in
+  let annotate = function
+    | D_Func ({ body = SB_ASL _; _ } as f) -> D_Func (annotate_func env f)
+    | D_Func ({ body = SB_Primitive _; _ } as f) ->
+        D_Func (rename_primitive env f)
+    | D_GlobalStorage gsd -> D_GlobalStorage (annotate_gsd env gsd)
+    | d -> d
+  in
+  (List.map annotate ast, env)

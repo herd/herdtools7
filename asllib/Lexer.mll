@@ -23,8 +23,8 @@ exception LexerError
 
 open Parser
 
-let bitvector_lit lxm =
-  BITVECTOR_LIT (Bitvector.of_string lxm)
+let bitvector_lit lxm = BITVECTOR_LIT (Bitvector.of_string lxm)
+let mask_lit lxm = MASK_LIT (Bitvector.mask_of_string lxm)
 
 let tr_name s = match s with
 | "AND"           -> AND
@@ -107,7 +107,7 @@ rule token = parse
     | real_lit as lxm          { REAL_LIT(float_of_string lxm)    }
     | '"' ([^ '"']* as lxm) '"' { STRING_LIT(lxm)                  }
     | '\'' (bits as lxm) '\''  { bitvector_lit lxm                }
-    | '\'' (mask as lxm) '\''  { MASK_LIT(lxm)                    }
+    | '\'' (mask as lxm) '\''  { mask_lit lxm                     }
     | '!'                      { BNOT                             }
     | ','                      { COMMA                            }
     | '<'                      { LT                               }

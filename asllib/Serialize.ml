@@ -68,6 +68,7 @@ let rec pp_value f = function
   | V_Real r -> bprintf f "V_Real %F" r
   | V_BitVector bv ->
       bprintf f "V_BitVector (Bitvector.of_string %S)" (Bitvector.to_string bv)
+  | V_String s -> bprintf f "V_String %S" s
   | V_Tuple li ->
       addb f "V_Tuple ";
       pp_list pp_value f li
@@ -95,12 +96,11 @@ let rec pp_expr =
         bprintf f "E_Slice (%a, %a)" pp_expr e pp_slice_list args
     | E_Cond (e1, e2, e3) ->
         bprintf f "E_Cond (%a, %a, %a)" pp_expr e1 pp_expr e2 pp_expr e3
-    | E_GetField (e, x, _ta) ->
-        bprintf f "E_GetField (%a, %S, None)" pp_expr e x
-    | E_GetFields (e, x, _ta) ->
-        bprintf f "E_GetFields (%a, %a, None)" pp_expr e (pp_list pp_string) x
-    | E_Record (ty, li, _ta) ->
-        bprintf f "E_Record (%a, %a, None)" pp_ty ty (pp_id_assoc pp_expr) li
+    | E_GetField (e, x) -> bprintf f "E_GetField (%a, %S)" pp_expr e x
+    | E_GetFields (e, x) ->
+        bprintf f "E_GetFields (%a, %a)" pp_expr e (pp_list pp_string) x
+    | E_Record (ty, li) ->
+        bprintf f "E_Record (%a, %a)" pp_ty ty (pp_id_assoc pp_expr) li
     | E_Concat es ->
         addb f "E_Concat ";
         pp_list pp_expr f es
@@ -129,11 +129,16 @@ and pp_pattern f = function
       pp_list pp_pattern f li
   | Pattern_Geq e -> bprintf f "Pattern_Geq (%a)" pp_expr e
   | Pattern_Leq e -> bprintf f "Pattern_Leq (%a)" pp_expr e
-  | Pattern_Mask s -> bprintf f "Pattern_Mask %S" s
+  | Pattern_Mask m ->
+      bprintf f "Pattern_Mask (Bitvector.mask_of_string \"%S\")"
+        (Bitvector.mask_to_canonical_string m)
   | Pattern_Not p -> bprintf f "Pattern_Not (%a)" pp_pattern p
   | Pattern_Range (e1, e2) ->
       bprintf f "Pattern_Range (%a, %a)" pp_expr e1 pp_expr e2
   | Pattern_Single e -> bprintf f "Pattern_Single (%a)" pp_expr e
+  | Pattern_Tuple li ->
+      addb f "Pattern_Tuple ";
+      pp_list pp_pattern f li
 
 and pp_ty =
   let pp_desc f = function
@@ -173,11 +178,11 @@ and pp_int_constraint f =
   pp_list pp_one f
 
 and pp_bits_constraint f = function
-  | BitWidth_Determined i -> bprintf f "BitWidth_Determined (%a)" pp_expr i
+  | BitWidth_SingleExpr i -> bprintf f "BitWidth_SingleExpr (%a)" pp_expr i
   | BitWidth_ConstrainedFormType ty ->
       bprintf f "BitWidth_ConstrainedFormType (%a)" pp_ty ty
-  | BitWidth_Constrained int_constraint ->
-      bprintf f "BitWidth_Constrained (%a)" pp_int_constraint int_constraint
+  | BitWidth_Constraints int_constraint ->
+      bprintf f "BitWidth_Constraints (%a)" pp_int_constraint int_constraint
 
 let pp_typed_identifier = pp_pair pp_string pp_ty
 
@@ -186,11 +191,9 @@ let rec pp_lexpr =
     | LE_Var x -> bprintf f "LE_Var %S" x
     | LE_Slice (le, args) ->
         bprintf f "LE_Slice (%a, %a)" pp_lexpr le pp_slice_list args
-    | LE_SetField (le, x, _ta) ->
-        bprintf f "LE_Set_Field (%a, %S, None)" pp_lexpr le x
-    | LE_SetFields (le, x, _ta) ->
-        bprintf f "LE_SetFields (%a, %a, None)" pp_lexpr le (pp_list pp_string)
-          x
+    | LE_SetField (le, x) -> bprintf f "LE_Set_Field (%a, %S)" pp_lexpr le x
+    | LE_SetFields (le, x) ->
+        bprintf f "LE_SetFields (%a, %a)" pp_lexpr le (pp_list pp_string) x
     | LE_Ignore -> addb f "LE_Ignore"
     | LE_TupleUnpack les ->
         addb f "LE_TupleUnpack ";
@@ -239,21 +242,55 @@ let rec pp_stmt =
     | S_Decl (ldk, ldi, e_opt) ->
         bprintf f "S_Decl (%a, %a, %a)" pp_local_decl_keyboard ldk
           pp_local_decl_item ldi (pp_option pp_expr) e_opt
+    | S_Throw opt ->
+        bprintf f "S_Throw (%a)"
+          (pp_option (pp_pair pp_expr (pp_option pp_ty)))
+          opt
+    | S_Try (s, catchers, otherwise) ->
+        bprintf f "S_Try (%a, %a, %a)" pp_stmt s (pp_list pp_catcher) catchers
+          (pp_option pp_stmt) otherwise
   in
   fun f s -> pp_annotated pp_desc f s
 
+and pp_catcher f (name, ty, s) =
+  bprintf f "(%a, %a, %a)" (pp_option pp_string) name pp_ty ty pp_stmt s
+
+let pp_gdk f gdk =
+  addb f
+  @@
+  match gdk with
+  | GDK_Config -> "GDK_Config"
+  | GDK_Constant -> "GDK_Constant"
+  | GDK_Let -> "GDK_Let"
+  | GDK_Var -> "GDK_Var"
+
+let pp_subprogram_type f st =
+  addb f
+    (match st with
+    | ST_Function -> "ST_Function"
+    | ST_Procedure -> "ST_Procedure"
+    | ST_Setter -> "ST_Setter"
+    | ST_Getter -> "ST_Getter")
+
+let pp_body f = function
+  | SB_ASL s -> bprintf f "SB_ASL (%a)" pp_stmt s
+  | SB_Primitive _ -> failwith "Cannot print a primitive."
+
 let pp_decl f = function
-  | D_Func { name; args; body; return_type; parameters = _ } ->
+  | D_Func { name; args; body; return_type; parameters; subprogram_type } ->
       bprintf f
-        "D_Func { name=%S; args=%a; body=%a; return_type=%a; parameters=[] }"
-        name (pp_id_assoc pp_ty) args pp_stmt body (pp_option pp_ty) return_type
-  | D_GlobalConst (x, ty, e) ->
-      bprintf f "D_GlobalConst (%S, %a, %a)" x pp_ty ty pp_expr e
-  | D_TypeDecl (name, type_desc) ->
-      bprintf f "D_TypeDecl (%S, %a)" name pp_ty type_desc
-  | D_Primitive { name; args; return_type; body = _; parameters = _ } ->
-      bprintf f "D_Primitive { name=%S; args=%a; body=S_Pass; return_type=%a }"
-        name (pp_id_assoc pp_ty) args (pp_option pp_ty) return_type
+        "D_Func { name=%S; args=%a; body=%a; return_type=%a; parameters=%a; \
+         subprogram_type=%a }"
+        name (pp_id_assoc pp_ty) args pp_body body (pp_option pp_ty) return_type
+        (pp_list (pp_pair pp_string (pp_option pp_ty)))
+        parameters pp_subprogram_type subprogram_type
+  | D_GlobalStorage { name; keyword; ty; initial_value } ->
+      bprintf f "D_GlobalConst { name=%S; keyword=%a; ty=%a; initial_value=%a}"
+        name pp_gdk keyword (pp_option pp_ty) ty (pp_option pp_expr)
+        initial_value
+  | D_TypeDecl (name, type_desc, subty_opt) ->
+      bprintf f "D_TypeDecl (%S, %a, %a)" name pp_ty type_desc
+        (pp_option pp_string) subty_opt
 
 let pp_t f ast =
   addb f "let open AST in let annot = ASTUtils.add_dummy_pos in ";

@@ -1,20 +1,6 @@
 open Format
 open AST
 
-(* Copied from stdlib 4.13 *)
-let string_is_prefix ~prefix s =
-  let open String in
-  let len_s = length s and len_pre = length prefix in
-  let rec aux i =
-    if i = len_pre then true
-    else if unsafe_get s i <> unsafe_get prefix i then false
-    else aux (i + 1)
-  in
-  len_s >= len_pre && aux 0
-
-let string_remove_prefix ~prefix s =
-  String.sub s (String.length prefix) (String.length s - String.length prefix)
-
 type 'a printer = Format.formatter -> 'a -> unit
 
 (* Adapted from stdlib >= 4.12.0 *)
@@ -91,6 +77,7 @@ let rec pp_value f =
   | V_Bool false -> pp_print_string f "FALSE"
   | V_Real r -> pp_print_float f r
   | V_BitVector bv -> Bitvector.pp_t f bv
+  | V_String s -> fprintf f "%S" s
   | V_Tuple li -> fprintf f "(@[%a@])" (pp_comma_list pp_value) li
   | V_Record li | V_Exception li -> pp_print_field_assoc f li
 
@@ -104,19 +91,16 @@ let rec pp_expr f e =
         e2
   | E_Unop (u, e) -> fprintf f "(%s %a)" (unop_to_string u) pp_expr e
   | E_Call (name, args, _) ->
-      if string_is_prefix ~prefix:ASTUtils.getter_prefix name then
-        let name = string_remove_prefix ~prefix:ASTUtils.getter_prefix name in
-        fprintf f "@[<hov 2>%s[%a]@]" name pp_expr_list args
-      else fprintf f "@[<hov 2>%s(%a)@]" name pp_expr_list args
+      fprintf f "@[<hov 2>%s(%a)@]" name pp_expr_list args
   | E_Slice (e, args) ->
       fprintf f "@[<hov 2>%a[%a]@]" pp_expr e pp_slice_list args
   | E_Cond (e1, e2, e3) ->
       fprintf f "@[<hv>@[<h>if %a@ then@]@;<1 2>%a@ else@;<1 2>%a@]" pp_expr e1
         pp_expr e2 pp_expr e3
-  | E_GetField (e, x, _ta) -> fprintf f "@[%a@,.%s@]" pp_expr e x
-  | E_GetFields (e, xs, _ta) ->
+  | E_GetField (e, x) -> fprintf f "@[%a@,.%s@]" pp_expr e x
+  | E_GetFields (e, xs) ->
       fprintf f "@[%a@,.[@[%a@]]@]" pp_expr e (pp_comma_list pp_print_string) xs
-  | E_Record (ty, li, _ta) ->
+  | E_Record (ty, li) ->
       let pp_one f (x, e) = fprintf f "@[<h>%s =@ %a@]" x pp_expr e in
       fprintf f "@[<hv>%a {@;<1 2>%a@,}@]" pp_ty ty (pp_comma_list pp_one) li
   | E_Concat es -> fprintf f "@[<hv 2>[%a]@]" pp_expr_list es
@@ -136,12 +120,13 @@ and pp_pattern f = function
   | Pattern_Any li -> fprintf f "@[{%a}@]" (pp_comma_list pp_pattern) li
   | Pattern_Geq e -> fprintf f "@[>= %a@]" pp_expr e
   | Pattern_Leq e -> fprintf f "@[<= %a@]" pp_expr e
-  | Pattern_Mask s -> fprintf f "'%s'" s
+  | Pattern_Mask m -> fprintf f "'%s'" (Bitvector.mask_to_string m)
   | Pattern_Not (Pattern_Any li) ->
       fprintf f "@[!{%a}@]" (pp_comma_list pp_pattern) li
   | Pattern_Not p -> fprintf f "@[!{%a}@]" pp_pattern p
   | Pattern_Range (e1, e2) -> fprintf f "@[%a .. %a@]" pp_expr e1 pp_expr e2
   | Pattern_Single e -> pp_expr f e
+  | Pattern_Tuple li -> fprintf f "@[(%a)@]" (pp_comma_list pp_pattern) li
 
 and pp_slice_list f = pp_comma_list pp_slice f
 
@@ -189,9 +174,10 @@ and pp_int_constraint f = function
 and pp_int_constraints f = pp_comma_list pp_int_constraint f
 
 and pp_bits_constraint f = function
-  | BitWidth_Determined i -> pp_expr f i
-  | BitWidth_Constrained int_constraint -> pp_int_constraints f int_constraint
-  | BitWidth_ConstrainedFormType ty -> pp_ty f ty
+  | BitWidth_SingleExpr i -> pp_expr f i
+  | BitWidth_Constraints int_constraint ->
+      fprintf f "@[{%a}@]" pp_int_constraints int_constraint
+  | BitWidth_ConstrainedFormType ty -> fprintf f "- : %a" pp_ty ty
 
 let pp_typed_identifier f (name, ty) = fprintf f "%s::%a" name pp_ty ty
 
@@ -199,8 +185,8 @@ let rec pp_lexpr f le =
   match le.desc with
   | LE_Var x -> pp_print_string f x
   | LE_Slice (le, args) -> fprintf f "%a[%a]" pp_lexpr le pp_slice_list args
-  | LE_SetField (le, x, _ta) -> fprintf f "@[%a@,.%s@]" pp_lexpr le x
-  | LE_SetFields (le, li, _ta) ->
+  | LE_SetField (le, x) -> fprintf f "@[%a@,.%s@]" pp_lexpr le x
+  | LE_SetFields (le, li) ->
       fprintf f "@[%a@,.@[[%a]@]@]" pp_lexpr le
         (pp_comma_list pp_print_string)
         li
@@ -235,11 +221,7 @@ let rec pp_stmt f s =
   | S_Then (s1, s2) -> fprintf f "%a@ %a" pp_stmt s1 pp_stmt s2
   | S_Assign (le, e) -> fprintf f "@[<h 2>%a =@ %a;@]" pp_lexpr le pp_expr e
   | S_Call (name, args, _) ->
-      if string_is_prefix ~prefix:ASTUtils.setter_prefix name then
-        let name = string_remove_prefix ~prefix:ASTUtils.setter_prefix name in
-        let v, args = match args with [] -> assert false | h :: t -> (h, t) in
-        fprintf f "@[<hov 2>%s[%a] = %a;@]" name pp_expr_list args pp_expr v
-      else fprintf f "@[<hov 2>%s(%a);@]" name pp_expr_list args
+      fprintf f "@[<hov 2>%s(%a);@]" name pp_expr_list args
   | S_Return (Some e) -> fprintf f "return %a;" pp_expr e
   | S_Return None -> fprintf f "return;"
   | S_Cond (e, s1, { desc = S_Pass; _ }) ->
@@ -270,7 +252,7 @@ let rec pp_stmt f s =
       fprintf f "@[<hv 2>repeat@;<1 2>@[<hv>%a@]@;<1 0>@[<h>until@ %a;@]@]"
         pp_stmt s pp_expr e
   | S_For (id, e1, dir, e2, s) ->
-      fprintf f "@[<hv 2>@[<h>for %a=%a %s %a@ do@]@;<1 2>@[<hv>%a@]@ end@]"
+      fprintf f "@[<hv>@[<h>for %a = %a %s %a@ do@]@;<1 2>@[<hv>%a@]@ end@]"
         pp_print_string id pp_expr e1 (pp_for_direction dir) pp_expr e2 pp_stmt
         s
   | S_Decl (ldk, ldi, None) ->
@@ -278,49 +260,103 @@ let rec pp_stmt f s =
   | S_Decl (ldk, ldi, Some e) ->
       fprintf f "@[<2>%a %a@ = %a;@]" pp_local_decl_keyword ldk
         pp_local_decl_item ldi pp_expr e
+  | S_Throw (Some (e, _ty_annotation)) ->
+      fprintf f "@[<2>throw@ %a;@]" pp_expr e
+  | S_Throw None -> fprintf f "throw;"
+  | S_Try (s, catchers, Some s') ->
+      fprintf f
+        "@[<hv>@[try@ %a@]@ @[<v 2>catch@ %a@ @[<2>otherwise =>@ %a@]@]@ end@]"
+        pp_stmt s
+        (pp_print_list ~pp_sep:pp_print_space pp_catcher)
+        catchers pp_stmt s'
+  | S_Try (s, catchers, None) ->
+      fprintf f "@[<2>try@ %a@ catch@ @[<v 2>%a@]@ end@]" pp_stmt s
+        (pp_print_list ~pp_sep:pp_print_space pp_catcher)
+        catchers
+
+and pp_catcher f (name, ty, s) =
+  match name with
+  | None -> fprintf f "@[<2>when@ %a@ => %a@]" pp_ty ty pp_stmt s
+  | Some name ->
+      fprintf f "@[<2>when %s@ :@ %a@ => %a@]" name pp_ty ty pp_stmt s
+
+let pp_gdk f gdk =
+  pp_print_string f
+  @@
+  match gdk with
+  | GDK_Var -> "var"
+  | GDK_Config -> "config"
+  | GDK_Let -> "let"
+  | GDK_Constant -> "constant"
 
 let pp_decl f =
-  let pp_func_sig f { name; args; return_type; _ } =
+  let pp_global_storage f = function
+    | { name; keyword; ty = None; initial_value = Some e } ->
+        fprintf f "%a %s@ = %a" pp_gdk keyword name pp_expr e
+    | { name; keyword; ty = Some t; initial_value = Some e } ->
+        fprintf f "%a %s@ :: %a@ = %a" pp_gdk keyword name pp_ty t pp_expr e
+    | { name; keyword; ty = Some t; initial_value = None } ->
+        fprintf f "%a %s@ :: %a" pp_gdk keyword name pp_ty t
+    | { name = _; keyword = _; ty = None; initial_value = None } -> assert false
+  in
+  let pp_func_sig f
+      { name; args; return_type; parameters; subprogram_type; body = _ } =
     let pp_args = pp_comma_list pp_typed_identifier in
     let pp_return_type_opt f = function
       | Some return_type -> fprintf f "@;<1 -2>=> %a" pp_ty return_type
       | None -> ()
     in
-    if string_is_prefix ~prefix:ASTUtils.getter_prefix name then
-      let name = string_remove_prefix ~prefix:ASTUtils.getter_prefix name in
-      fprintf f "@[<hv 4>getter %s [@,%a]%a@]" name pp_args args
-        pp_return_type_opt return_type
-    else if string_is_prefix ~prefix:ASTUtils.setter_prefix name then
-      let name = string_remove_prefix ~prefix:ASTUtils.setter_prefix name in
-      let new_v, args =
-        match args with [] -> assert false | h :: t -> (h, t)
-      in
-      fprintf f "@[<hv 4>setter %s [@,%a]@ = %a@]" name pp_args args
-        pp_typed_identifier new_v
-    else
-      fprintf f "@[<hv 4>func %s (@,%a)%a@]" name pp_args args
-        pp_return_type_opt return_type
+    let pp_parameters f = function
+      | [] -> ()
+      | parameters ->
+          let pp_one f = function
+            | name, None -> pp_print_string f name
+            | name, Some t -> pp_typed_identifier f (name, t)
+          in
+          fprintf f "@ {%a}" (pp_comma_list pp_one) parameters
+    in
+    match subprogram_type with
+    | ST_Function | ST_Procedure ->
+        fprintf f "@[<hv 4>func @[%s%a@] (@,%a)%a@]" name pp_parameters
+          parameters pp_args args pp_return_type_opt return_type
+    | ST_Getter ->
+        fprintf f "@[<hv 4>getter %s%a [@,%a]%a@]" name pp_parameters parameters
+          pp_args args pp_return_type_opt return_type
+    | ST_Setter ->
+        let new_v, args =
+          match args with [] -> assert false | h :: t -> (h, t)
+        in
+        fprintf f "@[<hv 4>setter %s%a [@,%a]@ = %a@]" name pp_parameters
+          parameters pp_args args pp_typed_identifier new_v
+  in
+  let pp_body f = function
+    | SB_ASL s -> pp_stmt f s
+    | SB_Primitive _ -> fprintf f "pass;@ // primitive"
   in
   function
   | D_Func func ->
-      fprintf f "@[<v>%a@ begin@;<1 2>@[<v>%a@]@ end@]" pp_func_sig func pp_stmt
+      fprintf f "@[<v>%a@ begin@;<1 2>@[<v>%a@]@ end@]" pp_func_sig func pp_body
         func.body
-  | D_GlobalConst (x, ty, e) ->
-      fprintf f "@[<2>constant %s@ :: %a@ = %a;@]" x pp_ty ty pp_expr e
-  | D_TypeDecl (x, ty) -> fprintf f "@[<2>type %s of %a;@]" x pp_ty ty
-  | D_Primitive func -> fprintf f "@[<h>%a ;@]" pp_func_sig func
+  | D_TypeDecl (x, ty, None) -> fprintf f "@[<2>type %s of %a;@]" x pp_ty ty
+  | D_TypeDecl (x, ty, Some s) ->
+      fprintf f "@[<2>type %s of %a subtypes %s;@]" x pp_ty ty s
+  | D_GlobalStorage decl -> fprintf f "@[<2>%a;@]" pp_global_storage decl
 
-let pp_t f =
+let pp_t f ast =
   let pp_blank_line f () =
     pp_print_space f ();
     pp_print_cut f ()
   in
-  fprintf f "@[<v>%a@]" (pp_print_list ~pp_sep:pp_blank_line pp_decl)
+  fprintf f "@[<v>%a@]" (pp_print_list ~pp_sep:pp_blank_line pp_decl) ast
 
 let ty_to_string = asprintf "%a" pp_ty
-let t_to_string = asprintf "%a" pp_t
+let t_to_string ast = asprintf "%a" pp_t ast
 let value_to_string = asprintf "%a" pp_value
 
 let pp_version f version =
   pp_print_string f
   @@ match version with `ASLv0 -> "ASLv0" | `ASLv1 -> "ASLv1" | `Any -> "any"
+
+let pp_scope f = function
+  | Scope_Global -> pp_print_string f "global scope"
+  | Scope_Local (name, i) -> fprintf f "%s(%d)" name i

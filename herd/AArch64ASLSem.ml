@@ -417,9 +417,9 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
           in
           let open Asllib.AST in
           match execute with
-          | [ D_Func f ] ->
-              let body = Asllib.ASTUtils.s_then decode f.body in
-              D_Func { f with body }
+          | [ D_Func ({ body = SB_ASL s; _ } as f) ] ->
+              let s = Asllib.ASTUtils.s_then decode s in
+              D_Func { f with body = SB_ASL s }
           | _ -> assert false
         in
         let () =
@@ -525,7 +525,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
 
       let tr_arch_op arch_op acc (v1 : ASLValue.V.v) (v2 : ASLValue.V.v) =
         match arch_op with
-        | ASLValue.Set _ ->
+        | ASLValue.SetIndex _ | ASLValue.SetField _ ->
             Warn.fatal "Cannot translate vector operations to AArch64."
         | ASLValue.Concat -> (
             match (v1, v2) with
@@ -648,12 +648,9 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
                 in
                 let w, acc, _ = List.fold_left folder (first, acc, n) t in
                 (w, acc))
-        | ASLValue.BoolNot ->
-           M.VC.Unop (Op.Not,v),acc
-        | _ ->
-            Warn.fatal
-              "Not yet implemented: translation of operation %s."
-              (ASLValue.ASLArchOp.pp_op1 TopConf.C.PC.hexa op)
+        | ASLValue.BoolNot -> (M.VC.Unop (Op.Not, v), acc)
+        | ASLValue.GetIndex _ | ASLValue.GetField _ ->
+            Warn.fatal "Cannot translate vector operations to AArch64."
 
       let tr_op1 =
         let open Op in

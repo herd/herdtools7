@@ -16,13 +16,14 @@ val pp_stmt : stmt printer
 val pp_expr : expr printer
 val pp_lexpr : lexpr printer
 
-val pp_t : t printer
+val pp_t : 'p t printer
 (** Print an AST from printer for a value *)
 
-val t_to_string : t -> string
+val t_to_string : 'p t -> string
 (** [t_to_string v_to_string ast] is a string representing [ast] with values printed with [v_to_string].*)
 
 val pp_ty : ty printer
 val pp_typed_identifier : typed_identifier printer
 val ty_to_string : ty -> string
 val pp_version : [ `ASLv0 | `ASLv1 | `Any ] printer
+val pp_scope : scope printer

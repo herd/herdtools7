@@ -22,8 +22,18 @@ begin
   assert c == 5;
 end
 
+func with_var ()
+begin
+  var a, b, c: integer;
+  (a, b, c) = f();
+  assert a == 3;
+  assert b == 4;
+  assert c == 5;
+end
+
 func main()
 begin
   multiple_return_values();
-  // other_tuple_usages();
+  other_tuple_usages();
+  with_var ();
 end

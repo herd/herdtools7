@@ -36,8 +36,8 @@ let builtin_examples () =
       T_Bool;
       T_Enum [];
       T_Enum [ "Something"; "Something Else" ];
-      T_Bits (BitWidth_Determined !$0, []);
-      T_Bits (BitWidth_Determined !$3, [ ("Something", [ Slice_Single !$0 ]) ]);
+      T_Bits (BitWidth_SingleExpr !$0, []);
+      T_Bits (BitWidth_SingleExpr !$3, [ ("Something", [ Slice_Single !$0 ]) ]);
     ];
 
   (* Builtin aggregate *)
@@ -91,23 +91,23 @@ let structure_example () =
   ()
 
 let subtype_examples () =
-  let bits_4 = !!(T_Bits (BitWidth_Determined !$4, [])) in
+  let bits_4 = !!(T_Bits (BitWidth_SingleExpr !$4, [])) in
   let bits_2_4 =
     !!(T_Bits
-         ( BitWidth_Constrained [ Constraint_Exact !$2; Constraint_Exact !$4 ],
+         ( BitWidth_Constraints [ Constraint_Exact !$2; Constraint_Exact !$4 ],
            [] ))
   in
 
   assert (not (subtype_satisfies empty_env bits_2_4 bits_4));
 
   let bits_btifields =
-    !!(T_Bits (BitWidth_Determined !$4, [ ("a", [ Slice_Single !$3 ]) ]))
+    !!(T_Bits (BitWidth_SingleExpr !$4, [ ("a", [ Slice_Single !$3 ]) ]))
   in
 
   assert (domain_subtype_satisfies empty_env bits_btifields bits_btifields);
 
-  let bits_n = !!(T_Bits (BitWidth_Determined !%"N", [])) in
-  let bits_n_1 = !!(T_Bits (BitWidth_Determined (binop MUL !%"N" !$1), [])) in
+  let bits_n = !!(T_Bits (BitWidth_SingleExpr !%"N", [])) in
+  let bits_n_1 = !!(T_Bits (BitWidth_SingleExpr (binop MUL !%"N" !$1), [])) in
 
   assert (domain_subtype_satisfies env_with_n bits_n bits_n_1);
   assert (structural_subtype_satisfies env_with_n bits_n bits_n_1);
@@ -116,9 +116,9 @@ let subtype_examples () =
   ()
 
 let type_examples () =
-  let bits_4 = !!(T_Bits (BitWidth_Determined !$4, [])) in
-  let bits_n = !!(T_Bits (BitWidth_Determined !%"N", [])) in
-  let bits_n' = !!(T_Bits (BitWidth_Determined !%"N", [])) in
+  let bits_4 = !!(T_Bits (BitWidth_SingleExpr !$4, [])) in
+  let bits_n = !!(T_Bits (BitWidth_SingleExpr !%"N", [])) in
+  let bits_n' = !!(T_Bits (BitWidth_SingleExpr !%"N", [])) in
 
   assert (type_satisfies env_with_n bits_n bits_n');
 
@@ -131,8 +131,8 @@ let type_examples () =
   ()
 
 let lca_examples () =
-  let bits_4 = !!(T_Bits (BitWidth_Determined !$4, [])) in
-  let bits_2 = !!(T_Bits (BitWidth_Determined !$2, [])) in
+  let bits_4 = !!(T_Bits (BitWidth_SingleExpr !$4, [])) in
+  let bits_2 = !!(T_Bits (BitWidth_SingleExpr !$2, [])) in
 
   assert (lowest_common_ancestor empty_env bits_4 bits_2 = None);
 
@@ -150,9 +150,9 @@ let lca_examples () =
   ()
 
 let type_clashes () =
-  let bits_4 = !!(T_Bits (BitWidth_Determined !$4, [])) in
-  let bits_2 = !!(T_Bits (BitWidth_Determined !$2, [])) in
-  let bits_m = !!(T_Bits (BitWidth_Determined !%"M", [])) in
+  let bits_4 = !!(T_Bits (BitWidth_SingleExpr !$4, [])) in
+  let bits_2 = !!(T_Bits (BitWidth_SingleExpr !$2, [])) in
+  let bits_m = !!(T_Bits (BitWidth_SingleExpr !%"M", [])) in
 
   let integer_4 = !!(T_Int (Some [ Constraint_Exact !$4 ])) in
   let integer_2 = !!(T_Int (Some [ Constraint_Exact !$2 ])) in

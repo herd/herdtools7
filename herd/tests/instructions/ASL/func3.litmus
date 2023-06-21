@@ -24,14 +24,17 @@ begin
   f1 = v + x;
 end
 
+var f3_storage: integer = -1;
+var f4_storage: integer = -1;
+
 setter f3[x::integer] = v :: integer
 begin
-  let f3_internal = x;
+  f3_storage = x;
 end
 
 setter f4[x::integer] = v :: integer
 begin
-  let f4_internal = v;
+  f4_storage = v;
 end
 
 func main()
@@ -47,10 +50,10 @@ begin
 end
 
 forall(
-     0: a = 3
-  /\ 0: b = 3
-  /\ 0: c = 7
-  /\ 0: setter-f3.0.f3_internal = 12
-  /\ 0: setter-f4.0.f4_internal = 15
+     0: main.0.a = 3
+  /\ 0: main.0.b = 3
+  /\ 0: main.0.c = 7
+  /\ 0: f3_storage = 12
+  /\ 0: f4_storage = 15
 )
 

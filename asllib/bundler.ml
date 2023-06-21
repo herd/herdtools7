@@ -5,7 +5,7 @@ module ISet = ASTUtils.ISet
 type identifier_state =
   | NotYetHandled
   | NotFound
-  | Parsed of AST.t
+  | Parsed of unit AST.t
   | BlackListed
 
 type bundler_state = identifier_state IMap.t

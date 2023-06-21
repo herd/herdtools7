@@ -38,7 +38,7 @@ let binop_values pos op v1 v2 =
   | PLUS, V_Real v1, V_Real v2 -> V_Real (v1 +. v2)
   | MUL, V_Real v1, V_Real v2 -> V_Real (v1 *. v2)
   | MINUS, V_Real v1, V_Real v2 -> V_Real (v1 -. v2)
-  | DIV, V_Real v1, V_Real v2 -> V_Real (v1 /. v2)
+  | RDIV, V_Real v1, V_Real v2 -> V_Real (v1 /. v2)
   (* real -> real -> bool *)
   | EQ_OP, V_Real v1, V_Real v2 -> V_Bool (v1 == v2)
   | NEQ, V_Real v1, V_Real v2 -> V_Bool (v1 <> v2)
@@ -50,6 +50,13 @@ let binop_values pos op v1 v2 =
   | EQ_OP, V_BitVector b1, V_BitVector b2 -> V_Bool (Bitvector.equal b1 b2)
   | NEQ, V_BitVector b1, V_BitVector b2 -> V_Bool (not @@ Bitvector.equal b1 b2)
   | OR, V_BitVector b1, V_BitVector b2 -> V_BitVector (Bitvector.logor b1 b2)
+  | AND, V_BitVector b1, V_BitVector b2 -> V_BitVector (Bitvector.logand b1 b2)
+  | EOR, V_BitVector b1, V_BitVector b2 -> V_BitVector (Bitvector.logxor b1 b2)
+  (* TODO *)
+  | (MOD | SHL | SHR), _, _ ->
+      fatal_from pos
+        (Error.NotYetImplemented ("Evaluation of " ^ PP.binop_to_string op))
+  (* Failure *)
   | _ -> fatal_from pos (Error.UnsupportedBinop (op, v1, v2))
 
 let unop_values pos op v =
@@ -240,6 +247,10 @@ module Normalize = struct
   let poly_of_int i = Sum (MMap.singleton mono_one i)
   let poly_neg (Sum monos) = Sum (MMap.map ( ~- ) monos)
 
+  let poly_of_val = function
+    | V_Int i -> poly_of_int i
+    | v -> Error.fatal_unknown_pos (Error.MismatchType (v, [ T_Int None ]))
+
   let sign_not = function
     | NotNull -> Null
     | Null -> NotNull
@@ -395,15 +406,19 @@ module Normalize = struct
   let rec to_ir env (e : expr) : ir_expr =
     match e.desc with
     | E_Literal (V_Int i) -> poly_of_int i |> always
-    | E_Var s ->
-        (match ASTUtils.IMap.find_opt s env.global.constants_values with
-        | Some (V_Int i) -> poly_of_int i
-        | Some _ -> poly_of_var s
-        | None -> (
-            match ASTUtils.IMap.find_opt s env.local.constants_values with
-            | Some (V_Int i) -> poly_of_int i
-            | _ -> poly_of_var s))
-        |> always
+    | E_Var s -> (
+        try Env.Static.lookup_constants env s |> poly_of_val |> always
+        with Not_found -> (
+          try
+            let ty = Env.Static.type_of env s in
+            match ty.desc with
+            | T_Int (Some [ Constraint_Exact e ]) -> to_ir env e
+            | T_Int _ -> poly_of_var s |> always
+            | _ ->
+                Error.fatal_unknown_pos
+                  (Error.ConflictingTypes ([ T_Int None ], ty))
+          with Not_found ->
+            Error.fatal_unknown_pos (Error.UndefinedIdentifier s)))
     | E_Binop (PLUS, e1, e2) ->
         let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
         cross_num ir1 ir2 add_polys

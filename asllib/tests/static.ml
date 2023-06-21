@@ -6,21 +6,30 @@ open Test_helpers.Helpers.Infix
 
 let _dbg = false
 
+let env_with_N =
+  let open Env.Static in
+  add_local "N" integer LDK_Let empty
+
 let build_consts () =
   let values =
     [ ("c1", !$3); ("c2", !!(E_Slice (!%"c1", [ Slice_Range (!$3, !$0) ]))) ]
   in
   let consts =
-    List.map (fun (name, e) -> D_GlobalConst (name, !!(T_Int None), e)) values
+    List.map
+      (fun (name, e) ->
+        D_GlobalStorage
+          { name; keyword = GDK_Let; ty = None; initial_value = Some e })
+      values
   in
   let main =
     D_Func
       {
         name = "main";
-        body = !!S_Pass;
+        body = SB_ASL !!S_Pass;
         args = [];
         parameters = [];
         return_type = None;
+        subprogram_type = ST_Procedure;
       }
   in
   let ast = main :: consts in
@@ -45,7 +54,7 @@ let normalize () =
       (binop MINUS !$4 !$2, !$2, Env.Static.empty);
       ( binop PLUS (binop MINUS !%"N" !%"m") (binop MINUS !%"m" !$1),
         binop MINUS !%"N" !$1,
-        Env.Static.empty );
+        Env.Static.add_local "m" integer LDK_Let env_with_N );
     ]
 
 let fpzero_example () =
@@ -56,10 +65,7 @@ let fpzero_example () =
   let f = !%"N" -~ e -~ !$1 in
   let res = !$1 +~ e +~ f in
 
-  let env =
-    let open Env.Static in
-    add_local "N" integer LDK_Let empty
-  in
+  let env = env_with_N in
 
   let () =
     if _dbg then

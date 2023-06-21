@@ -25,6 +25,8 @@ type error_desc =
   | AssignToImmutable of string
   | AlreadyDeclaredIdentifier of string
   | BadReturnStmt of ty option
+  | UnexpectedSideEffect of string
+  | UncaughtException of string
 
 type error = error_desc annotated
 
@@ -154,6 +156,8 @@ let pp_error =
     | BadReturnStmt None ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ something@ from@ a@ procedure@."
+    | UnexpectedSideEffect s -> fprintf f "Unexpected side-effect: %s" s
+    | UncaughtException s -> fprintf f "Uncaught exception: %s" s
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \

@@ -21,8 +21,8 @@ begin
 end
 
 forall (
-     0: x = 4
-  /\ 0: setter-X_set.0.internal_i = 2
-  /\ 0: setter-X_set.0.internal_v = 3
+     0: main.0.x = 4
+  /\ 0: X_set.0.internal_i = 2
+  /\ 0: X_set.0.internal_v = 3
 )
 

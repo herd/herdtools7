@@ -25,9 +25,14 @@ module A64B = AArch64Base
 (*                                                                           *)
 (*****************************************************************************)
 
-type scope = Asllib.AST.identifier * int
+type scope = Asllib.AST.scope
 
-let pp_scope (enclosure, call_nb) = Printf.sprintf "%s.%d" enclosure call_nb
+let pp_scope =
+  let open Asllib.AST in
+  function
+  | Scope_Global -> ""
+  | Scope_Local (enclosure, call_nb) ->
+      Printf.sprintf "%s.%d." enclosure call_nb
 
 let arch_reg_to_int =
   let rec index_of elt pos li =
@@ -59,8 +64,7 @@ let is_local = function ASLLocalId _ -> true | _ -> false
 let to_arch_reg = function ASLLocalId _ -> assert false | ArchReg r -> r
 let to_reg r = ArchReg r
 let main_scope = ("main", 0)
-let default_scope = main_scope
-let scope_equal (s1, nb1) (s2, nb2) = String.equal s1 s2 && nb1 = nb2
+let default_scope = Asllib.AST.Scope_Global
 
 let parse_local_id =
   let ( let* ) = Option.bind in
@@ -76,7 +80,7 @@ let parse_local_id =
   fun s ->
     if Str.string_match regexp s 0 then
       let* x1 = find_opt 1 s and* x2 = find_opt 2 s and* x3 = find_opt 3 s in
-      Some (ASLLocalId ((x1, int_of_string x2), x3))
+      Some (ASLLocalId (Asllib.AST.Scope_Local (x1, int_of_string x2), x3))
     else Some (ASLLocalId (default_scope, s))
 
 let parse_reg s =
@@ -89,15 +93,14 @@ let parse_reg s =
 let gregs = List.map fst AArch64Base.xregs
 
 let pp_reg = function
-  | ASLLocalId (scope, x) -> pp_scope scope ^ "." ^ x
+  | ASLLocalId (scope, x) -> pp_scope scope ^ x
   | ArchReg r -> A64B.pp_reg r
 
 let reg_compare r1 r2 =
   match (r1, r2) with
   | ArchReg r1, ArchReg r2 -> A64B.reg_compare r1 r2
-  | ASLLocalId ((c1, n1), x1), ASLLocalId ((c2, n2), x2) ->
-      if String.equal x1 x2 then
-        if String.equal c1 c2 then Int.compare n1 n2 else String.compare c1 c2
+  | ASLLocalId (s1, x1), ASLLocalId (s2, x2) ->
+      if String.equal x1 x2 then Asllib.ASTUtils.scope_compare s1 s2
       else String.compare x1 x2
   | ArchReg _, ASLLocalId _ -> 1
   | ASLLocalId _, ArchReg _ -> -1
@@ -114,8 +117,8 @@ type barrier = A64B.barrier
 let pp_barrier = A64B.pp_barrier
 let barrier_compare = A64B.barrier_compare
 
-type parsedInstruction = Asllib.AST.t
-type instruction = Asllib.AST.t
+type parsedInstruction = unit Asllib.AST.t
+type instruction = unit Asllib.AST.t
 
 let pp_instruction _ppmode ast = Asllib.PP.t_to_string ast
 let dump_instruction a = pp_instruction PPMode.Ascii a

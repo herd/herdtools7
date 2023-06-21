@@ -6,25 +6,22 @@ module Infix = struct
   let ( !! ) e = ASTUtils.add_dummy_pos e
   let ( !$ ) i = !!(E_Literal (V_Int i))
   let ( !% ) x = !!(E_Var x)
-  let integer = !!(T_Int None)
-  let boolean = !!T_Bool
 end
 
 let exec_tests =
   let exec_one_test any_failed (name, f) =
     let on_fail e =
-      Printf.printf "failed 𐄂\n";
+      let () =
+        match e with
+        | Error.ASLException e ->
+            Format.eprintf
+              "@[<hov 2>Test@ %s@ failed@ with@ the@ following@ error:@ %a.@."
+              name Error.pp_error e
+        | _ -> ()
+      in
       any_failed := Some e
     in
-    Printf.printf "[asl-test] Running %s ... %!" name;
-    try
-      f ();
-      Printf.printf "ok ✔︎\n"
-    with
-    | Error.ASLException err as e ->
-        Format.eprintf "%a@." Error.pp_error err;
-        on_fail e
-    | e -> on_fail e
+    if false then f () else try f () with e -> on_fail e
   in
   fun li ->
     let any_failed = ref None in

@@ -157,6 +157,7 @@ let () =
 
   let () =
     if args.print_typed then
+      let ast = List.rev_append (Lazy.force Builder.stdlib) ast in
       let annotated_ast, _ =
         or_exit (fun () ->
             Typing.type_check_ast args.strictness ast Env.Static.empty)

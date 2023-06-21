@@ -1,17 +1,22 @@
 open AST
 open ASTUtils
 
-type func_sig = {
-  declared_name : string;
-  args : (identifier * ty) list;
-  return_type : ty option;
-}
+type func_sig = unit AST.func
 (** Type signature for functions, some kind of an arrow type, with added
     informations. *)
 
-let ast_func_to_func_sig : 'a AST.func_skeleton -> func_sig = function
-  | { name = declared_name; args; return_type; parameters = _; body = _ } ->
-      { declared_name; args; return_type }
+type 'a env_result = Local of 'a | Global of 'a | NotFound
+
+let ast_func_to_func_sig : 'a AST.func -> func_sig = function
+  | { name; args; return_type; parameters; subprogram_type; body = _ } ->
+      {
+        name;
+        args;
+        return_type;
+        parameters;
+        subprogram_type;
+        body = SB_Primitive ();
+      }
 
 (** Static environments and utils. *)
 module Static = struct
@@ -123,6 +128,16 @@ module Static = struct
     try IMap.find x env.local.constants_values
     with Not_found -> IMap.find x env.global.constants_values
 
+  (** [type_of env "x"] is the type of ["x"] in the environment [env]. *)
+  let type_of env x =
+    try IMap.find x env.local.storage_types |> fst
+    with Not_found -> IMap.find x env.global.storage_types |> fst
+
+  let type_of_opt env x =
+    try IMap.find x env.local.storage_types |> fst |> Option.some
+    with Not_found ->
+      IMap.find_opt x env.global.storage_types |> Option.map fst
+
   let mem_constants env x =
     IMap.mem x env.global.constants_values
     || IMap.mem x env.local.constants_values
@@ -134,6 +149,17 @@ module Static = struct
         {
           env.global with
           subprograms = IMap.add name func_sig env.global.subprograms;
+        };
+    }
+
+  let set_renamings name set env =
+    {
+      env with
+      global =
+        {
+          env.global with
+          subprogram_renamings =
+            IMap.add name set env.global.subprogram_renamings;
         };
     }
 
@@ -168,6 +194,9 @@ module Static = struct
     }
 
   let add_local x ty ldk env =
+    let () =
+      if false then Format.eprintf "Adding to env %S <- %a@." x PP.pp_ty ty
+    in
     {
       env with
       local =
@@ -175,6 +204,12 @@ module Static = struct
           env.local with
           storage_types = IMap.add x (ty, ldk) env.local.storage_types;
         };
+    }
+
+  let add_subtype s t env =
+    {
+      env with
+      global = { env.global with subtypes = IMap.add s t env.global.subtypes };
     }
 end
 
@@ -185,19 +220,91 @@ module type RunTimeConf = sig
   val unroll : int
 end
 
+let _runtime_assertions = true
+
+module Storage : sig
+  type 'v t
+
+  val alloc : unit -> int
+  val empty : 'a t
+  val is_empty : 'a t -> bool
+  val mem : identifier -> 'a t -> bool
+  val add : identifier -> 'a -> 'a t -> 'a t
+  val assign : identifier -> 'a -> 'a t -> 'a t
+  val declare : identifier -> 'a -> 'a t -> 'a t
+  val find : identifier -> 'a t -> 'a
+  val find_opt : identifier -> 'a option t -> 'a option
+  val remove : identifier -> 'a t -> 'a t
+  val singleton : identifier -> 'a -> 'a t
+  val patch_mem : t_env:'a t -> t_mem:'a t -> identifier list -> 'a t
+end = struct
+  type pointer = int
+
+  module PMap = Map.Make (Int)
+  module PSet = Set.Make (Int)
+
+  type 'v t = { env : pointer IMap.t; mem : 'v PMap.t }
+
+  let alloc =
+    let next = ref 0 in
+    fun () ->
+      let r = !next in
+      next := r + 1;
+      r
+
+  let empty = { env = IMap.empty; mem = PMap.empty }
+  let is_empty t = IMap.is_empty t.env
+  let mem x t = IMap.mem x t.env
+
+  let assign x v t =
+    let p = IMap.find x t.env in
+    { t with mem = PMap.add p v t.mem }
+
+  let declare x v t =
+    let () = if _runtime_assertions then assert (not (mem x t)) in
+    let p = alloc () in
+    { env = IMap.add x p t.env; mem = PMap.add p v t.mem }
+
+  let add x v t = try assign x v t with Not_found -> declare x v t
+
+  let find x t =
+    let p = IMap.find x t.env in
+    PMap.find p t.mem
+
+  let find_opt x t = try find x t with Not_found -> None
+
+  let remove x t =
+    try
+      let p = IMap.find x t.env in
+      { mem = PMap.remove p t.mem; env = IMap.remove x t.env }
+    with Not_found -> t
+
+  let singleton x v = add x v empty
+
+  let patch_mem ~t_env ~t_mem to_avoid =
+    let env = t_env.env
+    and mem =
+      try
+        List.fold_left
+          (fun mem x ->
+            let p = IMap.find x t_mem.env in
+            PMap.remove p mem)
+          t_mem.mem to_avoid
+      with Not_found -> assert false
+    in
+    { env; mem }
+end
+
 module RunTime (C : RunTimeConf) = struct
   module Types = struct
     (** Internal representation for subprograms. *)
-    type func =
-      | Func of int ref * AST.func
-          (** A function has an index that keeps a unique calling index. *)
-      | Primitive of C.primitive
-          (** A primitive is just given by its type passed as argument. *)
+    type func = int ref * C.primitive AST.func
+    (** A function has an index that keeps a unique calling index. *)
 
     type global = {
       static : Static.global;
           (** Keeps a trace of the static env for reference. *)
-      storage : C.v IMap.t;  (** Global declared storage elements. *)
+      storage : C.v Storage.t;
       funcs : func IMap.t;
           (** Declared subprograms, maps called identifier to their code. *)
     }
@@ -206,9 +313,10 @@ module RunTime (C : RunTimeConf) = struct
     (** Stack of ints, for limiting loop unrolling *)
 
     type local = {
-      storage : C.v IMap.t;
-      scope : identifier * int;
+      storage : C.v Storage.t;
+      scope : AST.scope;
       unroll : int_stack;
+      declared : identifier list;
     }
 
     type env = { global : global; local : local }
@@ -216,11 +324,22 @@ module RunTime (C : RunTimeConf) = struct
 
   include Types
 
-  let empty_local = { storage = IMap.empty; scope = ("", 0); unroll = [] }
+  let empty_local =
+    {
+      storage = Storage.empty;
+      scope = Scope_Local ("", 0);
+      unroll = [];
+      declared = [];
+    }
+
   let empty_scoped scope = { empty_local with scope }
 
   let empty_global =
-    { static = Static.empty_global; storage = IMap.empty; funcs = IMap.empty }
+    {
+      static = Static.empty_global;
+      storage = Storage.empty;
+      funcs = IMap.empty;
+    }
 
   let empty = { global = empty_global; local = empty_local }
 
@@ -259,17 +378,70 @@ module RunTime (C : RunTimeConf) = struct
           (false, { env with local = { env.local with unroll } })
 
   (* --------------------------------------------------------------------------*)
+  (* Retrieval utils *)
+
+  let find x env =
+    try Local (Storage.find x env.local.storage)
+    with Not_found -> (
+      try Global (Storage.find x env.global.storage)
+      with Not_found -> NotFound)
+
+  let mem x env =
+    Storage.mem x env.local.storage || Storage.mem x env.global.storage
+
+  (* --------------------------------------------------------------------------*)
   (* Assignments utils *)
 
-  let add_local x v env =
+  let declare_local x v env =
     {
       env with
-      local = { env.local with storage = IMap.add x v env.local.storage };
+      local =
+        {
+          env.local with
+          storage = Storage.add x v env.local.storage;
+          declared = x :: env.local.declared;
+        };
+    }
+
+  let assign_local x v env =
+    {
+      env with
+      local = { env.local with storage = Storage.assign x v env.local.storage };
+    }
+
+  let declare_global x v env =
+    {
+      env with
+      global = { env.global with storage = Storage.add x v env.global.storage };
+    }
+
+  let assign_global x v env =
+    {
+      env with
+      global =
+        { env.global with storage = Storage.assign x v env.global.storage };
     }
 
   let remove_local x env =
     {
       env with
-      local = { env.local with storage = IMap.remove x env.local.storage };
+      local = { env.local with storage = Storage.remove x env.local.storage };
     }
+
+  let assign x v env =
+    try Local (assign_local x v env)
+    with Not_found -> (
+      try Global (assign_global x v env) with Not_found -> NotFound)
+
+  (* --------------------------------------------------------------------------*)
+  (* Scope swapping utils *)
+
+  let push_scope env = { env with local = { env.local with declared = [] } }
+
+  let pop_scope parent child =
+    let local_storage =
+      Storage.patch_mem ~t_env:parent.local.storage ~t_mem:child.local.storage
+        child.local.declared
+    in
+    { child with local = { parent.local with storage = local_storage } }
 end

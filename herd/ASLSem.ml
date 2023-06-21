@@ -126,6 +126,8 @@ module Make (C : Config) = struct
       | V.Var _ as v ->
           Warn.fatal "Cannot convert value %s into constant" (V.pp_v v)
 
+    let v_unknown_of_type _t = V.fresh_var ()
+
     let v_of_parsed_v =
       let open AST in
       let open ASLScalar in
@@ -133,14 +135,15 @@ module Make (C : Config) = struct
       let vector li = Constant.ConcreteVector li in
       let rec tr = function
         | V_Int i ->
-           let z = Z.of_int i in
-           S_Int z |> concrete
+            let z = Z.of_int i in
+            S_Int z |> concrete
         | V_Bool b -> S_Bool b |> concrete
         | V_BitVector bv -> S_BitVector bv |> concrete
         | V_Tuple li -> List.map tr li |> vector
         | V_Record li -> List.map (fun (_, v) -> tr v) li |> vector
         | V_Exception li -> List.map (fun (_, v) -> tr v) li |> vector
         | V_Real _f -> Warn.fatal "Cannot use reals yet."
+        | V_String _f -> Warn.fatal "Cannot strings in herd yet."
       in
       fun v -> V.Val (tr v)
 
@@ -241,7 +244,7 @@ module Make (C : Config) = struct
     let unop op =
       let open AST in
       match op with
-      | BNOT ->  wrap_op1_symb_as_var (Op.ArchOp1 ASLValue.BoolNot)
+      | BNOT -> wrap_op1_symb_as_var (Op.ArchOp1 ASLValue.BoolNot)
       | NEG -> M.op Op.Sub V.zero
       | NOT -> wrap_op1_symb_as_var Op.Inv
 
@@ -263,42 +266,35 @@ module Make (C : Config) = struct
       let action = Act.Access (Dir.R, loc, v, MachSize.Quad) in
       M.mk_singleton_es action (use_ii_with_poi ii poi)
 
-    let create_vector _ty li =
+    let create_vector li =
       let li = List.map as_constant li in
       return (V.Val (Constant.ConcreteVector li))
 
-    let get_i i v =
-      match v with
-      | V.Val (Constant.ConcreteVector li) -> (
-          match List.nth_opt li i with
-          | None ->
-              Warn.user_error "Index %d out of bounds for value %s" i (V.pp_v v)
-          | Some v -> return (V.Val v))
-      | V.Val _ ->
-          Warn.user_error "Trying to index non-indexable value %s" (V.pp_v v)
-      | V.Var _ -> M.op1 (Op.ArchOp1 (ASLValue.Get i)) v
-
-    let list_update i v li =
-      let rec aux acc i li =
-        match (li, i) with
-        | [], _ -> None
-        | _ :: t, 0 -> Some (List.rev_append acc (v :: t))
-        | h :: t, i -> aux (h :: acc) (i - 1) t
+    let create_record li =
+      let record =
+        List.to_seq li
+        |> Seq.map (fun (x, v) -> (x, as_constant v))
+        |> StringMap.of_seq
       in
-      aux [] i li
+      return (V.Val (Constant.ConcreteRecord record))
 
-    let set_i i v vec =
-      match vec with
-      | V.Val (Constant.ConcreteVector li) -> (
-          let c = match v with V.Val c -> c | V.Var i -> V.freeze i in
-          match list_update i c li with
-          | None ->
-              Warn.user_error "Index %d out of bounds for value %s" i
-                (V.pp_v vec)
-          | Some li -> return (V.Val (Constant.ConcreteVector li)))
-      | V.Val _ ->
-          Warn.user_error "Trying to index non-indexable value %s" (V.pp_v vec)
-      | V.Var _ -> M.op (Op.ArchOp (ASLValue.Set i)) vec v
+    let create_exception = create_record
+    let freeze = function V.Val c -> V.Val c | V.Var i -> V.Val (V.freeze i)
+
+    let unfreeze = function
+      | V.Val (Constant.Frozen i) -> return (V.Var i)
+      | v -> return v
+
+    let get_index i v = M.op1 (Op.ArchOp1 (ASLValue.GetIndex i)) v >>= unfreeze
+
+    let set_index i v vec =
+      M.op (Op.ArchOp (ASLValue.SetIndex i)) vec (freeze v)
+
+    let get_field name v =
+      M.op1 (Op.ArchOp1 (ASLValue.GetField name)) v >>= unfreeze
+
+    let set_field name v record =
+      M.op (Op.ArchOp (ASLValue.SetField name)) record (freeze v)
 
     let read_from_bitvector positions bvs =
       let positions = Asllib.ASTUtils.slices_to_positions v_as_int positions in
@@ -403,21 +399,24 @@ module Make (C : Config) = struct
 
     (* Helpers *)
     let build_primitive name args return_type body =
+      let open AST in
       let return_type, make_return_type = return_type in
-      let body = make_return_type body in
+      let body = SB_Primitive (make_return_type body) in
       let parameters =
-        let open AST in
         let get_param t =
           match t.desc with
-          | T_Bits (BitWidth_Determined { desc = E_Var x; _ }, _) ->
+          | T_Bits (BitWidth_SingleExpr { desc = E_Var x; _ }, _) ->
               Some (x, None)
           | _ -> None
         in
         args |> List.filter_map get_param (* |> List.sort String.compare *)
       and args =
         List.mapi (fun i arg_ty -> ("arg_" ^ string_of_int i, arg_ty)) args
+      and subprogram_type =
+        match return_type with None -> ST_Procedure | _ -> ST_Function
       in
-      AST.{ name; args; body; return_type; parameters }
+      (D_Func { name; args; body; return_type; parameters; subprogram_type }
+      [@warning "-40-42"])
 
     let arity_zero name return_type f =
       build_primitive name [] return_type @@ function
@@ -435,7 +434,10 @@ module Make (C : Config) = struct
       | [] | [ _ ] | _ :: _ :: _ :: _ ->
           Warn.fatal "Arity error for function %s." name
 
-    let return_one ty = (Some ty, fun body args -> return [ body args ])
+    let return_one =
+      let make body args = return [ body args ] in
+      fun ty -> (Some ty, make)
+
     let return_zero = (None, Fun.id)
 
     (* Primitives *)
@@ -446,14 +448,12 @@ module Make (C : Config) = struct
       let reg = T_Int None |> with_pos in
       let var x = E_Var x |> with_pos in
       let lit x = E_Literal (V_Int x) |> with_pos in
-      let bv x = T_Bits (BitWidth_Determined x, []) |> with_pos in
+      let bv x = T_Bits (BitWidth_SingleExpr x, []) |> with_pos in
       let bv_var x = bv @@ var x in
       let bv_N = bv_var "N" in
       let bv_lit x = bv @@ lit x in
       let bv_64 = bv_lit 64 in
       let t_named x = T_Named x |> with_pos in
-      let getter = Asllib.ASTUtils.getter_name in
-      let setter = Asllib.ASTUtils.setter_name in
       [
         arity_one "read_register" [ reg ] (return_one bv_64)
           (read_register ii_env);
@@ -463,14 +463,14 @@ module Make (C : Config) = struct
           (read_memory ii_env);
         build_primitive "write_memory" [ bv_64; d; bv_64 ] return_zero
           (write_memory ii_env);
-        arity_zero (getter "PSTATE")
+        arity_zero "PSTATE"
           (return_one (t_named "ProcState"))
           (read_pstate_nzcv ii_env);
-        arity_one (setter "PSTATE")
+        arity_one "PSTATE"
           [ t_named "ProcState" ]
           return_zero (write_pstate_nzcv ii_env);
-        arity_zero (getter "SP_EL0") (return_one bv_64) (read_sp ii_env);
-        arity_one (setter "SP_EL0") [ bv_64 ] return_zero (write_sp ii_env);
+        arity_zero "SP_EL0" (return_one bv_64) (read_sp ii_env);
+        arity_one "SP_EL0" [ bv_64 ] return_zero (write_sp ii_env);
         arity_one "UInt" [ bv_N ] (return_one d) uint;
         arity_one "SInt" [ bv_N ] (return_one d) sint;
         arity_zero "ProcessorID" (return_one d) (processor_id ii_env);
@@ -487,7 +487,8 @@ module Make (C : Config) = struct
       let module ASLBackend = struct
         type value = V.v
         type 'a m = 'a M.t
-        type scope = string * int
+        type primitive = value m list -> value m list m
+        type ast = primitive AST.t
 
         let debug_value = V.pp_v
         let is_undetermined = function V.Var _ -> true | V.Val _ -> false
@@ -508,11 +509,16 @@ module Make (C : Config) = struct
         let unop = unop
         let ternary = ternary
         let create_vector = create_vector
-        let get_i = get_i
-        let set_i = set_i
+        let create_record = create_record
+        let create_exception = create_exception
+        let get_index = get_index
+        let set_index = set_index
+        let get_field = get_field
+        let set_field = set_field
         let read_from_bitvector = read_from_bitvector
         let write_to_bitvector = write_to_bitvector
         let concat_bitvectors = concat_bitvectors
+        let v_unknown_of_type = v_unknown_of_type
       end in
       let module Config = struct
         let type_checking_strictness : Asllib.Typing.strictness =
@@ -527,33 +533,39 @@ module Make (C : Config) = struct
       end in
       let module ASLInterpreter = Asllib.Interpreter.Make (ASLBackend) (Config)
       in
+      let inst = Asllib.ASTUtils.no_primitive ii.A.inst in
       let ast =
+        let ( @! ) = List.rev_append in
         if C.variant Variant.ASL_AArch64 then
           let build ?ast_type version fname =
             Filename.concat "asl-pseudocode" fname
             |> C.libfind
             |> ASLBase.build_ast_from_file ?ast_type version
+            |> Asllib.ASTUtils.no_primitive
           in
           let patches = build `ASLv1 "patches.asl"
           and custom_implems = build `ASLv1 "implementations.asl"
           and shared = build `ASLv0 "shared_pseudocode.asl" in
           let shared =
-            List.filter
-              AST.(
-                function
-                | D_Func { name = "Zeros" | "Ones" | "Replicate"; _ } -> false
-                | _ -> true)
-              shared
+            (List.filter
+               AST.(
+                 function
+                 | D_Func { name = "Zeros" | "Ones" | "Replicate"; _ } -> false
+                 | _ -> true)
+               shared [@warning "-40-42"])
           in
           let shared =
             Asllib.ASTUtils.patch
-              ~patches:(List.rev_append custom_implems patches)
+              ~patches:(custom_implems @! patches @! extra_funcs ii_env)
               ~src:shared
           in
-          ii.A.inst @ shared
-        else ii.A.inst
+          inst @! shared
+        else inst @! extra_funcs ii_env
       in
-      let exec () = ASLInterpreter.run ast (extra_funcs ii_env) in
+      let () =
+        if false then Format.eprintf "Completed AST: %a.@." Asllib.PP.pp_t ast
+      in
+      let exec () = ASLInterpreter.run ast in
       let* () =
         match Asllib.Error.intercept exec () with
         | Ok m -> m

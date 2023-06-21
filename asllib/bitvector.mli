@@ -6,34 +6,23 @@ type t
 val length : t -> int
 (** The length of the bitvector. *)
 
-val debug : t -> string
+(* --------------------------------------------------------------------------*)
+(** {2 Constructors} *)
 
-val pp_t : Format.formatter -> t -> unit
-(** Print the bitvector, indexed from the right, as a serie of '0' and '1',
-    delimited by apostrophes. Inside a horizontal box. *)
+val one : t
+(** A length 1 bitvector with a 1 bit inside. *)
 
-val to_string : t -> string
-(** Returns a string representing the bitvector, indexed from the right and
-    delimited by apostrophes. *)
+val zero : t
+(** A length 1 bitvector with a 0 bit inside. *)
 
-val to_int : t -> int
-(** Returns an integer representing the bitvector, little-endian. Result
-    unspecified if [length > Sys.int_size]. *)
+val empty : t
+(** A length 0 bitvector. *)
 
-val to_int_signed : t -> int
-(** Returns a signed integer representing the bitvector. *)
+val ones : int -> t
+(** [ones n] is a bitvector of length [n] with every bit set. *)
 
-val to_int64_unsigned : t -> int64
-(** Returns an integer representing the bitvector, little-endian. Result
-    unspecified if [length > 64]. *)
-
-val to_int64_signed : t -> int64
-(** Returns an integer representing the bitvector, little-endian. Result
-    unspecified if [length > 64]. *)
-
-val to_z_unsigned : t -> Z.t
-
-val to_z_signed : t -> Z.t
+val zeros : int -> t
+(** [zeros n] is a bitvector of length [n] without any bit set. *)
 
 val of_string : string -> t
 (** [of_string s] interpretes [s] as a right-indexed representation of a
@@ -59,6 +48,37 @@ val of_z : int -> Z.t -> t
 (** [of_int sz i] is the bitvector of length [sz] that corresponds to [i] in
     little-endian. *)
 
+(* --------------------------------------------------------------------------*)
+(** {2 Exports} *)
+
+val pp_t : Format.formatter -> t -> unit
+(** Print the bitvector, indexed from the right, as a serie of '0' and '1',
+    delimited by apostrophes. Inside a horizontal box. *)
+
+val to_string : t -> string
+(** Returns a string representing the bitvector, indexed from the right and
+    delimited by apostrophes. *)
+
+val to_int : t -> int
+(** Returns an integer representing the bitvector, little-endian. Result
+    unspecified if [length > Sys.int_size]. *)
+
+val to_int_signed : t -> int
+(** Returns a signed integer representing the bitvector. *)
+
+val to_int64_unsigned : t -> int64
+(** Returns an integer representing the bitvector, little-endian. Result
+    unspecified if [length > 64]. *)
+
+val to_int64_signed : t -> int64
+(** Returns an integer representing the bitvector, little-endian. Result
+    unspecified if [length > 64]. *)
+
+val to_z_unsigned : t -> Z.t
+val to_z_signed : t -> Z.t
+
+(* --------------------------------------------------------------------------*)
+(** {2 Operations on bitvectors} *)
 
 val lognot : t -> t
 (** Bitwise not operation.
@@ -117,20 +137,51 @@ val concat : t list -> t
     ]}
  *)
 
-val one : t
-(** A length 1 bitvector with a 1 bit inside. *)
-
-val zero : t
-(** A length 1 bitvector with a 0 bit inside. *)
-
-val empty : t
-(** A length 0 bitvector. *)
-
-val ones : int -> t
-(** [ones n] is a bitvector of length [n] with every bit set. *)
-
-val zeros : int -> t
-(** [zeros n] is a bitvector of length [n] without any bit set. *)
-
 val is_zeros : t -> bool
 (** [is_zeros bv] is true if every bit of bv is unset. *)
+
+val is_ones : t -> bool
+(** [is_ones bv] is true if every bit of bv is set. *)
+
+(* --------------------------------------------------------------------------*)
+(**
+   {2 Bitvector masks}
+
+   Bitvector in ASL can be matched against masks, that have the same syntax
+   than bitvectors, with an extra possible bit: ['x']. This bits indicates that
+   the mask would match against any bit at this position.
+
+   For example:
+   {[
+     assert ('01' IN {'01'}) == TRUE;
+     assert ('01' IN {'0x'}) == TRUE;
+     assert ('10' IN {'0x'}) == FALSE;
+   ]}
+*)
+
+type mask
+(** Internal representation of a mask. *)
+
+val mask_length : mask -> int
+(** Returns the length of bitvectors matched by this mask. *)
+
+val mask_of_string : string -> mask
+(** Build a mask from its ASL representation. *)
+
+val matches : t -> mask -> bool
+(** [matches mask bv] is true iff [bv] matches [mask]. *)
+
+val mask_to_string : mask -> string
+(** Returns an ASL string matching its value. *)
+
+val mask_to_canonical_string : mask -> string
+(** Returns a unique ASL string matching its value. *)
+
+val mask_set : mask -> t
+(** [mask_set m]'s set bits are those required set by [m]. *)
+
+val mask_unset : mask -> t
+(** [mask_unset m]'s set bits are those required unset by [m]. *)
+
+val mask_specified : mask -> t
+(** [mask_specified m]'s set bits are those require set or unset by [m]. *)

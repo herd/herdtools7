@@ -4,7 +4,7 @@ ASL for1
 
 func main()
 begin
-  s = 0;
+  var s = 0;
   for i = 1 to 10 do
     s = s + i ;
   end
@@ -13,4 +13,4 @@ begin
   end
 end
 
-forall (0: s = 110)
+forall (0: main.0.s = 110)
