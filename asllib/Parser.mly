@@ -422,7 +422,11 @@ let local_decl_keyword ==
   | VAR       ; { LDK_Var       }
   | CONSTANT  ; { LDK_Constant  }
 
-let storage_keyword == LET | CONSTANT | VAR | CONFIG
+let storage_keyword ==
+  | LET       ; { GDK_Let      }
+  | CONSTANT  ; { GDK_Constant }
+  | VAR       ; { GDK_Var      }
+  | CONFIG    ; { GDK_Config   }
 
 let pass == { S_Pass }
 let unimplemented_stmt(x) == x ; pass
@@ -495,7 +499,7 @@ let subtype_opt == ioption(SUBTYPES; ty)
 let unimplemented_decl(x) ==
   x ; {
     let e = literal (V_Int 0) and ty = add_dummy_pos (T_Int None) in
-    (D_GlobalConst ("-", ty, e))
+    (D_GlobalStorage { name="-"; keyword=GDK_Constant; ty=Some ty; initial_value = Some e})
   }
 
 let opt_type_identifier == pair(IDENTIFIER, ty_opt)
@@ -543,15 +547,16 @@ let decl ==
       }
 
   | terminated_by(SEMI_COLON,
-    | storage_keyword; x=IDENTIFIER; t=as_ty; EQ; e=expr; <D_GlobalConst>
     | TYPE; x=IDENTIFIER; OF; t=ty; subtype_opt;   <D_TypeDecl>
 
-    | VAR; x=IDENTIFIER; t=as_ty;
-      { D_GlobalConst(x, t, E_Unknown t |> ASTUtils.add_pos_from t) }
+    | keyword=storage_keyword; name=IDENTIFIER;
+      ty=ioption(as_ty); EQ; initial_value=some(expr);
+      { D_GlobalStorage { keyword; name; ty; initial_value } }
+    | VAR; name=IDENTIFIER; ty=some(as_ty);
+      { D_GlobalStorage { keyword=GDK_Var; name; ty; initial_value=None}}
 
     | unimplemented_decl(
       | storage_keyword; MINUS; ty_opt; EQ; expr;                         <>
-      | storage_keyword; IDENTIFIER; EQ; expr;                            <>
       | PRAGMA; IDENTIFIER; clist(expr);                                  <>
       | TYPE; IDENTIFIER; SUBTYPES; ty; ioption(WITH; fields_opt);        <>
     )

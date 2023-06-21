@@ -414,7 +414,7 @@ let rec type_clashes env t s =
       && List.for_all2 (type_clashes env) li_s li_t
   | _ -> false
 
-let subprogram_clashes env f1 f2 =
+let subprogram_clashes env (f1 : 'a func_skeleton) (f2 : 'b func_skeleton) =
   (* Two subprograms clash if all of the following hold:
       • they have the same name
       • they are the same kind of subprogram
@@ -568,3 +568,43 @@ let rec lowest_common_ancestor env s t =
             | _, T_Named _ -> Some t
             | _, _ -> Some (add_dummy_pos (T_Int None)))
         | _ -> None)
+
+let rec base_value loc env t =
+  let eval env e =
+    let open StaticInterpreter in
+    try static_eval env e
+    with Error.ASLException _ -> Normalize.normalize env e |> static_eval env
+  in
+  match (get_structure env t).desc with
+  | T_Array _ ->
+      Error.fatal_from loc
+        (Error.NotYetImplemented "Base value of array types.")
+  | T_Bool -> V_Bool true
+  | T_Bits (BitWidth_Constrained (Constraint_Exact e :: _), _)
+  | T_Bits (BitWidth_Constrained (Constraint_Range (e, _) :: _), _)
+  | T_Bits (BitWidth_Determined e, _) -> (
+      match eval env e with
+      | V_Int i -> V_BitVector (Bitvector.zeros i)
+      | v -> Error.fatal_from e (Error.MismatchType (v, [ T_Int None ])))
+  | T_Bits (BitWidth_ConstrainedFormType _, _) ->
+      Error.fatal_from loc
+        (Error.NotYetImplemented "Base value of type-constrained bitvectors.")
+  | T_Bits (BitWidth_Constrained [], _) ->
+      Error.fatal_from loc
+        (Error.NotYetImplemented "Base value of under-constrained bitvectors.")
+  | T_Enum li -> IMap.find (List.hd li) env.global.constants_values
+  | T_Exception _ ->
+      Error.fatal_from loc
+        (Error.NotYetImplemented "Base value of exception types.")
+  | T_Int None | T_Int (Some []) -> V_Int 0
+  | T_Int (Some (Constraint_Exact e :: _))
+  | T_Int (Some (Constraint_Range (e, _) :: _)) ->
+      eval env e
+  | T_Named _ -> assert false
+  | T_Real -> V_Real 0.
+  | T_Record fields ->
+      V_Record (List.map (fun (name, t) -> (name, base_value loc env t)) fields)
+  | T_String ->
+      Error.fatal_from loc
+        (Error.NotYetImplemented "Base value of string types.")
+  | T_Tuple li -> V_Tuple (List.map (base_value loc env) li)

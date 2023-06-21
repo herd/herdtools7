@@ -8,5 +8,5 @@ begin
 end
 
 forall (
-    0: x = 3
+    0: main.0.x = 3
 )

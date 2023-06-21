@@ -13,4 +13,4 @@ begin
   end
 end
 
-forall (0: s = 110)
+forall (0: main.0.s = 110)

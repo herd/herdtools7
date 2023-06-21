@@ -26,3 +26,4 @@ val pp_ty : ty printer
 val pp_typed_identifier : typed_identifier printer
 val ty_to_string : ty -> string
 val pp_version : [ `ASLv0 | `ASLv1 | `Any ] printer
+val pp_scope : scope printer

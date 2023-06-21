@@ -242,13 +242,24 @@ let rec pp_stmt =
   in
   fun f s -> pp_annotated pp_desc f s
 
+let pp_gdk f gdk =
+  pp_string f
+  @@
+  match gdk with
+  | GDK_Config -> "GDK_Config"
+  | GDK_Constant -> "GDK_Constant"
+  | GDK_Let -> "GDK_Let"
+  | GDK_Var -> "GDK_Var"
+
 let pp_decl f = function
   | D_Func { name; args; body; return_type; parameters = _ } ->
       bprintf f
         "D_Func { name=%S; args=%a; body=%a; return_type=%a; parameters=[] }"
         name (pp_id_assoc pp_ty) args pp_stmt body (pp_option pp_ty) return_type
-  | D_GlobalConst (x, ty, e) ->
-      bprintf f "D_GlobalConst (%S, %a, %a)" x pp_ty ty pp_expr e
+  | D_GlobalStorage { name; keyword; ty; initial_value } ->
+      bprintf f "D_GlobalConst { name=%S; keyword=%a; ty=%a; initial_value=%a}"
+        name pp_gdk keyword (pp_option pp_ty) ty (pp_option pp_expr)
+        initial_value
   | D_TypeDecl (name, type_desc) ->
       bprintf f "D_TypeDecl (%S, %a)" name pp_ty type_desc
   | D_Primitive { name; args; return_type; body = _; parameters = _ } ->

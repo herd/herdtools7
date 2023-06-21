@@ -417,7 +417,7 @@ module Make (C : Config) = struct
       and args =
         List.mapi (fun i arg_ty -> ("arg_" ^ string_of_int i, arg_ty)) args
       in
-      AST.{ name; args; body; return_type; parameters }
+      (AST.{ name; args; body; return_type; parameters } [@warning "-40-42"])
 
     let arity_zero name return_type f =
       build_primitive name [] return_type @@ function
@@ -487,7 +487,6 @@ module Make (C : Config) = struct
       let module ASLBackend = struct
         type value = V.v
         type 'a m = 'a M.t
-        type scope = string * int
 
         let debug_value = V.pp_v
         let is_undetermined = function V.Var _ -> true | V.Val _ -> false

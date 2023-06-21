@@ -144,7 +144,7 @@ let used_identifiers, used_identifiers_stmt =
   and use_le acc _le = acc
   and use_decl acc = function
     | D_Func { body; _ } -> use_s acc body
-    | D_GlobalConst (_name, _ty, e) -> use_e acc e
+    | D_GlobalStorage { initial_value = Some e; _ } -> use_e acc e
     | _ -> acc
   in
   (List.fold_left use_decl ISet.empty, use_s ISet.empty)
@@ -341,7 +341,7 @@ let patch ~src ~patches =
      - [patches] is not that little. *)
   let identifier_of_decl = function
     | D_Func { name; _ }
-    | D_GlobalConst (name, _, _)
+    | D_GlobalStorage { name; _ }
     | D_TypeDecl (name, _)
     | D_Primitive { name; _ } ->
         name
@@ -422,3 +422,18 @@ let dag_fold (def : AST.decl -> identifier) (use : AST.decl -> ISet.t)
         (ISet.empty, acc) ast
     in
     acc
+
+let scope_equal s1 s2 =
+  match (s1, s2) with
+  | Scope_Global, Scope_Global -> true
+  | Scope_Global, _ | _, Scope_Global -> false
+  | Scope_Local (n1, i1), Scope_Local (n2, i2) -> i1 == i2 && String.equal n1 n2
+
+let scope_compare s1 s2 =
+  match (s1, s2) with
+  | Scope_Global, Scope_Global -> 0
+  | Scope_Global, _ -> -1
+  | _, Scope_Global -> 1
+  | Scope_Local (n1, i1), Scope_Local (n2, i2) ->
+      let n = Int.compare i1 i2 in
+      if n != 0 then n else String.compare n1 n2

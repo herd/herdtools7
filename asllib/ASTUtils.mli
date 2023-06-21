@@ -93,3 +93,6 @@ val dag_fold :
 (** [dag_fold def use folder ast a] is [a |> f d_1 |> ... f d_n] where [d_i]
     spawns all declarations in AST, but in an order such that [use]/[def]
     relations are respected. *)
+
+val scope_equal : scope -> scope -> bool
+val scope_compare : scope -> scope -> int
