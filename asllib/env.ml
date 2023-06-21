@@ -205,18 +205,15 @@ module RunTime (C : RunTimeConf) = struct
     type int_stack = int list
     (** Stack of ints, for limiting loop unrolling *)
 
-    type local = {
-      storage : C.v IMap.t;
-      scope : identifier * int;
-      unroll : int_stack;
-    }
-
+    type local = { storage : C.v IMap.t; scope : AST.scope; unroll : int_stack }
     type env = { global : global; local : local }
   end
 
   include Types
 
-  let empty_local = { storage = IMap.empty; scope = ("", 0); unroll = [] }
+  let empty_local =
+    { storage = IMap.empty; scope = Scope_Local ("", 0); unroll = [] }
+
   let empty_scoped scope = { empty_local with scope }
 
   let empty_global =
@@ -271,5 +268,12 @@ module RunTime (C : RunTimeConf) = struct
     {
       env with
       local = { env.local with storage = IMap.remove x env.local.storage };
+    }
+
+  let add_global x v env =
+    let () = if false then Format.eprintf "Writing to global %S.@." x in
+    {
+      env with
+      global = { env.global with storage = IMap.add x v env.global.storage };
     }
 end

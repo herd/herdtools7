@@ -40,4 +40,4 @@ begin
   assert read_f2(r);
 end
 
-forall (0: x = 3)
+forall (0: main.0.x = 3)

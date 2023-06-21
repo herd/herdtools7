@@ -19,6 +19,8 @@
 
 open AST
 
+let _log = false
+
 let list_update i f li =
   let rec aux acc i li =
     match (li, i) with
@@ -82,8 +84,17 @@ module NativeBackend = struct
     | v -> mismatch_type v [ T_Bool ]
 
   let unop op v = StaticInterpreter.unop_values ASTUtils.dummy_annotated op v
-  let on_write_identifier _x _scope _value = ()
-  let on_read_identifier _x _scope _value = ()
+
+  let on_write_identifier x scope value =
+    if _log then
+      Format.eprintf "Writing %a to %s in %a.@." PP.pp_value value x PP.pp_scope
+        scope
+
+  let on_read_identifier x scope value =
+    if _log then
+      Format.eprintf "Reading %a from %s in %a.@." PP.pp_value value x
+        PP.pp_scope scope
+
   let v_tuple li = return (V_Tuple li)
   let v_record li = return (V_Record li)
   let v_exception li = return (V_Exception li)
@@ -127,9 +138,13 @@ module NativeBackend = struct
   let bitvector_to_value bv = return (V_BitVector bv)
 
   let read_from_bitvector positions bv =
-    let bv' = as_bitvector bv
+    let bv =
+      match bv with
+      | V_BitVector bv -> bv
+      | V_Int i -> Bitvector.of_int i
+      | _ -> mismatch_type bv [ ASTUtils.default_t_bits ]
     and positions = ASTUtils.slices_to_positions as_int positions in
-    let res = Bitvector.extract_slice bv' positions in
+    let res = Bitvector.extract_slice bv positions in
     bitvector_to_value res
 
   let write_to_bitvector positions bits bv =

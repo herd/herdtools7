@@ -158,7 +158,7 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     let remove_fake_primitives =
       let primitive_names =
-        let one_sfunc { name; _ } = name in
+        let one_sfunc ({ name; _ } : 'a func_skeleton) = name in
         sfuncs |> List.to_seq |> Seq.map one_sfunc |> ASTUtils.ISet.of_seq
       in
       let is_primitive = function
@@ -186,7 +186,7 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (** [build_funcs] initialize the unique calling reference for each function
       and builds the subprogram sub-env. *)
-  let build_funcs ast funcs =
+  let build_funcs ast (funcs : IEnv.func IMap.t) =
     List.to_seq ast
     |> Seq.filter_map (function
          | D_Func func -> Some (func.name, Func (ref 0, func))
@@ -197,23 +197,63 @@ module Make (B : Backend.S) (C : Config) = struct
   (* ---------- *)
 
   (** [add_primitives primitives funcs] augments [funcs] with [primitives]. *)
-  let add_primitives primitives funcs =
-    let one_primitive primitive = (primitive.name, Primitive primitive) in
+  let add_primitives (primitives : primitive list) funcs =
+    let one_primitive (primitive : primitive) =
+      (primitive.name, Primitive primitive)
+    in
     primitives |> List.to_seq |> Seq.map one_primitive
     |> Fun.flip IMap.add_seq funcs
 
+  let build_global_storage eval_expr =
+    let def = function
+      | D_Func { name; _ }
+      | D_GlobalStorage { name; _ }
+      | D_TypeDecl (name, _)
+      | D_Primitive { name; _ } ->
+          name
+    in
+    let use =
+      let use_e e acc = ASTUtils.use_e acc e in
+      let use_ty _ty acc = acc (* TODO *) in
+      fun d ->
+        match d with
+        | D_GlobalStorage { initial_value = Some e; ty = Some ty; _ } ->
+            ISet.empty |> use_e e |> use_ty ty
+        | D_GlobalStorage { initial_value = None; ty = Some ty; _ } ->
+            ISet.empty |> use_ty ty
+        | D_GlobalStorage { initial_value = Some e; ty = None; _ } ->
+            ISet.empty |> use_e e
+        | D_GlobalStorage _ -> ISet.empty
+        | D_TypeDecl (_, ty) -> use_ty ty ISet.empty
+        | D_Func _ | D_Primitive _ ->
+            ISet.empty (* TODO: pure functions that can be used in constants? *)
+    in
+    let process_one_decl = function
+      | D_GlobalStorage { initial_value = Some e; name; _ } ->
+          fun env_m ->
+            let*| env = env_m in
+            let* v = eval_expr env e in
+            IEnv.add_global name v env |> return
+      | _ -> Fun.id
+    in
+    ASTUtils.dag_fold def use process_one_decl
+
   (** [build_genv static_env ast primitives] is the global environment before
       the start of the evaluation of [ast]. *)
-  let build_genv (static_env : Env.Static.env) ast primitives =
+  let build_genv eval_expr (static_env : Env.Static.env) ast primitives =
     let funcs = IMap.empty |> build_funcs ast |> add_primitives primitives in
-    let open IEnv in
-    let env = { empty_global with static = static_env.global; funcs } in
     let () =
       if _dbg then
         Format.eprintf "@[<v 2>Executing in env:@ %a@.]"
-          Env.Static.PPEnv.pp_global env.static
+          Env.Static.PPEnv.pp_global static_env.global
     in
-    env
+    let env =
+      let open IEnv in
+      let global = { empty_global with static = static_env.global; funcs } in
+      { global; local = empty_scoped Scope_Global }
+    in
+    let*| env = build_global_storage eval_expr ast (return env) in
+    return env.global
 
   (*****************************************************************************)
   (*                                                                           *)
@@ -243,6 +283,11 @@ module Make (B : Backend.S) (C : Config) = struct
     let* () = B.on_write_identifier x env.local.scope v in
     IEnv.add_local x v env |> return
 
+  let write_global_identifier env x m =
+    let* v = m in
+    let* () = B.on_write_identifier x Scope_Global v in
+    IEnv.add_global x v env |> return
+
   let write_identifier_m env x m =
     B.bind_seq env (fun env -> write_identifier env x m)
 
@@ -257,7 +302,9 @@ module Make (B : Backend.S) (C : Config) = struct
     | E_Typed (e, _t) -> eval_expr env e |: Rule.IgnoreTypedExpr
     | E_Var x -> (
         match IMap.find_opt x env.global.storage with
-        | Some v -> return v |: Rule.GlobalConst
+        | Some v ->
+            let* () = B.on_read_identifier x Scope_Global v in
+            return v |: Rule.EGlobalVar
         | None -> (
             match IMap.find_opt x env.local.storage with
             | Some v ->
@@ -421,7 +468,10 @@ module Make (B : Backend.S) (C : Config) = struct
   and eval_lexpr (env : env) le : B.value B.m -> env B.m =
     match le.desc with
     | LE_Ignore -> fun _ -> return env |: Rule.LEIgnore
-    | LE_Var x -> write_identifier env x >|: Rule.LELocalVar
+    | LE_Var x ->
+        if IMap.mem x env.global.storage then
+          write_global_identifier env x >|: Rule.LEGlobalVar
+        else write_identifier env x >|: Rule.LELocalVar
     | LE_Slice (le', slices) ->
         let setter = eval_lexpr env le' in
         fun m ->
@@ -621,7 +671,7 @@ module Make (B : Backend.S) (C : Config) = struct
         fatal_from pos
         @@ Error.BadArity (name, List.length arg_decls, List.length args)
     | Some (Func (r, { args = arg_decls; body; _ })) -> (
-        let scope = (name, !r) in
+        let scope = Scope_Local (name, !r) in
         let () = r := !r + 1 in
         let env = { global = genv; local = IEnv.empty_scoped scope } in
         let one_arg envm (x, _) m = write_identifier_m envm x m in
@@ -646,7 +696,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let () =
       if false then Format.eprintf "@[<v 2>Typed AST:@ %a@]@." PP.pp_t ast
     in
-    let genv = build_genv static_env ast primitives in
+    let*| genv = build_genv eval_expr static_env ast primitives in
     let*| _ = eval_func genv "main" ASTUtils.dummy_annotated [] [] in
     return ()
 end

@@ -235,10 +235,18 @@ type func = stmt func_skeleton
 (** Declaration keyword for global storage elements. *)
 type global_decl_keyword = GDK_Constant | GDK_Config | GDK_Let | GDK_Var
 
+type global_decl = {
+  keyword : global_decl_keyword;
+  name : identifier;
+  ty : ty option;
+  initial_value : expr option;
+}
+(** Global declaration type *)
+
 (** Declarations, ie. top level statement in a asl file. *)
 type decl =
   | D_Func of func
-  | D_GlobalConst of identifier * ty * expr
+  | D_GlobalStorage of global_decl
   | D_TypeDecl of identifier * ty
   | D_Primitive of func
 (* [D_Primitive] is a placeholder for typechecking primitive calls. Only the
@@ -246,3 +254,7 @@ type decl =
 
 type t = decl list
 (** Main AST type. *)
+
+type scope =
+  | Scope_Local of identifier * int
+  | Scope_Global  (** A scope is an unique identifier of the calling site. *)

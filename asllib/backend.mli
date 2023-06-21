@@ -103,14 +103,11 @@ module type S = sig
   val ternary : value -> (unit -> value m) -> (unit -> value m) -> value m
   (** [ternary v w1 w2] is w1 if v is true and w2 if v is false *)
 
-  type scope = AST.identifier * int
-  (** A scope is an unique identifier of the calling site. *)
-
-  val on_read_identifier : AST.identifier -> scope -> value -> unit m
+  val on_read_identifier : AST.identifier -> AST.scope -> value -> unit m
   (** [on_read_identifier] is called when a value is read from the local
       environment.*)
 
-  val on_write_identifier : AST.identifier -> scope -> value -> unit m
+  val on_write_identifier : AST.identifier -> AST.scope -> value -> unit m
   (** [on_write_identifier] is called when a value is read from the local
       environment.*)
 

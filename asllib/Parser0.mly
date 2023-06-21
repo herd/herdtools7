@@ -252,7 +252,7 @@ let ty_non_tuple ==
   | BOOLEAN;  { AST.T_Bool      }
   | ~=tident; < AST.T_Named     >
   | BIT;      { t_bit           }
-  | BITS; e=pared(expr); { AST.(T_Bits (AST.BitWidth_Determined e, [])) }
+  | BITS; e=pared(expr); { AST.(T_Bits (BitWidth_Determined e, [])) }
   (* | tident; pared(clist(expr)); <> *)
 
   | unimplemented_ty (
@@ -339,11 +339,24 @@ let variable_decl ==
   terminated_by (SEMICOLON; EOL,
     | some (
         ioption(CONSTANT); t=ty; x=qualident; EQ; e=expr;
-          { AST.D_GlobalConst (x, t, e) }
+          { AST.D_GlobalStorage {
+            keyword = GDK_Constant;
+            name = x;
+            initial_value = Some e;
+            ty = Some t;
+          } }
       )
+    | some (
+        ty=ty; x=qualident;
+          { AST.D_GlobalStorage {
+            keyword = GDK_Var;
+            name = x;
+            ty = Some ty;
+            initial_value = None;
+          }}
+    )
 
     | unimplemented_decl (
-      | ty; qualident; <>
       | ARRAY; ty; qualident; bracketed(ixtype); <>
     )
   )

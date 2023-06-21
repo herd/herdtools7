@@ -279,7 +279,25 @@ let rec pp_stmt f s =
       fprintf f "@[<2>%a %a@ = %a;@]" pp_local_decl_keyword ldk
         pp_local_decl_item ldi pp_expr e
 
+let pp_gdk f gdk =
+  pp_print_string f
+  @@
+  match gdk with
+  | GDK_Var -> "var"
+  | GDK_Config -> "config"
+  | GDK_Let -> "let"
+  | GDK_Constant -> "constant"
+
 let pp_decl f =
+  let pp_global_storage f = function
+    | { name; keyword; ty = None; initial_value = Some e } ->
+        fprintf f "%a %s@ = %a" pp_gdk keyword name pp_expr e
+    | { name; keyword; ty = Some t; initial_value = Some e } ->
+        fprintf f "%a %s@ :: %a@ = %a" pp_gdk keyword name pp_ty t pp_expr e
+    | { name; keyword; ty = Some t; initial_value = None } ->
+        fprintf f "%a %s@ :: %a" pp_gdk keyword name pp_ty t
+    | { name = _; keyword = _; ty = None; initial_value = None } -> assert false
+  in
   let pp_func_sig f { name; args; return_type; _ } =
     let pp_args = pp_comma_list pp_typed_identifier in
     let pp_return_type_opt f = function
@@ -305,9 +323,8 @@ let pp_decl f =
   | D_Func func ->
       fprintf f "@[<v>%a@ begin@;<1 2>@[<v>%a@]@ end@]" pp_func_sig func pp_stmt
         func.body
-  | D_GlobalConst (x, ty, e) ->
-      fprintf f "@[<2>constant %s@ :: %a@ = %a;@]" x pp_ty ty pp_expr e
   | D_TypeDecl (x, ty) -> fprintf f "@[<2>type %s of %a;@]" x pp_ty ty
+  | D_GlobalStorage decl -> fprintf f "@[<2>%a;@]" pp_global_storage decl
   | D_Primitive func -> fprintf f "@[<h>%a ;@]" pp_func_sig func
 
 let pp_t f =
@@ -324,3 +341,7 @@ let value_to_string = asprintf "%a" pp_value
 let pp_version f version =
   pp_print_string f
   @@ match version with `ASLv0 -> "ASLv0" | `ASLv1 -> "ASLv1" | `Any -> "any"
+
+let pp_scope f = function
+  | Scope_Global -> pp_print_string f "global scope"
+  | Scope_Local (name, i) -> fprintf f "%s(%d)" name i

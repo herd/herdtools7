@@ -36,9 +36,9 @@ begin
 end
 
 forall (
-     0: b = 1
-  /\ 0: d = 1
-  /\ 0: e = 1
+     0: main.0.b = 1
+  /\ 0: main.0.d = 1
+  /\ 0: main.0.e = 1
 )
 
 

@@ -11,7 +11,11 @@ let build_consts () =
     [ ("c1", !$3); ("c2", !!(E_Slice (!%"c1", [ Slice_Range (!$3, !$0) ]))) ]
   in
   let consts =
-    List.map (fun (name, e) -> D_GlobalConst (name, !!(T_Int None), e)) values
+    List.map
+      (fun (name, e) ->
+        D_GlobalStorage
+          { name; keyword = GDK_Let; ty = None; initial_value = Some e })
+      values
   in
   let main =
     D_Func
