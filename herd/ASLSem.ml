@@ -435,7 +435,13 @@ module Make (C : Config) = struct
       | [] | [ _ ] | _ :: _ :: _ :: _ ->
           Warn.fatal "Arity error for function %s." name
 
-    let return_one ty = (Some ty, fun body args -> return [ body args ])
+    let return_one =
+      let make body args =
+        let* v = body args in
+        return [ v ]
+      in
+      fun ty -> (Some ty, make)
+
     let return_zero = (None, Fun.id)
 
     (* Primitives *)
@@ -537,12 +543,12 @@ module Make (C : Config) = struct
           and custom_implems = build `ASLv1 "implementations.asl"
           and shared = build `ASLv0 "shared_pseudocode.asl" in
           let shared =
-            List.filter
-              AST.(
-                function
-                | D_Func { name = "Zeros" | "Ones" | "Replicate"; _ } -> false
-                | _ -> true)
-              shared
+            (List.filter
+               AST.(
+                 function
+                 | D_Func { name = "Zeros" | "Ones" | "Replicate"; _ } -> false
+                 | _ -> true)
+               shared [@warning "-40-42"])
           in
           let shared =
             Asllib.ASTUtils.patch

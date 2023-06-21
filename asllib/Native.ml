@@ -161,7 +161,7 @@ end
 module NativeStdlib = struct
   open NativeBackend
 
-  let return_one v = return [ return v ]
+  let return_one v = return [ v ]
 
   let uint = function
     | [ V_BitVector bv ] -> V_Int (Bitvector.to_int bv) |> return_one
