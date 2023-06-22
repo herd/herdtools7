@@ -57,4 +57,6 @@ module type S =
     module MemType:MemoryType.S
 
     module Barrier:AllBarrier.S with type a = barrier
+
+    module CMO:Cmo.S
   end

@@ -57,4 +57,6 @@ module Make (B : ArchBaseHerd) (C : Arch_herd.Config) (V : Value.S) = struct
   module Barrier = AllBarrier.No (struct
     type a = barrier
   end)
+
+  module CMO = Cmo.No
 end

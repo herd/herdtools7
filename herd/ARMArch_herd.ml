@@ -44,6 +44,9 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
        "DSB.ST",is_barrier (DSB ST);
        "ISB", is_barrier ISB;
      ]
+
+    let cmo_sets = []
+
     let annot_sets = ["X",is_atomic]
 
     let is_isync = is_barrier ISB
@@ -116,4 +119,6 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       let pp_isync = "isb"
 
     end
+
+    module CMO = Cmo.No
   end

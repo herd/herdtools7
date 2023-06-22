@@ -1934,13 +1934,13 @@ module Make
 
       (* Data cache operations *)
       let dc_loc op a ii =
-        let mk_act loc = Act.DC (op,Some loc) in
+        let mk_act loc = Act.CMO (AArch64.CMO.DC op,Some loc) in
         let loc = A.Location_global a in
         M.mk_singleton_es (mk_act loc) ii
 
       let do_dc op rd ii =
         if AArch64Base.DC.sw op then
-          M.mk_singleton_es (Act.DC (op, None)) ii >>= B.next1T
+          M.mk_singleton_es (Act.CMO (AArch64.CMO.DC op, None)) ii >>= B.next1T
         else begin
             (* TODO: The size for DC should be a cache line *)
             let mop _ac a = dc_loc op a ii in
@@ -1959,13 +1959,13 @@ module Make
 
       let do_ic op rd ii =
         if AArch64Base.IC.all op then (* IC IALLU *)
-          M.mk_singleton_es (Act.IC (op, None)) ii >>= B.next1T
+          M.mk_singleton_es (Act.CMO (AArch64.CMO.IC op, None)) ii >>= B.next1T
         else
         begin (* IC IVAU *)
           read_reg_ord rd ii
           >>= fun a ->
             let loc = A.Location_global a in
-            let act = Act.IC (op,Some loc) in
+            let act = Act.CMO (AArch64.CMO.IC op,Some loc) in
             M.mk_singleton_es act ii
           >>= B.next1T
         end

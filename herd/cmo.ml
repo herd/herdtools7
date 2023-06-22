@@ -2,9 +2,9 @@
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Luc Maranget, INRIA Paris, France.                                       *)
 (*                                                                          *)
-(* Copyright 2015-present Institut National de Recherche en Informatique et *)
+(* Copyright 2023-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -13,40 +13,13 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
-module Make (C:Arch_herd.Config) (V:Value.S) = struct
-  include CBase
-  (* Not so simple, should consider expressions... *)
-  let is_amo _ = assert false
 
-  let pp_barrier_short = pp_barrier
-  let reject_mixed = false
-  let mem_access_size _ = None
+module type S = sig
+  type t
+  val pp : t -> string option -> string
+end
 
-  include NoSemEnv
-
-  module V = V
-
-  include NoLevelNorTLBI
-
-  include ArchExtra_herd.Make(C)
-      (struct
-        module V = V
-        let endian = endian
-
-        type arch_reg = reg
-        let pp_reg = pp_reg
-        let reg_compare = reg_compare
-
-        let fromto_of_instr _ = None
-
-        let get_val _ v = v
-
-        module FaultType=FaultType.No
-      end)
-
-    module MemType=MemoryType.No
-
-    module Barrier = AllBarrier.No(struct type a = barrier end)
-
-    module CMO = Cmo.No
+module No = struct
+  type t = unit
+  let pp _ _ = assert false
 end

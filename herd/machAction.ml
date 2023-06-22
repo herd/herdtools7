@@ -22,6 +22,7 @@ module type A = sig
   type lannot
   val empty_annot : lannot
   val barrier_sets : (string * (barrier -> bool)) list
+  val cmo_sets : (string * (CMO.t -> bool)) list
   val annot_sets : (string * (lannot -> bool)) list
   val pp_annot : lannot -> string
   include Explicit.S
@@ -68,10 +69,7 @@ module Make (C:Config) (A : A) : sig
 (* TLB Invalidate event, operation (for print and level), address, if any.
    No adresss means complete invalidation at level *)
     | Inv of A.TLBI.op * A.location option
-(* Data cache operation event *)
-    | DC of AArch64Base.DC.op * A.location option
-(* Instruction-cache operation event *)
-    | IC of AArch64Base.IC.op * A.location option
+    | CMO of A.CMO.t * A.location option
 (* A placeholder action doing nothing *)
     | NoAction
 (* Arch specific actions *)
@@ -154,8 +152,7 @@ end = struct
         * Dir.dirn * A.lannot * bool * A.I.FaultType.t option * string option
     | TooFar of string
     | Inv of A.TLBI.op * A.location option
-    | DC of AArch64Base.DC.op * A.location option
-    | IC of AArch64Base.IC.op * A.location option
+    | CMO of A.CMO.t * A.location option
     | NoAction
     | Arch of A.ArchAction.t
 
@@ -208,14 +205,8 @@ end = struct
       Printf.sprintf "TLBI(%s)" (A.TLBI.pp_op op)
   | Inv (op,Some loc) ->
       Printf.sprintf "TLBI(%s,%s)" (A.TLBI.pp_op op) (A.pp_location loc)
-  | DC (op,None) ->
-      Printf.sprintf "DC(%s)" (AArch64Base.DC.pp_op op)
-  | DC(op,Some loc) ->
-      Printf.sprintf "DC(%s,%s)" (AArch64Base.DC.pp_op op) (A.pp_location loc)
-  | IC (op,None) ->
-      Printf.sprintf "IC(%s)" (AArch64Base.IC.pp_op op)
-  | IC(op,Some loc) ->
-      Printf.sprintf "IC(%s,%s)" (AArch64Base.IC.pp_op op) (A.pp_location loc)
+  | CMO (cmo,loc) ->
+     A.CMO.pp cmo (Option.map A.pp_location loc)
   | NoAction -> ""
   | Arch a -> A.ArchAction.pp a
 
@@ -223,7 +214,7 @@ end = struct
   let value_of a = match a with
   | Access (_,_ , v,_,_,_,_)
     -> Some v
-  | Barrier _|Commit _|Amo _|Fault _|TooFar _|Inv _|DC _|IC _|NoAction
+  | Barrier _|Commit _|Amo _|Fault _|TooFar _|Inv _|CMO _|NoAction
     -> None
   | Arch a -> A.ArchAction.value_of a
 
@@ -233,7 +224,7 @@ end = struct
     -> Some v
   | Arch a -> A.ArchAction.read_of a
   | Access (W, _, _, _,_,_,_)|Barrier _|Commit _|Fault _
-  | TooFar _|Inv _|DC _|IC _|NoAction
+  | TooFar _|Inv _|CMO _|NoAction
     -> None
 
   and written_of a = match a with
@@ -243,7 +234,7 @@ end = struct
   | Arch a -> A.ArchAction.written_of a
   | Access (R, _, _, _,_,_,_)
   | Barrier _|Commit _|Fault _
-  | TooFar _|Inv _|DC _|IC _|NoAction
+  | TooFar _|Inv _|CMO _|NoAction
     -> None
 
   let location_of a = match a with
@@ -251,12 +242,11 @@ end = struct
   | Amo (l,_,_,_,_,_,_)
   | Fault (_,Some l,_,_,_,_,_)
   | Inv (_,Some l)
-  | DC(_,Some l)
-  | IC(_,Some l)
+  | CMO (_,Some l)
     -> Some l
   | Arch a -> A.ArchAction.location_of a
   | Barrier _ |Commit _ | TooFar _ | Fault (_,None,_,_,_,_,_)
-  | Inv (_,None) | DC (_,None) | IC (_,None) | NoAction
+  | Inv (_,None) | CMO (_,None) | NoAction
     -> None
 
 (* relative to memory *)
@@ -314,11 +304,11 @@ end = struct
   let is_tag = function
     | Access (_,_,_,_,_,_,Access.TAG) -> true
     | Access _|Barrier _|Commit _
-    | Amo _|Fault _|TooFar _|Inv _|DC _|IC _|Arch _|NoAction-> false
+    | Amo _|Fault _|TooFar _|Inv _|CMO _|Arch _|NoAction-> false
 
   let is_inv = function
     | Inv _ -> true
-    | Access _|Amo _|Commit _|Barrier _|Fault _|TooFar _|DC _|IC _|Arch _|NoAction -> false
+    | Access _|Amo _|Commit _|Barrier _|Fault _|TooFar _|CMO _|Arch _|NoAction -> false
 
   let is_label a = match a with
   | Access (_,A.Location_global (A.V.Val c),_,_,_,_,_)
@@ -332,23 +322,6 @@ end = struct
      end
   | _ -> false
 
-  let is_dc = function
-    | DC _ -> true
-    | Access _|Amo _|Commit _|Barrier _ |Fault _|TooFar _|Inv _|IC _|Arch _|NoAction-> false
-
-  let is_ci = function
-    | DC(op,_) as a -> is_dc a && AArch64Base.DC.ci op
-    | _ -> false
-
-  let is_c = function
-    | DC(op,_) as a -> is_dc a && AArch64Base.DC.c op
-    | _ -> false
-
-  let is_i = function
-    | DC(op,_) as a -> is_dc a && AArch64Base.DC.i op
-    | IC _ -> Warn.warn_always "FIXME possibly mistaking IC for DC" ; true
-    | _ -> false
-
   let is_at_level lvl = function
     | Inv(op,_) -> A.TLBI.is_at_level lvl op
     | _ -> false
@@ -356,7 +329,7 @@ end = struct
   let is_fault = function
     | Fault _ -> true
     | Access _ | Amo _ | Commit _ | Barrier _ | TooFar _ | Inv _
-    | DC _ | IC _ | Arch _ | NoAction
+    | CMO _ | Arch _ | NoAction
       -> false
 
   let is_faulting_read = function
@@ -374,7 +347,7 @@ end = struct
   let is_exc_entry = function
     | Fault (_,_,_,_,true,_,_) -> true
     | Fault _ | Access _ | Amo _ | Commit _ | Barrier _ | TooFar _ | Inv _
-    | DC _ | IC _ | Arch _ | NoAction
+    | CMO _ | Arch _ | NoAction
       -> false
 
   let to_fault = function
@@ -383,7 +356,7 @@ end = struct
     | Fault (i,None,_,_,_,t,msg) ->
        Some ((i.A.proc,i.A.labels),None,t,msg)
     | Fault _ | Access _ | Amo _ | Commit _ | Barrier _ | TooFar _ | Inv _
-    | DC _ | IC _ | Arch _ | NoAction
+    | CMO _ | Arch _ | NoAction
       -> None
 
   let get_mem_dir a = match a with
@@ -448,13 +421,13 @@ end = struct
   | Access (W,_,_,_,_,_,_)|Amo _ -> true
   | Arch a -> A.ArchAction.is_load a
   | Access (R,_,_,_,_,_,_) | Barrier _ | Commit _
-  | Fault _ | TooFar _ | Inv _ | DC _ | IC _ | NoAction -> false
+  | Fault _ | TooFar _ | Inv _ | CMO _ | NoAction -> false
 
   let is_load a = match a with
   | Access (R,_,_,_,_,_,_) | Amo _ -> true
   | Arch a -> A.ArchAction.is_store a
   | Access (W,_,_,_,_,_,_) | Barrier _ | Commit _ | Fault _ | TooFar _ | Inv _
-  | DC _| IC _ | NoAction -> false
+  | CMO _ | NoAction -> false
 
 
   let get_kind = function
@@ -476,15 +449,6 @@ end = struct
 
   let is_reg_load_any a = match a with
   | Access (R,A.Location_reg _,_,_,_,_,_) -> true
-  | _ -> false
-
-(* Cache maintenance *)
-  let is_dc a = match a with
-  | DC _ -> true
-  | _ -> false
-
-  let is_ic a = match a with
-  | IC _ -> true
   | _ -> false
 
 (* Barriers *)
@@ -533,6 +497,13 @@ end = struct
           | Barrier b -> p b
           | _ -> false
           in tag,p) A.barrier_sets
+    and cmo_sets =
+      List.map
+        (fun (tag,p) ->
+          let p act = match act with
+          | CMO (cmo, _) -> p cmo
+          | _ -> false
+          in tag,p) A.cmo_sets
     and asets =
       List.map
         (fun (tag,p) ->
@@ -579,10 +550,6 @@ end = struct
     in
     ("T",is_tag)::
     ("TLBI",is_inv)::
-    ("DC",is_dc)::
-    ("DC-IC",is_ic)::
-    ("DC-CI",is_ci)::
-    ("DC-C",is_c)::("DC-I",is_i)::
     ("no-loc", fun a -> Misc.is_none (location_of a))::
     (if kvm then
       fun k ->
@@ -592,7 +559,7 @@ end = struct
           (fun (key,p) k -> (key,on_pteval p)::k) A.pteval_sets k
     else
       fun k -> k)
-      (bsets @ asets @ esets @ lsets @ aasets @ ifetch_sets @ fault_sets)
+      (bsets @ cmo_sets @ asets @ esets @ lsets @ aasets @ ifetch_sets @ fault_sets)
 
   let arch_rels =
     if kvm then
@@ -700,7 +667,7 @@ end = struct
           (V.undetermined_vars v1)
           (V.undetermined_vars v2)
     | Arch a -> A.ArchAction.undetermined_vars a
-    | Barrier _|Commit _|Fault _|TooFar _|Inv _ | DC _ | IC _|NoAction -> V.ValueSet.empty
+    | Barrier _|Commit _|Fault _|TooFar _|Inv _ |CMO _|NoAction -> V.ValueSet.empty
 
   let simplify_vars_in_action soln a =
     match a with
@@ -719,12 +686,9 @@ end = struct
     | Inv (op,oloc) ->
         let oloc = Misc.app_opt (A.simplify_vars_in_loc soln) oloc in
         Inv (op,oloc)
-    | DC (op,oloc) ->
+    | CMO (op,oloc) ->
         let oloc = Misc.app_opt (A.simplify_vars_in_loc soln) oloc in
-        DC (op,oloc)
-    | IC (op,oloc) ->
-        let oloc = Misc.app_opt (A.simplify_vars_in_loc soln) oloc in
-        IC (op,oloc)
+        CMO (op,oloc)
     | Arch a -> Arch (A.ArchAction.simplify_vars soln a)
     | Barrier _ | Commit _|TooFar _|NoAction -> a
 

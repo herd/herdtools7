@@ -418,19 +418,37 @@ let barrier_compare = compare
 module IC = struct
   type funct = I
   let pp_funct = function I -> "I"
+  let fold_funct f k = f I k
 
   type typ = ALL | VA
   let pp_typ = function | ALL -> "ALL" | VA -> "VA"
+  let fold_typ f k = k |> f ALL |> f VA
 
   type point = U
   let pp_point = function U -> "U"
+  let fold_point f k = f U k
 
   type domain = IS | NO
   let pp_domain = function IS -> "IS" | NO -> ""
+  let fold_domain f k = k |> f IS |> f NO
 
   type op = { funct:funct; typ:typ; point:point; domain:domain; }
   let ivau = { funct=I; typ=VA; point=U; domain=NO; }
   let iallu = { funct=I; typ=ALL; point=U; domain=NO; }
+
+  let fold_op f k =
+    fold_funct
+      (fun funct k ->
+        fold_typ
+          (fun typ k ->
+            fold_point
+              (fun point k ->
+                fold_domain
+                  (fun domain k -> f {funct; typ; point; domain; } k)
+                  k)
+              k)
+          k)
+      k
 
   let pp_op op =
     pp_funct op.funct ^
@@ -438,7 +456,13 @@ module IC = struct
     pp_point op.point ^
     pp_domain op.domain
 
+  let do_pp tag op = "IC" ^ tag ^ (pp_op op)
+  let pp = do_pp " "
+  let pp_dot = do_pp "."
+
   let all op = match op.typ with | VA -> false | ALL -> true
+
+  let equal = ( = )
 end
 
 module DC = struct
@@ -448,12 +472,15 @@ module DC = struct
     | C -> "C"
     | CI -> "CI"
     | Z -> "Z"
+  let fold_funct f k = k |> f I |> f C |> f CI |> f Z
 
   type typ = VA | SW
   let pp_typ = function VA -> "VA" | SW -> "SW"
+  let fold_typ f k = k |> f VA |> f SW
 
   type point = CO | U
   let pp_point = function CO -> "C" | U -> "U"
+  let fold_point f k = k |> f CO |> f U
 
   type op = { funct:funct; typ:typ; point:point; }
 
@@ -465,10 +492,27 @@ module DC = struct
     pp_typ op.typ ^
     pp_point op.point
 
+  let do_pp tag op = "DC" ^ tag ^ (pp_op op)
+  let pp = do_pp " "
+  let pp_dot = do_pp "."
+
   let sw op = match op.typ with | SW -> true | _ -> false
   let ci op = match op.funct with | CI -> true | _ -> false
   let c op = match op.funct with | C -> true | _ -> false
   let i op = match op.funct with | I -> true | _ -> false
+
+  let fold_op f k =
+    fold_funct
+      (fun funct k ->
+        fold_typ
+          (fun typ k ->
+            fold_point
+              (fun point k -> f {funct; typ; point; } k)
+              k)
+          k)
+      k
+
+  let equal = ( = )
 end
 
 type level = |E0 |E1 |E2 |E3
