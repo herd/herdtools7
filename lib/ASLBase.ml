@@ -176,7 +176,7 @@ let asl_generic_parser version lexer lexbuf =
   | Ok ast ->
       ( [ (0, None, MiscParser.Main) ],
         [ [ Instruction ast ] ],
-        MiscParser.NoExtra )
+        [] )
 
 module Instr = Instr.No (struct
   type instr = instruction

@@ -175,12 +175,13 @@ type info = (string * string) list
 
 (* Some source files contain addditionnal information *)
 
-type extra_data =
-  | NoExtra
+type extra_param =
   | CExtra of CAst.param list list
   | BellExtra of BellInfo.test
 
-let empty_extra = NoExtra
+type extra_data = extra_param list
+
+let empty_extra = []
 
 type ('i, 'p, 'prop, 'loc, 'v, 'ftype) result =
     { info : info ;
@@ -212,7 +213,7 @@ type 'pseudo t = (state, (proc * 'pseudo list) list, prop, location, maybev, fau
 
 let mach2generic parser lexer buff =
     let procs,code = parser lexer buff in
-    procs,code,NoExtra
+    procs,code,[]
 
 (* Info keys *)
 

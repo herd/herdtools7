@@ -77,7 +77,7 @@ end = struct
           Out.fprintf chan "%s=%s\n" k i)
       t.info ;
     Out.fprintf chan "\n{%s}\n\n" (dump_state  t.init) ;
-    begin match t.extra_data with
+    let print chan extra = begin match extra with
     | CExtra pss ->
         List.iter2
           (fun ((i,_,_),code) ps ->
@@ -92,7 +92,9 @@ end = struct
             Out.fprintf chan "}\n")
           t.prog pss
     | _ -> ()
-    end ;
+    end in
+    let extras = t.extra_data in
+    List.iter (print chan) extras;
     let locs = DumpUtils.dump_locations dump_loc ParsedConstant.pp_v dump_fault_type t.locations in
     if locs <> "" then Out.fprintf chan "%s\n" locs ;
     begin match t.filter with

@@ -496,9 +496,12 @@ module Make
                 evts
                 (BellModel.get_mem_annots bi) in
             let open MiscParser in
-            begin match test.Test_herd.extra_data with
+            let extra = test.Test_herd.extra_data in
+            begin
+              List.fold_right
+              (fun e m -> match e with
               (* No region in test, empty regions *)
-            | NoExtra|BellExtra {BellInfo.regions=None;_} ->
+            | BellExtra {BellInfo.regions=None;_} ->
                 I.add_sets m
                   (List.map
                      (fun r -> BellName.tag2instrs_var r,lazy E.EventSet.empty)
@@ -535,7 +538,9 @@ module Make
                        end in
                        (tag,set)::k)
                      (BellModel.get_region_sets bi) [])
-            | CExtra _ -> m (* Ignore CExtra ?? *)
+            | CExtra _ -> m (* Ignore CExtra ?? *))
+            extra
+            m
             end in
 (* Scope relations from bell info *)
       let m =
@@ -543,10 +548,16 @@ module Make
         | None -> m
         | Some _ ->
             let open MiscParser in
-            let extract_tbi e = match test.Test_herd.extra_data with
-            | NoExtra|CExtra _ ->
-                None (* must be here as, O.bell_mode_info is *)
-            | BellExtra tbi -> e tbi in
+            let extract_tbi e =
+              let extra = test.Test_herd.extra_data in
+              let scope_opt =
+                List.filter_map
+                  (function
+                   | CExtra _ ->
+                      None (* must be here as, O.bell_mode_info is *)
+                   | BellExtra tbi -> e tbi)
+                  extra in
+                List.nth_opt scope_opt 0 in
             let scopes =  extract_tbi (fun tbi -> tbi.BellInfo.scopes) in
             let m = match scopes with
               (* If no scope definition in test, do not build relations, will fail

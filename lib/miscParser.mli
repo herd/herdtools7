@@ -75,10 +75,11 @@ type info = (string * string) list
 
 (* Some source files contain additional information *)
 
-type extra_data =
-  | NoExtra
+type extra_param =
   | CExtra of CAst.param list list
   | BellExtra of BellInfo.test
+
+type extra_data = extra_param list
 
 val empty_extra : extra_data
 

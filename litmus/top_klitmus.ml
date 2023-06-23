@@ -193,7 +193,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
       type token = CParser.token
       module CL = CLexer.Make(struct let debug = false end)
       let lexer = CL.token false
-      let parser = CParser.shallow_main
+      let parser lexer buf = fst (CParser.shallow_main lexer buf)
     end
     module Pseudo =
       struct

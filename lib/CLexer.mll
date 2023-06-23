@@ -26,6 +26,7 @@ let tr_name s = match s with
 | "volatile" -> VOLATILE
 | "const" -> CONST
 | "_Atomic" -> ATOMIC
+| "atomic" -> ATOMIC_BASE
 | "char" -> CHAR
 | "int" -> INT
 | "long" -> LONG
@@ -95,7 +96,7 @@ let tr_name s = match s with
 | "__atomic_add_unless" -> UNDERATOMICADDUNLESS
 | "atomic_add_unless" -> ATOMICADDUNLESS
 (* Others *)
-| x -> IDENTIFIER x
+| x -> NAME x
 }
 
 let digit = ['0'-'9']
@@ -111,6 +112,7 @@ rule token deep = parse
 | '-' ? num as x { CONSTANT x }
 | 'P' (num as x) { PROC (int_of_string x) }
 | ';' { SEMI }
+| ':' { COLON }
 | ',' { COMMA }
 | '|' { PIPE }
 | '*' { STAR }
@@ -139,7 +141,8 @@ rule token deep = parse
 | ">=" { GE }
 | "constvar:" (name as s) { CONSTVAR s }
 | "codevar:" (name as s) { CODEVAR s }
-| '%' name as s { IDENTIFIER s }
+| '%' name as s { NAME s }
+| "regions" { REGIONS }
 | name as x   { tr_name x  }
 | eof { EOF }
 | "" { LexMisc.error "C lexer" lexbuf }

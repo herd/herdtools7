@@ -105,11 +105,16 @@ end = struct
         List.iter (fun i -> fprintf chan "%s\n" (fmt_io i)) code ;
         ())
       prog ;
-    begin match t.extra_data with
-    | NoExtra|CExtra _ -> ()
-    | BellExtra bi ->
-        dump_sep chan "Scope" ;
-        fprintf chan "%s" (BellInfo.pp bi)
+    let extra = t.extra_data in
+    begin
+      List.iter
+        (function
+         | CExtra _ -> ()
+         | BellExtra bi ->
+           dump_sep chan "Scope" ;
+           fprintf chan "%s" (BellInfo.pp bi))
+        extra;
+      ()
     end ;
     (* Conditions *)
     dump_sep chan "Check" ;

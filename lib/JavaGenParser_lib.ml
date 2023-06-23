@@ -180,7 +180,7 @@ struct
         filter = filter;
         condition = final;
         locations = locs;
-        extra_data = MiscParser.NoExtra
+        extra_data = []
       } in
 
     let name  = name.Name.name in

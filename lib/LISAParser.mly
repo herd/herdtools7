@@ -37,7 +37,7 @@ open Bell
 
 main:
 | semi_opt proc_list iol_list scopes_and_memory_map EOF
-   { $2,$3, MiscParser.BellExtra $4 }
+   { $2,$3, [MiscParser.BellExtra $4] }
 
 semi_opt:
 | { () }

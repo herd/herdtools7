@@ -3,7 +3,6 @@
 
 
 (menhir (modules PPCParser) (flags  --fixed-exception))
-(menhir (modules CParser) (flags  --fixed-exception))
 (menhir (modules ARMParser) (flags  --fixed-exception))
 (menhir (modules MIPSParser) (flags  --fixed-exception))
 (menhir (modules X86Parser) (flags  --fixed-exception))
@@ -24,6 +23,10 @@
 (menhir (modules scopeRules scopeParser)
   (merge_into scopeParser)
    (flags  --fixed-exception))
+
+(menhir (modules scopeRules BellExtraRules CParser)
+  (merge_into CParser)
+  (flags  --fixed-exception))
 
 (library
  (name herdtools)

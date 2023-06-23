@@ -188,7 +188,8 @@ module Top(O:Config)(Out:OutTests.S) = struct
 
 
   let do_tr p =
-    { p with prog = tr_prog p.prog; extra_data=CExtra (tr_extra p.prog);}
+    { p with prog = tr_prog p.prog;
+      extra_data=[CExtra (tr_extra p.prog)]; }
 
   let tr_test idx_out name parsed =
     let fname = name.Name.file in

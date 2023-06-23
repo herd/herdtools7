@@ -20,6 +20,7 @@ module type S = sig
   val open_all : unit -> t
   val open_file : string -> t
   val close : t -> unit
+  val remove : string ->  unit
   val put_char : t -> char -> unit
   val fprintf : t -> ('a, out_channel, unit) format -> 'a
   val tar : unit -> unit
