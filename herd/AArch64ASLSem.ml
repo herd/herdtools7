@@ -100,7 +100,9 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
     let decode_inst ii =
       let open Asllib.AST in
       let with_pos desc = Asllib.ASTUtils.add_dummy_pos desc in
-      let ( ^= ) x e = S_Assign (LE_Var x |> with_pos, e) |> with_pos in
+      let ( ^= ) x e =
+        S_Decl (LDK_Let, LDI_Var (x, None), Some e) |> with_pos
+      in
       let lit v = E_Literal v |> with_pos in
       let liti i = lit (V_Int i) in
       let litb b = lit (V_Bool b) in
@@ -436,7 +438,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
           filter = None;
           condition = ConstrGen.ExistsState (ConstrGen.And []);
           locations = [];
-          extra_data = MiscParser.empty_extra ;
+          extra_data = MiscParser.empty_extra;
         }
       in
       let name =

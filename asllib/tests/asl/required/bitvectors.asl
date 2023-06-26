@@ -1,6 +1,6 @@
 func main()
 begin
-  let a = '101';
+  var a = '101';
   let b = a[1, 0];
   a[0] = '0';
 

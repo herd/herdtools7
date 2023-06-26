@@ -137,14 +137,12 @@ and type_desc =
   | T_Real
   | T_String
   | T_Bool
-  | T_Bits of bits_constraint * bitfields option
+  | T_Bits of bits_constraint * bitfields
   | T_Enum of identifier list
   | T_Tuple of ty list
   | T_Array of expr * ty
   | T_Record of typed_identifier list
   | T_Exception of typed_identifier list
-  | T_ZType of ty
-      (** A Z-type correcponds to a type with a possible null value.*)
   | T_Named of identifier  (** A type variable. *)
 
 and ty = type_desc annotated
@@ -182,7 +180,6 @@ and typed_identifier = identifier * ty
 type lexpr_desc =
   | LE_Ignore
   | LE_Var of identifier
-  | LE_Typed of lexpr * ty
   | LE_Slice of lexpr * slice list
   | LE_SetField of lexpr * identifier * type_annot
   | LE_SetFields of lexpr * identifier list * type_annot
@@ -190,13 +187,20 @@ type lexpr_desc =
 
 and lexpr = lexpr_desc annotated
 
+type local_decl_keyword = LDK_Var | LDK_Constant | LDK_Let
+
+type local_decl_item =
+  | LDI_Var of identifier * ty option
+  | LDI_Ignore of ty option
+  | LDI_Tuple of local_decl_item list * ty option
+
 (** Statements. Parametric on the type of literals in expressions. *)
 type for_direction = Up | Down
 
 type stmt_desc =
   | S_Pass
   | S_Then of stmt * stmt
-  | S_TypeDecl of identifier * ty
+  | S_Decl of local_decl_keyword * local_decl_item * expr option
   | S_Assign of lexpr * expr
   | S_Call of identifier * expr list * (identifier * expr) list
   | S_Return of expr option
@@ -227,6 +231,9 @@ type 'body func_skeleton = {
 type func = stmt func_skeleton
 (** Function types in the AST. For the moment, they represent getters, setters,
     functions, procedures and primitives. *)
+
+(** Declaration keyword for global storage elements. *)
+type global_decl_keyword = GDK_Constant | GDK_Config | GDK_Let | GDK_Var
 
 (** Declarations, ie. top level statement in a asl file. *)
 type decl =

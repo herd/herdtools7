@@ -1,5 +1,15 @@
 open Asllib
 
+module Infix = struct
+  open AST
+
+  let ( !! ) e = ASTUtils.add_dummy_pos e
+  let ( !$ ) i = !!(E_Literal (V_Int i))
+  let ( !% ) x = !!(E_Var x)
+  let integer = !!(T_Int None)
+  let boolean = !!T_Bool
+end
+
 let exec_tests =
   let exec_one_test any_failed (name, f) =
     let on_fail e =

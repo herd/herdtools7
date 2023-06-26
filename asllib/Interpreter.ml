@@ -38,7 +38,6 @@ module type Config = sig
   module Instr : Instrumentation.INSTR
 
   val type_checking_strictness : Typing.strictness
-
   val unroll : int
 end
 
@@ -50,7 +49,18 @@ module Make (B : Backend.S) (C : Config) = struct
 
   type 'a m = 'a B.m
   type body = B.value m list -> B.value m list m
-  type primitive = body func_skeleton
+
+  module EnvConf = struct
+    type v = B.value
+    type primitive = body func_skeleton
+
+    let unroll = C.unroll
+  end
+
+  module IEnv = Env.RunTime (EnvConf)
+  open IEnv.Types
+
+  type primitive = EnvConf.primitive
 
   let return = B.return
 
@@ -120,58 +130,6 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (*****************************************************************************)
   (*                                                                           *)
-  (*                       Global constants environment                        *)
-  (*                                                                           *)
-  (*****************************************************************************)
-
-  (** Internal representation for subprograms. *)
-  type func =
-    | Func of int ref * AST.func
-        (** A function has an index that keeps a unique calling index. *)
-    | Primitive of primitive
-        (** A primitive is just given by its type passed as argument. *)
-
-  type genv = {
-    consts : value IMap.t;
-        (** Union of the following fields of the ElabModel:
-        - G_C, i.e. the global immutable compile-time constant storage (ie constant)
-        - G_L, i.e. the global immutable execution-time constant storage (ie let)
-        - G_P, i.e. the global immutable ~in between~ constant storage (ie config)
-     *)
-    funcs : func IMap.t;
-        (** The field P of the ElabModel, i.e. the declared subprograms. *)
-  }
-  (** The global part of the ElabModel. *)
-
-  type int_stack = int list
-
-  let tick_unroll s =
-    match s with
-    | [] -> assert false
-    | x::xs ->
-        let x = x-1 in
-        x,x::xs
-
-  let tick_push xs = C.unroll::xs
-  and tick_push_bis xs = C.unroll-1::xs
-  and tick_pop = function
-     | [] -> assert false
-     | _::xs -> xs
-
-  (** Stack of ints, for limiting loop unrolling *)
-
-  type env =
-      { global : genv; local : B.value IMap.t; scope : B.scope; unroll : int_stack }
-  (** [env] shoud contain all the informations of the semantics elab model. *)
-
-  (** [add_primitives primitives funcs] augments [funcs] with [primitives]. *)
-  let add_primitives primitives funcs =
-    let one_primitive primitive = (primitive.name, Primitive primitive) in
-    primitives |> List.to_seq |> Seq.map one_primitive
-    |> Fun.flip IMap.add_seq funcs
-
-  (*****************************************************************************)
-  (*                                                                           *)
   (*                         Type annotations handling                         *)
   (*                                                                           *)
   (*****************************************************************************)
@@ -191,7 +149,8 @@ module Make (B : Backend.S) (C : Config) = struct
     let add_fake_primitives =
       let fake_funcs =
         let one_sfunc { name; args; return_type; parameters; body = _ } =
-          D_Func { name; args; body = ASTUtils.s_pass; return_type; parameters }
+          D_Primitive
+            { name; args; body = ASTUtils.s_pass; return_type; parameters }
         in
         List.map one_sfunc sfuncs
       in
@@ -203,126 +162,24 @@ module Make (B : Backend.S) (C : Config) = struct
         sfuncs |> List.to_seq |> Seq.map one_sfunc |> ASTUtils.ISet.of_seq
       in
       let is_primitive = function
-        | D_Func AST.{ name; _ } -> not (ASTUtils.ISet.mem name primitive_names)
+        | D_Primitive AST.{ name; _ } ->
+            not (ASTUtils.ISet.mem name primitive_names)
         | _ -> true
       in
       List.filter is_primitive
     in
-    ast |> add_fake_primitives
-    |> Typing.type_check_ast C.type_checking_strictness
-    |> remove_fake_primitives
+    let ast_with_fake_primitives = add_fake_primitives ast in
+    let typed_ast, env =
+      Typing.type_check_ast C.type_checking_strictness ast_with_fake_primitives
+        Env.Static.empty
+    in
+    (remove_fake_primitives typed_ast, env)
 
   (*****************************************************************************)
   (*                                                                           *)
   (*                      Construction of the initial env                      *)
   (*                                                                           *)
   (*****************************************************************************)
-
-  (* Enums *)
-  (* ----- *)
-
-  (** Build a unique constant for each enum name declared. *)
-  let build_enums (ast : t) globals =
-    (* This counts the number of already-declared enum names, to ensure each
-       name is assigned a unique value. *)
-    let counter = ref 0 in
-    (* This build a constant for each name declared. *)
-    let build_one globals name =
-      let globals = IMap.add name (V_Int !counter) globals in
-      let () = incr counter in
-      globals
-    in
-    (* For an enum declaration, this loops over its declared names, assigning a
-       constant to each. *)
-    let build_decl globals = function
-      | D_TypeDecl (_name, { desc = T_Enum ids; _ }) ->
-          List.fold_left build_one globals ids
-      | _ -> globals
-    in
-    (* Loops over all the declarations to build their constants. *)
-    List.fold_left build_decl globals ast
-
-  (* Constants *)
-  (* --------- *)
-
-  (* Constants are declared as a Directed Acyclic Graph: the declaration order
-     does not matter as long as no cycle can be found.
-
-     This implementation of DAG should be able to detect cycles, but it is
-     currently untested.
-  *)
-
-  (* build_status only serve as an intermediate value type for static constants
-     evaluation. *)
-  type build_status =
-    | NotYetEvaluated of expr
-    | AlreadyEvaluated of value
-    | Evaluating  (** To detect cycles! *)
-
-  (* [build_consts ast globals] is the global environment before the start of
-     the evaluation of [ast], with the added global constant in [global]. *)
-  let build_consts (ast : t) globals =
-    (* In the following, [state] is the current status of evaluation, i.e. it
-       maps every global variable to either its build_status, that is its value
-       if it has been evaluated, or its expression otherwise. This is why we
-       have to use it every time we could use a variable. *)
-
-    (* First we build the initial value of this evaluation state, where all the
-       constants are still to be evaluated, but the already present globals . *)
-    let state =
-      let one_decl = function
-        | D_GlobalConst (name, _ty, e) -> Some (name, NotYetEvaluated e)
-        | _ -> None
-      in
-      let add_decls =
-        ast |> List.to_seq |> Seq.filter_map one_decl |> IMap.add_seq
-      in
-      let one_glob v = AlreadyEvaluated v in
-      globals |> IMap.map one_glob |> add_decls |> ref
-    in
-
-    (* Then we build a recursive function that will evaluate a constant, using
-       [StaticInterpreter]. To do that, we only need to create a function to
-       fetch a constant name from the environment. *)
-    let rec env_lookup pos name =
-      match IMap.find_opt name !state with
-      | Some Evaluating -> fatal_from pos (Error.CircularDeclarations name)
-      | Some (AlreadyEvaluated v) -> v
-      | Some (NotYetEvaluated e) ->
-          state := IMap.add name Evaluating !state;
-          let v =
-            try eval_expr e with
-            | Error.ASLException e ->
-                if _dbg || _warn then
-                  Format.eprintf
-                    "@[<2>Ignoring static evaluation error:@ %a@]@."
-                    Error.pp_error e;
-                V_Int 0
-            | e ->
-                if _dbg then
-                  Printf.eprintf "Evaluating constant %s failed with %s!" name
-                    (Printexc.to_string e);
-                raise e
-          in
-          state := IMap.add name (AlreadyEvaluated v) !state;
-          v
-      | None -> fatal_from pos @@ Error.UndefinedIdentifier name
-    and eval_expr e = StaticInterpreter.static_eval (env_lookup e) e in
-
-    (* Then we ensure that every constant is properly evaluated. *)
-    let () =
-      let one_decl = function
-        | D_GlobalConst (name, _, pos) ->
-            let _ = env_lookup pos name in
-            ()
-        | _ -> ()
-      in
-      List.iter one_decl ast
-    in
-
-    (* Finally we convert to the actual [genv] type. *)
-    let one_glob = function AlreadyEvaluated v -> v | _ -> assert false in
-    IMap.map one_glob !state
 
   (* Functions *)
   (* --------- *)
@@ -339,20 +196,24 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Global env *)
   (* ---------- *)
 
-  (** [build_genv ast primitives] is the global environment before the start of
-      the evaluation of [ast]. *)
-  let build_genv ast primitives =
+  (** [add_primitives primitives funcs] augments [funcs] with [primitives]. *)
+  let add_primitives primitives funcs =
+    let one_primitive primitive = (primitive.name, Primitive primitive) in
+    primitives |> List.to_seq |> Seq.map one_primitive
+    |> Fun.flip IMap.add_seq funcs
+
+  (** [build_genv static_env ast primitives] is the global environment before
+      the start of the evaluation of [ast]. *)
+  let build_genv (static_env : Env.Static.env) ast primitives =
     let funcs = IMap.empty |> build_funcs ast |> add_primitives primitives in
-    let consts = IMap.empty |> build_enums ast |> build_consts ast in
+    let open IEnv in
+    let env = { empty_global with static = static_env.global; funcs } in
     let () =
-      if _dbg then (
-        Format.eprintf "@[<v 2>Global const env:@ ";
-        IMap.iter
-          (fun name v -> Format.eprintf "@[<h>- %s: %a@]@ " name PP.pp_value v)
-          consts;
-        Format.eprintf "@]@.")
+      if _dbg then
+        Format.eprintf "@[<v 2>Executing in env:@ %a@.]"
+          Env.Static.PPEnv.pp_global env.static
     in
-    { consts; funcs }
+    env
 
   (*****************************************************************************)
   (*                                                                           *)
@@ -377,30 +238,30 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (** [write_identifier env x m] is env' such that x -> v in env',
       with v being the value in m. *)
-  let write_identifier env x m =
+  let write_identifier (env : env) x m =
     let* v = m in
-    let* () = B.on_write_identifier x env.scope v in
-    let local = IMap.add x v env.local in
-    return { env with local }
+    let* () = B.on_write_identifier x env.local.scope v in
+    IEnv.add_local x v env |> return
 
   let write_identifier_m env x m =
     B.bind_seq env (fun env -> write_identifier env x m)
 
   let is_defined env id =
-    IMap.mem id env.global.consts || IMap.mem id env.local
+    IMap.mem id env.global.storage || IMap.mem id env.local.storage
 
   (** [eval_expr env e] is the monadic evaluation  of [e] in [env]. *)
   let rec eval_expr (env : env) (e : expr) : B.value B.m =
+    if false then Format.eprintf "@[<3>Eval@ @[%a@]@]@." PP.pp_expr e;
     match e.desc with
     | E_Literal v -> B.v_of_parsed_v v |> return |: Rule.Lit
     | E_Typed (e, _t) -> eval_expr env e |: Rule.IgnoreTypedExpr
     | E_Var x -> (
-        match IMap.find_opt x env.global.consts with
-        | Some v -> B.v_of_parsed_v v |> return |: Rule.GlobalConst
+        match IMap.find_opt x env.global.storage with
+        | Some v -> return v |: Rule.GlobalConst
         | None -> (
-            match IMap.find_opt x env.local with
+            match IMap.find_opt x env.local.storage with
             | Some v ->
-                let* () = B.on_read_identifier x env.scope v in
+                let* () = B.on_read_identifier x env.local.scope v in
                 return v |: Rule.ELocalVar
             | None -> fatal_from e @@ Error.UndefinedIdentifier x))
     | E_Binop (op, e1, e2) ->
@@ -443,7 +304,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | E_GetFields (e', [ field ], ta) -> (
         let ty = type_of_ta e ta in
         match ty.desc with
-        | T_Bits (_, Some fields) -> (
+        | T_Bits (_, fields) -> (
             match List.assoc_opt field fields with
             | Some slices ->
                 E_Slice (e', slices)
@@ -453,7 +314,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | E_GetFields (e', xs, ta) -> (
         let ty = type_of_ta e ta in
         match ty.desc with
-        | T_Bits (_, Some fields) ->
+        | T_Bits (_, fields) ->
             let one (x : string) =
               match List.assoc_opt x fields with
               | None -> fatal_from e @@ Error.BadField (x, ty)
@@ -544,7 +405,8 @@ module Make (B : Backend.S) (C : Config) = struct
             B.create_vector ty (List.init i (Fun.const v))
         | None -> fatal_from ty @@ Error.UnsupportedExpr e)
     | T_Enum li ->
-        E_Var (List.hd li) |> ASTUtils.add_pos_from ty |> eval_expr env
+        IMap.find (List.hd li) env.global.static.Env.Static.constants_values
+        |> B.v_of_parsed_v |> return
     | T_Named _ -> fatal_from ty @@ Error.TypeInferenceNeeded
     | T_Tuple li -> prod_map (base_value_of_type env) li >>= B.create_vector ty
     | T_Record li ->
@@ -559,7 +421,6 @@ module Make (B : Backend.S) (C : Config) = struct
   and eval_lexpr (env : env) le : B.value B.m -> env B.m =
     match le.desc with
     | LE_Ignore -> fun _ -> return env |: Rule.LEIgnore
-    | LE_Typed (le, _t) -> eval_lexpr env le >|: Rule.LETyped
     | LE_Var x -> write_identifier env x >|: Rule.LELocalVar
     | LE_Slice (le', slices) ->
         let setter = eval_lexpr env le' in
@@ -585,7 +446,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | LE_SetFields (le', xs, ta) -> (
         let ty = type_of_ta le ta in
         match ty.desc with
-        | T_Bits (_, Some fields) ->
+        | T_Bits (_, fields) ->
             let folder prev_slices x =
               match List.assoc_opt x fields with
               | Some slices -> List.rev_append slices prev_slices
@@ -626,9 +487,12 @@ module Make (B : Backend.S) (C : Config) = struct
   (** [eval_stmt env s] evaluates [s] in [env]. This is either an interuption
       [Returning vs] or a continuation [env], see [eval_res]. *)
   and eval_stmt (env : env) s =
+    (if false then
+       match s.desc with
+       | S_Then _ -> ()
+       | _ -> Format.eprintf "@[<3>Eval@ @[%a@]@]@." PP.pp_stmt s);
     match s.desc with
     | S_Pass -> continue env |: Rule.Pass
-    | S_TypeDecl _ -> continue env
     | S_Assign
         ( { desc = LE_TupleUnpack les; _ },
           { desc = E_Call (name, args, named_args); _ } )
@@ -652,8 +516,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let m = eval_expr env e in
         return (Returning [ m ]) |: Rule.ReturnOne
     | S_Return None -> return (Returning []) |: Rule.ReturnNone
-    | S_Then (s1, s2) ->
-        eval_seq env s1 s2 |:  Rule.Then
+    | S_Then (s1, s2) -> eval_seq env s1 s2 |: Rule.Then
     | S_Call (name, args, named_args) ->
         let vargs = List.map (eval_expr env) args
         and nargs = List.map (fun (x, e) -> (x, eval_expr env e)) named_args in
@@ -670,105 +533,85 @@ module Make (B : Backend.S) (C : Config) = struct
         B.bind_ctrl (B.choice v (return true) (return false)) @@ fun b ->
         if b then continue env
         else fatal_from e @@ Error.AssertionFailed e |: Rule.Assert
-    | S_While (e,body) ->
-       let env = { env with unroll = tick_push env.unroll; } in
-       eval_loop true env e body
-    | S_Repeat (body,e) ->
-       eval_seq_kont env body
-         (fun env ->
-           let env = { env with unroll=tick_push_bis env.unroll; } in
-           eval_loop false env e body)
-    | S_For (id,e1,dir,e2,s) ->
-        let* v1  = eval_expr env e1 and* v2 = eval_expr env e2 in
+    | S_While (e, body) ->
+        let env = IEnv.tick_push env in
+        eval_loop true env e body
+    | S_Repeat (body, e) ->
+        eval_seq_kont env body (fun env ->
+            let env = IEnv.tick_push_bis env in
+            eval_loop false env e body)
+    | S_For (id, e1, dir, e2, s) ->
+        let* v1 = eval_expr env e1 and* v2 = eval_expr env e2 in
         (* It is an error to redefine an identifier *)
-        assert (not (is_defined env id)) ; (* By typing *)
+        assert (not (is_defined env id));
+        (* By typing *)
         let undet = B.is_undetermined v1 || B.is_undetermined v2 in
         let* env = write_identifier env id (B.return v1) in
-        let env =
-          if undet then { env with unroll = tick_push_bis env.unroll; }
-          else env in
-        B.bind_seq
-          (eval_for undet env id v1 dir v2 s)
-          (fun r ->
+        let env = if undet then IEnv.tick_push_bis env else env in
+        B.bind_seq (eval_for undet env id v1 dir v2 s) (fun r ->
             match r with
-            | Returning _  -> return r
+            | Returning _ -> return r
             | Continuing env ->
-                (* Destroy `id` binding *)
-                let env =
-                  { env with
-                    local = IMap.remove id env.local;
-                    unroll = if undet then tick_pop env.unroll else env.unroll;
-                  } in
-                return (Continuing env))
+                (if undet then IEnv.tick_pop env else env)
+                |> IEnv.remove_local id (* Destroy `id` binding *) |> continue)
+    | S_Decl (_dlk, _dli, _e_opt) ->
+        (* Type checking should change those into S_Assign. *)
+        fatal_from s Error.TypeInferenceNeeded
 
   and eval_loop is_while env e s =
     B.delay
-      (eval_expr env e >>= if is_while then return else B.unop NOT)
+      (eval_expr env e >>= if is_while then return else B.unop BNOT)
       (fun b mb ->
-        let stop,env =
-          if B.is_undetermined b then
-            let u,unroll = tick_unroll env.unroll in
-            if u <= 0 then
-              true,{ env with unroll = tick_pop unroll; }
-            else
-              false,{ env with unroll; }
-          else false,env in
+        let stop, env =
+          if B.is_undetermined b then IEnv.tick_decr env else (false, env)
+        in
         if stop then
-          B.bind_ctrl
-            mb
-            (fun _ ->
-              B.warnT
-                "Loop unrolling reached limit"
-                (Continuing env))
+          B.bind_ctrl mb (fun _ ->
+              B.warnT "Loop unrolling reached limit" (Continuing env))
         else
           B.bind_ctrl
             (B.choice mb
-               (return
-                  (fun env ->
-                    eval_seq_kont env s
-                      (fun env -> eval_loop is_while env e s)))
+               (return (fun env ->
+                    eval_seq_kont env s (fun env -> eval_loop is_while env e s)))
                (return continue))
             (fun f -> f env))
 
-  and eval_for undet (env:env) id v dir v2 s =
+  and eval_for undet (env : env) id v dir v2 s =
     B.bind_ctrl
       (B.choice
-         (let* () = B.on_read_identifier id env.scope v in
-         let op = match dir with Up -> LT | Down -> GT in
-         B.binop op v2 v)
+         (let* () = B.on_read_identifier id env.local.scope v in
+          let op = match dir with Up -> LT | Down -> GT in
+          B.binop op v2 v)
          (return continue)
-         (return
-            (fun env ->
-              (if undet then eval_unroll else eval_seq_kont)
-                env s
-                (fun env ->
+         (return (fun env ->
+              (if undet then eval_unroll else eval_seq_kont) env s (fun env ->
                   let* v =
-                    let* () = B.on_read_identifier id env.scope v in
+                    let* () = B.on_read_identifier id env.local.scope v in
                     let op = match dir with Up -> PLUS | Down -> MINUS in
-                    B.binop op v (B.v_of_int 1) in
+                    B.binop op v (B.v_of_int 1)
+                  in
                   let* env = write_identifier env id (return v) in
                   eval_for undet env id v dir v2 s))))
       (fun k -> k env)
 
   and eval_unroll env s k =
-    let u,unroll = tick_unroll env.unroll in
-    if u <= 0 then
-      B.warnT "For loop unrolling reached limit" (Continuing env)
-    else eval_seq_kont { env with unroll; } s k
+    let stop, env' = IEnv.tick_decr env in
+    if stop then B.warnT "For loop unrolling reached limit" (Continuing env)
+    else eval_seq_kont env' s k
 
-  and eval_seq env (s1:stmt) (s2:stmt) =
+  and eval_seq env (s1 : stmt) (s2 : stmt) =
     eval_seq_kont env s1 (fun env -> eval_stmt env s2)
 
   and eval_seq_kont env s1 k2 =
     B.bind_seq (eval_stmt env s1) (fun r1 ->
-      match r1 with
-      | Continuing env -> k2 env
-      | Returning vs -> return (Returning vs))
+        match r1 with
+        | Continuing env -> k2 env
+        | Returning vs -> return (Returning vs))
 
   (** [eval_func genv name pos args nargs] evaluate the function named [name]
       in the global environment [genv], with [args] the formal arguments, and
       [nargs] the arguments deduced by type equality. *)
-  and eval_func (genv : genv) name pos (args : B.value m list) nargs :
+  and eval_func (genv : global) name pos (args : B.value m list) nargs :
       B.value m list m =
     match IMap.find_opt name genv.funcs with
     | None -> fatal_from pos @@ Error.UndefinedIdentifier name
@@ -780,22 +623,14 @@ module Make (B : Backend.S) (C : Config) = struct
     | Some (Func (r, { args = arg_decls; body; _ })) -> (
         let scope = (name, !r) in
         let () = r := !r + 1 in
-        let env = { global = genv; scope; local = IMap.empty; unroll=[]; } in
+        let env = { global = genv; local = IEnv.empty_scoped scope } in
         let one_arg envm (x, _) m = write_identifier_m envm x m in
         let envm = List.fold_left2 one_arg (return env) arg_decls args in
         let one_narg envm (x, m) =
           let*| env = envm in
-          if IMap.mem x env.local then return env else write_identifier env x m
+          if is_defined env x then return env else write_identifier env x m
         in
         let*| env = List.fold_left one_narg envm nargs in
-        let () =
-          if false then (
-            Format.eprintf "@[<v 2>Evaluating %S in initial local env:@ " name;
-            IMap.iter
-              (fun x v -> Format.eprintf "%S = %s@ " x (B.debug_value v))
-              env.local;
-            Format.eprintf "@]@.")
-        in
         let*| res = eval_stmt env body in
         let () =
           if false then Format.eprintf "Finished evaluating %s.@." name
@@ -807,11 +642,11 @@ module Make (B : Backend.S) (C : Config) = struct
       in it. *)
   let run (ast : t) primitives : unit m =
     let ast = List.rev_append (Lazy.force Builder.stdlib) ast in
-    let ast = type_annotation ast primitives in
+    let ast, static_env = type_annotation ast primitives in
     let () =
       if false then Format.eprintf "@[<v 2>Typed AST:@ %a@]@." PP.pp_t ast
     in
-    let genv = build_genv ast primitives in
+    let genv = build_genv static_env ast primitives in
     let*| _ = eval_func genv "main" ASTUtils.dummy_annotated [] [] in
     return ()
 end

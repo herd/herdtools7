@@ -194,14 +194,15 @@ func PhysMemRead(
   accdesc::AccessDescriptor
 ) => (PhysMemRetStatus, bits(8*size))
 begin
-  value = read_memory (desc.vaddress, size*8);
-  ret_status = PhysMemRetStatus {
+  let value = read_memory (desc.vaddress, size*8);
+  let ret_status = PhysMemRetStatus {
     statuscode = Fault_None,
     extflag = '0',
     merrorstate = ErrorState_CE,  // ??
     store64bstatus = Zeros(64)
   };
-  return (ret_status, value);
+  assert size == 8;
+  return (ret_status, (value as bits((8*size))));
 end
 
 func HaveAArch32() => boolean

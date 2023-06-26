@@ -81,6 +81,8 @@ type t =
   | ASL_AArch64 
   (* When using aarch ASL, use ASL version v0 or v1 *)
   | ASLVersion of [ `ASLv0 | `ASLv1 ] 
+(* ASL Typing control *)
+  | ASLType of [`Warn|`Silence|`TypeCheck]
 (* Signed Int128 types *)
   | S128
 

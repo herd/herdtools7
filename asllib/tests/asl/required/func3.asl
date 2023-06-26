@@ -28,13 +28,13 @@ func main()
 begin
   f1[] = f1[];
   f1 = f1;
-  a = f1;
+  let a = f1;
   assert a == 3;
   assert f1 == 3;
-  b = f1[];
+  let b = f1[];
   assert b == 3;
   assert 3 == f1[];
-  c = f2[4];
+  let c = f2[4];
   assert c == 7;
 
   f2[5] = 6;

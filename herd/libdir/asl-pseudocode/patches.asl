@@ -1,6 +1,3 @@
-
-
-
 // GenMPAMatEL()
 // =============
 // Returns MPAMinfo for the specified EL.
@@ -55,12 +52,6 @@ func ELStateUsingAArch32K(el::bits(2), secure::boolean) => (boolean, boolean)
 begin
     return (TRUE, FALSE);
 end
-
-func SignExtend(x::bits(M), N::integer) => bits(N)
-begin
-  return sign_extend (x, N);
-end
-
 
 // ProcState
 // =========

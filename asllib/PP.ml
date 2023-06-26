@@ -17,6 +17,15 @@ let string_remove_prefix ~prefix s =
 
 type 'a printer = Format.formatter -> 'a -> unit
 
+(* Adapted from stdlib >= 4.12.0 *)
+let pp_print_seq ?(pp_sep = pp_print_cut) pp_v ppf v =
+  let is_first = ref true in
+  let pp_v v =
+    if !is_first then is_first := false else pp_sep ppf ();
+    pp_v ppf v
+  in
+  Seq.iter pp_v v
+
 let pp_comma f () = fprintf f ",@ "
 let pp_comma_list pp_elt f = pp_print_list ~pp_sep:pp_comma pp_elt f
 
@@ -144,9 +153,9 @@ and pp_ty f t =
   | T_Real -> pp_print_string f "real"
   | T_String -> pp_print_string f "string"
   | T_Bool -> pp_print_string f "boolean"
-  | T_Bits (bits_constraint, None) ->
+  | T_Bits (bits_constraint, []) ->
       fprintf f "@[bits(%a)@]" pp_bits_constraint bits_constraint
-  | T_Bits (bits_constraint, Some fields) ->
+  | T_Bits (bits_constraint, fields) ->
       let pp_bitfield f (name, slices) =
         fprintf f "@[<h>[%a]@ %s@]" pp_slice_list slices name
       in
@@ -165,7 +174,6 @@ and pp_ty f t =
       fprintf f "@[<hv 2>record {@,%a@;<0 -2>}@]" pp_record_ty record_ty
   | T_Exception record_ty ->
       fprintf f "@[exception {%a}@]" pp_record_ty record_ty
-  | T_ZType ty -> fprintf f "ZType(%a)" pp_ty ty
   | T_Named x -> pp_print_string f x
 
 and pp_record_ty f =
@@ -190,7 +198,6 @@ let pp_typed_identifier f (name, ty) = fprintf f "%s::%a" name pp_ty ty
 let rec pp_lexpr f le =
   match le.desc with
   | LE_Var x -> pp_print_string f x
-  | LE_Typed (le, ty) -> fprintf f "%a :: %a" pp_lexpr le pp_ty ty
   | LE_Slice (le, args) -> fprintf f "%a[%a]" pp_lexpr le pp_slice_list args
   | LE_SetField (le, x, _ta) -> fprintf f "@[%a@,.%s@]" pp_lexpr le x
   | LE_SetFields (le, li, _ta) ->
@@ -200,9 +207,27 @@ let rec pp_lexpr f le =
   | LE_Ignore -> pp_print_string f "-"
   | LE_TupleUnpack les -> fprintf f "@[( %a )@]" (pp_comma_list pp_lexpr) les
 
-let pp_for_direction  = function
-  | Up -> "to"
-  | Down -> "downto"
+let pp_for_direction = function Up -> "to" | Down -> "downto"
+
+let pp_local_decl_keyword f k =
+  pp_print_string f
+    (match k with
+    | LDK_Var -> "var"
+    | LDK_Constant -> "constant"
+    | LDK_Let -> "let")
+
+let rec pp_local_decl_item f =
+  let pp_ty_opt f = function
+    | Some ty -> fprintf f "@ :: @[%a@]" pp_ty ty
+    | None -> ()
+  in
+  function
+  | LDI_Ignore ty_opt -> fprintf f "@[-%a@]" pp_ty_opt ty_opt
+  | LDI_Var (s, ty_opt) -> fprintf f "@[%s%a@]" s pp_ty_opt ty_opt
+  | LDI_Tuple (ldis, ty_opt) ->
+      fprintf f "@[(%a)%a@]"
+        (pp_comma_list pp_local_decl_item)
+        ldis pp_ty_opt ty_opt
 
 let rec pp_stmt f s =
   match s.desc with
@@ -238,24 +263,21 @@ let rec pp_stmt f s =
         (pp_print_list ~pp_sep:pp_print_space pp_case_alt)
         case_li
   | S_Assert e -> fprintf f "@[<2>assert@ %a;@]" pp_expr e
-  | S_TypeDecl (x, t) -> fprintf f "@[<2>var %s :: %a;@]" x pp_ty t
-  | S_While (e,s) ->
-      fprintf f
-        "@[<hv>@[<h>while %a@ do@]@;<1 2>@[<hv>%a@]@ end@]"
-        pp_expr e
+  | S_While (e, s) ->
+      fprintf f "@[<hv>@[<h>while %a@ do@]@;<1 2>@[<hv>%a@]@ end@]" pp_expr e
         pp_stmt s
-  | S_Repeat (s,e) ->
-      fprintf f
-        "@[<hv 2>repeat@;<1 2>@[<hv>%a@]@;<1 0>@[<h>until@ %a;@]@@]"
-        pp_stmt s
-        pp_expr e
-  | S_For (id,e1,dir,e2,s) ->
+  | S_Repeat (s, e) ->
+      fprintf f "@[<hv 2>repeat@;<1 2>@[<hv>%a@]@;<1 0>@[<h>until@ %a;@]@]"
+        pp_stmt s pp_expr e
+  | S_For (id, e1, dir, e2, s) ->
       fprintf f "@[<hv 2>@[<h>for %a=%a %s %a@ do@]@;<1 2>@[<hv>%a@]@ end@]"
-        pp_print_string id
-        pp_expr e1
-        (pp_for_direction dir)
-        pp_expr e2
-        pp_stmt s
+        pp_print_string id pp_expr e1 (pp_for_direction dir) pp_expr e2 pp_stmt
+        s
+  | S_Decl (ldk, ldi, None) ->
+      fprintf f "@[<2>%a %a;@]" pp_local_decl_keyword ldk pp_local_decl_item ldi
+  | S_Decl (ldk, ldi, Some e) ->
+      fprintf f "@[<2>%a %a@ = %a;@]" pp_local_decl_keyword ldk
+        pp_local_decl_item ldi pp_expr e
 
 let pp_decl f =
   let pp_func_sig f { name; args; return_type; _ } =

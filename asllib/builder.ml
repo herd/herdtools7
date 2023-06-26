@@ -1,5 +1,7 @@
 open Lexing
 
+let _debug = false
+
 type token = Parser.token
 type ast_type = [ `Opn | `Ast ]
 type version = [ `ASLv0 | `ASLv1 ]
@@ -15,7 +17,7 @@ let _ast_type_to_string = select_type ~opn:"Opn" ~ast:"Ast"
 let from_lexbuf ast_type version (lexbuf : lexbuf) =
   let open Error in
   let () =
-    if false then
+    if _debug then
       Format.eprintf "Parsing %s from file %s@."
         (_ast_type_to_string ast_type)
         lexbuf.lex_curr_p.pos_fname
@@ -98,20 +100,34 @@ let stdlib =
   in
   let to_try =
     match Sys.getenv_opt "ASL_LIBDIR" with
-    | None -> to_try
+    | None ->
+        let () = if _debug then Printf.eprintf "Cannot find ASL_LIBDIR.\n" in
+        to_try
     | Some p -> p :: to_try
   in
   let to_try =
     match Sys.getenv_opt "DUNE_SOURCEROOT" with
-    | None -> to_try
+    | None ->
+        let () =
+          if _debug then Printf.eprintf "Cannot find DUNE_SOURCEROOT\n"
+        in
+        to_try
     | Some p -> (p / "asllib" / "libdir") :: to_try
   in
   let try_one dir_path =
     let file_path = dir_path / "stdlib.asl" in
     if Sys.file_exists file_path then
       match from_file_result ~ast_type:`Ast `ASLv1 file_path with
-      | Ok ast -> Some ast
-      | Error _ -> None
+      | Ok ast ->
+          let () =
+            if _debug then Printf.eprintf "Selecting stdlib from %s.\n" dir_path
+          in
+          Some ast
+      | Error _ ->
+          let () =
+            if _debug then Printf.eprintf "Cannot parse %s.\n" file_path
+          in
+          None
     else None
   in
   lazy

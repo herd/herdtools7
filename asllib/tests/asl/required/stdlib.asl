@@ -7,6 +7,7 @@ begin
   assert Min (2, 3) == 2;
   assert Max (2, 3) == 3;
 
+  assert Replicate('01',3) == '010101';
   assert Zeros(3) == '000';
   assert Zeros(8) == '00000000';
 

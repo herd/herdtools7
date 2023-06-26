@@ -3,7 +3,9 @@
     It should provide enough information to disambiguate any type-dependent
     behaviour. *)
 
-val annotate_ast : AST.t -> AST.t
+val infer_value : AST.value -> AST.type_desc
+
+val annotate_ast : AST.t -> Env.Static.env -> AST.t * Env.Static.env
 (** Annotate is a typing inference function for an ASL AST. It does not type check.
 
     @raise Error.ASLException if the Inferrence is blocked, for example when
@@ -13,7 +15,8 @@ val annotate_ast : AST.t -> AST.t
 type strictness = [ `Silence | `Warn | `TypeCheck ]
 (** Possible strictness of type-checking. *)
 
-val type_check_ast : strictness -> AST.t -> AST.t
+val type_check_ast :
+  strictness -> AST.t -> Env.Static.env -> AST.t * Env.Static.env
 (** Typechecks the AST, and returns an AST with type inference holes filled.
 
     @raise Error.ASLException if the AST does not type-checks.

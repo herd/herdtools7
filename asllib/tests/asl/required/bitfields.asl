@@ -14,8 +14,9 @@ end
 
 func set_first(bv::MyBitVector, b::bits(1)) => MyBitVector
 begin
-  bv.first = b;
-  return bv;
+  var bv_bis = bv;
+  bv_bis.first = b;
+  return bv_bis;
 end
 
 func get_first_three(bv::MyBitVector) => bits(3)

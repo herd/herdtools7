@@ -20,6 +20,11 @@ type error_desc =
   | TooManyCallCandidates of string * ty list
   | BadTypesForBinop of binop * ty * ty
   | CircularDeclarations of string
+  | UnpureExpression of expr
+  | UnreconciableTypes of ty * ty
+  | AssignToImmutable of string
+  | AlreadyDeclaredIdentifier of string
+  | BadReturnStmt of ty option
 
 type error = error_desc annotated
 
@@ -129,7 +134,31 @@ let pp_error =
         fprintf f
           "ASL Evaluation error: circular definition of constants, including \
            %S."
-          x);
+          x
+    | UnpureExpression e ->
+        fprintf f
+          "ASL Typing error:@ a pure expression was expected,@ found@ %a"
+          pp_expr e
+    | UnreconciableTypes (t1, t2) ->
+        fprintf f
+          "ASL Typing error:@ cannot@ find@ a@ common@ ancestor@ to@ those@ \
+           two@ types@ %a@ and@ %a."
+          pp_ty t1 pp_ty t2
+    | AssignToImmutable x ->
+        fprintf f
+          "ASL Typing error:@ cannot@ assign@ to@ immutable@ storage@ %S." x
+    | AlreadyDeclaredIdentifier x ->
+        fprintf f
+          "ASL Typing error:@ cannot@ declare@ already@ declared@ element@ %S."
+          x
+    | BadReturnStmt None ->
+        fprintf f
+          "ASL Typing error:@ cannot@ return@ something@ from@ a@ procedure@."
+    | BadReturnStmt (Some t) ->
+        fprintf f
+          "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \
+           expression@ of@ type@ %a@ is@ expected."
+          pp_ty t);
     pp_close_box f ();
     pp_close_box f ()
 

@@ -8,9 +8,6 @@
 //------------------------------------------------------------------------------
 // Externals
 
-// Replicate
-// BitCount
-// LowerSetBit
 // UInt
 // SInt
 
@@ -48,24 +45,61 @@ end
 // exists in the specification. We do not yet support those.
 
 // Externals
-// Replicate
-// BitCount
-// LowerSetBit
-// HigherSetBit
+
+func Replicate{M}(x: bits(M), N: integer) => bits(M*N)
+begin
+  var r: bits(M*N) = Zeros(M*N);
+  for i=0 to N-1 do
+    var t: bits(M*N) = [Zeros(((N-1)-i)*M), x, Zeros(i*M)];
+    r = r OR t;
+  end
+  return r;
+end
 
 func Len{N}(x :: bits(N)) => integer
 begin
   return N;
 end
 
-func Zeros(n :: integer) => bits(n)
+func BitCount{N}(x : bits(N)) => integer{0..N}
 begin
-  return Replicate ('0', n);
+  var result : integer = 0;
+  for i = 0 to N-1 do
+    if x[i] == '1' then
+      result = result + 1;
+    end
+  end
+  return result;
 end
 
-func Ones(n :: integer) => bits(n)
+func LowestSetBit{N}(x: bits(N)) => integer{0..N}
 begin
-  return Replicate ('1', n);
+  for i = 0 to N-1 do
+    if x[i] == '1' then
+      return i;
+    end
+  end
+  return N;
+end
+
+func HighestSetBit{N}(x: bits(N)) => integer{-1..N-1}
+begin
+  for i = N-1 downto 0 do
+    if x[i] == '1' then
+      return i;
+    end
+  end
+  return -1;
+end
+
+func Zeros(N :: integer) => bits(N)
+begin
+  return 0[N-1:0];
+end
+
+func Ones(N :: integer) => bits(N)
+begin
+  return NOT Zeros(N);
 end
 
 func IsZero(x :: bits(n)) => boolean
@@ -73,9 +107,9 @@ begin
   return BitCount(x) == 0;
 end
 
-func IsOnes(x :: bits(n)) => boolean
+func IsOnes{N}(x :: bits(N)) => boolean
 begin
-  return x == Ones(Len(x));
+  return x == Ones(N);
 end
 
 func SignExtend(x::bits(M), N::integer) => bits(N)
@@ -98,104 +132,77 @@ begin
   return N - 1 - HighestSetBit(x);
 end
 
-func CountLeadingSignBits{N}(x :: bits(N)) => integer
+// Leading sign bits in a bitvector. Count the number of consecutive
+// bits following the leading bit, that are equal to it.
+func CountLeadingSignBits{N}(x::bits(N)) => integer{0..N}
 begin
   return CountLeadingZeroBits(x[N-1:1] EOR x[N-2:0]);
 end
 
-func AlignDown{N}(x :: bits(N), y :: integer) => bits(N)
+// Treating input as an integer, align down to nearest multiple of 2^y.
+func AlignDown{N}(x:: bits(N), y:: integer{1..N}) => bits(N)
 begin
-  if N <= y then return Zeros(N);
-  else
-    return x AND [Ones(N - y), Zeros(y)];
-  end
+    return [x[N-1:y], Zeros(y)];
 end
 
-func AlignUp{N} (x :: bits(N), y :: integer) => bits(N)
+// Treating input as an integer, align up to nearest multiple of 2^y.
+// Returns zero if the result is not representable in N bits.
+func AlignUp{N}(x::bits(N), y::integer{1..N}) => bits(N)
 begin
-  if N <= y then return Zeros(N);
-  else
-    return AlignDown(x, y) + ['1', Zeros(y)];
-  end
-end
-
-func LSL_C(x :: bits(N), shift :: integer) => (bits(N), bit)
-begin
-  assert shift > 0 && shift < 256;
-  extended_x = [x, Zeros(shift)];
-  result = extended_x[N-1:0];
-  carry_out = extended_x[N];
-  return (result, carry_out);
-end
-
-func LSL(x :: bits(N), shift :: integer) => bits(N)
-begin
-  assert shift >= 0;
-  if shift == 0 then
+  if IsZero(x[y-1:0]) then
     return x;
   else
-    let (result, -) = LSL_C(x, shift);
-    return result;
+    return [x[N-1:y]+1, Zeros(y)];
   end
 end
 
-func LSR_C(x :: bits(N), shift :: integer) => (bits(N), bit)
+// The shift functions LSL, LSR, ASR and ROR accept a non-negative shift amount.
+// The shift functions LSL_C, LSR_C, ASR_C and ROR_C accept a non-zero positive shift amount.
+
+// Logical left shift
+func LSL{N}(x:: bits(N), shift:: integer{0..N-1}) => bits(N)
 begin
-  assert shift > 0 && shift < 256;
-  extended_x = ZeroExtend(x, shift+N);
-  result = extended_x[shift+N-1 : shift];
-  carry_out = extended_x[shift-1];
-  return (result, carry_out);
+    return [x[N-shift-1:0], Zeros(shift)];
 end
 
-func LSR(x :: bits(N), shift :: integer) => bits(N)
+// Logical left shift with carry out.
+func LSL_C{N}(x:: bits(N), shift:: integer{1..N-1}) => (bits(N), bit)
 begin
-  assert shift >= 0;
-  if shift == 0 then
-    return x;
-  else
-    let (result, -) = LSR_C(x, shift);
-    return result;
-  end
+    return (LSL(x, shift), x[N-shift]);
 end
 
-func ASR_C(x :: bits(N), shift :: integer) => (bits(N), bit)
+// Logical right shift, shifting zeroes into higher bits.
+func LSR{N}(x:: bits(N), shift:: integer{0..N-1}) => bits(N)
 begin
-  assert shift > 0 && shift < 256;
-  extended_x = SignExtend(x, shift+N);
-  result = extended_x[shift+N-1:shift];
-  carry_out = extended_x[shift-1];
-  return (result, carry_out);
+    return ZeroExtend(x[N-shift-1:shift], N);
 end
 
-func ASR(x :: bits(N), shift :: integer) => bits(N)
+// Logical right shift with carry out.
+func LSR_C{N}(x:: bits(N), shift:: integer{1..N-1}) => (bits(N), bit)
 begin
-  assert shift >= 0;
-  if shift == 0 then
-    return x;
-  else
-    let (result, -) = ASR_C(x, shift);
-    return result;
-  end
+    return (LSR(x, shift), x[shift-1]);
 end
 
-func ROR_C(x :: bits(N), shift :: integer) => (bits(N), bit)
+// Arithmetic right shift, shifting sign bits into higher bits.
+func ASR{N}(x:: bits(N), shift:: integer{0..N-1}) => bits(N)
 begin
-  assert shift != 0 && shift < 256;
-  m = shift MOD N;
-  result = LSR(x,m) OR LSL(x,N-m);
-  carry_out = result[N-1];
-  return (result, carry_out);
+    return SignExtend(x[N-shift-1:shift], N);
 end
 
-func ROR(x :: bits(N), shift :: integer) => bits(N)
+// Arithmetic right shift with carry out.
+func ASR_C{N}(x:: bits(N), shift:: integer{1..N-1}) => (bits(N), bit)
 begin
-  assert shift >= 0;
-  if shift == 0 then
-    return x;
-  else
-    let (result, -) = ROR_C(x, shift);
-    return result;
-  end
+    return (ASR(x, shift), x[shift-1]);
 end
 
+// Rotate right.
+func ROR{N}(x:: bits(N), shift:: integer{0..N-1}) => bits(N)
+begin
+    return [x[0+:shift], x[N-1:shift]];
+end
+
+// Rotate right with carry out.
+func ROR_C{N}(x:: bits(N), shift:: integer{1..N-1}) => (bits(N), bit)
+begin
+    return (ROR(x, shift), x[shift-1]);
+end
