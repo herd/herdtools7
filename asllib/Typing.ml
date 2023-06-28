@@ -240,12 +240,25 @@ let width_plus env acc w =
   | _ ->
       failwith "Not yet implemented: concatening slices constrained from type."
 
-let rename_ty_eqs (eqs : (AST.identifier * AST.expr) list) ty =
-  match ty.desc with
-  | T_Bits (BitWidth_Determined e, fields) ->
-      let new_e = subst_expr eqs e in
-      T_Bits (BitWidth_Determined new_e, fields) |> add_pos_from_st ty
-  | _ -> ty
+let rename_ty_eqs : (AST.identifier * AST.expr) list -> AST.ty -> AST.ty =
+  let subst_constraint eqs = function
+    | Constraint_Exact e -> Constraint_Exact (subst_expr eqs e)
+    | Constraint_Range (e1, e2) ->
+        Constraint_Range (subst_expr eqs e1, subst_expr eqs e2)
+  in
+  let subst_constraints eqs = List.map (subst_constraint eqs) in
+  fun eqs ty ->
+    match ty.desc with
+    | T_Bits (BitWidth_Determined e, fields) ->
+        let new_e = subst_expr eqs e in
+        T_Bits (BitWidth_Determined new_e, fields) |> add_pos_from_st ty
+    | T_Bits (BitWidth_Constrained constraints, fields) ->
+        let constraints = subst_constraints eqs constraints in
+        T_Bits (BitWidth_Constrained constraints, fields) |> add_pos_from_st ty
+    | T_Int (Some constraints) ->
+        let constraints = subst_constraints eqs constraints in
+        T_Int (Some constraints) |> add_pos_from_st ty
+    | _ -> ty
 
 let infer_value = function
   | V_Int i -> T_Int (Some [ Constraint_Exact (expr_of_int i) ])
