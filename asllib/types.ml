@@ -573,10 +573,14 @@ let rec lowest_common_ancestor env s t =
 let rec base_value loc env t =
   let lit v = E_Literal v |> add_pos_from t in
   let normalize env e =
-    try StaticInterpreter.Normalize.normalize env e
-    with StaticInterpreter.NotYetImplemented -> e
+    let open StaticInterpreter in
+    try Normalize.normalize env e
+    with NotYetImplemented -> (
+      try static_eval env e |> lit
+      with Error.ASLException _ | NotYetImplemented -> e)
   in
-  match (get_structure env t).desc with
+  let t_struct = get_structure env t in
+  match t_struct.desc with
   | T_Array _ ->
       Error.fatal_from loc
         (Error.NotYetImplemented "Base value of array types.")
@@ -603,20 +607,13 @@ let rec base_value loc env t =
   | T_Named _ -> assert false
   | T_Real -> V_Real 0. |> lit
   | T_Record fields ->
-      let one_field (name, t) =
-        match (base_value loc env t).desc with
-        | E_Literal v -> (name, v)
-        | _ ->
-            Error.fatal_from loc
-              (Error.NotYetImplemented
-                 "Not fully resolved base-values of types.")
-      in
-      V_Record (List.map one_field fields) |> lit
+      let one_field (name, t) = (name, base_value loc env t) in
+      E_Record (t, List.map one_field fields, TA_InferredStructure t_struct) |> add_pos_from t
   | T_String ->
       Error.fatal_from loc
         (Error.NotYetImplemented "Base value of string types.")
   | T_Tuple li ->
-      let one t =
+      let one t = 
         match (base_value loc env t).desc with
         | E_Literal v -> v
         | _ ->

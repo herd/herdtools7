@@ -1,3 +1,4 @@
+type signal of integer;
 
 type Feature of enumeration {
     FEAT_AA32BF16,
