@@ -126,6 +126,8 @@ module Make (C : Config) = struct
       | V.Var _ as v ->
           Warn.fatal "Cannot convert value %s into constant" (V.pp_v v)
 
+    let v_unknown_of_type _t = V.fresh_var ()
+
     let v_of_parsed_v =
       let open AST in
       let open ASLScalar in
@@ -518,6 +520,7 @@ module Make (C : Config) = struct
         let read_from_bitvector = read_from_bitvector
         let write_to_bitvector = write_to_bitvector
         let concat_bitvectors = concat_bitvectors
+        let v_unknown_of_type = v_unknown_of_type
       end in
       let module Config = struct
         let type_checking_strictness : Asllib.Typing.strictness =

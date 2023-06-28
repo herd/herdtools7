@@ -57,6 +57,10 @@ module NativeBackend = struct
   let prod (r1 : 'a m) (r2 : 'b m) : ('a * 'b) m = (r1, r2)
   let return v = v
 
+  let v_unknown_of_type ty =
+    Types.base_value ASTUtils.dummy_annotated Env.Static.empty ty
+    |> StaticInterpreter.static_eval Env.Static.empty
+
   let warnT msg v =
     (* Should not be called... *)
     Printf.eprintf "Warning: message %s found its way, something is wrong\n" msg;
