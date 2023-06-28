@@ -418,8 +418,9 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         return (v, env)
     | E_Tuple _ -> fatal_from e @@ Error.NotYetImplemented "tuple construction"
-    | E_Unknown _ ->
-        fatal_from e @@ Error.NotYetImplemented "unknown expressions"
+    | E_Unknown t ->
+        let v = B.v_unknown_of_type t in
+        return (v, env)
     | E_Pattern (e, p) ->
         let* v, env = eval_expr env e in
         let* v = eval_pattern env e v p in

@@ -36,6 +36,9 @@ module type S = sig
       Note that the prefered method to create records or any complex values
       is [create_vector], and should be used for constructing complex values. *)
 
+  val v_unknown_of_type : AST.ty -> value
+  (** [v_unknwon_of_type t] constructs a value from a type. *)
+
   val v_of_int : int -> value
   (** [v_of_int] is used to convert raw integers arising from the interpretation,
       and not parsed values. *)

@@ -1,0 +1,25 @@
+ASL Unknown
+variant = ASL
+(* Variant ASL to allow unresolved variables in result. *)
+
+{}
+
+func random_bool () => boolean
+begin
+  return (UNKNOWN:: boolean);
+end
+
+func main ()
+begin
+  var x: boolean;
+
+  if random_bool () then
+    x = 1;
+  else
+    x = 0;
+  end
+
+  let y = if random_bool () then 1 else 0;
+end
+
+locations [0: main.0.x; 0: main.0.y]

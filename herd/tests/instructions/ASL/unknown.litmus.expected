@@ -1,0 +1,11 @@
+Test Unknown Required
+States 2
+0:main.0.x=0; 0:main.0.y=S5;
+0:main.0.x=1; 0:main.0.y=S8;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall (true)
+Observation Unknown Always 2 0
+Hash=573e4d1d3889f71750faf4dfbb454952
+

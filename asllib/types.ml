@@ -608,12 +608,13 @@ let rec base_value loc env t =
   | T_Real -> V_Real 0. |> lit
   | T_Record fields ->
       let one_field (name, t) = (name, base_value loc env t) in
-      E_Record (t, List.map one_field fields, TA_InferredStructure t_struct) |> add_pos_from t
+      E_Record (t, List.map one_field fields, TA_InferredStructure t_struct)
+      |> add_pos_from t
   | T_String ->
       Error.fatal_from loc
         (Error.NotYetImplemented "Base value of string types.")
   | T_Tuple li ->
-      let one t = 
+      let one t =
         match (base_value loc env t).desc with
         | E_Literal v -> v
         | _ ->
