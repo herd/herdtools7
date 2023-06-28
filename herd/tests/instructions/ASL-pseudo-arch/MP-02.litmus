@@ -1,0 +1,36 @@
+ASL MP-pseudo-arch
+
+{
+  x = 0;
+  y = 0;
+  0: X1= x;
+  0: X2= y;
+}
+
+constant one :: bits(64) = 1[63:0];
+
+func T0(x::bits(64), y:: bits(64))
+begin
+  write_memory(x, 64, one);
+  write_memory(y, 64, one);
+end
+
+var a: integer;
+var b: integer;
+
+func T1(x::bits(64), y:: bits(64))
+begin
+  a = UInt(read_memory(y, 64));
+  b = UInt(read_memory(x, 64));
+end
+
+func main()
+begin
+  let x = read_register(1);
+  let y = read_register(2);
+
+  T0(x, y);
+  T1(x, y);
+end
+
+exists (0: a = 1 /\ 0: b = 0)
