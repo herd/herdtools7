@@ -190,8 +190,9 @@ and pp_int_constraints f = pp_comma_list pp_int_constraint f
 
 and pp_bits_constraint f = function
   | BitWidth_Determined i -> pp_expr f i
-  | BitWidth_Constrained int_constraint -> pp_int_constraints f int_constraint
-  | BitWidth_ConstrainedFormType ty -> pp_ty f ty
+  | BitWidth_Constrained int_constraint ->
+      fprintf f "@[{%a}@]" pp_int_constraints int_constraint
+  | BitWidth_ConstrainedFormType ty -> fprintf f "- : %a" pp_ty ty
 
 let pp_typed_identifier f (name, ty) = fprintf f "%s::%a" name pp_ty ty
 
@@ -298,26 +299,35 @@ let pp_decl f =
         fprintf f "%a %s@ :: %a" pp_gdk keyword name pp_ty t
     | { name = _; keyword = _; ty = None; initial_value = None } -> assert false
   in
-  let pp_func_sig f { name; args; return_type; _ } =
+  let pp_func_sig f { name; args; return_type; parameters; _ } =
     let pp_args = pp_comma_list pp_typed_identifier in
     let pp_return_type_opt f = function
       | Some return_type -> fprintf f "@;<1 -2>=> %a" pp_ty return_type
       | None -> ()
     in
+    let pp_parameters f = function
+      | [] -> ()
+      | parameters ->
+          let pp_one f = function
+            | name, None -> pp_print_string f name
+            | name, Some t -> pp_typed_identifier f (name, t)
+          in
+          fprintf f "@ {%a}" (pp_comma_list pp_one) parameters
+    in
     if string_is_prefix ~prefix:ASTUtils.getter_prefix name then
       let name = string_remove_prefix ~prefix:ASTUtils.getter_prefix name in
-      fprintf f "@[<hv 4>getter %s [@,%a]%a@]" name pp_args args
-        pp_return_type_opt return_type
+      fprintf f "@[<hv 4>getter %s%a [@,%a]%a@]" name pp_parameters parameters
+        pp_args args pp_return_type_opt return_type
     else if string_is_prefix ~prefix:ASTUtils.setter_prefix name then
       let name = string_remove_prefix ~prefix:ASTUtils.setter_prefix name in
       let new_v, args =
         match args with [] -> assert false | h :: t -> (h, t)
       in
-      fprintf f "@[<hv 4>setter %s [@,%a]@ = %a@]" name pp_args args
-        pp_typed_identifier new_v
+      fprintf f "@[<hv 4>setter %s%a [@,%a]@ = %a@]" name pp_parameters
+        parameters pp_args args pp_typed_identifier new_v
     else
-      fprintf f "@[<hv 4>func %s (@,%a)%a@]" name pp_args args
-        pp_return_type_opt return_type
+      fprintf f "@[<hv 4>func %s%a (@,%a)%a@]" name pp_parameters parameters
+        pp_args args pp_return_type_opt return_type
   in
   function
   | D_Func func ->

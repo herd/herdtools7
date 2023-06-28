@@ -289,8 +289,9 @@ let rec structural_subtype_satisfies env t s =
   *)
   | T_Bits (w_s, bf_s), T_Bits (w_t, bf_t) -> (
       (match (w_s, w_t) with
-      | BitWidth_Determined e_s, BitWidth_Determined e_t ->
-          expr_equal env e_s e_t
+      | BitWidth_Determined _e_s, BitWidth_Determined _e_t ->
+          (* does "the same determined width" mean anything? *)
+          true
       | BitWidth_Determined _, _ -> false
       | BitWidth_Constrained _, _ -> true
       | _ -> true)
@@ -570,41 +571,57 @@ let rec lowest_common_ancestor env s t =
         | _ -> None)
 
 let rec base_value loc env t =
-  let eval env e =
-    let open StaticInterpreter in
-    try static_eval env e
-    with Error.ASLException _ -> Normalize.normalize env e |> static_eval env
+  let lit v = E_Literal v |> add_pos_from t in
+  let normalize env e =
+    try StaticInterpreter.Normalize.normalize env e
+    with StaticInterpreter.NotYetImplemented -> e
   in
   match (get_structure env t).desc with
   | T_Array _ ->
       Error.fatal_from loc
         (Error.NotYetImplemented "Base value of array types.")
-  | T_Bool -> V_Bool true
+  | T_Bool -> V_Bool true |> lit
   | T_Bits (BitWidth_Constrained (Constraint_Exact e :: _), _)
   | T_Bits (BitWidth_Constrained (Constraint_Range (e, _) :: _), _)
-  | T_Bits (BitWidth_Determined e, _) -> (
-      match eval env e with
-      | V_Int i -> V_BitVector (Bitvector.zeros i)
-      | v -> Error.fatal_from e (Error.MismatchType (v, [ T_Int None ])))
+  | T_Bits (BitWidth_Determined e, _) ->
+      let e = normalize env e in
+      E_Call ("Zeros", [ e ], []) |> add_pos_from t
   | T_Bits (BitWidth_ConstrainedFormType _, _) ->
       Error.fatal_from loc
         (Error.NotYetImplemented "Base value of type-constrained bitvectors.")
   | T_Bits (BitWidth_Constrained [], _) ->
       Error.fatal_from loc
         (Error.NotYetImplemented "Base value of under-constrained bitvectors.")
-  | T_Enum li -> IMap.find (List.hd li) env.global.constants_values
+  | T_Enum li -> IMap.find (List.hd li) env.global.constants_values |> lit
   | T_Exception _ ->
       Error.fatal_from loc
         (Error.NotYetImplemented "Base value of exception types.")
-  | T_Int None | T_Int (Some []) -> V_Int 0
+  | T_Int None | T_Int (Some []) -> V_Int 0 |> lit
   | T_Int (Some (Constraint_Exact e :: _))
   | T_Int (Some (Constraint_Range (e, _) :: _)) ->
-      eval env e
+      normalize env e
   | T_Named _ -> assert false
-  | T_Real -> V_Real 0.
+  | T_Real -> V_Real 0. |> lit
   | T_Record fields ->
-      V_Record (List.map (fun (name, t) -> (name, base_value loc env t)) fields)
+      let one_field (name, t) =
+        match (base_value loc env t).desc with
+        | E_Literal v -> (name, v)
+        | _ ->
+            Error.fatal_from loc
+              (Error.NotYetImplemented
+                 "Not fully resolved base-values of types.")
+      in
+      V_Record (List.map one_field fields) |> lit
   | T_String ->
       Error.fatal_from loc
         (Error.NotYetImplemented "Base value of string types.")
-  | T_Tuple li -> V_Tuple (List.map (base_value loc env) li)
+  | T_Tuple li ->
+      let one t =
+        match (base_value loc env t).desc with
+        | E_Literal v -> v
+        | _ ->
+            Error.fatal_from loc
+              (Error.NotYetImplemented
+                 "Not fully resolved base-values of types.")
+      in
+      V_Tuple (List.map one li) |> lit

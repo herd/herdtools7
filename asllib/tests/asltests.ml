@@ -13,6 +13,7 @@ let process_test path () =
   let () = PP.pp_t formatter ast in
   let () = Format.pp_print_flush formatter () in
   let printed = Buffer.contents buffer in
+  let () = if false then Printf.eprintf "Printed:\n%s\n%!" printed in
   let lexbuf = Lexing.from_string printed in
   let ast = Parser.ast Lexer.token lexbuf in
   let _ = Native.interprete `TypeCheck ast in

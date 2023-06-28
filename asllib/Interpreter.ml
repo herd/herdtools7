@@ -230,9 +230,22 @@ module Make (B : Backend.S) (C : Config) = struct
             ISet.empty (* TODO: pure functions that can be used in constants? *)
     in
     let process_one_decl = function
-      | D_GlobalStorage { initial_value = Some e; name; _ } ->
+      | D_GlobalStorage { initial_value; name; ty; _ } ->
           fun env_m ->
             let*| env = env_m in
+            let e =
+              match initial_value with
+              | Some e -> e
+              | None -> (
+                  match ty with
+                  | None -> assert false
+                  | Some t ->
+                      let senv =
+                        Env.Static.
+                          { empty with global = env.IEnv.global.static }
+                      in
+                      Types.base_value t senv t)
+            in
             let* v = eval_expr env e in
             IEnv.add_global name v env |> return
       | _ -> Fun.id
