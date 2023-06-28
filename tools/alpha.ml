@@ -196,6 +196,8 @@ struct
     | Concrete _ -> k
     | ConcreteVector vs ->
        List.fold_left (fun k v -> collect_value f v k) k vs
+    | ConcreteRecord vs ->
+      StringMap.fold_values (collect_value f) vs k
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
     | PteVal _ -> nopte_value ()
@@ -212,6 +214,8 @@ struct
     | Concrete _ -> v
     | ConcreteVector vs ->
        ConcreteVector (List.map (map_value f) vs)
+    | ConcreteRecord vs ->
+       ConcreteRecord (StringMap.map (map_value f) vs)
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
     | PteVal _ -> nopte_value ()

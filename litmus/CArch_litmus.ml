@@ -37,7 +37,7 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
     function
       | Concrete i -> "addr_" ^ V.Scalar.pp O.hexa i
       | Symbolic (Virtual {name=s; tag=None; cap=0L;_ })-> s
-      | Label _|Symbolic _|Tag _|ConcreteVector _
+      | Label _|Symbolic _|Tag _|ConcreteVector _|ConcreteRecord _
       | PteVal _|Instruction _|Frozen _
         -> assert false
 

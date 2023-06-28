@@ -65,7 +65,7 @@ module Generic
         | Constant.Tag _ -> tag
         | Constant.PteVal _ -> pteval_t
         | Constant.Instruction _ -> ins_t
-        | Constant.Frozen _ -> assert false
+        | Constant.Frozen _ | Constant.ConcreteRecord _ -> assert false
 
       let misc_to_c loc = function
         | TestType.TyDef when A.is_pte_loc loc -> pteval_t
@@ -378,7 +378,7 @@ module A.FaultType = A.FaultType)
           match v with
           | Constant.Label (_,lbl) ->
               Label.Set.add lbl k
-          |Concrete _|ConcreteVector _
+          |Concrete _|ConcreteVector _|ConcreteRecord _
           |Symbolic _|Tag _|PteVal _
           |Instruction _|Frozen _
            -> k)

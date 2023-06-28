@@ -126,7 +126,7 @@ module
   let bit_at k = function
     | Val (Concrete v) -> Val (Concrete (Cst.Scalar.bit_at k v))
     | Val
-        (ConcreteVector _|Symbolic _|Label _|
+        (ConcreteVector _|ConcreteRecord _|Symbolic _|Label _|
          Tag _|PteVal _|Instruction _|Frozen _ as x)
       ->
         Warn.user_error "Illegal operation on %s" (Cst.pp_v x)
@@ -138,7 +138,7 @@ module
   match v1 with
     | Val (Concrete i1) ->
         Val (Concrete (op i1))
-    | Val (ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _|Frozen _ as x) ->
+    | Val (ConcreteVector _|ConcreteRecord _|Symbolic _|Label _|Tag _|PteVal _|Frozen _ as x) ->
         Warn.user_error "Illegal operation %s on %s"
           (pp_unop op_op) (Cst.pp_v x)
     | Val (Instruction _ as x) ->
@@ -298,7 +298,7 @@ module
   | Val (Symbolic (Virtual ({offset=i;_} as s))) ->
     Val (Symbolic (Virtual {s with offset=i+k}))
   | Val (Symbolic (Physical (s,i))) -> Val (Symbolic (Physical (s,i+k)))
-  | Val (ConcreteVector _|Symbolic (System _)|Label _|Tag _|PteVal _|Instruction _|Frozen _ as c) ->
+  | Val (ConcreteVector _|ConcreteRecord _|Symbolic (System _)|Label _|Tag _|PteVal _|Instruction _|Frozen _ as c) ->
       Warn.user_error "Illegal addition on constants %s +%d" (Cst.pp_v c) k
   | Var _ -> raise Undetermined
 
@@ -450,7 +450,7 @@ module
   |  Val (Symbolic (Virtual ({offset=o;_} as a))) -> Val (op a o)
   |  Val (Symbolic (Physical _|System _)
           |Concrete _|Label _
-          |Tag _|ConcreteVector _
+          |Tag _|ConcreteRecord _|ConcreteVector _
           |PteVal _|Instruction _
           |Frozen _)
      -> Warn.user_error "Illegal tagged operation %s on %s" op_op (pp_v v)
@@ -465,7 +465,7 @@ module
   | Val (Symbolic (Virtual {name=a;_}|Physical (a,_))) ->
        Val (Symbolic (System (TAG,a)))
   | Val
-        (Concrete _|ConcreteVector _
+        (Concrete _|ConcreteRecord _|ConcreteVector _
         |Symbolic (System _)|Label _
         |Tag _|PteVal _
         |Instruction _|Frozen _)
@@ -478,7 +478,7 @@ module
     | Val (Symbolic (Physical _|System _)) -> false
     | Var _
     | Val
-        (Concrete _|ConcreteVector _
+        (Concrete _|ConcreteRecord _|ConcreteVector _
         |Label _|Tag _
         |PteVal _|Instruction _
         |Frozen _)
@@ -499,7 +499,7 @@ module
   let op_pte_tlb op_op op v = match v with
   |  Val (Symbolic (Virtual s)) -> Val (op s)
   |  Val
-       (Concrete _|ConcreteVector _
+       (Concrete _|ConcreteRecord _|ConcreteVector _
        |Label _|Tag _
        |Symbolic _|PteVal _
        |Instruction _|Frozen _)
@@ -511,7 +511,7 @@ module
   | Val (Symbolic (Virtual {name=a;_})) -> Val (Symbolic (System (PTE,a)))
   | Val (Symbolic (System (PTE,a))) -> Val (Symbolic (System (PTE2,a)))
   | Val
-      (Concrete _|ConcreteVector _
+      (Concrete _|ConcreteRecord _|ConcreteVector _
       |Label _|Tag _
       |Symbolic _|PteVal _
       |Instruction _|Frozen _)
@@ -523,7 +523,7 @@ module
   | Val (Symbolic (Virtual {offset=o;_}|Physical (_,o))) -> intToV o
   | Val (Symbolic (System ((PTE|PTE2|TLB|TAG),_))) -> zero
   | Val
-      (Concrete _|ConcreteVector _
+      (Concrete _|ConcreteRecord _|ConcreteVector _
       |Label _|Tag _
       |PteVal _|Instruction _
       |Frozen _) ->
@@ -896,7 +896,7 @@ module
   let op3 If v1 v2 v3 = match v1 with
   | Val (Concrete x) -> if scalar_to_bool x then v2 else v3
   | Val
-      (ConcreteVector _|Symbolic _
+      (ConcreteVector _|ConcreteRecord _|Symbolic _
       |Label _|Tag _
       |PteVal _|Instruction _
       | Frozen _ as s) ->

@@ -60,6 +60,7 @@ module Make(O:Config)(V:Constant.S) = struct
   | Symbolic (Virtual {name=a;tag=None;cap=0L;offset=0;}) -> dump_addr a
   | ConcreteVector _ -> V.pp O.hexa v
   | Instruction _ -> Misc.lowercase (V.pp false v)
+  | ConcreteRecord _
   | Tag _
   | Symbolic _
   | Label _

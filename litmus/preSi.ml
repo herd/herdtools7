@@ -1472,6 +1472,8 @@ module Make
               | Concrete i -> A.V.Scalar.pp Cfg.hexa i
               | ConcreteVector _ ->
                   Warn.fatal "Vector used as scalar"
+              | ConcreteRecord _ ->
+                  Warn.fatal "Record used as scalar"
               | Symbolic (Virtual {name=s; tag=None; offset=0; _}) ->
                   sprintf "(%s)_vars->%s" (CType.dump at) s
               | Label _ ->

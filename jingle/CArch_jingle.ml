@@ -154,7 +154,7 @@ include Arch.MakeArch(struct
     let rec expl_expr = let open Constant in function
       | Const(Symbolic (Virtual {name=s;_})) -> find_cst s >! fun k -> Const k
       | Const
-          (Concrete _|ConcreteVector _|Label _
+          (Concrete _|ConcreteVector _|Label _|ConcreteRecord _
            |Tag _|Symbolic _|PteVal _
            |Instruction _|Frozen _)
         as e -> unitT e

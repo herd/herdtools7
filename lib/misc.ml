@@ -635,16 +635,9 @@ module Simple = struct
 
   type 'a bds = (string * 'a) list
 
-  let assoc (k:string) =
-    let rec find_rec = function
-      | [] -> raise Not_found
-      | (k0,v)::env ->
-          if k0 = k then v else find_rec env in
-    find_rec
-
-  let assoc_opt k env = try Some (assoc k env) with Not_found -> None
-
-  let mem (y:string) xs = List.exists (fun x -> x=y) xs
+  let assoc = List.assoc
+  let assoc_opt = List.assoc_opt
+  let mem = List.mem
 
   let mem_assoc (k:string) env =
     try ignore (assoc k env) ; true
