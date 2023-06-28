@@ -1235,7 +1235,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             (fun env' -> annotate_local_decl_item loc env' t LDK_Var)
             env ldis
         in
-        let e = E_Unknown (Types.get_structure env t) |> here in
+        let e = Types.base_value loc env t in
         let ss = List.map (fun le -> S_Assign (le, e) |> here) les in
         (env, stmt_from_list ss)
 
