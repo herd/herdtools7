@@ -106,5 +106,5 @@ val lowest_common_ancestor : Env.Static.env -> ty -> ty -> ty option
     As per Rule YZHM.
 *)
 
-val base_value : 'a annotated -> Env.Static.env -> ty -> value
+val base_value : 'a annotated -> Env.Static.env -> ty -> expr
 (** [base_value env ty] is a base value of [ty]. *)

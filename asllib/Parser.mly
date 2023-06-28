@@ -318,7 +318,7 @@ let int_constraint_elt ==
 
 let bits_constraint ==
   | e = expr ;                      < BitWidth_Determined           >
-  | MINUS ; colon_for_type ; t = ty ;  < BitWidth_ConstrainedFormType  >
+  | MINUS ; colon_for_type ; ~=ty ; < BitWidth_ConstrainedFormType  >
   | c = int_constraints ;           < BitWidth_Constrained          >
 
 let pattern_set ==

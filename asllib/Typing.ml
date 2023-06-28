@@ -776,7 +776,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           (fun res ->
             let env' = env in
             if Types.structural_subtype_satisfies env' t_e t then
-              if Types.domain_subtype_satisfies env' t_e t then (t_e, e'')
+              if Types.domain_subtype_satisfies env' t_e t then (t, e'')
               else res
             else conflict e [ t.desc ] t_e)
     | E_Var x -> (
@@ -1032,7 +1032,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   let check_can_assign_to loc env s t () =
     if can_assign_to env s t then ()
     else
-      let () = Format.eprintf "%a <-- %a@." PP.pp_ty s PP.pp_ty t in
+      let () =
+        if false then Format.eprintf "%a <-- %a@." PP.pp_ty s PP.pp_ty t
+      in
       fatal_from loc (Error.ConflictingTypes ([ s.desc ], t))
 
   let rec annotate_lexpr env le t_e =
@@ -1207,9 +1209,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           (Error.NotYetImplemented "Variable declaration needs a type.")
     | LDI_Var (x, Some t) ->
         let+ () = check_var_not_in_env loc env x in
-        let v = Types.base_value loc env t in
-        ( SEnv.add_local x t LDK_Var env,
-          S_Assign (LE_Var x |> here, E_Literal v |> here) |> here )
+        let e = Types.base_value loc env t in
+        (SEnv.add_local x t LDK_Var env, S_Assign (LE_Var x |> here, e) |> here)
     | LDI_Tuple (ldis, None) ->
         let env, ss =
           list_fold_left_map (annotate_local_decl_item_uninit loc) env ldis
@@ -1246,6 +1247,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             (S_Assign (le, e) |> here, env))
     | S_Call (name, args, eqs) ->
         let name, args, eqs = annotate_call (to_pos s) env name args eqs in
+        let+ () =
+         fun () ->
+          match IMap.find_opt name env.global.subprograms with
+          | Some { return_type = None; _ } -> ()
+          | Some _ -> fatal_from s @@ Error.MismatchedReturnValue name
+          | None -> undefined_identifier s name
+        in
         (* TODO: check that call does not returns anything. *)
         (S_Call (name, args, eqs) |> here, env)
     | S_Return e_opt -> (
