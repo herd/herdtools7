@@ -44,6 +44,7 @@ module Make
     open Code
     
     exception NotImplemented of string
+    exception Skip of string
 
     type extr = Code.extr 
     
@@ -342,7 +343,7 @@ module Make
           try
             Union (List.map make_sequence (union_fold_cross seq apply_match_var))
           with
-            | NotImplemented msg -> if O.verbose > 0 then eprintf "%s" msg; Union []
+          | NotImplemented msg | Skip msg  -> if O.verbose > 0 then eprintf "%s" msg; Union []
         )
         expl in
       let edges_of_union let_name =
@@ -430,7 +431,7 @@ module Make
         | Op (_,a,_) -> raise (Misc.Fatal (sprintf "Expression not supported: %s" (pp_op2 a)))
         | _ -> raise (Misc.Fatal (sprintf "Expression not supported: %s" (pp_exp exp)))
       with
-      | NotImplemented s -> if O.verbose > 0 then eprintf "%s\n" s; Union []
+      | NotImplemented s | Skip s  -> if O.verbose > 0 then eprintf "%s\n" s; Union []
       | Misc.Fatal s -> raise (Misc.Fatal ("Fail in expand:"^s))
 
     (*
@@ -487,7 +488,7 @@ module Make
               {E.edge=Rmw a; a1=_; a2=a2;}] ->
                 if (A.applies_atom_rmw a poa2 a2) then
                   {E.edge=Po (sd,Irr,Irr); a1=a1; a2=None;}::{E.edge=Rmw a; a1=poa2; a2=a2;}::(f t l)
-                else raise (NotImplemented "atoms not applied correctly for rmw")
+                else raise (Skip "atoms not applied correctly for rmw")
             | _ -> h::(f (h2::t) l)
               end
           | _ -> h::(f (h2::t) l)
@@ -595,7 +596,7 @@ module Make
           try
             f a::acc
           with
-            | NotImplemented s -> if O.verbose > 0 then (eprintf "%s\n" s);
+          | NotImplemented s | Skip s  -> if O.verbose > 0 then (eprintf "%s\n" s);
               acc)
         [] l in
       let tree_base = map_ast get_ins ast in
@@ -606,7 +607,7 @@ module Make
           fun (varname, expression) ->
           match List.find_opt (fun name -> String.equal name varname) O.lets_to_print with
           | Some _ -> varname, inline_vars varname tree_base expression
-          | None -> raise (Misc.Fatal (sprintf "no let statements found for: %s\n" varname))
+          | None -> raise (Skip (sprintf "no let statements found for: %s\n" varname))
         ) tree_base in
       apply_expand map_vars
     
@@ -635,7 +636,7 @@ module Make
             | [] -> raise (Misc.Fatal "Cannot have empty edge")
             ) edge;
         with
-          | NotImplemented msg -> if O.verbose > 0 then eprintf "%s\n" msg;
+          | NotImplemented msg | Skip msg -> if O.verbose > 0 then eprintf "%s\n" msg;
       in
       try
       List.iter (fun b ->
