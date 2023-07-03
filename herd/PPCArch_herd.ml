@@ -39,6 +39,8 @@ module Make (C:Arch_herd.Config) (V:Value.S)
        "EIEIO",is_barrier Eieio;
      ]
 
+    let cmo_sets = []
+
     let annot_sets = ["X",is_atomic]
 
     let is_isync = is_barrier Isync
@@ -118,4 +120,5 @@ module Make (C:Arch_herd.Config) (V:Value.S)
 
     end
 
+    module CMO = Cmo.No
   end

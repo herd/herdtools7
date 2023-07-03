@@ -78,6 +78,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
           (tag,pred)::k)
         []
 
+    let cmo_sets = []
+
     let annot_sets =
       ["X", is_atomic; "Acq", is_acquire; "Rel", is_release;
        "AcqRel",is_acquire_release;"Sc",is_sc]
@@ -143,4 +145,5 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     module Barrier = AllBarrier.No(struct type a = barrier end)
 
+    module CMO = Cmo.No
   end

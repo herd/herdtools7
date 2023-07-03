@@ -32,6 +32,9 @@ module Make
     let is_atomic annot = annot
 
     let barrier_sets = ["SYNC",(function Sync -> true);]
+
+    let cmo_sets = []
+
     let annot_sets = ["X", is_atomic]
 
     include Explicit.No
@@ -92,4 +95,5 @@ module Make
 
     end
 
+    module CMO = Cmo.No
   end

@@ -56,4 +56,5 @@ module Make
 
     module Barrier = AllBarrier.No(struct type a = barrier end)
 
+    module CMO = Cmo.No
 end

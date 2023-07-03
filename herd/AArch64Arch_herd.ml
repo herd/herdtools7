@@ -91,12 +91,41 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | NExp (DB|AFDB) -> true
       | NExp (AF|Other)|Exp -> false
 
+    module CMO = struct
+      type t = | DC of AArch64Base.DC.op | IC of AArch64Base.IC.op
+
+      let pp cmo loc =
+        let loc = (Misc.pp_opt_arg Fun.id loc) in
+        match cmo with
+        | DC op ->
+           Printf.sprintf "DC(%s%s)" (AArch64Base.DC.pp_op op) loc
+        | IC op ->
+           Printf.sprintf "IC(%s%s)" (AArch64Base.IC.pp_op op) loc
+    end
+
     let barrier_sets =
       do_fold_dmb_dsb false true
         (fun b k ->
           let tag = pp_barrier_dot b in
           (tag,is_barrier b)::k)
         ["ISB",is_barrier ISB]
+
+    let cmo_sets =
+      DC.fold_op
+        (fun op1 k ->
+          let tag = DC.pp_dot op1 in
+          let p = function
+            | CMO.DC op2 -> DC.equal op1 op2
+            | _ -> false in
+          (tag,p)::k)
+        (IC.fold_op
+        (fun op1 k ->
+          let tag = IC.pp_dot op1 in
+          let p = function
+            | CMO.IC op2 -> IC.equal op1 op2
+            | _ -> false in
+          (tag,p)::k) [])
+
 
     let annot_sets = [
       "X", is_atomic;

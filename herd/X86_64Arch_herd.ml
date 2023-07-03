@@ -47,6 +47,8 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
         "LFENCE",is_barrier LFENCE;
       ]
 
+    let cmo_sets = []
+
     let annot_sets = ["X",is_atomic; "NT",is_nt;]
 
     include Explicit.No
@@ -172,4 +174,5 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
 
     end
 
+    module CMO = Cmo.No
   end
