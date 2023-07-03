@@ -88,6 +88,11 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     let pte_def = P (C.A.PteVal.default "*")
     let () = ignore pte_def
 
+    let looks_like_array = function
+      | S s -> String.length s > 0 && s.[0] = '{'
+      | _ -> false
+
+
     module VSet =
       MySet.Make
         (struct
@@ -166,7 +171,9 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
             begin match bank with
             | Code.CapaTag
             | Code.CapaSeal
-            | Code.Ord ->
+            | Code.Ord
+            | Code.Pair
+              ->
                 Some (I evt.C.C.v)
             | Code.VecReg _->
                let v0 =
@@ -199,8 +206,13 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
              | _ -> [] in
            let m = C.C.EventMap.add n.C.C.evt (C.A.of_reg p r) m
            and fs =
-             add_to_fs r v
-               (List.fold_right2 add_to_fs (get_friends r) vs fs) in
+             try
+               add_to_fs r v
+                 (List.fold_right2 add_to_fs (get_friends r) vs fs)
+             with Invalid_argument _ ->
+               Printf.eprintf "Something wrong on %s\n"
+                  (C.C.str_node n) ;
+               assert false in
            m,fs
         | None -> finals
         else finals
@@ -237,7 +249,11 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     let dump_atom r v = match Misc.tr_atag (C.A.pp_location r) with
         | Some s -> sprintf "[tag(%s)]=%s" s (Code.add_tag "" (dump_tag v))
-        | None -> sprintf "%s=%s" (C.A.pp_location_brk r) (dump_val v)
+        | None ->
+           let pp_loc =
+             if looks_like_array v then C.A.pp_location
+             else C.A.pp_location_brk in
+           sprintf "%s=%s" (pp_loc r) (dump_val v)
 
     let dump_state fs =
       String.concat " /\\ "

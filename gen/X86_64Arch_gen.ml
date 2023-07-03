@@ -131,7 +131,8 @@ module Make
 
       let tr_value ao v = match ao with
       | None | Some ((NonTemporal|Plain|Atomic),None) -> v
-      | Some ((NonTemporal|Plain|Atomic), Some (sz, _)) -> Mixed.tr_value sz v
+      | Some ((NonTemporal|Plain|Atomic), Some (sz, _)) ->
+         Mixed.tr_value sz v
 
       module ValsMixed =
         MachMixed.Vals
@@ -143,12 +144,12 @@ module Make
       let overwrite_value v ao w = match ao with
       | None | Some ((Plain|Atomic|NonTemporal),None) -> w
       | Some ((Plain|Atomic|NonTemporal),Some (sz, o)) ->
-          ValsMixed.overwrite_value v sz o w
+         ValsMixed.overwrite_value v sz o w
 
       let extract_value v ao = match ao with
       | None | Some ((Plain|Atomic|NonTemporal),None) -> v
       | Some ((Plain|Atomic|NonTemporal),Some (sz, o)) ->
-          ValsMixed.extract_value v sz o
+         ValsMixed.extract_value v sz o
 
       include NoWide
 

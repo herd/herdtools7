@@ -34,6 +34,8 @@ val myok_proc : int -> loc
 
 
 type v = int
+val pp_v : ?hexa:bool -> v -> string
+
 type proc = Proc.t
 val pp_proc : proc -> string
 
@@ -88,7 +90,7 @@ type info = (string * string) list
 val plain : string
 
 (* Memory bank (for MTE, KVM)  *)
-type 'a bank = Ord | Tag | CapaTag | CapaSeal | Pte | VecReg of 'a
+type 'a bank = Ord | Tag | CapaTag | CapaSeal | Pte | VecReg of 'a | Pair
 
 val pp_bank : 'a bank -> string
 

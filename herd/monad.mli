@@ -212,6 +212,13 @@ module type S =
     val (>>::) : 'a t -> 'a list t -> 'a list t
     val (|||) : unit t -> unit t -> unit t
 
+(*
+ *Sequence of memorory events by iico_order.
+ * Notice that the combinator is otherwise similar
+ * to ``>>|`.
+ *)
+    val seq_mem : 'a t -> 'b t -> ('a * 'b) t
+
     val (|*|)   : bool code -> unit code -> unit code   (* Cross product *)
 (*    val lockT : 'a t -> 'a t *)
     val forceT : 'a -> 'b t -> 'a t

@@ -1,0 +1,25 @@
+Test L080 Allowed
+States 16
+1:X1=0; 1:X4=0;
+1:X1=0; 1:X4=1;
+1:X1=0; 1:X4=2;
+1:X1=0; 1:X4=3;
+1:X1=1; 1:X4=0;
+1:X1=1; 1:X4=1;
+1:X1=1; 1:X4=2;
+1:X1=1; 1:X4=3;
+1:X1=2; 1:X4=0;
+1:X1=2; 1:X4=1;
+1:X1=2; 1:X4=2;
+1:X1=2; 1:X4=3;
+1:X1=3; 1:X4=0;
+1:X1=3; 1:X4=1;
+1:X1=3; 1:X4=2;
+1:X1=3; 1:X4=3;
+Ok
+Witnesses
+Positive: 1 Negative: 15
+Condition exists (1:X1=3 /\ 1:X4=0)
+Observation L080 Sometimes 1 15
+Hash=51034c9713c5a6104731820626cf8099
+

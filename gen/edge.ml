@@ -125,6 +125,9 @@ module type S = sig
 (* If source atom implies wide access, size of access as integers *)
   val as_integers : edge -> int option
 
+(* Is source atom a pair access? *)
+  val is_pair : edge -> bool
+
 (* Can e1 target event direction be the same as e2 source event? *)
   val can_precede : edge -> edge -> bool
 
@@ -721,6 +724,8 @@ let fold_tedges f r =
   | _ -> IE (get_ie e)
 
   let as_integers e = F.as_integers e.a1
+
+  let is_pair e = F.is_pair e.a1
 
   let can_precede_dirs  x y = match x.edge,y.edge with
   | (Store,Store) -> false
