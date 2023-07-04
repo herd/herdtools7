@@ -168,6 +168,7 @@ annot:
 annot_base :
 | LOCK       { "lock" }
 | UNLOCK     { "unlock" }
+| ATOMIC_BASE { "atomic" }
 | NAME { $1 }
 
 
