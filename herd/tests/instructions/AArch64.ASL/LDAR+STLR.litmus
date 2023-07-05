@@ -1,0 +1,12 @@
+AArch64 LDAR+STLR
+{
+  int64_t x=2;
+  int64_t y=0;
+  0:X0=x;
+  0:X2=y;
+}
+  P0          ;
+ LDAR X1,[X0] ;
+ STLR X1,[X2] ;
+
+forall [y]=2

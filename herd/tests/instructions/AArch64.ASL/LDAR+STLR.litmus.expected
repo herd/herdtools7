@@ -1,0 +1,10 @@
+Test LDAR+STLR Required
+States 1
+[y]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([y]=2)
+Observation LDAR+STLR Always 1 0
+Hash=95e2ee017cb0a4683eef6895ed9b6a3f
+
