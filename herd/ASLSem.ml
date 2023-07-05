@@ -199,6 +199,8 @@ module Make (C : Config) = struct
       | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) -> b
       | _ -> assert false
 
+    let vbool b = V.Val (Constant.Concrete (ASLScalar.S_Bool b))
+
     let choice (m1 : V.v M.t) (m2 : 'b M.t) (m3 : 'b M.t) : 'b M.t =
       M.bind_ctrl_seq_data m1 (function
         | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) -> if b then m2 else m3
@@ -354,14 +356,17 @@ module Make (C : Config) = struct
       let loc = virtual_to_loc_reg r ii in
       write_loc MachSize.Quad loc v Act.Std (use_ii_with_poi ii poi) >>! []
 
-    let read_memory (ii, poi) addr_m datasize_m acq_m =
+    let do_read_memory (ii, poi) addr_m datasize_m acq_m =
       let* addr = addr_m and* datasize = datasize_m
       and* acq = acq_m in
       let sz = datasize_to_machsize datasize in
       let an = if as_bool acq then Act.AcqSc else Act.Std in
       read_loc sz (A.Location_global addr) an (use_ii_with_poi ii poi)
 
-    let write_memory (ii, poi) addr_m datasize_m value_m relsc_m =
+    let read_memory  ii addr_m datasize_m =
+      do_read_memory ii addr_m datasize_m (M.unitT (vbool false))
+
+    let do_write_memory (ii, poi) addr_m datasize_m value_m relsc_m =
       let value_m = M.as_data_port value_m in
       let* addr = addr_m and* datasize = datasize_m
       and* value = value_m and* relsc = relsc_m in
@@ -370,6 +375,10 @@ module Make (C : Config) = struct
       write_loc
         sz (A.Location_global addr) value an (use_ii_with_poi ii poi)
       >>! []
+
+    let write_memory ii addr_m datasize_m value_m =
+      do_write_memory ii addr_m datasize_m value_m
+        (M.unitT (vbool false))
 
     let loc_sp ii = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.SP)
 
@@ -479,8 +488,13 @@ module Make (C : Config) = struct
           (write_register ii_env);
         arity_three "do_read_memory"
           [ bv_64; d; bool; ] (return_one bv_64)
+          (do_read_memory ii_env);
+        arity_two "read_memory"
+          [ bv_64; d; ] (return_one bv_64)
           (read_memory ii_env);
         arity_four "do_write_memory" [ bv_64; d; bv_64; bool; ] return_zero
+          (do_write_memory ii_env);
+        arity_three "write_memory" [ bv_64; d; bv_64; ] return_zero
           (write_memory ii_env);
         arity_zero (getter "PSTATE")
           (return_one (t_named "ProcState"))
