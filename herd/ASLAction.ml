@@ -10,21 +10,34 @@ module Make (A : S) = struct
   module A = A
   module V = A.V
 
+  type annot = AcqSc|AcqPc|RelSc|Std
+
+  let pp_annot = function
+    | AcqSc -> "A"
+    | AcqPc -> "Q"
+    | RelSc -> "L"
+    | Std -> "N"
+
   type action =
-    | Access of dirn * A.location * A.V.v * MachSize.sz
+    | Access of
+        dirn * A.location * A.V.v * MachSize.sz * annot
     | TooFar of string
     | NoAction
 
-  let mk_init_write loc sz v = Access (W, loc, v, sz)
+  let mk_init_write loc sz v = Access (W, loc, v, sz,Std)
 
   let pp_action = function
-    | Access (d, l, v, _sz) ->
-        Printf.sprintf "%s%s=%s" (pp_dirn d) (A.pp_location l) (V.pp false v)
+    | Access (d, l, v, _sz,an) ->
+        Printf.sprintf "%s%s=%s%s"
+          (pp_dirn d) (A.pp_location l) (V.pp false v)
+          (match an with
+           | Std -> ""
+           | _ -> "(" ^ pp_annot an ^ ")")
     | TooFar msg -> Printf.sprintf "TooFar:%s" msg
     | NoAction -> ""
 
   let is_local = function
-    | Access (_, A.Location_reg (_, r), _, _) -> A.is_local r
+    | Access (_, A.Location_reg (_, r), _, _,_) -> A.is_local r
     | _ -> false
 
   (* Some architecture-specific sets and relations, with their definitions *)
@@ -38,10 +51,10 @@ module Make (A : S) = struct
   (* Access to sub_components of events *)
   (**************************************)
 
-  let value_of = function Access (_, _, v, _) -> Some v | _ -> None
-  let read_of = function Access (R, _, v, _) -> Some v | _ -> None
-  let written_of = function Access (W, _, v, _) -> Some v | _ -> None
-  let location_of = function Access (_, l, _, _) -> Some l | _ -> None
+  let value_of = function Access (_, _, v, _, _) -> Some v | _ -> None
+  let read_of = function Access (R, _, v, _, _) -> Some v | _ -> None
+  let written_of = function Access (W, _, v, _, _) -> Some v | _ -> None
+  let location_of = function Access (_, l, _, _, _) -> Some l | _ -> None
 
   (************************)
   (* Predicates on events *)
@@ -49,17 +62,17 @@ module Make (A : S) = struct
 
   (* relative to memory *)
   let is_mem_store = function
-    | Access (W, A.Location_global _, _, _) -> true
+    | Access (W, A.Location_global _, _, _, _) -> true
     | _ -> false
 
   let is_mem_load = function
-    | Access (R, A.Location_global _, _, _) -> true
+    | Access (R, A.Location_global _, _, _, _) -> true
     | _ -> false
 
   let is_additional_mem_load _action = false
 
   let is_mem = function
-    | Access (_, A.Location_global _, _, _) -> true
+    | Access (_, A.Location_global _, _, _, _) -> true
     | _ -> false
 
   let is_tag _action = false
@@ -69,11 +82,11 @@ module Make (A : S) = struct
   let to_fault _action = None
 
   let get_mem_dir = function
-    | Access (d, A.Location_global _, _, _) -> d
+    | Access (d, A.Location_global _, _, _, _) -> d
     | _ -> assert false
 
   let get_mem_size = function
-    | Access (_, A.Location_global _, _, sz) -> sz
+    | Access (_, A.Location_global _, _, sz, _) -> sz
     | _ -> assert false
 
   let is_pte_access _action = false
@@ -82,33 +95,33 @@ module Make (A : S) = struct
 
   (* relative to the registers of the given proc *)
   let is_reg_store = function
-    | Access (W, A.Location_reg (p, _), _, _) -> ( = ) p
+    | Access (W, A.Location_reg (p, _), _, _, _) -> ( = ) p
     | _ -> fun _ -> false
 
   let is_reg_load = function
-    | Access (R, A.Location_reg (p, _), _, _) -> ( = ) p
+    | Access (R, A.Location_reg (p, _), _, _, _) -> ( = ) p
     | _ -> fun _ -> false
 
   let is_reg = function
-    | Access (_, A.Location_reg (p, _), _, _) -> ( = ) p
+    | Access (_, A.Location_reg (p, _), _, _, _) -> ( = ) p
     | _ -> fun _ -> false
 
   (* Reg events, proc not specified *)
   let is_reg_store_any = function
-    | Access (W, A.Location_reg _, _, _) -> true
+    | Access (W, A.Location_reg _, _, _, _) -> true
     | _ -> false
 
   let is_reg_load_any = function
-    | Access (R, A.Location_reg _, _, _) -> true
+    | Access (R, A.Location_reg _, _, _, _) -> true
     | _ -> false
 
   let is_reg_any = function
-    | Access (_, A.Location_reg _, _, _) -> true
+    | Access (_, A.Location_reg _, _, _, _) -> true
     | _ -> false
 
   (* Store/Load to memory or register *)
-  let is_store = function Access (W, _, _, _) -> true | _ -> false
-  let is_load = function Access (R, _, _, _) -> true | _ -> false
+  let is_store = function Access (W, _, _, _, _) -> true | _ -> false
+  let is_load = function Access (R, _, _, _, _) -> true | _ -> false
 
   (* Compatible accesses *)
   let compatible_accesses _a1 _a2 = true
@@ -135,14 +148,15 @@ module Make (A : S) = struct
   (********************)
 
   let undetermined_vars_in_action = function
-    | Access (_, l, v, _) ->
+    | Access (_, l, v, _, _) ->
         V.ValueSet.union (A.undetermined_vars_in_loc l) (V.undetermined_vars v)
     | TooFar _ | NoAction -> V.ValueSet.empty
 
   let simplify_vars_in_action soln a =
     match a with
-    | Access (d, l, v, sz) ->
-        Access (d, A.simplify_vars_in_loc soln l, V.simplify_var soln v, sz)
+    | Access (d, l, v, sz, an) ->
+        Access
+          (d, A.simplify_vars_in_loc soln l, V.simplify_var soln v, sz, an)
     | TooFar _ | NoAction -> a
 end
 

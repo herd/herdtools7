@@ -178,13 +178,13 @@ module Make (C : Config) = struct
           | V.Val (Constant.Symbolic _) as v -> return v
           | v -> M.op1 (Op.Mask sz) v)
 
-    let write_loc sz loc v ii =
+    let write_loc sz loc v an ii =
       let* resized_v = resize_from_quad sz v in
-      let mk_action loc' = Act.Access (Dir.W, loc', resized_v, sz) in
+      let mk_action loc' = Act.Access (Dir.W, loc', resized_v, sz, an) in
       M.write_loc mk_action loc ii
 
-    let read_loc sz loc ii =
-      let mk_action loc' v' = Act.Access (Dir.R, loc', v', sz) in
+    let read_loc sz loc an ii =
+      let mk_action loc' v' = Act.Access (Dir.R, loc', v', sz, an) in
       let* v = M.read_loc false mk_action loc ii in
       resize_from_quad sz v >>= to_bv
 
@@ -194,6 +194,10 @@ module Make (C : Config) = struct
     (**************************************************************************)
     (* ASL-Backend implementation                                             *)
     (**************************************************************************)
+
+    let as_bool = function
+      | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) -> b
+      | _ -> assert false
 
     let choice (m1 : V.v M.t) (m2 : 'b M.t) (m3 : 'b M.t) : 'b M.t =
       M.bind_ctrl_seq_data m1 (function
@@ -255,12 +259,12 @@ module Make (C : Config) = struct
 
     let on_write_identifier (ii, poi) x scope v =
       let loc = loc_of_scoped_id ii x scope in
-      let action = Act.Access (Dir.W, loc, v, MachSize.Quad) in
+      let action = Act.Access (Dir.W, loc, v, MachSize.Quad, Act.Std) in
       M.mk_singleton_es action (use_ii_with_poi ii poi)
 
     let on_read_identifier (ii, poi) x scope v =
       let loc = loc_of_scoped_id ii x scope in
-      let action = Act.Access (Dir.R, loc, v, MachSize.Quad) in
+      let action = Act.Access (Dir.R, loc, v, MachSize.Quad, Act.Std) in
       M.mk_singleton_es action (use_ii_with_poi ii poi)
 
     let create_vector _ty li =
@@ -343,48 +347,49 @@ module Make (C : Config) = struct
     let read_register (ii, poi) r_m =
       let* rval = r_m in
       let loc = virtual_to_loc_reg rval ii in
-      read_loc MachSize.Quad loc (use_ii_with_poi ii poi)
+      read_loc MachSize.Quad loc Act.Std (use_ii_with_poi ii poi)
 
     let write_register (ii, poi) r_m v_m =
       let* v = v_m >>= to_int_signed and* r = r_m in
       let loc = virtual_to_loc_reg r ii in
-      write_loc MachSize.Quad loc v (use_ii_with_poi ii poi) >>! []
+      write_loc MachSize.Quad loc v Act.Std (use_ii_with_poi ii poi) >>! []
 
-    let read_memory (ii, poi) addr_m datasize_m =
-      let* addr = addr_m and* datasize = datasize_m in
+    let read_memory (ii, poi) addr_m datasize_m acq_m =
+      let* addr = addr_m and* datasize = datasize_m
+      and* acq = acq_m in
       let sz = datasize_to_machsize datasize in
-      read_loc sz (A.Location_global addr) (use_ii_with_poi ii poi)
+      let an = if as_bool acq then Act.AcqSc else Act.Std in
+      read_loc sz (A.Location_global addr) an (use_ii_with_poi ii poi)
 
-    let write_memory (ii, poi) = function
-      | [ addr_m; datasize_m; value_m ] ->
-          let value_m = M.as_data_port value_m in
-          let* addr = addr_m and* datasize = datasize_m and* value = value_m in
-          let sz = datasize_to_machsize datasize in
-          write_loc sz (A.Location_global addr) value (use_ii_with_poi ii poi)
-          >>! []
-      | li ->
-          Warn.fatal
-            "Bad number of arguments passed to write_memory: 3 expected, and \
-             only %d provided."
-            (List.length li)
+    let write_memory (ii, poi) addr_m datasize_m value_m relsc_m =
+      let value_m = M.as_data_port value_m in
+      let* addr = addr_m and* datasize = datasize_m
+      and* value = value_m and* relsc = relsc_m in
+      let sz = datasize_to_machsize datasize in
+      let an = if as_bool relsc then Act.RelSc else Act.Std in
+      write_loc
+        sz (A.Location_global addr) value an (use_ii_with_poi ii poi)
+      >>! []
 
     let loc_sp ii = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.SP)
 
     let read_sp (ii, poi) () =
-      read_loc MachSize.Quad (loc_sp ii) (use_ii_with_poi ii poi)
+      read_loc MachSize.Quad (loc_sp ii) Act.Std (use_ii_with_poi ii poi)
 
     let write_sp (ii, poi) v_m =
       let* v = v_m >>= to_int_signed in
-      write_loc MachSize.Quad (loc_sp ii) v (use_ii_with_poi ii poi) >>! []
+      write_loc MachSize.Quad (loc_sp ii) v Act.Std
+        (use_ii_with_poi ii poi) >>! []
 
     let read_pstate_nzcv (ii, poi) () =
       let loc = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.NZCV) in
-      read_loc MachSize.Quad loc (use_ii_with_poi ii poi)
+      read_loc MachSize.Quad loc Act.Std (use_ii_with_poi ii poi)
 
     let write_pstate_nzcv (ii, poi) v_m =
       let loc = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.NZCV) in
       let* v = v_m >>= to_int_signed in
-      write_loc MachSize.Quad loc v (use_ii_with_poi ii poi) >>! []
+      write_loc MachSize.Quad loc v Act.Std
+        (use_ii_with_poi ii poi) >>! []
 
     let uint bv_m = bv_m >>= to_int_unsigned
     let sint bv_m = bv_m >>= to_int_signed
@@ -435,6 +440,18 @@ module Make (C : Config) = struct
       | [] | [ _ ] | _ :: _ :: _ :: _ ->
           Warn.fatal "Arity error for function %s." name
 
+    let arity_three name args return_type f =
+      build_primitive name args return_type @@ function
+      | [ x; y; z; ] -> f x y z
+      | _ ->
+          Warn.fatal "Arity error for function %s." name
+
+    let arity_four name args return_type f =
+      build_primitive name args return_type @@ function
+      | [ x; y; z; t;] -> f x y z t
+      | _ ->
+          Warn.fatal "Arity error for function %s." name
+
     let return_one ty = (Some ty, fun body args -> return [ body args ])
     let return_zero = (None, Fun.id)
 
@@ -442,6 +459,7 @@ module Make (C : Config) = struct
     let extra_funcs ii_env =
       let open AST in
       let with_pos = Asllib.ASTUtils.add_dummy_pos in
+      let bool = T_Bool |> with_pos in
       let d = T_Int None |> with_pos in
       let reg = T_Int None |> with_pos in
       let var x = E_Var x |> with_pos in
@@ -459,9 +477,10 @@ module Make (C : Config) = struct
           (read_register ii_env);
         arity_two "write_register" [ bv_64; reg ] return_zero
           (write_register ii_env);
-        arity_two "read_memory" [ bv_64; d ] (return_one bv_64)
+        arity_three "do_read_memory"
+          [ bv_64; d; bool; ] (return_one bv_64)
           (read_memory ii_env);
-        build_primitive "write_memory" [ bv_64; d; bv_64 ] return_zero
+        arity_four "do_write_memory" [ bv_64; d; bv_64; bool; ] return_zero
           (write_memory ii_env);
         arity_zero (getter "PSTATE")
           (return_one (t_named "ProcState"))

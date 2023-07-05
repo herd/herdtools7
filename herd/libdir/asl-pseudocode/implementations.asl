@@ -1,3 +1,7 @@
+func ConstrainUnpredictableBool(which:Unpredictable) => boolean
+begin
+  return FALSE;
+end
 
 type Feature of enumeration {
     FEAT_AA32BF16,
@@ -172,6 +176,11 @@ begin
     return FALSE;
 end
 
+func write_memory(addr::bits(64),size::integer,v:bits(size))
+begin
+  do_write_memory(addr,size,v,false);
+end
+
 func PhysMemWrite(
   desc::AddressDescriptor,
   size::integer,
@@ -179,7 +188,7 @@ func PhysMemWrite(
   value::bits(8*size)
 ) => PhysMemRetStatus
 begin
-  write_memory (desc.vaddress, size*8, value);
+  do_write_memory (desc.vaddress, size*8, value,accdesc.relsc);
   return PhysMemRetStatus {
     statuscode = Fault_None,
     extflag = '0',
@@ -188,13 +197,19 @@ begin
   };
 end
 
+func read_memory(addr::bits(64),size::integer) => bits(size)
+begin
+  return do_read_memory(addr,size,false);
+end
+
+
 func PhysMemRead(
   desc::AddressDescriptor,
   size::integer,
   accdesc::AccessDescriptor
 ) => (PhysMemRetStatus, bits(8*size))
 begin
-  let value = read_memory (desc.vaddress, size*8);
+  let value = do_read_memory (desc.vaddress, size*8,accdesc.acqsc);
   let ret_status = PhysMemRetStatus {
     statuscode = Fault_None,
     extflag = '0',

@@ -113,13 +113,14 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
       let cond c = tr_cond c |> liti in
       let stmt = Asllib.ASTUtils.stmt_from_list in
       let open AArch64Base in
-      let reg = function
+      let regi = function
         (* To use with caution, sometimes it doesn't work. *)
-        | Ireg r -> ASLBase.arch_reg_to_int r |> liti
-        | ZR -> liti 31
-        | SP -> liti 31
+        | Ireg r -> ASLBase.arch_reg_to_int r
+        | ZR|SP -> 31
         | NZCV -> Warn.fatal "NZCV is not an addressable register"
         | r -> Warn.fatal "Unsupported register: %s." (pp_reg r)
+      in
+      let reg r = liti (regi r)
       in
       let logical_op = function
         | AND | ANDS | BIC | BICS -> var "LogicalOp_AND"
@@ -355,6 +356,31 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
                   "rt_unknown" ^= litb false;
                   "wb_unknown" ^= litb false;
                 ] )
+      | I_LDAR (v,AA,rt,rn) | I_STLR (v,rt,rn)
+        ->
+         let memop =
+           match ii.A.inst with
+           | I_STLR _ -> "MemOp_STORE"
+           | I_LDAR _ -> "MemOp_LOAD"
+            | _ -> assert false  in
+
+          Some
+            ( "memory/ordered.opn",
+              stmt
+                [
+                  "t" ^= reg rt;
+                  "t2" ^= liti (-1); (* Unused *)
+                  "n" ^= reg rn;
+                  "wback" ^= litb false;
+                  "offset" ^= liti 0;
+                  "rt_unknown" ^= litb false;
+                  "limitedordered" ^= litb false;
+                  "memop" ^= var memop;
+                  "datasize" ^= variant v;
+                  "regsize" ^= variant v;
+                  "tagchecked" ^= litb (regi rn <> 31);
+                ] )
+
       | i ->
           let () =
             if _dbg then
@@ -688,15 +714,23 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
             in
             fun acc v -> (M.VC.Unop (new_op, tr_v v), acc)
 
+      let tr_annot =
+        let open ASLS.Act in
+        function
+        | Std -> AArch64.N
+        | AcqSc -> AArch64.A
+        | AcqPc -> AArch64.Q
+        | RelSc -> AArch64.L
+
       let tr_action ii =
-        let an = AArch64.N in
         let exp = AArch64.Exp in
         function
-        | ASLS.Act.Access (dir, loc, v, sz) -> (
+        | ASLS.Act.Access (dir, loc, v, sz, an) -> (
             match tr_loc ii loc with
             | None -> None
             | Some loc ->
                 let ac = Act.access_of_location_std loc in
+                let an = tr_annot an in
                 Some (Act.Access (dir, loc, tr_v v, an, exp, sz, ac)))
         | ASLS.Act.NoAction -> Some Act.NoAction
         | ASLS.Act.TooFar msg -> Some (Act.TooFar msg)
@@ -837,7 +871,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
             match (acc, event.ASLE.action) with
             | ( B.Next li,
                 ASLS.Act.Access
-                  (Dir.W, ASLS.A.Location_reg (_, ASLBase.ArchReg reg), v, _) )
+                  (Dir.W, ASLS.A.Location_reg (_, ASLBase.ArchReg reg), v, _, _) )
               ->
                 B.Next ((reg, tr_v v) :: li)
             | _ -> acc
