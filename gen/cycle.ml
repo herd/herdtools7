@@ -353,7 +353,7 @@ let find_prev_code_write n =
       eprintf "find_prev_code_write, n=%a m=%a\n%!"
         debug_node n debug_node m ;
     let e = m.evt in
-    match e.loc,E.safe_dir m.edge with
+    match e.loc,E.safe_dir_src m.edge with
     | Code c,Some W ->
         (* Avoid the case where the cachesync is po-before the code write... *)
         begin if po_pred n m then raise Not_found end ;

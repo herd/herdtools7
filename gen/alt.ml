@@ -293,6 +293,31 @@ module Make(C:Builder.S)
       end ;
       r
 
+    let split_for_dir =
+      let rec split r w = function
+        | [] -> r,w
+        | (_,es as c)::cands ->
+           let e = Misc.last es in
+           match e.edge with
+           | Id ->
+              let cw = compat_id e.a1 (Dir W)
+              and cr = compat_id e.a1 (Dir R) in
+              begin
+                match cw,cr with
+                | true,false -> split r (c::w) cands
+                | false,true -> split (c::r) w cands
+                | _,_ -> split (c::r) (c::w) cands
+              end
+           | _ ->
+              let d = C.E.safe_dir_tgt (Misc.last es) in
+              match d with
+              | None|Some J ->
+                 split (c::r) (c::w) cands
+              | Some R ->
+                 split (c::r) w cands
+              | Some W ->
+                 split r (c::w) cands in
+      split [] []
 
     let can_precede safes po_safe (_,xs) k = match k with
     | [] -> true
@@ -462,6 +487,12 @@ module Make(C:Builder.S)
 (*      let safes = C.R.Set.of_list safe in *)
       let relax = edges_ofs relax in
       let safe = edges_ofs safe in
+      let safeR,safeW = split_for_dir safe in
+      let () =
+        let pp xs = List.map fst xs |> C.R.pp_relax_list in
+        Printf.eprintf
+          "R=[%s], W=[%s]\n"
+          (pp safeR) (pp safeW) in
       let po_safe = extract_po safe in
 
       let rec choose_relax rs k = match rs with
@@ -536,15 +567,28 @@ module Make(C:Builder.S)
 
 (* As a safety check, generate cycles with no relaxation *)
       let call_rec = call_rec prefix (f []) aset po_safe ~reject:reject in
-      let rec no_relax ss n suf k = match ss with
-      | [] -> k
-      | s::ss ->
-          let k = call_rec true n s suf (no_relax safe) k in
-          no_relax ss n suf k in
+
+      let rec no_relax n suf k =
+        match suf with
+        | [] -> no_relax_kont safe n suf k
+        | (_,es)::_ ->
+           let d = C.E.safe_dir_src (List.hd es) in
+           let safe =
+             match d with
+             | None|Some J-> safe
+             | Some R -> safeR
+             | Some W -> safeW in
+           no_relax_kont safe n suf k
+
+      and no_relax_kont ss n suf k = match ss with
+        | [] -> k
+        | s::ss ->
+          let k = call_rec true n s suf no_relax k in
+          no_relax_kont ss n suf k in
 
       fun k -> match relax with
       | [] ->
-          no_relax safe n [] k
+          no_relax n [] k
       | _  ->
          if O.mix && O.max_relax < 1 then k (* Let us stay logical *)
           else if O.mix && O.max_relax > 1 then
