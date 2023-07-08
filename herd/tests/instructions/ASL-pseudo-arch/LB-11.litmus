@@ -23,7 +23,7 @@ func T1(x::bits(64), y:: bits(64))
 begin
   let read = read_memory(y, 64);
   let x1 = UInt(read);
-  data = one OR (read EOR read);
+  let data = one OR (read EOR read);
   write_memory(x, 64, data);
 end
 

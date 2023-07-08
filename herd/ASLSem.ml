@@ -437,12 +437,7 @@ module Make (C : Config) = struct
       | [] | [ _ ] | _ :: _ :: _ :: _ ->
           Warn.fatal "Arity error for function %s." name
 
-    let return_one =
-      let make body args =
-        let* v = body args in
-        return [ v ]
-      in
-      fun ty -> (Some ty, make)
+    let return_one ty = (Some ty, fun body args -> return [ body args ])
 
     let return_zero = (None, Fun.id)
 

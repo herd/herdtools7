@@ -343,8 +343,8 @@ let rec setter_should_reduce_to_call_s env le e : stmt option =
         Some
           (s_then
              (s_then
-                (S_Assign (le_x, to_expr sub_le) |> here)
-                (S_Assign (old_le le_x, e) |> here))
+                (S_Assign (Decl, le_x, to_expr sub_le) |> here)
+                (S_Assign (Assign, old_le le_x, e) |> here))
              s)
   in
   match le.desc with
@@ -1223,7 +1223,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | LDI_Var (x, Some t) ->
         let+ () = check_var_not_in_env loc env x in
         let e = Types.base_value loc env t in
-        (SEnv.add_local x t LDK_Var env, S_Assign (LE_Var x |> here, e) |> here)
+        (SEnv.add_local x t LDK_Var env, S_Assign (Decl, LE_Var x |> here, e) |> here)
     | LDI_Tuple (ldis, None) ->
         let env, ss =
           list_fold_left_map (annotate_local_decl_item_uninit loc) env ldis
@@ -1236,7 +1236,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             env ldis
         in
         let e = Types.base_value loc env t in
-        let ss = List.map (fun le -> S_Assign (le, e) |> here) les in
+        let ss = List.map (fun le -> S_Assign (Decl,le, e) |> here) les in
         (env, stmt_from_list ss)
 
   let rec annotate_stmt env return_type s =
@@ -1250,14 +1250,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let s1, env = try_annotate_stmt env return_type s1 in
         let s2, env = try_annotate_stmt env return_type s2 in
         (S_Then (s1, s2) |> here, env)
-    | S_Assign (le, e) -> (
+    | S_Assign (_, le, e) -> (
         let t_e, e = annotate_expr env e in
         let reduced = setter_should_reduce_to_call_s env le e in
         match reduced with
         | Some s -> annotate_stmt env return_type s
         | None ->
             let le = annotate_lexpr env le t_e in
-            (S_Assign (le, e) |> here, env))
+            (S_Assign (Assign, le, e) |> here, env))
     | S_Call (name, args, eqs) ->
         let name, args, eqs = annotate_call (to_pos s) env name args eqs in
         let+ () =
@@ -1360,7 +1360,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                - Initialization expressions in local constant declarations must
                  be non-side-effecting.
             *)
-            (S_Assign (le, e) |> here, env)
+            (S_Assign (Decl, le, e) |> here, env)
         | LDK_Var, None ->
             (* TODO *)
             let env, s = annotate_local_decl_item_uninit s env ldi in

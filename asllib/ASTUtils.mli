@@ -7,6 +7,8 @@ module IMap : sig
   val of_list : (key * 'a) list -> 'a t
 end
 
+module PMap : Map.S with type key = pointer
+
 val dummy_pos : Lexing.position
 val annotated : 'a -> position -> position -> 'a annotated
 val add_dummy_pos : 'a -> 'a annotated
@@ -82,6 +84,8 @@ val subst_expr : (identifier * expr) list -> expr -> expr
     will become after [subst_expr [("y", E_Var "x")]]:
       [E_Slice (E_Var "x", [Slice_Single (E_Var "y")])]
 *)
+
+val simple_expr : expr -> bool
 
 val dag_fold :
   (decl -> identifier) ->

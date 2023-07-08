@@ -225,10 +225,11 @@ let try_extract_slice s positions =
   | S_BitVector bv ->
       if List.exists (( <= ) (BV.length bv)) positions then None
       else Some (S_BitVector (BV.extract_slice bv positions))
-  | S_Int 0L -> Some (S_BitVector (BV.zeros (List.length positions)))
-  | S_Int -1L -> Some (S_BitVector (BV.ones (List.length positions)))
   | S_Int i ->
-      if List.exists (( <= ) 64) positions then None
+      if Z.equal i Z.zero then Some (S_BitVector (BV.zeros (List.length positions)))
+      else if Z.equal i Z.minus_one then
+        Some (S_BitVector (BV.ones (List.length positions)))
+      else if List.exists (( <= ) 64) positions then None
       else Some (S_BitVector (BV.extract_slice (BV.of_z 64 i) positions))
   | _ -> None
 

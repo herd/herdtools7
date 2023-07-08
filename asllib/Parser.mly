@@ -56,6 +56,7 @@ let t_bit = T_Bits (BitWidth_Determined (E_Literal (V_Int 1) |> add_dummy_pos), 
 let make_ldi_tuple xs ty =
   LDI_Tuple (List.map (fun x -> LDI_Var (x, None)) xs, Some ty)
 
+let s_assign (le,e) = S_Assign (Assign,le,e)
 %}
 
 (* ------------------------------------------------------------------------
@@ -463,7 +464,7 @@ let stmt ==
       | RETURN; ~=ioption(expr);                             < S_Return >
       | x=IDENTIFIER; args=plist(expr); ~=nargs;             < S_Call   >
       | ASSERT; e=expr;                                      < S_Assert >
-      | ~=lexpr; EQ; ~=expr;                                 < S_Assign >
+      | ~=lexpr; EQ; ~=expr;                                 < s_assign >
       | ~=local_decl_keyword; ~=decl_item; EQ; ~=some(expr); < S_Decl   >
       | REPEAT; ~=stmt_list; UNTIL; ~=expr;                  < S_Repeat >
 

@@ -12,8 +12,8 @@ end
 
 func main()
 begin
-  a = inv(0);
-  b = inv(1);
+  let a = inv(0);
+  let b = inv(1);
 end
 
 forall (0: main.0.a = 1 /\ 0: main.0.b = 0)

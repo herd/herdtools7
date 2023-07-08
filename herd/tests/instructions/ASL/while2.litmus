@@ -4,6 +4,7 @@ ASL while2
 
 func main()
 begin
+  var z,x : integer;
   repeat
     while FALSE do
       z = 2 ;

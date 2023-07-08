@@ -20,7 +20,8 @@
 module type S = sig
   module B : Backend.S
 
-  type body = B.value B.m list -> B.value list B.m
+  type 'a m = 'a B.m
+  type body = B.value B.m list -> B.value B.m list B.m
   type primitive = body AST.func_skeleton
 
   val run : AST.t -> primitive list -> unit B.m

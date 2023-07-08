@@ -103,7 +103,8 @@ module type S = sig
   val unop : AST.unop -> value -> value m
   (** Evaluate this unary operation on this value. *)
 
-  val ternary : value -> (unit -> value m) -> (unit -> value m) -> value m
+  val ternary :
+    value -> (unit -> value m) -> (unit -> value m) -> value m
   (** [ternary v w1 w2] is w1 if v is true and w2 if v is false *)
 
   val on_read_identifier : AST.identifier -> AST.scope -> value -> unit m

@@ -186,13 +186,10 @@ Monad type:
                     eprintf "Delay %s output is %a\n" tag E.debug_output es
                   end ;
                let delayed : 'a t =
-                  fun eiid -> eiid,(Evt.singleton (v,[],es),None) in
+                  fun eiid -> eiid,(Evt.singleton (v,cls,es),None) in
                 let eiid,(acts2,specs) = kont v delayed eiid in
                 assert (specs=None) ;
-                let acts =
-                  Evt.fold
-                    (fun (v,cls2,es) acts -> Evt.add (v,cls@cls2,es) acts)
-                    acts2 acts in
+                let acts = Evt.union acts2 acts in
                 eiid,acts)
               acts (eiid,Evt.empty) in
           eiid,(acts,None)

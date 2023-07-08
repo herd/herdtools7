@@ -24,6 +24,9 @@
     T_Bits (
       BitWidth_Determined (E_Literal (V_Int 1) |> ASTUtils.add_dummy_pos),
       [])
+
+let s_assign (le,e) = AST.S_Assign (Assign,le,e)
+
 %}
 
 %token <string> IDENTIFIER STRING_LIT MASK_LIT
@@ -483,7 +486,7 @@ let simple_stmt ==
 let assignment_stmt ==
   annotated (
     terminated_by(SEMICOLON,
-      | ~=lexpr; EQ; ~=expr; < AST.S_Assign >
+      | ~=lexpr; EQ; ~=expr; < s_assign >
       | ldi=typed_le_ldi; EQ; ~=expr;
         { AST.(S_Decl (LDK_Var, ldi, Some expr)) }
       | CONSTANT; ldi=typed_le_ldi; EQ; ~=expr;
