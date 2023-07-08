@@ -197,11 +197,15 @@ type local_decl_item =
 (** Statements. Parametric on the type of literals in expressions. *)
 type for_direction = Up | Down
 
+type assign_t =
+  | Assign
+  | Decl
+
 type stmt_desc =
   | S_Pass
   | S_Then of stmt * stmt
   | S_Decl of local_decl_keyword * local_decl_item * expr option
-  | S_Assign of lexpr * expr
+  | S_Assign of assign_t * lexpr * expr
   | S_Call of identifier * expr list * (identifier * expr) list
   | S_Return of expr option
   | S_Cond of expr * stmt * stmt
@@ -258,3 +262,5 @@ type t = decl list
 type scope =
   | Scope_Local of identifier * int
   | Scope_Global  (** A scope is an unique identifier of the calling site. *)
+
+type pointer = int

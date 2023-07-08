@@ -194,30 +194,39 @@ module RunTime (C : RunTimeConf) = struct
       | Primitive of C.primitive
           (** A primitive is just given by its type passed as argument. *)
 
+    type storage =
+      { env : pointer IMap.t; mem : C.v PMap.t }
+
     type global = {
       static : Static.global;
           (** Keeps a trace of the static env for reference. *)
-      storage : C.v IMap.t;  (** Global declared storage elements. *)
+      storage : storage;  (** Global declared storage elements. *)
       funcs : func IMap.t;
           (** Declared subprograms, maps called identifier to their code. *)
     }
 
-    type int_stack = int list
+    type 'a stack = 'a list
+    type int_stack = int stack
     (** Stack of ints, for limiting loop unrolling *)
 
-    type local = { storage : C.v IMap.t; scope : AST.scope; unroll : int_stack }
+    type local =
+      { storage : storage; scope : AST.scope;
+        unroll : int_stack; declared : identifier list; }
     type env = { global : global; local : local }
   end
 
   include Types
 
+  let empty_storage = { env = IMap.empty; mem = PMap.empty; }
   let empty_local =
-    { storage = IMap.empty; scope = Scope_Local ("", 0); unroll = [] }
+    { storage = empty_storage; scope = Scope_Local ("", 0);
+      unroll = []; declared = [];  }
 
   let empty_scoped scope = { empty_local with scope }
 
   let empty_global =
-    { static = Static.empty_global; storage = IMap.empty; funcs = IMap.empty }
+    { static = Static.empty_global; storage = empty_storage;
+      funcs = IMap.empty }
 
   let empty = { global = empty_global; local = empty_local }
 
@@ -256,24 +265,118 @@ module RunTime (C : RunTimeConf) = struct
           (false, { env with local = { env.local with unroll } })
 
   (* --------------------------------------------------------------------------*)
-  (* Assignments utils *)
+(* Assignments utils *)
+  let gensym =
+    let nxt = ref 0 in
+    fun () ->
+      let r = !nxt in nxt := !nxt+1; r
 
-  let add_local x v env =
-    {
-      env with
-      local = { env.local with storage = IMap.add x v env.local.storage };
-    }
+  type 'a env_result =
+    | Local of 'a
+    | Global of 'a
+    | Failure
+
+(* Retrieve value *)
+  let find_storage x st =
+    let p = IMap.find x st.env in
+    PMap.find p st.mem
+
+  let find x env =
+    try Local (find_storage x env.local.storage)
+    with Not_found ->
+      try Global (find_storage x env.global.storage)
+      with Not_found -> Failure
+
+(* Remove one binding (for loop index *)
+  let remove_storage x st =
+    try
+      let p = IMap.find x st.env in
+      { env = IMap.remove x st.env;
+        mem = PMap.remove p st.mem; }
+    with Not_found -> st
+
+  let push_local env =
+    let local = env.local in
+    let local = { local with declared = []; } in
+    { env with local; }
+
+(* Return to enclosing scope, keeping local memory *)
+  let pop_local old env =
+    (* In the new global, no need to restore to old, nothing but
+       the mem field has changed *)
+    let global = env.global
+    and local = (* Change the local memory, keep all the rest *)
+      let local = old.local in
+      let mem =
+        (* Free memory. Otherwise memory size could be linear in
+           number of loop iterations *)
+        let xs = env.local.declared
+        and st = env.local.storage in
+        let env = st.env in
+        List.fold_left
+          (fun mem x ->
+            let p =
+              try IMap.find x env with Not_found -> assert false in
+            PMap.remove p mem)
+          st.mem xs in
+      let storage = { local.storage with mem; } in
+      { local with storage;} in
+    { global; local; }
 
   let remove_local x env =
-    {
-      env with
-      local = { env.local with storage = IMap.remove x env.local.storage };
-    }
+    let local = env.local in
+    let local = { local with storage = remove_storage x local.storage; } in
+    { env with local; }
 
-  let add_global x v env =
-    let () = if false then Format.eprintf "Writing to global %S.@." x in
-    {
-      env with
-      global = { env.global with storage = IMap.add x v env.global.storage };
-    }
+  let alloc_var x v st =
+    let p = gensym () in
+    { env = IMap.add x p st.env; mem = PMap.add p v st.mem; }
+
+  let do_assign x v st =
+    let p = IMap.find x st.env in
+    let mem = PMap.add p v st.mem in
+    { st with mem; }
+
+  let decl_local x v env =
+    let local = env.local in
+    let local =
+      { local with
+        storage = alloc_var x v local.storage;
+        declared = x::local.declared; } in
+    { env with local;  }
+
+  let assign_local x v env =
+    try
+      let local = env.local in
+      let local = { local with storage = do_assign x v local.storage } in
+      { env with local; }
+    with Not_found -> assert false
+
+  let assign_stm t x v env =
+    match t with
+    | Decl ->
+       Local (decl_local x v env)
+    | Assign ->
+       begin
+         try
+           let local = env.local in
+           let local =
+             { local with storage = do_assign x v local.storage } in
+           Local { env with local; }
+         with
+         |  Not_found ->
+             try
+               let global = env.global in
+               let global =
+                 { global with storage = do_assign x v global.storage } in
+               Global { env with global; }
+             with
+             | Not_found -> Failure
+       end
+
+  let def_global x v env =
+    let global = env.global in
+    let global =
+      { global with storage = alloc_var x v global.storage; } in
+    { env with global; }
 end

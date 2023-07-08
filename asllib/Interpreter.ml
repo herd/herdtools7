@@ -21,8 +21,6 @@ open AST
 
 let fatal_from pos = Error.fatal_from pos
 let to_pos = ASTUtils.to_pos
-let pair x y = (x, y)
-let pair' y x = (x, y)
 let _warn = false
 let _dbg = false
 
@@ -49,7 +47,7 @@ module Make (B : Backend.S) (C : Config) = struct
   module Rule = Instrumentation.Rule
 
   type 'a m = 'a B.m
-  type body = B.value m list -> B.value list m
+  type body = B.value B.m list -> B.value list m
 
   module EnvConf = struct
     type v = B.value
@@ -75,7 +73,6 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Parallel *)
   let ( and* ) = B.prod
-  let ( ||| ) = B.prod
 
   (* Applicative *)
   let ( >=> ) m f = m >>= fun v -> return (f v)
@@ -83,16 +80,6 @@ module Make (B : Backend.S) (C : Config) = struct
   (* To use instrumentation *)
   let ( |: ) = C.Instr.use_with
   let ( >|: ) f r m = m >>= fun v -> f (return v) |: r
-
-  (** [prod_map] is a monadic parallel version of List.map. For example:
-      [prod_map f [i1; i2; i3]] is {[f i1 ||| f i2 ||| f i3]] *)
-  let prod_map f =
-    let one acc elt =
-      let* v = f elt and* acc = acc in
-      return (v :: acc)
-    in
-    function
-    | [] -> return [] | li -> List.fold_left one (return []) li >=> List.rev
 
   (** [list_index] returns the index of the first element that satisfies the
       predicate [f]. *)
@@ -230,7 +217,7 @@ module Make (B : Backend.S) (C : Config) = struct
             ISet.empty (* TODO: pure functions that can be used in constants? *)
     in
     let process_one_decl = function
-      | D_GlobalStorage { initial_value; name; ty; _ } ->
+      | D_GlobalStorage { initial_value; name; ty; } ->
           fun env_m ->
             let*| env = env_m in
             let e =
@@ -247,7 +234,7 @@ module Make (B : Backend.S) (C : Config) = struct
                       Types.base_value t senv t)
             in
             let* v = eval_expr env e in
-            IEnv.add_global name v env |> return
+            IEnv.def_global name v env |> return
       | _ -> Fun.id
     in
     ASTUtils.dag_fold def use process_one_decl
@@ -290,26 +277,61 @@ module Make (B : Backend.S) (C : Config) = struct
   let lexpr_is_var le =
     match le.desc with LE_Var _ | LE_Ignore -> true | _ -> false
 
-  (** [write_identifier env x m] is env' such that x -> v in env',
-      with v being the value in m. *)
-  let write_identifier (env : env) x m =
+  (** [write_identifier assign env x m] is env' extending [env]
+      by the binding [x] -> v, v being the value in m
+      The [assign] argument is [Decl] or [Assign] to identify
+      declarations and actual assigments, which are compiled
+      differently. In the first case a slot is allocated, while
+      a slot is updated un the second case. *)
+
+  let write_identifier le assign (env : env) x m =
+    let* v = m in
+    match IEnv.assign_stm assign x v env with
+    | Failure ->
+       fatal_from le @@ Error.UndefinedIdentifier x
+    | Local env ->
+       let* () = B.on_write_identifier x env.local.scope v in
+       return env
+    | Global env ->
+       let* () = B.on_write_identifier x Scope_Global v in
+       return env
+
+  (* Used for formal argument initialisation in subprogram calls
+     and for the index variable of for loops.
+     Always a local declaration and cannot fail *)
+
+  let decl_identifier env x v =
+    let* () = B.on_write_identifier x env.local.scope v in
+    IEnv.decl_local x v env |> return
+
+  let update_identifier env x m =
     let* v = m in
     let* () = B.on_write_identifier x env.local.scope v in
-    IEnv.add_local x v env |> return
+    IEnv.assign_local x v env |> return
 
-  let write_global_identifier env x m =
-    let* v = m in
-    let* () = B.on_write_identifier x Scope_Global v in
-    IEnv.add_global x v env |> return
-
-  let write_identifier_m env x m =
-    B.bind_seq env (fun env -> write_identifier env x m)
+  let decl_identifier_m env x v =
+    B.bind_seq env (fun env -> decl_identifier env x v)
 
   let is_defined env id =
-    IMap.mem id env.global.storage || IMap.mem id env.local.storage
+    IMap.mem id env.global.storage.env
+    ||  IMap.mem id env.local.storage.env
 
   let ret_sef env v = return (v, env)
   let discard_env m = B.bind_data m (fun (v, _env) -> return v)
+
+
+  (* Notice: left-to-right evaluation order *)
+  let rec eval_list eval_expr env es =
+    match es with
+    | [] -> return ([],env)
+    | e::es ->
+       let*| v,env = eval_expr env e in
+       let*| vs,env = eval_list eval_expr env es in
+       return (v::vs,env)
+
+  let eval_bind eval_expr env (x,e) =
+    let* v,env = eval_expr env e in
+    return ((x,v),env)
 
   (** [eval_expr env e] is the monadic evaluation  of [e] in [env]. *)
   let rec eval_expr (env : env) (e : expr) : (B.value * env) B.m =
@@ -317,17 +339,18 @@ module Make (B : Backend.S) (C : Config) = struct
     match e.desc with
     | E_Literal v -> B.v_of_parsed_v v |> ret_sef env |: Rule.Lit
     | E_Typed (e, _t) -> eval_expr env e |: Rule.IgnoreTypedExpr
-    | E_Var x -> (
-        match IMap.find_opt x env.global.storage with
-        | Some v ->
+    | E_Var x ->
+       begin
+         match IEnv.find x env with
+         | Local v ->
+            let* () = B.on_read_identifier x env.local.scope v in
+            return (v, env) |: Rule.ELocalVar
+         | Global v ->
             let* () = B.on_read_identifier x Scope_Global v in
             return (v, env) |: Rule.EGlobalVar
-        | None -> (
-            match IMap.find_opt x env.local.storage with
-            | Some v ->
-                let* () = B.on_read_identifier x env.local.scope v in
-                return (v, env) |: Rule.ELocalVar
-            | None -> fatal_from e @@ Error.UndefinedIdentifier x))
+         | Failure ->
+            fatal_from e @@ Error.UndefinedIdentifier x
+       end
     | E_Binop (op, e1, e2) ->
         let* v1, env = eval_expr env e1 in
         let* v2, env = eval_expr env e2 in
@@ -338,38 +361,40 @@ module Make (B : Backend.S) (C : Config) = struct
         let* v = B.unop op v |: Rule.Unop in
         return (v, env)
     | E_Cond (e1, e2, e3) ->
-        let* v =
-          B.bind_ctrl (eval_expr env e1) (fun (v, env) ->
-              B.ternary v
-                (fun () -> eval_expr_sef env e2)
-                (fun () -> eval_expr_sef env e3))
-        in
-        return (v, env) |: Rule.ECond
+(* Cannot use the ternary 'if' any more, because of env result.
+   Could still use it for side-effect free expressions e2 and e2 *)
+       B.bind_ctrl
+         (eval_expr env e1)
+         (fun (c, env) ->
+           B.choice (return c) (eval_expr env e2) (eval_expr env e3))
+       |: Rule.ECond
+(*
+  B.bind_ctrl (eval_expr env e1) (fun v ->
+    B.ternary v
+      (fun () -> eval_expr env e2)
+      (fun () -> eval_expr env e3))
+  |: Rule.ECond[201~
+
+*)
     | E_Slice (e', slices) ->
         let* v, env = eval_expr env e' in
-        let* positions = eval_slices env slices in
+        let* positions,env = eval_slices env slices in
         let* v' = B.read_from_bitvector positions v in
         return (v', env) |: Rule.ESlice
     | E_Call (name, args, named_args) ->
         (* TODO: rework to allow side-effects there. *)
-        let vargs = List.map (eval_expr_sef env) args
-        and nargs =
-          let one_narg (x, e) = (x, eval_expr_sef env e) in
-          List.map one_narg named_args
-        in
+        let* vargs,env = eval_list eval_expr env args in
+        let* nargs,env = eval_list (eval_bind eval_expr) env named_args in
         let* returned, global =
           eval_func env.global name (to_pos e) vargs nargs
         in
         let v = one_return_value e name returned in
         return (v, { env with global }) |: Rule.ECall
     | E_Record (_, li, ta) ->
-        (* TODO: rework to allow side-effects in record declarations. *)
-        let one_field (x, e) = eval_expr_sef env e >=> pair x in
+        let* fields,env = eval_list (eval_bind eval_expr) env li in
         let* v =
-          let* fields = prod_map one_field li in
-          make_record e (type_of_ta e ta) fields |: Rule.ERecord
-        in
-        return (v, env)
+          make_record e (type_of_ta e ta) fields  |: Rule.ERecord in
+        return (v,env)
     | E_GetField (e', x, ta) -> (
         let ty = type_of_ta e ta in
         match ty.desc with
@@ -381,121 +406,136 @@ module Make (B : Backend.S) (C : Config) = struct
         | _ -> fatal_from e @@ Error.BadField (x, ty))
     | E_GetFields (_, [], _) ->
         V_BitVector (Bitvector.of_string "") |> B.v_of_parsed_v |> ret_sef env
-    | E_GetFields (e', [ field ], ta) -> (
-        let ty = type_of_ta e ta in
-        match ty.desc with
-        | T_Bits (_, fields) -> (
-            match List.assoc_opt field fields with
-            | Some slices ->
-                let* v, env = eval_expr env e' in
-                let* positions = eval_slices env slices in
-                let* v = B.read_from_bitvector positions v in
-                return (v, env) |: Rule.GetBitField
-            | None -> fatal_from e @@ Error.BadField (field, ty))
-        | _ -> fatal_from e @@ Error.BadField (field, ty))
-    | E_GetFields (e', xs, ta) -> (
-        let ty = type_of_ta e ta in
-        match ty.desc with
-        | T_Bits (_, fields) ->
+    | E_GetFields (e', [ field ], ta) ->
+       begin
+         let ty = type_of_ta e ta in
+         match ty.desc with
+         | T_Bits (_, fields) -> (
+           match List.assoc_opt field fields with
+           | Some slices ->
+              let* v, env = eval_expr env e' in
+              let* positions,env  = eval_slices env slices in
+              let* v = B.read_from_bitvector positions v in
+              return (v, env) |: Rule.GetBitField
+           | None -> fatal_from e @@ Error.BadField (field, ty))
+         | _ -> fatal_from e @@ Error.BadField (field, ty)
+       end
+    | E_GetFields (e', xs, ta) ->
+       begin
+         let ty = type_of_ta e ta in
+         match ty.desc with
+         | T_Bits (_, fields) ->
             let* v, env = eval_expr env e' in
-            let one (x : string) =
+            let one env (x : string) =
               match List.assoc_opt x fields with
               | None -> fatal_from e @@ Error.BadField (x, ty)
               | Some slices ->
-                  let* positions = eval_slices env slices in
-                  B.read_from_bitvector positions v
-            in
-            let* v =
-              prod_map one xs >>= B.concat_bitvectors |: Rule.GetBitFields
-            in
-            return (v, env)
-        | _ -> fatal_from e @@ Error.BadField (List.hd xs, ty))
+                 let* positions,env = eval_slices env slices in
+                 let* w = B.read_from_bitvector positions v in
+                 return (w,env) in
+            let* bvs,env = eval_list one env xs in
+            B.concat_bitvectors bvs >>= ret_sef env
+        | _ -> fatal_from e @@ Error.BadField (List.hd xs, ty)
+       end
     | E_Concat es ->
-        let* v =
-          (* TODO rework to allow side-effects there. *)
-          prod_map (fun e -> eval_expr_sef env e) es
-          >>= B.concat_bitvectors |: Rule.EConcat
-        in
+        let* vs,env  = eval_list eval_expr env es in
+        let* v = B.concat_bitvectors vs |: Rule.EConcat in
         return (v, env)
     | E_Tuple _ -> fatal_from e @@ Error.NotYetImplemented "tuple construction"
     | E_Unknown t ->
         let v = B.v_unknown_of_type t in
         return (v, env)
     | E_Pattern (e, p) ->
-        let* v, env = eval_expr env e in
-        let* v = eval_pattern env e v p in
-        return (v, env)
-
-  and eval_expr_sef env e = eval_expr env e |> discard_env
+        let* v,env = eval_expr env e in
+        eval_pattern env e v p
 
   (** [eval_slices env slices] is the list of pair [(i_n, l_n)] that
       corresponds to the start (included) and the length of each slice in
       [slices]. *)
-  and eval_slices env =
+  and eval_slices =
     let one = B.v_of_int 1 in
-    let eval_one = function
-      | Slice_Single e -> eval_expr_sef env e >=> pair' one
+    let eval_one env = function
+      | Slice_Single e ->
+         let* i,env = eval_expr env e in
+         return ((i,one),env)
       | Slice_Range (etop, ebot) ->
-          let* vtop = eval_expr_sef env etop
-          and* vbot = eval_expr_sef env ebot in
+          let* vbot,env = eval_expr env ebot in
+          let* vtop,env = eval_expr env etop in
           let* length =
-            B.binop MINUS vtop vbot >>= B.binop PLUS (B.v_of_int 1)
-          in
-          return (vbot, length)
+            B.binop MINUS vtop vbot >>= B.binop PLUS one in
+          return ((vbot, length),env)
       | Slice_Length (ebot, elength) ->
-          eval_expr_sef env ebot ||| eval_expr_sef env elength
-    in
-    prod_map eval_one
+          let* vbot,env = eval_expr env ebot in
+          let* length,env = eval_expr env elength in
+          return ((vbot, length),env) in
+    fun env -> eval_list eval_one env
 
   (** [eval_pattern env pos v p] determines if [v] matches the pattern [p]. *)
   and eval_pattern env pos v = function
-    | Pattern_All -> B.v_of_parsed_v (V_Bool true) |> return
+    | Pattern_All ->
+       B.v_of_parsed_v (V_Bool true) |> ret_sef env
     | Pattern_Any li ->
-        let folder acc p =
-          let* acc = acc and* b = eval_pattern env pos v p in
-          B.binop BOR acc b
-        in
-        let init = B.v_of_parsed_v (V_Bool false) |> return in
-        List.fold_left folder init li
-    | Pattern_Geq e -> eval_expr_sef env e >>= B.binop GEQ v
-    | Pattern_Leq e -> eval_expr_sef env e >>= B.binop LEQ v
+       let rec eval_pats env = function
+         | [] ->
+            return (B.v_of_parsed_v (V_Bool false),env)
+         | p::li ->
+            let* b,env = eval_pattern env pos v p in
+            let* c,env = eval_pats env  li in
+            B.binop BOR b c >>= ret_sef env in
+       eval_pats env li
+    | Pattern_Geq e ->
+       let* w,env = eval_expr env e in
+       B.binop GEQ v w >>= ret_sef env
+    | Pattern_Leq e ->
+       let* w,env = eval_expr env e in
+       B.binop LEQ v w >>= ret_sef env
     | Pattern_Mask _ ->
         fatal_from pos @@ Error.NotYetImplemented "Bitvector masks"
-    | Pattern_Not p -> eval_pattern env pos v p >>= B.unop BNOT
+    | Pattern_Not p ->
+       let* b,env = eval_pattern env pos v p in
+       B.unop BNOT b >>= ret_sef env
     | Pattern_Range (e1, e2) ->
-        let* b1 = eval_expr_sef env e1 >>= B.binop GEQ v
-        and* b2 = eval_expr_sef env e2 >>= B.binop LEQ v in
-        B.binop BAND b1 b2
-    | Pattern_Single e -> eval_expr_sef env e >>= B.binop EQ_OP v
+        let* b1,env =
+          let* w,env = eval_expr env e1 in
+          B.binop GEQ v w >>= ret_sef env in
+        let* b2,env =
+          let* w,env = eval_expr env e2 in
+          B.binop LEQ v w >>= ret_sef env in
+        B.binop BAND b1 b2 >>= ret_sef env
+    | Pattern_Single e ->
+       let* w,env = eval_expr env e in
+       B.binop EQ_OP v w >>= ret_sef env
 
   (** [eval_lexpr env le m] is [env[le --> m]]. *)
-  and eval_lexpr (env : env) le : B.value B.m -> env B.m =
+  and eval_lexpr assign (env:env) le : B.value B.m -> env B.m =
     match le.desc with
-    | LE_Ignore -> fun _ -> return env |: Rule.LEIgnore
+    | LE_Ignore ->
+       fun _ -> return env |: Rule.LEIgnore
     | LE_Var x ->
-        if IMap.mem x env.global.storage then
-          write_global_identifier env x >|: Rule.LEGlobalVar
-        else write_identifier env x >|: Rule.LELocalVar
+       write_identifier le assign env x >|: Rule.LELocalVar
     | LE_Slice (le', slices) ->
-        let setter = eval_lexpr env le' in
-        fun m ->
-          let* v = m
-          and* positions = eval_slices env slices
-          and* bv = ASTUtils.expr_of_lexpr le' |> eval_expr_sef env in
-          B.write_to_bitvector positions v bv |> setter |: Rule.LESlice
+       let setter env = eval_lexpr assign env le' in
+       fun m ->
+          let* v = m in
+          let* bv,env =
+            ASTUtils.expr_of_lexpr le' |> eval_expr env in
+          let* positions,env = eval_slices env slices in
+          B.write_to_bitvector positions v bv |> setter env |: Rule.LESlice
     | LE_SetField (le', x, ta) -> (
         let ty = type_of_ta le ta in
         match ty.desc with
         | T_Record li ->
-            let setter = eval_lexpr env le' in
+            let setter env = eval_lexpr assign env le' in
             let i = record_index_of_field le x li ty in
             fun m ->
               let* new_v = m
-              and* vec = ASTUtils.expr_of_lexpr le' |> eval_expr_sef env in
-              B.set_i i new_v vec |> setter |: Rule.LESetRecordField
+              and* vec,env =
+                ASTUtils.expr_of_lexpr le' |> eval_expr env in
+              B.set_i i new_v vec |> setter env |: Rule.LESetRecordField
         | T_Bits _ ->
             LE_SetFields (le', [ x ], ta)
-            |> ASTUtils.add_pos_from le |> eval_lexpr env |: Rule.LESetBitField
+            |> ASTUtils.add_pos_from le
+            |> eval_lexpr assign env |: Rule.LESetBitField
         | _ -> fatal_from le @@ Error.BadField (x, ty))
     | LE_SetFields (le', xs, ta) -> (
         let ty = type_of_ta le ta in
@@ -508,7 +548,8 @@ module Make (B : Backend.S) (C : Config) = struct
             in
             let slices = List.fold_left folder [] xs |> List.rev in
             LE_Slice (le', slices)
-            |> ASTUtils.add_pos_from le |> eval_lexpr env |: Rule.LESetBitFields
+            |> ASTUtils.add_pos_from le
+            |> eval_lexpr assign env |: Rule.LESetBitFields
         | _ ->
             fatal_from le
             @@ Error.ConflictingTypes ([ ASTUtils.default_t_bits ], ty))
@@ -518,25 +559,25 @@ module Make (B : Backend.S) (C : Config) = struct
         let n = List.length les in
         fun m ->
           let nmonads = List.init n (fun i -> m >>= B.get_i i) in
-          multi_assign env les nmonads
+          multi_assign assign env les nmonads
 
   (** [multi_assign env [le_1; ... ; le_n] [m_1; ... ; m_n]] is
       [env[le_1 --> m_1] ... [le_n --> m_n]]. *)
-  and multi_assign env les monads =
+  and multi_assign assign env les monads =
     let folder envm le vm =
       let*| env = envm in
-      eval_lexpr env le vm
+      eval_lexpr assign env le vm
     in
     List.fold_left2 folder (return env) les monads
 
   (** As [multi_assign], but checks that [les] and [monads] have the same
       length. *)
-  and protected_multi_assign env pos les monads =
+  and protected_multi_assign assign env pos les monads =
     if List.compare_lengths les monads != 0 then
       fatal_from pos
       @@ Error.BadArity
            ("tuple construction", List.length les, List.length monads)
-    else multi_assign env les monads
+    else multi_assign assign env les monads
 
   (** [eval_stmt env s] evaluates [s] in [env]. This is either an interuption
       [Returning vs] or a continuation [env], see [eval_res]. *)
@@ -548,56 +589,63 @@ module Make (B : Backend.S) (C : Config) = struct
     match s.desc with
     | S_Pass -> continue env |: Rule.Pass
     | S_Assign
-        ( { desc = LE_TupleUnpack les; _ },
+        ( assign,
+          { desc = LE_TupleUnpack les; _ },
           { desc = E_Call (name, args, named_args); _ } )
       when List.for_all lexpr_is_var les ->
-        (* TODO: rework to allow side-effects here. *)
-        let vargs = List.map (eval_expr_sef env) args
-        and nargs =
-          List.map (fun (x, e) -> (x, eval_expr_sef env e)) named_args
-        in
+        let* vargs,env = eval_list eval_expr env args in
+        let* nargs,env =
+          eval_list (eval_bind eval_expr) env named_args in
         let*| env =
-          let* vs, global = eval_func env.global name (to_pos s) vargs nargs in
+          let* vs, global =
+            eval_func env.global name (to_pos s) vargs nargs in
           let ms = List.map return vs in
           let env = { env with global } in
-          protected_multi_assign env s les ms
+          protected_multi_assign assign env s les ms
         in
         continue env
-    | S_Assign ({ desc = LE_TupleUnpack les; _ }, { desc = E_Tuple exprs; _ })
-      when List.for_all lexpr_is_var les ->
-        (* TODO: rework to allow side-effects there. *)
-        List.map (eval_expr_sef env) exprs
-        |> protected_multi_assign env s les
+    | S_Assign
+        (assign,
+         { desc = LE_TupleUnpack les; _ },
+         { desc = E_Tuple exprs; _ })
+         when List.for_all lexpr_is_var les ->
+       let* vs,env = eval_list eval_expr env exprs in
+       let vs = List.map return vs in
+       protected_multi_assign assign env s les vs
         >>=| continue
-    | S_Assign (le, e) ->
+    | S_Assign (assign, le, e) ->
         let*| env =
-          let* v, env' = eval_expr env e in
-          eval_lexpr { env with global = env'.global } le (return v)
+          let* v, env = eval_expr env e in
+          eval_lexpr assign env le (return v)
           |: Rule.Assign
         in
         continue env
     | S_Return (Some { desc = E_Tuple es; _ }) ->
         (* TODO: rework to allow side-effects there. *)
-        let* vs = prod_map (eval_expr_sef env) es in
+        let* vs,env = eval_list eval_expr env es in
         return (Returning (vs, env))
     | S_Return (Some e) ->
         let* v, env = eval_expr env e in
         return (Returning ([ v ], env)) |: Rule.ReturnOne
     | S_Return None -> return (Returning ([], env)) |: Rule.ReturnNone
-    | S_Then (s1, s2) -> eval_seq env s1 s2 |: Rule.Then
+    | S_Then (s1, s2) ->
+       eval_seq_kont
+         (eval_stmt env s1)
+         (fun env -> eval_stmt env s2) |: Rule.Then
     | S_Call (name, args, named_args) ->
-        let vargs = List.map (eval_expr_sef env) args
-        and nargs =
-          List.map (fun (x, e) -> (x, eval_expr_sef env e)) named_args
-        in
-        let*| returned, g = eval_func env.global name (to_pos s) vargs nargs in
+        let* vargs,env = eval_list eval_expr env args in
+        let* nargs,env = eval_list (eval_bind eval_expr) env named_args in
+        let*| returned, g =
+          eval_func env.global name (to_pos s) vargs nargs in
         let () = assert (returned = []) in
         continue { env with global = g } |: Rule.SCall
     | S_Cond (e, s1, s2) ->
-        let* cond, env = eval_expr env e in
         B.bind_ctrl
-          (B.choice (return cond) (return s1) (return s2))
-          (eval_stmt env)
+          (let* c,env = eval_expr env e in
+           B.choice
+             (return c)
+             (ret_sef env s1) (ret_sef env s2))
+          (fun (stm,env) -> eval_block env stm)
         |: Rule.SCond
     | S_Case _ -> ASTUtils.case_to_conds s |> eval_stmt env
     | S_Assert e ->
@@ -610,16 +658,18 @@ module Make (B : Backend.S) (C : Config) = struct
         let env = IEnv.tick_push env in
         eval_loop true env e body
     | S_Repeat (body, e) ->
-        eval_seq_kont env body (fun env ->
+        eval_block_kont env body
+          (fun env ->
             let env = IEnv.tick_push_bis env in
             eval_loop false env e body)
     | S_For (id, e1, dir, e2, s) ->
-        let* v1 = eval_expr_sef env e1 and* v2 = eval_expr_sef env e2 in
+         let* v1,env = eval_expr env e1 in
+         let* v2,env = eval_expr env e2 in
         (* It is an error to redefine an identifier *)
         assert (not (is_defined env id));
         (* By typing *)
         let undet = B.is_undetermined v1 || B.is_undetermined v2 in
-        let* env = write_identifier env id (B.return v1) in
+        let* env = decl_identifier env id v1 in
         let env = if undet then IEnv.tick_push_bis env else env in
         B.bind_seq (eval_for undet env id v1 dir v2 s) (fun r ->
             match r with
@@ -630,6 +680,13 @@ module Make (B : Backend.S) (C : Config) = struct
     | S_Decl (_dlk, _dli, _e_opt) ->
         (* Type checking should change those into S_Assign. *)
         fatal_from s Error.TypeInferenceNeeded
+
+  and eval_block env stm =
+    eval_stmt (IEnv.push_local env) stm  >>=|
+      (function
+       | Returning _ as r -> return r
+       | Continuing kenv ->
+          IEnv.pop_local env kenv |> continue)
 
   and eval_loop is_while env e s =
     let* cond, env = eval_expr env e in
@@ -646,7 +703,8 @@ module Make (B : Backend.S) (C : Config) = struct
           B.bind_ctrl
             (B.choice mb
                (return (fun env ->
-                    eval_seq_kont env s (fun env -> eval_loop is_while env e s)))
+                    eval_block_kont env s
+                      (fun env -> eval_loop is_while env e s)))
                (return continue))
             (fun f -> f env))
 
@@ -658,36 +716,41 @@ module Make (B : Backend.S) (C : Config) = struct
           B.binop op v2 v)
          (return continue)
          (return (fun env ->
-              (if undet then eval_unroll else eval_seq_kont) env s (fun env ->
+              (if undet then eval_unroll else eval_block_kont) env s (fun env ->
                   let* v =
                     let* () = B.on_read_identifier id env.local.scope v in
                     let op = match dir with Up -> PLUS | Down -> MINUS in
                     B.binop op v (B.v_of_int 1)
                   in
-                  let* env = write_identifier env id (return v) in
+                  let* env = update_identifier env id (return v) in
                   eval_for undet env id v dir v2 s))))
       (fun k -> k env)
 
   and eval_unroll env s k =
     let stop, env' = IEnv.tick_decr env in
     if stop then B.warnT "For loop unrolling reached limit" (Continuing env)
-    else eval_seq_kont env' s k
+    else eval_block_kont env' s k
 
-  and eval_seq env (s1 : stmt) (s2 : stmt) =
-    eval_seq_kont env s1 (fun env -> eval_stmt env s2)
+  and eval_seq_kont m1 k2 =
+    B.bind_seq m1
+      (fun r1 ->
+        match r1 with
+        | Continuing env -> k2 env
+        | Returning _ -> return r1)
 
-  and eval_seq_kont env s1 k2 =
-    B.bind_seq (eval_stmt env s1) (fun r1 ->
-        match r1 with Continuing env -> k2 env | Returning _ -> return r1)
+  and eval_block_kont env s1 k2 =
+    eval_seq_kont (eval_block env s1) k2
 
   (** [eval_func genv name pos args nargs] evaluate the function named [name]
       in the global environment [genv], with [args] the formal arguments, and
       [nargs] the arguments deduced by type equality. *)
-  and eval_func (genv : global) name pos (args : B.value m list) nargs :
+  and eval_func (genv : global) name pos (args : B.value list) nargs :
       (B.value list * global) m =
     match IMap.find_opt name genv.funcs with
     | None -> fatal_from pos @@ Error.UndefinedIdentifier name
-    | Some (Primitive { body; _ }) -> body args >=> fun res -> (res, genv)
+    | Some (Primitive { body; _ }) ->
+       let args = List.map return args in
+       body args >=> fun res -> (res, genv)
     | Some (Func (_, { args = arg_decls; _ }))
       when List.compare_lengths args arg_decls <> 0 ->
         fatal_from pos
@@ -695,15 +758,17 @@ module Make (B : Backend.S) (C : Config) = struct
     | Some (Func (r, { args = arg_decls; body; _ })) -> (
         let scope = Scope_Local (name, !r) in
         let () = r := !r + 1 in
-        let env = { global = genv; local = IEnv.empty_scoped scope } in
-        let one_arg envm (x, _) m = write_identifier_m envm x m in
-        let envm = List.fold_left2 one_arg (return env) arg_decls args in
-        let one_narg envm (x, m) =
-          let*| env = envm in
-          if is_defined env x then return env else write_identifier env x m
+        let env = return { global = genv; local = IEnv.empty_scoped scope } in
+        let one_arg env (x, _) v = decl_identifier_m env x v in
+        let env = List.fold_left2 one_arg env arg_decls args in
+        let one_narg env (x, v) =
+          let*| env = env in
+          (* Why this check that x is defined? *)
+          if is_defined env x then return env
+          else decl_identifier env x v
         in
-        let*| env = List.fold_left one_narg envm nargs in
-        let* res = eval_stmt env body in
+        let*| env = List.fold_left one_narg env nargs in
+        let*| res = eval_stmt env body in
         let () =
           if false then Format.eprintf "Finished evaluating %s.@." name
         in
@@ -720,7 +785,10 @@ module Make (B : Backend.S) (C : Config) = struct
     let () =
       if false then Format.eprintf "@[<v 2>Typed AST:@ %a@]@." PP.pp_t ast
     in
-    let*| env = build_genv eval_expr_sef static_env ast primitives in
+    let*| env =
+      build_genv
+        (fun env e -> eval_expr env e |> discard_env)
+        static_env ast primitives in
     let*| returned, _genv =
       eval_func env "main" ASTUtils.dummy_annotated [] []
     in

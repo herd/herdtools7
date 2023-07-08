@@ -12,6 +12,8 @@ end = struct
     List.fold_left (fun acc (key, value) -> add key value acc) empty li
 end
 
+module PMap = Map.Make(Int)
+
 let dummy_pos = Lexing.dummy_pos
 let annotated desc pos_start pos_end = { desc; pos_start; pos_end }
 let add_dummy_pos desc = annotated desc dummy_pos dummy_pos
@@ -129,7 +131,7 @@ let used_identifiers, used_identifiers_stmt =
     | S_Pass | S_Return None -> acc
     | S_Then (s1, s2) -> use_s (use_s acc s1) s2
     | S_Assert e | S_Return (Some e) -> use_e acc e
-    | S_Assign (le, e) -> use_le (use_e acc e) le
+    | S_Assign (_, le, e) -> use_le (use_e acc e) le
     | S_Call (x, args, named_args) ->
         let acc = ISet.add x acc in
         let acc = List.fold_left use_field acc named_args in
@@ -315,7 +317,7 @@ let case_to_conds : stmt -> stmt =
       let assign =
         let pos = e.pos_start in
         let le = annotated (LE_Var x) pos pos in
-        annotated (S_Assign (le, e)) pos e.pos_end
+        annotated (S_Assign (Decl, le, e)) pos e.pos_end
       in
       S_Then (assign, cases_to_cond x cases)
   | _ -> raise (Invalid_argument "case_to_conds")

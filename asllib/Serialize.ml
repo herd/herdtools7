@@ -218,7 +218,7 @@ let rec pp_stmt =
   let pp_desc f = function
     | S_Pass -> addb f "SPass"
     | S_Then (s1, s2) -> bprintf f "S_Then (%a, %a)" pp_stmt s1 pp_stmt s2
-    | S_Assign (le, e) -> bprintf f "S_Assign (%a, %a)" pp_lexpr le pp_expr e
+    | S_Assign (_, le, e) -> bprintf f "S_Assign (%a, %a)" pp_lexpr le pp_expr e
     | S_Call (name, args, named_args) ->
         bprintf f "S_Call (%S, %a, %a)" name pp_expr_list args
           (pp_id_assoc pp_expr) named_args

@@ -7,6 +7,8 @@ module IMap : sig
   val of_list : (key * 'a) list -> 'a t
 end
 
+module PMap : Map.S with type key = pointer
+
 val dummy_pos : Lexing.position
 val annotated : 'a -> position -> position -> 'a annotated
 val add_dummy_pos : 'a -> 'a annotated
