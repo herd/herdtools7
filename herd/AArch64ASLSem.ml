@@ -649,8 +649,12 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
                 in
                 let w, acc, _ = List.fold_left folder (first, acc, n) t in
                 (w, acc))
+        | ASLValue.BoolNot ->
+           M.VC.Unop (Op.Not,v),acc
         | _ ->
-            Warn.fatal "Not yet implemented: translation of vector operations."
+            Warn.fatal
+              "Not yet implemented: translation of operation %s."
+              (ASLValue.ASLArchOp.pp_op1 TopConf.C.PC.hexa op)
 
       let tr_op1 =
         let open Op in

@@ -132,7 +132,9 @@ module Make (C : Config) = struct
       let concrete v = Constant.Concrete v in
       let vector li = Constant.ConcreteVector li in
       let rec tr = function
-        | V_Int i -> S_Int (Int64.of_int i) |> concrete
+        | V_Int i ->
+           let z = Z.of_int i in
+           S_Int z |> concrete
         | V_Bool b -> S_Bool b |> concrete
         | V_BitVector bv -> S_BitVector bv |> concrete
         | V_Tuple li -> List.map tr li |> vector
@@ -143,7 +145,7 @@ module Make (C : Config) = struct
       fun v -> V.Val (tr v)
 
     let v_to_int = function
-      | V.Val (Constant.Concrete (ASLScalar.S_Int i)) -> Some (Int64.to_int i)
+      | V.Val (Constant.Concrete (ASLScalar.S_Int i)) -> Some (Z.to_int i)
       | _ -> None
 
     let v_as_int = function
@@ -239,9 +241,7 @@ module Make (C : Config) = struct
     let unop op =
       let open AST in
       match op with
-      | BNOT ->
-          fun v ->
-            wrap_op1_symb_as_var Op.Not v >>= M.op1 (Op.ArchOp1 ASLValue.ToBool)
+      | BNOT ->  wrap_op1_symb_as_var (Op.ArchOp1 ASLValue.BoolNot)
       | NEG -> M.op Op.Sub V.zero
       | NOT -> wrap_op1_symb_as_var Op.Inv
 

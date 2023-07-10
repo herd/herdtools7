@@ -157,6 +157,38 @@ let test_with_int64 () =
       (0x2L, "00000000000000000000000000000010");
     ]
 
+let test_with_z () =
+  let one (i, s) =
+    let s = Printf.sprintf "'%64s'" s in
+    let s = String.map (function ' ' -> '0' | c -> c) s in
+    let () =
+      if _debug then
+        Format.eprintf "Comparing %s to %s (%a to %a)@." (Z.to_string i) s
+          BV.pp_t (BV.of_z 64 i) BV.pp_t (BV.of_string s)
+    in
+    assert (BV.equal (BV.of_z 64 i) (BV.of_string s));
+    assert (String.equal (BV.to_string (BV.of_z 64 i)) s);
+    assert (Z.equal i (BV.to_z_unsigned (BV.of_string s)));
+    assert (Z.equal i (BV.to_z_unsigned (BV.of_z 64 i)))
+  in
+  List.iter one
+    [
+      (Z.of_string "0x0", "");
+      (Z.of_string "0x0", "0");
+      (Z.of_string "0x0", "000");
+      (Z.of_string "0x1", "1");
+      (Z.of_string "0x1", "01");
+      (Z.of_string "0x1", "0000000001");
+      (Z.of_string "0x100", "100000000");
+      (Z.of_string "0x100", "00100000000");
+      (Z.of_string "0x502", "10100000010");
+      (Z.of_string "0x30502", "110000010100000010");
+      (Z.of_string "0x20502", "100000010100000010");
+      (Z.of_string "0xffffffff", "11111111111111111111111111111111");
+      (Z.of_string "0xfffffffe", "11111111111111111111111111111110");
+      (Z.of_string "0x2", "00000000000000000000000000000010");
+    ]
+
 let test_with_int64_signed () =
   let one (i, s) =
     let of_s = BV.to_int64_signed (BV.of_string s) in
@@ -270,6 +302,7 @@ let () =
       ("bitvector/and", test_and);
       ("bitvector/with_ints", test_with_ints);
       ("bitvector/with_int64", test_with_int64);
+      ("bitvector/with_z", test_with_z);
       ("bitvector/read_slice", test_read_slice);
       ("bitvector/write_slice", test_write_slice);
       ("bitvector/concat", test_concat);

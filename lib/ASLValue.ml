@@ -11,7 +11,7 @@ type asl_op1 =
   | ToIntS
   | ToBool
   | ToBV
-
+  | BoolNot
 (*
    A note on ASL ArchOps
    ---------------------
@@ -54,6 +54,7 @@ module ASLArchOp :
     | ToIntS -> "ToIntS"
     | ToBool -> "ToBool"
     | ToBV -> "ToBV"
+    | BoolNot -> "BoolNot"
 
   let ( let* ) = Option.bind
   let return_concrete s = Some (Constant.Concrete s)
@@ -125,7 +126,15 @@ module ASLArchOp :
               Some (Constant.Symbolic x)
             else None
         | _ -> None)
-
+    | BoolNot ->
+       begin
+         let open Constant in
+         let open ASLScalar in
+         match cst with
+         | Concrete (S_Bool b) ->
+            return_concrete (S_Bool (not b))
+         | _ -> None
+       end
   let shift_address_right _ _ = None
   let orop _ _ = None
   let andnot2 _ _ = None

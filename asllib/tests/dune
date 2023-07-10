@@ -18,7 +18,7 @@
   (modules static bitvector types)
   (modes native)
   (deps (:standard ../libdir/stdlib.asl))
-  (libraries asllib test_helpers)
+  (libraries asllib test_helpers zarith)
   (action 
     (setenv ASL_LIBDIR %{project_root}/asllib/libdir/
       (run %{test} -e))))

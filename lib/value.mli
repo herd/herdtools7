@@ -60,6 +60,7 @@ module type S =
 
 (* Please use this for comparing constants... *)
       val compare : v -> v -> int
+      val equal : v -> v -> bool
 
 (* Build constant values, either numerical or symbolic *)
       val intToV  : int -> v
