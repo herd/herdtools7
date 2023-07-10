@@ -214,6 +214,26 @@ let to_int64_unsigned (length, data) =
   let _, data = remask (63, data) in
   to_int64_raw (64, data)
 
+let to_z_unsigned (sz,data) =
+  if sz=0 then Z.zero
+  else
+    let rec do_rec r i =
+      if i < 0 then r
+      else
+        let c = String.unsafe_get data i |> Char.code |> Z.of_int in
+        let r = Z.logor c (Z.shift_left r 8) in
+        do_rec r (i-1) in
+    let n = sz / 8 and m = sz mod 8 in
+    let mask = last_char_mask m in
+    let c0 = String.unsafe_get data (n-1) |> Char.code |> (land) mask in
+    do_rec (Z.of_int c0) (n-2)
+
+let to_z_signed (sz,_ as bv) =
+  let sgn = sign_bit bv in
+  let r = to_z_unsigned bv in
+  if sgn = 0 then r
+  else Z.sub r (Z.shift_left Z.one sz)
+
 let of_string s =
   let result = Buffer.create ((String.length s / 8) + 1) in
   let lengthr = ref 0 in
@@ -264,6 +284,19 @@ let of_int64 s =
   (64, Bytes.unsafe_to_string result)
 
 let of_int x = of_int64 (Int64.of_int x)
+
+let of_z sz z =
+  let n = sz / 8 and m = sz mod 8 in
+  let length = if m=0 then n else n+1 in
+  let result = Bytes.make length char_0 in
+  let rec do_rec i =
+    if i >= 0 then begin
+      let c = Z.extract z (i*8) 8 |> Z.to_int |> Char.chr in
+      Bytes.unsafe_set result i c ;
+      do_rec (i-1)
+    end in
+  do_rec (length-1) ;
+  sz,Bytes.unsafe_to_string result
 
 (* --------------------------------------------------------------------------
 

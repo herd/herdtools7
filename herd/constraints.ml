@@ -119,16 +119,17 @@ module Make (C:Config) (A : Arch_herd.S) :
 
           let do_check_prop look_type look_val flts =
             let rec do_rec = function
-              | Atom (LV (rloc,v)) ->
+              | Atom (LV (rloc,v0)) ->
                  let t = look_type rloc in
-                 let w = look_val rloc in
-                 let v = A.mask_type t v
-                 and w = A.mask_type t w in
+                 let w0 = look_val rloc in
+                 let v = A.mask_type t v0
+                 and w = A.mask_type t w0 in
                  if dbg then
-                   Printf.eprintf "Loc:(%s:%s) -> %s = %s\n"
+                   Printf.eprintf "Loc:(%s:%s) -> %s[%s] = %s[%s]\n%!"
                      (A.pp_rlocation rloc) (TestType.pp t)
-                     (A.V.pp_v w) (A.V.pp_v v) ;
-                  A.V.compare v w = 0
+                     (A.V.pp_v w) (A.V.pp_v w0)
+                     (A.V.pp_v v) (A.V.pp_v v0);
+                  A.V.equal v w
               | Atom (LL (l1,l2)) ->
                   let v1 = look_val (Loc l1)
                   and v2 = look_val (Loc l2) in

@@ -29,6 +29,10 @@ val to_int64_signed : t -> int64
 (** Returns an integer representing the bitvector, little-endian. Result
     unspecified if [length > 64]. *)
 
+val to_z_unsigned : t -> Z.t
+
+val to_z_signed : t -> Z.t
+
 val of_string : string -> t
 (** [of_string s] interpretes [s] as a right-indexed representation of a
     bitvector. Characters others than '0' or '1' are ignored. The length of
@@ -48,6 +52,11 @@ val of_int64 : int64 -> t
 (** [of_int i] is the bitvector of length 64 that corresponds to [i] in
     little-endian, i.e. index 0 (for slicing operations corresponds to
     [i mod 2]. *)
+
+val of_z : int -> Z.t -> t
+(** [of_int sz i] is the bitvector of length [sz] that corresponds to [i] in
+    little-endian. *)
+
 
 val lognot : t -> t
 (** Bitwise not operation.

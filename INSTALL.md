@@ -23,11 +23,12 @@ Requirements
 - OCaml (version >= 4.08.0)
 - dune
 - menhir (version >= 20180530)
+- zarith
 
 We strongly recommend to have this base software installed through the opam
 package manager.
 
-    % opam install dune menhir
+    % opam install dune menhir zarith
 
 Make sure to run `eval $(opam config env)` to make tools available in your PATH.
 

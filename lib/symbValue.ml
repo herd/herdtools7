@@ -41,6 +41,7 @@ module
 
   let pp_csym i = sprintf "S%i" i
   let compare_csym v1 v2 = Misc.int_compare v1 v2
+  let equal_csym v1 v2 = v1 == v2
 
   let nextsym = ref 0
 
@@ -73,12 +74,17 @@ module
     | (Var _,_)
     | (_,Var _) -> true  (* WARNING: May want to optimize later *)
 
-  let compare v1 v2 = match v1,v2 with
-  | Val i1,Val i2 -> Cst.compare i1 i2
-  | Var i1,Var i2 -> compare_csym i1 i2
-  | Val _,Var _ -> 1
-  | Var _,Val _ -> -1
+  let compare v1 v2 =
+    match v1,v2 with
+    | Val i1,Val i2 -> Cst.compare i1 i2
+    | Var i1,Var i2 -> compare_csym i1 i2
+    | Val _,Var _ -> 1
+    | Var _,Val _ -> -1
 
+  let equal v1 v2 =  match v1,v2 with
+  | Val i1,Val i2 -> Cst.eq i1 i2
+  | Var i1,Var i2 -> equal_csym i1 i2
+  | (Val _,Var _)|(Var _,Val _) -> false
 
   let intToV i  = Val (Cst.intToV i)
   let stringToV i  = Val (Cst.stringToV i)
