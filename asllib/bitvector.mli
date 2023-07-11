@@ -6,6 +6,8 @@ type t
 val length : t -> int
 (** The length of the bitvector. *)
 
+val debug : t -> string
+
 val pp_t : Format.formatter -> t -> unit
 (** Print the bitvector, indexed from the right, as a serie of '0' and '1',
     delimited by apostrophes. Inside a horizontal box. *)

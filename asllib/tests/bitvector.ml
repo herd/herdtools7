@@ -159,19 +159,21 @@ let test_with_int64 () =
 
 let test_with_z () =
   let one (i, s) =
-    let s = Printf.sprintf "'%64s'" s in
-    let s = String.map (function ' ' -> '0' | c -> c) s in
+    let len = String.length s in
     let () =
       if _debug then
-        Format.eprintf "Comparing %s to %s (%a to %a)@." (Z.to_string i) s
-          BV.pp_t (BV.of_z 64 i) BV.pp_t (BV.of_string s)
+        Printf.eprintf "Comparing %s to %s\nand %s to %s\nand %s and %s\n%!"
+          (Z.to_string i) s
+          (BV.to_string (BV.of_z len i)) s
+          (Z.to_string i)
+          (Z.to_string ((BV.to_z_unsigned (BV.of_string s))))
     in
-    assert (BV.equal (BV.of_z 64 i) (BV.of_string s));
-    assert (String.equal (BV.to_string (BV.of_z 64 i)) s);
+    assert (BV.equal (BV.of_z len i) (BV.of_string s));
+    assert (String.equal (BV.to_string (BV.of_z len i)) ("'" ^ s ^ "'"));
     assert (Z.equal i (BV.to_z_unsigned (BV.of_string s)));
-    assert (Z.equal i (BV.to_z_unsigned (BV.of_z 64 i)))
+    assert (Z.equal i (BV.to_z_unsigned (BV.of_z len i)))
   in
-  List.iter one
+    List.iter one
     [
       (Z.of_string "0x0", "");
       (Z.of_string "0x0", "0");
@@ -184,10 +186,22 @@ let test_with_z () =
       (Z.of_string "0x502", "10100000010");
       (Z.of_string "0x30502", "110000010100000010");
       (Z.of_string "0x20502", "100000010100000010");
+      (Z.of_string "0xffff", "1111111111111111");
       (Z.of_string "0xffffffff", "11111111111111111111111111111111");
       (Z.of_string "0xfffffffe", "11111111111111111111111111111110");
       (Z.of_string "0x2", "00000000000000000000000000000010");
-    ]
+    ] ;
+    assert (Z.equal Z.one (BV.to_z_unsigned (BV.of_string "1"))) ;
+    for i = 1 to 17 do
+      let x = BV.of_z i Z.minus_one
+      and y = BV.of_z i (Z.add Z.minus_one (Z.shift_left Z.one i)) in
+      if _debug then
+        Printf.eprintf "%s - %s\n" (BV.debug x) (BV.debug y) ;
+      assert (String.equal (BV.to_string x) (BV.to_string  y)) ;
+      assert (BV.equal y x) ;
+      ()
+    done ;
+  ()
 
 let test_with_int64_signed () =
   let one (i, s) =

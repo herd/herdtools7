@@ -68,6 +68,10 @@ let _pp_data f (length, data) =
   pp_print_char f 'x';
   String.iter (fun c -> fprintf f "%x" @@ Char.code c) data
 
+let debug bv =
+  Format.fprintf Format.str_formatter "@[%a@]" _pp_data bv ;
+  Format.flush_str_formatter ()
+
 let create_data_bytes length =
   let n = length / 8 and m = length mod 8 in
   Bytes.create (if m = 0 then n else n + 1)
@@ -223,8 +227,8 @@ let to_z_unsigned (sz,data) =
         let c = String.unsafe_get data i |> Char.code |> Z.of_int in
         let r = Z.logor c (Z.shift_left r 8) in
         do_rec r (i-1) in
-    let n = sz / 8 and m = sz mod 8 in
-    let mask = last_char_mask m in
+    let n = (sz + 7) / 8 and m = sz mod 8 in
+    let mask = last_char_mask (if m=0 then 8 else m) in
     let c0 = String.unsafe_get data (n-1) |> Char.code |> (land) mask in
     do_rec (Z.of_int c0) (n-2)
 
@@ -286,16 +290,16 @@ let of_int64 s =
 let of_int x = of_int64 (Int64.of_int x)
 
 let of_z sz z =
-  let n = sz / 8 and m = sz mod 8 in
-  let length = if m=0 then n else n+1 in
-  let result = Bytes.make length char_0 in
-  let rec do_rec i =
+  let n = (sz+7) / 8 and m = sz mod 8 in
+  let result = Bytes.make n char_0 in
+  let rec do_rec msk i =
     if i >= 0 then begin
-      let c = Z.extract z (i*8) 8 |> Z.to_int |> Char.chr in
+      let c = Z.extract z (i*8) 8 |> Z.to_int |> (land) msk |> Char.chr in
       Bytes.unsafe_set result i c ;
-      do_rec (i-1)
+      do_rec 0xFF (i-1)
     end in
-  do_rec (length-1) ;
+  let msk = last_char_mask (if m=0 then 8 else m) in
+  do_rec msk (n-1) ;
   sz,Bytes.unsafe_to_string result
 
 (* --------------------------------------------------------------------------
@@ -337,6 +341,7 @@ let logor = bitwise_op ( lor )
 let logxor bv1 bv2 = bitwise_op ( lxor ) bv1 bv2 |> remask
 
 let equal bv1 bv2 =
+  if false then Format.eprintf "@[%a =@ %a@]@." _pp_data bv1 _pp_data bv2 ;
   length bv1 == length bv2
   && (* let bv1 = remask bv1 and bv2 = remask bv2 in *)
   String.equal (data bv1) (data bv2)
