@@ -119,7 +119,7 @@ module Make(O:Config)(I:I) : S with module I = I
     let open Constant in
     match c with
     | Symbolic sym -> Global_litmus.tr_symbol sym
-    | Tag _|Concrete _|ConcreteVector _
+    | Tag _|Concrete _|ConcreteVector _|ConcreteRecord _
     | Label _|PteVal _|Instruction _
     | Frozen _
       ->

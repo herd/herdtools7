@@ -102,7 +102,7 @@ end = struct
     | Symbolic (System (TAG,_)) -> Access.TAG
     | Label _ -> VIR
     | Tag _
-    | ConcreteVector _|Concrete _
+    | ConcreteVector _|Concrete _|ConcreteRecord _
     | PteVal _|Instruction _|Frozen _ as v
       ->
        Warn.fatal "access_of_constant %s as an address"
@@ -612,7 +612,7 @@ end = struct
           | Some (A.V.Val (PteVal v)) -> Some v
           | Some
               (A.V.Val
-                 (ConcreteVector _|Concrete _|Symbolic _
+                 (ConcreteVector _|Concrete _|Symbolic _|ConcreteRecord _
                   |Label (_, _)|Tag _|Instruction _
                   |Frozen _))
           | None

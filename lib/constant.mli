@@ -64,16 +64,20 @@ val virt_match_phy : symbol (* virt *) -> symbol (* phy *)-> bool
 module SymbolSet : MySet.S with type elt = symbol
 module SymbolMap : MyMap.S with type key = symbol
 
-(* Add scalars *)
-type ('scalar,'pte,'instr) t =
-  | Concrete of 'scalar
-  | ConcreteVector of ('scalar,'pte,'instr) t list
-  | Symbolic  of symbol
-  | Label of Proc.t * string     (* In code *)
+(** [(s, p, i) t] is the type of constants with [s] the type of scalars, [p]
+    the type of page table entries, and [i] the type of instructions. *)
+type ('scalar, 'pte, 'instr) t =
+  | Concrete of 'scalar  (** A scalar, e.g. 3. *)
+  | ConcreteVector of ('scalar, 'pte, 'instr) t list
+      (** A vector of constants, e.g. [[3, x, NOP]]. *)
+  | ConcreteRecord of ('scalar, 'pte, 'instr) t StringMap.t
+      (** A record of constants, e.g. [{ addr: x; instr: NOP; index: 3 }] *)
+  | Symbolic of symbol  (** A symbolic constant, e.g. [x] *)
+  | Label of Proc.t * string  (** A label in code. *)
   | Tag of string
-  | PteVal of 'pte
-  | Instruction of 'instr
-  | Frozen of int (* Frozen symbolic value *)
+  | PteVal of 'pte  (** A page table entry. *)
+  | Instruction of 'instr  (** An instruction. *)
+  | Frozen of int (** Frozen symbolic value. *)
 
 val compare :
   ('scalar -> 'scalar -> int) ->

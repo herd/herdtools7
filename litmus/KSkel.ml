@@ -334,6 +334,8 @@ module Make
           let pp_vs = List.map dump_a_v vs in
           sprintf "{%s}" (String.concat "," pp_vs) (* list initializer syntax *)
       | Symbolic (Virtual {name=s;tag=None;cap=0L;offset=0;_})-> dump_a_addr s
+      | ConcreteRecord _ ->
+          Warn.user_error "No record value for klitmus"
       | Label _ ->
           Warn.user_error "No label value for klitmus"
       | Symbolic _|Tag _| PteVal _ ->

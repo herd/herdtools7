@@ -727,7 +727,7 @@ module Make(C:Config) (I:I) : S with module I = I
                 (pp_location loc)
           | Location_global
               (I.V.Val
-                 (Concrete _|ConcreteVector _
+                 (Concrete _|ConcreteVector _|ConcreteRecord _
                  |Label _|Instruction _|Frozen _
                  |Tag _|PteVal _))
             ->

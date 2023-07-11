@@ -107,6 +107,8 @@ module RLocSet = A.RLocSet and module FaultType = A.FaultType =
             | Concrete _|PteVal _|Instruction _ -> k
             | ConcreteVector vs ->
                 List.fold_right f vs k
+            | ConcreteRecord vs ->
+                StringMap.fold_values f vs k
             | Label _|Symbolic _|Tag _|Frozen _
               -> assert false in
             f v k

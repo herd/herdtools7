@@ -204,6 +204,8 @@ module Make(O:Config)(A:I) =
                       end
                   | ConcreteVector vs ->
                       List.fold_right f vs k
+                  | ConcreteRecord vs ->
+                    StringMap.fold_values f vs k
                   |Concrete _|Label _|Tag _
                   |PteVal _|Instruction _|Frozen _
                    -> k in

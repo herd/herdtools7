@@ -368,7 +368,7 @@ module Make
                (fun v -> sprintf "%s," (dump_a_v v))
                vs in
            sprintf "{%s}" (String.concat "" pps)
-        | Symbolic _|Tag _|PteVal _|Frozen _ -> assert false
+        | Symbolic _|Tag _|PteVal _|Frozen _|ConcreteRecord _ -> assert false
         | Label _ ->
             Warn.user_error
               "Labels cannot be used as initial values of memory locations"
