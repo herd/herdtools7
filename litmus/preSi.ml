@@ -82,12 +82,11 @@ module Make
       LocMake
         (CfgLoc:
            sig
-             val label_init : Label.Full.Set.t
-             val labels : Label.Full.full list
+             val all_labels : Label.Full.full list
              val need_prelude : bool
            end) = struct
 
-    let do_label_init = not (Label.Full.Set.is_empty CfgLoc.label_init)
+    let do_label_init = Misc.consp CfgLoc.all_labels
 
     let do_ascall = Cfg.ascall || Cfg.is_kvm || do_label_init ||
                       Cfg.variant Variant_litmus.Self
@@ -167,7 +166,9 @@ module Make
         List.exists
           (fun (_,o,_) -> Misc.is_some o)
           (U.get_faults test)
-      let need_labels test = do_precise || Misc.consp CfgLoc.labels || see_faults test
+
+      let some_labels test =
+        do_precise || do_label_init || see_faults test
 
 (***************)
 (* File header *)
@@ -275,8 +276,10 @@ module Make
         O.o "/* Full memory barrier */" ;
         UD.dump_mbar_def () ;
         let dump_find_ins =
-          do_self || CfgLoc.need_prelude
-          || do_precise|| Misc.consp CfgLoc.labels in
+          do_self
+          || CfgLoc.need_prelude
+          || do_precise
+          || do_label_init in
         if dump_find_ins then begin
           ObjUtil.insert_lib_file O.o "_find_ins.c" ;
           O.o ""
@@ -293,25 +296,10 @@ module Make
         if CfgLoc.need_prelude then begin
           ObjUtil.insert_lib_file O.o "_prelude_size.c"
         end ;
-        if do_label_init then begin
-          O.o "/* Code analysis */" ;
-
-          O.o "#define SOME_LABELS 1" ;
-          O.o "" ;
-          O.o "typedef struct {" ;
-          UD.define_label_fields CfgLoc.label_init ;
-          O.o "} code_labels_t;" ;
-          O.o "" ;
-          O.o "static void code_labels_init(code_labels_t *p);" ;
-          O.o "" ;
-        end ;
         dump_find_ins
 
 
       (* Fault handler *)
-      and tag_code ((p,lbl),_,_) = sprintf "code_P%d%s" p
-          (match lbl with None -> assert false | Some lbl -> "_" ^ lbl)
-
       let dump_vector_table is_user name tgt =
         O.f "static ins_t *get_vector_table%s(void) {" name ;
         O.oi "ins_t *r;" ;
@@ -395,7 +383,7 @@ module Make
              | _::_ ->
                 O.o "#define SEE_FAULTS 1" ;
                 O.o "" ;
-                begin match CfgLoc.labels with
+                begin match CfgLoc.all_labels with
                 | [] -> if do_precise then insert_ins_ops ()
                 | _ -> insert_ins_ops ()
                 end ;
@@ -676,16 +664,20 @@ module Make
               end)
           test.T.globals ;
         O.o "};"
- 
+
+
       let dump_fault_type env test =
-        if need_labels test then begin
-            O.o "typedef struct {" ;
-            List.iter (fun (p,lbl) -> O.fi "ins_t *code_P%d_%s;"  p lbl)
-              CfgLoc.labels ;
-            O.fi "ins_t *ret[N];" ;
-            O.o "} labels_t;" ;
-            O.o ""
-          end ;
+        if some_labels test then begin
+
+          O.o "typedef struct {" ;
+          List.iter
+            (fun (p,lbl) ->
+              O.fi "ins_t *%s;"
+                (OutUtils.fmt_lbl_var p lbl)) CfgLoc.all_labels ;
+          if do_precise then O.fi "ins_t *ret[N];" ;
+          O.o "} labels_t;" ;
+          O.o ""
+        end ;
         if see_faults test then begin
             O.f "#define %-25s 0" (SkelUtil.instr_symb_id "UNKNOWN") ;
             (* Define indices for labels *)
@@ -693,21 +685,21 @@ module Make
               (fun i (p,lbl) ->
                 let flbl = sprintf "P%d_%s" p lbl in
                 O.f "#define %-25s  %d" (SkelUtil.instr_symb_id flbl) (i + 1))
-              CfgLoc.labels ;
+              CfgLoc.all_labels ;
             O.o "" ;
             O.f "static const char *instr_symb_name[] = {" ;
             O.oi "\"UNKNOWN\"," ;
             (* Define names for inst symbols *)
-            List.iter (fun (_,lbl) -> O.fi "\"%s\"," lbl ) CfgLoc.labels ;
+            List.iter (fun (_,lbl) -> O.fi "\"%s\"," lbl ) CfgLoc.all_labels ;
             O.o "};" ;
             O.o "" ;
             O.o "static int get_instr_symb_id(labels_t *lbls, const unsigned long pc) {" ;
             List.iter
               (fun (p,lbl) ->
-                let flbl = sprintf "P%d_%s" p lbl in
-                O.fi "if (pc == (unsigned long)lbls->code_%s)" flbl ;
+                let flbl = (OutUtils.fmt_lbl_var p lbl) in
+                O.fi "if (pc == (unsigned long)lbls->%s)" flbl ;
                 O.fii "return %s;" (SkelUtil.instr_symb_id flbl))
-              CfgLoc.labels ;
+              CfgLoc.all_labels ;
             O.fi "return %s;" (SkelUtil.instr_symb_id "UNKNOWN") ;
             O.o "};" ;
             O.o "" ;
@@ -725,7 +717,7 @@ module Make
               if Cfg.hexa then "0x%" ^ fmt else "%" ^ fmt)
           locs env
 
-      let some_vars test = Misc.consp test.T.globals
+      let some_vars test = Misc.consp test.T.globals || some_labels test
 
       let dump_outcomes env test =
         let rlocs = U.get_displayed_locs test
@@ -757,17 +749,15 @@ module Make
               O.fi "size_t %s;" (fmt_prelude p) ;
               O.fi "size_t %s;" (fmt_code_size p))
             (Misc.interval 0 nprocs) in
-        begin match test.T.globals,do_self with
-        | [],false ->
-           O.o "typedef void vars_t;" ;
-        | locs,_ ->
-            O.o "" ;
-            O.o "#define SOME_VARS 1" ;
-            O.o "typedef struct {" ;
-            dump_vars_loc locs ;
-            if do_self then dump_vars_code (T.get_nprocs test) ;
-            if need_labels test then O.oi "labels_t labels;" ;
-            O.o "} vars_t;"
+        if some_vars test then begin
+          O.o "#define SOME_VARS 1" ;
+          O.o "typedef struct {" ;
+          dump_vars_loc test.T.globals ;
+          if do_self then dump_vars_code (T.get_nprocs test) ;
+          if some_labels test then O.oi "labels_t labels;" ;
+          O.o "} vars_t;"
+        end else begin
+         O.o "typedef void vars_t;"
         end ;
         O.o "" ;
         UD.dump_vars_types false test ;
@@ -831,7 +821,7 @@ module Make
             let addr = if Cfg.is_kvm then "p_addr" else "v_addr" in
             let dump_test (s,_) =
               O.fi "if (%s == p->%s) return %s;"
-                addr s (SkelUtil.data_symb_id s) ;                
+                addr s (SkelUtil.data_symb_id s) ;
               if Cfg.is_kvm then begin
                 O.fi "if ((pteval_t *)v_addr == p->%s) return %s;"
                   (OutUtils.fmt_pte_tag s)
@@ -1353,7 +1343,7 @@ module Make
           O.o "static void vars_init(vars_t *_vars,intmax_t *_mem) {" ;
           if Cfg.is_kvm then begin
           let has_user = Misc.consp procs_user in
-          if some_vars test then begin
+          if Misc.consp test.T.globals then begin
               O.oi "const size_t _sz = LINE/sizeof(intmax_t);";
               O.oi "pteval_t *_p;" ;
               O.o ""
@@ -1403,6 +1393,38 @@ module Make
                 test.T.code
             end ;
           O.o "}" ;
+          O.o "" ;
+          O.o "static void labels_init(vars_t *_vars) {" ;
+          if do_label_init || do_precise then
+            O.fi "labels_t *lbls = &_vars->labels;" ;
+          List.iter (fun (p,lbl) ->
+              let off = U.find_label_offset p lbl test in
+              let lhs = sprintf "lbls->%s" (OutUtils.fmt_lbl_var p lbl) in
+              let proc = if do_self then
+                  sprintf "_vars->%s" (LangUtils.code_fun p)
+                else
+                  LangUtils.code_fun p in
+              let rhs =
+                sprintf "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,0)+%d"
+                  proc (LangUtils.code_fun p) off in
+              O.fi "%s = %s;" lhs rhs)
+            CfgLoc.all_labels ;
+          if do_precise then begin
+            List.iter
+              (fun (p,(t,_)) ->
+                 let proc =
+                   if do_self then
+                     sprintf "_vars->%s" (LangUtils.code_fun p)
+                   else
+                     LangUtils.code_fun p in
+                 let rhs =
+                   sprintf "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,%d)"
+                     proc (LangUtils.code_fun p)
+                     (A.Out.get_nnops t-1) in
+                 O.fi "lbls->ret[%d] = %s;" p rhs)
+              test.T.code
+          end ;
+          O.o "}";
           ()
         end ;
         O.o "" ;
@@ -1502,11 +1524,6 @@ module Make
         if do_self then
           O.fii "code_init(%s, %s, _vars->%s);" (LangUtils.code_fun_cpy proc)
             (OutUtils.fmt_code proc) (OutUtils.fmt_code_size proc) ;
-        if need_labels test then begin
-            if proc = 0 then
-            O.oii "init_labels(_vars);" ;
-            O.oii "barrier_wait(_b);"
-          end ;
         (* Initialize them *)
         List.iter
           (fun a ->
@@ -1767,63 +1784,7 @@ module Make
         let faults = U.get_faults test in
         (* Notice: initialise the "nop" global variable before others *)
         UD.dump_init_getinstrs test ;
-        if do_label_init then begin
-          UD.define_label_offsets test CfgLoc.label_init ;
-          O.o "" ;
-          O.o "static void code_labels_init(code_labels_t *p) {" ;
-          UD.initialise_labels "p" CfgLoc.label_init ;
-          O.o "}" ;
-          O.o ""
-        end ;
-        if need_labels test then begin
-            O.o "static void init_labels(vars_t *_vars) {" ;
-            if do_precise || Misc.consp CfgLoc.labels then
-              O.fi "labels_t *lbls = &_vars->labels;" ;
-            List.iter (fun (p,lbl) ->
-                let off = U.find_label_offset p lbl test in
-                let lhs = sprintf "lbls->code_P%d_%s" p lbl in
-                let proc = if do_self then
-                             sprintf "_vars->%s" (LangUtils.code_fun p)
-                           else
-                             LangUtils.code_fun p in
-                let rhs =
-                  sprintf "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,0)+%d"
-                    proc proc off in
-                O.fi "%s = %s;" lhs rhs)
-              CfgLoc.labels ;
-            if do_precise then begin
-                List.iter
-                  (fun (p,(t,_)) ->
-                    let proc =
-                      if do_self then
-                        sprintf "_vars->%s" (LangUtils.code_fun p)
-                      else
-                        LangUtils.code_fun p in
-                    let rhs = sprintf
-                                "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,%d)"
-                                proc proc
-                                (A.Out.get_nnops t-1) in
-                    O.fi "lbls->ret[%d] = %s;" p rhs)
-                  test.T.code
-              end ;
-            O.o "}" ;
-            O.o ""
-          end ;
         O.o "inline static int do_run(thread_ctx_t *_c, param_t *_p,global_t *_g) {" ;
-        if not do_ascall then begin match faults with
-        | [] -> ()
-        | _::_ ->
-            O.oi "if (_c->role == 0 && _c->inst == 0) {" ;
-            List.iter
-              (fun ((p,lbl),_,_ as f) -> match lbl with
-              | None ->
-                  O.fii "labels.%s = (ins_t *) &&CODE%d;" (tag_code f) p
-              | Some lbl ->
-                  let off = U.find_label_offset p  lbl test in
-                  O.fii "labels.%s = ((ins_t *)&&CODE%d) + %d;" (tag_code f) p off)
-              faults ;
-            O.oi "}" ;
-        end ;
         O.oi "int _ok = 0;" ;
         O.oi "int _role = _c->role;" ;
         O.oi "if (_role < 0) return _ok;" ;
@@ -1831,10 +1792,9 @@ module Make
         O.oi "sense_t *_b = &_ctx->b;" ;
         O.oi "log_t *_log = &_ctx->out;" ;
         if some_ptr then O.oi "log_ptr_t *_log_ptr = &_ctx->out_ptr;" ;
-        begin match test.T.globals,do_self with
-        | [], false -> O.o ""
-        | _, _ -> O.oi "vars_t *_vars = &_ctx->v;"
-        end;
+        if some_vars test then begin
+          O.oi "vars_t *_vars = &_ctx->v;"
+        end ;
         begin match test.T.globals with
         | [] -> ()
         | globs ->
@@ -2142,7 +2102,7 @@ module Make
                   T.get_init_labels test
                 else Label.Full.Set.empty
 
-              let labels =
+              let all_labels =
                 if has_instruction_ptr then
                   T.all_labels test
                 else []
