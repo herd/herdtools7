@@ -23,6 +23,7 @@
 #include <limits.h>
 #include <errno.h>
 #include <stdint.h>
+#include <sys/mman.h>
 #endif
 
 #include "utils.h"
@@ -304,3 +305,22 @@ void parse_param(char *prog,parse_param_t *p,int sz,char **argv) {
     argv++ ;
   }
 }
+
+#ifndef KVM
+
+/********************/
+/* presi self alloc */
+/********************/
+void *mmap_exec(size_t sz) {
+  void * p = mmap(NULL, sz, PROT_READ|PROT_EXEC|PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+  if (p == MAP_FAILED) {
+    errexit("mmap",errno) ;
+  }
+  return p ;
+}
+
+void munmap_exec(void *p,size_t sz) {
+  if (munmap(p,sz)) errexit("munmap",errno);
+}
+
+#endif
