@@ -69,6 +69,7 @@ val dumplem : bool ref
 val dumptex : bool ref
 val maxphantom : int option ref
 val statelessrc11 : bool ref
+val dumpallfaults : bool ref
 
 (* Pretty printing configuration, deserves its own module *)
 module PP : sig

@@ -1463,7 +1463,7 @@ let match_reg_events es =
           | _,_ -> k)
           rfm test.Test_herd.init_state in
       st,
-      if A.FaultAtomSet.is_empty test.Test_herd.ffaults then
+      if A.FaultAtomSet.is_empty test.Test_herd.ffaults && not !Opts.dumpallfaults then
         A.FaultSet.empty
       else
         E.EventSet.fold

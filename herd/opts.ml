@@ -77,6 +77,7 @@ let dumplem = ref false
 let dumptex = ref false
 let maxphantom= ref None
 let statelessrc11 = ref false
+let dumpallfaults = ref false
 
 (* Pretty printing configuration, deserves its own module *)
 module PP = struct

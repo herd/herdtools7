@@ -166,6 +166,9 @@ let handle_key main key arg = match key with
      lex_bool badexecs arg
 | "badflag" ->
      lex_string_opt badflag arg
+| "dumpallfaults" ->
+   lex_bool dumpallfaults arg
+
 (* Control output *)
 | "show" ->
     lex_tag "show"
