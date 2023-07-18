@@ -7,6 +7,8 @@
 
 open AST
 
+type env = StaticEnv.env
+
 (** {1 Predicates on types} *)
 
 val is_builtin : ty -> bool
@@ -15,8 +17,8 @@ val is_builtin_aggregate : ty -> bool
 
 (** Note that a builtin type is either builtin aggregate or builtin singular. *)
 
-val is_singular : Env.Static.env -> ty -> bool
-val is_aggregate : Env.Static.env -> ty -> bool
+val is_singular : env -> ty -> bool
+val is_aggregate : env -> ty -> bool
 
 (** Note that a type is either singular or aggregate. *)
 
@@ -43,7 +45,7 @@ val is_non_primitive : ty -> bool
 
 (** {2 Type transformations} *)
 
-val get_structure : Env.Static.env -> ty -> ty
+val get_structure : env -> ty -> ty
 (** The structure of a type is the primitive type that can hold the same
     values. *)
 
@@ -57,7 +59,7 @@ module Domain : sig
   val pp : Format.formatter -> t -> unit
   (** A printer for the domain type. *)
 
-  val of_type : Env.Static.env -> ty -> t
+  val of_type : env -> ty -> t
   (** Construct the domain of a type. *)
 
   val mem : AST.value -> t -> bool
@@ -74,16 +76,16 @@ end
 
 (** {2 Orders on types} *)
 
-val subtype_satisfies : Env.Static.env -> ty -> ty -> bool
+val subtype_satisfies : env -> ty -> ty -> bool
 (** Subtype-satisfation as per Definition TRVR. *)
 
-val domain_subtype_satisfies : Env.Static.env -> ty -> ty -> bool
-val structural_subtype_satisfies : Env.Static.env -> ty -> ty -> bool
+val domain_subtype_satisfies : env -> ty -> ty -> bool
+val structural_subtype_satisfies : env -> ty -> ty -> bool
 
-val type_satisfies : Env.Static.env -> ty -> ty -> bool
+val type_satisfies : env -> ty -> ty -> bool
 (** Type-satisfation as per Rule FMXK. *)
 
-val type_clashes : Env.Static.env -> ty -> ty -> bool
+val type_clashes : env -> ty -> ty -> bool
 (** Type-clashing relation.
 
     Notes:
@@ -93,17 +95,17 @@ val type_clashes : Env.Static.env -> ty -> ty -> bool
     As par Definition VPZZ.
 *)
 
-val subprogram_clashes : Env.Static.env -> 'a func -> 'b func -> bool
+val subprogram_clashes : env -> 'a func -> 'b func -> bool
 (** Subprogram clashing relation.
 
     As per Definition BTBR.
 *)
 
-val lowest_common_ancestor : Env.Static.env -> ty -> ty -> ty option
+val lowest_common_ancestor : env -> ty -> ty -> ty option
 (** Lowest common ancestor.
 
     As per Rule YZHM.
 *)
 
-val base_value : 'a annotated -> Env.Static.env -> ty -> expr
+val base_value : 'a annotated -> env -> ty -> expr
 (** [base_value env ty] is a base value of [ty]. *)

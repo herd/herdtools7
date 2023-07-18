@@ -1,7 +1,8 @@
 open AST
 open ASTUtils
-module SEnv = Env.Static
-open SEnv.Types
+module SEnv = StaticEnv
+
+type env = SEnv.env
 
 let undefined_identifier pos x =
   Error.fatal_from pos (Error.UndefinedIdentifier x)
@@ -212,10 +213,10 @@ module Domain = struct
     match e.desc with
     | E_Literal v -> int_set_of_value v
     | E_Var x -> (
-        try Env.Static.lookup_constants env x |> int_set_of_value
+        try StaticEnv.lookup_constants env x |> int_set_of_value
         with Not_found -> (
           try
-            match (Env.Static.type_of env x).desc with
+            match (StaticEnv.type_of env x).desc with
             | T_Int None -> Top
             | T_Int (Some constraints) ->
                 int_set_of_int_constraints env constraints
@@ -325,7 +326,7 @@ let _is_bits_width_constrained env ty = not (is_bits_width_fixed env ty)
 let rec subtypes_names env s1 s2 =
   if String.equal s1 s2 then true
   else
-    match IMap.find_opt s1 env.global.subtypes with
+    match IMap.find_opt s1 env.SEnv.global.subtypes with
     | None -> false
     | Some s1' -> subtypes_names env s1' s2
 

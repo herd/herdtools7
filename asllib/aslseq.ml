@@ -160,7 +160,7 @@ let () =
       let ast = List.rev_append (Lazy.force Builder.stdlib) ast in
       let annotated_ast, _ =
         or_exit (fun () ->
-            Typing.type_check_ast args.strictness ast Env.Static.empty)
+            Typing.type_check_ast args.strictness ast StaticEnv.empty)
       in
       Format.printf "@[<v 2>Typed AST:@ %a@]@." PP.pp_t annotated_ast
   in

@@ -7,7 +7,7 @@ open Test_helpers.Helpers.Infix
 let _dbg = false
 
 let env_with_N =
-  let open Env.Static in
+  let open StaticEnv in
   add_local "N" integer LDK_Let empty
 
 let build_consts () =
@@ -51,10 +51,10 @@ let normalize () =
 
   List.iter do_one
     [
-      (binop MINUS !$4 !$2, !$2, Env.Static.empty);
+      (binop MINUS !$4 !$2, !$2, StaticEnv.empty);
       ( binop PLUS (binop MINUS !%"N" !%"m") (binop MINUS !%"m" !$1),
         binop MINUS !%"N" !$1,
-        Env.Static.add_local "m" integer LDK_Let env_with_N );
+        StaticEnv.add_local "m" integer LDK_Let env_with_N );
     ]
 
 let fpzero_example () =

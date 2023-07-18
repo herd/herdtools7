@@ -5,10 +5,10 @@ open Test_helpers.Helpers
 open Test_helpers.Helpers.Infix
 open Asllib.Types
 
-let empty_env = Env.Static.empty
+let empty_env = StaticEnv.empty
 
 let env_with_n =
-  let open Env.Static in
+  let open StaticEnv in
   add_local "N" integer LDK_Let empty
 
 let builtin_examples () =
@@ -65,7 +65,7 @@ let structure_example () =
   let t2_def = !!(T_Tuple [ integer; t1 ]) in
   let t2 = !!(T_Named "T2") in
   let env =
-    let open Env.Static in
+    let open StaticEnv in
     add_type "T1" integer empty |> add_type "T2" t2_def
   in
   (* the named type `T1` whose structure is integer *)

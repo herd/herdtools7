@@ -53,7 +53,8 @@ module Make (B : Backend.S) (C : Config) = struct
   end
 
   module IEnv = Env.RunTime (EnvConf)
-  open IEnv.Types
+
+  type env = IEnv.env
 
   let one = B.v_of_int 1
   let return = B.return
@@ -130,17 +131,10 @@ module Make (B : Backend.S) (C : Config) = struct
           fun env_m ->
             let*| env = env_m in
             let e =
-              match initial_value with
-              | Some e -> e
-              | None -> (
-                  match ty with
-                  | None -> assert false
-                  | Some t ->
-                      let senv =
-                        Env.Static.
-                          { empty with global = env.IEnv.global.static }
-                      in
-                      Types.base_value t senv t)
+              match (initial_value, ty) with
+              | Some e, _ -> e
+              | None, None -> assert false
+              | None, Some t -> Types.base_value t (IEnv.to_static env) t
             in
             let* v = eval_expr env e in
             IEnv.declare_global name v env |> return
@@ -150,16 +144,18 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (** [build_genv static_env ast primitives] is the global environment before
       the start of the evaluation of [ast]. *)
-  let build_genv eval_expr (static_env : Env.Static.env) ast =
+  let build_genv eval_expr (static_env : StaticEnv.env) ast =
     let funcs = IMap.empty |> build_funcs ast in
     let () =
       if _dbg then
-        Format.eprintf "@[<v 2>Executing in env:@ %a@.]"
-          Env.Static.PPEnv.pp_global static_env.global
+        Format.eprintf "@[<v 2>Executing in env:@ %a@.]" StaticEnv.pp_global
+          static_env.global
     in
     let env =
       let open IEnv in
-      let global = { empty_global with static = static_env.global; funcs } in
+      let global =
+        { static = static_env.StaticEnv.global; storage = Storage.empty; funcs }
+      in
       { global; local = empty_scoped Scope_Global }
     in
     let*| env = build_global_storage eval_expr ast (return env) in
@@ -175,7 +171,7 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (** An intermediate result of a statement. *)
   type control_flow_state =
-    | Returning of B.value list * global
+    | Returning of B.value list * IEnv.global
         (** Control flow interruption: skip to the end of the function. *)
     | Continuing of env  (** Normal behaviour: pass to next statement. *)
 
@@ -185,7 +181,7 @@ module Make (B : Backend.S) (C : Config) = struct
 
   type expr_eval_type = (B.value * env) maybe_exception m
   type stmt_eval_type = control_flow_state maybe_exception m
-  type func_eval_type = (value_read_from list * global) maybe_exception m
+  type func_eval_type = (value_read_from list * IEnv.global) maybe_exception m
 
   let bind_exception binder m f =
     binder m (function Normal v -> f v | Throwing _ as res -> return res)
@@ -195,7 +191,10 @@ module Make (B : Backend.S) (C : Config) = struct
   let bind_exception_ctrl m f = bind_exception B.bind_ctrl m f
   let normal v = Normal v |> return
   let continue env : stmt_eval_type = Continuing env |> normal
-  let returning env vs : stmt_eval_type = Returning (vs, env.global) |> normal
+
+  let returning env vs : stmt_eval_type =
+    Returning (vs, env.IEnv.global) |> normal
+
   let choice_m m v1 v2 = B.choice m (return v1) (return v2)
   let choice v v1 v2 = choice_m (return v) v1 v2
 
@@ -271,7 +270,7 @@ module Make (B : Backend.S) (C : Config) = struct
     match le.desc with LE_Var _ | LE_Ignore -> true | _ -> false
 
   let declare_local_identifier env x v =
-    let* () = B.on_write_identifier x env.local.scope v in
+    let* () = B.on_write_identifier x (IEnv.get_scope env) v in
     IEnv.declare_local x v env |> return
 
   let declare_local_identifier_m env x m = m >>= declare_local_identifier env x
@@ -281,7 +280,7 @@ module Make (B : Backend.S) (C : Config) = struct
     declare_local_identifier_m env x m
 
   let assign_local_identifier env x v =
-    let* () = B.on_write_identifier x env.local.scope v in
+    let* () = B.on_write_identifier x (IEnv.get_scope env) v in
     IEnv.assign_local x v env |> return
 
   let read_value_from ((v, name, scope) : value_read_from) =
@@ -300,7 +299,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | E_Var x -> (
         match IEnv.find x env with
         | Local v ->
-            let* () = B.on_read_identifier x env.local.scope v in
+            let* () = B.on_read_identifier x (IEnv.get_scope env) v in
             normal (v, env) |: Rule.ELocalVar
         | Global v ->
             let* () = B.on_read_identifier x Scope_Global v in
@@ -466,7 +465,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let* v = m in
         match IEnv.assign x v env with
         | Local env ->
-            let* () = B.on_write_identifier x env.local.scope v in
+            let* () = B.on_write_identifier x (IEnv.get_scope env) v in
             normal env
         | Global env ->
             let* () = B.on_write_identifier x Scope_Global v in
@@ -540,7 +539,7 @@ module Make (B : Backend.S) (C : Config) = struct
         continue env |: Rule.Assign
     | S_Return (Some { desc = E_Tuple es; _ }) ->
         let**| ms, env = eval_expr_list_m env es in
-        let scope = env.local.scope in
+        let scope = IEnv.get_scope env in
         let folder acc m =
           let*| i, vs = acc in
           let* v = m in
@@ -552,7 +551,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | S_Return (Some e) ->
         let** v, env = eval_expr env e in
         let* () =
-          B.on_write_identifier (return_identifier 0) env.local.scope v
+          B.on_write_identifier (return_identifier 0) (IEnv.get_scope env) v
         in
         returning env [ v ] |: Rule.ReturnOne
     | S_Return None -> returning env [] |: Rule.ReturnNone
@@ -634,13 +633,13 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Evaluate the condition: "Is the for loop terminated?" *)
     let cond_m =
       let op = match dir with Up -> LT | Down -> GT in
-      let* () = B.on_read_identifier id env.local.scope v in
+      let* () = B.on_read_identifier id (IEnv.get_scope env) v in
       B.binop op v2 v
     in
     (* Increase the loop counter *)
     let step env id v dir =
       let op = match dir with Up -> PLUS | Down -> MINUS in
-      let* () = B.on_read_identifier id env.local.scope v in
+      let* () = B.on_read_identifier id (IEnv.get_scope env) v in
       let* v = B.binop op v one in
       let* env = assign_local_identifier env id v in
       return (v, env)
@@ -677,7 +676,7 @@ module Make (B : Backend.S) (C : Config) = struct
     (* [catcher_matches t c] returns true if the catcher [c] match the raised
        exception type [t]. *)
     let catcher_matches =
-      let static_env = { Env.Static.empty with global = env.global.static } in
+      let static_env = { StaticEnv.empty with global = env.global.static } in
       fun v_ty (_e_name, e_ty, _stmt) ->
         Types.type_satisfies static_env v_ty e_ty
     in
@@ -690,7 +689,7 @@ module Make (B : Backend.S) (C : Config) = struct
     @@
     (* We compute the environment in which to compute the catch statements. *)
     let env =
-      if ASTUtils.scope_equal env.local.scope new_env.local.scope then new_env
+      if IEnv.same_scope env new_env then new_env
       else { local = env.local; global = new_env.global }
     in
     match List.find_opt (catcher_matches v_ty) catchers with
@@ -723,7 +722,7 @@ module Make (B : Backend.S) (C : Config) = struct
   (** [eval_func genv name pos args nargs] evaluate the function named [name]
       in the global environment [genv], with [args] the formal arguments, and
       [nargs] the arguments deduced by type equality. *)
-  and eval_func (genv : global) name pos (args : B.value m list) nargs :
+  and eval_func (genv : IEnv.global) name pos (args : B.value m list) nargs :
       func_eval_type =
     match IMap.find_opt name genv.funcs with
     | None -> fatal_from pos @@ Error.UndefinedIdentifier name
@@ -757,7 +756,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let () = if false then Format.eprintf "Evaluating %s.@." name in
         let scope = Scope_Local (name, !r) in
         let () = incr r in
-        let env = { global = genv; local = IEnv.empty_scoped scope } in
+        let env = IEnv.{ global = genv; local = empty_scoped scope } in
         let one_arg envm (x, _) m = declare_local_identifier_mm envm x m in
         let envm = List.fold_left2 one_arg (return env) arg_decls args in
         let one_narg envm (x, m) =
@@ -786,7 +785,7 @@ module Make (B : Backend.S) (C : Config) = struct
       List.rev_append (Lazy.force Builder.stdlib |> ASTUtils.no_primitive) ast
     in
     let ast, static_env =
-      Typing.type_check_ast C.type_checking_strictness ast Env.Static.empty
+      Typing.type_check_ast C.type_checking_strictness ast StaticEnv.empty
     in
     let () =
       if false then Format.eprintf "@[<v 2>Typed AST:@ %a@]@." PP.pp_t ast

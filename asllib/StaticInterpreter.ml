@@ -1,9 +1,9 @@
 open AST
 open ASTUtils
-module SEnv = Env.Static
-open SEnv.Types
+module SEnv = StaticEnv
 
-let _test = false
+type env = SEnv.env
+
 let fatal = Error.fatal
 let fatal_from = Error.fatal_from
 
@@ -67,7 +67,7 @@ let unop_values pos op v =
   | NOT, V_BitVector bv -> V_BitVector (Bitvector.lognot bv)
   | _ -> fatal_from pos (Error.UnsupportedUnop (op, v))
 
-let rec static_eval (env : env) : expr -> value =
+let rec static_eval (env : SEnv.env) : expr -> value =
   let rec expr_ e =
     match e.desc with
     | E_Literal v -> v
@@ -407,10 +407,10 @@ module Normalize = struct
     match e.desc with
     | E_Literal (V_Int i) -> poly_of_int i |> always
     | E_Var s -> (
-        try Env.Static.lookup_constants env s |> poly_of_val |> always
+        try StaticEnv.lookup_constants env s |> poly_of_val |> always
         with Not_found -> (
           try
-            let ty = Env.Static.type_of env s in
+            let ty = StaticEnv.type_of env s in
             match ty.desc with
             | T_Int (Some [ Constraint_Exact e ]) -> to_ir env e
             | T_Int _ -> poly_of_var s |> always

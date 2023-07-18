@@ -1,7 +1,6 @@
 open AST
 open ASTUtils
-module SEnv = Env.Static
-open SEnv.Types
+open StaticEnv
 
 let fatal_from = Error.fatal_from
 let not_yet_implemented pos s = fatal_from pos (Error.NotYetImplemented s)
@@ -68,7 +67,7 @@ module FunctionRenaming = struct
   let add_new_func env name arg_types subpgm_type =
     match IMap.find_opt name env.global.subprogram_renamings with
     | None ->
-        let env = SEnv.set_renamings name (ISet.singleton name) env in
+        let env = set_renamings name (ISet.singleton name) env in
         (env, name)
     | Some set ->
         let name' = name ^ "-" ^ string_of_int (ISet.cardinal set) in
@@ -93,7 +92,7 @@ module FunctionRenaming = struct
                   PP.pp_typed_identifier)
               arg_types
         in
-        let env = SEnv.set_renamings name (ISet.add name' set) env in
+        let env = set_renamings name (ISet.add name' set) env in
         (env, name')
 
   let find_name_strict loc env name caller_arg_types =
@@ -863,8 +862,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             with Not_found ->
               let () =
                 if false then
-                  Format.eprintf "@[Cannot find %s in env@ %a.@]@." x
-                    SEnv.PPEnv.pp_env env
+                  Format.eprintf "@[Cannot find %s in env@ %a.@]@." x pp_env env
               in
               undefined_identifier e x))
     | E_Binop (BAND, e1, e2) ->
@@ -1176,7 +1174,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (* Rule LCFD: A local declaration shall not declare an identifier
            which is already in scope at the point of declaration. *)
         let+ () = check_var_not_in_env loc env x in
-        let env = SEnv.add_local x t ldk env in
+        let env = add_local x t ldk env in
         (env, LDI_Var (x, Some t))
     | LDI_Tuple ([ ldi ], None) -> annotate_local_decl_item loc env ty ldk ldi
     | LDI_Tuple (ldis, None) ->
@@ -1191,10 +1189,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         in
         let env, ldis' =
           List.fold_right2
-            (fun  ty' ldi' (env', les) ->
+            (fun ty' ldi' (env', les) ->
               let env', le = annotate_local_decl_item loc env' ty' ldk ldi' in
               (env', le :: les))
-             tys ldis (env, [])
+            tys ldis (env, [])
         in
         (env, LDI_Tuple (ldis', None))
     | LDI_Tuple (_ldis, Some _t) ->
@@ -1213,7 +1211,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | LDI_Var (x, Some t) ->
         let+ () = check_var_not_in_env loc env x in
         let e = Types.base_value loc env t in
-        ( SEnv.add_local x t LDK_Var env,
+        ( add_local x t LDK_Var env,
           S_Decl (LDK_Var, LDI_Var (x, Some t), Some e) |> here )
     | LDI_Tuple (ldis, None) ->
         let env, ss =
@@ -1340,7 +1338,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let ty = T_Int cs |> here in
         let s =
           let+ () = check_var_not_in_env s env id in
-          let env' = SEnv.add_local id ty LDK_Let env in
+          let env' = add_local id ty LDK_Let env in
           try_annotate_block env' return_type s
         in
         (S_For (id, e1, dir, e2, s) |> here, env)
@@ -1387,7 +1385,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       | None -> env
       | Some name ->
           let+ () = check_var_not_in_env stmt env name in
-          SEnv.add_local name ty LDK_Let env
+          add_local name ty LDK_Let env
     in
     let stmt = try_annotate_block env' return_type stmt in
     (name_opt, ty, stmt)
@@ -1458,9 +1456,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   let annotate_func (env : env) (f : 'p AST.func) : 'p AST.func =
     let () = if false then Format.eprintf "Annotating %s.@." f.name in
     (* Build typing local environment. *)
-    let env' = { env with local = SEnv.empty_local } in
+    let env' = { env with local = empty_local } in
     let env' =
-      let one_arg env' (x, ty) = SEnv.add_local x ty LDK_Let env' in
+      let one_arg env' (x, ty) = add_local x ty LDK_Let env' in
       List.fold_left one_arg env' f.args
     in
     (* Add explicit parameters *)
@@ -1471,7 +1469,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           | Some ty -> ty
           | None -> ASTUtils.underconstrained_integer
         in
-        SEnv.add_local x ty LDK_Let env'
+        add_local x ty LDK_Let env'
       in
       List.fold_left one_param env' f.parameters
     in
@@ -1479,12 +1477,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let add_dependently_typed_from_ty env'' ty =
       match ty.desc with
       | T_Bits (BitWidth_SingleExpr { desc = E_Var x; _ }, _) -> (
-          match Env.Static.type_of_opt env x with
+          match StaticEnv.type_of_opt env x with
           | Some { desc = T_Int None; _ } ->
-              SEnv.add_local x ASTUtils.underconstrained_integer LDK_Let env''
+              add_local x ASTUtils.underconstrained_integer LDK_Let env''
           | Some _ -> env''
-          | None ->
-              SEnv.add_local x ASTUtils.underconstrained_integer LDK_Let env'')
+          | None -> add_local x ASTUtils.underconstrained_integer LDK_Let env'')
       | _ -> env''
     in
     (* Resolve dependently typed identifiers in the arguments. *)
@@ -1498,9 +1495,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       | None -> env'
       | Some { desc = T_Bits (BitWidth_SingleExpr { desc = E_Var x; _ }, _); _ }
         -> (
-          match Env.Static.type_of_opt env x with
+          match StaticEnv.type_of_opt env x with
           | Some { desc = T_Int None; _ } ->
-              SEnv.add_local x ASTUtils.underconstrained_integer LDK_Let env'
+              add_local x ASTUtils.underconstrained_integer LDK_Let env'
           | _ -> env')
       | _ -> env'
     in
@@ -1584,14 +1581,12 @@ let declare_one_func (func_sig : 'a func) env =
         (pp_print_list ~pp_sep:pp_print_space PP.pp_typed_identifier)
         func_sig.args
   in
-  SEnv.add_subprogram name' (Env.ast_func_to_func_sig func_sig) env
+  add_subprogram name' (ast_func_to_func_sig func_sig) env
 
 let declare_const name t v env =
   if IMap.mem name env.global.storage_types then
     Error.fatal_unknown_pos (Error.AlreadyDeclaredIdentifier name)
-  else
-    SEnv.add_global_storage name t GDK_Constant env
-    |> SEnv.add_global_constant name v
+  else add_global_storage name t GDK_Constant env |> add_global_constant name v
 
 let declare_type name ty s env =
   let env =
@@ -1599,20 +1594,20 @@ let declare_type name ty s env =
     | None -> env
     | Some s ->
         if Types.subtype_satisfies env ty (T_Named s |> add_dummy_pos) then
-          SEnv.add_subtype name s env
+          add_subtype name s env
         else
           Error.fatal_unknown_pos (Error.ConflictingTypes ([ T_Named s ], ty))
   in
   match ty.desc with
   | T_Enum ids ->
-      let env = SEnv.add_type name ty env in
+      let env = add_type name ty env in
       let t = T_Named name |> add_pos_from ty in
       let add_one_id env x =
         let v = V_Int (IMap.cardinal env.global.constants_values) in
         declare_const x t v env
       in
       List.fold_left add_one_id env ids
-  | _ -> SEnv.add_type name ty env
+  | _ -> add_type name ty env
 
 let declare_global_storage gsd env =
   let () = if false then Format.eprintf "Declaring %s@." gsd.name in
@@ -1636,14 +1631,14 @@ let declare_global_storage gsd env =
         (* Here keyword = GDK_Var or GDK_Config. *)
         if IMap.mem name env.global.storage_types then
           Error.fatal_unknown_pos (Error.AlreadyDeclaredIdentifier name)
-        else SEnv.add_global_storage name ty keyword env
+        else add_global_storage name ty keyword env
     | { keyword; initial_value = Some e; ty = None; name } ->
         let t, _e = TypeInferSilence.annotate_expr env e in
-        SEnv.add_global_storage name t keyword env
+        add_global_storage name t keyword env
     | { keyword; initial_value = Some e; ty = Some ty; name } ->
         let t, e = TypeInferSilence.annotate_expr env e in
         if not (Types.type_satisfies env t ty) then conflict e [ ty.desc ] t
-        else SEnv.add_global_storage name ty keyword env
+        else add_global_storage name ty keyword env
     | { initial_value = None; ty = None; _ } ->
         (* Shouldn't happen because of parser construction. *)
         Error.fatal_unknown_pos
@@ -1710,7 +1705,7 @@ let type_check_ast strictness ast env =
   let env = build_global ast env in
   let () =
     if false then
-      Format.eprintf "@[<v>Typing in env:@ %a@]@." Env.Static.PPEnv.pp_env env
+      Format.eprintf "@[<v>Typing in env:@ %a@]@." StaticEnv.pp_env env
   in
   let annotate_func =
     match strictness with

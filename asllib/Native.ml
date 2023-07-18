@@ -59,8 +59,8 @@ module NativeBackend = struct
   let return v = v
 
   let v_unknown_of_type ty =
-    Types.base_value dummy_annotated Env.Static.empty ty
-    |> StaticInterpreter.static_eval Env.Static.empty
+    Types.base_value dummy_annotated StaticEnv.empty ty
+    |> StaticInterpreter.static_eval StaticEnv.empty
 
   let warnT msg v =
     (* Should not be called... *)
