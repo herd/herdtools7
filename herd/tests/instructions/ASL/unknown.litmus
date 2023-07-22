@@ -9,7 +9,7 @@ begin
   return (UNKNOWN:: boolean);
 end
 
-func main ()
+func main () => integer
 begin
   var x: boolean;
 
@@ -18,6 +18,8 @@ begin
   else
     x = 0;
   end
+
+  return 0;
 end
 
 locations [0: main.0.x]

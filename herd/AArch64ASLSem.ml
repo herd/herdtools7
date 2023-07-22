@@ -21,6 +21,11 @@ let aarch64_iico_ctrl = "aarch64_iico_ctrl"
 let aarch64_iico_data = "aarch64_iico_data"
 let aarch64_iico_order = "aarch64_iico_order"
 
+let return_0 =
+  let open Asllib.AST in
+  let open Asllib.ASTUtils in
+  S_Return (Some (literal (V_Int 0))) |> add_dummy_pos
+
 module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
   AArch64Sig.Semantics with module A.V = V = struct
   module AArch64S = AArch64Sem.Make (TopConf) (V)
@@ -418,7 +423,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
           let open Asllib.AST in
           match execute with
           | [ D_Func ({ body = SB_ASL s; _ } as f) ] ->
-              let s = Asllib.ASTUtils.s_then decode s in
+              let s = Asllib.ASTUtils.stmt_from_list [ decode; s; return_0 ] in
               D_Func { f with body = SB_ASL s }
           | _ -> assert false
         in

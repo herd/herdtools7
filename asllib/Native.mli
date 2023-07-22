@@ -22,7 +22,7 @@ module NativeBackend : Backend.S with type value = AST.value and type 'a m = 'a
 module NativeInterpreter (C : Interpreter.Config) :
   Interpreter.S with module B = NativeBackend
 
-val interprete : Typing.strictness -> NativeBackend.ast -> unit
+val interprete : Typing.strictness -> NativeBackend.ast -> int
 
 val interprete_with_instrumentation :
-  Typing.strictness -> NativeBackend.ast -> Instrumentation.rule list
+  Typing.strictness -> NativeBackend.ast -> int * Instrumentation.rule list

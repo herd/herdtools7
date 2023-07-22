@@ -165,18 +165,22 @@ let () =
       Format.printf "@[<v 2>Typed AST:@ %a@]@." PP.pp_t annotated_ast
   in
 
-  let () =
+  let exit_code =
     if args.exec then
       or_exit (fun () ->
           if args.show_rules then
-            let rules =
+            let i, rules =
               Native.interprete_with_instrumentation args.strictness ast
             in
-            Format.printf "@[<v 3>Used rules:@ %a@]@."
-              Format.(
-                pp_print_list ~pp_sep:pp_print_cut Instrumentation.Rule.pp)
-              rules
+            let () =
+              let open Format in
+              printf "@[<v 3>Used rules:@ %a@]@."
+                (pp_print_list ~pp_sep:pp_print_cut Instrumentation.Rule.pp)
+                rules
+            in
+            i
           else Native.interprete args.strictness ast)
+    else 0
   in
 
-  ()
+  exit exit_code

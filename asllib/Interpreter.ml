@@ -27,7 +27,7 @@ let _dbg = false
 module type S = sig
   module B : Backend.S
 
-  val run : B.ast -> unit B.m
+  val run : B.ast -> B.value B.m
 end
 
 module type Config = sig
@@ -780,7 +780,7 @@ module Make (B : Backend.S) (C : Config) = struct
   (** Main entry point for the Interpreter, [run ast primitives] type-annotate
       [ast], build a global environment and then evaluate the "main" function
       in it. *)
-  let run (ast : B.ast) : unit m =
+  let run (ast : B.ast) : B.value m =
     let ast =
       List.rev_append (Lazy.force Builder.stdlib |> ASTUtils.no_primitive) ast
     in
@@ -792,18 +792,15 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     let*| env = build_genv eval_expr_sef static_env ast in
     let*| res = eval_func env "main" ASTUtils.dummy_annotated [] [] in
-    let () =
-      match res with
-      | Normal ([], _genv) -> ()
-      | Normal _ -> assert false
-      | Throwing (v_opt, _genv) ->
-          let msg =
-            match v_opt with
-            | None -> "implicitely thrown out of a try-catch."
-            | Some ((v, _, _scope), ty) ->
-                Format.asprintf "%a %s" PP.pp_ty ty (B.debug_value v)
-          in
-          Error.fatal_unknown_pos (Error.UncaughtException msg)
-    in
-    return ()
+    match res with
+    | Normal ([ v ], _genv) -> read_value_from v
+    | Normal _ -> Error.(fatal_unknown_pos (MismatchedReturnValue "main"))
+    | Throwing (v_opt, _genv) ->
+        let msg =
+          match v_opt with
+          | None -> "implicitely thrown out of a try-catch."
+          | Some ((v, _, _scope), ty) ->
+              Format.asprintf "%a %s" PP.pp_ty ty (B.debug_value v)
+        in
+        Error.fatal_unknown_pos (Error.UncaughtException msg)
 end

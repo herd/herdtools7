@@ -14,10 +14,12 @@ begin
     let internal_v = v;
 end
 
-func main()
+func main() => integer
 begin
     X_set[2] = 3;
     let x = X_get[4];
+
+    return 0;
 end
 
 forall (

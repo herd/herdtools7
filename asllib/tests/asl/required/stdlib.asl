@@ -1,5 +1,5 @@
 // Extra main
-func main()
+func main() => integer
 begin
   assert Abs (-1) == 1;
   assert Abs (2) == 2;
@@ -33,5 +33,9 @@ begin
   assert SInt('000') == 0;
   assert SInt('0') == 0;
   assert SInt('1') == -1;
+
+  return 0;
 end
+
+// RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
 

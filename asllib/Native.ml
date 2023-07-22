@@ -296,6 +296,10 @@ let run (module C : Interpreter.Config) ast =
   let ast = NativeStdlib.stdlib @ NativeStdlib.primitives @ ast in
   I.run ast
 
+let exit_value = function
+  | V_Int i -> i
+  | v -> Error.fatal_unknown_pos (Error.MismatchType (v, [ T_Int None ]))
+
 let interprete strictness ast =
   let module C : Interpreter.Config = struct
     let type_checking_strictness = strictness
@@ -303,7 +307,7 @@ let interprete strictness ast =
 
     module Instr = Instrumentation.NoInstr
   end in
-  run (module C) ast
+  run (module C) ast |> exit_value
 
 let interprete_with_instrumentation strictness ast =
   let module B = Instrumentation.SingleSetBuffer in
@@ -314,5 +318,5 @@ let interprete_with_instrumentation strictness ast =
 
     module Instr = Instrumentation.Make (B)
   end in
-  run (module C) ast;
-  B.get ()
+  let res = run (module C) ast in
+  (exit_value res, B.get ())

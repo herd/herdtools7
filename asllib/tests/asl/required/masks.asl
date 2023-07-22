@@ -1,4 +1,4 @@
-func main ()
+func main () => integer
 begin
   assert ('111' IN {'1xx'}) == TRUE;
   assert ('111' IN '1xx') == TRUE;
@@ -19,4 +19,9 @@ begin
   let expr_H = (1 IN {1}) && ('10' IN {'1x'});
   let expr_I = ((1 IN {1}) && ('10' IN {'0x'})) ||
   ((1 IN {2}) && ('10' IN {'1x'}));
+
+  return 0;
 end
+
+// RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
+

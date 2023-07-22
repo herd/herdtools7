@@ -2,11 +2,13 @@ ASL write-mem
 
 { 0: X1 = x; 0: X2 = 3; x = 0 }
 
-func main()
+func main() => integer
 begin
   let address = read_register (1);
   let data = read_register (2);
   write_memory(address, 64, data);
+
+  return 0;
 end
 
 forall (x = 3)

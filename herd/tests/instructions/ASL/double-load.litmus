@@ -6,12 +6,14 @@ ASL double-load
   0: X1 = y;
 }
 
-func main()
+func main() => integer
 begin
   let addr_y = read_register(1);
   let addr_x = read_memory (addr_y, 64);
   let data_x = read_memory (addr_x, 64);
   let three = UInt (data_x);
+
+  return 0;
 end
 
 forall (0: main.0.three = 3)

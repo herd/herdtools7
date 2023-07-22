@@ -2,7 +2,7 @@ ASL while1
 
 { }
 
-func main()
+func main() => integer
 begin
   var x = 3 ;
   var y = 0 ;
@@ -10,6 +10,8 @@ begin
     y = y + 2 ;
     x = x - 1 ;
   end
+
+  return 0;
 end
 
 forall (0: main.0.y = 6 /\ 0: main.0.x=0)

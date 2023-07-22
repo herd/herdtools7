@@ -9,13 +9,15 @@ constant C3 :: integer = C4 * C2;
 constant C4 :: integer = C1;
 constant C5 :: integer = - C2;
 
-func main()
+func main() => integer
 begin
   let c1 = C1;
   let c2 = C2;
   let c3 = C3;
   let c4 = C4;
   let c5 = C5;
+
+  return 0;
 end
 
 forall (

@@ -13,9 +13,14 @@ begin
   return Zeros(L);
 end
 
-func main()
+func main() => integer
 begin
   let x: bits(4) = f0 ('0000');
   let y: integer {0..5} = f1 ('11111');
   let z: bits(6) = f2 (6);
+
+  return 0;
 end
+
+// RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
+

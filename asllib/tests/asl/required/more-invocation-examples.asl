@@ -62,11 +62,16 @@ begin
   let legal = bus(argN, argM as bits(N*2));
 end
 
-func main ()
+func main () => integer
 begin
   let - = legal_fun_fixed_width_actual ();
   let - = legal_fun_underconstrained_actual (4);
   let - = legal_fun_constrained_actual (Zeros(32));
   let - = legal_fun_constrained_actual (Zeros(64));
   illegal_fun_parameter_mismatch (32, 64);
+
+  return 0;
 end
+
+// RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
+

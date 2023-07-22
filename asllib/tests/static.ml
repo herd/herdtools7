@@ -25,11 +25,11 @@ let build_consts () =
     D_Func
       {
         name = "main";
-        body = SB_ASL !!S_Pass;
+        body = SB_ASL !!(S_Return (Some !$0));
         args = [];
         parameters = [];
-        return_type = None;
-        subprogram_type = ST_Procedure;
+        return_type = Some integer;
+        subprogram_type = ST_Function;
       }
   in
   let ast = main :: consts in

@@ -8,8 +8,10 @@ begin
   return 3;
 end
 
-func main()
+func main() => integer
 begin
   let a = f (3);
+
+  return 0;
 end
 

@@ -2,7 +2,7 @@ ASL while2
 
 { }
 
-func main()
+func main() => integer
 begin
   var x: integer;
   repeat
@@ -11,6 +11,8 @@ begin
     end
     x = 2;
   until x >= 2 ;
+
+  return 0;
 end
 
 forall (0:main.0.z=0 /\ 0:main.0.x=2)

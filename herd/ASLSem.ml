@@ -566,11 +566,12 @@ module Make (C : Config) = struct
         if false then Format.eprintf "Completed AST: %a.@." Asllib.PP.pp_t ast
       in
       let exec () = ASLInterpreter.run ast in
-      let* () =
+      let* i =
         match Asllib.Error.intercept exec () with
         | Ok m -> m
         | Error err -> Asllib.Error.error_to_string err |> Warn.fatal "%s"
       in
+      assert (V.equal i V.zero);
       M.addT !(snd ii_env) B.nextT
 
     let spurious_setaf _ = assert false

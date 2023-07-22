@@ -37,7 +37,7 @@ begin
   f4_storage = v;
 end
 
-func main()
+func main() => integer
 begin
   f1[] = f1[];
   f1 = f1;
@@ -47,6 +47,8 @@ begin
   f2[5] = 6;
   f3[12] = 13;
   f4[14] = 15;
+
+  return 0;
 end
 
 forall(

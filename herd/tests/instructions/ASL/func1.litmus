@@ -7,10 +7,12 @@ begin
     return i;
 end
 
-func main()
+func main() => integer
 begin
     let x = 3;
     let y = f(x);
+
+    return 0;
 end
 
 forall (

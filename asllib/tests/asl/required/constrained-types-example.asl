@@ -32,9 +32,14 @@ begin
   // the formal 'x' and the actual 'myL' are of the same determined width.
 end
 
-func main()
+func main() => integer
 begin
   test (8, 8);
   test (16, 16);
   test (32, 8);
+
+  return 0;
 end
+
+// RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
+

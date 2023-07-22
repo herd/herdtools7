@@ -6,5 +6,5 @@ Witnesses
 Positive: 1 Negative: 0
 Condition forall (0:main.0.z=0 /\ 0:main.0.x=2)
 Observation while2 Always 1 0
-Hash=8d185110159490068fbe59e5145387d3
+Hash=6c96541a7ab2edff89424b082ef41789
 

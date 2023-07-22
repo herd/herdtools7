@@ -23,12 +23,14 @@ begin
   end
 end
 
-func main()
+func main() => integer
 begin
   let x = read_register(1);
 
   T0(x);
   T1(x);
+
+  return 0;
 end
 
 locations [0:T0.0.s;]
