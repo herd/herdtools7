@@ -1,8 +1,8 @@
 func inv(i: integer) => integer
 begin
   case i of
-    when 0: return 1;
-    when 1: return 0;
+    when 0 => return 1;
+    when 1 => return 0;
   end
 end
 

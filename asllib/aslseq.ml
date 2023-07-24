@@ -183,7 +183,7 @@ let () =
       let instrumentation = if args.show_rules then true else false in
       or_exit @@ fun () ->
       Native.interprete ~instrumentation ~static_env args.strictness ast
-    else 0, []
+    else (0, [])
   in
 
   let () =

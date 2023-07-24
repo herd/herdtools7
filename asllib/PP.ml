@@ -235,11 +235,13 @@ let rec pp_stmt f s =
   | S_Case (e, case_li) ->
       let pp_case_alt f { desc = p, s; _ } =
         match p with
-        | Pattern_All -> fprintf f "@[<hv 2>otherwise:@ @[<hv>%a@]@]" pp_stmt s
+        | Pattern_All ->
+            fprintf f "@[<hv 2>otherwise@ => @[<hv>%a@]@]" pp_stmt s
         | Pattern_Any li ->
-            fprintf f "@[<hv 2>when @[<h>%a@]:@ @[<hv>%a@]@]"
+            fprintf f "@[<hv 2>when @[<h>%a@]@ => @[<hv>%a@]@]"
               (pp_comma_list pp_pattern) li pp_stmt s
-        | _ -> fprintf f "@[<hv 2>when %a:@ @[<hv>%a@]@]" pp_pattern p pp_stmt s
+        | _ ->
+            fprintf f "@[<hv 2>when %a@ => @[<hv>%a@]@]" pp_pattern p pp_stmt s
       in
       fprintf f "@[<v 2>case %a of@ %a@;<1 -2>end@]" pp_expr e
         (pp_print_list ~pp_sep:pp_print_space pp_case_alt)

@@ -442,8 +442,8 @@ let assign(x, y) == ~=x ; EQ ; ~=y ; <S_Assign>
 let direction == | TO; { AST.Up } | DOWNTO; { AST.Down }
 
 let alt == annotated (
-  | WHEN; ~=pattern_list; ioption(WHERE; expr); COLON; ~=stmt_list; <>
-  | OTHERWISE; COLON; s=stmt_list; { (Pattern_All, s) }
+  | WHEN; ~=pattern_list; ioption(WHERE; expr); ARROW; ~=stmt_list; <>
+  | OTHERWISE; ARROW; s=stmt_list; { (Pattern_All, s) }
 )
 
 let otherwise == OTHERWISE; ARROW; stmt_list
