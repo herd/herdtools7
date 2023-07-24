@@ -703,16 +703,13 @@ let rec base_value loc env t =
       Error.fatal_from loc
         (Error.NotYetImplemented "Base value of under-constrained bitvectors.")
   | T_Enum li -> IMap.find (List.hd li) env.global.constants_values |> lit
-  | T_Exception _ ->
-      Error.fatal_from loc
-        (Error.NotYetImplemented "Base value of exception types.")
   | T_Int None | T_Int (Some []) -> V_Int 0 |> lit
   | T_Int (Some (Constraint_Exact e :: _))
   | T_Int (Some (Constraint_Range (e, _) :: _)) ->
       normalize env e
   | T_Named _ -> assert false
   | T_Real -> V_Real 0. |> lit
-  | T_Record fields ->
+  | T_Exception fields | T_Record fields ->
       let one_field (name, t) = (name, base_value loc env t) in
       E_Record (t, List.map one_field fields) |> add_pos_from t
   | T_String ->

@@ -916,7 +916,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | E_Record (t, fields) ->
         (* Rule WBCQ: The identifier in a record expression must be a named type
            with the structure of a record type, and whose fields have the values
-           given in the field_assignment_list. *)
+           given in the field_assignment_list.
+           Rule WZWC: The identifier in a exception expression must be a named
+           type with the structure of an exception type, and whose fields have
+           the values given in the field_assignment_list.
+        *)
         let+ () =
           check_true (Types.is_named t) (fun () ->
               failwith "Typing error: should be a named type")
