@@ -44,6 +44,8 @@
  *)
 
 include "aarch64fences.cat"
+let Imp = NExp
+let C_TLBI = TLBI & domain(po; [dsb.full])
 
 let add_pair p =
   map (fun r -> (p | r))
@@ -59,16 +61,19 @@ let rec add_both_choices (rs,wts) = match wts with
    add_both_choices (rs,wts)
 end
 
-let CTLBI = TLBI & domain(po; [dsb.full])
-
-(* Compute all possible R&PTE <-> TLBI orders *)
-let all-pte-tlbi =
-  [Imp & PTE & R]; inv-scope; [CTLBI]
-
-let pte-tlbi-pairs rel =
-    let all-pairs = all-pte-tlbi in
-    let no-choice = rel & (all-pairs | all-pairs^-1) in
-    let need-choosing = all-pairs \ (no-choice | no-choice^-1) in
+(* takes a relation "unordered-pairs" of the form [X]; r; [Y]
+         where "X" and "Y" are disjoint and "r" is meant to be symmetric
+   and a relation "rel",
+   and returns a set of acyclic relations consistent with "rel" and ordering
+   the unordered pairs one way or the other.
+ *)
+let enumerate-ordered-pairs (unordered-pairs,rel) =
+    let no-choice = rel & (unordered-pairs | unordered-pairs^-1) in
+    let need-choosing = unordered-pairs \ (no-choice | no-choice^-1) in
     add_both_choices ({no-choice},need-choosing)
 
-let ttd-tlbi-pairs = pte-tlbi-pairs
+let all-TLBI-Imp_TTD_R-enums rel =
+  enumerate-ordered-pairs (
+    inv-scope & (C_TLBI * (Imp & TTD & R)),
+    rel
+  )
