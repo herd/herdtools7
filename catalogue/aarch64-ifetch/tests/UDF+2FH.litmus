@@ -1,0 +1,17 @@
+AArch64 UDF+2FH
+Variant=fatal
+{
+ 0:X0=NOP; 0:X1=P0:L0;
+ 0:X2=0;
+}
+ P0          | P0.F        ;
+             | ADR X9,L0      ;
+             | MSR ELR_EL1,X9 ;
+             | ADD W2,W2,#1;
+             | STR W0,[X1] ;
+             | DC CVAU,X1  ;
+             | DSB ISH     ;
+             | IC IVAU,X1  ;
+L0:          | DSB ISH     ;
+ UDF #0      | ERET        ;
+forall(0:X2=1)

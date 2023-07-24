@@ -8,7 +8,7 @@
  * For a textual version of the model, see section B2.3 of the Armv8 ARM:
  *   https://developer.arm.com/docs/ddi0487/
  *
- * Authors: 
+ * Authors:
  * Jade Alglave <jade.alglave@arm.com>
  * Artem Khyzha <artem.khyzha@arm.com>
  *
@@ -54,8 +54,8 @@ let rec dtrm =
 let ADDR = Rreg \ DATA
 let basic-dep =
    [R|Rreg]; dtrm?
-let data = (basic-dep; [DATA]; iico_data+; [W]) \ same-instance  
-let addr = (basic-dep; [ADDR]; iico_data+; [M | TLBI]) \ same-instance
+let data = (basic-dep; [DATA]; iico_data+; [W]) \ same-instance
+let addr = (basic-dep; [ADDR]; iico_data+; [M | TLBI | IC.IVAU | DC.CVAU]) \ same-instance
 let ctrl = (basic-dep; [BCC]; po) \ same-instance
 
 (** Pick dependencies *)

@@ -1,0 +1,17 @@
+AArch64 SB.RF+dmb+dmb.ish-cachesync-isb
+{
+  0:X0=NOP;       0:X1=P1:m0; 1:X1=P1:m0;
+  0:X2=0; 1:X2=1; 0:X3=z; 1:X3=z; 1:X9=0;
+}
+P0           | P1              ;
+STR W0,[X1]  |     STR W2,[X3] ;
+DMB SY       |     DMB ISH     ;
+LDR W2,[X3]  |     DC CVAU,X1  ;
+             |     DSB ISH     ;
+             |     IC IVAU,X1  ;
+             |     DSB ISH     ;
+             |     ISB         ;
+             | m0: B l0        ;
+             |     MOV W9,#1   ;
+             | l0:             ;
+exists 0:X2=0 /\ 1:X9=0

@@ -1,0 +1,11 @@
+AArch64 IDC1.MP.FR+dmb.st+po
+CacheType=IDC
+{ 0:X0=NOP; 0:X1=P1:Lself; 1:X1=P1:Lself;
+  0:X3=x; 1:X3=x; 0:X9=0 }
+P0           | P1            ;
+MOV W2,#1    | Lself:        ;
+STR W2,[X3]  |   B Lnext     ;
+DMB ST       |   MOV W9,#1   ;
+STR W0,[X1]  | Lnext:        ;
+             |   LDR W2,[X3] ;
+exists 1:X9=1 /\ 1:X2=0

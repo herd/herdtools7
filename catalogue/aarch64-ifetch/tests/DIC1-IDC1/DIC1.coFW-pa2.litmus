@@ -1,0 +1,13 @@
+AArch64 DIC1.coFW-pa2
+CacheType=DIC
+{ 0:X0=NOP;
+  0:X1=x;
+  pte_x=(oa:phy_x);
+  pte_l0=(oa:phy_x);
+  0:X9=0; }
+
+    P0           ;
+l0: B l1         ;
+    MOV W9,#1    ;
+l1: STR W0,[X1]  ;
+exists 0:X9=1

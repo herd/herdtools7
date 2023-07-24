@@ -1,0 +1,22 @@
+AArch64 DIC1.MP.RF+cachesync+switch-ctrl
+(* switch table -- this one is allowed *)
+(* Will suggests that compilers require that this test be allowed iff the miniJit01 is allowed *)
+CacheType=DIC
+{
+[x]=P1:Lend;
+0:X0=NOP; 0:X1=P1:Lself; 0:X3=x;
+1:X3=x;
+1:X11=P1:Lself;
+}
+ P0          | P1           ;
+ STR W0,[X1] |  LDR X1,[X3] ;
+ DC CVAU,X1  |  CMP X1,X11  ;
+ DSB ISH     |  B.NE Lend   ;
+ IC IVAU,X1  | Lself:       ;
+ DSB ISH     |  B Lold      ;
+ MOV W2,#1   |  MOV W9,#2   ;
+ STR X1,[X3] |  B Lend      ;
+             | Lold:        ;
+             |  MOV W9,#1   ;
+             | Lend:        ;
+exists (1:X9=1)

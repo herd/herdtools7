@@ -1,0 +1,15 @@
+AArch64 SM.udf+dc.cvau+dsb.ish-ic.vau-dsb.ish-isb
+Variant=fatal
+{
+ 0:X0=NOP; 0:X1=P0:L0;
+}
+ P0          ;
+ STR W0,[X1] ;
+ DC CVAU,X1  ;
+ DSB ISH     ;
+ IC IVAU,X1  ;
+ DSB ISH     ;
+ ISB         ;
+L0:          ;
+ UDF #0      ;
+ exists(fault(P0:L0,IllegalInstruction))

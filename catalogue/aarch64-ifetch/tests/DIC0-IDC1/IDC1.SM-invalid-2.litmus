@@ -1,0 +1,16 @@
+AArch64 IDC1.SM-invalid-2
+CacheType=IDC
+{
+0:X0=0; 0:X1=P0:l1; 0:X2=0;
+}
+    P0          | P0.F           ;
+    STR W0,[X1] | MOV W2,#42     ;
+    DC CVAU,X1  | ADR X9,l0      ;
+    DSB ISH     | MSR ELR_EL1,X9 ;
+    IC IVAU,X1  | ERET           ;
+    DSB ISH     |                ;
+    ISB         |                ;
+l1: B l0        |                ;
+    MOV W2, #1  |                ;
+l0:             |                ;
+exists (0:X2=42)

@@ -1,0 +1,25 @@
+AArch64 MP.FF+dc.cvau-dmb.ish+dsb.ish-ic.ivau-dsb.ish-rfiINSTNOP
+(* jit_example2 *)
+{
+ 0:X1=NOP; 0:X3=P1:m1;
+ 0:x10=z;
+
+ 1:X10=z;  1:X3=P1:m1;
+ 1:X2=instr:"B .+8";  1:X4=P1:m0; (* B l0 *)
+}
+ P0             | P1             ;
+  STR W1,[X3]   |  LDR W11,[X10] ;
+  DC CVAU,X3    |  DSB ISH       ;
+  DMB ISH       |  IC IVAU,X3    ;
+  MOV W11,#1    |  DSB ISH       ;
+  STR W11,[X10] |  STR W2,[X4]   ;
+                |m0:             ;
+                |  NOP           ;
+                |  B end         ;
+                |l0:             ;
+                |  MOV X9,#1     ;
+                |m1:             ;
+                | B end          ;
+                |  MOV X9,#2     ;
+                |end:            ;
+exists(1:X9=1 /\ 1:X11=1)

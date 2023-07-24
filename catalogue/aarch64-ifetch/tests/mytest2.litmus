@@ -1,0 +1,13 @@
+AArch64 mytest2
+{
+    0:X0=instr:"NOP";
+    0:X1=P0:L00;
+}
+ P0           ;
+ STR W0,[X1]  ;
+L00:          ;
+ B L01        ;
+ ADD X9,X9,#1 ;
+L01:          ;
+ ADD X9,X9,#1 ;
+locations [0:X9];
