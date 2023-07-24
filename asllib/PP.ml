@@ -335,14 +335,15 @@ let pp_decl f =
     | SB_ASL s -> pp_stmt f s
     | SB_Primitive _ -> fprintf f "pass;@ // primitive"
   in
-  function
-  | D_Func func ->
-      fprintf f "@[<v>%a@ begin@;<1 2>@[<v>%a@]@ end@]" pp_func_sig func pp_body
-        func.body
-  | D_TypeDecl (x, ty, None) -> fprintf f "@[<2>type %s of %a;@]" x pp_ty ty
-  | D_TypeDecl (x, ty, Some s) ->
-      fprintf f "@[<2>type %s of %a subtypes %s;@]" x pp_ty ty s
-  | D_GlobalStorage decl -> fprintf f "@[<2>%a;@]" pp_global_storage decl
+  fun d ->
+    match d.desc with
+    | D_Func func ->
+        fprintf f "@[<v>%a@ begin@;<1 2>@[<v>%a@]@ end@]" pp_func_sig func
+          pp_body func.body
+    | D_TypeDecl (x, ty, None) -> fprintf f "@[<2>type %s of %a;@]" x pp_ty ty
+    | D_TypeDecl (x, ty, Some s) ->
+        fprintf f "@[<2>type %s of %a subtypes %s;@]" x pp_ty ty s
+    | D_GlobalStorage decl -> fprintf f "@[<2>%a;@]" pp_global_storage decl
 
 let pp_t f ast =
   let pp_blank_line f () =

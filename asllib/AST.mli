@@ -257,10 +257,12 @@ type global_decl = {
 (** Global declaration type *)
 
 (** Declarations, ie. top level statement in a asl file. *)
-type 'p decl =
+type 'p decl_desc =
   | D_Func of 'p func
   | D_GlobalStorage of global_decl
   | D_TypeDecl of identifier * ty * identifier option
+
+type 'p decl = 'p decl_desc annotated
 
 type 'p t = 'p decl list
 (** Main AST type. *)

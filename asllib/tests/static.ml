@@ -18,7 +18,8 @@ let build_consts () =
     List.map
       (fun (name, e) ->
         D_GlobalStorage
-          { name; keyword = GDK_Let; ty = None; initial_value = Some e })
+          { name; keyword = GDK_Let; ty = None; initial_value = Some e }
+        |> __POS_OF__ |> add_pos_from_pos_of)
       values
   in
   let main =
@@ -31,6 +32,7 @@ let build_consts () =
         return_type = Some integer;
         subprogram_type = ST_Function;
       }
+    |> __POS_OF__ |> add_pos_from_pos_of
   in
   let ast = main :: consts in
   let _ = Native.interprete `TypeCheck ast in

@@ -202,7 +202,9 @@ let reduce_expr env e =
 let reduce_constants env e =
   try StaticInterpreter.static_eval env e
   with
-  | Error.ASLException { desc = Error.UndefinedIdentifier _; _ } as error -> (
+  | Error.ASLException
+      { desc = Error.UndefinedIdentifier x; pos_start; pos_end } as error
+  -> (
     let () =
       if false then
         Format.eprintf
@@ -213,7 +215,10 @@ let reduce_constants env e =
     try
       StaticInterpreter.Normalize.normalize env e
       |> StaticInterpreter.static_eval env
-    with StaticInterpreter.NotYetImplemented -> raise error)
+    with StaticInterpreter.NotYetImplemented ->
+      if pos_end == Lexing.dummy_pos || pos_start == Lexing.dummy_pos then
+        undefined_identifier e x
+      else raise error)
 
 let sum = function
   | [] -> expr_of_int 0
@@ -465,8 +470,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   let has_bitvector_structure env t =
     match (Types.get_structure env t).desc with T_Bits _ -> true | _ -> false
 
-  let t_bool = T_Bool |> add_dummy_pos
-  let t_int = T_Int None |> add_dummy_pos
+  let t_bool = T_Bool |> __POS_OF__ |> add_pos_from_pos_of
+  let t_int = T_Int None |> __POS_OF__ |> add_pos_from_pos_of
 
   let check_binop loc env op t1 t2 : ty =
     let () =
@@ -564,7 +569,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 T_Int (Some (constraint_binop op cs1 cs2)) |> with_loc
             | _ -> assumption_failed ())
         | RDIV ->
-            let+ () = check_type_satisfies' env t1 (T_Real |> add_dummy_pos) in
+            let+ () = check_type_satisfies' env t1 real in
             T_Real |> with_loc)
       (fun () -> fatal_from loc (Error.BadTypesForBinop (op, t1, t2)))
       ()
@@ -763,7 +768,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         | T_Bits (BitWidth_SingleExpr { desc = E_Var x; _ }, _) -> (
             match (Types.get_structure env t_e).desc with
             | T_Bits (BitWidth_SingleExpr e, _) -> (x, e) :: acc
-            | T_Bits _ -> (x, E_Unknown t_e |> add_dummy_pos) :: acc
+            | T_Bits _ -> (x, E_Unknown t_e |> add_pos_from loc) :: acc
             | _ -> acc)
         | _ -> acc
       in
@@ -1457,7 +1462,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           Some (S_Call (name, args, eqs) |> here)
         else None
 
-  let annotate_func (env : env) (f : 'p AST.func) : 'p AST.func =
+  let annotate_func loc (env : env) (f : 'p AST.func) : 'p AST.func =
     let () = if false then Format.eprintf "Annotating %s.@." f.name in
     (* Build typing local environment. *)
     let env' = { env with local = empty_local } in
@@ -1517,7 +1522,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (either
            (fun _ ->
              let _, name, _, _ =
-               FunctionRenaming.find_name_strict dummy_annotated env f.name args
+               FunctionRenaming.find_name_strict loc env f.name args
              in
              let () =
                if false then
@@ -1532,7 +1537,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     { f with body = SB_ASL body; name }
 
-  let try_annotate_func env f = best_effort f (annotate_func env)
+  let try_annotate_func loc env f = best_effort f (annotate_func loc env)
 
   let annotate_gsd env gsd =
     match gsd with
@@ -1587,54 +1592,60 @@ let declare_one_func (func_sig : 'a func) env =
   in
   add_subprogram name' (ast_func_to_func_sig func_sig) env
 
-let declare_const name t v env =
+let declare_const loc name t v env =
   if IMap.mem name env.global.storage_types then
-    Error.fatal_unknown_pos (Error.AlreadyDeclaredIdentifier name)
+    Error.fatal_from loc (Error.AlreadyDeclaredIdentifier name)
   else add_global_storage name t GDK_Constant env |> add_global_constant name v
 
-let declare_type name ty s env =
+let declare_type loc name ty s env =
+  let () =
+    if false then Format.eprintf "Declaring type %s of %a@." name PP.pp_ty ty
+  in
   let env =
     match s with
     | None -> env
     | Some s ->
-        if Types.subtype_satisfies env ty (T_Named s |> add_dummy_pos) then
+        if Types.subtype_satisfies env ty (T_Named s |> add_pos_from loc) then
           add_subtype name s env
-        else
-          Error.fatal_unknown_pos (Error.ConflictingTypes ([ T_Named s ], ty))
+        else Error.fatal_from loc (Error.ConflictingTypes ([ T_Named s ], ty))
   in
-  match ty.desc with
-  | T_Enum ids ->
-      let env = add_type name ty env in
-      let t = T_Named name |> add_pos_from ty in
-      let add_one_id env x =
-        let v = V_Int (IMap.cardinal env.global.constants_values) in
-        declare_const x t v env
-      in
-      List.fold_left add_one_id env ids
-  | _ -> add_type name ty env
+  let res =
+    match ty.desc with
+    | T_Enum ids ->
+        let env = add_type name ty env in
+        let t = T_Named name |> add_pos_from ty in
+        let add_one_id env x =
+          let v = V_Int (IMap.cardinal env.global.constants_values) in
+          declare_const loc x t v env
+        in
+        List.fold_left add_one_id env ids
+    | _ -> add_type name ty env
+  in
+  let () = if false then Format.eprintf "Declared %s.@." name in
+  res
 
-let declare_global_storage gsd env =
+let declare_global_storage loc gsd env =
   let () = if false then Format.eprintf "Declaring %s@." gsd.name in
   try
     match gsd with
     | { keyword = GDK_Constant; initial_value = Some e; ty = None; name } ->
         let v = reduce_constants env e in
         let t = infer_value v |> add_pos_from e in
-        declare_const name t v env
+        declare_const loc name t v env
     | { keyword = GDK_Constant; initial_value = Some e; ty = Some ty; name } ->
         let v = reduce_constants env e in
         let t = infer_value v |> add_pos_from e in
-        if Types.type_satisfies env t ty then declare_const name ty v env
+        if Types.type_satisfies env t ty then declare_const loc name ty v env
         else conflict e [ ty.desc ] t
     | { keyword = GDK_Constant | GDK_Let; initial_value = None; _ } ->
         (* Shouldn't happen because of parser construction. *)
-        Error.fatal_unknown_pos
+        Error.fatal_from loc
           (Error.NotYetImplemented
              "Constants or let-bindings have to be initialized.")
     | { keyword; initial_value = None; ty = Some ty; name } ->
         (* Here keyword = GDK_Var or GDK_Config. *)
         if IMap.mem name env.global.storage_types then
-          Error.fatal_unknown_pos (Error.AlreadyDeclaredIdentifier name)
+          Error.fatal_from loc (Error.AlreadyDeclaredIdentifier name)
         else add_global_storage name ty keyword env
     | { keyword; initial_value = Some e; ty = None; name } ->
         let t, _e = TypeInferSilence.annotate_expr env e in
@@ -1645,7 +1656,7 @@ let declare_global_storage gsd env =
         else add_global_storage name ty keyword env
     | { initial_value = None; ty = None; _ } ->
         (* Shouldn't happen because of parser construction. *)
-        Error.fatal_unknown_pos
+        Error.fatal_from loc
           (Error.NotYetImplemented
              "Global storage declaration should have an initial value or a \
               type.")
@@ -1654,7 +1665,8 @@ let declare_global_storage gsd env =
     env
 
 let build_global ast =
-  let def = function
+  let def d =
+    match d.desc with
     | D_Func { name; _ } | D_GlobalStorage { name; _ } | D_TypeDecl (name, _, _)
       ->
         name
@@ -1663,7 +1675,7 @@ let build_global ast =
     let use_e e acc = ASTUtils.use_e acc e in
     let use_ty ty acc = ASTUtils.use_ty acc ty in
     fun d ->
-      match d with
+      match d.desc with
       | D_GlobalStorage { initial_value = Some e; ty = Some ty; _ } ->
           ISet.empty |> use_e e |> use_ty ty
       | D_GlobalStorage { initial_value = None; ty = Some ty; _ } ->
@@ -1675,17 +1687,17 @@ let build_global ast =
       | D_Func _ ->
           ISet.empty (* TODO: pure functions that can be used in constants? *)
   in
-  let process_one_decl = function
+  let process_one_decl d =
+    match d.desc with
     | D_Func func_sig -> declare_one_func func_sig
-    | D_GlobalStorage gsd -> declare_global_storage gsd
-    | D_TypeDecl (x, ty, s) -> declare_type x ty s
+    | D_GlobalStorage gsd -> declare_global_storage d gsd
+    | D_TypeDecl (x, ty, s) -> declare_type d x ty s
   in
   ASTUtils.dag_fold def use process_one_decl ast
 
-let rename_primitive env (f : 'a AST.func) =
+let rename_primitive loc env (f : 'a AST.func) =
   let _, name, _, _ =
-    FunctionRenaming.find_name_strict dummy_annotated env f.name
-      (List.map snd f.args)
+    FunctionRenaming.find_name_strict loc env f.name (List.map snd f.args)
   in
   { f with name }
 
@@ -1697,11 +1709,12 @@ let rename_primitive env (f : 'a AST.func) =
 
 let annotate_ast (ast : 'a AST.t) env : 'a AST.t * env =
   let env = build_global ast env in
-  let annotate_func f = TypeInferSilence.try_annotate_func env f in
+  let annotate_func loc f = TypeInferSilence.try_annotate_func loc env f in
   let one_decl d =
-    match d with
-    | D_Func ({ body = SB_ASL _; _ } as f) -> D_Func (annotate_func f)
-    | d -> d
+    match d.desc with
+    | D_Func ({ body = SB_ASL _; _ } as f) ->
+        D_Func (annotate_func d f) |> ASTUtils.add_pos_from_st d
+    | _ -> d
   in
   (List.map one_decl ast, env)
 
@@ -1725,11 +1738,14 @@ let type_check_ast strictness ast env =
     | `Warn -> TypeInferWarn.try_annotate_gsd
     | `Silence -> TypeInferSilence.try_annotate_gsd
   in
-  let annotate = function
-    | D_Func ({ body = SB_ASL _; _ } as f) -> D_Func (annotate_func env f)
+  let annotate d =
+    let here = ASTUtils.add_pos_from_st d in
+    match d.desc with
+    | D_Func ({ body = SB_ASL _; _ } as f) ->
+        D_Func (annotate_func d env f) |> here
     | D_Func ({ body = SB_Primitive _; _ } as f) ->
-        D_Func (rename_primitive env f)
-    | D_GlobalStorage gsd -> D_GlobalStorage (annotate_gsd env gsd)
-    | d -> d
+        D_Func (rename_primitive d env f) |> here
+    | D_GlobalStorage gsd -> D_GlobalStorage (annotate_gsd env gsd) |> here
+    | _ -> d
   in
   (List.map annotate ast, env)

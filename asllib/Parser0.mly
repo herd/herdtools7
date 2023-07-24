@@ -179,15 +179,16 @@ let ast := list(EOL); terminated (filter(list(decl)), EOF)
 
 let opn := list(EOL); body=list(stmts); EOF;
     {
+      let body = ASTUtils.stmt_from_list body in
       AST.[
         D_Func {
           name = "main";
           args = [];
           parameters = [];
-          body = SB_ASL (ASTUtils.stmt_from_list body);
+          body = SB_ASL body;
           return_type = None;
           subprogram_type = ST_Procedure;
-        }
+        } |> ASTUtils.add_pos_from body
       ]
     }
 
@@ -207,20 +208,22 @@ let unimplemented_ty(x) == x; { AST.(T_Bits (BitWidth_SingleExpr (E_Literal (V_I
 
 let type_decl ==
   some (
-    | terminated_by(SEMICOLON; EOL,
-      | TYPE; x=tidentdecl; EQ; ~=ty;
-        { AST.(D_TypeDecl (x, ty, None)) }
-      | RECORD; x=tidentdecl; fields=annotated(braced(nlist(field)));
-        { AST.(D_TypeDecl (x, ASTUtils.add_pos_from fields (T_Record fields.desc), None)) }
-      | ENUMERATION; x=tidentdecl; li=annotated(braced(ntclist(ident)));
-        { AST.(D_TypeDecl (x, ASTUtils.add_pos_from li (T_Enum li.desc), None)) }
+    annotated (
+      | terminated_by(SEMICOLON; EOL,
+        | TYPE; x=tidentdecl; EQ; ~=ty;
+          { AST.(D_TypeDecl (x, ty, None)) }
+        | RECORD; x=tidentdecl; fields=annotated(braced(nlist(field)));
+          { AST.(D_TypeDecl (x, ASTUtils.add_pos_from fields (T_Record fields.desc), None)) }
+        | ENUMERATION; x=tidentdecl; li=annotated(braced(ntclist(ident)));
+          { AST.(D_TypeDecl (x, ASTUtils.add_pos_from li (T_Enum li.desc), None)) }
 
-      | TYPE; t=tidentdecl; ty=annotated(unimplemented_ty(<>));
-        { AST.D_TypeDecl (t, ty, None) }
+        | TYPE; t=tidentdecl; ty=annotated(unimplemented_ty(<>));
+          { AST.D_TypeDecl (t, ty, None) }
+      )
+
+      | TYPE; x=tidentdecl; IS; li=annotated(pared(ntclist(field_ns))); EOL;
+        { AST.(D_TypeDecl (x, ASTUtils.add_pos_from li (T_Record li.desc), None)) }
     )
-
-    | TYPE; x=tidentdecl; IS; li=annotated(pared(ntclist(field_ns))); EOL;
-      { AST.(D_TypeDecl (x, ASTUtils.add_pos_from li (T_Record li.desc), None)) }
   )
 
 let tidentdecl ==
@@ -339,24 +342,22 @@ let literal_expression ==
 
 let variable_decl ==
   terminated_by (SEMICOLON; EOL,
-    | some (
-        ioption(CONSTANT); t=ty; x=qualident; EQ; e=expr;
+    | some (annotated (
+      | ioption(CONSTANT); t=ty; x=qualident; EQ; e=expr;
           { AST.D_GlobalStorage {
             keyword = GDK_Constant;
             name = x;
             initial_value = Some e;
             ty = Some t;
           } }
-      )
-    | some (
-        ty=ty; x=qualident;
+      | ty=ty; x=qualident;
           { AST.D_GlobalStorage {
             keyword = GDK_Var;
             name = x;
             ty = Some ty;
             initial_value = None;
           }}
-    )
+      ))
 
     | unimplemented_decl (
       | ARRAY; ty; qualident; bracketed(ixtype); <>
@@ -364,7 +365,7 @@ let variable_decl ==
   )
 
 let function_decl ==
-  | some (
+  | some (annotated (
       ~=ty; name=qualident; args=pared(clist(formal)); body=indented_block;
         {
           let open AST in
@@ -374,13 +375,13 @@ let function_decl ==
           and parameters = [] in
           D_Func { name; args; return_type; body; parameters; subprogram_type }
         }
-    )
+    ))
   | unimplemented_decl (
       some(ty); qualident; pared(clist(formal)); ioption(SEMICOLON); EOL
     )
 
 let getter_decl ==
-  | some (
+  | some (annotated (
     | ~=ty; name=qualident; body = indented_block;
       {
         let open AST in
@@ -410,14 +411,14 @@ let getter_decl ==
         and parameters = [] in
         D_Func { name; args; return_type; body; parameters; subprogram_type }
       }
-  )
+  ))
   | unimplemented_decl (
       ty; qualident; bracketed(clist(formal)); ioption(SEMICOLON); EOL
   )
 
 let setter_args == loption(bracketed(clist(sformal)))
 let setter_decl ==
-  some (
+  some (annotated (
     name=qualident; args=setter_args; EQ; ~=ty; ~=ident; body=indented_block;
       {
         let open AST in
@@ -428,13 +429,13 @@ let setter_decl ==
         and args = (ident, ty) :: args in
         D_Func { name; args; return_type; body; parameters; subprogram_type }
       }
-  )
+  ))
   | unimplemented_decl (
       qualident; setter_args; EQ; ty; ident; ioption(SEMICOLON); EOL
     )
 
 let procedure_decl ==
-  | some (
+  | some (annotated (
       name=qualident; args=pared(clist(formal)); body=indented_block;
         {
           let open AST in
@@ -444,7 +445,7 @@ let procedure_decl ==
           and subprogram_type = ST_Procedure in
           D_Func { name; args; return_type; body; parameters; subprogram_type }
         }
-    )
+    ))
   | unimplemented_decl (
       qualident; pared(clist(formal)); ioption(SEMICOLON); EOL
     )

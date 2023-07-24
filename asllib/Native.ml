@@ -231,6 +231,7 @@ module NativePrimitives = struct
           subprogram_type = ST_Procedure;
         }
     in
+    let here = ASTUtils.add_pos_from_pos_of in
     [
       D_Func
         {
@@ -240,7 +241,8 @@ module NativePrimitives = struct
           body = SB_Primitive uint;
           return_type = Some integer;
           subprogram_type = ST_Function;
-        };
+        }
+      |> __POS_OF__ |> here;
       D_Func
         {
           name = "SInt";
@@ -249,7 +251,8 @@ module NativePrimitives = struct
           body = SB_Primitive sint;
           return_type = Some integer;
           subprogram_type = ST_Function;
-        };
+        }
+      |> __POS_OF__ |> here;
       D_Func
         {
           name = "DecStr";
@@ -258,7 +261,8 @@ module NativePrimitives = struct
           body = SB_Primitive dec_str;
           return_type = Some string;
           subprogram_type = ST_Function;
-        };
+        }
+      |> __POS_OF__ |> here;
       D_Func
         {
           name = "HexStr";
@@ -267,7 +271,8 @@ module NativePrimitives = struct
           body = SB_Primitive hex_str;
           return_type = Some string;
           subprogram_type = ST_Function;
-        };
+        }
+      |> __POS_OF__ |> here;
       D_Func
         {
           name = "AsciiStr";
@@ -276,12 +281,13 @@ module NativePrimitives = struct
           body = SB_Primitive ascii_str;
           return_type = Some string;
           subprogram_type = ST_Function;
-        };
-      d_func_string 0;
-      d_func_string 1;
-      d_func_string 2;
-      d_func_string 3;
-      d_func_string 4;
+        }
+      |> __POS_OF__ |> here;
+      d_func_string 0 |> __POS_OF__ |> here;
+      d_func_string 1 |> __POS_OF__ |> here;
+      d_func_string 2 |> __POS_OF__ |> here;
+      d_func_string 3 |> __POS_OF__ |> here;
+      d_func_string 4 |> __POS_OF__ |> here;
     ]
 end
 

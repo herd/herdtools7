@@ -511,70 +511,72 @@ let func_args == plist(typed_identifier)
 let func_body == delimited(ioption(BEGIN), stmt_list, END)
 
 let decl ==
-  | FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; ~=return_type; body=func_body;
-      {
-        D_Func {
-          name;
-          parameters = params_opt;
-          args = func_args;
-          body = SB_ASL body;
-          return_type = Some return_type;
-          subprogram_type = ST_Function;
-        }
-      }
-  | FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; body=func_body;
-      {
-        D_Func {
-          name;
-          parameters = params_opt;
-          args = func_args;
-          body = SB_ASL body;
-          return_type = None;
-          subprogram_type = ST_Procedure;
-        }
-      }
-  | GETTER; name=IDENTIFIER; ~=params_opt; ~=access_args_opt; ret=return_type;
-      ~=func_body;
-      {
-        D_Func
-          {
+  annotated (
+    | FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; ~=return_type; body=func_body;
+        {
+          D_Func {
             name;
             parameters = params_opt;
-            args = access_args_opt;
-            return_type = Some ret;
-            body = SB_ASL func_body;
-            subprogram_type = ST_Getter;
+            args = func_args;
+            body = SB_ASL body;
+            return_type = Some return_type;
+            subprogram_type = ST_Function;
           }
-      }
-  | SETTER; name=IDENTIFIER; ~=params_opt; ~=access_args_opt; EQ; v=typed_identifier;
-      ~=func_body;
-      {
-        D_Func
-          {
+        }
+    | FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; body=func_body;
+        {
+          D_Func {
             name;
             parameters = params_opt;
-            args = v :: access_args_opt;
+            args = func_args;
+            body = SB_ASL body;
             return_type = None;
-            body = SB_ASL func_body;
-            subprogram_type = ST_Setter;
+            subprogram_type = ST_Procedure;
           }
-      }
+        }
+    | GETTER; name=IDENTIFIER; ~=params_opt; ~=access_args_opt; ret=return_type;
+        ~=func_body;
+        {
+          D_Func
+            {
+              name;
+              parameters = params_opt;
+              args = access_args_opt;
+              return_type = Some ret;
+              body = SB_ASL func_body;
+              subprogram_type = ST_Getter;
+            }
+        }
+    | SETTER; name=IDENTIFIER; ~=params_opt; ~=access_args_opt; EQ; v=typed_identifier;
+        ~=func_body;
+        {
+          D_Func
+            {
+              name;
+              parameters = params_opt;
+              args = v :: access_args_opt;
+              return_type = None;
+              body = SB_ASL func_body;
+              subprogram_type = ST_Setter;
+            }
+        }
 
-  | terminated_by(SEMI_COLON,
-    | TYPE; x=IDENTIFIER; OF; t=ty; ~=subtype_opt;       < D_TypeDecl >
-    | TYPE; x=IDENTIFIER; SUBTYPES; s=IDENTIFIER;
-      { D_TypeDecl (x, ASTUtils.add_dummy_pos (T_Named s), Some s) }
+    | terminated_by(SEMI_COLON,
+      | TYPE; x=IDENTIFIER; OF; t=ty; ~=subtype_opt;       < D_TypeDecl >
+      | TYPE; x=IDENTIFIER; SUBTYPES; s=IDENTIFIER;
+        { D_TypeDecl (x, ASTUtils.add_dummy_pos (T_Named s), Some s) }
 
-    | keyword=storage_keyword; name=IDENTIFIER;
-      ty=ioption(as_ty); EQ; initial_value=some(expr);
-      { D_GlobalStorage { keyword; name; ty; initial_value } }
-    | VAR; name=IDENTIFIER; ty=some(as_ty);
-      { D_GlobalStorage { keyword=GDK_Var; name; ty; initial_value=None}}
+      | keyword=storage_keyword; name=IDENTIFIER;
+        ty=ioption(as_ty); EQ; initial_value=some(expr);
+        { D_GlobalStorage { keyword; name; ty; initial_value } }
+      | VAR; name=IDENTIFIER; ty=some(as_ty);
+        { D_GlobalStorage { keyword=GDK_Var; name; ty; initial_value=None}}
 
-    | unimplemented_decl(
-      | storage_keyword; MINUS; ty_opt; EQ; expr;                <>
-      | PRAGMA; IDENTIFIER; clist(expr);                         <>
-      | TYPE; IDENTIFIER; SUBTYPES; ty; WITH; fields_opt;        <>
+      | unimplemented_decl(
+        | storage_keyword; MINUS; ty_opt; EQ; expr;                <>
+        | PRAGMA; IDENTIFIER; clist(expr);                         <>
+        | TYPE; IDENTIFIER; SUBTYPES; ty; WITH; fields_opt;        <>
+      )
     )
   )
 
@@ -592,5 +594,6 @@ let opn := body=stmt;
             return_type = None;
             subprogram_type = ST_Procedure;
           }
+        |> ASTUtils.add_pos_from body
       ]
     }

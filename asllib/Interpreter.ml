@@ -96,16 +96,18 @@ module Make (B : Backend.S) (C : Config) = struct
       and builds the subprogram sub-env. *)
   let build_funcs ast (funcs : IEnv.func IMap.t) =
     List.to_seq ast
-    |> Seq.filter_map (function
-         | D_Func func -> Some (func.name, (ref 0, func))
-         | _ -> None)
+    |> Seq.filter_map (fun d ->
+           match d.desc with
+           | D_Func func -> Some (func.name, (ref 0, func))
+           | _ -> None)
     |> Fun.flip IMap.add_seq funcs
 
   (* Global env *)
   (* ---------- *)
 
   let build_global_storage eval_expr =
-    let def = function
+    let def d =
+      match d.desc with
       | D_Func { name; _ }
       | D_GlobalStorage { name; _ }
       | D_TypeDecl (name, _, _) ->
@@ -115,7 +117,7 @@ module Make (B : Backend.S) (C : Config) = struct
       let use_e e acc = ASTUtils.use_e acc e in
       let use_ty _ty acc = acc (* TODO *) in
       fun d ->
-        match d with
+        match d.desc with
         | D_GlobalStorage { initial_value = Some e; ty = Some ty; _ } ->
             ISet.empty |> use_e e |> use_ty ty
         | D_GlobalStorage { initial_value = None; ty = Some ty; _ } ->
@@ -127,7 +129,8 @@ module Make (B : Backend.S) (C : Config) = struct
         | D_Func _ ->
             ISet.empty (* TODO: pure functions that can be used in constants? *)
     in
-    let process_one_decl = function
+    let process_one_decl d =
+      match d.desc with
       | D_GlobalStorage { initial_value; name; ty; _ } ->
           fun env_m ->
             let*| env = env_m in
@@ -145,7 +148,8 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (** [build_genv static_env ast primitives] is the global environment before
       the start of the evaluation of [ast]. *)
-  let build_genv eval_expr (static_env : StaticEnv.env) ast =
+  let build_genv eval_expr (static_env : StaticEnv.env)
+      (ast : B.primitive AST.t) =
     let funcs = IMap.empty |> build_funcs ast in
     let () =
       if _dbg then

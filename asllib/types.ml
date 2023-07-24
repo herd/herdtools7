@@ -381,7 +381,7 @@ let rec structural_subtype_satisfies env t s =
       | [], _ -> true
       | _, [] -> false
       | bfs_s, bfs_t ->
-          w_s = w_t
+          bitwidth_equal env w_s w_t
           &&
           let bf_equal (name_s, slices_s) (name_t, slices_t) =
             String.equal name_s name_t && slices_equal env slices_s slices_t

@@ -421,10 +421,11 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
             |> ASLBase.build_ast_from_file ~ast_type:`Opn version
           in
           let open Asllib.AST in
+          let open Asllib.ASTUtils in
           match execute with
-          | [ D_Func ({ body = SB_ASL s; _ } as f) ] ->
-              let s = Asllib.ASTUtils.stmt_from_list [ decode; s; return_0 ] in
-              D_Func { f with body = SB_ASL s }
+          | [ ({ desc = D_Func ({ body = SB_ASL s; _ } as f); _ } as d) ] ->
+              let s = stmt_from_list [ decode; s; return_0 ] in
+              D_Func { f with body = SB_ASL s } |> add_pos_from_st d
           | _ -> assert false
         in
         let () =

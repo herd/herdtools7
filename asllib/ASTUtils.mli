@@ -26,6 +26,10 @@ val add_pos_from : 'a annotated -> 'b -> 'b annotated
 val with_pos_from : 'a annotated -> 'b annotated -> 'b annotated
 val map_desc : ('a annotated -> 'b) -> 'a annotated -> 'b annotated
 
+val add_pos_from_pos_of : (string * int * int * int) * 'a -> 'a annotated
+(** [add_pos_from_pos_of (__POS_OF__ e)] is [annotated s s' e] where [s] and
+      [s'] correspond to [e]'s position in the ocaml file. *)
+
 val map2_desc :
   ('a annotated -> 'b annotated -> 'c) ->
   'a annotated ->
@@ -36,6 +40,7 @@ val integer : ty
 val underconstrained_integer : ty
 val boolean : ty
 val string : ty
+val real : ty
 val s_pass : stmt
 val s_then : stmt -> stmt -> stmt
 val stmt_from_list : stmt list -> stmt

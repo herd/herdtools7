@@ -444,8 +444,9 @@ module Make (C : Config) = struct
     let extra_funcs ii_env =
       let open AST in
       let with_pos = Asllib.ASTUtils.add_dummy_pos in
-      let d = T_Int None |> with_pos in
-      let reg = T_Int None |> with_pos in
+      let here = Asllib.ASTUtils.add_pos_from_pos_of in
+      let integer = Asllib.ASTUtils.integer in
+      let reg = integer in
       let var x = E_Var x |> with_pos in
       let lit x = E_Literal (V_Int x) |> with_pos in
       let bv x = T_Bits (BitWidth_SingleExpr x, []) |> with_pos in
@@ -453,29 +454,41 @@ module Make (C : Config) = struct
       let bv_N = bv_var "N" in
       let bv_lit x = bv @@ lit x in
       let bv_64 = bv_lit 64 in
-      let t_named x = T_Named x |> with_pos in
+      let t_named x = T_Named x |> __POS_OF__ |> here in
       [
         arity_one "read_register" [ reg ] (return_one bv_64)
-          (read_register ii_env);
+          (read_register ii_env)
+        |> __POS_OF__ |> here;
         arity_two "write_register" [ bv_64; reg ] return_zero
-          (write_register ii_env);
-        arity_two "read_memory" [ bv_64; d ] (return_one bv_64)
-          (read_memory ii_env);
-        build_primitive "write_memory" [ bv_64; d; bv_64 ] return_zero
-          (write_memory ii_env);
+          (write_register ii_env)
+        |> __POS_OF__ |> here;
+        arity_two "read_memory" [ bv_64; integer ] (return_one bv_64)
+          (read_memory ii_env)
+        |> __POS_OF__ |> here;
+        build_primitive "write_memory" [ bv_64; integer; bv_64 ] return_zero
+          (write_memory ii_env)
+        |> __POS_OF__ |> here;
         arity_zero "PSTATE"
           (return_one (t_named "ProcState"))
-          (read_pstate_nzcv ii_env);
+          (read_pstate_nzcv ii_env)
+        |> __POS_OF__ |> here;
         arity_one "PSTATE"
           [ t_named "ProcState" ]
-          return_zero (write_pstate_nzcv ii_env);
-        arity_zero "SP_EL0" (return_one bv_64) (read_sp ii_env);
-        arity_one "SP_EL0" [ bv_64 ] return_zero (write_sp ii_env);
-        arity_one "UInt" [ bv_N ] (return_one d) uint;
-        arity_one "SInt" [ bv_N ] (return_one d) sint;
-        arity_zero "ProcessorID" (return_one d) (processor_id ii_env);
+          return_zero (write_pstate_nzcv ii_env)
+        |> __POS_OF__ |> here;
+        arity_zero "SP_EL0" (return_one bv_64) (read_sp ii_env)
+        |> __POS_OF__ |> here;
+        arity_one "SP_EL0" [ bv_64 ] return_zero (write_sp ii_env)
+        |> __POS_OF__ |> here;
+        arity_one "UInt" [ bv_N ] (return_one integer) uint
+        |> __POS_OF__ |> here;
+        arity_one "SInt" [ bv_N ] (return_one integer) sint
+        |> __POS_OF__ |> here;
+        arity_zero "ProcessorID" (return_one integer) (processor_id ii_env)
+        |> __POS_OF__ |> here;
         arity_two "CanPredictFrom" [ bv_N; bv_N ] (return_one bv_N)
-          can_predict_from;
+          can_predict_from
+        |> __POS_OF__ |> here;
       ]
 
     (**************************************************************************)
@@ -549,9 +562,11 @@ module Make (C : Config) = struct
           let shared =
             (List.filter
                AST.(
-                 function
-                 | D_Func { name = "Zeros" | "Ones" | "Replicate"; _ } -> false
-                 | _ -> true)
+                 fun d ->
+                   match d.desc with
+                   | D_Func { name = "Zeros" | "Ones" | "Replicate"; _ } ->
+                       false
+                   | _ -> true)
                shared [@warning "-40-42"])
           in
           let shared =

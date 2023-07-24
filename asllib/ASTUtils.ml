@@ -32,6 +32,17 @@ let add_pos_from pos desc = { pos with desc }
 let with_pos_from pos { desc; _ } = add_pos_from pos desc
 let map_desc f thing = f thing |> add_pos_from thing
 
+let add_pos_from_pos_of ((fname, lnum, cnum, enum), desc) =
+  let open Lexing in
+  let common =
+    { pos_fname = fname; pos_lnum = lnum; pos_bol = 0; pos_cnum = 0 }
+  in
+  {
+    desc;
+    pos_start = { common with pos_cnum = cnum };
+    pos_end = { common with pos_cnum = enum };
+  }
+
 let list_equal equal li1 li2 =
   li1 == li2 || (List.compare_lengths li1 li2 = 0 && List.for_all2 equal li1 li2)
 
@@ -81,6 +92,7 @@ let s_then = map2_desc (fun s1 s2 -> S_Then (s1, s2))
 let boolean = T_Bool |> add_dummy_pos
 let integer = T_Int None |> add_dummy_pos
 let string = T_String |> add_dummy_pos
+let real = T_Real |> add_dummy_pos
 let underconstrained_integer = T_Int (Some []) |> add_dummy_pos
 
 let stmt_from_list : stmt list -> stmt =
@@ -91,7 +103,7 @@ let stmt_from_list : stmt list -> stmt =
     | s1 :: s2 :: t -> one_step (s_then s1 s2 :: acc) t
   in
   let rec aux = function
-    | [] -> add_dummy_pos S_Pass
+    | [] -> s_pass
     | [ x ] -> x
     | l -> aux @@ one_step [] l
   in
@@ -197,7 +209,8 @@ and use_le acc _le = acc
 and use_catcher acc (_name, _ty, s) = use_s acc s
 and use_catchers acc = List.fold_left use_catcher acc
 
-and use_decl acc = function
+and use_decl acc d =
+  match d.desc with
   | D_Func { body = SB_ASL s; _ } -> use_s acc s
   | D_GlobalStorage { initial_value = Some e; _ } -> use_e acc e
   | _ -> acc
@@ -390,7 +403,8 @@ let patch ~src ~patches =
   (* Size considerations:
      - [src] is BIG.
      - [patches] is not that little. *)
-  let identifier_of_decl = function
+  let identifier_of_decl d =
+    match d.desc with
     | D_Func { name; _ } | D_GlobalStorage { name; _ } | D_TypeDecl (name, _, _)
       ->
         name
@@ -488,9 +502,11 @@ let scope_compare s1 s2 =
       if n != 0 then n else String.compare n1 n2
 
 let no_primitive (ast : 'p t) : 'q t =
-  let one = function
-    | D_GlobalStorage g -> D_GlobalStorage g
-    | D_TypeDecl (a, b, c) -> D_TypeDecl (a, b, c)
+  let one d =
+    let here = add_pos_from d in
+    match d.desc with
+    | D_GlobalStorage g -> D_GlobalStorage g |> here
+    | D_TypeDecl (a, b, c) -> D_TypeDecl (a, b, c) |> here
     | D_Func { body = SB_Primitive _; _ } -> assert false
     | D_Func
         {
@@ -510,6 +526,7 @@ let no_primitive (ast : 'p t) : 'q t =
             subprogram_type;
             parameters;
           }
+        |> here
   in
   List.map one ast
 
