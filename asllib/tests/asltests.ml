@@ -9,7 +9,7 @@ let process_test path () =
 
   (* First interprete it. *)
   let () = if _dbg then Format.eprintf "@[AST: %a@]@." PP.pp_t ast in
-  let i = Native.interprete `TypeCheck ast in
+  let i, _ = Native.interprete `TypeCheck ast in
   let () = assert (i = 0) in
   let () = if _dbg then Format.eprintf "Ran successfully.@.@." in
 
@@ -18,7 +18,7 @@ let process_test path () =
   let () = if false then Printf.eprintf "Printed:\n%s\n%!" printed in
   let lexbuf = Lexing.from_string printed in
   let ast = Parser.ast Lexer.token lexbuf |> ASTUtils.no_primitive in
-  let i = Native.interprete `TypeCheck ast in
+  let i, _ = Native.interprete `TypeCheck ast in
   let () = assert (i = 0) in
 
   ()

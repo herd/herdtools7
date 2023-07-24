@@ -38,17 +38,18 @@ let parse_args () =
   let print_ast = ref false in
   let print_serialized = ref false in
   let print_typed = ref false in
-  let version = ref `ASLv1 in
-  let set_v0 () = version := `ASLv0 in
-  let set_v1 () = version := `ASLv1 in
+  let asl_version = ref `ASLv1 in
+  let set_v0 () = asl_version := `ASLv0 in
+  let set_v1 () = asl_version := `ASLv1 in
   let opn = ref "" in
   let strictness = ref None in
   let set_strictness s () = strictness := Some s in
+  let show_version = ref false in
 
   let speclist =
     [
-      ("--parse-only", Arg.Clear exec, " Do not execute the asl program.");
       ("--exec", Arg.Set exec, " Execute the asl program (default).");
+      ("--no-exec", Arg.Clear exec, " Don't execute the asl program.");
       ( "--print",
         Arg.Set print_ast,
         " Print the parsed AST to stdout before executing it." );
@@ -78,20 +79,22 @@ let parse_args () =
       ( "--show-rules",
         Arg.Set show_rules,
         " Instrument the interpreter and log to std rules used." );
+      ("--version", Arg.Set show_version, " Print version and exit.");
     ]
     |> Arg.align ?limit:None
   in
 
   let anon_fun s = target_files := s :: !target_files in
   let usage_msg =
-    "ASL parser and interpreter.\n\nUSAGE:\n\tasli [OPTIONS] [FILE]\n"
+    "ASL parser and interpreter.\n\nUSAGE:\n\taslseq [OPTIONS] [FILE]\n"
   in
   let () = Arg.parse speclist anon_fun usage_msg in
 
   let strictness =
     match !strictness with
     | Some s -> s
-    | None -> ( match !version with `ASLv0 -> `Silence | `ASLv1 -> `TypeCheck)
+    | None -> (
+        match !asl_version with `ASLv0 -> `Silence | `ASLv1 -> `TypeCheck)
   in
 
   let args =
@@ -102,7 +105,7 @@ let parse_args () =
       print_ast = !print_ast;
       print_serialized = !print_serialized;
       print_typed = !print_typed;
-      version = !version;
+      version = !asl_version;
       strictness;
       show_rules = !show_rules;
     }
@@ -115,6 +118,14 @@ let parse_args () =
     then
       let () = Arg.usage speclist usage_msg in
       exit 1
+  in
+
+  let () =
+    if !show_version then
+      let () =
+        Printf.printf "aslseq version %s rev %s\n%!" Version.version Version.rev
+      in
+      exit 0
   in
   args
 
@@ -155,32 +166,32 @@ let () =
     if args.print_serialized then print_string (Serialize.t_to_string ast)
   in
 
-  let () =
-    if args.print_typed then
-      let ast = List.rev_append (Lazy.force Builder.stdlib) ast in
-      let annotated_ast, _ =
-        or_exit (fun () ->
-            Typing.type_check_ast args.strictness ast StaticEnv.empty)
-      in
-      Format.printf "@[<v 2>Typed AST:@ %a@]@." PP.pp_t annotated_ast
+  let ast = Builder.with_stdlib ast in
+
+  let typed_ast, static_env =
+    or_exit @@ fun () ->
+    Typing.type_check_ast args.strictness ast StaticEnv.empty
   in
 
-  let exit_code =
+  let () =
+    if args.print_typed then
+      Format.printf "@[<v 2>Typed AST:@ %a@]@." PP.pp_t typed_ast
+  in
+
+  let exit_code, used_rules =
     if args.exec then
-      or_exit (fun () ->
-          if args.show_rules then
-            let i, rules =
-              Native.interprete_with_instrumentation args.strictness ast
-            in
-            let () =
-              let open Format in
-              printf "@[<v 3>Used rules:@ %a@]@."
-                (pp_print_list ~pp_sep:pp_print_cut Instrumentation.Rule.pp)
-                rules
-            in
-            i
-          else Native.interprete args.strictness ast)
-    else 0
+      let instrumentation = if args.show_rules then true else false in
+      or_exit @@ fun () ->
+      Native.interprete ~instrumentation ~static_env args.strictness ast
+    else 0, []
+  in
+
+  let () =
+    if args.show_rules then
+      let open Format in
+      printf "@[<v 3>Used rules:@ %a@]@."
+        (pp_print_list ~pp_sep:pp_print_cut Instrumentation.Rule.pp)
+        used_rules
   in
 
   exit exit_code

@@ -17,3 +17,4 @@ val from_file_multi_version :
   ?ast_type:ast_type -> version_selector -> string -> 'p AST.t Error.result
 
 val stdlib : unit AST.t Lazy.t
+val with_stdlib : 'a AST.t -> 'a AST.t

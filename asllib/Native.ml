@@ -164,7 +164,7 @@ module NativeBackend = struct
     Bitvector.concat bvs |> bitvector_to_value
 end
 
-module NativeStdlib = struct
+module NativePrimitives = struct
   open NativeBackend
 
   let return_one v = return [ return v ]
@@ -283,40 +283,36 @@ module NativeStdlib = struct
       d_func_string 3;
       d_func_string 4;
     ]
-
-  let stdlib = []
 end
 
 module NativeInterpreter (C : Interpreter.Config) =
   Interpreter.Make (NativeBackend) (C)
 
-let run (module C : Interpreter.Config) ast =
-  let module I = NativeInterpreter (C) in
-  let ( @ ) = List.rev_append in
-  let ast = NativeStdlib.stdlib @ NativeStdlib.primitives @ ast in
-  I.run ast
-
 let exit_value = function
   | V_Int i -> i
   | v -> Error.fatal_unknown_pos (Error.MismatchType (v, [ T_Int None ]))
 
-let interprete strictness ast =
+let instrumentation_buffer = function
+  | Some true ->
+      (module Instrumentation.SingleSetBuffer : Instrumentation.BUFFER)
+  | Some false | None ->
+      (module Instrumentation.NoBuffer : Instrumentation.BUFFER)
+
+let interprete strictness ?instrumentation ?static_env ast =
+  let module B = (val instrumentation_buffer instrumentation) in
   let module C : Interpreter.Config = struct
-    let type_checking_strictness = strictness
-    let unroll = 0 (* Does not matter, as all computations are performed *)
-
-    module Instr = Instrumentation.NoInstr
-  end in
-  run (module C) ast |> exit_value
-
-let interprete_with_instrumentation strictness ast =
-  let module B = Instrumentation.SingleSetBuffer in
-  B.reset ();
-  let module C = struct
     let type_checking_strictness = strictness
     let unroll = 0
 
     module Instr = Instrumentation.Make (B)
   end in
-  let res = run (module C) ast in
+  let module I = NativeInterpreter (C) in
+  B.reset ();
+  let res =
+    match static_env with
+    | Some static_env -> I.run_typed ast static_env
+    | None ->
+        let ast = List.rev_append NativePrimitives.primitives ast in
+        I.run ast
+  in
   (exit_value res, B.get ())

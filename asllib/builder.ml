@@ -137,3 +137,6 @@ let stdlib =
     | None ->
         (* Much better than "raise Not_found" *)
         assert false)
+
+let with_stdlib ast =
+  List.rev_append (Lazy.force stdlib |> ASTUtils.no_primitive) ast

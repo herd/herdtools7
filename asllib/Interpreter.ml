@@ -28,6 +28,7 @@ module type S = sig
   module B : Backend.S
 
   val run : B.ast -> B.value B.m
+  val run_typed : B.ast -> StaticEnv.env -> B.value B.m
 end
 
 module type Config = sig
@@ -777,19 +778,7 @@ module Make (B : Backend.S) (C : Config) = struct
             in
             normal (vs, genv))
 
-  (** Main entry point for the Interpreter, [run ast primitives] type-annotate
-      [ast], build a global environment and then evaluate the "main" function
-      in it. *)
-  let run (ast : B.ast) : B.value m =
-    let ast =
-      List.rev_append (Lazy.force Builder.stdlib |> ASTUtils.no_primitive) ast
-    in
-    let ast, static_env =
-      Typing.type_check_ast C.type_checking_strictness ast StaticEnv.empty
-    in
-    let () =
-      if false then Format.eprintf "@[<v 2>Typed AST:@ %a@]@." PP.pp_t ast
-    in
+  let run_typed (ast : B.ast) (static_env : StaticEnv.env) : B.value m =
     let*| env = build_genv eval_expr_sef static_env ast in
     let*| res = eval_func env "main" ASTUtils.dummy_annotated [] [] in
     match res with
@@ -803,4 +792,17 @@ module Make (B : Backend.S) (C : Config) = struct
               Format.asprintf "%a %s" PP.pp_ty ty (B.debug_value v)
         in
         Error.fatal_unknown_pos (Error.UncaughtException msg)
+
+  (** Main entry point for the Interpreter, [run ast primitives] type-annotate
+      [ast], build a global environment and then evaluate the "main" function
+      in it. *)
+  let run (ast : B.ast) : B.value m =
+    let ast = Builder.with_stdlib ast in
+    let ast, static_env =
+      Typing.type_check_ast C.type_checking_strictness ast StaticEnv.empty
+    in
+    let () =
+      if false then Format.eprintf "@[<v 2>Typed AST:@ %a@]@." PP.pp_t ast
+    in
+    run_typed ast static_env
 end

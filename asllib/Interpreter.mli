@@ -23,6 +23,10 @@ module type S = sig
   val run : B.ast -> B.value B.m
   (** [run ast] runs the function main of the ast, in an environment build from
       the ast. *)
+
+  val run_typed : B.ast -> StaticEnv.env -> B.value B.m
+  (** [run ast env] runs the function main of the typed-checked [ast], in
+      typed-checking environment [env]. *)
 end
 
 module type Config = sig
