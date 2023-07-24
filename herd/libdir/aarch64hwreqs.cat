@@ -8,12 +8,12 @@
  * For a textual version of the model, see section B2.3 of the Armv8 ARM:
  * https://developer.arm.com/documentation/ddi0487/
  *
- * Authors: 
+ * Authors:
  * Will Deacon <will.deacon@arm.com>
  * Jade Alglave <jade.alglave@arm.com>
  * Nikos Nikoleris <nikos.nikoleris@arm.com>
  * Artem Khyzha <artem.khyzha@arm.com>
- * 
+ *
  * Copyright (C) 2016-present, Arm Ltd.
  * All rights reserved.
  *
@@ -71,42 +71,45 @@ let tc-ib = [Imp & T & R]; iico_data; [B]; iico_ctrl; [(Exp & W) \ T | TagCheck 
 let HU = Imp & TTD & W
 assert empty HU \ (AF | DB)
 
+(* DSB-ordered-before *)
+let DSB-ob =
+ [M]; po; [dsb.full]; po; [~(Imp & M)]
+ | (if "ETS2" then [M]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
+ | [(Exp & R)\NoRet]; po; [dsb.ld]; po; [~(Imp & M)]
+ | (if "ETS2" then [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [Imp & TTD & M] else 0)
+ | [Exp & W]; po; [dsb.st]; po; [~(Imp & M)]
+ | (if "ETS2" then [Exp & W]; po; [dsb.st]; po; [Imp & TTD & M] else 0)
+
 (* CSE-ordered-before *)
 let EXC-ENTRY-CSE = EXC-ENTRY
 let EXC-RET-CSE = if not "ExS" || "EOS" then EXC-RET else {}
 let CSE = ISB | EXC-ENTRY-CSE | EXC-RET-CSE
-let CSE-ob = [Exp & R]; ctrl; [CSE]; po?
+let CSE-ob =
+ [Exp & R]; ctrl; [CSE]; po
+ | DSB-ob; [CSE]; po
+ | [Imp & TTD & R]; tr-ib; [CSE]; po
 
 (* Dependency-ordered-before *)
 let dob = addr | data
         | ctrl; [W]
-        | (addr; [Exp]; po); [CSE]; po; [R]
-        | CSE-ob; [R]
+        | addr; [Exp]; po; [CSE]; po; [R]
         | addr; [Exp]; po; [W]
         | (addr | data); [Exp]; lrs
 
 (* Pick-ordered-before *)
-let pob = [Exp]; (pick-dep; [W]
-        | (pick-ctrl-dep | pick-addr-dep; [Exp]; po); [CSE]; po; [M]
-        | pick-addr-dep; [Exp & M]; po; [W])
+let pob = [Exp]; pick-dep; [W]
+        | [Exp]; pick-ctrl-dep; [CSE]; po; [M]
+        | [Exp]; pick-addr-dep; [Exp]; po; [CSE]; po; [M]
+        | [Exp]; pick-addr-dep; [Exp & M]; po; [W]
 
 (* Atomic-ordered-before *)
 let aob = rmw
         | rmw; lrs; [A | Q]
 
-(* DSB-ordered-before *)
-let DSB-ob =
- [M]; po; [dsb.full]; po; [~(M&Imp)]
- | (if "ETS2" then [M]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
- | [(R&Exp)\NoRet]; po; [dsb.ld]; po; [~(M&Imp)]
- | (if "ETS2" then [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [Imp & TTD & M] else 0)
- | [W&Exp]; po; [dsb.st]; po; [~(M&Imp)]
- | (if "ETS2" then [Exp & W]; po; [dsb.st]; po; [Imp & TTD & M] else 0)
-
 (* Barrier-ordered-before *)
 let bob = po; [dmb.full]; po
         | [R\NoRet]; po; [dmb.ld]; po
-        | [W]; po; [dmb.st]; po; [W | MMU & FAULT] 
+        | [W]; po; [dmb.st]; po; [W | MMU & FAULT]
         | [range([A];amo;[L])]; po
         | [L]; po; [A]
         | [A | Q]; (po|iico_order)
@@ -123,18 +126,17 @@ let pick-lob = pick-basic-dep; lob; [W]
 
 let TLBUncacheable = MMU & (Translation | AccessFlag)
 
-(* Hardware-required-ordered-before *)
-let rec hw-reqs =
+(* Locally-hardware-required-ordered-before *)
+let rec local-hw-reqs =
   tr-ib
   | tc-ib
   | [Exp & M | Imp & T & R]; (lob | pick-lob); [Exp & M | Imp & T & R | FAULT & (TagCheck | MMU)]
   | (if "ETS2" then [Exp & M]; po; [TLBUncacheable & FAULT]; tr-ib^-1; [Imp & TTD & R] else 0)
   | DSB-ob
   | CSE-ob
-  | [CSE]; po
   | [Imp & TTD & R]; po-loc; [W]
   | [Imp & TTD & R]; rmw; [HU]
   | [Exp & M]; po-loc; [TLBUncacheable & FAULT]
   | [Exp & R]; addr; [TLBI]
   | [Exp & R]; ctrl; [HU]
-  | hw-reqs; hw-reqs
+  | local-hw-reqs; local-hw-reqs

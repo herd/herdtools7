@@ -48,15 +48,15 @@
  * Include default definitions for sets that are undefined without
  * -variant vmsa
 *)
-let PTE = try PTE with emptyset
-let PTEV = try PTEV with emptyset
-let PTEINV = try PTEINV with emptyset
-let inv-domain = try inv-domain with 0
-let AF = try AF with emptyset
-let DB = try DB with emptyset
-let MMU = try MMU with emptyset
-let Translation = try Translation with emptyset
-let AccessFlag = try AccessFlag with emptyset
+let PTE = if "vmsa" then PTE else emptyset
+let PTEV = if "vmsa" then PTEV else emptyset
+let PTEINV = if "vmsa" then PTEINV else emptyset
+let inv-domain = if "vmsa" then inv-domain else 0
+let AF = if "vmsa" then AF else emptyset
+let DB = if "vmsa" then DB else emptyset
+let MMU = if "vmsa" then MMU else emptyset
+let Translation = if "vmsa" then Translation else emptyset
+let AccessFlag = if "vmsa" then AccessFlag else emptyset
 
 (*
  * Include the cos.cat file shipped with herd.

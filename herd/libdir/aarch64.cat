@@ -51,16 +51,17 @@ include "aarch64hwreqs.cat"
 (* Coherence-after *)
 let ca = fr | co
 
-(* Observed-by *)
-let obs = ([Exp & M | Imp & T & R]; (rf | ca); [Exp & M | Imp & T & R]) & ext
+(* Explicitly-observed-by *)
+let exp-obs = [Exp & M]; (rf | ca) & ext; [Exp & M]
 
 (* TLBI-after *)
 include "tlbi-after.cat"
-with tlbi-after from (ttd-tlbi-pairs hw-reqs)
+with tlbi-after from (ttd-tlbi-pairs local-hw-reqs)
 
 (* TTD-read-ordered-before *)
 let TTD-read-ordered-before =
   tlbi-after; [TLBI]; po; [dsb.full]; po; [~(Imp & M)]
+  | tlbi-after; [TLBI]; po; [dsb.full]; po; [CSE]; po; [Imp & M]
   | (if "ETS2" then tlbi-after; [TLBI]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
 
 (* TLBI-Ordered-Before *)
@@ -81,24 +82,40 @@ let TLBuncacheable-pred =
 let HU-pred =
   ca \ intervening-write(ca); [HU]
 
-(* Hazard-Ordered-Before *)
-let haz-ob =
+(* Explicit-Hazard-Ordered-Before *)
+let exp-haz-ob =
   [Exp & R]; po-loc; [Exp & R]; fre; [Exp & W]
 
-(* Ordered-before *)
-let rec ob =
-     hw-reqs
-    | haz-ob
+(* Tag-observed-by *)
+let tag-obs =
+   rf & ext; [Imp & T & R]
+   | [Imp & T & R]; ca & ext
 
-    | obs; sca-class?
-    | [Imp & TTD]; rf | rf; [Imp & TTD]
+(* TTD-observed-by *)
+let TTD-obs =
+    [Imp & TTD]; rf | rf; [Imp & TTD]
     | TLBuncacheable-pred
     | HU-pred
     | [HU]; co | co; [HU]
     | tlbi-ca
 
-    | tlbi-ob
+(* Observed-by *)
+let obs =
+    exp-obs; sca-class?
+    | tag-obs; sca-class?
+    | TTD-obs
 
+(* Hazard-Ordered-Before *)
+let haz-ob =
+  exp-haz-ob | tlbi-ob
+
+(* Hardware-required-ordered-before *)
+let hw-reqs = local-hw-reqs | haz-ob
+
+(* Ordered-before *)
+let rec ob =
+    hw-reqs
+    | obs
     | ob; ob
 
 (* External visibility requirement *)
