@@ -9,182 +9,6 @@ let undefined_identifier pos x = fatal_from pos (Error.UndefinedIdentifier x)
 let conflict pos expected provided =
   fatal_from pos (Error.ConflictingTypes (expected, provided))
 
-(* Control Warning outputs. *)
-let _warn = false
-
-type strictness = [ `Silence | `Warn | `TypeCheck ]
-
-let rec resolve_root_name (env : env) (ty : ty) : ty =
-  match ty.desc with
-  | T_Named x -> (
-      match IMap.find_opt x env.global.declared_types with
-      | Some ty -> resolve_root_name env ty
-      | None -> undefined_identifier ty x)
-  | _ -> ty
-
-(* -------------------------------------------------------------------------
-
-                        Functionnal polymorphism
-
-   ------------------------------------------------------------------------- *)
-
-module FunctionRenaming = struct
-  (* Returns true iff type lists type-clash element-wise. *)
-  let has_arg_clash env caller callee =
-    List.compare_lengths caller callee == 0
-    && List.for_all2
-         (fun t_caller (_, t_callee) ->
-           Types.type_clashes env t_caller t_callee)
-         caller callee
-
-  (* Return true if two subprogram are forbidden with the same argument types. *)
-  let has_subprogram_type_clash s1 s2 =
-    match (s1, s2) with
-    | ST_Function, _ | _, ST_Function | ST_Procedure, _ | _, ST_Procedure ->
-        true
-    | ST_Getter, ST_Getter | ST_Setter, ST_Setter -> true
-    | ST_Getter, ST_Setter | ST_Setter, ST_Getter -> false
-
-  (* Deduce renamings from match between calling and callee types. *)
-  let deduce_eqs env =
-    (* Here we assume [has_arg_clash env caller callee] *)
-    (* Thus [List.length caller == List.length callee]. *)
-    let folder prev_eqs caller (_name, callee) =
-      match callee.desc with
-      | T_Bits (BitWidth_SingleExpr { desc = E_Var x; _ }, _) -> (
-          match (Types.get_structure env caller).desc with
-          | T_Bits (BitWidth_SingleExpr e_caller, _) ->
-              (x, e_caller) :: prev_eqs
-          | T_Bits _ -> prev_eqs
-          | _ ->
-              (* We know that callee type_clashes with caller, and that it
-                 cannot be a name. *)
-              assert false)
-      | _ -> prev_eqs
-    in
-    List.fold_left2 folder []
-
-  let add_new_func env name arg_types subpgm_type =
-    match IMap.find_opt name env.global.subprogram_renamings with
-    | None ->
-        let env = set_renamings name (ISet.singleton name) env in
-        (env, name)
-    | Some set ->
-        let name' = name ^ "-" ^ string_of_int (ISet.cardinal set) in
-        let clash =
-          let arg_types = List.map snd arg_types in
-          (not (ISet.is_empty set))
-          && ISet.exists
-               (fun name'' ->
-                 let other_func_sig = IMap.find name'' env.global.subprograms in
-                 has_subprogram_type_clash subpgm_type
-                   other_func_sig.subprogram_type
-                 && has_arg_clash env arg_types other_func_sig.args)
-               set
-        in
-        let () =
-          if clash && _warn then
-            Format.eprintf "Function %s@[(%a)@] is declared multiple times.@."
-              name
-              Format.(
-                pp_print_list
-                  ~pp_sep:(fun f () -> fprintf f ",@ ")
-                  PP.pp_typed_identifier)
-              arg_types
-        in
-        let env = set_renamings name (ISet.add name' set) env in
-        (env, name')
-
-  let find_name_strict loc env name caller_arg_types =
-    let () =
-      if false then Format.eprintf "Trying to rename call to %S@." name
-    in
-    match IMap.find_opt name env.global.subprogram_renamings with
-    | None -> (
-        match IMap.find_opt name env.global.subprograms with
-        | Some func_sig ->
-            let callee_arg_types = func_sig.args in
-            if has_arg_clash env caller_arg_types callee_arg_types then
-              let () =
-                if false then
-                  Format.eprintf "Found already translated name: %S.@." name
-              in
-              ( deduce_eqs env caller_arg_types callee_arg_types,
-                name,
-                callee_arg_types,
-                func_sig.return_type )
-            else fatal_from loc (Error.NoCallCandidate (name, caller_arg_types))
-        | None -> undefined_identifier loc name)
-    | Some set -> (
-        let finder name' acc =
-          let func_sig = IMap.find name' env.global.subprograms in
-          let callee_arg_types = func_sig.args in
-          if has_arg_clash env caller_arg_types callee_arg_types then
-            ( deduce_eqs env caller_arg_types callee_arg_types,
-              name',
-              callee_arg_types,
-              func_sig.return_type )
-            :: acc
-          else acc
-        in
-        match ISet.fold finder set [] with
-        | [] -> fatal_from loc (Error.NoCallCandidate (name, caller_arg_types))
-        | [ (eqs, name', callee_arg_types, ret_type) ] ->
-            (eqs, name', callee_arg_types, ret_type)
-        | _ :: _ ->
-            fatal_from loc
-              (Error.TooManyCallCandidates (name, caller_arg_types)))
-
-  let find_name env name caller_arg_types =
-    match IMap.find_opt name env.global.subprogram_renamings with
-    | None -> (
-        match IMap.find_opt name env.global.subprograms with
-        | Some func_sig ->
-            let callee_arg_types = func_sig.args in
-            if has_arg_clash env caller_arg_types callee_arg_types then
-              let () =
-                if false then
-                  Format.eprintf "Found already translated name: %S.@." name
-              in
-              (deduce_eqs env caller_arg_types callee_arg_types, name)
-            else ([], name)
-        | None -> ([], name) (* Will trigger runtime exception *))
-    | Some set -> (
-        let finder name' acc =
-          let func_sig = IMap.find name' env.global.subprograms in
-          let callee_arg_types = func_sig.args in
-          if has_arg_clash env caller_arg_types callee_arg_types then
-            (deduce_eqs env caller_arg_types callee_arg_types, name') :: acc
-          else acc
-        in
-        match ISet.fold finder set [] with
-        | [] ->
-            let () =
-              if _warn then
-                Format.eprintf
-                  "@[No found function %s with the right types:@ @[%a@]@]@."
-                  name
-                  Format.(pp_print_list ~pp_sep:pp_print_space PP.pp_ty)
-                  caller_arg_types
-            in
-            ([], name)
-            (* Will trigger runtime exception *)
-        | [ (eqs, name') ] -> (eqs, name')
-        | (_, name') :: _ as li ->
-            let () =
-              if _warn then
-                Format.eprintf
-                  "Ambiguous call to %s. Many conflicting declared functions.@."
-                  name
-            in
-            (* We select all possible equations, hoping that there are no
-               conflicting ones. Args keep precendence over type-equations, so
-               there should not be any conflicts with those. *)
-            let eqs = li |> List.map fst |> List.concat in
-            (eqs, name')
-        (* If ambiguous, I don't know what happens *))
-end
-
 (******************************************************************************)
 (*                                                                            *)
 (*                         Type manipulation helpers                          *)
@@ -310,28 +134,13 @@ let min_max_constraints m_constraint m =
 let min_constraints = min_max_constraints min_constraint min
 and max_constraints = min_max_constraints max_constraint max
 
-(* -------------------------------------------------------------------------
+(* ---------------------------------------------------------------------------
 
-                          Getter/Setter handling
+                           Main type-checking module
 
-   -------------------------------------------------------------------------- *)
+   ---------------------------------------------------------------------------*)
 
-let should_reduce_to_call env name =
-  IMap.mem name env.global.subprogram_renamings
-
-let should_slices_reduce_to_call env name slices =
-  let args =
-    try Some (List.map slice_as_single slices) with Invalid_argument _ -> None
-  in
-  match args with
-  | None -> None
-  | Some args -> if should_reduce_to_call env name then Some args else None
-
-(******************************************************************************)
-(*                                                                            *)
-(*                               Annotate AST                                 *)
-(*                                                                            *)
-(******************************************************************************)
+type strictness = [ `Silence | `Warn | `TypeCheck ]
 
 module type ANNOTATE_CONFIG = sig
   val check : strictness
@@ -339,9 +148,6 @@ end
 
 module Annotate (C : ANNOTATE_CONFIG) = struct
   exception TypingAssumptionFailed
-
-  let _warn =
-    match C.check with `Warn | `TypeCheck -> true | `Silence -> false
 
   let check =
     match C.check with
@@ -383,6 +189,163 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   let assumption_failed () = raise_notrace TypingAssumptionFailed [@@inline]
   let check_true b fail () = if b then () else fail () [@@inline]
   let check_true' b = check_true b assumption_failed [@@inline]
+
+  (* -------------------------------------------------------------------------
+
+                          Functionnal polymorphism
+
+     ------------------------------------------------------------------------- *)
+
+  module FunctionRenaming = struct
+    (* Returns true iff type lists type-clash element-wise. *)
+    let has_arg_clash env caller callee =
+      List.compare_lengths caller callee == 0
+      && List.for_all2
+           (fun t_caller (_, t_callee) ->
+             Types.type_clashes env t_caller t_callee)
+           caller callee
+
+    (* Return true if two subprogram are forbidden with the same argument types. *)
+    let has_subprogram_type_clash s1 s2 =
+      match (s1, s2) with
+      | ST_Function, _ | _, ST_Function | ST_Procedure, _ | _, ST_Procedure ->
+          true
+      | ST_Getter, ST_Getter | ST_Setter, ST_Setter -> true
+      | ST_Getter, ST_Setter | ST_Setter, ST_Getter -> false
+
+    (* Deduce renamings from match between calling and callee types. *)
+    let deduce_eqs env =
+      (* Here we assume [has_arg_clash env caller callee] *)
+      (* Thus [List.length caller == List.length callee]. *)
+      let folder prev_eqs caller (_name, callee) =
+        match callee.desc with
+        | T_Bits (BitWidth_SingleExpr { desc = E_Var x; _ }, _) -> (
+            match (Types.get_structure env caller).desc with
+            | T_Bits (BitWidth_SingleExpr e_caller, _) ->
+                (x, e_caller) :: prev_eqs
+            | T_Bits _ -> prev_eqs
+            | _ ->
+                (* We know that callee type_clashes with caller, and that it
+                   cannot be a name. *)
+                assert false)
+        | _ -> prev_eqs
+      in
+      List.fold_left2 folder []
+
+    let add_new_func loc env name arg_types subpgm_type =
+      match IMap.find_opt name env.global.subprogram_renamings with
+      | None ->
+          let env = set_renamings name (ISet.singleton name) env in
+          (env, name)
+      | Some set ->
+          let name' = name ^ "-" ^ string_of_int (ISet.cardinal set) in
+          let clash =
+            let arg_types = List.map snd arg_types in
+            (not (ISet.is_empty set))
+            && ISet.exists
+                 (fun name'' ->
+                   let other_func_sig =
+                     IMap.find name'' env.global.subprograms
+                   in
+                   has_subprogram_type_clash subpgm_type
+                     other_func_sig.subprogram_type
+                   && has_arg_clash env arg_types other_func_sig.args)
+                 set
+          in
+          let+ () =
+           fun () ->
+            if clash then
+              let () =
+                if false then
+                  Format.eprintf
+                    "Function %s@[(%a)@] is declared multiple times.@." name
+                    Format.(
+                      pp_print_list
+                        ~pp_sep:(fun f () -> fprintf f ",@ ")
+                        PP.pp_typed_identifier)
+                    arg_types
+              in
+              Error.fatal_from loc (Error.AlreadyDeclaredIdentifier name)
+          in
+          let env = set_renamings name (ISet.add name' set) env in
+          (env, name')
+
+    let find_name loc env name caller_arg_types =
+      let () =
+        if false then Format.eprintf "Trying to rename call to %S@." name
+      in
+      match IMap.find_opt name env.global.subprogram_renamings with
+      | None -> (
+          match IMap.find_opt name env.global.subprograms with
+          | Some func_sig ->
+              let callee_arg_types = func_sig.args in
+              if has_arg_clash env caller_arg_types callee_arg_types then
+                let () =
+                  if false then
+                    Format.eprintf "Found already translated name: %S.@." name
+                in
+                ( deduce_eqs env caller_arg_types callee_arg_types,
+                  name,
+                  callee_arg_types,
+                  func_sig.return_type )
+              else
+                fatal_from loc (Error.NoCallCandidate (name, caller_arg_types))
+          | None -> undefined_identifier loc name)
+      | Some set -> (
+          let finder name' acc =
+            let func_sig = IMap.find name' env.global.subprograms in
+            let callee_arg_types = func_sig.args in
+            if has_arg_clash env caller_arg_types callee_arg_types then
+              ( deduce_eqs env caller_arg_types callee_arg_types,
+                name',
+                callee_arg_types,
+                func_sig.return_type )
+              :: acc
+            else acc
+          in
+          match ISet.fold finder set [] with
+          | [] ->
+              fatal_from loc (Error.NoCallCandidate (name, caller_arg_types))
+          | [ (eqs, name', callee_arg_types, ret_type) ] ->
+              (eqs, name', callee_arg_types, ret_type)
+          | _ :: _ ->
+              fatal_from loc
+                (Error.TooManyCallCandidates (name, caller_arg_types)))
+
+    let try_find_name loc env name caller_arg_types =
+      try find_name loc env name caller_arg_types
+      with Error.ASLException _ as error -> (
+        try
+          match IMap.find_opt name env.global.subprograms with
+          | None -> undefined_identifier loc ("function " ^ name)
+          | Some { args = callee_arg_types; return_type; _ } ->
+              ([], name, callee_arg_types, return_type)
+        with Error.ASLException _ -> raise error)
+  end
+
+  (* -------------------------------------------------------------------------
+
+                            Getter/Setter handling
+
+     -------------------------------------------------------------------------- *)
+
+  let should_reduce_to_call env name =
+    IMap.mem name env.global.subprogram_renamings
+
+  let should_slices_reduce_to_call env name slices =
+    let args =
+      try Some (List.map slice_as_single slices)
+      with Invalid_argument _ -> None
+    in
+    match args with
+    | None -> None
+    | Some args -> if should_reduce_to_call env name then Some args else None
+
+  (* -------------------------------------------------------------------------
+
+                              Annotate AST
+
+     -------------------------------------------------------------------------- *)
 
   let check_type_satisfies' env t1 t2 () =
     let () =
@@ -742,18 +705,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let caller_arg_typed = List.map (annotate_expr env) args in
     let caller_arg_types, args = List.split caller_arg_typed in
     let extra_nargs, name, callee_arg_types, ret_ty =
-      either
-        (fun () ->
-          FunctionRenaming.find_name_strict loc env name caller_arg_types)
-        (fun () ->
-          let extra_nargs, name =
-            FunctionRenaming.find_name env name caller_arg_types
-          in
-          match IMap.find_opt name env.global.subprograms with
-          | None -> undefined_identifier loc ("function " ^ name)
-          | Some { args = callee_arg_types; return_type; _ } ->
-              (extra_nargs, name, callee_arg_types, return_type))
-        ()
+      FunctionRenaming.try_find_name loc env name caller_arg_types
     in
     let eqs = List.rev_append eqs extra_nargs in
     let () =
@@ -994,7 +946,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               E_Slice (e', slices) |> here ))
     | E_GetField (e', field) -> (
         let t_e', e' = annotate_expr env e' in
-        let t_e' = resolve_root_name env t_e' in
+        let t_e' = Types.resolve_root_name env t_e' in
         match t_e'.desc with
         | T_Exception fields | T_Record fields -> (
             match List.assoc_opt field fields with
@@ -1007,7 +959,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         | _ -> conflict e [ default_t_bits; T_Record []; T_Exception [] ] t_e')
     | E_GetFields (e', fields) ->
         let t_e', e' = annotate_expr env e' in
-        let t_e' = resolve_root_name env t_e' in
+        let t_e' = Types.resolve_root_name env t_e' in
         let bitfields =
           match t_e'.desc with
           | T_Bits (_, bitfields) -> bitfields
@@ -1518,22 +1470,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* Optionnally rename the function if needs be *)
     let name =
       let args = List.map snd f.args in
-      best_effort f.name
-        (either
-           (fun _ ->
-             let _, name, _, _ =
-               FunctionRenaming.find_name_strict loc env f.name args
-             in
-             let () =
-               if false then
-                 Format.eprintf "Renaming decl of %s (%a) to %s.@." f.name
-                   (Format.pp_print_list PP.pp_ty)
-                   args name
-             in
-             name)
-           (fun _ ->
-             let _, name = FunctionRenaming.find_name env f.name args in
-             name))
+      let _, name, _, _ = FunctionRenaming.try_find_name loc env f.name args in
+      name
     in
     { f with body = SB_ASL body; name }
 
@@ -1551,82 +1489,72 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | _ -> gsd
 
   let try_annotate_gsd env gsd = best_effort gsd (annotate_gsd env)
-end
 
-module TypeCheck = Annotate (struct
-  let check = `TypeCheck
-end)
+  (******************************************************************************)
+  (*                                                                            *)
+  (*                           Global env and funcs                             *)
+  (*                                                                            *)
+  (******************************************************************************)
 
-module TypeInferWarn = Annotate (struct
-  let check = `Warn
-end)
-
-module TypeInferSilence = Annotate (struct
-  let check = `Silence
-end)
-
-(******************************************************************************)
-(*                                                                            *)
-(*                           Global env and funcs                             *)
-(*                                                                            *)
-(******************************************************************************)
-
-let declare_one_func (func_sig : 'a func) env =
-  let env, name' =
-    try
-      FunctionRenaming.add_new_func env func_sig.name func_sig.args
+  let declare_one_func loc (func_sig : 'a func) env =
+    let env, name' =
+      best_effort (env, func_sig.name) @@ fun _ ->
+      FunctionRenaming.add_new_func loc env func_sig.name func_sig.args
         func_sig.subprogram_type
-    with Error.ASLException e ->
-      if _warn then Error.eprintln e;
-      (env, func_sig.name)
-  in
-  let () =
-    if false then
-      let open Format in
-      eprintf
-        "@[<hov>Adding function %s to env with@ return-type: %a@ and \
-         argtypes:@ %a@."
-        name' (pp_print_option PP.pp_ty) func_sig.return_type
-        (pp_print_list ~pp_sep:pp_print_space PP.pp_typed_identifier)
-        func_sig.args
-  in
-  add_subprogram name' (ast_func_to_func_sig func_sig) env
+    in
+    let () =
+      if false then
+        let open Format in
+        eprintf
+          "@[<hov>Adding function %s to env with@ return-type: %a@ and \
+           argtypes:@ %a@."
+          name' (pp_print_option PP.pp_ty) func_sig.return_type
+          (pp_print_list ~pp_sep:pp_print_space PP.pp_typed_identifier)
+          func_sig.args
+    in
+    add_subprogram name' (ast_func_to_func_sig func_sig) env
 
-let declare_const loc name t v env =
-  if IMap.mem name env.global.storage_types then
-    Error.fatal_from loc (Error.AlreadyDeclaredIdentifier name)
-  else add_global_storage name t GDK_Constant env |> add_global_constant name v
+  let declare_const loc name t v env =
+    if IMap.mem name env.global.storage_types then
+      Error.fatal_from loc (Error.AlreadyDeclaredIdentifier name)
+    else
+      add_global_storage name t GDK_Constant env |> add_global_constant name v
 
-let declare_type loc name ty s env =
-  let () =
-    if false then Format.eprintf "Declaring type %s of %a@." name PP.pp_ty ty
-  in
-  let env =
-    match s with
-    | None -> env
-    | Some s ->
-        if Types.subtype_satisfies env ty (T_Named s |> add_pos_from loc) then
+  let declare_type loc name ty s env =
+    let () =
+      if false then Format.eprintf "Declaring type %s of %a@." name PP.pp_ty ty
+    in
+    let env =
+      match s with
+      | None -> env
+      | Some s ->
+          let+ () =
+           fun () ->
+            if Types.subtype_satisfies env ty (T_Named s |> add_pos_from loc)
+            then ()
+            else
+              Error.fatal_from loc (Error.ConflictingTypes ([ T_Named s ], ty))
+          in
           add_subtype name s env
-        else Error.fatal_from loc (Error.ConflictingTypes ([ T_Named s ], ty))
-  in
-  let res =
-    match ty.desc with
-    | T_Enum ids ->
-        let env = add_type name ty env in
-        let t = T_Named name |> add_pos_from ty in
-        let add_one_id env x =
-          let v = V_Int (IMap.cardinal env.global.constants_values) in
-          declare_const loc x t v env
-        in
-        List.fold_left add_one_id env ids
-    | _ -> add_type name ty env
-  in
-  let () = if false then Format.eprintf "Declared %s.@." name in
-  res
+    in
+    let res =
+      match ty.desc with
+      | T_Enum ids ->
+          let env = add_type name ty env in
+          let t = T_Named name |> add_pos_from ty in
+          let add_one_id env x =
+            let v = V_Int (IMap.cardinal env.global.constants_values) in
+            declare_const loc x t v env
+          in
+          List.fold_left add_one_id env ids
+      | _ -> add_type name ty env
+    in
+    let () = if false then Format.eprintf "Declared %s.@." name in
+    res
 
-let declare_global_storage loc gsd env =
-  let () = if false then Format.eprintf "Declaring %s@." gsd.name in
-  try
+  let declare_global_storage loc gsd env =
+    let () = if false then Format.eprintf "Declaring %s@." gsd.name in
+    best_effort env @@ fun _ ->
     match gsd with
     | { keyword = GDK_Constant; initial_value = Some e; ty = None; name } ->
         let v = reduce_constants env e in
@@ -1648,10 +1576,10 @@ let declare_global_storage loc gsd env =
           Error.fatal_from loc (Error.AlreadyDeclaredIdentifier name)
         else add_global_storage name ty keyword env
     | { keyword; initial_value = Some e; ty = None; name } ->
-        let t, _e = TypeInferSilence.annotate_expr env e in
+        let t, _e = annotate_expr env e in
         add_global_storage name t keyword env
     | { keyword; initial_value = Some e; ty = Some ty; name } ->
-        let t, e = TypeInferSilence.annotate_expr env e in
+        let t, e = annotate_expr env e in
         if not (Types.type_satisfies env t ty) then conflict e [ ty.desc ] t
         else add_global_storage name ty keyword env
     | { initial_value = None; ty = None; _ } ->
@@ -1660,92 +1588,88 @@ let declare_global_storage loc gsd env =
           (Error.NotYetImplemented
              "Global storage declaration should have an initial value or a \
               type.")
-  with Error.ASLException err ->
-    if _warn then Error.eprintln err;
-    env
 
-let build_global ast =
-  let def d =
-    match d.desc with
-    | D_Func { name; _ } | D_GlobalStorage { name; _ } | D_TypeDecl (name, _, _)
-      ->
-        name
-  in
-  let use =
-    let use_e e acc = ASTUtils.use_e acc e in
-    let use_ty ty acc = ASTUtils.use_ty acc ty in
-    fun d ->
+  let build_global ast =
+    let def d =
       match d.desc with
-      | D_GlobalStorage { initial_value = Some e; ty = Some ty; _ } ->
-          ISet.empty |> use_e e |> use_ty ty
-      | D_GlobalStorage { initial_value = None; ty = Some ty; _ } ->
-          ISet.empty |> use_ty ty
-      | D_GlobalStorage { initial_value = Some e; ty = None; _ } ->
-          ISet.empty |> use_e e
-      | D_GlobalStorage _ -> ISet.empty
-      | D_TypeDecl (_, ty, s) -> use_ty ty (ISet.of_option s)
-      | D_Func _ ->
-          ISet.empty (* TODO: pure functions that can be used in constants? *)
-  in
-  let process_one_decl d =
-    match d.desc with
-    | D_Func func_sig -> declare_one_func func_sig
-    | D_GlobalStorage gsd -> declare_global_storage d gsd
-    | D_TypeDecl (x, ty, s) -> declare_type d x ty s
-  in
-  ASTUtils.dag_fold def use process_one_decl ast
+      | D_Func { name; _ }
+      | D_GlobalStorage { name; _ }
+      | D_TypeDecl (name, _, _) ->
+          name
+    in
+    let use =
+      let use_e e acc = ASTUtils.use_e acc e in
+      let use_ty ty acc = ASTUtils.use_ty acc ty in
+      fun d ->
+        match d.desc with
+        | D_GlobalStorage { initial_value = Some e; ty = Some ty; _ } ->
+            ISet.empty |> use_e e |> use_ty ty
+        | D_GlobalStorage { initial_value = None; ty = Some ty; _ } ->
+            ISet.empty |> use_ty ty
+        | D_GlobalStorage { initial_value = Some e; ty = None; _ } ->
+            ISet.empty |> use_e e
+        | D_GlobalStorage _ -> ISet.empty
+        | D_TypeDecl (_, ty, s) -> use_ty ty (ISet.of_option s)
+        | D_Func _ ->
+            ISet.empty (* TODO: pure functions that can be used in constants? *)
+    in
+    let process_one_decl d =
+      match d.desc with
+      | D_Func func_sig -> declare_one_func d func_sig
+      | D_GlobalStorage gsd -> declare_global_storage d gsd
+      | D_TypeDecl (x, ty, s) -> declare_type d x ty s
+    in
+    ASTUtils.dag_fold def use process_one_decl ast
 
-let rename_primitive loc env (f : 'a AST.func) =
-  let _, name, _, _ =
-    FunctionRenaming.find_name_strict loc env f.name (List.map snd f.args)
-  in
-  { f with name }
+  let rename_primitive loc env (f : 'a AST.func) =
+    let name =
+      best_effort f.name @@ fun _ ->
+      let _, name, _, _ =
+        FunctionRenaming.find_name loc env f.name (List.map snd f.args)
+      in
+      name
+    in
+    { f with name }
 
-(******************************************************************************)
-(*                                                                            *)
-(*                                Entry point                                 *)
-(*                                                                            *)
-(******************************************************************************)
+  (******************************************************************************)
+  (*                                                                            *)
+  (*                                Entry point                                 *)
+  (*                                                                            *)
+  (******************************************************************************)
 
-let annotate_ast (ast : 'a AST.t) env : 'a AST.t * env =
-  let env = build_global ast env in
-  let annotate_func loc f = TypeInferSilence.try_annotate_func loc env f in
-  let one_decl d =
-    match d.desc with
-    | D_Func ({ body = SB_ASL _; _ } as f) ->
-        D_Func (annotate_func d f) |> ASTUtils.add_pos_from_st d
-    | _ -> d
-  in
-  (List.map one_decl ast, env)
+  let type_check_ast ast env =
+    let env = build_global ast env in
+    let () =
+      if false then
+        Format.eprintf "@[<v>Typing in env:@ %a@]@." StaticEnv.pp_env env
+    in
+    let annotate d =
+      let here = ASTUtils.add_pos_from_st d in
+      match d.desc with
+      | D_Func ({ body = SB_ASL _; _ } as f) ->
+          D_Func (try_annotate_func d env f) |> here
+      | D_Func ({ body = SB_Primitive _; _ } as f) ->
+          D_Func (rename_primitive d env f) |> here
+      | D_GlobalStorage gsd ->
+          D_GlobalStorage (try_annotate_gsd env gsd) |> here
+      | _ -> d
+    in
+    (List.map annotate ast, env)
+end
 
-let type_check_ast strictness ast env =
-  let env = build_global ast env in
-  let () =
-    if false then
-      Format.eprintf "@[<v>Typing in env:@ %a@]@." StaticEnv.pp_env env
-  in
-  let annotate_func =
-    match strictness with
-    | `TypeCheck -> TypeCheck.annotate_func
-    | `Warn -> TypeInferWarn.try_annotate_func
-    | `Silence ->
-        if _warn then TypeInferWarn.try_annotate_func
-        else TypeInferSilence.try_annotate_func
-  in
-  let annotate_gsd =
-    match strictness with
-    | `TypeCheck -> TypeCheck.annotate_gsd
-    | `Warn -> TypeInferWarn.try_annotate_gsd
-    | `Silence -> TypeInferSilence.try_annotate_gsd
-  in
-  let annotate d =
-    let here = ASTUtils.add_pos_from_st d in
-    match d.desc with
-    | D_Func ({ body = SB_ASL _; _ } as f) ->
-        D_Func (annotate_func d env f) |> here
-    | D_Func ({ body = SB_Primitive _; _ } as f) ->
-        D_Func (rename_primitive d env f) |> here
-    | D_GlobalStorage gsd -> D_GlobalStorage (annotate_gsd env gsd) |> here
-    | _ -> d
-  in
-  (List.map annotate ast, env)
+module TypeCheck = Annotate (struct
+  let check = `TypeCheck
+end)
+
+module TypeInferWarn = Annotate (struct
+  let check = `Warn
+end)
+
+module TypeInferSilence = Annotate (struct
+  let check = `Silence
+end)
+
+let type_check_ast = function
+  | `TypeCheck -> TypeCheck.type_check_ast
+  | `Warn -> TypeInferWarn.type_check_ast
+  | `Silence -> TypeInferSilence.type_check_ast

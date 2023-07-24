@@ -5,13 +5,6 @@
 
 val infer_value : AST.value -> AST.type_desc
 
-val annotate_ast : 'p AST.t -> StaticEnv.env -> 'p AST.t * StaticEnv.env
-(** Annotate is a typing inference function for an ASL AST. It does not type check.
-
-    @raise Error.ASLException if the Inferrence is blocked, for example when
-    the AST does not typechecks.
-*)
-
 type strictness = [ `Silence | `Warn | `TypeCheck ]
 (** Possible strictness of type-checking. *)
 

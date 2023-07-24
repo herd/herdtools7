@@ -45,6 +45,9 @@ val is_non_primitive : ty -> bool
 
 (** {2 Type transformations} *)
 
+val resolve_root_name : env -> ty -> ty
+(** Replace any named type by its declared type in the environment. *)
+
 val get_structure : env -> ty -> ty
 (** The structure of a type is the primitive type that can hold the same
     values. *)

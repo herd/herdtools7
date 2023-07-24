@@ -17,6 +17,14 @@ let slices_equal = thing_equal slices_equal
 
 (* --------------------------------------------------------------------------*)
 
+let rec resolve_root_name (env : env) (ty : ty) : ty =
+  match ty.desc with
+  | T_Named x -> (
+      match IMap.find_opt x env.global.declared_types with
+      | Some ty -> resolve_root_name env ty
+      | None -> undefined_identifier ty x)
+  | _ -> ty
+
 let get_structure (env : env) : ty -> ty =
   (* TODO: rethink to have physical equality when structural equality? *)
   (* TODO: memoize? *)
@@ -391,10 +399,15 @@ let rec structural_subtype_satisfies env t s =
   | T_Bits _, _ -> false
   (* If S has the structure of an array type with elements of type E then T
      must have the structure of an array type with elements of type E, and T
-     must have the same element indices as S.
-     TODO: this is probably wrong, or a bad approximation. *)
-  | T_Array (length_s, ty_s), T_Array (length_t, ty_t) ->
-      expr_equal env length_s length_t && type_equal env ty_s ty_t
+     must have the same element indices as S. *)
+  | T_Array (length_s, _), T_Array (length_t, _) -> (
+      expr_equal env length_s length_t
+      &&
+      match
+        ((resolve_root_name env s).desc, (resolve_root_name env t).desc)
+      with
+      | T_Array (_, ty_s), T_Array (_, ty_t) -> type_equal env ty_s ty_t
+      | _ -> assert false)
   | T_Array _, _ -> false
   (* If S has the structure of a tuple type then T must have the structure of
      a tuple type with same number of elements as S, and each element in T
