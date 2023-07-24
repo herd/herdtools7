@@ -1661,7 +1661,7 @@ let build_global ast =
   in
   let use =
     let use_e e acc = ASTUtils.use_e acc e in
-    let use_ty _ty acc = acc (* TODO *) in
+    let use_ty ty acc = ASTUtils.use_ty acc ty in
     fun d ->
       match d with
       | D_GlobalStorage { initial_value = Some e; ty = Some ty; _ } ->

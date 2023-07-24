@@ -115,34 +115,60 @@ let slices_to_positions as_int =
   in
   fun positions -> List.map one_slice positions |> List.flatten
 
+let fold_named_list folder acc list =
+  List.fold_left (fun acc (_, v) -> folder acc v) acc list
+
 let rec use_e acc e =
   match e.desc with
   | E_Literal _ -> acc
-  | E_Typed (e, _) -> use_e acc e
+  | E_Typed (e, ty) -> use_e (use_ty acc ty) e
   | E_Var x -> ISet.add x acc
   | E_Binop (_op, e1, e2) -> use_e (use_e acc e2) e1
   | E_Unop (_op, e) -> use_e acc e
   | E_Call (x, args, named_args) ->
       let acc = ISet.add x acc in
-      let acc = List.fold_left use_field acc named_args in
-      List.fold_left use_e acc args
-  | E_Slice (e, args) ->
-      let acc = use_e acc e in
-      List.fold_left use_slice acc args
+      let acc = use_fields acc named_args in
+      use_es acc args
+  | E_Slice (e, slices) -> use_slices (use_e acc e) slices
   | E_Cond (e1, e2, e3) -> use_e (use_e (use_e acc e1) e3) e2
   | E_GetField (e, _) -> use_e acc e
   | E_GetFields (e, _) -> use_e acc e
-  | E_Record (_ty, li) -> List.fold_left use_field acc li
-  | E_Concat es -> List.fold_left use_e acc es
-  | E_Tuple es -> List.fold_left use_e acc es
+  | E_Record (_ty, li) -> use_fields acc li
+  | E_Concat es -> use_es acc es
+  | E_Tuple es -> use_es acc es
   | E_Unknown _ -> acc
   | E_Pattern (e, _p) -> use_e acc e
 
-and use_field acc (_, e) = use_e acc e
+and use_es acc es = List.fold_left use_e acc es
+and use_fields acc fields = fold_named_list use_e acc fields
+and use_slices acc slices = List.fold_left use_slice acc slices
 
 and use_slice acc = function
   | Slice_Single e -> use_e acc e
   | Slice_Length (e1, e2) | Slice_Range (e1, e2) -> use_e (use_e acc e1) e2
+
+and use_ty acc t =
+  match t.desc with
+  | T_Named s -> ISet.add s acc
+  | T_Int None | T_Enum _ | T_Bool | T_Real | T_String -> acc
+  | T_Int (Some cs) -> use_constraints acc cs
+  | T_Tuple li -> List.fold_left use_ty acc li
+  | T_Record fields | T_Exception fields -> fold_named_list use_ty acc fields
+  | T_Array (e, t') -> use_ty (use_e acc e) t'
+  | T_Bits (bit_constraint, bit_fields) ->
+      let acc =
+        match bit_constraint with
+        | BitWidth_SingleExpr e -> use_e acc e
+        | BitWidth_ConstrainedFormType t' -> use_ty acc t'
+        | BitWidth_Constraints cs -> use_constraints acc cs
+      in
+      fold_named_list use_slices acc bit_fields
+
+and use_constraints acc cs = List.fold_left use_constraint acc cs
+
+and use_constraint acc = function
+  | Constraint_Exact e -> use_e acc e
+  | Constraint_Range (e1, e2) -> use_e (use_e acc e1) e2
 
 let rec use_s acc s =
   match s.desc with
@@ -152,8 +178,8 @@ let rec use_s acc s =
   | S_Assign (le, e) -> use_le (use_e acc e) le
   | S_Call (x, args, named_args) ->
       let acc = ISet.add x acc in
-      let acc = List.fold_left use_field acc named_args in
-      List.fold_left use_e acc args
+      let acc = use_fields acc named_args in
+      use_es acc args
   | S_Cond (e, s1, s2) -> use_s (use_s (use_e acc e) s2) s1
   | S_Case (e, cases) -> List.fold_left use_case (use_e acc e) cases
   | S_For (_, e1, _, e2, s) -> use_s (use_e (use_e acc e1) e2) s

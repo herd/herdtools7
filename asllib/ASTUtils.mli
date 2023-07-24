@@ -43,6 +43,7 @@ val mask_from_set_bits_positions : int -> int list -> string
 val inv_mask : string -> string
 val slices_to_positions : ('a -> int) -> ('a * 'a) list -> int list
 val use_e : ISet.t -> expr -> ISet.t
+val use_ty : ISet.t -> ty -> ISet.t
 val used_identifiers : 'p decl list -> ISet.t
 val used_identifiers_stmt : stmt -> ISet.t
 val canonical_fields : (String.t * 'a) list -> (String.t * 'a) list
