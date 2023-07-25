@@ -1,0 +1,16 @@
+AArch64 DIC1.SM.B+badcachesync-isb-2
+CacheType=DIC
+{
+  0:X0=NOP; 0:X1=P0:m0; 0:X9=0;
+  1:X0=NOP; 1:X1=P0:m0;
+}
+P0              | P1         ;
+    STR W0,[X1] | LDR W2,[X1];
+    DSB ISH     | CMP W0,W2  ;
+    IC IVAU,X1  | CSET W6,EQ ;
+    DSB ISH     |            ;
+    ISB         |            ;
+m0: B l0        |            ;
+    MOV W9,#1   |            ;
+l0:             |            ;
+exists 0:X9=0 /\ 1:X6=1

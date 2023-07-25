@@ -59,6 +59,13 @@ let Translation = if "vmsa" then Translation else emptyset
 let AccessFlag = if "vmsa" then AccessFlag else emptyset
 
 (*
+ * Include default definitions for sets that might be undefined without
+ * -variant ifetch
+*)
+let INSTR = if "ifetch" then INSTR else emptyset
+let Within-CMODX-List = if "ifetch" then Restricted-CMODX else emptyset
+
+(*
  * Include the cos.cat file shipped with herd.
  * This builds the co relation as a total order over writes to the same
  * location and then consequently defines the fr relation using co and
@@ -68,6 +75,11 @@ let AFtoDB = same-instance & ((AF\DB) * (DB\AF))
 let co0=co0 | AFtoDB
 
 include "cos.cat"
+
+(*
+ * A shorthand for cache maintenance effects used by -variant ifetch
+ *)
+let IC = IC.IALLUIS | IC.IALLU | IC.IVAU
 
 (*
  * Include aarch64fences.cat to define barriers.
@@ -108,3 +120,15 @@ let Imp = NExp
 let SPONTANEOUS = SPURIOUS
 let inv-scope = inv-domain
 let TTD = PTE
+
+(* Same-cache-line relation *)
+(* NOTE : currently assumes all locations are on different cache lines *)
+(*        also extends to IC without a location specified              *)
+let scl = loc
+  | (M | DC.CVAU | IC) * (IC.IALLU | IC.IALLUIS)
+  | (IC.IALLU | IC.IALLUIS) * (M | DC.CVAU | IC)
+
+(* Flag any occurrence of writes to two different locations that might be on
+ * the same cache line. *)
+flag ~empty ((W & INSTR)*(W & INSTR) \ loc)
+  as Assuming-no-two-modified-instructions-are-on-the-same-cache-line

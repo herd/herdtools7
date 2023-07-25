@@ -1,0 +1,17 @@
+AArch64 IDC1.WRC-mmrb-1
+CacheType=IDC
+Stable=X9
+{ 1:X0=NOP;
+  0:X1=P0:mod; 1:X1=P0:mod; 2:X1=P0:mod;
+  1:X3=x; 2:X3=x; }
+ P0          | P1          |  P2          ;
+             | STR W0,[X1] |              ;
+             | BLR X1      |  LDR W2,[X3] ;
+ B end       | MOV W2,#1   |  DSB SY      ;
+mod:         | STR W2,[X3] |  DC CVAU,X1  ;
+ B l0        |             |  DSB SY      ;
+ MOV X9,#1   |             |  IC IVAU,X1  ;
+l0:          |             |  DSB SY      ;
+ RET         |             |  ISB         ;
+end:         |             |  BLR X1      ;
+exists(1:X9=1 /\ 2:X2=1 /\ 2:X9=0)

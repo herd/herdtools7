@@ -46,6 +46,10 @@
 
 include "aarch64util.cat"
 
+(* Fetch-intrinsically-before *)
+let f-ib =
+  [Imp & INSTR & R]; iico_data; [B]; iico_ctrl; [_]
+
 (* Translation-intrinsically-before *)
 let tr-ib =
   [Imp & TTD & R]; iico_data; [B]; iico_ctrl; [Exp & M | MMU & FAULT]
@@ -73,8 +77,8 @@ assert empty HU \ (AF | DB)
 
 (* DSB-ordered-before *)
 let DSB-ob =
- [M]; po; [dsb.full]; po; [~(Imp & M)]
- | (if "ETS2" then [M]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
+ [M|DC.CVAU|IC]; po; [dsb.full]; po; [~(Imp & M)]
+ | (if "ETS2" then [M|DC.CVAU|IC]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
  | [(Exp & R)\NoRet]; po; [dsb.ld]; po; [~(Imp & M)]
  | (if "ETS2" then [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [Imp & TTD & M] else 0)
  | [Exp & W]; po; [dsb.st]; po; [~(Imp & M)]
@@ -88,6 +92,8 @@ let CSE-ob =
  [Exp & R]; ctrl; [CSE]; po
  | DSB-ob; [CSE]; po
  | [Imp & TTD & R]; tr-ib; [CSE]; po
+ | [Imp & INSTR & R]; f-ib; [CSE]; po
+
 
 (* Dependency-ordered-before *)
 let dob = addr | data
@@ -137,6 +143,18 @@ let rec local-hw-reqs =
   | [Imp & TTD & R]; po-loc; [W]
   | [Imp & TTD & R]; rmw; [HU]
   | [Exp & M]; po-loc; [TLBUncacheable & FAULT]
-  | [Exp & R]; addr; [TLBI]
+  | [Exp & R]; addr; [TLBI | DC.CVAU | IC]
   | [Exp & R]; ctrl; [HU]
+
+  | f-ib
+  | [Imp & INSTR & R]; po; [~(Imp & INSTR & R)]
+
+  | [DC.CVAU]; po; [dmb.full]; po; [DC.CVAU]
+  | [M & Exp]; po; [dmb.full]; po; [DC.CVAU]
+  | [DC.CVAU]; po; [dmb.full]; po; [M & Exp]
+
+  | [Exp & M]; (po & scl); [DC.CVAU]
+  | [DC.CVAU]; (po & scl); [M & Exp]
+  | [DC.CVAU]; (po & scl); [DC.CVAU]
+  
   | local-hw-reqs; local-hw-reqs

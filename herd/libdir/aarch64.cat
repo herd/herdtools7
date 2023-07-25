@@ -99,15 +99,48 @@ let TTD-obs =
     | [HU]; co | co; [HU]
     | tlbi-ca
 
+include "cm-after.cat"
+with dc-after from (make-w2dc-order local-hw-reqs)
+with ic-after from (make-ic2if-order local-hw-reqs)
+
+(* IFetch-Ordered-Before *)
+let ifetch-ordered-before =
+  ic-after; [IC]; po; [dsb.full]; po; [~(Imp & M)]
+  | (if "DIC" then ca else 0)
+
+(* IC-Ordered-Before *)
+let ic-ob = [Imp & INSTR & R]; po; [Imp & INSTR & R]; ifetch-ordered-before
+
+(* Hazard-Ordered-Before *)
+let haz-ob =
+  exp-haz-ob | tlbi-ob | ic-ob
+
+(* Hardware-required-ordered-before *)
+let hw-reqs = local-hw-reqs | haz-ob
+
+(* IC-Coherence-After *)
+let ic-ca =
+    (if not "DIC" && not "IDC" then [IC]; ic-after; [Imp & INSTR & R]; ca; [W]; dc-after; [DC.CVAU] else 0)
+    | (if not "DIC" && "IDC" then [IC]; ic-after; [Imp & INSTR & R]; ca; [W] else 0)
+    | (if "DIC" && "IDC" then [Imp & INSTR & R]; ca; [W] else 0)
+
+(* Ifetch-observed-by *)
+let ifetch-obs =
+    rf; [Imp & INSTR & R]
+    | ic-after
+    | [DC.CVAU]; dc-after; [W] | [W]; dc-after; [DC.CVAU]
+    | ic-ca
+
 (* Observed-by *)
 let obs =
     exp-obs; sca-class?
     | tag-obs; sca-class?
     | TTD-obs
+    | ifetch-obs
 
 (* Hazard-Ordered-Before *)
 let haz-ob =
-  exp-haz-ob | tlbi-ob
+  exp-haz-ob | tlbi-ob | ic-ob
 
 (* Hardware-required-ordered-before *)
 let hw-reqs = local-hw-reqs | haz-ob
@@ -134,3 +167,20 @@ empty (rmw & (fr; co)) \ (([Exp]; rmw; [Exp]) & (fri ; [Exp & W]; coi)) as atomi
 (* Break Before Make *)
 let BBM = ([TTDV]; ca; [TTDINV]; co; [TTDV])
 flag ~empty (TTD-update-needsBBM & ~BBM) as requires-BBM
+
+(* Additional synchronisation requirements for CMODX *)
+let CMODX-conflicts = same-loc & (
+  (Imp & INSTR & R & Within-CMODX-List) * W
+  | (Imp & INSTR & R) * (Within-CMODX-List & W)
+  | W * (Within-CMODX-List & Imp & INSTR & R)
+  | (Within-CMODX-List & W) * (Imp & INSTR & R)
+  )
+
+let CMODX-ordering =
+  [Imp & INSTR & R]; ob; [W]
+  | [W]; ob; [Imp & INSTR & R]
+
+let CMODX-unordered-conflicts =
+  CMODX-conflicts \ (CMODX-ordering | CMODX-ordering^-1)
+
+flag ~empty CMODX-unordered-conflicts as violates-CMODX-requirements

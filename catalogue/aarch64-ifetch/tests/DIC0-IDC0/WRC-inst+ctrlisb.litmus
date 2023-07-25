@@ -1,0 +1,17 @@
+AArch64 WRC-inst+ctrlisb
+Stable=X9
+{ 0:X0=NOP;
+  0:X1=P0:mod; 1:X1=P0:mod; 2:X1=P0:mod;
+  1:X3=x; 2:X3=x; }
+ P0          | P1          |  P2          ;
+ STR W0,[X1] | BLR X1      |  LDR W2,[X3] ;
+ B end       | MOV W2,#1   |  CBNZ W2,l2  ;
+mod:         | STR W2,[X3] | l2:          ;
+ B l0        |             |  ISB         ;
+ MOV X9,#1   |             |  BLR X1      ;
+l0:          |             |              ;
+ RET         |             |              ;
+end:         |             |              ;
+exists(1:X9=1 /\ 2:X2=1 /\ 2:X9=0)
+
+

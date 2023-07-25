@@ -1,0 +1,18 @@
+AArch64 DIC1.SM+lob-fault
+CacheType=DIC
+{ 0:X0=0;  (*any invalid instruction value*)
+  0:X1=P0:m0;
+  0:X2=1;
+  0:X3=x; }
+P0              | P0.F           ;
+    STR W0,[X1] | MOV W4,#2      ;
+    DC CVAU,X1  | STR W4,[X3]    ;
+    DSB ISH     | ADR X9,l0      ;
+    IC IVAU,X1  | MSR ELR_EL1,X9 ;
+    DSB ISH     | ERET           ;
+    ISB         |                ;
+    STR W2,[X3] |                ;
+    DMB ISH     |                ;
+m0: B l0        |                ;
+l0:             |                ;
+ exists(x=1)

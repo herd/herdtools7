@@ -1,0 +1,15 @@
+AArch64 DIC1.S-self+dmb.st+fault
+CacheType=DIC
+{
+0:X1=x;
+0:X2=0; (*any invalid instruction value*)
+0:X3=P1:m0;
+1:X3=x;
+}
+ P0          | P1   | P1.F           ;
+ MOV W0,#1   |m0:   | MOV W2,#2      ;
+ STR W0,[X1] | B l1 | STR W2,[X3]    ;
+ DMB ST      |l1:   | ADR X9,l1      ;
+ STR W2,[X3] |      | MSR ELR_EL1,X9 ;
+             |      | ERET           ;
+ exists(1:X2=2 /\ x=1)
