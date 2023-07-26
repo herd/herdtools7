@@ -166,7 +166,10 @@ let () =
     if args.print_serialized then print_string (Serialize.t_to_string ast)
   in
 
+  let ast = List.rev_append Native.NativePrimitives.primitives ast in
   let ast = Builder.with_stdlib ast in
+
+  let () = if false then Format.eprintf "%a@." PP.pp_t ast in
 
   let typed_ast, static_env =
     or_exit @@ fun () ->
@@ -182,7 +185,7 @@ let () =
     if args.exec then
       let instrumentation = if args.show_rules then true else false in
       or_exit @@ fun () ->
-      Native.interprete ~instrumentation ~static_env args.strictness ast
+      Native.interprete ~instrumentation ~static_env args.strictness typed_ast
     else (0, [])
   in
 

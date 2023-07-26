@@ -149,6 +149,12 @@ end
 module Annotate (C : ANNOTATE_CONFIG) = struct
   exception TypingAssumptionFailed
 
+  let strictness_string =
+    match C.check with
+    | `TypeCheck -> "type-checking-strict"
+    | `Warn -> "type-checking-warn"
+    | `Silence -> "type-inference"
+
   let check =
     match C.check with
     | `TypeCheck -> fun f x -> f x
@@ -1641,7 +1647,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let env = build_global ast env in
     let () =
       if false then
-        Format.eprintf "@[<v>Typing in env:@ %a@]@." StaticEnv.pp_env env
+        Format.eprintf "@[<v>Typing with %s in env:@ %a@]@." strictness_string
+          StaticEnv.pp_env env
     in
     let annotate d =
       let here = ASTUtils.add_pos_from_st d in

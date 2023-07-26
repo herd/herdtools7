@@ -19,6 +19,10 @@
 
 module NativeBackend : Backend.S with type value = AST.value and type 'a m = 'a
 
+module NativePrimitives : sig
+  val primitives : NativeBackend.primitive AST.t
+end
+
 module NativeInterpreter (C : Interpreter.Config) :
   Interpreter.S with module B = NativeBackend
 
