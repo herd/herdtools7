@@ -19,6 +19,7 @@
 
 open AST
 open ASTUtils
+open Infix
 
 let _log = false
 
@@ -50,9 +51,9 @@ module NativeBackend = struct
   module SIMap = Map.Make (ScopedIdentifiers)
 
   let is_undetermined _ = false
-  let v_of_int i = V_Int i
+  let v_of_int i = V_Int (Z.of_int i)
   let v_of_parsed_v = Fun.id
-  let v_to_int = function V_Int i -> Some i | _ -> None
+  let v_to_int = function V_Int i -> Some (Z.to_int i) | _ -> None
   let debug_value = PP.value_to_string
   let bind (vm : 'a m) (f : 'a -> 'b m) : 'b m = f vm
   let prod (r1 : 'a m) (r2 : 'b m) : ('a * 'b) m = (r1, r2)
@@ -137,19 +138,26 @@ module NativeBackend = struct
 
   let as_bitvector = function
     | V_BitVector bits -> bits
-    | V_Int i -> Bitvector.of_int i
+    | V_Int i -> Bitvector.of_z (Z.numbits i) i
     | v -> mismatch_type v [ default_t_bits ]
 
-  let as_int = function V_Int i -> i | v -> mismatch_type v [ T_Int None ]
+  let as_int = function
+    | V_Int i -> Z.to_int i
+    | v -> mismatch_type v [ T_Int None ]
+
   let bitvector_to_value bv = return (V_BitVector bv)
 
+  let int_max x y = if x >= y then x else y
+
   let read_from_bitvector positions bv =
+    let positions = slices_to_positions as_int positions in
+    let max_pos = List.fold_left int_max 1 positions in
     let bv =
       match bv with
       | V_BitVector bv -> bv
-      | V_Int i -> Bitvector.of_int i
+      | V_Int i -> Bitvector.of_z (max_pos + 1) i
       | _ -> mismatch_type bv [ default_t_bits ]
-    and positions = slices_to_positions as_int positions in
+    in
     let res = Bitvector.extract_slice bv positions in
     bitvector_to_value res
 
@@ -170,13 +178,13 @@ module NativePrimitives = struct
   let return_one v = return [ return v ]
 
   let uint = function
-    | [ V_BitVector bv ] -> V_Int (Bitvector.to_int bv) |> return_one
+    | [ V_BitVector bv ] -> V_Int (Bitvector.to_z_unsigned bv) |> return_one
     | [ v ] ->
         Error.fatal_unknown_pos @@ Error.MismatchType (v, [ default_t_bits ])
     | li -> Error.fatal_unknown_pos @@ Error.BadArity ("UInt", 1, List.length li)
 
   let sint = function
-    | [ V_BitVector bv ] -> V_Int (Bitvector.to_int_signed bv) |> return_one
+    | [ V_BitVector bv ] -> V_Int (Bitvector.to_z_signed bv) |> return_one
     | [ v ] ->
         Error.fatal_unknown_pos @@ Error.MismatchType (v, [ default_t_bits ])
     | li -> Error.fatal_unknown_pos @@ Error.BadArity ("SInt", 1, List.length li)
@@ -192,29 +200,36 @@ module NativePrimitives = struct
       return []
 
   let dec_str = function
-    | [ V_Int i ] -> V_String (string_of_int i) |> return_one
+    | [ V_Int i ] -> V_String (Z.to_string i) |> return_one
     | [ v ] ->
         Error.fatal_unknown_pos @@ Error.MismatchType (v, [ integer.desc ])
     | li ->
         Error.fatal_unknown_pos @@ Error.BadArity ("DecStr", 1, List.length li)
 
   let hex_str = function
-    | [ V_Int i ] -> V_String (Printf.sprintf "%x" i) |> return_one
+    | [ V_Int i ] -> V_String (Printf.sprintf "%a" Z.sprint i) |> return_one
     | [ v ] ->
         Error.fatal_unknown_pos @@ Error.MismatchType (v, [ integer.desc ])
     | li ->
         Error.fatal_unknown_pos @@ Error.BadArity ("DecStr", 1, List.length li)
 
-  let ascii_range = Constraint_Range (literal (V_Int 0), literal (V_Int 127))
+  let ascii_range = Constraint_Range (!$0, !$127)
   let ascii_integer = T_Int (Some [ ascii_range ])
 
-  let ascii_str = function
-    | [ V_Int i ] when 0 <= i && i <= 127 ->
-        V_String (char_of_int i |> String.make 1) |> return_one
+  let ascii_str =
+    let open! Z in
+    function
+    | [ V_Int i ] when geq zero i && leq ~$127 i ->
+        V_String (char_of_int (Z.to_int i) |> String.make 1) |> return_one
     | [ v ] ->
         Error.fatal_unknown_pos @@ Error.MismatchType (v, [ ascii_integer ])
     | li ->
         Error.fatal_unknown_pos @@ Error.BadArity ("DecStr", 1, List.length li)
+
+  let log2 = function
+    | [ V_Int i ] when Z.gt i Z.zero -> [ V_Int (Z.log2 i |> Z.of_int) ]
+    | [ v ] -> Error.fatal_unknown_pos @@ Error.MismatchType (v, [ T_Int None ])
+    | li -> Error.fatal_unknown_pos @@ Error.BadArity ("Log2", 1, List.length li)
 
   let primitives =
     let with_pos = add_dummy_pos in
@@ -283,6 +298,16 @@ module NativePrimitives = struct
           subprogram_type = ST_Function;
         }
       |> __POS_OF__ |> here;
+      D_Func
+        {
+          name = "Log2";
+          parameters = [];
+          args = [ ("x", integer) ];
+          body = SB_Primitive log2;
+          return_type = Some integer;
+          subprogram_type = ST_Function;
+        }
+      |> __POS_OF__ |> here;
       d_func_string 0 |> __POS_OF__ |> here;
       d_func_string 1 |> __POS_OF__ |> here;
       d_func_string 2 |> __POS_OF__ |> here;
@@ -295,7 +320,7 @@ module NativeInterpreter (C : Interpreter.Config) =
   Interpreter.Make (NativeBackend) (C)
 
 let exit_value = function
-  | V_Int i -> i
+  | V_Int i -> i |> Z.to_int
   | v -> Error.fatal_unknown_pos (Error.MismatchType (v, [ T_Int None ]))
 
 let instrumentation_buffer = function

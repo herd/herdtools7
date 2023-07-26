@@ -1,5 +1,6 @@
 open AST
 open ASTUtils
+open Infix
 open StaticEnv
 
 let fatal_from = Error.fatal_from
@@ -15,7 +16,7 @@ let conflict pos expected provided =
 (*                                                                            *)
 (******************************************************************************)
 
-let expr_of_int i = literal (V_Int i)
+let expr_of_z z = literal (V_Int z)
 let plus = binop PLUS
 let t_bits_bitwidth e = T_Bits (BitWidth_SingleExpr e, [])
 
@@ -44,14 +45,11 @@ let reduce_constants env e =
         undefined_identifier e x
       else raise error)
 
-let sum = function
-  | [] -> expr_of_int 0
-  | [ x ] -> x
-  | h :: t -> List.fold_left plus h t
+let sum = function [] -> !$0 | [ x ] -> x | h :: t -> List.fold_left plus h t
 
 let slices_length env =
   let minus = binop MINUS in
-  let one = expr_of_int 1 in
+  let one = !$1 in
   let slice_length = function
     | Slice_Single _ -> one
     | Slice_Length (_, e) -> e
@@ -93,7 +91,7 @@ let rename_ty_eqs : (AST.identifier * AST.expr) list -> AST.ty -> AST.ty =
     | _ -> ty
 
 let infer_value = function
-  | V_Int i -> T_Int (Some [ Constraint_Exact (expr_of_int i) ])
+  | V_Int _ as v -> T_Int (Some [ Constraint_Exact (literal v) ])
   | V_Bool _ -> T_Bool
   | V_Real _ -> T_Real
   | V_String _ -> T_String
@@ -507,7 +505,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             let+ () = check_type_satisfies' env t1 t_int in
             let+ () = check_type_satisfies' env t2 t_int in
             T_Bool |> with_loc
-        | MUL | DIV | MOD | SHL | SHR | PLUS | MINUS -> (
+        | MUL | DIV | MOD | SHL | SHR | POW | PLUS | MINUS -> (
             (* TODO: ensure that they mean "has the structure of" instead of
                "is" *)
             let struct1 = Types.get_structure env t1
@@ -687,7 +685,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | Pattern_Mask m as p ->
         let+ () = check_structure_bits loc env t in
         let+ () =
-          let n = literal (V_Int (Bitvector.mask_length m)) in
+          let n = !$(Bitvector.mask_length m) in
           let t_m = T_Bits (BitWidth_SingleExpr n, []) |> add_pos_from loc in
           check_type_satisfies loc env t t_m
         in
@@ -1294,7 +1292,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 let bot = min_constraints env bot_cs
                 and top = max_constraints env top_cs in
                 if bot <= top then
-                  Some [ Constraint_Range (expr_of_int bot, expr_of_int top) ]
+                  Some [ Constraint_Range (expr_of_z bot, expr_of_z top) ]
                 else Some cs1
               with ConstraintMinMaxTop ->
                 (* TODO: this case is not specified by the LRM. *)
@@ -1425,7 +1423,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* Build typing local environment. *)
     let env' = { env with local = empty_local } in
     let env' =
-      let one_arg env' (x, ty) = add_local x ty LDK_Let env' in
+      let one_arg env' (x, ty) =
+        let+ () = check_var_not_in_env loc env' x in
+        add_local x ty LDK_Let env'
+      in
       List.fold_left one_arg env' f.args
     in
     (* Add explicit parameters *)
@@ -1436,6 +1437,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           | Some ty -> ty
           | None -> ASTUtils.underconstrained_integer
         in
+        let+ () = check_var_not_in_env loc env' x in
         add_local x ty LDK_Let env'
       in
       List.fold_left one_param env' f.parameters
@@ -1526,10 +1528,32 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     else
       add_global_storage name t GDK_Constant env |> add_global_constant name v
 
+  let rec check_is_valid_type loc env ty () =
+    match ty.desc with
+    | T_Record fields | T_Exception fields ->
+        let+ () =
+         fun () ->
+          let _ =
+            List.fold_left
+              (fun declared_names (x, ty) ->
+                if ISet.mem x declared_names then
+                  fatal_from loc (Error.AlreadyDeclaredIdentifier x)
+                else
+                  let+ () = check_is_valid_type loc env ty in
+                  ISet.add x declared_names)
+              ISet.empty fields
+          in
+          ()
+        in
+        ()
+    | _ -> ()
+
   let declare_type loc name ty s env =
     let () =
       if false then Format.eprintf "Declaring type %s of %a@." name PP.pp_ty ty
     in
+    let+ () = check_var_not_in_env loc env name in
+    let+ () = check_is_valid_type loc env ty in
     let env =
       match s with
       | None -> env
@@ -1549,7 +1573,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           let env = add_type name ty env in
           let t = T_Named name |> add_pos_from ty in
           let add_one_id env x =
-            let v = V_Int (IMap.cardinal env.global.constants_values) in
+            let v =
+              V_Int (IMap.cardinal env.global.constants_values |> Z.of_int)
+            in
             declare_const loc x t v env
           in
           List.fold_left add_one_id env ids

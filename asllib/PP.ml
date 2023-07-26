@@ -63,6 +63,7 @@ let binop_to_string : binop -> string = function
   | RDIV -> "/"
   | SHL -> "<<"
   | SHR -> ">>"
+  | POW -> "^"
 
 let unop_to_string = function BNOT -> "!" | NEG -> "-" | NOT -> "NOT"
 
@@ -72,10 +73,10 @@ let rec pp_value f =
     fprintf f "{ @[%a@] }" (pp_comma_list pp_one)
   in
   function
-  | V_Int i -> pp_print_int f i
+  | V_Int i -> Z.pp_print f i
   | V_Bool true -> pp_print_string f "TRUE"
   | V_Bool false -> pp_print_string f "FALSE"
-  | V_Real r -> pp_print_float f r
+  | V_Real r -> Q.pp_print f r
   | V_BitVector bv -> Bitvector.pp_t f bv
   | V_String s -> fprintf f "%S" s
   | V_Tuple li -> fprintf f "(@[%a@])" (pp_comma_list pp_value) li

@@ -1,5 +1,6 @@
 open AST
 open ASTUtils
+open Infix
 module SEnv = StaticEnv
 
 type env = SEnv.env
@@ -109,7 +110,7 @@ let is_primitive ty = not (is_non_primitive ty)
 (* --------------------------------------------------------------------------*)
 
 module Domain = struct
-  module IntSet = Set.Make (Int)
+  module IntSet = Set.Make (Z)
   (* Pretty inefficient. Use diets instead?
      See https://web.engr.oregonstate.edu/~erwig/papers/Diet_JFP98.pdf
      or https://github.com/mirage/ocaml-diet
@@ -130,7 +131,7 @@ module Domain = struct
 
   let rec add_interval_to_intset acc bot top =
     if bot > top then acc
-    else add_interval_to_intset (IntSet.add bot acc) (bot + 1) top
+    else add_interval_to_intset (IntSet.add bot acc) (Z.succ bot) top
 
   let pp_int_set f =
     let open Format in
@@ -139,7 +140,7 @@ module Domain = struct
     | Top -> pp_print_string f "ℤ"
     | Finite set ->
         fprintf f "@[{@,%a}@]"
-          (PP.pp_print_seq ~pp_sep:pp_print_space pp_print_int)
+          (PP.pp_print_seq ~pp_sep:pp_print_space Z.pp_print)
           (IntSet.to_seq set)
 
   let pp f =
@@ -232,18 +233,16 @@ module Domain = struct
           with Not_found ->
             Error.fatal_unknown_pos (Error.UndefinedIdentifier x)))
     | E_Unop (NEG, e') ->
-        int_set_of_expr env
-          (E_Binop (MINUS, E_Literal (V_Int 0) |> add_dummy_pos, e')
-          |> add_pos_from e)
+        int_set_of_expr env (E_Binop (MINUS, !$0, e') |> add_pos_from e)
     | E_Unop _ -> assert false
     | E_Binop (op, e1, e2) ->
         let is1 = int_set_of_expr env e1
         and is2 = int_set_of_expr env e2
         and op =
           match op with
-          | PLUS -> ( + )
-          | MINUS -> ( - )
-          | MUL -> ( * )
+          | PLUS -> Z.add
+          | MINUS -> Z.sub
+          | MUL -> Z.mul
           | _ -> assert false
         in
         int_set_raise_op op is1 is2
@@ -270,7 +269,7 @@ module Domain = struct
     | V_Bool _, _ | V_Real _, _ | _, D_Bool | _, D_Real -> false
     | V_BitVector _, D_Bits Top -> true
     | V_BitVector bv, D_Bits (Finite intset) ->
-        IntSet.mem (Bitvector.length bv) intset
+        IntSet.mem (Bitvector.length bv |> Z.of_int) intset
     | V_BitVector _, _ | _, D_Bits _ -> false
     | V_Int _, D_Int Top -> true
     | V_Int i, D_Int (Finite intset) -> IntSet.mem i intset
@@ -459,7 +458,7 @@ and domain_subtype_satisfies env t s =
         ( Domain.get_width_singleton_opt s_domain,
           Domain.get_width_singleton_opt t_domain )
       with
-      | Some w_s, Some w_t -> Int.equal w_s w_t
+      | Some w_s, Some w_t -> Z.equal w_s w_t
       | _ -> Domain.is_subset t_domain s_domain)
 
 and subtype_satisfies env t s =
@@ -709,12 +708,12 @@ let rec base_value loc env t =
       Error.fatal_from loc
         (Error.NotYetImplemented "Base value of under-constrained bitvectors.")
   | T_Enum li -> IMap.find (List.hd li) env.global.constants_values |> lit
-  | T_Int None | T_Int (Some []) -> V_Int 0 |> lit
+  | T_Int None | T_Int (Some []) -> !$0
   | T_Int (Some (Constraint_Exact e :: _))
   | T_Int (Some (Constraint_Range (e, _) :: _)) ->
       normalize env e
   | T_Named _ -> assert false
-  | T_Real -> V_Real 0. |> lit
+  | T_Real -> V_Real Q.zero |> lit
   | T_Exception fields | T_Record fields ->
       let one_field (name, t) = (name, base_value loc env t) in
       E_Record (t, List.map one_field fields) |> add_pos_from t

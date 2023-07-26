@@ -1,15 +1,15 @@
 
-var x :: integer = 0;
+var global_x :: integer = 0;
 
 func incr ()
 begin
-  x = x + 1;
+  global_x = global_x + 1;
 end
 
 func incr2 () => integer
 begin
-  let y = x;
-  x = y + 1;
+  let y = global_x;
+  global_x = y + 1;
   return y;
 end
 
@@ -23,12 +23,12 @@ begin
   incr ();
   incr ();
   incr ();
-  assert x == 3;
+  assert global_x == 3;
 
   assert incr2 () == 3;
   assert 2 + incr2 () * 4 == 18;
   // assert add (incr2 (), 3) == 8;
-  assert x == 5;
+  assert global_x == 5;
 
   return 0;
 end

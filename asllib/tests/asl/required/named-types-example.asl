@@ -39,15 +39,15 @@ type Byte of integer{0..255};
 
 constant K:: Char = 210;
 
-var c:: Char;
-var b:: Byte;
+var global_c:: Char;
+var global_b:: Byte;
 
 func f()
 begin
   pass;
-  // c = 210;  // legal: c has the structure of integer and can be assigned an integer
-  // c = K;    // legal: K has type Char and can be assigned to a Char
-  // b = K;    // illegal: a Char cannot be directly assigned to a Byte
+  // global_c = 210;  // legal: c has the structure of integer and can be assigned an integer
+  // global_c = K;    // legal: K has type Char and can be assigned to a Char
+  // global_b = K;    // illegal: a Char cannot be directly assigned to a Byte
 end
 
 func main() => integer

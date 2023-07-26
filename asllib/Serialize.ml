@@ -59,13 +59,14 @@ let pp_binop : binop -> string = function
   | RDIV -> "RDIV"
   | SHL -> "SHL"
   | SHR -> "SHR"
+  | POW -> "POW"
 
 let pp_unop = function BNOT -> "BNOT" | NOT -> "NOT" | NEG -> "NEG"
 
 let rec pp_value f = function
-  | V_Int i -> bprintf f "V_Int %d" i
+  | V_Int i -> bprintf f "V_Int (Z.of_string \"%a\")" Z.bprint i
   | V_Bool b -> bprintf f "V_Bool %B" b
-  | V_Real r -> bprintf f "V_Real %F" r
+  | V_Real r -> bprintf f "V_Real (Q.of_string \"%a\")" Q.bprint r
   | V_BitVector bv ->
       bprintf f "V_BitVector (Bitvector.of_string %S)" (Bitvector.to_string bv)
   | V_String s -> bprintf f "V_String %S" s

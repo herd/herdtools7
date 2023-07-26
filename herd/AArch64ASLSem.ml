@@ -24,7 +24,7 @@ let aarch64_iico_order = "aarch64_iico_order"
 let return_0 =
   let open Asllib.AST in
   let open Asllib.ASTUtils in
-  S_Return (Some (literal (V_Int 0))) |> add_dummy_pos
+  S_Return (Some (expr_of_int 0)) |> add_dummy_pos
 
 module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
   AArch64Sig.Semantics with module A.V = V = struct
@@ -108,7 +108,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
         S_Decl (LDK_Let, LDI_Var (x, None), Some e) |> with_pos
       in
       let lit v = E_Literal v |> with_pos in
-      let liti i = lit (V_Int i) in
+      let liti i = lit (V_Int (Z.of_int i)) in
       let litb b = lit (V_Bool b) in
       let litbv v i = lit (V_BitVector (Asllib.Bitvector.of_int_sized v i)) in
       let var x = E_Var x |> with_pos in

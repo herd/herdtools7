@@ -144,8 +144,8 @@ let lca_examples () =
   let lca = Option.get lca in
   let domain = Asllib.Types.Domain.of_type empty_env lca in
 
-  assert (Asllib.Types.Domain.mem (V_Int 2) domain);
-  assert (Asllib.Types.Domain.mem (V_Int 4) domain);
+  assert (Asllib.Types.Domain.mem ~$2 domain);
+  assert (Asllib.Types.Domain.mem ~$4 domain);
 
   ()
 

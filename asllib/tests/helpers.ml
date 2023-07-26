@@ -2,9 +2,9 @@ open Asllib
 
 module Infix = struct
   open AST
+  include ASTUtils.Infix
 
   let ( !! ) e = ASTUtils.add_dummy_pos e
-  let ( !$ ) i = !!(E_Literal (V_Int i))
   let ( !% ) x = !!(E_Var x)
 end
 

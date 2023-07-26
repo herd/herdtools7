@@ -134,9 +134,7 @@ module Make (C : Config) = struct
       let concrete v = Constant.Concrete v in
       let vector li = Constant.ConcreteVector li in
       let rec tr = function
-        | V_Int i ->
-            let z = Z.of_int i in
-            S_Int z |> concrete
+        | V_Int i -> S_Int i |> concrete
         | V_Bool b -> S_Bool b |> concrete
         | V_BitVector bv -> S_BitVector bv |> concrete
         | V_Tuple li -> List.map tr li |> vector
@@ -239,7 +237,7 @@ module Make (C : Config) = struct
       | PLUS -> M.op Op.Add
       | SHL -> M.op Op.ShiftLeft
       | SHR -> M.op Op.ShiftRight
-      | IMPL | MOD | RDIV -> Warn.fatal "Not yet implemented operation."
+      | POW | IMPL | MOD | RDIV -> Warn.fatal "Not yet implemented operation."
 
     let unop op =
       let open AST in
@@ -448,7 +446,7 @@ module Make (C : Config) = struct
       let integer = Asllib.ASTUtils.integer in
       let reg = integer in
       let var x = E_Var x |> with_pos in
-      let lit x = E_Literal (V_Int x) |> with_pos in
+      let lit x = E_Literal (V_Int (Z.of_int x)) |> with_pos in
       let bv x = T_Bits (BitWidth_SingleExpr x, []) |> with_pos in
       let bv_var x = bv @@ var x in
       let bv_N = bv_var "N" in

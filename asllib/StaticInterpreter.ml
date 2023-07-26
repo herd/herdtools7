@@ -1,5 +1,6 @@
 open AST
 open ASTUtils
+open Infix
 module SEnv = StaticEnv
 
 type env = SEnv.env
@@ -10,23 +11,27 @@ let fatal_from = Error.fatal_from
 exception NotYetImplemented
 
 let value_as_int pos = function
-  | V_Int i -> i
+  | V_Int i -> (
+      try Z.to_int i
+      with Z.Overflow ->
+        failwith "Cannot slice with an integer more than machine size.")
   | v -> fatal_from pos (Error.MismatchType (v, [ T_Int None ]))
 
 let binop_values pos op v1 v2 =
   match (op, v1, v2) with
   (* int -> int -> int *)
-  | PLUS, V_Int v1, V_Int v2 -> V_Int (v1 + v2)
-  | MUL, V_Int v1, V_Int v2 -> V_Int (v1 * v2)
-  | MINUS, V_Int v1, V_Int v2 -> V_Int (v1 - v2)
-  | DIV, V_Int v1, V_Int v2 -> V_Int (v1 / v2)
+  | PLUS, V_Int v1, V_Int v2 -> V_Int (Z.add v1 v2)
+  | MUL, V_Int v1, V_Int v2 -> V_Int (Z.mul v1 v2)
+  | MINUS, V_Int v1, V_Int v2 -> V_Int (Z.sub v1 v2)
+  | DIV, V_Int v1, V_Int v2 -> V_Int (Z.div v1 v2)
+  | POW, V_Int v1, V_Int v2 -> V_Int (Z.pow v1 (Z.to_int v2))
   (* int -> int -> bool*)
-  | EQ_OP, V_Int v1, V_Int v2 -> V_Bool (v1 == v2)
-  | NEQ, V_Int v1, V_Int v2 -> V_Bool (v1 <> v2)
-  | LEQ, V_Int v1, V_Int v2 -> V_Bool (v1 <= v2)
-  | LT, V_Int v1, V_Int v2 -> V_Bool (v1 < v2)
-  | GEQ, V_Int v1, V_Int v2 -> V_Bool (v1 >= v2)
-  | GT, V_Int v1, V_Int v2 -> V_Bool (v1 > v2)
+  | EQ_OP, V_Int v1, V_Int v2 -> V_Bool (Z.equal v1 v2)
+  | NEQ, V_Int v1, V_Int v2 -> V_Bool (not (Z.equal v1 v2))
+  | LEQ, V_Int v1, V_Int v2 -> V_Bool (Z.leq v1 v2)
+  | LT, V_Int v1, V_Int v2 -> V_Bool (Z.lt v1 v2)
+  | GEQ, V_Int v1, V_Int v2 -> V_Bool (Z.geq v1 v2)
+  | GT, V_Int v1, V_Int v2 -> V_Bool (Z.gt v1 v2)
   (* bool -> bool -> bool *)
   | BAND, V_Bool b1, V_Bool b2 -> V_Bool (b1 && b2)
   | BOR, V_Bool b1, V_Bool b2 -> V_Bool (b1 || b2)
@@ -35,17 +40,17 @@ let binop_values pos op v1 v2 =
   | EQ_OP, V_Bool b1, V_Bool b2 -> V_Bool (b1 == b2)
   | NEQ, V_Bool b1, V_Bool b2 -> V_Bool (b1 <> b2)
   (* real -> real -> real *)
-  | PLUS, V_Real v1, V_Real v2 -> V_Real (v1 +. v2)
-  | MUL, V_Real v1, V_Real v2 -> V_Real (v1 *. v2)
-  | MINUS, V_Real v1, V_Real v2 -> V_Real (v1 -. v2)
-  | RDIV, V_Real v1, V_Real v2 -> V_Real (v1 /. v2)
+  | PLUS, V_Real v1, V_Real v2 -> V_Real (Q.add v1 v2)
+  | MUL, V_Real v1, V_Real v2 -> V_Real (Q.mul v1 v2)
+  | MINUS, V_Real v1, V_Real v2 -> V_Real (Q.sub v1 v2)
+  | RDIV, V_Real v1, V_Real v2 -> V_Real (Q.div v1 v2)
   (* real -> real -> bool *)
-  | EQ_OP, V_Real v1, V_Real v2 -> V_Bool (v1 == v2)
-  | NEQ, V_Real v1, V_Real v2 -> V_Bool (v1 <> v2)
-  | LEQ, V_Real v1, V_Real v2 -> V_Bool (v1 <= v2)
-  | LT, V_Real v1, V_Real v2 -> V_Bool (v1 < v2)
-  | GEQ, V_Real v1, V_Real v2 -> V_Bool (v1 >= v2)
-  | GT, V_Real v1, V_Real v2 -> V_Bool (v1 > v2)
+  | EQ_OP, V_Real v1, V_Real v2 -> V_Bool (Q.equal v1 v2)
+  | NEQ, V_Real v1, V_Real v2 -> V_Bool (not (Q.equal v1 v2))
+  | LEQ, V_Real v1, V_Real v2 -> V_Bool (Q.leq v1 v2)
+  | LT, V_Real v1, V_Real v2 -> V_Bool (Q.lt v1 v2)
+  | GEQ, V_Real v1, V_Real v2 -> V_Bool (Q.geq v1 v2)
+  | GT, V_Real v1, V_Real v2 -> V_Bool (Q.gt v1 v2)
   (* bits -> bits -> bits *)
   | EQ_OP, V_BitVector b1, V_BitVector b2 -> V_Bool (Bitvector.equal b1 b2)
   | NEQ, V_BitVector b1, V_BitVector b2 -> V_Bool (not @@ Bitvector.equal b1 b2)
@@ -61,11 +66,13 @@ let binop_values pos op v1 v2 =
 
 let unop_values pos op v =
   match (op, v) with
-  | NEG, V_Int i -> V_Int ~-i
-  | NEG, V_Real r -> V_Real ~-.r
+  | NEG, V_Int i -> V_Int (Z.neg i)
+  | NEG, V_Real r -> V_Real (Q.neg r)
   | BNOT, V_Bool b -> V_Bool (not b)
   | NOT, V_BitVector bv -> V_BitVector (Bitvector.lognot bv)
   | _ -> fatal_from pos (Error.UnsupportedUnop (op, v))
+
+let int_max x y = if x >= y then x else y
 
 let rec static_eval (env : SEnv.env) : expr -> value =
   let rec expr_ e =
@@ -81,12 +88,14 @@ let rec static_eval (env : SEnv.env) : expr -> value =
         let v = expr_ e in
         unop_values e op v
     | E_Slice (e', slices) ->
+        let positions = slices_to_positions env slices in
+        let pos_max = List.fold_left int_max 0 positions in
         let bv =
           match expr_ e' with
-          | V_Int i -> Bitvector.of_int i
+          | V_Int i -> Bitvector.of_z (pos_max + 1) i
           | V_BitVector bv -> bv
           | _ -> fatal_from e (Error.UnsupportedExpr e)
-        and positions = slices_to_positions env slices in
+        in
         V_BitVector (Bitvector.extract_slice bv positions)
     | _ -> fatal_from e (Error.UnsupportedExpr e)
   in
@@ -120,7 +129,8 @@ module Normalize = struct
 
   module AMap = Map.Make (AtomOrdered)
 
-  type monomial = Prod of int AMap.t
+  type monomial =
+    | Prod of int AMap.t  (** Maps each variable to its exponent. *)
 
   module MonomialOrdered = struct
     type t = monomial
@@ -138,7 +148,8 @@ module Normalize = struct
         m empty
   end
 
-  type polynomial = Sum of int MMap.t
+  type polynomial =
+    | Sum of Z.t MMap.t  (** Maps each monomial to its factor. *)
 
   type sign =
     | Null
@@ -151,7 +162,7 @@ module Normalize = struct
   module PolynomialOrdered = struct
     type t = polynomial
 
-    let compare (Sum p1) (Sum p2) = MMap.compare Int.compare p1 p2
+    let compare (Sum p1) (Sum p2) = MMap.compare Z.compare p1 p2
   end
 
   module PMap = Map.Make (PolynomialOrdered)
@@ -169,12 +180,13 @@ module Normalize = struct
   let pp_mono f (Prod mono, factor) =
     let open Format in
     let mono = AMap.filter (fun _ p -> p != 0) mono in
-    if AMap.is_empty mono then pp_print_int f factor
+    if AMap.is_empty mono then Z.pp_print f factor
     else (
       pp_open_hbox f ();
       let pp_sep f () = fprintf f "@ \u{d7} " in
-      if factor != 1 then (
-        pp_print_int f factor;
+      if Z.equal factor Z.one then ()
+      else (
+        Z.pp_print f factor;
         pp_sep f ());
       PP.pp_print_seq ~pp_sep
         (fun f (x, p) ->
@@ -188,7 +200,7 @@ module Normalize = struct
 
   let pp_poly f (Sum poly) =
     let open Format in
-    let poly = MMap.filter (fun _ f -> f != 0) poly in
+    let poly = MMap.filter (fun _ f -> not (Z.equal Z.zero f)) poly in
     if MMap.is_empty poly then pp_print_string f "0"
     else (
       pp_open_hvbox f 2;
@@ -243,12 +255,13 @@ module Normalize = struct
   let mono_one = Prod AMap.empty
   let mono_of_var s = Prod (AMap.singleton s 1)
   let poly_zero = Sum MMap.empty
-  let poly_of_var s = Sum (MMap.singleton (mono_of_var s) 1)
-  let poly_of_int i = Sum (MMap.singleton mono_one i)
-  let poly_neg (Sum monos) = Sum (MMap.map ( ~- ) monos)
+  let poly_of_var s = Sum (MMap.singleton (mono_of_var s) Z.one)
+  let poly_of_z i = Sum (MMap.singleton mono_one i)
+  let poly_of_int i = Z.of_int i |> poly_of_z
+  let poly_neg (Sum monos) = Sum (MMap.map Z.neg monos)
 
   let poly_of_val = function
-    | V_Int i -> poly_of_int i
+    | V_Int i -> poly_of_z i
     | v -> Error.fatal_unknown_pos (Error.MismatchType (v, [ T_Int None ]))
 
   let sign_not = function
@@ -305,13 +318,14 @@ module Normalize = struct
         raise_notrace ConjunctionBottomInterrupt
 
   let constant_satisfies c s =
+    let open Z in
     match s with
-    | Null -> c = 0
-    | NotNull -> c != 0
-    | Positive -> c >= 0
-    | StrictPositive -> c > 0
-    | Negative -> c <= 0
-    | StrictNegative -> c <= 0
+    | Null -> equal c zero
+    | NotNull -> not (equal c zero)
+    | Positive -> geq c zero
+    | StrictPositive -> gt c zero
+    | Negative -> leq c zero
+    | StrictNegative -> lt c zero
 
   let ctnts_of_bool b = if b then ctnts_true else ctnts_false
 
@@ -323,7 +337,7 @@ module Normalize = struct
 
   let sign_compare = Stdlib.compare
   let mono_compare = MonomialOrdered.compare
-  let poly_compare (Sum p1) (Sum p2) = MMap.compare Int.compare p1 p2
+  let poly_compare (Sum p1) (Sum p2) = MMap.compare Z.compare p1 p2
 
   let ctnts_compare cs1 cs2 =
     match (cs1, cs2) with
@@ -344,14 +358,14 @@ module Normalize = struct
     let updater factor = function
       | None -> Some factor
       | Some f ->
-          let f' = f + factor in
-          if f' = 0 then None else Some f'
+          let f' = Z.add f factor in
+          if Z.equal f' Z.zero then None else Some f'
     in
     fun mono factor -> MMap.update mono (updater factor)
 
   let add_polys : polynomial -> polynomial -> polynomial =
    fun (Sum monos1) (Sum monos2) ->
-    Sum (MMap.union (fun _mono c1 c2 -> Some (c1 + c2)) monos1 monos2)
+    Sum (MMap.union (fun _mono c1 c2 -> Some (Z.add c1 c2)) monos1 monos2)
 
   let mult_monos : monomial -> monomial -> monomial =
    fun (Prod map1) (Prod map2) ->
@@ -363,7 +377,7 @@ module Normalize = struct
       (MMap.fold
          (fun m1 f1 ->
            MMap.fold
-             (fun m2 f2 -> add_mono_to_poly (mult_monos m1 m2) (f1 * f2))
+             (fun m2 f2 -> add_mono_to_poly (mult_monos m1 m2) (Z.mul f1 f2))
              monos2)
          monos1 MMap.empty)
 
@@ -405,7 +419,7 @@ module Normalize = struct
 
   let rec to_ir env (e : expr) : ir_expr =
     match e.desc with
-    | E_Literal (V_Int i) -> poly_of_int i |> always
+    | E_Literal (V_Int i) -> poly_of_z i |> always
     | E_Var s -> (
         try StaticEnv.lookup_constants env s |> poly_of_val |> always
         with Not_found -> (
@@ -444,7 +458,7 @@ module Normalize = struct
             raise NotYetImplemented
         in
         match v with
-        | V_Int i -> poly_of_int i |> always
+        | V_Int i -> poly_of_z i |> always
         | _ -> raise NotYetImplemented)
 
   and to_cond env (e : expr) : ctnts disjunction * ctnts disjunction =
@@ -478,13 +492,18 @@ module Normalize = struct
   (* ----------- *)
 
   let loc = dummy_annotated
-  let e_of_int i = V_Int i |> literal
-  let zero = e_of_int 0
-  let one = e_of_int 1
+  let zero = !$0
+  let one = !$1
   let cannot_happen_expr = zero
+
+  let expr_of_z z =
+    if Z.equal z Z.one then one
+    else if Z.equal z Z.zero then zero
+    else literal (V_Int z)
+
   let e_true = V_Bool true |> literal
   let e_false = V_Bool true |> literal
-  let e_var s = E_Var s |> add_pos_from loc
+  let e_var s = var_ s
 
   let e_band e1 e2 =
     if e1 == e_true then e2 else if e2 == e_true then e1 else binop BAND e1 e2
@@ -495,15 +514,11 @@ module Normalize = struct
     let ( ** ) e1 e2 =
       if e1 = one then e2 else if e2 = one then e1 else binop MUL e1 e2
     in
-    let rec ( ^^ ) e = function
+    let ( ^^ ) e = function
       | 0 -> one
       | 1 -> e
       | 2 -> e ** e
-      | 3 -> e ** e ** e
-      | 4 -> e ** e ** e ** e
-      | n ->
-          let e' = e ^^ (n / 2) in
-          if n mod 2 = 0 then e' ** e' else e' ** e' ** e
+      | p -> if e = one then one else binop POW e (expr_of_int p)
     in
     AMap.fold (fun s p e -> (e_var s ^^ p) ** e) map
 
@@ -511,7 +526,7 @@ module Normalize = struct
     let ( ++ ) e1 e2 =
       if e1 == zero then e2 else if e2 == zero then e1 else binop PLUS e1 e2
     in
-    MMap.fold (fun m c e -> monomial_to_expr m (e_of_int c) ++ e) map zero
+    MMap.fold (fun m c e -> monomial_to_expr m (expr_of_z c) ++ e) map zero
 
   let sign_to_binop = function
     | Null -> EQ_OP
@@ -524,9 +539,9 @@ module Normalize = struct
   let sign_to_expr sign e = binop (sign_to_binop sign) zero e
 
   let ctnt_to_expr (Sum p) sign =
-    let c = try MMap.find mono_one p with Not_found -> 0
+    let c = try MMap.find mono_one p with Not_found -> Z.zero
     and p = Sum (MMap.remove mono_one p) in
-    binop (sign_to_binop sign) (e_of_int ~-c) (polynomial_to_expr p)
+    binop (sign_to_binop sign) (expr_of_z (Z.neg c)) (polynomial_to_expr p)
 
   let ctnts_to_expr : ctnts -> expr option = function
     | Bottom -> None
@@ -550,7 +565,8 @@ module Normalize = struct
             | Some cond -> e_cond cond (polynomial_to_expr p) e)
           cannot_happen_expr map
 
-  let reduce_mono (Prod _) factor = if factor == 0 then None else Some factor
+  let reduce_mono (Prod _) factor =
+    if Z.equal factor Z.zero then None else Some factor
 
   let rec int_exp x = function
     | 0 -> 1
@@ -562,7 +578,7 @@ module Normalize = struct
         let r2 = r * r in
         if n mod 2 == 0 then r2 else r2 * x
 
-  type affectation = atom * int * polynomial option
+  type affectation = atom * Z.t * polynomial option
   type affectations = affectation list
 
   let subst_mono (affectations : affectations) (Prod m) factor =
@@ -571,7 +587,7 @@ module Normalize = struct
         (fun (m, f) (a, v, _) ->
           match AMap.find_opt a m with
           | None -> (m, f)
-          | Some power -> (AMap.remove a m, f * int_exp v power))
+          | Some power -> (AMap.remove a m, Z.mul f (Z.pow v power)))
         (m, factor) affectations
     in
     (Prod m, factor)
@@ -586,7 +602,8 @@ module Normalize = struct
                affectations
            in
            let mono, factor = subst_mono affectations mono factor in
-           if factor != 0 then add_mono_to_poly mono factor else Fun.id)
+           if Z.equal Z.zero factor then Fun.id
+           else add_mono_to_poly mono factor)
          map MMap.empty)
 
   let reduce_poly affectations : polynomial -> polynomial =
@@ -594,7 +611,7 @@ module Normalize = struct
     Sum (ms |> MMap.filter_map reduce_mono) |> subst_poly affectations
 
   let poly_get_constant_opt (Sum p) =
-    if MMap.is_empty p then Some 0
+    if MMap.is_empty p then Some Z.zero
     else if MMap.cardinal p = 1 then MMap.find_opt mono_one p
     else None
 
@@ -622,7 +639,7 @@ module Normalize = struct
         with ConjunctionBottomInterrupt -> Bottom)
 
   let poly_get_linear (Sum ms) =
-    let ms = MMap.filter (fun _ f -> f != 0) ms in
+    let ms = MMap.filter (fun _ f -> not (Z.equal f Z.zero)) ms in
     let n = MMap.cardinal ms in
     if false && n > 2 then None
     else
@@ -640,17 +657,19 @@ module Normalize = struct
           MMap.fold
             (fun mono factor o ->
               match (o, mono_get_linear mono) with
-              | (o, c), None -> (o, c - factor)
+              | (o, c), None -> (o, Z.sub c factor)
               | (None, c), Some x -> (Some x, c)
               | (Some x, _), Some x' ->
                   assert (not (String.equal x x'));
                   raise_notrace NotLinear)
-            ms (None, 0)
-        with NotLinear -> (None, 0)
+            ms (None, Z.zero)
+        with NotLinear -> (None, Z.zero)
       in
       match o with
       | None ->
-          if c != 0 then raise_notrace ConjunctionBottomInterrupt else None
+          if not (Z.equal Z.zero c) then
+            raise_notrace ConjunctionBottomInterrupt
+          else None
       | Some x -> Some (x, c)
 
   let deduce_equations : ctnts -> ctnts * affectations = function
@@ -726,7 +745,7 @@ module Normalize = struct
             pp_ctnts_and_poly (ctnts1, p1) pp_ctnts_and_poly (ctnts2, p2)
             Format.(
               pp_print_list ~pp_sep:pp_print_space (fun f (x, d, _) ->
-                  fprintf f "%s/%d" x d))
+                  fprintf f "%s/%a" x Z.pp_print d))
             affectations
       in
       match ctnts with

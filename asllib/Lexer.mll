@@ -102,10 +102,10 @@ rule token = parse
     | '\n'                     { Lexing.new_line lexbuf; token lexbuf }
     | [' ''\t''\r']+           { token lexbuf                     }
     | "//" [^'\n']*            { token lexbuf                     }
-    | int_lit as lxm           { INT_LIT(int_of_string lxm)       }
-    | hex_lit as lxm           { INT_LIT(int_of_string lxm)       }
-    | real_lit as lxm          { REAL_LIT(float_of_string lxm)    }
-    | '"' ([^ '"']* as lxm) '"' { STRING_LIT(lxm)                  }
+    | int_lit as lxm           { INT_LIT(Z.of_string lxm)         }
+    | hex_lit as lxm           { INT_LIT(Z.of_string lxm)         }
+    | real_lit as lxm          { REAL_LIT(Q.of_string lxm)        }
+    | '"' ([^ '"']* as lxm) '"' { STRING_LIT(lxm)                 }
     | '\'' (bits as lxm) '\''  { bitvector_lit lxm                }
     | '\'' (mask as lxm) '\''  { mask_lit lxm                     }
     | '!'                      { BNOT                             }

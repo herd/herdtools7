@@ -51,7 +51,7 @@
 open AST
 open ASTUtils
 
-let t_bit = T_Bits (BitWidth_SingleExpr (E_Literal (V_Int 1) |> add_dummy_pos), [])
+let t_bit = T_Bits (BitWidth_SingleExpr (E_Literal (V_Int Z.one) |> add_dummy_pos), [])
 
 let make_ldi_tuple xs ty =
   LDI_Tuple (List.map (fun x -> LDI_Var (x, None)) xs, Some ty)
@@ -76,8 +76,8 @@ let make_ldi_tuple xs ty =
 %token <string> IDENTIFIER STRING_LIT
 %token <Bitvector.mask> MASK_LIT
 %token <Bitvector.t> BITVECTOR_LIT
-%token <int> INT_LIT
-%token <float> REAL_LIT
+%token <Z.t> INT_LIT
+%token <Q.t> REAL_LIT
 %token <bool> BOOL_LIT
 
 
@@ -254,9 +254,9 @@ let binop ==
   | RDIV  ; { RDIV   }
   | SHL   ; { SHL    }
   | SHR   ; { SHR    }
+  | POW   ; { POW    }
 
   | unimplemented_binop(
-    | POW   ; <>
     | CONCAT; <>
   )
 
@@ -500,7 +500,7 @@ let s_else :=
 let subtype_opt == option(SUBTYPES; IDENTIFIER)
 let unimplemented_decl(x) ==
   x ; {
-    let e = literal (V_Int 0) and ty = add_dummy_pos (T_Int None) in
+    let e = literal (V_Int Z.zero) and ty = add_dummy_pos (T_Int None) in
     (D_GlobalStorage { name="-"; keyword=GDK_Constant; ty=Some ty; initial_value = Some e})
   }
 

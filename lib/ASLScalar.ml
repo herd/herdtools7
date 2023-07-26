@@ -45,7 +45,7 @@ let to_int64 = function
   | S_BitVector bv -> BV.to_int64_signed bv
 
 let to_native_value = function
-  | S_Int i -> AST.V_Int (Z.to_int i)
+  | S_Int i -> AST.V_Int i
   | S_Bool b -> AST.V_Bool b
   | S_BitVector bv -> AST.V_BitVector bv
 

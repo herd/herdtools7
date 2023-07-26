@@ -58,6 +58,7 @@ type binop =
   | NEQ  (** Non equality on two base values of same type *)
   | OR  (** Bitvector bitwise or *)
   | PLUS  (** Addition for int or reals or bitvectors *)
+  | POW  (** Exponentiation for ints *)
   | RDIV  (** Division for reals *)
   | SHL  (** Shift left for ints *)
   | SHR  (** Shift right for ints *)
@@ -73,9 +74,9 @@ type identifier = string
 
 (** Main value type, parametric on its base values *)
 type value =
-  | V_Int of int
+  | V_Int of Z.t
   | V_Bool of bool
-  | V_Real of float
+  | V_Real of Q.t
   | V_BitVector of Bitvector.t
   | V_String of string
   | V_Tuple of value list

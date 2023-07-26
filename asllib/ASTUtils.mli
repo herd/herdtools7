@@ -52,6 +52,7 @@ val use_ty : ISet.t -> ty -> ISet.t
 val used_identifiers : 'p decl list -> ISet.t
 val used_identifiers_stmt : stmt -> ISet.t
 val canonical_fields : (String.t * 'a) list -> (String.t * 'a) list
+val expr_of_int : int -> expr
 val literal : value -> expr
 val var_ : identifier -> expr
 val binop : binop -> expr -> expr -> expr
@@ -124,3 +125,8 @@ val list_concat_map : ('a -> 'b list) -> 'a list -> 'b list
 val is_simple_expr : expr -> bool
 (** [is_simple_expr e] is true if [e] does not contain any call to any other
     subprogram. It has false negative. *)
+
+module Infix : sig
+  val ( ~$ ) : int -> value
+  val ( !$ ) : int -> expr
+end

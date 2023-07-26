@@ -341,9 +341,15 @@ and bitwidth_equal eq w1 w2 =
 and bitfields_equal eq bf1 bf2 =
   bf1 == bf2 || (list_equal (pair_equal String.equal (slices_equal eq))) bf1 bf2
 
-let literal v = E_Literal v |> add_dummy_pos
 let var_ x = E_Var x |> add_dummy_pos
 let binop op = map2_desc (fun e1 e2 -> E_Binop (op, e1, e2))
+let literal v = E_Literal v |> add_dummy_pos
+let expr_of_int i = literal (V_Int (Z.of_int i))
+
+module Infix = struct
+  let ( ~$ ) i = V_Int (Z.of_int i)
+  let ( !$ ) i = expr_of_int i
+end
 
 let expr_of_lexpr : lexpr -> expr =
   let rec aux le =

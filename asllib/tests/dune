@@ -24,3 +24,5 @@
     (setenv ASL_LIBDIR %{project_root}/asllib/libdir/
       (run %{test} -e))))
 
+(cram
+  (deps %{bin:aslseq}))

@@ -6,5 +6,5 @@ Witnesses
 Positive: 0 Negative: 1
 Condition forall ([x]=3)
 Observation write-mem Never 0 1
-Hash=3b26c3031c3fc7f7aeca8baaa5b4b378
+Hash=0b26d2994acc86ca5af89b8cfe15c50f
 

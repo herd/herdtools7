@@ -89,23 +89,25 @@ let fpzero_example () =
 
 let[@warning "-44"] normalize_affectations () =
   let open StaticInterpreter.Normalize in
-  let affectations = [ ("x", 3, None); ("y", 7, None) ] in
+  let affectations = [ ("x", Z.of_int 3, None); ("y", Z.of_int 7, None) ] in
   let m_1 = Prod AMap.empty in
-  let m_1', f_1' = subst_mono affectations m_1 1 in
-  assert (mono_compare m_1' m_1 = 0 && f_1' = 1);
+  let m_1', f_1' = subst_mono affectations m_1 (Z.of_int 1) in
+  assert (mono_compare m_1' m_1 = 0 && f_1' = Z.of_int 1);
 
   let m_x = Prod (AMap.singleton "x" 1) in
-  let m_x', f_x' = subst_mono affectations m_x 1 in
-  assert (mono_compare m_x' m_1 = 0 && f_x' = 3);
+  let m_x', f_x' = subst_mono affectations m_x (Z.of_int 1) in
+  assert (mono_compare m_x' m_1 = 0 && f_x' = Z.of_int 3);
 
   let m_xy = Prod (AMap.singleton "x" 1 |> AMap.add "y" 1) in
-  let m_xy', f_xy' = subst_mono affectations m_xy 1 in
-  assert (mono_compare m_xy' m_1 = 0 && f_xy' = 21);
+  let m_xy', f_xy' = subst_mono affectations m_xy (Z.of_int 1) in
+  assert (mono_compare m_xy' m_1 = 0 && f_xy' = Z.of_int 21);
 
-  let p_1 = Sum (MMap.singleton m_1 1) in
-  let p_x = Sum (MMap.singleton m_x 1) in
+  let p_1 = Sum (MMap.singleton m_1 (Z.of_int 1)) in
+  let p_x = Sum (MMap.singleton m_x (Z.of_int 1)) in
   let p_x_1 = add_polys p_1 p_x in
-  let p_xy_1 = Sum (MMap.singleton m_xy 1 |> MMap.add m_1 1) in
+  let p_xy_1 =
+    Sum (MMap.singleton m_xy (Z.of_int 1) |> MMap.add m_1 (Z.of_int 1))
+  in
 
   let p_1' = subst_poly affectations p_1 in
   let p_x' = subst_poly affectations p_x in

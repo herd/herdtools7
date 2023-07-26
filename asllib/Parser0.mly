@@ -22,15 +22,15 @@
   let t_bit =
     let open AST in
     T_Bits (
-      BitWidth_SingleExpr (E_Literal (V_Int 1) |> ASTUtils.add_dummy_pos),
+      BitWidth_SingleExpr (E_Literal (V_Int Z.one) |> ASTUtils.add_dummy_pos),
       [])
 %}
 
 %token <string> IDENTIFIER STRING_LIT
 %token <Bitvector.mask> MASK_LIT
 %token <Bitvector.t> BITS_LIT
-%token <int> INT_LIT
-%token <float> REAL_LIT
+%token <Z.t> INT_LIT
+%token <Q.t> REAL_LIT
 %token <bool> BOOL_LIT
 %token <string> QUALIFIER
 
@@ -203,7 +203,7 @@ let decl ==
 let annotated(x) == desc = x; { AST.{ desc; pos_start=$symbolstartpos; pos_end=$endpos }}
 
 let unimplemented_decl(x) == x; { None }
-let unimplemented_ty(x) == x; { AST.(T_Bits (BitWidth_SingleExpr (E_Literal (V_Int 0) |> ASTUtils.add_dummy_pos), [])) }
+let unimplemented_ty(x) == x; { AST.(T_Bits (BitWidth_SingleExpr (ASTUtils.expr_of_int 0), [])) }
 
 
 let type_decl ==

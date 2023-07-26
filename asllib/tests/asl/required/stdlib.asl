@@ -34,6 +34,10 @@ begin
   assert SInt('0') == 0;
   assert SInt('1') == -1;
 
+  for n = 0 to 25 do
+    assert Log2(2 ^ n) == n;
+  end
+
   return 0;
 end
 
