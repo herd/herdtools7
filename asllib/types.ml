@@ -346,8 +346,7 @@ let subtypes env t1 t2 =
 let rec structural_subtype_satisfies env t s =
   (* A type T subtype-satisfies type S if and only if all of the following
      conditions hold: *)
-  let s_struct = get_structure env s and t_struct = get_structure env t in
-  match (s_struct.desc, t_struct.desc) with
+  match ((resolve_root_name env s).desc, (resolve_root_name env t).desc) with
   (* If S has the structure of an integer type then T must have the structure
      of an integer type. *)
   | T_Int _, T_Int _ -> true
@@ -400,14 +399,8 @@ let rec structural_subtype_satisfies env t s =
   (* If S has the structure of an array type with elements of type E then T
      must have the structure of an array type with elements of type E, and T
      must have the same element indices as S. *)
-  | T_Array (length_s, _), T_Array (length_t, _) -> (
-      expr_equal env length_s length_t
-      &&
-      match
-        ((resolve_root_name env s).desc, (resolve_root_name env t).desc)
-      with
-      | T_Array (_, ty_s), T_Array (_, ty_t) -> type_equal env ty_s ty_t
-      | _ -> assert false)
+  | T_Array (length_s, ty_s), T_Array (length_t, ty_t) ->
+      expr_equal env length_s length_t && type_equal env ty_s ty_t
   | T_Array _, _ -> false
   (* If S has the structure of a tuple type then T must have the structure of
      a tuple type with same number of elements as S, and each element in T

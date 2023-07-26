@@ -26,7 +26,7 @@ end
 func main () => integer
 begin
   pass;
-  // tsub01();
+  tsub01();
 
   return 0;
 end
