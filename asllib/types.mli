@@ -36,7 +36,8 @@ val is_primitive : ty -> bool
 val is_non_primitive : ty -> bool
 (** Types that are named types or which make use of named types.
 
-    Usually for all [ty]: {[
+    Usually for all [ty]:
+    {[
       is_non_primitive ty = not (is_primitive ty)
     ]}
 *)

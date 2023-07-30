@@ -146,7 +146,6 @@ module NativeBackend = struct
     | v -> mismatch_type v [ T_Int None ]
 
   let bitvector_to_value bv = return (V_BitVector bv)
-
   let int_max x y = if x >= y then x else y
 
   let read_from_bitvector positions bv =

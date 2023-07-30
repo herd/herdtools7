@@ -26,8 +26,6 @@ let to_pos pos = { pos with desc = () }
 let add_pos_from_st pos desc =
   if pos.desc == desc then pos else { pos with desc }
 
-let with_pos_from_st pos { desc; _ } = add_pos_from_st pos desc
-let map_desc_st f thing = f thing |> add_pos_from_st thing
 let add_pos_from pos desc = { pos with desc }
 let with_pos_from pos { desc; _ } = add_pos_from pos desc
 let map_desc f thing = f thing |> add_pos_from thing
@@ -72,9 +70,10 @@ let list_concat_map f l =
   let rec aux f acc = function
     | [] -> rev acc
     | x :: l ->
-       let xs = f x in
-       aux f (rev_append xs acc) l
-  in aux f [] l
+        let xs = f x in
+        aux f (rev_append xs acc) l
+  in
+  aux f [] l
 
 let pair x y = (x, y)
 let pair' y x = (x, y)
@@ -369,11 +368,6 @@ let fresh_var =
     let () = incr i in
     s ^ "-" ^ string_of_int !i
 
-let rec big_union = function
-  | [] -> literal (V_Bool true)
-  | [ e ] -> e
-  | h :: t -> binop BOR h (big_union t)
-
 let case_to_conds : stmt -> stmt =
   let rec cases_to_cond x = function
     | [] -> s_pass
@@ -398,10 +392,6 @@ let case_to_conds : stmt -> stmt =
 let slice_as_single = function
   | Slice_Single e -> e
   | _ -> raise @@ Invalid_argument "slice_as_single"
-
-let num_args = function
-  | 0 -> Fun.id
-  | n -> fun name -> name ^ "-" ^ string_of_int n
 
 let default_t_bits = T_Bits (BitWidth_Constraints [], [])
 

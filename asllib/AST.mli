@@ -17,11 +17,15 @@
 (* Hadrien Renaud, University College London, UK.                           *)
 (****************************************************************************)
 
+(** An Abstract Syntax Tree for ASL. *)
+
 (* -------------------------------------------------------------------------
 
                                     Utils
 
    ------------------------------------------------------------------------- *)
+
+(** {2 Utils} *)
 
 type position = Lexing.position
 type 'a annotated = { desc : 'a; pos_start : position; pos_end : position }
@@ -31,6 +35,8 @@ type 'a annotated = { desc : 'a; pos_start : position; pos_end : position }
                                    Operations
 
    ------------------------------------------------------------------------- *)
+
+(** {2 Operations} *)
 
 (** Operations on base value of arity one. *)
 type unop =
@@ -72,6 +78,8 @@ type identifier = string
 
    ------------------------------------------------------------------------- *)
 
+(** {2 Values} *)
+
 (** Main value type, parametric on its base values *)
 type value =
   | V_Int of Z.t
@@ -88,6 +96,8 @@ type value =
                                 Expressions
 
    ------------------------------------------------------------------------- *)
+
+(** {2 Expressions} *)
 
 (** Expressions. Parametric on the type of literals. *)
 type expr_desc =
@@ -133,6 +143,8 @@ and slice =
 
    ------------------------------------------------------------------------- *)
 
+(** {2 Types} *)
+
 (** Type descriptors.*)
 and type_desc =
   | T_Int of int_constraints option
@@ -177,6 +189,8 @@ and typed_identifier = identifier * ty
                         l-expressions and statements
 
    ------------------------------------------------------------------------- *)
+
+(** {2 Statements} *)
 
 (** Type of left-hand side of assignments. *)
 type lexpr_desc =
@@ -231,6 +245,8 @@ and catcher = identifier option * ty * stmt
                         Functions and declarations
 
    ------------------------------------------------------------------------- *)
+
+(** {2 Top-level declarations} *)
 
 type subprogram_type = ST_Procedure | ST_Function | ST_Getter | ST_Setter
 type 'p subprogram_body = SB_ASL of stmt | SB_Primitive of 'p
