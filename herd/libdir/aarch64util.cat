@@ -132,3 +132,11 @@ let scl = loc
  * the same cache line. *)
 flag ~empty ((W & INSTR)*(W & INSTR) \ loc)
   as Assuming-no-two-modified-instructions-are-on-the-same-cache-line
+
+(* Flag the runs of herd7 with unsupported combinations of variants *)
+flag ~empty (if "vmsa" && "memtag" then _ else 0)
+  as combining-vmsa-and-memtag-is-not-supported
+flag ~empty (if "vmsa" && "ifetch" then _ else 0)
+  as combining-vmsa-and-ifetch-is-not-supported
+flag ~empty (if "memtag" && "ifetch" then _ else 0)
+  as combining-memtag-and-ifetch-is-not-supported
