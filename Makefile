@@ -1,9 +1,15 @@
 .PHONY: check-deps
 
+OS := $(shell uname)
 PREFIX=$$HOME
 D=dune
+
 #Limit parallelism of some expensive operations
-J=8
+ifeq ($(OS),Darwin)
+	J=$(shell sysctl -n hw.logicalcpu)
+else
+	J=$(shell nproc)
+endif
 
 
 REGRESSION_TEST_MODE = test
@@ -19,8 +25,12 @@ HERD_CATALOGUE_REGRESSION_TEST = _build/default/internal/herd_catalogue_regressi
 
 all: build
 
-build: | check-deps
-	sh ./dune-build.sh $(PREFIX)
+.PHONY: Version.ml
+Version.ml:
+	sh ./version-gen.sh $(PREFIX)
+
+build: Version.ml | check-deps
+	dune build -j $(J) --profile release
 
 install:
 	sh ./dune-install.sh $(PREFIX)
@@ -34,8 +44,7 @@ clean: dune-clean clean-asl-pseudocode
 dune-clean:
 	dune clean
 
-versions:
-	@ sh ./version-gen.sh $(PREFIX)
+versions: Version.ml
 	@ dune build -j $(J) --workspace dune-workspace.versions @all
 
 
