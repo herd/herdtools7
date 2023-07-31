@@ -1210,6 +1210,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,None ->
             let init,cs,st = STR.emit_store_nop st p init lab in
             None,init,cs,st
+        | I,None ->
+            let r,init,st = U.next_init st p init lab in
+            None,init,(pseudo ([I_IC (IC.ivau, r)])),st
+        | D,None ->
+            let r,init,st = U.next_init st p init lab in
+            None,init,(pseudo ([I_DC (DC.cvau, r)])),st
         | _,_ -> Warn.fatal "Not Yet (%s,%s)!!!"
               (pp_dir d) (C.debug_evt e)
         end
@@ -1226,6 +1232,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             Some (a,Some (MachSize.S128,0))
           | _ -> Some (a,m) end in
         begin match d,atom with
+        | I, None ->
+            let r,init,st = U.next_init st p init loc in
+            Some r,init,(pseudo ([I_IC (IC.ivau, r)])),st
+        | D, None ->
+            let r,init,st = U.next_init st p init loc in
+            Some r,init,(pseudo ([I_DC (DC.cvau, r)])),st
+        | ( D| I ), _ -> Warn.fatal "not implemented"
         | R,None ->
             let r,init,cs,st = LDR.emit_load st p init loc in
             Some r,init,cs,st

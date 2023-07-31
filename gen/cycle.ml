@@ -191,7 +191,7 @@ module Make (O:Config) (E:Edge.S) :
     }
 
   let debug_dir d = match d with
-         Some W -> "W" | Some R -> "R" | Some J -> "J" | None -> "_"
+         Some W -> "W" | Some R -> "R" | Some J -> "J" | Some D -> "{DC.CVAU}" | Some I -> "{IC.IVAU}" | None -> "_"
 
   let debug_atom a =
     match a with None -> "" | Some a -> E.pp_atom a
@@ -354,7 +354,7 @@ let find_prev_code_write n =
         debug_node n debug_node m ;
     let e = m.evt in
     match e.loc,E.safe_dir m.edge with
-    | Code c,Some W ->
+    | Code c,Some (W|D|I) ->
         (* Avoid the case where the cachesync is po-before the code write... *)
         begin if po_pred n m then raise Not_found end ;
         c
@@ -610,8 +610,7 @@ let is_rmw_edge e = match e.E.edge with
 let is_rmw d e = match d with
 | R -> is_rmw_edge e.edge
 | W -> is_rmw_edge e.prev.edge
-| J -> is_rmw_edge e.edge
-
+| J| D | I -> is_rmw_edge e.edge
 
 
 let remove_store n0 =
@@ -887,7 +886,7 @@ let set_same_loc st n0 =
             | Code _ ->
                do_set_write_val next_x_ok st pte_val ns
             end
-        | Some (R|J) |None -> do_set_write_val next_x_ok st pte_val ns
+        | Some (R|J|D|I) |None -> do_set_write_val next_x_ok st pte_val ns
         end
 
   let set_all_write_val nss =
@@ -1011,7 +1010,7 @@ let do_set_read_v =
                | Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _ -> pte_cell
                | Pte -> n.evt.pte)
               ns
-        | None | Some J ->
+        | None | Some (J|D|I) ->
             do_rec st cell pte_cell ns
         end in
   fun ns -> match ns with
@@ -1281,7 +1280,7 @@ let rec group_rec x ns = function
           if
             E.is_node m.edge.E.edge || not (pbank m.evt.bank)
           then k else (e.loc,m)::k
-      | None| Some R | Some J -> k in
+      | None| Some (R|J|D|I)-> k in
       if m.store == nil then k
       else begin
         let e = m.store.evt in

@@ -656,6 +656,8 @@ let fold_tedges f r =
         ()) () ;
     if not (Hashtbl.mem t "R") then add_lxm "R" (plain_edge (Node R)) ;
     if not (Hashtbl.mem t "W") then add_lxm "W" (plain_edge (Node W)) ;
+    if not (Hashtbl.mem t "D") then add_lxm "D" (plain_edge (Node D)) ;
+    if not (Hashtbl.mem t "I") then add_lxm "I" (plain_edge (Node I)) ;
 (*Co aka Ws and LxSx aka Rmw*)
    four_times_iter_edges true (Misc.fold_to_iter (do_fold_edges fold_tedges_compat));
 (* Backward compatibility *)

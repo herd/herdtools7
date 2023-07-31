@@ -245,7 +245,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           let e =  n.C.C.evt in
           match e.C.C.dir,e.C.C.loc with
           | Some W,Data loc -> StringSet.add loc k
-          | ((Some R|None|Some J),_)|(Some W,Code _) -> k in
+          | ((Some R|None|Some J|Some D|Some I),_)|(Some W,Code _) -> k in
          k in
       do_rec n0
 
