@@ -582,6 +582,18 @@ let patch_edges n =
   let merge_annotations m =
       let rec do_rec n =
         let e = n.edge in
+        match e.E.edge with
+        | E.Fr ie -> if E.is_ifetch e.E.a1 then begin
+          n.edge <- {e with E.a1=None; };
+          n.edge <- {e with E.edge=E.Ifr ie; };
+        end
+        else ();
+        | E.Rf ie -> if E.is_ifetch e.E.a2 then begin
+          n.edge <- {e with E.a2=None; };
+          n.edge <- {e with E.edge=E.Irf ie; };
+        end
+        else ();
+        | _ -> ();
         if non_insert_store e then begin
           let p = find_non_insert_store_prev n.prev in
           if O.verbose > 0 then Printf.eprintf "Merge p=%a, n=%a\n"
@@ -1281,7 +1293,7 @@ let rec group_rec x ns = function
           if
             E.is_node m.edge.E.edge || not (pbank m.evt.bank)
           then k else (e.loc,m)::k
-      | None| Some R | Some J -> k in
+      | None| Some R | Some J-> k in
       if m.store == nil then k
       else begin
         let e = m.store.evt in

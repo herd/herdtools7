@@ -1204,7 +1204,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | None,_ -> Warn.fatal "AArchCompile.emit_access"
     | Some d,Code lab ->
         begin match d,e.C.atom with
-        | R,None ->
+        | R,(None|Some (Ifetch, None)) ->
             let r,init,cs,st = LDR.emit_fetch st p init lab in
             Some r,init,cs,st
         | W,None ->
@@ -1232,6 +1232,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,Some (Acq _,None) ->
             let r,init,cs,st = LDAR.emit_load st p init loc  in
             Some r,init,cs,st
+        | R, Some (Ifetch, _) -> Warn.fatal "something went wrong"
         | R,Some (Acq a,Some (sz,o)) ->
             let module L =
               LOAD
@@ -1333,6 +1334,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let init,cs,st = emit_stp opt idx st p init loc e in
             None,init,cs,st
         | W,Some (Pair _,Some _) -> assert false
+        | W, Some (Ifetch, _) -> assert false
         | R,Some (Pte (Read|ReadAcq|ReadAcqPc as rk),None) ->
             let emit = match rk with
             | Read -> LDR.emit_load_var
@@ -1681,6 +1683,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               Some r,init,pseudo cs0@cs@pseudo cs2,st
           | R,Some (Rel _,_) ->
               Warn.fatal "No load release"
+          | R, Some (Ifetch, _) -> Warn.fatal "No ifetch read"
           | R,Some (Atomic rw,None) ->
               let r,init,cs,st =
                 do_emit_lda_idx vdep (tr_rw rw) st p init loc r2 in
@@ -1755,6 +1758,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               None,init,pseudo cs0@cs,st
           | W,Some (Acq _,_) -> Warn.fatal "No store acquire"
           | W,Some (AcqPc _,_) -> Warn.fatal "No store acquirePc"
+          | W, Some (Ifetch, _) -> Warn.fatal "No dependency to code location"
           | W,Some (Atomic rw,None) ->
               let r,init,cs,st =
                 emit_sta_idx (tr_rw rw) st p init loc r2 e.C.v in
@@ -1994,6 +1998,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               Warn.fatal "No store acquire"
           | Some (AcqPc _,_) ->
               Warn.fatal "No store acquirePc"
+          | Some (Ifetch, _) -> Warn.fatal "No store ifetch"
           | Some (Plain a,Some (sz,o)) ->
               let module S =
                 STORE

@@ -62,7 +62,7 @@ module Make
        | Sc,_ -> assert false
        end
    | Atomic _|Mixed _ -> true
-
+   let is_ifetch _ = false
    let pp_plain = "P"
 
    let pp_as_a = None

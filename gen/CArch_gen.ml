@@ -33,7 +33,7 @@ let applies_atom a d = match a,d with
 | (Acq|Acq_Rel|Con),W -> false
 | (Rel|Acq_Rel),R -> false
 | _,_ -> true
-
+let is_ifetch _ = false
 let compare_atom = Misc.polymorphic_compare
 
 include MachMixed.No

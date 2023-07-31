@@ -311,7 +311,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
         let r =
           match d with
           | Code.W -> W
-          | Code.R ->
+          | Code.R->
               begin match e.CE.edge.E.edge with
               | E.Ifr _ -> F
               | _ ->

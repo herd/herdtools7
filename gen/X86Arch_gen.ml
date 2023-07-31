@@ -31,7 +31,7 @@ let default_atom = Atomic
 let applies_atom a d = match a,d with
 | Atomic,W -> true
 | _,_ -> false
-
+let is_ifetch _ = false
 let compare_atom = compare
 
 include MachMixed.No
