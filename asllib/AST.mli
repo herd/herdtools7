@@ -131,12 +131,19 @@ and pattern =
   | Pattern_Single of expr
   | Pattern_Tuple of pattern list
 
+(** Indexes an array, a bitvector. *)
 and slice =
   | Slice_Single of expr
-  | Slice_Range of expr * expr (* end first because ASL *)
+      (** [Slice_Single i] is the slice of length [1] at position [i]. *)
+  | Slice_Range of expr * expr
+      (** [Slice_Range (j, i)] denotes the slice from [i] to [j - 1]. *)
   | Slice_Length of expr * expr
-(* start, length *)
-
+      (** [Slice_Length (i, n)] denotes the slice starting at [i] of length
+          [n]. *)
+  | Slice_Star of expr * expr
+      (** [Slice_Start (factor, length)] denotes the slice starting at [factor
+          * length] of length [n]. *)
+(** All position mentionned above are included. *)
 (* -------------------------------------------------------------------------
 
                                   Types

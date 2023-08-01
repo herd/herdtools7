@@ -122,6 +122,7 @@ and pp_slice f = function
       bprintf f "Slice_Range (%a, %a)" pp_expr e1 pp_expr e2
   | Slice_Length (e1, e2) ->
       bprintf f "Slice_Length (%a, %a)" pp_expr e1 pp_expr e2
+  | Slice_Star (e1, e2) -> bprintf f "Slice_Star (%a, %a)" pp_expr e1 pp_expr e2
 
 and pp_pattern f = function
   | Pattern_All -> addb f "Pattern_All"

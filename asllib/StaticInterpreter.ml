@@ -114,6 +114,10 @@ and slices_to_positions env =
         let pbot = eval_to_int ebot and plength = eval_to_int elength in
         let ptop = pbot + plength - 1 in
         interval ptop plength
+    | Slice_Star (efactor, elength) ->
+        let pfactor = eval_to_int efactor and plength = eval_to_int elength in
+        let ptop = (pfactor * plength) + plength - 1 in
+        interval ptop plength
   in
   fun slices -> slices |> List.map slice_to_positions |> List.concat
 

@@ -140,6 +140,7 @@ rule token = parse
     | "::"                     { COLON_COLON                      }
     | '>'                      { GT                               }
     | "+:"                     { PLUS_COLON                       }
+    | "*:"                     { STAR_COLON                       }
     | ';'                      { SEMI_COLON                       }
     | ">="                     { GEQ                              }
     | identifier as lxm        { tr_name lxm                      }

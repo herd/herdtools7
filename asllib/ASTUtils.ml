@@ -156,7 +156,8 @@ and use_slices acc slices = List.fold_left use_slice acc slices
 
 and use_slice acc = function
   | Slice_Single e -> use_e acc e
-  | Slice_Length (e1, e2) | Slice_Range (e1, e2) -> use_e (use_e acc e1) e2
+  | Slice_Star (e1, e2) | Slice_Length (e1, e2) | Slice_Range (e1, e2) ->
+      use_e (use_e acc e1) e2
 
 and use_ty acc t =
   match t.desc with

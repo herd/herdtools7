@@ -52,7 +52,7 @@ let slices_length env =
   let one = !$1 in
   let slice_length = function
     | Slice_Single _ -> one
-    | Slice_Length (_, e) -> e
+    | Slice_Star (_, e) | Slice_Length (_, e) -> e
     | Slice_Range (e1, e2) -> plus one (minus e1 e2)
   in
   fun li -> List.map slice_length li |> sum |> reduce_expr env
@@ -599,23 +599,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
          if it fails.
        TODO: check them
     *)
-    let tr_one = function
-      | Slice_Single e ->
-          (* First rule trivially true. *)
-          (* TODO: try evaluate this at compile time, and check it against sliced
-             expression type. *)
-          let t_e, e = annotate_expr env e in
-          let+ () = check_structure_integer e env t_e in
-          let+ () = check_pure env e in
-          Slice_Single e
-      | Slice_Range (e1, e2) as slice ->
-          let t_e1, e1 = annotate_expr env e1
-          and t_e2, e2 = annotate_expr env e2 in
-          let+ () = check_structure_integer e1 env t_e1 in
-          let+ () = check_structure_integer e2 env t_e2 in
-          let length = slices_length env [ slice ] in
-          let+ () = check_pure env length in
-          Slice_Range (e1, e2)
+    let rec tr_one = function
       | Slice_Length (offset, length) ->
           let t_offset, offset = annotate_expr env offset
           and t_length, length = annotate_expr env length in
@@ -625,6 +609,24 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           (* TODO: if offset is statically evaluable, check that it is less
              than sliced expression width. *)
           Slice_Length (offset, length)
+      | Slice_Single i ->
+          (* LRM R_GXKG:
+             The notation b[i] is syntactic sugar for b[i +: 1].
+          *)
+          let length = expr_of_int 1 in
+          tr_one (Slice_Length (i, length))
+      | Slice_Range (j, i) ->
+          (* LRM R_GXKG:
+             The notation b[j:i] is syntactic sugar for b[i +: j-i+1].
+          *)
+          let length = binop MINUS j i |> binop PLUS (expr_of_int 1) in
+          tr_one (Slice_Length (i, length))
+      | Slice_Star (factor, length) ->
+          (* LRM R_GXQG:
+             The notation b[i *: n] is syntactic sugar for b[i*n +: n]
+          *)
+          let offset = binop MUL factor length in
+          tr_one (Slice_Length (offset, length))
     in
     List.map tr_one
 

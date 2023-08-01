@@ -403,6 +403,9 @@ module Make (B : Backend.S) (C : Config) = struct
           let** (vtop, vbot), env = fold_par eval_expr env etop ebot in
           let* length = B.binop MINUS vtop vbot >>= B.binop PLUS one in
           normal ((vbot, length), env)
+      | Slice_Star (efactor, elength) ->
+          let ebot = ASTUtils.binop MUL efactor elength in
+          fold_par eval_expr env ebot elength
       | Slice_Length (ebot, elength) -> fold_par eval_expr env ebot elength
     in
     fold_par_list eval_one env

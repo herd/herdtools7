@@ -69,9 +69,9 @@ let make_ldi_tuple xs ty =
 %token ELSE ELSIF END ENUMERATION EOF EOR EQ EQ_OP EXCEPTION FOR FUNC GEQ
 %token GETTER GT IF IMPL IN INTEGER LBRACE LBRACKET LEQ LET LPAR LT MINUS MOD
 %token MUL NEQ NOT OF OR OTHERWISE PASS PLUS PLUS_COLON POW PRAGMA RBRACE
-%token RBRACKET RDIV REAL RECORD REPEAT RETURN RPAR SEMI_COLON SETTER SHL SHR
-%token SLICING STRING SUBTYPES THEN THROW TO TRY TYPE UNKNOWN UNTIL VAR WHEN
-%token WHERE WHILE WITH
+%token RBRACKET RDIV REAL RECORD REPEAT RETURN RPAR STAR_COLON SEMI_COLON
+%token SETTER SHL SHR SLICING STRING SUBTYPES THEN THROW TO TRY TYPE UNKNOWN
+%token UNTIL VAR WHEN WHERE WHILE WITH
 
 %token <string> IDENTIFIER STRING_LIT
 %token <Bitvector.mask> MASK_LIT
@@ -351,6 +351,7 @@ let slice ==
   | ~=expr;                       < Slice_Single  >
   | e1=expr; COLON; e2=expr;      < Slice_Range   >
   | e1=expr; PLUS_COLON; e2=expr; < Slice_Length  >
+  | e1=expr; STAR_COLON; e2=expr; < Slice_Star    >
 
 (* Bitfields *)
 let bitfields == loption(braced(tclist(bitfield)))
