@@ -124,7 +124,7 @@ let fault = (['f''F'] "ault")
 let reg = name
 let loc = name | ('$' (alpha+|digit+))
 let new_loc =
-(("PTE"|"PA") ' '* '(' ' '* (name| "PTE" ' '* '(' ' '* name ' '* ')') ' '* ')')
+(("PTE"|"TTD"|"PA") ' '* '(' ' '* (name| ("PTE"|"TTD") ' '* '(' ' '* name ' '* ')') ' '* ')')
 | ("tag" ' '* '(' ' '* (name ' '* ')'))
 let name_off = name ['-''+'] (num|hexanum)
 let instr = "instr:" '"' [^'"']* '"'

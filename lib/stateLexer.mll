@@ -74,7 +74,7 @@ rule token = parse
 | "attrs"|"Attrs" { ATTRS }
 | "oa" { TOK_OA }
 (* PTW keywords *)
-| "PTE" { TOK_PTE }
+| "PTE"|"TTD" { TOK_PTE }
 | "PA"  { TOK_PA }
 (* Typing *)
 | "_Atomic" { ATOMIC }
