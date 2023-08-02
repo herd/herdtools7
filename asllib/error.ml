@@ -7,10 +7,10 @@ type error_desc =
   | UndefinedIdentifier of identifier
   | MismatchedReturnValue of string
   | BadArity of identifier * int * int
-  | UnsupportedBinop of binop * value * value
-  | UnsupportedUnop of unop * value
+  | UnsupportedBinop of binop * literal * literal
+  | UnsupportedUnop of unop * literal
   | UnsupportedExpr of expr
-  | MismatchType of value * type_desc list
+  | MismatchType of string * type_desc list
   | NotYetImplemented of string
   | ConflictingTypes of type_desc list * ty
   | AssertionFailed of expr
@@ -60,24 +60,24 @@ let pp_error =
         fprintf f
           "ASL Execution error: Illegal application of operator %s for values@ \
            %a@ and %a."
-          (binop_to_string op) pp_value v1 pp_value v2
+          (binop_to_string op) pp_literal v1 pp_literal v2
     | UnsupportedUnop (op, v) ->
         fprintf f
           "ASL Execution error: Illegal application of operator %s for value@ \
            %a."
-          (unop_to_string op) pp_value v
+          (unop_to_string op) pp_literal v
     | UnsupportedExpr e ->
         fprintf f "ASL Error: Unsupported expression %a." pp_expr e
     | MismatchType (v, [ ty ]) ->
         fprintf f
-          "ASL Execution error: Mismatch type:@ value %a does not belong to \
+          "ASL Execution error: Mismatch type:@ value %s does not belong to \
            type %a."
-          pp_value v pp_type_desc ty
+          v pp_type_desc ty
     | MismatchType (v, li) ->
         fprintf f
-          "ASL Execution error: Mismatch type:@ value %a@ does not subtype any \
+          "ASL Execution error: Mismatch type:@ value %s@ does not subtype any \
            of those types:@ %a"
-          pp_value v
+          v
           (pp_comma_list pp_type_desc)
           li
     | BadField (s, ty) ->

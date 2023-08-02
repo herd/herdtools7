@@ -63,28 +63,17 @@ let pp_binop : binop -> string = function
 
 let pp_unop = function BNOT -> "BNOT" | NOT -> "NOT" | NEG -> "NEG"
 
-let rec pp_value f = function
-  | V_Int i -> bprintf f "V_Int (Z.of_string \"%a\")" Z.bprint i
-  | V_Bool b -> bprintf f "V_Bool %B" b
-  | V_Real r -> bprintf f "V_Real (Q.of_string \"%a\")" Q.bprint r
-  | V_BitVector bv ->
+let pp_literal f = function
+  | L_Int i -> bprintf f "V_Int (Z.of_string \"%a\")" Z.bprint i
+  | L_Bool b -> bprintf f "V_Bool %B" b
+  | L_Real r -> bprintf f "V_Real (Q.of_string \"%a\")" Q.bprint r
+  | L_BitVector bv ->
       bprintf f "V_BitVector (Bitvector.of_string %S)" (Bitvector.to_string bv)
-  | V_String s -> bprintf f "V_String %S" s
-  | V_Tuple li ->
-      addb f "V_Tuple ";
-      pp_list pp_value f li
-  | V_Record li ->
-      addb f "V_Record ";
-      pp_field_assoc f li
-  | V_Exception li ->
-      addb f "V_Exception ";
-      pp_field_assoc f li
-
-and pp_field_assoc f = pp_list (pp_pair pp_string pp_value) f
+  | L_String s -> bprintf f "V_String %S" s
 
 let rec pp_expr =
   let pp_desc f = function
-    | E_Literal v -> bprintf f "E_Literal (%a)" pp_value v
+    | E_Literal v -> bprintf f "E_Literal (%a)" pp_literal v
     | E_Var x -> bprintf f "E_Var %S" x
     | E_Typed (e, t) -> bprintf f "E_Typed (%a, %a)" pp_expr e pp_ty t
     | E_Binop (op, e1, e2) ->

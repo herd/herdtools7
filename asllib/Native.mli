@@ -17,7 +17,13 @@
 (* Hadrien Renaud, University College London, UK.                           *)
 (****************************************************************************)
 
-module NativeBackend : Backend.S with type value = AST.value and type 'a m = 'a
+type native_value =
+  | NV_Literal of AST.literal
+  | NV_Vector of native_value list
+  | NV_Record of native_value ASTUtils.IMap.t
+
+module NativeBackend :
+  Backend.S with type value = native_value and type 'a m = 'a
 
 module NativePrimitives : sig
   val primitives : NativeBackend.primitive AST.t

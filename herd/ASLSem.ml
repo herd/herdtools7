@@ -128,20 +128,16 @@ module Make (C : Config) = struct
 
     let v_unknown_of_type _t = V.fresh_var ()
 
-    let v_of_parsed_v =
+    let v_of_literal =
       let open AST in
       let open ASLScalar in
       let concrete v = Constant.Concrete v in
-      let vector li = Constant.ConcreteVector li in
-      let rec tr = function
-        | V_Int i -> S_Int i |> concrete
-        | V_Bool b -> S_Bool b |> concrete
-        | V_BitVector bv -> S_BitVector bv |> concrete
-        | V_Tuple li -> List.map tr li |> vector
-        | V_Record li -> List.map (fun (_, v) -> tr v) li |> vector
-        | V_Exception li -> List.map (fun (_, v) -> tr v) li |> vector
-        | V_Real _f -> Warn.fatal "Cannot use reals yet."
-        | V_String _f -> Warn.fatal "Cannot strings in herd yet."
+      let tr = function
+        | L_Int i -> S_Int i |> concrete
+        | L_Bool b -> S_Bool b |> concrete
+        | L_BitVector bv -> S_BitVector bv |> concrete
+        | L_Real _f -> Warn.fatal "Cannot use reals yet."
+        | L_String _f -> Warn.fatal "Cannot strings in herd yet."
       in
       fun v -> V.Val (tr v)
 
@@ -446,7 +442,7 @@ module Make (C : Config) = struct
       let integer = Asllib.ASTUtils.integer in
       let reg = integer in
       let var x = E_Var x |> with_pos in
-      let lit x = E_Literal (V_Int (Z.of_int x)) |> with_pos in
+      let lit x = E_Literal (L_Int (Z.of_int x)) |> with_pos in
       let bv x = T_Bits (BitWidth_SingleExpr x, []) |> with_pos in
       let bv_var x = bv @@ var x in
       let bv_N = bv_var "N" in
@@ -504,7 +500,7 @@ module Make (C : Config) = struct
         let debug_value = V.pp_v
         let is_undetermined = function V.Var _ -> true | V.Val _ -> false
         let v_of_int = V.intToV
-        let v_of_parsed_v = v_of_parsed_v
+        let v_of_literal = v_of_literal
         let v_to_int = v_to_int
         let bind_data = M.( >>= )
         let bind_seq = M.aslseq

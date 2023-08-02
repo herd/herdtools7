@@ -5,7 +5,7 @@ type func_sig = unit AST.func
 
 type global = {
   declared_types : ty IMap.t;
-  constants_values : value IMap.t;
+  constants_values : literal IMap.t;
   storage_types : (ty * global_decl_keyword) IMap.t;
   subtypes : identifier IMap.t;
   subprograms : func_sig IMap.t;
@@ -13,7 +13,7 @@ type global = {
 }
 
 type local = {
-  constants_values : value IMap.t;
+  constants_values : literal IMap.t;
   storage_types : (ty * local_decl_keyword) IMap.t;
 }
 
@@ -39,7 +39,7 @@ module PPEnv = struct
 
   let pp_local f { constants_values; storage_types } =
     fprintf f "@[<v 2>Local with:@ - @[constants:@ %a@]@ - @[storage:@ %a@]@]"
-      (pp_map PP.pp_value) constants_values
+      (pp_map PP.pp_literal) constants_values
       (pp_map (fun f (t, _) -> PP.pp_ty f t))
       storage_types
 
@@ -61,7 +61,7 @@ module PPEnv = struct
       "@[<v 2>Global with:@ - @[constants:@ %a@]@ - @[storage:@ %a@]@ - \
        @[types:@ %a@]@ - @[subtypes:@ %a@]@ - @[subprograms:@ %a@] - \
        @[subprogram_renamings:@ %a@]@]"
-      (pp_map PP.pp_value) constants_values
+      (pp_map PP.pp_literal) constants_values
       (pp_map (fun f (t, _) -> PP.pp_ty f t))
       storage_types (pp_map PP.pp_ty) declared_types (pp_map pp_print_string)
       subtypes (pp_map pp_subprogram) subprograms (pp_map pp_iset)

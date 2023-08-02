@@ -31,7 +31,7 @@ module type S = sig
   val is_undetermined : value -> bool
   (** [is_undetermined v] returns true when [c] is a non-constant value  *)
 
-  val v_of_parsed_v : AST.value -> value
+  val v_of_literal : AST.literal -> value
   (** [v_of_parsed_v] constructs a value from a parsed value.
       Note that the prefered method to create records or any complex values
       is [create_vector], and should be used for constructing complex values. *)

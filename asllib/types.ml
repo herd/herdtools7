@@ -169,7 +169,7 @@ module Domain = struct
         raise_notrace StaticEvaluationTop
     in
     match v with
-    | V_Int i -> i
+    | L_Int i -> i
     | _ ->
         failwith
           "Type error? Cannot use an expression that is not an int in a \
@@ -215,7 +215,7 @@ module Domain = struct
         int_set_of_int_constraints env constraints
 
   and int_set_of_value = function
-    | V_Int i -> Finite (IntSet.singleton i)
+    | L_Int i -> Finite (IntSet.singleton i)
     | _ -> assert false
 
   and int_set_of_expr env e =
@@ -265,19 +265,17 @@ module Domain = struct
 
   let mem v d =
     match (v, d) with
-    | V_Bool _, D_Bool | V_Real _, D_Real -> true
-    | V_Bool _, _ | V_Real _, _ | _, D_Bool | _, D_Real -> false
-    | V_BitVector _, D_Bits Top -> true
-    | V_BitVector bv, D_Bits (Finite intset) ->
+    | L_Bool _, D_Bool | L_Real _, D_Real -> true
+    | L_Bool _, _ | L_Real _, _ | _, D_Bool | _, D_Real -> false
+    | L_BitVector _, D_Bits Top -> true
+    | L_BitVector bv, D_Bits (Finite intset) ->
         IntSet.mem (Bitvector.length bv |> Z.of_int) intset
-    | V_BitVector _, _ | _, D_Bits _ -> false
-    | V_Int _, D_Int Top -> true
-    | V_Int i, D_Int (Finite intset) -> IntSet.mem i intset
-    | V_Int _, _ | _, D_Int _ -> false
-    | V_String _, D_String -> true
-    | V_String _, _ | _, D_String -> false
-    | V_Tuple _, _ | V_Exception _, _ | V_Record _, _ ->
-        failwith "Unimplemented: domain of non-singular type."
+    | L_BitVector _, _ | _, D_Bits _ -> false
+    | L_Int _, D_Int Top -> true
+    | L_Int i, D_Int (Finite intset) -> IntSet.mem i intset
+    | L_Int _, _ | _, D_Int _ -> false
+    | L_String _, D_String -> true
+    | L_String _, _ (* | _, D_String *) -> false
 
   let equal d1 d2 =
     match (d1, d2) with
@@ -695,7 +693,7 @@ let rec base_value loc env t =
   | T_Array _ ->
       Error.fatal_from loc
         (Error.NotYetImplemented "Base value of array types.")
-  | T_Bool -> V_Bool true |> lit
+  | T_Bool -> L_Bool true |> lit
   | T_Bits (BitWidth_Constraints (Constraint_Exact e :: _), _)
   | T_Bits (BitWidth_Constraints (Constraint_Range (e, _) :: _), _)
   | T_Bits (BitWidth_SingleExpr e, _) ->
@@ -713,7 +711,7 @@ let rec base_value loc env t =
   | T_Int (Some (Constraint_Range (e, _) :: _)) ->
       normalize env e
   | T_Named _ -> assert false
-  | T_Real -> V_Real Q.zero |> lit
+  | T_Real -> L_Real Q.zero |> lit
   | T_Exception fields | T_Record fields ->
       let one_field (name, t) = (name, base_value loc env t) in
       E_Record (t, List.map one_field fields) |> add_pos_from t
@@ -721,12 +719,5 @@ let rec base_value loc env t =
       Error.fatal_from loc
         (Error.NotYetImplemented "Base value of string types.")
   | T_Tuple li ->
-      let one t =
-        match (base_value loc env t).desc with
-        | E_Literal v -> v
-        | _ ->
-            Error.fatal_from loc
-              (Error.NotYetImplemented
-                 "Not fully resolved base-values of types.")
-      in
-      V_Tuple (List.map one li) |> lit
+      let one t = base_value loc env t in
+      E_Tuple (List.map one li) |> add_pos_from t

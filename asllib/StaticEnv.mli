@@ -7,7 +7,7 @@ type func_sig = unit AST.func
 
 type global = {
   declared_types : ty IMap.t;  (** Maps a type name t to its declaration. *)
-  constants_values : value IMap.t;
+  constants_values : literal IMap.t;
       (** Maps a global constant name to its value. *)
   storage_types : (ty * global_decl_keyword) IMap.t;
       (** Maps global declared storage elements to their types. *)
@@ -22,7 +22,7 @@ type global = {
 (** Store all the global environment information at compile-time. *)
 
 type local = {
-  constants_values : value IMap.t;  (** Maps a local constant to its value. *)
+  constants_values : literal IMap.t;  (** Maps a local constant to its value. *)
   storage_types : (ty * local_decl_keyword) IMap.t;
       (** Maps an locally declared names to their type. *)
 }
@@ -37,7 +37,7 @@ val pp_global : Format.formatter -> global -> unit
 val empty_global : global
 val empty_local : local
 val empty : env
-val lookup_constants : env -> identifier -> value
+val lookup_constants : env -> identifier -> literal
 val type_of : env -> identifier -> ty
 val type_of_opt : env -> identifier -> ty option
 val mem_constants : env -> identifier -> bool
@@ -45,6 +45,6 @@ val add_subprogram : identifier -> func_sig -> env -> env
 val set_renamings : identifier -> ISet.t -> env -> env
 val add_global_storage : identifier -> ty -> global_decl_keyword -> env -> env
 val add_type : identifier -> ty -> env -> env
-val add_global_constant : identifier -> value -> env -> env
+val add_global_constant : identifier -> literal -> env -> env
 val add_local : identifier -> ty -> local_decl_keyword -> env -> env
 val add_subtype : identifier -> identifier -> env -> env

@@ -66,7 +66,7 @@ module Domain : sig
   val of_type : env -> ty -> t
   (** Construct the domain of a type. *)
 
-  val mem : AST.value -> t -> bool
+  val mem : AST.literal -> t -> bool
   (** [mem v d] is true if and only if [v] is in [d]. *)
 
   val equal : t -> t -> bool

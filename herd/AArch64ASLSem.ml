@@ -108,9 +108,9 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
         S_Decl (LDK_Let, LDI_Var (x, None), Some e) |> with_pos
       in
       let lit v = E_Literal v |> with_pos in
-      let liti i = lit (V_Int (Z.of_int i)) in
-      let litb b = lit (V_Bool b) in
-      let litbv v i = lit (V_BitVector (Asllib.Bitvector.of_int_sized v i)) in
+      let liti i = lit (L_Int (Z.of_int i)) in
+      let litb b = lit (L_Bool b) in
+      let litbv v i = lit (L_BitVector (Asllib.Bitvector.of_int_sized v i)) in
       let var x = E_Var x |> with_pos in
       let variant_raw v = AArch64Base.tr_variant v |> MachSize.nbits in
       let variant v = variant_raw v |> liti in

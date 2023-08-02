@@ -3,7 +3,7 @@
     It should provide enough information to disambiguate any type-dependent
     behaviour. *)
 
-val infer_value : AST.value -> AST.type_desc
+val infer_value : AST.literal -> AST.type_desc
 
 type strictness = [ `Silence | `Warn | `TypeCheck ]
 (** Possible strictness of type-checking. *)

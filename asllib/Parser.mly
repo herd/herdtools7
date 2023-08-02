@@ -51,7 +51,7 @@
 open AST
 open ASTUtils
 
-let t_bit = T_Bits (BitWidth_SingleExpr (E_Literal (V_Int Z.one) |> add_dummy_pos), [])
+let t_bit = T_Bits (BitWidth_SingleExpr (E_Literal (L_Int Z.one) |> add_dummy_pos), [])
 
 let make_ldi_tuple xs ty =
   LDI_Tuple (List.map (fun x -> LDI_Var (x, None)) xs, Some ty)
@@ -219,11 +219,11 @@ let plist2(x) == pared(
   ------------------------------------------------------------------------- *)
 
 let value == (* Also called literal_expr in grammar.bnf *)
-  | i=INT_LIT       ; < V_Int         >
-  | b=BOOL_LIT      ; < V_Bool        >
-  | r=REAL_LIT      ; < V_Real        >
-  | b=BITVECTOR_LIT ; < V_BitVector   >
-  | s=STRING_LIT    ; < V_String      >
+  | i=INT_LIT       ; < L_Int         >
+  | b=BOOL_LIT      ; < L_Bool        >
+  | r=REAL_LIT      ; < L_Real        >
+  | b=BITVECTOR_LIT ; < L_BitVector   >
+  | s=STRING_LIT    ; < L_String      >
 
 let unop ==
   | BNOT  ; { BNOT }
@@ -501,7 +501,7 @@ let s_else :=
 let subtype_opt == option(SUBTYPES; IDENTIFIER)
 let unimplemented_decl(x) ==
   x ; {
-    let e = literal (V_Int Z.zero) and ty = add_dummy_pos (T_Int None) in
+    let e = literal (L_Int Z.zero) and ty = add_dummy_pos (T_Int None) in
     (D_GlobalStorage { name="-"; keyword=GDK_Constant; ty=Some ty; initial_value = Some e})
   }
 

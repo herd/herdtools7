@@ -78,18 +78,20 @@ type identifier = string
 
    ------------------------------------------------------------------------- *)
 
-(** {2 Values} *)
+(** {2 Literals}
+
+    Literals are the values written straight into ASL programs.
+    There is only literal constructors for a few concepts that could be
+    encapsulated into an ASL value.
+*)
 
 (** Main value type, parametric on its base values *)
-type value =
-  | V_Int of Z.t
-  | V_Bool of bool
-  | V_Real of Q.t
-  | V_BitVector of Bitvector.t
-  | V_String of string
-  | V_Tuple of value list
-  | V_Record of (identifier * value) list
-  | V_Exception of (identifier * value) list
+type literal =
+  | L_Int of Z.t
+  | L_Bool of bool
+  | L_Real of Q.t
+  | L_BitVector of Bitvector.t
+  | L_String of string
 
 (* -------------------------------------------------------------------------
 
@@ -101,7 +103,7 @@ type value =
 
 (** Expressions. Parametric on the type of literals. *)
 type expr_desc =
-  | E_Literal of value
+  | E_Literal of literal
   | E_Var of identifier
   | E_Typed of expr * ty
   | E_Binop of binop * expr * expr

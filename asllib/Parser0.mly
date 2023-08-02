@@ -22,7 +22,7 @@
   let t_bit =
     let open AST in
     T_Bits (
-      BitWidth_SingleExpr (E_Literal (V_Int Z.one) |> ASTUtils.add_dummy_pos),
+      BitWidth_SingleExpr (E_Literal (L_Int Z.one) |> ASTUtils.add_dummy_pos),
       [])
 %}
 
@@ -284,7 +284,7 @@ let qualident ==
     | ident
     | RECORD; { "record" }
 
-let unimplemented_expr(x) == x; { AST.(E_Literal (V_Bool true)) }
+let unimplemented_expr(x) == x; { AST.(E_Literal (L_Bool true)) }
 let nargs == { [] }
 
 let sexpr := binop_expr(sexpr, abinop)
@@ -328,13 +328,13 @@ let slice ==
   | e1=sexpr; COLON; e2=sexpr;      < AST.Slice_Range  >
   | e1=sexpr; PLUS_COLON; e2=sexpr; < AST.Slice_Length >
 
-let unimplemented_literal_expression(x) == x; { AST.V_Bool false }
+let unimplemented_literal_expression(x) == x; { AST.L_Bool false }
 
 let literal_expression ==
-  | ~=BOOL_LIT;      < AST.V_Bool       >
-  | ~=INT_LIT;       < AST.V_Int        >
-  | ~=REAL_LIT;      < AST.V_Real       >
-  | ~=BITS_LIT;      < AST.V_BitVector  >
+  | ~=BOOL_LIT;      < AST.L_Bool       >
+  | ~=INT_LIT;       < AST.L_Int        >
+  | ~=REAL_LIT;      < AST.L_Real       >
+  | ~=BITS_LIT;      < AST.L_BitVector  >
 
   | unimplemented_literal_expression(
     | STRING_LIT

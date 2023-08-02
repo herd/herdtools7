@@ -4,7 +4,6 @@ open Infix
 open StaticEnv
 
 let fatal_from = Error.fatal_from
-let not_yet_implemented pos s = fatal_from pos (Error.NotYetImplemented s)
 let undefined_identifier pos x = fatal_from pos (Error.UndefinedIdentifier x)
 
 let conflict pos expected provided =
@@ -16,7 +15,7 @@ let conflict pos expected provided =
 (*                                                                            *)
 (******************************************************************************)
 
-let expr_of_z z = literal (V_Int z)
+let expr_of_z z = literal (L_Int z)
 let plus = binop PLUS
 let t_bits_bitwidth e = T_Bits (BitWidth_SingleExpr e, [])
 
@@ -91,12 +90,11 @@ let rename_ty_eqs : (AST.identifier * AST.expr) list -> AST.ty -> AST.ty =
     | _ -> ty
 
 let infer_value = function
-  | V_Int _ as v -> T_Int (Some [ Constraint_Exact (literal v) ])
-  | V_Bool _ -> T_Bool
-  | V_Real _ -> T_Real
-  | V_String _ -> T_String
-  | V_BitVector bv -> Bitvector.length bv |> expr_of_int |> t_bits_bitwidth
-  | _ -> not_yet_implemented dummy_annotated "static complex values"
+  | L_Int _ as v -> T_Int (Some [ Constraint_Exact (literal v) ])
+  | L_Bool _ -> T_Bool
+  | L_Real _ -> T_Real
+  | L_String _ -> T_String
+  | L_BitVector bv -> Bitvector.length bv |> expr_of_int |> t_bits_bitwidth
 
 (**********************************************)
 (* Approximate min and max on integer domains *)
@@ -108,14 +106,14 @@ let min_constraint env = function
   | Constraint_Exact e | Constraint_Range (e, _) -> (
       let e = reduce_expr env e in
       match e.desc with
-      | E_Literal (V_Int i) -> i
+      | E_Literal (L_Int i) -> i
       | _ -> raise ConstraintMinMaxTop)
 
 let max_constraint env = function
   | Constraint_Exact e | Constraint_Range (_, e) -> (
       let e = reduce_expr env e in
       match e.desc with
-      | E_Literal (V_Int i) -> i
+      | E_Literal (L_Int i) -> i
       | _ -> raise ConstraintMinMaxTop)
 
 let min_max_constraints m_constraint m =
@@ -613,13 +611,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           (* LRM R_GXKG:
              The notation b[i] is syntactic sugar for b[i +: 1].
           *)
-          let length = expr_of_int 1 in
-          tr_one (Slice_Length (i, length))
+          tr_one (Slice_Length (i, !$1))
       | Slice_Range (j, i) ->
           (* LRM R_GXKG:
              The notation b[j:i] is syntactic sugar for b[i +: j-i+1].
           *)
-          let length = binop MINUS j i |> binop PLUS (expr_of_int 1) in
+          let length = binop MINUS j i |> binop PLUS !$1 in
           tr_one (Slice_Length (i, length))
       | Slice_Star (factor, length) ->
           (* LRM R_GXQG:
@@ -829,10 +826,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               in
               undefined_identifier e x))
     | E_Binop (BAND, e1, e2) ->
-        E_Cond (e1, e2, E_Literal (V_Bool false) |> here)
+        E_Cond (e1, e2, E_Literal (L_Bool false) |> here)
         |> here |> annotate_expr env
     | E_Binop (BOR, e1, e2) ->
-        E_Cond (e1, E_Literal (V_Bool true) |> here, e2)
+        E_Cond (e1, E_Literal (L_Bool true) |> here, e2)
         |> here |> annotate_expr env
     | E_Binop (op, e1, e2) ->
         let t1, e1' = annotate_expr env e1 in
@@ -1576,7 +1573,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           let t = T_Named name |> add_pos_from ty in
           let add_one_id env x =
             let v =
-              V_Int (IMap.cardinal env.global.constants_values |> Z.of_int)
+              L_Int (IMap.cardinal env.global.constants_values |> Z.of_int)
             in
             declare_const loc x t v env
           in

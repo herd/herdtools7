@@ -67,24 +67,17 @@ let binop_to_string : binop -> string = function
 
 let unop_to_string = function BNOT -> "!" | NEG -> "-" | NOT -> "NOT"
 
-let rec pp_value f =
-  let pp_print_field_assoc f =
-    let pp_one f (name, value) = fprintf f "@[%s = %a@]" name pp_value value in
-    fprintf f "{ @[%a@] }" (pp_comma_list pp_one)
-  in
-  function
-  | V_Int i -> Z.pp_print f i
-  | V_Bool true -> pp_print_string f "TRUE"
-  | V_Bool false -> pp_print_string f "FALSE"
-  | V_Real r -> Q.pp_print f r
-  | V_BitVector bv -> Bitvector.pp_t f bv
-  | V_String s -> fprintf f "%S" s
-  | V_Tuple li -> fprintf f "(@[%a@])" (pp_comma_list pp_value) li
-  | V_Record li | V_Exception li -> pp_print_field_assoc f li
+let pp_literal f = function
+  | L_Int i -> Z.pp_print f i
+  | L_Bool true -> pp_print_string f "TRUE"
+  | L_Bool false -> pp_print_string f "FALSE"
+  | L_Real r -> Q.pp_print f r
+  | L_BitVector bv -> Bitvector.pp_t f bv
+  | L_String s -> fprintf f "%S" s
 
 let rec pp_expr f e =
   match e.desc with
-  | E_Literal v -> pp_value f v
+  | E_Literal v -> pp_literal f v
   | E_Var x -> pp_print_string f x
   | E_Typed (e, ty) -> fprintf f "@[%a@ as %a@]" pp_expr e pp_ty ty
   | E_Binop (b, e1, e2) ->
@@ -356,7 +349,7 @@ let pp_t f ast =
 
 let ty_to_string = asprintf "%a" pp_ty
 let t_to_string ast = asprintf "%a" pp_t ast
-let value_to_string = asprintf "%a" pp_value
+let literal_to_string = asprintf "%a" pp_literal
 
 let pp_version f version =
   pp_print_string f

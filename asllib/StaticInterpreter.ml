@@ -11,52 +11,54 @@ let fatal_from = Error.fatal_from
 exception NotYetImplemented
 
 let value_as_int pos = function
-  | V_Int i -> (
+  | L_Int i -> (
       try Z.to_int i
       with Z.Overflow ->
         failwith "Cannot slice with an integer more than machine size.")
-  | v -> fatal_from pos (Error.MismatchType (v, [ T_Int None ]))
+  | v ->
+      fatal_from pos
+        (Error.MismatchType (PP.literal_to_string v, [ T_Int None ]))
 
 let binop_values pos op v1 v2 =
   match (op, v1, v2) with
   (* int -> int -> int *)
-  | PLUS, V_Int v1, V_Int v2 -> V_Int (Z.add v1 v2)
-  | MUL, V_Int v1, V_Int v2 -> V_Int (Z.mul v1 v2)
-  | MINUS, V_Int v1, V_Int v2 -> V_Int (Z.sub v1 v2)
-  | DIV, V_Int v1, V_Int v2 -> V_Int (Z.div v1 v2)
-  | POW, V_Int v1, V_Int v2 -> V_Int (Z.pow v1 (Z.to_int v2))
+  | PLUS, L_Int v1, L_Int v2 -> L_Int (Z.add v1 v2)
+  | MUL, L_Int v1, L_Int v2 -> L_Int (Z.mul v1 v2)
+  | MINUS, L_Int v1, L_Int v2 -> L_Int (Z.sub v1 v2)
+  | DIV, L_Int v1, L_Int v2 -> L_Int (Z.div v1 v2)
+  | POW, L_Int v1, L_Int v2 -> L_Int (Z.pow v1 (Z.to_int v2))
   (* int -> int -> bool*)
-  | EQ_OP, V_Int v1, V_Int v2 -> V_Bool (Z.equal v1 v2)
-  | NEQ, V_Int v1, V_Int v2 -> V_Bool (not (Z.equal v1 v2))
-  | LEQ, V_Int v1, V_Int v2 -> V_Bool (Z.leq v1 v2)
-  | LT, V_Int v1, V_Int v2 -> V_Bool (Z.lt v1 v2)
-  | GEQ, V_Int v1, V_Int v2 -> V_Bool (Z.geq v1 v2)
-  | GT, V_Int v1, V_Int v2 -> V_Bool (Z.gt v1 v2)
+  | EQ_OP, L_Int v1, L_Int v2 -> L_Bool (Z.equal v1 v2)
+  | NEQ, L_Int v1, L_Int v2 -> L_Bool (not (Z.equal v1 v2))
+  | LEQ, L_Int v1, L_Int v2 -> L_Bool (Z.leq v1 v2)
+  | LT, L_Int v1, L_Int v2 -> L_Bool (Z.lt v1 v2)
+  | GEQ, L_Int v1, L_Int v2 -> L_Bool (Z.geq v1 v2)
+  | GT, L_Int v1, L_Int v2 -> L_Bool (Z.gt v1 v2)
   (* bool -> bool -> bool *)
-  | BAND, V_Bool b1, V_Bool b2 -> V_Bool (b1 && b2)
-  | BOR, V_Bool b1, V_Bool b2 -> V_Bool (b1 || b2)
-  | BEQ, V_Bool b1, V_Bool b2 -> V_Bool (b1 == b2)
-  | IMPL, V_Bool b1, V_Bool b2 -> V_Bool ((not b1) || b2)
-  | EQ_OP, V_Bool b1, V_Bool b2 -> V_Bool (b1 == b2)
-  | NEQ, V_Bool b1, V_Bool b2 -> V_Bool (b1 <> b2)
+  | BAND, L_Bool b1, L_Bool b2 -> L_Bool (b1 && b2)
+  | BOR, L_Bool b1, L_Bool b2 -> L_Bool (b1 || b2)
+  | BEQ, L_Bool b1, L_Bool b2 -> L_Bool (b1 == b2)
+  | IMPL, L_Bool b1, L_Bool b2 -> L_Bool ((not b1) || b2)
+  | EQ_OP, L_Bool b1, L_Bool b2 -> L_Bool (b1 == b2)
+  | NEQ, L_Bool b1, L_Bool b2 -> L_Bool (b1 <> b2)
   (* real -> real -> real *)
-  | PLUS, V_Real v1, V_Real v2 -> V_Real (Q.add v1 v2)
-  | MUL, V_Real v1, V_Real v2 -> V_Real (Q.mul v1 v2)
-  | MINUS, V_Real v1, V_Real v2 -> V_Real (Q.sub v1 v2)
-  | RDIV, V_Real v1, V_Real v2 -> V_Real (Q.div v1 v2)
+  | PLUS, L_Real v1, L_Real v2 -> L_Real (Q.add v1 v2)
+  | MUL, L_Real v1, L_Real v2 -> L_Real (Q.mul v1 v2)
+  | MINUS, L_Real v1, L_Real v2 -> L_Real (Q.sub v1 v2)
+  | RDIV, L_Real v1, L_Real v2 -> L_Real (Q.div v1 v2)
   (* real -> real -> bool *)
-  | EQ_OP, V_Real v1, V_Real v2 -> V_Bool (Q.equal v1 v2)
-  | NEQ, V_Real v1, V_Real v2 -> V_Bool (not (Q.equal v1 v2))
-  | LEQ, V_Real v1, V_Real v2 -> V_Bool (Q.leq v1 v2)
-  | LT, V_Real v1, V_Real v2 -> V_Bool (Q.lt v1 v2)
-  | GEQ, V_Real v1, V_Real v2 -> V_Bool (Q.geq v1 v2)
-  | GT, V_Real v1, V_Real v2 -> V_Bool (Q.gt v1 v2)
+  | EQ_OP, L_Real v1, L_Real v2 -> L_Bool (Q.equal v1 v2)
+  | NEQ, L_Real v1, L_Real v2 -> L_Bool (not (Q.equal v1 v2))
+  | LEQ, L_Real v1, L_Real v2 -> L_Bool (Q.leq v1 v2)
+  | LT, L_Real v1, L_Real v2 -> L_Bool (Q.lt v1 v2)
+  | GEQ, L_Real v1, L_Real v2 -> L_Bool (Q.geq v1 v2)
+  | GT, L_Real v1, L_Real v2 -> L_Bool (Q.gt v1 v2)
   (* bits -> bits -> bits *)
-  | EQ_OP, V_BitVector b1, V_BitVector b2 -> V_Bool (Bitvector.equal b1 b2)
-  | NEQ, V_BitVector b1, V_BitVector b2 -> V_Bool (not @@ Bitvector.equal b1 b2)
-  | OR, V_BitVector b1, V_BitVector b2 -> V_BitVector (Bitvector.logor b1 b2)
-  | AND, V_BitVector b1, V_BitVector b2 -> V_BitVector (Bitvector.logand b1 b2)
-  | EOR, V_BitVector b1, V_BitVector b2 -> V_BitVector (Bitvector.logxor b1 b2)
+  | EQ_OP, L_BitVector b1, L_BitVector b2 -> L_Bool (Bitvector.equal b1 b2)
+  | NEQ, L_BitVector b1, L_BitVector b2 -> L_Bool (not @@ Bitvector.equal b1 b2)
+  | OR, L_BitVector b1, L_BitVector b2 -> L_BitVector (Bitvector.logor b1 b2)
+  | AND, L_BitVector b1, L_BitVector b2 -> L_BitVector (Bitvector.logand b1 b2)
+  | EOR, L_BitVector b1, L_BitVector b2 -> L_BitVector (Bitvector.logxor b1 b2)
   (* TODO *)
   | (MOD | SHL | SHR), _, _ ->
       fatal_from pos
@@ -66,15 +68,15 @@ let binop_values pos op v1 v2 =
 
 let unop_values pos op v =
   match (op, v) with
-  | NEG, V_Int i -> V_Int (Z.neg i)
-  | NEG, V_Real r -> V_Real (Q.neg r)
-  | BNOT, V_Bool b -> V_Bool (not b)
-  | NOT, V_BitVector bv -> V_BitVector (Bitvector.lognot bv)
+  | NEG, L_Int i -> L_Int (Z.neg i)
+  | NEG, L_Real r -> L_Real (Q.neg r)
+  | BNOT, L_Bool b -> L_Bool (not b)
+  | NOT, L_BitVector bv -> L_BitVector (Bitvector.lognot bv)
   | _ -> fatal_from pos (Error.UnsupportedUnop (op, v))
 
 let int_max x y = if x >= y then x else y
 
-let rec static_eval (env : SEnv.env) : expr -> value =
+let rec static_eval (env : SEnv.env) : expr -> literal =
   let rec expr_ e =
     match e.desc with
     | E_Literal v -> v
@@ -92,11 +94,11 @@ let rec static_eval (env : SEnv.env) : expr -> value =
         let pos_max = List.fold_left int_max 0 positions in
         let bv =
           match expr_ e' with
-          | V_Int i -> Bitvector.of_z (pos_max + 1) i
-          | V_BitVector bv -> bv
+          | L_Int i -> Bitvector.of_z (pos_max + 1) i
+          | L_BitVector bv -> bv
           | _ -> fatal_from e (Error.UnsupportedExpr e)
         in
-        V_BitVector (Bitvector.extract_slice bv positions)
+        L_BitVector (Bitvector.extract_slice bv positions)
     | _ -> fatal_from e (Error.UnsupportedExpr e)
   in
   expr_
@@ -265,8 +267,10 @@ module Normalize = struct
   let poly_neg (Sum monos) = Sum (MMap.map Z.neg monos)
 
   let poly_of_val = function
-    | V_Int i -> poly_of_z i
-    | v -> Error.fatal_unknown_pos (Error.MismatchType (v, [ T_Int None ]))
+    | L_Int i -> poly_of_z i
+    | v ->
+        Error.fatal_unknown_pos
+          (Error.MismatchType (PP.literal_to_string v, [ T_Int None ]))
 
   let sign_not = function
     | NotNull -> Null
@@ -423,7 +427,7 @@ module Normalize = struct
 
   let rec to_ir env (e : expr) : ir_expr =
     match e.desc with
-    | E_Literal (V_Int i) -> poly_of_z i |> always
+    | E_Literal (L_Int i) -> poly_of_z i |> always
     | E_Var s -> (
         try StaticEnv.lookup_constants env s |> poly_of_val |> always
         with Not_found -> (
@@ -462,14 +466,14 @@ module Normalize = struct
             raise NotYetImplemented
         in
         match v with
-        | V_Int i -> poly_of_z i |> always
+        | L_Int i -> poly_of_z i |> always
         | _ -> raise NotYetImplemented)
 
   and to_cond env (e : expr) : ctnts disjunction * ctnts disjunction =
     let ( ||| ) = disjunction_or in
     let ( &&& ) = disjunction_cross ctnts_and in
     match e.desc with
-    | E_Literal (V_Bool b) ->
+    | E_Literal (L_Bool b) ->
         (Disjunction [ ctnts_of_bool b ], Disjunction [ ctnts_of_bool (not b) ])
     | E_Binop (BAND, e1, e2) ->
         let ctnts1, nctnts1 = to_cond env e1
@@ -503,10 +507,10 @@ module Normalize = struct
   let expr_of_z z =
     if Z.equal z Z.one then one
     else if Z.equal z Z.zero then zero
-    else literal (V_Int z)
+    else literal (L_Int z)
 
-  let e_true = V_Bool true |> literal
-  let e_false = V_Bool true |> literal
+  let e_true = L_Bool true |> literal
+  let e_false = L_Bool true |> literal
   let e_var s = var_ s
 
   let e_band e1 e2 =

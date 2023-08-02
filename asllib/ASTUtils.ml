@@ -4,17 +4,26 @@ module ISet = struct
   include Set.Make (String)
 
   let of_option = function None -> empty | Some s -> singleton s
+
+  let pp_print f t =
+    let open Format in
+    let pp_comma f () = fprintf f ",@ " in
+    fprintf f "@[{@,%a}@]"
+      (pp_print_seq ~pp_sep:pp_comma pp_print_string)
+      (to_seq t)
 end
 
-module IMap : sig
-  include Map.S with type key = identifier
-
-  val of_list : (key * 'a) list -> 'a t
-end = struct
+module IMap = struct
   include Map.Make (String)
 
   let of_list li =
     List.fold_left (fun acc (key, value) -> add key value acc) empty li
+
+  let pp_print pp_elt f t =
+    let open Format in
+    let pp_comma f () = fprintf f ",@ " in
+    let pp_one f (name, v) = fprintf f "@[<h>%s:@ @[%a@]@]" name pp_elt v in
+    fprintf f "{@[@,%a@]}" (pp_print_seq ~pp_sep:pp_comma pp_one) (to_seq t)
 end
 
 let dummy_pos = Lexing.dummy_pos
@@ -222,23 +231,20 @@ let canonical_fields li =
   let compare (x, _) (y, _) = String.compare x y in
   List.sort compare li
 
-let rec value_equal v1 v2 =
+let literal_equal v1 v2 =
+  v1 == v2
+  ||
   match (v1, v2) with
-  | V_Bool b1, V_Bool b2 -> b1 = b2
-  | V_Int i1, V_Int i2 -> i1 = i2
-  | V_Real f1, V_Real f2 -> f1 = f2
-  | V_BitVector bv1, V_BitVector bv2 -> Bitvector.equal bv1 bv2
-  | V_Exception fs1, V_Exception fs2 | V_Record fs1, V_Record fs2 ->
-      List.compare_lengths fs1 fs2 = 0
-      &&
-      let fs1 = canonical_fields fs1 and fs2 = canonical_fields fs2 in
-      let field_equal (x1, v1) (x2, v2) =
-        String.equal x1 x2 && value_equal v1 v2
-      in
-      List.for_all2 field_equal fs1 fs2
-  | V_Tuple vs1, V_Tuple vs2 ->
-      List.compare_lengths vs1 vs2 = 0 && List.for_all2 value_equal vs1 vs2
-  | _ -> false
+  | L_Bool b1, L_Bool b2 -> b1 = b2
+  | L_Bool _, _ -> false
+  | L_Int i1, L_Int i2 -> i1 = i2
+  | L_Int _, _ -> false
+  | L_Real f1, L_Real f2 -> f1 = f2
+  | L_Real _, _ -> false
+  | L_BitVector bv1, L_BitVector bv2 -> Bitvector.equal bv1 bv2
+  | L_BitVector _, _ -> false
+  | L_String s1, L_String s2 -> String.equal s1 s2
+  | L_String _, _ -> false
 
 let rec expr_equal eq e1 e2 =
   e1 == e2 || eq e1 e2
@@ -265,7 +271,7 @@ let rec expr_equal eq e1 e2 =
       list_equal String.equal f1s f2s && expr_equal eq e1' e2'
   | E_GetFields _, _ | _, E_GetFields _ -> false
   | E_Pattern _, _ | E_Record _, _ -> assert false
-  | E_Literal v1, E_Literal v2 -> value_equal v1 v2
+  | E_Literal v1, E_Literal v2 -> literal_equal v1 v2
   | E_Literal _, _ | _, E_Literal _ -> false
   | E_Tuple li1, E_Tuple li2 -> list_equal (expr_equal eq) li1 li2
   | E_Tuple _, _ | _, E_Tuple _ -> false
@@ -344,10 +350,10 @@ and bitfields_equal eq bf1 bf2 =
 let var_ x = E_Var x |> add_dummy_pos
 let binop op = map2_desc (fun e1 e2 -> E_Binop (op, e1, e2))
 let literal v = E_Literal v |> add_dummy_pos
-let expr_of_int i = literal (V_Int (Z.of_int i))
+let expr_of_int i = literal (L_Int (Z.of_int i))
 
 module Infix = struct
-  let ( ~$ ) i = V_Int (Z.of_int i)
+  let ( ~$ ) i = L_Int (Z.of_int i)
   let ( !$ ) i = expr_of_int i
 end
 

@@ -10,6 +10,7 @@ module ISet : sig
   include Set.S with type elt = identifier
 
   val of_option : identifier option -> t
+  val pp_print : Format.formatter -> t -> unit
 end
 
 (** An extended [identifier] map. *)
@@ -17,6 +18,9 @@ module IMap : sig
   include Map.S with type key = identifier
 
   val of_list : (key * 'a) list -> 'a t
+
+  val pp_print :
+    (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
 end
 
 (** {1 Position utils} *)
@@ -96,7 +100,7 @@ val stmt_from_list : stmt list -> stmt
 val expr_of_int : int -> expr
 (** [expr_of_int i] is the literal expression containing [i]. *)
 
-val literal : value -> expr
+val literal : literal -> expr
 (** [literal v] is the expression evaluated to [v]. *)
 
 val var_ : identifier -> expr
@@ -131,8 +135,8 @@ val canonical_fields : (String.t * 'a) list -> (String.t * 'a) list
 module Infix : sig
   (** Infix utils. *)
 
-  val ( ~$ ) : int -> value
-  (** [~$i] is an integer value that contains [i]. *)
+  val ( ~$ ) : int -> literal
+  (** [~$i] is an integer literal that contains [i]. *)
 
   val ( !$ ) : int -> expr
   (** An alias for {expr_of_int}. *)
@@ -145,7 +149,7 @@ end
 *)
 
 val expr_equal : (expr -> expr -> bool) -> expr -> expr -> bool
-val value_equal : value -> value -> bool
+val literal_equal : literal -> literal -> bool
 val slice_equal : (expr -> expr -> bool) -> slice -> slice -> bool
 val slices_equal : (expr -> expr -> bool) -> slice list -> slice list -> bool
 val type_equal : (expr -> expr -> bool) -> ty -> ty -> bool

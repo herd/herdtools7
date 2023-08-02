@@ -18,9 +18,9 @@
 (****************************************************************************)
 
 open AST
+open ASTUtils
 
 let fatal_from pos = Error.fatal_from pos
-let to_pos = ASTUtils.to_pos
 let _warn = false
 let _dbg = false
 
@@ -40,8 +40,6 @@ end
 
 module Make (B : Backend.S) (C : Config) = struct
   module B = B
-  module IMap = ASTUtils.IMap
-  module ISet = ASTUtils.ISet
   module Rule = Instrumentation.Rule
 
   type 'a m = 'a B.m
@@ -114,7 +112,7 @@ module Make (B : Backend.S) (C : Config) = struct
           name
     in
     let use =
-      let use_e e acc = ASTUtils.use_e acc e in
+      let use_e e acc = use_e acc e in
       let use_ty _ty acc = acc (* TODO *) in
       fun d ->
         match d.desc with
@@ -144,7 +142,7 @@ module Make (B : Backend.S) (C : Config) = struct
             IEnv.declare_global name v env |> return
       | _ -> Fun.id
     in
-    ASTUtils.dag_fold def use process_one_decl
+    dag_fold def use process_one_decl
 
   (** [build_genv static_env ast primitives] is the global environment before
       the start of the evaluation of [ast]. *)
@@ -293,13 +291,13 @@ module Make (B : Backend.S) (C : Config) = struct
     return v
 
   let return_identifier i = "return-" ^ string_of_int i
-  let throw_identifier () = ASTUtils.fresh_var "thrown"
+  let throw_identifier () = fresh_var "thrown"
 
   (** [eval_expr env e] is the monadic evaluation  of [e] in [env]. *)
   let rec eval_expr (env : env) (e : expr) : expr_eval_type =
     if false then Format.eprintf "@[<3>Eval@ @[%a@]@]@." PP.pp_expr e;
     match e.desc with
-    | E_Literal v -> normal (B.v_of_parsed_v v, env) |: Rule.Lit
+    | E_Literal v -> normal (B.v_of_literal v, env) |: Rule.Lit
     | E_Typed (e, _t) -> eval_expr env e |: Rule.IgnoreTypedExpr
     | E_Var x -> (
         match IEnv.find x env with
@@ -320,7 +318,7 @@ module Make (B : Backend.S) (C : Config) = struct
         normal (v, env)
     | E_Cond (econd, e2, e3) ->
         let*^ mcond, env = eval_expr env econd in
-        if ASTUtils.is_simple_expr e2 && ASTUtils.is_simple_expr e3 then
+        if is_simple_expr e2 && is_simple_expr e3 then
           B.bind_ctrl mcond @@ fun cond ->
           let* v =
             B.ternary cond
@@ -404,7 +402,7 @@ module Make (B : Backend.S) (C : Config) = struct
           let* length = B.binop MINUS vtop vbot >>= B.binop PLUS one in
           normal ((vbot, length), env)
       | Slice_Star (efactor, elength) ->
-          let ebot = ASTUtils.binop MUL efactor elength in
+          let ebot = binop MUL efactor elength in
           fold_par eval_expr env ebot elength
       | Slice_Length (ebot, elength) -> fold_par eval_expr env ebot elength
     in
@@ -412,7 +410,8 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (** [eval_pattern env pos v p] determines if [v] matches the pattern [p]. *)
   and eval_pattern env pos v : pattern -> B.value m =
-    let true_ = B.v_of_parsed_v (V_Bool true) |> return in
+    let true_ = B.v_of_literal (L_Bool true) |> return in
+    let false_ = B.v_of_literal (L_Bool false) |> return in
     function
     | Pattern_All -> true_
     | Pattern_Any li ->
@@ -420,8 +419,7 @@ module Make (B : Backend.S) (C : Config) = struct
           let* acc = acc and* b = eval_pattern env pos v p in
           B.binop BOR acc b
         in
-        let init = B.v_of_parsed_v (V_Bool false) |> return in
-        List.fold_left folder init li
+        List.fold_left folder false_ li
     | Pattern_Geq e -> eval_expr_sef env e >>= B.binop GEQ v
     | Pattern_Leq e -> eval_expr_sef env e >>= B.binop LEQ v
     | Pattern_Not p -> eval_pattern env pos v p >>= B.unop BNOT
@@ -431,10 +429,10 @@ module Make (B : Backend.S) (C : Config) = struct
         B.binop BAND b1 b2
     | Pattern_Single e -> eval_expr_sef env e >>= B.binop EQ_OP v
     | Pattern_Mask m ->
-        let bv bv = V_BitVector bv in
-        let set = Bitvector.mask_set m |> bv |> B.v_of_parsed_v
-        and unset = Bitvector.mask_unset m |> bv |> B.v_of_parsed_v
-        and specified = Bitvector.mask_specified m |> bv |> B.v_of_parsed_v in
+        let bv bv = L_BitVector bv in
+        let set = Bitvector.mask_set m |> bv |> B.v_of_literal
+        and unset = Bitvector.mask_unset m |> bv |> B.v_of_literal
+        and specified = Bitvector.mask_specified m |> bv |> B.v_of_literal in
         let* set = B.binop AND set v
         and* unset = B.unop NOT v >>= B.binop AND unset in
         B.binop OR set unset >>= B.binop EQ_OP specified
@@ -480,7 +478,7 @@ module Make (B : Backend.S) (C : Config) = struct
             normal env
         | NotFound -> fatal_from le @@ Error.UndefinedIdentifier x)
     | LE_Slice (le', slices) ->
-        let*^ bv_m, env = ASTUtils.expr_of_lexpr le' |> eval_expr env in
+        let*^ bv_m, env = expr_of_lexpr le' |> eval_expr env in
         let*^ positions_m, env = eval_slices env slices in
         let m' =
           let* v = m and* positions = positions_m and* bv = bv_m in
@@ -488,7 +486,7 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         eval_lexpr le' env m' |: Rule.LESlice
     | LE_SetField (le', x) ->
-        let*^ vec_m, env = ASTUtils.expr_of_lexpr le' |> eval_expr env in
+        let*^ vec_m, env = expr_of_lexpr le' |> eval_expr env in
         let m' =
           let* new_v = m and* vec = vec_m in
           B.set_field x new_v vec
@@ -573,7 +571,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | S_Cond (e, s1, s2) ->
         bind_exception_ctrl (eval_expr env e) @@ fun (v, env) ->
         choice v s1 s2 >>= eval_block env |: Rule.SCond
-    | S_Case _ -> ASTUtils.case_to_conds s |> eval_stmt env
+    | S_Case _ -> case_to_conds s |> eval_stmt env
     | S_Assert e ->
         bind_exception_ctrl (eval_expr env e) @@ fun (v, env) ->
         let* b = choice v true false in
