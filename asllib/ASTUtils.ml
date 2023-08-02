@@ -143,7 +143,7 @@ let rec use_e acc e =
   | E_Literal _ -> acc
   | E_Typed (e, ty) -> use_e (use_ty acc ty) e
   | E_Var x -> ISet.add x acc
-  | E_Binop (_op, e1, e2) -> use_e (use_e acc e2) e1
+  | E_GetArray (e1, e2) | E_Binop (_, e1, e2) -> use_e (use_e acc e2) e1
   | E_Unop (_op, e) -> use_e acc e
   | E_Call (x, args, named_args) ->
       let acc = ISet.add x acc in
@@ -264,6 +264,9 @@ let rec expr_equal eq e1 e2 =
   | E_Slice (e1, slices1), E_Slice (e2, slices2) ->
       expr_equal eq e1 e2 && slices_equal eq slices1 slices2
   | E_Slice _, _ | _, E_Slice _ -> false
+  | E_GetArray (e11, e21), E_GetArray (e12, e22) ->
+      expr_equal eq e11 e12 && expr_equal eq e21 e22
+  | E_GetArray _, _ | _, E_GetArray _ -> false
   | E_GetField (e1', f1), E_GetField (e2', f2) ->
       String.equal f1 f2 && expr_equal eq e1' e2'
   | E_GetField _, _ | _, E_GetField _ -> false
@@ -362,6 +365,7 @@ let expr_of_lexpr : lexpr -> expr =
     match le.desc with
     | LE_Var x -> E_Var x
     | LE_Slice (le, args) -> E_Slice (map_desc aux le, args)
+    | LE_SetArray (le, e) -> E_GetArray (map_desc aux le, e)
     | LE_SetField (le, x) -> E_GetField (map_desc aux le, x)
     | LE_SetFields (le, x) -> E_GetFields (map_desc aux le, x)
     | LE_Ignore -> E_Var "-"
@@ -447,6 +451,7 @@ let rec subst_expr substs e =
   | E_Concat es -> E_Concat (List.map tr es)
   | E_Cond (e1, e2, e3) -> E_Cond (tr e1, tr e2, tr e3)
   | E_Call (x, args, ta) -> E_Call (x, List.map tr args, ta)
+  | E_GetArray (e1, e2) -> E_GetArray (tr e1, tr e2)
   | E_GetField (e, x) -> E_GetField (tr e, x)
   | E_GetFields (e, fields) -> E_GetFields (tr e, fields)
   | E_Literal _ -> e.desc
@@ -536,7 +541,8 @@ let no_primitive (ast : 'p t) : 'q t =
 let rec is_simple_expr e =
   match e.desc with
   | E_Var _ | E_Literal _ | E_Unknown _ -> true
-  | E_Binop (_, e1, e2) -> is_simple_expr e1 && is_simple_expr e2
+  | E_GetArray (e1, e2) | E_Binop (_, e1, e2) ->
+      is_simple_expr e1 && is_simple_expr e2
   | E_Typed (e, _)
   | E_GetFields (e, _)
   | E_GetField (e, _)

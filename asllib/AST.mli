@@ -111,6 +111,7 @@ type expr_desc =
   | E_Call of identifier * expr list * (identifier * expr) list
   | E_Slice of expr * slice list
   | E_Cond of expr * expr * expr
+  | E_GetArray of expr * expr
   | E_GetField of expr * identifier
   | E_GetFields of expr * identifier list
   | E_Record of ty * (identifier * expr) list
@@ -206,6 +207,7 @@ type lexpr_desc =
   | LE_Ignore
   | LE_Var of identifier
   | LE_Slice of lexpr * slice list
+  | LE_SetArray of lexpr * expr
   | LE_SetField of lexpr * identifier
   | LE_SetFields of lexpr * identifier list
   | LE_TupleUnpack of lexpr list

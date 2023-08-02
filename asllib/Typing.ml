@@ -932,21 +932,35 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             in
             let ty = match ty with Some ty -> ty | None -> assert false in
             (ty, E_Call (name, args, eqs) |> here)
-        | None ->
+        | None -> (
             let t_e', e' = annotate_expr env e' in
-            let+ () =
-              either
-                (check_structure_bits e env t_e')
-                (check_structure_integer e env t_e')
-            in
-            let w = slices_length env slices in
-            (* TODO: check that:
-               - Rule SNQJ: An expression or subexpression which may result in
-                 a zero-length bitvector must not be side-effecting.
-            *)
-            let slices = best_effort slices (annotate_slices env) in
-            ( T_Bits (BitWidth_SingleExpr w, []) |> here,
-              E_Slice (e', slices) |> here ))
+            let struct_t_e' = Types.get_structure env t_e' in
+            match struct_t_e'.desc with
+            | T_Int _ | T_Bits _ ->
+                let w = slices_length env slices in
+                (* TODO: check that:
+                   - Rule SNQJ: An expression or subexpression which may result in
+                     a zero-length bitvector must not be side-effecting.
+                *)
+                let slices = best_effort slices (annotate_slices env) in
+                ( T_Bits (BitWidth_SingleExpr w, []) |> here,
+                  E_Slice (e', slices) |> here )
+            | T_Array (length, ty') -> (
+                (* TODO: make sure that it still works with length being a constrained integer. *)
+                let wanted_t_index =
+                  T_Int
+                    (Some [ Constraint_Range (!$0, binop MINUS length !$1) ])
+                  |> here
+                in
+                match slices with
+                | [ Slice_Single e_index ] ->
+                    let t_index, e_index = annotate_expr env e_index in
+                    let+ () =
+                      check_type_satisfies e env t_index wanted_t_index
+                    in
+                    (ty', E_GetArray (e', e_index) |> here)
+                | _ -> fatal_from e (Error.UnsupportedExpr e))
+            | _ -> conflict e [ T_Int None; default_t_bits ] t_e'))
     | E_GetField (e', field) -> (
         let t_e', e' = annotate_expr env e' in
         let t_e' = Types.resolve_root_name env t_e' in
@@ -1004,6 +1018,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let t_e', e' = annotate_expr env e' in
         let patterns = best_effort patterns (annotate_pattern e env t_e') in
         (T_Bool |> here, E_Pattern (e', patterns) |> here)
+    | E_GetArray _ -> assert false
 
   let rec annotate_lexpr env le t_e =
     let here x = add_pos_from le x in
@@ -1038,18 +1053,34 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               let les' = List.map2 (annotate_lexpr env) les sub_tys in
               LE_TupleUnpack les' |> here
         | _ -> conflict le [ T_Tuple [] ] t_e)
-    | LE_Slice (le', slices) ->
+    | LE_Slice (le', slices) -> (
         let t_le, _ = expr_of_lexpr le' |> annotate_expr env in
-        let+ () = check_structure_bits le env t_le in
-        let le' = annotate_lexpr env le' t_le in
-        let+ () =
-         fun () ->
-          let length = slices_length env slices |> reduce_expr env in
-          let t = T_Bits (BitWidth_SingleExpr length, []) |> here in
-          check_can_assign_to le env t t_e ()
-        in
-        let slices = best_effort slices (annotate_slices env) in
-        LE_Slice (le', slices) |> here
+        let struct_t_le = Types.get_structure env t_le in
+        match struct_t_le.desc with
+        | T_Bits _ ->
+            let le' = annotate_lexpr env le' t_le in
+            let+ () =
+             fun () ->
+              let length = slices_length env slices |> reduce_expr env in
+              let t = T_Bits (BitWidth_SingleExpr length, []) |> here in
+              check_can_assign_to le env t t_e ()
+            in
+            let slices = best_effort slices (annotate_slices env) in
+            LE_Slice (le', slices) |> here
+        | T_Array (length, ty') -> (
+            let le' = annotate_lexpr env le' t_le in
+            let+ () = check_can_assign_to le env ty' t_e in
+            let wanted_t_index =
+              T_Int (Some [ Constraint_Range (!$0, binop MINUS length !$1) ])
+              |> here
+            in
+            match slices with
+            | [ Slice_Single e_index ] ->
+                let t_index, e_index = annotate_expr env e_index in
+                let+ () = check_type_satisfies le env t_index wanted_t_index in
+                LE_SetArray (le', e_index) |> here
+            | _ -> fatal_from le (Error.UnsupportedExpr (expr_of_lexpr le)))
+        | _ -> conflict le [ default_t_bits ] t_le)
     | LE_SetField (le', field) -> (
         let t_le', _ = expr_of_lexpr le' |> annotate_expr env in
         let le' = annotate_lexpr env le' t_le' in
@@ -1089,6 +1120,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         in
         let new_le = LE_Slice (le', list_concat_map one_field fields) |> here in
         annotate_lexpr env new_le t_e
+    | LE_SetArray _ -> assert false
 
   let can_be_initialized_with env s t =
     (* Rules:
@@ -1174,9 +1206,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           (Error.NotYetImplemented "Variable declaration needs a type.")
     | LDI_Var (x, Some t) ->
         let+ () = check_var_not_in_env loc env x in
-        let e = Types.base_value loc env t in
         ( add_local x t LDK_Var env,
-          S_Decl (LDK_Var, LDI_Var (x, Some t), Some e) |> here )
+          S_Decl (LDK_Var, LDI_Var (x, Some t), None) |> here )
     | LDI_Tuple (ldis, None) ->
         let env, ss =
           list_fold_left_map (annotate_local_decl_item_uninit loc) env ldis
@@ -1188,9 +1219,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             (fun env' -> annotate_local_decl_item loc env' t LDK_Var)
             env ldis
         in
-        let e = Types.base_value loc env t in
         let ss =
-          List.map (fun ldi -> S_Decl (LDK_Var, ldi, Some e) |> here) les
+          List.map (fun ldi -> S_Decl (LDK_Var, ldi, None) |> here) les
         in
         (env, stmt_from_list ss)
 
@@ -1416,6 +1446,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           let () = assert (ret_ty = None) in
           Some (S_Call (name, args, eqs) |> here)
         else None
+    | LE_SetArray _ -> assert false
 
   let annotate_func loc (env : env) (f : 'p AST.func) : 'p AST.func =
     let () = if false then Format.eprintf "Annotating %s.@." f.name in
@@ -1529,6 +1560,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
 
   let rec check_is_valid_type loc env ty () =
     match ty.desc with
+    (* TODO:
+       - check integer constraints are compile-time constants
+       - check bitfields are compile-time constants
+       - check array-length are correctly defined
+    *)
     | T_Record fields | T_Exception fields ->
         let+ () =
          fun () ->

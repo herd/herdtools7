@@ -88,6 +88,7 @@ let rec pp_expr f e =
       fprintf f "@[<hov 2>%s(%a)@]" name pp_expr_list args
   | E_Slice (e, args) ->
       fprintf f "@[<hov 2>%a[%a]@]" pp_expr e pp_slice_list args
+  | E_GetArray (e1, e2) -> fprintf f "@[<hov 2>%a[%a]@]" pp_expr e1 pp_expr e2
   | E_Cond (e1, e2, e3) ->
       fprintf f "@[<hv>@[<h>if %a@ then@]@;<1 2>%a@ else@;<1 2>%a@]" pp_expr e1
         pp_expr e2 pp_expr e3
@@ -180,6 +181,7 @@ let rec pp_lexpr f le =
   match le.desc with
   | LE_Var x -> pp_print_string f x
   | LE_Slice (le, args) -> fprintf f "%a[%a]" pp_lexpr le pp_slice_list args
+  | LE_SetArray (le, e) -> fprintf f "%a[%a]" pp_lexpr le pp_expr e
   | LE_SetField (le, x) -> fprintf f "@[%a@,.%s@]" pp_lexpr le x
   | LE_SetFields (le, li) ->
       fprintf f "@[%a@,.@[[%a]@]@]" pp_lexpr le

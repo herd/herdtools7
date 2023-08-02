@@ -103,7 +103,7 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Global env *)
   (* ---------- *)
 
-  let build_global_storage eval_expr =
+  let build_global_storage eval_expr base_value =
     let def d =
       match d.desc with
       | D_Func { name; _ }
@@ -132,13 +132,12 @@ module Make (B : Backend.S) (C : Config) = struct
       | D_GlobalStorage { initial_value; name; ty; _ } ->
           fun env_m ->
             let*| env = env_m in
-            let e =
+            let* v =
               match (initial_value, ty) with
-              | Some e, _ -> e
+              | Some e, _ -> eval_expr env e
               | None, None -> assert false
-              | None, Some t -> Types.base_value t (IEnv.to_static env) t
+              | None, Some t -> base_value env t
             in
-            let* v = eval_expr env e in
             IEnv.declare_global name v env |> return
       | _ -> Fun.id
     in
@@ -146,7 +145,7 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (** [build_genv static_env ast primitives] is the global environment before
       the start of the evaluation of [ast]. *)
-  let build_genv eval_expr (static_env : StaticEnv.env)
+  let build_genv eval_expr base_value (static_env : StaticEnv.env)
       (ast : B.primitive AST.t) =
     let funcs = IMap.empty |> build_funcs ast in
     let () =
@@ -161,7 +160,7 @@ module Make (B : Backend.S) (C : Config) = struct
       in
       { global; local = empty_scoped Scope_Global }
     in
-    let*| env = build_global_storage eval_expr ast (return env) in
+    let*| env = build_global_storage eval_expr base_value ast (return env) in
     return env.global
 
   (*****************************************************************************)
@@ -343,6 +342,15 @@ module Make (B : Backend.S) (C : Config) = struct
               B.create_vector vs
         in
         normal (v, env) |: Rule.ECall
+    | E_GetArray (e_array, e_index) -> (
+        let** (v_array, v_index), env =
+          fold_par eval_expr env e_array e_index
+        in
+        match B.v_to_int v_index with
+        | None -> fatal_from e (Error.UnsupportedExpr e_index)
+        | Some i ->
+            let* v = B.get_index i v_array in
+            normal (v, env))
     | E_Record (_, li) ->
         let names, fields = List.split li in
         let** fields, env = eval_expr_list env fields in
@@ -448,20 +456,82 @@ module Make (B : Backend.S) (C : Config) = struct
         let folder (acc, i) p = (folderi i acc p, succ i) in
         List.fold_left folder (true_, 0) li |> fst
 
+  and base_value env t =
+    let t_struct = Types.get_structure (IEnv.to_static env) t in
+    let lit v = B.v_of_literal v |> return in
+    match t_struct.desc with
+    | T_Bool -> L_Bool true |> lit
+    | T_Bits (BitWidth_Constraints (Constraint_Exact e :: _), _)
+    | T_Bits (BitWidth_Constraints (Constraint_Range (e, _) :: _), _)
+    | T_Bits (BitWidth_SingleExpr e, _) ->
+        let* v = eval_expr_sef env e in
+        let length =
+          match B.v_to_int v with
+          | None -> fatal_from t (Error.UnsupportedExpr e)
+          | Some i -> i
+        in
+        L_BitVector (Bitvector.zeros length) |> lit
+    | T_Bits (BitWidth_ConstrainedFormType _, _) ->
+        Error.fatal_from t
+          (Error.NotYetImplemented "Base value of type-constrained bitvectors.")
+    | T_Bits (BitWidth_Constraints [], _) ->
+        Error.fatal_from t
+          (Error.NotYetImplemented "Base value of under-constrained bitvectors.")
+    | T_Enum li ->
+        IMap.find (List.hd li) env.global.static.constants_values |> lit
+    | T_Int None | T_Int (Some []) -> L_Int Z.zero |> lit
+    | T_Int (Some (Constraint_Exact e :: _))
+    | T_Int (Some (Constraint_Range (e, _) :: _)) ->
+        eval_expr_sef env e
+    | T_Named _ -> assert false
+    | T_Real -> L_Real Q.zero |> lit
+    | T_Exception fields | T_Record fields ->
+        List.map
+          (fun (name, t_field) ->
+            let* v = base_value env t_field in
+            return (name, v))
+          fields
+        |> sync_list >>= B.create_record
+    | T_String ->
+        Error.fatal_from t
+          (Error.NotYetImplemented "Base value of string types.")
+    | T_Tuple li ->
+        List.map (base_value env) li |> sync_list >>= B.create_vector
+    | T_Array (e_length, ty) ->
+        let* v = base_value env ty and* length = eval_expr_sef env e_length in
+        let length =
+          match B.v_to_int length with
+          | None -> Error.fatal_from t (Error.UnsupportedExpr e_length)
+          | Some i -> i
+        in
+        List.init length (Fun.const v) |> B.create_vector
+
   and eval_local_decl ldi env m : env maybe_exception m =
-    match ldi with
-    | LDI_Ignore _ty -> normal env |: Rule.LEIgnore
-    | LDI_Var (x, _ty) ->
+    match (ldi, m) with
+    | LDI_Ignore _ty, _ -> normal env |: Rule.LEIgnore
+    | LDI_Var (x, _ty), Some m ->
         let* env = declare_local_identifier_m env x m in
         normal env
-    | LDI_Tuple (ldis, _ty) ->
+    | LDI_Var (x, Some ty), None ->
+        base_value env ty >>= declare_local_identifier env x >>= normal
+    | LDI_Var (_, None), None -> assert false
+    | LDI_Tuple (ldis, _ty), Some m ->
         let n = List.length ldis in
         let nmonads = List.init n (fun i -> m >>= B.get_index i) in
         let folder envm ldi' vm =
           let**| env = envm in
-          eval_local_decl ldi' env vm
+          eval_local_decl ldi' env (Some vm)
         in
         List.fold_left2 folder (normal env) ldis nmonads
+    | LDI_Tuple (_ldis, Some ty), None ->
+        let m = base_value env ty in
+        eval_local_decl ldi env (Some m)
+    | LDI_Tuple (ldis, None), None ->
+        let folder envm ldi' =
+          let**| env = envm in
+          eval_local_decl ldi' env None
+        in
+        List.fold_left folder (normal env) ldis
 
   (** [eval_lexpr env le m] is [env[le --> m]]. *)
   and eval_lexpr le env m : env maybe_exception B.m =
@@ -485,6 +555,16 @@ module Make (B : Backend.S) (C : Config) = struct
           B.write_to_bitvector positions v bv
         in
         eval_lexpr le' env m' |: Rule.LESlice
+    | LE_SetArray (le', e) ->
+        let*^ array_m, env = expr_of_lexpr le' |> eval_expr env in
+        let*^ index_m, env = eval_expr env e in
+        let m' =
+          let* v = m and* index_v = index_m and* array_v = array_m in
+          match B.v_to_int index_v with
+          | None -> fatal_from le (Error.UnsupportedExpr e)
+          | Some i -> B.set_index i v array_v
+        in
+        eval_lexpr le' env m'
     | LE_SetField (le', x) ->
         let*^ vec_m, env = expr_of_lexpr le' |> eval_expr env in
         let m' =
@@ -605,11 +685,11 @@ module Make (B : Backend.S) (C : Config) = struct
         eval_catchers env catchers otherwise_opt s_m
     | S_Decl (_ldk, ldi, Some e) ->
         let*^ m, env = eval_expr env e in
-        let**| env = eval_local_decl ldi env m in
+        let**| env = eval_local_decl ldi env (Some m) in
         continue env
-    | S_Decl (_dlk, _dli, None) ->
-        (* Type checking should change those into S_Assign. *)
-        fatal_from s Error.TypeInferenceNeeded
+    | S_Decl (_dlk, ldi, None) ->
+        let**| env = eval_local_decl ldi env None in
+        continue env
 
   and eval_block env stm =
     let block_env = IEnv.push_scope env in
@@ -784,8 +864,8 @@ module Make (B : Backend.S) (C : Config) = struct
             normal (vs, genv))
 
   let run_typed (ast : B.ast) (static_env : StaticEnv.env) : B.value m =
-    let*| env = build_genv eval_expr_sef static_env ast in
-    let*| res = eval_func env "main" ASTUtils.dummy_annotated [] [] in
+    let*| env = build_genv eval_expr_sef base_value static_env ast in
+    let*| res = eval_func env "main" dummy_annotated [] [] in
     match res with
     | Normal ([ v ], _genv) -> read_value_from v
     | Normal _ -> Error.(fatal_unknown_pos (MismatchedReturnValue "main"))

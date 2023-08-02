@@ -86,6 +86,8 @@ let rec pp_expr =
         bprintf f "E_Slice (%a, %a)" pp_expr e pp_slice_list args
     | E_Cond (e1, e2, e3) ->
         bprintf f "E_Cond (%a, %a, %a)" pp_expr e1 pp_expr e2 pp_expr e3
+    | E_GetArray (e1, e2) ->
+        bprintf f "E_GetArray (%a, %a)" pp_expr e1 pp_expr e2
     | E_GetField (e, x) -> bprintf f "E_GetField (%a, %S)" pp_expr e x
     | E_GetFields (e, x) ->
         bprintf f "E_GetFields (%a, %a)" pp_expr e (pp_list pp_string) x
@@ -175,14 +177,14 @@ and pp_bits_constraint f = function
   | BitWidth_Constraints int_constraint ->
       bprintf f "BitWidth_Constraints (%a)" pp_int_constraint int_constraint
 
-let pp_typed_identifier = pp_pair pp_string pp_ty
-
 let rec pp_lexpr =
   let pp_desc f = function
     | LE_Var x -> bprintf f "LE_Var %S" x
     | LE_Slice (le, args) ->
         bprintf f "LE_Slice (%a, %a)" pp_lexpr le pp_slice_list args
-    | LE_SetField (le, x) -> bprintf f "LE_Set_Field (%a, %S)" pp_lexpr le x
+    | LE_SetArray (le, e) ->
+        bprintf f "LE_SetArray (%a, %a)" pp_lexpr le pp_expr e
+    | LE_SetField (le, x) -> bprintf f "LE_SetField (%a, %S)" pp_lexpr le x
     | LE_SetFields (le, x) ->
         bprintf f "LE_SetFields (%a, %a)" pp_lexpr le (pp_list pp_string) x
     | LE_Ignore -> addb f "LE_Ignore"

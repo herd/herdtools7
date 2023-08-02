@@ -86,7 +86,7 @@ module type S = sig
   (*  --------------------------------*)
 
   val create_vector : value list -> value m
-  (** Creates a vector, with possible names for the fields *)
+  (** Creates a vector with this values. *)
 
   val create_record : (AST.identifier * value) list -> value m
   (** Creates a record, with the indicated names. *)
