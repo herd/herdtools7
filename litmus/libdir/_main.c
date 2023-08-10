@@ -31,6 +31,9 @@ static pthread_t th[AVAIL];
 
 int RUN(int argc,char **argv,FILE *out) ;
 int RUN(int argc,char **argv,FILE *out) {
+  if (!feature_check()) {
+    return -1;
+  }
 #ifdef DYNALLOC
 #ifdef HAVE_FAULT_HANDLER
   alloc_fault_handler();
@@ -50,7 +53,6 @@ int RUN(int argc,char **argv,FILE *out) {
 #endif
   init_getinstrs();
   init_global(glo_ptr);
-  if (!feature_check()) return -1;
 #ifdef OUT
 #ifdef HAVE_TIMEBASE
   const int delta_tb = DELTA_TB;
