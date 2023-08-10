@@ -200,7 +200,7 @@ in the previous experiment for test~\ltest{SB-PPC}.
 To that aim, varying test conditions may help.
 
 
-\subsection{Architecture\label{sec:arch} of tests}
+\subsection{\label{sec:arch}Architecture of tests}
 
 Consider a test \file{a.litmus}
 designed to run on $t$ threads \P{0},\ldots, \P{t-1}.
@@ -302,7 +302,7 @@ Hence, running \file{a.exe} produces $n \times r \times s$ outcomes.
 Parameters $n$, $a$, $r$ and~$s$ can first be set directly while
 invoking \file{a.exe}, using the appropriate command line options.
 For instance, assuming $t=2$,
-\verb+./a.exe -a 201 -r 10k -s 1+ and \verb+./a.exe -n 1 -r 1 -s 1M+
+\verb+./a.exe -a 20 -r 10k -s 1+ and \verb+./a.exe -n 1 -r 1 -s 1M+
 will both produce one million outcomes, but the latter is probably
 more efficient.
 If our machine has $8$~cores,
@@ -1420,8 +1420,8 @@ Style for output C files, default is \texttt{std}.
 Standard mode (\texttt{std}) is the operating mode described in this manual.
 Other modes are experimental. Mode \texttt{presi} (for ``pre-silicium``) is an attempt not to rely on pre-existing operating system calls and libraries, while mode \texttt{kvm} is for running system level tests on top of the
 \ahref{https://www.linux-kvm.org/page/KVM-unit-tests}{kvm-unit-tests}
-infrastructure.
-\item[{\tt -driver (shell|C|XCode)}]
+infrastructure. See section~\ref{sec:nostd}.
+\item[{\tt \aname{driver}{-driver (shell|C|XCode)}}]
 Choose the driver that will run the tests.
 In the ``\opt{shell}'' (and default) mode,
 each test will be compiled into an executable. A dedicated shell script
@@ -1460,7 +1460,10 @@ emulator path before running the \texttt{run.sh} script, as in (\texttt{sh} synt
 
 \item[{\tt -index <@name>}] Save the source names of compiled files in index
 file~\file{@name}.
-\item[{\tt -hexa}] Hexadecimal output, default is decimal.
+\item[\aname{opt:hexa}{{\tt -hexa}}] Hexadecimal output, default is decimal.
+\item[\aname{opt:stdio}{{\tt -stdio (true|false)}}] Command whether
+using or not using the \texttt{printf} function in C~output
+files. Default is \opt{true}.
 \end{description}
 
 \paragraph*{Test conditions\label{litmus:option:sec}}
@@ -1514,7 +1517,7 @@ Perform several tests concurrently, either by forking POSIX
 threads (as described in Sec.~\ref{sec:arch}), or by forking
 Unix processes. Only applies for cross compilation.
 Default is \opt{self}.
-\item[{\tt -alloc (dynamic|static|before)}]
+\item[\aname{opt:alloc}{{\tt -alloc (dynamic|static|before)}}]
 Set memory allocation mode. In ``dynamic'' and ``before'' modes, the memory
 used by test threads is allocated with \texttt{malloc} --- in ``before'' mode,
 memory is allocated before forking test instances.
@@ -1596,7 +1599,7 @@ are up. This option is necessary on devices that let core sleep
 when the computing load is low. Default is false.
 \end{description}
 
-Custom affinity control (see Sec.~\ref{affinity:custom}) is enabled,
+\aname{desc:custom}{Custom} affinity control (see Sec.~\ref{affinity:custom}) is enabled,
 first by enabling affinity control (\emph{e.g.} with \opt{-affinity \ldots}),
 and then by specifying a logical processor topology with options \texttt{-smt}
 and \texttt{-smt\_mode}.
@@ -2075,3 +2078,354 @@ Default is \opt{true}.
 \begin{description}
 \item[{\tt -ccopt <string>}]Additional option for the C compiler.
 \end{description}
+
+\section{\label{sec:nostd} Non-standard modes}
+The non-standard modes are selected by \litmus{} options \opt{-mode
+presi} and \opt{-mode kvm}.
+
+\subsection{\label{sec:presi}Mode \texttt{presi}}
+In standard mode, system threads are spawned frequently
+--- see Section~\ref{sec:arch}.
+By contrast, in presi mode, harness threads  are created once for
+all and then collaborate  to execute  litmus tests, a technique better
+adapted to running tests over limiter system support. Non-standard
+modes also permit finer control over some of test parameters and the
+collection of statistics on their effect.
+
+During test run, each harness thread runs various tests threads,
+with various parameters being selected randomly.
+For instance, consider the following test~\atest{R}:
+\verbatiminput{R.litmus}
+On a X86\_64  machine with four cores two-ways hyper-threaded cores,
+we compile the test~\atest{R} in presi mode as follows:
+\begin{verbatim}
+% mkdir -p R
+% litmus7 -mach x86_64 -mode presi -avail 8 -o R R.litmus
+% cd R
+% make ...
+\end{verbatim}
+Namely, the machine has 8 ``logical'' cores, \emph{i.e}
+4~two-way hyper-threaded cores. Hence the harness spawns 8 threads,
+whether those threads being attached to hardware logical cores or not
+depends on the target system offering affinity control (Linux) or not (MacOs).
+
+We now run the  test:
+\begin{verbatim}
+% ./R.exe -s 1k -r 1k
+Test R Allowed
+Histogram (4 states)
+1889769:>1:rax=0; [y]=1;
+1653920:>1:rax=1; [y]=2;
+322740*>1:rax=0; [y]=2;
+133571:>1:rax=1; [y]=1;
+Ok
+
+Witnesses
+Positive: 322740, Negative: 3677260
+Condition exists ([y]=2 /\ 1:rax=0) is validated
+Hash=b66b3ce129b44b61416afa21c7cc6972
+Observation R Sometimes 322740 3677260
+Topology 56913 :> part=0 [[0],[1]]
+Topology 265827:> part=1 [[0,1]]
+Vars 205786:> {xp=0}
+Vars 116954:> {xp=1}
+Cache 86602 :> {c_0_x=0, c_0_y=1, c_1_x=0, c_1_y=0}
+Cache 67620 :> {c_0_x=0, c_0_y=2, c_1_x=0, c_1_y=0}
+Cache 41920 :> {c_0_x=0, c_0_y=2, c_1_x=0, c_1_y=1}
+Cache 51438 :> {c_0_x=2, c_0_y=1, c_1_x=0, c_1_y=0}
+Cache 49888 :> {c_0_x=2, c_0_y=2, c_1_x=0, c_1_y=0}
+Time R 0.85
+
+\end{verbatim}
+First observe the command lines options ``\texttt{-s 1k -r 1k}'',
+thereby setting the size parameter~$s$  and the number of
+runs~$r$. The interpretation of  these settings differ from  standard
+mode: in presi mode and for each test instance, $s$~experiments are
+performed for a given random allocation of test threads to harness
+threads. This process is performed $r$~times, resulting in $n \times
+r \times s$ experiments, where $n$ is the number of test instances
+(see Section~\ref{sec:arch}).
+
+In test output above. we see that the final state of the test is
+observed about $323$k~times over four billions tries. More
+significantly, we see some record of successful parameters. Each line
+consists in a number of occurrences of and of a parameter choice,
+called \aname{statistics}{\emph{parameter statistics}}. For instance,
+the first line ``\texttt{Topology 56913 :> part=0 [[0],[1]]}'' signals
+there are about $57$k occurrences of the target
+outcome \texttt{1:rax=0; [y]=2;} with topology
+parameter \texttt{part=0}. We now list parameters:
+\begin{description}
+\item[{\tt Topology}]  The configuration file \texttt{x86\_64.cfg}
+specifies the standard Intel topology description:
+\begin{verbatim}
+...
+# Standard Intel parameters
+smt=2
+...
+\end{verbatim}
+Thus, ``logical'' core are grouped by two. Hence, the two threads of
+the R~test can either be running on cores in the same group, or from
+different groups. This corresponds to parameters \texttt{part=1
+[[0,1]]} and \texttt{part=0 [[0],[1]]}, respectively.
+\item[{\tt Vars}] In sharp contrast to standard mode, where
+experiments operate on array cells,  all experiments (with a given
+Vars setting) operate on the same memory locations. The Vars
+parameters signals the relative placement of the two memory
+locations~\texttt{x} and~\texttt{y}. Parameter \texttt{xp} is to be
+interpreted as a cache line offset relative to the cache line of the
+missing location (here~\texttt{y}). That is, \texttt{xp=0} means
+that \texttt{x} and~\texttt{y} share the same cache line,
+while \texttt{xp=1} means that \texttt{x} resides in the cache line
+next to the one of~\texttt{y}.
+\item[{\tt Cache}] Finally, the cache  parameter describes the cache
+management performed by each test thread (\texttt{0} or~\texttt{1}) on
+each variable (\texttt{x} or~\texttt{y}) before running the actual
+experiment. For instance, given \texttt{\{c\_0\_x=0, c\_0\_y=1,
+c\_1\_x=0, c\_1\_y=0\}} thread~1 performs operation number one (cache
+flush) on \texttt{y}, while thread zero performs operation number zero
+(\emph{i.e.} no operation or ignore). For completeness, operation
+number two is cache touch and, if available, operation number three is
+cache touch for store.
+\end{description}
+
+As a distinctive feature of presi mode, users can set fixed values for
+parameters by giving settings on the command line. For instance, one
+can set the topology and vars parameters to their most productive
+values from a first test run:
+\begin{verbatim}
+% ./R.exe -s 1k -r 1k part=1 xp=0
+Test R Allowed
+...
+Observation R Sometimes 660262 3339738
+Topology 660262:> part=1 [[0,1]]
+Vars 660262:> {xp=0}
+Cache 387980:> {c_0_x=0, c_0_y=1, c_1_x=0, c_1_y=0}
+Cache 272282:> {c_0_x=0, c_0_y=2, c_1_x=0, c_1_y=0}
+Time R 0.52
+\end{verbatim}
+We witness an improvement of productivity by a factor of two.
+
+Most command line options were designed for standard mode first and presi mode
+is in some sense more automated. As a consequence, few command line
+settings apply to the presi mode: we have already seen
+the \texttt{-a}, \texttt{-s} and \texttt{-a} setting, to which we add
+the \texttt{-n <num>} option (number of instances).
+
+All options related to affinity are ignored: topology variation
+applies even when harness  threads cannot be attached to hardware
+threads. However, one can void the effect of topology variation with
+the option \texttt{-smt 1} (resulting in as many groups as available
+harness threads),  or by giving the same number argument to the
+options \opt{-smt} and~\opt{-a} (resulting in one group).
+
+The barrier setting option \texttt{-barrier tb} of
+Section~\ref{timebase} is effective. The  timebase delay value
+is expressed in ``ticks'', depends on the target architecture and can
+be changed at runtime with option \texttt{-tb <num>}.  Moreover, this
+option introduces a new randomly selected parameter. The delay
+parameter of threads w.r.t. to the starting time of test thread~$T_0$,
+as a (possibly negative) number of one eighth of the timebase delay
+value in the interval~$[-4..4]$.
+
+Option \ahrefloc{driver}{\texttt{-driver C}} is also implemented. It
+commands to the production of one executable \texttt{run.exe} in place
+of one executable per test  with the default \texttt{-driver
+shell}.
+
+Observe that non-implemented options are
+silently ignored.
+
+
+\subsection{\aname{sec:kvm}{Mode \texttt{kvm}}}
+The kvm (or vmsa) mode is based upon the \ahrefloc{sec:presi}{presi mode}.
+This mode permits running tests at the system level under the
+control of the KVM virtualisation infrastructure, by using the adequate
+qemu virtual machine. To that aim, it leverages the
+pre-existing \footahref{https://gitlab.com/kvm-unit-tests/kvm-unit-tests}{\texttt{kvm-unit-tests}}
+framework, available for Linux boxes and, with a little effort, on
+ARM-based Apple machines. Our extension has been developed for ARM
+AArch64 and from now we shall consider this  architecture. However,
+there is also a partial implementation for X86\_64. Refer to
+\footahref{https://gitlab.com/kvm-unit-tests/kvm-unit-tests}{\texttt{kvm-unit-tests}}
+or to OS documentation for qemu with kvm support and kvm-unit-tests
+installation instructions (instructions
+for \footahref{https://wiki.debian.org/KVM}{Debian Linux}).
+
+Let us consider the following two system tests
+\atest{MP-TTD+DMB.ST+DMB.LD} and~\atest{MP-TTD+DMB.ST+DSB-ISB}:
+\begin{center}
+\begin{tabular}{p{.45\linewidth}p{.4\linewidth}}
+\verbatiminput{MP-TTD+DMB.ST+DMB.LD.litmus}
+&
+\verbatiminput{MP-TTD+DMB.ST+DSB-ISB.litmus}
+\end{tabular}
+\end{center}
+The tests are specific ``message-passing tests'' acting on the signal
+location \texttt{y} and the data location~\texttt{x}. However, instead
+of changing the data content, we change its status or, more precisely,
+its TTD (Translation Table Descriptors). That is, location~\texttt{x} is
+invalid initially and $T_0$ restore validity with its first
+instruction \texttt{LDR X1,[X2]}, where the register \texttt{X1} holds
+the valid descriptor and the register \texttt{X2} points to the page table
+entry of~\texttt{x}. The two tests differ by their synchronisation
+instructions: \atest{MP-TTD+DMB.ST+DMB.LD} is synchronised by fences
+sufficient to synchronise the ordinary message passing test,
+while  \atest{MP-TTD+DMB.ST+DSB-ISB} synchronisation is more
+heavyweight.
+
+Compilation to qemu binary file arguments implies many settings. For
+user convenience, we provide litmus configuration
+files \texttt{kvm-aarch64.cfg} (generic
+ARMv8.0), \texttt{kvm-armv8.1.cfg} (for ARMv8.1)
+and  \texttt{kvm-m1.cfg} (for Apple machines).
+
+As an example, we target some ARMv8.0 machine MACH, with a
+functional \texttt{gcc} compiler and \texttt{kvm-unit-tests} installed
+in some homonymous directory.  We execute \litmus{} on another machine
+and run the tests on MACH following the usual
+``litmus-cross-compilation'' \ahrefloc{crosscompile}{scheme}.
+\begin{verbatim}
+% litmus7 -mach kvm-aarch64 -variant fatal -o M.tar MP-TTD+DMB.ST+DMB.LD.litmus  MP-TTD+DMB.ST+DSB-ISB.litmus
+% scp M.tar MACH:
+\end{verbatim}
+
+
+On the target machine, we unpack the transferred archive into some
+sub-directory of the \texttt{kvm-unit-tests} installation, and compile
+the test:
+\begin{verbatim}
+mach% cd kvm-litmus-tests
+mach% mkdir -p M
+mach% cd M
+mach% tar xmf ../../M.tar
+mach% make
+...
+\end{verbatim}
+We are now ready to run the tests. It is important to observe that
+tests can be run from the \texttt{kvm-unit-tests} directory and only from
+there:
+\begin{verbatim}
+% sh M/run.sh
+...
+Test MP-TTD+DMB.ST+DMB.LD Allowed
+Histogram (4 states)
+70    *>1:X7=1; fault(P1:L0,x,MMU:Translation);
+1975326:>1:X7=0; ~fault(P1:L0,x,MMU:Translation);
+21197 :>1:X7=0; fault(P1:L0,x,MMU:Translation);
+3407  :>1:X7=1; ~fault(P1:L0,x,MMU:Translation);
+Ok
+
+Witnesses
+Positive: 70, Negative: 1999930
+Condition exists (1:X7=1 /\ fault(P1:L0,x,MMU:Translation)) is validated
+Hash=e6d0396aa32c40b307db5f6921404c07
+EL0=P1
+Observation MP-TTD+DMB.ST+DMB.LD Sometimes 70 1999930
+Topology 70    :> part=0 [[0],[1]]
+Faults MP-TTD+DMB.ST+DMB.LD 21267 P1:21267
+Time MP-TTD+DMB.ST+DMB.LD 15.14
+
+...
+
+Test MP-TTD+DMB.ST+DSB-ISB Allowed
+Histogram (3 states)
+1991985:>1:X7=0; ~fault(P1:L0,x,MMU:Translation);
+5938  :>1:X7=0; fault(P1:L0,x,MMU:Translation);
+2077  :>1:X7=1; ~fault(P1:L0,x,MMU:Translation);
+No
+
+Witnesses
+Positive: 0, Negative: 2000000
+Condition exists (1:X7=1 /\ fault(P1:L0,x,MMU:Translation)) is NOT validated
+Hash=18e9682c0e7ed43f7f059cbfc47d781d
+EL0=P1
+Observation MP-TTD+DMB.ST+DSB-ISB Never 0 2000000
+Faults MP-TTD+DMB.ST+DSB-ISB 5938 P1:5938
+Time MP-TTD+DMB.ST+DSB-ISB 17.29
+...
+\end{verbatim}
+%HEVEA The above log has been elided for brevity, \ahref{kvm-log.txt}{complete log}.
+We see that the lightweight synchronisation pattern
+of \atest{MP-TTD+DMB.ST+DMB.LD} does not suffice to forbid the non-SC
+message passing execution, while the heavyweight  synchronisation
+pattern of \atest{MP-TTD+DMB.ST+DSB-ISB} does suffice.
+
+Due to harness structure and kvm-unit-tests limited system
+support, \litmus{} options and runtime controls are restricted. Harness
+structure is similar to one of \ahrefloc{sec:presi}{presi mode},
+with the noticeable exception that each memory location resides in its
+own (virtual memory) page, where the memory location of the presi mode
+reside in cache lines. The following options are worth mentioning:
+\begin{description}
+\item[{\tt -s  <n>} and {\tt -r <n>}] Control the size and number of
+runs. As in presi mode, a run consists in a series of single
+experiments with a fixed allocation of tests threads to qemu (or harness)
+threads. The \litmus{} tool accepts the long forms
+({\tt -size  <n>} and {\tt -nruns <n>}) and sets default values that
+can be changed by giving the same options \opt{-s} and~\opt{-r}
+to test executables.
+
+\item[{\tt -a <n>}] Define the number of cores (or hardware threads)
+allocated to the qemu virtual machine. The \litmus{} tool also accepts
+the long form \texttt{-avail <n>}.
+
+\item[{\tt -smt <n>} and {\tt smtmode (none|seq|end)}]
+Define (simple) machine topology: threads gather in groups of
+``close'' siblings of size \opt{<n>} and threads of the same
+group are numbered in sequence (\opt{-smt seq}) or by gaps of size
+number of threads divided by group size (\opt{end}). For instance,
+given $6$ available threads and a value of $2$ for the \opt{smt}
+parameter, groups are $\{0,1\}, \{2,3\},  \{4,5\}$ in the first case and
+$\{0,3\}, \{1,4\}, \{2,5\}$ in the second. Those parameters command
+the possible allocations of test threads to harness threads. Those
+allocations aim at testing all partitions of test threads among
+groups. Default is a neutral topology (\opt{-smt 1}) that will result
+in one  single possibility (all test threads in different groups).
+
+It is worth noticing that, once  harness threads are selected
+according to their groups, allocation of test threads to them is
+performed randomly, unless the test executable is given the \opt{+fix}
+option. For instance, considering a test with two threads $T_0$
+and~$T_1$ running on the above described machine, let us further
+assume the allocation of a test instance to the group $\{2,5\}$.
+Then, the two possible random allocations are
+$\{ T_0 \rightarrow 2, T_1 \rightarrow 5\}$
+and
+$\{ T_0 \rightarrow 5, T_1 \rightarrow 2\}$. With option \opt{+fix}
+one only of those allocations is performed.
+
+\item[{\tt -barrier (user|userfence|pthread|none|timebase)}]
+Control test thread starting synchronisation. The default and
+behaviour for all arguments except \texttt{timebase} is for test
+threads to synchronise by using
+standard \ahref{https://en.wikipedia.org/wiki/Barrier\_(computer\_science)}
+{sense-reversing barriers}. Argument \texttt{timebase} (which can be abbreviated
+as \texttt{tb}) uses the same synchronisation barrier for threads to
+agree on starting time based upon the hardware timebase. Timebase
+offers a finer control on test thread starting time: given a timebase
+delay ($d=32$ for AArch64) and a a starting ``timebase tick
+time''~$t_0$ for the starting time of the test first thread $T_0$,
+another thread~$T_k$ will start at time $t_k = t_0+(i_k*d)/8$, where
+$i_k$ is a random integer in the interval $[-4..+4]$. Test executables
+accept the option \texttt{-tb <n>} for overriding the default value
+of the timebase delay~$d$.
+
+\item[{\tt -driver (shell|C)}] Choose the driver that will run the tests.
+In the \opt{shell} (and default) mode, each test will be compiled into
+a \texttt{.flat} binary given as argument to qemu. By contrast, in the
+``\opt{C}'' mode, there is only one binary \texttt{run.flat} and one
+call of the qemu virtual machine. As a result, qemu initial runtime
+costs are amortized for batches of many tests. It is worth noticing
+that tests are executed by running a shell script called
+\texttt{run.sh} in all modes.
+
+However notice that \ahref{statistics}{parameter statistics}
+are not collected and thus not  printed in \opt{-driver C} mode.
+\end{description}
+Other miscellaneous options are implemented, such
+as \ahrefloc{opt:stdio}{\opt{-stdio (true|false)}},
+\ahrefloc{opt:hexa}{\opt{-hexa}},
+\ahrefloc{opt:alloc}{\opt{-alloc (dynamic|static)}},
+\ldots{}
+Non recognised options should be ignored silently.

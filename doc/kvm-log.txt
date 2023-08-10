@@ -1,0 +1,130 @@
+Thu Aug 10 05:29:21 PM CEST 2023
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for MP-TTD+DMB.ST+DMB.LD.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+AArch64 MP-TTD+DMB.ST+DMB.LD
+
+{
+ [PTE(x)]=(oa:PA(x), valid:0);
+ 0:X2=PTE(x); pteval_t 0:X1=(oa:PA(x)); 0:X8=y;
+ 1:X8=y; 1:X3=x;
+}
+ P0          | P1              ;
+ STR X1,[X2] | LDR W7,[X8]     ;
+ DMB ST      | DMB LD          ;
+ MOV W7,#1   | L0: LDR W4,[X3] ;
+ STR W7,[X8] |                 ;
+
+exists (1:X7=1 /\ fault(P1:L0,x,MMU:Translation))
+Generated assembler
+#START _litmus_P0
+	nop
+	str x2,[x1]
+	dmb st
+	mov w3,#1
+	str w3,[x0]
+	nop
+#START _litmus_P1
+	nop
+	msr sp_el0,x0
+	adr x5,0f
+	msr elr_el1,x5
+	msr spsr_el1,xzr
+	eret
+0:
+	ldr w4,[x2]
+	dmb ld
+1:
+	ldr w6,[x1]
+	nop
+	svc #471
+/usr/bin/qemu-system-aarch64 -nodefaults -machine virt,gic-version=host -accel kvm -cpu host -device virtio-serial-device -device virtconsole,chardev=ctd -chardev testdev,id=ctd -device pci-testdev -display none -serial stdio -kernel M/./MP-TTD+DMB.ST+DMB.LD.flat -smp 4 -append -q # -initrd /tmp/tmp.HYxVtV2KEl
+Test MP-TTD+DMB.ST+DMB.LD Allowed
+Histogram (4 states)
+70    *>1:X7=1; fault(P1:L0,x,MMU:Translation);
+1975326:>1:X7=0; ~fault(P1:L0,x,MMU:Translation);
+21197 :>1:X7=0; fault(P1:L0,x,MMU:Translation);
+3407  :>1:X7=1; ~fault(P1:L0,x,MMU:Translation);
+Ok
+
+Witnesses
+Positive: 70, Negative: 1999930
+Condition exists (1:X7=1 /\ fault(P1:L0,x,MMU:Translation)) is validated
+Hash=e6d0396aa32c40b307db5f6921404c07
+EL0=P1
+Observation MP-TTD+DMB.ST+DMB.LD Sometimes 70 1999930
+Topology 70    :> part=0 [[0],[1]]
+Faults MP-TTD+DMB.ST+DMB.LD 21267 P1:21267
+Time MP-TTD+DMB.ST+DMB.LD 15.14
+
+EXIT: STATUS=1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for MP-TTD+DMB.ST+DSB-ISB.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+AArch64 MP-TTD+DMB.ST+DSB-ISB
+
+{
+ [PTE(x)]=(oa:PA(x), valid:0);
+ 0:X2=PTE(x); pteval_t 0:X1=(oa:PA(x)); 0:X8=y;
+ 1:X3=x; 1:X8=y;
+}
+ P0          | P1              ;
+ STR X1,[X2] | LDR W7,[X8]     ;
+ DMB ST      | DSB SY          ;
+ MOV W7,#1   | ISB             ;
+ STR W7,[X8] | L0: LDR W4,[X3] ;
+
+exists (1:X7=1 /\ fault(P1:L0,x,MMU:Translation))
+Generated assembler
+#START _litmus_P0
+	nop
+	str x2,[x1]
+	dmb st
+	mov w3,#1
+	str w3,[x0]
+	nop
+#START _litmus_P1
+	nop
+	msr sp_el0,x0
+	adr x5,0f
+	msr elr_el1,x5
+	msr spsr_el1,xzr
+	eret
+0:
+	ldr w4,[x2]
+	dsb sy
+	isb
+1:
+	ldr w6,[x1]
+	nop
+	svc #471
+/usr/bin/qemu-system-aarch64 -nodefaults -machine virt,gic-version=host -accel kvm -cpu host -device virtio-serial-device -device virtconsole,chardev=ctd -chardev testdev,id=ctd -device pci-testdev -display none -serial stdio -kernel M/./MP-TTD+DMB.ST+DSB-ISB.flat -smp 4 -append -q # -initrd /tmp/tmp.b5PUkrphZb
+Test MP-TTD+DMB.ST+DSB-ISB Allowed
+Histogram (3 states)
+1991985:>1:X7=0; ~fault(P1:L0,x,MMU:Translation);
+5938  :>1:X7=0; fault(P1:L0,x,MMU:Translation);
+2077  :>1:X7=1; ~fault(P1:L0,x,MMU:Translation);
+No
+
+Witnesses
+Positive: 0, Negative: 2000000
+Condition exists (1:X7=1 /\ fault(P1:L0,x,MMU:Translation)) is NOT validated
+Hash=18e9682c0e7ed43f7f059cbfc47d781d
+EL0=P1
+Observation MP-TTD+DMB.ST+DSB-ISB Never 0 2000000
+Faults MP-TTD+DMB.ST+DSB-ISB 5938 P1:5938
+Time MP-TTD+DMB.ST+DSB-ISB 17.29
+
+EXIT: STATUS=1
+Revision 8cf2e5aafef957094015b763fa08524c5c44a605, version 7.56+03
+Command line: litmus7 -mach kvm-aarch64 -variant fatal -o M.tar MP-TTD+DMB.ST+DMB.LD.litmus MP-TTD+DMB.ST+DSB-ISB.litmus
+Parameters
+#define SIZE_OF_TEST 5000
+#define NUMBER_OF_RUN 200
+#define AVAIL 4
+/* gcc options: -Wall -std=gnu99 -DNOSWP -std=gnu99 -ffreestanding -I $(SRCDIR)/lib -I $(SRCDIR)/libfdt -Wall -Werror  -fomit-frame-pointer -Wno-frame-address   -fno-pic  -no-pie -Wmissing-parameter-type -Wold-style-declaration -Woverride-init -O2 $(call optional-ccopt, -mno-outline-atomics) */
+/* barrier: userfence */
+/* alloc: static */
+/* proc used: 4 */
+LITMUSOPTS=
+Thu Aug 10 05:30:01 PM CEST 2023

@@ -163,7 +163,8 @@ TST=ARM-LB.log SB.litmus SB+onces.litmus SB.log SB-PPC.litmus SB-PPC.log  SB-PPC
   MP+X000.litmus MP+X001.litmus \
   X.conf \
   iriw.litmus iriw-internal.litmus $(X86) \
-  CoRWR.litmus SB+rfi-pos.litmus SB+mfences.litmus
+  CoRWR.litmus SB+rfi-pos.litmus SB+mfences.litmus \
+  R.litmus MP-TTD+DMB.ST+DMB.LD.litmus  MP-TTD+DMB.ST+DSB-ISB.litmus
 
 STY=macros.sty common.tex syntaxdef.sty
 HVA=macros.hva common.tex syntaxdef.hva
@@ -178,7 +179,7 @@ CFG=hpcx.cfg saumur.cfg apoil.cfg trimslice.cfg dragon.cfg
 NOGENCAT=tso-00.cat tso-01.cat  tso-02.cat lamport.cat
 GENCAT=herd.cat x86tso.cat minimal.cat uniproc.cat cos-no-opt.cat  cross.cat sc.cat stdlib.cat
 CAT=$(NOGENCAT) $(GENCAT)
-TXT=rename.txt cond.txt trimslice.sh dragon.sh
+TXT=rename.txt cond.txt trimslice.sh dragon.sh kvm-log.txt
 DONT=x86.sc x86.explo x86-log.txt
 LITMUSDIR=../litmus/libdir
 HERDDIR=../herd/libdir
@@ -271,6 +272,7 @@ TSTPPC=html/tst-ppc.tar html/tst-ppc html/power7.cfg
 TSTARM=html/tst-arm.tar html/tst-arm html/tegra3.cfg
 TSTCO=html/tst-co.tar html/tst-co
 CATS=html/uniproccat.txt
+
 
 html/index.html: html/diy.html $(TSTX86) $(TSTPPC) $(TSTARM) $(TSTCO) $(CATS) | html
 	$(HACHA) $(HACHAOPTS) -o html/index.html html/diy.html
