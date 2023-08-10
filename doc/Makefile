@@ -325,7 +325,7 @@ clean::
 LATEX ?= $(if $(shell which rubber),\
 		rubber -f,\
 		$(if $(shell which latexmk),\
-			latexmk,\
+			latexmk -dvi,\
 			$(error "Could not find either rubber or latexmk in PATH")))
 DVIPS=dvips
 PS2PDF=ps2pdf
