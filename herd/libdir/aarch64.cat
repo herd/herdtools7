@@ -53,9 +53,9 @@ let ca = fr | co
 
 (*** TLBI-after, DC-after, IC-after ***)
 include "enumerations.cat"
-with TLBI-after from (all-TLBI-after-orders local-hw-reqs)
-with DC-after from (all-DC-after-orders local-hw-reqs)
-with IC-after from (all-IC-after-orders local-hw-reqs)
+with TLBI-after from (all-TLBI-Imp_TTD_R-enums local-hw-reqs)
+with DC-after from (all-DC-Exp_W-enums local-hw-reqs)
+with IC-after from (all-IC-Imp_Instr_R-enum local-hw-reqs)
 
 (*** Hazard-ordered-before ***)
 

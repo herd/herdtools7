@@ -46,7 +46,7 @@
 
 include "aarch64util.cat"
 
-(* Tag-Check-Intrinsically-Before *)
+(* Tag-Check-intrinsically-before *)
 let tc-ib = [Imp & Tag & R]; iico_data; [B]; iico_ctrl; [(Exp & W) \ Tag | TagCheck & FAULT]
 
 (* Translation-intrinsically-before *)

@@ -73,19 +73,19 @@ let enumerate-ordered-pairs (unordered-pairs,rel) =
     let need-choosing = unordered-pairs \ (no-choice | no-choice^-1) in
     add_both_choices ({no-choice},need-choosing)
 
-let all-TLBI-after-orders rel =
+let all-TLBI-Imp_TTD_R-enums rel =
   enumerate-ordered-pairs (
     inv-scope & (C_TLBI * (Imp & TTD & R)),
     rel
   )
 
-let all-DC-after-orders rel =
+let all-DC-Exp_W-enums rel =
     enumerate-ordered-pairs (
         scl & (DC.CVAU * (Exp & W)),
         rel | (IW * (_\IW))
     )
 
-let all-IC-after-orders rel =
+let all-IC-Imp_Instr_R-enum rel =
     enumerate-ordered-pairs (
         scl & (C_IC * (Imp & Instr & R)),
         rel
