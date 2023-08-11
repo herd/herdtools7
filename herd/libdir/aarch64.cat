@@ -48,48 +48,75 @@ catdep (* This option says that the cat file computes dependencies *)
 
 include "aarch64hwreqs.cat"
 
-(* Coherence-after *)
+(*** Coherence-after ***)
 let ca = fr | co
 
-(* Explicitly-observed-by *)
-let exp-obs = [Exp & M]; (rf | ca) & ext; [Exp & M]
+(*** TLBI-after, DC-after, IC-after ***)
+include "enumerations.cat"
+with TLBI-after from (all-TLBI-after-orders local-hw-reqs)
+with DC-after from (all-DC-after-orders local-hw-reqs)
+with IC-after from (all-IC-after-orders local-hw-reqs)
 
-(* TLBI-after *)
-include "tlbi-after.cat"
-with tlbi-after from (ttd-tlbi-pairs local-hw-reqs)
+(*** Hazard-ordered-before ***)
+
+(** Explicitly-hazard-ordered-before **)
+let Exp-haz-ob =
+  [Exp & R]; po-loc; [Exp & R]; (ca & ext); [Exp & W]
+
+(** TLBI-ordered-before **)
 
 (* TTD-read-ordered-before *)
 let TTD-read-ordered-before =
-  tlbi-after; [TLBI]; po; [dsb.full]; po; [~(Imp & M)]
-  | tlbi-after; [TLBI]; po; [dsb.full]; po; [CSE]; po; [Imp & M]
-  | (if "ETS2" then tlbi-after; [TLBI]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
+  TLBI-after; [TLBI]; po; [dsb.full]; po; [~(Imp & M)]
+  | TLBI-after; [TLBI]; po; [dsb.full]; po; [CSE]; po; [Imp & M]
+  | (if "ETS2" then TLBI-after; [TLBI]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
 
-(* TLBI-Ordered-Before *)
-let tlbi-ob =
+(* TLBI-ordered-before *)
+let TLBI-ob =
      TTD-read-ordered-before
    | tr-ib^-1; TTD-read-ordered-before & ext
    | po-va-loc; TTD-read-ordered-before & ext
 
-(* TLBI-Coherence-After *)
-let tlbi-ca =
-   [TLBI]; tlbi-after; [Imp & TTD & R]; ca; [W]
+(** IC-ordered-before **)
 
-(* TLBUncacheable-Predecessor *)
+(* Instr-read-ordered-before *)
+let Instr-read-ordered-before =
+  IC-after; [IC]; po; [dsb.full]; po; [~(Imp & M)]
+  | (if "DIC" then ca else 0)
+
+(* IC-ordered-before *)
+let IC-ob = [Imp & Instr & R]; po; [Imp & Instr & R]; Instr-read-ordered-before
+
+(* Hazard-ordered-before *)
+let haz-ob =
+  Exp-haz-ob | TLBI-ob | IC-ob
+
+(*** Hardware-required-ordered-before ***)
+let hw-reqs = local-hw-reqs | haz-ob
+
+(*** Observed-by ***)
+
+(** Explicitly-observed-by **)
+let Exp-obs = [Exp & M]; (rf | ca) & ext; [Exp & M]
+
+(** Tag-observed-by **)
+let Tag-obs =
+   [Exp & W]; rf & ext; [Imp & Tag & R]
+   | [Imp & Tag & R]; ca & ext; [Exp & W]
+
+(** TTD-observed-by **)
+
+(* TLBUncacheable-predecessor *)
 let TLBuncacheable-pred =
   [range([TLBUncacheable & FAULT]; tr-ib^-1)]; ca \ intervening-write(ca); [Exp & W]
 
-(* Hardware-Update-Predecessor *)
+(* Hardware-update-predecessor *)
 let HU-pred =
   ca \ intervening-write(ca); [HU]
 
-(* Explicit-Hazard-Ordered-Before *)
-let exp-haz-ob =
-  [Exp & R]; po-loc; [Exp & R]; fre; [Exp & W]
-
-(* Tag-observed-by *)
-let tag-obs =
-   rf & ext; [Imp & T & R]
-   | [Imp & T & R]; ca & ext
+(* TLBI-coherence-after *)
+let TLBI-ca =
+   [TLBI]; TLBI-after; [Imp & TTD & R]; ca; [W]
 
 (* TTD-observed-by *)
 let TTD-obs =
@@ -97,88 +124,64 @@ let TTD-obs =
     | TLBuncacheable-pred
     | HU-pred
     | [HU]; co | co; [HU]
-    | tlbi-ca
+    | TLBI-ca
 
-include "cm-after.cat"
-with dc-after from (make-w2dc-order local-hw-reqs)
-with ic-after from (make-ic2if-order local-hw-reqs)
+(** Instr-observed-by **)
 
-(* IFetch-Ordered-Before *)
-let ifetch-ordered-before =
-  ic-after; [IC]; po; [dsb.full]; po; [~(Imp & M)]
-  | (if "DIC" then ca else 0)
+(* IC-coherence-after *)
+let IC-ca =
+    (if not "DIC" && not "IDC" then [IC]; IC-after; [Imp & Instr & R]; ca; [W]; DC-after; [DC.CVAU] else 0)
+    | (if not "DIC" && "IDC" then [IC]; IC-after; [Imp & Instr & R]; ca; [W] else 0)
+    | (if "DIC" && "IDC" then [Imp & Instr & R]; ca; [W] else 0)
 
-(* IC-Ordered-Before *)
-let ic-ob = [Imp & INSTR & R]; po; [Imp & INSTR & R]; ifetch-ordered-before
+(* Instr-observed-by *)
+let Instr-obs =
+    rf; [Imp & Instr & R]
+    | IC-after
+    | [DC.CVAU]; DC-after; [W] | [W]; DC-after; [DC.CVAU]
+    | IC-ca
 
-(* Hazard-Ordered-Before *)
-let haz-ob =
-  exp-haz-ob | tlbi-ob | ic-ob
-
-(* Hardware-required-ordered-before *)
-let hw-reqs = local-hw-reqs | haz-ob
-
-(* IC-Coherence-After *)
-let ic-ca =
-    (if not "DIC" && not "IDC" then [IC]; ic-after; [Imp & INSTR & R]; ca; [W]; dc-after; [DC.CVAU] else 0)
-    | (if not "DIC" && "IDC" then [IC]; ic-after; [Imp & INSTR & R]; ca; [W] else 0)
-    | (if "DIC" && "IDC" then [Imp & INSTR & R]; ca; [W] else 0)
-
-(* Ifetch-observed-by *)
-let ifetch-obs =
-    rf; [Imp & INSTR & R]
-    | ic-after
-    | [DC.CVAU]; dc-after; [W] | [W]; dc-after; [DC.CVAU]
-    | ic-ca
-
-(* Observed-by *)
+(** Observed-by **)
 let obs =
-    exp-obs; sca-class?
-    | tag-obs; sca-class?
+    Exp-obs; sca-class?
+    | Tag-obs; sca-class?
     | TTD-obs
-    | ifetch-obs
+    | Instr-obs
 
-(* Hazard-Ordered-Before *)
-let haz-ob =
-  exp-haz-ob | tlbi-ob | ic-ob
-
-(* Hardware-required-ordered-before *)
-let hw-reqs = local-hw-reqs | haz-ob
-
-(* Ordered-before *)
+(*** Ordered-before ***)
 let rec ob =
     hw-reqs
     | obs
     | ob; ob
 
-(* External visibility requirement *)
+(*** External visibility requirement ***)
 irreflexive ob as external
 
-(* Internal visibility requirements *)
+(*** Internal visibility requirements ***)
 irreflexive [Exp & R]; (po-loc | rmw); [Exp & W]; rfi; [Exp & R] as coRW1-Exp
-irreflexive [Imp & T & R]; po-loc; [Exp & T & W]; rfi; [Imp & T & R] as coRW1-MTE
+irreflexive [Imp & Tag & R]; po-loc; [Exp & Tag & W]; rfi; [Imp & Tag & R] as coRW1-MTE
 irreflexive [Exp & W]; po-loc; [Exp & W]; (ca & int); [Exp & W] as coWW-Exp
 irreflexive [Exp & W]; po-loc; [Exp & R]; (ca & int); [Exp & W] as coWR-Exp
-irreflexive [Exp & T & W]; po-loc; [Imp & T & R]; (ca & int) as coWR-MTE
+irreflexive [Exp & Tag & W]; po-loc; [Imp & Tag & R]; (ca & int) as coWR-MTE
 
-(* Atomic: LDXR/STXR, AMO and HU constraint to forbid intervening writes. *)
+(*** Atomic: LDXR/STXR, AMO and HU constraint to forbid intervening writes. ***)
 empty (rmw & (fr; co)) \ (([Exp]; rmw; [Exp]) & (fri ; [Exp & W]; coi)) as atomic
 
-(* Break Before Make *)
+(*** Break Before Make ***)
 let BBM = ([TTDV]; ca; [TTDINV]; co; [TTDV])
 flag ~empty (TTD-update-needsBBM & ~BBM) as requires-BBM
 
-(* Additional synchronisation requirements for CMODX *)
+(*** Additional synchronisation requirements for CMODX ***)
 let CMODX-conflicts = same-loc & (
-  (Imp & INSTR & R & Within-CMODX-List) * W
-  | (Imp & INSTR & R) * (Within-CMODX-List & W)
-  | W * (Within-CMODX-List & Imp & INSTR & R)
-  | (Within-CMODX-List & W) * (Imp & INSTR & R)
+  (Imp & Instr & R & Within-CMODX-List) * W
+  | (Imp & Instr & R) * (Within-CMODX-List & W)
+  | W * (Within-CMODX-List & Imp & Instr & R)
+  | (Within-CMODX-List & W) * (Imp & Instr & R)
   )
 
 let CMODX-ordering =
-  [Imp & INSTR & R]; ob; [W]
-  | [W]; ob; [Imp & INSTR & R]
+  [Imp & Instr & R]; ob; [W]
+  | [W]; ob; [Imp & Instr & R]
 
 let CMODX-unordered-conflicts =
   CMODX-conflicts \ (CMODX-ordering | CMODX-ordering^-1)

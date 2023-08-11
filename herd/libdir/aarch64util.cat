@@ -62,7 +62,7 @@ let AccessFlag = if "vmsa" then AccessFlag else emptyset
  * Include default definitions for sets that might be undefined without
  * -variant ifetch
 *)
-let INSTR = if "ifetch" then INSTR else emptyset
+let Instr = if "ifetch" then Instr else emptyset
 let Within-CMODX-List = if "ifetch" then Restricted-CMODX else emptyset
 
 (*
@@ -120,6 +120,7 @@ let Imp = NExp
 let SPONTANEOUS = SPURIOUS
 let inv-scope = inv-domain
 let TTD = PTE
+let Tag = T
 
 (* Same-cache-line relation *)
 (* NOTE : currently assumes all locations are on different cache lines *)
@@ -130,7 +131,7 @@ let scl = loc
 
 (* Flag any occurrence of writes to two different locations that might be on
  * the same cache line. *)
-flag ~empty ((W & INSTR)*(W & INSTR) \ loc)
+flag ~empty ((W & Instr)*(W & Instr) \ loc)
   as Assuming-no-two-modified-instructions-are-on-the-same-cache-line
 
 (* Flag the runs of herd7 with unsupported combinations of variants *)

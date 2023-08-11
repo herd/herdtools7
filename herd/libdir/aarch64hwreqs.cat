@@ -46,13 +46,16 @@
 
 include "aarch64util.cat"
 
-(* Fetch-intrinsically-before *)
-let f-ib =
-  [Imp & INSTR & R]; iico_data; [B]; iico_ctrl; [_]
+(* Tag-Check-Intrinsically-Before *)
+let tc-ib = [Imp & Tag & R]; iico_data; [B]; iico_ctrl; [(Exp & W) \ Tag | TagCheck & FAULT]
 
 (* Translation-intrinsically-before *)
 let tr-ib =
   [Imp & TTD & R]; iico_data; [B]; iico_ctrl; [Exp & M | MMU & FAULT]
+
+(* Fetch-intrinsically-before *)
+let f-ib =
+  [Imp & Instr & R]; iico_data; [B]; iico_ctrl; [_]
 
 (* Notions of Same Location - PA, VA, and including Fault Effects *)
 let TTD-same-oa =  same-oa(TTD*TTD)
@@ -67,9 +70,6 @@ let lrs = [W]; (po-loc \ intervening-write(po-loc)) ; [R]
 
 (* Local write successor *)
 let lws = [M]; po-loc; [W | MMU & FAULT]
-
-(* Tag-Check-Intrinsically-Before *)
-let tc-ib = [Imp & T & R]; iico_data; [B]; iico_ctrl; [(Exp & W) \ T | TagCheck & FAULT]
 
 (* HW TTD Updates permitted only for the AF or DB *)
 let HU = Imp & TTD & W
@@ -92,8 +92,7 @@ let CSE-ob =
  [Exp & R]; ctrl; [CSE]; po
  | DSB-ob; [CSE]; po
  | [Imp & TTD & R]; tr-ib; [CSE]; po
- | [Imp & INSTR & R]; f-ib; [CSE]; po
-
+ | [Imp & Instr & R]; f-ib; [CSE]; po
 
 (* Dependency-ordered-before *)
 let dob = addr | data
@@ -134,9 +133,10 @@ let TLBUncacheable = MMU & (Translation | AccessFlag)
 
 (* Locally-hardware-required-ordered-before *)
 let rec local-hw-reqs =
-  tr-ib
-  | tc-ib
-  | [Exp & M | Imp & T & R]; (lob | pick-lob); [Exp & M | Imp & T & R | FAULT & (TagCheck | MMU)]
+  tc-ib
+  | tr-ib
+  | f-ib
+  | [Exp & M | Imp & Tag & R]; (lob | pick-lob); [Exp & M | Imp & Tag & R | FAULT & (TagCheck | MMU)]
   | (if "ETS2" then [Exp & M]; po; [TLBUncacheable & FAULT]; tr-ib^-1; [Imp & TTD & R] else 0)
   | DSB-ob
   | CSE-ob
@@ -146,15 +146,14 @@ let rec local-hw-reqs =
   | [Exp & R]; addr; [TLBI | DC.CVAU | IC]
   | [Exp & R]; ctrl; [HU]
 
-  | f-ib
-  | [Imp & INSTR & R]; po; [~(Imp & INSTR & R)]
+  | [Imp & Instr & R]; po; [~(Imp & Instr & R)]
 
+  | [Exp & M]; po; [dmb.full]; po; [DC.CVAU]
+  | [DC.CVAU]; po; [dmb.full]; po; [Exp & M]
   | [DC.CVAU]; po; [dmb.full]; po; [DC.CVAU]
-  | [M & Exp]; po; [dmb.full]; po; [DC.CVAU]
-  | [DC.CVAU]; po; [dmb.full]; po; [M & Exp]
 
   | [Exp & M]; (po & scl); [DC.CVAU]
-  | [DC.CVAU]; (po & scl); [M & Exp]
+  | [DC.CVAU]; (po & scl); [Exp & M]
   | [DC.CVAU]; (po & scl); [DC.CVAU]
   
   | local-hw-reqs; local-hw-reqs
