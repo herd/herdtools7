@@ -68,19 +68,6 @@ void launch(pthread_t *th, f_t *f, void *a) ;
 void *join(pthread_t *th) ;
 #endif
 
-#ifdef KVM
-/**********/
-/* Random */
-/**********/
-
-/* type of state for pseudorandom  generators */
-typedef uint32_t st_t ;
-
-/* Unlocked random bit */
-int rand_bit(st_t *st) ;
-
-uint32_t rand_k(st_t *st,uint32_t n) ;
-#endif
 
 /*********************/
 /* Real time counter */
@@ -112,6 +99,7 @@ typedef struct {
   int avail ;
   int n_exe ;
   int delay ;
+  int fix ;
 } opt_t ;
 
 char **parse_opt(int argc,char **argv,opt_t *def, opt_t *p) ;
@@ -134,5 +122,12 @@ void *mmap_exec(size_t sz) ;
 void munmap_exec(void *p,size_t sz) ;
 
 #endif
+
+/*******************/
+/* Array utilities */
+/*******************/
+#include "litmus_rand.h"
+void interval_init(int *p,size_t sz) ;
+void interval_shuffle(st_t *seed,int *p,size_t sz) ;
 
 #endif

@@ -194,12 +194,10 @@ module Make(O:Config)(Tar:Tar.S) =
               cpy fnames "show" ".awk"
         | `CPP|`LISA | `JAVA | `ASL -> Warn.fatal "no support for arch '%s'" (Archs.pp O.arch)
       in
-      let fnames = match O.mode with
-      | Mode.Kvm -> fnames
-      | Mode.PreSi|Mode.Std ->
-          let fnames = cpy fnames "litmus_rand" ".c" in
-          let fnames = cpy fnames "litmus_rand" ".h" in
-          fnames in
+      let fnames =
+        let fnames = cpy fnames "litmus_rand" ".c" in
+        let fnames = cpy fnames "litmus_rand" ".h" in
+        fnames in
       let fnames =
         if O.stdio then fnames
         else

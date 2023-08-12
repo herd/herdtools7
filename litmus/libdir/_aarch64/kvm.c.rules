@@ -15,7 +15,7 @@ clean:
 
 %.elf: LDFLAGS = -nostdlib -pie -n
 
-run.elf: run.o $(OBJ) utils.o kvm_timeofday.o $(FLATLIBS) $(SRCDIR)/arm/flat.lds $(cstart.o)
+run.elf: run.o $(OBJ) litmus_rand.o utils.o kvm_timeofday.o $(FLATLIBS) $(SRCDIR)/arm/flat.lds $(cstart.o)
 	$(CC) $(CFLAGS) -c -o $(@:.elf=.aux.o) $(SRCDIR)/lib/auxinfo.c \
 		-DPROGNAME=\"$(@:.elf=.flat)\" -DAUXFLAGS=$(AUXFLAGS)
 	$(LD) $(LDFLAGS) -o $@ -T $(SRCDIR)/arm/flat.lds \

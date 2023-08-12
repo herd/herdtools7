@@ -13,6 +13,7 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
+
 /************/
 /* Instance */
 /************/
@@ -33,6 +34,7 @@ typedef struct {
   hash_t t;
   sense_t b;
   param_t p;
+  int ind[N]; /* Indirection for role shuffle */
 } ctx_t ;
 
 
@@ -42,6 +44,7 @@ static void instance_init(ctx_t *p, int id, intmax_t *mem) {
   hash_init(&p->t) ;
   log_init(&p->out) ;
   barrier_init(&p->b,N) ;
+  interval_init((int *)&p->ind,N) ;
 #ifdef SOME_VARS
   vars_init(&p->v,mem);
 #endif
@@ -86,6 +89,9 @@ typedef struct global_t {
   int verbose ;
   int size,nruns,nexe,noccs ;
   int delay,step ;
+  int fix ;
+  /* Indirection for shuffling all threads */
+  int ind[AVAIL] ;
   /* Synchronisation for all threads */
   sense_t gb ;
   /* Count 'interesting' outcomes */
@@ -158,12 +164,19 @@ typedef struct {
 
 static void set_role(global_t *g,thread_ctx_t *c,int part) {
   barrier_wait(&g->gb) ;
-  int idx = SCANLINE*part+c->id ;
+  int idx = SCANLINE*part+g->ind[c->id] ;
   int inst = g->inst[idx] ;
   if (0 <= inst && inst < g->nexe) {
     c->inst = inst ;
     c->ctx = &g->ctx[inst] ;
     c->role = g->role[idx] ;
+    if (SCANSZ > 1 && !g->fix) {
+    /* Shuffle roles in case several topological placements are possible. */
+      ctx_t *d = c->ctx ;
+      if (c->role == 0) interval_shuffle(&c->seed,(int *)&d->ind,N);
+      barrier_wait(&d->b) ;
+      c->role = d->ind[c->role] ;
+    }
 #ifdef KVM
     set_feature(c->role) ;
 #ifdef HAVE_FAULT_HANDLER

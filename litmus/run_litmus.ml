@@ -48,7 +48,7 @@ module Make(O:Config)(Tar:Tar.S)(D:CoreDumper.S) =
           let k = match O.mode with
           | Mode.Std -> ["litmus_rand.c"; "outs.c";]
           | Mode.PreSi -> ["litmus_rand.c"; "litmus_io.c";]
-          | Mode.Kvm -> []  in
+          | Mode.Kvm -> ["litmus_rand.c";]  in
           let utils =
             match O.affinity with
             | Affinity.No -> "utils.c"::k

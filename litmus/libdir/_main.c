@@ -59,7 +59,7 @@ int RUN(int argc,char **argv,FILE *out) {
 #else
   const int delta_tb = 0;
 #endif
-  opt_t def = { 0, NUMBER_OF_RUN, SIZE_OF_TEST, AVAIL, NEXE, delta_tb, };
+  opt_t def = { 0, NUMBER_OF_RUN, SIZE_OF_TEST, AVAIL, NEXE, delta_tb, 0, };
   opt_t d = def;
   char *prog = argv[0];
   char **p = parse_opt(argc,argv,&def,&d);
@@ -78,6 +78,8 @@ int RUN(int argc,char **argv,FILE *out) {
   glo_ptr->delay = d.delay;
   glo_ptr->step = d.delay/(NSTEPS-1);
 #endif
+  glo_ptr->fix = d.fix;
+  interval_init((int *)&glo_ptr->ind,AVAIL);
   if (glo_ptr->verbose) {
 #ifdef NOSTDIO
     emit_string(stderr,prog);
