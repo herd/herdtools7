@@ -864,7 +864,7 @@ module Make
               then O.oi "pp_faults();" ;
               let s = sprintf "Time %s "  doc.Name.name in
               O.fi "puts(%S);" s ;
-              O.oi "emit_double(tsc_millions(total));" ;
+              O.oi "emit_millions(tsc_millions(total));" ;
               O.oi "puts(\"\\n\");"
           end ;
           if Cfg.exit_cond then O.oi "return cond;" ;

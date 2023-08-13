@@ -143,7 +143,7 @@ sec_t tsc_millions(tsc_t t) {
   return r ;
 }
 
-void emit_double(sec_t f) {
+void emit_millions(sec_t f) {
   printf("%" PRIu64, f.sec) ;
   puts(".");
   printf("%02" PRIu64, f.frac) ;

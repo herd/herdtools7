@@ -81,7 +81,7 @@ tsc_t timeofday(void) ;
 #ifdef KVM
 typedef struct { tsc_t sec,frac; } sec_t ;
 sec_t tsc_millions(tsc_t t) ;
-void emit_double(sec_t f) ;
+void emit_millions(sec_t f) ;
 #else
 double tsc_ratio(tsc_t t1, tsc_t t2) ;
 double tsc_millions(tsc_t t) ;

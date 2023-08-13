@@ -13,7 +13,7 @@ clean:
 %.h: %.t
 	sh toh.sh $< > $@
 
-run.elf: run.o $(OBJ) litmus_rand.o utils.o kvm_timeofday.o $(FLATLIBS) $(SRCDIR)/x86/flat.lds $(cstart.o)
+run.elf: run.o $(OBJ) $(UTILS) $(FLATLIBS) $(SRCDIR)/x86/flat.lds $(cstart.o)
 	$(CC) $(GCCOPTS) -nostdlib -o $@ -Wl,-T,$(SRCDIR)/x86/flat.lds $(filter %.o, $^) $(FLATLIBS)
 	@chmod a-x $@
 

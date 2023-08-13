@@ -196,7 +196,11 @@ module Make
           O.o "#define KVM 1" ;
           O.o "#include <libcflat.h>" ;
           O.o "#include \"kvm-headers.h\"" ;
-          O.o "#include \"utils.h\""
+          O.o "#include \"utils.h\"" ;
+          if not Cfg.stdio then begin
+            O.o "#include \"litmus_io.h\"" ;
+            O.o "#define NOSTDIO 1"
+          end ;
         end else begin
           O.o "#include <stdlib.h>" ;
           O.o "#include <inttypes.h>" ;
@@ -926,8 +930,9 @@ module Make
                       let c = sprintf "\"%s\"" (String.escaped c) in
                       EPF.fii ~out:"chan" "%s;" [c]
                   | d::ds,f::fs,fmt::fmts ->
-                      O.fii "if (%s != %s)" f d ;
+                      O.fii "if (%s != %s) {" f d ;
                       EPF.fiii ~out:"chan" fmt [f] ;
+                      O.oii "}" ;
                       do_rec ds fs fmts
                   |_ ->  (* All, defaults, arguments and formats agree *)
                      assert false in

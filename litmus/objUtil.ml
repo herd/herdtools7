@@ -163,7 +163,11 @@ module Make(O:Config)(Tar:Tar.S) =
 (* Copy from platform subdirectory *)
     let cpy_platform fnames name ext =
       let name = sprintf "platform_%s" name in
-      do_cpy fnames (Filename.concat O.platform name) name ext
+      let platform =
+        match O.mode with
+        | Mode.Kvm -> "_kvm" ^ O.platform
+        | Mode.PreSi|Mode.Std -> O.platform in
+      do_cpy fnames (Filename.concat platform name) name ext
 
     let affinity_base () = match O.targetos with
     | Linux|FreeBsd -> "_linux_affinity"
