@@ -1,0 +1,13 @@
+AArch64 A016
+{
+  0:X1=P0:Lself00; 0:X9=0;
+  0:X2=P1:Lsrc;
+}
+P0          | P1;
+ LDR W0,[X2]| B Lout1 ;
+ STR W0,[X1]| L2: B Lout1;
+Lself00:    | L1:L0:Lsrc: NOP;
+ B Lout     |  NOP   ;
+ MOV W9,#1  |  NOP   ;
+Lout:       | Lout1: ;
+exists 0:X9=0

@@ -40,6 +40,8 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
       | Plain|Atomic -> false
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
+    let ifetch_value_sets = []
+
     let barrier_sets =
       [
         "MFENCE",is_barrier MFENCE;

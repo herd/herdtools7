@@ -61,6 +61,18 @@ module Top (TopConf:RunTest.Config) = struct
           Conf.archcheck arch Conf.libfind Conf.variant Conf.model in
 
       let cache_type = CacheType.get splitted.Splitter.info in
+      let variant_patched_with_cache_type =
+         let dic_pred, idc_pred =
+            let open CacheType in
+               match cache_type with
+               | None ->
+                  (fun _ -> false), (fun _ -> false)
+               | Some cache_type ->
+                  cache_type.dic, cache_type.idc in
+         Misc.(|||) Conf.variant (function 
+            | Variant.DIC -> dic_pred 0
+            | Variant.IDC -> idc_pred 0
+            | _ -> false) in
       let dirty = DirtyBit.get splitted.Splitter.info in
 
       let module ModelConfig = struct
@@ -81,48 +93,47 @@ module Top (TopConf:RunTest.Config) = struct
         let cycles = Conf.cycles
         let optace = Conf.optace
         let libfind = Conf.libfind
-        let variant = Conf.variant
+        let variant = variant_patched_with_cache_type
         let dirty = dirty
-        let cache_type = cache_type
         let statelessrc11 = Conf.statelessrc11
       end in
       let module ArchConfig = SemExtra.ConfigToArchConfig(Conf) in
       match arch with
       | `PPC ->
          let module X = PPCParseTest.Make(Conf)(ModelConfig) in
-         X.run cache_type dirty start_time name chan env splitted
+         X.run dirty start_time name chan env splitted
       | `ARM ->
          let module X = ARMParseTest.Make(Conf)(ModelConfig) in
-         X.run cache_type dirty start_time name chan env splitted
+         X.run dirty start_time name chan env splitted
       | `AArch64 ->
          let module X = AArch64ParseTest.Make(Conf)(ModelConfig) in
-         X.run cache_type dirty start_time name chan env splitted
+         X.run dirty start_time name chan env splitted
 
       | `X86 ->
          let module X = X86ParseTest.Make(Conf)(ModelConfig) in
-         X.run cache_type dirty start_time name chan env splitted
+         X.run dirty start_time name chan env splitted
       | `X86_64 ->
          let module X = X86_64ParseTest.Make(Conf)(ModelConfig) in
-         X.run cache_type dirty start_time name chan env splitted
+         X.run dirty start_time name chan env splitted
       | `MIPS ->
          let module X = MIPSParseTest.Make(Conf)(ModelConfig) in
-         X.run cache_type dirty start_time name chan env splitted
+         X.run dirty start_time name chan env splitted
       | `RISCV ->
          let module X = RISCVParseTest.Make(Conf)(ModelConfig) in
-         X.run cache_type dirty start_time name chan env splitted
+         X.run dirty start_time name chan env splitted
       | `C ->
          let module X = CParseTest.Make(Conf)(ModelConfig) in
-         X.run cache_type dirty start_time name chan env splitted
+         X.run dirty start_time name chan env splitted
       | `JAVA ->
          let module X = JAVAParseTest.Make(Conf)(ModelConfig) in
-         X.run cache_type dirty start_time name chan env splitted
+         X.run dirty start_time name chan env splitted
       | `LISA ->
          let module X = LISAParseTest.Make(Conf)(ModelConfig) in
-         X.run cache_type dirty start_time name chan env splitted
+         X.run dirty start_time name chan env splitted
 (* START NOTWWW *)
       | `ASL ->
          let module X = ASLParseTest.Make(Conf)(ModelConfig) in
-         X.run cache_type dirty start_time name chan env splitted
+         X.run dirty start_time name chan env splitted
 (* END NOTWWW *)
       | arch -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
     end else env

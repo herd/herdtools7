@@ -328,7 +328,7 @@ module Make(C:Config) (I:I) : S with module I = I
          When variant -self is enabled, it fails trying to convert a branch
          instruction to a label into a branch-with-offset representation. *)
       let convert_if_imm_branch _ _ _ _ i =
-        if C.variant Variant.Self then
+        if C.variant Variant.Ifetch then
           Warn.fatal "Functionality %s not implemented for -variant self" "convert_if_imm_branch"
         else
           i

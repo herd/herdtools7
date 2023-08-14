@@ -64,4 +64,5 @@ module Make
     | Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _ | Label _|Tag _|PteVal _
     | Frozen _
       -> false
+
 end

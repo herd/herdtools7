@@ -37,7 +37,6 @@ module type Config = sig
 end
 
 type runfun =
-  CacheType.t option ->
   DirtyBit.t option ->
   float (* start time *) ->
   string (* file name *) ->

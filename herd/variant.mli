@@ -67,7 +67,10 @@ type t =
 (* Perform experiment *)
   | Exp
 (* Instruction-fetch support (AKA "self-modifying code" mode) *)
-  | Self
+  | Ifetch
+(* CacheType features *)
+  | DIC
+  | IDC
 (* Have cat interpreter to optimise generation of co's *)
   | CosOpt
 (* Test something *)

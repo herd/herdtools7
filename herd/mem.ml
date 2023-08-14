@@ -39,7 +39,6 @@ end
 module type Config = sig
   include CommonConfig
   val byte : MachSize.sz
-  val cache_type : CacheType.t option
   val dirty : DirtyBit.t option
 end
 
@@ -161,7 +160,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     let check_mixed =  not (C.variant Variant.DontCheckMixed)
     let do_deps = C.variant Variant.Deps
     let kvm = C.variant Variant.VMSA
-    let self = C.variant Variant.Self
+    let self = C.variant Variant.Ifetch
     let asl = C.variant Variant.ASL
     let unroll =
       match C.unroll with
@@ -281,7 +280,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
     module SM = S.Mixed(C)
 
-    type ('a,'b) fetch_r = Ok of 'a * 'b | No of 'a
+    type ('a,'b,'c) fetch_r = Ok of 'a * 'b | No of 'a | Segfault of 'c
 
     let segfault =
       Warn.user_error
@@ -298,6 +297,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         Label.Full.Set.exists
           (fun (_,lbl0) -> Misc.string_eq lbl lbl0)
            exported_labels in
+
 (**********************************************************)
 (* In mode `-variant self` test init_state is changed:    *)
 (*  1. Normalize labels in values                         *)
@@ -321,15 +321,10 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
               List.fold_left
                 (fun (ps, ls) (addr,i) ->
                   let lbls = labels_of_instr addr in
-                  let is_overwritable = A.V.Cst.Instr.is_overwritable i in
-                  if
-                    Label.Set.exists is_exported_label lbls ||
-                    is_overwritable
+                  if Label.Set.exists is_exported_label lbls
                   then
-                    if Label.Set.is_empty lbls then ps,ls
-                    else
                       (lbls,(proc,i))::ps,
-                      (if is_overwritable then Label.Set.union lbls ls else ls)
+                      Label.Set.union lbls ls
                   else ps,ls)
                 (ps,ls) code)
             ([], Label.Set.empty) starts
@@ -428,24 +423,23 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         | B.Addr addr -> get_label None addr in
 
     let fetch_addr check_back seen proc_jmp addr_jmp lbl addr =
-        let (proc_tgt,_) as tgt =
-          try IntMap.find addr code_segment
-          with Not_found ->
-          Warn.user_error
-            "Segmentation fault (kidding, address 0x%x does not point to code)" addr in
-        if (* Limit jump threshold to non determined jumps ? *)
-          Misc.int_eq proc_jmp proc_tgt
-          && check_back
-          && is_back_jump addr_jmp addr
-        then
-          let x,seen = see seen addr in
-          if x > unroll then begin
-              W.warn "loop unrolling limit reached: %s" (get_label lbl addr);
-              No tgt
-            end else
+        try
+          let (proc_tgt,_) as tgt = IntMap.find addr code_segment in
+          if (* Limit jump threshold to non determined jumps ? *)
+            Misc.int_eq proc_jmp proc_tgt
+            && check_back
+            && is_back_jump addr_jmp addr
+          then
+            let x,seen = see seen addr in
+            if x > unroll then begin
+                W.warn "loop unrolling limit reached: %s" (get_label lbl addr);
+                No tgt
+              end else
+              Ok (tgt,seen)
+          else
             Ok (tgt,seen)
-        else
-          Ok (tgt,seen) in
+        with Not_found ->
+            Segfault addr in
 
       let fetch_code check_back seen proc_jmp addr_jmp = function
         | B.Lbl lbl ->
@@ -543,6 +537,11 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
               re_exec tgt_proc proc inst addr env m >>> fun _ -> EM.unitcodeT true
         | No (_,[]) -> assert false (* Backward jump cannot be to end of code *)
         | Ok ((tgt_proc,code),seen) -> add_code re_exec tgt_proc proc env seen code
+        | Segfault addr ->
+          let msg = Printf.sprintf
+            "Segmentation fault (kidding, address 0x%x does not point to code)"
+            addr in
+          EM.failcodeT (Misc.UserError msg) true
 
       and add_fault re_exec inst dir fetch_proc proc env seen addr nexts =
         match env.A.fh_code,re_exec with

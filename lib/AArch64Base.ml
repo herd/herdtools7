@@ -2253,13 +2253,6 @@ let loop_idx = Internal 4
 
 let hash_pteval p = AArch64PteVal.pp_hash (AArch64PteVal.tr p)
 
-(* For performance reasons, overwritable sites are limited *)
-let is_overwritable = function
-  |I_NOP| I_B _|I_BC _|I_BL _|I_CBNZ _
-  |I_CBZ _|I_FENCE ISB|I_TBNZ _|I_TBZ _
-   -> true
-  | _ -> false
-
 (*
  * The set of overwriting instruction is more extensive.
  * Only branches to explicit labels are excluded, as their direct
@@ -2273,7 +2266,6 @@ let can_overwrite =
   | I_BC (_,Lbl _)
   | I_BL (Lbl _)
   | I_CBNZ (_,_,Lbl _) | I_CBZ (_,_,Lbl _)
-  | I_FENCE ISB
   | I_TBNZ (_,_,_,Lbl _)
   | I_TBZ (_,_,_,Lbl _)
     -> false
@@ -2283,7 +2275,6 @@ let can_overwrite =
 let get_exported_label = function
   | I_ADR (_,BranchTarget.Lbl lbl) -> Some lbl
   | _ -> None
-
 
 module
   MakeInstr
@@ -2316,8 +2307,7 @@ module
     | I_NOP -> true
     | _ -> false
 
-  let is_overwritable = is_overwritable
-  and can_overwrite =  can_overwrite
+  let can_overwrite =  can_overwrite
   and get_exported_label = get_exported_label
 
   module Set =

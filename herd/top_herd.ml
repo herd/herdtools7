@@ -40,7 +40,6 @@ end
 module type Config = sig
   include CommonConfig
   val byte : MachSize.sz
-  val cache_type : CacheType.t option
   val dirty : DirtyBit.t option
 end
 

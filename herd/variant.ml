@@ -69,7 +69,10 @@ type t =
 (* Perform experiment *)
   | Exp
 (* Instruction-fetch support (AKA "self-modifying code" mode) *)
-  | Self
+  | Ifetch
+(* CacheType features *)
+  | DIC
+  | IDC
 (* Have cat interpreter to optimise generation of co's *)
   | CosOpt
 (* Test something *)
@@ -131,7 +134,9 @@ let parse s = match Misc.lowercase s with
 | "optrfrmw" -> Some OptRfRMW
 | "constrainedunpredictable"|"cu" -> Some ConstrainedUnpredictable
 | "exp" -> Some Exp
-| "self" -> Some Self
+| "ifetch"|"self" -> Some Ifetch
+| "dic" -> None
+| "idc" -> None
 | "cos-opt" -> Some CosOpt
 | "test" -> Some Test
 | "asl" -> Some ASL
@@ -193,7 +198,9 @@ let pp = function
   | OptRfRMW -> "OptRfRMW"
   | ConstrainedUnpredictable -> "ConstrainedUnpredictable"
   | Exp -> "exp"
-  | Self -> "self"
+  | Ifetch -> "ifetch"
+  | DIC -> "dic"
+  | IDC -> "idc"
   | CosOpt -> "cos-opt"
   | Test -> "test"
   | T n -> Printf.sprintf "T%02i" n

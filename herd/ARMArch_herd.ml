@@ -35,6 +35,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let is_explicit annot = annot
     let is_not_explicit annot = annot
 
+    let ifetch_value_sets = []
+
     let barrier_sets =
       [
        "DMB",is_barrier (DMB SY);

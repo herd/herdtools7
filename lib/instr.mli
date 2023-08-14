@@ -23,7 +23,7 @@ module type S = sig
   val tr : InstrLit.t -> t
   val nop : t option
   val is_nop : t -> bool
-  val is_overwritable : t -> bool
+
   val can_overwrite : t -> bool
   val get_exported_label : t -> Label.t option
 
