@@ -196,7 +196,11 @@ module Make
           O.o "#define KVM 1" ;
           O.o "#include <libcflat.h>" ;
           O.o "#include \"kvm-headers.h\"" ;
-          O.o "#include \"utils.h\""
+          O.o "#include \"utils.h\"" ;
+          if not Cfg.stdio then begin
+            O.o "#include \"litmus_io.h\"" ;
+            O.o "#define NOSTDIO 1"
+          end ;
         end else begin
           O.o "#include <stdlib.h>" ;
           O.o "#include <inttypes.h>" ;
@@ -926,8 +930,9 @@ module Make
                       let c = sprintf "\"%s\"" (String.escaped c) in
                       EPF.fii ~out:"chan" "%s;" [c]
                   | d::ds,f::fs,fmt::fmts ->
-                      O.fii "if (%s != %s)" f d ;
+                      O.fii "if (%s != %s) {" f d ;
                       EPF.fiii ~out:"chan" fmt [f] ;
+                      O.oii "}" ;
                       do_rec ds fs fmts
                   |_ ->  (* All, defaults, arguments and formats agree *)
                      assert false in
@@ -1990,11 +1995,16 @@ module Make
         O.o "static void choose(int id,global_t *g) {" ;
         O.oi "param_t *q = g->param;" ;
         O.oi "thread_ctx_t c; c.id = c.seed = id;" ;
-        O.oi "st_t seed = 0;" ;
+        O.oi "st_t seed = 0; st_t seed0 = 0;" ;
         O.o "" ;
         O.oi "for (int nrun = 0; nrun < g->nruns ; nrun++) {" ;
+        O.oii "if (SCANSZ <= 1 && !g->fix && id == 0) {" ;
+        O.oii "/* Shuffle all threads in absence of topology information. */" ;
+        O.oiii "interval_shuffle(&seed0,(int *)g->ind,AVAIL);" ;
+        O.oii "}" ;
         O.oii
           "if (g->verbose>1) fprintf(stderr, \"Run %d of %d\\r\", nrun, g->nruns);" ;
+        O.oii "/* Select threads partition amounts SCANSZ */" ;
         O.oii "int part = q->part >= 0 ? q->part : rand_k(&seed,SCANSZ);" ;
         O.oii "set_role(g,&c,part);";
         O.oii "choose_params(g,&c,part);" ;

@@ -163,7 +163,11 @@ module Make(O:Config)(Tar:Tar.S) =
 (* Copy from platform subdirectory *)
     let cpy_platform fnames name ext =
       let name = sprintf "platform_%s" name in
-      do_cpy fnames (Filename.concat O.platform name) name ext
+      let platform =
+        match O.mode with
+        | Mode.Kvm -> "_kvm" ^ O.platform
+        | Mode.PreSi|Mode.Std -> O.platform in
+      do_cpy fnames (Filename.concat platform name) name ext
 
     let affinity_base () = match O.targetos with
     | Linux|FreeBsd -> "_linux_affinity"
@@ -194,12 +198,10 @@ module Make(O:Config)(Tar:Tar.S) =
               cpy fnames "show" ".awk"
         | `CPP|`LISA | `JAVA | `ASL -> Warn.fatal "no support for arch '%s'" (Archs.pp O.arch)
       in
-      let fnames = match O.mode with
-      | Mode.Kvm -> fnames
-      | Mode.PreSi|Mode.Std ->
-          let fnames = cpy fnames "litmus_rand" ".c" in
-          let fnames = cpy fnames "litmus_rand" ".h" in
-          fnames in
+      let fnames =
+        let fnames = cpy fnames "litmus_rand" ".c" in
+        let fnames = cpy fnames "litmus_rand" ".h" in
+        fnames in
       let fnames =
         if O.stdio then fnames
         else

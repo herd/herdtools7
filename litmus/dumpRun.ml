@@ -125,6 +125,19 @@ end = struct
         (List.rev sources) ;
       fprintf chan "\n"
     end ;
+    begin
+      match Cfg.mode with
+      | Mode.Std|Mode.PreSi -> ()
+      | Mode.Kvm ->
+         let utils =
+           ["litmus_rand.o"; "utils.o"; "kvm_timeofday.o";] in
+         let utils =
+           if Cfg.stdio then utils
+           else
+             "platform_io.o" :: "litmus_io.o" :: utils in
+         fprintf chan "UTILS=%s\n"
+           (String.concat " " utils)
+    end ;
     ()
 
   let makefile_clean chan extra =
@@ -444,8 +457,8 @@ let dump_c xcode names =
         | Mode.Kvm ->
            O.o "#include \"kvm-headers.h\"" ;
            O.o "#include \"utils.h\"" ;
-           if Cfg.sleep > 0 then
-             O.o "#include <asm/delay.h>"
+           if Cfg.sleep > 0 then O.o "#include <asm/delay.h>" ;
+           if not Cfg.stdio then O.o "#include \"litmus_io.h\"" ;
       end ;
       begin match Cfg.threadstyle with
       | ThreadStyle.Cached -> O.o "extern void set_pool(void);"
