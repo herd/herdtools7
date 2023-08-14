@@ -1,0 +1,7 @@
+X86_64 R
+
+{ }
+ P0          | P1            ;
+ movl $1,(x) | movl $2,(y)   ;
+ movl $1,(y) | movl (x),%eax ;
+exists ([y]=2 /\ 1:rax=0)
