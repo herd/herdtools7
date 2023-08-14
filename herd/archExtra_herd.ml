@@ -910,9 +910,14 @@ module Make(C:Config) (I:I) : S with module I = I
                     | Some lbl -> Label.Set.singleton lbl in
                   (" ~" ^ pp_fault (((p,tr_lbl),loc,ftype,None)) ^ ";")::k)
               fobs [] in
-          let flts = FaultSet.filter
-                       (fun f -> FaultAtomSet.exists (fun f0 -> check_one_fatom f f0) fobs)
-                       flts in
+          let flts =
+            if !Opts.dumpallfaults then
+              flts
+            else
+              FaultSet.filter
+                (fun f -> FaultAtomSet.exists
+                    (fun f0 -> check_one_fatom f f0) fobs)
+                flts in
           pp_st ^ " " ^
           FaultSet.pp_str " "  (fun f -> pp_fault f ^ ";")  flts ^
           String.concat "" noflts

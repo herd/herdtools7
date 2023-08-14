@@ -285,6 +285,9 @@ let options = [
   "-statelessrc11",
   Arg.Bool (fun b -> if b then statelessrc11 := true),
   "<bool> enable stateless RC11 model checking, use with -variant normw, SC check can be skipped";
+  "-dumpallfaults",
+  Arg.Bool (fun b -> dumpallfaults := b),
+  "Dump final states with all faults that that happenned regardless of the post-condition";
 
 (************************)
 (* Control dot pictures *)
@@ -521,6 +524,7 @@ let () =
     let throughflag = !throughflag
     let maxphantom = !maxphantom
     let statelessrc11 = !statelessrc11
+    let dumpallfaults = !dumpallfaults
 
     let check_name = Check.ok
     let check_rename = Check.rename_opt

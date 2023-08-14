@@ -32,6 +32,7 @@ module type Config = sig
   include Sem.Config
 
   val statelessrc11 : bool
+  val dumpallfaults : bool
   val byte : MachSize.Tag.t
 end
 

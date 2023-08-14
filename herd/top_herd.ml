@@ -34,6 +34,7 @@ module type CommonConfig = sig
   include Mem.CommonConfig
   val statelessrc11 : bool
   val skipchecks : StringSet.t
+  val dumpallfaults : bool
 end
 
 module type Config = sig
@@ -356,7 +357,9 @@ module Make(O:Config)(M:XXXMem.S) =
       let cstr = T.find_our_constraint test in
 
       let restrict_faults =
-        if A.FaultAtomSet.is_empty test.Test_herd.ffaults then
+        if !Opts.dumpallfaults then
+          Fun.id
+        else if A.FaultAtomSet.is_empty test.Test_herd.ffaults then
           fun _ -> A.FaultSet.empty
         else
           A.FaultSet.filter
