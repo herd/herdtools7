@@ -445,6 +445,7 @@ module Make (C : Config) = struct
       let lit x = E_Literal (L_Int (Z.of_int x)) |> with_pos in
       let bv x = T_Bits (BitWidth_SingleExpr x, []) |> with_pos in
       let bv_var x = bv @@ var x in
+      let bv_arg1 = bv_var "arg_1" in
       let bv_N = bv_var "N" in
       let bv_lit x = bv @@ lit x in
       let bv_64 = bv_lit 64 in
@@ -456,10 +457,11 @@ module Make (C : Config) = struct
         arity_two "write_register" [ bv_64; reg ] return_zero
           (write_register ii_env)
         |> __POS_OF__ |> here;
-        arity_two "read_memory" [ bv_64; integer ] (return_one bv_64)
+        arity_two "read_memory" [ bv_64 ; integer ]
+          (return_one (bv_arg1))
           (read_memory ii_env)
         |> __POS_OF__ |> here;
-        build_primitive "write_memory" [ bv_64; integer; bv_64 ] return_zero
+        build_primitive "write_memory" [ bv_64; integer; bv_arg1 ] return_zero
           (write_memory ii_env)
         |> __POS_OF__ |> here;
         arity_zero "PSTATE"
