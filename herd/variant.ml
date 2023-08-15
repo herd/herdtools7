@@ -87,7 +87,10 @@ type t =
   | ASLType of [`Warn|`Silence|`TypeCheck]
 (* Signed Int128 types *)
   | S128
-
+(* Strict interpretation of variant, e.g. -variant asl,strict *)
+  | Strict
+(* Semi-strict interpretation of variant, e.g. -variant asl,warn *)
+  | Warn
 
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
@@ -96,8 +99,8 @@ let tags =
     Precision.tags @
    ["toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
-    "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"; "asl"; "S128";
-    "ASLType+Warn";    "ASLType+Silence"; "ASLType+Check";]
+    "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"; "asl"; "strict";
+    "warn"; "S128"; "ASLType+Warn";    "ASLType+Silence"; "ASLType+Check";]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -147,6 +150,8 @@ let parse s = match Misc.lowercase s with
 | "asltype+silence"-> Some (ASLType `Silence)
 | "asltype+check"  -> Some (ASLType `TypeCheck)
 | "s128" -> Some S128
+| "strict" -> Some Strict
+| "warn" -> Some Warn
 | s ->
    begin
      match Precision.parse s with
@@ -209,6 +214,8 @@ let pp = function
   | ASLVersion `ASLv0 -> "ASLv0"
   | ASLVersion `ASLv1 -> "ASLv1"
   | S128 -> "S128"
+  | Strict -> "strict"
+  | Warn -> "warn"
   | ASLType `Warn -> "ASLType+Warn"
   | ASLType `Silence -> "ASLType+Silence"
   | ASLType `TypeCheck -> "ASLType+Check"

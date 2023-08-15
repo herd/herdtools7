@@ -890,6 +890,19 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
       end) in
       Model.Generic (P.parse fname)
 
+    let is_strict = C.variant Variant.Strict
+    let is_warn = C.variant Variant.Warn && not is_strict
+
+    let check_strict test ii =
+      if is_strict
+      then
+        Warn.fatal "No ASL implemention for instruction %s"
+          (A.dump_instruction ii.A.inst) ;
+      if is_warn then
+        Warn.warn_always "No ASL implemention for instruction %s"
+          (A.dump_instruction ii.A.inst) ;
+      AArch64Mixed.build_semantics test ii
+
     let build_semantics test ii =
       let () =
         if _dbg then
@@ -897,8 +910,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
             (A.pp_instruction PPMode.Ascii ii.A.inst)
       in
       match decode_inst ii with
-      | None -> AArch64Mixed.build_semantics test ii
-      | Some _ when AArch64.is_mixed -> AArch64Mixed.build_semantics test ii
+      | None -> check_strict test ii
+      | Some _ when AArch64.is_mixed -> check_strict test ii
       | Some (fname, args) -> (
           let test = fake_test ii fname args in
           let model = build_model_from_file "asl.cat" in
