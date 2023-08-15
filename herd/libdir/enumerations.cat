@@ -85,7 +85,7 @@ let all-DC-Exp_W-enums rel =
         rel | (IW * (_\IW))
     )
 
-let all-IC-Imp_Instr_R-enum rel =
+let all-IC-Imp_Instr_R-enums rel =
     enumerate-ordered-pairs (
         scl & (C_IC * (Imp & Instr & R)),
         rel
