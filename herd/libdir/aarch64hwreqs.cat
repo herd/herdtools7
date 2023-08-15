@@ -77,9 +77,9 @@ assert empty HU \ (AF | DB)
 
 (* DSB-ordered-before *)
 let DSB-ob =
- [M|DC.CVAU|IC]; po; [dsb.full]; po; [~(Imp & M)]
- | (if "ETS2" then [M|DC.CVAU|IC]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
- | [(Exp & R)\NoRet]; po; [dsb.ld]; po; [~(Imp & M)]
+ [M | DC.CVAU | IC]; po; [dsb.full]; po; [~(Imp & M)]
+ | (if "ETS2" then [M | DC.CVAU | IC]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
+ | [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [~(Imp & M)]
  | (if "ETS2" then [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [Imp & TTD & M] else 0)
  | [Exp & W]; po; [dsb.st]; po; [~(Imp & M)]
  | (if "ETS2" then [Exp & W]; po; [dsb.st]; po; [Imp & TTD & M] else 0)
@@ -113,12 +113,12 @@ let aob = rmw
 
 (* Barrier-ordered-before *)
 let bob = po; [dmb.full]; po
-        | [R\NoRet]; po; [dmb.ld]; po
+        | [R \ NoRet]; po; [dmb.ld]; po
         | [W]; po; [dmb.st]; po; [W | MMU & FAULT]
         | [range([A];amo;[L])]; po
         | [L]; po; [A]
-        | [A | Q]; (po|iico_order)
-        | (po|iico_order); [L]
+        | [A | Q]; (po | iico_order)
+        | (po | iico_order); [L]
 
 (* Locally-ordered-before *)
 let rec lob = lws; sca-class?
@@ -136,7 +136,7 @@ let rec local-hw-reqs =
   tc-ib
   | tr-ib
   | f-ib
-  | [Exp & M | Imp & Tag & R]; (lob | pick-lob); [Exp & M | Imp & Tag & R | FAULT & (TagCheck | MMU)]
+  | [Exp & M | Imp & Tag & R]; (lob | pick-lob); [Exp & M | Imp & Tag & R | (TagCheck | MMU) & FAULT]
   | (if "ETS2" then [Exp & M]; po; [TLBUncacheable & FAULT]; tr-ib^-1; [Imp & TTD & R] else 0)
   | DSB-ob
   | CSE-ob
