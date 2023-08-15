@@ -1,15 +1,29 @@
 open AST
-module ISet = Set.Make (String)
 
-module IMap : sig
-  include Map.S with type key = identifier
+module ISet = struct
+  include Set.Make (String)
 
-  val of_list : (key * 'a) list -> 'a t
-end = struct
+  let of_option = function None -> empty | Some s -> singleton s
+
+  let pp_print f t =
+    let open Format in
+    let pp_comma f () = fprintf f ",@ " in
+    fprintf f "@[{@,%a}@]"
+      (pp_print_seq ~pp_sep:pp_comma pp_print_string)
+      (to_seq t)
+end
+
+module IMap = struct
   include Map.Make (String)
 
   let of_list li =
     List.fold_left (fun acc (key, value) -> add key value acc) empty li
+
+  let pp_print pp_elt f t =
+    let open Format in
+    let pp_comma f () = fprintf f ",@ " in
+    let pp_one f (name, v) = fprintf f "@[<h>%s:@ @[%a@]@]" name pp_elt v in
+    fprintf f "{@[@,%a@]}" (pp_print_seq ~pp_sep:pp_comma pp_one) (to_seq t)
 end
 
 let dummy_pos = Lexing.dummy_pos
@@ -21,11 +35,20 @@ let to_pos pos = { pos with desc = () }
 let add_pos_from_st pos desc =
   if pos.desc == desc then pos else { pos with desc }
 
-let with_pos_from_st pos { desc; _ } = add_pos_from_st pos desc
-let map_desc_st f thing = f thing |> add_pos_from_st thing
 let add_pos_from pos desc = { pos with desc }
 let with_pos_from pos { desc; _ } = add_pos_from pos desc
 let map_desc f thing = f thing |> add_pos_from thing
+
+let add_pos_from_pos_of ((fname, lnum, cnum, enum), desc) =
+  let open Lexing in
+  let common =
+    { pos_fname = fname; pos_lnum = lnum; pos_bol = 0; pos_cnum = 0 }
+  in
+  {
+    desc;
+    pos_start = { common with pos_cnum = cnum };
+    pos_end = { common with pos_cnum = enum };
+  }
 
 let list_equal equal li1 li2 =
   li1 == li2 || (List.compare_lengths li1 li2 = 0 && List.for_all2 equal li1 li2)
@@ -40,7 +63,7 @@ let rec list_compare cmp l1 l2 =
       let c = cmp a1 a2 in
       if c <> 0 then c else list_compare cmp l1 l2
 
-(* Straight out of stdlib v5.0 *)
+(* Straight out of stdlib v4.11 *)
 let list_fold_left_map f accu l =
   let rec aux accu l_accu = function
     | [] -> (accu, List.rev l_accu)
@@ -50,6 +73,19 @@ let list_fold_left_map f accu l =
   in
   aux accu [] l
 
+(* Straigh out of stdlib v4.10 *)
+let list_concat_map f l =
+  let open List in
+  let rec aux f acc = function
+    | [] -> rev acc
+    | x :: l ->
+        let xs = f x in
+        aux f (rev_append xs acc) l
+  in
+  aux f [] l
+
+let pair x y = (x, y)
+let pair' y x = (x, y)
 let pair_equal f g (x1, y1) (x2, y2) = f x1 x2 && g y1 y2
 
 let map2_desc f thing1 thing2 =
@@ -61,6 +97,11 @@ let map2_desc f thing1 thing2 =
 
 let s_pass = add_dummy_pos S_Pass
 let s_then = map2_desc (fun s1 s2 -> S_Then (s1, s2))
+let boolean = T_Bool |> add_dummy_pos
+let integer = T_Int None |> add_dummy_pos
+let string = T_String |> add_dummy_pos
+let real = T_Real |> add_dummy_pos
+let underconstrained_integer = T_Int (Some []) |> add_dummy_pos
 
 let stmt_from_list : stmt list -> stmt =
   let is_not_s_pass = function { desc = S_Pass; _ } -> false | _ -> true in
@@ -70,7 +111,7 @@ let stmt_from_list : stmt list -> stmt =
     | s1 :: s2 :: t -> one_step (s_then s1 s2 :: acc) t
   in
   let rec aux = function
-    | [] -> add_dummy_pos S_Pass
+    | [] -> s_pass
     | [ x ] -> x
     | l -> aux @@ one_step [] l
   in
@@ -94,82 +135,116 @@ let slices_to_positions as_int =
   in
   fun positions -> List.map one_slice positions |> List.flatten
 
+let fold_named_list folder acc list =
+  List.fold_left (fun acc (_, v) -> folder acc v) acc list
+
 let rec use_e acc e =
   match e.desc with
   | E_Literal _ -> acc
-  | E_Typed (e, _) -> use_e acc e
+  | E_Typed (e, ty) -> use_e (use_ty acc ty) e
   | E_Var x -> ISet.add x acc
-  | E_Binop (_op, e1, e2) -> use_e (use_e acc e2) e1
+  | E_GetArray (e1, e2) | E_Binop (_, e1, e2) -> use_e (use_e acc e2) e1
   | E_Unop (_op, e) -> use_e acc e
   | E_Call (x, args, named_args) ->
       let acc = ISet.add x acc in
-      let acc = List.fold_left use_field acc named_args in
-      List.fold_left use_e acc args
-  | E_Slice (e, args) ->
-      let acc = use_e acc e in
-      List.fold_left use_slice acc args
+      let acc = use_fields acc named_args in
+      use_es acc args
+  | E_Slice (e, slices) -> use_slices (use_e acc e) slices
   | E_Cond (e1, e2, e3) -> use_e (use_e (use_e acc e1) e3) e2
-  | E_GetField (e, _, _ta) -> use_e acc e
-  | E_GetFields (e, _, _ta) -> use_e acc e
-  | E_Record (_ty, li, _ta) -> List.fold_left use_field acc li
-  | E_Concat es -> List.fold_left use_e acc es
-  | E_Tuple es -> List.fold_left use_e acc es
+  | E_GetField (e, _) -> use_e acc e
+  | E_GetFields (e, _) -> use_e acc e
+  | E_Record (_ty, li) -> use_fields acc li
+  | E_Concat es -> use_es acc es
+  | E_Tuple es -> use_es acc es
   | E_Unknown _ -> acc
   | E_Pattern (e, _p) -> use_e acc e
 
-and use_field acc (_, e) = use_e acc e
+and use_es acc es = List.fold_left use_e acc es
+and use_fields acc fields = fold_named_list use_e acc fields
+and use_slices acc slices = List.fold_left use_slice acc slices
 
 and use_slice acc = function
   | Slice_Single e -> use_e acc e
-  | Slice_Length (e1, e2) | Slice_Range (e1, e2) -> use_e (use_e acc e1) e2
+  | Slice_Star (e1, e2) | Slice_Length (e1, e2) | Slice_Range (e1, e2) ->
+      use_e (use_e acc e1) e2
 
-let used_identifiers, used_identifiers_stmt =
-  let rec use_s acc s =
-    match s.desc with
-    | S_Pass | S_Return None -> acc
-    | S_Then (s1, s2) -> use_s (use_s acc s1) s2
-    | S_Assert e | S_Return (Some e) -> use_e acc e
-    | S_Assign (le, e) -> use_le (use_e acc e) le
-    | S_Call (x, args, named_args) ->
-        let acc = ISet.add x acc in
-        let acc = List.fold_left use_field acc named_args in
-        List.fold_left use_e acc args
-    | S_Cond (e, s1, s2) -> use_s (use_s (use_e acc e) s2) s1
-    | S_Case (e, cases) -> List.fold_left use_case (use_e acc e) cases
-    | S_For (_, e1, _, e2, s) -> use_s (use_e (use_e acc e1) e2) s
-    | S_While (e, s) | S_Repeat (s, e) -> use_s (use_e acc e) s
-    | S_Decl (_, _, Some e) -> use_e acc e
-    | S_Decl (_, _, None) -> acc
-  and use_case acc { desc = _p, stmt; _ } = use_s acc stmt
-  and use_le acc _le = acc
-  and use_decl acc = function
-    | D_Func { body; _ } -> use_s acc body
-    | D_GlobalConst (_name, _ty, e) -> use_e acc e
-    | _ -> acc
-  in
-  (List.fold_left use_decl ISet.empty, use_s ISet.empty)
+and use_ty acc t =
+  match t.desc with
+  | T_Named s -> ISet.add s acc
+  | T_Int None | T_Enum _ | T_Bool | T_Real | T_String -> acc
+  | T_Int (Some cs) -> use_constraints acc cs
+  | T_Tuple li -> List.fold_left use_ty acc li
+  | T_Record fields | T_Exception fields -> fold_named_list use_ty acc fields
+  | T_Array (e, t') -> use_ty (use_e acc e) t'
+  | T_Bits (bit_constraint, bit_fields) ->
+      let acc =
+        match bit_constraint with
+        | BitWidth_SingleExpr e -> use_e acc e
+        | BitWidth_ConstrainedFormType t' -> use_ty acc t'
+        | BitWidth_Constraints cs -> use_constraints acc cs
+      in
+      fold_named_list use_slices acc bit_fields
+
+and use_constraints acc cs = List.fold_left use_constraint acc cs
+
+and use_constraint acc = function
+  | Constraint_Exact e -> use_e acc e
+  | Constraint_Range (e1, e2) -> use_e (use_e acc e1) e2
+
+let rec use_s acc s =
+  match s.desc with
+  | S_Pass | S_Return None -> acc
+  | S_Then (s1, s2) -> use_s (use_s acc s1) s2
+  | S_Assert e | S_Return (Some e) -> use_e acc e
+  | S_Assign (le, e) -> use_le (use_e acc e) le
+  | S_Call (x, args, named_args) ->
+      let acc = ISet.add x acc in
+      let acc = use_fields acc named_args in
+      use_es acc args
+  | S_Cond (e, s1, s2) -> use_s (use_s (use_e acc e) s2) s1
+  | S_Case (e, cases) -> List.fold_left use_case (use_e acc e) cases
+  | S_For (_, e1, _, e2, s) -> use_s (use_e (use_e acc e1) e2) s
+  | S_While (e, s) | S_Repeat (s, e) -> use_s (use_e acc e) s
+  | S_Decl (_, _, Some e) -> use_e acc e
+  | S_Decl (_, _, None) -> acc
+  | S_Throw (Some (e, _)) -> use_e acc e
+  | S_Throw None -> acc
+  | S_Try (s, catchers, None) -> use_catchers (use_s acc s) catchers
+  | S_Try (s, catchers, Some s') ->
+      use_catchers (use_s (use_s acc s') s) catchers
+
+and use_case acc { desc = _p, stmt; _ } = use_s acc stmt
+and use_le acc _le = acc
+and use_catcher acc (_name, _ty, s) = use_s acc s
+and use_catchers acc = List.fold_left use_catcher acc
+
+and use_decl acc d =
+  match d.desc with
+  | D_Func { body = SB_ASL s; _ } -> use_s acc s
+  | D_GlobalStorage { initial_value = Some e; _ } -> use_e acc e
+  | _ -> acc
+
+let used_identifiers ast = List.fold_left use_decl ISet.empty ast
+let used_identifiers_stmt = use_s ISet.empty
 
 let canonical_fields li =
   let compare (x, _) (y, _) = String.compare x y in
   List.sort compare li
 
-let rec value_equal v1 v2 =
+let literal_equal v1 v2 =
+  v1 == v2
+  ||
   match (v1, v2) with
-  | V_Bool b1, V_Bool b2 -> b1 = b2
-  | V_Int i1, V_Int i2 -> i1 = i2
-  | V_Real f1, V_Real f2 -> f1 = f2
-  | V_BitVector bv1, V_BitVector bv2 -> Bitvector.equal bv1 bv2
-  | V_Exception fs1, V_Exception fs2 | V_Record fs1, V_Record fs2 ->
-      List.compare_lengths fs1 fs2 = 0
-      &&
-      let fs1 = canonical_fields fs1 and fs2 = canonical_fields fs2 in
-      let field_equal (x1, v1) (x2, v2) =
-        String.equal x1 x2 && value_equal v1 v2
-      in
-      List.for_all2 field_equal fs1 fs2
-  | V_Tuple vs1, V_Tuple vs2 ->
-      List.compare_lengths vs1 vs2 = 0 && List.for_all2 value_equal vs1 vs2
-  | _ -> false
+  | L_Bool b1, L_Bool b2 -> b1 = b2
+  | L_Bool _, _ -> false
+  | L_Int i1, L_Int i2 -> i1 = i2
+  | L_Int _, _ -> false
+  | L_Real f1, L_Real f2 -> f1 = f2
+  | L_Real _, _ -> false
+  | L_BitVector bv1, L_BitVector bv2 -> Bitvector.equal bv1 bv2
+  | L_BitVector _, _ -> false
+  | L_String s1, L_String s2 -> String.equal s1 s2
+  | L_String _, _ -> false
 
 let rec expr_equal eq e1 e2 =
   e1 == e2 || eq e1 e2
@@ -189,14 +264,17 @@ let rec expr_equal eq e1 e2 =
   | E_Slice (e1, slices1), E_Slice (e2, slices2) ->
       expr_equal eq e1 e2 && slices_equal eq slices1 slices2
   | E_Slice _, _ | _, E_Slice _ -> false
-  | E_GetField (e1', f1, _), E_GetField (e2', f2, _) ->
+  | E_GetArray (e11, e21), E_GetArray (e12, e22) ->
+      expr_equal eq e11 e12 && expr_equal eq e21 e22
+  | E_GetArray _, _ | _, E_GetArray _ -> false
+  | E_GetField (e1', f1), E_GetField (e2', f2) ->
       String.equal f1 f2 && expr_equal eq e1' e2'
   | E_GetField _, _ | _, E_GetField _ -> false
-  | E_GetFields (e1', f1s, _), E_GetFields (e2', f2s, _) ->
+  | E_GetFields (e1', f1s), E_GetFields (e2', f2s) ->
       list_equal String.equal f1s f2s && expr_equal eq e1' e2'
   | E_GetFields _, _ | _, E_GetFields _ -> false
   | E_Pattern _, _ | E_Record _, _ -> assert false
-  | E_Literal v1, E_Literal v2 -> value_equal v1 v2
+  | E_Literal v1, E_Literal v2 -> literal_equal v1 v2
   | E_Literal _, _ | _, E_Literal _ -> false
   | E_Tuple li1, E_Tuple li2 -> list_equal (expr_equal eq) li1 li2
   | E_Tuple _, _ | _, E_Tuple _ -> false
@@ -262,27 +340,34 @@ and bitwidth_equal eq w1 w2 =
   w1 == w2
   ||
   match (w1, w2) with
-  | BitWidth_Constrained c1, BitWidth_Constrained c2 ->
+  | BitWidth_Constraints c1, BitWidth_Constraints c2 ->
       constraints_equal eq c1 c2
   | BitWidth_ConstrainedFormType t1, BitWidth_ConstrainedFormType t2 ->
       type_equal eq t1 t2
-  | BitWidth_Determined e1, BitWidth_Determined e2 -> expr_equal eq e1 e2
+  | BitWidth_SingleExpr e1, BitWidth_SingleExpr e2 -> expr_equal eq e1 e2
   | _ -> false
 
 and bitfields_equal eq bf1 bf2 =
   bf1 == bf2 || (list_equal (pair_equal String.equal (slices_equal eq))) bf1 bf2
 
-let literal v = E_Literal v |> add_dummy_pos
 let var_ x = E_Var x |> add_dummy_pos
 let binop op = map2_desc (fun e1 e2 -> E_Binop (op, e1, e2))
+let literal v = E_Literal v |> add_dummy_pos
+let expr_of_int i = literal (L_Int (Z.of_int i))
+
+module Infix = struct
+  let ( ~$ ) i = L_Int (Z.of_int i)
+  let ( !$ ) i = expr_of_int i
+end
 
 let expr_of_lexpr : lexpr -> expr =
   let rec aux le =
     match le.desc with
     | LE_Var x -> E_Var x
     | LE_Slice (le, args) -> E_Slice (map_desc aux le, args)
-    | LE_SetField (le, x, ta) -> E_GetField (map_desc aux le, x, ta)
-    | LE_SetFields (le, x, ta) -> E_GetFields (map_desc aux le, x, ta)
+    | LE_SetArray (le, e) -> E_GetArray (map_desc aux le, e)
+    | LE_SetField (le, x) -> E_GetField (map_desc aux le, x)
+    | LE_SetFields (le, x) -> E_GetFields (map_desc aux le, x)
     | LE_Ignore -> E_Var "-"
     | LE_TupleUnpack les -> E_Tuple (List.map (map_desc aux) les)
   in
@@ -293,11 +378,6 @@ let fresh_var =
   fun s ->
     let () = incr i in
     s ^ "-" ^ string_of_int !i
-
-let rec big_union = function
-  | [] -> literal (V_Bool true)
-  | [ e ] -> e
-  | h :: t -> binop BOR h (big_union t)
 
 let case_to_conds : stmt -> stmt =
   let rec cases_to_cond x = function
@@ -314,8 +394,8 @@ let case_to_conds : stmt -> stmt =
       let x = fresh_var "case" in
       let assign =
         let pos = e.pos_start in
-        let le = annotated (LE_Var x) pos pos in
-        annotated (S_Assign (le, e)) pos e.pos_end
+        let le = LDI_Var (x, Some integer) in
+        annotated (S_Decl (LDK_Let, le, Some e)) pos e.pos_end
       in
       S_Then (assign, cases_to_cond x cases)
   | _ -> raise (Invalid_argument "case_to_conds")
@@ -324,26 +404,16 @@ let slice_as_single = function
   | Slice_Single e -> e
   | _ -> raise @@ Invalid_argument "slice_as_single"
 
-let getter_prefix = "getter-"
-let setter_prefix = "setter-"
-let setter_name = ( ^ ) setter_prefix
-let getter_name = ( ^ ) getter_prefix
-
-let num_args = function
-  | 0 -> Fun.id
-  | n -> fun name -> name ^ "-" ^ string_of_int n
-
-let default_t_bits = T_Bits (BitWidth_Constrained [], [])
+let default_t_bits = T_Bits (BitWidth_Constraints [], [])
 
 let patch ~src ~patches =
   (* Size considerations:
      - [src] is BIG.
      - [patches] is not that little. *)
-  let identifier_of_decl = function
-    | D_Func { name; _ }
-    | D_GlobalConst (name, _, _)
-    | D_TypeDecl (name, _)
-    | D_Primitive { name; _ } ->
+  let identifier_of_decl d =
+    match d.desc with
+    | D_Func { name; _ } | D_GlobalStorage { name; _ } | D_TypeDecl (name, _, _)
+      ->
         name
   in
   let to_remove =
@@ -381,20 +451,21 @@ let rec subst_expr substs e =
   | E_Concat es -> E_Concat (List.map tr es)
   | E_Cond (e1, e2, e3) -> E_Cond (tr e1, tr e2, tr e3)
   | E_Call (x, args, ta) -> E_Call (x, List.map tr args, ta)
-  | E_GetField (e, x, ta) -> E_GetField (tr e, x, ta)
-  | E_GetFields (e, fields, ta) -> E_GetFields (tr e, fields, ta)
+  | E_GetArray (e1, e2) -> E_GetArray (tr e1, tr e2)
+  | E_GetField (e, x) -> E_GetField (tr e, x)
+  | E_GetFields (e, fields) -> E_GetFields (tr e, fields)
   | E_Literal _ -> e.desc
   | E_Pattern (e, ps) -> E_Pattern (tr e, ps)
-  | E_Record (t, fields, ta) ->
-      E_Record (t, List.map (fun (x, e) -> (x, tr e)) fields, ta)
+  | E_Record (t, fields) ->
+      E_Record (t, List.map (fun (x, e) -> (x, tr e)) fields)
   | E_Slice (e, slices) -> E_Slice (tr e, slices)
   | E_Tuple es -> E_Tuple (List.map tr es)
   | E_Typed (e, t) -> E_Typed (tr e, t)
   | E_Unknown _ -> e.desc
   | E_Unop (op, e) -> E_Unop (op, tr e)
 
-let dag_fold (def : AST.decl -> identifier) (use : AST.decl -> ISet.t)
-    (folder : AST.decl -> 'a -> 'a) (ast : AST.t) : 'a -> 'a =
+let dag_fold (def : 'p AST.decl -> identifier) (use : 'p AST.decl -> ISet.t)
+    (folder : 'p AST.decl -> 'a -> 'a) (ast : 'p AST.t) : 'a -> 'a =
   let def_use_map =
     List.fold_left
       (fun def_use_map d ->
@@ -407,7 +478,7 @@ let dag_fold (def : AST.decl -> identifier) (use : AST.decl -> ISet.t)
       IMap.empty ast
   in
   let rec loop s (seen, acc) =
-    if not (ISet.mem s seen) then
+    if (not (ISet.mem s seen)) && IMap.mem s def_use_map then
       let li, use_set = IMap.find s def_use_map in
       let seen, acc = ISet.fold loop use_set (seen, acc) in
       let acc = List.fold_left (Fun.flip folder) acc li in
@@ -422,3 +493,65 @@ let dag_fold (def : AST.decl -> identifier) (use : AST.decl -> ISet.t)
         (ISet.empty, acc) ast
     in
     acc
+
+let scope_equal s1 s2 =
+  match (s1, s2) with
+  | Scope_Global, Scope_Global -> true
+  | Scope_Global, _ | _, Scope_Global -> false
+  | Scope_Local (n1, i1), Scope_Local (n2, i2) -> i1 == i2 && String.equal n1 n2
+
+let scope_compare s1 s2 =
+  match (s1, s2) with
+  | Scope_Global, Scope_Global -> 0
+  | Scope_Global, _ -> -1
+  | _, Scope_Global -> 1
+  | Scope_Local (n1, i1), Scope_Local (n2, i2) ->
+      let n = Int.compare i1 i2 in
+      if n != 0 then n else String.compare n1 n2
+
+let no_primitive (ast : 'p t) : 'q t =
+  let one d =
+    let here = add_pos_from d in
+    match d.desc with
+    | D_GlobalStorage g -> D_GlobalStorage g |> here
+    | D_TypeDecl (a, b, c) -> D_TypeDecl (a, b, c) |> here
+    | D_Func { body = SB_Primitive _; _ } -> assert false
+    | D_Func
+        {
+          body = SB_ASL s;
+          args;
+          name;
+          return_type;
+          subprogram_type;
+          parameters;
+        } ->
+        D_Func
+          {
+            body = SB_ASL s;
+            args;
+            name;
+            return_type;
+            subprogram_type;
+            parameters;
+          }
+        |> here
+  in
+  List.map one ast
+
+let rec is_simple_expr e =
+  match e.desc with
+  | E_Var _ | E_Literal _ | E_Unknown _ -> true
+  | E_GetArray (e1, e2) | E_Binop (_, e1, e2) ->
+      is_simple_expr e1 && is_simple_expr e2
+  | E_Typed (e, _)
+  | E_GetFields (e, _)
+  | E_GetField (e, _)
+  | E_Unop (_, e)
+  | E_Pattern (e, _) (* because pattern must be side-effect free. *) ->
+      is_simple_expr e
+  | E_Tuple es | E_Concat es -> List.for_all is_simple_expr es
+  | E_Cond (e1, e2, e3) ->
+      is_simple_expr e1 && is_simple_expr e2 && is_simple_expr e3
+  | E_Record (_, fields) ->
+      List.for_all (fun (_name, e) -> is_simple_expr e) fields
+  | E_Call _ | E_Slice _ -> false

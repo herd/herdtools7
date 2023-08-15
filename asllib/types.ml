@@ -1,7 +1,9 @@
 open AST
 open ASTUtils
-module SEnv = Env.Static
-open SEnv.Types
+open Infix
+module SEnv = StaticEnv
+
+type env = SEnv.env
 
 let undefined_identifier pos x =
   Error.fatal_from pos (Error.UndefinedIdentifier x)
@@ -15,6 +17,14 @@ let bitwidth_equal = thing_equal bitwidth_equal
 let slices_equal = thing_equal slices_equal
 
 (* --------------------------------------------------------------------------*)
+
+let rec resolve_root_name (env : env) (ty : ty) : ty =
+  match ty.desc with
+  | T_Named x -> (
+      match IMap.find_opt x env.global.declared_types with
+      | Some ty -> resolve_root_name env ty
+      | None -> undefined_identifier ty x)
+  | _ -> ty
 
 let get_structure (env : env) : ty -> ty =
   (* TODO: rethink to have physical equality when structural equality? *)
@@ -41,6 +51,8 @@ let get_structure (env : env) : ty -> ty =
   in
 
   get
+
+(* --------------------------------------------------------------------------*)
 
 (* The builtin singular types are:
    • integer
@@ -95,14 +107,19 @@ let rec is_non_primitive ty =
 
 let is_primitive ty = not (is_non_primitive ty)
 
-module Domain = struct
-  module IntSet = Set.Make (Int)
+(* --------------------------------------------------------------------------*)
 
+module Domain = struct
+  module IntSet = Set.Make (Z)
   (* Pretty inefficient. Use diets instead?
      See https://web.engr.oregonstate.edu/~erwig/papers/Diet_JFP98.pdf
      or https://github.com/mirage/ocaml-diet
   *)
-  type int_set = Finite of IntSet.t | Top
+
+  (** Represents the domain of a integer expression. If there are no constraints,
+    then the expression has the [Top] domain, whereas there are constraints but
+    they cannot get resolved, the domain is [AlmostTop]. *)
+  type int_set = Finite of IntSet.t | AlmostTop | Top
 
   type t =
     | D_Bool
@@ -114,15 +131,16 @@ module Domain = struct
 
   let rec add_interval_to_intset acc bot top =
     if bot > top then acc
-    else add_interval_to_intset (IntSet.add bot acc) (bot + 1) top
+    else add_interval_to_intset (IntSet.add bot acc) (Z.succ bot) top
 
   let pp_int_set f =
     let open Format in
     function
+    | AlmostTop -> pp_print_string f "𝕫"
     | Top -> pp_print_string f "ℤ"
     | Finite set ->
         fprintf f "@[{@,%a}@]"
-          (PP.pp_print_seq ~pp_sep:pp_print_space pp_print_int)
+          (PP.pp_print_seq ~pp_sep:pp_print_space Z.pp_print)
           (IntSet.to_seq set)
 
   let pp f =
@@ -151,7 +169,7 @@ module Domain = struct
         raise_notrace StaticEvaluationTop
     in
     match v with
-    | V_Int i -> i
+    | L_Int i -> i
     | _ ->
         failwith
           "Type error? Cannot use an expression that is not an int in a \
@@ -164,15 +182,28 @@ module Domain = struct
         add_interval_to_intset acc bot top
 
   let int_set_of_int_constraints env constraints =
-    try
-      Finite
-        (List.fold_left (add_constraint_to_intset env) IntSet.empty constraints)
-    with StaticEvaluationTop -> Top
+    match constraints with
+    | [] -> AlmostTop
+    | _ -> (
+        try
+          Finite
+            (List.fold_left
+               (add_constraint_to_intset env)
+               IntSet.empty constraints)
+        with StaticEvaluationTop -> AlmostTop)
+
+  let int_set_raise_op op is1 is2 =
+    match (is1, is2) with
+    | Top, _ | _, Top -> Top
+    | AlmostTop, _ | _, AlmostTop -> AlmostTop
+    | Finite is1, Finite is2 ->
+        Finite
+          (IntSet.fold
+             (fun i1 -> IntSet.fold (fun i2 -> IntSet.add (op i1 i2)) is2)
+             is1 IntSet.empty)
 
   let rec int_set_of_bits_width env = function
-    | BitWidth_Determined e -> (
-        try Finite (IntSet.singleton (eval env e))
-        with StaticEvaluationTop -> Top)
+    | BitWidth_SingleExpr e -> int_set_of_expr env e
     | BitWidth_ConstrainedFormType ty -> (
         match of_type env ty with
         | D_Bits is | D_Int is -> is
@@ -180,8 +211,42 @@ module Domain = struct
             failwith
               "An bit width cannot be constrained from a type that is neither \
                a bitvector nor an integer.")
-    | BitWidth_Constrained constraints ->
+    | BitWidth_Constraints constraints ->
         int_set_of_int_constraints env constraints
+
+  and int_set_of_value = function
+    | L_Int i -> Finite (IntSet.singleton i)
+    | _ -> assert false
+
+  and int_set_of_expr env e =
+    match e.desc with
+    | E_Literal v -> int_set_of_value v
+    | E_Var x -> (
+        try StaticEnv.lookup_constants env x |> int_set_of_value
+        with Not_found -> (
+          try
+            match (StaticEnv.type_of env x).desc with
+            | T_Int None -> Top
+            | T_Int (Some constraints) ->
+                int_set_of_int_constraints env constraints
+            | _ -> assert false
+          with Not_found ->
+            Error.fatal_unknown_pos (Error.UndefinedIdentifier x)))
+    | E_Unop (NEG, e') ->
+        int_set_of_expr env (E_Binop (MINUS, !$0, e') |> add_pos_from e)
+    | E_Unop _ -> assert false
+    | E_Binop (op, e1, e2) ->
+        let is1 = int_set_of_expr env e1
+        and is2 = int_set_of_expr env e2
+        and op =
+          match op with
+          | PLUS -> Z.add
+          | MINUS -> Z.sub
+          | MUL -> Z.mul
+          | _ -> assert false
+        in
+        int_set_raise_op op is1 is2
+    | _ -> assert false
 
   and of_type env ty =
     match ty.desc with
@@ -200,17 +265,17 @@ module Domain = struct
 
   let mem v d =
     match (v, d) with
-    | V_Bool _, D_Bool | V_Real _, D_Real -> true
-    | V_Bool _, _ | V_Real _, _ | _, D_Bool | _, D_Real -> false
-    | V_BitVector _, D_Bits Top -> true
-    | V_BitVector bv, D_Bits (Finite intset) ->
-        IntSet.mem (Bitvector.length bv) intset
-    | V_BitVector _, _ | _, D_Bits _ -> false
-    | V_Int _, D_Int Top -> true
-    | V_Int i, D_Int (Finite intset) -> IntSet.mem i intset
-    | V_Int _, _ | _, D_Int _ -> false
-    | V_Tuple _, _ | V_Exception _, _ | V_Record _, _ ->
-        failwith "Unimplemented: domain of non-singular type."
+    | L_Bool _, D_Bool | L_Real _, D_Real -> true
+    | L_Bool _, _ | L_Real _, _ | _, D_Bool | _, D_Real -> false
+    | L_BitVector _, D_Bits Top -> true
+    | L_BitVector bv, D_Bits (Finite intset) ->
+        IntSet.mem (Bitvector.length bv |> Z.of_int) intset
+    | L_BitVector _, _ | _, D_Bits _ -> false
+    | L_Int _, D_Int Top -> true
+    | L_Int i, D_Int (Finite intset) -> IntSet.mem i intset
+    | L_Int _, _ | _, D_Int _ -> false
+    | L_String _, D_String -> true
+    | L_String _, _ (* | _, D_String *) -> false
 
   let equal d1 d2 =
     match (d1, d2) with
@@ -224,23 +289,49 @@ module Domain = struct
 
   let compare _d1 _d2 = assert false
 
+  let int_set_is_subset is1 is2 =
+    match (is1, is2) with
+    | _, Top -> true
+    | Top, _ -> false
+    | _, AlmostTop -> true
+    | AlmostTop, _ -> false
+    | Finite is1, Finite is2 -> IntSet.subset is1 is2
+
   let is_subset d1 d2 =
     match (d1, d2) with
     | D_Bool, D_Bool | D_String, D_String | D_Real, D_Real -> true
     | D_Symbols s1, D_Symbols s2 -> ISet.subset s1 s2
-    | D_Int _, D_Int Top -> true
-    | D_Int Top, D_Int _ -> false
-    | D_Int (Finite is1), D_Int (Finite is2) -> IntSet.subset is1 is2
-    | D_Bits _, D_Bits Top -> true
-    | D_Bits Top, D_Bits _ -> false
-    | D_Bits (Finite is1), D_Bits (Finite is2) -> IntSet.subset is1 is2
+    | D_Bits is1, D_Bits is2 | D_Int is1, D_Int is2 -> int_set_is_subset is1 is2
     | _ -> false
+
+  let get_width_singleton_opt = function
+    | D_Bits (Finite int_set) ->
+        if IntSet.cardinal int_set = 1 then Some (IntSet.choose int_set)
+        else None
+    | D_Bits _ -> None
+    | _ -> failwith "Cannot get width from non-bits domain."
 end
+
+(* --------------------------------------------------------------------------*)
+
+let is_bits_width_fixed env ty =
+  match ty.desc with
+  | T_Bits _ -> (
+      let open Domain in
+      match of_type env ty with
+      | D_Int (Finite int_set) -> IntSet.cardinal int_set = 1
+      | D_Int Top -> false
+      | _ -> failwith "Wrong domain for a bitwidth.")
+  | _ -> failwith "Wrong type for some bits."
+
+let _is_bits_width_constrained env ty = not (is_bits_width_fixed env ty)
+
+(* --------------------------------------------------------------------------*)
 
 let rec subtypes_names env s1 s2 =
   if String.equal s1 s2 then true
   else
-    match IMap.find_opt s1 env.global.subtypes with
+    match IMap.find_opt s1 env.SEnv.global.subtypes with
     | None -> false
     | Some s1' -> subtypes_names env s1' s2
 
@@ -252,8 +343,7 @@ let subtypes env t1 t2 =
 let rec structural_subtype_satisfies env t s =
   (* A type T subtype-satisfies type S if and only if all of the following
      conditions hold: *)
-  let s_struct = get_structure env s and t_struct = get_structure env t in
-  match (s_struct.desc, t_struct.desc) with
+  match ((resolve_root_name env s).desc, (resolve_root_name env t).desc) with
   (* If S has the structure of an integer type then T must have the structure
      of an integer type. *)
   | T_Int _, T_Int _ -> true
@@ -288,18 +378,14 @@ let rec structural_subtype_satisfies env t s =
       and offset, whose type type-satisfies the bitfield in S.
   *)
   | T_Bits (w_s, bf_s), T_Bits (w_t, bf_t) -> (
-      (match (w_s, w_t) with
-      | BitWidth_Determined e_s, BitWidth_Determined e_t ->
-          expr_equal env e_s e_t
-      | BitWidth_Determined _, _ -> false
-      | BitWidth_Constrained _, _ -> true
-      | _ -> true)
+      (* I interprete the first two condition as just a condition on domains. *)
+      true
       &&
       match (bf_s, bf_t) with
       | [], _ -> true
       | _, [] -> false
       | bfs_s, bfs_t ->
-          w_s = w_t
+          bitwidth_equal env w_s w_t
           &&
           let bf_equal (name_s, slices_s) (name_t, slices_t) =
             String.equal name_s name_t && slices_equal env slices_s slices_t
@@ -309,8 +395,7 @@ let rec structural_subtype_satisfies env t s =
   | T_Bits _, _ -> false
   (* If S has the structure of an array type with elements of type E then T
      must have the structure of an array type with elements of type E, and T
-     must have the same element indices as S.
-     TODO: this is probably wrong, or a bad approximation. *)
+     must have the same element indices as S. *)
   | T_Array (length_s, ty_s), T_Array (length_t, ty_t) ->
       expr_equal env length_s length_t && type_equal env ty_s ty_t
   | T_Array _, _ -> false
@@ -330,8 +415,13 @@ let rec structural_subtype_satisfies env t s =
      TODO: order of fields? *)
   | T_Exception fields_s, T_Exception fields_t
   | T_Record fields_s, T_Record fields_t ->
-      List.compare_lengths fields_s fields_t = 0
-      && List.for_all2 ( = ) fields_s fields_t
+      List.for_all
+        (fun (name_s, ty_s) ->
+          List.exists
+            (fun (name_t, ty_t) ->
+              String.equal name_s name_t && type_equal env ty_s ty_t)
+            fields_t)
+        fields_s
   | T_Exception _, _ | T_Record _, _ -> false (* A structure cannot be a name *)
   | T_Named _, _ -> assert false
 
@@ -347,22 +437,36 @@ and domain_subtype_satisfies env t s =
   | T_Real | T_String | T_Bool | T_Enum _ | T_Int _ ->
       Domain.(
         is_subset (of_type env (get_structure env t)) (of_type env s_struct))
-  | T_Bits (width_s, _) -> (
-      (* If either S or T have the structure of a bitvector type with
-         undetermined width then the domain of T must be a subset of the domain
-         of S. *)
+  | T_Bits _ -> (
+      (*
+        • If either S or T have the structure of a bitvector type with
+          undetermined width then the domain of T must be a subset of the domain
+          of S.
+         *)
       (* Implicitely, T must have the structure of a bitvector. *)
       let t_struct = get_structure env t in
-      match (width_s, t_struct.desc) with
-      | BitWidth_Constrained _, T_Bits _ | _, T_Bits (BitWidth_Constrained _, _)
-        ->
-          Domain.(is_subset (of_type env s_struct) (of_type env t_struct))
-      | BitWidth_Determined _, T_Bits (BitWidth_Determined _, _) ->
-          Domain.(
-            is_subset (of_type env (get_structure env t)) (of_type env s_struct))
-      | _ -> false)
+      let t_domain = Domain.of_type env t_struct
+      and s_domain = Domain.of_type env s_struct in
+      let () =
+        if false then
+          Format.eprintf "Is %a included in %a?@." Domain.pp t_domain Domain.pp
+            s_domain
+      in
+      match
+        ( Domain.get_width_singleton_opt s_domain,
+          Domain.get_width_singleton_opt t_domain )
+      with
+      | Some w_s, Some w_t -> Z.equal w_s w_t
+      | _ -> Domain.is_subset t_domain s_domain)
 
 and subtype_satisfies env t s =
+  let () =
+    if false then
+      let b1 = structural_subtype_satisfies env t s in
+      let b2 = domain_subtype_satisfies env t s in
+      Format.eprintf "%a subtypes %a ? struct: %B -- domain: %B@." PP.pp_ty t
+        PP.pp_ty s b1 b2
+  in
   structural_subtype_satisfies env t s && domain_subtype_satisfies env t s
 
 and type_satisfies env t s =
@@ -381,6 +485,8 @@ and type_satisfies env t s =
   | T_Bits (width_t, []), T_Bits (width_s, _) ->
       bitwidth_equal env width_t width_s
   | _ -> false
+
+(* --------------------------------------------------------------------------*)
 
 let rec type_clashes env t s =
   (*
@@ -414,7 +520,7 @@ let rec type_clashes env t s =
       && List.for_all2 (type_clashes env) li_s li_t
   | _ -> false
 
-let subprogram_clashes env f1 f2 =
+let subprogram_clashes env (f1 : 'a func) (f2 : 'b func) =
   (* Two subprograms clash if all of the following hold:
       • they have the same name
       • they are the same kind of subprogram
@@ -429,6 +535,8 @@ let subprogram_clashes env f1 f2 =
   && List.for_all2
        (fun (_, t1) (_, t2) -> type_clashes env t1 t2)
        f1.args f2.args
+
+(* --------------------------------------------------------------------------*)
 
 let supertypes_set (env : env) =
   let rec aux acc x =
@@ -568,3 +676,48 @@ let rec lowest_common_ancestor env s t =
             | _, T_Named _ -> Some t
             | _, _ -> Some (add_dummy_pos (T_Int None)))
         | _ -> None)
+
+(* --------------------------------------------------------------------------*)
+
+let rec base_value loc env t =
+  let lit v = E_Literal v |> add_pos_from t in
+  let normalize env e =
+    let open StaticInterpreter in
+    try Normalize.normalize env e
+    with NotYetImplemented -> (
+      try static_eval env e |> lit
+      with Error.ASLException _ | NotYetImplemented -> e)
+  in
+  let t_struct = get_structure env t in
+  match t_struct.desc with
+  | T_Array _ ->
+      Error.fatal_from loc
+        (Error.NotYetImplemented "Base value of array types.")
+  | T_Bool -> L_Bool true |> lit
+  | T_Bits (BitWidth_Constraints (Constraint_Exact e :: _), _)
+  | T_Bits (BitWidth_Constraints (Constraint_Range (e, _) :: _), _)
+  | T_Bits (BitWidth_SingleExpr e, _) ->
+      let e = normalize env e in
+      E_Call ("Zeros", [ e ], []) |> add_pos_from t
+  | T_Bits (BitWidth_ConstrainedFormType _, _) ->
+      Error.fatal_from loc
+        (Error.NotYetImplemented "Base value of type-constrained bitvectors.")
+  | T_Bits (BitWidth_Constraints [], _) ->
+      Error.fatal_from loc
+        (Error.NotYetImplemented "Base value of under-constrained bitvectors.")
+  | T_Enum li -> IMap.find (List.hd li) env.global.constants_values |> lit
+  | T_Int None | T_Int (Some []) -> !$0
+  | T_Int (Some (Constraint_Exact e :: _))
+  | T_Int (Some (Constraint_Range (e, _) :: _)) ->
+      normalize env e
+  | T_Named _ -> assert false
+  | T_Real -> L_Real Q.zero |> lit
+  | T_Exception fields | T_Record fields ->
+      let one_field (name, t) = (name, base_value loc env t) in
+      E_Record (t, List.map one_field fields) |> add_pos_from t
+  | T_String ->
+      Error.fatal_from loc
+        (Error.NotYetImplemented "Base value of string types.")
+  | T_Tuple li ->
+      let one t = base_value loc env t in
+      E_Tuple (List.map one li) |> add_pos_from t

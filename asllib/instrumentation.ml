@@ -3,7 +3,7 @@ module Rule = struct
     | Lit
     | IgnoreTypedExpr
     | ELocalVar
-    | GlobalConst
+    | EGlobalVar
     | Binop
     | Unop
     | ECond
@@ -17,6 +17,7 @@ module Rule = struct
     | LEIgnore
     | LETyped
     | LELocalVar
+    | LEGlobalVar
     | LESlice
     | LESetRecordField
     | LESetBitField
@@ -35,7 +36,7 @@ module Rule = struct
     | Lit -> "Lit"
     | IgnoreTypedExpr -> "IgnoreTypedExpr"
     | ELocalVar -> "ELocalVar"
-    | GlobalConst -> "GlobalConst"
+    | EGlobalVar -> "EGlobalVar"
     | Binop -> "Binop"
     | Unop -> "Unop"
     | ECond -> "ECond"
@@ -49,6 +50,7 @@ module Rule = struct
     | LEIgnore -> "LEIgnore"
     | LETyped -> "LETyped"
     | LELocalVar -> "LELocalVar"
+    | LEGlobalVar -> "LEGlobalVar"
     | LESlice -> "LESlice"
     | LESetRecordField -> "LESetRecordField"
     | LESetBitField -> "LESetBitField"
@@ -70,7 +72,7 @@ module Rule = struct
       Lit;
       IgnoreTypedExpr;
       ELocalVar;
-      GlobalConst;
+      EGlobalVar;
       Binop;
       Unop;
       ECond;
@@ -84,6 +86,7 @@ module Rule = struct
       LEIgnore;
       LETyped;
       LELocalVar;
+      LEGlobalVar;
       LESlice;
       LESetRecordField;
       LESetBitField;

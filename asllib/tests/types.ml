@@ -5,10 +5,10 @@ open Test_helpers.Helpers
 open Test_helpers.Helpers.Infix
 open Asllib.Types
 
-let empty_env = Env.Static.empty
+let empty_env = StaticEnv.empty
 
 let env_with_n =
-  let open Env.Static in
+  let open StaticEnv in
   add_local "N" integer LDK_Let empty
 
 let builtin_examples () =
@@ -36,8 +36,8 @@ let builtin_examples () =
       T_Bool;
       T_Enum [];
       T_Enum [ "Something"; "Something Else" ];
-      T_Bits (BitWidth_Determined !$0, []);
-      T_Bits (BitWidth_Determined !$3, [ ("Something", [ Slice_Single !$0 ]) ]);
+      T_Bits (BitWidth_SingleExpr !$0, []);
+      T_Bits (BitWidth_SingleExpr !$3, [ ("Something", [ Slice_Single !$0 ]) ]);
     ];
 
   (* Builtin aggregate *)
@@ -65,7 +65,7 @@ let structure_example () =
   let t2_def = !!(T_Tuple [ integer; t1 ]) in
   let t2 = !!(T_Named "T2") in
   let env =
-    let open Env.Static in
+    let open StaticEnv in
     add_type "T1" integer empty |> add_type "T2" t2_def
   in
   (* the named type `T1` whose structure is integer *)
@@ -91,23 +91,23 @@ let structure_example () =
   ()
 
 let subtype_examples () =
-  let bits_4 = !!(T_Bits (BitWidth_Determined !$4, [])) in
+  let bits_4 = !!(T_Bits (BitWidth_SingleExpr !$4, [])) in
   let bits_2_4 =
     !!(T_Bits
-         ( BitWidth_Constrained [ Constraint_Exact !$2; Constraint_Exact !$4 ],
+         ( BitWidth_Constraints [ Constraint_Exact !$2; Constraint_Exact !$4 ],
            [] ))
   in
 
   assert (not (subtype_satisfies empty_env bits_2_4 bits_4));
 
   let bits_btifields =
-    !!(T_Bits (BitWidth_Determined !$4, [ ("a", [ Slice_Single !$3 ]) ]))
+    !!(T_Bits (BitWidth_SingleExpr !$4, [ ("a", [ Slice_Single !$3 ]) ]))
   in
 
   assert (domain_subtype_satisfies empty_env bits_btifields bits_btifields);
 
-  let bits_n = !!(T_Bits (BitWidth_Determined !%"N", [])) in
-  let bits_n_1 = !!(T_Bits (BitWidth_Determined (binop MUL !%"N" !$1), [])) in
+  let bits_n = !!(T_Bits (BitWidth_SingleExpr !%"N", [])) in
+  let bits_n_1 = !!(T_Bits (BitWidth_SingleExpr (binop MUL !%"N" !$1), [])) in
 
   assert (domain_subtype_satisfies env_with_n bits_n bits_n_1);
   assert (structural_subtype_satisfies env_with_n bits_n bits_n_1);
@@ -116,9 +116,9 @@ let subtype_examples () =
   ()
 
 let type_examples () =
-  let bits_4 = !!(T_Bits (BitWidth_Determined !$4, [])) in
-  let bits_n = !!(T_Bits (BitWidth_Determined !%"N", [])) in
-  let bits_n' = !!(T_Bits (BitWidth_Determined !%"N", [])) in
+  let bits_4 = !!(T_Bits (BitWidth_SingleExpr !$4, [])) in
+  let bits_n = !!(T_Bits (BitWidth_SingleExpr !%"N", [])) in
+  let bits_n' = !!(T_Bits (BitWidth_SingleExpr !%"N", [])) in
 
   assert (type_satisfies env_with_n bits_n bits_n');
 
@@ -131,8 +131,8 @@ let type_examples () =
   ()
 
 let lca_examples () =
-  let bits_4 = !!(T_Bits (BitWidth_Determined !$4, [])) in
-  let bits_2 = !!(T_Bits (BitWidth_Determined !$2, [])) in
+  let bits_4 = !!(T_Bits (BitWidth_SingleExpr !$4, [])) in
+  let bits_2 = !!(T_Bits (BitWidth_SingleExpr !$2, [])) in
 
   assert (lowest_common_ancestor empty_env bits_4 bits_2 = None);
 
@@ -144,15 +144,15 @@ let lca_examples () =
   let lca = Option.get lca in
   let domain = Asllib.Types.Domain.of_type empty_env lca in
 
-  assert (Asllib.Types.Domain.mem (V_Int 2) domain);
-  assert (Asllib.Types.Domain.mem (V_Int 4) domain);
+  assert (Asllib.Types.Domain.mem ~$2 domain);
+  assert (Asllib.Types.Domain.mem ~$4 domain);
 
   ()
 
 let type_clashes () =
-  let bits_4 = !!(T_Bits (BitWidth_Determined !$4, [])) in
-  let bits_2 = !!(T_Bits (BitWidth_Determined !$2, [])) in
-  let bits_m = !!(T_Bits (BitWidth_Determined !%"M", [])) in
+  let bits_4 = !!(T_Bits (BitWidth_SingleExpr !$4, [])) in
+  let bits_2 = !!(T_Bits (BitWidth_SingleExpr !$2, [])) in
+  let bits_m = !!(T_Bits (BitWidth_SingleExpr !%"M", [])) in
 
   let integer_4 = !!(T_Int (Some [ Constraint_Exact !$4 ])) in
   let integer_2 = !!(T_Int (Some [ Constraint_Exact !$2 ])) in

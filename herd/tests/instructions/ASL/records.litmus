@@ -31,13 +31,15 @@ begin
   return r.f2;
 end
 
-func main()
+func main() => integer
 begin
-  r = constructor (3, TRUE);
+  var r = constructor (3, TRUE);
   r = inv2(r);
-  x = read_f1(r);
+  let x = read_f1(r);
   r = inv2(r);
   assert read_f2(r);
+
+  return 0;
 end
 
-forall (0: x = 3)
+forall (0: main.0.x = 3)

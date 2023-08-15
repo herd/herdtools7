@@ -7,14 +7,16 @@ begin
     return i;
 end
 
-func main()
+func main() => integer
 begin
     let x = 3;
     let y = f(x);
+
+    return 0;
 end
 
 forall (
-    0: x = 3 /\
-    0: y = 3
+    0: main.0.x = 3 /\
+    0: main.0.y = 3
 )
 

@@ -19,7 +19,10 @@
   (modes native)
   (deps (:standard ../libdir/stdlib.asl))
   (libraries asllib test_helpers zarith)
+  (flags (:standard -w -40-42))
   (action 
     (setenv ASL_LIBDIR %{project_root}/asllib/libdir/
       (run %{test} -e))))
 
+(cram
+  (deps %{bin:aslseq}))

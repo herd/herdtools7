@@ -1,10 +1,13 @@
+(** This module converts an AST into a valid ocaml string that represents it.
+*)
+
 open AST
 
-type buffer = Buffer.t
-type 'a printer = buffer -> 'a -> unit
+type 'a printer = Buffer.t -> 'a -> unit
+(** Type of printers used here. *)
 
-val pp_value : value printer
-val pp_t : t printer
-val t_to_string : t -> string
-val pp_ty : ty printer
-val pp_typed_identifier : typed_identifier printer
+val pp_t : 'p t printer
+(** Print an AST into the buffer. *)
+
+val t_to_string : 'p t -> string
+(** Converts the AST into an ocaml string. *)

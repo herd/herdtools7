@@ -22,14 +22,15 @@
   let t_bit =
     let open AST in
     T_Bits (
-      BitWidth_Determined (E_Literal (V_Int 1) |> ASTUtils.add_dummy_pos),
+      BitWidth_SingleExpr (E_Literal (L_Int Z.one) |> ASTUtils.add_dummy_pos),
       [])
 %}
 
-%token <string> IDENTIFIER STRING_LIT MASK_LIT
+%token <string> IDENTIFIER STRING_LIT
+%token <Bitvector.mask> MASK_LIT
 %token <Bitvector.t> BITS_LIT
-%token <int> INT_LIT
-%token <float> REAL_LIT
+%token <Z.t> INT_LIT
+%token <Q.t> REAL_LIT
 %token <bool> BOOL_LIT
 %token <string> QUALIFIER
 
@@ -152,8 +153,8 @@
 %type <AST.stmt> simple_stmts
 %type <AST.stmt> simple_stmt_list
 %type <AST.stmt> stmts
-%type <AST.t> ast
-%type <AST.t> opn
+%type <unit AST.t> ast
+%type <unit AST.t> opn
 %start ast
 %start opn
 
@@ -178,14 +179,16 @@ let ast := list(EOL); terminated (filter(list(decl)), EOF)
 
 let opn := list(EOL); body=list(stmts); EOF;
     {
+      let body = ASTUtils.stmt_from_list body in
       AST.[
         D_Func {
           name = "main";
           args = [];
           parameters = [];
-          body = ASTUtils.stmt_from_list body;
+          body = SB_ASL body;
           return_type = None;
-        }
+          subprogram_type = ST_Procedure;
+        } |> ASTUtils.add_pos_from body
       ]
     }
 
@@ -200,24 +203,27 @@ let decl ==
 let annotated(x) == desc = x; { AST.{ desc; pos_start=$symbolstartpos; pos_end=$endpos }}
 
 let unimplemented_decl(x) == x; { None }
-let unimplemented_ty(x) == x; { AST.(T_Bits (BitWidth_Determined (E_Literal (V_Int 0) |> ASTUtils.add_dummy_pos), [])) }
+let unimplemented_ty(x) == x; { AST.(T_Bits (BitWidth_SingleExpr (ASTUtils.expr_of_int 0), [])) }
 
 
 let type_decl ==
   some (
-    | terminated_by(SEMICOLON; EOL,
-      | TYPE; ~=tidentdecl; EQ; ~=ty; < AST.D_TypeDecl >
-      | RECORD; x=tidentdecl; fields=annotated(braced(nlist(field)));
-        { AST.(D_TypeDecl (x, ASTUtils.add_pos_from fields (T_Record fields.desc))) }
-      | ENUMERATION; x=tidentdecl; li=annotated(braced(ntclist(ident)));
-        { AST.(D_TypeDecl (x, ASTUtils.add_pos_from li (T_Enum li.desc))) }
+    annotated (
+      | terminated_by(SEMICOLON; EOL,
+        | TYPE; x=tidentdecl; EQ; ~=ty;
+          { AST.(D_TypeDecl (x, ty, None)) }
+        | RECORD; x=tidentdecl; fields=annotated(braced(nlist(field)));
+          { AST.(D_TypeDecl (x, ASTUtils.add_pos_from fields (T_Record fields.desc), None)) }
+        | ENUMERATION; x=tidentdecl; li=annotated(braced(ntclist(ident)));
+          { AST.(D_TypeDecl (x, ASTUtils.add_pos_from li (T_Enum li.desc), None)) }
 
-      | TYPE; t=tidentdecl; ty=annotated(unimplemented_ty(<>));
-        { AST.D_TypeDecl (t, ty) }
+        | TYPE; t=tidentdecl; ty=annotated(unimplemented_ty(<>));
+          { AST.D_TypeDecl (t, ty, None) }
+      )
+
+      | TYPE; x=tidentdecl; IS; li=annotated(pared(ntclist(field_ns))); EOL;
+        { AST.(D_TypeDecl (x, ASTUtils.add_pos_from li (T_Record li.desc), None)) }
     )
-
-    | TYPE; x=tidentdecl; IS; li=annotated(pared(ntclist(field_ns))); EOL;
-      { AST.(D_TypeDecl (x, ASTUtils.add_pos_from li (T_Record li.desc))) }
   )
 
 let tidentdecl ==
@@ -252,7 +258,7 @@ let ty_non_tuple ==
   | BOOLEAN;  { AST.T_Bool      }
   | ~=tident; < AST.T_Named     >
   | BIT;      { t_bit           }
-  | BITS; e=pared(expr); { AST.(T_Bits (AST.BitWidth_Determined e, [])) }
+  | BITS; e=pared(expr); { AST.(T_Bits (BitWidth_SingleExpr e, [])) }
   (* | tident; pared(clist(expr)); <> *)
 
   | unimplemented_ty (
@@ -278,8 +284,7 @@ let qualident ==
     | ident
     | RECORD; { "record" }
 
-let unimplemented_expr(x) == x; { AST.(E_Literal (V_Bool true)) }
-let no_ta == { AST.TA_None }
+let unimplemented_expr(x) == x; { AST.(E_Literal (L_Bool true)) }
 let nargs == { [] }
 
 let sexpr := binop_expr(sexpr, abinop)
@@ -300,8 +305,8 @@ let binop_expr(e, b) ==
       | e1=e; op=b; e2=e;                             { AST.E_Binop (op, e1, e2) }
       | ~=pared(nnclist(expr));                       < AST.E_Tuple     >
       | IF; c=expr; THEN; e=expr; ~=e_else;           < AST.E_Cond      >
-      | ~=e; DOT; ~=ident;                   ~=no_ta; < AST.E_GetField  >
-      | ~=e; DOT; ~=bracketed(clist(ident)); ~=no_ta; < AST.E_GetFields >
+      | ~=e; DOT; ~=ident;                            < AST.E_GetField  >
+      | ~=e; DOT; ~=bracketed(clist(ident));          < AST.E_GetFields >
       | ~=e; ~=bracketed(clist(slice));               < AST.E_Slice     >
       | ~=bracketed(clist(expr));                     < AST.E_Concat    >
       | ~=e; IN; ~=pattern;                           < AST.E_Pattern   >
@@ -323,13 +328,13 @@ let slice ==
   | e1=sexpr; COLON; e2=sexpr;      < AST.Slice_Range  >
   | e1=sexpr; PLUS_COLON; e2=sexpr; < AST.Slice_Length >
 
-let unimplemented_literal_expression(x) == x; { AST.V_Bool false }
+let unimplemented_literal_expression(x) == x; { AST.L_Bool false }
 
 let literal_expression ==
-  | ~=BOOL_LIT;      < AST.V_Bool       >
-  | ~=INT_LIT;       < AST.V_Int        >
-  | ~=REAL_LIT;      < AST.V_Real       >
-  | ~=BITS_LIT;      < AST.V_BitVector  >
+  | ~=BOOL_LIT;      < AST.L_Bool       >
+  | ~=INT_LIT;       < AST.L_Int        >
+  | ~=REAL_LIT;      < AST.L_Real       >
+  | ~=BITS_LIT;      < AST.L_BitVector  >
 
   | unimplemented_literal_expression(
     | STRING_LIT
@@ -337,79 +342,110 @@ let literal_expression ==
 
 let variable_decl ==
   terminated_by (SEMICOLON; EOL,
-    | some (
-        ioption(CONSTANT); t=ty; x=qualident; EQ; e=expr;
-          { AST.D_GlobalConst (x, t, e) }
-      )
+    | some (annotated (
+      | ioption(CONSTANT); t=ty; x=qualident; EQ; e=expr;
+          { AST.D_GlobalStorage {
+            keyword = GDK_Constant;
+            name = x;
+            initial_value = Some e;
+            ty = Some t;
+          } }
+      | ty=ty; x=qualident;
+          { AST.D_GlobalStorage {
+            keyword = GDK_Var;
+            name = x;
+            ty = Some ty;
+            initial_value = None;
+          }}
+      ))
 
     | unimplemented_decl (
-      | ty; qualident; <>
       | ARRAY; ty; qualident; bracketed(ixtype); <>
     )
   )
 
 let function_decl ==
-  | some (
+  | some (annotated (
       ~=ty; name=qualident; args=pared(clist(formal)); body=indented_block;
         {
+          let open AST in
           let return_type = Some ty
+          and subprogram_type = ST_Function
+          and body = SB_ASL body
           and parameters = [] in
-          AST.(D_Func { name; args; return_type; body; parameters })
+          D_Func { name; args; return_type; body; parameters; subprogram_type }
         }
-    )
+    ))
   | unimplemented_decl (
       some(ty); qualident; pared(clist(formal)); ioption(SEMICOLON); EOL
     )
 
 let getter_decl ==
-  | some (
+  | some (annotated (
     | ~=ty; name=qualident; body = indented_block;
       {
-        let return_type = Some(ty)
-        and name = ASTUtils.getter_name name
+        let open AST in
+        let return_type = Some ty
         and args = []
+        and body = SB_ASL body
+        and subprogram_type = ST_Getter
         and parameters = [] in
-        AST.(D_Func { name; args; return_type; body; parameters })
+        D_Func { name; args; return_type; body; parameters; subprogram_type }
       }
     | ~=ty; name=qualident; body=opt_indented_block; SEMICOLON; EOL;
       {
-        let return_type = Some(ty)
-        and name = ASTUtils.getter_name name
+        let open AST in
+        let return_type = Some ty
         and args = []
+        and body = SB_ASL body
+        and subprogram_type = ST_Getter
         and parameters = [] in
-        AST.(D_Func { name; args; return_type; body; parameters })
+        D_Func { name; args; return_type; body; parameters; subprogram_type }
       }
     | ~=ty; name=qualident; args=bracketed(clist(formal)); body=indented_block;
       {
-        let name = ASTUtils.getter_name name
-        and return_type = Some (ty)
+        let open AST in
+        let return_type = Some ty
+        and subprogram_type = ST_Getter
+        and body = SB_ASL body
         and parameters = [] in
-        AST.(D_Func { name; args; return_type; body; parameters })
+        D_Func { name; args; return_type; body; parameters; subprogram_type }
       }
-  )
+  ))
   | unimplemented_decl (
       ty; qualident; bracketed(clist(formal)); ioption(SEMICOLON); EOL
   )
 
 let setter_args == loption(bracketed(clist(sformal)))
 let setter_decl ==
-  some (
+  some (annotated (
     name=qualident; args=setter_args; EQ; ~=ty; ~=ident; body=indented_block;
       {
-        let name = ASTUtils.setter_name name
+        let open AST in
+        let return_type = None
+        and parameters = []
+        and body = SB_ASL body
+        and subprogram_type = ST_Setter
         and args = (ident, ty) :: args in
-        AST.(D_Func { name; body; return_type=None; args; parameters = [] })
+        D_Func { name; args; return_type; body; parameters; subprogram_type }
       }
-  )
+  ))
   | unimplemented_decl (
       qualident; setter_args; EQ; ty; ident; ioption(SEMICOLON); EOL
     )
 
 let procedure_decl ==
-  | some (
+  | some (annotated (
       name=qualident; args=pared(clist(formal)); body=indented_block;
-        { AST.(D_Func { name; args; body; return_type=None; parameters = [] }) }
-    )
+        {
+          let open AST in
+          let return_type = None
+          and parameters = []
+          and body = SB_ASL body
+          and subprogram_type = ST_Procedure in
+          D_Func { name; args; return_type; body; parameters; subprogram_type }
+        }
+    ))
   | unimplemented_decl (
       qualident; pared(clist(formal)); ioption(SEMICOLON); EOL
     )
@@ -493,11 +529,11 @@ let lexpr :=
   annotated (
     | MINUS; lexpr_ignore
     | le_var
-    | ~=lexpr; ~=bracketed(clist(slice));               < AST.LE_Slice    >
-    | ~=lexpr; LT; ~=clist(slice); GT;                  < AST.LE_Slice    >
-    | ~=pared(nclist(lexpr));                           < AST.LE_TupleUnpack >
-    | ~=lexpr; DOT; ~=ident;                   ~=no_ta; < AST.LE_SetField >
-    | ~=lexpr; DOT; ~=bracketed(clist(ident)); ~=no_ta; < AST.LE_SetFields >
+    | ~=lexpr; ~=bracketed(clist(slice));      < AST.LE_Slice       >
+    | ~=lexpr; LT; ~=clist(slice); GT;         < AST.LE_Slice       >
+    | ~=pared(nclist(lexpr));                  < AST.LE_TupleUnpack >
+    | ~=lexpr; DOT; ~=ident;                   < AST.LE_SetField    >
+    | ~=lexpr; DOT; ~=bracketed(clist(ident)); < AST.LE_SetFields   >
 
     | unimplemented_lexpr (
       | bracketed(nclist(lexpr)); <>

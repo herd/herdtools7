@@ -1,21 +1,26 @@
 open Asllib
 open Test_helpers.Helpers
 
+let _dbg = false
+
 let process_test path () =
-  let ast = build_ast_from_file path in
+  let () = if _dbg then Format.eprintf "Processing %s: @." path in
+  let ast = build_ast_from_file path |> ASTUtils.no_primitive in
 
   (* First interprete it. *)
-  let _ = Native.interprete `TypeCheck ast in
+  let () = if _dbg then Format.eprintf "@[AST: %a@]@." PP.pp_t ast in
+  let i, _ = Native.interprete `TypeCheck ast in
+  let () = assert (i = 0) in
+  let () = if _dbg then Format.eprintf "Ran successfully.@.@." in
 
   (* Then ensure that printed version is understandable by the parser. *)
-  let buffer = Buffer.create 1024 in
-  let formatter = Format.formatter_of_buffer buffer in
-  let () = PP.pp_t formatter ast in
-  let () = Format.pp_print_flush formatter () in
-  let printed = Buffer.contents buffer in
+  let printed = PP.t_to_string ast in
+  let () = if false then Printf.eprintf "Printed:\n%s\n%!" printed in
   let lexbuf = Lexing.from_string printed in
-  let ast = Parser.ast Lexer.token lexbuf in
-  let _ = Native.interprete `TypeCheck ast in
+  let ast = Parser.ast Lexer.token lexbuf |> ASTUtils.no_primitive in
+  let i, _ = Native.interprete `TypeCheck ast in
+  let () = assert (i = 0) in
+
   ()
 
 let tests testdir =

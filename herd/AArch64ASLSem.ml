@@ -21,6 +21,11 @@ let aarch64_iico_ctrl = "aarch64_iico_ctrl"
 let aarch64_iico_data = "aarch64_iico_data"
 let aarch64_iico_order = "aarch64_iico_order"
 
+let return_0 =
+  let open Asllib.AST in
+  let open Asllib.ASTUtils in
+  S_Return (Some (expr_of_int 0)) |> add_dummy_pos
+
 module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
   AArch64Sig.Semantics with module A.V = V = struct
   module AArch64S = AArch64Sem.Make (TopConf) (V)
@@ -103,9 +108,9 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
         S_Decl (LDK_Let, LDI_Var (x, None), Some e) |> with_pos
       in
       let lit v = E_Literal v |> with_pos in
-      let liti i = lit (V_Int i) in
-      let litb b = lit (V_Bool b) in
-      let litbv v i = lit (V_BitVector (Asllib.Bitvector.of_int_sized v i)) in
+      let liti i = lit (L_Int (Z.of_int i)) in
+      let litb b = lit (L_Bool b) in
+      let litbv v i = lit (L_BitVector (Asllib.Bitvector.of_int_sized v i)) in
       let var x = E_Var x |> with_pos in
       let variant_raw v = AArch64Base.tr_variant v |> MachSize.nbits in
       let variant v = variant_raw v |> liti in
@@ -416,10 +421,11 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
             |> ASLBase.build_ast_from_file ~ast_type:`Opn version
           in
           let open Asllib.AST in
+          let open Asllib.ASTUtils in
           match execute with
-          | [ D_Func f ] ->
-              let body = Asllib.ASTUtils.s_then decode f.body in
-              D_Func { f with body }
+          | [ ({ desc = D_Func ({ body = SB_ASL s; _ } as f); _ } as d) ] ->
+              let s = stmt_from_list [ decode; s; return_0 ] in
+              D_Func { f with body = SB_ASL s } |> add_pos_from_st d
           | _ -> assert false
         in
         let () =
@@ -525,7 +531,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
 
       let tr_arch_op arch_op acc (v1 : ASLValue.V.v) (v2 : ASLValue.V.v) =
         match arch_op with
-        | ASLValue.Set _ ->
+        | ASLValue.SetIndex _ | ASLValue.SetField _ ->
             Warn.fatal "Cannot translate vector operations to AArch64."
         | ASLValue.Concat -> (
             match (v1, v2) with
@@ -648,12 +654,9 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
                 in
                 let w, acc, _ = List.fold_left folder (first, acc, n) t in
                 (w, acc))
-        | ASLValue.BoolNot ->
-           M.VC.Unop (Op.Not,v),acc
-        | _ ->
-            Warn.fatal
-              "Not yet implemented: translation of operation %s."
-              (ASLValue.ASLArchOp.pp_op1 TopConf.C.PC.hexa op)
+        | ASLValue.BoolNot -> (M.VC.Unop (Op.Not, v), acc)
+        | ASLValue.GetIndex _ | ASLValue.GetField _ ->
+            Warn.fatal "Cannot translate vector operations to AArch64."
 
       let tr_op1 =
         let open Op in

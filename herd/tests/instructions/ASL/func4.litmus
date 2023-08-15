@@ -18,15 +18,17 @@ begin
   return x + y;
 end
 
-func main()
+func main() => integer
 begin
   let a = f();
   let b = f(1);
   let c = f(2, 3);
+
+  return 0;
 end
 
 forall (
-     0: a = 0
-  /\ 0: b = 1
-  /\ 0: c = 5
+     0: main.0.a = 0
+  /\ 0: main.0.b = 1
+  /\ 0: main.0.c = 5
 )

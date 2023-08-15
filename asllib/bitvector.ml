@@ -68,10 +68,6 @@ let _pp_data f (length, data) =
   pp_print_char f 'x';
   String.iter (fun c -> fprintf f "%x" @@ Char.code c) data
 
-let debug bv =
-  Format.fprintf Format.str_formatter "@[%a@]" _pp_data bv ;
-  Format.flush_str_formatter ()
-
 let create_data_bytes length =
   let n = length / 8 and m = length mod 8 in
   Bytes.create (if m = 0 then n else n + 1)
@@ -218,25 +214,25 @@ let to_int64_unsigned (length, data) =
   let _, data = remask (63, data) in
   to_int64_raw (64, data)
 
-let to_z_unsigned (sz,data) =
-  if sz=0 then Z.zero
+let to_z_unsigned (sz, data) =
+  if sz = 0 then Z.zero
   else
     let rec do_rec r i =
       if i < 0 then r
       else
         let c = String.unsafe_get data i |> Char.code |> Z.of_int in
         let r = Z.logor c (Z.shift_left r 8) in
-        do_rec r (i-1) in
+        do_rec r (i - 1)
+    in
     let n = (sz + 7) / 8 and m = sz mod 8 in
-    let mask = last_char_mask (if m=0 then 8 else m) in
-    let c0 = String.unsafe_get data (n-1) |> Char.code |> (land) mask in
-    do_rec (Z.of_int c0) (n-2)
+    let mask = last_char_mask (if m = 0 then 8 else m) in
+    let c0 = String.unsafe_get data (n - 1) |> Char.code |> ( land ) mask in
+    do_rec (Z.of_int c0) (n - 2)
 
-let to_z_signed (sz,_ as bv) =
+let to_z_signed ((sz, _) as bv) =
   let sgn = sign_bit bv in
   let r = to_z_unsigned bv in
-  if sgn = 0 then r
-  else Z.sub r (Z.shift_left Z.one sz)
+  if sgn = 0 then r else Z.sub r (Z.shift_left Z.one sz)
 
 let of_string s =
   let result = Buffer.create ((String.length s / 8) + 1) in
@@ -290,17 +286,17 @@ let of_int64 s =
 let of_int x = of_int64 (Int64.of_int x)
 
 let of_z sz z =
-  let n = (sz+7) / 8 and m = sz mod 8 in
+  let n = (sz + 7) / 8 and m = sz mod 8 in
   let result = Bytes.make n char_0 in
   let rec do_rec msk i =
-    if i >= 0 then begin
-      let c = Z.extract z (i*8) 8 |> Z.to_int |> (land) msk |> Char.chr in
-      Bytes.unsafe_set result i c ;
-      do_rec 0xFF (i-1)
-    end in
-  let msk = last_char_mask (if m=0 then 8 else m) in
-  do_rec msk (n-1) ;
-  sz,Bytes.unsafe_to_string result
+    if i >= 0 then (
+      let c = Z.extract z (i * 8) 8 |> Z.to_int |> ( land ) msk |> Char.chr in
+      Bytes.unsafe_set result i c;
+      do_rec 0xFF (i - 1))
+  in
+  let msk = last_char_mask (if m = 0 then 8 else m) in
+  do_rec msk (n - 1);
+  (sz, Bytes.unsafe_to_string result)
 
 (* --------------------------------------------------------------------------
 
@@ -341,7 +337,7 @@ let logor = bitwise_op ( lor )
 let logxor bv1 bv2 = bitwise_op ( lxor ) bv1 bv2 |> remask
 
 let equal bv1 bv2 =
-  if false then Format.eprintf "@[%a =@ %a@]@." _pp_data bv1 _pp_data bv2 ;
+  if false then Format.eprintf "@[%a =@ %a@]@." _pp_data bv1 _pp_data bv2;
   length bv1 == length bv2
   && (* let bv1 = remask bv1 and bv2 = remask bv2 in *)
   String.equal (data bv1) (data bv2)
@@ -496,7 +492,7 @@ let zeros length =
 
 let ones length =
   let n = length / 8 and m = length mod 8 in
-  let data = String.make (if m = 0 then n else n + 1) (Char.chr 0xff) in
+  let data = String.make (if m = 0 then n else n + 1) char_ff in
   remask (length, data)
 
 let zero = zeros 1
@@ -506,3 +502,65 @@ let empty = (0, "")
 let is_zeros bv =
   let _length, data = remask bv in
   string_for_all (( = ) char_0) data
+
+let is_ones bv = length bv |> ones |> equal bv
+
+type mask = {
+  length : int;
+  set : string;
+  unset : string;
+  specified : string;
+  initial_string : string;
+}
+
+let mask_length mask = mask.length
+
+let mask_of_string s =
+  let length_set, set =
+    String.map (function 'x' -> '0' | '0' -> '0' | '1' -> '1' | c -> c) s
+    |> of_string
+  and length_unset, unset =
+    String.map (function 'x' -> '0' | '0' -> '1' | '1' -> '0' | c -> c) s
+    |> of_string
+  and length_specified, specified =
+    String.map (function 'x' -> '0' | '0' -> '1' | '1' -> '1' | c -> c) s
+    |> of_string
+  in
+  let () =
+    if false then
+      Format.eprintf "Parsing %s gave %a and %a@." s _pp_data (length_set, set)
+        _pp_data (length_unset, unset)
+  in
+  if length_set != length_unset || length_set != length_specified then
+    raise (Invalid_argument "Mask")
+  else { length = length_set; set; unset; specified; initial_string = s }
+
+let matches bv mask =
+  if length bv != mask.length then raise (Invalid_argument "mask_matches");
+  equal
+    (mask.length, mask.specified)
+    (logor
+       (logand bv (mask.length, mask.set))
+       (logand (lognot bv) (mask.length, mask.unset)))
+
+let mask_to_string mask = mask.initial_string
+
+let mask_to_canonical_string mask =
+  let set = to_string (mask.length, mask.set)
+  and unset = to_string (mask.length, mask.unset) in
+  let result = Bytes.create (String.length set) in
+  for i = 0 to String.length set - 1 do
+    let b =
+      match (String.get set i, String.get unset i) with
+      | '0', '0' -> 'x'
+      | '1', _ -> '1'
+      | _, '1' -> '0'
+      | c, _ -> c
+    in
+    Bytes.set result i b
+  done;
+  Bytes.unsafe_to_string result
+
+let mask_set mask = (mask.length, mask.set)
+let mask_unset mask = (mask.length, mask.unset)
+let mask_specified mask = (mask.length, mask.specified)

@@ -2,14 +2,17 @@ ASL while2
 
 { }
 
-func main()
+func main() => integer
 begin
+  var x: integer;
   repeat
     while FALSE do
-      z = 2 ;
+      let z = 2 ;
     end
     x = 2;
   until x >= 2 ;
+
+  return 0;
 end
 
-forall (0:z=0 /\ 0:x=2)
+forall (0:main.0.z=0 /\ 0:main.0.x=2)

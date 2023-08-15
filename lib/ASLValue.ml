@@ -2,10 +2,15 @@ module ASLConstant = SymbConstant.Make (ASLScalar) (PteVal.No) (ASLBase.Instr)
 module ASLPteVal = ASLConstant.PteVal
 module ASLInstr = ASLConstant.Instr
 
-type asl_op = Set of int | Concat | BVSliceSet of int list
+type asl_op =
+  | SetIndex of int
+  | SetField of string
+  | Concat
+  | BVSliceSet of int list
 
 type asl_op1 =
-  | Get of int
+  | GetIndex of int
+  | GetField of string
   | BVSlice of int list
   | ToIntU
   | ToIntS
@@ -38,7 +43,8 @@ module ASLArchOp :
   type op1 = asl_op1
 
   let pp_op = function
-    | Set i -> Printf.sprintf "Set[%d]" i
+    | SetIndex i -> Printf.sprintf "Set[%d]" i
+    | SetField x -> Printf.sprintf "Set[%S]" x
     | Concat -> "Concat"
     | BVSliceSet positions ->
         Printf.sprintf "SliceSet[%s]"
@@ -46,7 +52,8 @@ module ASLArchOp :
         @@ List.map string_of_int positions
 
   let pp_op1 _hexa = function
-    | Get i -> Printf.sprintf "Get[%d]" i
+    | GetIndex i -> Printf.sprintf "Get[%d]" i
+    | GetField x -> Printf.sprintf "Get[%S]" x
     | BVSlice positions ->
         Printf.sprintf "Slice[%s]" @@ String.concat ", "
         @@ List.map string_of_int positions
@@ -64,6 +71,10 @@ module ASLArchOp :
     | Constant.ConcreteVector v -> Some v
     | _ -> None
 
+  let as_concrete_record = function
+    | Constant.ConcreteRecord v -> Some v
+    | _ -> None
+
   let all_64_bits_positions = List.init 64 (( - ) 63)
 
   let list_set =
@@ -76,10 +87,16 @@ module ASLArchOp :
 
   let do_op op c1 c2 =
     match op with
-    | Set i ->
+    | SetIndex i ->
         let* vec = as_concrete_vector c1 in
         let* vec' = list_set i c2 vec in
         Some (Constant.ConcreteVector vec')
+    | SetField x ->
+        let* record = as_concrete_record c1 in
+        if StringMap.mem x record then
+          let record' = StringMap.add x c2 record in
+          Some (Constant.ConcreteRecord record')
+        else None
     | Concat ->
         let* s1 = as_concrete c1 in
         let* s2 = as_concrete c2 in
@@ -93,9 +110,12 @@ module ASLArchOp :
 
   let do_op1 op cst =
     match op with
-    | Get i ->
+    | GetIndex i ->
         let* vec = as_concrete_vector cst in
         List.nth_opt vec i
+    | GetField x ->
+        let* record = as_concrete_record cst in
+        StringMap.find_opt x record
     | ToIntS -> (
         match cst with
         | Constant.Concrete s ->
@@ -126,15 +146,13 @@ module ASLArchOp :
               Some (Constant.Symbolic x)
             else None
         | _ -> None)
-    | BoolNot ->
-       begin
-         let open Constant in
-         let open ASLScalar in
-         match cst with
-         | Concrete (S_Bool b) ->
-            return_concrete (S_Bool (not b))
-         | _ -> None
-       end
+    | BoolNot -> (
+        let open Constant in
+        let open ASLScalar in
+        match cst with
+        | Concrete (S_Bool b) -> return_concrete (S_Bool (not b))
+        | _ -> None)
+
   let shift_address_right _ _ = None
   let orop _ _ = None
   let andnot2 _ _ = None

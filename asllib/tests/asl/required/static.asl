@@ -8,7 +8,7 @@ constant C5 :: integer = - C2;
 constant C6 :: bits(4) = 15[3:0];
 constant C7 :: bits(4) = 0xC[3:0];
 
-func main()
+func main() => integer
 begin
   assert C1 == 3;
   assert C2 == 5;
@@ -18,5 +18,9 @@ begin
 
   assert C6 == '1111';
   assert C7 == '1100';
+
+  return 0;
 end
+
+// RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
 

@@ -25,7 +25,7 @@ begin
   return b;
 end
 
-func main()
+func main() => integer
 begin
   let a = constructor('10101');
   let b = if get_b(a) == '010' then 1 else 0;
@@ -33,12 +33,14 @@ begin
   let c_c = c.c;
   let d = if c.e == '0' then 1 else 0;
   let e = if c.c == '00101' then 1 else 0;
+
+  return 0;
 end
 
 forall (
-     0: b = 1
-  /\ 0: d = 1
-  /\ 0: e = 1
+     0: main.0.b = 1
+  /\ 0: main.0.d = 1
+  /\ 0: main.0.e = 1
 )
 
 

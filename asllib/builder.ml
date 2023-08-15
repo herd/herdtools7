@@ -31,13 +31,14 @@ let from_lexbuf ast_type version (lexbuf : lexbuf) =
   match version with
   | `ASLv1 -> (
       let parse = select_type ~opn:Parser.opn ~ast:Parser.ast ast_type in
-      try parse Lexer.token lexbuf with
+      try parse Lexer.token lexbuf |> ASTUtils.no_primitive with
       | Parser.Error -> cannot_parse lexbuf
       | Lexer.LexerError -> unknown_symbol lexbuf)
   | `ASLv0 -> (
       let parse = select_type ~opn:Gparser0.opn ~ast:Gparser0.ast ast_type
       and lexer0 = Lexer0.token () in
-      try parse lexer0 lexbuf with Parser0.Error -> cannot_parse lexbuf)
+      try parse lexer0 lexbuf |> ASTUtils.no_primitive
+      with Parser0.Error -> cannot_parse lexbuf)
 
 let close_after chan f =
   try
@@ -136,3 +137,6 @@ let stdlib =
     | None ->
         (* Much better than "raise Not_found" *)
         assert false)
+
+let with_stdlib ast =
+  List.rev_append (Lazy.force stdlib |> ASTUtils.no_primitive) ast

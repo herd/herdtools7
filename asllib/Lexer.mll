@@ -23,8 +23,8 @@ exception LexerError
 
 open Parser
 
-let bitvector_lit lxm =
-  BITVECTOR_LIT (Bitvector.of_string lxm)
+let bitvector_lit lxm = BITVECTOR_LIT (Bitvector.of_string lxm)
+let mask_lit lxm = MASK_LIT (Bitvector.mask_of_string lxm)
 
 let tr_name s = match s with
 | "AND"           -> AND
@@ -102,12 +102,12 @@ rule token = parse
     | '\n'                     { Lexing.new_line lexbuf; token lexbuf }
     | [' ''\t''\r']+           { token lexbuf                     }
     | "//" [^'\n']*            { token lexbuf                     }
-    | int_lit as lxm           { INT_LIT(int_of_string lxm)       }
-    | hex_lit as lxm           { INT_LIT(int_of_string lxm)       }
-    | real_lit as lxm          { REAL_LIT(float_of_string lxm)    }
-    | '"' ([^ '"']* as lxm) '"' { STRING_LIT(lxm)                  }
+    | int_lit as lxm           { INT_LIT(Z.of_string lxm)         }
+    | hex_lit as lxm           { INT_LIT(Z.of_string lxm)         }
+    | real_lit as lxm          { REAL_LIT(Q.of_string lxm)        }
+    | '"' ([^ '"']* as lxm) '"' { STRING_LIT(lxm)                 }
     | '\'' (bits as lxm) '\''  { bitvector_lit lxm                }
-    | '\'' (mask as lxm) '\''  { MASK_LIT(lxm)                    }
+    | '\'' (mask as lxm) '\''  { mask_lit lxm                     }
     | '!'                      { BNOT                             }
     | ','                      { COMMA                            }
     | '<'                      { LT                               }
@@ -140,6 +140,7 @@ rule token = parse
     | "::"                     { COLON_COLON                      }
     | '>'                      { GT                               }
     | "+:"                     { PLUS_COLON                       }
+    | "*:"                     { STAR_COLON                       }
     | ';'                      { SEMI_COLON                       }
     | ">="                     { GEQ                              }
     | identifier as lxm        { tr_name lxm                      }

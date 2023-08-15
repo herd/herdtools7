@@ -10,14 +10,9 @@
 // MPAMinfo GenMPAMatEL(AccessType acctype, bits(2) el)
 func GenMPAMatEL(acctype:: AccessType, el::bits(2)) => MPAMinfo
 begin
-  return UNKNOWN :: MPAMinfo;
+  var x : MPAMinfo;
+  return x;
 end
-
-getter TSTATE[] => TMState
-begin
-  return UNKNOWN :: TMState;
-end
-
 
 // IsAligned
 
@@ -45,7 +40,8 @@ end
 
 func AArch64_TranslateAddress(address::bits(64), accdesc::AccessDescriptor, aligned::boolean, size::integer) => AddressDescriptor
 begin
-  return CreateAddressDescriptor(address, UNKNOWN :: FullAddress, NormalNCMemAttr());
+  var full_addr : FullAddress;
+  return CreateAddressDescriptor(address, full_addr, NormalNCMemAttr());
 end
 
 func ELStateUsingAArch32K(el::bits(2), secure::boolean) => (boolean, boolean)

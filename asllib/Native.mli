@@ -17,12 +17,24 @@
 (* Hadrien Renaud, University College London, UK.                           *)
 (****************************************************************************)
 
-module NativeBackend : Backend.S with type value = AST.value and type 'a m = 'a
+type native_value =
+  | NV_Literal of AST.literal
+  | NV_Vector of native_value list
+  | NV_Record of native_value ASTUtils.IMap.t
+
+module NativeBackend :
+  Backend.S with type value = native_value and type 'a m = 'a
+
+module NativePrimitives : sig
+  val primitives : NativeBackend.primitive AST.t
+end
 
 module NativeInterpreter (C : Interpreter.Config) :
   Interpreter.S with module B = NativeBackend
 
-val interprete : Typing.strictness -> AST.t -> unit
-
-val interprete_with_instrumentation :
-  Typing.strictness -> AST.t -> Instrumentation.rule list
+val interprete :
+  Typing.strictness ->
+  ?instrumentation:bool ->
+  ?static_env:StaticEnv.env ->
+  NativeBackend.primitive AST.t ->
+  int * Instrumentation.rule list

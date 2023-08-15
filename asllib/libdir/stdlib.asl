@@ -56,7 +56,7 @@ begin
   return r;
 end
 
-func Len{N}(x :: bits(N)) => integer
+func Len{N}(x :: bits(N)) => integer {N}
 begin
   return N;
 end
@@ -69,7 +69,7 @@ begin
       result = result + 1;
     end
   end
-  return result;
+  return result as integer {0..N};
 end
 
 func LowestSetBit{N}(x: bits(N)) => integer{0..N}
@@ -127,7 +127,7 @@ begin
   return if unsigned then ZeroExtend(x, N) else SignExtend(x, N);
 end
 
-func CountLeadingZeroBits{N}(x :: bits(N)) => integer
+func CountLeadingZeroBits{N}(x :: bits(N)) => integer {0..N}
 begin
   return N - 1 - HighestSetBit(x);
 end
