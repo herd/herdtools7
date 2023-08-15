@@ -1,0 +1,7 @@
+# These tests use hazarding clause for ifetch
+DIC1.MP.RF+dmb.st+addr-rfiINSTRISB.litmus
+DIC1.MP.RF+dmb.st+addr-rfiINSTRNOP.litmus
+MP.RF+dc.cvau-dmb.ish+dsb.ish.ic.ivau.dsb-rfiINSTRISB.litmus
+MP.FF+dc.cvau-dsb.ish-ic.ivau-dsb.ish+po.litmus
+MP.FF+dc.cvau-dmb.ish+dsb.ish-ic.ivau-dsb.ish-rfiINSTNOP.litmus
+MP.FF+dc.cvau-dsb.ish-ic.ivau-dsb.ish+dmb.ish+rfiINST.litmus
