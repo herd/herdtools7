@@ -72,6 +72,7 @@ match name with
 | "nshst" | "NSHST" -> I_NSHST
 | "osh" | "OSH" -> I_OSH
 | "oshst" | "OSHST" -> I_OSHST
+| "lsl" | "LSL" -> S_LSL
 | _  -> begin match ARM.parse_reg name with
   | Some r -> ARCH_REG r
   | None -> NAME name

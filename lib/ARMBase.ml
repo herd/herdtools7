@@ -40,6 +40,8 @@ type reg =
   | Internal of int
   | RESADDR
 
+type 'k shifter =
+  S_LSL of 'k
 
 let base =  Internal 0
 and max_idx = Internal 1
@@ -216,8 +218,10 @@ type 'k kinstruction =
   | I_LDM3 of reg * reg * reg * reg * increment
   | I_LDRD of reg * reg * reg * 'k option
   | I_LDR3 of reg * reg * reg * condition
+  | I_LDR3_S of reg * reg * reg * 'k shifter * condition
   | I_STR of reg * reg * condition
   | I_STR3 of reg * reg * reg * condition
+  | I_STR3_S of reg * reg * reg * 'k shifter * condition
   | I_STREX of reg * reg * reg * condition
   | I_STL of reg * reg * condition
   | I_STLEX of reg * reg * reg
@@ -283,6 +287,14 @@ let do_pp_instruction m =
     pp_memoc opcode c^" "^pp_reg rt ^ ","^
     "[" ^ pp_reg ri ^ "," ^ pp_reg rn ^ "]" in
 
+  let pp_shift = function
+  | S_LSL k -> "lsl " ^ m.pp_k k in
+
+  let ppi_rrrmc_s opcode rt ri rn c s =
+    pp_memoc opcode c^" "^pp_reg rt ^ ","^
+    "[" ^ pp_reg ri ^ "," ^ pp_reg rn ^ ","^
+    (pp_shift s) ^ "]" in
+
   let ppi_rrkmc opcode rt ri k =
     opcode ^" "^pp_reg rt ^ ","^
     "[" ^ pp_reg ri ^ "," ^ m.pp_k k ^ "]" in
@@ -329,9 +341,11 @@ let do_pp_instruction m =
   | I_LDRD(rd1,rd2,rn,None) -> sprintf "LDRD %s, %s, [%s]"
       (pp_reg rd1) (pp_reg rd2) (pp_reg rn)
   | I_LDR3(rt,rn,rm,c) -> ppi_rrrmc "LDR" rt rn rm c
+  | I_LDR3_S(rt,rn,rm,s,c) -> ppi_rrrmc_s "LDR" rt rn rm c s
   | I_LDRO(rt,rn,k,_) -> ppi_rrkmc "LDR" rt rn k
   | I_STR(rt,rn,c) -> ppi_rrmc "STR" rt rn c
   | I_STR3(rt,rn,rm,c) -> ppi_rrrmc "STR" rt rn rm c
+  | I_STR3_S(rt,rn,rm,s,c) -> ppi_rrrmc_s "STR" rt rn rm c s
   | I_STREX(rt,rn,rm,c) -> ppi_strex "STREX" rt rn rm c
   | I_STL(rt,rn,c) -> ppi_stl "STL" rt rn c
   | I_STLEX(rt,rn,rm) -> ppi_strex "STLEX" rt rn rm AL
@@ -391,12 +405,14 @@ let fold_regs (f_reg,f_sreg) =
   | I_CMP (r1,r2)
       -> fold_reg r2 (fold_reg r1 c)
   | I_LDR3 (r1, r2, r3, _)
+  | I_LDR3_S (r1, r2, r3, _,_)
   | I_LDRD (r1, r2, r3, _)
   | I_LDM2 (r1, r2, r3,_)
   | I_STLEX (r1, r2, r3)
   | I_ADD3 (_, r1, r2, r3)
   | I_SUB3 (_, r1, r2, r3)
   | I_STR3 (r1, r2, r3, _)
+  | I_STR3_S (r1, r2, r3, _,_)
   | I_STREX (r1, r2, r3, _)
   | I_XOR (_,r1, r2, r3)
   | I_SADD16 (r1, r2, r3)
@@ -454,6 +470,8 @@ let map_regs f_reg f_symb =
   | I_LDM3 (r1,r2,r3,r4,i) -> I_LDM3 (map_reg r1, map_reg r2, map_reg r3,map_reg r4, i)
   | I_STR (r1, r2, c) -> I_STR (map_reg r1, map_reg r2, c)
   | I_STR3 (r1, r2, r3, c) -> I_STR3 (map_reg r1, map_reg r2, map_reg r3, c)
+  | I_STR3_S (r1, r2, r3, c,s) -> I_STR3_S (map_reg r1, map_reg r2, map_reg r3, c,s)
+  | I_LDR3_S (r1, r2, r3, s,c) -> I_LDR3_S (map_reg r1, map_reg r2, map_reg r3, s,c)
   | I_STREX (r1, r2, r3, c) -> I_STREX (map_reg r1, map_reg r2, map_reg r3, c)
   | I_STL (r1, r2, c) -> I_STL (map_reg r1, map_reg r2, c)
   | I_MOVI (r, k, c) -> I_MOVI (map_reg r, k, c)
@@ -498,8 +516,10 @@ let get_next = function
   | I_LDRO _
   | I_LDRD _
   | I_LDR3 _
+  | I_LDR3_S _
   | I_STR _
   | I_STR3 _
+  | I_STR3_S _
   | I_STREX _
   | I_STL _
   | I_STLEX _
@@ -531,6 +551,10 @@ include Pseudo.Make
         | I_ORR (c,r1,r2,k) ->  I_ORR (c,r1,r2,MetaConst.as_int k)
         | I_LDRO (r1,r2,k,c) ->  I_LDRO (r1,r2,MetaConst.as_int k,c)
         | I_LDRD (r1,r2,r3,Some k) ->  I_LDRD (r1,r2,r3,Some (MetaConst.as_int k))
+        | I_STR3_S (r1,r2,r3,S_LSL k,c) ->
+          I_STR3_S (r1,r2,r3,S_LSL (MetaConst.as_int k),c)
+        | I_LDR3_S (r1,r2,r3,S_LSL k,c) ->
+          I_LDR3_S (r1,r2,r3,S_LSL (MetaConst.as_int k),c)
         | I_LDRD (r1,r2,r3,None) ->  I_LDRD (r1,r2,r3,None)
         | I_BX r -> I_BX r
         | I_CMPI (r,k) -> I_CMPI (r,MetaConst.as_int k)
@@ -600,8 +624,10 @@ include Pseudo.Make
         | I_LDAEX _
         | I_LDRO _
         | I_LDR3 _
+        | I_LDR3_S _
         | I_STR _
         | I_STR3 _
+        | I_STR3_S _
         | I_STREX _
         | I_STL _
         | I_STLEX _

@@ -62,6 +62,13 @@ let match_instr subs pattern instr = match pattern,instr with
       add_subs
         [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg(sr_name r3,r3')]
         subs
+  | I_LDR3_S(r1,r2,r3,S_LSL (MetaConst.Int k),c),
+    I_LDR3_S(r1',r2',r3',S_LSL k',c')
+  | I_STR3_S(r1,r2,r3,S_LSL (MetaConst.Int k),c),
+    I_STR3_S(r1',r2',r3',S_LSL k',c') when k = k' && c = c' ->
+      add_subs
+        [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg(sr_name r3,r3')]
+        subs
   | I_B l,I_B l'
   | I_BEQ l,I_BEQ l'
   | I_BNE l,I_BNE l' ->
@@ -243,6 +250,18 @@ let match_instr subs pattern instr = match pattern,instr with
           conv_reg r2 >> fun r2 ->
           conv_reg r3 >! fun r3 ->
           I_STR3(r1,r2,r3,c)
+      | I_STR3_S(r1,r2,r3,S_LSL k,c) ->
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >> fun r2 ->
+          conv_reg r3 >> fun r3 ->
+          find_cst k >! fun k ->
+          I_STR3_S(r1,r2,r3,S_LSL k,c)
+      | I_LDR3_S(r1,r2,r3,S_LSL k,c) ->
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >> fun r2 ->
+          conv_reg r3 >> fun r3 ->
+          find_cst k >! fun k ->
+          I_LDR3_S(r1,r2,r3,S_LSL k,c)
       | I_STREX(r1,r2,r3,c) ->
           conv_reg r1 >> fun r1 ->
           conv_reg r2 >> fun r2 ->

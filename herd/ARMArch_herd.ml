@@ -114,6 +114,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
         -> None
       | I_LDR _ | I_LDREX _ | I_LDR3 _ | I_STR _ | I_STREX _ | I_STR3 _
       | I_STL _ | I_LDA _|I_LDAEX _|I_STLEX _
+      | I_STR3_S _| I_LDR3_S _
       | I_LDRO _ | I_LDM2 _ | I_LDM3 _ | I_LDRD _
         -> Some MachSize.Word
 

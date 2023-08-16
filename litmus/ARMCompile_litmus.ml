@@ -172,6 +172,13 @@ module Make(V:Constant.S)(C:Config) =
         inputs = [r2;r3] ;
         outputs = [r1] ; cond=is_cond c; }
 
+    let ldr3_s r1 r2 r3 k c =
+      let memo = sprintf "%s%s" "ldr" (pp_cond c) in
+      { empty_ins with
+        memo = sprintf "%s ^o0,[^i0,^i1,lsl #%i]" memo k ;
+        inputs = [r2;r3] ;
+        outputs = [r1] ; }
+
     let str2 c r1 r2 =
       let memo = sprintf "%s%s" "str" (pp_cond c) in
       { empty_ins with
@@ -200,6 +207,14 @@ module Make(V:Constant.S)(C:Config) =
         memo = sprintf "%s ^i0,[^i1,^i2]" memo ;
         inputs = [r1;r2;r3] ;
         outputs = [] ; cond=is_cond c; }
+
+    let str3_s c r1 r2 r3 k =
+      let memo = sprintf "%s%s" "str" (pp_cond c) in
+      { empty_ins with
+        memo = sprintf "%s ^i0,[^i1,^i2, lsl #%i]" memo k ;
+        inputs = [r1;r2;r3] ;
+        outputs = [] ; cond=is_cond c; }
+
 
     let strex  c r1 r2 r3 =
       let memo = sprintf "%s%s" "strex" (pp_cond c) in
@@ -320,10 +335,12 @@ module Make(V:Constant.S)(C:Config) =
     | I_LDREX (r1, r2) ->  ldrex r1 r2::k
     | I_LDAEX (r1, r2) ->  ldaex r1 r2::k
     | I_LDR3 (r1, r2, r3, c) ->  ldr3 c r1 r2 r3::k
+    | I_LDR3_S (r1, r2, r3, S_LSL k2,c) ->  ldr3_s r1 r2 r3 k2 c::k
     | I_STR (r1, r2, c) ->  str2 c r1 r2::k
     | I_STL (r1, r2, c) ->  stl "STL" c r1 r2::k
     | I_STLEX (r1, r2, r3) ->  stlex r1 r2 r3::k
     | I_STR3 (r1, r2, r3, c) ->  str3 c r1 r2 r3::k
+    | I_STR3_S (r1, r2, r3, S_LSL k2, c) ->  str3_s c r1 r2 r3 k2::k
     | I_STREX (r1, r2, r3, c) ->  strex c r1 r2 r3::k
 (* Comparisons and branches *)
     | I_CMPI (r1, i) -> cmpi r1 i::k

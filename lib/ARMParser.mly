@@ -34,6 +34,7 @@ module A = ARMBase
 %token I_ADD I_ADDS I_BX I_SUB I_SUBS I_AND I_ORR I_ANDS I_B I_BEQ I_BNE I_CMP I_MOV I_MOVW I_MOVT I_MOVNE I_MOVEQ I_XOR I_XORS I_DMB I_DSB I_ISB I_CBZ I_CBNZ
 %token I_LDR I_LDREX I_LDRNE I_LDREQ I_LDRD I_LDM I_LDMIB I_STR I_STRNE I_STREQ I_STREX I_LDA I_STL I_LDAEX I_STLEX
 %token I_SY I_ST I_ISH I_ISHST I_NSH I_NSHST I_OSH I_OSHST
+%token S_LSL
 %type <MiscParser.proc list * (ARMBase.parsedPseudo) list list> main
 %start  main
 
@@ -81,6 +82,9 @@ k:
 | NUM  { MetaConst.Int $1 }
 | META { MetaConst.Meta $1 }
 
+shift:
+  | COMMA S_LSL k { A.S_LSL $3 }
+
 instr:
   | I_ADD reg COMMA reg COMMA k
      { A.I_ADD (A.DontSetFlags,$2,$4,$6) }
@@ -127,6 +131,8 @@ instr:
      { A.I_LDR ($2,$5,A.AL) }
   | I_LDR reg COMMA LBRK reg COMMA reg RBRK
      { A.I_LDR3 ($2,$5,$7,A.AL) }
+  | I_LDR reg COMMA LBRK reg COMMA reg shift RBRK
+     { A.I_LDR3_S ($2,$5,$7,$8,A.AL) }
   | I_LDR reg COMMA LBRK reg COMMA k RBRK
      { A.I_LDRO ($2,$5,$7,A.AL) }
   | I_LDRNE reg COMMA reg
@@ -174,6 +180,8 @@ instr:
      { A.I_STR ($2,$5,A.AL) }
   | I_STR reg COMMA LBRK reg COMMA reg RBRK
      { A.I_STR3 ($2,$5,$7,A.AL) }
+  | I_STR reg COMMA LBRK reg COMMA reg shift RBRK
+     { A.I_STR3_S ($2,$5,$7,$8,A.AL) }
   | I_STRNE reg COMMA reg
      { A.I_STR ($2,$4,A.NE) }
   | I_STRNE reg COMMA LBRK reg RBRK

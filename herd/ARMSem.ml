@@ -384,6 +384,17 @@ module
                     (read_mem nat_sz vaddr ii) >>=
                     (fun v -> write_reg  rt v ii))) in
               checkZ ldr3 c ii
+          |  ARM.I_LDR3_S (rt,rn,rm,ARM.S_LSL k, c) ->
+              let ldr3 ii =
+                ((read_reg_ord  rn ii) >>| (read_reg_ord  rm ii))
+                  >>=
+                (fun (vn,vm) ->
+                  (M.op1 (Op.LeftShift k) vm)
+                  >>= fun vm -> (M.add vn vm) >>=
+                  (fun vaddr ->
+                    (read_mem nat_sz vaddr ii) >>=
+                    (fun v -> write_reg  rt v ii))) in
+              checkZ ldr3 c ii
           |  ARM.I_STR (rt,rn,c) ->
               let str ii =
                 ((read_reg_ord  rn ii) >>| (read_reg_data  rt ii))
@@ -408,6 +419,17 @@ module
                    >>=
                  (fun (vm,(vn,vt)) ->
                    (M.add vn vm) >>=
+                   (fun a ->
+                     (write_mem nat_sz a vt ii)))) in
+              checkZ str3 c ii
+          |  ARM.I_STR3_S (rt,rn,rm,ARM.S_LSL k, c) ->
+              let str3 ii =
+                (((read_reg_ord  rm ii) >>|
+                ((read_reg_ord  rn ii) >>|
+                (read_reg_data  rt ii)))
+                   >>=
+                 (fun (vm,(vn,vt)) -> (M.op1 (Op.LeftShift k) vm)
+                   >>= fun vm -> (M.add vn vm) >>=
                    (fun a ->
                      (write_mem nat_sz a vt ii)))) in
               checkZ str3 c ii

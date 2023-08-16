@@ -1,0 +1,11 @@
+ARM A020
+
+(* TEST LDR/STR Barrel Shifters*)
+
+{ int v[2] = {1,2}; 0:R1 = v; 0:R3 = 1; int y[2] = {0,0}; 0:R4 = y }
+
+P0;
+LDR R2, [R1, R3, lsl #2];
+STR R2, [R4, R3, lsl #2];
+
+forall (0:R2 = 2 /\ v[1] = 2)
