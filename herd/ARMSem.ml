@@ -245,6 +245,13 @@ module
                    >>|
                    write_flags set vres (V.intToV 0) ii))
                 >>= B.next2T
+          | ARM.I_ANDC (c,rd,rs,rs2) ->
+              let andc ii = ((read_reg_ord rs ii) >>| (read_reg_ord rs2 ii)
+                 >>=
+               (fun (v1,v2) -> M.op Op.And v1 v2)
+                 >>=
+               (fun vres -> write_reg rd vres ii)) in
+              checkZ andc c ii
           | ARM.I_ORR (set,rd,rs,v) ->
               ((read_reg_ord  rs ii)
                  >>=

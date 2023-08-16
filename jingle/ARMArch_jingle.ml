@@ -51,6 +51,7 @@ let match_instr subs pattern instr = match pattern,instr with
       add_subs
         [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
         subs
+  | I_ANDC(_,r1,r2,r3), I_ANDC(_,r1',r2',r3')
   | I_ADD3(_,r1,r2,r3),I_ADD3(_,r1',r2',r3')
   | I_SUB3(_,r1,r2,r3),I_SUB3(_,r1',r2',r3')
   | I_XOR(_,r1,r2,r3),I_XOR(_,r1',r2',r3') ->
@@ -144,6 +145,11 @@ let match_instr subs pattern instr = match pattern,instr with
           fun r1 -> conv_reg r2 >>
           fun r2 -> find_cst v >!
           fun v -> I_AND(f,r1,r2,v)
+      | I_ANDC(c,r1,r2,r3) ->
+          conv_reg r1 >>
+          fun r1 -> conv_reg r2 >>
+          fun r2 -> conv_reg r3 >!
+          fun r3 -> I_ANDC(c,r1,r2,r3)
       | I_ORR(f,r1,r2,v) ->
           conv_reg r1 >>
           fun r1 -> conv_reg r2 >>

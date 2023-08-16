@@ -203,6 +203,7 @@ type 'k kinstruction =
   | I_SUB of setflags * reg * reg * 'k
   | I_SUB3 of setflags * reg * reg * reg
   | I_AND of setflags * reg * reg * 'k
+  | I_ANDC of condition * reg * reg * reg
   | I_ORR of setflags * reg * reg * 'k
   | I_B of lbl
   | I_BEQ of lbl
@@ -321,6 +322,8 @@ let do_pp_instruction m =
   | I_SUB(s,rt,rn,v) -> ppi_rri "SUB" s rt rn v
   | I_SUB3 (s,r1,r2,r3) -> ppi_rrr "SUB" s r1 r2 r3
   | I_AND(s,rt,rn,v) -> ppi_rri "AND" s rt rn v
+  | I_ANDC(c,rt,rn,v) -> sprintf "%s %s, %s, %s" (pp_memoc "AND" c)
+    (pp_reg rt) (pp_reg rn) (pp_reg v)
   | I_ORR(s,rt,rn,v) -> ppi_rri "ORR" s rt rn v
   | I_B v -> "B " ^ pp_lbl v
   | I_BEQ(v) -> "BEQ "^ pp_lbl v
@@ -405,6 +408,7 @@ let fold_regs (f_reg,f_sreg) =
   | I_MOV (r1, r2, _)
   | I_CMP (r1,r2)
       -> fold_reg r2 (fold_reg r1 c)
+  | I_ANDC (_,r1, r2, r3)
   | I_LDR3 (r1, r2, r3, _)
   | I_LDR3_S (r1, r2, r3, _,_)
   | I_LDRD (r1, r2, r3, _)
@@ -471,6 +475,7 @@ let map_regs f_reg f_symb =
   | I_LDM3 (r1,r2,r3,r4,i) -> I_LDM3 (map_reg r1, map_reg r2, map_reg r3,map_reg r4, i)
   | I_STR (r1, r2, c) -> I_STR (map_reg r1, map_reg r2, c)
   | I_STR3 (r1, r2, r3, c) -> I_STR3 (map_reg r1, map_reg r2, map_reg r3, c)
+  | I_ANDC (c,r1, r2, r3) -> I_ANDC (c, map_reg r1, map_reg r2, map_reg r3)
   | I_STR3_S (r1, r2, r3, c,s) -> I_STR3_S (map_reg r1, map_reg r2, map_reg r3, c,s)
   | I_LDR3_S (r1, r2, r3, s,c) -> I_LDR3_S (map_reg r1, map_reg r2, map_reg r3, s,c)
   | I_STREX (r1, r2, r3, c) -> I_STREX (map_reg r1, map_reg r2, map_reg r3, c)
@@ -505,6 +510,7 @@ let get_next = function
   | I_SUB _
   | I_SUB3 _
   | I_AND _
+  | I_ANDC _
   | I_ORR _
   | I_CMPI _
   | I_CMP _
@@ -549,6 +555,7 @@ include Pseudo.Make
         | I_ADD (c,r1,r2,k) ->  I_ADD (c,r1,r2,MetaConst.as_int k)
         | I_SUB (c,r1,r2,k) ->  I_SUB (c,r1,r2,MetaConst.as_int k)
         | I_AND (c,r1,r2,k) ->  I_AND (c,r1,r2,MetaConst.as_int k)
+        | I_ANDC (c,r1,r2,r3) ->  I_ANDC (c,r1,r2,r3)
         | I_ORR (c,r1,r2,k) ->  I_ORR (c,r1,r2,MetaConst.as_int k)
         | I_LDRO (r1,r2,k,c) ->  I_LDRO (r1,r2,MetaConst.as_int k,c)
         | I_LDRD (r1,r2,r3,Some k) ->  I_LDRD (r1,r2,r3,Some (MetaConst.as_int k))
@@ -599,6 +606,7 @@ include Pseudo.Make
         | I_SUB _
         | I_SUB3 _
         | I_AND _
+        | I_ANDC _
         | I_ORR _
         | I_B _
         | I_BX _

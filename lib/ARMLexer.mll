@@ -34,6 +34,7 @@ match name with
 | "and" | "AND"   -> I_AND
 | "orr" | "ORR"   -> I_ORR
 | "ands" | "ANDS"   -> I_ANDS
+| "andeq" | "ANDEQ"   -> I_ANDEQ
 | "bne" | "BNE"   -> I_BNE
 | "beq" | "BEQ"   -> I_BEQ
 | "cbz" | "CBZ"   -> I_CBZ

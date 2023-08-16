@@ -1,0 +1,12 @@
+ARM A022
+
+(* Test ANDEQ *)
+{ 0:R1 = 1 }
+
+P0;
+CMP R1, #1;
+ANDEQ R0, R0, R0; (*nop*)
+ANDEQ R2, R1, R1;
+
+forall 0:R2=1
+

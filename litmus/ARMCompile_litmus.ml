@@ -66,6 +66,14 @@ module Make(V:Constant.S)(C:Config) =
         inputs=[rA; rB];
         outputs=[rD]; cond=is_cond c; }
 
+    let andc c rD rA rB =
+      let memo =
+        sprintf "and%s" (pp_cond c) in
+      { empty_ins with
+        memo=memo^ " ^o0,^i0,^i1";
+        inputs=[rA; rB];
+        outputs=[rD]; cond=is_cond c; }
+
     let op2regsI memo s c rD rA i =
       let memo =
         sprintf "%s%s%s"
@@ -316,6 +324,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_AND (s,r1, r2, i) ->  op2regsI "and" s AL r1 r2 i::k
     | I_ORR (s,r1, r2, i) ->  op2regsI "orr" s AL r1 r2 i::k
     | I_ADD3 (s,r1, r2, r3) ->  op3regs "add" s AL r1 r2 r3::k
+    | I_ANDC (c,r1, r2, r3) ->  andc c r1 r2 r3::k
     | I_SADD16 (r1, r2, r3) ->  op3regs "sadd16" DontSetFlags AL r1 r2 r3::k
     | I_SEL (r1, r2, r3) ->  op3regs "sel" DontSetFlags AL r1 r2 r3::k
     | I_SUB3 (s,r1, r2, r3) ->  op3regs "sub" s AL r1 r2 r3::k

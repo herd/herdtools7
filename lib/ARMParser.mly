@@ -31,7 +31,7 @@ module A = ARMBase
 
 /* Instruction tokens */
 
-%token I_ADD I_ADDS I_BX I_SUB I_SUBS I_AND I_ORR I_ANDS I_B I_BEQ I_BNE I_CMP I_MOV I_MOVW I_MOVT I_MOVNE I_MOVEQ I_XOR I_XORS I_DMB I_DSB I_ISB I_CBZ I_CBNZ
+%token I_ADD I_ADDS I_BX I_SUB I_SUBS I_AND I_ORR I_ANDS I_ANDEQ I_B I_BEQ I_BNE I_CMP I_MOV I_MOVW I_MOVT I_MOVNE I_MOVEQ I_XOR I_XORS I_DMB I_DSB I_ISB I_CBZ I_CBNZ
 %token I_LDR I_LDREX I_LDRNE I_LDREQ I_LDRD I_LDM I_LDMIB I_STR I_STRNE I_STREQ I_STREX I_LDA I_STL I_LDAEX I_STLEX I_PUSH I_POP
 %token I_SY I_ST I_ISH I_ISHST I_NSH I_NSHST I_OSH I_OSHST
 %token S_LSL
@@ -110,6 +110,9 @@ instr:
      { A.I_ORR (A.DontSetFlags,$2,$4,$6) }
   | I_ANDS reg COMMA reg COMMA k
      { A.I_AND (A.SetFlags,$2,$4,$6) }
+  | I_ANDEQ reg COMMA reg COMMA reg
+     { (* This is historically used as a NOP when regs are the same*)
+       if $2 = $4 && $4 = $6 then A.I_NOP else A.I_ANDC (A.EQ,$2,$4,$6) }
   | I_B NAME
      { A.I_B $2 }
   | I_BNE NAME
