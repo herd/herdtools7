@@ -55,7 +55,7 @@ let ADDR = Rreg \ DATA
 let basic-dep =
    [R|Rreg]; dtrm?
 let data = (basic-dep; [DATA]; iico_data+; [W]) \ same-instance
-let addr = (basic-dep; [ADDR]; iico_data+; [M | TLBI]) \ same-instance
+let addr = (basic-dep; [ADDR]; iico_data+; [M | TLBI | IC.IVAU | DC.CVAU]) \ same-instance
 let ctrl = (basic-dep; [BCC]; po) \ same-instance
 
 (** Pick dependencies *)

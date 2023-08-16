@@ -1,0 +1,23 @@
+AArch64 SB-bnop-cachesyncs1-reordered
+{ 0:X0=NOP;
+  0:X1=P1:M0; 1:X1=P1:M0;
+  1:X2=NOP;
+  0:X3=P0:M1; 1:X3=P0:M1;
+  0:X9=0; 1:X9=0;
+}
+    P0           |     P1         ;
+    STR W0,[X1]  |     STR W2,[X3];
+                 |     DSB ISH ;
+    DSB ISH      |     DC CVAU,X1 ;
+    ISB          |     DSB ISH    ;
+M1: B L1         |     IC IVAU,X1 ;
+    MOV W9,#1    |     DSB ISH    ;
+L1:              |     DC CVAU,X3 ;
+                 |     DSB ISH    ;
+                 |     IC IVAU,X3 ;
+                 |     DSB ISH    ;
+                 |     ISB        ;
+                 | M0: B L0       ;
+                 |     MOV W9,#1  ;
+                 | L0:            ;
+exists 0:X9=0 /\ 1:X9=0

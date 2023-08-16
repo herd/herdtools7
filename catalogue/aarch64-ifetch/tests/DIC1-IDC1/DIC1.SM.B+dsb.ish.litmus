@@ -1,0 +1,10 @@
+AArch64 DIC1.SM.B+dsb.ish
+CacheType=DIC
+{ 0:X0=NOP; 0:X1=P0:L0; 0:X9=0; }
+P0              ;
+    STR W0,[X1] ;
+    DSB ISH     ;
+L0: B L1        ;
+    MOV W9,#1   ;
+L1:             ;
+exists 0:X9=0

@@ -46,6 +46,7 @@
 include "aarch64fences.cat"
 let Imp = NExp
 let C_TLBI = TLBI & domain(po; [dsb.full])
+let C_IC = IC & domain(po; [dsb.full])
 
 let add_pair p =
   map (fun r -> (p | r))
@@ -77,3 +78,15 @@ let all-TLBI-Imp_TTD_R-enums rel =
     inv-scope & (C_TLBI * (Imp & TTD & R)),
     rel
   )
+
+let all-DC-Exp_W-enums rel =
+    enumerate-ordered-pairs (
+        scl & (DC.CVAU * (Exp & W)),
+        rel | (IW * (_\IW))
+    )
+
+let all-IC-Imp_Instr_R-enums rel =
+    enumerate-ordered-pairs (
+        scl & (C_IC * (Imp & Instr & R)),
+        rel
+    )

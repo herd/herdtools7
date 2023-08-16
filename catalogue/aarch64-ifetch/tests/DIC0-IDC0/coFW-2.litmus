@@ -1,0 +1,10 @@
+AArch64 coFW-2
+{
+0:X0=NOP; 0:X1=P0:l1; 0:X2=0;
+}
+    P0          ;
+l1: B l0        ;
+    MOV W2, #1  ;
+l0: NOP         ;
+    STR W0,[X1] ;
+exists (0:X2=1)

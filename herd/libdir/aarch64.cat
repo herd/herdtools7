@@ -54,6 +54,8 @@ let ca = fr | co
 (*** TLBI-after, DC-after, IC-after ***)
 include "enumerations.cat"
 with TLBI-after from (all-TLBI-Imp_TTD_R-enums local-hw-reqs)
+with DC-after from (all-DC-Exp_W-enums local-hw-reqs)
+with IC-after from (all-IC-Imp_Instr_R-enums local-hw-reqs)
 
 (*** Hazard-ordered-before ***)
 
@@ -75,9 +77,19 @@ let TLBI-ob =
    | tr-ib^-1; TTD-read-ordered-before & ext
    | po-va-loc; TTD-read-ordered-before & ext
 
+(** IC-ordered-before **)
+
+(* Instr-read-ordered-before *)
+let Instr-read-ordered-before =
+  IC-after; [IC]; po; [dsb.full]; po; [~(Imp & M)]
+  | (if "DIC" then ca else 0)
+
+(* IC-ordered-before *)
+let IC-ob = [Imp & Instr & R]; po; [Imp & Instr & R]; Instr-read-ordered-before
+
 (* Hazard-ordered-before *)
 let haz-ob =
-  Exp-haz-ob | TLBI-ob
+  Exp-haz-ob | TLBI-ob | IC-ob
 
 (*** Hardware-required-ordered-before ***)
 let hw-reqs = local-hw-reqs | haz-ob
@@ -114,11 +126,27 @@ let TTD-obs =
     | [HU]; co | co; [HU]
     | TLBI-ca
 
+(** Instr-observed-by **)
+
+(* IC-coherence-after *)
+let IC-ca =
+    (if not "DIC" && not "IDC" then [IC]; IC-after; [Imp & Instr & R]; ca; [W]; DC-after; [DC.CVAU] else 0)
+    | (if not "DIC" && "IDC" then [IC]; IC-after; [Imp & Instr & R]; ca; [W] else 0)
+    | (if "DIC" && "IDC" then [Imp & Instr & R]; ca; [W] else 0)
+
+(* Instr-observed-by *)
+let Instr-obs =
+    rf; [Imp & Instr & R]
+    | IC-after
+    | [DC.CVAU]; DC-after; [W] | [W]; DC-after; [DC.CVAU]
+    | IC-ca
+
 (** Observed-by **)
 let obs =
     Exp-obs; sca-class?
     | Tag-obs; sca-class?
     | TTD-obs
+    | Instr-obs
 
 (*** Ordered-before ***)
 let rec ob =
@@ -142,3 +170,20 @@ empty (rmw & (fr; co)) \ (([Exp]; rmw; [Exp]) & (fri ; [Exp & W]; coi)) as atomi
 (*** Break Before Make ***)
 let BBM = ([TTDV]; ca; [TTDINV]; co; [TTDV])
 flag ~empty (TTD-update-needsBBM & ~BBM) as requires-BBM
+
+(*** Additional synchronisation requirements for CMODX ***)
+let CMODX-conflicts = same-loc & (
+  (Imp & Instr & R & Within-CMODX-List) * W
+  | (Imp & Instr & R) * (Within-CMODX-List & W)
+  | W * (Within-CMODX-List & Imp & Instr & R)
+  | (Within-CMODX-List & W) * (Imp & Instr & R)
+  )
+
+let CMODX-ordering =
+  [Imp & Instr & R]; ob; [W]
+  | [W]; ob; [Imp & Instr & R]
+
+let CMODX-unordered-conflicts =
+  CMODX-conflicts \ (CMODX-ordering | CMODX-ordering^-1)
+
+flag ~empty CMODX-unordered-conflicts as violates-CMODX-requirements

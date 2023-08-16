@@ -1,0 +1,15 @@
+AArch64 WRC-inst+cachesync+ctrlisb-2
+Stable=X9
+{ 0:X0=NOP;
+  0:X1=P0:mod; 1:X1=P0:mod; 2:X1=P0:mod;
+  1:X3=x; 2:X3=x; }
+ P0          | P1          |  P2          ;
+ STR W0,[X1] | BLR X1      |  LDR W2,[X3] ;
+ B end       | MOV W2,#1   |  CBNZ W2,l2  ;
+mod:         | DC CVAU,X1  | l2:          ;
+ B l0        | DSB ISH     |  ISB         ;
+ MOV W9,#1   | IC IVAU,X1  |  BLR X1      ;
+l0:          | DSB ISH     |              ;
+ RET         | STR W2,[X3] |              ;
+end:         |             |              ;
+exists(1:X9=1 /\ 2:X2=1 /\ 2:X9=0)

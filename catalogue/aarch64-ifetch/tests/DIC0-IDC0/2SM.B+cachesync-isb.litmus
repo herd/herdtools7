@@ -1,0 +1,19 @@
+AArch64 2SM.B+cachesync-isb
+{
+  0:X0=NOP; 0:X1=P1:L0; 0:X2=1;
+  1:X0=NOP; 1:X1=P1:L0; 1:X2=0; 1:X9=0;
+}
+P0           | P1           ;
+STR W0,[X1]  |  LDR W2,[X1] ;
+             |  DC CVAU,X1  ;
+             |  DSB ISH     ;
+             |  IC IVAU,X1  ;
+             |  DSB ISH     ;
+             |  ISB         ;
+             | L0: B L1     ;
+             |  MOV W9,#1   ;
+             | L1:          ;
+             |  CMP W2,W0   ;
+             |  CSET W3,EQ  ;
+exists 1:X3=1 /\ 1:X9=0
+(* NB 1:X3=1 <=> 1:X2=NOP *)
