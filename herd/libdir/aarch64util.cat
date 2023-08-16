@@ -57,6 +57,7 @@ let DB = try DB with emptyset
 let MMU = try MMU with emptyset
 let Translation = try Translation with emptyset
 let AccessFlag = try AccessFlag with emptyset
+let TagCheck = try TagCheck with emptyset
 
 (*
  * Include the cos.cat file shipped with herd.

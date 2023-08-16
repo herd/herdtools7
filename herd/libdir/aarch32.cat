@@ -1,0 +1,7 @@
+AArch32
+catdep
+
+let DMB.SY = DMB
+let DSB.SY = DSB
+include "aarch64.cat"
+
