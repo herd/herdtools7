@@ -1021,6 +1021,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | E_GetArray _ -> assert false
 
   let rec annotate_lexpr env le t_e =
+    let () =
+      if false then
+        Format.eprintf "Typing lexpr: @[%a@] to @[%a@]@."
+          PP.pp_lexpr le PP.pp_ty t_e in
     let here x = add_pos_from le x in
     match le.desc with
     | LE_Var x ->
@@ -1239,7 +1243,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let s2, env = try_annotate_stmt env return_type s2 in
         (S_Then (s1, s2) |> here, env)
     | S_Assign (le, e) -> (
+        let () =
+          if false then
+            Format.eprintf
+              "@[<3>Annotating assignment@ @[%a@]@]@." PP.pp_stmt s in
         let t_e, e = annotate_expr env e in
+        let () =
+          if false then
+            Format.eprintf "@[Type: @[%a@]@]@." PP.pp_ty t_e in
         let reduced = setter_should_reduce_to_call_s env le e in
         match reduced with
         | Some s -> (s, env)
@@ -1400,6 +1411,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     best_effort (s, env) (fun _ -> annotate_stmt env return_type s)
 
   and setter_should_reduce_to_call_s env le e : stmt option =
+    let () =
+      if false then
+        Format.eprintf
+          "@[<2>setter_..._s@ @[%a@]@ @[%a@]@]@."
+          PP.pp_lexpr le PP.pp_expr e in
     let here d = add_pos_from le d in
     let s_then = s_then in
     let to_expr = expr_of_lexpr in

@@ -813,7 +813,7 @@ let match_reg_events es =
               with Contradiction ->
                 let loc = Misc.as_some (E.location_of load) in
                 Printf.eprintf
-                  "Contradiction on reg %s: %s vs. %s\n"
+                  "Contradiction on reg %s: loaded %s vs. stored %s\n"
                   (A.pp_location loc)
                   (A.V.pp_v v_loaded)
                   (A.V.pp_v v_stored) ;

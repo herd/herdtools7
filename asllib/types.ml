@@ -246,7 +246,12 @@ module Domain = struct
           | _ -> assert false
         in
         int_set_raise_op op is1 is2
-    | _ -> assert false
+    | _ ->
+       let () =
+         Format.eprintf
+           "@[<2>Cannot interpret as int set:@ @[%a@]@]@."
+           PP.pp_expr e in
+       assert false
 
   and of_type env ty =
     match ty.desc with

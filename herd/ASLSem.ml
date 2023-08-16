@@ -187,9 +187,6 @@ module Make (C : Config) = struct
       let* v = M.read_loc false mk_action loc ii in
       resize_from_quad sz v >>= to_bv
 
-    let loc_of_scoped_id ii x scope =
-      A.Location_reg (ii.A.proc, ASLBase.ASLLocalId (scope, x))
-
     (**************************************************************************)
     (* ASL-Backend implementation                                             *)
     (**************************************************************************)
@@ -250,15 +247,31 @@ module Make (C : Config) = struct
             let* v1 = m1 () and* v2 = m2 () and* v = to_int_signed v in
             M.op3 Op.If v v1 v2
 
-    let on_write_identifier (ii, poi) x scope v =
-      let loc = loc_of_scoped_id ii x scope in
-      let action = Act.Access (Dir.W, loc, v, MachSize.Quad) in
-      M.mk_singleton_es action (use_ii_with_poi ii poi)
+(* Any access to PSTATE emits an access to NZCV.
+ * Notice that the value is casted into an integer.
+ *)
+    let is_pstate x scope =
+      match x,scope with
+      | "PSTATE",AST.Scope_Global -> true
+      | _ -> false
 
-    let on_read_identifier (ii, poi) x scope v =
+    let loc_of_scoped_id ii x scope =
+      if is_pstate x scope then
+        A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.NZCV)
+      else
+        A.Location_reg (ii.A.proc, ASLBase.ASLLocalId (scope, x))
+
+    let on_access_identifier  dir (ii,poi) x scope v =
       let loc = loc_of_scoped_id ii x scope in
-      let action = Act.Access (Dir.R, loc, v, MachSize.Quad) in
-      M.mk_singleton_es action (use_ii_with_poi ii poi)
+      let m v =
+        let action = Act.Access (dir, loc, v, MachSize.Quad) in
+        M.mk_singleton_es action (use_ii_with_poi ii poi) in
+      if is_pstate x scope then
+        M.op1 (Op.ArchOp1 ASLValue.ToIntU) v >>= m
+      else m v
+
+    let on_write_identifier = on_access_identifier Dir.W
+    and on_read_identifier =  on_access_identifier Dir.R
 
     let create_vector li =
       let li = List.map as_constant li in
@@ -367,15 +380,6 @@ module Make (C : Config) = struct
       let* v = v_m >>= to_int_signed in
       write_loc MachSize.Quad (loc_sp ii) v (use_ii_with_poi ii poi) >>! []
 
-    let read_pstate_nzcv (ii, poi) () =
-      let loc = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.NZCV) in
-      read_loc MachSize.Quad loc (use_ii_with_poi ii poi)
-
-    let write_pstate_nzcv (ii, poi) v_m =
-      let loc = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.NZCV) in
-      let* v = v_m >>= to_int_signed in
-      write_loc MachSize.Quad loc v (use_ii_with_poi ii poi) >>! []
-
     let uint bv_m = bv_m >>= to_int_unsigned
     let sint bv_m = bv_m >>= to_int_signed
     let processor_id (ii, _poi) () = return (V.intToV ii.A.proc)
@@ -449,7 +453,6 @@ module Make (C : Config) = struct
       let bv_N = bv_var "N" in
       let bv_lit x = bv @@ lit x in
       let bv_64 = bv_lit 64 in
-      let t_named x = T_Named x |> __POS_OF__ |> here in
       [
         arity_one "read_register" [ reg ] (return_one bv_64)
           (read_register ii_env)
@@ -463,14 +466,6 @@ module Make (C : Config) = struct
         |> __POS_OF__ |> here;
         build_primitive "write_memory" [ bv_64; integer; bv_arg1 ] return_zero
           (write_memory ii_env)
-        |> __POS_OF__ |> here;
-        arity_zero "PSTATE"
-          (return_one (t_named "ProcState"))
-          (read_pstate_nzcv ii_env)
-        |> __POS_OF__ |> here;
-        arity_one "PSTATE"
-          [ t_named "ProcState" ]
-          return_zero (write_pstate_nzcv ii_env)
         |> __POS_OF__ |> here;
         arity_zero "SP_EL0" (return_one bv_64) (read_sp ii_env)
         |> __POS_OF__ |> here;
@@ -552,7 +547,48 @@ module Make (C : Config) = struct
             |> ASLBase.build_ast_from_file ?ast_type version
             |> Asllib.ASTUtils.no_primitive
           in
-          let patches = build `ASLv1 "patches.asl"
+          let patches =
+            let open  AST in
+            let patches = build `ASLv1 "patches.asl" in
+            (* Patch "patches.asl":
+             * replace the default initial value of "PSTATE"
+             * by the value transmitted in the env field of
+             * the instruction instance ii.
+             *)
+            List.map
+              (fun d ->
+                match d.desc with
+                |  D_GlobalStorage ({ name="PSTATE"; _ } as desc) ->
+                    begin
+                      let to_d v =
+                        let v = Asllib.ASTUtils.add_dummy_pos v in
+                        let desc = { desc with initial_value= Some v; } in
+                        { d with desc=D_GlobalStorage desc;} in
+                      match
+                        A.look_reg
+                          (ASLBase.ASLLocalId (Scope_Global,"PSTATE"))
+                          ii.A.env.A.regs
+                      with
+                      | Some (A.V.Val (Constant.Concrete c)) ->
+                         begin match c with
+                         | ASLScalar.S_Int i ->
+                            let bv = Asllib.Bitvector.of_z 64 i in
+                            let v = E_Literal (L_BitVector bv) in
+                            to_d v
+                         | _ ->
+                            Warn.fatal
+                              "Unexpected initial value for PSTATE: %s"
+                              (ASLScalar.pp C.PC.hexa c)
+                         end
+                      | Some v ->
+                         Warn.fatal
+                           "Unexpected initial value for PSTATE: %s"
+                           (A.V.pp C.PC.hexa v)
+                      | None ->
+                         d
+                    end
+                | _ -> d)
+              patches
           and custom_implems = build `ASLv1 "implementations.asl"
           and shared = build `ASLv0 "shared_pseudocode.asl" in
           let shared =
