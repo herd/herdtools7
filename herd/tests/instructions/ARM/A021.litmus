@@ -1,0 +1,12 @@
+ARM A021
+
+(* Test MOVEQ/MOVTEQ instruction *)
+
+{ int R1=0; int R2 = 0; 0:R3=1}
+
+P0;
+  CMP R3, #1;
+  MOVWEQ R1, #2;
+  MOVTEQ R2, #2;
+
+forall (0:R1=2 /\ 0:R2=0x20000)

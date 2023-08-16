@@ -60,6 +60,8 @@ match name with
 | "movt" | "MOVT" -> I_MOVT
 | "movne" | "MOVNE"   -> I_MOVNE
 | "moveq" | "MOVEQ"   -> I_MOVEQ
+| "movteq" | "MOVTEQ" -> I_MOVTEQ
+| "movweq" | "MOVWEQ" -> I_MOVWEQ
 | "xor" | "XOR"   -> I_XOR
 | "eor" | "EOR"   -> I_XOR
 | "eors" | "EORS" -> I_XOR

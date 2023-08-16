@@ -229,8 +229,8 @@ type 'k kinstruction =
   | I_STLEX of reg * reg * reg
   | I_MOVI of reg * 'k * condition
   | I_MOV of reg * reg * condition
-  | I_MOVW of reg * 'k
-  | I_MOVT of reg * 'k
+  | I_MOVW of reg * 'k * condition
+  | I_MOVT of reg * 'k * condition
   | I_XOR of setflags * reg * reg * reg
   | I_DMB of barrier_option
   | I_DSB of barrier_option
@@ -355,8 +355,8 @@ let do_pp_instruction m =
   | I_STLEX(rt,rn,rm) -> ppi_strex "STLEX" rt rn rm AL
   | I_MOVI(r,i,c) -> ppi_ric "MOV" r i c
   | I_MOV(r1,r2,c) -> ppi_rrc "MOV" r1 r2 c
-  | I_MOVW(r1,k) -> "MOVW " ^ (pp_reg r1) ^ ", " ^ (m.pp_k k)
-  | I_MOVT(r1,k) -> "MOVT " ^ (pp_reg r1) ^ ", " ^ (m.pp_k k)
+  | I_MOVW(r1,k,c) -> pp_memoc "MOVW" c ^ (pp_reg r1) ^ ", " ^ (m.pp_k k)
+  | I_MOVT(r1,k,c) -> pp_memoc "MOVT " c ^ (pp_reg r1) ^ ", " ^ (m.pp_k k)
   | I_XOR(s,r1,r2,r3) -> ppi_rrr "EOR" s r1 r2 r3
   | I_DMB o -> pp_barrier_ins "DMB" o
   | I_DSB o -> pp_barrier_ins "DSB" o
@@ -428,7 +428,7 @@ let fold_regs (f_reg,f_sreg) =
   | I_BX r
   | I_CMPI (r, _)
   | I_MOVI (r, _, _)
-  | I_MOVW (r,_) | I_MOVT (r,_)
+  | I_MOVW (r,_,_) | I_MOVT (r,_,_)
   | I_CB (_,r,_)
       -> fold_reg r c
   | I_NOP
@@ -481,8 +481,8 @@ let map_regs f_reg f_symb =
   | I_STREX (r1, r2, r3, c) -> I_STREX (map_reg r1, map_reg r2, map_reg r3, c)
   | I_STL (r1, r2, c) -> I_STL (map_reg r1, map_reg r2, c)
   | I_MOVI (r, k, c) -> I_MOVI (map_reg r, k, c)
-  | I_MOVW (r, k) -> I_MOVW (map_reg r, k)
-  | I_MOVT (r, k) -> I_MOVT (map_reg r, k)
+  | I_MOVW (r, k,c) -> I_MOVW (map_reg r, k,c)
+  | I_MOVT (r, k,c) -> I_MOVT (map_reg r, k,c)
   | I_MOV (r1, r2, c) -> I_MOV (map_reg r1, map_reg r2, c)
   | I_XOR (s,r1, r2, r3) -> I_XOR (s,map_reg r1, map_reg r2, map_reg r3)
   | I_STLEX (r1, r2, r3) -> I_STLEX (map_reg r1, map_reg r2, map_reg r3)
@@ -567,8 +567,8 @@ include Pseudo.Make
         | I_BX r -> I_BX r
         | I_CMPI (r,k) -> I_CMPI (r,MetaConst.as_int k)
         | I_MOVI (r,k,c) -> I_MOVI (r,MetaConst.as_int k,c)
-        | I_MOVW (r,k) -> I_MOVW (r,MetaConst.as_int k)
-        | I_MOVT (r,k) -> I_MOVT (r,MetaConst.as_int k)
+        | I_MOVW (r,k,c) -> I_MOVW (r,MetaConst.as_int k,c)
+        | I_MOVT (r,k,c) -> I_MOVT (r,MetaConst.as_int k,c)
         | I_NOP
         | I_ADD3 _
         | I_SUB3 _

@@ -110,8 +110,8 @@ let match_instr subs pattern instr = match pattern,instr with
         subs
   | I_MOVI(r,MetaConst.Int i,c),I_MOVI(r',i',c') when i=i' && c=c' ->
       add_subs [Reg(sr_name r,r')] subs
-  | I_MOVW(r,MetaConst.Int i),I_MOVW(r',i')
-  | I_MOVT(r,MetaConst.Int i),I_MOVT(r',i') when i=i' ->
+  | I_MOVW(r,MetaConst.Int i,c),I_MOVW(r',i',c')
+  | I_MOVT(r,MetaConst.Int i,c),I_MOVT(r',i',c') when i=i' && c=c' ->
       add_subs [Reg(sr_name r,r')] subs
   | I_DMB b,I_DMB b'
   | I_DSB b,I_DSB b' when b = b' ->
@@ -282,14 +282,14 @@ let match_instr subs pattern instr = match pattern,instr with
           conv_reg r >> fun r ->
           find_cst v >! fun v ->
           I_MOVI(r,v,c)
-      | I_MOVW(r,v) ->
+      | I_MOVW(r,v,c) ->
           conv_reg r >> fun r ->
           find_cst v >! fun v ->
-          I_MOVW(r,v)
-      | I_MOVT(r,v) ->
+          I_MOVW(r,v,c)
+      | I_MOVT(r,v,c) ->
           conv_reg r >> fun r ->
           find_cst v >! fun v ->
-          I_MOVT(r,v)
+          I_MOVT(r,v,c)
       | I_NOP
       | I_DMB _
       | I_DSB _

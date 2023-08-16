@@ -91,15 +91,15 @@ module Make(V:Constant.S)(C:Config) =
         inputs = [] ;
         outputs = [r1]; cond=is_cond c; }
 
-    let movw r1 i =
-      let memo = "movw" in
+    let movw c r1 i =
+      let memo = sprintf "movw%s" (pp_cond c) in
       { empty_ins with
         memo = sprintf "%s ^o0,#%i" memo i ;
         inputs = [] ;
         outputs = [r1]; }
 
-    let movt r1 i =
-      let memo = "movt" in
+    let movt c r1 i =
+      let memo = sprintf "movt%s" (pp_cond c) in
       { empty_ins with
         memo = sprintf "%s ^o0,#%i" memo i ;
         inputs = [r1] ;
@@ -331,8 +331,8 @@ module Make(V:Constant.S)(C:Config) =
     | I_XOR (s,r1, r2, r3) -> op3regs "eor" s AL r1 r2 r3::k
 (* Moves *)
     | I_MOVI (r, i, c) -> movi c r i::k
-    | I_MOVW (r, i) -> movw r i::k
-    | I_MOVT (r, i) -> movt r i::k
+    | I_MOVW (r, i, c) -> movw c r i::k
+    | I_MOVT (r, i, c) -> movt c r i::k
     | I_MOV (r1,r2, c) -> mov c r1 r2::k
 (* Memory *)
     | I_LDR (r1, r2, c) ->  ldr2 c r1 r2::k

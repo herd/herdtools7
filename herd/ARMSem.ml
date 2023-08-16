@@ -468,16 +468,16 @@ module
           | ARM.I_MOVI (rt, i, c) ->
               let movi ii =  write_reg  rt (V.intToV i) ii in
               checkZ movi c ii
-          | ARM.I_MOVW (rt, k) ->
+          | ARM.I_MOVW (rt, k, c) ->
               assert (MachSize.is_imm16 k);
               let movi ii =  write_reg  rt (V.intToV k) ii in
-              checkZ movi ARM.AL ii
-          | ARM.I_MOVT (rt, k) ->
+              checkZ movi c ii
+          | ARM.I_MOVT (rt, k, c) ->
               assert (MachSize.is_imm16 k);
               let movi ii =
                 M.op1 (Op.LeftShift 16) (V.intToV k)
                 >>= fun k -> write_reg  rt k ii in
-              checkZ movi ARM.AL ii
+              checkZ movi c ii
           | ARM.I_XOR (set,r3,r1,r2) ->
               (((read_reg_ord  r1 ii) >>| (read_reg_ord r2 ii))
                  >>=
