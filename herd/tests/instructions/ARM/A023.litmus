@@ -1,0 +1,10 @@
+ARM A023
+
+(*Parse Frame Pointer reg*)
+
+{}
+
+P0;
+MOV R0, FP;
+
+forall 0:R0=0

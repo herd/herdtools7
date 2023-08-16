@@ -25,6 +25,8 @@ module LU = LexUtils.Make(O)
 let check_name name =
 match name with
 | "add" | "ADD" -> I_ADD
+| "push" | "PUSH" -> I_PUSH
+| "pop" | "POP" -> I_POP
 | "adds" | "ADDS"   -> I_ADDS
 | "bx" | "BX" -> I_BX
 | "sub" | "SUB"   -> I_SUB

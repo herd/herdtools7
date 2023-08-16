@@ -32,7 +32,7 @@ type reg =
   | R4 | R5 | R6 | R7
   | R8 | R9 | R10 | R11
   | R12
-  | SP | LR | PC
+  | SP | LR | PC | FP
 
   | Z  (* condition flags *)
 
@@ -68,6 +68,7 @@ let regs =
    R12, "R12" ;
    R12, "IP" ;
    SP, "SP" ;
+   FP, "FP" ;
    LR, "LR" ;
    PC, "PC" ;
    Z, "Z" ;
@@ -385,7 +386,7 @@ let fold_regs (f_reg,f_sreg) =
 
   let fold_reg reg (y_reg,y_sreg) = match reg with
   | R0 | R1 | R2 | R3 | R4 | R5 | R6 | R7 | R8
-  | R9 | R10 | R11 | R12 | SP | LR | PC | Z | RESADDR ->  f_reg reg y_reg,y_sreg
+  | R9 | R10 | R11 | R12 | SP | FP | LR | PC | Z | RESADDR ->  f_reg reg y_reg,y_sreg
   | Symbolic_reg reg -> y_reg,f_sreg reg y_sreg
   | Internal _ -> y_reg,y_sreg in
 
@@ -440,7 +441,7 @@ let map_regs f_reg f_symb =
 
   let map_reg  reg = match reg with
   | R0 | R1 | R2 | R3 | R4 | R5 | R6 | R7 | R8
-  | R9 | R10 | R11 | R12 | SP | LR | PC | Z | RESADDR -> f_reg reg
+  | R9 | R10 | R11 | R12 | SP | FP | LR | PC | Z | RESADDR -> f_reg reg
   | Symbolic_reg reg -> f_symb reg
   | Internal _ -> reg in
 
