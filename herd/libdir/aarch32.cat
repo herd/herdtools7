@@ -9,10 +9,7 @@
  * https://developer.arm.com/documentation/ddi0487/
  *
  * Authors:
- * Will Deacon <will.deacon@arm.com>
- * Jade Alglave <jade.alglave@arm.com>
- * Nikos Nikoleris <nikos.nikoleris@arm.com>
- * Artem Khyzha <artem.khyzha@arm.com>
+ * Luke Geeson <luke.geeson@cs.ucl.ac.uk>
  *
  * Copyright (C) 2016-present, Arm Ltd.
  * All rights reserved.
@@ -44,68 +41,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *)
 
-(*
- * Include default definitions for sets that are undefined without
- * -variant vmsa
-*)
-let PTE = try PTE with emptyset
-let PTEV = try PTEV with emptyset
-let PTEINV = try PTEINV with emptyset
-let inv-domain = try inv-domain with 0
-let AF = try AF with emptyset
-let DB = try DB with emptyset
-let MMU = try MMU with emptyset
-let Translation = try Translation with emptyset
-let AccessFlag = try AccessFlag with emptyset
-let TagCheck = try TagCheck with emptyset
+AArch32
+catdep
 
-(*
- * Include the cos.cat file shipped with herd.
- * This builds the co relation as a total order over writes to the same
- * location and then consequently defines the fr relation using co and
- * rf.
- *)
-let AFtoDB = same-instance & ((AF\DB) * (DB\AF))
-let co0=co0 | AFtoDB
-
-include "cos.cat"
-
-(*
- * Include aarch64fences.cat to define barriers.
- *)
-include "aarch64fences.cat"
-
-(*
- * Include aarch64deps.cat to define dependencies.
- *)
-include "aarch64deps.cat"
-
-(*
- * Include aarch64bbm.cat to define relations on Break-Before-Make semantics.
- *)
-include "aarch64bbm.cat"
-
-(* Show relations in generated diagrams *)
-include "aarch64show.cat"
-
-(* Helper functions *)
-procedure included(r1, r2) =
-  empty r1 \ r2
-end
-
-procedure equal(r1, r2) =
-  call included(r1, r2)
-  call included(r2, r1)
-end
-
-(* Intervening write *)
-let intervening-write(r) = r; [W]; r
-
-(* Properties of single-copy atomic accesses *)
-let sca-class = [M & Exp]; sm; [M & Exp]
-
-(* Renaming default herd names *)
-let Imp = NExp
-let SPONTANEOUS = SPURIOUS
-let inv-scope = inv-domain
-let TTD = PTE
+let DMB.SY = DMB
+let DSB.SY = DSB
+include "aarch64.cat"

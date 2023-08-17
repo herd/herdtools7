@@ -113,6 +113,13 @@ module Make(V:Constant.S)(C:Config) =
         inputs = [r2] ;
         outputs = [r1] ; cond=is_cond c; }
 
+    let lda r1 r2 =
+      let memo = sprintf "%s" "lda" in
+      { empty_ins with
+        memo = sprintf "%s ^o0,[^i0]" memo ;
+        inputs = [r2] ;
+        outputs = [r1] ; }
+
     let ldm2 ra r1 r2 i =
       let memo = sprintf "%s%s" "ldm" (pp_incr i) in
       { empty_ins with
@@ -151,6 +158,13 @@ module Make(V:Constant.S)(C:Config) =
         inputs = [r2] ;
         outputs = [r1]; }
 
+    let ldaex r1 r2 =
+      let memo = "ldaex" in
+      { empty_ins with
+        memo = sprintf "%s ^o0,[^i0]" memo ;
+        inputs = [r2] ;
+        outputs = [r1]; }
+
     let ldr3 c r1 r2 r3 =
       let memo = sprintf "%s%s" "ldr" (pp_cond c) in
       { empty_ins with
@@ -164,6 +178,21 @@ module Make(V:Constant.S)(C:Config) =
         memo = sprintf "%s ^i0,[^i1]" memo ;
         inputs = [r1;r2] ;
         outputs = [] ; cond=is_cond c; }
+
+    let stl s c r1 r2 =
+      let memo = sprintf "%s%s" s (pp_cond c) in
+      { empty_ins with
+        memo = sprintf "%s ^i0,[^i1]" memo ;
+        inputs = [r1;r2] ;
+        outputs = [] ; cond=is_cond c; }
+
+    let stlex r1 r2 r3 =
+      let memo = sprintf "%s" "stlex"  in
+       { empty_ins with
+        memo = sprintf "%s ^o0,^i0,[^i1]" memo ;
+        inputs = [r2;r3] ;
+        outputs = [r1] ; }
+
 
     let str3 c r1 r2 r3 =
       let memo = sprintf "%s%s" "str" (pp_cond c) in
@@ -283,13 +312,17 @@ module Make(V:Constant.S)(C:Config) =
     | I_MOV (r1,r2, c) -> mov c r1 r2::k
 (* Memory *)
     | I_LDR (r1, r2, c) ->  ldr2 c r1 r2::k
+    | I_LDA (r1, r2) ->  lda r1 r2::k
     | I_LDM2 (ra, r1, r2,i) ->  ldm2 ra r1 r2 i::k
     | I_LDM3 (ra, r1, r2, r3, i) ->  ldm3 ra r1 r2 r3 i::k
     | I_LDRD (r1, r2, r3, os) ->  ldrd r1 r2 r3 os::k
     | I_LDRO (r1, r2, k1, c) ->  ldr2k c r1 r2 k1::k
     | I_LDREX (r1, r2) ->  ldrex r1 r2::k
+    | I_LDAEX (r1, r2) ->  ldaex r1 r2::k
     | I_LDR3 (r1, r2, r3, c) ->  ldr3 c r1 r2 r3::k
     | I_STR (r1, r2, c) ->  str2 c r1 r2::k
+    | I_STL (r1, r2, c) ->  stl "STL" c r1 r2::k
+    | I_STLEX (r1, r2, r3) ->  stlex r1 r2 r3::k
     | I_STR3 (r1, r2, r3, c) ->  str3 c r1 r2 r3::k
     | I_STREX (r1, r2, r3, c) ->  strex c r1 r2 r3::k
 (* Comparisons and branches *)

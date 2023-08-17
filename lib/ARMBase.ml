@@ -209,6 +209,8 @@ type 'k kinstruction =
   | I_CMP of reg * reg
   | I_LDR of reg * reg * condition
   | I_LDREX of reg * reg
+  | I_LDA of reg * reg
+  | I_LDAEX of reg * reg
   | I_LDRO of reg * reg * 'k * condition
   | I_LDM2 of reg * reg * reg * increment
   | I_LDM3 of reg * reg * reg * reg * increment
@@ -217,6 +219,8 @@ type 'k kinstruction =
   | I_STR of reg * reg * condition
   | I_STR3 of reg * reg * reg * condition
   | I_STREX of reg * reg * reg * condition
+  | I_STL of reg * reg * condition
+  | I_STLEX of reg * reg * reg
   | I_MOVI of reg * 'k * condition
   | I_MOV of reg * reg * condition
   | I_MOVW of reg * 'k
@@ -287,6 +291,9 @@ let do_pp_instruction m =
      pp_memoc opcode c^" "^pp_reg rt ^ ","^
     pp_reg rn ^ ",[" ^ pp_reg rm ^ "]" in
 
+  let ppi_stl opcode rt rn c =
+     pp_memoc opcode c^" "^pp_reg rt ^ ",[" ^ pp_reg rn ^ "]" in
+
   let ppi_rr opcode rt rn = opcode^" "^pp_reg rt ^ ","^ pp_reg rn in
   let ppi_rrc opcode rt rn c=
     pp_memoc opcode c^" "^pp_reg rt ^ ","^ pp_reg rn in
@@ -312,6 +319,8 @@ let do_pp_instruction m =
   | I_BX r -> "BX " ^ (pp_reg r)
   | I_CMP (r1,r2) -> ppi_rr "CMP" r1 r2
   | I_LDREX(rt,rn) -> ppi_rrm "LDREX" rt rn
+  | I_LDA(rt,rn) -> ppi_rrm "LDA" rt rn
+  | I_LDAEX(rt,rn) -> ppi_rrm "LDAEX" rt rn
   | I_LDM2(rt,r1,r2,i) -> ppi_rr_multiple "LDM" rt [r1; r2] i
   | I_LDM3(rt,r1,r2,r3,i) -> ppi_rr_multiple "LDM" rt [r1;r2;r3] i
   | I_LDR(rt,rn,c) -> ppi_rrmc "LDR" rt rn c
@@ -324,6 +333,8 @@ let do_pp_instruction m =
   | I_STR(rt,rn,c) -> ppi_rrmc "STR" rt rn c
   | I_STR3(rt,rn,rm,c) -> ppi_rrrmc "STR" rt rn rm c
   | I_STREX(rt,rn,rm,c) -> ppi_strex "STREX" rt rn rm c
+  | I_STL(rt,rn,c) -> ppi_stl "STL" rt rn c
+  | I_STLEX(rt,rn,rm) -> ppi_strex "STLEX" rt rn rm AL
   | I_MOVI(r,i,c) -> ppi_ric "MOV" r i c
   | I_MOV(r1,r2,c) -> ppi_rrc "MOV" r1 r2 c
   | I_MOVW(r1,k) -> "MOVW " ^ (pp_reg r1) ^ ", " ^ (m.pp_k k)
@@ -371,14 +382,18 @@ let fold_regs (f_reg,f_sreg) =
   | I_ORR (_,r1, r2, _)
   | I_LDR (r1, r2, _)
   | I_LDREX (r1, r2)
+  | I_LDA (r1, r2)
+  | I_LDAEX (r1, r2)
   | I_LDRO (r1, r2,_,_)
   | I_STR (r1, r2, _)
+  | I_STL (r1, r2, _)
   | I_MOV (r1, r2, _)
   | I_CMP (r1,r2)
       -> fold_reg r2 (fold_reg r1 c)
   | I_LDR3 (r1, r2, r3, _)
   | I_LDRD (r1, r2, r3, _)
   | I_LDM2 (r1, r2, r3,_)
+  | I_STLEX (r1, r2, r3)
   | I_ADD3 (_, r1, r2, r3)
   | I_SUB3 (_, r1, r2, r3)
   | I_STR3 (r1, r2, r3, _)
@@ -429,6 +444,8 @@ let map_regs f_reg f_symb =
   | I_CMPI (r, k) -> I_CMPI (map_reg r, k)
   | I_CMP (r1, r2) -> I_CMP (map_reg r1, map_reg r2)
   | I_LDREX (r1, r2) -> I_LDREX (map_reg r1, map_reg r2)
+  | I_LDA (r1, r2) -> I_LDA (map_reg r1, map_reg r2)
+  | I_LDAEX (r1, r2) -> I_LDAEX (map_reg r1, map_reg r2)
   | I_LDRO (r1, r2,k,c) -> I_LDRO (map_reg r1, map_reg r2,k,c)
   | I_LDR (r1, r2, c) -> I_LDR (map_reg r1, map_reg r2, c)
   | I_LDR3 (r1, r2, r3, c) -> I_LDR3 (map_reg r1, map_reg r2, map_reg r3, c)
@@ -438,11 +455,13 @@ let map_regs f_reg f_symb =
   | I_STR (r1, r2, c) -> I_STR (map_reg r1, map_reg r2, c)
   | I_STR3 (r1, r2, r3, c) -> I_STR3 (map_reg r1, map_reg r2, map_reg r3, c)
   | I_STREX (r1, r2, r3, c) -> I_STREX (map_reg r1, map_reg r2, map_reg r3, c)
+  | I_STL (r1, r2, c) -> I_STL (map_reg r1, map_reg r2, c)
   | I_MOVI (r, k, c) -> I_MOVI (map_reg r, k, c)
   | I_MOVW (r, k) -> I_MOVW (map_reg r, k)
   | I_MOVT (r, k) -> I_MOVT (map_reg r, k)
   | I_MOV (r1, r2, c) -> I_MOV (map_reg r1, map_reg r2, c)
   | I_XOR (s,r1, r2, r3) -> I_XOR (s,map_reg r1, map_reg r2, map_reg r3)
+  | I_STLEX (r1, r2, r3) -> I_STLEX (map_reg r1, map_reg r2, map_reg r3)
   | I_DMB _
   | I_DSB _
   | I_ISB -> ins
@@ -474,12 +493,16 @@ let get_next = function
   | I_LDM2 _
   | I_LDM3 _
   | I_LDREX _
+  | I_LDA _
+  | I_LDAEX _
   | I_LDRO _
   | I_LDRD _
   | I_LDR3 _
   | I_STR _
   | I_STR3 _
   | I_STREX _
+  | I_STL _
+  | I_STLEX _
   | I_MOVI _
   | I_MOVW _
   | I_MOVT _
@@ -526,10 +549,14 @@ include Pseudo.Make
         | I_LDM2 _
         | I_LDM3 _
         | I_LDREX _
+        | I_LDA _
+        | I_LDAEX _
         | I_LDR3 _
         | I_STR _
         | I_STR3 _
         | I_STREX _
+        | I_STL _
+        | I_STLEX _
         | I_MOV _
         | I_XOR _
         | I_DMB _
@@ -569,11 +596,15 @@ include Pseudo.Make
         | I_LDR _
         | I_LDM2 _
         | I_LDREX _
+        | I_LDA _
+        | I_LDAEX _
         | I_LDRO _
         | I_LDR3 _
         | I_STR _
         | I_STR3 _
         | I_STREX _
+        | I_STL _
+        | I_STLEX _
             -> 1
         | I_LDM3 _
             -> 3

@@ -196,6 +196,18 @@ arm-test::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 ARM instructions tests: OK"
 
+aarch32-test::
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch32 \
+		-conf ./herd/tests/instructions/AArch32/aarch32.cfg \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 ARM instructions tests: OK"
+
+test::aarch32-test
+
 test::
 
 diy-test:: diy-test-aarch64

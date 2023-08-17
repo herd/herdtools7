@@ -26,6 +26,7 @@ module
     module Act = MachAction.Make(C.PC)(ARM)
     include SemExtra.Make(C)(ARM)(Act)
 
+    let aexp = ARM.Exp    (* Explicit accesses *)
 (* Barrier pretty print *)
     let  dmb =
       ARMBase.fold_barrier_option
@@ -88,40 +89,65 @@ module
       and nat_sz = V.Cst.Scalar.machsize
 
       let mk_read ato sz loc v =
-        Act.Access (Dir.R, loc, v, ato,(), sz, Act.access_of_location_std loc)
+        Act.Access (Dir.R, loc, v, ato,ARM.Exp, sz, Act.access_of_location_std loc)
 
       let read_reg is_data r ii =
         M.read_loc is_data
-          (mk_read false reg_sz)
+          (mk_read ARM.N reg_sz)
           (A.Location_reg (ii.A.proc,r)) ii
 
       let read_reg_ord = read_reg false
       let read_reg_data = read_reg true
 
       let read_mem sz a ii  =
-        M.read_loc false (mk_read false sz) (A.Location_global a) ii
+        M.read_loc false (mk_read ARM.N sz) (A.Location_global a) ii
       let read_mem_atomic sz a ii =
-        M.read_loc false (mk_read true sz) (A.Location_global a) ii
+        M.read_loc false (mk_read ARM.X sz) (A.Location_global a) ii
+
+      let do_read_mem_ret sz an anexp ac a ii =
+        let mk_act loc v =  Act.Access (Dir.R,loc,v,an,anexp,sz,ac) in
+        let loc = A.Location_global a in
+        M.read_loc false mk_act loc ii
 
       let write_loc sz loc v ii =
         let ac = Act.access_of_location_std loc in
-        M.mk_singleton_es (Act.Access (Dir.W, loc, v, false, (), sz, ac)) ii
+        M.mk_singleton_es (Act.Access (Dir.W, loc, v, ARM.N, ARM.Exp, sz, ac)) ii
 
       let write_reg r v ii =
         M.mk_singleton_es
-          (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, ARM.exp_annot, reg_sz, Access.REG))
+          (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, ARM.N, ARM.exp_annot, reg_sz, Access.REG))
           ii
 
       let write_mem sz a v ii  =
         M.mk_singleton_es
-          (Act.Access (Dir.W, A.Location_global a, v, false, (), sz, Access.VIR))
+          (Act.Access (Dir.W, A.Location_global a, v, ARM.N, ARM.Exp, sz, Access.VIR))
           ii
+
+      (* Acquire / release semantics like AArch64 *)
+      let do_read_mem sz an anexp ac rd a ii =
+        do_read_mem_ret sz an anexp ac a ii
+        >>= fun v -> write_reg rd v ii
+        >>= fun () -> B.nextT
+
+      let read_mem_acquire sz = do_read_mem sz ARM.A aexp Access.VIR
+      let read_mem_acquire_ex sz = do_read_mem sz ARM.XA aexp Access.VIR
 
       let write_mem_atomic sz a v resa ii =
         let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
         M.mk_singleton_es_eq
-          (Act.Access (Dir.W, A.Location_global a, v, true, (), sz, Access.VIR))
+          (Act.Access (Dir.W, A.Location_global a, v, ARM.X, ARM.Exp, sz, Access.VIR))
           eq ii
+
+      let write_mem_atomic_release sz a v resa ii =
+        let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
+        M.mk_singleton_es_eq
+          (Act.Access (Dir.W, A.Location_global a, v, ARM.XL, ARM.Exp, sz, Access.VIR))
+          eq ii
+
+      let write_mem_release sz a v ii  =
+        M.mk_singleton_es
+          (Act.Access (Dir.W, A.Location_global a, v, ARM.L, ARM.Exp, sz, Access.VIR))
+          ii
 
       let write_flag r o v1 v2 ii =
         M.addT
@@ -334,6 +360,20 @@ module
                   (read_mem_atomic nat_sz vn ii >>=
                    fun v -> write_reg  rt v ii)) in
               ldr ii >>= B.next2T
+          |  ARM.I_LDAEX (rt,rn) ->
+              (read_reg_ord rn ii)
+                >>=
+              (fun vn ->
+                write_reg ARM.RESADDR vn ii >>|
+                (read_mem_acquire_ex nat_sz rt vn ii))
+                >>= fun (_,_) -> B.nextT
+          |  ARM.I_LDA (rt,rn) ->
+              (read_reg_ord rn ii)
+                  >>=
+              fun vn ->
+                read_mem_acquire nat_sz rt vn ii
+                  >>=
+              fun _ -> B.nextT
           |  ARM.I_LDR3 (rt,rn,rm,c) ->
               let ldr3 ii =
                 ((read_reg_ord  rn ii) >>| (read_reg_ord  rm ii))
@@ -351,6 +391,14 @@ module
                 (fun (vn,vt) ->
                   let a = vn in
                   (write_mem nat_sz a vt ii)) in
+              checkZ str c ii
+          |  ARM.I_STL (rt,rn,c) ->
+              let str ii =
+                ((read_reg_ord  rn ii) >>| (read_reg_data  rt ii))
+                  >>=
+                (fun (vn,vt) ->
+                  let a = vn in
+                  (write_mem_release nat_sz a vt ii)) in
               checkZ str c ii
           |  ARM.I_STR3 (rt,rn,rm,c) ->
               let str3 ii =
@@ -373,6 +421,16 @@ module
                     ((write_reg r1 V.zero ii >>|
                     write_mem_atomic nat_sz a v resa ii) >>! ())) >>! () in
               checkZ strex c ii
+          | ARM.I_STLEX (r1,r2,r3) ->
+              let stlex ii =
+                (read_reg_ord ARM.RESADDR ii >>| read_reg_data r2 ii >>| read_reg_ord r3 ii) >>=
+                fun ((resa,v),a) ->
+                  (write_reg ARM.RESADDR V.zero ii >>|
+                  M.altT
+                    (write_reg r1 V.one ii)
+                    ((write_reg r1 V.zero ii >>|
+                    write_mem_atomic_release nat_sz a v resa ii) >>! ())) >>! () in
+              checkZ stlex ARM.AL ii
           | ARM.I_MOV (rd, rs, c) ->
               let mov ii =
                 read_reg_ord  rs ii >>=

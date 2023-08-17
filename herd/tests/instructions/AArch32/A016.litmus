@@ -1,0 +1,17 @@
+ARM A016
+
+{
+0:R1=x; 1:R1=x;
+0:R3=y; 1:R3=y;
+}
+
+ P0               | P1            ;
+ MOV R0, #1       | MOV R2, #1    ;
+ L0:              | STL  R2, [R3] ;
+ LDAEX R6, [R1]   | LDA  R0, [R1] ;
+ STLEX R4,R0,[R1] | ;
+ CMP R4, #0       | ;
+ BNE L0           | ; 
+ LDA R2, [R3]     | ;
+
+exists(0:R2=0 /\ 1:R0=0)

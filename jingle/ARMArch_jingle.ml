@@ -73,12 +73,15 @@ let match_instr subs pattern instr = match pattern,instr with
   | I_CMPI(r,MetaConst.Int i),I_CMPI(r',i') when i=i' ->
      add_subs [Reg(sr_name r,r')] subs
   | I_CMP(r1,r2),I_CMP(r1',r2')
+  | I_LDA(r1,r2),I_LDA(r1',r2')
+  | I_LDAEX(r1,r2),I_LDAEX(r1',r2')
   | I_LDREX(r1,r2),I_LDREX(r1',r2') ->
       add_subs
         [Reg(sr_name r1,r1');Reg(sr_name r2,r2')]
         subs
   | I_LDR(r1,r2,c),I_LDR(r1',r2',c')
   | I_STR(r1,r2,c),I_STR(r1',r2',c')
+  | I_STL(r1,r2,c),I_STL(r1',r2',c')
   | I_MOV(r1,r2,c),I_MOV(r1',r2',c') when c=c' ->
       add_subs
         [Reg(sr_name r1,r1');Reg(sr_name r2,r2')]
@@ -86,6 +89,10 @@ let match_instr subs pattern instr = match pattern,instr with
   | I_LDR3(r1,r2,r3,c),I_LDR3(r1',r2',r3',c')
   | I_STR3(r1,r2,r3,c),I_STR3(r1',r2',r3',c')
   | I_STREX(r1,r2,r3,c),I_STREX(r1',r2',r3',c') when c=c' ->
+      add_subs
+        [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg(sr_name r3,r3')]
+        subs
+  | I_STLEX(r1,r2,r3),I_STLEX(r1',r2',r3') ->
       add_subs
         [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg(sr_name r3,r3')]
         subs
@@ -175,6 +182,14 @@ let match_instr subs pattern instr = match pattern,instr with
           conv_reg r1 >> fun r1 ->
           conv_reg r2 >! fun r2 ->
           I_LDREX(r1,r2)
+      | I_LDAEX(r1,r2) ->
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >! fun r2 ->
+          I_LDAEX(r1,r2)
+      | I_LDA(r1,r2) ->
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >! fun r2 ->
+          I_LDA(r1,r2)
       | I_LDR(r1,r2,c) ->
           conv_reg r1 >> fun r1 ->
           conv_reg r2 >! fun r2 ->
@@ -210,6 +225,10 @@ let match_instr subs pattern instr = match pattern,instr with
           conv_reg r1 >> fun r1 ->
           conv_reg r2 >! fun r2 ->
           I_STR(r1,r2,c)
+      | I_STL(r1,r2,c) ->
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >! fun r2 ->
+          I_STL(r1,r2,c)
       | I_MOV(r1,r2,c) ->
           conv_reg r1 >> fun r1 ->
           conv_reg r2 >! fun r2 ->
@@ -229,6 +248,11 @@ let match_instr subs pattern instr = match pattern,instr with
           conv_reg r2 >> fun r2 ->
           conv_reg r3 >! fun r3 ->
           I_STREX(r1,r2,r3,c)
+      | I_STLEX(r1,r2,r3) ->
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >> fun r2 ->
+          conv_reg r3 >! fun r3 ->
+          I_STLEX(r1,r2,r3)
       | I_MOVI(r,v,c) ->
           conv_reg r >> fun r ->
           find_cst v >! fun v ->

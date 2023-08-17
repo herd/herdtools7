@@ -1,0 +1,12 @@
+Test A016 Allowed
+States 3
+0:R2=0; 1:R0=1;
+0:R2=1; 1:R0=0;
+0:R2=1; 1:R0=1;
+Loop No
+Witnesses
+Positive: 0 Negative: 9
+Condition exists (0:R2=0 /\ 1:R0=0)
+Observation A016 Never 0 9
+Hash=f9537c416b340c5c1d7afc4295df5253
+
