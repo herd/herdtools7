@@ -245,6 +245,13 @@ module
                    >>|
                    write_flags set vres (V.intToV 0) ii))
                 >>= B.next2T
+          | ARM.I_ANDC (c,rd,rs,rs2) ->
+              let andc ii = ((read_reg_ord rs ii) >>| (read_reg_ord rs2 ii)
+                 >>=
+               (fun (v1,v2) -> M.op Op.And v1 v2)
+                 >>=
+               (fun vres -> write_reg rd vres ii)) in
+              checkZ andc c ii
           | ARM.I_ORR (set,rd,rs,v) ->
               ((read_reg_ord  rs ii)
                  >>=
@@ -384,6 +391,17 @@ module
                     (read_mem nat_sz vaddr ii) >>=
                     (fun v -> write_reg  rt v ii))) in
               checkZ ldr3 c ii
+          |  ARM.I_LDR3_S (rt,rn,rm,ARM.S_LSL k, c) ->
+              let ldr3 ii =
+                ((read_reg_ord  rn ii) >>| (read_reg_ord  rm ii))
+                  >>=
+                (fun (vn,vm) ->
+                  (M.op1 (Op.LeftShift k) vm)
+                  >>= fun vm -> (M.add vn vm) >>=
+                  (fun vaddr ->
+                    (read_mem nat_sz vaddr ii) >>=
+                    (fun v -> write_reg  rt v ii))) in
+              checkZ ldr3 c ii
           |  ARM.I_STR (rt,rn,c) ->
               let str ii =
                 ((read_reg_ord  rn ii) >>| (read_reg_data  rt ii))
@@ -408,6 +426,17 @@ module
                    >>=
                  (fun (vm,(vn,vt)) ->
                    (M.add vn vm) >>=
+                   (fun a ->
+                     (write_mem nat_sz a vt ii)))) in
+              checkZ str3 c ii
+          |  ARM.I_STR3_S (rt,rn,rm,ARM.S_LSL k, c) ->
+              let str3 ii =
+                (((read_reg_ord  rm ii) >>|
+                ((read_reg_ord  rn ii) >>|
+                (read_reg_data  rt ii)))
+                   >>=
+                 (fun (vm,(vn,vt)) -> (M.op1 (Op.LeftShift k) vm)
+                   >>= fun vm -> (M.add vn vm) >>=
                    (fun a ->
                      (write_mem nat_sz a vt ii)))) in
               checkZ str3 c ii
@@ -439,16 +468,16 @@ module
           | ARM.I_MOVI (rt, i, c) ->
               let movi ii =  write_reg  rt (V.intToV i) ii in
               checkZ movi c ii
-          | ARM.I_MOVW (rt, k) ->
+          | ARM.I_MOVW (rt, k, c) ->
               assert (MachSize.is_imm16 k);
               let movi ii =  write_reg  rt (V.intToV k) ii in
-              checkZ movi ARM.AL ii
-          | ARM.I_MOVT (rt, k) ->
+              checkZ movi c ii
+          | ARM.I_MOVT (rt, k, c) ->
               assert (MachSize.is_imm16 k);
               let movi ii =
                 M.op1 (Op.LeftShift 16) (V.intToV k)
                 >>= fun k -> write_reg  rt k ii in
-              checkZ movi ARM.AL ii
+              checkZ movi c ii
           | ARM.I_XOR (set,r3,r1,r2) ->
               (((read_reg_ord  r1 ii) >>| (read_reg_ord r2 ii))
                  >>=

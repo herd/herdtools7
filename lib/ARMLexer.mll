@@ -25,6 +25,8 @@ module LU = LexUtils.Make(O)
 let check_name name =
 match name with
 | "add" | "ADD" -> I_ADD
+| "push" | "PUSH" -> I_PUSH
+| "pop" | "POP" -> I_POP
 | "adds" | "ADDS"   -> I_ADDS
 | "bx" | "BX" -> I_BX
 | "sub" | "SUB"   -> I_SUB
@@ -32,6 +34,7 @@ match name with
 | "and" | "AND"   -> I_AND
 | "orr" | "ORR"   -> I_ORR
 | "ands" | "ANDS"   -> I_ANDS
+| "andeq" | "ANDEQ"   -> I_ANDEQ
 | "bne" | "BNE"   -> I_BNE
 | "beq" | "BEQ"   -> I_BEQ
 | "cbz" | "CBZ"   -> I_CBZ
@@ -57,6 +60,8 @@ match name with
 | "movt" | "MOVT" -> I_MOVT
 | "movne" | "MOVNE"   -> I_MOVNE
 | "moveq" | "MOVEQ"   -> I_MOVEQ
+| "movteq" | "MOVTEQ" -> I_MOVTEQ
+| "movweq" | "MOVWEQ" -> I_MOVWEQ
 | "xor" | "XOR"   -> I_XOR
 | "eor" | "EOR"   -> I_XOR
 | "eors" | "EORS" -> I_XOR
@@ -72,6 +77,7 @@ match name with
 | "nshst" | "NSHST" -> I_NSHST
 | "osh" | "OSH" -> I_OSH
 | "oshst" | "OSHST" -> I_OSHST
+| "lsl" | "LSL" -> S_LSL
 | _  -> begin match ARM.parse_reg name with
   | Some r -> ARCH_REG r
   | None -> NAME name

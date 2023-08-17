@@ -107,13 +107,14 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     let mem_access_size = function
       | I_NOP | I_ADD _ | I_ADD3 _ | I_SUB _ | I_SUB3 _ | I_AND _ | I_ORR _
-      | I_B _ | I_BX _ |  I_BEQ _ | I_BNE _ | I_CB _ | I_CMPI _
+      | I_B _ | I_BX _ |  I_BEQ _ | I_BNE _ | I_CB _ | I_CMPI _ | I_ANDC _
       | I_CMP _ | I_MOVI _ | I_MOV _ | I_MOVW _ | I_MOVT _ | I_XOR _
       | I_DMB _ | I_DSB _ | I_ISB
       | I_SADD16 _ | I_SEL _
         -> None
       | I_LDR _ | I_LDREX _ | I_LDR3 _ | I_STR _ | I_STREX _ | I_STR3 _
       | I_STL _ | I_LDA _|I_LDAEX _|I_STLEX _
+      | I_STR3_S _| I_LDR3_S _
       | I_LDRO _ | I_LDM2 _ | I_LDM3 _ | I_LDRD _
         -> Some MachSize.Word
 

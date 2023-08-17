@@ -1,0 +1,10 @@
+Test A020 Required
+States 1
+0:R2=2; v[1]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:R2=2 /\ v[1]=2)
+Observation A020 Always 1 0
+Hash=53b68e1cf3bc79ce492882ea4fe72ade
+

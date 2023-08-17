@@ -66,6 +66,14 @@ module Make(V:Constant.S)(C:Config) =
         inputs=[rA; rB];
         outputs=[rD]; cond=is_cond c; }
 
+    let andc c rD rA rB =
+      let memo =
+        sprintf "and%s" (pp_cond c) in
+      { empty_ins with
+        memo=memo^ " ^o0,^i0,^i1";
+        inputs=[rA; rB];
+        outputs=[rD]; cond=is_cond c; }
+
     let op2regsI memo s c rD rA i =
       let memo =
         sprintf "%s%s%s"
@@ -83,15 +91,15 @@ module Make(V:Constant.S)(C:Config) =
         inputs = [] ;
         outputs = [r1]; cond=is_cond c; }
 
-    let movw r1 i =
-      let memo = "movw" in
+    let movw c r1 i =
+      let memo = sprintf "movw%s" (pp_cond c) in
       { empty_ins with
         memo = sprintf "%s ^o0,#%i" memo i ;
         inputs = [] ;
         outputs = [r1]; }
 
-    let movt r1 i =
-      let memo = "movt" in
+    let movt c r1 i =
+      let memo = sprintf "movt%s" (pp_cond c) in
       { empty_ins with
         memo = sprintf "%s ^o0,#%i" memo i ;
         inputs = [r1] ;
@@ -172,6 +180,13 @@ module Make(V:Constant.S)(C:Config) =
         inputs = [r2;r3] ;
         outputs = [r1] ; cond=is_cond c; }
 
+    let ldr3_s r1 r2 r3 k c =
+      let memo = sprintf "%s%s" "ldr" (pp_cond c) in
+      { empty_ins with
+        memo = sprintf "%s ^o0,[^i0,^i1,lsl #%i]" memo k ;
+        inputs = [r2;r3] ;
+        outputs = [r1] ; }
+
     let str2 c r1 r2 =
       let memo = sprintf "%s%s" "str" (pp_cond c) in
       { empty_ins with
@@ -200,6 +215,14 @@ module Make(V:Constant.S)(C:Config) =
         memo = sprintf "%s ^i0,[^i1,^i2]" memo ;
         inputs = [r1;r2;r3] ;
         outputs = [] ; cond=is_cond c; }
+
+    let str3_s c r1 r2 r3 k =
+      let memo = sprintf "%s%s" "str" (pp_cond c) in
+      { empty_ins with
+        memo = sprintf "%s ^i0,[^i1,^i2, lsl #%i]" memo k ;
+        inputs = [r1;r2;r3] ;
+        outputs = [] ; cond=is_cond c; }
+
 
     let strex  c r1 r2 r3 =
       let memo = sprintf "%s%s" "strex" (pp_cond c) in
@@ -301,14 +324,15 @@ module Make(V:Constant.S)(C:Config) =
     | I_AND (s,r1, r2, i) ->  op2regsI "and" s AL r1 r2 i::k
     | I_ORR (s,r1, r2, i) ->  op2regsI "orr" s AL r1 r2 i::k
     | I_ADD3 (s,r1, r2, r3) ->  op3regs "add" s AL r1 r2 r3::k
+    | I_ANDC (c,r1, r2, r3) ->  andc c r1 r2 r3::k
     | I_SADD16 (r1, r2, r3) ->  op3regs "sadd16" DontSetFlags AL r1 r2 r3::k
     | I_SEL (r1, r2, r3) ->  op3regs "sel" DontSetFlags AL r1 r2 r3::k
     | I_SUB3 (s,r1, r2, r3) ->  op3regs "sub" s AL r1 r2 r3::k
     | I_XOR (s,r1, r2, r3) -> op3regs "eor" s AL r1 r2 r3::k
 (* Moves *)
     | I_MOVI (r, i, c) -> movi c r i::k
-    | I_MOVW (r, i) -> movw r i::k
-    | I_MOVT (r, i) -> movt r i::k
+    | I_MOVW (r, i, c) -> movw c r i::k
+    | I_MOVT (r, i, c) -> movt c r i::k
     | I_MOV (r1,r2, c) -> mov c r1 r2::k
 (* Memory *)
     | I_LDR (r1, r2, c) ->  ldr2 c r1 r2::k
@@ -320,10 +344,12 @@ module Make(V:Constant.S)(C:Config) =
     | I_LDREX (r1, r2) ->  ldrex r1 r2::k
     | I_LDAEX (r1, r2) ->  ldaex r1 r2::k
     | I_LDR3 (r1, r2, r3, c) ->  ldr3 c r1 r2 r3::k
+    | I_LDR3_S (r1, r2, r3, S_LSL k2,c) ->  ldr3_s r1 r2 r3 k2 c::k
     | I_STR (r1, r2, c) ->  str2 c r1 r2::k
     | I_STL (r1, r2, c) ->  stl "STL" c r1 r2::k
     | I_STLEX (r1, r2, r3) ->  stlex r1 r2 r3::k
     | I_STR3 (r1, r2, r3, c) ->  str3 c r1 r2 r3::k
+    | I_STR3_S (r1, r2, r3, S_LSL k2, c) ->  str3_s c r1 r2 r3 k2::k
     | I_STREX (r1, r2, r3, c) ->  strex c r1 r2 r3::k
 (* Comparisons and branches *)
     | I_CMPI (r1, i) -> cmpi r1 i::k

@@ -32,7 +32,7 @@ type reg =
   | R4 | R5 | R6 | R7
   | R8 | R9 | R10 | R11
   | R12
-  | SP | LR | PC
+  | SP | LR | PC | FP
 
   | Z  (* condition flags *)
 
@@ -40,6 +40,8 @@ type reg =
   | Internal of int
   | RESADDR
 
+type 'k shifter =
+  S_LSL of 'k
 
 let base =  Internal 0
 and max_idx = Internal 1
@@ -66,6 +68,7 @@ let regs =
    R12, "R12" ;
    R12, "IP" ;
    SP, "SP" ;
+   FP, "FP" ;
    LR, "LR" ;
    PC, "PC" ;
    Z, "Z" ;
@@ -200,6 +203,7 @@ type 'k kinstruction =
   | I_SUB of setflags * reg * reg * 'k
   | I_SUB3 of setflags * reg * reg * reg
   | I_AND of setflags * reg * reg * 'k
+  | I_ANDC of condition * reg * reg * reg
   | I_ORR of setflags * reg * reg * 'k
   | I_B of lbl
   | I_BEQ of lbl
@@ -216,15 +220,17 @@ type 'k kinstruction =
   | I_LDM3 of reg * reg * reg * reg * increment
   | I_LDRD of reg * reg * reg * 'k option
   | I_LDR3 of reg * reg * reg * condition
+  | I_LDR3_S of reg * reg * reg * 'k shifter * condition
   | I_STR of reg * reg * condition
   | I_STR3 of reg * reg * reg * condition
+  | I_STR3_S of reg * reg * reg * 'k shifter * condition
   | I_STREX of reg * reg * reg * condition
   | I_STL of reg * reg * condition
   | I_STLEX of reg * reg * reg
   | I_MOVI of reg * 'k * condition
   | I_MOV of reg * reg * condition
-  | I_MOVW of reg * 'k
-  | I_MOVT of reg * 'k
+  | I_MOVW of reg * 'k * condition
+  | I_MOVT of reg * 'k * condition
   | I_XOR of setflags * reg * reg * reg
   | I_DMB of barrier_option
   | I_DSB of barrier_option
@@ -283,6 +289,14 @@ let do_pp_instruction m =
     pp_memoc opcode c^" "^pp_reg rt ^ ","^
     "[" ^ pp_reg ri ^ "," ^ pp_reg rn ^ "]" in
 
+  let pp_shift = function
+  | S_LSL k -> "lsl " ^ m.pp_k k in
+
+  let ppi_rrrmc_s opcode rt ri rn c s =
+    pp_memoc opcode c^" "^pp_reg rt ^ ","^
+    "[" ^ pp_reg ri ^ "," ^ pp_reg rn ^ ","^
+    (pp_shift s) ^ "]" in
+
   let ppi_rrkmc opcode rt ri k =
     opcode ^" "^pp_reg rt ^ ","^
     "[" ^ pp_reg ri ^ "," ^ m.pp_k k ^ "]" in
@@ -308,6 +322,8 @@ let do_pp_instruction m =
   | I_SUB(s,rt,rn,v) -> ppi_rri "SUB" s rt rn v
   | I_SUB3 (s,r1,r2,r3) -> ppi_rrr "SUB" s r1 r2 r3
   | I_AND(s,rt,rn,v) -> ppi_rri "AND" s rt rn v
+  | I_ANDC(c,rt,rn,v) -> sprintf "%s %s, %s, %s" (pp_memoc "AND" c)
+    (pp_reg rt) (pp_reg rn) (pp_reg v)
   | I_ORR(s,rt,rn,v) -> ppi_rri "ORR" s rt rn v
   | I_B v -> "B " ^ pp_lbl v
   | I_BEQ(v) -> "BEQ "^ pp_lbl v
@@ -329,16 +345,18 @@ let do_pp_instruction m =
   | I_LDRD(rd1,rd2,rn,None) -> sprintf "LDRD %s, %s, [%s]"
       (pp_reg rd1) (pp_reg rd2) (pp_reg rn)
   | I_LDR3(rt,rn,rm,c) -> ppi_rrrmc "LDR" rt rn rm c
+  | I_LDR3_S(rt,rn,rm,s,c) -> ppi_rrrmc_s "LDR" rt rn rm c s
   | I_LDRO(rt,rn,k,_) -> ppi_rrkmc "LDR" rt rn k
   | I_STR(rt,rn,c) -> ppi_rrmc "STR" rt rn c
   | I_STR3(rt,rn,rm,c) -> ppi_rrrmc "STR" rt rn rm c
+  | I_STR3_S(rt,rn,rm,s,c) -> ppi_rrrmc_s "STR" rt rn rm c s
   | I_STREX(rt,rn,rm,c) -> ppi_strex "STREX" rt rn rm c
   | I_STL(rt,rn,c) -> ppi_stl "STL" rt rn c
   | I_STLEX(rt,rn,rm) -> ppi_strex "STLEX" rt rn rm AL
   | I_MOVI(r,i,c) -> ppi_ric "MOV" r i c
   | I_MOV(r1,r2,c) -> ppi_rrc "MOV" r1 r2 c
-  | I_MOVW(r1,k) -> "MOVW " ^ (pp_reg r1) ^ ", " ^ (m.pp_k k)
-  | I_MOVT(r1,k) -> "MOVT " ^ (pp_reg r1) ^ ", " ^ (m.pp_k k)
+  | I_MOVW(r1,k,c) -> pp_memoc "MOVW" c ^ (pp_reg r1) ^ ", " ^ (m.pp_k k)
+  | I_MOVT(r1,k,c) -> pp_memoc "MOVT " c ^ (pp_reg r1) ^ ", " ^ (m.pp_k k)
   | I_XOR(s,r1,r2,r3) -> ppi_rrr "EOR" s r1 r2 r3
   | I_DMB o -> pp_barrier_ins "DMB" o
   | I_DSB o -> pp_barrier_ins "DSB" o
@@ -371,7 +389,7 @@ let fold_regs (f_reg,f_sreg) =
 
   let fold_reg reg (y_reg,y_sreg) = match reg with
   | R0 | R1 | R2 | R3 | R4 | R5 | R6 | R7 | R8
-  | R9 | R10 | R11 | R12 | SP | LR | PC | Z | RESADDR ->  f_reg reg y_reg,y_sreg
+  | R9 | R10 | R11 | R12 | SP | FP | LR | PC | Z | RESADDR ->  f_reg reg y_reg,y_sreg
   | Symbolic_reg reg -> y_reg,f_sreg reg y_sreg
   | Internal _ -> y_reg,y_sreg in
 
@@ -390,13 +408,16 @@ let fold_regs (f_reg,f_sreg) =
   | I_MOV (r1, r2, _)
   | I_CMP (r1,r2)
       -> fold_reg r2 (fold_reg r1 c)
+  | I_ANDC (_,r1, r2, r3)
   | I_LDR3 (r1, r2, r3, _)
+  | I_LDR3_S (r1, r2, r3, _,_)
   | I_LDRD (r1, r2, r3, _)
   | I_LDM2 (r1, r2, r3,_)
   | I_STLEX (r1, r2, r3)
   | I_ADD3 (_, r1, r2, r3)
   | I_SUB3 (_, r1, r2, r3)
   | I_STR3 (r1, r2, r3, _)
+  | I_STR3_S (r1, r2, r3, _,_)
   | I_STREX (r1, r2, r3, _)
   | I_XOR (_,r1, r2, r3)
   | I_SADD16 (r1, r2, r3)
@@ -407,7 +428,7 @@ let fold_regs (f_reg,f_sreg) =
   | I_BX r
   | I_CMPI (r, _)
   | I_MOVI (r, _, _)
-  | I_MOVW (r,_) | I_MOVT (r,_)
+  | I_MOVW (r,_,_) | I_MOVT (r,_,_)
   | I_CB (_,r,_)
       -> fold_reg r c
   | I_NOP
@@ -424,7 +445,7 @@ let map_regs f_reg f_symb =
 
   let map_reg  reg = match reg with
   | R0 | R1 | R2 | R3 | R4 | R5 | R6 | R7 | R8
-  | R9 | R10 | R11 | R12 | SP | LR | PC | Z | RESADDR -> f_reg reg
+  | R9 | R10 | R11 | R12 | SP | FP | LR | PC | Z | RESADDR -> f_reg reg
   | Symbolic_reg reg -> f_symb reg
   | Internal _ -> reg in
 
@@ -454,11 +475,14 @@ let map_regs f_reg f_symb =
   | I_LDM3 (r1,r2,r3,r4,i) -> I_LDM3 (map_reg r1, map_reg r2, map_reg r3,map_reg r4, i)
   | I_STR (r1, r2, c) -> I_STR (map_reg r1, map_reg r2, c)
   | I_STR3 (r1, r2, r3, c) -> I_STR3 (map_reg r1, map_reg r2, map_reg r3, c)
+  | I_ANDC (c,r1, r2, r3) -> I_ANDC (c, map_reg r1, map_reg r2, map_reg r3)
+  | I_STR3_S (r1, r2, r3, c,s) -> I_STR3_S (map_reg r1, map_reg r2, map_reg r3, c,s)
+  | I_LDR3_S (r1, r2, r3, s,c) -> I_LDR3_S (map_reg r1, map_reg r2, map_reg r3, s,c)
   | I_STREX (r1, r2, r3, c) -> I_STREX (map_reg r1, map_reg r2, map_reg r3, c)
   | I_STL (r1, r2, c) -> I_STL (map_reg r1, map_reg r2, c)
   | I_MOVI (r, k, c) -> I_MOVI (map_reg r, k, c)
-  | I_MOVW (r, k) -> I_MOVW (map_reg r, k)
-  | I_MOVT (r, k) -> I_MOVT (map_reg r, k)
+  | I_MOVW (r, k,c) -> I_MOVW (map_reg r, k,c)
+  | I_MOVT (r, k,c) -> I_MOVT (map_reg r, k,c)
   | I_MOV (r1, r2, c) -> I_MOV (map_reg r1, map_reg r2, c)
   | I_XOR (s,r1, r2, r3) -> I_XOR (s,map_reg r1, map_reg r2, map_reg r3)
   | I_STLEX (r1, r2, r3) -> I_STLEX (map_reg r1, map_reg r2, map_reg r3)
@@ -486,6 +510,7 @@ let get_next = function
   | I_SUB _
   | I_SUB3 _
   | I_AND _
+  | I_ANDC _
   | I_ORR _
   | I_CMPI _
   | I_CMP _
@@ -498,8 +523,10 @@ let get_next = function
   | I_LDRO _
   | I_LDRD _
   | I_LDR3 _
+  | I_LDR3_S _
   | I_STR _
   | I_STR3 _
+  | I_STR3_S _
   | I_STREX _
   | I_STL _
   | I_STLEX _
@@ -528,15 +555,20 @@ include Pseudo.Make
         | I_ADD (c,r1,r2,k) ->  I_ADD (c,r1,r2,MetaConst.as_int k)
         | I_SUB (c,r1,r2,k) ->  I_SUB (c,r1,r2,MetaConst.as_int k)
         | I_AND (c,r1,r2,k) ->  I_AND (c,r1,r2,MetaConst.as_int k)
+        | I_ANDC (c,r1,r2,r3) ->  I_ANDC (c,r1,r2,r3)
         | I_ORR (c,r1,r2,k) ->  I_ORR (c,r1,r2,MetaConst.as_int k)
         | I_LDRO (r1,r2,k,c) ->  I_LDRO (r1,r2,MetaConst.as_int k,c)
         | I_LDRD (r1,r2,r3,Some k) ->  I_LDRD (r1,r2,r3,Some (MetaConst.as_int k))
+        | I_STR3_S (r1,r2,r3,S_LSL k,c) ->
+          I_STR3_S (r1,r2,r3,S_LSL (MetaConst.as_int k),c)
+        | I_LDR3_S (r1,r2,r3,S_LSL k,c) ->
+          I_LDR3_S (r1,r2,r3,S_LSL (MetaConst.as_int k),c)
         | I_LDRD (r1,r2,r3,None) ->  I_LDRD (r1,r2,r3,None)
         | I_BX r -> I_BX r
         | I_CMPI (r,k) -> I_CMPI (r,MetaConst.as_int k)
         | I_MOVI (r,k,c) -> I_MOVI (r,MetaConst.as_int k,c)
-        | I_MOVW (r,k) -> I_MOVW (r,MetaConst.as_int k)
-        | I_MOVT (r,k) -> I_MOVT (r,MetaConst.as_int k)
+        | I_MOVW (r,k,c) -> I_MOVW (r,MetaConst.as_int k,c)
+        | I_MOVT (r,k,c) -> I_MOVT (r,MetaConst.as_int k,c)
         | I_NOP
         | I_ADD3 _
         | I_SUB3 _
@@ -574,6 +606,7 @@ include Pseudo.Make
         | I_SUB _
         | I_SUB3 _
         | I_AND _
+        | I_ANDC _
         | I_ORR _
         | I_B _
         | I_BX _
@@ -600,8 +633,10 @@ include Pseudo.Make
         | I_LDAEX _
         | I_LDRO _
         | I_LDR3 _
+        | I_LDR3_S _
         | I_STR _
         | I_STR3 _
+        | I_STR3_S _
         | I_STREX _
         | I_STL _
         | I_STLEX _
