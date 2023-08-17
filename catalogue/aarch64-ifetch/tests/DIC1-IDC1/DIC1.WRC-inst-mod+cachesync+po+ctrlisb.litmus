@@ -1,0 +1,23 @@
+AArch64 DIC1.WRC-inst-mod+cachesync+po+ctrlisb
+CacheType=DIC
+Stable=X9
+{ 0:X0=NOP;
+  0:X1=P0:mod; 1:X1=P0:mod; 2:X1=P0:mod;
+  1:X3=x; 2:X3=x; 0:X5=z; 2:X5=z;}
+ P0          |  P1          |  P2          ;
+ STR W0,[X1] |  BLR X1      |  LDR W2,[X3] ;
+ DC CVAU,X1  |  MOV W2,#1   |  LDR W4,[X5] ;
+ DSB ISH     |  STR W2,[X3] |  AND W2,W2,W4;
+ IC IVAU,X1  |              |  CBNZ W2,l2  ;
+ DSB ISH     |              | l2:          ;
+ MOV W4,#1   |              |  ISB         ;
+ STR W4,[X5] |              |  BLR X1      ;
+B end       |              |              ;
+mod:         |              |              ;
+ B l0        |              |              ;
+ MOV X9,#1   |              |              ;
+l0:          |              |              ;
+ RET         |              |              ;
+end:         |              |              ;
+exists(1:X9=1 /\ 2:X2=1 /\ 2:X4=1 /\ 2:X9=0)
+

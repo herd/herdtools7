@@ -1,11 +1,10 @@
-Test A010 Allowed
-States 2
-0:X2=1;
+Test A010 Required
+States 1
 0:X2=2;
 Ok
 Witnesses
-Positive: 1 Negative: 1
-Condition exists (0:X2=1)
-Observation A010 Sometimes 1 1
+Positive: 1 Negative: 0
+Condition forall (0:X2=2)
+Observation A010 Always 1 0
 Hash=77b235b3243a7010216394415245557e
 

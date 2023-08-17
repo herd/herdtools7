@@ -1,0 +1,17 @@
+AArch64 IDC1.dcc3
+Stable=X9
+CacheType=IDC
+{ 0:X0=NOP;         0:X1=P3:mod; 1:X1=P3:mod; 2:X1=P3:mod;
+  0:X2=1; 1:X2=0;   0:X3=z; 1:X3=z;
+  1:X4=1; 2:X4=0;   1:X5=x; 2:X5=x; }
+P0          | P1          | P2          | P3             ;
+STR W0,[X1] | LDR W2,[X3] | LDR W4,[X5] |      B end     ;
+DC CVAU,X1  | DSB ISH     | DSB ISH     | mod: B l00     ;
+DSB ISH     | IC IVAU,X1  | IC IVAU,X1  |      MOV W9,#1 ;
+STR W2,[X3] | DSB ISH     | DSB ISH     |      RET       ;
+            | ISB         | ISB         | l00: MOV W9,#0 ;
+            | BLR X1      | BLR X1      |      RET       ;
+            | DSB SY      |             | end:           ;
+            | STR W4,[X5] |             |                ;
+exists 1:X9=1 /\ 2:X9=0 /\ 2:X10=1 /\ 1:X12=1
+(* Strange observed registers X10 abd X12 are absent from code... *)

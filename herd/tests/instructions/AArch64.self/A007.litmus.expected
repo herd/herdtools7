@@ -5,6 +5,7 @@ States 2
 Ok
 Witnesses
 Positive: 1 Negative: 1
+Flag violates-CMODX-requirements
 Condition exists (0:X2=1)
 Observation A007 Sometimes 1 1
 Hash=77032c0be8690b2b66d8c9f20e2a5363

@@ -48,16 +48,24 @@
  * Include default definitions for sets that are undefined without
  * -variant vmsa
 *)
-let PTE = try PTE with emptyset
-let PTEV = try PTEV with emptyset
-let PTEINV = try PTEINV with emptyset
-let inv-domain = try inv-domain with 0
-let AF = try AF with emptyset
-let DB = try DB with emptyset
-let MMU = try MMU with emptyset
-let Translation = try Translation with emptyset
-let AccessFlag = try AccessFlag with emptyset
-let TagCheck = try TagCheck with emptyset
+
+let PTE = if "vmsa" then PTE else emptyset
+let PTEV = if "vmsa" then PTEV else emptyset
+let PTEINV = if "vmsa" then PTEINV else emptyset
+let inv-domain = if "vmsa" then inv-domain else 0
+let AF = if "vmsa" then AF else emptyset
+let DB = if "vmsa" then DB else emptyset
+let MMU = if "vmsa" then MMU else emptyset
+let Translation = if "vmsa" then Translation else emptyset
+let AccessFlag = if "vmsa" then AccessFlag else emptyset
+
+
+(*
+ * Include default definitions for sets that might be undefined without
+ * -variant ifetch
+*)
+let Instr = if "ifetch" then Instr else emptyset
+let Within-CMODX-List = if "ifetch" then Restricted-CMODX else emptyset
 
 (*
  * Include the cos.cat file shipped with herd.
@@ -69,6 +77,11 @@ let AFtoDB = same-instance & ((AF\DB) * (DB\AF))
 let co0=co0 | AFtoDB
 
 include "cos.cat"
+
+(*
+ * A shorthand for cache maintenance effects used by -variant ifetch
+ *)
+let IC = IC.IALLUIS | IC.IALLU | IC.IVAU
 
 (*
  * Include aarch64fences.cat to define barriers.
@@ -109,3 +122,24 @@ let Imp = NExp
 let SPONTANEOUS = SPURIOUS
 let inv-scope = inv-domain
 let TTD = PTE
+let Tag = T
+
+(* Same-cache-line relation *)
+(* NOTE : currently assumes all locations are on different cache lines *)
+(*        also extends to IC without a location specified              *)
+let scl = loc
+  | (M | DC.CVAU | IC) * (IC.IALLU | IC.IALLUIS)
+  | (IC.IALLU | IC.IALLUIS) * (M | DC.CVAU | IC)
+
+(* Flag any occurrence of writes to two different locations that might be on
+ * the same cache line. *)
+flag ~empty ((W & Instr)*(W & Instr) \ loc)
+  as Assuming-no-two-modified-instructions-are-on-the-same-cache-line
+
+(* Flag the runs of herd7 with unsupported combinations of variants *)
+flag ~empty (if "vmsa" && "memtag" then _ else 0)
+  as combining-vmsa-and-memtag-is-not-supported
+flag ~empty (if "vmsa" && "ifetch" then _ else 0)
+  as combining-vmsa-and-ifetch-is-not-supported
+flag ~empty (if "memtag" && "ifetch" then _ else 0)
+  as combining-memtag-and-ifetch-is-not-supported

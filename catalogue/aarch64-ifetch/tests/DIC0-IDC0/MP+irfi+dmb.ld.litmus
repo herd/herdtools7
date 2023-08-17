@@ -1,0 +1,14 @@
+AArch64 MP+irfi+dmb.ld
+
+{ 0:X0=NOP; 0:X1=P0:L0; 0:X5=x;
+  1:X0=NOP; 1:X1=P0:L0; 1:X5=x; }
+P0            | P1          ;
+  STR W0,[X1] | LDR W4,[X5] ;
+L0:           | DMB LD      ;
+  B L1        | LDR W2,[X1] ;
+  MOV W2,#1   | CMP W2,W0   ;
+L1:           | CSET W6,EQ  ;
+  MOV W4,#1   |             ;
+  STR W4,[X5] |             ;
+exists (0:X2=1 /\ 1:X4=1 /\ 1:X6=0)
+(* 1:X6=1 <=> 1:X2=NOP *)

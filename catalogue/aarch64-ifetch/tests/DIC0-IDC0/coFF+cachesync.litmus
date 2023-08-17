@@ -1,0 +1,20 @@
+AArch64 coFF+cachesync
+{  0:X0=NOP; 0:X1=P1:l1;
+   0:X2=instr:"B .+12"; (* "B j1" *)  }
+
+ P0          | P1            ;
+ STR W2,[X1] |     BL l1     ;
+ DC CVAU,X1  |     MOV W1,W9 ;
+ DSB ISH     |     BL l1     ;
+ IC IVAU,X1  |     MOV W2,W9 ;
+ DSB ISH     |     BL end    ;
+ STR W0,[X1] |               ;
+             | l1: B j0      ;
+             |     MOV W9,#2 ;
+             |     RET       ;
+             | j1: MOV W9,#1 ;
+             |     RET       ;
+             | j0: MOV W9,#0 ;
+             |     RET       ;
+             | end:          ;
+exists (1:X1=2 /\ 1:X2=0)

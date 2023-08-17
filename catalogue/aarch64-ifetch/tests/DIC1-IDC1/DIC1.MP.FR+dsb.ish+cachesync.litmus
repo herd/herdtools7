@@ -1,0 +1,20 @@
+AArch64 DIC1.MP.FR+dsb.ish+cachesync
+CacheType=DIC
+{
+0:X1=x; 0:X2=NOP; 0:X3=P1:mod;
+1:X1=x; 1:X3=P1:mod;
+}
+P0          | P1           ;
+MOV W0,#1   | mod:         ;
+STR W0,[X1] |  B j0        ;
+DSB ISH     |  MOV W0,#2   ;
+STR W2,[X3] |  B j1        ;
+            | j0:          ;
+            |  MOV W0,#1   ;
+            | j1:          ;
+            |  DC CVAU,X3  ;
+            |  DSB ISH     ;
+            |  IC IVAU,X3  ;
+            |  DSB ISH     ;
+            |  LDR W2,[X1] ;
+exists (1:X0=2 /\ 1:X2=0)
