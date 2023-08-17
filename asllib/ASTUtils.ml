@@ -9,8 +9,8 @@ module ISet = struct
     let open Format in
     let pp_comma f () = fprintf f ",@ " in
     fprintf f "@[{@,%a}@]"
-      (pp_print_seq ~pp_sep:pp_comma pp_print_string)
-      (to_seq t)
+      (pp_print_list ~pp_sep:pp_comma pp_print_string)
+      (elements t)
 end
 
 module IMap = struct
@@ -23,7 +23,8 @@ module IMap = struct
     let open Format in
     let pp_comma f () = fprintf f ",@ " in
     let pp_one f (name, v) = fprintf f "@[<h>%s:@ @[%a@]@]" name pp_elt v in
-    fprintf f "{@[@,%a@]}" (pp_print_seq ~pp_sep:pp_comma pp_one) (to_seq t)
+    fprintf f "{@[@,%a@]}"
+      (pp_print_list ~pp_sep:pp_comma pp_one) (bindings t)
 end
 
 let dummy_pos = Lexing.dummy_pos

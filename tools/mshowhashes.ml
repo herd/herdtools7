@@ -27,10 +27,9 @@ module Top
     let () = ignore Opt.verbose
 
     let do_test name =
-      let open TestInfo in
       try
-        let t = Z.from_file name in
-        printf "%s %s\n" t.T.tname t.T.hash
+        let t = TestInfo.Z.from_file name in
+        printf "%s %s\n" t.TestInfo.T.tname t.TestInfo.T.hash
       with
       | Misc.Exit -> ()
       | Misc.Fatal msg|Misc.UserError msg ->
