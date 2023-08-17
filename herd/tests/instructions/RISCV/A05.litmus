@@ -1,0 +1,12 @@
+RISCV A05
+{
+0:x6=x; 0:x8=y;
+1:x6=y; 1:x8=x;
+}
+ P0              | P1          ;
+ ori x5,x0,2     | ori x5,x0,1 ;
+ sw x5,0(x6)     | sw x5,0(x6) ;
+ fence iorw,iorw | fence w,w   ;
+ lw x7,0(x8)     | ori x7,x0,1 ;
+                 | sw x7,0(x8) ;
+~exists ([x]=2 /\ 0:x7=0)

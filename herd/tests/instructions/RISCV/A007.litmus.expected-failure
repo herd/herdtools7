@@ -1,0 +1,1 @@
+Warning: File "./herd/tests/instructions/RISCV/A007.litmus": RISCV, instruction 'auipc x10,2' not handled

@@ -17,10 +17,14 @@
 
 module A=RISCVBase
 
+(* We consider memory order and IO as the same*)
 let tr_rw = function
   | "r" -> A.R
+  | "ir" -> A.IR
   | "w" -> A.W
-  | "rw" -> A.RW
+  | "ow" -> A.OW 
+  | "rw"  -> A.RW
+  | "iorw" -> A.IORW
   | _ -> raise Parsing.Parse_error
 %}
 
@@ -36,7 +40,7 @@ let tr_rw = function
 /* Instruction tokens */
 %token <RISCVBase.opi> OPI
 %token <RISCVBase.opiw> OPIW
-%token LI
+%token LI LUI LA
 %token <RISCVBase.op> OP
 %token <RISCVBase.opw> OPW
 %token J
@@ -46,8 +50,10 @@ let tr_rw = function
 %token <RISCVBase.width * RISCVBase.mo> LR
 %token <RISCVBase.width * RISCVBase.mo> SC
 %token <RISCVBase.opamo * RISCVBase.width * RISCVBase.mo> AMO
-%token FENCE FENCEI FENCETSO
+%token FENCE FENCEI FENCETSO AUIPC
 %token <string> META
+%token NOP RET MV
+%token <RISCVBase.signed * RISCVBase.width> EXT
 %type <MiscParser.proc list * (RISCVBase.parsedPseudo) list list> main
 %type <RISCVBase.parsedPseudo list> instr_option_seq
 %start main instr_option_seq
@@ -107,9 +113,17 @@ addr0:
     { $2 }
 
 instr:
+| NOP
+  { A.INop }
+| RET
+  { A.Ret }
 /* OPs */
 | LI reg COMMA k
   { A.OpI (A.ORI,$2,A.Ireg A.X0,$4) }
+| LA reg COMMA NAME
+  { A.OpA (A.LA,$2,$4) }
+| LUI reg COMMA k
+  { A.OpI2 (A.LUI,$2,$4) }
 | OPI reg COMMA reg COMMA k
   { A.OpI ($1,$2,$4,$6) }
 | OPIW reg COMMA reg COMMA k
@@ -122,6 +136,8 @@ instr:
     { A.J $2 }
 | BCC reg COMMA reg COMMA NAME
     { A.Bcc ($1,$2,$4,$6) }
+| MV reg COMMA reg
+    { A.OpI (A.ADDI, $2, $4, MetaConst.Int 0) }
 | LOAD reg COMMA addr
     { let w,s,mo = $1 in
     let off,r = $4 in
@@ -136,6 +152,8 @@ instr:
 | SC reg COMMA reg COMMA addr0
     { let w,mo = $1 in
     A.StoreConditional (w,mo,$2,$4,$6) }
+| AUIPC reg COMMA k
+    { A.AUIPC ($2, $4) }
 | AMO reg COMMA reg COMMA addr0
     { let op,w,mo = $1 in
     A.Amo (op,w,mo,$2,$4,$6) }
@@ -147,3 +165,5 @@ instr:
     { A.FenceIns (A.Fence (A.RW,A.RW)) }
 | FENCE NAME COMMA NAME
     { A.FenceIns (A.Fence (tr_rw $2,tr_rw $4)) }
+| EXT reg COMMA reg
+    { let s,w = $1 in A.Ext (s,w,$2,$4) }

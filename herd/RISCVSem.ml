@@ -60,7 +60,8 @@ module
       | RISCV.ORI -> Op.Or
       | RISCV.XORI -> Op.Xor
       | RISCV.SLLI -> Op.ShiftLeft
-      | RISCV.SLTIU|RISCV.SRAI|RISCV.SRLI
+      | RISCV.SRLI -> Op.ShiftRight
+      | RISCV.SLTIU|RISCV.SRAI
         -> unimplemented (RISCV.pp_opi op)
 
       let tr_op op = match op  with
@@ -255,10 +256,25 @@ module
       let build_semantics _ ii =
         M.addT (A.next_po_index ii.A.program_order_index)
           begin match ii.A.inst with
+          | RISCV.INop-> B.next1T ()
+          | RISCV.Ret when O.variant Variant.Telechat -> M.unitT () >>! B.Exit
+          | RISCV.OpI2 (RISCV.LUI,r1,k) ->
+              (* put k into upper half of r1*)
+              M.op (Op.ShiftLeft) (V.intToV k)
+                (V.intToV 12) >>=
+                fun v -> write_reg r1 v ii >>= B.next1T
+          | RISCV.OpI (RISCV.ADDI,r1,r2,0) ->
+            (* A MV*)
+            read_reg_data r2 ii
+            >>= fun v -> write_reg r1 v ii
+            >>= B.next1T
           | RISCV.OpI (op,r1,r2,k) ->
               read_reg_ord r2 ii >>=
               fun v -> M.op (tr_opi op) v (V.intToV k) >>=
                 fun v -> write_reg r1 v ii >>= B.next1T
+          | RISCV.OpA (RISCV.LA,r1,lbl) ->
+              let v = ii.A.addr2v lbl in
+              write_reg r1 v ii >>= B.next1T
           | RISCV.OpIW (op,r1,r2,k) ->
               read_reg_ord r2 ii >>=
               fun v -> M.op (tr_opiw op) v (V.intToV k) >>=
@@ -339,6 +355,11 @@ module
               amo (tr_sz sz) op mo r1 r2 r3 ii >>= B.next1T
           | RISCV.FenceIns b ->
               create_barrier b ii >>= B.next1T
+          | RISCV.Ext (_,w,r1,r2) ->
+            read_reg_data r2 ii
+            >>= M.op1 (Op.Sxt (RISCV.tr_width w))
+            >>= fun v -> write_reg r1 v ii
+            >>= B.next1T
           | ins -> Warn.fatal "RISCV, instruction '%s' not handled" (RISCV.dump_instruction ins)
           end
 

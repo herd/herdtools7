@@ -1,0 +1,10 @@
+RISCV A003
+
+(* Test SRLI Instruction*)
+
+{ 0:a0 = 4}
+
+P0;
+srli a0, a0, 1;
+
+forall 0:a0 = 2

@@ -1,0 +1,10 @@
+RISCV A008
+
+(* Test LUI instruction*)
+{ 0:a0 = 0 }
+
+P0;
+
+lui a0, 1;
+
+forall 0:a0=4096
