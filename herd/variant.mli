@@ -88,6 +88,10 @@ type t =
   | ASLType of [`Warn|`Silence|`TypeCheck]
 (* Signed Int128 types *)
   | S128
+(* Strict interpretation of variant, e.g. -variant asl,strict *)
+  | Strict
+(* Semi-strict interpretation of variant, e.g. -variant asl,warn *)
+  | Warn
 
 val compare : t -> t -> int
 val equal : t -> t -> bool

@@ -1,8 +1,8 @@
 ASL double-load
 
 {
-  x = 3;
-  y = x;
+  int x = 3;
+  int *y = x;
   0: X1 = y;
 }
 
@@ -10,7 +10,7 @@ func main() => integer
 begin
   let addr_y = read_register(1);
   let addr_x = read_memory (addr_y, 64);
-  let data_x = read_memory (addr_x, 64);
+  let data_x = read_memory (addr_x, 32);
   let three = UInt (data_x);
 
   return 0;
