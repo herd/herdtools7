@@ -44,6 +44,12 @@
 AArch32
 catdep
 
+let TagCheck = emptyset
+let IC.IVAU = emptyset
+let IC.IALLUIS = emptyset
+let IC.IALLU = emptyset
+let DC.CVAU = emptyset
+
 let DMB.SY = DMB
 let DSB.SY = DSB
 include "aarch64.cat"
