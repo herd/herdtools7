@@ -41,6 +41,13 @@ let pp_pos f { pos_start; pos_end; _ } =
         pos_start;
     pp_close_box f ())
 
+let pp_pos_str withpos =
+  let buf = Buffer.create 16 in
+  let fmt =  Format.formatter_of_buffer buf in
+  let () = pp_pos fmt withpos in
+  let () = pp_print_flush fmt () in
+  Buffer.contents buf
+  
 let binop_to_string : binop -> string = function
   | AND -> "AND"
   | BAND -> "&&"
