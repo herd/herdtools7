@@ -21,6 +21,16 @@ open AST
 open ASTUtils
 
 let fatal_from pos = Error.fatal_from pos
+
+(* A bit more informative than assert false *)
+
+let fail a msg =
+  failwith
+    (Printf.sprintf "%s: %s" (PP.pp_pos_str a) msg)
+
+let fail_initialise a id =
+  fail a (Printf.sprintf "Cannot initialise variable %s" id)
+
 let _warn = false
 let _dbg = false
 
@@ -115,7 +125,7 @@ module Make (B : Backend.S) (C : Config) = struct
       let use_e e acc = use_e acc e in
       let use_ty _ty acc = acc (* TODO *) in
       fun d ->
-        match d.desc with
+        match d.desc with 
         | D_GlobalStorage { initial_value = Some e; ty = Some ty; _ } ->
             ISet.empty |> use_e e |> use_ty ty
         | D_GlobalStorage { initial_value = None; ty = Some ty; _ } ->
@@ -135,9 +145,10 @@ module Make (B : Backend.S) (C : Config) = struct
             let* v =
               match (initial_value, ty) with
               | Some e, _ -> eval_expr env e
-              | None, None -> assert false
+              | None, None -> fail_initialise d name
               | None, Some t -> base_value env t
             in
+            let* () = B.on_write_identifier name Scope_Global v in
             IEnv.declare_global name v env |> return
       | _ -> Fun.id
     in
@@ -506,7 +517,7 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         List.init length (Fun.const v) |> B.create_vector
 
-  and eval_local_decl ldi env m : env maybe_exception m =
+  and eval_local_decl s ldi env m : env maybe_exception m =
     match (ldi, m) with
     | LDI_Ignore _ty, _ -> normal env |: Rule.LEIgnore
     | LDI_Var (x, _ty), Some m ->
@@ -514,22 +525,23 @@ module Make (B : Backend.S) (C : Config) = struct
         normal env
     | LDI_Var (x, Some ty), None ->
         base_value env ty >>= declare_local_identifier env x >>= normal
-    | LDI_Var (_, None), None -> assert false
+    | LDI_Var (x, None), None ->
+        fail_initialise s x
     | LDI_Tuple (ldis, _ty), Some m ->
         let n = List.length ldis in
         let nmonads = List.init n (fun i -> m >>= B.get_index i) in
         let folder envm ldi' vm =
           let**| env = envm in
-          eval_local_decl ldi' env (Some vm)
+          eval_local_decl s ldi' env (Some vm)
         in
         List.fold_left2 folder (normal env) ldis nmonads
     | LDI_Tuple (_ldis, Some ty), None ->
         let m = base_value env ty in
-        eval_local_decl ldi env (Some m)
+        eval_local_decl s ldi env (Some m)
     | LDI_Tuple (ldis, None), None ->
         let folder envm ldi' =
           let**| env = envm in
-          eval_local_decl ldi' env None
+          eval_local_decl s ldi' env None
         in
         List.fold_left folder (normal env) ldis
 
@@ -685,10 +697,10 @@ module Make (B : Backend.S) (C : Config) = struct
         eval_catchers env catchers otherwise_opt s_m
     | S_Decl (_ldk, ldi, Some e) ->
         let*^ m, env = eval_expr env e in
-        let**| env = eval_local_decl ldi env (Some m) in
+        let**| env = eval_local_decl s ldi env (Some m) in
         continue env
     | S_Decl (_dlk, ldi, None) ->
-        let**| env = eval_local_decl ldi env None in
+        let**| env = eval_local_decl s ldi env None in
         continue env
 
   and eval_block env stm =
