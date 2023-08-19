@@ -2209,8 +2209,8 @@ We witness an improvement of productivity by a factor of two.
 Most command line options were designed for standard mode first and presi mode
 is in some sense more automated. As a consequence, few command line
 settings apply to the presi mode: we have already seen
-the \texttt{-a}, \texttt{-s} and \texttt{-a} setting, to which we add
-the \texttt{-n <num>} option (number of instances).
+the \texttt{-r}, \texttt{-s} and \texttt{-a} setting, of which interpretation
+significantly differs from standard mode.
 
 All options related to affinity are ignored: topology variation
 applies even when harness  threads cannot be attached to hardware
@@ -2233,8 +2233,7 @@ commands to the production of one executable \texttt{run.exe} in place
 of one executable per test  with the default \texttt{-driver
 shell}.
 
-Observe that non-implemented options are
-silently ignored.
+Observe that non-implemented options are silently ignored.
 
 
 \subsection{\aname{sec:kvm}{Mode \texttt{kvm}}}
@@ -2266,30 +2265,41 @@ location \texttt{y} and the data location~\texttt{x}. However, instead
 of changing the data content, we change its status or, more precisely,
 its TTD (Translation Table Descriptors). That is, location~\texttt{x} is
 invalid initially and $T_0$ restore validity with its first
-instruction \texttt{LDR X1,[X2]}, where the register \texttt{X1} holds
+instruction \texttt{STR X1,[X2]}, where the register \texttt{X1} holds
 the valid descriptor and the register \texttt{X2} points to the page table
-entry of~\texttt{x}. The two tests differ by their synchronisation
+entry of~\texttt{x}. The thread $T_0$ then signals by writing the
+value one into the location~\texttt{y}. Concurrently, $T_1$ reads the
+signal location~\texttt{y} and then attemps to read~\texttt{x}.
+The final condition
+\verb+exists(1:X7=1 /\ Fault(P1:L0,x,MMU:Translation)+
+describes the situation when the signal has been received by~$T_1$
+(\texttt{1:X7=1}), while $T_1$ has not yet noticed that $T_0$ has made
+accessing to~\texttt{x} valid
+--- The atom \texttt{Fault(P1:L0,x,MMU:Translation)} corresponds to a
+faulting attempt by~$T_1$ to read the location~\texttt{x}.
+The two tests differ by their synchronisation
 instructions: \atest{MP-TTD+DMB.ST+DMB.LD} is synchronised by fences
 sufficient to synchronise the ordinary message passing test,
 while  \atest{MP-TTD+DMB.ST+DSB-ISB} synchronisation is more
 heavyweight.
 
-Compilation to qemu binary file arguments implies many settings. For
-user convenience, we provide litmus configuration
+Compilation to qemu binary file arguments is complex.
+For user convenience, we provide litmus configuration
 files \texttt{kvm-aarch64.cfg} (generic
 ARMv8.0), \texttt{kvm-armv8.1.cfg} (for ARMv8.1)
 and  \texttt{kvm-m1.cfg} (for Apple machines).
-
 As an example, we target some ARMv8.0 machine MACH, with a
 functional \texttt{gcc} compiler and \texttt{kvm-unit-tests} installed
 in some homonymous directory.  We execute \litmus{} on another machine
 and run the tests on MACH following the usual
-``litmus-cross-compilation'' \ahrefloc{crosscompile}{scheme}.
+``litmus-cross-compilation''~\ahrefloc{crosscompile}{scheme}.
 \begin{verbatim}
 % litmus7 -mach kvm-aarch64 -variant fatal -o M.tar MP-TTD+DMB.ST+DMB.LD.litmus  MP-TTD+DMB.ST+DSB-ISB.litmus
 % scp M.tar MACH:
 \end{verbatim}
-
+Notice the \opt{-variant fatal} option that
+controls \ahrefloc{faultcontrol}{fault management}. Here,
+if some instruction faults, control is transferred at the end of thread~code. See 
 
 On the target machine, we unpack the transferred archive into some
 sub-directory of the \texttt{kvm-unit-tests} installation, and compile
@@ -2422,6 +2432,23 @@ that tests are executed by running a shell script called
 
 However notice that \ahref{statistics}{parameter statistics}
 are not collected and thus not  printed in \opt{-driver C} mode.
+
+\item[\aname{faultcontrol}{\tt -variant (handled|fatal|skip)}] When
+an instruction faults, control is transferred to a \emph{fault
+handler} that records the fault occurrence and returns to the faulting
+code. The above three variants control where:
+\begin{description}
+\item[{\tt handled}] Attempt to re-execute the faulting
+instruction. For the test not to loop forever, one of the test threads
+should supppress the cause of the fault, usually by changing some page
+table entry. This is the
+default. Synonymous: \texttt{imprecise}, \texttt{async}  and~\texttt{asynchronous}.
+\item[{\tt fatal}] Jump to the end of the thread code. Notice that
+threads other than the faulting thread are not
+affected. Synonymous: \texttt{precise}, \texttt{sync} and~\texttt{synchronous}.
+\item[{\tt skip}] Execute the instruction that follows the faulting
+instruction. Synonymous: \texttt{faultToNext}.
+\end{description}
 \end{description}
 Other miscellaneous options are implemented, such
 as \ahrefloc{opt:stdio}{\opt{-stdio (true|false)}},
