@@ -1,0 +1,14 @@
+MIPS A006
+
+(* test JR instruction *)
+{ 0:a0 = P0:L1; 0:a2 = 2; 0:a1 = 0}
+
+P0;
+  b L2;
+  nop;
+  move $a1, $a2;
+L2: jr a0;
+  nop;
+L1: nop;
+
+forall 0:a1=0

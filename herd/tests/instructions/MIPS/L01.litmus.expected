@@ -1,0 +1,10 @@
+Test L01 Required
+States 1
+0:$2=18446744073709551615; 0:$3=-1; 0:$8=18446744073709551615;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:$2=-1)
+Observation L01 Always 1 0
+Hash=40f7c109822251a6a8575623897de3d2
+

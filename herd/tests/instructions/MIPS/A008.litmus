@@ -1,0 +1,10 @@
+MIPS A008
+
+(* test dsll instr *)
+{ 0:a1=1}
+
+P0;
+  dsll a0, a1, 1;
+
+forall 0:a0 = 2
+

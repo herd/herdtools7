@@ -1,0 +1,10 @@
+Test L02 Required
+States 1
+0:$10=31165;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:$10=31165)
+Observation L02 Always 1 0
+Hash=ca9e436c25620d6d8c605b2d77f627fd
+

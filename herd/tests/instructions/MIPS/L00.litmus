@@ -1,0 +1,14 @@
+MIPS L00
+{
+uint64_t 0:a0;
+uint64_t 0:a1;
+}
+
+   P0         ;
+lui $a0,65535 ;
+li  $a1,65535 ;
+locations [0:a1;]
+forall 0:a0 = -65536 /\ 0:a1=65535
+
+
+

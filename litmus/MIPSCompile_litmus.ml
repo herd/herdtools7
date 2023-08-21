@@ -21,7 +21,10 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
     open A.Out
     open Printf
 
-    let is_ret _ = false
+    let is_ret = function
+      | A.JR (IReg R31) -> true
+      | _ -> false
+
     and is_nop = function
       | A.NOP -> true
       | _ -> false
@@ -58,10 +61,28 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
         inputs = [] ;
         outputs = [r1]; }
 
+    let move r1 r2 =
+      { empty_ins with
+        memo = sprintf "move ^o0,^i0" ;
+        inputs = [r2] ;
+        outputs = [r1]; }
+
+    let lui r1 i =
+      { empty_ins with
+        memo = sprintf "lui ^o0,%i" i ;
+        inputs = [] ;
+        outputs = [r1]; }
+
 (* Memory *)
     let lw r1 k r2 =
       { empty_ins with
         memo = sprintf "lw ^o0,%i(^i0)" k ;
+        inputs = [r2] ;
+        outputs = [r1] ; }
+
+    let ld r1 k r2 =
+      { empty_ins with
+        memo = sprintf "ld ^o0,%i(^i0)" k ;
         inputs = [r2] ;
         outputs = [r1] ; }
 
@@ -83,10 +104,23 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
         inputs = [r1;r2] ;
         outputs = [r1] ; }
 
+    let ebf r1 r2 k1 k2 =
+      { empty_ins with
+        memo = sprintf "DEXT ^i0,^i1,%i,%i" k1 k2 ;
+        inputs = [r1;r2] ;
+        outputs = [r1] ; }
+
+
     let b tr_lab lbl =
       { empty_ins with
         memo = sprintf "b %s" (A.Out.dump_label (tr_lab lbl)) ;
         branch=[Branch lbl] ; }
+
+    let jr r1 =
+      { empty_ins with
+        memo = sprintf "jr ^i0" ;
+        inputs = [r1] ;
+        outputs = [] ; }
 
     let bc tr_lab cond r1 r2 lbl =
       { empty_ins with
@@ -118,15 +152,20 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
     let compile_ins tr_lab ins k = match ins with
     | NOP -> { empty_ins with memo = "nop"; }::k
     | LI (r,i) -> li r i::k
+    | MOVE (r1,r2) -> move r1 r2::k
+    | LUI (r,i) -> lui r i::k
     | OP (op,r1,r2,r3) -> op3regs op r1 r2 r3::k
     | OPI (op,r1,r2,i) -> op2regsI op r1 r2 i::k
     | B lbl ->b tr_lab lbl::k
+    | JR r1 ->jr r1::k
     | BC (cond,r1,r2,lbl) -> bc tr_lab cond r1 r2 lbl::k
     | BCZ (cond,r1,lbl) -> bcz tr_lab cond r1 lbl::k
     | LW (r1,i,r2) -> lw r1 i r2::k
+    | LD (r1,i,r2) -> ld r1 i r2::k
     | SW (r1,i,r2) -> sw r1 i r2::k
     | LL (r1,i,r2) -> ll r1 i r2::k
     | SC (r1,i,r2) -> sc r1 i r2::k
+    | EBF (r1,r2,k1,k2) -> ebf r1 r2 k1 k2::k
     | SYNC -> { empty_ins with memo="sync"; }::k
 
     let do_branch cond r i lab k = match i with
