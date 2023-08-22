@@ -2,8 +2,8 @@ AArch64 STR01
 (* Basic test for STR functionnality *)
 
 {
-  x = 0;
-  0: X1 = 3;
+  int64_t x = 0;
+  int64_t 0: X1 = 3;
   0: X2 = x;
 }
 

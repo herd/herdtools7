@@ -1,8 +1,8 @@
 AArch64 swap
 {
-    x = 5;
-    0: X1 = 3;
-    0: X3 = x;
+int64_t x = 5;
+int64_t 0: X1 = 3;
+        0: X3 = x;
 }
 
 P0 ;

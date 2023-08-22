@@ -2,7 +2,8 @@ AArch64 LDR01
 (* Test ASL instruction LDR *)
 
 {
-  x = 2;
+  int64_t x = 2 ;
+  int64_t 0:X2  ;
   0: X1 = x;
 }
 

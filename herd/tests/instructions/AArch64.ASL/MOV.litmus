@@ -2,7 +2,7 @@ AArch64 MOV
 variant=ASLv0
 
 {
-    0: X1 = 2
+int64_t 0: X1 = 2
 }
 
 P0 ;
