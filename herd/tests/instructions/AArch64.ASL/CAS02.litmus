@@ -2,10 +2,10 @@ AArch64 CAS02
 (* CAS, no case *)
 
 {
-    x = 3;
-    0: X1 = 2;
-    0: X2 = 4;
-    0: X3 = x;
+int64_t x = 3;
+int64_t 0: X1 = 2;
+int64_t 0: X2 = 4;
+        0: X3 = x;
 }
 
 P0 ;

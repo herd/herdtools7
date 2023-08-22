@@ -2,10 +2,10 @@ AArch64 CSEL01
 (* Basic csel, without really a condition check *)
 
 {
-    0: X1 = 3;
-    0: X2 = 4;
-    0: X8 = 8;
-    0: X9 = 9;
+int64_t 0: X1 = 3;
+int64_t 0: X2 = 4;
+int64_t 0: X8 = 8;
+int64_t 0: X9 = 9;
 }
 
 P0 ;

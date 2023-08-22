@@ -60,6 +60,10 @@ let endian = A64B.endian
 
 type reg = ASLLocalId of scope * Asllib.AST.identifier | ArchReg of A64B.reg
 
+let pp_reg = function
+  | ASLLocalId (scope, x) -> pp_scope scope ^ x
+  | ArchReg r -> A64B.pp_reg r
+
 let is_local = function ASLLocalId _ -> true | _ -> false
 let to_arch_reg = function ASLLocalId _ -> assert false | ArchReg r -> r
 let to_reg r = ArchReg r
@@ -91,10 +95,6 @@ let parse_reg s =
 
 (** A list of supported AArch64 registers. *)
 let gregs = List.map fst AArch64Base.xregs
-
-let pp_reg = function
-  | ASLLocalId (scope, x) -> pp_scope scope ^ x
-  | ArchReg r -> A64B.pp_reg r
 
 let reg_compare r1 r2 =
   match (r1, r2) with

@@ -141,6 +141,9 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
         | AND | BIC | EOR | ORR | ORN | ADD | SUB | LSL | ASR | LSR ->
             litb false
       in
+      let subop op =
+        (match op with SUB | SUBS -> true | _ -> false) |> litb
+      in
       match ii.A.inst with
       | I_NOP ->
           Some ("system/hints.opn", stmt [ "op" ^= var "SystemHintOp_NOP" ])
@@ -249,7 +252,19 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
                       "op" ^= logical_op op;
                       "setflags" ^= setflags op;
                     ] )
-          | ADD | ADDS | SUB | SUBS | ASR | LSL | LSR -> None)
+          | ADD | SUB | ADDS | SUBS ->
+             Some
+               ("integer/arithmetic/add-sub/shiftedreg.opn",
+                stmt
+                ["d" ^= reg rd;
+                 "n" ^= reg rn;
+                 "m" ^= reg rm;
+                 "datasize" ^= variant v;
+                 "shift_type" ^= var "ShiftType_LSR";
+                 "shift_amount" ^= liti 0;
+                 "sub_op" ^= subop op;
+                 "setflags" ^= setflags op;])
+          | ASR | LSL | LSR -> None)
       | I_OP3 (v, op, rd, rn, K k, S_NOEXT) -> (
           let datasize = variant_raw v in
           match op with
@@ -267,7 +282,6 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
                       "setflags" ^= setflags op;
                     ] )
           | ADD | ADDS | SUB | SUBS ->
-              let subop = match op with SUB | SUBS -> true | _ -> false in
               Some
                 ( "integer/arithmetic/add-sub/immediate.opn",
                   stmt
@@ -276,7 +290,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
                       "n" ^= reg rn;
                       "imm" ^= litbv datasize k;
                       "datasize" ^= liti datasize;
-                      "sub_op" ^= litb subop;
+                      "sub_op" ^= subop op;
                       "setflags" ^= setflags op;
                     ] )
           | ASR | LSL | LSR -> None)
@@ -375,17 +389,17 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
       let proc = 0 in
       let init =
         let loc r = MiscParser.Location_reg (proc, AArch64Base.pp_reg r) in
+        let tr_c =
+          let open Constant in
+          function
+          | Concrete s -> Concrete (V.Cst.Scalar.pp false s)
+          | Symbolic s -> Symbolic s
+          | c ->
+             let name = V.Cst.pp_v c and tag = Some symb_values_tag in
+             let () = Hashtbl.add symb_values_tbl name (V.Val c) in
+             Symbolic (Virtual { offset = 0; cap = 0L; tag; name }) in
         let set r c =
-          let c' =
-            let open Constant in
-            match c with
-            | Concrete s -> Concrete (V.Cst.Scalar.pp false s)
-            | Symbolic s -> Symbolic s
-            | _ ->
-                let name = V.Cst.pp_v c and tag = Some symb_values_tag in
-                let () = Hashtbl.add symb_values_tbl name (V.Val c) in
-                Symbolic (Virtual { offset = 0; cap = 0L; tag; name })
-          in
+          let c' = tr_c c in
           (loc r, (TestType.TyDef, c'))
         in
         let init_gregs =
@@ -397,13 +411,33 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
           List.filter_map one_reg ASLBase.gregs
         in
         let nzcv = AArch64Base.NZCV in
-        match A.look_reg nzcv ii.A.env.A.regs with
-        | Some (V.Val c) -> set nzcv c :: init_gregs
-        | Some (V.Var _) -> init_gregs
-        | None ->
-            (loc nzcv, (TestType.TyDef, Constant.Concrete "0")) :: init_gregs
-      in
-      let prog =
+        let vnzcv =
+          match A.look_reg nzcv ii.A.env.A.regs with
+          | Some (V.Val c) -> Some (tr_c c)
+          | Some (V.Var _) -> None
+          | None ->
+             Some (Constant.Concrete "0") in
+        let () =
+          if _dbg then
+            let pp =
+              match vnzcv with
+              | Some v -> ParsedConstant.pp_v v
+              | None -> "-" in
+            Printf.eprintf "Initial value of flags: %s\n%!" pp
+        in
+        match vnzcv with
+        |Some c ->
+          let tc = TestType.TyDef,c and pstate = "PSTATE" in
+          (loc nzcv,tc)
+          (* The initial value for PSTATE given bellow
+           * overrides the one of the "patches.asl" file,
+           *  see `herd/ASLSem.ml`.
+           *)
+          ::(MiscParser.Location_reg (proc,pstate),tc)
+          ::init_gregs
+        | None -> init_gregs
+        in
+        let prog =
         let version =
           if TopConf.C.variant (Variant.ASLVersion `ASLv0) then `ASLv0
           else if TopConf.C.variant (Variant.ASLVersion `ASLv1) then `ASLv1
@@ -491,11 +525,22 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
             Warn.fatal "AArch64.ASL does not know how to translate: %s"
               (ASLValue.V.pp_v v)
 
-      let tr_loc ii = function
-        | ASLS.A.Location_global x -> Some (A.Location_global (tr_v x))
-        | ASLS.A.Location_reg (_proc, ASLBase.ArchReg reg) ->
-            Some (A.Location_reg (ii.A.proc, reg))
-        | ASLS.A.Location_reg (_proc, ASLBase.ASLLocalId _) -> None
+      let tr_loc ii loc =
+        let nloc =
+          match loc with
+          | ASLS.A.Location_global x -> Some (A.Location_global (tr_v x))
+          | ASLS.A.Location_reg (_proc, ASLBase.ArchReg reg) ->
+             Some (A.Location_reg (ii.A.proc, reg))
+          | ASLS.A.Location_reg (_proc, ASLBase.ASLLocalId _) -> None in
+        let () =
+          if _dbg then
+            Printf.eprintf
+              "tr_loc %s ->%s\n%!"
+              (ASLS.A.pp_location loc)
+              (match nloc with
+               | None -> ""
+               | Some loc -> " "^A.pp_location loc) in
+        nloc
 
       let mask_of_positions =
         let mask_one acc i =
@@ -840,20 +885,41 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
         let iico_order = translate_maybe_rel M.bind_order aarch64_iico_order in
         let branch =
           let one_event acc event =
-            match (acc, event.ASLE.action) with
-            | ( B.Next li,
-                ASLS.Act.Access
-                  (Dir.W, ASLS.A.Location_reg (_, ASLBase.ArchReg reg), v, _) )
+            match event.ASLE.action with
+            | ASLS.Act.Access
+                (Dir.W,
+                 ASLS.A.Location_reg (_, ASLBase.ArchReg reg), v, _)
               ->
-                B.Next ((reg, tr_v v) :: li)
-            | _ -> acc
-          in
-          List.fold_left one_event (B.Next []) event_list
+              (reg, tr_v v)::acc
+            |  ASLS.Act.Access (Dir.W, loc , v, _)
+               ->
+                if _dbg then
+                  Printf.eprintf
+                    "Not recorded in B.Next: %s <- %s\n"
+                    (ASLS.A.pp_location loc) (ASLS.A.V.pp_v v) ;
+                acc
+            | _ -> acc in
+          let acc = List.fold_left one_event [] event_list in
+          B.Next acc
+        in
+        let () =
+          if _dbg then
+            match branch with
+            | B.Next bds ->
+               let pp =
+                 List.map
+                   (fun (r,v) ->
+                     Printf.sprintf "(%s,%s)"
+                       (AArch64Base.pp_reg r) (AArch64.V.pp_v v))
+                   bds in
+               let pp = String.concat "; " pp in
+               Printf.eprintf "Next [%s]\n%!" pp
+            | _ -> ()
         in
         let constraints =
           let () =
             if _dbg then
-              Printf.eprintf "\t- constraints: %s\n" (ASLVC.pp_cnstrnts cs)
+              Printf.eprintf "\t- constraints:\n%s\n" (ASLVC.pp_cnstrnts cs)
           in
           M.restrict (tr_cnstrnts cs)
         in

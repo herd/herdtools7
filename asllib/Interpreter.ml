@@ -148,7 +148,15 @@ module Make (B : Backend.S) (C : Config) = struct
               | None, None -> fail_initialise d name
               | None, Some t -> base_value env t
             in
-            let* () = B.on_write_identifier name Scope_Global v in
+            let* () =
+              match name with
+              | "PSTATE" ->
+                 (* No event at all for PSTATE, translated to reg NZCV.
+                    Moeover, initialisation of NZCV is from
+                    previous instructions, like all registers. *)
+                 return ()
+              | _ ->
+                 B.on_write_identifier name Scope_Global v in
             IEnv.declare_global name v env |> return
       | _ -> Fun.id
     in
@@ -590,7 +598,13 @@ module Make (B : Backend.S) (C : Config) = struct
         let n = List.length les in
         let nmonads = List.init n (fun i -> m >>= B.get_index i) in
         multi_assign env les nmonads
-    | LE_SetFields _ -> fatal_from le Error.TypeInferenceNeeded
+    | LE_SetFields _ ->
+       let* () =
+         let* v = m in
+         Format.eprintf "@[<2>Failing on @[%a@]@ <-@ %s@]@."
+           PP.pp_lexpr le (B.debug_value v) ;
+         B.return () in
+       fatal_from le Error.TypeInferenceNeeded
 
   (** [multi_assign env [le_1; ... ; le_n] [m_1; ... ; m_n]] is
       [env[le_1 --> m_1] ... [le_n --> m_n]]. *)
