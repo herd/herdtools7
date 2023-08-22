@@ -1,0 +1,9 @@
+PPC A004
+
+(* Test NOP *)
+{}
+
+P0;
+nop;
+
+forall 0:r0 = 0

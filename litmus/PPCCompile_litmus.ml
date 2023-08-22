@@ -61,6 +61,18 @@ module Make(V:Constant.S)(C:Config) =
         inputs=[rA];
         outputs=[rD]; }
 
+    let op2regs3I memo rD rA i1 i2 i3 =
+      { empty_ins with
+        memo= sprintf "%s ^o0,^i0,%i,%i,%i" memo i1 i2 i3;
+        inputs=[rA];
+        outputs=[rD]; }
+
+    let op2regs3I_read_dest memo rD rA i1 i2 i3 =
+      { empty_ins with
+        memo= sprintf "%s ^o0,^i0,%i,%i,%i" memo i1 i2 i3;
+        inputs=[rA;rD;];
+        outputs=[rD]; }
+
     let justOp memo = { empty_ins with memo=memo ; }
 
     let tr_ins = match C.word with
@@ -70,6 +82,7 @@ module Make(V:Constant.S)(C:Config) =
         | Pload (Quad,a1,a2,a3) -> Pload (Word,a1,a2,a3)
         | Pstore (Quad,a1,a2,a3) -> Pstore (Word,a1,a2,a3)
         | Ploadx (Quad,a1,a2,a3) -> Ploadx (Word,a1,a2,a3)
+        | Plwax (Quad,a1,a2,a3) -> Plwax (Word,a1,a2,a3)
         | Pstorex (Quad,a1,a2,a3) -> Pstorex (Word,a1,a2,a3)
         | _ -> i
 
@@ -91,9 +104,22 @@ module Make(V:Constant.S)(C:Config) =
         inputs=[];
         outputs=[rD]; }
 
+    let lis rD v =
+      { empty_ins with
+        memo=sprintf "lis ^o0,%i" v;
+        inputs=[];
+        outputs=[rD]; }
+
+
     let mr rD rS =
       { empty_ins with
         memo="mr ^o0,^i0" ;
+        inputs=[rS];
+        outputs=[rD]; }
+
+    let extsw rD rS =
+      { empty_ins with
+        memo="extsw ^o0,^i0" ;
         inputs=[rS];
         outputs=[rD]; }
 
@@ -121,6 +147,12 @@ module Make(V:Constant.S)(C:Config) =
     let cmpwi rS v =
       { empty_ins with
         memo=sprintf "cmpwi ^i0,%i" v;
+        inputs=[rS];
+        outputs=[]; } (* no modeling of cc needed here *)
+
+    let cmplwi rS v =
+      { empty_ins with
+        memo=sprintf "cmplwi ^i0,%i" v;
         inputs=[rS];
         outputs=[]; } (* no modeling of cc needed here *)
 
@@ -224,6 +256,7 @@ module Make(V:Constant.S)(C:Config) =
     let do_compile_ins tr_lab ins k = match tr_ins ins with
     | Pnop -> { empty_ins with memo="nop"; }::k
     | Pmr (rD,rS) -> mr rD rS::k
+    | Pextsw (rD,rS) -> extsw rD rS::k
     | Padd(set,rD,rA,rB) -> op3regs  "add" set rD rA rB::k
     | Psub(set,rD,rA,rB) -> op3regs  "sub" set rD rA rB::k
     | Psubf(set,rD,rA,rB)  -> op3regs  "subf" set rD rA rB::k
@@ -234,16 +267,27 @@ module Make(V:Constant.S)(C:Config) =
     | Pdiv(set,rD,rA,rB) -> op3regs  "divw" set rD rA rB::k
 
     | Paddi(rD,rA,simm) -> op2regsI "addi" rD rA simm::k
+    | Paddis(rD,rA,simm) -> op2regsI "addis" rD rA simm::k
     | Pandi(rD,rA,simm) -> op2regsI "andi." rD rA simm::k
     | Pori(rD,rA,simm) -> op2regsI "ori" rD rA simm::k
     | Pxori(rD,rA,simm) -> op2regsI "xori" rD rA simm::k
     | Pmulli(rD,rA,simm) -> op2regsI "mulli" rD rA simm::k
+    | Pclrldi(rD,rA,simm) -> op2regsI "clrldi" rD rA simm :: k
+    | Prlwinm(rD,rA,s1,s2,s3) -> op2regs3I "rlwinm" rD rA s1 s2 s3::k
+    | Prlwimi(rD,rA,s1,s2,s3) -> op2regs3I_read_dest "rlwimi" rD rA s1 s2 s3::k
 
     | Pli(rD,v) -> li rD v::k
+    | Plis(rD,v) -> lis rD v::k
     | Pcmpwi (0,rS,v) -> cmpwi rS v::k
+    | Pcmplwi (0,rS,v) -> cmplwi rS v::k
     | Pcmpwi (crf,rS,v) ->
         { empty_ins with
           memo=sprintf "cmpwi cr%i,^i0,%i" crf v;
+          inputs=[rS];
+          outputs=[]; }::k
+    | Pcmplwi (crf,rS,v) ->
+        { empty_ins with
+          memo=sprintf "cmplwi cr%i,^i0,%i" crf v;
           inputs=[rS];
           outputs=[]; }::k
     | Pcmpw(0,rA,rB) -> cmpw rA rB::k
@@ -259,6 +303,11 @@ module Make(V:Constant.S)(C:Config) =
           memo = sprintf "%s ^o0,%i(^i0)"  (memo_load sz) d;
           inputs = [rA];
           outputs= [rD]; }::k
+    | Plwa (rD,d,rA) ->
+         { empty_ins with
+          memo = sprintf "lwa ^o0,%i(^i0)" d;
+          inputs = [rA];
+          outputs= [rD]; }::k
     | Plwzu (rD,d,rA) ->
         let outs =
           if rA <> r0 && rA <> rD then [rD;rA;] else [rD;] in
@@ -268,6 +317,20 @@ module Make(V:Constant.S)(C:Config) =
           outputs= outs; }::k
     | Ploadx (sz,rD,rA,rB) ->
         let memo = memo_loadx sz in
+        begin match rA with
+        | A.Ireg A.GPR0 -> (* Yes, it's this way cf. ISA p. 48 *)
+            { empty_ins with
+              memo = memo ^ " ^o0,0,^i0";
+              inputs = [rB];
+              outputs= [rD]; }::k
+        | _ ->
+            { empty_ins with
+              memo = memo ^ " ^o0,^i0,^i1";
+              inputs = [rA;rB];
+              outputs= [rD]; }::k
+        end
+    | Plwax (_,rD,rA,rB) ->
+        let memo = "lwax" in
         begin match rA with
         | A.Ireg A.GPR0 -> (* Yes, it's this way cf. ISA p. 48 *)
             { empty_ins with
@@ -345,8 +408,8 @@ module Make(V:Constant.S)(C:Config) =
     | Pblr ->
         { empty_ins with
           memo = "blr" ;
-          inputs = [A.LR];
-          branch = []; (* Hum *) }::k
+          inputs = [A.LR]; (* Was this tested?*)
+          branch = [Any]; }::k
     | Pmtlr rS ->
         { empty_ins with
           memo = "mtlr ^i0";

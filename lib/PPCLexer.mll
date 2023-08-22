@@ -45,7 +45,9 @@ rule token = parse
 | '(' { LPAR }
 | ')' { RPAR }
 | "codevar:" (name as x) { CODEVAR x }
+| "nop" { NOP }
 | "addi" { ADDI }
+| "addis" { ADDIS }
 | "subi" { SUBI }
 | "add"  { ADD }
 | "add."  { ADDDOT }
@@ -55,7 +57,9 @@ rule token = parse
 | "subf." { SUBFDOT }
 | "cmpwi" { CMPWI }
 | "cmpw" {CMPW}
+| "cmplwi" { CMPLWI }
 | "li"   { LI }
+| "lis" { LIS }
 | "xor" { XOR }
 | "xor." { XORDOT }
 | "xori" { XORI }
@@ -86,6 +90,8 @@ rule token = parse
 | "stwu" { STWU }
 | "stwx" { STWX }
 | "lwarx" { LWARX }
+| "lwa" { LWA }
+| "lwax" { LWAX }
 | "stwcx." { STWCX }
 | "std" { STD }
 | "ld"  { LD }
@@ -95,6 +101,7 @@ rule token = parse
 | "eieio" { EIEIO }
 | "isync" { ISYNC }
 | "lwsync" { LWSYNC }
+| "hwsync" { HWSYNC }
 | "dcbf" { DCBF }
 | "b" { B }
 | "beq" { BEQ }
@@ -120,6 +127,10 @@ rule token = parse
 | "mfcr"  { MFCR }
 | "stmw"  { STMW }
 | "lmw"  { LMW }
+| "rlwinm" { RLWINM }
+| "rlwimi" { RLWIMI }
+| "clrldi" { CLRLDI }
+| "extsw" { EXTSW }
 | "com"   { COMMENT}
 
 | name as x

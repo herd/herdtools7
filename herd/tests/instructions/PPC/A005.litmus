@@ -1,0 +1,15 @@
+PPC A005
+
+(* Test LWA *)
+{
+   0:r1 = x;
+   x = -1;
+   int64_t 0:r0;
+   int64_t 0:r2;
+}
+P0;
+  lwa r0, 0(r1) ;
+  lwz r2, 0(r1) ;
+
+forall 0:r0 = -1 /\ 0:r2 <> -1
+

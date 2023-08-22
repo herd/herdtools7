@@ -60,6 +60,8 @@ module Make (O:Arch_litmus.Config)(V:Constant.S) = struct
   let reg_to_string r = match r with
   | Ireg r -> ireg_to_string r
   | Internal i -> sprintf "i%i" i
+  | LR -> "LR" (* Needed for BLR *)
+  | Symbolic_reg _ -> assert false
   | _ -> assert false
 
   include

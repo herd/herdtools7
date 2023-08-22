@@ -1,0 +1,16 @@
+PPC A008
+
+(* test extsw *)
+{
+int x = -1   ;
+0:r2=x;
+int64_t 0:r0 ;
+0:r1 = -1    ;
+
+}
+
+P0;
+  lwz r1,0(r2) ;
+  extsw r0, r1 ;
+
+forall 0:r0 = -1
