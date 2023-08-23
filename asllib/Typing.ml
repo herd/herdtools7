@@ -1020,6 +1020,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (T_Bool |> here, E_Pattern (e', patterns) |> here)
     | E_GetArray _ -> assert false
 
+  exception Undef
+
   let rec annotate_lexpr env le t_e =
     let () =
       if false then
@@ -1242,7 +1244,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let s1, env = try_annotate_stmt env return_type s1 in
         let s2, env = try_annotate_stmt env return_type s2 in
         (S_Then (s1, s2) |> here, env)
-    | S_Assign (le, e) -> (
+    | S_Assign (le, e, ver) -> (
         let () =
           if false then
             Format.eprintf
@@ -1256,7 +1258,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         | Some s -> (s, env)
         | None ->
             let le = annotate_lexpr env le t_e in
-            (S_Assign (le, e) |> here, env))
+            (S_Assign (le, e, ver) |> here, env))
     | S_Call (name, args, eqs) ->
         let name, args, eqs, ty =
           annotate_call (to_pos s) env name args eqs ST_Procedure
@@ -1426,9 +1428,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       | None -> None
       | Some s ->
           let s1, _env1 =
-            S_Assign (le_x, to_expr sub_le) |> here |> annotate_stmt env None
+            S_Assign (le_x, to_expr sub_le,V1) |> here |> annotate_stmt env None
           and s2, _env2 =
-            S_Assign (old_le le_x, e) |> here |> annotate_stmt env None
+            S_Assign (old_le le_x, e,V1) |> here |> annotate_stmt env None
           in
           Some (s_then (s_then s1 s2) s)
     in

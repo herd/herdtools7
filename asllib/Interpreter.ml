@@ -553,7 +553,7 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         List.fold_left folder (normal env) ldis
 
-  (** [eval_lexpr env le m] is [env[le --> m]]. *)
+  (** [eval_lexpr version env le m] is [env[le --> m]]. *)
   and eval_lexpr le env m : env maybe_exception B.m =
     match le.desc with
     | LE_Ignore -> normal env |: Rule.LEIgnore
@@ -635,17 +635,18 @@ module Make (B : Backend.S) (C : Config) = struct
     | S_Pass -> continue env |: Rule.Pass
     | S_Assign
         ( { desc = LE_TupleUnpack les; _ },
-          { desc = E_Call (name, args, named_args); _ } )
+          { desc = E_Call (name, args, named_args); _ }, _ )
       when List.for_all lexpr_is_var les ->
         let**| ms, env = eval_call (to_pos s) name env args named_args in
         let**| env = protected_multi_assign env s les ms in
         continue env
-    | S_Assign ({ desc = LE_TupleUnpack les; _ }, { desc = E_Tuple exprs; _ })
+    | S_Assign
+         ({ desc = LE_TupleUnpack les; _ }, { desc = E_Tuple exprs; _ }, _)
       when List.for_all lexpr_is_var les ->
         let**| ms, env = eval_expr_list_m env exprs in
         let**| env = protected_multi_assign env s les ms in
         continue env
-    | S_Assign (le, e) ->
+    | S_Assign (le, e, _) ->
         let*^ m, env = eval_expr env e in
         let**| env = eval_lexpr le env m in
         continue env |: Rule.Assign

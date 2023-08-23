@@ -506,7 +506,7 @@ let simple_stmt ==
 let assignment_stmt ==
   annotated (
     terminated_by(SEMICOLON,
-      | ~=lexpr; EQ; ~=expr; < AST.S_Assign >
+      | le=lexpr; EQ; e=expr; { AST.S_Assign (le,e,V0) }
       | ldi=typed_le_ldi; EQ; ~=expr;
         { AST.(S_Decl (LDK_Var, ldi, Some expr)) }
       | CONSTANT; ldi=typed_le_ldi; EQ; ~=expr;
