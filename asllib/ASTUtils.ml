@@ -361,6 +361,16 @@ module Infix = struct
   let ( !$ ) i = expr_of_int i
 end
 
+let lid_of_lexpr =
+  let rec tr le =
+    match le.desc with
+    | LE_Ignore -> LDI_Ignore None
+    | LE_Var x -> LDI_Var (x, None)
+    | LE_TupleUnpack les ->
+       LDI_Tuple (List.map tr les,None)
+    | _ -> raise Exit  in
+  fun le -> try Some (tr le) with Exit -> None
+
 let expr_of_lexpr : lexpr -> expr =
   let rec aux le =
     match le.desc with

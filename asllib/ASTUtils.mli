@@ -160,8 +160,12 @@ val bitwidth_equal :
 val scope_equal : scope -> scope -> bool
 val scope_compare : scope -> scope -> int
 
-val expr_of_lexpr : lexpr -> expr
 (** {1 Transformers} *)
+
+val lid_of_lexpr : lexpr -> local_decl_item option
+
+val expr_of_lexpr : lexpr -> expr
+
 
 val case_to_conds : stmt -> stmt
 val slice_as_single : slice -> expr

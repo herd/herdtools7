@@ -321,6 +321,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           match IMap.find_opt name env.global.subprograms with
           | None -> undefined_identifier loc ("function " ^ name)
           | Some { args = callee_arg_types; return_type; _ } ->
+              if false then
+                Format.eprintf "@[<2>%a:@ No extra arguments for %s@]@."
+                  PP.pp_pos loc name ;
               ([], name, callee_arg_types, return_type)
         with Error.ASLException _ -> raise error)
   end
@@ -710,6 +713,21 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let extra_nargs, name, callee_arg_types, ret_ty =
       FunctionRenaming.try_find_name loc env name caller_arg_types
     in
+    let () =
+      if false then
+        match extra_nargs with
+        | [] -> ()
+        | _ ->
+           Format.eprintf
+             "@[<2>%a: Adding@ @[{%a}@]@ to call of %s@."
+             PP.pp_pos loc
+             (Format.pp_print_list
+                ~pp_sep:(fun f () -> Format.fprintf f ";@ ")
+                (fun f (n,e) ->
+                  Format.fprintf f "@[%s@ <- %a@]"
+                    n PP.pp_expr e))
+              extra_nargs name
+    in
     let eqs = List.rev_append eqs extra_nargs in
     let () =
       if List.compare_lengths callee_arg_types args != 0 then
@@ -1020,8 +1038,6 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (T_Bool |> here, E_Pattern (e', patterns) |> here)
     | E_GetArray _ -> assert false
 
-  exception Undef
-
   let rec annotate_lexpr env le t_e =
     let () =
       if false then
@@ -1042,7 +1058,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 | Some (ty, _) ->
                     (* TODO: check that the keyword is a variable. *)
                     ty
-                | None -> undefined_identifier le x)
+                | None ->
+                   undefined_identifier le x)
           in
           check_can_assign_to le env ty t_e ()
         in
@@ -1257,8 +1274,40 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         match reduced with
         | Some s -> (s, env)
         | None ->
-            let le = annotate_lexpr env le t_e in
-            (S_Assign (le, e, ver) |> here, env))
+           let env =
+             match ver with
+             | V1 -> env
+             | V0 ->
+                (*
+                 * In version V0, variable declaration is optional,
+                 * As a result typing will be partial and some
+                 * function calls may lack extra parameters.
+                 * Fix this by typing first assignemnts of
+                 * undeclared variables as declarations.
+                 *)
+                begin
+                  match ASTUtils.lid_of_lexpr le with
+                  | None -> env
+                  | Some ldi ->
+                     let rec undefined = function
+                       | LDI_Ignore _ -> true
+                       | LDI_Var (x,_) -> StaticEnv.is_undefined x env
+                       | LDI_Tuple (ldis,_) ->
+                          List.for_all undefined ldis in
+                     if undefined ldi then
+                       let () =
+                         if false then
+                           Format.eprintf
+                             "@[<3>Assignment@ @[%a@] as declaration@]@."
+                             PP.pp_stmt s in
+                       let ldk = LDK_Var in
+                       let env,_ldi =
+                         annotate_local_decl_item s env t_e ldk ldi in
+                       env
+                     else env
+                end in
+           let le = annotate_lexpr env le t_e in
+           (S_Assign (le, e, ver) |> here, env))
     | S_Call (name, args, eqs) ->
         let name, args, eqs, ty =
           annotate_call (to_pos s) env name args eqs ST_Procedure

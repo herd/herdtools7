@@ -525,12 +525,14 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         List.init length (Fun.const v) |> B.create_vector
 
+  and eval_local_decl_var_val env x v =
+    declare_local_identifier env x v >>= normal
+
   and eval_local_decl s ldi env m : env maybe_exception m =
     match (ldi, m) with
     | LDI_Ignore _ty, _ -> normal env |: Rule.LEIgnore
     | LDI_Var (x, _ty), Some m ->
-        let* env = declare_local_identifier_m env x m in
-        normal env
+        m >>= eval_local_decl_var_val env x
     | LDI_Var (x, Some ty), None ->
         base_value env ty >>= declare_local_identifier env x >>= normal
     | LDI_Var (x, None), None ->
@@ -554,7 +556,7 @@ module Make (B : Backend.S) (C : Config) = struct
         List.fold_left folder (normal env) ldis
 
   (** [eval_lexpr version env le m] is [env[le --> m]]. *)
-  and eval_lexpr le env m : env maybe_exception B.m =
+  and eval_lexpr ver le env m : env maybe_exception B.m =
     match le.desc with
     | LE_Ignore -> normal env |: Rule.LEIgnore
     | LE_Var x -> (
@@ -566,7 +568,14 @@ module Make (B : Backend.S) (C : Config) = struct
         | Global env ->
             let* () = B.on_write_identifier x Scope_Global v in
             normal env
-        | NotFound -> fatal_from le @@ Error.UndefinedIdentifier x)
+        | NotFound ->
+           begin
+             match ver with
+             | V1 -> fatal_from le @@ Error.UndefinedIdentifier x
+             | V0 ->
+                (* V0 first assignments promoted to local declarations *)
+                eval_local_decl_var_val env x v
+           end)
     | LE_Slice (le', slices) ->
         let*^ bv_m, env = expr_of_lexpr le' |> eval_expr env in
         let*^ positions_m, env = eval_slices env slices in
@@ -574,7 +583,7 @@ module Make (B : Backend.S) (C : Config) = struct
           let* v = m and* positions = positions_m and* bv = bv_m in
           B.write_to_bitvector positions v bv
         in
-        eval_lexpr le' env m' |: Rule.LESlice
+        eval_lexpr ver le' env m' |: Rule.LESlice
     | LE_SetArray (le', e) ->
         let*^ array_m, env = expr_of_lexpr le' |> eval_expr env in
         let*^ index_m, env = eval_expr env e in
@@ -584,20 +593,20 @@ module Make (B : Backend.S) (C : Config) = struct
           | None -> fatal_from le (Error.UnsupportedExpr e)
           | Some i -> B.set_index i v array_v
         in
-        eval_lexpr le' env m'
+        eval_lexpr ver le' env m'
     | LE_SetField (le', x) ->
         let*^ vec_m, env = expr_of_lexpr le' |> eval_expr env in
         let m' =
           let* new_v = m and* vec = vec_m in
           B.set_field x new_v vec
         in
-        eval_lexpr le' env m' |: Rule.LESetRecordField
+        eval_lexpr ver le' env m' |: Rule.LESetRecordField
     | LE_TupleUnpack les ->
         (* The index-out-of-bound on the vector are done either in typing,
            either in [B.get_index]. *)
         let n = List.length les in
         let nmonads = List.init n (fun i -> m >>= B.get_index i) in
-        multi_assign env les nmonads
+        multi_assign ver env les nmonads
     | LE_SetFields _ ->
        let* () =
          let* v = m in
@@ -608,21 +617,21 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (** [multi_assign env [le_1; ... ; le_n] [m_1; ... ; m_n]] is
       [env[le_1 --> m_1] ... [le_n --> m_n]]. *)
-  and multi_assign env les monads : env maybe_exception m =
+  and multi_assign ver env les monads : env maybe_exception m =
     let folder envm le vm =
       let**| env = envm in
-      eval_lexpr le env vm
+      eval_lexpr ver le env vm
     in
     List.fold_left2 folder (normal env) les monads
 
   (** As [multi_assign], but checks that [les] and [monads] have the same
       length. *)
-  and protected_multi_assign env pos les monads : env maybe_exception m =
+  and protected_multi_assign ver env pos les monads : env maybe_exception m =
     if List.compare_lengths les monads != 0 then
       fatal_from pos
       @@ Error.BadArity
            ("tuple construction", List.length les, List.length monads)
-    else multi_assign env les monads
+    else multi_assign ver env les monads
 
   (** [eval_stmt env s] evaluates [s] in [env]. This is either an interuption
       [Returning vs] or a continuation [env], see [eval_res]. *)
@@ -635,20 +644,20 @@ module Make (B : Backend.S) (C : Config) = struct
     | S_Pass -> continue env |: Rule.Pass
     | S_Assign
         ( { desc = LE_TupleUnpack les; _ },
-          { desc = E_Call (name, args, named_args); _ }, _ )
+          { desc = E_Call (name, args, named_args); _ }, ver)
       when List.for_all lexpr_is_var les ->
         let**| ms, env = eval_call (to_pos s) name env args named_args in
-        let**| env = protected_multi_assign env s les ms in
+        let**| env = protected_multi_assign ver env s les ms in
         continue env
     | S_Assign
-         ({ desc = LE_TupleUnpack les; _ }, { desc = E_Tuple exprs; _ }, _)
+         ({ desc = LE_TupleUnpack les; _ }, { desc = E_Tuple exprs; _ }, ver)
       when List.for_all lexpr_is_var les ->
         let**| ms, env = eval_expr_list_m env exprs in
-        let**| env = protected_multi_assign env s les ms in
+        let**| env = protected_multi_assign ver env s les ms in
         continue env
-    | S_Assign (le, e, _) ->
+    | S_Assign (le, e, ver) ->
         let*^ m, env = eval_expr env e in
-        let**| env = eval_lexpr le env m in
+        let**| env = eval_lexpr ver le env m in
         continue env |: Rule.Assign
     | S_Return (Some { desc = E_Tuple es; _ }) ->
         let**| ms, env = eval_expr_list_m env es in

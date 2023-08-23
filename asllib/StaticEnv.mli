@@ -48,3 +48,4 @@ val add_type : identifier -> ty -> env -> env
 val add_global_constant : identifier -> literal -> env -> env
 val add_local : identifier -> ty -> local_decl_keyword -> env -> env
 val add_subtype : identifier -> identifier -> env -> env
+val is_undefined : identifier -> env -> bool
