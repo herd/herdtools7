@@ -42,6 +42,7 @@ module type S = sig
   val sub : t -> t -> t
   val mul : t -> t -> t
   val div : t -> t -> t
+  val rem : t -> t -> t
   val logor : t -> t -> t
   val logand : t -> t -> t
   val logxor : t -> t -> t

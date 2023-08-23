@@ -217,6 +217,7 @@ module Make (C : Config) = struct
       | BEQ -> M.op Op.Eq |> to_bool
       | BOR -> M.op Op.Or
       | DIV -> M.op Op.Div
+      | MOD -> M.op Op.Rem
       | EOR -> M.op Op.Xor |> to_bv
       | EQ_OP -> M.op Op.Eq |> to_bool
       | GT -> M.op Op.Gt |> to_bool
@@ -230,7 +231,10 @@ module Make (C : Config) = struct
       | PLUS -> M.op Op.Add
       | SHL -> M.op Op.ShiftLeft
       | SHR -> M.op Op.ShiftRight
-      | POW | IMPL | MOD | RDIV -> Warn.fatal "Not yet implemented operation."
+      | POW | IMPL | RDIV as op->
+         Warn.fatal
+           "ASL operation %s not yet implement in ASLSem."
+           (Asllib.PP.binop_to_string op)
 
     let unop op =
       let open AST in

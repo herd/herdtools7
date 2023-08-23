@@ -19,7 +19,7 @@ open Printf
 (*********************)
 
 type 'aop op =
-  | Add | Sub | Mul | Div
+  | Add | Sub | Mul | Div | Rem
   | And | Or | Xor | Nor | AndNot2
   | ASR
   | CapaAdd | Alignd | Alignu | Build | ClrPerm | CpyType | CSeal | Cthi | Seal
@@ -42,6 +42,7 @@ let pp_op o pp_aop =
   | Sub -> "-"
   | Mul -> "*"
   | Div -> "/"
+  | Rem -> "%"
   | And -> "&"
   | Or -> "|"
   | Xor -> "^" (* in C ?? *)
@@ -80,7 +81,7 @@ let pp_op o pp_aop =
   | ArchOp aop -> pp_aop aop
 
 let is_infix = function
-  | Add|Sub|Mul|Div|And|Or|Xor|ShiftLeft
+  | Add|Sub|Mul|Div|Rem|And|Or|Xor|ShiftLeft
   | ShiftRight|Lsr|Eq|Lt|Gt|Le|Ge|Ne
     -> true
   | Nor|AndNot2|ASR|CapaAdd|Alignd|Alignu|Build
