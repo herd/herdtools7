@@ -101,7 +101,32 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
       | LE -> 0b1101
       | AL -> 0b1111 (* Also possible [0b1110] *)
 
+    let variant_raw v = AArch64Base.tr_variant v |> MachSize.nbits
+
+    let unalias ii =
+      let open AArch64Base in
+      match ii.A.inst with
+      | I_SXTW (rd,rn) ->
+         { ii with A.inst = I_SBFM (V64,rd,rn,0,31) }
+      | I_OP3 (V64|V32 as v,LSL,rd,rn,K i,S_NOEXT) ->
+         let sz = variant_raw v-1 in
+         let imms = sz-i in
+         let immr = imms+1 in
+         { ii with A.inst = I_UBFM (v,rd,rn,immr,imms) }
+      | I_OP3 (V64|V32 as v,LSR,rd,rn,K i,S_NOEXT) ->
+         let sz = variant_raw v-1 in
+         let imms = sz in
+         let immr = i in
+         { ii with A.inst = I_UBFM (v,rd,rn,immr,imms) }
+      | I_OP3 (V64|V32 as v,ASR,rd,rn,K i,S_NOEXT) ->
+         let sz = variant_raw v-1 in
+         let imms = sz in
+         let immr = i in
+         { ii with A.inst = I_SBFM (v,rd,rn,immr,imms) }
+      | _ -> ii
+
     let decode_inst ii =
+      let ii = unalias ii in
       let open Asllib.AST in
       let with_pos desc = Asllib.ASTUtils.add_dummy_pos desc in
       let ( ^= ) x e =
@@ -112,7 +137,6 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
       let litb b = lit (L_Bool b) in
       let litbv v i = lit (L_BitVector (Asllib.Bitvector.of_int_sized v i)) in
       let var x = E_Var x |> with_pos in
-      let variant_raw v = AArch64Base.tr_variant v |> MachSize.nbits in
       let variant v = variant_raw v |> liti in
       let cond c = tr_cond c |> liti in
       let stmt = Asllib.ASTUtils.stmt_from_list in
