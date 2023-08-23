@@ -19,15 +19,27 @@ let value_as_int pos = function
       fatal_from pos
         (Error.MismatchType (PP.literal_to_string v, [ T_Int None ]))
 
+let is_positive z = Z.sign z != 0
+let is_strict_positive z = Z.sign z = 1
+
 let binop_values pos op v1 v2 =
   match (op, v1, v2) with
   (* int -> int -> int *)
   | PLUS, L_Int v1, L_Int v2 -> L_Int (Z.add v1 v2)
   | MUL, L_Int v1, L_Int v2 -> L_Int (Z.mul v1 v2)
   | MINUS, L_Int v1, L_Int v2 -> L_Int (Z.sub v1 v2)
-  | DIV, L_Int v1, L_Int v2 -> L_Int (Z.div v1 v2)
-  | MOD, L_Int v1, L_Int v2 -> L_Int (Z.rem v1 v2)
+  | DIV, L_Int v1, L_Int v2 when is_strict_positive v2 && Z.divisible v1 v2 ->
+      L_Int (Z.divexact v1 v2)
+  | DIVRM, L_Int v1, L_Int v2 when is_strict_positive v2 ->
+      L_Int (Z.fdiv v1 v2) (* Division rounded towards minus infinity. *)
+  | MOD, L_Int v1, L_Int v2 when is_strict_positive v2 ->
+      L_Int (Z.sub v1 (Z.mul v2 (Z.fdiv v1 v2)))
+      (* We cannot use any rem function in Z as we need the rounded towards minus infinity reminder. *)
   | POW, L_Int v1, L_Int v2 -> L_Int (Z.pow v1 (Z.to_int v2))
+  | SHL, L_Int v1, L_Int v2 when is_positive v2 ->
+      L_Int (Z.shift_left v1 (Z.to_int v2))
+  | SHR, L_Int v1, L_Int v2 when is_positive v2 ->
+      L_Int (Z.shift_right v1 (Z.to_int v2))
   (* int -> int -> bool*)
   | EQ_OP, L_Int v1, L_Int v2 -> L_Bool (Z.equal v1 v2)
   | NEQ, L_Int v1, L_Int v2 -> L_Bool (not (Z.equal v1 v2))
@@ -60,10 +72,6 @@ let binop_values pos op v1 v2 =
   | OR, L_BitVector b1, L_BitVector b2 -> L_BitVector (Bitvector.logor b1 b2)
   | AND, L_BitVector b1, L_BitVector b2 -> L_BitVector (Bitvector.logand b1 b2)
   | EOR, L_BitVector b1, L_BitVector b2 -> L_BitVector (Bitvector.logxor b1 b2)
-  (* TODO *)
-  | ( SHL | SHR), _, _ ->
-      fatal_from pos
-        (Error.NotYetImplemented ("Evaluation of " ^ PP.binop_to_string op))
   (* Failure *)
   | _ -> fatal_from pos (Error.UnsupportedBinop (op, v1, v2))
 
@@ -413,7 +421,7 @@ module Normalize = struct
     in
     Disjunction (ASTUtils.list_cross on_pair li1 li2)
 
-  let map_num f (Disjunction li1) =
+  let map_num f (Disjunction li1 : ir_expr) : ir_expr =
     Disjunction (List.map (fun (ctnt, e) -> (ctnt, f e)) li1)
 
   let disjunction_cross f (Disjunction li1) (Disjunction li2) =
@@ -451,6 +459,13 @@ module Normalize = struct
     | E_Binop (MUL, e1, e2) ->
         let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
         cross_num ir1 ir2 mult_polys
+    | E_Binop (SHL, e1, { desc = E_Literal (L_Int i2); _ }) ->
+        let ir1 = to_ir env e1 and f2 = Z.pow Z.one (Z.to_int i2) in
+        map_num
+          (fun (Sum monos) -> Sum (MMap.map (fun c -> Z.mul c f2) monos))
+          ir1
+    | E_Binop (op, { desc = E_Literal l1; _ }, { desc = E_Literal l2; _ }) ->
+        binop_values e op l1 l2 |> poly_of_val |> always
     | E_Unop (NEG, e0) -> e0 |> to_ir env |> map_num poly_neg
     | E_Cond (cond, e1, e2) ->
         let Disjunction ctnts, Disjunction nctnts = to_cond env cond

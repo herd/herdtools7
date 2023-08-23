@@ -441,6 +441,29 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   let t_bool = T_Bool |> __POS_OF__ |> add_pos_from_pos_of
   let t_int = T_Int None |> __POS_OF__ |> add_pos_from_pos_of
 
+  let expr_is_strict_positive e =
+    match e.desc with
+    | E_Literal (L_Int i) -> Z.sign i = 1
+    | E_Var _n -> false
+    | _ -> fatal_from e (UnsupportedExpr e)
+
+  let constraint_is_strict_positive = function
+    | Constraint_Exact e | Constraint_Range (e, _) -> expr_is_strict_positive e
+
+  let constraints_is_strict_positive =
+    List.for_all constraint_is_strict_positive
+
+  let expr_is_non_negative e =
+    match e.desc with
+    | E_Literal (L_Int i) -> Z.sign i != -1
+    | E_Var _n -> false
+    | _ -> fatal_from e (UnsupportedExpr e)
+
+  let constraint_is_non_negative = function
+    | Constraint_Exact e | Constraint_Range (e, _) -> expr_is_non_negative e
+
+  let constraints_is_non_negative = List.for_all constraint_is_non_negative
+
   let check_binop loc env op t1 t2 : ty =
     let () =
       if false then
@@ -506,7 +529,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             let+ () = check_type_satisfies' env t1 t_int in
             let+ () = check_type_satisfies' env t2 t_int in
             T_Bool |> with_loc
-        | MUL | DIV | MOD | SHL | SHR | POW | PLUS | MINUS -> (
+        | MUL | DIV | DIVRM | MOD | SHL | SHR | POW | PLUS | MINUS -> (
             (* TODO: ensure that they mean "has the structure of" instead of
                "is" *)
             let struct1 = Types.get_structure env t1
@@ -531,9 +554,19 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                    operation are well-constrained integers, then it shall
                    return a constrained integer whose constraint is calculated
                    by applying the operation to all possible value pairs. *)
-                (* TODO: check for division by zero? cf I YHRP: The calculation
-                   of constraints shall cause an error if necessary, for
-                   example where a division by zero occurs, etc. *)
+                let () =
+                  match op with
+                  | DIV ->
+                      (* TODO cs1 divides cs1 ? How is it expressable in term of constraints? *)
+                      check_true' (constraints_is_strict_positive cs2) ()
+                  | DIVRM | MOD ->
+                      (* assert cs2 strict-positive *)
+                      check_true' (constraints_is_strict_positive cs2) ()
+                  | SHL | SHR ->
+                      (* assert cs2 non-negative *)
+                      check_true' (constraints_is_non_negative cs2) ()
+                  | _ -> ()
+                in
                 T_Int (Some (constraint_binop op cs1 cs2)) |> with_loc
             | _ -> assumption_failed ())
         | RDIV ->

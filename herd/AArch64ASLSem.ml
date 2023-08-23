@@ -666,6 +666,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
 
       let tr_arch_op arch_op acc (v1 : ASLValue.V.v) (v2 : ASLValue.V.v) =
         match arch_op with
+        | ASLValue.Divrm -> Warn.fatal "Cannot translate divrm to AArch64."
         | ASLValue.SetIndex _ | ASLValue.SetField _ ->
             Warn.fatal "Cannot translate vector operations to AArch64."
         | ASLValue.Concat -> (

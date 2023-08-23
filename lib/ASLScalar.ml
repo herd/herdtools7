@@ -82,10 +82,11 @@ let zop pp_op op s1 s2 =
         (pp false s1)
         (pp false s2)
 
+let asl_rem z1 z2 = Z.sub z1 (Z.mul z2 (Z.fdiv z1 z2))
 let sub = zop "sub" Z.sub
 and mul = zop "mul" Z.mul
-and div = zop "div" Z.div
-and rem = zop "rem" Z.rem
+and div = zop "div" Z.divexact
+and rem = zop "rem" asl_rem
 
 let logor s1 s2 =
   match (s1, s2) with
@@ -216,6 +217,11 @@ let try_concat s1 s2 =
   match (s1, s2) with
   | S_BitVector bv1, S_BitVector bv2 ->
       Some (S_BitVector (BV.concat [ bv1; bv2 ]))
+  | _ -> None
+
+let try_divrm s1 s2 =
+  match (s1, s2) with
+  | S_Int s1, S_Int s2 when Z.sign s2 = 1 -> Some (S_Int (Z.fdiv s1 s2))
   | _ -> None
 
 let try_write_slice positions dst src =

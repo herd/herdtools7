@@ -43,6 +43,7 @@ let pp_binop : binop -> string = function
   | BEQ -> "BEQ"
   | BOR -> "BOR"
   | DIV -> "DIV"
+  | DIVRM -> "DIVRM"
   | EOR -> "EOR"
   | EQ_OP -> "EQ_OP"
   | GT -> "GT"
