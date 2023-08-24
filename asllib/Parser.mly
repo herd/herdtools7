@@ -438,7 +438,7 @@ let storage_keyword ==
 let pass == { S_Pass }
 let unimplemented_stmt(x) == x ; pass
 
-let assign(x, y) == ~=x ; EQ ; ~=y ; <S_Assign>
+let assign(x, y) == ~=x ; EQ ; ~=y ; { S_Assign (x,y,V1) }
 
 let direction == | TO; { AST.Up } | DOWNTO; { AST.Down }
 
@@ -467,7 +467,8 @@ let stmt ==
       | RETURN; ~=ioption(expr);                             < S_Return >
       | x=IDENTIFIER; args=plist(expr); ~=nargs;             < S_Call   >
       | ASSERT; e=expr;                                      < S_Assert >
-      | ~=lexpr; EQ; ~=expr;                                 < S_Assign >
+      | le=lexpr; EQ; e=expr;
+          {  S_Assign (le,e,V1) }
       | ~=local_decl_keyword; ~=decl_item; EQ; ~=some(expr); < S_Decl   >
       | VAR; ldi=decl_item; e=ioption(EQ; expr);             { S_Decl (LDK_Var, ldi, e) }
       | REPEAT; ~=stmt_list; UNTIL; ~=expr;                  < S_Repeat >

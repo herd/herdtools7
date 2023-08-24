@@ -197,7 +197,7 @@ let rec use_s acc s =
   | S_Pass | S_Return None -> acc
   | S_Then (s1, s2) -> use_s (use_s acc s1) s2
   | S_Assert e | S_Return (Some e) -> use_e acc e
-  | S_Assign (le, e) -> use_le (use_e acc e) le
+  | S_Assign (le, e, _) -> use_le (use_e acc e) le
   | S_Call (x, args, named_args) ->
       let acc = ISet.add x acc in
       let acc = use_fields acc named_args in
@@ -360,6 +360,16 @@ module Infix = struct
   let ( ~$ ) i = L_Int (Z.of_int i)
   let ( !$ ) i = expr_of_int i
 end
+
+let lid_of_lexpr =
+  let rec tr le =
+    match le.desc with
+    | LE_Ignore -> LDI_Ignore None
+    | LE_Var x -> LDI_Var (x, None)
+    | LE_TupleUnpack les ->
+       LDI_Tuple (List.map tr les,None)
+    | _ -> raise Exit  in
+  fun le -> try Some (tr le) with Exit -> None
 
 let expr_of_lexpr : lexpr -> expr =
   let rec aux le =
