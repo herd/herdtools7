@@ -97,6 +97,37 @@ module Make (O:Arch_litmus.Config)(V:Constant.S) = struct
 
   include HardwareExtra.No
 
-  module GetInstr = GetInstr.No(struct type instr=instruction end)
+  module GetInstr = struct
+
+      type t = instruction
+
+      let self_instrs = [Pnop; ]
+
+      let lower_instr i = Misc.lowercase (dump_instruction i)
+
+      let instr_name i =
+        MyName.name_as_symbol (Misc.skip_spaces (lower_instr i))
+
+      let fun_name i = Printf.sprintf "get%s" (instr_name i)
+
+      let dump_instr dump = function
+        | Constant.Instruction i -> instr_name i
+        | v -> dump v
+
+      module Make(O:Indent.S) = struct
+      let dump i =
+        O.f "static ins_t %s(void) {" (fun_name i) ;
+        O.oi "ins_t r = 0;" ;
+        O.oi "asm __volatile__ (" ;
+        O.fii "%S" "nop\n\t" ;
+        O.oii ":" ;
+        O.oii ":" ;
+        O.oii ": \"cc\", \"memory\"" ;
+        O.o ");" ;
+        O.oi "return r;" ;
+        O.o "}" ;
+        O.o ""
+    end
+  end
 
 end

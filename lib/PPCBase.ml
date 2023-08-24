@@ -342,23 +342,21 @@ let pp_cond cond = match cond with
 | Lt -> "lt" | Ge -> "ge"
 | Gt -> "gt" | Le -> "le"
 
-open MachSize
-
 let memo_load = function
-  | Byte -> "lbz"
-  | Short -> "lhz"
-  | Word -> "lwz"
-  | Quad -> "ld"
-  | S128 -> assert false
+  | MachSize.Byte -> "lbz"
+  | MachSize.Short -> "lhz"
+  | MachSize.Word -> "lwz"
+  | MachSize.Quad -> "ld"
+  | MachSize.S128 -> assert false
 
 let memo_loadx sz = memo_load sz ^ "x"
 
 let memo_store = function
-  | Byte -> "stb"
-  | Short -> "sth"
-  | Word -> "stw"
-  | Quad -> "std"
-  | S128 -> assert false
+  | MachSize.Byte -> "stb"
+  | MachSize.Short -> "sth"
+  | MachSize.Word -> "stw"
+  | MachSize.Quad -> "std"
+  | MachSize.S128 -> assert false
 
 let memo_storex sz = memo_store sz ^ "x"
 
@@ -655,7 +653,9 @@ let map_addrs _f ins = ins
 
 (* Go back to 32bits mode *)
 
-let norm_ins ins = match ins with
+let norm_ins ins =
+  let open MachSize in
+  match ins with
   | Pload(Quad,r1,cst,r2) -> Pload(Word,r1,cst,r2)
   | Ploadx(Quad,r1,r2,r3) -> Ploadx(Word,r1,r2,r3)
   | Plwax(Quad,r1,r2,r3) -> Plwax(Word,r1,r2,r3)
@@ -900,7 +900,7 @@ let r0 = Ireg GPR0
 (* LWZ, a convenience *)
 let lwz regs k =  match regs with
 | [r; addr] ->
-    Instruction (Pload (Word,r,0,addr))::k
+    Instruction (Pload (MachSize.Word,r,0,addr))::k
 | _  -> Warn.fatal "LWZ macros takes two reg arguments (tgt,address)"
 
 (* FNO *)
@@ -966,7 +966,7 @@ let lock regs k = match regs with
     let atom = Label.next_label "ATO" in
     Instruction (Pb atom)::
     Label (loop,Nop)::
-    Instruction (Pload (Word,sym,0,addr))::
+    Instruction (Pload (MachSize.Word,sym,0,addr))::
     Instruction (Pcmpwi (0,sym,0))::
     Instruction (Pcmplwi (0,sym,0))::
     Instruction (Pbcc (Ne,loop))::
@@ -988,7 +988,7 @@ let unlock regs k = match regs with
     Instruction (Plwsync)::
     Instruction (Pli (sym,0))::
     Instruction (Plis (sym,0))::
-    Instruction (Pstore (Word,sym,0,addr))::
+    Instruction (Pstore (MachSize.Word,sym,0,addr))::
     k
 | _ -> Warn.fatal "UNLOCK takes one reg argument (address)"
 
@@ -998,13 +998,13 @@ let setflag regs k = match regs with
     Instruction (Plwsync)::
     Instruction (Pli (sym,1))::
     Instruction (Plis (sym,1))::
-    Instruction (Pstore (Word,sym,0,addr))::k
+    Instruction (Pstore (MachSize.Word,sym,0,addr))::k
 | _ -> Warn.fatal "SF takes one reg argument (address)"
 
 let readflag regs k =  match regs with
 | [r; addr] ->
     let next = Label.next_label "NEXT" in
-    Instruction (Pload (Word,r,0,addr))::
+    Instruction (Pload (MachSize.Word,r,0,addr))::
     Instruction (Pcmpw (0,r,r))::
     Instruction (Pbcc (Ne,next))::
     Label (next,Nop)::
@@ -1015,7 +1015,7 @@ let readflagloop regs k = match regs with
 | [addr] ->
     let loop = Label.next_label "LOOP" in
     Label (loop,Nop)::
-    Instruction (Pload (Word,sym,0,addr))::
+    Instruction (Pload (MachSize.Word,sym,0,addr))::
     Instruction (Pcmpwi (0,sym,0))::
     Instruction (Pcmplwi (0,sym,0))::
     Instruction (Pbcc (Eq,loop))::
@@ -1043,4 +1043,10 @@ let get_id_and_list _i = Warn.fatal "get_id_and_list is only for Bell"
 
 let hash_pteval _ = assert false
 
-module Instr = Instr.No(struct type instr = instruction end)
+module Instr =
+  Instr.WithNop
+    (struct
+      type instr = instruction
+      let nop = Pnop
+      let compare = compare
+    end)
