@@ -19,6 +19,7 @@ type t =
   | Precise of Precision.t
   | S128 (* 128 bit signed ints*)
   | Mixed (* Ignored *)
+  | Vmsa  (* Checked *)
 
 val tags : string list
 val parse : string -> t option
