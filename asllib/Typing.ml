@@ -1433,6 +1433,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         in
         let catchers = List.map (annotate_catcher env return_type) catchers in
         (S_Try (s', catchers, otherwise) |> here, env)
+    | S_Debug e ->
+       let _t_e, e = annotate_expr env e in
+       (S_Debug e |> here, env)
 
   and annotate_catcher env return_type (name_opt, ty, stmt) =
     let+ () = check_structure_exception ty env ty in

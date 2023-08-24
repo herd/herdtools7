@@ -726,6 +726,12 @@ module Make (B : Backend.S) (C : Config) = struct
     | S_Decl (_dlk, ldi, None) ->
         let**| env = eval_local_decl s ldi env None in
         continue env
+    | S_Debug e ->
+        let* v = eval_expr_sef env e in
+        let () =
+          Format.eprintf "@[@<2>%a:@ @[%a@]@ ->@ %s@]@."
+            PP.pp_pos e PP.pp_expr e (B.debug_value v) in
+        continue env
 
   and eval_block env stm =
     let block_env = IEnv.push_scope env in

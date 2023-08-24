@@ -65,7 +65,8 @@ let make_ldi_tuple xs ty =
   ------------------------------------------------------------------------- *)
 
 %token AND ARRAY ARROW AS ASSERT BAND BEGIN BEQ BIT BITS BNOT BOOLEAN BOR CASE
-%token CATCH COLON COLON_COLON COMMA CONCAT CONFIG CONSTANT DIV DO DOT DOWNTO
+%token CATCH COLON COLON_COLON COMMA CONCAT CONFIG CONSTANT
+%token DEBUG DIV DO DOT DOWNTO
 %token ELSE ELSIF END ENUMERATION EOF EOR EQ EQ_OP EXCEPTION FOR FUNC GEQ
 %token GETTER GT IF IMPL IN INTEGER LBRACE LBRACKET LEQ LET LPAR LT MINUS MOD
 %token MUL NEQ NOT OF OR OTHERWISE PASS PLUS PLUS_COLON POW PRAGMA RBRACE
@@ -467,6 +468,7 @@ let stmt ==
       | RETURN; ~=ioption(expr);                             < S_Return >
       | x=IDENTIFIER; args=plist(expr); ~=nargs;             < S_Call   >
       | ASSERT; e=expr;                                      < S_Assert >
+      | DEBUG; e=expr;                                       < S_Debug >
       | le=lexpr; EQ; e=expr;
           {  S_Assign (le,e,V1) }
       | ~=local_decl_keyword; ~=decl_item; EQ; ~=some(expr); < S_Decl   >
