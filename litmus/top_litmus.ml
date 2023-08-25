@@ -228,8 +228,13 @@ end = struct
           Warn.user_error
             "variant %s does not apply to arch %s"
             (Variant_litmus.pp v)
-            (Archs.pp a)
-
+            (Archs.pp a) ;
+        let v = Variant_litmus.Vmsa in
+        if O.variant v && O.mode != Mode.Kvm then
+          Warn.user_error
+            "(optional) variant %s not compatible with mode %s"
+            (Variant_litmus.pp v)
+            (Mode.pp O.mode)
 
       let limit_ok nprocs = match O.avail with
         | None|Some 0 -> true
