@@ -213,6 +213,7 @@ let rec use_s acc s =
   | S_Try (s, catchers, None) -> use_catchers (use_s acc s) catchers
   | S_Try (s, catchers, Some s') ->
       use_catchers (use_s (use_s acc s') s) catchers
+  | S_Debug e -> use_e acc e
 
 and use_case acc { desc = _p, stmt; _ } = use_s acc stmt
 and use_le acc _le = acc

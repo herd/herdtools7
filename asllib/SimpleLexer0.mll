@@ -62,6 +62,7 @@ let names_to_tokens = [
   ( "case", CASE );
   ( "catch", CATCH );
   ( "constant", CONSTANT );
+  ( "DEBUG", DEBUG );
   ( "do", DO );
   ( "downto", DOWNTO );
   ( "else", ELSE );
@@ -109,6 +110,7 @@ let string_of_token = function
   | CATCH -> "catch"
   | CONSTANT -> "constant"
   | CONSTRAINED_UNPRED -> "CONSTRAINED_UNPREDICTABLE"
+  | DEBUG -> "DEBUG"
   | DIV -> "DIV"
   | DO -> "do"
   | DOWNTO -> "downto"

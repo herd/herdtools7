@@ -52,6 +52,7 @@
 %token COMMA
 %token CONSTANT
 %token CONSTRAINED_UNPRED
+%token DEBUG
 %token DEDENT
 %token DIV
 %token DO
@@ -489,6 +490,7 @@ let simple_stmt ==
     | ~=qualident; ~=pared(clist(expr)); ~=nargs; < AST.S_Call >
     | RETURN; ~=ioption(expr);                    < AST.S_Return >
     | ASSERT; ~=expr;                             < AST.S_Assert >
+    | DEBUG; ~=expr;                              < AST.S_Debug >
 
     | unimplemented_stmts (
       | UNPREDICTABLE; ioption(pared(<>)); <>
