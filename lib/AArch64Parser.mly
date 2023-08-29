@@ -1109,10 +1109,16 @@ instr:
 /* Special handling for ASR/LSL/LSR operation */
 | TOK_ASR xreg COMMA xreg COMMA kr
   { I_OP3 (V64, ASR, $2, $4, $6, S_NOEXT) }
+| TOK_ASR wreg COMMA wreg COMMA kr
+  { I_OP3 (V32, ASR, $2, $4, $6, S_NOEXT) }
 | TOK_LSL xreg COMMA xreg COMMA kr
   { I_OP3 (V64, LSL, $2, $4, $6, S_NOEXT) }
+| TOK_LSL wreg COMMA wreg COMMA kr
+  { I_OP3 (V32, LSL, $2, $4, $6, S_NOEXT) }
 | TOK_LSR xreg COMMA xreg COMMA kr
   { I_OP3 (V64, LSR, $2, $4, $6, S_NOEXT) }
+| TOK_LSR wreg COMMA wreg COMMA kr
+  { I_OP3 (V32, LSR, $2, $4, $6, S_NOEXT) }
 | SXTW xreg COMMA wreg
   { I_SXTW ($2,$4) }
 | SBFM xreg COMMA xreg COMMA k COMMA k

@@ -177,6 +177,14 @@ let asl_generic_parser version lexer lexbuf =
   | Error e -> raise (Misc.Fatal (Asllib.Error.error_to_string e))
   | Ok ast -> ([ (0, None, MiscParser.Main) ], [ [ Instruction ast ] ], [])
 
+let stmts_from_string s =
+  let open Asllib in
+  let lexbuf = Lexing.from_string s in
+  try Parser.stmts Lexer.token lexbuf
+  with e ->
+    Warn.fatal
+      "Internal parsing of \"%s\" failed with %s" s (Printexc.to_string e)
+
 module Instr = Instr.No (struct
   type instr = instruction
 end)

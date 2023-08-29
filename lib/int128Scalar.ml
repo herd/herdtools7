@@ -56,6 +56,7 @@ let logxor = Int128.logxor
 let logand = Int128.logand
 let logor = Int128.logor
 let div = Int128.div
+let rem = Int128.rem
 let mul = Int128.mul
 let sub = Int128.sub
 let add = Int128.add

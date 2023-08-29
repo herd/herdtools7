@@ -47,6 +47,7 @@ let add (_,x1) (_,x2) = false, Uint128.add x1 x2
 let sub (_,x1) (_,x2) = false, Uint128.sub x1 x2
 let mul (_,x1) (_,x2) = false, Uint128.mul x1 x2
 let div (_,x1) (_,x2) = false, Uint128.div x1 x2
+let rem (_,x1) (_,x2) = false, Uint128.rem x1 x2
 let logor (_,x1) (_,x2) = false, Uint128.logor x1 x2
 let logand (_,x1) (_,x2) = false, Uint128.logand x1 x2
 let logxor (_,x1) (_,x2) = false, Uint128.logxor x1 x2

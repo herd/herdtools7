@@ -21,7 +21,7 @@
 (**********)
 
 type 'aop op =
-  | Add | Sub | Mul | Div
+  | Add | Sub | Mul | Div | Rem
   | And | Or | Xor | Nor
   | AndNot2
 (* Arithmetic shift right *)

@@ -73,23 +73,19 @@ let add s1 s2 =
   | _ ->
       Warn.fatal "ASLScalar invalid op: %s add %s" (pp false s1) (pp false s2)
 
-let sub s1 s2 =
+let zop pp_op op s1 s2 =
   match (s1, s2) with
-  | S_Int i1, S_Int i2 -> S_Int (Z.sub i1 i2)
+  | S_Int i1, S_Int i2 -> S_Int (op i1 i2)
   | _ ->
-      Warn.fatal "ASLScalar invalid op: %s sub %s" (pp false s1) (pp false s2)
+      Warn.fatal "ASLScalar invalid op: %s %s %s"
+        pp_op
+        (pp false s1)
+        (pp false s2)
 
-let mul s1 s2 =
-  match (s1, s2) with
-  | S_Int i1, S_Int i2 -> S_Int (Z.mul i1 i2)
-  | _ ->
-      Warn.fatal "ASLScalar invalid op: %s mul %s" (pp false s1) (pp false s2)
-
-let div s1 s2 =
-  match (s1, s2) with
-  | S_Int i1, S_Int i2 -> S_Int (Z.div i1 i2)
-  | _ ->
-      Warn.fatal "ASLScalar invalid op: %s div %s" (pp false s1) (pp false s2)
+let sub = zop "sub" Z.sub
+and mul = zop "mul" Z.mul
+and div = zop "div" Z.div
+and rem = zop "rem" Z.rem
 
 let logor s1 s2 =
   match (s1, s2) with

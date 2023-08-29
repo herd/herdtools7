@@ -101,7 +101,32 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
       | LE -> 0b1101
       | AL -> 0b1111 (* Also possible [0b1110] *)
 
+    let variant_raw v = AArch64Base.tr_variant v |> MachSize.nbits
+
+    let unalias ii =
+      let open AArch64Base in
+      match ii.A.inst with
+      | I_SXTW (rd,rn) ->
+         { ii with A.inst = I_SBFM (V64,rd,rn,0,31) }
+      | I_OP3 (V64|V32 as v,LSL,rd,rn,K i,S_NOEXT) ->
+         let sz = variant_raw v-1 in
+         let imms = sz-i in
+         let immr = imms+1 in
+         { ii with A.inst = I_UBFM (v,rd,rn,immr,imms) }
+      | I_OP3 (V64|V32 as v,LSR,rd,rn,K i,S_NOEXT) ->
+         let sz = variant_raw v-1 in
+         let imms = sz in
+         let immr = i in
+         { ii with A.inst = I_UBFM (v,rd,rn,immr,imms) }
+      | I_OP3 (V64|V32 as v,ASR,rd,rn,K i,S_NOEXT) ->
+         let sz = variant_raw v-1 in
+         let imms = sz in
+         let immr = i in
+         { ii with A.inst = I_SBFM (v,rd,rn,immr,imms) }
+      | _ -> ii
+
     let decode_inst ii =
+      let ii = unalias ii in
       let open Asllib.AST in
       let with_pos desc = Asllib.ASTUtils.add_dummy_pos desc in
       let ( ^= ) x e =
@@ -112,7 +137,6 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
       let litb b = lit (L_Bool b) in
       let litbv v i = lit (L_BitVector (Asllib.Bitvector.of_int_sized v i)) in
       let var x = E_Var x |> with_pos in
-      let variant_raw v = AArch64Base.tr_variant v |> MachSize.nbits in
       let variant v = variant_raw v |> liti in
       let cond c = tr_cond c |> liti in
       let stmt = Asllib.ASTUtils.stmt_from_list in
@@ -232,9 +256,43 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
                   "n" ^= liti 31;
                   "imm" ^= litbv datasize k;
                   "datasize" ^= liti datasize;
-                  "op" ^= logical_op EOR;
-                  "setflags" ^= setflags EOR;
+                  "op" ^= logical_op ORR;
+                  "setflags" ^= setflags ORR;
                 ] )
+      | I_UBFM (v,rd,rn,immr,imms)
+      | I_SBFM (v,rd,rn,immr,imms) ->
+         let datasize = variant_raw v in
+         let bitvariant =
+           let open AArch64Base in
+           match v with
+           | V64 -> 1
+           | V32 -> 0
+           | V128 -> assert false in
+         let extend =
+           match ii.A.inst with
+           | I_SBFM _ -> true
+           | I_UBFM _ -> false
+           | _ -> assert false in
+         let added =
+           ASLBase.stmts_from_string
+              "let r = UInt(immr);\n\
+               let s = UInt(imms);\n\
+               var wmask : bits(datasize);\n\
+               var tmask : bits(datasize) ;\n\
+               (wmask,tmask) = DecodeBitMasks(N, imms, immr, FALSE, datasize);"
+         in
+         Some
+           ("integer/bitfield.opn",
+            stmt
+              ([ "d" ^= reg rd;
+                "n" ^= reg rn;
+                "immr" ^= litbv 6 immr;
+                "imms" ^= litbv 6 imms;
+                "N" ^= litbv 1 bitvariant;
+                "datasize" ^= liti datasize;
+                "inzero" ^= litb true;
+                "extend" ^= litb extend;
+               ]@[added]))
       | I_OP3 (v, op, rd, rn, RV (v', rm), S_NOEXT) when v = v' -> (
           match op with
           | AND | ANDS | BIC | BICS | EOR | ORN | ORR ->
@@ -309,7 +367,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
             | S_UXTW -> "ExtendType_UXTW"
             | S_LSL _ -> "ExtendType_UXTX"
             | _ ->
-                Warn.fatal "Unsupported barrel shif† for LDR: %s."
+                Warn.fatal "Unsupported barrel shift for LDR: %s."
                   (AArch64Base.pp_barrel_shift "" barrel_shift string_of_int)
           in
           let shift =
@@ -633,6 +691,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
               | Sub -> Sub
               | Mul -> Mul
               | Div -> Div
+              | Rem -> Rem
               | And -> And
               | Or -> Or
               | Xor -> Xor

@@ -852,6 +852,7 @@ module
   | Sub -> sub
   | Mul -> binop op (Cst.Scalar.mul)
   | Div -> binop op (Cst.Scalar.div)
+  | Rem -> binop op (Cst.Scalar.rem)
   | And -> andop
   | ASR ->
           binop op (fun x y -> Cst.Scalar.shift_right_arithmetic x (Cst.Scalar.to_int y))

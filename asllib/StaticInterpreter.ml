@@ -26,6 +26,7 @@ let binop_values pos op v1 v2 =
   | MUL, L_Int v1, L_Int v2 -> L_Int (Z.mul v1 v2)
   | MINUS, L_Int v1, L_Int v2 -> L_Int (Z.sub v1 v2)
   | DIV, L_Int v1, L_Int v2 -> L_Int (Z.div v1 v2)
+  | MOD, L_Int v1, L_Int v2 -> L_Int (Z.rem v1 v2)
   | POW, L_Int v1, L_Int v2 -> L_Int (Z.pow v1 (Z.to_int v2))
   (* int -> int -> bool*)
   | EQ_OP, L_Int v1, L_Int v2 -> L_Bool (Z.equal v1 v2)
@@ -60,7 +61,7 @@ let binop_values pos op v1 v2 =
   | AND, L_BitVector b1, L_BitVector b2 -> L_BitVector (Bitvector.logand b1 b2)
   | EOR, L_BitVector b1, L_BitVector b2 -> L_BitVector (Bitvector.logxor b1 b2)
   (* TODO *)
-  | (MOD | SHL | SHR), _, _ ->
+  | ( SHL | SHR), _, _ ->
       fatal_from pos
         (Error.NotYetImplemented ("Evaluation of " ^ PP.binop_to_string op))
   (* Failure *)
