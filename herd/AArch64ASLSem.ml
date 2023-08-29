@@ -123,7 +123,19 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
          let imms = sz in
          let immr = i in
          { ii with A.inst = I_SBFM (v,rd,rn,immr,imms) }
+      | I_OP3 (v, ((ADD|ADDS|SUB|SUBS) as op), rd, rn, K k,ext)
+           when k < 0 ->
+         let k = -k
+         and op =
+           match op with
+           | ADD -> SUB
+           | SUB -> ADD
+           | ADDS -> SUBS
+           | SUBS -> ADDS
+           | _ -> assert false in
+         { ii with A.inst = I_OP3 (v, op, rd, rn, K k,ext) }
       | _ -> ii
+
 
     let decode_inst ii =
       let ii = unalias ii in
@@ -323,6 +335,26 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
                  "sub_op" ^= subop op;
                  "setflags" ^= setflags op;])
           | ASR | LSL | LSR -> None)
+      | I_OP3
+          (v, ((ADD|ADDS|SUB|SUBS) as op), rd, rn, K k,
+           (S_NOEXT|S_LSL (0|12) as ext)) ->
+         let datasize = variant_raw v in
+         let k =
+           match ext  with
+           | S_LSL s -> k lsl s
+           | _ -> k in
+         Some
+           ( "integer/arithmetic/add-sub/immediate.opn",
+             stmt
+               [
+                 "d" ^= reg rd;
+                 "n" ^= reg rn;
+                 "imm" ^= litbv datasize k;
+                 "datasize" ^= liti datasize;
+                 "sub_op" ^= subop op;
+                 "setflags" ^= setflags op;
+           ] )
+
       | I_OP3 (v, op, rd, rn, K k, S_NOEXT) -> (
           let datasize = variant_raw v in
           match op with

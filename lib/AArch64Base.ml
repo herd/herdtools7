@@ -1981,7 +1981,7 @@ let get_next =
 (* Check instruction validity, beyond parsing *)
 let mask12 = (1 lsl 12)-1
 
-let is_12bits k = k land mask12 = k
+let is_12bits_unsigned k = k land mask12 = k
 
 let is_valid i =
   match i with
@@ -1989,7 +1989,13 @@ let is_valid i =
   | I_OP3 (_,(ADD|SUB),ZR,_,K _,_)
     -> false
   | I_OP3 (_,(ADD|SUB|ADDS|SUBS),_,_,K k,(S_NOEXT|S_LSL (0|12)))
-    -> is_12bits (abs k)
+    ->
+(*
+ * Using either ADD or SUB the immediate constant size is 12 bits
+ *  unsigned + sign. In other words, sign is implemented by selecting
+ *  the adequate  instruction and the immediate constant is unsigned.
+ *)
+     is_12bits_unsigned (abs k)
   | I_OP3 (_,(ADD|SUB|ADDS|SUBS),_,_,K _,_)
     -> false
   | _ -> true
