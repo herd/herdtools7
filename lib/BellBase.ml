@@ -227,6 +227,8 @@ let do_dump_instruction pk i = match i with
 
 let dump_instruction i = do_dump_instruction (sprintf "%i") i
 
+let is_valid _ = true
+
 include Pseudo.Make
     (struct
       type ins = instruction

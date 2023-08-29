@@ -682,6 +682,8 @@ let rec get_next = function
     | I_JCC (_,lbl) -> [Label.Next; Label.To lbl]
     | I_LOCK ins -> get_next ins
 
+let is_valid _ = true
+
 include Pseudo.Make
           (struct
             type ins = instruction

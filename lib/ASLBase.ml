@@ -131,6 +131,8 @@ let map_addrs _ i = i
 let norm_ins i = i
 let get_next _ = assert false
 
+let is_valid _ = true
+
 include Pseudo.Make (struct
   type ins = instruction
   type pins = parsedInstruction

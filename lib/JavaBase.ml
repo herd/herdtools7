@@ -168,6 +168,8 @@ let map_addrs _f ins              = ins
 let norm_ins ins                  = ins
 let get_next _ins                 = Warn.fatal "Java get_next not implemented"
 
+let is_valid _ = true
+
 include Pseudo.Make
   (struct
     type ins      = instruction

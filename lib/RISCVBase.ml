@@ -430,6 +430,8 @@ let get_next = function
   | StoreConditional (_, _, _, _, _)|FenceIns _|Amo _
     -> [Label.Next;]
 
+let is_valid _ = true
+
 include Pseudo.Make
     (struct
       type ins = instruction
