@@ -1,0 +1,8 @@
+AArch64 SXTW01
+{
+int 0:X0=0xffffffff;
+}
+  P0                ;
+ SXTW X1,W0         ;
+
+forall 0:X1=0xffffffffffffffff;

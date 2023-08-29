@@ -1,0 +1,10 @@
+Test SXTW01 Required
+States 1
+0:X1=-1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=-1)
+Observation SXTW01 Always 1 0
+Hash=13c7e8d148852e3009ca22a331457e59
+
