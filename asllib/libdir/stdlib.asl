@@ -46,14 +46,23 @@ end
 
 // Externals
 
+func ReplicateBit(isZero : boolean, N : integer) => bits(N)
+begin
+  return if isZero then Zeros(N) else Ones(N);
+end
+
 func Replicate{M}(x: bits(M), N: integer) => bits(M*N)
 begin
-  var r: bits(M*N) = Zeros(M*N);
-  for i=0 to N-1 do
-    var t: bits(M*N) = [Zeros(((N-1)-i)*M), x, Zeros(i*M)];
-    r = r OR t;
+  if M == 1 then
+    return ReplicateBit(IsZero(x),N);
+  else
+    var r: bits(M*N) = Zeros(M*N);
+    for i=0 to N-1 do
+      var t: bits(M*N) = [Zeros(((N-1)-i)*M), x, Zeros(i*M)];
+      r = r OR t;
+    end
+    return r;
   end
-  return r;
 end
 
 func Len{N}(x :: bits(N)) => integer {N}
