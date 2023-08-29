@@ -1,0 +1,10 @@
+AArch64 ADD01
+{
+0:X0=1;
+}
+  P0                ;
+ ADD W0,W0,#4095    ;
+ ADD W0,W0,#-4095   ;
+ ADD W0,W0,#1, LSL 12 ;
+ ADD W0,W0,#-1, LSL 12 ;
+forall 0:X0=1
