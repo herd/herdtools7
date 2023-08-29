@@ -1,0 +1,10 @@
+AArch64 STR03
+{
+int t[2] = { 1, 2 };
+0:X0=t;
+}
+  P0                 ;
+ MOV W1,#4           ;
+ MOV W2,3            ;
+ STR W2,[X0,W1,SXTW] ;
+forall t = { 1,3 }

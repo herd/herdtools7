@@ -1,0 +1,10 @@
+Test A252 Required
+States 1
+0:X3=-1; 0:X4=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X3=-1 /\ 0:X4=0)
+Observation A252 Always 1 0
+Hash=565b4de4a429ef6a6c183798a0040922
+

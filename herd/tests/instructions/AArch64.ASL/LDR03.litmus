@@ -1,0 +1,9 @@
+AArch64 LDR03
+{
+int t[2] = { 1, 2 };
+0:X0=t;
+}
+  P0                 ;
+ MOV W1,#4           ;
+ LDR W2,[X0,W1,SXTW] ;
+forall 0:X2=2

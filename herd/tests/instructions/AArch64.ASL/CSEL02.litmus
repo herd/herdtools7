@@ -5,11 +5,10 @@ AArch64 CSEL02
 int64_t 0: X1 = 3;
 int64_t 0: X2 = 4;
 int64_t 0: X8 = 8;
-int64_t 0: X9 = 9
 }
 
 P0 ;
-CMP X8, X9;
+CMP X8, #9;
 CSEL X3, X1, X2, MI ;
 
 forall (0: X3 = 3)

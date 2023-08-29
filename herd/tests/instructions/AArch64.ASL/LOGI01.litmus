@@ -1,0 +1,11 @@
+AArch64 LOGI01
+{
+}
+  P0               ;
+ ORR W0,WZR,#3     ;
+ ORR W0,W0,#4096   ;
+ ORR W0,W0,#8192   ;
+ AND W0,W0,#65534  ;
+ EOR W0,W0,#255    ;
+forall 0:X0 = 12541
+ 

@@ -906,8 +906,8 @@ module Make
         (* Operation specific computations
            For specific formulae, see Hacker's Delight, 2-13.*)
         match op with
-        | ADD | EOR | ORR | ORN | SUB | AND | ASR | LSR | LSL | BIC -> None
-        | ANDS | BICS -> Some compute_nz
+        |ADD|EOR|EON|ORR|ORN|SUB|AND|ASR|LSR|LSL|BIC -> None
+        |ANDS|BICS -> Some compute_nz
         | ADDS ->
             let x = make_op Op.ToInteger x res
             and y = make_op Op.ToInteger y (fun _ _ _ -> mzero) in
@@ -1781,7 +1781,7 @@ module Make
 (* Move constant instructions *)
 (******************************)
 
-      let movz sz rd k os ii =
+      let movzn inv sz rd k os ii =
         let open AArch64Base in
         assert (MachSize.is_imm16 k);
         begin match sz, os with
@@ -1795,8 +1795,15 @@ module Make
             Warn.fatal
               "illegal instruction %s"
               (AArch64.dump_instruction (I_MOVZ (sz, rd, k, os)))
-        end
-        >>= fun v -> write_reg_dest rd v ii
+        end >>=
+        begin
+          if inv then M.op1 Op.Inv
+          else M.unitT
+        end >>=
+        fun v -> write_reg_dest rd v ii
+
+      let movz = movzn false
+      and movn = movzn true
 
       let m_movk msk v1 v2 =
         M.op Op.AndNot2 v2 msk >>= M.op Op.Or v1
@@ -2448,6 +2455,8 @@ module Make
             >>= nextSet r1
         | I_MOVZ(var,rd,k,os) ->
            movz var rd k os ii >>= nextSet rd
+        | I_MOVN (var,rd,k,os) ->
+           movn var rd k os ii >>= nextSet rd
         | I_MOVK(var,rd,k,os) ->
             movk var rd k os ii >>= nextSet rd
         | I_ADR (r,tgt) ->
@@ -2558,6 +2567,10 @@ module Make
                     match op with
                     | ADD | ADDS -> fun (v1, v2) -> M.add v1 v2
                     | EOR -> fun (v1, v2) -> M.op Op.Xor v1 v2
+                    | EON ->
+                       fun (v1,v2) ->
+                         M.op1 Op.Inv v2 >>=
+                         fun v2 -> M.op Op.Xor v1 v2
                     | ORR -> fun (v1, v2) -> M.op Op.Or v1 v2
                     | ORN -> fun (v1, v2) -> M.op1 Op.Inv v2
                       >>= fun v2 -> M.op Op.Or v1 v2

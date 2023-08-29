@@ -1,0 +1,15 @@
+AArch64 A252
+(* SUBS test, uses CSETM *)
+
+{
+    0: X1 = 2;
+    0: X2 = 3;
+}
+
+P0              ;
+SUBS W0, W1, W2 ;
+CSETM W3, MI    ; (* Fetch N *)
+CSETM W4, EQ    ; (* Fetch Z *)
+
+forall  (0:X3 = -1 /\ 0:X4 = 0)
+
