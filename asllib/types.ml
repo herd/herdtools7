@@ -15,6 +15,7 @@ let expr_equal = thing_equal expr_equal
 let type_equal = thing_equal type_equal
 let bitwidth_equal = thing_equal bitwidth_equal
 let slices_equal = thing_equal slices_equal
+let bitfield_equal = thing_equal bitfield_equal
 
 (* --------------------------------------------------------------------------*)
 
@@ -110,7 +111,7 @@ let is_primitive ty = not (is_non_primitive ty)
 (* --------------------------------------------------------------------------*)
 
 module Domain = struct
-  module IntSet = Set.Make (Z)
+  module IntSet = Diet.Z
   (* Pretty inefficient. Use diets instead?
      See https://web.engr.oregonstate.edu/~erwig/papers/Diet_JFP98.pdf
      or https://github.com/mirage/ocaml-diet
@@ -129,19 +130,18 @@ module Domain = struct
     | D_Int of int_set
     | D_Bits of int_set  (** The domain of a bitvector is given by its width. *)
 
-  let rec add_interval_to_intset acc bot top =
+  let add_interval_to_intset acc bot top =
     if bot > top then acc
-    else add_interval_to_intset (IntSet.add bot acc) (Z.succ bot) top
+    else
+      let interval = IntSet.Interval.make bot top in
+      IntSet.add interval acc
 
   let pp_int_set f =
     let open Format in
     function
     | AlmostTop -> pp_print_string f "𝕫"
     | Top -> pp_print_string f "ℤ"
-    | Finite set ->
-        fprintf f "@[{@,%a}@]"
-          (PP.pp_print_seq ~pp_sep:pp_print_space Z.pp_print)
-          (IntSet.to_seq set)
+    | Finite set -> fprintf f "@[{@,%a}@]" IntSet.pp set
 
   let pp f =
     let open Format in
@@ -176,7 +176,9 @@ module Domain = struct
            constraint."
 
   let add_constraint_to_intset env acc = function
-    | Constraint_Exact e -> IntSet.add (eval env e) acc
+    | Constraint_Exact e ->
+        let v = eval env e in
+        add_interval_to_intset acc v v
     | Constraint_Range (bot, top) ->
         let bot = eval env bot and top = eval env top in
         add_interval_to_intset acc bot top
@@ -192,7 +194,7 @@ module Domain = struct
                IntSet.empty constraints)
         with StaticEvaluationTop -> AlmostTop)
 
-  let int_set_raise_op op is1 is2 =
+  let int_set_raise_interval_op op is1 is2 =
     match (is1, is2) with
     | Top, _ | _, Top -> Top
     | AlmostTop, _ | _, AlmostTop -> AlmostTop
@@ -201,6 +203,14 @@ module Domain = struct
           (IntSet.fold
              (fun i1 -> IntSet.fold (fun i2 -> IntSet.add (op i1 i2)) is2)
              is1 IntSet.empty)
+
+  let monotone_interval_op op i1 i2 =
+    let open IntSet.Interval in
+    make (op (x i1) (x i2)) (op (y i1) (y i2))
+
+  let anti_monotone_interval_op op i1 i2 =
+    let open IntSet.Interval in
+    make (op (x i1) (y i2)) (op (y i1) (x i2))
 
   let rec int_set_of_bits_width env = function
     | BitWidth_SingleExpr e -> int_set_of_expr env e
@@ -240,18 +250,18 @@ module Domain = struct
         and is2 = int_set_of_expr env e2
         and op =
           match op with
-          | PLUS -> Z.add
-          | MINUS -> Z.sub
-          | MUL -> Z.mul
+          | PLUS -> monotone_interval_op Z.add
+          | MINUS -> anti_monotone_interval_op Z.sub
+          | MUL -> monotone_interval_op Z.mul
           | _ -> assert false
         in
-        int_set_raise_op op is1 is2
+        int_set_raise_interval_op op is1 is2
     | _ ->
-       let () =
-         Format.eprintf
-           "@[<2>Cannot interpret as int set:@ @[%a@]@]@."
-           PP.pp_expr e in
-       assert false
+        let () =
+          Format.eprintf "@[<2>Cannot interpret as int set:@ @[%a@]@]@."
+            PP.pp_expr e
+        in
+        assert false
 
   and of_type env ty =
     match ty.desc with
@@ -300,7 +310,7 @@ module Domain = struct
     | Top, _ -> false
     | _, AlmostTop -> true
     | AlmostTop, _ -> false
-    | Finite is1, Finite is2 -> IntSet.subset is1 is2
+    | Finite is1, Finite is2 -> IntSet.(is_empty (diff is1 is2))
 
   let is_subset d1 d2 =
     match (d1, d2) with
@@ -311,7 +321,8 @@ module Domain = struct
 
   let get_width_singleton_opt = function
     | D_Bits (Finite int_set) ->
-        if IntSet.cardinal int_set = 1 then Some (IntSet.choose int_set)
+        if Z.equal (IntSet.cardinal int_set) Z.one then
+          Some (IntSet.min_elt int_set |> IntSet.Interval.x)
         else None
     | D_Bits _ -> None
     | _ -> failwith "Cannot get width from non-bits domain."
@@ -324,7 +335,7 @@ let is_bits_width_fixed env ty =
   | T_Bits _ -> (
       let open Domain in
       match of_type env ty with
-      | D_Int (Finite int_set) -> IntSet.cardinal int_set = 1
+      | D_Int (Finite int_set) -> IntSet.cardinal int_set = Z.one
       | D_Int Top -> false
       | _ -> failwith "Wrong domain for a bitwidth.")
   | _ -> failwith "Wrong type for some bits."
@@ -344,6 +355,21 @@ let subtypes env t1 t2 =
   match (t1.desc, t2.desc) with
   | T_Named s1, T_Named s2 -> subtypes_names env s1 s2
   | _ -> false
+
+let bitfields_included env bfs1 bfs2 =
+  let rec mem_bfs bfs2 bf1 =
+    match find_bitfield_opt (bitfield_get_name bf1) bfs2 with
+    | None -> false
+    | Some (BitField_Simple _ as bf2) -> bitfield_equal env bf1 bf2
+    | Some (BitField_Nested (name2, slices2, bfs2') as bf2) -> (
+        match bf1 with
+        | BitField_Simple _ -> bitfield_equal env bf1 bf2
+        | BitField_Nested (name1, slices1, bfs1') ->
+            String.equal name1 name2
+            && slices_equal env slices1 slices2
+            && incl_bfs bfs1' bfs2')
+  and incl_bfs bfs1 bfs2 = List.for_all (mem_bfs bfs2) bfs1 in
+  incl_bfs bfs1 bfs2
 
 let rec structural_subtype_satisfies env t s =
   (* A type T subtype-satisfies type S if and only if all of the following
@@ -390,13 +416,7 @@ let rec structural_subtype_satisfies env t s =
       | [], _ -> true
       | _, [] -> false
       | bfs_s, bfs_t ->
-          bitwidth_equal env w_s w_t
-          &&
-          let bf_equal (name_s, slices_s) (name_t, slices_t) =
-            String.equal name_s name_t && slices_equal env slices_s slices_t
-          in
-          let mem_bf bfs_t bf_s = List.exists (bf_equal bf_s) bfs_t in
-          List.for_all (mem_bf bfs_t) bfs_s)
+          bitwidth_equal env w_s w_t && bitfields_included env bfs_s bfs_t)
   | T_Bits _, _ -> false
   (* If S has the structure of an array type with elements of type E then T
      must have the structure of an array type with elements of type E, and T

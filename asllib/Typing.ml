@@ -323,7 +323,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           | Some { args = callee_arg_types; return_type; _ } ->
               if false then
                 Format.eprintf "@[<2>%a:@ No extra arguments for %s@]@."
-                  PP.pp_pos loc name ;
+                  PP.pp_pos loc name;
               ([], name, callee_arg_types, return_type)
         with Error.ASLException _ -> raise error)
   end
@@ -345,6 +345,39 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     match args with
     | None -> None
     | Some args -> if should_reduce_to_call env name then Some args else None
+
+  let disjoint_slices_to_diet loc env slices =
+    let eval env e =
+      match reduce_constants env e with
+      | L_Int z -> Z.to_int z
+      | _ -> fatal_from e @@ Error.UnsupportedExpr e
+    in
+    let module DI = Diet.Int in
+    let one_slice loc env diet slice =
+      let interval =
+        let make x y =
+          if x > y then fatal_from loc @@ Error.OverlappingSlices [ slice ]
+          else DI.Interval.make x y
+        in
+        match slice with
+        | Slice_Single e ->
+            let x = eval env e in
+            make x x
+        | Slice_Range (e1, e2) ->
+            let x = eval env e2 and y = eval env e1 in
+            make x y
+        | Slice_Length (e1, e2) ->
+            let x = eval env e1 and y = eval env e2 in
+            make x (x + y - 1)
+        | Slice_Star (e1, e2) ->
+            let x = eval env e1 and y = eval env e2 in
+            make (x * y) ((x * (y + 1)) - 1)
+      in
+      let new_diet = DI.add interval DI.empty in
+      if DI.is_empty (Diet.Int.inter new_diet diet) then DI.add interval diet
+      else fatal_from loc Error.(OverlappingSlices slices)
+    in
+    List.fold_left (one_slice loc env) Diet.Int.empty slices
 
   (* -------------------------------------------------------------------------
 
@@ -751,14 +784,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         match extra_nargs with
         | [] -> ()
         | _ ->
-           Format.eprintf
-             "@[<2>%a: Adding@ @[{%a}@]@ to call of %s@."
-             PP.pp_pos loc
-             (Format.pp_print_list
-                ~pp_sep:(fun f () -> Format.fprintf f ";@ ")
-                (fun f (n,e) ->
-                  Format.fprintf f "@[%s@ <- %a@]"
-                    n PP.pp_expr e))
+            Format.eprintf "@[<2>%a: Adding@ @[{%a}@]@ to call of %s@."
+              PP.pp_pos loc
+              (Format.pp_print_list
+                 ~pp_sep:(fun f () -> Format.fprintf f ";@ ")
+                 (fun f (n, e) ->
+                   Format.fprintf f "@[%s@ <- %a@]" n PP.pp_expr e))
               extra_nargs name
     in
     let eqs = List.rev_append eqs extra_nargs in
@@ -1021,9 +1052,21 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             | None -> fatal_from e (Error.BadField (field, t_e'))
             | Some t -> (t, E_GetField (e', field) |> here))
         | T_Bits (_, bitfields) -> (
-            match List.assoc_opt field bitfields with
+            match find_bitfield_opt field bitfields with
             | None -> fatal_from e (Error.BadField (field, t_e'))
-            | Some slice -> E_Slice (e', slice) |> here |> annotate_expr env)
+            | Some (BitField_Simple (_field, slices)) ->
+                E_Slice (e', slices) |> here |> annotate_expr env
+            | Some (BitField_Nested (_field, slices, bitfields)) ->
+                let t_e, e =
+                  E_Slice (e', slices) |> here |> annotate_expr env
+                in
+                let t_e =
+                  match t_e.desc with
+                  | T_Bits (width, _bitfields) ->
+                      T_Bits (width, bitfields) |> add_pos_from t_e
+                  | _ -> assert false
+                in
+                (t_e, e))
         | _ -> conflict e [ default_t_bits; T_Record []; T_Exception [] ] t_e')
     | E_GetFields (e', fields) ->
         let t_e', e' = annotate_expr env e' in
@@ -1034,7 +1077,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           | _ -> conflict e [ default_t_bits ] t_e'
         in
         let one_field field =
-          match List.assoc_opt field bitfields with
+          match find_bitfields_slices_opt field bitfields with
           | None -> fatal_from e (Error.BadField (field, t_e'))
           | Some slices -> slices
         in
@@ -1074,8 +1117,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   let rec annotate_lexpr env le t_e =
     let () =
       if false then
-        Format.eprintf "Typing lexpr: @[%a@] to @[%a@]@."
-          PP.pp_lexpr le PP.pp_ty t_e in
+        Format.eprintf "Typing lexpr: @[%a@] to @[%a@]@." PP.pp_lexpr le
+          PP.pp_ty t_e
+    in
     let here x = add_pos_from le x in
     match le.desc with
     | LE_Var x ->
@@ -1091,8 +1135,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 | Some (ty, _) ->
                     (* TODO: check that the keyword is a variable. *)
                     ty
-                | None ->
-                   undefined_identifier le x)
+                | None -> undefined_identifier le x)
           in
           check_can_assign_to le env ty t_e ()
         in
@@ -1150,15 +1193,19 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             in
             let+ () = check_can_assign_to le env t t_e in
             LE_SetField (le', field) |> here
-        | T_Bits (_, bitfields) -> (
-            match List.assoc_opt field bitfields with
-            | None -> fatal_from le (Error.BadField (field, t_le'_struct))
-            | Some slice ->
-                let w = slices_length env slice in
-                let t = T_Bits (BitWidth_SingleExpr w, []) |> here in
-                let+ () = check_can_assign_to le env t t_e in
-                let le = LE_Slice (le', slice) |> here in
-                annotate_lexpr env le t_e)
+        | T_Bits (_, bitfields) ->
+            let slices, bitfields' =
+              match find_bitfield_opt field bitfields with
+              | None -> fatal_from le (Error.BadField (field, t_le'_struct))
+              | Some (BitField_Simple (_field, slices)) -> (slices, [])
+              | Some (BitField_Nested (_field, slices, bitfields')) ->
+                  (slices, bitfields')
+            in
+            let w = slices_length env slices in
+            let t = T_Bits (BitWidth_SingleExpr w, bitfields') |> here in
+            let+ () = check_can_assign_to le env t t_e in
+            let le = LE_Slice (le', slices) |> here in
+            annotate_lexpr env le t_e
         | _ -> conflict le [ default_t_bits; T_Record []; T_Exception [] ] t_e)
     | LE_SetFields (le', fields) ->
         let t_le', _ = expr_of_lexpr le' |> annotate_expr env in
@@ -1170,7 +1217,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           | _ -> conflict le [ default_t_bits ] t_le'
         in
         let one_field field =
-          match List.assoc_opt field bitfields with
+          match find_bitfields_slices_opt field bitfields with
           | None -> fatal_from le (Error.BadField (field, t_le'_struct))
           | Some slices -> slices
         in
@@ -1661,11 +1708,40 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     else
       add_global_storage name t GDK_Constant env |> add_global_constant name v
 
+  let rec check_is_valid_bitfield loc env width bitfield () =
+    let slices = bitfield_get_slices bitfield in
+    let diet = disjoint_slices_to_diet loc env slices in
+    let+ () =
+     fun () ->
+      let x = Diet.Int.min_elt diet |> Diet.Int.Interval.x
+      and y = Diet.Int.max_elt diet |> Diet.Int.Interval.y in
+      if 0 <= x && y < width then ()
+      else fatal_from loc (BadSlices (slices, width))
+    in
+    match bitfield with
+    | BitField_Simple _ -> ()
+    | BitField_Nested (_name, _slices, bitfields') ->
+        let width' = Diet.Int.cardinal diet in
+        check_is_valid_bitfields loc env width' bitfields'
+
+  and check_is_valid_bitfields loc env width bitfields =
+    let check_one declared_names bitfield =
+      let x = bitfield_get_name bitfield in
+      if ISet.mem x declared_names then
+        fatal_from loc (Error.AlreadyDeclaredIdentifier x)
+      else
+        let+ () = check_is_valid_bitfield loc env width bitfield in
+        ISet.add x declared_names
+    in
+    let _declared_names : ISet.t =
+      List.fold_left check_one ISet.empty bitfields
+    in
+    ()
+
   let rec check_is_valid_type loc env ty () =
     match ty.desc with
     (* TODO:
        - check integer constraints are compile-time constants
-       - check bitfields are compile-time constants
        - check array-length are correctly defined
     *)
     | T_Record fields | T_Exception fields ->
@@ -1683,6 +1759,18 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           in
           ()
         in
+        ()
+    | T_Bits (e_width, bitfields) ->
+        let width =
+          match e_width with
+          | BitWidth_SingleExpr e -> (
+              match reduce_constants env e with
+              | L_Int z -> Z.to_int z
+              | _ -> fatal_from loc (UnsupportedExpr e))
+          | _ ->
+              fatal_from loc (NotYetImplemented "Non static bitvector length")
+        in
+        let+ () = fun () -> check_is_valid_bitfields loc env width bitfields in
         ()
     | _ -> ()
 

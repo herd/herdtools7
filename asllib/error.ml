@@ -3,6 +3,7 @@ open AST
 type error_desc =
   | BadField of string * ty
   | BadFields of string list * ty
+  | BadSlices of slice list * int
   | TypeInferenceNeeded
   | UndefinedIdentifier of identifier
   | MismatchedReturnValue of string
@@ -27,6 +28,7 @@ type error_desc =
   | BadReturnStmt of ty option
   | UnexpectedSideEffect of string
   | UncaughtException of string
+  | OverlappingSlices of slice list
 
 type error = error_desc annotated
 
@@ -89,6 +91,11 @@ let pp_error =
           pp_ty ty
           (pp_print_list ~pp_sep:pp_print_space pp_print_string)
           fields
+    | BadSlices (slices, length) ->
+        fprintf f
+          "ASL Typing error: Cannot extract from bitvector of length %d slices \
+           %a."
+          length pp_slice_list slices
     | TypeInferenceNeeded ->
         pp_print_text f
           "ASL Internal error: Interpreter blocked. Type inference needed."
@@ -155,9 +162,12 @@ let pp_error =
           x
     | BadReturnStmt None ->
         fprintf f
-          "ASL Typing error:@ cannot@ return@ something@ from@ a@ procedure@."
+          "ASL Typing error:@ cannot@ return@ something@ from@ a@ procedure."
     | UnexpectedSideEffect s -> fprintf f "Unexpected side-effect: %s" s
     | UncaughtException s -> fprintf f "Uncaught exception: %s" s
+    | OverlappingSlices slices ->
+        fprintf f "ASL Typing error:@ overlapping slices@ @[%a@]." pp_slice_list
+          slices
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \

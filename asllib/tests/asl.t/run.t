@@ -17,16 +17,22 @@ Type-checking errors:
   [1]
 
   $ aslseq duplicate_function_args.asl
-  File duplicate_function_args.asl, line 1, character 0 to line  4, character 3:
+  File duplicate_function_args.asl, line 1, character 0 to line 4, character 3:
   ASL Typing error: cannot declare already declared element "i".
   [1]
 
   $ aslseq duplicate_record_fields.asl
-  File duplicate_record_fields.asl, line 1, character 0 to line  5, character 2:
+  File duplicate_record_fields.asl, line 1, character 0 to line 5, character 2:
   ASL Typing error: cannot declare already declared element "i".
   [1]
 
   $ aslseq duplicate_enumeration_items.asl
   File duplicate_enumeration_items.asl, line 1, characters 0 to 34:
   ASL Typing error: cannot declare already declared element "i".
+  [1]
+
+Bad types:
+  $ aslseq overlapping-slices.asl
+  File overlapping-slices.asl, line 1, character 0 to line 4, character 2:
+  ASL Typing error: overlapping slices 10:0, 3+:2.
   [1]

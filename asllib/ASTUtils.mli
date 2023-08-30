@@ -117,7 +117,7 @@ val constraint_binop :
 (** [constraint_binop PLUS cs1 cs2] is the set of constraints given by the
     element wise application of [PLUS]. *)
 
-(** {1 Masks and slices handling} *)
+(** {1 Fields, masks and slices handling} *)
 
 val mask_from_set_bits_positions : int -> int list -> string
 (** Builds a mask from specified positions. *)
@@ -129,8 +129,22 @@ val slices_to_positions : ('a -> int) -> ('a * 'a) list -> int list
 (** [slices_to_positions as_int slices] evaluates [slices] and returns a list
     of all queried positions in the correct order. *)
 
-val canonical_fields : (String.t * 'a) list -> (String.t * 'a) list
+val canonical_fields : (string * 'a) list -> (string * 'a) list
 (** Sorts the fields of a record to allow an element wise comparison. *)
+
+val bitfield_get_name : bitfield -> string
+(** Returns the name of the bitfield in question. *)
+
+val bitfield_get_slices : bitfield -> slice list
+(** Returns the slices corresponding to this bitfield. *)
+
+val find_bitfield_opt : string -> bitfield list -> bitfield option
+(** [bitfield_find_opt name bfs] is [Some (bf)] if there exists [bf] in [bfs]
+    with [name], [None] otherwise. *)
+
+val find_bitfields_slices_opt : string -> bitfield list -> slice list option
+(** [bitfields_find_slices_opt name bfs] is [Some (slices)] if there exists a
+    bitfield with name [name] and slices [slices]. *)
 
 module Infix : sig
   (** Infix utils. *)
@@ -153,6 +167,7 @@ val literal_equal : literal -> literal -> bool
 val slice_equal : (expr -> expr -> bool) -> slice -> slice -> bool
 val slices_equal : (expr -> expr -> bool) -> slice list -> slice list -> bool
 val type_equal : (expr -> expr -> bool) -> ty -> ty -> bool
+val bitfield_equal : (expr -> expr -> bool) -> bitfield -> bitfield -> bool
 
 val bitwidth_equal :
   (expr -> expr -> bool) -> bits_constraint -> bits_constraint -> bool
@@ -163,10 +178,7 @@ val scope_compare : scope -> scope -> int
 (** {1 Transformers} *)
 
 val lid_of_lexpr : lexpr -> local_decl_item option
-
 val expr_of_lexpr : lexpr -> expr
-
-
 val case_to_conds : stmt -> stmt
 val slice_as_single : slice -> expr
 

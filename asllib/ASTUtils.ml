@@ -23,8 +23,7 @@ module IMap = struct
     let open Format in
     let pp_comma f () = fprintf f ",@ " in
     let pp_one f (name, v) = fprintf f "@[<h>%s:@ @[%a@]@]" name pp_elt v in
-    fprintf f "{@[@,%a@]}"
-      (pp_print_list ~pp_sep:pp_comma pp_one) (bindings t)
+    fprintf f "{@[@,%a@]}" (pp_print_list ~pp_sep:pp_comma pp_one) (bindings t)
 end
 
 let dummy_pos = Lexing.dummy_pos
@@ -184,7 +183,15 @@ and use_ty acc t =
         | BitWidth_ConstrainedFormType t' -> use_ty acc t'
         | BitWidth_Constraints cs -> use_constraints acc cs
       in
-      fold_named_list use_slices acc bit_fields
+      use_bitfields acc bit_fields
+
+and use_bitfields acc bitfields = List.fold_left use_bitfield acc bitfields
+
+and use_bitfield acc = function
+  | BitField_Simple (_name, slices) -> use_slices acc slices
+  | BitField_Nested (_name, slices, bitfields) ->
+      let acc = use_bitfields acc bitfields in
+      use_slices acc slices
 
 and use_constraints acc cs = List.fold_left use_constraint acc cs
 
@@ -350,7 +357,20 @@ and bitwidth_equal eq w1 w2 =
   | _ -> false
 
 and bitfields_equal eq bf1 bf2 =
-  bf1 == bf2 || (list_equal (pair_equal String.equal (slices_equal eq))) bf1 bf2
+  bf1 == bf2 || (list_equal (bitfield_equal eq)) bf1 bf2
+
+and bitfield_equal eq bf1 bf2 =
+  bf1 == bf2
+  ||
+  match (bf1, bf2) with
+  | BitField_Simple (name1, slices1), BitField_Simple (name2, slices2) ->
+      String.equal name1 name2 && slices_equal eq slices1 slices2
+  | ( BitField_Nested (name1, slices1, bf1'),
+      BitField_Nested (name2, slices2, bf2') ) ->
+      String.equal name1 name2
+      && slices_equal eq slices1 slices2
+      && bitfields_equal eq bf1' bf2'
+  | _ -> false
 
 let var_ x = E_Var x |> add_dummy_pos
 let binop op = map2_desc (fun e1 e2 -> E_Binop (op, e1, e2))
@@ -367,9 +387,9 @@ let lid_of_lexpr =
     match le.desc with
     | LE_Ignore -> LDI_Ignore None
     | LE_Var x -> LDI_Var (x, None)
-    | LE_TupleUnpack les ->
-       LDI_Tuple (List.map tr les,None)
-    | _ -> raise Exit  in
+    | LE_TupleUnpack les -> LDI_Tuple (List.map tr les, None)
+    | _ -> raise Exit
+  in
   fun le -> try Some (tr le) with Exit -> None
 
 let expr_of_lexpr : lexpr -> expr =
@@ -567,3 +587,16 @@ let rec is_simple_expr e =
   | E_Record (_, fields) ->
       List.for_all (fun (_name, e) -> is_simple_expr e) fields
   | E_Call _ | E_Slice _ -> false
+
+let bitfield_get_name = function
+  | BitField_Simple (name, _) | BitField_Nested (name, _, _) -> name
+
+let bitfield_get_slices = function
+  | BitField_Simple (_, slices) | BitField_Nested (_, slices, _) -> slices
+
+let has_name name bf = bitfield_get_name bf |> String.equal name
+let find_bitfield_opt name bitfields = List.find_opt (has_name name) bitfields
+
+let find_bitfields_slices_opt name bitfields =
+  try List.find (has_name name) bitfields |> bitfield_get_slices |> Option.some
+  with Not_found -> None
