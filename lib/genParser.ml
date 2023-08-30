@@ -122,9 +122,16 @@ module Make
       List.map (fun (p,code) -> p,expn code)
 
 (* Translation from parsed instruction to internal ones *)
+    let check_and_tr p =
+      let p = A.pseudo_parsed_tr p in
+      if A.pseudo_exists (fun p -> not (A.is_valid p)) p then
+        Warn.user_error "Illegal instruction '%s'"
+          (A.pseudo_dump A.dump_instruction p)
+      else p
+
     let parsed_tr prog =
       List.map
-        (List.map A.pseudo_parsed_tr)
+        (List.map check_and_tr)
         prog
 
 (***********)

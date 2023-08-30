@@ -663,8 +663,7 @@ let get_next = function
   |Pblr|Pmtlr _|Pmflr _|Pmfcr _ -> []
 
 
-(* Macros *)
-
+let is_valid _ = true
 
 include Pseudo.Make
     (struct

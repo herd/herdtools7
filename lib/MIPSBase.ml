@@ -348,6 +348,8 @@ let get_next = function
   | B lbl -> [Label.To lbl]
   | BC (_,_,_,lbl)|BCZ (_,_,lbl) -> [Label.Next; Label.To lbl;]
 
+let is_valid _ = true
+
 include Pseudo.Make
     (struct
       type ins = instruction

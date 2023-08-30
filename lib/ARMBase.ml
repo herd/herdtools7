@@ -545,6 +545,8 @@ let get_next = function
   | I_BX _ -> [Label.Any]
   | I_BEQ lbl|I_BNE lbl|I_CB (_,_,lbl) -> [Label.Next; Label.To lbl]
 
+let is_valid _ = true
+
 include Pseudo.Make
     (struct
       type ins = instruction

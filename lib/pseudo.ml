@@ -46,6 +46,8 @@ module type S = sig
 (* Lifting of fold/map *)
   val pseudo_map : ('a -> 'b) -> 'a kpseudo -> 'b kpseudo
   val pseudo_fold : ('a -> 'b -> 'a) -> 'a -> 'b kpseudo -> 'a
+  val pseudo_exists : ('a -> bool) -> 'a kpseudo -> bool
+  val pseudo_dump : ('a -> string) -> 'a kpseudo -> string
   val pseudo_iter : ('a -> unit) -> 'a kpseudo -> unit
 
 (* Fold over instructions in code *)
@@ -150,6 +152,7 @@ struct
     | Macro (_,_) -> assert false
 
   let pseudo_exists p = pseudo_fold (fun b i -> b || p i) false
+  let pseudo_dump dump = pseudo_fold (fun  _ i -> dump i) ""
   let pseudo_iter f ins = pseudo_fold (fun () ins -> f ins) () ins
 
   let fold_pseudo_code f = List.fold_left (pseudo_fold f)

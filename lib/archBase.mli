@@ -78,6 +78,8 @@ module type S = sig
   (* Normalize instruction (for hashes) *)
   val norm_ins : instruction -> instruction
 
+  (* Check validity of instructions, beyond parsing *)
+  val is_valid : instruction -> bool
 
   include Pseudo.S
    with type ins = instruction
