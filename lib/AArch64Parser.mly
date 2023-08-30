@@ -67,6 +67,7 @@ let check_op3 op e =
 %token LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token LDRSB LDRSH
 %token LD1 LD1R LD2 LD2R LD3 LD3R LD4 LD4R ST1 ST2 ST3 ST4 STUR /* Neon load/store */
+%token DUP
 %token CMP MOV MOVZ MOVN MOVK MOVI ADR MVN
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH LDXP LDAXP
 %token STXR STXRB STXRH STLXR STLXRB STLXRH STXP STLXP
@@ -718,6 +719,9 @@ instr:
 | STUR scalar_regs COMMA LBRK xreg k0_opt RBRK
   { let v,r = $2 in
     I_STUR_SIMD (v, r, $5, $6) }
+| DUP vreg COMMA wxreg
+  { let v,r = $4 in
+    I_DUP ($2 , v, r) }
 | MOV vreg INDEX COMMA vreg INDEX
   { I_MOV_VE ($2, $3, $5, $6) }
 | MOV vreg INDEX COMMA wxreg

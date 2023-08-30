@@ -2451,6 +2451,10 @@ module Make
             stxr (bh_to_sz bh) t rr rs rd ii
 
         (* Neon operations *)
+        | I_DUP(r1,var,r2) ->
+            !(let sz = tr_variant var  in
+              read_reg_ord_sz sz r2 ii >>=
+              fun v -> write_reg_neon_rep (neon_sz r1) r1 v ii)
         | I_MOV_VE(r1,i1,r2,i2) ->
             !(read_reg_neon_elem false r2 i2 ii >>=
               fun v -> write_reg_neon_elem MachSize.S128 r1 i1 v ii)
