@@ -3,6 +3,7 @@ module ASLPteVal = ASLConstant.PteVal
 module ASLInstr = ASLConstant.Instr
 
 type asl_op =
+  | Divrm
   | SetIndex of int
   | SetField of string
   | Concat
@@ -43,6 +44,7 @@ module ASLArchOp :
   type op1 = asl_op1
 
   let pp_op = function
+    | Divrm -> "DIVRM"
     | SetIndex i -> Printf.sprintf "Set[%d]" i
     | SetField x -> Printf.sprintf "Set[%S]" x
     | Concat -> "Concat"
@@ -87,6 +89,11 @@ module ASLArchOp :
 
   let do_op op c1 c2 =
     match op with
+    | Divrm ->
+        let* s1 = as_concrete c1 in
+        let* s2 = as_concrete c2 in
+        let* s = ASLScalar.try_divrm s1 s2 in
+        return_concrete s
     | SetIndex i ->
         let* vec = as_concrete_vector c1 in
         let* vec' = list_set i c2 vec in

@@ -51,6 +51,8 @@ type binop =
   | BEQ  (** Boolean equivalence *)
   | BOR  (** Boolean or *)
   | DIV  (** Integer division *)
+  | DIVRM
+      (** Inexact integer division, with rounding towards negative infinity. *)
   | EOR  (** Bitvector bitwise exclusive or *)
   | EQ_OP  (** Equality on two base values of same type *)
   | GT  (** Greater than for int or reals *)

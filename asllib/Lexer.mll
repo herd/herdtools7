@@ -41,6 +41,7 @@ let tr_name s = match s with
 | "constant"      -> CONSTANT
 | "debug"|"DEBUG" -> DEBUG
 | "DIV"           -> DIV
+| "DIVRM"         -> DIVRM
 | "do"            -> DO
 | "downto"        -> DOWNTO
 | "else"          -> ELSE

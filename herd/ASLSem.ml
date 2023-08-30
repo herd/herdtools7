@@ -218,6 +218,7 @@ module Make (C : Config) = struct
       | BOR -> M.op Op.Or
       | DIV -> M.op Op.Div
       | MOD -> M.op Op.Rem
+      | DIVRM -> M.op (Op.ArchOp ASLValue.Divrm)
       | EOR -> M.op Op.Xor |> to_bv
       | EQ_OP -> M.op Op.Eq |> to_bool
       | GT -> M.op Op.Gt |> to_bool

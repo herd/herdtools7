@@ -330,6 +330,14 @@ let test_mask () =
       ("0", "x", true);
     ]
 
+let test_of_int_sized () =
+  let left = BV.of_int_sized 64 ~-1 in
+  let right = BV.ones 64 in
+  let () =
+    if _debug then Format.eprintf "Assert %a == %a@." BV.pp_t left BV.pp_t right
+  in
+  assert (BV.equal (BV.of_int_sized 64 ~-1) (BV.ones 64))
+
 let () =
   exec_tests
     [
@@ -345,4 +353,5 @@ let () =
       ("bitvector/concat", test_concat);
       ("bitvector/signed_int64", test_with_int64_signed);
       ("bitvector/masks", test_mask);
+      ("bitvector/of_int_sized", test_of_int_sized);
     ]

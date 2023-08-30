@@ -38,6 +38,9 @@ begin
     assert Log2(2 ^ n) == n;
   end
 
+  assert ((1 << 1)  == 2);
+  // assert ((2 << -1) == 1);
+
   return 0;
 end
 

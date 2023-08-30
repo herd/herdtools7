@@ -259,21 +259,6 @@ let of_string s =
   else ();
   (length, Buffer.contents result)
 
-let of_int_sized length s =
-  let n = length / 8 and m = length mod 8 in
-  let result = Bytes.make (if m = 0 then n else n + 1) char_0 in
-  for i = 0 to n - 1 do
-    let c = (s lsr (8 * i)) land 255 in
-    Bytes.set result i (Char.chr c)
-  done;
-  if m <> 0 then
-    let c = (s lsr (8 * n)) land 255 in
-    Bytes.set result n (Char.chr c)
-  else ();
-  (length, Bytes.unsafe_to_string result)
-
-let _of_int = of_int_sized (Sys.int_size - 1)
-
 let of_int64 s =
   let result = create_data_bytes 64 in
   for i = 0 to 7 do
@@ -296,6 +281,8 @@ let of_z sz z =
   let msk = last_char_mask (if m = 0 then 8 else m) in
   do_rec msk (n - 1);
   (sz, Bytes.unsafe_to_string result)
+
+let of_int_sized sz i = of_z sz (Z.of_int i)
 
 (* --------------------------------------------------------------------------
 
