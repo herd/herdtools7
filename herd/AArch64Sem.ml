@@ -2455,6 +2455,9 @@ module Make
             !(let sz = tr_variant var  in
               read_reg_ord_sz sz r2 ii >>=
               fun v -> write_reg_neon_rep (neon_sz r1) r1 v ii)
+        | I_FMOV_TG(_,r1,_,r2) ->
+            !(read_reg_neon false r2 ii >>=
+              fun v -> write_reg r1 v ii)
         | I_MOV_VE(r1,i1,r2,i2) ->
             !(read_reg_neon_elem false r2 i2 ii >>=
               fun v -> write_reg_neon_elem MachSize.S128 r1 i1 v ii)

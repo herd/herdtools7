@@ -847,6 +847,19 @@ module Make(V:Constant.S)(C:Config) =
           | V64 -> add_q
           | V128 -> assert false) [r2;])}
 
+    let fmov_simd_tg v1 r1 v2 r2 =
+      { empty_ins with
+        memo = sprintf "fmov %s, %s"
+          (match v1 with | V32 -> "^wo0" | V64 -> "^o0" | V128 -> assert false)
+          (print_vecreg v2 "i" 0);
+        inputs = [r2];
+        outputs = [r1];
+        reg_env = ((match v1 with
+          | V32 -> add_w
+          | V64 -> add_q
+          | V128 -> assert false)
+        [r1;]) @ (add_128 [r2;])}
+
     let mov_simd_ve r1 i1 r2 i2 =
       { empty_ins with
         memo = sprintf "mov %s[%i], %s[%i]" (print_simd_reg "i" 0 0 r1) i1 (print_simd_reg "i" 0 1 r2) i2;
@@ -1346,6 +1359,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_STUR_SIMD (v,r1,r2,Some(k1)) -> store_simd "stur" v r1 r2 (K k1) S_NOEXT::k
     | I_STUR_SIMD (v,r1,r2,None) -> store_simd "stur" v r1 r2 (K 0) S_NOEXT::k
     | I_DUP (r1,v,r2) -> dup_simd_v r1 v r2::k
+    | I_FMOV_TG (v1,r1,v2,r2) -> fmov_simd_tg v1 r1 v2 r2::k
     | I_MOV_VE (r1,i1,r2,i2) -> mov_simd_ve r1 i1 r2 i2::k
     | I_MOV_V (r1,r2) -> mov_simd_v r1 r2::k
     | I_MOV_FG (r1,i,v,r2) -> mov_simd_fg r1 i v r2::k

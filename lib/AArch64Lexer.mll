@@ -139,6 +139,7 @@ match name with
 | "dup" | "DUP" -> DUP
 | "movi" | "MOVI" -> MOVI
 | "mvn" | "MVN" -> MVN
+| "fmov" | "FMOV" -> FMOV
 (* Compare and swap *)
 | "cas"|"CAS" -> CAS
 | "casa"|"CASA" -> CASA
