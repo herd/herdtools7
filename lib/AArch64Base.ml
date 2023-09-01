@@ -1098,6 +1098,7 @@ type 'k kinstruction =
   | I_STR_P_SIMD of simd_variant * reg * reg * 'k
   | I_LDUR_SIMD of simd_variant * reg * reg * 'k option
   | I_STUR_SIMD of simd_variant * reg * reg * 'k option
+  | I_ADDV of simd_variant * reg * reg
   | I_DUP of reg * variant * reg
   | I_FMOV_TG of variant * reg * simd_variant * reg
   | I_MOV_VE of reg * int * reg * int
@@ -1561,6 +1562,8 @@ let do_pp_instruction m =
       sprintf "STUR %s, [%s]" (pp_vsimdreg v r1) (pp_reg r2)
   | I_STUR_SIMD (v,r1,r2,Some(k)) ->
       sprintf "STUR %s, [%s, %s]" (pp_vsimdreg v r1) (pp_reg r2) (m.pp_k k)
+  | I_ADDV (v,r1,r2) ->
+      sprintf "ADDV %s,%s" (pp_vsimdreg v r1) (pp_simd_vector_reg r2)
   | I_DUP (r1,v,r2) ->
       sprintf "DUP %s,%s" (pp_simd_vector_reg r1) (pp_vreg v r2)
   | I_FMOV_TG (v1,r1,v2,r2) ->
@@ -1839,6 +1842,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_MOV_S (_,r1,r2,_)
   | I_FMOV_TG (_,r1,_,r2)
   | I_DUP (r1,_,r2)
+  | I_ADDV (_,r1,r2)
   | I_LDUR_SIMD (_,r1,r2,_) | I_STUR_SIMD (_,r1,r2,_)
   | I_LDG (r1,r2,_) | I_STZG (r1,r2,_) | I_STG (r1,r2,_)
   | I_ALIGND (r1,r2,_) | I_ALIGNU (r1,r2,_)
@@ -2041,6 +2045,8 @@ let map_regs f_reg f_symb =
       I_LDUR_SIMD (v,map_reg r1, map_reg r2,k)
   | I_STUR_SIMD (v,r1,r2,k) ->
       I_STUR_SIMD (v,map_reg r1, map_reg r2,k)
+  | I_ADDV (v,r1,r2) ->
+      I_ADDV (v,map_reg r1,map_reg r2)
   | I_DUP (r1,v,r2) ->
       I_DUP (map_reg r1,v,map_reg r2)
   | I_FMOV_TG (v1,r1,v2,r2) ->
@@ -2267,7 +2273,7 @@ let get_next =
   | I_LDR_SIMD _ | I_LDR_P_SIMD _
   | I_STR_SIMD _ | I_STR_P_SIMD _
   | I_LDUR_SIMD _ | I_STUR_SIMD _
-  | I_DUP _ | I_FMOV_TG _
+  | I_ADDV _ | I_DUP _ | I_FMOV_TG _
   | I_MOV_VE _ | I_MOV_V _ | I_MOV_TG _ | I_MOV_FG _
   | I_MOV_S _
   | I_MOVI_V _ | I_MOVI_S _
@@ -2494,7 +2500,7 @@ module PseudoI = struct
         | I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _|I_CPYTYPE _
         | I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|I_SEAL _|I_STCT _
         | I_UNSEAL _
-        | I_DUP _ | I_FMOV_TG _
+        | I_ADDV _ | I_DUP _ | I_FMOV_TG _
         | I_MOV_VE _ | I_MOV_V _ | I_MOV_TG _ | I_MOV_FG _
         | I_MOV_S _
         | I_LDXP _| I_STXP _
@@ -2652,7 +2658,7 @@ module PseudoI = struct
         | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _
         | I_CLRTAG _|I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_SC _|I_SEAL _
         | I_UNSEAL _
-        | I_DUP _ | I_FMOV_TG _
+        | I_ADDV _|I_DUP _| I_FMOV_TG _
         | I_MOV_VE _ | I_MOV_V _ | I_MOV_TG _ | I_MOV_FG _
         | I_MOV_S _
         | I_MOVI_V _ | I_MOVI_S _

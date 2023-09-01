@@ -1,0 +1,9 @@
+AArch64 V61
+(* Test ADDV * )
+{}
+P0            ;
+MOVI V0.4S,#1 ;
+ADDV S1,V0.4S ;
+FMOV W1,S1    ;
+
+forall 0:X1=4

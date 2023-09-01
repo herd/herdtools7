@@ -1988,6 +1988,19 @@ module Make
         end >>=
         fun v -> write_reg_neon_sz sz r1 v ii
 
+      let addv var r1 r2 ii =
+        let open AArch64Base in
+        let nelem = neon_nelem r2 in
+        let sz = tr_simd_variant var in
+        let rec reduce n op =
+          match n with
+          | 0 -> op >>| read_reg_neon_elem false r2 0 ii >>= fun (v1,v2) -> M.add v1 v2
+          | _ ->
+             reduce (n-1) (op >>| read_reg_neon_elem false r2 n ii >>= fun (v1,v2) -> M.add v1 v2)
+        in
+        reduce (nelem-1) (M.add (V.intToV 0) (V.intToV 0)) >>=
+          fun v -> write_reg_neon_sz sz r1 v ii
+
 (******************************)
 (* Move constant instructions *)
 (******************************)
@@ -2451,6 +2464,8 @@ module Make
             stxr (bh_to_sz bh) t rr rs rd ii
 
         (* Neon operations *)
+        | I_ADDV(var,r1,r2) ->
+            !(addv var r1 r2 ii)
         | I_DUP(r1,var,r2) ->
             !(let sz = tr_variant var  in
               read_reg_ord_sz sz r2 ii >>=

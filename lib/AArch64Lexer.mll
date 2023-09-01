@@ -136,6 +136,7 @@ match name with
 | "st2" | "ST2" -> ST2
 | "st3" | "ST3" -> ST3
 | "st4" | "ST4" -> ST4
+| "addv" | "ADDV" -> ADDV
 | "dup" | "DUP" -> DUP
 | "movi" | "MOVI" -> MOVI
 | "mvn" | "MVN" -> MVN

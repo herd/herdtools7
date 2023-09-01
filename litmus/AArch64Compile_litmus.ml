@@ -834,6 +834,13 @@ module Make(V:Constant.S)(C:Config) =
           reg_env = (add_128 [r1;r2;]) @ [(r3,voidstar)]}
     | _ -> assert false
 
+    let addv_simd v r1 r2 =
+      { empty_ins with
+        memo = sprintf "addv %s, %s" (print_vecreg v "o" 0) (print_simd_reg "i" 0 0 r2);
+        inputs = [r2];
+        outputs = [r1];
+        reg_env = (add_128 [r1;r2])}
+
     let dup_simd_v r1 v r2 =
       { empty_ins with
         memo = sprintf "dup %s, %s"
@@ -1358,6 +1365,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_LDUR_SIMD (v,r1,r2,None) -> load_simd "ldur" v r1 r2 (K 0) S_NOEXT::k
     | I_STUR_SIMD (v,r1,r2,Some(k1)) -> store_simd "stur" v r1 r2 (K k1) S_NOEXT::k
     | I_STUR_SIMD (v,r1,r2,None) -> store_simd "stur" v r1 r2 (K 0) S_NOEXT::k
+    | I_ADDV (v,r1,r2) -> addv_simd v r1 r2::k
     | I_DUP (r1,v,r2) -> dup_simd_v r1 v r2::k
     | I_FMOV_TG (v1,r1,v2,r2) -> fmov_simd_tg v1 r1 v2 r2::k
     | I_MOV_VE (r1,i1,r2,i2) -> mov_simd_ve r1 i1 r2 i2::k
