@@ -27,7 +27,9 @@ module
   module Cst = Cst
 
   type arch_op = ArchOp.op
-  type arch_op1 = ArchOp.op1
+  type arch_extra_op1 = ArchOp.extra_op1
+  type 'a arch_constr_op1 = 'a ArchOp.constr_op1
+  type arch_op1 = arch_extra_op1 arch_constr_op1
 
   let pp_arch_op = ArchOp.pp_op
   let pp_arch_op1 = ArchOp.pp_op1

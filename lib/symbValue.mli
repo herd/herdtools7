@@ -26,4 +26,5 @@ module Make : functor
   Value.S
     with module Cst = Cst
      and type arch_op = ArchOp.op
-     and type arch_op1 = ArchOp.op1
+     and type arch_extra_op1 = ArchOp.extra_op1
+     and type 'a arch_constr_op1 = 'a ArchOp.constr_op1

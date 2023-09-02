@@ -18,7 +18,9 @@
 
 module type S = sig
   type op
-  type op1
+  type extra_op1
+  type 'a constr_op1
+  type op1 = extra_op1 constr_op1
 
   val pp_op : op -> string
   val pp_op1 : bool (* hexa *) -> op1 -> string
@@ -48,7 +50,8 @@ module type S = sig
   val mask : cst -> MachSize.sz -> cst option
 end
 
-type no_arch_op1
+type no_extra_op1
+type 'a no_constr_op1
 type no_arch_op
 
 module No (Cst : Constant.S) :
@@ -57,10 +60,13 @@ module No (Cst : Constant.S) :
      and type pteval = Cst.PteVal.t
      and type instr = Cst.Instr.t
      and type op = no_arch_op
-     and type op1 = no_arch_op1
+     and type extra_op1 = no_extra_op1
+     and type 'a constr_op1 = 'a no_constr_op1
 = struct
   type op = no_arch_op
-  type op1 = no_arch_op1
+  type extra_op1 = no_extra_op1
+  type 'a constr_op1 = 'a no_constr_op1
+  type op1 = extra_op1 constr_op1
 
   let pp_op _ = assert false
   let pp_op1 _hexa _ = assert false
@@ -80,7 +86,9 @@ module No (Cst : Constant.S) :
 end
 
 module type S1 = sig
-  type op1
+  type extra_op1
+  type 'a constr_op1
+  type op1 = extra_op1 constr_op1
 
   val pp_op1 : bool (* hexa *) -> op1 -> string
 
@@ -99,7 +107,8 @@ end
 
 module OnlyArchOp1 (A : S1) :
   S
-    with type op1 = A.op1
+    with type extra_op1 = A.extra_op1
+     and type 'a constr_op1 = 'a A.constr_op1
      and type scalar = A.scalar
      and type pteval = A.pteval
      and type instr = A.instr

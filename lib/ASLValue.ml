@@ -1,7 +1,3 @@
-module ASLConstant = SymbConstant.Make (ASLScalar) (PteVal.No) (ASLBase.Instr)
-module ASLPteVal = ASLConstant.PteVal
-module ASLInstr = ASLConstant.Instr
-
 type asl_op =
   | Divrm
   | SetIndex of int
@@ -9,7 +5,9 @@ type asl_op =
   | Concat
   | BVSliceSet of int list
 
-type asl_op1 =
+type asl_extra_op1
+
+type 'a asl_constr_op1 =
   | GetIndex of int
   | GetField of string
   | BVSlice of int list
@@ -18,6 +16,11 @@ type asl_op1 =
   | ToBool
   | ToBV
   | BoolNot
+
+module ASLConstant = SymbConstant.Make (ASLScalar) (PteVal.No) (ASLBase.Instr)
+module ASLPteVal = ASLConstant.PteVal
+module ASLInstr = ASLConstant.Instr
+
 (*
    A note on ASL ArchOps
    ---------------------
@@ -31,7 +34,8 @@ type asl_op1 =
 module ASLArchOp :
   ArchOp.S
     with type op = asl_op
-     and type op1 = asl_op1
+     and type extra_op1 = asl_extra_op1
+     and type 'a constr_op1 = 'a asl_constr_op1
      and type scalar = ASLScalar.t
      and type pteval = ASLPteVal.t
      and type instr = ASLInstr.t
@@ -41,7 +45,10 @@ module ASLArchOp :
   type instr = ASLInstr.t
   type cst = ASLConstant.v
   type op = asl_op
-  type op1 = asl_op1
+
+  type extra_op1 = asl_extra_op1
+  type 'a constr_op1 = 'a asl_constr_op1
+  type op1 = extra_op1 constr_op1
 
   let pp_op = function
     | Divrm -> "DIVRM"
