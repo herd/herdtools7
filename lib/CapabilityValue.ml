@@ -23,7 +23,6 @@ end) : Value.AArch64 = struct
   module NoCst =
     SymbConstant.Make (CapabilityScalar) (PteVal.No) (AArch64Instr)
   module NoArchOp = ArchOp.No(NoCst)
-  type extra_op1 = NoArchOp.op1
   module CapOp = AArch64Op.Make (CapabilityScalar)(NoArchOp)
   include SymbValue.Make(AArch64Constant)(CapOp)
 end

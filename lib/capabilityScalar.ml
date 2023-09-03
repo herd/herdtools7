@@ -36,6 +36,8 @@ let to_int (_,x) = Uint128.to_int x
 let of_int64 x = false,Uint128.of_int64 x
 let to_int64 (_,x) = Uint128.to_int64 x
 
+let printable c = c
+
 let compare (t1,x1) (t2,x2) =
   match Uint128.compare x1 x2 with
   | 0 -> compare t1 t2

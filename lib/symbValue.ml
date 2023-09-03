@@ -70,6 +70,11 @@ module
   let pp_v =  do_pp Cst.pp_v
   let pp_v_old =  do_pp Cst.pp_v_old
 
+  let printable = function
+    | Val (c) ->
+       Val (Constant.map_scalar Cst.Scalar.printable c)
+    | v -> v
+
   let equalityPossible v1 v2 =
     match (v1,v2) with
     | Val x1,Val x2 -> Cst.compare x1 x2 = 0

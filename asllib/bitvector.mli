@@ -76,6 +76,7 @@ val to_int64_signed : t -> int64
 
 val to_z_unsigned : t -> Z.t
 val to_z_signed : t -> Z.t
+val printable : t -> Z.t
 
 (* --------------------------------------------------------------------------*)
 (** {2 Operations on bitvectors} *)

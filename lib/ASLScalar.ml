@@ -8,6 +8,34 @@ let machsize = MachSize.Quad
 let zero = S_Int Z.zero
 let one = S_Int Z.one
 
+(*
+ * Integer dump is made assuming a 64bits basis.
+ * For instance '-1' in hexadecimal will be printed as
+ * 0xffffffffffffffff and not as 0x-1
+ *)
+
+let z63 = Z.shift_left Z.one (MachSize.nbits machsize-1)
+let z64 = Z.shift_left Z.one (MachSize.nbits machsize)
+
+let norm_unsigned z = if Z.sign z < 0 then Z.add z z64 else z
+
+let pp hexa = function
+  | S_Int i ->
+     if hexa then norm_unsigned i |> Z.format "%x"
+     else Z.format "%d" i
+  | S_Bool true -> "TRUE"
+  | S_Bool false -> "FALSE"
+  | S_BitVector bv -> BV.to_string bv
+
+let pp_unsigned hexa = function
+  | S_Int i ->
+     let i = norm_unsigned i in
+     if hexa then "0x" ^ Z.format "%x" i else Z.format "%d" i
+  | S_Bool true -> "TRUE"
+  | S_Bool false -> "FALSE"
+  | S_BitVector bv -> BV.to_string bv
+
+
 let of_string s =
   try S_Int (Z.of_string s)
   with Invalid_argument _ -> (
@@ -15,18 +43,6 @@ let of_string s =
     | "TRUE" -> S_Bool true
     | "FALSE" -> S_Bool false
     | _ -> S_BitVector (BV.of_string s))
-
-let pp hexa = function
-  | S_Int i -> if hexa then Z.format "0x%x" i else Z.format "%d" i
-  | S_Bool true -> "TRUE"
-  | S_Bool false -> "FALSE"
-  | S_BitVector bv -> BV.to_string bv
-
-let pp_unsigned hexa = function
-  | S_Int i -> if hexa then Z.format "0x%x" i else Z.format "%u" i
-  | S_Bool true -> "TRUE"
-  | S_Bool false -> "FALSE"
-  | S_BitVector bv -> BV.to_string bv
 
 let of_int i = S_Int (Z.of_int i)
 
@@ -232,3 +248,8 @@ let try_write_slice positions dst src =
   | _ -> None
 
 let empty = S_BitVector BV.empty
+
+let printable_z z =
+  let z = Z.erem z z64 in
+  if Z.geq z z63 then Z.sub z z64
+  else z

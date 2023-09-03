@@ -26,9 +26,16 @@ type 'op1 t =
   | Extra of 'op1
 
 module
-   Make(S:Scalar.S)
-   (Extra:ArchOp.S with type scalar = S.t) =
-  struct
+   Make
+     (S:Scalar.S)
+     (Extra:ArchOp.S with type scalar = S.t) : ArchOp.S
+   with type op = Extra.op
+    and type extra_op1 = Extra.op1
+    and type 'a constr_op1 = 'a t
+    and type scalar = S.t
+    and type pteval = AArch64PteVal.t
+    and type instr = AArch64Base.instruction
+  = struct
 
     type op = Extra.op
     type extra_op1 = Extra.op1

@@ -16,10 +16,19 @@
 
 module Make (C : sig
   val is_morello : bool
-end) : Value.AArch64 = struct
-  type extra_op1 = ASLValue.ASLArchOp.op1
+end) : Value.AArch64ASL = struct
+  if C.is_morello then
+    Warn.fatal "-variant asl and -variant morello are not conmpatible" ;
   module AArch64I = AArch64Instr.Make (C)
+  module ASLScalar = struct
+    include ASLScalar
+
+    let printable = function
+      | S_BitVector bv -> S_Int (Asllib.Bitvector.printable  bv)
+      | S_Bool b -> S_Int (if b then Z.one else Z.zero)
+      | S_Int i -> S_Int (printable_z i)
+  end
   module AArch64Cst = SymbConstant.Make (ASLScalar) (AArch64PteVal) (AArch64I)
-  module AArch64Op = AArch64Op.Make (ASLScalar)(ASLValue.ASLArchOp)
+  module AArch64Op = AArch64Op.Make(ASLScalar)(ASLOp)
   include SymbValue.Make (AArch64Cst) (AArch64Op)
 end

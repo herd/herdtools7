@@ -78,3 +78,5 @@ module No = struct
     let as_physical _ = None
     let as_flags _ = None
 end
+
+module ASL = No

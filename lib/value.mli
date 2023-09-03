@@ -47,6 +47,11 @@ module type S =
       val pp : bool (* hexa *) -> v -> string
       val pp_unsigned : bool (* hexa *) -> v -> string
 
+(* Some architecture may somehow normalize values before
+   printing them. *)
+      val printable : v -> v
+
+
 (* produce a fresh variable *)
       val fresh_var : unit -> v
       val from_var : csym -> v
@@ -112,9 +117,14 @@ module type S =
       val map_csym : (csym -> v) -> v -> v
     end
 
-module type AArch64 = sig
-  include S
+module type AArch64 =
+  S
   with type Cst.PteVal.t = AArch64PteVal.t
   and type Cst.Instr.t = AArch64Base.instruction
   and type 'a arch_constr_op1 = 'a AArch64Op.t
-end
+
+module type AArch64ASL =
+  AArch64
+  with type Cst.Scalar.t = ASLScalar.t
+  and type arch_op = ASLOp.op
+  and type arch_extra_op1 = ASLOp.op1
