@@ -222,7 +222,7 @@ module NativePrimitives = struct
 
   let print =
     let print_one = function
-      | NV_Literal (L_String s) -> Printf.printf "%s " s
+      | NV_Literal (L_String s) -> print_string s
       | v -> mismatch_type v [ T_String ]
     in
     fun li ->
@@ -262,6 +262,33 @@ module NativePrimitives = struct
         [ L_Int (Z.log2 i |> Z.of_int) |> nv_literal ]
     | [ v ] -> mismatch_type v [ T_Int None ]
     | li -> Error.fatal_unknown_pos @@ Error.BadArity ("Log2", 1, List.length li)
+
+  let int_to_real = function
+    | [ NV_Literal (L_Int i) ] ->
+        L_Real (Q.of_bigint i) |> nv_literal |> return_one
+    | [ v ] -> mismatch_type v [ T_Int None ]
+    | li -> Error.fatal_unknown_pos @@ Error.BadArity ("Real", 1, List.length li)
+
+  let truncate q = Q.to_bigint q
+
+  let floor q =
+    if Q.sign q = -1 then
+      if Q.den q = Z.one then Q.num q else truncate q |> Z.pred
+    else truncate q
+
+  let ceiling q =
+    if Q.sign q = 1 then
+      if Q.den q = Z.one then Q.num q else truncate q |> Z.succ
+    else truncate q
+
+  let wrap_real_to_int name f = function
+    | [ NV_Literal (L_Real q) ] -> L_Int (f q) |> nv_literal |> return_one
+    | [ v ] -> mismatch_type v [ T_Real ]
+    | li -> Error.fatal_unknown_pos @@ Error.BadArity (name, 1, List.length li)
+
+  let round_down = wrap_real_to_int "RoundDown" floor
+  let round_up = wrap_real_to_int "RoundUp" ceiling
+  let round_towards_zero = wrap_real_to_int "RoundTowardsZero" truncate
 
   let primitives =
     let with_pos = add_dummy_pos in
@@ -336,6 +363,46 @@ module NativePrimitives = struct
           parameters = [];
           args = [ ("x", integer) ];
           body = SB_Primitive log2;
+          return_type = Some integer;
+          subprogram_type = ST_Function;
+        }
+      |> __POS_OF__ |> here;
+      D_Func
+        {
+          name = "Real";
+          parameters = [];
+          args = [ ("x", integer) ];
+          body = SB_Primitive int_to_real;
+          return_type = Some real;
+          subprogram_type = ST_Function;
+        }
+      |> __POS_OF__ |> here;
+      D_Func
+        {
+          name = "RoundDown";
+          parameters = [];
+          args = [ ("x", real) ];
+          body = SB_Primitive round_down;
+          return_type = Some integer;
+          subprogram_type = ST_Function;
+        }
+      |> __POS_OF__ |> here;
+      D_Func
+        {
+          name = "RoundUp";
+          parameters = [];
+          args = [ ("x", real) ];
+          body = SB_Primitive round_up;
+          return_type = Some integer;
+          subprogram_type = ST_Function;
+        }
+      |> __POS_OF__ |> here;
+      D_Func
+        {
+          name = "RoundTowardsZero";
+          parameters = [];
+          args = [ ("x", real) ];
+          body = SB_Primitive round_towards_zero;
           return_type = Some integer;
           subprogram_type = ST_Function;
         }

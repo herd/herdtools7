@@ -56,6 +56,11 @@ let t_bit = T_Bits (BitWidth_SingleExpr (E_Literal (L_Int Z.one) |> add_dummy_po
 let make_ldi_tuple xs ty =
   LDI_Tuple (List.map (fun x -> LDI_Var (x, None)) xs, Some ty)
 
+let make_ty_decl_subtype (x, s) =
+  let name, _fields = s.desc in
+  let ty = ASTUtils.add_pos_from s (T_Named name) in
+  D_TypeDecl (x, ty, Some s.desc)
+
 %}
 
 (* ------------------------------------------------------------------------
@@ -270,7 +275,6 @@ let binop ==
 
   ------------------------------------------------------------------------- *)
 
-let unimplemented_expr(x) == annotated ( x ; { E_Literal (V_Bool false) })
 let field_assign == separated_pair(IDENTIFIER, EQ, expr)
 let nargs == { [] }
 
@@ -303,7 +307,7 @@ let make_expr(sub_expr) ==
 
     | ~=sub_expr; IN; ~=pattern_set;                              < E_Pattern            >
     | e=sub_expr; IN; m=MASK_LIT;                                 { E_Pattern (e, Pattern_Mask m) }
-    | UNKNOWN; COLON_COLON; ~=ty;                                 < E_Unknown            >
+    | UNKNOWN; colon_for_type; ~=ty;                              < E_Unknown            >
 
     | t=annotated(IDENTIFIER); fields=braced(clist(field_assign));
         { E_Record (add_pos_from t (T_Named t.desc), fields) }
@@ -346,7 +350,8 @@ let pattern :=
   | ~=plist2(pattern); < Pattern_Tuple >
   | pattern_set
 
-let fields_opt == { [] } | braced(tclist(typed_identifier))
+let fields == braced(tclist(typed_identifier))
+let fields_opt == { [] } | fields
 
 (* Slices *)
 let nslices == bracketed(nclist(slice))
@@ -363,6 +368,7 @@ let bitfields == braced(tclist(bitfield))
 let bitfield ==
   | s=nslices ; x=IDENTIFIER ;                 { BitField_Simple (x, s)     }
   | s=nslices ; x=IDENTIFIER ; bf=bitfields ;  { BitField_Nested (x, s, bf) }
+  | s=nslices ; x=IDENTIFIER ; ty=as_ty     ;  { BitField_Type   (x, s, ty) }
 
 (* Also called ty in grammar.bnf *)
 let ty :=
@@ -397,7 +403,6 @@ let implicit_t_int == annotated ( ~=some(int_constraints) ; <T_Int> )
 (* Left-hand-side expressions and helpers *)
 let le_var == ~=IDENTIFIER ; <LE_Var>
 let lexpr_ignore == { LE_Ignore }
-let unimplemented_lexpr(x) == x ; lexpr_ignore
 
 let lexpr ==
   annotated(
@@ -411,10 +416,7 @@ let lexpr_atom :=
   | le=annotated(lexpr_atom); ~=slices; <LE_Slice>
   | le=annotated(lexpr_atom); DOT; field=IDENTIFIER; <LE_SetField>
   | le=annotated(lexpr_atom); DOT; li=bracketed(clist(IDENTIFIER)); <LE_SetFields>
-
-  | unimplemented_lexpr(
-    | bracketed(nclist(lexpr_atom)); <>
-  )
+  | les=bracketed(nclist(annotated(lexpr_atom))); { LE_Concat (les, None) }
 
 (* Decl items are another kind of left-hand-side expressions, that appear only
    on declarations. They cannot have setter calls or set record fields, they
@@ -439,10 +441,7 @@ let storage_keyword ==
   | CONFIG    ; { GDK_Config   }
 
 let pass == { S_Pass }
-let unimplemented_stmt(x) == x ; pass
-
 let assign(x, y) == ~=x ; EQ ; ~=y ; { S_Assign (x,y,V1) }
-
 let direction == | TO; { AST.Up } | DOWNTO; { AST.Down }
 
 let alt_delim == ARROW | COLON
@@ -482,9 +481,8 @@ let stmt ==
       | VAR; xs=clist2(IDENTIFIER); colon_for_type; ~=ty;
           { S_Decl (LDK_Var, make_ldi_tuple xs ty, None) }
 
-      | unimplemented_stmt(
-        | PRAGMA; IDENTIFIER; clist(expr);                   <>
-      )
+      | loc=annotated(PRAGMA; IDENTIFIER; clist(expr); <>);
+          { Error.fatal_from loc @@ Error.NotYetImplemented "Pragmas in statements" }
     )
   )
 
@@ -503,12 +501,8 @@ let s_else :=
 
   ------------------------------------------------------------------------- *)
 
-let subtype_opt == option(SUBTYPES; IDENTIFIER)
-let unimplemented_decl(x) ==
-  x ; {
-    let e = literal (L_Int Z.zero) and ty = add_dummy_pos (T_Int None) in
-    (D_GlobalStorage { name="-"; keyword=GDK_Constant; ty=Some ty; initial_value = Some e})
-  }
+let subtype == SUBTYPES; ~=IDENTIFIER; ~=loption(WITH; fields); <>
+let subtype_opt == option(subtype)
 
 let opt_type_identifier == pair(IDENTIFIER, ty_opt)
 let return_type == ARROW; ty
@@ -516,6 +510,9 @@ let params_opt == { [] } | braced(clist(opt_type_identifier))
 let access_args_opt == { [] } | bracketed(clist(typed_identifier))
 let func_args == plist(typed_identifier)
 let func_body == delimited(ioption(BEGIN), stmt_list, END)
+let ignored_or_identifier ==
+  | MINUS; { global_ignored () }
+  | IDENTIFIER
 
 let decl ==
   annotated (
@@ -569,21 +566,17 @@ let decl ==
         }
 
     | terminated_by(SEMI_COLON,
-      | TYPE; x=IDENTIFIER; OF; t=ty; ~=subtype_opt;       < D_TypeDecl >
-      | TYPE; x=IDENTIFIER; SUBTYPES; s=IDENTIFIER;
-        { D_TypeDecl (x, ASTUtils.add_dummy_pos (T_Named s), Some s) }
+      | TYPE; x=IDENTIFIER; OF; t=ty; ~=subtype_opt;  < D_TypeDecl           >
+      | TYPE; x=IDENTIFIER; s=annotated(subtype);     < make_ty_decl_subtype > 
 
-      | keyword=storage_keyword; name=IDENTIFIER;
+      | keyword=storage_keyword; name=ignored_or_identifier;
         ty=ioption(as_ty); EQ; initial_value=some(expr);
         { D_GlobalStorage { keyword; name; ty; initial_value } }
-      | VAR; name=IDENTIFIER; ty=some(as_ty);
+      | VAR; name=ignored_or_identifier; ty=some(as_ty);
         { D_GlobalStorage { keyword=GDK_Var; name; ty; initial_value=None}}
 
-      | unimplemented_decl(
-        | storage_keyword; MINUS; ty_opt; EQ; expr;                <>
-        | PRAGMA; IDENTIFIER; clist(expr);                         <>
-        | TYPE; IDENTIFIER; SUBTYPES; ty; WITH; fields_opt;        <>
-      )
+      | loc=annotated(PRAGMA; IDENTIFIER; clist(expr); <>);
+        { Error.fatal_from loc @@ Error.NotYetImplemented "Pragma in declarations"}
     )
   )
 

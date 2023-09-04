@@ -192,6 +192,9 @@ and use_bitfield acc = function
   | BitField_Nested (_name, slices, bitfields) ->
       let acc = use_bitfields acc bitfields in
       use_slices acc slices
+  | BitField_Type (_name, slices, ty) ->
+      let acc = use_ty acc ty in
+      use_slices acc slices
 
 and use_constraints acc cs = List.fold_left use_constraint acc cs
 
@@ -232,6 +235,22 @@ and use_decl acc d =
   | D_Func { body = SB_ASL s; _ } -> use_s acc s
   | D_GlobalStorage { initial_value = Some e; _ } -> use_e acc e
   | _ -> acc
+
+let use_constant_decl acc d =
+  match d.desc with
+  | D_GlobalStorage { initial_value = Some e; ty = Some ty; _ } ->
+      let acc = use_e acc e in
+      use_ty acc ty
+  | D_GlobalStorage { initial_value = None; ty = Some ty; _ } -> use_ty acc ty
+  | D_GlobalStorage { initial_value = Some e; ty = None; _ } -> use_e acc e
+  | D_GlobalStorage { initial_value = None; ty = None; _ } -> assert false
+  | D_TypeDecl (_, ty, Some (s, fields)) ->
+      let acc = ISet.add s acc in
+      let acc = use_ty acc ty in
+      let acc = fold_named_list use_ty acc fields in
+      acc
+  | D_TypeDecl (_, ty, None) -> use_ty acc ty
+  | D_Func _ -> acc (* TODO: pure functions that can be used in constants? *)
 
 let used_identifiers ast = List.fold_left use_decl ISet.empty ast
 let used_identifiers_stmt = use_s ISet.empty
@@ -402,6 +421,7 @@ let expr_of_lexpr : lexpr -> expr =
     | LE_SetFields (le, x) -> E_GetFields (map_desc aux le, x)
     | LE_Ignore -> E_Var "-"
     | LE_TupleUnpack les -> E_Tuple (List.map (map_desc aux) les)
+    | LE_Concat (les, _) -> E_Concat (List.map (map_desc aux) les)
   in
   map_desc aux
 
@@ -410,6 +430,21 @@ let fresh_var =
   fun s ->
     let () = incr i in
     s ^ "-" ^ string_of_int !i
+
+(* Straight out of stdlib 4.12 *)
+let string_starts_with ~prefix s =
+  let open String in
+  let len_s = length s and len_pre = length prefix in
+  let rec aux i =
+    if i = len_pre then true
+    else if unsafe_get s i <> unsafe_get prefix i then false
+    else aux (i + 1)
+  in
+  len_s >= len_pre && aux 0
+
+let global_ignored_prefix = "__global_ignored"
+let global_ignored () = fresh_var global_ignored_prefix
+let is_global_ignored s = string_starts_with ~prefix:global_ignored_prefix s
 
 let case_to_conds : stmt -> stmt =
   let rec cases_to_cond x = function
@@ -589,10 +624,16 @@ let rec is_simple_expr e =
   | E_Call _ | E_Slice _ -> false
 
 let bitfield_get_name = function
-  | BitField_Simple (name, _) | BitField_Nested (name, _, _) -> name
+  | BitField_Simple (name, _)
+  | BitField_Nested (name, _, _)
+  | BitField_Type (name, _, _) ->
+      name
 
 let bitfield_get_slices = function
-  | BitField_Simple (_, slices) | BitField_Nested (_, slices, _) -> slices
+  | BitField_Simple (_, slices)
+  | BitField_Nested (_, slices, _)
+  | BitField_Type (_, slices, _) ->
+      slices
 
 let has_name name bf = bitfield_get_name bf |> String.equal name
 let find_bitfield_opt name bitfields = List.find_opt (has_name name) bitfields

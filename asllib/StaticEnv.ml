@@ -59,7 +59,7 @@ module PPEnv = struct
       } =
     fprintf f
       "@[<v 2>Global with:@ - @[constants:@ %a@]@ - @[storage:@ %a@]@ - \
-       @[types:@ %a@]@ - @[subtypes:@ %a@]@ - @[subprograms:@ %a@] - \
+       @[types:@ %a@]@ - @[subtypes:@ %a@]@ - @[subprograms:@ %a@]@ - \
        @[subprogram_renamings:@ %a@]@]"
       (pp_map PP.pp_literal) constants_values
       (pp_map (fun f (t, _) -> PP.pp_ty f t))
@@ -162,6 +162,16 @@ let add_type x ty env =
       };
   }
 
+let add_local_constant name v env =
+  {
+    env with
+    local =
+      {
+        env.local with
+        constants_values = IMap.add name v env.local.constants_values;
+      };
+  }
+
 let add_global_constant name v env =
   {
     env with
@@ -194,5 +204,4 @@ let add_subtype s t env =
 let is_undefined name env =
   not
     (IMap.mem name env.local.storage_types
-     ||IMap.mem name env.global.storage_types)
-
+    || IMap.mem name env.global.storage_types)

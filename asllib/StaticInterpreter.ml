@@ -22,6 +22,12 @@ let value_as_int pos = function
 let is_positive z = Z.sign z != 0
 let is_strict_positive z = Z.sign z = 1
 
+let exp_real q z =
+  let num = Q.num q and den = Q.den q in
+  let i = Z.to_int z in
+  let res_num = Z.pow num i and res_den = Z.pow den i in
+  Q.(res_num /// res_den)
+
 let binop_values pos op v1 v2 =
   match (op, v1, v2) with
   (* int -> int -> int *)
@@ -59,6 +65,7 @@ let binop_values pos op v1 v2 =
   | MUL, L_Real v1, L_Real v2 -> L_Real (Q.mul v1 v2)
   | MINUS, L_Real v1, L_Real v2 -> L_Real (Q.sub v1 v2)
   | RDIV, L_Real v1, L_Real v2 -> L_Real (Q.div v1 v2)
+  | POW, L_Real q1, L_Int z2 -> L_Real (exp_real q1 z2)
   (* real -> real -> bool *)
   | EQ_OP, L_Real v1, L_Real v2 -> L_Bool (Q.equal v1 v2)
   | NEQ, L_Real v1, L_Real v2 -> L_Bool (not (Q.equal v1 v2))
@@ -66,12 +73,32 @@ let binop_values pos op v1 v2 =
   | LT, L_Real v1, L_Real v2 -> L_Bool (Q.lt v1 v2)
   | GEQ, L_Real v1, L_Real v2 -> L_Bool (Q.geq v1 v2)
   | GT, L_Real v1, L_Real v2 -> L_Bool (Q.gt v1 v2)
-  (* bits -> bits -> bits *)
+  (* bits -> bits -> bool *)
   | EQ_OP, L_BitVector b1, L_BitVector b2 -> L_Bool (Bitvector.equal b1 b2)
   | NEQ, L_BitVector b1, L_BitVector b2 -> L_Bool (not @@ Bitvector.equal b1 b2)
+  (* bits -> bits -> bits *)
   | OR, L_BitVector b1, L_BitVector b2 -> L_BitVector (Bitvector.logor b1 b2)
   | AND, L_BitVector b1, L_BitVector b2 -> L_BitVector (Bitvector.logand b1 b2)
   | EOR, L_BitVector b1, L_BitVector b2 -> L_BitVector (Bitvector.logxor b1 b2)
+  | PLUS, L_BitVector b1, L_BitVector b2
+    when Bitvector.length b1 = Bitvector.length b2 ->
+      L_BitVector
+        (Bitvector.of_z (Bitvector.length b1)
+           (Z.add (Bitvector.to_z_unsigned b1) (Bitvector.to_z_unsigned b2)))
+  | MINUS, L_BitVector b1, L_BitVector b2
+    when Bitvector.length b1 = Bitvector.length b2 ->
+      L_BitVector
+        (Bitvector.of_z (Bitvector.length b1)
+           (Z.sub (Bitvector.to_z_unsigned b1) (Bitvector.to_z_unsigned b2)))
+  (* bits -> integer -> bits *)
+  | PLUS, L_BitVector b1, L_Int z2 ->
+      L_BitVector
+        (Bitvector.of_z (Bitvector.length b1)
+           (Z.add (Bitvector.to_z_unsigned b1) z2))
+  | MINUS, L_BitVector b1, L_Int z2 ->
+      L_BitVector
+        (Bitvector.of_z (Bitvector.length b1)
+           (Z.sub (Bitvector.to_z_unsigned b1) z2))
   (* Failure *)
   | _ -> fatal_from pos (Error.UnsupportedBinop (op, v1, v2))
 
@@ -91,7 +118,13 @@ let rec static_eval (env : SEnv.env) : expr -> literal =
     | E_Literal v -> v
     | E_Var x -> (
         try SEnv.lookup_constants env x
-        with Not_found -> Error.fatal_from e (Error.UndefinedIdentifier x))
+        with Not_found ->
+          let () =
+            if false then
+              Format.eprintf "Failed to lookup %S in env: %a@." x
+                StaticEnv.pp_env env
+          in
+          Error.fatal_from e (Error.UndefinedIdentifier x))
     | E_Binop (op, e1, e2) ->
         let v1 = expr_ e1 and v2 = expr_ e2 in
         binop_values e op v1 v2
@@ -105,9 +138,22 @@ let rec static_eval (env : SEnv.env) : expr -> literal =
           match expr_ e' with
           | L_Int i -> Bitvector.of_z (pos_max + 1) i
           | L_BitVector bv -> bv
-          | _ -> fatal_from e (Error.UnsupportedExpr e)
+          | v ->
+              fatal_from e
+              @@ Error.MismatchType
+                   (PP.literal_to_string v, [ T_Int None; default_t_bits ])
         in
         L_BitVector (Bitvector.extract_slice bv positions)
+    | E_Cond (e_cond, e1, e2) ->
+        let v_cond = expr_ e_cond in
+        let b =
+          match v_cond with
+          | L_Bool b -> b
+          | _ ->
+              fatal_from e
+              @@ Error.MismatchType (PP.literal_to_string v_cond, [ T_Bool ])
+        in
+        if b then expr_ e1 else expr_ e2
     | _ -> fatal_from e (Error.UnsupportedExpr e)
   in
   expr_

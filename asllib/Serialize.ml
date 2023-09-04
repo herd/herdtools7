@@ -168,6 +168,8 @@ and pp_bitfield f = function
   | BitField_Nested (name, slices, bitfields) ->
       bprintf f "BitField_Nested (%S, %a, %a)" name pp_slice_list slices
         pp_bitfields bitfields
+  | BitField_Type (name, slices, ty) ->
+      bprintf f "BitField_Type (%S, %a, %a)" name pp_slice_list slices pp_ty ty
 
 and pp_bitfields f bitfields = pp_list pp_bitfield f bitfields
 
@@ -200,6 +202,8 @@ let rec pp_lexpr =
     | LE_TupleUnpack les ->
         addb f "LE_TupleUnpack ";
         pp_list pp_lexpr f les
+    | LE_Concat (les, _) ->
+        bprintf f "LE_Concat (%a, None)" (pp_list pp_lexpr) les
   in
   fun f le -> pp_annotated pp_desc f le
 
@@ -295,7 +299,8 @@ let pp_decl f d =
         initial_value
   | D_TypeDecl (name, type_desc, subty_opt) ->
       bprintf f "D_TypeDecl (%S, %a, %a)" name pp_ty type_desc
-        (pp_option pp_string) subty_opt
+        (pp_option (pp_pair pp_string (pp_id_assoc pp_ty)))
+        subty_opt
 
 let pp_t f ast =
   addb f "let open AST in let annot = ASTUtils.add_dummy_pos in ";

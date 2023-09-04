@@ -122,7 +122,13 @@ module RunTime (C : RunTimeConf) = struct
   let remove_local x env =
     {
       env with
-      local = { env.local with storage = Storage.remove x env.local.storage };
+      local =
+        {
+          env.local with
+          storage = Storage.remove x env.local.storage;
+          declared =
+            List.filter (fun s -> not (String.equal s x)) env.local.declared;
+        };
     }
 
   let assign x v env =

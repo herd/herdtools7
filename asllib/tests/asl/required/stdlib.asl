@@ -41,6 +41,18 @@ begin
   assert ((1 << 1)  == 2);
   // assert ((2 << -1) == 1);
 
+  for m = -100 to 100 do
+    let q = Real (m);
+    assert RoundUp (q) == m;
+    assert RoundDown (q) == m;
+    assert RoundTowardsZero (q) == m;
+  end
+
+  for m = -100 to 100 do
+    let q = Real (m) / 3.0;
+    assert RoundDown (q) == m DIVRM 3;
+  end
+
   return 0;
 end
 

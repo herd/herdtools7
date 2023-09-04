@@ -189,22 +189,7 @@ module Make (B : Backend.S) (C : Config) = struct
       | D_TypeDecl (name, _, _) ->
           name
     in
-    let use =
-      let use_e e acc = use_e acc e in
-      let use_ty _ty acc = acc (* TODO *) in
-      fun d ->
-        match d.desc with
-        | D_GlobalStorage { initial_value = Some e; ty = Some ty; _ } ->
-            ISet.empty |> use_e e |> use_ty ty
-        | D_GlobalStorage { initial_value = None; ty = Some ty; _ } ->
-            ISet.empty |> use_ty ty
-        | D_GlobalStorage { initial_value = Some e; ty = None; _ } ->
-            ISet.empty |> use_e e
-        | D_GlobalStorage _ -> ISet.empty
-        | D_TypeDecl (_, ty, s) -> use_ty ty (ISet.of_option s)
-        | D_Func _ ->
-            ISet.empty (* TODO: pure functions that can be used in constants? *)
-    in
+    let use d = use_constant_decl ISet.empty d in
     let process_one_decl d =
       match d.desc with
       | D_GlobalStorage { initial_value; name; ty; _ } ->
@@ -340,8 +325,12 @@ module Make (B : Backend.S) (C : Config) = struct
     match e.desc with
     | E_Literal v -> return_normal (B.v_of_literal v, env) |: SemanticsRule.Lit
 
-    | E_Typed (e, _t) -> eval_expr env e |: SemanticsRule.TypedExpr
-
+    | E_Typed (e, t) ->
+        let** v, env = eval_expr env e in
+        let* b = is_val_of_type e env v t in
+        (if b then return_normal (v, env)
+         else fatal_from e (Error.MismatchType (B.debug_value v, [ t.desc ])))
+        |: SemanticsRule.TypedExpr
     | E_Var x -> (
         match IEnv.find x env with
 
@@ -472,6 +461,68 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         fatal_from e (Error.UnexpectedSideEffect msg)
 
+  (* Runtime checks *)
+  (* -------------- *)
+
+  and is_val_of_type loc env v ty : bool B.m =
+    let m_true = L_Bool true |> B.v_of_literal |> return in
+    let m_false = L_Bool false |> B.v_of_literal |> return in
+    let and' prev here = prev >>= B.binop BAND here in
+    let or' prev here = prev >>= B.binop BOR here in
+    let rec in_values v ty =
+      match (Types.get_structure (IEnv.to_static env) ty).desc with
+      | T_Real | T_Bool | T_Enum _ | T_String | T_Bits _ | T_Int None -> m_true
+      | T_Int (Some constraints) ->
+          let fold prev = function
+            | Constraint_Exact e ->
+                let* v' = eval_expr_sef env e in
+                let* here = B.binop EQ_OP v v' in
+                or' prev here
+            | Constraint_Range (e1, e2) ->
+                let* v1 = eval_expr_sef env e1 and* v2 = eval_expr_sef env e2 in
+                let* here =
+                  let* c1 = B.binop LEQ v1 v and* c2 = B.binop LEQ v v2 in
+                  B.binop BAND c1 c2
+                in
+                or' prev here
+          in
+          List.fold_left fold m_false constraints
+      | T_Record fields | T_Exception fields ->
+          let fold prev (field_name, field_type) =
+            let* v' = B.get_field field_name v in
+            let* here = in_values v' field_type in
+            and' prev here
+          in
+          List.fold_left fold m_true fields
+      | T_Tuple tys ->
+          let fold (i, prev) ty' =
+            let m =
+              let* v' = B.get_index i v in
+              let* here = in_values v' ty' in
+              and' prev here
+            and i = i + 1 in
+            (i, m)
+          in
+          List.fold_left fold (0, m_true) tys |> snd
+      | T_Array (e, ty') ->
+          let* v = eval_expr_sef env e in
+          let n =
+            match B.v_to_int v with
+            | Some i -> i
+            | None -> fatal_from loc @@ Error.UnsupportedExpr e
+          in
+          let rec loop i prev =
+            if i = n then prev
+            else
+              let* v' = B.get_index i v in
+              let* here = in_values v' ty' in
+              loop (succ i) (and' prev here)
+          in
+          loop 0 m_true
+      | T_Named _ -> assert false
+    in
+    B.choice (in_values v ty) (return true) (return false)
+
   (* Evaluation of Left-Hand-Side Expressions *)
   (* ---------------------------------------- *)
 
@@ -524,20 +575,29 @@ module Make (B : Backend.S) (C : Config) = struct
           B.set_field field_name v rv_record
         in
         eval_lexpr ver re_record env m' |: SemanticsRule.LESetField
-    | LE_SetFields _ ->
-        let* () =
-          let* v = m in
-          Format.eprintf "@[<2>Failing on @[%a@]@ <-@ %s@]@." PP.pp_lexpr le
-            (B.debug_value v);
-          B.return ()
-        in
-        fatal_from le Error.TypeInferenceNeeded |: SemanticsRule.LESetFields
     | LE_TupleUnpack le_list ->
         (* The index-out-of-bound on the vector are done either in typing,
            either in [B.get_index]. *)
         let n = List.length le_list in
         let nmonads = List.init n (fun i -> m >>= B.get_index i) in
         multi_assign ver env le_list nmonads |: SemanticsRule.LETuple
+    | LE_Concat (les, Some widths) ->
+        let extract_one width (ms, start) =
+          let end_ = start + width in
+          let v_width = B.v_of_int width and v_start = B.v_of_int start in
+          let m' = m >>= B.read_from_bitvector [ (v_start, v_width) ] in
+          (m' :: ms, end_)
+        in
+        let ms, _ = List.fold_right extract_one widths ([], 0) in
+        multi_assign V1 env les ms
+    | LE_Concat (_, None) | LE_SetFields _ ->
+        let* () =
+          let* v = m in
+          Format.eprintf "@[<2>Failing on @[%a@]@ <-@ %s@]@." PP.pp_lexpr le
+            (B.debug_value v);
+          B.return ()
+        in
+        fatal_from le Error.TypeInferenceNeeded
 
   (* Evaluation of Expression Lists *)
   (* ------------------------------ *)
@@ -1022,7 +1082,6 @@ module Make (B : Backend.S) (C : Config) = struct
           | Some i -> i
         in
         List.init length (Fun.const v) |> B.create_vector
-
 
   let run_typed_env env (ast : B.ast) (static_env : StaticEnv.env) : B.value m =
     let*| env = build_genv env eval_expr_sef base_value static_env ast in

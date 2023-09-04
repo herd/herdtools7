@@ -38,6 +38,42 @@ end
 //------------------------------------------------------------------------------
 // Functions on reals (TODO, §9.2)
 
+// Convert integer to rational value.
+// func Real(x: integer) => real;
+
+// Nearest integer, rounding towards negative infinity.
+// func RoundDown(x: real) => integer;
+
+// Nearest integer, rounding towards positive infinity.
+// func RoundUp(x: real) => integer;
+
+// Nearest integer, rounding towards zero.
+// func RoundTowardsZero(x: real) => integer;
+
+// Absolute value.
+func Abs(x: real) => real
+begin
+  return if x >= 0.0 then x else -x;
+end
+
+// Maximum of reals.
+func Max(a: real, b: real) => real
+begin
+  return if a>b then a else b;
+end
+
+// Minimum of reals.
+func Min(a: real, b: real) => real
+begin
+  return if a<b then a else b;
+end
+
+// Calculate the square root of x to sf binary digits.
+// The second tuple element of the return value is TRUE if the result is
+// inexact, else FALSE.
+// func SqrtRoundDown(x: real, sf: integer) => (real, boolean);
+// TODO
+
 //------------------------------------------------------------------------------
 // Standard bitvector functions and procedures
 

@@ -432,11 +432,12 @@ module Make (Elt : ELT) = struct
   let pp fmt =
     let open Format in
     function
-    | Empty -> fprintf fmt "\u{2205}"
+    | Empty -> fprintf fmt "∅"
     | t ->
         let m = min_elt t in
         let t = remove m t in
         pp_open_hovbox fmt 0;
+        pp_interval fmt m;
         iter
           (fun i ->
             fprintf fmt "@ \u{222a} ";

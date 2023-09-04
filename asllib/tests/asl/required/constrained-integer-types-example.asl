@@ -69,6 +69,8 @@ end
 func main () => integer
 begin
   tsub02 ();
+
+  gInt = 3;
   f1 ();
   f2 ();
 
