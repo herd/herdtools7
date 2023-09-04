@@ -33,7 +33,7 @@ let pp_pos f { pos_start; pos_end; _ } =
           fprintf f "line %d,@ characters %a to %a" pos_start.pos_lnum
             pp_char_num pos_start pp_char_num pos_end
       else
-        fprintf f "line %d,@ character %a@ to@ line %2d,@ character %a"
+        fprintf f "line %d,@ character %a@ to@ line %d,@ character %a"
           pos_start.pos_lnum pp_char_num pos_start pos_end.pos_lnum pp_char_num
           pos_end
     else
@@ -145,13 +145,8 @@ and pp_ty f t =
   | T_Bits (bits_constraint, []) ->
       fprintf f "@[bits(%a)@]" pp_bits_constraint bits_constraint
   | T_Bits (bits_constraint, fields) ->
-      let pp_bitfield f (name, slices) =
-        fprintf f "@[<h>[%a]@ %s@]" pp_slice_list slices name
-      in
-      fprintf f "bits (%a)@ {@[<hv 1>@,%a@]@,}" pp_bits_constraint
-        bits_constraint
-        (pp_comma_list pp_bitfield)
-        fields
+      fprintf f "@[bits (%a)@ %a@]" pp_bits_constraint bits_constraint
+        pp_bitfields fields
   | T_Enum enum_ty ->
       fprintf f "@[<hov 2>enumeration {@,%a@;<0 -2>}@]"
         (pp_comma_list pp_print_string)
@@ -164,6 +159,16 @@ and pp_ty f t =
   | T_Exception record_ty ->
       fprintf f "@[exception {%a}@]" pp_record_ty record_ty
   | T_Named x -> pp_print_string f x
+
+and pp_bitfield f = function
+  | BitField_Simple (name, slices) ->
+      fprintf f "@[<h>[%a]@ %s@]" pp_slice_list slices name
+  | BitField_Nested (name, slices, bitfields) ->
+      fprintf f "@[<h>[%a]@ %s@ %a@]" pp_slice_list slices name pp_bitfields
+        bitfields
+
+and pp_bitfields f bitfields =
+  fprintf f "@[<hov 2>{@ %a@ }@]" (pp_comma_list pp_bitfield) bitfields
 
 and pp_record_ty f =
   let pp_one f (field_name, field_type) =

@@ -37,7 +37,9 @@ let builtin_examples () =
       T_Enum [];
       T_Enum [ "Something"; "Something Else" ];
       T_Bits (BitWidth_SingleExpr !$0, []);
-      T_Bits (BitWidth_SingleExpr !$3, [ ("Something", [ Slice_Single !$0 ]) ]);
+      T_Bits
+        ( BitWidth_SingleExpr !$3,
+          [ BitField_Simple ("Something", [ Slice_Single !$0 ]) ] );
     ];
 
   (* Builtin aggregate *)
@@ -101,7 +103,9 @@ let subtype_examples () =
   assert (not (subtype_satisfies empty_env bits_2_4 bits_4));
 
   let bits_btifields =
-    !!(T_Bits (BitWidth_SingleExpr !$4, [ ("a", [ Slice_Single !$3 ]) ]))
+    !!(T_Bits
+         ( BitWidth_SingleExpr !$4,
+           [ BitField_Simple ("a", [ Slice_Single !$3 ]) ] ))
   in
 
   assert (domain_subtype_satisfies empty_env bits_btifields bits_btifields);

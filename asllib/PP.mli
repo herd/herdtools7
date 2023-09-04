@@ -12,6 +12,7 @@ val pp_print_seq : ?pp_sep:unit printer -> 'a printer -> 'a Seq.t printer
 (** Re-exported from stdlib 4.12, print q sequence from its elements. *)
 
 val pp_pos : 'a annotated printer
+
 val pp_pos_str : 'a annotated -> string
 (** Print a position. *)
 
@@ -34,6 +35,9 @@ val pp_lexpr : lexpr printer
 
 val pp_stmt : stmt printer
 (** Pretty-print a statement. *)
+
+val pp_slice_list : slice list printer
+(** Pretty-print a list of slices. *)
 
 val pp_t : 'p t printer
 (** Print an AST from printer for a literal *)

@@ -142,9 +142,8 @@ and pp_ty =
     | T_String -> addb f "T_String"
     | T_Bool -> addb f "T_Bool"
     | T_Bits (bits_constraint, fields) ->
-        let pp_fields = pp_list @@ pp_pair pp_string pp_slice_list in
-        bprintf f "T_Bits (%a, %a)" pp_bits_constraint bits_constraint pp_fields
-          fields
+        bprintf f "T_Bits (%a, %a)" pp_bits_constraint bits_constraint
+          pp_bitfields fields
     | T_Enum enum_type_desc ->
         addb f "T_Enum ";
         pp_list pp_string f enum_type_desc
@@ -162,6 +161,15 @@ and pp_ty =
     | T_Named identifier -> bprintf f "T_Named %S" identifier
   in
   fun f s -> pp_annotated pp_desc f s
+
+and pp_bitfield f = function
+  | BitField_Simple (name, slices) ->
+      bprintf f "BitField_Simple (%S, %a)" name pp_slice_list slices
+  | BitField_Nested (name, slices, bitfields) ->
+      bprintf f "BitField_Nested (%S, %a, %a)" name pp_slice_list slices
+        pp_bitfields bitfields
+
+and pp_bitfields f bitfields = pp_list pp_bitfield f bitfields
 
 and pp_int_constraint f =
   let pp_one f = function
@@ -215,7 +223,8 @@ let rec pp_stmt =
   let pp_desc f = function
     | S_Pass -> addb f "SPass"
     | S_Then (s1, s2) -> bprintf f "S_Then (%a, %a)" pp_stmt s1 pp_stmt s2
-    | S_Assign (le, e, _v) -> bprintf f "S_Assign (%a, %a)" pp_lexpr le pp_expr e
+    | S_Assign (le, e, _v) ->
+        bprintf f "S_Assign (%a, %a)" pp_lexpr le pp_expr e
     | S_Call (name, args, named_args) ->
         bprintf f "S_Call (%S, %a, %a)" name pp_expr_list args
           (pp_id_assoc pp_expr) named_args

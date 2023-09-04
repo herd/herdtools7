@@ -163,7 +163,7 @@ and type_desc =
   | T_Real
   | T_String
   | T_Bool
-  | T_Bits of bits_constraint * bitfields
+  | T_Bits of bits_constraint * bitfield list
   | T_Enum of identifier list
   | T_Tuple of ty list
   | T_Array of expr * ty
@@ -191,7 +191,12 @@ and bits_constraint =
   | BitWidth_Constraints of int_constraints
       (** Constrained directly by a constraint on its width. *)
 
-and bitfields = (identifier * slice list) list
+(** Represent static slices on a given bitvector type. *)
+and bitfield =
+  | BitField_Simple of identifier * slice list
+      (** A name and its corresponding slice *)
+  | BitField_Nested of identifier * slice list * bitfield list
+      (** A name, its corresponding slice and some nested bitfields. *)
 
 and typed_identifier = identifier * ty
 (** An identifier declared with its type. *)

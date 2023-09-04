@@ -358,28 +358,27 @@ let slice ==
   | e1=expr; STAR_COLON; e2=expr; < Slice_Star    >
 
 (* Bitfields *)
-let bitfields == loption(braced(tclist(bitfield)))
-let bitfield == s=nslices ; x=IDENTIFIER ; bitfield_spec; { (x, s) }
-(* Bitfield spec -- not yet implemented *)
-let bitfield_spec==
-  | as_ty     ; <>
-  | bitfields ; <>
+let bitfields_opt == loption(bitfields)
+let bitfields == braced(tclist(bitfield))
+let bitfield ==
+  | s=nslices ; x=IDENTIFIER ;                 { BitField_Simple (x, s)     }
+  | s=nslices ; x=IDENTIFIER ; bf=bitfields ;  { BitField_Nested (x, s, bf) }
 
 (* Also called ty in grammar.bnf *)
 let ty :=
   annotated (
-    | INTEGER; c = ioption(int_constraints);        < T_Int       >
-    | REAL;                                         { T_Real      }
-    | BOOLEAN;                                      { T_Bool      }
-    | STRING;                                       { T_String    }
-    | BIT;                                          { t_bit       }
-    | BITS; ~=pared(bits_constraint); ~=bitfields;  < T_Bits      >
-    | ENUMERATION; l=braced(tclist(IDENTIFIER));    < T_Enum      >
-    | l=plist(ty);                                  < T_Tuple     >
-    | ARRAY; e=bracketed(expr); OF; t=ty;           < T_Array     >
-    | RECORD; l=fields_opt;                         < T_Record    >
-    | EXCEPTION; l=fields_opt;                      < T_Exception >
-    | name=IDENTIFIER;                              < T_Named     >
+    | INTEGER; c = ioption(int_constraints);            < T_Int       >
+    | REAL;                                             { T_Real      }
+    | BOOLEAN;                                          { T_Bool      }
+    | STRING;                                           { T_String    }
+    | BIT;                                              { t_bit       }
+    | BITS; ~=pared(bits_constraint); ~=bitfields_opt;  < T_Bits      >
+    | ENUMERATION; l=braced(tclist(IDENTIFIER));        < T_Enum      >
+    | l=plist(ty);                                      < T_Tuple     >
+    | ARRAY; e=bracketed(expr); OF; t=ty;               < T_Array     >
+    | RECORD; l=fields_opt;                             < T_Record    >
+    | EXCEPTION; l=fields_opt;                          < T_Exception >
+    | name=IDENTIFIER;                                  < T_Named     >
   )
 
 (* Constructs on ty *)
