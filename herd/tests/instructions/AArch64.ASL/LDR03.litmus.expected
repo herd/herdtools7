@@ -1,0 +1,10 @@
+Test LDR03 Required
+States 1
+0:X2=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X2=2)
+Observation LDR03 Always 1 0
+Hash=1858150ef66e22e18267a451f64fc1b4
+

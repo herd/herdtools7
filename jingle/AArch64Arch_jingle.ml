@@ -185,6 +185,11 @@ include Arch.MakeArch(struct
         find_cst k >> fun k ->
         find_shift s >! fun s->
         I_MOVZ(a,r,k,s)
+    | I_MOVN(a,r,k,s) ->
+        conv_reg r >> fun r  ->
+        find_cst k >> fun k ->
+        find_shift s >! fun s->
+        I_MOVN(a,r,k,s)
     | I_MOVK(a,r,k,s) ->
         conv_reg r >> fun r  ->
         find_cst k >> fun k ->

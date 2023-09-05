@@ -333,6 +333,7 @@ match name with
 | "sbfm"|"SBFM" -> SBFM
 | "mov"|"MOV" -> MOV
 | "movz"|"MOVZ" -> MOVZ
+| "movn"|"MOVN" -> MOVN
 | "movk"|"MOVK" -> MOVK
 | "adr"|"ADR" -> ADR
 | "rbit"|"RBIT" -> RBIT
@@ -341,6 +342,7 @@ match name with
 (* Three argument opcodes factorized *)
 | "adds"|"ADDS" -> OP A.ADDS
 | "eor"|"EOR" -> OP A.EOR
+| "eon"|"EON" -> OP A.EOR
 | "orr"|"ORR" -> OP A.ORR
 | "orn"|"ORN" -> OP A.ORN
 | "and"|"AND" -> OP A.AND
@@ -389,6 +391,8 @@ match name with
 | "csinv"|"CSINV" -> CSINV
 | "csneg"|"CSNEG" -> CSNEG
 | "cset"|"CSET" -> CSET
+| "csetm"|"CSETM" -> CSETM
+| "cinc"|"CINC" -> CINC
 (* Fences *)
 | "dmb"|"DMB" -> TOK_DMB
 | "dsb"|"DSB" -> TOK_DSB

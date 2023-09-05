@@ -63,6 +63,17 @@ module Make(V:Constant.S)(C:Config) =
       | ZR -> [],ppz
       | _  -> [r],fmt "0"
 
+    let arg1o v r = match v with
+      | V32 -> arg1 "wzr" (fun s -> "^wo"^s) r
+      | V64 -> arg1 "xzr" (fun s -> "^o"^s) r
+      | V128 -> assert false
+
+    and arg1i v r =
+      match v with
+      | V32 -> arg1 "wzr" (fun s -> "^wi"^s) r
+      | V64 -> arg1 "xzr" (fun s -> "^i"^s) r
+      | V128 -> assert false
+
     let args2 ppz fmt r1 r2 = match r1,r2 with
     | ZR,ZR -> [],ppz,[],ppz
     | ZR,_  -> [],ppz,[r2],fmt "0"
@@ -1110,6 +1121,7 @@ module Make(V:Constant.S)(C:Config) =
     let movr = do_movr "mov"
     and rbit = do_movr "rbit"
     and movz = do_movz (fun _ -> []) (* No input *) "movz"
+    and movn = do_movz (fun _ -> []) (* No input *) "movn"
     and movk = do_movz Misc.identity (* Part of register preserved *) "movk"
 
 
@@ -1423,6 +1435,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_MOV (v,r,K i) ->  mov_const v r i::k
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k
     | I_MOVZ (v,rd,i,os) -> movz v rd i os::k
+    | I_MOVN (v,rd,i,os) -> movn v rd i os::k
     | I_MOVK (v,rd,i,os) -> movk  v rd i os::k
     | I_ADR (r,lbl) -> adr tr_lab r lbl::k
     | I_RBIT (v,rd,rs) -> rbit v rd rs::k
@@ -1449,15 +1462,28 @@ module Make(V:Constant.S)(C:Config) =
     | I_STOPBH (op,v,w,rs,rn) ->
         stop (stopbh_memo op v w) V32 rs rn::k
 (* Conditional selection *)
-    | I_CSEL (v,r,ZR,ZR,c,Inc) ->
-        let o,f = match v with
-        | V32 -> arg1 "wzr" (fun s -> "^wo"^s) r
-        | V64 -> arg1 "xzr" (fun s -> "^o"^s) r
-        | V128 -> assert false
-        and t = match v with V32 -> word | V64 -> quad | V128 -> assert false in
+    | I_CSEL (v,r,ZR,ZR,c,(Inc|Inv as op)) ->
+        let o,f = arg1o v r
+        and t =
+          match v with V32 -> word | V64 -> quad | V128 -> assert false in
         let memo =
-          sprintf "cset %s,%s" f (pp_cond (inverse_cond c)) in
+          let op =
+            match op with
+            | Inc -> "cset"
+            | Inv -> "csetm"
+            | _ -> assert false in
+          sprintf "%s %s,%s" op f (pp_cond (inverse_cond c)) in
         { empty_ins with memo; outputs=o; reg_env=add_type t o; }::k
+    | I_CSEL (v,r1,r2,r3,c,Inc) when r2=r3 ->
+       let o,fo = arg1o v r1
+       and i,fi = arg1i v r2
+       and t =
+         match v with V32 -> word | V64 -> quad | V128 -> assert false in
+       let memo =
+         sprintf "cinc %s,%s,%s" fo fi  (pp_cond (inverse_cond c)) in
+           { empty_ins
+           with memo; inputs=i;
+           outputs=o; reg_env=add_type t (i@o); }::k
     | I_CSEL (v,r1,r2,r3,c,op) ->
         let inputs,memo,t = match v with
         | V32 ->

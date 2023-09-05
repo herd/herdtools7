@@ -681,7 +681,9 @@ let inverse_cond = function
   | AL -> AL
 
 type op =
-  ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | ORN | EOR | ASR | LSR | LSL | BICS | BIC
+  | ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | ORN
+  | EOR | EON | ASR | LSR | LSL | BICS | BIC
+
 type gc = CFHI | GCFLGS | GCPERM | GCSEAL | GCTAG | GCTYPE | GCVALUE
 type sc = CLRPERM | CTHI | SCFLGS | SCTAG | SCVALUE
 type variant = V32 | V64 | V128
@@ -935,6 +937,7 @@ type 'k kinstruction =
 (* Operations *)
   | I_MOV of variant * reg * 'k kr
   | I_MOVZ of variant * reg * 'k * 'k s
+  | I_MOVN of variant * reg * 'k * 'k s
   | I_MOVK of variant * reg * 'k * 'k s
   | I_SXTW of reg * reg
   | I_SBFM of variant * reg * reg * 'k * 'k
@@ -1018,6 +1021,7 @@ let pp_op = function
   | ADD  -> "ADD"
   | ADDS -> "ADDS"
   | EOR  -> "EOR"
+  | EON  -> "EON"
   | ORR  -> "ORR"
   | ORN  -> "ORN"
   | SUB  -> "SUB"
@@ -1443,6 +1447,13 @@ let do_pp_instruction m =
         (pp_vreg v r)
         (m.pp_k k)
         (pp_barrel_shift "," s (m.pp_k))
+  | I_MOVN (v,r,k,S_NOEXT) ->
+      sprintf "MOVN %s,%s" (pp_vreg v r) (m.pp_k k)
+  | I_MOVN (v,r,k,s) ->
+      sprintf "MOVN %s,%s,%s"
+        (pp_vreg v r)
+        (m.pp_k k)
+        (pp_barrel_shift "," s (m.pp_k))
   | I_MOVK (v,r,k,S_NOEXT) ->
       sprintf "MOVK %s,%s" (pp_vreg v r) (m.pp_k k)
   | I_MOVK (v,r,k,s) ->
@@ -1480,6 +1491,11 @@ let do_pp_instruction m =
 (* Conditional select *)
   | I_CSEL (v,r1,ZR,ZR,c,Inc) ->
       sprintf "CSET %s,%s" (pp_vreg v r1)  (pp_cond (inverse_cond c))
+  | I_CSEL (v,r1,ZR,ZR,c,Inv) ->
+      sprintf "CSETM %s,%s" (pp_vreg v r1)  (pp_cond (inverse_cond c))
+  | I_CSEL (v,r1,r2,r3,c,Inc) when r2=r3 ->
+     sprintf "CINC %s,%s,%s"
+       (pp_vreg v r1) (pp_vreg v r2) (pp_cond (inverse_cond c))
   | I_CSEL (v,r1,r2,r3,c,op) ->
       pp_rrr (sel_memo op) v r1 r2 r3 ^ "," ^ pp_cond c
 (* Cache maintenance *)
@@ -1531,6 +1547,9 @@ let dump_parsedInstruction =
 
 end
 
+let dump_barrel_shift sh =
+  pp_barrel_shift "" sh (fun v -> "#" ^ string_of_int v)
+
 (****************************)
 (* Symbolic registers stuff *)
 (****************************)
@@ -1556,7 +1575,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None | I_ERET | I_UDF _
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
-  | I_MOVZ (_,r,_,_) | I_MOVK (_,r,_,_)
+  | I_MOVZ (_,r,_,_) | I_MOVN (_,r,_,_) | I_MOVK (_,r,_,_)
   | I_ADR (r,_) | I_IC (_,r) | I_DC (_,r)
   | I_TBNZ (_,r,_,_) | I_TBZ (_,r,_,_)
   | I_CHKSLD r | I_CHKTGD r
@@ -1842,6 +1861,8 @@ let map_regs f_reg f_symb =
       I_MOV (v,map_reg r,map_kr kr)
   | I_MOVZ (v,r,k,s) ->
       I_MOVZ (v,map_reg r,k,s)
+  | I_MOVN (v,r,k,s) ->
+      I_MOVN (v,map_reg r,k,s)
   | I_MOVK (v,r,k,s) ->
       I_MOVK (v,map_reg r,k,s)
   | I_SXTW (r1,r2) ->
@@ -1932,6 +1953,7 @@ let get_next =
   | I_STRBH _
   | I_MOV _
   | I_MOVZ _
+  | I_MOVN _
   | I_MOVK _
   | I_SXTW _
   | I_SBFM _
@@ -1979,12 +2001,110 @@ let get_next =
     -> [Label.Next;]
 
 (* Check instruction validity, beyond parsing *)
-let mask12 = (1 lsl 12)-1
 
-let is_12bits_unsigned k = k land mask12 = k
+let is_nbits_unsigned n =
+  let mask = (1 lsl n) - 1 in
+  fun k -> k land mask = k
+
+let is_6bits_unsigned = is_nbits_unsigned 6
+let is_12bits_unsigned = is_nbits_unsigned 12
+and is_16bits_unsigned = is_nbits_unsigned 16
+
+let variant_raw = function
+  | V128 -> 128
+  | V64 -> 64
+  | V32 -> 32
+
+let do_tr_mov k =
+  try
+    let p =
+      let msk = 0xffff in
+      if msk land k = k then k,0
+      else if (msk lsl 16) land k = k then k lsr 16,16
+      else if (msk lsl 32) land k = k then k lsr 32,32
+      else if (msk lsl 48) land k = k then k lsr 48,48
+      else raise Exit in
+    Some p
+  with Exit -> None
+
+let tr_mov_imm v k =
+  let r =
+    match do_tr_mov k with
+    | None ->
+       begin
+         match do_tr_mov (lnot k) with
+         | None -> None
+         | Some (k,s) -> Some (true,k,s)
+       end
+    | Some (k,s) -> Some (false,k,s) in
+  match r,v with
+  | (None,_)
+  | (Some (_,_,(32|48)),V32) -> None
+  | _,_ -> r
+
+let shift_amount = function
+  | S_NOEXT -> 0
+  | S_LSL s| S_LSR s| S_ASR s (* | S_ROR s *)
+  | S_MSL s
+    -> s
+  | sh ->
+     Warn.fatal
+       "Innapropriate shift, no amount %s"
+       (dump_barrel_shift sh)
+
+
+let unalias i =
+  match i with
+  | I_MOV (v,r1,RV (w,r2))
+       when v=w ->
+     if r1=SP || r2=SP then
+       I_OP3 (v,ADD,r1,r2,K 0,S_NOEXT)
+     else
+       I_OP3 (v,ORR,r1,ZR,RV (v,r2),S_NOEXT)
+  | I_SXTW (rd,rn) -> I_SBFM (V64,rd,rn,0,31)
+  | I_OP3 (V64|V32 as v,LSL,rd,rn,K i,S_NOEXT) ->
+     let sz = variant_raw v-1 in
+     let imms = sz-i in
+     let immr = imms+1 in
+    I_UBFM (v,rd,rn,immr,imms)
+  | I_OP3 (V64|V32 as v,LSR,rd,rn,K i,S_NOEXT) ->
+     let sz = variant_raw v-1 in
+     let imms = sz in
+     let immr = i in
+     I_UBFM (v,rd,rn,immr,imms)
+  | I_OP3 (V64|V32 as v,ASR,rd,rn,K i,S_NOEXT) ->
+         let sz = variant_raw v-1 in
+         let imms = sz in
+         let immr = i in
+         I_SBFM (v,rd,rn,immr,imms)
+  | I_OP3 (v, ((ADD|ADDS|SUB|SUBS) as op), rd, rn, K k,ext)
+       when k < 0 ->
+     let k = -k
+     and op =
+       match op with
+       | ADD -> SUB
+       | SUB -> ADD
+       | ADDS -> SUBS
+       | SUBS -> ADDS
+       | _ -> assert false in
+     I_OP3 (v, op, rd, rn, K k,ext)
+  | I_MOV (v,rd,K k) ->
+     begin
+       match tr_mov_imm v k with
+       | None ->
+          assert false
+       | Some (false,k,s) ->
+          I_MOVZ (v,rd,k,S_LSL s)
+       | Some (true,k,s) ->
+          I_MOVN (v,rd,k,S_LSL s)
+     end
+  | _ -> i
 
 let is_valid i =
   match i with
+  | I_MOV (v,_,RV (w,_)) -> v=w
+  | I_CAS (_,_,_,_,ZR) -> false
+  | I_CAS (_,_,_,_,_) -> true
   | I_OP3 (_,(ADD|SUB|ADDS|SUBS),_,ZR,K _,_)
   | I_OP3 (_,(ADD|SUB),ZR,_,K _,_)
     -> false
@@ -1998,6 +2118,34 @@ let is_valid i =
      is_12bits_unsigned (abs k)
   | I_OP3 (_,(ADD|SUB|ADDS|SUBS),_,_,K _,_)
     -> false
+  | I_OP3 (_,(AND|EOR|ORR),ZR,_,K _,_)
+    -> false
+  | I_OP3 (_,(ADD|SUB|ADDS|SUBS),_,_,RV _,S_NOEXT)
+    -> true
+  | I_OP3 (v,(ADD|SUB|ADDS|SUBS|AND|ANDS|BIC|BICS|EOR|EON|ORN|ORR),
+           _,_,RV (w,_),(S_NOEXT|S_LSL _|S_LSR _|S_ASR _ as s))
+       when v=w
+    -> is_6bits_unsigned (shift_amount s)
+  | I_OP3 (_,(AND|ANDS|EOR|ORR),_,_,K _,S_NOEXT)
+    -> true (* TODO: handle encoding of immediates here? *)
+  | I_OP3 (v,(AND|ANDS|EOR|ORR),_,_,RV (v',_),
+           (S_NOEXT|S_LSL _|S_LSR _|S_ASR _))
+    -> v=v'
+  | I_OP3 (_,(AND|ANDS|EOR|ORR),_,_,K _,_)
+    -> false
+  | I_MOV (v,_,K k) ->
+       Misc.is_some (tr_mov_imm v k)
+  | I_MOVZ (_,_,k,S_NOEXT)|I_MOVN (_,_,k,S_NOEXT) ->
+     is_16bits_unsigned k
+  | I_MOVZ (v,_,k,(S_LSL (0|16|32|48 as s)))
+  | I_MOVN (v,_,k,(S_LSL (0|16|32|48 as s))) ->
+     is_16bits_unsigned k &&
+     begin
+       match s with
+       | 32|48 -> v = V64
+       | _ -> true
+     end
+  | I_MOVZ _|I_MOVN _ -> false
   | _ -> true
 
 
@@ -2088,6 +2236,7 @@ module PseudoI = struct
         | I_TBZ (v,r1,k,lbl) -> I_TBZ (v,r1,k_tr k, lbl)
         | I_MOV (v,r,k) -> I_MOV (v,r,kr_tr k)
         | I_MOVZ (v,r,k,s) -> I_MOVZ (v,r,k_tr k,ap_shift k_tr s)
+        | I_MOVN (v,r,k,s) -> I_MOVN (v,r,k_tr k,ap_shift k_tr s)
         | I_MOVK (v,r,k,s) -> I_MOVK (v,r,k_tr k,ap_shift k_tr s)
         | I_OP3 (v,op,r1,r2,kr,s) -> I_OP3 (v,op,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_ALIGND (r1,r2,k) -> I_ALIGND (r1,r2,k_tr k)
@@ -2194,6 +2343,7 @@ module PseudoI = struct
         | I_TBNZ _
         | I_MOV _
         | I_MOVZ _
+        | I_MOVN _
         | I_MOVK _
         | I_SXTW _
         | I_SBFM _

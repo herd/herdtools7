@@ -8,11 +8,11 @@ BUNDLER_ARGS := -vv $(BUNDLER_JOBS)
 BUNDLER := bundler.py
 BUNDLER_CMD := $(PYTHON) $(BUNDLER) $(BUNDLER_ARGS)
 
-BASE_URL := https://developer.arm.com/-/media/developer/products/architecture/armv9-a-architecture/2022-12/
+BASE_URL := https://developer.arm.com/-/media/developer/products/architecture/armv9-a-architecture/2023-06/
 
-ISA_A64_NAME := ISA_A64_xml_A_profile-2022-12
-ISA_A32_NAME := ISA_AArch32_xml_A_profile-2022-12
-REGS_NAME := SysReg_xml_A_profile-2022-12
+ISA_A64_NAME := ISA_A64_xml_A_profile-2023-06
+ISA_A32_NAME := ISA_AArch32_xml_A_profile-2023-06
+REGS_NAME := SysReg_xml_A_profile-2023-06
 
 TARGETS := $(ISA_A64_NAME) $(ISA_A32_NAME) $(REGS_NAME)
 TARGETS_TAR_GZ := $(addsuffix .tar.gz,$(TARGETS))
@@ -23,7 +23,7 @@ TARGETS_LOG := $(addsuffix .log,$(TARGETS))
 
 $(TARGETS_TAR_GZ):
 	@ echo "Downloading ISA from developer.arm.com ..."
-	@ curl $(BASE_URL)/$@ --silent --output $@
+	curl $(BASE_URL)/$@ --silent --output $@
 
 $(TARGETS): %: | %.tar.gz
 	@ echo "Unpacking xml archive ..."

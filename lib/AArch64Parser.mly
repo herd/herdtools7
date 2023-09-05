@@ -74,14 +74,14 @@ let mk_instrp instr v r1 r2 ra ko kb =
 %token LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token LDRSB LDRSH
 %token LD1 LD1R LD2 LD2R LD3 LD3R LD4 LD4R ST1 ST2 ST3 ST4 STUR /* Neon load/store */
-%token CMP MOV MOVZ MOVK MOVI ADR MVN
+%token CMP MOV MOVZ MOVN MOVK MOVI ADR MVN
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH LDXP LDAXP
 %token STXR STXRB STXRH STLXR STLXRB STLXRH STXP STLXP
 %token <AArch64Base.op> OP
 %token <AArch64Base.sc> SC
 %token <AArch64Base.gc> GC
 %token TOK_ADD TOK_SUB TOK_SUBS
-%token CSEL CSINC CSINV CSNEG CSET
+%token CSEL CSINC CSINV CSNEG CSET CSETM CINC
 %token TOK_DMB TOK_DSB TOK_ISB
 %token TOK_SY TOK_ST TOK_LD
 %token TOK_OSH TOK_OSHST TOK_OSHLD
@@ -1082,6 +1082,7 @@ instr:
   { I_MOV (V128,$2,RV (V128,$4)) }
 | CPY creg COMMA creg
   { I_MOV (V128,$2,RV (V128,$4)) }
+
 | MOVZ xreg COMMA k
   { I_MOVZ (V64,$2, $4, S_NOEXT) }
 | MOVZ xreg COMMA k COMMA TOK_LSL k
@@ -1090,6 +1091,14 @@ instr:
   { I_MOVZ (V32,$2,$4, S_NOEXT) }
 | MOVZ wreg COMMA k COMMA TOK_LSL k
   { I_MOVZ (V32,$2,$4, S_LSL $7) }
+| MOVN xreg COMMA k
+  { I_MOVN (V64,$2, $4, S_NOEXT) }
+| MOVN xreg COMMA k COMMA TOK_LSL k
+  { I_MOVN (V64,$2, $4, S_LSL $7) }
+| MOVN wreg COMMA k
+  { I_MOVN (V32,$2,$4, S_NOEXT) }
+| MOVN wreg COMMA k COMMA TOK_LSL k
+  { I_MOVN (V32,$2,$4, S_LSL $7) }
 | MOVK xreg COMMA k
   { I_MOVK (V64,$2, $4, S_NOEXT) }
 | MOVK xreg COMMA k COMMA TOK_LSL k
@@ -1237,6 +1246,14 @@ instr:
   { I_CSEL (V32,$2,ZR,ZR,inverse_cond $4,Inc) }
 | CSET xreg COMMA cond
   { I_CSEL (V64,$2,ZR,ZR,inverse_cond $4,Inc) }
+| CSETM wreg COMMA cond
+  { I_CSEL (V32,$2,ZR,ZR,inverse_cond $4,Inv) }
+| CSETM xreg COMMA cond
+  { I_CSEL (V64,$2,ZR,ZR,inverse_cond $4,Inv) }
+| CINC wreg COMMA wreg COMMA cond
+  { I_CSEL (V32,$2,$4,$4,inverse_cond $6,Inc) }
+| CINC xreg COMMA xreg COMMA cond
+  { I_CSEL (V64,$2,$4,$4,inverse_cond $6,Inc) }
 /* Fences */
 | TOK_DMB fenceopt
   { let d,t = $2 in I_FENCE (DMB (d,t)) }
