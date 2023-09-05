@@ -145,6 +145,9 @@ let rec local-hw-reqs =
   | [Exp & M]; po-loc; [TLBUncacheable & FAULT]
   | [Exp & R]; addr; [TLBI | DC.CVAU | IC]
   | [Exp & R]; ctrl; [HU]
+  | [Exp & R]; addr; [HU]
+  | [Exp & R]; addr; [Exp]; po; [HU]
+  | [Exp & R]; addr; [Exp]; po; [CSE]; po
 
   | [Imp & Instr & R]; po; [~(Imp & Instr & R)]
 

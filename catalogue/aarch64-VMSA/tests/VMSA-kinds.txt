@@ -718,3 +718,13 @@ NT-20-tlbi                                     Forbidden
 NT-23-tlbi                                     Forbidden
 NT-23-tlbi+dsb                                 Forbidden
 Marc03                                         Forbidden
+S+dmb.st+addr-HUaf                             Allowed
+S+dmb.st+dmb-HUaf                              Allowed
+S+dmb.st+dsb-HUaf                              Allowed
+S+dmb.st+dsb.ish-isb-HUaf                      Allowed
+S+dmb.st+addr-HUdb                             Forbidden
+S+dmb.st+data-HUaf                             Allowed
+S+dmb.st+data-HUdb                             Allowed
+LB+dmb.sy+addr-po-HUaf                         Allowed
+LB+dmb.sy+addr-po-HUdb                         Forbidden
+LB+dmb.sy+addrisb-HU                           Forbidden
