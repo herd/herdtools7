@@ -149,8 +149,8 @@ module Make(O:Config)(A:I) =
     type flow = Any | Next | Branch of string | Disp of int
 
     let add_next b = match b with
-      | Next|Any|Disp _ -> [b;]
-      | Branch _ -> [Next; b;]
+      | Next|Any-> [b;]
+      | Branch _|Disp _ -> [Next; b;]
 
     type ins =
         { memo:string ; inputs:arch_reg list ;  outputs:arch_reg list;
