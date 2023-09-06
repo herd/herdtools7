@@ -608,7 +608,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             fun acc v -> (M.VC.Unop (new_op, tr_v v), acc)
 
       let tr_action ii =
-        let an = AArch64.N in
+        let an = AArch64Annot.N in
         let exp = AArch64.Exp in
         function
         | ASLS.Act.Access (dir, loc, v, sz) -> (

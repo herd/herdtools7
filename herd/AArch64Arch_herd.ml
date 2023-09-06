@@ -15,9 +15,7 @@
 (****************************************************************************)
 
 module Types = struct
-  type annot =
-      A | XA | L | XL | X | N | Q | XQ | NoRet | S
-    | NTA (* Non-Temporal, avoid clash with NT in AArch64Base *)
+  type annot = AArch64Annot.t
   type nexp =  AF|DB|AFDB|Other
   type explicit = Exp | NExp of nexp
   type lannot = annot
@@ -39,9 +37,11 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     include Types
 
-    let empty_annot = N
+    let empty_annot = AArch64Annot.N
     let exp_annot = Exp
     let nexp_annot = NExp Other
+
+    let is_atomic = AArch64Annot.is_atomic
 
     let is_explicit_annot = function
       | Exp -> true
@@ -52,36 +52,6 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | Exp -> false
 
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
-
-    let is_speculated = function
-      | S -> true
-      | _ -> false
-
-    let is_non_temporal = function
-      | NTA -> true
-      | _ -> false
-
-    let _is_atomic = function
-      | XA | XQ | XL | X | NoRet -> true
-      | _ -> false
-
-    let is_atomic = _is_atomic
-
-    let is_noreturn = function
-      | NoRet -> true
-      | _ -> false
-
-    let is_acquire = function
-      | A | XA -> true
-      | _ -> false
-
-    let is_acquire_pc = function
-      | Q | XQ -> true
-      | _ -> false
-
-    let is_release = function
-      | L | XL -> true
-      | _ -> false
 
     let is_af = function (* Setting of access flag *)
       | NExp (AF|AFDB)-> true
@@ -109,7 +79,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     *     B, B.cond, BL, BRK, CBNZ, CBZ, HVC, ISB, NOP, SMC, SVC, TBNZ and TBZ
     * For the other instructions, a concurrent modification and an execution
     * represent a conflict. The list is taken from:
-    *     Arm ARM B2.2.5 "Concurrent modification and execution of instructions" 
+    *   Arm ARM B2.2.5 "Concurrent modification and execution of instructions" 
     *)
     let is_cmodx_restricted_instruction = function
     | I_B _| I_BL _| I_CBNZ _| I_CBZ _| I_FENCE ISB | I_NOP | I_TBNZ _| I_TBZ _
@@ -167,15 +137,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
           (tag,p)::k) [])
 
 
-    let annot_sets = [
-      "X", is_atomic;
-      "A",  is_acquire;
-      "Q",  is_acquire_pc;
-      "L",  is_release;
-      "NoRet", is_noreturn;
-      "S", is_speculated;
-      "NT",is_non_temporal;
-    ]
+    let annot_sets = AArch64Annot.sets
 
     let explicit_sets = [
       "AF", is_af;
@@ -209,18 +171,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     let is_isync = is_barrier ISB
     let pp_isync = "isb"
 
-    let pp_annot a = match a with
-      | XA -> "Acq*"
-      | A -> "Acq"
-      | Q -> "AcqPc"
-      | XQ -> "AcqPc*"
-      | XL -> "Rel*"
-      | L -> "Rel"
-      | X -> "*"
-      | N -> ""
-      | NoRet -> "NoRet"
-      | S -> "^s"
-      | NTA -> "NT"
+    let pp_annot = AArch64Annot.pp
 
     let pp_explicit = function
       | Exp -> if is_kvm && C.verbose > 2 then "Exp" else ""
