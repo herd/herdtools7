@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2021-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,19 +14,21 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Operations on symbolic values *)
+module Make (C : sig
+  val is_morello : bool
+end) : Value.AArch64ASL = struct
+  if C.is_morello then
+    Warn.fatal "-variant asl and -variant morello are not conmpatible" ;
+  module AArch64I = AArch64Instr.Make (C)
+  module ASLScalar = struct
+    include ASLScalar
 
-module Make : functor
-  (Cst : Constant.S)
-  (ArchOp :
-     ArchOp.S
-   with type scalar = Cst.Scalar.t
-    and type pteval = Cst.PteVal.t
-    and type instr = Cst.Instr.t)
-  ->
-  Value.S
-    with module Cst = Cst
-     and module Cst.Scalar = Cst.Scalar
-     and type arch_extra_op1 = ArchOp.extra_op1
-     and type 'a arch_constr_op1 = 'a ArchOp.constr_op1
-     and type arch_op = ArchOp.op
+    let printable = function
+      | S_BitVector bv -> S_Int (Asllib.Bitvector.printable  bv)
+      | S_Bool b -> S_Int (if b then Z.one else Z.zero)
+      | S_Int i -> S_Int (printable_z i)
+  end
+  module AArch64Cst = SymbConstant.Make (ASLScalar) (AArch64PteVal) (AArch64I)
+  module AArch64Op = AArch64Op.Make(ASLScalar)(ASLOp)
+  include SymbValue.Make (AArch64Cst) (AArch64Op)
+end

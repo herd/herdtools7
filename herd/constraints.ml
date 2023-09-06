@@ -307,11 +307,11 @@ module Make (C:Config) (A : Arch_herd.S) :
             ->
              mbox m (pp_rloc_no_brk tr m rloc) ^
              pp_equal m ^
-             mbox m (do_add_asm m (V.pp C.hexa v))
+             mbox m (do_add_asm m (V.pp C.hexa (V.printable v)))
           | LV (rloc,v) ->
              mbox m (pp_rloc tr m rloc) ^
              pp_equal m ^
-             mbox m (do_add_asm m (V.pp C.hexa v))
+             mbox m (do_add_asm m (V.pp C.hexa (V.printable v)))
           | LL (l1,l2) ->
               mbox m (pp_loc tr m l1) ^
               pp_equal m ^

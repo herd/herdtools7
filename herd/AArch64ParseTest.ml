@@ -60,12 +60,6 @@ module Make(Conf:RunTest.Config)(ModelConfig:MemCat.Config) = struct
             X.X.run
       end in
 
-(* START NOTWWW *)
-      if Conf.variant Variant.ASL then
-        let module Run =  Top(AArch64ASLSem.Make) in
-        Run.run dirty start_time name chan env splitted
-      else
-(* END NOTWWW *)
-        let module Run = Top(AArch64Sem.Make) in
-        Run.run dirty start_time name chan env splitted
+    let module Run = Top(AArch64Sem.Make) in
+    Run.run dirty start_time name chan env splitted
 end

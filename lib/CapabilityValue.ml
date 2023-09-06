@@ -18,10 +18,11 @@ module Make (C : sig
   val is_morello : bool
 end) : Value.AArch64 = struct
   module AArch64Instr = AArch64Instr.Make (C)
-  module CapOp = ArchOp.OnlyArchOp1 (AArch64Op.Make (CapabilityScalar))
-
-  include
-    SymbValue.Make
-      (SymbConstant.Make (CapabilityScalar) (AArch64PteVal) (AArch64Instr))
-         (CapOp)
+  module AArch64Constant =
+    SymbConstant.Make (CapabilityScalar) (AArch64PteVal) (AArch64Instr)
+  module NoCst =
+    SymbConstant.Make (CapabilityScalar) (PteVal.No) (AArch64Instr)
+  module NoArchOp = ArchOp.No(NoCst)
+  module CapOp = AArch64Op.Make (CapabilityScalar)(NoArchOp)
+  include SymbValue.Make(AArch64Constant)(CapOp)
 end

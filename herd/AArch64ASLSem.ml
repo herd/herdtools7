@@ -26,7 +26,7 @@ let return_0 =
   let open Asllib.ASTUtils in
   S_Return (Some (expr_of_int 0)) |> add_dummy_pos
 
-module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
+module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
   AArch64Sig.Semantics with module A.V = V = struct
   module AArch64S = AArch64Sem.Make (TopConf) (V)
   include AArch64S
@@ -528,11 +528,6 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
       module IMap = Map.Make (Int)
 
       let csym_tbl = ref IMap.empty
-      let atom v = M.VC.Atom v
-
-      let declare e acc =
-        let name = V.fresh_var () in
-        (name, M.VC.Assign (name, e) :: acc)
 
       let tr_v = function
         | ASLValue.V.Var s | ASLValue.V.Val (Constant.Frozen s) -> (
@@ -543,8 +538,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
                 csym_tbl := IMap.add s v !csym_tbl;
                 v)
         | ASLValue.V.Val (Constant.Concrete i) ->
-            V.Val
-              (Constant.Concrete (V.Cst.Scalar.of_int64 (ASLScalar.to_int64 i)))
+            V.Val (Constant.Concrete i)
         | ASLValue.V.Val (Constant.Symbolic symb) -> (
             match symb with
             | Constant.(Virtual { tag = Some tag; name; _ })
@@ -572,168 +566,10 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64) :
                | Some loc -> " "^A.pp_location loc) in
         nloc
 
-      let mask_of_positions =
-        let mask_one acc i =
-          let open Int64 in
-          shift_left 1L i |> lognot |> logor acc
-        in
-        List.fold_left mask_one (-1L)
-
-      let group_by_continuous =
-        let rec aux prec start length acc = function
-          | [] -> (start, length) :: acc
-          | h :: t ->
-              if prec = h + 1 then aux h start (length + 1) acc t
-              else aux h h 1 ((start, length) :: acc) t
-        in
-        function [] -> [] | h :: t -> aux h h 1 [] t
-
-      let extract_bits_to dst_pos src src_pos n acc =
-        if n >= 64 then Warn.fatal "Can't handle values with more than 64 bits."
-        else
-          let shifted_v, acc =
-            let shift = src_pos - dst_pos in
-            if shift = 0 then (src, acc)
-            else
-              let dir =
-                if shift > 0 then Op.LogicalRightShift shift
-                else Op.LeftShift ~-shift
-              in
-              declare (M.VC.Unop (dir, src)) acc
-          in
-          let mask = ((1 lsl n) - 1) lsl (dst_pos - n) in
-          (M.VC.Unop (Op.AndK (string_of_int mask), shifted_v), acc)
-
-      let tr_arch_op arch_op acc (v1 : ASLValue.V.v) (v2 : ASLValue.V.v) =
-        match arch_op with
-        | ASLValue.Divrm -> Warn.fatal "Cannot translate divrm to AArch64."
-        | ASLValue.SetIndex _ | ASLValue.SetField _ ->
-            Warn.fatal "Cannot translate vector operations to AArch64."
-        | ASLValue.Concat -> (
-            match (v1, v2) with
-            | _, ASLValue.V.Val (Constant.Concrete (ASLScalar.S_BitVector bv2))
-              -> (
-                match Asllib.Bitvector.length bv2 with
-                | 0 -> (atom (tr_v v1), acc)
-                | n ->
-                    let shifted, acc =
-                      declare (M.VC.Unop (Op.LeftShift n, tr_v v1)) acc
-                    in
-                    (M.VC.Binop (Op.Or, shifted, tr_v v2), acc))
-            | ASLValue.V.Val (Constant.Concrete (ASLScalar.S_BitVector bv1)), _
-              when Asllib.Bitvector.is_zeros bv1 ->
-                (atom (tr_v v2), acc)
-            | _, ASLValue.V.Var _ ->
-                Warn.fatal
-                  "Not yet implemented: concatenating variables: %s and %s."
-                  (ASLValue.V.pp_v v1) (ASLValue.V.pp_v v2)
-            | _ ->
-                Warn.fatal "Cannot translate concatenation of %s and %s."
-                  (ASLValue.V.pp_v v1) (ASLValue.V.pp_v v2))
-        | ASLValue.BVSliceSet positions -> (
-            let dst = tr_v v1 and src = tr_v v2 in
-            match group_by_continuous positions with
-            | [] -> (atom dst, acc)
-            | [ (63, 64) ] -> (atom src, acc)
-            | (x, n) :: t ->
-                let folder (prec, acc, i) (x, n) =
-                  let w, acc = extract_bits_to x src i n acc in
-                  let nw, acc = declare w acc in
-                  let nprec, acc = declare prec acc in
-                  (M.VC.Binop (Op.Or, nw, nprec), acc, i + n)
-                in
-                let first, acc = extract_bits_to x src 0 n acc in
-                let w, acc, _ = List.fold_left folder (first, acc, n) t in
-                let nw, acc = declare w acc in
-                let mask =
-                  mask_of_positions positions |> Int64.to_string |> V.stringToV
-                in
-                let masked_dst, acc =
-                  declare (M.VC.Binop (Op.And, mask, dst)) acc
-                in
-                (M.VC.Binop (Op.Or, nw, masked_dst), acc))
-
-      let tr_op =
-        let open Op in
-        function
-        | ArchOp archop -> tr_arch_op archop
-        | op ->
-            let op =
-              match op with
-              | Add -> Add
-              | Sub -> Sub
-              | Mul -> Mul
-              | Div -> Div
-              | Rem -> Rem
-              | And -> And
-              | Or -> Or
-              | Xor -> Xor
-              | Nor -> Nor
-              | AndNot2 -> AndNot2
-              | ASR -> ASR
-              | CapaAdd -> CapaAdd
-              | Alignd -> Alignd
-              | Alignu -> Alignu
-              | Build -> Build
-              | ClrPerm -> ClrPerm
-              | CpyType -> CpyType
-              | CSeal -> CSeal
-              | Cthi -> Cthi
-              | Seal -> Seal
-              | SetValue -> SetValue
-              | CapaSub -> CapaSub
-              | CapaSubs -> CapaSubs
-              | CapaSetTag -> CapaSetTag
-              | Unseal -> Unseal
-              | ShiftLeft -> ShiftLeft
-              | ShiftRight -> ShiftRight
-              | Lsr -> Lsr
-              | Lt -> Lt
-              | Gt -> Gt
-              | Eq -> Eq
-              | Ne -> Ne
-              | Le -> Le
-              | Ge -> Ge
-              | Max -> Max
-              | Min -> Min
-              | SetTag -> SetTag
-              | SquashMutable -> SquashMutable
-              | CheckPerms s -> CheckPerms s
-              | ToInteger -> ToInteger
-              | ArchOp _ -> assert false
-            in
-            fun acc v1 v2 -> (M.VC.Binop (op, tr_v v1, tr_v v2), acc)
+      let tr_op op acc v1 v2 = M.VC.Binop (op, tr_v v1, tr_v v2), acc
 
       let tr_arch_op1 op acc v =
-        let v = tr_v v in
-        match op with
-        | ASLValue.ToIntS -> (atom v, acc)
-        | ASLValue.ToIntU -> (atom v, acc)
-        | ASLValue.ToBool -> (M.VC.Binop (Op.Ne, V.zero, v), acc)
-        | ASLValue.ToBV -> (atom v, acc)
-        | ASLValue.BVSlice positions -> (
-            let folder (prec, acc, i) (x, n) =
-              let w, acc = extract_bits_to i v x n acc in
-              let nw, acc = declare w acc in
-              let nprec, acc = declare prec acc in
-              (M.VC.Binop (Op.Or, nw, nprec), acc, i + n)
-            in
-            match group_by_continuous positions with
-            | [] -> (atom V.zero, acc)
-            | [ (63, 64) ] -> (atom v, acc)
-            | [ (31, 32) ] -> (M.VC.Unop (Op.Mask MachSize.Word, v), acc)
-            | [ (15, 16) ] -> (M.VC.Unop (Op.Mask MachSize.Short, v), acc)
-            | [ (7, 8) ] -> (M.VC.Unop (Op.Mask MachSize.Byte, v), acc)
-            | (x, n) :: t ->
-                let first, acc =
-                  if n = 1 then (M.VC.Unop (Op.ReadBit x, v), acc)
-                  else extract_bits_to 0 v x n acc
-                in
-                let w, acc, _ = List.fold_left folder (first, acc, n) t in
-                (w, acc))
-        | ASLValue.BoolNot -> (M.VC.Unop (Op.Not, v), acc)
-        | ASLValue.GetIndex _ | ASLValue.GetField _ ->
-            Warn.fatal "Cannot translate vector operations to AArch64."
+        M.VC.Unop (Op.ArchOp1 (AArch64Op.Extra op), tr_v v), acc
 
       let tr_op1 =
         let open Op in

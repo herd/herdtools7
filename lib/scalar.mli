@@ -34,6 +34,7 @@ module type S = sig
   val of_int64 : int64 -> t
   val to_int64 : t -> int64 (* Hum *)
 
+  val printable : t -> t
   val compare : t -> t -> int
   val equal : t -> t -> bool
 

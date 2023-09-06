@@ -236,7 +236,7 @@ module Make(O:Config)(M:XXXMem.S) =
 
       let check = check_prop test in
 
-      fun conc fsc (set_pp,vbpp) flags c ->
+      fun conc (st,flts) (set_pp,vbpp) flags c ->
         if not showtoofar && S.gone_toofar conc then
           { c with toofar = true; }
         else if do_observed && not (all_observed test conc) then c
@@ -246,6 +246,8 @@ module Make(O:Config)(M:XXXMem.S) =
           | Some flag -> not (Flag.Set.mem (Flag.Flag flag) flags)
         then c
         else
+          let st = A.map_state A.V.printable st in
+          let fsc = st,flts in
           let ok = check fsc in
           let show_exec =
             let open PrettyConf in

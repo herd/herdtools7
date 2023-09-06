@@ -162,9 +162,9 @@ module Make (C : Config) = struct
           M.restrict M.VC.[ Assign (v', Unop (op1, v)) ] >>! v'
       | v -> M.op1 op1 v
 
-    let to_bv = wrap_op1_symb_as_var (Op.ArchOp1 ASLValue.ToBV)
-    let to_int_unsigned = wrap_op1_symb_as_var (Op.ArchOp1 ASLValue.ToIntU)
-    let to_int_signed = wrap_op1_symb_as_var (Op.ArchOp1 ASLValue.ToIntS)
+    let to_bv = wrap_op1_symb_as_var (Op.ArchOp1 ASLOp.ToBV)
+    let to_int_unsigned = wrap_op1_symb_as_var (Op.ArchOp1 ASLOp.ToIntU)
+    let to_int_signed = wrap_op1_symb_as_var (Op.ArchOp1 ASLOp.ToIntS)
 
     (**************************************************************************)
     (* Special monad interations                                              *)
@@ -199,7 +199,7 @@ module Make (C : Config) = struct
 
     let binop =
       let open AST in
-      let to_bool op v1 v2 = op v1 v2 >>= M.op1 (Op.ArchOp1 ASLValue.ToBool) in
+      let to_bool op v1 v2 = op v1 v2 >>= M.op1 (Op.ArchOp1 ASLOp.ToBool) in
       let to_bv op v1 v2 = op v1 v2 >>= to_bv in
       let or_ v1 v2 =
         match (v1, v2) with
@@ -218,7 +218,7 @@ module Make (C : Config) = struct
       | BOR -> M.op Op.Or
       | DIV -> M.op Op.Div
       | MOD -> M.op Op.Rem
-      | DIVRM -> M.op (Op.ArchOp ASLValue.Divrm)
+      | DIVRM -> M.op (Op.ArchOp ASLOp.Divrm)
       | EOR -> M.op Op.Xor |> to_bv
       | EQ_OP -> M.op Op.Eq |> to_bool
       | GT -> M.op Op.Gt |> to_bool
@@ -240,7 +240,7 @@ module Make (C : Config) = struct
     let unop op =
       let open AST in
       match op with
-      | BNOT -> wrap_op1_symb_as_var (Op.ArchOp1 ASLValue.BoolNot)
+      | BNOT -> wrap_op1_symb_as_var (Op.ArchOp1 ASLOp.BoolNot)
       | NEG -> M.op Op.Sub V.zero
       | NOT -> wrap_op1_symb_as_var Op.Inv
 
@@ -272,7 +272,7 @@ module Make (C : Config) = struct
         let action = Act.Access (dir, loc, v, MachSize.Quad) in
         M.mk_singleton_es action (use_ii_with_poi ii poi) in
       if is_pstate x scope then
-        M.op1 (Op.ArchOp1 ASLValue.ToIntU) v >>= m
+        M.op1 (Op.ArchOp1 ASLOp.ToIntU) v >>= m
       else m v
 
     let on_write_identifier = on_access_identifier Dir.W
@@ -297,25 +297,25 @@ module Make (C : Config) = struct
       | V.Val (Constant.Frozen i) -> return (V.Var i)
       | v -> return v
 
-    let get_index i v = M.op1 (Op.ArchOp1 (ASLValue.GetIndex i)) v >>= unfreeze
+    let get_index i v = M.op1 (Op.ArchOp1 (ASLOp.GetIndex i)) v >>= unfreeze
 
     let set_index i v vec =
-      M.op (Op.ArchOp (ASLValue.SetIndex i)) vec (freeze v)
+      M.op (Op.ArchOp (ASLOp.SetIndex i)) vec (freeze v)
 
     let get_field name v =
-      M.op1 (Op.ArchOp1 (ASLValue.GetField name)) v >>= unfreeze
+      M.op1 (Op.ArchOp1 (ASLOp.GetField name)) v >>= unfreeze
 
     let set_field name v record =
-      M.op (Op.ArchOp (ASLValue.SetField name)) record (freeze v)
+      M.op (Op.ArchOp (ASLOp.SetField name)) record (freeze v)
 
     let read_from_bitvector positions bvs =
       let positions = Asllib.ASTUtils.slices_to_positions v_as_int positions in
-      let arch_op1 = ASLValue.BVSlice positions in
+      let arch_op1 = ASLOp.BVSlice positions in
       M.op1 (Op.ArchOp1 arch_op1) bvs
 
     let write_to_bitvector positions w v =
       let positions = Asllib.ASTUtils.slices_to_positions v_as_int positions in
-      M.op (Op.ArchOp (ASLValue.BVSliceSet positions)) v w
+      M.op (Op.ArchOp (ASLOp.BVSliceSet positions)) v w
 
     let concat_bitvectors bvs =
       let bvs =
@@ -332,7 +332,7 @@ module Make (C : Config) = struct
       | h :: t ->
           let folder acc v =
             let* acc = acc in
-            M.op (Op.ArchOp ASLValue.Concat) acc v
+            M.op (Op.ArchOp ASLOp.Concat) acc v
           in
           List.fold_left folder (return h) t
 

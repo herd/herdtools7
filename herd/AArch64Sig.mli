@@ -34,10 +34,9 @@ end
 module type Semantics =
   Sem.Semantics
   with type A.instruction = AArch64Base.instruction
-  and type A.parsedInstruction = AArch64Base.parsedInstruction
-  and type A.reg = AArch64Base.reg
-  and type 'ins A.kpseudo = 'ins AArch64Base.kpseudo
-
+   and type A.parsedInstruction = AArch64Base.parsedInstruction
+   and type A.reg = AArch64Base.reg
+   and type 'ins A.kpseudo = 'ins AArch64Base.kpseudo
 
 module type MakeSemantics =
   functor(C:Config) ->

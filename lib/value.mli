@@ -18,12 +18,12 @@
 
 module type S =
     sig
-
 (* Constants, notice that they include symbolic "rigid" constants *)
       module Cst : Constant.S
-
       type arch_op
-      type arch_op1 (* Arch specific operations *)
+      type arch_extra_op1
+      type 'a arch_constr_op1 (* Arch specific operations *)
+      type arch_op1 = arch_extra_op1 arch_constr_op1
 
       val pp_arch_op : arch_op -> string
       val pp_arch_op1 : bool -> arch_op1 -> string
@@ -46,6 +46,11 @@ module type S =
       val pp_v  : v -> string
       val pp : bool (* hexa *) -> v -> string
       val pp_unsigned : bool (* hexa *) -> v -> string
+
+(* Some architecture may somehow normalize values before
+   printing them. *)
+      val printable : v -> v
+
 
 (* produce a fresh variable *)
       val fresh_var : unit -> v
@@ -112,7 +117,14 @@ module type S =
       val map_csym : (csym -> v) -> v -> v
     end
 
-module type AArch64 = S
+module type AArch64 =
+  S
   with type Cst.PteVal.t = AArch64PteVal.t
   and type Cst.Instr.t = AArch64Base.instruction
-  and type arch_op1 = AArch64Op.t
+  and type 'a arch_constr_op1 = 'a AArch64Op.t
+
+module type AArch64ASL =
+  AArch64
+  with type Cst.Scalar.t = ASLScalar.t
+  and type arch_op = ASLOp.op
+  and type arch_extra_op1 = ASLOp.op1

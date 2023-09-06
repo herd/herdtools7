@@ -233,6 +233,14 @@ let to_z_signed ((sz, _) as bv) =
   let r = to_z_unsigned bv in
   if sgn = 0 then r else Z.sub r (Z.shift_left Z.one sz)
 
+let z63 = Z.shift_left Z.one 63
+let z64 = Z.shift_left Z.one 64
+
+let printable bv =
+  let z = to_z_signed bv in
+  if Z.geq z z63 then Z.sub z z64
+  else z
+
 let of_string s =
   let result = Buffer.create ((String.length s / 8) + 1) in
   let lengthr = ref 0 in

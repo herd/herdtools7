@@ -27,7 +27,9 @@ module
   module Cst = Cst
 
   type arch_op = ArchOp.op
-  type arch_op1 = ArchOp.op1
+  type arch_extra_op1 = ArchOp.extra_op1
+  type 'a arch_constr_op1 = 'a ArchOp.constr_op1
+  type arch_op1 = arch_extra_op1 arch_constr_op1
 
   let pp_arch_op = ArchOp.pp_op
   let pp_arch_op1 = ArchOp.pp_op1
@@ -67,6 +69,11 @@ module
 
   let pp_v =  do_pp Cst.pp_v
   let pp_v_old =  do_pp Cst.pp_v_old
+
+  let printable = function
+    | Val (c) ->
+       Val (Constant.map_scalar Cst.Scalar.printable c)
+    | v -> v
 
   let equalityPossible v1 v2 =
     match (v1,v2) with
