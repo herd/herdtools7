@@ -403,6 +403,17 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "rt_unknown" ^= litb false;
                   "wb_unknown" ^= litb false;
                 ] )
+      | I_STLR (v,rt,rn) ->
+         Some
+            ( "memory/ordered/STLR_SL32_ldstord.opn",
+              stmt
+                ["t" ^= reg rt;
+                 "n" ^= reg rn;
+                 "wback" ^= litb false;
+                 "rt_unknown" ^= litb false;
+                 "tagchecked" ^= litb (rn <> SP);
+                 "offset" ^= liti 0;
+                 "datasize" ^= variant v;])
       | i ->
           let () =
             if _dbg then
@@ -608,15 +619,14 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             fun acc v -> (M.VC.Unop (new_op, tr_v v), acc)
 
       let tr_action ii =
-        let an = AArch64Annot.N in
         let exp = AArch64.Exp in
         function
-        | ASLS.Act.Access (dir, loc, v, sz) -> (
+        | ASLS.Act.Access (dir, loc, v, sz, a) -> (
             match tr_loc ii loc with
             | None -> None
             | Some loc ->
                 let ac = Act.access_of_location_std loc in
-                Some (Act.Access (dir, loc, tr_v v, an, exp, sz, ac)))
+                Some (Act.Access (dir, loc, tr_v v, a, exp, sz, ac)))
         | ASLS.Act.NoAction -> Some Act.NoAction
         | ASLS.Act.TooFar msg -> Some (Act.TooFar msg)
 
@@ -756,10 +766,10 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             match event.ASLE.action with
             | ASLS.Act.Access
                 (Dir.W,
-                 ASLS.A.Location_reg (_, ASLBase.ArchReg reg), v, _)
+                 ASLS.A.Location_reg (_, ASLBase.ArchReg reg), v, _, _)
               ->
               (reg, tr_v v)::acc
-            |  ASLS.Act.Access (Dir.W, loc , v, _)
+            |  ASLS.Act.Access (Dir.W, loc , v, _, _)
                ->
                 if _dbg then
                   Printf.eprintf

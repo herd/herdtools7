@@ -1,0 +1,9 @@
+AArch64 STLR
+{
+0:X0=15;
+0:X1=x;
+}
+  P0         ;
+STLR W0,[X1] ;
+
+forall [x]=15
