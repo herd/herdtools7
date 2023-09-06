@@ -15,6 +15,8 @@
 (****************************************************************************)
 (* Authors:                                                                 *)
 (* Hadrien Renaud, University College London, UK.                           *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Jade Alglave, Arm Ltd and UCL, UK.                                       *)
 (****************************************************************************)
 
 module type S = sig
@@ -25,7 +27,7 @@ module type S = sig
       the ast. *)
 
   val run_typed : B.ast -> StaticEnv.env -> B.value B.m
-  (** [run ast env] runs the function main of the typed-checked [ast], in
+  (** [run_typed ast env] runs the function main of the typed-checked [ast], in
       typed-checking environment [env]. *)
 end
 

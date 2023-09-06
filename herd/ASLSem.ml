@@ -15,6 +15,8 @@
 (****************************************************************************)
 (* Authors:                                                                 *)
 (* Hadrien Renaud, University College London, UK.                           *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Jade Alglave, Arm Ltd and UCL, UK.                                       *)
 (****************************************************************************)
 
 (*
@@ -507,7 +509,8 @@ module Make (C : Config) = struct
         let bind_data = M.( >>= )
         let bind_seq = M.aslseq
         let bind_ctrl = M.bind_ctrl_seq_data
-        let prod = M.( >>| )
+        let prod_par = M.( >>| )
+        let appl_data m f = m >>= fun v -> return (f v)
         let choice = choice
         let delay m k = M.delay_kont "ASL" m k
         let return = M.unitT
