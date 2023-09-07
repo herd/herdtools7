@@ -304,9 +304,16 @@ module Make (C : Config) = struct
       | "PSTATE",AST.Scope_Global -> true
       | _ -> false
 
+    let is_resaddr x scope =
+      match x,scope with
+      | "RESADDR",AST.Scope_Global -> true
+      | _ -> false
+
     let loc_of_scoped_id ii x scope =
       if is_pstate x scope then
         A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.NZCV)
+      else if is_resaddr x scope then
+        A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.ResAddr)
       else
         A.Location_reg (ii.A.proc, ASLBase.ASLLocalId (scope, x))
 
@@ -384,6 +391,19 @@ module Make (C : Config) = struct
     (**************************************************************************)
     (* Primitives and helpers                                                 *)
     (**************************************************************************)
+
+    let vbool b =  V.Val (Constant.Concrete (ASLScalar.S_Bool b))
+
+    let checkprop m_prop =
+      let* vprop = m_prop in
+      M.assign (vbool true) vprop >>! []
+
+    let somebool _ =
+      let v = V.fresh_var () in
+      let mbool b =
+        let vb = V.Val (Constant.Concrete (ASLScalar.S_Bool b)) in
+        M.assign v vb >>= fun () -> M.unitT vb  in
+      choice (M.unitT v) (mbool true) (mbool false)
 
     let virtual_to_loc_reg rv ii =
       let i = v_as_int rv in
@@ -519,6 +539,7 @@ module Make (C : Config) = struct
       let with_pos = Asllib.ASTUtils.add_dummy_pos in
       let here = Asllib.ASTUtils.add_pos_from_pos_of in
       let integer = Asllib.ASTUtils.integer in
+      let boolean = Asllib.ASTUtils.boolean in
       let reg = integer in
       let var x = E_Var x |> with_pos in
       let lit x = E_Literal (L_Int (Z.of_int x)) |> with_pos in
@@ -569,13 +590,19 @@ module Make (C : Config) = struct
         arity_two "CanPredictFrom" [ bv_N; bv_N ] (return_one bv_N)
           can_predict_from
         |> __POS_OF__ |> here;
+        arity_zero "SomeBoolean" (return_one boolean)
+          somebool
+        |> __POS_OF__ |> here;
+        arity_one "CheckProp" [boolean] return_zero
+          checkprop
+        |> __POS_OF__ |> here;
       ]
 
     (**************************************************************************)
     (* Execution                                                              *)
     (**************************************************************************)
 
-    let build_semantics _t ii =
+    let build_semantics t ii =
       let ii_env = (ii, ref ii.A.program_order_index) in
       let module ASLBackend = struct
         type value = V.v
@@ -637,48 +664,7 @@ module Make (C : Config) = struct
             |> ASLBase.build_ast_from_file ?ast_type version
             |> Asllib.ASTUtils.no_primitive
           in
-          let patches =
-            let open  AST in
-            let patches = build `ASLv1 "patches.asl" in
-            (* Patch "patches.asl":
-             * replace the default initial value of "PSTATE"
-             * by the value transmitted in the env field of
-             * the instruction instance ii.
-             *)
-            List.map
-              (fun d ->
-                match d.desc with
-                |  D_GlobalStorage ({ name="PSTATE"; _ } as desc) ->
-                    begin
-                      let to_d v =
-                        let v = Asllib.ASTUtils.add_dummy_pos v in
-                        let desc = { desc with initial_value= Some v; } in
-                        { d with desc=D_GlobalStorage desc;} in
-                      match
-                        A.look_reg
-                          (ASLBase.ASLLocalId (Scope_Global,"PSTATE"))
-                          ii.A.env.A.regs
-                      with
-                      | Some (A.V.Val (Constant.Concrete c)) ->
-                         begin match c with
-                         | ASLScalar.S_Int i ->
-                            let bv = Asllib.Bitvector.of_z 64 i in
-                            let v = E_Literal (L_BitVector bv) in
-                            to_d v
-                         | _ ->
-                            Warn.fatal
-                              "Unexpected initial value for PSTATE: %s"
-                              (ASLScalar.pp C.PC.hexa c)
-                         end
-                      | Some v ->
-                         Warn.fatal
-                           "Unexpected initial value for PSTATE: %s"
-                           (A.V.pp C.PC.hexa v)
-                      | None ->
-                         d
-                    end
-                | _ -> d)
-              patches
+          let patches = build `ASLv1 "patches.asl"
           and custom_implems = build `ASLv1 "implementations.asl"
           and shared = build `ASLv0 "shared_pseudocode.asl" in
           let shared =
@@ -702,7 +688,15 @@ module Make (C : Config) = struct
       let () =
         if false then Format.eprintf "Completed AST: %a.@." Asllib.PP.pp_t ast
       in
-      let exec () = ASLInterpreter.run ast in
+      let env =
+        A.state_fold
+          (fun loc v env ->
+            let open ASLBase in
+            match loc with
+            | A.Location_reg (_,ASLLocalId (AST.Scope_Global,name)) ->
+               (name,v)::env
+            | _ -> env) t.Test_herd.init_state [] in
+      let exec () = ASLInterpreter.run_env env ast in
       let* i =
         match Asllib.Error.intercept exec () with
         | Ok m -> m

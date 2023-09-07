@@ -39,6 +39,7 @@ let _dbg = false
 module type S = sig
   module B : Backend.S
 
+  val run_env : (AST.identifier * B.value) list -> B.ast -> B.value B.m
   val run : B.ast -> B.value B.m
   val run_typed : B.ast -> StaticEnv.env -> B.value B.m
 end
@@ -193,7 +194,11 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Global env *)
   (* ---------- *)
 
-  let build_global_storage eval_expr base_value =
+  let build_global_storage env0 eval_expr base_value =
+    let names =
+      List.fold_left
+        (fun k (name,_) -> ISet.add name k)
+        ISet.empty env0 in
     let def d =
       match d.desc with
       | D_Func { name; _ }
@@ -205,7 +210,7 @@ module Make (B : Backend.S) (C : Config) = struct
       let use_e e acc = use_e acc e in
       let use_ty _ty acc = acc (* TODO *) in
       fun d ->
-        match d.desc with 
+        match d.desc with
         | D_GlobalStorage { initial_value = Some e; ty = Some ty; _ } ->
             ISet.empty |> use_e e |> use_ty ty
         | D_GlobalStorage { initial_value = None; ty = Some ty; _ } ->
@@ -220,31 +225,29 @@ module Make (B : Backend.S) (C : Config) = struct
     let process_one_decl d =
       match d.desc with
       | D_GlobalStorage { initial_value; name; ty; _ } ->
-          fun env_m ->
-            let*| env = env_m in
-            let* v =
-              match (initial_value, ty) with
-              | Some e, _ -> eval_expr env e
-              | None, None -> fail_initialise d name
-              | None, Some t -> base_value env t
-            in
-            let* () =
-              match name with
-              | "PSTATE" ->
-                 (* No event at all for PSTATE, translated to reg NZCV.
-                    Moeover, initialisation of NZCV is from
-                    previous instructions, like all registers. *)
-                 return ()
-              | _ ->
-                 B.on_write_identifier name Scope_Global v in
-            IEnv.declare_global name v env |> return
+         fun env_m ->
+           if ISet.mem name names then
+             env_m
+           else
+             let*| env = env_m in
+             let* v =
+               match (initial_value, ty) with
+               | Some e, _ -> eval_expr env e
+               | None, None -> fail_initialise d name
+               | None, Some t -> base_value env t in
+             let* () =
+               match name with
+               | "PSTATE"|"RESADDR" -> return ()
+               | _ ->
+                  B.on_write_identifier name Scope_Global v in
+             IEnv.declare_global name v env |> return
       | _ -> Fun.id
     in
     dag_fold def use process_one_decl
 
   (** [build_genv static_env ast primitives] is the global environment before
       the start of the evaluation of [ast]. *)
-  let build_genv eval_expr base_value (static_env : StaticEnv.env)
+  let build_genv env0 eval_expr base_value (static_env : StaticEnv.env)
       (ast : B.primitive AST.t) =
     let funcs = IMap.empty |> build_funcs ast in
     let () =
@@ -259,7 +262,12 @@ module Make (B : Backend.S) (C : Config) = struct
       in
       { global; local = empty_scoped Scope_Global }
     in
-    let*| env = build_global_storage eval_expr base_value ast (return env) in
+    let env =
+      List.fold_left
+        (fun env (name,v) -> IEnv.declare_global name v env)
+        env env0 in
+    let*| env =
+       build_global_storage env0 eval_expr base_value ast (return env) in
     return env.global
 
   (* Bind Environment *)
@@ -994,8 +1002,8 @@ module Make (B : Backend.S) (C : Config) = struct
         List.init length (Fun.const v) |> B.create_vector
 
 
-  let run_typed (ast : B.ast) (static_env : StaticEnv.env) : B.value m =
-    let*| env = build_genv eval_expr_sef base_value static_env ast in
+  let run_typed_env env (ast : B.ast) (static_env : StaticEnv.env) : B.value m =
+    let*| env = build_genv env eval_expr_sef base_value static_env ast in
     let*| res = eval_func env "main" dummy_annotated [] [] in
     match res with
     | Normal ([ v ], _genv) -> read_value_from v
@@ -1009,10 +1017,12 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         Error.fatal_unknown_pos (Error.UncaughtException msg)
 
+  let run_typed ast env = run_typed_env [] ast env
+
   (** Main entry point for the Interpreter, [run ast primitives] type-annotate
       [ast], build a global environment and then evaluate the "main" function
       in it. *)
-  let run (ast : B.ast) : B.value m =
+  let run_env (env : (AST.identifier * B.value) list) (ast : B.ast) : B.value m =
     let ast = Builder.with_stdlib ast in
     let ast, static_env =
       Typing.type_check_ast C.type_checking_strictness ast StaticEnv.empty
@@ -1020,5 +1030,8 @@ module Make (B : Backend.S) (C : Config) = struct
     let () =
       if false then Format.eprintf "@[<v 2>Typed AST:@ %a@]@." PP.pp_t ast
     in
-    run_typed ast static_env
+    run_typed_env env ast static_env
+
+  let run ast = run_env [] ast
+
 end

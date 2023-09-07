@@ -22,6 +22,7 @@
 module type S = sig
   module B : Backend.S
 
+  val run_env : (AST.identifier * B.value) list -> B.ast -> B.value B.m
   val run : B.ast -> B.value B.m
   (** [run ast] runs the function main of the ast, in an environment build from
       the ast. *)

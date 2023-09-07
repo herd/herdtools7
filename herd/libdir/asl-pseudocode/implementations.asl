@@ -1,3 +1,111 @@
+// MarkExclusiveGlobal()
+// =====================
+// Record the physical address region of size bytes starting at paddress in
+// the global Exclusives monitor for processorid.
+
+func MarkExclusiveGlobal
+  (paddress :: FullAddress,
+  processorid :: integer,
+  size :: integer)
+begin
+  return;
+end
+
+// MarkExclusiveLocal()
+// ====================
+// Record the physical address region of size bytes starting at paddress in
+// the local Exclusives monitor for processorid.
+
+func MarkExclusiveLocal
+  (paddress :: FullAddress,
+  processorid :: integer,
+  size :: integer)
+begin
+  return;
+end
+
+// AArch64.MarkExclusiveVA()
+// =========================
+// Optionally record an exclusive access to the virtual address region of size bytes
+// starting at address for processorid.
+
+var RESADDR : bits(64);
+
+func AArch64_MarkExclusiveVA
+(address :: bits(64), processorid :: integer, size :: integer)
+begin
+  RESADDR = address;
+  return;
+end
+
+// AArch64.IsExclusiveVA()
+// =======================
+// An optional IMPLEMENTATION DEFINED test for an exclusive access to a virtual
+// address region of size bytes starting at address.
+//
+// It is permitted (but not required) for this function to return FALSE and
+// cause a store exclusive to fail if the virtual address region is not
+// totally included within the region recorded by MarkExclusiveVA().
+//
+// It is always safe to return TRUE which will check the physical address only.
+
+var SuccessVA : boolean ;
+
+func AArch64_IsExclusiveVA
+(address :: bits(64), processorid :: integer, size :: integer) => boolean
+begin
+  // Try both possibilties: write or not write
+  SuccessVA = SomeBoolean();
+  let reserved = RESADDR;
+  // If write succeeds then effective address and reservation coincide.
+  if SuccessVA then CheckProp(address == reserved); end
+  return SuccessVA;
+end
+
+// ExclusiveMonitorsStatus()
+// =========================
+// Returns '0' to indicate success if the last memory write by this PE was to
+// the same physical address region endorsed by ExclusiveMonitorsPass().
+// Returns '1' to indicate failure if address translation resulted in a different
+// physical address.
+
+func ExclusiveMonitorsStatus() => bit
+begin
+  return if SuccessVA then '0' else '1';
+end
+
+// IsExclusiveLocal()
+// ==================
+// Return TRUE if the local Exclusives monitor for processorid includes all of
+// the physical address region of size bytes starting at paddress.
+
+func IsExclusiveLocal
+(paddress :: FullAddres, processorid :: integer, size :: integer) => boolean
+begin
+  return TRUE;
+end
+
+// IsExclusiveGlobal()
+// ===================
+// Return TRUE if the global Exclusives monitor for processorid includes all of
+// the physical address region of size bytes starting at paddress.
+
+func IsExclusiveGlobal
+(paddress :: FullAddres, processorid :: integer, size :: integer) => boolean
+begin
+  return TRUE;
+end
+
+
+// ClearExclusiveLocal()
+// =====================
+// Clear the local Exclusives monitor for the specified processorid.
+
+func ClearExclusiveLocal(processorid :: integer)
+begin
+  return;
+end
+
 type Unpredictable of enumeration {
 // VMSR on MVFR
                            Unpredictable_VMSR,
