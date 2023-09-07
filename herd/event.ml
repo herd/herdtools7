@@ -1693,13 +1693,12 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
                (EventSet.union inmem inwreg)
            else EventRel.empty;];
         intra_causality_order =
-        EventRel.unions
-          [EventRel.unions
-             [rloc.intra_causality_order;
-              rmem.intra_causality_order;rreg.intra_causality_order;
-              wmem.intra_causality_order;wreg.intra_causality_control;];
-           EventRel.cartesian outrreg inwreg;
-           if is_amo then EventRel.empty else mem2mem;];
+        EventRel.union
+          (EventRel.union5
+             rloc.intra_causality_order rmem.intra_causality_order
+             rreg.intra_causality_order wmem.intra_causality_order
+             wreg.intra_causality_control)
+          (if is_amo then EventRel.empty else mem2mem);
         control =
         EventRel.union5 rloc.control rmem.control rreg.control wmem.control wreg.control;
         data_ports =

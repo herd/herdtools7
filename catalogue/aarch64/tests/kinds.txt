@@ -44,3 +44,4 @@ CoRW1          Forbidden
 CoRW2          Forbidden
 CoWR           Forbidden
 CoWW           Forbidden
+LB+SWP-RsRt-addr+rel Allowed

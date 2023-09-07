@@ -65,6 +65,7 @@ illustrative_tests = [
     "tests/CoWR.litmus",
     "tests/CoWW.litmus",
     "tests/Small.litmus",
+    "tests/LB+SWP-RsRt-addr+rel"
 #    "tests/MP+CAS-rfi-ctrl+acq.litmus",
 #    "tests/R+CAS+DMBLD.litmus",
 #    "tests/LB+CAS-rfi-ctrl+DMBSY.litmus",
