@@ -414,6 +414,26 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                  "tagchecked" ^= litb (rn <> SP);
                  "offset" ^= liti 0;
                  "datasize" ^= variant v;])
+      | I_LDAR (v,AA,rt,rn) ->
+         Some ("memory/ordered/LDAR_LR32_ldstord.opn",
+               stmt
+                 ["t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "tagchecked" ^= litb (rn <> SP);
+                  "regsize" ^= variant v;
+                  "elsize" ^= variant v;])
+      | I_LDAR (v,AQ,rt,rn) ->
+         Some ("memory/ordered-rcpc/LDAPR_32L_memop.opn",
+               stmt
+                 ["t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "wback" ^= litb false;
+                  "offset" ^= liti 0;
+                  "wb_unknown" ^= litb false;
+                  "tagchecked" ^= litb (rn <> SP);
+                  "regsize" ^= variant v;
+                  "elsize" ^= variant v;
+                  "datasize" ^= variant v; ])
       | i ->
           let () =
             if _dbg then
