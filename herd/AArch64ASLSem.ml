@@ -116,6 +116,18 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
     (* TODO:     | S_ROR _         -> "ShiftType_ROR" *)
       | _ -> assert false
 
+    let decode_acquire =
+      let open AArch64 in
+      function
+      | RMW_P|RMW_L -> false
+      | RMW_A|RMW_AL -> true
+
+    and decode_release =
+      let open AArch64 in
+      function
+      | RMW_P|RMW_A -> false
+      | RMW_L|RMW_AL -> true
+
     let decode_inst ii =
       let ii = unalias ii in
       let open Asllib.AST in
@@ -148,42 +160,32 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
            ASLBase.stmts_from_string "return 0;" in
          Some
            ("system/hints/NOP_HI_hints.opn",stmt [added;])
-      | I_SWP (v, RMW_P, r1, r2, r3) ->
-          Some
+      | I_SWP (v, t, rs, rt, rn) ->
+         Some
             ( "memory/atomicops/swp/SWP_32_memop.opn",
-              stmt
-                [
-                  "s" ^= reg r1;
-                  "t" ^= reg r2;
-                  "n" ^= reg r3;
-                  "datasize" ^= variant v;
-                  "regsize" ^= liti 64;
-                  "acquire" ^= litb false;
-                  "release" ^= litb false;
-                  "tagchecked" ^= litb true;
-                ] )
-      | I_CAS (v, a, rs, rt, rn) ->
-         let acquire =
-           match a with
-           | RMW_P|RMW_L -> false
-           | RMW_A|RMW_AL -> true
-         and release =
-           match a with
-           | RMW_P|RMW_A -> false
-           | RMW_L|RMW_AL -> true in
-          Some
-            ( "memory/atomicops/cas/single/CAS_C32_comswap.opn",
               stmt
                 [
                   "s" ^= reg rs;
                   "t" ^= reg rt;
                   "n" ^= reg rn;
                   "datasize" ^= variant v;
-                  "regsize" ^=  variant v;
-                  "acquire" ^= litb acquire;
-                  "release" ^= litb release;
+                  "regsize" ^= liti 64;
+                  "acquire" ^= litb (decode_acquire t);
+                  "release" ^= litb (decode_release t);
                   "tagchecked" ^= litb (rn <> SP);
-                ] )
+                ])
+      | I_CAS (v, t, rs, rt, rn) ->
+         Some
+           ( "memory/atomicops/cas/single/CAS_C32_comswap.opn",
+             stmt
+               ["s" ^= reg rs;
+                "t" ^= reg rt;
+                "n" ^= reg rn;
+                "datasize" ^= variant v;
+                "regsize" ^=  variant v;
+                "acquire" ^= litb (decode_acquire t);
+                "release" ^= litb (decode_release t);
+                "tagchecked" ^= litb (rn <> SP); ])
       | I_CSEL (v, rd, rn, rm, c, opsel) ->
          let fname =
            match opsel with

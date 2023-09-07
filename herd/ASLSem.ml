@@ -179,17 +179,21 @@ module Make (C : Config) = struct
           "Record %s has no %s field"
           (V.pp_v v) f
 
-    let accdesc_to_annot accdesc =
+    let accdesc_to_annot is_read accdesc =
       let open AArch64Annot in
       let map = v_as_record accdesc in
       let is_release = access_bool_field accdesc "relsc" map
       and is_acquiresc = access_bool_field accdesc "acqsc" map
-      and is_acquirepc = access_bool_field accdesc "acqpc" map in
+      and is_acquirepc = access_bool_field accdesc "acqpc" map
+      and is_atomic = access_bool_field accdesc "atomicop" map
+      and is_exclusive = access_bool_field accdesc "exclusive" map in
+      let is_ax x n =
+        if is_atomic || is_exclusive then x else n in
       let an =
-        if is_release then L
-        else if is_acquiresc then A
-        else if is_acquirepc then Q
-        else N in
+        if not is_read && is_release then is_ax XL L
+        else if is_read && is_acquiresc then is_ax XA A
+        else if is_read && is_acquirepc then is_ax XQ Q
+        else is_ax X N in
       let () =
         if false && an <> N then
           Printf.eprintf "ASL -> AArch64 Memory annotation %s\n%!"
@@ -409,7 +413,7 @@ module Make (C : Config) = struct
 
     let read_memory_gen ii addr_m datasize_m accdesc_m =
       let* accdesc = accdesc_m in
-      do_read_memory ii addr_m datasize_m (accdesc_to_annot accdesc)
+      do_read_memory ii addr_m datasize_m (accdesc_to_annot true accdesc)
 
     let do_write_memory (ii, poi) addr_m datasize_m value_m an =
       let value_m = M.as_data_port value_m in
@@ -427,7 +431,7 @@ module Make (C : Config) = struct
     let write_memory_gen ii addr_m datasize_m value_m accdesc_m =
          let* accdesc = accdesc_m in
          do_write_memory ii
-           addr_m datasize_m value_m (accdesc_to_annot accdesc)
+           addr_m datasize_m value_m (accdesc_to_annot false accdesc)
 
     let loc_sp ii = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.SP)
 
