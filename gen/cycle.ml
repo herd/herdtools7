@@ -703,6 +703,15 @@ let remove_store n0 =
 
   let is_non_fetch_and_same e =
     is_real_edge e && same_loc e && not (E.is_fetch e)
+  
+  let is_I_D d =
+    match d with
+    | Some d -> begin
+      match d with
+      | D | I -> true
+      | _ -> false
+    end
+    | None -> false
 
   let check_fetch n0 =
     let rec do_rec m =
@@ -713,8 +722,8 @@ let remove_store n0 =
             (str_node p) (str_node m)
       end ;
       if
-        E.is_fetch p.edge && is_non_fetch_and_same m.edge ||
-        E.is_fetch m.edge && is_non_fetch_and_same p.edge
+        E.is_fetch p.edge && is_non_fetch_and_same m.edge && not (is_I_D m.next.evt.dir || is_I_D m.evt.dir) ||
+        E.is_fetch m.edge && is_non_fetch_and_same p.edge && not (is_I_D p.prev.evt.dir || is_I_D p.evt.dir)
       then begin
         Warn.user_error "Ambiguous Data/Code location es [%s] => [%s]"
           (str_node p) (str_node m)
