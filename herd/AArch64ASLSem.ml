@@ -278,8 +278,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
            | _ -> assert false
          and fname =
            match op with
-           | ADD -> "ADDS_32_addsub_shift.opn"
-           | ADDS -> "ADD_32_addsub_shift.opn"
+           | ADD -> "ADD_32_addsub_shift.opn"
+           | ADDS -> "ADDS_32_addsub_shift.opn"
            | SUB ->  "SUB_32_addsub_shift.opn"
            | SUBS ->  "SUBS_32_addsub_shift.opn"
            | AND ->  "AND_32_log_shift.opn"
