@@ -275,8 +275,9 @@ and all of the following applies:
 <minimal example>
 
 {3 Rule.EGetField}
-[e] denotes a field name [field_name] in a vector [e_vec] and
-[v] is the value mapped by [field_name] in the evaluation [v_vec] of [e_vec] in [env].
+[e] denotes a field name [field_name] in a vector [e_vec] and all of the following applies:
+- the evaluation of [e_vec] in [env] is [v_vec];
+- [v] is the value mapped by [field_name] in [v_vec].
 
 <minimal example>
 
@@ -286,14 +287,16 @@ and all of the following applies:
 <minimal example>
 
 {3 Rule.EConcat} 
-[e] denotes a list of expressions [e_list] and 
-[v] is the concatenation of the evaluation [v_list] of [e_list] in [env].
+[e] denotes a list of expressions [e_list] and all of the following applies:
+- the evaluation of [e_list] in [env] is [v_list]; 
+- [v] is the concatenation of [v_list].
 
 <minimal example>
 
 {3 Rule.ETuple} 
-[e] denotes a list of expression [e_list] and
-[v] is the vector built from the evaluation [v_list] of [e_list] in [env].
+[e] denotes a list of expression [e_list] and all of the following applies:
+- the evaluation of [e_list] in [env] is [v_list];
+- [v] is the vector built from [v_list].
 
 <minimal example>
 
@@ -321,47 +324,78 @@ Evaluation of Left-Hand-Side Expressions
 }
 [eval_lexpr version env le m] is [env[le --> m]]. 
 
-The evaluation of the expression [le] under an environment [env]
-is [v] and one of the following applies:
+The evaluation of the left-hand-side expression [le] associated with a value
+[v] under an environment [env] is [new_env] and one of the following applies:
 
   {3 Rule.LEIgnore}
-  <description> 
+  [le] can be ignored and [new_env] is [env]. 
+
   <minimal example>
 
   {3 Rule.LELocalVar}
-  <description> 
+  [le] denotes a variable [x] and all of the following applies:
+  - [new_env] is a local environment; 
+  - [new_env] is [env] where [x] has been assigned the value [v].
+
   <minimal example>
 
   {3 Rule.LEGlobalVar}
-  <description> 
-  <minimal example>
+  [le] denotes a variable [x] and all of the following applies:
+  - [new_env] is a global environment; 
+  - [new_env] is [env] where [x] has been assigned the value [v].
 
-  {3 Rule.LEUndefIdentV0}
-  <description> 
   <minimal example>
 
   {3 Rule.LEUndefIdentV1}
-  <description> 
+  [le] denotes a variable [x] which is not bound in [env] and all of the following applies:
+  - the ASL language version is V1;
+  - an Error "UndefinedIdentifier" is raised.
+
+  <minimal example>
+
+  {3 Rule.LEUndefIdentV0}
+  [le] denotes a variable [x] which is not bound in [env] and all of the following applies:
+  - the ASL language version is V0;
+  - [new_env] is [env] where [x] has been declared a local identifier bound to the value [v].
+
   <minimal example>
 
   {3 Rule.LESlice}
-  <description> 
+  [le] denotes an expression [e_bv] sliced as per [slices] and all of the following applies:
+  - The evaluation of [e_bv] under [env] is [v_bv];
+  - The evaluation of [slices] under [env] is [positions];
+  - [v] is the value read in [v_bv] from [positions];
+  - [new_env] is [env] where [le] has been assigned the value [v].
+
   <minimal example>
 
   {3 Rule.LESetArray}
-  <description> 
+  [le] denotes an array [e_array] and an index [e_index] and all of the following applies:
+  - The evaluation of [e_array] under [env] is [v_array];
+  - The evaluation of [e_index] under [env] is [v_index];
+  - [v] is the value found at the index [v_index] of [v_array];
+  - [new_env] is [env] where [le] has been assigned the value [v].
+
   <minimal example>
 
   {3 Rule.LESetField}
-  <description> 
+  [le] denotes a field name [field_name] in a vector [e_vec] and all of the following applies:
+  - The evaluation of [e_vec] under [env] is [v_vec];
+  - [v] is the value mapped by [field_name] in [v_vec];
+  - [new_env] is [env] where [le] has been assigned the value [v].
+ 
   <minimal example>
 
   {3 Rule.LESetFields}
   <description> 
   <minimal example>
 
-  {3 Rule.LETupleUnpack}
-  <description> 
+  {3 Rule.LETuple}
+  [le] denotes a list of expression [e_list] and all of the following applies:
+  - the evaluation of [e_list] in [env] is [v_list];
+  - [v] is the vector built from [v_list];
+  - [new_env] is [env] where [le] has been assigned the value [v].
+
   <minimal example>
 
 {2 
@@ -588,3 +622,6 @@ global environment [genv], with [args] the formal arguments, and [nargs] the
 arguments deduced by type equality. 
 <minimal example>
 
+{1 
+Typing
+}
