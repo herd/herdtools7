@@ -334,14 +334,14 @@ The evaluation of the left-hand-side expression [le] associated with a value
 
   {3 Rule.LELocalVar}
   [le] denotes a variable [x] and all of the following applies:
-  - [new_env] is a local environment; 
+  - [x] is locally bound in [env]; 
   - [new_env] is [env] where [x] has been assigned the value [v].
 
   <minimal example>
 
   {3 Rule.LEGlobalVar}
   [le] denotes a variable [x] and all of the following applies:
-  - [new_env] is a global environment; 
+  - [x] is globally bound in [env]; 
   - [new_env] is [env] where [x] has been assigned the value [v].
 
   <minimal example>
@@ -361,29 +361,33 @@ The evaluation of the left-hand-side expression [le] associated with a value
   <minimal example>
 
   {3 Rule.LESlice}
-  [le] denotes an expression [e_bv] sliced as per [slices] and all of the following applies:
-  - The evaluation of [e_bv] under [env] is [v_bv];
+  [le] denotes a left-hand-side expression sliced as per [slices] and
+  all of the following applies:
+  - The right-hand-side expression corresponding to [le] is [e_bv];
+  - The evaluation of [re_bv] under [env] is [rv_bv];
   - The evaluation of [slices] under [env] is [positions];
-  - [v] is the value read in [v_bv] from [positions];
+  - [v] is [rv_bv] where the positions [positions] have been updated to [v]
   - [new_env] is [env] where [le] has been assigned the value [v].
 
   <minimal example>
 
   {3 Rule.LESetArray}
-  [le] denotes an array [e_array] and an index [e_index] and all of the following applies:
-  - The evaluation of [e_array] under [env] is [v_array];
+  [le] denotes an array and an index [e_index] and all of the following applies:
+  - The right-hand-side expression corresponding to [le] is [re_array];
+  - The evaluation of [re_array] under [env] is [rv_array];
   - The evaluation of [e_index] under [env] is [v_index];
-  - [v] is the value found at the index [v_index] of [v_array];
+  - [v] is [rv_array] where the value at index [v_index] has been updated to [v];
   - [new_env] is [env] where [le] has been assigned the value [v].
 
   <minimal example>
 
   {3 Rule.LESetField}
-  [le] denotes a field name [field_name] in a vector [e_vec] and all of the following applies:
-  - The evaluation of [e_vec] under [env] is [v_vec];
-  - [v] is the value mapped by [field_name] in [v_vec];
+  [le] denotes a field name [field_name] in a vector and all of the following applies:
+  - The right-hand-side expression corresponding to [le] is [re_vec];
+  - The evaluation of [re_vec] under [env] is [rv_vec];
+  - [v] is [rv_vec] where the field [field_name] has been updated to [v]
   - [new_env] is [env] where [le] has been assigned the value [v].
- 
+
   <minimal example>
 
   {3 Rule.LESetFields}
@@ -391,10 +395,9 @@ The evaluation of the left-hand-side expression [le] associated with a value
   <minimal example>
 
   {3 Rule.LETuple}
-  [le] denotes a list of expression [e_list] and all of the following applies:
-  - the evaluation of [e_list] in [env] is [v_list];
-  - [v] is the vector built from [v_list];
-  - [new_env] is [env] where [le] has been assigned the value [v].
+  [le] denotes a list of left-hand-side expressions [le_list] and [new_env] is
+  [env] where each left-hand-side expression in [le_list] has been assigned the
+  value at the corresponding index in [v].
 
   <minimal example>
 

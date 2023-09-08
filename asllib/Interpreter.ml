@@ -503,31 +503,31 @@ module Make (B : Backend.S) (C : Config) = struct
                 declare_local_identifier env x v >>= return_normal |: Rule.LEUndefIdentV0 
            end) 
 
-    | LE_Slice (e_bv, slices) ->
-        let*^ m_bv, env = expr_of_lexpr e_bv |> eval_expr env in
+    | LE_Slice (re_bv, slices) ->
+        let*^ rm_bv, env = expr_of_lexpr re_bv |> eval_expr env in
         let*^ m_positions, env = eval_slices env slices in
         let m' =
-          let* v = m and* positions = m_positions and* v_bv = m_bv in
-          B.write_to_bitvector positions v v_bv
+          let* v = m and* positions = m_positions and* rv_bv = rm_bv in
+          B.write_to_bitvector positions v rv_bv
         in
-        eval_lexpr ver e_bv env m' |: Rule.LESlice
-    | LE_SetArray (e_array, e_index) ->
-        let*^ m_array, env = expr_of_lexpr e_array |> eval_expr env in
+        eval_lexpr ver re_bv env m' |: Rule.LESlice
+    | LE_SetArray (re_array, e_index) ->
+        let*^ rm_array, env = expr_of_lexpr re_array |> eval_expr env in
         let*^ m_index, env = eval_expr env e_index in
         let m' =
-          let* v = m and* v_index = m_index and* v_array = m_array in
+          let* v = m and* v_index = m_index and* rv_array = rm_array in
           match B.v_to_int v_index with
           | None -> fatal_from le (Error.UnsupportedExpr e_index)
-          | Some i -> B.set_index i v v_array
+          | Some i -> B.set_index i v rv_array
         in
-        eval_lexpr ver e_array env m' |: Rule.LESetArray
-    | LE_SetField (e_vec, field_name) ->
-        let*^ m_vec, env = expr_of_lexpr e_vec |> eval_expr env in
+        eval_lexpr ver re_array env m' |: Rule.LESetArray
+    | LE_SetField (re_vec, field_name) ->
+        let*^ rm_vec, env = expr_of_lexpr re_vec |> eval_expr env in
         let m' =
-          let* v = m and* v_vec = m_vec in
-          B.set_field field_name v v_vec
+          let* v = m and* rv_vec = rm_vec in
+          B.set_field field_name v rv_vec
         in
-        eval_lexpr ver e_vec env m' |: Rule.LESetField
+        eval_lexpr ver re_vec env m' |: Rule.LESetField
     | LE_SetFields _ ->
        let* () =
          let* v = m in
@@ -535,12 +535,12 @@ module Make (B : Backend.S) (C : Config) = struct
            PP.pp_lexpr le (B.debug_value v) ;
          B.return () in
        fatal_from le Error.TypeInferenceNeeded |: Rule.LESetFields
-    | LE_TupleUnpack e_list ->
+    | LE_TupleUnpack le_list ->
         (* The index-out-of-bound on the vector are done either in typing,
            either in [B.get_index]. *)
-        let n = List.length e_list in
+        let n = List.length le_list in
         let nmonads = List.init n (fun i -> m >>= B.get_index i) in
-        multi_assign ver env e_list nmonads |: Rule.LETuple
+        multi_assign ver env le_list nmonads |: Rule.LETuple
 
   (* Evaluation of Expression Lists *)
   (* ------------------------------ *)
