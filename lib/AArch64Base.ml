@@ -2146,6 +2146,10 @@ let is_valid i =
        | _ -> true
      end
   | I_MOVZ _|I_MOVN _ -> false
+  | I_STR (_,_,ZR,_,_)
+  | I_STLR (_,_,ZR)
+  | I_LDAR (_,_,_,ZR)
+    -> false
   | _ -> true
 
 

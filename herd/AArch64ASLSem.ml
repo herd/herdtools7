@@ -116,6 +116,18 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
     (* TODO:     | S_ROR _         -> "ShiftType_ROR" *)
       | _ -> assert false
 
+    let decode_acquire =
+      let open AArch64 in
+      function
+      | RMW_P|RMW_L -> false
+      | RMW_A|RMW_AL -> true
+
+    and decode_release =
+      let open AArch64 in
+      function
+      | RMW_P|RMW_A -> false
+      | RMW_L|RMW_AL -> true
+
     let decode_inst ii =
       let ii = unalias ii in
       let open Asllib.AST in
@@ -148,42 +160,32 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
            ASLBase.stmts_from_string "return 0;" in
          Some
            ("system/hints/NOP_HI_hints.opn",stmt [added;])
-      | I_SWP (v, RMW_P, r1, r2, r3) ->
-          Some
+      | I_SWP (v, t, rs, rt, rn) ->
+         Some
             ( "memory/atomicops/swp/SWP_32_memop.opn",
-              stmt
-                [
-                  "s" ^= reg r1;
-                  "t" ^= reg r2;
-                  "n" ^= reg r3;
-                  "datasize" ^= variant v;
-                  "regsize" ^= liti 64;
-                  "acquire" ^= litb false;
-                  "release" ^= litb false;
-                  "tagchecked" ^= litb true;
-                ] )
-      | I_CAS (v, a, rs, rt, rn) ->
-         let acquire =
-           match a with
-           | RMW_P|RMW_L -> false
-           | RMW_A|RMW_AL -> true
-         and release =
-           match a with
-           | RMW_P|RMW_A -> false
-           | RMW_L|RMW_AL -> true in
-          Some
-            ( "memory/atomicops/cas/single/CAS_C32_comswap.opn",
               stmt
                 [
                   "s" ^= reg rs;
                   "t" ^= reg rt;
                   "n" ^= reg rn;
                   "datasize" ^= variant v;
-                  "regsize" ^=  variant v;
-                  "acquire" ^= litb acquire;
-                  "release" ^= litb release;
+                  "regsize" ^= liti 64;
+                  "acquire" ^= litb (decode_acquire t);
+                  "release" ^= litb (decode_release t);
                   "tagchecked" ^= litb (rn <> SP);
-                ] )
+                ])
+      | I_CAS (v, t, rs, rt, rn) ->
+         Some
+           ( "memory/atomicops/cas/single/CAS_C32_comswap.opn",
+             stmt
+               ["s" ^= reg rs;
+                "t" ^= reg rt;
+                "n" ^= reg rn;
+                "datasize" ^= variant v;
+                "regsize" ^=  variant v;
+                "acquire" ^= litb (decode_acquire t);
+                "release" ^= litb (decode_release t);
+                "tagchecked" ^= litb (rn <> SP); ])
       | I_CSEL (v, rd, rn, rm, c, opsel) ->
          let fname =
            match opsel with
@@ -403,6 +405,37 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "rt_unknown" ^= litb false;
                   "wb_unknown" ^= litb false;
                 ] )
+      | I_STLR (v,rt,rn) ->
+         Some
+            ( "memory/ordered/STLR_SL32_ldstord.opn",
+              stmt
+                ["t" ^= reg rt;
+                 "n" ^= reg rn;
+                 "wback" ^= litb false;
+                 "rt_unknown" ^= litb false;
+                 "tagchecked" ^= litb (rn <> SP);
+                 "offset" ^= liti 0;
+                 "datasize" ^= variant v;])
+      | I_LDAR (v,AA,rt,rn) ->
+         Some ("memory/ordered/LDAR_LR32_ldstord.opn",
+               stmt
+                 ["t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "tagchecked" ^= litb (rn <> SP);
+                  "regsize" ^= variant v;
+                  "elsize" ^= variant v;])
+      | I_LDAR (v,AQ,rt,rn) ->
+         Some ("memory/ordered-rcpc/LDAPR_32L_memop.opn",
+               stmt
+                 ["t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "wback" ^= litb false;
+                  "offset" ^= liti 0;
+                  "wb_unknown" ^= litb false;
+                  "tagchecked" ^= litb (rn <> SP);
+                  "regsize" ^= variant v;
+                  "elsize" ^= variant v;
+                  "datasize" ^= variant v; ])
       | i ->
           let () =
             if _dbg then
@@ -608,15 +641,14 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             fun acc v -> (M.VC.Unop (new_op, tr_v v), acc)
 
       let tr_action ii =
-        let an = AArch64.N in
         let exp = AArch64.Exp in
         function
-        | ASLS.Act.Access (dir, loc, v, sz) -> (
+        | ASLS.Act.Access (dir, loc, v, sz, a) -> (
             match tr_loc ii loc with
             | None -> None
             | Some loc ->
                 let ac = Act.access_of_location_std loc in
-                Some (Act.Access (dir, loc, tr_v v, an, exp, sz, ac)))
+                Some (Act.Access (dir, loc, tr_v v, a, exp, sz, ac)))
         | ASLS.Act.NoAction -> Some Act.NoAction
         | ASLS.Act.TooFar msg -> Some (Act.TooFar msg)
 
@@ -756,10 +788,10 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             match event.ASLE.action with
             | ASLS.Act.Access
                 (Dir.W,
-                 ASLS.A.Location_reg (_, ASLBase.ArchReg reg), v, _)
+                 ASLS.A.Location_reg (_, ASLBase.ArchReg reg), v, _, _)
               ->
               (reg, tr_v v)::acc
-            |  ASLS.Act.Access (Dir.W, loc , v, _)
+            |  ASLS.Act.Access (Dir.W, loc , v, _, _)
                ->
                 if _dbg then
                   Printf.eprintf

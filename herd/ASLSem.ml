@@ -92,6 +92,7 @@ module Make (C : Config) = struct
   let barriers = []
   let isync = None
   let atomic_pair_allowed _ _ = true
+  let aneutral = AArch64Annot.N
 
   module Mixed (SZ : ByteSize.S) : sig
     val build_semantics : test -> A.inst_instance_id -> (proc * branch) M.t
@@ -151,12 +152,53 @@ module Make (C : Config) = struct
       | V.Val (Constant.Concrete i) -> V.Cst.Scalar.to_int i
       | v -> Warn.fatal "Cannot concretise symbolic value: %s" (V.pp_v v)
 
+    let v_as_record = function
+      | V.Val (Constant.ConcreteRecord map) -> map
+      | v ->
+         Warn.fatal
+           "Cannot concretise symbolic value %s as a record" (V.pp_v v)
+
+    let v_as_bool = function
+      | Constant.Concrete (ASLScalar.S_Bool b) -> b
+      | c ->
+         Warn.fatal
+           "Cannot concretise symbolic value %s as a boolean"
+           (V.pp_v (V.Val c))
+
     let datasize_to_machsize v =
       match v_as_int v with
       | 32 -> MachSize.Word
       | 64 -> MachSize.Quad
       | 128 -> MachSize.S128
       | _ -> Warn.fatal "Cannot access a register with size %s" (V.pp_v v)
+
+    let access_bool_field v f map =
+      try StringMap.find f map |> v_as_bool
+      with Not_found ->
+        Warn.fatal
+          "Record %s has no %s field"
+          (V.pp_v v) f
+
+    let accdesc_to_annot is_read accdesc =
+      let open AArch64Annot in
+      let map = v_as_record accdesc in
+      let is_release = access_bool_field accdesc "relsc" map
+      and is_acquiresc = access_bool_field accdesc "acqsc" map
+      and is_acquirepc = access_bool_field accdesc "acqpc" map
+      and is_atomic = access_bool_field accdesc "atomicop" map
+      and is_exclusive = access_bool_field accdesc "exclusive" map in
+      let is_ax x n =
+        if is_atomic || is_exclusive then x else n in
+      let an =
+        if not is_read && is_release then is_ax XL L
+        else if is_read && is_acquiresc then is_ax XA A
+        else if is_read && is_acquirepc then is_ax XQ Q
+        else is_ax X N in
+      let () =
+        if false && an <> N then
+          Printf.eprintf "ASL -> AArch64 Memory annotation %s\n%!"
+            (AArch64Annot.pp an) in
+      an
 
     let wrap_op1_symb_as_var op1 = function
       | V.Val (Constant.Symbolic _) as v ->
@@ -179,13 +221,13 @@ module Make (C : Config) = struct
           | V.Val (Constant.Symbolic _) as v -> return v
           | v -> M.op1 (Op.Mask sz) v)
 
-    let write_loc sz loc v ii =
+    let write_loc sz loc v a ii =
       let* resized_v = resize_from_quad sz v in
-      let mk_action loc' = Act.Access (Dir.W, loc', resized_v, sz) in
+      let mk_action loc' = Act.Access (Dir.W, loc', resized_v, sz, a) in
       M.write_loc mk_action loc ii
 
-    let read_loc sz loc ii =
-      let mk_action loc' v' = Act.Access (Dir.R, loc', v', sz) in
+    let read_loc sz loc a ii =
+      let mk_action loc' v' = Act.Access (Dir.R, loc', v', sz, a) in
       let* v = M.read_loc false mk_action loc ii in
       resize_from_quad sz v >>= to_bv
 
@@ -271,7 +313,8 @@ module Make (C : Config) = struct
     let on_access_identifier  dir (ii,poi) x scope v =
       let loc = loc_of_scoped_id ii x scope in
       let m v =
-        let action = Act.Access (dir, loc, v, MachSize.Quad) in
+        let action =
+          Act.Access (dir, loc, v, MachSize.Quad, aneutral) in
         M.mk_singleton_es action (use_ii_with_poi ii poi) in
       if is_pstate x scope then
         M.op1 (Op.ArchOp1 ASLOp.ToIntU) v >>= m
@@ -353,39 +396,52 @@ module Make (C : Config) = struct
     let read_register (ii, poi) r_m =
       let* rval = r_m in
       let loc = virtual_to_loc_reg rval ii in
-      read_loc MachSize.Quad loc (use_ii_with_poi ii poi)
+      read_loc MachSize.Quad loc aneutral (use_ii_with_poi ii poi)
 
     let write_register (ii, poi) r_m v_m =
       let* v = v_m >>= to_int_signed and* r = r_m in
       let loc = virtual_to_loc_reg r ii in
-      write_loc MachSize.Quad loc v (use_ii_with_poi ii poi) >>! []
+      write_loc MachSize.Quad loc v aneutral (use_ii_with_poi ii poi) >>! []
 
-    let read_memory (ii, poi) addr_m datasize_m =
+    let do_read_memory (ii, poi) addr_m datasize_m an =
       let* addr = addr_m and* datasize = datasize_m in
       let sz = datasize_to_machsize datasize in
-      read_loc sz (A.Location_global addr) (use_ii_with_poi ii poi)
+      read_loc sz (A.Location_global addr) an (use_ii_with_poi ii poi)
 
-    let write_memory (ii, poi) = function
-      | [ addr_m; datasize_m; value_m ] ->
-          let value_m = M.as_data_port value_m in
-          let* addr = addr_m and* datasize = datasize_m and* value = value_m in
-          let sz = datasize_to_machsize datasize in
-          write_loc sz (A.Location_global addr) value (use_ii_with_poi ii poi)
-          >>! []
-      | li ->
-          Warn.fatal
-            "Bad number of arguments passed to write_memory: 3 expected, and \
-             only %d provided."
-            (List.length li)
+    let read_memory ii addr_m datasize_m =
+      do_read_memory ii addr_m datasize_m aneutral
+
+    let read_memory_gen ii addr_m datasize_m accdesc_m =
+      let* accdesc = accdesc_m in
+      do_read_memory ii addr_m datasize_m (accdesc_to_annot true accdesc)
+
+    let do_write_memory (ii, poi) addr_m datasize_m value_m an =
+      let value_m = M.as_data_port value_m in
+      let* addr = addr_m and* datasize = datasize_m
+      and* value = value_m in
+      let sz = datasize_to_machsize datasize in
+      write_loc sz
+        (A.Location_global addr) value an (use_ii_with_poi ii poi)
+      >>! []
+
+    let write_memory ii  addr_m datasize_m value_m =
+      do_write_memory
+        ii addr_m datasize_m value_m AArch64Annot.N
+
+    let write_memory_gen ii addr_m datasize_m value_m accdesc_m =
+         let* accdesc = accdesc_m in
+         do_write_memory ii
+           addr_m datasize_m value_m (accdesc_to_annot false accdesc)
 
     let loc_sp ii = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.SP)
 
     let read_sp (ii, poi) () =
-      read_loc MachSize.Quad (loc_sp ii) (use_ii_with_poi ii poi)
+      read_loc MachSize.Quad (loc_sp ii) aneutral (use_ii_with_poi ii poi)
 
     let write_sp (ii, poi) v_m =
       let* v = v_m >>= to_int_signed in
-      write_loc MachSize.Quad (loc_sp ii) v (use_ii_with_poi ii poi) >>! []
+      write_loc MachSize.Quad (loc_sp ii)
+        v aneutral (use_ii_with_poi ii poi) >>! []
 
     let uint bv_m = bv_m >>= to_int_unsigned
     let sint bv_m = bv_m >>= to_int_signed
@@ -439,6 +495,18 @@ module Make (C : Config) = struct
       | [] | [ _ ] | _ :: _ :: _ :: _ ->
           Warn.fatal "Arity error for function %s." name
 
+    let arity_three name args return_type f =
+      build_primitive name args return_type @@ function
+      | [ x; y; z; ] -> f x y z
+      | _ ->
+          Warn.fatal "Arity error for function %s." name
+
+    let arity_four name args return_type f =
+      build_primitive name args return_type @@ function
+      | [ x; y; z; t; ] -> f x y z t
+      | _ ->
+          Warn.fatal "Arity error for function %s." name
+
     let return_one =
       let make body args = return [ body args ] in
       fun ty -> (Some ty, make)
@@ -460,6 +528,7 @@ module Make (C : Config) = struct
       let bv_N = bv_var "N" in
       let bv_lit x = bv @@ lit x in
       let bv_64 = bv_lit 64 in
+      let t_named x = T_Named x |> with_pos in
       [
         arity_one "read_register" [ reg ] (return_one bv_64)
           (read_register ii_env)
@@ -467,12 +536,25 @@ module Make (C : Config) = struct
         arity_two "write_register" [ bv_64; reg ] return_zero
           (write_register ii_env)
         |> __POS_OF__ |> here;
-        arity_two "read_memory" [ bv_64 ; integer ]
+        arity_two "read_memory"
+          [ bv_64 ; integer ]
           (return_one (bv_arg1))
           (read_memory ii_env)
         |> __POS_OF__ |> here;
-        build_primitive "write_memory" [ bv_64; integer; bv_arg1 ] return_zero
+        arity_three "read_memory_gen"
+          [ bv_64 ; integer; t_named "AccessDescriptor"; ]
+          (return_one (bv_arg1))
+          (read_memory_gen ii_env)
+        |> __POS_OF__ |> here;
+        arity_three "write_memory" [ bv_64; integer; bv_arg1 ]
+          return_zero
           (write_memory ii_env)
+        |> __POS_OF__ |> here;
+        arity_four
+          "write_memory_gen"
+          [ bv_64; integer; bv_arg1; t_named "AccessDescriptor"]
+          return_zero
+          (write_memory_gen ii_env)
         |> __POS_OF__ |> here;
         arity_zero "SP_EL0" (return_one bv_64) (read_sp ii_env)
         |> __POS_OF__ |> here;

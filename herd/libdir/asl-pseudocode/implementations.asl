@@ -1,3 +1,198 @@
+type Unpredictable of enumeration {
+// VMSR on MVFR
+                           Unpredictable_VMSR,
+// Writeback/transfer register overlap (load)
+                           Unpredictable_WBOVERLAPLD,
+// Writeback/transfer register overlap (store)
+                           Unpredictable_WBOVERLAPST,
+// Load Pair transfer register overlap
+                           Unpredictable_LDPOVERLAP,
+// Store-exclusive base/status register overlap
+                           Unpredictable_BASEOVERLAP,
+// Store-exclusive data/status register overlap
+                           Unpredictable_DATAOVERLAP,
+// Load-store alignment checks
+                           Unpredictable_DEVPAGE2,
+// Instruction fetch from Device memory
+                           Unpredictable_INSTRDEVICE,
+// Reserved CPACR value
+                           Unpredictable_RESCPACR,
+// Reserved MAIR value
+                           Unpredictable_RESMAIR,
+// Effect of SCTLR_ELx.C on Tagged attribute
+                           Unpredictable_S1CTAGGED,
+// Reserved Stage 2 MemAttr value
+                           Unpredictable_S2RESMEMATTR,
+// Reserved TEX:C:B value
+                           Unpredictable_RESTEXCB,
+// Reserved PRRR value
+                           Unpredictable_RESPRRR,
+// Reserved DACR field
+                           Unpredictable_RESDACR,
+// Reserved VTCR.S value
+                           Unpredictable_RESVTCRS,
+// Reserved TCR.TnSZ value
+                           Unpredictable_RESTnSZ,
+// Reserved SCTLR_ELx.TCF value
+                           Unpredictable_RESTCF,
+// Tag stored to Device memory
+                           Unpredictable_DEVICETAGSTORE,
+// Out-of-range TCR.TnSZ value
+                           Unpredictable_OORTnSZ,
+ // IPA size exceeds PA size
+                           Unpredictable_LARGEIPA,
+// Syndrome for a known-passing conditional A32 instruction
+                           Unpredictable_ESRCONDPASS,
+// Illegal State exception: zero PSTATE.IT
+                           Unpredictable_ILZEROIT,
+// Illegal State exception: zero PSTATE.T
+                           Unpredictable_ILZEROT,
+// Debug: prioritization of Vector Catch
+                           Unpredictable_BPVECTORCATCHPRI,
+// Debug Vector Catch: match on 2nd halfword
+                           Unpredictable_VCMATCHHALF,
+// Debug Vector Catch: match on Data Abort
+// or Prefetch abort
+                           Unpredictable_VCMATCHDAPA,
+// Debug watchpoints: nonzero MASK and non-ones BAS
+                           Unpredictable_WPMASKANDBAS,
+// Debug watchpoints: non-contiguous BAS
+                           Unpredictable_WPBASCONTIGUOUS,
+// Debug watchpoints: reserved MASK
+                           Unpredictable_RESWPMASK,
+// Debug watchpoints: nonzero MASKed bits of address
+                           Unpredictable_WPMASKEDBITS,
+// Debug breakpoints and watchpoints: reserved control bits
+                           Unpredictable_RESBPWPCTRL,
+// Debug breakpoints: not implemented
+                           Unpredictable_BPNOTIMPL,
+// Debug breakpoints: reserved type
+                           Unpredictable_RESBPTYPE,
+// Debug breakpoints and watchpoints: reserved MDSELR_EL1.BANK
+                           Unpredictable_RESMDSELR,
+// Debug breakpoints: not-context-aware breakpoint
+                           Unpredictable_BPNOTCTXCMP,
+// Debug breakpoints: match on 2nd halfword of instruction
+                           Unpredictable_BPMATCHHALF,
+// Debug breakpoints: mismatch on 2nd halfword of instruction
+                           Unpredictable_BPMISMATCHHALF,
+// Debug breakpoints: a breakpoint is linked to that is not
+// programmed with linking enabled
+                           Unpredictable_BPLINKINGDISABLED,
+// Debug breakpoints: reserved MASK
+                           Unpredictable_RESBPMASK,
+// Debug breakpoints: MASK is set for a Context matching
+// breakpoint or when DBGBCR_EL1[n].BAS != '1111'
+                           Unpredictable_BPMASK,
+// Debug breakpoints: nonzero MASKed bits of address
+                           Unpredictable_BPMASKEDBITS,
+// Debug breakpoints: A linked breakpoint is
+// linked to an address matching breakpoint
+                           Unpredictable_BPLINKEDADDRMATCH,
+// Debug: restart to a misaligned AArch32 PC value
+                           Unpredictable_RESTARTALIGNPC,
+// Debug: restart to a not-zero-extended AArch32 PC value
+                           Unpredictable_RESTARTZEROUPPERPC,
+// Zero top 32 bits of X registers in AArch32 state
+                           Unpredictable_ZEROUPPER,
+// Zero top 32 bits of PC on illegal return to
+// AArch32 state
+                           Unpredictable_ERETZEROUPPERPC,
+// Force address to be aligned when interworking
+// branch to A32 state
+                           Unpredictable_A32FORCEALIGNPC,
+// SMC disabled
+                           Unpredictable_SMD,
+// FF speculation
+                           Unpredictable_NONFAULT,
+// Zero top bits of Z registers in EL change
+                           Unpredictable_SVEZEROUPPER,
+// Load mem data in NF loads
+                           Unpredictable_SVELDNFDATA,
+// Write zeros in NF loads
+                           Unpredictable_SVELDNFZERO,
+// SP alignment fault when predicate is all zero
+                           Unpredictable_CHECKSPNONEACTIVE,
+// Zero top bits of ZA registers in EL change
+                           Unpredictable_SMEZEROUPPER,
+// Watchpoint match of last rounded up memory access in case of
+// 16 byte rounding
+                           Unpredictable_16BYTEROUNDEDUPACCESS,
+// Watchpoint match of first rounded down memory access in case of
+// 16 byte rounding
+                           Unpredictable_16BYTEROUNDEDDOWNACCESS,
+// HCR_EL2.<NV,NV1> == '01'
+                           Unpredictable_NVNV1,
+// Reserved shareability encoding
+                           Unpredictable_Shareability,
+// Access Flag Update by HW
+                           Unpredictable_AFUPDATE,
+// Dirty Bit State Update by HW
+                           Unpredictable_DBUPDATE,
+// Consider SCTLR_ELx[].IESB in Debug state
+                           Unpredictable_IESBinDebug,
+// Bad settings for PMSFCR_EL1/PMSEVFR_EL1/PMSLATFR_EL1
+                           Unpredictable_BADPMSFCR,
+// Zero saved BType value in SPSR_ELx/DPSR_EL0
+                           Unpredictable_ZEROBTYPE,
+// Timestamp constrained to virtual or physical
+                           Unpredictable_EL2TIMESTAMP,
+                           Unpredictable_EL1TIMESTAMP,
+ // Reserved MDCR_EL3.<NSTBE,NSTB> or MDCR_EL3.<NSPBE,NSPB> value
+                            Unpredictable_RESERVEDNSxB,
+// WFET or WFIT instruction in Debug state
+                           Unpredictable_WFxTDEBUG,
+// Address does not support LS64 instructions
+                           Unpredictable_LS64UNSUPPORTED,
+// Misaligned exclusives, atomics, acquire/release
+// to region that is not Normal Cacheable WB
+                           Unpredictable_MISALIGNEDATOMIC,
+// 128-bit Atomic or 128-bit RCW{S} transfer register overlap
+                           Unpredictable_LSE128OVERLAP,
+// Clearing DCC/ITR sticky flags when instruction is in flight
+                           Unpredictable_CLEARERRITEZERO,
+// ALUEXCEPTIONRETURN when in user/system mode in
+// A32 instructions
+                           Unpredictable_ALUEXCEPTIONRETURN,
+// Trap to register in debug state are ignored
+                           Unpredictable_IGNORETRAPINDEBUG,
+// Compare DBGBVR.RESS for BP/WP
+                           Unpredictable_DBGxVR_RESS,
+// Inaccessible event counter
+                           Unpredictable_PMUEVENTCOUNTER,
+// Reserved PMSCR.PCT behavior
+                           Unpredictable_PMSCR_PCT,
+// MDCR_EL2.HPMN or HDCR.HPMN is larger than PMCR.N or
+// FEAT_HPMN0 is not implemented and HPMN is 0.
+                           Unpredictable_CounterReservedForEL2,
+// Generate BRB_FILTRATE event on BRB injection
+                           Unpredictable_BRBFILTRATE,
+// Generate PMU_SNAPSHOT event in Debug state
+                           Unpredictable_PMUSNAPSHOTEVENT,
+// Reserved MDCR_EL3.EPMSSAD value
+                           Unpredictable_RESEPMSSAD,
+// Reserved PMECR_EL1.SSE value
+                           Unpredictable_RESPMSSE,
+// Enable for PMU exception and PMUIRQ
+                           Unpredictable_RESPMEE,
+// Operands for CPY*/SET* instructions overlap or
+// use 0b11111 as a register specifier
+                           Unpredictable_MOPSOVERLAP31,
+// Store-only Tag checking on a failed Atomic Compare and Swap
+                           Unpredictable_STOREONLYTAGCHECKEDCAS,
+// Reserved MDCR_EL3.ETBAD value
+                           Unpredictable_RES_ETBAD,
+// accessing DBGDSCRint via MRC in debug state
+                           Unpredictable_MRC_APSR_TARGET,
+// Reserved PMEVTYPER<n>_EL0.TC value
+                           Unpredictable_RESTC
+};
+
+func ConstrainUnpredictableBool(which:Unpredictable) => boolean
+begin
+  return FALSE;
+end
+
 type signal of integer;
 
 type Feature of enumeration {
@@ -180,7 +375,7 @@ func PhysMemWrite(
   value::bits(8*size)
 ) => PhysMemRetStatus
 begin
-  write_memory (desc.vaddress, size*8, value);
+  write_memory_gen (desc.vaddress, size*8, value,accdesc);
   return PhysMemRetStatus {
     statuscode = Fault_None,
     extflag = '0',
@@ -195,7 +390,7 @@ func PhysMemRead(
   accdesc::AccessDescriptor
 ) => (PhysMemRetStatus, bits(8*size))
 begin
-  let value = read_memory (desc.vaddress, size*8);
+  let value = read_memory_gen (desc.vaddress, size*8,accdesc);
   let ret_status = PhysMemRetStatus {
     statuscode = Fault_None,
     extflag = '0',
