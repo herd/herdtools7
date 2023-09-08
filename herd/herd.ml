@@ -654,13 +654,14 @@ let () =
       let bi = R.read fname in
       Some (fname,bi) in
 
-  let from_file =
+  let from_file f =
     let module T =
       ParseTest.Top
         (struct
           let bell_model_info = bi
           include Config end) in
-    T.from_file in
+    SymbValue.reset_gensym () ;
+    T.from_file f in
 
 
 (* Just go *)
