@@ -127,7 +127,7 @@ module U = TopUtils.Make(O)(Comp)
           (as_rmw n) st p init e n.C.next.C.evt
     | Some W|None ->
         None,init,[],st
-    | Some J -> assert false
+    | Some (J|D|I) -> assert false
     else if
       match e.C.atom with
       | None -> true
@@ -149,7 +149,7 @@ module U = TopUtils.Make(O)(Comp)
      | Some R ->
          Comp.emit_rmw_dep (as_rmw n) st p init e n.C.next.C.evt dp r1 n1
      | Some W|None -> None,init,[],st
-     | Some J -> assert false
+     | Some (J|D|I) -> assert false
      else
        Comp.emit_access_dep st p init e dp r1 n1
 

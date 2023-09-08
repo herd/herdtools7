@@ -1859,6 +1859,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | W,Some (Neon _,Some _) -> assert false
           | J,_ -> emit_joker st init
           | _,Some (Plain _,None) -> assert false
+          | (D|I),_ -> Warn.fatal "No dependency to DC CVAU or IC IVAU"
           end
       | _,Code _ -> Warn.fatal "No dependency to code location"
 
@@ -1922,6 +1923,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       match e.C.dir,e.C.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some R,_ -> Warn.fatal "data dependency to load"
+      | Some (D|I), _ -> Warn.fatal "data dependency to DC CVAu or IC IVAU"
       | Some W,Data loc ->
 
           let r2,cs2,init,st =

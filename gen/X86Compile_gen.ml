@@ -133,6 +133,7 @@ struct
         None,init,pseudo [emit_store loc e.C.v],st
   | Some J,_ -> emit_joker st init
   | _,Code _ -> Warn.fatal "No code location for X86"
+  | Some (D|I),_-> Warn.fatal "No DC CVAU or IC IVAU in X86"
 
   let emit_exch st _p init er ew =
     let rA,st = next_reg st in

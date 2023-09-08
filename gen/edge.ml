@@ -330,7 +330,7 @@ and type rmw = F.rmw = struct
     | Store -> "Store"
     | Node W -> "Write"
     | Node R -> "Read"
-    | Node J -> assert false
+    | Node (J | D | I) -> assert false
     | Irf ie -> sprintf "Irf%s" (pp_ie ie)
     | Ifr ie -> sprintf "Ifr%s" (pp_ie ie)
 

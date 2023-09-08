@@ -394,6 +394,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
             let init,cs,st = emit_store_mixed sz o st p init loc e.v in
             None,init,cs,st
         | Code.J, _ -> emit_joker st init
+        | Code.(D|I),_-> Warn.fatal "No DC CVAU or IC IVAU in RISCV"
         end
     | _,Code _ -> Warn.fatal "No code location for RISCV"
 
@@ -476,6 +477,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
           | _,Some (Mixed _) ->
               Warn.fatal "addr dep with mixed"
           | Code.J, _ -> emit_joker st init
+          | Code.(D|I),_-> Warn.fatal "No DC CVAU or IC IVAU in RISCV"
           end
       | _,Code _ -> Warn.fatal "No code location for RISCV"
 
@@ -514,6 +516,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
           end
       | Some Code.J,_ -> emit_joker st init
       | _,Code _ -> Warn.fatal "No code location for RISCV"
+      | Some Code.(D|I),_-> Warn.fatal "No DC CVAU or IC IVAU in RISCV"
 
     let insert_isb st p init isb cs1 cs2 =
       let _,cs,_ = emit_fence st p init 0 FenceI in

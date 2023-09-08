@@ -111,6 +111,8 @@ let tr_dir = function
   | R -> BellName.r
   | W -> BellName.w
   | J -> BellName.j
+  | D -> "D"
+  | I -> "I"
 
 let applies_atom = match bi with
 | None -> (fun a _d -> match a with [] -> true | _ -> false)

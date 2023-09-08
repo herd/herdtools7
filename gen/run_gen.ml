@@ -146,7 +146,7 @@ module Make (O:Config) (C:ArchRun.S) :
       let ws_by_loc =
         by_loc
           (fun e -> match e.C.dir with
-          | Some Code.W -> true | None|Some Code.R|Some Code.J -> false)
+          | Some Code.W -> true | None|Some Code.(R|J|D|I) -> false)
           str.evts in
       let wsi_by_loc =
         ESet.fold

@@ -311,7 +311,7 @@ and type edge = E.edge
         let someR sd d =
           er (E.Po (sd,Dir R,Dir d))::
           app_def_dp
-            (match d with R | J -> F.ddr_default
+            (match d with R | J | D | I -> F.ddr_default
                           | W -> F.ddw_default)
             (fun dp k -> er (E.Dp (dp,sd,Dir d))::k)
             (some_fences sd R d [])
@@ -324,7 +324,7 @@ and type edge = E.edge
 (* ALL *)
         let allR sd d =
           er (E.Po (sd,Dir R,Dir d))::
-          (match d with R | J -> F.fold_dpr
+          (match d with R | J | D | I-> F.fold_dpr
                         | W -> F.fold_dpw)
             (fun dp k -> er (E.Dp (dp,sd,Dir d))::k)
             (all_fences sd R d [])

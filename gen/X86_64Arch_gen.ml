@@ -52,7 +52,7 @@ module Make
       | ((Atomic,_),Code.W)
       | (((Plain|NonTemporal),_),(Code.W|Code.R)) -> true
       | ((Atomic,_),Code.R)
-      | (_,Code.J)-> false
+      | (_,Code.J)|(_,Code.I)|(_,Code.D)-> false
 
       let compare_atom = compare
 

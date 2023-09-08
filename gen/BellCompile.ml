@@ -181,6 +181,7 @@ zz        (fun r lab -> bcc Ne r rP lab)
             None,init,cs,st
         | J,_,_ -> emit_joker st init
         | _,_,Code _ -> Warn.fatal "No code location in Bell"
+        | (D|I),_,_ -> Warn.fatal "No DC CVAU or IC IVAU in Bell"
 
 (* Dubious... *)
     let _tr_a ar aw = match ar,aw with
@@ -233,6 +234,7 @@ let emit_rmw _ = assert false
           None,init,cA::cs,st
       | J,_,Data _ -> emit_joker st init
       | _,_,Code _ -> Warn.fatal "No code location for Bell"
+      | (D|I),_,_ -> Warn.fatal "No DC CVAU or IC IVAU in Bell"
       end
 
     let emit_access_dep_data st p init e r1 = match e.dir,e.loc with
@@ -251,6 +253,7 @@ let emit_rmw _ = assert false
         end
     | Some J,Data _ -> emit_joker st init
     | _,Code _ -> Warn.fatal "No code location for Bell"
+    | Some (D|I),_ -> Warn.fatal "No DC CVAU or IC IVAU in Bell"
 
     let emit_access_ctrl st p init e r1 v1 =
       if Cfg.realdep then

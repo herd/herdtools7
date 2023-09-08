@@ -273,6 +273,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | _,Some (Mixed _),Data _ -> assert false
         | Code.J,_,Data _ -> emit_joker st init
         | _,_,Code _ -> Warn.fatal "No code location in ARM"
+        | (D|I),_,_ -> Warn.fatal "DC CVAU or IC IVAU not implemented yet in ARM"
 
     let emit_exch st p init er ew =
       let rA,init,st = U.next_init st p init (as_data er.loc) in
@@ -312,6 +313,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | _,Some (Mixed _),Data _ -> assert false
       | Code.J,_,Data _ -> emit_joker st init
       | _,_,Code _ -> Warn.fatal "No code location for arch ARM"
+      | (D|I),_,_ -> Warn.fatal "DC CVAU or IC IVAU not implemented yet in ARM"
 
     let emit_exch_dep_addr st p init er ew rd =
       let rA,init,st = U.next_init st p init (as_data er.loc) in
@@ -345,6 +347,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | _,Code _ -> Warn.fatal "No code location for arch ARM"
           end
      | Some Code.J -> assert false
+     | Some (D|I) -> Warn.fatal "DC CVAU or IC IVAU not implemented yet in ARM"
 
     let insert_isb isb cs1 cs2 =
       if isb then cs1@[Instruction I_ISB]@cs2

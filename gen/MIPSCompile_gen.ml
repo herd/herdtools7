@@ -276,6 +276,7 @@ let emit_joker st init = None,init,[],st
         | _,Some (Mixed _),Data _ -> assert false
         | J, _,Data _ -> emit_joker st init
         | _,_,Code _ -> Warn.fatal "No code location for arch MIPS"
+        | (D|I),_,_ -> Warn.fatal "No DC CVAU or IC IVAU in MIPS"
 
     let emit_exch st p init er ew =
       let rA,init,st = U.next_init st p init (Code.as_data er.loc) in
@@ -313,8 +314,10 @@ let emit_joker st init = None,init,[],st
               ro,init,Instruction c::cs,st
           | _,Some (Mixed _) -> assert false
           | J,_ -> emit_joker st init
+          | (D|I),_-> Warn.fatal "No DC CVAU or IC IVAU in MIPS"
           end
       | _,Code _ -> Warn.fatal "No code location for MIPS"
+      
 
     let emit_exch_dep_addr st p init er ew rd =
       let rA,init,st = U.next_init st p init (as_data er.loc) in
@@ -350,6 +353,7 @@ let emit_joker st init = None,init,[],st
           end
       | Some J,_ -> emit_joker st init
       | _,Code _ -> Warn.fatal "No code location for MIPS"
+      | Some (D|I),_-> Warn.fatal "No DC CVAU or IC IVAU in MIPS"
 
     let emit_access_ctrl st p init e r1 =
       let lab = Label.next_label "LC" in
