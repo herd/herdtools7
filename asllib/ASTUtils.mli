@@ -153,7 +153,7 @@ module Infix : sig
   (** [~$i] is an integer literal that contains [i]. *)
 
   val ( !$ ) : int -> expr
-  (** An alias for {expr_of_int}. *)
+  (** An alias for [expr_of_int]. *)
 end
 
 (** {1 Equality helpers}

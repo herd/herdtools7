@@ -15,6 +15,7 @@
 (****************************************************************************)
 (* Authors:                                                                 *)
 (* Hadrien Renaud, University College London, UK.                           *)
+(* Jade Alglave, Arm Ltd and UCL, UK.                                       *)
 (****************************************************************************)
 
 open AST
@@ -79,7 +80,8 @@ module NativeBackend = struct
     | _ -> None
 
   let bind (vm : 'a m) (f : 'a -> 'b m) : 'b m = f vm
-  let prod (r1 : 'a m) (r2 : 'b m) : ('a * 'b) m = (r1, r2)
+  let prod_par (r1 : 'a m) (r2 : 'b m) : ('a * 'b) m = (r1, r2)
+
   let return v = v
 
   let v_unknown_of_type ty =
@@ -95,6 +97,7 @@ module NativeBackend = struct
   let bind_data = bind
   let bind_seq = bind
   let bind_ctrl = bind
+  let appl_data m f = bind_data m (fun v -> return (f v))
 
   let choice (c : value m) (m_true : 'b m) (m_false : 'b m) : 'b m =
     let open AST in

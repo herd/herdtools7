@@ -15,6 +15,7 @@
 (****************************************************************************)
 (* Authors:                                                                 *)
 (* Hadrien Renaud, University College London, UK.                           *)
+(* Jade Alglave, Arm Ltd and UCL, UK.                                       *)
 (****************************************************************************)
 
 (** This module is the signature of any backend of the ASL interpreter. *)
@@ -37,7 +38,7 @@ module type S = sig
       is [create_vector], and should be used for constructing complex values. *)
 
   val v_unknown_of_type : AST.ty -> value
-  (** [v_unknwon_of_type t] constructs a value from a type. *)
+  (** [v_unknown_of_type t] constructs a value from a type. *)
 
   val v_of_int : int -> value
   (** [v_of_int] is used to convert raw integers arising from the interpretation,
@@ -64,15 +65,22 @@ module type S = sig
       to compute the second operation. *)
 
   val bind_seq : 'a m -> ('a -> 'b m) -> 'b m
-  (** Monadic bind operation. but that only pass internal interpreter data.
+  (** Monadic bind operation, but that only passes internal interpreter data.
       This should not create any data-dependency. *)
 
   val bind_ctrl : 'a m -> ('a -> 'b m) -> 'b m
   (** Monadic bind operation, but that creates a control dependency between the
       first argument and the result of the second one. *)
 
-  val prod : 'a m -> 'b m -> ('a * 'b) m
-  (** Monadic product operation, two monads are combined "in parrallel".*)
+  val prod_par : 'a m -> 'b m -> ('a * 'b) m
+  (** Monadic product operation, two monads are combined "in parallel".*)
+
+  val appl_data: 'a m -> ('a -> 'b) -> 'b m
+    (** Applicative map. 
+  
+      Creates a data dependency between the output events and
+      the input events of the argument in the resulting monad. *)
+
 
   val choice : value m -> 'b m -> 'b m -> 'b m
   (** choice is a boolean if operator. *)
