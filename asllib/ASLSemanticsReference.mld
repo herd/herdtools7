@@ -478,30 +478,38 @@ Evaluation of Local Declarations
 }
 [eval_local_decl s ldi env m] declares local identifiers [ldi] in [env].
 The evaluation of the local identifiers [ldi] under an environment [env]
-is [v] and one of the following applies:
+is [env'] and one of the following applies:
 
   {3 Rule.LDIgnore}
   <description> 
   <minimal example>
 
   {3 Rule.LDVar}
-  <description> 
+  All of the following applies:
+  - [ldi] is a variable [x];
+  - [env'] is [env] modified to declare [x] as a local identifier. 
   <minimal example>
 
   {3 Rule.LDTypedVar}
-  <description> 
+  All of the following applies:
+  - [ldi] is a variable [x] of type [ty];
+  - [env'] is [env] modified to declare [x] as a local identifier.
   <minimal example>
 
   {3 Rule.LDUninitialisedVar}
-  <description> 
+  <description>
   <minimal example>
 
   {3 Rule.LDTuple}
-  <description> 
+  All of the following applies:
+  - [ldi] gives a list of local identifiers [ldis];
+  - [env'] is [env] modified to declare each element of [ldis].  
   <minimal example>
 
   {3 Rule.LDTypedTuple}
-  <description> 
+  All of the following applies:
+  - [ldi] gives a list of local identifiers [ldis] and a type [ty];
+  - [env'] is [env] modified to declare each element of [ldis] with type [ty]. 
   <minimal example>
 
   {3 Rule.LDUninitialisedTuple}
