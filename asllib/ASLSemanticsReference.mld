@@ -418,7 +418,7 @@ the start (included) and the length of each slice in [slices].
 Evaluation of Patterns 
 }
 [eval_pattern env pos v p] determines if [v] matches the pattern [p]. 
-One of the following applies:
+Formally, one of the following applies:
 
   {3 Rule.PAll}
   [p] is the pattern which matches everything.
@@ -511,11 +511,20 @@ is [v] and one of the following applies:
 {2
 Evaluation of Statements 
 }
-[eval_stmt env s] evaluates [s] in [env]. This is either an interruption
-[Returning vs] or a continuation [env], see [eval_res].
+[eval_stmt env s] evaluates [s] in [env]: this is either an interruption
+[Returning vs] or a continuation [cont]. Formally, one of the following applies:
 
   {3 Rule.SPass}
-  <description>
+  All of the following applies:
+  - [s] is a pass statement;
+  - [cont] is [env]. 
+  <minimal example>
+
+  {3 Rule.SAssign}
+  All of the following applies:
+  - [s] is an assignment [le := re];
+  - [r_env] is [env] modified after evaluation of [re] under [env];
+  - [cont] is [r_env] modified after evaluation of [le] under [r_env].
   <minimal example>
 
   {3 Rule.SAssignCall}
@@ -526,32 +535,49 @@ Evaluation of Statements
   <description>
   <minimal example>
 
-  {3 Rule.SAssign}
-  <description>
-  <minimal example>
+  {3 Rule.SReturnNone}
+  All of the following applies:
+  - [s] is a return statement;
+  - [cont] is [env].
+  <minimal example>  
 
   {3 Rule.SReturnOne}
-  <description>
+  All of the following applies:
+  - [s] is a return statement;
+  - [s] gives an expression [e];
+  - [cont] is [env] modified after evaluation of [e] under [env].
   <minimal example>
 
   {3 Rule.SReturnSome}
-  <description>
-  <minimal example>
-
-  {3 Rule.SReturnNone}
-  <description>
+  All of the following applies:
+  - [s] is a return statement;
+  - [s] gives a list of expressions [es];
+  - [cont] is [env] modified after evaluation of the list [es] under [env].
   <minimal example>
 
   {3 Rule.SThen}
-  <description>
+  All of the following applies:
+  - [s] is a then statement;
+  - [s] gives two statements [s1] and [s2];
+  - [env'] is [env] modified after evaluation of [s1];
+  - [cont] is [env'] modified after evaluation of [s2].
   <minimal example>
 
   {3 Rule.SCall}
-  <description>
+  All of the following applies:
+  - [s] is a call statement;
+  - [s] gives a function name [name], actual arguments [actual_args] and
+    parameters [params];
+  - [env'] is [env] modified after evaluation of the function call;
+  - [cont] is [env']. 
   <minimal example>
 
   {3 Rule.SCond}
-  <description>
+  All of the following applies:
+  - [s] is a conditional statement;
+  - [s] gives a condition [cond] and two statements [s1] and [s2];
+  - [v_cond] is the evaluation of [cond];
+  - [cont] is [env] modified after evaluation of [s1] or [s2] depending on [v_cond].
   <minimal example>
 
   {3 Rule.SCase}
@@ -559,47 +585,80 @@ Evaluation of Statements
   <minimal example>
 
   {3 Rule.SAssert}
-  <description>
+  All of the following applies:
+  - [s] is an assert statement;
+  - [s] gives an expression [e];
+  - [v] is the evaluation of [e];
+  - if [v] is true then [cont] is [env], otherwise an AssertionFailed error is raised.
   <minimal example>
 
   {3 Rule.SWhile}
-  <description>
+  All of the following applies:
+  - [s] is a while statement;
+  - [s] gives an expression [e] and a loop body [body];
+  - [cont] is [env] modified after evaluation of the loop [(e,body)].
   <minimal example>
 
   {3 Rule.SRepeat}
-  <description>
+  All of the following applies:
+  - [s] is a repeat statement;
+  - [s] gives an expression [e] and a loop body [body];
+  - [cont] is [env] modified after evaluation of the loop [(e,body)].
   <minimal example>
 
   {3 Rule.SFor}
-  <description>
+  All of the following applies:
+  - [s] is a for statement;
+  - [s] gives [(id,e1,dir,e2,s)];
+  - 
   <minimal example>
 
   {3 Rule.SThrowNone}
-  <description>
+  All of the following applies:
+  - [s] is a throw statement;
+  -  
   <minimal example>
 
   {3 Rule.SThrowSomeTyped}
-  <description>
+  All of the following applies:
+  - [s] is a throw statement;
+  -  
   <minimal example>
 
   {3 Rule.SThrowSome}
-  <description>
+  All of the following applies:
+  - [s] is a throw statement;
+  -  
   <minimal example>
 
   {3 Rule.STry}
-  <description>
+  All of the following applies:
+  - [s] is a try statement;
+  - [s] gives [(s', catchers, otherwise_opt)];
+  - [s_m] is the evaluation of the block [s'] under [env];
+  - [cont] is [env] modified after evaluation of the catchers [(catchers otherwise_opt s_m)]. 
   <minimal example>
 
   {3 Rule.SDeclSome}
-  <description>
+  All of the following applies:
+  - [s] is a declaration;
+  - [s] gives [(_ldk, ldi, Some e)];
+  - [cont] is [env] modified after evaluation of the local declaration [s ldi env (Some m)].
   <minimal example>
 
   {3 Rule.SDeclNone}
-  <description>
+  All of the following applies:
+  - [s] is a declaration;
+  - [s] gives [(_dlk, ldi, None)];
+  - [cont] is [env] modified after evaluation of the local declaration [s ldi env None].
   <minimal example>
 
   {3 Rule.SDebug}
-  <description>
+  All of the following applies:
+  - [s] is a debug statement;
+  - [s] gives a side-effect-free expression [e];
+  - [v] is the evaluation of [e];
+  - [cont] is [env].
   <minimal example>
 
 {2
