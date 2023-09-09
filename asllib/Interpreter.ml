@@ -585,7 +585,7 @@ module Make (B : Backend.S) (C : Config) = struct
         List.fold_left folder false_ li |: Rule.PAny
     | Pattern_Geq e -> eval_expr_sef env e >>= B.binop GEQ v |: Rule.PGeq
     | Pattern_Leq e -> eval_expr_sef env e >>= B.binop LEQ v |: Rule.PLeq
-    | Pattern_Not p -> eval_pattern env pos v p >>= B.unop BNOT |: Rule.PNot
+    | Pattern_Not p' -> eval_pattern env pos v p' >>= B.unop BNOT |: Rule.PNot
     | Pattern_Range (e1, e2) ->
         let* b1 = eval_expr_sef env e1 >>= B.binop GEQ v
         and* b2 = eval_expr_sef env e2 >>= B.binop LEQ v in
