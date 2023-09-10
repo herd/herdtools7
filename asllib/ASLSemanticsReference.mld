@@ -372,21 +372,21 @@ The evaluation of the left-hand-side expression [le] associated with a value
   <minimal example>
 
   {3 Rule.LESetArray}
-  [le] denotes an array and an index [e_index] and all of the following applies:
-  - The right-hand-side expression corresponding to [le] is [re_array];
+  [le] denotes an array [le_array] and an index [e_index] and all of the following applies:
+  - The right-hand-side expression corresponding to [le_array] is [re_array];
   - The evaluation of [re_array] under [env] is [rv_array];
   - The evaluation of [e_index] under [env] is [v_index];
-  - [v] is [rv_array] where the value at index [v_index] has been updated to [v];
-  - [new_env] is [env] where [le] has been assigned the value [v].
+  - [new_v_array] is [rv_array] where the value at index [v_index] has been updated to [v];
+  - [new_env] is [env] where [le_array] has been assigned the value [new_v_array].
 
   <minimal example>
 
   {3 Rule.LESetField}
-  [le] denotes a field name [field_name] in a vector and all of the following applies:
-  - The right-hand-side expression corresponding to [le] is [re_vec];
-  - The evaluation of [re_vec] under [env] is [rv_vec];
-  - [v] is [rv_vec] where the field [field_name] has been updated to [v]
-  - [new_env] is [env] where [le] has been assigned the value [v].
+  [le] denotes a field name [field_name] in a record [le_record] and all of the following applies:
+  - The right-hand-side expression corresponding to [le_record] is [re_record];
+  - The evaluation of [re_record] under [env] is [rv_record];
+  - [new_v_record] is [rv_record] where the field [field_name] has been updated to [v]
+  - [new_env] is [env] where [le_record] has been assigned the value [new_v_record].
 
   <minimal example>
 
@@ -426,39 +426,40 @@ Formally, one of the following applies:
 
   {3 Rule.PAny}
   All of the following applies:
-  - [p] gives a list of patterns [li];
-  - [v] matches the evaluation of one the patterns in the list [li].
+  - [p] gives a list of patterns [li_patterns];
+  - [v] is a record of values [li_values];
+  - each value in [li_values] matches the corresponding pattern in [li_patterns] in [env].
   <minimal example>
 
   {3 Rule.PGeq}
   All of the following applies:
   - [p] gives a side-effect-free expression [e];
-  - [v] is greater than or equal to the evaluation of [e]. 
+  - [v] is greater than or equal to the evaluation of [e] in [env]. 
   <minimal example>
 
   {3 Rule.PLeq}
   All of the following applies:
   - [p] gives a side-effect-free expression [e];
-  - [v] is lesser than or equal to the evaluation of [e]. 
+  - [v] is lesser than or equal to the evaluation of [e] in [env]. 
   <minimal example>
 
   {3 Rule.PNot}
   All of the following applies:
   - [p] gives a pattern [p']; 
-  - [v] matches the negation of [p']. 
+  - [v] matches the negation of [p'] in [env]. 
   <minimal example>
 
   {3 Rule.PRange}
   All of the following applies:
   - [p] gives two side-effect-free expressions [e1] and [e2];
-  - [v] is greater than or equal to [e1];
-  - [v] is lesser than or equal to [e2]. 
+  - [v] is greater than or equal to [e1] in [env];
+  - [v] is lesser than or equal to [e2] in [env]. 
   <minimal example>
 
   {3 Rule.PSingle}
   All of the following appplies:
   - [p] gives a side-effect-free expression [e];
-  - [v] is equal to the evaluation of [e]. 
+  - [v] is equal to the evaluation of [e] in [env]. 
   <minimal example>
 
   {3 Rule.PMask}
@@ -470,7 +471,7 @@ Formally, one of the following applies:
   {3 Rule.PTuple}
   All of the following applies:
   - [p] gives a list of patterns [li];
-  - [v] matches the evaluation of all the patterns in the list [li].
+  - [v] matches the evaluation of all the patterns in the list [li] in [env].
    <minimal example>
 
 {2
@@ -531,8 +532,9 @@ Evaluation of Statements
   {3 Rule.SAssign}
   All of the following applies:
   - [s] is an assignment [le := re];
+  - [v] is the evaluation of [re] under [env];
   - [r_env] is [env] modified after evaluation of [re] under [env];
-  - [cont] is [r_env] modified after evaluation of [le] under [r_env].
+  - [cont] is [r_env] modified after evaluation of [le] under [r_env] with [v].
   <minimal example>
 
   {3 Rule.SAssignCall}
@@ -546,6 +548,7 @@ Evaluation of Statements
   {3 Rule.SReturnNone}
   All of the following applies:
   - [s] is a return statement;
+  - [vs] is [[]];
   - [cont] is [env].
   <minimal example>  
 
@@ -553,6 +556,8 @@ Evaluation of Statements
   All of the following applies:
   - [s] is a return statement;
   - [s] gives an expression [e];
+  - [v] is the evaluation of [e] under [env];
+  - [vs] is [[v]];
   - [cont] is [env] modified after evaluation of [e] under [env].
   <minimal example>
 
@@ -560,7 +565,8 @@ Evaluation of Statements
   All of the following applies:
   - [s] is a return statement;
   - [s] gives a list of expressions [es];
-  - [cont] is [env] modified after evaluation of the list [es] under [env].
+  - [vs] is the piece-wise evaluation of the list [es] under [env];
+  - [cont] is [env] modified after evaluation of [e] under [env].
   <minimal example>
 
   {3 Rule.SThen}
@@ -651,14 +657,14 @@ Evaluation of Statements
   All of the following applies:
   - [s] is a declaration;
   - [s] gives [(_ldk, ldi, Some e)];
-  - [cont] is [env] modified after evaluation of the local declaration [s ldi env (Some m)].
+  - [cont] is [env] modified after evaluation of the local declaration [ldi env (Some m)].
   <minimal example>
 
   {3 Rule.SDeclNone}
   All of the following applies:
   - [s] is a declaration;
   - [s] gives [(_dlk, ldi, None)];
-  - [cont] is [env] modified after evaluation of the local declaration [s ldi env None].
+  - [cont] is [env] modified after evaluation of the local declaration [ldi env None].
   <minimal example>
 
   {3 Rule.SDebug}

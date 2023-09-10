@@ -427,9 +427,9 @@ module Make (B : Backend.S) (C : Config) = struct
         let* v = B.create_record (List.combine names v_fields) in
         return_normal (v, env) |: Rule.ERecord
 
-    | E_GetField (e_vec, field_name) ->
-        let** v_vec, env = eval_expr env e_vec in
-        let* v = B.get_field field_name v_vec in
+    | E_GetField (e_record, field_name) ->
+        let** v_record, env = eval_expr env e_record in
+        let* v = B.get_field field_name v_record in
         return_normal (v, env) |: Rule.EGetBitField 
 
     | E_GetFields _ -> fatal_from e Error.TypeInferenceNeeded |: Rule.EGetBitFields 
@@ -521,13 +521,13 @@ module Make (B : Backend.S) (C : Config) = struct
           | Some i -> B.set_index i v rv_array
         in
         eval_lexpr ver re_array env m' |: Rule.LESetArray
-    | LE_SetField (re_vec, field_name) ->
-        let*^ rm_vec, env = expr_of_lexpr re_vec |> eval_expr env in
+    | LE_SetField (re_record, field_name) ->
+        let*^ rm_record, env = expr_of_lexpr re_record |> eval_expr env in
         let m' =
-          let* v = m and* rv_vec = rm_vec in
-          B.set_field field_name v rv_vec
+          let* v = m and* rv_record = rm_record in
+          B.set_field field_name v rv_record
         in
-        eval_lexpr ver re_vec env m' |: Rule.LESetField
+        eval_lexpr ver re_record env m' |: Rule.LESetField
     | LE_SetFields _ ->
        let* () =
          let* v = m in
@@ -599,7 +599,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let* set = B.binop AND set v
         and* unset = B.unop NOT v >>= B.binop AND unset in
         B.binop OR set unset >>= B.binop EQ_OP specified |: Rule.PMask
-    | Pattern_Tuple li ->
+    | Pattern_Tuple li_patterns ->
         let folderi i acc p =
           let* acc = acc
           and* b =
@@ -609,7 +609,7 @@ module Make (B : Backend.S) (C : Config) = struct
           B.binop BAND acc b 
         in
         let folder (acc, i) p = (folderi i acc p, succ i) in
-        List.fold_left folder (true_, 0) li |> fst |: Rule.PTuple
+        List.fold_left folder (true_, 0) li_patterns |> fst |: Rule.PTuple
 
   (* Evaluation of Local Declarations *)
   (* -------------------------------- *)
