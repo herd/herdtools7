@@ -1350,6 +1350,12 @@ Monad type:
         | V.Val (Symbolic (System (PTE,_))) -> true
         | _ -> false
 
+      let is_instrloc a =
+        let open Constant in
+        match a with
+        | V.Val (Constant.Label _) -> true
+        | _ -> false
+
       let add_inittags env =
         let glob,tag =
           List.fold_left
@@ -1368,7 +1374,7 @@ Monad type:
         let env =
           List.fold_left
             (fun env a ->
-              if not (is_pteloc a) then
+              if not (is_pteloc a) && not (is_instrloc a) then
               begin
                 let atag =  V.op1 Op.TagLoc a in
                 if V.ValueSet.mem atag tag_set then env

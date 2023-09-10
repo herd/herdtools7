@@ -1,0 +1,6 @@
+AArch64 AK001
+{}
+P0        ;
+ADR X0,L0 ;
+L0:       ;
+ NOP      ;

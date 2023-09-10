@@ -1,0 +1,9 @@
+AArch64 AK003
+{
+    tag(z)=:green;
+    0:X1=z:red;
+}
+P0           | P0.F           ;
+ STR W0,[X1] | ADR X9,L0      ;
+L0:          | MSR ELR_EL1,X9 ;
+ NOP         | ERET           ;

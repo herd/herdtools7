@@ -1,0 +1,10 @@
+Test AK002 Required
+States 1
+
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (true)
+Observation AK002 Always 1 0
+Hash=87f5f630a2b92cb633415f356ff3f20f
+
