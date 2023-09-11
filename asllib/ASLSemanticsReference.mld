@@ -698,19 +698,43 @@ Evaluation of Blocks
 {2
 Evaluation of [while] and [repeat] loops 
 }
-<description> 
+[eval_loop is_while env e_cond body] evaluates [body] in [env]: this is either
+an interruption [Returning vs] or a continuation [cont].  Formally, [cond_m]
+evaluates to [e_cond] or [not e_cond] as determined by [is_while] and one of
+the following applies:
+  - All of the following applies:
+   . [cond_m] evaluates to [false];
+   . [cont] is [env] as the loop is exited.
+  - All of the following applies:
+   . [cond_m] evaluates to [true];
+   . [env1] is [env] modified after evaluating the statement [body]---this step
+might affect the value of [cond_m] eventually leading to exiting the loop;
+   . [cont] is [env1] modified after evaluating [eval_loop is_while env e_cond
+body].
 <minimal example>
 
 {2
 Evaluation of [for] loops 
 }
-<description> 
+[eval_for undet env index_name v_start dir v_end body] evaluates [body] in
+[env]: this is either an interruption [Returning vs] or a continuation [cont].
+Formally, [cond_m] evaluates to [leq v_end v_start] or [geq v_end v_start] as
+determined by [dir] and one of the following applies:
+  - All of the following applies:
+    . [cond_m] evaluates to [true];
+    . [cont] is [env] as the loop is exited.
+  - All of the following applies:
+    . [cond_m] evaluates to [false];
+    . [env1] is [env] modified after evaluating the statement [body];
+    . [env2] is [env1] modified such that [index_name] is bound to [v_step];
+    . [v_step] evaluates to [v_start+1] or [v_start-1] as determined by [dir]; 
+    . [cont] is [env2] modified after evaluating [eval_for undet env index_name v_step dir v_end body].
 <minimal example>
 
 {2
 Evaluation of Catchers 
 }
-<description> 
+[eval_catchers env catchers otherwise_opt s_m]
 <minimal example>
 
 {2

@@ -751,16 +751,16 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Evaluation of while and repeat loops *)
   (* ------------------------------------ *)
-  and eval_loop is_while env e s : stmt_eval_type =
+  and eval_loop is_while env e_cond body : stmt_eval_type =
     (* Name for warn messages. *)
     let loop_name = if is_while then "While loop" else "Repeat loop" in
     (* Continuation in the positive case. *)
     let loop env =
-      let*> env = eval_block env s in
-      eval_loop is_while env e s
+      let*> env1 = eval_block env body in
+      eval_loop is_while env1 e_cond body
     in
     (* First we evaluate the condition *)
-    let*^ cond_m, env = eval_expr env e in
+    let*^ cond_m, env = eval_expr env e_cond in
     (* Depending if we are in a while or a repeat, we invert that condition. *)
     let cond_m = if is_while then cond_m else cond_m >>= B.unop BNOT in
     (* If needs be, we tick the unrolling stack before looping. *)
@@ -772,26 +772,26 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Evaluation of for loops *)
   (* ----------------------- *)
-  and eval_for undet (env : env) id v dir v2 s : stmt_eval_type =
+  and eval_for undet (env : env) index_name v_start dir v_end body : stmt_eval_type =
     (* Evaluate the condition: "Is the for loop terminated?" *)
     let cond_m =
       let op = match dir with Up -> LT | Down -> GT in
-      let* () = B.on_read_identifier id (IEnv.get_scope env) v in
-      B.binop op v2 v
+      let* () = B.on_read_identifier index_name (IEnv.get_scope env) v_start in
+      B.binop op v_end v_start
     in
     (* Increase the loop counter *)
-    let step env id v dir =
+    let step env index_name v_start dir =
       let op = match dir with Up -> PLUS | Down -> MINUS in
-      let* () = B.on_read_identifier id (IEnv.get_scope env) v in
-      let* v = B.binop op v one in
-      let* env = assign_local_identifier env id v in
-      return (v, env)
+      let* () = B.on_read_identifier index_name (IEnv.get_scope env) v_start in
+      let* v_step = B.binop op v_start one in
+      let* env = assign_local_identifier env index_name v_step in
+      return (v_step, env)
     in
     (* Continuation in the positive case. *)
     let loop env =
-      bind_maybe_unroll "For loop" undet (eval_block env s) @@ fun env ->
-      let*| v, env = step env id v dir in
-      eval_for undet env id v dir v2 s
+      bind_maybe_unroll "For loop" undet (eval_block env body) @@ fun env1 ->
+      let*| v_step, env2 = step env1 index_name v_start dir in
+      eval_for undet env2 index_name v_step dir v_end body
     in
     (* Real logic: if condition is validated, we continue to the next
        statement, otherwise we loop. *)
