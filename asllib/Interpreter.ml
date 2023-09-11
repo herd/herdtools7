@@ -613,8 +613,8 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Evaluation of Local Declarations *)
   (* -------------------------------- *)
-  and eval_local_decl s ldi env m : env maybe_exception m =
-    match (ldi, m) with
+  and eval_local_decl s ldi env m_init_opt : env maybe_exception m =
+    match (ldi, m_init_opt) with
     | LDI_Ignore _ty, _ -> return_normal env |: Rule.LDIgnore
     | LDI_Var (x, _ty), Some m ->
         m >>= declare_local_identifier env x >>= return_normal |: Rule.LDVar
@@ -865,17 +865,17 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Evaluation of Functions *)
   (* ----------------------- *)
-  (** [eval_func genv name pos args nargs] evaluate the function named [name]
-      in the global environment [genv], with [args] the formal arguments, and
-      [nargs] the arguments deduced by type equality. *)
-  and eval_func (genv : IEnv.global) name pos (args : B.value m list) nargs :
+  (** [eval_func genv name pos actual_args params] evaluate the function named [name]
+      in the global environment [genv], with [actual_args] the actual arguments, and
+      [params] the parameters deduced by type equality. *)
+  and eval_func (genv : IEnv.global) name pos (actual_args : B.value m list) params :
       func_eval_type =
     match IMap.find_opt name genv.funcs with
-    | None -> fatal_from pos @@ Error.UndefinedIdentifier name
+    | None -> fatal_from pos @@ Error.UndefinedIdentifier name |: Rule.FUndefIdent
     | Some (r, { body = SB_Primitive body; _ }) ->
         let scope = Scope_Local (name, !r) in
         let () = incr r in
-        let* ms = body args in
+        let* ms = body actual_args in
         let _, vsm =
           List.fold_right
             (fun m (i, acc) ->
@@ -893,35 +893,35 @@ module Make (B : Backend.S) (C : Config) = struct
             (0, return [])
         in
         let*| vs = vsm in
-        return_normal (vs, genv)
+        return_normal (vs, genv) |: Rule.FPrimitive
     | Some (_, { args = arg_decls; _ })
-      when List.compare_lengths args arg_decls <> 0 ->
+      when List.compare_lengths actual_args arg_decls <> 0 ->
         fatal_from pos
-        @@ Error.BadArity (name, List.length arg_decls, List.length args)
+        @@ Error.BadArity (name, List.length arg_decls, List.length actual_args) |: Rule.FBadArity
     | Some (r, { body = SB_ASL body; args = arg_decls; _ }) -> (
         let () = if false then Format.eprintf "Evaluating %s.@." name in
         let scope = Scope_Local (name, !r) in
         let () = incr r in
-        let env = IEnv.{ global = genv; local = empty_scoped scope } in
+        let env1 = IEnv.{ global = genv; local = empty_scoped scope } in
         let one_arg envm (x, _) m = declare_local_identifier_mm envm x m in
-        let envm = List.fold_left2 one_arg (return env) arg_decls args in
+        let env2 = List.fold_left2 one_arg (return env1) arg_decls actual_args in
         let one_narg envm (x, m) =
           let*| env = envm in
           if IEnv.mem x env then return env
           else declare_local_identifier_m env x m
         in
-        let*| env = List.fold_left one_narg envm nargs in
-        let**| res = eval_stmt env body in
+        let*| env3 = List.fold_left one_narg env2 params in
+        let**| res = eval_stmt env3 body in
         let () =
           if false then Format.eprintf "Finished evaluating %s.@." name
         in
-        match res with
-        | Continuing env -> return_normal ([], env.global)
-        | Returning (xs, genv) ->
+        (match res with
+        | Continuing env4 -> return_normal ([], env4.global)
+        | Returning (xs, ret_genv) ->
             let vs =
               List.mapi (fun i v -> (v, return_identifier i, scope)) xs
             in
-            return_normal (vs, genv))
+            return_normal (vs, ret_genv))) |: Rule.FCall
 
   (** [multi_assign env [le_1; ... ; le_n] [m_1; ... ; m_n]] is
       [env[le_1 --> m_1] ... [le_n --> m_n]]. *)

@@ -485,64 +485,117 @@ Formally, one of the following applies:
 {2
 Evaluation of Local Declarations
 }
-[eval_local_decl s ldi env m] declares local identifiers [ldi] in [env].
-The evaluation of the local identifiers [ldi] under an environment [env]
-is [env'] and one of the following applies:
+[eval_local_decl s ldi env m_init_opt] declares local identifiers [ldi] in
+[env] with an optional initialisation value [m_init_opt].  The evaluation of
+the local identifiers [ldi] under an environment [env] is [new_env] and one of
+the following applies:
 
   {3 Rule.LDIgnore}
-  <description> 
-  <minimal example>
+
+    {4 Rule}
+    All of the following applies: 
+    - [ldi] is an identifier which can be ignored;
+    - [new_env] is [env].
+  
+    {4 Example}
+    [var - = 3;] evaluates [3];
+
+    [var - : integer;] does not modify the environment.
 
   {3 Rule.LDVar}
-  All of the following applies:
-  - [ldi] is a variable [x];
-  - [env'] is [env] modified to declare [x] as a local identifier. 
-  <minimal example>
+
+    {4 Rule}
+    All of the following applies:
+    - [ldi] is a variable [x];
+    - [m_init_opt] is a value [m];
+    - [new_env] is [env] modified to declare [x] as a local identifier bound to
+      value [m]. 
+ 
+    {4 Example} 
+    [var x = 3;] binds [x] to the evaluation of [3] in [env].
+   
+    [var x : integer = 3] binds [x] to the evaluation of [3] in [env], without
+    type consideration at runtime.
 
   {3 Rule.LDTypedVar}
-  All of the following applies:
-  - [ldi] is a variable [x] of type [ty];
-  - [env'] is [env] modified to declare [x] as a local identifier.
-  <minimal example>
+
+    {4 Rule}
+    All of the following applies:
+    - [ldi] is a variable [x] of type [ty];
+    - [m_init_opt] is [None];
+    - [new_env] is [env] modified to declare [x] as a local identifier bound to
+      the base value of [ty].
+
+    {4 Example} 
+    [var x : integer;] binds [x] in [env] to the base value of [integer].
 
   {3 Rule.LDUninitialisedVar}
-  <description>
-  <minimal example>
+  
+    {4 Rule}
+    All of the following applies:
+    - [ldi] is a variable [x] without a type nor an initialisation value; 
+    - an error is raised.
+
+    {4 Example}
+    [var x;] raises an error. 
 
   {3 Rule.LDTuple}
-  All of the following applies:
-  - [ldi] gives a list of local identifiers [ldis];
-  - [env'] is [env] modified to declare each element of [ldis].  
-  <minimal example>
+
+    {4 Rule}
+    All of the following applies:
+    - [ldi] gives a list of local identifiers [ldis];
+    - [m_init_opt] is a list of values [nmonads];
+    - [new_env] is [env] modified to declare each element of [ldis] to be bound
+      to the corresponding value in [nmonads].  
+
+    {4 Example}
+    [var (x,y,z) = (1,2,3);] bounds [x] (resp. [y], [z]) to the evaluation of
+    [1] (resp. [2], [3]) in [env].
 
   {3 Rule.LDTypedTuple}
-  All of the following applies:
-  - [ldi] gives a list of local identifiers [ldis] and a type [ty];
-  - [env'] is [env] modified to declare each element of [ldis] with type [ty]. 
-  <minimal example>
+   
+    {4 Rule}
+    All of the following applies:
+    - [ldi] gives a list of local identifiers [ldis] and a type [ty];
+    - [m_init_opt] is [None];
+    - [new_env] is [env] modified to declare each element of [ldis] with type
+      [ty]. 
+
+    {4 Example}
+    [var (x,y,z) : integer;] binds [x], [y] and [z] in [env] to the base value
+    of [integer].
 
   {3 Rule.LDUninitialisedTuple}
-  <description> 
-  <minimal example>
+  
+    {4 Rule} 
+    All of the following applies:
+    - [ldi] gives a list of local identifiers [ldis];
+    - [new_env] is [env] modified to declare each element of [ldis].
+ 
+    {4 Example}
+    [var (x : integer, y : boolean);] binds [x] to the base value of [integer]
+    and [y] to the base value of [boolean].
 
 {2
 Evaluation of Statements 
 }
 [eval_stmt env s] evaluates [s] in [env]: this is either an interruption
-[Returning vs] or a continuation [cont]. Formally, one of the following applies:
+[Returning vs] or a new environment [new_env]. Formally, one of the following
+applies:
 
   {3 Rule.SPass}
   All of the following applies:
   - [s] is a pass statement;
-  - [cont] is [env]. 
+  - [new_env] is [env]. 
   <minimal example>
 
   {3 Rule.SAssign}
   All of the following applies:
-  - [s] is an assignment [le := re];
+  - [s] is an assignment [le = re];
   - [v] is the evaluation of [re] under [env];
   - [r_env] is [env] modified after evaluation of [re] under [env];
-  - [cont] is [r_env] modified after evaluation of [le] under [r_env] with [v].
+  - [new_env] is [r_env] modified after evaluation of [le] under [r_env] with
+    [v].
   <minimal example>
 
   {3 Rule.SAssignCall}
@@ -557,7 +610,7 @@ Evaluation of Statements
   All of the following applies:
   - [s] is a return statement;
   - [vs] is [[]];
-  - [cont] is [env].
+  - [new_env] is [env].
   <minimal example>  
 
   {3 Rule.SReturnOne}
@@ -566,7 +619,7 @@ Evaluation of Statements
   - [s] gives an expression [e];
   - [v] is the evaluation of [e] under [env];
   - [vs] is [[v]];
-  - [cont] is [env] modified after evaluation of [e] under [env].
+  - [new_env] is [env] modified after evaluation of [e] under [env].
   <minimal example>
 
   {3 Rule.SReturnSome}
@@ -574,7 +627,7 @@ Evaluation of Statements
   - [s] is a return statement;
   - [s] gives a list of expressions [es];
   - [vs] is the piece-wise evaluation of the list [es] under [env];
-  - [cont] is [env] modified after evaluation of [e] under [env].
+  - [new_env] is [env] modified after evaluation of [e] under [env].
   <minimal example>
 
   {3 Rule.SThen}
@@ -582,7 +635,7 @@ Evaluation of Statements
   - [s] is a then statement;
   - [s] gives two statements [s1] and [s2];
   - [env'] is [env] modified after evaluation of [s1];
-  - [cont] is [env'] modified after evaluation of [s2].
+  - [new_env] is [env'] modified after evaluation of [s2].
   <minimal example>
 
   {3 Rule.SCall}
@@ -591,7 +644,7 @@ Evaluation of Statements
   - [s] gives a function name [name], actual arguments [actual_args] and
     parameters [params];
   - [env'] is [env] modified after evaluation of the function call;
-  - [cont] is [env']. 
+  - [new_env] is [env']. 
   <minimal example>
 
   {3 Rule.SCond}
@@ -599,7 +652,7 @@ Evaluation of Statements
   - [s] is a conditional statement;
   - [s] gives a condition [cond] and two statements [s1] and [s2];
   - [v_cond] is the evaluation of [cond];
-  - [cont] is [env] modified after evaluation of [s1] or [s2] depending on [v_cond].
+  - [new_env] is [env] modified after evaluation of [s1] or [s2] depending on [v_cond].
   <minimal example>
 
   {3 Rule.SCase}
@@ -611,46 +664,46 @@ Evaluation of Statements
   - [s] is an assert statement;
   - [s] gives an expression [e];
   - [v] is the evaluation of [e];
-  - if [v] is true then [cont] is [env], otherwise an AssertionFailed error is raised.
+  - if [v] is true then [new_env] is [env], otherwise an AssertionFailed error is raised.
   <minimal example>
 
   {3 Rule.SWhile}
   All of the following applies:
   - [s] is a while statement;
   - [s] gives an expression [e] and a loop body [body];
-  - [cont] is [env] modified after evaluation of the loop [(e,body)].
+  - [new_env] is [env] modified after evaluation of the loop [(e,body)].
   <minimal example>
 
   {3 Rule.SRepeat}
   All of the following applies:
   - [s] is a repeat statement;
   - [s] gives an expression [e] and a loop body [body];
-  - [cont] is [env] modified after evaluation of the loop [(e,body)].
+  - [new_env] is [env] modified after evaluation of the loop [(e,body)].
   <minimal example>
 
   {3 Rule.SFor}
   All of the following applies:
   - [s] is a for statement;
   - [s] gives [(id,e1,dir,e2,s)];
-  - 
+  - <description>  
   <minimal example>
 
   {3 Rule.SThrowNone}
   All of the following applies:
   - [s] is a throw statement;
-  -  
+  - <description> 
   <minimal example>
 
   {3 Rule.SThrowSomeTyped}
   All of the following applies:
   - [s] is a throw statement;
-  -  
+  - <description> 
   <minimal example>
 
   {3 Rule.SThrowSome}
   All of the following applies:
   - [s] is a throw statement;
-  -  
+  - <description> 
   <minimal example>
 
   {3 Rule.STry}
@@ -658,21 +711,21 @@ Evaluation of Statements
   - [s] is a try statement;
   - [s] gives [(s', catchers, otherwise_opt)];
   - [s_m] is the evaluation of the block [s'] under [env];
-  - [cont] is [env] modified after evaluation of the catchers [(catchers otherwise_opt s_m)]. 
+  - [new_env] is [env] modified after evaluation of the catchers [(catchers otherwise_opt s_m)]. 
   <minimal example>
 
   {3 Rule.SDeclSome}
   All of the following applies:
   - [s] is a declaration;
   - [s] gives [(_ldk, ldi, Some e)];
-  - [cont] is [env] modified after evaluation of the local declaration [ldi env (Some m)].
+  - [new_env] is [env] modified after evaluation of the local declaration [ldi env (Some m)].
   <minimal example>
 
   {3 Rule.SDeclNone}
   All of the following applies:
   - [s] is a declaration;
   - [s] gives [(_dlk, ldi, None)];
-  - [cont] is [env] modified after evaluation of the local declaration [ldi env None].
+  - [new_env] is [env] modified after evaluation of the local declaration [ldi env None].
   <minimal example>
 
   {3 Rule.SDebug}
@@ -680,18 +733,18 @@ Evaluation of Statements
   - [s] is a debug statement;
   - [s] gives a side-effect-free expression [e];
   - [v] is the evaluation of [e];
-  - [cont] is [env].
+  - [new_env] is [env].
   <minimal example>
 
 {2
 Evaluation of Blocks
 }
-[eval_block env stm] is [env'] and all of the following applies:
+[eval_block env stm] is [new_env] and all of the following applies:
   - [block_env] is [env] such that the scope given by [env] is pushed onto the
     declaration stack;
-  - [block_env'] is [env] modified after evaluating the statement [stm];
-  - [env] is [block_env'] after restoring the variable bindings of [env], with
-    the updated values of [block_env'].
+  - [block_env'] is [env] modified after the evaluation of the statement [stm];
+  - [new_env] is [block_env'] after restoring the variable bindings of [env],
+    with the updated values of [block_env'].
 
 <minimal example>
 
@@ -699,36 +752,38 @@ Evaluation of Blocks
 Evaluation of [while] and [repeat] loops 
 }
 [eval_loop is_while env e_cond body] evaluates [body] in [env]: this is either
-an interruption [Returning vs] or a continuation [cont].  Formally, [cond_m]
-evaluates to [e_cond] or [not e_cond] as determined by [is_while] and one of
-the following applies:
+an interruption [Returning vs] or a new environment [new_env].  Formally,
+[cond_m] evaluates to [e_cond] or [not e_cond] as determined by [is_while] and
+one of the following applies:
   - All of the following applies:
    . [cond_m] evaluates to [false];
-   . [cont] is [env] as the loop is exited.
+   . [new_env] is [env]---the loop is exited.
   - All of the following applies:
    . [cond_m] evaluates to [true];
-   . [env1] is [env] modified after evaluating the statement [body]---this step
-might affect the value of [cond_m] eventually leading to exiting the loop;
-   . [cont] is [env1] modified after evaluating [eval_loop is_while env e_cond
-body].
+   . [env1] is [env] modified after the evaluation of the statement
+     [body]---this step might affect the value of [cond_m] eventually leading
+     to exiting the loop; 
+  . [new_env] is [env1] modified after the evaluation of [eval_loop is_while env
+    e_cond body].  
+
 <minimal example>
 
 {2
 Evaluation of [for] loops 
 }
 [eval_for undet env index_name v_start dir v_end body] evaluates [body] in
-[env]: this is either an interruption [Returning vs] or a continuation [cont].
-Formally, [cond_m] evaluates to [leq v_end v_start] or [geq v_end v_start] as
-determined by [dir] and one of the following applies:
+[env]: this is either an interruption [Returning vs] or a new environment
+[new_env].  Formally, [cond_m] evaluates to [leq v_end v_start] or [geq v_end
+v_start] as determined by [dir] and one of the following applies:
   - All of the following applies:
     . [cond_m] evaluates to [true];
-    . [cont] is [env] as the loop is exited.
+    . [new_env] is [env] as the loop is exited.
   - All of the following applies:
     . [cond_m] evaluates to [false];
-    . [env1] is [env] modified after evaluating the statement [body];
+    . [env1] is [env] modified after the evaluation of the statement [body];
     . [env2] is [env1] modified such that [index_name] is bound to [v_step];
     . [v_step] evaluates to [v_start+1] or [v_start-1] as determined by [dir]; 
-    . [cont] is [env2] modified after evaluating [eval_for undet env index_name v_step dir v_end body].
+    . [new_env] is [env2] modified after the evaluation of [eval_for undet env index_name v_step dir v_end body].
 <minimal example>
 
 {2
@@ -747,11 +802,87 @@ with arguments [args] and parameters [named_args].
 {2
 Evaluation of Functions 
 }
-[eval_func genv name pos args nargs] evaluate the function named [name] in the
-global environment [genv], with [args] the formal arguments, and [nargs] the
-arguments deduced by type equality. 
-<minimal example>
+[eval_func genv name pos actual_args params] evaluate the function named [name]
+in the global environment [genv], with [actual_args] the list of actual
+arguments, and [params] the list of arguments deduced by type equality. This is
+a new global environment [new_genv] and a list of values [vs]. Formally, one of
+the following applies:
 
+{3 Rule.FUndefIdent}
+
+  {4 Rule}
+  - All of the following applies:
+    . [name] is undeclared in [genv];
+    . an [UndefinedIdentifier] error is raised.
+
+  {4 Example}
+  [func main () => integer
+   begin
+     Foo ();
+   end]
+  raises an [UndefinedIdentifier "Foo"] error. 
+
+{3 Rule.FPrimitive}
+
+  {4 Rule}
+  - All of the following applies:
+    . [name] is bound in [genv] to a primitive function with a body [body];
+    . [new_genv] is [genv];
+    . [vs] is the application of [body] on [actual_args].
+
+  {4 Example}
+  [print (2,3);] calls the primitive [print] on the evaluation of [(2,3)].
+
+{3 Rule.FBadArity}
+
+  {4 Rule}
+  - All of the following applies:
+    . [name] is bound in [genv] to a function with a list of formal arguments [arg_decls];
+    . the lists [actual_args] and [arg_decls] do not have the same length; 
+    . an error "BadArity" is raised.
+
+  {4 Example}
+  [Zeros(3,4);] raises a [BadArity "Zeros" 1 2] error.
+
+
+{3 Rule.FCall}
+
+  {4 Rule}
+  - All of the following applies:
+    . [name] is bound in [genv] to a function with a list of formal arguments
+      [arg_decls] and a body statement [body]; 
+    . [env1] is the environment made of [genv] and the empty local environment,
+    . [env2] is [env1] modified so that each formal argument in [arg_decls] is
+      locally bound to the corresponding actual argument in [actual_args];
+    . [env3] is [env2] modified so that each parameter in [params] is declared;
+    . [res] is the evaluation of [body] in [env3] and one of the following
+      applies:
+      * [res] is an environment [env4] and [new_genv] is the global environment
+        given by [env4]---e.g. where the function called is either a setter or
+        a procedure as per Rule R_DFWZ;
+
+      * [res] is an interruption [Returning(xs,ret_genv)] and [new_genv] is
+        [ret_genv]---this is the general case.
+
+  {4 Example}
+  [func foo (x : integer) => integer
+   begin
+     return x + 1;
+   end
+
+   func bar (x : integer) => integer
+   begin
+     print(x);
+   end
+
+   func main () => integer
+   begin
+     foo(2);
+     bar(3);
+    return 0;
+   end]
+
+   
 {1 
 Typing
 }

@@ -67,6 +67,10 @@ module Rule = struct
     | SDeclSome
     | SDeclNone
     | SDebug
+    | FUndefIdent
+    | FPrimitive
+    | FBadArity
+    | FCall
 
   let to_string : t -> string = function
     | Lit -> "Lit"
@@ -136,6 +140,11 @@ module Rule = struct
     | SDeclSome -> "SDeclSome"
     | SDeclNone -> "SDeclNone"
     | SDebug -> "SDebug" 
+    | FUndefIdent -> "FUndefIdent"
+    | FPrimitive -> "FPrimitive"
+    | FBadArity -> "FBadArity"
+    | FCall -> "FCall"
+
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -190,6 +199,10 @@ module Rule = struct
       SDeclSome;
       SDeclNone;
       SDebug;
+      FUndefIdent;
+      FPrimitive;
+      FBadArity;
+      FCall;
     ]
 
   let all_nb = List.length all
