@@ -26,9 +26,7 @@ let fatal_from pos = Error.fatal_from pos
 
 (* A bit more informative than assert false *)
 
-let fail a msg =
-  failwith
-    (Printf.sprintf "%s: %s" (PP.pp_pos_str a) msg)
+let fail a msg = failwith (Printf.sprintf "%s: %s" (PP.pp_pos_str a) msg)
 
 let fail_initialise a id =
   fail a (Printf.sprintf "Cannot initialise variable %s" id)
@@ -66,7 +64,6 @@ module Make (B : Backend.S) (C : Config) = struct
   module IEnv = Env.RunTime (EnvConf)
 
   type env = IEnv.env
-
   type value_read_from = B.value * identifier * scope
 
   type 'a maybe_exception =
@@ -94,9 +91,7 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Return *)
   (* ------ *)
   let return = B.return
-
   let return_normal v = Normal v |> return
-
   let return_continue env : stmt_eval_type = Continuing env |> return_normal
 
   let return_return env vs : stmt_eval_type =
@@ -119,13 +114,11 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Exceptions *)
   let bind_exception binder m f =
     binder m (function Normal v -> f v | Throwing _ as res -> return res)
-  
+
   let bind_exception_seq m f = bind_exception B.bind_seq m f
   let ( let**| ) = bind_exception_seq
-  
   let bind_exception_data m f = bind_exception B.bind_data m f
   let ( let** ) = bind_exception_data
-  
   let bind_exception_ctrl m f = bind_exception B.bind_ctrl m f
 
   (* Continue *)
@@ -134,6 +127,7 @@ module Make (B : Backend.S) (C : Config) = struct
     bind_exception_seq m @@ function
     | Continuing env -> f env
     | Returning _ as res -> return_normal res
+
   let ( let*> ) = bind_continue
 
   (* Unroll *)
@@ -170,7 +164,6 @@ module Make (B : Backend.S) (C : Config) = struct
   (* ----------- *)
   let ( >=> ) m f = B.appl_data m f
 
-
   (*****************************************************************************)
   (*                                                                           *)
   (*                                Environments                               *)
@@ -205,7 +198,7 @@ module Make (B : Backend.S) (C : Config) = struct
       let use_e e acc = use_e acc e in
       let use_ty _ty acc = acc (* TODO *) in
       fun d ->
-        match d.desc with 
+        match d.desc with
         | D_GlobalStorage { initial_value = Some e; ty = Some ty; _ } ->
             ISet.empty |> use_e e |> use_ty ty
         | D_GlobalStorage { initial_value = None; ty = Some ty; _ } ->
@@ -231,12 +224,12 @@ module Make (B : Backend.S) (C : Config) = struct
             let* () =
               match name with
               | "PSTATE" ->
-                 (* No event at all for PSTATE, translated to reg NZCV.
-                    Moeover, initialisation of NZCV is from
-                    previous instructions, like all registers. *)
-                 return ()
-              | _ ->
-                 B.on_write_identifier name Scope_Global v in
+                  (* No event at all for PSTATE, translated to reg NZCV.
+                     Moeover, initialisation of NZCV is from
+                     previous instructions, like all registers. *)
+                  return ()
+              | _ -> B.on_write_identifier name Scope_Global v
+            in
             IEnv.declare_global name v env |> return
       | _ -> Fun.id
     in
@@ -343,6 +336,7 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Evaluation of Expressions *)
   (* ------------------------- *)
+
   (** [eval_expr] specifies how to evaluate an expression [e] in an environment
       [env]. More precisely, [eval_expr env e] is the monadic evaluation  of
       [e] in [env]. *)
@@ -389,7 +383,9 @@ module Make (B : Backend.S) (C : Config) = struct
           in
           return_normal (v, env) |: Rule.ECondSimple
 
-        else B.bind_ctrl (bind_choice_m m_cond e1 e2) @@ eval_expr env |: Rule.ECond
+        else
+          B.bind_ctrl (bind_choice_m m_cond e1 e2) @@ eval_expr env
+          |: Rule.ECond
 
     | E_Slice (e_bv, slices) ->
         let** (v_bv, positions), env =
@@ -414,12 +410,14 @@ module Make (B : Backend.S) (C : Config) = struct
           fold_par eval_expr env e_array e_index
         in
         match B.v_to_int v_index with
-        | None ->           (* TODO: create a proper runtime error for this.
-             It should be caught at type-checking, but still. *) 
-          fatal_from e (Error.UnsupportedExpr e_index)
+        | None ->
+            (* TODO: create a proper runtime error for this.
+               It should be caught at type-checking, but still. *)
+            fatal_from e (Error.UnsupportedExpr e_index)
+
         | Some i ->
             let* v = B.get_index i v_array in
-            return_normal (v, env) |: Rule.EGetArray) 
+            return_normal (v, env) |: Rule.EGetArray)
 
     | E_Record (_, e_fields) ->
         let names, fields = List.split e_fields in
@@ -430,9 +428,10 @@ module Make (B : Backend.S) (C : Config) = struct
     | E_GetField (e_record, field_name) ->
         let** v_record, env = eval_expr env e_record in
         let* v = B.get_field field_name v_record in
-        return_normal (v, env) |: Rule.EGetBitField 
+        return_normal (v, env) |: Rule.EGetBitField
 
-    | E_GetFields _ -> fatal_from e Error.TypeInferenceNeeded |: Rule.EGetBitFields 
+    | E_GetFields _ ->
+        fatal_from e Error.TypeInferenceNeeded |: Rule.EGetBitFields
 
     | E_Concat e_list ->
         let** v_list, env = eval_expr_list env e_list in
@@ -442,11 +441,11 @@ module Make (B : Backend.S) (C : Config) = struct
     | E_Tuple e_list ->
         let** v_list, env = eval_expr_list env e_list in
         let* v = B.create_vector v_list in
-        return_normal (v, env) 
+        return_normal (v, env)
 
     | E_Unknown t ->
         let v = B.v_unknown_of_type t in
-        return_normal (v, env) |: Rule.EUnknown 
+        return_normal (v, env) |: Rule.EUnknown
 
     | E_Pattern (e, p) ->
         let** v, env = eval_expr env e in
@@ -455,6 +454,7 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Evaluation of Side-Effect-Free Expressions *)
   (* ------------------------------------------ *)
+
   (** [eval_expr_sef] specifies how to evaluate a side-effect-free expression
       [e] in an environment [env]. More precisely, [eval_expr_sef env e] is the
       [eval_expr env e], if e is side-effect-free. *)
@@ -479,6 +479,7 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Evaluation of Left-Hand-Side Expressions *)
   (* ---------------------------------------- *)
+
   (** [eval_lexpr version env le m] is [env[le --> m]]. *)
   and eval_lexpr ver le env m : env maybe_exception B.m =
     match le.desc with
@@ -494,14 +495,15 @@ module Make (B : Backend.S) (C : Config) = struct
             let* () = B.on_write_identifier x Scope_Global v in
             return_normal env |: Rule.LEGlobalVar
 
-        | NotFound ->
-           begin
-             match ver with
-             | V1 -> fatal_from le @@ Error.UndefinedIdentifier x |: Rule.LEUndefIdentV1  
-             | V0 ->
+        | NotFound -> (
+            match ver with
+            | V1 ->
+                fatal_from le @@ Error.UndefinedIdentifier x
+                |: Rule.LEUndefIdentV1
+            | V0 ->
                 (* V0 first assignments promoted to local declarations *)
-                declare_local_identifier env x v >>= return_normal |: Rule.LEUndefIdentV0 
-           end) 
+                declare_local_identifier env x v
+                >>= return_normal |: Rule.LEUndefIdentV0))
 
     | LE_Slice (re_bv, slices) ->
         let*^ rm_bv, env = expr_of_lexpr re_bv |> eval_expr env in
@@ -529,12 +531,13 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         eval_lexpr ver re_record env m' |: Rule.LESetField
     | LE_SetFields _ ->
-       let* () =
-         let* v = m in
-         Format.eprintf "@[<2>Failing on @[%a@]@ <-@ %s@]@."
-           PP.pp_lexpr le (B.debug_value v) ;
-         B.return () in
-       fatal_from le Error.TypeInferenceNeeded |: Rule.LESetFields
+        let* () =
+          let* v = m in
+          Format.eprintf "@[<2>Failing on @[%a@]@ <-@ %s@]@." PP.pp_lexpr le
+            (B.debug_value v);
+          B.return ()
+        in
+        fatal_from le Error.TypeInferenceNeeded |: Rule.LESetFields
     | LE_TupleUnpack le_list ->
         (* The index-out-of-bound on the vector are done either in typing,
            either in [B.get_index]. *)
@@ -549,6 +552,7 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Evaluation of Slices *)
   (* -------------------- *)
+
   (** [eval_slices env slices] is the list of pair [(i_n, l_n)] that
       corresponds to the start (included) and the length of each slice in
       [slices]. *)
@@ -571,6 +575,7 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Evaluation of Patterns *)
   (* ---------------------- *)
+
   (** [eval_pattern env pos v p] determines if [v] matches the pattern [p]. *)
   and eval_pattern env pos v : pattern -> B.value m =
     let true_ = B.v_of_literal (L_Bool true) |> return in
@@ -590,7 +595,8 @@ module Make (B : Backend.S) (C : Config) = struct
         let* b1 = eval_expr_sef env e1 >>= B.binop GEQ v
         and* b2 = eval_expr_sef env e2 >>= B.binop LEQ v in
         B.binop BAND b1 b2 |: Rule.PRange
-    | Pattern_Single e -> eval_expr_sef env e >>= B.binop EQ_OP v |: Rule.PSingle
+    | Pattern_Single e ->
+        eval_expr_sef env e >>= B.binop EQ_OP v |: Rule.PSingle
     | Pattern_Mask m ->
         let bv bv = L_BitVector bv in
         let set = Bitvector.mask_set m |> bv |> B.v_of_literal
@@ -606,7 +612,7 @@ module Make (B : Backend.S) (C : Config) = struct
             let* v' = B.get_index i v in
             eval_pattern env pos v' p
           in
-          B.binop BAND acc b 
+          B.binop BAND acc b
         in
         let folder (acc, i) p = (folderi i acc p, succ i) in
         List.fold_left folder (true_, 0) li_patterns |> fst |: Rule.PTuple
@@ -619,9 +625,10 @@ module Make (B : Backend.S) (C : Config) = struct
     | LDI_Var (x, _ty), Some m ->
         m >>= declare_local_identifier env x >>= return_normal |: Rule.LDVar
     | LDI_Var (x, Some ty), None ->
-        base_value env ty >>= declare_local_identifier env x >>= return_normal |: Rule.LDTypedVar
-    | LDI_Var (x, None), None ->
-        fail_initialise s x |: Rule.LDUninitialisedVar
+        base_value env ty
+        >>= declare_local_identifier env x
+        >>= return_normal |: Rule.LDTypedVar
+    | LDI_Var (x, None), None -> fail_initialise s x |: Rule.LDUninitialisedVar
     | LDI_Tuple (ldis, _ty), Some m ->
         let n = List.length ldis in
         let nmonads = List.init n (fun i -> m >>= B.get_index i) in
@@ -638,10 +645,12 @@ module Make (B : Backend.S) (C : Config) = struct
           let**| env = envm in
           eval_local_decl s ldi' env None
         in
-        List.fold_left folder (return_normal env) ldis |: Rule.LDUninitialisedTuple
+        List.fold_left folder (return_normal env) ldis
+        |: Rule.LDUninitialisedTuple
 
   (* Evaluation of Statements *)
   (* ------------------------ *)
+
   (** [eval_stmt env s] evaluates [s] in [env]. This is either an interruption
       [Returning vs] or a continuation [env], see [eval_res]. *)
   and eval_stmt (env : env) s : stmt_eval_type =
@@ -653,13 +662,14 @@ module Make (B : Backend.S) (C : Config) = struct
     | S_Pass -> return_continue env |: Rule.SPass
     | S_Assign
         ( { desc = LE_TupleUnpack les; _ },
-          { desc = E_Call (name, args, named_args); _ }, ver)
+          { desc = E_Call (name, args, named_args); _ },
+          ver )
       when List.for_all lexpr_is_var les ->
         let**| ms, env = eval_call (to_pos s) name env args named_args in
         let**| env = protected_multi_assign ver env s les ms in
         return_continue env |: Rule.SAssignCall
     | S_Assign
-         ({ desc = LE_TupleUnpack les; _ }, { desc = E_Tuple exprs; _ }, ver)
+        ({ desc = LE_TupleUnpack les; _ }, { desc = E_Tuple exprs; _ }, ver)
       when List.for_all lexpr_is_var les ->
         let**| ms, env = eval_expr_list_m env exprs in
         let**| env = protected_multi_assign ver env s les ms in
@@ -723,8 +733,10 @@ module Make (B : Backend.S) (C : Config) = struct
         let** v, env = eval_expr env e in
         let name = throw_identifier () and scope = Scope_Global in
         let* () = B.on_write_identifier name scope v in
-        return (Throwing (Some ((v, name, scope), t), env)) |: Rule.SThrowSomeTyped
-    | S_Throw (Some (_e, None)) -> fatal_from s Error.TypeInferenceNeeded |: Rule.SThrowSome
+        return (Throwing (Some ((v, name, scope), t), env))
+        |: Rule.SThrowSomeTyped
+    | S_Throw (Some (_e, None)) ->
+        fatal_from s Error.TypeInferenceNeeded |: Rule.SThrowSome
     | S_Try (s, catchers, otherwise_opt) ->
         let s_m = eval_block env s in
         eval_catchers env catchers otherwise_opt s_m |: Rule.STry
@@ -738,8 +750,9 @@ module Make (B : Backend.S) (C : Config) = struct
     | S_Debug e ->
         let* v = eval_expr_sef env e in
         let () =
-          Format.eprintf "@[@<2>%a:@ @[%a@]@ ->@ %s@]@."
-            PP.pp_pos e PP.pp_expr e (B.debug_value v) in
+          Format.eprintf "@[@<2>%a:@ @[%a@]@ ->@ %s@]@." PP.pp_pos e PP.pp_expr
+            e (B.debug_value v)
+        in
         return_continue env |: Rule.SDebug
 
   (* Evaluation of Blocks *)
@@ -768,11 +781,14 @@ module Make (B : Backend.S) (C : Config) = struct
     let binder = bind_maybe_unroll loop_name (B.is_undetermined cond) in
     (* Real logic: if condition is validated, we loop, otherwise we continue to
        the next statement. *)
-    B.bind_ctrl (bind_choice_m cond_m loop return_continue) @@ binder (return_continue env) |: Rule.Loop
+    B.bind_ctrl (bind_choice_m cond_m loop return_continue)
+    @@ binder (return_continue env)
+    |: Rule.Loop
 
   (* Evaluation of for loops *)
   (* ----------------------- *)
-  and eval_for undet (env : env) index_name v_start dir v_end body : stmt_eval_type =
+  and eval_for undet (env : env) index_name v_start dir v_end body :
+      stmt_eval_type =
     (* Evaluate the condition: "Is the for loop terminated?" *)
     let cond_m =
       let op = match dir with Up -> LT | Down -> GT in
@@ -795,7 +811,8 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     (* Real logic: if condition is validated, we continue to the next
        statement, otherwise we loop. *)
-    B.bind_ctrl (bind_choice_m cond_m return_continue loop) @@ fun kont -> kont env |: Rule.For
+    B.bind_ctrl (bind_choice_m cond_m return_continue loop) @@ fun kont ->
+    kont env |: Rule.For
 
   (* Evaluation of Catchers *)
   (* ---------------------- *)
@@ -853,6 +870,7 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Evaluation of Function Calls *)
   (* ---------------------------- *)
+
   (** [eval_call pos name env args named_args] evaluate the call to function
       [name] with arguments [args] and parameters [named_args] *)
   and eval_call pos name env args named_args =
@@ -865,13 +883,15 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Evaluation of Functions *)
   (* ----------------------- *)
+
   (** [eval_func genv name pos actual_args params] evaluate the function named [name]
       in the global environment [genv], with [actual_args] the actual arguments, and
       [params] the parameters deduced by type equality. *)
-  and eval_func (genv : IEnv.global) name pos (actual_args : B.value m list) params :
-      func_eval_type =
+  and eval_func (genv : IEnv.global) name pos (actual_args : B.value m list)
+      params : func_eval_type =
     match IMap.find_opt name genv.funcs with
-    | None -> fatal_from pos @@ Error.UndefinedIdentifier name |: Rule.FUndefIdent
+    | None ->
+        fatal_from pos @@ Error.UndefinedIdentifier name |: Rule.FUndefIdent
     | Some (r, { body = SB_Primitive body; _ }) ->
         let scope = Scope_Local (name, !r) in
         let () = incr r in
@@ -897,31 +917,35 @@ module Make (B : Backend.S) (C : Config) = struct
     | Some (_, { args = arg_decls; _ })
       when List.compare_lengths actual_args arg_decls <> 0 ->
         fatal_from pos
-        @@ Error.BadArity (name, List.length arg_decls, List.length actual_args) |: Rule.FBadArity
-    | Some (r, { body = SB_ASL body; args = arg_decls; _ }) -> (
-        let () = if false then Format.eprintf "Evaluating %s.@." name in
-        let scope = Scope_Local (name, !r) in
-        let () = incr r in
-        let env1 = IEnv.{ global = genv; local = empty_scoped scope } in
-        let one_arg envm (x, _) m = declare_local_identifier_mm envm x m in
-        let env2 = List.fold_left2 one_arg (return env1) arg_decls actual_args in
-        let one_narg envm (x, m) =
-          let*| env = envm in
-          if IEnv.mem x env then return env
-          else declare_local_identifier_m env x m
-        in
-        let*| env3 = List.fold_left one_narg env2 params in
-        let**| res = eval_stmt env3 body in
-        let () =
-          if false then Format.eprintf "Finished evaluating %s.@." name
-        in
-        (match res with
-        | Continuing env4 -> return_normal ([], env4.global)
-        | Returning (xs, ret_genv) ->
-            let vs =
-              List.mapi (fun i v -> (v, return_identifier i, scope)) xs
-            in
-            return_normal (vs, ret_genv))) |: Rule.FCall
+        @@ Error.BadArity (name, List.length arg_decls, List.length actual_args)
+        |: Rule.FBadArity
+    | Some (r, { body = SB_ASL body; args = arg_decls; _ }) ->
+        (let () = if false then Format.eprintf "Evaluating %s.@." name in
+         let scope = Scope_Local (name, !r) in
+         let () = incr r in
+         let env1 = IEnv.{ global = genv; local = empty_scoped scope } in
+         let one_arg envm (x, _) m = declare_local_identifier_mm envm x m in
+         let env2 =
+           List.fold_left2 one_arg (return env1) arg_decls actual_args
+         in
+         let one_narg envm (x, m) =
+           let*| env = envm in
+           if IEnv.mem x env then return env
+           else declare_local_identifier_m env x m
+         in
+         let*| env3 = List.fold_left one_narg env2 params in
+         let**| res = eval_stmt env3 body in
+         let () =
+           if false then Format.eprintf "Finished evaluating %s.@." name
+         in
+         match res with
+         | Continuing env4 -> return_normal ([], env4.global)
+         | Returning (xs, ret_genv) ->
+             let vs =
+               List.mapi (fun i v -> (v, return_identifier i, scope)) xs
+             in
+             return_normal (vs, ret_genv))
+        |: Rule.FCall
 
   (** [multi_assign env [le_1; ... ; le_n] [m_1; ... ; m_n]] is
       [env[le_1 --> m_1] ... [le_n --> m_n]]. *)

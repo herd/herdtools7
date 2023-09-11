@@ -3,19 +3,19 @@
 }
 
 {1
-Monadic operators                               
+Monadic operators
 }
 
 The basic bricks of the semantics are monadic operators, viz:
   + returns [return_<continuation>];
   + binds [bind_<composition>];
   + product [prod_par];
-  + application [appl_data].  
+  + application [appl_data].
 
 {2
 Return
 }
- 
+
 Each return_<continuation> function performs a specific continuation, as
 follows.
   {3 Normal}
@@ -28,11 +28,11 @@ follows.
   [return_return] <description, minimal example>
 
 {2
-Bind 
+Bind
 }
 
 Each bind_<composition> function performs a specific
-composition, as follows. 
+composition, as follows.
 
   {3 Sequential}
   [bind_seq], also written [let*|], denotes the program order,
@@ -64,7 +64,7 @@ when necessary.  <minimal example>
 
   {3 Continue}
   [bind_continue m f], also written [let*>], executes [f] on
-[m] only if [m] is [Normal (Continuing _)] <minimal example> 
+[m] only if [m] is [Normal (Continuing _)] <minimal example>
 
   {3 Unroll}
   [bind_unroll "while" m f] executes [f] on [m] after having
@@ -75,16 +75,16 @@ ticked the unrolling stack of [m] only if [m] is [Normal
   [bind_thrown] and [bind_explicit_thrown] handle [throw]
 statements <minimal example>
 
-{2 
+{2
 Product
 }
-  
+
 [prod_par], also written [and*], ensures that evaluation is
 done in parallel <minimal example>
 
 
 {2
-Application 
+Application
 }
 
 Application, viz,  [appl_data], also written [>=>], ensures that evaluation
@@ -92,7 +92,7 @@ follows function application <minimal example>
 
 
 {1
-Environments                               
+Environments
 }
 
 An environment is what the semantics operates over: a structure
@@ -129,8 +129,8 @@ of the program.
   values of [new].
 
 {1
-Evaluation 
-}                          
+Evaluation
+}
 Evaluating a program is evaluating its main function.
 Constructively, evaluating a program requires following its
 Abstract Syntax Tree and evaluating each of its components.
@@ -178,28 +178,28 @@ evaluation of a program is the evaluation of its main function.
 <minimal example>
 
 {2
-Evaluation of Expressions 
+Evaluation of Expressions
 }
 
 [eval_expr] specifies how to evaluate an expression [e] in an
 environment [env]. More precisely, [eval_expr env e] is the
-monadic evaluation  of [e] in [env]. 
+monadic evaluation  of [e] in [env].
 
 Evaluation of the expression [e] under an environment [env] is either a value
 [v] or an error and one of the following applies:
 
-{3 Rule.Lit}  
+{3 Rule.Lit}
 
   {4 Rule}
-  [e] denotes a Literal [l] and [v] is the value of [l] in [env]. 
+  [e] denotes a Literal [l] and [v] is the value of [l] in [env].
 
   {4 Example}
   <minimal example>
 
 {3 Rule.IgnoreTypedExpr}
- 
+
   {4 Rule}
-  [(e,_t)] denotes a typed expression and <description> 
+  [(e,_t)] denotes a typed expression and <description>
 
   {4 Example}
   <minimal example>
@@ -224,7 +224,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
   <minimal example>
 
 {3 Rule.EUndefIdent}
-  
+
   {4 Rule}
   All of the following applies:
   - [e] denotes a variable [x] which is not bound in [env];
@@ -245,7 +245,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Example}
   <minimal example>
 
-{3 Rule.Unop} 
+{3 Rule.Unop}
 
   {4 Rule}
   All of the following applies:
@@ -256,7 +256,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Example}
   <minimal example>
 
-{3 Rule.ECondSimple} 
+{3 Rule.ECondSimple}
 
   {4 Rule}
   All of the following applies:
@@ -268,7 +268,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Example}
   <minimal example>
 
-{3 Rule.ECond} 
+{3 Rule.ECond}
 
   {4 Rule}
   All of the following applies:
@@ -298,7 +298,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
   All of the following applies:
   - [e] denotes a function call [(name, actual_args, params)];
   - The evaluation of that function call under [env] is [ms];
-  - [v] is the value read from [ms]. 
+  - [v] is the value read from [ms].
 
   {4 Example}
   <minimal example>
@@ -315,7 +315,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Example}
   <minimal example>
 
-{3 Rule.ERecord} 
+{3 Rule.ERecord}
 
   {4 Rule}
   All of the following applies:
@@ -339,22 +339,22 @@ Evaluation of the expression [e] under an environment [env] is either a value
   <minimal example>
 
 {3 Rule.EGetFields}
-<description> 
+<description>
 
 <minimal example>
 
-{3 Rule.EConcat} 
+{3 Rule.EConcat}
 
   {4 Rule}
   All of the following applies:
   - [e] denotes a list of expressions [e_list];
-  - the evaluation of [e_list] in [env] is [v_list]; 
+  - the evaluation of [e_list] in [env] is [v_list];
   - [v] is the concatenation of [v_list].
 
   {4 Example}
   <minimal example>
 
-{3 Rule.ETuple} 
+{3 Rule.ETuple}
 
   {4 Rule}
   All of the following applies:
@@ -365,7 +365,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Example}
   <minimal example>
 
-{3 Rule.EUnknown} 
+{3 Rule.EUnknown}
 
   {4 Rule}
   All of the following applies:
@@ -375,7 +375,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Example}
   <minimal example>
 
-{3 Rule.EPattern} 
+{3 Rule.EPattern}
 
   {4 Rule}
   All of the following applies:
@@ -386,22 +386,22 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Example}
   <minimal example>
 
-{2 
+{2
 Evaluation of Side-Effect-Free Expressions
 }
 
   {3 Rule}
    [eval_expr_sef] specifies how to evaluate a side-effect-free expression [e]
    in an environment [env]. More precisely, [eval_expr_sef env e] is [eval_expr
-   env e], if e is side-effect-free. 
+   env e], if e is side-effect-free.
 
   {3 Example}
   <minimal example>
 
 {2
-Evaluation of Left-Hand-Side Expressions 
+Evaluation of Left-Hand-Side Expressions
 }
-[eval_lexpr version env le m] is [env[le --> m]]. 
+[eval_lexpr version env le m] is [env[le --> m]].
 
 The evaluation of the left-hand-side expression [le] associated with a value
 [v] under an environment [env] is either [new_env] or an error is raised and
@@ -412,7 +412,7 @@ one of the following applies:
     {4 Rule}
     All of the following applies:
     - [le] can be ignored;
-    - [new_env] is [env]. 
+    - [new_env] is [env].
 
   {4 Example}
   <minimal example>
@@ -422,7 +422,7 @@ one of the following applies:
     {4 Rule}
     All of the following applies:
     - [le] denotes a variable [x];
-    - [x] is locally bound in [env]; 
+    - [x] is locally bound in [env];
     - [new_env] is [env] where [x] has been assigned the value [v].
 
     {4 Example}
@@ -433,7 +433,7 @@ one of the following applies:
     {4 Rule}
     All of the following applies:
     - [le] denotes a variable [x];
-    - [x] is globally bound in [env]; 
+    - [x] is globally bound in [env];
     - [new_env] is [env] where [x] has been assigned the value [v].
 
     {4 Example}
@@ -509,9 +509,9 @@ one of the following applies:
     <minimal example>
 
   {3 Rule.LESetFields}
-    
+
     {4 Rule}
-    <description> 
+    <description>
 
     {4 Example}
     <minimal example>
@@ -527,23 +527,23 @@ one of the following applies:
     {4 Example}
     <minimal example>
 
-{2 
+{2
 Evaluation of Expression Lists
 }
-<description> 
+<description>
 <minimal example>
 
 {2
-Evaluation of Slices 
+Evaluation of Slices
 }
 [eval_slices env slices] is the list of pair [(i_n, l_n)] that corresponds to
-the start (included) and the length of each slice in [slices]. 
+the start (included) and the length of each slice in [slices].
 <minimal example>
 
-{2 
-Evaluation of Patterns 
+{2
+Evaluation of Patterns
 }
-[eval_pattern env pos v p] determines if [v] matches the pattern [p]. 
+[eval_pattern env pos v p] determines if [v] matches the pattern [p].
 Formally, one of the following applies:
 
   {3 Rule.PAll}
@@ -571,7 +571,7 @@ Formally, one of the following applies:
     {4 Rule}
     All of the following applies:
     - [p] gives a side-effect-free expression [e];
-    - [v] is greater than or equal to the evaluation of [e] in [env]. 
+    - [v] is greater than or equal to the evaluation of [e] in [env].
 
     {4 Example}
     <minimal example>
@@ -581,8 +581,8 @@ Formally, one of the following applies:
     {4 Rule}
     All of the following applies:
     - [p] gives a side-effect-free expression [e];
-    - [v] is lesser than or equal to the evaluation of [e] in [env]. 
-    
+    - [v] is lesser than or equal to the evaluation of [e] in [env].
+
     {4 Example}
     <minimal example>
 
@@ -590,9 +590,9 @@ Formally, one of the following applies:
 
     {4 Rule}
     All of the following applies:
-    - [p] gives a pattern [p']; 
-    - [v] matches the negation of [p'] in [env]. 
-    
+    - [p] gives a pattern [p'];
+    - [v] matches the negation of [p'] in [env].
+
     {4 Example}
     <minimal example>
 
@@ -602,8 +602,8 @@ Formally, one of the following applies:
     All of the following applies:
     - [p] gives two side-effect-free expressions [e1] and [e2];
     - [v] is greater than or equal to [e1] in [env];
-    - [v] is lesser than or equal to [e2] in [env]. 
-    
+    - [v] is lesser than or equal to [e2] in [env].
+
     {4 Example}
     <minimal example>
 
@@ -612,8 +612,8 @@ Formally, one of the following applies:
     {4 Rule}
     All of the following appplies:
     - [p] gives a side-effect-free expression [e];
-    - [v] is equal to the evaluation of [e] in [env]. 
-    
+    - [v] is equal to the evaluation of [e] in [env].
+
     {4 Example}
     <minimal example>
 
@@ -623,7 +623,7 @@ Formally, one of the following applies:
     All the following applies:
     - [p] gives a mask [m]
     - [v] is a bitvector that matches the mask [m]
-    
+
     {4 Example}
     <minimal example>
 
@@ -648,10 +648,10 @@ raises an error and one of the following applies:
   {3 Rule.LDIgnore}
 
     {4 Rule}
-    All of the following applies: 
+    All of the following applies:
     - [ldi] is an identifier which can be ignored;
     - [new_env] is [env].
-  
+
     {4 Example}
     [var - = 3;] evaluates [3];
 
@@ -664,11 +664,11 @@ raises an error and one of the following applies:
     - [ldi] is a variable [x];
     - [m_init_opt] is a value [m];
     - [new_env] is [env] modified to declare [x] as a local identifier bound to
-      value [m]. 
- 
-    {4 Example} 
+      value [m].
+
+    {4 Example}
     [var x = 3;] binds [x] to the evaluation of [3] in [env].
-   
+
     [var x : integer = 3] binds [x] to the evaluation of [3] in [env], without
     type consideration at runtime.
 
@@ -681,18 +681,18 @@ raises an error and one of the following applies:
     - [new_env] is [env] modified to declare [x] as a local identifier bound to
       the base value of [ty].
 
-    {4 Example} 
+    {4 Example}
     [var x : integer;] binds [x] in [env] to the base value of [integer].
 
   {3 Rule.LDUninitialisedVar}
-  
+
     {4 Rule}
     All of the following applies:
-    - [ldi] is a variable [x] without a type nor an initialisation value; 
+    - [ldi] is a variable [x] without a type nor an initialisation value;
     - an error is raised.
 
     {4 Example}
-    [var x;] raises an error. 
+    [var x;] raises an error.
 
   {3 Rule.LDTuple}
 
@@ -701,56 +701,56 @@ raises an error and one of the following applies:
     - [ldi] gives a list of local identifiers [ldis];
     - [m_init_opt] is a list of values [nmonads];
     - [new_env] is [env] modified to declare each element of [ldis] to be bound
-      to the corresponding value in [nmonads].  
+      to the corresponding value in [nmonads].
 
     {4 Example}
     [var (x,y,z) = (1,2,3);] bounds [x] (resp. [y], [z]) to the evaluation of
     [1] (resp. [2], [3]) in [env].
 
   {3 Rule.LDTypedTuple}
-   
+
     {4 Rule}
     All of the following applies:
     - [ldi] gives a list of local identifiers [ldis] and a type [ty];
     - [m_init_opt] is [None];
     - [new_env] is [env] modified to declare each element of [ldis] with type
-      [ty]. 
+      [ty].
 
     {4 Example}
     [var (x,y,z) : integer;] binds [x], [y] and [z] in [env] to the base value
     of [integer].
 
   {3 Rule.LDUninitialisedTuple}
-  
-    {4 Rule} 
+
+    {4 Rule}
     All of the following applies:
     - [ldi] gives a list of local identifiers [ldis];
     - [new_env] is [env] modified to declare each element of [ldis].
- 
+
     {4 Example}
     [var (x : integer, y : boolean);] binds [x] to the base value of [integer]
     and [y] to the base value of [boolean].
 
 {2
-Evaluation of Statements 
+Evaluation of Statements
 }
 The evaluation [eval_stmt env s] of a statement s under environment [env] is
 either an interruption [Returning vs] or a new environment [new_env]. Formally,
 one of the following applies:
 
   {3 Rule.SPass}
-  
-    {4 Rule} 
+
+    {4 Rule}
     All of the following applies:
     - [s] is a pass statement;
-    - [new_env] is [env]. 
+    - [new_env] is [env].
 
     {4 Example}
     <minimal example>
 
   {3 Rule.SAssign}
-  
-    {4 Rule} 
+
+    {4 Rule}
     All of the following applies:
     - [s] is an assignment [le = re];
     - [v] is the evaluation of [re] under [env];
@@ -762,35 +762,35 @@ one of the following applies:
     <minimal example>
 
   {3 Rule.SAssignCall}
-  
-    {4 Rule} 
+
+    {4 Rule}
     <description>
 
     {4 Example}
     <minimal example>
 
   {3 Rule.SAssignTuple}
-  
-    {4 Rule} 
+
+    {4 Rule}
     <description>
 
     {4 Example}
     <minimal example>
 
   {3 Rule.SReturnNone}
-  
-    {4 Rule} 
+
+    {4 Rule}
     All of the following applies:
     - [s] is a return statement;
     - [vs] is [[]];
     - [new_env] is [env].
 
     {4 Example}
-    <minimal example>  
+    <minimal example>
 
   {3 Rule.SReturnOne}
-  
-    {4 Rule} 
+
+    {4 Rule}
     All of the following applies:
     - [s] is a return statement;
     - [s] gives an expression [e];
@@ -802,8 +802,8 @@ one of the following applies:
     <minimal example>
 
   {3 Rule.SReturnSome}
-  
-    {4 Rule} 
+
+    {4 Rule}
     All of the following applies:
     - [s] is a return statement;
     - [s] gives a list of expressions [es];
@@ -814,8 +814,8 @@ one of the following applies:
     <minimal example>
 
   {3 Rule.SThen}
-  
-    {4 Rule} 
+
+    {4 Rule}
     All of the following applies:
     - [s] is a then statement;
     - [s] gives two statements [s1] and [s2];
@@ -826,21 +826,21 @@ one of the following applies:
     <minimal example>
 
   {3 Rule.SCall}
-  
-    {4 Rule} 
+
+    {4 Rule}
     All of the following applies:
     - [s] is a call statement;
     - [s] gives a function name [name], actual arguments [actual_args] and
       parameters [params];
     - [env'] is [env] modified after evaluation of the function call;
-    - [new_env] is [env']. 
+    - [new_env] is [env'].
 
     {4 Example}
     <minimal example>
 
   {3 Rule.SCond}
-  
-    {4 Rule} 
+
+    {4 Rule}
     All of the following applies:
     - [s] is a conditional statement;
     - [s] gives a condition [cond] and two statements [s1] and [s2];
@@ -852,8 +852,8 @@ one of the following applies:
     <minimal example>
 
   {3 Rule.SCase}
-  
-    {4 Rule} 
+
+    {4 Rule}
     <description>
 
     {4 Example}
@@ -861,7 +861,7 @@ one of the following applies:
 
   {3 Rule.SAssert}
 
-    {4 Rule} 
+    {4 Rule}
     All of the following applies:
     - [s] is an assert statement;
     - [s] gives an expression [e];
@@ -874,7 +874,7 @@ one of the following applies:
 
   {3 Rule.SWhile}
 
-    {4 Rule} 
+    {4 Rule}
     All of the following applies:
     - [s] is a while statement;
     - [s] gives an expression [e] and a loop body [body];
@@ -885,7 +885,7 @@ one of the following applies:
 
   {3 Rule.SRepeat}
 
-    {4 Rule} 
+    {4 Rule}
     All of the following applies:
     - [s] is a repeat statement;
     - [s] gives an expression [e] and a loop body [body];
@@ -896,61 +896,61 @@ one of the following applies:
 
   {3 Rule.SFor}
 
-    {4 Rule} 
+    {4 Rule}
     All of the following applies:
     - [s] is a for statement;
     - [s] gives [(id,e1,dir,e2,s)];
-    - <description>  
+    - <description>
 
     {4 Example}
     <minimal example>
 
   {3 Rule.SThrowNone}
 
-    {4 Rule} 
+    {4 Rule}
     All of the following applies:
     - [s] is a throw statement;
-    - <description> 
+    - <description>
 
     {4 Example}
     <minimal example>
 
   {3 Rule.SThrowSomeTyped}
 
-    {4 Rule} 
+    {4 Rule}
     All of the following applies:
     - [s] is a throw statement;
-    - <description> 
+    - <description>
 
     {4 Example}
     <minimal example>
 
   {3 Rule.SThrowSome}
 
-    {4 Rule} 
+    {4 Rule}
     All of the following applies:
     - [s] is a throw statement;
-    - <description> 
+    - <description>
 
     {4 Example}
     <minimal example>
 
   {3 Rule.STry}
 
-    {4 Rule} 
+    {4 Rule}
     All of the following applies:
     - [s] is a try statement;
     - [s] gives [(s', catchers, otherwise_opt)];
     - [s_m] is the evaluation of the block [s'] under [env];
     - [new_env] is [env] modified after evaluation of the catchers [(catchers
-      otherwise_opt s_m)]. 
+      otherwise_opt s_m)].
 
     {4 Example}
     <minimal example>
 
   {3 Rule.SDeclSome}
 
-    {4 Rule} 
+    {4 Rule}
     All of the following applies:
     - [s] is a declaration;
     - [s] gives [(_ldk, ldi, Some e)];
@@ -962,7 +962,7 @@ one of the following applies:
 
   {3 Rule.SDeclNone}
 
-    {4 Rule} 
+    {4 Rule}
     All of the following applies:
     - [s] is a declaration;
     - [s] gives [(_dlk, ldi, None)];
@@ -974,7 +974,7 @@ one of the following applies:
 
   {3 Rule.SDebug}
 
-    {4 Rule} 
+    {4 Rule}
     All of the following applies:
     - [s] is a debug statement;
     - [s] gives a side-effect-free expression [e];
@@ -989,7 +989,7 @@ Evaluation of Blocks
 }
 
   {3 Rule.Block}
-  
+
     {4 Rule}
     [eval_block env stm] is [new_env] and all of the following applies:
     - [block_env] is [env] such that the scope given by [env] is pushed onto the
@@ -1002,10 +1002,10 @@ Evaluation of Blocks
     <minimal example>
 
 {2
-Evaluation of [while] and [repeat] loops 
+Evaluation of [while] and [repeat] loops
 }
 [eval_loop is_while env e_cond body] evaluates [body] in [env]: this is either
-an interruption [Returning vs] or a new environment [new_env].  
+an interruption [Returning vs] or a new environment [new_env].
 
   {3 Rule.Loop}
 
@@ -1020,19 +1020,19 @@ an interruption [Returning vs] or a new environment [new_env].
       * [cond_m] evaluates to [true];
       * [env1] is [env] modified after the evaluation of the statement
        [body]---this step might affect the value of [cond_m] eventually leading
-       to exiting the loop; 
+       to exiting the loop;
       * [new_env] is [env1] modified after the evaluation of [eval_loop
-        is_while env e_cond body].  
+        is_while env e_cond body].
 
     {4 Example}
     <minimal example>
 
 {2
-Evaluation of [for] loops 
+Evaluation of [for] loops
 }
 [eval_for undet env index_name v_start dir v_end body] evaluates [body] in
 [env]: this is either an interruption [Returning vs] or a new environment
-[new_env].  
+[new_env].
 
   {3.Rule.For}
 
@@ -1047,7 +1047,7 @@ Evaluation of [for] loops
       * [cond_m] evaluates to [false];
       * [env1] is [env] modified after the evaluation of the statement [body];
       * [env2] is [env1] modified such that [index_name] is bound to [v_step];
-      * [v_step] evaluates to [v_start+1] or [v_start-1] as determined by [dir]; 
+      * [v_step] evaluates to [v_start+1] or [v_start-1] as determined by [dir];
       * [new_env] is [env2] modified after the evaluation of [eval_for undet
       * env index_name v_step dir v_end body].
 
@@ -1055,7 +1055,7 @@ Evaluation of [for] loops
     <minimal example>
 
 {2
-Evaluation of Catchers 
+Evaluation of Catchers
 }
 [eval_catchers env catchers otherwise_opt s_m]
 
@@ -1066,19 +1066,19 @@ Evaluation of Catchers
     <minimal example>
 
 {2
-Evaluation of Function Calls 
+Evaluation of Function Calls
 }
 [eval_call pos name env args named_args] evaluate the call to function [name]
 with arguments [args] and parameters [named_args].
 
   {4 Rule}
   <description>
-  
+
   {4 Example}
   <minimal example>
 
 {2
-Evaluation of Functions 
+Evaluation of Functions
 }
 [eval_func genv name pos actual_args params] evaluates the function named
 [name] in the global environment [genv], with [actual_args] the list of actual
@@ -1098,7 +1098,7 @@ raised. Formally, one of the following applies:
    begin
      Foo ();
    end]
-  raises an [UndefinedIdentifier "Foo"] error. 
+  raises an [UndefinedIdentifier "Foo"] error.
 
 {3 Rule.FPrimitive}
 
@@ -1117,7 +1117,7 @@ raised. Formally, one of the following applies:
   All of the following applies:
   - [name] is bound in [genv] to a function with a list of formal arguments
     [arg_decls];
-  - the lists [actual_args] and [arg_decls] do not have the same length; 
+  - the lists [actual_args] and [arg_decls] do not have the same length;
   - an error "BadArity" is raised.
 
   {4 Example}
@@ -1128,7 +1128,7 @@ raised. Formally, one of the following applies:
   {4 Rule}
   All of the following applies:
   - [name] is bound in [genv] to a function with a list of formal arguments
-    [arg_decls] and a body statement [body]; 
+    [arg_decls] and a body statement [body];
   - [env1] is the environment made of [genv] and the empty local environment,
   - [env2] is [env1] modified so that each formal argument in [arg_decls] is
     locally bound to the corresponding actual argument in [actual_args];
@@ -1160,7 +1160,7 @@ raised. Formally, one of the following applies:
     return 0;
    end]
 
-   
-{1 
+
+{1
 Typing
 }
