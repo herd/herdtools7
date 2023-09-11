@@ -71,6 +71,9 @@ module Rule = struct
     | FPrimitive
     | FBadArity
     | FCall
+    | Block
+    | Loop
+    | For
 
   let to_string : t -> string = function
     | Lit -> "Lit"
@@ -144,7 +147,9 @@ module Rule = struct
     | FPrimitive -> "FPrimitive"
     | FBadArity -> "FBadArity"
     | FCall -> "FCall"
-
+    | Block -> "Block"
+    | Loop -> "Loop"
+    | For -> "For"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -203,6 +208,9 @@ module Rule = struct
       FPrimitive;
       FBadArity;
       FCall;
+      Block;
+      Loop;
+      For;
     ]
 
   let all_nb = List.length all

@@ -747,7 +747,7 @@ module Make (B : Backend.S) (C : Config) = struct
   and eval_block env stm =
     let block_env = IEnv.push_scope env in
     let*> block_env' = eval_stmt block_env stm in
-    IEnv.pop_scope env block_env' |> return_continue
+    IEnv.pop_scope env block_env' |> return_continue |: Rule.Block
 
   (* Evaluation of while and repeat loops *)
   (* ------------------------------------ *)
@@ -768,7 +768,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let binder = bind_maybe_unroll loop_name (B.is_undetermined cond) in
     (* Real logic: if condition is validated, we loop, otherwise we continue to
        the next statement. *)
-    B.bind_ctrl (bind_choice_m cond_m loop return_continue) @@ binder (return_continue env)
+    B.bind_ctrl (bind_choice_m cond_m loop return_continue) @@ binder (return_continue env) |: Rule.Loop
 
   (* Evaluation of for loops *)
   (* ----------------------- *)
@@ -795,7 +795,7 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     (* Real logic: if condition is validated, we continue to the next
        statement, otherwise we loop. *)
-    B.bind_ctrl (bind_choice_m cond_m return_continue loop) @@ fun kont -> kont env
+    B.bind_ctrl (bind_choice_m cond_m return_continue loop) @@ fun kont -> kont env |: Rule.For
 
   (* Evaluation of Catchers *)
   (* ---------------------- *)

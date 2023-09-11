@@ -185,109 +185,158 @@ Evaluation of Expressions
 environment [env]. More precisely, [eval_expr env e] is the
 monadic evaluation  of [e] in [env]. 
 
-The evaluation of the expression [e] under an environment [env]
-is [v] and one of the following applies:
+Evaluation of the expression [e] under an environment [env] is either a value
+[v] or an error and one of the following applies:
 
 {3 Rule.Lit}  
-[e] denotes a Literal [l] and [v] is the value of [l] in [env]. 
 
-<minimal example>
+  {4 Rule}
+  [e] denotes a Literal [l] and [v] is the value of [l] in [env]. 
+
+  {4 Example}
+  <minimal example>
 
 {3 Rule.IgnoreTypedExpr}
-[(e,_t)] denotes a typed expression and <description> 
+ 
+  {4 Rule}
+  [(e,_t)] denotes a typed expression and <description> 
 
-<minimal example>
+  {4 Example}
+  <minimal example>
 
 {3 Rule.ELocalVar}
-[e] denotes a variable [x] which is bound locally in
-[env] and [v] is the value of [x] in [env].
 
-<minimal example>
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes a variable [x] which is bound locally in [env];
+  - [v] is the value of [x] in [env].
+
+  {4 Example}
+  <minimal example>
 
 {3 Rule.EGlobalVar}
-[e] denotes a variable [x] which is bound globally in [env] and
-[v] is the value of [x] in [env].
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes a variable [x] which is bound globally in [env];
+  - [v] is the value of [x] in [env].
 
-<minimal example>
+  {4 Example}
+  <minimal example>
 
 {3 Rule.EUndefIdent}
-[e] denotes a variable [x] which is not bound in [env] and an
-Error "UndefinedIdentifier" is raised.
+  
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes a variable [x] which is not bound in [env];
+  - an Error "UndefinedIdentifier" is raised.
 
-<minimal example>
+  {4 Example}
+  <minimal example>
 
 {3 Rule.Binop}
-[e] denotes a Binary Operator [op] over two expressions [e1] and
-[e2] and all of the following applies:
+
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes a Binary Operator [op] over two expressions [e1] and [e2];
   - The evaluation of the expression [e1] under [env] is [v1];
   - The evaluation of the expression [e2] under [env] is [v2];
   - [v] is the result of applying the Binary Operator [op] to [v1] and [v2].
 
-<minimal example>
+  {4 Example}
+  <minimal example>
 
 {3 Rule.Unop} 
-[e] denotes a Unary Operator [op] over an expression [e] and all of
-the following applies:
+
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes a Unary Operator [op] over an expression [e];
   - The evaluation of the expression [e] under [env] is [t];
   - [v] is the result of applying the Unary Operator [op] to [t].
 
-<minimal example>
+  {4 Example}
+  <minimal example>
 
 {3 Rule.ECondSimple} 
-[e] denotes a condition [econd] with two options [e1] and [e2] and
-all of the following applies:
+
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes a condition [econd] with two options [e1] and [e2];
   - The evaluation of the condition [econd] under [env] is mcond;
   - Both [e1] and [e2] are simple expressions; EUndefIdent
   - The evaluation of [e1] or [e2], depending on [mcond], is [v].
 
-<minimal example>
+  {4 Example}
+  <minimal example>
 
 {3 Rule.ECond} 
-[e] denotes a condition [e_cond] with two options [e1] and [e2] and all of
-the following applies:
-   - The evaluation of the condition [e_cond] under [env] is [m_cond];
-   - One of [e1] or [e2] is not a simple expression;
-   - The evaluation of [e1] or [e2], depending on [m_cond], is [v].
 
-<minimal example>
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes a condition [e_cond] with two options [e1] and [e2];
+  - The evaluation of the condition [e_cond] under [env] is [m_cond];
+  - One of [e1] or [e2] is not a simple expression;
+  - The evaluation of [e1] or [e2], depending on [m_cond], is [v].
+
+  {4 Example}
+  <minimal example>
 
 {3 Rule.ESlice}
-[e] denotes an expression [e_bv] sliced as per [slices] and all of the following applies:
+
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes an expression [e_bv] sliced as per [slices];
   - The evaluation of [e_bv] under [env] is [v_bv];
   - The evaluation of [slices] under [env] is [positions];
   - [v] is the value read in [v_bv] from [positions].
 
-<minimal example>
+  {4 Example}
+  <minimal example>
 
 {3 Rule.ECall}
-[e] denotes a function call [(name, actual_args, params)] and all of the following applies:
+
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes a function call [(name, actual_args, params)];
   - The evaluation of that function call under [env] is [ms];
   - [v] is the value read from [ms]. 
 
-<minimal example>
+  {4 Example}
+  <minimal example>
 
 {3 Rule.EGetArray}
-[e] denotes an array [e_array] and an index [e_index] and all of the following applies
-- The evaluation of [e_array] under [env] is [v_array];
-- The evaluation of [e_index] under [env] is [v_index];
-- [v] is the value found at the index [v_index] of [v_array].
 
-<minimal example>
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes an array [e_array] and an index [e_index];
+  - The evaluation of [e_array] under [env] is [v_array];
+  - The evaluation of [e_index] under [env] is [v_index];
+  - [v] is the value found at the index [v_index] of [v_array].
+
+  {4 Example}
+  <minimal example>
 
 {3 Rule.ERecord} 
-[e] denotes a series of field names [names] and associated expressions [fields]
-and all of the following applies:
-- [fields] evaluates in [env] to [v_fields];
-- [v] is the record built by associating the names [names] to [v_fields].
 
-<minimal example>
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes a series of field names [names] and associated expressions
+    [fields];
+  - [fields] evaluates in [env] to [v_fields];
+  - [v] is the record built by associating the names [names] to [v_fields].
+
+  {4 Example}
+  <minimal example>
 
 {3 Rule.EGetField}
-[e] denotes a field name [field_name] in a vector [e_vec] and all of the following applies:
-- the evaluation of [e_vec] in [env] is [v_vec];
-- [v] is the value mapped by [field_name] in [v_vec].
 
-<minimal example>
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes a field name [field_name] in a vector [e_vec];
+  - the evaluation of [e_vec] in [env] is [v_vec];
+  - [v] is the value mapped by [field_name] in [v_vec].
+
+  {4 Example}
+  <minimal example>
 
 {3 Rule.EGetFields}
 <description> 
@@ -295,37 +344,59 @@ and all of the following applies:
 <minimal example>
 
 {3 Rule.EConcat} 
-[e] denotes a list of expressions [e_list] and all of the following applies:
-- the evaluation of [e_list] in [env] is [v_list]; 
-- [v] is the concatenation of [v_list].
 
-<minimal example>
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes a list of expressions [e_list];
+  - the evaluation of [e_list] in [env] is [v_list]; 
+  - [v] is the concatenation of [v_list].
+
+  {4 Example}
+  <minimal example>
 
 {3 Rule.ETuple} 
-[e] denotes a list of expression [e_list] and all of the following applies:
-- the evaluation of [e_list] in [env] is [v_list];
-- [v] is the vector built from [v_list].
 
-<minimal example>
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes a list of expression [e_list];
+  - the evaluation of [e_list] in [env] is [v_list];
+  - [v] is the vector built from [v_list].
+
+  {4 Example}
+  <minimal example>
 
 {3 Rule.EUnknown} 
-[e] denotes a type [t] and [v] is a value in the domain of [t].
 
-<minimal example>
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes a type [t];
+  - [v] is a value in the domain of [t].
+
+  {4 Example}
+  <minimal example>
 
 {3 Rule.EPattern} 
-[e] denotes a pattern [e,p] and [v] is the boolean determining whether the
-evaluation of [e] in [env] matches [p].
 
-<minimal example>
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes a pattern [e,p];
+  - [v] is the boolean determining whether the evaluation of [e] in [env]
+    matches [p].
+
+  {4 Example}
+  <minimal example>
 
 {2 
 Evaluation of Side-Effect-Free Expressions
 }
-[eval_expr_sef] specifies how to evaluate a side-effect-free expression [e] in
-an environment [env]. More precisely, [eval_expr_sef env e] is the [eval_expr
-env e], if e is side-effect-free. 
-<minimal example>
+
+  {3 Rule}
+   [eval_expr_sef] specifies how to evaluate a side-effect-free expression [e]
+   in an environment [env]. More precisely, [eval_expr_sef env e] is [eval_expr
+   env e], if e is side-effect-free. 
+
+  {3 Example}
+  <minimal example>
 
 {2
 Evaluation of Left-Hand-Side Expressions 
@@ -333,81 +404,128 @@ Evaluation of Left-Hand-Side Expressions
 [eval_lexpr version env le m] is [env[le --> m]]. 
 
 The evaluation of the left-hand-side expression [le] associated with a value
-[v] under an environment [env] is [new_env] and one of the following applies:
+[v] under an environment [env] is either [new_env] or an error is raised and
+one of the following applies:
 
   {3 Rule.LEIgnore}
-  [le] can be ignored and [new_env] is [env]. 
 
+    {4 Rule}
+    All of the following applies:
+    - [le] can be ignored;
+    - [new_env] is [env]. 
+
+  {4 Example}
   <minimal example>
 
   {3 Rule.LELocalVar}
-  [le] denotes a variable [x] and all of the following applies:
-  - [x] is locally bound in [env]; 
-  - [new_env] is [env] where [x] has been assigned the value [v].
 
-  <minimal example>
+    {4 Rule}
+    All of the following applies:
+    - [le] denotes a variable [x];
+    - [x] is locally bound in [env]; 
+    - [new_env] is [env] where [x] has been assigned the value [v].
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.LEGlobalVar}
-  [le] denotes a variable [x] and all of the following applies:
-  - [x] is globally bound in [env]; 
-  - [new_env] is [env] where [x] has been assigned the value [v].
 
-  <minimal example>
+    {4 Rule}
+    All of the following applies:
+    - [le] denotes a variable [x];
+    - [x] is globally bound in [env]; 
+    - [new_env] is [env] where [x] has been assigned the value [v].
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.LEUndefIdentV1}
-  [le] denotes a variable [x] which is not bound in [env] and all of the following applies:
-  - the ASL language version is V1;
-  - an Error "UndefinedIdentifier" is raised.
 
-  <minimal example>
+    {4 Rule}
+    All of the following applies:
+    - [le] denotes a variable [x] which is not bound in [env];
+    - the ASL language version is V1;
+    - an Error "UndefinedIdentifier" is raised.
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.LEUndefIdentV0}
-  [le] denotes a variable [x] which is not bound in [env] and all of the following applies:
-  - the ASL language version is V0;
-  - [new_env] is [env] where [x] has been declared a local identifier bound to the value [v].
 
-  <minimal example>
+    {4 Rule}
+    All of the following applies:
+    - [le] denotes a variable [x] which is not bound in [env];
+    - the ASL language version is V0;
+    - [new_env] is [env] where [x] has been declared a local identifier bound to
+    the value [v].
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.LESlice}
-  [le] denotes a left-hand-side expression sliced as per [slices] and
-  all of the following applies:
-  - The right-hand-side expression corresponding to [le] is [e_bv];
-  - The evaluation of [re_bv] under [env] is [rv_bv];
-  - The evaluation of [slices] under [env] is [positions];
-  - [v] is [rv_bv] where the positions [positions] have been updated to [v]
-  - [new_env] is [env] where [le] has been assigned the value [v].
 
-  <minimal example>
+    {4 Rule}
+    All of the following applies:
+    - [le] denotes a left-hand-side expression sliced as per [slices];
+    - The right-hand-side expression corresponding to [le] is [e_bv];
+    - The evaluation of [re_bv] under [env] is [rv_bv];
+    - The evaluation of [slices] under [env] is [positions];
+    - [v] is [rv_bv] where the positions [positions] have been updated to [v]
+    - [new_env] is [env] where [le] has been assigned the value [v].
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.LESetArray}
-  [le] denotes an array [le_array] and an index [e_index] and all of the following applies:
-  - The right-hand-side expression corresponding to [le_array] is [re_array];
-  - The evaluation of [re_array] under [env] is [rv_array];
-  - The evaluation of [e_index] under [env] is [v_index];
-  - [new_v_array] is [rv_array] where the value at index [v_index] has been updated to [v];
-  - [new_env] is [env] where [le_array] has been assigned the value [new_v_array].
 
-  <minimal example>
+    {4 Rule}
+    All of the following applies:
+    - [le] denotes an array [le_array] and an index [e_index];
+    - The right-hand-side expression corresponding to [le_array] is [re_array];
+    - The evaluation of [re_array] under [env] is [rv_array];
+    - The evaluation of [e_index] under [env] is [v_index];
+    - [new_v_array] is [rv_array] where the value at index [v_index] has been
+      updated to [v];
+    - [new_env] is [env] where [le_array] has been assigned the value
+      [new_v_array].
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.LESetField}
-  [le] denotes a field name [field_name] in a record [le_record] and all of the following applies:
-  - The right-hand-side expression corresponding to [le_record] is [re_record];
-  - The evaluation of [re_record] under [env] is [rv_record];
-  - [new_v_record] is [rv_record] where the field [field_name] has been updated to [v]
-  - [new_env] is [env] where [le_record] has been assigned the value [new_v_record].
 
-  <minimal example>
+    {4 Rule}
+    All of the following applies:
+    - [le] denotes a field name [field_name] in a record [le_record];
+    - The right-hand-side expression corresponding to [le_record] is
+      [re_record];
+    - The evaluation of [re_record] under [env] is [rv_record];
+    - [new_v_record] is [rv_record] where the field [field_name] has been
+      updated to [v];
+    - [new_env] is [env] where [le_record] has been assigned the value
+      [new_v_record].
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.LESetFields}
-  <description> 
-  <minimal example>
+    
+    {4 Rule}
+    <description> 
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.LETuple}
-  [le] denotes a list of left-hand-side expressions [le_list] and [new_env] is
-  [env] where each left-hand-side expression in [le_list] has been assigned the
-  value at the corresponding index in [v].
 
-  <minimal example>
+    {4 Rule}
+    All of the following applies:
+    - [le] denotes a list of left-hand-side expressions [le_list];
+    - [new_env] is [env] where each left-hand-side expression in [le_list] has
+      been assigned the value at the corresponding index in [v].
+
+    {4 Example}
+    <minimal example>
 
 {2 
 Evaluation of Expression Lists
@@ -429,66 +547,103 @@ Evaluation of Patterns
 Formally, one of the following applies:
 
   {3 Rule.PAll}
-  [p] is the pattern which matches everything.
-  <minimal example>
+
+    {4 Rule}
+    [p] is the pattern which matches everything.
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.PAny}
-  All of the following applies:
-  - [p] gives a list of patterns [li_patterns];
-  - [v] is a record of values [li_values];
-  - each value in [li_values] matches the corresponding pattern in [li_patterns] in [env].
-  <minimal example>
+
+    {4 Rule}
+    All of the following applies:
+    - [p] gives a list of patterns [li_patterns];
+    - [v] is a record of values [li_values];
+    - each value in [li_values] matches the corresponding pattern in
+      [li_patterns] in [env].
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.PGeq}
-  All of the following applies:
-  - [p] gives a side-effect-free expression [e];
-  - [v] is greater than or equal to the evaluation of [e] in [env]. 
-  <minimal example>
+
+    {4 Rule}
+    All of the following applies:
+    - [p] gives a side-effect-free expression [e];
+    - [v] is greater than or equal to the evaluation of [e] in [env]. 
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.PLeq}
-  All of the following applies:
-  - [p] gives a side-effect-free expression [e];
-  - [v] is lesser than or equal to the evaluation of [e] in [env]. 
-  <minimal example>
+
+    {4 Rule}
+    All of the following applies:
+    - [p] gives a side-effect-free expression [e];
+    - [v] is lesser than or equal to the evaluation of [e] in [env]. 
+    
+    {4 Example}
+    <minimal example>
 
   {3 Rule.PNot}
-  All of the following applies:
-  - [p] gives a pattern [p']; 
-  - [v] matches the negation of [p'] in [env]. 
-  <minimal example>
+
+    {4 Rule}
+    All of the following applies:
+    - [p] gives a pattern [p']; 
+    - [v] matches the negation of [p'] in [env]. 
+    
+    {4 Example}
+    <minimal example>
 
   {3 Rule.PRange}
-  All of the following applies:
-  - [p] gives two side-effect-free expressions [e1] and [e2];
-  - [v] is greater than or equal to [e1] in [env];
-  - [v] is lesser than or equal to [e2] in [env]. 
-  <minimal example>
+
+    {4 Rule}
+    All of the following applies:
+    - [p] gives two side-effect-free expressions [e1] and [e2];
+    - [v] is greater than or equal to [e1] in [env];
+    - [v] is lesser than or equal to [e2] in [env]. 
+    
+    {4 Example}
+    <minimal example>
 
   {3 Rule.PSingle}
-  All of the following appplies:
-  - [p] gives a side-effect-free expression [e];
-  - [v] is equal to the evaluation of [e] in [env]. 
-  <minimal example>
+
+    {4 Rule}
+    All of the following appplies:
+    - [p] gives a side-effect-free expression [e];
+    - [v] is equal to the evaluation of [e] in [env]. 
+    
+    {4 Example}
+    <minimal example>
 
   {3 Rule.PMask}
-  All the following applies:
-  - [p] gives a mask [m]
-  - [v] is a bitvector that matches the mask [m]
-  <minimal example>
+
+    {4 Rule}
+    All the following applies:
+    - [p] gives a mask [m]
+    - [v] is a bitvector that matches the mask [m]
+    
+    {4 Example}
+    <minimal example>
 
   {3 Rule.PTuple}
-  All of the following applies:
-  - [p] gives a list of patterns [li];
-  - [v] matches the evaluation of all the patterns in the list [li] in [env].
-   <minimal example>
+
+    {4 Rule}
+    All of the following applies:
+    - [p] gives a list of patterns [li];
+    - [v] matches the evaluation of all the patterns in the list [li] in [env].
+
+    {4 Example}
+     <minimal example>
 
 {2
 Evaluation of Local Declarations
 }
 [eval_local_decl s ldi env m_init_opt] declares local identifiers [ldi] in
 [env] with an optional initialisation value [m_init_opt].  The evaluation of
-the local identifiers [ldi] under an environment [env] is [new_env] and one of
-the following applies:
+the local identifiers [ldi] under an environment [env] is either [new_env] or
+raises an error and one of the following applies:
 
   {3 Rule.LDIgnore}
 
@@ -579,241 +734,364 @@ the following applies:
 {2
 Evaluation of Statements 
 }
-[eval_stmt env s] evaluates [s] in [env]: this is either an interruption
-[Returning vs] or a new environment [new_env]. Formally, one of the following
-applies:
+The evaluation [eval_stmt env s] of a statement s under environment [env] is
+either an interruption [Returning vs] or a new environment [new_env]. Formally,
+one of the following applies:
 
   {3 Rule.SPass}
-  All of the following applies:
-  - [s] is a pass statement;
-  - [new_env] is [env]. 
-  <minimal example>
+  
+    {4 Rule} 
+    All of the following applies:
+    - [s] is a pass statement;
+    - [new_env] is [env]. 
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.SAssign}
-  All of the following applies:
-  - [s] is an assignment [le = re];
-  - [v] is the evaluation of [re] under [env];
-  - [r_env] is [env] modified after evaluation of [re] under [env];
-  - [new_env] is [r_env] modified after evaluation of [le] under [r_env] with
-    [v].
-  <minimal example>
+  
+    {4 Rule} 
+    All of the following applies:
+    - [s] is an assignment [le = re];
+    - [v] is the evaluation of [re] under [env];
+    - [r_env] is [env] modified after evaluation of [re] under [env];
+    - [new_env] is [r_env] modified after evaluation of [le] under [r_env] with
+      [v].
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.SAssignCall}
-  <description>
-  <minimal example>
+  
+    {4 Rule} 
+    <description>
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.SAssignTuple}
-  <description>
-  <minimal example>
+  
+    {4 Rule} 
+    <description>
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.SReturnNone}
-  All of the following applies:
-  - [s] is a return statement;
-  - [vs] is [[]];
-  - [new_env] is [env].
-  <minimal example>  
+  
+    {4 Rule} 
+    All of the following applies:
+    - [s] is a return statement;
+    - [vs] is [[]];
+    - [new_env] is [env].
+
+    {4 Example}
+    <minimal example>  
 
   {3 Rule.SReturnOne}
-  All of the following applies:
-  - [s] is a return statement;
-  - [s] gives an expression [e];
-  - [v] is the evaluation of [e] under [env];
-  - [vs] is [[v]];
-  - [new_env] is [env] modified after evaluation of [e] under [env].
-  <minimal example>
+  
+    {4 Rule} 
+    All of the following applies:
+    - [s] is a return statement;
+    - [s] gives an expression [e];
+    - [v] is the evaluation of [e] under [env];
+    - [vs] is [[v]];
+    - [new_env] is [env] modified after evaluation of [e] under [env].
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.SReturnSome}
-  All of the following applies:
-  - [s] is a return statement;
-  - [s] gives a list of expressions [es];
-  - [vs] is the piece-wise evaluation of the list [es] under [env];
-  - [new_env] is [env] modified after evaluation of [e] under [env].
-  <minimal example>
+  
+    {4 Rule} 
+    All of the following applies:
+    - [s] is a return statement;
+    - [s] gives a list of expressions [es];
+    - [vs] is the piece-wise evaluation of the list [es] under [env];
+    - [new_env] is [env] modified after evaluation of [e] under [env].
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.SThen}
-  All of the following applies:
-  - [s] is a then statement;
-  - [s] gives two statements [s1] and [s2];
-  - [env'] is [env] modified after evaluation of [s1];
-  - [new_env] is [env'] modified after evaluation of [s2].
-  <minimal example>
+  
+    {4 Rule} 
+    All of the following applies:
+    - [s] is a then statement;
+    - [s] gives two statements [s1] and [s2];
+    - [env'] is [env] modified after evaluation of [s1];
+    - [new_env] is [env'] modified after evaluation of [s2].
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.SCall}
-  All of the following applies:
-  - [s] is a call statement;
-  - [s] gives a function name [name], actual arguments [actual_args] and
-    parameters [params];
-  - [env'] is [env] modified after evaluation of the function call;
-  - [new_env] is [env']. 
-  <minimal example>
+  
+    {4 Rule} 
+    All of the following applies:
+    - [s] is a call statement;
+    - [s] gives a function name [name], actual arguments [actual_args] and
+      parameters [params];
+    - [env'] is [env] modified after evaluation of the function call;
+    - [new_env] is [env']. 
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.SCond}
-  All of the following applies:
-  - [s] is a conditional statement;
-  - [s] gives a condition [cond] and two statements [s1] and [s2];
-  - [v_cond] is the evaluation of [cond];
-  - [new_env] is [env] modified after evaluation of [s1] or [s2] depending on [v_cond].
-  <minimal example>
+  
+    {4 Rule} 
+    All of the following applies:
+    - [s] is a conditional statement;
+    - [s] gives a condition [cond] and two statements [s1] and [s2];
+    - [v_cond] is the evaluation of [cond];
+    - [new_env] is [env] modified after evaluation of [s1] or [s2] depending on
+      [v_cond].
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.SCase}
-  <description>
-  <minimal example>
+  
+    {4 Rule} 
+    <description>
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.SAssert}
-  All of the following applies:
-  - [s] is an assert statement;
-  - [s] gives an expression [e];
-  - [v] is the evaluation of [e];
-  - if [v] is true then [new_env] is [env], otherwise an AssertionFailed error is raised.
-  <minimal example>
+
+    {4 Rule} 
+    All of the following applies:
+    - [s] is an assert statement;
+    - [s] gives an expression [e];
+    - [v] is the evaluation of [e];
+    - if [v] is true then [new_env] is [env], otherwise an AssertionFailed
+      error is raised.
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.SWhile}
-  All of the following applies:
-  - [s] is a while statement;
-  - [s] gives an expression [e] and a loop body [body];
-  - [new_env] is [env] modified after evaluation of the loop [(e,body)].
-  <minimal example>
+
+    {4 Rule} 
+    All of the following applies:
+    - [s] is a while statement;
+    - [s] gives an expression [e] and a loop body [body];
+    - [new_env] is [env] modified after evaluation of the loop [(e,body)].
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.SRepeat}
-  All of the following applies:
-  - [s] is a repeat statement;
-  - [s] gives an expression [e] and a loop body [body];
-  - [new_env] is [env] modified after evaluation of the loop [(e,body)].
-  <minimal example>
+
+    {4 Rule} 
+    All of the following applies:
+    - [s] is a repeat statement;
+    - [s] gives an expression [e] and a loop body [body];
+    - [new_env] is [env] modified after evaluation of the loop [(e,body)].
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.SFor}
-  All of the following applies:
-  - [s] is a for statement;
-  - [s] gives [(id,e1,dir,e2,s)];
-  - <description>  
-  <minimal example>
+
+    {4 Rule} 
+    All of the following applies:
+    - [s] is a for statement;
+    - [s] gives [(id,e1,dir,e2,s)];
+    - <description>  
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.SThrowNone}
-  All of the following applies:
-  - [s] is a throw statement;
-  - <description> 
-  <minimal example>
+
+    {4 Rule} 
+    All of the following applies:
+    - [s] is a throw statement;
+    - <description> 
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.SThrowSomeTyped}
-  All of the following applies:
-  - [s] is a throw statement;
-  - <description> 
-  <minimal example>
+
+    {4 Rule} 
+    All of the following applies:
+    - [s] is a throw statement;
+    - <description> 
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.SThrowSome}
-  All of the following applies:
-  - [s] is a throw statement;
-  - <description> 
-  <minimal example>
+
+    {4 Rule} 
+    All of the following applies:
+    - [s] is a throw statement;
+    - <description> 
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.STry}
-  All of the following applies:
-  - [s] is a try statement;
-  - [s] gives [(s', catchers, otherwise_opt)];
-  - [s_m] is the evaluation of the block [s'] under [env];
-  - [new_env] is [env] modified after evaluation of the catchers [(catchers otherwise_opt s_m)]. 
-  <minimal example>
+
+    {4 Rule} 
+    All of the following applies:
+    - [s] is a try statement;
+    - [s] gives [(s', catchers, otherwise_opt)];
+    - [s_m] is the evaluation of the block [s'] under [env];
+    - [new_env] is [env] modified after evaluation of the catchers [(catchers
+      otherwise_opt s_m)]. 
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.SDeclSome}
-  All of the following applies:
-  - [s] is a declaration;
-  - [s] gives [(_ldk, ldi, Some e)];
-  - [new_env] is [env] modified after evaluation of the local declaration [ldi env (Some m)].
-  <minimal example>
+
+    {4 Rule} 
+    All of the following applies:
+    - [s] is a declaration;
+    - [s] gives [(_ldk, ldi, Some e)];
+    - [new_env] is [env] modified after evaluation of the local declaration
+      [ldi env (Some m)].
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.SDeclNone}
-  All of the following applies:
-  - [s] is a declaration;
-  - [s] gives [(_dlk, ldi, None)];
-  - [new_env] is [env] modified after evaluation of the local declaration [ldi env None].
-  <minimal example>
+
+    {4 Rule} 
+    All of the following applies:
+    - [s] is a declaration;
+    - [s] gives [(_dlk, ldi, None)];
+    - [new_env] is [env] modified after evaluation of the local declaration
+      [ldi env None].
+
+    {4 Example}
+    <minimal example>
 
   {3 Rule.SDebug}
-  All of the following applies:
-  - [s] is a debug statement;
-  - [s] gives a side-effect-free expression [e];
-  - [v] is the evaluation of [e];
-  - [new_env] is [env].
-  <minimal example>
+
+    {4 Rule} 
+    All of the following applies:
+    - [s] is a debug statement;
+    - [s] gives a side-effect-free expression [e];
+    - [v] is the evaluation of [e];
+    - [new_env] is [env].
+
+    {4 Example}
+    <minimal example>
 
 {2
 Evaluation of Blocks
 }
-[eval_block env stm] is [new_env] and all of the following applies:
-  - [block_env] is [env] such that the scope given by [env] is pushed onto the
-    declaration stack;
-  - [block_env'] is [env] modified after the evaluation of the statement [stm];
-  - [new_env] is [block_env'] after restoring the variable bindings of [env],
+
+  {3 Rule.Block}
+  
+    {4 Rule}
+    [eval_block env stm] is [new_env] and all of the following applies:
+    - [block_env] is [env] such that the scope given by [env] is pushed onto the
+      declaration stack;
+    - [block_env'] is [env] modified after the evaluation of the statement [stm];
+    - [new_env] is [block_env'] after restoring the variable bindings of [env],
     with the updated values of [block_env'].
 
-<minimal example>
+    {4 Example}
+    <minimal example>
 
 {2
 Evaluation of [while] and [repeat] loops 
 }
 [eval_loop is_while env e_cond body] evaluates [body] in [env]: this is either
-an interruption [Returning vs] or a new environment [new_env].  Formally,
-[cond_m] evaluates to [e_cond] or [not e_cond] as determined by [is_while] and
-one of the following applies:
-  - All of the following applies:
-   . [cond_m] evaluates to [false];
-   . [new_env] is [env]---the loop is exited.
-  - All of the following applies:
-   . [cond_m] evaluates to [true];
-   . [env1] is [env] modified after the evaluation of the statement
-     [body]---this step might affect the value of [cond_m] eventually leading
-     to exiting the loop; 
-  . [new_env] is [env1] modified after the evaluation of [eval_loop is_while env
-    e_cond body].  
+an interruption [Returning vs] or a new environment [new_env].  
 
-<minimal example>
+  {3 Rule.Loop}
+
+    {4 Rule}
+    Formally, [cond_m] evaluates to [e_cond] or [not e_cond] as determined by
+    [is_while] and one of the following applies:
+
+    - All of the following applies:
+      * [cond_m] evaluates to [false];
+      * [new_env] is [env]---the loop is exited.
+    - All of the following applies:
+      * [cond_m] evaluates to [true];
+      * [env1] is [env] modified after the evaluation of the statement
+       [body]---this step might affect the value of [cond_m] eventually leading
+       to exiting the loop; 
+      * [new_env] is [env1] modified after the evaluation of [eval_loop
+        is_while env e_cond body].  
+
+    {4 Example}
+    <minimal example>
 
 {2
 Evaluation of [for] loops 
 }
 [eval_for undet env index_name v_start dir v_end body] evaluates [body] in
 [env]: this is either an interruption [Returning vs] or a new environment
-[new_env].  Formally, [cond_m] evaluates to [leq v_end v_start] or [geq v_end
-v_start] as determined by [dir] and one of the following applies:
-  - All of the following applies:
-    . [cond_m] evaluates to [true];
-    . [new_env] is [env] as the loop is exited.
-  - All of the following applies:
-    . [cond_m] evaluates to [false];
-    . [env1] is [env] modified after the evaluation of the statement [body];
-    . [env2] is [env1] modified such that [index_name] is bound to [v_step];
-    . [v_step] evaluates to [v_start+1] or [v_start-1] as determined by [dir]; 
-    . [new_env] is [env2] modified after the evaluation of [eval_for undet env index_name v_step dir v_end body].
-<minimal example>
+[new_env].  
+
+  {3.Rule.For}
+
+    {4 Rule}
+    Formally, [cond_m] evaluates to [leq v_end v_start] or [geq v_end v_start]
+    as determined by [dir] and one of the following applies:
+
+    - All of the following applies:
+      * [cond_m] evaluates to [true];
+      * [new_env] is [env] as the loop is exited.
+    - All of the following applies:
+      * [cond_m] evaluates to [false];
+      * [env1] is [env] modified after the evaluation of the statement [body];
+      * [env2] is [env1] modified such that [index_name] is bound to [v_step];
+      * [v_step] evaluates to [v_start+1] or [v_start-1] as determined by [dir]; 
+      * [new_env] is [env2] modified after the evaluation of [eval_for undet
+      * env index_name v_step dir v_end body].
+
+    {4 Example}
+    <minimal example>
 
 {2
 Evaluation of Catchers 
 }
 [eval_catchers env catchers otherwise_opt s_m]
-<minimal example>
+
+    {4 Rule}
+    <description>
+
+    {4 Example}
+    <minimal example>
 
 {2
 Evaluation of Function Calls 
 }
 [eval_call pos name env args named_args] evaluate the call to function [name]
 with arguments [args] and parameters [named_args].
-<minimal example>
+
+  {4 Rule}
+  <description>
+  
+  {4 Example}
+  <minimal example>
 
 {2
 Evaluation of Functions 
 }
-[eval_func genv name pos actual_args params] evaluate the function named [name]
-in the global environment [genv], with [actual_args] the list of actual
+[eval_func genv name pos actual_args params] evaluates the function named
+[name] in the global environment [genv], with [actual_args] the list of actual
 arguments, and [params] the list of arguments deduced by type equality. This is
-a new global environment [new_genv] and a list of values [vs]. Formally, one of
-the following applies:
+a new global environment [new_genv] and a list of values [vs], or an error is
+raised. Formally, one of the following applies:
 
 {3 Rule.FUndefIdent}
 
   {4 Rule}
-  - All of the following applies:
-    . [name] is undeclared in [genv];
-    . an [UndefinedIdentifier] error is raised.
+  All of the following applies:
+  - [name] is undeclared in [genv];
+  - an [UndefinedIdentifier] error is raised.
 
   {4 Example}
   [func main () => integer
@@ -825,10 +1103,10 @@ the following applies:
 {3 Rule.FPrimitive}
 
   {4 Rule}
-  - All of the following applies:
-    . [name] is bound in [genv] to a primitive function with a body [body];
-    . [new_genv] is [genv];
-    . [vs] is the application of [body] on [actual_args].
+  All of the following applies:
+  - [name] is bound in [genv] to a primitive function with a body [body];
+  - [new_genv] is [genv];
+  - [vs] is the application of [body] on [actual_args].
 
   {4 Example}
   [print (2,3);] calls the primitive [print] on the evaluation of [(2,3)].
@@ -836,27 +1114,27 @@ the following applies:
 {3 Rule.FBadArity}
 
   {4 Rule}
-  - All of the following applies:
-    . [name] is bound in [genv] to a function with a list of formal arguments [arg_decls];
-    . the lists [actual_args] and [arg_decls] do not have the same length; 
-    . an error "BadArity" is raised.
+  All of the following applies:
+  - [name] is bound in [genv] to a function with a list of formal arguments
+    [arg_decls];
+  - the lists [actual_args] and [arg_decls] do not have the same length; 
+  - an error "BadArity" is raised.
 
   {4 Example}
   [Zeros(3,4);] raises a [BadArity "Zeros" 1 2] error.
 
-
 {3 Rule.FCall}
 
   {4 Rule}
-  - All of the following applies:
-    . [name] is bound in [genv] to a function with a list of formal arguments
-      [arg_decls] and a body statement [body]; 
-    . [env1] is the environment made of [genv] and the empty local environment,
-    . [env2] is [env1] modified so that each formal argument in [arg_decls] is
-      locally bound to the corresponding actual argument in [actual_args];
-    . [env3] is [env2] modified so that each parameter in [params] is declared;
-    . [res] is the evaluation of [body] in [env3] and one of the following
-      applies:
+  All of the following applies:
+  - [name] is bound in [genv] to a function with a list of formal arguments
+    [arg_decls] and a body statement [body]; 
+  - [env1] is the environment made of [genv] and the empty local environment,
+  - [env2] is [env1] modified so that each formal argument in [arg_decls] is
+    locally bound to the corresponding actual argument in [actual_args];
+  - [env3] is [env2] modified so that each parameter in [params] is declared;
+  - [res] is the evaluation of [body] in [env3] and one of the following
+    applies:
       * [res] is an environment [env4] and [new_genv] is the global environment
         given by [env4]---e.g. where the function called is either a setter or
         a procedure as per Rule R_DFWZ;
