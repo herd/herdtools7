@@ -116,10 +116,10 @@ module RunTime (C : RunTimeConf) : sig
   (** [same_scope env1 env2] is [true] iff [env1]'s scope and [env2]'scope are equal. *)
 
   val push_scope : env -> env
-  (** Push an new scope on the declaration stack. Variables declared here will
+  (** Push a new scope on the declaration stack. Variables declared here will
       be stored until the corresponding [pop_scope]. *)
 
   val pop_scope : env -> env -> env
-  (** [pop_scope old new] restores the variable bnindings of [old], with the
+  (** [pop_scope old new] restores the variable bindings of [old], with the
       updated values of [new]. *)
 end

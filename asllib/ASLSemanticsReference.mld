@@ -101,32 +101,40 @@ Intuitively, the evaluation of a program makes an initial
 environment evolve, with new values as given by the operations
 of the program.
 
-The initial environment is built with the help of the
-[build_<object>] functions.  Each [build_<object>] function
-builds a specific object, as follows.
-
   {2 Base Value}
   [base_value] <description, minimal example>
 
-  {2 Function Calls}
-  [build_func_call_ref] <description, minimal example>
+  {2 Initial environment}
+  The initial environment is built with the help of the [build_<object>]
+  functions.  Each [build_<object>] function builds a specific object, as
+  follows.
 
-  {2 Global Storage}
-  [build_global_storage] <description, minimal example>
+    {3 Function Calls}
+    [build_func_call_ref] <description, minimal example>
 
-  {2 Global Environment}
-  [build_global_env] <description, minimal example>
+    {3 Global Storage}
+    [build_global_storage] <description, minimal example>
 
-  {2 Bind Environment}
-  [bind_env], also written [let*^], <description, minimal example>
+    {3 Global Environment}
+    [build_global_env] <description, minimal example>
 
-Evaluating a program is evaluating its main function.
-Constructively, evaluating a program requires following its
-Abstract Syntax Tree and evaluating each of its components.
+    {3 Bind Environment}
+    [bind_env], also written [let*^], <description, minimal example>
+
+  {2 Scopes}
+  [push_scope] pushes a new scope on the declaration stack. Variables declared
+  here will be stored until the corresponding [pop_scope].
+
+  [pop_scope old new] restores the variable bindings of [old], with the updated
+  values of [new].
 
 {1
 Evaluation 
 }                          
+Evaluating a program is evaluating its main function.
+Constructively, evaluating a program requires following its
+Abstract Syntax Tree and evaluating each of its components.
+
 Formally, the semantics of a program are given by applying a
 set of eval_<object> functions. Each eval_<object> function
 describes how to evaluate a specific object, as follows.
@@ -678,7 +686,13 @@ Evaluation of Statements
 {2
 Evaluation of Blocks
 }
-<description> 
+[eval_block env stm] is [env'] and all of the following applies:
+  - [block_env] is [env] such that the scope given by [env] is pushed onto the
+    declaration stack;
+  - [block_env'] is [env] modified after evaluating the statement [stm];
+  - [env] is [block_env'] after restoring the variable bindings of [env], with
+    the updated values of [block_env'].
+
 <minimal example>
 
 {2

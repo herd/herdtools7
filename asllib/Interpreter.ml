@@ -746,8 +746,8 @@ module Make (B : Backend.S) (C : Config) = struct
   (* -------------------- *)
   and eval_block env stm =
     let block_env = IEnv.push_scope env in
-    let*> block_env = eval_stmt block_env stm in
-    IEnv.pop_scope env block_env |> return_continue
+    let*> block_env' = eval_stmt block_env stm in
+    IEnv.pop_scope env block_env' |> return_continue
 
   (* Evaluation of while and repeat loops *)
   (* ------------------------------------ *)
