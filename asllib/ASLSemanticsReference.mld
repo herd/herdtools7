@@ -471,9 +471,9 @@ Formally, one of the following applies:
   <minimal example>
 
   {3 Rule.PMask}
-  All of the following applies:
-  - [p] gives a mask [m];
-  - [v]  
+  All the following applies:
+  - [p] gives a mask [m]
+  - [v] is a bitvector that matches the mask [m]
   <minimal example>
 
   {3 Rule.PTuple}
