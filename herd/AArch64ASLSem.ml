@@ -348,7 +348,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
            match i with
            | I_STR _ -> "STR_32_ldst_regoff.opn"
            | I_LDR _ -> "LDR_32_ldst_regoff.opn"
-           | _ -> assert false             
+           | _ -> assert false
           and extend_type =
             match barrel_shift with
             | S_NOEXT -> "ExtendType_UXTX"
@@ -424,6 +424,19 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "tagchecked" ^= litb (rn <> SP);
                   "regsize" ^= variant v;
                   "elsize" ^= variant v;])
+      | I_LDAR (v,(XX|AX as a),rt,rn) ->
+         let fname =
+           match a with
+           | XX -> "LDXR_LR32_ldstexclr.opn"
+           | AX -> "LDAXR_LR32_ldstexclr.opn"
+           | _ -> assert false in
+         Some ("memory/exclusive/single/" ^ fname,
+               stmt
+                 ["t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "tagchecked" ^= litb (rn <> SP);
+                  "regsize" ^= variant v;
+                  "elsize" ^= variant v;])
       | I_LDAR (v,AQ,rt,rn) ->
          Some ("memory/ordered-rcpc/LDAPR_32L_memop.opn",
                stmt
@@ -436,6 +449,21 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "regsize" ^= variant v;
                   "elsize" ^= variant v;
                   "datasize" ^= variant v; ])
+      | I_STXR (v,t,rs,rt,rn) ->
+         let fname =
+           match t with
+           | YY -> "STXR_SR32_ldstexclr.opn"
+           | LY -> "STLXR_SR32_ldstexclr.opn" in
+         Some
+           ("memory/exclusive/single/" ^ fname,
+            stmt
+              ["n" ^= reg rn;
+               "t" ^= reg rt;
+               "s" ^= reg rs;
+               "elsize" ^= variant v;
+               "tagchecked" ^= litb (rn <>SP);
+               "rt_unknown" ^= litb false;
+               "rn_unknown" ^= litb false;])
       | i ->
           let () =
             if _dbg then
@@ -445,62 +473,30 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           in
           None
 
-    let symb_values_tbl : (string, V.v) Hashtbl.t = Hashtbl.create 17
-    let symb_values_tag = "AArch64-HashedValue"
+    let tr_cst tr =
+      Constant.map tr
+        (fun _ -> Warn.fatal "Cannot translate PTE")
+        (fun _ -> Warn.fatal "Cannot translate instruction")
+
+    let aarch64_to_asl_bv = function
+      | V.Var v -> ASLS.A.V.Var v
+      | V.Val cst ->
+         ASLS.A.V.Val
+           (tr_cst ASLScalar.convert_to_bv cst)
+
+    let aarch64_to_asl = function
+      | V.Var v -> ASLS.A.V.Var v
+      | V.Val cst ->
+         ASLS.A.V.Val (tr_cst Misc.identity cst)
+
+    let asl_to_aarch64 = function
+      | ASLS.A.V.Var v -> V.Var v
+      | ASLS.A.V.Val cst ->
+         V.Val (tr_cst Misc.identity cst)
 
     let fake_test ii fname decode =
-      let proc = 0 in
-      let init =
-        let loc r = MiscParser.Location_reg (proc, AArch64Base.pp_reg r) in
-        let tr_c =
-          let open Constant in
-          function
-          | Concrete s -> Concrete (V.Cst.Scalar.pp false s)
-          | Symbolic s -> Symbolic s
-          | c ->
-             let name = V.Cst.pp_v c and tag = Some symb_values_tag in
-             let () = Hashtbl.add symb_values_tbl name (V.Val c) in
-             Symbolic (Virtual { offset = 0; cap = 0L; tag; name }) in
-        let set r c =
-          let c' = tr_c c in
-          (loc r, (TestType.TyDef, c'))
-        in
-        let init_gregs =
-          let one_reg r =
-            match A.look_reg r ii.A.env.A.regs with
-            | Some (V.Val c) -> Some (set r c)
-            | Some (V.Var _) | None -> None
-          in
-          List.filter_map one_reg ASLBase.gregs
-        in
-        let nzcv = AArch64Base.NZCV in
-        let vnzcv =
-          match A.look_reg nzcv ii.A.env.A.regs with
-          | Some (V.Val c) -> Some (tr_c c)
-          | Some (V.Var _) -> None
-          | None ->
-             Some (Constant.Concrete "0") in
-        let () =
-          if _dbg then
-            let pp =
-              match vnzcv with
-              | Some v -> ParsedConstant.pp_v v
-              | None -> "-" in
-            Printf.eprintf "Initial value of flags: %s\n%!" pp
-        in
-        match vnzcv with
-        |Some c ->
-          let tc = TestType.TyDef,c and pstate = "PSTATE" in
-          (loc nzcv,tc)
-          (* The initial value for PSTATE given bellow
-           * overrides the one of the "patches.asl" file,
-           *  see `herd/ASLSem.ml`.
-           *)
-          ::(MiscParser.Location_reg (proc,pstate),tc)
-          ::init_gregs
-        | None -> init_gregs
-        in
-        let prog =
+      let init = [] in
+      let prog =
         let version =
           if TopConf.C.variant (Variant.ASLVersion `ASLv0) then `ASLv0
           else if TopConf.C.variant (Variant.ASLVersion `ASLv1) then `ASLv1
@@ -547,6 +543,41 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         Name.{ name = "ASL (fake)"; file = ""; texname = ""; doc = "" }
       in
       let test = ASLTH.build name t in
+      let init =
+        let global_loc name =
+          ASLS.A.Location_reg
+            (ii.A.proc,
+             ASLBase.ASLLocalId (Asllib.AST.Scope_Global, name)) in
+        let st =
+          List.fold_left
+            (fun st reg ->
+              match A.look_reg reg ii.A.env.A.regs with
+              | Some v ->
+                 ASLS.A.state_add st
+                   (ASLS.A.Location_reg
+                      (ii.A.proc,ASLBase.ArchReg reg))
+                   (aarch64_to_asl v)
+              | _ -> st)
+            ASLS.A.state_empty
+            ASLBase.gregs in
+        let nzcv = AArch64Base.NZCV
+        and pstate = global_loc "PSTATE" in
+        let st =
+          match A.look_reg nzcv ii.A.env.A.regs with
+          | Some v ->
+             let v = aarch64_to_asl_bv v in
+             ASLS.A.state_add st pstate v
+          | _ -> st in
+        let regq = AArch64Base.ResAddr
+        and resaddr = global_loc "RESADDR" in
+        let v =
+          match A.look_reg regq ii.A.env.A.regs with
+          | Some v -> Some (aarch64_to_asl v)
+          | None -> None in
+        match v with
+        | Some v -> ASLS.A.state_add st resaddr v
+        | None -> st in
+      let test = { test with Test_herd.init_state=init; } in
       let () =
         if _dbg then
           Printf.eprintf "Building fake test with initial state:\n\t%s\n"
@@ -558,29 +589,10 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       val tr_execution :
         AArch64.inst_instance_id -> asl_exec -> (proc * branch) M.t
     end = struct
+
       module IMap = Map.Make (Int)
 
-      let csym_tbl = ref IMap.empty
-
-      let tr_v = function
-        | ASLValue.V.Var s | ASLValue.V.Val (Constant.Frozen s) -> (
-            match IMap.find_opt s !csym_tbl with
-            | Some v -> v
-            | None ->
-                let v = V.fresh_var () in
-                csym_tbl := IMap.add s v !csym_tbl;
-                v)
-        | ASLValue.V.Val (Constant.Concrete i) ->
-            V.Val (Constant.Concrete i)
-        | ASLValue.V.Val (Constant.Symbolic symb) -> (
-            match symb with
-            | Constant.(Virtual { tag = Some tag; name; _ })
-              when tag == symb_values_tag ->
-                Hashtbl.find symb_values_tbl name
-            | _ -> V.Val (Constant.Symbolic symb))
-        | v ->
-            Warn.fatal "AArch64.ASL does not know how to translate: %s"
-              (ASLValue.V.pp_v v)
+      let tr_v v = asl_to_aarch64 v
 
       let tr_loc ii loc =
         let nloc =
@@ -667,34 +679,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             let expr, acc = tr_expr acc ex in
             M.VC.Assign (tr_v la, expr) :: acc
 
-      let tr_cnstrnts cs =
-        let prepare (symb_assign, acc) = function
-          | ASLVC.Assign (ASLValue.V.Var i, e) -> (IMap.add i e symb_assign, acc)
-          | cnstrnt -> (symb_assign, tr_cnstrnt acc cnstrnt)
-        in
-        let symb_assigns, acc = List.fold_left prepare (IMap.empty, []) cs in
-        let tr_one acc i =
-          match IMap.find_opt i symb_assigns with
-          | Some e ->
-              let e', acc = tr_expr acc e in
-              M.VC.Assign (tr_v (ASLValue.V.Var i), e') :: acc
-          | None -> acc
-        in
-        let map_diff_key map1 map2 =
-          let folder key _val acc =
-            if IMap.mem key map2 then acc else key :: acc
-          in
-          IMap.fold folder map1 []
-        in
-        let rec loop to_do acc1 =
-          let csym_tbl_1 = !csym_tbl in
-          let acc2 = List.fold_left tr_one [] to_do in
-          let to_do = map_diff_key !csym_tbl csym_tbl_1
-          and acc = List.rev_append acc1 acc2 in
-          match to_do with [] -> acc | _ -> loop to_do acc
-        in
-        let to_do = map_diff_key !csym_tbl IMap.empty in
-        loop to_do acc
+      let tr_cnstrnts cs = List.fold_left tr_cnstrnt [] cs
 
       let event_to_monad ii is_data event =
         let { ASLE.action; ASLE.iiid; _ } = event in

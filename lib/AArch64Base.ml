@@ -2149,6 +2149,7 @@ let is_valid i =
   | I_STR (_,_,ZR,_,_)
   | I_STLR (_,_,ZR)
   | I_LDAR (_,_,_,ZR)
+  | I_STXR (_,_,_,_,ZR)
     -> false
   | _ -> true
 

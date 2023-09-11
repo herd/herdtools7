@@ -16,6 +16,8 @@
 
 (** Operations on symbolic values *)
 
+val reset_gensym : unit -> unit
+
 module Make : functor
   (Cst : Constant.S)
   (ArchOp :
