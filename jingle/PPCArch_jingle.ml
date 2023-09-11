@@ -47,14 +47,24 @@ include Arch.MakeArch(struct
     | Pxori(r1,r2,k),Pxori(r1',r2',k')
     | Pmulli(r1,r2,k),Pmulli(r1',r2',k')
     | Plwzu(r1,k,r2),Plwzu(r1',k',r2')
+    | Plwa(r1,k,r2),Plwa(r1',k',r2')
     | Pstwu(r1,k,r2),Pstwu(r1',k',r2')
     | Plmw(r1,k,r2),Plmw(r1',k',r2')
+    | Pclrldi(r1,r2,k), Pclrldi (r1',r2',k')
     | Pstmw(r1,k,r2),Pstmw(r1',k',r2')
       ->
         match_const subs k k' >>>
         add_subs [Reg(sr_name r1,r1');Reg(sr_name r2,r2')]
+    | Prlwimi(r1,r2,k1,k2,k3),Prlwimi(r1',r2',k1',k2',k3')
+    | Prlwinm(r1,r2,k1,k2,k3),Prlwinm(r1',r2',k1',k2',k3')
+      ->
+          add_subs [Reg(sr_name r1,r1');Reg(sr_name r2,r2');
+                    Cst(cv_name k1,k1'); Cst (cv_name k2,k2');
+                    Cst(cv_name k3,k3')]
+                   subs
 
     | Pmr(r1,r2),Pmr(r1',r2')
+    | Pextsw(r1,r2),Pextsw(r1',r2')
     | Pdcbf(r1,r2),Pdcbf(r1',r2')
       ->
         add_subs
@@ -73,6 +83,7 @@ include Arch.MakeArch(struct
       ->
         add_subs [Reg(sr_name r,r')] subs
 
+    | Pcmplwi(i,r,k),Pcmplwi(i',r',k')
     | Pcmpwi(i,r,k),Pcmpwi(i',r',k')
       when i = i' ->
         match_const subs k k'  >>> add_subs [Reg(sr_name r,r')]
@@ -83,6 +94,7 @@ include Arch.MakeArch(struct
 	  subs
 
     | Pli(r,k),Pli(r',k')
+    | Plis(r,k),Plis(r',k')
       ->
         match_const subs k k' >>> add_subs [Reg(sr_name r,r')]
 
@@ -110,6 +122,7 @@ include Arch.MakeArch(struct
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
 
     | Ploadx(s,r1,r2,r3),Ploadx(s',r1',r2',r3')
+    | Plwax(s,r1,r2,r3),Plwax(s',r1',r2',r3')
     | Pstorex(s,r1,r2,r3),Pstorex(s',r1',r2',r3')
       when s = s' ->
         add_subs
@@ -164,6 +177,24 @@ include Arch.MakeArch(struct
         par3 conv_reg r1 r2 r3 (fun r1 r2 r3 -> Pdiv (s,r1,r2,r3))
     | Paddi(r1,r2,k) ->
         par21 conv_reg r1 r2 find_cst k (fun r1 r2 k ->  Paddi (r1,r2,k))
+    | Paddis(r1,r2,k) ->
+        par21 conv_reg r1 r2 find_cst k (fun r1 r2 k ->  Paddis (r1,r2,k))
+    | Prlwimi (r1,r2,k1,k2,k3) ->
+        find_cst k1 >> fun k1 ->
+        find_cst k2 >> fun k2 ->
+        find_cst k3 >> fun k3 ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 -> Prlwimi (r1,r2,k1,k2,k3)
+    | Prlwinm (r1,r2,k1,k2,k3) ->
+        find_cst k1 >> fun k1 ->
+        find_cst k2 >> fun k2 ->
+        find_cst k3 >> fun k3 ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 -> Prlwinm (r1,r2,k1,k2,k3)
+    | Pclrldi (r1,r2,k1) ->
+        find_cst k1 >> fun k1 ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 -> Pclrldi (r1,r2,k1)
     | Pandi(r1,r2,k) ->
         par21 conv_reg r1 r2 find_cst k (fun r1 r2 k ->  Pandi (r1,r2,k))
     | Pori(r1,r2,k) ->
@@ -174,12 +205,16 @@ include Arch.MakeArch(struct
         par21 conv_reg r1 r2 find_cst k (fun r1 r2 k ->  Pxori (r1,r2,k))
     | Pli(r,k) ->
         conv_reg r >> fun r -> find_cst k >! fun k -> Pli (r,k)
+    | Plis(r,k) ->
+        conv_reg r >> fun r -> find_cst k >! fun k -> Plis (r,k)
     | Pb l ->
         find_lab l >! fun l -> Pb l
     | Pbcc(c,l) ->
         find_lab l >! fun l -> Pbcc (c, l)
     | Pcmpwi(i,r,k) ->
         conv_reg r >> fun r -> find_cst k >! fun k -> Pcmpwi (i,r,k)
+    | Pcmplwi(i,r,k) ->
+        conv_reg r >> fun r -> find_cst k >! fun k -> Pcmplwi (i,r,k)
     | Pcmpw(i,r1,r2) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >! fun r2 ->
@@ -187,10 +222,17 @@ include Arch.MakeArch(struct
     | Plwzu(r1,k,r2) ->
         par21 conv_reg r1 r2 find_cst k
           (fun r1 r2 k -> Plwzu(r1,k,r2))
+    | Plwa(r1,k,r2) ->
+        par21 conv_reg r1 r2 find_cst k
+          (fun r1 r2 k -> Plwa(r1,k,r2))
     | Pmr(r1,r2) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >! fun r2 ->
         Pmr(r1,r2)
+    | Pextsw(r1,r2) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 ->
+        Pextsw(r1,r2)
     | Pstwu(r1,k,r2) ->
         par21 conv_reg r1 r2 find_cst k
           (fun r1 r2 k -> Pstwu (r1,k,r2))
@@ -206,6 +248,9 @@ include Arch.MakeArch(struct
     | Ploadx(s,r1,r2,r3) ->
         par3 conv_reg r1 r2 r3
           (fun r1 r2 r3 -> Ploadx (s,r1,r2,r3))
+    | Plwax(s,r1,r2,r3) ->
+        par3 conv_reg r1 r2 r3
+          (fun r1 r2 r3 -> Plwax (s,r1,r2,r3))
     | Pstore(s,r1,k,r2) ->
         par21 conv_reg r1 r2 find_cst k
           (fun r1 r2 k -> Pstore (s,r1,k,r2))

@@ -1,0 +1,16 @@
+PPC A014
+(* Test ROT32 vs ROT64 *)
+{
+0:r3=0xaaaaaaaaaaaaaaaa;
+0:r5=0xaaaaaaaaaaaaaaaa;
+0:r6=0xaaaaaaaaaaaaaaaa;
+}
+
+P0;
+li r4,-1                 ;
+rlwimi r3, r4, 4, 30, 31 ;
+rlwimi r5, r4, 0, 30, 31 ;
+rlwimi r6, r4, 16, 0, 15 ;
+locations [0:r3; 0:r5; 0:r6;]
+
+

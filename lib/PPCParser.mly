@@ -34,18 +34,20 @@ open MachSize
 %token <int> CRK
 
 /* Instruction tokens */
-%token LI
+%token LI LIS
 %token ADD ADDDOT SUB SUBF SUBFDOT SUBDOT XOR XORDOT OR ORDOT  AND ANDDOT
 %token MULL MULLDOT DIV DIVDOT
-%token ADDI SUBI ORI XORI ANDIDOT MULLI
+%token ADDI ADDIS SUBI ORI XORI ANDIDOT MULLI
 %token LBZ LBZX LHZ LHZX LWZ LWZU LWZX
-%token MR STB STBX STH STHX STW STWU STWX LWARX STWCX CMPWI CMPW
-%token LD STD LDX STDX
-%token SYNC EIEIO ISYNC LWSYNC DCBF B BEQ BNE BLT BGT BLE BGE BNL BNG
+%token MR STB STBX STH STHX STW STWU STWX LWARX LWA STWCX CMPWI CMPW CMPLWI
+%token LD STD LDX STDX LWAX
+%token SYNC EIEIO ISYNC LWSYNC HWSYNC DCBF B BEQ BNE BLT BGT BLE BGE BNL BNG
 %token NOR NORDOT NEG NEGDOT SLW SRAWI SRAW BL BLR MTLR MFLR MFCR
 %token LMW STMW
+%token RLWINM RLWIMI CLRLDI EXTSW
 %token COMMENT
 %token <string> STRING
+%token NOP
 
 %type <MiscParser.proc list * (PPCBase.parsedPseudo) list list> main
 %start main
@@ -94,6 +96,8 @@ reg_list :
 | reg COMMA reg_list { $1 :: $3 }
 
 instr:
+  | NOP
+    { Pnop }
   | ADD reg COMMA reg COMMA reg
     { Padd (DontSetCR0,$2,$4,$6) }
   | ADDDOT reg COMMA reg COMMA reg
@@ -106,13 +110,25 @@ instr:
     { Psubf (DontSetCR0,$2,$4,$6) }
   | SUBFDOT reg COMMA reg COMMA reg
     { Psubf (SetCR0,$2,$4,$6) }
+  | ADDIS reg COMMA reg COMMA k
+    { Paddis ($2,$4,$6) }
   | ADDI reg COMMA reg COMMA k
     { Paddi ($2,$4,$6) }
   | SUBI reg COMMA reg COMMA k
       { Paddi ($2,$4, match $6 with MetaConst.Meta _ as k -> k
                      | MetaConst.Int i -> MetaConst.Int(-i)) }
+  | RLWINM reg COMMA reg COMMA k COMMA k COMMA k
+    { Prlwinm ($2,$4,$6,$8,$10) }
+  | RLWIMI reg COMMA reg COMMA k COMMA k COMMA k
+    { Prlwimi ($2,$4,$6,$8,$10) }
+  | CLRLDI reg COMMA reg COMMA k
+    { Pclrldi ($2,$4,$6) }
+  | EXTSW reg COMMA reg
+    { Pextsw ($2,$4) }
   | CMPWI reg COMMA k
     { Pcmpwi (0,$2,$4) }
+  | CMPLWI reg COMMA k
+    { Pcmplwi (0,$2,$4) }
   | CMPWI crindex COMMA reg COMMA k
     { Pcmpwi ($2,$4,$6) }
   | CMPW crindex COMMA reg COMMA reg
@@ -121,6 +137,8 @@ instr:
     { Pcmpw (0,$2,$4)}
   | LI reg COMMA k
     { Pli ($2,$4) }
+  | LIS reg COMMA k
+    { Plis ($2,$4) }
   | XOR reg COMMA reg COMMA reg
     { Pxor (DontSetCR0,$2,$4,$6) }
   | XORDOT reg COMMA reg COMMA reg
@@ -159,6 +177,10 @@ instr:
     { Pload (Short,$2,$4,$6)}
   | LWZ reg COMMA idx COMMA reg
     { Pload (Word,$2,$4,$6)}
+  | LWA  reg COMMA idx LPAR reg RPAR
+    { Plwa ($2,$4,$6) }
+  | LWAX reg COMMA reg COMMA reg
+    { Plwax (Word,$2,$4,$6)}
   | LWZ reg COMMA idx LPAR reg RPAR
     { Pload (Word,$2,$4,$6)}
   | LWZU reg COMMA idx COMMA reg
@@ -217,6 +239,8 @@ instr:
     { Peieio }
   | LWSYNC
     { Plwsync }
+  | HWSYNC
+    { Psync }
   | ISYNC
     { Pisync }
   | DCBF reg COMMA reg

@@ -1,0 +1,9 @@
+PPC A000
+
+(* Test CI works *)
+{}
+
+P0;
+nop;
+
+forall 0:r0 = 0

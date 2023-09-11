@@ -154,6 +154,16 @@ test::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 C instructions tests: OK"
 
+test:: test-ppc
+test-ppc:
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/PPC \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 PPC instructions tests: OK"
+
 test:: test-asl
 test-asl:
 	@ echo

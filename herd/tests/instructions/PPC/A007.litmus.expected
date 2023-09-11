@@ -1,0 +1,11 @@
+Test A007 Allowed
+States 2
+[P0_r0]=0; [P1_r0]=0;
+[P0_r0]=0; [P1_r0]=1;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition exists (not ([P0_r0]=1 /\ [P1_r0]=1))
+Observation A007 Always 2 0
+Hash=4bbfcab3f0e8578a8c6e2411b8ff4d44
+

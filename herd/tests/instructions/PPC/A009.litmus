@@ -1,0 +1,11 @@
+PPC A009
+
+(* test CLRLDI instr *)
+{ int 0:r11 = 0x0; int 0:r31 = 1; 0:r9 = 1 }
+
+P0;
+  clrldi r11, r31, 32;
+  clrldi r9, r9, 32;
+
+forall 0:r11 = 1 /\ 0:r9 = 1
+
