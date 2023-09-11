@@ -56,7 +56,7 @@ let aarch64_intrinsic = aarch64_iico_ctrl | aarch64_iico_data | aarch64_iico_ord
 
 (* Event sets *)
 
-let AArch64 = NASLLocal
+let AArch64 = NASLLocal|F
 
 (* DATA and NDATA *)
 let to_data = (asl_deps_restricted ; [DATA] ; asl_iico_data ; [W | Wreg]) & aarch64
