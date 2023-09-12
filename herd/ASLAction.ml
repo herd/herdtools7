@@ -12,6 +12,7 @@ module Make (A : S) = struct
 
   type action =
     | Access of dirn * A.location * A.V.v * MachSize.sz * AArch64Annot.t
+    | Barrier of A.barrier
     | TooFar of string
     | NoAction
 
@@ -25,6 +26,7 @@ module Make (A : S) = struct
            match a with
            | N -> ""
            | _ -> AArch64Annot.pp a)
+    | Barrier b -> A.pp_barrier_short b
     | TooFar msg -> Printf.sprintf "TooFar:%s" msg
     | NoAction -> ""
 
@@ -122,8 +124,14 @@ module Make (A : S) = struct
   let annot_in_list _str _act = false
 
   (* Barriers *)
-  let is_barrier _action = false
-  let barrier_of _action = None
+  let is_barrier = function
+    | Barrier _  -> true
+    | _ -> false
+
+  let barrier_of = function
+    | Barrier b -> Some b
+    | _ -> None
+
   let same_barrier_id _a1 _a2 = assert false
 
   (* Commits *)
@@ -142,7 +150,7 @@ module Make (A : S) = struct
   let undetermined_vars_in_action = function
     | Access (_, l, v, _, _) ->
         V.ValueSet.union (A.undetermined_vars_in_loc l) (V.undetermined_vars v)
-    | TooFar _ | NoAction -> V.ValueSet.empty
+    | Barrier _ | TooFar _ | NoAction -> V.ValueSet.empty
 
   let simplify_vars_in_action soln a =
     match a with
@@ -150,8 +158,8 @@ module Make (A : S) = struct
         Access
           (d, A.simplify_vars_in_loc soln l,
            V.simplify_var soln v, sz, a)
-    | TooFar _ | NoAction -> a
+    | Barrier _ | TooFar _ | NoAction -> a
 end
 
-module FakeModuleForCheckingSignatures (A : S) : Action.S with module A = A =
-  Make (A)
+module FakeModuleForCheckingSignatures (A : S) : Action.S
+       with module A = A =  Make (A)

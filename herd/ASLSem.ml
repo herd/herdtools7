@@ -214,6 +214,9 @@ module Make (C : Config) = struct
     (* Special monad interations                                              *)
     (**************************************************************************)
 
+    let create_barrier b ii =
+      M.mk_singleton_es (Act.Barrier b) ii >>! []
+
     let resize_from_quad = function
       | MachSize.Quad -> return
       | sz -> (
@@ -394,23 +397,74 @@ module Make (C : Config) = struct
 
     let vbool b =  V.Val (Constant.Concrete (ASLScalar.S_Bool b))
 
+    (*
+     * Add equation, the effect will be silent
+     * discard of executon candidate if a
+     * contradiction appears.
+     *)
+
     let checkprop m_prop =
       let* vprop = m_prop in
       M.assign (vbool true) vprop >>! []
 
+    (*
+     * Split the current execution candidate into two:
+     * one candidate, has variable [v] value to be TRUE,
+     * while the value is FALSE for the other.
+     *)
+
     let somebool _ =
       let v = V.fresh_var () in
-      let mbool b =
-        let vb = V.Val (Constant.Concrete (ASLScalar.S_Bool b)) in
-        M.assign v vb >>= fun () -> M.unitT vb  in
+      let mbool b = M.unitT (vbool b) in
       choice (M.unitT v) (mbool true) (mbool false)
 
-    let virtual_to_loc_reg rv ii =
-      let i = v_as_int rv in
-      if i >= List.length AArch64Base.gprs || i < 0 then
+    (*
+     * Primitives that generate fence events.
+     * Notice that ASL fence events take
+     * an AArch64 barrier as argument.
+     *)
+
+    let primitive_isb (ii,poi) () =
+      create_barrier AArch64Base.ISB (use_ii_with_poi ii poi)
+
+    let dom_of =
+      let open AArch64Base in
+      function
+      | 0 -> NSH
+      | 1 -> ISH
+      | 2 -> OSH
+      | 3 -> SY
+      | _ -> assert false
+    and btyp_of =
+      let open AArch64Base in
+      function
+      | 0 -> LD
+      | 1 -> ST
+      | 2 -> FULL
+      | _ -> assert false
+
+    let primitive_db constr (ii,poi) dom_m btyp_m =
+      let* dom = dom_m and* btyp = btyp_m in
+      let dom = v_as_int dom and btyp = v_as_int btyp in
+      let dom = dom_of dom and btyp = btyp_of btyp in
+      create_barrier (constr (dom,btyp)) (use_ii_with_poi ii poi)
+
+    let primitive_dmb =  primitive_db (fun (d,t) -> AArch64Base.DMB (d,t))
+    and primitive_dsb =  primitive_db (fun (d,t) -> AArch64Base.DSB (d,t))
+
+
+    (*
+     * Prinitives for read and write events.
+     *)
+
+    let virtual_to_loc_reg =
+      let tgprs = Array.of_list  AArch64Base.gprs in
+      fun rv ii ->
+        let i = v_as_int rv in
+        if i >= Array.length tgprs || i < 0 then
         Warn.fatal "Invalid register number: %d" i
       else
-        let arch_reg = AArch64Base.Ireg (List.nth AArch64Base.gprs i) in
+        let arch_reg = AArch64Base.Ireg (tgprs.(i)) in
         A.Location_reg (ii.A.proc, ASLBase.ArchReg arch_reg)
 
     let read_register (ii, poi) r_m =
@@ -551,6 +605,15 @@ module Make (C : Config) = struct
       let bv_64 = bv_lit 64 in
       let t_named x = T_Named x |> with_pos in
       [
+        arity_zero "primitive_isb" return_zero
+          (primitive_isb ii_env)
+        |> __POS_OF__ |> here;
+        arity_two "primitive_dmb" [integer; integer; ] return_zero
+          (primitive_dmb ii_env)
+        |> __POS_OF__ |> here;
+        arity_two "primitive_dsb" [integer; integer; ] return_zero
+          (primitive_dsb ii_env)
+        |> __POS_OF__ |> here;
         arity_one "read_register" [ reg ] (return_one bv_64)
           (read_register ii_env)
         |> __POS_OF__ |> here;

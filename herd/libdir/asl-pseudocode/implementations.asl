@@ -35,7 +35,6 @@ func AArch64_MarkExclusiveVA
 (address :: bits(64), processorid :: integer, size :: integer)
 begin
   RESADDR = address;
-  return;
 end
 
 // AArch64.IsExclusiveVA()
@@ -56,6 +55,7 @@ func AArch64_IsExclusiveVA
 begin
   // Try both possibilties: write or not write
   SuccessVA = SomeBoolean();
+  // Read RESADDR localy because we want a read event in all cases.
   let reserved = RESADDR;
   // If write succeeds then effective address and reservation coincide.
   if SuccessVA then CheckProp(address == reserved); end
@@ -608,4 +608,53 @@ type SCTLRType of bits(64) {
 getter SCTLR_EL1[] => SCTLRType
 begin
   return Zeros(64);
+end
+
+// InstructionSynchronizationBarrier()
+// ===================================
+func InstructionSynchronizationBarrier()
+begin
+  primitive_isb();
+end
+
+
+// DataMemoryBarrier()
+// ===================
+
+// We use our own integer codings of enumerations
+// to guard against enumeration type change
+
+func MBReqDomainToInteger(domain : MBReqDomain) => integer
+begin
+  case domain of
+    when MBReqDomain_Nonshareable => return 0;
+    when MBReqDomain_InnerShareable => return 1;
+    when MBReqDomain_OuterShareable => return 2;
+    when MBReqDomain_FullSystem => return 3;
+  end
+end
+
+func MBReqTypesToInteger(types : MBReqTypes) => integer
+begin
+  case types of
+    when MBReqTypes_Reads => return 0;
+    when MBReqTypes_Writes => return 1;
+    when MBReqTypes_All => return 2;
+  end
+end
+
+func DataMemoryBarrier(domain : MBReqDomain, types : MBReqTypes)
+begin
+  primitive_dmb(MBReqDomainToInteger(domain),MBReqTypesToInteger(types));
+end
+
+// DataSynchronizationBarrier()
+// ============================
+
+func DataSynchronizationBarrier
+  (domain : MBReqDomain,
+   types : MBReqTypes,
+   nXS : boolean)
+begin
+  primitive_dsb(MBReqDomainToInteger(domain),MBReqTypesToInteger(types));
 end

@@ -783,21 +783,19 @@ let match_reg_events es =
 
 (* Add a constraint for two values *)
 
-(* More like an optimization, adding constraint v1 := v2 should work *)
+(* Optimization: adding constraint v1 := v2 should always work *)
 
     exception Contradiction
 
     let add_eq v1 v2 eqs =
       if V.is_var_determined v1 then
         if V.is_var_determined v2 then
-          if V.compare v1 v2 = 0 then
-            eqs
-          else
-            raise Contradiction
-        else
+          if V.equal v1 v2 then eqs
+          else raise Contradiction
+        else (* Here, v1 and v2 necessarily differ *)
           VC.Assign (v2, VC.Atom v1)::eqs
-      else
-        VC.Assign (v1, VC.Atom v2)::eqs
+      else if V.equal v1 v2 then eqs
+      else VC.Assign (v1, VC.Atom v2)::eqs
 
     let pp_nosol lvl test es rfm =
       let module PP = Pretty.Make(S) in

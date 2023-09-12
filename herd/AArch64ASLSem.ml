@@ -101,6 +101,21 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | LE -> 0b1101
       | AL -> 0b1111 (* Also possible [0b1110] *)
 
+    let barrier_domain =
+      let open AArch64Base in
+      function
+      | NSH -> "MBReqDomain_Nonshareable"
+      | ISH -> "MBReqDomain_InnerShareable"
+      | OSH -> "MBReqDomain_OuterShareable"
+      | SY -> "MBReqDomain_FullSystem"
+
+    and barrier_typ =
+      let open AArch64Base in
+      function
+      | LD -> "MBReqTypes_Reads"
+      | ST -> "MBReqTypes_Writes"
+      | FULL -> "MBReqTypes_All"
+
     let unalias ii =
       let i0 = ii.A.inst in
       let i = AArch64Base.unalias i0 in
@@ -464,6 +479,22 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                "tagchecked" ^= litb (rn <>SP);
                "rt_unknown" ^= litb false;
                "rn_unknown" ^= litb false;])
+      | I_FENCE ISB ->
+         Some ("system/barriers/isb/ISB_BI_barriers.opn",stmt [])
+      | I_FENCE (DMB (dom,btyp)) ->
+         Some
+           ("system/barriers/dmb/DMB_BO_barriers.opn",
+            stmt
+              ["domain" ^= var (barrier_domain dom);
+               "types" ^= var (barrier_typ btyp); ])
+      | I_FENCE (DSB (dom,btyp)) ->
+         Some
+           ("system/barriers/dsb/DSB_BO_barriers.opn",
+            stmt
+              ["nXS" ^= litb false;
+               "alias" ^= var "DSBAlias_DSB";
+               "domain" ^= var (barrier_domain dom);
+               "types" ^= var (barrier_typ btyp); ])
       | i ->
           let () =
             if _dbg then
@@ -661,6 +692,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             | Some loc ->
                 let ac = Act.access_of_location_std loc in
                 Some (Act.Access (dir, loc, tr_v v, a, exp, sz, ac)))
+        | ASLS.Act.Barrier b -> Some (Act.Barrier b)
         | ASLS.Act.NoAction -> Some Act.NoAction
         | ASLS.Act.TooFar msg -> Some (Act.TooFar msg)
 
@@ -747,8 +779,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         let () = if _dbg then Printf.eprintf "\t- events: " in
         let event_list = List.of_seq events in
         let event_to_monad_map =
-          List.to_seq event_list
-          |> Seq.filter_map (event_to_monad ii is_data)
+          Seq.filter_map (event_to_monad ii is_data) events
           |> EMap.of_seq
         in
         let events_m =
