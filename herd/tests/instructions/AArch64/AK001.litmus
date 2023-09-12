@@ -1,0 +1,16 @@
+AArch64 AK001 (* LB+rel+br-ctrl *)
+{
+ins_t *y;
+0:X2=x; 0:X4=y; 0:X3=P1:L0;
+1:X2=x; 1:X4=y;
+}
+P0           |P1           ;
+LDR W1,[X2]  | ADR X5,L1   ;
+STLR X3,[X4] | STR X5,[X4] ;
+             | LDR X3,[X4] ;
+             | BR X3       ;
+             |L0:          ;
+             | MOV W0,#1   ;
+             | STR W0,[X2] ;
+             |L1:          ;
+exists (0:X1=1 /\ 1:X0=1)

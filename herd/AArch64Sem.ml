@@ -2009,9 +2009,11 @@ module Make
         | M.A.V.Val (Concrete i) -> Some (B.Addr (M.A.V.Cst.Scalar.to_int i))
         | _ -> None
 
-      let do_indirect_jump test bds i v =
+      let do_indirect_jump test bds i ii v =
         match  v2tgt v with
-        | Some tgt -> M.unitT (B.Jump (tgt,bds))
+        | Some tgt ->
+          commit_bcc ii
+          >>= fun () -> M.unitT (B.Jump (tgt,bds))
         | None ->
            match v with
            | M.A.V.Var(_) as v ->
@@ -2021,7 +2023,8 @@ module Make
                   "Could find no potential target for indirect branch %s \
                    (potential targets are statically known labels)" (AArch64.dump_instruction i)
               else
-                B.indirectBranchT v lbls bds
+                commit_bcc ii
+                >>= fun () -> B.indirectBranchT v lbls bds
         | _ -> Warn.fatal
             "illegal argument for the indirect branch instruction %s \
             (must be a label)" (AArch64.dump_instruction i)
@@ -2067,20 +2070,20 @@ module Make
            >>= fun () -> M.unitT (B.Jump (tgt2tgt ii l,[AArch64Base.linkreg,v_ret]))
 
         | I_BR r as i ->
-            read_reg_ord r ii >>= do_indirect_jump test [] i
+            read_reg_ord r ii >>= do_indirect_jump test [] i ii
 
         | I_BLR r as i ->
            let v_ret = V.intToV (ii.A.addr + 4) in
            write_reg AArch64Base.linkreg v_ret ii
            >>= fun () -> read_reg_ord r ii
-           >>= do_indirect_jump test [AArch64Base.linkreg,v_ret] i
+           >>= do_indirect_jump test [AArch64Base.linkreg,v_ret] i ii
 
         | I_RET ro as i ->
             let r = match ro with
             | None -> AArch64Base.linkreg
             | Some r -> r in
             read_reg_ord r ii
-            >>= do_indirect_jump test [] i
+            >>= do_indirect_jump test [] i ii
 
         | I_ERET ->
            let eret_to_addr = function
