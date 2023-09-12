@@ -194,7 +194,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
   [e] denotes a Literal [l] and [v] is the value of [l] in [env].
 
   {4 Example}
-  [3] evaluates to [3].
+  The expression [3] evaluates to the value [3].
 
 {3 Rule.IgnoreTypedExpr}
 
@@ -202,8 +202,9 @@ Evaluation of the expression [e] under an environment [env] is either a value
   [(e,_t)] denotes a typed expression and <description>
 
   {4 Example}
-  [(3 as integer)] evaluates to [3]
-  [(3 as integer {5:7})] raises a Mismatch value error.
+  The expression [(3 as integer)] evaluates to the value [3].
+
+  The expression [(3 as integer {5:7})] raises a "Mismatched Value" error.
 
 {3 Rule.ELocalVar}
 
@@ -213,7 +214,15 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - [v] is the value of [x] in [env].
 
   {4 Example}
-  [x] evaluates to [42] in the environment [x → 42].
+  [
+  func main () => integer
+  begin
+    var x: integer = 3;
+    assert x == 3;
+  end  
+  ]
+
+  The evaluation of [x] within [assert x == 3]; uses ELocalVar.
 
 {3 Rule.EGlobalVar}
   {4 Rule}
@@ -222,7 +231,16 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - [v] is the value of [x] in [env].
 
   {4 Example}
-  [x] evaluates to [42] in the environment [x → 42].
+  [
+   var x: integer = 3;
+
+   func main () => integer
+   begin
+     assert x == 3;
+   end
+  ]
+  
+  The evaluation of [x] within [assert x == 3;] uses EGlobalVar.
 
 {3 Rule.EUndefIdent}
 
@@ -232,7 +250,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - an Error "UndefinedIdentifier" is raised.
 
   {4 Example}
-  [y] raises an "Undefined Identifier" error in the environment [x → 42]
+  The variable [y] raises an "Undefined Identifier" error in the environment [x → 42].
 
 {3 Rule.Binop}
 
@@ -244,9 +262,10 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - [v] is the result of applying the Binary Operator [op] to [v1] and [v2].
 
   {4 Example}
-  [3 + 2] evaluates to [5].
-  [3 DIV 0] raises a Backend defined error. For the [Native] backend, it is
-  a [DivisionByZero] error.
+  The expression [3 + 2] evaluates to the value [5].
+
+  The expression [3 DIV 0] raises a backend-defined,
+  e.g. a [DivisionByZero] error.
 
 {3 Rule.Unop}
 
@@ -257,20 +276,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - [v] is the result of applying the Unary Operator [op] to [t].
 
   {4 Example}
-  [NOT '1010'] evaluates to ['0101']
-
-{3 Rule.ECondSimple}
-
-  {4 Rule}
-  All of the following applies:
-  - [e] denotes a condition [econd] with two options [e1] and [e2];
-  - The evaluation of the condition [econd] under [env] is mcond;
-  - Both [e1] and [e2] are simple expressions; EUndefIdent
-  - The evaluation of [e1] or [e2], depending on [mcond], is [v].
-
-  {4 Example}
-  [if TRUE then 3 else 42] evaluates to [3].
-  [if UNKNOWN: boolean then 3 else 2] might evaluate both [3] and [2].
+  The expression [NOT '1010'] evaluates to the value ['0101'].
 
 {3 Rule.ECond}
 
@@ -282,9 +288,12 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - The evaluation of [e1] or [e2], depending on [m_cond], is [v].
 
   {4 Example}
-  [if FALSE then DoSomethingAndReturn42() else 3] evaluates to [3].
-  [if UNKNWON: boolean then 3 else DoSomethingAndReturn42()] will evaluate
-  either [3] or [DoSomethingAndReturn42()] in different executions.
+  The expression [if FALSE then DoSomethingAndReturn42()
+else 3] evaluates to the value [3].
+
+  The expression [if UNKNWON: boolean then 3 else
+DoSomethingAndReturn42()] will evaluate either [3] or
+[DoSomethingAndReturn42()] in different executions.
 
 {3 Rule.ESlice}
 
@@ -296,7 +305,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - [v] is the value read in [v_bv] from [positions].
 
   {4 Example}
-  ['11110000'[5:2]] evaluates to ['1100']
+  The expression ['11110000'[5:2]] evaluates to the value ['1100'].
 
 {3 Rule.ECall}
 
@@ -307,7 +316,10 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - [v] is the value read from [ms].
 
   {4 Example}
-  [DoSomethingAndReturn42()] evaluates to [42]
+  The expression [DoSomethingAndReturn42()] evaluates to
+the value [42] if the function
+[DoSomethingAndReturn42()] is implemented to return the
+value [42].
 
 {3 Rule.EGetArray}
 
@@ -319,8 +331,9 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - [v] is the value found at the index [v_index] of [v_array].
 
   {4 Example}
-  [my_array[3]] evaluates to [42] if the element indexed by [3] in [my_array]
-  is [42].
+  The expression [my_array[3]] evaluates to the value
+[42] if the element indexed by [3] in [my_array] is
+[42].
 
 {3 Rule.ERecord}
 
@@ -332,7 +345,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - [v] is the record built by associating the names [names] to [v_fields].
 
   {4 Example}
-  [MyRecord { a: 3, b: 42 }] evaluates to [{a: 3, b: 42}].
+  The expression [MyRecordType { a: 3, b: 42 }] evaluates to the value [{a: 3, b: 42}].
 
 {3 Rule.EGetField}
 
@@ -343,12 +356,15 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - [v] is the value mapped by [field_name] in [v_vec].
 
   {4 Example}
-  [(MyRecord { a: 3, b: 42 }).a] evaluates to [3].
+  The expression [(MyRecordType { a: 3, b: 42 }).a] evaluates to the value [3].
 
 {3 Rule.EGetFields}
-<description>
+  
+  {4 Rule}
+  <description>
 
-<minimal example>
+  {4 Example}
+  <minimal example>
 
 {3 Rule.EConcat}
 
@@ -359,7 +375,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - [v] is the concatenation of [v_list].
 
   {4 Example}
-  [['10', '11']] evaluates to ['1011']
+  The expression [['10', '11']] evaluates to the value ['1011'].
 
 {3 Rule.ETuple}
 
@@ -370,7 +386,8 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - [v] is the vector built from [v_list].
 
   {4 Example}
-  [(3, 42)] evaluates to [(3, 42)]
+  The expression [(3, DoSomethingAndReturn42())]
+evaluates to the value [(3, 42)].
 
 {3 Rule.EUnknown}
 
@@ -380,8 +397,9 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - [v] is a value in the domain of [t].
 
   {4 Example}
-  [UNKNOWN: integer] evaluates to an integer.
-  [UNKNOWN: integer {3, 42}] evaluates to either [3] either [42].
+  The expression [UNKNOWN : integer] evaluates to an integer value.
+  
+  The expression [UNKNOWN : integer {3, 42}] evaluates to either the value [3] or the value [42].
 
 {3 Rule.EPattern}
 
@@ -392,8 +410,9 @@ Evaluation of the expression [e] under an environment [env] is either a value
     matches [p].
 
   {4 Example}
-  [42 IN { 0:3, -4}] evaluates to [FALSE]
-  [42 IN { 0:3, 42}] evaluates to [TRUE]
+  The expression [42 IN { 0:3, -4}] evaluates to the value [FALSE].
+
+  The expression [42 IN { 0:3, 42}] evaluates to [TRUE].
 
 {2
 Evaluation of Side-Effect-Free Expressions
@@ -424,7 +443,7 @@ one of the following applies:
     - [new_env] is [env].
 
   {4 Example}
-  [- = 42;] evaluates [42].
+  The left-hand-side expression [-] within [- = 42;] evaluates to the value [42].
 
   {3 Rule.LELocalVar}
 
@@ -435,8 +454,14 @@ one of the following applies:
     - [new_env] is [env] where [x] has been assigned the value [v].
 
     {4 Example}
-    [x = 3;] binds [x] to [3] in [x ⟶ 42] ([new_env] is here [x ⟶ 3]).
-
+    [
+     func main () => integer
+     begin
+       var x: integer = 3;
+       x = 42;
+     end
+    ]
+    The evaluation of the left-hand-side expression [x] within [x = 42;] uses Rule.LELocalVar.
 
   {3 Rule.LEGlobalVar}
 
@@ -447,7 +472,16 @@ one of the following applies:
     - [new_env] is [env] where [x] has been assigned the value [v].
 
     {4 Example}
-    [x = 3;] binds [x] to [3] in [x ⟶ 42] ([new_env] is here [x ⟶ 3]).
+    [
+     var x: integer = 3;
+
+     func main () => integer
+     begin
+       x = 42;
+     end
+    ]  
+ 
+    The evaluation of the left-hand-side expression [x] within [x = 42;] uses Rule.LEGlobalVar.
 
   {3 Rule.LEUndefIdentV1}
 
@@ -458,7 +492,7 @@ one of the following applies:
     - an Error "UndefinedIdentifier" is raised.
 
     {4 Example}
-    [y = 3;] raises an "Undefined Identifier" error in the environment [x ⟶ 42].
+    The evaluation of the left-hand-side expression [y] within [y = 3;] raises an "Undefined Identifier" error in the environment [x ⟶ 42].
 
   {3 Rule.LEUndefIdentV0}
 
@@ -484,7 +518,7 @@ one of the following applies:
     - [new_env] is [env] where [le] has been assigned the value [v].
 
     {4 Example}
-    [x[3:0] = '0000'] binds [x] to ['11110000'] in [x ⟶ '11111111']
+    [x[3:0] = '0000'] binds [x] to ['11110000'] in [x ⟶ '11111111'].
 
   {3 Rule.LESetArray}
 
@@ -500,7 +534,11 @@ one of the following applies:
       [new_v_array].
 
     {4 Example}
-    <minimal example>
+    [
+     var my_array: array [42] of integer;
+     my_array[3] = 53;
+    ]
+    binds the [3rd] element of [my_array] to the value [53].
 
   {3 Rule.LESetField}
 
@@ -516,7 +554,7 @@ one of the following applies:
       [new_v_record].
 
     {4 Example}
-    [my_record.a = 42;] binds [my_record] to [{a: 42, b: 42}] in [my_record ⟶ {a: 3, b: 42}]
+    [my_record.a = 42;] binds [my_record] to [{a: 42, b: 42}] in the environment [my_record ⟶ {a: 3, b: 42}].
 
   {3 Rule.LESetFields}
 
@@ -535,7 +573,7 @@ one of the following applies:
       been assigned the value at the corresponding index in [v].
 
     {4 Example}
-    [(x, y) = (3, 42)] binds [x] to [3] and [y] to [42] in [x ⟶ 42, y ⟶ 3]
+    [(x, y) = (3, 42)] binds [x] to [3] and [y] to [42] in the environment [x ⟶ 42, y ⟶ 3].
 
 {2
 Evaluation of Expression Lists
@@ -549,8 +587,9 @@ Evaluation of Slices
 [eval_slices env slices] is the list of pair [(i_n, l_n)] that corresponds to
 the start (included) and the length of each slice in [slices].
 
-[[3:2]] evaluates to [[(2, 2)]]
-[[3:2, 42+:5]] evaluatest to [[(2, 2), (42, 5)]]
+[[3:2]] evaluates to [[(2, 2)]].
+
+[[3:2, 42+:5]] evaluates to [[(2, 2), (42, 5)]].
 
 
 {2
@@ -577,8 +616,9 @@ Formally, one of the following applies:
       [li_patterns] in [env].
 
     {4 Example}
-    [42 IN { 3, 42 }] evaluates to [true]
-    [42 IN { 3, 4 }] evaluates to [false]
+    [42 IN { 3, 42 }] evaluates to [true].
+
+    [42 IN { 3, 4 }] evaluates to [false].
 
   {3 Rule.PGeq}
 
@@ -588,8 +628,9 @@ Formally, one of the following applies:
     - [v] is greater than or equal to the evaluation of [e] in [env].
 
     {4 Example}
-    [42 IN { >= 3 }] evaluates to [true]
-    [3 IN { >= 42 }] evaluates to [false]
+    [42 IN { >= 3 }] evaluates to [true].
+
+    [3 IN { >= 42 }] evaluates to [false].
 
   {3 Rule.PLeq}
 
@@ -599,8 +640,9 @@ Formally, one of the following applies:
     - [v] is lesser than or equal to the evaluation of [e] in [env].
 
     {4 Example}
-    [3 IN { <= 42 }] evaluatest to [true]
-    [42 IN { <= 3 }] evaluatest to [false]
+    [3 IN { <= 42 }] evaluatest to [true].
+
+    [42 IN { <= 3 }] evaluatest to [false].
 
   {3 Rule.PNot}
 
@@ -610,8 +652,9 @@ Formally, one of the following applies:
     - [v] matches the negation of [p'] in [env].
 
     {4 Example}
-    [42 IN !{ 3 }] evaluates to [true]
-    [42 IN !{ 42 }] evaluates to [false]
+    [42 IN !{ 3 }] evaluates to [true].
+
+    [42 IN !{ 42 }] evaluates to [false].
 
   {3 Rule.PRange}
 
@@ -622,8 +665,9 @@ Formally, one of the following applies:
     - [v] is lesser than or equal to [e2] in [env].
 
     {4 Example}
-    [42 IN {3..42}] evaluates to [true]
-    [-3 IN {3..42}] evaluates to [false]
+    [42 IN {3..42}] evaluates to [true].
+
+    [-3 IN {3..42}] evaluates to [false].
 
   {3 Rule.PSingle}
 
@@ -633,7 +677,7 @@ Formally, one of the following applies:
     - [v] is equal to the evaluation of [e] in [env].
 
     {4 Example}
-    [42 IN { 3 }] evaluates to [false]
+    [42 IN { 3 }] evaluates to [false].
 
   {3 Rule.PMask}
 
@@ -643,8 +687,9 @@ Formally, one of the following applies:
     - [v] is a bitvector that matches the mask [m]
 
     {4 Example}
-    ['101010' IN 'xx1010'] evaluates to [true]
-    ['101010' IN '0x1010'] evaluates to [false]
+    ['101010' IN 'xx1010'] evaluates to [true].
+
+    ['101010' IN '0x1010'] evaluates to [false].
 
   {3 Rule.PTuple}
 
@@ -654,7 +699,7 @@ Formally, one of the following applies:
     - [v] matches the evaluation of all the patterns in the list [li] in [env].
 
     {4 Example}
-    [(3, '101010') IN {( <= 42, 'xx1010')}] evaluates to [true]
+    [(3, '101010') IN {( <= 42, 'xx1010')}] evaluates to [true].
 
 {2
 Evaluation of Local Declarations
@@ -672,7 +717,7 @@ raises an error and one of the following applies:
     - [new_env] is [env].
 
     {4 Example}
-    [var - = 3;] evaluates [3];
+    [var - = 3;] evaluates [3].
 
     [var - : integer;] does not modify the environment.
 
@@ -688,7 +733,7 @@ raises an error and one of the following applies:
     {4 Example}
     [var x = 3;] binds [x] to the evaluation of [3] in [env].
 
-    [var x : integer = 3] binds [x] to the evaluation of [3] in [env], without
+    [var x : integer = 3;] binds [x] to the evaluation of [3] in [env], without
     type consideration at runtime.
 
   {3 Rule.LDTypedVar}
@@ -723,7 +768,7 @@ raises an error and one of the following applies:
       to the corresponding value in [nmonads].
 
     {4 Example}
-    [var (x,y,z) = (1,2,3);] bounds [x] (resp. [y], [z]) to the evaluation of
+    [var (x,y,z) = (1,2,3);] binds [x] (resp. [y], [z]) to the evaluation of
     [1] (resp. [2], [3]) in [env].
 
   {3 Rule.LDTypedTuple}
@@ -765,7 +810,7 @@ one of the following applies:
     - [new_env] is [env].
 
     {4 Example}
-    [pass;] does nothing
+    [pass;] does nothing.
 
   {3 Rule.SAssign}
 
@@ -805,7 +850,7 @@ one of the following applies:
     - [new_env] is [env].
 
     {4 Example}
-    [return;] exits the current procedure
+    [return;] exits the current procedure.
 
     [func foo ()
      begin
@@ -817,7 +862,7 @@ one of the following applies:
        end
      end
      func main () => integer begin foo (); return 0; end]
-     prints "012"
+     prints "012".
 
   {3 Rule.SReturnOne}
 
@@ -868,7 +913,7 @@ one of the following applies:
 
     {4 Example}
     [Zeros(3)] evaluates to ['000'].
-.
+
   {3 Rule.SCond}
 
     {4 Rule}
@@ -920,7 +965,7 @@ one of the following applies:
      while i <= 3 do
        print (i);
        i = i + 1;
-     end] prints "0123"
+     end] prints "0123".
 
   {3 Rule.SRepeat}
 
@@ -935,7 +980,7 @@ one of the following applies:
      repeat
        print(i);
        i = i + 1;
-     until i > 3;] prints "0123"
+     until i > 3;] prints "0123".
 
   {3 Rule.SFor}
 
@@ -948,7 +993,7 @@ one of the following applies:
     {4 Example}
     [for i = 0 to 3 do
        print (i);
-     end] prints "0123"
+     end] prints "0123".
 
   {3 Rule.SThrowNone}
 
@@ -993,7 +1038,7 @@ one of the following applies:
 
     {4 Example}
     [try throw MyException;
-     catch MyException: print(3);] prints "3"
+     catch MyException: print(3);] prints "3".
 
   {3 Rule.SDeclSome}
 
