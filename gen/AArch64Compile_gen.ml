@@ -1232,7 +1232,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,Some (Acq _,None) ->
             let r,init,cs,st = LDAR.emit_load st p init loc  in
             Some r,init,cs,st
-        | R, Some (Ifetch, _) -> Warn.fatal "something went wrong"
+        | R, Some (Ifetch, _) -> Warn.fatal "Ifetch annotation did not create code location"
         | R,Some (Acq a,Some (sz,o)) ->
             let module L =
               LOAD

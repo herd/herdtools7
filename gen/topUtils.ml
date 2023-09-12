@@ -309,8 +309,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       | _,_,_ -> false
 
     let fetch_val n =
-      match n.C.C.prev.C.C.edge.C.E.edge, n.C.C.edge.C.E.edge with
-      | C.E.Irf _,_ -> 2
-      | _,C.E.Ifr _ -> 1
-      | _,_ -> 0
+      match n.C.C.prev.C.C.edge.C.E.edge, n.C.C.edge.C.E.edge, (List.for_all C.E.is_ifetch [n.C.C.edge.C.E.a1; n.C.C.edge.C.E.a2]) with
+      | C.E.Irf _,_,_ | C.E.Rf _,_,true-> 2
+      | _,C.E.Ifr _,_ | _,C.E.Fr _,true -> 1
+      | _,_,_ -> 0
   end

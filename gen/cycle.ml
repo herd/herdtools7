@@ -453,8 +453,12 @@ let make_loc n =
   else Printf.sprintf "x%02i" (n-locs_len)
 
 let next_loc e ((loc0,lab0),vs) = match e.E.edge with
-| E.Irf _|E.Ifr _ -> Code (sprintf "Lself%02i" lab0),((loc0,lab0+1),vs)
-| _ -> Code.Data (make_loc loc0),((loc0+1,lab0),vs)
+| (E.Irf _|E.Ifr _) -> Code (sprintf "Lself%02i" lab0),((loc0,lab0+1),vs)
+| _ -> 
+  if (E.is_ifetch e.E.a1 || E.is_ifetch e.E.a2) then
+    Code (sprintf "Lself%02i" lab0),((loc0,lab0+1),vs)
+  else
+    Code.Data (make_loc loc0),((loc0+1,lab0),vs)
 
 let same_loc e = match E.loc_sd e with
     | Same -> true
@@ -582,18 +586,6 @@ let patch_edges n =
   let merge_annotations m =
       let rec do_rec n =
         let e = n.edge in
-        match e.E.edge with
-        | E.Fr ie -> if E.is_ifetch e.E.a1 then begin
-          n.edge <- {e with E.a1=None; };
-          n.edge <- {e with E.edge=E.Ifr ie; };
-        end
-        else ();
-        | E.Rf ie -> if E.is_ifetch e.E.a2 then begin
-          n.edge <- {e with E.a2=None; };
-          n.edge <- {e with E.edge=E.Irf ie; };
-        end
-        else ();
-        | _ -> ();
         if non_insert_store e then begin
           let p = find_non_insert_store_prev n.prev in
           if O.verbose > 0 then Printf.eprintf "Merge p=%a, n=%a\n"
