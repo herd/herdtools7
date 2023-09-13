@@ -541,7 +541,7 @@ module Make (C : Config) = struct
         let unroll =
           match C.unroll with None -> Opts.unroll_default `ASL | Some u -> u
 
-        module Instr = Asllib.Instrumentation.NoInstr
+        module Instr = Asllib.Instrumentation.SemanticsNoInstr
       end in
       let module ASLInterpreter = Asllib.Interpreter.Make (ASLBackend) (Config)
       in

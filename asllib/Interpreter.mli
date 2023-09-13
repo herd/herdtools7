@@ -32,7 +32,7 @@ module type S = sig
 end
 
 module type Config = sig
-  module Instr : Instrumentation.INSTR
+  module Instr : Instrumentation.SEMINSTR
 
   val type_checking_strictness : Typing.strictness
   (** The strictness of type-checking. *)

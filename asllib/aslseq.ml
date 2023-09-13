@@ -193,7 +193,7 @@ let () =
     if args.show_rules then
       let open Format in
       printf "@[<v 3>Used rules:@ %a@]@."
-        (pp_print_list ~pp_sep:pp_print_cut Instrumentation.Rule.pp)
+        (pp_print_list ~pp_sep:pp_print_cut Instrumentation.SemanticsRule.pp)
         used_rules
   in
 
