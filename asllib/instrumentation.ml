@@ -76,6 +76,11 @@ module SemanticsRule = struct
     | Block
     | Loop
     | For
+    | Catch
+    | CatchNamed
+    | CatchOtherwise
+    | CatchNone
+    | CatchNoThrow
 
   let to_string : t -> string = function
     | Lit -> "Lit"
@@ -154,6 +159,11 @@ module SemanticsRule = struct
     | Block -> "Block"
     | Loop -> "Loop"
     | For -> "For"
+    | Catch -> "Catch"
+    | CatchNamed -> "CatchNamed"
+    | CatchOtherwise -> "CatchOtherwise"
+    | CatchNone -> "CatchNone"
+    | CatchNoThrow -> "CatchNoThrow"
 
   let pp f r = to_string r |> Format.pp_print_string f
 

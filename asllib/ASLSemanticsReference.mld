@@ -788,9 +788,9 @@ raises an error and one of the following applies:
 {2
 Evaluation of Statements
 }
-The evaluation [eval_stmt env s] of a statement s under environment [env] is
-either an interruption [Returning vs] or a new environment [new_env]. Formally,
-one of the following applies:
+The evaluation [eval_stmt env s] of a statement [s] under environment [env] is
+either a [Throwing], an interruption [Returning vs] or a new environment
+[new_env]. Formally, one of the following applies:
 
   {3 SemanticsRule.SPass}
 
@@ -1145,13 +1145,118 @@ Evaluation of [for] loops
 {2
 Evaluation of Catchers
 }
-[eval_catchers env catchers otherwise_opt s_m]
+[eval_catchers env catchers otherwise_opt s_m], given the result [s_m] of the
+evaluation of a statement under environment [env] is either a [Throwing (v,
+v_ty, env_throw)], an interruption [Returning vs] or a new environment
+[new_env]. Formally, one of the following applies:
+
+  {3 SemanticsRule.Catch}
 
     {4 Rule}
-    <description>
+    All of the following applies:
+    - [s_m] is [Throwing (v, v_ty, env_throw)];
+    - [catcher] is the first catcher in [catchers] that matches [v_ty];
+    - [catcher] does not declare a name;
+    - [catcher] gives a statement [s];
+    - [new_env] is [env] modified after the evaluation of the block [s].
 
     {4 Example}
-    <minimal example>
+    [
+    try throw 
+      MyExceptionType {}; 
+      print("No exception raised");
+    catch
+      when MyExceptionType => 
+      print("MyException");
+    otherwise => 
+      print("Another exception");
+    ]
+    prints "MyException".
+
+  {3 SemanticsRule.CatchNamed}
+
+    {4 Rule}
+    All of the following applies:
+    - [s_m] is [Throwing (v, v_ty, env_throw)];
+    - [catcher] is the first catcher in [catchers] that matches [v_ty];
+    - [catcher] declares a name [name];
+    - [catcher] gives a statement [s];
+    - [env1] is [env] modified after binding [name] to the exception [v] raised by [s_m];
+    - [env2] is [env1] modified after the evaluation of the block [s];
+    - [new_env] is [env2] modified after unbinding [name] from [env2].
+
+    {4 Example}
+    [
+    try throw 
+      MyExceptionType { msg: "My exception with my message" };
+    catch
+      when MyExceptionType: exn => 
+      print(exn.msg);
+    otherwise => 
+    print("Another exception");
+    ]
+    prints "My exception with my message".
+
+  {3 SemanticsRule.CatchOtherwise}
+
+    {4 Rule}
+    All of the following applies:
+    - [s_m] is [Throwing (v, v_ty, env_throw)];
+    - [otherwise_opt] is [Some s];
+    - no catcher matches [v_ty];
+    - [new_env] is [env] modified after the evaluation of the block [s].
+
+    {4 Example}
+    [
+     try throw 
+       MyExceptionType1 {}; 
+       print("No exception raised");
+       catch
+         when MyExceptionType2 => 
+         print("MyException2");
+       otherwise => 
+         print("Another exception");
+     ]
+     prints "Another exception"
+
+  {3 SemanticsRule.CatchNone}
+
+    {4 Rule}
+    All of the following applies:
+    - [s_m] is [Throwing (v, v_ty, env_throw)];
+    - [otherwise_opt] is [None];
+    - no catcher matches [s_m];
+    - [new_env] is [env].
+
+    {4 Example}
+    [
+     try throw 
+       MyExceptionType1 {}; 
+       print("No exception raised");
+       catch
+         when MyExceptionType2 => 
+         print("MyException2");
+    ]
+    does not print anything.
+
+  {3 SemanticsRule.CatchNoThrow}
+
+    {4 Rule}
+    All of the following applies:
+    - [s_m] is not [Throwing];
+    - [new_env] is [env].
+
+    {4 Example}
+    [
+    try 
+      print ("No exception raised");
+    catch
+      when MyExceptionType => 
+        print("MyException");
+      otherwise => 
+        print("Another exception");
+    ] 
+    prints "No exception raised".
 
 {2
 Evaluation of Function Calls
