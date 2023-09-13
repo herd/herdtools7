@@ -20,7 +20,6 @@ module SemanticsRule = struct
     | EUnknown 
     | EPattern
     | LEIgnore
-    | LETyped
     | LELocalVar
     | LEGlobalVar
     | LEUndefIdentV0
@@ -103,7 +102,6 @@ module SemanticsRule = struct
     | EUnknown -> "EUnknown"
     | EPattern -> "EPattern"
     | LEIgnore -> "LEIgnore"
-    | LETyped -> "LETyped"
     | LELocalVar -> "LELocalVar"
     | LEGlobalVar -> "LEGlobalVar"
     | LESlice -> "LESlice"
@@ -189,7 +187,6 @@ module SemanticsRule = struct
       EConcat;
       ETuple;
       LEIgnore;
-      LETyped;
       LELocalVar;
       LEGlobalVar;
       LESlice;
@@ -278,7 +275,6 @@ module TypingRule = struct
     | EUnknown 
     | EPattern
     | LEIgnore
-    | LETyped
     | LELocalVar
     | LEGlobalVar
     | LEUndefIdentV0
@@ -361,7 +357,6 @@ module TypingRule = struct
     | EUnknown -> "EUnknown"
     | EPattern -> "EPattern"
     | LEIgnore -> "LEIgnore"
-    | LETyped -> "LETyped"
     | LELocalVar -> "LELocalVar"
     | LEGlobalVar -> "LEGlobalVar"
     | LESlice -> "LESlice"
@@ -447,7 +442,6 @@ module TypingRule = struct
       EConcat;
       ETuple;
       LEIgnore;
-      LETyped;
       LELocalVar;
       LEGlobalVar;
       LESlice;
