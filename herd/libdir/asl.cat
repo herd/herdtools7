@@ -83,7 +83,7 @@ show asl_iico_ctrl, asl_iico_data, asl_rf_reg
 show iico_ctrl, iico_data, rf, rf-reg
 *)
 
-show AArch64
+show AArch64,AArch64_DATA
 show aarch64_iico_ctrl, aarch64_iico_data, aarch64_iico_order
 
 
