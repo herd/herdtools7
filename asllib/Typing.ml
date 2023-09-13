@@ -1260,10 +1260,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
 
   let rec annotate_local_decl_item loc (env : env) ty ldk ldi =
     match ldi with
-    | LDI_Ignore None -> (env, ldi)
+    | LDI_Ignore None -> (env, ldi) |: TypingRule.LDIgnoreNone
     | LDI_Ignore (Some t) ->
         let+ () = check_can_be_initialized_with loc env t ty in
-        (env, ldi)
+        (env, ldi) |: LDIgnoreSome
     | LDI_Var (x, ty_opt) ->
         let t =
           best_effort ty (fun _ ->
@@ -1277,8 +1277,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
            which is already in scope at the point of declaration. *)
         let+ () = check_var_not_in_env loc env x in
         let env = add_local x t ldk env in
-        (env, LDI_Var (x, Some t))
-    | LDI_Tuple ([ ldi ], None) -> annotate_local_decl_item loc env ty ldk ldi
+        (env, LDI_Var (x, Some t)) |: TypingRule.LDVar
+    | LDI_Tuple ([ ldi ], None) -> 
+        annotate_local_decl_item loc env ty ldk ldi 
     | LDI_Tuple (ldis, None) ->
         let tys =
           match (Types.get_structure env ty).desc with
@@ -1294,13 +1295,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             (fun ty' ldi' (env', les) ->
               let env', le = annotate_local_decl_item loc env' ty' ldk ldi' in
               (env', le :: les))
-            tys ldis (env, [])
+            tys ldis (env, []) 
         in
-        (env, LDI_Tuple (ldis', None))
+        (env, LDI_Tuple (ldis', None)) |: TypingRule.LDTuple
     | LDI_Tuple (_ldis, Some _t) ->
         (* TODO: I don't know what to do in that case, for me the LRM is
            ambiguous in this case. *)
-        assert false
+        assert false |: TypingRule.LDTypedTuple
 
   let rec annotate_local_decl_item_uninit loc (env : env) ldi =
     (* Here implicitely ldk=LDK_Var *)
@@ -1309,16 +1310,16 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | LDI_Ignore _ -> (env, S_Pass |> here)
     | LDI_Var (_, None) ->
         fatal_from loc
-          (Error.NotYetImplemented "Variable declaration needs a type.")
+          (Error.NotYetImplemented "Variable declaration needs a type.") |: TypingRule.LDUninitialisedVar
     | LDI_Var (x, Some t) ->
         let+ () = check_var_not_in_env loc env x in
         ( add_local x t LDK_Var env,
-          S_Decl (LDK_Var, LDI_Var (x, Some t), None) |> here )
+          S_Decl (LDK_Var, LDI_Var (x, Some t), None) |> here ) |: TypingRule.LDUninitialisedTypedVar
     | LDI_Tuple (ldis, None) ->
         let env, ss =
           list_fold_left_map (annotate_local_decl_item_uninit loc) env ldis
         in
-        (env, stmt_from_list ss)
+        (env, stmt_from_list ss) |: TypingRule.LDUninitialisedTuple
     | LDI_Tuple (ldis, Some t) ->
         let env, les =
           list_fold_left_map
@@ -1328,7 +1329,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let ss =
           List.map (fun ldi -> S_Decl (LDK_Var, ldi, None) |> here) les
         in
-        (env, stmt_from_list ss)
+        (env, stmt_from_list ss) |: TypingRule.LDUninitialisedTypedTuple
 
   let rec annotate_stmt env return_type s =
     let () =

@@ -46,6 +46,7 @@ module SemanticsRule = struct
     | LDTuple
     | LDTypedTuple
     | LDUninitialisedTuple
+    | LDUninitialisedTypedTuple
     | SPass
     | SAssignCall
     | SAssignTuple
@@ -123,6 +124,7 @@ module SemanticsRule = struct
     | LDTuple -> "LDTuple"
     | LDTypedTuple -> "LDTypedTuple"
     | LDUninitialisedTuple -> "LDUninitialisedTuple"
+    | LDUninitialisedTypedTuple -> "LDUninitialisedTypedTuple"
     | SPass -> "SPass"
     | SAssignCall -> "SAssignCall"
     | SAssignTuple -> "SAssignTuple"
@@ -285,13 +287,16 @@ module TypingRule = struct
     | PSingle
     | PMask
     | PTuple
-    | LDIgnore
+    | LDIgnoreNone
+    | LDIgnoreSome
     | LDVar
     | LDTypedVar
     | LDUninitialisedVar
+    | LDUninitialisedTypedVar
     | LDTuple
     | LDTypedTuple
     | LDUninitialisedTuple
+    | LDUninitialisedTypedTuple
     | SPass
     | SAssignCall
     | SAssignTuple
@@ -365,13 +370,16 @@ module TypingRule = struct
     | PSingle -> "PSingle"
     | PMask -> "PMask"
     | PTuple -> "PTuple"
-    | LDIgnore -> "LDIgnore"
+    | LDIgnoreNone -> "LDIgnoreNone"
+    | LDIgnoreSome -> "LDIgnoreSome"
     | LDVar -> "LDVar"
     | LDTypedVar -> "LDTypedVar"
     | LDUninitialisedVar -> "LDUninitialisedVar"
+    | LDUninitialisedTypedVar -> "LDUninitialisedTypedVar"
     | LDTuple -> "LDTuple"
     | LDTypedTuple -> "LDTypedTuple"
     | LDUninitialisedTuple -> "LDUninitialisedTuple"
+    | LDUninitialisedTypedTuple -> "LDUninitialisedTypedTuple"
     | SPass -> "SPass"
     | SAssignCall -> "SAssignCall"
     | SAssignTuple -> "SAssignTuple"
