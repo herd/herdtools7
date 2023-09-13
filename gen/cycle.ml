@@ -722,8 +722,9 @@ let remove_store n0 =
             (str_node p) (str_node m)
       end ;
       if
-        E.is_fetch p.edge && is_non_fetch_and_same m.edge && not (is_I_D m.next.evt.dir || is_I_D m.evt.dir) ||
-        E.is_fetch m.edge && is_non_fetch_and_same p.edge && not (is_I_D p.prev.evt.dir || is_I_D p.evt.dir)
+        let is_same_next_nonID = same_loc (find_node (fun a -> not (is_I_D a.evt.dir)) m.next).prev.edge in
+        E.is_fetch p.edge && is_non_fetch_and_same m.edge && is_same_next_nonID ||
+        E.is_fetch m.edge && is_non_fetch_and_same p.edge
       then begin
         Warn.user_error "Ambiguous Data/Code location es [%s] => [%s]"
           (str_node p) (str_node m)
