@@ -71,10 +71,6 @@ when necessary.  <minimal example>
 ticked the unrolling stack of [m] only if [m] is [Normal
 (Continuing _)] <minimal example>
 
-  {3 Thrown}
-  [bind_thrown] and [bind_explicit_thrown] handle [throw]
-statements <minimal example>
-
 {2
 Product
 }
@@ -1135,7 +1131,7 @@ Evaluation of [for] loops
       * [env2] is [env1] modified such that [index_name] is bound to [v_step];
       * [v_step] evaluates to [v_start+1] or [v_start-1] as determined by [dir];
       * [new_env] is [env2] modified after the evaluation of [eval_for undet
-      * env index_name v_step dir v_end body].
+        env index_name v_step dir v_end body].
 
     {4 Example}
     [for i = 0 to 3 do
@@ -1146,9 +1142,9 @@ Evaluation of [for] loops
 Evaluation of Catchers
 }
 [eval_catchers env catchers otherwise_opt s_m], given the result [s_m] of the
-evaluation of a statement under environment [env] is either a [Throwing (v,
-v_ty, env_throw)], an interruption [Returning vs] or a new environment
-[new_env]. Formally, one of the following applies:
+evaluation of a statement under environment [env] is [res] which is either a
+[Throwing (v, v_ty, env_throw)], an interruption [Returning vs] or a new
+environment [new_env]. Formally, one of the following applies:
 
   {3 SemanticsRule.Catch}
 
@@ -1158,7 +1154,14 @@ v_ty, env_throw)], an interruption [Returning vs] or a new environment
     - [catcher] is the first catcher in [catchers] that matches [v_ty];
     - [catcher] does not declare a name;
     - [catcher] gives a statement [s];
-    - [new_env] is [env] modified after the evaluation of the block [s].
+    - One of the following applies:
+      - [env_throw] and [env] have the same scope, and [env1] is [env_throw];
+      - [env1] is the environment formed with the global part of [env_throw]
+        and the local part of [env];
+    - One of the following applies:
+      - [Throwing (None, None, env_throw1)] is the result of the evaluation of
+        the block [s] in [env1], and [res] is [Throwing (v, v_ty, env_throw1)];
+      - [res] is the result of the evaluation of the block [s] in [env1].
 
     {4 Example}
     [
@@ -1181,9 +1184,19 @@ v_ty, env_throw)], an interruption [Returning vs] or a new environment
     - [catcher] is the first catcher in [catchers] that matches [v_ty];
     - [catcher] declares a name [name];
     - [catcher] gives a statement [s];
-    - [env1] is [env] modified after binding [name] to the exception [v] raised by [s_m];
-    - [env2] is [env1] modified after the evaluation of the block [s];
-    - [new_env] is [env2] modified after unbinding [name] from [env2].
+    - One of the following applies:
+      - [env_throw] and [env] have the same scope, and [env1] is [env_throw];
+      - [env1] is the environment formed with the global part of [env_throw]
+        and the local part of [env];
+    - [env2] is [env1] modified after binding locally [name] to the exception
+      [v] raised by [s_m];
+    - One of the following applies:
+      - [Throwing (None, None, env_throw1)] is the result of the evaluation of
+        the block [s] in [env2], and [res] is [Throwing (v, v_ty, env_throw1)];
+      - [env3] is [env2] modified after the evaluation of the block [s] in
+        [env2], and [new_env] is [env3] modified after unbinding [name] from
+        [env3].
+      - [res] is the result of the evaluation of the block [s] in [env2].
 
     {4 Example}
     [
@@ -1204,7 +1217,14 @@ v_ty, env_throw)], an interruption [Returning vs] or a new environment
     - [s_m] is [Throwing (v, v_ty, env_throw)];
     - [otherwise_opt] is [Some s];
     - no catcher matches [v_ty];
-    - [new_env] is [env] modified after the evaluation of the block [s].
+    - One of the following applies:
+      - [env_throw] and [env] have the same scope, and [env1] is [env_throw];
+      - [env1] is the environment formed with the global part of [env_throw]
+        and the local part of [env];
+    - One of the following applies:
+      - [Throwing (None, None, env_throw1)] is the result of the evaluation of
+        the block [s] in [env1], and [res] is [Throwing (v, v_ty, env_throw1)];
+      - [res] is the result of the evaluation of the block [s] in [env1].
 
     {4 Example}
     [
@@ -1225,7 +1245,7 @@ v_ty, env_throw)], an interruption [Returning vs] or a new environment
     All of the following applies:
     - [s_m] is [Throwing (v, v_ty, env_throw)];
     - [otherwise_opt] is [None];
-    - no catcher matches [s_m];
+    - no catcher matches [v_ty];
     - [new_env] is [env].
 
     {4 Example}
@@ -1244,7 +1264,7 @@ v_ty, env_throw)], an interruption [Returning vs] or a new environment
     {4 Rule}
     All of the following applies:
     - [s_m] is not [Throwing];
-    - [new_env] is [env].
+    - [res] is [s_m].
 
     {4 Example}
     [

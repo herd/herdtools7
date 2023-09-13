@@ -143,21 +143,8 @@ module Make (B : Backend.S) (C : Config) = struct
   let bind_maybe_unroll loop_name undet =
     if undet then bind_unroll loop_name else bind_continue
 
-  (* Thrown *)
-  (* [bind_thrown m f] executes [f] on [m] if [m] is [Throwing _] *)
-  let bind_thrown (m : stmt_eval_type) f : stmt_eval_type =
-    B.bind_seq m @@ function
-    | Normal _ as res -> return res
-    | Throwing (typed_value_opt, global) -> f typed_value_opt global
-
   (* To give name to rules *)
   let ( |: ) = C.Instr.use_with
-
-  (* [bind_explicit_thrown m f] triggers [f] only if [m] is [Throwing (Some v, g)] *)
-  let bind_explicit_thrown (m : stmt_eval_type) f : stmt_eval_type =
-    B.bind_seq m @@ function
-    | Normal _ | Throwing (None, _) -> m |: SemanticsRule.CatchNoThrow
-    | Throwing (Some typed_value, global) -> f typed_value global
 
   (* Product parallel *)
   (* ---------------- *)
@@ -358,8 +345,8 @@ module Make (B : Backend.S) (C : Config) = struct
             let* () = B.on_read_identifier x Scope_Global v in
             return_normal (v, env) |: SemanticsRule.EGlobalVar
 
-        | NotFound -> 
-          fatal_from e @@ Error.UndefinedIdentifier x |: SemanticsRule.EUndefIdent) 
+        | NotFound ->
+          fatal_from e @@ Error.UndefinedIdentifier x |: SemanticsRule.EUndefIdent)
 
     | E_Binop (op, e1, e2) ->
         let** (v1, v2), env = fold_par eval_expr env e1 e2 in
@@ -511,7 +498,7 @@ module Make (B : Backend.S) (C : Config) = struct
           let* v = m and* positions = m_positions and* rv_bv = rm_bv in
           B.write_to_bitvector positions v rv_bv
         in
-        eval_lexpr ver re_bv env new_m_bv |: SemanticsRule.LESlice   
+        eval_lexpr ver re_bv env new_m_bv |: SemanticsRule.LESlice
     | LE_SetArray (re_array, e_index) ->
         let*^ rm_array, env = expr_of_lexpr re_array |> eval_expr env in
         let*^ m_index, env = eval_expr env e_index in
@@ -828,11 +815,11 @@ module Make (B : Backend.S) (C : Config) = struct
          - [m] if [m] is [Normal _]
          - [m] if [m] is [Throwing (Some _, _)]
          - [Throwing (Some to_throw, g)] if  [m] is [Throwing (None, g)] *)
-    let rethrow_implicit to_throw thrown =
-      bind_thrown thrown @@ fun typed_value_opt global ->
-      match typed_value_opt with
-      | None -> Throwing (Some to_throw, global) |> return
-      | Some _ -> thrown
+    let rethrow_implicit (v, v_ty) res =
+      B.bind_seq res @@ function
+      | Throwing (None, env_throw1) ->
+          Throwing (Some (v, v_ty), env_throw1) |> return
+      | _ -> res
     in
     (* [catcher_matches t c] returns true if the catcher [c] match the raised
        exception type [t]. *)
@@ -843,35 +830,41 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     (* Main logic: *)
     (* If an explicit throw has been made in the [try] block: *)
-    bind_explicit_thrown s_m @@ fun (v, v_ty) env_throw ->
-    (* We ensure that any implicit exception raised here will get replaced
-       by its value. *)
-    rethrow_implicit (v, v_ty)
-    @@
-    (* We compute the environment in which to compute the catch statements. *)
-    let env =
-      if IEnv.same_scope env env_throw then env_throw
-      else { local = env.local; global = env_throw.global }
-    in
-    match List.find_opt (catcher_matches v_ty) catchers with
-    (* If any catcher matches the exception type: *)
-    | Some catcher -> 
-       begin
-        match catcher with
-        | (None, _e_ty, s) -> eval_block env s |: SemanticsRule.Catch
-        | (Some name, _e_ty, s) ->
-        (* If the exception is declared to be used in the catcher, we
-           update the environment before executing [s]. *)
-          let*| env1 = read_value_from v |> declare_local_identifier_m env name in
-          let*> env2 = eval_block env1 s in
-          IEnv.remove_local name env2 |> return_continue |: SemanticsRule.CatchNamed 
-       end
-    | None -> (
-        (* Otherwise we try to execute the otherwise statement, or we
-           return the exception. *)
-        match otherwise_opt with 
-          | Some s -> eval_block env s |: SemanticsRule.CatchOtherwise
-          | None -> s_m  |: SemanticsRule.CatchNone)
+    B.bind_seq s_m @@ function
+    | Normal _ | Throwing (None, _) -> s_m |: SemanticsRule.CatchNoThrow
+    | Throwing (Some (v, v_ty), env_throw) -> (
+        (* We compute the environment in which to compute the catch statements. *)
+        let env1 =
+          if IEnv.same_scope env env_throw then env_throw
+          else { local = env.local; global = env_throw.global }
+        in
+        match List.find_opt (catcher_matches v_ty) catchers with
+        (* If any catcher matches the exception type: *)
+        | Some catcher -> (
+            match catcher with
+            | None, _e_ty, s ->
+                eval_block env1 s
+                |> rethrow_implicit (v, v_ty)
+                |: SemanticsRule.Catch
+            | Some name, _e_ty, s ->
+                (* If the exception is declared to be used in the catcher, we
+                   update the environment before executing [s]. *)
+                let*| env2 =
+                  read_value_from v |> declare_local_identifier_m env1 name
+                in
+                (let*> env3 = eval_block env2 s in
+                 IEnv.remove_local name env3 |> return_continue)
+                |> rethrow_implicit (v, v_ty)
+                |: SemanticsRule.CatchNamed)
+        | None -> (
+            (* Otherwise we try to execute the otherwise statement, or we
+               return the exception. *)
+            match otherwise_opt with
+            | Some s ->
+                eval_block env1 s
+                |> rethrow_implicit (v, v_ty)
+                |: SemanticsRule.CatchOtherwise
+            | None -> s_m |: SemanticsRule.CatchNone))
 
   (* Evaluation of Function Calls *)
   (* ---------------------------- *)
