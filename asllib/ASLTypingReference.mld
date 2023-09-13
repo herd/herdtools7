@@ -191,16 +191,6 @@ applies:
 
     {4 Example}
  
-  {3 TypingRule.LEUndefIdentV1}
-
-    {4 Rule}
-
-  {3 TypingRule.LEUndefIdentV0}
-
-    {4 Rule}
-
-    {4 Example}
-
   {3 TypingRule.LESlice}
 
     {4 Rule}
@@ -228,72 +218,6 @@ applies:
     <minimal example>
 
   {3 TypingRule.LETuple}
-
-    {4 Rule}
-
-    {4 Example}
-
-{2
-Typing of Slices
-}
-[annotate_slices env slices] is <description> 
-
-{2
-Typing of Patterns
-}
-[annotate_pattern env pos v p] is <description>.
-Formally, one of the following applies:
-
-  {3 TypingRule.PAll}
-
-    {4 Rule}
-
-    {4 Example}
-
-  {3 TypingRule.PAny}
-
-    {4 Rule}
-
-    {4 Example}
-
-  {3 TypingRule.PGeq}
-
-    {4 Rule}
-
-    {4 Example}
-
-  {3 TypingRule.PLeq}
-
-    {4 Rule}
-
-    {4 Example}
-
-
-  {3 TypingRule.PNot}
-
-    {4 Rule}
-
-    {4 Example}
-
-  {3 TypingRule.PRange}
-
-    {4 Rule}
-
-    {4 Example}
-
-  {3 TypingRule.PSingle}
-
-    {4 Rule}
-
-    {4 Example}
-
-  {3 TypingRule.PMask}
-
-    {4 Rule}
-
-    {4 Example}
-
-  {3 TypingRule.PTuple}
 
     {4 Rule}
 
@@ -376,22 +300,6 @@ Typing of Statements
 
     {4 Example}
 
-  {3 TypingRule.SAssignCall}
-
-    {4 Rule}
-    <description>
-
-    {4 Example}
-    <minimal example>
-
-  {3 TypingRule.SAssignTuple}
-
-    {4 Rule}
-    <description>
-
-    {4 Example}
-    <minimal example>
-
   {3 TypingRule.SReturnNone}
 
     {4 Rule}
@@ -465,12 +373,6 @@ Typing of Statements
 
     {4 Example}
 
-  {3 TypingRule.SThrowSomeTyped}
-
-    {4 Rule}
-
-    {4 Example}
-
   {3 TypingRule.SThrowSome}
 
     {4 Rule}
@@ -504,6 +406,96 @@ Typing of Statements
     <minimal example>
 
 {2
+Typing of Slices
+}
+[annotate_slices env slices] is <description> 
+Formally, one of the following applies:
+
+  {3 TypingRule.SliceLength}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SliceSingle}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SliceRange}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SliceStar}
+
+    {4 Rule}
+
+    {4 Example}
+
+{2
+Typing of Patterns
+}
+[annotate_pattern env pos v p] is <description>.
+Formally, one of the following applies:
+
+  {3 TypingRule.PAll}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.PAny}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.PNot}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.PSingle}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.PGeq}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.PLeq}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.PRange}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.PMask}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.PTuple}
+
+    {4 Rule}
+
+    {4 Example}
+
+{2
 Typing of Blocks
 }
 
@@ -520,6 +512,8 @@ Typing of Catchers
 }
 [annotate_catchers env catchers otherwise_opt s_m]
 
+  {3 TypingRule.Catcher}
+
     {4 Rule}
     <description>
 
@@ -532,11 +526,13 @@ Typing of Function Calls
 [annotate_call pos name env args named_args] annotates the call to function [name]
 with arguments [args] and parameters [named_args].
 
-  {4 Rule}
-  <description>
+  {3 TypingRule.FCall}
 
-  {4 Example}
-  At the begining of a program, the interpreter annotates the function "main".
+    {4 Rule}
+    <description>
+
+    {4 Example}
+    At the begining of a program, the interpreter annotates the function "main".
 
 {2
 Typing of Functions
@@ -544,26 +540,9 @@ Typing of Functions
 [annotate_func genv name pos actual_args params] annotates the function named
 [name] <description> and one of the following applies:
 
-{3 TypingRule.FUndefIdent}
+{3 TypingRule.Func}
 
   {4 Rule}
 
   {4 Example}
 
-{3 TypingRule.FPrimitive}
-
-  {4 Rule}
-
-  {4 Example}
-
-{3 TypingRule.FBadArity}
-
-  {4 Rule}
-
-  {4 Example}
-
-{3 TypingRule.FCall}
-
-  {4 Rule}
-
-  {4 Example}

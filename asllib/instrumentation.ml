@@ -332,6 +332,12 @@ module TypingRule = struct
     | Block
     | Loop
     | For
+    | SliceLength
+    | SliceSingle
+    | SliceRange
+    | SliceStar
+    | Catcher
+    | Func
 
   let to_string : t -> string = function
     | Lit -> "Lit"
@@ -414,6 +420,12 @@ module TypingRule = struct
     | Block -> "Block"
     | Loop -> "Loop"
     | For -> "For"
+    | SliceLength -> "SliceLength"
+    | SliceSingle -> "SliceSingle"
+    | SliceRange -> "SliceRange"
+    | SliceStar -> "SliceStar"
+    | Catcher -> "Catcher"
+    | Func -> "Func"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -478,6 +490,12 @@ module TypingRule = struct
       Block;
       Loop;
       For;
+      SliceLength;
+      SliceSingle;
+      SliceRange;
+      SliceStar;
+      Catcher;
+      Func;
     ]
 
   let all_nb = List.length all
