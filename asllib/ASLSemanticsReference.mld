@@ -1130,7 +1130,7 @@ Evaluation of [for] loops
 [env]: this is either an interruption [Returning vs] or a new environment
 [new_env].
 
-  {3.Rule.For}
+  {3 Rule.For}
 
     {4 Rule}
     Formally, [cond_m] evaluates to [leq v_end v_start] or [geq v_end v_start]
@@ -1216,7 +1216,7 @@ raised. Formally, one of the following applies:
   - [name] is bound in [genv] to a function with a list of formal arguments
     [arg_decls];
   - the lists [actual_args] and [arg_decls] do not have the same length;
-  - an error "BadArity" is raised.
+  - a "BadArity" error is raised.
 
   {4 Example}
   [Zeros(3,4);] raises a [BadArity "Zeros" 1 2] error.
@@ -1233,11 +1233,10 @@ raised. Formally, one of the following applies:
   - [env3] is [env2] modified so that each parameter in [params] is declared;
   - [res] is the evaluation of [body] in [env3] and one of the following
     applies:
-      * [res] is an environment [env4] and [new_genv] is the global environment
+      + [res] is an environment [env4] and [new_genv] is the global environment
         given by [env4]---e.g. where the function called is either a setter or
         a procedure as per Rule R_DFWZ;
-
-      * [res] is an interruption [Returning(xs,ret_genv)] and [new_genv] is
+      + [res] is an interruption [Returning(xs,ret_genv)] and [new_genv] is
         [ret_genv]---this is the general case.
 
   {4 Example}

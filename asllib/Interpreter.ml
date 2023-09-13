@@ -1032,9 +1032,6 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         Error.fatal_unknown_pos (Error.UncaughtException msg)
 
-  (** Main entry point for the Interpreter, [run ast primitives] type-annotate
-      [ast], build a global environment and then evaluate the "main" function
-      in it. *)
   let run (ast : B.ast) : B.value m =
     let ast = Builder.with_stdlib ast in
     let ast, static_env =
