@@ -514,8 +514,8 @@ one of the following applies:
     - The right-hand-side expression corresponding to [le] is [e_bv];
     - The evaluation of [re_bv] under [env] is [rv_bv];
     - The evaluation of [slices] under [env] is [positions];
-    - [v] is [rv_bv] where the positions [positions] have been updated to [v]
-    - [new_env] is [env] where [le] has been assigned the value [v].
+    - [new_m_bv] is [rv_bv] where the positions [positions] have been updated to [v]
+    - [new_env] is [env] where [le] has been assigned the value [new_m_bv].
 
     {4 Example}
     [x[3:0] = '0000'] binds [x] to ['11110000'] in [x ⟶ '11111111'].

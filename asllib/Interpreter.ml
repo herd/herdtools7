@@ -504,15 +504,14 @@ module Make (B : Backend.S) (C : Config) = struct
                 (* V0 first assignments promoted to local declarations *)
                 declare_local_identifier env x v
                 >>= return_normal |: Rule.LEUndefIdentV0))
-
-    | LE_Slice (re_bv, slices) ->
+     | LE_Slice (re_bv, slices) ->
         let*^ rm_bv, env = expr_of_lexpr re_bv |> eval_expr env in
         let*^ m_positions, env = eval_slices env slices in
-        let m' =
+        let new_m_bv =
           let* v = m and* positions = m_positions and* rv_bv = rm_bv in
           B.write_to_bitvector positions v rv_bv
         in
-        eval_lexpr ver re_bv env m' |: Rule.LESlice
+        eval_lexpr ver re_bv env new_m_bv |: Rule.LESlice   
     | LE_SetArray (re_array, e_index) ->
         let*^ rm_array, env = expr_of_lexpr re_array |> eval_expr env in
         let*^ m_index, env = eval_expr env e_index in
