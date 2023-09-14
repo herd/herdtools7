@@ -1,6 +1,8 @@
 open AST
 open ASTUtils
 
+(** The runtime environment used by {!Interpreter}. *)
+
 module type RunTimeConf = sig
   type v
   (** Stored elements of the environment. *)

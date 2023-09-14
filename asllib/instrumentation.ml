@@ -1,3 +1,5 @@
+(** Provide some instrumentation backends for {!Interpreter} and {!Typing}. *)
+
 module SemanticsRule = struct
   type t =
     | Lit
@@ -6,6 +8,9 @@ module SemanticsRule = struct
     | EGlobalVar
     | EUndefIdent
     | Binop
+    | BinopAnd
+    | BinopOr
+    | BinopImpl
     | Unop
     | ECondSimple
     | ECond
@@ -17,7 +22,7 @@ module SemanticsRule = struct
     | EGetBitFields
     | EConcat
     | ETuple
-    | EUnknown 
+    | EUnknown
     | EPattern
     | LEIgnore
     | LELocalVar
@@ -87,6 +92,9 @@ module SemanticsRule = struct
     | ELocalVar -> "ELocalVar"
     | EGlobalVar -> "EGlobalVar"
     | Binop -> "Binop"
+    | BinopAnd -> "BinopAnd"
+    | BinopOr -> "BinopOr"
+    | BinopImpl -> "BinopImpl"
     | Unop -> "Unop"
     | ECond -> "ECond"
     | ESlice -> "ESlice"
@@ -149,7 +157,7 @@ module SemanticsRule = struct
     | STry -> "STry"
     | SDeclSome -> "SDeclSome"
     | SDeclNone -> "SDeclNone"
-    | SDebug -> "SDebug" 
+    | SDebug -> "SDebug"
     | FUndefIdent -> "FUndefIdent"
     | FPrimitive -> "FPrimitive"
     | FBadArity -> "FBadArity"
@@ -172,6 +180,9 @@ module SemanticsRule = struct
       ELocalVar;
       EGlobalVar;
       Binop;
+      BinopAnd;
+      BinopOr;
+      BinopImpl;
       Unop;
       ECond;
       ESlice;
@@ -254,11 +265,12 @@ module TypingRule = struct
   type t =
     | Lit
     | TypedExpr
+    | ELocalVarConstant
     | ELocalVar
+    | EGlobalVarConstantVal
+    | EGlobalVarConstantNoVal
     | EGlobalVar
     | EUndefIdent
-    | BinopAnd
-    | BinopOr
     | Binop
     | Unop
     | ECondSimple
@@ -267,12 +279,18 @@ module TypingRule = struct
     | ECall
     | EGetArray
     | ERecord
+    | ERecordMissingField
+    | ERecordNotARecord
+    | EGetRecordField
     | EGetBitField
+    | EGetBadBitField
+    | EGetBitFieldNested
+    | EGetBitFieldTyped
     | EGetBitFields
     | EConcatEmpty
     | EConcat
     | ETuple
-    | EUnknown 
+    | EUnknown
     | EPattern
     | LEIgnore
     | LELocalVar
@@ -295,14 +313,14 @@ module TypingRule = struct
     | PTuple
     | LDIgnoreNone
     | LDIgnoreSome
-    | LDVar
-    | LDTypedVar
     | LDUninitialisedVar
     | LDUninitialisedTypedVar
-    | LDTuple
-    | LDTypedTuple
+    | LDVar
+    | LDTypedVar
     | LDUninitialisedTuple
     | LDUninitialisedTypedTuple
+    | LDTuple
+    | LDTypedTuple
     | SPass
     | SAssignCall
     | SAssignTuple
@@ -342,17 +360,24 @@ module TypingRule = struct
   let to_string : t -> string = function
     | Lit -> "Lit"
     | TypedExpr -> "TypedExpr"
+    | ELocalVarConstant -> "ELocalVarConstant"
     | ELocalVar -> "ELocalVar"
+    | EGlobalVarConstantVal -> "EGlobalVarConstantVal"
+    | EGlobalVarConstantNoVal -> "EGlobalVarConstantNoVal"
     | EGlobalVar -> "EGlobalVar"
-    | BinopAnd -> "BinopAnd"
-    | BinopOr -> "BinopOr"
     | Binop -> "Binop"
     | Unop -> "Unop"
     | ECond -> "ECond"
     | ESlice -> "ESlice"
     | ECall -> "ECall"
     | ERecord -> "ERecord"
+    | ERecordMissingField -> "ERecordMissingField"
+    | ERecordNotARecord -> "ERecordNotARecord"
+    | EGetRecordField -> "EGetRecordField"
     | EGetBitField -> "EGetBitField"
+    | EGetBadBitField -> "EGetBadBitField"
+    | EGetBitFieldNested -> "EGetBitFieldNested"
+    | EGetBitFieldTyped -> "EGetBitFieldTyped"
     | EGetBitFields -> "EGetBitFields"
     | EConcatEmpty -> "EConcatEmpty"
     | EConcat -> "EConcat"
@@ -412,7 +437,7 @@ module TypingRule = struct
     | STry -> "STry"
     | SDeclSome -> "SDeclSome"
     | SDeclNone -> "SDeclNone"
-    | SDebug -> "SDebug" 
+    | SDebug -> "SDebug"
     | FUndefIdent -> "FUndefIdent"
     | FPrimitive -> "FPrimitive"
     | FBadArity -> "FBadArity"
@@ -433,17 +458,24 @@ module TypingRule = struct
     [
       Lit;
       TypedExpr;
+      ELocalVarConstant;
       ELocalVar;
+      EGlobalVarConstantVal;
+      EGlobalVarConstantNoVal;
       EGlobalVar;
-      BinopAnd;
-      BinopOr;
       Binop;
       Unop;
       ECond;
       ESlice;
       ECall;
+      ERecordMissingField;
+      ERecordNotARecord;
       ERecord;
+      EGetRecordField;
+      EGetBadBitField;
       EGetBitField;
+      EGetBitFieldNested;
+      EGetBitFieldTyped;
       EGetBitFields;
       EUnknown;
       EPattern;
@@ -593,14 +625,18 @@ module TypingSingleBuffer : TYPBUFFER = struct
 end
 
 module SemanticsSingleSetBuffer : SEMBUFFER = struct
-  let _semantics_buffer : (semantics_rule, unit) Hashtbl.t = Hashtbl.create SemanticsRule.all_nb
+  let _semantics_buffer : (semantics_rule, unit) Hashtbl.t =
+    Hashtbl.create SemanticsRule.all_nb
+
   let push r = Hashtbl.replace _semantics_buffer r ()
   let reset () = Hashtbl.clear _semantics_buffer
   let get () = Hashtbl.to_seq_keys _semantics_buffer |> List.of_seq
 end
 
 module TypingSingleSetBuffer : TYPBUFFER = struct
-  let _typing_buffer : (typing_rule, unit) Hashtbl.t = Hashtbl.create TypingRule.all_nb
+  let _typing_buffer : (typing_rule, unit) Hashtbl.t =
+    Hashtbl.create TypingRule.all_nb
+
   let push r = Hashtbl.replace _typing_buffer r ()
   let reset () = Hashtbl.clear _typing_buffer
   let get () = Hashtbl.to_seq_keys _typing_buffer |> List.of_seq

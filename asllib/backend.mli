@@ -18,6 +18,8 @@
 (* Jade Alglave, Arm Ltd and UCL, UK.                                       *)
 (****************************************************************************)
 
+(** Signature module of the backend of {!Interpreter}. *)
+
 (** This module is the signature of any backend of the ASL interpreter. *)
 module type S = sig
   (* Value constructors *)

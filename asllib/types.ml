@@ -19,11 +19,11 @@ let bitfield_equal = thing_equal bitfield_equal
 
 (* --------------------------------------------------------------------------*)
 
-let rec resolve_root_name (env : env) (ty : ty) : ty =
+let rec make_anonymous (env : env) (ty : ty) : ty =
   match ty.desc with
   | T_Named x -> (
       match IMap.find_opt x env.global.declared_types with
-      | Some ty -> resolve_root_name env ty
+      | Some ty -> make_anonymous env ty
       | None -> undefined_identifier ty x)
   | _ -> ty
 
@@ -385,7 +385,7 @@ let rec bitfields_included env bfs1 bfs2 =
 and structural_subtype_satisfies env t s =
   (* A type T subtype-satisfies type S if and only if all of the following
      conditions hold: *)
-  match ((resolve_root_name env s).desc, (resolve_root_name env t).desc) with
+  match ((make_anonymous env s).desc, (make_anonymous env t).desc) with
   (* If S has the structure of an integer type then T must have the structure
      of an integer type. *)
   | T_Int _, T_Int _ -> true

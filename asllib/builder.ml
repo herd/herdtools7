@@ -89,15 +89,26 @@ let rec list_first_opt f = function
   | [] -> None
   | h :: t -> ( match f h with Some x -> Some x | None -> list_first_opt f t)
 
+let asl_libdir = Filename.concat Version.libdir "asllib"
+
+let stdlib_not_found_message =
+  {|Asllib cannot find stdlib.asl. If you have installed herdtools7, it should
+be at: |}
+  ^ asl_libdir
+  ^ {|
+herdtools7 builds are dependent on the installation path, please rebuild the
+whole herdtools7 toolsuite if you want to move the executables or their
+libraries. For example, if you want to move the installed files from
+$OLD_PREFIX to $NEW_PREFIX, you should run:
+  make uninstall PREFIX=$OLD_PREFIX
+  make build install PREFIX=$NEW_PREFIX
+|}
+
 let stdlib =
   (* Share code with: lib/myLib ? *)
   let ( / ) = Filename.concat in
   let to_try =
-    [
-      Version.libdir / "asllib";
-      "asllib" / "libdir";
-      "/jherd" (* For web interface *);
-    ]
+    [ asl_libdir; "asllib" / "libdir"; "/jherd" (* For web interface *) ]
   in
   let to_try =
     match Sys.getenv_opt "ASL_LIBDIR" with
@@ -135,8 +146,8 @@ let stdlib =
     (match list_first_opt try_one to_try with
     | Some ast -> ast
     | None ->
-        (* Much better than "raise Not_found" *)
-        assert false)
+        let () = prerr_string stdlib_not_found_message in
+        exit 1)
 
 let with_stdlib ast =
   List.rev_append (Lazy.force stdlib |> ASTUtils.no_primitive) ast

@@ -19,6 +19,8 @@
 (* Jade Alglave, Arm Ltd and UCL, UK.                                       *)
 (****************************************************************************)
 
+(** Reference interpreter for ASL. *)
+
 module type S = sig
   module B : Backend.S
 

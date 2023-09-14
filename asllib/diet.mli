@@ -15,6 +15,8 @@
  *
  *)
 
+(** An interval set implementation using diets. *)
+
 module type ELT = sig
   type t
   (** The type of the set elements. *)
