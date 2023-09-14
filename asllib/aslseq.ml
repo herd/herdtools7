@@ -85,9 +85,15 @@ let parse_args () =
   in
 
   let anon_fun s = target_files := s :: !target_files in
+  let prog =
+    if Array.length (Sys.argv) > 0 then Filename.basename Sys.argv.(0)
+    else "aslref" in
+
   let usage_msg =
-    "ASL parser and interpreter.\n\nUSAGE:\n\taslseq [OPTIONS] [FILE]\n"
-  in
+    Printf.sprintf
+      "ASL parser and interpreter.\n\nUSAGE:\n\t%s [OPTIONS] [FILE]\n"
+      prog
+    in
   let () = Arg.parse speclist anon_fun usage_msg in
 
   let strictness =

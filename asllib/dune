@@ -19,7 +19,8 @@
 (documentation)
 
 (executable
- (public_name aslseq)
+ (name aslseq)
+ (public_name aslref)
  (libraries asllib)
  (modules aslseq))
 
