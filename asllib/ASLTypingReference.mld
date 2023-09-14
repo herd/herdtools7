@@ -1,0 +1,548 @@
+{0
+          ASL Typing Reference
+}
+
+{1
+Typing
+}
+Typing a program is typing its main function.
+Constructively, typing a program requires following its
+Abstract Syntax Tree and typing each of its components.
+
+Formally, the types of a program are given by applying a set of
+annotate_<object> functions. Each annotate_<object> function describes how to
+annotate a specific object, as follows.
+
+      - [annotate_expr] annotates expressions;
+      - [annotate_slices] annotates slices;
+      - [annotate_pattern] annotates pattern; 
+      - [annotate_local_decl_item] annotates local declarations;
+      - [annotate_lexpr] annotates left-hand sides of assignments;
+      - [annotate_stmt] annotates statements;
+      - [annotate_block] annotates blocks;
+      - [annotate_catcher] annotates catchers;
+      - [annotate_call] annotates functions calls;
+      - [annotate_func] annotates functions.
+
+{2
+Typing of Expressions
+}
+
+[annotate_expr] specifies how to annotate an expression [e] in an
+environment [env]. 
+
+Typing of the expression [e] is <description> and one of the following applies:
+
+{3 TypingRule.Lit}
+
+  {4 Rule}
+
+  {4 Example}
+
+{3 TypingRule.TypedExpr}
+
+  {4 Rule}
+  [(e,_t)] denotes a typed expression and <description>
+
+  {4 Example}
+
+{3 TypingRule.ELocalVar}
+
+  {4 Rule}
+
+  {4 Example}
+
+{3 TypingRule.EGlobalVar}
+  {4 Rule}
+
+  {4 Example}
+
+{3 TypingRule.EUndefIdent}
+
+  {4 Rule}
+
+  {4 Example}
+
+{3 TypingRule.BinopAnd}
+
+  {4 Rule}
+
+  {4 Example}
+
+{3 TypingRule.BinopOr}
+
+  {4 Rule}
+
+  {4 Example}
+
+{3 TypingRule.Binop}
+
+  {4 Rule}
+
+  {4 Example}
+
+{3 TypingRule.Unop}
+
+  {4 Rule}
+
+  {4 Example}
+
+{3 TypingRule.ECond}
+
+  {4 Rule}
+
+  {4 Example}
+
+{3 TypingRule.ESlice}
+
+  {4 Rule}
+
+  {4 Example}
+
+{3 TypingRule.ECall}
+
+  {4 Rule}
+
+  {4 Example}
+
+{3 TypingRule.EGetArray}
+
+  {4 Rule}
+
+  {4 Example}
+
+{3 TypingRule.ERecord}
+
+  {4 Rule}
+
+  {4 Example}
+
+{3 TypingRule.EGetBitField}
+
+  {4 Rule}
+
+  {4 Example}
+
+{3 TypingRule.EGetBitFields}
+  
+  {4 Rule}
+  <description>
+
+  {4 Example}
+  <minimal example>
+
+{3 TypingRule.EConcatEmpty}
+
+  {4 Rule}
+
+  {4 Example}
+
+{3 TypingRule.EConcat}
+
+  {4 Rule}
+
+  {4 Example}
+
+{3 TypingRule.ETuple}
+
+  {4 Rule}
+
+  {4 Example}
+
+{3 TypingRule.EUnknown}
+
+  {4 Rule}
+
+  {4 Example}
+
+{3 TypingRule.EPattern}
+
+  {4 Rule}
+
+  {4 Example}
+
+{3 TypingRule.EGetArray}
+
+  {4 Rule}
+
+  {4 Example}
+
+{2
+Typing of Left-Hand-Side Expressions
+}
+[annotate_lexpr version env le m] is <description> and one of the following
+applies:
+
+  {3 TypingRule.LEIgnore}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.LELocalVar}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.LEGlobalVar}
+
+    {4 Rule}
+
+    {4 Example}
+ 
+  {3 TypingRule.LESlice}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.LESetArray}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.LESetField}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.LESetFields}
+
+    {4 Rule}
+    <description>
+
+    {4 Example}
+    <minimal example>
+
+  {3 TypingRule.LETuple}
+
+    {4 Rule}
+
+    {4 Example}
+
+{2
+Typing of Local Declarations
+}
+[annotate_local_decl_item s ldi env m_init_opt] is <description> and one of the
+following applies:
+
+  {3 TypingRule.LDIgnoreNone}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.LDIgnoreSome}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.LDVar}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.LDUninitialisedTypedVar}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.LDUninitialisedVar}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.LDTuple}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.LDTypedTuple}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.LDUninitialisedTuple}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.LDUninitialisedTypedTuple}
+
+    {4 Rule}
+
+    {4 Example}
+
+{2
+Typing of Statements
+}
+[annotate_stmt env s] is <description> and one of the following applies:
+
+  {3 TypingRule.SPass}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SAssign}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SReturnNone}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SReturnOne}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SReturnSome}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SThen}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SCall}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SCond}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SCase}
+
+    {4 Rule}
+    <description>
+
+    {4 Example}
+
+  {3 TypingRule.SAssert}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SWhile}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SRepeat}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SFor}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SThrowNone}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SThrowSome}
+
+    {4 Rule}
+
+    {4 Example}
+    <minimal example>
+
+  {3 TypingRule.STry}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SDeclSome}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SDeclNone}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SDebug}
+
+    {4 Rule}
+
+    {4 Example}
+    <minimal example>
+
+{2
+Typing of Slices
+}
+[annotate_slices env slices] is <description> 
+Formally, one of the following applies:
+
+  {3 TypingRule.SliceLength}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SliceSingle}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SliceRange}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.SliceStar}
+
+    {4 Rule}
+
+    {4 Example}
+
+{2
+Typing of Patterns
+}
+[annotate_pattern env pos v p] is <description>.
+Formally, one of the following applies:
+
+  {3 TypingRule.PAll}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.PAny}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.PNot}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.PSingle}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.PGeq}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.PLeq}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.PRange}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.PMask}
+
+    {4 Rule}
+
+    {4 Example}
+
+  {3 TypingRule.PTuple}
+
+    {4 Rule}
+
+    {4 Example}
+
+{2
+Typing of Blocks
+}
+
+  {3 TypingRule.Block}
+
+    {4 Rule}
+    [annotate_block env stm] is <description>.
+
+    {4 Example}
+    <minimal example>
+
+{2
+Typing of Catchers
+}
+[annotate_catchers env catchers otherwise_opt s_m]
+
+  {3 TypingRule.Catcher}
+
+    {4 Rule}
+    <description>
+
+    {4 Example}
+    <minimal example>
+
+{2
+Typing of Function Calls
+}
+[annotate_call pos name env args named_args] annotates the call to function [name]
+with arguments [args] and parameters [named_args].
+
+  {3 TypingRule.FCall}
+
+    {4 Rule}
+    <description>
+
+    {4 Example}
+    At the begining of a program, the interpreter annotates the function "main".
+
+{2
+Typing of Functions
+}
+[annotate_func genv name pos actual_args params] annotates the function named
+[name] <description> and one of the following applies:
+
+{3 TypingRule.Func}
+
+  {4 Rule}
+
+  {4 Example}
+

@@ -357,9 +357,9 @@ let exit_value = function
 
 let instrumentation_buffer = function
   | Some true ->
-      (module Instrumentation.SingleSetBuffer : Instrumentation.BUFFER)
+      (module Instrumentation.SemanticsSingleSetBuffer : Instrumentation.SEMBUFFER)
   | Some false | None ->
-      (module Instrumentation.NoBuffer : Instrumentation.BUFFER)
+      (module Instrumentation.SemanticsNoBuffer : Instrumentation.SEMBUFFER)
 
 let interprete strictness ?instrumentation ?static_env ast =
   let module B = (val instrumentation_buffer instrumentation) in
@@ -367,7 +367,7 @@ let interprete strictness ?instrumentation ?static_env ast =
     let type_checking_strictness = strictness
     let unroll = 0
 
-    module Instr = Instrumentation.Make (B)
+    module Instr = Instrumentation.SemMake (B)
   end in
   let module I = NativeInterpreter (C) in
   B.reset ();

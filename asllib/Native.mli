@@ -37,4 +37,4 @@ val interprete :
   ?instrumentation:bool ->
   ?static_env:StaticEnv.env ->
   NativeBackend.primitive AST.t ->
-  int * Instrumentation.rule list
+  int * Instrumentation.semantics_rule list
