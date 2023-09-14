@@ -17,6 +17,8 @@
 (* Hadrien Renaud, University College London, UK.                           *)
 (****************************************************************************)
 
+(* Sequential ASL interpreter using straight OCaml values as backend. *)
+
 type native_value =
   | NV_Literal of AST.literal
   | NV_Vector of native_value list

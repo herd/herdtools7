@@ -1,6 +1,8 @@
 open AST
 open ASTUtils
 
+(** Static Environment used for type-checking (cf {!Typing}. *)
+
 type func_sig = unit AST.func
 (** Type signature for functions, some kind of an arrow type, with added
     informations. *)

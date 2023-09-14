@@ -348,13 +348,16 @@ module Make (B : Backend.S) (C : Config) = struct
           fatal_from e @@ Error.UndefinedIdentifier x |: SemanticsRule.EUndefIdent)
 
     | E_Binop (BAND, e1, e2) ->
-        E_Cond (e1, e2, false') |> add_pos_from e |> eval_expr env
+        (* if e1 then e2 else false *)
+        E_Cond (e1, e2, false') |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopAnd
 
     | E_Binop (BOR, e1, e2) ->
-        E_Cond (e1, true', e2) |> add_pos_from e |> eval_expr env
+       (* if e1 then true else e2 *)
+        E_Cond (e1, true', e2) |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopOr
 
     | E_Binop (IMPL, e1, e2) ->
-        E_Cond (e1, e2, true') |> add_pos_from e |> eval_expr env
+        (* if e1 then e2 else true *)
+        E_Cond (e1, e2, true') |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopImpl
 
     | E_Binop (op, e1, e2) ->
         let** (v1, v2), env = fold_par eval_expr env e1 e2 in

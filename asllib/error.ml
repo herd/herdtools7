@@ -1,5 +1,7 @@
 open AST
 
+(** Error handling for {!Asllib}. *)
+
 type error_desc =
   | BadField of string * ty
   | BadFields of string list * ty
@@ -22,7 +24,7 @@ type error_desc =
   | BadTypesForBinop of binop * ty * ty
   | CircularDeclarations of string
   | UnpureExpression of expr
-  | UnreconciableTypes of ty * ty
+  | UnreconciliableTypes of ty * ty
   | AssignToImmutable of string
   | AlreadyDeclaredIdentifier of string
   | BadReturnStmt of ty option
@@ -148,7 +150,7 @@ let pp_error =
         fprintf f
           "ASL Typing error:@ a pure expression was expected,@ found@ %a"
           pp_expr e
-    | UnreconciableTypes (t1, t2) ->
+    | UnreconciliableTypes (t1, t2) ->
         fprintf f
           "ASL Typing error:@ cannot@ find@ a@ common@ ancestor@ to@ those@ \
            two@ types@ %a@ and@ %a."

@@ -15,7 +15,7 @@ annotate a specific object, as follows.
 
       - [annotate_expr] annotates expressions;
       - [annotate_slices] annotates slices;
-      - [annotate_pattern] annotates pattern; 
+      - [annotate_pattern] annotates pattern;
       - [annotate_local_decl_item] annotates local declarations;
       - [annotate_lexpr] annotates left-hand sides of assignments;
       - [annotate_stmt] annotates statements;
@@ -25,163 +25,411 @@ annotate a specific object, as follows.
       - [annotate_func] annotates functions.
 
 {2
+Checking Compatibility of operators
+}
+
+- [check_binop op t1 t2] checks that the types [t1] and [t2] are valid for the
+  operation [op], as is defined in chapter 7 of the Language Reference Manual.
+
+- [check_unop op t] checks that the type [t] is valid for the operation [op],
+  as defined in chapter 7 of the Language Reference Manual.
+
+{2
 Typing of Expressions
 }
 
-[annotate_expr] specifies how to annotate an expression [e] in an
-environment [env]. 
-
-Typing of the expression [e] is <description> and one of the following applies:
+[annotate_expr] specifies how to annotate an expression [e] in an environment
+[env].  Formally, the result of annotating the expression [e] in [env] is
+[t,new_e] and one of the following applies:
 
 {3 TypingRule.Lit}
 
   {4 Rule}
+  All of the following applies:
+  - [e] is a Literal [v];
+  - [t] is the type of [v];
+  - [new_e] is [e].
 
   {4 Example}
 
 {3 TypingRule.TypedExpr}
 
   {4 Rule}
-  [(e,_t)] denotes a typed expression and <description>
+  All of the following applies:
+  - [e] is a typed expression [(e',t')];
+  - [t'',e''] is the result of annotating [e'] in [env];
+  - One of the following applies:
+    - All of the following applies:
+      - [t''] is a structural subtype of [t'] in [env];
+      - [t''] is a domain subtype of [t'] in [env];
+      - [t] is [t'];
+      - [new_e] is [e''].
+    - All of the following applies:
+      - [t''] is a structural subtype of [t'] in [env];
+      - [t''] is not a domain subtype of [t'] in [env];
+      - an execution-time check that the expression evaluates to a value in the
+        domain of the required type is required.
+   - All of the following applies:
+     - [t''] is not a structural subtype of [t'] in [env];
+     - a "ConflictingTypes" error is raised.
+
+  {4 Example}
+
+{3 TypingRule.ELocalVarConstant}
+
+  {4 Rule}
+  All of the following applies:
+  - [e] is a variable [x];
+  - [x] maps to a type [ty] in the [storage_types] of the local environment given by [env];
+  - [x] maps to a local constant [v];
+  - [t] is [ty];
+  - [new_e] is the Literal [v].
 
   {4 Example}
 
 {3 TypingRule.ELocalVar}
 
   {4 Rule}
+  All of the following applies:
+  - [e] is a variable [x];
+  - [x] maps to a type [ty] in the [storage_types] of the local environment given by [env];
+  - [x] does not map to a local constant;
+  - [t] is [ty];
+  - [new_e] is [e].
+
+  {4 Example}
+
+{3 TypingRule.EGlobalVarConstantVal}
+
+  {4 Rule}
+  All of the following applies:
+  - [e] is a variable [x];
+  - [x] maps to a type [ty] in the [constant_values] of the global environment given by [env];
+  - [x] maps to a global constant;
+  - [x] maps to a value [v];
+  - [t] is [ty];
+  - [new_e] is [E_Literal v].
 
   {4 Example}
 
 {3 TypingRule.EGlobalVar}
+
   {4 Rule}
+  All of the following applies:
+  - [e] is a variable [x];
+  - [x] maps to a type [ty] in the [constant_values] of the global environment given by [env];
+  - [x] does not map to a global constant;
+  - [t] is [ty];
+  - [new_e] is [e].
 
   {4 Example}
 
 {3 TypingRule.EUndefIdent}
 
   {4 Rule}
-
-  {4 Example}
-
-{3 TypingRule.BinopAnd}
-
-  {4 Rule}
-
-  {4 Example}
-
-{3 TypingRule.BinopOr}
-
-  {4 Rule}
+  All of the following applies:
+  - [e] is a variable [x];
+  - [x] is not bound in [env];
+  - an error "Undefined Identifier" is raised.
 
   {4 Example}
 
 {3 TypingRule.Binop}
 
   {4 Rule}
+  All of the following applies:
+  - [e] denotes a binary operation [op] over two expressions [e1] and [e2];
+  - [t1,e1'] is the result of annotating [e1] in [env];
+  - [t2,e2'] is the result of annotating [e2] in [env];
+  - [t] is the result of checking compatibility of [op] with [t1] and [t2];
+  - [new_e] denotes [op] over [e1'] and [e2'].
 
   {4 Example}
 
 {3 TypingRule.Unop}
 
   {4 Rule}
+  All of the following applies:
+  - [e] denotes a unary operation [op] over an expression [e'];
+  - [t'',e''] is the result of annotating [e'] in [env];
+  - [t] is the result of checking compatibility of [op] with [t''];
+  - [new_e] denotes [op] over [e''].
 
   {4 Example}
 
 {3 TypingRule.ECond}
 
   {4 Rule}
-
-  {4 Example}
-
-{3 TypingRule.ESlice}
-
-  {4 Rule}
-
-  {4 Example}
-
-{3 TypingRule.ECall}
-
-  {4 Rule}
-
-  {4 Example}
-
-{3 TypingRule.EGetArray}
-
-  {4 Rule}
-
-  {4 Example}
-
-{3 TypingRule.ERecord}
-
-  {4 Rule}
-
-  {4 Example}
-
-{3 TypingRule.EGetBitField}
-
-  {4 Rule}
-
-  {4 Example}
-
-{3 TypingRule.EGetBitFields}
-  
-  {4 Rule}
-  <description>
-
-  {4 Example}
-  <minimal example>
-
-{3 TypingRule.EConcatEmpty}
-
-  {4 Rule}
-
-  {4 Example}
-
-{3 TypingRule.EConcat}
-
-  {4 Rule}
+  All of the following applies:
+  - [e] denotes a condition [e_cond] with two options [e_true] and [e_false];
+  - [t_cond, e'_cond] is the result of annotating [e_cond] in [env];
+  - [t_true, e'_true] is the result of annotating [e_true] in [env];
+  - [t_false, e'_false] is the result of annotating [e_false] in [env];
+  - One of the following applies:
+    - All of the following applies:
+      - [t] is the lowest common ancestor of [t_true] and [t_false];
+      - [new_e] is the condition [e'_cond] with two options [e'_true] and [e'_false].
+    - All of the following applies:
+      - there is no lowest common ancestor of [t_true] and [t_false];
+      - an error "Unreconciliable Types" is raised.
 
   {4 Example}
 
 {3 TypingRule.ETuple}
 
   {4 Rule}
+  All of the following applies:
+  - [e] denotes a tuple [li];
+  - [ts, es] is the result of annotating in [env] each expression in [li];
+  - [t] is [ts];
+  - [new_e] is [es].
+
+  {4 Example}
+
+{3 TypingRule.EConcatEmpty}
+
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes the empty concatenation;
+  - [t] is [bits(0)];
+  - [new_e] is [e].
+
+  {4 Example}
+
+{3 TypingRule.EConcat}
+
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes the concatenation of a non-empty list of expressions [li];
+  - [ts, es] is the result of annotating [li] in [env];
+  - [w] is the sum of the widths of the bitvector types [ts];
+  - [t] is [bits(w)];
+  - [new_e] is [es].
+
+  {4 Example}
+
+{3 TypingRule.ERecordNotARecord}
+
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes the record expression of type [ty] with fields [fields];
+  - [ty] is neither a record nor an exception type;
+  - an error "Conflicting Types" is raised.
+
+  {4 Example}
+
+{3 TypingRule.ERecordMissingField}
+
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes the record expression of type [ty] with fields [fields];
+  - [ty] is the name of a record type with fields [field_types];
+  - one field in [field_types] is not initialised by [fields];
+  - an error "Bad Fields" is raised.
+
+  {4 Example}
+
+{3 TypingRule.ERecord}
+
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes the record expression of type [ty] with fields [fields];
+  - [ty] is the name of a record type with fields [field_types];
+  - For each field named [name] associated with the expression [e'] in
+    [field_types], all of the following applies:
+    - [t',e''] is the result of annotating [e'] in [env];
+    - [t_spec'] is the type associated to [name] in [field_types];
+    - [t'] type-satisfies [t_spec'];
+    - [fields'] associates [name] to [e''];
+  - [t] is [ty];
+  - [new_e] is the record expression of type [ty] with fields [fields'].
+
+  {4 Example}
+
+{3 TypingRule.ECall}
+
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes a call to a function named [name] with arguments [args] and
+    parameters [eqs];
+  - [name', args', eqs', ty] is the result of annotating the call of
+    that function in [env];
+  - [t] is [ty];
+  - [new_e] is the call the function named [name'] with arguments [args']
+    and parameters [eqs'].
 
   {4 Example}
 
 {3 TypingRule.EUnknown}
 
   {4 Rule}
+  All of the following applies:
+  - [e] denotes an unknown expression of type [ty];
+  - [ty'] is the structure of [ty] in [env];
+  - [t] is [ty];
+  - [new_e] is an unknown expression of type [ty'].
 
   {4 Example}
 
-{3 TypingRule.EPattern}
+{3 TypingRule.ESlice}
 
   {4 Rule}
+  All of the following applies:
+  - [e] denotes the slicing of expression [e'] by the slices [slices];
+  - [t_e',e'] is the result of annotating the expression [e'] in [env];
+  - [t_e'] has the structure of an integer or a bitvector;
+  - [w] is the width of [slices];
+  - [slices'] is the result of annotating [slices] in [env];
+  - [t] is the bitvector type of width [w];
+  - [new_e] is the slicing of expression [e'] by the slices [slices'].
 
   {4 Example}
 
 {3 TypingRule.EGetArray}
 
   {4 Rule}
+  All of the following applies:
+  - [e] denotes the slicing of expression [e'] by the slices [slices];
+  - [t_e',e'] is the result of annotating the expression [e'] in [env];
+  - [t_e'] has the structure of an array of size [size] and type [t];
+  - One of the following applies:
+    - [wanted_t_index] is an enumeration type of name [size];
+    - [wanted_t_index] is the type [integer {0..size-1}];
+  - [slices] is single expression [e_index];
+  - [t_index', e_index'] is the result of annotating [e_index] in [env];
+  - [t_index'] type-satisfies [wanted_t_index];
+  - [new_e] is an access to array [e'] at index [e_index'].
+
+  {4 Example}
+
+{3 TypingRule.EGetRecordField}
+
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes the access of field [field_name] on expression [e1];
+  - [t_e1, e2] is the result of annotating [e1] in [env];
+  - [t_e2] is the anonymous type corresponding to [t_e1] in [env];
+  - [t_e2] is an Exception or a Record type with fields [fields];
+  - One of the following applies:
+    - All of the following applies:
+      - [field_name] is not declared in [fields];
+      - an error "Bad Field" is raised.
+    - All of the following applies:
+      - [field_name] is declared in [fields];
+      - [t] is the type corresponding to [field_name] in [fields];
+      - [new_e] is the access of field [field_name] on expression [e2].
+
+  {4 Example}
+
+{3 TypingRule.EGetBadBitField}
+
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes the access of field [field_name] on expression [e1];
+  - [t_e1, e2] is the result of annotating [e1] in [env];
+  - [t_e2] is the anonymous type corresponding to [t_e1] in [env];
+  - [t_e2] is a bitvector type with bitfields [bitfields];
+  - [field_name] is not declared in [bitfields];
+  - an error "Bad Field" is raised.
+
+  {4 Example}
+
+{3 TypingRule.EGetBitField}
+
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes the access of field [field_name] on expression [e1];
+  - [t_e1, e2] is the result of annotating [e1] in [env];
+  - [t_e2] is the anonymous type corresponding to [t_e1] in [env];
+  - [t_e2] is a bitvector type with bitfields [bitfields];
+  - [field_name] is declared in [bitfields];
+  - [slices] gives the slices corresponding to the bitfield [field_name]
+    in [bitfields];
+  - [e3] denotes the slicing of the expression [e2] by the slices [slices];
+  - [t,new_e] is the result of annotating [e3].
+
+  {4 Example}
+
+{3 TypingRule.EGetBitFieldNested}
+
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes the access of field [field_name] on expression [e1];
+  - [t_e1, e2] is the result of annotating [e1] in [env];
+  - [t_e2] is the anonymous type corresponding to [t_e1] in [env];
+  - [t_e2] is a bitvector type with bitfields [bitfields];
+  - [field_name] is declared in [bitfields];
+  - [slices] gives the slices corresponding to the bitfield [field_name] in
+    [bitfields];
+  - [e3] denotes the slicing of the expression [e2] by the slices [slices];
+  - [t4, e4] is the result of annotating [e3] in [env];
+  - [bitfields'] gives the bitfields corresponding to the bitfield [field_name]
+    in [bitfields];
+  - [t] is the bitvector type with the width of [t4] and the bitfields [bitfields']
+  - [new_e] is [e4].
+
+  {4 Example}
+
+{3 TypingRule.EGetBitFieldTyped}
+
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes [e1, field_name];
+  - [t_e1, e2] is the result of annotating [e1] in [env];
+  - [t_e2] is the anonymous type corresponding to [t_e1] in [env];
+  - [t_e2] is a bitvector type with bitfields [bitfields];
+  - [field_name] is declared in [bitfields];
+  - [slices] gives the slices corresponding to the bitfield [field_name] in
+    [bitfields];
+  - [t_e3,e3] is the result of annotating [e2,slices] in [env];
+  - [t] gives the type corresponding to the bitfield [field_name] in [bitfields];
+  - [t_e3] type-satisfies [t] in [env];
+  - [new_e] is [e3].
+
+  {4 Example}
+
+{3 TypingRule.EGetBitFields}
+
+  {4 Rule}
+  <description>
+
+  {4 Example}
+  <minimal example>
+
+{3 TypingRule.EPattern}
+
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes whether the expression [e'] matches [patterns];
+  - [t_e', e''] is the result of annotating [e'] in [env];
+  - [patterns'] is the result of annotating [patterns] in [env];
+  - [t] is [boolean];
+  - [new_e] denotes whether the expression [e''] matches [patterns'].
 
   {4 Example}
 
 {2
 Typing of Left-Hand-Side Expressions
 }
-[annotate_lexpr version env le m] is <description> and one of the following
+[annotate_lexpr version env le t_e] is [new_le] and one of the following
 applies:
 
   {3 TypingRule.LEIgnore}
 
     {4 Rule}
+    All of the following applies:
+    - [le] denotes an expression which can be ignored;
+    - [new_le] is [le].
 
     {4 Example}
 
   {3 TypingRule.LELocalVar}
 
     {4 Rule}
+    All of the following applies:
+    - [le] denotes a local variable [x] of type [ty];
+    - [x] is locally declared as a variable of type [ty] in [env];
+    - [new_le] is [le].
 
     {4 Example}
 
@@ -190,7 +438,23 @@ applies:
     {4 Rule}
 
     {4 Example}
- 
+
+  {3 TypingRule.LETuple}
+
+    {4 Rule}
+    All of the following applies:
+    - [le] denotes a tuple [les];
+    - [t_e] denotes a tuple type [sub_tys];
+    - One of the following applies:
+      - All of the following applies:
+        - [les] and [sub_tys] have the same length;
+        - [new_le] is the result of annotating [les] with [sub_tys] in [env]
+      - All of the following applies:
+        - [les] and [sub_tys] do not have the same length;
+        - an error "Bad Arity Tuple Unpacking" is raised.
+
+    {4 Example}
+
   {3 TypingRule.LESlice}
 
     {4 Rule}
@@ -217,45 +481,64 @@ applies:
     {4 Example}
     <minimal example>
 
-  {3 TypingRule.LETuple}
-
-    {4 Rule}
-
-    {4 Example}
-
 {2
 Typing of Local Declarations
 }
-[annotate_local_decl_item s ldi env m_init_opt] is <description> and one of the
-following applies:
+[annotate_local_decl_item loc env ty ldk ldi] is [new_env, new_ldi] and one
+of the following applies:
 
   {3 TypingRule.LDIgnoreNone}
 
     {4 Rule}
+    All of the following applies:
+    - [ldi] is a local declaration which can be ignored;
+    - no type is given;
+    - [new_env] is [env];
+    - [new_ldi] is [ldi].
 
     {4 Example}
 
   {3 TypingRule.LDIgnoreSome}
 
     {4 Rule}
+    All of the following applies:
+    - [ldi] is a local declaration which can be ignored;
+    - a type [t] is given;
+    - One of the following applies:
+      - All of the following applies:
+        - [t] can be initialised with [ty] in [env];
+        - [new_env] is [env];
+        - [new_ldi] is [ldi].
+      - All of the following applies:
+        - [t] cannot be initialised with [ty] in [env];
+        - an error "Conflicting Types" is raised.
 
     {4 Example}
 
   {3 TypingRule.LDVar}
 
     {4 Rule}
+    All of the following applies:
+    - [ldi] denotes a variable [x] with an optional type [ty_opt];
+    - [x] is not declared in [env];
+    - One of the following applies:
+      - All of the following applies:
+        - [ty_opt] is [None];
+        - [t] is [ty]
+      - All of the following applies:
+        - [ty_opt] is [Some t];
+        - [t] can be initialized with [ty] in [env];
+    - [new_env] is [env] modified so that [x] is locally declared of type [t];
+    - [new_ldi] is the declaration of variable [x] with type [t].
 
     {4 Example}
 
-  {3 TypingRule.LDUninitialisedTypedVar}
+  {3 TypingRule.LDUninitialisedTypedTuple}
 
     {4 Rule}
-
-    {4 Example}
-
-  {3 TypingRule.LDUninitialisedVar}
-
-    {4 Rule}
+    All of the following applies:
+    - [ldi] denotes a singleton list [ld];
+    - [new_env, new_ldi] is the result of annotating the local declaration [ld] with [ty] in [env].
 
     {4 Example}
 
@@ -266,18 +549,6 @@ following applies:
     {4 Example}
 
   {3 TypingRule.LDTypedTuple}
-
-    {4 Rule}
-
-    {4 Example}
-
-  {3 TypingRule.LDUninitialisedTuple}
-
-    {4 Rule}
-
-    {4 Example}
-
-  {3 TypingRule.LDUninitialisedTypedTuple}
 
     {4 Rule}
 
@@ -408,7 +679,7 @@ Typing of Statements
 {2
 Typing of Slices
 }
-[annotate_slices env slices] is <description> 
+[annotate_slices env slices] is <description>
 Formally, one of the following applies:
 
   {3 TypingRule.SliceLength}

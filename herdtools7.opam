@@ -20,7 +20,6 @@ depends: [
   "ocaml" {>= "4.08.0"}
   "dune"  {>= "2.7" }
   "menhir" {>= "20200123"}
-  "feat"
   "zarith"
 ]
 depopts: [

@@ -254,7 +254,7 @@ val list_cross : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 
 val list_concat_map : ('a -> 'b list) -> 'a list -> 'b list
 (** [list_concat_map f l] gives the same result as
-    {!List.concat}[ (]{!List.map}[ f l)]. Tail-recursive.
+    [List.concat (List.map f l)]. Tail-recursive.
     Taken from stdlib 4.10.
 *)
 

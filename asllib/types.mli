@@ -1,7 +1,7 @@
 (** Type Algebra *)
 
 (**
-   Types are defined as {!AST.ty}. This should map pretty-well with the current
+   Types are defined as {!type:AST.ty}. This should map pretty-well with the current
    version of the Language Reference Manual.
 *)
 
@@ -46,7 +46,7 @@ val is_non_primitive : ty -> bool
 
 (** {2 Type transformations} *)
 
-val resolve_root_name : env -> ty -> ty
+val make_anonymous : env -> ty -> ty
 (** Replace any named type by its declared type in the environment. *)
 
 val get_structure : env -> ty -> ty

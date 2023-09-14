@@ -1,5 +1,7 @@
 open Lexing
 
+(** Builds an {!AST.t} from some files. *)
+
 type token = Parser.token
 type ast_type = [ `Opn | `Ast ]
 type version = [ `ASLv0 | `ASLv1 ]
