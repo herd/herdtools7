@@ -635,12 +635,12 @@ module Make (C : Config) = struct
         |> __POS_OF__ |> here;
         arity_two "read_memory"
           [ bv_64 ; integer ]
-          (return_one (bv_arg1))
+          (return_one (bv_64))
           (read_memory ii_env)
         |> __POS_OF__ |> here;
         arity_three "read_memory_gen"
           [ bv_64 ; integer; t_named "AccessDescriptor"; ]
-          (return_one (bv_arg1))
+          (return_one (bv_64))
           (read_memory_gen ii_env)
         |> __POS_OF__ |> here;
         arity_three "write_memory" [ bv_64; integer; bv_arg1 ]
