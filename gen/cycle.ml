@@ -738,7 +738,11 @@ let set_diff_loc st n0 =
     let loc,st =
       if same_loc p.edge then begin
         p.evt.loc,st
-      end else next_loc m.edge st in
+      end else begin
+        match non_pseudo m.edge with
+        | true -> next_loc m.edge st
+        | false -> next_loc m.next.edge st
+      end in
     m.evt <- { m.evt with loc=loc ; bank=E.atom_to_bank m.evt.atom; } ;
 (*    eprintf "LOC SET: %a [p=%a]\n%!" debug_node m debug_node p; *)
     if m.store != nil then begin
@@ -1091,7 +1095,10 @@ let finish n =
             (fun (loc,(v,_pte)) -> sprintf "%s -> 0x%x"
                 (Code.pp_loc loc) v) vs))
   end ;
-  if O.variant Variant_gen.Self then check_fetch n ;
+  let n1 =
+    try find_node (fun n -> E.is_com n.edge) n
+    with Not_found -> n in
+  if O.variant Variant_gen.Self && not (!Config.same_loc && E.is_fetch n1.edge) then check_fetch n ;
   initvals
 
 
