@@ -222,21 +222,21 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
     let get_all_locs_init init =
       let locs =
-        List.fold_left
-          (fun locs (loc,v) ->
+        A.state_fold
+          (fun loc v locs ->
             let locs =
               match loc with
               | A.Location_global _
                 -> loc::locs
               | A.Location_reg _ -> locs in
-            let locs =
+            try
               match A.V.as_virtual v with
               | Some s ->
-                  let sym = Constant.mk_sym_virtual s in
-                  A.Location_global (A.V.Val sym)::locs
-              | None -> locs in
-            locs)
-          [] (A.state_to_list init) in
+                 let sym = Constant.mk_sym_virtual s in
+                 A.Location_global (A.V.Val sym)::locs
+              | None -> locs
+            with V.Undetermined -> locs)
+          init [] in
       A.LocSet.of_list locs
 
 (* All (virtual) memory locations reachable by a test *)
@@ -753,7 +753,12 @@ let match_reg_events es =
                           S.Store ew
                         else begin
                           (* store order is total *)
-                          assert (U.is_before_strict es ew ew0) ;
+                            if not (U.is_before_strict es ew ew0) then begin
+                              Printf.eprintf "Not ordered stores %a and %a\n"
+                                E.debug_event ew0
+                                E.debug_event ew ;
+                              assert false
+                            end ;
                           rf
                         end
                   else rf)
@@ -778,21 +783,19 @@ let match_reg_events es =
 
 (* Add a constraint for two values *)
 
-(* More like an optimization, adding constraint v1 := v2 should work *)
+(* Optimization: adding constraint v1 := v2 should always work *)
 
     exception Contradiction
 
     let add_eq v1 v2 eqs =
       if V.is_var_determined v1 then
         if V.is_var_determined v2 then
-          if V.compare v1 v2 = 0 then
-            eqs
-          else
-            raise Contradiction
-        else
+          if V.equal v1 v2 then eqs
+          else raise Contradiction
+        else (* Here, v1 and v2 necessarily differ *)
           VC.Assign (v2, VC.Atom v1)::eqs
-      else
-        VC.Assign (v1, VC.Atom v2)::eqs
+      else if V.equal v1 v2 then eqs
+      else VC.Assign (v1, VC.Atom v2)::eqs
 
     let pp_nosol lvl test es rfm =
       let module PP = Pretty.Make(S) in

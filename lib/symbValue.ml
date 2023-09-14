@@ -16,6 +16,14 @@
 
 open Printf
 
+let nextsym = ref 0
+
+let reset_gensym () = nextsym := 0
+
+let gensym () =
+  nextsym := !nextsym + 1;
+  !nextsym
+
 module
   Make
     (Cst:Constant.S)
@@ -44,10 +52,6 @@ module
   let pp_csym i = sprintf "S%i" i
   let compare_csym v1 v2 = Misc.int_compare v1 v2
   let equal_csym v1 v2 = v1 == v2
-
-  let nextsym = ref 0
-
-  let gensym () = nextsym := !nextsym + 1; !nextsym
 
   type cst = Cst.v
 

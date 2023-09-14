@@ -1,0 +1,33 @@
+PPC A007
+
+Variant=telechat
+
+(* test blr *)
+(*****************************************************************)
+(* Compiler:                                                     *)
+(* powerpc64le-linux-gnu-gcc-10 -c -g -O1 -pthread --std=c11 -ffreestanding -mabi=elfv1 -fno-section-anchors*)
+(*****************************************************************)
+
+{
+  [P0_r0]=0;[P1_r0]=0;[x]=0;[y]=0;
+  0:r0 = x; 0:r1 = y; 0:r2 = P0_r0;
+  1:r0 = y; 1:r1 = x; 1:r2 = P1_r0;
+}
+  P0                    |  P1                     ;
+   hwsync               |   hwsync                ;
+   lwz r9,0(r0)         |   lwz r9,0(r0)          ;
+   cmpw r9,r9           |   cmpw r9,r9            ;
+   b   L0x18            |   b   L0x6c             ;
+  L0x18: isync          |  L0x6c: isync           ;
+   clrldi r9,r9,32      |   extsw r10, r9         ;
+   lwsync               |   cmpwi r9,1            ;
+   hwsync               |   beq  L0x8c            ;
+   li r8,1              |  L0x7c:                 ;
+   stw r8,0(r1)         |   stw r10,0(r2)         ;
+   stw r9,0(r2)         |   blr                ;
+                        |  L0x8c:                 ;
+                        |   li r8,1               ;
+                        |   stw r8,0(r1)          ;
+                        |   b   L0x7c             ;
+
+exists not (P0_r0=1 /\ P1_r0=1)

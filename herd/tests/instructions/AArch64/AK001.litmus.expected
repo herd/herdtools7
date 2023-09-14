@@ -1,0 +1,11 @@
+Test AK001 Allowed
+States 2
+0:X1=0; 1:X0=0;
+0:X1=0; 1:X0=1;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (0:X1=1 /\ 1:X0=1)
+Observation AK001 Never 0 3
+Hash=7967e5120b4f97d2a96964ef4e3b026a
+

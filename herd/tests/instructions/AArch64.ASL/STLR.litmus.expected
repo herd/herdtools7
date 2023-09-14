@@ -1,0 +1,10 @@
+Test STLR Required
+States 1
+[x]=15;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([x]=15)
+Observation STLR Always 1 0
+Hash=4458e8f19e5398ba20875a30195dc432
+

@@ -61,16 +61,18 @@ module Make (C:Arch_herd.Config) (V:Value.S)
       | Pnop
       | Padd _ | Psub _ | Psubf _ | Por _
       | Pand _ | Pxor _ | Pmull _ | Pdiv _
-      | Paddi _ | Pori _ | Pandi _ | Pxori _ | Pmulli _
-      | Pli _ | Pb _ | Pbcc _ | Pcmpwi _ | Pcmpw _
+      | Paddi _ | Paddis _ | Pori _ | Pandi _ | Pxori _ | Pmulli _
+      | Prlwinm _ | Prlwimi _ | Pclrldi _
+      | Pli _ | Pb _ | Pbcc _ | Pcmpwi _ | Pcmpw _ | Plis _
       | Pmr _ | Psync | Peieio | Pisync | Plwsync
+      | Pcmplwi _ | Pextsw _
       | Pdcbf _ | Pblr | Pnor _ | Pneg _ | Pslw _
       | Psrawi _| Psraw _ | Pbl _ | Pmtlr _ | Pmflr _ | Pmfcr _
       | Plmw  _ | Pstmw _ | Pcomment _
         -> None
-      | Plwzu _ | Pstwu _ | Plwarx _ | Pstwcx _
+      | Plwzu _ | Plwa _ | Pstwu _ | Plwarx _ | Pstwcx _
         -> Some MachSize.Word
-      | Pload (sz,_,_,_) | Ploadx (sz,_,_,_)
+      | Pload (sz,_,_,_) | Ploadx (sz,_,_,_) | Plwax (sz,_,_,_)
       | Pstore (sz,_,_,_) | Pstorex (sz,_,_,_)
         -> Some sz
 

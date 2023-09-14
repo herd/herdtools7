@@ -1,0 +1,10 @@
+Test A004 Required
+States 1
+0:r0=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:r0=0)
+Observation A004 Always 1 0
+Hash=9697a8f62bb095c6209ec10f0eb77308
+

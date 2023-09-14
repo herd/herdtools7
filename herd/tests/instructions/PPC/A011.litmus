@@ -1,0 +1,9 @@
+PPC A011
+
+(* Test rlwinm and wlwimi instructions *)
+{}
+
+P0;
+  rlwinm r3, r4, 5, 0, 31;
+
+forall 0:r3 = 0

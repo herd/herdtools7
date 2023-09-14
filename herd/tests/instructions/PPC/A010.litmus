@@ -1,0 +1,12 @@
+PPC A010
+
+(* Test Cmplwi instr *)
+{ 0:r0 = 2 }
+
+P0;
+  cmplwi r0, 2;
+  beq L1;
+  addi r0, r0, 1;
+L1: nop;
+
+forall 0:r0=2

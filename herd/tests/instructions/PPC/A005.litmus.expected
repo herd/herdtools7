@@ -1,0 +1,10 @@
+Test A005 Required
+States 1
+0:r0=-1; 0:r2=4294967295;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:r0=-1 /\ not (0:r2=-1))
+Observation A005 Always 1 0
+Hash=3277c7026d4d160c200e872073551105
+

@@ -1,0 +1,11 @@
+Test SWP+TWO Required
+States 2
+0:X2=0; 1:X2=1;
+0:X2=2; 1:X2=0;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall (0:X2=2 \/ 1:X2=1)
+Observation SWP+TWO Always 2 0
+Hash=ca9a6147848dd5387d6b1d0b90af0166
+

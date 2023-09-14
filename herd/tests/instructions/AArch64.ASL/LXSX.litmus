@@ -1,0 +1,13 @@
+AArch64 LXSX
+{
+int x = 1;
+0:X1=x; 0:X3=2;
+1:X1=x; 1:X0=4;
+}
+  P0            |  P1         ;
+LDXR W0,[X1]    | STR W0,[X1] ;
+STXR W2,W3,[X1] |             ;
+forall
+  x=2 /\ 0:X2=0 /\ 0:X0=4
+\/  
+  x=4

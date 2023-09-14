@@ -91,6 +91,8 @@ type t =
   | Strict
 (* Semi-strict interpretation of variant, e.g. -variant asl,warn *)
   | Warn
+(* Telechat variant - implements unconditional branches as exit, and any other optional quirks*)
+  | Telechat
 
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
@@ -152,6 +154,7 @@ let parse s = match Misc.lowercase s with
 | "s128" -> Some S128
 | "strict" -> Some Strict
 | "warn" -> Some Warn
+| "telechat" -> Some Telechat
 | s ->
    begin
      match Precision.parse s with
@@ -219,6 +222,7 @@ let pp = function
   | ASLType `Warn -> "ASLType+Warn"
   | ASLType `Silence -> "ASLType+Silence"
   | ASLType `TypeCheck -> "ASLType+Check"
+  | Telechat -> "telechat"
 
 let compare = compare
 let equal v1 v2 = compare v1 v2 = 0
