@@ -137,7 +137,7 @@ let pp_error =
     | BadTypesForBinop (op, t1, t2) ->
         fprintf f
           "ASL Typing error: Illegal application of operator %s on types@ %a@ \
-           and %a@."
+           and %a"
           (binop_to_string op) pp_ty t1 pp_ty t2
     | CircularDeclarations x ->
         fprintf f

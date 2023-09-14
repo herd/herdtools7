@@ -12,7 +12,6 @@ Division by zero:
   File div.asl, line 3, characters 19 to 26:
   ASL Typing error: Illegal application of operator DIV on types integer {6}
     and integer {0}
-  
   [1]
 
   $ cat >div.asl <<EOF
@@ -27,7 +26,6 @@ Division by zero:
   File div.asl, line 3, characters 19 to 28:
   ASL Typing error: Illegal application of operator DIVRM on types integer {6}
     and integer {0}
-  
   [1]
 
   $ cat >div.asl <<EOF
@@ -42,7 +40,6 @@ Division by zero:
   File div.asl, line 3, characters 19 to 26:
   ASL Typing error: Illegal application of operator MOD on types integer {6}
     and integer {0}
-  
   [1]
 
 Unsupported divisions (caught at time-checking time):
@@ -59,7 +56,6 @@ Unsupported divisions (caught at time-checking time):
   File div.asl, line 3, characters 19 to 27:
   ASL Typing error: Illegal application of operator DIV on types integer {6}
     and integer {(- 3)}
-  
   [1]
 
   $ cat >div.asl <<EOF
@@ -74,7 +70,6 @@ Unsupported divisions (caught at time-checking time):
   File div.asl, line 3, characters 19 to 29:
   ASL Typing error: Illegal application of operator DIVRM on types integer {6}
     and integer {(- 3)}
-  
   [1]
 
   $ cat >div.asl <<EOF
@@ -89,7 +84,6 @@ Unsupported divisions (caught at time-checking time):
   File div.asl, line 3, characters 19 to 27:
   ASL Typing error: Illegal application of operator MOD on types integer {6}
     and integer {(- 3)}
-  
   [1]
 
 The following error is a runtime error because we don't know how to catch those at compile-time:
@@ -216,5 +210,4 @@ Example from asltools:
   File div.asl, line 6, characters 10 to 27:
   ASL Typing error: Illegal application of operator DIV on types
     integer {2, 4, 8} and integer {0, 1, 2}
-  
   [1]

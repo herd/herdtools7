@@ -24,7 +24,13 @@ let assign x v t =
   { t with mem = PMap.add p v t.mem }
 
 let declare x v t =
-  let () = if _runtime_assertions then assert (not (mem x t)) in
+  let () =
+    if _runtime_assertions && mem x t then
+      let () =
+        Printf.eprintf "Storage element %s already declared in env.\n%!" x
+      in
+      assert false
+  in
   let p = alloc () in
   { env = IMap.add x p t.env; mem = PMap.add p v t.mem }
 
@@ -51,6 +57,12 @@ let patch_mem ~t_env ~t_mem to_avoid =
           let p = IMap.find x t_mem.env in
           PMap.remove p mem)
         t_mem.mem to_avoid
-    with Not_found -> assert false
+    with Not_found ->
+      let () =
+        Printf.eprintf "Bug in unsetting one of ";
+        List.iter (fun s -> Printf.eprintf "%s, " s) to_avoid;
+        Printf.eprintf "\n%!"
+      in
+      assert false
   in
   { env; mem }

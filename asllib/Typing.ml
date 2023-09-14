@@ -110,18 +110,35 @@ let min_constraint env = function
       let e = reduce_expr env e in
       match e.desc with
       | E_Literal (L_Int i) -> i
-      | _ -> raise ConstraintMinMaxTop)
+      | _ ->
+          let () =
+            if false then
+              Format.eprintf "Min constraint found strange value %a@."
+                PP.pp_expr e
+          in
+          raise ConstraintMinMaxTop)
 
 let max_constraint env = function
   | Constraint_Exact e | Constraint_Range (_, e) -> (
       let e = reduce_expr env e in
       match e.desc with
       | E_Literal (L_Int i) -> i
-      | _ -> raise ConstraintMinMaxTop)
+      | _ ->
+          let () =
+            if false then
+              Format.eprintf "Max constraint found strange value %a@."
+                PP.pp_expr e
+          in
+          raise ConstraintMinMaxTop)
 
 let min_max_constraints m_constraint m =
   let rec do_rec env = function
-    | [] -> raise ConstraintMinMaxTop (* for underconstraint bitvector types. *)
+    | [] ->
+        let () =
+          if false then
+            Format.eprintf "MinMax constraint found no constraint.@."
+        in
+        raise ConstraintMinMaxTop (* for underconstraint bitvector types. *)
     | [ c ] -> m_constraint env c
     | c :: cs ->
         let i = m_constraint env c and j = do_rec env cs in
@@ -455,7 +472,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     if ISet.for_all (storage_is_pure e env) use_set then ()
     else fatal_from e (Error.UnpureExpression e)
 
-  let check_bv_have_same_determined_bitwidth' env t1 t2 () =
+  let check_bits_equal_width' env t1 t2 () =
     let n = get_bitvector_width' env t1 and m = get_bitvector_width' env t2 in
     if bitwidth_equal (StaticInterpreter.equal_in_env env) n m then
       (* TODO: Check statically evaluable? *) ()
@@ -466,8 +483,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           else assumption_failed ()
       | _ -> assumption_failed ()
 
-  let check_bv_have_same_determined_bitwidth loc env t1 t2 () =
-    try check_bv_have_same_determined_bitwidth' env t1 t2 ()
+  let check_bits_equal_width loc env t1 t2 () =
+    try check_bits_equal_width' env t1 t2 ()
     with TypingAssumptionFailed ->
       fatal_from loc (Error.UnreconciableTypes (t1, t2))
 
@@ -476,6 +493,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
 
   let t_bool = T_Bool |> __POS_OF__ |> add_pos_from_pos_of
   let t_int = T_Int None |> __POS_OF__ |> add_pos_from_pos_of
+  let t_real = T_Real |> __POS_OF__ |> add_pos_from_pos_of
 
   let expr_is_strict_positive e =
     match e.desc with
@@ -518,7 +536,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             (* Rule KXMR: If the operands of a primitive operation are
                bitvectors, the widths of the operands must be equivalent
                statically evaluable expressions. *)
-            let+ () = check_bv_have_same_determined_bitwidth' env t1 t2 in
+            let+ () = check_bits_equal_width' env t1 t2 in
             let n = get_bitvector_width' env t1 in
             T_Bits (n, []) |> with_loc
         | (PLUS | MINUS) when has_bitvector_structure env t1 ->
@@ -527,7 +545,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                statically evaluable expressions. *)
             let+ () =
               either
-                (check_bv_have_same_determined_bitwidth' env t1 t2)
+                (check_bits_equal_width' env t1 t2)
                 (check_type_satisfies' env t2 t_int)
             in
             let n = get_bitvector_width' env t1 in
@@ -547,7 +565,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                     (check_type_satisfies' env t2 t_int);
                   (* If the arguments of a comparison operation are bitvectors
                      then they must have the same determined width. *)
-                  check_bv_have_same_determined_bitwidth' env t1 t2;
+                  check_bits_equal_width' env t1 t2;
                   (* The rest are redundancies from the first equal types
                      cases, but provided for completeness. *)
                   both
@@ -562,8 +580,15 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             in
             T_Bool |> with_loc
         | LEQ | GEQ | GT | LT ->
-            let+ () = check_type_satisfies' env t1 t_int in
-            let+ () = check_type_satisfies' env t2 t_int in
+            let+ () =
+              either
+                (both
+                   (check_type_satisfies' env t1 t_int)
+                   (check_type_satisfies' env t2 t_int))
+                (both
+                   (check_type_satisfies' env t1 t_real)
+                   (check_type_satisfies' env t2 t_real))
+            in
             T_Bool |> with_loc
         | MUL | DIV | DIVRM | MOD | SHL | SHR | POW | PLUS | MINUS -> (
             (* TODO: ensure that they mean "has the structure of" instead of
@@ -604,6 +629,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                   | _ -> ()
                 in
                 T_Int (Some (constraint_binop op cs1 cs2)) |> with_loc
+            | T_Real, T_Real -> (
+                match op with
+                | PLUS | MINUS | MUL -> T_Real |> with_loc
+                | _ -> assumption_failed ())
+            | T_Real, T_Int _ -> (
+                match op with
+                | POW -> T_Real |> with_loc
+                | _ -> assumption_failed ())
             | _ -> assumption_failed ())
         | RDIV ->
             let+ () = check_type_satisfies' env t1 real in
@@ -617,7 +650,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let+ () = check_type_satisfies loc env t t_bool in
         T_Bool |> add_pos_from loc
     | NEG -> (
-        let+ () = check_type_satisfies loc env t t_int in
+        let+ () =
+          either
+            (check_type_satisfies loc env t t_int)
+            (check_type_satisfies loc env t t_real)
+        in
         match (Types.get_structure env t).desc with
         | T_Int None -> T_Int None |> add_pos_from loc
         | T_Int (Some cs) ->
@@ -716,8 +753,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           | T_Bool, T_Bool | T_Real, T_Real -> ()
           | T_Int _, T_Int _ -> ()
           | T_Bits _, T_Bits _ ->
-              check_bv_have_same_determined_bitwidth loc env t_struct t_e_struct
-                ()
+              check_bits_equal_width loc env t_struct t_e_struct ()
           (* TODO: Multiple discriminants can be matched at once by forming
              a tuple of discriminants and a tuple used in the pattern_set.
              Both tuples must have the same number of elements. A
@@ -1072,8 +1108,16 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                       T_Bits (width, bitfields) |> add_pos_from t_e
                   | _ -> assert false
                 in
-                (t_e, e))
-        | _ -> conflict e [ default_t_bits; T_Record []; T_Exception [] ] t_e') |: TypingRule.EGetBitField
+                (t_e, e)
+            | Some (BitField_Type (_field, slices, t)) ->
+                let t_e, e =
+                  E_Slice (e', slices) |> here |> annotate_expr env
+                in
+                let+ () = check_type_satisfies e env t_e t in
+                (t, e))
+        | _ ->
+           conflict e [ default_t_bits; T_Record []; T_Exception [] ] t_e')
+           |: TypingRule.EGetBitField
     | E_GetFields (e', fields) ->
         let t_e', e' = annotate_expr env e' in
         let t_e' = Types.resolve_root_name env t_e' in
@@ -1200,15 +1244,22 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             let+ () = check_can_assign_to le env t t_e in
             LE_SetField (le', field) |> here
         | T_Bits (_, bitfields) ->
-            let slices, bitfields' =
+            let bits slices bitfields =
+              let w = slices_length env slices in
+              T_Bits (BitWidth_SingleExpr w, bitfields) |> here
+            in
+            let t, slices =
               match find_bitfield_opt field bitfields with
               | None -> fatal_from le (Error.BadField (field, t_le'_struct))
-              | Some (BitField_Simple (_field, slices)) -> (slices, [])
+              | Some (BitField_Simple (_field, slices)) ->
+                  (bits slices [], slices)
               | Some (BitField_Nested (_field, slices, bitfields')) ->
-                  (slices, bitfields')
+                  (bits slices bitfields', slices)
+              | Some (BitField_Type (_field, slices, t)) ->
+                  let t' = bits slices [] in
+                  let+ () = check_bits_equal_width le env t t' in
+                  (t, slices)
             in
-            let w = slices_length env slices in
-            let t = T_Bits (BitWidth_SingleExpr w, bitfields') |> here in
             let+ () = check_can_assign_to le env t t_e in
             let le = LE_Slice (le', slices) |> here in
             annotate_lexpr env le t_e
@@ -1230,6 +1281,38 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let new_le = LE_Slice (le', list_concat_map one_field fields) |> here in
         annotate_lexpr env new_le t_e |: TypingRule.LESetFields
     | LE_SetArray _ -> assert false |: TypingRule.LESetArray
+    | LE_Concat (les, _) ->
+        let e_eq = expr_of_lexpr le in
+        let t_e_eq, _e_eq = annotate_expr env e_eq in
+        let+ () = check_bits_equal_width' env t_e_eq t_e in
+        let bv_length t =
+          let e_width =
+            match get_bitvector_width le env t with
+            | BitWidth_SingleExpr e -> e
+            | _ -> failwith "Cannot get bitwidth of expression"
+          in
+          match reduce_constants env e_width with
+          | L_Int z -> Z.to_int z
+          | _ ->
+              fatal_from le @@ MismatchType ("bitvector width", [ T_Int None ])
+        in
+        let annotate_one (les, widths, sum) le =
+          let e = expr_of_lexpr le in
+          let t_e, _e = annotate_expr env e in
+          let width = bv_length t_e in
+          let t_e' =
+            T_Bits (BitWidth_SingleExpr (expr_of_int width), [])
+            |> add_pos_from le
+          in
+          let le = annotate_lexpr env le t_e' in
+          (le :: les, width :: widths, sum + width)
+        in
+        let rev_les, rev_widths, _real_width =
+          List.fold_left annotate_one ([], [], 0) les
+        in
+        (* Here as the first check, we have _real_width == bv_length t_e *)
+        let les = List.rev rev_les and widths = List.rev rev_widths in
+        LE_Concat (les, Some widths) |> add_pos_from le
 
   let can_be_initialized_with env s t =
     (* Rules:
@@ -1332,6 +1415,16 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           List.map (fun ldi -> S_Decl (LDK_Var, ldi, None) |> here) les
         in
         (env, stmt_from_list ss) |: TypingRule.LDUninitialisedTypedTuple
+
+  let declare_local_constant loc env t_e v ldi =
+    let rec add_constants env ldi =
+      match ldi with
+      | LDI_Ignore _ -> env
+      | LDI_Var (x, _t_opt) -> add_local_constant x v env
+      | LDI_Tuple (ldis, _) -> List.fold_left add_constants env ldis
+    in
+    let env, ldi = annotate_local_decl_item loc env t_e LDK_Constant ldi in
+    (add_constants env ldi, ldi)
 
   let rec annotate_stmt env return_type s =
     let () =
@@ -1488,16 +1581,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         match (ldk, e_opt) with
         | _, Some e ->
             let t_e, e = annotate_expr env e in
-            let env, ldi = annotate_local_decl_item s env t_e ldk ldi in
-            (* TODO:
-               - The initialization expression in a local constant declaration
-                 must be a compile-time-constant expression.
-               - A local storage element declared with constant is initialized
-                 with the value of its initialization expression during
-                 compilation.
-               - Initialization expressions in local constant declarations must
-                 be non-side-effecting.
-            *)
+            let env, ldi =
+              if ldk = LDK_Constant then
+                let v = reduce_constants env e in
+                declare_local_constant s env t_e v ldi
+              else annotate_local_decl_item s env t_e ldk ldi
+            in
             (S_Decl (ldk, ldi, Some e) |> here, env) |: TypingRule.SDeclSome
         | LDK_Var, None ->
             let env, s = annotate_local_decl_item_uninit s env ldi in
@@ -1602,6 +1691,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           let () = assert (ret_ty = None) in
           Some (S_Call (name, args, eqs) |> here)
         else None
+    | LE_Concat (_les, _) -> None
     | LE_SetArray _ -> assert false
 
   let annotate_func loc (env : env) (f : 'p AST.func) : 'p AST.func =
@@ -1711,6 +1801,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   let declare_const loc name t v env =
     if IMap.mem name env.global.storage_types then
       Error.fatal_from loc (Error.AlreadyDeclaredIdentifier name)
+    else if is_global_ignored name then env
     else
       add_global_storage name t GDK_Constant env |> add_global_constant name v
 
@@ -1729,6 +1820,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | BitField_Nested (_name, _slices, bitfields') ->
         let width' = Diet.Int.cardinal diet in
         check_is_valid_bitfields loc env width' bitfields'
+    | BitField_Type (_name, _slices, ty) ->
+        let+ () = check_is_valid_type loc env ty in
+        let width' = Diet.Int.cardinal diet in
+        let t =
+          T_Bits (BitWidth_SingleExpr (expr_of_int width'), []) |> add_dummy_pos
+        in
+        let+ () = check_bits_equal_width loc env ty t in
+        ()
 
   and check_is_valid_bitfields loc env width bitfields =
     let check_one declared_names bitfield =
@@ -1744,7 +1843,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     ()
 
-  let rec check_is_valid_type loc env ty () =
+  and check_is_valid_type loc env ty () =
     match ty.desc with
     (* TODO:
        - check integer constraints are compile-time constants
@@ -1785,20 +1884,30 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       if false then Format.eprintf "Declaring type %s of %a@." name PP.pp_ty ty
     in
     let+ () = check_var_not_in_env loc env name in
-    let+ () = check_is_valid_type loc env ty in
-    let env =
+    let env, ty =
       match s with
-      | None -> env
-      | Some s ->
+      | None -> (env, ty)
+      | Some (s, extra_fields) ->
           let+ () =
            fun () ->
             if Types.subtype_satisfies env ty (T_Named s |> add_pos_from loc)
             then ()
-            else
-              Error.fatal_from loc (Error.ConflictingTypes ([ T_Named s ], ty))
+            else conflict loc [ T_Named s ] ty
           in
-          add_subtype name s env
+          let ty =
+            if extra_fields = [] then ty
+            else
+              match IMap.find_opt s env.global.declared_types with
+              | Some { desc = T_Record fields; _ } ->
+                  T_Record (fields @ extra_fields) |> add_pos_from_st ty
+              | Some { desc = T_Exception fields; _ } ->
+                  T_Exception (fields @ extra_fields) |> add_pos_from_st ty
+              | Some _ -> conflict loc [ T_Record []; T_Exception [] ] ty
+              | None -> undefined_identifier loc s
+          and env = add_subtype name s env in
+          (env, ty)
     in
+    let+ () = check_is_valid_type loc env ty in
     let res =
       match ty.desc with
       | T_Enum ids ->
@@ -1838,13 +1947,16 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (* Here keyword = GDK_Var or GDK_Config. *)
         if IMap.mem name env.global.storage_types then
           Error.fatal_from loc (Error.AlreadyDeclaredIdentifier name)
+        else if is_global_ignored name then env
         else add_global_storage name ty keyword env
     | { keyword; initial_value = Some e; ty = None; name } ->
         let t, _e = annotate_expr env e in
-        add_global_storage name t keyword env
+        if is_global_ignored name then env
+        else add_global_storage name t keyword env
     | { keyword; initial_value = Some e; ty = Some ty; name } ->
         let t, e = annotate_expr env e in
         if not (Types.type_satisfies env t ty) then conflict e [ ty.desc ] t
+        else if is_global_ignored name then env
         else add_global_storage name ty keyword env
     | { initial_value = None; ty = None; _ } ->
         (* Shouldn't happen because of parser construction. *)
@@ -1861,22 +1973,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       | D_TypeDecl (name, _, _) ->
           name
     in
-    let use =
-      let use_e e acc = ASTUtils.use_e acc e in
-      let use_ty ty acc = ASTUtils.use_ty acc ty in
-      fun d ->
-        match d.desc with
-        | D_GlobalStorage { initial_value = Some e; ty = Some ty; _ } ->
-            ISet.empty |> use_e e |> use_ty ty
-        | D_GlobalStorage { initial_value = None; ty = Some ty; _ } ->
-            ISet.empty |> use_ty ty
-        | D_GlobalStorage { initial_value = Some e; ty = None; _ } ->
-            ISet.empty |> use_e e
-        | D_GlobalStorage _ -> ISet.empty
-        | D_TypeDecl (_, ty, s) -> use_ty ty (ISet.of_option s)
-        | D_Func _ ->
-            ISet.empty (* TODO: pure functions that can be used in constants? *)
-    in
+    let use d = ASTUtils.use_constant_decl ISet.empty d in
     let process_one_decl d =
       match d.desc with
       | D_Func func_sig -> declare_one_func d func_sig

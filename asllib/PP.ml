@@ -79,7 +79,9 @@ let pp_literal f = function
   | L_Int i -> Z.pp_print f i
   | L_Bool true -> pp_print_string f "TRUE"
   | L_Bool false -> pp_print_string f "FALSE"
-  | L_Real r -> Q.pp_print f r
+  | L_Real r ->
+      if Q.den r = Z.one then fprintf f "%a.0" Z.pp_print (Q.num r)
+      else Q.pp_print f r
   | L_BitVector bv -> Bitvector.pp_t f bv
   | L_String s -> fprintf f "%S" s
 
@@ -105,7 +107,7 @@ let rec pp_expr f e =
       fprintf f "@[%a@,.[@[%a@]]@]" pp_expr e (pp_comma_list pp_print_string) xs
   | E_Record (ty, li) ->
       let pp_one f (x, e) = fprintf f "@[<h>%s =@ %a@]" x pp_expr e in
-      fprintf f "@[<hv>%a {@;<1 2>%a@,}@]" pp_ty ty (pp_comma_list pp_one) li
+      fprintf f "@[<hv>%a {@ %a@;<1 -2>}@]" pp_ty ty (pp_comma_list pp_one) li
   | E_Concat es -> fprintf f "@[<hv 2>[%a]@]" pp_expr_list es
   | E_Tuple es -> fprintf f "@[<hv 2>(%a)@]" pp_expr_list es
   | E_Unknown ty -> fprintf f "@[<h>UNKNOWN ::@ %a@]" pp_ty ty
@@ -155,9 +157,9 @@ and pp_ty f t =
   | T_Array (e, elt_type) ->
       fprintf f "@[array [%a] of %a@]" pp_expr e pp_ty elt_type
   | T_Record record_ty ->
-      fprintf f "@[<hv 2>record {@,%a@;<0 -2>}@]" pp_record_ty record_ty
+      fprintf f "@[<hv 2>record {@ %a@;<1 -2>}@]" pp_fields record_ty
   | T_Exception record_ty ->
-      fprintf f "@[exception {%a}@]" pp_record_ty record_ty
+      fprintf f "@[exception { %a@;<1 -2>}@]" pp_fields record_ty
   | T_Named x -> pp_print_string f x
 
 and pp_bitfield f = function
@@ -166,13 +168,15 @@ and pp_bitfield f = function
   | BitField_Nested (name, slices, bitfields) ->
       fprintf f "@[<h>[%a]@ %s@ %a@]" pp_slice_list slices name pp_bitfields
         bitfields
+  | BitField_Type (name, slices, ty) ->
+      fprintf f "@[<h>[%a]@ %s:@ %a@]" pp_slice_list slices name pp_ty ty
 
 and pp_bitfields f bitfields =
   fprintf f "@[<hov 2>{@ %a@ }@]" (pp_comma_list pp_bitfield) bitfields
 
-and pp_record_ty f =
+and pp_fields f =
   let pp_one f (field_name, field_type) =
-    fprintf f "%s::%a" field_name pp_ty field_type
+    fprintf f "@[<h>%s:@ %a@]" field_name pp_ty field_type
   in
   pp_comma_list pp_one f
 
@@ -202,6 +206,7 @@ let rec pp_lexpr f le =
         li
   | LE_Ignore -> pp_print_string f "-"
   | LE_TupleUnpack les -> fprintf f "@[( %a )@]" (pp_comma_list pp_lexpr) les
+  | LE_Concat (les, _) -> fprintf f "@[[%a]@]" (pp_comma_list pp_lexpr) les
 
 let pp_for_direction = function Up -> "to" | Down -> "downto"
 
@@ -270,7 +275,7 @@ let rec pp_stmt f s =
   | S_Decl (ldk, ldi, None) ->
       fprintf f "@[<2>%a %a;@]" pp_local_decl_keyword ldk pp_local_decl_item ldi
   | S_Decl (ldk, ldi, Some e) ->
-      fprintf f "@[<2>%a %a@ = %a;@]" pp_local_decl_keyword ldk
+      fprintf f "@[<2>%a %a =@ %a;@]" pp_local_decl_keyword ldk
         pp_local_decl_item ldi pp_expr e
   | S_Throw (Some (e, _ty_annotation)) ->
       fprintf f "@[<2>throw@ %a;@]" pp_expr e
@@ -352,8 +357,12 @@ let pp_decl f =
         fprintf f "@[<v>%a@ begin@;<1 2>@[<v>%a@]@ end@]" pp_func_sig func
           pp_body func.body
     | D_TypeDecl (x, ty, None) -> fprintf f "@[<2>type %s of %a;@]" x pp_ty ty
-    | D_TypeDecl (x, ty, Some s) ->
-        fprintf f "@[<2>type %s of %a subtypes %s;@]" x pp_ty ty s
+    | D_TypeDecl (x, ty, Some (s, [])) ->
+        fprintf f "@[<2>type %s@ of %a@ subtypes %s;@]" x pp_ty ty s
+    | D_TypeDecl (x, ty, Some (s, fields)) ->
+        fprintf f
+          "@[<2>type %s@ of %a@ subtypes %s@ with @[<hv 2>{@ %a@;<1 -2>}@];@]" x
+          pp_ty ty s pp_fields fields
     | D_GlobalStorage decl -> fprintf f "@[<2>%a;@]" pp_global_storage decl
 
 let pp_t f ast =

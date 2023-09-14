@@ -329,17 +329,12 @@ let slice ==
   | e1=sexpr; COLON; e2=sexpr;      < AST.Slice_Range  >
   | e1=sexpr; PLUS_COLON; e2=sexpr; < AST.Slice_Length >
 
-let unimplemented_literal_expression(x) == x; { AST.L_Bool false }
-
 let literal_expression ==
   | ~=BOOL_LIT;      < AST.L_Bool       >
   | ~=INT_LIT;       < AST.L_Int        >
   | ~=REAL_LIT;      < AST.L_Real       >
   | ~=BITS_LIT;      < AST.L_BitVector  >
-
-  | unimplemented_literal_expression(
-    | STRING_LIT
-  )
+  | ~=STRING_LIT;    < AST.L_String     >
 
 let variable_decl ==
   terminated_by (SEMICOLON; EOL,

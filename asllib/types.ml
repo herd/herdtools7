@@ -313,6 +313,9 @@ module Domain = struct
     | Finite is1, Finite is2 -> IntSet.(is_empty (diff is1 is2))
 
   let is_subset d1 d2 =
+    let () =
+      if false then Format.eprintf "Is %a a subset of %a?@." pp d1 pp d2
+    in
     match (d1, d2) with
     | D_Bool, D_Bool | D_String, D_String | D_Real, D_Real -> true
     | D_Symbols s1, D_Symbols s2 -> ISet.subset s1 s2
@@ -356,7 +359,7 @@ let subtypes env t1 t2 =
   | T_Named s1, T_Named s2 -> subtypes_names env s1 s2
   | _ -> false
 
-let bitfields_included env bfs1 bfs2 =
+let rec bitfields_included env bfs1 bfs2 =
   let rec mem_bfs bfs2 bf1 =
     match find_bitfield_opt (bitfield_get_name bf1) bfs2 with
     | None -> false
@@ -364,14 +367,23 @@ let bitfields_included env bfs1 bfs2 =
     | Some (BitField_Nested (name2, slices2, bfs2') as bf2) -> (
         match bf1 with
         | BitField_Simple _ -> bitfield_equal env bf1 bf2
-        | BitField_Nested (name1, slices1, bfs1') ->
+        | BitField_Nested (name1, slices1, bfs1) ->
             String.equal name1 name2
             && slices_equal env slices1 slices2
-            && incl_bfs bfs1' bfs2')
+            && incl_bfs bfs1 bfs2'
+        | BitField_Type _ -> false)
+    | Some (BitField_Type (name2, slices2, ty2) as bf2) -> (
+        match bf1 with
+        | BitField_Simple _ -> bitfield_equal env bf1 bf2
+        | BitField_Nested _ -> false
+        | BitField_Type (name1, slices1, ty1) ->
+            String.equal name1 name2
+            && slices_equal env slices1 slices2
+            && structural_subtype_satisfies env ty1 ty2)
   and incl_bfs bfs1 bfs2 = List.for_all (mem_bfs bfs2) bfs1 in
   incl_bfs bfs1 bfs2
 
-let rec structural_subtype_satisfies env t s =
+and structural_subtype_satisfies env t s =
   (* A type T subtype-satisfies type S if and only if all of the following
      conditions hold: *)
   match ((resolve_root_name env s).desc, (resolve_root_name env t).desc) with
@@ -410,8 +422,6 @@ let rec structural_subtype_satisfies env t s =
   *)
   | T_Bits (w_s, bf_s), T_Bits (w_t, bf_t) -> (
       (* I interprete the first two condition as just a condition on domains. *)
-      true
-      &&
       match (bf_s, bf_t) with
       | [], _ -> true
       | _, [] -> false
@@ -460,8 +470,9 @@ and domain_subtype_satisfies env t s =
          then the domain of T must be a subset of the domain of S. *)
   | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ -> true
   | T_Real | T_String | T_Bool | T_Enum _ | T_Int _ ->
-      Domain.(
-        is_subset (of_type env (get_structure env t)) (of_type env s_struct))
+      let d_s = Domain.of_type env s_struct
+      and d_t = get_structure env t |> Domain.of_type env in
+      Domain.is_subset d_t d_s
   | T_Bits _ -> (
       (*
         • If either S or T have the structure of a bitvector type with

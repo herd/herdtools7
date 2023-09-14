@@ -112,6 +112,12 @@ val binop : binop -> expr -> expr -> expr
 val fresh_var : string -> identifier
 (** [fresh_var "doc"] is a fresh variable whose name begins with "doc". *)
 
+val global_ignored : unit -> identifier
+(** Creates a fresh dummy variable for a global ignored variable. *)
+
+val is_global_ignored : identifier -> bool
+(** [is_global_ignored s] is true iff [s] has been created with [global_ignored ()]. *)
+
 val constraint_binop :
   binop -> int_constraints -> int_constraints -> int_constraints
 (** [constraint_binop PLUS cs1 cs2] is the set of constraints given by the
@@ -208,6 +214,11 @@ val is_simple_expr : expr -> bool
 
 val use_e : ISet.t -> expr -> ISet.t
 val use_ty : ISet.t -> ty -> ISet.t
+
+val use_constant_decl : ISet.t -> 'a decl -> ISet.t
+(** [use_constant_decl d] is the set of other declared names required to have
+    in the environment to be able to type-check d. *)
+
 val used_identifiers : 'p decl list -> ISet.t
 val used_identifiers_stmt : stmt -> ISet.t
 

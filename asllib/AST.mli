@@ -167,8 +167,8 @@ and type_desc =
   | T_Enum of identifier list
   | T_Tuple of ty list
   | T_Array of expr * ty
-  | T_Record of typed_identifier list
-  | T_Exception of typed_identifier list
+  | T_Record of field list
+  | T_Exception of field list
   | T_Named of identifier  (** A type variable. *)
 
 and ty = type_desc annotated
@@ -197,6 +197,11 @@ and bitfield =
       (** A name and its corresponding slice *)
   | BitField_Nested of identifier * slice list * bitfield list
       (** A name, its corresponding slice and some nested bitfields. *)
+  | BitField_Type of identifier * slice list * ty
+      (** A name, its corresponding slice and the type of the bitfield. *)
+
+and field = identifier * ty
+(** A field of a record-like structure. *)
 
 and typed_identifier = identifier * ty
 (** An identifier declared with its type. *)
@@ -218,6 +223,8 @@ type lexpr_desc =
   | LE_SetField of lexpr * identifier
   | LE_SetFields of lexpr * identifier list
   | LE_TupleUnpack of lexpr list
+  | LE_Concat of lexpr list * int list option
+      (** LE_Concat (les, _) unpacks the various lexpr. Second argument is a type annotation. *)
 
 and lexpr = lexpr_desc annotated
 
@@ -298,7 +305,7 @@ type global_decl = {
 type 'p decl_desc =
   | D_Func of 'p func
   | D_GlobalStorage of global_decl
-  | D_TypeDecl of identifier * ty * identifier option
+  | D_TypeDecl of identifier * ty * (identifier * field list) option
 
 type 'p decl = 'p decl_desc annotated
 
