@@ -1,0 +1,14 @@
+AArch64 LB+SWP-RsRt-addr+rel
+
+{
+0:X1=x; 0:X3=y; 0:X10=z;
+1:X1=y; 1:X3=x;
+}
+ P0                 | P1          ;
+ LDR W0,[X1]        | LDR W0,[X1] ;
+ SWP W0, W12, [X10] |             ; 
+ EOR W22, W12, W12  |             ; 
+ ADD W2, W22, #1    | MOV W2,#1   ;
+ STR W2,[X3]        | STLR W2,[X3];
+exists (0:X0=1 /\ 1:X0=1)
+

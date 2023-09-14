@@ -30,7 +30,12 @@ SB+dmb.sy+po   Allowed
 SB+dmb.sys     Forbidden
 SB             Allowed
 LB+rel+CAS     Forbidden
+LB+rel+CAS-ok-RsRs-addr     Allowed
+LB+rel+CAS-ok-MRs-addr     Forbidden
 MP+rel+CAS-addr Allowed
+MP+rel+CAS-ok-RsRs-addr Allowed
+MP+rel+CAS-ok-MRs-addr Allowed
+MP+rel+CAS-ok-bothRs-addr Forbidden
 MP+rel+CSEL     Allowed
 #MP+rel+CSEL-data Forbidden
 MP+rel+CSEL-addr Allowed 
@@ -39,3 +44,4 @@ CoRW1          Forbidden
 CoRW2          Forbidden
 CoWR           Forbidden
 CoWW           Forbidden
+LB+SWP-RsRt-addr+rel Allowed

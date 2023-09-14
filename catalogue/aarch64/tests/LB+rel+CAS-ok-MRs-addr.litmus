@@ -1,0 +1,18 @@
+AArch64 LB+rel+CAS-ok-MRs-addr.litmus
+
+{
+  x = 0;
+  y = 0;
+
+  0: X0 = x;         1: X0 = x;
+  0: X1 = y;         1: X1 = y;
+}
+
+P0                 | P1                     ;
+LDR W3, [X0]       | MOV W3, #1             ;
+MOV W4, #1         | CAS W3, WZR, [X1]      ;
+STLR W4, [X1]      | EOR W4, W3, W3         ;
+                   | MOV W5, #1             ;
+                   | STR W5, [X0, W4, SXTW] ;
+
+exists (0: X3 = 1 /\ 1: X3 = 1)
