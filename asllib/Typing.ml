@@ -949,12 +949,6 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                   Format.eprintf "@[Cannot find %s in env@ %a.@]@." x pp_env env
               in
               undefined_identifier e x)) |: TypingRule.EUndefIdent
-    | E_Binop (BAND, e1, e2) ->
-        E_Cond (e1, e2, E_Literal (L_Bool false) |> here) |: TypingRule.BinopAnd
-        |> here |> annotate_expr env
-    | E_Binop (BOR, e1, e2) ->
-        E_Cond (e1, E_Literal (L_Bool true) |> here, e2) |: TypingRule.BinopOr  
-        |> here |> annotate_expr env
     | E_Binop (op, e1, e2) ->
         let t1, e1' = annotate_expr env e1 in
         let t2, e2' = annotate_expr env e2 in
