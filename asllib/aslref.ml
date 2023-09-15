@@ -129,7 +129,7 @@ let parse_args () =
   let () =
     if !show_version then
       let () =
-        Printf.printf "aslseq version %s rev %s\n%!" Version.version Version.rev
+        Printf.printf "aslref version %s rev %s\n%!" Version.version Version.rev
       in
       exit 0
   in

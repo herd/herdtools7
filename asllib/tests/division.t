@@ -8,7 +8,7 @@ Division by zero:
   > end
   > EOF
 
-  $ aslseq div.asl
+  $ aslref div.asl
   File div.asl, line 3, characters 19 to 26:
   ASL Typing error: Illegal application of operator DIV on types integer {6}
     and integer {0}
@@ -22,7 +22,7 @@ Division by zero:
   > end
   > EOF
 
-  $ aslseq div.asl
+  $ aslref div.asl
   File div.asl, line 3, characters 19 to 28:
   ASL Typing error: Illegal application of operator DIVRM on types integer {6}
     and integer {0}
@@ -36,7 +36,7 @@ Division by zero:
   > end
   > EOF
 
-  $ aslseq div.asl
+  $ aslref div.asl
   File div.asl, line 3, characters 19 to 26:
   ASL Typing error: Illegal application of operator MOD on types integer {6}
     and integer {0}
@@ -52,7 +52,7 @@ Unsupported divisions (caught at time-checking time):
   > end
   > EOF
 
-  $ aslseq div.asl
+  $ aslref div.asl
   File div.asl, line 3, characters 19 to 27:
   ASL Typing error: Illegal application of operator DIV on types integer {6}
     and integer {(- 3)}
@@ -66,7 +66,7 @@ Unsupported divisions (caught at time-checking time):
   > end
   > EOF
 
-  $ aslseq div.asl
+  $ aslref div.asl
   File div.asl, line 3, characters 19 to 29:
   ASL Typing error: Illegal application of operator DIVRM on types integer {6}
     and integer {(- 3)}
@@ -80,7 +80,7 @@ Unsupported divisions (caught at time-checking time):
   > end
   > EOF
 
-  $ aslseq div.asl
+  $ aslref div.asl
   File div.asl, line 3, characters 19 to 27:
   ASL Typing error: Illegal application of operator MOD on types integer {6}
     and integer {(- 3)}
@@ -96,7 +96,7 @@ The following error is a runtime error because we don't know how to catch those 
   > end
   > EOF
 
-  $ aslseq div.asl
+  $ aslref div.asl
   ASL Execution error: Illegal application of operator DIV for values 5 and 3.
   [1]
 
@@ -112,7 +112,7 @@ For completeness, those operations are runtime errors:
   > end
   > EOF
 
-  $ aslseq div.asl
+  $ aslref div.asl
   ASL Execution error: Illegal application of operator DIV for values 6 and -3.
   [1]
 
@@ -126,7 +126,7 @@ For completeness, those operations are runtime errors:
   > end
   > EOF
 
-  $ aslseq div.asl
+  $ aslref div.asl
   ASL Execution error: Illegal application of operator DIVRM for values 6
     and -3.
   [1]
@@ -141,7 +141,7 @@ For completeness, those operations are runtime errors:
   > end
   > EOF
 
-  $ aslseq div.asl
+  $ aslref div.asl
   ASL Execution error: Illegal application of operator MOD for values 6 and -3.
   [1]
 
@@ -155,7 +155,7 @@ For completeness, those operations are runtime errors:
   > end
   > EOF
 
-  $ aslseq div.asl
+  $ aslref div.asl
   ASL Execution error: Illegal application of operator DIV for values 5 and 3.
   [1]
 
@@ -174,7 +174,7 @@ More complicated examples:
   > end
   > EOF
 
-  $ aslseq div.asl
+  $ aslref div.asl
   ASL Execution error: Illegal application of operator DIV for values 5 and 0.
   [1]
 
@@ -191,7 +191,7 @@ More complicated examples:
   > end
   > EOF
 
-  $ aslseq div.asl
+  $ aslref div.asl
   ASL Execution error: Illegal application of operator DIV for values 5 and 2.
   [1]
 
@@ -206,7 +206,7 @@ Example from asltools:
   >   let x = glob_a DIV glob_b;
   > end
 
-  $ aslseq div.asl
+  $ aslref div.asl
   File div.asl, line 6, characters 10 to 27:
   ASL Typing error: Illegal application of operator DIV on types
     integer {2, 4, 8} and integer {0, 1, 2}

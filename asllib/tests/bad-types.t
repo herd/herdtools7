@@ -10,7 +10,7 @@ Bad fields
   > };
   > EOF
 
-  $ aslseq bad-types.asl
+  $ aslref bad-types.asl
   File bad-types.asl, line 1, character 0 to line 4, character 2:
   ASL Typing error: cannot declare already declared element "a".
   [1]
@@ -23,7 +23,7 @@ Overlapping slices
   > };
   > EOF
 
-  $ aslseq bad-types.asl
+  $ aslref bad-types.asl
   File bad-types.asl, line 1, character 0 to line 4, character 2:
   ASL Typing error: overlapping slices 10:0, 3+:2.
   [1]
@@ -36,7 +36,7 @@ Bad slices
   > };
   > EOF
 
-  $ aslseq bad-types.asl
+  $ aslref bad-types.asl
   File bad-types.asl, line 1, character 0 to line 4, character 2:
   ASL Typing error: Cannot extract from bitvector of length 12 slices 14:12.
   [1]
@@ -48,7 +48,7 @@ Bad slices
   > };
   > EOF
 
-  $ aslseq bad-types.asl
+  $ aslref bad-types.asl
   File bad-types.asl, line 1, character 0 to line 4, character 2:
   ASL Typing error: Cannot extract from bitvector of length 12 slices (- 2)+:1.
   [1]
@@ -63,7 +63,7 @@ Bad slices
   > };
   > EOF
 
-  $ aslseq bad-types.asl
+  $ aslref bad-types.asl
   File bad-types.asl, line 1, character 0 to line 7, character 2:
   ASL Typing error: Cannot extract from bitvector of length 3 slices 10:8.
   [1]

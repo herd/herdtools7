@@ -8,4 +8,4 @@ Unsupported division:
   > end
   > EOF
 
-  $ aslseq div.asl
+  $ aslref div.asl
