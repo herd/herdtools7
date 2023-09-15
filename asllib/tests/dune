@@ -25,4 +25,4 @@
       (run %{test} -e))))
 
 (cram
-  (deps %{bin:aslseq}))
+  (deps %{bin:aslref}))
