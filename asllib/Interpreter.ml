@@ -1086,7 +1086,14 @@ module Make (B : Backend.S) (C : Config) = struct
     | T_Tuple li ->
         List.map (base_value env) li |> sync_list >>= B.create_vector
     | T_Array (e_length, ty) ->
-        let* v = base_value env ty and* length = eval_expr_sef env e_length in
+        let* v = base_value env ty in
+        let* length =
+          match e_length.desc with
+          | E_Var x when IMap.mem x env.global.static.declared_types ->
+              IMap.find x env.global.static.constants_values
+              |> B.v_of_literal |> return
+          | _ -> eval_expr_sef env e_length
+        in
         let length =
           match B.v_to_int length with
           | None -> Error.fatal_from t (Error.UnsupportedExpr e_length)

@@ -50,7 +50,6 @@ let get_structure (env : env) : ty -> ty =
     let fields = List.map one_field fields in
     canonical_fields fields
   in
-
   get
 
 (* --------------------------------------------------------------------------*)

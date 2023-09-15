@@ -1062,13 +1062,21 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 *)
                 let slices = best_effort slices (annotate_slices env) in
                 ( T_Bits (BitWidth_SingleExpr w, []) |> here,
-                  E_Slice (e', slices) |> here ) |: TypingRule.ESlice
+                  E_Slice (e', slices) |> here )
+                |: TypingRule.ESlice
             | T_Array (length, ty') -> (
-                (* TODO: make sure that it still works with length being a constrained integer. *)
                 let wanted_t_index =
-                  T_Int
-                    (Some [ Constraint_Range (!$0, binop MINUS length !$1) ])
-                  |> here
+                  let t_int =
+                    T_Int
+                      (Some [ Constraint_Range (!$0, binop MINUS length !$1) ])
+                    |> here
+                  in
+                  match length.desc with
+                  | E_Var name -> (
+                      match IMap.find_opt name env.global.declared_types with
+                      | Some t -> t
+                      | None -> t_int)
+                  | _ -> t_int
                 in
                 match slices with
                 | [ Slice_Single e_index ] ->
@@ -1077,41 +1085,41 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                       check_type_satisfies e env t_index wanted_t_index
                     in
                     (ty', E_GetArray (e', e_index) |> here)
-                | _ -> fatal_from e (Error.UnsupportedExpr e))
-            | _ -> conflict e [ T_Int None; default_t_bits ] t_e')) |: TypingRule.EGetArray
-    | E_GetField (e', field) -> (
-        let t_e', e' = annotate_expr env e' in
-        let t_e' = Types.resolve_root_name env t_e' in
-        match t_e'.desc with
-        | T_Exception fields | T_Record fields -> (
-            match List.assoc_opt field fields with
-            | None -> fatal_from e (Error.BadField (field, t_e'))
-            | Some t -> (t, E_GetField (e', field) |> here))
-        | T_Bits (_, bitfields) -> (
-            match find_bitfield_opt field bitfields with
-            | None -> fatal_from e (Error.BadField (field, t_e'))
-            | Some (BitField_Simple (_field, slices)) ->
-                E_Slice (e', slices) |> here |> annotate_expr env
-            | Some (BitField_Nested (_field, slices, bitfields)) ->
-                let t_e, e =
-                  E_Slice (e', slices) |> here |> annotate_expr env
-                in
-                let t_e =
-                  match t_e.desc with
-                  | T_Bits (width, _bitfields) ->
-                      T_Bits (width, bitfields) |> add_pos_from t_e
-                  | _ -> assert false
-                in
-                (t_e, e)
-            | Some (BitField_Type (_field, slices, t)) ->
-                let t_e, e =
-                  E_Slice (e', slices) |> here |> annotate_expr env
-                in
-                let+ () = check_type_satisfies e env t_e t in
-                (t, e))
-        | _ ->
-           conflict e [ default_t_bits; T_Record []; T_Exception [] ] t_e')
-           |: TypingRule.EGetBitField
+                    |: TypingRule.EGetArray
+                | _ -> conflict e [ T_Int None; default_t_bits ] t_e')
+            | _ -> conflict e [ T_Int None; default_t_bits ] t_e'))
+    | E_GetField (e', field) ->
+        (let t_e', e' = annotate_expr env e' in
+         let t_e' = Types.resolve_root_name env t_e' in
+         match t_e'.desc with
+         | T_Exception fields | T_Record fields -> (
+             match List.assoc_opt field fields with
+             | None -> fatal_from e (Error.BadField (field, t_e'))
+             | Some t -> (t, E_GetField (e', field) |> here))
+         | T_Bits (_, bitfields) -> (
+             match find_bitfield_opt field bitfields with
+             | None -> fatal_from e (Error.BadField (field, t_e'))
+             | Some (BitField_Simple (_field, slices)) ->
+                 E_Slice (e', slices) |> here |> annotate_expr env
+             | Some (BitField_Nested (_field, slices, bitfields)) ->
+                 let t_e, e =
+                   E_Slice (e', slices) |> here |> annotate_expr env
+                 in
+                 let t_e =
+                   match t_e.desc with
+                   | T_Bits (width, _bitfields) ->
+                       T_Bits (width, bitfields) |> add_pos_from t_e
+                   | _ -> assert false
+                 in
+                 (t_e, e)
+             | Some (BitField_Type (_field, slices, t)) ->
+                 let t_e, e =
+                   E_Slice (e', slices) |> here |> annotate_expr env
+                 in
+                 let+ () = check_type_satisfies e env t_e t in
+                 (t, e))
+         | _ -> conflict e [ default_t_bits; T_Record []; T_Exception [] ] t_e')
+        |: TypingRule.EGetBitField
     | E_GetFields (e', fields) ->
         let t_e', e' = annotate_expr env e' in
         let t_e' = Types.resolve_root_name env t_e' in
@@ -1195,69 +1203,80 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             else
               let les' = List.map2 (annotate_lexpr env) les sub_tys in
               LE_TupleUnpack les' |> here
-        | _ -> conflict le [ T_Tuple [] ] t_e) |: TypingRule.LETuple
-    | LE_Slice (le', slices) -> (
-        let t_le, _ = expr_of_lexpr le' |> annotate_expr env in
-        let struct_t_le = Types.get_structure env t_le in
-        match struct_t_le.desc with
-        | T_Bits _ ->
-            let le' = annotate_lexpr env le' t_le in
-            let+ () =
-             fun () ->
-              let length = slices_length env slices |> reduce_expr env in
-              let t = T_Bits (BitWidth_SingleExpr length, []) |> here in
-              check_can_assign_to le env t t_e ()
-            in
-            let slices = best_effort slices (annotate_slices env) in
-            LE_Slice (le', slices) |> here
-        | T_Array (length, ty') -> (
-            let le' = annotate_lexpr env le' t_le in
-            let+ () = check_can_assign_to le env ty' t_e in
-            let wanted_t_index =
-              T_Int (Some [ Constraint_Range (!$0, binop MINUS length !$1) ])
-              |> here
-            in
-            match slices with
-            | [ Slice_Single e_index ] ->
-                let t_index, e_index = annotate_expr env e_index in
-                let+ () = check_type_satisfies le env t_index wanted_t_index in
-                LE_SetArray (le', e_index) |> here
-            | _ -> fatal_from le (Error.UnsupportedExpr (expr_of_lexpr le)))
-        | _ -> conflict le [ default_t_bits ] t_le) |: TypingRule.LESlice
-    | LE_SetField (le', field) -> (
-        let t_le', _ = expr_of_lexpr le' |> annotate_expr env in
-        let le' = annotate_lexpr env le' t_le' in
-        let t_le'_struct = Types.get_structure env t_le' in
-        match t_le'_struct.desc with
-        | T_Exception fields | T_Record fields ->
-            let t =
-              match List.assoc_opt field fields with
-              | None -> fatal_from le (Error.BadField (field, t_le'))
-              | Some t -> t
-            in
-            let+ () = check_can_assign_to le env t t_e in
-            LE_SetField (le', field) |> here
-        | T_Bits (_, bitfields) ->
-            let bits slices bitfields =
-              let w = slices_length env slices in
-              T_Bits (BitWidth_SingleExpr w, bitfields) |> here
-            in
-            let t, slices =
-              match find_bitfield_opt field bitfields with
-              | None -> fatal_from le (Error.BadField (field, t_le'_struct))
-              | Some (BitField_Simple (_field, slices)) ->
-                  (bits slices [], slices)
-              | Some (BitField_Nested (_field, slices, bitfields')) ->
-                  (bits slices bitfields', slices)
-              | Some (BitField_Type (_field, slices, t)) ->
-                  let t' = bits slices [] in
-                  let+ () = check_bits_equal_width le env t t' in
-                  (t, slices)
-            in
-            let+ () = check_can_assign_to le env t t_e in
-            let le = LE_Slice (le', slices) |> here in
-            annotate_lexpr env le t_e
-        | _ -> conflict le [ default_t_bits; T_Record []; T_Exception [] ] t_e) |: TypingRule.LESetField
+        | _ -> conflict le [ T_Tuple [] ] t_e)
+        |: TypingRule.LETuple
+    | LE_Slice (le', slices) ->
+        (let t_le, _ = expr_of_lexpr le' |> annotate_expr env in
+         let struct_t_le = Types.get_structure env t_le in
+         match struct_t_le.desc with
+         | T_Bits _ ->
+             let le' = annotate_lexpr env le' t_le in
+             let+ () =
+              fun () ->
+               let length = slices_length env slices |> reduce_expr env in
+               let t = T_Bits (BitWidth_SingleExpr length, []) |> here in
+               check_can_assign_to le env t t_e ()
+             in
+             let slices = best_effort slices (annotate_slices env) in
+             LE_Slice (le', slices) |> here
+         | T_Array (length, ty') -> (
+             let le' = annotate_lexpr env le' t_le in
+             let+ () = check_can_assign_to le env ty' t_e in
+             let wanted_t_index =
+               let t_int =
+                 T_Int (Some [ Constraint_Range (!$0, binop MINUS length !$1) ])
+                 |> here
+               in
+               match length.desc with
+               | E_Var name -> (
+                   match IMap.find_opt name env.global.declared_types with
+                   | Some t -> t
+                   | None -> t_int)
+               | _ -> t_int
+             in
+             match slices with
+             | [ Slice_Single e_index ] ->
+                 let t_index, e_index = annotate_expr env e_index in
+                 let+ () = check_type_satisfies le env t_index wanted_t_index in
+                 LE_SetArray (le', e_index) |> here
+             | _ -> fatal_from le (Error.UnsupportedExpr (expr_of_lexpr le)))
+         | _ -> conflict le [ default_t_bits ] t_le)
+        |: TypingRule.LESlice
+    | LE_SetField (le', field) ->
+        (let t_le', _ = expr_of_lexpr le' |> annotate_expr env in
+         let le' = annotate_lexpr env le' t_le' in
+         let t_le'_struct = Types.get_structure env t_le' in
+         match t_le'_struct.desc with
+         | T_Exception fields | T_Record fields ->
+             let t =
+               match List.assoc_opt field fields with
+               | None -> fatal_from le (Error.BadField (field, t_le'))
+               | Some t -> t
+             in
+             let+ () = check_can_assign_to le env t t_e in
+             LE_SetField (le', field) |> here
+         | T_Bits (_, bitfields) ->
+             let bits slices bitfields =
+               let w = slices_length env slices in
+               T_Bits (BitWidth_SingleExpr w, bitfields) |> here
+             in
+             let t, slices =
+               match find_bitfield_opt field bitfields with
+               | None -> fatal_from le (Error.BadField (field, t_le'_struct))
+               | Some (BitField_Simple (_field, slices)) ->
+                   (bits slices [], slices)
+               | Some (BitField_Nested (_field, slices, bitfields')) ->
+                   (bits slices bitfields', slices)
+               | Some (BitField_Type (_field, slices, t)) ->
+                   let t' = bits slices [] in
+                   let+ () = check_bits_equal_width le env t t' in
+                   (t, slices)
+             in
+             let+ () = check_can_assign_to le env t t_e in
+             let le = LE_Slice (le', slices) |> here in
+             annotate_lexpr env le t_e
+         | _ -> conflict le [ default_t_bits; T_Record []; T_Exception [] ] t_e)
+        |: TypingRule.LESetField
     | LE_SetFields (le', fields) ->
         let t_le', _ = expr_of_lexpr le' |> annotate_expr env in
         let le' = annotate_lexpr env le' t_le' in
@@ -1907,13 +1926,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       | T_Enum ids ->
           let env = add_type name ty env in
           let t = T_Named name |> add_pos_from ty in
-          let add_one_id env x =
-            let v =
-              L_Int (IMap.cardinal env.global.constants_values |> Z.of_int)
-            in
-            declare_const loc x t v env
+          let add_one_id (env, counter) x =
+            let v = L_Int (Z.of_int counter) in
+            (declare_const loc x t v env, counter + 1)
           in
-          List.fold_left add_one_id env ids
+          let env, counter = List.fold_left add_one_id (env, 0) ids in
+          let l_counter = L_Int (Z.of_int counter) in
+          let env = declare_const loc name integer l_counter env in
+          env
       | _ -> add_type name ty env
     in
     let () = if false then Format.eprintf "Declared %s.@." name in
