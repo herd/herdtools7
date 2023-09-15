@@ -88,6 +88,8 @@ module Make (B : Backend.S) (C : Config) = struct
   (*****************************************************************************)
 
   let one = B.v_of_int 1
+  let true' = E_Literal (L_Bool true) |> add_dummy_pos
+  let false' = E_Literal (L_Bool false) |> add_dummy_pos
 
   (* Return *)
   (* ------ *)
@@ -345,6 +347,15 @@ module Make (B : Backend.S) (C : Config) = struct
         | NotFound ->
           fatal_from e @@ Error.UndefinedIdentifier x |: SemanticsRule.EUndefIdent)
 
+    | E_Binop (BAND, e1, e2) ->
+        E_Cond (e1, e2, false') |> add_pos_from e |> eval_expr env
+
+    | E_Binop (BOR, e1, e2) ->
+        E_Cond (e1, true', e2) |> add_pos_from e |> eval_expr env
+
+    | E_Binop (IMPL, e1, e2) ->
+        E_Cond (e1, e2, true') |> add_pos_from e |> eval_expr env
+
     | E_Binop (op, e1, e2) ->
         let** (v1, v2), env = fold_par eval_expr env e1 e2 in
         let* v = B.binop op v1 v2 in
@@ -550,7 +561,7 @@ module Make (B : Backend.S) (C : Config) = struct
                 (* V0 first assignments promoted to local declarations *)
                 declare_local_identifier env x v
                 >>= return_normal |: SemanticsRule.LEUndefIdentV0))
-     | LE_Slice (re_bv, slices) ->
+    | LE_Slice (re_bv, slices) ->
         let*^ rm_bv, env = expr_of_lexpr re_bv |> eval_expr env in
         let*^ m_positions, env = eval_slices env slices in
         let new_m_bv =
