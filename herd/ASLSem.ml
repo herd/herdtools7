@@ -404,6 +404,8 @@ module Make (C : Config) = struct
           in
           List.fold_left folder (return h) t
 
+    let bitvector_length v = M.op1 (Op.ArchOp1 ASLOp.BVLength) v
+
     (**************************************************************************)
     (* Primitives and helpers                                                 *)
     (**************************************************************************)
@@ -715,6 +717,7 @@ module Make (C : Config) = struct
         let read_from_bitvector = read_from_bitvector
         let write_to_bitvector = write_to_bitvector
         let concat_bitvectors = concat_bitvectors
+        let bitvector_length = bitvector_length
         let v_unknown_of_type = v_unknown_of_type
       end in
       let module Config = struct

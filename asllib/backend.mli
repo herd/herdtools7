@@ -90,12 +90,11 @@ module type S = sig
   val prod_par : 'a m -> 'b m -> ('a * 'b) m
   (** Monadic product operation, two monads are combined "in parallel".*)
 
-  val appl_data: 'a m -> ('a -> 'b) -> 'b m
-    (** Applicative map. 
+  val appl_data : 'a m -> ('a -> 'b) -> 'b m
+  (** Applicative map. 
   
       Creates a data dependency between the output events and
       the input events of the argument in the resulting monad. *)
-
 
   val choice : value m -> 'b m -> 'b m -> 'b m
   (** choice is a boolean if operator. *)
@@ -157,6 +156,9 @@ module type S = sig
 
   val concat_bitvectors : value list -> value m
   (** Similar to Bitvector.concat, but monadic style obviously. *)
+
+  val bitvector_length : value -> value m
+  (** Get the length of a bitvector. *)
 
   type primitive = value m list -> value m list m
   (** primitive types that go with this AST. *)

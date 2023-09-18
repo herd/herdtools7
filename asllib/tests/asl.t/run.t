@@ -135,3 +135,19 @@ Runtime checks:
     value 2 does not belong to type integer {1}.
   [1]
 
+  $ cat >runtime-type-sat.asl <<EOF
+  > func test(size: integer) begin
+  >   let - = Zeros(4) as bits(size);
+  > end
+  > func main () => integer begin
+  >   test(4);
+  >   test(3);
+  >   return 0;
+  > end
+
+  $ aslref runtime-type-sat.asl
+  File runtime-type-sat.asl, line 2, characters 10 to 18:
+  ASL Execution error: Mismatch type:
+    value '0000' does not belong to type bits(size).
+  [1]
+

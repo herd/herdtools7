@@ -498,7 +498,17 @@ module Make (B : Backend.S) (C : Config) = struct
     let or' prev here = prev >>= B.binop BOR here in
     let rec in_values v ty =
       match (Types.get_structure (IEnv.to_static env) ty).desc with
-      | T_Real | T_Bool | T_Enum _ | T_String | T_Bits _ | T_Int None -> m_true
+      | T_Real | T_Bool | T_Enum _ | T_String | T_Int None -> m_true
+      | T_Bits (BitWidth_SingleExpr e, _) ->
+          let* v' = eval_expr_sef env e and* v_length = B.bitvector_length v in
+          B.binop EQ_OP v_length v'
+      | T_Bits (BitWidth_ConstrainedFormType ty_length, _) ->
+          let* v_length = B.bitvector_length v in
+          in_values v_length ty_length
+      | T_Bits (BitWidth_Constraints cs, _) ->
+          let* v_length = B.bitvector_length v in
+          let ty_length = T_Int (Some cs) |> add_pos_from ty in
+          in_values v_length ty_length
       | T_Int (Some constraints) ->
           let fold prev = function
             | Constraint_Exact e ->

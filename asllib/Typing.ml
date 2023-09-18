@@ -942,7 +942,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           (fun res ->
             let env' = env in
             if Types.structural_subtype_satisfies env' t'' t' then
-              if Types.domain_subtype_satisfies env' t'' t' then (t', e'')
+              if Types.domain_subtype_satisfies env' t'' t' then
+                (* I am disabling the opmitization here as long as the type
+                   system is not sound. *)
+                (* (t', e'') *)
+                res
               else res
             else conflict e [ t'.desc ] t'')
         |: TypingRule.TypedExpr
