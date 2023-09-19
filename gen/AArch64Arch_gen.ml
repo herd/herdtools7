@@ -100,6 +100,8 @@ module SIMD = struct
       else reg r 0::regs (r+1) in
     regs 0
 
+  let reduce vec =
+    List.fold_right (+) (List.flatten vec) 0
 end
 
 type atom_rw =  PP | PL | AP | AL

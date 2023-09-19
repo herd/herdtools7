@@ -21,3 +21,4 @@ let pp () = ""
 let initial _ = [||]
 let step () _ _ = [||]
 let read () _ = []
+let reduce _ = 0

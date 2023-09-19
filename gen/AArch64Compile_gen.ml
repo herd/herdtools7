@@ -54,6 +54,17 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       r1,r2,x
 
     let next_vreg x = A64.alloc_special x
+    let next_scalar_reg x =
+      let r,x = A64.alloc_special x in
+      let r = match r with
+        | Vreg (r,(_,8)) -> A64.SIMDreg r
+        | Vreg (r,(_,16)) -> A64.SIMDreg r
+        | Vreg (r,(_,32)) -> A64.SIMDreg r
+        | Vreg (r,(_,64)) -> A64.SIMDreg r
+        | _ -> assert false (* ? *)
+      in
+      r,x
+
     let pseudo = List.map (fun i -> Instruction i)
 
     let tempo1 st = A.alloc_trashed_reg "T1" st (* May be used for address  *)
@@ -160,8 +171,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let eor sz r1 r2 r3 = op3r sz EOR r1 r2 r3
 
-    let eor_simd r1 r2 = I_EOR_SIMD (r1,r2,r2)
-
     let andi sz r1 r2 k = op3i sz AND r1 r2 k
 
     let incr r = op3i V32 ADD r r 1
@@ -226,15 +235,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | N2 -> I_LD2M (rs,rt,K 0)
       | N3 -> I_LD3M (rs,rt,K 0)
       | N4 -> I_LD4M (rs,rt,K 0)
-
-    let ldn_idx n rs rt ro =
-      let open SIMD in
-      match n with
-      | N1 -> I_LD1M (rs,rt,RV (V64,ro))
-      | N2 -> I_LD2M (rs,rt,RV (V64,ro))
-      | N3 -> I_LD3M (rs,rt,RV (V64,ro))
-      | N4 -> I_LD4M (rs,rt,RV (V64,ro))
-
 
     let ldr_mixed_idx v r1 r2 idx sz  =
       let idx = MemExt.v2idx_reg v idx in
@@ -561,15 +561,24 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     module LDN = struct
 
-      let emit_load n st p init x =
+      let emit_load_reg n st init rA =
         let (r,rs),st = emit_vregs n st in
-        let rB,init,st = U.next_init st p init x in
-        r,init,lift_code [ldn n (r::rs) rB],st
+        let adds = List.map (fun v -> add_simd r v) rs in
+        let rS,st = next_scalar_reg st in
+        let addv = [I_ADDV(A64.VSIMD32,rS,r)] in
+        let rX,st = next_reg st in
+        let fmov = [I_FMOV_TG(A64.V32,rX,A64.VSIMD32,rS)] in
+        rX,init,lift_code ([ldn n (r::rs) rA]@adds@addv@fmov),st
 
-      let emit_load_idx n st p init x ro =
-        let (r,rs),st = emit_vregs n st in
-        let rB,init,st = U.next_init st p init x in
-        r,init,lift_code [ldn_idx n (r::rs) rB ro],st
+      let emit_load n st p init loc =
+        let rA,init,st = U.next_init st p init loc in
+        emit_load_reg n st init rA
+
+      let emit_load_idx n v st p init loc ridx =
+        let rA,init,st = U.next_init st p init loc in
+        let rA,csA,st = do_sum_addr v st rA ridx in
+        let r,init,cs,st = emit_load_reg n st init rA in
+        r,init,pseudo csA@cs,st
     end
 
     module LDG = struct
@@ -1730,11 +1739,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               Some rB,init,cs@lift_code [ldr_mixed rB rA MachSize.S128 0; gctype rB rB],st
           | R,Some (CapaSeal,Some _) -> assert false
           | R,Some (Neon n,None) ->
-              let c = sxtw r2 rd in
-              let r3,st = next_reg st in
-              let cs0,st = calc0_gen csel st V64 r3 r2 in
-              let rB,init,cs,st = LDN.emit_load_idx n st p init loc r3 in
-              Some rB,init,Instruction c::pseudo cs0@cs,st
+              let rB,init,cs,st = LDN.emit_load_idx n vdep st p init loc r2 in
+              Some rB,init,pseudo cs0@cs,st
           | R,Some (Pair (opt,idx),None) ->
               let r,init,cs,st =
                 emit_ldp_idx_var opt idx vdep st p init loc r2 in
@@ -1966,14 +1972,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                       let cs0,st = calc0_gen csel st A64.V64 r2 r3 in
                       sxtw r3 r1::cs0,st in
                 let cs2 = pseudo cs@[Instruction (add A64.V64 r2 r2 rA);] in
-                r2,cs2,init,st
-            | Some (Neon _,None) ->
-                let r2,st = next_vreg st in
-                let r3,st = next_vreg st in
-                let cs2 =
-                  [Instruction (eor_simd r2 r1) ;
-                   Instruction (movi_reg r3 e.C.v) ;
-                   Instruction (add_simd r2 r3); ] in
                 r2,cs2,init,st
             | _ ->
                 let cs2,st =
