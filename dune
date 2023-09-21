@@ -15,3 +15,5 @@
  (name jerd)
  (deps
   (alias herd-www/all)))
+
+(documentation)

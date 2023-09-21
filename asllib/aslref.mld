@@ -1,86 +1,25 @@
-{0 Getting started with ASLRef}
+{0 ASLRef}
 
-{1 Installation}
+Welcome!
 
-{2 Pre-requisites}
+{1 Disclaimer}
+This material covers both ASLv0 (viz, the existing ASL pseudocode language
+which appears in the Arm Architecture Reference Manual) and ASLv1, a new,
+experimental, and as yet unreleased version of ASL.
 
-The following steps have been tested on Unix.
+This material is work in progress, more precisely at pre-Alpha quality as
+per Arm’s quality standards. In particular, this means that it would be
+premature to base any production tool development on this material.
 
-+ Install ocaml and opam (ocaml package manager), see
-  {{: https://ocaml.org/docs/up-and-running#installing-ocaml} the manual}. For
-  example on MacOS:
-    {@bash[
-      $ brew install opam
-    ]}
-+ Install dependencies:
-    {@bash[
-      $ opam install dune menhir zarith
-    ]}
+However, any feedback, question, query and feature request would be most
+welcome; those can be sent to Arm’s Architecture Formal Team Lead Jade
+Alglave <jade.alglave@arm.com> or by raising issues or PRs to the herdtools7
+github repository.
 
-{2 Building}
+{1 Pointers}
+For the ASL reference documents see {!ASLSemanticsReference} or {!ASLTypingReference}.
 
-+ Clone herdtools7:
-  {@bash[
-    $ git clone https://github.com/herd/herdtools7.git
-  ]}
-+ Build and install into a location [$PREFIX]:
-  {@bash[
-    $ make build install PREFIX=$PREFIX
-  ]}
+For instructions on how to build and run ASLRef, see {!ASLRefREADME}.
 
-It's done!
-
-{2 Checking}
-
-If [$PREFIX] is in your [$PATH], the following command should return a similar output:
-  {@bash[
-    $ aslref --version
-    aslref version 7.56+03 rev 7aa9d1f3cee2598ec64f14372f210e008ac5510f
-  ]}
-
-Please note that building herdtools7 depends on the installation path
-[$PREFIX]. If you want to move your installation from [$OLD_PREFIX] to
-[$NEW_PREFIX], please use:
-  {@bash[
-    make uninstall PREFIX=$OLD_PREFIX
-    make build install PREFIX=$NEW_PREFIX
-  ]}
-
-{1 Running}
-
-{2 Basics}
-
-If [my-test.asl] contains a valid ASL program returning 0, the tool [aslref]
-does not print anything and exit with code 0.
-{@bash[
-  $ aslref my-test.asl
-]}
-
-{2 Version and type-checking flags}
-
-For a complete reference of arguments, see [aslref --help].
-
-{3 ASL Version}
-
-To use the ASLv0 parser, use the [-0] flag.
-
-The default parser is the ASLv1, but you can still specify it with [-1].
-
-{3 Type-checking}
-
-There are currently three possible type-checking settings, listed here from the
-strongest to the weakest:
-+ [--type-check-strict] fails on the first error encountered while
-  type-checking the program. This is the default setting for ASLv1.
-+ [--type-check-warn] logs every error on the standard error output, but does
-  not fail on any of them. The program might not be able to run through the
-  interpreter if the type-checking phase failed.
-+ [--no-type-check] only performs minimal type-inference. Tries to fail as
-  little as possible. This is the default for ASLv0.
-
-{2 Examples}
-
-You can find examples of ASLv1 programs that [aslref] supports in
-{{: https://github.com/herd/herdtools7/tree/master/asllib/tests/asl/required}
-[herdtools7/asllib/tests/asl/required]}.
+For the developper documentation of [asllib], see {!Asllib}.
 

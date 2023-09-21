@@ -2,6 +2,20 @@
           ASL Semantics Reference
 }
 
+{1 Disclaimer}
+This material covers both ASLv0 (viz, the existing ASL pseudocode language
+which appears in the Arm Architecture Reference Manual) and ASLv1, a new,
+experimental, and as yet unreleased version of ASL.
+
+This material is work in progress, more precisely at pre-Alpha quality as
+per Arm’s quality standards. In particular, this means that it would be
+premature to base any production tool development on this material.
+
+However, any feedback, question, query and feature request would be most
+welcome; those can be sent to Arm’s Architecture Formal Team Lead Jade
+Alglave <jade.alglave@arm.com> or by raising issues or PRs to the herdtools7
+github repository.
+
 {1
 Environments
 }
@@ -52,18 +66,18 @@ describes how to evaluate a specific object, as follows.
 
       - [eval_expr] evaluates expressions: it takes an
 environment and an expression and returns a wrapped value and a
-new environment; 
+new environment;
       - [eval_expr_sef] evaluates expressions without side
-effects; 
+effects;
       - [eval_expr_list] and [eval_expr_list_m] evaluate lists
-of expressions; 
-      - [eval_slices] evaluates slices; 
-      - [eval_patterns] evaluates patterns; 
+of expressions;
+      - [eval_slices] evaluates slices;
+      - [eval_patterns] evaluates patterns;
       - [eval_local_decl] evaluates local declarations;
       - [eval_lexpr] evaluates left-hand sides of assignments:
 it takes an environment, the left-hand side of an assignment
 and a wrapped value to be written, and returns a wrapped
-environment updated with the new value; 
+environment updated with the new value;
       - [eval_stmt] evaluates statements: it takes an
 environment and a statement and returns a wrapped new
 environment, viz, the environment updated with the side-effects
@@ -115,14 +129,14 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - [v] is the value of [x] in [env].
 
   {4 Example}
-  [
+  {@asl[
   func main () => integer
   begin
     var x: integer = 3;
     assert x == 3;
     return 0;
-  end  
-  ]
+  end
+  ]}
 
   The evaluation of [x] within [assert x == 3]; uses ELocalVar.
 
@@ -133,7 +147,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - [v] is the value of [x] in [env].
 
   {4 Example}
-  [
+  {@asl[
    var global_x: integer = 3;
 
    func main () => integer
@@ -141,20 +155,20 @@ Evaluation of the expression [e] under an environment [env] is either a value
      assert global_x == 3;
      return 0;
    end
-  ]
-  
+  ]}
+
   The evaluation of [global_x] within [assert global_x == 3;] uses EGlobalVar.
 
-  [
+  {@asl[
    var x: integer = 3;
 
    func main () => integer
    begin
      assert x == 3;
    end
-  ]
+  ]}
 
-  This raises a type error because [x] is already declared locally in [stdlib.asl].  
+  This raises a type error because [x] is already declared locally in [stdlib.asl].
 
 {3 SemanticsRule.EUndefIdent}
 
@@ -164,14 +178,14 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - an Error "UndefinedIdentifier" is raised.
 
   {4 Example}
-  [
+  {@asl[
   func main () => integer
   begin
     let x = 42;
     print(y);
     return 0;
   end
-  ]
+  ]}
   raises an Undefined Identifier error: the variable [y] is undefined in the
   environment [x → 42].
 
@@ -213,30 +227,30 @@ Evaluation of the expression [e] under an environment [env] is either a value
 
   {4 Example}
   In this program:
-  [
+  {@asl[
   func main () => integer
   begin
     let x = 3 + 2;
     assert(x==5);
     return 0;
   end
-  ]
+  ]}
   The expression [3 + 2] evaluates to the value [5].
 
   For the program:
-  [
+  {@asl[
   func main () => integer
   begin
     let x = 3 DIV 0;
     return 0;
   end
-  ]
+  ]}
 
-  Without type-checking, the expression [3 DIV 0] raises a backend-defined error,  
-  e.g. 
-  [
+  Without type-checking, the expression [3 DIV 0] raises a backend-defined error,
+  e.g.
+  {@asl[
   ASL Execution error: Illegal application of operator DIV for values 3 and 0.
-  ].
+  ]}
 
   With type-checking, the expression [3 DIV 0] raises a type error.
 
@@ -262,7 +276,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
 
   {4 Example}
   In the program:
-  [
+  {@asl[
   func Return42() => integer
   begin
     return 42;
@@ -274,11 +288,11 @@ Evaluation of the expression [e] under an environment [env] is either a value
     assert(x==3);
     return 0;
   end
-  ]
+  ]}
   The expression [if FALSE then Return42() else 3] evaluates to the value [3].
 
   In the program:
-  [
+  {@asl[
   func Return42() => integer
   begin
     return 42;
@@ -290,7 +304,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
     assert(x==3);
     return 0;
   end
-  ]
+  ]}
    The expression [if UNKNOWN: boolean then 3 else Return42()] will evaluate
   either [3] or [Return42()] depending on how UNKNOWN is implemented.
 
@@ -316,7 +330,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
 
   {4 Example}
   In the program:
-  [
+  {@asl[
   func Return42() => integer
   begin
     return 42;
@@ -328,7 +342,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
     assert(x==42);
     return 0;
   end
-  ]
+  ]}
   The expression [Return42()] evaluates to the value [42] because the function
   [Return42()] is implemented to return the value [42].
 
@@ -343,10 +357,10 @@ Evaluation of the expression [e] under an environment [env] is either a value
 
   {4 Example}
   In the program:
-  [
+  {@asl[
   type MyArrayType of array [3] of integer;
 
-  var my_array : MyArrayType;  
+  var my_array : MyArrayType;
 
   func main () => integer
   begin
@@ -354,15 +368,15 @@ Evaluation of the expression [e] under an environment [env] is either a value
     assert(my_array[2]==42);
     return 0;
   end
-  ]
+  ]}
   The expression [my_array[2]] evaluates to the value [42] since the element
   indexed by [2] in [my_array] is [42].
 
   The program:
-  [
+  {@asl[
   type MyArrayType of array [3] of integer;
 
-  var my_array : MyArrayType;  
+  var my_array : MyArrayType;
 
   func main () => integer
   begin
@@ -370,7 +384,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
     assert(my_array[3]==42);
     return 0;
   end
-  ]
+  ]}
   raises a typing error since we are trying to access index [3] of an array which has
   indexes [0], [1] and [2] only.
 
@@ -396,7 +410,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
 
   {4 Example}
   In the program:
-  [
+  {@asl[
   type MyRecordType of record {a: integer, b: integer};
 
   func main () => integer
@@ -405,11 +419,11 @@ Evaluation of the expression [e] under an environment [env] is either a value
     assert(my_record.a==3);
     return 0;
   end
-  ]
+  ]}
   The expression [(MyRecordType{a=3, b=42}).a] evaluates to the value [3].
 
 {3 SemanticsRule.EGetFields}
-  
+
   {4 Rule}
   <description>
 
@@ -426,14 +440,14 @@ Evaluation of the expression [e] under an environment [env] is either a value
 
   {4 Example}
   In the program:
-  [
+  {@asl[
   func main () => integer
   begin
     let x = [['10','11']];
     assert(x=='1011');
     return 0;
   end
-  ]
+  ]}
   The expression [['10', '11']] evaluates to the value ['1011'].
 
 {3 SemanticsRule.ETuple}
@@ -446,7 +460,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
 
   {4 Example}
   In the program:
-  [
+  {@asl[
   func Return42() => integer
   begin
     return 42;
@@ -459,7 +473,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
     assert(y==42);
     return 0;
   end
-  ]
+  ]}
   The expression [(3, Return42())] evaluates to the value [(3, 42)].
 
 {3 SemanticsRule.EUnknown}
@@ -471,25 +485,25 @@ Evaluation of the expression [e] under an environment [env] is either a value
 
   {4 Example}
   In the program:
-  [
+  {@asl[
   func main () => integer
   begin
     let x = UNKNOWN:integer;
     assert(x==3);
     return 0;
   end
-  ]  
+  ]}
   The expression [UNKNOWN : integer] evaluates to an integer value.
-  
+
   In the program:
-  [
+  {@asl[
   func main () => integer
   begin
     let x = UNKNOWN:integer {3, 42};
     assert(x==3);
     return 0;
   end
-  ]
+  ]}
   The expression [UNKNOWN : integer {3, 42}] evaluates to either the value [3] or the value [42].
 
 {3 SemanticsRule.EPattern}
@@ -502,25 +516,25 @@ Evaluation of the expression [e] under an environment [env] is either a value
 
   {4 Example}
   In the program:
-  [
+  {@asl[
   func main () => integer
   begin
     let x = 42 IN {0..3, -4};
     assert x == FALSE;
     return 0;
   end
-  ]
+  ]}
   The expression [42 IN {0..3, -4}] evaluates to the value [FALSE].
 
   In the program:
-  [
+  {@asl[
   func main () => integer
   begin
     let x = 42 IN {0..3, 42};
     assert x == TRUE;
     return 0;
   end
-  ]
+  ]}
   The expression [42 IN {0..3, 42}] evaluates to [TRUE].
 
 {2
@@ -563,13 +577,13 @@ one of the following applies:
     - [new_env] is [env] where [x] has been assigned the value [v].
 
     {4 Example}
-    [
+    {@asl[
      func main () => integer
      begin
        var x: integer = 3;
        x = 42;
      end
-    ]
+    ]}
     The evaluation of the left-hand-side expression [x] within [x = 42;] uses Rule.LELocalVar.
 
   {3 SemanticsRule.LEGlobalVar}
@@ -581,15 +595,15 @@ one of the following applies:
     - [new_env] is [env] where [x] has been assigned the value [v].
 
     {4 Example}
-    [
+    {@asl[
      var x: integer = 3;
 
      func main () => integer
      begin
        x = 42;
      end
-    ]  
- 
+    ]}
+
     The evaluation of the left-hand-side expression [x] within [x = 42;] uses Rule.LEGlobalVar.
 
   {3 SemanticsRule.LEUndefIdentV1}
@@ -643,10 +657,10 @@ one of the following applies:
       [new_v_array].
 
     {4 Example}
-    [
+    {@asl[
      var my_array: array [42] of integer;
      my_array[3] = 53;
-    ]
+    ]}
     binds the [3rd] element of [my_array] to the value [53].
 
   {3 SemanticsRule.LESetField}
@@ -1287,16 +1301,16 @@ environment [new_env]. Formally, one of the following applies:
       - [res] is the result of the evaluation of the block [s] in [env1].
 
     {4 Example}
-    [
-    try throw 
-      MyExceptionType {}; 
+    {@asl[
+    try throw
+      MyExceptionType {};
       print("No exception raised");
     catch
-      when MyExceptionType => 
+      when MyExceptionType =>
       print("MyException");
-    otherwise => 
+    otherwise =>
       print("Another exception");
-    ]
+    ]}
     prints "MyException".
 
   {3 SemanticsRule.CatchNamed}
@@ -1322,15 +1336,15 @@ environment [new_env]. Formally, one of the following applies:
       - [res] is the result of the evaluation of the block [s] in [env2].
 
     {4 Example}
-    [
-    try throw 
+    {@asl[
+    try throw
       MyExceptionType { msg: "My exception with my message" };
     catch
-      when MyExceptionType: exn => 
+      when MyExceptionType: exn =>
       print(exn.msg);
-    otherwise => 
+    otherwise =>
     print("Another exception");
-    ]
+    ]}
     prints "My exception with my message".
 
   {3 SemanticsRule.CatchOtherwise}
@@ -1350,16 +1364,16 @@ environment [new_env]. Formally, one of the following applies:
       - [res] is the result of the evaluation of the block [s] in [env1].
 
     {4 Example}
-    [
-     try throw 
-       MyExceptionType1 {}; 
+    {@asl[
+     try throw
+       MyExceptionType1 {};
        print("No exception raised");
        catch
-         when MyExceptionType2 => 
+         when MyExceptionType2 =>
          print("MyException2");
-       otherwise => 
+       otherwise =>
          print("Another exception");
-     ]
+     ]}
      prints "Another exception"
 
   {3 SemanticsRule.CatchNone}
@@ -1372,14 +1386,14 @@ environment [new_env]. Formally, one of the following applies:
     - [new_env] is [env].
 
     {4 Example}
-    [
-     try throw 
-       MyExceptionType1 {}; 
+    {@asl[
+     try throw
+       MyExceptionType1 {};
        print("No exception raised");
        catch
-         when MyExceptionType2 => 
+         when MyExceptionType2 =>
          print("MyException2");
-    ]
+    ]}
     does not print anything.
 
   {3 SemanticsRule.CatchNoThrow}
@@ -1390,15 +1404,15 @@ environment [new_env]. Formally, one of the following applies:
     - [res] is [s_m].
 
     {4 Example}
-    [
-    try 
+    {@asl[
+    try
       print ("No exception raised");
     catch
-      when MyExceptionType => 
+      when MyExceptionType =>
         print("MyException");
-      otherwise => 
+      otherwise =>
         print("Another exception");
-    ] 
+    ]}
     prints "No exception raised".
 
 {2
@@ -1478,7 +1492,8 @@ raised. Formally, one of the following applies:
         [ret_genv]---this is the general case.
 
   {4 Example}
-  [func foo (x : integer) => integer
+  {@asl[
+   func foo (x : integer) => integer
    begin
      return x + 1;
    end
@@ -1493,4 +1508,4 @@ raised. Formally, one of the following applies:
      foo(2);
      bar(3);
     return 0;
-   end]
+   end]}
