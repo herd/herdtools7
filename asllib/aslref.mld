@@ -12,9 +12,9 @@ per Arm’s quality standards. In particular, this means that it would be
 premature to base any production tool development on this material.
 
 However, any feedback, question, query and feature request would be most
-welcome; those can be sent to Arm’s Architecture Formal Team Lead Jade
-Alglave <jade.alglave@arm.com> or by raising issues or PRs to the herdtools7
-github repository using the dedicated "ASL" label.
+welcome; those can be sent to Arm’s Architecture Formal Team Lead Jade Alglave
+<jade.alglave@arm.com> or by raising issues or PRs prefaced with "[ASL]" to the
+github repository where ASLRef is hosted.
 
 {1 Pointers}
 For the ASL reference documents see {!ASLSemanticsReference} or {!ASLTypingReference}.
