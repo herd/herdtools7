@@ -24,6 +24,7 @@ module Attrs : sig
   val pp : t -> string
   val as_list : t -> string list
   val of_list : string list -> t
+  val mem : string -> t -> bool
 end
 
 type t = {
