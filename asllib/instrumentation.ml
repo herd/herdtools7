@@ -316,7 +316,9 @@ module TypingRule = struct
     | ERecordNotARecord
     | EGetRecordField
     | EGetBitField
+    | EGetBadField
     | EGetBadBitField
+    | EGetBadRecordField
     | EGetBitFieldNested
     | EGetBitFieldTyped
     | EGetBitFields
@@ -330,11 +332,18 @@ module TypingRule = struct
     | LEGlobalVar
     | LEUndefIdentV0
     | LEUndefIdentV1
+    | LETuple
     | LESlice
     | LESetArray
-    | LESetField
+    | LESetBadRecordField
+    | LESetRecordField
+    | LESetBadBitField
+    | LESetBitField
+    | LESetBitFieldNested
+    | LESetBitFieldTyped
+    | LESetBadField
     | LESetFields
-    | LETuple
+    | LEConcat
     | PAll
     | PAny
     | PGeq
@@ -408,7 +417,9 @@ module TypingRule = struct
     | ERecordNotARecord -> "ERecordNotARecord"
     | EGetRecordField -> "EGetRecordField"
     | EGetBitField -> "EGetBitField"
+    | EGetBadField -> "EGetBadField"
     | EGetBadBitField -> "EGetBadBitField"
+    | EGetBadRecordField -> "EGetBadRecordField"
     | EGetBitFieldNested -> "EGetBitFieldNested"
     | EGetBitFieldTyped -> "EGetBitFieldTyped"
     | EGetBitFields -> "EGetBitFields"
@@ -425,8 +436,15 @@ module TypingRule = struct
     | LEGlobalVar -> "LEGlobalVar"
     | LESlice -> "LESlice"
     | LESetArray -> "LESetArray"
-    | LESetField -> "LESetField"
+    | LESetBadRecordField -> "LESetBadRecordField" 
+    | LESetRecordField -> "LESetRecordField" 
+    | LESetBadBitField -> "LESetBadBitField" 
+    | LESetBitField -> "LESetBitField" 
+    | LESetBitFieldNested -> "LESetBitFieldNested" 
+    | LESetBitFieldTyped -> "LESetBitFieldTyped" 
+    | LESetBadField -> "LESetBadField" 
     | LESetFields -> "LESetFields"
+    | LEConcat -> "LEConcat"
     | LETuple -> "LETuple"
     | LEUndefIdentV0 -> "LEUndefIdentV0"
     | LEUndefIdentV1 -> "LEUndefIdentV1"
@@ -505,7 +523,9 @@ module TypingRule = struct
       ERecordNotARecord;
       ERecord;
       EGetRecordField;
+      EGetBadField;
       EGetBadBitField;
+      EGetBadRecordField;
       EGetBitField;
       EGetBitFieldNested;
       EGetBitFieldTyped;
@@ -523,9 +543,17 @@ module TypingRule = struct
       LEGlobalVar;
       LESlice;
       LESetArray;
-      LESetField;
+      LESetBadRecordField;
+      LESetRecordField;
+      LESetBadBitField;
+      LESetBitField;
+      LESetBitFieldNested;
+      LESetBitFieldTyped;
+      LESetBadField;
+      LESetFields;
       LESetFields;
       LETuple;
+      LEConcat;
       SPass;
       SAssignCall;
       SAssignTuple;
