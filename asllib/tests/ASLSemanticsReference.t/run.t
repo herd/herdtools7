@@ -33,7 +33,7 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.ECall.asl
   $ aslref SemanticsRule.EGetArray.asl
   $ aslref SemanticsRule.EGetArrayTooSmall.asl
-  File SemanticsRule.EGetArrayTooSmall.asl, line 7, characters 2 to 13:
+  File SemanticsRule.EGetArrayTooSmall.asl, line 7, characters 2 to 10:
   ASL Typing error: a subtype of integer {3} was expected,
     provided integer {0..(3 - 1)}.
   [1]

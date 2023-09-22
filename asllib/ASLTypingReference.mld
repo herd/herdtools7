@@ -309,7 +309,7 @@ Typing of Expressions
   - One of the following applies:
     - [wanted_t_index] is an enumeration type of name [size];
     - [wanted_t_index] is the type [integer {0..size-1}];
-  - [slices] is single expression [e_index];
+  - [slices] is a single expression [e_index];
   - [t_index', e_index'] is the result of annotating [e_index] in [env];
   - [t_index'] type-satisfies [wanted_t_index];
   - [new_e] is an access to array [e'] at index [e_index'].
@@ -324,14 +324,22 @@ Typing of Expressions
   - [t_e1, e2] is the result of annotating [e1] in [env];
   - [t_e2] is the anonymous type corresponding to [t_e1] in [env];
   - [t_e2] is an Exception or a Record type with fields [fields];
-  - One of the following applies:
-    - All of the following applies:
-      - [field_name] is not declared in [fields];
-      - an error "Bad Field" is raised.
-    - All of the following applies:
-      - [field_name] is declared in [fields];
-      - [t] is the type corresponding to [field_name] in [fields];
-      - [new_e] is the access of field [field_name] on expression [e2].
+  - [field_name] is declared in [fields];
+  - [t] is the type corresponding to [field_name] in [fields];
+  - [new_e] is the access of field [field_name] on expression [e2].
+
+  {4 Example}
+
+{3 TypingRule.EGetBadRecordField}
+
+  {4 Rule}
+  All of the following applies:
+  - [e] denotes the access of field [field_name] on expression [e1];
+  - [t_e1, e2] is the result of annotating [e1] in [env];
+  - [t_e2] is the anonymous type corresponding to [t_e1] in [env];
+  - [t_e2] is an Exception or a Record type with fields [fields];
+  - [field_name] is not declared in [fields];
+  - an error "Bad Field" is raised.
 
   {4 Example}
 
@@ -347,6 +355,17 @@ Typing of Expressions
   - an error "Bad Field" is raised.
 
   {4 Example}
+
+{3 TypingRule.EGetBadField}
+
+   {4 Rule}
+   All of the following applies:
+   - [e] denotes the access of field [field_name] on expression [e1];
+   - [t_e1, e2] is the result of annotating [e1] in [env];
+   - [t_e1] does not have the structure of a record or an exception or a bitvector type;
+   - an error "Conflicting Types" is raised.
+
+   {4 Example}
 
 {3 TypingRule.EGetBitField}
 
@@ -472,28 +491,160 @@ applies:
   {3 TypingRule.LESlice}
 
     {4 Rule}
-
+    All of the following applies:
+    - [le] denotes the slicing of a left-hand-side expression [le1] by the slices [slices];
+    - [t_le1] is the type result of annotating the right-hand-side expression corresponding to [le1] in [env];
+    - [t_le1] has the structure of a bitvector type;
+    - [le2] is the result of annotating [le1] in [env];
+    - [width] is the width of the slices [slices] in [env];
+    - [t] is the bitvector type of width [width];
+    - [slices2] is the result of annotating [slices] in [env];
+    - [new_le] is the slicing of [le2] by [slices2].
+ 
     {4 Example}
 
   {3 TypingRule.LESetArray}
 
     {4 Rule}
+    All of the following applies:
+    - [le] denotes the slicing of a left-hand-side expression [le1] by the slices [slices];
+    - [t_le1] is the type result of annotating the right-hand-side expression corresponding to [le1] in [env];
+    - [t_le1] has the structure of an array type of size [size] and item type [t];
+    - [le2] is the result of annotating [le1] in [env];
+    - One of the following applies:
+      - [wanted_t_index] is an enumeration type of name [size];
+      - [wanted_t_index] is the type [integer {0..size-1}];
+    - [slices] is a single expression [e_index];
+    - [t_index', e_index'] is the result of annotating [e_index] in [env];
+    - [t_index'] type-satisfies [wanted_t_index];
+    - [new_le] is an access to array [le2] at index [e_index'].  
 
     {4 Example}
 
-  {3 TypingRule.LESetField}
+  {3 TypingRule.LESetBadRecordField}
 
     {4 Rule}
+    All of the following applies:
+    - [le] denotes the access to the field named [field] in [le1];
+    - [t_le1] is the type result of annotating the right-hand-side expression corresponding to [le1] in [env];
+    - [le2] is the result of annotating [le1] in [env];
+    - [t_le1] has the structure of an exception or a record type with fields [fields];
+    - [field] is not declared in [fields];
+    - an error "Bad Field" is raised.
+
+    {4 Example}
+
+  {3 TypingRule.LESetRecordField}
+
+    {4 Rule}
+    All of the following applies:
+    - [le] denotes the access to the field named [field] in [le1];
+    - [t_le1] is the type result of annotating the right-hand-side expression corresponding to [le1] in [env];
+    - [le2] is the result of annotating [le1] in [env];
+    - [t_le1] has the structure of an exception or a record type with fields [fields];
+    - [field] is bound to type [t] in [fields];
+    - [t_e] type-satisfies [t]; 
+    - [new_le] is the access to the field [field] in [le2].
+
+    {4 Example}
+
+  {3 TypingRule.LESetBadBitField}
+
+    {4 Rule}
+    All of the following applies:
+    - [le] denotes the access to the field named [field] in [le1];
+    - [t_le1] is the type result of annotating the right-hand-side expression corresponding to [le1] in [env];
+    - [le2] is the result of annotating [le1] in [env];
+    - [t_le1] has the structure of a bitvector with bitfields [bitfields];
+    - [field] is not declared in [bitfields];
+    - an error "Bad Field" is raised.  
+
+    {4 Example}
+
+  {3 TypingRule.LESetBitField}
+
+    {4 Rule}
+    All of the following applies:
+    - [le] denotes the access to the field named [field] in [le1];
+    - [t_le1] is the type result of annotating the right-hand-side expression corresponding to [le1] in [env];
+    - [le2] is the result of annotating [le1] in [env];
+    - [t_le1] has the structure of a bitvector with bitfields [bitfields];
+    - [field] is declared in [bitfields];
+    - [slices] gives the slices corresponding to the bitfield [field] in
+      [bitfields];
+    - [w] is the width of [slices];
+    - [t] is the bitvector type of width [w];
+    - [t_e] type-satisfies [t];
+    - [le2] is the slicing of [le1] by [slices];
+    - [new_le] is the result of annotating [le2] in [env].
+
+    {4 Example}
+
+  {3 TypingRule.LESetBitFieldNested}
+
+    {4 Rule}
+    All of the following applies:
+    - [le] denotes the access to the field named [field] in [le1];
+    - [t_le1] is the type result of annotating the right-hand-side expression corresponding to [le1] in [env];
+    - [le2] is the result of annotating [le1] in [env];
+    - [t_le1] has the structure of a bitvector with bitfields [bitfields];
+    - [slices] gives the slices corresponding to the bitfield [field] in
+      [bitfields];
+    - [w] is the width of [slices];
+    - [bitfields'] gives the bitfields corresponding to [field] in [bitfields];
+    - [t] is the bitvector type of width [w] and bitfields [bitfields'];
+    - [t_e] type-satisfies [t];
+    - [le2] is the slicing of [le1] by [slices];
+    - [new_le] is the result of annotating [le2] in [env].
+
+    {4 Example}
+
+  {3 TypingRule.LESetBitFieldTyped}
+
+    {4 Rule}
+    All of the following applies:
+    - [le] denotes the access to the field named [field] in [le1];
+    - [t_le1] is the type result of annotating the right-hand-side expression corresponding to [le1] in [env];
+    - [le2] is the result of annotating [le1] in [env];
+    - [t_le1] has the structure of a bitvector with bitfields [bitfields];
+    - [slices] gives the slices corresponding to the bitfield [field] in
+      [bitfields];
+    - [w] is the width of [slices];
+    - [t'] is the bitvector type of width [w];
+    - [t] gives the type corresponding to the bitfield [field] in
+      [bitfields];
+    - [t'] type-satisfies [t];
+    - [t_e] type-satisfies [t];
+    - [le2] is the slicing of [le1] by [slices];
+    - [new_le] is the result of annotating [le2] in [env].
+
+    {4 Example}
+
+  {3 TypingRule.LESetBadField}
+
+    {4 Rule}
+    All of the following applies:
+    - [le] denotes the access to the field named [field] in [le1];
+    - [t_le1] is the type result of annotating the right-hand-side expression corresponding to [le1] in [env];
+    - [le2] is the result of annotating [le1] in [env];
+    - [t_le1] does not have the structure of a record, or an exception or a bitvector type;
+    - an error "Conflicting Types" is raised.
 
     {4 Example}
 
   {3 TypingRule.LESetFields}
 
     {4 Rule}
-    <description>
 
     {4 Example}
-    <minimal example>
+
+  {3 TypingRule.LEConcat}
+    {4 Rule}
+    
+
+    {4 Example}
+
+
 
 {2
 Typing of Local Declarations

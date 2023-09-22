@@ -98,3 +98,13 @@ You can find examples of ASLv1 programs that [aslref] supports in
 {{: https://github.com/herd/herdtools7/tree/master/asllib/tests/asl/required}
 [herdtools7/asllib/tests/asl/required]}.
 
+{2 Building HTML pages locally from .mld files}
+
+In the directory [herdtools7/]:
+ 
++ Run:   
+  {@bash[
+    $ dune build @doc
+  ]}
+
++ Open [_build/default/_doc/_html/herdtools7/aslref.html]
