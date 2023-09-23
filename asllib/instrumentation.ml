@@ -352,7 +352,9 @@ module TypingRule = struct
     | PRange
     | PSingle
     | PMask
+    | PTupleBadArity
     | PTuple
+    | PTupleConflict
     | LDIgnoreNone
     | LDIgnoreSome
     | LDUninitialisedVar
@@ -388,7 +390,10 @@ module TypingRule = struct
     | FUndefIdent
     | FPrimitive
     | FBadArity
-    | FCall
+    | FCallBadArity
+    | FCallSetter
+    | FCallGetter
+    | FCallMismatch
     | Block
     | Loop
     | For
@@ -396,7 +401,8 @@ module TypingRule = struct
     | SliceSingle
     | SliceRange
     | SliceStar
-    | Catcher
+    | CatcherNone
+    | CatcherSome
     | Func
 
   let to_string : t -> string = function
@@ -456,7 +462,9 @@ module TypingRule = struct
     | PRange -> "PRange"
     | PSingle -> "PSingle"
     | PMask -> "PMask"
+    | PTupleBadArity -> "PTupleBadArity"
     | PTuple -> "PTuple"
+    | PTupleConflict -> "PTupleConflict"
     | LDIgnoreNone -> "LDIgnoreNone"
     | LDIgnoreSome -> "LDIgnoreSome"
     | LDVar -> "LDVar"
@@ -492,7 +500,10 @@ module TypingRule = struct
     | FUndefIdent -> "FUndefIdent"
     | FPrimitive -> "FPrimitive"
     | FBadArity -> "FBadArity"
-    | FCall -> "FCall"
+    | FCallBadArity -> "FCallBadArity" 
+    | FCallSetter -> "FCallSetter"
+    | FCallGetter -> "FCallGetter"
+    | FCallMismatch -> "FCallMismatch"
     | Block -> "Block"
     | Loop -> "Loop"
     | For -> "For"
@@ -500,7 +511,8 @@ module TypingRule = struct
     | SliceSingle -> "SliceSingle"
     | SliceRange -> "SliceRange"
     | SliceStar -> "SliceStar"
-    | Catcher -> "Catcher"
+    | CatcherNone -> "CatcherNone"
+    | CatcherSome -> "CatcherSome"
     | Func -> "Func"
 
   let pp f r = to_string r |> Format.pp_print_string f
@@ -579,7 +591,10 @@ module TypingRule = struct
       FUndefIdent;
       FPrimitive;
       FBadArity;
-      FCall;
+      FCallBadArity;
+      FCallSetter;
+      FCallGetter;
+      FCallMismatch;
       Block;
       Loop;
       For;
@@ -587,7 +602,8 @@ module TypingRule = struct
       SliceSingle;
       SliceRange;
       SliceStar;
-      Catcher;
+      CatcherNone;
+      CatcherSome;
       Func;
     ]
 

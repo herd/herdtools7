@@ -682,12 +682,12 @@ let rec lowest_common_ancestor env s t =
                   Some (add_dummy_pos (T_Tuple ancestors))
                 else None)
         | T_Int (Some []), _ ->
-            (* TODO: This is pretty bizarre. Maybe revisit LRM? *)
+            (* TODO: revisit? *)
             (* If either S or T have the structure of an under-constrained
                integer type: the under-constrained integer type. *)
             Some s
         | _, T_Int (Some []) ->
-            (* TODO: This is pretty bizarre. Maybe revisit LRM? *)
+            (* TODO: revisit? *)
             (* If either S or T have the structure of an under-constrained
                integer type: the under-constrained integer type. *)
             Some t
@@ -710,8 +710,8 @@ let rec lowest_common_ancestor env s t =
                 Some (add_dummy_pos (T_Int (Some (cs_s @ cs_t)))))
         | T_Int None, _ -> (
             (* Here S has the structure of an unconstrained integer type. *)
-            (* TODO: This is pretty bizarre. Maybe revisit LRM? *)
-            (* TODO: typo in the LRM, corrected here, on point 2 S and T have
+            (* TODO: revisit? *)
+            (* TODO: typo corrected here, on point 2 S and T have
                been swapped. *)
             (* If either S or T have the structure of an unconstrained integer
                type:
@@ -728,8 +728,8 @@ let rec lowest_common_ancestor env s t =
             | _, _ -> Some (add_dummy_pos (T_Int None)))
         | _, T_Int None -> (
             (* Here T has the structure of an unconstrained integer type. *)
-            (* TODO: This is pretty bizarre. Maybe revisit LRM? *)
-            (* TODO: typo in the LRM, corrected here, on point 2 S and T have
+            (* TODO: revisit? *)
+            (* TODO: typo corrected here, on point 2 S and T have
                been swapped. *)
             (* If either S or T have the structure of an unconstrained integer
                type:

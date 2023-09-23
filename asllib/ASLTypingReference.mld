@@ -16,8 +16,72 @@ welcome; those can be sent to Arm’s Architecture Formal Team Lead Jade
 Alglave <jade.alglave@arm.com> or by raising issues or PRs to the herdtools7
 github repository.
 
+{1 Type nomenclature
+
+{2 Named and Anonymous Types}
+
+  {3 Definitions} 
+  All types are either:
+  • named types: those which are declared using the type syntax.
+  • or anonymous types: those which are not declared using the type syntax. 
+
+  {3 Examples}
+
+{2 Primitive and Non-primitive types}
+
+  {3 Definitions} 
+  All types are either:
+  • primitive types: those which only uses the builtin types (see rule NZWT)
+  • or non-primitive types: those which are named types or which make use of named types.
+
+  {3 Examples}
+
+{2 Structure of a type}
+
+  {3 Definition}
+  The structure of a type is the primitive type it is equivalent to such that
+  it can hold the same values. 
+
+  {3 Examples}
+
+  [type T1 of integer;]
+  is the named type [T1] whose structure is integer.
+
+  [type T2 of (integer, T1);]
+  is the named type [T2] whose structure is (integer, integer). In this
+  example, [(integer, T1)] is non-primitive since it uses [T1].
+
+  In this example:
+  [var x: T1;]
+  the type of [x] is the named (hence non-primitive) type [T1], whose structure
+  is [integer].
+
+  In this example:
+  [var y: integer;]
+  the type of y is the anonymous primitive type [integer].
+
+  In this example:
+  [var z: (integer, T1);]
+  the type of z is the anonymous non-primitive type `(integer, T1)` whose
+  structure is `(integer, integer)`.
+
+{2 Domain of Values for Types}
+
+  {3 Definition}
+  The domain of a type is the set of values which storage elements of that type may hold. 
+
+  {3 Examples}
+
+  The domain of [integer] is the infinite set of all integers.
+
+  The domain of [bits(1)] is the set [{‘1’, ‘0’}].
+
+  The domain of [integer {2,16}] is the set containing the integers [2] and [16].
+
+  The domain of [bits({2,16})] is the set containing all two bit and all sixteen bit values.
+
 {1
-Typing
+Typing Rules
 }
 Typing a program is typing its main function.
 Constructively, typing a program requires following its
@@ -38,15 +102,7 @@ annotate a specific object, as follows.
       - [annotate_call] annotates functions calls;
       - [annotate_func] annotates functions.
 
-{2
-Checking Compatibility of operators
-}
 
-- [check_binop op t1 t2] checks that the types [t1] and [t2] are valid for the
-  operation [op], as is defined in chapter 7 of the Language Reference Manual.
-
-- [check_unop op t] checks that the type [t] is valid for the operation [op],
-  as defined in chapter 7 of the Language Reference Manual.
 
 {2
 Typing of Expressions
@@ -64,7 +120,7 @@ Typing of Expressions
   - [t] is the type of [v];
   - [new_e] is [e].
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.TypedExpr}
 
@@ -87,7 +143,7 @@ Typing of Expressions
      - [t''] is not a structural subtype of [t'] in [env];
      - a "ConflictingTypes" error is raised.
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.ELocalVarConstant}
 
@@ -99,7 +155,7 @@ Typing of Expressions
   - [t] is [ty];
   - [new_e] is the Literal [v].
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.ELocalVar}
 
@@ -111,7 +167,7 @@ Typing of Expressions
   - [t] is [ty];
   - [new_e] is [e].
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.EGlobalVarConstantVal}
 
@@ -124,7 +180,7 @@ Typing of Expressions
   - [t] is [ty];
   - [new_e] is [E_Literal v].
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.EGlobalVar}
 
@@ -136,7 +192,7 @@ Typing of Expressions
   - [t] is [ty];
   - [new_e] is [e].
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.EUndefIdent}
 
@@ -146,7 +202,7 @@ Typing of Expressions
   - [x] is not bound in [env];
   - an error "Undefined Identifier" is raised.
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.Binop}
 
@@ -158,7 +214,7 @@ Typing of Expressions
   - [t] is the result of checking compatibility of [op] with [t1] and [t2];
   - [new_e] denotes [op] over [e1'] and [e2'].
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.Unop}
 
@@ -169,7 +225,7 @@ Typing of Expressions
   - [t] is the result of checking compatibility of [op] with [t''];
   - [new_e] denotes [op] over [e''].
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.ECond}
 
@@ -187,7 +243,7 @@ Typing of Expressions
       - there is no lowest common ancestor of [t_true] and [t_false];
       - an error "Unreconciliable Types" is raised.
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.ETuple}
 
@@ -198,7 +254,7 @@ Typing of Expressions
   - [t] is [ts];
   - [new_e] is [es].
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.EConcatEmpty}
 
@@ -208,7 +264,7 @@ Typing of Expressions
   - [t] is [bits(0)];
   - [new_e] is [e].
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.EConcat}
 
@@ -220,7 +276,7 @@ Typing of Expressions
   - [t] is [bits(w)];
   - [new_e] is [es].
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.ERecordNotARecord}
 
@@ -230,7 +286,7 @@ Typing of Expressions
   - [ty] is neither a record nor an exception type;
   - an error "Conflicting Types" is raised.
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.ERecordMissingField}
 
@@ -241,7 +297,7 @@ Typing of Expressions
   - one field in [field_types] is not initialised by [fields];
   - an error "Bad Fields" is raised.
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.ERecord}
 
@@ -258,7 +314,7 @@ Typing of Expressions
   - [t] is [ty];
   - [new_e] is the record expression of type [ty] with fields [fields'].
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.ECall}
 
@@ -272,7 +328,7 @@ Typing of Expressions
   - [new_e] is the call the function named [name'] with arguments [args']
     and parameters [eqs'].
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.EUnknown}
 
@@ -283,7 +339,7 @@ Typing of Expressions
   - [t] is [ty];
   - [new_e] is an unknown expression of type [ty'].
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.ESlice}
 
@@ -297,7 +353,7 @@ Typing of Expressions
   - [t] is the bitvector type of width [w];
   - [new_e] is the slicing of expression [e'] by the slices [slices'].
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.EGetArray}
 
@@ -314,7 +370,7 @@ Typing of Expressions
   - [t_index'] type-satisfies [wanted_t_index];
   - [new_e] is an access to array [e'] at index [e_index'].
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.EGetRecordField}
 
@@ -328,7 +384,7 @@ Typing of Expressions
   - [t] is the type corresponding to [field_name] in [fields];
   - [new_e] is the access of field [field_name] on expression [e2].
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.EGetBadRecordField}
 
@@ -341,7 +397,7 @@ Typing of Expressions
   - [field_name] is not declared in [fields];
   - an error "Bad Field" is raised.
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.EGetBadBitField}
 
@@ -354,7 +410,7 @@ Typing of Expressions
   - [field_name] is not declared in [bitfields];
   - an error "Bad Field" is raised.
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.EGetBadField}
 
@@ -365,7 +421,7 @@ Typing of Expressions
    - [t_e1] does not have the structure of a record or an exception or a bitvector type;
    - an error "Conflicting Types" is raised.
 
-   {4 Example}
+   {4 Examples}
 
 {3 TypingRule.EGetBitField}
 
@@ -381,7 +437,7 @@ Typing of Expressions
   - [e3] denotes the slicing of the expression [e2] by the slices [slices];
   - [t,new_e] is the result of annotating [e3].
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.EGetBitFieldNested}
 
@@ -401,7 +457,7 @@ Typing of Expressions
   - [t] is the bitvector type with the width of [t4] and the bitfields [bitfields']
   - [new_e] is [e4].
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.EGetBitFieldTyped}
 
@@ -419,14 +475,14 @@ Typing of Expressions
   - [t_e3] type-satisfies [t] in [env];
   - [new_e] is [e3].
 
-  {4 Example}
+  {4 Examples}
 
 {3 TypingRule.EGetBitFields}
 
   {4 Rule}
   <description>
 
-  {4 Example}
+  {4 Examples}
   <minimal example>
 
 {3 TypingRule.EPattern}
@@ -439,7 +495,7 @@ Typing of Expressions
   - [t] is [boolean];
   - [new_e] denotes whether the expression [e''] matches [patterns'].
 
-  {4 Example}
+  {4 Examples}
 
 {2
 Typing of Left-Hand-Side Expressions
@@ -454,7 +510,7 @@ applies:
     - [le] denotes an expression which can be ignored;
     - [new_le] is [le].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.LELocalVar}
 
@@ -464,13 +520,13 @@ applies:
     - [x] is locally declared as a variable of type [ty] in [env];
     - [new_le] is [le].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.LEGlobalVar}
 
     {4 Rule}
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.LETuple}
 
@@ -486,7 +542,7 @@ applies:
         - [les] and [sub_tys] do not have the same length;
         - an error "Bad Arity Tuple Unpacking" is raised.
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.LESlice}
 
@@ -501,7 +557,7 @@ applies:
     - [slices2] is the result of annotating [slices] in [env];
     - [new_le] is the slicing of [le2] by [slices2].
  
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.LESetArray}
 
@@ -519,7 +575,7 @@ applies:
     - [t_index'] type-satisfies [wanted_t_index];
     - [new_le] is an access to array [le2] at index [e_index'].  
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.LESetBadRecordField}
 
@@ -532,7 +588,7 @@ applies:
     - [field] is not declared in [fields];
     - an error "Bad Field" is raised.
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.LESetRecordField}
 
@@ -546,7 +602,7 @@ applies:
     - [t_e] type-satisfies [t]; 
     - [new_le] is the access to the field [field] in [le2].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.LESetBadBitField}
 
@@ -559,7 +615,7 @@ applies:
     - [field] is not declared in [bitfields];
     - an error "Bad Field" is raised.  
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.LESetBitField}
 
@@ -578,7 +634,7 @@ applies:
     - [le2] is the slicing of [le1] by [slices];
     - [new_le] is the result of annotating [le2] in [env].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.LESetBitFieldNested}
 
@@ -597,7 +653,7 @@ applies:
     - [le2] is the slicing of [le1] by [slices];
     - [new_le] is the result of annotating [le2] in [env].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.LESetBitFieldTyped}
 
@@ -618,7 +674,7 @@ applies:
     - [le2] is the slicing of [le1] by [slices];
     - [new_le] is the result of annotating [le2] in [env].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.LESetBadField}
 
@@ -630,19 +686,19 @@ applies:
     - [t_le1] does not have the structure of a record, or an exception or a bitvector type;
     - an error "Conflicting Types" is raised.
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.LESetFields}
 
     {4 Rule}
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.LEConcat}
     {4 Rule}
     
 
-    {4 Example}
+    {4 Examples}
 
 
 
@@ -661,7 +717,7 @@ of the following applies:
     - [new_env] is [env];
     - [new_ldi] is [ldi].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.LDIgnoreSome}
 
@@ -678,7 +734,7 @@ of the following applies:
         - [t] cannot be initialised with [ty] in [env];
         - an error "Conflicting Types" is raised.
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.LDVar}
 
@@ -696,7 +752,7 @@ of the following applies:
     - [new_env] is [env] modified so that [x] is locally declared of type [t];
     - [new_ldi] is the declaration of variable [x] with type [t].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.LDUninitialisedTypedTuple}
 
@@ -705,280 +761,607 @@ of the following applies:
     - [ldi] denotes a singleton list [ld];
     - [new_env, new_ldi] is the result of annotating the local declaration [ld] with [ty] in [env].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.LDTuple}
 
     {4 Rule}
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.LDTypedTuple}
 
     {4 Rule}
 
-    {4 Example}
+    {4 Examples}
 
 {2
 Typing of Statements
 }
-[annotate_stmt env s] is <description> and one of the following applies:
+[annotate_stmt env s] is a statement [new_s] and an environment [new_env] and
+one of the following applies:
 
   {3 TypingRule.SPass}
 
     {4 Rule}
+    All of the following applies:
+    - [s] is a pass statement;
+    - [new_s] is [s];
+    - [new_env] is [env].
 
-    {4 Example}
-
-  {3 TypingRule.SAssign}
-
-    {4 Rule}
-
-    {4 Example}
-
-  {3 TypingRule.SReturnNone}
-
-    {4 Rule}
-
-    {4 Example}
-
-  {3 TypingRule.SReturnOne}
-
-    {4 Rule}
-
-    {4 Example}
-
-  {3 TypingRule.SReturnSome}
-
-    {4 Rule}
-
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.SThen}
 
     {4 Rule}
+    All of the following applies:
+    - [s] is a then statement over two statements [s1] and [s2];
+    - [new_s1, env1] is the result of annotating [s1] in [env];
+    - [new_s2, env2] is the result of annotating [s2] in [env1];
+    - [new_s] is a then statement over two statements [new_s1] and [new_s2];
+    - [new_env] is [env2].
 
-    {4 Example}
+    {4 Examples}
+
+  {3 TypingRule.SAssign}
+
+    {4 Rule}
+    All of the following applies:
+    - [s] is an assignment [le = re] under language version [ver];
+    - [t_e, e1] is the result of annotating [e] in [env];
+    - [reduced] is the result of potential result of inlining a setter call in [le];
+    - One of the following applies:
+      - All of the following applies:
+        - [reduced] gives a statement [s];
+        - [new_s] is [s];
+        - [new_env] is [env].
+     
+      - All of the following applies:
+        - [reduced] does not give a statement [s];
+        - One of the following applies:
+          - All of the following applies:
+            - [ver] is ASLv1;
+            - [env1] is [env];
+
+          - All of the following applies:
+            - [ver] is ASLv0;
+	    - [env1] is the result of annotating undeclared variables by using
+	      the first assignments to such variables as declarations;
+ 
+        - [le1] is the result of annotating [le] in [env1];
+        - [new_s] is the assignment [le1 = e1];
+        - [new_env] is [env1].
+
+    {4 Examples}
 
   {3 TypingRule.SCall}
 
     {4 Rule}
+    All of the following applies:
+    - [s] is a call to a function named [name] with arguments [args] and parameters [eqs];
+    - [new_name, new_args, new_eqs] is the result of annotating the call
+      to the procedure [name] with arguments [args] and parameters
+[eqs];
+    - [new_s] is the call to a function named [new_name] with arguments
+      [new_args] and parameters [new_eqs];
+    - [new_env] is [env].
 
-    {4 Example}
+    {4 Examples}
+
+  {3 TypingRule.SReturnNone}
+
+    {4 Rule}
+    All of the following applies:
+    - [s] is a return statement with no value and no return type; 
+    - [new_s] is a return statement with no value;
+    - the enclosing function does not have a return type (it is either a setter or a procedure);
+    - [new_env] is [env].
+
+    {4 Examples}
+
+  {3 TypingRule.SReturnOne}
+
+    {4 Rule}
+    All of the following applies:
+    - One of the following applies:
+      - All of the following applies:
+        - [s] is a return statement with some value;
+        - the enclosing function does not have a return type;
+      - All of the following applies:
+        - [s] is a return statement with no value;
+        - the enclosing function has a return type;
+    - An error "Bad Return Statement" is raised.
+
+    {4 Examples}
+
+  {3 TypingRule.SReturnSome}
+
+    {4 Rule}
+    All of the following applies:
+    - [s] is a return statement with some value [e];
+    - the enclosing function has a return type [t];
+    - [t_e',e'] is the result of annotating [e] in [env];
+    - [t_e'] type-satisfies [t];
+    - [new_s] is a return statement with value [e'];
+    - [new_env] is [env]. 
+
+    {4 Examples}
 
   {3 TypingRule.SCond}
 
     {4 Rule}
+    All of the following applies:
+    - [s] is a condition [e] with two statements [s1] and [s2];
+    - [t_cond, e_cond] is the result of annotating [e] in [env];
+    - [t_cond] type-satisfies [t_bool];
+    - [s1'] is the result of annotating [s1] in [env];
+    - [s2'] is the result of annotating [s2] in [env];
+    - [new_s] is the condition [e_cond] with two statements [s1'] and [s2'];
+    - [new_env] is [env].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.SCase}
 
     {4 Rule}
-    <description>
+    All of the following applies:
+    - [s] is a case statement with expression [e] and cases [cases];
+    - [t_e, e1] is the result of annotating [e] in [env];
+    - [cases1, env1] is the result of annotating each case in [cases];
+    - [new_s] is a case statement with expression [e1] and cases [cases1];
+    - [new_env] is [env1].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.SAssert}
 
     {4 Rule}
+    All of the following applies:
+    - [s] is an assert statement with expression [e];
+    - [t_e',e'] is the result of annotating [e] in [env];
+    - [t_e'] type-satisfies [t_bool];  
+    - [new_s] is an assert statement with expression [e'];
+    - [new_env] is [env].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.SWhile}
 
     {4 Rule}
+    All of the following applies:
+    - [s] is a while statement with expression [e1] and statement [s1];
+    - [t, e2] is the result of annotating [e1] in [env];
+    - [t] type-satisfies [t_bool];
+    - [s2] is the result of annotating [s1] in [env];
+    - [new_s] is a while statement with expression [e2] and statement [s2];
+    - [new_env] is [env].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.SRepeat}
 
     {4 Rule}
+    All of the following applies:
+    - [s] is a repeat statement with expression [e1] and statement [s1];
+    - [s2] is the result of annotating [s1] in [env];
+    - [t, e2] is the result of annotating [e1] in [env];
+    - [t] type-satisfies [t_bool];
+    - [new_s] is a repeat statement with expression [e2] and statement [s2];
+    - [new_env] is [env].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.SFor}
 
     {4 Rule}
+    All of the following applies:
+    - [s] is a for statement with index [id], direction [dir], two expressions
+      [e1] and [e2] and a statement [s'];
+    - [t1,e1'] is the result of annotating [e1] in [env];
+    - [t2,e2'] is the result of annotating [e2] in [env];
+    - [t1] has the structure of an integer type;
+    - [t2] has the structure of an integer type;
+    - [ty] is ;
+    - [s''] is the result of annotating [s'] in [env];
+    - [new_s] is a for statement with index [id], direction [dir], two expressions
+      [e1'] and [e2'] and statement [s''];
+    - [new_env] is [env].
 
-    {4 Example}
-
-  {3 TypingRule.SThrowNone}
-
-    {4 Rule}
-
-    {4 Example}
-
-  {3 TypingRule.SThrowSome}
-
-    {4 Rule}
-
-    {4 Example}
-    <minimal example>
-
-  {3 TypingRule.STry}
-
-    {4 Rule}
-
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.SDeclSome}
 
     {4 Rule}
+    All of the following applies:
+    - [s] is a declaration with [ldk], [ldi] and an expression [e];
+    - [t_e,e'] is the result of annotating [e] in [env];
+    - [env', ldi'] is the result of declaring the local identifiers of [ldi] in [env];
+    - [new_s] is a declaration with [ldk], [ldi'] and an expression [e'];
+    - [new_env] is [env'].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.SDeclNone}
 
     {4 Rule}
+    All of the following applies:
+    - [s] is a declaration statement with [ldk], [ldi] and no initial expression;
+    - [env', s'] is the result of annotating uninitialised local declarations [ldi] in [env];
+    - [new_s] is [s'];
+    - [new_env] is [env'].
 
-    {4 Example}
+    {4 Examples}
 
-  {3 TypingRule.SDebug}
+  {3 TypingRule.SThrowNone}
 
     {4 Rule}
+    All of the following applies:
+    - [s] is a throw statement with no expression;
+    - [new_s] is [s];
+    - [new_env] is [env].
 
-    {4 Example}
-    <minimal example>
+    {4 Examples}
+
+  {3 TypingRule.SThrowSome}
+
+    {4 Rule}
+    All of the following applies:
+    - [s] is a throw statement with expression [e];
+    - [t_e,e'] is the result of annotating [e] in [env];
+    - [t_e] has the structure of an exception type;
+    - [new_s] is a throw statement with expression [e'] and type [t_e];
+    - [new_env] is [env].
+
+    {4 Examples}
+
+  {3 TypingRule.STry}
+
+    {4 Rule}
+    All of the following applies:
+    - [s] is a try statement with statement [s'], catchers [catchers] and block [otherwise];
+    - [s''] is the result of annotating [s'] in [env];
+    - [otherwise'] is the result of annotating [otherwise] in [env];
+    - [catchers'] is the result of annotating [catchers] in [env];
+    - [new_s] is a try statement with statement [s''], catchers [catchers'] and block [otherwise'];
+    - [new_env] is [env].
+
+    {4 Examples}
 
 {2
 Typing of Slices
 }
-[annotate_slices env slices] is <description>
-Formally, one of the following applies:
+[annotate_slices env slices] is the pair [(offset, length)] and one of the
+following applies:
 
   {3 TypingRule.SliceLength}
 
     {4 Rule}
+    All of the following applies:
+    - [slices] gives [offset] and [length]; 
+    - [t_offset, offset'] is the result of annotating [offset] in [env];
+    - [t_length, length'] is the result of annotating [length] in [env];
+    - [t_offset] has the structure of an integer type;
+    - [t_length] has the structure of an integer type;
+    - [length] is pure.
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.SliceSingle}
 
     {4 Rule}
+    All of the following applies: 
+    - [slices] gives an index [i];
+    - [(offset, length)] is the result of applying TypingRule.SliceLength to [i, i+:1].
 
-    {4 Example}
+    {4 Comments}
+    R_GXKG: The notation b[i] is syntactic sugar for b[i +: 1].
+
+    {4 Examples}
 
   {3 TypingRule.SliceRange}
 
     {4 Rule}
+    All of the following applies:
+    - [slices] gives a range [(j, i)];
+    - [pre_length] is [i +: j-i+1];
+    - [offset, length] is the result of applying TypingRule.SliceLength to [i,pre_length].
 
-    {4 Example}
+    {4 Comments}
+    R_GXKG: The notation b[j:i] is syntactic sugar for b[i +: j-i+1].
+
+    {4 Examples}
 
   {3 TypingRule.SliceStar}
 
     {4 Rule}
+    All of the following applies:
+    - [slices] gives [(factor, pre_length)];
+    - [pre_offset] is [factor * pre_length];
+    - [offset, length] is the result of applying TypingRule.SliceLength to [(pre_offset, pre_length)].
 
-    {4 Example}
+    {4 Comments}
+    R_GXQG: The notation b[i *: n] is syntactic sugar for b[i*n +: n]
+
+    {4 Examples}
 
 {2
 Typing of Patterns
 }
-[annotate_pattern env pos v p] is <description>.
-Formally, one of the following applies:
+[annotate_pattern loc env t p] is [new_p] and one of the following applies:
 
   {3 TypingRule.PAll}
 
     {4 Rule}
+    All of the following applies:
+    - [p] is the pattern matching everything;
+    - [new_p] is [p].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.PAny}
 
     {4 Rule}
+    All of the following applies:
+    - [p] is the pattern which matches anything in a list [li];
+    - [new_li] is the result of mapping the result of annotating [p] in [env] onto [li];
+    - [new_p] is the pattern which matches anything in [new_li].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.PNot}
 
     {4 Rule}
+    All of the following applies:
+    - [p] is the pattern which matches the negation of a pattern [q];
+    - [new_q] is the result of annotating [q] in [env]; 
+    - [new_p] is pattern which matches the negation of [new_q].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.PSingle}
 
     {4 Rule}
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.PGeq}
 
     {4 Rule}
+    All of the following applies:
+    - [p] is the pattern which matches anything greater than or equal to an expression [e];
+    - [t_e, e'] is the result of annotating [e] in [env]; 
+    - [e'] is a compile-time constant;
+    - [t] has the structure of an integer;
+    - [t_e] has the structure of an integer;
+    - [new_p] is the pattern which matches anything greater than or equal to [e'].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.PLeq}
 
     {4 Rule}
+    All of the following applies:
+    - [p] is the pattern which matches anything lesser than or equal to an expression [e];
+    - [t_e, e'] is the result of annotating [e] in [env]; 
+    - [e'] is a compile-time constant;
+    - [t] has the structure of an integer;
+    - [t_e] has the structure of an integer;
+    - [new_p] is the pattern which matches anything lesser than or equal to [e'].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.PRange}
 
     {4 Rule}
+    All of the following applies:
+    - [p] is the pattern which matches anything within the range given by
+      expressions [e1] and [e2];
+    - [t_e1, e1'] is the result of annotating [e1] in [env];
+    - [t_e2, e2'] is the result of annotating [e2] in [env];
+    - [t] has the structure of an integer;
+    - [t_e1] has the structure of an integer;
+    - [t_e2] has the structure of an integer;
+    - e1' and e2' are compile-time constants; 
+    - [new_p] is the pattern which matches anything within the range given by
+      expressions [e1'] and [e2'].
 
-    {4 Example}
+    {4 Examples}
 
   {3 TypingRule.PMask}
 
     {4 Rule}
+    All of the following applies:
+    - [p] is the pattern which matches a mask [m];
+    - [t] has the structure of a bitvector type;
+    - [n] is the length of mask [m];
+    - [t_m] is the bitvector type of width [n];
+    - [t] type-satisfies [t_m];
+    - [new_p] is [p].
 
-    {4 Example}
+    {4 Examples}
+
+  {3 TypingRule.PTupleBadArity}
+
+    {4 Rule}
+    All of the following applies:
+    - [p] is the pattern which matches a tuple [li];
+    - [t] has the type structure of a tuple type [ts];
+    - [ts] is a list of different size to the size of [li];
+    - an error "Bad Arity" is raised. 
+
+    {4 Examples}
 
   {3 TypingRule.PTuple}
 
     {4 Rule}
+    All of the following applies:
+    - [p] is the pattern which matches a tuple [li];
+    - [t_struct] is the type structure of [t];
+    - [t_struct] is a tuple [ts];
+    - [ts] is a list of same size to the size of [li];  
+    - [new_li] is the result of annotating [li] with [ts];
+    - [new_p] is the pattern which matches the tuple [new_li].
 
-    {4 Example}
+    {4 Examples}
+
+  {3 TypingRule.PTupleConflict}
+
+    {4 Rule}
+    All of the following applies:
+    - [p] is the pattern which matches a tuple [li];
+    - [t_struct] is the type structure of [t];
+    - [t_struct] is not a tuple type;
+    - an error "Conflicting Types" is raised. 
+
+    {4 Examples}
 
 {2
 Typing of Blocks
 }
 
   {3 TypingRule.Block}
-
+    
     {4 Rule}
-    [annotate_block env stm] is <description>.
+    [annotate_block env return_type s] is the result of annotating the
+    statement [s] in [env].
 
-    {4 Example}
-    <minimal example>
+    {4 Comments}
+    A local identifier declared with var, let or constant is in scope
+from the point immediately after its declaration until the end of the
+immediately enclosing block.
+
+    From that follows that we can discard the environment at the end of
+an enclosing block.
+    
+    {4 Examples}
+
+    [@asl{
+    func main () => integer
+    begin
+      if UNKNOWN: boolean then
+         let i = 3;
+         print (i);
+      end
+      let i = "Some text";
+      print (i);
+      return 0;
+    end
+    }]
 
 {2
 Typing of Catchers
 }
-[annotate_catchers env catchers otherwise_opt s_m]
+  
+  {3 TypingRule.CatcherNone}
+  [annotate_catchers env return_type (name_opt, ty, stmt)] is [(name_opt, ty,
+  new_stmt)] and one of the following applies:
+ 
+    {4 Rule}
+    All of the following applies:
+    - [ty] has the structure of an exception type;
+    - [name_opt] gives no name;
+    - [env'] is [env];
+    - [new_stmt] is the result of annotating [stmt] in [env'] with [return_type].
 
-  {3 TypingRule.Catcher}
+    {4 Examples}
+
+
+  {3 TypingRule.CatcherSome}
 
     {4 Rule}
-    <description>
+    All of the following applies:
+     - [ty] has the structure of an exception type;
+    - [name_opt] gives a name [name];
+    - [name] is not already declared in [env];
+    - [name] is annotated with [ty] in [env];
+    - [env'] is [env] modified to have [name] locally declared as immutable of type [ty];
+    - [new_stmt] is the result of annotating [stmt] in [env'] with [return_type].
 
-    {4 Example}
-    <minimal example>
+    {4 Examples}
+
 
 {2
 Typing of Function Calls
 }
-[annotate_call pos name env args named_args] annotates the call to function [name]
-with arguments [args] and parameters [named_args].
+[annotate_call loc en name args eqs call_type] annotates the call to function
+[name] with arguments [args] and parameters [eqs]. Formally, [annotate_call loc
+en name args eqs call_type] is [(name1, args, eqs2, ret_ty1)] or an error is
+raised and one of the following applies:
 
-  {3 TypingRule.FCall}
+  {3 TypingRule.FCallBadArity}
 
     {4 Rule}
-    <description>
+    All of the following applies:
+    - [caller_arg_types, args1] is the result of annotating [args] in [env];
+    - [name] is bound in [env] to a function with a unique name [name1]
+      whose argument types [callee_arg_types] type-clash
+      [caller_arg_types] and whose return type is [ret_ty];
+    - [eqs1] is the list made of both [eqs] and [extra_nargs];
+    - the lists [callee_arg_types] and [args1] do not have the same length;
+    - an error "Bad Arity" is raised.
 
-    {4 Example}
-    At the begining of a program, the interpreter annotates the function "main".
+    {4 Examples}
+
+  {3 TypingRule.FCallGetter}
+
+    {4 Rule}
+    All of the following applies:
+    - [caller_arg_types, arg1] is the result of annotating [args] in [env];
+    - [name] is bound in [env] to a function with argument types
+      [callee_arg_types];
+    - [eqs2] is [eqs1] modified to add all the type equations from the
+      type-clash of [caller_arg_types] and [callee_arg_types];
+    - [call_type] is a either a function or a getter type;
+    - [ret_ty1] is the result of renaming [ty] in [eqs2].
+
+    {4 Examples}
+
+  {3 TypingRule.FCallSetter}
+
+    {4 Rule}
+    All of the following applies:
+    - [caller_arg_types, arg1] is the result of annotating [args] in [env];
+    - [name] is bound in [env] to a function with a unique name [name1] whose argument types [callee_arg_types] type-clash [caller_arg_types] and whose return type is [ret_ty];
+    - [eqs1] is the list made of both [eqs] and [extra_nargs];
+    - [eqs2] is ;
+    - [call_type] is a setter or procedure type;
+    - [ret_ty] is None;
+    - [ret_ty1] is None.
+
+    {4 Examples}
+
+  {3 TypingRule.FCallMismatch}
+
+    {4 Rule}
+    All of the following applies:
+    - [caller_arg_types, arg1] is the result of annotating [args] in [env];
+    - [extra_nargs, name1, callee_arg_types, ret_ty] is the result of trying to
+      find the name [name] with [caller_arg_types] in [env];
+    - [eqs1] is the list made of both [eqs] and [extra_nargs];
+    - [eqs2] is ;
+    - [call_type] is not a function, getter, setter or procedure type;
+    - an error "Mismatched Return Value" is raised.
+
+    {4 Examples}
 
 {2
 Typing of Functions
 }
-[annotate_func genv name pos actual_args params] annotates the function named
-[name] <description> and one of the following applies:
+[annotate_func loc env f] annotates the function named [f] and returns [f],
+[new_body] and [name].
 
 {3 TypingRule.Func}
 
   {4 Rule}
+  All of the following applies:
+  - [env1] is [env] modified to have an empty local environment;
+  - [env2] is [env1] with every formal argument declared as immutable with its type;
+  - [env3] is [env2] modified to add explicit parameters;
+  - [env4] is [env3] modified to resolve dependently typed identifiers in the arguments;
+  - [env5] is [env4] modified to resolve dependently typed identifiers in the result type;
+  - [body] is the body given by [f];
+  - [new_body] is the result of annotating [body] in [env5];
+  - [name] is the name [f] as found in [env5].
 
-  {4 Example}
+  {4 Examples}
 
