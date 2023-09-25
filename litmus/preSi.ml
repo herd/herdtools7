@@ -69,6 +69,15 @@ module Make
       val dump : Name.t -> T.t -> unit
     end = struct
 
+    module Insert =
+      ObjUtil.Insert
+        (struct
+          let sysarch = Cfg.sysarch
+        end)
+
+(* Handle instruction as data *)
+    let has_instruction_ptr = Insert.exists "instruction.h"
+
     module
       LocMake
         (CfgLoc:
@@ -104,11 +113,6 @@ module Make
 (*******************************************)
 (* Set compile time parameters from config *)
 (*******************************************)
-      module Insert =
-        ObjUtil.Insert
-          (struct
-            let sysarch = Cfg.sysarch
-          end)
 
       module EPF =
         DoEmitPrintf.Make
@@ -270,7 +274,9 @@ module Make
         O.o "" ;
         O.o "/* Full memory barrier */" ;
         UD.dump_mbar_def () ;
-        let dump_find_ins = do_self || CfgLoc.need_prelude || do_precise || Misc.consp CfgLoc.labels in
+        let dump_find_ins =
+          do_self || CfgLoc.need_prelude
+          || do_precise|| Misc.consp CfgLoc.labels in
         if dump_find_ins then begin
           ObjUtil.insert_lib_file O.o "_find_ins.c" ;
           O.o ""
@@ -674,7 +680,8 @@ module Make
       let dump_fault_type env test =
         if need_labels test then begin
             O.o "typedef struct {" ;
-            List.iter (fun (p,lbl) -> O.fi "ins_t *code_P%d_%s;"  p lbl) CfgLoc.labels ;
+            List.iter (fun (p,lbl) -> O.fi "ins_t *code_P%d_%s;"  p lbl)
+              CfgLoc.labels ;
             O.fi "ins_t *ret[N];" ;
             O.o "} labels_t;" ;
             O.o ""
@@ -2129,12 +2136,24 @@ module Make
         let module MLoc =
           LocMake
             (struct
-              let label_init = T.get_init_labels test
-              let labels = T.all_labels test
+
+              let label_init =
+                if has_instruction_ptr then
+                  T.get_init_labels test
+                else Label.Full.Set.empty
+
+              let labels =
+                if has_instruction_ptr then
+                  T.all_labels test
+                else []
+
               let need_prelude =
-                not (Label.Full.Set.is_empty label_init)
-                || Misc.consp (T.from_labels test)
-                || Cfg.variant Variant_litmus.Self
+                has_instruction_ptr &&
+                  begin
+                    not (Label.Full.Set.is_empty label_init)
+                    || Misc.consp (T.from_labels test)
+                    || Cfg.variant Variant_litmus.Self
+                  end
             end) in
         let open MLoc in
         let db = DirtyBit.get test.T.info
