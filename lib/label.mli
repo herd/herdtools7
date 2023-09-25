@@ -25,6 +25,7 @@ val reset : unit -> unit
 val next_label : string -> t
 
 val last : int -> t
+val return : int -> t
 
 type next = Any | Next | To of t
 

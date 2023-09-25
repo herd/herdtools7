@@ -500,8 +500,25 @@ module A.FaultType = A.FaultType)
       let k = List.fold_right pp_pseudo code [] in
       String.concat "; " k
 
+    let ret_as_branch proc code =
+      if List.exists (A.pseudo_exists C.is_ret) code then
+        let lab = Label.return proc in
+        List.fold_right
+          (fun i k ->
+            (A.pseudo_map
+               (fun i ->
+                 if C.is_ret i then C.branch lab
+                 else i)) i::k)
+          code [A.Label (lab,A.Nop)]
+      else code
 
     let compile_code proc user code fhandler =
+      (* In telechat mode, return instruction is interpreted as "jump to end of code" *)
+      let code =
+        if O.variant Variant_litmus.Telechat then
+          ret_as_branch proc code
+        else code in
+
       let fhandler =
         match fhandler with
         | [] -> None
