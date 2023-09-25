@@ -1,0 +1,11 @@
+X86_64 A009
+{
+int64_t t[2]={1,-1};
+0:rax=t;
+0:rbx=1;
+int64_t 0:rcx;
+}
+
+P0                        ;
+movq 0(%rax,%ebx,8),%rcx  ;
+forall 0:rcx = -1

@@ -26,7 +26,9 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
     open A.Out
     open Printf
 
-    let is_ret _ = assert false
+    let is_ret = function
+      | A.I_RET -> true
+      | _ -> false
     let is_nop = function
       | A.I_NOP -> true
       | _ -> false
@@ -41,6 +43,7 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
     | G.Pte _|G.Phy _ -> false
 
     let extract_rm64 r = match r with
+    |  Rm64_scaled _
     |  Rm64_reg _
     |  Rm64_deref _ -> G.Set.empty
     |  Rm64_abs v ->
@@ -61,7 +64,7 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
       | I_LOCK ins -> extract_addrs ins
       | I_EFF_OP (_, _, ea, op)
         ->  G.Set.union (extract_ea ea) (extract_op op)
-      | I_NOP | I_JMP _ | I_FENCE _ | I_JCC _ | I_MOVD _
+      | I_NOP | I_RET | I_JMP _ | I_FENCE _ | I_JCC _ | I_MOVD _
         -> G.Set.empty
       | I_CMPXCHG (_, ea,_) | I_EFF (_, _, ea)
       | I_CMOVC (_, _, ea)  | I_MOVNTI (_,ea,_)
@@ -78,6 +81,7 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
 
     let compile_reg = function
       | RIP -> sprintf "%%[rip]"
+      | CS -> sprintf "%%[cs]"
       | Ireg (r, t) ->
           sprintf "%%%s[%s]" (reg_size_to_string t) (reg64_string r)
       | Symbolic_reg s -> s
@@ -88,6 +92,7 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
     let compile_rm64_move i o r =  match r with
     |  Rm64_reg reg -> compile_reg reg,(i,[]),(o+1,[reg])
     |  Rm64_deref (reg,o) -> pp_offset o ^ "(" ^ compile_reg reg ^ ")",(i+1,[reg]),(o,[])
+    |  Rm64_scaled (o1,r1,r2,o2) -> pp_offset o1 ^ "(" ^ compile_reg r1 ^ "," ^ compile_reg r2 ^ ", " ^ pp_offset o2 ^ ")",(i+1,[r1;r2]),(o1,[])
     |  Rm64_abs abs ->
         (let name = A.tr_global abs in
         if internal_addr name then G.pp_old name
@@ -101,6 +106,7 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
     let compile_rm64_output i o r =  match r with
     |  Rm64_reg reg -> compile_reg reg,(i,[]),(o+1,[reg])
     |  Rm64_deref (reg,o) -> pp_offset o ^ "(" ^ compile_reg reg ^ ")",(i+1,[reg]),(o,[])
+    |  Rm64_scaled (o1,r1,r2,o2) -> pp_offset o1 ^ "(" ^ compile_reg r1 ^ "," ^ compile_reg r2 ^ ", " ^ pp_offset o2 ^ ")",(i+1,[r1;r2]),(o1,[])
     |  Rm64_abs abs ->
         let name = A.tr_global abs in
         sprintf "%%[%s]" (G.pp_old name),(i,[]),(o,[])
@@ -112,6 +118,7 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
     let compile_rm64_input i r = match r with
     |  Rm64_reg reg -> "" ^ compile_reg reg,(i+1,[reg])
     |  Rm64_deref (reg,o) -> pp_offset o ^ "(" ^ compile_reg reg ^ ")",(i+1,[reg])
+    |  Rm64_scaled (o1,r1,r2,o2) -> pp_offset o1 ^ "(" ^ compile_reg r1 ^ "," ^ compile_reg r2 ^ ", " ^ pp_offset o2 ^ ")",(i+1,[r1;r2])
     |  Rm64_abs abs ->
         let name = A.tr_global abs in
         sprintf "%%[%s]" (G.pp_old name),(i,[])
@@ -265,10 +272,12 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
     let rec do_compile_ins tr_lab ins = match ins with
     | I_NOP ->
         { empty_ins with memo = "nop"; }
+    | I_RET ->
+        { empty_ins with memo = "ret"; }
     | I_EFF_OP (inst, _, ea, op) as i ->
        begin
          match inst with
-         | I_OR | I_ADD | I_XOR
+         | I_OR | I_ADD | I_XOR | I_AND | I_SHL
            -> op_ea_output_op (inst_string i) ea op
          (* as usual, move is quite special *)
          | I_MOV -> move (inst_string i) ea op

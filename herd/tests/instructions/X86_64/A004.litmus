@@ -1,0 +1,12 @@
+X86_64 A004
+
+(* Tests for nopl/nopw emmitted by LLVM *)
+
+{}
+
+P0;
+  nopl 0(%rax,%eax,0);
+  nopw 0(%rax,%eax,0);
+
+forall 0:RAX = 0
+

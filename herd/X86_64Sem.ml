@@ -89,7 +89,7 @@ module
       let get_inst_size inst =
         let open X86_64 in
            match inst with
-           | I_NOP | I_FENCE _ | I_LOCK _ | I_JMP _ | I_JCC _
+           | I_NOP | I_RET | I_FENCE _ | I_LOCK _ | I_JMP _ | I_JCC _
            | I_MOVNTDQA _ | I_CLFLUSH _ -> INSb
            | I_EFF_OP (_, sz, _, _) | I_EFF (_, sz, _) | I_EFF_EFF (_, sz, _, _)
            | I_CMPXCHG (sz, _, _) | I_CMOVC (sz, _, _)
@@ -189,6 +189,11 @@ module
            read_reg false r ii >>=
              fun v -> M.add v (V.intToV o) >>=
              fun vreg -> M.unitT (X86_64.Location_global vreg)
+        | X86_64.Effaddr_rm64 (X86_64.Rm64_scaled (o1,r1,r2,o2)) ->
+           (read_reg false r1 ii >>= fun v -> M.add v (V.intToV o1)) >>|
+           (read_reg false r2 ii >>= fun v ->M.op Op.Mul v (V.intToV o2))
+          >>= fun (vreg,a) -> M.add vreg a
+          >>= fun vreg -> M.unitT (X86_64.Location_global vreg)
         | X86_64.Effaddr_rm64 (X86_64.Rm64_abs v)->
            M.unitT (X86_64.maybev_to_location v)
 
@@ -239,6 +244,8 @@ module
           | A.I_ADD -> Op.Add
           | A.I_XOR -> Op.Xor
           | A.I_OR  -> Op.Or
+          | A.I_AND -> Op.And
+          | A.I_SHL -> Op.ShiftLeft
           | (A.I_MOV|A.I_CMP) -> assert false in
         (lval_ea ea ii >>=
            fun loc ->
@@ -255,10 +262,35 @@ module
         M.mk_singleton_es
           (Act.Arch (X86_64.ArchAction.ClFlush (opt,a))) ii
 
-      let build_semantics _ ii =
+      let v2tgt =
+        let open Constant in
+        function
+        | M.A.V.Val(Label (_, lbl)) -> Some (B.Lbl lbl)
+        | M.A.V.Val (Concrete i) -> Some (B.Addr (M.A.V.Cst.Scalar.to_int i))
+        | _ -> None
+
+      let do_indirect_jump test bds i v =
+        match  v2tgt v with
+        | Some tgt -> M.unitT (B.Jump (tgt,bds))
+        | None ->
+           match v with
+           | M.A.V.Var(_) as v ->
+              let lbls = get_exported_labels test in
+              if Label.Full.Set.is_empty lbls then
+                M.unitT () >>! B.Exit
+              else
+                B.indirectBranchT v lbls bds
+        | _ -> Warn.fatal
+            "illegal argument for the indirect branch instruction %s \
+            (must be a label)" (X86_64.dump_instruction i)
+
+      let build_semantics test ii =
         let rec build_semantics_inner locked ii =
           match ii.A.inst with
           | X86_64.I_NOP -> B.nextT
+          | X86_64.I_RET as i when C.variant Variant.Telechat ->
+            read_reg true X86_64.RIP ii
+            >>= do_indirect_jump test [] i
           | X86_64.I_EFF_OP (X86_64.I_CMP, sz, ea, op) ->
              let sz = inst_size_to_mach_size sz in
              (rval_ea sz locked ea ii >>| rval_op sz locked op ii) >>=
@@ -364,6 +396,7 @@ module
           | X86_64.I_CLFLUSH (opt,ea) ->
               clflush opt ea ii >>= B.next1T
           | X86_64.I_MOVD _
+          | X86_64.I_RET
           | X86_64.I_MOVNTDQA _ as i ->
               Warn.fatal "X86_64Sem.ml: Instruction %s not implemented" (X86_64.dump_instruction i)
         in

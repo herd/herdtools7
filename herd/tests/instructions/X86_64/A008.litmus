@@ -1,0 +1,10 @@
+X86_64 A008
+
+(* Test AND instr*)
+
+{ 0:RAX=1}
+
+P0;
+and %eax,%eax;
+
+forall 0:RAX=1
