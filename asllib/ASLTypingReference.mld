@@ -22,8 +22,8 @@ github repository.
 
   {3 Definitions} 
   All types are either:
-  • named types: those which are declared using the type syntax.
-  • or anonymous types: those which are not declared using the type syntax. 
+  - named types: those which are declared using the type syntax;
+  - or anonymous types: those which are not declared using the type syntax. 
 
   {3 Examples}
 
@@ -31,8 +31,8 @@ github repository.
 
   {3 Definitions} 
   All types are either:
-  • primitive types: those which only uses the builtin types (see rule NZWT)
-  • or non-primitive types: those which are named types or which make use of named types.
+  - primitive types: those which only uses the builtin types;
+  - or non-primitive types: those which are named types or which make use of named types.
 
   {3 Examples}
 
