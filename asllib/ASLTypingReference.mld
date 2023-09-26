@@ -18,12 +18,39 @@ github repository.
 
 {1 Type nomenclature
 
+{2 Singular and Aggregate Types}
+
+All types are either singular or aggregate. 
+
+{3 TypingDefinition.SingularType}
+
+The builtin singular types are:
+- integer; 
+- real;
+- string; 
+- boolean; 
+- bit;
+- bits;
+- enumeration.
+
+{3 TypingDefinition.AggregateType}
+
+The builtin aggregate types are:
+- tuple;
+- array;
+- record;
+- exception.
+
 {2 Named and Anonymous Types}
 
   {3 Definitions} 
   All types are either:
   - named types: those which are declared using the type syntax;
   - or anonymous types: those which are not declared using the type syntax. 
+
+  {3 Comments}
+  A named type is singular if it has the structure of a singular type,
+  otherwise it is aggregate.
 
   {3 Examples}
 
