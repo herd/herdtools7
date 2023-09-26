@@ -1,0 +1,13 @@
+Test S27 Required
+States 2
+0:X5=instr:"ADR X3,.+0"; 0:X6=0;
+0:X5=instr:"ADR X3,.+0"; 0:X6=1;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Flag Assuming-no-two-modified-instructions-are-on-the-same-cache-line
+Flag violates-CMODX-requirements
+Condition forall (true)
+Observation S27 Always 2 0
+Hash=dafd07478617c823bca682aaa6e8d197
+

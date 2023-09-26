@@ -1,0 +1,11 @@
+Test S25 Required
+States 1
+0:X0=instr:"ADR X3,.+4"; 0:X2=instr:"MOV W6,W4"; 0:X6=instr:"BL .+8";
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Assuming-no-two-modified-instructions-are-on-the-same-cache-line
+Condition forall (true)
+Observation S25 Always 1 0
+Hash=353531dc6e6299b14776426e2440091c
+

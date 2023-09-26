@@ -1,0 +1,23 @@
+AArch64 S27
+(* Similar to S26, yielding no error, because
+   ADDR X3,.+0 miraculously correspong to label L1 when
+   after instruction at L1 is overwritten *)
+{
+0:X0=P0:L0;
+0:X1=P0:L1;
+ins_t 0:X5;
+0:X2=1;
+}
+  P0         ;
+ LDR W4,[X0] ;
+ B .+8       ;
+L0:          ;  
+ ADR X3,L0   ;
+ STR W4,[X1] ;
+L1:          ;
+ MOV W6,W2   ;
+ LDR W5,[X1] ;
+locations [0:X5;0:X6;]
+
+ 
+
