@@ -1,0 +1,15 @@
+AArch64 CAS03
+(*
+ * This test was failing, because the 32bits memory
+ * reads was returning a bitvector of size 64, which
+ * compared negatively with the bitvector of size 32
+ * read from the register W0.
+ *)  
+{
+int x;
+0:X3=x;
+}
+  P0            ;
+ MOV W2,#1      ;
+ CAS W0,W2,[X3] ;
+forall [x]=1 

@@ -404,6 +404,8 @@ module Make (C : Config) = struct
           in
           List.fold_left folder (return h) t
 
+    let bitvector_length v = M.op1 (Op.ArchOp1 ASLOp.BVLength) v
+
     (**************************************************************************)
     (* Primitives and helpers                                                 *)
     (**************************************************************************)
@@ -635,12 +637,12 @@ module Make (C : Config) = struct
         |> __POS_OF__ |> here;
         arity_two "read_memory"
           [ bv_64 ; integer ]
-          (return_one (bv_arg1))
+          (return_one (bv_64))
           (read_memory ii_env)
         |> __POS_OF__ |> here;
         arity_three "read_memory_gen"
           [ bv_64 ; integer; t_named "AccessDescriptor"; ]
-          (return_one (bv_arg1))
+          (return_one (bv_64))
           (read_memory_gen ii_env)
         |> __POS_OF__ |> here;
         arity_three "write_memory" [ bv_64; integer; bv_arg1 ]
@@ -715,6 +717,7 @@ module Make (C : Config) = struct
         let read_from_bitvector = read_from_bitvector
         let write_to_bitvector = write_to_bitvector
         let concat_bitvectors = concat_bitvectors
+        let bitvector_length = bitvector_length
         let v_unknown_of_type = v_unknown_of_type
       end in
       let module Config = struct

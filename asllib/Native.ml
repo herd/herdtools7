@@ -94,7 +94,6 @@ module NativeBackend = struct
 
   let bind (vm : 'a m) (f : 'a -> 'b m) : 'b m = f vm
   let prod_par (r1 : 'a m) (r2 : 'b m) : ('a * 'b) m = (r1, r2)
-
   let return v = v
 
   let v_unknown_of_type ty =
@@ -214,6 +213,10 @@ module NativeBackend = struct
   let concat_bitvectors bvs =
     let bvs = List.map as_bitvector bvs in
     Bitvector.concat bvs |> bitvector_to_value
+
+  let bitvector_length bv =
+    let bv = as_bitvector bv in
+    Bitvector.length bv |> v_of_int
 end
 
 module NativePrimitives = struct
@@ -437,7 +440,8 @@ let exit_value = function
 
 let instrumentation_buffer = function
   | Some true ->
-      (module Instrumentation.SemanticsSingleSetBuffer : Instrumentation.SEMBUFFER)
+      (module Instrumentation.SemanticsSingleSetBuffer
+      : Instrumentation.SEMBUFFER)
   | Some false | None ->
       (module Instrumentation.SemanticsNoBuffer : Instrumentation.SEMBUFFER)
 
