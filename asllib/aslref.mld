@@ -21,5 +21,7 @@ For the ASL reference documents see {!ASLSemanticsReference} or {!ASLTypingRefer
 
 For instructions on how to build and run ASLRef, see {!ASLRefREADME}.
 
+For instructions on how to contribute examples and regression tests, see {!ASLRefRegression}.
+
 For the developer documentation of [asllib], see {!Asllib}.
 
