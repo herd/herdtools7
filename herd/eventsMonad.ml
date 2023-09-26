@@ -152,7 +152,13 @@ Monad type:
 
     let warnT msg (v : 'a) : 'a t =
       fun eiid_next ->
-        eiid_next, (Evt.singleton (v, [VC.Warn msg], E.empty_event_structure), None)
+      eiid_next,
+      (Evt.singleton (v, [VC.Warn msg], E.empty_event_structure), None)
+
+    let failT (e:exn) (v : 'a) : 'a t =
+      fun eiid_next ->
+      eiid_next,
+      (Evt.singleton (v, [VC.Failed e], E.empty_event_structure), None)
 
     let ignore _ = unitT ()
 

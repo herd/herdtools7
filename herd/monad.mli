@@ -47,6 +47,7 @@ module type S =
     val zerocodeT        : 'a code
     val unitT        : 'a -> 'a t
     val warnT : string -> 'a -> 'a t
+    val failT : exn -> 'a -> 'a t
     val ignore : 'a -> unit t
     val unitcodeT        : 'a -> 'a code
     val failcodeT        : exn -> 'a -> 'a code
