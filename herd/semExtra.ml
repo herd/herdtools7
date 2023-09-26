@@ -314,18 +314,11 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
           | V.Var _ -> k)
         st Label.Full.Set.empty
 
+    module AU = ArchUtils.Make(A)(V.Cst.Instr)
+
     let get_exported_labels_code test =
       let { Test_herd.nice_prog=prog; _ } = test in
-      List.fold_left
-        (fun k (p,code) ->
-          A.fold_pseudo_code
-            (fun k i ->
-              match A.V.Cst.Instr.get_exported_label i with
-              | None -> k
-              | Some lbl ->
-                  Label.Full.Set.add (MiscParser.proc_num p,lbl) k)
-            k code)
-        Label.Full.Set.empty prog
+      AU.get_exported_labels_code prog
 
     let get_exported_labels test =
       Label.Full.Set.union

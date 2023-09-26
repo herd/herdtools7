@@ -2454,7 +2454,7 @@ let can_overwrite =
      true
 
 let get_exported_label = function
-  | I_ADR (_,BranchTarget.Lbl lbl) -> Some lbl
+  | I_ADR (_,bt) -> Some bt
   | _ -> None
 
 module

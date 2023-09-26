@@ -1107,8 +1107,8 @@ instr:
   { I_MOVK (V32,$2,$4, S_NOEXT) }
 | MOVK wreg COMMA k COMMA TOK_LSL k
   { I_MOVK (V32,$2,$4, S_LSL $7) }
-| ADR xreg COMMA NAME
-  { I_ADR ($2,BranchTarget.Lbl $4) }
+| ADR xreg COMMA label_addr
+  { I_ADR ($2,$4) }
 | TOK_SXTW xreg COMMA wreg
   { I_SXTW ($2,$4) }
 | MVN wreg COMMA wreg

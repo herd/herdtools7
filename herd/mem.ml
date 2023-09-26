@@ -249,6 +249,15 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
            | A.Location_reg _ -> false)
           (S.observed_locations test)
       and locs_init = get_all_locs_init test.Test_herd.init_state in
+      let () =
+        if dbg then begin
+          let pp_locs locs =
+            A.LocSet.pp_str "," A.dump_location locs in
+          Printf.eprintf
+            "locs_init={%s}, locs_final={%s}\n%!"
+            (pp_locs locs_init)
+            (pp_locs locs_final)
+        end in
       let locs = A.LocSet.union locs_final locs_init in
       let locs =
         List.fold_left
