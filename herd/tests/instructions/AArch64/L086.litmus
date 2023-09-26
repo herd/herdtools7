@@ -1,0 +1,11 @@
+AArch64 L086
+{
+0:X0=instr:"ADR X1,.+0";
+}
+  P0          ;
+L0:           ;
+  ADR X1,L0   ;
+  LDR W2,[X1] ;
+  CMP W0,W2   ;
+  CSET W3,EQ  ;
+forall 0:X3=1  
