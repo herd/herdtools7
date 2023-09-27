@@ -68,16 +68,16 @@ let get_structure (env : env) : ty -> ty =
     | T_Named x -> (
         match IMap.find_opt x env.global.declared_types with
         | None -> undefined_identifier ty x
-        | Some ty -> get ty)
+        | Some ty' -> get ty')
     | T_Int _ | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ -> ty
     | T_Tuple subtypes -> T_Tuple (List.map get subtypes) |> with_pos
     | T_Array (e, t) -> T_Array (e, get t) |> with_pos
     | T_Record fields -> T_Record (get_fields fields) |> with_pos
-    | T_Exception fields -> T_Exception (get_fields fields) |> with_pos
+    | T_Exception fields -> T_Exception (get_fields fields) |> with_pos |: TypingRule.Structure
   and get_fields fields =
     let one_field (name, t) = (name, get t) in
     let fields = List.map one_field fields in
-    canonical_fields fields
+    canonical_fields fields |: TypingRule.Canonical
   in
   get
 
@@ -95,7 +95,7 @@ let get_structure (env : env) : ty -> ty =
 let is_builtin_singular ty =
   match ty.desc with
   | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ | T_Int _ -> true
-  | _ -> false
+  | _ -> false |: TypingRule.BuiltinSingularType
 
 (* The builtin aggregate types are:
    • tuple
@@ -106,24 +106,25 @@ let is_builtin_singular ty =
 let is_builtin_aggregate ty =
   match ty.desc with
   | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ -> true
-  | _ -> false
+  | _ -> false |: TypingRule.BuiltinAggregateType 
 
-let is_builtin ty = is_builtin_singular ty || is_builtin_aggregate ty
-let is_named ty = match ty.desc with T_Named _ -> true | _ -> false
+let is_builtin ty = is_builtin_singular ty || is_builtin_aggregate ty |: TypingRule.BuiltinSingularOrAggregate
+
+let is_named ty = match ty.desc with T_Named _ -> true | _ -> false |: TypingRule.NamedType
+
+let is_anonymous ty = not (is_named ty) |: TypingRule.AnonymousType
 
 (* A named type is singular if it has the structure of a singular type,
    otherwise it is aggregate. *)
 let is_singular env ty =
   is_builtin_singular ty
-  || (is_named ty && get_structure env ty |> is_builtin_singular)
+  || (is_named ty && get_structure env ty |> is_builtin_singular) |: TypingRule.SingularType
 
 (* A named type is singular if it has the structure of a singular type,
    otherwise it is aggregate. *)
 let is_aggregate env ty =
   is_builtin_aggregate ty
   || (is_named ty && get_structure env ty |> is_builtin_aggregate)
-
-let is_anonymous ty = not (is_named ty)
 
 let rec is_non_primitive ty =
   match ty.desc with
@@ -132,21 +133,17 @@ let rec is_non_primitive ty =
   | T_Tuple li -> List.exists is_non_primitive li
   | T_Array (_, ty) -> is_non_primitive ty
   | T_Record fields | T_Exception fields ->
-      List.exists (fun (_, ty) -> is_non_primitive ty) fields
+      List.exists (fun (_, ty) -> is_non_primitive ty) fields |: TypingRule.NonPrimitiveType
 
-let is_primitive ty = not (is_non_primitive ty)
+let is_primitive ty = not (is_non_primitive ty) |: TypingRule.PrimitiveType
 
 (* --------------------------------------------------------------------------*)
 
 module Domain = struct
   module IntSet = Diet.Z
-  (* Pretty inefficient. Use diets instead?
-     See https://web.engr.oregonstate.edu/~erwig/papers/Diet_JFP98.pdf
-     or https://github.com/mirage/ocaml-diet
-  *)
 
-  (** Represents the domain of a integer expression. If there are no constraints,
-    then the expression has the [Top] domain, whereas there are constraints but
+  (** Represents the domain of an integer expression. If there are no constraints,
+    then the expression has the [Top] domain, whereas when there are constraints but
     they cannot get resolved, the domain is [AlmostTop]. *)
   type int_set = Finite of IntSet.t | AlmostTop | Top
 

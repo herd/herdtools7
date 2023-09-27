@@ -16,105 +16,206 @@ welcome; those can be sent to Arm’s Architecture Formal Team Lead Jade
 Alglave <jade.alglave@arm.com> or by raising issues or PRs to the herdtools7
 github repository.
 
-{1 Type nomenclature}
+{1 Type Algebra}
 
-{2 Singular and Aggregate Types}
+{2 Predicates on Types}
 
-All types are either singular or aggregate. 
 
-{3 TypingRule.SingularType}
+  {3 TypingRule.BuiltinSingularType}
 
-  {2 Definition}
-  The builtin singular types are:
-  - integer; 
-  - real;
-  - string; 
-  - boolean; 
-  - bit;
-  - bits;
-  - enumeration.
+    {4 Definition}
+    The builtin singular types are:
+    - integer; 
+    - real;
+    - string; 
+    - boolean; 
+    - bit;
+    - bits;
+    - enumeration.
 
-  {2 Comments}
-  This encompasses LRM Section 3.1 D_PQCK and D_NZWT.
+    {4 Comments}
+    This encompasses LRM Section 3.1 D_PQCK and D_NZWT.
 
-  {3 TypingRule.AggregateType}
 
-    {2 Definition}
+  {3 TypingRule.BuiltinAggregateType}
+
+    {4 Definition}
     The builtin aggregate types are:
     - tuple;
     - array;
     - record;
     - exception.
 
-    {2 Comments}
+    {4 Comments}
     This encompasses LRM Section 3.1 D_PQCK and D_KNBD.
 
-{2 TypingRule.NamedType and TypingRule.AnonymousType}
+  {3 TypingRule.BuiltinSingularOrAggregate}
 
-  {3 Definitions} 
-  All types are either:
-  - named types: those which are declared using the type syntax;
-  - or anonymous types: those which are not declared using the type syntax. 
+    {4 Rule}
+    [t] is a builtin type and one of the following applies:
+    - [t] is singular;
+    - [t] is aggregate.
 
-  {3 Comments}
-  This encompasses LRM Section 7.1.1 D_VMZX.
+  {3 TypingRule.NamedType} 
 
-  {3 Examples}
+    {4 Definition}
+    A named type is a type which is declared using the type syntax.
 
-  {3 TypingRule.NamedSingularOrAggregate}
-  A named type is singular if it has the structure of a singular type,
-  otherwise it is aggregate.
+    {4 Comments}
+    This encompasses LRM Section 7.1.1 D_VMZX.
 
-  {3 Comments}
-  This encompasses LRM Section 3.1 R_GVZK.
+    {4 Examples}
 
-{2 Primitive and Non-primitive types}
+  {3 TypingRule.AnonymousType}
 
-  {3 Definitions} 
-  All types are either:
-  - primitive types: those which only uses the builtin types;
-  - or non-primitive types: those which are named types or which make use of named types.
+    {4 Definition} 
+    An anonymous type is a type which is not declared using the type syntax. 
 
-  {3 Comments}
-  This encompasses LRM Section 7.1.1 D_GWXK.
+    {4 Comments}
+    This encompasses LRM Section 7.1.1 D_VMZX.
 
-  {3 Examples}
+    {4 Examples}
 
-{2 Structure of a type}
+  {3 TypingRule.SingularType}
 
-  {3 Definition}
-  The structure of a type is the primitive type it is equivalent to such that
-  it can hold the same values. 
+    {4 Definition}
+    A type [t] is singular if one of the following applies:
+    - [t] is a builtin singular type;
+    - All of the following applies:
+      - [t] is a named type;
+      - [t_struct] is the structure of [t];
+      - [t_struct] is a builtin singular. 
 
-  {3 Comments}
-  This encompasses LRM Section 7.1.2 D_FXQV.
+    {4 Comments}
+    This encompasses LRM Section 3.1 R_GVZK.
 
-  {3 Examples}
-  [type T1 of integer;]
-  is the named type [T1] whose structure is integer.
+    {4 Examples}
 
-  [type T2 of (integer, T1);]
-  is the named type [T2] whose structure is (integer, integer). In this
-  example, [(integer, T1)] is non-primitive since it uses [T1].
+  {3 TypingRule.AggregateType}
 
-  In this example:
-  [var x: T1;]
-  the type of [x] is the named (hence non-primitive) type [T1], whose structure
-  is [integer].
+    {4 Definition}
+    A type [t] is aggregate if one of the following applies:
+    - [t] is a builtin aggregate type;
+    - All of the following applies:
+      - [t] is a named type;
+      - [t_struct] is the structure of [t];
+      - [t_struct] is a builtin aggregate. 
 
-  In this example:
-  [var y: integer;]
-  the type of y is the anonymous primitive type [integer].
+    {4 Comments}
+    This encompasses LRM Section 3.1 R_GVZK.
 
-  In this example:
-  [var z: (integer, T1);]
-  the type of z is the anonymous non-primitive type `(integer, T1)` whose
-  structure is `(integer, integer)`.
+    {4 Examples}
+
+  {3 TypingRule.NonPrimitiveType}
+
+    {4 Definition} 
+    A type [t] is non-primitive if one of the following applies:
+    - [t] is a named type;
+    - All of the following applies:
+      - [t] is a tuple [li];
+      - there exists a non-primitive type in [li];
+    - All of the following applies:
+      - [t] is an array of type [ty]
+      - [ty] is non-primitive; 
+    - All of the following applies:
+      - [t] is a record with fields [fields];
+      - there exists a non-primitive type in [fields];
+    - All of the following applies:
+      - [t] is an exception with fields [fields];
+      - there exists a non-primitive type in [fields];
+
+    {4 Comments}
+    This encompasses LRM Section 7.1.1 D_GWXK.
+
+    {4 Examples}
+
+  {3 TypingRule.PrimitiveType}
+
+    {4 Definitions} 
+    A type [t] is primitive if it is not non-primitive.
+
+    {4 Comments}
+    This encompasses LRM Section 7.1.1 D_GWXK.
+
+    {4 Examples}
+
+  {3 TypingRule.Canonical}
+
+     {4 Definition}
+
+     {4 Comments}
+
+     {4 Examples}
+
+  {3 TypingRule.Structure}
+
+    {4 Definition}
+    [ty] is a type and its structure is [t_struct] and one of the following
+    applies:
+    - All of the following applies:
+      - [ty] is a named type [x];
+      - One of the following applies:
+        - All of the following applies:
+          - [x] is not declared in the global environment; 
+          - an error "Undefined Identifier" is raised;
+        - All of the following applies:
+          - [x] is declared in the global environment as some type [ty'];
+          - [t_struct] is the structure of [ty'];
+    - All of the following applies:
+      - One of the following applies:
+        - [t] is [integer];
+        - [t] is [real];
+        - [t] is [string];
+        - [t] is [bool];
+        - [t] is [bits];
+        - [t] is [enum];
+      - [t_struct] is [ty];
+    - All of the following applies:
+      - [ty] is a tuple with [subtypes];
+      - [t_struct] is a tuple with the structure of each element in [subtypes];
+    - All of the following applies:
+      - [ty] is an array with [t];
+      - [t_struct] is an array with the structure of [t];
+    - All of the following applies:
+      - [ty] is a record with [fields];
+      - [t_struct] is a record with ;
+    - All of the following applies:
+      - [ty] is an exception with [fields];
+      - [t_struct] is a record with ;
+      
+    {4 Comments}
+    The structure of a type is the primitive type it is equivalent to such that
+    it can hold the same values. 
+
+    This encompasses LRM Section 7.1.2 D_FXQV.
+
+    {4 Examples}
+    [type T1 of integer;]
+    is the named type [T1] whose structure is integer.
+
+    [type T2 of (integer, T1);]
+    is the named type [T2] whose structure is (integer, integer). In this
+    example, [(integer, T1)] is non-primitive since it uses [T1].
+
+    In this example:
+    [var x: T1;]
+    the type of [x] is the named (hence non-primitive) type [T1], whose structure
+    is [integer].
+
+    In this example:
+    [var y: integer;]
+    the type of y is the anonymous primitive type [integer].
+
+    In this example:
+    [var z: (integer, T1);]
+    the type of z is the anonymous non-primitive type `(integer, T1)` whose
+    structure is `(integer, integer)`.
 
 {2 Domain of Values for Types}
 
   {3 Definition}
-  The domain of a type is the set of values which storage elements of that type may hold. 
+  The domain of a type is the set of values which storage elements of that type
+may hold. 
 
   {3 Comments}
   This encompasses LRM Section 7.1.3 D_BMGM.
@@ -127,6 +228,23 @@ All types are either singular or aggregate.
   The domain of [integer {2,16}] is the set containing the integers [2] and [16].
 
   The domain of [bits({2,16})] is the set containing all two bit and all sixteen bit values.
+
+{2 Constrained Types}
+
+  {3 Definition}
+  A constrained type is a type whose value is limited to a finite
+  set. 
+
+  A type which is not constrained is unconstrained.
+
+  A constrained type with a non-empty constraint is well-constrained.
+
+  {3 Comments}
+  This encompasses LRM Section 3.4.1 D_ZTPP, R_WJYH, R_HJPN, R_CZTX, R_TPHR
+
+  {3 Examples}
+  Bitvector storage element’s widths are constrained integers.  
+
 
 {1 Type satisfaction and related notions}
 
@@ -848,6 +966,9 @@ Typing of Expressions
   - [ty] is neither a record nor an exception type;
   - an error "Conflicting Types" is raised.
 
+  {4 Comments}
+  This encompasses LRM Section 5.5 R_WBCQ.
+
   {4 Examples}
 
 {3 TypingRule.ERecordMissingField}
@@ -858,6 +979,9 @@ Typing of Expressions
   - [ty] is the name of a record type with fields [field_types];
   - one field in [field_types] is not initialised by [fields];
   - an error "Bad Fields" is raised.
+
+  {4 Comments}
+  This encompasses LRM Section 5.5 R_WBCQ.
 
   {4 Examples}
 
@@ -875,6 +999,9 @@ Typing of Expressions
     - [fields'] associates [name] to [e''];
   - [t] is [ty];
   - [new_e] is the record expression of type [ty] with fields [fields'].
+
+  {4 Comments}
+  This encompasses LRM Section 5.5 R_WBCQ.
 
   {4 Examples}
 

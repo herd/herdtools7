@@ -44,8 +44,8 @@ val is_builtin_aggregate : ty -> bool
 
 (** Note that a builtin type is either builtin aggregate or builtin singular. *)
 
-val is_singular : env -> ty -> bool
-val is_aggregate : env -> ty -> bool
+val is_singular : env -> ty -> bool 
+val is_aggregate : env -> ty -> bool 
 
 (** Note that a type is either singular or aggregate. *)
 
@@ -121,15 +121,15 @@ val type_clashes : env -> ty -> ty -> bool
 
     Notes:
       - T subtype-satisfies S implies T and S type-clash
-      - This is a equivalence relation
+      - This is an equivalence relation
 
-    As par Definition VPZZ.
+    per Definition VPZZ.
 *)
 
 val subprogram_clashes : env -> 'a func -> 'b func -> bool
 (** Subprogram clashing relation.
 
-    As per Definition BTBR.
+    per Definition BTBR.
 *)
 
 val lowest_common_ancestor : env -> ty -> ty -> ty option

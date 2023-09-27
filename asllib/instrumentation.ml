@@ -289,6 +289,17 @@ end
 
 module TypingRule = struct
   type t =
+    | BuiltinSingularType
+    | BuiltinAggregateType
+    | BuiltinSingularOrAggregate
+    | NamedType
+    | AnonymousType
+    | SingularType
+    | AggregateType
+    | NonPrimitiveType
+    | PrimitiveType
+    | Structure
+    | Canonical
     | Subtype
     | StructuralSubtypeSatisfaction
     | DomainSubtypeSatisfaction
@@ -408,6 +419,17 @@ module TypingRule = struct
     | Func
 
   let to_string : t -> string = function
+    | BuiltinSingularType -> "BuiltinSingularType"
+    | BuiltinAggregateType -> "BuiltinAggregateType"
+    | BuiltinSingularOrAggregate -> "BuiltinSingularOrAggregate"
+    | NamedType -> "NamedType"
+    | AnonymousType -> "AnonymousType"
+    | SingularType -> "SingularType"
+    | AggregateType -> "AggregateType"
+    | NonPrimitiveType -> "NonPrimitiveType"
+    | PrimitiveType -> "PrimitiveType"
+    | Canonical -> "Canonical"
+    | Structure -> "Structure"
     | Subtype -> "Subtype"
     | StructuralSubtypeSatisfaction -> "StructuralSubtypeSatisfaction"
     | DomainSubtypeSatisfaction -> "DomainSubtypeSatisfaction"
@@ -530,6 +552,17 @@ module TypingRule = struct
 
   let all =
     [
+      BuiltinSingularType;
+      BuiltinAggregateType;
+      BuiltinSingularOrAggregate;
+      SingularType;
+      AggregateType;
+      NamedType;
+      AnonymousType;
+      NonPrimitiveType;
+      PrimitiveType;
+      Canonical;
+      Structure;
       Subtype;
       DomainSubtypeSatisfaction;
       StructuralSubtypeSatisfaction;

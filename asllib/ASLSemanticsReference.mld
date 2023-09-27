@@ -297,6 +297,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - The evaluation of [e1] or [e2], depending on [m_cond], is [v].
 
   {4 Comments}
+  This encompasses LRM Section 5.1 R_YCDB.
 
   {4 Examples}
 
@@ -562,6 +563,7 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - [v] is a value in the domain of [t].
 
   {4 Comments}
+  This encompasses LRM Section 5.12 R_WLCH.
 
   {4 Examples}
 
