@@ -1,3 +1,5 @@
+{0 Contributing examples and regression tests to ASLRef}
+
 {1 Disclaimer}
 This material covers both ASLv0 (viz, the existing ASL pseudocode language
 which appears in the Arm Architecture Reference Manual) and ASLv1, a new,
@@ -31,6 +33,11 @@ appears in the corresponding asllib test suite, as follows.
     - do: [dune runtest asllib]
     - if the tests pass, do: [dune promote]
 
+  In [asllib/ASLSemanticsReference.mld]
+  
+    - add a new section titled [SemanticsRule.MyNewTest.asl];
+    - add a comment about how the test should behave and why.
+
 {2 Contributing examples to the ASL Typing Reference document and regression suite}
 
   In [asllib/tests/ASLTypingReference.t]:
@@ -42,4 +49,10 @@ appears in the corresponding asllib test suite, as follows.
 
     - do: [dune runtest asllib]
     - if the tests pass, do: [dune promote]
+
+  In [asllib/ASLTypingReference.mld]
+  
+    - add a new section titled [TypingRule.MyNewTest.asl];
+    - add a comment about how the test should behave and why.
+
 

@@ -658,6 +658,7 @@ module Make (B : Backend.S) (C : Config) = struct
           let* length = B.binop MINUS vtop vbot >>= B.binop PLUS one in
           return_normal ((vbot, length), env)
       | Slice_Star (efactor, elength) ->
+          (* why is it not B.binop here? *)
           let ebot = binop MUL efactor elength in
           fold_par eval_expr env ebot elength
       | Slice_Length (ebot, elength) -> fold_par eval_expr env ebot elength

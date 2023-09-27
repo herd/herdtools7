@@ -108,16 +108,18 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Comments}
 
   {4 Examples}
-  {@asl[
-  func main () => integer
-  begin
-    var x: integer = 3;
-    assert x == 3;
-    return 0;
-  end
-  ]}
 
-  The evaluation of [x] within [assert x == 3]; uses ELocalVar.
+    {5 SemanticsRuleELocalVar.asl}
+    In the program:
+    {@asl[
+    func main () => integer
+    begin
+      var x: integer = 3;
+      assert x == 3;
+      return 0;
+    end
+    ]}
+    the evaluation of [x] within [assert x == 3]; uses ELocalVar.
 
 {3 SemanticsRule.EGlobalVar}
   {4 Rule}
@@ -128,28 +130,31 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Comments}
 
   {4 Examples}
-  {@asl[
-   var global_x: integer = 3;
+    
+    {5 SemanticsRuleEGlobalVar.asl}
+    In the program:
+    {@asl[
+      var global_x: integer = 3;
 
-   func main () => integer
-   begin
-     assert global_x == 3;
-     return 0;
-   end
-  ]}
+      func main () => integer
+      begin
+       assert global_x == 3;
+       return 0;
+      end
+    ]}
+    the evaluation of [global_x] within [assert global_x == 3;] uses EGlobalVar.
 
-  The evaluation of [global_x] within [assert global_x == 3;] uses EGlobalVar.
+    {5 SemanticsRuleEGlobalVarError.asl}
+    The program:
+    {@asl[
+      var x: integer = 3;
 
-  {@asl[
-   var x: integer = 3;
-
-   func main () => integer
-   begin
-     assert x == 3;
-   end
-  ]}
-
-  This raises a type error because [x] is already declared locally in [stdlib.asl].
+      func main () => integer
+      begin
+       assert x == 3;
+      end
+    ]}
+    raises a type error because [x] is already declared locally in [stdlib.asl].
 
 {3 SemanticsRule.EUndefIdent}
 
@@ -161,16 +166,19 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Comments}
 
   {4 Examples}
-  {@asl[
-  func main () => integer
-  begin
-    let x = 42;
-    print(y);
-    return 0;
-  end
-  ]}
-  raises an Undefined Identifier error: the variable [y] is undefined in the
-  environment [x → 42].
+
+    {5 SemanticsRule.EUndefIdent.asl}
+    The program:
+    {@asl[
+    func main () => integer
+    begin
+      let x = 42;
+      print(y);
+      return 0;
+    end
+    ]}
+    raises an Undefined Identifier error: the variable [y] is undefined in the
+    environment [x → 42].
 
 {3 SemanticsRule.BinopAnd}
 
@@ -180,6 +188,8 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - [e] is evaluated as [if e1 then e2 else false].
 
   {4 Comments}
+  This encompasses LRM Section 7.5.3 R_BKNT, Section 8.5.1 I_QRXP and Section
+  8.6.1.
 
   {4 Examples}
 
@@ -191,6 +201,8 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - [e] is evaluated as [if e1 then true else e2].
 
   {4 Comments}
+  This encompasses LRM Section 7.5.3 R_BKNT, Section 8.5.1 I_QRXP and Section
+  8.6.1.
 
   {4 Examples}
 
@@ -202,6 +214,8 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - [e] is evaluated as [if e1 then e2 else true].
 
   {4 Comments}
+  This encompasses LRM Section 7.5.3 R_BKNT, Section 8.5.1 I_QRXP and Section
+  8.6.1.
 
   {4 Examples}
 
@@ -215,35 +229,39 @@ Evaluation of the expression [e] under an environment [env] is either a value
   - [v] is the result of applying the Binary Operator [op] to [v1] and [v2].
 
   {4 Comments}
+  This encompasses LRM Section 7.5.3 R_BKNT.
 
   {4 Examples}
-  In this program:
-  {@asl[
-  func main () => integer
-  begin
-    let x = 3 + 2;
-    assert(x==5);
-    return 0;
-  end
-  ]}
-  The expression [3 + 2] evaluates to the value [5].
 
-  For the program:
-  {@asl[
-  func main () => integer
-  begin
-    let x = 3 DIV 0;
-    return 0;
-  end
-  ]}
+    {5 SemanticRule.EBinopPlusAssert.asl}
+    In this program:
+    {@asl[
+    func main () => integer
+    begin
+      let x = 3 + 2;
+      assert(x==5);
+      return 0;
+    end
+    ]}
+    the expression [3 + 2] evaluates to the value [5].
 
-  Without type-checking, the expression [3 DIV 0] raises a backend-defined error,
-  e.g.
-  {@asl[
-  ASL Execution error: Illegal application of operator DIV for values 3 and 0.
-  ]}
+    {5 SemanticRule.EDIVBackendDefinedError.asl}
+    In the program:
+    {@asl[
+    func main () => integer
+    begin
+      let x = 3 DIV 0;
+      return 0;
+    end
+    ]}
 
-  With type-checking, the expression [3 DIV 0] raises a type error.
+    - Without type-checking, the expression [3 DIV 0] raises a backend-defined
+      error, e.g.
+      {@asl[
+        ASL Execution error: Illegal application of operator DIV for values 3 and 0.
+      ]}
+
+    - With type-checking, the expression [3 DIV 0] raises a type error.
 
 {3 SemanticsRule.Unop}
 
@@ -256,7 +274,18 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Comments}
 
   {4 Examples}
-  The expression [NOT '1010'] evaluates to the value ['0101'].
+
+    {5 SemanticsRule.EUnopAssert.asl}
+    In the program:
+    {@asl[
+    func main () => integer
+    begin
+      let x = NOT '1010';
+      assert(x=='0101');
+      return 0;
+    end 
+    ]}
+    the expression [NOT '1010'] evaluates to the value ['0101'].
 
 {3 SemanticsRule.ECond}
 
@@ -270,38 +299,41 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Comments}
 
   {4 Examples}
-  In the program:
-  {@asl[
-  func Return42() => integer
-  begin
-    return 42;
-  end
 
-  func main () => integer
-  begin
-    let x = if FALSE then Return42() else 3;
-    assert(x==3);
-    return 0;
-  end
-  ]}
-  The expression [if FALSE then Return42() else 3] evaluates to the value [3].
+    {5 SemanticsRule.ECondFalse.asl}
+    In the program:
+    {@asl[
+    func Return42() => integer
+    begin
+      return 42;
+    end
 
-  In the program:
-  {@asl[
-  func Return42() => integer
-  begin
-    return 42;
-  end
+    func main () => integer
+    begin
+      let x = if FALSE then Return42() else 3;
+      assert(x==3);
+      return 0;
+    end
+    ]}
+    the expression [if FALSE then Return42() else 3] evaluates to the value [3].
 
-  func main () => integer
-  begin
-    let x = if UNKNOWN: boolean then 3 else Return42();
-    assert(x==3);
-    return 0;
-  end
-  ]}
-   The expression [if UNKNOWN: boolean then 3 else Return42()] will evaluate
-  either [3] or [Return42()] depending on how UNKNOWN is implemented.
+    {5 SemanticsRule.ECondUNKNOWN3.asl and SemanticsRule.ECondUNKNOWN42.asl}
+    In the program:
+    {@asl[
+    func Return42() => integer
+    begin
+      return 42;
+    end
+
+    func main () => integer
+    begin
+      let x = if UNKNOWN: boolean then 3 else Return42();
+      assert(x==3);
+      return 0;
+    end
+    ]}
+    the expression [if UNKNOWN: boolean then 3 else Return42()] will evaluate
+    either [3] or [Return42()] depending on how UNKNOWN is implemented.
 
 {3 SemanticsRule.ESlice}
 
@@ -315,7 +347,18 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Comments}
 
   {4 Examples}
-  The expression ['11110000'[5:2]] evaluates to the value ['1100'].
+    
+    {5 SemanticsRule.ESlice.asl}
+    In the program:
+    {@asl[
+    func main () => integer
+    begin
+      let x = ['11110000'[5:2]];
+      assert(x=='1100');
+      return 0;
+    end 
+    ]}    
+    the expression ['11110000'[5:2]] evaluates to the value ['1100'].
 
 {3 SemanticsRule.ECall}
 
@@ -328,22 +371,24 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Comments}
 
   {4 Examples}
-  In the program:
-  {@asl[
-  func Return42() => integer
-  begin
-    return 42;
-  end
 
-  func main () => integer
-  begin
-    let x = Return42();
-    assert(x==42);
-    return 0;
-  end
-  ]}
-  The expression [Return42()] evaluates to the value [42] because the function
-  [Return42()] is implemented to return the value [42].
+    {5 SemanticsRule.ECall.asl}
+    In the program:
+    {@asl[
+    func Return42() => integer
+    begin
+      return 42;
+    end
+
+    func main () => integer
+    begin
+      let x = Return42();
+      assert(x==42);
+      return 0;
+    end
+    ]}
+    the expression [Return42()] evaluates to the value [42] because the
+    function [Return42()] is implemented to return the value [42].
 
 {3 SemanticsRule.EGetArray}
 
@@ -357,37 +402,40 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Comments}
 
   {4 Examples}
-  In the program:
-  {@asl[
-  type MyArrayType of array [3] of integer;
 
-  var my_array : MyArrayType;
+    {5 SemanticsRule.EGetArray.asl}
+    In the program:
+    {@asl[
+    type MyArrayType of array [3] of integer;
 
-  func main () => integer
-  begin
-    my_array[2]=42;
-    assert(my_array[2]==42);
-    return 0;
-  end
-  ]}
-  The expression [my_array[2]] evaluates to the value [42] since the element
-  indexed by [2] in [my_array] is [42].
+    var my_array : MyArrayType;
 
-  The program:
-  {@asl[
-  type MyArrayType of array [3] of integer;
+    func main () => integer
+    begin
+      my_array[2]=42;
+      assert(my_array[2]==42);
+      return 0;
+    end
+    ]}
+    the expression [my_array[2]] evaluates to the value [42] since the element
+    indexed by [2] in [my_array] is [42].
 
-  var my_array : MyArrayType;
+    {5 SemanticsRule.EGetArrayTooSmall.asl}
+    The program:
+    {@asl[
+    type MyArrayType of array [3] of integer;
 
-  func main () => integer
-  begin
-    my_array[3]=42;
-    assert(my_array[3]==42);
-    return 0;
-  end
-  ]}
-  raises a typing error since we are trying to access index [3] of an array which has
-  indexes [0], [1] and [2] only.
+    var my_array : MyArrayType;
+
+    func main () => integer
+    begin
+      my_array[3]=42;
+      assert(my_array[3]==42);
+      return 0;
+    end
+    ]}
+  raises a typing error since we are trying to access index [3] of an array
+  which has indexes [0], [1] and [2] only.
 
 {3 SemanticsRule.ERecord}
 
@@ -401,7 +449,21 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Comments}
 
   {4 Examples}
-  The expression [MyRecordType { a: 3, b: 42 }] evaluates to the value [{a: 3, b: 42}].
+
+    {5 SemanticsRule.ERecord.asl}
+    In the program:
+    {@asl[
+    type MyRecordType of record {a: integer, b: integer};
+
+    func main () => integer
+    begin
+      let my_record = MyRecordType{a=3, b=42};
+      assert(my_record.a==3);
+      return 0;
+    end 
+    ]}
+    the expression [MyRecordType { a=3, b=42 }] evaluates to the value [{a:
+3, b: 42}].
 
 {3 SemanticsRule.EGetField}
 
@@ -414,18 +476,19 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Comments}
 
   {4 Examples}
-  In the program:
-  {@asl[
-  type MyRecordType of record {a: integer, b: integer};
+    {5 SemanticsRule.ERecord.asl}
+    In the program:
+    {@asl[
+    type MyRecordType of record {a: integer, b: integer};
 
-  func main () => integer
-  begin
-    let my_record = MyRecordType{a=3, b=42};
-    assert(my_record.a==3);
-    return 0;
-  end
-  ]}
-  The expression [(MyRecordType{a=3, b=42}).a] evaluates to the value [3].
+    func main () => integer
+    begin
+      let my_record = MyRecordType{a=3, b=42};
+      assert(my_record.a==3);
+      return 0;
+    end
+    ]}
+    the expression [my_record.a] evaluates to the value [3].
 
 {3 SemanticsRule.EGetFields}
 
@@ -448,16 +511,18 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Comments}
 
   {4 Examples}
-  In the program:
-  {@asl[
-  func main () => integer
-  begin
-    let x = [['10','11']];
-    assert(x=='1011');
-    return 0;
-  end
-  ]}
-  The expression [['10', '11']] evaluates to the value ['1011'].
+
+    {5 SemanticsRule.EConcat}
+    In the program:
+    {@asl[
+    func main () => integer
+    begin
+      let x = [['10','11']];
+      assert(x=='1011');
+      return 0;
+    end
+    ]}
+    the expression [['10', '11']] evaluates to the value ['1011'].
 
 {3 SemanticsRule.ETuple}
 
@@ -470,22 +535,24 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Comments}
 
   {4 Examples}
-  In the program:
-  {@asl[
-  func Return42() => integer
-  begin
-    return 42;
-  end
 
-  func main () => integer
-  begin
-    let (x,y) = (3, Return42());
-    assert(x==3);
-    assert(y==42);
-    return 0;
-  end
-  ]}
-  The expression [(3, Return42())] evaluates to the value [(3, 42)].
+    {5 SemanticsRule.ETuple.asl}
+    In the program:
+    {@asl[
+    func Return42() => integer
+    begin
+      return 42;
+    end
+
+    func main () => integer
+    begin
+      let (x,y) = (3, Return42());
+      assert(x==3);
+      assert(y==42);
+      return 0;
+    end
+    ]}
+    the expression [(3, Return42())] evaluates to the value [(3, 42)].
 
 {3 SemanticsRule.EUnknown}
 
@@ -497,27 +564,32 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Comments}
 
   {4 Examples}
-  In the program:
-  {@asl[
-  func main () => integer
-  begin
-    let x = UNKNOWN:integer;
-    assert(x==3);
-    return 0;
-  end
-  ]}
-  The expression [UNKNOWN : integer] evaluates to an integer value.
 
-  In the program:
-  {@asl[
-  func main () => integer
-  begin
-    let x = UNKNOWN:integer {3, 42};
-    assert(x==3);
-    return 0;
-  end
-  ]}
-  The expression [UNKNOWN : integer {3, 42}] evaluates to either the value [3] or the value [42].
+    {5 SemanticsRule.EUnknownInteger3.asl}
+    In the program:
+    {@asl[
+    func main () => integer
+    begin
+      let x = UNKNOWN:integer;
+      assert(x==3);
+      return 0;
+    end
+    ]}
+    the expression [UNKNOWN : integer] evaluates to an integer value.
+
+    {5 SemanticsRule.EUnknownIntegerRange\{3-42\}3.asl and SemanticsRule.EUnknownIntegerRange\{3-42\}42.asl}
+
+    In the program:
+    {@asl[
+    func main () => integer
+    begin
+      let x = UNKNOWN:integer {3, 42};
+      assert(x==3);
+      return 0;
+    end
+    ]}
+    the expression [UNKNOWN : integer {3, 42}] evaluates to either the value
+[3] or the value [42].
 
 {3 SemanticsRule.EPattern}
 
@@ -530,27 +602,30 @@ Evaluation of the expression [e] under an environment [env] is either a value
   {4 Comments}
 
   {4 Examples}
-  In the program:
-  {@asl[
-  func main () => integer
-  begin
-    let x = 42 IN {0..3, -4};
-    assert x == FALSE;
-    return 0;
-  end
-  ]}
-  The expression [42 IN {0..3, -4}] evaluates to the value [FALSE].
 
-  In the program:
-  {@asl[
-  func main () => integer
-  begin
-    let x = 42 IN {0..3, 42};
-    assert x == TRUE;
-    return 0;
-  end
-  ]}
-  The expression [42 IN {0..3, 42}] evaluates to [TRUE].
+    {5 SemanticsRule.EPatternFALSE.asl}
+    In the program:
+    {@asl[
+    func main () => integer
+    begin
+      let x = 42 IN {0..3, -4};
+      assert x == FALSE;
+      return 0;
+    end
+    ]}
+    the expression [42 IN {0..3, -4}] evaluates to the value [FALSE].
+
+    {5 SemanticsRule.EPatternTRUE.asl}
+    In the program:
+    {@asl[
+    func main () => integer
+    begin
+      let x = 42 IN {0..3, 42};
+      assert x == TRUE;
+      return 0;
+    end
+    ]}
+    the expression [42 IN {0..3, 42}] evaluates to [TRUE].
 
 {2
 Evaluation of Side-Effect-Free Expressions
@@ -597,6 +672,7 @@ one of the following applies:
   {4 Comments}
 
     {4 Examples}
+    In the program:
     {@asl[
      func main () => integer
      begin
@@ -617,6 +693,7 @@ one of the following applies:
   {4 Comments}
 
     {4 Examples}
+    In the program:
     {@asl[
      var x: integer = 3;
 
@@ -807,6 +884,7 @@ Formally, one of the following applies:
   {3 SemanticsRule.PLeq}
 
     {4 Rule}
+
     All of the following applies:
     - [p] gives a side-effect-free expression [e];
     - [v] is lesser than or equal to the evaluation of [e] in [env].

@@ -36,8 +36,10 @@ open AST
 open ASTUtils
 open Infix
 module SEnv = StaticEnv
-
 type env = SEnv.env
+
+module TypingRule = Instrumentation.TypingRule
+let ( |: ) = Instrumentation.TypingNoInstr.use_with
 
 let undefined_identifier pos x =
   Error.fatal_from pos (Error.UndefinedIdentifier x)
@@ -390,7 +392,7 @@ let rec subtypes_names env s1 s2 =
 let subtypes env t1 t2 =
   match (t1.desc, t2.desc) with
   | T_Named s1, T_Named s2 -> subtypes_names env s1 s2
-  | _ -> false
+  | _ -> false |: TypingRule.Subtype
 
 let rec bitfields_included env bfs1 bfs2 =
   let rec mem_bfs bfs2 bf1 =
@@ -454,7 +456,7 @@ and structural_subtype_satisfies env t s =
       and offset, whose type type-satisfies the bitfield in S.
   *)
   | T_Bits (w_s, bf_s), T_Bits (w_t, bf_t) -> (
-      (* I interprete the first two condition as just a condition on domains. *)
+      (* Interpreting the first two condition as just a condition on domains. *)
       match (bf_s, bf_t) with
       | [], _ -> true
       | _, [] -> false
@@ -491,7 +493,7 @@ and structural_subtype_satisfies env t s =
             fields_t)
         fields_s
   | T_Exception _, _ | T_Record _, _ -> false (* A structure cannot be a name *)
-  | T_Named _, _ -> assert false
+  | T_Named _, _ -> assert false |: TypingRule.StructuralSubtypeSatisfaction
 
 and domain_subtype_satisfies env t s =
   let s_struct = get_structure env s in
@@ -512,7 +514,7 @@ and domain_subtype_satisfies env t s =
           undetermined width then the domain of T must be a subset of the domain
           of S.
          *)
-      (* Implicitely, T must have the structure of a bitvector. *)
+      (* Implicitly, T must have the structure of a bitvector. *)
       let t_struct = get_structure env t in
       let t_domain = Domain.of_type env t_struct
       and s_domain = Domain.of_type env s_struct in
@@ -526,7 +528,7 @@ and domain_subtype_satisfies env t s =
           Domain.get_width_singleton_opt t_domain )
       with
       | Some w_s, Some w_t -> Z.equal w_s w_t
-      | _ -> Domain.is_subset t_domain s_domain)
+      | _ -> Domain.is_subset t_domain s_domain) |: TypingRule.DomainSubtypeSatisfaction
 
 and subtype_satisfies env t s =
   let () =
@@ -536,7 +538,7 @@ and subtype_satisfies env t s =
       Format.eprintf "%a subtypes %a ? struct: %B -- domain: %B@." PP.pp_ty t
         PP.pp_ty s b1 b2
   in
-  structural_subtype_satisfies env t s && domain_subtype_satisfies env t s
+  structural_subtype_satisfies env t s && domain_subtype_satisfies env t s |: TypingRule.SubtypeSatisfaction
 
 and type_satisfies env t s =
   (* Type T type-satisfies type S if and only if at least one of the following
@@ -553,7 +555,7 @@ and type_satisfies env t s =
   match (t.desc, (get_structure env s).desc) with
   | T_Bits (width_t, []), T_Bits (width_s, _) ->
       bitwidth_equal env width_t width_s
-  | _ -> false
+  | _ -> false |: TypingRule.TypeSatisfaction
 
 (* --------------------------------------------------------------------------*)
 
@@ -587,7 +589,7 @@ let rec type_clashes env t s =
   | T_Tuple li_s, T_Tuple li_t ->
       List.compare_lengths li_s li_t = 0
       && List.for_all2 (type_clashes env) li_s li_t
-  | _ -> false
+  | _ -> false |: TypingRule.TypeClash
 
 let subprogram_clashes env (f1 : 'a func) (f2 : 'b func) =
   (* Two subprograms clash if all of the following hold:
@@ -744,7 +746,7 @@ let rec lowest_common_ancestor env s t =
             | T_Named _, _ -> assert false
             | _, T_Named _ -> Some t
             | _, _ -> Some (add_dummy_pos (T_Int None)))
-        | _ -> None)
+        | _ -> None |: TypingRule.LowestCommonAncestor)
 
 (* --------------------------------------------------------------------------*)
 

@@ -16,32 +16,40 @@ welcome; those can be sent to Arm’s Architecture Formal Team Lead Jade
 Alglave <jade.alglave@arm.com> or by raising issues or PRs to the herdtools7
 github repository.
 
-{1 Type nomenclature
+{1 Type nomenclature}
 
 {2 Singular and Aggregate Types}
 
 All types are either singular or aggregate. 
 
-{3 TypingDefinition.SingularType}
+{3 TypingRule.SingularType}
 
-The builtin singular types are:
-- integer; 
-- real;
-- string; 
-- boolean; 
-- bit;
-- bits;
-- enumeration.
+  {2 Definition}
+  The builtin singular types are:
+  - integer; 
+  - real;
+  - string; 
+  - boolean; 
+  - bit;
+  - bits;
+  - enumeration.
 
-{3 TypingDefinition.AggregateType}
+  {2 Comments}
+  This encompasses LRM Section 3.1 D_PQCK and D_NZWT.
 
-The builtin aggregate types are:
-- tuple;
-- array;
-- record;
-- exception.
+  {3 TypingRule.AggregateType}
 
-{2 Named and Anonymous Types}
+    {2 Definition}
+    The builtin aggregate types are:
+    - tuple;
+    - array;
+    - record;
+    - exception.
+
+    {2 Comments}
+    This encompasses LRM Section 3.1 D_PQCK and D_KNBD.
+
+{2 TypingRule.NamedType and TypingRule.AnonymousType}
 
   {3 Definitions} 
   All types are either:
@@ -49,10 +57,16 @@ The builtin aggregate types are:
   - or anonymous types: those which are not declared using the type syntax. 
 
   {3 Comments}
+  This encompasses LRM Section 7.1.1 D_VMZX.
+
+  {3 Examples}
+
+  {3 TypingRule.NamedSingularOrAggregate}
   A named type is singular if it has the structure of a singular type,
   otherwise it is aggregate.
 
-  {3 Examples}
+  {3 Comments}
+  This encompasses LRM Section 3.1 R_GVZK.
 
 {2 Primitive and Non-primitive types}
 
@@ -60,6 +74,9 @@ The builtin aggregate types are:
   All types are either:
   - primitive types: those which only uses the builtin types;
   - or non-primitive types: those which are named types or which make use of named types.
+
+  {3 Comments}
+  This encompasses LRM Section 7.1.1 D_GWXK.
 
   {3 Examples}
 
@@ -69,8 +86,10 @@ The builtin aggregate types are:
   The structure of a type is the primitive type it is equivalent to such that
   it can hold the same values. 
 
-  {3 Examples}
+  {3 Comments}
+  This encompasses LRM Section 7.1.2 D_FXQV.
 
+  {3 Examples}
   [type T1 of integer;]
   is the named type [T1] whose structure is integer.
 
@@ -97,8 +116,10 @@ The builtin aggregate types are:
   {3 Definition}
   The domain of a type is the set of values which storage elements of that type may hold. 
 
-  {3 Examples}
+  {3 Comments}
+  This encompasses LRM Section 7.1.3 D_BMGM.
 
+  {3 Examples}
   The domain of [integer] is the infinite set of all integers.
 
   The domain of [bits(1)] is the set [{‘1’, ‘0’}].
@@ -107,16 +128,523 @@ The builtin aggregate types are:
 
   The domain of [bits({2,16})] is the set containing all two bit and all sixteen bit values.
 
+{1 Type satisfaction and related notions}
+
+{2 TypingRule.Subtype} 
+
+  {3 Definition}
+  The subtype relation is a partial order.
+
+  {3 Comments}
+  Since the subtype relation is a partial order, it is reflexive, viz, 
+  every type is also a subtype of itself.
+
+  Since the subtype relation is a partial order, it is transitive, viz, if A is
+  a subtype of B and B is a subtype of C then A is a subtype of C.
+ 
+  As a consequence, there is no need to declare the reflexive and transitive
+  subtype relations explicitly. All other subtype relations must be explicitly
+  declared.
+ 
+  Since the subtype relation is a partial order, it is antisymmetric. Therefore
+  it is an error if all of the following apply:
+  - id1 is a subtype of id2;
+  - id2 is a subtype of id1.
+
+  This encompasses LRM Section 4.3.1 R_NXRX, I_KGKS, I_MTML, I_JVRM, I_CHMP.
+
+  {3 Examples}
+
+{2 TypingRule.Supertype}
+
+  {3 Definition}
+  T is a supertype of S if and only if S is a subtype of T.
+
+  {3 Comments}
+  Since the subtype relation is a partial order, it is reflexive. Therefore the
+  supertype relation also is reflexive, viz, every type is also a supertype of
+  itself.
+
+  This encompasses LRM Section 4.3.1 I_KGKS.
+
+{2 TypingRule.StructuralSubtypeSatisfaction}
+
+  {3 Definition}
+  T structural-subtype-satisfies S if one of the following applies:
+  - All of the following applies:
+    - S has the structure of an integer type;
+    - T has the structure of an integer type.
+
+  - All of the following applies:
+    - S has the structure of a real type;
+    - T has the structure of a real type.
+ 
+  - All of the following applies:
+    - S has the structure of a string type;
+    - T has the structure of a string type.
+
+  - All of the following applies:
+    - S has the structure of a boolean type;
+    - T has the structure of a boolean type.
+
+  - All of the following applies:
+    - S has the structure of an enumeration type; 
+    - T has the structure of an enumeration type;
+    - S and T have the same enumeration literals.
+
+  - All of the following applies:
+    - S has the structure of a bitvector type with determined width [w];
+    - One of the following applies:
+      - T has the structure of a bitvector type of determined width [w];
+      - T has the structure of a bitvector type of undetermined width.
+
+  - All of the following applies:
+    - S has the structure of a bitvector type with undetermined width;
+    - T has the structure of a bitvector type. 
+
+  - All of the following applies:
+    - S has the structure of a bitvector type with bitfields [bitfields] and width [width];
+    - T has the structure of a bitvector type with width [width];
+    - for every bitfield [f] in [bitfields] there is a bitfield [f'] in [T] and
+      all of the following applies:
+      - [f'] has the same name, width and offset as [f];
+      - [f'] type-satisfies [f].
+
+  - All of the following applies:
+    - [S] has the structure of an array type with elements of type [E];
+    - [T] has the structure of an array type with elements of type [E];
+    - [T] has the same element indices as [S].
+
+  - All of the following applies:
+    - [S] has the structure of a tuple type;
+    - [T] has the structure of a tuple type;
+    - [T] has the same number of elements as [S];
+    - for each element [e] in [S] there is an element [e'] in [T] and [e']
+      type-satisfies [e].
+  
+  - All of the following applies:
+    - [S] has the structure of a record type;
+    - [T] has the structure of a record type;
+    - for each field [f] in [S] there is an element [f'] in [T] and [f'] has
+      the same type as [f].
+
+  - All of the following applies:
+    - [S] has the structure of an exception type;
+    - [T] has the structure of an exception type;
+    - for each field [f] in [S] there is an element [f'] in [T] and [f'] has
+      the same type as [f].
+
+  {3 Comments}
+  This encompasses LRM Section 7.3.1. D_TRVR.
+
+  {3 Examples}
+
+{2 TypingRule.DomainSubtypeSatisfaction}
+
+  {3 Definition}
+  T domain-subtype-satisfies S if one of the following applies:
+  - All of the following applies:
+    - [S] does not have the structure of an aggregate type or bitvector type;
+    - the domain of [T] is a subset of the domain of [S].
+
+  - All of the following applies:
+    - One of the following applies:
+      - [S] has the structure of a bitvector type with undetermined width;
+      - [T] has the structure of a bitvector type with undetermined width;
+   - the domain of [T] is a subset of the domain of [S].
+
+  {3 Comments}
+  This encompasses LRM Section 7.3.1. D_TRVR.
+
+  {3 Examples}
+
+{2 TypingRule.SubtypeSatisfaction}
+
+  {3 Definition}
+  T subtype-satisfies S if all of the following apply:
+  - T structural-subtype-satisfies S;
+  - T domain-subtype-satisfies S.
+
+  {3 Comments}
+  This encompasses LRM Section 7.3.1. D_TRVR.
+
+  {3 Examples}
+
+{2 TypingRule.TypeSatisfaction}
+
+  {3 Definition}
+  T type-satisfies S if one of the following applies:
+  - T is a subtype of S;
+  - All of the following applies:
+    - T subtype-satisfies S;
+    - One of the following applies:
+      - S is an anonymous type;
+      - T is an anonymous type;
+  - All of the following applies:
+    - T is an anonymous bitvector with no bitfields;
+    - S has the structure of a bitvector (with or without bitfields);
+    - S has the same width as T.
+
+  {3 Comments}
+  Since the subtype relation is a partial order, it is reflexive. Therefore
+  every type T is a subtype of itself, and as a consequence, every type T
+  type-satisfies itself.
+  
+  This encompasses LRM Section 7.3.2 R_FMXK and I_NLFD.
+
+  {3 Examples}
+  
+    {4 TypingRule.TypeSatisfaction1.asl}
+    In the program:
+    {@asl[
+    type T1 of integer;          // the named type `T1` whose structure is integer
+    type T2 of integer;          // the named type `T2` whose structure is integer
+    type pairT of (integer, T1); // the named type `pairT` whose structure is (integer, integer)
+
+    func main() => integer
+    begin
+      var dataT1: T1;
+      var pair: pairT = (1, dataT1);
+      return 0;
+    end
+    ]} 
+    [var pair: pairT = {1, dataT1}] is legal since the right-hand-side has
+    anonymous, non-primitive type [(integer, T1)].
+
+    {4 TypingRule.TypeSatisfaction2.asl}
+    In the program:
+    {@asl[
+    type T1 of integer;          // the named type `T1` whose structure is integer
+    type T2 of integer;          // the named type `T2` whose structure is integer
+    type pairT of (integer, T1); // the named type `pairT` whose structure is (integer, integer)
+
+    func main() => integer
+    begin
+      var dataT1: T1;
+      var pair: pairT = (1, dataT1);
+
+      let dataAsInt: integer = dataT1;
+      pair = (1, dataAsInt);
+      return 0;
+    end
+    ]}
+    [pair = (1, dataAsInt);] is legal since the right-hand-side has anonymous,
+    primitive type [(integer, integer)].
+ 
+    {4 TypingRule.TypeSatisfaction3.asl}
+    In the program:
+    {@asl[
+    type T1 of integer;          // the named type `T1` whose structure is integer
+    type T2 of integer;          // the named type `T2` whose structure is integer
+    type pairT of (integer, T1); // the named type `pairT` whose structure is (integer, integer)
+
+    func main() => integer
+    begin
+      var dataT1: T1;
+      var pair: pairT = (1,dataT1);
+
+      let dataT2: T2 = 10;
+      pair = (1, dataT2);
+      return 0;
+    end
+    ]}
+    [pair = (1, dataT2);] is illegal since the right-hand-side has anonymous,
+    non-primitive type [(integer, T2)] which does not subtype-satisfy named
+    type [pairT].
+
+{2 TypingRule.TypeClash}
+
+  {3 Definition}
+  [T] type-clashes with [S] if one of the following applies:
+  - [S] and [T] both have the structure of integers;
+  - [S] and [T] both have the structure of reals;
+  - [S] and [T] both have the structure of strings;
+  - [S] and [T] both have the structure of enumeration types with the same enumeration literals;
+  - [S] and [T] both have the structure of bitvectors;
+  - [S] and [T] both have the structure of arrays whose element types type-clash;
+  - [S] and [T] both have the structure of tuples of the same length whose
+    corresponding element types type-clash;
+  - [S] is a subtype of [T];
+  - [S] is a supertype of [T].
+
+  {3 Comments}
+  Note that if T subtype-satisfies S then T and S type-clash, but not the other
+  way around.
+
+  Note that type-clashing is an equivalence relation. Therefore if T
+  type-clashes with A and B then it is also the case that A and B type-clash.
+
+  This encompasses LRM Section 7.3.3. D_VPZZ, I_PQCT and I_WZKM.
+
+  {3 Examples}
+
+{2 TypingRule.LowestCommonAncestor}
+
+  {3 Definition}
+  The lowest common ancestor of types S and T is ty and one of the following applies:
+  - All of the following applies:
+    - S and T are the same type;
+    - ty is S.
+
+  - All of the following applies:
+    - S and T are both named types;
+    - ty is a common supertype of S and T;
+    - ty is a subtype of all other common supertypes of S and T.
+
+  - All of the following applies:
+    - S and T both have the structure of array types with the same index type
+      and the same element types;
+    - One of the following applies:
+      - All of the following applies:
+        - S is a named type;
+        - T is an anonymous type;
+        - ty is S.
+
+      - All of the following applies:
+        - S is an anonymous type;
+        - T is a named type;
+        - ty is T.
+
+  - All of the following applies:
+    - S and T both have the structure of tuple types with the same number of elements;
+    - The types of the elements of S type-satisfy the types of the elements of T;
+    - The types of the elements of T type-satisfy the types of the elements of S;
+    - One of the following applies:
+
+      - All of the following applies:
+        - S is a named type;
+        - T is an anonymous type;
+        - ty is S.
+
+      - All of the following applies:
+        - S is an anonymous type;
+        - T is a named type;
+        - ty is T.
+
+     - All of the following applies:
+        - S is an anonymous type;
+        - T is an anonymous type;
+	- ty is the tuple type where the type of each element is the lowest common
+	  ancestor of the types of the corresponding elements of S and T. 
+
+  - All of the following applies:
+    - S and T both have the structure of well-constrained integer types;
+    - One of the following applies:
+
+      - All of the following applies:
+        - S is a named type;
+        - T is an anonymous type;
+        - ty is S.
+
+      - All of the following applies:
+        - S is an anonymous type;
+        - T is a named type;
+        - ty is T.
+
+     - All of the following applies:
+        - S is an anonymous type;
+        - T is an anonymous type;
+	- ty is the well-constrained integer type whose domain is the union of the
+	  domains of S and T.      
+
+  - All of the following applies:
+    - Either S or T have the structure of an unconstrained integer type;
+    - One of the following applies:
+
+      - All of the following applies:
+        - S is a named type;
+        - S has the structure of an unconstrained integer type;
+        - T is an anonymous type;
+        - ty is S.
+
+
+      - All of the following applies:
+        - S is an anonymous type;
+        - T is a named type;
+        - T has the structure of an unconstrained integer type;
+        - ty is T.
+
+
+      - All of the following applies:
+        - S is an anonymous type;
+        - T is an anonymous type;
+	- ty is the unconstrained integer type. 
+
+  - All of the following applies:
+    - Either S or T have the structure of an under-constrained integer type;
+    - ty is the under-constrained integer type. 
+
+  - ty is undefined.
+
+  {3 Comments}
+  This encompasses LRM Section 7.6.1. R_YZHM.
+
+{2 TypingRule.CheckUnop}
+
+  {3 Goal}
+  Checking compatibility of an unary operator with the type of its argument.
+
+  {3 Definition}
+  [t] is the result of checking compatibility of a unary operator [op] with
+  type [t1] and one of the following applies:
+  - All of the folowing applies:
+    - [op] is [BNOT];
+    - [t1] type-satisfies [boolean];
+    - [t] is [boolean];
+
+  - All of the following applies:
+    - [op] is [NEG];
+    - One of the following applies:
+      - [t1] type-satisfies [integer]; 
+      - [t1] type-satisfies [real];
+     - One of the following applies:
+       - All of the following applies:
+         - [t1] has the structure of an unconstrained integer;
+         - [t] is an unconstrained integer;
+       - All of the following applies:
+         - [t1] has the structure of a constrained integer;
+         - [t] is a constrained integer whose constraint is ;
+  
+  - All of the following applies:
+    - [op] is [NOT];
+    - [t1] has the structure of a bitvector;
+    - [t] is [t1].
+
+  {3 Comments}
+
+  {3 Examples}
+
+ {2 TypingRule.CheckBinop}
+
+  {3 Goal}
+  Checking compatibility of a binary operator with the types of its arguments.
+
+  {3 Definition}
+  [t] is the result of checking compatibility of a binary operator [op] with
+  types [t1] and [t2] and one of the following applies:
+  - All of the following applies:
+    - [op] is [AND], [OR], [EQ] or [IMPL]; 
+    - [t1] type-satisfies [boolean];
+    - [t2] type-satisfies [boolean];
+    - [t] is [boolean].
+
+  - All of the following applies:
+    - [op] is [AND], [OR], or [EOR];
+    - [t1] has the structure of a bitvector;
+    - [t2] has the structure of a bitvector;
+    - [t1] and [t2] have the same bitvector width [w];
+    - [t] is the bitvector type of width [w].
+
+  - All of the following applies:
+    - [op] is [PLUS] or [MINUS];
+    - [t1] has the structure of a bitvector;
+    - [t2] has the structure of a bitvector;
+    - [t1] and [t2] have the same bitvector width [w];
+    - [t2] type-satisfies [integer];
+    - [t] is the bitvector type of width [w].
+
+  - All of the following applies:
+    - [op] is [EQ_OP] or [NEQ];
+    - One of the following applies:
+      - [t1] is equal to [t2];
+      - All of the following applies:
+        - [t1] type-satisfies [integer];
+        - [t2] type-satisfies [integer];
+      - All of the following applies:
+        - [t1] has the structure of a bitvector;
+        - [t2] has the structure of a bitvector;
+        - [t1] and [t2] have the same bitvector width;
+      - All of the following applies:
+        - [t1] type-satisfies [boolean];
+        - [t2] type-satisfies [boolean];
+      - All of the following applies:
+        - [t1] enumerates local declarations [li1]; 
+        - [t2] enumerates local declarations [li2];
+        - [li1] equals [li2];
+    - [t] is [boolean].
+   
+  - All of the following applies:
+    - [op] is [LEQ], [GEQ], [GT] or [LT];
+    - One of the following applies:
+      - All of the following applies:
+        - [t1] type-satisfies [integer];
+        - [t2] type-satisfies [integer];
+      - All of the following applies:
+        - [t1] type-satisfies [real];
+        - [t2] type-satisfies [real];
+    - [t] is boolean.
+
+  - All of the following applies:
+    - [op] is [MUL], [DIV], [DIVRM], [MOD], [SHL], [SHR], [POW], [PLUS] or [MINUS];
+    - [struct1] is the structure of [t1];
+    - [struct2] is the structure of [t2];
+    - One of the following applies:
+      - All of the following applies:
+        - [t1] has the structure of an unconstrained integer;
+        - [t2] has the structure of an integer;
+        - [t] is an unconstrained integer;
+      - All of the following applies:
+        - [t1] has the structure of an integer;
+        - [t2] has the structure of an unconstrained integer;
+        - [t] is an unconstrained integer;
+      - One of the following applies:
+        - All of the following applies:
+          - [t1] has the structure of an under-constrained integer;
+          - [t2] has the structure of a constrained integer;
+          - [t] is an under-constrained integer;
+        - All of the following applies:
+          - [t1] has the structure of a constrained integer;
+          - [t2] has the structure of an under-constrained integer;
+          - [t] is an under-constrained integer;
+      - One of the following applies:
+         - All of the following applies:
+           - [t1] has the structure of a well-constrained integer;
+           - [t2] has the structure of a well-constrained integer;
+	   - [t] is a constrained integer whose constraint is calculated by
+	     applying the operation to all possible value pairs;
+         - All of the following applies:
+           - [t1] has the structure of a well-constrained integer;
+           - [t2] has the structure of an well-constrained integer;
+	   - [t] is a constrained integer whose constraint is calculated by
+	     applying the operation to all possible value pairs;
+      - All of the following applies:
+        - [t1] has the structure of [real];
+        - [t2] has the structure of [real];
+        - [op] is [PLUS], [MINUS] or [MUL];
+        - [t] is [real];
+     - All of the following applies:
+       - [t1] has the structure of [real];
+       - [t2] has the structure of [integer];
+       - [op] is [POW];
+       - [t] is [real];
+ 
+  - All of the following applies:
+    - [op] is [RDIV];
+    - [t1] type-satisfies [real];
+    - [t] is [real].
+
+  {3 Comments}
+  This encompasses LRM Section 7.5.3 R_BKNT, Section 7.5.5 R_ZYWY, R_BZKW,
+  R_KFYS, Section 7.5.6 R_KXMR, Section 7.7 R_SQXN, R_MRHT.
+
+  {3 Examples} 
+
 {1
 Typing Rules
 }
-Typing a program is typing its main function.
-Constructively, typing a program requires following its
-Abstract Syntax Tree and typing each of its components.
 
-Formally, the types of a program are given by applying a set of
-annotate_<object> functions. Each annotate_<object> function describes how to
-annotate a specific object, as follows.
+{2
+Typing of Programs
+}
+
+  {3 Definition}
+  Typing a program is typing its main function.  Constructively, typing a
+  program requires following its Abstract Syntax Tree and typing each of its
+  components.
+
+  Formally, the types of a program are given by applying a set of
+  annotate_<object> functions. Each annotate_<object> function describes how to
+  annotate a specific object, as follows.
 
       - [annotate_expr] annotates expressions;
       - [annotate_slices] annotates slices;
@@ -129,7 +657,8 @@ annotate a specific object, as follows.
       - [annotate_call] annotates functions calls;
       - [annotate_func] annotates functions.
 
-
+  {3 Comments}
+  This encompasses LRM 7.4.2. R_VDPC.
 
 {2
 Typing of Expressions
@@ -270,6 +799,9 @@ Typing of Expressions
       - there is no lowest common ancestor of [t_true] and [t_false];
       - an error "Unreconciliable Types" is raised.
 
+  {4 Comments}
+  This encompasses LRM Section 7.6 R_XZVT.
+
   {4 Examples}
 
 {3 TypingRule.ETuple}
@@ -302,6 +834,9 @@ Typing of Expressions
   - [w] is the sum of the widths of the bitvector types [ts];
   - [t] is [bits(w)];
   - [new_e] is [es].
+
+  {4 Comments}
+  This encompasses LRM Section 7.8 R_NYNK and R_KCZS.
 
   {4 Examples}
 
@@ -735,6 +1270,9 @@ Typing of Local Declarations
 [annotate_local_decl_item loc env ty ldk ldi] is [new_env, new_ldi] and one
 of the following applies:
 
+  {3 Comments}
+  This encompasses LRM Section 7.4.2 R_YSPM.
+
   {3 TypingRule.LDIgnoreNone}
 
     {4 Rule}
@@ -881,8 +1419,12 @@ one of the following applies:
     All of the following applies:
     - [s] is a return statement with no value and no return type; 
     - [new_s] is a return statement with no value;
-    - the enclosing function does not have a return type (it is either a setter or a procedure);
+    - the enclosing function does not have a return type (it is either a setter
+      or a procedure);
     - [new_env] is [env].
+
+    {4 Comments}
+    This encompasses LRM Section 7.4.3 R_FTPK.
 
     {4 Examples}
 
@@ -898,6 +1440,9 @@ one of the following applies:
         - [s] is a return statement with no value;
         - the enclosing function has a return type;
     - An error "Bad Return Statement" is raised.
+
+    {4 Comments}
+    This encompasses LRM Section 7.4.3 R_FTPK.
 
     {4 Examples}
 
@@ -920,11 +1465,14 @@ one of the following applies:
     All of the following applies:
     - [s] is a condition [e] with two statements [s1] and [s2];
     - [t_cond, e_cond] is the result of annotating [e] in [env];
-    - [t_cond] type-satisfies [t_bool];
+    - [t_cond] type-satisfies [t_bool]; (* is this the same as [e] having the structure of a boolean? *)
     - [s1'] is the result of annotating [s1] in [env];
     - [s2'] is the result of annotating [s2] in [env];
     - [new_s] is the condition [e_cond] with two statements [s1'] and [s2'];
     - [new_env] is [env].
+
+    {4 Comments}
+    This encompasses LRM Section 7.4.3 R_NBDJ.
 
     {4 Examples}
 
@@ -937,6 +1485,10 @@ one of the following applies:
     - [cases1, env1] is the result of annotating each case in [cases];
     - [new_s] is a case statement with expression [e1] and cases [cases1];
     - [new_env] is [env1].
+    (* do we not check that [e] has the structure of a boolean? *)
+
+    {4 Comments}
+    This encompasses LRM Section 7.4.3 R_WGSY.
 
     {4 Examples}
 
@@ -950,6 +1502,9 @@ one of the following applies:
     - [new_s] is an assert statement with expression [e'];
     - [new_env] is [env].
 
+    {4 Comments}
+    This encompasses LRM Section 7.4.3 R_JQYF
+
     {4 Examples}
 
   {3 TypingRule.SWhile}
@@ -958,10 +1513,13 @@ one of the following applies:
     All of the following applies:
     - [s] is a while statement with expression [e1] and statement [s1];
     - [t, e2] is the result of annotating [e1] in [env];
-    - [t] type-satisfies [t_bool];
+    - [t] type-satisfies [t_bool]; (* is this the same as [e1] having the structure of a boolean? *)
     - [s2] is the result of annotating [s1] in [env];
     - [new_s] is a while statement with expression [e2] and statement [s2];
     - [new_env] is [env].
+
+    {4 Comments}
+    This encompasses LRM Section 7.4.3 R_FTVN.
 
     {4 Examples}
 
@@ -972,9 +1530,12 @@ one of the following applies:
     - [s] is a repeat statement with expression [e1] and statement [s1];
     - [s2] is the result of annotating [s1] in [env];
     - [t, e2] is the result of annotating [e1] in [env];
-    - [t] type-satisfies [t_bool];
+    - [t] type-satisfies [t_bool]; (* is this the same as [e1] having the structure of a boolean? *)
     - [new_s] is a repeat statement with expression [e2] and statement [s2];
     - [new_env] is [env].
+
+    {4 Comments}
+    This encompasses LRM Section 7.4.3 R_FTVN.
 
     {4 Examples}
 
@@ -993,6 +1554,9 @@ one of the following applies:
     - [new_s] is a for statement with index [id], direction [dir], two expressions
       [e1'] and [e2'] and statement [s''];
     - [new_env] is [env].
+
+    {4 Comments}
+    This encompasses LRM Section 7.4.3 R_VTJW.
 
     {4 Examples}
 
@@ -1039,6 +1603,9 @@ one of the following applies:
     - [new_s] is a throw statement with expression [e'] and type [t_e];
     - [new_env] is [env].
 
+    {4 Comments}
+    This encompasses LRM Section 7.4.3 R_NXRC.
+
     {4 Examples}
 
   {3 TypingRule.STry}
@@ -1051,6 +1618,9 @@ one of the following applies:
     - [catchers'] is the result of annotating [catchers] in [env];
     - [new_s] is a try statement with statement [s''], catchers [catchers'] and block [otherwise'];
     - [new_env] is [env].
+
+    {4 Comments}
+    This encompasses LRM Section 7.4.3 R_WVXS.
 
     {4 Examples}
 
@@ -1290,6 +1860,9 @@ Typing of Catchers
     - [env'] is [env];
     - [new_stmt] is the result of annotating [stmt] in [env'] with [return_type].
 
+    {4 Comments}
+    This encompasses LRM Section 7.4.3 R_SDJK.
+
     {4 Examples}
 
 
@@ -1303,6 +1876,9 @@ Typing of Catchers
     - [name] is annotated with [ty] in [env];
     - [env'] is [env] modified to have [name] locally declared as immutable of type [ty];
     - [new_stmt] is the result of annotating [stmt] in [env'] with [return_type].
+
+    {4 Comments}
+    This encompasses LRM Section 7.4.3 R_SDJK.
 
     {4 Examples}
 

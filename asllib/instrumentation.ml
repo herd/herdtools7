@@ -296,6 +296,15 @@ end
 
 module TypingRule = struct
   type t =
+    | Subtype
+    | StructuralSubtypeSatisfaction
+    | DomainSubtypeSatisfaction
+    | SubtypeSatisfaction
+    | TypeSatisfaction
+    | TypeClash
+    | LowestCommonAncestor
+    | CheckUnop
+    | CheckBinop
     | Lit
     | TypedExpr
     | ELocalVarConstant
@@ -406,6 +415,15 @@ module TypingRule = struct
     | Func
 
   let to_string : t -> string = function
+    | Subtype -> "Subtype"
+    | StructuralSubtypeSatisfaction -> "StructuralSubtypeSatisfaction"
+    | DomainSubtypeSatisfaction -> "DomainSubtypeSatisfaction"
+    | SubtypeSatisfaction -> "SubtypeSatisfaction"
+    | TypeSatisfaction -> "TypeSatisfaction"
+    | TypeClash -> "TypeClash"
+    | CheckUnop -> "CheckUnop"
+    | CheckBinop -> "CheckBinop"
+    | LowestCommonAncestor -> "LowestCommonAncestor"
     | Lit -> "Lit"
     | TypedExpr -> "TypedExpr"
     | ELocalVarConstant -> "ELocalVarConstant"
@@ -519,6 +537,15 @@ module TypingRule = struct
 
   let all =
     [
+      Subtype;
+      DomainSubtypeSatisfaction;
+      StructuralSubtypeSatisfaction;
+      SubtypeSatisfaction;
+      TypeSatisfaction;
+      TypeClash;
+      CheckUnop;
+      CheckBinop;
+      LowestCommonAncestor;
       Lit;
       TypedExpr;
       ELocalVarConstant;
