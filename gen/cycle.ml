@@ -452,13 +452,10 @@ let make_loc n =
   if n < locs_len then locs.(n)
   else Printf.sprintf "x%02i" (n-locs_len)
 
-let next_loc e ((loc0,lab0),vs) = match e.E.edge with
-| (E.Irf _|E.Ifr _) -> Code (sprintf "Lself%02i" lab0),((loc0,lab0+1),vs)
+let next_loc e ((loc0,lab0),vs) = match E.is_fetch e with
+| true -> Code (sprintf "Lself%02i" lab0),((loc0,lab0+1),vs)
 | _ -> 
-  if (E.is_ifetch e.E.a1 || E.is_ifetch e.E.a2) then
-    Code (sprintf "Lself%02i" lab0),((loc0,lab0+1),vs)
-  else
-    Code.Data (make_loc loc0),((loc0+1,lab0),vs)
+  Code.Data (make_loc loc0),((loc0+1,lab0),vs)
 
 let same_loc e = match E.loc_sd e with
     | Same -> true

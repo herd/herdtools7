@@ -162,7 +162,7 @@ let applies_atom (a,_) d = match a,d with
 | Rel _,W
 | Pte (Read|ReadAcq|ReadAcqPc),R
 | Pte (Set _|SetRel _),W
-| Ifetch, R
+| Ifetch, W
 | (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _|Pair _),(R|W)
   -> true
 | _ -> false
@@ -213,7 +213,7 @@ let is_ifetch a = match a with
      | Neon n -> SIMD.pp n
      | Pair (opt,idx)
        -> sprintf "Pa%s%s" (pp_pair_opt opt) (pp_pair_idx idx)
-     | Ifetch -> "{Ifetch}"
+     | Ifetch -> "I"
 
    let pp_atom (a,m) = match a with
    | Plain o ->
