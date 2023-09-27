@@ -2,25 +2,25 @@
 type ADDR of bits (32) {};
 type PHYSICAL_ADDR of ADDR;
 
-var addr    :: ADDR;
-var physical:: PHYSICAL_ADDR;
+var addr    : ADDR;
+var physical: PHYSICAL_ADDR;
 
 // For the function "raw_addr",
-func raw_addr(x:: ADDR) => bits(32)
+func raw_addr(x: ADDR) => bits(32)
 begin
   // x may be used as the expression in the return statement
   // since the return type is type satisfied by the type of x
   return x;
 end
 
-func raw_physical_addr(x:: PHYSICAL_ADDR) => bits(32)
+func raw_physical_addr(x: PHYSICAL_ADDR) => bits(32)
 begin
     return x;
 end
 
 func addresses()
 begin
-  var tmp::bits(32);
+  var tmp:bits(32);
   // primitive type bits(32) is type-satisfied by both ADDR and PHYSICAL_ADDR
 
   tmp      = addr;
@@ -37,10 +37,10 @@ end
 type Char of integer{0..255};
 type Byte of integer{0..255};
 
-constant K:: Char = 210;
+constant K: Char = 210;
 
-var global_c:: Char;
-var global_b:: Byte;
+var global_c: Char;
+var global_b: Byte;
 
 func f()
 begin

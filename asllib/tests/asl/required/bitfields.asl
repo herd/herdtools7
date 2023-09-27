@@ -12,19 +12,19 @@ begin
   return '10111';
 end
 
-func set_first(bv::MyBitVector, b::bits(1)) => MyBitVector
+func set_first(bv:MyBitVector, b:bits(1)) => MyBitVector
 begin
   var bv_bis = bv;
   bv_bis.first = b;
   return bv_bis;
 end
 
-func get_first_three(bv::MyBitVector) => bits(3)
+func get_first_three(bv:MyBitVector) => bits(3)
 begin
   return bv.first_three;
 end
 
-func as_MyBitVector(x :: bits(5)) => MyBitVector
+func as_MyBitVector(x:bits(5)) => MyBitVector
 begin
   return x;
 end

@@ -3,22 +3,22 @@ begin
   return 3;
 end
 
-setter f1[] = v :: integer
+setter f1[] = v : integer
 begin
   assert v == 3;
 end
 
-getter f2[x::integer] => integer
+getter f2[x:integer] => integer
 begin
   return f1 + x;
 end
 
-setter f2[x::integer] = v :: integer
+setter f2[x:integer] = v : integer
 begin
   f1 = 3 * (v - x);
 end
 
-setter f3[x::integer] = v :: integer
+setter f3[x:integer] = v : integer
 begin
   assert x == 12;
   assert v == 13;
