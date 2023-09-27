@@ -1,9 +1,9 @@
-getter X_get[i::integer] => integer
+getter X_get[i:integer] => integer
 begin
     return i;
 end
 
-setter X_set[i::integer] = v::integer
+setter X_set[i:integer] = v:integer
 begin
     let internal_i = i;
     let internal_v = v;

@@ -2,14 +2,14 @@
 type SomeOtherType of integer;
 
 type MyFieldType of record {
-    subfieldA:: boolean,
-    subfieldB:: integer,
+    subfieldA: boolean,
+    subfieldB: integer,
 };
 
 type MyRecord of record {
-  fieldA:: integer,
-  fieldB:: MyFieldType,
-  fieldC:: SomeOtherType,
+  fieldA: integer,
+  fieldB: MyFieldType,
+  fieldC: SomeOtherType,
 };
 
 func build_record() => MyRecord
@@ -24,19 +24,19 @@ begin
   };
 end
 
-func access_subfieldA(obj::MyRecord) => boolean
+func access_subfieldA(obj:MyRecord) => boolean
 begin
   return obj.fieldB.subfieldA;
 end
 
-func incr_subfieldB(obj::MyRecord) => MyRecord
+func incr_subfieldB(obj:MyRecord) => MyRecord
 begin
   var obj2 = obj;
   obj2.fieldB.subfieldB = obj2.fieldB.subfieldB + 1;
   return obj2;
 end
 
-func set_fieldC(obj::MyRecord, val::integer) => MyRecord
+func set_fieldC(obj:MyRecord, val:integer) => MyRecord
 begin
   var obj2 = obj;
   obj2.fieldC = val;

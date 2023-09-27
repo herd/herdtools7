@@ -3,12 +3,12 @@ begin
   return 0;
 end
 
-func f(x::integer) => integer
+func f(x:integer) => integer
 begin
   return x;
 end
 
-func f(x::integer, y::integer) => integer
+func f(x:integer, y:integer) => integer
 begin
   return x + y;
 end

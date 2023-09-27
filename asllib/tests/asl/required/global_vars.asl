@@ -1,5 +1,5 @@
 
-var global_x :: integer = 0;
+var global_x : integer = 0;
 
 func incr ()
 begin

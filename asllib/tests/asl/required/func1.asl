@@ -1,4 +1,4 @@
-func f(i::integer) => integer
+func f(i:integer) => integer
 begin
     return i;
 end
