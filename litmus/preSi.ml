@@ -641,8 +641,37 @@ module Make
         if U.is_rloc_ptr rloc env then dump_rloc_tag_coded rloc
         else  A.dump_rloc_tag rloc
 
-(* Fault types *)
-      let dump_fault_type test =
+      (* Fault types *)
+
+      let pp_data_zero = if Cfg.is_kvm then "UNKNOWN" else "0"
+      let data_zero =  SkelUtil.data_symb_id pp_data_zero
+
+      let dump_data_indices test =
+        O.f "#define %-25s 0" data_zero ;
+        (* Define indices for data *)
+        List.iteri
+          (fun k (a,_) ->
+            let idx = if Cfg.is_kvm then 2*k else k in
+            O.f "#define %-25s  %i" (SkelUtil.data_symb_id a) (idx+1);
+            if Cfg.is_kvm then begin
+                O.f "#define %-25s  %i"
+                  (SkelUtil.data_symb_id (Misc.add_pte a)) (idx+2)
+              end)
+          test.T.globals ;
+        O.o "" ;
+        O.f "static const char *data_symb_name[] = {" ;
+        (* Define names for data symbols *)
+        O.fi "\"%s\"," pp_data_zero ;
+        List.iter
+          (fun (a,_) ->
+            O.fi "\"%s\"," a ;
+            if Cfg.is_kvm then begin
+                O.fi "\"%s\"," (Misc.pp_pte a)
+              end)
+          test.T.globals ;
+        O.o "};"
+ 
+      let dump_fault_type env test =
         if need_labels test then begin
             O.o "typedef struct {" ;
             List.iter (fun (p,lbl) -> O.fi "ins_t *code_P%d_%s;"  p lbl) CfgLoc.labels ;
@@ -675,32 +704,10 @@ module Make
             O.fi "return %s;" (SkelUtil.instr_symb_id "UNKNOWN") ;
             O.o "};" ;
             O.o "" ;
-            O.f "#define %-25s 0" (SkelUtil.data_symb_id "UNKNOWN") ;
-            (* Define indices for data *)
-            List.iteri
-              (fun k (a,_) ->
-                let idx = if Cfg.is_kvm then 2*k else k in
-                O.f "#define %-25s  %i" (SkelUtil.data_symb_id a) (idx+1);
-                if Cfg.is_kvm then begin
-                  O.f "#define %-25s  %i"
-                    (SkelUtil.data_symb_id (Misc.add_pte a)) (idx+2)
-                end)
-              test.T.globals ;
-            O.o "" ;
-            O.f "static const char *data_symb_name[] = {" ;
-            (* Define names for data symbols *)
-            O.oi "\"UNKNOWN\"," ;
-            List.iter
-              (fun (a,_) ->
-                O.fi "\"%s\"," a ;
-                if Cfg.is_kvm then begin
-                    O.fi "\"%s\"," (Misc.pp_pte a)
-                  end)
-              test.T.globals ;
-            O.o "};" ;
-            O.o "" ;
+            dump_data_indices test ;
             Insert.insert O.o  "kvm_fault_type.c" ;
-          end
+          end else if U.ptr_in_outs env test then
+            dump_data_indices test
 
 (* Collected locations *)
 
@@ -811,11 +818,13 @@ module Make
             O.o ""
             end
           end ;
-        if see_faults test then begin
+        let some_ptr =  U.ptr_in_outs env test in
+        if see_faults test || some_ptr then begin
             (*  Translation to indices *)
+            let addr = if Cfg.is_kvm then "p_addr" else "v_addr" in
             let dump_test (s,_) =
-              O.fi "if (p_addr == p->%s) return %s;"
-                s (SkelUtil.data_symb_id s) ;
+              O.fi "if (%s == p->%s) return %s;"
+                addr s (SkelUtil.data_symb_id s) ;                
               if Cfg.is_kvm then begin
                 O.fi "if ((pteval_t *)v_addr == p->%s) return %s;"
                   (OutUtils.fmt_pte_tag s)
@@ -829,25 +838,17 @@ module Make
                  O.oii "(intmax_t *)((uintptr_t)v_addr & PAGE_MASK);"
               | _ -> ()
               end ;
+              if (not Cfg.is_kvm) then
+                (* Compatibility with standard mode, recognise NULL *)
+                O.fi "if (%s == NULL) return %s;" addr data_zero ;
               List.iter dump_test test.T.globals ;
-              O.oi "fatal(\"Cannot find symbol for faulting address\"); return -1;" ;
+              O.oi "fatal(\"Cannot find symbol for address\"); return -1;" ;
               O.o "}" ;
               O.o ""
             end ;
 (* Pretty-print indices *)
-            let some_ptr =  U.ptr_in_outs env test in
             if some_ptr then begin
-              O.f "static const char *pretty_addr[%s+1] = {\"0\",%s};"
-                (if Cfg.is_kvm then "(2*NVARS)" else "NVARS")
-                (String.concat ""
-                   (List.map (fun (s,_) ->
-                     sprintf "\"%s\",%s"
-                       s
-                       (if Cfg.is_kvm then
-                         sprintf "\"%s\","
-                           (Misc.pp_pte s)
-                       else ""))
-                      test.T.globals)) ;
+              O.o "static const char **pretty_addr = data_symb_name;" ;
               O.o ""
             end
         end ;
@@ -2150,7 +2151,7 @@ module Make
         dump_user_stacks procs_user ;
         let env = U.build_env test in
         let stats = get_stats test in
-        dump_fault_type test ;
+        dump_fault_type env test ;
         let some_ptr = dump_outcomes env test in
         dump_fault_handler find_ins_inserted doc test ;
         dump_cond_def env test ;
