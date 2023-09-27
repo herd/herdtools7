@@ -80,11 +80,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       and get_reg_list n st =
         let open SIMD in
         match n with
-        | N1 ->
+        | Ne1 ->
            let r,st = next_vreg st in (r,[]),st
-        | N2 -> call_rec N1 st
-        | N3 -> call_rec N2 st
-        | N4 -> call_rec N3 st in
+        | Ne2I -> call_rec Ne1 st
+        | Ne3I -> call_rec Ne2I st
+        | Ne4I -> call_rec Ne3I st in
       fun n st ->
         let (r,rs),st = get_reg_list n st in
         (r,rs),A.set_friends r rs st
@@ -231,10 +231,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let ldn n rs rt =
       let open SIMD in
       match n with
-      | N1 -> I_LD1M (rs,rt,K 0)
-      | N2 -> I_LD2M (rs,rt,K 0)
-      | N3 -> I_LD3M (rs,rt,K 0)
-      | N4 -> I_LD4M (rs,rt,K 0)
+      | Ne1 -> I_LD1M (rs,rt,K 0)
+      | Ne2I -> I_LD2M (rs,rt,K 0)
+      | Ne3I -> I_LD3M (rs,rt,K 0)
+      | Ne4I -> I_LD4M (rs,rt,K 0)
 
     let ldr_mixed_idx v r1 r2 idx sz  =
       let idx = MemExt.v2idx_reg v idx in
@@ -270,10 +270,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let stn n rs rt =
       let open SIMD in
       match n with
-      | N1 -> I_ST1M (rs,rt,K 0)
-      | N2 -> I_ST2M (rs,rt,K 0)
-      | N3 -> I_ST3M (rs,rt,K 0)
-      | N4 -> I_ST4M (rs,rt,K 0)
+      | Ne1 -> I_ST1M (rs,rt,K 0)
+      | Ne2I -> I_ST2M (rs,rt,K 0)
+      | Ne3I -> I_ST3M (rs,rt,K 0)
+      | Ne4I -> I_ST4M (rs,rt,K 0)
 
     let stxr_sz t sz r1 r2 r3 =
       let open MachSize in

@@ -60,17 +60,21 @@ module Mixed =
 let bellatom = false
 module SIMD = struct
 
-  type atom = N1|N2|N3|N4
+  type atom = Ne1|Ne2I|Ne3I|Ne4I
 
-  let fold_neon f r = f N1 (f N2 (f N3 (f N4 r)))
+  let fold_neon f r = f Ne1 (f Ne2I (f Ne3I (f Ne4I r)))
 
   let nregs = function
-    | N1 -> 1
-    | N2 -> 2
-    | N3 -> 3
-    | N4 -> 4
+    | Ne1 -> 1
+    | Ne2I -> 2
+    | Ne3I -> 3
+    | Ne4I -> 4
 
-  let pp n = Printf.sprintf "N%i" (nregs n)
+  let pp_opt = function
+    | Ne2I | Ne3I | Ne4I -> "I"
+    | _ -> ""
+
+  let pp n = Printf.sprintf "Ne%i%s" (nregs n) (pp_opt n)
 
   let initial sz =
     let sz = if sz <= 0 then 1 else sz in
@@ -413,10 +417,10 @@ let applies_atom (a,_) d = match a,d with
    let neon_as_integers =
      let open SIMD in
      function
-     | N1 -> 4
-     | N2 -> 8
-     | N3 -> 12
-     | N4 -> 16
+     | Ne1 -> 4
+     | Ne2I -> 8
+     | Ne3I -> 12
+     | Ne4I -> 16
 
    let atom_to_bank = function
    | Tag,None -> Code.Tag
