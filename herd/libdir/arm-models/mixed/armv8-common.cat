@@ -63,7 +63,6 @@ let dob = addr | data
 	| (ctrl | (addr; po)); [ISB]; po; [M]
 	| addr; po; [W]
 	| (addr | data); lrs
-show ctrl;[M] as ctrl
 
 (* Pick-ordered-before *)
 let pob = pick-dep; [W]
