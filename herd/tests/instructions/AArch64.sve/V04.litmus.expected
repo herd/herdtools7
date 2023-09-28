@@ -1,0 +1,11 @@
+Test V04 Required
+States 1
+0:V1.4S={1,2,3,4};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Vector-Extensions-are-work-in-progress
+Condition forall (0:V1.4S={1,2,3,4})
+Observation V04 Always 1 0
+Hash=6b6e77bb9a7aedb7f1e6fc946ac17f9a
+

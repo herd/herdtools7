@@ -1,0 +1,19 @@
+AArch64 V12
+(* Contiguous store four-word structures from four vectors (scalar index) *)
+{
+ uint64_t x[8];
+
+ 0:X0=x;
+}
+P0                                              ;
+ MOV Z1.D,#1                                    ;
+ MOV Z2.D,#2                                    ;
+ MOV Z3.D,#3                                    ;
+ MOV Z4.D,#4                                    ;
+ MOV W1,#0                                      ;
+ MOV W2,#2                                      ;
+ SXTW X3,W1                                     ;
+ WHILELT P0.D,W1,W2                             ;
+ ST4D {Z1.D,Z2.D,Z3.D,Z4.D},P0,[X0,X3, LSL #3]  ;
+
+forall x={1,2,3,4,1,2,3,4}

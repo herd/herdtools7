@@ -1,0 +1,10 @@
+AArch64 V02
+(* Broadcast general-purpose register to vector elements (unpredicated) *)
+{
+}
+P0                 ;
+ MOV W0,#4         ;
+ DUP Z0.H, W0      ;
+ DUP Z1.S, W0      ;
+
+forall 0:V0.4S={0x40004,0x40004,0x40004,0x40004} /\ 0:V1.4S={4,4,4,4}

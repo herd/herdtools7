@@ -4,6 +4,7 @@ States 1
 Ok
 Witnesses
 Positive: 1 Negative: 0
+Flag Vector-Extensions-are-work-in-progress
 Condition forall ([x]=1 /\ [y]=1 /\ [z]=0)
 Observation V19 Always 1 0
 Hash=65d078abec8ff979af7283d4ee0e3785

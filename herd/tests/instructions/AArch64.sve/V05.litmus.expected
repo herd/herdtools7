@@ -1,0 +1,11 @@
+Test V05 Required
+States 1
+0:V0.4S={1,0,0,0}; 0:V1.4S={2,0,0,0};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Vector-Extensions-are-work-in-progress
+Condition forall (0:V0.4S={1,0,0,0} /\ 0:V1.4S={2,0,0,0})
+Observation V05 Always 1 0
+Hash=24e75b5e009efc52fb6e3f3ea45038b3
+

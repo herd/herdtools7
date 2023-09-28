@@ -1,0 +1,11 @@
+Test V09 Required
+States 1
+x={1,0,1,0};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Vector-Extensions-are-work-in-progress
+Condition forall (x={1,0,1,0})
+Observation V09 Always 1 0
+Hash=c77f18993ea7dad52f754abfdddc8897
+
