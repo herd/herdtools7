@@ -1712,4 +1712,10 @@ Monad type:
         | Some v -> (eiid, v)
       in
       new_m
+
+    let debugT (s : string) (m : 'a t) : 'a t
+      = fun eiid ->
+        let eiid,(evts,specs) = m eiid in
+        List.iter (fun (_,_,es) -> eprintf "%s%a" s E.debug_event_structure es) (Evt.elements evts) ;
+        eiid,(evts,specs)
   end

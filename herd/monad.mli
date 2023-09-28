@@ -241,6 +241,11 @@ module type S =
 
     val tooFar : string -> E.A.inst_instance_id -> 'v -> 'v t
 
+    val debugT : string -> 'a t -> 'a t
+    (** [debugT str s] prints [str] followed by a string
+        representation of the input event structure [s], and returns
+        the input [s] without making any changes to it *)
+
     (**********************************************************)
     (* A few action instruction instance -> monad constructors *)
     (**********************************************************)
