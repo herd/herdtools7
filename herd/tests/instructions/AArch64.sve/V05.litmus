@@ -1,0 +1,13 @@
+AArch64 V05
+(* Contiguous load two-word structures to two vectors (scalar index) *)
+{
+ uint16_t x[8] = {1,2,0,0,0,0,0,0};
+
+ 0:X0=x;
+}
+P0                                    ;
+ MOV X2,#0                            ;
+ PTRUE P0.H,VL1                       ;
+ LD2H {Z0.H,Z1.H},P0/Z,[X0,X2,LSL #1] ;
+
+forall(0:V0.4S = {1,0,0,0} /\ 0:V1.4S = {2,0,0,0})

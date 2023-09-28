@@ -1,0 +1,9 @@
+AArch64 V08
+(* Broadcast signed immediate to vector elements (unpredicated) *)
+{
+}
+P0                 ;
+ MOV Z0.S,#4       ;
+ MOV Z1.B,#1       ;
+
+forall 0:V0.4S={4,4,4,4} /\ 0:V1.4S={0x1010101,0x1010101,0x1010101,0x1010101}

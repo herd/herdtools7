@@ -1,0 +1,10 @@
+AArch64 V13
+(* Unsigned add reduction to scalar *)
+{
+}
+P0                  ;
+ MOV Z0.S,#4        ;
+ PTRUE P0.S,VL3     ;
+ UADDV D1,P0,Z0.S   ;
+
+forall 0:V1.4S={12,0,0,0}

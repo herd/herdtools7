@@ -1,0 +1,35 @@
+AArch64 V15
+(* WHILELT (predicate) *)
+{
+}
+P0                  ;
+ MOV W0,#0          ;
+ MOV W1,#0          ;
+ WHILELT P0.S,W0,W1 ; (* No active elemenets *)
+ B.EQ L0            ; (* All Active elements were FALSE or there were no Active elements. Z == 1 *)
+ MOV W2,#1          ;
+L0:                 ;
+ B.CS L1            ; (* The Last active element was FALSE or there were no Active elements. C == 1 *)
+ MOV W2,#2          ;
+L1:                 ;
+ B.PL L3            ; (* The First active element was FALSE or there were no Active elements. N == 0 *)
+ MOV W2,#3          ;
+L3:
+ MOV W1,#1          ; (* First element is active but not Last *)
+ WHILELT P1.S,W0,W1 ;
+ B.NE L4            ; (* An Active element was TRUE. Z == 0 *)
+ MOV W2,#4          ;
+L4:                 ;
+ B.MI L5            ; (* The First active element was TRUE. N == 1 *)
+ MOV W2,#5          ;
+L5:                 ;
+ B.HI L6            ; (* An Active element was TRUE, but the Last active element was FALSE. C ==1 && Z == 0 *)
+ MOV W2,#6          ;
+L6:                 ;
+ MOV W1,#64         ;
+ WHILELT P2.S,W0,W1 ; (* All elements are active including Last *)
+ B.CC END           ; (* The Last active element was TRUE. C == 0  *)
+ MOV W2,#7          ;
+END:                ;
+
+forall 0:X2=0

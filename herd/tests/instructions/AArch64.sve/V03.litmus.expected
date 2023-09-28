@@ -1,0 +1,11 @@
+Test V03 Required
+States 1
+x={1,1,1,0};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Vector-Extensions-is-work-in-progress
+Condition forall (x={1,1,1,0})
+Observation V03 Always 1 0
+Hash=4d6c70541c7e2576a5148e43c261e804
+

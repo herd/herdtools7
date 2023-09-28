@@ -1,0 +1,12 @@
+AArch64 V07
+(* Contiguous load four-word structures to four vectors (scalar index) *)
+{
+ uint64_t x[8] = {1,2,3,4,1,2,3,4};
+
+ 0:X0=x;
+}
+P0                                             ;
+ MOV X2,#0                                     ;
+ PTRUE P0.D,VL2                                ;
+ LD4D {Z0.D,Z1.D,Z2.D,Z3.D},P0/Z,[X0,X2,LSL #3];
+forall(0:V0.4S = {1,0,1,0} /\ 0:V1.4S = {2,0,2,0} /\ 0:V2.4S = {3,0,3,0} /\ 0:V3.4S = {4,0,4,0})

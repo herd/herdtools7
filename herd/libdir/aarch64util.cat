@@ -132,4 +132,8 @@ flag ~empty (if "vmsa" && "ifetch" then _ else 0)
 flag ~empty (if "memtag" && "ifetch" then _ else 0)
   as combining-memtag-and-ifetch-is-not-supported
 
+(* Flag the runs of herd7 with work-in-progress features *)
+flag ~empty (if "sve" then _ else 0)
+  as Scalable-Vector-Extensions-is-work-in-progress
+
 include "aarch64loc.cat"

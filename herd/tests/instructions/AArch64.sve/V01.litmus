@@ -1,0 +1,13 @@
+AArch64 V01
+(* Add vectors (unpredicated) *)
+{
+}
+P0                    ;
+ MOV Z0.S, #1         ;
+ MOV Z1.S, #2         ;
+ ADD Z2.S,Z1.S,Z0.S   ;
+ MOV Z3.D, #3         ;
+ MOV Z4.D, #4         ;
+ ADD Z5.D,Z4.D,Z3.D   ;
+
+forall 0:V2.4S={3,3,3,3} /\ 0:V5.4S={7,0,7,0}

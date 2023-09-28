@@ -140,6 +140,18 @@ test.neon::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 NEON instructions tests: OK"
 
+test:: test.sve
+test.sve::
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64.sve \
+		-variant sve \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 SVE instructions tests: OK"
+
 test:: test.mte
 test.mte::
 	@ echo

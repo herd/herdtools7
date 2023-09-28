@@ -271,6 +271,7 @@ include Arch.MakeArch(struct
            conv_idx idx >! fun idx -> E.Imm idx
         | E.Reg (v,r,e,k) ->
            find_cst k >> fun k -> conv_reg r >! fun r -> E.Reg (v,r,e,k)
+        | _ -> assert false
 
       end in
 
@@ -664,4 +665,12 @@ include Arch.MakeArch(struct
     | I_MOVI_V _ | I_MOVI_S _
     | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
         -> Warn.fatal "Neon instructions are not implemented yet"
+    (* Scalable Vector Extension *)
+    | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
+    | I_UADDV _ | I_DUP_SV _ | I_ADD_SV _
+    | I_LD1SP _ | I_LD2SP _ | I_LD3SP _ | I_LD4SP _
+    | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
+    | I_MOV_SV _ | I_PTRUE _
+    | I_INDEX_SI _ | I_INDEX_IS _  | I_INDEX_SS _ | I_INDEX_II _
+        -> Warn.fatal "SVE instructions are not implemented yet"
 end)

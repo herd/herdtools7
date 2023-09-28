@@ -1,0 +1,13 @@
+AArch64 V03
+(* Initialise predicate from named constraint *)
+{
+ int x[4];
+
+ 0:X0=x;
+}
+P0                  ;
+ PTRUE P0.S,VL3     ;
+ MOV Z0.S,#1        ;
+ ST1W {Z0.S},P0,[X0];
+
+forall(x = {1,1,1,0})

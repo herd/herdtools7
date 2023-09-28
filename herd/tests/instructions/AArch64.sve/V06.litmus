@@ -1,0 +1,13 @@
+AArch64 V06
+(* Contiguous load three-word structures to three vectors (scalar index) *)
+{
+ int x[12] = {1,2,3,1,2,3,1,2,3,1,2,3};
+
+ 0:X0=x;
+}
+P0                                         ;
+ MOV X2,#0                                 ;
+ PTRUE P0.S,VL4                            ;
+ LD3W {Z0.S,Z1.S,Z2.S},P0/Z,[X0,X2,LSL #2] ;
+
+forall(0:V0.4S = {1,1,1,1} /\ 0:V1.4S = {2,2,2,2} /\ 0:V2.4S = {3,3,3,3})

@@ -1,0 +1,15 @@
+AArch64 V10
+(* Contiguous store two-word structures from two vectors (scalar index) *)
+{
+ uint16_t x[8];
+
+ 0:X0=x;
+}
+P0                                    ;
+ MOV Z1.H,#1                          ;
+ MOV Z2.H,#2                          ;
+ MOV X1,#0                            ;
+ PTRUE P0.H,VL4                       ;
+ ST2H {Z1.H,Z2.H},P0,[X0,X1, LSL #1]  ;
+
+forall x={1,2,1,2,1,2,1,2}

@@ -1,0 +1,13 @@
+AArch64 V04
+(* Contiguous load unsigned bytes to vector (scalar index), 32-bit element *)
+{
+ uint8_t x[4] = {1,2,3,4};
+
+ 0:X0=x;
+}
+P0                               ;
+ MOV X1,#0                       ;
+ PTRUE P0.S,VL4                  ;
+ LD1B {Z1.S},P0/Z,[X0,X1]        ;
+
+forall(0:V1.4S = {1,2,3,4})
