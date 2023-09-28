@@ -32,6 +32,7 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
     let is_nop = function
       | A.I_NOP -> true
       | _ -> false
+    let branch lbl = I_JMP lbl
 
 (***************************************************)
 (* Extract explicit [symbolic] addresses from code *)

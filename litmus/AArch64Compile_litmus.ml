@@ -42,6 +42,8 @@ module Make(V:Constant.S)(C:Config) =
       | A.I_NOP -> true
       | _ -> false
 
+    let branch lbl = A.I_B (BranchTarget.Lbl lbl)
+
 (* No addresses in code *)
     let extract_addrs _ins = Global_litmus.Set.empty
 

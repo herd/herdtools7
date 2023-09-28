@@ -34,6 +34,7 @@ let next_label s =
   sprintf "%s%02i" s x
 
 let last p = sprintf "End%i" p
+and return p = sprintf "Lret%i" p
 
 type next = Any | Next | To of t
 

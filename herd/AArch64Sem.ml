@@ -2078,6 +2078,8 @@ module Make
            >>= fun () -> read_reg_ord r ii
            >>= do_indirect_jump test [AArch64Base.linkreg,v_ret] i ii
 
+        | I_RET None when C.variant Variant.Telechat ->
+           M.unitT B.Exit
         | I_RET ro as i ->
             let r = match ro with
             | None -> AArch64Base.linkreg
