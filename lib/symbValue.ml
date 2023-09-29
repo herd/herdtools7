@@ -280,7 +280,7 @@ module
     match v1,v2 with
     | (Val (Tag _),Val (Tag _))
     | (Val (Symbolic _),Val (Symbolic _))
-    | (Val (Label _),Val (Label _))
+    | (Val (Label _), Val _) | (Val _,Val (Label _))
     | (Val (PteVal _),Val (PteVal _))
     | (Val (Instruction _),Val (Instruction _))
       ->
