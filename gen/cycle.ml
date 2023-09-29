@@ -453,7 +453,7 @@ let make_loc n =
   else Printf.sprintf "x%02i" (n-locs_len)
 
 let next_loc e ((loc0,lab0),vs) = match e.E.edge with
-| E.Irf _|E.Ifr _ -> Code (sprintf "Lself%02i" lab0),((loc0,lab0+1),vs)
+| E.Irf _ |E.Ifr _ -> Code (sprintf "Lself%02i" lab0),((loc0,lab0+1),vs)
 | _ -> Code.Data (make_loc loc0),((loc0+1,lab0),vs)
 
 let same_loc e = match E.loc_sd e with
@@ -723,8 +723,9 @@ let remove_store n0 =
       end ;
       if
         let is_same_next_nonID = same_loc (find_node (fun a -> not (is_I_D a.evt.dir)) m.next).prev.edge in
+        let is_same_prev_nonID = same_loc (find_node_prev (fun a -> not (is_I_D a.evt.dir)) p.prev).edge in
         E.is_fetch p.edge && is_non_fetch_and_same m.edge && is_same_next_nonID ||
-        E.is_fetch m.edge && is_non_fetch_and_same p.edge
+        E.is_fetch m.edge && is_non_fetch_and_same p.edge && is_same_prev_nonID
       then begin
         Warn.user_error "Ambiguous Data/Code location es [%s] => [%s]"
           (str_node p) (str_node m)
@@ -739,9 +740,8 @@ let set_diff_loc st n0 =
       if same_loc p.edge then begin
         p.evt.loc,st
       end else begin
-        match non_pseudo m.edge with
-        | true -> next_loc m.edge st
-        | false -> next_loc m.next.edge st
+        let medge = (find_node (fun a -> non_pseudo a.edge && not (is_I_D a.evt.dir)) m).edge in
+        next_loc medge st
       end in
     m.evt <- { m.evt with loc=loc ; bank=E.atom_to_bank m.evt.atom; } ;
 (*    eprintf "LOC SET: %a [p=%a]\n%!" debug_node m debug_node p; *)
