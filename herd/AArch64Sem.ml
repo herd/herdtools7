@@ -1037,7 +1037,7 @@ module Make
               mk_fault (Some a) dir an ii ft (Some msg)) ii  >>! B.Exit in
         M.delay_kont "morello" ma
           (fun a ma ->
-            (* Notice: virtual access only, beaause morello # kvm *)
+            (* Notice: virtual access only, because morello # kvm *)
             let mok ma mv = mop Access.VIR ma mv in
             check_morello_tag a ma mv
               (fun ma mv ->
@@ -2476,20 +2476,29 @@ module Make
         | I_MOVK(var,rd,k,os) ->
             movk var rd k os ii >>= nextSet rd
         | I_ADR (r,tgt) ->
-           let lbl = 
+           let lbl =
              let open BranchTarget in
              match tgt with
-             | Lbl lbl -> lbl
+             | Lbl lbl -> Some lbl
              | Offset o ->
-              begin
-              let a = ii.A.addr + o in
-              let lbls = test.Test_herd.entry_points a in
-              match Label.norm lbls with
-              | Some lbl -> lbl
-              | None -> assert false
-              end in
-           let v = ii.A.addr2v lbl in
-           write_reg_dest r v ii >>= nextSet r
+                begin
+                  let a = ii.A.addr + o in
+                  let lbls = test.Test_herd.entry_points a in
+                  Label.norm lbls
+                end in
+           begin
+             match lbl with
+             | Some lbl ->
+                let v = ii.A.addr2v lbl in
+                write_reg_dest r v ii >>= nextSet r
+             | None ->
+                (* Delay error,  only a poor fix.
+                   A complete possible fix would be
+                   having code addresses as values *)
+                M.failT
+                  (Misc.Fatal "Overwriting  with ADR, cannot handle")
+                  B.Exit
+           end
 
         | I_SXTW(rd,rs) ->
             read_reg_ord_sz MachSize.Word rs ii
