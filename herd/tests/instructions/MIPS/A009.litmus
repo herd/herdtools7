@@ -1,0 +1,22 @@
+MIPS A009
+
+Variant=telechat
+
+{ [P1_r0]=0;[x]=0;[y]=0;
+  uint64_t %P0_x=x;uint64_t %P0_y=y;
+  uint64_t %P1_P1_r0=P1_r0;
+  uint64_t %P1_x=x;uint64_t %P1_y=y }
+  P0               |  P1                   ;
+   li $3,2         |   li $3,1             ;
+   sync            |   lw $2,0(%P1_y)      ;
+   sw $3,0(%P0_x)  |   beq $2,$3,L0x70     ;
+   li $3,1         |   sw $2,0(%P1_P1_r0)  ;
+   sw $3,0(%P0_y)  |   jr $31              ;
+   jr $31          |  L0x70:               ;
+                   |   sync                ;
+                   |   sw $3,0(%P1_x)      ;
+                   |   sw $2,0(%P1_P1_r0)  ;
+                   |   jr $31              ;
+
+
+exists ([x]=2 /\ P1_r0=1)

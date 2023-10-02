@@ -1,0 +1,13 @@
+MIPS L02
+{
+uint64_t x = 0xabcdef;
+0:t0=x;
+uint64_t 0:t1;
+uint64_t 0:t2;
+}
+  P0               ;
+ ld $t1,0($t0)     ;
+ dext $t2,$t1,3,16 ;
+
+locations [0:t2;]
+forall 0:t2 = 31165

@@ -1,0 +1,11 @@
+MIPS A004
+
+(* Test DADDU DADDIU instructions *)
+{}
+
+P0;
+
+daddu $v0, $v1, $a0;
+daddiu $v0, $v1, 2;
+
+forall (0:v0 = 2 /\ 0:v1 = 0)

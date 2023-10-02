@@ -29,13 +29,16 @@ module A=MIPSBase
 %token SEMI COMMA PIPE COLON LPAR RPAR
 
 /* Instruction tokens */
-%token LI LW SW LL SC SYNC
-%token ADD ADDU ADDI ADDIU
+%token LI LW SW LL SC SYNC LD MOVE
+%token LUI
+%token ADD ADDU ADDI ADDIU DADDU DADDIU
+%token DEXT DSLL
 %token SUB SUBU SUBI SUBIU
 %token SLT SLTU SLTI SLTIU
 %token AND ANDI OR ORI
 %token XOR XORI NOR
-%token B BEQ BNE BLEZ BGTZ BLTZ BGEZ
+%token B BEQ BNE BLEZ BGTZ BLTZ BGEZ JR
+%token NOP
 
 
 %type <MiscParser.proc list * (MIPSBase.pseudo) list list> main
@@ -78,6 +81,8 @@ k:
 | NUM { $1 }
 
 instr:
+| NOP
+  { A.NOP }
 /* ADD */
 | ADD reg COMMA reg COMMA reg
   { A.OP (A.ADD,$2,$4,$6) }
@@ -85,8 +90,17 @@ instr:
   { A.OPI (A.ADD,$2,$4,$6) }
 | ADDU reg COMMA reg COMMA reg
   { A.OP (A.ADDU,$2,$4,$6) }
+| DADDU reg COMMA reg COMMA reg
+  { A.OP (A.DADDU,$2,$4,$6) }
 | ADDIU reg COMMA reg COMMA k
   { A.OPI (A.ADDU,$2,$4,$6) }
+| DADDIU reg COMMA reg COMMA k
+  { A.OPI (A.DADDU,$2,$4,$6) }
+| DSLL reg COMMA reg COMMA k
+  { A.OPI (A.DSLL,$2,$4,$6) }
+/* DEXT */
+| DEXT reg COMMA reg COMMA k COMMA k
+  { A.EBF ($2, $4, $6, $8) }
 /* SUB */
 | SUB reg COMMA reg COMMA reg
   { A.OP (A.SUB,$2,$4,$6) }
@@ -126,6 +140,8 @@ instr:
 /* Branch */
 | B NAME
   { A.B $2 }
+| JR reg
+  { A.JR $2 }
 | BEQ reg COMMA reg COMMA NAME
   { A.BC (A.EQ,$2,$4,$6) }
 | BNE reg COMMA reg COMMA NAME
@@ -141,6 +157,8 @@ instr:
 /* Load and Store */
 | LW reg COMMA k LPAR reg RPAR
   { A.LW ($2,$4,$6) }
+| LD reg COMMA k LPAR reg RPAR
+  { A.LD ($2,$4,$6) }
 | LW reg COMMA LPAR reg RPAR
   { A.LW ($2,0,$5) }
 | SW reg COMMA k LPAR reg RPAR
@@ -158,5 +176,9 @@ instr:
 /* Misc */
 | LI reg COMMA k
   { A.LI ($2,$4) }
+| MOVE reg COMMA reg
+  { A.MOVE ($2,$4) }
+| LUI reg COMMA k
+  { A.LUI($2,$4) }
 | SYNC
   { A.SYNC }

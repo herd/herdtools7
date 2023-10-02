@@ -1,0 +1,9 @@
+MIPS L03
+{
+int x=-1;
+0:v0=x;
+int64_t 0:v1;
+}
+  P0           ;
+ lw $v1,0($v0) ;
+forall 0:v1=-1
