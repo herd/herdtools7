@@ -2,9 +2,9 @@
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris, France.                                       *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2020-present Institut National de Recherche en Informatique et *)
+(* Copyright 2023-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,29 +14,27 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module type S = sig
-  type t
+(** Utilities from ArchBase useful for herd and litmus *)
 
-  val compare : t -> t -> int
-  val eq : t -> t -> bool
-  val pp : t -> string
-  val tr : InstrLit.t -> t
-  val nop : t option
-  val is_nop : t -> bool
+module Make(A:ArchBase.S)(Instr:Instr.S with type t = A.instruction) =
+  struct
 
-  val can_overwrite : t -> bool
-  val get_exported_label : t -> BranchTarget.t option
+    let get_exported_labels_code prog =
+      let lbls =
+        List.fold_left
+          (fun k (p,code) ->
+            A.fold_pseudo_code
+              (fun k i ->
+                let open BranchTarget in
+                match Instr.get_exported_label i with
+                | None -> k
+                | Some (Lbl lbl) ->
+                   (MiscParser.proc_num p,lbl)::k
+                | Some (Offset _) ->
+                   Warn.user_error "Replace offset by label in instruction %s"
+                     (A.dump_instruction i))
+              k code)
+          [] prog in
+      Label.Full.Set.of_list lbls
 
-  module Set : MySet.S with type elt = t
 end
-
-module No : functor (I:sig type instr end) -> S with type t = I.instr
-
-module WithNop :
-functor
-  (I:sig
-       type instr
-       val nop : instr
-       val compare : instr -> instr -> int
-     end)
--> S with type t = I.instr

@@ -1,0 +1,10 @@
+Test L086 Required
+States 1
+0:X3=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X3=1)
+Observation L086 Always 1 0
+Hash=5e2daad1656881d22f1562e268ebe492
+

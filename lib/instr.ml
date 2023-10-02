@@ -25,7 +25,7 @@ module type S = sig
 
   val can_overwrite : t -> bool
 
-  val get_exported_label : t -> Label.t option
+  val get_exported_label : t -> BranchTarget.t option
 
   module Set : MySet.S with type elt = t
 end

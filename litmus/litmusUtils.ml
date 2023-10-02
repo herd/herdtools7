@@ -83,18 +83,9 @@ module Pseudo(A:Arch_litmus.S) = struct
  * ARM "ADR" instruction.
  *)
 
-  let exported_labels_code prog =
-    let lbls =
-      List.fold_left
-        (fun k (p,code) ->
-          A.fold_pseudo_code
-            (fun k i ->
-              match A.V.Instr.get_exported_label i with
-              | None -> k
-              | Some lbl -> (MiscParser.proc_num p,lbl)::k)
-            k code)
-        [] prog in
-    Label.Full.Set.of_list lbls
+  module AU = ArchUtils.Make(A)(A.V.Instr)
+
+  let exported_labels_code prog = AU.get_exported_labels_code prog
 
   let from_labels lbls prog = A.from_labels lbls prog
 
