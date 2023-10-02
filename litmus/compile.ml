@@ -810,6 +810,8 @@ module A.FaultType = A.FaultType)
             extra_data ;_
           } = t in
       let procs_user = ProcsUser.get info in
+      if Misc.consp procs_user && do_self && is_pte then
+        Warn.user_error "litmus7 cannot handle -variant self -mode kvm when there are processes in userspace" ;
       let initenv = List.map (fun (loc,(_,v)) -> loc,v) init in
       let observed = Generic.all_observed final filter locs in
       let ty_env1 = Generic.build_type_env init final filter locs

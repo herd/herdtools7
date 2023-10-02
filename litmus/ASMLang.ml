@@ -613,15 +613,12 @@ module RegMap = A.RegMap)
         match O.mode,do_self with
         | Mode.Std,false ->
            sprintf "_a->%s" (fmt_lbl_var p lbl)
-        | (Mode.PreSi|Mode.Kvm),false ->
-           sprintf "_g->lbl.%s" (fmt_lbl_var p lbl)
         | Mode.Std,true ->
            sprintf "&_a->%s[_i*_a->%s+_a->%s+%s]"
              (fmt_code p) (fmt_code_size p)
              (fmt_prelude p) (fmt_lbl_offset p lbl)
-        | (Mode.PreSi|Mode.Kvm),true ->
-           sprintf "(ins_t *)_vars->%s+_vars->%s+%s"
-             (fmt_code p) (fmt_prelude p) (fmt_lbl_offset p lbl)
+        | (Mode.PreSi|Mode.Kvm),_ ->
+           sprintf "_vars->labels.%s" (fmt_lbl_var p lbl)
 
       let compile_instr_call i = AL.GetInstr.instr_name i
       let indirect_star =
