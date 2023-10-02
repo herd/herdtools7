@@ -719,7 +719,7 @@ let fold_tedges f r =
   let can_precede_dirs  x y = match x.edge,y.edge with
   | (Store,Store) -> false
   | (Id,_)|(_,Id)|(Store,_)|(_,Store) -> true
-  | (Insert _,Insert _) -> do_kvm
+  | (Insert _,Insert _) -> do_kvm || do_self
   | _,_ ->
       begin match dir_tgt x,dir_src y with
       | (Irr,Irr) -> false

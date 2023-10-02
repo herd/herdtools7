@@ -1612,6 +1612,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | NoSync ->
          pseudo (I_TLBI(op,r)::[])
 
+    let emit_CMO t r = match t with
+      | DC_CVAU -> pseudo ([I_DC (DC.cvau, r)])
+      | IC_IVAU -> pseudo ([I_IC (IC.ivau, r)])
+
     let emit_fence st p init n f = match f with
     | Barrier f -> init,[Instruction (I_FENCE f)],st
     | Shootdown(dom,op,sync) ->
@@ -1631,13 +1635,25 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               r1,init,cs,st in
         let cs = emit_shootdown dom op sync r in
         init,csr@cs,st
-    | CacheSync (s,isb) ->
+    | CacheSync (s,isb) -> begin
         try
           let lab = C.find_prev_code_write n in
           let r,init,st = U.next_init st p init lab in
           init,emit_cachesync s isb r,st
         with Not_found ->
           Warn.user_error "No code write before CacheSync"
+        end
+    | CMO (t,dirloc) ->
+      let loc =
+        let n0 = match dirloc with
+        | Next -> C.find_non_pseudo n
+        | Prev -> C.find_non_pseudo_prev n in
+        match n0.C.evt.C.loc with
+        | Data loc -> loc
+        | Code lab -> lab
+      in
+      let r,init,st = U.next_init st p init loc in
+      init,emit_CMO t r,st
 
     let stronger_fence = strong
 
@@ -2180,6 +2196,30 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | Cas -> map_some_dp emit_cas_dep
     | StOp op -> emit_stop_dep op
 
+    let emit_fence_dp st p init n f (dp,csel) r1 n1 =
+      let vdep = node2vdep n1 in
+      match dp with
+      | D.ADDR ->
+        let n2 = C.find_non_pseudo n in
+        let loc = match n2.C.evt.C.loc with
+        | Data loc -> loc
+        | Code _ -> Warn.fatal "Can't create address dependency for a code location" in
+        let r2,st = next_reg st in
+        let cs0,st =  calc0_gen csel st vdep r2 r1 in
+        let rB,init,st = U.next_init st p init loc in
+        let r,st = tempo1 st in
+        let cs2 = (if do_morello then
+          [do_addcapa rB r r2]
+        else
+          [do_add64 vloc rB r r2]) in
+        let _,cs, st = emit_fence st p init n f in
+        None, init, pseudo cs0@pseudo cs2@cs, st
+      | D.DATA -> let init,cs, st = emit_fence st p init n f in
+        Some r1, init, cs, st
+      | D.CTRL | D.CTRLISYNC ->
+        let c,st = emit_ctrl_gen csel st vdep r1 in
+        let init,cs,st = emit_fence st p init n f in
+        None,init,insert_isb (is_ctrlisync dp) c cs,st
 
     let do_check_load p st r e =
       let ok,st = A.ok_reg st in

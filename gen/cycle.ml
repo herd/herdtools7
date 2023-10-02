@@ -687,7 +687,12 @@ let remove_store n0 =
       if not (E.is_ext p.edge || E.is_po_or_fenced_joker p.edge || E.is_ext n.edge || E.is_po_or_fenced_joker n.edge) then begin
         Warn.fatal "Insert pseudo edge %s appears in-between  %s..%s (at least one neighbour must be an external edge)"
           (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
-      end
+      end;
+      match p.edge.E.edge with 
+      | (E.Rf Ext | E.Fr Ext) ->
+        Warn.fatal "Insert pseudo edge %s appears after external communication edge %s"
+        (E.pp_edge m.edge) (E.pp_edge p.edge)
+      | _ -> ()
     end ;
     if m.next != n0 then do_rec m.next in
   do_rec n0 ;

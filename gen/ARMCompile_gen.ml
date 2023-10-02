@@ -393,6 +393,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | DMB o -> I_DMB o
         | DSB o -> I_DSB o
         | ISB -> I_ISB)],st
+    let emit_fence_dp st a init b f _ r _ =
+      let init,cs,st = emit_fence st a init b f in
+      Some r,init,cs,st
     let stronger_fence = DMB SY
 
     let do_check_load p st r e =
