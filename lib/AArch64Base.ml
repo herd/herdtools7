@@ -374,6 +374,9 @@ type barrier =
   | DSB of mBReqDomain*mBReqTypes
   | ISB
 
+type syncType = 
+  | DC_CVAU
+  | IC_IVAU
 let fold_barrier_option kvm more f k =
   if more then
     fold_domain

@@ -1584,6 +1584,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             I_TLBI(op,r)::I_FENCE (DSB(dom,FULL))::[])
       | NoSync ->
          pseudo (I_TLBI(op,r)::[])
+    
+    let emit_DI t r = match t with
+      | DC_CVAU -> pseudo ([I_DC (DC.cvau, r)])
+      | IC_IVAU -> pseudo ([I_IC (IC.ivau, r)])
 
     let emit_fence st p init n f = match f with
     | Barrier f -> init,[Instruction (I_FENCE f)],st
@@ -1604,13 +1608,26 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               r1,init,cs,st in
         let cs = emit_shootdown dom op sync r in
         init,csr@cs,st
-    | CacheSync (s,isb) ->
+    | CacheSync (s,isb) -> begin
         try
           let lab = C.find_prev_code_write n in
           let r,init,st = U.next_init st p init lab in
           init,emit_cachesync s isb r,st
         with Not_found ->
           Warn.user_error "No code write before CacheSync"
+        end
+    | DI t -> 
+      let loc = begin
+        try
+          C.find_prev_code_write n
+        with Not_found -> 
+          match n.C.evt.C.loc with
+          | Data loc -> loc
+          | Code lab -> lab
+        end
+        in
+        let r,init,st = U.next_init st p init loc in
+        init,emit_DI t r,st
 
     let stronger_fence = strong
 

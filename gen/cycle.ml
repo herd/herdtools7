@@ -714,8 +714,8 @@ let remove_store n0 =
             (str_node p) (str_node m)
       end ;
       if
-        E.is_fetch p.edge && is_non_fetch_and_same m.edge ||
-        E.is_fetch m.edge && is_non_fetch_and_same p.edge
+        E.is_fetch p.edge && is_non_fetch_and_same m.edge && find_real_edge_prev p.prev != m ||
+        E.is_fetch m.edge && is_non_fetch_and_same p.edge && find_node (fun a -> is_real_edge a.edge) m.next != p
       then begin
         Warn.user_error "Ambiguous Data/Code location es [%s] => [%s]"
           (str_node p) (str_node m)
@@ -729,7 +729,10 @@ let set_diff_loc st n0 =
     let loc,st =
       if same_loc p.edge then begin
         p.evt.loc,st
-      end else next_loc m.edge st in
+      end else begin
+        let medge = (find_node (fun a -> non_pseudo a.edge) m).edge in
+        next_loc medge st
+      end in
     m.evt <- { m.evt with loc=loc ; bank=E.atom_to_bank m.evt.atom; } ;
 (*    eprintf "LOC SET: %a [p=%a]\n%!" debug_node m debug_node p; *)
     if m.store != nil then begin

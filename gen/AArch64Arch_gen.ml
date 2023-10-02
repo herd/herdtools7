@@ -525,7 +525,7 @@ type strength = Strong | Weak
 let fold_strength f r = f Strong (f Weak r)
 type sync = Sync | NoSync
 type fence = | Barrier of barrier | CacheSync of strength * bool |
-               Shootdown of mBReqDomain * TLBI.op * sync
+               Shootdown of mBReqDomain * TLBI.op * sync | DI of syncType
 
 let is_isync = function
   | Barrier ISB -> true
@@ -553,6 +553,7 @@ let compare_fence b1 b2 = match b1,b2 with
     end
 | (Shootdown _,(Barrier _|CacheSync _))
 | (CacheSync _,Barrier _)
+| (DI _,_) | (_, DI _) (* temporary *)
  -> +1
 
 
@@ -580,6 +581,9 @@ let pp_fence f = match f with
      (match sync with
       | NoSync -> ""
       | Sync -> add_dot pp_domain d)
+| DI t ->
+  sprintf "%s" (match t with DC_CVAU -> "DC.CVAU" | IC_IVAU -> "IC.IVAU")
+  
 
 let fold_cumul_fences f k =
    do_fold_dmb_dsb do_kvm C.moreedges (fun b k -> f (Barrier b) k) k
@@ -609,9 +613,13 @@ let fold_cachesync =
         (fun b k -> fold_strength (fun s k -> f (CacheSync (s,b)) k) k)
   else fun _ k -> k
 
+let fold_di f k = f (DI DC_CVAU) (f (DI IC_IVAU) k)
+  
+
 let fold_all_fences f k =
   let k = fold_shootdown f k in
   let k = fold_cachesync f k in
+  let k = fold_di f k in
   fold_barrier do_kvm C.moreedges (fun b k -> f (Barrier b) k) k
 
 
@@ -632,6 +640,7 @@ let orders f d1 d2 = match f,d1,d2 with
 | Barrier (DSB (_,LD)|DMB (_,LD)),_,_ -> false
 | CacheSync _,_,_ -> true
 | Shootdown _,_,_ -> false
+| DI _,_,_ -> true
 
 let var_fence f r = f default r
 
