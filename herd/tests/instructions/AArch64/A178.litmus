@@ -1,6 +1,7 @@
 AArch64 A178
 (* Combine illegal load of address in 32bits register
    and indirect access. Should fail *)
+variant=DontCheckMixed
 {
   int *p = &x;
   int x=1;

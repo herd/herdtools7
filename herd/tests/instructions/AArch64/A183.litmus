@@ -2,7 +2,7 @@ AArch64 A183
 (*
   Complex indrect store/load, should fail
 *)
-q
+Variant=DontCheckMixed
 {
   int x[2] = {1,1};
   int *p = &x;
