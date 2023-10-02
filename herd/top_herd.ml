@@ -2,7 +2,7 @@
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Luc aranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
 (* Copyright 2012-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
@@ -348,8 +348,26 @@ module Make(O:Config)(M:XXXMem.S) =
                 end in
           if stop_now then raise (Over r) else r
 
+    (* Performed delayed checks and warnings *)
+    let check_failed_model_kont
+          cs
+          ochan test do_restrict cstr
+          conc (st,flts) (set_pp,vbpp) flags c  =
+      let open S.M.VC in
+      match cs with
+      | Some (Failed e) ->
+         (* Perform error *)
+         raise e
+      | Some (Warn msg) ->
+         (* Warn and ignore *)
+         Warn.warn_always "%s, legal outcomes may be missing" msg ;
+         c
+      | Some (Assign _)|None ->
+         model_kont 
+           ochan test do_restrict cstr
+           conc (st,flts) (set_pp,vbpp) flags c
 
-(* Driver *)
+    (* Driver *)
     let run start_time test =
 
       let { MC.event_structures=rfms; MC.overwritable_labels=owls; },test =
@@ -403,10 +421,11 @@ module Make(O:Config)(M:XXXMem.S) =
            apply their internal functors once *)
         let check_test =
             M.check_event_structure test in
-        let call_model conc _cs =
+        let call_model conc ofail =
           check_test
             conc kfail
-            (model_kont ochan test final_state_restrict_locs cstr) in
+            (check_failed_model_kont
+               ofail ochan test final_state_restrict_locs cstr) in
       let c =
         if O.statelessrc11
         then let module SL = Slrc11.Make(struct include MC let skipchecks = O.skipchecks end) in
