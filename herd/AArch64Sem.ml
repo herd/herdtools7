@@ -1479,9 +1479,12 @@ module Make
       let swp sz rmw r1 r2 r3 ii =
         lift_memop r3 Dir.W true (* swp is a write for the purpose of DB *)
           (fun ac ma mv ->
+            let noret = match r2 with | AArch64.ZR -> true | _ -> false in
             let r2 = mv
             and w2 v = write_reg_sz_non_mixed sz r2 v ii
-            and r1 a = rmw_amo_read sz rmw ac a ii
+            and r1 a =
+              if noret then do_read_mem_ret sz Annot.NoRet aexp ac a ii
+              else rmw_amo_read sz rmw ac a ii
             and w1 a v = rmw_amo_write sz rmw ac a v ii in
             M.swp
               (Access.is_physical ac)
@@ -1501,12 +1504,17 @@ module Make
            (* mv is read new value from reg, not important
               as this code is not executed in morello mode *)
           (fun ac ma mv ->
-            let is_phy = Access.is_physical ac in
+             let noret = match rs with | AArch64.ZR -> true | _ -> false in
+             let is_phy = Access.is_physical ac in
              M.altT
-              (let read_mem a = do_read_mem_ret sz an aexp ac a ii in
+              (let read_mem a =
+                  if noret then do_read_mem_ret sz Annot.NoRet aexp ac a ii
+                  else do_read_mem_ret sz an aexp ac a ii in
                M.aarch64_cas_no is_phy ma read_rs write_rs read_mem M.neqT)
               (let read_rt = mv
-               and read_mem a = rmw_amo_read sz rmw ac a ii
+               and read_mem a =
+                 if noret then do_read_mem_ret sz Annot.NoRet aexp ac a ii
+                 else rmw_amo_read sz rmw ac a ii
                and write_mem a v = rmw_amo_write sz rmw ac a v ii in
                M.aarch64_cas_ok is_phy ma read_rs read_rt write_rs
                  read_mem write_mem M.eqT))

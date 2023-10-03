@@ -1,0 +1,13 @@
+AArch64 MP+rel+CAS-ok-dmb.ld
+{
+ y=2;
+ 0:X1=x; 0:X3=y;
+ 1:X1=x; 1:X3=y;
+}
+ P0           | P1             ;
+ MOV W0,#1    | MOV W4,#1      ;
+ STR W0,[X1]  | MOV W2,#0      ;
+ MOV W2,#0    | CAS W2,W4,[X3] ;
+ STLR W2,[X3] | DMB LD         ;
+              | LDR W0,[X1]    ;
+exists (y=1 /\ 1:X0=0)
