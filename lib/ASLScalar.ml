@@ -255,7 +255,7 @@ let try_extract_slice s positions =
       else Some (S_BitVector (BV.extract_slice bv positions))
   | S_Int i ->
       if Z.equal Z.zero i then
-        Some (S_BitVector (BV.zeros (List.length positions)))
+        Some (S_BitVector (BV.zeros (List.length positions) ))
       else if Z.equal Z.minus_one i then
         Some (S_BitVector (BV.ones (List.length positions)))
       else if List.exists (( <= ) 64) positions then None
@@ -281,6 +281,7 @@ let try_write_slice positions dst src =
   | _ -> None
 
 let empty = S_BitVector BV.empty
+let zeros_size_one = S_BitVector (BV.zeros 1)
 
 let printable_z z =
   let z = Z.erem z z64 in

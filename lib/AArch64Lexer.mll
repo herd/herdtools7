@@ -327,8 +327,6 @@ match name with
 | "stzg"|"STZG" -> STZG
 | "ldg"|"LDG" -> LDG
 (* Operations *)
-| "sxtw"|"SXTW" -> TOK_SXTW
-| "uxtw"|"UXTW" -> TOK_UXTW
 | "ubfm"|"UBFM" -> UBFM
 | "sbfm"|"SBFM" -> SBFM
 | "mov"|"MOV" -> MOV
@@ -340,7 +338,6 @@ match name with
 | "cmp"|"CMP" -> CMP
 | "tst"|"TST" -> TST
 (* Three argument opcodes factorized *)
-| "adds"|"ADDS" -> OP A.ADDS
 | "eor"|"EOR" -> OP A.EOR
 | "eon"|"EON" -> OP A.EOR
 | "orr"|"ORR" -> OP A.ORR
@@ -355,10 +352,21 @@ match name with
 | "asr" | "ASR" -> TOK_ASR
 | "lsl" | "LSL" -> TOK_LSL
 | "lsr" | "LSR" -> TOK_LSR
+| "ror" | "ROR" -> TOK_ROR
+(* extensions *)
+| "uxtb"|"UXTB" -> TOK_UXTB
+| "uxth"|"UXTH" -> TOK_UXTH
+| "uxtw"|"UXTW" -> TOK_UXTW
+| "uxtx"|"UXTX" -> TOK_UXTX
+| "sxtb"|"SXTB" -> TOK_SXTB
+| "sxth"|"SXTH" -> TOK_SXTH
+| "sxtw"|"SXTW" -> TOK_SXTW
+| "sxtx"|"SXTX" -> TOK_SXTX
 (* SUB, SUBS, ADD have 128 bits semantics*)
 | "sub"|"SUB" -> TOK_SUB
 | "subs"|"SUBS" -> TOK_SUBS
 | "add"|"ADD" -> TOK_ADD
+| "adds"|"ADDS" -> TOK_ADDS
 (* Morello *)
 | "alignd"|"ALIGND" -> ALIGND
 | "alignu"|"ALIGNU" -> ALIGNU

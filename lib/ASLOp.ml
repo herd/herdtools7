@@ -83,7 +83,8 @@ let pp_op1 _hexa = function
 
 let ( let* ) = Option.bind
 let return_concrete s = Some (Constant.Concrete s)
-let as_concrete = function Constant.Concrete v -> Some v | _ -> None
+let as_concrete = function
+  | Constant.Concrete v -> Some v | _ -> None
 
 let as_concrete_vector = function
   | Constant.ConcreteVector v -> Some v
@@ -167,7 +168,11 @@ let do_op1 op cst =
       | Constant.Symbolic x ->
           if Misc.list_eq ( = ) positions all_64_bits_positions then
             Some (Constant.Symbolic x)
-          else None
+          else begin
+            match positions with
+            | [63] -> Some (Constant.Concrete ASLScalar.zeros_size_one)
+            | _ -> None
+          end
       | _ -> None)
   | BoolNot -> (
       let open Constant in

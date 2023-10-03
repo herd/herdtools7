@@ -1,5 +1,5 @@
- (****************************************************************************)
-(*                           the diy toolsuite                              *)
+(****************************************************************************)
+(*                           The Diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
@@ -23,20 +23,98 @@ include Arch.MakeArch(struct
 
   include Arch.MakeCommon(A)
 
-  let match_kr subs kr kr' =  match kr,kr' with
-    | K(MetaConst.Meta m),K i ->  add_subs [Cst(m, i)] subs
-    | RV(_,r),RV(_,r') -> add_subs [Reg(sr_name r,r')] subs
-    | K(MetaConst.Int i),K(j) when i=j -> Some subs
-    | _ -> None
+  let match_k k k' subs =
+    let open MetaConst in
+    match k,k' with
+    | Meta k,k' -> add_subs [Cst (k,k');] subs
+    | Int k, k' when k=k' -> Some subs
+    | _,_ -> None
 
-  let match_shift s s' subs =  match s,s' with
-    | S_LSL (MetaConst.Meta m), S_LSL y
-    | S_LSR (MetaConst.Meta m), S_LSR y
-    | S_ASR (MetaConst.Meta m), S_ASR y -> add_subs [(Cst(m,y))] subs
-    | S_LSL (MetaConst.Int m), S_LSL y
-    | S_LSR (MetaConst.Int m), S_LSR y
-    | S_ASR (MetaConst.Int m), S_ASR y when m=y -> Some subs
-    | S_SXTW, S_SXTW | S_UXTW, S_UXTW | S_NOEXT, S_NOEXT -> Some subs
+  module Ext = struct
+    open AArch64Base.Ext
+
+    let match_sext e e' subs =
+      match e,e' with
+      | UXTB,UXTB
+      | UXTH,UXTH
+      | UXTW,UXTW
+      | UXTX,UXTX
+      | SXTB,SXTB
+      | SXTH,SXTH
+      | SXTW,SXTW
+      | SXTX,SXTX
+        -> Some subs
+      | _,_
+        -> None
+
+    let match_ext e e' subs =
+      match e,e' with
+      | (se,None),(se',None) -> match_sext se se' subs
+      | (se,Some k),(se',Some k') ->
+         match_sext se se' subs >>> match_k k k'
+      | _ -> None
+  end
+
+  module MemExt = struct
+
+    module E = AArch64Base.MemExt
+
+    let match_mode m m' subs =
+      let open AArch64Base in
+      match m,m' with
+      | (Idx,Idx)
+      | (PreIdx,PreIdx)
+      | (PostIdx,PostIdx)
+        -> Some subs
+      | _,_ -> None
+
+    let match_rext e e' subs =
+      let open E in
+      match e,e' with
+      | (UXTW,UXTW)
+      | (LSL,LSL)
+      | (SXTW,SXTW)
+      | (SXTX,SXTX)
+        -> Some subs
+      | _,_ -> None
+
+    let match_ext e e' subs =
+      match e,e' with
+      | E.Imm(k,m),E.Imm(k',m') ->
+         match_mode m m' subs >>> match_k k k'
+      | E.Reg (_,r,e,k),E.Reg (_,r',e',k')
+        ->
+         match_rext e e' subs
+         >>> match_k k k'
+         >>> add_subs [Reg(sr_name r,r');]
+      | _,_ -> None
+
+  end
+
+  module OpExt = struct
+
+    let match_shift s s' subs =
+      let open OpExt in
+      match s,s' with
+      | (LSL k,LSL k')
+      | (LSR k,LSR k')
+      | (ASR k,ASR k')
+      | (ROR k,ROR k')
+        -> match_k k k' subs
+      | _ -> None
+
+    let match_ext e e' subs =
+      match e,e' with
+      | OpExt.Imm (k1,k2),OpExt.Imm (k1',k2') ->
+         match_k k1 k1' subs >>> match_k k2 k2'
+      | OpExt.Reg (r,s),OpExt.Reg (r',s') ->
+         match_shift s s' subs >>> add_subs [Reg(sr_name r,r')]
+      | _,_ -> None
+  end
+
+  let match_kr subs kr kr' =  match kr,kr' with
+    | K k,K k' ->  match_k k k' subs
+    | RV(_,r),RV(_,r') -> add_subs [Reg(sr_name r,r')] subs
     | _ -> None
 
   let match_lbl lp li subs =
@@ -88,10 +166,6 @@ include Arch.MakeArch(struct
         | Some(x),Some(_) -> Some(x)
         | _ -> None end  >>>
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
-    | I_LDR_P(_,r1,r2,k),I_LDR_P(_,r1',r2',k')
-      ->
-        match_kr subs (K k) (K k') >>>
-        add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
     | I_LDUR(_,r1,r2,None),I_LDUR(_,r1',r2',None)
       -> add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')] subs
     | I_LDUR(_,r1,r2,Some(k)),I_LDUR(_,r1',r2',Some(k'))
@@ -100,23 +174,37 @@ include Arch.MakeArch(struct
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
     | I_LDRS(_,_,r1,r2),I_LDRS(_,_,r1',r2')
       -> add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')] subs
-    | I_LDR(_,r1,r2,kr,s),I_LDR(_,r1',r2',kr',s')
-    | I_STR(_,r1,r2,kr,s),I_STR(_,r1',r2',kr',s')
-    | I_STRBH(_,r1,r2,kr,s),I_STRBH(_,r1',r2',kr',s')
-    | I_LDRBH(_,r1,r2,kr,s),I_LDRBH(_,r1',r2',kr',s')
+    | I_LDR(_,r1,r2,e),I_LDR(_,r1',r2',e')
+    | I_STR(_,r1,r2,e),I_STR(_,r1',r2',e')
       ->
-        match_kr subs kr kr' >>>
-        match_shift s s' >>>
+       MemExt.match_ext e e' subs >>>
+       add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
+    | I_STRBH(_,r1,r2,e),I_STRBH(_,r1',r2',e')
+    | I_LDRBH(_,r1,r2,e),I_LDRBH(_,r1',r2',e')
+      ->
+        MemExt.match_ext e e' subs >>>
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
 
-    | I_OP3(_,opp,r1,r2,kr,_),I_OP3(_,opi,r1',r2',kr',_) when opp=opi
+    | I_ADDSUBEXT(_,op,r1,r2,(_,r3),ext),
+      I_ADDSUBEXT(_,op',r1',r2',(_,r3'),ext')
+         when op = op'
       ->
-        match_kr subs kr kr' >>>
+       Ext.match_ext ext ext' subs >>>
+       add_subs
+           [Reg(sr_name r1,r1'); Reg(sr_name r2,r2');
+            Reg (sr_name r3,r3');]
+
+    | I_OP3(_,opp,r1,r2,ext),I_OP3(_,opi,r1',r2',ext') when opp=opi
+      ->
+        OpExt.match_ext ext ext' subs >>>
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
     | _,_ -> None
 
   let expl_instr subs =
-    let conv_reg = conv_reg subs in
+
+    let return x n = x,n in
+
+  let conv_reg = conv_reg subs in
 
     let find_lab lbl =
       let open BranchTarget in
@@ -134,15 +222,54 @@ include Arch.MakeArch(struct
           find_cst n >! fun n -> S_MSL(n)
       | S_ASR(n) ->
           find_cst n >! fun n -> S_ASR(n)
-      | S_SXTW -> fun n -> S_SXTW, n
-      | S_UXTW -> fun n -> S_UXTW, n
-      | S_NOEXT -> fun n -> S_NOEXT, n in
+      | S_NOEXT -> return S_NOEXT in
 
     let expl_kr = function
       | RV(a,r) ->
           conv_reg r >! fun r -> RV(a,r)
       | K k ->
-          find_cst k >! fun k -> K k in
+         find_cst k >! fun k -> K k in
+
+    let module Ext = struct
+        let expl = function
+          | (e,None) -> fun st -> (e,None),st
+          | (e,Some k) ->  find_cst k >! fun k -> (e,Some k)
+    end in
+
+    let module MemExt = struct
+      module E = AArch64Base.MemExt
+
+      let expl = function
+        | E.Imm (k,m) ->
+           find_cst k >! fun k -> E.Imm (k,m)
+        | E.Reg (v,r,e,k) ->
+           find_cst k >> fun k -> conv_reg r >! fun r -> E.Reg (v,r,e,k)
+
+      end in
+
+    let module OpExt = struct
+      module E = AArch64Base.OpExt
+
+      let expl = function
+        | E.Imm (k1,k2) ->
+           find_cst k1 >> fun k1 -> find_cst k2  >! fun k2 -> E.Imm (k1,k2)
+        | E.Reg (r,s) ->
+           conv_reg r
+           >> fun r ->
+              (match s with
+              | E.LSL k ->
+                 find_cst k >> fun k -> unitT (E.LSL k)
+              | E.LSR k ->
+                 find_cst k >> fun k -> unitT (E.LSR k)
+              | E.ASR k ->
+                 find_cst k >> fun k -> unitT (E.ASR k)
+              | E.ROR k ->
+                 find_cst k >> fun k -> unitT (E.ROR k))
+          >! fun s ->
+            E.Reg  (r,s)
+
+    end in
+
     function
     | (I_FENCE _|I_NOP|I_RET None|I_ERET|I_UDF _) as i -> unitT i
     | I_B l ->
@@ -244,17 +371,11 @@ include Arch.MakeArch(struct
         conv_reg r3 >! fun r3 ->
         I_STXRBH(a,b,r1,r2,r3)
 
-    | I_LDR(a,r1,r2,kr,s) ->
+    | I_LDR(a,r1,r2,e) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        find_shift s >> fun s ->
-        expl_kr kr >! fun kr ->
-        I_LDR(a,r1,r2,kr,s)
-    | I_LDR_P(a,r1,r2,k) ->
-        conv_reg r1 >> fun r1 ->
-        conv_reg r2 >> fun r2 ->
-        find_cst k >! fun k ->
-        I_LDR_P(a,r1,r2,k)
+        MemExt.expl e >! fun e ->
+        I_LDR(a,r1,r2,e)
     | I_LDUR(a,r1,r2,Some(k)) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
@@ -290,39 +411,36 @@ include Arch.MakeArch(struct
         conv_reg r3 >> fun r3 ->
         conv_reg r4 >! fun r4 ->
         I_STXP (a,b,r1,r2,r3,r4)
-    | I_LDRBH(a,r1,r2,kr,s) ->
+    | I_LDRBH(a,r1,r2,e) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        find_shift s >> fun s ->
-        expl_kr kr >! fun kr ->
-        I_LDRBH(a,r1,r2,kr,s)
+        MemExt.expl e >! fun e ->
+        I_LDRBH(a,r1,r2,e)
     | I_LDRS(a,var,r1,r2) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >! fun r2 ->
         I_LDRS(a,var,r1,r2)
-    | I_STR(a,r1,r2,kr,s) ->
+    | I_STR(a,r1,r2,e) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        find_shift s >> fun s ->
-        expl_kr kr >! fun kr ->
-        I_STR(a,r1,r2,kr,s)
-    | I_STR_P(a,r1,r2,k) ->
+        MemExt.expl e >! fun e ->
+        I_STR(a,r1,r2,e)
+    | I_STRBH(a,r1,r2,e) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        find_cst k >! fun k ->
-        I_STR_P(a,r1,r2,k)
-    | I_STRBH(a,r1,r2,kr,s) ->
+        MemExt.expl e >! fun e ->
+        I_STRBH(a,r1,r2,e)
+    | I_ADDSUBEXT (v1,op,r1,r2,(v3,r3),e) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        expl_kr kr >> fun kr ->
-        find_shift s >! fun s ->
-        I_STRBH(a,r1,r2,kr,s)
-    | I_OP3(a,b,r1,r2,kr, s) ->
+        conv_reg r3 >> fun r3 ->
+        Ext.expl e >! fun e ->
+        I_ADDSUBEXT (v1,op,r1,r2,(v3,r3),e)
+    | I_OP3 (a,b,r1,r2,e) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        find_shift s >> fun s ->
-        expl_kr kr >! fun kr ->
-        I_OP3(a,b,r1,r2,kr,s)
+        OpExt.expl e >! fun e ->
+        I_OP3(a,b,r1,r2,e)
     | I_CSEL(v,r1,r2,r3,c,op) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

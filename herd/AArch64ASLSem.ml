@@ -122,14 +122,17 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       if i ==  i0 then ii
       else { ii with A.inst = i; }
 
-    let decode_shift =
-      let open AArch64Base in
+    let opext_decode_shift =
+      let open AArch64Base.OpExt in
       function
-      | S_NOEXT|S_LSL _ -> "ShiftType_LSL"
-      | S_LSR _         -> "ShiftType_LSR"
-      | S_ASR _         -> "ShiftType_ASR"
-    (* TODO:     | S_ROR _         -> "ShiftType_ROR" *)
-      | _ -> assert false
+      | LSL _ -> "ShiftType_LSL"
+      | LSR _ -> "ShiftType_LSR"
+      | ASR _ -> "ShiftType_ASR"
+      | ROR _ -> "ShiftType_ROR"
+
+    let opext_shift_amount =
+      let open AArch64Base.OpExt in
+      function |LSL k|LSR k|ASR k| ROR k -> k
 
     let decode_acquire =
       let open AArch64 in
@@ -279,11 +282,43 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 "datasize" ^= liti datasize;
                 "inzero" ^= litb true;
                ]@[added]))
+      | I_ADDSUBEXT (v,Ext.(ADD|ADDS|SUB|SUBS as op),rd,rn,(_vm,rm),(e,ko))
+        ->
+         let datasize = variant_raw v in
+         let fname =
+           let open Ext in
+           match op with
+           | ADD -> "ADD_32_addsub_ext.opn"
+           | ADDS -> "ADDS_32_addsub_ext.opn"
+           | SUB -> "SUB_32_addsub_ext.opn"
+           | SUBS -> "SUBS_32_addsub_ext.opn" in
+         let base = "integer/arithmetic/add-sub/extendedreg/" in
+         let extend_type =
+           let open Ext in
+           match e with
+           | UXTB -> "ExtendType_UXTB"
+           | UXTH -> "ExtendType_UXTH"
+           | UXTW -> "ExtendType_UXTW"
+           | UXTX -> "ExtendType_UXTX"
+           | SXTB -> "ExtendType_SXTB"
+           | SXTH -> "ExtendType_SXTH"
+           | SXTW -> "ExtendType_SXTW"
+           | SXTX -> "ExtendType_SXTX" in
+         let shift =  match ko with None -> 0 | Some k -> k in
+         Some
+           (base ^ fname,
+            stmt
+            ["d" ^= reg rd;
+             "n" ^= reg rn;
+             "m" ^= reg rm;
+             "datasize" ^= liti datasize;
+             "extend_type" ^= var extend_type;
+             "shift" ^= liti shift;])
       | I_OP3
          (v,
           (ADD|ADDS|SUB|SUBS|AND|ANDS|BIC|BICS|EOR|EON|ORN|ORR as op),
-          rd, rn, RV (v', rm),
-          (S_NOEXT|S_LSL _|S_ASR _|S_LSR _ (* S_ROR _ *) as s)) when v = v' ->
+          rd, rn, OpExt.Reg(rm,s))
+        ->
          let base =
            match op with
            | ADD|ADDS|SUB|SUBS ->
@@ -313,16 +348,13 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                "n" ^= reg rn;
                "m" ^= reg rm;
                "datasize" ^= variant v;
-               "shift_type" ^= var (decode_shift s);
-               "shift_amount" ^= liti (shift_amount s); ])
+               "shift_type" ^= var (opext_decode_shift s);
+               "shift_amount" ^= liti (opext_shift_amount s); ])
     | I_OP3
-          (v, ((ADD|ADDS|SUB|SUBS) as op), rd, rn, K k,
-           (S_NOEXT|S_LSL (0|12) as ext)) ->
+        (v, ((ADD|ADDS|SUB|SUBS) as op), rd, rn, OpExt.Imm (k,s))
+      ->
          let datasize = variant_raw v in
-         let k =
-           match ext  with
-           | S_LSL s -> k lsl s
-           | _ -> k in
+         let k = k lsl s in
          let fname =
            match op with
            | ADD -> "ADD_32_addsub_imm.opn"
@@ -340,7 +372,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                  "datasize" ^= liti datasize;
            ] )
 
-      | I_OP3 (v, (AND|ANDS|EOR|ORR as op), rd, rn, K k, S_NOEXT) -> (
+      | I_OP3 (v, (AND|ANDS|EOR|ORR as op), rd, rn, OpExt.Imm (k,0)) -> (
           let datasize = variant_raw v in
           let fname =
             match op with
@@ -357,29 +389,21 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "n" ^= reg rn;
                   "imm" ^= litbv datasize k;
                   "datasize" ^= liti datasize; ]))
-      | I_STR (v, rt, rn, RV (v', rm), barrel_shift)
-      | I_LDR (v, rt, rn, RV (v', rm), barrel_shift) as i ->
+      | I_STR (v, rt, rn, MemExt.Reg (_vm,rm,e,s))
+      | I_LDR (v, rt, rn, MemExt.Reg (_vm,rm,e,s)) as i
+        ->
          let fname =
            match i with
            | I_STR _ -> "STR_32_ldst_regoff.opn"
            | I_LDR _ -> "LDR_32_ldst_regoff.opn"
            | _ -> assert false
           and extend_type =
-            match barrel_shift with
-            | S_NOEXT -> "ExtendType_UXTX"
-            | S_SXTW -> "ExtendType_SXTW"
-            | S_UXTW -> "ExtendType_UXTW"
-            | S_LSL _ -> "ExtendType_UXTX"
-            | _ ->
-                Warn.fatal "Unsupported barrel shift for LDR: %s."
-                  (AArch64Base.pp_barrel_shift "" barrel_shift string_of_int)
-          in
-          let shift =
-            match barrel_shift with
-            | S_LSL k -> k
-            | S_NOEXT -> 0
-            | _ -> 0
-          in
+            let open MemExt in
+            match e with
+            | UXTW -> "ExtendType_UXTW"
+            | SXTW -> "ExtendType_SXTW"
+            | SXTX -> "ExtendType_SXTX"
+            | LSL  -> "ExtendType_UXTX"  in
           Some
             ( "memory/single/general/register/" ^ fname,
               stmt
@@ -388,33 +412,36 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "n" ^= reg rn;
                   "m" ^= reg rm;
                   "extend_type" ^= var extend_type;
-                  "shift" ^= liti shift;
+                  "shift" ^= liti s;
                   "datasize" ^= variant v;
-                  "regsize" ^= variant v';
+                  "regsize" ^= variant v;
                 ] )
-      | I_STR (v, rt, rn, K k, S_NOEXT)
-      | I_LDR (v, rt, rn, K k, S_NOEXT) ->
+      | I_STR (v, rt, rn, MemExt.Imm (k,idx))
+      | I_LDR (v, rt, rn, MemExt.Imm (k,idx))
+        ->
           let memop,fname =
             match ii.A.inst with
             | I_STR _ -> "MemOp_STORE","STR_32_ldst_immpost.opn"
             | I_LDR _ -> "MemOp_LOAD","LDR_32_ldst_immpost.opn"
-            | _ -> assert false
-          in
-          let offset = k
-          in
+            | _ -> assert false in
+          let wback,postindex =
+            match idx with
+            | Idx -> false,false
+            | PreIdx -> true,false
+            | PostIdx -> true,true in
           Some
             ( "memory/single/general/immediate/signed/post-idx/"^fname,
               stmt
                 [
                   "t" ^= reg rt;
                   "n" ^= reg rn;
-                  "offset" ^= litbv 64 offset;
-                  "wback" ^= litb false;
-                  "postindex" ^= litb false;
+                  "offset" ^= litbv 64 k;
+                  "wback" ^= litb wback;
+                  "postindex" ^= litb postindex;
                   "signed" ^= litb false;
                   "nontemporal" ^= litb false;
                   "memop" ^= var memop;
-                  "tagchecked" ^= litb true;
+                  "tagchecked" ^= litb (wback || rn <> SP);
                   "datasize" ^= variant v;
                   "regsize" ^= variant v;
                   "rt_unknown" ^= litb false;
