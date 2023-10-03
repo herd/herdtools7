@@ -321,6 +321,7 @@ type Feature of enumeration {
     FEAT_CMOW,
     FEAT_CNTSC,
     FEAT_CONSTPACFIELD,
+    FEAT_CPA2,
     FEAT_CRC32,
     FEAT_CSSC,
     FEAT_D128,
