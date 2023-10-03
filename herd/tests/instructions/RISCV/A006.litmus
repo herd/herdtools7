@@ -1,0 +1,9 @@
+RISCV A006
+
+(* Test sext.w instruction*)
+{ 0:a1 = 2}
+
+P0;
+sext.w a0, a1;
+
+forall 0:a0=2

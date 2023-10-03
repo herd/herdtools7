@@ -1,0 +1,10 @@
+RISCV A007
+
+(* Test AUIPC Instr - not handled like ADRP in AArch64 - emit error *)
+{}
+
+P0;
+auipc a0, 2;
+
+forall 0:a0=1
+

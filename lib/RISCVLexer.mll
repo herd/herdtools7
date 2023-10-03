@@ -25,12 +25,17 @@ open RISCVParser
   module LU = LexUtils.Make(O)
 
   let check_name = function
+    | "nop" | "NOP" -> NOP
+    | "ret" | "RET" -> RET
+    | "mv" | "MV" -> MV
     | "addi" -> OPI ADDI
     | "slti" -> OPI SLTI
     | "sltiu" -> OPI SLTIU
     | "andi" -> OPI ANDI
     | "ori" -> OPI ORI
     | "li"  -> LI
+    | "la" -> LA
+    | "lui" -> LUI
     | "xori" -> OPI XORI
     | "slli" -> OPI SLLI
     | "srli" -> OPI SRLI
@@ -74,6 +79,8 @@ open RISCVParser
     | "sh" -> STORE (Half,Rlx)
     | "sw" -> STORE (Word,Rlx)
     | "sd"   -> STORE (Double,Rlx)
+
+    | "auipc" -> AUIPC
 
 (* Limited memory order on ordinary load and store *)
     | "lb.aq" -> LOAD (Byte,Signed,Acq)
@@ -190,6 +197,8 @@ open RISCVParser
     | "amomin.d.aq.rl"|"amomin.d.aqrl" ->  AMO (AMOMIN,Double,AcqRel)
     | "amomaxu.d.aq.rl"|"amomaxu.d.aqrl" -> AMO (AMOMAXU,Double,AcqRel)
     | "amominu.d.aq.rl"|"amominu.d.aqrl" ->  AMO (AMOMINU,Double,AcqRel)
+(* Sign extension*)
+    | "sext.w" -> EXT (Signed,Word)
 
 (* Fences *)
 | "fence" -> FENCE

@@ -116,7 +116,7 @@ let type_reg _ = base_type
 (* Fences *)
 (**********)
 
-type access = R | W | RW
+type access = R | IR | W | OW | RW | IORW
 
 let fold_access f k =
   let k = f R k in
@@ -126,8 +126,11 @@ let fold_access f k =
 
 let pp_access = function
   | R -> "r"
+  | IR -> "ir"
   | W -> "w"
+  | OW -> "ow"
   | RW -> "rw"
+  | IORW -> "iorw"
 
 type barrier =
   | Fence of access * access
@@ -161,6 +164,22 @@ let pp_barrier_dot f = do_pp_barrier "." "."     f
 
 let barrier_compare = compare
 
+let rw_equal_semantics rw1 rw2 = match rw1,rw2 with
+  | ((R|IR),(R|IR))
+  | ((W|OW),(W|OW))
+  | ((RW|IORW),(RW|IORW))
+    -> true
+  | ((R|IR),((W|OW)|(RW|IORW)))
+  | ((W|OW),((R|IR)|(RW|IORW)))
+  | ((RW|IORW),((R|IR)|(W|OW)))
+     -> false
+     
+let barrier_equal_semantics b1 b2 = match b1,b2 with
+  | FenceI,FenceI -> true
+  | FenceTSO,FenceTSO -> true
+  | Fence (a11,a12),Fence (a21,a22) ->
+     rw_equal_semantics a11 a21 && rw_equal_semantics a12 a22
+  | _,_ -> false
 
 (****************)
 (* Instructions *)
@@ -180,6 +199,14 @@ let pp_opi = function
   | SRLI -> "srli"
   | SRAI -> "srai"
 
+type opi2 = LUI
+let pp_opi2 = function
+  | LUI -> "lui"
+
+type opa = LA
+
+let pp_opa = function
+  | LA -> "la"
 
 type opiw = ADDIW | SLLIW | SRLIW | SRAIW
 
@@ -286,7 +313,10 @@ type signed = Sign.t
 
 type 'k kinstruction =
   | INop
+  | Ret
   | OpI of opi * reg * reg * 'k
+  | OpI2 of opi2 * reg * 'k
+  | OpA of opa * reg * lbl
   | OpIW of opiw * reg * reg * 'k
   | Op of op * reg * reg * reg
   | OpW of opw * reg * reg * reg
@@ -296,8 +326,10 @@ type 'k kinstruction =
   | Store of width * mo * reg * int * reg
   | LoadReserve of width * mo * reg * reg
   | StoreConditional of width * mo * reg * reg * reg
+  | AUIPC of reg * 'k
   | Amo of opamo * width * mo * reg * reg * reg
   | FenceIns of  barrier
+  | Ext of signed * width * reg * reg
 
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
@@ -306,13 +338,23 @@ let pp_label lbl = lbl
 
 let pp_k _m v = sprintf "%i" v
 
-type 'k basic_pp = { pp_k : 'k -> string; }
+type 'k basic_pp = { pp_k : 'k -> string; is_zero : 'k -> bool }
 
 let do_pp_instruction m = function
   | INop -> "nop"
+  | Ret -> "ret"
+  (* MV is a pseudoinstruction - special case of ADDI*)
+  | OpI (ADDI, r1,r2,k) when m.is_zero k ->
+      sprintf "mv %s,%s" (pp_reg r1) (pp_reg r2)
   | OpI (op,r1,r2,k) ->
       sprintf "%s %s,%s,%s"
         (pp_opi op) (pp_reg r1) (pp_reg r2) (m.pp_k k)
+  | OpI2 (op,r1,k) ->
+      sprintf "%s %s,%s"
+        (pp_opi2 op) (pp_reg r1) (m.pp_k k)
+  | OpA (op,r1,lbl) ->
+      sprintf "%s %s,%s"
+        (pp_opa op) (pp_reg r1) (pp_label lbl)
   | OpIW (op,r1,r2,k) ->
       sprintf "%s %s,%s,%s"
         (pp_opiw op) (pp_reg r1) (pp_reg r2) (m.pp_k k)
@@ -333,6 +375,9 @@ let do_pp_instruction m = function
   | Store (w,mo,r1,o,r2) ->
       sprintf "%s %s,%i(%s)"
         (pp_store w mo) (pp_reg r1) o (pp_reg r2)
+  | AUIPC (r1,k) ->
+      sprintf "auipc %s,%s"
+        (pp_reg r1) (m.pp_k k)
   | LoadReserve (w,mo,r1,r2) ->
       sprintf "%s %s,0(%s)"
         (pp_lr w mo) (pp_reg r1) (pp_reg r2)
@@ -343,13 +388,18 @@ let do_pp_instruction m = function
       sprintf "%s %s,%s,(%s)"
         (pp_amo op w mo)  (pp_reg r1) (pp_reg r2) (pp_reg r3)
   | FenceIns f -> pp_barrier f
+  | Ext (_,w,r1,r2) ->
+      sprintf "%s%s %s,%s"
+        "sext." (pp_width w) (pp_reg r1) (pp_reg r2)
 
 let pp_instruction m =
   do_pp_instruction
-    {pp_k = pp_k m}
+    {pp_k = pp_k m; is_zero = fun v -> 0=v}
 
-let dump_instruction = do_pp_instruction {pp_k = (fun v -> sprintf "%i" v)}
-and dump_parsedInstruction = do_pp_instruction {pp_k = MetaConst.pp; }
+let dump_instruction = do_pp_instruction
+  {pp_k = (fun v -> sprintf "%i" v); is_zero = fun v -> v=0}
+and dump_parsedInstruction = do_pp_instruction
+  {pp_k = MetaConst.pp; is_zero = fun v -> MetaConst.zero = v }
 
 let dump_instruction_hash = dump_instruction
 
@@ -374,10 +424,12 @@ let fold_regs (f_reg,f_sreg) =
   | Symbolic_reg reg   -> y_reg,f_sreg reg y_sreg in
 
   fun c ins -> match ins with
-  | INop|J _ | FenceIns _ -> c
+  | INop|Ret|J _ | FenceIns _ -> c
+  | OpA (_,r1,_) | AUIPC (r1,_) | OpI2 (_,r1,_) -> fold_reg r1 c
   | OpI (_,r1,r2,_) | OpIW (_,r1,r2,_)
   | Bcc (_,r1,r2,_)
   | Load (_,_,_,r1,_,r2)
+  | Ext (_,_,r1,r2)
   | Store (_,_,r1,_,r2)
   | LoadReserve (_,_,r1,r2)
     -> fold_reg r1 (fold_reg r2 c)
@@ -393,9 +445,13 @@ let map_regs f_reg f_symb =
   | Symbolic_reg reg -> f_symb reg in
 
   function ins -> match ins with
-  | INop|J _ | FenceIns _ -> ins
+  | INop|Ret|J _ | FenceIns _ -> ins
   | OpI (op,r1,r2,k) ->
       OpI (op,map_reg r1,map_reg r2,k)
+  | OpI2 (op,r1,k) ->
+      OpI2 (op,map_reg r1,k)
+  | OpA (op,r1,lbl) ->
+      OpA (op,map_reg r1,lbl)
   | OpIW (op,r1,r2,k) ->
       OpIW (op,map_reg r1,map_reg r2,k)
   | Op (op,r1,r2,r3) ->
@@ -412,8 +468,12 @@ let map_regs f_reg f_symb =
       LoadReserve (w,mo,map_reg r1,map_reg r2)
   | StoreConditional (w,mo,r1,r2,r3) ->
       StoreConditional (w,mo,map_reg r1,map_reg r2,map_reg r3)
+  | AUIPC (r1,k) ->
+      AUIPC (map_reg r1,k)
   | Amo (op,w,mo,r1,r2,r3) ->
       Amo (op,w,mo,map_reg r1,map_reg r2,map_reg r3)
+  | Ext (s,w,r1,r2) ->
+      Ext (s,w, map_reg r1, map_reg r2)
 
 (* No addresses burried in ARM code *)
 let fold_addrs _f c _ins = c
@@ -425,9 +485,10 @@ let norm_ins ins = ins
 let get_next = function
   | J lbl -> [Label.To lbl;]
   | Bcc (_,_,_,lbl) -> [Label.Next; Label.To lbl;]
-  | INop|OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)|OpW (_, _, _, _)
+  | INop|Ret|OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)|OpW (_, _, _, _) | OpA (_,_,_) | AUIPC (_,_)
+  | OpI2 (_,_,_)
   | Load (_,_, _, _, _, _)|Store (_,_, _, _, _)|LoadReserve (_, _, _, _)
-  | StoreConditional (_, _, _, _, _)|FenceIns _|Amo _
+  | StoreConditional (_, _, _, _, _)|FenceIns _|Amo _|Ext (_,_,_,_)
     -> [Label.Next;]
 
 let is_valid _ = true
@@ -442,10 +503,13 @@ include Pseudo.Make
 
       let parsed_tr i = match i with
       | OpI (op,r1,r2,k) -> OpI (op,r1,r2,k_tr k)
+      | OpI2 (op,r1,k) -> OpI2 (op,r1,k_tr k)
       | OpIW (op,r1,r2,k) -> OpIW (op,r1,r2,k_tr k)
+      |AUIPC (r1, k) -> AUIPC (r1,k_tr k)
       | Op (_, _, _, _)|OpW (_, _, _, _)|J _|Bcc (_, _, _, _)
-      |INop
+      |INop | Ret | OpA (_,_,_)
       |Load (_, _, _, _, _, _)|Store (_, _ ,_ , _, _)
+      | Ext (_,_,_,_)
       |LoadReserve (_, _, _, _)|StoreConditional (_, _, _, _, _)|Amo _|FenceIns _
           as keep
         -> keep
@@ -456,7 +520,10 @@ include Pseudo.Make
         | Load _ | LoadReserve _ | Store _ | StoreConditional _ -> 1
         | Amo _ -> 2
         | INop
+        | Ret
         | OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)
+        | OpI2 (_,_,_)
+        | OpA (_,_,_) | AUIPC (_,_) | Ext (_,_,_,_)
         | OpW (_, _, _, _)|J _|Bcc (_, _, _, _)|FenceIns _
           -> 0
 
@@ -464,21 +531,26 @@ include Pseudo.Make
 
       let fold_labels k f = function
         | J lbl
-        | Bcc (_,_,_,lbl)
+        | Bcc (_,_,_,lbl) | OpA (_,_,lbl)
           -> f k lbl
         | INop
-        |OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)
+        | Ret
+        |OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _) | AUIPC (_,_)
+        | OpI2 (_,_,_)
         |OpW (_, _, _, _)|Load (_, _, _, _, _, _)|Store (_, _, _, _, _)
-        |LoadReserve (_, _, _, _)|StoreConditional (_, _, _, _, _)|Amo _|FenceIns _
+        |LoadReserve (_, _, _, _)|StoreConditional (_, _, _, _, _)|Amo _|FenceIns _ | Ext (_,_,_,_)
             -> k
       let map_labels f = function
         | J lbl -> J (BranchTarget.as_string_fun f lbl)
         | Bcc (cc,r1,r2,lbl) ->
            Bcc (cc,r1,r2,BranchTarget.as_string_fun f lbl)
+        | OpA (op,r1,lbl) -> OpA (op,r1,BranchTarget.as_string_fun f lbl)
         |INop
+        |Ret
         |OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)
-        |OpW (_, _, _, _)|Load _|Store _
-        |LoadReserve (_, _, _, _)
+        | OpI2 (_,_,_)
+        |OpW (_, _, _, _)|Load _|Store _| AUIPC (_,_)
+        |LoadReserve (_, _, _, _) | Ext (_,_,_,_)
         |StoreConditional (_, _, _, _, _)|Amo _|FenceIns _
          as ins
          -> ins

@@ -35,12 +35,18 @@ include Arch.MakeArch(struct
   let match_instr subs pattern instr = match pattern,instr with
   | OpI (op,r1,r2,k),OpI(op',r1',r2',k') when op=op' ->
       match_const_2r subs k r1 r2 k' r1' r2'
+  | OpI2 (op,r1,k),OpI2(op',r1',k') when op=op' ->
+      match_reg r1 r1' subs >>> match_const k k'
+  | OpA (op,r1,lbl),OpA(op',r1',lbl') when op=op' ->
+      add_subs [Lab (lbl,lbl'); Reg (sr_name r1, r1')] subs
   | OpIW (op,r1,r2,k),OpIW(op',r1',r2',k') when op=op' ->
       match_const_2r subs k r1 r2 k' r1' r2'
   | Op (op,r1,r2,r3),Op(op',r1',r2',r3') when op=op' ->
       match_3r subs r1 r2 r3 r1' r2' r3'
   | OpW (op,r1,r2,r3),OpW(op',r1',r2',r3') when op=op' ->
       match_3r subs r1 r2 r3 r1' r2' r3'
+  | AUIPC (r1,k1), AUIPC (r1',k1') ->
+      match_reg r1 r1' subs >>> match_const k1 k1'
   | J lbl,J lbl' ->
       add_subs [Lab (lbl,lbl')] subs
   | Bcc (c,r1,r2,lbl),Bcc (c',r1',r2',lbl') when c=c' ->
@@ -55,6 +61,8 @@ include Arch.MakeArch(struct
       match_2r subs r1 r2 r1' r2'
   | LoadReserve (w,m,r1,r2),LoadReserve (w',m',r1',r2')
     when w=w' && m=m' ->
+      match_2r subs r1 r2 r1' r2'
+  | Ext (s,w,r1,r2),Ext (s',w',r1',r2') when s=s' && w=w' ->
       match_2r subs r1 r2 r1' r2'
   | StoreConditional (w,m,r1,r2,r3),StoreConditional (w',m',r1',r2',r3')
     when w=w' && m=m' ->
@@ -76,6 +84,14 @@ include Arch.MakeArch(struct
           conv_reg r2 >> fun r2 ->
           find_cst k  >! fun k ->
           OpI (op,r1,r2,k)
+      | OpI2 (op,r1,k) ->
+          conv_reg r1 >> fun r1 ->
+          find_cst k  >! fun k ->
+          OpI2 (op,r1,k)
+      | OpA (op,r1,lbl) ->
+          conv_reg r1 >> fun r1 ->
+          find_lab lbl >! fun lbl ->
+          OpA (op,r1,lbl)
       | OpIW (op,r1,r2,k) ->
           conv_reg r1 >> fun r1 ->
           conv_reg r2 >> fun r2 ->
@@ -91,8 +107,16 @@ include Arch.MakeArch(struct
           conv_reg r2 >> fun r2 ->
           conv_reg r3 >! fun r3 ->
           OpW (op,r1,r2,r3)
+      | Ext (s,w,r1,r2) ->
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >! fun r2 ->
+          Ext (s,w,r1,r2)
       | J lbl->
           find_lab lbl >! fun lbl -> J lbl
+      | AUIPC (r1,k) ->
+          conv_reg r1 >> fun r1 ->
+          find_cst k  >! fun k ->
+          AUIPC (r1,k)
       | Bcc (c,r1,r2,lbl) ->
           conv_reg r1 >> fun r1 ->
           conv_reg r2 >> fun r2 ->
@@ -120,5 +144,5 @@ include Arch.MakeArch(struct
           conv_reg r2 >> fun r2 ->
           conv_reg r3 >! fun r3 ->
           Amo (op,w,m,r1,r2,r3)
-      | INop|FenceIns _ as i -> unitT i
+      | INop|Ret|FenceIns _ as i -> unitT i
 end)

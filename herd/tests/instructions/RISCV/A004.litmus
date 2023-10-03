@@ -1,0 +1,10 @@
+RISCV A004
+
+(*test MV instruction*)
+{ 0:a1 = 1 }
+
+P0;
+MV a0, a1;
+
+forall 0:a0=1
+

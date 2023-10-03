@@ -1,0 +1,12 @@
+Test A05 Forbidden
+States 3
+0:x7=0; [x]=1;
+0:x7=1; [x]=1;
+0:x7=1; [x]=2;
+Ok
+Witnesses
+Positive: 3 Negative: 0
+Condition ~exists ([x]=2 /\ 0:x7=0)
+Observation A05 Never 0 3
+Hash=76889daed926cd74375244e972cf9638
+
