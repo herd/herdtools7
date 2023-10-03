@@ -8,11 +8,11 @@ BUNDLER_ARGS := -vv $(BUNDLER_JOBS)
 BUNDLER := bundler.py
 BUNDLER_CMD := $(PYTHON) $(BUNDLER) $(BUNDLER_ARGS)
 
-BASE_URL := https://developer.arm.com/-/media/developer/products/architecture/armv9-a-architecture/2023-06/
+BASE_URL := https://developer.arm.com/-/media/developer/products/architecture/armv9-a-architecture/2023-09/
 
-ISA_A64_NAME := ISA_A64_xml_A_profile-2023-06
-ISA_A32_NAME := ISA_AArch32_xml_A_profile-2023-06
-REGS_NAME := SysReg_xml_A_profile-2023-06
+ISA_A64_NAME := ISA_A64_xml_A_profile-2023-09
+ISA_A32_NAME := ISA_AArch32_xml_A_profile-2023-09
+REGS_NAME := SysReg_xml_A_profile-2023-09
 
 TARGETS := $(ISA_A64_NAME) $(ISA_A32_NAME) $(REGS_NAME)
 TARGETS_TAR_GZ := $(addsuffix .tar.gz,$(TARGETS))
