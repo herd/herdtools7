@@ -1401,7 +1401,7 @@ let do_pp_instruction m =
   let pp_smemp memo v r1 r2 ra k =
     pp_memo memo ^ " " ^ pp_vsimdreg v r1 ^ "," ^ pp_vsimdreg v r2 ^
     ",[" ^ pp_xreg ra ^ (if m.compat
-      then pp_kr false false (K k) else m.pp_k k)  ^ "]" in
+      then pp_kr false false (K k) else "," ^ m.pp_k k)  ^ "]" in
 
   let pp_vmem_shift memo r k s =
     pp_memo memo ^ " " ^ pp_simd_vector_reg r ^ "," ^ m.pp_k k ^
