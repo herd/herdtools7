@@ -125,7 +125,7 @@ let rec pp_expr f e =
       fprintf f "@[<hv>%a {@ %a@;<1 -2>}@]" pp_ty ty (pp_comma_list pp_one) li
   | E_Concat es -> fprintf f "@[<hv 2>[%a]@]" pp_expr_list es
   | E_Tuple es -> fprintf f "@[<hv 2>(%a)@]" pp_expr_list es
-  | E_Unknown ty -> fprintf f "@[<h>UNKNOWN ::@ %a@]" pp_ty ty
+  | E_Unknown ty -> fprintf f "@[<h>UNKNOWN :@ %a@]" pp_ty ty
   | E_Pattern (e, p) -> fprintf f "@[<hv 2>%a@ IN %a@]" pp_expr e pp_pattern p
 
 and pp_expr_list f = pp_comma_list pp_expr f
@@ -207,7 +207,7 @@ and pp_bits_constraint f = function
       fprintf f "@[{%a}@]" pp_int_constraints int_constraint
   | BitWidth_ConstrainedFormType ty -> fprintf f "- : %a" pp_ty ty
 
-let pp_typed_identifier f (name, ty) = fprintf f "%s::%a" name pp_ty ty
+let pp_typed_identifier f (name, ty) = fprintf f "@[%s:@ %a@]" name pp_ty ty
 
 let rec pp_lexpr f le =
   match le.desc with
@@ -234,7 +234,7 @@ let pp_local_decl_keyword f k =
 
 let rec pp_local_decl_item f =
   let pp_ty_opt f = function
-    | Some ty -> fprintf f "@ :: @[%a@]" pp_ty ty
+    | Some ty -> fprintf f ": @[%a@]" pp_ty ty
     | None -> ()
   in
   function
@@ -327,9 +327,9 @@ let pp_decl f =
     | { name; keyword; ty = None; initial_value = Some e } ->
         fprintf f "%a %s@ = %a" pp_gdk keyword name pp_expr e
     | { name; keyword; ty = Some t; initial_value = Some e } ->
-        fprintf f "%a %s@ :: %a@ = %a" pp_gdk keyword name pp_ty t pp_expr e
+        fprintf f "%a %s:@ %a@ = %a" pp_gdk keyword name pp_ty t pp_expr e
     | { name; keyword; ty = Some t; initial_value = None } ->
-        fprintf f "%a %s@ :: %a" pp_gdk keyword name pp_ty t
+        fprintf f "%a %s:@ %a" pp_gdk keyword name pp_ty t
     | { name = _; keyword = _; ty = None; initial_value = None } -> assert false
   in
   let pp_func_sig f
