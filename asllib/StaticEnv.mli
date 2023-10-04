@@ -32,6 +32,7 @@ type local = {
   constants_values : literal IMap.t;  (** Maps a local constant to its value. *)
   storage_types : (ty * local_decl_keyword) IMap.t;
       (** Maps an locally declared names to their type. *)
+  return_type : ty option (** Local return type, [None] for procedures, global constants, or setters. *)
 }
 (** Store all the local environment information at compile-time. *)
 
@@ -43,6 +44,7 @@ val pp_env : Format.formatter -> env -> unit
 val pp_global : Format.formatter -> global -> unit
 val empty_global : global
 val empty_local : local
+val empty_local_return_type : ty option -> local
 val empty : env
 val lookup_constants : env -> identifier -> literal
 val type_of : env -> identifier -> ty

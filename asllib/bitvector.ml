@@ -406,7 +406,7 @@ let extract_slice (_length_src, data_src) positions =
     let () = List.iteri copy_bit_here positions in
     remask (length, Bytes.unsafe_to_string result)
   with Invalid_argument msg ->
-    raise (Invalid_argument (Printf.sprintf "exract_sliced (%s)" msg))
+    raise (Invalid_argument (Printf.sprintf "extract_sliced (%s)" msg))
 
 let write_slice (length_dst, data_dst) (length_src, data_src) positions =
   let min x y = if x <= y then x else y in
