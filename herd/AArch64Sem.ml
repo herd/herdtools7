@@ -1888,6 +1888,7 @@ module Make
         write_reg_neon_sz sz rd v ii
 
       let simd_ldr = do_simd_ldr  Annot.N
+      let simd_ldar = do_simd_ldr  Annot.Q
 
       let do_simd_str an sz rs rd kr s ii =
         get_ea rs kr s ii >>|
@@ -2624,6 +2625,11 @@ module Make
             k = K (match k with Some k -> k | None -> 0) in
             (get_ea rA k S_NOEXT ii >>= fun addr ->
             simd_ldr access_size addr r1 ii) >>= B.next1T
+        | I_LDAPUR_SIMD(var,r1,rA,k) ->
+            let access_size = tr_simd_variant var and
+            k = K (match k with Some k -> k | None -> 0) in
+            (get_ea rA k S_NOEXT ii >>= fun addr ->
+            simd_ldar access_size addr r1 ii) >>= B.next1T
         | I_STR_SIMD(var,r1,rA,kr,s) ->
             let access_size = tr_simd_variant var in
             simd_str access_size rA r1 kr s ii

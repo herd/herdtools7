@@ -91,7 +91,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_LD2 _| I_LD2M _| I_LD2R _| I_LD3 _| I_LD3M _| I_LD3R _| I_LD4 _| I_LD4M _
     | I_LD4R _| I_LDAR _| I_LDARBH _| I_LDCT _| I_LDG _| I_LDOP _| I_LDOPBH _
     | I_LDP _| I_LDP_P_SIMD _| I_LDP_SIMD _| I_LDPSW _| I_LDR _
-    | I_LDRSW _ | I_LDR_P_SIMD _
+    | I_LDRSW _ | I_LDR_P_SIMD _ | I_LDAPUR_SIMD _
     | I_LDR_SIMD _| I_LDRBH _| I_LDRS _| I_LDUR _| I_LDUR_SIMD _| I_LDXP _| I_MOV _ | I_FMOV_TG _
     | I_ADDV _| I_DUP _ | I_MOV_FG _| I_MOV_S _| I_MOV_TG _| I_MOV_V _| I_MOV_VE _| I_MOVI_S _
     | I_MOVI_V _| I_MOVK _| I_MOVZ _| I_MOVN _| I_MRS _| I_MSR _| I_OP3 _| I_RBIT _
@@ -233,7 +233,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDP_SIMD (_,v,_,_,_,_) | I_LDP_P_SIMD (_,v,_,_,_,_)
       | I_STR_SIMD (v,_,_,_,_) | I_STR_P_SIMD (v,_,_,_)
       | I_STP_SIMD (_,v,_,_,_,_) | I_STP_P_SIMD (_,v,_,_,_,_)
-      | I_LDUR_SIMD (v,_,_,_) | I_STUR_SIMD (v,_,_,_) ->
+      | I_LDUR_SIMD (v,_,_,_) | I_STUR_SIMD (v,_,_,_)
+      | I_LDAPUR_SIMD (v,_,_,_)  ->
           Some (tr_simd_variant v)
       | I_LD1 (rs,_,_,_) | I_LD1R (rs,_,_) | I_ST1 (rs,_,_,_)
       | I_LD1M (rs,_,_) | I_ST1M (rs,_,_)
@@ -344,7 +345,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDP_SIMD _|I_STP_SIMD _
       | I_LDR_SIMD _|I_LDR_P_SIMD _
       | I_STR_SIMD _|I_STR_P_SIMD _
-      | I_LDUR_SIMD _|I_STUR_SIMD _|I_MOV_VE _
+      | I_LDUR_SIMD _|I_LDAPUR_SIMD _|I_STUR_SIMD _|I_MOV_VE _
       | I_MOV_V _|I_MOV_TG _|I_MOV_FG _
       | I_MOV_S _|I_MOVI_V _|I_MOVI_S _
       | I_EOR_SIMD _|I_ADD_SIMD _|I_ADD_SIMD_S _
@@ -375,7 +376,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDP_SIMD _|I_STP_SIMD _
       | I_LDR_SIMD _|I_LDR_P_SIMD _
       | I_STR_SIMD _|I_STR_P_SIMD _
-      | I_LDUR_SIMD _|I_STUR_SIMD _|I_MOV_VE _
+      | I_LDUR_SIMD _|I_LDAPUR_SIMD _|I_STUR_SIMD _|I_MOV_VE _
       | I_MOV_V _|I_MOV_TG _|I_MOV_FG _
       | I_MOV_S _|I_MOVI_V _|I_MOVI_S _
       | I_ADDV _| I_DUP _ | I_FMOV_TG _

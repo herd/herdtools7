@@ -83,6 +83,7 @@ match name with
 | "ldr"|"LDR" -> LDR
 | "ldrsw"|"LDRSW" -> LDRSW
 | "ldur"|"LDUR" -> LDUR
+| "ldapur"|"LDAPUR" -> LDAPUR
 | "ldp"|"LDP" -> LDP
 | "ldpsw"|"LDPSW" -> LDPSW
 | "ldnp"|"LDNP" -> LDNP

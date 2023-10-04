@@ -1374,6 +1374,8 @@ module Make(V:Constant.S)(C:Config) =
     | I_STR_P_SIMD (v,r1,r2,k1) -> store_simd_p v r1 r2 k1::k
     | I_LDUR_SIMD (v,r1,r2,Some(k1)) -> load_simd "ldur" v r1 r2 (K k1) S_NOEXT::k
     | I_LDUR_SIMD (v,r1,r2,None) -> load_simd "ldur" v r1 r2 (K 0) S_NOEXT::k
+    | I_LDAPUR_SIMD (v,r1,r2,Some(k1)) -> load_simd "ldapur" v r1 r2 (K k1) S_NOEXT::k
+    | I_LDAPUR_SIMD (v,r1,r2,None) -> load_simd "ldapur" v r1 r2 (K 0) S_NOEXT::k
     | I_STUR_SIMD (v,r1,r2,Some(k1)) -> store_simd "stur" v r1 r2 (K k1) S_NOEXT::k
     | I_STUR_SIMD (v,r1,r2,None) -> store_simd "stur" v r1 r2 (K 0) S_NOEXT::k
     | I_ADDV (v,r1,r2) -> addv_simd v r1 r2::k

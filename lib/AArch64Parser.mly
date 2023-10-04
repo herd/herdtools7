@@ -70,7 +70,7 @@ let check_op3 op e =
 %token LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token LDRSB LDRSH
 %token LD1 LD1R LD2 LD2R LD3 LD3R LD4 LD4R ST1 ST2 ST3 ST4 STUR /* Neon load/store */
-%token ADDV DUP FMOV
+%token ADDV DUP FMOV LDAPUR
 %token CMP MOV MOVZ MOVN MOVK MOVI ADR MVN
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH LDXP LDAXP
 %token STXR STXRB STXRH STLXR STLXRB STLXRH STXP STLXP
@@ -719,6 +719,9 @@ instr:
 | LDUR scalar_regs COMMA LBRK xreg k0_opt RBRK
   { let v,r = $2 in
     I_LDUR_SIMD (v, r, $5, $6) }
+| LDAPUR scalar_regs COMMA LBRK xreg k0_opt RBRK
+  { let v,r = $2 in
+    I_LDAPUR_SIMD (v, r, $5, $6) }
 | STR scalar_regs COMMA LBRK xreg kr0 RBRK k0_opt
   { let v,r    = $2 in
     let kr, os = $6 in
