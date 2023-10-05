@@ -549,6 +549,9 @@ end = struct
       ("EXC-RET",is_exc_return)::
         List.map (fun (s,keys) -> (s,is_fault_of_type keys)) A.I.FaultType.sets
 
+    and tlbi_sets = List.map
+        (fun (tag, f) -> tag, function | Inv (op,_) -> f op | _ -> false)
+        A.TLBI.sets
     in
     ("T",is_tag)::
     ("TLBI",is_inv)::
@@ -561,7 +564,7 @@ end = struct
           (fun (key,p) k -> (key,on_pteval p)::k) A.pteval_sets k
     else
       fun k -> k)
-      (bsets @ cmo_sets @ asets @ esets @ lsets @ aasets @ ifetch_sets @ fault_sets)
+      (bsets @ cmo_sets @ asets @ esets @ lsets @ aasets @ ifetch_sets @ fault_sets @ tlbi_sets)
 
   let arch_rels =
     if kvm then

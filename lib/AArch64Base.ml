@@ -576,15 +576,15 @@ module TLBI = struct
     | IS -> "IS"
     | No -> ""
 
-let fold_domain f k =
-  let k = f IS k in
-  let k = f No k
-  in k
+  let fold_domain f k =
+    let k = f IS k in
+    let k = f No k
+    in k
 
-  type op = { typ:typ; level:level; domain:domain; }
+  type op = { typ:typ; level:level; domain:domain; nXS:bool }
 
-  let alle1is = { typ=ALL; level=E1; domain=IS; }
-  let alle2is = { typ=ALL; level=E2; domain=IS; }
+  let alle1is = { typ=ALL; level=E1; domain=IS; nXS=false; }
+  let alle2is = { typ=ALL; level=E2; domain=IS; nXS=false; }
 
   let level_list = [ E0; E1; E2; E3 ]
 
@@ -603,21 +603,25 @@ let fold_domain f k =
         fold_from_list level_list
           (fun level k ->
             fold_from_list domain_list
-              (fun domain k -> f {typ; level; domain; } k)
+              (fun domain k ->
+                 fold_from_list [ false; true ]
+                   (fun nXS k -> f {typ; level; domain; nXS; } k )
+                   k)
               k)
           k)
       k
 
   let fold_op f k =
-    let k = f  {typ=VMALL; level=E1; domain=IS;} k in
-    f {typ=VAA; level=E1; domain=IS; } k
+    let k = f  {typ=VMALL; level=E1; domain=IS; nXS=false } k in
+    f {typ=VAA; level=E1; domain=IS; nXS=false } k
 
-  let pp_op { typ; level; domain; } =
-    sprintf "%s%s%s" (pp_typ typ) (pp_level level) (pp_domain domain)
+  let pp_op { typ; level; domain; nXS; } =
+    sprintf "%s%s%s%s" (pp_typ typ) (pp_level level) (pp_domain domain)
+      (if nXS then "NXS" else "")
 
   let short_pp_op = function
-    | {typ=VMALL; level=E1; domain=IS} -> "VMALL"
-    | {typ=VAA; level=E1; domain=IS} -> ""
+    | {typ=VMALL; level=E1; domain=IS; nXS=false } -> "VMALL"
+    | {typ=VAA; level=E1; domain=IS; nXS=false } -> ""
     | op -> pp_op op
 
   let is_at_level lvl op =  op.level = lvl
@@ -636,6 +640,7 @@ let fold_domain f k =
     | IPAS2L
       -> false
 
+  let sets = [("TLBIIS", fun op->op.domain=IS); ("TLBInXS", (fun op -> op.nXS))]
 end
 
 (****************)

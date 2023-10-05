@@ -524,6 +524,7 @@ let assignment_stmt ==
         { AST.(S_Decl (LDK_Let, ldi, Some expr)) }
       | CONSTANT; x=ident; EQ; ~=expr;
         { AST.(S_Decl (LDK_Let, LDI_Var (x, None), Some expr)) }
+      | CONSTANT; ldi=ldi_tuple ; EQ; e=expr; { AST.S_Decl (LDK_Let,ldi,Some e) }
       | t=annotated(ty_non_tuple); li=nclist(~=ident; ~=none; < AST.LDI_Var >);
           { AST.(S_Decl (LDK_Var, LDI_Tuple (li, Some t), None)) }
       ))
@@ -550,6 +551,15 @@ let lexpr :=
       | bracketed(nclist(lexpr)); <>
     )
   )
+let ldi :=
+   | MINUS; { AST.LDI_Ignore None }
+   | x=ident_plus_record; { AST.LDI_Var (x,None) }
+   | ldi_tuple
+
+let ldi_tuple := ldis=pared(nnclist(ldi)); { AST.LDI_Tuple  (ldis,None) }
+
+
+
 
 let simple_if_stmt ==
     annotated (
@@ -658,4 +668,3 @@ let binop ==
   | abinop
   | LT         ; { AST.LT     }
   | GT         ; { AST.GT     }
-

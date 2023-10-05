@@ -50,6 +50,7 @@ module type S =
       val pp_op : op -> string
       val is_at_level : level -> op -> bool
       val inv_all : op -> bool
+      val sets : (string * (op -> bool)) list
     end
 
     val convert_if_imm_branch : int -> int -> int Label.Map.t -> int Label.Map.t -> instruction -> instruction

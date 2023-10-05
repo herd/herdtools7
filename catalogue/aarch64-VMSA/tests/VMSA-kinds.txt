@@ -127,7 +127,7 @@ coRRExpNExp+DSB-ISB                            Allowed
 coRR-pte7+BIS                                  Forbidden
 STRx+STRptex+oa                                Forbidden
 SWP-AF                                         Required
-V2I-W-DSB.ISH-TLBI-DSB.ISH-W+RR                Forbidden
+V2I-W-DSB.ISH-TLBI-DSB.ISH-W+RR                Allowed
 STRx+STCLRptex+db3+dbm                         Forbidden
 STRx+STCLRptex+db3                             Forbidden
 STRx+STCLRptex+db+dbm                          Forbidden
@@ -143,7 +143,7 @@ V2I-W-DSB.ISH-TLBI-DSB.LD-W+RR                 Allowed
 STRx+SWPptexForbid                             Forbidden
 STRx-LDRptex                                   Forbidden
 STRx+STCLRptex+db                              Forbidden
-V2I-W-DSB.ISH-TLBI-DSB.ISH-R+WR                Forbidden
+V2I-W-DSB.ISH-TLBI-DSB.ISH-R+WR                Allowed
 STRx+STCLRptex+db4                             Forbidden
 STRx+SWPptex+db4                               Forbidden
 STRx+LDR-ORR-STRptex                           Allowed

@@ -96,6 +96,9 @@ assert empty OuterCacheability-conflict as Invalid-Outer-Cacheability
 
 let PTENormal = try PTENormal with emptyset
 
+(*** Common attributes ***)
+let PTEXS = try PTEXS with emptyset
+
 (*** Sanity checks ***)
 
 (* Memory cannot be of type Normal and Device at the same time *)
@@ -109,7 +112,7 @@ let PTEAll-Valid-Mem-Attr = PTENormal
                     | PTEInner-write-back | PTEInner-write-through | PTEInner-non-cacheable
                     | PTEOuter-write-back | PTEOuter-write-through | PTEOuter-non-cacheable
                     | PTEDevice
-                    | PTEDevice-GRE | PTEDevice-nGRE | PTEDevice-nGnRE | PTEDevice-nGnRnE
+                    | PTEDevice-GRE | PTEDevice-nGRE | PTEDevice-nGnRE | PTEDevice-nGnRnE | PTEXS
 let Invalid-Memory-Attr = PTEMemAttr \ (PTEAll-Valid-Mem-Attr)
 assert empty Invalid-Memory-Attr as Invalid-Memory-Attribute
 

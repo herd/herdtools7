@@ -165,9 +165,9 @@ STRv0+db                                       Forbidden
 STRx+SWPptexForbid1                            Allowed
 STR                                            Allowed
 STRx-LDRptex                                   Forbidden
-V2I-W-DSB.ISH-TLBI-DSB.ISH-R+WR                Forbidden
+V2I-W-DSB.ISH-TLBI-DSB.ISH-R+WR                Allowed
 STRdb0dbm1                                     Required
-V2I-W-DSB.ISH-TLBI-DSB.ISH-W+RR                Forbidden
+V2I-W-DSB.ISH-TLBI-DSB.ISH-W+RR                Allowed
 STRaf1                                         Forbidden
 STR-db0-noHD                                   Forbidden
 STRaf1db1                                      Allowed

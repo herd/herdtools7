@@ -90,3 +90,13 @@ type ProcState of bits(64) {
 };
 
 var PSTATE : ProcState;
+
+// GenerateAddress()
+// =================
+// Generate and address by adding a pointer with an offset and returning the result.
+// If FEAT_CPA2 is implemented, the pointer arithmetic is checked.
+// LUC simplify because failur of slice operatin on symbolic address.
+func GenerateAddress(base:bits(64), offset:bits(64), accdesc:AccessDescriptor) => bits(64)
+begin
+  return base + offset;
+end
