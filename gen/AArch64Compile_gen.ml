@@ -1616,14 +1616,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         with Not_found ->
           Warn.user_error "No code write before CacheSync"
         end
-    | DI t -> 
+    | DI (t,dirloc) ->
       let loc = begin
-        try
-          C.find_prev_code_write n
-        with Not_found -> 
-          match n.C.evt.C.loc with
-          | Data loc -> loc
-          | Code lab -> lab
+        let n0 = match dirloc with
+        | Next -> C.find_non_pseudo n
+        | Prev -> C.find_non_pseudo_prev n in
+        match n0.C.evt.C.loc with
+        | Data loc -> loc
+        | Code lab -> lab
         end
         in
         let r,init,st = U.next_init st p init loc in
