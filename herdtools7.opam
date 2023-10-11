@@ -12,10 +12,11 @@ bug-reports: "http://github.com/herd/herdtools7/issues/"
 doc: "http://diy.inria.fr/doc/index.html"
 dev-repo: "git+https://github.com/herd/herdtools7.git"
 license: "CECILL-B"
-build: ["sh" "./dune-build.sh" "%{prefix}%"]
-install: ["sh" "./dune-install.sh" "%{prefix}%"]
-# @todo Add "build-doc" field
-# @todo Add "build-test" field
+build: [
+  [make "build" "PREFIX=%{prefix}%"]
+  [make "test" "PREFIX=%{prefix}%"] {with-test}
+]
+install: [make "install" "PREFIX=%{prefix}%"]
 depends: [
   "ocaml" {>= "4.08.0"}
   "dune"  {>= "2.7" }

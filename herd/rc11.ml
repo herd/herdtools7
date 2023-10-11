@@ -1,3 +1,5 @@
+[@@@warning "-40-42"]
+
 open Printf
 
 module type Cfg = sig
@@ -65,7 +67,7 @@ module Make (O:Cfg)(S:Sem.Semantics)
         let rmw = conc.S.atomic_load_store in
 
         let aux = fun x ->
-          try List.assoc x S.E.Act.arch_sets with Not_found -> fun x -> true in
+          try List.assoc x S.E.Act.arch_sets with Not_found -> fun _x -> true in
 
         let rlx = aux "RLX" in
         let acq = aux "ACQ" in
