@@ -4,8 +4,18 @@
 
 (ocamllex lexConf_herd)
 
+(library
+  (name herdlib)
+  (modules :standard \ herd)
+  (libraries unix herdtools)
+  (public_name herdtools7.herdlib)
+  (modules_without_implementation AArch64Sig action arch_herd monad sem XXXMem))
+
 (executable
    (name herd)
    (public_name herd7)
-   (libraries unix herdtools)
-   (modules_without_implementation AArch64Sig action arch_herd monad sem XXXMem))
+   (modules herd)
+   (libraries herdlib))
+
+(documentation)
+

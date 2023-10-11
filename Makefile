@@ -32,6 +32,9 @@ Version.ml:
 build: Version.ml | check-deps
 	dune build -j $(J) --profile release
 
+doc: Version.ml | check-deps
+	dune build -j $(J) --profile release @doc
+
 install:
 	sh ./dune-install.sh $(PREFIX)
 

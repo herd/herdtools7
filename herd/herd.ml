@@ -17,6 +17,7 @@
 (** Entry point to Herd  *)
 
 open Printf
+open Herdlib
 open Archs
 open Opts
 
