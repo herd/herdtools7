@@ -96,7 +96,7 @@ let pp_literal f = function
   | L_Bool false -> pp_print_string f "FALSE"
   | L_Real r ->
       if Q.den r = Z.one then fprintf f "%a.0" Z.pp_print (Q.num r)
-      else Q.pp_print f r
+      else pp_print_float f (Q.to_float r)
   | L_BitVector bv -> Bitvector.pp_t f bv
   | L_String s -> fprintf f "%S" s
 
