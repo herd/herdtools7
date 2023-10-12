@@ -250,9 +250,13 @@ let get_fence n =
               begin match o with
               | None   -> finals (* Code write *)
               | Some r -> (* fetch! *)
+                    match n.C.prev.C.edge.E.edge, n.C.edge.E.edge, E.is_ifetch n.C.prev.C.edge.E.a2, E.is_ifetch n.C.edge.E.a1 with
+                    |E.Rf _,_,true,_| _,E.Fr _,true,_ -> F.add_final (A.get_friends st) p o n finals
+                    | _,_,_,_-> begin
                   let m,fenv =  finals in
                   m,F.add_final_v p r (IntSet.singleton (U.fetch_val n))
                     fenv
+                    end
               end),
           st
       end
@@ -581,7 +585,7 @@ let max_set = IntSet.max_elt
     let lst = Misc.last ns in
     if U.check_here lst then
       match lst.C.evt.C.loc,lst.C.evt.C.bank with
-      | Data x,(Ord|Pair) -> (* TODO check for -obs local mode and pairs *)
+      | Data x,(Ord|Pair|Instr) -> (* TODO check for -obs local mode and pairs *)
          let nxt = lst.C.next.C.evt in
          let bank = nxt.C.bank in
          begin match bank with

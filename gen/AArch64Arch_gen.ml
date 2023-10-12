@@ -148,7 +148,7 @@ type pair_idx = Both
 type atom_acc =
   | Plain of capa_opt | Acq of capa_opt | AcqPc of capa_opt | Rel of capa_opt
   | Atomic of atom_rw | Tag | CapaTag | CapaSeal | Pte of atom_pte | Neon of neon_sizes
-  | Pair of pair_opt * pair_idx | Ifetch
+  | Pair of pair_opt * pair_idx | Instr
 
 let  plain = Plain None
 
@@ -162,12 +162,11 @@ let applies_atom (a,_) d = match a,d with
 | Rel _,W
 | Pte (Read|ReadAcq|ReadAcqPc),R
 | Pte (Set _|SetRel _),W
-| Ifetch, W
-| (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _|Pair _),(R|W)
+| (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _|Pair _|Instr),(R|W)
   -> true
 | _ -> false
 let is_ifetch a = match a with
-| Some (Ifetch,_) -> true
+| Some (Instr,_) -> true
 | _ -> false
    let pp_plain = "P"
 (* Annotation A is taken by load aquire *)
@@ -213,7 +212,7 @@ let is_ifetch a = match a with
      | Neon n -> SIMD.pp n
      | Pair (opt,idx)
        -> sprintf "Pa%s%s" (pp_pair_opt opt) (pp_pair_idx idx)
-     | Ifetch -> "I"
+     | Instr -> "I"
 
    let pp_atom (a,m) = match a with
    | Plain o ->
@@ -311,7 +310,7 @@ let is_ifetch a = match a with
         let r = f (Acq o) r in
         let r = f (AcqPc o) r in
         let r = f (Rel o) r in
-        let r = f Ifetch r in
+        let r = f Instr r in
         r
 
    let fold_acc mixed f r =
@@ -344,7 +343,7 @@ let is_ifetch a = match a with
 
    let worth_final (a,_) = match a with
      | Atomic _ -> true
-     | Acq _|AcqPc _|Rel _|Plain _|Tag|Ifetch
+     | Acq _|AcqPc _|Rel _|Plain _|Tag|Instr
      | CapaTag|CapaSeal
      | Pte _|Neon _
      | Pair _
@@ -428,8 +427,9 @@ let is_ifetch a = match a with
    | CapaSeal,None -> Code.CapaSeal
    | Neon n,None -> Code.VecReg n
    | Pair (_,Both),_ -> Code.Pair
+   | Instr,_ -> Code.Instr
    | (Tag|CapaTag|CapaSeal|Pte _|Neon _),Some _ -> assert false
-   | (Plain _|Acq _|AcqPc _|Rel _|Atomic _|Ifetch),_
+   | (Plain _|Acq _|AcqPc _|Rel _|Atomic _),_
      -> Code.Ord
 
 
@@ -453,9 +453,9 @@ let overwrite_value v ao w = match ao with
 | None
 | Some
     ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|
-    Tag|CapaTag|CapaSeal|Pte _|Neon _|Pair _|Ifetch),None)
+    Tag|CapaTag|CapaSeal|Pte _|Neon _|Pair _|Instr),None)
   -> w (* total overwrite *)
-| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Neon _|Ifetch),Some (sz,o)) ->
+| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Neon _|Instr),Some (sz,o)) ->
    ValsMixed.overwrite_value v sz o w
 | Some ((Tag|CapaTag|CapaSeal|Pte _|Pair _),Some _) ->
     assert false
@@ -464,10 +464,10 @@ let overwrite_value v ao w = match ao with
   | None
   | Some
       ((Atomic _|Acq _|AcqPc _|Rel _|Plain _
-        |Tag|CapaTag|CapaSeal|Pte _|Neon _|Pair _|Ifetch),None) -> v
+        |Tag|CapaTag|CapaSeal|Pte _|Neon _|Pair _|Instr),None) -> v
   | Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal|Neon _),Some (sz,o)) ->
      ValsMixed.extract_value v sz o
-  | Some ((Pte _|Pair _|Ifetch),Some _) -> assert false
+  | Some ((Pte _|Pair _|Instr),Some _) -> assert false
 
 (* Page table entries *)
   module PteVal = struct

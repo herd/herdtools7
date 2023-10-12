@@ -298,7 +298,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
            | None -> false
            | Some m -> not (m == n || C.C.po_pred m n)
          end
-    | Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _ ->
+    | Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _|Instr ->
         check_edge n.C.C.edge.C.E.edge && not (is_load_init n.C.C.evt)
 
 (* Poll for value is possible *)

@@ -748,9 +748,10 @@ let fold_tedges f r =
   | Rf _|Fr _|Ws _|Irf _|Ifr _|Leave _|Back _| Hat -> true
   | _ -> false
 
-  let is_fetch e = match e.edge,is_ifetch e.a1,is_ifetch e.a2 with
-  | Irf _,_,_|Ifr _,_,_
-  | Rf _,true,_| Fr _,_,true -> true
+  let is_fetch e = match e.edge with
+  | Irf _|Ifr _ -> true
+  | Rf _ -> is_ifetch e.a1
+  | Fr _ -> is_ifetch e.a2
   | _ -> false
 
   let compat_atoms a1 a2 = match F.merge_atoms a1 a2 with
