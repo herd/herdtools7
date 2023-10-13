@@ -346,3 +346,7 @@ val mix : int -> int -> int -> int
 (*********************************)
 
 val group_by_int : ('k -> int option) -> ('k * 'v) list -> ('k * 'v) list list
+
+
+
+val concat_map : ('a -> 'b list) -> 'a list -> 'b list
