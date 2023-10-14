@@ -364,6 +364,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
                   None,init,cs,st
                end
             | J -> emit_joker st init
+            | (D|I)-> Warn.fatal "No DC CVAU or IC IVAU in X86_64"
             end
          | Code _ -> Warn.fatal "No code location for X86_64"
          end

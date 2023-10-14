@@ -69,7 +69,7 @@ let pp_proc p = Proc.pp p
 type env = (string * v) list
 
 (* Direction of event *)
-type dir = W | R | J
+type dir = W | R | J | D | I
 
 (* Edges compoments that do not depend on architecture *)
 
@@ -87,6 +87,8 @@ let pp_dir = function
   | W -> "W"
   | R -> "R"
   | J -> "J"
+  | D -> "{DC.CVAU}"
+  | I -> "{IC.IVAU}"
 
 let pp_ie = function
   | Int -> "i"
@@ -109,9 +111,9 @@ let seq_sd sd1 sd2 =
 let fold_ie f r = f Ext (f Int r)
 let fold_sd f r = f Diff (f Same r)
 let do_fold_extr withj f r =
-  let r = f (Dir W) (f (Dir R) (f Irr r)) in
-  if withj then f (Dir J) r
-  else r
+  let all_dirs = [Dir W; Dir R; Dir J; Dir D; Dir I; Irr] in
+  let dirs = List.filter (function Dir J -> withj | _ -> true) all_dirs in
+  List.fold_right f dirs r
 let fold_extr f r = do_fold_extr false f r
 let fold_sd_extr f = fold_sd (fun sd -> fold_extr (fun e -> f sd e))
 let fold_sd_extr_extr f =

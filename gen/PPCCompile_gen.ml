@@ -341,6 +341,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
                 let init,cs,st = emit_store_mixed sz o st p init loc e.v in
                 None,init,cs,st
             | J,_ -> emit_joker st init
+            | (D|I),_-> Warn.fatal "No DC CVAU or IC IVAU in PPC"
             end
         end
 
@@ -389,6 +390,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
           | _,Some (PPC.Mixed _) ->
               Warn.fatal "addr dep with mixed"
           | J,_ -> emit_joker st init
+          | (D|I),_-> Warn.fatal "No DC CVAU or IC IVAU in PPC"
           end
 
     let emit_exch_dep_addr st  p init er ew rd =
@@ -427,6 +429,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
             | Some PPC.Reserve -> Warn.fatal "No store with reservation" in
           ro,init,cs2@cs,st
       | Some J,_ -> emit_joker st init
+      | Some (D|I),_-> Warn.fatal "No DC CVAU or IC IVAU in PPC"
 
     let insert_isync cs1 cs2 = cs1@[PPC.Instruction PPC.Pisync]@cs2
 
@@ -470,6 +473,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
           ro,init,(if isync then insert_isync c cs else c@cs),st
       | Some J,_ -> emit_joker st init
       | _,Code _ -> Warn.fatal "No code location for PPC"
+      | Some (D|I),_-> Warn.fatal "No DC CVAU or IC IVAU in PPC"
 
     let emit_exch_ctrl isync st p init er ew rd =
       let lab = Label.next_label "LC" in

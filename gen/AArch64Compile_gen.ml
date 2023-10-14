@@ -1210,6 +1210,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,None ->
             let init,cs,st = STR.emit_store_nop st p init lab in
             None,init,cs,st
+        | I,None ->
+            let r,init,st = U.next_init st p init lab in
+            None,init,(pseudo ([I_IC (IC.ivau, r)])),st
+        | D,None ->
+            let r,init,st = U.next_init st p init lab in
+            None,init,(pseudo ([I_DC (DC.cvau, r)])),st
         | _,_ -> Warn.fatal "Not Yet (%s,%s)!!!"
               (pp_dir d) (C.debug_evt e)
         end
@@ -1226,6 +1232,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             Some (a,Some (MachSize.S128,0))
           | _ -> Some (a,m) end in
         begin match d,atom with
+        | I, None ->
+            let r,init,st = U.next_init st p init loc in
+            Some r,init,(pseudo ([I_IC (IC.ivau, r)])),st
+        | D, None ->
+            let r,init,st = U.next_init st p init loc in
+            Some r,init,(pseudo ([I_DC (DC.cvau, r)])),st
+        | ( D| I ), _ -> Warn.fatal "not implemented"
         | R,None ->
             let r,init,cs,st = LDR.emit_load st p init loc in
             Some r,init,cs,st
@@ -1846,6 +1859,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | W,Some (Neon _,Some _) -> assert false
           | J,_ -> emit_joker st init
           | _,Some (Plain _,None) -> assert false
+          | (D|I),_ -> Warn.fatal "No dependency to DC CVAU or IC IVAU"
           end
       | _,Code _ -> Warn.fatal "No dependency to code location"
 
@@ -1909,6 +1923,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       match e.C.dir,e.C.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some R,_ -> Warn.fatal "data dependency to load"
+      | Some (D|I), _ -> Warn.fatal "data dependency to DC CVAu or IC IVAU"
       | Some W,Data loc ->
 
           let r2,cs2,init,st =

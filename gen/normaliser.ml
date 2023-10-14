@@ -320,7 +320,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
                   | _ -> R
                   end
               end
-          | Code.J -> J in
+          | Code.(J|D|I) -> J in
         if debug then
           eprintf "%s[%s] -> %s\n"
             (E.pp_edge e.CE.edge) (Code.pp_dir d)

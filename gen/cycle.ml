@@ -191,7 +191,7 @@ module Make (O:Config) (E:Edge.S) :
     }
 
   let debug_dir d = match d with
-         Some W -> "W" | Some R -> "R" | Some J -> "J" | None -> "_"
+         Some W -> "W" | Some R -> "R" | Some J -> "J" | Some D -> "{DC.CVAU}" | Some I -> "{IC.IVAU}" | None -> "_"
 
   let debug_atom a =
     match a with None -> "" | Some a -> E.pp_atom a
@@ -354,7 +354,7 @@ let find_prev_code_write n =
         debug_node n debug_node m ;
     let e = m.evt in
     match e.loc,E.safe_dir m.edge with
-    | Code c,Some W ->
+    | Code c,Some (W|D|I) ->
         (* Avoid the case where the cachesync is po-before the code write... *)
         begin if po_pred n m then raise Not_found end ;
         c
@@ -453,7 +453,7 @@ let make_loc n =
   else Printf.sprintf "x%02i" (n-locs_len)
 
 let next_loc e ((loc0,lab0),vs) = match e.E.edge with
-| E.Irf _|E.Ifr _ -> Code (sprintf "Lself%02i" lab0),((loc0,lab0+1),vs)
+| E.Irf _ |E.Ifr _ -> Code (sprintf "Lself%02i" lab0),((loc0,lab0+1),vs)
 | _ -> Code.Data (make_loc loc0),((loc0+1,lab0),vs)
 
 let same_loc e = match E.loc_sd e with
@@ -610,8 +610,7 @@ let is_rmw_edge e = match e.E.edge with
 let is_rmw d e = match d with
 | R -> is_rmw_edge e.edge
 | W -> is_rmw_edge e.prev.edge
-| J -> is_rmw_edge e.edge
-
+| J| D | I -> is_rmw_edge e.edge
 
 
 let remove_store n0 =
@@ -704,6 +703,15 @@ let remove_store n0 =
 
   let is_non_fetch_and_same e =
     is_real_edge e && same_loc e && not (E.is_fetch e)
+  
+  let is_I_D d =
+    match d with
+    | Some d -> begin
+      match d with
+      | D | I -> true
+      | _ -> false
+    end
+    | None -> false
 
   let check_fetch n0 =
     let rec do_rec m =
@@ -714,8 +722,10 @@ let remove_store n0 =
             (str_node p) (str_node m)
       end ;
       if
-        E.is_fetch p.edge && is_non_fetch_and_same m.edge ||
-        E.is_fetch m.edge && is_non_fetch_and_same p.edge
+        let is_same_next_nonID = same_loc (find_node (fun a -> not (is_I_D a.evt.dir)) m.next).prev.edge in
+        let is_same_prev_nonID = same_loc (find_node_prev (fun a -> not (is_I_D a.evt.dir)) p.prev).edge in
+        E.is_fetch p.edge && is_non_fetch_and_same m.edge && is_same_next_nonID ||
+        E.is_fetch m.edge && is_non_fetch_and_same p.edge && is_same_prev_nonID
       then begin
         Warn.user_error "Ambiguous Data/Code location es [%s] => [%s]"
           (str_node p) (str_node m)
@@ -729,7 +739,10 @@ let set_diff_loc st n0 =
     let loc,st =
       if same_loc p.edge then begin
         p.evt.loc,st
-      end else next_loc m.edge st in
+      end else begin
+        let medge = (find_node (fun a -> non_pseudo a.edge && not (is_I_D a.evt.dir)) m).edge in
+        next_loc medge st
+      end in
     m.evt <- { m.evt with loc=loc ; bank=E.atom_to_bank m.evt.atom; } ;
 (*    eprintf "LOC SET: %a [p=%a]\n%!" debug_node m debug_node p; *)
     if m.store != nil then begin
@@ -887,7 +900,7 @@ let set_same_loc st n0 =
             | Code _ ->
                do_set_write_val next_x_ok st pte_val ns
             end
-        | Some (R|J) |None -> do_set_write_val next_x_ok st pte_val ns
+        | Some (R|J|D|I) |None -> do_set_write_val next_x_ok st pte_val ns
         end
 
   let set_all_write_val nss =
@@ -1011,7 +1024,7 @@ let do_set_read_v =
                | Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _ -> pte_cell
                | Pte -> n.evt.pte)
               ns
-        | None | Some J ->
+        | None | Some (J|D|I) ->
             do_rec st cell pte_cell ns
         end in
   fun ns -> match ns with
@@ -1082,7 +1095,10 @@ let finish n =
             (fun (loc,(v,_pte)) -> sprintf "%s -> 0x%x"
                 (Code.pp_loc loc) v) vs))
   end ;
-  if O.variant Variant_gen.Self then check_fetch n ;
+  let n1 =
+    try find_node (fun n -> E.is_com n.edge) n
+    with Not_found -> n in
+  if O.variant Variant_gen.Self && not (!Config.same_loc && E.is_fetch n1.edge) then check_fetch n ;
   initvals
 
 
@@ -1281,7 +1297,7 @@ let rec group_rec x ns = function
           if
             E.is_node m.edge.E.edge || not (pbank m.evt.bank)
           then k else (e.loc,m)::k
-      | None| Some R | Some J -> k in
+      | None| Some (R|J|D|I)-> k in
       if m.store == nil then k
       else begin
         let e = m.store.evt in

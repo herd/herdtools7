@@ -42,7 +42,7 @@ val pp_proc : proc -> string
 type env = (string * v) list
 
 (* Direction of event *)
-type dir = W | R | J
+type dir = W | R | J | D | I
 
 (* Edges compoments that do not depend on architecture *)
 

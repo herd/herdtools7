@@ -58,7 +58,7 @@ module Make
        | (Acq,Code.W)|(Rel,Code.R) -> false
        | (Rel, Code.W)|(Acq, Code.R)
        | ((Rlx|AcqRel), _) -> true
-       | _,Code.J -> assert false
+       | _,Code.J|_,Code.D|_,Code.I -> assert false
        | Sc,_ -> assert false
        end
    | Atomic _|Mixed _ -> true
