@@ -703,9 +703,6 @@ let () =
               Warn.warn_always "%a: %s (User error)" Pos.pp_pos0 name msg
             end ;
             check_exit seen
-        | Asllib.Error.ASLException e ->
-          Warn.warn_always "%s" (Asllib.Error.error_to_string e);
-          check_exit seen
         | e ->
             Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
             raise e)

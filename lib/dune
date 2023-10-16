@@ -31,6 +31,6 @@
 (library
  (name herdtools)
  (wrapped false)
- (libraries str asllib zarith)
+ (libraries str zarith)
  (modules_without_implementation sign outTests AST CAst Scalar archBase archDump
    PPMode name value))

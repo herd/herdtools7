@@ -123,8 +123,3 @@ module type AArch64 =
   and type Cst.Instr.t = AArch64Base.instruction
   and type 'a arch_constr_op1 = 'a AArch64Op.t
 
-module type AArch64ASL =
-  AArch64
-  with type Cst.Scalar.t = ASLScalar.t
-  and type arch_op = ASLOp.op
-  and type arch_extra_op1 = ASLOp.op1

@@ -106,12 +106,8 @@ module Top (TopConf:RunTest.Config) = struct
          let module X = ARMParseTest.Make(Conf)(ModelConfig) in
          X.run dirty start_time name chan env splitted
       | `AArch64 ->
-         if Conf.variant Variant.ASL then
-           let module X = AArch64ASLParseTest.Make(Conf)(ModelConfig) in
-           X.run dirty start_time name chan env splitted
-         else
-           let module X = AArch64ParseTest.Make(Conf)(ModelConfig) in
-           X.run dirty start_time name chan env splitted
+         let module X = AArch64ParseTest.Make(Conf)(ModelConfig) in
+         X.run dirty start_time name chan env splitted
 
       | `X86 ->
          let module X = X86ParseTest.Make(Conf)(ModelConfig) in
@@ -134,11 +130,6 @@ module Top (TopConf:RunTest.Config) = struct
       | `LISA ->
          let module X = LISAParseTest.Make(Conf)(ModelConfig) in
          X.run dirty start_time name chan env splitted
-(* START NOTWWW *)
-      | `ASL ->
-         let module X = ASLParseTest.Make(Conf)(ModelConfig) in
-         X.run dirty start_time name chan env splitted
-(* END NOTWWW *)
       | arch -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
     end else env
 

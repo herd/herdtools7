@@ -1,8 +1,0 @@
-AArch64 SWP+TWO
-{
-0:X1=1; 0:X0=x;
-1:X1=2; 1:X0=x;
-}
-  P0           | P1             ;
-SWP W1,W2,[X0] | SWP W1,W2,[X0] ;
-forall (0:X2=2 \/ 1:X2=1)

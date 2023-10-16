@@ -1368,7 +1368,7 @@ Monad type:
       let is_instrloc a =
         let open Constant in
         match a with
-        | V.Val (Constant.Label _) -> true
+        | V.Val (Label _) -> true
         | _ -> false
 
       let add_inittags env =
@@ -1405,8 +1405,8 @@ Monad type:
         env
 
       let morello_init_tag s v eiid =
-        assert morello ;
         let open Constant in
+        assert morello ;
         bump_eid eiid,
         { E.eiid = eiid.id; E.subid=eiid.sub; E.iiid = E.IdInit;
           E.action =

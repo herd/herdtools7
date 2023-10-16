@@ -38,7 +38,7 @@ install:
 uninstall:
 	sh ./dune-uninstall.sh $(PREFIX)
 
-clean: dune-clean clean-asl-pseudocode
+clean: dune-clean
 	rm -f Version.ml
 
 dune-clean:
@@ -183,37 +183,6 @@ test-ppc:
 		-litmus-dir ./herd/tests/instructions/PPC \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 PPC instructions tests: OK"
-
-test:: test-asl
-test-asl:
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/ASL \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 ASL instructions tests: OK"
-
-test:: test-pseudo-asl
-test-pseudo-asl:
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/ASL-pseudo-arch \
-		-conf ./herd/tests/instructions/ASL-pseudo-arch/pseudo-conf.cfg \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 ASL instructions tests on pseudo-architecture: OK"
-
-test-aarch64-asl: asl-pseudocode
-	@echo
-	$(HERD_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/AArch64.ASL \
-		-conf ./herd/tests/instructions/AArch64.ASL/asl.cfg \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64+ASL instructions tests: OK"
 
 test:: arm-test
 
@@ -520,12 +489,4 @@ diy-test-mte::
 		-diycross-arg T,P \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64.MTE diycross7 tests: OK"
-
-.PHONY: asl-pseudocode clean-asl-pseudocode
-asl-pseudocode: herd/libdir/asl-pseudocode/shared_pseudocode.asl
-herd/libdir/asl-pseudocode/shared_pseudocode.asl:
-	@ $(MAKE) -C $(@D) a64 clean-tmp
-
-clean-asl-pseudocode:
-	@ $(MAKE) -C $(@D)/herd/libdir/asl-pseudocode clean
 
