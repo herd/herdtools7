@@ -29,9 +29,11 @@ open AST
 open ASTUtils
 open Infix
 module SEnv = StaticEnv
+
 type env = SEnv.env
 
 module TypingRule = Instrumentation.TypingRule
+
 let ( |: ) = Instrumentation.TypingNoInstr.use_with
 
 let undefined_identifier pos x =
@@ -73,7 +75,8 @@ let get_structure (env : env) : ty -> ty =
     | T_Tuple subtypes -> T_Tuple (List.map get subtypes) |> with_pos
     | T_Array (e, t) -> T_Array (e, get t) |> with_pos
     | T_Record fields -> T_Record (get_fields fields) |> with_pos
-    | T_Exception fields -> T_Exception (get_fields fields) |> with_pos |: TypingRule.Structure
+    | T_Exception fields ->
+        T_Exception (get_fields fields) |> with_pos |: TypingRule.Structure
   and get_fields fields =
     let one_field (name, t) = (name, get t) in
     let fields = List.map one_field fields in
@@ -106,19 +109,23 @@ let is_builtin_singular ty =
 let is_builtin_aggregate ty =
   match ty.desc with
   | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ -> true
-  | _ -> false |: TypingRule.BuiltinAggregateType 
+  | _ -> false |: TypingRule.BuiltinAggregateType
 
-let is_builtin ty = is_builtin_singular ty || is_builtin_aggregate ty |: TypingRule.BuiltinSingularOrAggregate
+let is_builtin ty =
+  is_builtin_singular ty
+  || is_builtin_aggregate ty |: TypingRule.BuiltinSingularOrAggregate
 
-let is_named ty = match ty.desc with T_Named _ -> true | _ -> false |: TypingRule.NamedType
+let is_named ty =
+  match ty.desc with T_Named _ -> true | _ -> false |: TypingRule.NamedType
 
-let is_anonymous ty = not (is_named ty) |: TypingRule.AnonymousType
+let is_anonymous ty = (not (is_named ty)) |: TypingRule.AnonymousType
 
 (* A named type is singular if it has the structure of a singular type,
    otherwise it is aggregate. *)
 let is_singular env ty =
   is_builtin_singular ty
-  || (is_named ty && get_structure env ty |> is_builtin_singular) |: TypingRule.SingularType
+  || (is_named ty && get_structure env ty |> is_builtin_singular)
+     |: TypingRule.SingularType
 
 (* A named type is singular if it has the structure of a singular type,
    otherwise it is aggregate. *)
@@ -133,9 +140,10 @@ let rec is_non_primitive ty =
   | T_Tuple li -> List.exists is_non_primitive li
   | T_Array (_, ty) -> is_non_primitive ty
   | T_Record fields | T_Exception fields ->
-      List.exists (fun (_, ty) -> is_non_primitive ty) fields |: TypingRule.NonPrimitiveType
+      List.exists (fun (_, ty) -> is_non_primitive ty) fields
+      |: TypingRule.NonPrimitiveType
 
-let is_primitive ty = not (is_non_primitive ty) |: TypingRule.PrimitiveType
+let is_primitive ty = (not (is_non_primitive ty)) |: TypingRule.PrimitiveType
 
 (* --------------------------------------------------------------------------*)
 
@@ -498,27 +506,28 @@ and domain_subtype_satisfies env t s =
       let d_s = Domain.of_type env s_struct
       and d_t = get_structure env t |> Domain.of_type env in
       Domain.is_subset d_t d_s
-  | T_Bits _ -> (
-      (*
+  | T_Bits _ ->
+      ((*
         • If either S or T have the structure of a bitvector type with
           undetermined width then the domain of T must be a subset of the domain
           of S.
          *)
-      (* Implicitly, T must have the structure of a bitvector. *)
-      let t_struct = get_structure env t in
-      let t_domain = Domain.of_type env t_struct
-      and s_domain = Domain.of_type env s_struct in
-      let () =
-        if false then
-          Format.eprintf "Is %a included in %a?@." Domain.pp t_domain Domain.pp
-            s_domain
-      in
-      match
-        ( Domain.get_width_singleton_opt s_domain,
-          Domain.get_width_singleton_opt t_domain )
-      with
-      | Some w_s, Some w_t -> Z.equal w_s w_t
-      | _ -> Domain.is_subset t_domain s_domain) |: TypingRule.DomainSubtypeSatisfaction
+       (* Implicitly, T must have the structure of a bitvector. *)
+       let t_struct = get_structure env t in
+       let t_domain = Domain.of_type env t_struct
+       and s_domain = Domain.of_type env s_struct in
+       let () =
+         if false then
+           Format.eprintf "Is %a included in %a?@." Domain.pp t_domain Domain.pp
+             s_domain
+       in
+       match
+         ( Domain.get_width_singleton_opt s_domain,
+           Domain.get_width_singleton_opt t_domain )
+       with
+       | Some w_s, Some w_t -> Z.equal w_s w_t
+       | _ -> Domain.is_subset t_domain s_domain)
+      |: TypingRule.DomainSubtypeSatisfaction
 
 and subtype_satisfies env t s =
   let () =
@@ -528,7 +537,8 @@ and subtype_satisfies env t s =
       Format.eprintf "%a subtypes %a ? struct: %B -- domain: %B@." PP.pp_ty t
         PP.pp_ty s b1 b2
   in
-  structural_subtype_satisfies env t s && domain_subtype_satisfies env t s |: TypingRule.SubtypeSatisfaction
+  structural_subtype_satisfies env t s
+  && domain_subtype_satisfies env t s |: TypingRule.SubtypeSatisfaction
 
 and type_satisfies env t s =
   (* Type T type-satisfies type S if and only if at least one of the following

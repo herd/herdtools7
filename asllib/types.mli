@@ -44,8 +44,8 @@ val is_builtin_aggregate : ty -> bool
 
 (** Note that a builtin type is either builtin aggregate or builtin singular. *)
 
-val is_singular : env -> ty -> bool 
-val is_aggregate : env -> ty -> bool 
+val is_singular : env -> ty -> bool
+val is_aggregate : env -> ty -> bool
 
 (** Note that a type is either singular or aggregate. *)
 

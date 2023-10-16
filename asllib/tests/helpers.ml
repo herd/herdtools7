@@ -30,12 +30,10 @@ let exec_tests =
 
 let build_ast_from_file filename =
   match Builder.from_file_result `ASLv1 filename with
-  | Error e ->
-     begin
-       match Builder.from_file_result `ASLv0 filename with
-       | Ok ast -> ast,`ASLv0
-       | Error _ ->
+  | Error e -> (
+      match Builder.from_file_result `ASLv0 filename with
+      | Ok ast -> (ast, `ASLv0)
+      | Error _ ->
           Format.eprintf "%a@." Error.pp_error e;
-          Error.fatal e
-     end
-  | Ok ast -> ast,`ASLv1
+          Error.fatal e)
+  | Ok ast -> (ast, `ASLv1)

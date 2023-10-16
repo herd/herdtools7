@@ -649,7 +649,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             let+ () = check_type_satisfies' env t1 real in
             T_Real |> with_loc)
       (fun () -> fatal_from loc (Error.BadTypesForBinop (op, t1, t2)))
-      () |: TypingRule.CheckBinop
+      ()
+    |: TypingRule.CheckBinop
 
   let check_unop loc env op t1 =
     match op with

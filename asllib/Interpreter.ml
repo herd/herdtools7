@@ -187,9 +187,8 @@ module Make (B : Backend.S) (C : Config) = struct
 
   let build_global_storage env0 eval_expr base_value =
     let names =
-      List.fold_left
-        (fun k (name,_) -> ISet.add name k)
-        ISet.empty env0 in
+      List.fold_left (fun k (name, _) -> ISet.add name k) ISet.empty env0
+    in
     let def d =
       match d.desc with
       | D_Func { name; _ }
@@ -201,22 +200,22 @@ module Make (B : Backend.S) (C : Config) = struct
     let process_one_decl d =
       match d.desc with
       | D_GlobalStorage { initial_value; name; ty; _ } ->
-         fun env_m ->
-           if ISet.mem name names then
-             env_m
-           else
-             let*| env = env_m in
-             let* v =
-               match (initial_value, ty) with
-               | Some e, _ -> eval_expr env e
-               | None, None -> fail_initialise d name
-               | None, Some t -> base_value env t in
-             let* () =
-               match name with
-               | "PSTATE"|"RESADDR" -> return ()
-               | _ ->
-                  B.on_write_identifier name Scope_Global v in
-             IEnv.declare_global name v env |> return
+          fun env_m ->
+            if ISet.mem name names then env_m
+            else
+              let*| env = env_m in
+              let* v =
+                match (initial_value, ty) with
+                | Some e, _ -> eval_expr env e
+                | None, None -> fail_initialise d name
+                | None, Some t -> base_value env t
+              in
+              let* () =
+                match name with
+                | "PSTATE" | "RESADDR" -> return ()
+                | _ -> B.on_write_identifier name Scope_Global v
+              in
+              IEnv.declare_global name v env |> return
       | _ -> Fun.id
     in
     dag_fold def use process_one_decl
@@ -240,10 +239,12 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     let env =
       List.fold_left
-        (fun env (name,v) -> IEnv.declare_global name v env)
-        env env0 in
+        (fun env (name, v) -> IEnv.declare_global name v env)
+        env env0
+    in
     let*| env =
-       build_global_storage env0 eval_expr base_value ast (return env) in
+      build_global_storage env0 eval_expr base_value ast (return env)
+    in
     return env.global
 
   (* Bind Environment *)
@@ -332,7 +333,6 @@ module Make (B : Backend.S) (C : Config) = struct
     if false then Format.eprintf "@[<3>Eval@ @[%a@]@]@." PP.pp_expr e;
     match e.desc with
     | E_Literal v -> return_normal (B.v_of_literal v, env) |: SemanticsRule.Lit
-
     | E_Typed (e, t) ->
         let** v, env = eval_expr env e in
         let* b = is_val_of_type e env v t in
@@ -341,40 +341,35 @@ module Make (B : Backend.S) (C : Config) = struct
         |: SemanticsRule.TypedExpr
     | E_Var x -> (
         match IEnv.find x env with
-
         | Local v ->
             let* () = B.on_read_identifier x (IEnv.get_scope env) v in
             return_normal (v, env) |: SemanticsRule.ELocalVar
-
         | Global v ->
             let* () = B.on_read_identifier x Scope_Global v in
             return_normal (v, env) |: SemanticsRule.EGlobalVar
-
         | NotFound ->
-          fatal_from e @@ Error.UndefinedIdentifier x |: SemanticsRule.EUndefIdent)
-
+            fatal_from e @@ Error.UndefinedIdentifier x
+            |: SemanticsRule.EUndefIdent)
     | E_Binop (BAND, e1, e2) ->
         (* if e1 then e2 else false *)
-        E_Cond (e1, e2, false') |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopAnd
-
+        E_Cond (e1, e2, false')
+        |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopAnd
     | E_Binop (BOR, e1, e2) ->
-       (* if e1 then true else e2 *)
-        E_Cond (e1, true', e2) |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopOr
-
+        (* if e1 then true else e2 *)
+        E_Cond (e1, true', e2)
+        |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopOr
     | E_Binop (IMPL, e1, e2) ->
         (* if e1 then e2 else true *)
-        E_Cond (e1, e2, true') |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopImpl
-
+        E_Cond (e1, e2, true')
+        |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopImpl
     | E_Binop (op, e1, e2) ->
         let** (v1, v2), env = fold_par eval_expr env e1 e2 in
         let* v = B.binop op v1 v2 in
         return_normal (v, env) |: SemanticsRule.Binop
-
     | E_Unop (op, e) ->
         let** v, env = eval_expr env e in
         let* v = B.unop op v |: SemanticsRule.Unop in
         return_normal (v, env)
-
     | E_Cond (e_cond, e1, e2) ->
         let*^ m_cond, env = eval_expr env e_cond in
 
@@ -386,18 +381,15 @@ module Make (B : Backend.S) (C : Config) = struct
               (fun () -> eval_expr_sef env e2)
           in
           return_normal (v, env) |: SemanticsRule.ECondSimple
-
         else
           B.bind_ctrl (bind_choice_m m_cond e1 e2) @@ eval_expr env
           |: SemanticsRule.ECond
-
     | E_Slice (e_bv, slices) ->
         let** (v_bv, positions), env =
           fold_par2 eval_expr eval_slices env e_bv slices
         in
         let* v = B.read_from_bitvector positions v_bv in
         return_normal (v, env) |: SemanticsRule.ESlice
-
     | E_Call (name, actual_args, params) ->
         let**| ms, env = eval_call (to_pos e) name env actual_args params in
         let* v =
@@ -408,7 +400,6 @@ module Make (B : Backend.S) (C : Config) = struct
               B.create_vector vs
         in
         return_normal (v, env) |: SemanticsRule.ECall
-
     | E_GetArray (e_array, e_index) -> (
         let** (v_array, v_index), env =
           fold_par eval_expr env e_array e_index
@@ -418,39 +409,31 @@ module Make (B : Backend.S) (C : Config) = struct
             (* TODO: create a proper runtime error for this.
                It should be caught at type-checking, but still. *)
             fatal_from e (Error.UnsupportedExpr e_index)
-
         | Some i ->
             let* v = B.get_index i v_array in
             return_normal (v, env) |: SemanticsRule.EGetArray)
-
     | E_Record (_, e_fields) ->
         let names, fields = List.split e_fields in
         let** v_fields, env = eval_expr_list env fields in
         let* v = B.create_record (List.combine names v_fields) in
         return_normal (v, env) |: SemanticsRule.ERecord
-
     | E_GetField (e_record, field_name) ->
         let** v_record, env = eval_expr env e_record in
         let* v = B.get_field field_name v_record in
         return_normal (v, env) |: SemanticsRule.EGetBitField
-
     | E_GetFields _ ->
         fatal_from e Error.TypeInferenceNeeded |: SemanticsRule.EGetBitFields
-
     | E_Concat e_list ->
         let** v_list, env = eval_expr_list env e_list in
         let* v = B.concat_bitvectors v_list in
         return_normal (v, env) |: SemanticsRule.EConcat
-
     | E_Tuple e_list ->
         let** v_list, env = eval_expr_list env e_list in
         let* v = B.create_vector v_list in
         return_normal (v, env) |: SemanticsRule.ETuple
-
     | E_Unknown t ->
         let v = B.v_unknown_of_type t in
         return_normal (v, env) |: SemanticsRule.EUnknown
-
     | E_Pattern (e, p) ->
         let** v, env = eval_expr env e in
         let* v = eval_pattern env e v p in
@@ -566,11 +549,9 @@ module Make (B : Backend.S) (C : Config) = struct
         | Local env ->
             let* () = B.on_write_identifier x (IEnv.get_scope env) v in
             return_normal env |: SemanticsRule.LELocalVar
-
         | Global env ->
             let* () = B.on_write_identifier x Scope_Global v in
             return_normal env |: SemanticsRule.LEGlobalVar
-
         | NotFound -> (
             match ver with
             | V1 ->
@@ -673,9 +654,12 @@ module Make (B : Backend.S) (C : Config) = struct
           B.binop BOR acc b
         in
         List.fold_left folder false_ li |: SemanticsRule.PAny
-    | Pattern_Geq e -> eval_expr_sef env e >>= B.binop GEQ v |: SemanticsRule.PGeq
-    | Pattern_Leq e -> eval_expr_sef env e >>= B.binop LEQ v |: SemanticsRule.PLeq
-    | Pattern_Not p' -> eval_pattern env pos v p' >>= B.unop BNOT |: SemanticsRule.PNot
+    | Pattern_Geq e ->
+        eval_expr_sef env e >>= B.binop GEQ v |: SemanticsRule.PGeq
+    | Pattern_Leq e ->
+        eval_expr_sef env e >>= B.binop LEQ v |: SemanticsRule.PLeq
+    | Pattern_Not p' ->
+        eval_pattern env pos v p' >>= B.unop BNOT |: SemanticsRule.PNot
     | Pattern_Range (e1, e2) ->
         let* b1 = eval_expr_sef env e1 >>= B.binop GEQ v
         and* b2 = eval_expr_sef env e2 >>= B.binop LEQ v in
@@ -700,7 +684,8 @@ module Make (B : Backend.S) (C : Config) = struct
           B.binop BAND acc b
         in
         let folder (acc, i) p = (folderi i acc p, succ i) in
-        List.fold_left folder (true_, 0) li_patterns |> fst |: SemanticsRule.PTuple
+        List.fold_left folder (true_, 0) li_patterns
+        |> fst |: SemanticsRule.PTuple
 
   (* Evaluation of Local Declarations *)
   (* -------------------------------- *)
@@ -708,12 +693,15 @@ module Make (B : Backend.S) (C : Config) = struct
     match (ldi, m_init_opt) with
     | LDI_Ignore _ty, _ -> return_normal env |: SemanticsRule.LDIgnore
     | LDI_Var (x, _ty), Some m ->
-        m >>= declare_local_identifier env x >>= return_normal |: SemanticsRule.LDVar
+        m
+        >>= declare_local_identifier env x
+        >>= return_normal |: SemanticsRule.LDVar
     | LDI_Var (x, Some ty), None ->
         base_value env ty
         >>= declare_local_identifier env x
         >>= return_normal |: SemanticsRule.LDTypedVar
-    | LDI_Var (x, None), None -> fail_initialise s x |: SemanticsRule.LDUninitialisedVar
+    | LDI_Var (x, None), None ->
+        fail_initialise s x |: SemanticsRule.LDUninitialisedVar
     | LDI_Tuple (ldis, _ty), Some m ->
         let n = List.length ldis in
         let nmonads = List.init n (fun i -> m >>= B.get_index i) in
@@ -721,7 +709,8 @@ module Make (B : Backend.S) (C : Config) = struct
           let**| env = envm in
           eval_local_decl s ldi' env (Some vm)
         in
-        List.fold_left2 folder (return_normal env) ldis nmonads |: SemanticsRule.LDTuple
+        List.fold_left2 folder (return_normal env) ldis nmonads
+        |: SemanticsRule.LDTuple
     | LDI_Tuple (_ldis, Some ty), None ->
         let m = base_value env ty in
         eval_local_decl s ldi env (Some m) |: SemanticsRule.LDTypedTuple
@@ -988,7 +977,8 @@ module Make (B : Backend.S) (C : Config) = struct
       params : func_eval_type =
     match IMap.find_opt name genv.funcs with
     | None ->
-        fatal_from pos @@ Error.UndefinedIdentifier name |: SemanticsRule.FUndefIdent
+        fatal_from pos @@ Error.UndefinedIdentifier name
+        |: SemanticsRule.FUndefIdent
     | Some (r, { body = SB_Primitive body; _ }) ->
         let scope = Scope_Local (name, !r) in
         let () = incr r in
@@ -1137,8 +1127,9 @@ module Make (B : Backend.S) (C : Config) = struct
         Error.fatal_unknown_pos (Error.UncaughtException msg)
 
   let run_typed ast env = run_typed_env [] ast env
-  
-  let run_env (env : (AST.identifier * B.value) list) (ast : B.ast) : B.value m =
+
+  let run_env (env : (AST.identifier * B.value) list) (ast : B.ast) : B.value m
+      =
     let ast = Builder.with_stdlib ast in
     let ast, static_env =
       Typing.type_check_ast C.type_checking_strictness ast StaticEnv.empty
@@ -1149,5 +1140,4 @@ module Make (B : Backend.S) (C : Config) = struct
     run_typed_env env ast static_env
 
   let run ast = run_env [] ast
-
 end
