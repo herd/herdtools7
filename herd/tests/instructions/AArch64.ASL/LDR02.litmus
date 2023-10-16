@@ -1,8 +1,0 @@
-AArch64 LDR02
-{
-int x = 1 ;
-0:X1=x;
-}
-  P0         ;
- LDR W0,[X1] ;
-forall 0:X0=1

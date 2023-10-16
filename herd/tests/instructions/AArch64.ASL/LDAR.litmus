@@ -1,9 +1,0 @@
-AArch64 LDAR
-{
-0:X1=x;
-int x=15;
-}
-  P0         ;
-LDAR W0,[X1] ;
-
-forall 0:X0=15
