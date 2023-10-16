@@ -592,6 +592,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                   both
                     (check_type_satisfies' env t1 t_bool)
                     (check_type_satisfies' env t2 t_bool);
+                  both
+                    (check_type_satisfies' env t1 t_real)
+                    (check_type_satisfies' env t2 t_real);
                   (fun () ->
                     match (t1.desc, t2.desc) with
                     | T_Enum li1, T_Enum li2 ->
