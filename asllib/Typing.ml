@@ -572,35 +572,18 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             let w = get_bitvector_width' env t1 in
             T_Bits (w, []) |> with_loc
         | EQ_OP | NEQ ->
-            (* Wrong! *)
             let+ () =
-              any
-                [
-                  (* Optimisation. *)
-                  check_true'
-                    (type_equal (StaticInterpreter.equal_in_env env) t1 t2);
-                  (* If an argument of a comparison operation is a constrained
-                     integer then it is treated as an unconstrained integer. *)
-                  both
-                    (check_type_satisfies' env t1 t_int)
-                    (check_type_satisfies' env t2 t_int);
-                  (* If the arguments of a comparison operation are bitvectors
-                     then they must have the same determined width. *)
-                  check_bits_equal_width' env t1 t2;
-                  (* The rest are redundancies from the first equal types
-                     cases, but provided for completeness. *)
-                  both
-                    (check_type_satisfies' env t1 t_bool)
-                    (check_type_satisfies' env t2 t_bool);
-                  both
-                    (check_type_satisfies' env t1 t_real)
-                    (check_type_satisfies' env t2 t_real);
-                  (fun () ->
-                    match (t1.desc, t2.desc) with
-                    | T_Enum li1, T_Enum li2 ->
-                        check_true' (list_equal String.equal li1 li2) ()
-                    | _ -> assumption_failed ());
-                ]
+             fun () ->
+              let struct1 = Types.get_structure env t1
+              and struct2 = Types.get_structure env t2 in
+              match (struct1.desc, struct2.desc) with
+              | T_Int _, T_Int _ -> ()
+              | T_Bits _, T_Bits _ -> check_bits_equal_width' env t1 t2 ()
+              | T_Bool, T_Bool -> ()
+              | T_Real, T_Real -> ()
+              | T_Enum li1, T_Enum li2 when list_equal String.equal li1 li2 ->
+                  ()
+              | _ -> assumption_failed ()
             in
             T_Bool |> with_loc
         | LEQ | GEQ | GT | LT ->

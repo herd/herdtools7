@@ -664,17 +664,19 @@ may hold.
   - All of the following applies:
     - [op] is [EQ_OP] or [NEQ];
     - One of the following applies:
-      - [t1] is equal to [t2];
       - All of the following applies:
-        - [t1] type-satisfies [integer];
-        - [t2] type-satisfies [integer];
+        - [t1] has the structure of an integer;
+        - [t2] has the structure of an integer;
       - All of the following applies:
         - [t1] has the structure of a bitvector;
         - [t2] has the structure of a bitvector;
         - [t1] and [t2] have the same bitvector width;
       - All of the following applies:
-        - [t1] type-satisfies [boolean];
-        - [t2] type-satisfies [boolean];
+        - [t1] has the structure of a real;
+        - [t2] has the structure of a real;
+      - All of the following applies:
+        - [t1] has the structure of a boolean;
+        - [t2] has the structure of a boolean;
       - All of the following applies:
         - [t1] enumerates local declarations [li1]; 
         - [t2] enumerates local declarations [li2];
