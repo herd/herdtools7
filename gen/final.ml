@@ -186,6 +186,11 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                 Some (S (Code.add_tag (Code.as_data evt.C.C.loc) evt.C.C.v))
             | Code.Pte ->
                 Some (P evt.C.C.pte)
+            | Code.Instr ->
+              let s = match evt.C.C.ins with
+              | 1 -> "instr:\"NOP\""
+              | _ -> Warn.user_error "invalid value with instruction store" in
+              Some (S s)
             end
         | Some Code.W ->
            assert (evt.C.C.bank = Code.Ord || evt.C.C.bank = Code.CapaSeal) ;

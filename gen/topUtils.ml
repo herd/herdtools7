@@ -298,7 +298,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
            | None -> false
            | Some m -> not (m == n || C.C.po_pred m n)
          end
-    | Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _ ->
+    | Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _|Instr ->
         check_edge n.C.C.edge.C.E.edge && not (is_load_init n.C.C.evt)
 
 (* Poll for value is possible *)
@@ -309,8 +309,9 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       | _,_,_ -> false
 
     let fetch_val n =
-      match n.C.C.prev.C.C.edge.C.E.edge, n.C.C.edge.C.E.edge with
-      | C.E.Irf _,_ -> 2
-      | _,C.E.Ifr _ -> 1
-      | _,_ -> 0
+      let has_I = List.exists C.E.is_ifetch [n.C.C.prev.C.C.edge.C.E.a1; n.C.C.edge.C.E.a2] in
+      match n.C.C.prev.C.C.edge.C.E.edge, n.C.C.edge.C.E.edge, has_I with
+      | C.E.Irf _,_,_ | C.E.Rf _,_,true-> 2
+      | _,C.E.Ifr _,_ | _,C.E.Fr _,true -> 1
+      | _,_,_ -> 0
   end

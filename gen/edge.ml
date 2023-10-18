@@ -43,6 +43,7 @@ module type S = sig
   val set_pteval :
     atom option -> PteVal.t -> (unit -> string) -> PteVal.t
   val merge_atoms : atom -> atom -> atom option
+  val is_ifetch : atom option -> bool
   val atom_to_bank : atom option -> SIMD.atom Code.bank
   val strong : fence
   val pp_fence : fence -> string
@@ -208,7 +209,7 @@ and type rmw = F.rmw = struct
   | Some a,Dir d -> F.applies_atom a d
 
   let merge_atoms = F.merge_atoms
-
+  let is_ifetch = F.is_ifetch
   let atom_to_bank = function
     | None -> Ord
     | Some a -> F.atom_to_bank a
@@ -749,6 +750,8 @@ let fold_tedges f r =
 
   let is_fetch e = match e.edge with
   | Irf _|Ifr _ -> true
+  | Rf _ -> is_ifetch e.a1
+  | Fr _ -> is_ifetch e.a2
   | _ -> false
 
   let compat_atoms a1 a2 = match F.merge_atoms a1 a2 with
