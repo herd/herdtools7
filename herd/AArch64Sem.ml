@@ -911,7 +911,7 @@ module Make
         match op with
         |ADD|EOR|EON|ORR|ORN|SUB|AND|ASR|LSR|LSL|BIC -> None
         |ANDS|BICS -> Some compute_nz
-        | ADDS ->
+        |ADDS ->
             let x = make_op Op.ToInteger x res
             and y = make_op Op.ToInteger y (fun _ _ _ -> mzero) in
             let compute_c = ((x & y) || ((x || y) & !res)) ---> 1 in
@@ -934,6 +934,60 @@ module Make
             let compute_c = ((x & !y) || ((x || !y) & !res)) ---> 1 in
             let compute_v = ((x + y) & (res + x)) ---> 0 in
             Some (compute_nz || compute_c || compute_v)
+
+
+      let mop3 inst v op rd margs ii =
+        let open AArch64Base in
+        margs >>=
+        begin
+          let with_correct_size f arg = f arg >>= mask32 v M.unitT in
+          let do_write_reg v = write_reg_dest rd v ii in
+          let write_reg_no_flags f arg =
+            let without_flags v = M.unitT (v, None) in
+            with_correct_size f arg >>= do_write_reg >>= without_flags in
+          match v with
+          | V128 ->
+             check_morello inst;
+             let tr_op = function
+               | ADD -> Op.CapaAdd
+               | SUB -> Op.CapaSub
+               | SUBS -> Op.CapaSubs
+               | op ->
+                  Warn.fatal
+                    "Operation '%s' is not available in morello mode"
+                    (AArch64.pp_op op) in
+                write_reg_no_flags
+                  (fun (v1,v2) -> M.op (tr_op op) v1 v2)
+          | (V64|V32) ->
+             let get_res (v1,v2) =
+                match op with
+                | ADD | ADDS -> M.add v1 v2
+                | EOR -> M.op Op.Xor v1 v2
+                | EON -> M.op1 Op.Inv v2 >>= M.op Op.Xor v1
+                | ORR -> M.op Op.Or v1 v2
+                | ORN -> M.op1 Op.Inv v2 >>= M.op Op.Or v1
+                | SUB | SUBS -> M.op Op.Sub v1 v2
+                | AND | ANDS -> M.op Op.And v1 v2
+                | ASR -> M.op Op.ASR v1 v2
+                | LSR -> M.op Op.Lsr v1 v2
+                | LSL -> M.op Op.ShiftLeft v1 v2
+                | BIC | BICS -> M.op Op.AndNot2 v1 v2 in
+             match op_set_flags op v with
+              | None -> write_reg_no_flags get_res
+              | Some get_flags ->
+                 let do_write_flags flags = write_reg_dest NZCV flags ii in
+                 let return_flags flags = M.unitT (Some flags) in
+                 let compute_and_write_flags res v1 v2 =
+                   get_flags res v1 v2 >>= do_write_flags >>= return_flags in
+                 fun (v1, v2 as p) ->
+                 with_correct_size get_res p >>= fun res ->
+                 do_write_reg res >>| compute_and_write_flags res v1 v2
+        end
+        >>= fun (v,wo) ->
+        begin match wo with
+        | None -> B.nextSetT rd v
+        | Some w -> M.unitT (B.Next [rd,v; NZCV,w])
+        end
 
 (***************************)
 (* Various lift functions. *)
@@ -1128,23 +1182,76 @@ module Make
 (* Memory instructions *)
 (***********************)
 
-(* compute signed and unsized extension (32 -> 64 bits) *)
-      let sxtw_op = M.op1 (Op.Sxt MachSize.Word)
+      (* Compute shifts, signed and unsigned extension, etc. *)
+      let do_shift op k =
+        match k with
+        | 0 -> M.unitT
+        | _ -> M.op1 op
 
-      and uxtw_op = M.op1 (Op.Mask MachSize.Word)
+      let sxt_op sz =  M.op1 (Op.Sxt sz)
+      and uxt_op sz =  M.op1 (Op.Mask sz)
+      let sxtw_op = sxt_op MachSize.Word
+      and uxtw_op = uxt_op MachSize.Word
+      and lsl_op k = do_shift (Op.LeftShift k) k
+      and lsr_op sz k v =
+        uxt_op sz v >>= do_shift (Op.LogicalRightShift k) k
+      and asr_op sz k v =
+        sxt_op sz v >>= do_shift (Op.ArithRightShift k) k
+
+      let ror_op sz k v =
+        let n = MachSize.nbits sz in
+        let m = k mod n in
+        begin lsr_op sz m v >>| lsl_op (n-m) v end
+        >>= fun (v1,v2) -> M.op Op.Or v1 v2
+
+      let opext_shift sz =
+        let open AArch64Base.OpExt in
+        function
+        | LSL s -> lsl_op s
+        | LSR s -> lsr_op sz s
+        | ASR s -> asr_op sz s
+        | ROR s -> ror_op sz s
+
+      let ext_sext e ko v =
+        let k = match ko with None -> 0 | Some k -> k in
+        lsl_op k v
+        >>=
+          M.op1
+            begin
+              let open AArch64.Ext in
+              let open MachSize in
+              match e with
+              | UXTB -> Op.Mask  Byte
+              | UXTH -> Op.Mask Short
+              | UXTW -> Op.Mask Word
+              | UXTX ->  Op.Mask Quad
+              | SXTB -> Op.Sxt  Byte
+              | SXTH -> Op.Sxt Short
+              | SXTW -> Op.Sxt Word
+              | SXTX ->  Op.Sxt Quad
+            end
 
 (* Apply a shift as monadic op *)
-      let shift s =
+      let shift sz s =
         let open AArch64Base in
         match s with
           | S_NOEXT   -> M.unitT
           | S_LSL(n)
           | S_MSL(n)
-            -> fun x -> M.op (Op.ShiftLeft) x (V.intToV n)
-          | S_LSR(n)  -> fun x -> M.op (Op.ShiftRight) x (V.intToV n)
-          | S_ASR(n)  -> fun x -> M.op (Op.ASR) x (V.intToV n)
-          | S_SXTW -> sxtw_op
-          | S_UXTW -> uxtw_op
+            -> lsl_op n
+          | S_LSR(n)  -> lsr_op sz n
+          | S_ASR(n)  -> asr_op sz n
+
+      let memext_sext sext s v =
+        let open AArch64Base.MemExt in
+        let m_shift = lsl_op s
+        and m_sext =
+          match sext with
+          | UXTW -> uxtw_op
+          | SXTW -> sxtw_op
+          | LSL|SXTX -> M.unitT in
+        m_sext v >>= m_shift
+
 
 (* Complete effective adress computation *)
       let get_ea rs kr s ii =
@@ -1154,19 +1261,28 @@ module Make
             read_reg_ord rs ii
         | K k, s -> (* Immediate with offset, with shift *)
             read_reg_ord rs ii
-            >>= fun v -> shift s (V.intToV k)
+            >>= fun v -> shift MachSize.Quad s (V.intToV k)
             >>= M.add v
         | RV(_,r), S_NOEXT -> (* register, no shift *)
             (read_reg_ord rs ii >>| read_reg_ord r ii)
             >>= fun (v1,v2) -> M.add v2 v1
-        | RV(_,r), s -> (* register, with shift *)
+        | RV(v,r), s -> (* register, with shift *)
             (read_reg_ord rs ii >>| read_reg_ord r ii)
-            >>= fun (v1,v2) -> shift s v2
+            >>= fun (v1,v2) -> shift (tr_variant v) s v2
             >>= fun v2 -> M.add v1 v2
 
       let get_ea_idx rs k ii = get_ea rs (AArch64.K k) AArch64.S_NOEXT ii
 
+      let get_ea_preindexed  rs k ii =
+        get_ea_idx rs k ii >>== fun v -> write_reg_dest rs v ii
+
+      let get_ea_reg rs _v ri sext s ii =
+        let open AArch64Base.MemExt in
+        read_reg_ord rs ii >>| (read_reg_ord ri ii >>= memext_sext sext s)
+        >>= fun (v1,v2) -> M.add v1 v2
+
       let add_size a sz = M.add a (V.intToV (MachSize.nbytes sz))
+
 
       let post_kr rA addr kr ii =
         let open AArch64Base in
@@ -1178,10 +1294,31 @@ module Make
         M.add addr k >>= fun new_addr ->
         write_reg rA new_addr ii
 
-      let ldr sz rd rs kr s ii = (* load *)
-        do_ldr rs sz Annot.N
-          (fun ac a -> do_read_mem sz Annot.N aexp ac rd a ii)
-          (get_ea rs kr s ii) ii
+(* Ordinary loads *)
+      let ldr sz rd rs e ii =
+        let open AArch64Base in
+        let open MemExt in
+        let mop ac a = do_read_mem sz Annot.N aexp ac rd a ii in
+        match e with
+        | Imm (k,Idx) ->
+           do_ldr rs sz Annot.N mop (get_ea_idx rs k ii) ii
+        | Imm (k,PreIdx) ->
+            do_ldr rs sz Annot.N mop (get_ea_preindexed rs k ii) ii
+        | Reg (v,ri,sext,s) ->
+           do_ldr rs sz Annot.N mop (get_ea_reg rs v ri sext s ii) ii
+        | Imm (k,PostIdx) ->
+           (* This case differs signicantly from others,
+            * as update of base address register is part
+            * of the "read memory" monad, which thus departs
+            * from the ordinary `do_read_mem`.
+            *)
+           M.delay_kont "ldr_p"
+             (read_reg_ord rs ii)
+             (fun a_virt ma ->
+               do_ldr rs sz Annot.N
+                 (fun ac a ->
+                   read_mem_postindexed a_virt sz Annot.N aexp ac rd rs k a ii)
+                 ma ii)
 
       module LoadPair
           (Read:
@@ -1292,41 +1429,42 @@ module Make
             read aexp ac rd a ii)
           (read_reg_ord rs ii)  ii
 
-      and ldr_p sz rd rs k ii = (* load post-index *)
-        M.delay_kont "ldr_p"
-          (read_reg_ord rs ii)
-          (fun a_virt ma ->
-            do_ldr rs sz Annot.N
-              (fun ac a ->
-                read_mem_postindexed a_virt sz Annot.N aexp ac rd rs k a ii)
-              ma ii)
-
-      and str sz rs rd kr s ii =
+      let str_simple sz rs rd m_ea ii =
         do_str rd
           (fun ac a _ ii ->
-            M.data_input_next
-              (read_reg_data sz rs ii)
-              (fun v -> do_write_mem sz Annot.N aexp ac a v ii))
+               M.data_input_next
+                 (read_reg_data sz rs ii)
+                 (fun v -> do_write_mem sz Annot.N aexp ac a v ii))
           sz Annot.N
-          (get_ea rd kr s ii)  (M.unitT V.zero) ii
+          m_ea  (M.unitT V.zero) ii
 
-      (* Store - post-indexed write *)
-      and str_post sz rs rd k ii =
-        let m =
-          M.delay_kont "str_post"
-            (read_reg_ord rd ii)
-            (fun a_virt ma ->
-              do_str rd
-                (fun ac a _ ii ->
-                  M.add a_virt (V.intToV k) >>= fun b -> write_reg rd b ii
-             >>|
-                  M.data_input_next
-                   (read_reg_data sz rs ii)
-                   (fun v -> do_write_mem sz Annot.N aexp ac a v ii))
-                sz Annot.N
-                ma (M.unitT V.zero) ii) in
-        if kvm then M.upOneRW (is_this_reg rd) m
-        else m
+      let str sz rs rd e ii =
+        let open AArch64Base in
+        let open MemExt in
+        match e with
+        | Imm (k,Idx) ->
+           str_simple sz rs rd  (get_ea_idx rd k ii)  ii
+        | Imm (k,PostIdx) ->
+           let m =
+             M.delay_kont "str_post"
+               (read_reg_ord rd ii)
+               (fun a_virt ma ->
+                 do_str rd
+                   (fun ac a _ ii ->
+                     M.add a_virt (V.intToV k) >>= fun b -> write_reg rd b ii
+                     >>|
+                     M.data_input_next
+                       (read_reg_data sz rs ii)
+                       (fun v -> do_write_mem sz Annot.N aexp ac a v ii))
+                   sz Annot.N
+                   ma (M.unitT V.zero) ii) in
+           if kvm then M.upOneRW (is_this_reg rd) m
+           else m
+        | Imm (k,PreIdx) ->
+           str_simple sz rs rd (get_ea_preindexed rd k ii) ii
+        | Reg (v,ri,sext,s) ->
+            str_simple sz rs rd (get_ea_reg rd v ri sext s ii) ii
+
 
       let stp_wback =
         let (>>>) = M.data_input_next in
@@ -1338,26 +1476,25 @@ module Make
                 do_str rd
                   (fun ac a _ ii ->
                     (add_if post k a_virt >>=
-                     fun b -> write_reg rd b ii) >>|
+                       fun b -> write_reg rd b ii) >>|
                       let (>>|) =
                         match an with
                         | Annot.L ->
                            assert (not post) ;
                            fun m1 m2 -> M.seq_mem m2 m1
                         | _ -> (>>|) in
-                     ((read_reg_data sz rs1 ii >>> fun v ->
-                       do_write_mem sz an aexp ac a v ii) >>|
-                       (add_size a sz >>= fun a ->
-                         read_reg_data sz rs2 ii >>> fun v ->
-                           do_write_mem sz an aexp ac a v ii)))
+                      ((read_reg_data sz rs1 ii >>> fun v ->
+                        do_write_mem sz an aexp ac a v ii) >>|
+                         (add_size a sz >>= fun a ->
+                          read_reg_data sz rs2 ii >>> fun v ->
+                          do_write_mem sz an aexp ac a v ii)))
                   sz Annot.N
                   ma (M.unitT V.zero)
                   ii >>=
-                fun _ -> add_if post k a_virt >>=
+                  fun _ -> add_if post k a_virt >>=
                   fun a -> M.unitT (B.Next [rd,a])) in
           if kvm then M.upOneRW (is_this_reg rd) m
           else m
-
 
       let stp tnt sz rs1 rs2 rd k md ii =
         let an =
@@ -2006,9 +2143,9 @@ module Make
       let read_loc_instr a ii =
         M.read_loc false (mk_fetch Annot.N) a ii
 
-(*********************)
+(************)
 (* Branches *)
-(*********************)
+(************)
 
       let v2tgt =
         let open Constant in
@@ -2134,35 +2271,29 @@ module Make
               >>= fun () -> M.unitT (B.CondJump (v,tgt2tgt ii l))
 
                       (* Load and Store *)
-        | I_LDR(var,rd,rs,kr,s) ->
+        | I_LDR(var,rd,rs,e) ->
             let sz = tr_variant var in
-            ldr sz rd rs kr s ii
-        | I_LDRBH (bh, rd, rs, kr, s) ->
+            ldr sz rd rs e ii
+        | I_LDRBH (bh, rd, rs, e) ->
             let sz = bh_to_sz bh in
-            ldr sz rd rs kr s ii
+            ldr sz rd rs e ii
         | I_LDRS (v, bh, rd, rs) ->
             let sz = bh_to_sz bh in
             ldrs sz v rd rs (AArch64.K 0) S_NOEXT ii
-        | I_LDR_P(var,rd,rs,k) ->
-            assert (k >= -256 && k <= 255);
-            let sz = tr_variant var in
-            ldr_p sz rd rs k ii
         | I_LDUR(var,rd,rs,k) ->
             let sz = tr_variant var in
-            let k = AArch64.K (match k with Some k -> k | None -> 0) in
-            ldr sz rd rs k AArch64.S_NOEXT ii
+            let k = match k with Some k -> k | None -> 0 in
+            ldr sz rd rs (MemExt.k2idx k) ii
         | I_LDAR(var,t,rd,rs) ->
             let sz = tr_variant var in
             ldar sz t rd rs ii
         | I_LDARBH(bh,t,rd,rs) ->
             let sz = bh_to_sz bh in
             ldar sz t rd rs ii
-        | I_STR(var,rs,rd,kr,os) ->
-            str (tr_variant var) rs rd kr os ii
-        | I_STR_P(var, rs, rd, k) ->
-            str_post (tr_variant var) rs rd k ii
-        | I_STRBH(bh,rs,rd,kr, s) ->
-            str (bh_to_sz bh) rs rd kr s ii
+        | I_STR(var,rs,rd,e) ->
+            str (tr_variant var) rs rd e ii
+        | I_STRBH(bh,rs,rd,e) ->
+            str (bh_to_sz bh) rs rd e ii
         | I_STLR(var,rs,rd) ->
             stlr (tr_variant var) rs rd ii
 
@@ -2516,124 +2647,35 @@ module Make
             >>= fun v -> write_reg_dest rd v ii
             >>= nextSet rd
 
-        | I_OP3(ty,op,rd,rn,kr,os) ->
-            let sz = tr_variant ty in
-            (* Check correctness of shift, and shift if correct *)
-            (* These checks aren't needed, but correctness checks are good! *)
-            (* Besides this seems to be the only place they are checked... *)
-            (* Details can be found in the Arm Arch reference manual *)
-            let check_and_shift op ty s = begin match op, ty, s with
-              (*These patterns could be further merged, but are not for legibility *)
-            | _,V64,S_SXTW ->
-                shift s (* sign extension should always be possible *)
-            | (ADD|ADDS), V32, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 32) ->
-                shift s
-            | (ADD|ADDS), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
-                shift s
-            | (AND|ANDS), V32, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 32) ->
-                shift s (* todo add ROR shift if it occurs*)
-            | (AND|ANDS), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
-                shift s (* todo add ROR shift if it occurs*)
-            | (SUB|SUBS), V32, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 32) ->
-                shift s
-            | (SUB|SUBS), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
-                shift s
-            | (ORR|EOR), V32, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 32) ->
-                shift s (* todo add ROR shift if it occurs*)
-            | (ORR|EOR), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
-                shift s (* todo add ROR shift if it occues*)
-            | _ ->
-                Warn.fatal "Unsupported shift arg %s in %s instruction %s"
-                  (pp_barrel_shift "" s pp_imm)
-                  (pp_variant ty)
-                  (pp_op op)
-            end in
-            (begin match kr with
-            | RV (_,r) when reg_compare r rn = 0 -> (* register variant*)
-                (* Keep sharing here, otherwise performance penalty on address
-                   dependency by r^r in mixed size mode *)
-                read_reg_ord_sz sz rn ii >>= fun v1 ->
-                  (* if present, apply an optional inline barrel shift *)
-                  begin match os with
-                  | S_NOEXT -> M.unitT (v1,v1)
-                  | s ->
-                      check_and_shift op ty s v1
-                      >>= fun v2 -> M.unitT (v1,v2)
-                  end
-            | RV (_,r) -> (* register variant *)
-                (* no sharing, we optionally shift v2 and return the pair *)
-                read_reg_ord_sz sz rn ii  >>| read_reg_ord_sz sz r ii
-                  (* if present, apply an optional inline barrel shift *)
-                  >>= fun (v1,v2) ->
-                    begin match os with
-                    | S_NOEXT -> M.unitT (v1,v2)
-                    | s -> check_and_shift op ty s v2
-                          >>= fun v2 -> M.unitT(v1,v2)
-                    end
-              | K k -> (* immediate  *)
-                  read_reg_ord_sz sz rn ii >>|
-                  begin match os with
-                  | S_NOEXT -> M.unitT (V.intToV k)
-                  | s -> check_and_shift op ty s (V.intToV k)
-                  end
-            end
-            >>=
-            begin
-              let with_correct_size f arg = f arg >>= mask32 ty M.unitT in
-              let do_write_reg v = write_reg_dest rd v ii in
-              let write_reg_no_flags f arg =
-                let without_flags v = M.unitT (v, None) in
-                with_correct_size f arg >>= do_write_reg >>= without_flags
-              in
-              match ty with
-              | V128 ->
-                  check_morello inst;
-                  write_reg_no_flags
-                    (match op with
-                    | ADD -> fun (v1, v2) -> M.op Op.CapaAdd v1 v2
-                    | SUB -> fun (v1, v2) -> M.op Op.CapaSub v1 v2
-                    | SUBS -> fun (v1, v2) -> M.op Op.CapaSubs v1 v2
-                    | _ ->
-                        Warn.fatal
-                          "Operation '%s' is not available in morello mode"
-                          (AArch64.pp_op op))
-              | _ -> (
-                  let get_res =
-                    match op with
-                    | ADD | ADDS -> fun (v1, v2) -> M.add v1 v2
-                    | EOR -> fun (v1, v2) -> M.op Op.Xor v1 v2
-                    | EON ->
-                       fun (v1,v2) ->
-                         M.op1 Op.Inv v2 >>=
-                         fun v2 -> M.op Op.Xor v1 v2
-                    | ORR -> fun (v1, v2) -> M.op Op.Or v1 v2
-                    | ORN -> fun (v1, v2) -> M.op1 Op.Inv v2
-                      >>= fun v2 -> M.op Op.Or v1 v2
-                    | SUB | SUBS -> fun (v1, v2) -> M.op Op.Sub v1 v2
-                    | AND | ANDS -> fun (v1, v2) -> M.op Op.And v1 v2
-                    | ASR -> fun (v1, v2) -> M.op Op.ASR v1 v2
-                    | LSR -> fun (v1, v2) -> M.op Op.Lsr v1 v2
-                    | LSL -> fun (v1, v2) -> M.op Op.ShiftLeft v1 v2
-                    | BIC | BICS -> fun (v1, v2) -> M.op Op.AndNot2 v1 v2
-                  in
-                  match op_set_flags op ty with
-                  | None -> write_reg_no_flags get_res
-                  | Some get_flags ->
-                      let do_write_flags flags = write_reg_dest NZCV flags ii in
-                      let return_flags flags = M.unitT (Some flags) in
-                      let compute_and_write_flags res v1 v2 =
-                        get_flags res v1 v2 >>= do_write_flags >>= return_flags
-                      in
-                      fun (v1, v2) ->
-                        with_correct_size get_res (v1, v2) >>= fun res ->
-                        do_write_reg res >>| compute_and_write_flags res v1 v2)
-            end)
-            >>= fun (v,wo) ->
-            begin match wo with
-            | None -> B.nextSetT rd v
-            | Some w ->
-                M.unitT (B.Next [rd,v; NZCV,w])
-            end
+        | I_OP3(v,op,rd,rn,e) ->
+           let margs =
+             let sz = tr_variant v in
+             let mn = read_reg_ord_sz sz rn ii in
+             begin
+               let open AArch64.OpExt in
+               match e with
+               | Imm (k,s) ->
+                  mn >>| lsl_op s  (V.intToV k)
+               | OpExt.Reg (r,s) when AArch64Base.reg_compare rn r = 0
+                 ->
+                  mn >>= fun v1 -> M.unitT v1 >>| opext_shift sz s v1
+               | Reg (r,s) ->
+                  mn >>|  (read_reg_ord_sz sz r ii >>= opext_shift sz s)
+             end in
+           mop3 inst v op rd  margs ii
+        | I_ADDSUBEXT (v,op,r1,r2,(v3,r3),(e,ko)) ->
+           let op =
+             match op with
+             | Ext.ADD -> ADD
+             | Ext.ADDS -> ADDS
+             | Ext.SUB -> SUB
+             | Ext.SUBS -> SUBS in
+           let sz = tr_variant v in
+           let m2 = read_reg_ord_sz sz r2 ii in
+           let m3 =
+             read_reg_ord_sz (tr_variant v3) r3 ii
+             >>= ext_sext e ko in
+           mop3 inst v op r1 (m2 >>| m3) ii
       (* Barrier *)
         | I_FENCE b ->
             !(create_barrier b ii)

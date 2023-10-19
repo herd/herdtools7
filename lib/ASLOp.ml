@@ -167,9 +167,14 @@ let do_op1 op cst =
       | Constant.Symbolic x ->
           if Misc.list_eq ( = ) positions all_64_bits_positions then
             Some (Constant.Symbolic x)
-          else if positions = [63] then
-            return_concrete (ASLScalar.zeros 1)
-          else None
+          else begin
+          (* MSB of virtual address is assumed null.
+           * This hypothesis is reasonable for user programs,
+           * less so for kernel code. *)
+            match positions with
+            | [63] -> Some (Constant.Concrete ASLScalar.zeros_size_one)
+            | _ -> None
+          end
       | _ -> None)
   | BoolNot -> (
       let open Constant in

@@ -79,7 +79,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     *     B, B.cond, BL, BRK, CBNZ, CBZ, HVC, ISB, NOP, SMC, SVC, TBNZ and TBZ
     * For the other instructions, a concurrent modification and an execution
     * represent a conflict. The list is taken from:
-    *   Arm ARM B2.2.5 "Concurrent modification and execution of instructions" 
+    *   Arm ARM B2.2.5 "Concurrent modification and execution of instructions"
     *)
     let is_cmodx_restricted_instruction = function
     | I_B _| I_BL _| I_CBNZ _| I_CBZ _| I_FENCE ISB | I_NOP | I_TBNZ _| I_TBZ _
@@ -90,19 +90,20 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_EOR_SIMD _| I_ERET| I_FENCE _| I_GC _| I_IC _| I_LD1 _| I_LD1M _| I_LD1R _
     | I_LD2 _| I_LD2M _| I_LD2R _| I_LD3 _| I_LD3M _| I_LD3R _| I_LD4 _| I_LD4M _
     | I_LD4R _| I_LDAR _| I_LDARBH _| I_LDCT _| I_LDG _| I_LDOP _| I_LDOPBH _
-    | I_LDP _| I_LDP_P_SIMD _| I_LDP_SIMD _| I_LDPSW _| I_LDR _| I_LDR_P _| I_LDR_P_SIMD _
+    | I_LDP _| I_LDP_P_SIMD _| I_LDP_SIMD _| I_LDPSW _| I_LDR _| I_LDR_P_SIMD _
     | I_LDR_SIMD _| I_LDRBH _| I_LDRS _| I_LDUR _| I_LDUR_SIMD _| I_LDXP _| I_MOV _
     | I_MOV_FG _| I_MOV_S _| I_MOV_TG _| I_MOV_V _| I_MOV_VE _| I_MOVI_S _
-    | I_MOVI_V _| I_MOVK _| I_MOVZ _| I_MOVN _| I_MRS _| I_MSR _| I_OP3 _| I_RBIT _| I_RET _
+    | I_MOVI_V _| I_MOVK _| I_MOVZ _| I_MOVN _| I_MRS _| I_MSR _| I_OP3 _| I_RBIT _
+    | I_RET _
     | I_SBFM _| I_SC _| I_SEAL _| I_ST1 _| I_ST1M _| I_ST2 _| I_ST2M _| I_ST3 _
     | I_ST3M _| I_ST4 _| I_ST4M _| I_STCT _| I_STG _| I_STLR _| I_STLRBH _| I_STOP _
-    | I_STOPBH _| I_STP _| I_STP_P_SIMD _| I_STP_SIMD _| I_STR _| I_STR_P _
+    | I_STOPBH _| I_STP _| I_STP_P_SIMD _| I_STP_SIMD _| I_STR _
     | I_STR_P_SIMD _| I_STR_SIMD _| I_STRBH _| I_STUR_SIMD _| I_STXP _| I_STXR _
     | I_STXRBH _| I_STZG _| I_SWP _| I_SWPBH _| I_SXTW _| I_TLBI _| I_UBFM _
-    | I_UDF _| I_UNSEAL _
+    | I_UDF _| I_UNSEAL _ | I_ADDSUBEXT _
       -> true
 
-    let is_cmodx_restricted_value = 
+    let is_cmodx_restricted_value =
       let open Constant in
       function
       | V.Val Instruction i -> is_cmodx_restricted_instruction i
@@ -217,10 +218,9 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     let mem_access_size = function
       | I_LDPSW _ -> Some (tr_variant V32)
-      | I_LDR (v,_,_,_,_) | I_LDP (_,v,_,_,_,_,_) | I_LDXP (v,_,_,_,_)
-      | I_LDUR (v,_,_,_)  | I_LDR_P(v,_,_,_)
-      | I_STR (v,_,_,_,_) | I_STLR (v,_,_) | I_STXR (v,_,_,_,_)
-      | I_STR_P (v,_,_,_)
+      | I_LDR (v,_,_,_) | I_LDP (_,v,_,_,_,_,_) | I_LDXP (v,_,_,_,_)
+      | I_LDUR (v,_,_,_)
+      | I_STR (v,_,_,_) | I_STLR (v,_,_) | I_STXR (v,_,_,_,_)
       | I_STP (_,v,_,_,_,_,_) | I_STXP (v,_,_,_,_,_)
       | I_CAS (v,_,_,_,_) | I_CASP (v,_,_,_,_,_,_) | I_SWP (v,_,_,_,_)
       | I_LDOP (_,v,_,_,_,_) | I_STOP (_,v,_,_,_) ->
@@ -241,8 +241,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LD4 (rs,_,_,_) | I_LD4R (rs,_,_) | I_ST4 (rs,_,_,_)
       | I_LD4M (rs,_,_) | I_ST4M (rs,_,_) ->
           Some (simd_mem_access_size rs)
-      | I_LDRBH (v,_,_,_,_) | I_LDARBH (v,_,_,_) | I_LDRS (_,v,_,_)
-      | I_STRBH (v,_,_,_,_) | I_STLRBH (v,_,_) | I_STXRBH (v,_,_,_,_)
+      | I_LDRBH (v,_,_,_) | I_LDARBH (v,_,_,_) | I_LDRS (_,v,_,_)
+      | I_STRBH (v,_,_,_) | I_STLRBH (v,_,_) | I_STXRBH (v,_,_,_,_)
       | I_CASBH (v,_,_,_,_) | I_SWPBH (v,_,_,_,_)
       | I_LDOPBH (_,v,_,_,_,_) | I_STOPBH (_,v,_,_,_) ->
           Some (bh_to_sz v)
@@ -250,7 +250,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_CBNZ (_, _, _)|I_BL _|I_BLR _|I_RET _|I_ERET|I_LDAR (_, _, _, _)
       | I_TBNZ(_,_,_,_) | I_TBZ (_,_,_,_) | I_MOVZ (_,_,_,_) | I_MOVK(_,_,_,_)
       | I_MOVN _
-      | I_MOV (_, _, _)|I_SXTW (_, _)|I_OP3 (_, _, _, _, _, _)
+      | I_MOV (_, _, _)|I_SXTW (_, _)|I_OP3 (_, _, _, _, _)
       | I_ADR (_, _)|I_RBIT (_, _, _)|I_FENCE _
       | I_SBFM (_,_,_,_,_) | I_UBFM (_,_,_,_,_)
       | I_CSEL (_, _, _, _, _, _)|I_IC (_, _)|I_DC (_, _)|I_MRS (_, _)|I_MSR (_, _)
@@ -263,7 +263,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MOV_V _ | I_MOV_VE _ | I_MOV_S _ | I_MOV_TG _ | I_MOV_FG _
       | I_MOVI_S _ | I_MOVI_V _
       | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
-      | I_UDF _
+      | I_UDF _ | I_ADDSUBEXT _
           -> None
 
     let all_regs =
@@ -281,6 +281,9 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
           killed_idx ra idx [r1; r2;]
       | I_STP (_,_,_,_,ra,_,idx) ->
           killed_idx ra idx []
+      | I_STR (_,_,r,MemExt.Imm (_,(PreIdx|PostIdx)))
+      | I_STRBH (_,_,r,MemExt.Imm (_,(PreIdx|PostIdx)))
+        -> [r;]
       | I_B _| I_BR _
       | I_BC _ | I_CBZ _ | I_CBNZ _
       | I_STR _ | I_STLR _
@@ -291,7 +294,10 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_NOP|I_TBZ _|I_TBNZ _
       | I_BL _ | I_BLR _ | I_RET _ | I_ERET | I_UDF _
         -> [] (* For -variant self only ? *)
-      | I_LDR (_,r,_,_,_)|I_LDRBH (_,r,_,_,_)
+      | I_LDR (_,r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
+      | I_LDRBH (_,r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
+        -> [r1;r2;]
+      | I_LDR (_,r,_,_)|I_LDRBH (_,r,_,_)
       | I_LDRS (_,_,r,_)
       | I_LDUR (_,r,_,_)
       | I_LDAR (_,_,r,_) |I_LDARBH (_,_,r,_)
@@ -301,17 +307,16 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDOP (_,_,_,_,r,_) | I_LDOPBH (_,_,_,_,r,_)
       | I_MOV (_,r,_) | I_MOVZ (_,r,_,_) | I_MOVN (_,r,_,_) | I_MOVK (_,r,_,_)
       | I_SXTW (r,_)
-      | I_OP3 (_,_,r,_,_,_)
+      | I_OP3 (_,_,r,_,_)
       | I_ADR (r,_)
       | I_RBIT (_,r,_)
       | I_CSEL (_,r,_,_,_,_)
       | I_MRS (r,_)
-      | I_STR_P (_,_,r,_)
       | I_UBFM (_,r,_,_,_) | I_SBFM (_,r,_,_,_)
+      | I_ADDSUBEXT (_,_,r,_,_,_)
         -> [r]
       | I_MSR (sr,_)
         -> [(SysReg sr)]
-      | I_LDR_P (_,r1,r2,_)
       | I_LDXP (_,_,r1,r2,_)
         -> [r1;r2;]
       | I_LD1 _|I_LD1M _|I_LD1R _|I_LD2 _
@@ -359,8 +364,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MOV_V _|I_MOV_TG _|I_MOV_FG _
       | I_MOV_S _|I_MOVI_V _|I_MOVI_S _
       | I_EOR_SIMD _|I_ADD_SIMD _|I_ADD_SIMD_S _
-      | I_LDR_P _|I_LDP _|I_LDPSW _|I_STP _
-      | I_STR_P _
+      | I_LDP _|I_LDPSW _|I_STP _
       | I_STR _|I_STLR _|I_ALIGND _|I_ALIGNU _
       | I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
       | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _
@@ -374,6 +378,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_OP3 _|I_ADR _|I_RBIT _|I_FENCE _
       | I_CSEL _|I_IC _|I_DC _|I_TLBI _|I_MRS _|I_MSR _
       | I_STG _|I_STZG _|I_LDG _|I_UDF _
+      | I_ADDSUBEXT _
         -> MachSize.No
 
     include ArchExtra_herd.Make(C)
