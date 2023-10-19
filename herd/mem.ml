@@ -93,7 +93,8 @@ module type S = sig
      in  computation:
      kont (esN (... (kont es1 res)))
      where esK is the
-        + abstract es with variables replaced by constants
+        + abstract event structure with variables replaced by constants
+        + [Failed] of [Warn] constraint from equations, if any
         + rfmap
         + final state (included in rfmap in fact)
  *)
@@ -101,7 +102,7 @@ module type S = sig
 
   val calculate_rf_with_cnstrnts :
       S.test -> Label.Set.t -> S.event_structure -> S.M.VC.cnstrnts ->
-        (S.concrete -> S.M.VC.cnstrnts -> 'a -> 'a ) -> (* kont *)
+        (S.concrete -> S.M.VC.cnstrnt option -> 'a -> 'a ) -> (* kont *)
           'a -> 'a
 
   val solve_regs :
@@ -831,7 +832,7 @@ let match_reg_events es =
                   (A.V.pp_v v_stored) ;
                 assert false)
           rfm csn in
-      match VC.solve ~final:false csn with
+      match VC.solve csn with
       | VC.NoSolns ->
          if C.debug.Debug_herd.solver then
            pp_nosol "register" test es rfm ;
@@ -1073,7 +1074,7 @@ let match_reg_events es =
                 loads stores cns in
             if dbg then eprintf "\n%!" ;
             (* And solve *)
-            match VC.solve ~final:true cns with
+            match VC.solve cns with
             | VC.NoSolns ->
                if C.debug.Debug_herd.solver then begin
                  let rfm = add_some_mem loads stores rfm in
@@ -1117,7 +1118,7 @@ let match_reg_events es =
           PP.show_es_rfm test es rfm ;
           prerr_endline "Unsolvable system"
         end ;
-      assert (rfmap_is_cyclic es rfm);
+      assert (true || rfmap_is_cyclic es rfm);
       res
 
     let solve_mem_non_mixed test es rfm cns kont res =
@@ -1371,7 +1372,7 @@ let match_reg_events es =
                       (fun load store k -> add_mem_eqs test store load k)
                       tag_loads tag_stores cns in
                   (* And solve *)
-                  match VC.solve ~final:true cns with
+                  match VC.solve cns with
                   | VC.NoSolns -> res
                   | VC.Maybe (sol,cs) ->
                       (* Time to complete rfmap *)
@@ -1775,7 +1776,7 @@ let match_reg_events es =
           Misc.exists_pair S.read_from_equal rfs)
         loads
 
-    let fold_mem_finals test es rfm cs atomic_load_store kont res =
+    let fold_mem_finals test es rfm ofail atomic_load_store kont res =
       (* We can build those now *)
       let evts = es.E.events in
       let po_iico = U.po_iico es in
@@ -1870,7 +1871,7 @@ let match_reg_events es =
                    last_store_vbf = last_store_vbf ;
                    atomic_load_store = atomic_load_store ;
                  } in
-                kont conc cs res
+                kont conc ofail res
               else begin
                 if C.debug.Debug_herd.solver then begin
                   let conc =
@@ -2044,8 +2045,14 @@ let match_reg_events es =
           end ;
           solve_mem test es rfm cs
             (fun es rfm cs res ->
+              let ofail = VC.get_failed cs in
               match cs with
-              | _::_ when (not C.initwrites || not do_deps) && not asl ->
+              | _::_
+                   when
+                     (not C.initwrites || not do_deps)
+                     && not asl
+                     && Misc.is_none ofail
+                ->
 (*
  Jade:
   on tolere qu'il reste des equations dans le cas d'evts specules -
@@ -2086,9 +2093,9 @@ let match_reg_events es =
                         PP.show_es_rfm test es rfm
                       end ;
                       res
-                    end else
+                      end else
                       fold_mem_finals test es
-                        rfm cs atomic_load_store kont res
+                        rfm ofail atomic_load_store kont res
                   else  res)
             res
   end

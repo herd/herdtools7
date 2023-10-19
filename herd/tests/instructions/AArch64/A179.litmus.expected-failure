@@ -1,1 +1,1 @@
-Warning: File "./herd/tests/instructions/AArch64/A179.litmus": Illegal operation mask32 on x (User error)
+Warning: File "./herd/tests/instructions/AArch64/A179.litmus": Illegal operation mask32 on p (User error)

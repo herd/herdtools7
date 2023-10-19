@@ -58,8 +58,10 @@ module type S = sig
 
   val pp_answer : answer -> string
 
-(* Argument `final` characterises the last call to solver: delayed exception are raised *)
-  val solve : final:bool -> cnstrnt list -> answer
+(* Extract delayed exception, if present, or warning, if present. *)
+  val get_failed :  cnstrnts -> cnstrnt option
+
+  val solve : cnstrnt list -> answer
 end
 
 module type Config = sig
@@ -378,15 +380,14 @@ let solve_cnstrnts =
 (* Raise exceptions now *)
 (************************)
 
-let check_failed cns =
-  List.iter
-    (function
-     | Failed e -> raise e
-     | Warn e ->
-        Warn.warn_always "%s, legal outcomes may be missing" e;
-        raise Contradiction
-     | Assign _ -> ())
-  cns
+let get_failed cns =
+  List.fold_left
+    (fun r cn ->
+      match cn,r with
+      | Failed _,_ -> Some cn
+      | Warn _,None -> Some cn
+      | (Assign _,_)|(Warn _,Some _) -> r)
+    None cns
 
 (*******************************)
 (* Iterate basic solving steps *)
@@ -419,7 +420,7 @@ let check_failed cns =
         m
         (V.Solution.map (fun x -> V.Val x) solns0)
 
-    let solve ~final lst =
+    let solve lst =
       if C.debug then begin
         prerr_endline "** Solve **" ;
         eprintf "%s\n" (pp_cnstrnts lst) ; flush stderr
@@ -428,7 +429,6 @@ let check_failed cns =
       let sol =
         try
           let solns,lst = solve_step lst V.Solution.empty in
-          if final then check_failed lst ;
           let solns = add_vars_solns m solns in
           Maybe (solns,lst)
         with Contradiction -> NoSolns in
