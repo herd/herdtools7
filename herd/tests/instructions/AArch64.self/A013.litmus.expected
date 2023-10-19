@@ -4,7 +4,6 @@ States 1
 Ok
 Witnesses
 Positive: 2 Negative: 0
-Flag Assuming-no-two-modified-instructions-are-on-the-same-cache-line
 Condition forall (true)
 Observation A013 Always 2 0
 Hash=2709172bb2cddf652d30338fd2804dea

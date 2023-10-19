@@ -5,7 +5,6 @@ States 2
 Ok
 Witnesses
 Positive: 1 Negative: 1
-Flag Assuming-no-two-modified-instructions-are-on-the-same-cache-line
 Condition exists (0:X9=0)
 Observation A016 Sometimes 1 1
 Hash=4030de5673678c66761560ccadc0ba40
