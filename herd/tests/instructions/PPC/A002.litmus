@@ -1,0 +1,20 @@
+PPC A002
+
+(* test hwsync instr *)
+(*****************************************************************)
+(* Compiler:                                                     *)
+(* clang-11 -c -g -O3 -pthread --std=c11 --target=powerpc-linux-gnu*)
+(*****************************************************************)
+{ [P0_r0]=0;[P1_r0]=0;[x]=0;[y]=0;uint64_t %P0_P0_r0=P0_r0;uint64_t %P0_x=x;uint64_t %P0_y=y;uint64_t %P1_P1_r0=P1_r0;uint64_t %P1_x=x;uint64_t %P1_y=y }
+
+  P0                    |  P1                    ;
+   li r4,1              |   li r4,1              ;
+   stw r4,0(%P0_x)      |   stw r4,0(%P1_y)      ;
+   hwsync               |   hwsync               ;
+   lwz r3,0(%P0_y)      |   lwz r3,0(%P1_x)      ;
+   stw r3,0(%P0_P0_r0)  |   stw r3,0(%P1_P1_r0)  ;
+
+
+exists (P0_r0=0 /\ P1_r0=0)
+
+

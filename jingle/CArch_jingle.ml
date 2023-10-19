@@ -104,8 +104,10 @@ include Arch.MakeArch(struct
     end
     | DeclReg (_t,r),DeclReg(_t',r') (* when t = t' *) ->
         add_subs [Reg (sr_name r,r')] subs
-    | StoreReg (_ot,r,ex),StoreReg(_ot',r',ex') (* when ot = ot' *) ->
+    | StoreReg (_ot,Some r,ex),StoreReg(_ot',Some r',ex') (* when ot = ot' *) ->
         add_subs [Reg (sr_name r,r')] subs >>> fun subs ->
+        match_expr subs ex ex'
+    | StoreReg (_ot,None,ex),StoreReg(_ot',None,ex') (* when ot = ot' *) ->
         match_expr subs ex ex'
     | StoreMem(l,ex,mo),StoreMem(l',ex',mo') when mo=mo' ->
         match_location subs l l' >>> fun subs ->
@@ -151,7 +153,10 @@ include Arch.MakeArch(struct
 
     let rec expl_expr = let open Constant in function
       | Const(Symbolic (Virtual {name=s;_})) -> find_cst s >! fun k -> Const k
-      | Const(Concrete _|ConcreteVector _|Label _|Tag _|Symbolic _|PteVal _|Instruction _)
+      | Const
+          (Concrete _|ConcreteVector _|Label _|ConcreteRecord _
+           |Tag _|Symbolic _|PteVal _
+           |Instruction _|Frozen _)
         as e -> unitT e
       | LoadReg r -> conv_reg r >! fun r -> LoadReg r
       | LoadMem (loc,mo) -> expl_expr loc >! fun loc -> LoadMem (loc,mo)
@@ -207,10 +212,13 @@ include Arch.MakeArch(struct
           While (c,t,n)
       | CastExpr e ->
           expl_expr e >! fun e -> CastExpr e
-      | StoreReg(ot,r,e) ->
+      | StoreReg(ot,Some r,e) ->
           conv_reg r >> fun r ->
           expl_expr e >! fun e ->
-          StoreReg (ot,r,e)
+          StoreReg (ot,Some r,e)
+      | StoreReg(ot,None,e) ->
+          expl_expr e >! fun e ->
+          StoreReg (ot,None,e)
       | StoreMem(loc,e,mo) ->
           expl_expr loc >> fun loc ->
           expl_expr e >! fun e ->

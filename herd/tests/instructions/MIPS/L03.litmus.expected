@@ -1,0 +1,10 @@
+Test L03 Required
+States 1
+0:$3=-1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:$3=-1)
+Observation L03 Always 1 0
+Hash=03786784e438a0ca487e35071fb1d761
+

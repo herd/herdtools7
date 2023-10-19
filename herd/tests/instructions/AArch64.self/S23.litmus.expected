@@ -1,0 +1,13 @@
+Test S23 Required
+States 2
+t={1,3};
+t={3,2};
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Flag Assuming-no-two-modified-instructions-are-on-the-same-cache-line
+Flag violates-CMODX-requirements
+Condition forall (true)
+Observation S23 Always 2 0
+Hash=b5828ee8a20d1f9c72c22257755f5515
+

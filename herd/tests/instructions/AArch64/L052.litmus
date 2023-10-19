@@ -1,0 +1,9 @@
+AArch64 L052
+{
+0:X0=x;
+int64_t 0:X1=4;
+}
+  P0           ;
+ ADD X0,X0,#4  ;
+ SUB X0,X0,X1  ;
+forall 0:X0=x;

@@ -1,0 +1,10 @@
+Test A207 Required
+States 1
+0:X3=0; 0:X4=1; 0:X5=1; 0:X6=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X3=0 /\ 0:X4=1 /\ 0:X5=1 /\ 0:X6=0)
+Observation A207 Always 1 0
+Hash=70803363e18a67fafe6158e3965d55c0
+

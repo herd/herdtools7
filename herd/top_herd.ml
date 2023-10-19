@@ -34,6 +34,7 @@ module type CommonConfig = sig
   include Mem.CommonConfig
   val statelessrc11 : bool
   val skipchecks : StringSet.t
+  val dumpallfaults : bool
 end
 
 module type Config = sig
@@ -172,14 +173,18 @@ module Make(O:Config)(M:XXXMem.S) =
     let open_dot test =
       match O.outputdir with
       | PrettyConf.NoOutputdir ->
-          if S.O.PC.gv || S.O.PC.evince then
+         begin
+           match S.O.PC.view with
+           | Some _ ->
             begin try
               let f,chan = Filename.open_temp_file "herd" ".dot" in
               Some (chan,f)
             with  Sys_error msg ->
               W.warn "Cannot create temporary file: %s" msg ;
               None
-            end else None
+            end
+           | None -> None
+         end
       | PrettyConf.StdoutOutput ->
          let fname = Test_herd.basename test in
          fprintf stdout "\nDOTBEGIN %s\n" fname;
@@ -231,7 +236,7 @@ module Make(O:Config)(M:XXXMem.S) =
 
       let check = check_prop test in
 
-      fun conc fsc (set_pp,vbpp) flags c ->
+      fun conc (st,flts) (set_pp,vbpp) flags c ->
         if not showtoofar && S.gone_toofar conc then
           { c with toofar = true; }
         else if do_observed && not (all_observed test conc) then c
@@ -241,6 +246,8 @@ module Make(O:Config)(M:XXXMem.S) =
           | Some flag -> not (Flag.Set.mem (Flag.Flag flag) flags)
         then c
         else
+          let st = A.map_state A.V.printable st in
+          let fsc = st,flts in
           let ok = check fsc in
           let show_exec =
             let open PrettyConf in
@@ -351,12 +358,17 @@ module Make(O:Config)(M:XXXMem.S) =
       let cstr = T.find_our_constraint test in
 
       let restrict_faults =
-        if memtag || morello || kvm then
+        if !Opts.dumpallfaults then
+          Fun.id
+        else if A.FaultAtomSet.is_empty test.Test_herd.ffaults then
+          fun _ -> A.FaultSet.empty
+        else
           A.FaultSet.filter
             (fun flt ->
               A.FaultAtomSet.exists
-                (fun ((p,lab),loc,_ftype) -> A.check_one_fatom flt ((p,lab),loc,None)) test.Test_herd.ffaults)
-        else fun _ -> A.FaultSet.empty in
+                (fun ((p,lab),loc,ftype) ->
+                  A.check_one_fatom flt ((p,lab),loc,ftype))
+                test.Test_herd.ffaults) in
 
       let final_state_restrict_locs test fsc =
         let dlocs = S.displayed_rlocations test
@@ -380,7 +392,7 @@ module Make(O:Config)(M:XXXMem.S) =
               (fun (_i,_cs,es) -> PP.dump_es chan test es)
               rfms ;
             close_dot ochan ;
-            if S.O.PC.gv || S.O.PC.evince then begin
+            if Misc.is_some S.O.PC.view then begin
               let module SH = Show.Make(S.O.PC) in
               SH.show_file fname
             end ;
@@ -391,7 +403,7 @@ module Make(O:Config)(M:XXXMem.S) =
            apply their internal functors once *)
         let check_test =
             M.check_event_structure test in
-        let call_model conc =
+        let call_model conc _cs =
           check_test
             conc kfail
             (model_kont ochan test final_state_restrict_locs cstr) in

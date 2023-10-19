@@ -1,0 +1,17 @@
+AArch64 L054
+{
+uint32_t 0:X0=0xE;
+uint32_t 0:X1;
+uint32_t 0:X2;
+uint64_t 0:X3=0xE;
+uint64_t 0:X4;
+uint64_t 0:X5;
+}
+    P0           ;
+UBFM W1,W0,#0,#2 ;
+SBFM W2,W1,#0,#2 ;
+UBFM X4,X3,#0,#2 ;
+SBFM X5,X4,#0,#2 ;
+
+forall 0:X1=0x6 /\ 0:X2=0xfffffffe
+/\ 0:X4=0x6 /\ 0:X5=0xfffffffffffffffe

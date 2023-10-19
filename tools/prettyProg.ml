@@ -261,7 +261,7 @@ module Make(O:Config)(A:Arch_tools.S) =
 
     let pp_initial_state_flat sc =
       let non_zero_constraints =
-        Misc.option_map
+        List.filter_map
 	  (fun (l,(_,v))->
             if is_zero v then None
             else

@@ -64,6 +64,7 @@ module Insert (O:InsertConfig) :
     sig
       val insert : (string -> unit) -> string -> unit
       val exists : string -> bool
+      val insert_when_exists : (string -> unit) -> string -> unit
       val copy : string -> (string -> string) -> unit
     end =
   struct
@@ -80,25 +81,31 @@ module Insert (O:InsertConfig) :
 
     let find_lib src =
       let n1 = Filename.concat dir src in
-      try MyName.open_lib n1
+      try
+        let _,chan = MyName.open_lib n1 in
+        chan
       with Misc.Fatal _ ->
         Warn.fatal "Cannot find lib file %s" src
 
     let insert out src =
-      let _,in_chan = find_lib src in
-      let out = add_no_header src out  in
-      MySys.cat_chan in_chan out ;
-      close_in in_chan
+      Misc.input_protect_gen find_lib
+        (fun in_chan ->
+         let out = add_no_header src out  in
+         MySys.cat_chan in_chan out)
+        src
 
     let exists src =
       try
-        let _,in_chan = find_lib src in
+        let in_chan = find_lib src in
         begin try close_in in_chan with _ -> () end ;
         true
       with Misc.Fatal _ -> false
 
+    let insert_when_exists out src =
+      if exists src then insert out src
+
     let copy fname outname =
-      let _,in_chan = find_lib fname in
+      let in_chan = find_lib fname in
       begin try
         MySys.cp in_chan (outname fname)
       with e ->
@@ -156,7 +163,11 @@ module Make(O:Config)(Tar:Tar.S) =
 (* Copy from platform subdirectory *)
     let cpy_platform fnames name ext =
       let name = sprintf "platform_%s" name in
-      do_cpy fnames (Filename.concat O.platform name) name ext
+      let platform =
+        match O.mode with
+        | Mode.Kvm -> "_kvm" ^ O.platform
+        | Mode.PreSi|Mode.Std -> O.platform in
+      do_cpy fnames (Filename.concat platform name) name ext
 
     let affinity_base () = match O.targetos with
     | Linux|FreeBsd -> "_linux_affinity"
@@ -185,14 +196,12 @@ module Make(O:Config)(Tar:Tar.S) =
               cpy' fnames "showLabel" "show" ".awk"
             else
               cpy fnames "show" ".awk"
-        | `CPP|`LISA | `JAVA -> Warn.fatal "no support for arch '%s'" (Archs.pp O.arch)
+        | `CPP|`LISA | `JAVA | `ASL -> Warn.fatal "no support for arch '%s'" (Archs.pp O.arch)
       in
-      let fnames = match O.mode with
-      | Mode.Kvm -> fnames
-      | Mode.PreSi|Mode.Std ->
-          let fnames = cpy fnames "litmus_rand" ".c" in
-          let fnames = cpy fnames "litmus_rand" ".h" in
-          fnames in
+      let fnames =
+        let fnames = cpy fnames "litmus_rand" ".c" in
+        let fnames = cpy fnames "litmus_rand" ".h" in
+        fnames in
       let fnames =
         if O.stdio then fnames
         else

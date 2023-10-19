@@ -43,7 +43,9 @@ module Make
     (P:sig type code end)
     (A:Arch_litmus.Base)
     (MemType:MemoryType.S)
-    (T:Test_litmus.S with type P.code = P.code and module A = A and module FaultType = A.FaultType)
+    (T:Test_litmus.S with
+     type instruction = A.instruction and
+     type P.code = P.code and module A = A and module FaultType = A.FaultType)
     (O:Indent.S)
     (Lang:Language.S
     with type arch_reg = T.A.reg and type t = A.Out.t
@@ -81,6 +83,9 @@ module Make
       let exit_cond = false
       let have_fault_handler = false
       let do_stats = false
+      let sysarch = Cfg.sysarch
+      let c11 = false
+      let variant _ = false (* No variant (yet ?) *)
     end
 
     module U = SkelUtil.Make(UCfg)(P)(A)(T)
@@ -329,12 +334,15 @@ module Make
           let pp_vs = List.map dump_a_v vs in
           sprintf "{%s}" (String.concat "," pp_vs) (* list initializer syntax *)
       | Symbolic (Virtual {name=s;tag=None;cap=0L;offset=0;_})-> dump_a_addr s
+      | ConcreteRecord _ ->
+          Warn.user_error "No record value for klitmus"
       | Label _ ->
           Warn.user_error "No label value for klitmus"
       | Symbolic _|Tag _| PteVal _ ->
           Warn.user_error "No tag, indexed access, nor pteval for klitmus"
       | Instruction _ ->
           Warn.fatal "FIXME: dump_a_v functionality for -variant self"
+      | Frozen _ -> assert false
 
     let is_align_effective mts env s =
       U.is_aligned s env && Misc.is_none (Misc.Simple.assoc_opt s mts)

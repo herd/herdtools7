@@ -1,0 +1,17 @@
+AArch64 A229
+{
+uint32_t 0:X0=0xF;
+uint32_t 0:X1;
+uint32_t 0:X2;
+uint64_t 0:X3=0xF;
+uint64_t 0:X4;
+uint64_t 0:X5;
+}
+    P0           ;
+UBFM W1,W0,#0,#0 ;
+SBFM W2,W1,#0,#0 ;
+UBFM X4,X3,#0,#0 ;
+SBFM X5,X4,#0,#0 ;
+
+forall 0:X1=0x1 /\ 0:X2=0xffffffff
+/\ 0:X4=0x1 /\ 0:X5=0xffffffffffffffff

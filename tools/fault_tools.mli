@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type t = (Proc.t * string option) * string * string option
+type t = (Proc.t * string option) * string option * string option
 
 val equal_ft : string option -> string option -> bool
 val equal : t -> t -> bool

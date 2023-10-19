@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type t =
+type 'op1 t =
   | AF (* get AF from PTE entry *)
   | SetAF (* set AF to 1 in PTE entry *)
   | DB (* get DB from PTE entry *)
@@ -23,13 +23,28 @@ type t =
   | Valid (* get Valid bit from PTE entry *)
   | EL0 (* get EL0 bit from PTE entry *)
   | OA (* get OA from PTE entry *)
+  | Extra of 'op1
 
-module Make(S:Scalar.S) =
-  struct
+module
+   Make
+     (S:Scalar.S)
+     (Extra:ArchOp.S with type scalar = S.t) : ArchOp.S
+   with type op = Extra.op
+    and type extra_op1 = Extra.op1
+    and type 'a constr_op1 = 'a t
+    and type scalar = S.t
+    and type pteval = AArch64PteVal.t
+    and type instr = AArch64Base.instruction
+  = struct
 
-    type op1 = t
+    type op = Extra.op
+    type extra_op1 = Extra.op1
+    type 'a constr_op1 = 'a t
+    type op1 = extra_op1 constr_op1
 
-    let pp_op1 _hexa = function
+    let pp_op = Extra.pp_op
+
+    let pp_op1 hexa = function
       | AF -> "AF"
       | SetAF -> "SetAF"
       | DB -> "DB"
@@ -38,7 +53,7 @@ module Make(S:Scalar.S) =
       | Valid -> "Valid"
       | EL0 -> "EL0"
       | OA -> "OA"
-
+      | Extra op1 -> Extra.pp_op1 hexa op1
 
     type scalar = S.t
     type pteval = AArch64PteVal.t
@@ -84,6 +99,18 @@ module Make(S:Scalar.S) =
       | PteVal {oa;_} -> Some (Symbolic (oa2symbol oa))
       | _ -> None
 
+    let exit _ = raise Exit
+    let toExtra cst = Constant.map Misc.identity exit exit cst
+    and fromExtra cst = Constant.map Misc.identity exit exit cst
+
+    let do_op op c1 c2 =
+      try
+        match Extra.do_op op (toExtra c1) (toExtra c2) with
+        | None -> None
+        | Some cst -> Some (fromExtra cst)
+      with Exit -> None
+
+
     let do_op1 = function
       | AF -> getaf
       | SetAF -> setaf
@@ -93,6 +120,14 @@ module Make(S:Scalar.S) =
       | Valid -> getvalid
       | EL0 -> getel0
       | OA -> getoa
+      | Extra op1 ->
+         fun cst ->
+           try
+             match Extra.do_op1 op1 (toExtra cst) with
+             | None -> None
+             | Some cst -> Some (fromExtra cst)
+           with Exit -> None
+
 
     let shift_address_right s c =
       let open Constant in

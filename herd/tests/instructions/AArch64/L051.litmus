@@ -1,0 +1,16 @@
+AArch64 N0
+(* ADR instruction constant only *)
+{
+}
+  P0           ; 
+  ADR X1,L0    ; 
+  BLR X1       ;
+  BLR X1       ;
+  LDR W2,[X1]  ;
+  B L1         ;
+L0:            ;
+  ADD W0,W0,#1 ;
+  RET          ;
+L1:            ;
+locations [0:X2 ins_t;]
+forall (0:X0=2)

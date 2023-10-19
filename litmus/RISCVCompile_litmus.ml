@@ -21,10 +21,12 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
     open A.Out
     open Printf
 
-    let is_ret _ = assert false
+    let is_ret _ = false
     and is_nop = function
       | A.INop -> true
       | _ -> false
+
+    let branch lbl = J lbl
 
 (* No addresses in code *)
     let extract_addrs _ins = Global_litmus.Set.empty
@@ -58,6 +60,18 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
         memo = sprintf "%s %s,%s,%i" memo fmt1 fmt2 k ;
         inputs=r2; outputs=r1; }
 
+    let lui r1 k =
+      let fmt1,r1 = tr_1o r1 in
+      { empty_ins with
+        memo = sprintf "lui %s,%i" fmt1 k ;
+        outputs=r1; }
+
+    let op1regsA memo r1 lbl =
+      let fmt1,r1 = tr_1o r1 in
+      { empty_ins with
+        memo = sprintf "%s %s,%s" memo fmt1 lbl ;
+        inputs=[]; outputs=r1; }
+
     let op3regs memo r1 r2 r3 =
       let fmt1,r1 = tr_1o r1
       and fmt2,fmt3,r2r3 = tr_2i r2 r3 in
@@ -65,20 +79,34 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
         memo = sprintf "%s %s,%s,%s" memo fmt1 fmt2 fmt3;
         inputs=r2r3; outputs=r1; }
 
+    let ext memo r1 r2 =
+      let fmt1,r1 = tr_1o r1
+      and fmt2,r2 = tr_1i r2 in
+      { empty_ins with
+        memo = sprintf "%s %s,%s" memo fmt1 fmt2 ;
+        inputs=r2; outputs=r1; }
+
     let emit_loop _ins = assert false
 
     include Handler.No(struct type ins = A.Out.ins end)
 
     let compile_ins tr_lab ins k = match ins with
     | A.INop -> { empty_ins with memo="nop"; }::k
+    | A.Ret -> { empty_ins with memo="ret"; }::k
+    | A.OpI2 (A.LUI,r1,i) ->
+        lui r1 i::k
     | A.OpI (op,r1,r2,i) ->
         op2regsI (A.pp_opi op) r1 r2 i::k
+    | A.OpA (op,r1,lbl) ->
+        op1regsA (A.pp_opa op) r1 lbl::k
     | OpIW (op,r1,r2,i) ->
         op2regsI (A.pp_opiw op) r1 r2 i::k
     | Op (op,r1,r2,r3) ->
         op3regs (A.pp_op op) r1 r2 r3::k
     | OpW (op,r1,r2,r3) ->
         op3regs (A.pp_opw op) r1 r2 r3::k
+    | Ext (_,_,r1,r2) ->
+        ext "sext.w" r1 r2::k
     | J lbl ->
         { empty_ins with
           memo = sprintf "j %s" (A.Out.dump_label (tr_lab lbl));
@@ -112,6 +140,7 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
       { empty_ins with
         memo =  sprintf "%s %s,%s,0(%s)" (A.pp_sc w mo) fmt1 fmt2 fmt3;
         outputs=r1; inputs=r2r3; }::k
+  | AUIPC (_,_) -> Warn.fatal "auipc not Supported in litmus"
   | Amo (op,w,mo,r1,r2,r3) ->
       let fmt1,r1 = tr_1o r1
       and fmt2,fmt3,r2r3 = tr_2i r2 r3 in

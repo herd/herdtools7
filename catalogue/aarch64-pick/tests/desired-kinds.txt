@@ -54,3 +54,5 @@ T15-corrected             Forbid
 T15-datadep-corrected     Forbid
 LB+rel+pick-by-csel       Forbid
 LB+rel+CSEL-CSEL          Forbid
+LB-swp-rel                Allow
+LB-ldxr-stxr-rel          Allow

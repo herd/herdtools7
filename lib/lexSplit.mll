@@ -21,7 +21,7 @@ exception Error
 let blank = [' ''\n''\r''\t']
 let non_blank = [^' ''\n''\r''\t']
 let digit = ['0'-'9']
-let printable = ['0'-'9''a'-'z''A'-'Z'':']
+let printable = [^' ''\n''\r''\t'',']
 rule main = parse
 | ',' | blank+  { main lexbuf }
 | digit+ as lxm { int_of_string lxm :: main lexbuf }
@@ -45,12 +45,51 @@ and words = parse
 | non_blank+ as w { w::words lexbuf }
 | eof { [] }
 
+and parse_array buff d = parse
+| '{'
+    {
+     Buffer.add_char buff '{' ;
+     parse_array buff (d+1) lexbuf
+   }
+| '}'
+    {
+     Buffer.add_char buff '}' ;
+     if d <= 0 then Buffer.contents buff
+     else parse_array buff (d-1) lexbuf
+   }
+| _ as c
+    {
+     Buffer.add_char buff c ;
+     parse_array buff d lexbuf
+   }
+| "" { raise Error }
+
+and array_elements = parse
+| blank* ',' blank* { array_elements lexbuf }
+| [^',''}']+ as lxm blank* { lxm :: array_elements lexbuf }
+| blank* '}' { [] }
+| '{'
+    {
+     let buff = Buffer.create 16 in
+     Buffer.add_char buff '{' ;
+     let elt = parse_array buff 0 lexbuf  in
+     elt :: array_elements lexbuf
+   }
+| ""  { raise Error }
+
+and split_array = parse
+| '{' { array_elements lexbuf }
+| ""  { raise Error }
 {
 
 let ints s = main (Lexing.from_string s)
 let strings s = strings (Lexing.from_string s)
 let strings_spaces s = strings_spaces (Lexing.from_string s)
 let words s = words (Lexing.from_string s)
+let split_array s =
+  try Lexing.from_string s |> split_array
+  with Error ->
+    Warn.fatal "Bad array syntax: %s\n" s
 
 let pp_ints xs = String.concat "," (List.map string_of_int xs)
 

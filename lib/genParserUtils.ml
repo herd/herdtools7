@@ -80,7 +80,8 @@ let call_parser name lexbuf lex parse =
       | LV (loc,_) -> RLocSet.add loc
       | LL (loc1,loc2) ->
           (fun k -> RLocSet.add (Loc loc1) (RLocSet.add (Loc loc2) k))
-      | FF (_,x,_) -> RLocSet.add (Loc (MiscParser.Location_global x))
+      | FF (_,Some x,_) -> RLocSet.add (Loc (MiscParser.Location_global x))
+      | FF (_,None,_) -> Misc.identity
 
     let get_visible_locs locs c =
       MiscParser.RLocSet.union

@@ -1,0 +1,10 @@
+Test A202 Required
+States 1
+0:X3=0; 0:X4=1; 0:X5=0; 0:X6=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X3=0 /\ 0:X4=1 /\ 0:X5=0 /\ 0:X6=0)
+Observation A202 Always 1 0
+Hash=cdcb26024ce459dc21f1d0af4dde3568
+

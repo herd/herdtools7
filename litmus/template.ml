@@ -61,7 +61,10 @@ module type S = sig
   val comment : string
   type arch_reg
 
-  type flow = Any | Next | Branch of string
+  type flow = Any | Next | Branch of string | Disp of int
+
+  val add_next : flow -> flow list
+
   type ins =
       { memo:string ; inputs:arch_reg list ;  outputs:arch_reg list;
         reg_env: (arch_reg * CType.t) list; (* Register typing [ARMv8] *)
@@ -96,7 +99,8 @@ module type S = sig
   val get_addrs_only : t -> string list
   val get_phys_only : t -> string list
   val get_addrs : t -> string list * string list (* addresses X ptes *)
-  val get_labels : t -> (int * string) list
+  val get_labels : t -> Label.Full.full list
+  val get_instructions : t -> V.Instr.t list
   val fmt_reg : arch_reg -> string
   val dump_label : string -> string
   val emit_label : (string -> string) -> string -> ins
@@ -126,6 +130,8 @@ module type S = sig
           t -> CType.t RegMap.t
 
   val has_fault_handler : t -> bool
+  val find_offset : Label.t -> t -> int
+
 end
 
 module Make(O:Config)(A:I) =
@@ -140,7 +146,12 @@ module Make(O:Config)(A:I) =
 
     type arch_reg = A.arch_reg
 
-    type flow = Any | Next | Branch of string
+    type flow = Any | Next | Branch of string | Disp of int
+
+    let add_next b = match b with
+      | Next|Any-> [b;]
+      | Branch _|Disp _ -> [Next; b;]
+
     type ins =
         { memo:string ; inputs:arch_reg list ;  outputs:arch_reg list;
           reg_env: (arch_reg * CType.t) list; (* Register typing [ARMv8] *)
@@ -193,8 +204,11 @@ module Make(O:Config)(A:I) =
                       end
                   | ConcreteVector vs ->
                       List.fold_right f vs k
-                  | Concrete _|Label _|Tag _|PteVal _|Instruction _ ->
-                     k in
+                  | ConcreteRecord vs ->
+                    StringMap.fold_values f vs k
+                  |Concrete _|Label _|Tag _
+                  |PteVal _|Instruction _|Frozen _
+                   -> k in
                   f v k)
                 [] init)) in
       StringSet.elements set
@@ -223,16 +237,38 @@ module Make(O:Config)(A:I) =
     let get_addrs t =
       get_addrs_only t,get_ptes_only t
 
-    let get_labels { init; _} =
+    let get_constants get {init;_} =
+      let rec f v k = match v with
+        | ConcreteVector vs ->
+           List.fold_right f vs k
+        | _ ->
+           begin
+             match get v with
+             | Some r -> r::k
+             | None -> k
+           end in
+      List.fold_left (fun k (_,v) -> f v k) [] init
+
+    let list_unique lst =
       List.fold_left
-        (fun k (_,v) ->
-          let rec f v k = match v with
-          | Label (p,s) -> (p,s)::k
-          | ConcreteVector vs ->
-              List.fold_right f vs k
-          | Concrete _|Symbolic _|Tag _|PteVal _|Instruction _ -> k
-          in f v k)
-        [] init
+        (fun l e -> if List.exists (fun elt -> elt = e) l then l else e::l)
+        [] lst
+
+    let get_labels t =
+      let lbls = get_constants
+        (function
+         | Label (p,s) -> Some (p,s)
+         | _ -> None)
+        t in
+      list_unique lbls
+
+    let get_instructions t =
+      let insts = get_constants
+        (function
+         | Instruction i -> Some i
+         | _ -> None)
+        t in
+      list_unique insts
 
     let get_stable { stable; _} = stable
 
@@ -426,4 +462,23 @@ module Make(O:Config)(A:I) =
       m
 
     let has_fault_handler t = t.fhandler <> []
+
+    type r = Ok of int | No of int
+
+    let rec find_offset_code lbl k code =
+      match code with
+      | [] -> No k
+      | { label=Some lbl0; _}::code ->
+         if Label.equal lbl0 lbl then Ok k
+         else find_offset_code lbl k code
+      | { label=None; _}::code ->
+         find_offset_code lbl (k+1) code
+
+    let find_offset lbl t =
+      match find_offset_code lbl 0 t.code with
+      | Ok off -> off
+      | No sz ->
+         match find_offset_code lbl sz t.fhandler with
+         | Ok off -> off
+         | No _ -> raise Not_found
   end

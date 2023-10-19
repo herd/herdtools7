@@ -1,4 +1,19 @@
-(ignored_subdirs (herd-www))
+(dirs :standard \ catalogue)
+
 (env
  (release
-(flags (:standard -w +a-3-4-9-29-33-41-45-60-67-70))))
+  (flags
+   (:standard -w +a-3-4-9-29-33-41-45-60-67-70))))
+
+(alias
+ (name default)
+ (deps
+   (alias install)
+   (alias internal/all)))
+
+(alias
+ (name jerd)
+ (deps
+  (alias herd-www/all)))
+
+(documentation)

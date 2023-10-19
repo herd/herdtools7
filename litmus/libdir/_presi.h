@@ -30,6 +30,7 @@ typedef void FILE;
 
 #else
 #include <pthread.h>
+#include <string.h>
 #endif
 
 /********/
@@ -67,19 +68,6 @@ void launch(pthread_t *th, f_t *f, void *a) ;
 void *join(pthread_t *th) ;
 #endif
 
-#ifdef KVM
-/**********/
-/* Random */
-/**********/
-
-/* type of state for pseudorandom  generators */
-typedef uint32_t st_t ;
-
-/* Unlocked random bit */
-int rand_bit(st_t *st) ;
-
-uint32_t rand_k(st_t *st,uint32_t n) ;
-#endif
 
 /*********************/
 /* Real time counter */
@@ -93,7 +81,7 @@ tsc_t timeofday(void) ;
 #ifdef KVM
 typedef struct { tsc_t sec,frac; } sec_t ;
 sec_t tsc_millions(tsc_t t) ;
-void emit_double(sec_t f) ;
+void emit_millions(sec_t f) ;
 #else
 double tsc_ratio(tsc_t t1, tsc_t t2) ;
 double tsc_millions(tsc_t t) ;
@@ -111,6 +99,7 @@ typedef struct {
   int avail ;
   int n_exe ;
   int delay ;
+  int fix ;
 } opt_t ;
 
 char **parse_opt(int argc,char **argv,opt_t *def, opt_t *p) ;
@@ -123,5 +112,22 @@ typedef struct {
 } parse_param_t;
 
 void parse_param(char *prog,parse_param_t *p,int sz,char **argv) ;
+
+#ifndef KVM
+
+/********************/
+/* presi self alloc */
+/********************/
+void *mmap_exec(size_t sz) ;
+void munmap_exec(void *p,size_t sz) ;
+
+#endif
+
+/*******************/
+/* Array utilities */
+/*******************/
+#include "litmus_rand.h"
+void interval_init(int *p,size_t sz) ;
+void interval_shuffle(st_t *seed,int *p,size_t sz) ;
 
 #endif

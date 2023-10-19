@@ -1,0 +1,11 @@
+ARM A007
+
+Stable=R1,R2
+
+(* Tests LDM (2-reg variant) *)
+{ int x[2] = {1,2}; 0:R0 = x}
+
+P0;
+  LDM R0, { R1, R2 };
+
+forall (0:R1 = 1 /\ 0:R2 = 2)

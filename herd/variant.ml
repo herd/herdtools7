@@ -13,6 +13,11 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
+(* Authors:                                                                 *)
+(* Jade Alglave, University College London, UK.                             *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Hadrien Renaud, University College London, UK.                           *)
+(****************************************************************************)
 
 type t =
   | Success     (* Riscv Model with explicit success dependency *)
@@ -64,14 +69,30 @@ type t =
 (* Perform experiment *)
   | Exp
 (* Instruction-fetch support (AKA "self-modifying code" mode) *)
-  | Self
+  | Ifetch
+(* CacheType features *)
+  | DIC
+  | IDC
 (* Have cat interpreter to optimise generation of co's *)
   | CosOpt
 (* Test something *)
   | Test
 (* One hundred tests *)
   | T of int
-
+(* ASL processing *)
+  | ASL
+  | ASL_AArch64
+  | ASLVersion of [ `ASLv0 | `ASLv1 ]
+(* ASL Typing control *)
+  | ASLType of [`Warn|`Silence|`TypeCheck]
+(* Signed Int128 types *)
+  | S128
+(* Strict interpretation of variant, e.g. -variant asl,strict *)
+  | Strict
+(* Semi-strict interpretation of variant, e.g. -variant asl,warn *)
+  | Warn
+(* Telechat variant - implements unconditional branches as exit, and any other optional quirks*)
+  | Telechat
 
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
@@ -80,7 +101,8 @@ let tags =
     Precision.tags @
    ["toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
-   "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"]
+    "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"; "asl"; "strict";
+    "warn"; "S128"; "ASLType+Warn";    "ASLType+Silence"; "ASLType+Check";]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -117,9 +139,22 @@ let parse s = match Misc.lowercase s with
 | "optrfrmw" -> Some OptRfRMW
 | "constrainedunpredictable"|"cu" -> Some ConstrainedUnpredictable
 | "exp" -> Some Exp
-| "self" -> Some Self
+| "ifetch"|"self" -> Some Ifetch
+| "dic" -> None
+| "idc" -> None
 | "cos-opt" -> Some CosOpt
 | "test" -> Some Test
+| "asl" -> Some ASL
+| "asl_aarch64" | "aslaarch64" | "asl+aarch64" -> Some ASL_AArch64
+| "aslv0" | "asl0" | "asl_0" -> Some (ASLVersion `ASLv0)
+| "aslv1" | "asl1" | "asl_1" -> Some (ASLVersion `ASLv1)
+| "asltype+warn" -> Some (ASLType `Warn)
+| "asltype+silence"-> Some (ASLType `Silence)
+| "asltype+check"  -> Some (ASLType `TypeCheck)
+| "s128" -> Some S128
+| "strict" -> Some Strict
+| "warn" -> Some Warn
+| "telechat" -> Some Telechat
 | s ->
    begin
      match Precision.parse s with
@@ -171,10 +206,23 @@ let pp = function
   | OptRfRMW -> "OptRfRMW"
   | ConstrainedUnpredictable -> "ConstrainedUnpredictable"
   | Exp -> "exp"
-  | Self -> "self"
+  | Ifetch -> "ifetch"
+  | DIC -> "dic"
+  | IDC -> "idc"
   | CosOpt -> "cos-opt"
   | Test -> "test"
   | T n -> Printf.sprintf "T%02i" n
+  | ASL -> "ASL"
+  | ASL_AArch64 -> "ASL+AArch64"
+  | ASLVersion `ASLv0 -> "ASLv0"
+  | ASLVersion `ASLv1 -> "ASLv1"
+  | S128 -> "S128"
+  | Strict -> "strict"
+  | Warn -> "warn"
+  | ASLType `Warn -> "ASLType+Warn"
+  | ASLType `Silence -> "ASLType+Silence"
+  | ASLType `TypeCheck -> "ASLType+Check"
+  | Telechat -> "telechat"
 
 let compare = compare
 let equal v1 v2 = compare v1 v2 = 0

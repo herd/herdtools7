@@ -1,0 +1,9 @@
+MIPS A005
+
+(* test ld instruction *)
+{ int64_t 0:a1 = x; int64_t x=1}
+
+P0;
+ ld a0, 0(a1);
+
+forall 0:a0 = 1

@@ -13,6 +13,11 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
+(* Authors:                                                                 *)
+(* Jade Alglave, University College London, UK.                             *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Hadrien Renaud, University College London, UK.                           *)
+(****************************************************************************)
 
 type t =
   | Success     (* Riscv Model with explicit success dependency *)
@@ -62,13 +67,32 @@ type t =
 (* Perform experiment *)
   | Exp
 (* Instruction-fetch support (AKA "self-modifying code" mode) *)
-  | Self
+  | Ifetch
+(* CacheType features *)
+  | DIC
+  | IDC
 (* Have cat interpreter to optimise generation of co's *)
   | CosOpt
 (* Test something *)
   | Test
 (* One hundred tests *)
   | T of int
+(* ASL Processing *)
+  (* In AArch64 arch, use ASL to interprete AArch64 instructions when possible. *)
+  | ASL 
+  (* While interpreting ASL litmus test, include AArch64 shared pseudocode. *)
+  | ASL_AArch64 
+  (* When using aarch ASL, use ASL version v0 or v1 *)
+  | ASLVersion of [ `ASLv0 | `ASLv1 ] 
+(* ASL Typing control *)
+  | ASLType of [`Warn|`Silence|`TypeCheck]
+(* Signed Int128 types *)
+  | S128
+(* Strict interpretation of variant, e.g. -variant asl,strict *)
+  | Strict
+(* Semi-strict interpretation of variant, e.g. -variant asl,warn *)
+  | Warn
+  | Telechat
 
 val compare : t -> t -> int
 val equal : t -> t -> bool

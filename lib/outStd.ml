@@ -25,6 +25,7 @@ type t = No | Out
 let open_all () = No
 let open_file _ = Out
 let close _ = ()
+let remove _ = ()
 
 let put_char out c = match out with
 | No -> ()

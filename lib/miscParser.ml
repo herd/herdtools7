@@ -22,6 +22,7 @@ type func = Main | FaultHandler
 type proc = Proc.t * string list option * func
 
 let proc_num (p,_,_) = p
+let proc_func (_,_,k) = k
 
 let pp_proc (p,ao,f) =
   sprintf
@@ -174,12 +175,13 @@ type info = (string * string) list
 
 (* Some source files contain addditionnal information *)
 
-type extra_data =
-  | NoExtra
+type extra_param =
   | CExtra of CAst.param list list
   | BellExtra of BellInfo.test
 
-let empty_extra = NoExtra
+type extra_data = extra_param list
+
+let empty_extra = []
 
 type ('i, 'p, 'prop, 'loc, 'v, 'ftype) result =
     { info : info ;
@@ -211,7 +213,7 @@ type 'pseudo t = (state, (proc * 'pseudo list) list, prop, location, maybev, fau
 
 let mach2generic parser lexer buff =
     let procs,code = parser lexer buff in
-    procs,code,NoExtra
+    procs,code,[]
 
 (* Info keys *)
 
@@ -219,6 +221,7 @@ let hash_key =  "Hash"
 and stable_key = "Stable"
 and align_key = "Align"
 and tthm_key = "TTHM"
+and cache_type_key = "CacheType"
 and variant_key = "Variant"
 and user_key = "user"
 and el0_key = "el0"
@@ -239,7 +242,7 @@ let key_match k1 k2 =
       do_rec 0
     end
 
-let digested_keys = [memory_type_key; mt_key;]
+let digested_keys = [memory_type_key; mt_key; cache_type_key; ]
 
 let digest_mem k = List.exists (key_match k) digested_keys
 
@@ -278,6 +281,9 @@ let add_oa_if_none loc p =
   with Exit -> PteVal p
 
 let mk_instr_val v =
-  match v with
-  | "NOP" -> Constant.Instruction(InstrLit.LIT_NOP)
-  | _ -> Warn.user_error "unexpected {%s} value while parsing an instruction" v
+  let open InstrLit in
+  let i =
+    match v with
+    | None -> LIT_NOP
+    | Some i -> LIT_INSTR i in
+  Constant.Instruction i

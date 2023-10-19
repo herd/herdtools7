@@ -21,6 +21,7 @@
 (* Configuration, to change kinds and condition *)
 module type Config = sig
   val debuglexer : bool
+  val verbose : int
   val check_kind : string -> ConstrGen.kind option
   val check_cond : string -> string option
   val macros : string option
@@ -29,6 +30,7 @@ end
 
 module DefaultConfig = struct
   let debuglexer = false
+  let verbose = 0
   let check_kind _ = None
   let check_cond _ = None
   let macros = None
@@ -42,12 +44,12 @@ module type LexParse = sig
   val deep_lexer : Lexing.lexbuf -> token
   val deep_parser :
         (Lexing.lexbuf -> token) -> Lexing.lexbuf ->
-	  pseudo list CAst.test list
+	  pseudo list CAst.test list * MiscParser.extra_data
 
   val shallow_lexer : Lexing.lexbuf -> token
   val shallow_parser :
         (Lexing.lexbuf -> token) -> Lexing.lexbuf ->
-	  string CAst.t list
+	  string CAst.t list * MiscParser.extra_data
 
   type macro
   val macros_parser :
@@ -127,9 +129,9 @@ module Do
     let init =
       I.call_parser_loc "init"
 		      chan init_loc SL.token StateParser.init in
-    let prog =
+    let prog,_ =
       I.call_parser_loc "prog" chan prog_loc L.deep_lexer L.deep_parser in
-    let prog_litmus =
+    let prog_litmus,data_litmus =
       I.call_parser_loc "prog_litmus" chan prog_loc L.shallow_lexer L.shallow_parser in
     (* Add parameter passsing as inits *)
     let full_init =
@@ -191,7 +193,7 @@ module Do
         filter = filter;
         condition = final;
         locations = locs;
-        extra_data = MiscParser.CExtra params;
+        extra_data = (MiscParser.CExtra params)::data_litmus;
       } in
     let name  = name.Name.name in
     let parsed =

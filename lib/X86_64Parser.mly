@@ -15,7 +15,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module X86_64 = X86_64Base
+open struct module X86_64 = X86_64Base end
 %}
 
 %token EOF
@@ -32,7 +32,7 @@ module X86_64 = X86_64Base
 /* Instruction tokens */
 
 %token I_XOR I_XORB I_XORW I_XORL I_XORQ
-%token I_OR I_ORB I_ORW I_ORL I_ORQ
+%token I_OR I_ORB I_ORW I_ORL I_ORQ I_AND I_SHL
 %token I_ADD I_ADDB I_ADDW I_ADDL I_ADDQ
 %token I_MOV I_MOVB I_MOVW I_MOVL I_MOVQ
 %token I_CMP I_CMPB I_CMPW I_CMPL I_CMPQ
@@ -42,11 +42,12 @@ module X86_64 = X86_64Base
 %token I_UXCH I_UXCHB I_UXCHW I_UXCHL I_UXCHQ
 %token I_CMPXCHG I_CMPXCHGB I_CMPXCHGW I_CMPXCHGL I_CMPXCHGQ
 %token I_CMOVC I_CMOVCB I_CMOVCW I_CMOVCL I_CMOVCQ
-%token I_LOCK  I_JMP I_SETNB
+%token I_LOCK  I_JMP I_SETNB I_RET
 %token I_MFENCE I_SFENCE I_LFENCE
 %token I_JE I_JNE I_JLE I_JLT I_JGT I_JGE I_JS I_JNS
 %token I_MOVNTI  I_MOVNTIL I_MOVNTIQ
 %token I_MOVD I_MOVNTDQA
+%token I_NOP I_NOPA I_ENDBR64
 %token <X86_64Base.opt> I_CLFLUSH
 %type <MiscParser.proc list * (X86_64Base.pseudo) list list> main
 %start  main
@@ -98,6 +99,10 @@ instr:
     {X86_64.I_EFF_OP (X86_64.I_OR, X86_64.I32b, $4,$2)}
   | I_ORQ  operand  COMMA  effaddr
     {X86_64.I_EFF_OP (X86_64.I_OR, X86_64.I64b, $4,$2)}
+  | I_AND  operand  COMMA  effaddr
+    {X86_64.I_EFF_OP (X86_64.I_AND, X86_64.INSb , $4,$2)}
+  | I_SHL  operand  COMMA  effaddr
+    {X86_64.I_EFF_OP (X86_64.I_SHL, X86_64.INSb , $4,$2)}
 
   | I_XOR  operand  COMMA  effaddr
     {X86_64.I_EFF_OP (X86_64.I_XOR, X86_64.INSb, $4,$2)}
@@ -156,6 +161,15 @@ instr:
 
   | I_JMP  NAME
     {X86_64.I_JMP $2}
+  | I_RET
+    {X86_64.I_RET}
+  | I_ENDBR64
+    {X86_64.I_NOP}
+  | I_NOP effaddr
+    {X86_64.I_NOP}
+  | I_NOPA
+    {X86_64.I_NOP}
+
 
   | I_JE NAME
     {X86_64.I_JCC(X86_64.C_EQ, $2)}
@@ -263,6 +277,12 @@ rm64:
   |  LBRK reg RBRK {X86_64.Rm64_deref ($2, 0)}
   |  k LPAR reg RPAR {X86_64.Rm64_deref ($3, Misc.string_as_int $1)}
   |  k LBRK reg RBRK {X86_64.Rm64_deref ($3, Misc.string_as_int $1)}
+  |  k LPAR reg COMMA reg COMMA k RPAR {X86_64.Rm64_scaled
+      (Misc.string_as_int $1, $3, $5, Misc.string_as_int $7)}
+  |  LPAR reg COMMA reg COMMA k RPAR {X86_64.Rm64_scaled
+      (0, $2, $4, Misc.string_as_int $6)}
+  |  reg COLON k LPAR reg COMMA reg COMMA k RPAR {X86_64.Rm64_scaled
+      (Misc.string_as_int $3, $5, $7, Misc.string_as_int $9)}
   |  LBRK NAME RBRK {X86_64.Rm64_abs (Constant.mk_sym $2)}
   |  LPAR NAME RPAR {X86_64.Rm64_abs (Constant.mk_sym $2)}
   |  LBRK NUM RBRK {X86_64.Rm64_abs (Constant.Concrete $2)}

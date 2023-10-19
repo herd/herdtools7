@@ -1,0 +1,10 @@
+Test A194 Required
+States 1
+0:X3=0; 0:X4=0; 0:X5=1; 0:X6=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X3=0 /\ 0:X4=0 /\ 0:X5=1 /\ 0:X6=1)
+Observation A194 Always 1 0
+Hash=0f0fee9398abbec89bd8eef4e0cbecc1
+

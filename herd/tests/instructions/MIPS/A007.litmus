@@ -1,0 +1,9 @@
+MIPS A007
+
+(* test Dext instr*)
+{ 0:a0=0x10000; }
+
+P0;
+  dext a1, a0, 16, 1;
+
+forall 0:a1 = 0x1

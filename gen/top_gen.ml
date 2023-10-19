@@ -36,6 +36,7 @@ module type Config = sig
   val typ : TypBase.t
   val hexa : bool
   val variant : Variant_gen.t -> bool
+  val cycleonly: bool
 end
 
 module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
@@ -63,7 +64,7 @@ module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
     | true,Some r -> (A.Reg (p,r),Some (A.S "-1"))::init
     | _,_ -> init
 
-  type typ = Typ of TypBase.t | IntArray of int
+  type typ = Typ of TypBase.t | Array of TypBase.t * int
 
   type test =
       {
@@ -138,7 +139,7 @@ module U = TopUtils.Make(O)(Comp)
     then
       Comp.emit_access st p init e
     else
-      Warn.fatal "atomicity mismatch on edge %s, annotation '%s' on %s"
+      Warn.fatal "annotation mismatch on edge %s, annotation '%s' on %s"
         (E.pp_edge n.C.edge)
         (E.pp_atom_option e.C.atom) (Misc.app_opt_def "_" pp_dir e.C.dir)
 
@@ -146,7 +147,7 @@ module U = TopUtils.Make(O)(Comp)
     let e = n.C.evt in
      if e.C.rmw then match e.C.dir with
      | Some R ->
-         Comp.emit_rmw_dep (as_rmw n) st p init e n.C.next.C.evt dp r1
+         Comp.emit_rmw_dep (as_rmw n) st p init e n.C.next.C.evt dp r1 n1
      | Some W|None -> None,init,[],st
      | Some J -> assert false
      else
@@ -504,31 +505,40 @@ let max_set = IntSet.max_elt
 
       (* Local check of coherence *)
 
-  let do_add_load st p i f x v =
-    let r,i,c,st = Comp.emit_obs Ord st p i x in
+  let do_add_load bank st p i f x v =
+    let r,i,c,st = Comp.emit_obs bank st p i x in
+    let v =
+      match bank with
+      | Pair -> v+v
+      | _ -> v in
     i,c,F.add_final_v p r (IntSet.singleton v) f,st
 
   let do_add_loop st p i f x v w =
     let r,i,c,st = Comp.emit_obs_not_value st p i x v in
     i,c,F.add_final_v p r (IntSet.singleton w) f,st
 
-  let rec do_observe_local obs_type st p i code f x prev_v v =
+  let rec do_observe_local bank obs_type st p i code f x prev_v v =
     match obs_type with
     | Config.Straight ->
-        let i,c,f,st = do_add_load st p i f x v in
+        let i,c,f,st = do_add_load bank st p i f x v in
         i,code@c,f,st
     |  Config.Fenced ->
-        let i,c,f,st = do_add_load st p i f x v in
+        let i,c,f,st = do_add_load bank st p i f x v in
         let i,c',st = Comp.emit_fence st p i C.nil Comp.stronger_fence in
         let c = c'@c in
         i,code@c,f,st
     | Config.Loop ->
        begin match prev_v with
        | Some prev_v ->
+          begin match bank with
+          | Pair ->
+             Warn.user_error "No loop observer for pairs"
+          | _ -> ()
+          end ;
           let i,c,f,st = do_add_loop st p i f x prev_v v in
           i,code@c,f,st
        | None ->
-          do_observe_local Config.Fenced st p i code f x None v
+          do_observe_local bank Config.Fenced st p i code f x None v
        end
 
   let do_observe_local_simd st p i code f x bank nxt =
@@ -571,10 +581,11 @@ let max_set = IntSet.max_elt
     let lst = Misc.last ns in
     if U.check_here lst then
       match lst.C.evt.C.loc,lst.C.evt.C.bank with
-      | Data x,Ord ->
+      | Data x,(Ord|Pair) -> (* TODO check for -obs local mode and pairs *)
          let nxt = lst.C.next.C.evt in
-         begin match nxt.C.bank with
-         | VecReg _ as bank ->
+         let bank = nxt.C.bank in
+         begin match bank with
+         | VecReg _ ->
             do_observe_local_simd st p i code f x bank nxt
          | _ ->
             let v = nxt.C.v
@@ -586,7 +597,11 @@ let max_set = IntSet.max_elt
             then
               i,code,F.cons_int_set (A.Loc x,IntSet.singleton v) f,st
             else
-              do_observe_local O.obs_type st p i code f x (Some prev_v) v
+              let bank =
+                match bank with
+                | Pair -> Pair
+                | _ -> Ord in
+              do_observe_local  bank O.obs_type st p i code f x (Some prev_v) v
          end
       | Data x,Tag ->
           let v = lst.C.next.C.evt.C.v in
@@ -606,12 +621,12 @@ let max_set = IntSet.max_elt
          let nxt = lst.C.next.C.evt in
          let bank = nxt.C.bank in
          begin match bank with
-         | Ord ->
+         | Ord|Pair ->
             let v = nxt.C.v in
-            do_observe_local O.obs_type st p i code f x None v
+            do_observe_local bank O.obs_type st p i code f x None v
          | VecReg _ ->
             do_observe_local_simd st p i code f x bank nxt
-         | _ -> Warn.fatal "Mixing SIMD and other variants"
+         | _ -> Warn.user_error "Mixing SIMD and other variants"
          end
       | Code _,_ -> i,code,f,st
     else  i,code,f,st
@@ -637,6 +652,9 @@ let max_set = IntSet.max_elt
     let open Config in
     Label.reset () ;
     let env_wide = C.get_wide n in
+    let env_pair =
+      if StringMap.is_empty env_wide then StringSet.empty
+      else C.get_pair n in
     let splitted =  C.split_procs n in
     (* Split before, as  proc numbers added by side effet.. *)
     let cos0 = C.coherence n in
@@ -716,9 +734,12 @@ let max_set = IntSet.max_elt
         let env =
           StringMap.fold
             (fun loc sz k ->
-              let loc = A.Loc loc in
-              assert (not (A.LocMap.mem loc k)) ;
-              A.LocMap.add loc (IntArray sz) k)
+              let aloc = A.Loc loc in
+              assert (not (A.LocMap.mem aloc k)) ;
+              let ty =
+                if StringSet.mem loc env_pair then O.typ
+                else TypBase.Int in
+              A.LocMap.add aloc (Array (ty,sz)) k)
           env_wide env in
         let env =
           let ptes = A.LocSet.of_list (F.extract_ptes f) in
@@ -807,7 +828,7 @@ let max_set = IntSet.max_elt
               F.run evts m
           | Cycle -> F.check f
           | Observe -> F.observe f in
-        let i = if do_kvm then A.complete_init initvals i else i in
+        let i = if do_kvm then A.complete_init O.hexa initvals i else i in
         (i,c,fc flts,env),
         (U.compile_prefetch_ios (List.length obsc) ios,
          U.compile_coms splitted)
@@ -840,8 +861,9 @@ let dump_init chan inits env =
     A.LocMap.fold
       (fun loc t k ->
         match t with
-        | IntArray sz ->
-           sprintf "int %s[%d];" (A.pp_location loc) sz::k
+        | Array (ty,sz) ->
+           sprintf "%s %s[%d];"
+             (TypBase.pp ty) (A.pp_location loc) sz::k
         | Typ t ->
             if A.LocSet.mem loc locs_init then k
             else
@@ -908,7 +930,7 @@ let fmt_cols =
     let pp = fmt_cols code in
     Misc.pp_prog chan pp
 
-  let dump_test_channel chan t =
+  let dump_test_channel_full chan t =
     fprintf chan "%s %s\n" (Archs.pp A.arch) t.name ;
     if t.com <>  "" then fprintf chan "\"%s\"\n" t.com ;
     List.iter
@@ -924,6 +946,15 @@ let fmt_cols =
     end ;
     F.dump_final chan t.final ;
     ()
+
+  let dump_test_channel chan t =
+    if O.cycleonly then
+      if t.com <> "" then
+        fprintf chan "%s: %s\n" t.name t.com
+      else
+       Warn.fatal "-cycleonly=true requested but no cycle generated"
+    else
+      dump_test_channel_full chan t
 
   let num_labels =
 

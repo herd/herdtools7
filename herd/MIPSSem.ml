@@ -47,13 +47,14 @@ module
       let (>>::) = M.(>>::)
 
       let tr_op = function
-        | MIPS.ADD|MIPS.ADDU -> Op.Add (* NB confusing ADD and ADDU... *)
+        | MIPS.ADD|MIPS.ADDU|MIPS.DADDU -> Op.Add (* NB confusing ADD and ADDU... *)
         | MIPS.SUB|MIPS.SUBU -> Op.Sub (* NB confusing SUB and SUBU... *)
         | MIPS.SLT|MIPS.SLTU -> Op.Lt  (* NB confusing SLT and SLTU... *)
         | MIPS.AND -> Op.And
         | MIPS.OR -> Op.Or
         | MIPS.XOR -> Op.Xor
         | MIPS.NOR -> Op.Nor
+        | MIPS.DSLL -> Op.ShiftLeft
 
       let mk_read sz ato loc v =
         Act.Access
@@ -95,22 +96,92 @@ module
       let commit ii =
         M.mk_singleton_es (Act.Commit (Act.Bcc,None)) ii
 
+      let v2tgt =
+        let open Constant in
+        function
+        | M.A.V.Val(Label (_, lbl)) -> Some (B.Lbl lbl)
+        | M.A.V.Val (Concrete i) -> Some (B.Addr (M.A.V.Cst.Scalar.to_int i))
+        | _ -> None
+
+      let do_indirect_jump test bds i v =
+        match  v2tgt v with
+        | Some tgt -> M.unitT (B.Jump (tgt,bds))
+        | None ->
+           match v with
+           | M.A.V.Var(_) as v ->
+              let lbls = get_exported_labels test in
+              if Label.Full.Set.is_empty lbls && C.variant Variant.Telechat then
+                (* We assume a ret/branch is an exit *)
+                M.unitT () >>! B.Exit
+              else if Label.Full.Set.is_empty lbls then
+                Warn.fatal "Could find no potential target for indirect branch %s \
+                (potential targets are statically known labels)" (MIPS.dump_instruction i)
+              else
+                B.indirectBranchT v lbls bds
+        | _ -> Warn.fatal
+            "illegal argument for the indirect branch instruction %s \
+            (must be a label)" (MIPS.dump_instruction i)
+
+(* Promote 16bit immediates to values *)
+
+(* Signed *)
+      let imm16ToV k =
+        V.Cst.Scalar.of_int (k land 0xffff)
+        |> V.Cst.Scalar.sxt MachSize.Short
+        |> fun sc -> V.Val (Constant.Concrete sc)
+
+(* Unsigned *)
+      let immu16ToV k =
+        V.Cst.Scalar.of_int (k land 0xffff)
+        |> fun sc -> V.Val (Constant.Concrete sc)
+
+      let is_logical =
+        let open MIPS in
+        function
+        | ADD|ADDU|DADDU
+        | SUB|SUBU
+        | SLT|SLTU
+          -> false
+        | OR|AND|XOR|NOR|DSLL
+          -> true
+
+      let imm16 op =
+        if is_logical op then immu16ToV
+        else imm16ToV
+
 (* Entry point *)
 
-      let build_semantics _ ii =
+      let build_semantics test ii =
         M.addT (A.next_po_index ii.A.program_order_index)
           begin match ii.A.inst with
           | MIPS.NOP -> B.nextT
+          | MIPS.LUI (r1,k) ->
+             M.op Op.ShiftLeft (V.intToV k) (V.intToV 16)
+             >>=  M.op1 (Op.Sxt MachSize.Word)
+             >>= fun v -> write_reg r1 v ii
+             >>= B.next1T
           | MIPS.LI (r,k) ->
-              write_reg r (V.intToV k) ii >>= B.next1T
+             write_reg r (immu16ToV k) ii >>= B.next1T
+          | MIPS.MOVE (r1,r2) ->
+              read_reg_data r2 ii >>= fun v -> write_reg r1 v ii
+              >>= B.next1T
           | MIPS.OP (op,r1,r2,r3) ->
               (read_reg_ord r2 ii >>|  read_reg_ord r3 ii) >>=
               (fun (v1,v2) -> M.op (tr_op op) v1 v2) >>=
               (fun v -> write_reg r1 v ii) >>= B.next1T
+          | MIPS.OPI (MIPS.DSLL,r1,r2,k) ->
+              read_reg_ord r2 ii >>=
+              M.op1 (Op.LeftShift k) >>=
+              fun v -> write_reg r1 v ii >>= B.next1T
           | MIPS.OPI (op,r1,r2,k) ->
               read_reg_ord r2 ii >>=
-              fun v -> M.op (tr_op op) v (V.intToV k) >>=
-                fun v -> write_reg r1 v ii >>= B.next1T
+              fun v -> M.op (tr_op op) v (imm16 op k) >>=
+              fun v -> write_reg r1 v ii >>= B.next1T
+          | MIPS.JR (MIPS.IReg MIPS.R31)
+               when C.variant Variant.Telechat -> (* Telechat return *)
+              M.unitT B.Exit
+          | MIPS.JR r as t ->
+            read_reg_ord r ii >>= do_indirect_jump test [] t
           | MIPS.B lbl -> B.branchT lbl
           | MIPS.BC (cond,r1,r2,lbl) ->
               (read_reg_ord r1 ii >>| read_reg_ord r2 ii) >>=
@@ -131,19 +202,26 @@ module
                   v V.zero >>=
                 fun v -> commit ii >>= fun () -> B.bccT v lbl
           | MIPS.LW (r1,k,r2) ->
+              let sz = MachSize.Word in
               read_reg_ord r2 ii >>=
-              (fun a -> M.add a (V.intToV k)) >>=
-              (fun ea -> read_mem nat_sz ea ii) >>=
+              (fun a -> M.add a (imm16ToV k)) >>=
+              (fun ea -> read_mem sz ea ii) >>=
+              M.op1 (Op.Sxt sz) >>=
+              (fun v -> write_reg r1 v ii)  >>= B.next1T
+          | MIPS.LD (r1,k,r2) ->
+              read_reg_ord r2 ii >>=
+              (fun a -> M.add a (imm16ToV k)) >>=
+              (fun ea -> read_mem MachSize.Quad ea ii) >>=
               (fun v -> write_reg r1 v ii)  >>= B.next1T
           | MIPS.SW (r1,k,r2) ->
               (read_reg_data r1 ii >>| read_reg_ord r2 ii) >>=
               (fun (d,a) ->
-                (M.add a (V.intToV k)) >>=
+                (M.add a (imm16ToV k)) >>=
                 (fun ea -> write_mem nat_sz ea d ii)) >>= B.next1T
           | MIPS.LL (r1,k,r2) ->
               read_reg_ord r2 ii >>=
               (fun a ->
-                (M.add a (V.intToV k) >>=
+                (M.add a (imm16ToV k) >>=
                  (fun ea ->
                    write_reg MIPS.RESADDR ea ii >>|
                    (read_mem_atomic nat_sz ea ii >>= fun v -> write_reg r1 v ii))))
@@ -153,7 +231,7 @@ module
               read_reg_data r1 ii >>|
               read_reg_ord r2 ii) >>=
               (fun ((resa,v),a) ->
-                M.add a (V.intToV k) >>=
+                M.add a (imm16ToV k) >>=
                 (fun ea ->
                   write_reg MIPS.RESADDR V.zero ii >>| (* Cancel reservation... *)
                   M.altT
@@ -161,6 +239,24 @@ module
                     ((write_reg r1 V.one ii
                         >>| write_mem_atomic nat_sz ea v resa ii) >>! ())))
                 >>=  B.next2T
+          | MIPS.EBF (r1,r2,k1,k2) ->
+            let lsb = k1 in
+            let msbd = k2 - 1 in
+            let hex_mask = begin
+              (* similar to UBFM/SBFM in AArch64*)
+              let f x = if x < lsb then "0"
+                else if x > lsb+msbd then "0"
+                else "1" in
+              let bitmask = List.rev (List.init 64 f) in
+              let dec_mask = Int64.of_string
+                (Printf.sprintf "0b%s" (String.concat "" bitmask)) in
+              Printf.sprintf "0x%Lx" dec_mask
+             end in
+            read_reg_data r2 ii
+            >>= M.op1 (Op.AndK hex_mask)
+            >>= M.op1 (Op.LogicalRightShift lsb)
+            >>= fun v -> write_reg r1 v ii
+            >>= B.next1T
           | MIPS.SYNC ->
               create_barrier MIPS.Sync ii >>= B.next1T
           end

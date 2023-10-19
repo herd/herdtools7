@@ -39,24 +39,42 @@ match name with
 (* Halt instructions are used by Debug mode, not needed here - NOP *)
 | "hlt" | "HLT" -> HLT
 (* Branch *)
-| "b"  | "B"  -> B
+| "b"  | "B"  -> TOK_B
 | "br"  | "BR"  -> BR
 | "bl"  | "BL"  -> BL
 | "blr"  | "BLR"  -> BLR
 | "ret"  | "RET" -> RET
 | "eret"  | "ERET" -> ERET
-| "ne"  | "NE"  -> NE
-| "eq"  | "EQ"  -> EQ
-| "ge"  | "GE"  -> GE
-| "gt"  | "GT"  -> GT
-| "le"  | "LE"  -> LE
-| "lt"  | "LT"  -> LT
+| "ne"  | "NE"  -> TOK_NE
+| "eq"  | "EQ"  -> TOK_EQ
+| "ge"  | "GE"  -> TOK_GE
+| "gt"  | "GT"  -> TOK_GT
+| "le"  | "LE"  -> TOK_LE
+| "lt"  | "LT"  -> TOK_LT
+| "cs"  | "CS"  -> TOK_CS
+| "cc"  | "CC"  -> TOK_CC
+| "mi"  | "MI"  -> TOK_MI
+| "pl"  | "PL"  -> TOK_PL
+| "vs"  | "VS"  -> TOK_VS
+| "vc"  | "VC"  -> TOK_VC
+| "hi"  | "HI"  -> TOK_HI
+| "ls"  | "LS"  -> TOK_LS
+| "al"  | "AL"  -> TOK_AL
 | "b.eq" | "B.EQ" -> BEQ
 | "b.ne" | "B.NE" -> BNE
 | "b.ge" | "B.GE" -> BGE
 | "b.gt" | "B.GT" -> BGT
 | "b.le" | "B.LE" -> BLE
 | "b.lt" | "B.LT" -> BLT
+| "b.cs" | "B.CS" -> BCS
+| "b.cc" | "B.CC" -> BCC
+| "b.mi" | "B.MI" -> BMI
+| "b.pl" | "B.PL" -> BPL
+| "b.vs" | "B.VS" -> BVS
+| "b.vc" | "B.VC" -> BVC
+| "b.hi" | "B.HI" -> BHI
+| "b.ls" | "B.LS" -> BLS
+| "b.al" | "B.AL" -> BAL
 | "cbz"  | "CBZ" -> CBZ
 | "cbnz"  | "CBNZ" -> CBNZ
 | "tbnz" | "TBNZ" -> TBNZ
@@ -67,8 +85,10 @@ match name with
 | "ldp"|"LDP" -> LDP
 | "ldpsw"|"LDPSW" -> LDPSW
 | "ldnp"|"LDNP" -> LDNP
+| "ldiapp"|"LDIAPP" -> LDIAPP
 | "stp"|"STP" -> STP
 | "stnp"|"STNP" -> STNP
+| "stilp"|"STILP" -> STILP
 | "ldrb"|"LDRB" -> LDRB
 | "ldrh"|"LDRH" -> LDRH
 | "ldrsb"|"LDRSB" -> LDRSB
@@ -116,6 +136,7 @@ match name with
 | "st3" | "ST3" -> ST3
 | "st4" | "ST4" -> ST4
 | "movi" | "MOVI" -> MOVI
+| "mvn" | "MVN" -> MVN
 (* Compare and swap *)
 | "cas"|"CAS" -> CAS
 | "casa"|"CASA" -> CASA
@@ -129,6 +150,10 @@ match name with
 | "casab"|"CASAB" -> CASAB
 | "caslb"|"CASLB" -> CASLB
 | "casalb"|"CASALB" -> CASALB
+| "casp" | "CASP" -> CASP
+| "caspa" | "CASPA" -> CASPA
+| "caspl" | "CASPL" -> CASPL
+| "caspal" | "CASPAL" -> CASPAL
 (* Swap *)
 | "swp"|"SWP" -> SWP
 | "swpa"|"SWPA" -> SWPA
@@ -296,15 +321,19 @@ match name with
 | "stuminb"|"STUMINB" -> STUMINB
 | "stuminlb"|"STUMINLB" -> STUMINLB
 *)
+| "udf"|"UDF" -> UDF
 (* Memory Tagging *)
 | "stg"|"STG" -> STG
 | "stzg"|"STZG" -> STZG
 | "ldg"|"LDG" -> LDG
 (* Operations *)
-| "sxtw"|"SXTW" -> SXTW
-| "uxtw"|"UXTW" -> UXTW
+| "sxtw"|"SXTW" -> TOK_SXTW
+| "uxtw"|"UXTW" -> TOK_UXTW
+| "ubfm"|"UBFM" -> UBFM
+| "sbfm"|"SBFM" -> SBFM
 | "mov"|"MOV" -> MOV
 | "movz"|"MOVZ" -> MOVZ
+| "movn"|"MOVN" -> MOVN
 | "movk"|"MOVK" -> MOVK
 | "adr"|"ADR" -> ADR
 | "rbit"|"RBIT" -> RBIT
@@ -313,7 +342,9 @@ match name with
 (* Three argument opcodes factorized *)
 | "adds"|"ADDS" -> OP A.ADDS
 | "eor"|"EOR" -> OP A.EOR
+| "eon"|"EON" -> OP A.EOR
 | "orr"|"ORR" -> OP A.ORR
+| "orn"|"ORN" -> OP A.ORN
 | "and"|"AND" -> OP A.AND
 | "ands"|"ANDS" -> OP A.ANDS
 | "bic"|"BIC" -> OP A.BIC
@@ -321,13 +352,13 @@ match name with
 (* Some arithmetic instruction have their own lexeme,
    for parser to handle then in special ways *)
 (* Also used as barrel shift *)
-| "asr" | "ASR" -> ASR
-| "lsl" | "LSL" -> LSL
-| "lsr" | "LSR" -> LSR
+| "asr" | "ASR" -> TOK_ASR
+| "lsl" | "LSL" -> TOK_LSL
+| "lsr" | "LSR" -> TOK_LSR
 (* SUB, SUBS, ADD have 128 bits semantics*)
-| "sub"|"SUB" -> SUB
-| "subs"|"SUBS" -> SUBS
-| "add"|"ADD" -> ADD
+| "sub"|"SUB" -> TOK_SUB
+| "subs"|"SUBS" -> TOK_SUBS
+| "add"|"ADD" -> TOK_ADD
 (* Morello *)
 | "alignd"|"ALIGND" -> ALIGND
 | "alignu"|"ALIGNU" -> ALIGNU
@@ -360,25 +391,27 @@ match name with
 | "csinv"|"CSINV" -> CSINV
 | "csneg"|"CSNEG" -> CSNEG
 | "cset"|"CSET" -> CSET
+| "csetm"|"CSETM" -> CSETM
+| "cinc"|"CINC" -> CINC
 (* Fences *)
-| "dmb"|"DMB" -> DMB
-| "dsb"|"DSB" -> DSB
-| "isb"|"ISB" -> ISB
+| "dmb"|"DMB" -> TOK_DMB
+| "dsb"|"DSB" -> TOK_DSB
+| "isb"|"ISB" -> TOK_ISB
 (* Fence Operands *)
-| "sy"|"SY" ->SY
-| "st"|"ST" -> ST
-| "ld"|"LD" -> LD
-| "osh"|"OSH" -> OSH
-| "oshst"|"OSHST" -> OSHST
-| "oshld"|"OSHLD" -> OSHLD
-| "ish"|"ISH" -> ISH
-| "ishst"|"ISHST" -> ISHST
-| "ishld"|"ISHLD" -> ISHLD
-| "nsh"|"NSH" -> NSH
-| "nshst"|"NSHST" -> NSHST
-| "nshld"|"NSHLD" -> NSHLD
+| "sy"|"SY" -> TOK_SY
+| "st"|"ST" -> TOK_ST
+| "ld"|"LD" -> TOK_LD
+| "osh"|"OSH" -> TOK_OSH
+| "oshst"|"OSHST" -> TOK_OSHST
+| "oshld"|"OSHLD" -> TOK_OSHLD
+| "ish"|"ISH" -> TOK_ISH
+| "ishst"|"ISHST" -> TOK_ISHST
+| "ishld"|"ISHLD" -> TOK_ISHLD
+| "nsh"|"NSH" -> TOK_NSH
+| "nshst"|"NSHST" -> TOK_NSHST
+| "nshld"|"NSHLD" -> TOK_NSHLD
 (* inline barrel shift operands *)
-| "msl" | "MSL" -> MSL
+| "msl" | "MSL" -> TOK_MSL
 (* Cache maintenance *)
 | "ic"|"IC" -> IC
 | "dc"|"DC" -> DC
@@ -405,43 +438,82 @@ match name with
 | "tlbi"|"TLBI"-> TLBI
 (* Arguments, and there are many... *)
 | "ipas2e1is"|"IPAS2E1IS" ->
-    A.TLBI.(TLBI_OP {typ=IPAS2; level=A.E1; domain=IS; })
+    A.TLBI.(TLBI_OP {typ=IPAS2; level=A.E1; domain=IS; nXS=false; })
 | "ipas2le1is"|"IPAS2LE1IS" ->
-    A.TLBI.(TLBI_OP {typ=IPAS2L; level=A.E1; domain=IS; })
-| "ipas2e1"|"IPAS2E1" -> A.TLBI.(TLBI_OP {typ=IPAS2; level=A.E1; domain=No; })
-| "ipas2le1"|"IPAS2LE1" -> A.TLBI.(TLBI_OP {typ=IPAS2L; level=A.E1; domain=No; })
+    A.TLBI.(TLBI_OP {typ=IPAS2L; level=A.E1; domain=IS; nXS=false; })
+| "ipas2e1"|"IPAS2E1" -> A.TLBI.(TLBI_OP {typ=IPAS2; level=A.E1; domain=No; nXS=false; })
+| "ipas2le1"|"IPAS2LE1" -> A.TLBI.(TLBI_OP {typ=IPAS2L; level=A.E1; domain=No; nXS=false; })
 |  "vmalle1is"|"VMALLE1IS" ->
-    A.TLBI.(TLBI_OP {typ=VMALL; level=A.E1; domain=IS; })
+    A.TLBI.(TLBI_OP {typ=VMALL; level=A.E1; domain=IS; nXS=false; })
 |  "vmalle1"|"VMALLE1" ->
-    A.TLBI.(TLBI_OP {typ=VMALL; level=A.E1; domain=No; })
-| "alle1is"|"ALLE1IS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E1; domain=IS; })
-| "alle2is"|"ALLE2IS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E2; domain=IS; })
-| "alle3is"|"ALLE3IS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E3; domain=IS; })
-| "alle1"|"ALLE1" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E1; domain=No; })
-| "alle2"|"ALLE2" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E2; domain=No; })
-| "alle3"|"ALLE3" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E3; domain=No; })
-| "vae1is"|"VAE1IS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E1; domain=IS; })
-| "vae2is"|"VAE2IS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E2; domain=IS; })
-| "vae3is"|"VAE3IS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E3; domain=IS; })
-| "vae1"|"VAE1" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E1; domain=No; })
-| "vae2"|"VAE2" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E2; domain=No; })
-| "vae3"|"VAE3" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E3; domain=No; })
-| "aside1is"|"ASIDE1IS" -> A.TLBI.(TLBI_OP {typ=ASID; level=A.E1; domain=IS; })
-| "aside1"|"ASIDE1" -> A.TLBI.(TLBI_OP {typ=ASID; level=A.E1; domain=No; })
-| "vaae1is"|"VAAE1IS" -> A.TLBI.(TLBI_OP {typ=VAA; level=A.E1; domain=IS; })
-| "vaae1"|"VAAE1" -> A.TLBI.(TLBI_OP {typ=VAA; level=A.E1; domain=No; })
-| "vale1is"|"VALE1IS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E1; domain=IS; })
-| "vale2is"|"VALE2IS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E2; domain=IS; })
-| "vale3is"|"VALE3IS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E3; domain=IS; })
-| "vale1"|"VALE1" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E1; domain=No; })
-| "vale2"|"VALE2" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E2; domain=No; })
-| "vale3"|"VALE3" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E3; domain=No; })
-| "vaale1is"|"VAALE1IS" -> A.TLBI.(TLBI_OP {typ=VAAL; level=A.E1; domain=IS; })
-| "vaale1"|"VAALE1" -> A.TLBI.(TLBI_OP {typ=VAAL; level=A.E1; domain=No; })
+    A.TLBI.(TLBI_OP {typ=VMALL; level=A.E1; domain=No; nXS=false; })
+| "alle1is"|"ALLE1IS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E1; domain=IS; nXS=false; })
+| "alle2is"|"ALLE2IS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E2; domain=IS; nXS=false; })
+| "alle3is"|"ALLE3IS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E3; domain=IS; nXS=false; })
+| "alle1"|"ALLE1" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E1; domain=No; nXS=false; })
+| "alle2"|"ALLE2" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E2; domain=No; nXS=false; })
+| "alle3"|"ALLE3" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E3; domain=No; nXS=false; })
+| "vae1is"|"VAE1IS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E1; domain=IS; nXS=false; })
+| "vae2is"|"VAE2IS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E2; domain=IS; nXS=false; })
+| "vae3is"|"VAE3IS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E3; domain=IS; nXS=false; })
+| "vae1"|"VAE1" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E1; domain=No; nXS=false; })
+| "vae2"|"VAE2" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E2; domain=No; nXS=false; })
+| "vae3"|"VAE3" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E3; domain=No; nXS=false; })
+| "aside1is"|"ASIDE1IS" -> A.TLBI.(TLBI_OP {typ=ASID; level=A.E1; domain=IS; nXS=false; })
+| "aside1"|"ASIDE1" -> A.TLBI.(TLBI_OP {typ=ASID; level=A.E1; domain=No; nXS=false; })
+| "vaae1is"|"VAAE1IS" -> A.TLBI.(TLBI_OP {typ=VAA; level=A.E1; domain=IS; nXS=false; })
+| "vaae1"|"VAAE1" -> A.TLBI.(TLBI_OP {typ=VAA; level=A.E1; domain=No; nXS=false; })
+| "vale1is"|"VALE1IS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E1; domain=IS; nXS=false; })
+| "vale2is"|"VALE2IS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E2; domain=IS; nXS=false; })
+| "vale3is"|"VALE3IS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E3; domain=IS; nXS=false; })
+| "vale1"|"VALE1" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E1; domain=No; nXS=false; })
+| "vale2"|"VALE2" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E2; domain=No; nXS=false; })
+| "vale3"|"VALE3" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E3; domain=No; nXS=false; })
+| "vaale1is"|"VAALE1IS" -> A.TLBI.(TLBI_OP {typ=VAAL; level=A.E1; domain=IS; nXS=false; })
+| "vaale1"|"VAALE1" -> A.TLBI.(TLBI_OP {typ=VAAL; level=A.E1; domain=No; nXS=false; })
 | "vmalls12e1is"|"VMALLS12E1IS" ->
-    A.TLBI.(TLBI_OP {typ=VMALLS12; level=A.E1; domain=IS; })
+    A.TLBI.(TLBI_OP {typ=VMALLS12; level=A.E1; domain=IS; nXS=false; })
 | "vmalls12e1"|"VMALLS12E1" ->
-    A.TLBI.(TLBI_OP {typ=VMALLS12; level=A.E1; domain=No; })
+    A.TLBI.(TLBI_OP {typ=VMALLS12; level=A.E1; domain=No; nXS=false; })
+(* nXS version of the above *)
+| "ipas2e1isnxs"|"IPAS2E1ISNXS" ->
+    A.TLBI.(TLBI_OP {typ=IPAS2; level=A.E1; domain=IS; nXS=true; })
+| "ipas2le1isnxs"|"IPAS2LE1ISNXS" ->
+    A.TLBI.(TLBI_OP {typ=IPAS2L; level=A.E1; domain=IS; nXS=true; })
+| "ipas2e1nxs"|"IPAS2E1NXS" -> A.TLBI.(TLBI_OP {typ=IPAS2; level=A.E1; domain=No; nXS=true; })
+| "ipas2le1nxs"|"IPAS2LE1NXS" -> A.TLBI.(TLBI_OP {typ=IPAS2L; level=A.E1; domain=No; nXS=true; })
+|  "vmalle1isnxs"|"VMALLE1ISNXS" ->
+    A.TLBI.(TLBI_OP {typ=VMALL; level=A.E1; domain=IS; nXS=true; })
+|  "vmalle1nxs"|"VMALLE1NXS" ->
+    A.TLBI.(TLBI_OP {typ=VMALL; level=A.E1; domain=No; nXS=true; })
+| "alle1isnxs"|"ALLE1ISNXS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E1; domain=IS; nXS=true; })
+| "alle2isnxs"|"ALLE2ISNXS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E2; domain=IS; nXS=true; })
+| "alle3isnxs"|"ALLE3ISNXS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E3; domain=IS; nXS=true; })
+| "alle1nxs"|"ALLE1NXS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E1; domain=No; nXS=true; })
+| "alle2nxs"|"ALLE2NXS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E2; domain=No; nXS=true; })
+| "alle3nxs"|"ALLE3NXS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E3; domain=No; nXS=true; })
+| "vae1isnxs"|"VAE1ISNXS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E1; domain=IS; nXS=true; })
+| "vae2isnxs"|"VAE2ISNXS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E2; domain=IS; nXS=true; })
+| "vae3isnxs"|"VAE3ISNXS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E3; domain=IS; nXS=true; })
+| "vae1nxs"|"VAE1NXS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E1; domain=No; nXS=true; })
+| "vae2nxs"|"VAE2NXS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E2; domain=No; nXS=true; })
+| "vae3nxs"|"VAE3NXS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E3; domain=No; nXS=true; })
+| "aside1isnxs"|"ASIDE1ISNXS" -> A.TLBI.(TLBI_OP {typ=ASID; level=A.E1; domain=IS; nXS=true; })
+| "aside1nxs"|"ASIDE1NXS" -> A.TLBI.(TLBI_OP {typ=ASID; level=A.E1; domain=No; nXS=true; })
+| "vaae1isnxs"|"VAAE1ISNXS" -> A.TLBI.(TLBI_OP {typ=VAA; level=A.E1; domain=IS; nXS=true; })
+| "vaae1nxs"|"VAAE1NXS" -> A.TLBI.(TLBI_OP {typ=VAA; level=A.E1; domain=No; nXS=true; })
+| "vale1isnxs"|"VALE1ISNXS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E1; domain=IS; nXS=true; })
+| "vale2isnxs"|"VALE2ISNXS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E2; domain=IS; nXS=true; })
+| "vale3isnxs"|"VALE3ISNXS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E3; domain=IS; nXS=true; })
+| "vale1nxs"|"VALE1NXS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E1; domain=No; nXS=true; })
+| "vale2nxs"|"VALE2NXS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E2; domain=No; nXS=true; })
+| "vale3nxs"|"VALE3NXS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E3; domain=No; nXS=true; })
+| "vaale1isnxs"|"VAALE1ISNXS" -> A.TLBI.(TLBI_OP {typ=VAAL; level=A.E1; domain=IS; nXS=true; })
+| "vaale1nxs"|"VAALE1NXS" -> A.TLBI.(TLBI_OP {typ=VAAL; level=A.E1; domain=No; nXS=true; })
+| "vmalls12e1isnxs"|"VMALLS12E1ISNXS" ->
+    A.TLBI.(TLBI_OP {typ=VMALLS12; level=A.E1; domain=IS; nXS=true; })
+| "vmalls12e1nxs"|"VMALLS12E1NXS" ->
+    A.TLBI.(TLBI_OP {typ=VMALLS12; level=A.E1; domain=No; nXS=true; })
 (* System registers *)
 | "mrs"|"MRS" -> MRS
 | "msr"|"MSR" -> MSR
@@ -481,14 +553,14 @@ match name with
 }
 let digit = [ '0'-'9' ]
 let alpha = [ 'a'-'z' 'A'-'Z']
-let name  = alpha (alpha|digit|'_' | '/' | '.' | '-')*
+let name  = (alpha|'_'|'.'|'$') (alpha|digit|'_'|'/'|'.'|'$')*
 let num = digit+
 
 rule token = parse
 | [' ''\t''\r'] { token lexbuf }
 | '\n'      { incr_lineno lexbuf; token lexbuf }
 | "(*"      { LU.skip_comment lexbuf ; token lexbuf }
-| '#'? ('-' ? num as x) { NUM (int_of_string x) }
+| '#'? (('-'|'+') ? num as x) { NUM (int_of_string x) }
 | 'P' (num as x)
     { PROC (int_of_string x) }
 | 'P' (num as x) ".F"
@@ -507,6 +579,8 @@ rule token = parse
 | '(' { LPAR }
 | ')' { RPAR }
 | ':' { COLON }
+| '.' { DOT }
+| '!' { BANG }
 | "scopes"  { SCOPES  }
 | "levels"  { LEVELS  }
 | "regions" { REGIONS }

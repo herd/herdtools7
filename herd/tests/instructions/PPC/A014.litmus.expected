@@ -1,0 +1,10 @@
+Test A014 Required
+States 1
+0:r3=-1431655765; 0:r5=-1431655765; 0:r6=-21846;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (true)
+Observation A014 Always 1 0
+Hash=f5fd1f3a6656a0390699cb32c0ad1af0
+

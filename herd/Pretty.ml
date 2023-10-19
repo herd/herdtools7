@@ -67,6 +67,8 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   module PC = S.O.PC
   let dbg = false
 
+  let pc_symetric = StringSet.union PC.symetric PC.noid
+
 (* One init *)
   let one_init = match PC.graph with
   | Graph.Columns -> PC.oneinit
@@ -121,7 +123,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     for k=0 to String.length s-1 do
       let c = s.[k] in
       begin match c with
-      | '\\' -> Buffer.add_char buff '\\'
+      | '\\'|'"' -> Buffer.add_char buff '\\'
       | _ -> ()
       end ;
       Buffer.add_char buff c
@@ -310,12 +312,12 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     add_ea "iico_data"
       { def_ea with color="black" ; }
       { def_ea with color="black" ; } ;
-    add_ea "iico_control"
-      { def_ea with color="grey" ; }
-      { def_ea with color="grey" ; } ;
     add_ea "iico_ctrl"
       { def_ea with color="grey" ; }
       { def_ea with color="grey" ; } ;
+    add_ea "iico_order"
+      { def_ea with color="darkgrey" ; }
+      { def_ea with color="darkgrey" ; } ;
     add_eas ["After";]
       {color="orange" ; style = extra_thick ; }
       {color="black" ; style= extra_thick ; } ;
@@ -386,8 +388,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
 
 
   let order_events es by_proc_and_poi =
-    let iico =
-      S.union es.E.intra_causality_data es.E.intra_causality_control in
+    let iico = E.iico es in
     let iicos = E.proj_rel es iico in
     let rs =
       List.map2
@@ -437,8 +438,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   let siwidth = PC.siwidth
 
   let order_events_mult es by_proc_and_poi =
-    let iico =
-      S.union es.E.intra_causality_data es.E.intra_causality_control in
+    let iico = E.iico es in
     let  by_proc_and_poi =
       List.map
         (fun ess ->
@@ -509,10 +509,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
 
  let make_visible_po_nodeps es by_proc_and_poi =
     let intra =
-      E.EventRel.transitive_closure
-        (E.EventRel.union
-           es.E.intra_causality_data
-           es.E.intra_causality_control) in
+      E.EventRel.transitive_closure (E.iico es) in
     let min_max_list =
       List.map
         (List.map
@@ -533,10 +530,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
 (* Deps mode *)
   let make_visible_po_deps es by_proc_and_poi =
    let iico =
-      E.EventRel.transitive_closure
-         (E.EventRel.union
-           es.E.intra_causality_data
-           es.E.intra_causality_control) in
+      E.EventRel.transitive_closure (E.iico es) in
     let _,po0 = es.E.po in
     let po = E.EventRel.diff po0 iico in
     let po = E.EventRel.remove_transitive_edges po in
@@ -648,7 +642,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
         (fun (n1,n2 as p) infos (m_yes,m_no) ->
           let yes,no =
             List.partition
-              (fun i -> StringSet.mem i.ikey PC.symetric)
+              (fun i -> StringSet.mem i.ikey pc_symetric)
               infos in
           let m_yes =
             let q =
@@ -703,7 +697,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       (fun (n1,n2) infos ->
         let all_syms =
           List.for_all
-            (fun i -> StringSet.mem i.ikey PC.symetric)
+            (fun i -> StringSet.mem i.ikey pc_symetric)
             infos in
         let colors = compute_colors (List.map (fun i -> i.icolor) infos)
         and lbl = String.concat "" (fmt_merged_labels infos) in
@@ -761,7 +755,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       else checklabel lbl)
       (pp_edge_label movelbl lbl) ;
 
-    if StringSet.mem lbl PC.symetric then pp_attr chan "arrowhead" "none" ;
+    if StringSet.mem lbl pc_symetric then pp_attr chan "arrowhead" "none" ;
     if not (overridden "color") then begin
       pp_attr chan "color" color ;
       if not (PC.tikz) then
@@ -806,7 +800,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       =
     try
       if StringSet.mem lbl PC.unshow then raise Exit ;
-      let is_symetric = StringSet.mem lbl PC.symetric in
+      let is_symetric = StringSet.mem lbl pc_symetric in
       if is_symetric then begin
         if known_edge n1 n2 lbl then raise Exit ;
         record_edge_seen n1 n2 lbl
@@ -889,7 +883,18 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
             tags)
         stes in
     let vbss =
-      List.filter (fun (tag,_) -> not (StringSet.mem tag PC.unshow)) vbss in
+      List.fold_right
+        (fun (tag,r) k ->
+          if StringSet.mem tag PC.unshow then k
+          else
+            let r =
+              if StringSet.mem tag PC.noid then
+                E.EventRel.filter
+                  (fun (e1,e2) -> not (E.event_equal e1 e2))
+                  r
+              else r in
+            (tag,r)::k)
+        vbss [] in
     let pl = fprintf chan "%s\n"
     and pf fmt = fprintf chan fmt in
 
@@ -1328,6 +1333,12 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
             (pp_node_eiid e) (pp_node_eiid e')
             "iico_ctrl" false false)
         es.E.intra_causality_control ;
+      E.EventRel.pp chan ""
+        (fun chan (e,e') ->
+          pp_edge chan
+            (pp_node_eiid e) (pp_node_eiid e')
+            "iico_order" false false)
+        es.E.intra_causality_order ;
 
 
 (****************)
@@ -1461,28 +1472,26 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
 (* A bunch of arrows *)
     pl "" ;
     pl "/* The viewed-before edges */" ;
-    if true then begin
-      if dbg then begin
-        let ns = List.map fst vbss in
-        eprintf "Names: {%s}\n" (String.concat "," ns)
-      end ;
-      List.iter
-        (fun (label,vbs) ->
-          if dbg then eprintf "label=%s\n%!" label;
-          E.EventRel.pp chan ""
-            (fun chan (e,e') ->
-              do_pp_edge chan (pp_node_eiid e) (pp_node_eiid e') label
-(* Overides default color... *)
-                (fun s -> { s with color="brown" ; })
-(* Overides any style given *)
-                (if (try "mo" = String.sub label 0 2 with Invalid_argument _ -> false) && E.is_mem_store e && E.is_mem_store e' then "" (*"penwidth=10.0"*) else "")
-(* Extra attributes, overrides nothing *)
-                ""
-                (last_thread e e' || is_up e e' || is_back e e')
-                (is_even e e'))
-            vbs)
-        vbss
+    if dbg then begin
+      let ns = List.map fst vbss in
+      eprintf "Names: {%s}\n" (String.concat "," ns)
     end ;
+    List.iter
+      (fun (label,vbs) ->
+        if dbg then eprintf "label=%s\n%!" label;
+        E.EventRel.pp chan ""
+          (fun chan (e,e') ->
+            do_pp_edge chan (pp_node_eiid e) (pp_node_eiid e') label
+(* Overides default color... *)
+              (fun s -> { s with color="brown" ; })
+(* Overides any style given *)
+              (if (try "mo" = String.sub label 0 2 with Invalid_argument _ -> false) && E.is_mem_store e && E.is_mem_store e' then "" (*"penwidth=10.0"*) else "")
+(* Extra attributes, overrides nothing *)
+              ""
+              (last_thread e e' || is_up e e' || is_back e e')
+              (is_even e e'))
+          vbs)
+      vbss ;
     dump_pairs chan ;
     pl "}"
 
@@ -1520,7 +1529,10 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       intra_causality_data = select_rel
         es.E.intra_causality_data;
       intra_causality_control = select_rel
-        es.E.intra_causality_control; }
+        es.E.intra_causality_control;
+      intra_causality_order = select_rel
+        es.E.intra_causality_order;
+    }
 
   let select_rfmap rfm =
     S.RFMap.fold

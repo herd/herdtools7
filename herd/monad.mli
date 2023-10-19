@@ -13,6 +13,11 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
+(* Authors:                                                                 *)
+(* Jade Alglave, University College London, UK.                             *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Hadrien Renaud, University College London, UK.                           *)
+(****************************************************************************)
 
 (** A monad for event structures *)
 
@@ -32,6 +37,8 @@ module type S =
     and type solution = A.V.solution
     and type location = A.location
     and type state = A.state
+    and type arch_op1 = A.V.arch_op1
+    and type arch_op = A.V.arch_op
 
     type 'a t
 
@@ -39,6 +46,8 @@ module type S =
     val zeroT        : 'a t
     val zerocodeT        : 'a code
     val unitT        : 'a -> 'a t
+    val warnT : string -> 'a -> 'a t
+    val failT : exn -> 'a -> 'a t
     val ignore : 'a -> unit t
     val unitcodeT        : 'a -> 'a code
     val failcodeT        : exn -> 'a -> 'a code
@@ -47,6 +56,9 @@ module type S =
     val delay : 'a t -> ('a * 'a t) t
 
     val set_standard_input_output : 'a t -> 'a t
+
+    (* [restrict constraints] is an empty monad with the constraints [constraints] *)
+    val restrict : VC.cnstrnts -> unit t
 
     (* Data composition, entry for snd monad: minimals for iico_data *)
     val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
@@ -71,6 +83,10 @@ module type S =
     (* Data composition, entry for snd monad: minimals for complete iico *)
     val bind_data_to_minimals : 'a t -> ('a -> 'b t) -> ('b) t
 
+    (* Control compoisition, but output events might be in first event if
+       second is empty. *)
+    val bind_ctrl_seq_data : 'a t -> ('a -> 'b t) -> 'b t
+
     (* Hybrid composition m1 m2 m3, m1 -ctrl+data-> m3 and m2 -data-> m3.
        ctrl+data -> ctrl from maximal commit evts + data from
        monad output *)
@@ -85,12 +101,21 @@ module type S =
     (* Identical control dep only, all output from firtst argument *)
     val bind_ctrl_first_outputs : 'a t -> ('a -> 'b t) -> 'b t
 
+    (* Same as [>>=] but with order deps instead of data between the arguments. *)
+    val bind_order : 'a t -> ('a -> 'b t) -> 'b t
+
     (* Very ad-hoc transformation, [short3 p1 p2 s],
      * add relation r;r;r where r is intra_causality_data,
-     *  with starting event(s) selected by p1 and final one(s) by p2       
+     *  with starting event(s) selected by p1 and final one(s) by p2
      *)
     val short3 : (E.event -> bool) -> (E.event -> bool) -> 'a t -> 'a t
-       
+
+    (* Another ad-hoc transformation. [upOneRW p m]
+     * Let r be iico_data, e1 and e2 be events s.t. p is true, e1 is 1 read e2 is a write,
+     * and there exists e0, s.r. e1 -r-> e0 -r-> e2, then replace e0 -r0-> e2 by e1 -r-> e2.
+     *)
+    val upOneRW : (E.event -> bool) -> 'a t -> 'a t
+
     val exch : 'a t -> 'a t -> ('a -> 'b t) ->  ('a -> 'c t) ->  ('b * 'c) t
 
 (*
@@ -109,7 +134,7 @@ module type S =
         ('loc -> A.V.v -> unit t) ->  (A.V.v -> unit t) (* Write reg *)
           -> unit t
 
-    val amo_strict : bool -> Op.op -> ('loc t) ->
+    val amo_strict : bool -> A.V.op_t -> ('loc t) ->
       ('loc -> A.V.v t) -> A.V.v t (* read reg *) ->
         ('loc -> A.V.v -> unit t) ->  (A.V.v -> unit t) (* Write reg *)
           -> unit t
@@ -120,7 +145,7 @@ module type S =
 
 (* Weak amo, without control dependency from read read to write reg.
   In fact, the write reg is absent *)
-    val amo : Op.op ->
+    val amo : A.V.op_t ->
       'loc t -> A.V.v t -> ('loc -> A.V.v t) -> ('loc -> A.V.v -> unit t) -> A.V.v t
 
     val linux_cmpexch_ok :
@@ -167,7 +192,13 @@ module type S =
     val aarch64_cas_ok_morello :
         'loc t -> 'v t -> 'v t -> ('loc -> 'v -> unit t) -> unit t
     val stu : 'a t -> 'a t -> ('a -> unit t) -> (('a * 'a) -> unit t) -> unit t
+
+    (* Same as [>>|], but binding style. *)
     val cseq : 'a t -> ('a -> 'b t) -> 'b t
+
+    (* Same as [cseq], but output on right argument. *)
+    val aslseq : 'a t -> ('a -> 'b t) -> 'b t
+
     type poi = int
 
     val add_instr :
@@ -181,6 +212,13 @@ module type S =
     val para_input_right : 'a t -> 'b t -> ('a * 'b)  t (* Input in second argument *)
     val (>>::) : 'a t -> 'a list t -> 'a list t
     val (|||) : unit t -> unit t -> unit t
+
+(*
+ *Sequence of memorory events by iico_order.
+ * Notice that the combinator is otherwise similar
+ * to ``>>|`.
+ *)
+    val seq_mem : 'a t -> 'b t -> ('a * 'b) t
 
     val (|*|)   : bool code -> unit code -> unit code   (* Cross product *)
 (*    val lockT : 'a t -> 'a t *)
@@ -233,8 +271,11 @@ module type S =
     val mk_fence : E.action -> A.inst_instance_id -> unit t
     (* Fetch and op *)
     val fetch :
-        Op.op -> A.V.v -> (A.V.v -> A.V.v -> E.action) ->
+        A.V.op_t -> A.V.v -> (A.V.v -> A.V.v -> E.action) ->
           A.inst_instance_id -> A.V.v t
+
+    (* [as_data_port m] flags all events in [m] as data. *)
+    val as_data_port : 'a t -> 'a t
 
     (**********************)
     (* Morello extensions *)
@@ -266,7 +307,7 @@ module type S =
 
 (* Operations *)
     val op1 : A.V.op1_t -> A.V.v -> A.V.v t
-    val op : Op.op -> A.V.v -> A.V.v -> A.V.v t
+    val op : A.V.op_t -> A.V.v -> A.V.v -> A.V.v t
     val op3 : Op.op3 -> A.V.v -> A.V.v -> A.V.v -> A.V.v t
     val add : A.V.v -> A.V.v -> A.V.v t
 
@@ -281,4 +322,7 @@ module type S =
     type output = VC.cnstrnts * evt_struct
 
     val get_output  : 'a code -> output list -> output list
+
+    (* Force executed only once. *)
+    val force_once : 'a t -> 'a t
   end

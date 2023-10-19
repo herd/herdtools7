@@ -24,7 +24,7 @@ open MemOrderOrAnnot
 %}
 
 %token EOF
-%token <string> IDENTIFIER
+%token <string> NAME
 %token <string> BASE_TYPE
 %token <string> STRUCT_TYPE
 %token <string> ATOMIC_TYPE
@@ -32,14 +32,19 @@ open MemOrderOrAnnot
 %token <string> CODEVAR
 %token <int> PROC
 %token LPAR RPAR COMMA LBRACE RBRACE STAR
-%token ATOMIC CHAR INT LONG VOID
+%token ATOMIC ATOMIC_BASE CHAR INT LONG VOID
 %token MUTEX
 %token VOLATILE CONST
 %token STRUCT
 
+/* Needed for memory mapped regions */
+%token COLON SCOPES LEVELS REGIONS
+/* Tokens only needed so we can reuse bellextrarules */
+%token <int> NUM
+
 /* For shallow parsing */
 %token <string> BODY
-%type <string CAst.t list> shallow_main
+%type <string CAst.t list * MiscParser.extra_data> shallow_main
 %start shallow_main
 
 /* For deep parsing */
@@ -57,7 +62,7 @@ open MemOrderOrAnnot
 %token LOAD STORE UNDERFENCE XCHG CMPXCHG
 %token   UNDERATOMICOP  UNDERATOMICOPRETURN UNDERATOMICFETCHOP UNDERATOMICADDUNLESS ATOMICADDUNLESS
 %token SRCU
-%token <Op.op> ATOMIC_FETCH_EXPLICIT
+%token <CBase.op> ATOMIC_FETCH_EXPLICIT
 
 %left PIPE
 %left XOR
@@ -67,9 +72,11 @@ open MemOrderOrAnnot
 %left ADD SUB
 %left STAR DIV
 %nonassoc CAST
-%nonassoc PREC_BASE
+%left ECALL
+%left ESRCU
+%left SEMI
 
-%type <(CBase.pseudo list) CAst.test list> deep_main
+%type <(CBase.pseudo list) CAst.test list * MiscParser.extra_data> deep_main
 %start deep_main
 
 %type <CBase.pseudo list> pseudo_seq
@@ -86,7 +93,7 @@ parameter_list:
 | parameter_declaration COMMA parameter_list { $1 :: $3 }
 
 parameter_declaration:
-| typ_ptr IDENTIFIER { {CAst.param_ty = $1; param_name = $2} }
+| typ_ptr NAME { {CAst.param_ty = $1; param_name = $2} }
 
 typ_ptr:
 | typ STAR { Pointer $1 }
@@ -96,17 +103,22 @@ void:
 | VOID { Base "void" }
 
 
+typ_par:
+|t=typ { t }
+| LPAR t=typ RPAR { t }
+
 typ:
 | typ_ptr { $1 }
-| typ VOLATILE { Volatile $1 }
-| typ CONST { CType.Const $1 }
+| typ_par VOLATILE { Volatile $1 }
+| typ_par CONST { CType.Const $1 }
 | ATOMIC base { Atomic $2 }
-| VOLATILE base0 { Volatile $2 }
-| CONST base0 { Const $2 }
-| base { $1 }
+| VOLATILE base { Volatile $2 }
+| CONST base { Const $2 }
+| base0 { $1 }
 
 base0:
 | ATOMIC_TYPE { Atomic (Base $1) }
+| ATOMIC_BASE LT BASE_TYPE GT { Atomic (Base $3) }
 | BASE_TYPE { (Base $1) }
 | STRUCT STRUCT_TYPE { Base ("struct " ^ $2) }
 | ty_attr MUTEX { Base ($1 ^ "mutex") }
@@ -115,18 +127,20 @@ base0:
 | ty_attr LONG { Base ($1 ^ "long") }
 
 
+
 base:
 | base0 { $1 }
-| LPAR typ RPAR %prec PREC_BASE { $2 }
+| LPAR typ RPAR  { $2 }
 
 ty_attr:
 | { "" }
 
 shallow_main:
-| EOF { [] }
-| BODY shallow_main { CAst.Global $1 :: $2 }
+| scopes_and_memory_map EOF { [], [MiscParser.BellExtra $1] }
+| BODY shallow_main { CAst.Global $1 :: (fst $2), (snd $2) }
 | voidopt PROC LPAR parameter_list RPAR BODY shallow_main
-    { CAst.Test {CAst.proc = $2; params = $4; body = $6} :: $7 }
+    { CAst.Test {CAst.proc = $2; params = $4; body = $6} :: (fst $7),
+      (snd $7) }
 
 voidopt:
 | VOID { () }
@@ -134,10 +148,14 @@ voidopt:
 | { () }
 
 declaration:
-| typ IDENTIFIER SEMI { DeclReg ($1,$2) }
+| typ NAME SEMI { DeclReg ($1,$2) }
 
 initialisation:
-| typ IDENTIFIER EQ expr { StoreReg (Some $1,$2,$4) ; }
+| typ NAME EQ expr { StoreReg (Some $1,Some $2,$4) ; }
+| expr_only { $1 }
+
+expr_only:
+| e=expr { StoreReg(None,None,e) }
 
 atomic_op:
 | ADD { Op.Add }
@@ -150,7 +168,8 @@ annot:
 annot_base :
 | LOCK       { "lock" }
 | UNLOCK     { "unlock" }
-| IDENTIFIER { $1 }
+| ATOMIC_BASE { "atomic" }
+| NAME { $1 }
 
 
 
@@ -167,16 +186,16 @@ expr:
 expr0:
 | CONSTANT { CBase.Const(Constant.Concrete $1) }
 | CONSTVAR { CBase.Const(mk_sym $1) }
-| IDENTIFIER { CBase.LoadReg $1 }
-| STAR IDENTIFIER { CBase.LoadMem (CBase.LoadReg $2,AN []) }
+| NAME { CBase.LoadReg $1 }
+| STAR NAME { CBase.LoadMem (CBase.LoadReg $2,AN []) }
 | LPAR expr RPAR { $2 }
 
 expr1:
-| LPAR typ RPAR expr %prec CAST { $4 }
-| STAR LPAR typ RPAR IDENTIFIER { LoadMem (LoadReg $5,AN []) }
+| LPAR typ RPAR e=expr %prec CAST { e }
+| STAR LPAR typ RPAR NAME { LoadMem (LoadReg $5,AN []) }
 | STAR LPAR expr RPAR { LoadMem ($3,AN []) }
 | LOAD LBRACE annot_list RBRACE LPAR expr RPAR { LoadMem($6,AN $3) }
-| SRCU LBRACE annot_list RBRACE LPAR expr RPAR { ExpSRCU($6,$3) }
+| SRCU LBRACE annot_list RBRACE LPAR expr RPAR %prec ESRCU { ExpSRCU($6,$3) }
 | LD_EXPLICIT LPAR expr COMMA MEMORDER RPAR { LoadMem($3,MO $5) }
 | expr STAR expr { Op(Op.Mul,$1,$3) }
 | expr ADD expr { Op(Op.Add,$1,$3) }
@@ -199,7 +218,7 @@ expr1:
   { CmpExchange($6,$8,$10,$3) }
 | ATOMIC_FETCH_EXPLICIT LPAR expr COMMA expr COMMA MEMORDER RPAR
   { Fetch($3, $1, $5, $7) }
-| IDENTIFIER LPAR args RPAR
+| NAME LPAR args RPAR %prec ECALL
   { ECall ($1,$3) }
 | WCAS LPAR expr COMMA expr COMMA expr RPAR
   { ECas ($3,$5,$7,SC,SC,false) }
@@ -231,7 +250,7 @@ args_ne:
 | expr COMMA args_ne { $1 :: $3 }
 
 location:
-| IDENTIFIER { LoadReg($1) }
+| NAME { LoadReg($1) }
 | STAR location { LoadMem($2,AN []) }
 | LPAR expr RPAR { $2 }
 
@@ -244,8 +263,8 @@ instruction:
   { While ($2,$3,0) }
 | initialisation SEMI
   { $1 }
-| IDENTIFIER EQ expr SEMI
-  { StoreReg(None,$1,$3) }
+| NAME EQ expr SEMI
+  { StoreReg(None,Some $1,$3) }
 | LPAR VOID RPAR expr SEMI
   { CastExpr $4 }
 | STAR location EQ expr SEMI
@@ -274,7 +293,7 @@ instruction:
   { Fence(MO $3) }
 | CODEVAR SEMI
   { Symb $1 }
-| IDENTIFIER LPAR args RPAR SEMI
+| NAME LPAR args RPAR SEMI
   { PCall ($1,$3) }
 
 ins_seq:
@@ -309,11 +328,11 @@ trans_unit:
   { $1 @ [$2] }
 
 deep_main:
-| trans_unit EOF { $1 }
+| trans_unit scopes_and_memory_map EOF { $1, [MiscParser.BellExtra $2] }
 
 formals_ne:
-| IDENTIFIER { [ $1 ] }
-| IDENTIFIER COMMA formals_ne { $1 :: $3 }
+| NAME { [ $1 ] }
+| NAME COMMA formals_ne { $1 :: $3 }
 
 formals:
 | { [] }
@@ -323,8 +342,8 @@ body:
 | LBRACE ins_seq RBRACE { Seq ($2,true) }
 
 macro:
-| IDENTIFIER LPAR formals RPAR expr { EDef ($1,$3,$5) }
-| IDENTIFIER LPAR formals RPAR body { PDef ($1,$3,$5) }
+| NAME LPAR formals RPAR expr { EDef ($1,$3,$5) }
+| NAME LPAR formals RPAR body { PDef ($1,$3,$5) }
 
 macros:
 | ms=list(macro) EOF { ms }

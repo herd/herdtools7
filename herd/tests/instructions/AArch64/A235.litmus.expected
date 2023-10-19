@@ -1,0 +1,10 @@
+Test C Required
+States 1
+[x]=1;
+No
+Witnesses
+Positive: 0 Negative: 1
+Condition forall ([x]=0)
+Observation C Never 0 1
+Hash=63d39367a4fe571201587275c10c0941
+

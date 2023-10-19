@@ -50,6 +50,7 @@ type xmm =
 
 type reg =
   | RIP
+  | CS
   | Ireg of base_reg * reg_part
   | XMM of xmm
   | Symbolic_reg of string
@@ -64,6 +65,7 @@ let loop_idx = Internal 0
 let sig_cell = "sig_cell"
 
 let pc = RIP
+let cs = CS
 let gen_regs64 =
     [
 (* 64b registers *)
@@ -174,13 +176,13 @@ let reg_size_to_string = function
   | R32b -> "k"
   | R64b -> "q"
 
-let parse_list = List.map (fun ((r, t),s) -> s, Ireg (r, t)) gen_regs
+let parse_list = [("cs",cs);("rip",pc)]@(List.map (fun ((r, t),s) -> s, Ireg (r, t)) gen_regs)
 
-let parse_list64 = List.map (fun ((r, t),s) -> s, Ireg (r, t)) gen_regs64
+let parse_list64 = [("cs",cs); ("rip",pc)]@List.map (fun ((r, t),s) -> s, Ireg (r, t)) gen_regs64
 
 let parse_list_xmm =  List.map (fun (xmm,s) -> s,xmm) xmm_regs
 
-let regs = List.map (fun ((r, t),s) -> Ireg (r, t), s) gen_regs
+let regs = [(cs,"cs");(pc,"rip")]@List.map (fun ((r, t),s) -> Ireg (r, t), s) gen_regs
 
 let reg_string r t = List.assoc (Ireg (r, t)) regs
 
@@ -257,6 +259,7 @@ type rm64 =
   |  Rm64_reg of reg
   |  Rm64_deref of reg * offset
   |  Rm64_abs of abs
+  |  Rm64_scaled of offset * reg * reg * offset
 
 (* Absolute memory location, we should later combine with Rm64_deref to have proper base-displacement (and later, scale-index) addressing *)
 
@@ -269,7 +272,8 @@ type operand =
 
 let get_naccs_rm64 = function
   |  Rm64_reg _ -> 0
-  |  Rm64_deref _ |  Rm64_abs _ -> 1
+  |  Rm64_deref _ |  Rm64_abs _
+  |  Rm64_scaled _ -> 1
 
 let get_naccs_eff  = function
   | Effaddr_rm64 rm -> get_naccs_rm64 rm
@@ -284,9 +288,11 @@ type inst_size =
 type inst_eff_op =
   | I_ADD
   | I_OR
+  | I_AND
   | I_XOR
   | I_MOV
   | I_CMP
+  | I_SHL
 
 type inst_eff =
   | I_DEC
@@ -318,9 +324,11 @@ let pp_inst_eff_op inst size =
   let inst_string = match inst with
     | I_ADD -> "add"
     | I_OR -> "or"
+    | I_AND -> "and"
     | I_XOR -> "xor"
     | I_MOV -> "mov"
-    | I_CMP -> "cmp" in
+    | I_CMP -> "cmp"
+    | I_SHL -> "shl" in
   inst_string ^ pp_inst_size size
 
 let pp_inst_eff inst size =
@@ -360,6 +368,7 @@ type instruction =
   | I_EFF_EFF of inst_eff_eff * inst_size * effaddr * effaddr
   | I_CMPXCHG of inst_size * effaddr * reg
   | I_JMP of lbl
+  | I_RET
   | I_JCC of condition * lbl
   | I_CMOVC of inst_size * reg * effaddr
   | I_LOCK of instruction
@@ -441,7 +450,9 @@ let rec do_pp_instruction (m : mm) =
     match rm64 with
     | Rm64_reg r -> pp_reg r
     | Rm64_deref (r,o) -> pp_offset o ^ "(" ^ pp_reg r ^ ")"
-    | Rm64_abs v -> "(" ^ pp_abs v ^ ")" in
+    | Rm64_abs v -> "(" ^ pp_abs v ^ ")"
+    | Rm64_scaled (o1,r1,r2,o2) -> pp_offset o1 ^ "(" ^ pp_reg r1
+      ^ ", " ^ pp_reg r2 ^ "," ^ pp_offset o2 ^ ")" in
 
   let pp_effaddr ea =  match ea with
     | Effaddr_rm64 rm64 -> pp_rm64 rm64 in
@@ -470,6 +481,7 @@ let rec do_pp_instruction (m : mm) =
 
   fun i -> match i with
            | I_NOP -> "NOP"
+           | I_RET -> "ret"
            | I_EFF_OP(inst, s, ea, op) -> ppi_inst_ea_op inst s ea op
            | I_EFF(inst, s, ea) -> ppi_ea inst s ea
            | I_EFF_EFF(inst, s, ea1, ea2) -> ppi_ea_ea inst s ea1 ea2
@@ -515,7 +527,7 @@ let allowed_for_symb = allowed_for_symb_size R64b
 let rec fold_regs (f_reg,f_sreg) =
 
   let fold_reg (y_reg,y_sreg) reg = match reg with
-    | RIP | Ireg _ | Flag _ | XMM _ -> f_reg reg y_reg,y_sreg
+    | RIP | CS | Ireg _ | Flag _ | XMM _ -> f_reg reg y_reg,y_sreg
     | Symbolic_reg reg -> y_reg,f_sreg reg y_sreg
     | Internal _ -> y_reg,y_sreg in
 
@@ -523,6 +535,7 @@ let rec fold_regs (f_reg,f_sreg) =
 
   let fold_rm64 c = function
     | Rm64_reg reg | Rm64_deref (reg, _) -> fold_reg c reg
+    | Rm64_scaled (_,r1,r2,_) -> fold_reg (fold_reg c r1) r2
     | Rm64_abs _ -> c in
 
   let fold_effaddr c = function
@@ -537,7 +550,7 @@ let rec fold_regs (f_reg,f_sreg) =
     | I_EFF_OP (_, _, ea, op) ->
         let c = fold_effaddr c ea in
         fold_operand c op
-    | I_NOP | I_JMP _ | I_JCC _ | I_FENCE _ -> c
+    | I_NOP | I_JMP _ | I_RET | I_JCC _ | I_FENCE _ -> c
     | I_EFF (_, _, eff) -> fold_effaddr c eff
     | I_EFF_EFF (_, _, ea1, ea2) ->
         let c = fold_effaddr c ea1 in
@@ -560,7 +573,7 @@ let rec map_regs f_reg f_symb =
   let f_reg r = copy_part r (f_reg r) in
 
   let map_reg reg = match reg with
-  | RIP | Ireg _ | Flag _ | Internal _ | XMM _ -> f_reg reg
+  | RIP | CS | Ireg _ | Flag _ | Internal _ | XMM _ -> f_reg reg
   | Symbolic_reg reg -> f_symb reg in
 
   let map_xmm xmm = match map_reg (XMM xmm) with
@@ -570,6 +583,8 @@ let rec map_regs f_reg f_symb =
   let map_rm64 = function
     | Rm64_reg reg -> Rm64_reg (map_reg reg)
     | Rm64_deref (reg, o) -> Rm64_deref (map_reg reg,o)
+    | Rm64_scaled (o1,r1,r2,o2) -> Rm64_scaled
+      (o1,map_reg r1,map_reg r2, o2)
     | Rm64_abs _ as rm -> rm in
 
   let map_effaddr = function
@@ -583,7 +598,7 @@ let rec map_regs f_reg f_symb =
   match ins with
   | I_EFF_OP(inst, s, ea, op) ->
       I_EFF_OP (inst, s, map_effaddr ea, map_operand op)
-  | I_NOP | I_JMP _ | I_JCC _| I_FENCE _ -> ins
+  | I_NOP | I_JMP _ | I_RET | I_JCC _| I_FENCE _ -> ins
   | I_EFF (inst, s, ea) ->
       I_EFF (inst, s, map_effaddr ea)
   | I_EFF_EFF (inst, s, ea1, ea2) ->
@@ -606,7 +621,7 @@ let rec map_regs f_reg f_symb =
 let rec fold_addrs f =
 
   let fold_rm64 c = function
-    | Rm64_reg _ | Rm64_deref _ -> c
+    | Rm64_reg _ | Rm64_deref _ | Rm64_scaled _ -> c
     | Rm64_abs v -> f v c in
 
   let fold_effaddr c = function
@@ -621,7 +636,7 @@ let rec fold_addrs f =
   | I_EFF_OP (_, _, ea, op) ->
       let c = fold_effaddr c ea in
       fold_operand c op
-  | I_NOP | I_JMP _ | I_JCC _ | I_FENCE _ |I_MOVD _ -> c
+  | I_NOP | I_JMP _ | I_RET | I_JCC _ | I_FENCE _ |I_MOVD _ -> c
   | I_EFF (_, _, eff) -> fold_effaddr c eff
   | I_EFF_EFF (_, _, ea1, ea2) ->
       let c = fold_effaddr c ea1 in
@@ -637,7 +652,7 @@ let rec fold_addrs f =
 let rec map_addrs f =
 
   let map_rm64 x = match x with
-    | Rm64_reg _| Rm64_deref _ -> x
+    | Rm64_reg _| Rm64_deref _ | Rm64_scaled _ -> x
     | Rm64_abs v -> Rm64_abs (f v) in
 
   let map_effaddr = function
@@ -651,7 +666,7 @@ let rec map_addrs f =
   match ins with
   | I_EFF_OP(inst, s, ea, op) ->
       I_EFF_OP (inst, s, map_effaddr ea, map_operand op)
-  | I_NOP | I_JMP _ | I_JCC _| I_FENCE _| I_MOVD _ -> ins
+  | I_NOP | I_JMP _ | I_RET | I_JCC _| I_FENCE _| I_MOVD _ -> ins
   | I_EFF (inst, s, ea) ->
       I_EFF (inst, s, map_effaddr ea)
   | I_EFF_EFF (inst, s, ea1, ea2) ->
@@ -676,11 +691,13 @@ let rec get_next = function
   | I_NOP | I_EFF_OP _ | I_FENCE _
     | I_EFF_EFF _ | I_EFF _ | I_CMPXCHG _
     | I_CMOVC _|I_MOVNTI _ | I_MOVD _ | I_MOVNTDQA _
-    | I_CLFLUSH _
+    | I_CLFLUSH _ | I_RET
       -> [Label.Next]
     | I_JMP lbl-> [Label.To lbl]
     | I_JCC (_,lbl) -> [Label.Next; Label.To lbl]
     | I_LOCK ins -> get_next ins
+
+let is_valid _ = true
 
 include Pseudo.Make
           (struct
@@ -693,7 +710,7 @@ include Pseudo.Make
             let rec get_naccesses = function
               | I_EFF_OP (_, _, ea, op)
                 -> get_naccs_eff ea + get_naccs_op op
-              | I_NOP | I_FENCE _ | I_JMP _ | I_JCC _| I_MOVD _ -> 0
+              | I_NOP | I_FENCE _ | I_JMP _ | I_RET | I_JCC _| I_MOVD _ -> 0
               | I_EFF (I_SETNB, _, e) -> get_naccs_eff e
               | I_EFF (_, _, e) | I_CMPXCHG (_, e, _) -> 2 * get_naccs_eff e
               | I_EFF_EFF (_, _, e1, e2) ->
@@ -703,19 +720,30 @@ include Pseudo.Make
                 -> get_naccs_eff e
               | I_LOCK i -> get_naccesses i
 
+(* This is incorrect as the size of instructions varies.
+ * However a wrong value should generally be harmless, except
+ * for litmus with option `-variant self` and for initial label
+ * values
+ *)
+            let size_of_ins _ = 4
+
             let rec fold_labels k f = function
               | I_LOCK ins -> fold_labels k f ins
               | I_JMP lbl | I_JCC (_, lbl)-> f k lbl
-              | I_NOP | I_EFF_OP _ | I_FENCE _
+              | I_NOP | I_RET | I_EFF_OP _ | I_FENCE _
               | I_EFF_EFF _ | I_EFF _ | I_CMPXCHG _
               | I_CMOVC _|I_MOVNTI _|I_MOVD _|I_MOVNTDQA _
               | I_CLFLUSH _
                 -> k
 
             let rec map_labels f ins = match ins with
-              | I_LOCK ins -> I_LOCK (map_labels f ins)
-              | I_JMP lbl | I_JCC (_, lbl) -> I_JMP (f lbl)
-              | I_NOP | I_EFF_OP _ | I_FENCE _
+              | I_LOCK ins ->
+                 I_LOCK (map_labels f ins)
+              | I_JMP lbl ->
+                 I_JMP (BranchTarget.as_string_fun f lbl)
+              | I_JCC (cc,lbl) ->
+                 I_JCC (cc,BranchTarget.as_string_fun f lbl)
+              | I_NOP | I_RET | I_EFF_OP _ | I_FENCE _
               | I_EFF_EFF _ | I_EFF _ | I_CMPXCHG _
               | I_CMOVC _|I_MOVNTI _|I_MOVD _|I_MOVNTDQA _
               | I_CLFLUSH _ -> ins

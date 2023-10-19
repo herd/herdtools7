@@ -36,7 +36,7 @@ module type S = sig
   type constr = prop ConstrGen.constr
 
 (* Does loc appears in constr ? *)
-  val loc_in : A.location -> constr -> bool
+(*  val loc_in : A.location -> constr -> bool *)
 
   val foralltrue : constr
 
@@ -94,7 +94,8 @@ module Make (C:Config) (A : Arch_herd.S) :
               A.location_compare l2 loc = 0
           | LV (l,_) ->
               A.location_compare (loc_of_rloc l) loc = 0
-          | FF (_,x,_) ->
+          | FF (_,None,_) -> false
+          | FF (_,Some x,_) ->
               A.location_compare
                 (A.Location_global x)
                 loc = 0
@@ -108,7 +109,7 @@ module Make (C:Config) (A : Arch_herd.S) :
 
         and loc_in_props loc =  List.exists (loc_in_prop loc)
 
-        let loc_in loc c = match c with
+        let _loc_in loc c = match c with
         | ForallStates p
         | ExistsState p
         | NotExistsState p -> loc_in_prop loc p
@@ -118,15 +119,17 @@ module Make (C:Config) (A : Arch_herd.S) :
 
           let do_check_prop look_type look_val flts =
             let rec do_rec = function
-              | Atom (LV (rloc,v)) ->
+              | Atom (LV (rloc,v0)) ->
                  let t = look_type rloc in
-                 let w = look_val rloc
-                 and v = A.mask_type t v in
+                 let w0 = look_val rloc in
+                 let v = A.mask_type t v0
+                 and w = A.mask_type t w0 in
                  if dbg then
-                   Printf.eprintf "Loc:(%s:%s) -> %s = %s\n"
+                   Printf.eprintf "Loc:(%s:%s) -> %s[%s] = %s[%s]\n%!"
                      (A.pp_rlocation rloc) (TestType.pp t)
-                     (A.V.pp_v w) (A.V.pp_v v) ;
-                  A.V.compare v w = 0
+                     (A.V.pp_v w) (A.V.pp_v w0)
+                     (A.V.pp_v v) (A.V.pp_v v0);
+                  A.V.equal v w
               | Atom (LL (l1,l2)) ->
                   let v1 = look_val (Loc l1)
                   and v2 = look_val (Loc l2) in
@@ -304,11 +307,11 @@ module Make (C:Config) (A : Arch_herd.S) :
             ->
              mbox m (pp_rloc_no_brk tr m rloc) ^
              pp_equal m ^
-             mbox m (do_add_asm m (V.pp C.hexa v))
+             mbox m (do_add_asm m (V.pp C.hexa (V.printable v)))
           | LV (rloc,v) ->
              mbox m (pp_rloc tr m rloc) ^
              pp_equal m ^
-             mbox m (do_add_asm m (V.pp C.hexa v))
+             mbox m (do_add_asm m (V.pp C.hexa (V.printable v)))
           | LL (l1,l2) ->
               mbox m (pp_loc tr m l1) ^
               pp_equal m ^

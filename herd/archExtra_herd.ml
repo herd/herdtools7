@@ -34,6 +34,8 @@ end
 (** Output signature, functionalities added *)
 module type S = sig
 
+
+
   val is_mixed : bool
 
   module I : I
@@ -69,15 +71,19 @@ module type S = sig
   type instr = I.V.Cst.Instr.t
   type code = (int * instr) list
 
+  val convert_if_imm_branch : int -> int -> int Label.Map.t -> int Label.Map.t -> instr -> instr
 
   (* Program loaded in memory *)
-  type program = (proc * code) Label.Map.t
+  type program = int Label.Map.t
 
   (* A starting address per proc *)
   type start_points = (proc * code * code option) list
 
-  (* A mapping from instruction addresses to labels of the instructions after them *)
-  type return_labels = Label.t IntMap.t
+  (* A mapping from code addresses to code *)
+  type code_segment = (proc * code) IntMap.t
+
+  (* A mapping from code addresses to sets of labels *)
+  type entry_points = int -> Label.Set.t
 
   (* Constraints *)
   type prop =  (location,v,I.FaultType.t) ConstrGen.prop
@@ -97,9 +103,10 @@ module type S = sig
       program_order_index   : program_order_index;
       inst : instr;
       labels : Label.Set.t;
-      link_label : Label.t option;
+      addr : int;
       addr2v : string -> I.V.v;
       env : ii_env;
+      in_handler : bool;
     }
 
   val inst_instance_compare :
@@ -171,6 +178,7 @@ module type S = sig
   val look_reg : I.arch_reg -> reg_state -> I.V.v option
   val set_reg : I.arch_reg -> v -> reg_state -> reg_state
   val kill_regs : I.arch_reg list -> reg_state -> reg_state
+  val fold_reg_state : (I.arch_reg -> v -> 'a -> 'a) -> reg_state -> 'a -> 'a
 
 (****************)
 (* Environments *)
@@ -246,6 +254,7 @@ module type Config = sig
   val brackets : bool
   val variant : Variant.t -> bool
   val endian : Endian.t option
+  val default_to_symb: bool
 end
 
 module Make(C:Config) (I:I) : S with module I = I
@@ -315,16 +324,26 @@ module Make(C:Config) (I:I) : S with module I = I
       type instr = I.V.Cst.Instr.t
       type code = (int * instr) list
 
+      (* This function is a default behaviour for all architectures.
+         When variant -self is enabled, it fails trying to convert a branch
+         instruction to a label into a branch-with-offset representation. *)
+      let convert_if_imm_branch _ _ _ _ i =
+        if C.variant Variant.Ifetch then
+          Warn.fatal "Functionality %s not implemented for -variant self" "convert_if_imm_branch"
+        else
+          i
 
       (* Programm loaded in memory *)
-      type program = (proc * code) Label.Map.t
+      type program = int Label.Map.t
 
       (* A starting address per proc *)
       type start_points = (proc * code * code option) list
 
-      (* A mapping from instruction addresses to labels of the instructions after them *)
-      type return_labels = Label.t IntMap.t
+      (* Mapping from code addresses to code *)
+      type code_segment = (proc * code) IntMap.t
 
+      (* A mapping from code addresses to sets of labels *)
+      type entry_points = int -> Label.Set.t
 
       (* Constraints *)
       type prop =  (location,v,I.FaultType.t) ConstrGen.prop
@@ -342,9 +361,10 @@ module Make(C:Config) (I:I) : S with module I = I
           program_order_index   : program_order_index;
           inst : instr;
           labels : Label.Set.t;
-          link_label : Label.t option;
+          addr : int ;
           addr2v : string -> I.V.v;
           env : ii_env;
+          in_handler : bool;
         }
 
 
@@ -561,9 +581,10 @@ module Make(C:Config) (I:I) : S with module I = I
             | _ -> k)
           st RegMap.empty
 
-      let look_reg r st = try Some (RegMap.find r st) with Not_found -> None
+      let look_reg r st = RegMap.find_opt r st
       let set_reg r v st = RegMap.add r v st
       let kill_regs rs st =  List.fold_right RegMap.remove rs st
+      let fold_reg_state = RegMap.fold
 
 (****************)
 (* Environments *)
@@ -574,7 +595,9 @@ module Make(C:Config) (I:I) : S with module I = I
       let mem_access_size_of_t t =
         let open TestType in
         match t with
-        | Atomic b|Ty b|TyArray (b,_) -> size_of_t b
+        | Atomic b|Ty b|TyArray (b,_) ->
+           if b = "ins_t" then MachSize.Word (* Ok for most archs... *)
+           else size_of_t b
         | TyDef -> size_of_t TestType.default
         | TyDefPointer|Pointer _ -> I.V.Cst.Scalar.machsize
 
@@ -686,6 +709,7 @@ module Make(C:Config) (I:I) : S with module I = I
         try get_val loc (State.find loc st)
         with Not_found ->
           let open Constant in
+          if C.default_to_symb then I.V.fresh_var () else
           match loc with
           | Location_global (I.V.Var _)
           (* As called from look_address_in_state below *)
@@ -703,8 +727,9 @@ module Make(C:Config) (I:I) : S with module I = I
                 (pp_location loc)
           | Location_global
               (I.V.Val
-                 (Concrete _|ConcreteVector _
-                 |Label _|Instruction _|Tag _|PteVal _))
+                 (Concrete _|ConcreteVector _|ConcreteRecord _
+                 |Label _|Instruction _|Frozen _
+                 |Tag _|PteVal _))
             ->
               Warn.user_error
                 "Very strange location (look_address) %s\n"
@@ -800,7 +825,7 @@ module Make(C:Config) (I:I) : S with module I = I
              (fun loc ->
                match look loc with
                | I.V.Val c -> c
-               | _ -> Warn.fatal "Non constant value in vector")
+               | I.V.Var v -> I.V.freeze v)
              locs in
          I.V.Val (Constant.ConcreteVector cs)
 
@@ -828,12 +853,14 @@ module Make(C:Config) (I:I) : S with module I = I
       (* Scalars are always for the same effective type,
          (V.Cst.Scalar.t). For printing a scalar of "external"
          type t, the value itself is changed, masking for unsigned
-         types, sign extension for signed types *)
+         types, sign extension for signed types.
+         However, in hexadecimal all scalars are seen
+         as unsigned. *)
 
       let cast_for_pp_with_base b sc =
         let sz = size_of_t b in
         if sz = I.V.Cst.Scalar.machsize then sc
-        else if TestType.is_signed b then I.V.Cst.Scalar.sxt sz sc
+        else if TestType.is_signed b && not C.hexa then I.V.Cst.Scalar.sxt sz sc
         else I.V.Cst.Scalar.mask sz sc
 
       let cast_for_pp_with_type t =
@@ -873,18 +900,26 @@ module Make(C:Config) (I:I) : S with module I = I
         else
           let noflts =
             FaultAtomSet.fold
-              (fun ((p,lab),loc,_ftype) k ->
+              (fun (((p,lbl),loc,ftype) as f0) k ->
                 if
-                  FaultSet.exists (fun f -> check_one_fatom f ((p,lab),loc,None)) flts
+                  FaultSet.exists (fun f -> check_one_fatom f f0) flts
                 then k
                 else
-                  let tr_lab = match lab with
+                  let tr_lbl = match lbl with
                     | None -> Label.Set.empty
-                    | Some lab -> Label.Set.singleton lab in
-                  (" ~"^pp_fault (((p,tr_lab),loc,None,None))^";")::k)
+                    | Some lbl -> Label.Set.singleton lbl in
+                  (" ~" ^ pp_fault (((p,tr_lbl),loc,ftype,None)) ^ ";")::k)
               fobs [] in
+          let flts =
+            if !Opts.dumpallfaults then
+              flts
+            else
+              FaultSet.filter
+                (fun f -> FaultAtomSet.exists
+                    (fun f0 -> check_one_fatom f f0) fobs)
+                flts in
           pp_st ^ " " ^
-          FaultSet.pp_str " " (fun f -> pp_fault f ^ ";") flts ^
+          FaultSet.pp_str " "  (fun f -> pp_fault f ^ ";")  flts ^
           String.concat "" noflts
 
       module StateSet =

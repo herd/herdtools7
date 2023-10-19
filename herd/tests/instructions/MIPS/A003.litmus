@@ -1,0 +1,9 @@
+MIPS A003
+
+(* Parse NOP instruction *)
+{}
+
+P0;
+nop;
+
+forall 0:a0=0

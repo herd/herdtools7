@@ -58,6 +58,7 @@ let mk_lab p s = Label (p,s)
 %token <string> NAME
 %token <string> DOLLARNAME
 %token <string> NUM
+%token <string> VALUE
 
 %token TRUE FALSE
 %token EQUAL NOTEQUAL EQUALEQUAL
@@ -70,7 +71,7 @@ let mk_lab p s = Label (p,s)
 %token TOK_PTE TOK_PA
 %token TOK_TAG
 %token TOK_NOP
-
+%token <string> INSTR
 %token PTX_REG_DEC
 %token <string> PTX_REG_TYPE
 
@@ -146,6 +147,7 @@ pteval:
 
 maybev_notag:
 | NUM  { Concrete $1 }
+| VALUE { Concrete $1 }
 | location_global { $1 }
 /* conflicts with location_reg:
 | NUM COLON NAME { mk_sym_morello $1 $3 "0" }
@@ -202,13 +204,16 @@ atom:
 | location {($1,ParsedConstant.zero)}
 | left_loc EQUAL maybev_label {($1,$3)}
 
-
+instr:
+| TOK_NOP { None }
+| i=INSTR { Some i }
 atom_init:
 | atom { let x,v = $1 in x,(TyDef,v) }
 | typ=NAME loc=left_loc  { (loc, (Ty typ,ParsedConstant.zero)) }
 | ATOMIC typ=NAME loc=left_loc { loc,(Atomic typ,ParsedConstant.zero)}
-| loc=left_loc EQUAL TOK_NOP
-  { (loc,(Ty "ins_t", mk_instr_val "NOP")) }
+| loc=left_loc EQUAL i=instr  { (loc,(Ty "ins_t", mk_instr_val i)) }
+| NAME loc=left_loc EQUAL i=instr  { (loc,(Ty "ins_t", mk_instr_val i)) }
+| ATOMIC typ=NAME loc=left_loc EQUAL v=maybev { loc,(Atomic typ,v)}
 | typ=NAME loc=left_loc EQUAL v=maybev { (loc,(Ty typ,v))}
 | typ=NAME loc=left_loc EQUAL ATOMICINIT LPAR v=maybev RPAR
    { (loc,(Ty typ,v))}
@@ -256,13 +261,26 @@ rloc_typ:
 | rloc NAME { ($1, Ty $2) }
 | rloc NAME STAR { ($1, Pointer $2) }
 
+fault_pte_loc:
+| TOK_PTE LPAR name=NAME RPAR { (Constant.mk_sym_pte name) }
+
 fault_loc:
 | name=NAME { Constant.mk_sym name }
-| TOK_PTE LPAR name=NAME RPAR { Constant.mk_sym_pte name }
+| fl=fault_pte_loc { fl }
 
+composite_faulttype:
+| fst=NAME COLON rem=separated_nonempty_list(COLON,NAME)
+     { String.concat ":" (fst::rem) }
 fault:
-| FAULT LPAR lbl COMMA fault_loc RPAR { ($3,$5,None) }
-| FAULT LPAR lbl COMMA fault_loc COMMA separated_nonempty_list(COLON, NAME) RPAR { ($3,$5,Some (String.concat ":" $7)) }
+| FAULT LPAR lab=lbl RPAR { (lab,None,None) }
+| FAULT LPAR lab=lbl COMMA name=NAME RPAR
+   { if FaultType.is name then (lab,None,Some name)
+     else (lab,Some (Constant.mk_sym name),None) }
+| FAULT LPAR lab=lbl COMMA fl=fault_pte_loc RPAR { (lab,Some fl,None) }
+| FAULT LPAR lab=lbl COMMA ft=composite_faulttype RPAR { (lab,None,Some ft) }
+| FAULT LPAR lab=lbl COMMA fl=fault_loc COMMA
+  ft=separated_nonempty_list(COLON, NAME) RPAR
+    { (lab,Some fl,Some (String.concat ":" ft)) }
 
 
 loc_item:
@@ -372,8 +390,8 @@ arrayspec:
 | LBRK loc=location_global RBRK { Location_global loc }
 
 atom_prop:
-| loc=location EQUAL TOK_NOP
-  {Atom (LV (Loc loc,(mk_instr_val "NOP")))}
+| loc=location EQUAL i=instr
+  {Atom (LV (Loc loc,(mk_instr_val i)))}
 | location equal maybev {Atom (LV (Loc $1,$3))}
 | loc=loc_brk equal v=maybev
    {Atom (LV (Loc loc,v))}

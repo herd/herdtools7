@@ -27,7 +27,7 @@ module System : sig
     | `X86
     | `RISCV
     | `X86_64
-    ]
+   ]
 
   (* Native architecture may be unknown, some features
      will notbe available *)
@@ -48,6 +48,7 @@ type t = [
   | `CPP
   | `LISA
   | `JAVA
+  | `ASL
   ]
 
 val tags : string list
@@ -68,6 +69,7 @@ val  cpp : t
 val  java : t
 val  lisa : t
 val  x86_64 : t
+val  asl : t
 
 val get_sysarch : [< t ] ->  System.t -> System.t
 val check_carch : [< System.t ] -> System.arch

@@ -1,0 +1,13 @@
+RISCV A04
+{
+int x=0;
+0:x6=x;
+1:x6=x;
+}
+ P0          | P1             ;
+ ori x5,x0,1 | lw x5,0(x6)    ;
+ sw x5,0(x6) | beq x5,x0,LC00 ;
+             | ori x1,x0,1    ;
+             | LC00:          ;
+
+exists (1:x1=1)

@@ -19,11 +19,13 @@
 type t = string
 
 val pp : t -> string
+val equal : t -> t -> bool
 val compare : t -> t -> int
 val reset : unit -> unit
 val next_label : string -> t
 
 val last : int -> t
+val return : int -> t
 
 type next = Any | Next | To of t
 

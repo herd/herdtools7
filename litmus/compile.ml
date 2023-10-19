@@ -41,7 +41,8 @@ let get_fmt hexa base = match CType.get_fmt hexa base with
 let base =  CType.Base "int"
 let pointer = CType.Pointer base
 
-module Generic (A : Arch_litmus.Base)
+module Generic
+    (A : Arch_litmus.Base)
     (C:Constr.S
     with type location = A.location and module LocSet = A.LocSet) = struct
 
@@ -53,7 +54,8 @@ module Generic (A : Arch_litmus.Base)
       let code_pointer = Pointer (Base "ins_t")
       let tag = Base "tag_t"
       let base_array sz = CType.Array ("int", sz)
-      let pteval_t = Base "pteval_t"
+      let pteval_t = CType.pteval_t
+      let ins_t = CType.ins_t
 
       let typeof = function
         | Constant.Concrete _ -> base
@@ -62,8 +64,8 @@ module Generic (A : Arch_litmus.Base)
         | Constant.Label _ -> code_pointer
         | Constant.Tag _ -> tag
         | Constant.PteVal _ -> pteval_t
-        | Constant.Instruction _ ->
-          Warn.fatal "FIXME: typeof functionality for -variant self"
+        | Constant.Instruction _ -> ins_t
+        | Constant.Frozen _ | Constant.ConcreteRecord _ -> assert false
 
       let misc_to_c loc = function
         | TestType.TyDef when A.is_pte_loc loc -> pteval_t
@@ -286,6 +288,7 @@ module Make
     (O:Config)
     (A:Arch_litmus.S)
     (T:Test_litmus.S with
+type instruction = A.instruction and
 module A.V = A.V and
 type A.reg = A.reg and
 type A.location = A.location and
@@ -337,16 +340,6 @@ module A.FaultType = A.FaultType)
         code
         A.RegSet.empty
 
-
-
-(**********************************)
-(* Label compilation as an offset *)
-(**********************************)
-
-    let find_offset prog p lbl =
-      let is = List.assoc p prog in
-      A.find_offset lbl is
-
 (*******************************)
 (* Assoc label -> small number *)
 (*******************************)
@@ -385,8 +378,9 @@ module A.FaultType = A.FaultType)
           match v with
           | Constant.Label (_,lbl) ->
               Label.Set.add lbl k
-          |Concrete _|ConcreteVector _
-          |Symbolic _|Tag _|PteVal _|Instruction _
+          |Concrete _|ConcreteVector _|ConcreteRecord _
+          |Symbolic _|Tag _|PteVal _
+          |Instruction _|Frozen _
            -> k)
         Label.Set.empty init
 
@@ -395,39 +389,24 @@ module A.FaultType = A.FaultType)
 
     let pp_full = Label.Full.Set.pp_str "," Label.Full.pp
 
-    let escaping_labels init prog =
-      let defs = all_labels prog
-      and uses = prog_targets prog in
-      let esc_prog = Label.Full.Set.diff uses defs in
-      if do_self then begin
-        if not (Label.Full.Set.is_empty esc_prog) then
-          Warn.user_error
-            "Code to code branches {%s} not possible with `-variant self`, change for initial values"
-          (pp_full esc_prog)
-        end ;
-      Label.Full.Set.fold
-        (fun (_,lbl) -> Label.Set.add lbl)
-        esc_prog (init_targets init)
-
 (* Translate labls to integers (local labels), when possible *)
-    let rec lblmap_pseudo no cm i = match i with
+    let rec lblmap_pseudo cm i = match i with
     | A.Nop|A.Instruction _ -> cm
     | A.Label(lbl,i) ->
        let cm  =
          let c,m = cm in
-         if Label.Set.mem lbl no then cm
-         else c+1,Label.Map.add lbl c m in
-       lblmap_pseudo no cm i
+         c+1,Label.Map.add lbl c m in
+       lblmap_pseudo cm i
     | A.Symbolic _ (*no symbolic in litmus *)
     | A.Macro _ -> assert false
 
     let first_label = if is_pte then C.max_handler_label else 0
 
-    let lblmap_code no =
+    let lblmap_code =
       let rec do_rec cm = function
         | [] -> cm
         | i::code ->
-            let cm = lblmap_pseudo no cm i in
+            let cm = lblmap_pseudo cm i in
             do_rec cm code in
       fun code co ->
         let (_,m) as cm = do_rec (first_label,Label.Map.empty) code in
@@ -470,16 +449,9 @@ module A.FaultType = A.FaultType)
         memo=sprintf "%s:" (A.Out.dump_label (tr_label m lbl)) ;
         label = Some lbl ; branch=[Next] ; }
 
-    let as_int = function
-      | Concrete i -> i
-      | ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _
-        -> raise CannotIntern
-      | Instruction _ ->
-        Warn.fatal "FIXME: as_int functionality for -variant self"
-
-    let compile_pseudo_code no code fhandler =
+    let compile_pseudo_code code fhandler =
       let m =
-        if O.numeric_labels then lblmap_code no code fhandler
+        if O.numeric_labels then lblmap_code code fhandler
         else Label.Map.empty in
 
       let tr_lab seen lbl =
@@ -513,9 +485,46 @@ module A.FaultType = A.FaultType)
          let _,fhandler = do_rec seen fhandler in
          code,fhandler
 
-    let compile_code proc no user code fhandler =
+    let rec pp_pseudo ins k =
+      match ins with
+      | A.Nop -> k
+      | A.Label (lbl,ins) ->
+         (Label.pp lbl ^ ":")
+         ::pp_pseudo ins k
+      | A.Instruction ins ->
+         A.dump_instruction ins::k
+      | A.Macro _|A.Symbolic _
+        -> assert false
+
+    let pp_code code =
+      let k = List.fold_right pp_pseudo code [] in
+      String.concat "; " k
+
+    let ret_as_branch proc code =
+      if List.exists (A.pseudo_exists C.is_ret) code then
+        let lab = Label.return proc in
+        List.fold_right
+          (fun i k ->
+            (A.pseudo_map
+               (fun i ->
+                 if C.is_ret i then C.branch lab
+                 else i)) i::k)
+          code [A.Label (lab,A.Nop)]
+      else code
+
+    let compile_code proc user code fhandler =
+      (* In telechat mode, return instruction is interpreted as "jump to end of code" *)
+      let code =
+        if O.variant Variant_litmus.Telechat then
+          ret_as_branch proc code
+        else code in
+
+      let fhandler =
+        match fhandler with
+        | [] -> None
+        | _::_ -> Some fhandler in
       let has_handler = Misc.is_some fhandler in
-      let code,fhandler_c = compile_pseudo_code no code fhandler in
+      let code,fhandler_c = compile_pseudo_code code fhandler in
       let code =
         if O.timeloop > 0 then C.emit_loop code
         else code in
@@ -558,7 +567,9 @@ module A.FaultType = A.FaultType)
    by real code. This is standard live-in calculation *)
 
 (* One instruction *)
-    let live_in_ins ins (env,live_in_next) =
+    let int_label k = Printf.sprintf "_%d" k
+
+    let live_in_ins i ins (env,live_in_next) =
       let live_out =
         List.fold_left
           (fun k flow ->
@@ -570,9 +581,17 @@ module A.FaultType = A.FaultType)
                     (fun _ rs k -> rs::k)
                     env [live_in_next;] in
                 RegSet.unions rss
+            | Disp j ->
+               let lbl = int_label (i+j) in
+               begin
+                 try LabEnv.find lbl env
+                 with Not_found -> assert false
+               end
             | Branch lbl ->
-                try LabEnv.find lbl env
-                with Not_found -> RegSet.empty in
+               begin
+                 try LabEnv.find lbl env
+                 with Not_found -> RegSet.empty
+               end in
             RegSet.union rs k)
           RegSet.empty ins.branch in
       let live_in =
@@ -582,29 +601,51 @@ module A.FaultType = A.FaultType)
 (* Conditional instruction, a la ARM *)
              (if ins.cond then RegSet.empty
              else RegSet.of_list ins.outputs)) in
+      let env =
+        let lbl = int_label i in
+        if LabEnv.mem lbl env then LabEnv.add lbl live_in env
+        else env in
       (match ins.label with
       | None -> env
       | Some lbl -> LabEnv.add lbl live_in env),
       live_in
 
 (* One sequence of instruction *)
-    let live_in_code code env live_in_final =
-      List.fold_right live_in_ins code (env,live_in_final)
+    let live_in_code t env live_in_final =
+      let rec do_rec k =
+        if k >= Array.length t then (env,live_in_final)
+        else live_in_ins k t.(k) (do_rec (k+1)) in
+      do_rec 0
 
     let debug = false
 (* Fixpoint *)
     let comp_fix  code live_in_final =
+      let t = Array.of_list code in
       if debug then
         eprintf "FINAL: {%a}\n" pp_reg_set live_in_final ;
       let rec do_rec env0 =
-        let env,r = live_in_code code env0 live_in_final in
+        let env,r = live_in_code t env0 live_in_final in
         if debug then
           eprintf "FIX: {%a}\n" pp_reg_set r ;
         let c =
           LabEnv.compare RegSet.compare env env0 in
         if c = 0 then r
         else do_rec env in
-      do_rec LabEnv.empty
+      let env0 =
+        let rec do_rec k env =
+          if k >= Array.length t then env
+          else
+            let env =
+              List.fold_left
+                (fun env -> function
+                  | Disp i ->LabEnv.add (int_label (k+i)) RegSet.empty env
+                  | Next|Branch _|Any -> env)
+                env t.(k).branch in
+            do_rec (k+1) env in
+        do_rec 0
+          (LabEnv.add
+             (int_label (Array.length t)) live_in_final LabEnv.empty) in
+      do_rec env0
 
     let comp_initset proc initenv code inputs_final =
       let reg_set  = comp_fix code inputs_final in
@@ -634,33 +675,19 @@ module A.FaultType = A.FaultType)
 
     let compile_final _proc observed = RegSet.elements observed
 
-    let mk_templates procs_user ty_env name stable_info init code observed =
-      let esc =
-        if O.numeric_labels then escaping_labels init code
-        else Label.Set.empty in
-      let mains,fhandlers =
-        List.partition (fun (_,func,_) -> func=MiscParser.Main) code in
+    let mk_templates procs_user ty_env name stable_info init prog observed =
       let outs =
         List.map
-          (fun (proc,_,code) ->
-            let nrets = count_ret code in
-            let nnops = count_nop code in
-            let addrs = extract_addrs code in
-            let stable = stable_regs code in
+          (fun (proc,(code,fhandler)) ->
             let is_user = ProcsUser.is procs_user proc in
-            let (code,fhandler),addrs =
-              try
-                let (_,_,c) =
-                  List.find (fun (p,_,_) -> Proc.equal p proc) fhandlers in
-                let addrs = G.Set.union (extract_addrs c) addrs in
-                let code,fhandler =
-                  compile_code proc esc is_user code (Some c) in
-                (code,fhandler),addrs
-              with Not_found ->
-                 compile_code proc esc is_user code None,addrs
-            in
+            let nrets = count_ret code in
+            (* For user mode one nop added at the assembly level *)
+            let nnops = count_nop code + (if is_user then 1 else 0) in
+            let addrs =  G.Set.union (extract_addrs code) (extract_addrs fhandler) in
+            let stable = stable_regs code in
+            let code,fhandler =  compile_code proc is_user code fhandler in
             proc,addrs,stable,code,fhandler,nrets,nnops)
-          mains in
+          prog in
       List.map
         (fun (proc,addrs,stable,code,fhandler,nrets,nnops) ->
           let addrs,ptes =
@@ -782,6 +809,9 @@ module A.FaultType = A.FaultType)
             locations = locs ;
             extra_data ;_
           } = t in
+      let procs_user = ProcsUser.get info in
+      if Misc.consp procs_user && do_self && is_pte then
+        Warn.user_error "litmus7 cannot handle -variant self -mode kvm when there are processes in userspace" ;
       let initenv = List.map (fun (loc,(_,v)) -> loc,v) init in
       let observed = Generic.all_observed final filter locs in
       let ty_env1 = Generic.build_type_env init final filter locs
@@ -794,18 +824,22 @@ module A.FaultType = A.FaultType)
             StringMap.empty (InfoAlign.parse ps)
         with Not_found -> StringMap.empty in
       let ty_env = ty_env1,ty_env2 in
-      let code = List.map (fun ((p,_,f),c) -> p,f,c) code in
-      let label_init = A.get_label_init initenv in
-      let code =
-        if do_self || is_pte || Misc.consp label_init then
+      let label_init = T.get_exported_labels_init_code initenv code in
+      let prog = A.code_by_proc code in
+      let prog =
+        if do_self || is_pte || not (Label.Full.Set.is_empty label_init) then
           let do_append_nop = is_pte && do_precise in
-          List.map (fun (p,f,c) ->
-            let nop = A.Instruction A.nop in
-            let c = A.Instruction A.nop::c in
-            let c =
-              if do_append_nop then c@[nop] else c in
-            p,f,c) code
-        else code in
+          List.map
+            (fun (p,(c,f)) ->
+              (* Add nop to signal code start *)
+              let is_user = ProcsUser.is procs_user p in
+              let nop = A.Instruction A.nop in
+              (* Except in user mode, where it will be added later *)
+              let c = if not is_user then nop::c else c in
+              let c = (* Append nop for faukt handler to return at end of code *)
+                if do_append_nop then c@[nop] else c in
+              p,(c,f)) prog
+        else prog in
       let stable_info = match MiscParser.get_info  t MiscParser.stable_key with
       | None -> A.RegSet.empty
       | Some s ->
@@ -817,15 +851,14 @@ module A.FaultType = A.FaultType)
               | Some r -> r::k)
               [] rs in
           A.RegSet.of_list rs in
-      let procs_user = ProcsUser.get info in
       let code =
         mk_templates
-          procs_user ty_env1 name stable_info initenv code observed in
+          procs_user ty_env1 name stable_info initenv prog observed in
       let bellinfo =
         let open MiscParser in
         match extra_data with
-        | NoExtra|CExtra _ -> None
-        | BellExtra i -> Some i in
+        | [BellExtra i] -> Some i
+        | _ -> None in
       let code_typed = type_outs ty_env1 code in
       let flocs,ffaults = LocationsItem.locs_and_faults locs in
         { T.init = initenv ;

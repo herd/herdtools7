@@ -1,4 +1,4 @@
 (tests
- (names uint_test)
+ (names uint_test int128_test)
  (libraries internal_lib herdtools)
  (modes native))

@@ -397,7 +397,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let emit_exch_dep _st =
       Warn.fatal "Dependent access is irrelevant for X86_64"
 
-    let emit_rmw_dep () =  emit_exch_dep
+    let emit_rmw_dep () _n =  emit_exch_dep
 
     let emit_fence st p init n f = match f with
       | Fence b -> init,[X86_64.Instruction (I_FENCE b)],st

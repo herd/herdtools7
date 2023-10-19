@@ -1,0 +1,10 @@
+RISCV A005
+
+(* Test NOP instruction*)
+{}
+
+P0;
+
+NOP;
+
+forall 0:a0=0

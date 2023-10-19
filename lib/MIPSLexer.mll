@@ -22,9 +22,18 @@ open MIPSParser
 
 module LU = LexUtils.Make(O)
 
+let parse_reg name = begin match MIPSBase.parse_reg name with
+  | Some r -> ARCH_REG r;
+  | None -> NAME name
+end
+
 let check_name = function
+  | "nop"-> NOP
+  | "lui"-> LUI
   | "li" -> LI
+  | "move" -> MOVE
   | "lw" -> LW
+  | "ld" -> LD
   | "sw" -> SW
   | "ll" -> LL
   | "sc" -> SC
@@ -34,6 +43,12 @@ let check_name = function
   | "addu" -> ADDU
   | "addi" -> ADDI
   | "addiu" -> ADDIU
+  | "daddu" -> DADDU
+  | "daddiu" -> DADDIU
+(* DEXT *)
+  | "dext" -> DEXT
+(* Shift Left *)
+  | "dsll" -> DSLL
 (* SUB *)
   | "sub" -> SUB
   | "subu" -> SUBU
@@ -63,7 +78,8 @@ let check_name = function
   | "bgtz" -> BGTZ
   | "bltz" -> BLTZ
   | "bgez" -> BGEZ
-  | name -> NAME name
+  | "jr" -> JR
+  | name -> parse_reg name
 
 }
 let digit = [ '0'-'9' ]
@@ -87,8 +103,8 @@ rule token = parse
 | ':' { COLON }
 | '$' (name|num) as x
   { match MIPSBase.parse_reg x with
-  | Some r -> ARCH_REG r
-  | None -> NAME x }
+    | Some r -> ARCH_REG r
+    | _ -> NAME x }
 | name as x
   { check_name x }
 | eof { EOF }

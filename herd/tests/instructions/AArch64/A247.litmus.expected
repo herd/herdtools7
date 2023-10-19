@@ -1,0 +1,10 @@
+Test A247 Required
+States 1
+ Fault(P0:L0,UndefinedInstruction);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0:L0,UndefinedInstruction))
+Observation A247 Always 1 0
+Hash=f175a0f32cc8e0defdfd4e1bdd656da4
+

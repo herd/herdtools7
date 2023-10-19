@@ -39,20 +39,30 @@ include Arch.MakeArch(struct
     | S_SXTW, S_SXTW | S_UXTW, S_UXTW | S_NOEXT, S_NOEXT -> Some subs
     | _ -> None
 
+  let match_lbl lp li subs =
+    let open BranchTarget in
+    match lp,li with
+    | Lbl lp,Lbl li -> add_subs [Lab(lp,li)] subs
+    | Offset ip,Offset ii
+         when Misc.int_eq ip ii -> Some subs
+    | _,_ -> None
+
   let match_instr subs pattern instr = match pattern,instr with
     | I_NOP,I_NOP -> Some subs
     | I_FENCE fp,I_FENCE fi when fp = fi
                             -> Some subs
 
     | I_B lp, I_B li
-      -> add_subs [Lab(lp,li)] subs
+      -> match_lbl lp li subs
 
     | I_BC(cp,lp), I_BC(ci,li) when cp = ci
-                               -> add_subs [Lab(lp,li)] subs
+      -> match_lbl lp li subs
 
     | I_CBZ(_,r,lp),I_CBZ(_,r',li)
     | I_CBNZ(_,r,lp),I_CBNZ(_,r',li)
-      ->  add_subs [Reg(sr_name r,r'); Lab(lp,li)] subs
+      ->
+       match_lbl lp li subs >>> add_subs [Reg(sr_name r,r')]
+
     | I_MOV(_,r,kr),I_MOV(_,r',kr') ->
         match_kr subs kr kr' >>> add_subs [Reg(sr_name r,r');]
 
@@ -70,6 +80,14 @@ include Arch.MakeArch(struct
         add_subs
           [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg(sr_name r3,r3')]
           subs
+    | I_UBFM(_,r1,r2,k1,k2),I_UBFM(_,r1',r2',k1',k2')
+    | I_SBFM(_,r1,r2,k1,k2),I_SBFM(_,r1',r2',k1',k2')
+      ->
+        begin match (match_kr subs (K k1) (K k1'),
+        match_kr subs (K k2) (K k2')) with
+        | Some(x),Some(_) -> Some(x)
+        | _ -> None end  >>>
+        add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
     | I_LDR_P(_,r1,r2,k),I_LDR_P(_,r1',r2',k')
       ->
         match_kr subs (K k) (K k') >>>
@@ -99,7 +117,13 @@ include Arch.MakeArch(struct
 
   let expl_instr subs =
     let conv_reg = conv_reg subs in
-    let find_lab = find_lab subs in
+
+    let find_lab lbl =
+      let open BranchTarget in
+      match lbl with
+      | Lbl lbl -> find_lab subs lbl >! fun lbl -> Lbl lbl
+      | Offset _ as tgt -> unitT tgt in
+
     let find_cst = find_cst subs in
     let find_shift = function
       | S_LSL(n) ->
@@ -120,7 +144,7 @@ include Arch.MakeArch(struct
       | K k ->
           find_cst k >! fun k -> K k in
     function
-    | (I_FENCE _|I_NOP|I_RET None|I_ERET) as i -> unitT i
+    | (I_FENCE _|I_NOP|I_RET None|I_ERET|I_UDF _) as i -> unitT i
     | I_B l ->
         find_lab l >! fun l -> I_B l
     | I_BR r ->
@@ -161,6 +185,11 @@ include Arch.MakeArch(struct
         find_cst k >> fun k ->
         find_shift s >! fun s->
         I_MOVZ(a,r,k,s)
+    | I_MOVN(a,r,k,s) ->
+        conv_reg r >> fun r  ->
+        find_cst k >> fun k ->
+        find_shift s >! fun s->
+        I_MOVN(a,r,k,s)
     | I_MOVK(a,r,k,s) ->
         conv_reg r >> fun r  ->
         find_cst k >> fun k ->
@@ -192,6 +221,18 @@ include Arch.MakeArch(struct
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >! fun r2 ->
         I_SXTW(r1,r2)
+    | I_SBFM(a,r1,r2,k1,k2) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        find_cst k1 >> fun k1 ->
+        find_cst k2 >! fun k2 ->
+        I_SBFM(a,r1,r2,k1,k2)
+    | I_UBFM(a,r1,r2,k1,k2) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        find_cst k1 >> fun k1 ->
+        find_cst k2 >! fun k2 ->
+        I_UBFM(a,r1,r2,k1,k2)
     | I_STXR(a,b,r1,r2,r3) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
@@ -223,30 +264,27 @@ include Arch.MakeArch(struct
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >! fun r2 ->
         I_LDUR(a,r1,r2,None)
-    | I_LDP(t,a,r1,r2,r3,kr) ->
+    | I_LDP(t,a,r1,r2,r3,k,md) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        conv_reg r3 >> fun r3 ->
-        expl_kr kr  >! fun kr ->
-        I_LDP(t,a,r1,r2,r3,kr)
-    | I_LDPSW(r1,r2,r3,kr) ->
+        conv_reg r3 >! fun r3 ->
+        I_LDP(t,a,r1,r2,r3,k,md)
+    | I_LDPSW(r1,r2,r3,k,md) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        conv_reg r3 >> fun r3 ->
-        expl_kr kr  >! fun kr ->
-        I_LDPSW(r1,r2,r3,kr)
+        conv_reg r3 >! fun r3 ->
+        I_LDPSW(r1,r2,r3,k,md)
     | I_LDXP(t,a,r1,r2,r3) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
         conv_reg r3 >! fun r3 ->
         I_LDXP(t,a,r1,r2,r3)
-    | I_STP(t,a,r1,r2,r3,kr) ->
+    | I_STP(t,a,r1,r2,r3,k,md) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        conv_reg r3 >> fun r3 ->
-        expl_kr kr >! fun kr ->
-        I_STP(t,a,r1,r2,r3,kr)
-    | I_STXP(a,b,r1,r2,r3,r4) ->
+        conv_reg r3 >! fun r3 ->
+        I_STP(t,a,r1,r2,r3,k,md)
+    | I_STXP (a,b,r1,r2,r3,r4) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
         conv_reg r3 >> fun r3 ->
@@ -268,6 +306,11 @@ include Arch.MakeArch(struct
         find_shift s >> fun s ->
         expl_kr kr >! fun kr ->
         I_STR(a,r1,r2,kr,s)
+    | I_STR_P(a,r1,r2,k) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        find_cst k >! fun k ->
+        I_STR_P(a,r1,r2,k)
     | I_STRBH(a,r1,r2,kr,s) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
@@ -295,6 +338,13 @@ include Arch.MakeArch(struct
         conv_reg r2 >> fun r2 ->
         conv_reg r3 >! fun r3 ->
         I_CASBH(v,a,r1,r2,r3)
+    | I_CASP (v,a,r1,r2,r3,r4,r5) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >> fun r3 ->
+        conv_reg r4 >> fun r4 ->
+        conv_reg r5 >! fun r5 ->
+        I_CASP(v,a,r1,r2,r3,r4,r5)
     | I_SWP (v,a,r1,r2,r3) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
@@ -331,28 +381,30 @@ include Arch.MakeArch(struct
         conv_reg r >! fun r -> I_TLBI (op,r)
     | I_MRS (r,sr) -> conv_reg r >! fun r -> I_MRS (r,sr)
     | I_MSR (sr,r) -> conv_reg r >! fun r -> I_MSR (sr,r)
-    | I_STG (r1,r2,kr) ->
+    | I_STG (r1,r2,k) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        expl_kr kr >! fun kr ->
-        I_STG (r1,r2,kr)
-    | I_STZG (r1,r2,kr) ->
+        find_cst k >! fun k ->
+        I_STG (r1,r2,k)
+    | I_STZG (r1,r2,k) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        expl_kr kr >! fun kr ->
-        I_STZG (r1,r2,kr)
-    | I_LDG (r1,r2,kr) ->
+        find_cst k >! fun k ->
+        I_STZG (r1,r2,k)
+    | I_LDG (r1,r2,k) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        expl_kr kr >! fun kr ->
-        I_LDG (r1,r2,kr)
+        find_cst k >! fun k ->
+        I_LDG (r1,r2,k)
     | I_ALIGND(r1,r2,k) ->
         conv_reg r1 >> fun r1 ->
-        conv_reg r2 >! fun r2 ->
+        conv_reg r2 >> fun r2 ->
+        find_cst k >! fun k ->
         I_ALIGND(r1,r2,k)
     | I_ALIGNU(r1,r2,k) ->
         conv_reg r1 >> fun r1 ->
-        conv_reg r2 >! fun r2 ->
+        conv_reg r2 >> fun r2 ->
+        find_cst k >! fun k ->
         I_ALIGNU(r1,r2,k)
     | I_BUILD(r1,r2,r3) ->
         conv_reg r1 >> fun r1 ->

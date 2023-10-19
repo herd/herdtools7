@@ -1,0 +1,14 @@
+RISCV A010
+
+(* Test sext.w instruction*)
+{
+int64_t 0:a0;
+int64_t 0:a1 = 1;
+}
+
+P0;
+slli a1,a1,32 ;
+addi a1,a1,-1 ;
+sext.w a0, a1 ;
+
+forall 0:a0=-1

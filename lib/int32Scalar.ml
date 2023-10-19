@@ -16,6 +16,8 @@
 
 include Int32
 
+let printable c = c
+
 let shift_right_arithmetic = Int32.shift_right
 
 let addk x k = match k with

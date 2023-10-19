@@ -18,12 +18,17 @@
 
 module type S =
     sig
-
 (* Constants, notice that they include symbolic "rigid" constants *)
       module Cst : Constant.S
-      type arch_op1 (* Arch specific operations *)
+      type arch_op
+      type arch_extra_op1
+      type 'a arch_constr_op1 (* Arch specific operations *)
+      type arch_op1 = arch_extra_op1 arch_constr_op1
+
+      val pp_arch_op : arch_op -> string
       val pp_arch_op1 : bool -> arch_op1 -> string
 
+      type op_t = arch_op Op.op
       type op1_t = arch_op1 Op.op1
 
 (* flexible variables *)
@@ -42,16 +47,25 @@ module type S =
       val pp : bool (* hexa *) -> v -> string
       val pp_unsigned : bool (* hexa *) -> v -> string
 
+(* Some architecture may somehow normalize values before
+   printing them. *)
+      val printable : v -> v
+
+
 (* produce a fresh variable *)
       val fresh_var : unit -> v
       val from_var : csym -> v
+
+(* Back to constants *)
       val as_symbol : v -> string
+      val freeze : csym -> Cst.v
 
 (* Equality (for constraint solver) is possible *)
       val equalityPossible : v -> v -> bool
 
 (* Please use this for comparing constants... *)
       val compare : v -> v -> int
+      val equal : v -> v -> bool
 
 (* Build constant values, either numerical or symbolic *)
       val intToV  : int -> v
@@ -83,8 +97,8 @@ module type S =
       val is_virtual : v -> bool
       val as_virtual : v -> string option
 
-      val op1 : arch_op1 Op.op1 -> v -> v
-      val op : Op.op -> v -> v -> v
+      val op1 : op1_t -> v -> v
+      val op : op_t -> v -> v -> v
       val op3 : Op.op3 -> v -> v -> v -> v
 
       module ValueSet : MySet.S with type elt = v
@@ -103,7 +117,9 @@ module type S =
       val map_csym : (csym -> v) -> v -> v
     end
 
-module type AArch64 = S
+module type AArch64 =
+  S
   with type Cst.PteVal.t = AArch64PteVal.t
   and type Cst.Instr.t = AArch64Base.instruction
-  and type arch_op1 = AArch64Op.t
+  and type 'a arch_constr_op1 = 'a AArch64Op.t
+

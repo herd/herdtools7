@@ -13,6 +13,11 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
+(* Authors:                                                                 *)
+(* Jade Alglave, University College London, UK.                             *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Hadrien Renaud, University College London, UK.                           *)
+(****************************************************************************)
 
 (** A monad for event structures *)
 
@@ -37,7 +42,9 @@ and type evt_struct = E.event_structure) =
     module VC =
       Valconstraint.Make
         (struct
-          let hexa = C.hexa let debug = C.debug.Debug_herd.solver
+          let hexa = C.hexa
+          let debug = C.debug.Debug_herd.solver
+          let keep_failed_as_undetermined = C.variant Variant.ASL_AArch64
         end)
         (A)
 
@@ -122,6 +129,11 @@ Monad type:
     type 'a t =
         eid -> eid * ('a Evt.t * 'a Evt.t option)
 
+    let map_elt (f : 'a Evt.elt -> 'b Evt.elt) (m : 'a t) : 'b t =
+     fun eid ->
+      let eid', (evt, evt_spec) = m eid in
+      (eid', (Evt.map f evt, Option.map (Evt.map f) evt_spec))
+
  (* Code monad slight differs as regardes agument *)
  (* Threading by instruction instance identifier and event id proper *)
 
@@ -137,6 +149,16 @@ Monad type:
     let unitT (v : 'a) : 'a t =
       fun eiid_next ->
         eiid_next, (Evt.singleton (v, [], E.empty_event_structure), None)
+
+    let warnT msg (v : 'a) : 'a t =
+      fun eiid_next ->
+      eiid_next,
+      (Evt.singleton (v, [VC.Warn msg], E.empty_event_structure), None)
+
+    let failT (e:exn) (v : 'a) : 'a t =
+      fun eiid_next ->
+      eiid_next,
+      (Evt.singleton (v, [VC.Failed e], E.empty_event_structure), None)
 
     let ignore _ = unitT ()
 
@@ -155,7 +177,7 @@ Monad type:
       (Evt.singleton (v, [VC.Warn e], E.empty_event_structure), None)
 
   (* This very special combinator permits to get monad m's result,
-   while postponing the usaga of corresponding event structure.
+   while postponing the usage of corresponding event structure.
    It proves convenient to express complex dependencies.
    Not compatible with speculation *)
 
@@ -196,7 +218,7 @@ Monad type:
       let sact = set_stds sact
       and sspec = Misc.map_opt set_stds sspec in
       eiid,(sact,sspec)
-      
+
     let (=**=) = E.(=**=)
     let (=*$=) = E.(=*$=)
     let (=$$=) = E.(=$$=)
@@ -260,6 +282,8 @@ Monad type:
       assert (cl=[]) ;
       data_comp (E.bind_ctrl_avoid es.E.events) s f eiid
 
+    let bind_ctrl_seq_data s f = data_comp E.bind_ctrl_sequence_data s f
+
     let bind_data_to_minimals s f =  data_comp E.data_to_minimals s f
 
 (* Triple composition *)
@@ -293,9 +317,9 @@ Monad type:
 
     let bind_ctrl_first_outputs s f = data_comp E.bind_ctrl_first_outputs s f
 
+    let bind_order s f = data_comp E.bind_order s f
 
 (* Ad-hoc short-circuit *)
-
     let short3 p1 p2 m =
       fun eiid ->
       let eiid,(acts,specs) = m eiid in
@@ -312,6 +336,35 @@ Monad type:
             v,cls,{ es with E.intra_causality_data=data3; })
       acts in
        eiid,(acts,specs)
+
+(* Ad-hoc upOne *)
+    let upOneRW p m =
+      fun eiid ->
+        let eiid,(acts,specs) = m eiid in
+        let acts =
+          Evt.map
+            (fun (v,cls,es) ->
+              let data = es.E.intra_causality_data in
+              let data =
+                E.EventRel.fold
+                  (fun (e1,e0) k ->
+                    if p e1 && E.is_load e1 then
+                      E.EventRel.fold
+                        (fun (f0,e2) k ->
+                          if
+                            E.event_equal e0 f0 &&
+                            p e2 && E.is_store e2
+                          then
+                            E.EventRel.add
+                              (e1,e2)
+                              (E.EventRel.remove (e0,e2) k)
+                          else k)
+                        data k
+                    else k)
+                  data data in
+              v,cls,{ es with E.intra_causality_data=data; })
+            acts in
+        eiid,(acts,specs)
 
 (* Exchange combination *)
     let exch : 'a t -> 'a t -> ('a -> 'b t) ->  ('a -> 'c t) ->  ('b * 'c) t
@@ -331,7 +384,7 @@ Monad type:
 
 (* Exchange combination *)
 (* NB: first boolean -> physical memory access *)
-    let swp_or_amo : bool -> Op.op option -> ('loc t) ->
+    let swp_or_amo : bool -> A.V.op_t option -> ('loc t) ->
       ('loc -> V.v t) -> V.v t -> ('loc -> V.v -> unit t) -> (V.v -> unit t)
         -> unit t  = fun is_phy op rloc rmem rreg wmem wreg ->
           fun eiid ->
@@ -381,7 +434,7 @@ Monad type:
         (Evt.singleton (w,vlcloc@vclexp@vclrmem@vclwmem,es),None)
 
 (* Amo, similar to exchange *)
-    let amo : Op.op -> 'loc t -> 'v t -> ('loc -> 'w t) -> ('loc -> 'v -> unit t) -> 'w t = fun op rloc rexpr rmem wmem ->
+    let amo : A.V.op_t -> 'loc t -> 'v t -> ('loc -> 'w t) -> ('loc -> 'v -> unit t) -> 'w t = fun op rloc rexpr rmem wmem ->
       fun eiid ->
         let eiid,locm = rloc eiid in
         let eiid,expm = rexpr eiid in
@@ -545,8 +598,8 @@ Monad type:
       eiid,(acts, None)
 
 (* AArch64 successful cas *)
-    let aarch64_cas_ok
-        (is_physical:bool)
+    let do_aarch64_cas_ok
+        (is_physical:bool) (prov_data: [`DataFromRRs | `DataFromRx])
         (read_rn:'loc t) (read_rs:'v t) (read_rt: 'v t)
         (write_rs:'v-> unit t)
         (read_mem: 'loc -> 'v t) (write_mem: 'loc -> 'v -> unit t)
@@ -572,7 +625,7 @@ Monad type:
             let (),cl_eq,eseq =  Evt.as_singleton_nospecul eqm in
             assert (E.is_empty_event_structure eseq) ;
             let es =
-              E.aarch64_cas_ok is_physical es_rn es_rs es_rt es_wrs es_rm es_wm in
+              E.aarch64_cas_ok is_physical prov_data es_rn es_rs es_rt es_wrs es_rm es_wm in
             let cls = cl_a@cl_cv@cl_nv@cl_rm@cl_wm@cl_wrs@cl_eq  in
             eiid,Evt.add ((),cls,es) acts)
           acts_rn (eiid,Evt.empty) in
@@ -622,6 +675,15 @@ Monad type:
              read_res read_data read_addr cancel_res
              (write_result V.zero)
              write_mem)
+
+    let aarch64_cas_ok (is_physical: bool) (read_rn: 'loc t) (read_rs: 'v t)
+        (read_rt: 'v t) (write_rs: 'v -> unit t) (read_mem: 'loc -> 'v t)
+        (write_mem: 'loc -> 'v -> unit t) (req: 'v -> 'v -> unit t) =
+      let do_ prov_data =
+        do_aarch64_cas_ok is_physical prov_data read_rn read_rs read_rt
+          write_rs read_mem write_mem req
+      in
+      altT (do_ `DataFromRRs) (do_ `DataFromRx)
 
     (* RISCV store conditional may always succeed? *)
     let riscv_store_conditional = aarch64_or_riscv_store_conditional false
@@ -704,31 +766,28 @@ Monad type:
     let (|||) : unit t -> unit t -> unit t
       = fun  s1 s2 -> combi (fun _ _ -> ()) (=|=) s1 s2
 
+(* Sequence memory events *)
+    let seq_mem : 'a t -> 'b t -> ('a * 'b) t
+      = fun  s1 s2 -> combi Misc.pair E.seq_mem s1 s2
+
 (* Force monad value *)
-    let forceT : 'a -> 'b t -> 'a t =
-      fun v s eiid ->
-        let (eiid,(sact,spec)) = s eiid in
-        let f = fun (_,vcl,es) -> (v,vcl,es) in
-        (eiid,(Evt.map f sact, Misc.app_opt (Evt.map f) spec))
+    let forceT (v : 'a) : 'b t -> 'a t =
+      let f (_, vcl, es) = (v, vcl, es) in
+      map_elt f
 
     let (>>!) s v = forceT v s
 
     let discardT : 'a t -> unit t = fun s eiid -> forceT () s eiid
 
-
 (* Add a value *)
-    let addT : 'a -> 'b t -> ('a * 'b) t
-        = fun v s eiid ->
-          let (eiid1,(sact,spec)) = s eiid in
-          let f = (fun (vin, vcl, es) -> ((v, vin), vcl, es)) in
-          (eiid1,(Evt.map f sact, Misc.app_opt (Evt.map f) spec))
+    let addT (v1: 'a) : 'b t -> ('a * 'b) t =
+      let f (v2, vcl, es) = ((v1, v2), vcl, es) in
+      map_elt f
 
 (* Assert a value *)
-    let assertT : 'A.V.v -> 'a t -> 'a t =
-      fun v m eiid ->
-      let eiid,(acts,spec) = m eiid in
-      let f (r,cs,es) = r,VC.Assign (v,VC.Atom V.one)::cs,es in
-      eiid,(Evt.map f acts,Misc.app_opt (Evt.map f) spec)
+    let assertT (v: A.V.v) : 'a t -> 'a t =
+      let f (r, cs, es) = (r, VC.Assign (v, VC.Atom V.one) :: cs, es) in
+      map_elt f
 
 (* Choosing dependant upon flag, notice that, once determined v is either one or zero *)
     let choiceT =
@@ -892,6 +951,9 @@ Monad type:
 
     let cseq : 'a t -> ('a -> 'b t) -> 'b t = fun s f ->  data_comp (+|+) s f
 
+    let aslseq : 'a t -> ('a -> 'b t) -> 'b t =
+      fun s f -> data_comp E.para_output_right s f
+
     type poi = int
 
 (************************************************)
@@ -1045,6 +1107,10 @@ Monad type:
     let add_data_ports st = { st with E.data_ports = st.E.events; }
     let add_success_ports st = { st with E.success_ports = st.E.events; }
 
+    let as_data_port : 'a t -> 'a t =
+      let f (a, cs, es) = (a, cs, add_data_ports es) in
+      fun m -> map_elt f m
+
     let do_make_one_event_structure_data is_data =
       if is_data then
         fun a iiid -> do_make_one_event_structure a iiid -- add_data_ports
@@ -1067,6 +1133,8 @@ Monad type:
     let mk_singleton_es_eq a eqs ii =
       make_one_event_structure a ii ++
       make_one_monad () eqs
+
+    let restrict cs = make_one_monad () cs E.empty_event_structure
 
     (******************************************************)
     (* Some basic event structures, read, write, fence... *)
@@ -1297,6 +1365,12 @@ Monad type:
         | V.Val (Symbolic (System (PTE,_))) -> true
         | _ -> false
 
+      let is_instrloc a =
+        let open Constant in
+        match a with
+        | V.Val (Label _) -> true
+        | _ -> false
+
       let add_inittags env =
         let glob,tag =
           List.fold_left
@@ -1315,7 +1389,7 @@ Monad type:
         let env =
           List.fold_left
             (fun env a ->
-              if not (is_pteloc a) then
+              if not (is_pteloc a) && not (is_instrloc a) then
               begin
                 let atag =  V.op1 Op.TagLoc a in
                 if V.ValueSet.mem atag tag_set then env
@@ -1331,8 +1405,8 @@ Monad type:
         env
 
       let morello_init_tag s v eiid =
-        assert morello ;
         let open Constant in
+        assert morello ;
         bump_eid eiid,
         { E.eiid = eiid.id; E.subid=eiid.sub; E.iiid = E.IdInit;
           E.action =
@@ -1605,4 +1679,21 @@ Monad type:
       List.fold_left
         (fun k (_,vcl,evts) -> (vcl,evts)::k)
         k (Evt.elements es)
+
+    let force_once (m : 'a t) : 'a t =
+      let res = ref None in
+      let new_m eiid =
+        match !res with
+        | None ->
+            let eiid, v = m eiid in
+            let _evts, evts_specul = v in
+            let () =
+              if Option.is_none evts_specul then ()
+              else Warn.warn_always "Speculated stored events. Results unknown."
+            in
+            let () = res := Some v in
+            (eiid, v)
+        | Some v -> (eiid, v)
+      in
+      new_m
   end

@@ -1,0 +1,16 @@
+AArch64 A014
+{
+ 0:X1=P0:Lself00;
+ 0:X3=P0:L0;
+}
+P0            ;
+ LDR W2,[X3]  ;
+L0:           ;
+ B L1         ;
+ NOP          ;
+L1:           ;
+              ;
+ STR W2,[X1]  ;
+Lself00:      ;
+ B Lout       ;
+Lout:         ;

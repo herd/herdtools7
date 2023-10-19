@@ -26,7 +26,7 @@ module LU = LexUtils.Make(O)
 let digit = [ '0'-'9' ]
 let hexadigit = [ '0'-'9' 'a'-'f' 'A'-'F']
 let alpha = [ 'a'-'z' 'A'-'Z']
-let name  = alpha (alpha|digit|'_' | '/' | '.' | '-')*
+let name  = (alpha|'_'|'.'|'$')+ (alpha|digit|'_' | '/' | '.' | '-')*
 let decimal = '-' ? digit+
 let hexadecimal = ("0x"|"0X") hexadigit+
 let num = decimal | hexadecimal
@@ -74,11 +74,13 @@ rule token = parse
 | "attrs"|"Attrs" { ATTRS }
 | "oa" { TOK_OA }
 (* PTW keywords *)
-| "PTE" { TOK_PTE }
+| "PTE"|"TTD" { TOK_PTE }
 | "PA"  { TOK_PA }
 (* Typing *)
 | "_Atomic" { ATOMIC }
 | "ATOMIC_INIT" { ATOMICINIT }
+| "instr:" '"' ([^'"']+ as i) '"' { INSTR i }
+| '`' ([^'`']+ as i) '`' { VALUE i }
 (*for GPU*)
 | ".reg" {PTX_REG_DEC}
 | ".s32" as x
@@ -90,6 +92,8 @@ rule token = parse
 (* Memory Tagging *)
 | "*" { STAR }
 | '$' (digit+|alpha+) as name { DOLLARNAME name }
+| "__int128" as name { NAME name }
+| "__uint128" as name { NAME name }
 | '_' ? name as name { NAME name }
 | eof { EOF }
 | "<<" { error "<<" lexbuf }

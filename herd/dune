@@ -1,9 +1,11 @@
+(dirs :standard \ tests libdir)
+
 (rule (copy ../Version.ml Version.ml))
+
 (ocamllex lexConf_herd)
-(executables
-   (names
-   herd
-   )
-   (public_names herd7)
+
+(executable
+   (name herd)
+   (public_name herd7)
    (libraries unix herdtools)
-   (modules_without_implementation action arch_herd monad sem XXXMem))
+   (modules_without_implementation AArch64Sig action arch_herd monad sem XXXMem))

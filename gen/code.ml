@@ -58,6 +58,11 @@ let myok p n = Data (Printf.sprintf "ok%i%i" p n)
 let myok_proc p = Data (Printf.sprintf "ok%i" p)
 
 type v = int
+
+let pp_v ?(hexa=false) =
+  Printf.sprintf
+    (if hexa then "0x%x" else "%d")
+
 type proc = Proc.t
 let pp_proc p = Proc.pp p
 
@@ -96,6 +101,11 @@ let pp_sd = function
   | Same -> "s"
   | Diff -> "d"
 
+let seq_sd sd1 sd2 =
+  match sd1,sd2 with
+  | Same,Same -> Same
+  | Diff,_|_,Diff -> Diff
+
 let fold_ie f r = f Ext (f Int r)
 let fold_sd f r = f Diff (f Same r)
 let do_fold_extr withj f r =
@@ -107,9 +117,36 @@ let fold_sd_extr f = fold_sd (fun sd -> fold_extr (fun e -> f sd e))
 let fold_sd_extr_extr f =
   fold_sd_extr (fun sd e1 -> fold_extr (fun e2 -> f sd e1 e2))
 
-type check =  Sc | Uni | Thin | Critical
-| Free | Ppo | Transitive | Total | MixedCheck
+type check =
+  | Default | Sc | Uni | Thin | Critical
+  | Free | Ppo | Transitive | Total | MixedCheck
 
+let pp_check =
+  function
+    | Default -> "default"
+    | Sc -> "sc"
+    | Uni -> "uni"
+    | Thin -> "thin"
+    | Critical -> "critical"
+    | Free -> "free"
+    | Ppo -> "ppo"
+    | Transitive -> "transitive"
+    | Total -> "total"
+    | MixedCheck -> "mixedcheck"
+
+let checks =
+  [
+   "default";
+   "sc";
+   "uni";
+   "thin";
+   "critical";
+   "free";
+   "ppo";
+   "transitive";
+   "total";
+   "mixedcheck";
+ ]
 
 
 (* Com relation *)
@@ -128,7 +165,7 @@ type info = (string * string) list
 let plain = "Na"
 
 (* Memory Space *)
-type 'a bank = Ord | Tag | CapaTag | CapaSeal | Pte | VecReg of 'a
+type 'a bank = Ord | Tag | CapaTag | CapaSeal | Pte | VecReg of 'a | Pair
 
 let pp_bank = function
   | Ord -> "Ord"
@@ -137,6 +174,7 @@ let pp_bank = function
   | CapaSeal -> "CapaSeal"
   | Pte -> "Pte"
   | VecReg _ -> "VecReg"
+  | Pair -> "Pair"
 
 let tag_of_int  = function
   | 0 -> "green"
@@ -155,6 +193,6 @@ let add_capability s t = Printf.sprintf "0xffffc0000:%s:%i" s (if t = 0 then 1 e
 
 let add_vector hexa v =
   let open Printf in
-  let pp = if hexa then sprintf "0x%x" else sprintf "%i" in
+  let pp = pp_v ~hexa:hexa in
   sprintf "{%s}"
     (String.concat "," (List.map pp  v))

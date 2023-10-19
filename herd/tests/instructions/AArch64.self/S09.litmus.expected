@@ -6,5 +6,5 @@ Witnesses
 Positive: 1 Negative: 0
 Condition forall (0:X0=1 /\ 0:X1=1)
 Observation S09 Always 1 0
-Hash=fa7c8df60057e4ad3303a38306856d5b
+Hash=1c91bb28ac14473d8ce9f8db6894ddc3
 

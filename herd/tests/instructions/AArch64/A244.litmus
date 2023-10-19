@@ -1,0 +1,32 @@
+AArch64 A244
+
+(* Test CASPL wreg and xreg*)
+Stable=X6,X7,X2,X3,X8,X9,X10,X11
+{
+int x[2]={0,0};
+uint64_t 0:X5=x;
+int 0:X6; int 0:X7; int 0:X2; int 0:X3;
+int 1:X6; int 1:X7; int 1:X2; int 1:X3;
+int64_t 0:X8; int64_t 0:X9; int64_t 0:X10; int64_t 0:X11;
+int64_t 1:X8; int64_t 1:X9; int64_t 1:X10; int64_t 1:X11;
+int y[2]={0,0};
+uint64_t 1:X5=y;
+int64_t z[2]= {0,0};
+uint64_t 0:X12=z;
+int64_t a[2] = {0,0};
+uint64_t 1:X12=a;
+}
+P0                       | P1                    ;
+MOV W6,#1                | MOV W6,#0             ;
+MOV W7,#1                | MOV W7,#0             ;
+MOV W2,#2                | MOV W2,#2             ;
+MOV W3,#2                | MOV W3,#2             ;
+CASPL W6,W7,W2,W3,[X5]    | CASPL W6,W7,W2,W3,[X5] ;
+MOV X10,#1               | MOV X10,#0            ;
+MOV X11,#1               | MOV X11,#0            ;
+MOV X8,#2                | MOV X8,#2             ;
+MOV X9,#2                | MOV X9,#2             ;
+CASPL X10,X11,X8,X9,[X12] | CASPL X10,X11,X8,X9,[X12];
+
+forall (x[0]=0 /\ x[1]=0 /\ y[0]=2 /\ y[1]=2
+ /\ z[0] = 0 /\ z[1] = 0 /\ a[0]=2 /\ a[1]=2)

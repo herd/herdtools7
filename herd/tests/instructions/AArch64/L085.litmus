@@ -1,0 +1,9 @@
+AArch64 L085
+{
+ins_t 0:X0;
+}
+  P0         ;
+L0:          ; 
+ ADR X1,.+0  ;
+ LDR W0,[X1] ;
+forall 0:X0=instr:"ADR X1,.+0"

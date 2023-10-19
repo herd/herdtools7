@@ -46,9 +46,15 @@ let symb_reg_name r =
 
 let symb_reg r = sprintf "%%%s" r
 
+type arch_op = ArchOp.no_arch_op
+type op = arch_op Op.op
+
+let pp_phantom_archop _ = assert false
+let pp_op op = Op.pp_op op pp_phantom_archop
+
 (* (M operation, access_mode for R, access_mode for W) *)
 type rw = AccessModes.t * AccessModes.t
-type rmw = Op.op * AccessModes.t
+type rmw = op * AccessModes.t
 
 type expression =
   | Const of int
@@ -56,7 +62,7 @@ type expression =
   | LoadMem of varhandle * AccessModes.t
   | CAS of varhandle * rw * expression * expression
   | Rmw of varhandle * rmw * expression
-  | Op of Op.op * expression * expression
+  | Op of op * expression * expression
 
 
 type instruction =
@@ -85,7 +91,7 @@ let rec dump_expr = function
   | LoadMem (varhandle, accessmode) ->
       sprintf "%s.get%s()" varhandle (AccessModes.pp_access_modes accessmode)
   | Op (op , e1 , e2) ->
-      sprintf "%s %s %s" (dump_expr e1) (Op.pp_op op) (dump_expr e2)
+      sprintf "%s %s %s" (dump_expr e1) (pp_op op) (dump_expr e2)
   | CAS (varhandle, rw, expect, target) ->
       (sprintf "%s.compareAndExchange%s(%s, %s)"
         varhandle
@@ -162,6 +168,8 @@ let map_addrs _f ins              = ins
 let norm_ins ins                  = ins
 let get_next _ins                 = Warn.fatal "Java get_next not implemented"
 
+let is_valid _ = true
+
 include Pseudo.Make
   (struct
     type ins      = instruction
@@ -200,6 +208,7 @@ include Pseudo.Make
 
       aux_count_ins 0 i
 
+    let size_of_ins _ = 1
     let fold_labels acc _f _ins = acc
     let map_labels _f ins = ins
   end)

@@ -34,6 +34,8 @@ module Make
     let mixed = O.variant Variant.Mixed || morello
     let memtag = O.variant Variant.MemTag
     let kvm = O.variant Variant.VMSA
+    let self = O.variant Variant.Ifetch
+    let asl = S.A.arch = `ASL
     let optacetrue =
       let open OptAce in
       match O.optace with
@@ -71,7 +73,11 @@ module Make
           if optacetrue then
             Misc.(|||) (Variant.equal Variant.CosOpt) O.variant
           else O.variant in
-        Misc.delay_parse variant Variant.parse
+        Misc.delay_parse variant (fun s ->
+          match Misc.lowercase s with
+          | "dic" -> Some Variant.DIC
+          | "idc" -> Some Variant.IDC
+          | _ -> Variant.parse s)
     end
     module U = MemUtils.Make(S)
     module MU = ModelUtils.Make(O)(S)
@@ -218,7 +224,7 @@ module Make
         else
           lazy [] in
       let relevant =
-        if do_deps || catdep then fun _ -> true
+        if do_deps || catdep || asl then fun _ -> true
         else fun e -> not (E.is_reg_any e) in
       let all_evts =  conc.S.str.E.events in
       let evts =
@@ -319,6 +325,7 @@ module Make
               "aligned",aligned;
               "iico_data", lazy conc.S.str.E.intra_causality_data;
               "iico_ctrl", lazy conc.S.str.E.intra_causality_control;
+              "iico_order", lazy conc.S.str.E.intra_causality_order;
               "rf-reg", rf_reg ;
               "same-instr", lazy begin E.EventRel.of_pred all_evts all_evts E.same_instruction end;
               "same-static",
@@ -473,9 +480,12 @@ module Make
                 evts
                 (BellModel.get_mem_annots bi) in
             let open MiscParser in
-            begin match test.Test_herd.extra_data with
+            let extra = test.Test_herd.extra_data in
+            begin
+              List.fold_right
+              (fun e m -> match e with
               (* No region in test, empty regions *)
-            | NoExtra|BellExtra {BellInfo.regions=None;_} ->
+            | BellExtra {BellInfo.regions=None;_} ->
                 I.add_sets m
                   (List.map
                      (fun r -> BellName.tag2instrs_var r,lazy E.EventSet.empty)
@@ -512,7 +522,9 @@ module Make
                        end in
                        (tag,set)::k)
                      (BellModel.get_region_sets bi) [])
-            | CExtra _ -> m (* Ignore CExtra ?? *)
+            | CExtra _ -> m (* Ignore CExtra ?? *))
+            extra
+            m
             end in
 (* Scope relations from bell info *)
       let m =
@@ -520,10 +532,16 @@ module Make
         | None -> m
         | Some _ ->
             let open MiscParser in
-            let extract_tbi e = match test.Test_herd.extra_data with
-            | NoExtra|CExtra _ ->
-                None (* must be here as, O.bell_mode_info is *)
-            | BellExtra tbi -> e tbi in
+            let extract_tbi e =
+              let extra = test.Test_herd.extra_data in
+              let scope_opt =
+                List.filter_map
+                  (function
+                   | CExtra _ ->
+                      None (* must be here as, O.bell_mode_info is *)
+                   | BellExtra tbi -> e tbi)
+                  extra in
+                List.nth_opt scope_opt 0 in
             let scopes =  extract_tbi (fun tbi -> tbi.BellInfo.scopes) in
             let m = match scopes with
               (* If no scope definition in test, do not build relations, will fail

@@ -51,30 +51,32 @@ module type S = sig
   val as_flags : t -> string option
 end
 
-module No= struct
-    type t
+module No = struct
+    type t = unit
 
-    let default _ = assert false
-    let of_pte _ = assert false
-    let is_default _ = assert false
-    let pp _ _ = assert false
-    let pp_v _ = assert false
-    let pp_hash _ = assert false
-    let tr _ = assert false
-    let pp_norm _ = assert false
+    let default _ = ()
+    let of_pte _ = ()
+    let is_default _ = true
+    let pp _ _ = "()"
+    let pp_v _ = "()"
+    let pp_hash _ = "()"
+    let tr _ = ()
+    let pp_norm _ = "()"
 
-    let eq _ _ = assert false
-    let compare _ _ = assert false
+    let eq _ _ = true
+    let compare _ _ = 0
 
-    let is_af _ = assert false
+    let is_af _ = false
 
-    let same_oa _ _ = assert false
-    let writable _ _ _ = assert false
-    let get_attrs _ = assert false
+    let same_oa _ _ = false
+    let writable _ _ _ = false
+    let get_attrs _ = []
 
     let fields = []
     let default_fields = []
-    let dump_pack _ _ = assert false
+    let dump_pack _ _ = "()"
     let as_physical _ = None
     let as_flags _ = None
 end
+
+module ASL = No

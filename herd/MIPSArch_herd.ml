@@ -31,7 +31,12 @@ module Make
     let empty_annot = false
     let is_atomic annot = annot
 
+    let ifetch_value_sets = []
+
     let barrier_sets = ["SYNC",(function Sync -> true);]
+
+    let cmo_sets = []
+
     let annot_sets = ["X", is_atomic]
 
     include Explicit.No
@@ -51,13 +56,6 @@ module Make
     include NoSemEnv
 
     include NoLevelNorTLBI
-
-    include
-      IFetchTrait.NotImplemented
-        (struct
-          type arch_instruction = instruction
-          type arch_reg = reg
-        end)
 
     include ArchExtra_herd.Make(C)
 	(struct
@@ -99,4 +97,5 @@ module Make
 
     end
 
+    module CMO = Cmo.No
   end

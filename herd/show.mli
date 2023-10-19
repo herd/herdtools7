@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Show dot files as Postscript, controlled by '-gv' option *)
+(** Show dot files as Postscript, controlled by '-view viewer' option *)
 module Generator : functor (O:PrettyConf.S) -> sig
   val generator : string
 end

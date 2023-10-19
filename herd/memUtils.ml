@@ -27,9 +27,7 @@ module Make(S : SemExtra.S) = struct
 (* Utilities *)
 (*************)
 
-  let iico es =
-    E.EventRel.transitive_closure
-    (E.EventRel.union es.E.intra_causality_data  es.E.intra_causality_control)
+  let iico es = E.EventRel.transitive_closure (E.iico es)
 
   let po_strict =
     if S.do_deps then
@@ -53,9 +51,7 @@ module Make(S : SemExtra.S) = struct
   (* Slight extension of prog order *)
 
   let is_before_strict es =
-    let iico =
-      E.EventRel.union
-        es.E.intra_causality_data es.E.intra_causality_control in
+    let iico = E.iico  es in
     fun e1 e2  ->
       (do_po_strict es e1 e2) ||           (* e1 is po-before e2 *)
       (if do_po_strict es e2 e1 then false (* e2 is po-before e1 *)

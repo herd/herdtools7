@@ -40,42 +40,49 @@ module Make(O:PrettyConf.S) = struct
       with e ->
         W.warn "remove failed: %s" (Printexc.to_string e)
 
-  let psfile name_dot =
+  let extfile name_dot ext =
     let base =
       try Filename.chop_extension name_dot
       with Invalid_argument _ -> name_dot in
-    base ^ ".ps"
+    base ^ "." ^ ext
 
   module G = Generator(O)
   let generator = G.generator
 
-  let do_show_file name_dot prog =
-    let name_ps = psfile name_dot in
+  let do_show_file name_dot prog ext =
+    let name_ps = extfile name_dot ext in
     Handler.push (fun () -> my_remove name_ps) ;
     let cmd =
       sprintf
-        "%s -Tps %s > %s 2>/dev/null ; %s %s 2>/dev/null%s"
-      generator
+        "%s -T%s %s > %s 2>/dev/null ; %s %s 2>/dev/null%s"
+      generator ext
       name_dot name_ps prog name_ps
         (if O.debug then "" else sprintf " && /bin/rm -f %s" name_ps) in
     let r = Sys.command cmd in
     if O.debug then eprintf "Command: [%s] -> %i\n" cmd r ;
     Handler.pop ()
 
+let show_file_with_view view name_dot =
+  let open View in
+  match view with
+  | GV -> do_show_file name_dot "gv"  "ps"
+  | Evince -> do_show_file name_dot "evince" "pdf"
+  | Preview -> do_show_file name_dot "open -a Preview" "pdf"
+
 let show_file name_dot =
-  if O.gv     then do_show_file name_dot "gv"     else
-  if O.evince then do_show_file name_dot "evince" else ()
+  match O.view with
+  | None -> ()
+  | Some v -> show_file_with_view v name_dot
 
 let show ouput_dot =
-  (* Perhaps this function needs some work doing, as it
-     currently doesn't work with evince, only with gv *)
-  if O.gv then begin
-    let name_dot = Filename.temp_file "herd" ".dot" in
-    Handler.push (fun () -> my_remove name_dot) ;
-    Misc.output_protect ouput_dot name_dot ;
-    do_show_file name_dot "gv";
-    my_remove name_dot ;
-    Handler.pop ()
-  end
+  match O.view with
+  | None -> ()
+  | Some view ->
+     let name_dot = Filename.temp_file "herd" ".dot" in
+     Handler.push (fun () -> my_remove name_dot) ;
+     Misc.output_protect ouput_dot name_dot ;
+     show_file_with_view view name_dot ;
+     my_remove name_dot ;
+     Handler.pop ()
 
 end

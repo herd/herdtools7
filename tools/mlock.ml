@@ -57,11 +57,13 @@ module Top(O:Config)(Out:OutTests.S) = struct
 
   let changed = ref false
 
+  exception NotChanged
+
   let not_changed name =
     if O.verbose > 0 then
       Warn.fatal "test %s unchanged, no output" name.Name.name
     else
-      raise Misc.Exit
+      raise NotChanged
 
 (**********)
 (* Expand *)
@@ -113,7 +115,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
         let v = sprintf "d%i" nxt in
         nxt+1,StringSet.singleton v,
         StoreReg
-          (None,v,ECall ("xchg_acquire",[e;Const const_one]))
+          (None,Some v,ECall ("xchg_acquire",[e;Const const_one]))
     | Unlock (e,_)|PCall ("spin_unlock",[e]) ->
         let e = tr_expr e in
         nxt,StringSet.empty,
@@ -378,22 +380,28 @@ module Top(O:Config)(Out:OutTests.S) = struct
     tr_ins
 
 (* Parsed *)
+
   let tr_params = match O.action with
   | Action.Lock  -> lock_params
   | Expand -> List.map expand_params
   | Once -> fun pss -> pss
 
-  let tr_parsed tr_ins name t = match t.extra_data with
-  | CExtra pss ->
-      changed := false ;
-      let prog =
-        List.map
-          (fun (i,code) -> i,List.map (CBase.pseudo_map tr_ins) code)
-          t.prog in
-      if not !changed then not_changed name ;
-      let extra_data = CExtra (tr_params pss) in
-      { t with extra_data; prog;}
-  | NoExtra|BellExtra _ -> assert false
+  let tr_extra_data =
+    List.map
+      (function
+        | CExtra pss -> CExtra (tr_params pss)
+        | BellExtra _ as data -> data)
+
+  let tr_parsed tr_ins name t =
+    let tr_prog prog =
+     changed := false ;
+     let prog =
+       List.map
+        (fun (i,code) -> i,List.map (CBase.pseudo_map tr_ins) code)
+        prog in
+     if not !changed then not_changed name ;
+    prog in
+    { t with prog = tr_prog t.prog; extra_data = tr_extra_data t.extra_data; }
 
 (* Name *)
   let tr_name0 = match O.action with
@@ -418,45 +426,56 @@ module Top(O:Config)(Out:OutTests.S) = struct
       with Invalid_argument _ -> assert false in
     let base = sprintf "%s.litmus" (tr_name0 base) in
     let out = Out.open_file base in
-    Misc.output_protect_close Out.close
-      (fun out ->
-        let name = tr_name name in
-        let parsed = match O.action with
-        | Action.Lock ->
-            opt_locks (tr_parsed lock_ins name parsed)
-        | Once ->
-            tr_parsed once_ins name parsed
-        | Expand ->
-            begin match parsed.extra_data with
-            | CExtra extra ->
-                let extra_data = CExtra (tr_params extra) in
-                changed := false ;
-                let prog =
-                  List.map
-                    (fun ((i,_,_) as proc,ps) ->
-                      let vs,ps = expand_pseudo_code ps in
-                      StringSet.fold (fun v k -> Location_reg (i,v)::k) vs [],
-                      (proc,ps))
-                    parsed.prog in
-                if not !changed then not_changed name ;
-                let locss,prog = List.split prog in
-                let filter =
-                  let open ConstrGen in
-                  And
-                    (List.map
-                       (fun vs ->
-                         And
-                           (List.map
-                              (fun loc -> Atom (LV (Loc loc,const_zero)))
-                              vs))
-                       locss) in
-                { parsed with prog; extra_data; filter=Some filter;}
-            | NoExtra | BellExtra _ -> assert false
-            end in
-        dump out name parsed ;
-        Out.fprintf idx_out "%s\n" base)
-      out ;
-    ()
+    try
+      Misc.output_protect_close Out.close
+        (fun out ->
+          let name = tr_name name in
+          let parsed = match O.action with
+            | Action.Lock ->
+               opt_locks (tr_parsed lock_ins name parsed)
+            | Once ->
+               tr_parsed once_ins name parsed
+            | Expand ->
+               let extra_data = tr_extra_data parsed.extra_data in
+               changed := false ;
+               let prog =
+                 List.map
+                   (fun ((i,_,_) as proc,ps) ->
+                     let vs,ps = expand_pseudo_code ps in
+                     StringSet.fold (fun v k -> Location_reg (i,v)::k) vs [],
+                     (proc,ps))
+                   parsed.prog in
+               if not !changed then not_changed name ;
+               let locss,prog = List.split prog in
+               let filter =
+                 let open ConstrGen in
+                 let old =
+                   match parsed.filter with
+                   | Some p -> fun q -> And [q;p]
+                   | None -> Misc.identity
+                 and q =
+                   And
+                     (List.map
+                        (fun vs ->
+                          And
+                            (List.map
+                               (fun loc -> Atom (LV (Loc loc,const_zero)))
+                               vs))
+                        locss) in
+                 old q in
+               { parsed with prog;
+                             extra_data;
+                             filter=Some filter;} in
+          dump out name parsed ;
+          Out.fprintf idx_out "%s\n" base)
+        out ;
+      ()
+    with
+    | NotChanged ->
+       Out.remove base
+    | e ->
+       Out.remove base ;
+       raise e
 
   module LexConf  = struct
     let debug = O.verbose > 2

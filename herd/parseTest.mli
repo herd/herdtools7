@@ -14,29 +14,10 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Run a test from source file *)
-
-module type Config = sig
-  val model : Model.t option
-  val archcheck : bool
-  val through : Model.through
-  val strictskip : bool
-  val cycles : StringSet.t
-  val bell_model_info : (string * BellModel.info) option
-  val macros : string option
-  val check_name : string -> bool
-  val check_rename : string -> string option
-  val libfind : string -> string
-  include GenParser.Config
-  include Top_herd.CommonConfig
-  include Sem.Config
-
-  val statelessrc11 : bool
-  val byte : MachSize.Tag.t
-end
+(** Run a test from source file, dispatch on tests architecture *)
 
 module Top :
-  functor (C : Config) ->
+  functor (C : RunTest.Config) ->
   sig
     val from_file : string -> TestHash.env -> TestHash.env
   end

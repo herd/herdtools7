@@ -15,20 +15,19 @@
 (****************************************************************************)
 
 type t =
-    | LIT_B of string
+    | LIT_INSTR of string
     | LIT_NOP
 
 let pp = function
-    | LIT_B(label) -> Printf.sprintf "B %s" label
+    | LIT_INSTR s -> Printf.sprintf "instr:\"%s\"" s
     | LIT_NOP -> "NOP"
 
 let compare i1 i2 =
     match (i1, i2) with
-    | (LIT_B(l1), LIT_B(l2)) ->
+    | (LIT_INSTR(l1), LIT_INSTR(l2)) ->
         String.compare l1 l2
     | (LIT_NOP, LIT_NOP) -> 0
-    | (LIT_B(_), LIT_NOP) -> -1
-    | (LIT_NOP, LIT_B(_)) -> 1
+    | (LIT_INSTR(_), LIT_NOP) -> -1
+    | (LIT_NOP, LIT_INSTR(_)) -> 1
 
-let eq i1 i2 =
-    (compare i1 i2) = 0
+let eq i1 i2 = compare i1 i2 = 0

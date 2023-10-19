@@ -1,0 +1,13 @@
+AArch64 DIC1.MP.RF+DC-DSB-IC-DSB+DSB-ISB
+CacheType=DIC
+{ 0:X0=NOP;         0:X1=P1:mod;
+  0:X2=1; 1:X2=0;   0:X3=z; 1:X3=z; }
+    P0           | P1           ;
+    STR W0,[X1]  |  LDR W2,[X3] ;
+    DC CVAU,X1   |  DSB ISH     ;
+    DSB ISH      |  ISB         ;
+    IC IVAU,X1   | mod:         ;
+    DSB ISH      |  B end       ;
+    STR W2,[X3]  |  MOV W9,#1   ;
+                 | end:         ;
+exists 1:X2=1 /\ 1:X9=0

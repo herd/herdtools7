@@ -1,0 +1,13 @@
+AArch64 A250
+Stable=X0
+{
+0:X1=P1:L1;
+}
+P0           | P1           ;
+BLR X1       | BL L1        ;
+             | B L2         ;
+             |L1:           ;
+             | MOV W0,#1    ;
+             | RET          ;
+             |L2:           ;
+locations [0:X0;1:X0;]

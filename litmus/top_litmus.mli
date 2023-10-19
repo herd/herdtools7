@@ -48,7 +48,6 @@ module type CommonConfig = sig
   val makevar : string list
   val gcc : string
   val c11 : bool
-  val c11_fence : bool
   val ascall : bool
   val precision : Precision.t
   val variant : Variant_litmus.t -> bool

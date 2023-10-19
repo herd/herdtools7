@@ -4,6 +4,6 @@ AArch64 S15
 }
     P0           ;
   BR X1          ;
-  MOV X0, #1     ;
+  MOV W0, #1     ;
 L0:              ;
 forall (0:X0=0)

@@ -127,7 +127,7 @@ coRRExpNExp+DSB-ISB                            Allowed
 coRR-pte7+BIS                                  Forbidden
 STRx+STRptex+oa                                Forbidden
 SWP-AF                                         Required
-V2I-W-DSB.ISH-TLBI-DSB.ISH-W+RR                Forbidden
+V2I-W-DSB.ISH-TLBI-DSB.ISH-W+RR                Allowed
 STRx+STCLRptex+db3+dbm                         Forbidden
 STRx+STCLRptex+db3                             Forbidden
 STRx+STCLRptex+db+dbm                          Forbidden
@@ -143,7 +143,7 @@ V2I-W-DSB.ISH-TLBI-DSB.LD-W+RR                 Allowed
 STRx+SWPptexForbid                             Forbidden
 STRx-LDRptex                                   Forbidden
 STRx+STCLRptex+db                              Forbidden
-V2I-W-DSB.ISH-TLBI-DSB.ISH-R+WR                Forbidden
+V2I-W-DSB.ISH-TLBI-DSB.ISH-R+WR                Allowed
 STRx+STCLRptex+db4                             Forbidden
 STRx+SWPptex+db4                               Forbidden
 STRx+LDR-ORR-STRptex                           Allowed
@@ -507,7 +507,7 @@ FL                                             Allowed
 I2V-DSB-WEXP-DSB+obs+DSB-ISH-STR               Allowed
 FM                                             Forbidden
 FJ                                             Allowed
-FG                                             Allowed
+FG                                             Forbidden
 FI                                             Forbidden
 FH                                             Forbidden
 FD                                             Forbidden
@@ -601,7 +601,7 @@ D15347-M-load-shoot+acq-po                     Forbidden
 D15347-M-load-shoot+ctrl                       Allowed
 D15347-M-load-shoot-noscope+DMB.LD             Allowed
 D15347-M-load-shoot+DMB.LD                     Forbidden
-D15347-M-load-shoot+ctrlisb                    Allowed
+D15347-M-load-shoot+ctrlisb                    Forbidden
 D15347-M-load-shoot+addr                       Allowed
 D15347-2+2WExpExp+DMBST+DSB-ISB2               Forbidden
 D15347-2+2WExpExp+DMBST+DSB-ISB                Forbidden

@@ -1,0 +1,11 @@
+Test A017 Required
+States 2
+  ~Fault(P1:L0,x,MMU:Translation);
+ Fault(P1:L0,x,MMU:Translation);
+Ok
+Witnesses
+Positive: 3 Negative: 0
+Condition forall (true)
+Observation A017 Always 3 0
+Hash=83f44c15d73037901c1a990dcd68f0a4
+

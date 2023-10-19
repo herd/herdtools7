@@ -14,6 +14,13 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+module Types = struct
+  type annot = AArch64Annot.t
+  type nexp =  AF|DB|AFDB|Other
+  type explicit = Exp | NExp of nexp
+  type lannot = annot
+end
+
 module Make (C:Arch_herd.Config)(V:Value.AArch64) =
   struct
 
@@ -28,14 +35,13 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     let pp_barrier_short = pp_barrier
     let reject_mixed = true
 
-    type annot = A | XA | L | XL | X | N | Q | XQ | NoRet | S
-    type nexp =  AF|DB|AFDB|Other
-    type explicit = Exp | NExp of nexp
-    type lannot = annot
+    include Types
 
-    let empty_annot = N
+    let empty_annot = AArch64Annot.N
     let exp_annot = Exp
     let nexp_annot = NExp Other
+
+    let is_atomic = AArch64Annot.is_atomic
 
     let is_explicit_annot = function
       | Exp -> true
@@ -47,32 +53,6 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
-    let is_speculated = function
-      | S -> true
-      | _ -> false
-
-    let _is_atomic = function
-      | XA | XQ | XL | X | NoRet -> true
-      | _ -> false
-
-    let is_atomic = _is_atomic
-
-    let is_noreturn = function
-      | NoRet -> true
-      | _ -> false
-
-    let is_acquire = function
-      | A | XA -> true
-      | _ -> false
-
-    let is_acquire_pc = function
-      | Q | XQ -> true
-      | _ -> false
-
-    let is_release = function
-      | L | XL -> true
-      | _ -> false
-
     let is_af = function (* Setting of access flag *)
       | NExp (AF|AFDB)-> true
       | NExp (DB|Other)|Exp -> false
@@ -81,6 +61,58 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | NExp (DB|AFDB) -> true
       | NExp (AF|Other)|Exp -> false
 
+    module CMO = struct
+      type t = | DC of AArch64Base.DC.op | IC of AArch64Base.IC.op
+
+      let pp cmo loc =
+        let loc = (Misc.pp_opt_arg Fun.id loc) in
+        match cmo with
+        | DC op ->
+           Printf.sprintf "DC(%s%s)" (AArch64Base.DC.pp_op op) loc
+        | IC op ->
+           Printf.sprintf "IC(%s%s)" (AArch64Base.IC.pp_op op) loc
+    end
+
+    (* Holds of an instruction iff modifying it or with it while it is being
+    * fetched is subject to special restrictions.
+    * Returns false iff its argument is any of:
+    *     B, B.cond, BL, BRK, CBNZ, CBZ, HVC, ISB, NOP, SMC, SVC, TBNZ and TBZ
+    * For the other instructions, a concurrent modification and an execution
+    * represent a conflict. The list is taken from:
+    *   Arm ARM B2.2.5 "Concurrent modification and execution of instructions" 
+    *)
+    let is_cmodx_restricted_instruction = function
+    | I_B _| I_BL _| I_CBNZ _| I_CBZ _| I_FENCE ISB | I_NOP | I_TBNZ _| I_TBZ _
+      -> false
+    | I_ADD_SIMD _| I_ADD_SIMD_S _| I_ADR _| I_ALIGND _| I_ALIGNU _| I_BC _
+    | I_BLR _| I_BR _| I_BUILD _| I_CAS _| I_CASBH _| I_CASP _| I_CHKEQ _| I_CHKSLD _
+    | I_CHKTGD _| I_CLRTAG _| I_CPYTYPE _| I_CPYVALUE _| I_CSEAL _| I_CSEL _| I_DC _
+    | I_EOR_SIMD _| I_ERET| I_FENCE _| I_GC _| I_IC _| I_LD1 _| I_LD1M _| I_LD1R _
+    | I_LD2 _| I_LD2M _| I_LD2R _| I_LD3 _| I_LD3M _| I_LD3R _| I_LD4 _| I_LD4M _
+    | I_LD4R _| I_LDAR _| I_LDARBH _| I_LDCT _| I_LDG _| I_LDOP _| I_LDOPBH _
+    | I_LDP _| I_LDP_P_SIMD _| I_LDP_SIMD _| I_LDPSW _| I_LDR _| I_LDR_P _| I_LDR_P_SIMD _
+    | I_LDR_SIMD _| I_LDRBH _| I_LDRS _| I_LDUR _| I_LDUR_SIMD _| I_LDXP _| I_MOV _
+    | I_MOV_FG _| I_MOV_S _| I_MOV_TG _| I_MOV_V _| I_MOV_VE _| I_MOVI_S _
+    | I_MOVI_V _| I_MOVK _| I_MOVZ _| I_MOVN _| I_MRS _| I_MSR _| I_OP3 _| I_RBIT _| I_RET _
+    | I_SBFM _| I_SC _| I_SEAL _| I_ST1 _| I_ST1M _| I_ST2 _| I_ST2M _| I_ST3 _
+    | I_ST3M _| I_ST4 _| I_ST4M _| I_STCT _| I_STG _| I_STLR _| I_STLRBH _| I_STOP _
+    | I_STOPBH _| I_STP _| I_STP_P_SIMD _| I_STP_SIMD _| I_STR _| I_STR_P _
+    | I_STR_P_SIMD _| I_STR_SIMD _| I_STRBH _| I_STUR_SIMD _| I_STXP _| I_STXR _
+    | I_STXRBH _| I_STZG _| I_SWP _| I_SWPBH _| I_SXTW _| I_TLBI _| I_UBFM _
+    | I_UDF _| I_UNSEAL _
+      -> true
+
+    let is_cmodx_restricted_value = 
+      let open Constant in
+      function
+      | V.Val Instruction i -> is_cmodx_restricted_instruction i
+      | V.Val
+           (Symbolic _|Concrete _|ConcreteVector _|ConcreteRecord _|
+            Label _|Tag _|PteVal _|Frozen _)
+      | V.Var _ -> false
+
+    let ifetch_value_sets = [("Restricted-CMODX",is_cmodx_restricted_value)]
+
     let barrier_sets =
       do_fold_dmb_dsb false true
         (fun b k ->
@@ -88,14 +120,24 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
           (tag,is_barrier b)::k)
         ["ISB",is_barrier ISB]
 
-    let annot_sets = [
-      "X", is_atomic;
-      "A",  is_acquire;
-      "Q",  is_acquire_pc;
-      "L",  is_release;
-      "NoRet", is_noreturn;
-      "S", is_speculated;
-    ]
+    let cmo_sets =
+      DC.fold_op
+        (fun op1 k ->
+          let tag = DC.pp_dot op1 in
+          let p = function
+            | CMO.DC op2 -> DC.equal op1 op2
+            | _ -> false in
+          (tag,p)::k)
+        (IC.fold_op
+        (fun op1 k ->
+          let tag = IC.pp_dot op1 in
+          let p = function
+            | CMO.IC op2 -> IC.equal op1 op2
+            | _ -> false in
+          (tag,p)::k) [])
+
+
+    let annot_sets = AArch64Annot.sets
 
     let explicit_sets = [
       "AF", is_af;
@@ -129,17 +171,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     let is_isync = is_barrier ISB
     let pp_isync = "isb"
 
-    let pp_annot a = match a with
-      | XA -> "Acq*"
-      | A -> "Acq"
-      | Q -> "AcqPc"
-      | XQ -> "AcqPc*"
-      | XL -> "Rel*"
-      | L -> "Rel"
-      | X -> "*"
-      | N -> ""
-      | NoRet -> "NoRet"
-      | S -> "^s"
+    let pp_annot = AArch64Annot.pp
 
     let pp_explicit = function
       | Exp -> if is_kvm && C.verbose > 2 then "Exp" else ""
@@ -185,11 +217,12 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     let mem_access_size = function
       | I_LDPSW _ -> Some (tr_variant V32)
-      | I_LDR (v,_,_,_,_) | I_LDP (_,v,_,_,_,_) | I_LDXP (v,_,_,_,_)
+      | I_LDR (v,_,_,_,_) | I_LDP (_,v,_,_,_,_,_) | I_LDXP (v,_,_,_,_)
       | I_LDUR (v,_,_,_)  | I_LDR_P(v,_,_,_)
       | I_STR (v,_,_,_,_) | I_STLR (v,_,_) | I_STXR (v,_,_,_,_)
-      | I_STP (_,v,_,_,_,_) | I_STXP (v,_,_,_,_,_)
-      | I_CAS (v,_,_,_,_) | I_SWP (v,_,_,_,_)
+      | I_STR_P (v,_,_,_)
+      | I_STP (_,v,_,_,_,_,_) | I_STXP (v,_,_,_,_,_)
+      | I_CAS (v,_,_,_,_) | I_CASP (v,_,_,_,_,_,_) | I_SWP (v,_,_,_,_)
       | I_LDOP (_,v,_,_,_,_) | I_STOP (_,v,_,_,_) ->
           Some (tr_variant v)
       | I_LDR_SIMD (v,_,_,_,_) | I_LDR_P_SIMD (v,_,_,_)
@@ -216,8 +249,10 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_NOP|I_B _|I_BR _|I_BC (_, _)|I_CBZ (_, _, _)
       | I_CBNZ (_, _, _)|I_BL _|I_BLR _|I_RET _|I_ERET|I_LDAR (_, _, _, _)
       | I_TBNZ(_,_,_,_) | I_TBZ (_,_,_,_) | I_MOVZ (_,_,_,_) | I_MOVK(_,_,_,_)
+      | I_MOVN _
       | I_MOV (_, _, _)|I_SXTW (_, _)|I_OP3 (_, _, _, _, _, _)
       | I_ADR (_, _)|I_RBIT (_, _, _)|I_FENCE _
+      | I_SBFM (_,_,_,_,_) | I_UBFM (_,_,_,_,_)
       | I_CSEL (_, _, _, _, _, _)|I_IC (_, _)|I_DC (_, _)|I_MRS (_, _)|I_MSR (_, _)
       | I_STG _ | I_STZG _ | I_LDG _
       | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _
@@ -228,6 +263,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MOV_V _ | I_MOV_VE _ | I_MOV_S _ | I_MOV_TG _ | I_MOV_FG _
       | I_MOVI_S _ | I_MOVI_V _
       | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
+      | I_UDF _
           -> None
 
     let all_regs =
@@ -235,17 +271,25 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     let opt_env = true
 
+    let killed_idx r = function
+      | Idx -> Misc.identity
+      | PostIdx|PreIdx -> fun k -> r::k
+
     let killed i =
       match i with
+      | I_LDP (_,_,r1,r2,ra,_,idx) |I_LDPSW (r1,r2,ra,_,idx) ->
+          killed_idx ra idx [r1; r2;]
+      | I_STP (_,_,_,_,ra,_,idx) ->
+          killed_idx ra idx []
       | I_B _| I_BR _
       | I_BC _ | I_CBZ _ | I_CBNZ _
-      | I_STP _ | I_STR _ | I_STLR _
+      | I_STR _ | I_STLR _
       | I_STRBH _ | I_STLRBH _
       | I_STOP _ | I_STOPBH _
       | I_FENCE _
       | I_IC _|I_DC _|I_TLBI _
       | I_NOP|I_TBZ _|I_TBNZ _
-      | I_BL _ | I_BLR _ | I_RET _ | I_ERET
+      | I_BL _ | I_BLR _ | I_RET _ | I_ERET | I_UDF _
         -> [] (* For -variant self only ? *)
       | I_LDR (_,r,_,_,_)|I_LDRBH (_,r,_,_,_)
       | I_LDRS (_,_,r,_)
@@ -255,18 +299,20 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_STXR (_,_,r,_,_) | I_STXP (_,_,r,_,_, _) | I_STXRBH (_,_,r,_,_)
       | I_CAS (_,_,r,_,_) | I_CASBH (_,_,r,_,_)
       | I_LDOP (_,_,_,_,r,_) | I_LDOPBH (_,_,_,_,r,_)
-      | I_MOV (_,r,_) | I_MOVZ (_,r,_,_) | I_MOVK (_,r,_,_)
+      | I_MOV (_,r,_) | I_MOVZ (_,r,_,_) | I_MOVN (_,r,_,_) | I_MOVK (_,r,_,_)
       | I_SXTW (r,_)
       | I_OP3 (_,_,r,_,_,_)
       | I_ADR (r,_)
       | I_RBIT (_,r,_)
       | I_CSEL (_,r,_,_,_,_)
       | I_MRS (r,_)
+      | I_STR_P (_,_,r,_)
+      | I_UBFM (_,r,_,_,_) | I_SBFM (_,r,_,_,_)
         -> [r]
       | I_MSR (sr,_)
         -> [(SysReg sr)]
-      | I_LDR_P (_,r1,r2,_) | I_LDP (_,_,r1,r2,_,_)
-      | I_LDPSW (r1,r2,_,_) | I_LDXP (_,_,r1,r2,_)
+      | I_LDR_P (_,r1,r2,_)
+      | I_LDXP (_,_,r1,r2,_)
         -> [r1;r2;]
       | I_LD1 _|I_LD1M _|I_LD1R _|I_LD2 _
       | I_LD2M _|I_LD2R _|I_LD3 _|I_LD3M _
@@ -286,6 +332,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _
       | I_LDCT _|I_SC _|I_SEAL _|I_STCT _
       | I_UNSEAL _|I_STG _|I_STZG _|I_LDG _
+      | I_CASP _
         ->
          all_regs (* safe approximation *)
 
@@ -297,6 +344,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDAR (_, (AA|AQ), _, _)|I_LDARBH (_, (AA|AQ), _, _)
       | I_NOP|I_B _|I_BR _|I_BC _|I_CBZ _|I_CBNZ _
       | I_TBNZ _|I_TBZ _|I_BL _|I_BLR _|I_RET _|I_ERET
+      | I_UBFM _ | I_SBFM _
       | I_LDR _|I_LDUR _|I_LD1 _
       | I_LD1M _|I_LD1R _|I_LD2 _|I_LD2M _
       | I_LD2R _|I_LD3 _|I_LD3M _|I_LD3R _
@@ -312,27 +360,21 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MOV_S _|I_MOVI_V _|I_MOVI_S _
       | I_EOR_SIMD _|I_ADD_SIMD _|I_ADD_SIMD_S _
       | I_LDR_P _|I_LDP _|I_LDPSW _|I_STP _
+      | I_STR_P _
       | I_STR _|I_STLR _|I_ALIGND _|I_ALIGNU _
       | I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
       | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _
       | I_LDCT _|I_SC _|I_SEAL _|I_STCT _
       | I_UNSEAL _|I_LDRBH _|I_STRBH _
       | I_STLRBH _|I_CAS _|I_CASBH _
+      | I_CASP _
       | I_SWP _|I_SWPBH _|I_LDOP _
       | I_LDOPBH _|I_STOP _|I_STOPBH _
-      | I_MOV _|I_MOVZ _|I_MOVK _|I_SXTW _
+      | I_MOV _|I_MOVZ _|I_MOVN _|I_MOVK _|I_SXTW _
       | I_OP3 _|I_ADR _|I_RBIT _|I_FENCE _
       | I_CSEL _|I_IC _|I_DC _|I_TLBI _|I_MRS _|I_MSR _
-      | I_STG _|I_STZG _|I_LDG _
+      | I_STG _|I_STZG _|I_LDG _|I_UDF _
         -> MachSize.No
-
-    type ifetch_instruction = instruction
-
-    type ifetch_reg = reg
-
-    let is_link = function
-      | I_BL _ | I_BLR _ -> Some linkreg
-      | _ -> None
 
     include ArchExtra_herd.Make(C)
         (struct

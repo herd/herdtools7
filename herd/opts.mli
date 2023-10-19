@@ -36,7 +36,8 @@ val conds : string list ref
 val model : Model.t option  ref
 val bell : string option ref
 val macros : string option ref
-val unroll : int ref
+val unroll_default : [> `ASL ] -> int
+val unroll : int option ref
 val speedcheck : Speed.t ref
 val optace : OptAce.t option ref
 val archcheck : bool ref
@@ -68,14 +69,14 @@ val dumplem : bool ref
 val dumptex : bool ref
 val maxphantom : int option ref
 val statelessrc11 : bool ref
+val dumpallfaults : bool ref
 
 (* Pretty printing configuration, deserves its own module *)
 module PP : sig
   open PrettyConf
   val dotmode : dotmode ref
   val dotcom : dotcom option ref
-  val evince : bool ref
-  val gv : bool ref
+  val view : View.t option ref
   val showevents : showevents ref
   val texmacros : bool ref
   val tikz : bool ref
@@ -126,6 +127,7 @@ module PP : sig
   val unshow : StringSet.t ref
   val add_doshow : StringSet.t -> unit
   val add_unshow : StringSet.t -> unit
+  val noid : StringSet.t ref
   val symetric : StringSet.t ref
   val classes : string option ref
   val showraw : StringSet.t ref

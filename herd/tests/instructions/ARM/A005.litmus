@@ -1,0 +1,12 @@
+ARM A005
+
+Stable=R2,R3,R4,R5
+
+(*Test LDRD Instruction *)
+{ int x[2] = {1,1}; 0:R1 = x }
+
+P0;
+LDRD R2,R3,[R1];
+LDRD R4,[R1];
+
+forall (0:R2=1 /\ 0:R3=1 /\ 0:R4=1 /\ 0:R5=1)

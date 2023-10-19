@@ -63,8 +63,7 @@ module type S = sig
   val debug : bool
   val verbose : int
   val dotcom : dotcom option
-  val gv : bool
-  val evince : bool
+  val view : View.t option
   val dotmode : dotmode
   val showevents : showevents
   val texmacros : bool
@@ -111,6 +110,7 @@ module type S = sig
   val edgeattrs : DotEdgeAttr.t
   val doshow : StringSet.t
   val unshow : StringSet.t
+  val noid : StringSet.t
   val symetric : StringSet.t
   val classes : string option
   val showraw : StringSet.t

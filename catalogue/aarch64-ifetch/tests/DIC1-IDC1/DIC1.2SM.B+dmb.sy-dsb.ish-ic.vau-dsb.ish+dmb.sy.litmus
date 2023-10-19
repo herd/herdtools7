@@ -1,0 +1,17 @@
+AArch64 DIC1.2SM.B+dmb.sy-dsb.ish-ic.vau-dsb.ish+dmb.sy
+CacheType=DIC
+{ 0:X0=NOP; 0:X1=P0:m0; 0:X3=x; 0:X9=0;
+  1:X0=NOP; 1:X1=P0:m0; 1:X3=x;}
+P0              | P1          ;
+    STR W0,[X1] | LDR W4,[X1] ;
+    DMB SY      | DMB SY      ;
+    LDR W2,[X3] | MOV W2,#1   ;
+    DSB ISH     | STR W2,[X3] ;
+    IC IVAU,X1  | CMP W0,W4   ;
+    DSB ISH     | CSET W9,EQ  ;
+    ISB         |             ;
+m0: B l0        |             ;
+    MOV W9,#1   |             ;
+l0:             |             ;
+exists 0:X9=0 /\ 1:X9=1 /\ 0:X2=1
+(* 1:X9=1 <=> 1:X4=NOP *)

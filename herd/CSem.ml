@@ -15,15 +15,18 @@
 (****************************************************************************)
 module type Config = sig
   include Sem.Config
-  val unroll : int
 end
 
 module
   Make
     (Conf:Config)
-    (V:Value.S with type Cst.Instr.t = CBase.instruction)
+    (V:Value.S with type Cst.Instr.t = CBase.instruction and type arch_op = CBase.arch_op)
     =
   struct
+    let unroll =
+      match Conf.unroll with
+      | None -> Opts.unroll_default `C
+      | Some u -> u
 
     module C = CArch_herd.Make(SemExtra.ConfigToArchConfig(Conf))(V)
     module Act = CAction.Make(C)
@@ -368,7 +371,7 @@ module
               let else_branch =
                 M.unitT (ii.A.program_order_index, next0)
               and then_branch =
-                if n >= Conf.unroll then
+                if n >= unroll then
                   mk_toofar "While" ii >>= fun () -> M.unitT (ii.A.program_order_index, B.Exit)
                 else
                   build_semantics test
@@ -381,9 +384,12 @@ module
         | C.CastExpr e ->
             build_semantics_expr true e ii >>=
             fun _ ->  M.unitT (ii.A.program_order_index, next0)
-        | C.StoreReg(_,r,e) ->
+        | C.StoreReg(_,Some r,e) ->
             build_semantics_expr true e ii >>=
             fun v -> write_reg r v ii >>=
+              fun _ ->  M.unitT (ii.A.program_order_index, next0)
+        | C.StoreReg(_,None,e) ->
+            build_semantics_expr true e ii >>=
               fun _ ->  M.unitT (ii.A.program_order_index, next0)
         | C.StoreMem(loc,e,mo) ->
             (begin

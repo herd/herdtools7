@@ -22,8 +22,9 @@ module Make(V:Constant.S) =
     open CType
     open Printf
 
-    let is_ret _ = assert false
+    let is_ret _ = false
     and is_nop _ = assert false
+    and branch lbl = Pbranch (None,lbl,[])
 
 (***************************************************)
 (* Extract explicit [symbolic] addresses from code *)

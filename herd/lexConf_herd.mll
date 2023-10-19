@@ -41,6 +41,9 @@ let lex_tag_fun key parse tags set tag = match parse tag with
 let lex_tag key parse tags v tag =
   lex_tag_fun key parse tags (fun x -> v := x) tag
 
+let lex_tag_opt key parse tags v tag =
+  lex_tag_fun key parse tags (fun x -> v := Some x) tag
+
 let lex_bool_fun set arg =
   let x =
     try bool_of_string arg
@@ -129,9 +132,7 @@ let handle_key main key arg = match key with
     conds := !conds @ [arg]
 (* Behaviour control *)
 | "model"|"cat"  ->
-    lex_tag_fun
-       key Model.parse Model.tags
-       (fun x -> model := Some x) arg
+    lex_tag_opt key Model.parse Model.tags model arg
 | "bell" ->
     bell := Some arg
 | "macros" ->
@@ -140,10 +141,9 @@ let handle_key main key arg = match key with
     let module PV = ParseTag.MakeS(Opts.OptS) in
     PV.parse_tag_set "variant" variant arg
 | "machsize" ->
-     lex_tag "machsize" MachSize.Tag.parse MachSize.Tag.tags byte arg
+    lex_tag "machsize" MachSize.Tag.parse MachSize.Tag.tags byte arg
 | "endian" ->
-     lex_tag_fun "endian" Endian.parse Endian.tags
-        (fun t -> endian := Some t) arg
+     lex_tag_opt "endian" Endian.parse Endian.tags endian arg
 | "through" ->
     lex_tag
        "through" Model.parse_through Model.tags_through
@@ -153,10 +153,9 @@ let handle_key main key arg = match key with
 | "strictskip" ->
     lex_bool strictskip arg
 | "unroll" ->
-    lex_int unroll arg
+    lex_int_opt unroll arg
 | "optace" ->
-    lex_tag_fun
-       "optace" OptAce.parse OptAce.tags (fun b ->  optace := Some b) arg
+    lex_tag_opt "optace" OptAce.parse OptAce.tags optace arg
 | "archcheck" ->
     lex_bool archcheck arg
 | "initwrites" ->
@@ -167,6 +166,9 @@ let handle_key main key arg = match key with
      lex_bool badexecs arg
 | "badflag" ->
      lex_string_opt badflag arg
+| "dumpallfaults" ->
+   lex_bool dumpallfaults arg
+
 (* Control output *)
 | "show" ->
     lex_tag "show"
@@ -192,15 +194,14 @@ let handle_key main key arg = match key with
      lex_tag "dotmode" PrettyConf.parse_dotmode PrettyConf.tags_dotmode
         PP.dotmode arg
 | "dotcom" ->
-     lex_tag_fun
+     lex_tag_opt
         "dotcom" PrettyConf.parse_dotcom
         PrettyConf.tags_dotmode
-        (fun x -> PP.dotcom := Some x)
-        arg
-| "gv" ->
-     lex_bool PP.gv arg
-| "evince" ->
-     lex_bool PP.evince arg
+        PP.dotcom arg
+| "view" ->
+     lex_tag_opt
+        "view" View.parse
+        View.tags PP.view arg
 | "showevents" ->
      lex_tag "showevents"
         PrettyConf.parse_showevents PrettyConf.tags_showevents
@@ -254,6 +255,8 @@ let handle_key main key arg = match key with
      lex_stringsetfun PP.add_doshow arg
 | "unshow" ->
      lex_stringsetfun PP.add_unshow arg
+| "noid" ->
+     lex_stringset PP.noid arg
 | "symetric" ->
      lex_stringset PP.symetric arg
 | "classes" ->

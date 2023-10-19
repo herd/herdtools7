@@ -1,0 +1,1 @@
+Warning: File "./herd/tests/instructions/AArch64/A249.litmus": P0 cannot refer to L1 defined by P1, use register with initial value P1:L1 (User error)

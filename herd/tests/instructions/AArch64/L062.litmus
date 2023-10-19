@@ -1,0 +1,19 @@
+AArch64 L062
+{
+ins_t 0:X1=instr:"B .+4";
+ins_t 1:X1=instr:"B .+8";
+ins_t 0:X2;
+ins_t 1:X2;
+ins_t 1:X3;
+1:X0=P0:L0;
+}
+  P0                 | P1               ;
+ ADR X0,L0           | LDR W2,[X0]      ;
+ LDR W2,[X0]         | CMP W2,W1        ;
+L0:                  | CSEL W3,W2,W1,NE ;
+ B L1                |                  ;
+L1:                  |                  ;
+ CMP W2,W1           |                  ;
+ CSINC W3,WZR,WZR,EQ |                  ;
+locations [0:X2;1:X1;]
+forall 0:X3=0 /\ 1:X3=instr:"B .+4"

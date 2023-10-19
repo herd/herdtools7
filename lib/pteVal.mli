@@ -53,3 +53,4 @@ module type S = sig
 end
 
 module No : S
+module ASL : S

@@ -1,0 +1,10 @@
+Test A229 Required
+States 1
+0:X1=1; 0:X2=4294967295; 0:X4=1; 0:X5=18446744073709551615;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=1 /\ 0:X2=4294967295 /\ 0:X4=1 /\ 0:X5=-1)
+Observation A229 Always 1 0
+Hash=a7d1ec3240ec4160e6ff6f2fae328eb1
+

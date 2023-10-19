@@ -1,0 +1,10 @@
+Test A240 Required
+States 1
+0:X3=x; x[0]=5; x[1]=6;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x[0]=5 /\ x[1]=6 /\ 0:X3=x)
+Observation A240 Always 1 0
+Hash=0c20e0ef6bd6054f1b927d5e6905e910
+

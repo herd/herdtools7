@@ -1,0 +1,9 @@
+AArch64 A127
+
+(* MOV value from symbolic register into concrete reg *)
+{ uint64_t X0; uint64_t %symbolic_reg = x; uint64_t x }
+
+P0;
+MOV X0, %symbolic_reg;
+
+exists (0:X0 = x)

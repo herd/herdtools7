@@ -1,0 +1,13 @@
+(copy_files (files ../herd/*.{ml,mli}))
+
+(executable
+  (name jerd)
+  (modes js)
+  (optional)
+  (libraries herdtools asllib js_of_ocaml)
+  (preprocess (per_module
+     ((pps js_of_ocaml-ppx) jerd)
+     ((action (system "awk -f herd-www/notwww.awk %{input-file}"))
+       AArch64ParseTest ParseTest Top_herd)))
+  (modules_without_implementation AArch64Sig action arch_herd monad sem XXXMem))
+

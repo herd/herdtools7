@@ -107,6 +107,7 @@ let () =
   | `C ->
       let module M = Make(CArch_gen) in
       M.zyva
+  | `ASL -> Warn.fatal "ASL arch in atoms"
   | `CPP -> Warn.fatal "CCP arch in atoms"
   | `JAVA -> Warn.fatal "JAVA arch in atoms")
      ()

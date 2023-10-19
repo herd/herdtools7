@@ -217,7 +217,7 @@ module
                 M.choiceT vcf
                   (rval_ea  nat_sz locked ea ii >>= fun vea -> write_reg r vea ii >>= B.next1T)
                   B.nextT)
-          |  X86.I_JMP lbl -> M.unitT (B.Jump lbl)
+          |  X86.I_JMP lbl -> B.branchT lbl
 
 (* Conditional branZch, I need to look at doc for
    interpretation of conditions *)

@@ -54,5 +54,6 @@ module type S = sig
   val extract_value : Code. v -> atom option -> Code.v
 (* Typing of wide accesses as arrays of integers *)
   val as_integers : atom option -> int option
-
+(* Typing of pair accesses is different, so check them *)
+  val is_pair : atom option -> bool
 end

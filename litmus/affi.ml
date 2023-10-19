@@ -38,7 +38,7 @@ let pp (cs,ne) =
       (List.map (fun (x,y) -> sprintf "(%i,%i)" x y) ne) in
   sprintf "%s ; %s" cs ne
 
-let dbg fmt = kprintf (fun _ -> ()) fmt
+let dbg fmt = ksprintf (fun _ -> ()) fmt
 
 let debug_nodes xss =
   String.concat " "

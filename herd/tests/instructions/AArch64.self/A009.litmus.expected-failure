@@ -1,1 +1,1 @@
-Warning: File "./herd/tests/instructions/AArch64.self/A009.litmus": Label L2 is undefined, yet it is used as constant (User error)
+Warning: File "./herd/tests/instructions/AArch64.self/A009.litmus": Label L0 not found on P0, although used in the instruction B L0 (User error)

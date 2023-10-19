@@ -83,10 +83,6 @@ end = struct
   end
 
   let get_arch arch =
-    let arch = match arch with
-    | `C -> Archs.check_carch Cfg.carch
-    | `OpenCL | `CPP | `LISA | `JAVA -> assert false
-    | #Archs.System.arch as a -> a in
     let opt = Option.get_default arch in
     let opt = Cfg.mkopt opt in
     let module M = struct
@@ -128,6 +124,19 @@ end = struct
         (fun src -> fprintf chan " %s\\\n" src)
         (List.rev sources) ;
       fprintf chan "\n"
+    end ;
+    begin
+      match Cfg.mode with
+      | Mode.Std|Mode.PreSi -> ()
+      | Mode.Kvm ->
+         let utils =
+           ["litmus_rand.o"; "utils.o"; "kvm_timeofday.o";] in
+         let utils =
+           if Cfg.stdio then utils
+           else
+             "platform_io.o" :: "litmus_io.o" :: utils in
+         fprintf chan "UTILS=%s\n"
+           (String.concat " " utils)
     end ;
     ()
 
@@ -448,8 +457,8 @@ let dump_c xcode names =
         | Mode.Kvm ->
            O.o "#include \"kvm-headers.h\"" ;
            O.o "#include \"utils.h\"" ;
-           if Cfg.sleep > 0 then
-             O.o "#include <asm/delay.h>"
+           if Cfg.sleep > 0 then O.o "#include <asm/delay.h>" ;
+           if not Cfg.stdio then O.o "#include \"litmus_io.h\"" ;
       end ;
       begin match Cfg.threadstyle with
       | ThreadStyle.Cached -> O.o "extern void set_pool(void);"

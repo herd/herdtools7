@@ -179,15 +179,22 @@ let options = [
   ("-suffix", Arg.String (fun s -> suffix := s),
    "<suf> add <suf> at the end of the base of generated files") ;
   parse_bool "-dumpes" Opts.dumpes "dump event structures";
+  begin let module ParseView = ParseTag.Make(View) in
+  ParseView.parse_opt "-view" PP.view
+    "fork specified viewer to show output graphs" end ;
   ( "-gv",
-    Arg.Unit (fun _ -> PP.gv := true),
-    "<non-default>  fork gv to show output graphs") ;
+    Arg.Unit (fun _ -> PP.view := Some View.GV),
+    "<non-default>  alias for -view gv") ;
   ( "-evince",
-    Arg.Unit (fun _ -> PP.evince := true),
-    "<non-default>  fork evince to show output graphs") ;
+    Arg.Unit (fun _ -> PP.view := Some View.Evince),
+    "<non-default>  alias for -view evince") ;
+  ( "-preview",
+    Arg.Unit (fun _ -> PP.view := Some View.Preview),
+    "<non-default>  alias for -view preview") ;
   ("-unroll",
-   Arg.Int (fun x -> unroll := x),
-   sprintf "<int> branch unrolling upper limit, default %i" !unroll);
+   Arg.Int (fun x -> unroll := Some x),
+   sprintf "<int> branch unrolling upper limit, default ASL: %i, others: %i"
+     (unroll_default `ASL)  (unroll_default `Others));
   parse_bool "-hexa" PP.hexa "print numbers in hexadecimal";
 (* undocumented *)
   ("-switch",
@@ -278,6 +285,9 @@ let options = [
   "-statelessrc11",
   Arg.Bool (fun b -> if b then statelessrc11 := true),
   "<bool> enable stateless RC11 model checking, use with -variant normw, SC check can be skipped";
+  "-dumpallfaults",
+  Arg.Bool (fun b -> dumpallfaults := b),
+  "Dump final states with all faults that that happenned regardless of the post-condition";
 
 (************************)
 (* Control dot pictures *)
@@ -375,6 +385,7 @@ let options = [
  parse_stringsetfun "-doshow" PP.add_doshow "show those edges";
  parse_stringsetfun "-unshow" PP.add_unshow "do not show those edges" ;
  parse_stringset "-symetric" PP.symetric "declare those edges as symetric" ;
+ parse_stringset "-noid" PP.noid "like -symetric, additionally do not show identity edges" ;
  parse_string_opt "-classes" PP.classes "show classes of this equivalence (no not cumulate)" ;
  parse_stringset "-showraw" PP.showraw
     "do not perform transitivity removal on those edges" ;
@@ -414,7 +425,7 @@ let options = [
     "<name> specify kind of tests (can be repeated)");
   ( "-conds",
     Arg.String  (fun s -> conds := !conds @ [s]),
-    "<name> specify conditoins of tests (can be repeated)");
+    "<name> specify conditions of tests (can be repeated)");
 (* Undocumented *)
   parse_bool "-candidates" candidates
   "show complete candidate count in output" ;
@@ -513,6 +524,7 @@ let () =
     let throughflag = !throughflag
     let maxphantom = !maxphantom
     let statelessrc11 = !statelessrc11
+    let dumpallfaults = !dumpallfaults
 
     let check_name = Check.ok
     let check_rename = Check.rename_opt
@@ -550,8 +562,7 @@ let () =
       let verbose = verbose
       let dotmode = !PP.dotmode
       let dotcom = !PP.dotcom
-      let gv = !PP.gv
-      let evince = !PP.evince
+      let view = !PP.view
       let showevents = !PP.showevents
       let texmacros = !PP.texmacros
       let tikz = !PP.tikz
@@ -598,6 +609,7 @@ let () =
       let edgeattrs = PP.get_edgeattrs ()
       let doshow = !PP.doshow
       let unshow = !PP.unshow
+      let noid = !PP.noid
       let symetric = !PP.symetric
       let classes = !PP.classes
       let showraw = !PP.showraw
@@ -642,13 +654,14 @@ let () =
       let bi = R.read fname in
       Some (fname,bi) in
 
-  let from_file =
+  let from_file f =
     let module T =
       ParseTest.Top
         (struct
           let bell_model_info = bi
           include Config end) in
-    T.from_file in
+    SymbValue.reset_gensym () ;
+    T.from_file f in
 
 
 (* Just go *)

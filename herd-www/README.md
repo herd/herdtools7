@@ -13,11 +13,11 @@ Compilation and installation
 ============================
 
 Dependencies.
-- ocaml, ocamlbuild, js_of_ocaml, js_of_ocaml-ppx.
+- ocaml, dune, js_of_ocaml, js_of_ocaml-ppx.
 
 Install all those with opam!
 ```
-% opam install ocamlbuild js_of_ocaml js_of_ocaml-ppx
+% opam install dune js_of_ocaml js_of_ocaml-ppx
 ```
 
 Build

@@ -1,0 +1,10 @@
+Test A012 Required
+States 1
+ Fault(P0:L0,UndefinedInstruction); Fault(P0:L1,x,MMU:Translation); Fault(P0:L2,y,MMU:AccessFlag);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0:L0,UndefinedInstruction) /\ fault(P0:L1,x,MMU:Translation) /\ fault(P0:L2,y,MMU:AccessFlag))
+Observation A012 Always 1 0
+Hash=fceea3352bd9a66e0ccf240f75a7e6f4
+

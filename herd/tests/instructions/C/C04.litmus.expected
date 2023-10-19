@@ -1,0 +1,10 @@
+Test C04 Required
+States 1
+0:r1=0x0; 0:r3=0x0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:r1=0x0 /\ 0:r3=0x0)
+Observation C04 Always 1 0
+Hash=8b9618e5572a22c7e8d1ced9c7b99fe8
+

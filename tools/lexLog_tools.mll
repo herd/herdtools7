@@ -89,12 +89,20 @@ let norm_pteval s =
  + Other values need not being normalised
  *)
 
-let norm_value s =
+let norm_one_value s =
   assert (String.length s > 0) ;
   match s.[0] with
   | '(' -> norm_pteval s
-  | '0'..'9' -> to_xxx s
+  | '-'|'0'..'9' -> to_xxx s
   | _ ->  Constant.old2new s
+
+let rec norm_value s =
+  assert (String.length s > 0) ;
+  match s.[0] with
+  | '{' ->
+      let elts = List.map norm_value (LexSplit.split_array s) in
+      Printf.sprintf "{%s}" (String.concat "," elts)
+  | _ -> norm_one_value s
 
 let norm_loc s = Constant.old2new s
 
@@ -110,14 +118,16 @@ let hexanum = "0x" hexa+
 let set = '{' (' '|','|('-'?(num|hexanum)))* '}'
 let alpha = [ 'a'-'z' 'A'-'Z']
 let pteval = '(' ([' ''_'','':''('')']|alpha|digit)+ ')'
-let name = alpha (alpha|digit|'_'| '.')*
+let name = (alpha|'_'|'.'|'$') (alpha|digit|'_'| '.')*
 let label = 'L' (alpha|digit)+
 let fault = (['f''F'] "ault")
 let reg = name
 let loc = name | ('$' (alpha+|digit+))
 let new_loc =
-(("PTE"|"PA") ' '* '(' ' '* (name| "PTE" ' '* '(' ' '* name ' '* ')') ' '* ')')
+(("PTE"|"TTD"|"PA") ' '* '(' ' '* (name| ("PTE"|"TTD") ' '* '(' ' '* name ' '* ')') ' '* ')')
 | ("tag" ' '* '(' ' '* (name ' '* ')'))
+let name_off = name ['-''+'] (num|hexanum)
+let instr = "instr:" '"' [^'"']* '"'
 let fault_type = alpha+ (':' alpha+)?
 let blank = [' ' '\t']
 let testname  = (alpha|digit|'_' | '/' | '.' | '-' | '+' | '[' | ']')+
@@ -226,44 +236,50 @@ and skip_empty_lines = parse
 and pline bds fs abs = parse
 | blank*
  ((num ':' reg as loc)|(('['?) ((loc|new_loc) as loc) ( ']'?))|(loc '[' num ']' as loc))
-    blank* '=' blank* (('-' ? (num|hexanum))|(name(':'name)?)|new_loc|set|pteval|(('P'? num)':'label)|(':'alpha+) as v)
+    blank* '=' blank* (('-' ? (num|hexanum))|(name(':'name)?)|new_loc|name_off|set|pteval|(('P'? num)':'label)|(':'alpha+)|instr as v)
     blank* ';'
     {
      let v = norm_value v in  (* Translate to decimal *)
      let loc = norm_loc loc in
      let p = poolize loc v in
      pline (p::bds) fs abs lexbuf }
-| blank* fault blank*
-    '(' blank* ('P'? (num as proc)) (':' (name as lbl))? blank* ','
-     ((loc|new_loc) as loc) (':' alpha+)? blank* (* skip optional tag *)
+| blank* ('~'? as neg) fault blank*
+    '(' blank* ('P'? (num as proc)) (':' (name as lbl))? blank*
+     (','((loc|new_loc) as loc) (':' alpha+)?)? blank* (* NB: skip optional tag *)
      (',' blank* (fault_type as ftype))? blank*
-      (',' [^')']*)?  (* skip optional comment *)
+     (',' [^')']*)?  (* skip optional comment *)
       ')' blank* ';'
     {
-     let loc = Constant.old2new loc in
+     let loc,ftype = (* Resolve ambiguity if one args only *)
+       match loc,ftype with
+       | (None,Some v) | (Some v,None)
+         ->
+           if FaultType.is v then None,Some v
+           else Some v,None
+       | (Some _,Some _)|(None,None)
+         ->
+           loc,ftype in
+     let loc = Misc.map_opt Constant.old2new loc in
      let ftype =
        if O.faulttype then
          match ftype with Some "kvm" -> None | _ -> ftype
        else None in
      let f = (to_proc proc,lbl),loc,ftype in
      let f = HashedFault.as_hashed f in
-     pline bds (f::fs) abs lexbuf }
-| blank* '~' fault blank* '(' blank* ('P'? (num as proc)) (':' (name as lbl))? blank* ','
-    ((loc|new_loc) as loc) blank* ')' blank* ';'
-    {
-     let loc = Constant.old2new loc in
-     let f = (to_proc proc,lbl),loc,None in
-     let f = HashedFault.as_hashed f in
-     pline bds fs (f::abs) lexbuf }
+     match neg with
+     | "" ->
+        pline bds (f::fs) abs lexbuf
+     | _ ->
+        pline bds fs (f::abs) lexbuf }
 | blank* ('#' [^'\n']*)?  nl  { incr_lineno lexbuf ; bds,fs,abs }
 | "" { error "pline" lexbuf }
 
 and skip_pline = parse
 | blank*
  ((num ':' reg)|(('['?) (loc) ( ']'?))|(loc '[' num ']'))
-    blank* '=' blank* (('-' ? (num|hexanum))|name|set)
+    blank* '=' blank* (('-' ? (num|hexanum))|name|name_off|set|instr)
     blank* ';'
-| blank* fault blank* '(' blank* ('P'? num) ':' label blank* ','
+| blank* ('~'?) fault blank* '(' blank* ('P'? num) ':' label blank* ','
     loc blank* ')' blank* ';'
     { skip_pline lexbuf }
 | blank* ('#' [^'\n']*)?  nl  { incr_lineno lexbuf }

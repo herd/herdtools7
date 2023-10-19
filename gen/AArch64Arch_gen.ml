@@ -143,9 +143,12 @@ type atom_pte =
 
 type neon_sizes = SIMD.atom
 
+type pair_idx = Both
+
 type atom_acc =
   | Plain of capa_opt | Acq of capa_opt | AcqPc of capa_opt | Rel of capa_opt
   | Atomic of atom_rw | Tag | CapaTag | CapaSeal | Pte of atom_pte | Neon of neon_sizes
+  | Pair of pair_opt * pair_idx
 
 let  plain = Plain None
 
@@ -159,7 +162,7 @@ let applies_atom (a,_) d = match a,d with
 | Rel _,W
 | Pte (Read|ReadAcq|ReadAcqPc),R
 | Pte (Set _|SetRel _),W
-| (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _),(R|W)
+| (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _|Pair _),(R|W)
   -> true
 | _ -> false
 
@@ -186,6 +189,14 @@ let applies_atom (a,_) d = match a,d with
      | Set set -> pp_w_pte set
      | SetRel set -> pp_w_pte set ^"L"
 
+   let pp_pair_opt = function
+     | Pa -> ""
+     | PaN -> "N"
+     | PaI -> "I"
+
+   and pp_pair_idx = function
+     | Both -> ""
+
    let pp_atom_acc = function
      | Atomic rw -> sprintf "X%s" (pp_atom_rw rw)
      | Rel o -> sprintf "L%s" (pp_opt o)
@@ -197,6 +208,8 @@ let applies_atom (a,_) d = match a,d with
      | CapaSeal -> "Cs"
      | Pte p -> sprintf "Pte%s" (pp_atom_pte p)
      | Neon n -> SIMD.pp n
+     | Pair (opt,idx)
+       -> sprintf "Pa%s%s" (pp_pair_opt opt) (pp_pair_idx idx)
 
    let pp_atom (a,m) = match a with
    | Plain o ->
@@ -280,17 +293,28 @@ let applies_atom (a,_) d = match a,d with
      else
        fun _ r -> r
 
-   let fold_acc_opt o f r =
-     let r = f (Acq o) r in
-     let r = f (AcqPc o) r in
-     let r = f (Rel o) r in
-     r
+      let fold_pair f r =
+        if do_mixed then r
+        else
+          let f opt idx r =
+            f (Pair (opt,idx)) r in
+          r |>
+          f Pa Both |>
+          f PaN Both |>
+          f PaI Both
+
+      let fold_acc_opt o f r =
+        let r = f (Acq o) r in
+        let r = f (AcqPc o) r in
+        let r = f (Rel o) r in
+        r
 
    let fold_acc mixed f r =
      let r = if mixed then r else fold_pte (fun p r -> f (Pte p) r) r in
      let r = fold_morello f r in
      let r = fold_tag f r in
      let r = fold_neon f r in
+     let r = fold_pair f r in
      let r = fold_acc_opt None f r in
      let r =
        if do_morello then
@@ -315,7 +339,11 @@ let applies_atom (a,_) d = match a,d with
 
    let worth_final (a,_) = match a with
      | Atomic _ -> true
-     | Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal|Pte _|Neon _ -> false
+     | Acq _|AcqPc _|Rel _|Plain _|Tag
+     | CapaTag|CapaSeal
+     | Pte _|Neon _
+     | Pair _
+       -> false
 
 
 
@@ -394,9 +422,10 @@ let applies_atom (a,_) d = match a,d with
    | CapaTag,None -> Code.CapaTag
    | CapaSeal,None -> Code.CapaSeal
    | Neon n,None -> Code.VecReg n
+   | Pair (_,Both),_ -> Code.Pair
    | (Tag|CapaTag|CapaSeal|Pte _|Neon _),Some _ -> assert false
-   | (Plain _|Acq _|AcqPc _|Rel _|Atomic (PP|PL|AP|AL)),_
-      -> Code.Ord
+   | (Plain _|Acq _|AcqPc _|Rel _|Atomic _),_
+     -> Code.Ord
 
 
 (**************)
@@ -405,7 +434,8 @@ let applies_atom (a,_) d = match a,d with
 
    let tr_value ao v = match ao with
    | None| Some (_,None) -> v
-   | Some (_,Some (sz,_)) -> Mixed.tr_value sz v
+   | Some (_,Some (sz,_)) ->
+      Mixed.tr_value sz v
 
    module ValsMixed =
      MachMixed.Vals
@@ -416,21 +446,23 @@ let applies_atom (a,_) d = match a,d with
 
 let overwrite_value v ao w = match ao with
 | None
-| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal|Pte _|Neon _),None)
+| Some
+    ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|
+    Tag|CapaTag|CapaSeal|Pte _|Neon _|Pair _),None)
   -> w (* total overwrite *)
 | Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Neon _),Some (sz,o)) ->
-    ValsMixed.overwrite_value v sz o w
-| Some ((Tag|CapaTag|CapaSeal|Pte _),Some _) ->
+   ValsMixed.overwrite_value v sz o w
+| Some ((Tag|CapaTag|CapaSeal|Pte _|Pair _),Some _) ->
     assert false
 
  let extract_value v ao = match ao with
   | None
   | Some
       ((Atomic _|Acq _|AcqPc _|Rel _|Plain _
-        |Tag|CapaTag|CapaSeal|Pte _|Neon _),None) -> v
+        |Tag|CapaTag|CapaSeal|Pte _|Neon _|Pair _),None) -> v
   | Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal|Neon _),Some (sz,o)) ->
-      ValsMixed.extract_value v sz o
-  | Some (Pte _,Some _) -> assert false
+     ValsMixed.extract_value v sz o
+  | Some ((Pte _|Pair _),Some _) -> assert false
 
 (* Page table entries *)
   module PteVal = struct
@@ -473,9 +505,15 @@ let overwrite_value v ao w = match ao with
    let as_integers a =
      Misc.seq_opt
        (function
-        | (Neon n,_) -> Some (neon_as_integers n)
+        | Neon n,_ -> Some (neon_as_integers n)
+        | Pair _,_ -> Some 2
         | _ -> None)
        a
+
+   let is_pair a =
+     match a with
+     | Some (Pair _,_) -> true
+     | Some _|None -> false
 
 (* End of atoms *)
 

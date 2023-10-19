@@ -135,7 +135,7 @@ The additional \opt{-a 16}  command line option informs test executable
 to use $16$ logical processors, hence running $8$ instances of
 the ``\ltest{X}'' tests concurrently, as those tests all are two thread tests.
 This technique of flooding the tested machine obviously
-yields better ressource usage
+yields better resource usage
 and, according to our experience, favours outcome variability.
 
 The following table summarises the results:
@@ -161,8 +161,8 @@ Finally, it may be interesting to classify the ``\texttt{X}'' tests:
 \begin{verbatim}
 % mcycles7 @all | classify7 -arch X86
 R
-  X003 -> R+po+rfi-po : PodWW Wse Rfi PodRR Fre
-  X006 -> R : PodWW Wse PodWR Fre
+  X003 -> R+po+rfi-po : PodWW Coe Rfi PodRR Fre
+  X006 -> R : PodWW Coe PodWR Fre
 SB
   X000 -> SB+rfi-pos : Rfi PodRR Fre Rfi PodRR Fre
   X001 -> SB+rfi-po+po : Rfi PodRR Fre PodWR Fre
@@ -176,7 +176,7 @@ One sees that two thread non-SC tests for x86 are basically of two kinds.
 
 
 \section{Cross compiling, \label{affinity:experiment}affinity experiment}
-In this section we describe how to produce the C~sources of tests
+\aname{crosscompile}{In} this section we describe how to produce the C~sources of tests
 on a machine, while running the tests on another.
 We also describe a sophisticated affinity experiment.
 
@@ -481,7 +481,7 @@ available in directory \ahref{tst-co}{\texttt{tst-co}}%
 Amongst those $31$~tests, are five tests that may exhibit
 the five ``basic'' uniproc violations.
 Those five basic uniproc violations are three direct contraditions of
-program order and communication candidate relaxations Ws,Rf and~Fr ---
+program order and communication candidate relaxations Co,Rf and~Fr ---
 which we show
 as executions of the tests \basic{WW}, \basic{RW} and~\basic{WR}:
 \begin{center}
@@ -491,7 +491,7 @@ as executions of the tests \basic{WW}, \basic{RW} and~\basic{WR}:
 \end{center}
 plus two contradictions of
 program order and communication candidate relaxation
-sequences Ws;Rf and~Fr;Rf,
+sequences Co;Rf and~Fr;Rf,
 which we show
 as executions of the tests \basic{W+RW} and~\basic{W+RR}:
 \begin{center}
@@ -499,8 +499,8 @@ as executions of the tests \basic{W+RW} and~\basic{W+RR}:
 \img{W+RR}
 \end{center}
 
-Namely, due to the transitivity of Ws and to the definition of Fr
-(that implies $\textrm{Fr;Ws} \subseteq \textrm{Fr}$) all sequences of
+Namely, due to the transitivity of Co and to the definition of Fr
+(that implies $\textrm{Fr;Co} \subseteq \textrm{Fr}$) all sequences of
 communications are covered by the above listed five cases.
 
 \input{MPPOSS.tex}\newcommand{\mpposs}[1]{\ahref{MPPOSS-#1.html}{#1}}%
@@ -526,7 +526,7 @@ on our local machine and compile C files on the remote machine):
 % scp /tmp/A.tar trimslice:/tmp/A.tar
 \end{verbatim}
 We use the \afile{trimslice.cfg} (\litmus) configuration file present
-in the \litmus{} distribution, additionnally specifying
+in the \litmus{} distribution, additionally specifying
 \ahrefloc{defmemorymode}{memory direct mode}
 and a \ahrefloc{defstride}{stride value} of~\opt{1}.
 We then copy the \texttt{A.tar} archive to our Trimslice machine.
@@ -618,7 +618,7 @@ that we move into some sub-directory \texttt{dragon}.
 
 \subsubsection{Other machines}
 We also run our test set on more recent
-Google nexus7 tablet (dual-core Cortex-A15 based Exynos5250, runing Android)
+Google nexus7 tablet (dual-core Cortex-A15 based Exynos5250, running Android)
 and Hardkernel ODROID-XU development board
 (quad-core CortexA7-Cortex-A15 in tandem based Exynos5410, running Linux),
 resulting in log files into sub-directories \file{nexus10} and~\file{odroid-xu}.

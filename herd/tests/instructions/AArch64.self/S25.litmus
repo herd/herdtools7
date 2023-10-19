@@ -1,0 +1,23 @@
+AArch64 S25
+(* Some of the latter discarded candidate execution
+   trigger a delayed error. More precisely, herd cannot
+   hander overwriting MOV W6,W4 with ADR X3.+4, because there
+   is no label on target. *)
+{
+ins_t 0:X4=instr:"BL .+8";
+0:X1=P0:L0;
+ins_t 0:X0;
+ins_t 0:X2;
+ins_t 0:X6;
+}
+  P0         ;
+L0:          ;
+ ADR X3,L1   ;
+L1:          ;
+ MOV W6,W4   ;
+ LDR W0,[X1] ;
+ LDR W2,[X3] ;
+locations [0:X0;0:X2;0:X6;]
+
+ 
+

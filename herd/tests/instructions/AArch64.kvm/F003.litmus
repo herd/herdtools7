@@ -1,0 +1,13 @@
+AArch64 F003
+EL0=P0
+{
+int x=1;
+0:X0=x;
+[PTE(x)]=(el0:0);
+}
+  P0          | P0.F           ;
+ ADD X0,X0,#0 | LDR W2,[X0]    ;
+L0:           | ADR X3,L1      ;
+ LDR W1,[X0]  | MSR ELR_EL1,X3 ;
+L1:           | ERET           ;
+forall 0:X2=1;

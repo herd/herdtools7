@@ -45,13 +45,13 @@ val filebase : string -> string
 (* basic misc   *)
 (****************)
 val polymorphic_compare : 'a -> 'a -> int
-external int_compare : int -> int -> int = "caml_int_compare"
+val int_compare : int -> int -> int
 val int_eq : int -> int -> bool
 val max_int : int -> int -> int
 val string_eq : string -> string -> bool
 val bool_eq : bool -> bool -> bool
 
-external identity : 'a -> 'a = "%identity"
+val identity : 'a -> 'a
 (* ignore argument(s) *)
 val ing : 'a -> unit
 val ing2 : 'a -> 'b -> unit
@@ -67,13 +67,15 @@ val app_opt : ('a -> 'b) -> 'a option -> 'b option
 val check_opt : ('a -> unit) -> 'a option -> unit
 val snd_opt : ('a * 'b) option -> 'b option
 val map_opt : ('a -> 'b) -> 'a option -> 'b option
-val option_map : ('a -> 'b option) -> 'a list -> 'b list
 val app_opt_def : 'b -> ('a -> 'b) -> 'a option -> 'b
+val pp_opt_arg : ('a -> string) -> 'a option -> string
+
 val app_opt2 : ('v -> 'r) -> (unit -> 'r) -> ('i -> 'v option) -> 'i -> 'r
 val delay_parse : ('v -> 'r) -> ('i -> 'v option) -> 'i -> 'r
 
 val map_string : (char -> string) -> string -> string
 val fmt_percent : string -> string
+val skip_spaces : string -> string
 
 val opt_compare : ('a -> 'a -> int) -> 'a option -> 'a option -> int
 val opt_eq : ('a -> 'a -> bool) -> 'a option -> 'a option -> bool
@@ -118,6 +120,7 @@ val consp : 'a list -> bool
 val cons : 'a -> 'a list -> 'a list
 val last : 'a list -> 'a
 val pop_last : 'a -> 'a list -> 'a * 'a list
+val pop_filter_opt : ('a -> bool) -> 'a list -> 'a option * 'a list
 val pp_list :
   out_channel -> string -> (out_channel -> 'a -> unit) -> 'a list -> unit
 val rev_iter : ('a -> unit) -> 'a list -> unit

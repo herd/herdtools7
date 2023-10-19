@@ -36,12 +36,16 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
     let is_atomic annot = annot
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
+    let ifetch_value_sets = []
+
     let barrier_sets =
       [
        "MFENCE",is_barrier Mfence;
        "SFENCE",is_barrier Sfence;
        "LFENCE",is_barrier Lfence;
      ]
+
+    let cmo_sets = []
 
     let annot_sets = ["X",is_atomic]
 
@@ -61,13 +65,6 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
     include NoSemEnv
 
     include NoLevelNorTLBI
-
-    include
-      IFetchTrait.NotImplemented
-        (struct
-          type arch_instruction = instruction
-          type arch_reg = reg
-        end)
 
     include ArchExtra_herd.Make
         (C)(struct
@@ -113,4 +110,5 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
 
     end
 
+    module CMO = Cmo.No
   end

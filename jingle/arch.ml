@@ -115,6 +115,10 @@ module MakeCommon(A:Base) = struct
     let r,st = f st in
     g r,st
 
+  let (>!!) f g = fun st ->
+    let rs,stt = List.split (List.map f st) in
+    List.map g rs,stt
+
   let mapT f =
     let rec map_rec = function
       | [] -> unitT []

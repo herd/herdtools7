@@ -1,0 +1,16 @@
+AArch64 S23
+{
+int t[2] = { 1,2 } ;
+0:X1=P1:L0; 0:X3=P1:L1;
+1:X2=t;
+}
+  P0         | P1             ;
+ LDR W0,[X3] | MOV W1,#3      ;
+ STR W0,[X1] |L0:             ;
+             | STR W1,[X2,#4] ;
+             | B L2           ;
+             |L1:             ;
+             | STR W1,[X2]    ;
+             |L2:             ;
+ 
+locations [t;]

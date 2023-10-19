@@ -1,0 +1,10 @@
+Test L049 Required
+States 1
+0:X0=instr:"B.EQ .+8"; 0:X4=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X4=1 /\ not (0:X0=instr:"B.EQ .+4"))
+Observation L049 Always 1 0
+Hash=041819817e6401b5ace371c8e0fe2e4c
+

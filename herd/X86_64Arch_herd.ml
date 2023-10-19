@@ -21,7 +21,7 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
     include X86_64Base
     let is_amo = function
       | I_LOCK _ | I_EFF_EFF (I_XCHG,_,_,_) -> true
-      | I_NOP | I_EFF_OP _ | I_EFF _ | I_EFF_EFF _
+      | I_NOP | I_RET | I_EFF_OP _ | I_EFF _ | I_EFF_EFF _
       | I_CMPXCHG _ | I_JMP _ | I_JCC _ | I_CMOVC _ | I_MOVNTI _
       | I_FENCE _ | I_MOVD _ | I_MOVNTDQA _ | I_CLFLUSH _
         -> false
@@ -40,12 +40,16 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
       | Plain|Atomic -> false
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
+    let ifetch_value_sets = []
+
     let barrier_sets =
       [
         "MFENCE",is_barrier MFENCE;
         "SFENCE",is_barrier SFENCE;
         "LFENCE",is_barrier LFENCE;
       ]
+
+    let cmo_sets = []
 
     let annot_sets = ["X",is_atomic; "NT",is_nt;]
 
@@ -75,10 +79,10 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
 
     let reg_to_mach_size r = match r with
       | Ireg (_,p) -> reg_part_to_mach_size p
-      | RIP | Symbolic_reg _ | Internal _ | Flag _ | XMM _ -> Warn.fatal "No size for register %s" (pp_reg r)
+      | RIP | CS | Symbolic_reg _ | Internal _ | Flag _ | XMM _ -> Warn.fatal "No size for register %s" (pp_reg r)
 
     let mem_access_size = function
-      | I_NOP | I_JMP _ | I_JCC _ | I_LOCK _ | I_FENCE _
+      | I_NOP | I_RET | I_JMP _ | I_JCC _ | I_LOCK _ | I_FENCE _
       | I_CLFLUSH _
       | I_MOVNTDQA _ (* twice a quad in fact *)
         -> None
@@ -95,13 +99,6 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
     module V = V
 
     include NoLevelNorTLBI
-
-    include
-      IFetchTrait.NotImplemented
-        (struct
-          type arch_instruction = instruction
-          type arch_reg = reg
-        end)
 
     include ArchExtra_herd.Make (C)
               (struct
@@ -179,4 +176,5 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
 
     end
 
+    module CMO = Cmo.No
   end

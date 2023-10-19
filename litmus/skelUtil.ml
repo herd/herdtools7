@@ -25,6 +25,9 @@ module type Config = sig
   val exit_cond : bool
   val have_fault_handler : bool
   val do_stats : bool
+  val sysarch : Archs.System.t
+  val c11 : bool
+  val variant : Variant_litmus.t -> bool
 end
 
 let no_timebase_error sysarch =
@@ -65,7 +68,15 @@ let rec nitems t = match t with
 | Base _|Pointer _ -> 1
 
 let dump_fatom_tag d ((p,lbl),v,_) =
-  sprintf "fault_P%d%s_%s" p (match lbl with None -> "" | Some lbl -> "_" ^ lbl) (d v)
+  sprintf "fault_P%d%s%s" p
+    (match lbl with None -> "" | Some lbl -> "_" ^ lbl)
+    (match v with
+     | None -> ""
+     | Some v -> "_" ^ d v)
+
+let data_symb_id s = sprintf "DATA_SYMB_ID_%s" (String.uppercase_ascii s)
+let instr_symb_id s = sprintf "INSTR_SYMB_ID_%s" (String.uppercase_ascii s)
+let fault_id s = sprintf "Fault%s" (Misc.to_c_name s)
 
 module PteValUtil(P:PteVal.S) = struct
 
@@ -80,7 +91,9 @@ module Make
     (Cfg:Config)
     (P:sig type code end)
     (A:Arch_litmus.Base)
-    (T:Test_litmus.S with type P.code = P.code and module A = A and module FaultType = A.FaultType) : sig
+    (T:Test_litmus.S with
+       type instruction = A.instruction and type P.code = P.code and
+       module A = A and module FaultType = A.FaultType) : sig
 
 (* Skeleton utilities, useful for Skel and PreSi *)
 
@@ -106,7 +119,9 @@ module Make
       val select_global : env -> (string * CType.t) list
       val select_aligned : env -> (string * CType.t) list
 
-(* Some dump`ing stuff *)
+      val select_by_type : (CType.t -> bool) -> env -> A.location list
+
+(* Some dumping stuff *)
       val register_type : 'loc ->  CType.t -> CType.t
       val fmt_outcome_as_list :
         T.t -> (CType.base -> string) -> A.RLocSet.t -> env
@@ -132,8 +147,9 @@ module Make
       val is_rloc_pte : A.rlocation -> env -> bool
       val pte_in_outs : env -> T.t -> bool
       val ptr_pte_in_outs : env -> T.t -> bool
+      val instr_in_outs : env -> T.t -> bool
       val get_faults : T.t -> (A.V.v, A.FaultType.t) Fault.atom list
-      val find_label_offset : Proc.t -> MiscParser.func -> string -> T.t -> int
+      val find_label_offset : Proc.t -> string -> T.t -> int
 
 (* Instructions *)
       val do_store : CType.t -> string -> string -> string
@@ -146,19 +162,21 @@ module Make
       module Dump : functor (O:Indent.S) -> functor(EPF:EmitPrintf.S) -> sig
         (* Some small dump functions common std/presi *)
 
-        (* Dump (typedef) array types, boolean argument commands
+        val dump_mbar_def : unit -> unit
+
+       (* Dump (typedef) array types, boolean argument commands
            also dumping types used for alignment. *)
         val dump_vars_types : bool -> T.t -> unit
 
         (* Dump definition of struct fields that point in code*)
-        val define_label_fields : Label.Full.full list -> unit
+        val define_label_fields : Label.Full.Set.t -> unit
 
         (* Dump initialisation code of label constants,
            first argument is a pointer to struct *)
-        val initialise_labels : string -> Label.Full.full list -> unit
+        val initialise_labels : string -> Label.Full.Set.t -> unit
 
         (* Dump definition of label offsets, _i.e_ offset from code start *)
-        val define_label_offsets : T.t -> Label.Full.full list -> unit
+        val define_label_offsets : T.t -> Label.Full.Set.t -> unit
 
         (* Same output as shell script in (normal) shell driver mode *)
         val prelude : Name.t -> T.t -> unit
@@ -167,7 +185,18 @@ module Make
         val postlude :
             Name.t -> T.t -> Affi.t option -> bool ->
               stat list -> unit
+
+        (* Dump functions that return relevant opcodes *)
+        val dump_getinstrs : T.t -> unit
+
+        (* Initialise relevant opcode glogal variables *)
+        val dump_init_getinstrs : T.t -> unit
+
+        (* Dump function to translate back opcodes into instructions *)
+        val dump_opcode : env -> T.t -> unit
+
       end
+
     end = struct
 
       let dbg = false
@@ -184,7 +213,9 @@ module Make
       | None -> ""
 
 (* Typing stuff *)
-      type env =
+
+
+      type env = (* Second component list aligned locations *)
           CType.t A.LocMap.t * CType.t StringMap.t
 
       let pp_env (env,_m) =
@@ -216,10 +247,19 @@ module Make
 
       let cast_constant env loc v =
         let t = find_rloc_type loc env in
-        do_mask
-          (if CType.signed t then A.V.Scalar.sxt else A.V.Scalar.mask)
-          (CType.base_size t)
-          v
+        let sz_t = CType.base_size t in
+        let mask_ok =
+          match sz_t with
+          | None -> false
+          | Some sz_t ->
+              MachSize.compare sz_t A.V.Scalar.machsize <= 0 in
+        if mask_ok then
+          do_mask
+            (if CType.signed t && not Cfg.hexa then A.V.Scalar.sxt
+             else A.V.Scalar.mask)
+            sz_t
+            v
+        else v
 
       let is_aligned loc (_,env) =
         try ignore (StringMap.find loc env) ; true with Not_found -> false
@@ -288,6 +328,12 @@ module Make
                 if is_aligned loc env then Some loc else None)
           env
 
+      let select_by_type f (env,_) =
+        A.LocMap.fold
+          (fun loc t k -> match f t with
+          | true -> loc::k
+          | false -> k)
+          env []
 
       let tr_out test = OutMapping.info_to_tr test.T.info
 
@@ -440,14 +486,23 @@ module Make
         let locs = get_displayed_locs test in
         A.RLocSet.exists (fun loc ->is_ptr_pte loc env) locs
 
+      let is_instr loc env =
+        let loc = ConstrGen.loc_of_rloc loc in
+        let t = find_type loc env in
+        CType.is_ins_t t
+
+      let instr_in_outs env test =
+        let locs = get_displayed_locs test in
+        A.RLocSet.exists (fun loc ->is_instr loc env) locs
+
       let get_faults test =
         let inc = T.C.get_faults test.T.condition
         and inf = test.T.ffaults in
         inc@inf
 
-      let find_label_offset p f lbl test =
+      let find_label_offset p lbl test =
         try
-          T.find_offset test.T.src.MiscParser.prog p f lbl
+          T.find_offset_out p lbl test
         with Not_found ->
           let v = Constant.Label (p,lbl) in
           Warn.user_error "Non-existant label %s" (A.V.pp_v v)
@@ -479,7 +534,44 @@ module Make
         let tr_out = tr_out test in
         ConstrGen.constraints_to_string (pp_atom tr_out) test.T.condition
 
+(* Instructions as values *)
+
+      let get_instrs_init t =
+        let open Constant in
+        List.fold_left
+          (fun k (_,v) ->
+            match v with
+            | Instruction i -> A.V.Instr.Set.add i k
+            | _ -> k)
+          A.V.Instr.Set.empty t.T.init
+
+      let get_instrs_final t = T.C.get_instrs t.T.condition
+
+      let get_instrs_others t =
+        A.V.Instr.Set.union3
+          (get_instrs_init t) (get_instrs_final t)
+          (if Cfg.variant Variant_litmus.Self then
+            A.V.Instr.Set.of_list A.GetInstr.self_instrs
+          else
+            match A.V.Instr.nop with
+            | None -> A.V.Instr.Set.empty
+            | Some nop -> A.V.Instr.Set.singleton nop)
+
+      let all_instrs t =
+        let from_code = T.from_labels t
+        and from_others = get_instrs_others t in
+        from_code,from_others
+
       module Dump (O:Indent.S) (EPF:EmitPrintf.S) = struct
+
+        let dump_mbar_def () =
+          if Cfg.c11 && Cfg.sysarch = `Unknown then begin
+            O.o "inline static void mbar(void) {" ;
+            O.oi "atomic_thread_fence(memory_order_seq_cst);";
+            O.o "}" ;
+          end else
+            let module Insert =  ObjUtil.Insert(Cfg) in
+            Insert.insert O.o "mbar.c"
 
         let dump_vars_types dump_align test =
           let _,env = build_env test in
@@ -504,48 +596,47 @@ module Make
 
 (* Definition of label constant fields *)
         let define_label_fields lbls =
-          match lbls with
-          | [] -> ()
-          | _::_ ->
-              let pp =
-                List.map
-                  (fun (p,lbl) -> "*" ^ OutUtils.fmt_lbl_var p lbl)
-                  lbls in
-              O.fi "ins_t %s;" (String.concat "," pp)
+          if not (Label.Full.Set.is_empty lbls) then begin
+            let pp =
+              Label.Full.Set.pp_str ","
+                (fun (p,lbl) -> "*" ^ OutUtils.fmt_lbl_var p lbl)
+                lbls in
+            O.fi "ins_t %s;"pp
+          end
 
 (* Label constant initialisation *)
         let initialise_labels ptr label_init =
           let open OutUtils in
           let procs =
-            List.fold_left
-              (fun k (p,_) -> IntSet.add p k)
-              IntSet.empty label_init in
+            Label.Full.Set.fold
+              (fun (p,_) k -> IntSet.add p k)
+              label_init IntSet.empty in
           IntSet.iter
             (fun p ->
               O.fi "size_t %s = prelude_size((ins_t *)code%i);"
                 (fmt_prelude p) p)
             procs ;
-          List.iter
+          Label.Full.Set.iter
             (fun (p,lbl) ->
               O.fi
                 "%s->%s = ((ins_t *)code%i)+%s+%s;" ptr
                 (fmt_lbl_var p lbl) p
                 (fmt_prelude p) (fmt_lbl_offset p lbl))
-            label_init
+            label_init ;
+          ()
 
 (* Output offset of labels *)
         let define_label_offsets test lbls =
-          match lbls with
-          | [] -> ()
-          | _::_ ->
-              let find p lbl = find_label_offset p MiscParser.Main lbl test in
-              List.iter
-                (fun (p,lbl) ->
-                  let off = find p lbl in
-                  O.f "static const int %s = %i;"
-                    (OutUtils.fmt_lbl_offset p lbl) off)
-                lbls ;
-              O.o ""
+          if not (Label.Full.Set.is_empty lbls) then begin
+            let find p lbl = find_label_offset p lbl test in
+            Label.Full.Set.iter
+              (fun (p,lbl) ->
+                let off = find p lbl in
+                O.f "static const size_t %s = %i;"
+                  (OutUtils.fmt_lbl_offset p lbl) off)
+              lbls ;
+            O.o ""
+          end
 
         open Preload
 
@@ -773,7 +864,7 @@ module Make
               then O.oi "pp_faults();" ;
               let s = sprintf "Time %s "  doc.Name.name in
               O.fi "puts(%S);" s ;
-              O.oi "emit_double(tsc_millions(total));" ;
+              O.oi "emit_millions(tsc_millions(total));" ;
               O.oi "puts(\"\\n\");"
           end ;
           if Cfg.exit_cond then O.oi "return cond;" ;
@@ -781,5 +872,88 @@ module Make
           O.o "" ;
           ()
 
+       (* Dump opcode of relevant instructions *)
+
+        let dump_getinstrs t =
+          let module I = ObjUtil.Insert(Cfg) in
+          I.insert_when_exists O.o "instruction.h" ; (* Always insert *)
+          O.o "" ;
+          let module D = A.GetInstr.Make(O) in
+          let lbl2instr,is = all_instrs t in
+          if not (A.V.Instr.Set.is_empty is && Misc.nilp lbl2instr) then begin
+            O.o "/***************************/" ;
+            O.o "/* Get instruction opcodes */" ;
+            O.o "/***************************/" ;
+            O.o "" ;
+            A.V.Instr.Set.iter
+              (fun i -> D.dump i ; O.o "")
+              is ;
+            A.V.Instr.Set.iter
+              (fun i -> O.f "static ins_t %s;" (A.GetInstr.instr_name i))
+              is ;
+            List.iter
+              (fun ((p,lab as lbl),_) ->
+                O.f "static ins_t %s;" (OutUtils.fmt_lbl_instr lbl) ;
+                O.f "static const size_t %s=%d;"
+                  (OutUtils.fmt_lbl_instr_offset lbl)
+                  (find_label_offset p lab t)
+              )
+              lbl2instr ;
+            O.o ""
+          end
+
+        let dump_init_getinstrs t =
+          let  lbl2instr,is = all_instrs t in
+          O.o "static void init_getinstrs(void) {" ;
+          A.V.Instr.Set.iter
+            (fun i ->
+              O.fi "%s = %s();"
+                (A.GetInstr.instr_name i)
+                (A.GetInstr.fun_name i))
+            is ;
+          let lbl2instrs =
+            Misc.group
+              (fun ((p1,_),_) ((p2,_),_) -> Proc.equal p1 p2)
+              lbl2instr in
+          let open OutUtils in
+          List.iter
+            (fun ps ->
+              match ps with
+              | [] -> assert false
+              | ((p,_),_)::_ ->
+                  O.fi "size_t %s = prelude_size((ins_t *)code%i);"
+                    (fmt_prelude p) p ;
+                  List.iter
+                    (fun ((p,_ as lbl),_) ->
+                      O.fi
+                        "%s = *(((ins_t *)code%i)+%s+%s);"
+                        (fmt_lbl_instr lbl) p
+                        (fmt_prelude p)
+                        (fmt_lbl_instr_offset lbl))
+                    ps)
+            lbl2instrs ;
+          O.o "}" ;
+          O.o ""
+
+        let dump_opcode env t =
+          if instr_in_outs env t then begin
+            let  lbl2instr,is = all_instrs t in
+            O.o "static char *pretty_opcode(ins_t op) {" ;
+            O.fi "if (op == 0) return %S;" "instr:\"UDF\"" ;
+            A.V.Instr.Set.iter
+              (fun i ->
+                O.fi "else if (op == %s) return %S;"
+                  (A.GetInstr.instr_name i)
+                  (A.V.Instr.pp i))
+              is ;
+            List.iter
+              (fun (lbl,i) ->
+                O.fi "else if (op == %s) return %S;"
+                  (OutUtils.fmt_lbl_instr lbl)
+                  (A.V.Instr.pp i))
+              lbl2instr ;
+            O.oi "else return \"???\";" ;
+            O.o "}"
+          end
       end
     end

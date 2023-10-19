@@ -1,0 +1,10 @@
+Test L052 Required
+States 1
+0:X0=x;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=x)
+Observation L052 Always 1 0
+Hash=2782f5bd314578ff31d813b7e6d7ae21
+

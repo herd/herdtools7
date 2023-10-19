@@ -31,12 +31,15 @@ let rec tr_v v =
   match v with
   | Concrete i -> Concrete (Int64.of_string i)
   | ConcreteVector vs -> ConcreteVector (List.map tr_v vs)
-  | Symbolic _|Label _|Tag _|PteVal _|Instruction _ as sym -> sym
+  | ConcreteRecord vs -> ConcreteRecord (StringMap.map tr_v vs)
+  | Symbolic _|Label _|Tag _
+  | PteVal _|Instruction _|Frozen _
+    as w -> w
 
 let tr_atom = function
   | LV(loc,v) ->  LV(loc,tr_v v)
   | LL (loc1,loc2) -> LL(loc1,loc2)
-  | FF (p,x,ft) -> FF (p,tr_v x,ft)
+  | FF (p,x,ft) -> FF (p,Misc.map_opt tr_v x,ft)
 
 let tr_cond c = ConstrGen.map_constr tr_atom c
 
@@ -80,7 +83,8 @@ let get_locs_atom a =
   | LV (loc,_) -> LocSet.add (loc_of_rloc loc)
   | LL (loc1,loc2) ->
       (fun k -> LocSet.add loc1 (LocSet.add loc2 k))
-  | FF (_,x,_) -> LocSet.add (MiscParser.Location_global x)
+  | FF (_,Some x,_) -> LocSet.add (MiscParser.Location_global x)
+  | FF (_,None,_) -> Misc.identity
 
 let get_locs c = fold_constr get_locs_atom c LocSet.empty
 

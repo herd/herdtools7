@@ -37,7 +37,10 @@ let conds = ref []
 let model = ref None
 let bell = ref None
 let macros = ref None
-let unroll = ref 2
+let unroll_default = function
+|`ASL -> 4
+| _ -> 2
+let unroll = ref None
 let speedcheck = ref Speed.False
 let archcheck = ref true
 let optace = ref None
@@ -74,14 +77,14 @@ let dumplem = ref false
 let dumptex = ref false
 let maxphantom= ref None
 let statelessrc11 = ref false
+let dumpallfaults = ref false
 
 (* Pretty printing configuration, deserves its own module *)
 module PP = struct
   open PrettyConf
   let dotmode =  ref Plain
   let dotcom = ref None
-  let gv = ref false
-  let evince = ref false
+  let view = ref None
   let showevents = ref NonRegEvents
   let texmacros = ref false
   let tikz = ref false
@@ -141,6 +144,7 @@ module PP = struct
     unshow := StringSet.union u !unshow ;
     doshow := StringSet.diff !doshow u
 
+  let noid = ref StringSet.empty
   let symetric = ref StringSet.empty
   let classes = ref None
   let showraw = ref StringSet.empty

@@ -1,0 +1,10 @@
+Test A233 Required
+States 1
+0:X0=1; 0:X1=t; t[1]=3;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1 /\ t[1]=3 /\ 0:X1=t)
+Observation A233 Always 1 0
+Hash=fbb5dd140043cc14ef81baadf7494ed7
+

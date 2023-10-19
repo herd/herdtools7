@@ -31,14 +31,6 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
 
   include NoLevelNorTLBI
 
-    include
-      IFetchTrait.NotImplemented
-        (struct
-          type arch_instruction = instruction
-          type arch_reg = reg
-        end)
-
-
   include ArchExtra_herd.Make(C)
       (struct
         module V = V
@@ -54,4 +46,5 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
 
   module MemType=MemoryType.No
   module Barrier = AllBarrier.No(struct type a = barrier end)
+  module CMO = Cmo.No
 end

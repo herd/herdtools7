@@ -46,7 +46,7 @@ module Make
 type arch_reg = A.arch_reg and
 module RegSet = A.RegSet and
 module RegMap = A.RegMap)
-    (AL:Arch_litmus.S)
+    (AL:Arch_litmus.S with type instruction = A.V.Instr.t)
     = struct
 
       let do_self = O.variant Variant_litmus.Self
@@ -58,15 +58,13 @@ module RegMap = A.RegMap)
 
       let debug = false
 
-      let checkVal f v = f v
-
       let compile_addr_inline = match O.mode with
       | Mode.Std -> sprintf "_a->%s[_i]"
       | Mode.PreSi|Mode.Kvm -> sprintf "*%s"
 
       and compile_addr_fun x = sprintf "*%s" x
 
-      and compile_val_inline = checkVal Tmpl.dump_v
+      and compile_val_inline v = AL.GetInstr.dump_instr Tmpl.dump_v v
 
       module RegSet = Tmpl.RegSet
       module RegMap = Tmpl.RegMap
@@ -130,6 +128,7 @@ module RegMap = A.RegMap)
             in_outputs
         end ;
 
+
         let dump_pair reg v =
           let dump_v = compile_val in
           let dump_v = (* catch those addresses that are saved in a variable *)
@@ -138,13 +137,29 @@ module RegMap = A.RegMap)
               | Constant.Symbolic _ -> copy_name (Tmpl.tag_reg reg)
               | _ -> dump_v v)
             else dump_v  in
+
+          let dump_v_typed v =
+            match v with
+            | Constant.Concrete _ ->
+               begin try
+                 let ty = List.assoc reg t.Tmpl.ty_env in
+                 sprintf "(%s)(%s)" (CType.dump ty) (dump_v v)
+               with Not_found -> dump_v v
+               end
+            | _ -> dump_v v in
+
           if RegSet.mem reg in_outputs then begin
             match A.internal_init reg with
-            | None -> sprintf "\"%s\" (%s)" (tag_reg_def reg) (dump_v v)
+            | None ->
+               sprintf "\"%s\" (%s)" (tag_reg_def reg)
+                 (dump_v_typed v)
             | Some (s,_) -> sprintf "\"%s\" (%s)" (tag_reg_def reg) s
           end else match A.internal_init reg with
           | None ->
-              sprintf "%s \"%s\" (%s)" (tag_reg_def reg) (strip_equal (A.reg_class reg)) (dump_v v)
+              sprintf "%s \"%s\" (%s)"
+                (tag_reg_def reg)
+                (strip_equal (A.reg_class reg))
+                (dump_v_typed v)
           | Some (s,_) ->
               sprintf "%s \"%s\" (%s)" (tag_reg_def reg) (strip_equal (A.reg_class reg)) s in
 
@@ -369,7 +384,15 @@ module RegMap = A.RegMap)
                 (A.reg_to_string reg)
                 (match init_val reg t with
                 | None -> ""
-                | Some v -> sprintf " = %s" (compile_val v)))
+                | Some v ->
+                    begin
+                      match v with
+                      | Constant.Symbolic _ ->
+                          sprintf " = (%s)%s"
+                            (CType.dump ty) (compile_val v)
+                      | _ ->
+                          sprintf " = %s" (compile_val v)
+                    end))
           t.Tmpl.stable ;
 
         if O.cautious then begin
@@ -480,12 +503,12 @@ module RegMap = A.RegMap)
               (match O.memory with Memory.Direct -> "" | Memory.Indirect -> "*")
               s
         | Concrete _ | ConcreteVector _ | Instruction _
-            -> Tmpl.dump_v v
+          -> AL.GetInstr.dump_instr Tmpl.dump_v v
         | Label (p,lbl) -> OutUtils.fmt_lbl_var p lbl
         | PteVal p ->
             let idx = find_pteval_index p ptevalEnv in
             add_pteval idx
-        | Tag _ -> assert false
+        | Tag _|Frozen _ | ConcreteRecord _ -> assert false
 
       let compile_init_val_fun = compile_val_fun
 
@@ -509,6 +532,11 @@ module RegMap = A.RegMap)
              { args0 with Template.trashed=trashed; } in
         if debug then debug_globEnv globEnv ;
         let ptevalEnv = extract_ptevals t in
+        let instrs = Tmpl.get_instructions t in
+        let instrs =
+          List.map
+            (fun i ->  sprintf "ins_t %s" (AL.GetInstr.instr_name i))
+            instrs in
         let labels = Tmpl.get_labels t in
         let labels =
           List.map
@@ -529,8 +557,6 @@ module RegMap = A.RegMap)
               | Memory.Indirect ->
                   sprintf "%s **%s" ty x)
             addrs_proc in
-        let nop =
-          if nop_init t then ["ins_t nop"] else [] in
         let params0 =
           List.map
             (fun ((t,n),_) ->
@@ -570,7 +596,7 @@ module RegMap = A.RegMap)
               sprintf "%s *%s" (CType.dump ty) x) t.Tmpl.final in
         let params =
           String.concat ","
-            (nop@params0@labels@addrs@ptes@phys@ptevals@cpys@outs) in
+            (params0@labels@instrs@addrs@ptes@phys@ptevals@cpys@outs) in
         LangUtils.dump_code_def chan O.noinline O.mode proc params ;
         do_dump
           args0
@@ -584,17 +610,17 @@ module RegMap = A.RegMap)
 
       let compile_label_call (p,lbl) =
         let open OutUtils in
-        if do_self then
-          sprintf "&_a->%s[_i*_a->%s+_a->%s+%s]"
-            (fmt_code p) (fmt_code_size p)
-            (fmt_prelude p) (fmt_lbl_offset p lbl)
-        else
-          match O.mode with
-          | Mode.Std ->
-              sprintf "_a->%s" (fmt_lbl_var p lbl)
-          | Mode.PreSi|Mode.Kvm ->
-              sprintf "_g->lbl.%s" (fmt_lbl_var p lbl)
+        match O.mode,do_self with
+        | Mode.Std,false ->
+           sprintf "_a->%s" (fmt_lbl_var p lbl)
+        | Mode.Std,true ->
+           sprintf "&_a->%s[_i*_a->%s+_a->%s+%s]"
+             (fmt_code p) (fmt_code_size p)
+             (fmt_prelude p) (fmt_lbl_offset p lbl)
+        | (Mode.PreSi|Mode.Kvm),_ ->
+           sprintf "_vars->labels.%s" (fmt_lbl_var p lbl)
 
+      let compile_instr_call i = AL.GetInstr.instr_name i
       let indirect_star =
         let open Memory in
         match O.memory with
@@ -641,9 +667,8 @@ module RegMap = A.RegMap)
 
       let dump_call f_id args0
             _tr_idx chan indent env (_,alignedEnv) _volatileEnv proc t =
-        let nop =
-          if nop_init t then ["getnop()";] else [] in
         let labels = List.map compile_label_call (Tmpl.get_labels t) in
+        let instrs = List.map compile_instr_call (Tmpl.get_instructions t) in
         let addrs_proc,ptes = Tmpl.get_addrs t
         and phys = Tmpl.get_phys_only t in
         let addrs =
@@ -668,7 +693,7 @@ module RegMap = A.RegMap)
         and outs = List.map (compile_out_reg_call env proc) t.Tmpl.final in
         let args =
           String.concat ","
-            (nop@args0@labels@addrs@ptevals@addrs_cpy@outs) in
+            (args0@labels@instrs@addrs@ptevals@addrs_cpy@outs) in
         LangUtils.dump_code_call chan indent f_id args
 
     end

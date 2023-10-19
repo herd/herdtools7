@@ -20,8 +20,8 @@
 (* Binary *)
 (**********)
 
-type op =
-  | Add | Sub | Mul | Div
+type 'aop op =
+  | Add | Sub | Mul | Div | Rem
   | And | Or | Xor | Nor
   | AndNot2
 (* Arithmetic shift right *)
@@ -40,12 +40,17 @@ type op =
   | SetTag
   | SquashMutable
   | CheckPerms of string
+(* Change non-integer to integer given as second argument.
+ * If argument is integer, it is left as is.
+ *)
+  | ToInteger
+  | ArchOp of 'aop
 
-val pp_op : op -> string
+val pp_op : 'aop op -> ('aop -> string)-> string
 
-val is_infix : op -> bool
+val is_infix : 'aop op -> bool
 
-val pp_ptx_cmp_op : op -> string
+val pp_ptx_cmp_op : 'aop op -> string
 
 (*********)
 (* Unary *)
@@ -58,6 +63,7 @@ type 'aop op1 =
   | ReadBit of int
   | LeftShift of int
   | LogicalRightShift of int
+  | ArithRightShift of int
   | AddK of int
   | AndK of string
   | Mask of MachSize.sz

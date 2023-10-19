@@ -4,8 +4,8 @@ AArch64 S04
 }
     P0           ;
   RET X1         ;
-  MOV X0, #1     ;
+  MOV W0, #1     ;
 L1:              ;
-  MOV X0, #2     ;
+  MOV W0, #2     ;
 L0:              ;
 forall (0:X0=0)

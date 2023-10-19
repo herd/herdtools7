@@ -16,8 +16,8 @@ States 14
 0:X1=0x0; 0:X3=0x3030303; 1:X1=0x0; 1:X3=0x0; 1:X5=0x202; 1:X8=0x1010101; [y]=0x3030303;
 Ok
 Witnesses
-Positive: 1 Negative: 13
+Positive: 2 Negative: 26
 Condition exists ([y]=0x3030303 /\ 0:X1=0x0 /\ 0:X3=0x0 /\ 1:X3=0x0 /\ 1:X1=0x0 /\ 1:X5=0x202 /\ 1:X8=0x0)
-Observation RR+RR+amo.ldsetw0w0-pow0w0+rmwh0h0-rfih0w0-amo.staddw0w0-rfiw0h2-amo.cash2h2-poh2w0 Sometimes 1 13
+Observation RR+RR+amo.ldsetw0w0-pow0w0+rmwh0h0-rfih0w0-amo.staddw0w0-rfiw0h2-amo.cash2h2-poh2w0 Sometimes 2 26
 Hash=c6a1aff6350811ed74fa89bd3a085b78
 

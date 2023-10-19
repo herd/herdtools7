@@ -1,0 +1,14 @@
+RISCV A009
+
+(* Tests IORW,OW fence args*)
+
+{
+0:x6=x; 0:x8=y;
+1:x6=y; 1:x8=x;
+}
+ P0          | P1          ;
+ ori x5,x0,1 | ori x5,x0,1 ;
+ sw x5,0(x6) | sw x5,0(x6) ;
+ fence iorw,ow  | fence iorw,ow  ;
+ lw x7,0(x8) | lw x7,0(x8) ;
+exists (0:x7=0 /\ 1:x7=0)

@@ -42,6 +42,8 @@ module Make(V:Constant.S)(C:Config) =
       | A.I_NOP -> true
       | _ -> false
 
+    let branch lbl = A.I_B (BranchTarget.Lbl lbl)
+
 (* No addresses in code *)
     let extract_addrs _ins = Global_litmus.Set.empty
 
@@ -62,6 +64,17 @@ module Make(V:Constant.S)(C:Config) =
     let arg1 ppz fmt r = match r with
       | ZR -> [],ppz
       | _  -> [r],fmt "0"
+
+    let arg1o v r = match v with
+      | V32 -> arg1 "wzr" (fun s -> "^wo"^s) r
+      | V64 -> arg1 "xzr" (fun s -> "^o"^s) r
+      | V128 -> assert false
+
+    and arg1i v r =
+      match v with
+      | V32 -> arg1 "wzr" (fun s -> "^wi"^s) r
+      | V64 -> arg1 "xzr" (fun s -> "^i"^s) r
+      | V128 -> assert false
 
     let args2 ppz fmt r1 r2 = match r1,r2 with
     | ZR,ZR -> [],ppz,[],ppz
@@ -102,15 +115,33 @@ module Make(V:Constant.S)(C:Config) =
     let pp_cond = function
       | EQ -> "eq"
       | NE -> "ne"
+      | CS -> "cs"
+      | CC -> "cc"
+      | MI -> "mi"
+      | PL -> "pl"
+      | VS -> "vs"
+      | VC -> "vc"
+      | HI -> "hi"
+      | LS -> "ls"
       | GE -> "ge"
+      | LT -> "lt"
       | GT -> "gt"
       | LE -> "le"
-      | LT -> "lt"
+      | AL -> "al"
+
+    let dump_tgt tr_lab =
+      let open BranchTarget in
+      function
+      | Lbl lbl -> Branch lbl,A.Out.dump_label (tr_lab lbl)
+      | Offset o ->
+         if o mod 4 <>0 then  Warn.user_error "Non aligned branch" ;
+         Disp (o/4),"." ^ pp_offset o
 
     let b tr_lab lbl =
+      let b,lbl = dump_tgt tr_lab lbl in
       { empty_ins with
-        memo = sprintf "b %s" (A.Out.dump_label (tr_lab lbl)) ;
-        branch=[Branch lbl] ; }
+        memo = sprintf "b %s" lbl;
+        branch=[b;]; }
 
     let br r =
       { empty_ins with
@@ -125,10 +156,12 @@ module Make(V:Constant.S)(C:Config) =
         branch=[Any] ; }
 
     let bl tr_lab lbl =
+      let b,lbl = dump_tgt tr_lab lbl in
       { empty_ins with
-        memo = sprintf "bl %s" (A.Out.dump_label (tr_lab lbl)) ;
+        memo = sprintf "bl %s" lbl;
         inputs=[]; outputs=[];
-        branch=[Next;Branch lbl] ; clobbers=[linkreg;]; }
+        branch= add_next b;
+        clobbers=[linkreg;]; }
 
     let blr r =
       { empty_ins with
@@ -138,34 +171,36 @@ module Make(V:Constant.S)(C:Config) =
         branch=[Any] ;  clobbers=[linkreg;]; }
 
     let bcc tr_lab cond lbl =
+      let b,lbl = dump_tgt tr_lab lbl in
       { empty_ins with
-        memo = sprintf "b.%s %s"
-          (pp_cond cond) (A.Out.dump_label (tr_lab lbl)) ;
-        branch=[Next; Branch lbl] ; }
+        memo = sprintf "b.%s %s" (pp_cond cond) lbl ;
+        branch=add_next b; }
 
     let cbz tr_lab memo v r lbl =
+      let b,lbl = dump_tgt tr_lab lbl in
       let memo =
         sprintf
           (match v with
           | V32 -> "%s ^wi0,%s"
           | V64 -> "%s ^i0,%s"
           | V128 -> assert false)
-          memo (A.Out.dump_label (tr_lab lbl)) in
+          memo lbl in
       { empty_ins with
         memo; inputs=[r;]; outputs=[];
-        branch=[Next; Branch lbl] ; }
+        branch=add_next b; }
 
     let tbz tr_lab memo v r k lbl =
+      let b,lbl = dump_tgt tr_lab lbl in
       let memo =
         sprintf
           (match v with
           | V32 -> "%s ^wi0,#%d, %s"
           | V64 -> "%s ^i0, #%d, %s"
           | V128 -> assert false)
-          memo k (A.Out.dump_label (tr_lab lbl)) in
+          memo k lbl in
       { empty_ins with
         memo; inputs=[r;]; outputs=[];
-        branch=[Next; Branch lbl] ; }
+        branch=add_next b ; }
 
 (* Load and Store *)
 
@@ -268,69 +303,60 @@ module Make(V:Constant.S)(C:Config) =
           reg_env=[rA,voidstar; rD,quad;]; }
     | V128 -> assert false
 
-    let load_pair memo v rD1 rD2 rA kr = match v,kr with
-    | V32,K 0 ->
+    let ldp_memo t = Misc.lowercase (ldp_memo t)
+
+    let load_pair memo v rD1 rD2 rA kr md = match v,kr,md with
+    | V32,0,Idx ->
         { empty_ins with
           memo= sprintf "%s ^wo0,^wo1,[^i0]" memo;
           inputs=[rA];
           outputs=[rD1;rD2;];
           reg_env=[(rA,voidstar);(rD1,word);(rD2,word);]; }
-    | V32,K k ->
+    | V32,k,Idx ->
         { empty_ins with
           memo= sprintf "%s ^wo0,^wo1,[^i0,#%i]" memo k;
           inputs=[rA];
           outputs=[rD1;rD2;];
           reg_env=[(rA,voidstar);(rD1,word);(rD2,word);];}
-    | V32,RV (V32,rB) ->
-        { empty_ins with
-          memo=memo^ " ^wo0,^wo1,[^i0,^wi1,sxtw]";
-          inputs=[rA; rB];
-          outputs=[rD1;rD2;];
-          reg_env=[(rA,voidstar); (rB,word); (rD1,word);(rD2,word);]; }
-    | V64,K 0 ->
+    | V64,0,Idx ->
         { empty_ins with
           memo=memo ^ sprintf " ^o0,^o1,[^i0]";
           inputs=[rA];
           outputs=[rD1;rD2;];
           reg_env=[rA,voidstar;(rD1,quad);(rD2,quad);]; }
-    | V64,K k ->
+    | V64,k,Idx ->
         { empty_ins with
           memo=memo ^ sprintf " ^o0,^o1,[^i0,#%i]" k;
           inputs=[rA];
           outputs=[rD1;rD2;];
           reg_env=[rA,voidstar; (rD1,quad);(rD2,quad);]; }
-    | V64,RV (V64,rB) ->
+    | V32,k,PostIdx ->
         { empty_ins with
-          memo=memo^ " ^o0,^o1,[^i0,^i1]";
-          inputs=[rA; rB];
-          outputs=[rD1;rD2;];
-          reg_env=[rA,voidstar;rB,quad;(rD1,quad);(rD2,quad)]; }
-    | V64,RV (V32,rB) ->
+          memo= sprintf "%s ^wo0,^wo1,[^i0],#%i" memo k;
+          inputs=[rA];
+          outputs=[rD1;rD2;rA;];
+          reg_env=[(rA,voidstar);(rD1,word);(rD2,word);];}
+    | V64,k,PostIdx ->
         { empty_ins with
-          memo=memo^ " ^o0,^o1,[^i0,^wi1,sxtw]";
-          inputs=[rA; rB];
-          outputs=[rD1;rD2;];
-          reg_env=[rA,voidstar;rB,word;(rD1,quad);(rD2,quad);]; }
-    | V32,RV (V64,_) -> assert false
-    | V128,_
-    | _,RV (V128,_) -> assert false
+          memo=memo ^ sprintf " ^o0,^o1,[^i0],#%i" k;
+          inputs=[rA];
+          outputs=[rD1;rD2;rA];
+          reg_env=[rA,voidstar; (rD1,quad);(rD2,quad);]; }
+    | V32,k,PreIdx ->
+        { empty_ins with
+          memo= sprintf "%s ^wo0,^wo1,[^i0,#%i]!" memo k;
+          inputs=[rA];
+          outputs=[rD1;rD2;rA;];
+          reg_env=[(rA,voidstar);(rD1,word);(rD2,word);];}
+    | V64,k,PreIdx ->
+        { empty_ins with
+          memo=memo ^ sprintf " ^o0,^o1,[^i0,#%i]!" k;
+          inputs=[rA];
+          outputs=[rD1;rD2;rA];
+          reg_env=[rA,voidstar; (rD1,quad);(rD2,quad);]; }
+    | V128,_,_ -> assert false
 
-    let ldpsw rD1 rD2 rA kr =
-      let memo = "ldpsw" in
-      match kr with
-      | K 0 ->
-         { empty_ins with
-           memo=memo ^ " ^o0,^o1,[^i0]";
-           inputs=[rA];
-           outputs=[rD1;rD2;];
-           reg_env=[rA,voidstar;(rD1,quad);(rD2,quad);]; }
-      | K k ->
-         { empty_ins with
-          memo=memo ^ sprintf " ^o0,^o1,[^i0,#%i]" k;
-          inputs=[rA];
-          outputs=[rD1;rD2;];
-          reg_env=[rA,voidstar; (rD1,quad);(rD2,quad);]; }
-      | _ -> assert false
+    let ldpsw rD1 rD2 rA kr md = load_pair "ldpsw" V64 rD1 rD2 rA kr md
 
     let loadx_pair memo v rD1 rD2 rA = match v with
       | V32 ->
@@ -347,52 +373,58 @@ module Make(V:Constant.S)(C:Config) =
            reg_env=[(rA,voidstar);(rD1,quad);(rD2,quad);]; }
       | V128 -> assert false
 
-    let store_pair memo v rD1 rD2 rA kr = match v,kr with
-    | V32,K 0 ->
+    let stp_memo t = Misc.lowercase (stp_memo t)
+
+    let store_pair memo v rD1 rD2 rA kr md  = match v,kr,md with
+    | V32,0,Idx ->
         { empty_ins with
           memo= sprintf "%s ^wi1,^wi2,[^i0]" memo;
           inputs=[rA;rD1;rD2;];
           outputs=[];
           reg_env=[(rA,voidstar);(rD1,word);(rD2,word);]; }
-    | V32,K k ->
+    | V32,k,Idx ->
         { empty_ins with
           memo= sprintf "%s ^wi1,^wi2,[^i0,#%i]" memo k;
           inputs=[rA;rD1;rD2;];
           outputs=[];
           reg_env=[(rA,voidstar);(rD1,word);(rD2,word);];}
-    | V32,RV (V32,rB) ->
-        { empty_ins with
-          memo=memo^ " ^wi2,^wi3,[^i0,^wi1,sxtw]";
-          inputs=[rA;rB;rD1;rD2;];
-          outputs=[];
-          reg_env=[(rA,voidstar); (rB,word); (rD1,word);(rD2,word);]; }
-    | V64,K 0 ->
+    | V64,0,Idx ->
         { empty_ins with
           memo=memo ^ sprintf " ^i1,^i2,[^i0]";
           inputs=[rA;rD1;rD2;];
           outputs=[];
           reg_env=[rA,voidstar;(rD1,quad);(rD2,quad);]; }
-    | V64,K k ->
+    | V64,k,Idx ->
         { empty_ins with
           memo=memo ^ sprintf " ^i1,^i2,[^i0,#%i]" k;
           inputs=[rA;rD1;rD2;];
           outputs=[];
           reg_env=[rA,voidstar; (rD1,quad);(rD2,quad);]; }
-    | V64,RV (V64,rB) ->
+    | V32,k,PostIdx ->
         { empty_ins with
-          memo=memo^ " ^i2,^i3,[^i0,^i1]";
-          inputs=[rA; rB;rD1;rD2;];
-          outputs=[];
-          reg_env=[rA,voidstar;rB,quad;(rD1,quad);(rD2,quad)]; }
-    | V64,RV (V32,rB) ->
+          memo= sprintf "%s ^wi1,^wi2,[^i0],#%i" memo k;
+          inputs=[rA;rD1;rD2;];
+          outputs=[rA;];
+          reg_env=[(rA,voidstar);(rD1,word);(rD2,word);];}
+    | V64,k,PostIdx ->
         { empty_ins with
-          memo=memo^ " ^i2,^i3,[^i0,^wi1,sxtw]";
-          inputs=[rA; rB;rD1;rD2;];
-          outputs=[];
-          reg_env=[rA,voidstar;rB,word;(rD1,quad);(rD2,quad);]; }
-    | V32,RV (V64,_) -> assert false
-    | V128,_
-    | _,RV (V128,_) -> assert false
+          memo=memo ^ sprintf " ^i1,^i2,[^i0],#%i" k;
+          inputs=[rA;rD1;rD2;];
+          outputs=[rA;];
+          reg_env=[rA,voidstar; (rD1,quad);(rD2,quad);]; }
+    | V32,k,PreIdx ->
+        { empty_ins with
+          memo= sprintf "%s ^wi1,^wi2,[^i0,#%i]!" memo k;
+          inputs=[rA;rD1;rD2;];
+          outputs=[rA;];
+          reg_env=[(rA,voidstar);(rD1,word);(rD2,word);];}
+    | V64,k,PreIdx ->
+        { empty_ins with
+          memo=memo ^ sprintf " ^i1,^i2,[^i0,#%i]!" k;
+          inputs=[rA;rD1;rD2;];
+          outputs=[rA;];
+          reg_env=[rA,voidstar; (rD1,quad);(rD2,quad);]; }
+    | V128,_,_ -> assert false
 
     let storex_pair memo v rs rt1 rt2 rn =
       match v with
@@ -494,6 +526,21 @@ module Make(V:Constant.S)(C:Config) =
     | V128,_,_
     | _,RV (V128,_),_ ->
         assert false
+
+    let store_post memo v rA rB s = match v,s with
+    | V32, k ->
+        let rA,fA,fB = str_arg1 V32 rA in
+        { empty_ins with
+          memo=memo ^ sprintf " %s,[%s],#%i" fA fB k;
+          outputs=[rB;]; inputs=rA@[rB]; reg_env=[rB,voidstar;]@add_w rA; }
+    | V64, k ->
+        let rA,fA,fB = str_arg1 V64 rA in
+        { empty_ins with
+          memo=memo ^ sprintf " %s,[%s],#%i" fA fB k;
+          outputs=[rB;]; inputs=rA@[rB]; reg_env=[rB,voidstar;]@add_q  rA; }
+    | V128,_ ->
+        assert false
+
 
     let stxr memo v r1 r2 r3 = match v with
     | V32 ->
@@ -616,38 +663,38 @@ module Make(V:Constant.S)(C:Config) =
           reg_env = (add_128 rs) @ [(rA,voidstar);(rB,quad)]}
     | _ -> Warn.fatal "Illegal form of %s instruction" memo
 
-    let load_pair_simd memo v r1 r2 r3 kr = match v,kr with
-    | VSIMD32,K 0 ->
+    let load_pair_simd memo v r1 r2 r3 k = match v,k with
+    | VSIMD32,0 ->
         { empty_ins with
           memo = sprintf "%s %s,%s,[^i0]" memo (print_vecreg VSIMD32 "o" 0) (print_vecreg VSIMD32 "o" 1);
           inputs=[r3];
           outputs=[r1;r2;];
           reg_env= (add_128 [r1;r2;]) @ [(r3,voidstar)]}
-    | VSIMD32,K k ->
+    | VSIMD32,k ->
         { empty_ins with
           memo = sprintf "%s %s,%s,[^i0,#%i]" memo (print_vecreg VSIMD32 "o" 0) (print_vecreg VSIMD32 "o" 1) k;
           inputs=[r3];
           outputs=[r1;r2;];
           reg_env= (add_128 [r1;r2;]) @ [(r3,voidstar)]}
-    | VSIMD64,K 0 ->
+    | VSIMD64,0 ->
         { empty_ins with
           memo = sprintf "%s %s,%s,[^i0]" memo (print_vecreg VSIMD64 "o" 0) (print_vecreg VSIMD64 "o" 1);
           inputs=[r3];
           outputs=[r1;r2;];
           reg_env= (add_128 [r1;r2;]) @ [(r3,voidstar)]}
-    | VSIMD64,K k ->
+    | VSIMD64,k ->
         { empty_ins with
           memo = sprintf "%s %s,%s,[^i0,#%i]" memo (print_vecreg VSIMD64 "o" 0) (print_vecreg VSIMD64 "o" 1) k;
           inputs=[r3];
           outputs=[r1;r2;];
           reg_env= (add_128 [r1;r2;]) @ [(r3,voidstar)]}
-    | VSIMD128,K 0 ->
+    | VSIMD128,0 ->
         { empty_ins with
           memo = sprintf "%s %s,%s,[^i0]" memo (print_vecreg VSIMD128 "o" 0) (print_vecreg VSIMD128 "o" 1);
           inputs=[r3];
           outputs=[r1;r2;];
           reg_env= (add_128 [r1;r2;]) @ [(r3,voidstar)]}
-    | VSIMD128,K k ->
+    | VSIMD128,k ->
         { empty_ins with
           memo = sprintf "%s %s,%s,[^i0,#%i]" memo (print_vecreg VSIMD128 "o" 0) (print_vecreg VSIMD128 "o" 1) k;
           inputs=[r3];
@@ -758,38 +805,38 @@ module Make(V:Constant.S)(C:Config) =
         reg_env = [(rA,voidstar);(rB,quad)] @ (add_128 rs)}
     | _ -> Warn.fatal "Illegal form of %s instruction" memo
 
-    let store_pair_simd memo v r1 r2 r3 kr = match v,kr with
-    | VSIMD32,K 0 ->
+    let store_pair_simd memo v r1 r2 r3 k = match v,k with
+    | VSIMD32,0 ->
         { empty_ins with
           memo = sprintf "%s %s,%s,[^i2]" memo (print_vecreg VSIMD32 "i" 0) (print_vecreg VSIMD32 "i" 1);
           inputs = [r1;r2;r3];
           outputs = [];
           reg_env = (add_128 [r1;r2;]) @ [(r3,voidstar)]}
-    | VSIMD32,K k ->
+    | VSIMD32,k ->
         { empty_ins with
           memo = sprintf "%s %s,%s,[^i2,#%i]" memo (print_vecreg VSIMD32 "i" 0) (print_vecreg VSIMD32 "i" 1) k;
           inputs = [r1;r2;r3];
           outputs = [];
           reg_env = (add_128 [r1;r2;]) @ [(r3,voidstar)]}
-    | VSIMD64,K 0 ->
+    | VSIMD64,0 ->
         { empty_ins with
           memo = sprintf "%s %s,%s,[^i2]" memo (print_vecreg VSIMD64 "i" 0) (print_vecreg VSIMD64 "i" 1);
           inputs = [r1;r2;r3];
           outputs = [];
           reg_env = (add_128 [r1;r2;]) @ [(r3,voidstar)]}
-    | VSIMD64,K k ->
+    | VSIMD64,k ->
         { empty_ins with
           memo = sprintf "%s %s,%s,[^i2,#%i]" memo (print_vecreg VSIMD64 "i" 0) (print_vecreg VSIMD64 "i" 1) k;
           inputs = [r1;r2;r3];
           outputs = [];
           reg_env = (add_128 [r1;r2;]) @ [(r3,voidstar)]}
-    | VSIMD128,K 0 ->
+    | VSIMD128,0 ->
         { empty_ins with
           memo = sprintf "%s %s,%s,[^i2]" memo (print_vecreg VSIMD128 "i" 0) (print_vecreg VSIMD128 "i" 1);
           inputs = [r1;r2;r3];
           outputs = [];
           reg_env = (add_128 [r1;r2;]) @ [(r3,voidstar)]}
-    | VSIMD128,K k ->
+    | VSIMD128,k ->
         { empty_ins with
           memo = sprintf "%s %s,%s,[^i2,#%i]" memo (print_vecreg VSIMD128 "i" 0) (print_vecreg VSIMD128 "i" 1) k;
           inputs = [r1;r2;r3];
@@ -923,6 +970,7 @@ module Make(V:Constant.S)(C:Config) =
       | V32 -> word | V64 -> quad | V128 -> assert false
 
     let cas_memo rmw = Misc.lowercase (cas_memo rmw)
+    let casp_memo rmw = Misc.lowercase (casp_memo rmw)
     let casbh_memo bh rmw = Misc.lowercase (casbh_memo bh rmw)
 
     let cas memo v r1 r2 r3 =
@@ -939,6 +987,19 @@ module Make(V:Constant.S)(C:Config) =
         memo = sprintf "%s %s,%s,[^i%s]" memo f1 f2 idx;
         inputs = r1@r2@[r3]; outputs = r1;
         reg_env = (r3,voidstar)::add_type t (r1@r2); }
+
+    let casp memo v r1 r2 r3 r4 r5 =
+      let t = type_of_variant v in
+      let rs1,rs2,rs3,rs4,rs5 = match v with
+      (* How to output even consecutive registers? *)
+      (* Assembler needs this proprty*)
+      | V32 -> "^wi0","^wi1","^wi2","^wi3", "^i4"
+      | V64 -> "^i0", "^i1", "^i2", "^i3", "^i4"
+      | V128 -> assert false in
+      { empty_ins with
+        memo = sprintf "%s %s,%s,%s,%s,[%s]" memo rs1 rs2 rs3 rs4 rs5;
+        inputs = [r1;r2;r3;r4;r5]; outputs = [r1;r2;r3;r4;r5];
+        reg_env = (r5,voidstar)::add_type t [r1;r2;r3;r4]@add_type quad [r5] }
 
 (* Swap *)
     let swp_memo rmw = Misc.lowercase (swp_memo rmw)
@@ -1013,9 +1074,10 @@ module Make(V:Constant.S)(C:Config) =
         [r;])}
 
     let adr tr_lab r lbl =
+      let _,lbl = dump_tgt tr_lab lbl in
       let r,f = arg1 "xzr" (fun s -> "^o"^s) r in
       { empty_ins with
-        memo = sprintf "adr %s,%s" f (A.Out.dump_label (tr_lab lbl));
+        memo = sprintf "adr %s,%s" f lbl;
         outputs=r; reg_env=add_v r; }
 
     let do_movr memo v r1 r2 = match v with
@@ -1061,6 +1123,7 @@ module Make(V:Constant.S)(C:Config) =
     let movr = do_movr "mov"
     and rbit = do_movr "rbit"
     and movz = do_movz (fun _ -> []) (* No input *) "movz"
+    and movn = do_movz (fun _ -> []) (* No input *) "movn"
     and movk = do_movz Misc.identity (* Part of register preserved *) "movk"
 
 
@@ -1068,6 +1131,21 @@ module Make(V:Constant.S)(C:Config) =
       { empty_ins with
         memo = "sxtw ^o0,^wi0";
         inputs = [r2;]; outputs=[r1;]; reg_env=[r1,quad; r2,word];}
+
+    let xbfm s v r1 r2 k1 k2 = match v with
+    | V32 ->
+        let r1,fm1,r2,fm2 = args2 "wzr" (fun s -> "^wi"^s) r1 r2 in
+        let rs = r1 @ r2 in
+        { empty_ins with
+          memo = sprintf "%s %s,%s,#%i,#%i" s fm1 fm2 k1 k2;
+          inputs = rs; reg_env=List.map (fun r -> r,word) rs;}
+    | V64 ->
+        let r1,fm1,r2,fm2 = args2 "xzr" (fun s -> "^i"^s) r1 r2 in
+        let rs = r1 @ r2 in
+        { empty_ins with
+          memo = sprintf "%s %s,%s,#%i,#%i" s fm1 fm2 k1 k2;
+          inputs = rs; reg_env=List.map (fun r -> r,quad) rs;}
+    | V128 -> assert false
 
     let cmpk v r k = match v with
     | V32 ->
@@ -1107,6 +1185,25 @@ module Make(V:Constant.S)(C:Config) =
         outputs=r; reg_env = add r;}
 
     let memo_of_op op = Misc.lowercase (pp_op op)
+
+    let mvn v r1 r2 =
+      let memo = "mvn" in
+      match v with
+      | V32 ->
+          let r1,f1 = arg1 "wzr" (fun s -> "^wo"^s) r1
+          and r2,f2 = arg1 "wzr" (fun s -> "^wi"^s) r2 in
+          { empty_ins with
+            memo=sprintf "%s %s,%s" memo f1 f2;
+            inputs=r2;
+            outputs=r1; reg_env = add_w (r1@r2);}
+      | V64 ->
+          let r1,f1 = arg1 "xzr" (fun s -> "^o"^s) r1
+          and r2,f2 = arg1 "xzr" (fun s -> "^i"^s) r2 in
+          { empty_ins with
+            memo=sprintf "%s %s,%s" memo f1 f2;
+            inputs=r2;
+            outputs=r1; reg_env = add_q (r1@r2);}
+      | V128 -> assert false
 
     let op3 v op rD rA kr s =
       let memo = memo_of_op op in
@@ -1197,7 +1294,8 @@ module Make(V:Constant.S)(C:Config) =
     let user_mode has_handler p =
       let ins =
         (fun k ->
-          "msr sp_el0,%[sp_usr]"
+          "nop"
+          ::"msr sp_el0,%[sp_usr]"
           ::"adr %[tr0],0f"
           ::"msr elr_el1,%[tr0]"
           ::"msr spsr_el1,xzr"
@@ -1238,7 +1336,7 @@ module Make(V:Constant.S)(C:Config) =
       let ins = map_ins ins in
       ins@[ {empty_ins with memo="0:"; label=Some "0"; } ]
 
-    let compile_ins tr_lab ins k = match ins with
+      let compile_ins tr_lab ins k = match ins with
     | I_NOP -> { empty_ins with memo = "nop"; }::k
 (* Branches *)
     | I_B lbl -> b tr_lab lbl::k
@@ -1258,14 +1356,14 @@ module Make(V:Constant.S)(C:Config) =
     | I_LDUR (v,r1,r2,Some(k')) -> load "ldur" v r1 r2 (K k') S_NOEXT ::k
     | I_LDUR (v,r1,r2,None) -> load "ldur" v r1 r2 (K 0) S_NOEXT ::k
     | I_LDR_P (v,r1,r2,k1) -> load_p "ldr" v r1 r2 k1::k
-    | I_LDP (t,v,r1,r2,r3,kr) ->
-        load_pair (match t with TT -> "ldp" | NT -> "ldnp") v r1 r2 r3 kr::k
-    | I_LDPSW (r1,r2,r3,kr) ->
-       ldpsw r1 r2 r3 kr::k
+    | I_LDP (t,v,r1,r2,r3,kr,md) ->
+        load_pair (ldp_memo t) v r1 r2 r3 kr md::k
+    | I_LDPSW (r1,r2,r3,kr,md) ->
+       ldpsw r1 r2 r3 kr md::k
     | I_LDXP (v,t,r1,r2,r3) ->
        loadx_pair (Misc.lowercase (ldxp_memo t)) v r1 r2 r3::k
-    | I_STP (t,v,r1,r2,r3,kr) ->
-        store_pair (match t with TT -> "stp" | NT -> "stnp") v r1 r2 r3 kr::k
+    | I_STP (t,v,r1,r2,r3,kr,md) ->
+        store_pair (stp_memo t) v r1 r2 r3 kr md::k
     | I_STXP (v,t,r1,r2,r3,r4) ->
         storex_pair (Misc.lowercase (stxp_memo t)) v r1 r2 r3 r4::k
     | I_LDRBH (B,r1,r2,kr,s) -> load "ldrb" V32 r1 r2 kr (default_shift kr s)::k
@@ -1277,12 +1375,14 @@ module Make(V:Constant.S)(C:Config) =
     | I_STR (v,r1,r2,kr, s) -> store "str" v r1 r2 kr s::k
     | I_STRBH (B,r1,r2,kr,s) -> store "strb" V32 r1 r2 kr s::k
     | I_STRBH (H,r1,r2,kr,s) -> store "strh" V32 r1 r2 kr s::k
+    | I_STR_P (v,r1,r2,s) -> store_post "str" v r1 r2 s::k
     | I_STLR (v,r1,r2) -> store "stlr" v r1 r2 k0 S_NOEXT::k
     | I_STLRBH (B,r1,r2) -> store "stlrb" V32 r1 r2 k0 S_NOEXT::k
     | I_STLRBH (H,r1,r2) -> store "stlrh" V32 r1 r2 k0 S_NOEXT::k
     | I_STXR (v,t,r1,r2,r3) -> stxr (str_memo t) v r1 r2 r3::k
     | I_STXRBH (bh,t,r1,r2,r3) -> stxr (strbh_memo bh t) V32 r1 r2 r3::k
     | I_CAS (v,rmw,r1,r2,r3) -> cas (cas_memo rmw) v r1 r2 r3::k
+    | I_CASP (v,rmw,r1,r2,r3,r4,r5) -> casp (casp_memo rmw) v r1 r2 r3 r4 r5::k
     | I_CASBH (bh,rmw,r1,r2,r3) -> cas (casbh_memo bh rmw) V32 r1 r2 r3::k
     | I_SWP (v,rmw,r1,r2,r3) -> swp (swp_memo rmw) v r1 r2 r3::k
     | I_SWPBH (bh,rmw,r1,r2,r3) -> swp (swpbh_memo bh rmw) V32 r1 r2 r3::k
@@ -1337,13 +1437,17 @@ module Make(V:Constant.S)(C:Config) =
     | I_MOV (v,r,K i) ->  mov_const v r i::k
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k
     | I_MOVZ (v,rd,i,os) -> movz v rd i os::k
+    | I_MOVN (v,rd,i,os) -> movn v rd i os::k
     | I_MOVK (v,rd,i,os) -> movk  v rd i os::k
     | I_ADR (r,lbl) -> adr tr_lab r lbl::k
     | I_RBIT (v,rd,rs) -> rbit v rd rs::k
     | I_SXTW (r1,r2) -> sxtw r1 r2::k
+    | I_SBFM (v,r1,r2,k1,k2) -> xbfm "sbfm" v r1 r2 k1 k2::k
+    | I_UBFM (v,r1,r2,k1,k2) -> xbfm "ubfm" v r1 r2 k1 k2::k
     | I_OP3 (v,SUBS,ZR,r,K i, S_NOEXT) ->  cmpk v r i::k
     | I_OP3 (v,SUBS,ZR,r2,RV (v3,r3), s) when v=v3->  cmp v r2 r3 s::k
     | I_OP3 (v,ANDS,ZR,r,K i, S_NOEXT) -> tst v r i::k
+    | I_OP3 (v,ORN,r1,ZR,RV (_,r2),S_NOEXT) -> mvn v r1 r2::k
     | I_OP3 (V64,_,_,_,RV(V32,_),S_NOEXT) ->
         Warn.fatal "Instruction %s is illegal (extension required)"
           (dump_instruction ins)
@@ -1360,15 +1464,28 @@ module Make(V:Constant.S)(C:Config) =
     | I_STOPBH (op,v,w,rs,rn) ->
         stop (stopbh_memo op v w) V32 rs rn::k
 (* Conditional selection *)
-    | I_CSEL (v,r,ZR,ZR,c,Inc) ->
-        let o,f = match v with
-        | V32 -> arg1 "wzr" (fun s -> "^wo"^s) r
-        | V64 -> arg1 "xzr" (fun s -> "^o"^s) r
-        | V128 -> assert false
-        and t = match v with V32 -> word | V64 -> quad | V128 -> assert false in
+    | I_CSEL (v,r,ZR,ZR,c,(Inc|Inv as op)) ->
+        let o,f = arg1o v r
+        and t =
+          match v with V32 -> word | V64 -> quad | V128 -> assert false in
         let memo =
-          sprintf "cset %s,%s" f (pp_cond (inverse_cond c)) in
+          let op =
+            match op with
+            | Inc -> "cset"
+            | Inv -> "csetm"
+            | _ -> assert false in
+          sprintf "%s %s,%s" op f (pp_cond (inverse_cond c)) in
         { empty_ins with memo; outputs=o; reg_env=add_type t o; }::k
+    | I_CSEL (v,r1,r2,r3,c,Inc) when r2=r3 ->
+       let o,fo = arg1o v r1
+       and i,fi = arg1i v r2
+       and t =
+         match v with V32 -> word | V64 -> quad | V128 -> assert false in
+       let memo =
+         sprintf "cinc %s,%s,%s" fo fi  (pp_cond (inverse_cond c)) in
+           { empty_ins
+           with memo; inputs=i;
+           outputs=o; reg_env=add_type t (i@o); }::k
     | I_CSEL (v,r1,r2,r3,c,op) ->
         let inputs,memo,t = match v with
         | V32 ->
@@ -1414,6 +1531,8 @@ module Make(V:Constant.S)(C:Config) =
       I_SEAL _|I_STCT _|I_UNSEAL _ ->
         Warn.fatal "No litmus output for instruction %s"
             (dump_instruction ins)
+    | I_UDF _ ->
+        { empty_ins with memo = ".word 0"; }::k
 
     let no_tr lbl = lbl
     let branch_neq r i lab k = cmpk V32 r i::bcc no_tr NE lab::k

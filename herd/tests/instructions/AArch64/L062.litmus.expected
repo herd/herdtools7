@@ -1,0 +1,10 @@
+Test L062 Required
+States 1
+0:X2=instr:"B .+4"; 0:X3=0; 1:X1=instr:"B .+8"; 1:X3=instr:"B .+4";
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X3=0 /\ 1:X3=instr:"B .+4")
+Observation L062 Always 1 0
+Hash=7ddb135d6424c1b26ac694459671ebb1
+

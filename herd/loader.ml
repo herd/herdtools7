@@ -17,87 +17,113 @@
 (************************************************)
 (* "load" program in memory, somehow abstracted *)
 (************************************************)
-module type S = sig
-  type nice_prog
-  type program
-  type start_points
-  type return_labels
 
-  val load : nice_prog -> program * start_points * return_labels
-end
-
-let func_size = 1000
+let func_size = Pseudo.func_size
 let proc_size = 10000
 
 let func_start_addr proc = function
   | MiscParser.Main -> (proc + 1) * proc_size
   | MiscParser.FaultHandler -> (proc + 1) * proc_size + func_size
 
-module Make(A:Arch_herd.S) : S
-  with type nice_prog = A.nice_prog
-   and type program = A.program
-   and type start_points = A.start_points
-   and type return_labels = A.return_labels =
+module type S = sig
+  type nice_prog
+  type program
+  type start_points
+  type code_segment
 
+  val load : nice_prog -> program * start_points * code_segment
+end
+
+module Make(A:Arch_herd.S) =
 struct
 
   type nice_prog = A.nice_prog
   type program = A.program
   type start_points = A.start_points
-  type return_labels = A.return_labels
+  type code_segment = A.code_segment
+
+
+  let preload_labels proc =
+    let add_label lbl addr m =
+      if Label.Map.mem lbl m then
+        Warn.user_error
+          "Label %s occurs more that once" lbl ;
+      Label.Map.add lbl (proc,addr) m in
+    A.fold_label_addr add_label
+
+  let preload =
+    List.fold_left
+      (fun m ((proc,_,func),code) ->
+        let addr = func_start_addr proc func in
+        preload_labels proc m addr code)
+      Label.Map.empty
+
+  let convert_lbl_to_offset proc pc mem instr =
+    let labelmap =
+      let open BranchTarget in
+      function
+      | Lbl l ->
+         let tgt_proc, tgt_addr =
+           try Label.Map.find l mem
+           with Not_found ->
+             Warn.user_error
+               "Label %s not found on %s, although used in the instruction %s"
+               (Label.pp l)
+               (Proc.pp proc)
+               (A.dump_instruction instr) in
+         if Proc.equal tgt_proc proc then
+           Offset (tgt_addr - pc)
+         else
+           Warn.user_error
+             "%s cannot refer to %s defined by %s, use register with initial value %s"
+             (Proc.pp proc) (Label.pp l)
+             (Proc.pp tgt_proc) (Label.Full.pp (tgt_proc,l))
+    | Offset _ as x -> x in
+    A.map_labels_base labelmap instr
 
   let rec load_code proc addr mem rets = function
-    | [] -> mem,[],rets
+    | [] ->
+       [],IntMap.add addr (proc,[]) rets
     | ins::code ->
-      load_ins proc addr mem rets code ins
+       load_ins proc addr mem rets code ins
 
   and load_ins proc addr mem rets code = fun x ->
     match x with
     | A.Nop ->
-      load_code proc addr mem rets code
+       load_code proc addr mem rets code
     | A.Instruction ins ->
-      if Misc.is_some (A.is_link ins) then
-        let new_mem,start,new_rets =
-          load_code proc (addr+4) mem rets code in
-        let lbl = Printf.sprintf "##%d" addr in
-        let newer_mem =
-          if Label.Map.mem lbl new_mem then
-            Warn.user_error
-              "Label %s cannot be created, since it is reserved internally" lbl ;
-          Label.Map.add lbl (proc,start) new_mem in
-        let newer_rets = IntMap.add addr lbl new_rets in
-        newer_mem,(addr,ins)::start,newer_rets
-      else
-        let mem,start,new_rets =
-          load_code proc (addr+4) mem rets code in
-        mem,(addr,ins)::start,new_rets
-    | A.Label (lbl,ins) ->
-        let mem,start,new_rets =
-          load_ins proc addr mem rets code ins in
-        if Label.Map.mem lbl mem then
-          Warn.user_error
-            "Label %s occurs more that once" lbl ;
-        Label.Map.add lbl (proc,start) mem,start,new_rets
+        let start,new_rets =
+          load_code proc (addr+A.size_of_ins ins) mem rets code in
+        let new_ins =
+          convert_lbl_to_offset proc addr mem ins in
+        let new_start = (addr,new_ins)::start in
+        let newer_rets = IntMap.add addr (proc,new_start)  new_rets in
+        new_start,newer_rets
+    | A.Label (_,ins) ->
+        let start,new_rets = load_ins proc addr mem rets code ins in
+        start,new_rets
     | A.Symbolic _
     | A.Macro (_,_) -> assert false
 
   let load prog =
+    let mem = preload prog in
     let rec load_iter = function
-    | [] -> Label.Map.empty,[],IntMap.empty
-    | ((proc,_,func),code)::prog ->
-       let mem,starts,rets = load_iter prog in
-       let addr = func_start_addr proc func in
-       let fin_mem,start,fin_rets = load_code proc addr mem rets code in
-       fin_mem,(proc,func,start)::starts,fin_rets in
-    let mem,starts,codes = load_iter prog in
+      | [] -> [],IntMap.empty
+      | ((proc,_,func),code)::prog ->
+         let starts,rets = load_iter prog in
+         let addr = func_start_addr proc func in
+         let start,fin_rets = load_code proc addr mem rets code in
+         (proc,func,start)::starts,fin_rets in
+    let starts,codes = load_iter prog in
     let mains,fhandlers =
       List.partition (fun (_,func,_) -> func=MiscParser.Main) starts in
     let add_fhandler (proc,_,start) =
-      let fhandler = List.find_opt (fun (p,_,_) -> p=proc) fhandlers in
+      let fhandler =
+        List.find_opt (fun (p,_,_) -> Proc.equal p proc) fhandlers in
       match fhandler with
       | Some (_,_,fh_start) ->
          (proc,start,Some fh_start)
       | None -> (proc,start,None) in
-    mem,List.map add_fhandler mains,codes
+    Label.Map.map snd mem,List.map add_fhandler mains,codes
 
 end

@@ -37,14 +37,16 @@ module Make
   let zero = Concrete Scalar.zero
   and one = Concrete Scalar.one
 
+  let pp_instr_cst i = Instr.pp i
+
   let pp hexa =
-    Constant.pp (Scalar.pp hexa) (PteVal.pp hexa) (Instr.pp)
+    Constant.pp (Scalar.pp hexa) (PteVal.pp hexa) pp_instr_cst
   and pp_unsigned hexa =
-    Constant.pp (Scalar.pp_unsigned hexa) (PteVal.pp hexa) (Instr.pp)
+    Constant.pp (Scalar.pp_unsigned hexa) (PteVal.pp hexa) pp_instr_cst
 
   let pp_v = pp false
   let pp_v_old =
-    Constant.pp_old (Scalar.pp false) (PteVal.pp false) (Instr.pp)
+    Constant.pp_old (Scalar.pp false) (PteVal.pp false) pp_instr_cst
 
   let compare c1 c2 =
     Constant.compare Scalar.compare PteVal.compare Instr.compare c1 c2
@@ -53,11 +55,14 @@ module Make
 (* For building code symbols. *)
   let vToName = function
     | Symbolic s-> Constant.as_address s
-    | Concrete _|ConcreteVector _ | Label _|Tag _|PteVal _|Instruction _
+    | Concrete _|ConcreteVector _|ConcreteRecord _| Label _|Tag _
+    | PteVal _|Instruction _|Frozen _
         -> assert false
 
   let is_nop = function
     | Instruction i -> Instr.is_nop i
-    | Symbolic _|Concrete _|ConcreteVector _ | Label _|Tag _|PteVal _
+    | Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _ | Label _|Tag _|PteVal _
+    | Frozen _
       -> false
+
 end

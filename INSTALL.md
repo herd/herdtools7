@@ -20,21 +20,19 @@ You can change PREFIX by editing the Makefile, or by running ``make ...`` as ``m
 Requirements
 ------------
 
-- OCaml (version >= 4.05.0)
+- OCaml (version >= 4.08.0)
 - dune
 - menhir (version >= 20180530)
+- zarith
 
 We strongly recommend to have this base software installed through the opam
 package manager.
 
-    % opam install dune menhir
+    % opam install dune menhir zarith
 
-Notice: Compilation with ocamlbuild is possible, by setting D=ocb in Makefile.
-For using ocamlbuild, supplementary software ocamlbuild and ocamlfind are required.
-They can be installed with opam:
-
-     % opam install ocamlfind ocamlbuild
 Make sure to run `eval $(opam config env)` to make tools available in your PATH.
+
+Notice: Compilation with ocamlbuild is not longer possible
 
 Build
 -----

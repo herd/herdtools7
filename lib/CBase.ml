@@ -53,19 +53,25 @@ type mutex_kind = MutexLinux | MutexC11
 
 type return = OpReturn | FetchOp
 
+type arch_op = ArchOp.no_arch_op
+type op = arch_op Op.op
+
+let pp_phantom_archop _ = assert false
+let pp_op op = Op.pp_op op pp_phantom_archop
+
 type expression =
   | Const of ParsedConstant.v
   | LoadReg of reg
   | LoadMem of expression * MemOrderOrAnnot.t
-  | Op of Op.op * expression * expression
+  | Op of op * expression * expression
   | Exchange of expression * expression * MemOrderOrAnnot.t
   | CmpExchange of expression * expression * expression  * MemOrderOrAnnot.annot
-  | Fetch of expression * Op.op * expression * mem_order
+  | Fetch of expression * op * expression * mem_order
   | ECall of string * expression list
   | ECas of expression * expression * expression * mem_order * mem_order * bool
   | TryLock of expression * mutex_kind
   | IsLocked of expression * mutex_kind
-  | AtomicOpReturn of expression * Op.op * expression * return * MemOrderOrAnnot.annot
+  | AtomicOpReturn of expression * op * expression * return * MemOrderOrAnnot.annot
   | AtomicAddUnless of expression * expression * expression * bool (* ret bool *) | ExpSRCU of expression * MemOrderOrAnnot.annot
 
 type instruction =
@@ -75,11 +81,11 @@ type instruction =
   | While of expression * instruction * int (* number of unrollings *)
   | CastExpr of expression
   | DeclReg of CType.t * reg
-  | StoreReg of CType.t option * reg * expression
+  | StoreReg of CType.t option * reg option * expression (* None reg does not store result*)
   | StoreMem of expression * expression * MemOrderOrAnnot.t
   | Lock of expression * mutex_kind
   | Unlock of expression * mutex_kind
-  | AtomicOp of expression * Op.op * expression
+  | AtomicOp of expression * op * expression
   | InstrSRCU of expression * MemOrderOrAnnot.annot * expression option
   | Symb of string
   | PCall of string * expression list
@@ -113,7 +119,7 @@ let rec dump_expr =
         sprintf "atomic_load_explicit(%s,%s)"
           (dump_expr l) (MemOrder.pp_mem_order mo)
     | Op(op,e1,e2) ->
-        sprintf "%s %s %s" (dump_expr e1) (Op.pp_op op) (dump_expr e2)
+        sprintf "%s %s %s" (dump_expr e1) (pp_op op) (dump_expr e2)
     | Exchange(l,e,MO mo) ->
         sprintf "atomic_exchange_explicit(%s,%s,%s)"
           (dump_expr l) (dump_expr e) (MemOrder.pp_mem_order mo)
@@ -149,7 +155,7 @@ let rec dump_expr =
         sprintf "__atomic_%s{%s}(%s,%s,%s)"
           (match ret with OpReturn -> "op_return" | FetchOp -> "fetch_op")
           (string_of_annot a)
-          (dump_expr loc) (Op.pp_op op) (dump_expr e)
+          (dump_expr loc) (pp_op op) (dump_expr e)
     | AtomicAddUnless (loc,a,u,retbool) ->
         sprintf "%satomic_op_return(%s,%s,%s)"
           (if retbool then "" else "__")
@@ -184,9 +190,12 @@ let rec do_dump_instruction indent =
       sprintf "%swhile (%s) " indent (dump_expr e) ^
       do_dump_instruction indent i
   | CastExpr e -> pindent "(void)%s;" (dump_expr e)
-  | StoreReg(None,r,e) ->
+  (* if we provide no reg, just evaluate the expression*)
+  | StoreReg(_,None,e) ->
+     pindent "%s;" (dump_expr e)
+  | StoreReg(None,Some r,e) ->
      pindent "%s = %s;" r (dump_expr e)
-  | StoreReg(Some t,r,e) ->
+  | StoreReg(Some t,Some r,e) ->
      pindent "%s %s = %s;" (CType.dump t) r (dump_expr e)
   | DeclReg(t,r) ->
      pindent "%s %s;" (CType.dump t) r
@@ -233,6 +242,8 @@ let map_addrs _f ins = ins
 let norm_ins ins = ins
 let get_next _ins = Warn.fatal "C get_next not implemented"
 
+let is_valid _ = true
+
 include Pseudo.Make
     (struct
       type ins = instruction
@@ -243,8 +254,10 @@ include Pseudo.Make
         let open Constant in
         function
           | Const(Concrete _|ConcreteVector _) as k -> k
-          | Const (Symbolic _|Label _|Tag _|PteVal _|Instruction _ as v) ->
-              Warn.fatal "No constant '%s' allowed" (ParsedConstant.pp_v v)
+          | Const
+              (Symbolic _|Label _|Tag _|ConcreteRecord _
+              |PteVal _|Instruction _|Frozen _ as v) ->
+             Warn.fatal "No constant '%s' allowed" (ParsedConstant.pp_v v)
           | LoadReg _ as l -> l
           | LoadMem (l,mo) ->
               LoadMem (parsed_expr_tr l,mo)
@@ -333,6 +346,7 @@ include Pseudo.Make
         fun i -> get_rec 0 i
 
 
+      let size_of_ins _ = 1
       let fold_labels acc _f _ins = acc
       let map_labels _f ins = ins
     end)
@@ -411,17 +425,18 @@ let rec subst env i = match i with
     While (subst_expr env e, subst env  i,n)
 | CastExpr e ->
     CastExpr (subst_expr env e)
-| StoreReg (ot,r,e) ->
+| StoreReg (ot,None,e) -> StoreReg (ot,None,subst_expr env e)
+| StoreReg (ot,Some r,e) ->
     let e = subst_expr env e in
     begin try
       match StringMap.find r env.args with
-      | LoadReg r -> StoreReg (ot,r,e)
+      | LoadReg r -> StoreReg (ot,Some r,e)
       | LoadMem (loc,mo) -> StoreMem (loc,e,mo)
       | e ->
           Warn.user_error
             "Bad lvalue '%s' while substituting macro argument %s"
             (dump_expr e) r
-    with Not_found -> StoreReg (ot,r,e) end
+    with Not_found -> StoreReg (ot,Some r,e) end
 | StoreMem (loc,e,mo) ->
     StoreMem (subst_expr env loc,subst_expr env e,mo)
 | Lock (loc,k) -> Lock (subst_expr env loc,k)

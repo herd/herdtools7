@@ -131,7 +131,7 @@
   * Suppress deprecaton warnings, by writing code in misc...
 7.17
   * More Linux macros
-  * Locked intructions for X86, simplify setting: 1. suppress atomicity
+  * Locked instructions for X86, simplify setting: 1. suppress atomicity
     component of event structures + set atomicity at event creation time.
 7.16
   * Oups trivial bug in filters.cat

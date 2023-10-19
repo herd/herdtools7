@@ -1,0 +1,10 @@
+MIPS A000
+
+(* Tests MIPS automatic testing *)
+
+{}
+
+P0;
+move $v0, $v1;
+
+forall 0:v0 = 0

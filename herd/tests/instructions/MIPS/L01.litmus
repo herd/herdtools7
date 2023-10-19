@@ -1,0 +1,16 @@
+MIPS L01
+{
+uint64_t 0:v0;
+int64_t 0:v1;
+uint64_t 0:t0;
+}
+
+ P0                  ;
+daddiu $v0,$v0,65535 ;
+daddiu $v1,$v1,65535 ;
+addiu $t0,$t0,65535  ;
+locations [0:v0; 0:v1; 0:t0; ]
+forall 0:v0 = -1
+
+
+

@@ -25,6 +25,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
 
   let reg_to_string r = match r with
     | RIP -> "%rip"
+    | CS -> "%cs"
 (* We always want the 64 bits version of the register because the smaller version are created by GCC*)
     | Ireg (r, _) -> "%" ^ X86_64Base.reg64_string r
     | XMM xmm -> "%" ^ X86_64Base.xmm_string xmm
@@ -65,4 +66,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
   let nop =  I_NOP
 
   include HardwareExtra.No
+
+  module GetInstr = GetInstr.No(struct type instr=instruction end)
+
 end

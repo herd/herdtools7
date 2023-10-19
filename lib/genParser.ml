@@ -122,9 +122,16 @@ module Make
       List.map (fun (p,code) -> p,expn code)
 
 (* Translation from parsed instruction to internal ones *)
+    let check_and_tr p =
+      let p = A.pseudo_parsed_tr p in
+      if A.pseudo_exists (fun p -> not (A.is_valid p)) p then
+        Warn.user_error "Illegal instruction '%s'"
+          (A.pseudo_dump A.dump_instruction p)
+      else p
+
     let parsed_tr prog =
       List.map
-        (List.map A.pseudo_parsed_tr)
+        (List.map check_and_tr)
         prog
 
 (***********)
@@ -181,7 +188,7 @@ module Make
          filter = filter;
          condition = final;
          locations = locs;
-         extra_data ;
+         extra_data = extra_data ;
        } in
       let name  = name.Name.name in
       let parsed =
@@ -211,9 +218,10 @@ module Make
                 let map_atom = function
                   | LV (loc,v) -> LV (map_rloc loc,v)
                   | LL (loc1,loc2) ->  LL (map_loc loc1,map_loc loc2)
-                  | FF (p,x,ft) ->
+                  | FF (_,None,_) as a -> a
+                  | FF (p,Some x,ft) ->
                       begin match map_loc (Location_global x) with
-                      | Location_global x -> FF (p,x,ft)
+                      | Location_global x -> FF (p,Some x,ft)
                       | _ -> assert false
                       end
                 in

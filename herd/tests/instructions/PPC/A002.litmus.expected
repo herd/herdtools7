@@ -1,0 +1,12 @@
+Test A002 Allowed
+States 3
+[P0_r0]=0; [P1_r0]=1;
+[P0_r0]=1; [P1_r0]=0;
+[P0_r0]=1; [P1_r0]=1;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists ([P0_r0]=0 /\ [P1_r0]=0)
+Observation A002 Never 0 3
+Hash=d94e9aab81affd834e43c4085405e4c8
+

@@ -197,7 +197,37 @@ let instruction_tr f = function
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
 
-(* from GPU_PTXBase *)
+let do_dump_instruction pk i = match i with
+| Pnop -> "nop"
+| Pld(r, addr_op, s) -> sprintf "r[%s] %s %s"
+      (string_of_annot_list s)
+      (pp_reg r)
+      (pp_addr_op pk addr_op)
+| Pst(addr_op,roi,s) -> sprintf "w[%s] %s %s"
+      (string_of_annot_list s)
+      (pp_addr_op pk addr_op)
+      (string_of_reg_or_imm pk roi)
+| Prmw(r,op,x,s) -> sprintf "rmw[%s] %s %s %s"
+      (string_of_annot_list s)
+      (pp_reg r)
+      (pp_op pk op)
+      (pp_addr_op pk x)
+| Pfence f -> pp_fence_ins f
+| Pcall s -> sprintf "call[%s]" s
+| Pbranch(Some r,l,s) -> sprintf "b[%s] %s %s"
+      (string_of_annot_list s)
+      (pp_reg r)
+      l
+| Pbranch(None,l,s) -> sprintf "b[%s] %s"
+      (string_of_annot_list s)
+      l
+| Pmov(r,op) -> sprintf "mov %s %s"
+      (pp_reg r)
+      (pp_op pk op)
+
+let dump_instruction i = do_dump_instruction (sprintf "%i") i
+
+let is_valid _ = true
 
 include Pseudo.Make
     (struct
@@ -212,52 +242,18 @@ include Pseudo.Make
         | Pst _  -> 1
         | _ -> 0
 
+      let size_of_ins _ = 4
+
       (* We do have instructions with labels... *)
       let fold_labels k f = function
         | Pbranch (_,lbl,_) -> f k lbl
         | _ -> k
 
       let map_labels f = function
-        | Pbranch(c,lbl,s) -> Pbranch(c,f lbl,s)
+        | Pbranch(c,lbl,s) -> Pbranch(c,BranchTarget.as_string_fun f lbl,s)
         | ins -> ins
 
      end)
-
-let do_dump_instruction pk i = match i with
-| Pnop -> "nop"
-
-| Pld(r, addr_op, s) -> sprintf "r[%s] %s %s"
-      (string_of_annot_list s)
-      (pp_reg r)
-      (pp_addr_op pk addr_op)
-
-| Pst(addr_op,roi,s) -> sprintf "w[%s] %s %s"
-      (string_of_annot_list s)
-      (pp_addr_op pk addr_op)
-      (string_of_reg_or_imm pk roi)
-
-| Prmw(r,op,x,s) -> sprintf "rmw[%s] %s %s %s"
-      (string_of_annot_list s)
-      (pp_reg r)
-      (pp_op pk op)
-      (pp_addr_op pk x)
-
-| Pfence f -> pp_fence_ins f
-
-| Pcall s -> sprintf "call[%s]" s
-
-| Pbranch(Some r,l,s) -> sprintf "b[%s] %s %s"
-      (string_of_annot_list s)
-      (pp_reg r)
-      l
-
-| Pbranch(None,l,s) -> sprintf "b[%s] %s"
-      (string_of_annot_list s)
-      l
-
-| Pmov(r,op) -> sprintf "mov %s %s"
-      (pp_reg r)
-      (pp_op pk op)
 
 
 let fold_regs (f_reg,f_sreg) =
@@ -364,7 +360,7 @@ let do_fold_addrs f =
   | Pmov (_,op) -> fold_op op c
 
 let fold_addrs f i = do_fold_addrs (fun s -> f (ParsedConstant.nameToV s)) i
-let dump_instruction i = do_dump_instruction (sprintf "%i") i
+
 let dump_parsedInstruction i = do_dump_instruction MetaConst.pp i
 let dump_instruction_hash = dump_instruction
 let pp_instruction _m = dump_instruction

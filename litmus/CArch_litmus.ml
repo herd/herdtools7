@@ -22,10 +22,13 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
     val base_type : CType.t
 
     type reg = string
-    type instruction
+    type instruction = CBase.instruction
+    val dump_instruction : instruction -> string
+
   end
 
   include (CBase : SmallBase)
+
   module RegSet = StringSet
   module RegMap = StringMap
 
@@ -34,7 +37,9 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
     function
       | Concrete i -> "addr_" ^ V.Scalar.pp O.hexa i
       | Symbolic (Virtual {name=s; tag=None; cap=0L;_ })-> s
-      | Label _|Symbolic _|Tag _|ConcreteVector _| PteVal _|Instruction _ -> assert false
+      | Label _|Symbolic _|Tag _|ConcreteVector _|ConcreteRecord _
+      | PteVal _|Instruction _|Frozen _
+        -> assert false
 
   module Internal = struct
     type arch_reg = reg
@@ -109,4 +114,6 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
   let features = []
 
   include HardwareExtra.No
+
+  module GetInstr = GetInstr.No(struct type instr = instruction end)
 end

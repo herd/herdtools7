@@ -1,0 +1,10 @@
+Test L00 Required
+States 1
+0:$4=18446744073709486080; 0:$5=65535;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:$4=-65536 /\ 0:$5=65535)
+Observation L00 Always 1 0
+Hash=d74d5f511039a20800a02e7376b80115
+

@@ -1,0 +1,10 @@
+Test A234 Required
+States 1
+0:X20=89548664; 0:X21=34816; 0:X22=-89548665; 0:X23=30720;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X20=89548664 /\ 0:X21=34816 /\ 0:X22=-89548665 /\ 0:X23=30720)
+Observation A234 Always 1 0
+Hash=a39291334aea9e04d38c52075fc5081d
+

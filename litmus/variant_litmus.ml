@@ -17,21 +17,31 @@
 type t =
   | Self (* Self modifying code *)
   | Precise of Precision.t
+  | S128 (* 128 bit signed ints*)
   | Mixed (* Ignored *)
+  | Vmsa  (* Checked *)
+  | Telechat (* Telechat idiosyncrasies *)
 
 let compare = compare
 
-let tags = "self"::"mixed"::Precision.tags
+let tags = "s128"::"self"::"mixed"::"vmsa"::"telechat"::Precision.tags
 
 let parse s = match Misc.lowercase s with
+| "s128" -> Some S128
 | "self" -> Some Self
 | "mixed" -> Some Mixed
+| "vmsa"|"kvm" -> Some Vmsa
+| "telechat" -> Some Telechat
 | tag ->
    Misc.app_opt (fun p -> Precise p) (Precision.parse tag)
 
 let pp = function
   | Self -> "self"
   | Mixed -> "mixed"
+  | S128 -> "s128"
+  | Vmsa -> "vmsa"
+  | Telechat -> "telechat"
+
   | Precise p -> Precision.pp p
 
 let ok v a = match v,a with

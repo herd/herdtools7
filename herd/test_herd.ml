@@ -17,7 +17,7 @@
 type proc_info = (string * int list) list
 
 type
-  ('prog,'nice_prog,'start,'ret,'state,
+  ('prog,'nice_prog,'start,'ret,'entry,'state,
    'size_env, 'type_env,
    'prop,'loc,'locset,'fset) t =
     {
@@ -27,7 +27,8 @@ type
      program : 'prog ;
      nice_prog : 'nice_prog ;
      start_points : 'start ;
-     return_labels : 'ret ;
+     code_segment : 'ret ;
+     entry_points : 'entry;
      init_state : 'state ;
      size_env : 'size_env ; type_env : 'type_env ;
      filter : 'prop option ;
@@ -60,7 +61,7 @@ module Make(A:Arch_herd.S) =
   struct
 
     type result =
-      (A.program, A.nice_prog, A.start_points, A.return_labels, A.state,
+      (A.program, A.nice_prog, A.start_points, A.code_segment, A.entry_points, A.state,
        A.size_env, A.type_env,
        A.prop, A.location, A.RLocSet.t,A.FaultAtomSet.t) t
 
@@ -151,6 +152,13 @@ module Make(A:Arch_herd.S) =
          } = t in
 
       let prog,starts,rets = Load.load nice_prog in
+      let entry_points =
+        let instr2labels =
+          let one_label lbl addr res =
+            let ins_lbls = IntMap.safe_find Label.Set.empty addr res in
+            IntMap.add addr (Label.Set.add lbl ins_lbls) res in
+          Label.Map.fold one_label prog IntMap.empty in
+        fun addr -> IntMap.safe_find Label.Set.empty addr instr2labels in
       let init_state = A.build_state init in
       let type_env = A.build_type_env init in
       let flocs,ffaults = LocationsItem.locs_and_faults locs in
@@ -183,7 +191,8 @@ module Make(A:Arch_herd.S) =
        program = prog ;
        nice_prog = nice_prog ;
        start_points = starts ;
-       return_labels = rets ;
+       code_segment = rets ;
+       entry_points = entry_points;
        init_state = init_state ;
        filter = filter ;
        cond = final ;
@@ -216,7 +225,8 @@ module Make(A:Arch_herd.S) =
        program = Label.Map.empty ;
        nice_prog = [] ;
        start_points = [] ;
-       return_labels = IntMap.empty ;
+       code_segment = IntMap.empty ;
+       entry_points = (fun _ -> Label.Set.empty) ;
        init_state = A.state_empty;
        size_env = A.size_env_empty ;
        type_env = A.type_env_empty ;

@@ -1,0 +1,14 @@
+AArch64 F001
+{
+int x=1;
+0:X0=x;
+[PTE(x)]=(valid:0);
+}
+  P0          | P0.F           ;
+ ADD X0,X0,#0 | MOV W2,#1      ;
+L0:           | ADR X3,L1      ;
+ LDR W1,[X0]  | MSR ELR_EL1,X3 ;
+L1:           | ERET           ;
+ MOV W4,#2    |                ;
+
+forall 0:X2=1 /\ 0:X4=2

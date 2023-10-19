@@ -55,7 +55,6 @@ module type CommonConfig = sig
   val makevar : string list
   val gcc : string
   val c11 : bool
-  val c11_fence : bool
   val ascall : bool
   val precision : Precision.t
   val variant : Variant_litmus.t -> bool
@@ -229,8 +228,13 @@ end = struct
           Warn.user_error
             "variant %s does not apply to arch %s"
             (Variant_litmus.pp v)
-            (Archs.pp a)
-
+            (Archs.pp a) ;
+        let v = Variant_litmus.Vmsa in
+        if O.variant v && O.mode != Mode.Kvm then
+          Warn.user_error
+            "(optional) variant %s not compatible with mode %s"
+            (Variant_litmus.pp v)
+            (Mode.pp O.mode)
 
       let limit_ok nprocs = match O.avail with
         | None|Some 0 -> true
@@ -243,6 +247,7 @@ end = struct
              Warn.warn_always
                "%stest with more threads (%i) than available (%i) is compiled"
                (Pos.str_pos0 name.Name.file) nprocs navail
+
       let compile
             parse count_procs compile allocate
             cycles hash_env
@@ -336,7 +341,7 @@ end = struct
         type token = CParser.token
         module CL = CLexer.Make(struct let debug = false end)
         let lexer = CL.token false
-        let parser = CParser.shallow_main
+        let parser lexer buf = fst (CParser.shallow_main lexer buf)
       end
 
       module A' = CArch_litmus.Make(O)
@@ -345,8 +350,10 @@ end = struct
         struct
           type ins = A'.instruction
           include DumpCAst
-          let find_offset _ _ _ = Warn.user_error "No label value in C"
           let code_exists _ _ = assert false
+          let exported_labels_code _ = Label.Full.Set.empty
+          let from_labels _ _ = []
+          let all_labels _ = []
         end
 
       module Lang =
@@ -434,7 +441,9 @@ end = struct
           let sysarch =
             match arch,Archs.get_sysarch arch  OT.carch with
             | `C,`Unknown->
-                  Warn.fatal "Test %s not performed because -carch is not given but required while using C arch" tname
+                if not OT.c11 then
+                Warn.user_error "Test %s in C not performed, because no option -carch <arch> or -c11 true is present" tname ;
+                `Unknown
             | _,a -> a
           let noinline = true
           end in
@@ -521,10 +530,9 @@ end = struct
              begin match OT.usearch with
              | UseArch.Trad ->
                 let module AArch64Instr =
-                  AArch64Base.MakeInstr (* No morello (yet) *)
+                  AArch64Instr.Make (* No morello (yet) *)
                     (struct let is_morello = false end) in
-                let module V =
-                  SymbConstant.Make
+                let module V =                  SymbConstant.Make
                     (Int64Scalar)(AArch64PteVal)
                     (AArch64Instr) in
                 let module Arch' = AArch64Arch_litmus.Make(OC)(V) in
@@ -543,19 +551,6 @@ end = struct
              | UseArch.Gen ->
                 assert false
              end
-          (*
-  let module Arch' = AArch64GenArch.Make(OC)(V) in
-  let module LexParse = struct
-  type instruction = Arch'.pseudo
-  type token = AArch64GenParser.token
-  module Lexer = AArch64GenLexer.Make(LexConfig)
-  let lexer = Lexer.token
-  let parser = AArch64GenParser.main
-  end in
-  let module Compile = AArch64GenCompile.Make(V)(OC) in
-  let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
-  X.compile
-           *)
           | `MIPS ->
              let module V = Int64Constant.Make(MIPSBase.Instr) in
              let module Arch' = MIPSArch_litmus.Make(OC)(V) in
@@ -595,12 +590,12 @@ end = struct
                       | `AArch64 -> AArch64Arch_litmus.comment
                       | `MIPS -> MIPSArch_litmus.comment
                       | `RISCV -> RISCVArch_litmus.comment
-                      | `Unknown -> assert false
+                      | `Unknown -> "#"
                       end
                end in
              let module X = Make'(Cfg)(Arch') in
              X.compile
-          | `CPP | `LISA | `JAVA -> assert false
+          | `CPP | `LISA | `JAVA | `ASL -> assert false
         in
         aux arch cycles hash_env name in_chan out_chan splitted
       end else begin (* Excluded explicitely, (check_tname), do not warn *)

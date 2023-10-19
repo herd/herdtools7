@@ -36,8 +36,9 @@ module
     let barriers = [sync;lwsync;eieio;]
     let isync = Some {barrier=PPC.Isync; pp="isync";}
     let nat_sz =  V.Cst.Scalar.machsize
-
     let atomic_pair_allowed _ _ = true
+
+    let () = assert (nat_sz = MachSize.Quad)
 
 (****************************)
 (* Build semantics function *)
@@ -200,6 +201,58 @@ module
         read_flag cr bit ii >>=
         M.op1 Op.Not >>=
         fun v ->  commit ii >>= fun () -> B.bccT v lbl
+(**********)
+(* Rotate *)
+(**********)
+
+      let rot64 x n =
+        let n = n mod 64 in
+        begin
+          M.op1 (Op.LeftShift n) x >>|
+          M.op1 (Op.LogicalRightShift (63-n)) x
+        end >>= fun (x,y) ->
+        M.op Op.Or x y
+
+      let rot32 x n =
+        M.op1 (Op.Mask MachSize.Word) x >>= fun x ->
+        M.op1 (Op.LeftShift 32) x >>= fun y ->
+        M.op Op.Or x y >>= fun x ->
+        rot64 x n
+
+(****************************)
+(* Mask auxiliary functions *)
+(****************************)
+
+      let op_and_mask msk = M.op1 (Op.AndK ("0b" ^ msk))
+
+      let mask k1 k2 =
+        let msk =
+          if k1 <= k2 then
+            let msk = Bytes.make 64 '0' in
+            for k=k1 to k2 do
+              Bytes.set msk k '1'
+            done ;
+            msk
+          else
+            let msk = Bytes.make 64 '1' in
+            for k = k2+1 to k1-1 do
+              Bytes.set msk k '0'
+            done ;
+            msk in
+        Bytes.to_string msk
+
+      let not_mask msk =
+        let len = String.length msk in
+        let r = Bytes.create len in
+        for k=0 to len-1 do
+          let c =
+            match msk.[k] with
+            | '0' -> '1'
+            | '1' -> '0'
+            | _ -> assert false in
+          Bytes.set r k c
+        done ;
+        Bytes.to_string r
 
       let build_semantics _ ii =
         M.addT (A.next_po_index ii.A.program_order_index)
@@ -231,7 +284,43 @@ module
               else
                 read_reg_ord rS ii >>=
                 fun v -> write_reg rD v ii >>= B.next1T
+(* rotate instructions *)
+          | PPC.Pextsw (rD,rA) ->
+            read_reg_ord rA ii >>=
+            M.op1 (Op.Sxt Word) >>=
+            fun v -> write_reg rD v ii >>=
+            B.next1T
+          | PPC.Prlwinm (rD,rA,k1,k2,k3) ->
+            (* rotate left word immediate and mask *)
+             let m = mask (k2+32) (k3+32) in
+             read_reg_ord rA ii >>= fun a ->
+             rot32 a k1 >>=
+             op_and_mask m >>= fun v ->
+             write_reg rD v ii >>= B.next1T
+          | PPC.Prlwimi (rD,rA,k1,k2,k3) ->
+            (* rotate left word immediate mask insert*)
+             let m = mask (k2+32) (k3+32) in
+             let not_m = not_mask m in
+             (read_reg_ord rD ii >>| read_reg_ord rA ii) >>= fun (d,a) ->
+             rot32 a k1 >>= fun a ->
+             op_and_mask m a >>| op_and_mask not_m d >>= fun (d,a) ->
+            (* unlike RLWINM, this instruction preserves bits*)
+            M.op Op.Or d a >>= fun v ->
+            write_reg rD v ii >>= B.next1T
+          | PPC.Pclrldi (rD,rA,k) ->
+            (* create 1 mask from 0-(k-1), 0 mask for the rest *)
+            (* AND with contents of rA, store in rD *)
+            let m = mask k 63  in
+            read_reg_ord rA ii >>=
+            op_and_mask m >>= fun v ->
+            (* unlike RLWINM, this instruction preserves bits*)
+            (* We can simply OR (shifted rA) and (masked rD) *)
+            write_reg rD v ii >>= B.next1T
 (* 2 reg + immediate *)
+          | PPC.Plis (rD,v) ->
+              M.op Op.ShiftLeft (V.intToV v) (V.intToV 16)
+              >>= fun v -> write_reg rD v ii
+              >>= B.next1T
           | PPC.Pli (rD,v)
           | PPC.Paddi (rD,PPC.Ireg (PPC.GPR0),v) ->
 (* Believe it or not Power ISA, p. 62 says so,
@@ -239,6 +328,10 @@ module
               write_reg rD (V.intToV v) ii >>= B.next1T
           |  PPC.Paddi (rD,rA,simm) ->
               op2regi ii Op.Add false rD rA (V.intToV simm)
+          |  PPC.Paddis (rD,PPC.Ireg PPC.GPR0,simm) ->
+              write_reg rD (V.intToV (simm lsl 16)) ii >>= B.next1T
+          |  PPC.Paddis (rD,rA,simm) ->
+              op2regi ii Op.Add false rD rA (V.intToV (simm lsl 16))
           |  PPC.Pori (rD,rA,simm) ->
               op2regi ii Op.Or false rD rA (V.intToV simm)
           |  PPC.Pxori (rD,rA,simm) ->
@@ -259,6 +352,9 @@ module
           | PPC.Pbcc(PPC.Le,lbl) -> bcc_no  0 bit_gt ii lbl
           | PPC.Pbcc(PPC.Eq,lbl) -> bcc_yes 0 bit_eq ii lbl
           | PPC.Pbcc(PPC.Ne,lbl) -> bcc_no 0 bit_eq ii lbl
+          | PPC.Pblr when C.variant Variant.Telechat -> (* We assume a jump to the callee*)
+            (* in the link register is an exit from the program*)
+            M.unitT () >>! B.Exit
 (* Compare, to result in any cr *)
           | PPC.Pcmpwi (cr,rA,v) ->
               read_reg_ord rA ii >>=
@@ -266,6 +362,10 @@ module
           | PPC.Pcmpw (cr,rA,rB) ->
               (read_reg_ord rA ii >>| read_reg_ord rB ii) >>=
               fun (vA,vB) -> flags true cr vA vB ii >>= B.next1T
+          | PPC.Pcmplwi (cr,rA,v) ->
+              (read_reg_ord rA ii) >>= M.op1 (Op.Mask MachSize.Word) >>=
+              fun vA ->
+                flags true cr vA (V.intToV (v land 0xffff)) ii >>= B.next1T
           | PPC.Pmfcr rA ->
               read_reg_ord (PPC.CRField 0) ii >>=
               fun v -> write_reg rA v ii >>= B.next1T
@@ -277,6 +377,12 @@ module
                 fun a ->
                   read_addr sz a ii >>=
                   fun v -> write_reg rD v ii >>= B.next1T
+          | PPC.Plwa(rD,d,rA) ->
+              read_reg_ord rA ii >>= fun aA ->
+              M.add aA (V.intToV d) >>= fun a ->
+              read_addr Word a ii >>=
+              M.op1 (Op.Sxt Word) >>= fun v ->
+              write_reg rD v ii >>= B.next1T
           | PPC.Plwzu (rD,d,rA) ->
               read_reg_ord rA ii >>=
               fun aA ->
@@ -286,12 +392,16 @@ module
                   if rA <> PPC.r0 && rA <> rD then
                     (write_reg rA a ii >>| load) >>= B.next2T
                   else load >>= B.next1T)
-          | PPC.Ploadx(sz,rD,rA,rB) ->
+          | PPC.Plwax(sz,rD,rA,rB)
+          | PPC.Ploadx(sz,rD,rA,rB) as i ->
               (read_reg_or_zero false rA ii >>| read_reg_ord rB ii) >>=
               fun (aA,aB) ->
                 M.add aA aB >>=
                 fun a ->
                   read_addr sz a ii >>=
+                  (match i with
+                   | PPC.Plwax _ -> M.op1 (Op.Sxt sz)
+                   | _ -> M.unitT) >>=
                   fun v -> write_reg rD v ii >>= B.next1T
           | PPC.Pstore(sz,rS,d,rA) ->
               (read_reg_data rS ii >>| read_reg_ord rA ii) >>=
@@ -362,11 +472,11 @@ module
           | PPC.Psrawi (_, _, _, _)
           | PPC.Psraw (_, _, _, _)
           | PPC.Pbl _
-          | PPC.Pblr
           | PPC.Pmtlr _
           | PPC.Pmflr _
           | PPC.Pstmw _
           | PPC.Plmw _
+          | PPC.Pblr
             ->
               Warn.fatal "Instruction %s not implemented"
                 (PPC.dump_instruction ii.A.inst)

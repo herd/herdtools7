@@ -18,8 +18,8 @@ open Printf
 
 (*********************)
 
-type op =
-  | Add | Sub | Mul | Div
+type 'aop op =
+  | Add | Sub | Mul | Div | Rem
   | And | Or | Xor | Nor | AndNot2
   | ASR
   | CapaAdd | Alignd | Alignu | Build | ClrPerm | CpyType | CSeal | Cthi | Seal
@@ -33,13 +33,16 @@ type op =
   | SetTag
   | SquashMutable
   | CheckPerms of string
+  | ToInteger
+  | ArchOp of 'aop
 
-let pp_op o =
+let pp_op o pp_aop =
   match o with
   | Add -> "+"
   | Sub -> "-"
   | Mul -> "*"
   | Div -> "/"
+  | Rem -> "%"
   | And -> "&"
   | Or -> "|"
   | Xor -> "^" (* in C ?? *)
@@ -74,15 +77,19 @@ let pp_op o =
   | CapaSetTag -> "capasettag"
   | SquashMutable -> "squashmutable"
   | CheckPerms perms -> sprintf "checkcapa:%s" perms
+  | ToInteger -> "ToInteger"
+  | ArchOp aop -> pp_aop aop
 
 let is_infix = function
-  | Add|Sub|Mul|Div|And|Or|Xor|ShiftLeft
+  | Add|Sub|Mul|Div|Rem|And|Or|Xor|ShiftLeft
   | ShiftRight|Lsr|Eq|Lt|Gt|Le|Ge|Ne
     -> true
   | Nor|AndNot2|ASR|CapaAdd|Alignd|Alignu|Build
   | ClrPerm|CpyType|CSeal|Cthi|Seal|SetValue
   | CapaSub|CapaSubs|CapaSetTag|Unseal
   | Max|Min|SetTag|SquashMutable|CheckPerms _
+  | ToInteger
+  | ArchOp _
     -> false
 
 let pp_ptx_cmp_op = function
@@ -102,6 +109,7 @@ type 'aop op1 =
   | ReadBit of int
   | LeftShift of int
   | LogicalRightShift of int
+  | ArithRightShift of int
   | AddK of int
   | AndK of string
   | Mask of MachSize.sz
@@ -131,6 +139,7 @@ let pp_op1 hexa pp_aop o = match o with
 | ReadBit i -> sprintf "readbit%i" i
 | LeftShift i -> sprintf "<<[%i]" i
 | LogicalRightShift i -> sprintf ">>>[%i]" i
+| ArithRightShift i -> sprintf ">>[%i]" i
 | AddK i  -> (if hexa then sprintf "+[0x%x]" else sprintf "+[%i]") i
 | AndK i  -> sprintf "&[%s]" i
 | Inv -> "~"

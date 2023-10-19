@@ -6,13 +6,13 @@ For instance a LISA test may be translated into an AArch64 (or ARMv8)~test.
 
 
 \section{Writing conversions rules}
-Transation is directed by user-specified conversion rules.
+Translation is directed by user-specified conversion rules.
 All conversion rules of a specific (\emph{i.e.} one architecture
-to another) are regrouped in a specific ``theme'' files.
+to another) are regrouped in a specific ``theme'' file.
 
 
 \subsection{Mimimal conversion rules}
-A theme file starts by specififing source and target architectures.
+A theme file starts by specifying source and target architectures.
 For instance:
 \begin{verbatim}
 LISA to AArch64
@@ -68,14 +68,14 @@ As a consequence, the matched symbolic location from the left hand-side
 pattern is replaced by a register, written ``\verb+%x+'' above.
 The tool \jingle{} will initialise the corresponding AArch64 register
 appropriately.
-For instance the LISA instrucation \verb+w[] z r0+ will get translated
+For instance the LISA instruction \verb+w[] z r0+ will get translated
 to say \verb+STR R1,[R2]+, with \verb+R2+ initial value being specified
 as~\verb+z+ in the final target litmus test.
 
 
 
 \subsection{Multiple instructions patterns}
-Sometimes, a single instruction with a couple of symbolic register
+Sometimes, a single instruction with a couple of symbolic registers
 is not nearly enough to express every conversion in a good fashion.
 
 A single rule ought to be enough for anybody to understand:
@@ -91,13 +91,13 @@ with a register picked on the fly.
 This example illustrates at the same time:
 \begin{itemize}
 \item how to identify addresses for languages which can directly mention it,
-such as LISA, where they are simply represented by a name. A address can
+such as LISA, where they are simply represented by a name. An address can
 be converted to a register which would contain the said address value.
-\item how to identify constants. For every assembly languages, a constant can be
+\item how to identify constants. For every assembly language, a constant can be
 represented by a name preceded by the character \verb+&+.
 \item how to define patterns with multiple instructions by separating them
 with a semicolon.
-\item that identifiers are not necessarily bound to appear on both side of
+\item that identifiers are not necessarily bound to appear on both sides of
 a rule if they are only needed in one.
 \end{itemize}
 
@@ -108,7 +108,7 @@ in the file: the higher the rule, the higher its priority.
 The last section covers what is necessary to convert most tests from any assembly language
 to another. However, we might want to allow our tool to work on higher level languages.
 
-The suite currently support a relevant subset of the C language.
+The suite currently supports a relevant subset of the C language.
 That means our tool must not only convert sequences of instructions but also
 potential control structures.
 
@@ -180,7 +180,7 @@ according to its substitutions.
 \end{itemize}
 
 \paragraph{Decomposing}
-The program is decomposed witha greedy algorithm
+The program is decomposed with a greedy algorithm
 applying the rules according to their priority order.
 
 A recursive definition would be:
@@ -189,7 +189,7 @@ A recursive definition would be:
 & Decomp(P | Source_{rest},Rs) = App(R,P) | Decomp(Source_{rest},Rs) && and P \in Instances(R_{left})
 \end{align*}
 
-Of course, we assume the given rule set is sufficient to assure that all part of the
+Of course, we assume the given rule set is sufficient to assure that all parts of the
 program will be matched. If not, users have to refine it.
 
 \paragraph{Recomposing}
@@ -277,7 +277,7 @@ exists (1:X0=1 /\ 1:X2=0)
 According to the algorithm described in the last section,
 \jingle{} has converted the three instructions of P1 with,
 in order, the load rule, the fence rule and the load again.
-For P0 it apply the store rule twice.
+For P0 it applies the store rule twice.
 
 Notice that the same AArch64 register \verb+X2+ is used as
 the temporary register for both applications. It is safe to do so
@@ -286,7 +286,7 @@ of each application.
 
 The initialisation and test conditions are converted as well:
 the registers are from the right architecture and
-the location, directly used in LISA, are now bound to
+the location, directly used in LISA, is now bound to
 specific registers.
 
 A \verb+Mapping+ metadatum is also added to allow comparison tools
@@ -317,7 +317,7 @@ name as the input tests.
 
 \subsection{Regarding conversion errors}
 When the tool fails to find a conversion in a program, it will print the remaining instructions.
-It makes easy for the user to pin down missing rules in his \verb+.theme+ file
+It makes it easy for the user to pin down missing rules in his \verb+.theme+ file
 as the first instruction printed is likely the one that cannot be matched.
 
 Using those error might be helpful to build such file instead of trying to figure it out

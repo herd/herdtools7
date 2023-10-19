@@ -1,0 +1,10 @@
+X86_64 A007
+
+(* Test SHL instr*)
+
+{ 0:RAX=1}
+
+P0;
+shl 2,%eax;
+
+forall 0:RAX=4

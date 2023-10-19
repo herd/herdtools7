@@ -1,0 +1,11 @@
+C C12
+
+{ int x = 0 }
+
+P0(int *x) {
+  *x = 1;
+}
+
+regions: x:PROP
+
+forall ( x = 1 )

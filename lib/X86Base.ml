@@ -544,6 +544,8 @@ let rec get_next = function
   | I_JMP lbl-> [Label.To lbl]
   | I_JCC (_,lbl) -> [Label.Next; Label.To lbl]
 
+let is_valid _ = true
+
 include Pseudo.Make
     (struct
       type ins = instruction
@@ -588,6 +590,13 @@ include Pseudo.Make
             -> get_naccs_eff e
         | I_MOVSD -> 2
 
+(* This is incorrect as the size of instructions varies.
+ * However a wrong value should generally be harmless, except
+ * for litmus with option `-variant self` and for initial label
+ * values
+ *)
+      let size_of_ins _ = 4
+
       let rec fold_labels k f = function
         | I_LOCK ins -> fold_labels k f ins
         | I_JMP lbl
@@ -604,10 +613,12 @@ include Pseudo.Make
         | I_CMPXCHG (_,_)
           -> k
 
-      let rec map_labels f ins = match ins with
+      let rec map_labels f ins =
+        let open BranchTarget in
+        match ins with
         | I_LOCK ins -> I_LOCK (map_labels f ins)
-        | I_JMP lbl -> I_JMP (f lbl)
-        | I_JCC (cc,lbl) -> I_JCC (cc,f lbl)
+        | I_JMP lbl -> I_JMP (as_string_fun f lbl)
+        | I_JCC (cc,lbl) -> I_JCC (cc,as_string_fun f lbl)
         | I_NOP
         | I_SETNB _|I_READ _|I_XCHG_UNLOCKED (_, _)|I_XCHG (_, _)|I_INC _
         | I_CMOVC (_, _)|I_CMP (_, _)|I_DEC _

@@ -21,6 +21,7 @@ type func = Main | FaultHandler
 type proc = Proc.t * string list option * func
 
 val proc_num : proc -> Proc.t
+val proc_func : proc -> func
 val pp_proc : proc -> string
 val count_procs : (proc * 'c) list -> int
 
@@ -74,10 +75,11 @@ type info = (string * string) list
 
 (* Some source files contain additional information *)
 
-type extra_data =
-  | NoExtra
+type extra_param =
   | CExtra of CAst.param list list
   | BellExtra of BellInfo.test
+
+type extra_data = extra_param list
 
 val empty_extra : extra_data
 
@@ -117,6 +119,7 @@ val hash_key : string
 val stable_key : string
 val align_key : string
 val tthm_key : string
+val cache_type_key : string
 val variant_key : string
 val user_key : string
 val el0_key : string
@@ -143,4 +146,4 @@ val get_info :  ('i, 'p, 'c, 'loc, 'v, 'ftype) result -> string -> string option
 
 val add_oa_if_none : location -> ParsedPteVal.t -> maybev
 
-val mk_instr_val : string -> ('scalar,'pte,InstrLit.t) Constant.t
+val mk_instr_val : string option -> ('scalar,'pte,InstrLit.t) Constant.t

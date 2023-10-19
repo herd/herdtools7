@@ -78,10 +78,8 @@ module type S = sig
   (* Normalize instruction (for hashes) *)
   val norm_ins : instruction -> instruction
 
-
-  (* Instruction continuation *)
-  val get_next : instruction -> Label.next list
-
+  (* Check validity of instructions, beyond parsing *)
+  val is_valid : instruction -> bool
 
   include Pseudo.S
    with type ins = instruction
@@ -94,4 +92,5 @@ module type S = sig
 
   (* For digest, include normalised prininting of pteval's *)
   val hash_pteval : ParsedPteVal.t -> string
+
 end

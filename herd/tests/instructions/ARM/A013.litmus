@@ -1,0 +1,9 @@
+ARM A013
+
+(* MOVT implementation *)
+{ 0:R0 = 0}
+
+P0;
+MOVT R0, #48879;
+
+forall 0:R0=0xBEEF0000

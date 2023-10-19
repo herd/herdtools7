@@ -15,6 +15,7 @@
 /****************************************************************************/
 
 #include <vmalloc.h>
+#include <alloc_page.h>
 #include <asm-generic/atomic.h>
 #include <asm/smp.h>
 #include <asm/delay.h>
@@ -24,7 +25,7 @@
 #define LITMUS_PAGE_SIZE PAGE_SIZE
 
 static inline pteval_t *litmus_tr_pte(void *p) {
-  return mmu_get_pte(mmu_idmap, (uintptr_t)p);
+  return follow_pte(mmu_idmap, (uintptr_t)p);
 }
 
 static inline void litmus_flush_tlb(void *p) {
@@ -255,19 +256,6 @@ inline static int unpack_db(pteval_t v) { return unpack_flag(v,DB_PACKED); }
 inline static int unpack_dbm(pteval_t v) { return unpack_flag(v,DBM_PACKED); }
 inline static int unpack_valid(pteval_t v) { return unpack_flag(v,VALID_PACKED); }
 inline static int unpack_el0(pteval_t v) { return unpack_flag(v,EL0_PACKED); }
-
-/* Faulty virtual adress in handler */
-inline static void *read_far(void) {
-  void *r ;
-  asm volatile("mrs %0, far_el1": "=r" (r));
-  return r ;
-}
-
-inline static void *read_elr_el1(void) {
-  void *r ;
-  asm volatile("mrs %0, elr_el1": "=r" (r));
-  return r ;
-}
 
 /* Hardware managment of access flag and dirty state */
 

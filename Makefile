@@ -1,56 +1,51 @@
 .PHONY: check-deps
 
+OS := $(shell uname)
 PREFIX=$$HOME
 D=dune
+
 #Limit parallelism of some expensive operations
-J=8
+ifeq ($(OS),Darwin)
+	J=$(shell sysctl -n hw.logicalcpu)
+else
+	J=$(shell nproc)
+endif
 
-
-#For building with ocamlbuild set
-#D=ocb
 
 REGRESSION_TEST_MODE = test
 # REGRESSION_TEST_MODE = promote
 # REGRESSION_TEST_MODE = show
 
-ifeq ($(D), dune)
-	DIYCROSS                      = _build/install/default/bin/diycross7
-	HERD                          = _build/install/default/bin/herd7
-	HERD_REGRESSION_TEST          = _build/default/internal/herd_regression_test.exe
-	HERD_DIYCROSS_REGRESSION_TEST = _build/default/internal/herd_diycross_regression_test.exe
-	HERD_CATALOGUE_REGRESSION_TEST = _build/default/internal/herd_catalogue_regression_test.exe
-else
-	DIYCROSS                      = _build/gen/diycross.native
-	HERD                          = _build/herd/herd.native
-	HERD_REGRESSION_TEST          = _build/internal/herd_regression_test.native
-	HERD_DIYCROSS_REGRESSION_TEST = _build/internal/herd_diycross_regression_test.native
-	HERD_CATALOGUE_REGRESSION_TEST = _build/internal/herd_catalogue_regression_test.exe
-endif
+DIYCROSS                      = _build/install/default/bin/diycross7
+HERD                          = _build/install/default/bin/herd7
+HERD_REGRESSION_TEST          = _build/default/internal/herd_regression_test.exe
+HERD_DIYCROSS_REGRESSION_TEST = _build/default/internal/herd_diycross_regression_test.exe
+HERD_CATALOGUE_REGRESSION_TEST = _build/default/internal/herd_catalogue_regression_test.exe
 
 
 all: build
 
-build: | check-deps
-	sh ./$(D)-build.sh $(PREFIX)
+.PHONY: Version.ml
+Version.ml:
+	sh ./version-gen.sh $(PREFIX)
+
+build: Version.ml | check-deps
+	dune build -j $(J) --profile release
 
 install:
-	sh ./$(D)-install.sh $(PREFIX)
+	sh ./dune-install.sh $(PREFIX)
 
 uninstall:
-	sh ./$(D)-uninstall.sh $(PREFIX)
+	sh ./dune-uninstall.sh $(PREFIX)
 
-clean: $(D)-clean
+clean: dune-clean
 	rm -f Version.ml
-
-ocb-clean:
-	ocamlbuild -clean
 
 dune-clean:
 	dune clean
 
-versions:
-	@ sh ./version-gen.sh $(PREFIX)
-	@ dune build -j $(J) --workspace dune-workspace.versions @all
+versions: Version.ml
+	@ dune build -j $(J) --workspace dune-workspace.versions @default
 
 
 # Dependencies.
@@ -59,33 +54,23 @@ check-deps::
 	$(if $(shell which ocaml),,$(error "Could not find ocaml in PATH"))
 	$(if $(shell which menhir),,$(error "Could not find menhir in PATH; it can be installed with `opam install menhir`."))
 
-ifeq ($(D), dune)
 check-deps::
 	$(if $(shell which dune),,$(error "Could not find dune in PATH; it can be installed with `opam install dune`."))
-else
-check-deps::
-	$(if $(shell which ocamlbuild),,$(error "Could not find ocamlbuild in PATH; it can be installed with `opam install ocamlbuild`."))
-	$(if $(shell which ocamlfind),,$(error "Could not find ocamlfind in PATH; it can be installed with `opam install ocamlfind`."))
-endif
-
 
 # Tests.
 TIMEOUT=16.0
 
 test:: | build
 
-test:: $(D)-test
+test:: dune-test
 	@ echo "OCaml unit tests: OK"
 
 dune-test:
 	@ echo
 	dune runtest --profile=release
 
-ocb-test:
-	@ echo
-	./ocb-test.sh
-
-test::
+test:: test.aarch64
+test.aarch64:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
 		-herd-path $(HERD) \
@@ -93,6 +78,26 @@ test::
 		-litmus-dir ./herd/tests/instructions/AArch64 \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 instructions tests: OK"
+
+test:: test.riscv
+test.riscv:
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/RISCV \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 RISCV instructions tests: OK"
+
+test:: test.x86_64
+test.x86_64:
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/X86_64 \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 X86_64 instructions tests: OK"
 
 test:: test.mixed
 test.mixed:
@@ -104,6 +109,16 @@ test.mixed:
 		-conf ./herd/tests/instructions/AArch64.mixed/mixed.cfg \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 mixed instructions tests: OK"
+
+test:: test.mips
+test.mips:
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/MIPS \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 RISCV instructions tests: OK"
 
 test:: test.neon
 test.neon::
@@ -159,6 +174,16 @@ test::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 C instructions tests: OK"
 
+test:: test-ppc
+test-ppc:
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/PPC \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 PPC instructions tests: OK"
+
 test:: arm-test
 
 arm-test::
@@ -169,6 +194,18 @@ arm-test::
 		-litmus-dir ./herd/tests/instructions/ARM \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 ARM instructions tests: OK"
+
+aarch32-test::
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch32 \
+		-conf ./herd/tests/instructions/AArch32/aarch32.cfg \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 ARM instructions tests: OK"
+
+test::aarch32-test
 
 test::
 
@@ -241,6 +278,18 @@ pick-test:
 		-shelf-path catalogue/aarch64-pick/shelf.py \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-pick tests: OK"
+
+cata-test:: faults-test
+faults-test:
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64-faults/tests/kinds.txt \
+		-shelf-path catalogue/aarch64-faults/shelf.py \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 catalogue aarch64-faults tests: OK"
 
 more-test:: pick-test-mixed
 pick-test-mixed:
@@ -440,3 +489,4 @@ diy-test-mte::
 		-diycross-arg T,P \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64.MTE diycross7 tests: OK"
+

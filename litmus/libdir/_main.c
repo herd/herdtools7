@@ -31,15 +31,18 @@ static pthread_t th[AVAIL];
 
 int RUN(int argc,char **argv,FILE *out) ;
 int RUN(int argc,char **argv,FILE *out) {
+  if (!feature_check()) {
+    return -1;
+  }
 #ifdef DYNALLOC
 #ifdef HAVE_FAULT_HANDLER
   alloc_fault_handler();
-#ifdef SEE_FAULTS
+#if defined(SEE_FAULTS) || defined(PRECISE)
   alloc_see_faults();
 #endif
 #endif
   global_t *glo_ptr = malloc_check(sizeof(global_t));
-  glo_ptr->mem = malloc_check(MEMSZ*sizeof(*glo_ptr->mem)) ;
+  glo_ptr->mem = malloc_check(MEMSZ*sizeof(*glo_ptr->mem));
   zyva_t *arg = malloc_check(AVAIL*sizeof(*arg));
 #ifndef KVM
   pthread_t *th = malloc_check(AVAIL*sizeof(*th));
@@ -48,17 +51,15 @@ int RUN(int argc,char **argv,FILE *out) {
   global_t *glo_ptr = &global;
   glo_ptr->mem = mem;
 #endif
+  init_getinstrs();
   init_global(glo_ptr);
-#ifdef KVM
-  if (!feature_check()) return -1;
-#endif
 #ifdef OUT
 #ifdef HAVE_TIMEBASE
   const int delta_tb = DELTA_TB;
 #else
   const int delta_tb = 0;
 #endif
-  opt_t def = { 0, NUMBER_OF_RUN, SIZE_OF_TEST, AVAIL, NEXE, delta_tb, };
+  opt_t def = { 0, NUMBER_OF_RUN, SIZE_OF_TEST, AVAIL, NEXE, delta_tb, 0, };
   opt_t d = def;
   char *prog = argv[0];
   char **p = parse_opt(argc,argv,&def,&d);
@@ -77,6 +78,8 @@ int RUN(int argc,char **argv,FILE *out) {
   glo_ptr->delay = d.delay;
   glo_ptr->step = d.delay/(NSTEPS-1);
 #endif
+  glo_ptr->fix = d.fix;
+  interval_init((int *)&glo_ptr->ind,AVAIL);
   if (glo_ptr->verbose) {
 #ifdef NOSTDIO
     emit_string(stderr,prog);
@@ -102,7 +105,6 @@ int RUN(int argc,char **argv,FILE *out) {
     arg[id].g = glo_ptr;
   }
 #ifdef KVM
-  init_labels();
   on_cpus(zyva, arg);
 #else
   for (int id=0; id < AVAIL ; id++) launch(&th[id],zyva,&arg[id]);
@@ -126,15 +128,14 @@ int RUN(int argc,char **argv,FILE *out) {
   }
   postlude(out,glo_ptr,p_true,p_false,total);
 #endif
+  free_global(glo_ptr);
 #ifdef DYNALLOC
 #ifdef HAVE_FAULT_HANDLER
-#ifdef SEE_FAULTS
+#if defined(SEE_FAULTS) || defined(PRECISE)
   free_see_faults();
 #endif
   free_fault_handler();
 #endif
-  free(glo_ptr->mem);
-  free(glo_ptr);
   free(arg);
 #ifndef KVM
   free(th);

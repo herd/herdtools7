@@ -29,7 +29,8 @@ module type I = sig
   val fault_type_compare : fault_type -> fault_type -> int
 end
 
-type ('loc, 'ftype) atom =  (Proc.t * Label.t option) * 'loc * 'ftype option
+type ('loc, 'ftype) atom =
+  (Proc.t * Label.t option) * 'loc option * 'ftype option
 
 val pp_fatom : ('loc -> string) -> ('ftype -> string) -> ('loc,'ftype) atom -> string
 
@@ -43,12 +44,17 @@ module type S = sig
   type loc_global
   type fault_type
 
-  type fault = (Proc.t * Label.Set.t) * loc_global * fault_type option * string option
+  type fault =
+    (Proc.t * Label.Set.t) * loc_global option
+    * fault_type option * string option
+
   val pp_fault : fault -> string
 
   module FaultSet : MySet.S with type elt = fault
 
   type fatom = (loc_global,fault_type) atom
+
+  val pp_fatom : fatom -> string
   val check_one_fatom : fault -> fatom -> bool
   val check_fatom : FaultSet.t -> fatom -> bool
 

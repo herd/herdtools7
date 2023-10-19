@@ -1,0 +1,26 @@
+AArch64 miniJit02
+Variant=self
+{
+[x] = P1:L0 ;
+0:X1=P1:L1; 0:X3=x; 0:X0=NOP;
+1:X3=x; 1:X9=0; 1:X2=P1:L3;
+}
+  P0         | P1          ;
+ STR W0,[X1] | LDR X1,[X3] ; 
+ DC CVAU,X1  | CMP X1,X2   ;
+ DSB ISH     | B.EQ L3     ;
+ IC IVAU,X1  | ISB         ;
+ DSB ISH     |             ;
+ STR X1,[X3] | BR X1       ;
+             |L0:          ;
+             | MOV W9,#1   ;
+             | B L3        ;
+             |L1:          ;
+             | B L2        ;
+             | MOV W9,#3   ;
+             | B L3        ;
+             |L2:          ;
+             | MOV W9,#2   ;
+             |L3:          ;
+
+exists 1:X9=2

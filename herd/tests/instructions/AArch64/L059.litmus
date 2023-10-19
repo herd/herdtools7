@@ -1,0 +1,10 @@
+AArch64 L059
+(* branch to instruction address with __DYNAMIC section name *)
+
+{ 0:X0 = 1; }
+  P0            ;
+  B __DYNAMIC   ;
+  ADD X0, X0, #1;
+__DYNAMIC: NOP  ;
+
+forall (0:X0 = 1)

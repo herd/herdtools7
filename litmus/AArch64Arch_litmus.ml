@@ -69,8 +69,11 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
           let open CType in
 (*          Printf.eprintf "Error %s and %s\n" (debug t1) (debug t2) ; *)
           match t1,t2 with
-          | (Base "int",Pointer _)
-          | (Pointer _,Base "int")  ->
+          | (Base
+               ("int"|"ins_t"|"int16_t"|"uint16_t"|"int8_t"|"uint8_t"),
+             Pointer _)
+          | (Pointer _,
+             Base ("int"|"ins_t"|"int16_t"|"uint16_t"|"int8_t"|"uint8_t"))  ->
               true
 
           | _ -> false
@@ -111,4 +114,43 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
          ** "el0_sync_32" ** "el0_irq_32" ** "el0_fiq_32" ** "el0_error_32"
          ** ["1:"]
 
+      module GetInstr = struct
+
+        type t = instruction
+
+        let self_instrs = [I_NOP; I_RET None; ]
+
+        let lower_instr i = Misc.lowercase (dump_instruction i)
+
+        let instr_name i =
+          MyName.name_as_symbol (Misc.skip_spaces (lower_instr i))
+
+        let fun_name i = sprintf "get%s" (instr_name i)
+
+        let dump_instr dump = function
+          | Constant.Instruction i -> instr_name i
+          | v -> dump v
+
+        module Make(O:Indent.S) = struct
+
+          let dump i =
+            O.f "static ins_t %s(void) {" (fun_name i) ;
+            O.oi "ins_t *x1;" ;
+            O.oi "ins_t r;" ;
+            O.oi "asm __volatile__ (" ;
+            O.fii "%S" "adr %[x1],0f\n\t" ;
+            O.fii "%S" "ldr %w[x2],[%[x1]]\n\t" ;
+            O.fii "%S" "b 1f\n" ;
+            O.fii "%S" "0:\n\t" ;
+            O.fii "\"%s\\n\"" (lower_instr i) ;
+            O.fii "%S" "1:\n" ;
+            O.oii ":[x1] \"=&r\" (x1),[x2] \"=&r\" (r)" ;
+            O.oii ":" ;
+            O.oii ": \"cc\", \"memory\"" ;
+            O.o ");" ;
+            O.oi "return r;" ;
+            O.o "}" ;
+            O.o ""
+        end
+      end
 end

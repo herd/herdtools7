@@ -24,9 +24,10 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     let is_amo = function
       | Amo _ -> true
-      | INop|J _|Bcc _|Load _|Store _|LoadReserve _
-      | OpI _|OpIW _|Op _|OpW _
+      | INop|Ret|J _|Bcc _|Load _|Store _|LoadReserve _
+      | OpI _|OpI2 _|OpIW _|Op _|OpW _|OpA _
       |StoreConditional _|FenceIns _
+      |AUIPC _| Ext _
            -> false
 
     let pp_barrier_short = function
@@ -69,21 +70,26 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | P Sc -> assert false
       | X (Rlx|Rel|Acq|AcqRel)| P (Rlx|Rel|Acq|AcqRel) -> false
 
-    let is_barrier b = fun c -> barrier_compare b c = 0
+    let same_barrier b = fun c -> barrier_equal_semantics b c
+
+    let ifetch_value_sets = []
+
     let barrier_sets =
       fold_barrier
         (fun f k ->
           let tag = Misc.capitalize (pp_barrier_dot f)
-          and pred = is_barrier f in
+          and pred = same_barrier f in
           (tag,pred)::k)
         []
+
+    let cmo_sets = []
 
     let annot_sets =
       ["X", is_atomic; "Acq", is_acquire; "Rel", is_release;
        "AcqRel",is_acquire_release;"Sc",is_sc]
 
     let isync =  FenceI
-    let is_isync = is_barrier isync
+    let is_isync = same_barrier isync
     let pp_isync = Misc.capitalize (pp_barrier_dot isync)
 
     let pp_annot =
@@ -100,8 +106,9 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     module V = V
 
     let mem_access_size = function
-      | INop | OpI _ | OpIW _ | Op _ | OpW _
-      | J _ | Bcc _ | FenceIns _
+      | INop | Ret | OpI _ | OpI2 _ | OpIW _ | Op _ | OpW _
+      | J _ | Bcc _ | FenceIns _ | OpA _ | AUIPC _
+      | Ext _
         -> None
       | Load (w,_,_,_,_,_) | Store (w,_,_,_,_)
       | LoadReserve (w,_,_,_) | StoreConditional (w,_,_,_,_)
@@ -111,13 +118,6 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     include NoSemEnv
 
     include  NoLevelNorTLBI
-
-    include
-      IFetchTrait.NotImplemented
-        (struct
-          type arch_instruction = instruction
-          type arch_reg = reg
-        end)
 
     include ArchExtra_herd.Make(C)
         (struct
@@ -150,4 +150,5 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     module Barrier = AllBarrier.No(struct type a = barrier end)
 
+    module CMO = Cmo.No
   end

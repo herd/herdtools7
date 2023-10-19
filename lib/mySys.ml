@@ -194,4 +194,7 @@ let mktmpdir () =
   mkdir name ;
   name
 
+(* does not destroy dir if you want to keep it around *)
+let mkdirp name = exec_stdout (sprintf "mkdir -p %s" name)
+
 let rmdir name = exec_stdout (sprintf "/bin/rm -rf %s" name)

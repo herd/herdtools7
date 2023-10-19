@@ -94,7 +94,8 @@ let list_loc prog =
     | While (e,i,_) -> expr (ins s i) e
     | DeclReg (_,r) ->  LocSet.add r s
     | CastExpr e -> expr s e
-    | StoreReg(_,r,e) ->  LocSet.add r (expr s e)
+    | StoreReg(_,Some r,e) ->  LocSet.add r (expr s e)
+    | StoreReg(_,None,e) -> expr s e
     | StoreMem(l,e,_) -> loc (expr s e) l
     | Lock (l,_)
     | Unlock (l,_) -> loc s l
@@ -175,10 +176,13 @@ let do_dump withinfo chan doc t =
     DumpUtils.dump_locations
       dump_location ParsedConstant.pp_v MiscParser.dump_fault_type t.MiscParser.locations in
   if locs <> "" then fprintf chan "%s\n" locs ;
-  begin match t.MiscParser.extra_data with
-	| MiscParser.NoExtra|MiscParser.CExtra _ -> ()
-	| MiscParser.BellExtra bi ->
-           fprintf chan "\n%s\n" (BellInfo.pp bi)
+  let extra = t.MiscParser.extra_data in
+  begin List.iter
+    (function
+	 | MiscParser.CExtra _ -> ()
+	 | MiscParser.BellExtra bi ->
+         fprintf chan "\n%s\n" (BellInfo.pp bi))
+    extra
   end ;
   fprintf chan "%s\n" (dump_constr t.MiscParser.condition) ;
   ()

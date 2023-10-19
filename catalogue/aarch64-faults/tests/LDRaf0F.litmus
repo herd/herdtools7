@@ -1,0 +1,10 @@
+AArch64 LDRaf0F
+variant=vmsa,fatal
+{
+ [PTE(x)]=(oa:PA(x),valid:1,af:0);
+ 0:X1=x;
+}
+ P0          ;
+L0:          ;
+ LDR W0,[X1] ;
+forall(fault(P0:L0,x,MMU:AccessFlag))

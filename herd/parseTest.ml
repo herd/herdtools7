@@ -13,94 +13,15 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
+(* Authors:                                                                 *)
+(* Jade Alglave, University College London, UK.                             *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Hadrien Renaud, University College London, UK.                           *)
+(****************************************************************************)
 
-(*******************************)
-(* Run a test from source file *)
-(*******************************)
-module type Config = sig
-  val model : Model.t option
-  val archcheck : bool
-  val through : Model.through
-  val strictskip : bool
-  val cycles : StringSet.t
-  val bell_model_info : (string * BellModel.info) option
-  val macros : string option
-  val check_name : string -> bool
-  val check_rename : string -> string option
-  val libfind : string -> string
-  include GenParser.Config
-  include Top_herd.CommonConfig
-  include Sem.Config
 
-  val statelessrc11 : bool
-  val byte : MachSize.Tag.t
-end
 
-(**********************)
-(* Stuff for non-bell *)
-(**********************)
-
-(* do not check *)
-module NoCheck = struct
-  let check parsed= parsed
-end
-
-module Make
-    (S:Sem.Semantics)
-    (P:sig
-      type pseudo
-      val parse : in_channel -> Splitter.result ->  pseudo MiscParser.t
-    end with type pseudo = S.A.pseudo)
-    (Check:
-       sig
-         val check : S.A.pseudo MiscParser.t -> S.A.pseudo MiscParser.t
-       end)
-    (M:XXXMem.S with module S = S)
-    (C:Config) =
-  struct
-    module T = Test_herd.Make(S.A)
-     let run dirty start_time filename chan env splitted =
-      try
-         let parsed = P.parse chan splitted in
-         (* Additional checks *)
-        let parsed = Check.check parsed in
-          let name = splitted.Splitter.name in
-        let hash = MiscParser.get_hash parsed in
-        let env = match hash with
-        | None -> env
-        | Some hash ->
-            TestHash.check_env env name.Name.name filename hash in
-        let test = T.build name parsed in
-(* Compute basic machine size *)
-        let sz =
-          if S.A.is_mixed then begin match C.byte with
-          | MachSize.Tag.Size sz -> sz
-          | MachSize.Tag.Auto ->
-              let szs = test.Test_herd.access_size in
-              match szs with
-              | [] -> MachSize.Byte
-              | [sz] -> MachSize.pred sz
-              | sz::_ -> sz
-          end else begin
-            (* Cannot that easily check the test not to mix sizes,
-               as there are several locations in test that may be of
-               different sizes *)
-            MachSize.Byte
-          end in
-(* And run test *)
-        let module T =
-          Top_herd.Make
-            (struct
-              include C
-              let byte = sz
-              let dirty = dirty
-            end)(M) in
-        T.run start_time test ;
-        env
-      with TestHash.Seen -> env
-  end
-
-module Top (TopConf:Config) = struct
+module Top (TopConf:RunTest.Config) = struct
 
   module SP =
     Splitter.Make
@@ -108,21 +29,6 @@ module Top (TopConf:Config) = struct
         let debug = TopConf.debug.Debug_herd.lexer
         let check_rename = TopConf.check_rename
       end)
-
-  let check_arch_model a m =
-    if TopConf.archcheck then match m with
-    | Model.Generic (o,_,_) ->
-        begin match o.ModelOption.arch with
-        | None -> m
-        | Some b ->
-            if a = b then m
-            else
-              Warn.user_error
-                "Architecture mismatch between test and model (%s vs. %s)"
-                (Archs.pp a)  (Archs.pp b)
-        end
-    | m -> m
-    else m
 
   let do_from_file start_time env name chan =
     if TopConf.debug.Debug_herd.files then MyLib.pp_debug name ;
@@ -150,25 +56,23 @@ module Top (TopConf:Config) = struct
       let arch = splitted.Splitter.arch in
 (* Now, we have the architecture, call specific parsers
    generically. *)
-      let module LexConfig = struct
-        let debug = Conf.debug.Debug_herd.lexer
-      end in
       let model =
-        let m = match Conf.model with
-        | None -> Model.get_default_model Conf.variant arch
-        | Some m -> m in
-        let m = match m with
-        | Model.File fname ->
-            let module P =
-              ParseModel.Make
-                (struct
-                  include LexUtils.Default
-                  let libfind = Conf.libfind
-                end) in
-            Model.Generic (P.parse fname)
-        | _ -> m in
-        check_arch_model arch m in
+        GetModel.parse
+          Conf.archcheck arch Conf.libfind Conf.variant Conf.model in
 
+      let cache_type = CacheType.get splitted.Splitter.info in
+      let variant_patched_with_cache_type =
+         let dic_pred, idc_pred =
+            let open CacheType in
+               match cache_type with
+               | None ->
+                  (fun _ -> false), (fun _ -> false)
+               | Some cache_type ->
+                  cache_type.dic, cache_type.idc in
+         Misc.(|||) Conf.variant (function 
+            | Variant.DIC -> dic_pred 0
+            | Variant.IDC -> idc_pred 0
+            | _ -> false) in
       let dirty = DirtyBit.get splitted.Splitter.info in
 
       let module ModelConfig = struct
@@ -178,7 +82,7 @@ module Top (TopConf:Config) = struct
           begin match Conf.outputdir with
           | PrettyConf.StdoutOutput | PrettyConf.Outputdir _ -> true
           | _ -> false
-          end || Conf.PC.gv || Conf.PC.evince || Conf.variant Variant.MemTag
+          end || Misc.is_some Conf.PC.view || Conf.variant Variant.MemTag
               || Conf.variant Variant.Morello
         let through = Conf.through
         let debug = Conf.debug.Debug_herd.barrier
@@ -189,246 +93,44 @@ module Top (TopConf:Config) = struct
         let cycles = Conf.cycles
         let optace = Conf.optace
         let libfind = Conf.libfind
-        let variant = Conf.variant
+        let variant = variant_patched_with_cache_type
         let dirty = dirty
         let statelessrc11 = Conf.statelessrc11
       end in
       let module ArchConfig = SemExtra.ConfigToArchConfig(Conf) in
       match arch with
       | `PPC ->
-         let module PPCValue = Int64Value.Make(PPCBase.Instr) in
-          let module PPC =
-            PPCArch_herd.Make(ArchConfig)(PPCValue) in
-          let module PPCLexParse = struct
-            type instruction = PPC.parsedPseudo
-            type token = PPCParser.token
-            module Lexer = PPCLexer.Make(LexConfig)
-            let lexer = Lexer.token
-            let parser = MiscParser.mach2generic PPCParser.main
-          end in
-          let module PPCS = PPCSem.Make(Conf)(PPCValue) in
-          let module PPCM = MemWithCav12.Make(ModelConfig)(PPCS) in
-          let module P = GenParser.Make (Conf) (PPC) (PPCLexParse) in
-          let module X = Make (PPCS) (P) (NoCheck) (PPCM) (Conf) in
-          X.run dirty start_time name chan env splitted
+         let module X = PPCParseTest.Make(Conf)(ModelConfig) in
+         X.run dirty start_time name chan env splitted
       | `ARM ->
-          let module ARMValue = Int32Value.Make(ARMBase.Instr) in
-          let module ARM = ARMArch_herd.Make(ArchConfig)(ARMValue) in
-          let module ARMLexParse = struct
-            type instruction = ARM.parsedPseudo
-            type token = ARMParser.token
-            module Lexer = ARMLexer.Make(LexConfig)
-            let lexer = Lexer.token
-            let parser = MiscParser.mach2generic ARMParser.main
-          end in
-          let module ARMS = ARMSem.Make(Conf)(ARMValue) in
-          let module ARMM = MemWithCav12.Make(ModelConfig)(ARMS) in
-          let module P = GenParser.Make (Conf) (ARM) (ARMLexParse) in
-          let module X = Make (ARMS) (P) (NoCheck) (ARMM) (Conf) in
-          X.run dirty start_time name chan env splitted
+         let module X = ARMParseTest.Make(Conf)(ModelConfig) in
+         X.run dirty start_time name chan env splitted
       | `AArch64 ->
-         let module
-             AArch64Make(V:Value.AArch64) = struct
-             module AArch64 = AArch64Arch_herd.Make(ArchConfig)(V)
+         let module X = AArch64ParseTest.Make(Conf)(ModelConfig) in
+         X.run dirty start_time name chan env splitted
 
-             module AArch64LexParse = struct
-               type instruction = AArch64.parsedPseudo
-               type token = AArch64Parser.token
-               module Lexer =
-                 AArch64Lexer.Make
-                   (struct
-                     include LexConfig
-                     let is_morello =  Conf.variant Variant.Morello
-                   end)
-               let lexer = Lexer.token
-               let parser = (*MiscParser.mach2generic*) AArch64Parser.main
-             end
-
-             module AArch64SemConf = struct
-               module C = Conf
-               let dirty = ModelConfig.dirty
-               let procs_user = ProcsUser.get splitted.Splitter.info
-             end
-
-             module AArch64S = AArch64Sem.Make(AArch64SemConf)(V)
-
-             module AArch64C = (* TODO: Checking something? *)
-               BellCheck.Make
-                 (struct
-                   let debug = Conf.debug.Debug_herd.barrier
-                   let compat = Conf.variant Variant.BackCompat
-                 end)
-                 (AArch64)
-                 (struct
-                   let info = Misc.snd_opt Conf.bell_model_info
-                   let get_id_and_list _ = raise Not_found
-                   let set_list _ _ = assert false
-                   let tr_compat i = i
-                 end)
-
-             module AArch64M = MemCat.Make(ModelConfig)(AArch64S)
-
-             module P = GenParser.Make (Conf) (AArch64) (AArch64LexParse)
-
-             module X = Make (AArch64S) (P) (AArch64C) (AArch64M) (Conf)
-
-             let run = X.run
-         end in
-(* Markers START/END below are for excluding source when compiling
-   the web interface *)
-         let is_morello = Conf.variant Variant.Morello in
-         let module ConfMorello =
-           struct let is_morello = is_morello end in
-(* START NOTWWW *)
-         if Conf.variant Variant.Morello then
-           let module
-               AArch64Value = CapabilityValue.Make(ConfMorello) in
-           let module X = AArch64Make(AArch64Value) in
-           X.run dirty start_time name chan env splitted
-         else if Conf.variant Variant.Neon then
-           let module AArch64Value = Uint128Value.Make(ConfMorello) in
-           let module X = AArch64Make(AArch64Value) in
-           X.run dirty start_time name chan env splitted
-         else
-(* END NOTWWW *)
-           let module AArch64Value = AArch64Value.Make(ConfMorello) in
-           let module X = AArch64Make(AArch64Value) in
-           X.run dirty start_time name chan env splitted
       | `X86 ->
-          let module X86Value = Int32Value.Make(X86Base.Instr) in
-          let module X86 = X86Arch_herd.Make(ArchConfig)(X86Value) in
-          let module X86LexParse = struct
-            type instruction = X86.pseudo
-            type token = X86Parser.token
-            module Lexer = X86Lexer.Make(LexConfig)
-            let lexer = Lexer.token
-            let parser = MiscParser.mach2generic X86Parser.main
-          end in
-          let module X86S = X86Sem.Make(Conf)(X86Value) in
-          let module X86M = MemWithCav12.Make(ModelConfig)(X86S) in
-          let module P = GenParser.Make (Conf) (X86) (X86LexParse) in
-          let module X = Make (X86S) (P) (NoCheck) (X86M) (Conf) in
-          X.run dirty start_time name chan env splitted
-
+         let module X = X86ParseTest.Make(Conf)(ModelConfig) in
+         X.run dirty start_time name chan env splitted
       | `X86_64 ->
-          let module X86_64Value = Int64Value.Make(X86_64Base.Instr) in
-          let module X86_64 = X86_64Arch_herd.Make(ArchConfig)(X86_64Value) in
-          let module X86_64LexParse = struct
-            type instruction = X86_64.pseudo
-            type token = X86_64Parser.token
-            module Lexer = X86_64Lexer.Make(LexConfig)
-            let lexer = Lexer.token
-            let parser = MiscParser.mach2generic X86_64Parser.main
-          end in
-          let module X86_64S = X86_64Sem.Make(Conf)(X86_64Value) in
-          let module X86_64M = MemWithCav12.Make(ModelConfig)(X86_64S) in
-          let module P = GenParser.Make(Conf)(X86_64)(X86_64LexParse) in
-          let module X = Make(X86_64S)(P)(NoCheck)(X86_64M)(Conf) in
-          X.run dirty start_time name chan env splitted
-
-
+         let module X = X86_64ParseTest.Make(Conf)(ModelConfig) in
+         X.run dirty start_time name chan env splitted
       | `MIPS ->
-          let module MIPSValue = Int64Value.Make(MIPSBase.Instr) in
-          let module MIPS = MIPSArch_herd.Make(ArchConfig)(MIPSValue) in
-          let module MIPSLexParse = struct
-            type instruction = MIPS.pseudo
-            type token = MIPSParser.token
-            module Lexer = MIPSLexer.Make(LexConfig)
-            let lexer = Lexer.token
-            let parser = MiscParser.mach2generic MIPSParser.main
-          end in
-          let module MIPSS = MIPSSem.Make(Conf)(MIPSValue) in
-          let module MIPSM = MemWithCav12.Make(ModelConfig)(MIPSS) in
-          let module P = GenParser.Make (Conf) (MIPS) (MIPSLexParse) in
-          let module X = Make (MIPSS) (P) (NoCheck) (MIPSM) (Conf) in
-          X.run dirty start_time name chan env splitted
-
+         let module X = MIPSParseTest.Make(Conf)(ModelConfig) in
+         X.run dirty start_time name chan env splitted
       | `RISCV ->
-          let module RISCVValue = Int64Value.Make(RISCVBase.Instr) in
-          let module RISCV = RISCVArch_herd.Make(ArchConfig)(RISCVValue) in
-          let module RISCVLexParse = struct
-            type instruction = RISCV.parsedPseudo
-            type token = RISCVParser.token
-            module Lexer = RISCVLexer.Make(LexConfig)
-            let lexer = Lexer.token
-            let parser = MiscParser.mach2generic RISCVParser.main
-          end in
-          let module RISCVS = RISCVSem.Make(Conf)(RISCVValue) in
-          let module RISCVM = MemCat.Make(ModelConfig)(RISCVS) in
-          let module P = GenParser.Make (Conf) (RISCV) (RISCVLexParse) in
-          let module X = Make (RISCVS) (P) (NoCheck) (RISCVM) (Conf) in
-          X.run dirty start_time name chan env splitted
+         let module X = RISCVParseTest.Make(Conf)(ModelConfig) in
+         X.run dirty start_time name chan env splitted
       | `C ->
-          let module CValue = Int32Value.Make(CBase.Instr) in
-          let module C = CArch_herd.Make(ArchConfig)(CValue) in
-          let module CLexParse = struct
-            (* Parsing *)
-            type pseudo = C.pseudo
-            type token = CParser.token
-            module Lexer = CLexer.Make(LexConfig)
-            let shallow_lexer = Lexer.token false
-            let deep_lexer = Lexer.token true
-            let shallow_parser = CParser.shallow_main
-            let deep_parser = CParser.deep_main
-
-                (* Macros *)
-            type macro = C.macro
-            let macros_parser = CParser.macros
-            let macros_expand = CBase.expand
-          end in
-          let module CS = CSem.Make(Conf)(CValue) in
-          let module CM = CMem.Make(ModelConfig)(CS) in
-          let module P = CGenParser_lib.Make (Conf) (C) (CLexParse) in
-          let module X = Make (CS) (P) (NoCheck) (CM) (Conf) in
-          X.run dirty start_time name chan env splitted
-      | `CPP as arch -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
-
+         let module X = CParseTest.Make(Conf)(ModelConfig) in
+         X.run dirty start_time name chan env splitted
       | `JAVA ->
-        let module JavaValue = Int64Value.Make(JavaBase.Instr) in
-        let module Java = JavaArch_herd.Make(ArchConfig)(JavaValue) in
-        let module JavaLexParse = struct
-          type pseudo     = Java.pseudo
-          type token      = JavaParser.token
-          module Lexer    = JavaLexer.Make(LexConfig)
-          let lexer       = Lexer.token
-          let parser      = JavaParser.main
-        end in
-        let module JavaS  = JavaSem.Make(Conf)(JavaValue) in
-        let module JavaM  = CMem.Make(ModelConfig)(JavaS) in
-        let module P      = JavaGenParser_lib.Make (Conf) (Java) (JavaLexParse) in
-        let module X      = Make (JavaS) (P) (NoCheck) (JavaM) (Conf) in
-
-        X.run dirty start_time name chan env splitted
-
+         let module X = JAVAParseTest.Make(Conf)(ModelConfig) in
+         X.run dirty start_time name chan env splitted
       | `LISA ->
-          let module LISAValue = Int64Value.Make(BellBase.Instr) in
-          let module Bell = BellArch_herd.Make(ArchConfig)(LISAValue) in
-          let module BellLexParse = struct
-            type instruction = Bell.parsedPseudo
-            type token = LISAParser.token
-            module Lexer = BellLexer.Make(LexConfig)
-            let lexer = Lexer.token
-            let parser = LISAParser.main
-          end in
-
-          let module BellS = BellSem.Make(Conf)(LISAValue) in
-          let module BellM = BellMem.Make(ModelConfig)(BellS) in
-          let module BellC =
-            BellCheck.Make
-              (struct
-                let debug = Conf.debug.Debug_herd.barrier
-                let compat = Conf.variant Variant.BackCompat
-              end)
-              (Bell)
-              (struct
-                let info = Misc.snd_opt Conf.bell_model_info
-                let get_id_and_list = Bell.get_id_and_list
-                let set_list = Bell.set_list
-                let tr_compat = Bell.tr_compat
-              end) in
-          let module P = GenParser.Make (Conf) (Bell) (BellLexParse) in
-          let module X = Make (BellS) (P) (BellC) (BellM) (Conf) in
-          X.run dirty start_time name chan env splitted
+         let module X = LISAParseTest.Make(Conf)(ModelConfig) in
+         X.run dirty start_time name chan env splitted
+      | arch -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
     end else env
 
 (* Enter here... *)

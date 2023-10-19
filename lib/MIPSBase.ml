@@ -31,6 +31,7 @@ type ireg =
   | R8 | R9 | R10 | R11 | R12 | R13 | R14 | R15
   | R16 | R17 | R18 | R19 | R20 | R21 | R22 | R23
   | R24 | R25 | R26 | R27 | R28 | R29 | R30 | R31
+  | R32 | R33 | R34 | R35
 
 type reg =
   | IReg of ireg
@@ -41,38 +42,43 @@ type reg =
   | Internal of int
 
 let parse_ireg = function
-  | "$0"|"$zero" -> R0
-  | "$1"|"$at" -> R1
-  | "$2"|"$v0" -> R2
-  | "$3"|"$v1" -> R3
-  | "$4"|"$a0" -> R4
-  | "$5"|"$a1" -> R5
-  | "$6"|"$a2" -> R6
-  | "$7"|"$a3" -> R7
-  | "$8"|"$t0" -> R8
-  | "$9"|"$t1" -> R9
-  | "$10"|"$t2" -> R10
-  | "$11"|"$t3" -> R11
-  | "$12"|"$t4" -> R12
-  | "$13"|"$t5" -> R13
-  | "$14"|"$t6" -> R14
-  | "$15"|"$t7" -> R15
-  | "$16"|"$s0" -> R16
-  | "$17"|"$s1" -> R17
-  | "$18"|"$s2" -> R18
-  | "$19"|"$s3" -> R19
-  | "$20"|"$s4" -> R20
-  | "$21"|"$s5" -> R21
-  | "$22"|"$s6" -> R22
-  | "$23"|"$s7" -> R23
-  | "$24"|"$t8" -> R24
-  | "$25"|"$t9" -> R25
-  | "$26"|"$k0" -> R26
-  | "$27"|"$k1" -> R27
-  | "$28"|"$gp" -> R28
-  | "$29"|"$sp" -> R29
-  | "$30"|"$fp" -> R30
-  | "$31"|"$ra" -> R31
+  | "$0"|"$zero"|"zero" -> R0
+  | "$1"|"$at"|"at" -> R1
+  | "$2"|"$v0"|"v0" -> R2
+  | "$3"|"$v1"|"v1" -> R3
+  | "$4"|"$a0"|"a0" -> R4
+  | "$5"|"$a1"|"a1" -> R5
+  | "$6"|"$a2"|"a2" -> R6
+  | "$7"|"$a3"|"a3" -> R7
+  | "$8"|"$t0"|"t0" -> R8
+  | "$9"|"$t1"|"t1" -> R9
+  | "$10"|"$t2"|"t2" -> R10
+  | "$11"|"$t3"|"t3" -> R11
+  | "$12"|"$t4"|"t4" -> R12
+  | "$13"|"$t5"|"t5" -> R13
+  | "$14"|"$t6"|"t6" -> R14
+  | "$15"|"$t7"|"t7" -> R15
+  | "$16"|"$s0"|"s0" -> R16
+  | "$17"|"$s1"|"s1" -> R17
+  | "$18"|"$s2"|"s2" -> R18
+  | "$19"|"$s3"|"s3" -> R19
+  | "$20"|"$s4"|"s4" -> R20
+  | "$21"|"$s5"|"s5" -> R21
+  | "$22"|"$s6"|"s6" -> R22
+  | "$23"|"$s7"|"s7" -> R23
+  | "$24"|"$t8"|"t8" -> R24
+  | "$25"|"$t9"|"t9" -> R25
+  | "$26"|"$k0"|"k0" -> R26
+  | "$27"|"$k1"|"k1" -> R27
+  | "$28"|"$gp"|"gp" -> R28
+  | "$29"|"$sp"|"sp" -> R29
+  | "$30"|"$fp"|"fp" -> R30
+  | "$31"|"$ra"|"ra" -> R31
+(* O64 ABI adds temps $a4-$a7 *)
+  |       "$a4"|"a4" -> R32
+  |       "$a5"|"a5" -> R33
+  |       "$a6"|"a6" -> R34
+  |       "$a7"|"a7" -> R35
   | _ -> raise Exit
 
 
@@ -120,6 +126,10 @@ let do_pp_ireg m = function
   | R29 -> add_dollar m "29"
   | R30 -> add_dollar m "30"
   | R31 -> add_dollar m "31"
+  | R32 -> add_dollar m "a4"
+  | R33 -> add_dollar m "a5"
+  | R34 -> add_dollar m "a6"
+  | R35 -> add_dollar m "a7"
 
 let do_pp_reg m = function
   | IReg r -> do_pp_ireg m r
@@ -165,22 +175,28 @@ let barrier_compare = compare
 type k = int
 type lbl = Label.t
 
-type op = ADD | ADDU | SUB | SUBU | SLT | SLTU | AND | OR | XOR | NOR
+type op = ADD | ADDU | SUB | SUBU | SLT | SLTU | AND | OR | XOR | NOR | DADDU
+  | DSLL
 type cond = EQ | NE
 type condz = LEZ | GTZ | LTZ | GEZ
 
 type instruction =
   | NOP
   | LI of reg * k
+  | MOVE of reg * reg
+  | LUI of reg * k
   | OP of op * reg * reg * reg
   | OPI of op * reg * reg * k
   | B of lbl
+  | JR of reg
   | BC of cond * reg * reg * lbl
   | BCZ of condz * reg * lbl
   | LW of reg * k * reg
+  | LD of reg * k * reg
   | SW of reg * k * reg
   | LL of reg * k * reg
   | SC of reg * k * reg
+  | EBF of reg * reg * k * k (* extract bit field *)
   | SYNC
 
 type parsedInstruction = instruction
@@ -202,6 +218,7 @@ let pp_condz = function
 let pp_op = function
   | ADD -> "add"
   | ADDU -> "addu"
+  | DADDU -> "daddu"
   | SUB -> "sub"
   | SUBU -> "subu"
   | SLT -> "slt"
@@ -210,10 +227,12 @@ let pp_op = function
   | OR -> "or"
   | XOR -> "xor"
   | NOR -> "nor"
+  | DSLL -> "dsll"
 
 let pp_opi = function
   | ADD -> "addi"
   | ADDU -> "addiu"
+  | DADDU -> "daddiu"
   | SUB -> "subi"
   | SUBU -> "subiu"
   | SLT -> "slti"
@@ -222,6 +241,7 @@ let pp_opi = function
   | OR -> "ori"
   | XOR -> "xori"
   | NOR -> "nori"
+  | DSLL -> "dsll"
 
 
 let pp_instruction m =
@@ -229,9 +249,16 @@ let pp_instruction m =
   let pp_rkr memo r1 k r2 =
     sprintf "%s %s,%i(%s)"
       memo (pp_reg r1) k (pp_reg r2) in
+  let pp_ebf memo r1 r2 k1 k2 =
+    sprintf "%s %s,%s,%i,%i"
+      memo (pp_reg r1) (pp_reg r2) k1 k2 in
   fun i -> match i with
   | LI (r,k) ->
       sprintf "li %s,%i" (pp_reg r) k
+  | MOVE (r1,r2) ->
+      sprintf "move %s,%s" (pp_reg r1) (pp_reg r2)
+  | LUI (r,k) ->
+      sprintf "lui %s,%i" (pp_reg r) k
   | OP (op,r1,r2,r3) ->
       sprintf "%s %s,%s,%s"
         (pp_op op)
@@ -245,6 +272,7 @@ let pp_instruction m =
         (pp_reg r2)
         k
   | B lbl -> sprintf "b %s" (pp_lbl lbl)
+  | JR r1 -> sprintf "jr %s" (pp_reg r1)
   | BC (c,r1,r2,lbl) ->
       sprintf "b%s %s,%s,%s"
         (pp_cond c)
@@ -257,9 +285,11 @@ let pp_instruction m =
         (pp_reg r1)
         (pp_lbl lbl)
   | LW (r1,k,r2) -> pp_rkr "lw" r1 k r2
+  | LD (r1,k,r2) -> pp_rkr "ld" r1 k r2
   | SW (r1,k,r2) -> pp_rkr "sw" r1 k r2
   | LL (r1,k,r2) -> pp_rkr "ll" r1 k r2
   | SC (r1,k,r2) -> pp_rkr "sc" r1 k r2
+  | EBF (r1, r2, k1, k2) -> pp_ebf "dext" r1 r2 k1 k2
   | NOP -> "nop"
   | SYNC -> "sync"
 
@@ -288,15 +318,18 @@ let fold_regs (f_reg,f_sreg) =
   | Internal _ -> y_reg,y_sreg in
 
   fun c ins -> match ins with
-  | LI (r,_)|BCZ (_,r,_) -> fold_reg r c
+  | LI (r,_)|BCZ (_,r,_)|LUI (r,_)|JR r -> fold_reg r c
   | OP (_,r1,r2,r3) ->
       fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | OPI (_,r1,r2,_)
+  | MOVE (r1,r2)
   | LW (r1,_,r2)
+  | LD (r1,_,r2)
   | SW (r1,_,r2)
   | LL (r1,_,r2)
   | SC (r1,_,r2)
-  | BC (_,r1,r2,_) ->
+  | BC (_,r1,r2,_)
+  | EBF (r1,r2,_,_) ->
       fold_reg r1 (fold_reg r2 c)
   | NOP|B _|SYNC -> c
 
@@ -308,12 +341,16 @@ let map_regs f_reg f_symb =
 
   fun ins -> match ins with
   | LI (r,k) -> LI (map_reg r,k)
+  | MOVE (r1,r2) -> MOVE (map_reg r1,map_reg r2)
+  | LUI (r,k) -> LUI (map_reg r,k)
   | OP (op,r1,r2,r3) ->
       OP (op,map_reg r1,map_reg r2,map_reg r3)
   | OPI (op,r1,r2,k) ->
       OPI (op,map_reg r1,map_reg r2,k)
   | LW (r1,k,r2) ->
       LW (map_reg r1,k,map_reg r2)
+  | LD (r1,k,r2) ->
+      LD (map_reg r1,k,map_reg r2)
   | SW (r1,k,r2) ->
       SW (map_reg r1,k,map_reg r2)
   | LL (r1,k,r2) ->
@@ -324,7 +361,9 @@ let map_regs f_reg f_symb =
       BC (c,map_reg r1,map_reg r2,lbl)
   | BCZ (c,r,lbl) ->
       BCZ (c,map_reg r,lbl)
-  | NOP|B _| SYNC -> ins
+  | EBF (r1, r2, k1, k2) ->
+      EBF (map_reg r1, map_reg r2, k1, k2)
+  | NOP|B _|JR _| SYNC -> ins
 
 (* No addresses burried in MIPS code *)
 let fold_addrs _f c _ins = c
@@ -337,16 +376,23 @@ let norm_ins ins = ins
 (* Instruction continuation *)
 let get_next = function
   | NOP
+  | JR _
   | LI _
+  | MOVE _
+  | LUI _
   | OP _
   | OPI _
   | LW _
+  | LD _
   | SW _
   | LL _
   | SC _
+  | EBF _
   | SYNC -> [Label.Next]
   | B lbl -> [Label.To lbl]
   | BC (_,_,_,lbl)|BCZ (_,_,lbl) -> [Label.Next; Label.To lbl;]
+
+let is_valid _ = true
 
 include Pseudo.Make
     (struct
@@ -359,16 +405,23 @@ include Pseudo.Make
       let get_naccesses = function
         | NOP
         | LI _
+        | MOVE _
+        | LUI _
         | OP _
         | OPI _
         | SYNC
         | B _
+        | JR _
         | BC _
         | BCZ _ -> 0
         | LW _
+        | LD _
         | SW _
         | LL _
+        | EBF _
         | SC _ -> 1
+
+      let size_of_ins _ = 4
 
       let fold_labels k f = function
         | B lbl
@@ -377,10 +430,12 @@ include Pseudo.Make
           -> f k lbl
         | _ -> k
 
-      let map_labels f = function
-        | B lbl -> B (f lbl)
-        | BC (c,r1,r2,lbl) -> BC (c,r1,r2,f lbl)
-        | BCZ (c,r,lbl) -> BCZ (c,r,f lbl)
+      let map_labels f =
+        let open BranchTarget in
+        function
+        | B lbl -> B (as_string_fun f lbl)
+        | BC (c,r1,r2,lbl) -> BC (c,r1,r2,as_string_fun f lbl)
+        | BCZ (c,r,lbl) -> BCZ (c,r,as_string_fun f lbl)
         | ins -> ins
 
     end)
@@ -391,4 +446,10 @@ let get_id_and_list _i = Warn.fatal "get_id_and_list is only for Bell"
 
 let hash_pteval _ = assert false
 
-module Instr = Instr.No(struct type instr = instruction end)
+module Instr =
+  Instr.WithNop
+    (struct
+      type instr = instruction
+      let nop = NOP
+      let compare = compare
+    end)

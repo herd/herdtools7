@@ -24,6 +24,7 @@ module type Config = sig
   val precision : Precision.t
   val variant : Variant.t -> bool
   val endian : Endian.t option
+  val unroll : int option
   module PC : PrettyConf.S
 end
 
@@ -55,11 +56,12 @@ module type S = sig
 
   type nice_prog = A.nice_prog
   type start_points = A.start_points
-  type return_labels = A.return_labels
+  type code_segment = A.code_segment
+  type entry_points = A.entry_points
 
   type proc_info = Test_herd.proc_info
   type test =
-      (program, nice_prog, start_points, return_labels,
+      (program, nice_prog, start_points, code_segment, entry_points,
        state, A.size_env, A.type_env,
        prop, location, A.RLocSet.t, A.FaultAtomSet.t) Test_herd.t
 
@@ -78,6 +80,11 @@ module type S = sig
   val is_non_mixed_symbol : test -> Constant.symbol -> bool
 
 (* "Exported" labels, i.e. labels that can find their way to registers *)
+  (* In initial state *)
+  val get_exported_labels_init : test -> Label.Full.Set.t
+  (* In code *)
+  val get_exported_labels_code : test -> Label.Full.Set.t
+  (* Both of them *)
   val get_exported_labels : test -> Label.Full.Set.t
 
   type event = E.event
@@ -180,6 +187,8 @@ type concrete =
   with type reg = A.reg and type v = v and type 'a monad = 'a M.t
   type branch = B.t
 
+  val tgt2tgt : A.inst_instance_id -> BranchTarget.t -> B.tgt
+
   val gone_toofar : concrete -> bool
 
 (************)
@@ -190,10 +199,6 @@ type concrete =
   type barrier = A.barrier
   type pp_barrier = { barrier:barrier ; pp:string; }
 
-include
-  IFetchTrait.S
-    with type ifetch_instruction := instruction
-    and type ifetch_reg := A.reg
 end
 
 module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
@@ -231,11 +236,12 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     type program = A.program
     type nice_prog = A.nice_prog
     type start_points = A.start_points
-    type return_labels = A.return_labels
+    type code_segment = A.code_segment
+    type entry_points = A.entry_points
 
     type proc_info = Test_herd.proc_info
     type test =
-      (program, nice_prog, start_points, return_labels, state,
+      (program, nice_prog, start_points, code_segment, entry_points, state,
        A.size_env, A.type_env,
        prop, location, A.RLocSet.t, A.FaultAtomSet.t) Test_herd.t
 
@@ -290,38 +296,35 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
       | System ((PTE|PTE2|TLB|TAG),_)  -> true
 
 (* Exported labels:
- * Labels from init environments ( + transfered to registers?)                   *)
-    let get_exported_labels (test:test) =
-      let open Test_herd in
-      let init =
-        let { init_state=st; _ } = test in
-        A.state_fold
-          (fun _ v k ->
-            match v with
-            | V.Val cst ->
-               begin
-                 match Constant.as_label cst with
-                 | Some lbl -> Label.Full.Set.add lbl k
-                 | None -> k
-               end
-            | V.Var _ -> k)
-          st Label.Full.Set.empty
-      and code =
-        let { nice_prog=prog; _ } = test in
-        List.fold_left
-          (fun k (p,code) ->
-            List.fold_left
-              (fun k i ->
-                A.pseudo_fold
-                  (fun k i ->
-                    match A.V.Cst.Instr.get_exported_label i with
-                    | None -> k
-                    | Some lbl ->
-                       Label.Full.Set.add (MiscParser.proc_num p,lbl) k)
-                  k i)
-              k code)
-          Label.Full.Set.empty prog in
-     Label.Full.Set.union init code
+ *  1. Labels from init environments
+ *  2. Labels from instructions that transfer labels into regs.
+ *)
+
+    let get_exported_labels_init test =
+      let { Test_herd.init_state=st; _ } = test in
+      A.state_fold
+        (fun _ v k ->
+          match v with
+          | V.Val cst ->
+              begin
+                match Constant.as_label cst with
+                | Some lbl -> Label.Full.Set.add lbl k
+                | None -> k
+              end
+          | V.Var _ -> k)
+        st Label.Full.Set.empty
+
+    module AU = ArchUtils.Make(A)(V.Cst.Instr)
+
+    let get_exported_labels_code test =
+      let { Test_herd.nice_prog=prog; _ } = test in
+      AU.get_exported_labels_code prog
+
+    let get_exported_labels test =
+      Label.Full.Set.union
+        (get_exported_labels_init test)
+        (get_exported_labels_code test)
+
 
 (**********)
 (* Events *)
@@ -471,6 +474,10 @@ type concrete =
     module B = Branch.Make(M)
     type branch = B.t
 
+    let tgt2tgt ii = function
+      | BranchTarget.Lbl lbl -> B.Lbl lbl
+      | BranchTarget.Offset o -> B.Addr (ii.A.addr + o)
+
     let gone_toofar { str; _ } =
       try E.EventSet.exists E.is_toofar str.E.events
       with Exit -> false
@@ -483,8 +490,6 @@ type concrete =
 
     type pp_barrier = { barrier:barrier ; pp:string; }
 
-    let is_link = A.is_link
-
   end
 
 module ConfigToArchConfig(C:Config) : ArchExtra_herd.Config =
@@ -495,4 +500,5 @@ module ConfigToArchConfig(C:Config) : ArchExtra_herd.Config =
     let brackets = C.PC.brackets
     let variant = C.variant
     let endian = C.endian
+    let default_to_symb = false
   end

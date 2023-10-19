@@ -21,10 +21,12 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
     open A.Out
     open Printf
 
-    let is_ret _ = assert false
+    let is_ret _ = false
     let is_nop = function
       | A.I_NOP -> true
       | _ -> false
+
+    let branch lbl = I_JMP lbl
 
 (* Not so nice..., the price of code sharing of
    symbConst.ml with memevents *)

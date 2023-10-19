@@ -1,4 +1,4 @@
-ARM SB004
+ARM A003
 
 (* classic SB004 test, should not see final state in outcomes*)
 {
@@ -10,4 +10,4 @@ ARM SB004
  STR R0,[R2]  | STR R0,[R2]  ;
  DMB ISH      | DMB ISH      ;
  LDR R1,[R3]  | LDR R1,[R3]  ;
-exists (0:R1=0 /\ 1:R1=0)
+~exists (0:R1=0 /\ 1:R1=0)

@@ -232,6 +232,8 @@ let () =
     let neg = !Config.neg
     let typ = !Config.typ
     let hexa = !Config.hexa
+    let stdout = if !Config.cycleonly then true else !Config.stdout
+    let cycleonly = !Config.cycleonly
 (* Specific *)
     let norm = !norm
     let cpp = cpp
@@ -303,6 +305,6 @@ let () =
       let module T = CCompile_gen.Make(CoC) in
       let module M = Build(T) in
       M.zyva
-  | `JAVA -> assert false
+  | `JAVA | `ASL -> assert false
 )
     pp_es

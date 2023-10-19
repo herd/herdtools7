@@ -8,7 +8,7 @@
  * For a textual version of the model, see section B2.3 of the Armv8 ARM:
  *   https://developer.arm.com/docs/ddi0487/
  *
- * Authors: 
+ * Authors:
  * Jade Alglave <jade.alglave@arm.com>
  * Artem Khyzha <artem.khyzha@arm.com>
  *
@@ -50,13 +50,12 @@ let rec dtrm =
   | iico_data
   | dtrm; dtrm
 
-let Reg=~M | ~B
 (** Data, Address and Control dependencies *)
-let ADDR=NDATA
+let ADDR = Rreg \ DATA
 let basic-dep =
    [R|Rreg]; dtrm?
-let data = (basic-dep; [DATA]; iico_data; [W]) \ same-instance  (* Artem: same-instance subtracted to no longer treat intrinsic dependencies as data/addr/ctrl/pick-dep *)
-let addr = (basic-dep; [ADDR]; iico_data; [M]) \ same-instance
+let data = (basic-dep; [DATA]; iico_data+; [W]) \ same-instance
+let addr = (basic-dep; [ADDR]; iico_data+; [M | TLBI | IC.IVAU | DC.CVAU]) \ same-instance
 let ctrl = (basic-dep; [BCC]; po) \ same-instance
 
 (** Pick dependencies *)
@@ -65,9 +64,9 @@ let pick-dtrm = (dtrm|iico_ctrl)+
 let pick-basic-dep =
    [R|Rreg];  pick-dtrm?
 let pick-addr-dep =
-   pick-basic-dep; [ADDR]; iico_data; [M]
+   pick-basic-dep; [ADDR]; iico_data+; [M]
 let pick-data-dep =
-   pick-basic-dep; [DATA]; iico_data; [W]
+   pick-basic-dep; [DATA]; iico_data+; [W]
 let pick-ctrl-dep =
    pick-basic-dep; [BCC]; po
 let pick-dep =

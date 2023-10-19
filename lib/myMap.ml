@@ -40,9 +40,10 @@ module type S = sig
   val filter : (key -> bool) -> 'a t -> 'a t
 
 (* List bindings *)
-  val bindings : 'a t -> (key * 'a) list
   val add_bindings : (key * 'a) list -> 'a t -> 'a t
   val from_bindings :  (key * 'a) list -> 'a t
+
+  val fold_values : ('a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
 end
 
 module Make(O:Set.OrderedType) : S with type key = O.t =
@@ -84,9 +85,12 @@ module Make(O:Set.OrderedType) : S with type key = O.t =
         (fun k v r -> if p k then add k v r else r)
         m empty
 
-    let bindings m = fold (fun k v xs -> (k,v)::xs) m []
     let add_bindings bds m =
       List.fold_left (fun m (k,v) -> add k v m) m bds
+
     let from_bindings bds = add_bindings bds empty
 
+    let fold_values fold_value =
+      let fold_binding _key v acc = fold_value v acc in
+      fun t acc -> fold fold_binding t acc
   end

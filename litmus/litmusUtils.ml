@@ -63,25 +63,31 @@ module Pseudo(A:Arch_litmus.S) = struct
         f
         (String.concat "," (List.map A.pp_reg regs))
 
-  let dump_prog (p,is) = MiscParser.pp_proc  p::List.map fmt_io is
+  let dump_prog _ (p,is) = MiscParser.pp_proc  p::List.map fmt_io is
 
   let dump_prog_lines prog =
-    let pp = List.map dump_prog prog in
+    let pp = List.map (dump_prog true) prog in
     let pp = Misc.lines_of_prog pp in
     List.map (Printf.sprintf "%s;") pp
 
   let print_prog chan prog =
-    let pp = List.map dump_prog prog in
+    let pp = List.map (dump_prog true) prog in
     Misc.pp_prog chan pp
 
-  let rec find_code p func = function
-    | [] -> assert false
-    | ((q,_,f),is)::rem ->
-        if Proc.equal p q && f = func then is else find_code p func rem
-
-  let find_offset code p f lbl =
-    let is = find_code p f code in
-    A.find_offset lbl is
-
   let code_exists p (_,c) = A.code_exists p c
+
+
+(* Extract "exported" labels from code.
+ * Those are defined as the argument of instruction
+ * that store a label into a register, as does
+ * ARM "ADR" instruction.
+ *)
+
+  module AU = ArchUtils.Make(A)(A.V.Instr)
+
+  let exported_labels_code prog = AU.get_exported_labels_code prog
+
+  let from_labels lbls prog = A.from_labels lbls prog
+
+  let all_labels = A.all_labels
 end

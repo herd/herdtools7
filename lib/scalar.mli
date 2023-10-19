@@ -21,7 +21,8 @@ module type S = sig
   type  t
   val machsize : MachSize.sz
 
-  val zero : t val one : t
+  val zero : t
+  val one : t
 
   val of_string : string -> t
   val pp : bool -> t -> string
@@ -33,6 +34,7 @@ module type S = sig
   val of_int64 : int64 -> t
   val to_int64 : t -> int64 (* Hum *)
 
+  val printable : t -> t
   val compare : t -> t -> int
   val equal : t -> t -> bool
 
@@ -41,6 +43,7 @@ module type S = sig
   val sub : t -> t -> t
   val mul : t -> t -> t
   val div : t -> t -> t
+  val rem : t -> t -> t
   val logor : t -> t -> t
   val logand : t -> t -> t
   val logxor : t -> t -> t

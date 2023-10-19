@@ -18,7 +18,7 @@
 type proc_info = (string * int list) list
 
 type
-  ('prog,'nice_prog,'start,'ret,'state,
+  ('prog,'nice_prog,'start,'ret,'entry,'state,
    'size_env, 'type_env,
    'prop,'loc,'locset,'fset) t =
     {
@@ -28,7 +28,8 @@ type
      program : 'prog ;
      nice_prog : 'nice_prog ;
      start_points : 'start ;
-     return_labels : 'ret ;
+     code_segment : 'ret ;
+     entry_points : 'entry;
      init_state : 'state ; size_env : 'size_env ; type_env : 'type_env ;
      filter : 'prop option ;
      cond : 'prop ConstrGen.constr ;
@@ -42,22 +43,22 @@ type
    }
 
 val simple_name :
-  ('prog,'nice_prog,'start,'ret,'state,
+  ('prog,'nice_prog,'start,'ret,'entry,'state,
    'size_env,'type_env,
    'prop,'loc,'locset,'fset) t -> string
 
 val readable_name :
-  ('prog,'nice_prog,'start,'ret,'state,
+  ('prog,'nice_prog,'start,'ret,'entry,'state,
    'size_env,'type_env,
    'prop,'loc,'locset,'fset) t -> string
 
 val very_readable_name :
-  ('prog,'nice_prog,'start,'ret,'state,
+  ('prog,'nice_prog,'start,'ret,'entry,'state,
    'size_env,'type_env,
    'prop,'loc,'locset,'fset) t -> string
 
 val basename :
-  ('prog,'nice_prog,'start,'ret,'state,
+  ('prog,'nice_prog,'start,'ret,'entry,'state,
    'size_env,'type_env,
    'prop,'loc,'locset,'fset) t -> string
 
@@ -67,7 +68,8 @@ module Make(A:Arch_herd.S) : sig
       (A.program,
        A.nice_prog,
        A.start_points,
-       A.return_labels,
+       A.code_segment,
+       A.entry_points,
        A.state,
        A.size_env,
        A.type_env,

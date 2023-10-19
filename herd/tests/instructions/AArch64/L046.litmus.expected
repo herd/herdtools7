@@ -1,0 +1,10 @@
+Test L046 Required
+States 1
+0:X0=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1)
+Observation L046 Always 1 0
+Hash=9e1b5c3876ae9522d0506d3041802ec8
+

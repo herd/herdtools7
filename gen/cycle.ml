@@ -25,10 +25,10 @@ module type S = sig
   module PteVal : PteVal_gen.S with type pte_atom = atom
 
   type event =
-      { loc : loc ; ord : int; tag : int;
-        ctag : int; cseal : int; dep : int;
+      { loc : loc ; ord : int; tag : int ;
+        ctag : int; cseal : int; dep : int ;
         v   : v ; (* Value read or written *)
-        vecreg: v list list; (* Alternative for SIMD *)
+        vecreg: v list list ; (* Alternative for SIMD *)
         dir : dir option ;
         proc : Code.proc ;
         atom : atom option ;
@@ -81,6 +81,8 @@ module type S = sig
 
 (* Extract wide accesses from cycle. Size as number of integers *)
   val get_wide : node -> int StringMap.t
+(* Extract pair accesses from cycle. *)
+  val get_pair : node -> StringSet.t
 
 (* Re-extract edges out of cycle *)
   val extract_edges : node -> edge list
@@ -114,7 +116,7 @@ end
 module type Config = sig
   val same_loc : bool
   val verbose : int
-(* allow threads s.t start -> end is against com+ *)
+(* allow threads s.t. start -> end is against com+ *)
   val allow_back : bool
   val naturalsize : MachSize.sz
   val hexa : bool
@@ -211,9 +213,7 @@ module Make (O:Config) (E:Edge.S) :
         (String.concat "," (List.map pp_one e.vecreg))
     else fun _ -> ""
 
-  let debug_val =
-    if O.hexa then sprintf "0x%x"
-    else sprintf "%i"
+  let debug_val = Code.pp_v ~hexa:O.hexa
 
   let debug_vec v =
     String.concat ", " (List.map debug_val (Array.to_list v))
@@ -222,7 +222,7 @@ module Make (O:Config) (E:Edge.S) :
     let pp_v =
       match e.bank with
       | Pte -> PteVal.pp e.pte
-      | (Ord|Tag|CapaTag|CapaSeal|VecReg _) -> debug_val e.v in
+      | (Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _) -> debug_val e.v in
     sprintf "%s%s %s %s%s%s%s%s"
       (debug_dir e.dir)
       (debug_atom e.atom)
@@ -418,6 +418,20 @@ let find_real_edge_prev = find_edge_prev is_real_edge
         | None-> k)
     m StringMap.empty
 
+  let is_pair n = match n.evt.loc with
+      | Data loc ->
+         if E.is_pair n.edge then Some loc
+         else None
+      | Code _ -> None
+
+  let get_pair m =
+    fold
+      (fun n k ->
+        match is_pair n with
+        | Some loc -> StringSet.add loc k
+        | None -> k)
+      m StringSet.empty
+
 (* Add events in nodes *)
 
 module Env = Map.Make(String)
@@ -485,7 +499,7 @@ module CoSt = struct
 
   let set_cell st n =
     let e = n.evt in match e.bank with
-    | Ord -> begin
+    | Ord|Pair -> begin
        let old = st.co_cell.(0) in
        let co_cell = Array.copy st.co_cell in
        let cell2 =
@@ -494,8 +508,17 @@ module CoSt = struct
            let old = E.extract_value old n.prev.evt.atom in
            E.compute_rmw rmw old e.v
          | _ -> e.v in
-       co_cell.(0) <- E.overwrite_value old e.atom cell2;
-      {e with cell=co_cell;},{ st with co_cell; }
+       begin
+         match e.bank with
+         | Ord ->
+            co_cell.(0) <- E.overwrite_value old e.atom cell2
+         | Pair -> (* No Rmw for pairs *)
+            co_cell.(0) <- E.overwrite_value old e.atom (e.v-1);
+            let old = st.co_cell.(0) in
+            co_cell.(1) <- E.overwrite_value old e.atom e.v
+         | _ -> assert false
+       end ;
+       {e with cell=co_cell;},{ st with co_cell; }
     end
     | _ -> e,st
 
@@ -605,10 +628,16 @@ let remove_store n0 =
          next.prev <- prev ;
          m.evt <- { m.evt with dir = Some W; } ;
          next.store <- m
+      | E.Node W -> (* Also remove isolated W nodes, before computing values *)
+         let prev = m.prev
+         and next = m.next in
+         prev.next <- next ;
+         next.prev <- prev
       | _ -> ()
     end ;
     if m.next != n0 then do_rec m.next in
-  do_rec n0
+  do_rec n0 ;
+  n0
 
  let set_dir n0 =
   let rec do_rec m =
@@ -805,6 +834,15 @@ let set_same_loc st n0 =
                 | Ord ->
                    let st = set_write_val_ord st n in
                    do_set_write_val next_x_ok st pte_val ns
+                | Pair ->
+                   (* Same code as for Ord, however notice that
+                      CoSet.set_cell has a case for pairs.
+                      However increment of current value is by 2 *)
+                   let cell = CoSt.get_cell st in
+                   assert (Array.length cell=2) ;
+                   let st = CoSt.next_co st Ord in (* Pre-increment *)
+                   let st = set_write_val_ord st n in
+                   do_set_write_val next_x_ok st pte_val ns
                 | Tag|CapaTag|CapaSeal ->
                    let st = CoSt.next_co st bank in
                    let v = CoSt.get_co st bank in
@@ -922,6 +960,14 @@ let set_read_v n cell =
   n.evt <- e
 (*  eprintf "AFTER %a\n" debug_node n *)
 
+let set_read_pair_v n cell =
+  let e = n.evt in
+  let v0 = E.extract_value cell.(0) e.atom
+  and v1 =  E.extract_value cell.(1) e.atom in
+  let v = v0 + v1 in
+  let e = { e with v=v; } in
+  n.evt <- e
+
 let do_set_read_v =
   (* st keeps track of tags, cell and pte_cell are the current
      state of memory *)
@@ -937,6 +983,8 @@ let do_set_read_v =
             begin match bank with
             | Ord ->
                set_read_v n cell
+            | Pair ->
+               set_read_pair_v n cell
             | VecReg a ->
                let v = E.SIMD.read a cell in
                n.evt <- { n.evt with vecreg=v; }
@@ -951,16 +999,16 @@ let do_set_read_v =
               match bank with
               | Tag|CapaTag|CapaSeal ->
                  CoSt.set_co st bank n.evt.v
-              | Pte|Ord|VecReg _ ->
+              | Pte|Ord|Pair|VecReg _ ->
                  st in
             do_rec st
               (match bank with
-               | Ord|VecReg _ ->
+               | Ord|Pair|VecReg _ ->
                   if Code.is_data n.evt.loc then n.evt.cell
                   else cell
                | Tag|CapaTag|CapaSeal|Pte -> cell)
               (match bank with
-               | Ord|Tag|CapaTag|CapaSeal|VecReg _ -> pte_cell
+               | Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _ -> pte_cell
                | Pte -> n.evt.pte)
               ns
         | None | Some J ->
@@ -1056,7 +1104,7 @@ let resolve_edges = function
   | es ->
       let c = build_cycle es in
       merge_annotations c ;
-      remove_store c ;
+      let c = remove_store c in
       set_dir c ;
       extract_edges c,c
 
@@ -1244,8 +1292,9 @@ let rec group_rec x ns = function
     do_rec n
 
   let get_ord_writes =
-    do_get_writes
-      (function Code.Ord|Code.Tag|Code.VecReg _ -> true | _ -> false)
+    let open Code in
+    do_get_writes (* Not so sure about capacity here... *)
+      (function Ord|Tag|VecReg _|Pair -> true | CapaTag|CapaSeal|Pte -> false)
 
   let get_pte_writes =
     do_get_writes (function Code.Pte -> true | _ -> false)

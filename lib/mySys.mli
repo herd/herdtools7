@@ -67,5 +67,6 @@ val cat_and_remove : string -> (string -> unit) -> unit
 val exec_stdout : string -> unit
 val exec : string -> (string -> unit) -> unit
 val mkdir : string -> unit
+val mkdirp : string -> unit
 val mktmpdir : unit -> string
 val rmdir : string -> unit

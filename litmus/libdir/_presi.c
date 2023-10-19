@@ -23,6 +23,7 @@
 #include <limits.h>
 #include <errno.h>
 #include <stdint.h>
+#include <sys/mman.h>
 #endif
 
 #include "utils.h"
@@ -95,59 +96,6 @@ static int do_argint(char *p, char **q) {
   return r ;
 }
 
-#ifdef KVM
-/**********/
-/* Random */
-/**********/
-
-/*
-  Simple generator
-  http://en.wikipedia.org/wiki/Linear_congruential_generator
-*/
-
-
-/*
-
-  From ocaml sources: (globroot.c)
-  Linear congruence with modulus = 2^32, multiplier = 69069
-  (Knuth vol 2 p. 106, line 15 of table 1), additive = 25173.
-
-
-  Knuth (vol 2 p. 13) shows that the least significant bits are
-  "less random" than the most significant bits with a modulus of 2^m.
-  We just swap half words, enough? */
-
-static const uint32_t a = 69069;
-static const uint32_t c = 25173 ;
-
-inline static uint32_t unlocked_rand(st_t *st)  {
-  uint32_t r = a * *st + c ;
-  *st = r ;
-  /* Swap high & low bits */
-  uint32_t low = r & 0xffff ;
-  uint32_t high = r >> 16 ;
-  r = high | (low << 16) ;
-  return r ;
-}
-
-int rand_bit(st_t *st)  {
-  uint32_t r = unlocked_rand(st) ;
-  r &= 1 ;
-  return r ;
-}
-
-static const uint32_t r_max = UINT32_MAX ;
-
-uint32_t rand_k (uint32_t *st,uint32_t k) {
-  uint32_t r, v ;
-  do {
-    r = unlocked_rand(st) ;
-    v = r % k ;
-  } while (r-v > r_max-k+1) ;
-  return v ;
-}
-#endif
-
 #ifndef KVM
 /*************************/
 /* Concurrency utilities */
@@ -195,7 +143,7 @@ sec_t tsc_millions(tsc_t t) {
   return r ;
 }
 
-void emit_double(sec_t f) {
+void emit_millions(sec_t f) {
   printf("%" PRIu64, f.sec) ;
   puts(".");
   printf("%02" PRIu64, f.frac) ;
@@ -226,6 +174,7 @@ static void usage_opt(char *prog,opt_t *d) {
   if (d->delay > 0) {
     fprintf(stderr,"  -tb <n> time base delay  (default %d)\n",d->delay) ;
   }
+  fprintf(stderr,"  +fix    do not shuffle threads\n");
   exit(2) ;
 }
 
@@ -270,6 +219,8 @@ char **parse_opt(int argc,char **argv,opt_t *d, opt_t *p) {
       if (!*argv) usage_opt(prog,d) ;
       p->delay = argint_opt(prog,argv[0],d) ;
       if (p->delay < 1) p->delay = 1 ;
+    } else if (strcmp(*argv,"+fix") == 0) {
+      p->fix = 1 ;
     } else usage_opt(prog,d);
   }
 }
@@ -302,5 +253,42 @@ void parse_param(char *prog,parse_param_t *p,int sz,char **argv) {
   while (*argv) {
     do_parse(prog,p,sz,*argv) ;
     argv++ ;
+  }
+}
+
+#ifndef KVM
+
+/********************/
+/* presi self alloc */
+/********************/
+
+void *mmap_exec(size_t sz) {
+  void * p = mmap(NULL, sz, PROT_READ|PROT_EXEC|PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+  if (p == MAP_FAILED) {
+    errexit("mmap",errno) ;
+  }
+  return p ;
+}
+
+void munmap_exec(void *p,size_t sz) {
+  if (munmap(p,sz)) errexit("munmap",errno);
+}
+
+#endif
+
+/*******************/
+/* Array utilities */
+/*******************/
+
+void interval_init(int *p,size_t sz) {
+  for (int k=0 ; k < sz ; k++) *p++ = k;
+}
+
+void interval_shuffle(st_t *seed,int *p,size_t sz) {
+  for (int k=0 ; k < sz-1 ; k++) {
+    int j = k + rand_k(seed,sz-k) ;
+    int tmp = p[k] ;
+    p[k] = p[j] ;
+    p[j] = tmp ;
   }
 }

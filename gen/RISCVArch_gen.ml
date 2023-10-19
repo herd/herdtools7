@@ -166,22 +166,27 @@ module Make
 
    let compare_fence = barrier_compare
 
-   let default = Fence (RW,RW)
+   let default = Fence (IORW,IORW)
    let strong = default
 
    let pp_fence f = Misc.capitalize (pp_barrier_dot f)
 
+   let add_iorw fold f k = fold f k |> f (Fence (IORW,IORW))
+
+   let do_fold_fence f = add_iorw do_fold_fence f
+   and fold_barrier f = add_iorw fold_barrier f
+   
    let fold_cumul_fences f k = do_fold_fence f k
    let fold_all_fences f k = fold_barrier f k
    let fold_some_fences = fold_all_fences
 
    let applies r d = match r,d with
-   | RW,_
-   | R,Code.R
-   | W,Code.W
+   | (IORW|RW),_
+   | (IR|R),Code.R
+   | (OW|W),Code.W
      -> true
-   | W,Code.R
-   | R,Code.W
+   | (W|OW),Code.R
+   | (R|IR),Code.W
      -> false
    | _ -> assert false
 

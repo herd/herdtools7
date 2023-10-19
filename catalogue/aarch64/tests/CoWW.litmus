@@ -1,0 +1,15 @@
+AArch64 CoWW
+"PosWW Coe"
+Cycle=Coe PosWW
+Generator=diycross7 (version 7.56+03)
+Com=Co
+Orig=PosWW Coe
+{
+0:X1=x;
+}
+ P0          ;
+ MOV W0,#1   ;
+ STR W0,[X1] ;
+ MOV W2,#2   ;
+ STR W2,[X1] ;
+exists ([x]=1)

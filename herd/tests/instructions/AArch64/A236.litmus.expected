@@ -1,0 +1,10 @@
+Test 236 Required
+States 1
+0:X0=-1; 0:X3=-2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=-1 /\ 0:X3=-2)
+Observation 236 Always 1 0
+Hash=8205eb706c7f2a58368a8bdc3b855c37
+

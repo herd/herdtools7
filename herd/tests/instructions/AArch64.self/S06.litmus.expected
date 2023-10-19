@@ -1,10 +1,10 @@
 Test S06 Required
 States 1
-0:X0=0; 0:X30=0:##10000;
+0:X0=0; 0:X30=10004;
 Ok
 Witnesses
 Positive: 1 Negative: 0
 Condition forall (0:X0=0)
 Observation S06 Always 1 0
-Hash=2a0f138a916fabc1acce66a7ac0f7c76
+Hash=f6594ca314e73b63847cbd4ea234b633
 

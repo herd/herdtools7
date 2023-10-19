@@ -1,0 +1,10 @@
+Test A021 Required
+States 1
+0:R1=2; 0:R2=131072;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:R1=2 /\ 0:R2=131072)
+Observation A021 Always 1 0
+Hash=1763ed3b82a8cec323ea12c101f0a09f
+

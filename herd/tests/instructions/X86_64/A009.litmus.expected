@@ -1,0 +1,10 @@
+Test A009 Required
+States 1
+0:rcx=-1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:rcx=-1)
+Observation A009 Always 1 0
+Hash=a97bc3fd7318c7656902927df4f2aa4a
+

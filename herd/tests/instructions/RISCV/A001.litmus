@@ -1,0 +1,9 @@
+RISCV A001
+
+(*Test NOP instr *)
+{ x=0 }
+
+P0;
+nop;
+
+forall (x=0)

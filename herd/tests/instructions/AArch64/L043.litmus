@@ -1,0 +1,15 @@
+AArch64 L043
+Orig=PodWWPL RfeLP Amo.Swp PodWR DpCtrlIsbdR Fre
+{
+0:X1=x; 0:X3=y;
+1:X0=y; 1:X3=z; 1:X5=x;
+}
+ P0           | P1             ;
+ MOV W0,#1    | MOV W2,#2      ;
+ STR W0,[X1]  | SWP W2,W1,[X0] ;
+ MOV W2,#1    | LDR W4,[X3]    ;
+ STLR W2,[X3] | CBNZ W4,LC00   ;
+              | LC00:          ;
+              | ISB            ;
+              | LDR W6,[X5]    ;
+exists ([y]=2 /\ 1:X1=1 /\ 1:X6=0)

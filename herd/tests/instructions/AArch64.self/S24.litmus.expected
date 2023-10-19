@@ -1,0 +1,11 @@
+Test S24 Allowed
+States 2
+0:X3=1;
+0:X3=3;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (0:X3=1)
+Observation S24 Sometimes 1 1
+Hash=1fb919303b294cca31dc287fe2c2315a
+

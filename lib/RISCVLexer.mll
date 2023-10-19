@@ -25,12 +25,17 @@ open RISCVParser
   module LU = LexUtils.Make(O)
 
   let check_name = function
+    | "nop" | "NOP" -> NOP
+    | "ret" | "RET" -> RET
+    | "mv" | "MV" -> MV
     | "addi" -> OPI ADDI
     | "slti" -> OPI SLTI
     | "sltiu" -> OPI SLTIU
     | "andi" -> OPI ANDI
     | "ori" -> OPI ORI
     | "li"  -> LI
+    | "la" -> LA
+    | "lui" -> LUI
     | "xori" -> OPI XORI
     | "slli" -> OPI SLLI
     | "srli" -> OPI SRLI
@@ -75,6 +80,8 @@ open RISCVParser
     | "sw" -> STORE (Word,Rlx)
     | "sd"   -> STORE (Double,Rlx)
 
+    | "auipc" -> AUIPC
+
 (* Limited memory order on ordinary load and store *)
     | "lb.aq" -> LOAD (Byte,Signed,Acq)
     | "lh.aq" -> LOAD (Half,Signed,Acq)
@@ -88,35 +95,35 @@ open RISCVParser
     | "sw.rl" -> STORE (Word,Rel)
     | "sd.rl"   -> STORE (Double,Rel)
 (* Extension: AcqRel for everybody! *)
-    | "lb.aq.rl" -> LOAD (Byte,Signed,AcqRel)
-    | "lh.aq.rl" -> LOAD (Half,Signed,AcqRel)
-    | "lw.aq.rl" -> LOAD (Word,Signed,AcqRel)
-    | "ld.aq.rl" -> LOAD (Double,Signed,AcqRel)
-    | "lbu.aq.rl" -> LOAD (Byte,Unsigned,AcqRel)
-    | "lhu.aq.rl" -> LOAD (Half,Unsigned,AcqRel)
-    | "lwu.aq.rl" -> LOAD (Word,Unsigned,AcqRel)
-    | "sb.aq.rl" -> STORE (Byte,AcqRel)
-    | "sh.aq.rl" -> STORE (Half,AcqRel)
-    | "sw.aq.rl" -> STORE (Word,AcqRel)
-    | "sd.aq.rl"   -> STORE (Double,AcqRel)
+    | "lb.aq.rl"|"lb.aqrl" -> LOAD (Byte,Signed,AcqRel)
+    | "lh.aq.rl"|"lh.aqrl" -> LOAD (Half,Signed,AcqRel)
+    | "lw.aq.rl"|"lw.aqrl" -> LOAD (Word,Signed,AcqRel)
+    | "ld.aq.rl"|"ld.aqrl" -> LOAD (Double,Signed,AcqRel)
+    | "lbu.aq.rl"|"lbu.aqrl" -> LOAD (Byte,Unsigned,AcqRel)
+    | "lhu.aq.rl"|"lhu.aqrl" -> LOAD (Half,Unsigned,AcqRel)
+    | "lwu.aq.rl"|"lwu.aqrl" -> LOAD (Word,Unsigned,AcqRel)
+    | "sb.aq.rl"|"sb.aqrl" -> STORE (Byte,AcqRel)
+    | "sh.aq.rl"|"sh.aqrl" -> STORE (Half,AcqRel)
+    | "sw.aq.rl"|"sw.aqrl" -> STORE (Word,AcqRel)
+    | "sd.aq.rl"|"sd.aqrl"   -> STORE (Double,AcqRel)
 
 (* Complete memory ordering... *)
     | "lr.w" -> LR (Word,Rlx)
     | "lr.w.aq" -> LR (Word,Acq)
-    | "lr.w.rl" -> LR (Word,Rel)
-    | "lr.w.aq.rl" -> LR (Word,AcqRel)
+    | "lr.w.rl" -> LR (Word,Rlx)
+    | "lr.w.aq.rl"|"lr.w.aqrl" -> LR (Word,AcqRel)
     | "lr.d" ->  LR (Double,Rlx)
     | "lr.d.aq" -> LR (Double,Acq)
-    | "lr.d.rl" -> LR (Double,Rel)
-    | "lr.d.aq.rl" -> LR (Double,AcqRel)
+    | "lr.d.rl" -> LR (Double,Rlx)
+    | "lr.d.aq.rl"|"lr.d.aqrl" -> LR (Double,AcqRel)
     | "sc.w" -> SC (Word,Rlx)
-    | "sc.w.aq" -> SC (Word,Acq)
+    | "sc.w.aq" -> SC (Word,Rlx)
     | "sc.w.rl" -> SC (Word,Rel)
-    | "sc.w.aq.rl" -> SC (Word,AcqRel)
+    | "sc.w.aq.rl"|"sc.w.aqrl" -> SC (Word,AcqRel)
     | "sc.d" ->  SC (Double,Rlx)
-    | "sc.d.aq" -> SC (Double,Acq)
+    | "sc.d.aq" -> SC (Double,Rlx)
     | "sc.d.rl" -> SC (Double,Rel)
-    | "sc.d.aq.rl" -> SC (Double,AcqRel)
+    | "sc.d.aq.rl"|"sc.d.aqrl" -> SC (Double,AcqRel)
 
     | "amoswap.w" -> AMO (AMOSWAP,Word,Rlx)
     | "amoadd.w" ->  AMO (AMOADD,Word,Rlx)
@@ -172,24 +179,26 @@ open RISCVParser
     | "amomin.d.rl" ->  AMO (AMOMIN,Double,Rel)
     | "amomaxu.d.rl" -> AMO (AMOMAXU,Double,Rel)
     | "amominu.d.rl" -> AMO (AMOMINU,Double,Rel)
-    | "amoswap.w.aq.rl" -> AMO (AMOSWAP,Word,AcqRel)
-    | "amoadd.w.aq.rl" ->  AMO (AMOADD,Word,AcqRel)
-    | "amoand.w.aq.rl" ->  AMO (AMOAND,Word,AcqRel)
-    | "amoor.w.aq.rl" ->   AMO (AMOOR,Word,AcqRel)
-    | "amoxor.w.aq.rl" ->  AMO (AMOXOR,Word,AcqRel)
-    | "amomax.w.aq.rl" ->  AMO (AMOMAX,Word,AcqRel)
-    | "amomin.w.aq.rl" ->  AMO (AMOMIN,Word,AcqRel)
-    | "amomaxu.w.aq.rl" -> AMO (AMOMAXU,Word,AcqRel)
-    | "amominu.w.aq.rl" -> AMO (AMOMINU,Word,AcqRel)
-    | "amoswap.d.aq.rl" -> AMO (AMOSWAP,Double,AcqRel)
-    | "amoadd.d.aq.rl" ->  AMO (AMOADD,Double,AcqRel)
-    | "amoand.d.aq.rl" ->  AMO (AMOAND,Double,AcqRel)
-    | "amoor.d.aq.rl" ->   AMO (AMOOR,Double,AcqRel)
-    | "amoxor.d.aq.rl" ->  AMO (AMOXOR,Double,AcqRel)
-    | "amomax.d.aq.rl" ->  AMO (AMOMAX,Double,AcqRel)
-    | "amomin.d.aq.rl" ->  AMO (AMOMIN,Double,AcqRel)
-    | "amomaxu.d.aq.rl" -> AMO (AMOMAXU,Double,AcqRel)
-    | "amominu.d.aq.rl" ->  AMO (AMOMINU,Double,AcqRel)
+    | "amoswap.w.aq.rl"|"amoswap.w.aqrl" -> AMO (AMOSWAP,Word,AcqRel)
+    | "amoadd.w.aq.rl"|"amoadd.w.aqrl" ->  AMO (AMOADD,Word,AcqRel)
+    | "amoand.w.aq.rl"|"amoand.w.aqrl" ->  AMO (AMOAND,Word,AcqRel)
+    | "amoor.w.aq.rl"|"amoor.w.aqrl" ->   AMO (AMOOR,Word,AcqRel)
+    | "amoxor.w.aq.rl"|"amoxor.w.aqrl" ->  AMO (AMOXOR,Word,AcqRel)
+    | "amomax.w.aq.rl"|"amomax.w.aqrl" ->  AMO (AMOMAX,Word,AcqRel)
+    | "amomin.w.aq.rl"|"amomin.w.aqrl" ->  AMO (AMOMIN,Word,AcqRel)
+    | "amomaxu.w.aq.rl"|"amomaxu.w.aqrl" -> AMO (AMOMAXU,Word,AcqRel)
+    | "amominu.w.aq.rl"|"amominu.w.aqrl" -> AMO (AMOMINU,Word,AcqRel)
+    | "amoswap.d.aq.rl"|"amoswap.d.aqrl" -> AMO (AMOSWAP,Double,AcqRel)
+    | "amoadd.d.aq.rl"|"amoadd.d.aqrl" ->  AMO (AMOADD,Double,AcqRel)
+    | "amoand.d.aq.rl"|"amoand.d.aqrl" ->  AMO (AMOAND,Double,AcqRel)
+    | "amoor.d.aq.rl"|"amoor.d.aqrl" ->   AMO (AMOOR,Double,AcqRel)
+    | "amoxor.d.aq.rl"|"amoxor.d.aqrl" ->  AMO (AMOXOR,Double,AcqRel)
+    | "amomax.d.aq.rl"|"amomax.d.aqrl" ->  AMO (AMOMAX,Double,AcqRel)
+    | "amomin.d.aq.rl"|"amomin.d.aqrl" ->  AMO (AMOMIN,Double,AcqRel)
+    | "amomaxu.d.aq.rl"|"amomaxu.d.aqrl" -> AMO (AMOMAXU,Double,AcqRel)
+    | "amominu.d.aq.rl"|"amominu.d.aqrl" ->  AMO (AMOMINU,Double,AcqRel)
+(* Sign extension*)
+    | "sext.w" -> EXT (Signed,Word)
 
 (* Fences *)
 | "fence" -> FENCE

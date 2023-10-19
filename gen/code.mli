@@ -34,6 +34,8 @@ val myok_proc : int -> loc
 
 
 type v = int
+val pp_v : ?hexa:bool -> v -> string
+
 type proc = Proc.t
 val pp_proc : proc -> string
 
@@ -60,7 +62,7 @@ val pp_ie : ie -> string
 val pp_dir : dir -> string
 val pp_extr : extr -> string
 val pp_sd : sd -> string
-
+val seq_sd : sd -> sd -> sd
 val fold_ie : (ie -> 'a -> 'a) -> 'a -> 'a
 val do_fold_extr : bool -> (extr -> 'a -> 'a) -> 'a -> 'a
 val fold_extr : (extr -> 'a -> 'a) -> 'a -> 'a
@@ -69,8 +71,11 @@ val fold_sd_extr : (sd -> extr -> 'a -> 'a) -> 'a -> 'a
 val fold_sd_extr_extr : (sd -> extr -> extr -> 'a -> 'a) -> 'a -> 'a
 
 type check =
-  | Sc | Uni | Thin | Critical | Free
+  | Default | Sc | Uni | Thin | Critical | Free
   | Ppo | Transitive | Total | MixedCheck
+
+val pp_check : check -> string
+val checks : string list
 
 (* Com *)
 type com =  CRf | CFr | CWs
@@ -85,7 +90,7 @@ type info = (string * string) list
 val plain : string
 
 (* Memory bank (for MTE, KVM)  *)
-type 'a bank = Ord | Tag | CapaTag | CapaSeal | Pte | VecReg of 'a
+type 'a bank = Ord | Tag | CapaTag | CapaSeal | Pte | VecReg of 'a | Pair
 
 val pp_bank : 'a bank -> string
 

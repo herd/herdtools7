@@ -21,7 +21,9 @@ module type A = sig
 
   type lannot
   val empty_annot : lannot
+  val ifetch_value_sets : (string * (V.v -> bool)) list
   val barrier_sets : (string * (barrier -> bool)) list
+  val cmo_sets : (string * (CMO.t -> bool)) list
   val annot_sets : (string * (lannot -> bool)) list
   val pp_annot : lannot -> string
   include Explicit.S
@@ -60,16 +62,15 @@ module Make (C:Config) (A : A) : sig
     | Amo of A.location * A.V.v * A.V.v * A.lannot * A.explicit * MachSize.sz * Access.t
 (* NB: Amo used in some arch only (e.g., Arm, RISCV) *)
 (* bool (fifth) argument is true when modeling fault handler entry *)
-    | Fault of A.inst_instance_id * A.location * Dir.dirn * A.lannot * bool * A.I.FaultType.t option * string option
+    | Fault of
+        A.inst_instance_id * A.location option * Dir.dirn
+        * A.lannot * bool * A.I.FaultType.t option * string option
 (* Unrolling control *)
     | TooFar of string
 (* TLB Invalidate event, operation (for print and level), address, if any.
    No adresss means complete invalidation at level *)
     | Inv of A.TLBI.op * A.location option
-(* Data cache operation event *)
-    | DC of AArch64Base.DC.op * A.location option
-(* Instruction-cache operation event *)
-    | IC of AArch64Base.IC.op * A.location option
+    | CMO of A.CMO.t * A.location option
 (* A placeholder action doing nothing *)
     | NoAction
 (* Arch specific actions *)
@@ -90,7 +91,7 @@ end = struct
   open Access
 
   let kvm = C.variant Variant.VMSA
-  let self = C.variant Variant.Self
+  let self = C.variant Variant.Ifetch
 
   let access_of_constant cst =
     let open Constant in
@@ -102,9 +103,11 @@ end = struct
     | Symbolic (System (TAG,_)) -> Access.TAG
     | Label _ -> VIR
     | Tag _
-    | ConcreteVector _|Concrete _|PteVal _|Instruction _ as v ->
-        Warn.fatal "access_of_constant %s as an address"
-          (V.pp_v (V.Val v)) (* assert false *)
+    | ConcreteVector _|Concrete _|ConcreteRecord _
+    | PteVal _|Instruction _|Frozen _ as v
+      ->
+       Warn.fatal "access_of_constant %s as an address"
+         (V.pp_v (V.Val v)) (* assert false *)
 
 
 (* precondition: v is a constant symbol *)
@@ -145,11 +148,12 @@ end = struct
     | Amo of
         A.location * A.V.v * A.V.v * A.lannot * A.explicit *
         MachSize.sz * Access.t
-    | Fault of A.inst_instance_id * A.location * Dir.dirn * A.lannot * bool * A.I.FaultType.t option * string option
+    | Fault of
+        A.inst_instance_id * A.location option
+        * Dir.dirn * A.lannot * bool * A.I.FaultType.t option * string option
     | TooFar of string
     | Inv of A.TLBI.op * A.location option
-    | DC of AArch64Base.DC.op * A.location option
-    | IC of AArch64Base.IC.op * A.location option
+    | CMO of A.CMO.t * A.location option
     | NoAction
     | Arch of A.ArchAction.t
 
@@ -190,30 +194,20 @@ end = struct
         (A.pp_location loc) (MachSize.pp_short sz)
         (V.pp C.hexa v1) (V.pp C.hexa v2)
   | Fault (_,loc,d,an,handler,ftype,msg) ->
-     Printf.sprintf "%s(%s,loc:%s%s%s%s)"
+     Printf.sprintf "%s(%s%s%s%s%s)"
         (if handler then "ExcEntry" else "Fault")
         (pp_dirn d)
-        (A.pp_location_old loc)
+        (Misc.pp_opt_arg (fun loc -> "loc:" ^ A.pp_location_old loc) loc)
         (A.pp_annot an)
-        (match ftype with
-         | None -> ""
-         | Some ftype -> Printf.sprintf ",%s" (A.I.FaultType.pp ftype))
-        (match msg with
-         | None -> ""
-         | Some msg -> Printf.sprintf ",type:%s" msg)
+        (Misc.pp_opt_arg A.I.FaultType.pp ftype)
+        (Misc.pp_opt_arg (Printf.sprintf "type:%s") msg)
   | TooFar msg -> Printf.sprintf "TooFar:%s" msg
   | Inv (op,None) ->
       Printf.sprintf "TLBI(%s)" (A.TLBI.pp_op op)
   | Inv (op,Some loc) ->
       Printf.sprintf "TLBI(%s,%s)" (A.TLBI.pp_op op) (A.pp_location loc)
-  | DC (op,None) ->
-      Printf.sprintf "DC(%s)" (AArch64Base.DC.pp_op op)
-  | DC(op,Some loc) ->
-      Printf.sprintf "DC(%s,%s)" (AArch64Base.DC.pp_op op) (A.pp_location loc)
-  | IC (op,None) ->
-      Printf.sprintf "IC(%s)" (AArch64Base.IC.pp_op op)
-  | IC(op,Some loc) ->
-      Printf.sprintf "IC(%s,%s)" (AArch64Base.IC.pp_op op) (A.pp_location loc)
+  | CMO (cmo,loc) ->
+     A.CMO.pp cmo (Option.map A.pp_location loc)
   | NoAction -> ""
   | Arch a -> A.ArchAction.pp a
 
@@ -221,7 +215,7 @@ end = struct
   let value_of a = match a with
   | Access (_,_ , v,_,_,_,_)
     -> Some v
-  | Barrier _|Commit _|Amo _|Fault _|TooFar _|Inv _|DC _|IC _|NoAction
+  | Barrier _|Commit _|Amo _|Fault _|TooFar _|Inv _|CMO _|NoAction
     -> None
   | Arch a -> A.ArchAction.value_of a
 
@@ -231,7 +225,7 @@ end = struct
     -> Some v
   | Arch a -> A.ArchAction.read_of a
   | Access (W, _, _, _,_,_,_)|Barrier _|Commit _|Fault _
-  | TooFar _|Inv _|DC _|IC _|NoAction
+  | TooFar _|Inv _|CMO _|NoAction
     -> None
 
   and written_of a = match a with
@@ -241,19 +235,20 @@ end = struct
   | Arch a -> A.ArchAction.written_of a
   | Access (R, _, _, _,_,_,_)
   | Barrier _|Commit _|Fault _
-  | TooFar _|Inv _|DC _|IC _|NoAction
+  | TooFar _|Inv _|CMO _|NoAction
     -> None
 
   let location_of a = match a with
   | Access (_, l, _,_,_,_,_)
   | Amo (l,_,_,_,_,_,_)
-  | Fault (_,l,_,_,_,_,_)
+  | Fault (_,Some l,_,_,_,_,_)
   | Inv (_,Some l)
-  | DC(_,Some l)
-  | IC(_,Some l)
+  | CMO (_,Some l)
     -> Some l
   | Arch a -> A.ArchAction.location_of a
-  | Barrier _ |Commit _ | TooFar _| Inv (_,None) | DC (_,None) | IC (_,None) | NoAction -> None
+  | Barrier _ |Commit _ | TooFar _ | Fault (_,None,_,_,_,_,_)
+  | Inv (_,None) | CMO (_,None) | NoAction
+    -> None
 
 (* relative to memory *)
   let is_mem_arch_action a =
@@ -310,40 +305,11 @@ end = struct
   let is_tag = function
     | Access (_,_,_,_,_,_,Access.TAG) -> true
     | Access _|Barrier _|Commit _
-    | Amo _|Fault _|TooFar _|Inv _|DC _|IC _|Arch _|NoAction-> false
+    | Amo _|Fault _|TooFar _|Inv _|CMO _|Arch _|NoAction-> false
 
   let is_inv = function
     | Inv _ -> true
-    | Access _|Amo _|Commit _|Barrier _|Fault _|TooFar _|DC _|IC _|Arch _|NoAction -> false
-
-  let is_label a = match a with
-  | Access (_,A.Location_global (A.V.Val c),_,_,_,_,_)
-  | Amo (A.Location_global (A.V.Val c),_,_,_,_,_,_)
-    -> Constant.is_label c
-  | Arch a ->
-     begin
-       match A.ArchAction.location_of a with
-       | Some (A.Location_global (A.V.Val c)) -> Constant.is_label c
-       | _ -> false
-     end
-  | _ -> false
-
-  let is_dc = function
-    | DC _ -> true
-    | Access _|Amo _|Commit _|Barrier _ |Fault _|TooFar _|Inv _|IC _|Arch _|NoAction-> false
-
-  let is_ci = function
-    | DC(op,_) as a -> is_dc a && AArch64Base.DC.ci op
-    | _ -> false
-
-  let is_c = function
-    | DC(op,_) as a -> is_dc a && AArch64Base.DC.c op
-    | _ -> false
-
-  let is_i = function
-    | DC(op,_) as a -> is_dc a && AArch64Base.DC.i op
-    | IC _ -> Warn.warn_always "FIXME possibly mistaking IC for DC" ; true
-    | _ -> false
+    | Access _|Amo _|Commit _|Barrier _|Fault _|TooFar _|CMO _|Arch _|NoAction -> false
 
   let is_at_level lvl = function
     | Inv(op,_) -> A.TLBI.is_at_level lvl op
@@ -352,7 +318,7 @@ end = struct
   let is_fault = function
     | Fault _ -> true
     | Access _ | Amo _ | Commit _ | Barrier _ | TooFar _ | Inv _
-    | DC _ | IC _ | Arch _ | NoAction
+    | CMO _ | Arch _ | NoAction
       -> false
 
   let is_faulting_read = function
@@ -370,13 +336,16 @@ end = struct
   let is_exc_entry = function
     | Fault (_,_,_,_,true,_,_) -> true
     | Fault _ | Access _ | Amo _ | Commit _ | Barrier _ | TooFar _ | Inv _
-    | DC _ | IC _ | Arch _ | NoAction
+    | CMO _ | Arch _ | NoAction
       -> false
 
   let to_fault = function
-    | Fault (i,A.Location_global x,_,_,_,t,msg) -> Some ((i.A.proc,i.A.labels),x,t,msg)
+    | Fault (i,Some (A.Location_global x),_,_,_,t,msg) ->
+       Some ((i.A.proc,i.A.labels),Some x,t,msg)
+    | Fault (i,None,_,_,_,t,msg) ->
+       Some ((i.A.proc,i.A.labels),None,t,msg)
     | Fault _ | Access _ | Amo _ | Commit _ | Barrier _ | TooFar _ | Inv _
-    | DC _ | IC _ | Arch _ | NoAction
+    | CMO _ | Arch _ | NoAction
       -> None
 
   let get_mem_dir a = match a with
@@ -441,13 +410,13 @@ end = struct
   | Access (W,_,_,_,_,_,_)|Amo _ -> true
   | Arch a -> A.ArchAction.is_load a
   | Access (R,_,_,_,_,_,_) | Barrier _ | Commit _
-  | Fault _ | TooFar _ | Inv _ | DC _ | IC _ | NoAction -> false
+  | Fault _ | TooFar _ | Inv _ | CMO _ | NoAction -> false
 
   let is_load a = match a with
   | Access (R,_,_,_,_,_,_) | Amo _ -> true
   | Arch a -> A.ArchAction.is_store a
   | Access (W,_,_,_,_,_,_) | Barrier _ | Commit _ | Fault _ | TooFar _ | Inv _
-  | DC _| IC _ | NoAction -> false
+  | CMO _ | NoAction -> false
 
 
   let get_kind = function
@@ -469,15 +438,6 @@ end = struct
 
   let is_reg_load_any a = match a with
   | Access (R,A.Location_reg _,_,_,_,_,_) -> true
-  | _ -> false
-
-(* Cache maintenance *)
-  let is_dc a = match a with
-  | DC _ -> true
-  | _ -> false
-
-  let is_ic a = match a with
-  | IC _ -> true
   | _ -> false
 
 (* Barriers *)
@@ -526,6 +486,13 @@ end = struct
           | Barrier b -> p b
           | _ -> false
           in tag,p) A.barrier_sets
+    and cmo_sets =
+      List.map
+        (fun (tag,p) ->
+          let p act = match act with
+          | CMO (cmo, _) -> p cmo
+          | _ -> false
+          in tag,p) A.cmo_sets
     and asets =
       List.map
         (fun (tag,p) ->
@@ -557,9 +524,22 @@ end = struct
 
     and ifetch_sets =
       if self then
-        (* ("IF",is_ifetch)::[] *)
-        ("INSTR",is_label)::[]
-      else []
+        let location_of_is_a_label a =
+          match location_of a with
+          | Some A.Location_global (A.V.Val c) -> Constant.is_label c
+          | _ -> false in
+        let is_ifetch a = (is_mem_load a || is_mem_store a) && location_of_is_a_label a in
+        let check_value a f = match value_of a with
+          | Some v -> f v
+          | _ -> false in
+        let ifetch_value_sets =
+          List.map
+            (fun (tag,p) ->
+              tag, fun a -> is_ifetch a && (check_value a p))
+            A.ifetch_value_sets in
+        ("Instr",is_ifetch)::ifetch_value_sets
+      else
+        []
 
     and fault_sets =
       ("FAULT",is_fault)::
@@ -569,13 +549,12 @@ end = struct
       ("EXC-RET",is_exc_return)::
         List.map (fun (s,keys) -> (s,is_fault_of_type keys)) A.I.FaultType.sets
 
+    and tlbi_sets = List.map
+        (fun (tag, f) -> tag, function | Inv (op,_) -> f op | _ -> false)
+        A.TLBI.sets
     in
     ("T",is_tag)::
     ("TLBI",is_inv)::
-    ("DC",is_dc)::
-    ("DC-IC",is_ic)::
-    ("DC-CI",is_ci)::
-    ("DC-C",is_c)::("DC-I",is_i)::
     ("no-loc", fun a -> Misc.is_none (location_of a))::
     (if kvm then
       fun k ->
@@ -585,7 +564,7 @@ end = struct
           (fun (key,p) k -> (key,on_pteval p)::k) A.pteval_sets k
     else
       fun k -> k)
-      (bsets @ asets @ esets @ lsets @ aasets @ ifetch_sets @ fault_sets)
+      (bsets @ cmo_sets @ asets @ esets @ lsets @ aasets @ ifetch_sets @ fault_sets @ tlbi_sets)
 
   let arch_rels =
     if kvm then
@@ -636,7 +615,11 @@ end = struct
           let open Constant in
           function
           | Some (A.V.Val (PteVal v)) -> Some v
-          | Some (A.V.Val (ConcreteVector _|Concrete _|Symbolic _|Label (_, _)|Tag _|Instruction _))
+          | Some
+              (A.V.Val
+                 (ConcreteVector _|Concrete _|Symbolic _|ConcreteRecord _
+                  |Label (_, _)|Tag _|Instruction _
+                  |Frozen _))
           | None
             -> None
           | Some (A.V.Var _) ->
@@ -689,7 +672,7 @@ end = struct
           (V.undetermined_vars v1)
           (V.undetermined_vars v2)
     | Arch a -> A.ArchAction.undetermined_vars a
-    | Barrier _|Commit _|Fault _|TooFar _|Inv _ | DC _ | IC _|NoAction -> V.ValueSet.empty
+    | Barrier _|Commit _|Fault _|TooFar _|Inv _ |CMO _|NoAction -> V.ValueSet.empty
 
   let simplify_vars_in_action soln a =
     match a with
@@ -703,17 +686,14 @@ end = struct
         let v2 = V.simplify_var soln v2 in
         Amo (loc,v1,v2,an,exp_an,sz,t)
     | Fault (ii,loc,d,a,h,t,msg) ->
-        let loc = A.simplify_vars_in_loc soln loc in
+        let loc = Misc.map_opt (A.simplify_vars_in_loc soln) loc in
         Fault(ii,loc,d,a,h,t,msg)
     | Inv (op,oloc) ->
         let oloc = Misc.app_opt (A.simplify_vars_in_loc soln) oloc in
         Inv (op,oloc)
-    | DC (op,oloc) ->
+    | CMO (op,oloc) ->
         let oloc = Misc.app_opt (A.simplify_vars_in_loc soln) oloc in
-        DC (op,oloc)
-    | IC (op,oloc) ->
-        let oloc = Misc.app_opt (A.simplify_vars_in_loc soln) oloc in
-        IC (op,oloc)
+        CMO (op,oloc)
     | Arch a -> Arch (A.ArchAction.simplify_vars soln a)
     | Barrier _ | Commit _|TooFar _|NoAction -> a
 

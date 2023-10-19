@@ -1,0 +1,12 @@
+Test AK003 Allowed
+States 3
+1:X0=0; 1:X1=0;
+1:X0=0; 1:X1=1;
+1:X0=1; 1:X1=1;
+No
+Witnesses
+Positive: 0 Negative: 5
+Condition exists (1:X0=1 /\ 1:X1=0)
+Observation AK003 Never 0 5
+Hash=f1ea3d37edb778d976084e71b2bbafc9
+

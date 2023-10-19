@@ -94,7 +94,6 @@ module Make(C:Config) = struct
   | None| Some (Atomic|Reserve) -> v
   | Some (Mixed (sz,_)) -> Mixed.tr_value sz v
 
-
   module ValsMixed =
     MachMixed.Vals
       (struct
@@ -105,7 +104,8 @@ module Make(C:Config) = struct
   let overwrite_value v ao w = match ao with
   | None| Some (Atomic|Reserve) -> w (* total overwrite *)
   | Some (Mixed (sz,o)) ->
-      ValsMixed.overwrite_value v sz o w
+     ValsMixed.overwrite_value v sz o w
+
 
   let extract_value v ao = match ao with
   | None| Some (Atomic|Reserve) -> v

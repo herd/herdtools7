@@ -1,0 +1,17 @@
+AArch64 L083
+{
+int64_t x[2];
+0:X2=x;
+1:X2=x;
+int64_t 1:X0;
+int64_t 1:X1;
+}
+  P0                    |  P1            ;
+ ADD X2,X2,#16          | LDR X1,[X2]    ;
+ MOV X0,#1              | DMB LD         ;
+ MOV X1,#2              | LDR X0,[X2,#8] ;
+ STILP X0,X1,[X2,#-16]! |                ;
+
+~exists 1:X1=1 /\ 1:X0=0
+(* Notice: forbiding this test, as it probabbly should be,
+   requires a model change *)
