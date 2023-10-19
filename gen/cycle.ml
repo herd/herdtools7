@@ -91,7 +91,7 @@ module type S = sig
  val resolve_edges : edge list -> edge list * node
 
 (* Finish edge cycle, adding complete events, returns initial environment *)
-  val finish : node -> (string * Code.v) list
+  val finish : node -> Code.env
 
 (* Composition of the two more basic steps above *)
   val make : edge list -> edge list * node * Code.env
@@ -134,6 +134,7 @@ module Make (O:Config) (E:Edge.S) :
   let do_memtag = O.variant Variant_gen.MemTag
   let do_morello = O.variant Variant_gen.Morello
   let do_kvm = Variant_gen.is_kvm O.variant
+  let do_invalid = if do_kvm then O.variant Variant_gen.InvalidPte else false
   let do_neon = O.variant Variant_gen.Neon
 
   type fence = E.fence
@@ -545,7 +546,8 @@ module CoSt = struct
 end
 
 let pte_val_init loc = match loc with
-| Code.Data loc when do_kvm -> PteVal.default loc
+  | Code.Data loc when do_kvm ->
+      if do_invalid then PteVal.invalid loc else PteVal.default loc
 | _ -> pte_default
 
 (****************************)
@@ -905,9 +907,16 @@ let set_same_loc st n0 =
                   false
                   (CoSt.create ~init:i sz)
                   (pte_val_init loc) ns in
-              let env = if do_kvm then (Code.as_data loc,k)::env else env in
+              let env =
+                if do_kvm then
+                  let loc = Code.as_data loc in
+                  let env = (loc,V k)::env in
+                  if do_invalid then
+                    (Misc.add_pte loc,VPte (false,loc))::env
+                  else env
+                else env in
               if next_x_ok then
-                k+8,(next_x,k+4)::env
+                k+8,(next_x,V (k+4))::env
               else
                 k+4,env)
         nss (0,[]) in
@@ -1064,7 +1073,7 @@ let finish n =
     eprintf "INITIAL VALUES: %s\n"
       (String.concat "; "
          (List.map
-            (fun (loc,k) -> sprintf "%s->%d" loc k)
+            (fun (loc,k) -> sprintf "%s->%s" loc (Code.pp_initv k))
             initvals)) ;
     eprintf "WRITE VALUES\n" ;
     debug_cycle stderr n

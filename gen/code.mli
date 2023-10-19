@@ -39,7 +39,9 @@ val pp_v : ?hexa:bool -> v -> string
 type proc = Proc.t
 val pp_proc : proc -> string
 
-type env = (string * v) list
+type initv = V of v | VPte of bool * string (* bool=false <=> invalid *)
+type env = (string * initv) list
+val pp_initv : initv -> string
 
 (* Direction of event *)
 type dir = W | R | J

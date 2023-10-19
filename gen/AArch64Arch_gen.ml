@@ -465,7 +465,7 @@ let overwrite_value v ao w = match ao with
   | Some ((Pte _|Pair _),Some _) -> assert false
 
 (* Page table entries *)
-  module PteVal = struct
+ module PteVal = struct
 
     type pte_atom = atom
 
@@ -474,6 +474,8 @@ let overwrite_value v ao w = match ao with
     let pp = AArch64PteVal.pp_v
 
     let default = AArch64PteVal.default
+
+    let invalid = AArch64PteVal.invalid
 
     let compare = AArch64PteVal.compare
 
@@ -799,6 +801,7 @@ include
 
       type special = reg
       let specials = vregs
+
     end)
 
 end
