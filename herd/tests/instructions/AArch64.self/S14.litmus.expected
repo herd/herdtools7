@@ -6,7 +6,6 @@ States 3
 Ok
 Witnesses
 Positive: 3 Negative: 0
-Flag Assuming-no-two-modified-instructions-are-on-the-same-cache-line
 Condition forall (0:X0=2 \/ 0:X0=3 \/ 0:X0=4)
 Observation S14 Always 3 0
 Hash=037d336cd00d0983446ae270e9369843
