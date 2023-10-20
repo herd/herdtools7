@@ -2026,10 +2026,12 @@ module Make
            match v with
            | M.A.V.Var(_) as v ->
               let lbls = get_exported_labels test in
-              if Label.Full.Set.is_empty lbls then
-                Warn.fatal
-                  "Could find no potential target for indirect branch %s \
-                   (potential targets are statically known labels)" (AArch64.dump_instruction i)
+              if Label.Full.Set.is_empty lbls  then begin
+                if C.variant Variant.Telechat then M.unitT () >>! B.Exit
+                else
+                  Warn.fatal "Could find no potential target for indirect branch %s \
+                    (potential targets are statically known labels)" (AArch64.dump_instruction i)
+                end
               else
                 commit_bcc ii
                 >>= fun () -> B.indirectBranchT v lbls bds
