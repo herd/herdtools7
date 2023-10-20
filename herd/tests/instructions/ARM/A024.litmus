@@ -1,0 +1,25 @@
+ARM A024
+
+Variant=telechat
+{ [P1_r0]=0;[x]=0;[y]=0;
+  %P0_x=x;%P0_y=y;
+  %P1_P1_r0=P1_r0;
+  %P1_x=x;%P1_y=y }
+(*****************************************************************)
+(* Compiler:                                                     *)
+(* arm-linux-gnueabi-gcc-10 -c -g -O2 -march=armv7-a --std=c11 -fno-section-anchors*)
+(*****************************************************************)
+  P0               |  P1                   ;
+   MOV R0,#2       |   LDR R2,[%P1_y]      ;
+   MOV R1,#1       |   CMP R2,#1           ;
+   DMB ISH         |   BEQ L0x5c           ;
+   STR R0,[%P0_x]  |  L0x48:               ;
+   STR R1,[%P0_y]  |   STR R2,[%P1_P1_r0]  ;
+   BX LR           |   BX LR               ;
+                   |  L0x5c:               ;
+                   |   DMB ISH             ;
+                   |   STR R2,[%P1_x]      ;
+                   |   B L0x48             ;
+
+
+exists ([x]=2 /\ P1_r0=1)

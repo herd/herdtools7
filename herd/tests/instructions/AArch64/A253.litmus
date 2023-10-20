@@ -1,0 +1,26 @@
+AArch64 A253
+
+Variant=telechat
+
+{ [P1_r0]=0;[x]=0;[y]=0; uint64_t %P0_x=x;
+  uint64_t %P0_y=y; uint64_t %P1_P1_r0=P1_r0;
+  uint64_t %P1_x=x;uint64_t %P1_y=y }
+(*****************************************************************)
+(* Compiler:                                                     *)
+(* aarch64-linux-gnu-gcc -c -g  -O2 -pthread --std=c11 -fno-section-anchors*)
+(*                                                               *)
+(*****************************************************************)
+P0                 |  P1                    ;
+ MOVZ W1,#2        |   LDR W1,[X%P1_y]      ;
+ STLR W1,[X%P0_x]  |   CMP W1,#1            ;
+ MOVZ W1,#1        |   B.EQ L0x5c           ;
+ STR W1,[X%P0_y]   |   STR W1,[X%P1_P1_r0]  ;
+ RET               |   RET                  ;
+                   |  L0x5c:                ;
+                   |   MOVZ W2,#1           ;
+                   |   STLR W2,[X%P1_x]     ;
+                   |   STR W1,[X%P1_P1_r0]  ;
+                   |   RET                  ;
+
+exists ([x]=2 /\ P1_r0=1)
+
