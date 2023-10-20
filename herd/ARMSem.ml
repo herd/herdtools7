@@ -56,22 +56,6 @@ module
       | M.A.V.Val (Concrete i) -> Some (B.Addr (M.A.V.Cst.Scalar.to_int i))
       | _ -> None
 
-    let do_indirect_jump test bds i v =
-      match  v2tgt v with
-      | Some tgt -> M.unitT (B.Jump (tgt,bds))
-      | None ->
-         match v with
-         | M.A.V.Var(_) as v ->
-            let lbls = get_exported_labels test in
-            if Label.Full.Set.is_empty lbls then
-              Warn.fatal
-                "Could find no potential target for indirect branch %s \
-                 (potential targets are statically known labels)" (ARM.dump_instruction i)
-            else
-              B.indirectBranchT v lbls bds
-      | _ -> Warn.fatal
-          "illegal argument for the indirect branch instruction %s \
-           (must be a label)" (ARM.dump_instruction i)
 
 (********************)
 (* Semantics proper *)
@@ -84,6 +68,25 @@ module
       let (>>|) = M.(>>|)
       let (>>!) = M.(>>!)
       let (>>::) = M.(>>::)
+
+      let do_indirect_jump test bds i v =
+      match  v2tgt v with
+      | Some tgt -> M.unitT (B.Jump (tgt,bds))
+      | None ->
+         match v with
+         | M.A.V.Var(_) as v ->
+            let lbls = get_exported_labels test in
+              if Label.Full.Set.is_empty lbls then begin
+                if C.variant Variant.Telechat then M.unitT () >>! B.Exit
+                else
+                  Warn.fatal "Could find no potential target for indirect branch %s \
+                    (potential targets are statically known labels)" (ARM.dump_instruction i)
+                end
+              else
+                B.indirectBranchT v lbls bds
+      | _ -> Warn.fatal
+          "illegal argument for the indirect branch instruction %s \
+           (must be a label)" (ARM.dump_instruction i)
 
       let reg_sz = V.Cst.Scalar.machsize
       and nat_sz = V.Cst.Scalar.machsize
