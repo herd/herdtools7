@@ -167,6 +167,8 @@ let do_op1 op cst =
       | Constant.Symbolic x ->
           if Misc.list_eq ( = ) positions all_64_bits_positions then
             Some (Constant.Symbolic x)
+          else if positions = [63] then
+            return_concrete (ASLScalar.zeros 1)
           else None
       | _ -> None)
   | BoolNot -> (
