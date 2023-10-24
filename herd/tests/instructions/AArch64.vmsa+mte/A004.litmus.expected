@@ -1,0 +1,11 @@
+Test A004 Required
+States 1
+[x]=0; Fault(P0:L0,x:red,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag combining-vmsa-and-memtag-is-not-supported
+Condition forall ([x]=0 /\ fault(P0:L0,x,TagCheck))
+Observation A004 Always 1 0
+Hash=bf45c6a8a3dec235d4ba99539f6e2979
+

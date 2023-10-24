@@ -1,0 +1,11 @@
+Test A005 Required
+States 1
+[x]=0; Fault(P0:L0,x:red,MMU:Permission);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag combining-vmsa-and-memtag-is-not-supported
+Condition forall ([x]=0 /\ fault(P0:L0,x,MMU:Permission))
+Observation A005 Always 1 0
+Hash=fe308bb85bd50ea32864c623d03c6b2a
+
