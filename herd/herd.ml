@@ -679,6 +679,8 @@ let () =
     | _ -> false
     end  in
 
+  let dbg_exc = !Opts.debug.Debug_herd.exc in
+
   let _seen =
 
 (* If interval timer enabled and triggered,
@@ -692,19 +694,23 @@ let () =
         try from_file name seen
         with
         | Misc.Timeout -> seen
-        | Misc.Exit -> check_exit seen
-        | Misc.Fatal msg ->
-            Warn.warn_always "%a: %s" Pos.pp_pos0 name msg ;
-             check_exit seen
-        | Misc.UserError msg ->
-            begin if check_pos0 msg then
-              Warn.warn_always "%s (User error)" msg
-            else
-              Warn.warn_always "%a: %s (User error)" Pos.pp_pos0 name msg
-            end ;
-            check_exit seen
+        | Misc.Exit as e ->
+           if dbg_exc then raise e ;
+           check_exit seen
+        | Misc.Fatal msg as e  ->
+           if dbg_exc then raise e ;
+           Warn.warn_always "%a: %s" Pos.pp_pos0 name msg ;
+           check_exit seen
+        | Misc.UserError msg as e ->
+           if dbg_exc then raise e ;
+           begin if check_pos0 msg then
+             Warn.warn_always "%s (User error)" msg
+           else
+             Warn.warn_always "%a: %s (User error)" Pos.pp_pos0 name msg
+           end ;
+           check_exit seen
         | e ->
-            Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
-            raise e)
+           Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
+           raise e)
       tests StringMap.empty in
   exit 0

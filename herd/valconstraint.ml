@@ -66,7 +66,7 @@ end
 
 module type Config = sig
   val hexa : bool
-  val debug : bool
+  val debug : Debug_herd.t
   val keep_failed_as_undetermined : bool
 end
 
@@ -79,6 +79,8 @@ and type solution = A.V.solution
 and type location = A.location
 and type state = A.state =
   struct
+
+    let debug_solver = C.debug.Debug_herd.solver
 
     open Printf
     module V = A.V
@@ -254,7 +256,7 @@ and type state = A.state =
       let t = add_vars_cns cns in
       let m = uf_cns t cns in
       let cns = subst_cns m cns in
-      if C.debug then begin
+      if debug_solver then begin
        eprintf "* Normalizes to *\n%s\n%!" (pp_cnstrnts cns)
       end ;
       m,cns
@@ -304,13 +306,15 @@ and type state = A.state =
          with
          | Contradiction|Misc.Timeout as e -> raise e
          | e ->
-            if C.keep_failed_as_undetermined then cn :: k
+            if C.debug.Debug_herd.exc then raise e
+            else if C.keep_failed_as_undetermined then cn :: k
             else
               let () =
-                if C.debug then
-                  eprintf "Delaying exception in solver: %s\n"
+                if debug_solver then begin
+                  eprintf "Solving %s\n" (pp_cnstrnt cn) ;
+                  eprintf "Delaying exception in solver: %s\n%!"
                     (Printexc.to_string e)
-              in
+                end in
               Failed e :: k
        end
     | Failed _ | Warn _ -> cn::k
@@ -421,7 +425,7 @@ let get_failed cns =
         (V.Solution.map (fun x -> V.Val x) solns0)
 
     let solve lst =
-      if C.debug then begin
+      if debug_solver then begin
         prerr_endline "** Solve **" ;
         eprintf "%s\n" (pp_cnstrnts lst) ; flush stderr
       end ;
@@ -432,7 +436,7 @@ let get_failed cns =
           let solns = add_vars_solns m solns in
           Maybe (solns,lst)
         with Contradiction -> NoSolns in
-      if C.debug then begin
+      if debug_solver then begin
         eprintf "Solutions: %s\n" (pp_answer sol) ; flush stderr
       end ;
       sol
