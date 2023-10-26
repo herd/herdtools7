@@ -131,6 +131,7 @@ val same_instance : event -> event -> bool
 (* Commit *)
   val is_bcc : event -> bool
   val is_pred : event -> bool
+  val is_pred_txt : string option -> event -> bool
   val is_commit : event -> bool
 
 (* Too much unrolling *)
@@ -691,6 +692,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 (* Commits *)
     let is_bcc e = Act.is_bcc e.action
     let is_pred e = Act.is_pred e.action
+    let is_pred_txt cond e = Act.is_pred ~cond e.action
     let is_commit e = Act.is_commit e.action
 
 (*  Unrolling control *)

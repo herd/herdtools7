@@ -257,7 +257,7 @@ end = struct
 
 (* (No) commits *)
   let is_bcc _ = false
-  let is_pred _ = false
+  let is_pred ?cond:_ _ = false
   let is_commit _ = false
 
 (* Unrolling control *)

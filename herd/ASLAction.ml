@@ -169,7 +169,7 @@ module Make (A : S) = struct
 
   (* Commits *)
   let is_bcc _action = false
-  let is_pred _action = false
+  let is_pred ?cond:_ _action = false
   let is_commit _action = false
 
   (* Unrolling control *)

@@ -1132,7 +1132,7 @@ module Make
               if kvm then
                 let mphy = (fun ma a -> lift_memtag_phy a mop ma dir an ii) in
                 M.short3
-                  (is_this_reg rA) E.is_commit
+                  (is_this_reg rA) (E.is_pred_txt (Some "color"))
                   (lift_kvm dir updatedb mop ma an ii mphy)
               else lift_memtag_virt mop ma dir an ii
             end
