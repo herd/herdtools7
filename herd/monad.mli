@@ -104,11 +104,10 @@ module type S =
     (* Same as [>>=] but with order deps instead of data between the arguments. *)
     val bind_order : 'a t -> ('a -> 'b t) -> 'b t
 
-    (* Very ad-hoc transformation, [short3 p1 p2 s],
-     * add relation r;r;r where r is intra_causality_data,
-     *  with starting event(s) selected by p1 and final one(s) by p2
-     *)
-    val short3 : (E.event -> bool) -> (E.event -> bool) -> 'a t -> 'a t
+    val short : (E.event -> bool) -> (E.event -> bool) -> 'a t -> 'a t
+    (** [short p1 p2 s] adds iico_causality_data relations to [s].
+        New relation start from all events in [s] that satisfy [p1]
+        and finish on all events in [s] that satisfy [p2]. *)
 
     (* Another ad-hoc transformation. [upOneRW p m]
      * Let r be iico_data, e1 and e2 be events s.t. p is true, e1 is 1 read e2 is a write,

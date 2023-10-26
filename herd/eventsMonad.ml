@@ -320,20 +320,19 @@ Monad type:
     let bind_order s f = data_comp E.bind_order s f
 
 (* Ad-hoc short-circuit *)
-    let short3 p1 p2 m =
+    let short p1 p2 m =
       fun eiid ->
       let eiid,(acts,specs) = m eiid in
       let acts =
         Evt.map
           (fun (v,cls,es) ->
-            let data3 =
-              let data = es.E.intra_causality_data in
-              let data3 =
-                E.EventRel.filter
-                  (fun (e1,e2) -> p1 e1 && p2 e2)
-                  (E.EventRel.transitive3 data) in
-              E.EventRel.union data data3 in
-            v,cls,{ es with E.intra_causality_data=data3; })
+             let data =
+               let data =
+                 E.EventRel.filter
+                   (fun (e1,e2) -> p1 e1 && p2 e2)
+                   (E.EventRel.cartesian es.E.events es.E.events) in
+               E.EventRel.union es.E.intra_causality_data data in
+            v,cls,{ es with E.intra_causality_data=data; })
       acts in
        eiid,(acts,specs)
 
