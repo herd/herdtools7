@@ -1,4 +1,8 @@
 (*
+ * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
+ * SPDX-License-Identifier: BSD-3-Clause
+ *)
+(*
    This Module implements some sort of a GLR parser for ASLv0.
    Such work is needed because ASLv0 is not a LR language, as the following
    statements show:

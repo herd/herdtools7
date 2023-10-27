@@ -1,36 +1,7 @@
-(******************************************************************************)
-(*                           the diy toolsuite                                *)
-(*                                                                            *)
-(* Jade Alglave, University College London, UK.                               *)
-(* Luc Maranget, INRIA Paris-Rocquencourt, France.                            *)
-(*                                                                            *)
-(* Copyright 2015-present Institut National de Recherche en Informatique et   *)
-(* en Automatique and the authors. All rights reserved.                       *)
-(*                                                                            *)
-(* This software is governed by the CeCILL-B license under French law and     *)
-(* abiding by the rules of distribution of free software. You can use,        *)
-(* modify and/ or redistribute the software under the terms of the CeCILL-B   *)
-(* license as circulated by CEA, CNRS and INRIA at the following URL          *)
-(* "http://www.cecill.info". We also give a copy in LICENSE.txt.              *)
-(******************************************************************************)
-(* Authors:                                                                   *)
-(* Hadrien Renaud, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris-Rocquencourt, France.                            *)
-(* Jade Alglave, Arm Ltd and UCL, UK.                                         *)
-(******************************************************************************)
-(* Disclaimer:                                                                *)
-(* This material covers both ASLv0 (viz, the existing ASL pseudocode language *)
-(* which appears in the Arm Architecture Reference Manual) and ASLv1, a new,  *)
-(* experimental, and as yet unreleased version of ASL.                        *)
-(* This material is work in progress, more precisely at pre-Alpha quality as  *)
-(* per Arm’s quality standards.                                               *)
-(* In particular, this means that it would be premature to base any           *)
-(* production tool development on this material.                              *)
-(* However, any feedback, question, query and feature request would be most   *)
-(* welcome; those can be sent to Arm’s Architecture Formal Team Lead          *)
-(* Jade Alglave <jade.alglave@arm.com>, or by raising issues or PRs to the    *)
-(* herdtools7 github repository.                                              *)
-(******************************************************************************)
+(*
+ * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
+ * SPDX-License-Identifier: BSD-3-Clause
+ *)
 
 open AST
 open ASTUtils
@@ -45,11 +16,6 @@ let undefined_identifier pos x = fatal_from pos (Error.UndefinedIdentifier x)
 let conflict pos expected provided =
   fatal_from pos (Error.ConflictingTypes (expected, provided))
 
-(******************************************************************************)
-(*                                                                            *)
-(*                         Type manipulation helpers                          *)
-(*                                                                            *)
-(******************************************************************************)
 
 let expr_of_z z = literal (L_Int z)
 let plus = binop PLUS
@@ -132,9 +98,6 @@ let infer_value = function
   | L_String _ -> T_String
   | L_BitVector bv -> Bitvector.length bv |> expr_of_int |> t_bits_bitwidth
 
-(**********************************************)
-(* Approximate min and max on integer domains *)
-(**********************************************)
 
 exception ConstraintMinMaxTop
 

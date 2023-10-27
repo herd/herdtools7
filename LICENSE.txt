@@ -3,7 +3,35 @@ NOTE
 This license applies to all files in the distribution, except as stated
 below:
 
-* The file herd/libdir/aarch64.cat, which is courtesy of ARM Ltd.
+* Files in directory asllib/ are copryright Arm Ltd and
+  are distributed under the terms of the BSD-3-Clause license.
+
+* Some OCaml source files have a joint copyright
+  attribution with Arm Ltd, as specified in the files themselves.
+  Those files are under Cecill-B, like the rest of herdtools7.
+
+* The files in the following sub-directories of catalogue
+  are under Cecill-B, like the rest of herdtools7 but have
+  copyright attribution with Arm Ltd:
+    aarch64-ETS2/
+    aarch64-MTE/
+    aarch64-MTE-mixed/
+    aarch64-MTE-pick/
+    aarch64-VMSA/
+    aarch64-down-one-leg/
+    aarch64-faults/
+    aarch64-ifetch/
+    aarch64-pick/
+
+* The following files are copyright Arm Ltd:
+    herd/libdir/aarch64hwreqs.cat
+    herd/libdir/aarch64.cat
+    herd/libdir/aarch32.cat
+    herd/libdir/enumerations.cat
+    herd/libdir/aarch64memattrs.cat
+    herd/libdir/aarch64bbm.cat
+    herd/libdir/aarch64deps.cat
+    herd/libdir/aarch64util.cat
 
 ----------------------------------------
 

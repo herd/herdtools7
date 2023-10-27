@@ -1,3 +1,7 @@
+(*
+ * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
+ * SPDX-License-Identifier: BSD-3-Clause
+ *)
 open Asllib
 module IMap = ASTUtils.IMap
 module ISet = ASTUtils.ISet
