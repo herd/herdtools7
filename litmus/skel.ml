@@ -360,8 +360,11 @@ module Make
 (* Right value, all cases *)
       let rec dump_a_v = function
         | Concrete i ->  A.V.Scalar.pp  Cfg.hexa i
+        | Symbolic _ as v when is_label v ->
+           Warn.user_error
+             "Labels cannot be used as initial values of memory locations"
         | Symbolic (Virtual {name=s;tag=None; offset=0;_}) ->
-            dump_a_addr s
+            dump_a_addr (Symbol.pp s)
         | ConcreteVector vs ->
            let pps =
              List.map
@@ -369,9 +372,6 @@ module Make
                vs in
            sprintf "{%s}" (String.concat "" pps)
         | Symbolic _|Tag _|PteVal _|Frozen _|ConcreteRecord _ -> assert false
-        | Label _ ->
-            Warn.user_error
-              "Labels cannot be used as initial values of memory locations"
         | Instruction i -> A.GetInstr.instr_name i
 
 (* Dump left & right values when context is available *)
@@ -784,7 +784,7 @@ module Make
                         (fun (loc,v) k ->
                           match loc,v with
                           | A.Location_reg(p,_),
-                            Symbolic (Virtual {name=s;_}) when s = a ->
+                            Symbolic (Virtual {name=Symbol.Data s;_}) when s = a ->
                               let cpy = A.Out.addr_cpy_name a p in
                               O.fi "%s* *%s ;" (CType.dump t) cpy ;
                               (cpy,a)::k
@@ -817,7 +817,7 @@ module Make
                 if Cfg.cautious then
                   List.iter
                     (fun (loc,v) -> match loc,v with
-                    | A.Location_reg(p,_),Symbolic (Virtual {name=s;_})
+                    | A.Location_reg(p,_),Symbolic (Virtual {name=Symbol.Data s;_})
                           when Misc.string_eq s a ->
                         let cpy = A.Out.addr_cpy_name a p in
                         O.f "static %s* %s[SIZE_OF_ALLOC];"

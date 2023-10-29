@@ -16,6 +16,18 @@
 
 (** Constants, both symbolic (ie addresses) and concrete (eg integers)  *)
 
+module Symbol : sig
+  type t = Data of string | Label of Label.Full.full
+
+  val compare : t -> t -> int
+  val equal : t -> t -> bool
+  val pp : t -> string
+  val map : (string -> string) -> t -> t
+  val of_string : string -> t
+  val is_data : t -> bool
+  val is_label : t -> bool
+end
+
 type tag = string option
 type cap = Int64.t
 type offset = int
@@ -24,7 +36,7 @@ type offset = int
 (* Memory cell, with optional tag, capability<128:95>,optional vector metadata, and offset *)
 type symbolic_data =
   {
-   name : string ;
+   name : Symbol.t ;
    tag : tag ;
    cap : cap ;
    offset : offset ;
@@ -73,7 +85,6 @@ type ('scalar, 'pte, 'instr) t =
   | ConcreteRecord of ('scalar, 'pte, 'instr) t StringMap.t
       (** A record of constants, e.g. [{ addr: x; instr: NOP; index: 3 }] *)
   | Symbolic of symbol  (** A symbolic constant, e.g. [x] *)
-  | Label of Proc.t * string  (** A label in code. *)
   | Tag of string
   | PteVal of 'pte  (** A page table entry. *)
   | Instruction of 'instr  (** An instruction. *)
@@ -105,6 +116,7 @@ val map_label : (Label.t -> Label.t) -> ('s,'pte,'instr) t -> ('s,'pte,'instr) t
 val map :
   ('a -> 'b) -> ('c -> 'd) -> ('e -> 'f) -> ('a,'c,'e) t -> ('b,'d,'f) t
 
+val mk_sym_virtual_label : Proc.t -> Label.t -> ('scalar,'pte,'instr) t
 val mk_sym_virtual : string -> ('scalar,'pte,'instr) t
 val mk_sym : string -> ('scalar,'pte,'instr) t
 val mk_sym_with_index : string -> int -> ('scalar, 'pte, 'instr) t
@@ -117,6 +129,7 @@ val mk_vec : int -> ('scalar,'pte,'instr) t list -> ('scalar,'pte,'instr) t
 val mk_replicate : int -> ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t
 
 val is_symbol : ('scalar,'pte,'instr) t -> bool
+val is_data : ('scalar,'pte,'instr) t -> bool
 val is_label : ('scalar,'pte,'instr) t -> bool
 (* Extract label, if any *)
 val as_label :  ('scalar,'pte,'instr)  t -> Label.Full.full option
@@ -124,6 +137,7 @@ val as_label :  ('scalar,'pte,'instr)  t -> Label.Full.full option
 val is_non_mixed_symbol : symbol -> bool
 
 val default_tag : ('scalar,'pte,'instr) t
+val mk_sym_tag : string -> string -> ('scalar,'pte,'instr) t
 
 (* Check  non-concrete constant (and change type!) *)
 val check_sym : ('a,'pte,'instr) t -> ('b,'pte,'instr) t
@@ -137,6 +151,7 @@ val of_symbolic_data : symbolic_data -> ('scalar,'pte,'instr) t
 val as_pte : ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t option
 val is_pt : ('scalar,'pte,'instr)  t -> bool
 
+val mk_sym_morello : string -> string -> string -> ('scalar,'pte,'instr) t
 module type S =  sig
 
   module Scalar : Scalar.S

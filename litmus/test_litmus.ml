@@ -193,7 +193,7 @@ struct
     List.fold_left
       (fun k (_,v) ->
         match v with
-        | Label (p,lbl) -> Label.Full.Set.add (p,lbl) k
+        | Symbolic (Virtual {name=Symbol.Label (p,lbl); _}) -> Label.Full.Set.add (p,lbl) k
         | _ -> k)
       Label.Full.Set.empty
 
