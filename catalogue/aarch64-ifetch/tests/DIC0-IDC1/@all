@@ -31,7 +31,9 @@ IDC1.MP.RF+cachesync+dsb-isb.litmus
 IDC1.MP.RF+cachesync+switch-ctrl.litmus
 IDC1.MP.RF+cachesync+switch-ctrlisb.litmus
 IDC1.MP.RF+ctrlisb-dc-dsb+ic-dsb-isb.litmus
+IDC1.MP.RF+dc-dmb+addr-ic-dsb-isb-1.litmus
 IDC1.MP.RF+dc-dmb+addr-ic-dsb-isb.litmus
+IDC1.MP.RF+dc-dsb+addr-ic-dsb-isb-1.litmus
 IDC1.MP.RF+dc-dsb+addr-ic-dsb-isb.litmus
 IDC1.MP.RF+dc-dsb+ctrlisb-ic-dsb-isb.litmus
 IDC1.MP.RF+dc-dsb-ic-dsb+addr.litmus
@@ -41,6 +43,7 @@ IDC1.MP.RF+dc-dsb-ic-dsb+dsb.ld-isb.litmus
 IDC1.MP.RF+dc.cvau-dmb.ish+dsb.ish-ic.ivau-dsb.ish-isb.litmus
 IDC1.MP.RF+dmb+ctrlisb-dc-dsb-ic-dsb-isb.litmus
 IDC1.MP.RF+dmb+dmb-dc-dsb-ic-dsb-isb.litmus
+IDC1.MP.RF+dmb.st+addr-cachesyncisb-1.litmus
 IDC1.MP.RF+dmb.st+addr-cachesyncisb.litmus
 IDC1.MP.RF+dmb.st+ctrlisb-ic-dsb-isb.litmus
 IDC1.MP.RF+dmb.st+ctrlisb.litmus
