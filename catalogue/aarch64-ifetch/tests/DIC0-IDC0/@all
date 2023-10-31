@@ -34,6 +34,7 @@ MP.RF+ctrlisb-dc-dsb+ic-dsb-isb.litmus
 MP.RF+dc-dmb+addr-ic-dsb-isb-1.litmus
 MP.RF+dc-dsb+addr-ic-dsb-isb-1.litmus
 MP.RF+dc-dsb+ctrlisb-ic-dsb-isb.litmus
+MP.RF+dc-dsb-ic-dsb+addr-1.litmus
 MP.RF+dc-dsb-ic-dsb+ctrlisb.br.litmus
 MP.RF+dc-dsb-ic-dsb+ctrlisb.litmus
 MP.RF+dc-dsb-ic-dsb+dsb.ld-isb.litmus

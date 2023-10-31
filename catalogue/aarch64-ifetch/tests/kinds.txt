@@ -43,6 +43,7 @@ MP.RF+dmb.st+ctrlisb-ic-dsb-isb                       Allowed
 MP.RF+dmb.st+ctrlisb                                  Allowed
 MP.RF+dc-dsb-ic-dsb+ctrlisb                           Forbidden
 MP.RF+dsb-ic-dsb+ctrlisb                              Allowed
+MP.RF+dc-dsb-ic-dsb+addr-1                            Allowed
 MP.RF+dc-dsb-ic-dsb+ctrlisb.br                        Forbidden
 MP.RF+dmb.st+dmb.ish-dc-dsb-ic-dsb-isb                Forbidden
 MP.RF+dmb.st+dmb.ld-dc-dsb-ic-dsb-isb                 Allowed
@@ -160,6 +161,7 @@ IDC1.MP.RF+dmb.st+ctrlisb-ic-dsb-isb                       Forbidden
 IDC1.MP.RF+dmb.st+ctrlisb                                  Allowed
 IDC1.MP.RF+dc-dsb-ic-dsb+ctrlisb                           Forbidden
 IDC1.MP.RF+dsb-ic-dsb+ctrlisb                              Forbidden
+IDC1.MP.RF+dc-dsb-ic-dsb+addr-1                            Allowed
 IDC1.MP.RF+dc-dsb-ic-dsb+ctrlisb.br                        Forbidden
 IDC1.MP.RF+dmb.st+dmb.ish-dc-dsb-ic-dsb-isb                Forbidden
 IDC1.MP.RF+dmb.st+dmb.ld-dc-dsb-ic-dsb-isb                 Forbidden
@@ -275,6 +277,7 @@ DIC1.MP.RF+dmb.st+ctrlisb-ic-dsb-isb                       Forbidden
 DIC1.MP.RF+dmb.st+ctrlisb                                  Forbidden
 DIC1.MP.RF+dc-dsb-ic-dsb+ctrlisb                           Forbidden
 DIC1.MP.RF+dsb-ic-dsb+ctrlisb                              Forbidden
+DIC1.MP.RF+dc-dsb-ic-dsb+addr-1                            Allowed
 DIC1.MP.RF+dc-dsb-ic-dsb+ctrlisb.br                        Forbidden
 DIC1.MP.RF+dmb.st+dmb.ish-dc-dsb-ic-dsb-isb                Forbidden
 DIC1.MP.RF+dmb.st+dmb.ld-dc-dsb-ic-dsb-isb                 Forbidden
