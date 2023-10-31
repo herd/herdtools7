@@ -217,6 +217,17 @@ module Make (B : Backend.S) (C : Config) = struct
       { global; local = empty_scoped Scope_Global }
     in
     let env =
+      (*
+       * Should we put constants in storage, as we do here?
+       * Alternative would be to consider constants in env.ml.
+       *)
+      IMap.fold
+        (fun name c env ->
+          let v = B.v_of_literal c in
+          IEnv.declare_global name v env)
+        static_env.StaticEnv.global.StaticEnv.constants_values
+        env in
+    let env =
       List.fold_left
         (fun env (name,v) -> IEnv.declare_global name v env)
         env env0 in
