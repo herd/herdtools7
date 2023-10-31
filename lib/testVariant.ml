@@ -25,29 +25,36 @@ module
       end
       val info : MiscParser.info
       val precision : Precision.t
+      val mops_size : MachSize.sz
       val variant : Opt.t -> bool
       val set_precision : Precision.t ref -> Opt.t -> bool
+      val set_mops_size : MachSize.sz ref -> Opt.t -> bool
     end) : sig
       type t = Var.Opt.t
       val precision : Precision.t
+      val mops_size: MachSize.sz
       val variant : Var.Opt.t -> bool
     end= struct
       type t = Var.Opt.t
 
       let pref = ref Var.precision
+      and szref = ref Var.mops_size
       and vref = ref Var.variant
 
       let () =
+        let key = MiscParser.variant_key in
         match
           MiscParser.get_info_on_info
-            MiscParser.variant_key Var.info
+            key Var.info
         with
         | None -> ()
         | Some tags ->
             let tags = LexSplit.strings_spaces tags in
             let module Opt = struct
               include Var.Opt
-              let setnow = Var.set_precision pref
+              let setnow tag =
+                Var.set_precision pref tag ||
+                Var.set_mops_size szref tag
             end in
             let module P = ParseTag.MakeS(Opt) in
             try
@@ -55,5 +62,6 @@ module
             with Arg.Bad msg ->  Warn.user_error "%s" msg
 
       let precision = !pref
+      let mops_size = !szref
       let variant = !vref
     end

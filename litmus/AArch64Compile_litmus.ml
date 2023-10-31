@@ -82,6 +82,16 @@ module Make(V:Constant.S)(C:Config) =
     | _,ZR  -> [r1],fmt "0",[],ppz
     | _,_ -> [r1],fmt "0",[r2],fmt "1"
 
+    let args3 ppz fmt r1 r2 r3 = match r1,r2,r3 with
+    | ZR,ZR,ZR -> [],ppz,[],ppz,[],ppz
+    | ZR,ZR,_  -> [],ppz,[],ppz,[r3],fmt "0"
+    | ZR,_,ZR  -> [],ppz,[r2],fmt "0",[],ppz
+    | _,ZR,ZR  -> [r1],fmt "0",[],ppz,[],ppz
+    | ZR,_,_   -> [],ppz,[r2],fmt "0",[r3],fmt "1"
+    | _,ZR,_   -> [r1],fmt "0",[],ppz,[r3],fmt "1"
+    | _,_,ZR   -> [r1],fmt "0",[r2],fmt "1",[],ppz
+    | _,_,_ -> [r1],fmt "0",[r2],fmt "1",[r3],fmt "2"
+
     let add_type t rs = List.map (fun r -> r,t) rs
     let add_w = add_type word
     let add_q = add_type quad
@@ -208,7 +218,7 @@ module Make(V:Constant.S)(C:Config) =
     let ldrbh_memo bh t = Misc.lowercase (ldrbh_memo bh t)
     let str_memo t = Misc.lowercase (str_memo t)
     let strbh_memo bh t = Misc.lowercase (strbh_memo bh t)
-
+    let add_stage memo st = Misc.lowercase (add_stage memo st)
 
     let load memo v rD rA kr os = match v,kr,os with
     | V32,K 0, S_NOEXT ->
@@ -1275,6 +1285,28 @@ module Make(V:Constant.S)(C:Config) =
       | r ->
           { empty_ins with memo = sprintf "tlbi %s,^i0" op; inputs=[r]; reg_env=add_v [r]; }
 
+
+    let mcpy memo rd rs rn =
+      let rd,fmtd,rs,fmts,rn,fmtn =
+        args3 "xzr" (fun s -> "^i"^s) rd rs rn in
+      let regs = rd@rs@rn in
+      let memo =
+        sprintf "%s [%s]!,[%s]!,%s!" memo fmtd fmts fmtn in
+      { empty_ins with memo;
+        inputs=regs; outputs=regs;
+        reg_env = add_q regs; }
+
+    let mset memo rd rn rs =
+      let rd,fmtd,rn,fmtn,rs,fmts =
+        args3 "xzr" (fun s -> "^i"^s) rd rs rn in
+      let regs = rd@rn@rs in
+      let regsw = rd@rn in
+      let memo =
+        sprintf "%s [%s]!,%s!,%s" memo fmtd fmtn fmts in
+      { empty_ins with memo;
+        inputs=regs; outputs=regsw;
+        reg_env = add_q regs; }
+
 (* Not that useful *)
     let emit_loop _k = assert false
 
@@ -1523,6 +1555,14 @@ module Make(V:Constant.S)(C:Config) =
          sprintf "msr %s,%s" (Misc.lowercase (pp_sysreg sr)) f in
        {empty_ins with
          memo; outputs=r; reg_env=add_type quad r;}::k
+(* MOPS *)
+    | I_CPYF (st,r1,r2,r3) ->
+       mcpy (add_stage "cpyf" st) r1 r2 r3::k
+    | I_CPY (st,r1,r2,r3) ->
+       mcpy (add_stage "cpy" st) r1 r2 r3::k
+    | I_SET (st,r1,r2,r3) ->
+       mset (add_stage "set" st) r1 r2 r3::k
+(* Not implemented yet *)
     | I_STG _| I_STZG _|I_LDG _ ->
         Warn.fatal "No litmus output for instruction %s"
           (dump_instruction ins)

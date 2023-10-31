@@ -1,5 +1,5 @@
 (****************************************************************************)
-(*                           the diy toolsuite                              *)
+(*                           The diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
@@ -24,7 +24,8 @@ module Make
     module AArch64 = AArch64Arch_herd.Make(ConfLoc)(V)
     module Act = MachAction.Make(ConfLoc)(AArch64)
     module Annot = AArch64Annot
-    include SemExtra.Make(C)(AArch64)(Act)
+    module SE = SemExtra.Make(C)(AArch64)(Act)
+    include SE
 
     let dirty = match TopConf.dirty with | None -> DirtyBit.soft | Some d -> d
     let mixed = AArch64.is_mixed
@@ -1996,6 +1997,31 @@ module Make
           >>= B.next1T
         end
 
+(*************)
+(* FEAT_MOPS *)
+(*************)
+
+      module MOPS =
+        AArch64MOPS.Make(SE)
+          (struct
+
+            let mops_size = C.mops_size
+            let endian = AArch64.endian
+
+            let nzcv = AArch64.NZCV
+            let read_reg_ord = read_reg_ord
+            let read_reg_data = read_reg_data
+            let write_reg = write_reg
+            let write_reg_dest = write_reg_dest
+            let do_append_commit = do_append_commit
+            let is_this_reg = is_this_reg
+
+            let read_mem sz ea ii =
+              do_read_mem_ret sz Annot.N aexp Access.VIR ea ii
+            let write_mem sz ea v ii =
+              write_mem sz aexp Access.VIR ea v ii
+          end)
+
 (*********************)
 (* Instruction fetch *)
 (*********************)
@@ -2006,9 +2032,9 @@ module Make
       let read_loc_instr a ii =
         M.read_loc false (mk_fetch Annot.N) a ii
 
-(*********************)
+(************)
 (* Branches *)
-(*********************)
+(************)
 
       let v2tgt =
         let open Constant in
@@ -2739,10 +2765,25 @@ module Make
            let ft = Some FaultType.AArch64.UndefinedInstruction in
            let m_fault = mk_fault None Dir.R Annot.N ii ft None in
            m_fault >>| set_elr_el1 ii >>! B.Fault Dir.R
+        (* MOPS *)
+        | I_SET (st,rd,rn,rs) ->
+            MOPS.mset st rd rn rs ii >>=
+            fun (vd,vn) -> B.nextSetEnvT [rd,vd; rn,vn;]
+        | I_CPYF (st,rd,rs,rn) ->
+            MOPS.cpyf st rd rs rn ii >>=
+            fun (vd,vs,vn) -> B.nextSetEnvT [rd,vd; rs,vs; rn,vn;]
+        | I_CPY (st,rd,rs,rn) ->
+            MOPS.cpy st rd rs rn ii >>=
+            fun (nzcv,(vd,vs,vn)) ->
+              let env = [rd,vd; rs,vs; rn,vn;] in
+              let env =
+                match nzcv with
+                | None -> env
+                | Some nzcv ->
+                    (AArch64.NZCV,V.intToV nzcv)::env in
+              B.nextSetEnvT env
 (*  Cannot handle *)
-        | (I_RBIT _
-        (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
-        | I_LD1M _|I_ST1M _) as i ->
+        | (I_RBIT _|I_LD1M _|I_ST1M _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
 
 (* Compute a safe set of instructions that can

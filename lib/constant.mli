@@ -31,6 +31,7 @@ type symbolic_data =
   }
 
 val default_symbolic_data : symbolic_data
+val add_offset : symbolic_data -> int -> symbolic_data
 (*
    Symbols defined below are the union of all possible sort of symbols
    used by all tools. Abstract later?

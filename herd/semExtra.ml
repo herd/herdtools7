@@ -22,6 +22,7 @@ module type Config = sig
   val optace : OptAce.t
   val debug : Debug_herd.t
   val precision : Precision.t
+  val mops_size : MachSize.sz
   val variant : Variant.t -> bool
   val endian : Endian.t option
   val unroll : int option
@@ -498,6 +499,7 @@ module ConfigToArchConfig(C:Config) : ArchExtra_herd.Config =
     let texmacros = C.PC.texmacros
     let hexa = C.PC.hexa
     let brackets = C.PC.brackets
+    let mops_size = C.mops_size
     let variant = C.variant
     let endian = C.endian
     let default_to_symb = false

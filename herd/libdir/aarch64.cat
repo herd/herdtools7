@@ -187,3 +187,8 @@ let CMODX-unordered-conflicts =
   CMODX-conflicts \ (CMODX-ordering | CMODX-ordering^-1)
 
 flag ~empty CMODX-unordered-conflicts as violates-CMODX-requirements
+
+(* Some instructions performe several _ordered_ memory accesses *)
+let iico = iico_order | iico_ctrl | iico_data
+acyclic iico | rf | ca as order-iico-memory
+

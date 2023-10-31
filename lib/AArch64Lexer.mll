@@ -517,6 +517,16 @@ match name with
 (* System registers *)
 | "mrs"|"MRS" -> MRS
 | "msr"|"MSR" -> MSR
+(* MOPS *)
+| "cpyp"|"CPYP" -> MCPY A.Prologue
+| "cpym"|"CPYM" -> MCPY A.Main
+| "cpye"|"CPYE" -> MCPY A.Epilogue
+| "cpyfp"|"CPYFP" -> CPYF A.Prologue
+| "cpyfm"|"CPYFM" -> CPYF A.Main
+| "cpyfe"|"CPYFE" -> CPYF A.Epilogue
+| "setp"|"SETP" -> MSET A.Prologue
+| "setm"|"SETM" -> MSET A.Main
+| "sete"|"SETE" -> MSET A.Epilogue
 | _ ->
     begin match A.parse_wreg name with
     | Some r -> ARCH_WREG r

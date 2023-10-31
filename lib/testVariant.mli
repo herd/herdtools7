@@ -24,11 +24,14 @@ module Make : functor
       end
       val info : MiscParser.info
       val precision : Precision.t
+      val mops_size : MachSize.sz
       val variant : Opt.t -> bool
       val set_precision : Precision.t ref -> Opt.t -> bool
+      val set_mops_size : MachSize.sz ref -> Opt.t -> bool
     end) ->
       sig
         type t = Var.Opt.t
         val precision : Precision.t
+        val mops_size : MachSize.sz
         val variant : t -> bool
       end

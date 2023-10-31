@@ -51,6 +51,7 @@ module type S = sig
   val next3T : ((unit * unit) * unit) -> t monad
   val next4T : (((unit * unit) * unit) * unit) -> t monad
   val nextSetT : reg -> v -> t monad
+  val nextSetEnvT : (reg * v) list  -> t monad
 (* Non-conditional branch *)
   val branchT : lbl ->  t monad
 (* Indirect branch *)
@@ -95,6 +96,7 @@ module Make(M:Monad.S) = struct
   let next3T (((),()),()) = nextT
   let next4T ((((),()),()), ()) = nextT
   let nextSetT r v = M.unitT (Next [r,v])
+  let nextSetEnvT env = M.unitT (Next env)
   let branchT tgt = M.unitT (Jump (Lbl tgt,[]))
   let indirectBranchT v lbls bds = M.unitT (IndirectJump (v,lbls,bds))
   let bccT v lbl = M.unitT (CondJump (v,Lbl lbl))

@@ -1,0 +1,17 @@
+Test L070 Allowed
+States 8
+1:X1=0; 1:X5=0; 1:X7=0;
+1:X1=0; 1:X5=0; 1:X7=3;
+1:X1=0; 1:X5=1; 1:X7=0;
+1:X1=0; 1:X5=1; 1:X7=3;
+1:X1=1; 1:X5=0; 1:X7=0;
+1:X1=1; 1:X5=0; 1:X7=3;
+1:X1=1; 1:X5=1; 1:X7=0;
+1:X1=1; 1:X5=1; 1:X7=3;
+Ok
+Witnesses
+Positive: 3 Negative: 5
+Condition exists (1:X1=1 /\ (1:X5=0 \/ 1:X7=0))
+Observation L070 Sometimes 3 5
+Hash=787a925beb3e7254f872ffb4718a919b
+

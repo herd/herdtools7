@@ -93,6 +93,12 @@ type t =
   | Warn
 (* Telechat variant - implements unconditional branches as exit, and any other optional quirks*)
   | Telechat
+(* Switch Mops default A/B option *)
+  | SwitchMops
+(* Switch Mops default Direction for CPY *)
+  | SwitchMopsDir
+(* Mops tranfer size *)
+  | MopsSize of MachSize.sz
 
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
@@ -100,9 +106,11 @@ let tags =
    "mixed";"dontcheckmixed";"weakpredicated"; "memtag";"vmsa";"kvm";]@
     Precision.tags @
    ["toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
-   "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
-    "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"; "asl"; "strict";
-    "warn"; "S128"; "ASLType+Warn";    "ASLType+Silence"; "ASLType+Check";]
+    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
+   "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"; "asl"; "strict";
+   "warn"; "S128"; "ASLType+Warn";    "ASLType+Silence"; "ASLType+Check";
+   "SwitchMops"; "SwitchMopsDir"; "ByteMops"; "ShortMops"; "WordMops";
+   "QuadMops";]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -152,6 +160,12 @@ let parse s = match Misc.lowercase s with
 | "asltype+silence"-> Some (ASLType `Silence)
 | "asltype+check"  -> Some (ASLType `TypeCheck)
 | "s128" -> Some S128
+| "switchmops" -> Some SwitchMops
+| "switchmopsdir" -> Some SwitchMopsDir
+| "bytemops" -> Some (MopsSize MachSize.Byte)
+| "shortmops" -> Some (MopsSize MachSize.Short)
+| "wordmops" -> Some  (MopsSize MachSize.Word)
+| "quadmops" -> Some  (MopsSize MachSize.Quad)
 | "strict" -> Some Strict
 | "warn" -> Some Warn
 | "telechat" -> Some Telechat
@@ -171,7 +185,8 @@ let parse s = match Misc.lowercase s with
         else None
    end
 
-let pp = function
+let pp =
+  function
   | Success -> "success"
   | Instr -> "instr"
   | SpecialX0 -> "specialx0"
@@ -217,6 +232,13 @@ let pp = function
   | ASLVersion `ASLv0 -> "ASLv0"
   | ASLVersion `ASLv1 -> "ASLv1"
   | S128 -> "S128"
+  | SwitchMops -> "SwitchMops"
+  | SwitchMopsDir -> "SwitchMopsDir"
+  | MopsSize MachSize.Byte -> "ByteMops"
+  | MopsSize MachSize.Short -> "ShortMops"
+  | MopsSize MachSize.Word -> "WordMops"
+  | MopsSize MachSize.Quad -> "QuadMops"
+  | MopsSize MachSize.S128 -> assert false
   | Strict -> "strict"
   | Warn -> "warn"
   | ASLType `Warn -> "ASLType+Warn"
@@ -248,4 +270,8 @@ let get_switch a v f =
 
 let set_precision r tag = match tag with
   | TagPrecise p -> r := p ; true
+  | _ -> false
+
+let set_mops_size r tag = match tag with
+  | MopsSize sz -> r := sz ; true
   | _ -> false
