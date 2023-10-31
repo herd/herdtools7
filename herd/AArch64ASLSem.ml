@@ -159,8 +159,10 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let open Asllib.AST in
       let with_pos desc = Asllib.ASTUtils.add_dummy_pos desc in
       let ( ^= ) x e =
-        S_Decl (LDK_Let, LDI_Var (x, None), Some e) |> with_pos
-      in
+        S_Decl (LDK_Let, LDI_Var (x, None), Some e) |> with_pos in
+      let ( ^^= ) x e =
+        let le_x = LE_Var x |> with_pos in
+        S_Assign (le_x, e, V1) |> with_pos in
       let lit v = E_Literal v |> with_pos in
       let liti i = lit (L_Int (Z.of_int i)) in
       let litb b = lit (L_Bool b) in
@@ -186,6 +188,43 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
            ASLBase.stmts_from_string "return 0;" in
          Some
            ("system/hints/NOP_HI_hints.opn",stmt [added;])
+      | I_B lab ->
+         let off = tgt2offset ii lab in
+         Some ("branch/unconditional/immediate/B_only_branch_imm.opn",
+               stmt
+                 [
+                   "offset" ^= litbv 64 off;
+                   "_PC" ^^= litbv 64 ii.A.addr; ])
+      | I_CBZ (v,rt,lab)
+      | I_CBNZ (v,rt,lab) as i
+        ->
+         let off = tgt2offset ii lab in
+         let file =
+           match i with
+           | I_CBZ _ -> "CBZ_32_compbranch.opn"
+           | I_CBNZ _ -> "CBNZ_32_compbranch.opn"
+           | _ -> assert false in
+         Some
+           ("branch/conditional/compare/" ^ file,
+            stmt
+              [
+                "t" ^= reg rt;
+                "datasize" ^= variant v;
+                "offset" ^= litbv 64 off;
+                "_PC" ^^= litbv 64 ii.A.addr;
+              ])
+      | I_BC (c,lab)
+        ->
+         let off = tgt2offset ii lab in
+         Some
+           ("branch/conditional/cond/B_only_condbranch.opn",
+            stmt
+              [
+                "offset" ^= litbv 64 off;
+                "cond" ^= cond c;
+                "_PC" ^^= litbv 64 ii.A.addr;
+              ])
+
       | I_SWP (v, t, rs, rt, rn) ->
          Some
             ( "memory/atomicops/swp/SWP_32_memop.opn",
@@ -876,7 +915,12 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         let monads = Seq.map one_pair (ASLE.EventRel.to_seq rel) in
         Seq.fold_left ( ||| ) (return ()) monads
 
+
       let tr_execution ii (conc, cs, set_pp, vbpp) =
+        let get_cat_show get x =
+          match StringMap.find_opt x set_pp with
+          | Some e -> get e
+          | None -> get ESet.empty in
         let () = if _dbg then Printf.eprintf "Translating event structure:\n" in
         let () =
           if _dbg then (
@@ -887,19 +931,11 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   (ASLE.Act.pp_action e.ASLE.action))
               conc.ASLS.str.ASLE.events)
         in
-        let events =
-          match StringMap.find_opt "AArch64" set_pp with
-          | None -> Seq.empty
-          | Some s -> ESet.to_seq s
-        in
+        let events = get_cat_show ESet.to_seq "AArch64" in
         let is_data =
           let data_set =
-            match StringMap.find_opt "AArch64_DATA" set_pp with
-            | None -> ESet.empty
-            | Some s -> s
-          in
-          fun e -> ESet.mem e data_set
-        in
+            get_cat_show Misc.identity "AArch64_DATA" in
+          fun e -> ESet.mem e data_set in
         let () = if _dbg then Printf.eprintf "\t- events: " in
         let event_list = List.of_seq events in
         let event_to_monad_map =
@@ -924,23 +960,61 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         let iico_ctrl = translate_maybe_rel M.( >>*= ) aarch64_iico_ctrl in
         let iico_order = translate_maybe_rel M.bind_order aarch64_iico_order in
         let branch =
-          let one_event acc event =
+          let one_event bds event =
             match event.ASLE.action with
             | ASLS.Act.Access
                 (Dir.W,
                  ASLS.A.Location_reg (_, ASLBase.ArchReg reg), v, _, _)
               ->
-              (reg, tr_v v)::acc
+               let v = tr_v v in
+               let () =
+                 if _dbg then
+                   Printf.eprintf "Recording %s <- %s\n%!"
+                     (AArch64Base.pp_reg reg) (A.V.pp_v v) in
+               (reg,v)::bds
             |  ASLS.Act.Access (Dir.W, loc , v, _, _)
                ->
                 if _dbg then
                   Printf.eprintf
                     "Not recorded in B.Next: %s <- %s\n"
                     (ASLS.A.pp_location loc) (ASLS.A.V.pp_v v) ;
-                acc
-            | _ -> acc in
-          let acc = List.fold_left one_event [] event_list in
-          B.Next acc
+                bds
+            | _ -> bds in
+          let bds = List.fold_left one_event [] event_list in
+          let finals = get_cat_show  Misc.identity "AArch64Finals" in
+          let pc =
+            let n_pc = (* Count writes to PC *)
+              List.fold_left
+                (fun c (r,_) ->
+                  match r with
+                  | AArch64Base.PC -> c+1
+                  | _ -> c)
+                0 bds in
+            (* Branching instructions all generate one, initial,
+             * PC assignement and a second PC assignement
+             * that gives the branch target. This applies even
+             * for  non-taken conditional branches where
+             * the second assignment is to the next instruction.
+             * This second write event is the final write to PC.
+             * Non-branching instructions neither read nor
+             * write the PC, cf. case [None] below.
+             *)
+            if n_pc <= 1 then None
+            else
+              ESet.fold
+                (fun e r ->
+                  match e.ASLE.action with
+                  | ASLS.Act.Access
+                    (Dir.W,
+                     ASLS.A.Location_reg
+                       (_,
+                        ASLBase.ArchReg AArch64Base.PC), v, _, _) ->
+                     Some (tr_v v)
+                  | _ -> r)
+                finals None in
+          match Misc.seq_opt A.V.as_int pc with
+          | Some v -> B.Jump (B.Addr v,bds)
+          | None -> B.Next bds
         in
         let () =
           if _dbg then

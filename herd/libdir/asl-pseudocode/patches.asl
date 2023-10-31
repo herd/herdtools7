@@ -95,8 +95,45 @@ var PSTATE : ProcState;
 // =================
 // Generate and address by adding a pointer with an offset and returning the result.
 // If FEAT_CPA2 is implemented, the pointer arithmetic is checked.
-// LUC simplify because failur of slice operatin on symbolic address.
+// LUC simplify because failure of slice operatin on symbolic address.
 func GenerateAddress(base:bits(64), offset:bits(64), accdesc:AccessDescriptor) => bits(64)
 begin
   return base + offset;
+end
+
+// AArch64.BranchAddr()
+// ====================
+// Return the virtual address with tag bits removed.
+// This is typically used when the address will be stored to the program counter.
+
+func AArch64_BranchAddr
+  (vaddress:bits(64), el:bits(2)) => bits(64)
+begin
+  return vaddress;
+end
+
+// BranchNotTaken()
+// ================
+// Called when a branch is not taken.
+// Patched to add PC self assignment
+
+func BranchNotTaken(branchtype:BranchType, branch_conditional:boolean)
+begin
+    _PC = _PC+4;
+   let branchtaken = FALSE;
+   if IsFeatureImplemented(FEAT_SPE) then
+     SPEBranch
+       (UNKNOWN:bits(64), branchtype, branch_conditional, branchtaken);
+    end
+    return;
+end
+
+// UsingAArch32()
+// ==============
+// Return TRUE if the current Exception level is using AArch32, FALSE if using AArch64.
+// Let us return FALSE, called by BranchTo(...) for checking tgt address size.
+
+func UsingAArch32() => boolean
+begin
+  return FALSE;
 end

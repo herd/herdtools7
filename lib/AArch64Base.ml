@@ -100,6 +100,7 @@ type reg =
   | Internal of int
   | NZCV
   | SP
+  | PC
   | ResAddr
   | SysReg of sysreg
 
@@ -354,6 +355,7 @@ let pp_xreg r = match r with
 | Internal i -> Printf.sprintf "i%i" i
 | NZCV -> "NZCV"
 | ResAddr -> "Res"
+| PC -> "PC"
 | SysReg sreg -> pp_sysreg sreg
 | _ -> try List.assoc r regs with Not_found -> assert false
 
@@ -1819,7 +1821,9 @@ let fold_regs (f_regs,f_sregs) =
   | Vreg _ -> f_regs reg y_reg,y_sreg
   | SIMDreg _ -> f_regs reg y_reg,y_sreg
   | Symbolic_reg reg ->  y_reg,f_sregs reg y_sreg
-  | Internal _ | NZCV | ZR | SP | ResAddr | Tag _ | SysReg _ -> y_reg,y_sreg in
+  | Internal _ | NZCV | ZR | SP | PC
+  | ResAddr | Tag _ | SysReg _
+    -> y_reg,y_sreg in
 
   let fold_kr kr y = match kr with
   | K _ -> y
@@ -1926,7 +1930,9 @@ let map_regs f_reg f_symb =
   | Vreg _ -> f_reg reg
   | SIMDreg _ -> f_reg reg
   | Symbolic_reg reg -> f_symb reg
-  | Internal _ | ZR | SP | NZCV | ResAddr | Tag _ | SysReg _ -> reg in
+  | Internal _ | ZR | SP| PC
+  | NZCV | ResAddr | Tag _ | SysReg _
+    -> reg in
 
   let map_kr kr = match kr with
   | K _ -> kr

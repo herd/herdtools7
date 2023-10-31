@@ -517,7 +517,7 @@ end
 
 func HaveAArch64() => boolean
 begin
-  return FALSE;
+  return TRUE;
 end
 
 // HaveEL()
@@ -545,6 +545,15 @@ begin
   pass;
 end
 
+getter _PC [] => bits(64)
+begin
+  return read_pc();
+end
+
+setter _PC [] = value :: bits(64)
+begin
+  write_pc(value);
+end
 
 getter _R [n :: integer] => bits(64)
 begin
@@ -659,4 +668,17 @@ func DataSynchronizationBarrier
    nXS : boolean)
 begin
   primitive_dsb(MBReqDomainToInteger(domain),MBReqTypesToInteger(types));
+end
+
+// Branches
+var _PC : bits(64);
+
+// Hint_Branch()
+// =============
+// Report the hint passed to BranchTo() and BranchToAddr(), for consideration when processing
+// the next instruction.
+
+func Hint_Branch(hint : BranchType)
+begin
+  return;
 end

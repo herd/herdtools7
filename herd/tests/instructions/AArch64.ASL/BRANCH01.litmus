@@ -1,0 +1,13 @@
+AArch64 BRANCH01
+{
+
+}
+
+ P0           ;
+B L0          ;
+ADD W0,W0,#1  ;
+B .+8         ;
+L0:           ;
+B .-4         ;
+ADD W0,W0,#1  ;
+forall 0:X0=1

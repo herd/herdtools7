@@ -1,0 +1,11 @@
+Test BRANCH07 Allowed
+States 2
+1:X0=0;
+1:X0=3;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (1:X0=0)
+Observation BRANCH07 Sometimes 1 1
+Hash=6ab8f05c8f2cd2bfd4ad9967e7858353
+

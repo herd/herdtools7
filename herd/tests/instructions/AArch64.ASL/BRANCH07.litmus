@@ -1,0 +1,11 @@
+AArch64 BRANCH07
+{
+int x=0;
+0:X1=x;
+1:X1=x;
+}
+  P0         | P1           ;
+ MOV W0,#1   | LDR W0,[X1]  ;
+ STR W0,[X1] | CBZ W0,.+8   ;
+             | ADD W0,W0,#2 ;
+exists 1:X0=0;

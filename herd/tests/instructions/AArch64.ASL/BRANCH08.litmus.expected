@@ -1,0 +1,10 @@
+Test BRANCH08 Required
+States 1
+1:X0=1;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall (1:X0=1)
+Observation BRANCH08 Always 2 0
+Hash=a94b8494be14d72a26d1c41a13efa0a6
+

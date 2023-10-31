@@ -1,0 +1,10 @@
+Test BRANCH03 Required
+States 1
+0:X0=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=2)
+Observation BRANCH03 Always 1 0
+Hash=9fc0fb3ca924e141bcc940c55ea07579
+

@@ -58,7 +58,13 @@ let aarch64_intrinsic = aarch64_iico_ctrl | aarch64_iico_data | aarch64_iico_ord
 
 (* Event sets *)
 
+let restrict-finals s =
+(* Asumming that non-final writes are read internally *)
+  let non-final = domain(rf-reg) in
+  s \ non-final
+
 let AArch64 = NASLLocal|F
+let AArch64Finals =  restrict-finals(AArch64)
 
 (* DATA and NDATA *)
 let to_data = (asl_deps_restricted ; [DATA] ; asl_iico_data ; [W | Wreg]) & aarch64
@@ -85,7 +91,7 @@ show asl_iico_ctrl, asl_iico_data, asl_rf_reg
 show iico_ctrl, iico_data, rf, rf-reg
 *)
 
-show AArch64,AArch64_DATA
+show AArch64,AArch64Finals,AArch64_DATA
 show aarch64_iico_ctrl, aarch64_iico_data, aarch64_iico_order
 
 
