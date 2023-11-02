@@ -195,12 +195,6 @@ module type S =
         'loc t -> 'v t -> 'v t -> ('loc -> 'v -> unit t) -> unit t
     val stu : 'a t -> 'a t -> ('a -> unit t) -> (('a * 'a) -> unit t) -> unit t
 
-    (* Same as [>>|], but binding style. *)
-    val cseq : 'a t -> ('a -> 'b t) -> 'b t
-
-    (* Same as [cseq], but output on right argument. *)
-    val aslseq : 'a t -> ('a -> 'b t) -> 'b t
-
     type poi = int
 
     val add_instr :
@@ -214,6 +208,16 @@ module type S =
     val para_input_right : 'a t -> 'b t -> ('a * 'b)  t (* Input in second argument *)
     val (>>::) : 'a t -> 'a list t -> 'a list t
     val (|||) : unit t -> unit t -> unit t
+
+    val cseq : 'a t -> ('a -> 'b t) -> 'b t
+    (** [cseq s1 s2] similar to [>>|], but binding style. *)
+
+    val para_bind_output_right : 'a t -> ('a -> 'b t) -> 'b t
+    (** [para_bind_output_right s f] returns a parallel composition of
+        the event structures of [s] and the result of [f] where the
+        input of the new event structure is the union of the inputs of
+        [s] and the result of [f], like [cseq]. Unlike [cseq] the output of
+        the resulting event structure is set to the result of [f]. *)
 
 (*
  *Sequence of memorory events by iico_order.

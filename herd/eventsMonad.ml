@@ -967,7 +967,7 @@ Monad type:
 
     let cseq : 'a t -> ('a -> 'b t) -> 'b t = fun s f ->  data_comp (+|+) s f
 
-    let aslseq : 'a t -> ('a -> 'b t) -> 'b t =
+    let para_bind_output_right : 'a t -> ('a -> 'b t) -> 'b t =
       fun s f -> data_comp E.para_output_right s f
 
     type poi = int
