@@ -1,0 +1,1 @@
+Warning: File "./herd/tests/instructions/AArch64/AK004.litmus": Label Lself00 not found on P0, yet it is used in the initialization list (User error)
