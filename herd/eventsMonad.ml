@@ -1476,6 +1476,10 @@ Monad type:
             | A.Location_global (V.Val (Symbolic (System (PTE,s)))) ->
                 let v = expand_pteval loc v in
                 (loc,v)::env,(virt,StringSet.add s pte)
+            | A.Location_global (V.Val (Symbolic (System (TAG,s)))) ->
+              let s = V.pp_v (V.Val (Symbolic (Physical (s,0)))) in
+              let loc = A.Location_global (V.Val (Symbolic (System (TAG,s)))) in
+              (loc,v)::env,maps
             | A.Location_global (V.Val (Symbolic (Physical _|Virtual _))) ->
                 Warn.user_error "herd cannot handle initialisation of '%s'"
                   (A.pp_location loc)
