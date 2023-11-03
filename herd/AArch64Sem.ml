@@ -1013,8 +1013,9 @@ module Make
              fun ma ->  ma >>*= (fun _ -> mfault >>! B.Exit)
           | (Handled,_)|(LoadsFatal,Dir.W) ->
              fun ma ->
+             let set_tfsr = write_reg AArch64Base.tfsr V.one ii in
              let (>>) = M.bind_ctrl_first_outputs in
-             let ma = ma >> (fun a -> mfault >>! a) in
+             let ma = ma >> (fun a -> (set_tfsr >>| mfault) >>! a) in
              mm ma >>! B.Next []
           | Skip,_ ->
              fun _ ->

@@ -65,7 +65,8 @@ type sysreg =
   CTR_EL0 | DCIZ_EL0 |
   MDCCSR_EL0 | DBGDTR_EL0 |
   DBGDTRRX_EL0 | DBGDTRTX_EL0 |
-  ELR_EL1 | ESR_EL1 | SYS_NZCV
+  ELR_EL1 | ESR_EL1 | SYS_NZCV |
+  TFSR_ELx
 
 let sysregs = [
     CTR_EL0, "CTR_EL0";
@@ -77,6 +78,7 @@ let sysregs = [
     ELR_EL1, "ELR_EL1";
     ESR_EL1, "ESR_EL1";
     SYS_NZCV, "NZCV";
+    TFSR_ELx, "TFSR_ELx";
   ]
 
 type reg =
@@ -148,6 +150,7 @@ let vregs = List.map (fun v -> Vreg (v,(4,32))) vec_regs
 
 let linkreg = Ireg R30
 let elr_el1 = SysReg ELR_EL1
+let tfsr = SysReg TFSR_ELx
 
 let cgprs =
 [
@@ -273,7 +276,10 @@ let simd_regs =
 let parse_list rs = List.map (fun (r,s) -> s,r) rs
 
 let parse_some plist s =
-  try Some (List.assoc (Misc.uppercase s) plist)
+  try
+    let plist = List.map (fun (n,r) -> Misc.uppercase n,r) plist in
+    let s = Misc.uppercase s in
+    Some (List.assoc s plist)
   with Not_found -> None
 
 let make_parser rs =
@@ -304,7 +310,11 @@ let parse_simd_reg = parse_some simd_regs
 
 let parse_reg s = match parse_vreg s with
 | Some v -> Some v
-| None -> parse_xreg s
+| None ->
+  begin match parse_xreg s with
+    | Some v -> Some v
+    | None -> Option.map (fun r -> (SysReg r)) (parse_sysreg s)
+  end
 
 let pp_sysreg r = try List.assoc r sysregs with Not_found -> assert false
 

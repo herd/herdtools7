@@ -1,0 +1,9 @@
+AArch64 B004
+Variant=async
+{
+ 0:X1=x:red
+}
+ P0          ;
+ MOV W0,#1   ;
+ STR W0,[X1] ;
+forall([x]=1 /\ 0:TFSR_ELx=1)
