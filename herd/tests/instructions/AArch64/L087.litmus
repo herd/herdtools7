@@ -1,0 +1,13 @@
+AArch64 L087
+{
+int t[2]={1,2};
+0:X0=t;
+}
+  P0               ;
+  MOV W1,#3        ;
+  STR W1,[X0,#4]!  ;
+  LDR W2,[X0],#-4  ;
+  ADD W1,W1,#1     ;
+  STR W1,[X0],#4   ;
+  LDR W3,[X0,#-4]! ;
+forall 0:X2=3  /\ 0:X3=4 /\ 0:X0=t

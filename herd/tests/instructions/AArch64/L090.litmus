@@ -1,0 +1,8 @@
+AArch64 L090
+
+{ uint64_t 0:X0=42; }
+
+P0;
+ADDS X0, X0, #1, LSL #12;
+
+exists 0:X0=4138

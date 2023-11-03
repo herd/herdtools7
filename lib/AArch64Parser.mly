@@ -18,9 +18,9 @@
 open AArch64Base
 
 (* No constant third argument for those *)
-let check_op3 op kr =
-  match op,kr with
-  |(BIC|BICS),K _ -> raise Parsing.Parse_error
+let check_op3 op e =
+  match op,e with
+  |(BIC|BICS),OpExt.Imm _ -> raise Parsing.Parse_error
   | _ -> ()
 
 type 'k k0_bang = Nada | Bang | Konst of 'k
@@ -56,12 +56,15 @@ let mk_instrp instr v r1 r2 ra ko kb =
 %token <int> PROC
 
 %token SEMI COMMA PIPE COLON DOT BANG LCRL RCRL LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
-%token TOK_SXTW
 
-%token SXTW SBFM UBFM
+/*  Extension */
+%token TOK_SXTB TOK_SXTH TOK_SXTW TOK_SXTX
+%token TOK_UXTB TOK_UXTH TOK_UXTW TOK_UXTX
+
+%token SBFM UBFM
 
 /* Inline Barrel Shift Operands */
-%token TOK_LSL TOK_LSR TOK_ASR TOK_MSL TOK_UXTW
+%token TOK_LSL TOK_LSR TOK_ASR TOK_MSL TOK_ROR
 
 /* Instructions */
 %token NOP HINT HLT
@@ -80,7 +83,7 @@ let mk_instrp instr v r1 r2 ra ko kb =
 %token <AArch64Base.op> OP
 %token <AArch64Base.sc> SC
 %token <AArch64Base.gc> GC
-%token TOK_ADD TOK_SUB TOK_SUBS
+%token TOK_ADD TOK_ADDS TOK_SUB TOK_SUBS
 %token CSEL CSINC CSINV CSNEG CSET CSETM CINC
 %token TOK_DMB TOK_DSB TOK_ISB
 %token TOK_SY TOK_ST TOK_LD
@@ -202,7 +205,7 @@ wreg:
 | SYMB_WREG { Symbolic_reg $1 }
 | ARCH_WREG { $1 }
 
-xwr:
+%inline wxreg:
 | xreg { V64,$1 }
 | wreg { V32,$1 }
 
@@ -283,23 +286,10 @@ kr_shift_address:
 | wreg COMMA shift { (RV (V32, $1)), $3 }
 | xreg COMMA shift { (RV (V64, $1)), $3 }
 
-kr_shift:
-| kr_shift_address { $1 }
-| wreg { (RV (V32,$1)),  S_NOEXT }
-
 (* For address argument only *)
 kr0:
 | { K (MetaConst.zero), S_NOEXT }
 | COMMA kr_shift_address { $2 }
-
-/*
-kr0_no_shift:
-| { K (MetaConst.zero) }
-| COMMA k { K $2 }
-| COMMA xreg { RV (V64,$2) }
-| COMMA wreg { RV (V32,$2) }
-| COMMA wreg COMMA TOK_SXTW { RV (V32,$2) }
-*/
 
 kx0_no_shift:
 | { K (MetaConst.zero) }
@@ -310,6 +300,51 @@ k0_no_shift:
 | { K (MetaConst.zero) }
 | COMMA k { K $2 }
 
+%inline op_ext_shift:
+| TOK_LSL k { OpExt.LSL $2 }
+| TOK_LSR k { OpExt.LSR $2}
+| TOK_ASR k { OpExt.ASR $2}
+| TOK_ROR k { OpExt.ROR $2}
+
+%inline op_ext_shift0:
+| { OpExt.LSL MetaConst.zero }
+| COMMA op_ext_shift { $2 }
+
+op_ext_imm:
+| k
+    { OpExt.Imm ($1,MetaConst.zero) }
+| k COMMA TOK_LSL k
+    { OpExt.Imm ($1,$4) }
+
+op_ext_w:
+| op_ext_imm { $1 }
+| wreg op_ext_shift0
+    { OpExt.Reg ($1,$2) }
+
+%inline op_ext_x:
+| op_ext_imm { $1 }
+| xreg op_ext_shift0
+    { OpExt.Reg ($1,$2) }
+
+op_ext_c:
+| op_ext_imm { $1 }
+| creg op_ext_shift0
+    { OpExt.Reg ($1,$2) }
+
+%inline add_sub_sext:
+| TOK_SXTB { Ext.SXTB }
+| TOK_SXTH { Ext.SXTH }
+| TOK_SXTW { Ext.SXTW }
+| TOK_SXTX { Ext.SXTX }
+| TOK_UXTB { Ext.UXTB }
+| TOK_UXTH { Ext.UXTH }
+| TOK_UXTW { Ext.UXTW }
+| TOK_UXTX { Ext.UXTX }
+
+
+%inline add_sub_ext:
+| add_sub_sext { $1,None }
+| add_sub_sext k { $1,Some $2 }
 /*
 kr0_no_shift_opt:
 | { None }
@@ -326,17 +361,45 @@ kwr:
 | k { K $1 }
 | wreg { RV (V32,$1) }
 
-kxr:
-| k { K $1 }
-| xreg { RV (V64,$1) }
+mem_sext:
+| TOK_UXTW { MemExt.UXTW }
+| TOK_LSL { MemExt.LSL }
+| TOK_SXTW { MemExt.SXTW }
+| TOK_SXTX { MemExt.SXTX }
+
+mem_ea:
+| LBRK cxreg RBRK
+    { $2,MemExt.Imm (MetaConst.zero,Idx)  }
+| LBRK cxreg COMMA k RBRK
+    { $2,MemExt.Imm ($4,Idx) }
+| LBRK cxreg RBRK COMMA k
+    { $2,MemExt.Imm ($5,PostIdx) }
+| LBRK cxreg COMMA k RBRK BANG
+    { $2,MemExt.Imm ($4,PreIdx) }
+| LBRK cxreg COMMA wxreg RBRK
+    {
+      let open MemExt in
+      let v,r = $4 in
+      $2,Reg (v,r,LSL,MetaConst.zero)
+    }
+| LBRK cxreg COMMA wxreg COMMA mem_sext RBRK
+    {
+      let open MemExt in
+      let v,r = $4 in
+      $2,Reg (v,r,$6,MetaConst.zero)
+    }
+| LBRK cxreg COMMA wxreg COMMA mem_sext k RBRK
+    {
+      let open MemExt in
+      let v,r = $4 in
+      $2,Reg (v,r,$6,$7)
+    }
 
 shift:
 | TOK_LSL NUM  { S_LSL(MetaConst.Int $2)  }
 | TOK_LSR NUM  { S_LSR(MetaConst.Int $2)  }
 | TOK_ASR NUM  { S_ASR(MetaConst.Int $2)  }
 | TOK_MSL NUM  { S_MSL(MetaConst.Int $2)  }
-| TOK_SXTW { S_SXTW }
-| TOK_UXTW { S_UXTW }
 
 zeroopt:
 | { () }
@@ -428,6 +491,23 @@ cond:
 | TOK_LS { LS }
 | TOK_AL { AL }
 
+%inline tok_instr_shift:
+| TOK_ASR { ASR }
+| TOK_LSL { LSL }
+| TOK_LSR { LSR}
+
+%inline tok_add_sub:
+| TOK_ADD  { ADD }
+| TOK_ADDS { ADDS }
+| TOK_SUB  { SUB }
+| TOK_SUBS { SUBS }
+
+%inline tok_add_sub_ext:
+| TOK_ADD  { Ext.ADD }
+| TOK_ADDS { Ext.ADDS }
+| TOK_SUB  { Ext.SUB }
+| TOK_SUBS { Ext.SUBS }
+
 label_addr:
 | NAME      { BranchTarget.Lbl $1 }
 | DOT NUM   { BranchTarget.Offset $2 }
@@ -469,15 +549,8 @@ instr:
 | TBZ reg COMMA NUM COMMA label_addr
   { let v,r = $2 in I_TBZ (v,r,MetaConst.Int $4,$6) }
 /* Memory */
-/* must differentiate between regular and post-indexed load */
-| LDR reg COMMA LBRK cxreg kr0 RBRK k0_opt
-  { let v,r    = $2 in
-    let kr, os = $6 in
-    match $8 with
-    | Some post when kr = K MetaConst.zero ->
-      I_LDR_P (v,r,$5,post)
-    | _ ->
-      I_LDR (v,r,$5,kr,os) }
+| LDR wxreg COMMA mem_ea
+  { let (v,r)   = $2 and (ra,ext) = $4 in I_LDR (v,r,ra,ext) }
 | LDUR reg COMMA LBRK cxreg k0_opt RBRK
   { let v,r = $2 in I_LDUR (v,r,$5,$6)}
 
@@ -510,10 +583,10 @@ instr:
   { I_STXP (V32,LY,$2,$4,$6,$9) }
 | STLXP wreg COMMA xreg COMMA xreg COMMA LBRK cxreg RBRK
   { I_STXP (V64,LY,$2,$4,$6,$9) }
-| LDRB wreg COMMA LBRK cxreg kr0 RBRK
-  { let (kr, s) = $6 in I_LDRBH (B,$2,$5,kr,s) }
-| LDRH wreg COMMA LBRK cxreg kr0 RBRK
-  { let (kr, s) = $6 in I_LDRBH (H,$2,$5,kr,s) }
+| LDRB wreg COMMA mem_ea
+  { let (ra,idx) = $4 in I_LDRBH (B,$2,ra,idx) }
+| LDRH wreg COMMA mem_ea
+  { let ra,idx = $4 in I_LDRBH (H,$2,ra,idx) }
 | LDRSB reg COMMA LBRK cxreg RBRK
   { let (v, s) = $2 in I_LDRS (v,B,s,$5) }
 | LDRSH reg COMMA LBRK cxreg RBRK
@@ -542,16 +615,12 @@ instr:
   { I_LDARBH (B,AQ,$2,$5) }
 | LDAPRH wreg COMMA LBRK cxreg RBRK
   { I_LDARBH (H,AQ,$2,$5) }
-| STR reg COMMA LBRK cxreg kr0 RBRK k0_opt
-  { let (v,r)   = $2 in
-    match $6, $8 with
-    (* post-indexed writes do not have shifters *)
-    | (_,S_NOEXT), Some s -> I_STR_P (v,r,$5,s)
-    | (kr,os),_ -> I_STR (v,r,$5,kr,os) }
-| STRB wreg COMMA LBRK cxreg kr0 RBRK
-  { let (kr,os) = $6 in I_STRBH (B,$2,$5,kr,os) }
-| STRH wreg COMMA LBRK cxreg kr0 RBRK
-  { let (kr, os) = $6 in I_STRBH (H,$2,$5,kr,os) }
+| STR wxreg COMMA mem_ea
+  { let (v,r)   = $2 and (ra,ext) = $4 in I_STR (v,r,ra,ext) }
+| STRB wreg COMMA mem_ea
+  { let (ra,idx) = $4 in I_STRBH (B,$2,ra,idx) }
+| STRH wreg COMMA mem_ea
+  { let (ra,idx) = $4 in I_STRBH (H,$2,ra,idx) }
 | STLR reg COMMA LBRK cxreg RBRK
   { let v,r = $2 in I_STLR (v,r,$5) }
 | STLRB wreg COMMA LBRK cxreg RBRK
@@ -647,7 +716,7 @@ instr:
     I_STUR_SIMD (v, r, $5, $6) }
 | MOV vreg INDEX COMMA vreg INDEX
   { I_MOV_VE ($2, $3, $5, $6) }
-| MOV vreg INDEX COMMA xwr
+| MOV vreg INDEX COMMA wxreg
   { let v,r = $5 in
     I_MOV_FG ($2, $3, v, r) }
 | MOV xreg COMMA vreg INDEX
@@ -1112,24 +1181,15 @@ instr:
 | TOK_SXTW xreg COMMA wreg
   { I_SXTW ($2,$4) }
 | MVN wreg COMMA wreg
-  { I_OP3 (V32,ORN,$2,ZR,RV (V32,$4), S_NOEXT) }
+  { I_OP3 (V32,ORN,$2,ZR,OpExt.Reg ($4,OpExt.LSL MetaConst.zero)) }
 | MVN xreg COMMA xreg
-  { I_OP3 (V64,ORN,$2,ZR,RV (V64,$4), S_NOEXT) }
+  { I_OP3 (V64,ORN,$2,ZR,OpExt.Reg ($4,OpExt.LSL MetaConst.zero)) }
 /* Special handling for ASR/LSL/LSR operation */
-| TOK_ASR xreg COMMA xreg COMMA kr
-  { I_OP3 (V64, ASR, $2, $4, $6, S_NOEXT) }
-| TOK_ASR wreg COMMA wreg COMMA kr
-  { I_OP3 (V32, ASR, $2, $4, $6, S_NOEXT) }
-| TOK_LSL xreg COMMA xreg COMMA kr
-  { I_OP3 (V64, LSL, $2, $4, $6, S_NOEXT) }
-| TOK_LSL wreg COMMA wreg COMMA kr
-  { I_OP3 (V32, LSL, $2, $4, $6, S_NOEXT) }
-| TOK_LSR xreg COMMA xreg COMMA kr
-  { I_OP3 (V64, LSR, $2, $4, $6, S_NOEXT) }
-| TOK_LSR wreg COMMA wreg COMMA kr
-  { I_OP3 (V32, LSR, $2, $4, $6, S_NOEXT) }
-| SXTW xreg COMMA wreg
-  { I_SXTW ($2,$4) }
+| tok_instr_shift xreg COMMA xreg COMMA op_ext_x
+  { I_OP3 (V64, $1, $2, $4, $6) }
+| tok_instr_shift wreg COMMA wreg COMMA op_ext_w
+  { I_OP3 (V32, $1, $2, $4, $6) }
+
 | SBFM xreg COMMA xreg COMMA k COMMA k
   { I_SBFM (V64,$2,$4,$6,$8) }
 | SBFM wreg COMMA wreg COMMA k COMMA k
@@ -1138,54 +1198,41 @@ instr:
   { I_UBFM (V64,$2,$4,$6,$8) }
 | UBFM wreg COMMA wreg COMMA k COMMA k
   { I_UBFM (V32,$2,$4,$6,$8) }
-| OP xreg COMMA xreg COMMA kxr
-  { check_op3 $1 $6 ; I_OP3 (V64,$1,$2,$4,$6, S_NOEXT) }
-| OP xreg COMMA xreg COMMA kr COMMA shift
-  { check_op3 $1 $6 ; I_OP3 (V64,$1,$2,$4,$6, $8) }
-| OP wreg COMMA wreg COMMA kwr
-  { check_op3 $1 $6 ; I_OP3 (V32,$1,$2,$4,$6, S_NOEXT) }
-| TOK_ADD xreg COMMA xreg COMMA kxr
-  { I_OP3 (V64,ADD,$2,$4,$6, S_NOEXT) }
-| TOK_ADD xreg COMMA xreg COMMA kr COMMA shift
-  { I_OP3 (V64,ADD,$2,$4,$6, $8) }
-| TOK_ADD wreg COMMA wreg COMMA kwr
-  { I_OP3 (V32,ADD,$2,$4,$6, S_NOEXT) }
-| TOK_ADD wreg COMMA wreg COMMA kwr COMMA shift
-  { I_OP3 (V32,ADD,$2,$4,$6, $8) }
-| TOK_ADD creg COMMA creg COMMA kxr
-  { I_OP3 (V128,ADD,$2,$4,$6, S_NOEXT) }
-| TOK_SUB xreg COMMA xreg COMMA kxr
-  { I_OP3 (V64,SUB,$2,$4,$6, S_NOEXT) }
-| TOK_SUB xreg COMMA xreg COMMA kr COMMA shift
-  { I_OP3 (V64,SUB,$2,$4,$6, $8) }
-| TOK_SUB wreg COMMA wreg COMMA kwr
-    { I_OP3 (V32,SUB,$2,$4,$6, S_NOEXT) }
-| TOK_SUB wreg COMMA wreg COMMA kwr COMMA shift
-    { I_OP3 (V32,SUB,$2,$4,$6, $8) }
-| TOK_SUB creg COMMA creg COMMA k
-  { I_OP3 (V128,SUB,$2,$4,K $6, S_NOEXT) }
-| TOK_SUBS xreg COMMA xreg COMMA kxr
-  { I_OP3 (V64,SUBS,$2,$4,$6, S_NOEXT) }
-| TOK_SUBS xreg COMMA xreg COMMA kr COMMA shift
-  { I_OP3 (V64,SUBS,$2,$4,$6, $8) }
-| TOK_SUBS wreg COMMA wreg COMMA kwr
-  { I_OP3 (V32,SUBS,$2,$4,$6, S_NOEXT) }
-| TOK_SUBS wreg COMMA wreg COMMA kwr COMMA shift
-  { I_OP3 (V32,SUBS,$2,$4,$6, $8) }
-| TOK_SUBS xreg COMMA creg COMMA creg
-  { I_OP3 (V128,SUBS,$2,$4,RV (V128,$6), S_NOEXT) }
-| OP wreg COMMA wreg COMMA kwr COMMA shift
-  { check_op3 $1 $6 ; I_OP3 (V32,$1,$2,$4,$6,$8) }
-| CMP wreg COMMA kr_shift
-  { let (reg,shift) = $4 in
-    I_OP3 (V32,SUBS,ZR,$2,reg,shift) }
-| CMP xreg COMMA kr_shift
-  { let (reg,shift) = $4 in
-    I_OP3 (V64,SUBS,ZR,$2,reg,shift) }
-| TST wreg COMMA k
-  { I_OP3 (V32,ANDS,ZR,$2,K $4, S_NOEXT) }
-| TST xreg COMMA k
-  { I_OP3 (V64,ANDS,ZR,$2,K $4, S_NOEXT) }
+(* Generic OP3 *)
+| OP xreg COMMA xreg COMMA op_ext_x
+  { check_op3 $1 $6 ; I_OP3 (V64,$1,$2,$4,$6) }
+| OP wreg COMMA wreg COMMA op_ext_w
+  { check_op3 $1 $6 ; I_OP3 (V32,$1,$2,$4,$6) }
+
+(* Addition, also consider extended register *)
+| tok_add_sub xreg COMMA xreg COMMA op_ext_x
+  { I_OP3 (V64, $1, $2, $4, $6) }
+| tok_add_sub wreg COMMA wreg COMMA op_ext_w
+  { I_OP3 (V32, $1, $2, $4, $6) }
+| tok_add_sub creg COMMA creg COMMA op_ext_c
+  { I_OP3 (V128, $1, $2, $4, $6) }
+| tok_add_sub_ext creg COMMA creg COMMA xreg COMMA add_sub_ext
+  { I_ADDSUBEXT (V128, $1, $2, $4, (V64, $6), $8) }
+| tok_add_sub_ext xreg COMMA xreg COMMA wxreg COMMA add_sub_ext
+  { I_ADDSUBEXT (V64,$1,$2,$4,$6,$8) }
+| tok_add_sub_ext wreg COMMA wreg COMMA wreg COMMA add_sub_ext
+  { I_ADDSUBEXT (V32, $1, $2, $4, (V32, $6), $8) }
+
+
+| CMP wreg COMMA op_ext_w
+  { I_OP3 (V32,SUBS,ZR,$2,$4) }
+| CMP xreg COMMA op_ext_x
+  { I_OP3 (V64,SUBS,ZR,$2,$4) }
+| CMP wreg COMMA wreg COMMA add_sub_ext
+  { I_ADDSUBEXT (V32,Ext.SUBS,ZR,$2,(V32,$4),$6) }
+| CMP xreg COMMA wxreg COMMA add_sub_ext
+  { I_ADDSUBEXT (V64,Ext.SUBS,ZR,$2,$4,$6) }
+
+| TST wreg COMMA op_ext_w
+  { I_OP3 (V32,ANDS,ZR,$2,$4) }
+| TST xreg COMMA op_ext_x
+  { I_OP3 (V64,ANDS,ZR,$2,$4) }
+
 | RBIT wreg COMMA wreg
   { I_RBIT (V32,$2,$4) }
 | RBIT xreg COMMA xreg
