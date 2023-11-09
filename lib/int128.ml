@@ -27,6 +27,8 @@ module Int128 = struct
 
   let is_neg (ah,_) = BaseUint64.has_top_bit_set ah
 
+  let abs x = if is_neg x then chsgn x else x
+
   let compare a b =
     match is_neg a,is_neg b with
     | true,true -> compare b a

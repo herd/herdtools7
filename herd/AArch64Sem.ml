@@ -2660,7 +2660,13 @@ module Make
             >>=  sxtw_op
             >>= fun v -> write_reg_dest rd v ii
             >>= nextSet rd
-
+        | I_ABS (v,rd,rs) ->
+           let sz = tr_variant v in
+           read_reg_ord_sz sz rs ii
+           >>= sxt_op sz
+           >>= M.op1 Op.Abs
+           >>=fun v -> write_reg_dest rd v ii
+           >>= nextSet rd
         | I_OP3(v,op,rd,rn,e) ->
            let margs =
              let sz = tr_variant v in

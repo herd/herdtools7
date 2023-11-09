@@ -822,6 +822,7 @@ module
     | Mask sz -> maskop op sz
     | Sxt sz -> sxtop op sz
     | Inv -> unop op Cst.Scalar.lognot
+    | Abs -> unop op Cst.Scalar.abs
     | TagLoc -> tagloc
     | CapaTagLoc -> capatagloc
     | TagExtract -> tagextract

@@ -335,6 +335,7 @@ match name with
 | "movk"|"MOVK" -> MOVK
 | "adr"|"ADR" -> ADR
 | "rbit"|"RBIT" -> RBIT
+| "abs"|"ABS" -> ABS
 | "cmp"|"CMP" -> CMP
 | "tst"|"TST" -> TST
 (* Three argument opcodes factorized *)

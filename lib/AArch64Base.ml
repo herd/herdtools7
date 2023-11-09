@@ -1120,6 +1120,7 @@ type 'k kinstruction =
   | I_OP3 of variant * op * reg * reg * 'k OpExt.ext
   | I_ADR of reg * lbl
   | I_RBIT of variant * reg * reg
+  | I_ABS of variant * reg * reg
 (* Barrier *)
   | I_FENCE of barrier
 (* Conditional select *)
@@ -1637,6 +1638,8 @@ let pp_k_nz k = if m.zerop k then "" else "," ^ m.pp_k k in
        (pp_xreg r) (pp_label lbl)
   | I_RBIT (v,rd,rs) ->
       sprintf "RBIT %s,%s" (pp_vreg v rd) (pp_vreg v rs)
+  | I_ABS (v,rd,rs) ->
+      sprintf "ABS %s,%s" (pp_vreg v rd) (pp_vreg v rs)
 (* Barrier *)
   | I_FENCE b ->
       pp_barrier b
@@ -1752,7 +1755,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2) | I_LDRS (_,_,r1,r2)
   | I_SBFM (_,r1,r2,_,_) | I_UBFM (_,r1,r2,_,_)
   | I_STOP (_,_,_,r1,r2) | I_STOPBH (_,_,_,r1,r2)
-  | I_RBIT (_,r1,r2) | I_LDUR (_, r1, r2, _)
+  | I_RBIT (_,r1,r2) | I_ABS (_,r1,r2) | I_LDUR (_, r1, r2, _)
   | I_CHKEQ (r1,r2) | I_CLRTAG (r1,r2) | I_GC (_,r1,r2) | I_LDCT (r1,r2)
   | I_STCT (r1,r2)
   | I_LDR_P_SIMD (_,r1,r2,_) | I_STR_P_SIMD (_,r1,r2,_)
@@ -2053,6 +2056,8 @@ let map_regs f_reg f_symb =
       I_ADR (map_reg r,lbl)
   | I_RBIT (v,r1,r2) ->
       I_RBIT (v,map_reg r1,map_reg r2)
+  | I_ABS (v,r1,r2) ->
+      I_ABS (v,map_reg r1,map_reg r2)
 (* Conditinal select *)
   | I_CSEL (v,r1,r2,r3,c,op) ->
       I_CSEL (v,map_reg r1,map_reg r2,map_reg r3,c,op)
@@ -2147,6 +2152,7 @@ let get_next =
   | I_STOPBH _
   | I_ADR _
   | I_RBIT _
+  | I_ABS _
   | I_IC _
   | I_DC _
   | I_TLBI _
@@ -2383,6 +2389,7 @@ module PseudoI = struct
         | I_STOPBH _
         | I_ADR _
         | I_RBIT _
+        | I_ABS _
         | I_IC _
         | I_DC _
         | I_TLBI _
@@ -2535,6 +2542,7 @@ module PseudoI = struct
         | I_CSEL _
         | I_ADR _
         | I_RBIT _
+        | I_ABS _
 (*        | I_TLBI (_,ZR) *)
         | I_MRS _ | I_MSR _
         | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _

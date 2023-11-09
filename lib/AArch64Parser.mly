@@ -127,7 +127,7 @@ let mk_instrp instr v r1 r2 ra ko kb =
 %token <AArch64Base.DC.op> DC_OP
 %token <AArch64Base.TLBI.op> TLBI_OP
 %token <AArch64Base.sysreg> SYSREG
-%token MRS MSR TST RBIT
+%token MRS MSR TST RBIT ABS
 %token STG STZG LDG
 %token ALIGND ALIGNU BUILD CHKEQ CHKSLD CHKTGD CLRTAG CPY CPYTYPE CPYVALUE CSEAL
 %token LDCT SEAL STCT UNSEAL
@@ -1237,6 +1237,12 @@ instr:
   { I_RBIT (V32,$2,$4) }
 | RBIT xreg COMMA xreg
   { I_RBIT (V64,$2,$4) }
+
+| ABS wreg COMMA wreg
+  { I_ABS (V32,$2,$4) }
+| ABS xreg COMMA xreg
+  { I_ABS (V64,$2,$4) }
+
 /* Morello */
 | ALIGND creg COMMA creg COMMA k
   { I_ALIGND ($2,$4,$6) }

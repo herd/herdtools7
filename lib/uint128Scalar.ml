@@ -33,6 +33,7 @@ let pp_unsigned = pp (* Hum *)
 
 let lt v1 v2 = compare v1 v2 < 0
 let le v1 v2 = compare v1 v2 <= 0
+let abs _ = Warn.fatal "Uint128 absolute value not implemented"
 let bit_at k v = Uint128.logand v (Uint128.shift_left Uint128.one k)
 let mask sz =
   let open MachSize in
