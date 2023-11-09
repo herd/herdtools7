@@ -2654,7 +2654,12 @@ module Make
                   (Misc.Fatal "Overwriting  with ADR, cannot handle")
                   B.Exit
            end
-
+        | I_RBIT (v,rd,rn) ->
+            let sz = tr_variant v in
+            read_reg_ord_sz sz rn ii
+            >>= M.op1 (Op.Rbit sz)
+            >>= fun v -> write_reg_dest rd v ii
+            >>= nextSet rd
         | I_SXTW(rd,rs) ->
             read_reg_ord_sz MachSize.Word rs ii
             >>=  sxtw_op
@@ -2802,9 +2807,8 @@ module Make
            let m_fault = mk_fault None Dir.R Annot.N ii ft None in
            m_fault >>| set_elr_el1 ii >>! B.Fault Dir.R
 (*  Cannot handle *)
-        | (I_RBIT _
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
-        | I_LD1M _|I_ST1M _) as i ->
+        | (I_LD1M _|I_ST1M _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
 
 (* Compute a safe set of instructions that can

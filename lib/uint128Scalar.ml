@@ -57,3 +57,5 @@ let set_tag _ = assert false
 
 type mask = Int64.t
 let to_mask = to_int64
+
+let rbit _ _ =  Warn.fatal "Uint128.rbit not implemented"

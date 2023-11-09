@@ -254,6 +254,16 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 "n" ^= reg rn;
                 "datasize" ^= liti datasize;
               ])
+      | I_RBIT (v,rd,rn) ->
+         let datasize = variant_raw v in
+         Some
+           ("integer/arithmetic/rbit/RBIT_32_dp_1src.opn",
+            stmt
+              [
+                "d" ^= reg rd;
+                "n" ^= reg rn;
+                "datasize" ^= liti datasize;
+              ])
       | I_UBFM (v,rd,rn,immr,imms)
       | I_SBFM (v,rd,rn,immr,imms) ->
          let datasize = variant_raw v in
@@ -704,6 +714,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               | Abs -> Abs
               | Mask sz -> Mask sz
               | Sxt sz -> Sxt sz
+              | Rbit sz -> Rbit sz
               | TagLoc -> TagLoc
               | CapaTagLoc -> CapaTagLoc
               | TagExtract -> TagExtract
