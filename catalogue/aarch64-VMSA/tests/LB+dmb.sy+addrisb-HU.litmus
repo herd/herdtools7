@@ -1,0 +1,15 @@
+AArch64 LB+dmb.sy+addrisb-HU
+Variant=vmsa
+TTHM=P1:HD
+{
+TTD(x)=(oa:PA(x),db:0,dbm:1);
+0:X9=TTD(x); 0:X3=y;
+1:X1=x; 1:X3=y; 1:X5=z; 
+}
+ P0          | P1                  ;
+             | LDR W2,[X3]         ;
+ LDR X8,[X9] | EOR W6,W2,W2        ;
+ DMB SY      | LDR W4,[X5,W6,SXTW] ;
+ MOV W2,#1   | ISB                 ;
+ STR W2,[X3] | STR W0,[X1]         ;
+exists (0:X8=(oa:PA(x),db:1,dbm:1) /\ 1:X2=1)
