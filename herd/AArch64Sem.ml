@@ -1074,13 +1074,16 @@ module Make
               fire_spurious_af dir a m) >>= M.ignore >>= B.next1T)
             mphy
             mfault in
-        M.delay_kont "6" ma
-          (if pte2 then maccess
-           else
+        M.delay_kont "6" ma (
+          if pte2 then maccess
+          else
              fun a ma ->
              match Act.access_of_location_std (A.Location_global a) with
-             | Access.VIR|Access.PTE -> maccess a ma
-             | ac -> mop ac ma >>= M.ignore >>= B.next1T)
+             | Access.VIR|Access.PTE when not (A.V.is_instrloc a) ->
+                 maccess a ma
+             | ac ->
+                 mop ac ma >>= M.ignore >>= B.next1T
+        )
 
       let lift_morello mop perms ma mv dir an ii =
         let mfault msg ma mv =

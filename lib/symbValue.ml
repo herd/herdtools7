@@ -554,6 +554,10 @@ module
 
   let is_virtual_v v =  if is_virtual v then one else zero
 
+  let is_instrloc v = match v with
+  | Val c -> Constant.is_label c
+  | Var _ -> false
+
   let is_instr_v =
     function
     | Val (Constant.Instruction _) -> one
