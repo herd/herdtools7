@@ -441,6 +441,7 @@ val same_instance : event -> event -> bool
 
   val aarch64_cas_no :
     bool -> (* Physical memory access *)
+    bool -> (* Add an iico_ctrl between the Branch and the Register Write *)
     event_structure -> event_structure -> event_structure ->
     event_structure -> event_structure -> event_structure
 
@@ -2168,7 +2169,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           @ wres.aligned @ wresult.aligned @ wmem.aligned ;}
 
 (* AArch64 CAS, failure *)
-    let aarch64_cas_no is_phy rn rs wrs rm br =
+    let aarch64_cas_no is_phy add_ctrl rn rs wrs rm br =
       let input_wrs = minimals wrs
       and input_rm = minimals rm
       and input_br = minimals br in
@@ -2201,10 +2202,14 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
              EventRel.union
                (EventRel.cartesian (get_ctrl_output_commits rn) input_rm)
            else Misc.identity)
-            (EventRel.union5
-               rn.intra_causality_control rs.intra_causality_control
-               wrs.intra_causality_control rm.intra_causality_control
-               br.intra_causality_control);
+          ((if add_ctrl then
+             EventRel.union
+               (EventRel.cartesian (get_output br) input_wrs)
+            else Misc.identity)
+          (EventRel.union5
+             rn.intra_causality_control rs.intra_causality_control
+             wrs.intra_causality_control rm.intra_causality_control
+             br.intra_causality_control)) ;
         intra_causality_order =
           EventRel.union5
             rn.intra_causality_order rs.intra_causality_order
