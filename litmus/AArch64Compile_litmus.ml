@@ -1064,10 +1064,10 @@ module Make(V:Constant.S)(C:Config) =
     let v2fmt v = match v with | V32 -> "w"| V64 -> "" | V128 -> assert false
 
     let do_cmp memo v r a =
-      let fmt = v2fmt v in
       let open OpExt in
       match a with
       | Imm (k,s) ->
+         let fmt = v2fmt v in
          let pp_s = match s with 0 -> "" | _ -> sprintf ",#%i" s in
          { empty_ins with
            memo = sprintf "%s ^%si0,#%i%s" memo fmt k pp_s;
@@ -1075,7 +1075,7 @@ module Make(V:Constant.S)(C:Config) =
       | Reg (idx,s) ->
          let rs,f1,f2 = do_arg2i v r idx 0 in
          { empty_ins with
-           memo = sprintf "%s ^%si0,%si1%s" memo f1 f2 (pp_op_ext_shift s);
+           memo = sprintf "%s %s,%s%s" memo f1 f2 (pp_op_ext_shift s);
            inputs = rs; reg_env=add_v v rs; }
 
     let cmp = do_cmp "cmp"
@@ -1365,12 +1365,12 @@ module Make(V:Constant.S)(C:Config) =
            outputs=o; reg_env=add_type t (i@o); }::k
     | I_CSEL (v,r1,r2,r3,c,op) ->
        let ri,f2,f3 = do_arg2i v r2 r3 0
-       and ro,f1 = do_arg1i v r1 0 in
+       and ro,f1 = do_arg1o v r1 0 in
        {
          empty_ins with
          memo =
            sprintf "%s %s,%s,%s,%s"
-             (sel_memo op) f1 f2 f3 (pp_cond c);
+             (sel_memo op |> Misc.lowercase) f1 f2 f3 (pp_cond c);
          inputs=ri; outputs=ro;
          reg_env=add_v v (ro@ri); }::k
     | I_IC (op,r) ->
