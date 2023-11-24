@@ -1014,8 +1014,7 @@ module Make
           | (Handled,_)|(LoadsFatal,Dir.W) ->
              fun ma ->
              let set_tfsr = write_reg AArch64Base.tfsr V.one ii in
-             let (>>) = M.bind_ctrl_first_outputs in
-             let ma = ma >> (fun a -> (set_tfsr >>| mfault) >>! a) in
+             let ma = ma >>*== (fun a -> (set_tfsr >>| mfault) >>! a) in
              mm ma >>! B.Next []
           | Skip,_ ->
              fun _ ->
@@ -1158,7 +1157,9 @@ module Make
 (* Generic load *)
         lift_memop rA  Dir.R true
           (fun ac ma _mv -> (* value fake here *)
-            if Access.is_physical ac || memtag  then
+            let open Precision in
+            let memtag_sync = memtag && (C.precision = Fatal || C.precision = LoadsFatal) in
+            if memtag_sync || Access.is_physical ac then
               M.bind_ctrldata ma (mop ac)
             else
               ma >>= mop ac)
@@ -1169,7 +1170,9 @@ module Make
       let do_str rA mop sz an ma mv ii =
         lift_memop rA Dir.W true
           (fun ac ma mv ->
-            if memtag || (is_branching && Access.is_physical ac) then begin
+            let open Precision in
+            let memtag_sync = memtag && C.precision = Fatal in
+            if memtag_sync || (is_branching && Access.is_physical ac) then begin
               (* additional ctrl dep on address *)
               M.bind_ctrldata_data ma mv
                 (fun a v -> mop ac a v ii)
