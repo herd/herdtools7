@@ -2142,10 +2142,13 @@ module Make
         do_read_mem_ret access_size Annot.N aexp Access.VIR addr ii >>= fun v ->
         write_reg_neon_rep sz r v ii
 
-      let store_elem i r addr ii =
+      let do_store_elem an i r addr ii =
         let access_size = AArch64.simd_mem_access_size [r] in
         read_reg_neon_elem true r i ii >>= fun v ->
-        write_mem access_size aexp Access.VIR addr v ii
+        do_write_mem access_size an aexp Access.VIR addr v ii
+
+      let store_elem = do_store_elem Annot.N
+      let store_elem_stlr = do_store_elem Annot.L
 
      (* Single structure memory access *)
       let mem_ss memop addr rs ii =
@@ -2600,6 +2603,10 @@ module Make
         | I_LD4M(rs,rA,kr) ->
             !!(read_reg_ord rA ii >>= fun addr ->
             (load_m addr rs ii >>|
+            post_kr rA addr kr ii))
+        | I_STL1(rs,i,rA,kr) ->
+            !!!(read_reg_ord rA ii >>= fun addr ->
+            (mem_ss (store_elem_stlr i) addr rs ii >>|
             post_kr rA addr kr ii))
         | I_ST1(rs,i,rA,kr)
         | I_ST2(rs,i,rA,kr)

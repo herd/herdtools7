@@ -135,6 +135,7 @@ match name with
 | "ld4r" | "LD4R" -> LD4R
 | "stur" | "STUR" -> STUR
 | "stlur" | "STLUR" -> STLUR
+| "stl1" | "STL1" -> STL1
 | "st1" | "ST1" -> ST1
 | "st2" | "ST2" -> ST2
 | "st3" | "ST3" -> ST3

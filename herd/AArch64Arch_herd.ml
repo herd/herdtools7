@@ -96,7 +96,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_ADDV _| I_DUP _ | I_MOV_FG _| I_MOV_S _| I_MOV_TG _| I_MOV_V _| I_MOV_VE _| I_MOVI_S _
     | I_MOVI_V _| I_MOVK _| I_MOVZ _| I_MOVN _| I_MRS _| I_MSR _| I_OP3 _| I_RBIT _
     | I_RET _
-    | I_SBFM _| I_SC _| I_SEAL _| I_ST1 _| I_ST1M _| I_ST2 _| I_ST2M _| I_ST3 _
+    | I_SBFM _| I_SC _| I_SEAL _| I_ST1 _| I_STL1 _| I_ST1M _| I_ST2 _| I_ST2M _| I_ST3 _
     | I_ST3M _| I_ST4 _| I_ST4M _| I_STCT _| I_STG _| I_STLR _| I_STLRBH _| I_STOP _
     | I_STOPBH _| I_STP _| I_STP_P_SIMD _| I_STP_SIMD _| I_STR _ | I_STLUR_SIMD _
     | I_STR_P_SIMD _| I_STR_SIMD _| I_STRBH _| I_STUR_SIMD _| I_STXP _| I_STXR _
@@ -237,7 +237,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDAPUR_SIMD (v,_,_,_) | I_STLUR_SIMD (v,_,_,_) ->
           Some (tr_simd_variant v)
       | I_LD1 (rs,_,_,_) | I_LD1R (rs,_,_) | I_ST1 (rs,_,_,_)
-      | I_LDAP1 (rs,_,_,_)
+      | I_LDAP1 (rs,_,_,_) | I_STL1 (rs,_,_,_)
       | I_LD1M (rs,_,_) | I_ST1M (rs,_,_)
       | I_LD2 (rs,_,_,_) | I_LD2R (rs,_,_) | I_ST2 (rs,_,_,_)
       | I_LD2M (rs,_,_) | I_ST2M (rs,_,_)
@@ -338,6 +338,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDXP (_,_,r1,r2,_)
         -> [r1;r2;]
       | I_LDAP1 _
+      | I_STL1 _
       | I_LD1 _|I_LD1M _|I_LD1R _|I_LD2 _
       | I_LD2M _|I_LD2R _|I_LD3 _|I_LD3M _
       | I_LD3R _|I_LD4 _|I_LD4M _|I_LD4R _
@@ -372,7 +373,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDR _|I_LDRSW _|I_LDRS _|I_LDUR _|I_LD1 _|I_LDAP1 _
       | I_LD1M _|I_LD1R _|I_LD2 _|I_LD2M _
       | I_LD2R _|I_LD3 _|I_LD3M _|I_LD3R _
-      | I_LD4 _|I_LD4M _|I_LD4R _|I_ST1 _
+      | I_LD4 _|I_LD4M _|I_LD4R _|I_ST1 _|I_STL1 _
       | I_ST1M _|I_ST2 _|I_ST2M _|I_ST3 _
       | I_ST3M _|I_ST4 _|I_ST4M _
       | I_LDP_P_SIMD _|I_STP_P_SIMD _

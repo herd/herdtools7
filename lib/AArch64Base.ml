@@ -1102,6 +1102,7 @@ type 'k kinstruction =
   | I_LD4M of reg list * reg * 'k kr
   | I_LD4R of reg list * reg * 'k kr
   | I_ST1 of reg list * int * reg * 'k kr
+  | I_STL1 of reg list * int * reg * 'k kr
   | I_ST1M of reg list * reg * 'k kr
   | I_ST2 of reg list * int * reg * 'k kr
   | I_ST2M of reg list * reg * 'k kr
@@ -1548,6 +1549,8 @@ let do_pp_instruction m =
       pp_vmem_r_m "LD4R" rs r2 kr
   | I_ST1 (rs,i,r2,kr) ->
       pp_vmem_s "ST1" rs i r2 kr
+  | I_STL1 (rs,i,r2,kr) ->
+      pp_vmem_s "STL1" rs i r2 kr
   | I_ST1M (rs,r2,kr) ->
       pp_vmem_r_m "ST1" rs r2 kr
   | I_ST2 (rs,i,r2,kr) ->
@@ -1906,7 +1909,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_LD2 (rs,_,r2,kr) | I_LD2M (rs,r2,kr) | I_LD2R (rs,r2,kr)
   | I_LD3 (rs,_,r2,kr) | I_LD3M (rs,r2,kr) | I_LD3R (rs,r2,kr)
   | I_LD4 (rs,_,r2,kr) | I_LD4M (rs,r2,kr) | I_LD4R (rs,r2,kr)
-  | I_ST1 (rs,_,r2,kr) | I_ST1M (rs,r2,kr)
+  | I_ST1 (rs,_,r2,kr) | I_ST1M (rs,r2,kr) | I_STL1 (rs,_,r2,kr)
   | I_ST2 (rs,_,r2,kr) | I_ST2M (rs,r2,kr)
   | I_ST3 (rs,_,r2,kr) | I_ST3M (rs,r2,kr)
   | I_ST4 (rs,_,r2,kr) | I_ST4M (rs,r2,kr)
@@ -2060,6 +2063,8 @@ let map_regs f_reg f_symb =
       I_LD4R (List.map map_reg rs,map_reg r2,map_kr kr)
   | I_ST1 (rs,i,r2,kr) ->
       I_ST1 (List.map map_reg rs,i,map_reg r2,map_kr kr)
+  | I_STL1 (rs,i,r2,kr) ->
+      I_STL1 (List.map map_reg rs,i,map_reg r2,map_kr kr)
   | I_ST1M (rs,r2,kr) ->
       I_ST1M (List.map map_reg rs,map_reg r2,map_kr kr)
   | I_ST2 (rs,i,r2,kr) ->
@@ -2322,7 +2327,7 @@ let get_next =
   | I_LD2 _ | I_LD2M _ | I_LD2R _
   | I_LD3 _ | I_LD3M _ | I_LD3R _
   | I_LD4 _ | I_LD4M _ | I_LD4R _
-  | I_ST1 _ | I_ST1M _
+  | I_ST1 _ | I_ST1M _ | I_STL1 _
   | I_ST2 _ | I_ST2M _
   | I_ST3 _ | I_ST3M _
   | I_ST4 _ | I_ST4M _
@@ -2616,6 +2621,7 @@ module PseudoI = struct
         | I_LD4M (rs,r2,kr) -> I_LD4M (rs,r2,kr_tr kr)
         | I_LD4R (rs,r2,kr) -> I_LD4R (rs,r2,kr_tr kr)
         | I_ST1 (rs,i,r2,kr) -> I_ST1 (rs,i,r2,kr_tr kr)
+        | I_STL1 (rs,i,r2,kr) -> I_STL1 (rs,i,r2,kr_tr kr)
         | I_ST1M (rs,r2,kr) -> I_ST1M (rs,r2,kr_tr kr)
         | I_ST2 (rs,i,r2,kr) -> I_ST2 (rs,i,r2,kr_tr kr)
         | I_ST2M (rs,r2,kr) -> I_ST2M (rs,r2,kr_tr kr)
@@ -2672,7 +2678,7 @@ module PseudoI = struct
         | I_STG _ | I_LDG _
         | I_LDR_SIMD _ | I_STR_SIMD _
         | I_LD1 _ | I_LD1R _ | I_LDAP1 _
-        | I_ST1 _
+        | I_ST1 _ | I_STL1 _
         | I_LDUR_SIMD _ | I_LDAPUR_SIMD _
         | I_STUR_SIMD _ | I_STLUR_SIMD _
         | I_TLBI (_,_)

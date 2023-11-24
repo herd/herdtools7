@@ -1355,6 +1355,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_LD4M (rs,r2,kr) -> load_simd_m "ld4" rs r2 kr::k
     | I_LD4R (rs,r2,kr) -> load_simd_m "ld4r" rs r2 kr::k
     | I_ST1 (rs,i,r2,kr) -> store_simd_s "st1" rs i r2 kr::k
+    | I_STL1 (rs,i,r2,kr) -> store_simd_s "stl1" rs i r2 kr::k
     | I_ST1M (rs,r2,kr) -> store_simd_m "st1" rs r2 kr::k
     | I_ST2 (rs,i,r2,kr) -> store_simd_s "st2" rs i r2 kr::k
     | I_ST2M (rs,r2,kr) -> store_simd_m "st2" rs r2 kr::k
