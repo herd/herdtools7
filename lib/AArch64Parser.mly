@@ -69,7 +69,7 @@ let check_op3 op e =
 %token LDR LDRSW LDP LDNP LDPSW LDIAPP STP STNP STILP
 %token LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token LDRSB LDRSH
-%token LD1 LD1R LD2 LD2R LD3 LD3R LD4 LD4R ST1 ST2 ST3 ST4 STUR /* Neon load/store */
+%token LD1 LD1R LDAP1 LD2 LD2R LD3 LD3R LD4 LD4R ST1 ST2 ST3 ST4 STUR /* Neon load/store */
 %token ADDV DUP FMOV LDAPUR STLUR
 %token CMP MOV MOVZ MOVN MOVK MOVI ADR MVN
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH LDXP LDAXP
@@ -658,6 +658,11 @@ instr:
    /* Neon extension Memory */
 | LD1 vregs1 INDEX COMMA LBRK xreg RBRK kx0_no_shift
   { I_LD1 ($2, $3, $6, $8) }
+| LDAP1 vregs1 INDEX COMMA LBRK xreg RBRK
+  { match List.hd $2 with
+    | Vreg(_,(0,64)) -> I_LDAP1 ($2, $3, $6, K (MetaConst.zero))
+    | _ -> assert false
+  }
 | LD1 vregs COMMA LBRK xreg RBRK kx0_no_shift
   { I_LD1M ($2, $5, $7) }
 | LD1R vregs1 COMMA LBRK xreg RBRK kx0_no_shift

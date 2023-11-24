@@ -1089,6 +1089,7 @@ type 'k kinstruction =
   | I_LDUR of variant * reg * reg * 'k option
 (* Neon Extension Load and Store*)
   | I_LD1 of reg list * int * reg * 'k kr
+  | I_LDAP1 of reg list * int * reg * 'k kr
   | I_LD1M of reg list * reg * 'k kr
   | I_LD1R of reg list * reg * 'k kr
   | I_LD2 of reg list * int * reg * 'k kr
@@ -1521,6 +1522,8 @@ let do_pp_instruction m =
 (* Neon Extension Load and Store *)
   | I_LD1 (rs,i,r2,kr) ->
       pp_vmem_s "LD1" rs i r2 kr
+  | I_LDAP1 (rs,i,r2,kr) ->
+      pp_vmem_s "LDAP1" rs i r2 kr
   | I_LD1M (rs,r2,kr) ->
       pp_vmem_r_m "LD1" rs r2 kr
   | I_LD1R (rs, r2, kr) ->
@@ -1899,7 +1902,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDRS (_,r1,r2,idx) | I_STR (_,r1,r2,idx)
   | I_LDRBH (_,r1,r2,idx) | I_STRBH (_,r1,r2,idx)
     -> fold_reg r1 (fold_reg r2 (fold_idx idx c))
-  | I_LD1 (rs,_,r2,kr) | I_LD1M (rs,r2,kr) | I_LD1R (rs,r2,kr)
+  | I_LD1 (rs,_,r2,kr) | I_LD1M (rs,r2,kr) | I_LD1R (rs,r2,kr) | I_LDAP1 (rs,_,r2,kr)
   | I_LD2 (rs,_,r2,kr) | I_LD2M (rs,r2,kr) | I_LD2R (rs,r2,kr)
   | I_LD3 (rs,_,r2,kr) | I_LD3M (rs,r2,kr) | I_LD3R (rs,r2,kr)
   | I_LD4 (rs,_,r2,kr) | I_LD4M (rs,r2,kr) | I_LD4R (rs,r2,kr)
@@ -2031,6 +2034,8 @@ let map_regs f_reg f_symb =
 (* Neon Extension Loads and Stores *)
   | I_LD1 (rs,i,r2,kr) ->
       I_LD1 (List.map map_reg rs, i, map_reg r2, map_kr kr)
+  | I_LDAP1 (rs,i,r2,kr) ->
+      I_LDAP1 (List.map map_reg rs, i, map_reg r2, map_kr kr)
   | I_LD1M (rs,r2,kr) ->
       I_LD1M (List.map map_reg rs,map_reg r2,map_kr kr)
   | I_LD1R (rs,r2,kr) ->
@@ -2313,7 +2318,7 @@ let get_next =
   | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
   | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|I_SEAL _|I_STCT _
   | I_UNSEAL _
-  | I_LD1 _ | I_LD1M _ | I_LD1R _
+  | I_LD1 _ | I_LD1M _ | I_LD1R _ | I_LDAP1 _
   | I_LD2 _ | I_LD2M _ | I_LD2R _
   | I_LD3 _ | I_LD3M _ | I_LD3R _
   | I_LD4 _ | I_LD4M _ | I_LD4R _
@@ -2598,6 +2603,7 @@ module PseudoI = struct
         | I_ALIGND (r1,r2,k) -> I_ALIGND (r1,r2,k_tr k)
         | I_ALIGNU (r1,r2,k) -> I_ALIGNU (r1,r2,k_tr k)
         | I_LD1 (rs,i,r2,kr) -> I_LD1 (rs,i,r2,kr_tr kr)
+        | I_LDAP1 (rs,i,r2,kr) -> I_LDAP1 (rs,i,r2,kr_tr kr)
         | I_LD1M (rs,r2,kr) -> I_LD1M (rs,r2,kr_tr kr)
         | I_LD1R (rs,r2,kr) -> I_LD1R (rs,r2,kr_tr kr)
         | I_LD2 (rs,i,r2,kr) -> I_LD2 (rs,i,r2,kr_tr kr)
@@ -2665,7 +2671,7 @@ module PseudoI = struct
         | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
         | I_STG _ | I_LDG _
         | I_LDR_SIMD _ | I_STR_SIMD _
-        | I_LD1 _ | I_LD1R _
+        | I_LD1 _ | I_LD1R _ | I_LDAP1 _
         | I_ST1 _
         | I_LDUR_SIMD _ | I_LDAPUR_SIMD _
         | I_STUR_SIMD _ | I_STLUR_SIMD _

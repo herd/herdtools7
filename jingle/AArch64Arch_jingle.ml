@@ -651,7 +651,7 @@ include Arch.MakeArch(struct
         conv_reg r2 >! fun r2 ->
         I_STCT(r1,r2)
     (* Neon Extension *)
-    | I_LD1 _ | I_LD1M _ | I_LD1R _
+    | I_LD1 _ | I_LD1M _ | I_LD1R _ | I_LDAP1 _
     | I_LD2 _ | I_LD2M _ | I_LD2R _
     | I_LD3 _ | I_LD3M _ | I_LD3R _
     | I_LD4 _ | I_LD4M _ | I_LD4R _

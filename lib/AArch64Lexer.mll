@@ -125,6 +125,7 @@ match name with
 | "stlxp"| "STLXP" -> STLXP
 (* Neon Extension Memory *)
 | "ld1" | "LD1" -> LD1
+| "ldap1" | "LDAP1" -> LDAP1
 | "ld1r" | "LD1R" -> LD1R
 | "ld2" | "LD2" -> LD2
 | "ld2r" | "LD2R" -> LD2R

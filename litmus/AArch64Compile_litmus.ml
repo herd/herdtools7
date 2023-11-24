@@ -48,6 +48,7 @@ module Make(V:Constant.S)(C:Config) =
     let extract_addrs _ins = Global_litmus.Set.empty
 
     let stable_regs _ins = match _ins with
+    | I_LDAP1 (rs,_,_,_)
     | I_LD1 (rs,_,_,_) | I_LD1M (rs,_,_)
     | I_LD2 (rs,_,_,_) | I_LD2M (rs,_,_) | I_LD2R (rs,_,_)
     | I_LD3 (rs,_,_,_) | I_LD3M (rs,_,_) | I_LD3R (rs,_,_)
@@ -1340,6 +1341,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_SWP (v,rmw,r1,r2,r3) -> swp (swp_memo rmw) v r1 r2 r3::k
     | I_SWPBH (bh,rmw,r1,r2,r3) -> swp (swpbh_memo bh rmw) V32 r1 r2 r3::k
 (* Neon Extension Load and Store *)
+    | I_LDAP1 (rs,i,r2,kr) -> load_simd_s "ldap1" rs i r2 kr::k
     | I_LD1 (rs,i,r2,kr) -> load_simd_s "ld1" rs i r2 kr::k
     | I_LD1M (rs,r2,kr) -> load_simd_m "ld1" rs r2 kr::k
     | I_LD1R (rs,r2,kr) -> load_simd_m "ld1r" rs r2 kr::k

@@ -2129,10 +2129,13 @@ module Make
         | Neg -> M.op Op.Sub V.zero v
         | Inv -> M.op1 Op.Inv v
 
-      let load_elem sz i r addr ii =
+      let do_load_elem an sz i r addr ii =
         let access_size = AArch64.simd_mem_access_size [r] in
-        do_read_mem_ret access_size Annot.N aexp Access.VIR addr ii >>= fun v ->
+        do_read_mem_ret access_size an aexp Access.VIR addr ii >>= fun v ->
         write_reg_neon_elem sz r i v ii
+
+      let load_elem = do_load_elem Annot.N
+      let load_elem_ldar = do_load_elem Annot.Q
 
       let load_elem_rep sz r addr ii =
         let access_size = AArch64.simd_mem_access_size [r] in
@@ -2570,6 +2573,10 @@ module Make
             !(simd_op ADD MachSize.Quad r1 r2 r3 ii)
 
         (* Neon loads and stores *)
+        | I_LDAP1(rs,i,rA,kr) ->
+            !!!(read_reg_ord rA ii >>= fun addr ->
+            (mem_ss (load_elem_ldar MachSize.S128 i) addr rs ii >>|
+            post_kr rA addr kr ii))
         | I_LD1(rs,i,rA,kr)
         | I_LD2(rs,i,rA,kr)
         | I_LD3(rs,i,rA,kr)
