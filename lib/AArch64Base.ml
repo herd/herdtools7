@@ -1090,7 +1090,7 @@ type 'k kinstruction =
 (* Neon Extension Load and Store*)
   | I_LD1 of reg list * int * reg * 'k kr
   | I_LD1M of reg list * reg * 'k kr
-  | I_LD1R of reg * reg * 'k kr
+  | I_LD1R of reg list * reg * 'k kr
   | I_LD2 of reg list * int * reg * 'k kr
   | I_LD2M of reg list * reg * 'k kr
   | I_LD2R of reg list * reg * 'k kr
@@ -1521,8 +1521,8 @@ let do_pp_instruction m =
       pp_vmem_s "LD1" rs i r2 kr
   | I_LD1M (rs,r2,kr) ->
       pp_vmem_r_m "LD1" rs r2 kr
-  | I_LD1R (r1, r2, kr) ->
-      pp_vmem_r_m "LD1R" [r1] r2 kr
+  | I_LD1R (rs, r2, kr) ->
+      pp_vmem_r_m "LD1R" rs r2 kr
   | I_LD2 (rs,i,r2,kr) ->
       pp_vmem_s "LD2" rs i r2 kr
   | I_LD2M (rs,r2,kr) ->
@@ -1880,7 +1880,6 @@ let fold_regs (f_regs,f_sregs) =
   | I_ALIGND (r1,r2,_) | I_ALIGNU (r1,r2,_)
     -> fold_reg r1 (fold_reg r2 c)
   | I_MRS (r,sr) | I_MSR (sr,r) -> fold_reg (SysReg sr) (fold_reg r c)
-  | I_LD1R (r1,r2,kr)
   | I_LDR_SIMD (_,r1,r2,kr,_) | I_STR_SIMD(_,r1,r2,kr,_)
     -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
   | I_OP3 (_,_,r1,r2,e)
@@ -1889,7 +1888,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDRS (_,r1,r2,idx) | I_STR (_,r1,r2,idx)
   | I_LDRBH (_,r1,r2,idx) | I_STRBH (_,r1,r2,idx)
     -> fold_reg r1 (fold_reg r2 (fold_idx idx c))
-  | I_LD1 (rs,_,r2,kr) | I_LD1M (rs,r2,kr)
+  | I_LD1 (rs,_,r2,kr) | I_LD1M (rs,r2,kr) | I_LD1R (rs,r2,kr)
   | I_LD2 (rs,_,r2,kr) | I_LD2M (rs,r2,kr) | I_LD2R (rs,r2,kr)
   | I_LD3 (rs,_,r2,kr) | I_LD3M (rs,r2,kr) | I_LD3R (rs,r2,kr)
   | I_LD4 (rs,_,r2,kr) | I_LD4M (rs,r2,kr) | I_LD4R (rs,r2,kr)
@@ -2023,8 +2022,8 @@ let map_regs f_reg f_symb =
       I_LD1 (List.map map_reg rs, i, map_reg r2, map_kr kr)
   | I_LD1M (rs,r2,kr) ->
       I_LD1M (List.map map_reg rs,map_reg r2,map_kr kr)
-  | I_LD1R (r1,r2,kr) ->
-      I_LD1R (map_reg r1,map_reg r2,map_kr kr)
+  | I_LD1R (rs,r2,kr) ->
+      I_LD1R (List.map map_reg rs,map_reg r2,map_kr kr)
   | I_LD2 (rs,i,r2,kr) ->
       I_LD2 (List.map map_reg rs,i,map_reg r2,map_kr kr)
   | I_LD2M (rs,r2,kr) ->
@@ -2584,7 +2583,7 @@ module PseudoI = struct
         | I_ALIGNU (r1,r2,k) -> I_ALIGNU (r1,r2,k_tr k)
         | I_LD1 (rs,i,r2,kr) -> I_LD1 (rs,i,r2,kr_tr kr)
         | I_LD1M (rs,r2,kr) -> I_LD1M (rs,r2,kr_tr kr)
-        | I_LD1R (r1,r2,kr) -> I_LD1R (r1,r2,kr_tr kr)
+        | I_LD1R (rs,r2,kr) -> I_LD1R (rs,r2,kr_tr kr)
         | I_LD2 (rs,i,r2,kr) -> I_LD2 (rs,i,r2,kr_tr kr)
         | I_LD2M (rs,r2,kr) -> I_LD2M (rs,r2,kr_tr kr)
         | I_LD2R (rs,r2,kr) -> I_LD2R (rs,r2,kr_tr kr)

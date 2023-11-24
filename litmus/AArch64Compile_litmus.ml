@@ -1342,7 +1342,7 @@ module Make(V:Constant.S)(C:Config) =
 (* Neon Extension Load and Store *)
     | I_LD1 (rs,i,r2,kr) -> load_simd_s "ld1" rs i r2 kr::k
     | I_LD1M (rs,r2,kr) -> load_simd_m "ld1" rs r2 kr::k
-    | I_LD1R (r1,r2,kr) -> load_simd_m "ld1r" [r1] r2 kr::k
+    | I_LD1R (rs,r2,kr) -> load_simd_m "ld1r" rs r2 kr::k
     | I_LD2 (rs,i,r2,kr) -> load_simd_s "ld2" rs i r2 kr::k
     | I_LD2M (rs,r2,kr) -> load_simd_m "ld2" rs r2 kr::k
     | I_LD2R (rs,r2,kr) -> load_simd_m "ld2r" rs r2 kr::k

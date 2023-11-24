@@ -2575,10 +2575,7 @@ module Make
             !!!(read_reg_ord rA ii >>= fun addr ->
             (mem_ss (load_elem MachSize.S128 i) addr rs ii >>|
             post_kr rA addr kr ii))
-        | I_LD1R(r1,rA,kr) ->
-            !!(read_reg_ord rA ii >>= fun addr ->
-            (load_elem_rep MachSize.S128 r1 addr ii >>|
-            post_kr rA addr kr ii))
+        | I_LD1R(rs,rA,kr)
         | I_LD2R(rs,rA,kr)
         | I_LD3R(rs,rA,kr)
         | I_LD4R(rs,rA,kr) ->
