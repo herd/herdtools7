@@ -2568,10 +2568,7 @@ module Make
             !(simd_op ADD MachSize.Quad r1 r2 r3 ii)
 
         (* Neon loads and stores *)
-        | I_LD1(r1,i,rA,kr) ->
-            !!(read_reg_ord rA ii >>= fun addr ->
-            (load_elem MachSize.S128 i r1 addr ii >>|
-            post_kr rA addr kr ii))
+        | I_LD1(rs,i,rA,kr)
         | I_LD2(rs,i,rA,kr)
         | I_LD3(rs,i,rA,kr)
         | I_LD4(rs,i,rA,kr) ->
@@ -2598,10 +2595,7 @@ module Make
             !!(read_reg_ord rA ii >>= fun addr ->
             (load_m addr rs ii >>|
             post_kr rA addr kr ii))
-        | I_ST1(r1,i,rA,kr) ->
-            !!(read_reg_ord rA ii >>= fun addr ->
-            (store_elem i r1 addr ii >>|
-            post_kr rA addr kr ii))
+        | I_ST1(rs,i,rA,kr)
         | I_ST2(rs,i,rA,kr)
         | I_ST3(rs,i,rA,kr)
         | I_ST4(rs,i,rA,kr) ->

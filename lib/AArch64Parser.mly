@@ -657,7 +657,7 @@ instr:
   { I_STXRBH (H,LY,$2,$4,$7) }
    /* Neon extension Memory */
 | LD1 vregs1 INDEX COMMA LBRK xreg RBRK kx0_no_shift
-  { I_LD1 ($2, $3, $6, $8) }
+  { I_LD1 ([$2], $3, $6, $8) }
 | LD1 vregs COMMA LBRK xreg RBRK kx0_no_shift
   { I_LD1M ($2, $5, $7) }
 | LD1R vregs1 COMMA LBRK xreg RBRK kx0_no_shift
@@ -681,7 +681,7 @@ instr:
 | LD4R vregs4 COMMA LBRK xreg RBRK kx0_no_shift
    { I_LD4R ($2, $5, $7) }
 | ST1 vregs1 INDEX COMMA LBRK xreg RBRK kx0_no_shift
-   { I_ST1 ($2, $3, $6, $8) }
+   { I_ST1 ([$2], $3, $6, $8) }
 | ST1 vregs COMMA LBRK xreg RBRK kx0_no_shift
    { I_ST1M ($2, $5, $7) }
 | ST2 vregs2 INDEX COMMA LBRK xreg RBRK kx0_no_shift

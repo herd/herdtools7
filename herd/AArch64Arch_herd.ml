@@ -235,8 +235,9 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_STP_SIMD (_,v,_,_,_,_) | I_STP_P_SIMD (_,v,_,_,_,_)
       | I_LDUR_SIMD (v,_,_,_) | I_STUR_SIMD (v,_,_,_) ->
           Some (tr_simd_variant v)
-      | I_LD1 (r,_,_,_) | I_LD1R (r,_,_) | I_ST1 (r,_,_,_) ->
+      | I_LD1R (r,_,_) ->
           Some (simd_mem_access_size [r])
+      | I_LD1 (rs,_,_,_) | I_ST1 (rs,_,_,_)
       | I_LD1M (rs,_,_) | I_ST1M (rs,_,_)
       | I_LD2 (rs,_,_,_) | I_LD2R (rs,_,_) | I_ST2 (rs,_,_,_)
       | I_LD2M (rs,_,_) | I_ST2M (rs,_,_)

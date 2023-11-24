@@ -48,16 +48,15 @@ module Make(V:Constant.S)(C:Config) =
     let extract_addrs _ins = Global_litmus.Set.empty
 
     let stable_regs _ins = match _ins with
-    | I_LD1M (rs,_,_)
+    | I_LD1 (rs,_,_,_) | I_LD1M (rs,_,_)
     | I_LD2 (rs,_,_,_) | I_LD2M (rs,_,_) | I_LD2R (rs,_,_)
     | I_LD3 (rs,_,_,_) | I_LD3M (rs,_,_) | I_LD3R (rs,_,_)
     | I_LD4 (rs,_,_,_) | I_LD4M (rs,_,_) | I_LD4R (rs,_,_)
-    | I_ST1M (rs,_,_)
+    | I_ST1 (rs,_,_,_) | I_ST1M (rs,_,_)
     | I_ST2 (rs,_,_,_) | I_ST2M (rs,_,_)
     | I_ST3 (rs,_,_,_) | I_ST3M (rs,_,_)
     | I_ST4 (rs,_,_,_) | I_ST4M (rs,_,_) ->
         A.RegSet.of_list rs
-    | I_LD1 (r,_,_,_) -> A.RegSet.of_list [r]
     | I_MOV_FG (r,_,_,_) -> A.RegSet.of_list [r]
     | I_MOV_VE (r,_,_,_) -> A.RegSet.of_list [r]
     | _ ->  A.RegSet.empty
@@ -1341,7 +1340,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_SWP (v,rmw,r1,r2,r3) -> swp (swp_memo rmw) v r1 r2 r3::k
     | I_SWPBH (bh,rmw,r1,r2,r3) -> swp (swpbh_memo bh rmw) V32 r1 r2 r3::k
 (* Neon Extension Load and Store *)
-    | I_LD1 (r1,i,r2,kr) -> load_simd_s "ld1" [r1] i r2 kr::k
+    | I_LD1 (rs,i,r2,kr) -> load_simd_s "ld1" rs i r2 kr::k
     | I_LD1M (rs,r2,kr) -> load_simd_m "ld1" rs r2 kr::k
     | I_LD1R (r1,r2,kr) -> load_simd_m "ld1r" [r1] r2 kr::k
     | I_LD2 (rs,i,r2,kr) -> load_simd_s "ld2" rs i r2 kr::k
@@ -1353,7 +1352,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_LD4 (rs,i,r2,kr) -> load_simd_s "ld4" rs i r2 kr::k
     | I_LD4M (rs,r2,kr) -> load_simd_m "ld4" rs r2 kr::k
     | I_LD4R (rs,r2,kr) -> load_simd_m "ld4r" rs r2 kr::k
-    | I_ST1 (r1,i,r2,kr) -> store_simd_s "st1" [r1] i r2 kr::k
+    | I_ST1 (rs,i,r2,kr) -> store_simd_s "st1" rs i r2 kr::k
     | I_ST1M (rs,r2,kr) -> store_simd_m "st1" rs r2 kr::k
     | I_ST2 (rs,i,r2,kr) -> store_simd_s "st2" rs i r2 kr::k
     | I_ST2M (rs,r2,kr) -> store_simd_m "st2" rs r2 kr::k
