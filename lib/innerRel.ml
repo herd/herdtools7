@@ -37,6 +37,9 @@ module type S =  sig
 (* All elements related *)
   val nodes : t -> Elts.t
 
+  val filter_nodes : (elt0 -> bool) -> t -> t
+  val map_nodes : (elt0 -> elt0) -> t -> t
+
 (* Inverse *)
   val inverse : t -> t
 
@@ -167,7 +170,11 @@ and module Elts = MySet.Make(O) =
         fold (fun (x,y) k -> Elts.add x (Elts.add y Elts.empty)::k) t [] in
       Elts.unions xs
 
+    let filter_nodes p t =
+      filter (fun (e1, e2) -> p e1 && p e2) t
 
+    let map_nodes f t =
+      map (fun (e1, e2) -> (f e1, f e2)) t
 
 (* Inverse *)
     let inverse t = fold (fun (x,y) k -> add (y,x) k) t empty
@@ -493,52 +500,6 @@ and module Elts = MySet.Make(O) =
         Elts.fold
           (dfs Elts.empty) ns ([],Elts.empty) in
       o
-
-
-
-
-(* calculate all topological orderings of
-   an acyclic directed graph, method 2
-   following http://sunburn.stanford.edu/~knuth/fasc2b.ps.gz
-   (found by Gilles).
-   Raises Cyclic when the graph is cyclic *)
-
-
-    let rec do_all_topos nodes edges =
-      if Elts.is_empty nodes then
-        [[]]
-      else
-        let n = (* Minimal node (no predecessor) *)
-          try Elts.find (fun n -> not (exists_pred edges n)) nodes
-          with Not_found -> raise Cyclic in
-        let n_succs, others =
-          partition (fun (n1,_n2) -> O.compare n n1 = 0) edges in
-        let mss = do_all_topos (Elts.remove n nodes) others in
-        (*
-          find all the legitimate places to insert n in ms,
-          ie all the points before m s.t. there is
-          an (n,m) edge in g *)
-        let rec insert = function
-          | [] -> [[n]]
-          | m::ms as all ->
-              (n::all)::
-              (if not (mem (n,m) n_succs) then
-                List.rev_map
-                  (fun ms -> m::ms)
-                  (insert ms)
-              else
-                []) in
-        List.fold_left
-          (fun k ms -> ms@k)
-          []
-          (List.rev_map insert mss)
-
-
-    let _all_topos1 nodes edges =
-      do_all_topos nodes
-        (filter
-           (fun (e1,e2) -> Elts.mem e1 nodes && Elts.mem e2 nodes)
-           edges)
 
 (* New version of all_topos *)
     module EMap =

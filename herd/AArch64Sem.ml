@@ -1313,7 +1313,6 @@ module Make
         get_ea_idx rs k ii >>== fun v -> write_reg_dest rs v ii
 
       let get_ea_reg rs _v ri sext s ii =
-        let open AArch64Base.MemExt in
         read_reg_ord rs ii >>| (read_reg_ord ri ii >>= memext_sext sext s)
         >>= fun (v1,v2) -> M.add v1 v2
 

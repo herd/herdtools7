@@ -66,6 +66,10 @@ module type S =
     val data_input_next : 'a t -> ('a -> 'b t) -> 'b t
  (* Input to both args *)
     val data_input_union : 'a t -> ('a -> 'b t) -> 'b t
+
+    (* Same as [>>=] but sequences partial_po *)
+    val asl_data : 'a t -> ('a -> 'b t) -> 'b t
+
     val (>>==) : 'a t -> ('a -> 'b t) -> 'b t (* Output events stay in first arg *)
 
 (* Control composition *)
@@ -86,6 +90,9 @@ module type S =
     (* Control compoisition, but output events might be in first event if
        second is empty. *)
     val bind_ctrl_seq_data : 'a t -> ('a -> 'b t) -> 'b t
+
+    (* Similar as [bind_ctrl_seq_data] but sequences partial_po *)
+    val asl_ctrl : 'a t -> ('a -> 'b t) -> 'b t
 
     (* Hybrid composition m1 m2 m3, m1 -ctrl+data-> m3 and m2 -data-> m3.
        ctrl+data -> ctrl from maximal commit evts + data from
@@ -217,6 +224,13 @@ module type S =
         input of the new event structure is the union of the inputs of
         [s] and the result of [f], like [cseq]. Unlike [cseq] the output of
         the resulting event structure is set to the result of [f]. *)
+
+    val asl_seq : 'a t -> ('a -> 'b t) -> 'b t
+    (** [asl_seq s f] returns a parallel composition of [s] and the result of
+        [f] where the input of the new event structure is the union of the
+        inputs of [s] and the result of [f], like [cseq] and
+        [para_bind_output_right]. Unlike the later, a [partial_po] arrow is put
+        between the two structures. *)
 
     val seq_mem : 'a t -> 'b t -> ('a * 'b) t
     (** [seq_mem s1 s2] returns a composition of the event structures

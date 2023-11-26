@@ -16,6 +16,8 @@ REGRESSION_TEST_MODE = test
 # REGRESSION_TEST_MODE = promote
 # REGRESSION_TEST_MODE = show
 
+DUNE_PROFILE = release
+
 DIYCROSS                      = _build/install/default/bin/diycross7
 HERD                          = _build/install/default/bin/herd7
 HERD_REGRESSION_TEST          = _build/default/internal/herd_regression_test.exe
@@ -30,7 +32,7 @@ Version.ml:
 	sh ./version-gen.sh $(PREFIX)
 
 build: Version.ml | check-deps
-	dune build -j $(J) --profile release
+	dune build -j $(J) --profile $(DUNE_PROFILE)
 
 install:
 	sh ./dune-install.sh $(PREFIX)
@@ -67,7 +69,7 @@ test:: dune-test
 
 dune-test:
 	@ echo
-	dune runtest --profile=release
+	dune runtest --profile=$(DUNE_PROFILE)
 
 test:: test.aarch64
 test.aarch64:
