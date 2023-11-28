@@ -6,8 +6,8 @@ States 4
 1:X1=0x101; [x]=0x2; [y]=0x202;
 Ok
 Witnesses
-Positive: 2 Negative: 4
+Positive: 2 Negative: 6
 Condition exists ([x]=0x2 /\ [y]=0x202 /\ 1:X1=0x101)
-Observation M008 Sometimes 2 4
+Observation M008 Sometimes 2 6
 Hash=dce7776cf1382a6e5b1afce5eab68a83
 
