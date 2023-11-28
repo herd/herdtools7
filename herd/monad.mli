@@ -181,12 +181,14 @@ module type S =
       bool -> (* physical access *)
         'loc t -> 'v t ->
           ('v -> unit t) -> ('loc -> 'v t) ->
+           ('loc -> unit t) ->
             ('v -> 'v -> unit t) -> unit t
 
     val aarch64_cas_ok :
       bool -> (* physical access *)
         'loc t -> 'v t -> 'v t ->
           ('v -> unit t) -> ('loc -> 'v t) -> ('loc -> 'v -> unit t) ->
+           ('loc -> unit t) ->
             ('v -> 'v -> unit t) -> unit t
     (* Temporary morello variation of CAS *)
     val aarch64_cas_ok_morello :

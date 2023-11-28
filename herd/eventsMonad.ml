@@ -568,11 +568,13 @@ Monad type:
       eiid,(acts,None)
 
 (* AArch64 failed cas *)
-    let aarch64_cas_no
+    let do_aarch64_cas_no
         (is_physical:bool)
+        (add_ctrl:bool)
         (read_rn:'loc t) (read_rs:'v t)
         (write_rs:'v-> unit t)
         (read_mem: 'loc -> 'v t)
+        (branch: 'loc -> unit t)
         (rne: 'v -> 'v -> unit t)
         eiid =
       let eiid,read_rn = read_rn eiid in
@@ -587,12 +589,14 @@ Monad type:
             let ov,cl_rm,es_rm = Evt.as_singleton_nospecul read_mem in
             let eiid,write_rs = write_rs ov eiid in
             let (),cl_wrs,es_wrs = Evt.as_singleton_nospecul write_rs in
+            let eiid,branch = branch a eiid in
+            let (),cl_br,es_br =  Evt.as_singleton_nospecul branch in
             let eiid,nem = rne ov cv eiid in
             let (),cl_ne,eseq =  Evt.as_singleton_nospecul nem in
             assert (E.is_empty_event_structure eseq) ;
             let es =
-              E.aarch64_cas_no is_physical es_rn es_rs es_wrs es_rm in
-            let cls = cl_a@cl_cv@cl_rm@cl_wrs@cl_ne  in
+              E.aarch64_cas_no is_physical add_ctrl es_rn es_rs es_wrs es_rm es_br in
+            let cls = cl_a@cl_cv@cl_rm@cl_wrs@cl_ne@cl_br  in
             eiid,Evt.add ((),cls,es) acts)
           acts_rn (eiid,Evt.empty) in
       eiid,(acts, None)
@@ -603,6 +607,7 @@ Monad type:
         (read_rn:'loc t) (read_rs:'v t) (read_rt: 'v t)
         (write_rs:'v-> unit t)
         (read_mem: 'loc -> 'v t) (write_mem: 'loc -> 'v -> unit t)
+        (branch: 'loc -> unit t)
         (req: 'v -> 'v -> unit t)
         eiid =
       let eiid,read_rn = read_rn eiid in
@@ -621,12 +626,14 @@ Monad type:
             and (),cl_wm,es_wm= Evt.as_singleton_nospecul write_mem in
             let eiid,write_rs = write_rs ov eiid in
             let (),cl_wrs,es_wrs = Evt.as_singleton_nospecul write_rs in
+            let eiid,branch = branch a eiid in
+            let (),cl_br,es_br =  Evt.as_singleton_nospecul branch in
             let eiid,eqm = req ov cv eiid in
             let (),cl_eq,eseq =  Evt.as_singleton_nospecul eqm in
             assert (E.is_empty_event_structure eseq) ;
             let es =
-              E.aarch64_cas_ok is_physical prov_data es_rn es_rs es_rt es_wrs es_rm es_wm in
-            let cls = cl_a@cl_cv@cl_nv@cl_rm@cl_wm@cl_wrs@cl_eq  in
+              E.aarch64_cas_ok is_physical prov_data es_rn es_rs es_rt es_wrs es_rm es_wm es_br in
+            let cls = cl_a@cl_cv@cl_nv@cl_rm@cl_wm@cl_wrs@cl_br@cl_eq  in
             eiid,Evt.add ((),cls,es) acts)
           acts_rn (eiid,Evt.empty) in
       eiid,(acts, None)
@@ -678,12 +685,21 @@ Monad type:
 
     let aarch64_cas_ok (is_physical: bool) (read_rn: 'loc t) (read_rs: 'v t)
         (read_rt: 'v t) (write_rs: 'v -> unit t) (read_mem: 'loc -> 'v t)
-        (write_mem: 'loc -> 'v -> unit t) (req: 'v -> 'v -> unit t) =
+        (write_mem: 'loc -> 'v -> unit t) (branch: 'loc -> unit t) (req: 'v -> 'v -> unit t) =
       let do_ prov_data =
         do_aarch64_cas_ok is_physical prov_data read_rn read_rs read_rt
-          write_rs read_mem write_mem req
+          write_rs read_mem write_mem branch req
       in
       altT (do_ `DataFromRRs) (do_ `DataFromRx)
+
+    let aarch64_cas_no (is_physical:bool) (read_rn:'loc t) (read_rs:'v t)
+        (write_rs:'v-> unit t) (read_mem: 'loc -> 'v t) (branch: 'loc -> unit t)
+        (rne: 'v -> 'v -> unit t) =
+      let do_ add_ctrl =
+        do_aarch64_cas_no is_physical add_ctrl read_rn read_rs write_rs
+          read_mem branch rne
+      in
+      altT (do_ true) (do_ false)
 
     (* RISCV store conditional may always succeed? *)
     let riscv_store_conditional = aarch64_or_riscv_store_conditional false

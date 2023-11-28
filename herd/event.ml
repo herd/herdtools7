@@ -441,14 +441,15 @@ val same_instance : event -> event -> bool
 
   val aarch64_cas_no :
     bool -> (* Physical memory access *)
+    bool -> (* Add an iico_ctrl between the Branch and the Register Write *)
     event_structure -> event_structure -> event_structure ->
-    event_structure ->  event_structure
+    event_structure -> event_structure -> event_structure
 
   val aarch64_cas_ok :
     bool (* Physical memory access *) -> [`DataFromRRs | `DataFromRx] ->
     event_structure -> event_structure -> event_structure ->
     event_structure ->  event_structure ->  event_structure ->
-    event_structure
+    event_structure -> event_structure
 
   val aarch64_cas_ok_morello :
         event_structure -> event_structure -> event_structure ->
@@ -2068,6 +2069,16 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       else
         fun es _ _ _ _ _ -> es.po
 
+    let po_unions =
+      if do_deps then
+        List.fold_left
+          (fun (roots, edges) evt_st ->
+             let r,e = evt_st.po in
+             EventSet.union r roots,EventRel.union e edges)
+          (EventSet.empty,EventRel.empty)
+      else
+        function | hd::_ -> hd.po | [] -> assert false
+
 (* RISCV Store conditional *)
     let get_switch v = Variant.get_switch A.arch v C.variant
 
@@ -2158,153 +2169,170 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           @ wres.aligned @ wresult.aligned @ wmem.aligned ;}
 
 (* AArch64 CAS, failure *)
-    let aarch64_cas_no is_phy rn rs wrs rm =
+    let aarch64_cas_no is_phy add_ctrl rn rs wrs rm br =
       let input_wrs = minimals wrs
-      and input_rm = minimals rm in
+      and input_rm = minimals rm
+      and input_br = minimals br in
       { procs = [] ;
         events =
-        EventSet.union4
-          rn.events rs.events wrs.events rm.events;
+        EventSet.union5
+          rn.events rs.events wrs.events rm.events br.events;
         speculated =
         if do_deps then
-          EventSet.union4
-            rn.speculated rs.speculated wrs.speculated rm.speculated
+          EventSet.union5
+            rn.speculated rs.speculated wrs.speculated rm.speculated br.speculated
         else rn.speculated;
-        po = po_union4 rn rs wrs rm;
+        po = po_union5 rn rs wrs rm br;
         intra_causality_data =
         EventRel.union
-          (EventRel.union4
+          (EventRel.union5
              rn.intra_causality_data
              rs.intra_causality_data
              wrs.intra_causality_data
-             rm.intra_causality_data)
-          (EventRel.union
+             rm.intra_causality_data
+             br.intra_causality_data)
+          (EventRel.union4
              (EventRel.cartesian (get_output rn) input_rm) (* D1 *)
-             (EventRel.cartesian (get_output rm) input_wrs));    (* Df1 *)
+             (EventRel.cartesian (get_output rm) input_wrs)    (* Df1 *)
+             (EventRel.cartesian (get_output rm) input_br)
+             (EventRel.cartesian (get_output rs) input_br)
+          );
         intra_causality_control =
           (if is_branching && is_phy then
              EventRel.union
                (EventRel.cartesian (get_ctrl_output_commits rn) input_rm)
            else Misc.identity)
-            (EventRel.union4
-               rn.intra_causality_control rs.intra_causality_control
-               wrs.intra_causality_control rm.intra_causality_control);
+          ((if add_ctrl then
+             EventRel.union
+               (EventRel.cartesian (get_output br) input_wrs)
+            else Misc.identity)
+          (EventRel.union5
+             rn.intra_causality_control rs.intra_causality_control
+             wrs.intra_causality_control rm.intra_causality_control
+             br.intra_causality_control)) ;
         intra_causality_order =
-          EventRel.union4
+          EventRel.union5
             rn.intra_causality_order rs.intra_causality_order
-            wrs.intra_causality_order rm.intra_causality_order;
+            wrs.intra_causality_order rm.intra_causality_order
+            br.intra_causality_order;
         control =
-        EventRel.union4 rn.control rs.control rm.control wrs.control;
+        EventRel.union5 rn.control rs.control rm.control wrs.control br.control;
         data_ports =
-        EventSet.union4
+        EventSet.union5
           rn.data_ports rs.data_ports
-          wrs.data_ports rm.data_ports;
+          wrs.data_ports rm.data_ports br.data_ports;
         success_ports =
-        EventSet.union4
+        EventSet.union5
           rn.success_ports rs.success_ports
-          wrs.success_ports rm.success_ports;
+          wrs.success_ports rm.success_ports br.success_ports;
         sca =
-        EventSetSet.union4
-          rn.sca rs.sca wrs.sca rm.sca;
+        EventSetSet.union5
+          rn.sca rs.sca wrs.sca rm.sca br.sca;
         mem_accesses =
-        EventSet.union4
+        EventSet.union5
           rn.mem_accesses rs.mem_accesses
-          wrs.mem_accesses rm.mem_accesses;
+          wrs.mem_accesses rm.mem_accesses br.mem_accesses;
         input=None; data_input=None;
         output = Some (maximals wrs);
         ctrl_output = None ;
-        aligned = rn.aligned @ rs.aligned @ wrs.aligned @ rm.aligned;
+        aligned = rn.aligned @ rs.aligned @ wrs.aligned @ rm.aligned @ br.aligned;
       }
 
 (* AArch64 CAS, success *)
-    let aarch64_cas_ok is_phy prov_data rn rs rt wrs rm wm =
+    let aarch64_cas_ok is_phy prov_data rn rs rt wrs rm wm br =
       let input_wrs = minimals wrs
       and input_rm = minimals rm
-      and input_wm = minimals wm in
+      and input_wm = minimals wm
+      and input_br = minimals br in
       { procs = [] ;
         events =
-        EventSet.union6
-          rn.events rs.events rt.events
-          wrs.events rm.events wm.events ;
+        EventSet.unions
+          [rn.events; rs.events; rt.events;
+           wrs.events; rm.events; br.events; wm.events];
         speculated =
         if do_deps then
-          EventSet.union6
-            rn.speculated rs.speculated rt.speculated
-            wrs.speculated rm.speculated wm.speculated
+          EventSet.unions
+            [rn.speculated; rs.speculated; rt.speculated;
+             wrs.speculated; rm.speculated; br.speculated; wm.speculated]
         else
           rn.speculated;
-        po = po_union6 rn rs rt wrs rm wm;
+        po = po_unions [rn; rs; rt; wrs; rm; br; wm];
         intra_causality_data =
         EventRel.union
-          (EventRel.union6
-             rn.intra_causality_data
-             rs.intra_causality_data
-             rt.intra_causality_data
-             wrs.intra_causality_data
-             rm.intra_causality_data
-             wm.intra_causality_data)
+          (EventRel.unions
+             [rn.intra_causality_data;
+                rs.intra_causality_data;
+                rt.intra_causality_data;
+                wrs.intra_causality_data;
+                rm.intra_causality_data;
+                br.intra_causality_data;
+                wm.intra_causality_data])
           (let output_rn = get_output rn
            and output_prov_data = match prov_data with
              | `DataFromRRs -> get_output rs
              | `DataFromRx -> get_output rm
            in
-           EventRel.union4
-             (EventRel.cartesian output_rn input_rm)          (* D1 *)
-             (EventRel.cartesian output_rn input_wm)          (* Ds2 *)
-             (EventRel.cartesian (get_output rt) input_wm)    (* Ds3 *)
-             (EventRel.cartesian output_prov_data input_wrs)
+           EventRel.unions
+             [(EventRel.cartesian output_rn input_rm);          (* D1 *)
+              (EventRel.cartesian output_rn input_wm);          (* Ds2 *)
+              (EventRel.cartesian (get_output rt) input_wm);    (* Ds3 *)
+              (EventRel.cartesian output_prov_data input_wrs);
+              (EventRel.cartesian (get_output rs) input_br);
+              (EventRel.cartesian (get_output rm) input_br);]
           );
         intra_causality_control =
         EventRel.union
-          (EventRel.union6
-             rn.intra_causality_control
-             rs.intra_causality_control
-             rt.intra_causality_control
-             wrs.intra_causality_control
-             rm.intra_causality_control
-             wm.intra_causality_control)
-          (let output_rs = get_ctrl_output rs in
-           let output_rm = get_ctrl_output rm in
+          (EventRel.unions
+             [rn.intra_causality_control;
+              rs.intra_causality_control;
+              rt.intra_causality_control;
+              wrs.intra_causality_control;
+              rm.intra_causality_control;
+              br.intra_causality_control;
+              wm.intra_causality_control])
+          (let output_br = get_ctrl_output br in
            EventRel.union4
              (if is_branching && is_phy then
                 EventRel.cartesian (get_ctrl_output_commits rn)
                   (EventSet.union input_rm input_wm)
               else EventRel.empty)
              (match prov_data with
-              | `DataFromRRs -> EventRel.cartesian output_rm input_wrs
+              | `DataFromRRs -> EventRel.cartesian output_br input_wrs
               | `DataFromRx -> EventRel.empty)
-             (EventRel.cartesian output_rs input_wm)   (* Cs1 *)
-             (EventRel.cartesian output_rm input_wm)); (* Cs2 *)
+             (EventRel.cartesian output_br input_wm)   (* Cs1 *)
+             (EventRel.cartesian output_br input_wm)); (* Cs2 *)
         intra_causality_order =
-          EventRel.union6
-             rn.intra_causality_order rs.intra_causality_order
-             rt.intra_causality_order wrs.intra_causality_order
-             rm.intra_causality_order wm.intra_causality_order;
+          EventRel.unions
+             [rn.intra_causality_order; rs.intra_causality_order;
+              rt.intra_causality_order; wrs.intra_causality_order;
+              rm.intra_causality_order; br.intra_causality_order;
+              wm.intra_causality_order];
         control =
-        (EventRel.union6
-           rn.control rs.control rt.control
-           wrs.control rm.control wm.control);
+        (EventRel.unions
+           [rn.control; rs.control; rt.control;
+            wrs.control; rm.control; br.control; wm.control]);
         data_ports =
-        (EventSet.union6
-           rn.data_ports rs.data_ports rt.data_ports
-           wrs.data_ports rm.data_ports wm.data_ports);
+        (EventSet.unions
+           [rn.data_ports; rs.data_ports; rt.data_ports;
+            wrs.data_ports; rm.data_ports; br.data_ports; wm.data_ports]);
         success_ports =
-        (EventSet.union6
-           rn.success_ports rs.success_ports rt.success_ports
-           wrs.success_ports rm.success_ports wm.success_ports);
+        (EventSet.unions
+           [rn.success_ports; rs.success_ports; rt.success_ports;
+            wrs.success_ports; rm.success_ports; br.success_ports;
+            wm.success_ports]);
         sca =
-        (EventSetSet.union6
-           rn.sca rs.sca rt.sca
-           wrs.sca rm.sca wm.sca);
+        (EventSetSet.unions
+           [rn.sca; rs.sca; rt.sca;
+           wrs.sca; rm.sca; br.sca; wm.sca]);
         mem_accesses =
-        (EventSet.union6
-           rn.mem_accesses rs.mem_accesses rt.mem_accesses
-           wrs.mem_accesses rm.mem_accesses wm.mem_accesses);
+        (EventSet.unions
+           [rn.mem_accesses; rs.mem_accesses; rt.mem_accesses;
+            wrs.mem_accesses; rm.mem_accesses; br.mem_accesses; wm.mem_accesses]);
         input=None; data_input=None;
         output = Some (maximals wrs); ctrl_output = None ;
         aligned =
           rn.aligned @ rs.aligned @ rt.aligned @ wrs.aligned
-          @ rm.aligned @ wm.aligned ;
+          @ rm.aligned @ br.aligned @ wm.aligned ;
       }
 
 (* Temporary morello variation of CAS *)
