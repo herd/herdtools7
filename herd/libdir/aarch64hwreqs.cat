@@ -59,7 +59,10 @@ let f-ib =
 
 (* Notions of Same Location - PA, VA, and including Fault Effects *)
 let TTD-same-oa =  same-oa(TTD*TTD)
-let same-loc = loc | tr-ib^-1; TTD-same-oa; tr-ib
+let same-loc = [M]; loc; [M]
+  | [MMU & Translation & FAULT]; same-low-order-bits
+  | same-low-order-bits; [MMU & Translation & FAULT]
+  | (tr-ib^-1; TTD-same-oa; tr-ib) & same-low-order-bits
 let po-loc = po & same-loc
 
 let va-loc = (tr-ib; same-low-order-bits; tr-ib^-1) & loc
