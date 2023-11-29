@@ -612,7 +612,7 @@ let is_rmw d e = match d with
 | W -> is_rmw_edge e.prev.edge
 | J -> is_rmw_edge e.edge
 
-
+let is_com_rmw n0 = E.is_com n0.edge || is_rmw_edge n0.edge
 
 let remove_store n0 =
   let n0 =
@@ -922,16 +922,23 @@ let set_same_loc st n0 =
               m.prev.evt.loc <> m.evt.loc &&
               m.next.evt.loc = m.evt.loc) n in
         split_by_loc m
-      with Not_found -> try
-        let m =
-          find_node
-            (fun m -> match m.prev.edge.E.edge with
-            | E.Fr _|E.Rf _|E.Ws _|E.Leave _|E.Back _
-            | E.Hat|E.Rmw _|E.Irf _|E.Ifr _ -> true
-            | E.Po _|E.Dp _|E.Fenced _|E.Insert _|E.Store|E.Node _ -> false
-            | E.Id -> assert false) n in
-        split_one_loc m
-      with Exit -> Warn.fatal "Cannot set write values" in
+      with
+      | Not_found ->
+        (*check if node is preceded by a non com/rmw node and is itself a com/rmw node*)
+        let to_com_rmw n0 = not (is_com_rmw n0.prev) && is_com_rmw n0 in
+        fold (fun n0 _ -> if E.is_id n0.edge.E.edge then assert false) n ();
+        try
+          (* check for R ensures that we start on Fr or Rmw if possible*)
+          let m = find_node (fun m -> to_com_rmw m && m.evt.dir = Some R) n in
+          split_one_loc m
+        with Not_found -> try
+          (* The previous search failed. This search will return the W node from
+             which an Rf edge starts, provided that the previous edge is not a
+             communication or a Rmw edge *)
+          let m = find_node (fun m -> to_com_rmw m) n in
+          split_one_loc m
+        with Not_found -> Warn.fatal "cannot set write values"
+      | Exit -> Warn.fatal "cannot set write values" in
     let initvals = set_all_write_val nss in
     nss,initvals
 
