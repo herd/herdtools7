@@ -1152,7 +1152,7 @@ module Make
         | Some rB -> AArch64.reg_compare rA rB=0
 
       let lift_memop rA (* Base address register *)
-            dir updatedb mop perms ma mv an ii =
+            dir updatedb checked mop perms ma mv an ii =
         if morello then
           lift_morello mop perms ma mv dir an ii
         else
@@ -1170,20 +1170,20 @@ module Make
                 mop Access.PHY ma
                 >>= M.ignore >>= B.next1T in
             let mphy =
-              if memtag then lift_memtag_phy dir mop ma an ii mphy
+              if checked then lift_memtag_phy dir mop ma an ii mphy
               else mphy
             in
             let m = lift_kvm dir updatedb false mop ma an ii mphy in
             (* M.short will add an iico_data only if memtag is enabled *)
             M.short (is_this_reg rA) (E.is_pred_txt (Some "color")) m
-          else if memtag then
+          else if checked then
             lift_memtag_virt mop ma dir an ii
           else
             mop Access.VIR ma >>= M.ignore >>= B.next1T
 
       let do_ldr rA sz an mop ma ii =
 (* Generic load *)
-        lift_memop rA  Dir.R true
+        lift_memop rA Dir.R true memtag
           (fun ac ma _mv -> (* value fake here *)
             let open Precision in
             let memtag_sync = memtag && (C.precision = Fatal || C.precision = LoadsFatal) in
@@ -1196,7 +1196,7 @@ module Make
 
 (* Generic store *)
       let do_str rA mop sz an ma mv ii =
-        lift_memop rA Dir.W true
+        lift_memop rA Dir.W true memtag
           (fun ac ma mv ->
             let open Precision in
             let memtag_sync = memtag && C.precision = Fatal in
@@ -1582,7 +1582,7 @@ module Make
         let an = match t with
           | YY -> Annot.X
           | LY -> Annot.XL in
-        lift_memop rd Dir.W true
+        lift_memop rd Dir.W true memtag
           (fun ac ma mv ->
             let must_fail =
               begin
@@ -1650,6 +1650,7 @@ module Make
 
       let swp sz rmw r1 r2 r3 ii =
         lift_memop r3 Dir.W true (* swp is a write for the purpose of DB *)
+          memtag
           (fun ac ma mv ->
             let noret = match r2 with | AArch64.ZR -> true | _ -> false in
             let r2 = mv
@@ -1672,7 +1673,7 @@ module Make
         let an = rmw_to_read rmw in
         let read_rs = read_reg_data sz rs ii
         and write_rs v = write_reg_sz_non_mixed sz rs v ii in
-        lift_memop rn Dir.W true
+        lift_memop rn Dir.W true memtag
            (* mv is read new value from reg, not important
               as this code is not executed in morello mode *)
           (fun ac ma mv ->
@@ -1708,7 +1709,7 @@ module Make
           let cond = Printf.sprintf "[%s]=={%d:%s,%d:%s}" (V.pp_v a)
             ii.A.proc (A.pp_reg rs1) ii.A.proc (A.pp_reg rs1) in
           commit_pred_txt (Some cond) ii in
-        lift_memop rn Dir.W true
+        lift_memop rn Dir.W true memtag
           (fun ac ma _ ->
             let is_phy = Access.is_physical ac in
              M.altT
@@ -1775,7 +1776,7 @@ module Make
       let ldop op sz rmw rs rt rn ii =
         let open AArch64 in
         let an = rmw_to_read rmw in
-        lift_memop rn Dir.W true
+        lift_memop rn Dir.W true memtag
           (fun ac ma mv ->
             let noret = match rt with | ZR -> true | _ -> false in
             let op = match op with
@@ -2152,7 +2153,7 @@ module Make
             let dir = match op.AArch64Base.DC.funct with
               | AArch64Base.DC.I -> Dir.W
               | _ -> Dir.R in
-            lift_memop rd dir false
+            lift_memop rd dir false memtag
               (fun ac ma _mv -> (* value fake here *)
                 if Access.is_physical ac then
                   M.bind_ctrldata ma (mop ac)
@@ -2174,6 +2175,85 @@ module Make
             M.mk_singleton_es act ii
           >>= B.next1T
         end
+
+      let ldg rt rn k ii =
+        let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii in
+        let do_ldg a_virt ac ma =
+          let ( let* ) = (>>=) in
+          let _do_ldg a =
+            let* atag = M.op1 Op.TagLoc a in
+            let* tag = do_read_tag atag ii in
+            let* v = M.op Op.SetTag a_virt tag in
+            let* () = write_reg rt v ii in
+            B.nextT in
+          if Access.is_physical ac then
+            M.bind_ctrldata ma _do_ldg
+          else
+            ma >>= _do_ldg in
+        M.delay_kont "ldg" ma
+          (fun a_virt ma ->
+             let do_ldg = do_ldg a_virt in
+             lift_memop rn Dir.R false false (fun ac ma _mv -> do_ldg ac ma)
+               (to_perms "w" MachSize.S128) ma mzero Annot.N ii)
+
+      let stg rt rn k ii =
+        let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii
+        and mv = read_reg_data MachSize.Quad rt ii >>= tag_extract in
+        let do_stg ac ma mv =
+          let _do_stg a v = M.op1 Op.TagLoc a >>=
+            fun a -> do_write_tag a v ii >>=
+            fun () -> B.nextT in
+          if Access.is_physical ac then
+            M.bind_ctrldata_data ma mv _do_stg
+          else
+            (ma >>| mv) >>= fun (a,v) -> _do_stg a v in
+        lift_memop rn Dir.W true false (fun ac ma mv -> do_stg ac ma mv)
+          (to_perms "w" MachSize.S128) ma mv Annot.N ii
+
+      let stzg rt rn k ii =
+        let do_stz =
+          let sz = MachSize.S128 in
+          let mop = do_write_mem sz Annot.N aexp in
+          let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii in
+          lift_memop rn Dir.W true false
+            (fun ac ma mv ->
+               if Access.is_physical ac then begin
+                 (* additional ctrl dep on address *)
+                 M.bind_ctrldata_data ma mv
+                   (fun a v -> mop ac a v ii)
+               end else
+                 (ma >>| mv) >>= fun (a,v) -> mop ac a v ii)
+            (to_perms "w" sz) ma mzero Annot.N ii in
+        let do_stg = stg rt rn k ii in
+        if kvm then
+          (* The two operations include their own translations, if
+             there is a fault, it has to be ordered after any other
+             event of the instruction *)
+          M.altT
+            (M.delay_kont "do_stg" do_stg
+               (function
+                 | B.Next _ ->
+                   fun mstg -> M.delay_kont "do_stz" do_stz
+                       (function
+                         | B.Next _ ->
+                           fun mstz -> mstz >>| do_stg >>= M.ignore >>= B.next1T
+                         | B.Fault _ ->
+                           fun mstz ->  mstz >>| mstg >>= M.ignore >>= B.next1T
+                         | _ ->
+                           Warn.fatal "Unexpected return value do_stg")
+                 | B.Fault _ ->
+                   fun mstg -> mstg
+                 | _ -> Warn.fatal "Unexpected return value do_stz"))
+            (M.delay_kont "do_stz" do_stz
+               (function
+                 | B.Next _ ->
+                   (* Force the solver to drop this, already handled above *)
+                   fun _ -> M.assertT V.zero B.nextT
+                 | B.Fault _ ->
+                   fun mstz -> mstz
+                 | _ -> Warn.fatal "Unexpected return value do_stz"))
+        else
+          do_stg >>| do_stz >>= M.ignore >>= B.next1T
 
 (*********************)
 (* Instruction fetch *)
@@ -2344,32 +2424,13 @@ module Make
 
         | I_STZG(rt,rn,k) ->
             check_memtag "STZG" ;
-            !!(begin
-              (read_reg_data MachSize.Quad rt ii >>= tag_extract) >>|
-              get_ea rn (K k) AArch64.S_NOEXT ii
-            end >>= fun (v,a) ->
-              (M.op1 Op.TagLoc a >>| loc_extract a) >>= fun (atag,loc) ->
-                (do_write_tag atag v ii
-                 >>| do_write_mem quad Annot.N aexp Access.VIR loc V.zero ii))
-
+            stzg rt rn k ii
         | I_STG(rt,rn,k) ->
             check_memtag "STG" ;
-            !(begin
-              (read_reg_data quad rt ii >>= tag_extract) >>|
-              get_ea rn (K k) S_NOEXT ii
-            end >>= fun (v,a) ->
-              M.op1 Op.TagLoc a  >>= fun a ->
-                do_write_tag a v ii)
-
+            stg rt rn k ii
         | I_LDG (rt,rn,k) ->
             check_memtag "LDG" ;
-            !(get_ea rn (K k) S_NOEXT ii  >>=
-            fun a -> M.op1 Op.TagLoc a >>=
-              fun atag -> do_read_tag atag ii
-                  >>= fun tag ->
-                    M.op Op.SetTag a tag >>= fun v ->
-                      write_reg rt v ii)
-
+            ldg rt rn k ii
         | I_STXR(var,t,rr,rs,rd) ->
             stxr (tr_variant var) t rr rs rd ii
         | I_STXRBH(bh,t,rr,rs,rd) ->

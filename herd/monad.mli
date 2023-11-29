@@ -218,12 +218,11 @@ module type S =
         [s] and the result of [f], like [cseq]. Unlike [cseq] the output of
         the resulting event structure is set to the result of [f]. *)
 
-(*
- *Sequence of memorory events by iico_order.
- * Notice that the combinator is otherwise similar
- * to ``>>|`.
- *)
     val seq_mem : 'a t -> 'b t -> ('a * 'b) t
+    (** [seq_mem s1 s2] returns a composition of the event structures
+        of [s1] and [s2] where in addition to the existing relations,
+        every memory event in [s1] is iico_order before every memory
+        event in [s2] *)
 
     val (|*|)   : bool code -> unit code -> unit code   (* Cross product *)
 (*    val lockT : 'a t -> 'a t *)
