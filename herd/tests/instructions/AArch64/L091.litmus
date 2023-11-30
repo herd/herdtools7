@@ -1,0 +1,8 @@
+AArch64 L091
+{ 0:X1=0x80000000;}
+  P0           ;
+ ABS W2,W1     ;
+ MOV W3,#1     ;
+ SUB W3,WZR,W3 ;
+ ABS W4,W3     ;
+locations [0:X2;0:X3;0:X4;]

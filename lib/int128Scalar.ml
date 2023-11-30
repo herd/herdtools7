@@ -54,6 +54,7 @@ let sxt sz v = match sz with
 let shift_right_logical = Int128.shift_right_logical
 let shift_left = Int128.shift_left
 let lognot = Int128.lognot
+let abs = Int128.abs
 let logxor = Int128.logxor
 let logand = Int128.logand
 let logor = Int128.logor
@@ -71,6 +72,7 @@ let of_int = Int128.of_int
 let of_string = Int128.of_string
 let one = Int128.one
 let zero = Int128.zero
+
 type t = Int128.t
 
 let get_tag _ = assert false

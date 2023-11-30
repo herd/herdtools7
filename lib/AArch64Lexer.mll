@@ -335,6 +335,7 @@ match name with
 | "movk"|"MOVK" -> MOVK
 | "adr"|"ADR" -> ADR
 | "rbit"|"RBIT" -> RBIT
+| "abs"|"ABS" -> ABS
 | "cmp"|"CMP" -> CMP
 | "tst"|"TST" -> TST
 (* Three argument opcodes factorized *)
@@ -367,6 +368,8 @@ match name with
 | "subs"|"SUBS" -> TOK_SUBS
 | "add"|"ADD" -> TOK_ADD
 | "adds"|"ADDS" -> TOK_ADDS
+| "neg"|"NEG" -> TOK_NEG
+| "negs"|"NEGS" -> TOK_NEGS
 (* Morello *)
 | "alignd"|"ALIGND" -> ALIGND
 | "alignu"|"ALIGNU" -> ALIGNU

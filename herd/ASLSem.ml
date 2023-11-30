@@ -152,7 +152,9 @@ module Make (C : Config) = struct
         | L_Int i -> S_Int i |> concrete
         | L_Bool b -> S_Bool b |> concrete
         | L_BitVector bv -> S_BitVector bv |> concrete
-        | L_Real _f -> Warn.fatal "Cannot use reals yet."
+        | L_Real _f ->
+           Printf.eprintf "real: %s\n%!" (Q.to_string _f) ;
+           Warn.fatal "Cannot use reals yet."
         | L_String _f -> Warn.fatal "Cannot strings in herd yet."
       in
       fun v -> V.Val (tr v)
@@ -751,7 +753,7 @@ module Make (C : Config) = struct
                AST.(
                  fun d ->
                    match d.desc with
-                   | D_Func { name = "Zeros" | "Ones" | "Replicate"; _ } ->
+                   | D_Func { name = "Zeros" | "Ones" | "Replicate" | "Abs" ; _ } ->
                        false
                    | _ -> true)
                shared [@warning "-40-42"])

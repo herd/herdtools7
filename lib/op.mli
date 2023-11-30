@@ -69,6 +69,7 @@ type 'aop op1 =
   | Mask of MachSize.sz
   | Sxt of MachSize.sz (* Sign extension *)
   | Inv          (* Logical not or inverse *)
+  | Abs          (* Absolute value *)
   | TagLoc       (* Get tag memory location from location *)
   | CapaTagLoc
   | TagExtract   (* Extract tag from tagged location *)

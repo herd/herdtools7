@@ -84,6 +84,7 @@ let mk_instrp instr v r1 r2 ra ko kb =
 %token <AArch64Base.sc> SC
 %token <AArch64Base.gc> GC
 %token TOK_ADD TOK_ADDS TOK_SUB TOK_SUBS
+%token TOK_NEG TOK_NEGS
 %token CSEL CSINC CSINV CSNEG CSET CSETM CINC
 %token TOK_DMB TOK_DSB TOK_ISB
 %token TOK_SY TOK_ST TOK_LD
@@ -127,7 +128,7 @@ let mk_instrp instr v r1 r2 ra ko kb =
 %token <AArch64Base.DC.op> DC_OP
 %token <AArch64Base.TLBI.op> TLBI_OP
 %token <AArch64Base.sysreg> SYSREG
-%token MRS MSR TST RBIT
+%token MRS MSR TST RBIT ABS
 %token STG STZG LDG
 %token ALIGND ALIGNU BUILD CHKEQ CHKSLD CHKTGD CLRTAG CPY CPYTYPE CPYVALUE CSEAL
 %token LDCT SEAL STCT UNSEAL
@@ -316,15 +317,21 @@ op_ext_imm:
 | k COMMA TOK_LSL k
     { OpExt.Imm ($1,$4) }
 
-op_ext_w:
-| op_ext_imm { $1 }
+%inline op_ext_reg_w:
 | wreg op_ext_shift0
+    { OpExt.Reg ($1,$2) }
+
+%inline op_ext_w:
+| op_ext_imm { $1 }
+| op_ext_reg_w { $1 }
+
+%inline op_ext_reg_x:
+| xreg op_ext_shift0
     { OpExt.Reg ($1,$2) }
 
 %inline op_ext_x:
 | op_ext_imm { $1 }
-| xreg op_ext_shift0
-    { OpExt.Reg ($1,$2) }
+| op_ext_reg_x { $1 }
 
 op_ext_c:
 | op_ext_imm { $1 }
@@ -1218,7 +1225,7 @@ instr:
 | tok_add_sub_ext wreg COMMA wreg COMMA wreg COMMA add_sub_ext
   { I_ADDSUBEXT (V32, $1, $2, $4, (V32, $6), $8) }
 
-
+(* Aliases of SUB *)
 | CMP wreg COMMA op_ext_w
   { I_OP3 (V32,SUBS,ZR,$2,$4) }
 | CMP xreg COMMA op_ext_x
@@ -1227,6 +1234,14 @@ instr:
   { I_ADDSUBEXT (V32,Ext.SUBS,ZR,$2,(V32,$4),$6) }
 | CMP xreg COMMA wxreg COMMA add_sub_ext
   { I_ADDSUBEXT (V64,Ext.SUBS,ZR,$2,$4,$6) }
+| TOK_NEG wreg COMMA  op_ext_reg_w
+  { I_OP3 (V32,SUB,$2,ZR,$4) }
+| TOK_NEG xreg COMMA  op_ext_reg_x
+  { I_OP3 (V64,SUB,$2,ZR,$4) }
+| TOK_NEGS wreg COMMA  op_ext_reg_w
+  { I_OP3 (V32,SUBS,$2,ZR,$4) }
+| TOK_NEGS xreg COMMA  op_ext_reg_x
+  { I_OP3 (V64,SUBS,$2,ZR,$4) }
 
 | TST wreg COMMA op_ext_w
   { I_OP3 (V32,ANDS,ZR,$2,$4) }
@@ -1237,6 +1252,12 @@ instr:
   { I_RBIT (V32,$2,$4) }
 | RBIT xreg COMMA xreg
   { I_RBIT (V64,$2,$4) }
+
+| ABS wreg COMMA wreg
+  { I_ABS (V32,$2,$4) }
+| ABS xreg COMMA xreg
+  { I_ABS (V64,$2,$4) }
+
 /* Morello */
 | ALIGND creg COMMA creg COMMA k
   { I_ALIGND ($2,$4,$6) }

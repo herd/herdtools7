@@ -48,6 +48,7 @@ module type S = sig
   val logand : t -> t -> t
   val logxor : t -> t -> t
   val lognot : t -> t
+  val abs : t -> t
   val shift_left : t -> int -> t
   val shift_right_logical : t -> int -> t
   val shift_right_arithmetic : t -> int -> t

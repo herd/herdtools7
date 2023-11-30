@@ -172,6 +172,10 @@ let lognot = function
   | S_Bool b -> S_Bool (not b)
   | S_BitVector bv -> S_BitVector (BV.lognot bv)
 
+let abs = function
+  | S_Int i -> S_Int (Z.abs i)
+  | s -> Warn.fatal "ASLScalar invalid op: %s abs" (pp false s)
+
 let shift_left = function
   | S_Int i -> fun k -> S_Int (Z.shift_left i k)
   | s1 -> Warn.fatal "ASLScalar invalid op: %s shift_left" (pp false s1)

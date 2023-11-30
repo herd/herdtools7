@@ -1043,6 +1043,7 @@ module Make(V:Constant.S)(C:Config) =
 
     let movr = do_movr "mov"
     and rbit = do_movr "rbit"
+    and abs = do_movr "abs"
     and movz = do_movz (fun _ -> []) (* No input *) "movz"
     and movn = do_movz (fun _ -> []) (* No input *) "movn"
     and movk = do_movz Misc.identity (* Part of register preserved *) "movk"
@@ -1097,13 +1098,16 @@ module Make(V:Constant.S)(C:Config) =
 
     let memo_of_op op = Misc.lowercase (pp_op op)
 
-    let mvn v r1 r2 s =
-      let memo = "mvn" in
+    let op2 memo v r1 r2 s =
       let r1,f1 = do_arg1o v r1 0 and r2,f2 = do_arg1i v r2 0 in
       { empty_ins with
         memo=sprintf "%s %s,%s%s" memo f1 f2 (pp_op_ext_shift s);
         inputs=r2;
         outputs=r1; reg_env = add_v v (r1@r2);}
+
+    let mvn = op2 "movn"
+    and neg = op2  "neg"
+    and negs = op2 "negs"
 
     let op3 v op rD rN e =
       let memo = memo_of_op op
@@ -1321,10 +1325,13 @@ module Make(V:Constant.S)(C:Config) =
     | I_MOVK (v,rd,i,os) -> movk  v rd i os::k
     | I_ADR (r,lbl) -> adr tr_lab r lbl::k
     | I_RBIT (v,rd,rs) -> rbit v rd rs::k
+    | I_ABS (v,rd,rs) -> abs v rd rs::k
     | I_SXTW (r1,r2) -> sxtw r1 r2::k
     | I_SBFM (v,r1,r2,k1,k2) -> xbfm "sbfm" v r1 r2 k1 k2::k
     | I_UBFM (v,r1,r2,k1,k2) -> xbfm "ubfm" v r1 r2 k1 k2::k
     | I_OP3 (v,SUBS,ZR,r,e) -> cmp v r e::k
+    | I_OP3 (v,SUB,r1,ZR,OpExt.Reg (r2,s)) -> neg v r1 r2 s::k
+    | I_OP3 (v,SUBS,r1,ZR,OpExt.Reg (r2,s)) -> negs v r1 r2 s::k
     | I_ADDSUBEXT (v,Ext.SUBS,ZR,r2,vr3,e) -> cmp_ext v r2  vr3 e::k
     | I_OP3 (v,ANDS,ZR,r,e) -> tst v r e::k
     | I_OP3 (v,ORN,r1,ZR,OpExt.Reg (r2,s)) -> mvn v r1 r2 s::k
