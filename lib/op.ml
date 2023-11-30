@@ -114,6 +114,7 @@ type 'aop op1 =
   | AndK of string
   | Mask of MachSize.sz
   | Sxt of MachSize.sz
+  | Rbit of MachSize.sz
   | Inv
   | Abs
   | TagLoc       (* Get tag memory location from location *)
@@ -147,6 +148,7 @@ let pp_op1 hexa pp_aop o = match o with
 | Abs -> "abs"
 | Mask sz  -> sprintf "mask%02i" (MachSize.nbits sz)
 | Sxt sz -> sprintf "sxt%02i" (MachSize.nbits sz)
+| Rbit sz -> sprintf "rbit%02i" (MachSize.nbits sz)
 | TagLoc ->  "tagloc"
 | CapaTagLoc -> "capatagloc"
 | TagExtract -> "tagextract"

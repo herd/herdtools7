@@ -103,3 +103,6 @@ let sxt sz v = match sz with
 
 type mask = Int64.t
 let to_mask = to_int64
+
+let rbit _ _ = Warn.fatal "Capatibility.rbit not implemented"
+

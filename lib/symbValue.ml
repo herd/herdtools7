@@ -795,6 +795,7 @@ module
     | Val _,Val (Concrete _) -> v2
     | _,_ ->
        Warn.user_error "Illegal ToInteger on %s and %s" (pp_v v1) (pp_v v2)
+
   let op1 op =
     let open! Cst.Scalar in
     match op with
@@ -821,6 +822,9 @@ module
     | AndK k -> unop op (fun s -> Cst.Scalar.logand s (Cst.Scalar.of_string k))
     | Mask sz -> maskop op sz
     | Sxt sz -> sxtop op sz
+    | Rbit sz ->
+       let module R = Rbit.Make(Cst.Scalar) in
+       unop op (R.rbit sz)
     | Inv -> unop op Cst.Scalar.lognot
     | Abs -> unop op Cst.Scalar.abs
     | TagLoc -> tagloc

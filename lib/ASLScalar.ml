@@ -294,4 +294,4 @@ let zeros_size_one = S_BitVector (BV.zeros 1)
 
 let printable_z z = norm_signed z
 
-
+let rbit _ _ =  Warn.fatal "ASLScalar.rbit non-existent"
