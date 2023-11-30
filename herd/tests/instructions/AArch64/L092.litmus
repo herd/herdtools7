@@ -1,0 +1,9 @@
+AArch64 L092
+{
+0:X1=6;
+}
+
+  P0              ;
+ NEG W2,W1,LSL 2  ;
+ ABS W3,W2        ;
+forall 0:X2=-24 /\ 0:X3=24

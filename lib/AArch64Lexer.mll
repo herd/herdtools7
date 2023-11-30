@@ -368,6 +368,8 @@ match name with
 | "subs"|"SUBS" -> TOK_SUBS
 | "add"|"ADD" -> TOK_ADD
 | "adds"|"ADDS" -> TOK_ADDS
+| "neg"|"NEG" -> TOK_NEG
+| "negs"|"NEGS" -> TOK_NEGS
 (* Morello *)
 | "alignd"|"ALIGND" -> ALIGND
 | "alignu"|"ALIGNU" -> ALIGNU

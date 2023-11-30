@@ -119,6 +119,10 @@ let pp_hash m = match m with
 
 let pp_k m v = pp_hash m ^ string_of_int v
 
+(*
+ * The boolean `compat` specifies backward comparibility.
+ * Backward compatibility is important for preserving hashes.
+ *)
 type 'k basic_pp =
   { compat : bool; pp_k : 'k -> string; zerop : 'k -> bool; k0 : 'k kr }
 
@@ -847,7 +851,7 @@ module OpExt = struct (* Third argumen tabnd extension of operations *)
     | LSL _
     | LSR _
     | ASR _
-     | ROR _
+    | ROR _
       -> false
 
   let pp_shift m = function
@@ -1626,6 +1630,10 @@ let pp_k_nz k = if m.zerop k then "" else "," ^ m.pp_k k in
        (Ext.pp_ext m ext)
   | I_OP3 (v,SUBS,ZR,r,e) ->
      pp_op2 "CMP" v r e
+  | I_OP3 (v,SUB,r,ZR,(OpExt.Reg _ as e)) when not m.compat ->
+     pp_op2 "NEG" v r e
+  | I_OP3 (v,SUBS,r,ZR,(OpExt.Reg _ as e)) when not m.compat ->
+     pp_op2 "NEGS" v r e
   | I_OP3 (v,ANDS,ZR,r,e) ->
       pp_op2 "TST" v r e
   | I_OP3 (v,ORN,r,ZR,e) ->
