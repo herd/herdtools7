@@ -347,6 +347,30 @@ mte-test:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-MTE tests: OK"
 
+vmsa-test:
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-herd-timeout $(TIMEOUT) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64-VMSA/tests/VMSA-kinds.txt \
+		-shelf-path catalogue/aarch64-VMSA/shelf.py \
+		$(REGRESSION_TEST_MODE)
+		@ echo "herd7 catalogue aarch64-VMSA tests: OK"
+
+ets2-test:
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-herd-timeout $(TIMEOUT) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64-ETS2/tests/VMSA-ETS2-kinds.txt \
+		-shelf-path catalogue/aarch64-ETS2/shelf.py \
+		$(REGRESSION_TEST_MODE)
+		@ echo "herd7 catalogue aarch64-ETS2 tests: OK"
+
 test:: diy-test
 
 LDS:="Amo.Cas,Amo.LdAdd,Amo.LdClr,Amo.LdEor,Amo.LdSet"
@@ -528,4 +552,3 @@ herd/libdir/asl-pseudocode/shared_pseudocode.asl:
 
 clean-asl-pseudocode:
 	@ $(MAKE) -C $(@D)/herd/libdir/asl-pseudocode clean
-
