@@ -53,7 +53,7 @@ let rec dtrm =
 (** Data, Address and Control dependencies *)
 let ADDR = Rreg \ DATA
 let basic-dep =
-   [R|Rreg]; dtrm?
+   [Exp & R | Rreg]; dtrm?
 let data = (basic-dep; [DATA]; iico_data+; [W]) \ same-instance
 let addr = (basic-dep; [ADDR]; iico_data+; [M | TLBI | IC.IVAU | DC.CVAU]) \ same-instance
 let ctrl = (basic-dep; [BCC]; po) \ same-instance
@@ -62,7 +62,7 @@ let ctrl = (basic-dep; [BCC]; po) \ same-instance
 let pick-dtrm = (dtrm|iico_ctrl)+
 
 let pick-basic-dep =
-   [R|Rreg];  pick-dtrm?
+   [Exp & R | Rreg];  pick-dtrm?
 let pick-addr-dep =
    pick-basic-dep; [ADDR]; iico_data+; [M]
 let pick-data-dep =
