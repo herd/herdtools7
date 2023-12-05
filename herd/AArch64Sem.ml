@@ -1006,15 +1006,24 @@ module Make
  *)
 
 (*  memtag faults *)
+      let set_elr_el1 ii =
+        let lbl =
+          match Label.norm ii.A.labels with
+          | Some hd -> hd
+          | None -> "undef" in
+        let lbl_v = A.V.cstToV (Constant.Label (ii.A.proc, lbl)) in
+        write_reg AArch64Base.elr_el1 lbl_v ii
 
       let lift_fault_memtag mfault mm dir ii =
         if has_handler ii then
-          fun ma -> M.bind_ctrldata ma (fun _ -> mfault >>! B.Fault dir)
+          fun ma ->
+            M.bind_ctrldata ma (fun _ -> mfault >>| set_elr_el1 ii) >>!
+            B.Fault dir
         else
           let open Precision in
           match C.precision,dir with
           | (Fatal,_)|(LoadsFatal,(Dir.R)) ->
-             fun ma ->  ma >>*= (fun _ -> mfault >>! B.Exit)
+             fun ma ->  ma >>*= (fun _ -> mfault >>| set_elr_el1 ii) >>! B.Exit
           | (Handled,_)|(LoadsFatal,Dir.W) ->
              fun ma ->
              let set_tfsr = write_reg AArch64Base.tfsr V.one ii in
@@ -1037,14 +1046,6 @@ module Make
              M.altT (test_and_set_af_succeeds a E.IdSpurious) (M.unitT ())) >>=
             fun (r,_) -> M.unitT r
         else m
-
-      let set_elr_el1 ii =
-        let lbl =
-          match Label.norm ii.A.labels with
-          | Some hd -> hd
-          | None -> "undef" in
-        let lbl_v = A.V.cstToV (Constant.Label (ii.A.proc, lbl)) in
-        write_reg AArch64Base.elr_el1 lbl_v ii
 
       let lift_kvm dir updatedb is_tag mop ma an ii mphy =
         let mfault ma a ft =
