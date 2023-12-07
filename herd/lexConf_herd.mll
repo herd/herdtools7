@@ -282,7 +282,7 @@ let handle_key main key arg = match key with
 | "edgemerge" ->
     lex_bool PP.edgemerge arg
 | _ ->
-    error (sprintf "Unkown key '%s' in configuration file" key)
+    error (sprintf "Unknown key '%s' in configuration file" key)
 }
 
 let blank = [' ''\t''\r']
@@ -302,7 +302,7 @@ and opt = parse
 | (['a'-'z''A'-'Z']+ as key) arg
    { handle_key main key arg }
 | ""
-   { error "Unkown key in configuration file" }
+   { error "Unknown key in configuration file" }
 {
 
 let lex fname = dolex main fname

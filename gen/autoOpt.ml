@@ -155,7 +155,7 @@ let set_transitive b opts = { opts with transitive = b ; }
 let set_compress b opts = { opts with compress = b ; }
 
 let set_arch arg cfg = match Archs.parse arg with
-| None -> raise (Arg.Bad (sprintf "unkown architecture: %s" arg))
+| None -> raise (Arg.Bad (sprintf "unknown architecture: %s" arg))
 | Some a -> { cfg with arch =a; }
 
 let set_mode arg cfg = match parse_mode arg with
