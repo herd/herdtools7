@@ -2924,11 +2924,15 @@ module Make
             | Cpy -> fun m -> m
             | Inc|Inv|Neg -> mask32 var in
             !(if not (C.variant Variant.NotWeakPredicated) then
-              read_reg_ord NZCV ii >>= tr_cond c >>*= fun v ->
-                M.choiceT v
-                  (read_reg_data sz r2 ii >>= fun v -> write_reg r1 v ii)
-                  (read_reg_data sz r3 ii >>=
-                     csel_op op >>= mask (fun v ->  write_reg r1 v ii))
+                let(>>*=) = M.bind_control_set_data_input_first in
+                let mok = commit_pred_txt (Some (pp_cond c)) ii >>*=
+                  fun () -> read_reg_data sz r2 ii >>=
+                  fun v -> write_reg r1 v ii in
+                let mno = commit_pred_txt None ii >>*=
+                  fun () -> read_reg_data sz r3 ii >>=
+                  csel_op op >>= mask (fun v ->  write_reg r1 v ii) in
+                read_reg_ord NZCV ii >>= tr_cond c >>=
+                fun v -> M.choiceT v mok mno
             else
               begin
                 (read_reg_ord NZCV ii >>= tr_cond c) >>|  read_reg_data sz r2 ii >>| read_reg_data sz r3 ii
