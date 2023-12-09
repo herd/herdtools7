@@ -29,6 +29,8 @@ module Attrs = struct
   let pp a = StringSet.pp_str ", " Misc.identity a
   let as_list a = StringSet.elements a
   let of_list l = StringSet.of_list l
+
+  let mem = StringSet.mem
 end
 
 

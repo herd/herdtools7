@@ -39,7 +39,7 @@
    We use three main connecters here:
     - the classic data binder ( [>>=] )
     - a control binder ( [>>*=] or assimilate)
-    - a sequencing operator ( [M.aslseq] )
+    - a sequencing operator ( [M.para_bind_output_right] )
    And some specialized others:
     - the parallel operator ( [>>|] )
     - a choice operation
@@ -61,7 +61,7 @@
      output = 2.ouput (or 1.output if 2.output is None)
         same-ish with ctrl_output
 
-   - _seq_ binder (called [aslseq]):
+   - _seq_ binder (called [para_bind_output_right]):
      input = 1.input U 2.input
         same with data_input
      output = 2.output
@@ -114,7 +114,7 @@ module Make (C : Config) = struct
     module Mixed = M.Mixed (SZ)
 
     let ( let* ) = M.( >>= )
-    let ( let*| ) = M.aslseq
+    let ( let*| ) = M.para_bind_output_right
     let ( and* ) = M.( >>| )
     let return = M.unitT
     let ( >>= ) = M.( >>= )
@@ -696,7 +696,7 @@ module Make (C : Config) = struct
         let v_of_literal = v_of_literal
         let v_to_int = v_to_int
         let bind_data = M.( >>= )
-        let bind_seq = M.aslseq
+        let bind_seq = M.para_bind_output_right
         let bind_ctrl = M.bind_ctrl_seq_data
         let prod_par = M.( >>| )
         let appl_data m f = m >>= fun v -> return (f v)

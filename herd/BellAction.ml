@@ -193,7 +193,7 @@ end = struct
   | Commit -> true
   | _ -> false
 
-  let is_pred _ = false
+  let is_pred ?cond:_ _ = false
 
   let is_commit = is_bcc
 

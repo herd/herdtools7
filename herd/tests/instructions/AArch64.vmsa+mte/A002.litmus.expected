@@ -1,0 +1,11 @@
+Test A002 Required
+States 1
+[x]=0; Fault(P0:L0,x:green,MMU:Translation);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag combining-vmsa-and-memtag-is-not-supported
+Condition forall ([x]=0 /\ fault(P0:L0,x,MMU:Translation))
+Observation A002 Always 1 0
+Hash=28724503810e0526ec2b6e8518813c37
+

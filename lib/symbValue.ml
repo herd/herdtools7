@@ -473,8 +473,10 @@ module
   let capatagloc = op_tagged "capatagloc" (op_tagloc Misc.add_ctag)
 
   let tagloc v =  match v with
-  | Val (Symbolic (Virtual {name=a;_}|Physical (a,_))) ->
+  | Val (Symbolic (Virtual {name=a;_})) ->
        Val (Symbolic (System (TAG,a)))
+  | Val (Symbolic (Physical _)) ->
+    Val (Symbolic (System (TAG,pp_v v)))
   | Val
         (Concrete _|ConcreteRecord _|ConcreteVector _
         |Symbolic (System _)|Label _

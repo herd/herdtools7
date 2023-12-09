@@ -131,6 +131,7 @@ val same_instance : event -> event -> bool
 (* Commit *)
   val is_bcc : event -> bool
   val is_pred : event -> bool
+  val is_pred_txt : string option -> event -> bool
   val is_commit : event -> bool
 
 (* Too much unrolling *)
@@ -290,6 +291,7 @@ val same_instance : event -> event -> bool
 (* Event structure output ports *)
 (********************************)
   val debug_output : out_channel -> event_structure -> unit
+  val debug_event_structure : out_channel -> event_structure -> unit
 
 (********************************)
 (* Instruction+code composition *)
@@ -690,6 +692,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 (* Commits *)
     let is_bcc e = Act.is_bcc e.action
     let is_pred e = Act.is_pred e.action
+    let is_pred_txt cond e = Act.is_pred ~cond e.action
     let is_commit e = Act.is_commit e.action
 
 (*  Unrolling control *)
@@ -998,6 +1001,16 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       fprintf chan "(i=%a, o=%a)"
         debug_opt (es.input,get_dinput,es)
         debug_opt (es.output,get_output,es)
+
+    let debug_event_structure chan es =
+      fprintf chan "(\n" ;
+      fprintf chan "\tevents: %a\n" debug_events es.events ;
+      fprintf chan "\tinput: %a\n" debug_opt (es.input,get_dinput,es) ;
+      fprintf chan "\toutput: %a\n" debug_opt (es.output,get_output,es) ;
+      fprintf chan "\tiico_data: %a\n" debug_rel es.intra_causality_data ;
+      fprintf chan "\tiico_ctrl: %a\n" debug_rel es.intra_causality_control ;
+      fprintf chan "\tpo: %a\n" debug_rel (let _,rel = es.po in rel) ;
+      fprintf chan ")\n"
 
     let get_ctrl_output es = match es.ctrl_output with
     | None -> maximals es

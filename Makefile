@@ -371,6 +371,16 @@ ets2-test:
 		$(REGRESSION_TEST_MODE)
 		@ echo "herd7 catalogue aarch64-ETS2 tests: OK"
 
+test.vmsa+mte:
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64.vmsa+mte \
+		-conf ./herd/tests/instructions/AArch64.vmsa+mte/vmsa+mte.cfg \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 VMSA+MTE instructions tests: OK"
+
 test:: diy-test
 
 LDS:="Amo.Cas,Amo.LdAdd,Amo.LdClr,Amo.LdEor,Amo.LdSet"

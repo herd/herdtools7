@@ -457,8 +457,9 @@ end = struct
   | Commit (Bcc,_) -> true
   | _ -> false
 
-  let is_pred a = match a with
-  | Commit (Pred,_) -> true
+  let is_pred ?(cond=None) = function
+  | Commit (Pred, cond0) ->
+    Option.is_none cond || Option.equal String.equal cond cond0
   | _ -> false
 
   let is_exc_return a = match a with

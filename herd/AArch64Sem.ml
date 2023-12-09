@@ -353,11 +353,11 @@ module Make
         M.delay_kont "check_tags" m
           (fun c m ->
             let ma = (* NB output to initial ma *)
-              ma >>==
-                (fun a -> m >>== fun _ ->
-                match a_phy with
-                | None -> loc_extract a
-                | Some _ -> M.unitT a) in
+              match a_phy with
+              | None ->
+                ma >>== fun a -> m >>== fun _ -> loc_extract a
+              | Some _ ->
+                M.bind_ctrldata ma (fun a -> m >>== fun _ -> M.unitT a) in
             choice c ma)
 
       (* Tag checking Morello *)
@@ -409,6 +409,7 @@ module Make
         dbm_v : V.v;
         valid_v : V.v;
         el0_v : V.v;
+        tagged_v : V.v;
       }
 
       let arch_op1 op = M.op1 (Op.ArchOp1 op)
@@ -419,6 +420,7 @@ module Make
       let extract_valid v = arch_op1 AArch64Op.Valid v
       let extract_el0 v = arch_op1 AArch64Op.EL0 v
       let extract_oa v = arch_op1 AArch64Op.OA v
+      let extract_tagged v = arch_op1 AArch64Op.Tagged v
 
       let mextract_whole_pte_val an nexp a_pte iiid =
         (M.do_read_loc false
@@ -478,9 +480,10 @@ module Make
         extract_valid pte_v >>|
         extract_af pte_v >>|
         extract_db pte_v >>|
-        extract_dbm pte_v) >>=
-        (fun (((((oa_v,el0_v),valid_v),af_v),db_v),dbm_v) ->
-          M.unitT {oa_v; af_v; db_v; dbm_v; valid_v; el0_v;})
+        extract_dbm pte_v >>|
+        extract_tagged pte_v) >>=
+        (fun ((((((oa_v,el0_v),valid_v),af_v),db_v),dbm_v),tagged_v) ->
+          M.unitT {oa_v; af_v; db_v; dbm_v; valid_v; el0_v; tagged_v})
 
       let get_oa a_virt mpte =
         (M.op1 Op.Offset a_virt >>| mpte)
@@ -499,13 +502,13 @@ module Make
          from branch to instructions events *)
         m1 >>= fun a -> commit_pred ii >>*== fun _ -> m2 a
 
-      let do_insert_commit_to_fault m1 m2 ii =
+      let do_insert_commit_to_fault m1 m2 txt ii =
         (* Dependencies to fault are simple: Rpte -data-> Branch -> Fault *)
         M.bind_data_to_minimals m1
-          (fun a -> commit_pred ii >>*= fun () -> m2 a)
+          (fun a -> commit_pred_txt txt ii >>*= fun () -> m2 a)
 
-      let insert_commit_to_fault m1 m2 ii =
-        if is_branching || morello then do_insert_commit_to_fault m1 m2 ii
+      let insert_commit_to_fault m1 m2 txt ii =
+        if is_branching || morello then do_insert_commit_to_fault m1 m2 txt ii
         else m1 >>*= m2 (* Direct control dependency to fault *)
 
 (******************)
@@ -563,7 +566,7 @@ module Make
         let open FaultType.AArch64 in
         let ft = Some (MMU Permission) in
         insert_commit_to_fault ma
-          (fun _ -> mk_fault (Some a) dir an ii ft (Some "EL0"))  ii >>! B.Exit
+          (fun _ -> mk_fault (Some a) dir an ii ft (Some "EL0")) None ii >>! B.Exit
 
       let an_xpte =
         let open Annot in
@@ -583,8 +586,7 @@ module Make
         | X|N -> N
         | NoRet|S|NTA -> N
 
-
-      let check_ptw proc dir updatedb a_virt ma an ii mdirect mok mfault =
+      let check_ptw proc dir updatedb is_tag a_virt ma an ii mdirect mok mfault =
 
         let is_el0  = List.exists (Proc.equal proc) TopConf.procs_user in
 
@@ -629,6 +631,8 @@ module Make
               | Dir.R ->
                  if ha then "valid:1"
                  else "valid:1 && af:1" in
+            let prefix = if is_tag then "Tag, " else "Data, " in
+            let msg = if memtag then prefix ^ msg else msg in
             let m = append_commit m (Some msg) ii in
             let add_setbits cond txt set no =
               cond >>= fun c ->
@@ -655,7 +659,7 @@ module Make
                    add_setbits (is_zero ipte.af_v) "af:0" set_af m
                  else m in
             setbits in
-          mok (get_oa a_virt m) a in
+          mok m a in
 
 
 (* Action on case of page table access.
@@ -1002,15 +1006,24 @@ module Make
  *)
 
 (*  memtag faults *)
+      let set_elr_el1 ii =
+        let lbl =
+          match Label.norm ii.A.labels with
+          | Some hd -> hd
+          | None -> "undef" in
+        let lbl_v = A.V.cstToV (Constant.Label (ii.A.proc, lbl)) in
+        write_reg AArch64Base.elr_el1 lbl_v ii
 
       let lift_fault_memtag mfault mm dir ii =
         if has_handler ii then
-          fun ma -> M.bind_ctrldata ma (fun _ -> mfault >>! B.Fault dir)
+          fun ma ->
+            M.bind_ctrldata ma (fun _ -> mfault >>| set_elr_el1 ii) >>!
+            B.Fault dir
         else
           let open Precision in
           match C.precision,dir with
           | (Fatal,_)|(LoadsFatal,(Dir.R)) ->
-             fun ma ->  ma >>*= (fun _ -> mfault >>! B.Exit)
+             fun ma ->  ma >>*= (fun _ -> mfault >>| set_elr_el1 ii) >>! B.Exit
           | (Handled,_)|(LoadsFatal,Dir.W) ->
              fun ma ->
              let set_tfsr = write_reg AArch64Base.tfsr V.one ii in
@@ -1019,27 +1032,6 @@ module Make
           | Skip,_ ->
              fun _ ->
                Warn.fatal "Memtag extension has no 'Skip' fault handling mode"
-
-      let lift_memtag_phy a_virt mop ma dir an ii =
-        M.delay_kont "4" ma
-          (fun a_phy ma ->
-            let mm = mop Access.PHY in
-            let ft = Some FaultType.AArch64.TagCheck in
-            delayed_check_tags a_virt (Some a_phy) ma ii
-              (fun ma -> mm ma >>= M.ignore >>= B.next1T)
-              (lift_fault_memtag
-                 (mk_fault (Some a_virt) dir an ii ft None) mm dir ii))
-
-
-      let lift_memtag_virt mop ma dir an ii =
-        M.delay_kont "5" ma
-          (fun a_virt ma  ->
-            let mm = mop Access.VIR in
-            let ft = Some FaultType.AArch64.TagCheck in
-            delayed_check_tags a_virt None ma ii
-              (fun ma -> mm ma >>= M.ignore >>= B.next1T)
-              (lift_fault_memtag
-                 (mk_fault (Some a_virt) dir an ii ft None) mm dir ii))
 
 (* KVM mode *)
       let some_ha = dirty.DirtyBit.some_ha || dirty.DirtyBit.some_hd
@@ -1055,21 +1047,16 @@ module Make
             fun (r,_) -> M.unitT r
         else m
 
-      let set_elr_el1 ii =
-        let lbl =
-          match Label.norm ii.A.labels with
-          | Some hd -> hd
-          | None -> "undef" in
-        let lbl_v = A.V.cstToV (Constant.Label (ii.A.proc, lbl)) in
-        write_reg AArch64Base.elr_el1 lbl_v ii
-
-      let lift_kvm dir updatedb mop ma an ii mphy =
+      let lift_kvm dir updatedb is_tag mop ma an ii mphy =
         let mfault ma a ft =
-          insert_commit_to_fault ma
-            (fun _ -> mk_fault (Some a) dir an ii ft None) ii >>|
-          set_elr_el1 ii >>! B.Fault dir in
+          if is_tag then
+            insert_commit_to_fault ma (fun _ -> mzero) (Some "Tag") ii >>! B.Fault dir
+          else
+            insert_commit_to_fault ma
+              (fun _ -> mk_fault (Some a) dir an ii ft None) None ii >>|
+            set_elr_el1 ii >>! B.Fault dir in
         let maccess a ma =
-          check_ptw ii.AArch64.proc dir updatedb a ma an ii
+          check_ptw ii.AArch64.proc dir updatedb is_tag a ma an ii
             ((let m = mop Access.PTE ma in
               fire_spurious_af dir a m) >>= M.ignore >>= B.next1T)
             mphy
@@ -1084,6 +1071,50 @@ module Make
              | ac ->
                  mop ac ma >>= M.ignore >>= B.next1T
         )
+
+      let lift_memtag_phy dir mop ma an ii mphy =
+        let lift_tag_op =
+          let check_tag ma a_virt =
+            (* We can't add the fault yet, but we need to identify
+               that tag check failed *)
+            M.delay_kont "check_tag" ma
+              (fun a_phy ma ->
+                 delayed_check_tags a_virt (Some a_phy) ma ii
+                   (fun ma -> ma >>= M.ignore >>= B.next1T)
+                   (fun ma -> ma >>! B.Fault dir)) in
+          let cond_check_tag ma a_virt =
+            (* Only read and check the tag if the attrs of the PTE
+               allow it *)
+            M.delay_kont "check_tag_pte" ma
+              (fun (_,ipte) ma ->
+                 let moa = get_oa a_virt ma in
+                 M.choiceT (ipte.tagged_v)
+                   (check_tag moa a_virt)
+                   (moa >>= M.ignore >>= B.next1T)) in
+          lift_kvm Dir.R false true mop ma an ii cond_check_tag in
+        fun ma a_virt ->
+          M.delay_kont "lift_memtag" lift_tag_op
+            (fun tag_op mtag_op ->
+               let ma = M.para_bind_output_right mtag_op (fun _ -> ma) in
+               match tag_op with
+               | B.Next _ -> mphy ma a_virt
+               | B.Fault _ ->
+                 let ft = Some FaultType.AArch64.TagCheck in
+                 let mm = fun ma -> mphy ma a_virt in
+                 let fault = lift_fault_memtag
+                     (mk_fault (Some a_virt) dir an ii ft None) mm dir ii in
+                 fault ma
+               | _ -> Warn.fatal "Unexpected return value from lift_tag_op")
+
+      let lift_memtag_virt mop ma dir an ii =
+        M.delay_kont "5" ma
+          (fun a_virt ma  ->
+             let mm = mop Access.VIR in
+             let ft = Some FaultType.AArch64.TagCheck in
+             delayed_check_tags a_virt None ma ii
+               (fun ma -> mm ma >>= M.ignore >>= B.next1T)
+               (lift_fault_memtag
+                  (mk_fault (Some a_virt) dir an ii ft None) mm dir ii))
 
       let lift_morello mop perms ma mv dir an ii =
         let mfault msg ma mv =
@@ -1122,40 +1153,38 @@ module Make
         | Some rB -> AArch64.reg_compare rA rB=0
 
       let lift_memop rA (* Base address register *)
-            dir updatedb mop perms ma mv an ii =
+            dir updatedb checked mop perms ma mv an ii =
         if morello then
           lift_morello mop perms ma mv dir an ii
         else
           let mop = apply_mv mop mv in
-          if memtag then
-            begin
-              if kvm then
-                let mphy = (fun ma a -> lift_memtag_phy a mop ma dir an ii) in
-                M.short3
-                  (is_this_reg rA) E.is_commit
-                  (lift_kvm dir updatedb mop ma an ii mphy)
-              else lift_memtag_virt mop ma dir an ii
-            end
-          else if kvm then
-            let mphy =
+          if kvm then
+            let mphy ma a_virt =
+              let ma = get_oa a_virt ma in
               if pte2 then
-                fun ma a_virt ->
                 M.op1 Op.IsVirtual a_virt >>= fun c ->
                 M.choiceT c
                   (mop Access.PHY ma)
                   (fire_spurious_af dir a_virt (mop Access.PHY_PTE ma))
                 >>= M.ignore >>= B.next1T
               else
-                fun ma _a ->
                 mop Access.PHY ma
                 >>= M.ignore >>= B.next1T in
-            lift_kvm dir updatedb mop ma an ii mphy
+            let mphy =
+              if checked then lift_memtag_phy dir mop ma an ii mphy
+              else mphy
+            in
+            let m = lift_kvm dir updatedb false mop ma an ii mphy in
+            (* M.short will add an iico_data only if memtag is enabled *)
+            M.short (is_this_reg rA) (E.is_pred_txt (Some "color")) m
+          else if checked then
+            lift_memtag_virt mop ma dir an ii
           else
             mop Access.VIR ma >>= M.ignore >>= B.next1T
 
       let do_ldr rA sz an mop ma ii =
 (* Generic load *)
-        lift_memop rA  Dir.R true
+        lift_memop rA Dir.R true memtag
           (fun ac ma _mv -> (* value fake here *)
             let open Precision in
             let memtag_sync = memtag && (C.precision = Fatal || C.precision = LoadsFatal) in
@@ -1168,7 +1197,7 @@ module Make
 
 (* Generic store *)
       let do_str rA mop sz an ma mv ii =
-        lift_memop rA Dir.W true
+        lift_memop rA Dir.W true memtag
           (fun ac ma mv ->
             let open Precision in
             let memtag_sync = memtag && C.precision = Fatal in
@@ -1554,7 +1583,7 @@ module Make
         let an = match t with
           | YY -> Annot.X
           | LY -> Annot.XL in
-        lift_memop rd Dir.W true
+        lift_memop rd Dir.W true memtag
           (fun ac ma mv ->
             let must_fail =
               begin
@@ -1622,6 +1651,7 @@ module Make
 
       let swp sz rmw r1 r2 r3 ii =
         lift_memop r3 Dir.W true (* swp is a write for the purpose of DB *)
+          memtag
           (fun ac ma mv ->
             let noret = match r2 with | AArch64.ZR -> true | _ -> false in
             let r2 = mv
@@ -1644,7 +1674,7 @@ module Make
         let an = rmw_to_read rmw in
         let read_rs = read_reg_data sz rs ii
         and write_rs v = write_reg_sz_non_mixed sz rs v ii in
-        lift_memop rn Dir.W true
+        lift_memop rn Dir.W true memtag
            (* mv is read new value from reg, not important
               as this code is not executed in morello mode *)
           (fun ac ma mv ->
@@ -1680,7 +1710,7 @@ module Make
           let cond = Printf.sprintf "[%s]=={%d:%s,%d:%s}" (V.pp_v a)
             ii.A.proc (A.pp_reg rs1) ii.A.proc (A.pp_reg rs1) in
           commit_pred_txt (Some cond) ii in
-        lift_memop rn Dir.W true
+        lift_memop rn Dir.W true memtag
           (fun ac ma _ ->
             let is_phy = Access.is_physical ac in
              M.altT
@@ -1747,7 +1777,7 @@ module Make
       let ldop op sz rmw rs rt rn ii =
         let open AArch64 in
         let an = rmw_to_read rmw in
-        lift_memop rn Dir.W true
+        lift_memop rn Dir.W true memtag
           (fun ac ma mv ->
             let noret = match rt with | ZR -> true | _ -> false in
             let op = match op with
@@ -2124,7 +2154,7 @@ module Make
             let dir = match op.AArch64Base.DC.funct with
               | AArch64Base.DC.I -> Dir.W
               | _ -> Dir.R in
-            lift_memop rd dir false
+            lift_memop rd dir false memtag
               (fun ac ma _mv -> (* value fake here *)
                 if Access.is_physical ac then
                   M.bind_ctrldata ma (mop ac)
@@ -2146,6 +2176,85 @@ module Make
             M.mk_singleton_es act ii
           >>= B.next1T
         end
+
+      let ldg rt rn k ii =
+        let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii in
+        let do_ldg a_virt ac ma =
+          let ( let* ) = (>>=) in
+          let _do_ldg a =
+            let* atag = M.op1 Op.TagLoc a in
+            let* tag = do_read_tag atag ii in
+            let* v = M.op Op.SetTag a_virt tag in
+            let* () = write_reg rt v ii in
+            B.nextT in
+          if Access.is_physical ac then
+            M.bind_ctrldata ma _do_ldg
+          else
+            ma >>= _do_ldg in
+        M.delay_kont "ldg" ma
+          (fun a_virt ma ->
+             let do_ldg = do_ldg a_virt in
+             lift_memop rn Dir.R false false (fun ac ma _mv -> do_ldg ac ma)
+               (to_perms "w" MachSize.S128) ma mzero Annot.N ii)
+
+      let stg rt rn k ii =
+        let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii
+        and mv = read_reg_data MachSize.Quad rt ii >>= tag_extract in
+        let do_stg ac ma mv =
+          let _do_stg a v = M.op1 Op.TagLoc a >>=
+            fun a -> do_write_tag a v ii >>=
+            fun () -> B.nextT in
+          if Access.is_physical ac then
+            M.bind_ctrldata_data ma mv _do_stg
+          else
+            (ma >>| mv) >>= fun (a,v) -> _do_stg a v in
+        lift_memop rn Dir.W true false (fun ac ma mv -> do_stg ac ma mv)
+          (to_perms "w" MachSize.S128) ma mv Annot.N ii
+
+      let stzg rt rn k ii =
+        let do_stz =
+          let sz = MachSize.S128 in
+          let mop = do_write_mem sz Annot.N aexp in
+          let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii in
+          lift_memop rn Dir.W true false
+            (fun ac ma mv ->
+               if Access.is_physical ac then begin
+                 (* additional ctrl dep on address *)
+                 M.bind_ctrldata_data ma mv
+                   (fun a v -> mop ac a v ii)
+               end else
+                 (ma >>| mv) >>= fun (a,v) -> mop ac a v ii)
+            (to_perms "w" sz) ma mzero Annot.N ii in
+        let do_stg = stg rt rn k ii in
+        if kvm then
+          (* The two operations include their own translations, if
+             there is a fault, it has to be ordered after any other
+             event of the instruction *)
+          M.altT
+            (M.delay_kont "do_stg" do_stg
+               (function
+                 | B.Next _ ->
+                   fun mstg -> M.delay_kont "do_stz" do_stz
+                       (function
+                         | B.Next _ ->
+                           fun mstz -> mstz >>| do_stg >>= M.ignore >>= B.next1T
+                         | B.Fault _ ->
+                           fun mstz ->  mstz >>| mstg >>= M.ignore >>= B.next1T
+                         | _ ->
+                           Warn.fatal "Unexpected return value do_stg")
+                 | B.Fault _ ->
+                   fun mstg -> mstg
+                 | _ -> Warn.fatal "Unexpected return value do_stz"))
+            (M.delay_kont "do_stz" do_stz
+               (function
+                 | B.Next _ ->
+                   (* Force the solver to drop this, already handled above *)
+                   fun _ -> M.assertT V.zero B.nextT
+                 | B.Fault _ ->
+                   fun mstz -> mstz
+                 | _ -> Warn.fatal "Unexpected return value do_stz"))
+        else
+          do_stg >>| do_stz >>= M.ignore >>= B.next1T
 
 (*********************)
 (* Instruction fetch *)
@@ -2316,32 +2425,13 @@ module Make
 
         | I_STZG(rt,rn,k) ->
             check_memtag "STZG" ;
-            !!(begin
-              (read_reg_data MachSize.Quad rt ii >>= tag_extract) >>|
-              get_ea rn (K k) AArch64.S_NOEXT ii
-            end >>= fun (v,a) ->
-              (M.op1 Op.TagLoc a >>| loc_extract a) >>= fun (atag,loc) ->
-                (do_write_tag atag v ii
-                 >>| do_write_mem quad Annot.N aexp Access.VIR loc V.zero ii))
-
+            stzg rt rn k ii
         | I_STG(rt,rn,k) ->
             check_memtag "STG" ;
-            !(begin
-              (read_reg_data quad rt ii >>= tag_extract) >>|
-              get_ea rn (K k) S_NOEXT ii
-            end >>= fun (v,a) ->
-              M.op1 Op.TagLoc a  >>= fun a ->
-                do_write_tag a v ii)
-
+            stg rt rn k ii
         | I_LDG (rt,rn,k) ->
             check_memtag "LDG" ;
-            !(get_ea rn (K k) S_NOEXT ii  >>=
-            fun a -> M.op1 Op.TagLoc a >>=
-              fun atag -> do_read_tag atag ii
-                  >>= fun tag ->
-                    M.op Op.SetTag a tag >>= fun v ->
-                      write_reg rt v ii)
-
+            ldg rt rn k ii
         | I_STXR(var,t,rr,rs,rd) ->
             stxr (tr_variant var) t rr rs rd ii
         | I_STXRBH(bh,t,rr,rs,rd) ->
