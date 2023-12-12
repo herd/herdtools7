@@ -156,3 +156,27 @@ let stdlib =
 
 let with_stdlib ast =
   List.rev_append (Lazy.force stdlib |> ASTUtils.no_primitive) ast
+
+let extract_name k d =
+  let open AST in
+  match d.desc with
+  | D_Func {name;_}
+    -> name::k
+  | D_TypeDecl _ ->
+     prerr_string  "Type declaration in stdlib.asl" ;
+     exit 1
+  | D_GlobalStorage _ ->
+     prerr_string "Storage declaration in stdlib.asl" ;
+     exit 1
+
+
+let is_stdlib_name =
+  let module StringSet = Set.Make(String) in
+  let set =
+    lazy
+      begin
+        let extract_names ds =
+          List.fold_left extract_name [] ds |> StringSet.of_list in
+        Lazy.force stdlib |> extract_names
+      end in
+  fun name -> StringSet.mem name (Lazy.force set)
