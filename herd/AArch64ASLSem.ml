@@ -263,7 +263,32 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 "d" ^= reg rd;
                 "n" ^= reg rn;
                 "datasize" ^= liti datasize;
-              ])
+           ])
+    (*
+     * Does not work, because instruction code uses the Elem
+     * setter `Elem[..] = ...`. This setter relies on passing argument
+     * by reference.
+     *)
+(*
+      | I_REV (rv,rd,rn) ->
+         let datasize = variant_of_rev rv |> variant_raw in
+         let csz = container_size rv |> MachSize.nbits in
+         Printf.eprintf "REV: sz=%i, csz=%i\n%!" datasize csz ;
+         let fname =
+           match rv with
+           | RV16 _ -> "REV16_32_dp_1src.opn"
+           | RV32 -> "REV32_64_dp_1src.opn"
+           | RV64 _ -> "REV_32_dp_1src.opn" in
+         Some
+           ("/integer/arithmetic/rev/" ^ fname,
+            stmt
+              [
+                "d" ^= reg rd;
+                "n" ^= reg rn;
+                "datasize" ^= liti datasize;
+                "container_size" ^= liti csz;
+           ])
+ *)
       | I_UBFM (v,rd,rn,immr,imms)
       | I_SBFM (v,rd,rn,immr,imms) ->
          let datasize = variant_raw v in
@@ -715,6 +740,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               | Mask sz -> Mask sz
               | Sxt sz -> Sxt sz
               | Rbit sz -> Rbit sz
+              | RevBytes (csz,sz) -> RevBytes (csz,sz)
               | TagLoc -> TagLoc
               | CapaTagLoc -> CapaTagLoc
               | TagExtract -> TagExtract

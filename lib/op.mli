@@ -71,6 +71,7 @@ type 'aop op1 =
   | Rbit of MachSize.sz (* Reverse bits *)
   | Inv          (* Logical not or inverse *)
   | Abs          (* Absolute value *)
+  | RevBytes of MachSize.sz * MachSize.sz (* Reverse Bytes *)
   | TagLoc       (* Get tag memory location from location *)
   | CapaTagLoc
   | TagExtract   (* Extract tag from tagged location *)

@@ -1047,7 +1047,10 @@ module Make(V:Constant.S)(C:Config) =
     and movz = do_movz (fun _ -> []) (* No input *) "movz"
     and movn = do_movz (fun _ -> []) (* No input *) "movn"
     and movk = do_movz Misc.identity (* Part of register preserved *) "movk"
-
+    and rev rv =
+      let memo = Misc.lowercase (memo_of_rev rv)
+      and v = variant_of_rev rv in
+      do_movr memo v
 
     let sxtw r1 r2 =
       { empty_ins with
@@ -1326,6 +1329,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_ADR (r,lbl) -> adr tr_lab r lbl::k
     | I_RBIT (v,rd,rs) -> rbit v rd rs::k
     | I_ABS (v,rd,rs) -> abs v rd rs::k
+    | I_REV (v,rd,rs) -> rev v rd rs::k
     | I_SXTW (r1,r2) -> sxtw r1 r2::k
     | I_SBFM (v,r1,r2,k1,k2) -> xbfm "sbfm" v r1 r2 k1 k2::k
     | I_UBFM (v,r1,r2,k1,k2) -> xbfm "ubfm" v r1 r2 k1 k2::k

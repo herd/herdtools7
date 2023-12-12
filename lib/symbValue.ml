@@ -827,6 +827,9 @@ module
     | Rbit sz ->
        let module R = Rbit.Make(Cst.Scalar) in
        unop op (R.rbit sz)
+    | RevBytes (csz,sz) ->
+       let module R = Rbit.Make(Cst.Scalar) in
+       unop op (R.revbytes csz sz)
     | Inv -> unop op Cst.Scalar.lognot
     | Abs -> unop op Cst.Scalar.abs
     | TagLoc -> tagloc

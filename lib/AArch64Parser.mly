@@ -129,6 +129,7 @@ let mk_instrp instr v r1 r2 ra ko kb =
 %token <AArch64Base.TLBI.op> TLBI_OP
 %token <AArch64Base.sysreg> SYSREG
 %token MRS MSR TST RBIT ABS
+%token REV16 REV32 REV REV64
 %token STG STZG LDG
 %token ALIGND ALIGNU BUILD CHKEQ CHKSLD CHKTGD CLRTAG CPY CPYTYPE CPYVALUE CSEAL
 %token LDCT SEAL STCT UNSEAL
@@ -1252,6 +1253,19 @@ instr:
   { I_RBIT (V32,$2,$4) }
 | RBIT xreg COMMA xreg
   { I_RBIT (V64,$2,$4) }
+
+| REV16 wreg COMMA wreg
+  { I_REV (RV16 AArch64Base.V32,$2,$4) }
+| REV16 xreg COMMA xreg
+  { I_REV (RV16 AArch64Base.V64,$2,$4) }
+| REV32 xreg COMMA xreg
+  { I_REV (RV32,$2,$4) }
+| REV64 xreg COMMA xreg
+  { I_REV (RV64 AArch64Base.V64 ,$2,$4) }
+| REV wreg COMMA wreg
+  { I_REV (RV64 AArch64Base.V32,$2,$4) }
+| REV xreg COMMA xreg
+  { I_REV (RV64 AArch64Base.V64,$2,$4) }
 
 | ABS wreg COMMA wreg
   { I_ABS (V32,$2,$4) }

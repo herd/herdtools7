@@ -334,6 +334,10 @@ include Arch.MakeArch(struct
        conv_reg r1 >> fun r1 ->
        conv_reg r2 >! fun r2 ->
        I_ABS (v,r1,r2)
+    | I_REV (v,r1,r2) ->
+       conv_reg r1 >> fun r1 ->
+       conv_reg r2 >! fun r2 ->
+       I_REV (v,r1,r2)
     | I_LDAR(a,b,r1,r2) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >! fun r2 ->

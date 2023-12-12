@@ -100,6 +100,17 @@ type reg =
 
 type variant = V32 | V64 | V128
 
+type rev_variant = RV16 of variant | RV32 | RV64 of variant
+
+let memo_of_rev = function
+  | RV16 _ -> "REV16"
+  | RV32 -> "REV32"
+  | RV64 _ -> "REV"
+
+let variant_of_rev = function
+  | RV16 v|RV64 v -> v
+  | RV32 -> V64
+
 type 'k kr = K of 'k | RV of variant * reg
 let k0 = K 0
 
@@ -888,6 +899,12 @@ let tr_variant = function
   | V64 -> MachSize.Quad
   | V128 -> MachSize.S128
 
+let container_size = function
+  | RV16 _ -> MachSize.Short
+  | RV32 -> MachSize.Word
+  | RV64 v -> tr_variant v
+
+
 let tr_simd_variant = function
   | VSIMD8 -> MachSize.Byte
   | VSIMD16 -> MachSize.Short
@@ -1125,6 +1142,7 @@ type 'k kinstruction =
   | I_ADR of reg * lbl
   | I_RBIT of variant * reg * reg
   | I_ABS of variant * reg * reg
+  | I_REV of rev_variant * reg * reg
 (* Barrier *)
   | I_FENCE of barrier
 (* Conditional select *)
@@ -1648,6 +1666,10 @@ let pp_k_nz k = if m.zerop k then "" else "," ^ m.pp_k k in
       sprintf "RBIT %s,%s" (pp_vreg v rd) (pp_vreg v rs)
   | I_ABS (v,rd,rs) ->
       sprintf "ABS %s,%s" (pp_vreg v rd) (pp_vreg v rs)
+  | I_REV (rv,rd,rs) ->
+     let memo = memo_of_rev rv
+     and v = variant_of_rev rv in
+     sprintf "%s %s,%s" memo (pp_vreg v rd) (pp_vreg v rs)
 (* Barrier *)
   | I_FENCE b ->
       pp_barrier b
@@ -1763,7 +1785,8 @@ let fold_regs (f_regs,f_sregs) =
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2) | I_LDRS (_,_,r1,r2)
   | I_SBFM (_,r1,r2,_,_) | I_UBFM (_,r1,r2,_,_)
   | I_STOP (_,_,_,r1,r2) | I_STOPBH (_,_,_,r1,r2)
-  | I_RBIT (_,r1,r2) | I_ABS (_,r1,r2) | I_LDUR (_, r1, r2, _)
+  | I_RBIT (_,r1,r2) | I_ABS (_,r1,r2)
+  | I_REV (_,r1,r2) | I_LDUR (_, r1, r2, _)
   | I_CHKEQ (r1,r2) | I_CLRTAG (r1,r2) | I_GC (_,r1,r2) | I_LDCT (r1,r2)
   | I_STCT (r1,r2)
   | I_LDR_P_SIMD (_,r1,r2,_) | I_STR_P_SIMD (_,r1,r2,_)
@@ -2066,7 +2089,9 @@ let map_regs f_reg f_symb =
       I_RBIT (v,map_reg r1,map_reg r2)
   | I_ABS (v,r1,r2) ->
       I_ABS (v,map_reg r1,map_reg r2)
-(* Conditinal select *)
+  | I_REV (rv,r1,r2) ->
+     I_REV (rv,r1,r2)
+  (* Conditinal select *)
   | I_CSEL (v,r1,r2,r3,c,op) ->
       I_CSEL (v,map_reg r1,map_reg r2,map_reg r3,c,op)
 (* Cache maintenance *)
@@ -2161,6 +2186,7 @@ let get_next =
   | I_ADR _
   | I_RBIT _
   | I_ABS _
+  | I_REV _
   | I_IC _
   | I_DC _
   | I_TLBI _
@@ -2398,6 +2424,7 @@ module PseudoI = struct
         | I_ADR _
         | I_RBIT _
         | I_ABS _
+        | I_REV _
         | I_IC _
         | I_DC _
         | I_TLBI _
@@ -2551,6 +2578,7 @@ module PseudoI = struct
         | I_ADR _
         | I_RBIT _
         | I_ABS _
+        | I_REV _
 (*        | I_TLBI (_,ZR) *)
         | I_MRS _ | I_MSR _
         | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _

@@ -19,15 +19,19 @@
 module type I = sig
     type t
     val zero : t
+    val one : t
+    val pp : bool -> t -> string
     val shift_left : t  -> int -> t
     val shift_right_logical : t -> int -> t
     val bit_at : int -> t -> t
     val logor : t -> t -> t
-  end
+    val mask : MachSize.sz -> t -> t
+end
 
 module Make :
   functor (I:I)
   ->
   sig
     val rbit : MachSize.sz -> I.t -> I.t
+    val revbytes : MachSize.sz -> MachSize.sz -> I.t -> I.t
   end
