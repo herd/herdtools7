@@ -5,7 +5,9 @@ end
 
 func main () => integer
 begin
+
   let x = Return42();
-  assert(x==42);
+  assert x == 42;
+
   return 0;
 end 

@@ -1,7 +1,24 @@
+(******************************************************************************)
+(*                                ASLRef                                      *)
+(******************************************************************************)
 (*
  * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
  * SPDX-License-Identifier: BSD-3-Clause
  *)
+(******************************************************************************)
+(* Disclaimer:                                                                *)
+(* This material covers both ASLv0 (viz, the existing ASL pseudocode language *)
+(* which appears in the Arm Architecture Reference Manual) and ASLv1, a new,  *)
+(* experimental, and as yet unreleased version of ASL.                        *)
+(* This material is work in progress, more precisely at pre-Alpha quality as  *)
+(* per Arm’s quality standards.                                               *)
+(* In particular, this means that it would be premature to base any           *)
+(* production tool development on this material.                              *)
+(* However, any feedback, question, query and feature request would be most   *)
+(* welcome; those can be sent to Arm’s Architecture Formal Team Lead          *)
+(* Jade Alglave <jade.alglave@arm.com>, or by raising issues or PRs to the    *)
+(* herdtools7 github repository.                                              *)
+(******************************************************************************)
 
 %{
 
@@ -477,7 +494,7 @@ let stmts ==
 (* Always terminated by EOL *)
 let simple_stmts ==
   | annotated (
-    ~=simple_stmt_list; ~=simple_if_stmt; < AST.S_Then >
+    ~=simple_stmt_list; ~=simple_if_stmt; < AST.S_Seq >
   )
   | terminated(simple_stmt_list, EOL)
 
@@ -521,7 +538,7 @@ let assignment_stmt ==
 
 let none == { None }
 let le_var == ~=qualident; < AST.LE_Var >
-let lexpr_ignore == { AST.LE_Ignore }
+let lexpr_ignore == { AST.LE_Discard }
 let unimplemented_lexpr(x) == x; lexpr_ignore
 
 let typed_le_ldi ==
@@ -533,7 +550,7 @@ let lexpr :=
     | le_var
     | ~=lexpr; ~=bracketed(clist(slice));      < AST.LE_Slice       >
     | ~=lexpr; LT; ~=clist(slice); GT;         < AST.LE_Slice       >
-    | ~=pared(nclist(lexpr));                  < AST.LE_TupleUnpack >
+    | ~=pared(nclist(lexpr));                  < AST.LE_Destructuring >
     | ~=lexpr; DOT; ~=ident;                   < AST.LE_SetField    >
     | ~=lexpr; DOT; ~=bracketed(clist(ident)); < AST.LE_SetFields   >
 
@@ -542,7 +559,7 @@ let lexpr :=
     )
   )
 let ldi :=
-   | MINUS; { AST.LDI_Ignore None }
+   | MINUS; { AST.LDI_Discard None }
    | x=ident_plus_record; { AST.LDI_Var (x,None) }
    | ldi_tuple
 

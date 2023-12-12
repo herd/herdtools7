@@ -1,7 +1,24 @@
+(******************************************************************************)
+(*                                ASLRef                                      *)
+(******************************************************************************)
 (*
  * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
  * SPDX-License-Identifier: BSD-3-Clause
  *)
+(******************************************************************************)
+(* Disclaimer:                                                                *)
+(* This material covers both ASLv0 (viz, the existing ASL pseudocode language *)
+(* which appears in the Arm Architecture Reference Manual) and ASLv1, a new,  *)
+(* experimental, and as yet unreleased version of ASL.                        *)
+(* This material is work in progress, more precisely at pre-Alpha quality as  *)
+(* per Arm’s quality standards.                                               *)
+(* In particular, this means that it would be premature to base any           *)
+(* production tool development on this material.                              *)
+(* However, any feedback, question, query and feature request would be most   *)
+(* welcome; those can be sent to Arm’s Architecture Formal Team Lead          *)
+(* Jade Alglave <jade.alglave@arm.com>, or by raising issues or PRs to the    *)
+(* herdtools7 github repository.                                              *)
+(******************************************************************************)
 
 open AST
 open Printf
@@ -81,7 +98,7 @@ let rec pp_expr =
   let pp_desc f = function
     | E_Literal v -> bprintf f "E_Literal (%a)" pp_literal v
     | E_Var x -> bprintf f "E_Var %S" x
-    | E_Typed (e, t) -> bprintf f "E_Typed (%a, %a)" pp_expr e pp_ty t
+    | E_CTC (e, t) -> bprintf f "E_CTC (%a, %a)" pp_expr e pp_ty t
     | E_Binop (op, e1, e2) ->
         bprintf f "E_Binop (%s, %a, %a)" (pp_binop op) pp_expr e1 pp_expr e2
     | E_Unop (op, e) -> bprintf f "E_Unop (%s, %a)" (pp_unop op) pp_expr e
@@ -203,9 +220,9 @@ let rec pp_lexpr =
     | LE_SetField (le, x) -> bprintf f "LE_SetField (%a, %S)" pp_lexpr le x
     | LE_SetFields (le, x) ->
         bprintf f "LE_SetFields (%a, %a)" pp_lexpr le (pp_list pp_string) x
-    | LE_Ignore -> addb f "LE_Ignore"
-    | LE_TupleUnpack les ->
-        addb f "LE_TupleUnpack ";
+    | LE_Discard -> addb f "LE_Discard"
+    | LE_Destructuring les ->
+        addb f "LE_Destructuring ";
         pp_list pp_lexpr f les
     | LE_Concat (les, _) ->
         bprintf f "LE_Concat (%a, None)" (pp_list pp_lexpr) les
@@ -220,7 +237,7 @@ let pp_local_decl_keyboard f k =
     | LDK_Let -> "LDK_Let")
 
 let rec pp_local_decl_item f = function
-  | LDI_Ignore ty_opt -> bprintf f "LDI_Ignore (%a)" (pp_option pp_ty) ty_opt
+  | LDI_Discard ty_opt -> bprintf f "LDI_Discard (%a)" (pp_option pp_ty) ty_opt
   | LDI_Var (s, ty_opt) ->
       bprintf f "LDI_Var (%S, %a)" s (pp_option pp_ty) ty_opt
   | LDI_Tuple (ldis, ty_opt) ->
@@ -231,7 +248,7 @@ let rec pp_local_decl_item f = function
 let rec pp_stmt =
   let pp_desc f = function
     | S_Pass -> addb f "SPass"
-    | S_Then (s1, s2) -> bprintf f "S_Then (%a, %a)" pp_stmt s1 pp_stmt s2
+    | S_Seq (s1, s2) -> bprintf f "S_Seq (%a, %a)" pp_stmt s1 pp_stmt s2
     | S_Assign (le, e, _v) ->
         bprintf f "S_Assign (%a, %a)" pp_lexpr le pp_expr e
     | S_Call (name, args, named_args) ->

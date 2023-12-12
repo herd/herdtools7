@@ -1,7 +1,24 @@
+(******************************************************************************)
+(*                                ASLRef                                      *)
+(******************************************************************************)
 (*
  * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
  * SPDX-License-Identifier: BSD-3-Clause
  *)
+(******************************************************************************)
+(* Disclaimer:                                                                *)
+(* This material covers both ASLv0 (viz, the existing ASL pseudocode language *)
+(* which appears in the Arm Architecture Reference Manual) and ASLv1, a new,  *)
+(* experimental, and as yet unreleased version of ASL.                        *)
+(* This material is work in progress, more precisely at pre-Alpha quality as  *)
+(* per Arm’s quality standards.                                               *)
+(* In particular, this means that it would be premature to base any           *)
+(* production tool development on this material.                              *)
+(* However, any feedback, question, query and feature request would be most   *)
+(* welcome; those can be sent to Arm’s Architecture Formal Team Lead          *)
+(* Jade Alglave <jade.alglave@arm.com>, or by raising issues or PRs to the    *)
+(* herdtools7 github repository.                                              *)
+(******************************************************************************)
 
 open AST
 
@@ -101,7 +118,7 @@ let map2_desc f thing1 thing2 =
   }
 
 let s_pass = add_dummy_pos S_Pass
-let s_then = map2_desc (fun s1 s2 -> S_Then (s1, s2))
+let s_then = map2_desc (fun s1 s2 -> S_Seq (s1, s2))
 let boolean = T_Bool |> add_dummy_pos
 let integer = T_Int None |> add_dummy_pos
 let string = T_String |> add_dummy_pos
@@ -146,7 +163,7 @@ let fold_named_list folder acc list =
 let rec use_e acc e =
   match e.desc with
   | E_Literal _ -> acc
-  | E_Typed (e, ty) -> use_e (use_ty acc ty) e
+  | E_CTC (e, ty) -> use_e (use_ty acc ty) e
   | E_Var x -> ISet.add x acc
   | E_GetArray (e1, e2) | E_Binop (_, e1, e2) -> use_e (use_e acc e2) e1
   | E_Unop (_op, e) -> use_e acc e
@@ -210,7 +227,7 @@ and use_constraint acc = function
 let rec use_s acc s =
   match s.desc with
   | S_Pass | S_Return None -> acc
-  | S_Then (s1, s2) -> use_s (use_s acc s1) s2
+  | S_Seq (s1, s2) -> use_s (use_s acc s1) s2
   | S_Assert e | S_Return (Some e) -> use_e acc e
   | S_Assign (le, e, _) -> use_le (use_e acc e) le
   | S_Call (x, args, named_args) ->
@@ -311,9 +328,9 @@ let rec expr_equal eq e1 e2 =
   | E_Literal _, _ | _, E_Literal _ -> false
   | E_Tuple li1, E_Tuple li2 -> list_equal (expr_equal eq) li1 li2
   | E_Tuple _, _ | _, E_Tuple _ -> false
-  | E_Typed (e1, t1), E_Typed (e2, t2) ->
+  | E_CTC (e1, t1), E_CTC (e2, t2) ->
       expr_equal eq e1 e2 && type_equal eq t1 t2
-  | E_Typed _, _ | _, E_Typed _ -> false
+  | E_CTC _, _ | _, E_CTC _ -> false
   | E_Unop (o1, e1), E_Unop (o2, e2) -> o1 = o2 && expr_equal eq e1 e2
   | E_Unop _, _ | _, E_Unop _ -> false
   | E_Unknown _, _ | _, E_Unknown _ -> false
@@ -409,9 +426,9 @@ end
 let lid_of_lexpr =
   let rec tr le =
     match le.desc with
-    | LE_Ignore -> LDI_Ignore None
+    | LE_Discard -> LDI_Discard None
     | LE_Var x -> LDI_Var (x, None)
-    | LE_TupleUnpack les -> LDI_Tuple (List.map tr les, None)
+    | LE_Destructuring les -> LDI_Tuple (List.map tr les, None)
     | _ -> raise Exit
   in
   fun le -> try Some (tr le) with Exit -> None
@@ -424,8 +441,8 @@ let expr_of_lexpr : lexpr -> expr =
     | LE_SetArray (le, e) -> E_GetArray (map_desc aux le, e)
     | LE_SetField (le, x) -> E_GetField (map_desc aux le, x)
     | LE_SetFields (le, x) -> E_GetFields (map_desc aux le, x)
-    | LE_Ignore -> E_Var "-"
-    | LE_TupleUnpack les -> E_Tuple (List.map (map_desc aux) les)
+    | LE_Discard -> E_Var "-"
+    | LE_Destructuring les -> E_Tuple (List.map (map_desc aux) les)
     | LE_Concat (les, _) -> E_Concat (List.map (map_desc aux) les)
   in
   map_desc aux
@@ -469,7 +486,7 @@ let case_to_conds : stmt -> stmt =
         let le = LDI_Var (x, Some integer) in
         annotated (S_Decl (LDK_Let, le, Some e)) pos e.pos_end
       in
-      S_Then (assign, cases_to_cond x cases)
+      S_Seq (assign, cases_to_cond x cases)
   | _ -> raise (Invalid_argument "case_to_conds")
 
 let slice_as_single = function
@@ -532,7 +549,7 @@ let rec subst_expr substs e =
       E_Record (t, List.map (fun (x, e) -> (x, tr e)) fields)
   | E_Slice (e, slices) -> E_Slice (tr e, slices)
   | E_Tuple es -> E_Tuple (List.map tr es)
-  | E_Typed (e, t) -> E_Typed (tr e, t)
+  | E_CTC (e, t) -> E_CTC (tr e, t)
   | E_Unknown _ -> e.desc
   | E_Unop (op, e) -> E_Unop (op, tr e)
 
@@ -615,7 +632,7 @@ let rec is_simple_expr e =
   | E_Var _ | E_Literal _ | E_Unknown _ -> true
   | E_GetArray (e1, e2) | E_Binop (_, e1, e2) ->
       is_simple_expr e1 && is_simple_expr e2
-  | E_Typed (e, _)
+  | E_CTC (e, _)
   | E_GetFields (e, _)
   | E_GetField (e, _)
   | E_Unop (_, e)
