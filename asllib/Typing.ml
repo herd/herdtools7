@@ -1,7 +1,24 @@
+(******************************************************************************)
+(*                                ASLRef                                      *)
+(******************************************************************************)
 (*
  * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
  * SPDX-License-Identifier: BSD-3-Clause
  *)
+(******************************************************************************)
+(* Disclaimer:                                                                *)
+(* This material covers both ASLv0 (viz, the existing ASL pseudocode language *)
+(* which appears in the Arm Architecture Reference Manual) and ASLv1, a new,  *)
+(* experimental, and as yet unreleased version of ASL.                        *)
+(* This material is work in progress, more precisely at pre-Alpha quality as  *)
+(* per Arm’s quality standards.                                               *)
+(* In particular, this means that it would be premature to base any           *)
+(* production tool development on this material.                              *)
+(* However, any feedback, question, query and feature request would be most   *)
+(* welcome; those can be sent to Arm’s Architecture Formal Team Lead          *)
+(* Jade Alglave <jade.alglave@arm.com>, or by raising issues or PRs to the    *)
+(* herdtools7 github repository.                                              *)
+(******************************************************************************)
 
 open AST
 open ASTUtils
@@ -523,13 +540,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             let+ () = check_type_satisfies' env t1 t_bool in
             let+ () = check_type_satisfies' env t2 t_bool in
             T_Bool |> with_loc
-        | AND | OR | EOR ->
+        | AND | OR | EOR (* when has_bitvector_structure env t1 ? *) ->
             (* Rule KXMR: If the operands of a primitive operation are
                bitvectors, the widths of the operands must be equivalent
                statically evaluable expressions. *)
             let+ () = check_bits_equal_width' env t1 t2 in
-            let n = get_bitvector_width' env t1 in
-            T_Bits (n, []) |> with_loc
+            let w = get_bitvector_width' env t1 in
+            T_Bits (w, []) |> with_loc
         | (PLUS | MINUS) when has_bitvector_structure env t1 ->
             (* Rule KXMR: If the operands of a primitive operation are
                bitvectors, the widths of the operands must be equivalent
@@ -539,8 +556,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 (check_bits_equal_width' env t1 t2)
                 (check_type_satisfies' env t2 t_int)
             in
-            let n = get_bitvector_width' env t1 in
-            T_Bits (n, []) |> with_loc
+            let w = get_bitvector_width' env t1 in
+            T_Bits (w, []) |> with_loc
         | EQ_OP | NEQ ->
             (* Wrong! *)
             let+ () =
@@ -582,7 +599,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             in
             T_Bool |> with_loc
         | MUL | DIV | DIVRM | MOD | SHL | SHR | POW | PLUS | MINUS -> (
-            (* TODO: ensure that they mean "has the structure of" instead of
+            (* TODO: ensure that we mean "has the structure of" instead of
                "is" *)
             let struct1 = Types.get_structure env t1
             and struct2 = Types.get_structure env t2 in
@@ -633,20 +650,20 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             let+ () = check_type_satisfies' env t1 real in
             T_Real |> with_loc)
       (fun () -> fatal_from loc (Error.BadTypesForBinop (op, t1, t2)))
-      ()
+      () |: TypingRule.CheckBinop
 
-  let check_unop loc env op t =
+  let check_unop loc env op t1 =
     match op with
     | BNOT ->
-        let+ () = check_type_satisfies loc env t t_bool in
+        let+ () = check_type_satisfies loc env t1 t_bool in
         T_Bool |> add_pos_from loc
     | NEG -> (
         let+ () =
           either
-            (check_type_satisfies loc env t t_int)
-            (check_type_satisfies loc env t t_real)
+            (check_type_satisfies loc env t1 t_int)
+            (check_type_satisfies loc env t1 t_real)
         in
-        match (Types.get_structure env t).desc with
+        match (Types.get_structure env t1).desc with
         | T_Int None -> T_Int None |> add_pos_from loc
         | T_Int (Some cs) ->
             let neg e = E_Unop (NEG, e) |> add_pos_from e in
@@ -656,10 +673,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                   Constraint_Range (neg bot, neg top)
             in
             T_Int (Some (List.map constraint_minus cs)) |> add_pos_from loc
-        | _ -> (* fail case *) t)
+        | _ -> (* fail case *) t1)
     | NOT ->
-        let+ () = check_structure_bits loc env t in
-        t
+        let+ () = check_structure_bits loc env t1 in
+        t1 |: TypingRule.CheckUnop
 
   let can_assign_to env s t =
     (* Rules:
