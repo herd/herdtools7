@@ -1,0 +1,10 @@
+Test L095 Required
+States 1
+0:X2=1703354691; 0:X4=18302834341392621891;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X2=1703354691 /\ 0:X4=-143909732316929725)
+Observation L095 Always 1 0
+Hash=23b492a35abf95f36f070f9d77e32f08
+

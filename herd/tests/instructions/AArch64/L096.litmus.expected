@@ -1,0 +1,10 @@
+Test L096 Required
+States 1
+0:X4=13464916262442460551;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X4=-4981827811267091065)
+Observation L096 Always 1 0
+Hash=fe0a2adb127e165e26778c56716e669d
+
