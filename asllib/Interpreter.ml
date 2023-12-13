@@ -326,49 +326,60 @@ module Make (B : Backend.S) (C : Config) = struct
   let rec eval_expr (env : env) (e : expr) : expr_eval_type =
     if false then Format.eprintf "@[<3>Eval@ @[%a@]@]@." PP.pp_expr e;
     match e.desc with
-    | E_Literal v -> return_normal (B.v_of_literal v, env) |: SemanticsRule.Lit
+    | E_Literal v -> return_normal (B.v_of_literal v, env) 
+      |: SemanticsRule.Lit
 
     | E_Typed (e, t) ->
         let** v, env = eval_expr env e in
         let* b = is_val_of_type e env v t in
         (if b then return_normal (v, env)
          else fatal_from e (Error.MismatchType (B.debug_value v, [ t.desc ])))
-        |: SemanticsRule.TypedExpr
+      |: SemanticsRule.TypedExpr
+
     | E_Var x -> (
         match IEnv.find x env with
 
         | Local v ->
             let* () = B.on_read_identifier x (IEnv.get_scope env) v in
-            return_normal (v, env) |: SemanticsRule.ELocalVar
+            return_normal (v, env) 
+          |: SemanticsRule.ELocalVar
 
         | Global v ->
             let* () = B.on_read_identifier x Scope_Global v in
-            return_normal (v, env) |: SemanticsRule.EGlobalVar
+            return_normal (v, env) 
+          |: SemanticsRule.EGlobalVar
 
         | NotFound ->
-          fatal_from e @@ Error.UndefinedIdentifier x |: SemanticsRule.EUndefIdent)
+          fatal_from e @@ Error.UndefinedIdentifier x 
+          |: SemanticsRule.EUndefIdent
+      )
 
     | E_Binop (BAND, e1, e2) ->
         (* if e1 then e2 else false *)
-        E_Cond (e1, e2, false') |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopAnd
+        E_Cond (e1, e2, false') |> add_pos_from e |> eval_expr env 
+      |: SemanticsRule.BinopAnd
 
     | E_Binop (BOR, e1, e2) ->
        (* if e1 then true else e2 *)
-        E_Cond (e1, true', e2) |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopOr
+        E_Cond (e1, true', e2) |> add_pos_from e |> eval_expr env 
+      |: SemanticsRule.BinopOr
 
     | E_Binop (IMPL, e1, e2) ->
         (* if e1 then e2 else true *)
-        E_Cond (e1, e2, true') |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopImpl
+        E_Cond (e1, e2, true') |> add_pos_from e |> eval_expr env 
+      |: SemanticsRule.BinopImpl
 
     | E_Binop (op, e1, e2) ->
         let** (v1, v2), env = fold_par eval_expr env e1 e2 in
         let* v = B.binop op v1 v2 in
-        return_normal (v, env) |: SemanticsRule.Binop
+        return_normal (v, env) 
+      |: SemanticsRule.Binop
 
     | E_Unop (op, e) ->
         let** v, env = eval_expr env e in
-        let* v = B.unop op v |: SemanticsRule.Unop in
+        let* v = B.unop op v in
         return_normal (v, env)
+      |: SemanticsRule.Unop
 
     | E_Cond (e_cond, e1, e2) ->
         let*^ m_cond, env = eval_expr env e_cond in
@@ -380,18 +391,20 @@ module Make (B : Backend.S) (C : Config) = struct
               (fun () -> eval_expr_sef env e1)
               (fun () -> eval_expr_sef env e2)
           in
-          return_normal (v, env) |: SemanticsRule.ECondSimple
+          return_normal (v, env) 
+       |: SemanticsRule.ECondSimple
 
         else
           B.bind_ctrl (bind_choice_m m_cond e1 e2) @@ eval_expr env
-          |: SemanticsRule.ECond
+       |: SemanticsRule.ECond
 
     | E_Slice (e_bv, slices) ->
         let** (v_bv, positions), env =
           fold_par2 eval_expr eval_slices env e_bv slices
         in
         let* v = B.read_from_bitvector positions v_bv in
-        return_normal (v, env) |: SemanticsRule.ESlice
+        return_normal (v, env) 
+      |: SemanticsRule.ESlice
 
     | E_Call (name, actual_args, params) ->
         let**| ms, env = eval_call (to_pos e) name env actual_args params in
@@ -402,7 +415,8 @@ module Make (B : Backend.S) (C : Config) = struct
               let* vs = sync_list ms in
               B.create_vector vs
         in
-        return_normal (v, env) |: SemanticsRule.ECall
+        return_normal (v, env) 
+      |: SemanticsRule.ECall
 
     | E_GetArray (e_array, e_index) -> (
         let** (v_array, v_index), env =
@@ -416,13 +430,16 @@ module Make (B : Backend.S) (C : Config) = struct
 
         | Some i ->
             let* v = B.get_index i v_array in
-            return_normal (v, env) |: SemanticsRule.EGetArray)
+            return_normal (v, env) 
+      |: SemanticsRule.EGetArray
+      )
 
     | E_Record (_, e_fields) ->
         let names, fields = List.split e_fields in
         let** v_fields, env = eval_expr_list env fields in
         let* v = B.create_record (List.combine names v_fields) in
-        return_normal (v, env) |: SemanticsRule.ERecord
+        return_normal (v, env) 
+      |: SemanticsRule.ERecord
 
     | E_GetField (e_record, field_name) ->
         let** v_record, env = eval_expr env e_record in
@@ -736,7 +753,7 @@ module Make (B : Backend.S) (C : Config) = struct
   and eval_stmt (env : env) s : stmt_eval_type =
     (if false then
        match s.desc with
-       | S_Then _ -> ()
+       | S_Seq _ -> ()
        | _ -> Format.eprintf "@[<3>Eval@ @[%a@]@]@." PP.pp_stmt s);
     match s.desc with
     | S_Pass -> return_continue env |: SemanticsRule.SPass
@@ -776,9 +793,9 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         return_return env [ v ] |: SemanticsRule.SReturnOne
     | S_Return None -> return_return env [] |: SemanticsRule.SReturnNone
-    | S_Then (s1, s2) ->
+    | S_Seq (s1, s2) ->
         let*> env = eval_stmt env s1 in
-        eval_stmt env s2 |: SemanticsRule.SThen
+        eval_stmt env s2 |: SemanticsRule.SSeq
     | S_Call (name, args, named_args) ->
         let**| returned, env = eval_call (to_pos s) name env args named_args in
         let () = assert (returned = []) in

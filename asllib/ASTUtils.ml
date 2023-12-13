@@ -118,7 +118,7 @@ let map2_desc f thing1 thing2 =
   }
 
 let s_pass = add_dummy_pos S_Pass
-let s_then = map2_desc (fun s1 s2 -> S_Then (s1, s2))
+let s_then = map2_desc (fun s1 s2 -> S_Seq (s1, s2))
 let boolean = T_Bool |> add_dummy_pos
 let integer = T_Int None |> add_dummy_pos
 let string = T_String |> add_dummy_pos
@@ -227,7 +227,7 @@ and use_constraint acc = function
 let rec use_s acc s =
   match s.desc with
   | S_Pass | S_Return None -> acc
-  | S_Then (s1, s2) -> use_s (use_s acc s1) s2
+  | S_Seq (s1, s2) -> use_s (use_s acc s1) s2
   | S_Assert e | S_Return (Some e) -> use_e acc e
   | S_Assign (le, e, _) -> use_le (use_e acc e) le
   | S_Call (x, args, named_args) ->
@@ -486,7 +486,7 @@ let case_to_conds : stmt -> stmt =
         let le = LDI_Var (x, Some integer) in
         annotated (S_Decl (LDK_Let, le, Some e)) pos e.pos_end
       in
-      S_Then (assign, cases_to_cond x cases)
+      S_Seq (assign, cases_to_cond x cases)
   | _ -> raise (Invalid_argument "case_to_conds")
 
 let slice_as_single = function

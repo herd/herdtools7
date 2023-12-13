@@ -494,7 +494,7 @@ let stmts ==
 (* Always terminated by EOL *)
 let simple_stmts ==
   | annotated (
-    ~=simple_stmt_list; ~=simple_if_stmt; < AST.S_Then >
+    ~=simple_stmt_list; ~=simple_if_stmt; < AST.S_Seq >
   )
   | terminated(simple_stmt_list, EOL)
 

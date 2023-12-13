@@ -1493,16 +1493,16 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let () =
       if false then
         match s.desc with
-        | S_Then _ -> ()
+        | S_Seq _ -> ()
         | _ -> Format.eprintf "@[<3>Annotating@ @[%a@]@]@." PP.pp_stmt s
     in
     let here x = add_pos_from s x in
     match s.desc with
     | S_Pass -> (s, env) |: TypingRule.SPass
-    | S_Then (s1, s2) ->
+    | S_Seq (s1, s2) ->
         let new_s1, env1 = try_annotate_stmt env return_type s1 in
         let new_s2, env2 = try_annotate_stmt env1 return_type s2 in
-        (S_Then (new_s1, new_s2) |> here, env2) |: TypingRule.SThen
+        (S_Seq (new_s1, new_s2) |> here, env2) |: TypingRule.SThen
     | S_Assign (le, e, ver) ->
         (let () =
            if false then

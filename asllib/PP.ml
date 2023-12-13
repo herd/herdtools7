@@ -255,7 +255,7 @@ let rec pp_local_decl_item f =
 let rec pp_stmt f s =
   match s.desc with
   | S_Pass -> pp_print_string f "pass;"
-  | S_Then (s1, s2) -> fprintf f "%a@ %a" pp_stmt s1 pp_stmt s2
+  | S_Seq (s1, s2) -> fprintf f "%a@ %a" pp_stmt s1 pp_stmt s2
   | S_Assign (le, e, _) -> fprintf f "@[<h 2>%a =@ %a;@]" pp_lexpr le pp_expr e
   | S_Call (name, args, _) ->
       fprintf f "@[<hov 2>%s(%a);@]" name pp_expr_list args

@@ -248,7 +248,7 @@ let rec pp_local_decl_item f = function
 let rec pp_stmt =
   let pp_desc f = function
     | S_Pass -> addb f "SPass"
-    | S_Then (s1, s2) -> bprintf f "S_Then (%a, %a)" pp_stmt s1 pp_stmt s2
+    | S_Seq (s1, s2) -> bprintf f "S_Seq (%a, %a)" pp_stmt s1 pp_stmt s2
     | S_Assign (le, e, _v) ->
         bprintf f "S_Assign (%a, %a)" pp_lexpr le pp_expr e
     | S_Call (name, args, named_args) ->

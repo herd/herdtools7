@@ -45,12 +45,35 @@ ASL Semantics Reference:
   File SemanticsRule.EUnknownInteger3.asl, line 4, characters 9 to 13:
   ASL Execution error: Assertion failed: (x == 3)
   [1]
-  $ aslref SemanticsRule.EUnknownIntegerRange{3-42}3.asl
-  $ aslref SemanticsRule.EUnknownIntegerRange{3-42}42.asl
-  File SemanticsRule.EUnknownIntegerRange{3-42}42.asl, line 4,
+  $ aslref SemanticsRule.EUnknownIntegerRange3-42-3.asl
+  $ aslref SemanticsRule.EUnknownIntegerRange3-42-42.asl
+  File SemanticsRule.EUnknownIntegerRange3-42-42.asl, line 4,
     characters 9 to 14:
   ASL Execution error: Assertion failed: (x == 42)
   [1]
   $ aslref SemanticsRule.EPatternFALSE.asl
   $ aslref SemanticsRule.EPatternTRUE.asl
+  $ aslref SemanticsRule.LELocalVar.asl
+  $ aslref SemanticsRule.LEGlobalVar.asl
+  $ aslref SemanticsRule.LESetArray.asl
+  $ aslref SemanticsRule.SReturnNoneReturn.asl
+  $ aslref SemanticsRule.SReturnNonePrint.asl
+  $ aslref SemanticsRule.SCond.asl
+  $ aslref SemanticsRule.SCase.asl
+  $ aslref SemanticsRule.SWhile.asl
+  $ aslref SemanticsRule.SRepeat.asl
+  $ aslref SemanticsRule.SFor.asl
+  $ aslref SemanticsRule.SThrowNone.asl
+  $ aslref SemanticsRule.SThrowSomeTyped.asl
+  $ aslref SemanticsRule.SThrowSTry.asl
+  $ aslref SemanticsRule.Loop.asl
+  $ aslref SemanticsRule.For.asl
+  $ aslref SemanticsRule.Catch.asl
+  $ aslref SemanticsRule.CatchNamed.asl
+  $ aslref SemanticsRule.CatchOtherwise.asl
+  $ aslref SemanticsRule.CatchNone.asl
+  $ aslref SemanticsRule.FUndefIdent.asl
+  $ aslref SemanticsRule.FCall.asl
+
+
 
