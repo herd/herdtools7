@@ -80,7 +80,7 @@ module SemanticsRule = struct
     | SReturnOne
     | SReturnSome
     | SReturnNone
-    | SThen
+    | SSeq
     | SCall
     | SCond
     | SCase
@@ -165,7 +165,7 @@ module SemanticsRule = struct
     | SReturnOne -> "SReturnOne"
     | SReturnNone -> "SReturnNone"
     | SReturnSome -> "SReturnSome"
-    | SThen -> "SThen"
+    | SSeq -> "SThen"
     | SCall -> "SCall"
     | SCond -> "SCond"
     | SCase -> "SCase"
@@ -234,7 +234,7 @@ module SemanticsRule = struct
       SReturnOne;
       SReturnSome;
       SReturnNone;
-      SThen;
+      SSeq;
       SCall;
       SCond;
       SCase;
@@ -381,7 +381,7 @@ module TypingRule = struct
     | SReturnOne
     | SReturnSome
     | SReturnNone
-    | SThen
+    | SSeq
     | SCall
     | SCond
     | SCase
@@ -511,7 +511,7 @@ module TypingRule = struct
     | SReturnOne -> "SReturnOne"
     | SReturnNone -> "SReturnNone"
     | SReturnSome -> "SReturnSome"
-    | SThen -> "SThen"
+    | SSeq -> "SThen"
     | SCall -> "SCall"
     | SCond -> "SCond"
     | SCase -> "SCase"
@@ -622,7 +622,7 @@ module TypingRule = struct
       SReturnOne;
       SReturnSome;
       SReturnNone;
-      SThen;
+      SSeq;
       SCall;
       SCond;
       SCase;

@@ -1502,7 +1502,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | S_Seq (s1, s2) ->
         let new_s1, env1 = try_annotate_stmt env return_type s1 in
         let new_s2, env2 = try_annotate_stmt env1 return_type s2 in
-        (S_Seq (new_s1, new_s2) |> here, env2) |: TypingRule.SThen
+        (S_Seq (new_s1, new_s2) |> here, env2) |: TypingRule.SSeq
     | S_Assign (le, e, ver) ->
         (let () =
            if false then
