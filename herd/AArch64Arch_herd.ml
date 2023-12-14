@@ -90,7 +90,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_EOR_SIMD _| I_ERET| I_FENCE _| I_GC _| I_IC _| I_LD1 _| I_LD1M _| I_LD1R _
     | I_LD2 _| I_LD2M _| I_LD2R _| I_LD3 _| I_LD3M _| I_LD3R _| I_LD4 _| I_LD4M _
     | I_LD4R _| I_LDAR _| I_LDARBH _| I_LDCT _| I_LDG _| I_LDOP _| I_LDOPBH _
-    | I_LDP _| I_LDP_P_SIMD _| I_LDP_SIMD _| I_LDPSW _| I_LDR _| I_LDR_P_SIMD _
+    | I_LDP _| I_LDP_P_SIMD _| I_LDP_SIMD _| I_LDPSW _| I_LDR _
+    | I_LDRSW _ | I_LDR_P_SIMD _
     | I_LDR_SIMD _| I_LDRBH _| I_LDRS _| I_LDUR _| I_LDUR_SIMD _| I_LDXP _| I_MOV _
     | I_MOV_FG _| I_MOV_S _| I_MOV_TG _| I_MOV_V _| I_MOV_VE _| I_MOVI_S _
     | I_MOVI_V _| I_MOVK _| I_MOVZ _| I_MOVN _| I_MRS _| I_MSR _| I_OP3 _| I_RBIT _
@@ -217,7 +218,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | _ -> assert false (* Unsupported arrangement specifier *)
 
     let mem_access_size = function
-      | I_LDPSW _ -> Some (tr_variant V32)
+      | I_LDPSW _ | I_LDRSW _ -> Some MachSize.Word
       | I_LDR (v,_,_,_) | I_LDP (_,v,_,_,_,_,_) | I_LDXP (v,_,_,_,_)
       | I_LDUR (v,_,_,_)
       | I_STR (v,_,_,_) | I_STLR (v,_,_) | I_STXR (v,_,_,_,_)
@@ -295,9 +296,12 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_BL _ | I_BLR _ | I_RET _ | I_ERET | I_UDF _
         -> [] (* For -variant self only ? *)
       | I_LDR (_,r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
+      | I_LDRSW (r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
       | I_LDRBH (_,r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
         -> [r1;r2;]
-      | I_LDR (_,r,_,_)|I_LDRBH (_,r,_,_)
+      | I_LDR (_,r,_,_)
+      | I_LDRSW (r,_,_)
+      | I_LDRBH (_,r,_,_)
       | I_LDRS (_,_,r,_)
       | I_LDUR (_,r,_,_)
       | I_LDAR (_,_,r,_) |I_LDARBH (_,_,r,_)
@@ -353,7 +357,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_NOP|I_B _|I_BR _|I_BC _|I_CBZ _|I_CBNZ _
       | I_TBNZ _|I_TBZ _|I_BL _|I_BLR _|I_RET _|I_ERET
       | I_UBFM _ | I_SBFM _
-      | I_LDR _|I_LDUR _|I_LD1 _
+      | I_LDR _|I_LDRSW _|I_LDUR _|I_LD1 _
       | I_LD1M _|I_LD1R _|I_LD2 _|I_LD2M _
       | I_LD2R _|I_LD3 _|I_LD3M _|I_LD3R _
       | I_LD4 _|I_LD4M _|I_LD4R _|I_ST1 _

@@ -130,6 +130,14 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | ASR _ -> "ShiftType_ASR"
       | ROR _ -> "ShiftType_ROR"
 
+    let memext_decode_ext =
+      let open AArch64Base.MemExt in
+      function
+      | UXTW -> "ExtendType_UXTW"
+      | SXTW -> "ExtendType_SXTW"
+      | SXTX -> "ExtendType_SXTX"
+      | LSL  -> "ExtendType_UXTX"
+
     let opext_shift_amount =
       let open AArch64Base.OpExt in
       function |LSL k|LSR k|ASR k| ROR k -> k
@@ -457,13 +465,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
            | I_STR _ -> "STR_32_ldst_regoff.opn"
            | I_LDR _ -> "LDR_32_ldst_regoff.opn"
            | _ -> assert false
-          and extend_type =
-            let open MemExt in
-            match e with
-            | UXTW -> "ExtendType_UXTW"
-            | SXTW -> "ExtendType_SXTW"
-            | SXTX -> "ExtendType_SXTX"
-            | LSL  -> "ExtendType_UXTX"  in
+          and extend_type = memext_decode_ext e in
           Some
             ( "memory/single/general/register/" ^ fname,
               stmt
@@ -475,6 +477,19 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "shift" ^= liti s;
                   "datasize" ^= variant v;
                   "regsize" ^= variant v;
+                ] )
+      | I_LDRSW (rt,rn,MemExt.Reg (_vm,rm,e,s))
+        ->
+          let extend_type = memext_decode_ext e in
+          Some
+            ("memory/single/general/register/LDRSW_64_ldst_regoff.opn",
+              stmt
+                [
+                  "t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "m" ^= reg rm;
+                  "extend_type" ^= var extend_type;
+                  "shift" ^= liti s;
                 ] )
       | I_STR (v, rt, rn, MemExt.Imm (k,idx))
       | I_LDR (v, rt, rn, MemExt.Imm (k,idx))
@@ -506,6 +521,25 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "regsize" ^= variant v;
                   "rt_unknown" ^= litb false;
                   "wb_unknown" ^= litb false;
+                ] )
+      | I_LDRSW (rt, rn, MemExt.Imm (k,idx))
+        ->
+         let wback,postindex =
+           match idx with
+           | Idx -> false,false
+           | PreIdx -> true,false
+           | PostIdx -> true,true in
+         Some
+           ( "memory/single/general/immediate/signed/post-idx/LDRSW_64_ldst_immpost.opn",
+               stmt
+               [
+                 "t" ^= reg rt;
+                 "n" ^= reg rn;
+                 "offset" ^= litbv 64 k;
+                 "wback" ^= litb wback;
+                 "postindex" ^= litb postindex;
+                 "tagchecked" ^= litb (wback || rn <> SP);
+                 "wb_unknown" ^= litb false;
                 ] )
       | I_STLR (v,rt,rn) ->
          Some

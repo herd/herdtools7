@@ -1330,10 +1330,12 @@ module Make
         write_reg rA new_addr ii
 
 (* Ordinary loads *)
-      let ldr sz rd rs e ii =
+      let ldr ?(sxt=false) sz rd rs e ii =
         let open AArch64Base in
         let open MemExt in
-        let mop ac a = do_read_mem sz Annot.N aexp ac rd a ii in
+        let mop ac a =
+          (if sxt then do_read_mem_sxt else do_read_mem)
+            sz Annot.N aexp ac rd a ii in
         match e with
         | Imm (k,Idx) ->
            do_ldr rs sz Annot.N mop (get_ea_idx rs k ii) ii
@@ -1354,6 +1356,8 @@ module Make
                  (fun ac a ->
                    read_mem_postindexed a_virt sz Annot.N aexp ac rd rs k a ii)
                  ma ii)
+
+      let ldrsw rd rs e ii = ldr ~sxt:true MachSize.Word rd rs e ii
 
       module LoadPair
           (Read:
@@ -2396,6 +2400,8 @@ module Make
         | I_LDR(var,rd,rs,e) ->
             let sz = tr_variant var in
             ldr sz rd rs e ii
+        | I_LDRSW(rd,rs,e) ->
+            ldrsw rd rs e ii
         | I_LDRBH (bh, rd, rs, e) ->
             let sz = bh_to_sz bh in
             ldr sz rd rs e ii

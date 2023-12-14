@@ -1061,6 +1061,7 @@ type 'k kinstruction =
   | I_ERET
 (* Load and Store *)
   | I_LDR of variant * reg * reg * 'k MemExt.ext
+  | I_LDRSW of reg * reg * 'k MemExt.ext
   | I_LDUR of variant * reg * reg * 'k option
 (* Neon Extension Load and Store*)
   | I_LD1 of reg * int * reg * 'k kr
@@ -1448,6 +1449,8 @@ let pp_k_nz k = if m.zerop k then "" else "," ^ m.pp_k k in
 (* Load and Store *)
   | I_LDR (v,r1,r2,idx) ->
       pp_mem_idx "LDR" v r1 r2 idx
+  | I_LDRSW (r1,r2,idx) ->
+      pp_mem_idx "LDRSW" V64 r1 r2 idx
   | I_LDUR (_,r1,r2,None) ->
       sprintf "LDUR %s, [%s]" (pp_reg r1) (pp_reg r2)
   | I_LDUR (_,r1,r2,Some(k)) ->
@@ -1834,7 +1837,7 @@ let fold_regs (f_regs,f_sregs) =
     -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
   | I_OP3 (_,_,r1,r2,e)
     -> fold_reg r1 (fold_reg r2 (fold_op_ext e c))
-  | I_LDR (_,r1,r2,idx) | I_STR (_,r1,r2,idx)
+  | I_LDR (_,r1,r2,idx) | I_LDRSW (r1,r2,idx)  | I_STR (_,r1,r2,idx)
   | I_LDRBH (_,r1,r2,idx) | I_STRBH (_,r1,r2,idx)
     -> fold_reg r1 (fold_reg r2 (fold_idx idx c))
   | I_LD1M (rs,r2,kr)
@@ -1929,6 +1932,8 @@ let map_regs f_reg f_symb =
 (* Load and Store *)
   | I_LDR (v,r1,r2,idx) ->
      I_LDR (v,map_reg r1,map_reg r2,map_idx idx)
+  | I_LDRSW (r1,r2,idx) ->
+     I_LDRSW (map_reg r1,map_reg r2,map_idx idx)
   | I_LDRBH (v,r1,r2,idx) ->
      I_LDRBH (v,map_reg r1,map_reg r2,map_idx idx)
   | I_LDUR (v,r1,r2,k) ->
@@ -2183,6 +2188,7 @@ let get_next =
   | I_BLR _|I_BR _|I_RET _ |I_ERET -> [Label.Any]
   | I_NOP
   | I_LDR _
+  | I_LDRSW _
   | I_LDUR _
   | I_LDP _
   | I_LDPSW _
@@ -2473,6 +2479,7 @@ module PseudoI = struct
         | I_MOPL _
             as keep -> keep
         | I_LDR (v,r1,r2,idx) -> I_LDR (v,r1,r2,idx_tr idx)
+        | I_LDRSW (r1,r2,idx) -> I_LDRSW (r1,r2,idx_tr idx)
         | I_LDUR (v,r1,r2,None) -> I_LDUR (v,r1,r2,None)
         | I_LDUR (v,r1,r2,Some(k)) -> I_LDUR (v,r1,r2,Some(k_tr k))
         | I_LDP (t,v,r1,r2,r3,k,md) -> I_LDP (t,v,r1,r2,r3,k_tr k,md)
@@ -2559,7 +2566,7 @@ module PseudoI = struct
       | _ -> assert false
 
       let get_naccesses ins = match ins with
-        | I_LDR _ | I_LDAR _ | I_LDARBH _ | I_LDUR _ | I_LDRS _
+        | I_LDR _ | I_LDRSW _ | I_LDAR _ | I_LDARBH _ | I_LDUR _ | I_LDRS _
         | I_STR _ | I_STLR _ | I_STLRBH _ | I_STXR _
         | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
         | I_STG _ | I_LDG _

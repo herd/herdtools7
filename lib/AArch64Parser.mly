@@ -73,7 +73,7 @@ let mk_instrp instr v r1 r2 ra ko kb =
 %token TOK_CS TOK_CC TOK_MI TOK_PL TOK_VS TOK_VC TOK_HI TOK_LS TOK_AL
 %token BEQ BNE BGE BGT BLE BLT BCS BCC BMI BPL BVS BVC BHI BLS BAL
 %token BL BLR RET ERET
-%token LDR LDP LDNP LDPSW LDIAPP STP STNP STILP
+%token LDR LDRSW LDP LDNP LDPSW LDIAPP STP STNP STILP
 %token LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token LDRSB LDRSH
 %token LD1 LD1R LD2 LD2R LD3 LD3R LD4 LD4R ST1 ST2 ST3 ST4 STUR /* Neon load/store */
@@ -561,6 +561,8 @@ instr:
 /* Memory */
 | LDR wxreg COMMA mem_ea
   { let (v,r)   = $2 and (ra,ext) = $4 in I_LDR (v,r,ra,ext) }
+| LDRSW xreg COMMA mem_ea
+  { let r = $2 and (ra,ext) = $4 in I_LDRSW (r,ra,ext) }
 | LDUR reg COMMA LBRK cxreg k0_opt RBRK
   { let v,r = $2 in I_LDUR (v,r,$5,$6)}
 
