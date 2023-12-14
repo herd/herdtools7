@@ -1,4 +1,7 @@
 func main () => integer
-   begin
-     Foo ();
-   end
+begin
+
+     foo ();
+
+  return 0;
+end

@@ -369,16 +369,18 @@ module Make (B : Backend.S) (C : Config) = struct
         E_Cond (e1, e2, true') |> add_pos_from e |> eval_expr env 
       |: SemanticsRule.BinopImpl
 
+    (* Begin_SemanticsRule.Binop *)
     | E_Binop (op, e1, e2) ->
         let** (v1, v2), env = fold_par eval_expr env e1 e2 in
         let* v = B.binop op v1 v2 in
         return_normal (v, env) 
       |: SemanticsRule.Binop
+    (* End_SemanticsRule.Binop *)
 
-    | E_Unop (op, e) ->
-        let** v, env = eval_expr env e in
-        let* v = B.unop op v in
-        return_normal (v, env)
+    | E_Unop (op, e') ->
+        let** v', env' = eval_expr env e' in
+        let* v = B.unop op v' in
+        return_normal (v, env')
       |: SemanticsRule.Unop
 
     | E_Cond (e_cond, e1, e2) ->

@@ -1,7 +1,16 @@
+type MyExceptionType of exception{};
+
+func main () => integer
+begin
+
     try
-      print ("No exception raised");
+      assert TRUE;
     catch
       when MyExceptionType =>
-        print("MyException");
+        assert FALSE;
       otherwise =>
-        print("Another exception");
+        assert FALSE;
+    end
+
+  return 0;
+end

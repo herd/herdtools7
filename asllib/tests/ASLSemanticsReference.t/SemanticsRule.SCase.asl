@@ -1,4 +1,11 @@
-match 3 with
-     case 42: print("equals 42.");
-     case <= 42: print("less than 42.");
-     otherwise: print("bigger than 42.");
+func main () => integer
+begin
+
+  case 3 of
+    when 42: assert FALSE;
+    when <= 42: assert TRUE;
+    otherwise: assert FALSE;
+  end
+
+  return 0;
+end

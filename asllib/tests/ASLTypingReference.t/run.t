@@ -11,4 +11,4 @@ ASL Typing Reference:
   ASL Typing error: a subtype of pairT was expected,
     provided (integer {1}, T2).
   [1]
-
+  $ aslref TypingRule.Block0.asl

@@ -1,4 +1,10 @@
-if TRUE 
-  then print(3); 
-  else print(42); 
+func main () => integer
+begin
+
+  if TRUE 
+    then assert TRUE; 
+    else assert FALSE; 
+  end
+
+  return 0;
 end

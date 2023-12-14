@@ -1,7 +1,16 @@
-    try throw
-      MyExceptionType { msg: "My exception with my message" };
+type MyExceptionType of exception{ msg: integer };
+
+func main () => integer
+begin
+
+    try 
+      throw MyExceptionType { msg=42 };
     catch
-      when MyExceptionType: exn =>
-      print(exn.msg);
+      when exn: MyExceptionType =>
+        assert exn.msg == 42;
     otherwise =>
-    print("Another exception");
+      assert FALSE;
+    end
+
+  return 0;
+end
