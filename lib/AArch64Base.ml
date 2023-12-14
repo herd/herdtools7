@@ -889,6 +889,28 @@ module OpExt = struct (* Third argumen tabnd extension of operations *)
        sprintf "%s%s" (pp_vreg v r) (pp_shift m s)
 end
 
+module  MOPLExt = struct
+
+  type s = Signed|Unsigned
+
+  type op = ADD | SUB
+
+  type sop = s * op
+
+  let memo sop = match sop with
+    | Signed,ADD -> "SMADDL"
+    | Signed,SUB -> "SMSUBL"
+    | Unsigned,ADD -> "UMADDL"
+    | Unsigned,SUB -> "UMSUBL"
+
+  let memo_z sop = match sop with
+    | Signed,ADD -> "SMULL"
+    | Signed,SUB -> "SMNEGL"
+    | Unsigned,ADD -> "UMULL"
+    | Unsigned,SUB -> "UMNEGL"
+
+end
+
 let pp_variant = function
   | V32 -> "V32"
   | V64 -> "V64"
@@ -1138,6 +1160,7 @@ type 'k kinstruction =
   | I_UBFM of variant * reg * reg * 'k * 'k
   | I_ADDSUBEXT of
       variant * Ext.op * reg * reg * (variant * reg) * 'k Ext.ext
+  | I_MOPL of MOPLExt.sop * reg * reg * reg *reg
   | I_OP3 of variant * op * reg * reg * 'k OpExt.ext
   | I_ADR of reg * lbl
   | I_RBIT of variant * reg * reg
@@ -1646,6 +1669,14 @@ let pp_k_nz k = if m.zerop k then "" else "," ^ m.pp_k k in
        (pp_vreg v1 r2)
        (pp_vreg v3 r3)
        (Ext.pp_ext m ext)
+  | I_MOPL (sop,rd,rn,rm,ZR) ->
+     sprintf "%s %s,%s,%s"
+       (MOPLExt.memo_z sop)
+       (pp_xreg rd) (pp_wreg rn) (pp_wreg rm)
+  | I_MOPL (sop,rd,rn,rm,ra) ->
+     sprintf "%s %s,%s,%s,%s"
+       (MOPLExt.memo sop)
+       (pp_xreg rd) (pp_wreg rn) (pp_wreg rm) (pp_xreg ra)
   | I_OP3 (v,SUBS,ZR,r,e) ->
      pp_op2 "CMP" v r e
   | I_OP3 (v,SUB,r,ZR,(OpExt.Reg _ as e)) when not m.compat ->
@@ -1840,6 +1871,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_ADDSUBEXT (_,_,r1,r2,(_,r3),_)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_STXP (_,_,r1,r2,r3,r4)
+  | I_MOPL (_,r1,r2,r3,r4)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_reg r4 c)))
   | I_CASP (_,_,r1,r2,r3,r4,r5)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_reg r4 (fold_reg r5 c))))
@@ -2081,6 +2113,8 @@ let map_regs f_reg f_symb =
       I_UBFM (v,map_reg r1, map_reg r2, k1, k2)
   | I_ADDSUBEXT (v1,op,r1,r2,(v3,r3),ext) ->
      I_ADDSUBEXT (v1,op,map_reg r1,map_reg r2,(v3,map_reg r3),ext)
+  | I_MOPL (sop,r1,r2,r3,r4) ->
+     I_MOPL (sop,map_reg r1,map_reg r2,map_reg r3,map_reg r4)
   | I_OP3 (v,op,r1,r2,e) ->
       I_OP3 (v,op,map_reg r1,map_reg r2,map_op_ext e)
   | I_ADR (r,lbl) ->
@@ -2171,6 +2205,7 @@ let get_next =
   | I_SBFM _
   | I_UBFM _
   | I_ADDSUBEXT _
+  | I_MOPL _
   | I_OP3 _
   | I_FENCE _
   | I_CSEL _
@@ -2435,6 +2470,7 @@ module PseudoI = struct
         | I_MOV_VE _ | I_MOV_V _ | I_MOV_TG _ | I_MOV_FG _
         | I_MOV_S _
         | I_LDXP _| I_STXP _
+        | I_MOPL _
             as keep -> keep
         | I_LDR (v,r1,r2,idx) -> I_LDR (v,r1,r2,idx_tr idx)
         | I_LDUR (v,r1,r2,None) -> I_LDUR (v,r1,r2,None)
@@ -2572,6 +2608,7 @@ module PseudoI = struct
         | I_SBFM _
         | I_UBFM _
         | I_ADDSUBEXT _
+        | I_MOPL _
         | I_OP3 _
         | I_FENCE _
         | I_CSEL _

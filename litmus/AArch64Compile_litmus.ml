@@ -1,5 +1,5 @@
 (****************************************************************************)
-(*                           The diy toolsuite                              *)
+(*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
@@ -1131,6 +1131,25 @@ module Make(V:Constant.S)(C:Config) =
            inputs = rN@rI; outputs=rD;
            reg_env = add_v v (rD@rN@rI); }
 
+    let moplz sop rd rn rm =
+      let rd,fd = do_arg1o V64 rd 0
+      and rs,fn,fm = do_arg2i V32 rn rm  0
+      and memo = MOPLExt.memo_z sop |> Misc.lowercase in
+      { empty_ins with
+        memo = sprintf "%s %s,%s,%s" memo fd fn fm;
+        inputs=rs; outputs=rd;
+        reg_env = add_q rd@ add_w rs; }
+
+    let mopl sop rd rn rm ra =
+      let rd,fd = do_arg1o V64 rd 0
+      and rs,fn,fm = do_arg2i V32 rn rm  0
+      and memo = MOPLExt.memo sop |> Misc.lowercase in
+      let ra,fa = do_arg1i V64 ra (List.length rs) in
+      { empty_ins with
+        memo = sprintf "%s %s,%s,%s,%s" memo fd fn fm fa;
+        inputs=rs@ra; outputs=rd;
+        reg_env = add_q rd@ add_w rs@add_q ra; }
+
     let addsub_ext v op r1 r2 (v3,r3) e =
       let r1,f1 = do_arg1o v r1 0
       and r2,f2 = do_arg1i v r2 0
@@ -1340,6 +1359,8 @@ module Make(V:Constant.S)(C:Config) =
     | I_OP3 (v,ANDS,ZR,r,e) -> tst v r e::k
     | I_OP3 (v,ORN,r1,ZR,OpExt.Reg (r2,s)) -> mvn v r1 r2 s::k
     | I_OP3 (v,op,r1,r2,e) ->  op3 v op r1 r2 e::k
+    | I_MOPL (sop,rd,rn,rm,ZR) -> moplz sop rd rn rm::k
+    | I_MOPL (sop,rd,rn,rm,ra) -> mopl sop rd rn rm ra::k
     | I_ADDSUBEXT (v,op,r1,r2,vr3,e) -> addsub_ext v op r1 r2 vr3 e::k
 (* Fence *)
     | I_FENCE f -> fence f::k

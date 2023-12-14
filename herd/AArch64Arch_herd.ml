@@ -100,7 +100,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_STOPBH _| I_STP _| I_STP_P_SIMD _| I_STP_SIMD _| I_STR _
     | I_STR_P_SIMD _| I_STR_SIMD _| I_STRBH _| I_STUR_SIMD _| I_STXP _| I_STXR _
     | I_STXRBH _| I_STZG _| I_SWP _| I_SWPBH _| I_SXTW _| I_TLBI _| I_UBFM _
-    | I_UDF _| I_UNSEAL _ | I_ADDSUBEXT _ | I_ABS _ | I_REV _
+    | I_UDF _| I_UNSEAL _ | I_ADDSUBEXT _ | I_ABS _ | I_REV _ | I_MOPL _
       -> true
 
     let is_cmodx_restricted_value =
@@ -263,7 +263,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MOV_V _ | I_MOV_VE _ | I_MOV_S _ | I_MOV_TG _ | I_MOV_FG _
       | I_MOVI_S _ | I_MOVI_V _
       | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
-      | I_UDF _ | I_ADDSUBEXT _
+      | I_UDF _ | I_ADDSUBEXT _ | I_MOPL _
           -> None
 
     let all_regs =
@@ -316,6 +316,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MRS (r,_)
       | I_UBFM (_,r,_,_,_) | I_SBFM (_,r,_,_,_)
       | I_ADDSUBEXT (_,_,r,_,_,_)
+      | I_MOPL (_,r,_,_,_)
         -> [r]
       | I_MSR (sr,_)
         -> [(SysReg sr)]
@@ -380,7 +381,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_OP3 _|I_ADR _|I_RBIT _|I_ABS _|I_REV _|I_FENCE _
       | I_CSEL _|I_IC _|I_DC _|I_TLBI _|I_MRS _|I_MSR _
       | I_STG _|I_STZG _|I_LDG _|I_UDF _
-      | I_ADDSUBEXT _
+      | I_ADDSUBEXT _|I_MOPL _
         -> MachSize.No
 
     include ArchExtra_herd.Make(C)

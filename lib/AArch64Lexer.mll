@@ -374,6 +374,14 @@ match name with
 | "adds"|"ADDS" -> TOK_ADDS
 | "neg"|"NEG" -> TOK_NEG
 | "negs"|"NEGS" -> TOK_NEGS
+| "smaddl"|"SMADDL" -> MOPL AArch64Base.MOPLExt.(Signed,ADD)
+| "smsubl"|"SMSUBL" -> MOPL AArch64Base.MOPLExt.(Signed,SUB)
+| "umaddl"|"UMADDL" -> MOPL AArch64Base.MOPLExt.(Unsigned,ADD)
+| "umsubl"|"UMSUBL" -> MOPL AArch64Base.MOPLExt.(Unsigned,SUB)
+| "smull"|"SMULL" -> MOPLZ AArch64Base.MOPLExt.(Signed,ADD)
+| "smnegl"|"SMNEGL" -> MOPLZ AArch64Base.MOPLExt.(Signed,SUB)
+| "umull"|"UMULL" -> MOPLZ AArch64Base.MOPLExt.(Unsigned,ADD)
+| "umnegl"|"UMNEGL" -> MOPLZ AArch64Base.MOPLExt.(Unsigned,SUB)
 (* Morello *)
 | "alignd"|"ALIGND" -> ALIGND
 | "alignu"|"ALIGNU" -> ALIGNU

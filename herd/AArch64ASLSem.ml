@@ -359,6 +359,21 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
              "datasize" ^= liti datasize;
              "extend_type" ^= var extend_type;
              "shift" ^= liti shift;])
+      | I_MOPL (sop,rd,rn,rm,ra) ->
+         let fname =
+           let open MOPLExt in
+           match sop with
+           | Signed,ADD -> "SMADDL_64WA_dp_3src.opn"
+           | Signed,SUB -> "SMSUBL_64WA_dp_3src.opn"
+           | Unsigned,ADD -> "UMADDL_64WA_dp_3src.opn"
+           | Unsigned,SUB -> "UMSUBL_64WA_dp_3src.opn" in
+         Some
+           ("integer/arithmetic/mul/widening/32-64/" ^ fname,
+            stmt
+              ["d" ^= reg rd;
+               "n" ^= reg rn;
+               "m" ^= reg rm;
+               "a" ^= reg ra;])
       | I_OP3
          (v,
           (ADD|ADDS|SUB|SUBS|AND|ANDS|BIC|BICS|EOR|EON|ORN|ORR as op),
