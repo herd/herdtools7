@@ -39,6 +39,10 @@ module type S =  sig
 (* All elements related *)
   val nodes : t -> Elts.t
 
+(* Operations on nodes, ie all elements related *)
+  val filter_nodes : (elt0 -> bool) -> t -> t
+  val map_nodes: (elt0 -> elt0) -> t -> t
+
 (* Inverse *)
   val inverse : t -> t
 

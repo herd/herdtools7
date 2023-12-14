@@ -198,6 +198,11 @@ val same_instance : event -> event -> bool
   with type elt0 = event
   and module Elts = EventSet
 
+  module EventTransRel : InnerTransRel.S
+    with type elt = event
+     and module Set = EventSet
+     and module Rel = EventRel
+
   type event_rel = EventRel.t
 
   val debug_rel : out_channel -> event_rel -> unit
@@ -206,7 +211,8 @@ val same_instance : event -> event -> bool
       procs : A.proc list ;
       events : EventSet.t ;                     (* really a set *)
       speculated : EventSet.t ;                 (* really a set *)
-      po : EventSet.t * EventRel.t; (* A forest: roots first + partial order *)
+      po : EventSet.t * EventRel.t; (* speculated po represented as a forest: roots first + partial order *)
+      partial_po : EventTransRel.t;
       intra_causality_data : EventRel.t ;       (* really a partial order relation *)
       intra_causality_control : EventRel.t ;    (* really a partial order relation *)
       intra_causality_order : EventRel.t ; (* Just order *)
@@ -322,6 +328,10 @@ val same_instance : event -> event -> bool
   val para_output_right :
     event_structure -> event_structure -> event_structure option
 
+  (* Partial po sequencing, output in second argument *)
+  val para_po_seq_output_right :
+    event_structure -> event_structure -> event_structure option
+
 (* Sequence memory events, otherwise parallel composition *)
   val seq_mem :
     event_structure -> event_structure -> event_structure option
@@ -341,6 +351,9 @@ val same_instance : event -> event -> bool
 
   val data_to_minimals : (* second es entries are minimal evts all iico *)
       event_structure -> event_structure -> event_structure option
+
+  val data_po_seq : (* same as [=*$=], but sequences po. *)
+    event_structure -> event_structure -> event_structure option
 
 (* Identical, keep first event structure data output as output. *)
   val (=$$=) :
@@ -369,6 +382,10 @@ val same_instance : event -> event -> bool
 
 (* Similar, but if no output in second argument, use first as output *)
   val bind_ctrl_sequence_data :
+    event_structure -> event_structure -> event_structure option
+
+  (* Similar, but sequencing partial po *)
+  val bind_ctrl_sequence_data_po :
     event_structure -> event_structure -> event_structure option
 
 (***********************)
@@ -475,6 +492,8 @@ val same_instance : event -> event -> bool
   val empty_event_structure   : event_structure
   val is_empty_event_structure : event_structure -> bool
 
+  val from_events: EventSet.t -> event_structure
+
 (* Condition at instruction level *)
   val cond_comp :
       event_structure -> event_structure -> event_structure
@@ -499,6 +518,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let memtag = C.variant Variant.MemTag
     let kvm = C.variant Variant.VMSA
     let is_branching = kvm && not (C.variant Variant.NoPteBranch)
+    let is_po_partial = A.arch = `ASL
     type eiid = int
     type subid = int
 
@@ -756,6 +776,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     module EventRel = InnerRel.Make(OrderedEvent)
     type event_rel = EventRel.t
 
+    module EventTransRel = InnerTransRel.Make(OrderedEvent)
+
     let debug_event_in_rel chan e = fprintf chan "%s" (pp_eiid e)
 
     let debug_rel chan r =
@@ -769,6 +791,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         events : EventSet.t ;        (* really a set *)
         speculated : EventSet.t ;        (* really a set *)
         po : EventSet.t * EventRel.t;
+        partial_po: EventTransRel.t;
         intra_causality_data : EventRel.t ;   (* really a (partial order) relation *)
         intra_causality_control : EventRel.t ;(* really a (partial order) relation *)
       intra_causality_order : EventRel.t ; (* Just order *)
@@ -790,12 +813,13 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let map_aligned f = List.map (fun (e,es) -> f e,EventSet.map f es)
 
     let map_event_structure f es =
-      let map_rel = EventRel.map (fun (e1,e2) -> f e1,f e2)
+      let map_rel = EventRel.map_nodes f
       and map_set = EventSet.map f in
       { procs = es.procs ;
         events = map_set es.events ;
         speculated = map_set es.speculated ;
         po = begin let r,e = es.po in (map_set r, map_rel e) end;
+        partial_po = EventTransRel.map_nodes f es.partial_po ;
         intra_causality_data = map_rel  es.intra_causality_data ;
         intra_causality_control = map_rel es.intra_causality_control ;
         intra_causality_order = map_rel es.intra_causality_order ;
@@ -825,6 +849,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       { procs = [] ; events = EventSet.empty ;
         speculated = EventSet.empty ;
         po = (EventSet.empty,EventRel.empty);
+        partial_po = EventTransRel.empty;
         intra_causality_data = EventRel.empty ;
         intra_causality_control = EventRel.empty ;
         intra_causality_order = EventRel.empty ;
@@ -1097,7 +1122,14 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
          if EventSet.is_empty out2 then Some out
          else Some out2
 
-(* Sequential composition *)
+    (* Sequential composition *)
+
+    let seq_partial_po =
+      if not is_po_partial then fun _ _ -> EventTransRel.empty
+      else fun es1 es2 ->
+        if EventSet.is_empty es1.events then es2.partial_po
+        else if EventSet.is_empty es2.events then es1.partial_po
+        else EventTransRel.seq es1.partial_po es2.partial_po
 
     let inst_code_comp (*poi*) es1 es2 =
       { procs = [] ;
@@ -1113,6 +1145,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
               (r1, EventRel.union (EventRel.cartesian r1 r2) e2)
           else es2.po
         end ;
+        partial_po = seq_partial_po es1 es2;
         intra_causality_data = EventRel.union
           es1.intra_causality_data es2.intra_causality_data ;
         intra_causality_control = EventRel.union
@@ -1162,6 +1195,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
                 (EventRel.union (EventRel.cartesian r1l r2) e2)
                 (EventRel.union (EventRel.cartesian r1r r3) e3)
             end ;
+            partial_po = seq_partial_po es1 es2;
             intra_causality_data =
             EventRel.union3
               es1.intra_causality_data
@@ -1200,6 +1234,11 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           (EventSet.union r1 r2, EventRel.union e1 e2)
       else fun es _ -> es.po
 
+    let partial_po_union =
+      if is_po_partial then fun es1 es2 ->
+        EventTransRel.union es1.partial_po es2.partial_po
+      else fun _ _ -> EventTransRel.empty
+
     let speculated_union =
       if do_deps then
         fun es1 es2 ->
@@ -1213,6 +1252,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         events = EventSet.union es1.events es2.events ;
         speculated = speculated_union es1 es2 ;
         po = po_union es1 es2 ;
+        partial_po = partial_po_union es1 es2 ;
         intra_causality_data =
           EventRel.union
             es1.intra_causality_data
@@ -1305,6 +1345,19 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         } in
       Some r
 
+    let para_po_seq_output_right es1 es2 =
+      let r = union es1 es2 in
+      let r =
+        { r with
+          input = union_input es1 es2 ;
+          data_input = union_data_input es1 es2 ;
+          output = Some (get_output es2);
+          ctrl_output = union_ctrl_output es1 es2;
+          partial_po = seq_partial_po es1 es2;
+        }
+      in
+      Some r
+
 (* parallel composition with memory event sequencing *)
     let seq_mem es1 es2 =
       let r = do_para_comp es1 es2 in
@@ -1357,6 +1410,13 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 
     let (=*$=) =
       check_disjoint (data_comp minimals_data sequence_data_output)
+
+    let data_po_seq es1 es2 =
+      let r = data_comp minimals_data sequence_data_output es1 es2 in
+      Some
+        { r with
+          partial_po = seq_partial_po es1 es2;
+        }
 
     let data_input_next es1 es2 =
       let r = data_comp minimals_data sequence_data_output es1 es2  in
@@ -1476,6 +1536,40 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let bind_ctrl_sequence_data =
       check_disjoint (control_comp get_ctrl_output minimals sequence_data_output)
 
+    let bind_ctrl_sequence_data_po es1 es2 =
+      let r =
+        control_comp get_ctrl_output minimals sequence_data_output es1 es2
+      in
+      Some { r with partial_po = seq_partial_po es1 es2 }
+
+    let partial_po_union3 =
+      if is_po_partial then fun es1 es2 es3 ->
+        EventTransRel.union3 es1.partial_po es2.partial_po es3.partial_po
+      else fun _ _ _ -> EventTransRel.empty
+
+    let partial_po_union4 =
+      if is_po_partial then fun es1 es2 es3 es4 ->
+        EventTransRel.union4 es1.partial_po es2.partial_po es3.partial_po
+          es4.partial_po
+      else fun _ _ _ _ -> EventTransRel.empty
+
+    let partial_po_union5 =
+      if is_po_partial then fun es1 es2 es3 es4 es5 ->
+        EventTransRel.union5 es1.partial_po es2.partial_po es3.partial_po
+          es4.partial_po es5.partial_po
+      else fun _ _ _ _ _ -> EventTransRel.empty
+
+    let partial_po_union6 =
+      if is_po_partial then fun es1 es2 es3 es4 es5 es6 ->
+        EventTransRel.union6 es1.partial_po es2.partial_po es3.partial_po
+          es4.partial_po es5.partial_po es6.partial_po
+      else fun _ _ _ _ _ _ -> EventTransRel.empty
+
+    let partial_po_unions =
+      if is_po_partial then fun li ->
+        List.map (fun es -> es.partial_po) li |> EventTransRel.unions
+      else fun _ -> EventTransRel.empty
+
     let po_union4 =
       if do_deps then
         fun es1 es2 es3 es4 ->
@@ -1502,6 +1596,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
             else es1.speculated
           end;
         po = po_union3 es1 es2 es3;
+        partial_po = partial_po_union3 es1 es2 es3;
        intra_causality_data =
          EventRel.union3
            es1.intra_causality_data
@@ -1620,6 +1715,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         else
           rs1.speculated;
         po = po_union4 rs1 rs2 ws1 ws2;
+        partial_po = partial_po_union4 rs1 rs2 ws1 ws2;
         intra_causality_data =
         EventRel.union3
           (EventRel.union4
@@ -1684,6 +1780,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         else
           rloc.speculated;
         po = po_union5 rloc rmem rreg wmem wreg;
+        partial_po = partial_po_union5 rloc rmem rreg wmem wreg;
         intra_causality_data =
         EventRel.unions
           [EventRel.union5
@@ -1764,6 +1861,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         else
           re.speculated;
         po = po_union4 re rloc rmem wmem;
+        partial_po = partial_po_union4 re rloc rmem wmem;
         intra_causality_data =
         EventRel.unions
           [EventRel.union4
@@ -1813,6 +1911,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         else
           re.speculated;
         po = po_union4 re rloc rmem wmem;
+        partial_po = partial_po_union4 re rloc rmem wmem;
         intra_causality_data =
         EventRel.unions
           [EventRel.union4
@@ -1870,6 +1969,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         else
           rloc.speculated;
         po = po_union5 rloc rold rnew rmem wmem;
+        partial_po = partial_po_union5 rloc rold rnew rmem wmem;
         intra_causality_data =
         EventRel.unions
           [EventRel.union5
@@ -1929,6 +2029,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         else
           rloc.speculated;
         po = po_union3 rloc rold rmem;
+        partial_po = partial_po_union3 rloc rold rmem;
         intra_causality_data =
         EventRel.unions
           [EventRel.union3
@@ -1976,6 +2077,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         else
           loc.speculated;
         po = po_union5 loc a u rmem wmem;
+        partial_po = partial_po_union5 loc a u rmem wmem;
         intra_causality_data =
         EventRel.unions
           [EventRel.union5
@@ -2037,6 +2139,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         else
           loc.speculated;
         po = po_union3 loc u rmem;
+        partial_po = partial_po_union3 loc u rmem;
         intra_causality_data =
         EventRel.unions
           [loc.intra_causality_data; u.intra_causality_data;
@@ -2117,6 +2220,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         else
           resa.speculated;
         po = po_union6 resa data addr wres wresult wmem;
+        partial_po = partial_po_union6 resa data addr wres wresult wmem;
         intra_causality_data =
         EventRel.unions
           [EventRel.union3 resa.intra_causality_data
@@ -2196,6 +2300,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
             rn.speculated rs.speculated wrs.speculated rm.speculated br.speculated
         else rn.speculated;
         po = po_union5 rn rs wrs rm br;
+        partial_po = partial_po_union5 rn rs wrs rm br;
         intra_causality_data =
         EventRel.union
           (EventRel.union5
@@ -2270,6 +2375,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         else
           rn.speculated;
         po = po_unions [rn; rs; rt; wrs; rm; br; wm];
+        partial_po = partial_po_unions [rn; rs; rt; wrs; rm; br; wm];
         intra_causality_data =
         EventRel.union
           (EventRel.unions
@@ -2363,6 +2469,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         else
           rn.speculated;
         po = po_union4 rn rt rm wm;
+        partial_po = partial_po_union4 rn rt rm wm;
         intra_causality_data =
         EventRel.union
           (EventRel.union4
@@ -2425,6 +2532,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         else
           rD.speculated;
         po = po_union4 rD rEA wEA wM;
+        partial_po = partial_po_union4 rD rEA wEA wM;
         intra_causality_data = begin
           let drD = rD.intra_causality_data
           and drEA = rEA.intra_causality_data
@@ -2494,4 +2602,12 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       let r = do_para_comp es1 es2 in
       let control = EventRel.cartesian es1.events es2.events in
       { r with control =  EventRel.union control r.control; }
+
+    (* Build from events - without any form of iico. *)
+    let from_events events =
+      let partial_po =
+        if is_po_partial then EventTransRel.from_nodes events
+        else EventTransRel.empty
+      in
+      { empty with events ; partial_po }
   end

@@ -32,13 +32,14 @@ let asl_iico_ctrl = iico_ctrl
 let asl_iico_data = iico_data
 let asl_rf_reg = rf-reg
 let asl_rf = rf
+let asl_po = partial_po
 
 (* Working relations *)
 
 let aarch64 = NASLLocal * NASLLocal
 
-let asl_fr_reg = ([Rreg] ; po ; [Wreg]) & loc (* loc extended to registers *)
-let asl_fr = ([R] ; po ; [W]) & loc
+let asl_fr_reg = ([Rreg] ; asl_po ; [Wreg]) & loc (* loc extended to registers *)
+let asl_fr = ([R] ; asl_po ; [W]) & loc
 
 let asl_data = asl_iico_data | asl_rf_reg
 let asl_deps = asl_data (* | asl_iico_ctrl *)
@@ -73,7 +74,7 @@ show [DATA] as debug_data
 
 (* Tests *)
 
-acyclic (aarch64_intrinsic | po) as asl_determinism
+acyclic (aarch64_intrinsic | asl_po) as asl_determinism
 
 
 (* Display *)

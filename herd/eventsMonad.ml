@@ -265,6 +265,8 @@ Monad type:
     let (>>==) : 'a t -> ('a -> 'b t) -> ('b) t
         = fun s f -> data_comp (=$$=) s f
 
+    let asl_data s f = data_comp E.data_po_seq s f
+
     let (>>*=) : 'a t -> ('a -> 'b t) -> ('b) t
       = fun s f -> data_comp (=**=) s f
 
@@ -283,6 +285,8 @@ Monad type:
       data_comp (E.bind_ctrl_avoid es.E.events) s f eiid
 
     let bind_ctrl_seq_data s f = data_comp E.bind_ctrl_sequence_data s f
+
+    let asl_ctrl s f = data_comp E.bind_ctrl_sequence_data_po s f
 
     let bind_data_to_minimals s f =  data_comp E.data_to_minimals s f
 
@@ -969,6 +973,9 @@ Monad type:
     let para_bind_output_right : 'a t -> ('a -> 'b t) -> 'b t =
       fun s f -> data_comp E.para_output_right s f
 
+    let asl_seq : 'a t -> ('a -> 'b t) -> 'b t =
+      fun s f -> data_comp E.para_po_seq_output_right s f
+
     type poi = int
 
 (************************************************)
@@ -1089,7 +1096,7 @@ Monad type:
 
     (* Build event structure from event set *)
 
-    let do_trivial es = { E.empty_event_structure with E.events = es ; }
+    let do_trivial es = E.from_events es
 
     (* Build event structure from action and instruction instance *)
 
@@ -1381,7 +1388,6 @@ Monad type:
         | _ -> false
 
       let is_instrloc a =
-        let open Constant in
         match a with
         | V.Val (Constant.Label _) -> true
         | _ -> false

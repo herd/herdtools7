@@ -695,9 +695,9 @@ module Make (C : Config) = struct
         let v_of_int = V.intToV
         let v_of_literal = v_of_literal
         let v_to_int = v_to_int
-        let bind_data = M.( >>= )
-        let bind_seq = M.para_bind_output_right
-        let bind_ctrl = M.bind_ctrl_seq_data
+        let bind_data = M.asl_data
+        let bind_seq = M.asl_seq
+        let bind_ctrl = M.asl_ctrl
         let prod_par = M.( >>| )
         let appl_data m f = m >>= fun v -> return (f v)
         let choice = choice

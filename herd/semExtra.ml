@@ -168,6 +168,7 @@ type concrete =
      rfmap : rfmap ;           (* rfmap *)
      fs    : state * A.FaultSet.t ;           (* final state *)
      po  : event_rel ;         (* program order (in fact po + iico) *)
+     partial_po : event_rel ;
      pos : event_rel ;         (* Same location same processor accesses *)
 (* Write serialization precursor ie uniproc induced constraints over writes *)
      pco : event_rel ;
@@ -446,6 +447,7 @@ type concrete =
      rfmap : rfmap ;           (* rfmap *)
      fs    : state * A.FaultSet.t ;           (* final state *)
      po : event_rel ;
+     partial_po : event_rel ;
      pos : event_rel ;      (* Same location same processor accesses *)
      pco : event_rel ;
 (* View before relation deduced from rfmaps *)
@@ -460,6 +462,7 @@ type concrete =
        str = E.empty_event_structure ;
        rfmap = RFMap.empty ;
        fs = A.state_empty,A.FaultSet.empty;
+       partial_po = E.EventRel.empty;
        po = E.EventRel.empty ;
        pos = E.EventRel.empty ;
        pco = E.EventRel.empty ;
