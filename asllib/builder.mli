@@ -25,3 +25,4 @@ val from_file_multi_version :
 
 val stdlib : unit AST.t Lazy.t
 val with_stdlib : 'a AST.t -> 'a AST.t
+val is_stdlib_name : AST.identifier -> bool

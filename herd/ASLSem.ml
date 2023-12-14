@@ -749,12 +749,16 @@ module Make (C : Config) = struct
           and custom_implems = build `ASLv1 "implementations.asl"
           and shared = build `ASLv0 "shared_pseudocode.asl" in
           let shared =
+            (*
+             * For Some reason, do not clash with
+             * stdlib definitions that will be loaded later.
+             *)
             (List.filter
                AST.(
                  fun d ->
                    match d.desc with
-                   | D_Func { name = "Zeros" | "Ones" | "Replicate" | "Abs" ; _ } ->
-                       false
+                   | D_Func { name;_} ->
+                      not (Asllib.Builder.is_stdlib_name name)
                    | _ -> true)
                shared [@warning "-40-42"])
           in
