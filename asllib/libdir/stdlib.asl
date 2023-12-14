@@ -147,9 +147,9 @@ begin
   return NOT Zeros(N);
 end
 
-func IsZero(x :: bits(n)) => boolean
+func IsZero(x :: bits(N)) => boolean
 begin
-  return BitCount(x) == 0;
+  return x == Zeros(N);
 end
 
 func IsOnes{N}(x :: bits(N)) => boolean
