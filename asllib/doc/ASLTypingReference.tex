@@ -1,0 +1,2506 @@
+\documentclass{book}
+\usepackage{amsmath}  % Classic math package
+\usepackage{amssymb}  % Classic math package
+\usepackage{mathtools}  % Additional math package
+\usepackage{graphicx}  % For figures
+\usepackage{caption}  % For figure captions
+\usepackage{subcaption}  % For subfigure captions
+\usepackage{url}  % Automatically escapes urls
+\usepackage{hyperref}  % Insert links inside pdfs
+\usepackage[inline]{enumitem}  % For inline lists
+\usepackage[export]{adjustbox}  % For centering too wide figures
+\usepackage{mathpartir}  % For deduction rules and equations paragraphs
+\usepackage{comment}
+\usepackage{fancyvrb}
+\usepackage{enumitem}
+\renewlist{itemize}{itemize}{10}
+\setlist[itemize,1]{label=\textbullet}
+\setlist[itemize,2]{label=\textasteriskcentered}
+\setlist[itemize,3]{label=\textendash}
+\setlist[itemize,4]{label=$\triangleright$}
+\setlist[itemize,5]{label=+}
+\setlist[itemize,6]{label=\textbullet}
+\setlist[itemize,7]{label=$\ast$}
+\setlist[itemize,8]{label=\textendash}
+\setlist[itemize,9]{label=$\triangleright$}
+\setlist[itemize,10]{label=+}
+
+
+%Macros
+\newcommand\ie{i.\,e.}
+\newcommand\eg{e.\,g.}
+\newcommand\synor{\ |\ }
+\newcommand\syntt[1]{\mathtt{#1}}
+\newcommand\ife[3]{\text{if}\ #1\ \text{then}\ #2\ \text{else}\ #3\ \text{end}}
+\newcommand\inenv[2]{\left\langle #1, #2 \right\rangle}
+\newcommand\env[1]{\left\langle #1 \right\rangle}
+\newcommand\reducesto{\ \to\ }
+\newcommand\llbracket{[|}
+\newcommand\rrbracket{|]}
+\newcommand\interp[1]{\left\llbracket #1 \right\rrbracket}
+\newcommand\st[0]{\ \middle|\ }
+\newcommand\field[1]{.\text{#1}}
+\newcommand\globals[0]{\field{globals}}
+\newcommand\locals[0]{\field{locals}}
+\newcommand\X[0]{\mathcal{X}}
+\newcommand\N[0]{\mathbb{N}}
+\newcommand\asldata[0]{\mathtt{asl\_data}}
+\newcommand\aslctrl[0]{\mathtt{asl\_ctrl}}
+\newcommand\aslpo[0]{\mathtt{asl\_po}}
+\DeclareMathOperator{\dom}{dom}
+
+\author{Arm Architecture Technology Group}
+\title{ASL Typing Reference}
+\begin{document}
+\maketitle
+\tableofcontents{}
+
+\chapter{Copyright and Disclaimer}
+
+The material in this document is copyright Arm Ltd 2023, all rights reserved.
+
+This material covers both ASLv0 (viz, the existing ASL pseudocode language
+which appears in the Arm Architecture Reference Manual) and ASLv1, a new,
+experimental, and as yet unreleased version of ASL.
+
+This material is work in progress, more precisely at pre-Alpha quality as
+per Arm’s quality standards. In particular, this means that it would be
+premature to base any production tool development on this material.
+
+However, any feedback, question, query and feature request would be most
+welcome; those can be sent to Arm’s Architecture Formal Team Lead Jade
+Alglave <jade.alglave@arm.com> or by raising issues or PRs to the herdtools7
+github repository.
+
+\chapter{Type Algebra}
+
+\section{Predicates on Types}
+
+\subsection{TypingRule.BuiltinSingularType \label{sec:TypingRule.BuiltinSingularType}}
+
+    \subsubsection{Prose}
+    The \emph{builtin singular types} are:
+    \begin{itemize}
+    \item  integer; 
+    \item  real;
+    \item  string; 
+    \item  boolean; 
+    \item  bit;
+    \item  bits;
+    \item  enumeration.
+    \end{itemize}
+
+    \subsubsection{Comments}
+    This aims to encompass LRM Section 3.1 D\_PQCK and D\_NZWT.
+
+\subsection{TypingRule.BuiltinAggregateType \label{sec:TypingRule.BuiltinAggregateType}}
+
+    \subsubsection{Prose}
+    The builtin aggregate types are:
+    \begin{itemize}
+    \item  tuple;
+    \item  array;
+    \item  record;
+    \item  exception.
+    \end{itemize}
+
+    \subsubsection{Comments}
+    This aims to encompass LRM Section 3.1 D\_PQCK and D\_KNBD.
+
+\subsection{TypingRule.BuiltinSingularOrAggregate}
+
+    \subsubsection{Prose}
+    [t] is a builtin type and one of the following applies:
+    \begin{itemize}
+    \item  [t] is singular;
+    \item  [t] is aggregate.
+    \end{itemize}
+
+\subsection{TypingRule.NamedType} 
+
+    \subsubsection{Prose}
+    A named type is a type which is declared using the type syntax.
+
+    \subsubsection{Comments}
+    This aims to encompass LRM Section 7.1.1 D\_VMZX.
+
+\subsection{TypingRule.AnonymousType}
+
+    \subsubsection{Prose} 
+    An anonymous type is a type which is not declared using the type syntax. 
+
+    \subsubsection{Comments}
+    This aims to encompass LRM Section 7.1.1 D\_VMZX.
+
+    Is it the case that anonymous/not name/unnamed and builtin are the same notions?
+    No:
+
+    the fact that the record {a: bool, b: integer} does not have a name means that this record has an anonymous type:
+    var myvar: {a: bool, b: integer} = ...
+
+    anonymous = non-primitive + no name?
+
+    builtin = primitive
+    anonymous = no name
+
+    HERE
+
+\subsection{TypingRule.SingularType}
+
+    \subsubsection{Prose}
+    A type [t] is singular if one of the following applies:
+    \begin{itemize}
+    \item  [t] is a builtin singular type;
+    \item  All of the following apply:
+      \begin{itemize}
+      \item  [t] is a named type;
+      \item  [t\_struct] is the structure of [t];
+      \item  [t\_struct] is a builtin singular.
+      \end{itemize} 
+    \end{itemize}
+
+    \subsubsection{Comments}
+    This aims to encompass LRM Section 3.1 R\_GVZK.
+
+\subsection{TypingRule.AggregateType}
+
+    \subsubsection{Prose}
+    A type [t] is aggregate if one of the following applies:
+    \begin{itemize}
+    \item  [t] is a builtin aggregate type;
+    \item  All of the following apply:
+      \begin{itemize}
+      \item  [t] is a named type;
+      \item  [t\_struct] is the structure of [t];
+      \item  [t\_struct] is a builtin aggregate. 
+      \end{itemize}
+    \end{itemize}
+
+    \subsubsection{Comments}
+    This aims to encompass LRM Section 3.1 R\_GVZK.
+
+\subsection{TypingRule.NonPrimitiveType}
+
+    \subsubsection{Prose} 
+    A type [t] is non-primitive if one of the following applies:
+    \begin{itemize}
+    \item  [t] is a named type;
+    \item  All of the following apply:
+      \begin{itemize}
+      \item  [t] is a tuple [li];
+      \item  there exists a non-primitive type in [li];
+      \end{itemize}
+    \item  All of the following apply:
+      \begin{itemize}
+      \item  [t] is an array of type [ty]
+      \item  [ty] is non-primitive; 
+      \end{itemize}
+    \item  All of the following apply:
+      \begin{itemize}
+      \item  [t] is a record with fields [fields];
+      \item  there exists a non-primitive type in [fields];
+      \end{itemize}
+    \item  All of the following apply:
+      \begin{itemize}
+      \item  [t] is an exception with fields [fields];
+      \item  there exists a non-primitive type in [fields];
+      \end{itemize}
+    \end{itemize}
+
+    \subsubsection{Comments}
+    This aims to encompass LRM Section 7.1.1 D\_GWXK.
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.PrimitiveType}
+
+    \subsubsection{Proses} 
+    A type [t] is primitive if it is not non-primitive.
+
+    \subsubsection{Comments}
+    This aims to encompass LRM Section 7.1.1 D\_GWXK.
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.Canonical}
+
+     \subsubsection{Prose}
+
+     \subsubsection{Comments}
+
+     \subsubsection{Examples}
+
+\subsection{TypingRule.Structure}
+
+    \subsubsection{Prose}
+    [ty] is a type and its structure is [t\_struct] and one of the following
+    applies:
+    \begin{itemize}
+    \item  All of the following apply:
+      \begin{itemize}
+      \item  [ty] is a named type [x];
+      \item  One of the following applies:
+        \begin{itemize}
+        \item  All of the following apply:
+          \begin{itemize}
+          \item  [x] is not declared in the global environment; 
+          \item  an error "Undefined Identifier" is raised;
+          \end{itemize}
+        \item  All of the following apply:
+          \begin{itemize}
+          \item  [x] is declared in the global environment as some type [ty'];
+          \item  [t\_struct] is the structure of [ty'];
+          \end{itemize}
+       \end{itemize}
+      \end{itemize}
+    \item  All of the following apply:
+      \begin{itemize}
+      \item  [t] is a builtin singular type;
+      \item  [t\_struct] is [ty];
+      \end{itemize}
+    \item  All of the following apply:
+      \begin{itemize}
+      \item  [ty] is a tuple with [subtypes];
+      \item  [t\_struct] is a tuple with the structure of each element in [subtypes];
+      \end{itemize}
+    \item  All of the following apply:
+      \begin{itemize}
+      \item  [ty] is an array with [t];
+      \item  [t\_struct] is an array with the structure of [t];
+      \end{itemize}
+    \item  All of the following apply:
+      \begin{itemize}
+      \item  [ty] is a record with [fields];
+      \item  [t\_struct] is a record with ;
+      \end{itemize}
+    \item  All of the following apply:
+      \begin{itemize}
+      \item  [ty] is an exception with [fields];
+      \item  [t\_struct] is a record with ;
+      \end{itemize}
+    \end{itemize}
+      
+    \subsubsection{Comments}
+    The structure of a type is the primitive type it is equivalent to such that
+    it can hold the same values. 
+
+    This aims to encompass LRM Section 7.1.2 D\_FXQV.
+
+    \subsubsection{Examples}
+    [type T1 of integer;]
+    is the named type [T1] whose structure is integer.
+
+    [type T2 of (integer, T1);]
+    is the named type [T2] whose structure is (integer, integer). In this
+    example, [(integer, T1)] is non-primitive since it uses [T1], which is builtin aggregate.
+
+    In this example:
+    [var x: T1;]
+    the type of [x] is the named (hence non-primitive) type [T1], whose structure
+    is [integer].
+
+    In this example:
+    [var y: integer;]
+    the type of y is the anonymous primitive type [integer].
+
+    In this example:
+    [var z: (integer, T1);]
+    the type of z is the anonymous non-primitive type `(integer, T1)` whose
+    structure is `(integer, integer)`.
+
+\section{Domain of Values for Types}
+
+\subsection{Prose}
+  The domain of a type is the set of values which storage elements of that type
+may hold. 
+
+\subsection{Comments}
+  This aims to encompass LRM Section 7.1.3 D\_BMGM.
+
+\subsection{Examples}
+  The domain of [integer] is the infinite set of all integers.
+
+  The domain of [bits(1)] is the set [{‘1’, ‘0’}].
+
+  The domain of [integer \section{,16}] is the set containing the integers [2] and [16].
+
+  The domain of [bits(\section{,16})] is the set containing all two bit and all sixteen bit values.
+
+\section{Constrained Types}
+
+\subsection{Prose}
+  A constrained type is a type whose value is limited to a finite
+  set. 
+
+  A type which is not constrained is unconstrained.
+
+  A constrained type with a non-empty constraint is well-constrained.
+
+\subsection{Comments}
+  This aims to encompass LRM Section 3.4.1 D\_ZTPP, R\_WJYH, R\_HJPN, R\_CZTX, R\_TPHR
+
+\subsection{Examples}
+  Bitvector storage element’s widths are constrained integers.  
+
+
+\chapter{Type satisfaction and related notions}
+
+\section{TypingRule.Subtype} 
+
+\subsection{Prose}
+  The subtype relation is a partial order.
+
+\subsection{Comments}
+  Since the subtype relation is a partial order, it is reflexive, viz, 
+  every type is also a subtype of itself.
+
+  Since the subtype relation is a partial order, it is transitive, viz, if A is
+  a subtype of B and B is a subtype of C then A is a subtype of C.
+ 
+  As a consequence, there is no need to declare the reflexive and transitive
+  subtype relations explicitly. All other subtype relations must be explicitly
+  declared.
+ 
+  Since the subtype relation is a partial order, it is antisymmetric. Therefore
+  it is an error if all of the following apply:
+  \begin{itemize}
+  \item  id1 is a subtype of id2;
+  \item  id2 is a subtype of id1.
+  \end{itemize}
+
+  This aims to encompass LRM Section 4.3.1 R\_NXRX, I\_KGKS, I\_MTML, I\_JVRM, I\_CHMP.
+
+\subsection{Examples}
+
+\section{TypingRule.Supertype}
+
+\subsection{Prose}
+  T is a supertype of S if and only if S is a subtype of T.
+
+\subsection{Comments}
+  Since the subtype relation is a partial order, it is reflexive. Therefore the
+  supertype relation also is reflexive, viz, every type is also a supertype of
+  itself.
+
+  This aims to encompass LRM Section 4.3.1 I\_KGKS.
+
+\section{TypingRule.StructuralSubtypeSatisfaction}
+
+\subsection{Prose}
+  T structural-subtype-satisfies S if one of the following applies:
+  \begin{itemize}
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  S has the structure of an integer type;
+    \item  T has the structure of an integer type.
+    \end{itemize}
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  S has the structure of a real type;
+    \item  T has the structure of a real type.
+    \end{itemize} 
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  S has the structure of a string type;
+    \item  T has the structure of a string type.
+    \end{itemize}
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  S has the structure of a boolean type;
+    \item  T has the structure of a boolean type.
+    \end{itemize}
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  S has the structure of an enumeration type; 
+    \item  T has the structure of an enumeration type;
+    \item  S and T have the same enumeration literals.
+    \end{itemize}
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  S has the structure of a bitvector type with determined width [w];
+    \item  One of the following applies:
+      \begin{itemize}
+      \item  T has the structure of a bitvector type of determined width [w];
+      \item  T has the structure of a bitvector type of undetermined width.
+      \end{itemize}
+    \end{itemize}
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  S has the structure of a bitvector type with undetermined width;
+    \item  T has the structure of a bitvector type. 
+    \end{itemize}
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  S has the structure of a bitvector type with bitfields [bitfields] and width [width];
+    \item  T has the structure of a bitvector type with width [width];
+    \item  for every bitfield [f] in [bitfields] there is a bitfield [f'] in [T] and
+      all of the following apply:
+      \begin{itemize}
+      \item  [f'] has the same name, width and offset as [f];
+      \item  [f'] type-satisfies [f].
+      \end{itemize}
+    \end{itemize}
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  [S] has the structure of an array type with elements of type [E];
+    \item  [T] has the structure of an array type with elements of type [E];
+    \item  [T] has the same element indices as [S].
+    \end{itemize}
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  [S] has the structure of a tuple type;
+    \item  [T] has the structure of a tuple type;
+    \item  [T] has the same number of elements as [S];
+    \item  for each element [e] in [S] there is an element [e'] in [T] and [e']
+      type-satisfies [e].
+    \end{itemize}  
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  [S] has the structure of a record type;
+    \item  [T] has the structure of a record type;
+    \item  for each field [f] in [S] there is an element [f'] in [T] and [f'] has
+      the same type as [f].
+    \end{itemize}
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  [S] has the structure of an exception type;
+    \item  [T] has the structure of an exception type;
+    \item  for each field [f] in [S] there is an element [f'] in [T] and [f'] has
+      the same type as [f].
+    \end{itemize}
+  \end{itemize}
+
+\subsection{Comments}
+  This aims to encompass LRM Section 7.3.1. D\_TRVR.
+
+\subsection{Examples}
+
+\section{TypingRule.DomainSubtypeSatisfaction}
+
+\subsection{Prose}
+ T domain-subtype-satisfies S if one of the following applies:
+ \begin{itemize}
+ \item  All of the following apply:
+    \begin{itemize}
+    \item  [S] does not have the structure of an aggregate type or bitvector type;
+    \item  the domain of [T] is a subset of the domain of [S].
+    \end{itemize}
+
+  \item  All of the following apply:
+    \item  One of the following applies:
+      \begin{itemize}
+      \item  [S] has the structure of a bitvector type with undetermined width;
+      \item  [T] has the structure of a bitvector type with undetermined width;
+      \end{itemize}
+   \item  the domain of [T] is a subset of the domain of [S].
+  \end{itemize}
+
+\subsection{Comments}
+  This aims to encompass LRM Section 7.3.1. D\_TRVR.
+
+\subsection{Examples}
+
+\section{TypingRule.SubtypeSatisfaction}
+
+\subsection{Prose}
+  T subtype-satisfies S if all of the following apply:
+  \begin{itemize}
+  \item  T structural-subtype-satisfies S;
+  \item  T domain-subtype-satisfies S.
+  \end{itemize} 
+
+\subsection{Comments}
+  This aims to encompass LRM Section 7.3.1. D\_TRVR.
+
+\subsection{Examples}
+
+\section{TypingRule.TypeSatisfaction}
+
+\subsection{Prose}
+ 
+ T type-satisfies S if one of the following applies:
+ \begin{itemize}
+ \item  T is a subtype of S;
+ \item  All of the following apply:
+    \begin{itemize}
+    \item  T subtype-satisfies S;
+    \item  One of the following applies:
+      \begin{itemize}
+      \item  S is an anonymous type;
+      \item  T is an anonymous type;
+      \end{itemize}
+    \end{itemize}
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  T is an anonymous bitvector with no bitfields;
+    \item  S has the structure of a bitvector (with or without bitfields);
+    \item  S has the same width as T.
+    \end{itemize}
+  \end{itemize}
+
+\subsection{Comments}
+  Since the subtype relation is a partial order, it is reflexive. Therefore
+  every type T is a subtype of itself, and as a consequence, every type T
+  type-satisfies itself.
+  
+  This aims to encompass LRM Section 7.3.2 R\_FMXK and I\_NLFD.
+
+\subsection{Example: TypingRule.TypeSatisfaction1.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction1.asl}
+    [var pair: pairT = (1, dataT1)] is legal since the right-hand-side has
+    anonymous, non-primitive type [(integer, T1)].
+
+\subsection{Example: TypingRule.TypeSatisfaction2.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction2.asl}
+    [pair = (1, dataAsInt);] is legal since the right-hand-side has anonymous,
+    primitive type [(integer, integer)].
+ 
+\subsection{Example: TypingRule.TypeSatisfaction3.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction3.asl}
+    [pair = (1, dataT2);] is illegal since the right-hand-side has anonymous,
+    non-primitive type [(integer, T2)] which does not subtype-satisfy named
+    type [pairT].
+
+\section{TypingRule.TypeClash}
+
+\subsection{Prose}
+  [T] type-clashes with [S] if one of the following applies:
+  \begin{itemize}
+  \item  [S] and [T] both have the structure of integers;
+  \item  [S] and [T] both have the structure of reals;
+  \item  [S] and [T] both have the structure of strings;
+  \item  [S] and [T] both have the structure of enumeration types with the same enumeration literals;
+  \item  [S] and [T] both have the structure of bitvectors;
+  \item  [S] and [T] both have the structure of arrays whose element types type-clash;
+  \item  [S] and [T] both have the structure of tuples of the same length whose
+    corresponding element types type-clash;
+  \item  [S] is a subtype of [T];
+  \item  [S] is a supertype of [T].
+  \end{itemize}
+
+\subsection{Comments}
+  Note that if T subtype-satisfies S then T and S type-clash, but not the other
+  way around.
+
+  Note that type-clashing is an equivalence relation. Therefore if T
+  type-clashes with A and B then it is also the case that A and B type-clash.
+
+  This aims to encompass LRM Section 7.3.3. D\_VPZZ, I\_PQCT and I\_WZKM.
+
+\subsection{Examples}
+
+\section{TypingRule.LowestCommonAncestor}
+
+\subsection{Prose}
+  The lowest common ancestor of types S and T is ty and one of the following applies:
+  \begin{itemize}
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  S and T are the same type;
+    \item  ty is S.
+    \end{itemize}
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  S and T are both named types;
+    \item  ty is a common supertype of S and T;
+    \item  ty is a subtype of all other common supertypes of S and T.
+    \end{itemize}
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  S and T both have the structure of array types with the same index type
+      and the same element types;
+
+    \item  One of the following applies:
+      \begin{itemize}
+      \item  All of the following apply:
+        \begin{itemize}
+        \item  S is a named type;
+        \item  T is an anonymous type;
+        \item  ty is S.
+        \end{itemize}
+
+      \item  All of the following apply:
+        \begin{itemize}
+        \item  S is an anonymous type;
+        \item  T is a named type;
+        \item  ty is T.
+        \end{itemize}
+      \end{itemize}
+    \end{itemize}
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  S and T both have the structure of tuple types with the same number of elements;
+    \item  The types of the elements of S type-satisfy the types of the elements of T;
+    \item  The types of the elements of T type-satisfy the types of the elements of S;
+    \item  One of the following applies:
+
+      \item  All of the following apply:
+        \begin{itemize}
+        \item  S is a named type;
+        \item  T is an anonymous type;
+        \item  ty is S.
+        \end{itemize}
+
+      \item  All of the following apply:
+        \begin{itemize}
+        \item  S is an anonymous type;
+        \item  T is a named type;
+        \item  ty is T.
+        \end{itemize}
+
+     \item  All of the following apply:
+        \begin{itemize}
+        \item  S is an anonymous type;
+        \item  T is an anonymous type;
+	\item  ty is the tuple type where the type of each element is the lowest common
+	  ancestor of the types of the corresponding elements of S and T. 
+        \end{itemize}
+    \end{itemize}
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  S and T both have the structure of well-constrained integer types;
+    \item  One of the following applies:
+      \begin{itemize}
+      \item  All of the following apply:
+        \begin{itemize}
+        \item  S is a named type;
+        \item  T is an anonymous type;
+        \item  ty is S.
+        \end{itemize}
+
+      \item  All of the following apply:
+        \begin{itemize}
+        \item  S is an anonymous type;
+        \item  T is a named type;
+        \item  ty is T.
+        \end{itemize}
+
+      \item  All of the following apply:
+        \begin{itemize}
+        \item  S is an anonymous type;
+        \item  T is an anonymous type;
+	\item  ty is the well-constrained integer type whose domain is the union of the
+	  domains of S and T.      
+        \end{itemize}
+      \end{itemize}
+    \end{itemize}
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  Either S or T have the structure of an unconstrained integer type;
+    \item  One of the following applies:
+
+      \item  All of the following apply:
+        \begin{itemize}
+        \item  S is a named type;
+        \item  S has the structure of an unconstrained integer type;
+        \item  T is an anonymous type;
+        \item  ty is S.
+        \end{itemize}
+
+      \item  All of the following apply:
+        \begin{itemize}
+        \item  S is an anonymous type;
+        \item  T is a named type;
+        \item  T has the structure of an unconstrained integer type;
+        \item  ty is T.
+        \end{itemize}
+
+      \item  All of the following apply:
+        \begin{itemize}
+        \item  S is an anonymous type;
+        \item  T is an anonymous type;
+	\item  ty is the unconstrained integer type. 
+        \end{itemize}
+    \end{itemize}
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  Either S or T have the structure of an under-constrained integer type;
+    \item  ty is the under-constrained integer type. 
+    \end{itemize}
+
+  \item  ty is undefined.
+  \end{itemize}
+
+\subsection{Comments}
+  This aims to encompass LRM Section 7.6.1. R\_YZHM.
+
+\section{TypingRule.CheckUnop}
+
+\subsection{Goal}
+  Checking compatibility of an unary operator with the type of its argument.
+
+\subsection{Prose}
+  [t] is the result of checking compatibility of a unary operator [op] with
+  type [t1] and one of the following applies:
+  \begin{itemize}
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  [op] is [BNOT];
+    \item  [t1] type-satisfies [boolean];
+    \item  [t] is [boolean];
+    \end{itemize}
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  [op] is [NEG];
+    \item  One of the following applies:
+      \begin{itemize}
+      \item  [t1] type-satisfies [integer]; 
+      \item  [t1] type-satisfies [real];
+      \end{itemize}
+     \item  One of the following applies:
+       \begin{itemize}
+       \item  All of the following apply:
+         \begin{itemize}
+         \item  [t1] has the structure of an unconstrained integer;
+         \item  [t] is an unconstrained integer;
+         \end{itemize}
+       \item  All of the following apply:
+         \begin{itemize}
+         \item  [t1] has the structure of a constrained integer;
+         \item  [t] is a constrained integer whose constraint is ;
+         \end{itemize}
+       \end{itemize}
+    \end{itemize}  
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  [op] is [NOT];
+    \item  [t1] has the structure of a bitvector;
+    \item  [t] is [t1].
+    \end{itemize}
+  \end{itemize}
+
+\subsection{Comments}
+
+\subsection{Examples}
+
+ \section{TypingRule.CheckBinop}
+
+\subsection{Goal}
+  Checking compatibility of a binary operator with the types of its arguments.
+
+\subsection{Prose}
+  [t] is the result of checking compatibility of a binary operator [op] with
+  types [t1] and [t2] and one of the following applies:
+\begin{itemize}
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  [op] is [AND], [OR], [EQ] or [IMPL]; 
+    \item  [t1] type-satisfies [boolean];
+    \item  [t2] type-satisfies [boolean];
+    \item  [t] is [boolean].
+    \end{itemize}
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  [op] is [AND], [OR], or [EOR];
+    \item  [t1] has the structure of a bitvector;
+    \item  [t2] has the structure of a bitvector;
+    \item  [t1] and [t2] have the same bitvector width [w];
+    \item  [t] is the bitvector type of width [w].
+    \end{itemize}
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  [op] is [PLUS] or [MINUS];
+    \item  [t1] has the structure of a bitvector;
+    \item  [t2] has the structure of a bitvector;
+    \item  [t1] and [t2] have the same bitvector width [w];
+    \item  [t2] type-satisfies [integer];
+    \item  [t] is the bitvector type of width [w].
+    \end{itemize}
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  [op] is [EQ\_OP] or [NEQ];
+    \item  One of the following applies:
+      \begin{itemize}
+      \item  [t1] is equal to [t2];
+      \item  All of the following apply:
+        \begin{itemize}
+        \item  [t1] type-satisfies [integer];
+        \item  [t2] type-satisfies [integer]; 
+        \end{itemize}
+      \item  All of the following apply:
+        \begin{itemize}
+        \item  [t1] has the structure of a bitvector;
+        \item  [t2] has the structure of a bitvector;
+        \item  [t1] and [t2] have the same bitvector width;
+        \end{itemize}
+      \item  All of the following apply:
+        \begin{itemize}
+        \item  [t1] type-satisfies [boolean];
+        \item  [t2] type-satisfies [boolean];
+        \end{itemize}
+      \item  All of the following apply:
+        \begin{itemize}
+        \item  [t1] enumerates local declarations [li1]; 
+        \item  [t2] enumerates local declarations [li2];
+        \item  [li1] equals [li2];
+        \end{itemize}
+      \end{itemize}
+    \item  [t] is [boolean].
+    \end{itemize}
+   
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  [op] is [LEQ], [GEQ], [GT] or [LT];
+    \item  One of the following applies:
+      \begin{itemize}
+      \item  All of the following apply:
+        \begin{itemize}
+        \item  [t1] type-satisfies [integer];
+        \item  [t2] type-satisfies [integer];
+        \end{itemize}
+      \item  All of the following apply:
+        \begin{itemize}
+        \item  [t1] type-satisfies [real];
+        \item  [t2] type-satisfies [real];
+        \end{itemize}
+      \end{itemize}
+    \item  [t] is boolean.
+    \end{itemize}
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  [op] is [MUL], [DIV], [DIVRM], [MOD], [SHL], [SHR], [POW], [PLUS] or [MINUS];
+    \item  [struct1] is the structure of [t1];
+    \item  [struct2] is the structure of [t2];
+    \item  One of the following applies:
+      \begin{itemize}
+      \item  All of the following apply:
+        \begin{itemize}
+        \item  [t1] has the structure of an unconstrained integer;
+        \item  [t2] has the structure of an integer;
+        \item  [t] is an unconstrained integer;
+        \end{itemize}
+      \item  All of the following apply:
+        \begin{itemize}
+        \item  [t1] has the structure of an integer;
+        \item  [t2] has the structure of an unconstrained integer;
+        \item  [t] is an unconstrained integer;
+        \end{itemize}
+      \item  One of the following applies:
+       \begin{itemize} 
+       \item  All of the following apply:
+          \begin{itemize}
+          \item  [t1] has the structure of an under-constrained integer;
+          \item  [t2] has the structure of a constrained integer;
+          \item  [t] is an under-constrained integer;
+          \end{itemize}
+        \item  All of the following apply:
+          \begin{itemize}
+          \item  [t1] has the structure of a constrained integer;
+          \item  [t2] has the structure of an under-constrained integer;
+          \item  [t] is an under-constrained integer;
+          \end{itemize}
+       \end{itemize}
+      \item  One of the following applies:
+         \begin{itemize}
+         \item  All of the following apply:
+           \begin{itemize}
+           \item  [t1] has the structure of a well-constrained integer;
+           \item  [t2] has the structure of a well-constrained integer;
+	   \item  [t] is a constrained integer whose constraint is calculated by
+	     applying the operation to all possible value pairs;
+           \end{itemize}
+         \item  All of the following apply:
+           \begin{itemize}
+           \item  [t1] has the structure of a well-constrained integer;
+           \item  [t2] has the structure of an well-constrained integer;
+	   \item  [t] is a constrained integer whose constraint is calculated by
+	     applying the operation to all possible value pairs;
+           \end{itemize}
+         \end{itemize}
+      \item  All of the following apply:
+        \begin{itemize}
+        \item  [t1] has the structure of [real];
+        \item  [t2] has the structure of [real];
+        \item  [op] is [PLUS], [MINUS] or [MUL];
+        \item  [t] is [real];
+        \end{itemize}
+     \item  All of the following apply:
+       \begin{itemize}
+       \item  [t1] has the structure of [real];
+       \item  [t2] has the structure of [integer];
+       \item  [op] is [POW];
+       \item  [t] is [real];
+       \end{itemize}
+     \end{itemize}
+   \end{itemize} 
+
+  \item  All of the following apply:
+    \begin{itemize}
+    \item  [op] is [RDIV];
+    \item  [t1] type-satisfies [real];
+    \item  [t] is [real].
+    \end{itemize}
+\end{itemize}
+
+\subsection{Comments}
+  This aims to encompass LRM Section 7.5.3 R\_BKNT, Section 7.5.5 R\_ZYWY, R\_BZKW,
+  R\_KFYS, Section 7.5.6 R\_KXMR, Section 7.7 R\_SQXN, R\_MRHT.
+
+\subsection{Examples} 
+
+\chapter{
+Typing Proses
+}
+
+
+Typing a program is typing its ``main'' function.  Constructively, typing a program
+requires following its Abstract Syntax Tree and typing each of its components.
+
+\section{Annotation functions}
+The types of a program are given by applying a set of
+\texttt{annotate\_<object>} functions. Each \texttt{annotate\_<object>}
+function describes how to annotate a specific object, as follows.
+\begin{itemize}
+\item  [annotate\_expr] annotates expressions;
+\item  [annotate\_slices] annotates slices;
+\item  [annotate\_pattern] annotates pattern;
+\item  [annotate\_local\_decl\_item] annotates local declarations;
+\item  [annotate\_lexpr] annotates left-hand sides of assignments;
+\item  [annotate\_stmt] annotates statements;
+\item  [annotate\_block] annotates blocks;
+\item  [annotate\_catcher] annotates catchers;
+\item  [annotate\_call] annotates functions calls;
+\item  [annotate\_func] annotates functions.
+\end{itemize}
+
+This aims to encompass LRM 7.4.2. R\_VDPC.
+
+\section{
+Typing of Expressions
+}
+
+[annotate\_expr] specifies how to annotate an expression [e] in an environment
+[env].  Formally, the result of annotating the expression [e] in [env] is
+[t,new\_e] and one of the following applies:
+
+\subsection{TypingRule.Lit}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] is a Literal [v];
+  \item  [t] is the type of [v];
+  \item  [new\_e] is [e].
+  \end{itemize}
+ 
+  \subsubsection{Examples}
+
+\subsection{TypingRule.TypedExpr}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] is a typed expression [(e',t')];
+  \item  [t'',e''] is the result of annotating [e'] in [env];
+  \item  One of the following applies:
+    \begin{itemize}
+    \item  All of the following apply:
+      \begin{itemize}
+      \item  [t''] is a structural subtype of [t'] in [env];
+      \item  [t''] is a domain subtype of [t'] in [env];
+      \item  [t] is [t'];
+      \item  [new\_e] is [e''].
+      \end{itemize}
+    \item  All of the following apply:
+      \begin{itemize}
+      \item  [t''] is a structural subtype of [t'] in [env];
+      \item  [t''] is not a domain subtype of [t'] in [env];
+      \item  an execution-time check that the expression evaluates to a value in the
+        domain of the required type is required.
+      \end{itemize}
+   \item  All of the following apply:
+     \begin{itemize}
+     \item  [t''] is not a structural subtype of [t'] in [env];
+     \item  a "ConflictingTypes" error is raised.
+     \end{itemize}
+   \end{itemize}
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.ELocalVarConstant}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] is a variable [x];
+  \item  [x] maps to a type [ty] in the [storage\_types] of the local environment given by [env];
+  \item  [x] maps to a local constant [v];
+  \item  [t] is [ty];
+  \item  [new\_e] is the Literal [v].
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.ELocalVar}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] is a variable [x];
+  \item  [x] maps to a type [ty] in the [storage\_types] of the local environment given by [env];
+  \item  [x] does not map to a local constant;
+  \item  [t] is [ty];
+  \item  [new\_e] is [e].
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.EGlobalVarConstantVal}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] is a variable [x];
+  \item  [x] maps to a type [ty] in the [constant\_values] of the global environment given by [env];
+  \item  [x] maps to a global constant;
+  \item  [x] maps to a value [v];
+  \item  [t] is [ty];
+  \item  [new\_e] is [E\_Literal v].
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.EGlobalVar}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] is a variable [x];
+  \item  [x] maps to a type [ty] in the [constant\_values] of the global environment given by [env];
+  \item  [x] does not map to a global constant;
+  \item  [t] is [ty];
+  \item  [new\_e] is [e].
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.EUndefIdent}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] is a variable [x];
+  \item  [x] is not bound in [env];
+  \item  an error "Undefined Identifier" is raised.
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.Binop}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] denotes a binary operation [op] over two expressions [e1] and [e2];
+  \item  [t1,e1'] is the result of annotating [e1] in [env];
+  \item  [t2,e2'] is the result of annotating [e2] in [env];
+  \item  [t] is the result of checking compatibility of [op] with [t1] and [t2];
+  \item  [new\_e] denotes [op] over [e1'] and [e2'].
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.Unop}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] denotes a unary operation [op] over an expression [e'];
+  \item  [t'',e''] is the result of annotating [e'] in [env];
+  \item  [t] is the result of checking compatibility of [op] with [t''];
+  \item  [new\_e] denotes [op] over [e''].
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.ECond}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] denotes a condition [e\_cond] with two options [e\_true] and [e\_false];
+  \item  [t\_cond, e'\_cond] is the result of annotating [e\_cond] in [env];
+  \item  [t\_true, e'\_true] is the result of annotating [e\_true] in [env];
+  \item  [t\_false, e'\_false] is the result of annotating [e\_false] in [env];
+  \item  One of the following applies:
+    \item  All of the following apply:
+      \begin{itemize}
+      \item  [t] is the lowest common ancestor of [t\_true] and [t\_false];
+      \item  [new\_e] is the condition [e'\_cond] with two options [e'\_true] and [e'\_false].
+      \end{itemize}
+    \item  All of the following apply:
+      \begin{itemize}
+      \item  there is no lowest common ancestor of [t\_true] and [t\_false];
+      \item  an error "Unreconciliable Types" is raised.
+      \end{itemize}
+  \end{itemize}
+
+  \subsubsection{Comments}
+  This aims to encompass LRM Section 7.6 R\_XZVT.
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.ETuple}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] denotes a tuple [li];
+  \item  [ts, es] is the result of annotating in [env] each expression in [li];
+  \item  [t] is [ts];
+  \item  [new\_e] is [es].
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.EConcatEmpty}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] denotes the empty concatenation;
+  \item  [t] is [bits(0)];
+  \item  [new\_e] is [e].
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.EConcat}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] denotes the concatenation of a non-empty list of expressions [li];
+  \item  [ts, es] is the result of annotating [li] in [env];
+  \item  [w] is the sum of the widths of the bitvector types [ts];
+  \item  [t] is [bits(w)];
+  \item  [new\_e] is [es].
+  \end{itemize}
+
+  \subsubsection{Comments}
+  This aims to encompass LRM Section 7.8 R\_NYNK and R\_KCZS.
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.ERecordNotARecord}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] denotes the record expression of type [ty] with fields [fields];
+  \item  [ty] is neither a record nor an exception type;
+  \item  an error "Conflicting Types" is raised.
+  \end{itemize}
+
+  \subsubsection{Comments}
+  This aims to encompass LRM Section 5.5 R\_WBCQ.
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.ERecordMissingField}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] denotes the record expression of type [ty] with fields [fields];
+  \item  [ty] is the name of a record type with fields [field\_types];
+  \item  one field in [field\_types] is not initialised by [fields];
+  \item  an error "Bad Fields" is raised.
+  \end{itemize}
+
+  \subsubsection{Comments}
+  This aims to encompass LRM Section 5.5 R\_WBCQ.
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.ERecord}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] denotes the record expression of type [ty] with fields [fields];
+  \item  [ty] is the name of a record type with fields [field\_types];
+  \item  For each field named [name] associated with the expression [e'] in
+    [field\_types], all of the following apply:
+    \begin{itemize}
+    \item  [t',e''] is the result of annotating [e'] in [env];
+    \item  [t\_spec'] is the type associated to [name] in [field\_types];
+    \item  [t'] type-satisfies [t\_spec'];
+    \item  [fields'] associates [name] to [e''];
+    \end{itemize}
+  \item  [t] is [ty];
+  \item  [new\_e] is the record expression of type [ty] with fields [fields'].
+  \end{itemize}
+
+  \subsubsection{Comments}
+  This aims to encompass LRM Section 5.5 R\_WBCQ.
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.ECall}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] denotes a call to a function named [name] with arguments [args] and
+    parameters [eqs];
+  \item  [name', args', eqs', ty] is the result of annotating the call of
+    that function in [env];
+  \item  [t] is [ty];
+  \item  [new\_e] is the call the function named [name'] with arguments [args']
+    and parameters [eqs'].
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.EUnknown}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] denotes an unknown expression of type [ty];
+  \item  [ty'] is the structure of [ty] in [env];
+  \item  [t] is [ty];
+  \item  [new\_e] is an unknown expression of type [ty'].
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.ESlice}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] denotes the slicing of expression [e'] by the slices [slices];
+  \item  [t\_e',e'] is the result of annotating the expression [e'] in [env];
+  \item  [t\_e'] has the structure of an integer or a bitvector;
+  \item  [w] is the width of [slices];
+  \item  [slices'] is the result of annotating [slices] in [env];
+  \item  [t] is the bitvector type of width [w];
+  \item  [new\_e] is the slicing of expression [e'] by the slices [slices'].
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.EGetArray}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] denotes the slicing of expression [e'] by the slices [slices];
+  \item  [t\_e',e'] is the result of annotating the expression [e'] in [env];
+  \item  [t\_e'] has the structure of an array of size [size] and type [t];
+  \item  One of the following applies:
+    \begin{itemize}
+    \item  [wanted\_t\_index] is an enumeration type of name [size];
+    \item  [wanted\_t\_index] is the type [integer {0..size-1}];
+    \end{itemize}
+  \item  [slices] is a single expression [e\_index];
+  \item  [t\_index', e\_index'] is the result of annotating [e\_index] in [env];
+  \item  [t\_index'] type-satisfies [wanted\_t\_index];
+  \item  [new\_e] is an access to array [e'] at index [e\_index'].
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.EGetRecordField}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] denotes the access of field [field\_name] on expression [e1];
+  \item  [t\_e1, e2] is the result of annotating [e1] in [env];
+  \item  [t\_e2] is the anonymous type corresponding to [t\_e1] in [env];
+  \item  [t\_e2] is an Exception or a Record type with fields [fields];
+  \item  [field\_name] is declared in [fields];
+  \item  [t] is the type corresponding to [field\_name] in [fields];
+  \item  [new\_e] is the access of field [field\_name] on expression [e2].
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.EGetBadRecordField}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] denotes the access of field [field\_name] on expression [e1];
+  \item  [t\_e1, e2] is the result of annotating [e1] in [env];
+  \item  [t\_e2] is the anonymous type corresponding to [t\_e1] in [env];
+  \item  [t\_e2] is an Exception or a Record type with fields [fields];
+  \item  [field\_name] is not declared in [fields];
+  \item  an error "Bad Field" is raised.
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.EGetBadBitField}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] denotes the access of field [field\_name] on expression [e1];
+  \item  [t\_e1, e2] is the result of annotating [e1] in [env];
+  \item  [t\_e2] is the anonymous type corresponding to [t\_e1] in [env];
+  \item  [t\_e2] is a bitvector type with bitfields [bitfields];
+  \item  [field\_name] is not declared in [bitfields];
+  \item  an error "Bad Field" is raised.
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.EGetBadField}
+
+   \subsubsection{Prose}
+   All of the following apply:
+   \begin{itemize}
+   \item  [e] denotes the access of field [field\_name] on expression [e1];
+   \item  [t\_e1, e2] is the result of annotating [e1] in [env];
+   \item  [t\_e1] does not have the structure of a record or an exception or a bitvector type;
+   \item  an error "Conflicting Types" is raised.
+   \end{itemize}
+
+   \subsubsection{Examples}
+
+\subsection{TypingRule.EGetBitField}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] denotes the access of field [field\_name] on expression [e1];
+  \item  [t\_e1, e2] is the result of annotating [e1] in [env];
+  \item  [t\_e2] is the anonymous type corresponding to [t\_e1] in [env];
+  \item  [t\_e2] is a bitvector type with bitfields [bitfields];
+  \item  [field\_name] is declared in [bitfields];
+  \item  [slices] gives the slices corresponding to the bitfield [field\_name]
+    in [bitfields];
+  \item  [e3] denotes the slicing of the expression [e2] by the slices [slices];
+  \item  [t,new\_e] is the result of annotating [e3].
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.EGetBitFieldNested}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] denotes the access of field [field\_name] on expression [e1];
+  \item  [t\_e1, e2] is the result of annotating [e1] in [env];
+  \item  [t\_e2] is the anonymous type corresponding to [t\_e1] in [env];
+  \item  [t\_e2] is a bitvector type with bitfields [bitfields];
+  \item  [field\_name] is declared in [bitfields];
+  \item  [slices] gives the slices corresponding to the bitfield [field\_name] in
+    [bitfields];
+  \item  [e3] denotes the slicing of the expression [e2] by the slices [slices];
+  \item  [t4, e4] is the result of annotating [e3] in [env];
+  \item  [bitfields'] gives the bitfields corresponding to the bitfield [field\_name]
+    in [bitfields];
+  \item  [t] is the bitvector type with the width of [t4] and the bitfields [bitfields']
+  \item  [new\_e] is [e4].
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.EGetBitFieldTyped}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] denotes [e1, field\_name];
+  \item  [t\_e1, e2] is the result of annotating [e1] in [env];
+  \item  [t\_e2] is the anonymous type corresponding to [t\_e1] in [env];
+  \item  [t\_e2] is a bitvector type with bitfields [bitfields];
+  \item  [field\_name] is declared in [bitfields];
+  \item  [slices] gives the slices corresponding to the bitfield [field\_name] in
+    [bitfields];
+  \item  [t\_e3,e3] is the result of annotating [e2,slices] in [env];
+  \item  [t] gives the type corresponding to the bitfield [field\_name] in [bitfields];
+  \item  [t\_e3] type-satisfies [t] in [env];
+  \item  [new\_e] is [e3].
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\subsection{TypingRule.EGetBitFields}
+
+  \subsubsection{Prose}
+  <description>
+
+  \subsubsection{Examples}
+  <minimal example>
+
+\subsection{TypingRule.EPattern}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item  [e] denotes whether the expression [e'] matches [patterns];
+  \item  [t\_e', e''] is the result of annotating [e'] in [env];
+  \item  [patterns'] is the result of annotating [patterns] in [env];
+  \item  [t] is [boolean];
+  \item  [new\_e] denotes whether the expression [e''] matches [patterns'].
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+\section{
+Typing of Left-Hand-Side Expressions
+}
+[annotate\_lexpr version env le t\_e] is [new\_le] and one of the following
+applies:
+
+\subsection{TypingRule.LEIgnore}
+
+   \subsubsection{Prose}
+   All of the following apply:
+   \begin{itemize}
+   \item [le] denotes an expression which can be ignored;
+   \item [new\_le] is [le].
+   \end{itemize}
+
+   \subsubsection{Examples}
+
+\subsection{TypingRule.LELocalVar}
+
+   \subsubsection{Prose}
+   All of the following apply:
+   \begin{itemize}
+   \item [le] denotes a local variable [x] of type [ty];
+   \item [x] is locally declared as a variable of type [ty] in [env];
+   \item [new\_le] is [le].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.LEGlobalVar}
+
+    \subsubsection{Prose}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.LETuple}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [le] denotes a tuple [les];
+   \item [t\_e] denotes a tuple type [sub\_tys];
+   \item  One of the following applies:
+     \begin{itemize}
+     \item  All of the following apply:
+       \begin{itemize}
+       \item [les] and [sub\_tys] have the same length;
+       \item [new\_le] is the result of annotating [les] with [sub\_tys] in [env]
+       \end{itemize}
+     \item  All of the following apply:
+       \begin{itemize}
+       \item  [les] and [sub\_tys] do not have the same length;
+       \item  an error "Bad Arity Tuple Unpacking" is raised.
+       \end{itemize}
+     \end{itemize}
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.LESlice}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [le] denotes the slicing of a left-hand-side expression [le1] by the slices [slices];
+   \item [t\_le1] is the type result of annotating the right-hand-side expression corresponding to [le1] in [env];
+   \item [t\_le1] has the structure of a bitvector type;
+   \item [le2] is the result of annotating [le1] in [env];
+   \item [width] is the width of the slices [slices] in [env];
+   \item [t] is the bitvector type of width [width];
+   \item [slices2] is the result of annotating [slices] in [env];
+   \item [new\_le] is the slicing of [le2] by [slices2].
+   \end{itemize}
+ 
+    \subsubsection{Examples}
+
+\subsection{TypingRule.LESetArray}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [le] denotes the slicing of a left-hand-side expression [le1] by the slices [slices];
+   \item [t\_le1] is the type result of annotating the right-hand-side expression corresponding to [le1] in [env];
+   \item [t\_le1] has the structure of an array type of size [size] and item type [t];
+   \item [le2] is the result of annotating [le1] in [env];
+   \item One of the following applies:
+     \begin{itemize}
+     \item [wanted\_t\_index] is an enumeration type of name [size];
+     \item [wanted\_t\_index] is the type [integer {0..size-1}];
+     \end{itemize}
+   \item [slices] is a single expression [e\_index];
+   \item [t\_index', e\_index'] is the result of annotating [e\_index] in [env];
+   \item [t\_index'] type-satisfies [wanted\_t\_index];
+   \item [new\_le] is an access to array [le2] at index [e\_index'].  
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.LESetBadRecordField}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [le] denotes the access to the field named [field] in [le1];
+   \item [t\_le1] is the type result of annotating the right-hand-side expression corresponding to [le1] in [env];
+   \item [le2] is the result of annotating [le1] in [env];
+   \item [t\_le1] has the structure of an exception or a record type with fields [fields];
+   \item [field] is not declared in [fields];
+   \item an error "Bad Field" is raised.
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.LESetRecordField}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [le] denotes the access to the field named [field] in [le1];
+   \item [t\_le1] is the type result of annotating the right-hand-side expression corresponding to [le1] in [env];
+   \item [le2] is the result of annotating [le1] in [env];
+   \item [t\_le1] has the structure of an exception or a record type with fields [fields];
+   \item [field] is bound to type [t] in [fields];
+   \item [t\_e] type-satisfies [t]; 
+   \item [new\_le] is the access to the field [field] in [le2].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.LESetBadBitField}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [le] denotes the access to the field named [field] in [le1];
+   \item [t\_le1] is the type result of annotating the right-hand-side expression corresponding to [le1] in [env];
+   \item [le2] is the result of annotating [le1] in [env];
+   \item [t\_le1] has the structure of a bitvector with bitfields [bitfields];
+   \item [field] is not declared in [bitfields];
+   \item an error "Bad Field" is raised.  
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.LESetBitField}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [le] denotes the access to the field named [field] in [le1];
+   \item [t\_le1] is the type result of annotating the right-hand-side expression corresponding to [le1] in [env];
+   \item [le2] is the result of annotating [le1] in [env];
+   \item [t\_le1] has the structure of a bitvector with bitfields [bitfields];
+   \item [field] is declared in [bitfields];
+   \item [slices] gives the slices corresponding to the bitfield [field] in
+      [bitfields];
+   \item [w] is the width of [slices];
+   \item [t] is the bitvector type of width [w];
+   \item [t\_e] type-satisfies [t];
+   \item [le2] is the slicing of [le1] by [slices];
+   \item [new\_le] is the result of annotating [le2] in [env].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.LESetBitFieldNested}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [le] denotes the access to the field named [field] in [le1];
+   \item [t\_le1] is the type result of annotating the right-hand-side expression corresponding to [le1] in [env];
+   \item [le2] is the result of annotating [le1] in [env];
+   \item [t\_le1] has the structure of a bitvector with bitfields [bitfields];
+   \item [slices] gives the slices corresponding to the bitfield [field] in
+      [bitfields];
+   \item [w] is the width of [slices];
+   \item [bitfields'] gives the bitfields corresponding to [field] in [bitfields];
+   \item [t] is the bitvector type of width [w] and bitfields [bitfields'];
+   \item [t\_e] type-satisfies [t];
+   \item [le2] is the slicing of [le1] by [slices];
+   \item [new\_le] is the result of annotating [le2] in [env].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.LESetBitFieldTyped}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [le] denotes the access to the field named [field] in [le1];
+   \item [t\_le1] is the type result of annotating the right-hand-side expression corresponding to [le1] in [env];
+   \item [le2] is the result of annotating [le1] in [env];
+   \item [t\_le1] has the structure of a bitvector with bitfields [bitfields];
+   \item [slices] gives the slices corresponding to the bitfield [field] in
+      [bitfields];
+   \item [w] is the width of [slices];
+   \item [t'] is the bitvector type of width [w];
+   \item [t] gives the type corresponding to the bitfield [field] in
+      [bitfields];
+   \item [t'] type-satisfies [t];
+   \item [t\_e] type-satisfies [t];
+   \item [le2] is the slicing of [le1] by [slices];
+   \item [new\_le] is the result of annotating [le2] in [env].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.LESetBadField}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [le] denotes the access to the field named [field] in [le1];
+   \item [t\_le1] is the type result of annotating the right-hand-side expression corresponding to [le1] in [env];
+   \item [le2] is the result of annotating [le1] in [env];
+   \item [t\_le1] does not have the structure of a record, or an exception or a bitvector type;
+   \item an error "Conflicting Types" is raised.
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.LESetFields}
+
+    \subsubsection{Prose}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.LEConcat}
+    \subsubsection{Prose}
+    
+
+    \subsubsection{Examples}
+
+
+
+\section{
+Typing of Local Declarations
+}
+[annotate\_local\_decl\_item loc env ty ldk ldi] is [new\_env, new\_ldi] and one
+of the following applies:
+
+\subsection{Comments}
+  This aims to encompass LRM Section 7.4.2 R\_YSPM.
+
+\subsection{TypingRule.LDIgnoreNone}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [ldi] is a local declaration which can be ignored;
+   \item no type is given;
+   \item [new\_env] is [env];
+   \item [new\_ldi] is [ldi].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.LDIgnoreSome}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [ldi] is a local declaration which can be ignored;
+   \item a type [t] is given;
+   \item One of the following applies:
+     \begin{itemize}
+     \item All of the following apply:
+       \begin{itemize}
+       \item [t] can be initialised with [ty] in [env];
+       \item [new\_env] is [env];
+       \item [new\_ldi] is [ldi].
+       \end{itemize}
+     \item All of the following apply:
+       \begin{itemize}
+       \item [t] cannot be initialised with [ty] in [env];
+       \item an error "Conflicting Types" is raised.
+       \end{itemize}
+     \end{itemize}
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.LDVar}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [ldi] denotes a variable [x] with an optional type [ty\_opt];
+   \item [x] is not declared in [env];
+   \item One of the following applies:
+     \begin{itemize}
+     \item All of the following apply:
+       \begin{itemize}
+       \item [ty\_opt] is [None];
+       \item [t] is [ty]
+       \end{itemize}
+     \item All of the following apply:
+       \begin{itemize}
+       \item [ty\_opt] is [Some t];
+       \item [t] can be initialized with [ty] in [env];
+       \end{itemize}
+     \end{itemize}
+   \item [new\_env] is [env] modified so that [x] is locally declared of type [t];
+   \item [new\_ldi] is the declaration of variable [x] with type [t].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.LDUninitialisedTypedTuple}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [ldi] denotes a singleton list [ld];
+   \item [new\_env, new\_ldi] is the result of annotating the local declaration [ld] with [ty] in [env].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.LDTuple}
+
+    \subsubsection{Prose}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.LDTypedTuple}
+
+    \subsubsection{Prose}
+
+    \subsubsection{Examples}
+
+\section{
+Typing of Statements
+}
+[annotate\_stmt env s] is a statement [new\_s] and an environment [new\_env] and
+one of the following applies:
+
+\subsection{TypingRule.SPass}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [s] is a pass statement;
+   \item [new\_s] is [s];
+   \item [new\_env] is [env].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.SThen}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [s] is a then statement over two statements [s1] and [s2];
+   \item [new\_s1, env1] is the result of annotating [s1] in [env];
+   \item [new\_s2, env2] is the result of annotating [s2] in [env1];
+   \item [new\_s] is a then statement over two statements [new\_s1] and [new\_s2];
+   \item [new\_env] is [env2].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.SAssign}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [s] is an assignment [le = re] under language version [ver];
+   \item [t\_e, e1] is the result of annotating [e] in [env];
+   \item [reduced] is the result of potential result of inlining a setter call in [le];
+   \item One of the following applies:
+     \begin{itemize}
+     \item All of the following apply:
+       \begin{itemize}
+       \item [reduced] gives a statement [s];
+       \item [new\_s] is [s];
+       \item [new\_env] is [env].
+       \end{itemize}     
+
+     \item All of the following apply:
+       \begin{itemize}
+       \item [reduced] does not give a statement [s];
+       \item One of the following applies:
+         \begin{itemize}
+         \item All of the following apply:
+           \begin{itemize}
+           \item [ver] is ASLv1;
+           \item [env1] is [env];
+           \end{itemize}
+         \item All of the following apply:
+           \begin{itemize}
+           \item [ver] is ASLv0;
+	   \item [env1] is the result of annotating undeclared variables by using
+	      the first assignments to such variables as declarations;
+           \end{itemize}
+         \end{itemize} 
+
+       \item [le1] is the result of annotating [le] in [env1];
+       \item [new\_s] is the assignment [le1 = e1];
+       \item [new\_env] is [env1].
+       \end{itemize}
+    \end{itemize}
+  \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.SCall}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [s] is a call to a function named [name] with arguments [args] and parameters [eqs];
+   \item [new\_name, new\_args, new\_eqs] is the result of annotating the call
+      to the procedure [name] with arguments [args] and parameters
+[eqs];
+   \item [new\_s] is the call to a function named [new\_name] with arguments
+      [new\_args] and parameters [new\_eqs];
+   \item [new\_env] is [env].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.SReturnNone}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [s] is a return statement with no value and no return type; 
+   \item [new\_s] is a return statement with no value;
+   \item the enclosing function does not have a return type (it is either a setter
+      or a procedure);
+   \item [new\_env] is [env].
+   \end{itemize}
+
+    \subsubsection{Comments}
+    This aims to encompass LRM Section 7.4.3 R\_FTPK.
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.SReturnOne}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item One of the following applies:
+     \begin{itemize}
+     \item All of the following apply:
+       \begin{itemize}
+       \item [s] is a return statement with some value;
+       \item the enclosing function does not have a return type;
+       \end{itemize}
+     \item All of the following apply:
+       \begin{itemize}
+       \item [s] is a return statement with no value;
+       \item the enclosing function has a return type;
+       \end{itemize}
+     \end{itemize}
+   \item An error "Bad Return Statement" is raised.
+   \end{itemize}
+
+    \subsubsection{Comments}
+    This aims to encompass LRM Section 7.4.3 R\_FTPK.
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.SReturnSome}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [s] is a return statement with some value [e];
+   \item the enclosing function has a return type [t];
+   \item [t\_e',e'] is the result of annotating [e] in [env];
+   \item [t\_e'] type-satisfies [t];
+   \item [new\_s] is a return statement with value [e'];
+   \item [new\_env] is [env]. 
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.SCond}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [s] is a condition [e] with two statements [s1] and [s2];
+   \item [t\_cond, e\_cond] is the result of annotating [e] in [env];
+   \item [t\_cond] type-satisfies [t\_bool]; 
+   \item [s1'] is the result of annotating [s1] in [env];
+   \item [s2'] is the result of annotating [s2] in [env];
+   \item [new\_s] is the condition [e\_cond] with two statements [s1'] and [s2'];
+   \item [new\_env] is [env].
+   \end{itemize}
+
+    \subsubsection{Comments}
+    This aims to encompass LRM Section 7.4.3 R\_NBDJ.
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.SCase}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [s] is a case statement with expression [e] and cases [cases];
+   \item [t\_e, e1] is the result of annotating [e] in [env];
+   \item [cases1, env1] is the result of annotating each case in [cases];
+   \item [new\_s] is a case statement with expression [e1] and cases [cases1];
+   \item [new\_env] is [env1].
+   \end{itemize}
+    (* do we not check that [e] has the structure of a boolean? *)
+
+    \subsubsection{Comments}
+    This aims to encompass LRM Section 7.4.3 R\_WGSY.
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.SAssert}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [s] is an assert statement with expression [e];
+   \item [t\_e',e'] is the result of annotating [e] in [env];
+   \item [t\_e'] type-satisfies [t\_bool];  
+   \item [new\_s] is an assert statement with expression [e'];
+   \item [new\_env] is [env].
+   \end{itemize}
+
+    \subsubsection{Comments}
+    This aims to encompass LRM Section 7.4.3 R\_JQYF
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.SWhile}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [s] is a while statement with expression [e1] and statement [s1];
+   \item [t, e2] is the result of annotating [e1] in [env];
+   \item [t] type-satisfies [t\_bool]; (* is this the same as [e1] having the structure of a boolean? *)
+   \item [s2] is the result of annotating [s1] in [env];
+   \item [new\_s] is a while statement with expression [e2] and statement [s2];
+   \item [new\_env] is [env].
+   \end{itemize}
+
+    \subsubsection{Comments}
+    This aims to encompass LRM Section 7.4.3 R\_FTVN.
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.SRepeat}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [s] is a repeat statement with expression [e1] and statement [s1];
+   \item [s2] is the result of annotating [s1] in [env];
+   \item [t, e2] is the result of annotating [e1] in [env];
+   \item [t] type-satisfies [t\_bool]; (* is this the same as [e1] having the structure of a boolean? *)
+   \item [new\_s] is a repeat statement with expression [e2] and statement [s2];
+   \item [new\_env] is [env].
+   \end{itemize}
+
+    \subsubsection{Comments}
+    This aims to encompass LRM Section 7.4.3 R\_FTVN.
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.SFor}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [s] is a for statement with index [id], direction [dir], two expressions
+      [e1] and [e2] and a statement [s'];
+   \item [t1,e1'] is the result of annotating [e1] in [env];
+   \item [t2,e2'] is the result of annotating [e2] in [env];
+   \item [t1] has the structure of an integer type;
+   \item [t2] has the structure of an integer type;
+   \item [ty] is ;
+   \item [s''] is the result of annotating [s'] in [env];
+   \item [new\_s] is a for statement with index [id], direction [dir], two expressions
+      [e1'] and [e2'] and statement [s''];
+   \item [new\_env] is [env].
+   \end{itemize}
+
+    \subsubsection{Comments}
+    This aims to encompass LRM Section 7.4.3 R\_VTJW.
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.SDeclSome}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [s] is a declaration with [ldk], [ldi] and an expression [e];
+   \item [t\_e,e'] is the result of annotating [e] in [env];
+   \item [env', ldi'] is the result of declaring the local identifiers of [ldi] in [env];
+   \item [new\_s] is a declaration with [ldk], [ldi'] and an expression [e'];
+   \item [new\_env] is [env'].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.SDeclNone}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [s] is a declaration statement with [ldk], [ldi] and no initial expression;
+   \item [env', s'] is the result of annotating uninitialised local declarations [ldi] in [env];
+   \item [new\_s] is [s'];
+   \item [new\_env] is [env'].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.SThrowNone}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [s] is a throw statement with no expression;
+   \item [new\_s] is [s];
+   \item [new\_env] is [env].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.SThrowSome}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [s] is a throw statement with expression [e];
+   \item [t\_e,e'] is the result of annotating [e] in [env];
+   \item [t\_e] has the structure of an exception type;
+   \item [new\_s] is a throw statement with expression [e'] and type [t\_e];
+   \item [new\_env] is [env].
+   \end{itemize}
+
+    \subsubsection{Comments}
+    This aims to encompass LRM Section 7.4.3 R\_NXRC.
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.STry}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [s] is a try statement with statement [s'], catchers [catchers] and block [otherwise];
+   \item [s''] is the result of annotating [s'] in [env];
+   \item [otherwise'] is the result of annotating [otherwise] in [env];
+   \item [catchers'] is the result of annotating [catchers] in [env];
+   \item [new\_s] is a try statement with statement [s''], catchers [catchers'] and block [otherwise'];
+   \item [new\_env] is [env].
+   \end{itemize}
+
+    \subsubsection{Comments}
+    This aims to encompass LRM Section 7.4.3 R\_WVXS.
+
+    \subsubsection{Examples}
+
+\section{Typing of Slices}
+[annotate\_slices env slices] is the pair [(offset, length)] and one of the
+following applies:
+
+\subsection{TypingRule.SliceLength}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [slices] gives [offset] and [length]; 
+   \item [t\_offset, offset'] is the result of annotating [offset] in [env];
+   \item [t\_length, length'] is the result of annotating [length] in [env];
+   \item [t\_offset] has the structure of an integer type;
+   \item [t\_length] has the structure of an integer type;
+   \item [length] is pure.
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.SliceSingle}
+
+    \subsubsection{Prose}
+    All of the following apply: 
+   \begin{itemize}
+   \item [slices] gives an index [i];
+   \item [(offset, length)] is the result of applying TypingRule.SliceLength to [i, i+:1].
+   \end{itemize}
+
+    \subsubsection{Comments}
+    R\_GXKG: The notation b[i] is syntactic sugar for b[i +: 1].
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.SliceRange}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [slices] gives a range [(j, i)];
+   \item [pre\_length] is [i +: j-i+1];
+   \item [offset, length] is the result of applying TypingRule.SliceLength to [i,pre\_length].
+   \end{itemize}
+
+    \subsubsection{Comments}
+    R\_GXKG: The notation b[j:i] is syntactic sugar for b[i +: j-i+1].
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.SliceStar}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [slices] gives [(factor, pre\_length)];
+   \item [pre\_offset] is [factor * pre\_length];
+   \item [offset, length] is the result of applying TypingRule.SliceLength to [(pre\_offset, pre\_length)].
+   \end{itemize}
+
+    \subsubsection{Comments}
+    R\_GXQG: The notation b[i *: n] is syntactic sugar for b[i*n +: n]
+
+    \subsubsection{Examples}
+
+\section{Typing of Patterns}
+[annotate\_pattern loc env t p] is [new\_p] and one of the following applies:
+
+\subsection{TypingRule.PAll}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [p] is the pattern matching everything;
+   \item [new\_p] is [p].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.PAny}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [p] is the pattern which matches anything in a list [li];
+   \item [new\_li] is the result of mapping the result of annotating [p] in [env] onto [li];
+   \item [new\_p] is the pattern which matches anything in [new\_li].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.PNot}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [p] is the pattern which matches the negation of a pattern [q];
+   \item [new\_q] is the result of annotating [q] in [env]; 
+   \item [new\_p] is pattern which matches the negation of [new\_q].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.PSingle}
+
+    \subsubsection{Prose}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.PGeq}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [p] is the pattern which matches anything greater than or equal to an expression [e];
+   \item [t\_e, e'] is the result of annotating [e] in [env]; 
+   \item [e'] is a compile-time constant;
+   \item [t] has the structure of an integer;
+   \item [t\_e] has the structure of an integer;
+   \item [new\_p] is the pattern which matches anything greater than or equal to [e'].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.PLeq}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [p] is the pattern which matches anything lesser than or equal to an expression [e];
+   \item [t\_e, e'] is the result of annotating [e] in [env]; 
+   \item [e'] is a compile-time constant;
+   \item [t] has the structure of an integer;
+   \item [t\_e] has the structure of an integer;
+   \item [new\_p] is the pattern which matches anything lesser than or equal to [e'].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.PRange}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [p] is the pattern which matches anything within the range given by
+      expressions [e1] and [e2];
+   \item [t\_e1, e1'] is the result of annotating [e1] in [env];
+   \item [t\_e2, e2'] is the result of annotating [e2] in [env];
+   \item [t] has the structure of an integer;
+   \item [t\_e1] has the structure of an integer;
+   \item [t\_e2] has the structure of an integer;
+   \item e1' and e2' are compile-time constants; 
+   \item [new\_p] is the pattern which matches anything within the range given by
+      expressions [e1'] and [e2'].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.PMask}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [p] is the pattern which matches a mask [m];
+   \item [t] has the structure of a bitvector type;
+   \item [n] is the length of mask [m];
+   \item [t\_m] is the bitvector type of width [n];
+   \item [t] type-satisfies [t\_m];
+   \item [new\_p] is [p].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.PTupleBadArity}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [p] is the pattern which matches a tuple [li];
+   \item [t] has the type structure of a tuple type [ts];
+   \item [ts] is a list of different size to the size of [li];
+   \item an error "Bad Arity" is raised. 
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.PTuple}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [p] is the pattern which matches a tuple [li];
+   \item [t\_struct] is the type structure of [t];
+   \item [t\_struct] is a tuple [ts];
+   \item [ts] is a list of same size to the size of [li];  
+   \item [new\_li] is the result of annotating [li] with [ts];
+   \item [new\_p] is the pattern which matches the tuple [new\_li].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.PTupleConflict}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [p] is the pattern which matches a tuple [li];
+   \item [t\_struct] is the type structure of [t];
+   \item [t\_struct] is not a tuple type;
+   \item an error "Conflicting Types" is raised. 
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\section{Typing of Blocks}
+
+\subsection{TypingRule.Block}
+    
+    \subsubsection{Prose}
+    [annotate\_block env return\_type s] is the result of annotating the
+    statement [s] in [env].
+
+    \subsubsection{Comments}
+    A local identifier declared with var, let or constant is in scope
+from the point immediately after its declaration until the end of the
+immediately enclosing block.
+
+    From that follows that we can discard the environment at the end of
+an enclosing block.
+    
+    \subsubsection{Example: TypingRule.Block0.asl}
+    \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.Block0.asl}
+
+\section{Typing of Catchers}
+  
+\subsection{TypingRule.CatcherNone}
+  [annotate\_catchers env return\_type (name\_opt, ty, stmt)] is [(name\_opt, ty,
+  new\_stmt)] and one of the following applies:
+ 
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [ty] has the structure of an exception type;
+   \item [name\_opt] gives no name;
+   \item [env'] is [env];
+   \item [new\_stmt] is the result of annotating [stmt] in [env'] with [return\_type].
+   \end{itemize}
+
+    \subsubsection{Comments}
+    This aims to encompass LRM Section 7.4.3 R\_SDJK.
+
+    \subsubsection{Examples}
+
+
+\subsection{TypingRule.CatcherSome}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [ty] has the structure of an exception type;
+   \item [name\_opt] gives a name [name];
+   \item [name] is not already declared in [env];
+   \item [name] is annotated with [ty] in [env];
+   \item [env'] is [env] modified to have [name] locally declared as immutable of type [ty];
+   \item [new\_stmt] is the result of annotating [stmt] in [env'] with [return\_type].
+   \end{itemize}
+
+    \subsubsection{Comments}
+    This aims to encompass LRM Section 7.4.3 R\_SDJK.
+
+    \subsubsection{Examples}
+
+
+\section{Typing of Function Calls}
+[annotate\_call loc en name args eqs call\_type] annotates the call to function
+[name] with arguments [args] and parameters [eqs]. Formally, [annotate\_call loc
+en name args eqs call\_type] is [(name1, args, eqs2, ret\_ty1)] or an error is
+raised and one of the following applies:
+
+\subsection{TypingRule.FCallBadArity}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [caller\_arg\_types, args1] is the result of annotating [args] in [env];
+   \item [name] is bound in [env] to a function with a unique name [name1]
+      whose argument types [callee\_arg\_types] type-clash
+      [caller\_arg\_types] and whose return type is [ret\_ty];
+   \item [eqs1] is the list made of both [eqs] and [extra\_nargs];
+   \item the lists [callee\_arg\_types] and [args1] do not have the same length;
+   \item an error "Bad Arity" is raised.
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.FCallGetter}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [caller\_arg\_types, arg1] is the result of annotating [args] in [env];
+   \item [name] is bound in [env] to a function with argument types
+      [callee\_arg\_types];
+   \item [eqs2] is [eqs1] modified to add all the type equations from the
+      type-clash of [caller\_arg\_types] and [callee\_arg\_types];
+   \item [call\_type] is a either a function or a getter type;
+   \item [ret\_ty1] is the result of renaming [ty] in [eqs2].
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.FCallSetter}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [caller\_arg\_types, arg1] is the result of annotating [args] in [env];
+   \item [name] is bound in [env] to a function with a unique name [name1] whose argument types [callee\_arg\_types] type-clash [caller\_arg\_types] and whose return type is [ret\_ty];
+   \item [eqs1] is the list made of both [eqs] and [extra\_nargs];
+   \item [eqs2] is ;
+   \item [call\_type] is a setter or procedure type;
+   \item [ret\_ty] is None;
+   \item [ret\_ty1] is None.
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\subsection{TypingRule.FCallMismatch}
+
+    \subsubsection{Prose}
+    All of the following apply:
+   \begin{itemize}
+   \item [caller\_arg\_types, arg1] is the result of annotating [args] in [env];
+   \item [extra\_nargs, name1, callee\_arg\_types, ret\_ty] is the result of trying to
+      find the name [name] with [caller\_arg\_types] in [env];
+   \item [eqs1] is the list made of both [eqs] and [extra\_nargs];
+   \item [eqs2] is ;
+   \item [call\_type] is not a function, getter, setter or procedure type;
+   \item an error "Mismatched Return Value" is raised.
+   \end{itemize}
+
+    \subsubsection{Examples}
+
+\section{Typing of Functions}
+[annotate\_func loc env f] annotates the function named [f] and returns [f],
+[new\_body] and [name].
+
+\subsection{TypingRule.Func}
+
+  \subsubsection{Prose}
+  All of the following apply:
+ \begin{itemize}
+ \item [env1] is [env] modified to have an empty local environment;
+ \item [env2] is [env1] with every formal argument declared as immutable with its type;
+ \item [env3] is [env2] modified to add explicit parameters;
+ \item [env4] is [env3] modified to resolve dependently typed identifiers in the arguments;
+ \item [env5] is [env4] modified to resolve dependently typed identifiers in the result type;
+ \item [body] is the body given by [f];
+ \item [new\_body] is the result of annotating [body] in [env5];
+ \item [name] is the name [f] as found in [env5].
+ \end{itemize} 
+
+  \subsubsection{Examples}
+
+\end{document}

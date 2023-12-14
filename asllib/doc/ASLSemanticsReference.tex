@@ -1,0 +1,2818 @@
+\documentclass{book}
+\usepackage{amsmath}  % Classic math package
+\usepackage{amssymb}  % Classic math package
+\usepackage{mathtools}  % Additional math package
+\usepackage{graphicx}  % For figures
+\usepackage{caption}  % For figure captions
+\usepackage{subcaption}  % For subfigure captions
+\usepackage{url}  % Automatically escapes urls
+\usepackage{hyperref}  % Insert links inside pdfs
+\usepackage[inline]{enumitem}  % For inline lists
+\usepackage[export]{adjustbox}  % For centering too wide figures
+\usepackage{mathpartir}  % For deduction rules and equations paragraphs
+\usepackage{comment}
+\usepackage{fancyvrb}
+
+%Macros
+\newcommand\ie{i.\,e.}
+\newcommand\eg{e.\,g.}
+\newcommand\synor{\ |\ }
+\newcommand\syntt[1]{\mathtt{#1}}
+\newcommand\ife[3]{\text{if}\ #1\ \text{then}\ #2\ \text{else}\ #3\ \text{end}}
+\newcommand\inenv[2]{\left\langle #1, #2 \right\rangle}
+\newcommand\env[1]{\left\langle #1 \right\rangle}
+\newcommand\reducesto{\ \to\ }
+\newcommand\llbracket{[|}
+\newcommand\rrbracket{|]}
+\newcommand\interp[1]{\left\llbracket #1 \right\rrbracket}
+\newcommand\st[0]{\ \middle|\ }
+\newcommand\field[1]{.\text{#1}}
+\newcommand\globals[0]{\field{globals}}
+\newcommand\locals[0]{\field{locals}}
+\newcommand\X[0]{\mathcal{X}}
+\newcommand\N[0]{\mathbb{N}}
+\newcommand\asldata[0]{\mathtt{asl\_data}}
+\newcommand\aslctrl[0]{\mathtt{asl\_ctrl}}
+\newcommand\aslpo[0]{\mathtt{asl\_po}}
+\DeclareMathOperator{\dom}{dom}
+
+\author{Arm Architecture Technology Group}
+\title{ASL Semantics Reference}
+\begin{document}
+\maketitle
+\tableofcontents{}
+
+\chapter{Copyright and Disclaimer}
+
+The material in this document is copyright Arm Ltd 2023, all rights reserved.
+
+This material covers both ASLv0 (viz, the existing ASL pseudocode language
+which appears in the Arm Architecture Reference Manual) and ASLv1, a new,
+experimental, and as yet unreleased version of ASL.
+
+This material is work in progress, more precisely at pre-Alpha quality as
+per Arm’s quality standards. In particular, this means that it would be
+premature to base any production tool development on this material.
+
+However, any feedback, question, query and feature request would be most
+welcome; those can be sent to Arm’s Architecture Formal Team Lead Jade
+Alglave <jade.alglave@arm.com> or by raising issues or PRs to the herdtools7
+github repository.
+
+\chapter{Preamble}
+
+The semantics of ASL are embodied in a function that takes as input an ASL program
+and returns all possible behaviours of that program.
+
+\section{Environments}
+
+An environment is what the semantics operates over: a structure
+which amongst other things associates values to variables.
+Intuitively, the evaluation of a program makes an initial
+environment evolve, with new values as given by the operations
+of the program.
+
+Environments map names to variables and functions. 
+
+\subsection{Variables}
+Variables have two different possible scopes: global to the whole program which
+come with an initial value and cannot be declared inside a function, or local
+to a function. Global variables are initialized at the start of the evaluation
+of the program.  
+
+\subsection{Functions}
+Functions are declared statically: they are declared before the start of the
+program and are not values, thus a function call uses directly a function name. 
+
+Formally, an environment $E \in \mathcal{E}$ is a pair of a binding from global
+variable names to their value, and a binding from local variable names to their
+values:
+
+%
+\[
+  \mathcal{E} = \left( \X \hookrightarrow \mathcal{V} \right)
+         % \times \left( \X^\text{F} \hookrightarrow {\X^\text{L}}^* \times \mathcal{S} \right)
+         \times \left( \X \hookrightarrow \mathcal{V} \right)
+\]
+
+We define some notations, for an environment $E = (G, F, L)$, a variable $x$
+and a value $v$:
+%
+\begin{mathpar}
+  E\globals \triangleq G
+  \and
+  % E^\text{F} \triangleq F
+  % \and
+  E\locals \triangleq L
+  \and
+  \text{Env}(G, L) \triangleq E
+  \and
+  E[x \mapsto v] \triangleq
+    \left\{
+      \begin{array}{ll}
+        (G[x \mapsto v], L) &\text{if}\ x \in \dom (G) \\
+        (G, L[x \mapsto v]) &\text{otherwise} \\
+      \end{array}
+    \right.
+\end{mathpar}
+%
+The notation $E\globals$ refers to the global part of the environment, and
+$E\locals$ to the local variable mappings, and $\text{Env} (G, L)$ is the
+environment formed with the global mappings in $G$ and the local from $L$.
+%
+The notation $E[x \mapsto v]$ is the environment $E$ modified so $x$ is bound
+to $v$.
+%
+Furthermore, $v?$ refers to $v$ or $\bot$, and the usage of $v$ without a
+question mark implies that $v \neq \bot$.
+%
+In particular, the over-writing of a variable in an environment depends on
+whether the variable is a global or local variable.
+
+\section{Side-effects}
+
+\section{Domain of a type}
+
+The domain of a type $t$, written $D(t)$, is defined as follows:
+  \[
+  D(t) \triangleq \left\{
+    \begin{array}{ll}
+      \{\text{true}, \text{false} \} & \text{if } t \text{ is boolean}  \\
+      \mathbb{Z}                     & \text{if } t \text{ is integer}  \\
+      {\{0, 1\}}^n                   & \text{if } t \text{ is bits} (n) \\
+    \end{array}
+  \right.
+  \]
+
+\chapter{Evaluation}
+
+Evaluating a program is evaluating its ``main'' function.
+Constructively, evaluating a program requires following its
+Abstract Syntax Tree and evaluating each of its components.
+
+\section{Evaluation functions}
+The semantics of a program are given by applying a set of
+\texttt{eval\_<object>} functions. Each \texttt{eval\_<object>} function
+describes how to evaluate a specific object, as follows.
+\begin{itemize}
+\item \texttt{eval\_expr} evaluates expressions: it takes an
+environment and an expression and returns a wrapped value and a
+new environment;
+\item \texttt{eval\_expr\_sef} evaluates expressions without side
+effects;
+\item \texttt{eval\_expr\_list} and \texttt{eval\_expr\_list\_m} evaluate lists
+of expressions;
+\item \texttt{eval\_slices} evaluates slices;
+\item \texttt{eval\_patterns} evaluates patterns;
+\item \texttt{eval\_local\_decl} evaluates local declarations;
+\item \texttt{eval\_lexpr} evaluates left-hand sides of assignments:
+it takes an environment, the left-hand side of an assignment
+and a wrapped value to be written, and returns a wrapped
+environment updated with the new value;
+\item \texttt{eval\_stmt} evaluates statements: it takes an
+environment and a statement and returns a wrapped new
+environment, viz, the environment updated with the side-effects
+of the statement;
+\item \texttt{eval\_block} evaluates blocks;
+\item \texttt{eval\_loop} evaluates both while and repeat loops;
+\item \texttt{eval\_for} evaluates for loops;
+\item \texttt{eval\_catchers} evaluates catchers;
+\item \texttt{eval\_call} evaluates functions calls;
+\item \texttt{eval\_func} evaluates functions: it takes an
+environment, a function name and its arguments, and returns a
+wrapped list of the return values of the function. The
+evaluation of a program is the evaluation of its main function.
+\end{itemize}
+
+%
+Formally, the semantics of different language constructs are given by the functions
+$\interp{\cdot}_F$ that map an environment to a set of pair of values and
+environments, where $F$ is a given set of ASL functions.
+%
+In the following, for simplicity, we will omit the indices $F$ from the
+semantics definitions, apart when defined, as they are constant in the whole
+evaluation.
+%
+Furthermore, the variable names inside set definitions are implicitly
+quantified. For example the two following definitions are equivalent:
+%
+\begin{gather*}
+  X + Y \triangleq \left\{ n \st{} n_1 \in X \ \text{and}\ n_2 \in Y \text{and}\ n = n_1 + n_2 \right\}
+  \\
+  X + Y \triangleq \left\{ n \st{} \exists n_1 \in X, \exists n_2 \in Y, n = n_1 + n_2 \right\}
+\end{gather*}
+
+\section{Evaluation of Expressions}
+
+\texttt{eval\_expr} specifies how to evaluate an expression \texttt{e} in an
+environment \texttt{env}. More precisely, \texttt{eval\_expr env e} is the
+monadic evaluation  of \texttt{e} in \texttt{env}.
+
+Evaluation of the expression \texttt{e} under an environment \texttt{env} is
+either a value \texttt{v} or an error, together with a potentially updated
+environment \texttt{env'}, and one of the following applies:
+\begin{itemize}
+\item SemanticsRule.Lit (see Section~\ref{sec:SemanticsRule.Lit});
+\item SemanticsRule.TypedExpr (see Section~\ref{sec:SemanticsRule.TypedExpr})
+\item SemanticsRule.ELocalVar (see Section~\ref{sec:SemanticsRule.ELocalVar})
+\item SemanticsRule.EGlobalVar (see Section~\ref{sec:SemanticsRule.EGlobalVar})
+\item SemanticsRule.EUndefIdent (see Section~\ref{sec:SemanticsRule.EUndefIdent})
+\item SemanticsRule.BinopAnd (see Section~\ref{sec:SemanticsRule.BinopAnd})
+\item SemanticsRule.BinopOr (see Section~\ref{sec:SemanticsRule.BinopOr})
+\item SemanticsRule.BinopImpl (see Section~\ref{sec:SemanticsRule.BinopImpl})
+\item SemanticsRule.Binop (see Section~\ref{sec:SemanticsRule.Binop})
+\item SemanticsRule.Unop (see Section~\ref{sec:SemanticsRule.Unop})
+\item SemanticsRule.ECond (see Section~\ref{sec:SemanticsRule.ECond})
+\item SemanticsRule.ESlice (see Section~\ref{sec:SemanticsRule.ESlice})
+\item SemanticsRule.ECall (see Section~\ref{sec:SemanticsRule.ECall})
+\item SemanticsRule.EGetArray (see Section~\ref{sec:SemanticsRule.EGetArray})
+\item SemanticsRule.ERecord (see Section~\ref{sec:SemanticsRule.ERecord})
+\item SemanticsRule.EGetField (see Section~\ref{sec:SemanticsRule.EGetField})
+\item SemanticsRule.EConcat (see Section~\ref{sec:SemanticsRule.EConcat})
+\item SemanticsRule.ETuple (see Section~\ref{sec:SemanticsRule.ETuple})
+\item SemanticsRule.EUnknown (see Section~\ref{sec:SemanticsRule.EUnknown})
+\item SemanticsRule.EPattern (see Section~\ref{sec:SemanticsRule.EPattern})
+\item SemanticsRule.SideEffectFreeExpr (see Section~\ref{sec:SemanticsRule.SideEffectFreeExpr})
+\item SemanticsRule.LEIgnore (see Section~\ref{sec:SemanticsRule.LEIgnore})
+\item SemanticsRule.LELocalVar (see Section~\ref{sec:SemanticsRule.LELocalVar})
+\item SemanticsRule.LEGlobalVar (see Section~\ref{sec:SemanticsRule.LEGlobalVar})
+\item SemanticsRule.LEUndefIdentV0 (see Section~\ref{sec:SemanticsRule.LEUndefIdentV0})
+\item SemanticsRule.LEUndefIdentV1 (see Section~\ref{sec:SemanticsRule.LEUndefIdentV1})
+\item SemanticsRule.LESlice (see Section~\ref{sec:SemanticsRule.LESlice})
+\item SemanticsRule.LESetArray (see Section~\ref{sec:SemanticsRule.LESetArray})
+\item SemanticsRule.LESetField (see Section~\ref{sec:SemanticsRule.LESetField})
+\item SemanticsRule.LESetFields (see Section~\ref{sec:SemanticsRule.LESetFields})
+\item SemanticsRule.LETuple (see Section~\ref{sec:SemanticsRule.LETuple})
+\item SemanticsRule.PAll (see Section~\ref{sec:SemanticsRule.PAll})
+\item SemanticsRule.PAny (see Section~\ref{sec:SemanticsRule.PAny})
+\item SemanticsRule.PGeq (see Section~\ref{sec:SemanticsRule.PGeq})
+\item SemanticsRule.PLeq (see Section~\ref{sec:SemanticsRule.PLeq})
+\item SemanticsRule.PNot (see Section~\ref{sec:SemanticsRule.PNot})
+\item SemanticsRule.PRange (see Section~\ref{sec:SemanticsRule.PRange})
+\item SemanticsRule.PSingle (see Section~\ref{sec:SemanticsRule.PSingle})
+\item SemanticsRule.PMask (see Section~\ref{sec:SemanticsRule.PMask})
+\item SemanticsRule.PTuple (see Section~\ref{sec:SemanticsRule.PTuple})
+\item SemanticsRule.LDIgnore (see Section~\ref{sec:SemanticsRule.LDIgnore})
+\item SemanticsRule.LDVar (see Section~\ref{sec:SemanticsRule.LDVar})
+\item SemanticsRule.LDTypedVar (see Section~\ref{sec:SemanticsRule.LDTypedVar})
+\item SemanticsRule.LDUninitialisedVar (see Section~\ref{sec:SemanticsRule.LDUninitialisedVar})
+\item SemanticsRule.LDTuple (see Section~\ref{sec:SemanticsRule.LDTuple})
+\item SemanticsRule.LDTypedTuple (see Section~\ref{sec:SemanticsRule.LDTypedTuple})
+\item SemanticsRule.LDUninitialisedTuple (see Section~\ref{sec:SemanticsRule.LDUninitialisedTuple})
+\item SemanticsRule.SPass (see Section~\ref{sec:SemanticsRule.SPass})
+\item SemanticsRule.SAssign (see Section~\ref{sec:SemanticsRule.SAssign})
+\item SemanticsRule.SAssignCall (see Section~\ref{sec:SemanticsRule.SAssignCall})
+\item SemanticsRule.SAssignTuple (see Section~\ref{sec:SemanticsRule.SAssignTuple})
+\item SemanticsRule.SReturnNone (see Section~\ref{sec:SemanticsRule.SReturnNone})
+\item SemanticsRule.SReturnOne (see Section~\ref{sec:SemanticsRule.SReturnOne})
+\item SemanticsRule.SReturnSome (see Section~\ref{sec:SemanticsRule.SReturnSome})
+\item SemanticsRule.SSeq (see Section~\ref{sec:SemanticsRule.SSeq})
+\item SemanticsRule.SCall (see Section~\ref{sec:SemanticsRule.SCall})
+\item SemanticsRule.SCond (see Section~\ref{sec:SemanticsRule.SCond})
+\item SemanticsRule.SCase (see Section~\ref{sec:SemanticsRule.SCase})
+\item SemanticsRule.SAssert (see Section~\ref{sec:SemanticsRule.SAssert})
+\item SemanticsRule.SWhile (see Section~\ref{sec:SemanticsRule.SWhile})
+\item SemanticsRule.SRepeat (see Section~\ref{sec:SemanticsRule.SRepeat})
+\item SemanticsRule.SFor (see Section~\ref{sec:SemanticsRule.SFor})
+\item SemanticsRule.SThrowNone (see Section~\ref{sec:SemanticsRule.SThrowNone})
+\item SemanticsRule.SThrowSomeTyped (see Section~\ref{sec:SemanticsRule.SThrowSomeTyped})
+\item SemanticsRule.SThrowSome (see Section~\ref{sec:SemanticsRule.SThrowSome})
+\item SemanticsRule.STry (see Section~\ref{sec:SemanticsRule.STry})
+\item SemanticsRule.SDeclSome (see Section~\ref{sec:SemanticsRule.SDeclSome})
+\item SemanticsRule.SDeclNone (see Section~\ref{sec:SemanticsRule.SDeclNone})
+\item SemanticsRule.Block (see Section~\ref{sec:SemanticsRule.Block})
+\item SemanticsRule.Loop (see Section~\ref{sec:SemanticsRule.Loop})
+\item SemanticsRule.For (see Section~\ref{sec:SemanticsRule.For})
+\item SemanticsRule.Catch (see Section~\ref{sec:SemanticsRule.Catch})
+\item SemanticsRule.CatchNamed (see Section~\ref{sec:SemanticsRule.CatchNamed})
+\item SemanticsRule.CatchOtherwise (see Section~\ref{sec:SemanticsRule.CatchOtherwise})
+\item SemanticsRule.CatchNone (see Section~\ref{sec:SemanticsRule.CatchNone})
+\item SemanticsRule.CatchNoThrow (see Section~\ref{sec:SemanticsRule.CatchNoThrow})
+\item SemanticsRule.FUndefIdent (see Section~\ref{sec:SemanticsRule.FUndefIdent})
+\item SemanticsRule.FPrimitive (see Section~\ref{sec:SemanticsRule.FPrimitive})
+\item SemanticsRule.FBadArity (see Section~\ref{sec:SemanticsRule.FBadArity})
+\item SemanticsRule.FCall (see Section~\ref{sec:SemanticsRule.FCall})
+\item SemanticsRule.SideEffectFreeExpr (see Section~\ref{sec:SemanticsRule.SideEffectFreeExpr}).
+\end{itemize}
+
+\subsection{SemanticsRule.Lit \label{sec:SemanticsRule.Lit}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item \texttt{e} denotes a Literal \texttt{l}, and
+  \item \texttt{v} is the value of \texttt{l} in \texttt{env}.
+  \end{itemize}
+
+  \subsubsection{Example}
+  The expression [3] evaluates to the value [3].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=329, lastline=330]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  The evaluation of a literal value $v$ associates any environment to itself
+  coupled with $v$: 
+
+  \begin{align}
+  \interp{v} (E) & \triangleq \left\{ (v, E) \right\}
+  \label{eq:sem-det-lit}
+  \end{align}
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \interp{v} (E) & \triangleq \left\{ (v, E, \varnothing) \right\}
+  \label{eq:sem-ndet-lit}
+  \end{align}
+
+  \subsubsection{Comments}
+
+\subsection{SemanticsRule.TypedExpr \label{sec:SemanticsRule.TypedExpr}}
+
+  \subsubsection{Prose}
+  \texttt{(e,\_t)} denotes a typed expression and <description>
+
+  \subsubsection{Examples}
+  The expression [(3 as integer)] evaluates to the value [3].
+  The expression [(3 as integer {5:7})] raises a "Mismatched Value" error.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=332, lastline=337]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  
+  \subsubsection{Formally: concurrent case}
+
+  \subsubsection{Comments}
+
+\subsection{SemanticsRule.ELocalVar \label{sec:SemanticsRule.ELocalVar}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item [e] denotes a variable [x] which is bound locally in [env];
+  \item [v] is the value of [x] in [env].
+  \end{itemize}
+
+  \subsubsection{Example: SemanticsRuleELocalVar.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ELocalVar.asl}
+    the evaluation of [x] within [assert x == 3]; uses SemanticsRule.ELocalVar.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=342, lastline=345]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  The evaluation of a variable $x$ in an environment $E$ that maps $x$ to $v$
+  is the tuple $(v,E)$: 
+  \begin{align}
+  \interp{x} (E) & \triangleq \left\{ (E[x], E)) \right\}
+  \label{eq:sem-det-var}
+  \end{align} 
+ 
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \interp{x} (E) & \triangleq \left\{ (E[x], E, \text{R} (x)) \right\}
+  \label{eq:sem-ndet-var}
+  \end{align} 
+ 
+  \subsubsection{Comments}
+  When there exists a global variable called \texttt{x} then an ASL program
+  cannot use the name \texttt{x} as a local variable. ASLRef checks that this
+  property, sometimes called ``banning shadowing'', is true at type-checking.
+
+\subsection{SemanticsRule.EGlobalVar \label{sec:SemanticsRule.EGlobalVar}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item \texttt{e} denotes a variable \texttt{x} which is bound globally in \texttt{env};
+  \item \texttt{v} is the value of \texttt{x} in \texttt{env}.
+  \end{itemize}
+
+  \subsubsection{Example: SemanticsRuleEGlobalVar.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EGlobalVar.asl}
+    the evaluation of \texttt{global\_x} within \texttt{assert global\_x == 3;}
+    uses SemanticsRule.EGlobalVar.
+
+  \subsubsection{Example: SemanticsRuleEGlobalVarError.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EGlobalVarError.asl} 
+    raises a type error because \texttt{x} is already declared locally in
+    \texttt{stdlib.asl}.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=347, lastline=350]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \interp{x} (E) & \triangleq \left\{ (E[x], E)) \right\}
+  \label{eq:sem-det-var}
+  \end{align} 
+ 
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \interp{x} (E) & \triangleq \left\{ (E[x], E, \text{R} (x)) \right\}
+  \label{eq:sem-ndet-var}
+  \end{align} 
+
+  \subsubsection{Comments}
+
+\subsection{SemanticsRule.EUndefIdent \label{sec:SemanticsRule.EUndefIdent}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item \texttt{e} denotes a variable \texttt{x} which is not bound in \texttt{env};
+  \item an "\texttt{Undefined Identifier}" error is raised.
+  \end{itemize}
+
+  \subsubsection{Example: SemanticsRule.EUndefIdent.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EUndefIdent.asl} 
+    raises an \texttt{Undefined Identifier} error: the variable \texttt{y} is
+    undefined in the environment $\mathtt{x} \mapsto \mathtt{42}$.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=352, lastline=354]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Comments}
+
+\subsection{SemanticsRule.BinopAnd \label{sec:SemanticsRule.BinopAnd}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item \texttt{e} denotes a conjunction over two expressions \texttt{e1} and \texttt{e2};
+  \item \texttt{e} is evaluated as \texttt{if e1 then e2 else false}.
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=357, lastline=360]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Comments}
+  This aim to encompass LRM Section 7.5.3 R\_BKNT, Section 8.5.1 I\_QRXP and Section
+  8.6.1.
+
+\subsection{SemanticsRule.BinopOr \label{sec:SemanticsRule.BinopOr}}
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item \texttt{e} denotes a disjunction over two expressions \texttt{e1} and \texttt{e2};
+  \item \texttt{e} is evaluated as \texttt{if e1 then true else e2}.
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=362, lastline=365]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Comments}
+  This aim to encompass LRM Section 7.5.3 R\_BKNT, Section 8.5.1 I\_QRXP and Section
+  8.6.1.
+
+\subsection{SemanticsRule.BinopImpl \label{sec:SemanticsRule.BinopImpl}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item \texttt{e} denotes an implication over two expressions \texttt{e1} and \texttt{e2};
+  \item \texttt{e} is evaluated as \texttt{if e1 then e2 else true}.
+  \end{itemize}
+
+  \subsubsection{Examples}
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=367, lastline=370]{../Interpreter.ml}
+
+  \subsubsection{Comments}
+  This aim to encompass LRM Section 7.5.3 R\_BKNT, Section 8.5.1 I\_QRXP and Section
+  8.6.1.
+
+\subsection{SemanticsRule.Binop \label{sec:SemanticsRule.Binop}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item \texttt{e} denotes a Binary Operator \texttt{op} over two expressions \texttt{e1} and \texttt{e2};
+  \item The evaluation of the expression \texttt{e1} under \texttt{env} is \texttt{v1};
+  \item The evaluation of the expression \texttt{e2} under \texttt{env} is \texttt{v2};
+  \item \texttt{v} is the result of applying the Binary Operator \texttt{op} to \texttt{v1} and \texttt{v2}.
+  \end{itemize}
+
+  \subsubsection{Example: SemanticsRule.EBinopPlusAssert.asl}
+    In this program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EBinopPlusAssert.asl}
+    the expression \texttt{3 + 2} evaluates to the value \texttt{5}.
+
+  \subsubsection{Example: SemanticsRule.EDIVBackendDefinedError.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EBinopDIVBackendDefinedError.asl}
+    \begin{itemize}
+    \item Without type-checking, the expression \texttt{3 DIV 0} raises a backend-defined
+      error, e.g.
+      \texttt{ASL Execution error: Illegal application of operator DIV for values 3 and 0.}
+    \item With type-checking, the expression \texttt{3 DIV 0} raises a type error.
+    \end{itemize}
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=372, lastline=376]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  
+  \begin{align}
+  \interp{e_1 + e_2} (E) & \triangleq
+    \left\{ (v, E'') \st{}
+    \begin{aligned}
+      & v_1 + v_2 = v
+      \\ \text{and}\ &
+      (v_1, E') \in{} \interp{e_1} (E)
+      \\ \text{and}\ &
+      (v_2, E'') \in{} \interp{e_2} (E')
+    \end{aligned}
+    \right\}
+  \label{eq:sem-det-plus}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  For the ordering constraints, the different arguments of a n-ary function
+are considered computed in parallel:
+  \begin{align}
+    \interp{e_1 + e_2} (E) & \triangleq
+    \left\{ (v, E'', S_1 \parallel S_2) \st{}
+    \begin{aligned}
+      & v_1 + v_2 = v
+      \\ \text{and}\ &
+      (v_1, E', S_1) \in{} \interp{e_1} (E)
+      \\ \text{and}\ &
+      (v_2, E'', S_2) \in{} \interp{e_2} (E')
+    \end{aligned}
+    \right\}
+  \label{eq:sem-ndet-plus}
+  \end{align} 
+
+  \subsubsection{Comments}
+  This aim to encompass LRM Section 7.5.3 R\_BKNT.
+
+\subsection{SemanticsRule.Unop \label{sec:SemanticsRule.Unop}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item \texttt{e} denotes a Unary Operator \texttt{op} over an expression \texttt{e'} in an environment \texttt{env};
+  \item The evaluation of the expression \texttt{e'} under \texttt{env} is \texttt{v',env'};
+  \item \texttt{v, env'} is the result of applying the Unary Operator \texttt{op} to \texttt{v'}.
+  \end{itemize}
+
+  \subsubsection{Example: SemanticsRule.EUnopAssert.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EUnopAssert.asl}
+    the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Comments}
+
+\subsection{SemanticsRule.ECond \label{sec:SemanticsRule.ECond}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item \texttt{e} denotes a condition \texttt{e\_cond} with two options \texttt{e1} and \texttt{e2};
+  \item The evaluation of the condition \texttt{e\_cond} under \texttt{env} is \texttt{m\_cond};
+  \item One of \texttt{e1} or \texttt{e2} is not a simple expression;
+  \item The evaluation of \texttt{e1} or \texttt{e2}, depending on \texttt{m\_cond}, is \texttt{v}.
+  \end{itemize}
+
+  \subsubsection{Example: SemanticsRule.ECondFalse.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ECondFalse.asl}
+    the expression \texttt{if FALSE then Return42() else 3} evaluates to the value \texttt{3}.
+
+  \subsubsection{Example: SemanticsRule.ECondUNKNOWN3.asl and SemanticsRule.ECondUNKNOWN42.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ECondUNKNOWN3.asl}
+    the expression \texttt{if UNKNOWN: boolean then 3 else Return42()} will evaluate
+    either \texttt{3} or \texttt{Return42()} depending on how \texttt{UNKNOWN} is implemented.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Comments}
+  This aim to encompass LRM Section 5.1 R\_YCDB.
+
+\subsection{SemanticsRule.ESlice \label{sec:SemanticsRule.ESlice}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item \texttt{e} denotes an expression \texttt{e\_bv} sliced as per \texttt{slices};
+  \item The evaluation of \texttt{e\_bv} under \texttt{env} is \texttt{v\_bv};
+  \item The evaluation of \texttt{slices} under \texttt{env} is \texttt{positions};
+  \item \texttt{v} is the value read in \texttt{v\_bv} from \texttt{positions}.
+  \end{itemize}
+
+  \subsubsection{Example: SemanticsRule.ESlice.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ESlice.asl}    
+    the expression \texttt{'11110000'[5:2]} evaluates to the value \texttt{'1100'}.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Comments}
+
+\subsection{SemanticsRule.ECall \label{sec:SemanticsRule.ECall}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item \texttt{e} denotes a function call \texttt{(name, actual\_args, params)};
+  \item The evaluation of that function call under \texttt{env} is \texttt{ms};
+  \item \texttt{v} is the value read from \texttt{ms}.
+  \end{itemize}
+
+  \subsubsection{Example: SemanticsRule.ECall.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ECall.asl}
+    the expression \texttt{Return42()} evaluates to the value \texttt{42} because the
+    function \texttt{Return42()} is implemented to return the value \texttt{42}.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Comments}
+
+\subsection{SemanticsRule.EGetArray \label{sec:SemanticsRule.EGetArray}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item \texttt{e} denotes an array \texttt{e\_array} and an index \texttt{e\_index};
+  \item The evaluation of \texttt{e\_array} under \texttt{env} is \texttt{v\_array};
+  \item The evaluation of \texttt{e\_index} under \texttt{env} is \texttt{v\_index};
+  \item \texttt{v} is the value found at the index \texttt{v\_index} of \texttt{v\_array}.
+  \end{itemize}
+
+  \subsubsection{Example: SemanticsRule.EGetArray.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EGetArray.asl}
+    the expression \texttt{my\_array[2]} evaluates to the value \texttt{42} since the element
+    indexed by \texttt{2} in \texttt{my\_array} is \texttt{42}.
+
+  \subsubsection{Example: SemanticsRule.EGetArrayTooSmall.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EGetArrayTooSmall.asl} 
+    raises a typing error since we are trying to access index \texttt{3} of an array
+    which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Comments}
+
+\subsection{SemanticsRule.ERecord \label{sec:SemanticsRule.ERecord}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item \texttt{e} denotes a series of field names [names] and associated expressions
+    \texttt{fields};
+  \item \texttt{fields} evaluates in \texttt{env} to \texttt{v\_fields};
+  \item \texttt{v} is the record built by associating the names \texttt{names} to \texttt{v\_fields}.
+  \end{itemize}
+
+  \subsubsection{Example: SemanticsRule.ERecord.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ERecord.asl} 
+    the expression \texttt{MyRecordType { a=3, b=42 }} evaluates to the value \texttt{{a:
+3, b: 42}}.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Comments}
+
+\subsection{SemanticsRule.EGetField \label{sec:SemanticsRule.EGetField}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item \texttt{e} denotes a field name \texttt{field\_name} in a vector \texttt{e\_vec};
+  \item the evaluation of \texttt{e\_vec} in \texttt{env} is \texttt{v\_vec};
+  \item \texttt{v} is the value mapped by \texttt{field\_name} in \texttt{v\_vec}.
+  \end{itemize}
+
+  \subsubsection{Example: SemanticsRule.ERecord.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ERecord.asl}
+    the expression \texttt{my\_record.a} evaluates to the value \texttt{3}.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Comments}
+
+\subsection{SemanticsRule.EGetFields \label{sec:SemanticsRule.EGetFields}}
+
+  \subsubsection{Prose}
+  <description>
+
+  \subsubsection{Examples}
+  <minimal example>
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Comments}
+
+\subsection{SemanticsRule.EConcat \label{sec:SemanticsRule.EConcat}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item \texttt{e} denotes a list of expressions \texttt{e\_list};
+  \item the evaluation of \texttt{e\_list} in \texttt{env} is \texttt{v\_list};
+  \item \texttt{v} is the concatenation of \texttt{v\_list}.
+  \end{itemize}
+
+  \subsubsection{Example: SemanticsRule.EConcat}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EConcat.asl}
+    the expression \texttt{['10', '11']} evaluates to the value \texttt{'1011'}.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Comments}
+
+\subsection{SemanticsRule.ETuple \label{sec:SemanticsRule.ETuple}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item \texttt{e} denotes a list of expression \texttt{e\_list};
+  \item the evaluation of \texttt{e\_list} in \texttt{env} is \texttt{v\_list};
+  \item \texttt{v} is the vector built from \texttt{v\_list}.
+  \end{itemize}
+
+  \subsubsection{Example: SemanticsRule.ETuple.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ETuple.asl}
+    the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Comments}
+
+\subsection{SemanticsRule.EUnknown \label{sec:SemanticsRule.EUnknown}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item \texttt{e} denotes a type \texttt{t};
+  \item \texttt{v} is a value in the domain of \texttt{t}.
+  \end{itemize}
+
+  \subsubsection{Example: SemanticsRule.EUnknownInteger3.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EUnknownInteger3.asl}
+    the expression \texttt{[UNKNOWN : integer]} evaluates to an integer value.
+
+  \subsubsection{Examples: SemanticsRule.EUnknownIntegerRange3-42-\{3,42\}.asl}
+
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EUnknownIntegerRange3-42-3.asl}
+    the expression \texttt{UNKNOWN : integer \{3, 42\}} evaluates to either the value
+\texttt{3} or the value \texttt{42}.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=447, lastline=449]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+
+  \begin{align}  
+  \interp{\syntt{unknown:}\ t} (E) & \triangleq \left\{ (v, E) \st{} v \in{} D(t) \right\}
+  \label{eq:sem-det-unknown}  
+  \end{align}  
+
+  \subsubsection{Formally: concurrent case}
+
+  \begin{align}
+  \interp{\syntt{unknown:} t} (E) & \triangleq \left\{ (v, E, \varnothing) \st{} v \in{} D(t) \right\}
+  \label{eq:sem-ndet-unknown}
+  \end{align}
+
+  \subsubsection{Comments}
+  This aim to encompass LRM Section 5.12 R\_WLCH.
+
+\subsection{SemanticsRule.EPattern \label{sec:SemanticsRule.EPattern}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item \texttt{e} denotes a pattern \texttt{e,p};
+  \item \texttt{v} is the boolean determining whether the evaluation of \texttt{e} in \texttt{env} matches \texttt{p}.
+  \end{itemize}
+
+  \subsubsection{Example: SemanticsRule.EPatternFALSE.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EPatternFALSE.asl}
+    the expression \texttt{42 IN \{0..3, -4\}} evaluates to the value \texttt{FALSE}.
+
+  \subsubsection{Example: SemanticsRule.EPatternTRUE.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EPatternTRUE.asl}
+    the expression \texttt{42 IN \{0..3, 42\}} evaluates to \texttt{TRUE}.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Comments}
+
+\subsection{SemanticsRule.SideEffectFreeExpr \label{sec:SemanticsRule.SideEffectFreeExpr}}
+  \texttt{eval\_expr\_sef} specifies how to evaluate a side-effect-free
+expression \texttt{e} in an environment \texttt{env}. More precisely,
+\texttt{eval\_expr\_sef env e} is \texttt{eval\_expr env e}, if e is
+side-effect-free.
+
+  \subsubsection{Prose}
+
+  \subsubsection{Examples}
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Comments}
+
+\section{Evaluation of Left-Hand-Side Expressions}
+
+\texttt{eval\_lexpr version env le m} is \texttt{env\[le --> m\]}.
+
+The evaluation of the left-hand-side expression \texttt{le} associated with a
+value \texttt{v} under an environment \texttt{env} is either \texttt{new\_env}
+or an error is raised and one of the following applies:
+\begin{itemize}
+\item SemanticsRule.LEIgnore (see Section~\ref{sec:SemanticsRule.LEIgnore});
+\item SemanticsRule.LELocalVar (see Section~\ref{sec:SemanticsRule.LELocalVar});
+\item SemanticsRule.LEGlobalVar (see Section~\ref{sec:SemanticsRule.LEGlobalVar});
+\item SemanticsRule.LEUndefIdentV0 (see Section~\ref{sec:SemanticsRule.LEUndefIdentV0});
+\item SemanticsRule.LEUndefIdentV1 (see Section~\ref{sec:SemanticsRule.LEUndefIdentV1});
+\item SemanticsRule.LESlice (see Section~\ref{sec:SemanticsRule.LESlice});
+\item SemanticsRule.LESetArray (see Section~\ref{sec:SemanticsRule.LESetArray});
+\item SemanticsRule.LESetField (see Section~\ref{sec:SemanticsRule.LESetField});
+\item SemanticsRule.LESetFields (see Section~\ref{sec:SemanticsRule.LESetFields});
+\item SemanticsRule.LETuple (see Section~\ref{sec:SemanticsRule.LETuple}).
+\end{itemize}
+
+\subsection{SemanticsRule.LEIgnore \label{sec:SemanticsRule.LEIgnore}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item \texttt{le} can be ignored;
+    \item \texttt{new\_env} is \texttt{env}.
+    \end{itemize}
+
+  \subsubsection{Comments}
+
+  \subsubsection{Example}
+  The left-hand-side expression [-] within [- = 42;] evaluates to the value [42].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.LELocalVar \label{sec:SemanticsRule.LELocalVar}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item \texttt{le} denotes a variable \texttt{x};
+    \item \texttt{x} is locally bound in \texttt{env};
+    \item \texttt{new\_env} is \texttt{env} where \texttt{x} has been assigned the value \texttt{v}.
+    \end{itemize}
+
+  \subsubsection{Comments}
+
+    \subsubsection{Example: SemanticsRule.LELocalVar.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LELocalVar.asl}
+    the evaluation of the left-hand-side expression \texttt{x} within \texttt{x = 42;} uses SemanticsRule.LELocalVar.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.LEGlobalVar \label{sec:SemanticsRule.LEGlobalVar}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item \texttt{le} denotes a variable \texttt{x};
+    \item \texttt{x} is globally bound in \texttt{env};
+    \item \texttt{new\_env} is \texttt{env} where \texttt{x} has been assigned the value \texttt{v}.
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Example: SemanticsRule.LEGlobalVar.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEGlobalVar.asl}
+    the evaluation of the left-hand-side expression \texttt{x} within \texttt{x = 42;} uses SemanticsRule.LEGlobalVar.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.LEUndefIdentV0 \label{sec:SemanticsRule.LEUndefIdentV0}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item \texttt{le} denotes a variable \texttt{x} which is not bound in \texttt{env};
+    \item the ASL language version is \texttt{V0};
+    \item \texttt{new\_env} is \texttt{env} where \texttt{x} has been declared
+a local identifier bound to the value \texttt{v}.
+    \end{itemize}
+
+  \subsubsection{Comments}
+
+  \subsubsection{Example}
+  [y = 3;] binds [y] to [3] in [x $\mapsto$ 42] ([new\_env] is here [y $\mapsto$ 3, x $\mapsto$ 42]).
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.LEUndefIdentV1 \label{sec:SemanticsRule.LEUndefIdentV1}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item \texttt{le} denotes a variable \texttt{x} which is not bound in \texttt{env};
+    \item the ASL language version is \texttt{V1};
+    \item an \texttt{UndefinedIdentifier} error is raised.
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    The evaluation of the left-hand-side expression [y] within [y = 3;] raises an "Undefined Identifier" error in the environment [x $\mapsto$ 42].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.LESlice \label{sec:SemanticsRule.LESlice}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [le] denotes a left-hand-side expression sliced as per [slices];
+    \item The right-hand-side expression corresponding to [le] is [e\_bv];
+    \item The evaluation of [re\_bv] under [env] is [rv\_bv];
+    \item The evaluation of [slices] under [env] is [positions];
+    \item [new\_m\_bv] is [rv\_bv] where the positions [positions] have been updated to [v]
+    \item [new\_env] is [env] where [le] has been assigned the value [new\_m\_bv].
+    \end{itemize}
+
+   \subsubsection{Comments}
+
+   \subsubsection{Examples}
+   [x[3:0] = '0000'] binds [x] to ['11110000'] in [x $\mapsto$ '11111111'].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.LESetArray \label{sec:SemanticsRule.LESetArray}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [le] denotes an array [le\_array] and an index [e\_index];
+    \item The right-hand-side expression corresponding to [le\_array] is [re\_array];
+    \item The evaluation of [re\_array] under [env] is [rv\_array];
+    \item The evaluation of [e\_index] under [env] is [v\_index];
+    \item [new\_v\_array] is [rv\_array] where the value at index [v\_index] has been
+      updated to [v];
+    \item [new\_env] is [env] where [le\_array] has been assigned the value
+      [new\_v\_array].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Example: SemanticsRule.LESetArray.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LESetArray.asl}
+    binds the [3rd] element of [my\_array] to the value [53].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.LESetField \label{sec:SemanticsRule.LESetField}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [le] denotes a field name [field\_name] in a record [le\_record];
+    \item The right-hand-side expression corresponding to [le\_record] is
+      [re\_record];
+    \item The evaluation of [re\_record] under [env] is [rv\_record];
+    \item [new\_v\_record] is [rv\_record] where the field [field\_name] has been
+      updated to [v];
+    \item [new\_env] is [env] where [le\_record] has been assigned the value
+      [new\_v\_record].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [my\_record.a = 42;] binds [my\_record] to [{a: 42, b: 42}] in the environment [my\_record $mapsto${a: 3, b: 42}].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+\subsection{SemanticsRule.LESetFields \label{sec:SemanticsRule.LESetFields}}
+
+    \subsubsection{Prose}
+    <description>
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    <minimal example>
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.LETuple \label{sec:SemanticsRule.LETuple}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [le] denotes a list of left-hand-side expressions [le\_list];
+    \item [new\_env] is [env] where each left-hand-side expression in [le\_list] has
+      been assigned the value at the corresponding index in [v].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [(x, y) = (3, 42)] binds [x] to [3] and [y] to [42] in the environment [x $mapsto$42, y $mapsto$3].
+
+\section{Evaluation of Expression Lists}
+  
+    \subsubsection{ Rule}
+
+    \subsubsection{ Comments}
+
+    \subsubsection{ Examples}
+
+\section{Evaluation of Slices}
+[eval\_slices env slices] is the list of pair [(i\_n, l\_n)] that
+corresponds to the start (included) and the length of each slice in
+[slices].
+
+[[3:2]] evaluates to [[(2, 2)]].
+
+[[3:2, 42+:5]] evaluates to [[(2, 2), (42, 5)]].
+
+\section{Evaluation of Patterns}
+[eval\_pattern env pos v p] determines if [v] matches the pattern [p].
+Formally, one of the following applies:
+
+\subsection{SemanticsRule.PAll \label{sec:SemanticsRule.PAll}}
+
+  \subsubsection{Prose}
+  [p] is the pattern which matches everything.
+
+  \subsubsection{Comments}
+
+  \subsubsection{Examples}
+    [42 IN { - }] evaluates to [true].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.PAny \label{sec:SemanticsRule.PAny}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [p] gives a list of patterns [li\_patterns];
+    \item [v] is a record of values [li\_values];
+    \item each value in [li\_values] matches the corresponding pattern in
+      [li\_patterns] in [env].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [42 IN { 3, 42 }] evaluates to [true].
+
+    [42 IN { 3, 4 }] evaluates to [false].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.PGeq \label{sec:SemanticsRule.PGeq}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [p] gives a side-effect-free expression [e];
+    \item [v] is greater than or equal to the evaluation of [e] in [env].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [42 IN { >= 3 }] evaluates to [true].
+
+    [3 IN { >= 42 }] evaluates to [false].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.PLeq \label{sec:SemanticsRule.PLeq}}
+
+    \subsubsection{Prose}
+
+    All of the following apply:
+    \begin{itemize}
+    \item [p] gives a side-effect-free expression [e];
+    \item [v] is lesser than or equal to the evaluation of [e] in [env].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [3 IN { <= 42 }] evaluatest to [true].
+
+    [42 IN { <= 3 }] evaluatest to [false].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.PNot \label{sec:SemanticsRule.PNot}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [p] gives a pattern [p'];
+    \item [v] matches the negation of [p'] in [env].
+    \end{itemize}
+ 
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [42 IN !{ 3 }] evaluates to [true].
+
+    [42 IN !{ 42 }] evaluates to [false].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.PRange \label{sec:SemanticsRule.PRange}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [p] gives two side-effect-free expressions [e1] and [e2];
+    \item [v] is greater than or equal to [e1] in [env];
+    \item [v] is lesser than or equal to [e2] in [env].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [42 IN {3..42}] evaluates to [true].
+
+    [-3 IN {3..42}] evaluates to [false].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.PSingle \label{sec:SemanticsRule.PSingle}}
+
+    \subsubsection{Prose}
+    All of the following appplies:
+    \begin{itemize}
+    \item [p] gives a side-effect-free expression [e];
+    \item [v] is equal to the evaluation of [e] in [env].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [42 IN { 3 }] evaluates to [false].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.PMask \label{sec:SemanticsRule.PMask}}
+
+    \subsubsection{Prose}
+    All the following applies:
+    \begin{itemize}
+    \item [p] gives a mask [m]
+    \item [v] is a bitvector that matches the mask [m]
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    ['101010' IN 'xx1010'] evaluates to [true].
+
+    ['101010' IN '0x1010'] evaluates to [false].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.PTuple \label{sec:SemanticsRule.}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [p] gives a list of patterns [li];
+    \item [v] matches the evaluation of all the patterns in the list [li] in [env].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [(3, '101010') IN {( <= 42, 'xx1010')}] evaluates to [true].
+
+\section{Evaluation of Local Declarations}
+
+[eval\_local\_decl s ldi env m\_init\_opt] declares local identifiers [ldi] in
+[env] with an optional initialisation value [m\_init\_opt].  The evaluation of
+the local identifiers [ldi] under an environment [env] is either [new\_env] or
+raises an error and one of the following applies:
+\begin{itemize}
+\item SemanticsRule.LDIgnore (see Section~\ref{sec:SemanticsRule.LDIgnore},
+\item SemanticsRule.LDVar (see Section~\ref{sec:SemanticsRule.LDVar},
+\item SemanticsRule.LDTypedVar (see Section~\ref{sec:SemanticsRule.LDTypedVar},
+\item SemanticsRule.LDUninitialisedVar (see Section~\ref{sec:SemanticsRule.LDUninitialisedVar},
+\item SemanticsRule.LDTuple (see Section~\ref{sec:SemanticsRule.LDTuple},
+\item SemanticsRule.LDTypedTuple (see Section~\ref{sec:SemanticsRule.LDTypedTuple},
+\item SemanticsRule.LDUninitialisedTuple (see Section~\ref{sec:SemanticsRule.LDUninitialisedTuple}.
+\end{itemize}
+
+\subsection{SemanticsRule.LDIgnore \label{sec:SemanticsRule.LDIgnore}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [ldi] is an identifier which can be ignored;
+    \item [new\_env] is [env].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [var - = 3;] evaluates [3].
+
+    [var - : integer;] does not modify the environment.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.LDVar \label{sec:SemanticsRule.LDVar}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [ldi] is a variable [x];
+    \item [m\_init\_opt] is a value [m];
+    \item [new\_env] is [env] modified to declare [x] as a local identifier bound to
+      value [m].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [var x = 3;] binds [x] to the evaluation of [3] in [env].
+
+    [var x : integer = 3;] binds [x] to the evaluation of [3] in [env], without
+    type consideration at runtime.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.LDTypedVar \label{sec:SemanticsRule.LDTypedVar}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [ldi] is a variable [x] of type [ty];
+    \item [m\_init\_opt] is [None];
+    \item [new\_env] is [env] modified to declare [x] as a local identifier bound to
+      the base value of [ty].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [var x : integer;] binds [x] in [env] to the base value of [integer].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.LDUninitialisedVar \label{sec:SemanticsRule.LDUninitialisedVar}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [ldi] is a variable [x] without a type nor an initialisation value;
+    \item an error is raised.
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [var x;] raises an error.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.LDTuple \label{sec:SemanticsRule.LDTuple}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [ldi] gives a list of local identifiers [ldis];
+    \item [m\_init\_opt] is a list of values [nmonads];
+    \item [new\_env] is [env] modified to declare each element of [ldis] to be bound
+      to the corresponding value in [nmonads].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [var (x,y,z) = (1,2,3);] binds [x] (resp. [y], [z]) to the evaluation of
+    [1] (resp. [2], [3]) in [env].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.LDTypedTuple \label{sec:SemanticsRule.LDTypedTuple}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [ldi] gives a list of local identifiers [ldis] and a type [ty];
+    \item [m\_init\_opt] is [None];
+    \item [new\_env] is [env] modified to declare each element of [ldis] with type
+      [ty].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [var (x,y,z) : integer;] binds [x], [y] and [z] in [env] to the base value
+    of [integer].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.LDUninitialisedTuple \label{sec:SemanticsRule.LDUninitialisedTuple}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [ldi] gives a list of local identifiers [ldis];
+    \item [new\_env] is [env] modified to declare each element of [ldis].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [var (x : integer, y : boolean);] binds [x] to the base value of [integer]
+    and [y] to the base value of [boolean].
+
+\section{Evaluation of Statements}
+The evaluation [eval\_stmt env s] of a statement [s] under environment [env] is
+either a [Throwing], an interruption [Returning vs] or a new environment
+[new\_env]. Formally, one of the following applies:
+\begin{itemize}
+\item SemanticsRule.SPass (see Section~\ref{sec:SemanticsRule.SPass}), 
+\item SemanticsRule.SAssign (see Section~\ref{sec:SemanticsRule.SAssign}), 
+\item SemanticsRule.SAssignCall (see Section~\ref{sec:SemanticsRule.SAssignCall}), 
+\item SemanticsRule.SAssignTuple (see Section~\ref{sec:SemanticsRule.SAssignTuple}), 
+\item SemanticsRule.SReturnNone (see Section~\ref{sec:SemanticsRule.SReturnNone}), 
+\item SemanticsRule.SReturnOne (see Section~\ref{sec:SemanticsRule.SReturnOne}), 
+\item SemanticsRule.SReturnSome (see Section~\ref{sec:SemanticsRule.SReturnSome}), 
+\item SemanticsRule.SSeq (see Section~\ref{sec:SemanticsRule.SSeq}), 
+\item SemanticsRule.SCall (see Section~\ref{sec:SemanticsRule.SCall}), 
+\item SemanticsRule.SCond (see Section~\ref{sec:SemanticsRule.SCond}), 
+\item SemanticsRule.SCase (see Section~\ref{sec:SemanticsRule.SCase}), 
+\item SemanticsRule.SAssert (see Section~\ref{sec:SemanticsRule.SAssert}), 
+\item SemanticsRule.SWhile (see Section~\ref{sec:SemanticsRule.SWhile}), 
+\item SemanticsRule.SRepeat (see Section~\ref{sec:SemanticsRule.SRepeat}), 
+\item SemanticsRule.SFor (see Section~\ref{sec:SemanticsRule.SFor}), 
+\item SemanticsRule.SThrowNone (see Section~\ref{sec:SemanticsRule.SThrowNone}), 
+\item SemanticsRule.SThrowSomeTyped (see Section~\ref{sec:SemanticsRule.SThrowSomeTyped}), 
+\item SemanticsRule.SThrowSome (see Section~\ref{sec:SemanticsRule.SThrowSome}), 
+\item SemanticsRule.STry (see Section~\ref{sec:SemanticsRule.STry}), 
+\item SemanticsRule.SDeclSome (see Section~\ref{sec:SemanticsRule.SDeclSome}), 
+\item SemanticsRule.SDeclNone (see Section~\ref{sec:SemanticsRule.SDeclNone}). 
+\end{itemize}
+
+\subsection{SemanticsRule.SPass \label{sec:SemanticsRule.SPass}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item [s] is a pass statement;
+  \item [new\_env] is [env].
+  \end{itemize}
+
+  \subsubsection{Examples}
+  [pass;] does nothing.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \interp{\syntt{pass}} (E) & \triangleq \{ (\bot, E) \}
+  \label{eq:sem-det-spass}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \interp{\syntt{pass}} (E) & \triangleq \{ (\bot, E, \varnothing) \}
+  \label{eq:sem-ndet-spass}
+  \end{align} 
+
+  \subsubsection{Comments}
+
+\subsection{SemanticsRule.SAssign \label{sec:SemanticsRule.SAssign}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item [s] is an assignment [le = re];
+  \item [v] is the evaluation of [re] under [env];
+  \item [r\_env] is [env] modified after evaluation of [re] under [env];
+  \item [new\_env] is [r\_env] modified after evaluation of [le] under [r\_env] with
+    [v].
+  \end{itemize}
+
+  \subsubsection{Examples}
+  [x = 3;] binds [x] to [3] in [x $mapsto$42] ([new\_env] is here [x $mapsto$3]).
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{equation}
+    \interp{x = e} (E) \triangleq
+      \left\{ \left(\bot, E'[x \mapsto v ]\right) \st{} (v, E') \in \interp{e} (E) \right\}
+    \label{eq:sem-det-sassign}
+  \end{equation}
+
+  \subsubsection{Formally: concurrent case}
+  \begin{equation}
+    \interp{x = e} (E) \triangleq
+      \left\{ \left(\bot, E'[x \mapsto v ], S \xrightarrow{\asldata} W(x)\right) \st{}
+        (v, E', S) \in \interp{e} (E)
+      \right\}
+    \label{eq:sem-ndet-sassign}
+  \end{equation}
+
+  \subsubsection{Comments}
+
+\subsection{SemanticsRule.SAssignCall \label{sec:SemanticsRule.SAssignCall}}
+
+    \subsubsection{Prose}
+    <description>
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    <example>
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.SAssignTuple \label{sec:SemanticsRule.SAssignTuple}}
+
+    \subsubsection{Prose}
+    <description>
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    <example>
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.SReturnNone \label{sec:SemanticsRule.SReturnNone}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [s] is a return statement;
+    \item [vs] is [[]];
+    \item [new\_env] is [env].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Example: SReturnNoneReturn.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnNoneReturn.asl} 
+    exits the current procedure.
+
+    \subsubsection{Example: SReturnNonePrint.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnNonePrint.asl}
+    prints "012".
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.SReturnOne \label{sec:SemanticsRule.SReturnOne}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [s] is a return statement;
+    \item [s] gives an expression [e];
+    \item [v] is the evaluation of [e] under [env];
+    \item [vs] is [[v]];
+    \item [new\_env] is [env] modified after evaluation of [e] under [env].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [return 3;] exits the current function with value [3].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.SReturnSome \label{sec:SemanticsRule.SReturnSome}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [s] is a return statement;
+    \item [s] gives a list of expressions [es];
+    \item [vs] is the piece-wise evaluation of the list [es] under [env];
+    \item [new\_env] is [env] modified after evaluation of [e] under [env].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [return (3, 42);] exits the current function with value [(3, 42)].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \interp{\syntt{return}\ e} (E) & \triangleq \interp{e} (E)
+  \label{eq:sem-det-sreturn}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \interp{\syntt{return}\ e} (E) & \triangleq \interp{e} (E)
+  \label{eq:sem-ndet-sreturn}
+  \end{align} 
+
+\subsection{SemanticsRule.SSeq \label{sec:SemanticsRule.SSeq}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item [s] is a then statement;
+  \item [s] gives two statements [s1] and [s2];
+  \item [env'] is [env] modified after evaluation of [s1];
+  \item [new\_env] is [env'] modified after evaluation of [s2].
+  \end{itemize}
+
+  \subsubsection{Examples}
+  [print(3); print(42);] prints ``342''.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  The semantics of~$s_1; s_2$ is the semantics of~$s_2$ applied to the results
+  of the semantics of~$s_1$ if they do not perform an early return, in which
+  case it is the semantics of~$s_1$.
+  \begin{equation}
+    \interp{s_1; s_2} (E) \triangleq
+      \left\{ (v?, E'') \st{}
+      \begin{aligned}
+        & (v, E'') \in \interp{s_1} (E)
+        \\ \text{or}\ &
+        \left(
+        \begin{aligned}
+            & (\bot{}, E') \in \interp{s_1} (E)
+            \\ \text{and}\ &
+            (v?, E'') \in \interp{s_2} (E')
+        \end{aligned}
+        \right)
+      \end{aligned}
+      \right\}
+    \label{eq:sem-det-sseq}
+  \end{equation}
+
+  \subsubsection{Formally: concurrent case}
+  The evaluation of two statements introduces an $\aslpo$ arrow between the two
+graphs produced by their interpretations:
+  \begin{equation}
+    \interp{s_1; s_2} (E) \triangleq
+      \left\{ (v, E'', S'') \st{}
+      \begin{aligned}
+        & (v, E'', S'') \in \interp{s_1} (E)
+        \\ \text{or}\ &
+        \left(
+        \begin{aligned}
+            & (\bot{}, E', S) \in \interp{s_1} (E)
+            \\ \text{and}\ &
+            (v, E'', S') \in \interp{s_2} (E')
+            \\ \text{and}\ &
+            S = S' \xrightarrow{\aslpo} S''
+        \end{aligned}
+        \right)
+      \end{aligned}
+      \right\}
+    \label{eq:sem-ndet-sseq}
+  \end{equation}
+
+  \subsubsection{Comments}
+
+\subsection{SemanticsRule.SCall \label{sec:SemanticsRule.SCall}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [s] is a call statement;
+    \item [s] gives a function name [name], actual arguments [actual\_args] and
+      parameters [params];
+    \item [env'] is [env] modified after evaluation of the function call;
+    \item [new\_env] is [env'].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [Zeros(3)] evaluates to ['000'].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.SCond \label{sec:SemanticsRule.SCond}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [s] is a conditional statement;
+    \item [s] gives a condition [cond] and two statements [s1] and [s2];
+    \item [v\_cond] is the evaluation of [cond];
+    \item [new\_env] is [env] modified after evaluation of [s1] or [s2] depending on
+      [v\_cond].
+    \end{itemize}
+
+    \subsubsection{Example: SemanticsRule.SCond.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond.asl}
+    prints "3".
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  The semantics of a conditional statement $\ife{e}{s_1}{s_2}$ chooses between
+  the semantics of~$s_1$ or $s_2$ depending on the evaluation of $e$:
+  \begin{equation}
+    \interp{\begin{array}{l}
+      \syntt{if}\ e\\
+      \syntt{then}\ s_1\\
+      \syntt{else}\ s_2\ \syntt{end}
+    \end{array}} (E) \triangleq
+    % \interp{\ife{e}{s_1}{s_2}} (E) & \triangleq
+      \left\{ (v?, E'') \st{} \ 
+      \begin{aligned}
+        & (b, E') \in \interp{e} (E)
+        \\ \text{and}\ &
+        \left( \begin{aligned}
+          & \left(b = \syntt{true} \ \text{and} \ s' = s_1 \right)
+          \\ \text{or}\ &
+          \left( b = \syntt{false} \ \text{and}\ s' = s_2 \right)
+        \end{aligned} \right)
+        \\ \text{and}\ &
+        (v?, E'') \in \interp{s'} (E')
+      \end{aligned}
+      \right\}
+    \label{eq:sem-det-scond}
+  \end{equation}
+
+  \subsubsection{Formally: concurrent case}
+  A conditional statement introduces control dependencies $\aslctrl$ between its
+  condition and its body:
+  \begin{equation}
+    \interp{\begin{array}{l}
+      \syntt{if}\ e\\
+      \syntt{then}\ s_1\\
+      \syntt{else}\ s_2\ \syntt{end}
+    \end{array}} (E) \triangleq
+      \left\{ (v, E'', S'') \st{} \ 
+      \begin{aligned}
+        & (b, E', S) \in \interp{e} (E)
+        \\ \text{and}\ &
+        \left( \begin{aligned}
+          & \left(b = \syntt{true}\ \text{and}\ s' = s_1 \right)
+          \\ \text{or}\ &
+          \left( b = \syntt{false}\ \text{and}\ s' = s_2 \right)
+        \end{aligned} \right)
+        \\ \text{and}\ &
+        (v, E'', S') \in \interp{s'} (E')
+        \\ \text{and}\ &
+        S'' = S \xrightarrow{\aslctrl} S'
+      \end{aligned}
+      \right\}
+    \label{eq:sem-ndet-scond}
+  \end{equation}
+
+  \subsubsection{Comments}
+
+\subsection{SemanticsRule.SCase \label{sec:SemanticsRule.SCase}}
+
+    \subsubsection{Prose}
+    <description>
+
+    \subsubsection{Comments}
+
+    \subsubsection{Example: SemanticsRule.SCase.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCase.asl} 
+    prints ``less than 42.''
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.SAssert \label{sec:SemanticsRule.SAssert}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [s] is an assert statement;
+    \item [s] gives an expression [e];
+    \item [v] is the evaluation of [e];
+    \item if [v] is true then [new\_env] is [env], otherwise an AssertionFailed
+      error is raised.
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [assert (42 != 3);] ensures that [3] is not equal to [42].
+    [assert (42 == 3);] raises an [AssertionFailed] error.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.SWhile \label{sec:SemanticsRule.SWhile}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [s] is a while statement;
+    \item [s] gives an expression [e] and a loop body [body];
+    \item [new\_env] is [env] modified after evaluation of the loop [(e,body)].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Example: SemanticsRule.SWhile.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SWhile.asl}
+    prints ``0123''.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.SRepeat \label{sec:SemanticsRule.SRepeat}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [s] is a repeat statement;
+    \item [s] gives an expression [e] and a loop body [body];
+    \item [new\_env] is [env] modified after evaluation of the loop [(e,body)].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Example: SemanticsRule.SRepeat.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SRepeat.asl}
+    prints ``0123''.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.SFor \label{sec:SemanticsRule.SFor}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [s] is a for statement;
+    \item [s] gives [(id,e1,dir,e2,s)];
+    \item <description>
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Example: ../tests/ASLSemanticsReference.t/SemanticsRule.SFor.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SFor.asl}
+    prints ``0123''.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.SThrowNone \label{sec:SemanticsRule.SThrowNone}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [s] is a throw statement;
+    \item <description>
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Example: SemanticsRule.SThrowNone.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SThrowNone.asl} 
+    throws a [MyException] exception.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.SThrowSomeTyped \label{sec:SemanticsRule.SThrowSomeTyped}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [s] is a throw statement;
+    \item <description>
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Example: SemanticsRule.SThrowSomeTyped.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SThrowSomeTyped.asl}
+    throws a [MyException {a: 3, b: 42}] exception.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.SThrowSome \label{sec:SemanticsRule.SThrowSome}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [s] is a throw statement;
+    \item <description>
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    <example>
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.STry \label{sec:SemanticsRule.STry}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [s] is a try statement;
+    \item [s] gives [(s', catchers, otherwise\_opt)];
+    \item [s\_m] is the evaluation of the block [s'] under [env];
+    \item [new\_env] is [env] modified after evaluation of the catchers [(catchers
+      otherwise\_opt s\_m)].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Example: SemanticsRule.STry.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.STry.asl}
+    prints ``3''.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.SDeclSome \label{sec:SemanticsRule.SDeclSome}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [s] is a declaration;
+    \item [s] gives [(\_ldk, ldi, Some e)];
+    \item [new\_env] is [env] modified after evaluation of the local declaration
+      [ldi env (Some m)].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [let x = 3;] binds [x] to [3] in the empty environment.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.SDeclNone \label{sec:SemanticsRule.SDeclNone}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [s] is a declaration;
+    \item [s] gives [(\_dlk, ldi, None)];
+    \item [new\_env] is [env] modified after evaluation of the local declaration
+      [ldi env None]. 
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    [var x : integer;] binds [x] in [env] to the base value of [integer].
+
+\section{Evaluation of Blocks: SemanticsRule.Block \label{sec:SemanticsRule.Block}}
+
+    \subsubsection{Prose}
+    [eval\_block env stm] is [new\_env] and all of the following applies:
+    \begin{itemize}
+    \item [block\_env] is [env] such that the scope given by [env] is pushed onto the
+      declaration stack;
+    \item [block\_env'] is [env] modified after the evaluation of the statement [stm];
+    \item [new\_env] is [block\_env'] after restoring the variable bindings of [env],
+    with the updated values of [block\_env'].
+    \end{itemize}
+ 
+    \subsubsection{Comments}
+
+    \subsubsection{Examples}
+    <example>
+
+\section{Evaluation of [while] and [repeat] loops: SemanticsRule.Loop \label{sec:SemanticsRule.Loop}}
+[eval\_loop is\_while env e\_cond body] evaluates [body] in [env]: this is either
+an interruption [Returning vs] or a new environment [new\_env].
+
+    \subsubsection{Prose}
+    Formally, [cond\_m] evaluates to [e\_cond] or [not e\_cond] as determined by
+    [is\_while] and one of the following applies:
+
+    \begin{itemize}
+    \item All of the following apply:
+      \begin{itemize}
+      \item [cond\_m] evaluates to [false];
+      \item [new\_env] is [env]---the loop is exited. 
+      \end{itemize}
+    \item All of the following apply:
+      \begin{itemize}
+      \item [cond\_m] evaluates to [true];
+      \item [env1] is [env] modified after the evaluation of the statement
+       [body]---this step might affect the value of [cond\_m] eventually leading
+       to exiting the loop;
+      \item [new\_env] is [env1] modified after the evaluation of [eval\_loop
+        is\_while env e\_cond body].
+      \end{itemize}
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Example: SemanticsRule.Loop.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.Loop.asl}
+    prints ``0123''.
+
+\section{Evaluation of [for] loops: SemanticsRule.For \label{sec:SemanticsRule.For}}
+[eval\_for undet env index\_name v\_start dir v\_end body] evaluates [body] in
+[env]: this is either an interruption [Returning vs] or a new environment
+[new\_env].
+
+    \subsubsection{Prose}
+    Formally, [cond\_m] evaluates to [leq v\_end v\_start] or [geq v\_end v\_start]
+    as determined by [dir] and one of the following applies:
+
+    \begin{itemize}
+    \item All of the following apply:
+      \begin{itemize}
+      \item [cond\_m] evaluates to [true];
+      \item [new\_env] is [env] as the loop is exited.
+      \end{itemize}
+    \item All of the following apply:
+      \begin{itemize}
+      \item [cond\_m] evaluates to [false];
+      \item [env1] is [env] modified after the evaluation of the statement [body];
+      \item [env2] is [env1] modified such that [index\_name] is bound to [v\_step];
+      \item [v\_step] evaluates to [v\_start+1] or [v\_start-1] as determined by [dir];
+      \item [new\_env] is [env2] modified after the evaluation of [eval\_for undet
+        env index\_name v\_step dir v\_end body].
+      \end{itemize}
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Example: SemanticsRule.For.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.For.asl}
+    prints ``3''.
+
+\section{Evaluation of Catchers}
+[eval\_catchers env catchers otherwise\_opt s\_m], given the result [s\_m] of the
+evaluation of a statement under environment [env] is [res] which is either a
+[Throwing (v, v\_ty, env\_throw)], an interruption [Returning vs] or a new
+environment [new\_env]. Formally, one of the following applies:
+\begin{itemize}
+\item SemanticsRule.Catch (see Section~\ref{sec:SemanticsRule.Catch}),
+\item SemanticsRule.CatchNamed (see Section~\ref{sec:SemanticsRule.CatchNamed}),
+\item SemanticsRule.CatchOtherwise (see Section~\ref{sec:SemanticsRule.CatchOtherwise}),
+\item SemanticsRule.CatchNone (see Section~\ref{sec:SemanticsRule.CatchNone}),
+\item SemanticsRule.CatchNoThrow (see Section~\ref{sec:SemanticsRule.CatchNoThrow}).
+\end{itemize}
+
+\subsection{SemanticsRule.Catch \label{sec:SemanticsRule.Catch}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [s\_m] is [Throwing (v, v\_ty, env\_throw)];
+    \item [catcher] is the first catcher in [catchers] that matches [v\_ty];
+    \item [catcher] does not declare a name;
+    \item [catcher] gives a statement [s];
+    \item One of the following applies:
+      \begin{itemize}
+      \item [env\_throw] and [env] have the same scope, and [env1] is [env\_throw];
+      \item [env1] is the environment formed with the global part of [env\_throw]
+        and the local part of [env];
+      \end{itemize}
+    \item One of the following applies:
+      \begin{itemize}
+      \item [Throwing (None, None, env\_throw1)] is the result of the evaluation of
+        the block [s] in [env1], and [res] is [Throwing (v, v\_ty, env\_throw1)];
+      \item [res] is the result of the evaluation of the block [s] in [env1].
+      \end{itemize}
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Example: SemanticsRule.Catch.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.Catch.asl}
+    prints ``MyException''.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.CatchNamed \label{sec:SemanticsRule.CatchNamed}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [s\_m] is [Throwing (v, v\_ty, env\_throw)];
+    \item [catcher] is the first catcher in [catchers] that matches [v\_ty];
+    \item [catcher] declares a name [name];
+    \item [catcher] gives a statement [s];
+    \item One of the following applies:
+      \begin{itemize}
+      \item [env\_throw] and [env] have the same scope, and [env1] is [env\_throw];
+      \item [env1] is the environment formed with the global part of [env\_throw]
+        and the local part of [env];
+      \item [env2] is [env1] modified after binding locally [name] to the exception
+        [v] raised by [s\_m];
+      \end{itemize}
+    \item One of the following applies:
+      \begin{itemize}
+      \item [Throwing (None, None, env\_throw1)] is the result of the evaluation of
+        the block [s] in [env2], and [res] is [Throwing (v, v\_ty, env\_throw1)];
+      \item [env3] is [env2] modified after the evaluation of the block [s] in
+        [env2], and [new\_env] is [env3] modified after unbinding [name] from
+        [env3].
+      \item [res] is the result of the evaluation of the block [s] in [env2].
+      \end{itemize}
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Example: SemanticsRule.CatchNamed.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNamed.asl}
+    prints ``My exception with my message''.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.CatchOtherwise \label{sec:SemanticsRule.CatchOtherwise}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [s\_m] is [Throwing (v, v\_ty, env\_throw)];
+    \item [otherwise\_opt] is [Some s];
+    \item no catcher matches [v\_ty];
+    \item One of the following applies:
+      \begin{itemize}
+      \item [env\_throw] and [env] have the same scope, and [env1] is [env\_throw];
+      \item [env1] is the environment formed with the global part of [env\_throw]
+        and the local part of [env];
+      \end{itemize}
+    \item One of the following applies:
+      \begin{itemize}
+      \item [Throwing (None, None, env\_throw1)] is the result of the evaluation of
+        the block [s] in [env1], and [res] is [Throwing (v, v\_ty, env\_throw1)];
+      \item [res] is the result of the evaluation of the block [s] in [env1].
+      \end{itemize}
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Example: SemanticsRule.CatchOtherwise.asl}
+     The program:
+     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchOtherwise.asl}
+     prints ``Another exception''.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.CatchNone \label{sec:SemanticsRule.CatchNone}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [s\_m] is [Throwing (v, v\_ty, env\_throw)];
+    \item [otherwise\_opt] is [None];
+    \item no catcher matches [v\_ty];
+    \item [new\_env] is [env].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Example: SemanticsRule.CatchNone.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNone.asl}
+    does not print anything.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.CatchNoThrow \label{sec:SemanticsRule.CatchNoThrow}}
+
+    \subsubsection{Prose}
+    All of the following apply:
+    \begin{itemize}
+    \item [s\_m] is not [Throwing];
+    \item [res] is [s\_m].
+    \end{itemize}
+
+    \subsubsection{Comments}
+
+    \subsubsection{Example: SemanticsRule.CatchNoThrow.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNoThrow.asl}
+    prints ``No exception raised''.
+
+\section{Evaluation of Function Calls}
+[eval\_call pos name env args named\_args] evaluates the call to function [name]
+with arguments [args] and parameters [named\_args].
+
+  \subsubsection{Prose}
+  <description>
+
+  \subsubsection{Comments}
+
+  \subsubsection{Examples}
+  At the begining of a program, the interpreter evaluates the function "main".
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\section{Evaluation of Functions}
+[eval\_func genv name pos actual\_args params] evaluates the function named
+[name] in the global environment [genv], with [actual\_args] the list of actual
+arguments, and [params] the list of arguments deduced by type equality. This is
+a new global environment [new\_genv] and a list of values [vs], or an error is
+raised. Formally, one of the following applies:
+\begin{itemize}
+\item SemanticsRule.FUndefIdent (see Section~\ref{sec:SemanticsRule.FUndefIdent}),
+\item SemanticsRule.FPrimitive (see Section~\ref{sec:SemanticsRule.FPrimitive}),
+\item SemanticsRule.FBadArity (see Section~\ref{sec:SemanticsRule.FBadArity}),
+\item SemanticsRule.FCall (see Section~\ref{sec:SemanticsRule.FCall}).
+\end{itemize}
+
+\subsection{SemanticsRule.FUndefIdent \label{sec:SemanticsRule.FUndefIdent}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item [name] is undeclared in [genv];
+  \item an [UndefinedIdentifier] error is raised.
+  \end{itemize}
+
+  \subsubsection{Comments}
+
+  \subsubsection{Example: SemanticsRule.FUndefIdent.asl}
+  The program:
+  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.FUndefIdent.asl}
+  raises an [UndefinedIdentifier "Foo"] error.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.FPrimitive \label{sec:SemanticsRule.FPrimitive}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item [name] is bound in [genv] to a primitive function with a body [body];
+  \item [new\_genv] is [genv];
+  \item [vs] is the application of [body] on [actual\_args].
+  \end{itemize}
+
+  \subsubsection{Comments}
+
+  \subsubsection{Examples}
+  [print (2,3);] calls the primitive [print] on the evaluation of [(2,3)].
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.FBadArity \label{sec:SemanticsRule.FBadArity}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item [name] is bound in [genv] to a function with a list of formal arguments
+    [arg\_decls];
+  \item the lists [actual\_args] and [arg\_decls] do not have the same length;
+  \item a "BadArity" error is raised.
+  \end{itemize}
+
+  \subsubsection{Comments}
+
+  \subsubsection{Examples}
+  [Zeros(3,4);] raises a [BadArity "Zeros" 1 2] error.
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  \begin{align}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  \begin{align}
+  \end{align} 
+
+\subsection{SemanticsRule.FCall \label{sec:SemanticsRule.FCall}}
+
+  \subsubsection{Prose}
+  All of the following apply:
+  \begin{itemize}
+  \item [name] is bound in [genv] to a function with a list of formal arguments
+    [arg\_decls] and a body statement [body];
+  \item [env1] is the environment made of [genv] and the empty local environment,
+  \item [env2] is [env1] modified so that each formal argument in [arg\_decls] is
+    locally bound to the corresponding actual argument in [actual\_args];
+  \item [env3] is [env2] modified so that each parameter in [params] is declared;
+  \item [res] is the evaluation of [body] in [env3] and one of the following
+    applies:
+      \begin{itemize}
+      \item [res] is an environment [env4] and [new\_genv] is the global environment
+        given by [env4]---e.g. where the function called is either a setter or
+        a procedure;
+      \item [res] is an interruption [Returning(xs,ret\_genv)] and [new\_genv] is
+        [ret\_genv]---this is the general case.
+      \end{itemize}
+  \end{itemize}
+
+  \subsubsection{Example: SemanticsRule.FCall.asl}
+  The program:
+  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.FCall.asl}
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+
+  \subsubsection{Formally: sequential case}
+  The evaluation of a n-ary function evaluates the arguments in order then
+  calls the function:
+  \begin{align}
+  \interp{f (e_1, \dotsc e_n)} (E_0) & \triangleq
+    \left\{ (v, E') \st{}
+    \begin{aligned}
+      & \forall i \in \llbracket 1, n \rrbracket, (v_i, E_i) \in \interp{e_i} (E_{i - 1})
+      \\ \text{and}\ &
+      (v, E') \in \interp{\left\langle f, v_1, \dotsc v_n \right\rangle} \left(E_n\right)
+    \end{aligned}
+    \right\}
+  \label{eq:sem-det-fcall}
+  \end{align} 
+
+  \subsubsection{Formally: concurrent case}
+  For $i$ ranging implicitely from 1 to $n$ included, a call to a function $f$
+  is interpreted as the interpretation of the function call (see to $f$ after
+  evaluating every argument in order:
+
+  \begin{equation}
+    \interp{f (e_i)} (E_0) \triangleq
+      \left\{ (v, E', S) \st{}
+      \begin{aligned}
+        & % \forall i \in \llbracket 1, n \rrbracket,
+          (v_i, E_i, S_i) \in \interp{e_i} (E_{i - 1})
+        \\ \text{and}\ &
+        (v, E', S) \in \interp{\left\langle f, (v_i,S_i) \right\rangle} \left(E_n\right)
+      \end{aligned}
+      \right\}
+    \label{eq:sem-ndet-fcall}
+  \end{equation}
+
+  \subsubsection{Comments}
+  This aim to encompass LRM R\_DFWZ.
+
+\end{document}
