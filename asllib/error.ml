@@ -55,6 +55,7 @@ type error_desc =
   | OverlappingSlices of slice list
   | BadLDI of AST.local_decl_item
   | BadRecursiveDecls of identifier list
+  | UnrespectedParserInvariant
 
 type error = error_desc annotated
 
@@ -200,6 +201,7 @@ let pp_error =
         fprintf f "ASL Typing error:@ multiple recursive declarations:@ @[%a@]"
           (pp_comma_list (fun f -> fprintf f "%S"))
           decls
+    | UnrespectedParserInvariant -> fprintf f "Parser invariant broke."
     | BadReturnStmt (Some t) ->
         fprintf f
           "ASL Typing error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \
@@ -210,3 +212,8 @@ let pp_error =
 
 let error_to_string = Format.asprintf "%a" pp_error
 let eprintln = Format.eprintf "@[<2>%a@]@." pp_error
+
+let () =
+  Printexc.register_printer @@ function
+  | ASLException e -> Some (error_to_string e)
+  | _ -> None

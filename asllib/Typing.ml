@@ -1862,8 +1862,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             let env', ldi' = annotate_local_decl_item_uninit s env ldi in
             (S_Decl (LDK_Var, ldi', None) |> here, env') |: TypingRule.SDeclNone
         | (LDK_Constant | LDK_Let), None ->
-            (* by construction in Parser. *)
-            assert false)
+            fatal_from s UnrespectedParserInvariant)
     (* End *)
     (* Begin SThrowSome *)
     | S_Throw (Some (e, _)) ->

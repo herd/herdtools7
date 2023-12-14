@@ -1,4 +1,4 @@
-(dirs :standard \ catalogue)
+(dirs :standard \ catalogue carpenter)
 
 (env
  (release

@@ -309,11 +309,9 @@ module Domain = struct
           try
             let ty = StaticEnv.type_of env x in
             of_type env ty
-          with Not_found ->
-            Error.fatal_unknown_pos (Error.UndefinedIdentifier x)))
+          with Not_found -> Error.fatal_from e (Error.UndefinedIdentifier x)))
     | E_Unop (NEG, e') ->
         of_expr env (E_Binop (MINUS, !$0, e') |> add_pos_from e)
-    | E_Unop _ -> assert false
     | E_Binop (((PLUS | MINUS | MUL) as op), e1, e2) ->
         let is1 = match of_expr env e1 with D_Int is -> is | _ -> assert false
         and is2 = match of_expr env e2 with D_Int is -> is | _ -> assert false
@@ -349,7 +347,7 @@ module Domain = struct
         try
           match of_expr env width with
           | D_Int is -> D_Bits is
-          | _ -> assert false
+          | _ -> raise StaticEvaluationTop
         with StaticEvaluationTop ->
           D_Bits (FromSyntax [ Constraint_Exact width ]))
     | T_Array _ | T_Exception _ | T_Record _ | T_Tuple _ ->
@@ -759,12 +757,12 @@ let rec lowest_common_ancestor env s t =
                  if List.compare_lengths ancestors li_s = 0 then
                    Some (add_dummy_pos (T_Tuple ancestors))
                  else None)
-         | T_Int (UnderConstrained _), _ ->
+         | T_Int (UnderConstrained _), T_Int _ ->
              (* TODO: revisit? *)
              (* If either S or T have the structure of an under-constrained
                 integer type: the under-constrained integer type. *)
              Some s
-         | _, T_Int (UnderConstrained _) ->
+         | T_Int _, T_Int (UnderConstrained _) ->
              (* TODO: revisit? *)
              (* If either S or T have the structure of an under-constrained
                 integer type: the under-constrained integer type. *)
@@ -786,7 +784,7 @@ let rec lowest_common_ancestor env s t =
                  (* TODO: simplify domains ? If domains use a form of diets,
                     this could be more efficient. *)
                  Some (add_dummy_pos (T_Int (WellConstrained (cs_s @ cs_t)))))
-         | T_Int UnConstrained, _ -> (
+         | T_Int UnConstrained, T_Int _ -> (
              (* Here S has the structure of an unconstrained integer type. *)
              (* TODO: revisit? *)
              (* TODO: typo corrected here, on point 2 S and T have
@@ -804,7 +802,7 @@ let rec lowest_common_ancestor env s t =
              | T_Named _, _ -> Some s
              | _, T_Named _ -> assert false
              | _, _ -> Some (add_dummy_pos (T_Int UnConstrained)))
-         | _, T_Int UnConstrained -> (
+         | T_Int _, T_Int UnConstrained -> (
              (* Here T has the structure of an unconstrained integer type. *)
              (* TODO: revisit? *)
              (* TODO: typo corrected here, on point 2 S and T have
@@ -846,7 +844,8 @@ let rec base_value loc env t =
   | T_Bits (e, _) ->
       let e = normalize env e in
       E_Call ("Zeros", [ e ], []) |> add_pos_from t
-  | T_Enum li -> IMap.find (List.hd li) env.global.constants_values |> lit
+  | T_Enum [] -> failwith "Enumerations shouldn't be empty."
+  | T_Enum (x :: _) -> IMap.find x env.global.constants_values |> lit
   | T_Int UnConstrained -> !$0
   | T_Int (UnderConstrained _) ->
       (* This case cannot happen:
