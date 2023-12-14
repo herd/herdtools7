@@ -147,7 +147,7 @@ begin
   return NOT Zeros(N);
 end
 
-func IsZero(x :: bits(N)) => boolean
+func IsZero{N}(x :: bits(N)) => boolean
 begin
   return x == Zeros(N);
 end
