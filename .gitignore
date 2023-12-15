@@ -12,3 +12,11 @@ catIncludes.ml
 herdtools7.install
 jerd.byte
 jerd.js
+asllib/doc/ASLSemanticsLines.tex
+asllib/doc/ASLTypingLines.tex
+asllib/doc/*.aux
+asllib/doc/*.log
+asllib/doc/*.out
+asllib/doc/*.pdf
+asllib/doc/*.synctex.gz
+asllib/doc/*.toc
