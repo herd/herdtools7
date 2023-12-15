@@ -146,6 +146,15 @@ TODO: what about \texttt{hex\_lit}?
     \item  [t] is singular;
     \item  [t] is aggregate.
     \end{itemize}
+    
+   \subsubsection{Rules}
+   \[
+   \begin{array}{l}
+   t \in \texttt{ty} \;\;\;\; \texttt{is\_builtin\_singular}(t) \vdash \texttt{is\_builtin}(t)\\
+   t \in \texttt{ty} \;\;\;\; \texttt{is\_builtin\_aggregate}(t) \vdash \texttt{is\_builtin}(t)\\
+   \end{array}
+   \]
+   
 
 \subsection{TypingRule.NamedType} 
 
