@@ -85,6 +85,29 @@ ASL Semantics Reference:
   ASL Error: Undefined identifier: 'foo'
   [1]
   $ aslref SemanticsRule.FCall.asl
+  $ aslref SemanticsRule.PAll.asl
+  $ aslref SemanticsRule.PAnyTRUE.asl
+  $ aslref SemanticsRule.PAnyFALSE.asl
+  $ aslref SemanticsRule.PGeqTRUE.asl
+  $ aslref SemanticsRule.PGeqFALSE.asl
+  $ aslref SemanticsRule.PLeqTRUE.asl
+  $ aslref SemanticsRule.PLeqFALSE.asl
+  $ aslref SemanticsRule.PNotTRUE.asl
+  $ aslref SemanticsRule.PNotFALSE.asl
+  $ aslref SemanticsRule.PRangeTRUE.asl
+  $ aslref SemanticsRule.PRangeFALSE.asl
+  $ aslref SemanticsRule.PSingleTRUE.asl
+  $ aslref SemanticsRule.PSingleFALSE.asl
+  $ aslref SemanticsRule.PMaskTRUE.asl
+  $ aslref SemanticsRule.PMaskFALSE.asl
+  $ aslref SemanticsRule.PTupleTRUE.asl
+  $ aslref SemanticsRule.PTupleFALSE.asl
+
+
+
+
+
+
 
 
 
