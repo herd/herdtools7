@@ -1682,7 +1682,9 @@ Evaluation of the local variables \texttt{ldi} under the environment
       the base value of \texttt{ty}.
     \end{itemize}
 
-    \subsection{Examples}
+    \subsection{Example: SemanticsRule.LDTypedVar.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDTypedVar.asl}
     [var x : integer;] binds [x] in [env] to the base value of [integer].
 
   \subsection{Code}
@@ -1710,7 +1712,9 @@ Evaluation of the local variables \texttt{ldi} under the environment
       to the corresponding value in \texttt{liv}.
     \end{itemize}
 
-    \subsection{Example}
+    \subsection{Example: SemanticsRule.LDTuple.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDTuple.asl}
     [var (x,y,z) = (1,2,3);] binds [x] (resp. [y], [z]) to the evaluation of
     [1] (resp. [2], [3]) in [env].
 
@@ -1738,7 +1742,9 @@ Evaluation of the local variables \texttt{ldi} under the environment
     \item \texttt{new\_env} is \texttt{env} modified to declare each element of \texttt{ldis} with type \texttt{ty}.
     \end{itemize}
 
-    \subsection{Examples}
+    \subsection{Example: SemanticsRule.LDTypedTuple.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDTypedTuple.asl}
     [var (x,y,z) : integer;] binds [x], [y] and [z] in [env] to the base value
     of [integer].
 
@@ -1765,7 +1771,9 @@ Evaluation of the local variables \texttt{ldi} under the environment
     \item \texttt{new\_env} is \texttt{env} modified to declare each element of \texttt{ldis}.
     \end{itemize}
 
-    \subsection{Examples}
+    \subsection{Example: SemanticsRule.LDUninitalisedTuple.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDUninitalisedTuple.asl}
     [var (x : integer, y : boolean);] binds [x] to the base value of [integer]
     and [y] to the base value of [boolean].
 
@@ -1813,7 +1821,9 @@ the following applies:
   \item \texttt{new\_env} is \texttt{env}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example: SemanticsRule.SPass.asl}
+  In the program:
+  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SPass.asl}
   [pass;] does nothing.
 
   \subsection{Code}
@@ -1845,7 +1855,9 @@ the following applies:
     [v].
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example: SemanticsRule.SAssign.asl}
+  In the program:
+  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssign.asl}
   [x = 3;] binds [x] to [3] in [x $mapsto$42] ([new\_env] is here [x $mapsto$3]).
 
   \subsection{Code}
@@ -1953,7 +1965,9 @@ the following applies:
 
     \subsection{Comments}
 
-    \subsection{Examples}
+    \subsection{Example: SemanticsRule.SReturnOne.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnOne.asl}
     [return 3;] exits the current subprogram with value [3].
 
   \subsection{Code}
@@ -1980,7 +1994,9 @@ the following applies:
 
     \subsection{Comments}
 
-    \subsection{Examples}
+    \subsection{Example: SemanticsRule.SReturnSome.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnSome.asl}
     [return (3, 42);] exits the current subprogram with value [(3, 42)].
 
   \subsection{Code}
@@ -2009,8 +2025,10 @@ the following applies:
   \item [new\_env] is [env'] modified after evaluation of [s2].
   \end{itemize}
 
-  \subsection{Examples}
-  [print(3); print(42);] prints ``342''.
+  \subsection{Example: SemanticsRule.SSeq.asl}
+  In the program:
+  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SSeq.asl}
+  [let x = 3; let y = x + 1] evaluates [let x = 3] then [let y = x + 1].
 
   \subsection{Code}
   \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
@@ -2076,7 +2094,9 @@ graphs produced by their interpretations:
 
     \subsection{Comments}
 
-    \subsection{Examples}
+    \subsection{Example: SemanticsRule.SCall.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCall.asl}
     [Zeros(3)] evaluates to ['000'].
 
   \subsection{Code}
@@ -2420,7 +2440,9 @@ graphs produced by their interpretations:
 
     \subsection{Comments}
 
-    \subsection{Examples}
+    \subsection{Example: SemanticsRule.SDeclSome.asl}
+    The program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SDeclSome.asl}
     [let x = 3;] binds [x] to [3] in the empty environment.
 
   \subsection{Code}
@@ -2447,7 +2469,9 @@ graphs produced by their interpretations:
 
     \subsection{Comments}
 
-    \subsection{Examples}
+    \subsection{Example: SemanticsRule.SDeclNone.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SDeclNone.asl}
     [var x : integer;] binds [x] in [env] to the base value of [integer].
 
 \chapter{Evaluation of Blocks \label{chap:eval_block}}
