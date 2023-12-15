@@ -782,29 +782,42 @@ module Make (B : Backend.S) (C : Config) = struct
   (* -------------------------------- *)
   and eval_local_decl s ldi env m_init_opt : env maybe_exception m =
     match (ldi, m_init_opt) with
+    (* Begin LDIgnore *)
     | LDI_Ignore _ty, _ -> return_normal env |: SemanticsRule.LDIgnore
+    (* End *)
+    (* Begin LDVar *)
     | LDI_Var (x, _ty), Some m ->
         m
         >>= declare_local_identifier env x
         >>= return_normal |: SemanticsRule.LDVar
+    (* End *)
+    (* Begin LDTypedVar *)
     | LDI_Var (x, Some ty), None ->
         base_value env ty
         >>= declare_local_identifier env x
         >>= return_normal |: SemanticsRule.LDTypedVar
+    (* End *)
+    (* Begin LDUninitialisedVar *)
     | LDI_Var (x, None), None ->
         fail_initialise s x |: SemanticsRule.LDUninitialisedVar
+    (* End *)
+    (* Begin LDTuple *)
     | LDI_Tuple (ldis, _ty), Some m ->
         let n = List.length ldis in
-        let nmonads = List.init n (fun i -> m >>= B.get_index i) in
+        let liv = List.init n (fun i -> m >>= B.get_index i) in
         let folder envm ldi' vm =
           let**| env = envm in
           eval_local_decl s ldi' env (Some vm)
         in
-        List.fold_left2 folder (return_normal env) ldis nmonads
+        List.fold_left2 folder (return_normal env) ldis liv 
         |: SemanticsRule.LDTuple
+    (* End *)
+    (* Begin LDTypedTuple *)
     | LDI_Tuple (_ldis, Some ty), None ->
         let m = base_value env ty in
         eval_local_decl s ldi env (Some m) |: SemanticsRule.LDTypedTuple
+    (* End *)
+    (* Begin LDUninitialisedTuple *)
     | LDI_Tuple (ldis, None), None ->
         let folder envm ldi' =
           let**| env = envm in
@@ -812,6 +825,7 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         List.fold_left folder (return_normal env) ldis
         |: SemanticsRule.LDUninitialisedTuple
+    (* End *)
 
   (* Evaluation of Statements *)
   (* ------------------------ *)
