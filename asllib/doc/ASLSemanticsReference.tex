@@ -12,7 +12,7 @@
 \usepackage{mathpartir}  % For deduction rules and equations paragraphs
 \usepackage{comment}
 \usepackage{fancyvrb}
-
+\input{ASLSemanticsLines}
 %Macros
 \newcommand\ie{i.\,e.}
 \newcommand\eg{e.\,g.}
@@ -251,8 +251,8 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
   \subsection{Example}
   The expression [3] evaluates to the value [3].
 
-  \subsection{Code}
-  \VerbatimInput[firstline=329, lastline=330]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\LitBegin, lastline=\LitEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   The evaluation of a literal value $v$ associates any environment to itself
@@ -268,6 +268,25 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
   \interp{v}(\texttt{env}) & \triangleq \left\{ (v, \texttt{env}, \varnothing) \right\}
   \label{eq:sem-conc-lit}
   \end{align}
+
+  \subsection{Comments}
+
+
+  \section{SemanticsRule.TypedExpr \label{sec:SemanticsRule.TypedExpr}}
+
+  \subsection{Prose}
+  \texttt{(e,\_t)} denotes a typed expression and <description>
+
+  \subsection{Examples}
+  The expression [(3 as integer)] evaluates to the value [3].
+  The expression [(3 as integer {5:7})] raises a "Mismatched Value" error.
+
+  \subsection{Code}
+  \VerbatimInput[firstline=\TypedExprBegin, lastline=\TypedExprEnd]{../Interpreter.ml}
+
+  \subsection{Formally: sequential case}
+  
+  \subsection{Formally: concurrent case}
 
   \subsection{Comments}
 
@@ -288,8 +307,8 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ELocalVar.asl}
     the evaluation of [x] within [assert x == 3]; uses SemanticsRule.ELocalVar.
 
-  \subsection{Code}
-  \VerbatimInput[firstline=342, lastline=345]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\ELocalVarBegin, lastline=\ELocalVarEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   The evaluation of a variable $x$ in an environment \texttt{env} that maps $x$ to $v$
@@ -335,8 +354,8 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
     raises a type error because \texttt{x} is already declared locally in
     \texttt{stdlib.asl}.
 
-  \subsection{Code}
-  \VerbatimInput[firstline=347, lastline=350]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\EGlobalVarBegin, lastline=\EGlobalVarEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -369,8 +388,8 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
     raises an \texttt{Undefined Identifier} error: the variable \texttt{y} is
     undefined in the environment $\mathtt{x} \mapsto \mathtt{42}$.
 
-  \subsection{Code}
-  \VerbatimInput[firstline=352, lastline=354]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\EUndefIdentBegin, lastline=\EUndefIdentEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -396,8 +415,8 @@ e1 then e2 else false} (see Section~\ref{sec:SemanticsRule.ECond}).
 
   \subsection{Examples}
 
-  \subsection{Code}
-  \VerbatimInput[firstline=357, lastline=360]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\BinopAndBegin, lastline=\BinopAndEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -424,8 +443,8 @@ e1 then true else e2} (see Section~\ref{sec:SemanticsRule.ECond}).
 
   \subsection{Examples}
 
-  \subsection{Code}
-  \VerbatimInput[firstline=362, lastline=365]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\BinopOrBegin, lastline=\BinopOrEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -450,8 +469,8 @@ e1 then true else e2} (see Section~\ref{sec:SemanticsRule.ECond}).
 
   \subsection{Examples}
 
-  \subsection{Code}
-  \VerbatimInput[firstline=367, lastline=370]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\BinopImplBegin, lastline=\BinopImplEnd]{../Interpreter.ml}
 
   \subsection{Comments}
   This aims to encompass LRM Section 7.5.3 R\_BKNT, Section 8.5.1 I\_QRXP and Section
@@ -483,8 +502,8 @@ e1 then true else e2} (see Section~\ref{sec:SemanticsRule.ECond}).
     \item in ASLv1, the expression \texttt{3 DIV 0} raises a type error.
     \end{itemize}
 
-  \subsection{Code}
-  \VerbatimInput[firstline=372, lastline=376]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\BinopBegin, lastline=\BinopEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   
@@ -537,8 +556,8 @@ are considered computed in parallel:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EUnopAssert.asl}
     the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 
-  \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\UnopBegin, lastline=\UnopEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -571,8 +590,8 @@ are considered computed in parallel:
     the expression \texttt{if UNKNOWN: boolean then 3 else Return42()} will evaluate
     either \texttt{3} or \texttt{Return42()} depending on how \texttt{UNKNOWN} is implemented.
 
-  \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\ECondBegin, lastline=\ECondEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -601,8 +620,8 @@ are considered computed in parallel:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ESlice.asl}    
     the expression \texttt{'11110000'[5:2]} evaluates to the value \texttt{'1100'}.
 
-  \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\ESliceBegin, lastline=\ESliceEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -634,8 +653,8 @@ are considered computed in parallel:
     the expression \texttt{Return42()} evaluates to the value \texttt{42} because the
     subprogram \texttt{Return42()} is implemented to return the value \texttt{42}.
 
-  \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\ECallBegin, lastline=\ECallEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -683,8 +702,9 @@ are considered computed in parallel:
     raises a typing error since we are trying to access index \texttt{3} of an array
     which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
 
-  \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\EGetArrayBegin, lastline=\EGetArrayEnd]{../Interpreter.ml}
+
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -717,8 +737,8 @@ are considered computed in parallel:
     the expression \texttt{MyRecordType { a=3, b=42 }} evaluates to the value \texttt{{a:
 3, b: 42}}.
 
-  \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\ERecordBegin, lastline=\ERecordEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -748,8 +768,8 @@ are considered computed in parallel:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ERecord.asl}
     the expression \texttt{my\_record.a} evaluates to the value \texttt{3}.
 
-  \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\EGetFieldBegin, lastline=\EGetFieldEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -779,8 +799,8 @@ are considered computed in parallel:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EConcat.asl}
     the expression \texttt{['10', '11']} evaluates to the value \texttt{'1011'}.
 
-  \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\EConcatBegin, lastline=\EConcatEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -810,8 +830,8 @@ are considered computed in parallel:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ETuple.asl}
     the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
 
-  \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\ETupleBegin, lastline=\ETupleEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -860,8 +880,8 @@ are considered computed in parallel:
     the expression \texttt{UNKNOWN : integer \{3, 42\}} evaluates to either the value
 \texttt{3} or the value \texttt{42}.
 
-  \subsection{Code}
-  \VerbatimInput[firstline=447, lastline=449]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\EUnknownBegin, lastline=\EUnknownEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
 
@@ -903,8 +923,8 @@ are considered computed in parallel:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EPatternTRUE.asl}
     the expression \texttt{42 IN \{0..3, 42\}} evaluates to \texttt{TRUE}.
 
-  \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\EPatternBegin, lastline=\EPatternEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -931,6 +951,10 @@ are considered computed in parallel:
 
   \subsection{Example: SemanticsRule.CTCError.asl}
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CTCError.asl}
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\ESideEffectFreeExprBegin, lastline=\ESideEffectFreeExprEnd]
+                {../Interpreter.ml}
 
   \subsection{Code}
   \VerbatimInput[firstline=332, lastline=337]{../Interpreter.ml}
@@ -971,9 +995,10 @@ of the following apply:
     \end{itemize}
 
   \subsection{Example}
+  The left-hand-side expression [-] within [- = 42;] evaluates to the value [42].
 
-  \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\LEIgnoreBegin, lastline=\LEIgnoreEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -1003,8 +1028,8 @@ of the following apply:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LELocalVar.asl}
     the evaluation of the left-hand-side expression \texttt{x} within \texttt{x = 42;} uses SemanticsRule.LELocalVar.
 
-  \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\LELocalVarBegin, lastline=\LELocalVarEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -1033,8 +1058,8 @@ of the following apply:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEGlobalVar.asl}
     the evaluation of the left-hand-side expression \texttt{x} within \texttt{x = 42;} uses SemanticsRule.LEGlobalVar.
 
-  \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\LEGlobalVarBegin, lastline=\LEGlobalVarEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -1062,8 +1087,8 @@ a local variable bound to the value \texttt{v}.
   \subsection{Example: SemanticsRule.LEUndefIdentV0.asl}
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEUndefIdentV0.asl}
 
-  \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\LEUndefIdentZeroBegin, lastline=\LEUndefIdentZeroEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -1092,8 +1117,8 @@ a local variable bound to the value \texttt{v}.
 = 3;} raises an ``Undefined identifier'' error in the environment where
 \texttt{x} is bound to \texttt{42}.
 
-  \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\LEUndefIdentOneBegin, lastline=\LEUndefIdentOneEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
