@@ -1148,7 +1148,7 @@ of the following apply:
    \texttt{x[3:0] = '0000'} binds \texttt{x} to \texttt{'11110000'} in the environment where \texttt{x} is bound to \texttt{'11111111'}.
 
   \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \VerbatimInput[firstline=\LESliceBegin, lastline=\LESliceEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -1183,7 +1183,7 @@ of the following apply:
     binds the third element of \texttt{my\_array} to the value \texttt{53}.
 
   \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \VerbatimInput[firstline=\LESetArrayBegin, lastline=\LESetArrayEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -1218,9 +1218,9 @@ of the following apply:
     \texttt{my\_record.a = 42;} binds \texttt{my\_record} to \texttt{\{a: 42, b: 42\}} in the environment where \texttt{my\_record} is bound to \texttt{\{a: 3, b: 42\}}.
 
   \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \VerbatimInput[firstline=\LESetFieldBegin, lastline=\LESetFieldEnd]{../Interpreter.ml}
 
-    \subsection{Comments}
+  \subsection{Comments}
 
 \section{SemanticsRule.LEDestructuring \label{sec:SemanticsRule.LEDestructuring}}
 
@@ -1724,9 +1724,10 @@ Evaluation of the local variables \texttt{ldi} under the environment
     \subsection{Comments}
 
 \chapter{Evaluation of Statements \label{chap:eval_stmt}}
-The evaluation [eval\_stmt env s] of a statement [s] under environment [env] is
-either a [Throwing], an interruption [Returning vs] or a new environment
-[new\_env]. Formally, one of the following applies:
+Evaluation \texttt{eval\_stmt env s} of a statement \texttt{s} under
+environment \texttt{env} is either a \texttt{Throwing}, an interruption
+\texttt{Returning vs} or a new environment \texttt{new\_env}. Formally, one of
+the following applies:
 \begin{itemize}
 \item SemanticsRule.SPass (see Section~\ref{sec:SemanticsRule.SPass}), 
 \item SemanticsRule.SAssign (see Section~\ref{sec:SemanticsRule.SAssign}), 
@@ -1754,10 +1755,11 @@ either a [Throwing], an interruption [Returning vs] or a new environment
 \section{SemanticsRule.SPass \label{sec:SemanticsRule.SPass}}
 
   \subsection{Prose}
-  All of the following apply:
+  Evaluation of the statement \texttt{s} under environment \texttt{env} is
+\texttt{new\_env} and all of the following apply:
   \begin{itemize}
-  \item [s] is a pass statement;
-  \item [new\_env] is [env].
+  \item \texttt{s} is a \texttt{pass} statement;
+  \item \texttt{new\_env} is \texttt{env}.
   \end{itemize}
 
   \subsection{Examples}
@@ -1768,13 +1770,13 @@ either a [Throwing], an interruption [Returning vs] or a new environment
 
   \subsection{Formally: sequential case}
   \begin{align}
-  \interp{\syntt{pass}} (E) & \triangleq \{ (\bot, E) \}
+  \interp{\syntt{pass}} (\texttt{env}) & \triangleq \{ (\bot, \texttt{env}) \}
   \label{eq:sem-seq-spass}
   \end{align} 
 
   \subsection{Formally: concurrent case}
   \begin{align}
-  \interp{\syntt{pass}} (E) & \triangleq \{ (\bot, E, \varnothing) \}
+  \interp{\syntt{pass}} (\texttt{env}) & \triangleq \{ (\bot, \texttt{env}, \varnothing) \}
   \label{eq:sem-conc-spass}
   \end{align} 
 

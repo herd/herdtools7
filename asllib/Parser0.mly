@@ -550,7 +550,7 @@ let lexpr :=
     | le_var
     | ~=lexpr; ~=bracketed(clist(slice));      < AST.LE_Slice       >
     | ~=lexpr; LT; ~=clist(slice); GT;         < AST.LE_Slice       >
-    | ~=pared(nclist(lexpr));                  < AST.LE_TupleUnpack >
+    | ~=pared(nclist(lexpr));                  < AST.LE_Destructuring >
     | ~=lexpr; DOT; ~=ident;                   < AST.LE_SetField    >
     | ~=lexpr; DOT; ~=bracketed(clist(ident)); < AST.LE_SetFields   >
 

@@ -221,8 +221,8 @@ let rec pp_lexpr =
     | LE_SetFields (le, x) ->
         bprintf f "LE_SetFields (%a, %a)" pp_lexpr le (pp_list pp_string) x
     | LE_Ignore -> addb f "LE_Ignore"
-    | LE_TupleUnpack les ->
-        addb f "LE_TupleUnpack ";
+    | LE_Destructuring les ->
+        addb f "LE_Destructuring ";
         pp_list pp_lexpr f les
     | LE_Concat (les, _) ->
         bprintf f "LE_Concat (%a, None)" (pp_list pp_lexpr) les

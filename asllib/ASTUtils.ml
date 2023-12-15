@@ -428,7 +428,7 @@ let lid_of_lexpr =
     match le.desc with
     | LE_Ignore -> LDI_Ignore None
     | LE_Var x -> LDI_Var (x, None)
-    | LE_TupleUnpack les -> LDI_Tuple (List.map tr les, None)
+    | LE_Destructuring les -> LDI_Tuple (List.map tr les, None)
     | _ -> raise Exit
   in
   fun le -> try Some (tr le) with Exit -> None
@@ -442,7 +442,7 @@ let expr_of_lexpr : lexpr -> expr =
     | LE_SetField (le, x) -> E_GetField (map_desc aux le, x)
     | LE_SetFields (le, x) -> E_GetFields (map_desc aux le, x)
     | LE_Ignore -> E_Var "-"
-    | LE_TupleUnpack les -> E_Tuple (List.map (map_desc aux) les)
+    | LE_Destructuring les -> E_Tuple (List.map (map_desc aux) les)
     | LE_Concat (les, _) -> E_Concat (List.map (map_desc aux) les)
   in
   map_desc aux

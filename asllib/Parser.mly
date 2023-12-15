@@ -405,7 +405,7 @@ let lexpr ==
   annotated(
     | MINUS; lexpr_ignore
     | lexpr_atom
-    | ~=pared(nclist(lexpr)); <LE_TupleUnpack>
+    | ~=pared(nclist(lexpr)); <LE_Destructuring>
   )
 
 let lexpr_atom :=

@@ -227,7 +227,7 @@ let rec pp_lexpr f le =
         (pp_comma_list pp_print_string)
         li
   | LE_Ignore -> pp_print_string f "-"
-  | LE_TupleUnpack les -> fprintf f "@[( %a )@]" (pp_comma_list pp_lexpr) les
+  | LE_Destructuring les -> fprintf f "@[( %a )@]" (pp_comma_list pp_lexpr) les
   | LE_Concat (les, _) -> fprintf f "@[[%a]@]" (pp_comma_list pp_lexpr) les
 
 let pp_for_direction = function Up -> "to" | Down -> "downto"

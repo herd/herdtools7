@@ -608,6 +608,7 @@ module Make (B : Backend.S) (C : Config) = struct
                 declare_local_identifier env x v
                 >>= return_normal |: SemanticsRule.LEUndefIdentV0))
     (* End *)
+    (* Begin LESlice *)
     | LE_Slice (re_bv, slices) ->
         let*^ rm_bv, env = expr_of_lexpr re_bv |> eval_expr env in
         let*^ m_positions, env = eval_slices env slices in
@@ -616,7 +617,8 @@ module Make (B : Backend.S) (C : Config) = struct
           B.write_to_bitvector positions v rv_bv
         in
         eval_lexpr ver re_bv env new_m_bv |: SemanticsRule.LESlice
-
+    (* End *)
+    (* Begin LESetArray *)
     | LE_SetArray (re_array, e_index) ->
         let*^ rm_array, env = expr_of_lexpr re_array |> eval_expr env in
         let*^ m_index, env = eval_expr env e_index in
@@ -627,7 +629,8 @@ module Make (B : Backend.S) (C : Config) = struct
           | Some i -> B.set_index i v rv_array
         in
         eval_lexpr ver re_array env m' |: SemanticsRule.LESetArray
-
+    (* End *)
+    (* Begin LESetField *)
     | LE_SetField (re_record, field_name) ->
         let*^ rm_record, env = expr_of_lexpr re_record |> eval_expr env in
         let m' =
@@ -635,14 +638,16 @@ module Make (B : Backend.S) (C : Config) = struct
           B.set_field field_name v rv_record
         in
         eval_lexpr ver re_record env m' |: SemanticsRule.LESetField
-
-    | LE_TupleUnpack le_list ->
+    (* End *)
+    (* Begin LEDestructuring *)
+    | LE_Destructuring le_list ->
         (* The index-out-of-bound on the vector are done either in typing,
            either in [B.get_index]. *)
         let n = List.length le_list in
         let nmonads = List.init n (fun i -> m >>= B.get_index i) in
-        multi_assign ver env le_list nmonads |: SemanticsRule.LETuple
-
+        multi_assign ver env le_list nmonads |: SemanticsRule.LEDestructuring
+    (* End *)
+    (* Begin LEConcat *)
     | LE_Concat (les, Some widths) ->
         let extract_one width (ms, start) =
           let end_ = start + width in
@@ -652,7 +657,7 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         let ms, _ = List.fold_right extract_one widths ([], 0) in
         multi_assign V1 env les ms
-
+    (* End *)
     | LE_Concat (_, None) | LE_SetFields _ ->
         let* () =
           let* v = m in
@@ -795,7 +800,7 @@ module Make (B : Backend.S) (C : Config) = struct
     match s.desc with
     | S_Pass -> return_continue env |: SemanticsRule.SPass
     | S_Assign
-        ( { desc = LE_TupleUnpack les; _ },
+        ( { desc = LE_Destructuring les; _ },
           { desc = E_Call (name, args, named_args); _ },
           ver )
       when List.for_all lexpr_is_var les ->
@@ -803,7 +808,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let**| env = protected_multi_assign ver env s les ms in
         return_continue env |: SemanticsRule.SAssignCall
     | S_Assign
-        ({ desc = LE_TupleUnpack les; _ }, { desc = E_Tuple exprs; _ }, ver)
+        ({ desc = LE_Destructuring les; _ }, { desc = E_Tuple exprs; _ }, ver)
       when List.for_all lexpr_is_var les ->
         let**| ms, env = eval_expr_list_m env exprs in
         let**| env = protected_multi_assign ver env s les ms in

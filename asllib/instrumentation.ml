@@ -55,7 +55,7 @@ module SemanticsRule = struct
     | LESetArray
     | LESetField
     | LESetFields
-    | LETuple
+    | LEDestructuring
     | PAll
     | PAny
     | PGeq
@@ -138,7 +138,7 @@ module SemanticsRule = struct
     | LESetArray -> "LESetArray"
     | LESetField -> "LESetField"
     | LESetFields -> "LESetFields"
-    | LETuple -> "LETuple"
+    | LEDestructuring -> "LEDestructuring"
     | LEUndefIdentV0 -> "LEUndefIdentV0"
     | LEUndefIdentV1 -> "LEUndefIdentV1"
     | PAll -> "PAll"
@@ -226,7 +226,7 @@ module SemanticsRule = struct
       LESetArray;
       LESetField;
       LESetFields;
-      LETuple;
+      LEDestructuring;
       SPass;
       SAssignCall;
       SAssignTuple;
@@ -341,7 +341,7 @@ module TypingRule = struct
     | LEGlobalVar
     | LEUndefIdentV0
     | LEUndefIdentV1
-    | LETuple
+    | LEDestructuring
     | LESlice
     | LESetArray
     | LESetBadRecordField
@@ -480,7 +480,7 @@ module TypingRule = struct
     | LESetBadField -> "LESetBadField" 
     | LESetFields -> "LESetFields"
     | LEConcat -> "LEConcat"
-    | LETuple -> "LETuple"
+    | LEDestructuring -> "LEDestructuring"
     | LEUndefIdentV0 -> "LEUndefIdentV0"
     | LEUndefIdentV1 -> "LEUndefIdentV1"
     | PAll -> "PAll"
@@ -613,7 +613,7 @@ module TypingRule = struct
       LESetBadField;
       LESetFields;
       LESetFields;
-      LETuple;
+      LEDestructuring;
       LEConcat;
       SPass;
       SAssignCall;

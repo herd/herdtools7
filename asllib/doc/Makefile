@@ -8,6 +8,9 @@ ASLSemanticsReference.pdf: ASLSemanticsReference.tex ASLSemanticsLines.tex
 ASLTypingReference.pdf: ASLTypingReference.tex ASLTypingLines.tex 
 	pdflatex -pdf ASLTypingReference.tex
 
+ASLSemanticsLines.tex: ../Interpreter.ml
+	$(BENTO) $< > $@
+
 ASLTypingLines.tex: ../Typing.ml
 	$(BENTO) $< > $@
 

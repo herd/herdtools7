@@ -1270,7 +1270,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           check_can_assign_to le env ty t_e ()
         in
         le
-    | LE_TupleUnpack les ->
+    | LE_Destructuring les ->
         (match t_e.desc with
         | T_Tuple sub_tys ->
             if List.compare_lengths sub_tys les != 0 then
@@ -1279,9 +1279,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                    ("tuple unpacking", List.length sub_tys, List.length les))
             else
               let les' = List.map2 (annotate_lexpr env) les sub_tys in
-              LE_TupleUnpack les' |> here
+              LE_Destructuring les' |> here
         | _ -> conflict le [ T_Tuple [] ] t_e)
-        |: TypingRule.LETuple
+        |: TypingRule.LEDestructuring
     | LE_Slice (le1, slices) -> (
         let t_le1, _ = expr_of_lexpr le1 |> annotate_expr env in
         let struct_t_le1 = Types.get_structure env t_le1 in
@@ -1788,7 +1788,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | LE_Slice (sub_le, slices) ->
         let old_le le' = LE_Slice (le', slices) |> here in
         with_temp old_le sub_le
-    | LE_TupleUnpack _ -> None
+    | LE_Destructuring _ -> None
     | LE_Var x ->
         if should_reduce_to_call env x then
           let name, args, eqs, ret_ty =
