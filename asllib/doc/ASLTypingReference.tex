@@ -12,6 +12,8 @@
 \usepackage{mathpartir}  % For deduction rules and equations paragraphs
 \usepackage{comment}
 \usepackage{fancyvrb}
+\input{ASLTypingLines}
+
 \usepackage{enumitem}
 \renewlist{itemize}{itemize}{10}
 \setlist[itemize,1]{label=\textbullet}
@@ -1008,10 +1010,13 @@ Typing of Expressions
   \item  [t] is the type of [v];
   \item  [new\_e] is [e].
   \end{itemize}
- 
+
   \subsubsection{Examples}
 
-\subsection{TypingRule.TypedExpr}
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\LitBegin, lastline=\LitEnd]{../Typing.ml}  
+ 
+\subsection{TypingRule.CTC}
 
   \subsubsection{Prose}
   All of the following apply:
@@ -1043,6 +1048,9 @@ Typing of Expressions
   \end{itemize}
 
   \subsubsection{Examples}
+
+  \subsubsection{Code}
+  \VerbatimInput[firstline=\CTCBegin, lastline=\CTCEnd]{../Typing.ml}   
 
 \subsection{TypingRule.ELocalVarConstant}
 

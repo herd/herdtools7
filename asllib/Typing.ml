@@ -907,7 +907,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let () = if false then Format.eprintf "@[Annotating %a@]@." PP.pp_expr e in
     let here x = add_pos_from e x in
     match e.desc with
+    (* Begin Lit *) 
     | E_Literal v -> (infer_value v |> here, e) |: TypingRule.Lit
+    (* End *)
+    (* Begin CTC *)
     | E_CTC (e', t') ->
         let t'', e'' = annotate_expr env e' in
         (* - If type-checking determines that the expression type-satisfies
@@ -930,6 +933,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               else res
             else conflict e [ t'.desc ] t'')
         |: TypingRule.CTC
+    (* End *)
     | E_Var x -> (
         let () = if false then Format.eprintf "Looking at %S.@." x in
         if should_reduce_to_call env x then
@@ -950,14 +954,17 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           in
           try
             match IMap.find x env.local.storage_types with
+            (* Begin ELocalVar *)
             | ty, LDK_Constant ->
                 let v = IMap.find x env.local.constants_values in
                 let e = E_Literal v |> here in
                 (ty, e) |: TypingRule.ELocalVarConstant
             | ty, _ -> (ty, e) |: TypingRule.ELocalVar
+         (* End *)
           with Not_found -> (
             try
               match IMap.find x env.global.storage_types with
+              (* Begin EGlobalVar *)
               | ty, GDK_Constant -> (
                   match IMap.find_opt x env.global.constants_values with
                   | Some v ->
@@ -965,27 +972,37 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                       |: TypingRule.EGlobalVarConstantVal
                   | None -> (ty, e) |: TypingRule.EGlobalVarConstantNoVal)
               | ty, _ -> (ty, e) |: TypingRule.EGlobalVar
+              (* End *)
+              (* Begin EUndefIdent *)
             with Not_found ->
               let () =
                 if false then
                   Format.eprintf "@[Cannot find %s in env@ %a.@]@." x pp_env env
               in
               undefined_identifier e x |: TypingRule.EUndefIdent))
+              (* End *)
+    (* Begin Binop *)
     | E_Binop (op, e1, e2) ->
         let t1, e1' = annotate_expr env e1 in
         let t2, e2' = annotate_expr env e2 in
         let t = check_binop e env op t1 t2 in
         (t, E_Binop (op, e1', e2') |> here) |: TypingRule.Binop
+    (* End *)
+    (* Begin Unop *)
     | E_Unop (op, e') ->
         let t'', e'' = annotate_expr env e' in
         let t = check_unop e env op t'' in
         (t, E_Unop (op, e'') |> here) |: TypingRule.Unop
+    (* End *)
+    (* Begin ECall *)
     | E_Call (name, args, eqs) ->
         let name', args', eqs', ty_opt =
           annotate_call (to_pos e) env name args eqs ST_Function
         in
         let t = match ty_opt with Some ty -> ty | None -> assert false in
         (t, E_Call (name', args', eqs') |> here) |: TypingRule.ECall
+    (* End *)
+    (* Begin ECond *)
     | E_Cond (e_cond, e_true, e_false) ->
         let t_cond, e'_cond = annotate_expr env e_cond in
         let+ () = check_structure_boolean e env t_cond in
@@ -999,12 +1016,18 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               | Some t -> t)
         in
         (t, E_Cond (e'_cond, e'_true, e'_false) |> here) |: TypingRule.ECond
+    (* End *)
+    (* Begin ETuple *)
     | E_Tuple li ->
         let ts, es = List.map (annotate_expr env) li |> List.split in
         (T_Tuple ts |> here, E_Tuple es |> here) |: TypingRule.ETuple
+    (* End *)
+    (* Begin EConcatEmpty *)
     | E_Concat [] ->
         (T_Bits (BitWidth_SingleExpr (expr_of_int 0), []) |> here, e)
         |: TypingRule.EConcatEmpty
+    (* End *)
+    (* Begin EConcat *)
     | E_Concat (_ :: _ as li) ->
         let ts, es = List.map (annotate_expr env) li |> List.split in
         let w =
@@ -1014,6 +1037,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               List.fold_left (width_plus env) wh wts)
         in
         (T_Bits (w, []) |> here, E_Concat es |> here) |: TypingRule.EConcat
+    (* End *)
+    (* Begin ERecord *)
     | E_Record (ty, fields) ->
         (* Rule WBCQ: The identifier in a record expression must be a named type
            with the structure of a record type, and whose fields have the values
@@ -1065,9 +1090,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 fields)
         in
         (ty, E_Record (ty, fields') |> here) |: TypingRule.ERecord
+    (* End *)
+    (* Begin EUnknown *)
     | E_Unknown ty ->
         let ty' = Types.get_structure env ty in
         (ty, E_Unknown ty' |> here) |: TypingRule.EUnknown
+    (* End *)
+    (* Begin ESlice *)
     | E_Slice (e', slices) -> (
         let reduced =
           match e'.desc with
@@ -1120,6 +1149,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                     |: TypingRule.EGetArray
                 | _ -> conflict e [ T_Int None; default_t_bits ] t_e')
             | _ -> conflict e [ T_Int None; default_t_bits ] t_e'))
+    (* End *)
+    (* Begin EGetField *)
     | E_GetField (e1, field_name) -> (
         let t_e1, e2 = annotate_expr env e1 in
         let t_e2 = Types.make_anonymous env t_e1 in
@@ -1175,6 +1206,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         in
         E_Slice (e', list_concat_map one_field fields)
         |> here |> annotate_expr env |: TypingRule.EGetBitFields
+    (* End *)
+    (* Begin EPattern *)
     | E_Pattern (e', patterns) ->
         (*
          Rule ZNDL states that
@@ -1205,7 +1238,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let patterns' = best_effort patterns (annotate_pattern e env t_e') in
         (T_Bool |> here, E_Pattern (e'', patterns') |> here)
         |: TypingRule.EPattern
+    (* End *)
+    (* Begin EGetArray *)
     | E_GetArray _ -> assert false |: TypingRule.EGetArray
+    (* End *)
 
   let rec annotate_lexpr env le t_e =
     let () =
