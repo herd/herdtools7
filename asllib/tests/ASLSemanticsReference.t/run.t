@@ -110,7 +110,7 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.LEDestructuring.asl
   $ aslref SemanticsRule.LDVar0.asl
   $ aslref SemanticsRule.LDVar1.asl
-
+  $ aslref SemanticsRule.SliceRange.asl
 
 
 
