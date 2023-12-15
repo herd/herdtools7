@@ -720,26 +720,40 @@ module Make (B : Backend.S) (C : Config) = struct
     let true_ = B.v_of_literal (L_Bool true) |> return in
     let false_ = B.v_of_literal (L_Bool false) |> return in
     function
-     
+    (* Begin PAll *) 
     | Pattern_All -> true_ |: SemanticsRule.PAll
+    (* End *)
+    (* Begin PAny *)
     | Pattern_Any li ->
         let folder acc p =
           let* acc = acc and* b = eval_pattern env pos v p in
           B.binop BOR acc b
         in
         List.fold_left folder false_ li |: SemanticsRule.PAny
+    (* End *)
+    (* Begin PGeq *)
     | Pattern_Geq e ->
         eval_expr_sef env e >>= B.binop GEQ v |: SemanticsRule.PGeq
+    (* End *)
+    (* Begin PLeq *)    
     | Pattern_Leq e ->
         eval_expr_sef env e >>= B.binop LEQ v |: SemanticsRule.PLeq
+    (* End *)
+    (* Begin PNot *)
     | Pattern_Not p' ->
         eval_pattern env pos v p' >>= B.unop BNOT |: SemanticsRule.PNot
+    (* End *)
+    (* Begin PRange *)
     | Pattern_Range (e1, e2) ->
         let* b1 = eval_expr_sef env e1 >>= B.binop GEQ v
         and* b2 = eval_expr_sef env e2 >>= B.binop LEQ v in
         B.binop BAND b1 b2 |: SemanticsRule.PRange
+    (* End *)
+    (* Begin PSingle *)    
     | Pattern_Single e ->
         eval_expr_sef env e >>= B.binop EQ_OP v |: SemanticsRule.PSingle
+    (* End *)
+    (* Begin PMask *) 
     | Pattern_Mask m ->
         let bv bv = L_BitVector bv in
         let set = Bitvector.mask_set m |> bv |> B.v_of_literal
@@ -748,6 +762,8 @@ module Make (B : Backend.S) (C : Config) = struct
         let* set = B.binop AND set v
         and* unset = B.unop NOT v >>= B.binop AND unset in
         B.binop OR set unset >>= B.binop EQ_OP specified |: SemanticsRule.PMask
+    (* End *)
+    (* Begin PTuple *)
     | Pattern_Tuple li_patterns ->
         let folderi i acc p =
           let* acc = acc
@@ -760,6 +776,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let folder (acc, i) p = (folderi i acc p, succ i) in
         List.fold_left folder (true_, 0) li_patterns
         |> fst |: SemanticsRule.PTuple
+    (* End *)
 
   (* Evaluation of Local Declarations *)
   (* -------------------------------- *)
