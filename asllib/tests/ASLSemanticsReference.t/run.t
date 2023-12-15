@@ -102,8 +102,16 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.PMaskFALSE.asl
   $ aslref SemanticsRule.PTupleTRUE.asl
   $ aslref SemanticsRule.PTupleFALSE.asl
-
-
+  $ aslref SemanticsRule.CTCValue.asl
+  $ aslref SemanticsRule.CTCError.asl
+  $ aslref -0 SemanticsRule.LEUndefIdentV0.asl
+  $ aslref SemanticsRule.LEUndefIdentV1.asl
+  File SemanticsRule.LEUndefIdentV1.asl, line 5, characters 2 to 3:
+  ASL Error: Undefined identifier: 'y'
+  [1]
+  $ aslref SemanticsRule.LESlice.asl
+  $ aslref SemanticsRule.LESetField.asl
+  $ aslref SemanticsRule.LEDestructuring.asl
 
 
 

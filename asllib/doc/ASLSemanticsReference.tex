@@ -232,7 +232,7 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
 \item SemanticsRule.ETuple (see Section~\ref{sec:SemanticsRule.ETuple})
 \item SemanticsRule.EUnknown (see Section~\ref{sec:SemanticsRule.EUnknown})
 \item SemanticsRule.EPattern (see Section~\ref{sec:SemanticsRule.EPattern})
-\item SemanticsRule.TypedExpr (see Section~\ref{sec:SemanticsRule.TypedExpr})
+\item SemanticsRule.CTC (see Section~\ref{sec:SemanticsRule.CTC})
 \end{itemize}
 
 
@@ -916,7 +916,7 @@ are considered computed in parallel:
 
   \subsection{Comments}
 
-\section{SemanticsRule.TypedExpr \label{sec:SemanticsRule.TypedExpr}}
+\section{SemanticsRule.CTC \label{sec:SemanticsRule.CTC}}
 
   \subsection{Prose}
   Evaluation of the expression \texttt{e} under environment \texttt{env} is
@@ -926,9 +926,11 @@ are considered computed in parallel:
   \item 
   \end{itemize} 
 
-  \subsection{Examples}
-  The expression [(3 as integer)] evaluates to the value [3].
-  The expression [(3 as integer {5:7})] raises a "Mismatched Value" error.
+  \subsection{Example: SemanticsRule.CTCValue.asl}
+  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CTCValue.asl}
+
+  \subsection{Example: SemanticsRule.CTCError.asl}
+  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CTCError.asl}
 
   \subsection{Code}
   \VerbatimInput[firstline=332, lastline=337]{../Interpreter.ml}
@@ -954,7 +956,6 @@ or an error is raised and one of the following applies:
 \item SemanticsRule.LESlice (see Section~\ref{sec:SemanticsRule.LESlice});
 \item SemanticsRule.LESetArray (see Section~\ref{sec:SemanticsRule.LESetArray});
 \item SemanticsRule.LESetField (see Section~\ref{sec:SemanticsRule.LESetField});
-\item SemanticsRule.LESetFields (see Section~\ref{sec:SemanticsRule.LESetFields});
 \item SemanticsRule.LETuple (see Section~\ref{sec:SemanticsRule.LETuple}).
 \end{itemize}
 
@@ -969,8 +970,6 @@ of the following apply:
     \item \texttt{new\_env} is \texttt{env}.
     \end{itemize}
 
-  \subsection{Comments}
-
   \subsection{Example}
 
   \subsection{Code}
@@ -984,6 +983,8 @@ of the following apply:
   \begin{align}
   \end{align} 
 
+  \subsection{Comments}
+
 \section{SemanticsRule.LELocalVar \label{sec:SemanticsRule.LELocalVar}}
 
     \subsection{Prose}
@@ -996,8 +997,6 @@ of the following apply:
     \item \texttt{x} is locally bound in \texttt{env};
     \item \texttt{new\_env} is \texttt{env} where \texttt{x} is bound to \texttt{v}.
     \end{itemize}
-
-  \subsection{Comments}
 
     \subsection{Example: SemanticsRule.LELocalVar.asl}
     In the program:
@@ -1015,6 +1014,8 @@ of the following apply:
   \begin{align}
   \end{align} 
 
+  \subsection{Comments}
+
 \section{SemanticsRule.LEGlobalVar \label{sec:SemanticsRule.LEGlobalVar}}
 
     \subsection{Prose}
@@ -1026,8 +1027,6 @@ of the following apply:
     \item \texttt{x} is globally bound in \texttt{env};
     \item \texttt{new\_env} is \texttt{env} where \texttt{x} is bound to \texttt{v}.
     \end{itemize}
-
-    \subsection{Comments}
 
     \subsection{Example: SemanticsRule.LEGlobalVar.asl}
     In the program:
@@ -1045,6 +1044,8 @@ of the following apply:
   \begin{align}
   \end{align} 
 
+    \subsection{Comments}
+
 \section{SemanticsRule.LEUndefIdentV0 \label{sec:SemanticsRule.LEUndefIdentV0}}
 
     \subsection{Prose}
@@ -1058,10 +1059,8 @@ of the following apply:
 a local variable bound to the value \texttt{v}.
     \end{itemize}
 
-  \subsection{Comments}
-
-  \subsection{Example}
-  [y = 3;] binds [y] to [3] in [x $\mapsto$ 42] ([new\_env] is here [y $\mapsto$ 3, x $\mapsto$ 42]).
+  \subsection{Example: SemanticsRule.LEUndefIdentV0.asl}
+  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEUndefIdentV0.asl}
 
   \subsection{Code}
   \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
@@ -1073,6 +1072,8 @@ a local variable bound to the value \texttt{v}.
   \subsection{Formally: concurrent case}
   \begin{align}
   \end{align} 
+
+  \subsection{Comments}
 
 \section{SemanticsRule.LEUndefIdentV1 \label{sec:SemanticsRule.LEUndefIdentV1}}
 
@@ -1084,10 +1085,12 @@ a local variable bound to the value \texttt{v}.
     \item an \texttt{UndefinedIdentifier} error is raised.
     \end{itemize}
 
-    \subsection{Comments}
-
-    \subsection{Examples}
-    The evaluation of the left-hand-side expression [y] within [y = 3;] raises an "Undefined Identifier" error in the environment [x $\mapsto$ 42].
+    \subsection{Example: SemanticsRule.LEUndefIdentV1.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEUndefIdentV1.asl}
+    the evaluation of the left-hand-side expression \texttt{y} within \texttt{y
+= 3;} raises an ``Undefined identifier'' error in the environment where
+\texttt{x} is bound to \texttt{42}.
 
   \subsection{Code}
   \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
@@ -1099,6 +1102,8 @@ a local variable bound to the value \texttt{v}.
   \subsection{Formally: concurrent case}
   \begin{align}
   \end{align} 
+
+    \subsection{Comments}
 
 \section{SemanticsRule.LESlice \label{sec:SemanticsRule.LESlice}}
 
@@ -1107,18 +1112,18 @@ a local variable bound to the value \texttt{v}.
 value \texttt{v} under an environment \texttt{env} is \texttt{new\_env} and all
 of the following apply:
     \begin{itemize}
-    \item [le] denotes a left-hand-side expression sliced as per [slices];
-    \item The right-hand-side expression corresponding to [le] is [re\_bv];
-    \item The evaluation of [re\_bv] under [env] is [rv\_bv];
-    \item The evaluation of [slices] under [env] is [positions];
-    \item [new\_m\_bv] is [rv\_bv] where the positions [positions] have been updated to [v]
-    \item [new\_env] is [env] where [le] is bound to [new\_m\_bv].
+    \item \texttt{le} denotes a left-hand-side expression sliced as per \texttt{slices};
+    \item The right-hand-side expression corresponding to \texttt{le} is \texttt{re\_bv};
+    \item The evaluation of \texttt{re\_bv} under \texttt{env} is \texttt{rv\_bv};
+    \item The evaluation of \texttt{slices} under \texttt{env} is \texttt{positions};
+    \item \texttt{new\_m\_bv} is \texttt{rv\_bv} where the positions \texttt{positions} have been updated to \texttt{v};
+    \item \texttt{new\_env} is \texttt{env} where \texttt{le} is bound to \texttt{new\_m\_bv}.
     \end{itemize}
 
-   \subsection{Comments}
-
-   \subsection{Examples}
-   [x[3:0] = '0000'] binds [x] to ['11110000'] in [x $\mapsto$ '11111111'].
+   \subsection{Example: SemanticsRule.LESlice.asl}
+   In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LESlice.asl}
+   \texttt{x[3:0] = '0000'} binds \texttt{x} to \texttt{'11110000'} in the environment where \texttt{x} is bound to \texttt{'11111111'}.
 
   \subsection{Code}
   \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
@@ -1130,28 +1135,30 @@ of the following apply:
   \subsection{Formally: concurrent case}
   \begin{align}
   \end{align} 
+
+   \subsection{Comments}
 
 \section{SemanticsRule.LESetArray \label{sec:SemanticsRule.LESetArray}}
 
     \subsection{Prose}
-    All of the following apply:
+    Evaluation of the left-hand-side expression \texttt{le} associated with a
+value \texttt{v} under an environment \texttt{env} is \texttt{new\_env} and all
+of the following apply:
     \begin{itemize}
-    \item [le] denotes an array [le\_array] and an index [e\_index];
-    \item The right-hand-side expression corresponding to [le\_array] is [re\_array];
-    \item The evaluation of [re\_array] under [env] is [rv\_array];
-    \item The evaluation of [e\_index] under [env] is [v\_index];
-    \item [new\_v\_array] is [rv\_array] where the value at index [v\_index] has been
-      updated to [v];
-    \item [new\_env] is [env] where [le\_array] is bound to
-      [new\_v\_array].
+    \item \texttt{le} denotes an array \texttt{le\_array} and an index \texttt{e\_index};
+    \item The right-hand-side expression corresponding to \texttt{le\_array} is \texttt{re\_array};
+    \item The evaluation of \texttt{re\_array} under \texttt{env} is \texttt{rv\_array};
+    \item The evaluation of \texttt{e\_index} under \texttt{env} is \texttt{v\_index};
+    \item \texttt{new\_v\_array} is \texttt{rv\_array} where the value at index \texttt{v\_index} has been
+      updated to \texttt{v};
+    \item \texttt{new\_env} is \texttt{env} where \texttt{le\_array} is bound to
+      \texttt{new\_v\_array}.
     \end{itemize}
-
-    \subsection{Comments}
 
     \subsection{Example: SemanticsRule.LESetArray.asl}
     The program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LESetArray.asl}
-    binds the [3rd] element of [my\_array] to the value [53].
+    binds the third element of \texttt{my\_array} to the value \texttt{53}.
 
   \subsection{Code}
   \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
@@ -1163,65 +1170,52 @@ of the following apply:
   \subsection{Formally: concurrent case}
   \begin{align}
   \end{align} 
+
+    \subsection{Comments}
 
 \section{SemanticsRule.LESetField \label{sec:SemanticsRule.LESetField}}
 
     \subsection{Prose}
-    All of the following apply:
+    Evaluation of the left-hand-side expression \texttt{le} associated with a
+value \texttt{v} under an environment \texttt{env} is \texttt{new\_env} and all
+of the following apply:
     \begin{itemize}
-    \item [le] denotes a field name [field\_name] in a record [le\_record];
-    \item The right-hand-side expression corresponding to [le\_record] is
-      [re\_record];
-    \item The evaluation of [re\_record] under [env] is [rv\_record];
-    \item [new\_v\_record] is [rv\_record] where the field [field\_name] has been
-      updated to [v];
-    \item [new\_env] is [env] where [le\_record] is bound to
-      [new\_v\_record].
+    \item \texttt{le} denotes a field name \texttt{field\_name} in a record \texttt{le\_record};
+    \item The right-hand-side expression corresponding to \texttt{le\_record} is
+      \texttt{re\_record};
+    \item The evaluation of \texttt{re\_record} under \texttt{env} is \texttt{rv\_record};
+    \item \texttt{new\_v\_record} is \texttt{rv\_record} where the field [field\_name] has been
+      updated to \texttt{v};
+    \item \texttt{new\_env} is \texttt{env} where \texttt{le\_record} is bound to
+      \texttt{new\_v\_record}.
     \end{itemize}
 
-    \subsection{Comments}
-
-    \subsection{Examples}
-    [my\_record.a = 42;] binds [my\_record] to [{a: 42, b: 42}] in the environment [my\_record $mapsto${a: 3, b: 42}].
-
-  \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
-
-\section{SemanticsRule.LESetFields \label{sec:SemanticsRule.LESetFields}}
-
-    \subsection{Prose}
-    <description>
-
-    \subsection{Comments}
-
-    \subsection{Examples}
-    <minimal example>
+    \subsection{Example: SemanticsRule.LESetField.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LESetField.asl}
+    \texttt{my\_record.a = 42;} binds \texttt{my\_record} to \texttt{\{a: 42, b: 42\}} in the environment where \texttt{my\_record} is bound to \texttt{\{a: 3, b: 42\}}.
 
   \subsection{Code}
   \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
 
-  \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
+    \subsection{Comments}
 
-  \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
-
-\section{SemanticsRule.LETuple \label{sec:SemanticsRule.LETuple}}
+\section{SemanticsRule.LEDestructuring \label{sec:SemanticsRule.LEDestructuring}}
 
     \subsection{Prose}
-    All of the following apply:
+    Evaluation of the left-hand-side expression \texttt{le} associated with a
+value \texttt{v} under an environment \texttt{env} is \texttt{new\_env} and all
+of the following apply:
     \begin{itemize}
     \item [le] denotes a list of left-hand-side expressions [le\_list];
     \item [new\_env] is [env] where each left-hand-side expression in [le\_list] has
       been assigned the value at the corresponding index in [v].
     \end{itemize}
 
-    \subsection{Comments}
-
-    \subsection{Examples}
-    [(x, y) = (3, 42)] binds [x] to [3] and [y] to [42] in the environment [x $mapsto$42, y $mapsto$3].
+    \subsection{Example: SemanticsRule.LEDestructuring.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEDestructuring.asl}
+    \texttt{(x, y) = (3, 42)} binds \texttt{x} to \texttt{3} and \texttt{y} to \texttt{42} in the environment where \texttt{x} is bound to \texttt{42} and \texttt{y} is bound to \texttt{3}.
 
 \chapter{Evaluation of Slices \label{chap:eval_slices}}
 [eval\_slices env slices] is the list of pair [(i\_n, l\_n)] that
@@ -1231,6 +1225,8 @@ corresponds to the start (included) and the length of each slice in
 [[3:2]] evaluates to [[(2, 2)]].
 
 [[3:2, 42+:5]] evaluates to [[(2, 2), (42, 5)]].
+
+    \subsection{Comments}
 
 \chapter{Evaluation of Patterns \label{chap:eval_pattern}}
 [eval\_pattern env pos v p] determines if [v] matches the pattern [p].
