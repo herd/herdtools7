@@ -299,8 +299,8 @@ let make_expr(sub_expr) ==
     | e=sub_expr; DOT; x=IDENTIFIER;                              < E_GetField           >
     | e=sub_expr; DOT; fs=bracketed(nclist(IDENTIFIER));          < E_GetFields          >
     | ~=bracketed(nclist(expr));                                  < E_Concat             >
-    | ~=sub_expr; AS; ~=ty;                                       < E_Typed              >
-    | ~=sub_expr; AS; ~=implicit_t_int;                           < E_Typed              >
+    | ~=sub_expr; AS; ~=ty;                                       < E_CTC              >
+    | ~=sub_expr; AS; ~=implicit_t_int;                           < E_CTC              >
 
     | ~=sub_expr; IN; ~=pattern_set;                              < E_Pattern            >
     | e=sub_expr; IN; m=MASK_LIT;                                 { E_Pattern (e, Pattern_Mask m) }

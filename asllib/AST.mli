@@ -110,7 +110,7 @@ type literal =
 type expr_desc =
   | E_Literal of literal
   | E_Var of identifier
-  | E_Typed of expr * ty
+  | E_CTC of expr * ty
   | E_Binop of binop * expr * expr
   | E_Unop of unop * expr
   | E_Call of identifier * expr list * (identifier * expr) list

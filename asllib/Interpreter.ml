@@ -328,13 +328,13 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin Lit *)
     | E_Literal v -> return_normal (B.v_of_literal v, env) |: SemanticsRule.Lit
     (* End *)
-    (* Begin TypedExpr *)
-    | E_Typed (e, t) ->
+    (* Begin CTC *)
+    | E_CTC (e, t) ->
         let** v, env = eval_expr env e in
         let* b = is_val_of_type e env v t in
         (if b then return_normal (v, env)
          else fatal_from e (Error.MismatchType (B.debug_value v, [ t.desc ])))
-        |: SemanticsRule.TypedExpr
+        |: SemanticsRule.CTC
     (* End *)
     | E_Var x -> (
         match IEnv.find x env with

@@ -272,24 +272,6 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
   \subsection{Comments}
 
 
-  \section{SemanticsRule.TypedExpr \label{sec:SemanticsRule.TypedExpr}}
-
-  \subsection{Prose}
-  \texttt{(e,\_t)} denotes a typed expression and <description>
-
-  \subsection{Examples}
-  The expression [(3 as integer)] evaluates to the value [3].
-  The expression [(3 as integer {5:7})] raises a "Mismatched Value" error.
-
-  \subsection{Code}
-  \VerbatimInput[firstline=\TypedExprBegin, lastline=\TypedExprEnd]{../Interpreter.ml}
-
-  \subsection{Formally: sequential case}
-  
-  \subsection{Formally: concurrent case}
-
-  \subsection{Comments}
-
 \section{SemanticsRule.ELocalVar \label{sec:SemanticsRule.ELocalVar}}
 
   \subsection{Prose}
@@ -305,7 +287,7 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
   \subsection{Example: SemanticsRuleELocalVar.asl}
     In the program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ELocalVar.asl}
-    the evaluation of [x] within [assert x == 3]; uses SemanticsRule.ELocalVar.
+    the evaluation of \texttt{x} within \texttt{assert x == 3;} uses SemanticsRule.ELocalVar.
 
   \subsubsection{Code}
   \VerbatimInput[firstline=\ELocalVarBegin, lastline=\ELocalVarEnd]{../Interpreter.ml}
@@ -584,11 +566,12 @@ are considered computed in parallel:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ECondFalse.asl}
     the expression \texttt{if FALSE then Return42() else 3} evaluates to the value \texttt{3}.
 
-  \subsection{Example: SemanticsRule.ECondUNKNOWN3.asl and SemanticsRule.ECondUNKNOWN42.asl}
+  \subsection{Example: SemanticsRule.ECondUNKNOWN3or42.asl}
     In the program:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ECondUNKNOWN3.asl}
-    the expression \texttt{if UNKNOWN: boolean then 3 else Return42()} will evaluate
-    either \texttt{3} or \texttt{Return42()} depending on how \texttt{UNKNOWN} is implemented.
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ECondUNKNOWN3or42.asl}
+the expression \texttt{if UNKNOWN: boolean then 3 else Return42()} will
+evaluate either \texttt{3} or \texttt{Return42()} depending on how
+\texttt{UNKNOWN} is implemented.
 
   \subsubsection{Code}
   \VerbatimInput[firstline=\ECondBegin, lastline=\ECondEnd]{../Interpreter.ml}
@@ -873,7 +856,7 @@ are considered computed in parallel:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EUnknownInteger3.asl}
     the expression \texttt{[UNKNOWN : integer]} evaluates to an integer value.
 
-  \subsection{Examples: SemanticsRule.EUnknownIntegerRange3-42-\{3,42\}.asl}
+  \subsection{Example: SemanticsRule.EUnknownIntegerRange3-42-3.asl}
 
     In the program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EUnknownIntegerRange3-42-3.asl}
@@ -1525,7 +1508,7 @@ pattern in \texttt{li\_patterns} in \texttt{env};
 
     \subsection{Comments}
 
-\section{SemanticsRule.PTuple \label{sec:SemanticsRule.}}
+\section{SemanticsRule.PTuple \label{sec:SemanticsRule.PTuple}}
 
     \subsection{Prose}
    Evaluation of the pattern \texttt{p} under environment \texttt{env} is
@@ -2235,7 +2218,7 @@ graphs produced by their interpretations:
 
     \subsection{Comments}
 
-    \subsection{Example: ../tests/ASLSemanticsReference.t/SemanticsRule.SFor.asl}
+    \subsection{Example: SemanticsRule.SFor.asl}
     The program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SFor.asl}
     prints ``0123''.
@@ -2257,7 +2240,6 @@ graphs produced by their interpretations:
     All of the following apply:
     \begin{itemize}
     \item [s] is a throw statement;
-    \item <description>
     \end{itemize}
 
     \subsection{Comments}
@@ -2284,7 +2266,6 @@ graphs produced by their interpretations:
     All of the following apply:
     \begin{itemize}
     \item [s] is a throw statement;
-    \item <description>
     \end{itemize}
 
     \subsection{Comments}
@@ -2311,7 +2292,6 @@ graphs produced by their interpretations:
     All of the following apply:
     \begin{itemize}
     \item [s] is a throw statement;
-    \item <description>
     \end{itemize}
 
     \subsection{Comments}

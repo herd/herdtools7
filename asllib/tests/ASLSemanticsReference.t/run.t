@@ -24,11 +24,7 @@ ASL Semantics Reference:
   [1]
   $ aslref SemanticsRule.EUnopAssert.asl
   $ aslref SemanticsRule.ECondFALSE.asl
-  $ aslref SemanticsRule.ECondUNKNOWN3.asl
-  $ aslref SemanticsRule.ECondUNKNOWN42.asl
-  File SemanticsRule.ECondUNKNOWN42.asl, line 10, characters 9 to 14:
-  ASL Execution error: Assertion failed: (x == 42)
-  [1]
+  $ aslref SemanticsRule.ECondUNKNOWN3or42.asl
   $ aslref SemanticsRule.ESlice.asl
   $ aslref SemanticsRule.ECall.asl
   $ aslref SemanticsRule.EGetArray.asl

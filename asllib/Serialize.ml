@@ -98,7 +98,7 @@ let rec pp_expr =
   let pp_desc f = function
     | E_Literal v -> bprintf f "E_Literal (%a)" pp_literal v
     | E_Var x -> bprintf f "E_Var %S" x
-    | E_Typed (e, t) -> bprintf f "E_Typed (%a, %a)" pp_expr e pp_ty t
+    | E_CTC (e, t) -> bprintf f "E_CTC (%a, %a)" pp_expr e pp_ty t
     | E_Binop (op, e1, e2) ->
         bprintf f "E_Binop (%s, %a, %a)" (pp_binop op) pp_expr e1 pp_expr e2
     | E_Unop (op, e) -> bprintf f "E_Unop (%s, %a)" (pp_unop op) pp_expr e

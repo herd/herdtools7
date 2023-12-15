@@ -908,7 +908,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let here x = add_pos_from e x in
     match e.desc with
     | E_Literal v -> (infer_value v |> here, e) |: TypingRule.Lit
-    | E_Typed (e', t') ->
+    | E_CTC (e', t') ->
         let t'', e'' = annotate_expr env e' in
         (* - If type-checking determines that the expression type-satisfies
              the required type, then no further check is required.
@@ -918,7 +918,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
              evaluates to a value in the domain of the required type is
              required. *)
         best_effort
-          (t', E_Typed (e'', t') |> here)
+          (t', E_CTC (e'', t') |> here)
           (fun res ->
             let env' = env in
             if Types.structural_subtype_satisfies env' t'' t' then
@@ -929,7 +929,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 res
               else res
             else conflict e [ t'.desc ] t'')
-        |: TypingRule.TypedExpr
+        |: TypingRule.CTC
     | E_Var x -> (
         let () = if false then Format.eprintf "Looking at %S.@." x in
         if should_reduce_to_call env x then

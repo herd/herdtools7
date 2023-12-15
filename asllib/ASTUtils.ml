@@ -163,7 +163,7 @@ let fold_named_list folder acc list =
 let rec use_e acc e =
   match e.desc with
   | E_Literal _ -> acc
-  | E_Typed (e, ty) -> use_e (use_ty acc ty) e
+  | E_CTC (e, ty) -> use_e (use_ty acc ty) e
   | E_Var x -> ISet.add x acc
   | E_GetArray (e1, e2) | E_Binop (_, e1, e2) -> use_e (use_e acc e2) e1
   | E_Unop (_op, e) -> use_e acc e
@@ -328,9 +328,9 @@ let rec expr_equal eq e1 e2 =
   | E_Literal _, _ | _, E_Literal _ -> false
   | E_Tuple li1, E_Tuple li2 -> list_equal (expr_equal eq) li1 li2
   | E_Tuple _, _ | _, E_Tuple _ -> false
-  | E_Typed (e1, t1), E_Typed (e2, t2) ->
+  | E_CTC (e1, t1), E_CTC (e2, t2) ->
       expr_equal eq e1 e2 && type_equal eq t1 t2
-  | E_Typed _, _ | _, E_Typed _ -> false
+  | E_CTC _, _ | _, E_CTC _ -> false
   | E_Unop (o1, e1), E_Unop (o2, e2) -> o1 = o2 && expr_equal eq e1 e2
   | E_Unop _, _ | _, E_Unop _ -> false
   | E_Unknown _, _ | _, E_Unknown _ -> false
@@ -549,7 +549,7 @@ let rec subst_expr substs e =
       E_Record (t, List.map (fun (x, e) -> (x, tr e)) fields)
   | E_Slice (e, slices) -> E_Slice (tr e, slices)
   | E_Tuple es -> E_Tuple (List.map tr es)
-  | E_Typed (e, t) -> E_Typed (tr e, t)
+  | E_CTC (e, t) -> E_CTC (tr e, t)
   | E_Unknown _ -> e.desc
   | E_Unop (op, e) -> E_Unop (op, tr e)
 
@@ -632,7 +632,7 @@ let rec is_simple_expr e =
   | E_Var _ | E_Literal _ | E_Unknown _ -> true
   | E_GetArray (e1, e2) | E_Binop (_, e1, e2) ->
       is_simple_expr e1 && is_simple_expr e2
-  | E_Typed (e, _)
+  | E_CTC (e, _)
   | E_GetFields (e, _)
   | E_GetField (e, _)
   | E_Unop (_, e)
