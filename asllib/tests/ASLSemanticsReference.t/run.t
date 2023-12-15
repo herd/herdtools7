@@ -112,7 +112,8 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.LESlice.asl
   $ aslref SemanticsRule.LESetField.asl
   $ aslref SemanticsRule.LEDestructuring.asl
-
+  $ aslref SemanticsRule.LDVar0.asl
+  $ aslref SemanticsRule.LDVar1.asl
 
 
 

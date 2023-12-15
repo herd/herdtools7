@@ -277,8 +277,6 @@ module Make (B : Backend.S) (C : Config) = struct
     let* v1 = m1 and* v2 = m2 in
     return_normal ((v1, v2), acc)
 
-  let fold_par fold acc e1 e2 = fold_par2 fold fold acc e1 e2
-
   let rec fold_par_list fold acc es =
     match es with
     | [] -> return_normal ([], acc)

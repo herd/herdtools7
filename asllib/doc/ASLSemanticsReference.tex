@@ -1243,15 +1243,20 @@ of the following apply:
     \texttt{(x, y) = (3, 42)} binds \texttt{x} to \texttt{3} and \texttt{y} to \texttt{42} in the environment where \texttt{x} is bound to \texttt{42} and \texttt{y} is bound to \texttt{3}.
 
 \chapter{Evaluation of Slices \label{chap:eval_slices}}
-[eval\_slices env slices] is the list of pair [(i\_n, l\_n)] that
+\texttt{eval\_slices env slices} is the list of pair \texttt{(i\_n, l\_n)} that
 corresponds to the start (included) and the length of each slice in
-[slices].
+\texttt{slices}.
 
-[[3:2]] evaluates to [[(2, 2)]].
 
-[[3:2, 42+:5]] evaluates to [[(2, 2), (42, 5)]].
+  \subsection{Example: SemanticsRule.Slice0.asl}
+  In the program:
+  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.Slice0.asl}
+  \texttt{x[3:2]} evaluates to \texttt{'10'}.
 
-    \subsection{Comments}
+  \subsection{Example: SemanticsRule.Slice1.asl}
+  In the program:
+  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.Slice1.asl}
+  \texttt{x[3:2, 42+:5]} evaluates to \texttt{'1010101'}.
 
 \chapter{Evaluation of Patterns \label{chap:eval_pattern}}
 [eval\_pattern env pos v p] determines if [v] matches the pattern [p].
@@ -1532,22 +1537,25 @@ pattern in \texttt{li\_patterns} in \texttt{env};
     \item \texttt{new\_env} is \texttt{env}.
     \end{itemize}
 
-    \subsection{Examples}
-    [(3, '101010') IN {( <= 42, 'xx1010')}] evaluates to [true].
+    \subsection{Example: SemanticsRule.PTupleTRUE.asl}
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PTupleTRUE.asl}
+
+    \subsection{Example: SemanticsRule.PTupleFALSE.asl}
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PTupleFALSE.asl}
 
     \subsection{Comments}
 
 \chapter{Evaluation of Local Declarations \label{chap:eval_local_decl}}
 
-[eval\_local\_decl s ldi env m\_init\_opt] declares local variables [ldi] in
-[env] with an optional initialisation value [m\_init\_opt].  The evaluation of
-the local variables [ldi] under an environment [env] is either [new\_env] or
-raises an error and one of the following applies:
+\texttt{eval\_local\_decl ldi env m\_init\_opt} declares local variables
+\texttt{ldi} in \texttt{env} with an optional initialisation value
+\texttt{m\_init\_opt}.  Evaluation of the local variables \texttt{ldi}
+under an environment \texttt{env} is either \texttt{new\_env} or raises an
+error and one of the following applies:
 \begin{itemize}
 \item SemanticsRule.LDIgnore (see Section~\ref{sec:SemanticsRule.LDIgnore},
 \item SemanticsRule.LDVar (see Section~\ref{sec:SemanticsRule.LDVar},
 \item SemanticsRule.LDTypedVar (see Section~\ref{sec:SemanticsRule.LDTypedVar},
-\item SemanticsRule.LDUninitialisedVar (see Section~\ref{sec:SemanticsRule.LDUninitialisedVar},
 \item SemanticsRule.LDTuple (see Section~\ref{sec:SemanticsRule.LDTuple},
 \item SemanticsRule.LDTypedTuple (see Section~\ref{sec:SemanticsRule.LDTypedTuple},
 \item SemanticsRule.LDUninitialisedTuple (see Section~\ref{sec:SemanticsRule.LDUninitialisedTuple}.
@@ -1556,13 +1564,12 @@ raises an error and one of the following applies:
 \section{SemanticsRule.LDIgnore \label{sec:SemanticsRule.LDIgnore}}
 
     \subsection{Prose}
-    All of the following apply:
+Evaluation of the local variables \texttt{ldi} under the environment
+\texttt{env} is \texttt{new\_env} and all of the following apply:
     \begin{itemize}
-    \item [ldi] is an identifier which can be ignored;
-    \item [new\_env] is [env].
+    \item \texttt{ldi} indicates that the initialisation value will be discarded;
+    \item \texttt{new\_env} is \texttt{env}.
     \end{itemize}
-
-    \subsection{Comments}
 
     \subsection{Examples}
     [var - = 3;] evaluates [3].
@@ -1580,24 +1587,30 @@ raises an error and one of the following applies:
   \begin{align}
   \end{align} 
 
+    \subsection{Comments}
+
 \section{SemanticsRule.LDVar \label{sec:SemanticsRule.LDVar}}
 
     \subsection{Prose}
-    All of the following apply:
+Evaluation of the local variables \texttt{ldi} under the environment
+\texttt{env} is \texttt{new\_env} and all of the following apply:
     \begin{itemize}
-    \item [ldi] is a variable [x];
-    \item [m\_init\_opt] is a value [m];
-    \item [new\_env] is [env] modified to declare [x] as a local variable bound to
-      value [m].
+    \item \texttt{ldi} is a variable \texttt{x};
+    \item \texttt{m\_init\_opt} is a value \texttt{m};
+    \item \texttt{new\_env} is \texttt{env} modified to declare \texttt{x} as a
+local variable bound to value \texttt{m}.
     \end{itemize}
 
-    \subsection{Comments}
+    \subsection{Example: SemanticsRule.LDVar0.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDVar0.asl}
+    \texttt{var x = 3;} binds \texttt{x} to the evaluation of \texttt{3} in \texttt{env}.
 
-    \subsection{Examples}
-    [var x = 3;] binds [x] to the evaluation of [3] in [env].
-
-    [var x : integer = 3;] binds [x] to the evaluation of [3] in [env], without
-    type consideration at runtime.
+    \subsection{Example: SemanticsRule.LDVar1.asl}
+    In the program:
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDVar1.asl}
+    \texttt{var x : integer = 3;} binds \texttt{x} to the evaluation of
+\texttt{3} in \texttt{env}, without type consideration at runtime.
 
   \subsection{Code}
   \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
@@ -1610,18 +1623,19 @@ raises an error and one of the following applies:
   \begin{align}
   \end{align} 
 
+    \subsection{Comments}
+
 \section{SemanticsRule.LDTypedVar \label{sec:SemanticsRule.LDTypedVar}}
 
     \subsection{Prose}
-    All of the following apply:
+Evaluation of the local variables \texttt{ldi} under the environment
+\texttt{env} is \texttt{new\_env} and all of the following apply:
     \begin{itemize}
-    \item [ldi] is a variable [x] of type [ty];
-    \item [m\_init\_opt] is [None];
-    \item [new\_env] is [env] modified to declare [x] as a local variable bound to
-      the base value of [ty].
+    \item \texttt{ldi} is a variable \texttt{x} of type \texttt{ty};
+    \item \texttt{m\_init\_opt} is \texttt{None};
+    \item \texttt{new\_env} is \texttt{env} modified to declare \texttt{x} as a local variable bound to
+      the base value of \texttt{ty}.
     \end{itemize}
-
-    \subsection{Comments}
 
     \subsection{Examples}
     [var x : integer;] binds [x] in [env] to the base value of [integer].
@@ -1637,45 +1651,21 @@ raises an error and one of the following applies:
   \begin{align}
   \end{align} 
 
-\section{SemanticsRule.LDUninitialisedVar \label{sec:SemanticsRule.LDUninitialisedVar}}
-
-    \subsection{Prose}
-    All of the following apply:
-    \begin{itemize}
-    \item [ldi] is a variable [x] without a type nor an initialisation value;
-    \item an error is raised.
-    \end{itemize}
-
     \subsection{Comments}
-
-    \subsection{Examples}
-    [var x;] raises an error.
-
-  \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
-
-  \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
-
-  \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
 
 \section{SemanticsRule.LDTuple \label{sec:SemanticsRule.LDTuple}}
 
     \subsection{Prose}
-    All of the following apply:
+Evaluation of the local variables \texttt{ldi} under the environment
+\texttt{env} is \texttt{new\_env} and all of the following apply:
     \begin{itemize}
-    \item [ldi] gives a list of local variables [ldis];
-    \item [m\_init\_opt] is a list of values [nmonads];
-    \item [new\_env] is [env] modified to declare each element of [ldis] to be bound
-      to the corresponding value in [nmonads].
+    \item \texttt{ldi} gives a list of local variables \texttt{ldis};
+    \item \texttt{m\_init\_opt} is a list of values \texttt{liv};
+    \item \texttt{new\_env} is \texttt{env} modified to declare each element of \texttt{ldis} to be bound
+      to the corresponding value in \texttt{liv}.
     \end{itemize}
 
-    \subsection{Comments}
-
-    \subsection{Examples}
+    \subsection{Example: SemanticsRule.LDTuple.asl}
     [var (x,y,z) = (1,2,3);] binds [x] (resp. [y], [z]) to the evaluation of
     [1] (resp. [2], [3]) in [env].
 
@@ -1690,18 +1680,18 @@ raises an error and one of the following applies:
   \begin{align}
   \end{align} 
 
+    \subsection{Comments}
+
 \section{SemanticsRule.LDTypedTuple \label{sec:SemanticsRule.LDTypedTuple}}
 
     \subsection{Prose}
-    All of the following apply:
+Evaluation of the local variables \texttt{ldi} under the environment
+\texttt{env} is \texttt{new\_env} and all of the following apply:
     \begin{itemize}
-    \item [ldi] gives a list of local variables [ldis] and a type [ty];
-    \item [m\_init\_opt] is [None];
-    \item [new\_env] is [env] modified to declare each element of [ldis] with type
-      [ty].
+    \item \texttt{ldi} gives a list of local variables \texttt{ldis} and a type \texttt{ty};
+    \item \texttt{m\_init\_opt} is \texttt{None};
+    \item \texttt{new\_env} is \texttt{env} modified to declare each element of \texttt{ldis} with type \texttt{ty}.
     \end{itemize}
-
-    \subsection{Comments}
 
     \subsection{Examples}
     [var (x,y,z) : integer;] binds [x], [y] and [z] in [env] to the base value
@@ -1718,20 +1708,23 @@ raises an error and one of the following applies:
   \begin{align}
   \end{align} 
 
+    \subsection{Comments}
+
 \section{SemanticsRule.LDUninitialisedTuple \label{sec:SemanticsRule.LDUninitialisedTuple}}
 
     \subsection{Prose}
-    All of the following apply:
+Evaluation of the local variables \texttt{ldi} under the environment
+\texttt{env} is \texttt{new\_env} and all of the following apply:
     \begin{itemize}
-    \item [ldi] gives a list of local variables [ldis];
-    \item [new\_env] is [env] modified to declare each element of [ldis].
+    \item \texttt{ldi} gives a list of local variables \texttt{ldis};
+    \item \texttt{new\_env} is \texttt{env} modified to declare each element of \texttt{ldis}.
     \end{itemize}
-
-    \subsection{Comments}
 
     \subsection{Examples}
     [var (x : integer, y : boolean);] binds [x] to the base value of [integer]
     and [y] to the base value of [boolean].
+
+    \subsection{Comments}
 
 \chapter{Evaluation of Statements \label{chap:eval_stmt}}
 The evaluation [eval\_stmt env s] of a statement [s] under environment [env] is
