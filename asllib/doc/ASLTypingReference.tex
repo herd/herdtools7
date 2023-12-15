@@ -74,6 +74,34 @@ welcome; those can be sent to Arm’s Architecture Formal Team Lead Jade
 Alglave <jade.alglave@arm.com> or by raising issues or PRs to the herdtools7
 github repository.
 
+\chapter{Abstract Syntax}
+In order to type both ASLv0 and ASLv1, we map the concrete syntax of both versions into an abstract syntax, which is a form of labelled tree. The abstract syntax tree abstracts away many syntactic elements that are only needed to enable parsing.
+
+\newcommand\BNOT[0]{\texttt{"!"}}
+\newcommand\NEG[0]{\texttt{"-"}}
+\newcommand\NOT[0]{\texttt{"NOT"}}
+
+\newcommand\unop[0]{\textrm{unop}}
+\newcommand\binop[0]{\textrm{binop}}
+\newcommand\binopin[0]{\textrm{binop\_in}}
+\newcommand\binoppow[0]{\textrm{binop\_pow}}
+
+% AST-only nodes
+\newcommand\literal[0]{\texttt{literal}}
+\newcommand\expr[0]{\texttt{expr}}
+
+The following node types directly correspond to their respective ASL grammar variables (non-terminals):  $\unop$, $\binop$, $\binopin$, $\binoppow$
+
+\[
+%\unop = \BNOT \;|\; \NEG \;|\; \NOT
+\begin{array}{rcl}
+\literal &=& \texttt{<int\_lit>} \;|\; \texttt{<boolean\_lit>} \;|\; \texttt{<real\_lit>} \;|\; \texttt{<bitvector\_lit>} \;|\; \texttt{<string\_lit>}\\
+\expr &=& \texttt{E\_Literal}(literal) \;|\; \texttt{E\_Var}(\texttt{<identifier>})
+\end{array}
+\]
+
+TODO: what about \texttt{hex\_lit}?
+
 \chapter{Type Algebra}
 
 \section{Predicates on Types}
