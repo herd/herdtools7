@@ -681,26 +681,34 @@ module Make (B : Backend.S) (C : Config) = struct
   and eval_slices env :
       slice list -> ((B.value * B.value) list * env) maybe_exception m =
     let eval_one env = function
+      (* Begin SliceSingle *)
       | Slice_Single e ->
           let** v, env = eval_expr env e in
-          return_normal ((v, one), env)
+          return_normal ((v, one), env) |: SemanticsRule.SliceSingle
+      (* End *)
+      (* Begin SliceLength *)
       | Slice_Length (ebot, elength) ->
           let*^ vbot, env1 = eval_expr env ebot in
           let*^ vlength, env' = eval_expr env1 elength in
           let* vbot = vbot and* vlength = vlength in
-          return_normal ((vbot, vlength), env')
+          return_normal ((vbot, vlength), env') |: SemanticsRule.SliceLength 
+      (* End *)
+      (* Begin SliceRange *)
       | Slice_Range (etop, ebot) ->
           let*^ vtop, env1 = eval_expr env etop in
           let*^ vbot, env' = eval_expr env1 ebot in
           let* vtop = vtop and* vbot = vbot in
           let* length = B.binop MINUS vtop vbot >>= B.binop PLUS one in
-          return_normal ((vbot, length), env')
+          return_normal ((vbot, length), env') |: SemanticsRule.SliceRange  
+      (* End *)
+      (* Begin SliceStar *)
       | Slice_Star (efactor, elength) ->
           let*^ vfactor, env1 = eval_expr env efactor in
           let*^ vlength, env' = eval_expr env1 elength in
           let* vfactor = vfactor and* vlength = vlength in
           let* vbot = B.binop MUL vfactor vlength in
-          return_normal ((vbot, vlength), env')
+          return_normal ((vbot, vlength), env') |: SemanticsRule.SliceStar 
+      (* End *)
     in
     fold_par_list eval_one env
 
@@ -712,6 +720,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let true_ = B.v_of_literal (L_Bool true) |> return in
     let false_ = B.v_of_literal (L_Bool false) |> return in
     function
+     
     | Pattern_All -> true_ |: SemanticsRule.PAll
     | Pattern_Any li ->
         let folder acc p =

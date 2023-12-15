@@ -1229,9 +1229,9 @@ of the following apply:
 value \texttt{v} under an environment \texttt{env} is \texttt{new\_env} and all
 of the following apply:
     \begin{itemize}
-    \item [le] denotes a list of left-hand-side expressions [le\_list];
-    \item [new\_env] is [env] where each left-hand-side expression in [le\_list] has
-      been assigned the value at the corresponding index in [v].
+    \item \texttt{le} denotes a list of left-hand-side expressions \texttt{le\_list};
+    \item \texttt{new\_env} is \texttt{env} where each left-hand-side expression in \texttt{le\_list} has
+      been assigned the value at the corresponding index in \texttt{v}.
     \end{itemize}
 
     \subsection{Example: SemanticsRule.LEDestructuring.asl}
@@ -1239,16 +1239,61 @@ of the following apply:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEDestructuring.asl}
     \texttt{(x, y) = (3, 42)} binds \texttt{x} to \texttt{3} and \texttt{y} to \texttt{42} in the environment where \texttt{x} is bound to \texttt{42} and \texttt{y} is bound to \texttt{3}.
 
+  \subsection{Code}
+  \VerbatimInput[firstline=\LEDestructuringBegin, lastline=\LEDestructuringEnd]{../Interpreter.ml}
+
 \chapter{Evaluation of Slices \label{chap:eval_slices}}
 \texttt{eval\_slices env slices} is the list of pair \texttt{(i\_n, l\_n)} that
 corresponds to the start (included) and the length of each slice in
 \texttt{slices}.
 
+Evaluation of the slice \texttt{s} under environment \texttt{env} is
+\texttt{(res,new\_env)}, or an error, and one of the following applies:
+\begin{itemize}
+\item SemanticsRule.SliceSingle (see Section~\ref{sec:SemanticsRule.SliceSingle}),
+\item SemanticsRule.SliceLength (see Section~\ref{sec:SemanticsRule.SliceLength}),
+\item SemanticsRule.SliceRange (see Section~\ref{sec:SemanticsRule.SliceRange}),
+\item SemanticsRule.SliceStar (see Section~\ref{sec:SemanticsRule.SliceStar}).
+\end{itemize}
 
-  \subsection{Example: SemanticsRule.Slice0.asl}
+\section{SemanticsRule.SliceSingle \label{sec:SemanticsRule.SliceSingle}}
+
+  \subsection{Prose}
+
+  \subsection{Example}
+
+  \subsection{Code}
+  \VerbatimInput[firstline=\SliceSingleBegin, lastline=\SliceSingleEnd]{../Interpreter.ml}
+
+\section{SemanticsRule.SliceLength \label{sec:SemanticsRule.SliceLength}}
+
+  \subsection{Prose}
+
+  \subsection{Example}
+
+  \subsection{Code}
+  \VerbatimInput[firstline=\SliceLengthBegin, lastline=\SliceLengthEnd]{../Interpreter.ml}
+
+\section{SemanticsRule.SliceRange \label{sec:SemanticsRule.SliceRange}}
+
+  \subsection{Prose}
+
+  \subsection{Example: SemanticsRule.SliceRange.asl}
   In the program:
-  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.Slice0.asl}
+  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceRange.asl}
   \texttt{x[3:2]} evaluates to \texttt{'10'}.
+
+  \subsection{Code}
+  \VerbatimInput[firstline=\SliceRangeBegin, lastline=\SliceRangeEnd]{../Interpreter.ml}
+
+\section{SemanticsRule.SliceStar \label{sec:SemanticsRule.SliceStar}}
+
+  \subsection{Prose}
+
+  \subsection{Example}
+
+  \subsection{Code}
+  \VerbatimInput[firstline=\SliceStarBegin, lastline=\SliceStarEnd]{../Interpreter.ml}
 
   \subsection{Example: SemanticsRule.Slice1.asl}
   In the program:

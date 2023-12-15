@@ -56,6 +56,10 @@ module SemanticsRule = struct
     | LESetField
     | LESetFields
     | LEDestructuring
+    | SliceSingle
+    | SliceLength
+    | SliceRange
+    | SliceStar
     | PAll
     | PAny
     | PGeq
@@ -141,6 +145,10 @@ module SemanticsRule = struct
     | LEDestructuring -> "LEDestructuring"
     | LEUndefIdentV0 -> "LEUndefIdentV0"
     | LEUndefIdentV1 -> "LEUndefIdentV1"
+    | SliceSingle -> "SliceSingle"
+    | SliceLength -> "SliceLength"
+    | SliceRange -> "SliceRange"
+    | SliceStar -> "SliceStar"
     | PAll -> "PAll"
     | PAny -> "PAny"
     | PGeq -> "PGeq"
@@ -353,6 +361,10 @@ module TypingRule = struct
     | LESetBadField
     | LESetFields
     | LEConcat
+    | SliceSingle
+    | SliceLength
+    | SliceRange
+    | SliceStar
     | PAll
     | PAny
     | PGeq
@@ -406,10 +418,6 @@ module TypingRule = struct
     | Block
     | Loop
     | For
-    | SliceLength
-    | SliceSingle
-    | SliceRange
-    | SliceStar
     | CatcherNone
     | CatcherSome
     | Func
@@ -483,6 +491,10 @@ module TypingRule = struct
     | LEDestructuring -> "LEDestructuring"
     | LEUndefIdentV0 -> "LEUndefIdentV0"
     | LEUndefIdentV1 -> "LEUndefIdentV1"
+    | SliceSingle -> "SliceSingle"
+    | SliceLength -> "SliceLength"
+    | SliceRange -> "SliceRange"
+    | SliceStar -> "SliceStar"
     | PAll -> "PAll"
     | PAny -> "PAny"
     | PGeq -> "PGeq"
@@ -536,10 +548,6 @@ module TypingRule = struct
     | Block -> "Block"
     | Loop -> "Loop"
     | For -> "For"
-    | SliceLength -> "SliceLength"
-    | SliceSingle -> "SliceSingle"
-    | SliceRange -> "SliceRange"
-    | SliceStar -> "SliceStar"
     | CatcherNone -> "CatcherNone"
     | CatcherSome -> "CatcherSome"
     | Func -> "Func"
@@ -615,6 +623,10 @@ module TypingRule = struct
       LESetFields;
       LEDestructuring;
       LEConcat;
+      SliceLength;
+      SliceSingle;
+      SliceRange;
+      SliceStar;
       SPass;
       SAssignCall;
       SAssignTuple;
@@ -647,10 +659,6 @@ module TypingRule = struct
       Block;
       Loop;
       For;
-      SliceLength;
-      SliceSingle;
-      SliceRange;
-      SliceStar;
       CatcherNone;
       CatcherSome;
       Func;
