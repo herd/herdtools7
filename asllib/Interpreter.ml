@@ -111,9 +111,12 @@ module Make (B : Backend.S) (C : Config) = struct
   let ( let* ) = B.bind_data
   let ( >>= ) = B.bind_data
 
+  (* Control bind *)
+  let ( let*= ) = B.bind_ctrl
+  let ( >>*= ) = B.bind_ctrl
+
   (* Choice *)
-  let bind_choice_m m v1 v2 = B.choice m (return v1) (return v2)
-  let bind_choice v v1 v2 = bind_choice_m (return v) v1 v2
+  let choice m v1 v2 = B.choice m (return v1) (return v2)
 
   (* Exceptions *)
   let bind_exception binder m f =
@@ -123,7 +126,6 @@ module Make (B : Backend.S) (C : Config) = struct
   let ( let**| ) = bind_exception_seq
   let bind_exception_data m f = bind_exception B.bind_data m f
   let ( let** ) = bind_exception_data
-  let bind_exception_ctrl m f = bind_exception B.bind_ctrl m f
 
   (* Continue *)
   (* [bind_continue m f] executes [f] on [m] only if [m] is [Normal (Continuing _)] *)
@@ -277,8 +279,6 @@ module Make (B : Backend.S) (C : Config) = struct
     let* v1 = m1 and* v2 = m2 in
     return_normal ((v1, v2), acc)
 
-  let fold_par fold acc e1 e2 = fold_par2 fold fold acc e1 e2
-
   let rec fold_par_list fold acc es =
     match es with
     | [] -> return_normal ([], acc)
@@ -331,9 +331,9 @@ module Make (B : Backend.S) (C : Config) = struct
     | E_Literal v -> return_normal (B.v_of_literal v, env) |: SemanticsRule.Lit
 
     | E_Typed (e, t) ->
-        let** v, env = eval_expr env e in
+        let** v, env' = eval_expr env e in
         let* b = is_val_of_type e env v t in
-        (if b then return_normal (v, env)
+        (if b then return_normal (v, env')
          else fatal_from e (Error.MismatchType (B.debug_value v, [ t.desc ])))
         |: SemanticsRule.TypedExpr
 
@@ -379,19 +379,18 @@ module Make (B : Backend.S) (C : Config) = struct
         return_normal (v, env') |: SemanticsRule.Unop
 
     | E_Cond (e_cond, e1, e2) ->
-        let*^ m_cond, env = eval_expr env e_cond in
+        let*^ m_cond, env1 = eval_expr env e_cond in
 
         if is_simple_expr e1 && is_simple_expr e2 then
-          B.bind_ctrl m_cond @@ fun v_cond ->
+          let*= v_cond = m_cond in
           let* v =
             B.ternary v_cond
-              (fun () -> eval_expr_sef env e1)
-              (fun () -> eval_expr_sef env e2)
+              (fun () -> eval_expr_sef env1 e1)
+              (fun () -> eval_expr_sef env1 e2)
           in
           return_normal (v, env) |: SemanticsRule.ECondSimple
-        else
-          B.bind_ctrl (bind_choice_m m_cond e1 e2) @@ eval_expr env
-          |: SemanticsRule.ECond
+
+        else choice m_cond e1 e2 >>*= eval_expr env1 |: SemanticsRule.ECond
 
     | E_Slice (e_bv, slices) ->
         let*^ m_bv, env1 = eval_expr env e_bv in
@@ -426,36 +425,36 @@ module Make (B : Backend.S) (C : Config) = struct
 
     | E_Record (_, e_fields) ->
         let names, fields = List.split e_fields in
-        let** v_fields, env = eval_expr_list env fields in
+        let** v_fields, env' = eval_expr_list env fields in
         let* v = B.create_record (List.combine names v_fields) in
-        return_normal (v, env) |: SemanticsRule.ERecord
+        return_normal (v, env') |: SemanticsRule.ERecord
 
     | E_GetField (e_record, field_name) ->
-        let** v_record, env = eval_expr env e_record in
+        let** v_record, env' = eval_expr env e_record in
         let* v = B.get_field field_name v_record in
-        return_normal (v, env) |: SemanticsRule.EGetBitField
+        return_normal (v, env') |: SemanticsRule.EGetBitField
 
     | E_GetFields _ ->
         fatal_from e Error.TypeInferenceNeeded |: SemanticsRule.EGetBitFields
 
     | E_Concat e_list ->
-        let** v_list, env = eval_expr_list env e_list in
+        let** v_list, env' = eval_expr_list env e_list in
         let* v = B.concat_bitvectors v_list in
-        return_normal (v, env) |: SemanticsRule.EConcat
+        return_normal (v, env') |: SemanticsRule.EConcat
 
     | E_Tuple e_list ->
-        let** v_list, env = eval_expr_list env e_list in
+        let** v_list, env' = eval_expr_list env e_list in
         let* v = B.create_vector v_list in
-        return_normal (v, env) |: SemanticsRule.ETuple
+        return_normal (v, env') |: SemanticsRule.ETuple
 
     | E_Unknown t ->
         let v = B.v_unknown_of_type t in
         return_normal (v, env) |: SemanticsRule.EUnknown
 
     | E_Pattern (e, p) ->
-        let** v, env = eval_expr env e in
+        let** v, env' = eval_expr env e in
         let* v = eval_pattern env e v p in
-        return_normal (v, env) |: SemanticsRule.EPattern
+        return_normal (v, env') |: SemanticsRule.EPattern
 
   (* Evaluation of Side-Effect-Free Expressions *)
   (* ------------------------------------------ *)
@@ -552,7 +551,7 @@ module Make (B : Backend.S) (C : Config) = struct
           loop 0 m_true
       | T_Named _ -> assert false
     in
-    B.choice (in_values v ty) (return true) (return false)
+    choice (in_values v ty) true false
 
   (* Evaluation of Left-Hand-Side Expressions *)
   (* ---------------------------------------- *)
@@ -651,8 +650,8 @@ module Make (B : Backend.S) (C : Config) = struct
       slice list -> ((B.value * B.value) list * env) maybe_exception m =
     let eval_one env = function
       | Slice_Single e ->
-          let** v, env = eval_expr env e in
-          return_normal ((v, one), env)
+          let** v, env' = eval_expr env e in
+          return_normal ((v, one), env')
       | Slice_Length (ebot, elength) ->
           let*^ vbot, env1 = eval_expr env ebot in
           let*^ vlength, env' = eval_expr env1 elength in
@@ -798,27 +797,28 @@ module Make (B : Backend.S) (C : Config) = struct
         let*| _i, vs = List.fold_left folder (return (0, [])) ms in
         return_return env (List.rev vs) |: SemanticsRule.SReturnSome
     | S_Return (Some e) ->
-        let** v, env = eval_expr env e in
+        let** v, env' = eval_expr env e in
         let* () =
-          B.on_write_identifier (return_identifier 0) (IEnv.get_scope env) v
+          B.on_write_identifier (return_identifier 0) (IEnv.get_scope env') v
         in
-        return_return env [ v ] |: SemanticsRule.SReturnOne
+        return_return env' [ v ] |: SemanticsRule.SReturnOne
     | S_Return None -> return_return env [] |: SemanticsRule.SReturnNone
     | S_Seq (s1, s2) ->
         let*> env = eval_stmt env s1 in
         eval_stmt env s2 |: SemanticsRule.SSeq
     | S_Call (name, args, named_args) ->
-        let**| returned, env = eval_call (to_pos s) name env args named_args in
+        let**| returned, env' = eval_call (to_pos s) name env args named_args in
         let () = assert (returned = []) in
-        return_continue env |: SemanticsRule.SCall
+        return_continue env' |: SemanticsRule.SCall
     | S_Cond (e, s1, s2) ->
-        bind_exception_ctrl (eval_expr env e) @@ fun (v, env) ->
-        bind_choice v s1 s2 >>= eval_block env |: SemanticsRule.SCond
+        let*^ v, env' = eval_expr env e in
+        let*= s' = choice v s1 s2 in
+        eval_block env' s' |: SemanticsRule.SCond
     | S_Case _ -> case_to_conds s |> eval_stmt env |: SemanticsRule.SCase
     | S_Assert e ->
-        bind_exception_ctrl (eval_expr env e) @@ fun (v, env) ->
-        let* b = bind_choice v true false in
-        if b then return_continue env
+        let*^ v, env' = eval_expr env e in
+        let*= b = choice v true false in
+        if b then return_continue env'
         else fatal_from e @@ Error.AssertionFailed e |: SemanticsRule.SAssert
     | S_While (e, body) ->
         let env = IEnv.tick_push env in
@@ -838,10 +838,10 @@ module Make (B : Backend.S) (C : Config) = struct
         IEnv.remove_local id env |> return_continue |: SemanticsRule.SFor
     | S_Throw None -> return (Throwing (None, env)) |: SemanticsRule.SThrowNone
     | S_Throw (Some (e, Some t)) ->
-        let** v, env = eval_expr env e in
+        let** v, env' = eval_expr env e in
         let name = throw_identifier () and scope = Scope_Global in
         let* () = B.on_write_identifier name scope v in
-        return (Throwing (Some ((v, name, scope), t), env))
+        return (Throwing (Some ((v, name, scope), t), env'))
         |: SemanticsRule.SThrowSomeTyped
     | S_Throw (Some (_e, None)) ->
         fatal_from s Error.TypeInferenceNeeded |: SemanticsRule.SThrowSome
@@ -849,12 +849,12 @@ module Make (B : Backend.S) (C : Config) = struct
         let s_m = eval_block env s in
         eval_catchers env catchers otherwise_opt s_m |: SemanticsRule.STry
     | S_Decl (_ldk, ldi, Some e) ->
-        let*^ m, env = eval_expr env e in
-        let**| env = eval_local_decl s ldi env (Some m) in
-        return_continue env |: SemanticsRule.SDeclSome
+        let*^ m, env1 = eval_expr env e in
+        let**| env' = eval_local_decl s ldi env1 (Some m) in
+        return_continue env' |: SemanticsRule.SDeclSome
     | S_Decl (_dlk, ldi, None) ->
-        let**| env = eval_local_decl s ldi env None in
-        return_continue env |: SemanticsRule.SDeclNone
+        let**| env' = eval_local_decl s ldi env None in
+        return_continue env' |: SemanticsRule.SDeclNone
     | S_Debug e ->
         let* v = eval_expr_sef env e in
         let () =
@@ -889,8 +889,8 @@ module Make (B : Backend.S) (C : Config) = struct
     let binder = bind_maybe_unroll loop_name (B.is_undetermined cond) in
     (* Real logic: if condition is validated, we loop, otherwise we continue to
        the next statement. *)
-    B.bind_ctrl (bind_choice_m cond_m loop return_continue)
-    @@ binder (return_continue env)
+    choice cond_m loop return_continue
+    >>*= binder (return_continue env)
     |: SemanticsRule.Loop
 
   (* Evaluation of for loops *)
@@ -919,7 +919,7 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     (* Real logic: if condition is validated, we continue to the next
        statement, otherwise we loop. *)
-    B.bind_ctrl (bind_choice_m cond_m return_continue loop) @@ fun kont ->
+    choice cond_m return_continue loop >>*= fun kont ->
     kont env |: SemanticsRule.For
 
   (* Evaluation of Catchers *)

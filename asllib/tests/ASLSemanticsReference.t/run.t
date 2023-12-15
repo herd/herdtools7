@@ -55,7 +55,7 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.EPatternTRUE.asl
   $ aslref SemanticsRule.LELocalVar.asl
   $ aslref SemanticsRule.LEGlobalVar.asl
-  File /Users/jadalg01/herdtools7/asllib/libdir/stdlib.asl, line 250,
+  File /Users/hadren02/Soft/herdtools7/asllib/libdir/stdlib.asl, line 250,
     character 0 to line 253, character 3:
   ASL Typing error: cannot declare already declared element "x".
   [1]
