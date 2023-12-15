@@ -1622,7 +1622,7 @@ Evaluation of the local variables \texttt{ldi} under the environment
     [var - : integer;] does not modify the environment.
 
   \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \VerbatimInput[firstline=\LDIgnoreBegin, lastline=\LDIgnoreEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -1658,7 +1658,7 @@ local variable bound to value \texttt{m}.
 \texttt{3} in \texttt{env}, without type consideration at runtime.
 
   \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \VerbatimInput[firstline=\LDVarBegin, lastline=\LDVarEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -1686,7 +1686,7 @@ Evaluation of the local variables \texttt{ldi} under the environment
     [var x : integer;] binds [x] in [env] to the base value of [integer].
 
   \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \VerbatimInput[firstline=\LDTypedVarBegin, lastline=\LDTypedVarEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -1710,12 +1710,12 @@ Evaluation of the local variables \texttt{ldi} under the environment
       to the corresponding value in \texttt{liv}.
     \end{itemize}
 
-    \subsection{Example: SemanticsRule.LDTuple.asl}
+    \subsection{Example}
     [var (x,y,z) = (1,2,3);] binds [x] (resp. [y], [z]) to the evaluation of
     [1] (resp. [2], [3]) in [env].
 
   \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \VerbatimInput[firstline=\LDTupleBegin, lastline=\LDTupleEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -1743,7 +1743,7 @@ Evaluation of the local variables \texttt{ldi} under the environment
     of [integer].
 
   \subsection{Code}
-  \VerbatimInput[firstline=, lastline=]{../Interpreter.ml}
+  \VerbatimInput[firstline=\LDTypedTupleBegin, lastline=\LDTypedTupleEnd]{../Interpreter.ml}
 
   \subsection{Formally: sequential case}
   \begin{align}
@@ -1768,6 +1768,9 @@ Evaluation of the local variables \texttt{ldi} under the environment
     \subsection{Examples}
     [var (x : integer, y : boolean);] binds [x] to the base value of [integer]
     and [y] to the base value of [boolean].
+
+  \subsection{Code}
+  \VerbatimInput[firstline=\LDUninitialisedTupleBegin, lastline=\LDUninitialisedTupleEnd]{../Interpreter.ml}
 
     \subsection{Comments}
 
