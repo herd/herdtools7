@@ -224,6 +224,10 @@ val no_primitive : 'p AST.t -> 'q AST.t
 (** [no_primitive parsed_ast] is [parsed_ast] if does not contains any
     primitive. Otherwise, it fails with an assert false. *)
 
+val rename_locals : (identifier -> identifier) -> 'p AST.t -> 'p AST.t
+(** [rename_locals f ast] is [ast] where all instances of variables [x] are
+    replaced with [f x]. *)
+
 val is_simple_expr : expr -> bool
 (** [is_simple_expr e] is true if [e] does not contain any call to any other
     subprogram. It has false negative. *)

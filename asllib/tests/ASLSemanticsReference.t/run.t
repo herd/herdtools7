@@ -7,7 +7,7 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.Lit.asl
   $ aslref SemanticsRule.ELocalVar.asl
   $ aslref SemanticsRule.EGlobalVar.asl
-//  $ aslref SemanticsRule.EGlobalVarError.asl
+  $ aslref SemanticsRule.EGlobalVarError.asl
   $ aslref SemanticsRule.EUndefIdent.asl
   File SemanticsRule.EUndefIdent.asl, line 5, characters 9 to 10:
   ASL Error: Undefined identifier: 'y'
