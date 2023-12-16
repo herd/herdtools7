@@ -33,10 +33,9 @@ let undefined_identifier pos x = fatal_from pos (Error.UndefinedIdentifier x)
 let conflict pos expected provided =
   fatal_from pos (Error.ConflictingTypes (expected, provided))
 
-
 let expr_of_z z = literal (L_Int z)
 let plus = binop PLUS
-let t_bits_bitwidth e = T_Bits (BitWidth_SingleExpr e, [])
+let t_bits_bitwidth e = T_Bits (e, [])
 
 let reduce_expr env e =
   try StaticInterpreter.Normalize.normalize env e
@@ -75,18 +74,7 @@ let slices_width env =
   in
   fun li -> List.map slice_length li |> sum |> reduce_expr env
 
-let width_plus env acc w =
-  match (acc, w) with
-  | BitWidth_SingleExpr e1, BitWidth_SingleExpr e2 ->
-      BitWidth_SingleExpr (plus e1 e2 |> reduce_expr env)
-  | BitWidth_Constraints cs1, BitWidth_SingleExpr e2 ->
-      BitWidth_Constraints (constraint_binop PLUS cs1 [ Constraint_Exact e2 ])
-  | BitWidth_SingleExpr e1, BitWidth_Constraints cs2 ->
-      BitWidth_Constraints (constraint_binop PLUS [ Constraint_Exact e1 ] cs2)
-  | BitWidth_Constraints cs1, BitWidth_Constraints cs2 ->
-      BitWidth_Constraints (constraint_binop PLUS cs1 cs2)
-  | _ ->
-      failwith "Not yet implemented: concatening slices constrained from type."
+let width_plus env acc w = plus acc w |> reduce_expr env
 
 let rename_ty_eqs : (AST.identifier * AST.expr) list -> AST.ty -> AST.ty =
   let subst_constraint eqs = function
@@ -97,12 +85,8 @@ let rename_ty_eqs : (AST.identifier * AST.expr) list -> AST.ty -> AST.ty =
   let subst_constraints eqs = List.map (subst_constraint eqs) in
   fun eqs ty ->
     match ty.desc with
-    | T_Bits (BitWidth_SingleExpr e, fields) ->
-        let new_e = subst_expr eqs e in
-        T_Bits (BitWidth_SingleExpr new_e, fields) |> add_pos_from_st ty
-    | T_Bits (BitWidth_Constraints constraints, fields) ->
-        let constraints = subst_constraints eqs constraints in
-        T_Bits (BitWidth_Constraints constraints, fields) |> add_pos_from_st ty
+    | T_Bits (e, fields) ->
+        T_Bits (subst_expr eqs e, fields) |> add_pos_from_st ty
     | T_Int (Some constraints) ->
         let constraints = subst_constraints eqs constraints in
         T_Int (Some constraints) |> add_pos_from_st ty
@@ -114,7 +98,6 @@ let infer_value = function
   | L_Real _ -> T_Real
   | L_String _ -> T_String
   | L_BitVector bv -> Bitvector.length bv |> expr_of_int |> t_bits_bitwidth
-
 
 exception ConstraintMinMaxTop
 
@@ -254,11 +237,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       (* Thus [List.length caller == List.length callee]. *)
       let folder prev_eqs caller (_name, callee) =
         match callee.desc with
-        | T_Bits (BitWidth_SingleExpr { desc = E_Var x; _ }, _) -> (
+        | T_Bits ({ desc = E_Var x; _ }, _) -> (
             match (Types.get_structure env caller).desc with
-            | T_Bits (BitWidth_SingleExpr e_caller, _) ->
-                (x, e_caller) :: prev_eqs
-            | T_Bits _ -> prev_eqs
+            | T_Bits (e_caller, _) -> (x, e_caller) :: prev_eqs
             | _ ->
                 (* We know that callee type_clashes with caller, and that it
                    cannot be a name. *)
@@ -484,12 +465,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let n = get_bitvector_width' env t1 and m = get_bitvector_width' env t2 in
     if bitwidth_equal (StaticInterpreter.equal_in_env env) n m then
       (* TODO: Check statically evaluable? *) ()
-    else
-      match (n, m) with
-      | BitWidth_SingleExpr e_n, BitWidth_SingleExpr e_m ->
-          if StaticInterpreter.equal_in_env env e_n e_m then ()
-          else assumption_failed ()
-      | _ -> assumption_failed ()
+    else assumption_failed ()
 
   let check_bits_equal_width loc env t1 t2 () =
     try check_bits_equal_width' env t1 t2 ()
@@ -834,7 +810,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let+ () = check_structure_bits loc env t in
         let+ () =
           let n = !$(Bitvector.mask_length m) in
-          let t_m = T_Bits (BitWidth_SingleExpr n, []) |> add_pos_from loc in
+          let t_m = T_Bits (n, []) |> add_pos_from loc in
           check_type_satisfies loc env t t_m
         in
         p |: TypingRule.PMask
@@ -895,10 +871,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       let folder acc (x, ty) (t_e, e) =
         match ty.desc with
         | T_Int _ -> (x, e) :: acc
-        | T_Bits (BitWidth_SingleExpr { desc = E_Var x; _ }, _) -> (
+        | T_Bits ({ desc = E_Var x; _ }, _) -> (
             match (Types.get_structure env t_e).desc with
-            | T_Bits (BitWidth_SingleExpr e, _) -> (x, e) :: acc
-            | T_Bits _ -> (x, E_Unknown t_e |> add_pos_from loc) :: acc
+            | T_Bits (e, _) -> (x, e) :: acc
             | _ -> acc)
         | _ -> acc
       in
@@ -1073,17 +1048,15 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* End *)
     (* Begin EConcatEmpty *)
     | E_Concat [] ->
-        (T_Bits (BitWidth_SingleExpr (expr_of_int 0), []) |> here, e)
-        |: TypingRule.EConcatEmpty
+        (T_Bits (expr_of_int 0, []) |> here, e) |: TypingRule.EConcatEmpty
     (* End *)
     (* Begin EConcat *)
     | E_Concat (_ :: _ as li) ->
         let ts, es = List.map (annotate_expr env) li |> List.split in
         let w =
-          best_effort (BitWidth_Constraints []) (fun _ ->
-              let widths = List.map (get_bitvector_width e env) ts in
-              let wh = List.hd widths and wts = List.tl widths in
-              List.fold_left (width_plus env) wh wts)
+          let widths = List.map (get_bitvector_width e env) ts in
+          let wh = List.hd widths and wts = List.tl widths in
+          List.fold_left (width_plus env) wh wts
         in
         (T_Bits (w, []) |> here, E_Concat es |> here) |: TypingRule.EConcat
     (* End *)
@@ -1175,8 +1148,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                      a zero-length bitvector must not be side-effecting.
                 *)
                 let slices' = best_effort slices (annotate_slices env) in
-                ( T_Bits (BitWidth_SingleExpr w, []) |> here,
-                  E_Slice (e', slices') |> here )
+                (T_Bits (w, []) |> here, E_Slice (e', slices') |> here)
                 |: TypingRule.ESlice
     (* End *)
     (* Begin EGetArray *)
@@ -1364,7 +1336,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             let+ () =
              fun () ->
               let width = slices_width env slices |> reduce_expr env in
-              let t = T_Bits (BitWidth_SingleExpr width, []) |> here in
+              let t = T_Bits (width, []) |> here in
               check_can_assign_to le env t t_e ()
             in
             let slices2 = best_effort slices (annotate_slices env) in
@@ -1417,8 +1389,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
              (* End *)
          | T_Bits (_, bitfields) ->
              let bits slices bitfields =
-               let w = slices_width env slices in
-               T_Bits (BitWidth_SingleExpr w, bitfields) |> here
+               T_Bits (slices_width env slices, bitfields) |> here
              in
              let t, slices =
                match find_bitfield_opt field bitfields with
@@ -1473,11 +1444,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let t_e_eq, _e_eq = annotate_expr env e_eq in
         let+ () = check_bits_equal_width' env t_e_eq t_e in
         let bv_length t =
-          let e_width =
-            match get_bitvector_width le env t with
-            | BitWidth_SingleExpr e -> e
-            | _ -> failwith "Cannot get bitwidth of expression"
-          in
+          let e_width = get_bitvector_width le env t in
           match reduce_constants env e_width with
           | L_Int z -> Z.to_int z
           | _ ->
@@ -1487,10 +1454,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           let e = expr_of_lexpr le in
           let t_e, _e = annotate_expr env e in
           let width = bv_length t_e in
-          let t_e' =
-            T_Bits (BitWidth_SingleExpr (expr_of_int width), [])
-            |> add_pos_from le
-          in
+          let t_e' = T_Bits (expr_of_int width, []) |> add_pos_from le in
           let le = annotate_lexpr env le t_e' in
           (le :: les, width :: widths, sum + width)
         in
@@ -1843,9 +1807,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* Begin STry *)
     | S_Try (s', catchers, otherwise) ->
         let s'' = try_annotate_block env s' in
-        let otherwise' =
-          Option.map (try_annotate_block env) otherwise
-        in
+        let otherwise' = Option.map (try_annotate_block env) otherwise in
         let catchers' = List.map (annotate_catcher env) catchers in
         (S_Try (s'', catchers', otherwise') |> here, env) |: TypingRule.STry
     (* End *)
@@ -1880,8 +1842,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         From that follows that we can discard the environment at the end of an
         enclosing block.
     *)
-    best_effort s (fun _ -> annotate_stmt env s |> fst)
-    |: TypingRule.Block
+    best_effort s (fun _ -> annotate_stmt env s |> fst) |: TypingRule.Block
   (* End *)
 
   and try_annotate_stmt env s =
@@ -1903,8 +1864,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       | None -> None
       | Some s ->
           let s1, _env1 =
-            S_Assign (le_x, to_expr sub_le, V1)
-            |> here |> annotate_stmt env
+            S_Assign (le_x, to_expr sub_le, V1) |> here |> annotate_stmt env
           and s2, _env2 =
             S_Assign (old_le le_x, e, V1) |> here |> annotate_stmt env
           in
@@ -1971,7 +1931,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     (* Add dependently typed identifiers. *)
     let add_dependently_typed_from_ty env'' ty =
       match ty.desc with
-      | T_Bits (BitWidth_SingleExpr { desc = E_Var x; _ }, _) -> (
+      | T_Bits ({ desc = E_Var x; _ }, _) -> (
           match StaticEnv.type_of_opt env x with
           | Some { desc = T_Int None; _ } ->
               add_local x ASTUtils.underconstrained_integer LDK_Let env''
@@ -1988,8 +1948,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     let env5 =
       match f.return_type with
       | None -> env4
-      | Some { desc = T_Bits (BitWidth_SingleExpr { desc = E_Var x; _ }, _); _ }
-        -> (
+      | Some { desc = T_Bits ({ desc = E_Var x; _ }, _); _ } -> (
           match StaticEnv.type_of_opt env x with
           | Some { desc = T_Int None; _ } ->
               add_local x ASTUtils.underconstrained_integer LDK_Let env4
@@ -2073,11 +2032,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         check_is_valid_bitfields loc env width' bitfields'
     | BitField_Type (_name, _slices, ty) ->
         let+ () = check_is_valid_type loc env ty in
-        let width' = Diet.Int.cardinal diet in
-        let t =
-          T_Bits (BitWidth_SingleExpr (expr_of_int width'), []) |> add_dummy_pos
+        let+ () =
+          Diet.Int.cardinal diet |> expr_of_int |> t_bits_bitwidth
+          |> add_dummy_pos
+          |> check_bits_equal_width loc env ty
         in
-        let+ () = check_bits_equal_width loc env ty t in
         ()
 
   and check_is_valid_bitfields loc env width bitfields =
@@ -2118,13 +2077,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         ()
     | T_Bits (e_width, bitfields) ->
         let width =
-          match e_width with
-          | BitWidth_SingleExpr e -> (
-              match reduce_constants env e with
-              | L_Int z -> Z.to_int z
-              | _ -> fatal_from loc (UnsupportedExpr e))
-          | _ ->
-              fatal_from loc (NotYetImplemented "Non static bitvector length")
+          match reduce_constants env e_width with
+          | L_Int z -> Z.to_int z
+          | _ -> fatal_from loc (UnsupportedExpr e_width)
         in
         let+ () = fun () -> check_is_valid_bitfields loc env width bitfields in
         ()

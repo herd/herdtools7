@@ -557,8 +557,7 @@ module Make (C : Config) = struct
       let parameters =
         let get_param t =
           match t.desc with
-          | T_Bits (BitWidth_SingleExpr { desc = E_Var x; _ }, _) ->
-              Some (x, None)
+          | T_Bits ({ desc = E_Var x; _ }, _) -> Some (x, None)
           | _ -> None
         in
         args |> List.filter_map get_param (* |> List.sort String.compare *)
@@ -614,7 +613,7 @@ module Make (C : Config) = struct
       let reg = integer in
       let var x = E_Var x |> with_pos in
       let lit x = E_Literal (L_Int (Z.of_int x)) |> with_pos in
-      let bv x = T_Bits (BitWidth_SingleExpr x, []) |> with_pos in
+      let bv x = T_Bits (x, []) |> with_pos in
       let bv_var x = bv @@ var x in
       let bv_arg1 = bv_var "arg_1" in
       let bv_N = bv_var "N" in

@@ -165,11 +165,9 @@ and pp_ty f t =
   | T_Real -> pp_print_string f "real"
   | T_String -> pp_print_string f "string"
   | T_Bool -> pp_print_string f "boolean"
-  | T_Bits (bits_constraint, []) ->
-      fprintf f "@[bits(%a)@]" pp_bits_constraint bits_constraint
-  | T_Bits (bits_constraint, fields) ->
-      fprintf f "@[bits (%a)@ %a@]" pp_bits_constraint bits_constraint
-        pp_bitfields fields
+  | T_Bits (width, []) -> fprintf f "@[bits(%a)@]" pp_expr width
+  | T_Bits (width, fields) ->
+      fprintf f "@[bits (%a)@ %a@]" pp_expr width pp_bitfields fields
   | T_Enum enum_ty ->
       fprintf f "@[<hov 2>enumeration {@,%a@;<0 -2>}@]"
         (pp_comma_list pp_print_string)
@@ -206,12 +204,6 @@ and pp_int_constraint f = function
   | Constraint_Range (x, y) -> fprintf f "%a..%a" pp_expr x pp_expr y
 
 and pp_int_constraints f = pp_comma_list pp_int_constraint f
-
-and pp_bits_constraint f = function
-  | BitWidth_SingleExpr i -> pp_expr f i
-  | BitWidth_Constraints int_constraint ->
-      fprintf f "@[{%a}@]" pp_int_constraints int_constraint
-  | BitWidth_ConstrainedFormType ty -> fprintf f "- : %a" pp_ty ty
 
 let pp_typed_identifier f (name, ty) = fprintf f "@[%s:@ %a@]" name pp_ty ty
 

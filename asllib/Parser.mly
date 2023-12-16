@@ -48,7 +48,7 @@
 open AST
 open ASTUtils
 
-let t_bit = T_Bits (BitWidth_SingleExpr (E_Literal (L_Int Z.one) |> add_dummy_pos), [])
+let t_bit = T_Bits (E_Literal (L_Int Z.one) |> add_dummy_pos, [])
 
 let make_ldi_tuple xs ty =
   LDI_Tuple (List.map (fun x -> LDI_Var (x, None)) xs, Some ty)
@@ -327,11 +327,6 @@ let int_constraint_elt ==
   | ~=expr;                     < Constraint_Exact >
   | e1=expr; SLICING; e2=expr;  < Constraint_Range >
 
-let bits_constraint ==
-  | e = expr ;                      < BitWidth_SingleExpr           >
-  | MINUS ; colon_for_type ; ~=ty ; < BitWidth_ConstrainedFormType  >
-  | c = int_constraints ;           < BitWidth_Constraints          >
-
 let expr_pattern := make_expr (expr_pattern)
 let pattern_set ==
   | BNOT; ~=braced(pattern_list); < Pattern_Not >
@@ -375,7 +370,7 @@ let ty :=
     | BOOLEAN;                                          { T_Bool      }
     | STRING;                                           { T_String    }
     | BIT;                                              { t_bit       }
-    | BITS; ~=pared(bits_constraint); ~=bitfields_opt;  < T_Bits      >
+    | BITS; ~=pared(expr); ~=bitfields_opt;             < T_Bits      >
     | ENUMERATION; l=braced(tclist(IDENTIFIER));        < T_Enum      >
     | l=plist(ty);                                      < T_Tuple     >
     | ARRAY; e=bracketed(expr); OF; t=ty;               < T_Array     >

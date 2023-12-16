@@ -164,7 +164,7 @@ and slice =
 and type_desc =
 (* Begin Constrained *)
   | T_Int of int_constraints option
-  | T_Bits of bits_constraint * bitfield list
+  | T_Bits of expr * bitfield list
 (* End Constrained *)
   | T_Real
   | T_String
@@ -187,14 +187,6 @@ and int_constraint =
 
 and int_constraints = int_constraint list
 (** The int_constraints represent the union of the individual constraints.*)
-
-(** The width of a bitvector can be constrained in multiple ways. *)
-and bits_constraint =
-  | BitWidth_SingleExpr of expr  (** Statically evaluable expression. *)
-  | BitWidth_ConstrainedFormType of ty
-      (** Constrained by the domain of another type. *)
-  | BitWidth_Constraints of int_constraints
-      (** Constrained directly by a constraint on its width. *)
 
 (** Represent static slices on a given bitvector type. *)
 and bitfield =
