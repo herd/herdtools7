@@ -111,6 +111,7 @@ let rec list_first_opt f = function
   | [] -> None
   | h :: t -> ( match f h with Some x -> Some x | None -> list_first_opt f t)
 
+let offuscate = ASTUtils.rename_locals (( ^ ) "__stdlib_local_")
 let asl_libdir = Filename.concat Version.libdir "asllib"
 
 let stdlib_not_found_message =
@@ -166,7 +167,7 @@ let stdlib =
   in
   lazy
     (match list_first_opt try_one to_try with
-    | Some ast -> ast
+    | Some ast -> offuscate ast
     | None ->
         let () = prerr_string stdlib_not_found_message in
         exit 1)
