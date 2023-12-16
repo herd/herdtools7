@@ -251,23 +251,11 @@ module Domain = struct
     let open IntSet.Interval in
     make (op (x i1) (y i2)) (op (y i1) (x i2))
 
-  let rec int_set_of_bits_width env = function
-    | BitWidth_SingleExpr e -> int_set_of_expr env e
-    | BitWidth_ConstrainedFormType ty -> (
-        match of_type env ty with
-        | D_Bits is | D_Int is -> is
-        | _ ->
-            failwith
-              "A bit width cannot be constrained from a type that is neither \
-               a bitvector nor an integer.")
-    | BitWidth_Constraints constraints ->
-        int_set_of_int_constraints env constraints
-
-  and int_set_of_value = function
+  let int_set_of_value = function
     | L_Int i -> Finite (IntSet.singleton i)
     | _ -> assert false
 
-  and int_set_of_expr env e =
+  let rec int_set_of_expr env e =
     match e.desc with
     | E_Literal v -> int_set_of_value v
     | E_Var x -> (
@@ -311,7 +299,7 @@ module Domain = struct
     | T_Int None -> D_Int Top
     | T_Int (Some constraints) ->
         D_Int (int_set_of_int_constraints env constraints)
-    | T_Bits (width, _) -> D_Bits (int_set_of_bits_width env width)
+    | T_Bits (width, _) -> D_Bits (int_set_of_expr env width)
     | T_Array _ | T_Exception _ | T_Record _ | T_Tuple _ ->
         failwith "Unimplemented: domain of a non singular type."
     | T_Named _ ->
@@ -780,17 +768,9 @@ let rec base_value loc env t =
       Error.fatal_from loc
         (Error.NotYetImplemented "Base value of array types.")
   | T_Bool -> L_Bool true |> lit
-  | T_Bits (BitWidth_Constraints (Constraint_Exact e :: _), _)
-  | T_Bits (BitWidth_Constraints (Constraint_Range (e, _) :: _), _)
-  | T_Bits (BitWidth_SingleExpr e, _) ->
+  | T_Bits (e, _) ->
       let e = normalize env e in
       E_Call ("Zeros", [ e ], []) |> add_pos_from t
-  | T_Bits (BitWidth_ConstrainedFormType _, _) ->
-      Error.fatal_from loc
-        (Error.NotYetImplemented "Base value of type-constrained bitvectors.")
-  | T_Bits (BitWidth_Constraints [], _) ->
-      Error.fatal_from loc
-        (Error.NotYetImplemented "Base value of under-constrained bitvectors.")
   | T_Enum li -> IMap.find (List.hd li) env.global.constants_values |> lit
   | T_Int None | T_Int (Some []) -> !$0
   | T_Int (Some (Constraint_Exact e :: _))

@@ -195,10 +195,7 @@ val slice_equal : (expr -> expr -> bool) -> slice -> slice -> bool
 val slices_equal : (expr -> expr -> bool) -> slice list -> slice list -> bool
 val type_equal : (expr -> expr -> bool) -> ty -> ty -> bool
 val bitfield_equal : (expr -> expr -> bool) -> bitfield -> bitfield -> bool
-
-val bitwidth_equal :
-  (expr -> expr -> bool) -> bits_constraint -> bits_constraint -> bool
-
+val bitwidth_equal : (expr -> expr -> bool) -> expr -> expr -> bool
 val scope_equal : scope -> scope -> bool
 val scope_compare : scope -> scope -> int
 

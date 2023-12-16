@@ -512,16 +512,9 @@ module Make (B : Backend.S) (C : Config) = struct
     let rec in_values v ty =
       match (Types.get_structure (IEnv.to_static env) ty).desc with
       | T_Real | T_Bool | T_Enum _ | T_String | T_Int None -> m_true
-      | T_Bits (BitWidth_SingleExpr e, _) ->
+      | T_Bits (e, _) ->
           let* v' = eval_expr_sef env e and* v_length = B.bitvector_length v in
           B.binop EQ_OP v_length v'
-      | T_Bits (BitWidth_ConstrainedFormType ty_length, _) ->
-          let* v_length = B.bitvector_length v in
-          in_values v_length ty_length
-      | T_Bits (BitWidth_Constraints cs, _) ->
-          let* v_length = B.bitvector_length v in
-          let ty_length = T_Int (Some cs) |> add_pos_from ty in
-          in_values v_length ty_length
       | T_Int (Some constraints) ->
           let fold prev = function
             | Constraint_Exact e ->
@@ -1206,9 +1199,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let lit v = B.v_of_literal v |> return in
     match t_struct.desc with
     | T_Bool -> L_Bool true |> lit
-    | T_Bits (BitWidth_Constraints (Constraint_Exact e :: _), _)
-    | T_Bits (BitWidth_Constraints (Constraint_Range (e, _) :: _), _)
-    | T_Bits (BitWidth_SingleExpr e, _) ->
+    | T_Bits (e, _) ->
         let* v = eval_expr_sef env e in
         let length =
           match B.v_to_int v with
@@ -1216,12 +1207,6 @@ module Make (B : Backend.S) (C : Config) = struct
           | Some i -> i
         in
         L_BitVector (Bitvector.zeros length) |> lit
-    | T_Bits (BitWidth_ConstrainedFormType _, _) ->
-        Error.fatal_from t
-          (Error.NotYetImplemented "Base value of type-constrained bitvectors.")
-    | T_Bits (BitWidth_Constraints [], _) ->
-        Error.fatal_from t
-          (Error.NotYetImplemented "Base value of under-constrained bitvectors.")
     | T_Enum li ->
         IMap.find (List.hd li) env.global.static.constants_values |> lit
     | T_Int None | T_Int (Some []) -> L_Int Z.zero |> lit

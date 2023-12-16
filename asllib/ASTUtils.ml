@@ -198,14 +198,7 @@ and use_ty acc t =
   | T_Tuple li -> List.fold_left use_ty acc li
   | T_Record fields | T_Exception fields -> fold_named_list use_ty acc fields
   | T_Array (e, t') -> use_ty (use_e acc e) t'
-  | T_Bits (bit_constraint, bit_fields) ->
-      let acc =
-        match bit_constraint with
-        | BitWidth_SingleExpr e -> use_e acc e
-        | BitWidth_ConstrainedFormType t' -> use_ty acc t'
-        | BitWidth_Constraints cs -> use_constraints acc cs
-      in
-      use_bitfields acc bit_fields
+  | T_Bits (e, bit_fields) -> use_bitfields (use_e acc e) bit_fields
 
 and use_bitfields acc bitfields = List.fold_left use_bitfield acc bitfields
 
@@ -386,16 +379,7 @@ and type_equal eq t1 t2 =
   | T_Tuple ts1, T_Tuple ts2 -> list_equal (type_equal eq) ts1 ts2
   | _ -> false
 
-and bitwidth_equal eq w1 w2 =
-  w1 == w2
-  ||
-  match (w1, w2) with
-  | BitWidth_Constraints c1, BitWidth_Constraints c2 ->
-      constraints_equal eq c1 c2
-  | BitWidth_ConstrainedFormType t1, BitWidth_ConstrainedFormType t2 ->
-      type_equal eq t1 t2
-  | BitWidth_SingleExpr e1, BitWidth_SingleExpr e2 -> expr_equal eq e1 e2
-  | _ -> false
+and bitwidth_equal eq w1 w2 = expr_equal eq w1 w2
 
 and bitfields_equal eq bf1 bf2 =
   bf1 == bf2 || (list_equal (bitfield_equal eq)) bf1 bf2
@@ -493,7 +477,7 @@ let slice_as_single = function
   | Slice_Single e -> e
   | _ -> raise @@ Invalid_argument "slice_as_single"
 
-let default_t_bits = T_Bits (BitWidth_Constraints [], [])
+let default_t_bits = T_Bits (E_Var "-" |> add_dummy_pos, [])
 
 let patch ~src ~patches =
   (* Size considerations:

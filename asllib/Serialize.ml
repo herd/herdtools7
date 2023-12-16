@@ -164,7 +164,7 @@ and pp_ty =
     | T_String -> addb f "T_String"
     | T_Bool -> addb f "T_Bool"
     | T_Bits (bits_constraint, fields) ->
-        bprintf f "T_Bits (%a, %a)" pp_bits_constraint bits_constraint
+        bprintf f "T_Bits (%a, %a)" pp_expr bits_constraint
           pp_bitfields fields
     | T_Enum enum_type_desc ->
         addb f "T_Enum ";
@@ -202,13 +202,6 @@ and pp_int_constraint f =
         bprintf f "Constraint_Range (%a, %a)" pp_expr bot pp_expr top
   in
   pp_list pp_one f
-
-and pp_bits_constraint f = function
-  | BitWidth_SingleExpr i -> bprintf f "BitWidth_SingleExpr (%a)" pp_expr i
-  | BitWidth_ConstrainedFormType ty ->
-      bprintf f "BitWidth_ConstrainedFormType (%a)" pp_ty ty
-  | BitWidth_Constraints int_constraint ->
-      bprintf f "BitWidth_Constraints (%a)" pp_int_constraint int_constraint
 
 let rec pp_lexpr =
   let pp_desc f = function

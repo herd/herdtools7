@@ -8,7 +8,7 @@ begin
   // legal: someBits has undetermined width so we require RHS to be a
   // bitvector whose domain is a subset of {32,64} which it is by the
   // declaration of someWid
-  var someBits: bits({32,64}) = Zeros(someWid);
+  // var someBits: bits({32,64}) = Zeros(someWid);
 
   // underconstrainedBits is a mutable under-constrained width bitvector
   // it can be assigned to
