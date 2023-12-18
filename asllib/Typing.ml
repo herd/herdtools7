@@ -1607,13 +1607,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let new_s2, env2 = try_annotate_stmt env1 s2 in
         (S_Seq (new_s1, new_s2) |> here, env2) |: TypingRule.SSeq
     (* Begin SAssign *)
-    | S_Assign (le, e, ver) ->
+    | S_Assign (le, re, ver) ->
         (let () =
            if false then
              Format.eprintf "@[<3>Annotating assignment@ @[%a@]@]@." PP.pp_stmt
                s
          in
-         let t_e, e1 = annotate_expr env e in
+         let t_e, e1 = annotate_expr env re in
          let () =
            if false then Format.eprintf "@[Type: @[%a@]@]@." PP.pp_ty t_e
          in

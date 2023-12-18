@@ -2778,8 +2778,9 @@ the following apply:
   \subsection{Comments}
 
 \chapter{Typing of Statements}
-\texttt{annotate\_stmt env s} is a statement \texttt{new\_s} and an environment \texttt{new\_env} and
-one of the following applies:
+Annotating a statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and one of the following applies:
 \begin{itemize}
 \item TypingRule.SPass (see Section~\ref{sec:TypingRule.SPass}),
 \item TypingRule.SAssign (see Section~\ref{sec:TypingRule.SAssign}),
@@ -2804,7 +2805,9 @@ one of the following applies:
 \section{TypingRule.SPass \label{sec:TypingRule.SPass}}
 
     \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
     \begin{itemize}
     \item \texttt{s} is a pass statement;
     \item \texttt{new\_s} is \texttt{s};
@@ -2823,11 +2826,13 @@ one of the following applies:
 \section{TypingRule.SAssign \label{sec:TypingRule.SAssign}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
    \item \texttt{s} is an assignment \texttt{le = re} under language version \texttt{ver};
-   \item \texttt{t\_e, e1} is the result of annotating \texttt{e} in \texttt{env};
-   \item \texttt{reduced} is the result of potential result of inlining a setter call in \texttt{le};
+   \item \texttt{t\_e, e1} is the result of annotating \texttt{re} in \texttt{env};
+   \item \texttt{reduced} is the result of inlining a setter call in \texttt{le};
    \item One of the following applies:
      \begin{itemize}
      \item All of the following apply:
@@ -2855,7 +2860,7 @@ one of the following applies:
            \end{itemize}
          \end{itemize} 
 
-       \item \texttt{le1} is the result of annotating \texttt{le} in \texttt{env1};
+       \item \texttt{le1} is the result of annotating \texttt{le} with \texttt{t\_e} in \texttt{env1};
        \item \texttt{new\_s} is the assignment \texttt{le1 = e1};
        \item \texttt{new\_env} is \texttt{env1}.
        \end{itemize}
@@ -2874,11 +2879,13 @@ one of the following applies:
 \section{TypingRule.SReturnNone \label{sec:TypingRule.SReturnNone}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
-   \item \texttt{s} is a return statement with no value and no return type; 
-   \item \texttt{new\_s} is a return statement with no value;
-   \item the enclosing subprogram does not have a return type (it is either a setter
+   \item \texttt{s} is a \texttt{return} statement with no value and no return type; 
+   \item \texttt{new\_s} is a \texttt{return} statement with no value;
+   \item the enclosing subprogram does not have a \texttt{return} type (it is either a setter
       or a procedure);
    \item \texttt{new\_env} is \texttt{env}.
    \end{itemize}
@@ -2897,22 +2904,24 @@ one of the following applies:
 \section{TypingRule.SReturnOne \label{sec:TypingRule.SReturnOne}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
    \item One of the following applies:
      \begin{itemize}
      \item All of the following apply:
        \begin{itemize}
-       \item \texttt{s} is a return statement with some value;
+       \item \texttt{s} is a \texttt{return} statement with some value;
        \item the enclosing subprogram does not have a return type;
        \end{itemize}
      \item All of the following apply:
        \begin{itemize}
-       \item \texttt{s} is a return statement with no value;
-       \item the enclosing subprogram has a return type;
+       \item \texttt{s} is a \texttt{return} statement with no value;
+       \item the enclosing subprogram has a \texttt{return} type;
        \end{itemize}
      \end{itemize}
-   \item An error "Bad Return Statement" is raised.
+   \item An error ``\texttt{Bad Return Statement}'' is raised.
    \end{itemize}
 
   \subsection{Examples}
@@ -2928,14 +2937,21 @@ one of the following applies:
 \section{TypingRule.SReturnSome \label{sec:TypingRule.SReturnSome}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
-   \item \texttt{s} is a return statement with some value \texttt{e};
+   \item \texttt{s} is a \texttt{return} statement with some value \texttt{e};
    \item the enclosing subprogram has a return type \texttt{t};
    \item \texttt{t\_e',e'} is the result of annotating \texttt{e} in \texttt{env};
-   \item \texttt{t\_e'} type-satisfies \texttt{t};
-   \item \texttt{new\_s} is a return statement with value \texttt{e'};
-   \item \texttt{new\_env} is \texttt{env}. 
+   \item One of the following applies:
+     \item All of the following apply:
+       \begin{itemize}
+       \item \texttt{t\_e'} type-satisfies \texttt{t};
+       \item \texttt{new\_s} is a \texttt{return} statement with value \texttt{e'};
+       \item \texttt{new\_env} is \texttt{env}. 
+       \end{itemize}
+     \item an error ``\texttt{Typing Assumption Failed}'' is raised.
    \end{itemize}
 
   \subsection{Examples}
@@ -2950,7 +2966,9 @@ one of the following applies:
 \section{TypingRule.SSeq \label{sec:TypingRule.SSeq}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
    \item \texttt{s} is a statement \texttt{s1; s2};
    \item \texttt{new\_s1, env1} is the result of annotating \texttt{s1} in \texttt{env};
@@ -2971,7 +2989,9 @@ one of the following applies:
 \section{TypingRule.SCall \label{sec:TypingRule.SCall}}
 
     \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
    \item \texttt{s} is a call to a subprogram named \texttt{name} with arguments \texttt{args} and parameters \texttt{eqs};
    \item \texttt{new\_name, new\_args, new\_eqs} is the result of annotating the call
@@ -2994,15 +3014,22 @@ one of the following applies:
 \section{TypingRule.SCond \label{sec:TypingRule.SCond}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
    \item \texttt{s} is a condition \texttt{e} with two statements \texttt{s1} and \texttt{s2};
    \item \texttt{t\_cond, e\_cond} is the result of annotating \texttt{e} in \texttt{env};
-   \item \texttt{t\_cond} type-satisfies \texttt{t\_bool}; 
-   \item \texttt{s1'} is the result of annotating \texttt{s1} in \texttt{env};
-   \item \texttt{s2'} is the result of annotating \texttt{s2} in \texttt{env};
-   \item \texttt{new\_s} is the condition \texttt{e\_cond} with two statements \texttt{s1'} and \texttt{s2'};
-   \item \texttt{new\_env} is \texttt{env}.
+   \item One of the following applies:
+     \item All of the following apply:
+       \begin{itemize}
+       \item \texttt{t\_cond} type-satisfies \texttt{t\_bool}; 
+       \item \texttt{s1'} is the result of annotating \texttt{s1} in \texttt{env};
+       \item \texttt{s2'} is the result of annotating \texttt{s2} in \texttt{env};
+       \item \texttt{new\_s} is the condition \texttt{e\_cond} with two statements \texttt{s1'} and \texttt{s2'};
+       \item \texttt{new\_env} is \texttt{env}.
+       \end{itemize}
+     \item an error ``\texttt{Typing Assumption Failed}'' is raised.
    \end{itemize}
 
   \subsection{Examples}
@@ -3018,15 +3045,16 @@ one of the following applies:
 \section{TypingRule.SCase \label{sec:TypingRule.SCase}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
    \item \texttt{s} is a case statement with expression \texttt{e} and cases \texttt{cases};
    \item \texttt{t\_e, e1} is the result of annotating \texttt{e} in \texttt{env};
-   \item \texttt{cases1, env1} is the result of annotating each case in \texttt{cases};
+   \item \texttt{cases1, env1} is the result of annotating each case in \texttt{cases} given \texttt{t\_e};
    \item \texttt{new\_s} is a case statement with expression \texttt{e1} and cases \texttt{cases1};
    \item \texttt{new\_env} is \texttt{env1}.
    \end{itemize}
-    (* do we not check that \texttt{e} has the structure of a boolean? *)
 
   \subsection{Examples}
 
@@ -3041,13 +3069,20 @@ one of the following applies:
 \section{TypingRule.SAssert \label{sec:TypingRule.SAssert}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
    \item \texttt{s} is an assert statement with expression \texttt{e};
    \item \texttt{t\_e',e'} is the result of annotating \texttt{e} in \texttt{env};
-   \item \texttt{t\_e'} type-satisfies \texttt{t\_bool};  
-   \item \texttt{new\_s} is an assert statement with expression \texttt{e'};
-   \item \texttt{new\_env} is \texttt{env}.
+   \item One of the following applies:
+     \item All of the following apply:
+       \begin{itemize}
+       \item \texttt{t\_e'} type-satisfies \texttt{t\_bool};  
+       \item \texttt{new\_s} is an assert statement with expression \texttt{e'};
+       \item \texttt{new\_env} is \texttt{env}.
+       \end{itemize}
+     \item an error ``\texttt{Typing Assumption Failed}'' is raised.
    \end{itemize}
 
   \subsection{Examples}
@@ -3064,14 +3099,21 @@ one of the following applies:
 \section{TypingRule.SWhile \label{sec:TypingRule.SWhile}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
-   \item \texttt{s} is a while statement with expression \texttt{e1} and statement \texttt{s1};
+   \item \texttt{s} is a \texttt{while} statement with expression \texttt{e1} and statement block \texttt{s1};
    \item \texttt{t, e2} is the result of annotating \texttt{e1} in \texttt{env};
-   \item \texttt{t} type-satisfies \texttt{t\_bool}; (* is this the same as \texttt{e1} having the structure of a boolean? *)
-   \item \texttt{s2} is the result of annotating \texttt{s1} in \texttt{env};
-   \item \texttt{new\_s} is a while statement with expression \texttt{e2} and statement \texttt{s2};
-   \item \texttt{new\_env} is \texttt{env}.
+   \item One of the following applies:
+     \item All of the following apply:
+       \begin{itemize}
+       \item \texttt{t} type-satisfies \texttt{t\_bool}; 
+       \item \texttt{s2} is the result of annotating \texttt{s1} in \texttt{env};
+       \item \texttt{new\_s} is a \texttt{while} statement with expression \texttt{e2} and statement block \texttt{s2};
+       \item \texttt{new\_env} is \texttt{env}.
+       \end{itemize}
+     \item an error ``\texttt{Typing Assumption Failed}'' is raised.
    \end{itemize}
 
   \subsection{Examples}
@@ -3087,14 +3129,21 @@ one of the following applies:
 \section{TypingRule.SRepeat \label{sec:TypingRule.SRepeat}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
-   \item \texttt{s} is a repeat statement with expression \texttt{e1} and statement \texttt{s1};
+   \item \texttt{s} is a \texttt{repeat} statement with expression \texttt{e1} and statement block \texttt{s1};
    \item \texttt{s2} is the result of annotating \texttt{s1} in \texttt{env};
    \item \texttt{t, e2} is the result of annotating \texttt{e1} in \texttt{env};
-   \item \texttt{t} type-satisfies \texttt{t\_bool}; (* is this the same as \texttt{e1} having the structure of a boolean? *)
-   \item \texttt{new\_s} is a repeat statement with expression \texttt{e2} and statement \texttt{s2};
-   \item \texttt{new\_env} is \texttt{env}.
+   \item One of the following applies:
+     \item All of the following apply:
+       \begin{itemize}
+       \item \texttt{t} type-satisfies \texttt{t\_bool}; 
+       \item \texttt{new\_s} is a \texttt{repeat} statement with expression \texttt{e2} and statement block \texttt{s2};
+       \item \texttt{new\_env} is \texttt{env}.
+       \end{itemize}
+     \item an error ``\texttt{Typing Assumption Failed}'' is raised.
    \end{itemize}
 
   \subsection{Examples}
@@ -3110,19 +3159,25 @@ one of the following applies:
 \section{TypingRule.SFor \label{sec:TypingRule.SFor}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
-   \item \texttt{s} is a for statement with index \texttt{id}, direction \texttt{dir}, two expressions
-      \texttt{e1} and \texttt{e2} and a statement \texttt{s'};
+   \item \texttt{s} is a \texttt{for} statement with index \texttt{id}, direction \texttt{dir}, two expressions
+      \texttt{e1} and \texttt{e2} and a statement block \texttt{s'};
    \item \texttt{t1,e1'} is the result of annotating \texttt{e1} in \texttt{env};
    \item \texttt{t2,e2'} is the result of annotating \texttt{e2} in \texttt{env};
-   \item \texttt{t1} has the structure of an integer type;
-   \item \texttt{t2} has the structure of an integer type;
-   \item \texttt{ty} is ;
-   \item \texttt{s''} is the result of annotating \texttt{s'} in \texttt{env};
-   \item \texttt{new\_s} is a for statement with index \texttt{id}, direction \texttt{dir}, two expressions
-      \texttt{e1'} and \texttt{e2'} and statement \texttt{s''};
-   \item \texttt{new\_env} is \texttt{env}.
+   \item One of the following applies:
+     \item All of the following apply:
+       \begin{itemize}
+       \item \texttt{t1} has the structure of an integer type;
+       \item \texttt{t2} has the structure of an integer type;
+       \item \texttt{ty} is ;
+       \item \texttt{s''} is the result of annotating \texttt{s'} in \texttt{env};
+       \item \texttt{new\_s} is a for statement with index \texttt{id}, direction \texttt{dir}, two expressions \texttt{e1'} and \texttt{e2'} and statement \texttt{s''};
+       \item \texttt{new\_env} is \texttt{env}.
+       \end{itemize}
+     \item an error ``\texttt{Typing Assumption Failed}'' is raised.
    \end{itemize}
 
   \subsection{Examples}
@@ -3139,7 +3194,9 @@ one of the following applies:
 \section{TypingRule.SThrowNone \label{sec:TypingRule.SThrowNone}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
    \item \texttt{s} is a throw statement with no expression;
    \item \texttt{new\_s} is \texttt{s};
@@ -3159,7 +3216,9 @@ one of the following applies:
 \section{TypingRule.SThrowSome \label{sec:TypingRule.SThrowSome}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
    \item \texttt{s} is a throw statement with expression \texttt{e};
    \item \texttt{t\_e,e'} is the result of annotating \texttt{e} in \texttt{env};
@@ -3182,7 +3241,9 @@ one of the following applies:
 \section{TypingRule.STry \label{sec:TypingRule.STry}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
    \item \texttt{s} is a try statement with statement \texttt{s'}, catchers \texttt{catchers} and block \texttt{otherwise};
    \item \texttt{s''} is the result of annotating \texttt{s'} in \texttt{env};
@@ -3205,9 +3266,11 @@ one of the following applies:
 \section{TypingRule.SDeclSome \label{sec:TypingRule.SDeclSome}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
-   \item \texttt{s} is a declaration with \texttt{ldk}, \texttt{ldi} and an expression \texttt{e};
+   \item \texttt{s} is a declaration with local identifiers \texttt{ldi} and an expression \texttt{e};
    \item \texttt{t\_e,e'} is the result of annotating \texttt{e} in \texttt{env};
    \item \texttt{env', ldi'} is the result of declaring the local identifiers of \texttt{ldi} in \texttt{env};
    \item \texttt{new\_s} is a declaration with \texttt{ldk}, \texttt{ldi'} and an expression \texttt{e'};
@@ -3226,9 +3289,11 @@ one of the following applies:
 \section{TypingRule.SDeclNone \label{sec:TypingRule.SDeclNone}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
-   \item \texttt{s} is a declaration statement with \texttt{ldk}, \texttt{ldi} and no initial expression;
+   \item \texttt{s} is a declaration statement with local identifiers \texttt{ldi} and no initial expression;
    \item \texttt{env', s'} is the result of annotating uninitialised local declarations \texttt{ldi} in \texttt{env};
    \item \texttt{new\_s} is \texttt{s'};
    \item \texttt{new\_env} is \texttt{env'}.
