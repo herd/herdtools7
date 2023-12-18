@@ -135,6 +135,7 @@ In order to type both ASLv0 and ASLv1, we map the concrete syntax of both versio
 \newcommand\literal[0]{\texttt{literal}}
 \newcommand\expr[0]{\texttt{expr}}
 
+%The following node types directly correspond to their respective ASL grammar variables (non-terminals):  $\unop$, $\binop$, $\binopin$, $\binoppow$
 The following node types directly correspond to their respective ASL grammar variables (non-terminals):  $\unop$, $\binop$, $\binopin$, $\binoppow$
 
 \[
@@ -1211,7 +1212,8 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 \section{TypingRule.Lit \label{sec:TypingRule.Lit}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} is a Literal \texttt{v};
   \item \texttt{t} is the type of \texttt{v};
@@ -1230,7 +1232,8 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 \section{TypingRule.ELocalVarConstant \label{sec:TypingRule.ELocalVarConstant}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:  
   \begin{itemize}
   \item \texttt{e} denotes a variable \texttt{x};
   \item \texttt{x} is bound to a local constant~\texttt{v} of type \texttt{ty} in the local environment given by \texttt{env};
@@ -1250,7 +1253,8 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 \section{TypingRule.ELocalVar \label{sec:TypingRule.ELocalVar}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply: 
   \begin{itemize}
   \item \texttt{e} denotes a variable \texttt{x};
   \item \texttt{x} is not bound to a local constant; 
@@ -1271,7 +1275,8 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 \section{TypingRule.EGlobalVarConstantVal \label{sec:TypingRule.EGlobalVarConstant}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply: 
   \begin{itemize}
   \item \texttt{e} denotes a variable \texttt{x};
   \item \texttt{x} is bound to a global constant~\texttt{v} of type \texttt{ty} in the global environment given by \texttt{env};
@@ -1291,7 +1296,8 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 \section{TypingRule.EGlobalVar \label{sec:TypingRule.EGlobalVar}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes a variable \texttt{x};
   \item \texttt{x} is not bound to a global constant;
@@ -1312,7 +1318,8 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 \section{TypingRule.EUndefIdent \label{sec:TypingRule.EUndefIdent}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item  \texttt{e} is a variable \texttt{x};
   \item  \texttt{x} is not bound in \texttt{env};
@@ -1330,7 +1337,8 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 \section{TypingRule.Binop \label{sec:TypingRule.Binop}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item  \texttt{e} denotes a binary operation \texttt{op} over two expressions \texttt{e1} and \texttt{e2};
   \item  \texttt{t1,e1'} is the result of annotating \texttt{e1} in \texttt{env};
@@ -1351,7 +1359,8 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 \section{TypingRule.Unop \label{sec:TypingRule.Unop}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item  \texttt{e} denotes a unary operation \texttt{op} over an expression \texttt{e'};
   \item  \texttt{t'',e''} is the result of annotating \texttt{e'} in \texttt{env};
@@ -1371,7 +1380,8 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 \section{TypingRule.ECond \label{sec:TypingRule.ECond}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes a conditional expression with condition \texttt{e\_cond} with two options \texttt{e\_true} and \texttt{e\_false};
   \item \texttt{t\_cond, e'\_cond} is the result of annotating \texttt{e\_cond} in \texttt{env};
@@ -1405,7 +1415,8 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 \section{TypingRule.ESlice \label{sec:TypingRule.ESlice}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the slicing of expression \texttt{e'} by the slices \texttt{slices};
   \item \texttt{t\_e',e'} is the result of annotating the expression \texttt{e'} in \texttt{env};
@@ -1431,7 +1442,8 @@ expression.
 \section{TypingRule.ECall \label{sec:TypingRule.ECall}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes a call to a subprogram named \texttt{name} with arguments \texttt{args} and
     parameters \texttt{eqs};
@@ -1454,7 +1466,8 @@ expression.
 \section{TypingRule.EGetArray \label{sec:TypingRule.EGetArray}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the slicing of expression \texttt{e'} by the slices \texttt{slices};
   \item \texttt{t\_e',e'} is the result of annotating the expression \texttt{e'} in \texttt{env};
@@ -1477,7 +1490,8 @@ expression.
 \section{TypingRule.EStructuredNotStructured \label{sec:TypingRule.EStructuredNotStructured}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the record expression or an exception expression of type \texttt{ty} with fields \texttt{fields};
   \item \texttt{ty} is neither a record nor an exception type;
@@ -1498,7 +1512,8 @@ expression.
 \section{TypingRule.EStructuredMissingField \label{sec:TypingRule.EStructuredMissingField}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the record expression or an exception expression of type \texttt{ty} with fields \texttt{fields};
   \item \texttt{ty} is the name of a record or exception type with fields \texttt{field\_types};
@@ -1519,7 +1534,8 @@ expression.
 \section{TypingRule.ERecord \label{sec:TypingRule.ERecord}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the record expression of type \texttt{ty} with fields \texttt{fields};
   \item \texttt{ty} is the name of a record type with fields \texttt{field\_types};
@@ -1549,7 +1565,8 @@ expression.
 \section{TypingRule.EGetRecordField \label{sec:TypingRule.EGetRecordField}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the access of field \texttt{field\_name} on expression \texttt{e1};
   \item \texttt{t\_e1, e2} is the result of annotating \texttt{e1} in \texttt{env};
@@ -1572,7 +1589,8 @@ expression.
 \section{TypingRule.EGetBadRecordField \label{sec:TypingRule.EGetBadRecordField}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the access of field \texttt{field\_name} on expression \texttt{e1};
   \item \texttt{t\_e1, e2} is the result of annotating \texttt{e1} in \texttt{env};
@@ -1595,7 +1613,8 @@ expression.
 \section{TypingRule.EGetBadBitField \label{sec:TypingRule.EGetBadBitField}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the access of field \texttt{field\_name} on expression \texttt{e1};
   \item \texttt{t\_e1} has the structure a bitvector type with bitfields \texttt{bitfields};
@@ -1616,7 +1635,8 @@ expression.
 \section{TypingRule.EGetBadField \label{sec:TypingRule.EGetBadField}}
 
  \subsection{Prose}
-   All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
    \begin{itemize}
    \item \texttt{e} denotes the access of field \texttt{field\_name} on expression \texttt{e1};
    \item \texttt{t\_e1, e2} is the result of annotating \texttt{e1} in \texttt{env};
@@ -1636,7 +1656,8 @@ expression.
 \section{TypingRule.EGetBitField \label{sec:TypingRule.EGetBitField}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the access of field \texttt{field\_name} on expression \texttt{e1};
   \item \texttt{t\_e1, e2} is the result of annotating \texttt{e1} in \texttt{env};
@@ -1661,7 +1682,8 @@ expression.
 \section{TypingRule.EGetBitFieldNested \label{sec:TypingRule.EGetBitFieldNested}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the access of field \texttt{field\_name} on expression \texttt{e1};
   \item \texttt{t\_e1, e2} is the result of annotating \texttt{e1} in \texttt{env};
@@ -1690,7 +1712,8 @@ expression.
 \section{TypingRule.EGetBitFieldTyped \label{sec:TypingRule.EGetBitFieldTyped}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes \texttt{e1, field\_name};
   \item \texttt{t\_e1, e2} is the result of annotating \texttt{e1} in \texttt{env};
@@ -1717,7 +1740,8 @@ expression.
 \section{TypingRule.EConcatEmpty \label{sec:TypingRule.EConcatEmpty}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the empty concatenation;
   \item \texttt{t} is \texttt{bits(0)};
@@ -1736,7 +1760,8 @@ expression.
 \section{TypingRule.EConcat \label{sec:TypingRule.EConcat}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the concatenation of a non-empty list of expressions \texttt{li};
   \item \texttt{ts, es} is the result of annotating \texttt{li} in \texttt{env};
@@ -1764,7 +1789,8 @@ expression that is unresolvable to an integer. For example:
 \section{TypingRule.ETuple \label{sec:TypingRule.ETuple}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes a tuple \texttt{li};
   \item \texttt{ts, es} is the result of annotating in \texttt{env} each expression in \texttt{li};
@@ -1784,7 +1810,8 @@ expression that is unresolvable to an integer. For example:
 \section{TypingRule.EUnknown \label{sec:TypingRule.EUnknown}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes an expression \texttt{UNKNOWN} of type \texttt{ty};
   \item \texttt{ty'} is the structure of \texttt{ty} in \texttt{env};
@@ -1804,7 +1831,8 @@ expression that is unresolvable to an integer. For example:
 \section{TypingRule.EPattern \label{sec:TypingRule.EPattern}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes whether the expression \texttt{e'} matches \texttt{patterns};
   \item \texttt{t\_e', e''} is the result of annotating \texttt{e'} in \texttt{env};
@@ -1825,7 +1853,8 @@ expression that is unresolvable to an integer. For example:
 \section{TypingRule.CTC \label{sec:TypingRule.CTC}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes an expression \texttt{e'} and a type \texttt{t'};
   \item \texttt{t'',new\_env} is the result of annotating \texttt{e'} in \texttt{env};
