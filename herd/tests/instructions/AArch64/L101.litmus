@@ -1,0 +1,25 @@
+AArch64 L101
+{
+int64_t x=-7;
+int16_t y=-7;
+int8_t  z[3]={-7,-5,-3};
+0:X0=x;
+0:X8=y;
+0:X9=z;
+int64_t 0:X2=0;
+int64_t 0:X1;
+int64_t 0:X3;
+int64_t 0:X4;
+int64_t 0:X5;
+}
+  P0                   ;
+LDRSW X1,[X0,X2,LSL 2] ;
+LDRSH W3,[X8,X2,LSL 1] ;
+LDRSB X4,[X9],#2       ;
+LDRSB X5,[X9,#-1]!     ;
+locations [0:X1;0:X3;0:X4;0:X5;]
+forall
+  0:X1=-7 /\
+  0:X3=4294967289 /\
+  0:X4=-7 /\
+  0:X5=-5

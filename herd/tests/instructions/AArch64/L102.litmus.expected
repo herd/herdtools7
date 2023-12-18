@@ -1,0 +1,10 @@
+Test L102 Required
+States 1
+0:X2=-7; 0:X3=-2; 0:X4=-3;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X2=-7 /\ 0:X3=-2 /\ 0:X4=-3)
+Observation L102 Always 1 0
+Hash=f44678c331ca2a4a17b9d20f5a5aac42
+

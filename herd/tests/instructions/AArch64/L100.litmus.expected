@@ -1,0 +1,10 @@
+Test L100 Required
+States 1
+0:X1=-7;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=-7)
+Observation L100 Always 1 0
+Hash=73ed83cc72f02e2df95b5adc8205c25c
+
