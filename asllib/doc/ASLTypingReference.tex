@@ -3474,12 +3474,8 @@ and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
 \texttt{(name1, args, eqs2, ret\_ty1)} or an error is raised and all of the
 following apply:
    \begin{itemize}
-   \item \texttt{caller\_arg\_types, args1} is the result of annotating \texttt{args} in \texttt{env};
-   \item \texttt{name} is bound in \texttt{env} to a subprogram with a unique name \texttt{name1}
-      whose argument types \texttt{callee\_arg\_types} type-clash
-      \texttt{caller\_arg\_types} and whose return type is \texttt{ret\_ty};
-   \item \texttt{eqs1} is the list made of both \texttt{eqs} and \texttt{extra\_nargs};
-   \item the lists \texttt{callee\_arg\_types} and \texttt{args1} do not have the same length;
+   \item \texttt{name} is bound in \texttt{env} to a function with argument types \texttt{callee\_arg\_types};
+   \item the lists \texttt{callee\_arg\_types} and \texttt{args} do not have the same length;
    \item an error ``\texttt{Bad Arity}'' is raised.
    \end{itemize}
 
@@ -3502,9 +3498,8 @@ and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
    \item \texttt{caller\_arg\_types, arg1} is the result of annotating \texttt{args} in \texttt{env};
    \item \texttt{name} is bound in \texttt{env} to a subprogram with argument types
       \texttt{callee\_arg\_types};
-   \item \texttt{eqs2} is \texttt{eqs1} modified to add all the type equations from the
-      type-clash of \texttt{caller\_arg\_types} and \texttt{callee\_arg\_types};
-   \item \texttt{call\_type} is a either a subprogram or a getter type;
+   \item \texttt{eqs2} is \texttt{eqs1} modified to add all the type equations of \texttt{caller\_arg\_types} and \texttt{callee\_arg\_types};
+   \item \texttt{call\_type} is either a subprogram or a getter type;
    \item \texttt{ret\_ty1} is the result of renaming \texttt{ty} in \texttt{eqs2}.
    \end{itemize}
 
@@ -3542,33 +3537,6 @@ and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
   \subsection{Formally}
 
   \subsection{Comments}
-
-
-\section{TypingRule.FCallMismatch \label{sec:TypingRule.FCallMismatch}}
-
-  \subsection{Prose}
-  Annotating the call to subprogram \texttt{name} with arguments \texttt{args}
-and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
-\texttt{(name1, args, eqs2, ret\_ty1)} or an error is raised and all of the following apply:
-   \begin{itemize}
-   \item \texttt{caller\_arg\_types, arg1} is the result of annotating \texttt{args} in \texttt{env};
-   \item \texttt{extra\_nargs, name1, callee\_arg\_types, ret\_ty} is the result of trying to
-      find the name \texttt{name} with \texttt{caller\_arg\_types} in \texttt{env};
-   \item \texttt{eqs1} is the list made of both \texttt{eqs} and \texttt{extra\_nargs};
-   \item \texttt{eqs2} is ;
-   \item \texttt{call\_type} is not a subprogram, getter, setter or procedure type;
-   \item an error "Mismatched Return Value" is raised.
-   \end{itemize}
-
-  \subsection{Examples}
-
-  \subsection{Code}
-    \VerbatimInput[firstline=\FCallMismatchBegin, lastline=\FCallMismatchEnd]{../Typing.ml}
-
-  \subsection{Formally}
-
-  \subsection{Comments}
-
 
 \chapter{Typing of Functions}
 \texttt{annotate\_func loc env f} annotates the subprogram named \texttt{f} and returns \texttt{f},
