@@ -1,14 +1,33 @@
+(******************************************************************************)
+(*                                ASLRef                                      *)
+(******************************************************************************)
 (*
  * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
  * SPDX-License-Identifier: BSD-3-Clause
  *)
+(******************************************************************************)
+(* Disclaimer:                                                                *)
+(* This material covers both ASLv0 (viz, the existing ASL pseudocode language *)
+(* which appears in the Arm Architecture Reference Manual) and ASLv1, a new,  *)
+(* experimental, and as yet unreleased version of ASL.                        *)
+(* This material is work in progress, more precisely at pre-Alpha quality as  *)
+(* per Arm’s quality standards.                                               *)
+(* In particular, this means that it would be premature to base any           *)
+(* production tool development on this material.                              *)
+(* However, any feedback, question, query and feature request would be most   *)
+(* welcome; those can be sent to Arm’s Architecture Formal Team Lead          *)
+(* Jade Alglave <jade.alglave@arm.com>, or by raising issues or PRs to the    *)
+(* herdtools7 github repository.                                              *)
+(******************************************************************************)
 
 open AST
 open ASTUtils
 open Infix
 module SEnv = StaticEnv
-
 type env = SEnv.env
+
+module TypingRule = Instrumentation.TypingRule
+let ( |: ) = Instrumentation.TypingNoInstr.use_with
 
 let undefined_identifier pos x =
   Error.fatal_from pos (Error.UndefinedIdentifier x)
@@ -44,16 +63,16 @@ let get_structure (env : env) : ty -> ty =
     | T_Named x -> (
         match IMap.find_opt x env.global.declared_types with
         | None -> undefined_identifier ty x
-        | Some ty -> get ty)
+        | Some ty' -> get ty')
     | T_Int _ | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ -> ty
     | T_Tuple subtypes -> T_Tuple (List.map get subtypes) |> with_pos
     | T_Array (e, t) -> T_Array (e, get t) |> with_pos
     | T_Record fields -> T_Record (get_fields fields) |> with_pos
-    | T_Exception fields -> T_Exception (get_fields fields) |> with_pos
+    | T_Exception fields -> T_Exception (get_fields fields) |> with_pos |: TypingRule.Structure
   and get_fields fields =
     let one_field (name, t) = (name, get t) in
     let fields = List.map one_field fields in
-    canonical_fields fields
+    canonical_fields fields |: TypingRule.Canonical
   in
   get
 
@@ -71,7 +90,7 @@ let get_structure (env : env) : ty -> ty =
 let is_builtin_singular ty =
   match ty.desc with
   | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ | T_Int _ -> true
-  | _ -> false
+  | _ -> false |: TypingRule.BuiltinSingularType
 
 (* The builtin aggregate types are:
    • tuple
@@ -82,24 +101,25 @@ let is_builtin_singular ty =
 let is_builtin_aggregate ty =
   match ty.desc with
   | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ -> true
-  | _ -> false
+  | _ -> false |: TypingRule.BuiltinAggregateType 
 
-let is_builtin ty = is_builtin_singular ty || is_builtin_aggregate ty
-let is_named ty = match ty.desc with T_Named _ -> true | _ -> false
+let is_builtin ty = is_builtin_singular ty || is_builtin_aggregate ty |: TypingRule.BuiltinSingularOrAggregate
+
+let is_named ty = match ty.desc with T_Named _ -> true | _ -> false |: TypingRule.NamedType
+
+let is_anonymous ty = not (is_named ty) |: TypingRule.AnonymousType
 
 (* A named type is singular if it has the structure of a singular type,
    otherwise it is aggregate. *)
 let is_singular env ty =
   is_builtin_singular ty
-  || (is_named ty && get_structure env ty |> is_builtin_singular)
+  || (is_named ty && get_structure env ty |> is_builtin_singular) |: TypingRule.SingularType
 
 (* A named type is singular if it has the structure of a singular type,
    otherwise it is aggregate. *)
 let is_aggregate env ty =
   is_builtin_aggregate ty
   || (is_named ty && get_structure env ty |> is_builtin_aggregate)
-
-let is_anonymous ty = not (is_named ty)
 
 let rec is_non_primitive ty =
   match ty.desc with
@@ -108,21 +128,17 @@ let rec is_non_primitive ty =
   | T_Tuple li -> List.exists is_non_primitive li
   | T_Array (_, ty) -> is_non_primitive ty
   | T_Record fields | T_Exception fields ->
-      List.exists (fun (_, ty) -> is_non_primitive ty) fields
+      List.exists (fun (_, ty) -> is_non_primitive ty) fields |: TypingRule.NonPrimitiveType
 
-let is_primitive ty = not (is_non_primitive ty)
+let is_primitive ty = not (is_non_primitive ty) |: TypingRule.PrimitiveType
 
 (* --------------------------------------------------------------------------*)
 
 module Domain = struct
   module IntSet = Diet.Z
-  (* Pretty inefficient. Use diets instead?
-     See https://web.engr.oregonstate.edu/~erwig/papers/Diet_JFP98.pdf
-     or https://github.com/mirage/ocaml-diet
-  *)
 
-  (** Represents the domain of a integer expression. If there are no constraints,
-    then the expression has the [Top] domain, whereas there are constraints but
+  (** Represents the domain of an integer expression. If there are no constraints,
+    then the expression has the [Top] domain, whereas when there are constraints but
     they cannot get resolved, the domain is [AlmostTop]. *)
   type int_set = Finite of IntSet.t | AlmostTop | Top
 
@@ -361,7 +377,7 @@ let rec subtypes_names env s1 s2 =
 let subtypes env t1 t2 =
   match (t1.desc, t2.desc) with
   | T_Named s1, T_Named s2 -> subtypes_names env s1 s2
-  | _ -> false
+  | _ -> false |: TypingRule.Subtype
 
 let rec bitfields_included env bfs1 bfs2 =
   let rec mem_bfs bfs2 bf1 =
@@ -387,6 +403,7 @@ let rec bitfields_included env bfs1 bfs2 =
   and incl_bfs bfs1 bfs2 = List.for_all (mem_bfs bfs2) bfs1 in
   incl_bfs bfs1 bfs2
 
+(* Begin TypingRule.StructuralSubtypeSatisfaction *)
 and structural_subtype_satisfies env t s =
   (* A type T subtype-satisfies type S if and only if all of the following
      conditions hold: *)
@@ -425,7 +442,7 @@ and structural_subtype_satisfies env t s =
       and offset, whose type type-satisfies the bitfield in S.
   *)
   | T_Bits (w_s, bf_s), T_Bits (w_t, bf_t) -> (
-      (* I interprete the first two condition as just a condition on domains. *)
+      (* Interpreting the first two condition as just a condition on domains. *)
       match (bf_s, bf_t) with
       | [], _ -> true
       | _, [] -> false
@@ -462,8 +479,9 @@ and structural_subtype_satisfies env t s =
             fields_t)
         fields_s
   | T_Exception _, _ | T_Record _, _ -> false (* A structure cannot be a name *)
-  | T_Named _, _ -> assert false
-
+  | T_Named _, _ -> assert false |: TypingRule.StructuralSubtypeSatisfaction
+(* End *)
+(* Begin DomainSubtypeSatisfaction *)
 and domain_subtype_satisfies env t s =
   let s_struct = get_structure env s in
   match s_struct.desc with
@@ -483,7 +501,7 @@ and domain_subtype_satisfies env t s =
           undetermined width then the domain of T must be a subset of the domain
           of S.
          *)
-      (* Implicitely, T must have the structure of a bitvector. *)
+      (* Implicitly, T must have the structure of a bitvector. *)
       let t_struct = get_structure env t in
       let t_domain = Domain.of_type env t_struct
       and s_domain = Domain.of_type env s_struct in
@@ -497,8 +515,9 @@ and domain_subtype_satisfies env t s =
           Domain.get_width_singleton_opt t_domain )
       with
       | Some w_s, Some w_t -> Z.equal w_s w_t
-      | _ -> Domain.is_subset t_domain s_domain)
-
+      | _ -> Domain.is_subset t_domain s_domain) |: TypingRule.DomainSubtypeSatisfaction
+(* End *)
+(* Begin SubtypeSatisfaction *)
 and subtype_satisfies env t s =
   let () =
     if false then
@@ -507,8 +526,9 @@ and subtype_satisfies env t s =
       Format.eprintf "%a subtypes %a ? struct: %B -- domain: %B@." PP.pp_ty t
         PP.pp_ty s b1 b2
   in
-  structural_subtype_satisfies env t s && domain_subtype_satisfies env t s
-
+  structural_subtype_satisfies env t s && domain_subtype_satisfies env t s |: TypingRule.SubtypeSatisfaction
+(* End *)
+(* Begin TypeSatisfaction *)
 and type_satisfies env t s =
   (* Type T type-satisfies type S if and only if at least one of the following
      conditions holds: *)
@@ -524,7 +544,8 @@ and type_satisfies env t s =
   match (t.desc, (get_structure env s).desc) with
   | T_Bits (width_t, []), T_Bits (width_s, _) ->
       bitwidth_equal env width_t width_s
-  | _ -> false
+  | _ -> false |: TypingRule.TypeSatisfaction
+(* End *)
 
 (* --------------------------------------------------------------------------*)
 
@@ -558,7 +579,7 @@ let rec type_clashes env t s =
   | T_Tuple li_s, T_Tuple li_t ->
       List.compare_lengths li_s li_t = 0
       && List.for_all2 (type_clashes env) li_s li_t
-  | _ -> false
+  | _ -> false |: TypingRule.TypeClash
 
 let subprogram_clashes env (f1 : 'a func) (f2 : 'b func) =
   (* Two subprograms clash if all of the following hold:
@@ -602,6 +623,7 @@ let find_named_lowest_common_supertype env x1 x2 =
   in
   aux x2
 
+(* Begin LowestCommonAncestor *)
 let rec lowest_common_ancestor env s t =
   (* The lowest common ancestor of types S and T is: *)
   (* • If S and T are the same type: S (or T). *)
@@ -715,7 +737,8 @@ let rec lowest_common_ancestor env s t =
             | T_Named _, _ -> assert false
             | _, T_Named _ -> Some t
             | _, _ -> Some (add_dummy_pos (T_Int None)))
-        | _ -> None)
+        | _ -> None |: TypingRule.LowestCommonAncestor)
+(* End *)
 
 (* --------------------------------------------------------------------------*)
 

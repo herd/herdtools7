@@ -1,7 +1,24 @@
+(******************************************************************************)
+(*                                ASLRef                                      *)
+(******************************************************************************)
 (*
  * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
  * SPDX-License-Identifier: BSD-3-Clause
  *)
+(******************************************************************************)
+(* Disclaimer:                                                                *)
+(* This material covers both ASLv0 (viz, the existing ASL pseudocode language *)
+(* which appears in the Arm Architecture Reference Manual) and ASLv1, a new,  *)
+(* experimental, and as yet unreleased version of ASL.                        *)
+(* This material is work in progress, more precisely at pre-Alpha quality as  *)
+(* per Arm’s quality standards.                                               *)
+(* In particular, this means that it would be premature to base any           *)
+(* production tool development on this material.                              *)
+(* However, any feedback, question, query and feature request would be most   *)
+(* welcome; those can be sent to Arm’s Architecture Formal Team Lead          *)
+(* Jade Alglave <jade.alglave@arm.com>, or by raising issues or PRs to the    *)
+(* herdtools7 github repository.                                              *)
+(******************************************************************************)
 
 (** An Abstract Syntax Tree for ASL. *)
 
@@ -93,7 +110,7 @@ type literal =
 type expr_desc =
   | E_Literal of literal
   | E_Var of identifier
-  | E_Typed of expr * ty
+  | E_CTC of expr * ty
   | E_Binop of binop * expr * expr
   | E_Unop of unop * expr
   | E_Call of identifier * expr list * (identifier * expr) list
@@ -202,13 +219,13 @@ and typed_identifier = identifier * ty
 
 (** Type of left-hand side of assignments. *)
 type lexpr_desc =
-  | LE_Ignore
+  | LE_Discard
   | LE_Var of identifier
   | LE_Slice of lexpr * slice list
   | LE_SetArray of lexpr * expr
   | LE_SetField of lexpr * identifier
   | LE_SetFields of lexpr * identifier list
-  | LE_TupleUnpack of lexpr list
+  | LE_Destructuring of lexpr list
   | LE_Concat of lexpr list * int list option
       (** LE_Concat (les, _) unpacks the various lexpr. Second argument is a type annotation. *)
 
@@ -218,7 +235,7 @@ type local_decl_keyword = LDK_Var | LDK_Constant | LDK_Let
 
 type local_decl_item =
   | LDI_Var of identifier * ty option
-  | LDI_Ignore of ty option
+  | LDI_Discard of ty option
   | LDI_Tuple of local_decl_item list * ty option
 
 (** Statements. Parametric on the type of literals in expressions. *)
@@ -228,7 +245,7 @@ type version = V0 | V1
 
 type stmt_desc =
   | S_Pass
-  | S_Then of stmt * stmt
+  | S_Seq of stmt * stmt
   | S_Decl of local_decl_keyword * local_decl_item * expr option
   | S_Assign of lexpr * expr * version
   | S_Call of identifier * expr list * (identifier * expr) list

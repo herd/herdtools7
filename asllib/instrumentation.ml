@@ -1,14 +1,31 @@
+(******************************************************************************)
+(*                                ASLRef                                      *)
+(******************************************************************************)
 (*
  * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
  * SPDX-License-Identifier: BSD-3-Clause
  *)
+(******************************************************************************)
+(* Disclaimer:                                                                *)
+(* This material covers both ASLv0 (viz, the existing ASL pseudocode language *)
+(* which appears in the Arm Architecture Reference Manual) and ASLv1, a new,  *)
+(* experimental, and as yet unreleased version of ASL.                        *)
+(* This material is work in progress, more precisely at pre-Alpha quality as  *)
+(* per Arm’s quality standards.                                               *)
+(* In particular, this means that it would be premature to base any           *)
+(* production tool development on this material.                              *)
+(* However, any feedback, question, query and feature request would be most   *)
+(* welcome; those can be sent to Arm’s Architecture Formal Team Lead          *)
+(* Jade Alglave <jade.alglave@arm.com>, or by raising issues or PRs to the    *)
+(* herdtools7 github repository.                                              *)
+(******************************************************************************)
 
 (** Provide some instrumentation backends for {!Interpreter} and {!Typing}. *)
 
 module SemanticsRule = struct
   type t =
     | Lit
-    | TypedExpr
+    | CTC
     | ELocalVar
     | EGlobalVar
     | EUndefIdent
@@ -29,7 +46,7 @@ module SemanticsRule = struct
     | ETuple
     | EUnknown
     | EPattern
-    | LEIgnore
+    | LEDiscard
     | LELocalVar
     | LEGlobalVar
     | LEUndefIdentV0
@@ -38,7 +55,11 @@ module SemanticsRule = struct
     | LESetArray
     | LESetField
     | LESetFields
-    | LETuple
+    | LEDestructuring
+    | SliceSingle
+    | SliceLength
+    | SliceRange
+    | SliceStar
     | PAll
     | PAny
     | PGeq
@@ -48,7 +69,7 @@ module SemanticsRule = struct
     | PSingle
     | PMask
     | PTuple
-    | LDIgnore
+    | LDDiscard
     | LDVar
     | LDTypedVar
     | LDUninitialisedVar
@@ -63,7 +84,7 @@ module SemanticsRule = struct
     | SReturnOne
     | SReturnSome
     | SReturnNone
-    | SThen
+    | SSeq
     | SCall
     | SCond
     | SCase
@@ -93,7 +114,7 @@ module SemanticsRule = struct
 
   let to_string : t -> string = function
     | Lit -> "Lit"
-    | TypedExpr -> "TypedExpr"
+    | CTC -> "CTC"
     | ELocalVar -> "ELocalVar"
     | EGlobalVar -> "EGlobalVar"
     | Binop -> "Binop"
@@ -114,16 +135,20 @@ module SemanticsRule = struct
     | EGetArray -> "EGetArray"
     | EUnknown -> "EUnknown"
     | EPattern -> "EPattern"
-    | LEIgnore -> "LEIgnore"
+    | LEDiscard -> "LEDiscard"
     | LELocalVar -> "LELocalVar"
     | LEGlobalVar -> "LEGlobalVar"
     | LESlice -> "LESlice"
     | LESetArray -> "LESetArray"
     | LESetField -> "LESetField"
     | LESetFields -> "LESetFields"
-    | LETuple -> "LETuple"
+    | LEDestructuring -> "LEDestructuring"
     | LEUndefIdentV0 -> "LEUndefIdentV0"
     | LEUndefIdentV1 -> "LEUndefIdentV1"
+    | SliceSingle -> "SliceSingle"
+    | SliceLength -> "SliceLength"
+    | SliceRange -> "SliceRange"
+    | SliceStar -> "SliceStar"
     | PAll -> "PAll"
     | PAny -> "PAny"
     | PGeq -> "PGeq"
@@ -133,7 +158,7 @@ module SemanticsRule = struct
     | PSingle -> "PSingle"
     | PMask -> "PMask"
     | PTuple -> "PTuple"
-    | LDIgnore -> "LDIgnore"
+    | LDDiscard -> "LDDiscard"
     | LDVar -> "LDVar"
     | LDTypedVar -> "LDTypedVar"
     | LDUninitialisedVar -> "LDUninitialisedVar"
@@ -148,7 +173,7 @@ module SemanticsRule = struct
     | SReturnOne -> "SReturnOne"
     | SReturnNone -> "SReturnNone"
     | SReturnSome -> "SReturnSome"
-    | SThen -> "SThen"
+    | SSeq -> "SThen"
     | SCall -> "SCall"
     | SCond -> "SCond"
     | SCase -> "SCase"
@@ -181,7 +206,7 @@ module SemanticsRule = struct
   let all =
     [
       Lit;
-      TypedExpr;
+      CTC;
       ELocalVar;
       EGlobalVar;
       Binop;
@@ -202,14 +227,14 @@ module SemanticsRule = struct
       EUndefIdent;
       EConcat;
       ETuple;
-      LEIgnore;
+      LEDiscard;
       LELocalVar;
       LEGlobalVar;
       LESlice;
       LESetArray;
       LESetField;
       LESetFields;
-      LETuple;
+      LEDestructuring;
       SPass;
       SAssignCall;
       SAssignTuple;
@@ -217,7 +242,7 @@ module SemanticsRule = struct
       SReturnOne;
       SReturnSome;
       SReturnNone;
-      SThen;
+      SSeq;
       SCall;
       SCond;
       SCase;
@@ -268,8 +293,28 @@ end
 
 module TypingRule = struct
   type t =
+    | BuiltinSingularType
+    | BuiltinAggregateType
+    | BuiltinSingularOrAggregate
+    | NamedType
+    | AnonymousType
+    | SingularType
+    | AggregateType
+    | NonPrimitiveType
+    | PrimitiveType
+    | Structure
+    | Canonical
+    | Subtype
+    | StructuralSubtypeSatisfaction
+    | DomainSubtypeSatisfaction
+    | SubtypeSatisfaction
+    | TypeSatisfaction
+    | TypeClash
+    | LowestCommonAncestor
+    | CheckUnop
+    | CheckBinop
     | Lit
-    | TypedExpr
+    | CTC
     | ELocalVarConstant
     | ELocalVar
     | EGlobalVarConstantVal
@@ -284,8 +329,8 @@ module TypingRule = struct
     | ECall
     | EGetArray
     | ERecord
-    | ERecordMissingField
-    | ERecordNotARecord
+    | EStructuredMissingField
+    | EStructuredNotStructured
     | EGetRecordField
     | EGetBitField
     | EGetBadField
@@ -299,12 +344,12 @@ module TypingRule = struct
     | ETuple
     | EUnknown
     | EPattern
-    | LEIgnore
+    | LEDiscard
     | LELocalVar
     | LEGlobalVar
     | LEUndefIdentV0
     | LEUndefIdentV1
-    | LETuple
+    | LEDestructuring
     | LESlice
     | LESetArray
     | LESetBadRecordField
@@ -316,6 +361,10 @@ module TypingRule = struct
     | LESetBadField
     | LESetFields
     | LEConcat
+    | SliceSingle
+    | SliceLength
+    | SliceRange
+    | SliceStar
     | PAll
     | PAny
     | PGeq
@@ -327,8 +376,8 @@ module TypingRule = struct
     | PTupleBadArity
     | PTuple
     | PTupleConflict
-    | LDIgnoreNone
-    | LDIgnoreSome
+    | LDDiscardNone
+    | LDDiscardSome
     | LDUninitialisedVar
     | LDUninitialisedTypedVar
     | LDVar
@@ -344,7 +393,7 @@ module TypingRule = struct
     | SReturnOne
     | SReturnSome
     | SReturnNone
-    | SThen
+    | SSeq
     | SCall
     | SCond
     | SCase
@@ -369,17 +418,33 @@ module TypingRule = struct
     | Block
     | Loop
     | For
-    | SliceLength
-    | SliceSingle
-    | SliceRange
-    | SliceStar
     | CatcherNone
     | CatcherSome
     | Func
 
   let to_string : t -> string = function
+    | BuiltinSingularType -> "BuiltinSingularType"
+    | BuiltinAggregateType -> "BuiltinAggregateType"
+    | BuiltinSingularOrAggregate -> "BuiltinSingularOrAggregate"
+    | NamedType -> "NamedType"
+    | AnonymousType -> "AnonymousType"
+    | SingularType -> "SingularType"
+    | AggregateType -> "AggregateType"
+    | NonPrimitiveType -> "NonPrimitiveType"
+    | PrimitiveType -> "PrimitiveType"
+    | Canonical -> "Canonical"
+    | Structure -> "Structure"
+    | Subtype -> "Subtype"
+    | StructuralSubtypeSatisfaction -> "StructuralSubtypeSatisfaction"
+    | DomainSubtypeSatisfaction -> "DomainSubtypeSatisfaction"
+    | SubtypeSatisfaction -> "SubtypeSatisfaction"
+    | TypeSatisfaction -> "TypeSatisfaction"
+    | TypeClash -> "TypeClash"
+    | CheckUnop -> "CheckUnop"
+    | CheckBinop -> "CheckBinop"
+    | LowestCommonAncestor -> "LowestCommonAncestor"
     | Lit -> "Lit"
-    | TypedExpr -> "TypedExpr"
+    | CTC -> "CTC"
     | ELocalVarConstant -> "ELocalVarConstant"
     | ELocalVar -> "ELocalVar"
     | EGlobalVarConstantVal -> "EGlobalVarConstantVal"
@@ -391,8 +456,8 @@ module TypingRule = struct
     | ESlice -> "ESlice"
     | ECall -> "ECall"
     | ERecord -> "ERecord"
-    | ERecordMissingField -> "ERecordMissingField"
-    | ERecordNotARecord -> "ERecordNotARecord"
+    | EStructuredMissingField -> "EStructuredMissingField"
+    | EStructuredNotStructured -> "EStructuredNotStructured"
     | EGetRecordField -> "EGetRecordField"
     | EGetBitField -> "EGetBitField"
     | EGetBadField -> "EGetBadField"
@@ -409,7 +474,7 @@ module TypingRule = struct
     | EGetArray -> "EGetArray"
     | EUnknown -> "EUnknown"
     | EPattern -> "EPattern"
-    | LEIgnore -> "LEIgnore"
+    | LEDiscard -> "LEDiscard"
     | LELocalVar -> "LELocalVar"
     | LEGlobalVar -> "LEGlobalVar"
     | LESlice -> "LESlice"
@@ -423,9 +488,13 @@ module TypingRule = struct
     | LESetBadField -> "LESetBadField" 
     | LESetFields -> "LESetFields"
     | LEConcat -> "LEConcat"
-    | LETuple -> "LETuple"
+    | LEDestructuring -> "LEDestructuring"
     | LEUndefIdentV0 -> "LEUndefIdentV0"
     | LEUndefIdentV1 -> "LEUndefIdentV1"
+    | SliceSingle -> "SliceSingle"
+    | SliceLength -> "SliceLength"
+    | SliceRange -> "SliceRange"
+    | SliceStar -> "SliceStar"
     | PAll -> "PAll"
     | PAny -> "PAny"
     | PGeq -> "PGeq"
@@ -437,8 +506,8 @@ module TypingRule = struct
     | PTupleBadArity -> "PTupleBadArity"
     | PTuple -> "PTuple"
     | PTupleConflict -> "PTupleConflict"
-    | LDIgnoreNone -> "LDIgnoreNone"
-    | LDIgnoreSome -> "LDIgnoreSome"
+    | LDDiscardNone -> "LDDiscardNone"
+    | LDDiscardSome -> "LDDiscardSome"
     | LDVar -> "LDVar"
     | LDTypedVar -> "LDTypedVar"
     | LDUninitialisedVar -> "LDUninitialisedVar"
@@ -454,7 +523,7 @@ module TypingRule = struct
     | SReturnOne -> "SReturnOne"
     | SReturnNone -> "SReturnNone"
     | SReturnSome -> "SReturnSome"
-    | SThen -> "SThen"
+    | SSeq -> "SThen"
     | SCall -> "SCall"
     | SCond -> "SCond"
     | SCase -> "SCase"
@@ -479,10 +548,6 @@ module TypingRule = struct
     | Block -> "Block"
     | Loop -> "Loop"
     | For -> "For"
-    | SliceLength -> "SliceLength"
-    | SliceSingle -> "SliceSingle"
-    | SliceRange -> "SliceRange"
-    | SliceStar -> "SliceStar"
     | CatcherNone -> "CatcherNone"
     | CatcherSome -> "CatcherSome"
     | Func -> "Func"
@@ -491,8 +556,28 @@ module TypingRule = struct
 
   let all =
     [
+      BuiltinSingularType;
+      BuiltinAggregateType;
+      BuiltinSingularOrAggregate;
+      SingularType;
+      AggregateType;
+      NamedType;
+      AnonymousType;
+      NonPrimitiveType;
+      PrimitiveType;
+      Canonical;
+      Structure;
+      Subtype;
+      DomainSubtypeSatisfaction;
+      StructuralSubtypeSatisfaction;
+      SubtypeSatisfaction;
+      TypeSatisfaction;
+      TypeClash;
+      CheckUnop;
+      CheckBinop;
+      LowestCommonAncestor;
       Lit;
-      TypedExpr;
+      CTC;
       ELocalVarConstant;
       ELocalVar;
       EGlobalVarConstantVal;
@@ -503,8 +588,8 @@ module TypingRule = struct
       ECond;
       ESlice;
       ECall;
-      ERecordMissingField;
-      ERecordNotARecord;
+      EStructuredMissingField;
+      EStructuredNotStructured;
       ERecord;
       EGetRecordField;
       EGetBadField;
@@ -522,7 +607,7 @@ module TypingRule = struct
       EConcatEmpty;
       EConcat;
       ETuple;
-      LEIgnore;
+      LEDiscard;
       LELocalVar;
       LEGlobalVar;
       LESlice;
@@ -536,8 +621,12 @@ module TypingRule = struct
       LESetBadField;
       LESetFields;
       LESetFields;
-      LETuple;
+      LEDestructuring;
       LEConcat;
+      SliceLength;
+      SliceSingle;
+      SliceRange;
+      SliceStar;
       SPass;
       SAssignCall;
       SAssignTuple;
@@ -545,7 +634,7 @@ module TypingRule = struct
       SReturnOne;
       SReturnSome;
       SReturnNone;
-      SThen;
+      SSeq;
       SCall;
       SCond;
       SCase;
@@ -570,10 +659,6 @@ module TypingRule = struct
       Block;
       Loop;
       For;
-      SliceLength;
-      SliceSingle;
-      SliceRange;
-      SliceStar;
       CatcherNone;
       CatcherSome;
       Func;
