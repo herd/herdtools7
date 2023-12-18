@@ -2310,8 +2310,9 @@ all of the following apply:
 
 
 \chapter{Typing of Slices}
-\texttt{annotate\_slices env slices} is the pair \texttt{(offset, length)} and one of the
-following applies:
+Annotating slices~\texttt{slices} in an environment~\texttt{env}
+(\texttt{annotate\_slices env slices}) results in the pair \texttt{(offset,
+length)} and one of the following applies:
 \begin{itemize}
 \item TypingRule.SliceSingle (see Section~\ref{sec:TypingRule.SliceSingle}),
 \item TypingRule.SliceLength (see Section~\ref{sec:TypingRule.SliceLength}),
@@ -2321,79 +2322,91 @@ following applies:
 
 \section{TypingRule.SliceSingle \label{sec:TypingRule.SliceSingle}}
 
-    \subsection{Prose}
-    All of the following apply: 
+  \subsection{Prose}
+   Annotating slices~\texttt{slices} in an environment~\texttt{env}
+(\texttt{annotate\_slices env slices}) results in the pair \texttt{(offset,
+length)} and all of the following apply: 
    \begin{itemize}
    \item \texttt{slices} gives an index \texttt{i};
    \item \texttt{(offset, length)} is the result of applying TypingRule.SliceLength to \texttt{i, i+:1}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\SliceSingleBegin, lastline=\SliceSingleEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
+  \subsection{Comments}
     R\_GXKG: The notation b\texttt{i} is syntactic sugar for b\texttt{i +: 1}.
 
 \section{TypingRule.SliceLength \label{sec:TypingRule.SliceLength}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating slices~\texttt{slices} in an environment~\texttt{env}
+(\texttt{annotate\_slices env slices}) results in the pair \texttt{(offset,
+length)} and all of the following apply:
    \begin{itemize}
    \item \texttt{slices} gives \texttt{offset} and \texttt{length}; 
    \item \texttt{t\_offset, offset'} is the result of annotating \texttt{offset} in \texttt{env};
    \item \texttt{t\_length, length'} is the result of annotating \texttt{length} in \texttt{env};
    \item \texttt{t\_offset} has the structure of an integer type;
    \item \texttt{t\_length} has the structure of an integer type;
-   \item \texttt{length} is pure.
+   \item \texttt{length} is statically evaluable.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\SliceLengthBegin, lastline=\SliceLengthEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
+  \subsection{Comments}
 
 \section{TypingRule.SliceRange \label{sec:TypingRule.SliceRange}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+      Annotating slices~\texttt{slices} in an environment~\texttt{env}
+(\texttt{annotate\_slices env slices}) results in the pair \texttt{(offset,
+length)} and all of the following apply:
    \begin{itemize}
    \item \texttt{slices} gives a range \texttt{(j, i)};
    \item \texttt{pre\_length} is \texttt{i +: j-i+1};
    \item \texttt{offset, length} is the result of applying TypingRule.SliceLength to \texttt{i,pre\_length}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\SliceRangeBegin, lastline=\SliceRangeEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
+  \subsection{Comments}
     R\_GXKG: The notation b\texttt{j:i} is syntactic sugar for b\texttt{i +: j-i+1}.
 
 \section{TypingRule.SliceStar \label{sec:TypingRule.SliceStar}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+      Annotating slices~\texttt{slices} in an environment~\texttt{env}
+(\texttt{annotate\_slices env slices}) results in the pair \texttt{(offset,
+length)} and all of the following apply:
    \begin{itemize}
    \item \texttt{slices} gives \texttt{(factor, pre\_length)};
    \item \texttt{pre\_offset} is \texttt{factor * pre\_length};
    \item \texttt{offset, length} is the result of applying TypingRule.SliceLength to \texttt{(pre\_offset, pre\_length)}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\SliceStarBegin, lastline=\SliceStarEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
+  \subsection{Comments}
     R\_GXQG: The notation b\texttt{i *: n} is syntactic sugar for b\texttt{i*n +: n}
 
 \chapter{Typing of Patterns}

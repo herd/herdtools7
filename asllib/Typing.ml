@@ -721,6 +721,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
        TODO: check them
     *)
     let rec tr_one = function
+      (* Begin SliceSingle *)
+      | Slice_Single i ->
+          (* LRM R_GXKG:
+             The notation b[i] is syntactic sugar for b[i +: 1].
+          *)
+          tr_one (Slice_Length (i, !$1)) |: TypingRule.SliceSingle
+      (* End *)
+      (* Begin SliceLength *)
       | Slice_Length (offset, length) ->
           let t_offset, offset' = annotate_expr env offset
           and t_length, length' = annotate_expr env length in
@@ -730,23 +738,23 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           (* TODO: if offset is statically evaluable, check that it is less
              than sliced expression width. *)
           Slice_Length (offset', length') |: TypingRule.SliceLength
-      | Slice_Single i ->
-          (* LRM R_GXKG:
-             The notation b[i] is syntactic sugar for b[i +: 1].
-          *)
-          tr_one (Slice_Length (i, !$1)) |: TypingRule.SliceSingle
+      (* End *)
+      (* Begin SliceRange *)
       | Slice_Range (j, i) ->
           (* LRM R_GXKG:
              The notation b[j:i] is syntactic sugar for b[i +: j-i+1].
           *)
           let pre_length = binop MINUS j i |> binop PLUS !$1 in
           tr_one (Slice_Length (i, pre_length)) |: TypingRule.SliceRange
+      (* End *)
+      (* Begin SliceStar *)
       | Slice_Star (factor, pre_length) ->
           (* LRM R_GXQG:
              The notation b[i *: n] is syntactic sugar for b[i*n +: n]
           *)
           let pre_offset = binop MUL factor pre_length in
           tr_one (Slice_Length (pre_offset, pre_length)) |: TypingRule.SliceStar
+      (* End *)
     in
     List.map tr_one
 
