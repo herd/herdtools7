@@ -2410,7 +2410,7 @@ length)} and all of the following apply:
     R\_GXQG: The notation b\texttt{i *: n} is syntactic sugar for b\texttt{i*n +: n}
 
 \chapter{Typing of Patterns}
-\texttt{annotate\_pattern loc env t p} is \texttt{new\_p} and one of the following applies:
+Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and one of the following applies:
 \begin{itemize}
 \item TypingRule.PAll (see Section~\ref{sec:TypingRule.PAll}),
 \item TypingRule.PAny (see Section~\ref{sec:TypingRule.PAny}),
@@ -2427,45 +2427,45 @@ length)} and all of the following apply:
 
 \section{TypingRule.PAll \label{sec:TypingRule.PAll}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern matching everything;
    \item \texttt{new\_p} is \texttt{p}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PAllBegin, lastline=\PAllEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
+  \subsection{Comments}
 
- \section{TypingRule.PAny\label{sec:TypingRule.PAny}}
+\section{TypingRule.PAny\label{sec:TypingRule.PAny}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches anything in a list \texttt{li};
    \item \texttt{new\_li} is the result of mapping the result of annotating \texttt{p} in \texttt{env} onto \texttt{li};
    \item \texttt{new\_p} is the pattern which matches anything in \texttt{new\_li}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PAnyBegin, lastline=\PAnyEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
-
-
+  \subsection{Comments}
 
 \section{TypingRule.PGeq \label{sec:TypingRule.PGeq}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches anything greater than or equal to an expression \texttt{e};
    \item \texttt{t\_e, e'} is the result of annotating \texttt{e} in \texttt{env}; 
@@ -2475,18 +2475,19 @@ length)} and all of the following apply:
    \item \texttt{new\_p} is the pattern which matches anything greater than or equal to \texttt{e'}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PGeqBegin, lastline=\PGeqEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
+  \subsection{Comments}
 
  \section{TypingRule.PLeq \label{sec:TypingRule.PLeq}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches anything lesser than or equal to an expression \texttt{e};
    \item \texttt{t\_e, e'} is the result of annotating \texttt{e} in \texttt{env}; 
@@ -2496,35 +2497,38 @@ length)} and all of the following apply:
    \item \texttt{new\_p} is the pattern which matches anything lesser than or equal to \texttt{e'}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PLeqBegin, lastline=\PLeqEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
+  \subsection{Comments}
  
- \section{TypingRule.PNot \label{sec:TypingRule.PNot}}
+\section{TypingRule.PNot \label{sec:TypingRule.PNot}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches the negation of a pattern \texttt{q};
    \item \texttt{new\_q} is the result of annotating \texttt{q} in \texttt{env}; 
    \item \texttt{new\_p} is pattern which matches the negation of \texttt{new\_q}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PNotBegin, lastline=\PNotEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
- \section{TypingRule.PRange \label{sec:TypingRule.PRange}}
+  \subsection{Comments}
+ 
+\section{TypingRule.PRange \label{sec:TypingRule.PRange}}
 
     \subsection{Prose}
-    All of the following apply:
+   Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches anything within the range given by
       expressions \texttt{e1} and \texttt{e2};
@@ -2538,29 +2542,33 @@ length)} and all of the following apply:
       expressions \texttt{e1'} and \texttt{e2'}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PRangeBegin, lastline=\PRangeEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
+  \subsection{Comments}
  
 \section{TypingRule.PSingle \label{sec:TypingRule.PSingle}}
 
     \subsection{Prose}
+Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PSingleBegin, lastline=\PSingleEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
- \section{TypingRule.PMask \label{sec:TypingRule.PMask}}
+  \subsection{Comments}
 
-    \subsection{Prose}
-    All of the following apply:
+\section{TypingRule.PMask \label{sec:TypingRule.PMask}}
+
+  \subsection{Prose}
+   Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches a mask \texttt{m};
    \item \texttt{t} has the structure of a bitvector type;
@@ -2570,38 +2578,40 @@ length)} and all of the following apply:
    \item \texttt{new\_p} is \texttt{p}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PMaskBegin, lastline=\PMaskEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
+  \subsection{Comments}
 
 \section{TypingRule.PTupleBadArity \label{sec:TypingRule.PTupleBadArity}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches a tuple \texttt{li};
    \item \texttt{t} has the type structure of a tuple type \texttt{ts};
    \item \texttt{ts} is a list of different size to the size of \texttt{li};
-   \item an error "Bad Arity" is raised. 
+   \item an error ``\texttt{Bad Arity}'' is raised. 
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PTupleBadArityBegin, lastline=\PTupleBadArityEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
+  \subsection{Comments}
 
 
- \section{TypingRule.PTuple \label{sec:TypingRule.PTuple}}
+\section{TypingRule.PTuple \label{sec:TypingRule.PTuple}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches a tuple \texttt{li};
    \item \texttt{t\_struct} is the type structure of \texttt{t};
@@ -2611,33 +2621,35 @@ length)} and all of the following apply:
    \item \texttt{new\_p} is the pattern which matches the tuple \texttt{new\_li}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PTupleBegin, lastline=\PTupleEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
+  \subsection{Comments}
 
 
 \section{TypingRule.PTupleConflict \label{sec:TypingRule.PTupleConflict}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches a tuple \texttt{li};
    \item \texttt{t\_struct} is the type structure of \texttt{t};
    \item \texttt{t\_struct} is not a tuple type;
-   \item an error "Conflicting Types" is raised. 
+   \item an error ``\texttt{Conflicting Types}'' is raised. 
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PTupleConflictBegin, lastline=\PTupleConflictEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
+  \subsection{Comments}
 
 
 

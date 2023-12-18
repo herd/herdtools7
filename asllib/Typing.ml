@@ -474,7 +474,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         | Some (_, GDK_Var) -> false
         | None -> undefined_identifier loc s)
 
-  let check_pure (env : env) e () =
+  let check_statically_evaluable (env : env) e () =
     let e = reduce_expr env e in
     let use_set = use_e ISet.empty e in
     if ISet.for_all (storage_is_pure e env) use_set then ()
@@ -734,7 +734,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           and t_length, length' = annotate_expr env length in
           let+ () = check_structure_integer offset' env t_offset in
           let+ () = check_structure_integer length' env t_length in
-          let+ () = check_pure env length in
+          let+ () = check_statically_evaluable env length in
           (* TODO: if offset is statically evaluable, check that it is less
              than sliced expression width. *)
           Slice_Length (offset', length') |: TypingRule.SliceLength
@@ -759,13 +759,20 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     List.map tr_one
 
   and annotate_pattern loc env t = function
+    (* Begin PAll *)
     | Pattern_All as p -> p |: TypingRule.PAll
+    (* End *)
+    (* Begin PAny *)
     | Pattern_Any li ->
         let new_li = List.map (annotate_pattern loc env t) li in
         Pattern_Any new_li |: TypingRule.PAny
+    (* End *)
+    (* Begin PNot *)
     | Pattern_Not q ->
         let new_q = annotate_pattern loc env t q in
         Pattern_Not new_q |: TypingRule.PNot
+    (* End *)
+    (* Begin PSingle *)
     | Pattern_Single e ->
         let t_e, e = annotate_expr env e in
         let+ () =
@@ -786,24 +793,30 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           | _ -> fatal_from loc (Error.BadTypesForBinop (EQ_OP, t, t_e))
         in
         Pattern_Single e |: TypingRule.PSingle
+    (* End *)
+    (* Begin PGeq *)
     | Pattern_Geq e ->
         let t_e, e' = annotate_expr env e in
-        let+ () = check_pure env e' in
+        let+ () = check_statically_evaluable env e' in
         let+ () =
           both
             (check_structure_integer loc env t)
             (check_structure_integer loc env t_e)
         in
         Pattern_Geq e' |: TypingRule.PGeq
+    (* End *)
+    (* Begin PLeq *)
     | Pattern_Leq e ->
         let t_e, e' = annotate_expr env e in
-        let+ () = check_pure env e' in
+        let+ () = check_statically_evaluable env e' in
         let+ () =
           both
             (check_structure_integer loc env t)
             (check_structure_integer loc env t_e)
         in
         Pattern_Leq e' |: TypingRule.PLeq
+    (* End *)
+    (* Begin PRange *)
     | Pattern_Range (e1, e2) ->
         let t_e1, e1' = annotate_expr env e1
         and t_e2, e2' = annotate_expr env e2 in
@@ -815,6 +828,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                (check_structure_integer loc env t_e2))
         in
         Pattern_Range (e1', e2') |: TypingRule.PRange
+    (* End *)
+    (* Begin PMask *)
     | Pattern_Mask m as p ->
         let+ () = check_structure_bits loc env t in
         let+ () =
@@ -823,18 +838,26 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           check_type_satisfies loc env t t_m
         in
         p |: TypingRule.PMask
+    (* End *)
     | Pattern_Tuple li -> (
         let t_struct = Types.get_structure env t in
         match t_struct.desc with
+        (* Begin PTupleBadArity *)
         | T_Tuple ts when List.compare_lengths li ts != 0 ->
             Error.fatal_from loc
               (Error.BadArity
                  ("pattern matching on tuples", List.length li, List.length ts))
             |: TypingRule.PTupleBadArity
+        (* End *)
+        (* Begin PTuple *)
         | T_Tuple ts ->
             let new_li = List.map2 (annotate_pattern loc env) ts li in
             Pattern_Tuple new_li |: TypingRule.PTuple
-        | _ -> conflict loc [ T_Tuple [] ] t |: TypingRule.PTupleConflict)
+        (* End *)
+        (* Begin PTupleConflict *)
+        | _ -> conflict loc [ T_Tuple [] ] t |: TypingRule.PTupleConflict
+        (* End *)
+    )
 
   and annotate_call loc env name args eqs call_type =
     let () =
