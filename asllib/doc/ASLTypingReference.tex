@@ -3538,16 +3538,15 @@ and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
 
   \subsection{Comments}
 
-\chapter{Typing of Functions}
-\texttt{annotate\_func loc env f} annotates the subprogram named \texttt{f} and returns \texttt{f},
+\chapter{Typing of Subprograms}
+Annotating a subprogram \texttt{f} in an environment \texttt{env} (\texttt{annotate\_func}) results in \texttt{f},
 \texttt{new\_body} and \texttt{name}.
 
-\section{TypingRule.Func \label{sec:TypingRule.Func}}
+\section{TypingRule.Subprogram \label{sec:TypingRule.Subprogram}}
 
   \subsection{Prose}
-  Annotating the call to subprogram \texttt{name} with arguments \texttt{args}
-and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
-\texttt{(name1, args, eqs2, ret\_ty1)} or an error is raised and all of the following apply:
+Annotating a subprogram \texttt{f} in an environment \texttt{env} (\texttt{annotate\_func}) results in \texttt{f},
+\texttt{new\_body} and all of the following apply:
  \begin{itemize}
  \item \texttt{env1} is \texttt{env} modified to have an empty local environment;
  \item \texttt{env2} is \texttt{env1} with every formal argument declared as immutable with its type;
@@ -3555,17 +3554,16 @@ and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
  \item \texttt{env4} is \texttt{env3} modified to resolve dependently typed identifiers in the arguments;
  \item \texttt{env5} is \texttt{env4} modified to resolve dependently typed identifiers in the result type;
  \item \texttt{body} is the body given by \texttt{f};
- \item \texttt{new\_body} is the result of annotating \texttt{body} in \texttt{env5};
- \item \texttt{name} is the name \texttt{f} as found in \texttt{env5}.
+ \item \texttt{new\_body} is the result of annotating \texttt{body} in \texttt{env5}.
  \end{itemize} 
 
   \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\SubprogramBegin, lastline=\SubprogramEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
-
+  \subsection{Comments}
 
 \end{document}

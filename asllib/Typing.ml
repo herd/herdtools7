@@ -1944,7 +1944,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | LE_Concat (_les, _) -> None
     | LE_SetArray _ -> assert false
 
-  let annotate_func loc (env : env) (f : 'p AST.func) : 'p AST.func =
+  (* Begin Subprogram *)
+  let annotate_subprogram loc (env : env) (f : 'p AST.func) : 'p AST.func =
     let () = if false then Format.eprintf "Annotating %s.@." f.name in
     (* Build typing local environment. *)
     let env1 = { env with local = empty_local_return_type f.return_type } in
@@ -2007,9 +2008,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       let _, name, _, _ = FunctionRenaming.try_find_name loc env5 f.name args in
       name
     in
-    { f with body = SB_ASL new_body; name } |: TypingRule.Func
+    { f with body = SB_ASL new_body; name } |: TypingRule.Subprogram
+  (* End *)
 
-  let try_annotate_func loc env f = best_effort f (annotate_func loc env)
+  let try_annotate_subprogram loc env f = best_effort f (annotate_subprogram loc env)
 
   let annotate_gsd env gsd =
     match gsd with
@@ -2260,7 +2262,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       let here = ASTUtils.add_pos_from_st d in
       match d.desc with
       | D_Func ({ body = SB_ASL _; _ } as f) ->
-          D_Func (try_annotate_func d env f) |> here
+          D_Func (try_annotate_subprogram d env f) |> here
       | D_Func ({ body = SB_Primitive _; _ } as f) ->
           D_Func (rename_primitive d env f) |> here
       | D_GlobalStorage gsd ->

@@ -421,7 +421,7 @@ module TypingRule = struct
     | For
     | CatcherNone
     | CatcherSome
-    | Func
+    | Subprogram
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -552,7 +552,7 @@ module TypingRule = struct
     | For -> "For"
     | CatcherNone -> "CatcherNone"
     | CatcherSome -> "CatcherSome"
-    | Func -> "Func"
+    | Subprogram -> "Subprogram"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -664,7 +664,7 @@ module TypingRule = struct
       For;
       CatcherNone;
       CatcherSome;
-      Func;
+      Subprogram;
     ]
 
   let all_nb = List.length all
