@@ -1891,7 +1891,9 @@ expression that is unresolvable to an integer. For example:
 
 
 \chapter{Typing of Left-Hand-Side Expressions}
-\texttt{annotate\_lexpr version env le t\_e} is \texttt{new\_le} and one of the following
+Annotating~\texttt{le} in an environment~\texttt{env}, assuming \texttt{t\_e}
+to be the type of the corresponding right-hand-side (\texttt{annotate\_lexpr
+version env le t\_e}), results in \texttt{new\_le} and one of the following
 applies:
 \begin{itemize}
 \item TypingRule.LEDiscard (see Section~\ref{sec:TypingRule.LEDiscard}),
@@ -1914,7 +1916,10 @@ applies:
 \section{TypingRule.LEDiscard \label{sec:TypingRule.LEDiscard}}
 
    \subsection{Prose}
-   All of the following apply:
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes an expression which can be discarded;
    \item \texttt{new\_le} is \texttt{le}.
@@ -1931,7 +1936,10 @@ applies:
 \section{TypingRule.LELocalVar \label{sec:TypingRule.LELocalVar}}
 
    \subsection{Prose}
-   All of the following apply:
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes a local variable \texttt{x} of type \texttt{ty};
    \item \texttt{x} is locally declared as a variable of type \texttt{ty} in \texttt{env};
@@ -1949,7 +1957,11 @@ applies:
 \section{TypingRule.LEGlobalVar \label{sec:TypingRule.LEGlobalVar}}
 
     \subsection{Prose}
-
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
+ 
     \subsection{Examples}
 
   \subsection{Code}
@@ -1961,7 +1973,10 @@ applies:
 \section{TypingRule.LETuple \label{sec:TypingRule.LETuple}}
 
     \subsection{Prose}
-    All of the following apply:
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes a tuple \texttt{les};
    \item \texttt{t\_e} denotes a tuple type \texttt{sub\_tys};
@@ -1991,7 +2006,10 @@ applies:
 \section{TypingRule.LESlice \label{sec:TypingRule.LESlice}}
 
     \subsection{Prose}
-    All of the following apply:
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes the slicing of a left-hand-side expression \texttt{le1} by the slices \texttt{slices};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
@@ -2014,7 +2032,10 @@ applies:
 \section{TypingRule.LESetArray \label{sec:TypingRule.LESetArray}}
 
     \subsection{Prose}
-    All of the following apply:
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes the slicing of a left-hand-side expression \texttt{le1} by the slices \texttt{slices};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
@@ -2042,7 +2063,10 @@ applies:
 \section{TypingRule.LESetBadRecordField \label{sec:TypingRule.LESetBadRecordField}}
 
     \subsection{Prose}
-    All of the following apply:
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
@@ -2063,7 +2087,10 @@ applies:
 \section{TypingRule.LESetRecordField \label{sec:TypingRule.LESetRecordField}}
 
     \subsection{Prose}
-    All of the following apply:
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
@@ -2085,7 +2112,10 @@ applies:
 \section{TypingRule.LESetBadBitField \label{sec:TypingRule.LESetBadBitField}}
 
     \subsection{Prose}
-    All of the following apply:
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
@@ -2106,7 +2136,10 @@ applies:
 \section{TypingRule.LESetBitField \label{sec:TypingRule.LESetBitField}}
 
     \subsection{Prose}
-    All of the following apply:
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
@@ -2133,7 +2166,10 @@ applies:
 \section{TypingRule.LESetBitFieldNested \label{sec:TypingRule.LESetBitFieldNested}}
 
     \subsection{Prose}
-    All of the following apply:
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
@@ -2160,7 +2196,10 @@ applies:
 \section{TypingRule.LESetBitFieldTyped \label{sec:TypingRule.LESetBitFieldTyped}}
 
     \subsection{Prose}
-    All of the following apply:
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
@@ -2189,7 +2228,10 @@ applies:
 \section{TypingRule.LESetBadField \label{sec:TypingRule.LESetBadField}}
 
     \subsection{Prose}
-    All of the following apply:
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
@@ -2209,7 +2251,11 @@ applies:
 \section{TypingRule.LESetFields \label{sec:TypingRule.LESetFields}}
 
     \subsection{Prose}
-
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
+ 
     \subsection{Examples}
 
   \subsection{Code}
@@ -2219,9 +2265,13 @@ applies:
   \subsection{Comments}
 
 \section{TypingRule.LEConcat \label{sec:TypingRule.LEConcat}}
-    \subsection{Prose}
-    
 
+    \subsection{Prose}
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
+     
     \subsection{Examples}
 
   \subsection{Code}
