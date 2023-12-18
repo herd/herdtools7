@@ -2688,8 +2688,6 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
 
   \subsection{Comments}
 
-
-
 \chapter{Typing of Local Declarations}
 Annotating a local declaration~\texttt{ldi}, given a type~\texttt{ty}, in an
 environment~\texttt{env} results in \texttt{new\_env, new\_ldi}
@@ -3375,11 +3373,12 @@ environment \texttt{new\_env} and all of the following apply:
 \section{TypingRule.Block \label{sec:TypingRule.Block}}
     
   \subsection{Prose}
-    \texttt{annotate\_block env return\_type s} is the result of annotating the
-    statement \texttt{s} in \texttt{env}.
+    Annotating a block \texttt{s} in an environment \texttt{env}, given a type
+\texttt{return\_type} (\texttt{annotate\_block env return\_type s}, is the
+result of annotating the statement \texttt{s} in \texttt{env}.
    
   \subsection{Example: TypingRule.Block0.asl}
-    \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.Block0.asl}
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.Block0.asl}
 
   \subsection{Code}
     \VerbatimInput[firstline=\BlockBegin, lastline=\BlockEnd]{../Typing.ml}
@@ -3396,8 +3395,10 @@ an enclosing block.
  
 
 \chapter{Typing of Catchers}
-  \texttt{annotate\_catchers env return\_type (name\_opt, ty, stmt)} is \texttt{(name\_opt, ty,
-  new\_stmt)} and one of the following applies:
+Annotating catchers \texttt{(name\_opt, ty, stmt)} in an environment
+\texttt{env} given a type \texttt{return\_type} (\texttt{annotate\_catchers env
+return\_type (name\_opt, ty, stmt)}) results in \texttt{(name\_opt, ty,
+new\_stmt)} and one of the following applies:
 \begin{itemize}
 \item TypingRule.CatcherNone (see Section~\ref{sec:TypingRule.CatcherNone}),
 \item TypingRule.CatcherSome (see Section~\ref{sec:TypingRule.CatcherSome}).
@@ -3406,7 +3407,10 @@ an enclosing block.
 \section{TypingRule.CatcherNone \label{sec:TypingRule.CatcherNone}}
 
   \subsection{Prose}
-    All of the following apply:
+   Annotating catchers \texttt{(name\_opt, ty, stmt)} in an environment
+\texttt{env} given a type \texttt{return\_type} (\texttt{annotate\_catchers env
+return\_type (name\_opt, ty, stmt)}) results in \texttt{(name\_opt, ty,
+new\_stmt)} and all of the following apply:
    \begin{itemize}
    \item \texttt{ty} has the structure of an exception type;
    \item \texttt{name\_opt} gives no name;
@@ -3417,9 +3421,9 @@ an enclosing block.
   \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\CatcherNoneBegin, lastline=\CatcherNoneEnd]{../Typing.ml}
 
   \subsection{Formally}
-    \VerbatimInput[firstline=\CatcherNoneBegin, lastline=\CatcherNoneEnd]{../Typing.ml}
 
   \subsection{Comments}
     This aims to encompass LRM Section 7.4.3 R\_SDJK.
@@ -3427,12 +3431,15 @@ an enclosing block.
 \section{TypingRule.CatcherSome \label{sec:TypingRule.CatcherSome}}
 
   \subsection{Prose}
-    All of the following apply:
+   Annotating catchers \texttt{(name\_opt, ty, stmt)} in an environment
+\texttt{env} given a type \texttt{return\_type} (\texttt{annotate\_catchers env
+return\_type (name\_opt, ty, stmt)}) results in \texttt{(name\_opt, ty,
+new\_stmt)} and all of the following apply:
    \begin{itemize}
    \item \texttt{ty} has the structure of an exception type;
    \item \texttt{name\_opt} gives a name \texttt{name};
    \item \texttt{name} is not already declared in \texttt{env};
-   \item \texttt{name} is annotated with \texttt{ty} in \texttt{env};
+   \item \texttt{name} has type \texttt{ty} in \texttt{env};
    \item \texttt{env'} is \texttt{env} modified to have \texttt{name} locally declared as immutable of type \texttt{ty};
    \item \texttt{new\_stmt} is the result of annotating \texttt{stmt} in \texttt{env'} with \texttt{return\_type}.
    \end{itemize}
@@ -3447,7 +3454,7 @@ an enclosing block.
   \subsection{Comments}
     This aims to encompass LRM Section 7.4.3 R\_SDJK.
 
-\chapter{Typing of Function Calls}
+\chapter{Typing of Subprogram Calls}
 \texttt{annotate\_call loc en name args eqs call\_type} annotates the call to subprogram
 \texttt{name} with arguments \texttt{args} and parameters \texttt{eqs}. Formally, \texttt{annotate\_call loc
 en name args eqs call\_type} is \texttt{(name1, args, eqs2, ret\_ty1)} or an error is
