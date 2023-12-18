@@ -2629,8 +2629,9 @@ following applies:
 
 
 \chapter{Typing of Local Declarations}
-\texttt{annotate\_local\_decl\_item loc env ty ldk ldi} is \texttt{new\_env, new\_ldi} and one
-of the following applies:
+Annotating a local declaration~\texttt{ldi}, given a type~\texttt{ty}, in an
+environment~\texttt{env} results in \texttt{new\_env, new\_ldi}
+(\texttt{annotate\_local\_decl\_item}) and one of the following applies:
 \begin{itemize}
 \item TypingRule.LDDiscardNone (see Section~\ref{sec:TypingRule.LDDiscardNone}),
 \item TypingRule.LDDiscardSome (see Section~\ref{sec:TypingRule.LDDiscardSome}),
@@ -2643,18 +2644,21 @@ This aims to encompass LRM Section 7.4.2 R\_YSPM.
 
 \section{TypingRule.LDDiscardNone \label{sec:TypingRule.LDDiscardNone}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+    Annotating a local declaration~\texttt{ldi}, given a type~\texttt{ty}, in
+an environment~\texttt{env} results in \texttt{new\_env, new\_ldi} and all of
+the following apply:
    \begin{itemize}
    \item \texttt{ldi} is a local declaration which can be discarded;
-   \item no type is given;
+   \item \texttt{ldi} does not specify a type;
    \item \texttt{new\_env} is \texttt{env};
    \item \texttt{new\_ldi} is \texttt{ldi}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LDDiscardNoneBegin, lastline=\LDDiscardNoneEnd]{../Typing.ml}
 
   \subsection{Formally}
 
@@ -2662,11 +2666,13 @@ This aims to encompass LRM Section 7.4.2 R\_YSPM.
 
 \section{TypingRule.LDDiscardSome \label{sec:TypingRule.LDDiscardSome}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+    Annotating a local declaration~\texttt{ldi}, given a type~\texttt{ty}, in
+an environment~\texttt{env} results in \texttt{new\_env, new\_ldi} and all of
+the following apply:
    \begin{itemize}
    \item \texttt{ldi} is a local declaration which can be discarded;
-   \item a type \texttt{t} is given;
+   \item \texttt{ldi} specifies a type \texttt{t};
    \item One of the following applies:
      \begin{itemize}
      \item All of the following apply:
@@ -2678,14 +2684,15 @@ This aims to encompass LRM Section 7.4.2 R\_YSPM.
      \item All of the following apply:
        \begin{itemize}
        \item \texttt{t} cannot be initialised with \texttt{ty} in \texttt{env};
-       \item an error "Conflicting Types" is raised.
+       \item an error ``\texttt{Conflicting Types}'' is raised.
        \end{itemize}
      \end{itemize}
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LDDiscardSomeBegin, lastline=\LDDiscardSomeEnd]{../Typing.ml}
 
   \subsection{Formally}
 
@@ -2693,8 +2700,10 @@ This aims to encompass LRM Section 7.4.2 R\_YSPM.
 
 \section{TypingRule.LDVar \label{sec:TypingRule.LDVar}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+    Annotating a local declaration~\texttt{ldi}, given a type~\texttt{ty}, in
+an environment~\texttt{env} results in \texttt{new\_env, new\_ldi} and all of
+the following apply:
    \begin{itemize}
    \item \texttt{ldi} denotes a variable \texttt{x} with an optional type \texttt{ty\_opt};
    \item \texttt{x} is not declared in \texttt{env};
@@ -2715,26 +2724,10 @@ This aims to encompass LRM Section 7.4.2 R\_YSPM.
    \item \texttt{new\_ldi} is the declaration of variable \texttt{x} with type \texttt{t}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
-
-  \subsection{Formally}
-
-  \subsection{Comments}
-
-\section{TypingRule.LDUninitialisedTypedTuple \label{sec:TypingRule.LDUninitialisedTypedTuple}}
-
-    \subsection{Prose}
-    All of the following apply:
-   \begin{itemize}
-   \item \texttt{ldi} denotes a singleton list \texttt{ld};
-   \item \texttt{new\_env, new\_ldi} is the result of annotating the local declaration \texttt{ld} with \texttt{ty} in \texttt{env}.
-   \end{itemize}
-
-    \subsection{Examples}
-
-  \subsection{Code}
+    \VerbatimInput[firstline=\LDVarBegin, lastline=\LDVarEnd]{../Typing.ml}
 
   \subsection{Formally}
 
@@ -2742,11 +2735,23 @@ This aims to encompass LRM Section 7.4.2 R\_YSPM.
 
 \section{TypingRule.LDTuple \label{sec:TypingRule.LDTuple}}
 
-    \subsection{Prose}
+  \subsection{Prose}
+    Annotating a local declaration~\texttt{ldi}, given a type~\texttt{ty}, in
+an environment~\texttt{env} results in \texttt{new\_env, new\_ldi} and all of
+the following apply:
+  \begin{itemize}
+  \item \texttt{ldi} denotes a list \texttt{ldis};
+  \item \texttt{ldi} does not specify a type;
+  \item \texttt{ty} has the structure of a tuple type of the same length as~\texttt{ldis};
+  \item \texttt{new\_env} is \texttt{env} modified so that each element in \texttt{ldis} is annotated with the corresponding type in \texttt{ty}; 
+  \item \texttt{new\_ldi} is \texttt{ldis} where each element is declared with
+the corresponding type in ~\texttt{ty}.
+  \end{itemize} 
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LDTupleBegin, lastline=\LDTupleEnd]{../Typing.ml}
 
   \subsection{Formally}
 
@@ -2754,11 +2759,19 @@ This aims to encompass LRM Section 7.4.2 R\_YSPM.
 
 \section{TypingRule.LDTypedTuple \label{sec:TypingRule.LDTypedTuple}}
 
-    \subsection{Prose}
-
-    \subsection{Examples}
+  \subsection{Prose}
+    Annotating a local declaration~\texttt{ldi}, given a type~\texttt{ty}, in
+an environment~\texttt{env} results in \texttt{new\_env, new\_ldi} and all of
+the following apply:
+  \begin{itemize}
+  \item \texttt{ldi} denotes a list \texttt{ldis};
+  \item \texttt{ldi} specifies a type~\texttt{t};
+  \end{itemize}
+  
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LDTypedTupleBegin, lastline=\LDTypedTupleEnd]{../Typing.ml}
 
   \subsection{Formally}
 

@@ -1496,10 +1496,15 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
 
   let rec annotate_local_decl_item loc (env : env) ty ldk ldi =
     match ldi with
+    (* Begin LDDiscardNone *)
     | LDI_Discard None -> (env, ldi) |: TypingRule.LDDiscardNone
+    (* End *)
+    (* Begin LDDiscardSome *)
     | LDI_Discard (Some t) ->
         let+ () = check_can_be_initialized_with loc env t ty in
         (env, ldi) |: TypingRule.LDDiscardSome
+    (* End *)
+    (* Begin LDVar *)
     | LDI_Var (x, ty_opt) ->
         let t =
           best_effort ty @@ fun _ ->
@@ -1515,9 +1520,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let new_env = add_local x t ldk env in
         (new_env, LDI_Var (x, Some t)) |: TypingRule.LDVar
     | LDI_Tuple ([ ld ], None) ->
+      (* TODO: this is prohibited *)
         annotate_local_decl_item loc env ty ldk ld
         |: TypingRule.LDUninitialisedTypedTuple
-    | LDI_Tuple (ldis, None) ->
+    (* End *)
+    (* Begin LDTuple *)
+     | LDI_Tuple (ldis, None) ->
         let tys =
           match (Types.get_structure env ty).desc with
           | T_Tuple tys when List.compare_lengths tys ldis = 0 -> tys
@@ -1527,20 +1535,23 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                    ("tuple initialization", List.length tys, List.length ldis))
           | _ -> conflict loc [ T_Tuple [] ] ty
         in
-        let env, ldis' =
+        let new_env, new_ldi =
           List.fold_right2
             (fun ty' ldi' (env', les) ->
               let env', le = annotate_local_decl_item loc env' ty' ldk ldi' in
               (env', le :: les))
             tys ldis (env, [])
         in
-        (env, LDI_Tuple (ldis', None)) |: TypingRule.LDTuple
+        (new_env, LDI_Tuple (new_ldi, None)) |: TypingRule.LDTuple
+    (* End *)
+    (* Begin LDTypedTuple *)
     | LDI_Tuple (_ldis, Some _t) ->
         (* TODO *)
         assert false |: TypingRule.LDTypedTuple
+    (* End *)
 
   let rec annotate_local_decl_item_uninit loc (env : env) ldi =
-    (* Here implicitely ldk=LDK_Var *)
+    (* Here implicitly ldk=LDK_Var *)
     let here s = add_pos_from loc s in
     match ldi with
     | LDI_Discard _ -> (env, S_Pass |> here)
