@@ -1258,6 +1258,7 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         List.init length (Fun.const v) |> B.create_vector
 
+(* Begin TopLevel *)
   let run_typed_env env (ast : B.ast) (static_env : StaticEnv.env) : B.value m =
     let*| env = build_genv env eval_expr_sef base_value static_env ast in
     let*| res = eval_func env "main" dummy_annotated [] [] in
@@ -1286,5 +1287,6 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     run_typed_env env ast static_env
 
-  let run ast = run_env [] ast
+  let run ast = run_env [] ast |: SemanticsRule.TopLevel
+  (* End TopLevel *)
 end

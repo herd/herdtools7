@@ -1,60 +1,15 @@
 \documentclass{book}
-\usepackage{amsmath}  % Classic math package
-\usepackage{amssymb}  % Classic math package
-\usepackage{mathtools}  % Additional math package
-\usepackage{graphicx}  % For figures
-\usepackage{caption}  % For figure captions
-\usepackage{subcaption}  % For subfigure captions
-\usepackage{url}  % Automatically escapes urls
-\usepackage{hyperref}  % Insert links inside pdfs
-\usepackage[inline]{enumitem}  % For inline lists
-\usepackage[export]{adjustbox}  % For centering too wide figures
-\usepackage{mathpartir}  % For deduction rules and equations paragraphs
-\usepackage{comment}
-\usepackage{fancyvrb}
+\input{ASLmacros}
+
 \input{ASLSemanticsLines}
 
-\usepackage{enumitem}
-\renewlist{itemize}{itemize}{10}
-\setlist[itemize,1]{label=\textbullet}
-\setlist[itemize,2]{label=\textasteriskcentered}
-\setlist[itemize,3]{label=\textendash}
-\setlist[itemize,4]{label=$\triangleright$}
-\setlist[itemize,5]{label=+}
-\setlist[itemize,6]{label=\textbullet}
-\setlist[itemize,7]{label=$\ast$}
-\setlist[itemize,8]{label=\textendash}
-\setlist[itemize,9]{label=$\triangleright$}
-\setlist[itemize,10]{label=+}
-
-%Macros
-\newcommand\ie{i.\,e.}
-\newcommand\eg{e.\,g.}
-\newcommand\synor{\ |\ }
-\newcommand\syntt[1]{\mathtt{#1}}
-\newcommand\ife[3]{\text{if}\ #1\ \text{then}\ #2\ \text{else}\ #3\ \text{end}}
-\newcommand\inenv[2]{\left\langle #1, #2 \right\rangle}
-\newcommand\env[1]{\left\langle #1 \right\rangle}
-\newcommand\reducesto{\ \to\ }
-\newcommand\llbracket{[|}
-\newcommand\rrbracket{|]}
-\newcommand\interp[1]{\left\llbracket #1 \right\rrbracket}
-\newcommand\st[0]{\ \middle|\ }
-\newcommand\field[1]{.\text{#1}}
-\newcommand\globals[0]{\field{globals}}
-\newcommand\locals[0]{\field{locals}}
-\newcommand\X[0]{\mathcal{X}}
-\newcommand\N[0]{\mathbb{N}}
-\newcommand\asldata[0]{\mathtt{asl\_data}}
-\newcommand\aslctrl[0]{\mathtt{asl\_ctrl}}
-\newcommand\aslpo[0]{\mathtt{asl\_po}}
-\DeclareMathOperator{\dom}{dom}
 \newcommand{\testdir}{../tests/ASLSemanticsReference.t}
 
 \author{Arm Architecture Technology Group}
 \title{ASL Semantics Reference}
 \begin{document}
 \maketitle
+
 \tableofcontents{}
 
 \chapter{Copyright and Disclaimer}
@@ -142,15 +97,6 @@ question mark implies that $v \neq \bot$.
 In particular, the over-writing of a variable in an environment depends on
 whether the variable is a global or local variable.
 
-\section{Side-effects}
-
-Side-effects can arise due to:
-\begin{itemize}
-\item Reads and Writes to global variables;
-\item Exceptions;
-\item Calls to primitives.
-\end{itemize}
-
 \section{Evaluation}
 
 Evaluating a program is evaluating its ``main'' subprogram.
@@ -158,8 +104,8 @@ Constructively, evaluating a program requires following its
 Abstract Syntax Tree and evaluating each of its components.
 
 The semantics of a program are given by applying a set of
-\texttt{eval\_<object>} functions. Each \texttt{eval\_<object>} function
-describes how to evaluate a specific object, as follows.
+\texttt{eval\_<label>} functions. Each \texttt{eval\_<label>} function
+describes how to evaluate a specific label, as follows.
 \begin{itemize}
 \item \texttt{eval\_expr} evaluates expressions: it takes an
 environment and an expression and returns a value and a
@@ -184,10 +130,10 @@ environment, a subprogram name and its arguments, and returns a
 list of the return values of the subprogram (see Chapter~\ref{chap:eval_func}). 
 \end{itemize}
 
-\section{Reading guide}
+\chapter{Reading guide}
 
-The definition of each \texttt{eval\_<object>} function is given by a number of
-rules, which follow the possible shapes the \texttt{object} can have. For
+The definition of each \texttt{eval\_<label>} function is given by a number of
+rules, which follow the possible shapes the \texttt{label} can have. For
 example, an expression can be a literal, or a binary operator, amongst other
 things. Each of those has its own evaluation rule: SemanticsRule.Lit in
 Section~\ref{sec:SemanticsRule.Lit}, Semantics.Binop in
@@ -196,12 +142,16 @@ Section~\ref{sec:SemanticsRule.Binop} respectively.
 Each rule is presented using the following template:
 \begin{itemize}
 \item a Prose paragraph gives the rule in English, and corresponds as much as possible to the code of the reference implementation ASLRef given at \url{~/herdtools7/asllib};
-\item one or several Examples, which as much as possible are also given as regression tests in \url{~/herdtools7/asllib/tests/ASLSemanticsReference.t} 
+\item one or several Example, which as much as possible are also given as regression tests in \url{~/herdtools7/asllib/tests/ASLSemanticsReference.t} 
 \item a Code paragraph which gives a verbatim of the corresponding implementation in the interpreter of ASLRef \url{~/herdtools7/asllib/Interpreter.ml};
-\item Formal paragraphs which give formal definitions of the rule: the
-sequential case essentially gives the same information as the Prose paragraph,
-whilst the concurrent case augments this information with a set of
-\texttt{herd7} execution graphs.
+\item a Formal paragraph for the sequential case, which gives a formal
+definition of the rule: the sequential case essentially gives the same
+information as the Prose paragraph;
+\item a Formal paragraph for the concurrent case: the concurrent case augments
+the information given by the sequential case with a set of \texttt{herd7}
+execution graphs. This enables building, for each AArch64 instruction, the
+Intrinsic dependencies used by the AArch64 memory model from this instruction's
+ASL code.
 \end{itemize}
 %
 Formally, the semantics of different language constructs are given by the functions
@@ -274,11 +224,12 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
   \subsection{Code}
   \VerbatimInput[firstline=\LitBegin, lastline=\LitEnd]{../Interpreter.ml}
 
+\begin{formal}
   \subsection{Formally: sequential case}
   The evaluation of a literal value \texttt{v} associates any environment
 \texttt{env} to itself coupled with \texttt{v}: 
 
-  \begin{align}
+\begin{align}
   \interp{\texttt{v}}(\texttt{env}) & \triangleq \left\{ (\texttt{v}, \texttt{env}) \right\}
   \label{eq:sem-seq-lit}
   \end{align}
@@ -288,8 +239,9 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
   \interp{\texttt{v}}(\texttt{env}) & \triangleq \left\{ (\texttt{v}, \texttt{env}, \varnothing) \right\}
   \label{eq:sem-conc-lit}
   \end{align}
+\end{formal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 
 \section{SemanticsRule.ELocalVar \label{sec:SemanticsRule.ELocalVar}}
@@ -312,6 +264,7 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
   \subsection{Code}
   \VerbatimInput[firstline=\ELocalVarBegin, lastline=\ELocalVarEnd]{../Interpreter.ml}
 
+\begin{formal}
   \subsection{Formally: sequential case}
   The evaluation of a variable \texttt{x} in an environment \texttt{env} that maps \texttt{x} to \texttt{v}
   is the tuple $(\texttt{v},\texttt{env})$: 
@@ -325,7 +278,8 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
   \interp{x}(\texttt{env}) & \triangleq \left\{ (\texttt{env}[\texttt{x}], \texttt{env}, \texttt{R(x)}) \right\}
   \label{eq:sem-conc-var}
   \end{align} 
- 
+\end{formal}
+
   \subsection{Comments}
   When there exists a global variable called \texttt{x} then an ASL program
   cannot use the name \texttt{x} as a local variable. ASLRef checks that this
@@ -358,6 +312,7 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
   \subsection{Code}
   \VerbatimInput[firstline=\EGlobalVarBegin, lastline=\EGlobalVarEnd]{../Interpreter.ml}
 
+\begin{formal}
   \subsection{Formally: sequential case}
   \begin{align}
   \interp{\texttt{x}}(\texttt{env}) & \triangleq \left\{ (\texttt{env}[\texttt{x}], \texttt{env})) \right\}
@@ -369,8 +324,9 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
   \interp{\texttt{x}}(\texttt{env}) & \triangleq \left\{ (\texttt{env}[\texttt{x}], \texttt{env}, \texttt{R(x)}) \right\}
   \label{eq:sem-conc-var}
   \end{align} 
+\end{formal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.EUndefIdent \label{sec:SemanticsRule.EUndefIdent}}
 
@@ -391,15 +347,13 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
   \subsection{Code}
   \VerbatimInput[firstline=\EUndefIdentBegin, lastline=\EUndefIdentEnd]{../Interpreter.ml}
 
+\begin{emptyformal} 
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.BinopAnd \label{sec:SemanticsRule.BinopAnd}}
 
@@ -420,13 +374,11 @@ e1 then e2 else false} (see Section~\ref{sec:SemanticsRule.ECond}).
   \subsection{Code}
   \VerbatimInput[firstline=\BinopAndBegin, lastline=\BinopAndEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
   \subsection{Comments}
   This aims to encompass LRM Section 7.5.3 R\_BKNT, Section 8.5.1 I\_QRXP and Section
@@ -449,13 +401,11 @@ e1 then true else e2} (see Section~\ref{sec:SemanticsRule.ECond}).
   \subsection{Code}
   \VerbatimInput[firstline=\BinopOrBegin, lastline=\BinopOrEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
   \subsection{Comments}
   This aims to encompass LRM Section 7.5.3 R\_BKNT, Section 8.5.1 I\_QRXP and Section
@@ -476,16 +426,13 @@ the expression \texttt{(0 == 1) --> (1 == 0)} evaluates to the value \texttt{TRU
 
   \subsection{Code}
   \VerbatimInput[firstline=\BinopImplBegin, lastline=\BinopImplEnd]{../Interpreter.ml}
-
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
   This aims to encompass LRM Section 7.5.3 R\_BKNT, Section 8.5.1 I\_QRXP and Section
   8.6.1.
 
@@ -522,6 +469,7 @@ Evaluation of the expression \texttt{e} under environment \texttt{env} is \textt
   \subsection{Code}
   \VerbatimInput[firstline=\BinopBegin, lastline=\BinopEnd]{../Interpreter.ml}
 
+\begin{formal}
   \subsection{Formally: sequential case}
   
   \begin{align}
@@ -549,13 +497,14 @@ are considered computed in parallel:
       \\ \text{and}\ &
       (\texttt{v1}, \texttt{env'}, S_1) \in{} \interp{\texttt{e1}} (\texttt{env})
       \\ \text{and}\ &
-      (\texttt{v2}, \texttt{new\_env}, S_2) \in{} \interp{\texttt{e2}} (\texttt{env'})
+      (\texttt{v2}, \texttt{new\_env}, S_2) \in{} <\interp{\texttt{e2}} (\texttt{env'})
     \end{aligned}
     \right\}
   \label{eq:sem-conc-plus}
   \end{align} 
+\end{formal}
 
-  \subsection{Comments}
+\subsection{Comments}
   This aims to encompass LRM Section 7.5.3 R\_BKNT.
 
 \section{SemanticsRule.Unop \label{sec:SemanticsRule.Unop}}
@@ -576,15 +525,13 @@ are considered computed in parallel:
   \subsection{Code}
   \VerbatimInput[firstline=\UnopBegin, lastline=\UnopEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.ECond \label{sec:SemanticsRule.ECond}}
 
@@ -611,13 +558,11 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \subsection{Code}
   \VerbatimInput[firstline=\ECondBegin, lastline=\ECondEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
   \subsection{Comments}
   This aims to encompass LRM Section 5.1 R\_YCDB.
@@ -641,15 +586,13 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \subsection{Code}
   \VerbatimInput[firstline=\ESliceBegin, lastline=\ESliceEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.ECall \label{sec:SemanticsRule.ECall}}
 
@@ -673,15 +616,13 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \subsection{Code}
   \VerbatimInput[firstline=\ECallBegin, lastline=\ECallEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.EGetArray \label{sec:SemanticsRule.EGetArray}}
 
@@ -721,16 +662,13 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \subsection{Code}
   \VerbatimInput[firstline=\EGetArrayBegin, lastline=\EGetArrayEnd]{../Interpreter.ml}
 
-
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.ERecord \label{sec:SemanticsRule.ERecord}}
 
@@ -755,15 +693,13 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \subsection{Code}
   \VerbatimInput[firstline=\ERecordBegin, lastline=\ERecordEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.EGetField \label{sec:SemanticsRule.EGetField}}
 
@@ -786,15 +722,14 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \subsection{Code}
   \VerbatimInput[firstline=\EGetFieldBegin, lastline=\EGetFieldEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.EConcat \label{sec:SemanticsRule.EConcat}}
 
@@ -817,15 +752,13 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \subsection{Code}
   \VerbatimInput[firstline=\EConcatBegin, lastline=\EConcatEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.ETuple \label{sec:SemanticsRule.ETuple}}
 
@@ -848,15 +781,13 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \subsection{Code}
   \VerbatimInput[firstline=\ETupleBegin, lastline=\ETupleEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.EUnknown \label{sec:SemanticsRule.EUnknown}}
 
@@ -898,6 +829,7 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \subsection{Code}
   \VerbatimInput[firstline=\EUnknownBegin, lastline=\EUnknownEnd]{../Interpreter.ml}
 
+\begin{formal}
   \subsection{Formally: sequential case}
 
   \begin{align}  
@@ -911,8 +843,9 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \interp{\syntt{unknown:} t} (E) & \triangleq \left\{ (v, E, \varnothing) \st{} v \in{} D(t) \right\}
   \label{eq:sem-conc-unknown}
   \end{align}
+\end{formal}
 
-  \subsection{Comments}
+\subsection{Comments}
   This aims to encompass LRM Section 5.12 R\_WLCH.
 
 \section{SemanticsRule.EPattern \label{sec:SemanticsRule.EPattern}}
@@ -941,15 +874,13 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \subsection{Code}
   \VerbatimInput[firstline=\EPatternBegin, lastline=\EPatternEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.CTC \label{sec:SemanticsRule.CTC}}
 
@@ -987,11 +918,13 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \VerbatimInput[firstline=\CTCBegin, lastline=\CTCEnd]
                 {../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
   
   \subsection{Formally: concurrent case}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 
 \chapter{Evaluation of Left-Hand-Side Expressions \label{chap:eval_lexpr}}
@@ -1030,15 +963,13 @@ of the following apply:
   \subsection{Code}
   \VerbatimInput[firstline=\LEDiscardBegin, lastline=\LEDiscardEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.LELocalVar \label{sec:SemanticsRule.LELocalVar}}
 
@@ -1060,15 +991,13 @@ of the following apply:
   \subsection{Code}
   \VerbatimInput[firstline=\LELocalVarBegin, lastline=\LELocalVarEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.LEGlobalVar \label{sec:SemanticsRule.LEGlobalVar}}
 
@@ -1090,15 +1019,13 @@ of the following apply:
   \subsection{Code}
   \VerbatimInput[firstline=\LEGlobalVarBegin, lastline=\LEGlobalVarEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.LEUndefIdentV0 \label{sec:SemanticsRule.LEUndefIdentV0}}
 
@@ -1119,15 +1046,13 @@ a local variable bound to the value \texttt{v}.
   \subsection{Code}
   \VerbatimInput[firstline=\LEUndefIdentZeroBegin, lastline=\LEUndefIdentZeroEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.LEUndefIdentV1 \label{sec:SemanticsRule.LEUndefIdentV1}}
 
@@ -1149,15 +1074,13 @@ a local variable bound to the value \texttt{v}.
   \subsection{Code}
   \VerbatimInput[firstline=\LEUndefIdentOneBegin, lastline=\LEUndefIdentOneEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.LESlice \label{sec:SemanticsRule.LESlice}}
 
@@ -1182,15 +1105,13 @@ of the following apply:
   \subsection{Code}
   \VerbatimInput[firstline=\LESliceBegin, lastline=\LESliceEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-   \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.LESetArray \label{sec:SemanticsRule.LESetArray}}
 
@@ -1217,15 +1138,13 @@ of the following apply:
   \subsection{Code}
   \VerbatimInput[firstline=\LESetArrayBegin, lastline=\LESetArrayEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.LESetField \label{sec:SemanticsRule.LESetField}}
 
@@ -1238,7 +1157,7 @@ of the following apply:
     \item The right-hand-side expression corresponding to \texttt{le\_record} is
       \texttt{re\_record};
     \item The evaluation of \texttt{re\_record} under \texttt{env} is \texttt{rv\_record};
-    \item \texttt{new\_v\_record} is \texttt{rv\_record} where the field [field\_name] has been
+    \item \texttt{new\_v\_record} is \texttt{rv\_record} where the field \texttt{field\_name} has been
       updated to \texttt{v};
     \item \texttt{new\_env} is \texttt{env} where \texttt{le\_record} is bound to
       \texttt{new\_v\_record}.
@@ -1252,15 +1171,13 @@ of the following apply:
   \subsection{Code}
   \VerbatimInput[firstline=\LESetFieldBegin, lastline=\LESetFieldEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.LEDestructuring \label{sec:SemanticsRule.LEDestructuring}}
 
@@ -1282,15 +1199,13 @@ of the following apply:
   \subsection{Code}
   \VerbatimInput[firstline=\LEDestructuringBegin, lastline=\LEDestructuringEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \chapter{Evaluation of Slices \label{chap:eval_slices}}
 \texttt{eval\_slices env slices} is the list of pair \texttt{(i\_n, l\_n)} that
@@ -1327,15 +1242,13 @@ of the following apply:
   \subsection{Code}
   \VerbatimInput[firstline=\SliceSingleBegin, lastline=\SliceSingleEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SliceLength \label{sec:SemanticsRule.SliceLength}}
 
@@ -1359,15 +1272,13 @@ apply:
   \subsection{Code}
   \VerbatimInput[firstline=\SliceLengthBegin, lastline=\SliceLengthEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SliceRange \label{sec:SemanticsRule.SliceRange}}
 
@@ -1392,15 +1303,13 @@ apply:
   \subsection{Code}
   \VerbatimInput[firstline=\SliceRangeBegin, lastline=\SliceRangeEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SliceStar \label{sec:SemanticsRule.SliceStar}}
 
@@ -1426,18 +1335,16 @@ apply:
   \subsection{Code}
   \VerbatimInput[firstline=\SliceStarBegin, lastline=\SliceStarEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \chapter{Evaluation of Patterns \label{chap:eval_pattern}}
-[eval\_pattern env pos v p] determines if [v] matches the pattern [p].
+\texttt{eval\_pattern env pos v p} determines if \texttt{v} matches the pattern \texttt{p}.
 
 Evaluation of the pattern \texttt{p} under environment \texttt{env} is
 \texttt{(res,new\_env)}, or an error, and one of the following applies:
@@ -1471,15 +1378,13 @@ Evaluation of the pattern \texttt{p} under environment \texttt{env} is
   \subsection{Code}
   \VerbatimInput[firstline=\PAllBegin, lastline=\PAllEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.PAny \label{sec:SemanticsRule.PAny}}
 
@@ -1504,15 +1409,13 @@ pattern in \texttt{li\_patterns} in \texttt{env};
     \subsection{Code}
     \VerbatimInput[firstline=\PAnyBegin, lastline=\PAnyEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
     \subsection{Formally: sequential case}
-    \begin{align}
-    \end{align} 
 
     \subsection{Formally: concurrent case}
-    \begin{align}
-    \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.PGeq \label{sec:SemanticsRule.PGeq}}
 
@@ -1520,9 +1423,9 @@ pattern in \texttt{li\_patterns} in \texttt{env};
    Evaluation of the pattern \texttt{p} under environment \texttt{env} is
   \texttt{(res,new\_env)} and all of the following apply:
     \begin{itemize}
-    \item [p] is a side-effect-free expression [e];
+    \item \texttt{p} is a side-effect-free expression \texttt{e};
     \item \texttt{res} is a value \texttt{v};
-    \item [v] is greater than or equal to the evaluation of [e] in [env];
+    \item \texttt{v} is greater than or equal to the evaluation of \texttt{e} in \texttt{env};
     \item \texttt{new\_env} is \texttt{env}.
     \end{itemize}
 
@@ -1535,15 +1438,13 @@ pattern in \texttt{li\_patterns} in \texttt{env};
   \subsection{Code}
   \VerbatimInput[firstline=\PGeqBegin, lastline=\PGeqEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.PLeq \label{sec:SemanticsRule.PLeq}}
 
@@ -1566,15 +1467,13 @@ pattern in \texttt{li\_patterns} in \texttt{env};
   \subsection{Code}
   \VerbatimInput[firstline=\PLeqBegin, lastline=\PLeqEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.PNot \label{sec:SemanticsRule.PNot}}
 
@@ -1598,15 +1497,13 @@ pattern in \texttt{li\_patterns} in \texttt{env};
   \subsection{Code}
   \VerbatimInput[firstline=\PNotBegin, lastline=\PNotEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.PRange \label{sec:SemanticsRule.PRange}}
 
@@ -1630,15 +1527,13 @@ pattern in \texttt{li\_patterns} in \texttt{env};
   \subsection{Code}
   \VerbatimInput[firstline=\PRangeBegin, lastline=\PRangeEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.PSingle \label{sec:SemanticsRule.PSingle}}
 
@@ -1661,15 +1556,13 @@ pattern in \texttt{li\_patterns} in \texttt{env};
   \subsection{Code}
   \VerbatimInput[firstline=\PSingleBegin, lastline=\PSingleEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.PMask \label{sec:SemanticsRule.PMask}}
 
@@ -1692,15 +1585,13 @@ pattern in \texttt{li\_patterns} in \texttt{env};
   \subsection{Code}
   \VerbatimInput[firstline=\PMaskBegin, lastline=\PMaskEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.PTuple \label{sec:SemanticsRule.PTuple}}
 
@@ -1723,15 +1614,13 @@ pattern in \texttt{li\_patterns} in \texttt{env};
   \subsection{Code}
   \VerbatimInput[firstline=\PTupleBegin, lastline=\PTupleEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \chapter{Evaluation of Local Declarations \label{chap:eval_local_decl}}
 
@@ -1767,15 +1656,13 @@ Evaluation of the local variables \texttt{ldi} under the environment
   \subsection{Code}
   \VerbatimInput[firstline=\LDDiscardBegin, lastline=\LDDiscardEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.LDVar \label{sec:SemanticsRule.LDVar}}
 
@@ -1803,15 +1690,13 @@ local variable bound to value \texttt{m}.
   \subsection{Code}
   \VerbatimInput[firstline=\LDVarBegin, lastline=\LDVarEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.LDTypedVar \label{sec:SemanticsRule.LDTypedVar}}
 
@@ -1828,20 +1713,18 @@ Evaluation of the local variables \texttt{ldi} under the environment
     \subsection{Example: SemanticsRule.LDTypedVar.asl}
     In the program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDTypedVar.asl}
-    [var x : integer;] binds [x] in [env] to the base value of [integer].
+    \texttt{var x : integer;} binds \texttt{x} in \texttt{env} to the base value of \texttt{integer}.
 
   \subsection{Code}
   \VerbatimInput[firstline=\LDTypedVarBegin, lastline=\LDTypedVarEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.LDTuple \label{sec:SemanticsRule.LDTuple}}
 
@@ -1858,21 +1741,19 @@ Evaluation of the local variables \texttt{ldi} under the environment
     \subsection{Example: SemanticsRule.LDTuple.asl}
     In the program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDTuple.asl}
-    [var (x,y,z) = (1,2,3);] binds [x] (resp. [y], [z]) to the evaluation of
-    [1] (resp. [2], [3]) in [env].
+    \texttt{var (x,y,z) = (1,2,3);} binds \texttt{x} (resp. \texttt{y}, \texttt{z}) to the evaluation of
+    \texttt{1} (resp. \texttt{2}, \texttt{3}) in \texttt{env}.
 
   \subsection{Code}
   \VerbatimInput[firstline=\LDTupleBegin, lastline=\LDTupleEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.LDTypedTuple \label{sec:SemanticsRule.LDTypedTuple}}
 
@@ -1888,21 +1769,19 @@ Evaluation of the local variables \texttt{ldi} under the environment
     \subsection{Example: SemanticsRule.LDTypedTuple.asl}
     In the program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDTypedTuple.asl}
-    [var (x,y,z) : integer;] binds [x], [y] and [z] in [env] to the base value
-    of [integer].
+    \texttt{var (x,y,z) : integer;} binds \texttt{x}, \texttt{y} and \texttt{z} in \texttt{env} to the base value
+    of \texttt{integer}.
 
   \subsection{Code}
   \VerbatimInput[firstline=\LDTypedTupleBegin, lastline=\LDTypedTupleEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.LDUninitialisedTuple \label{sec:SemanticsRule.LDUninitialisedTuple}}
 
@@ -1917,21 +1796,19 @@ Evaluation of the local variables \texttt{ldi} under the environment
     \subsection{Example: SemanticsRule.LDUninitalisedTuple.asl}
     In the program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDUninitialisedTuple.asl}
-    [var (x : integer, y : boolean);] binds [x] to the base value of [integer]
-    and [y] to the base value of [boolean].
+   \texttt{var (x : integer, y : boolean);} binds \texttt{x} to the base value of \texttt{integer}
+    and \texttt{y} to the base value of \texttt{boolean}.
 
   \subsection{Code}
   \VerbatimInput[firstline=\LDUninitialisedTupleBegin, lastline=\LDUninitialisedTupleEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \chapter{Evaluation of Statements \label{chap:eval_stmt}}
 Evaluation \texttt{eval\_stmt env s} of a statement \texttt{s} under
@@ -1979,19 +1856,21 @@ the following applies:
   \subsection{Code}
   \VerbatimInput[firstline=\SPassBegin, lastline=\SPassEnd]{../Interpreter.ml}
 
+\begin{formal}
   \subsection{Formally: sequential case}
   \begin{align}
   \interp{\syntt{pass}} (\texttt{env}) & \triangleq \{ (\bot, \texttt{env}) \}
   \label{eq:sem-seq-spass}
-  \end{align} 
+\end{align} 
 
   \subsection{Formally: concurrent case}
   \begin{align}
   \interp{\syntt{pass}} (\texttt{env}) & \triangleq \{ (\bot, \texttt{env}, \varnothing) \}
   \label{eq:sem-conc-spass}
   \end{align} 
+\end{formal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SAssign \label{sec:SemanticsRule.SAssign}}
 
@@ -2014,23 +1893,25 @@ the following applies:
   \subsection{Code}
   \VerbatimInput[firstline=\SAssignBegin, lastline=\SAssignEnd]{../Interpreter.ml}
 
+\begin{formal}
   \subsection{Formally: sequential case}
-  \begin{equation}
+  \begin{align}
     \interp{\texttt{le = re}} (\texttt{env}) \triangleq
       \left\{ \left(\bot, \texttt{env'}[\texttt{le} \mapsto \texttt{v} ]\right) \st{} (\texttt{v}, \texttt{env'}) \in \interp{\texttt{re}} (\texttt{env}) \right\}
     \label{eq:sem-seq-sassign}
-  \end{equation}
+  \end{align}
 
   \subsection{Formally: concurrent case}
-  \begin{equation}
+  \begin{align}
     \interp{\texttt{le = re}} (\texttt{env}) \triangleq
       \left\{ \left(\bot, \texttt{env'}[\texttt{le} \mapsto \texttt{v} ], S \xrightarrow{\asldata} \texttt{W(le)}\right) \st{}
         (\texttt{v}, \texttt{env'}, S) \in \interp{\texttt{re}} (\texttt{E})
       \right\}
     \label{eq:sem-conc-sassign}
-  \end{equation}
+  \end{align}
+\end{formal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SAssignCall \label{sec:SemanticsRule.SAssignCall}}
 
@@ -2051,15 +1932,13 @@ the following applies:
   \subsection{Code}
   \VerbatimInput[firstline=\SAssignCallBegin, lastline=\SAssignCallEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SAssignTuple \label{sec:SemanticsRule.SAssignTuple}}
 
@@ -2080,13 +1959,13 @@ statement \texttt{(b,x)} assigns the value \texttt{TRUE} to the mutable variable
   \subsection{Code}
   \VerbatimInput[firstline=\SAssignTupleBegin, lastline=\SAssignTupleEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SReturnNone \label{sec:SemanticsRule.SReturnNone}}
 
@@ -2107,15 +1986,13 @@ Evaluation of the statement \texttt{s} under environment \texttt{env} is
   \subsection{Code}
   \VerbatimInput[firstline=\SReturnNoneBegin, lastline=\SReturnNoneEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SReturnOne \label{sec:SemanticsRule.SReturnOne}}
 
@@ -2133,20 +2010,18 @@ Evaluation of the statement \texttt{s} under environment \texttt{env} is
     \subsection{Example: SemanticsRule.SReturnOne.asl}
     In the program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnOne.asl}
-    [return 3;] exits the current subprogram with value [3].
+    \texttt{return 3;} exits the current subprogram with value \texttt{3}.
 
   \subsection{Code}
   \VerbatimInput[firstline=\SReturnOneBegin, lastline=\SReturnOneEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SReturnSome \label{sec:SemanticsRule.SReturnSome}}
 
@@ -2163,11 +2038,12 @@ Evaluation of the statement \texttt{s} under environment \texttt{env} is
     \subsection{Example: SemanticsRule.SReturnSome.asl}
     In the program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnSome.asl}
-    [return (3, 42);] exits the current subprogram with value [(3, 42)].
+    \texttt{return (3, 42);} exits the current subprogram with value \texttt{(3, 42)}.
 
   \subsection{Code}
   \VerbatimInput[firstline=\SReturnSomeBegin, lastline=\SReturnSomeEnd]{../Interpreter.ml}
 
+\begin{formal}
   \subsection{Formally: sequential case}
   \begin{align}
   \interp{\syntt{return}\ e} (E) & \triangleq \interp{e} (E)
@@ -2179,8 +2055,9 @@ Evaluation of the statement \texttt{s} under environment \texttt{env} is
   \interp{\syntt{return}\ e} (E) & \triangleq \interp{e} (E)
   \label{eq:sem-conc-sreturn}
   \end{align} 
+\end{formal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SSeq \label{sec:SemanticsRule.SSeq}}
 
@@ -2196,16 +2073,17 @@ Evaluation of the statement \texttt{s} under environment \texttt{env} is
   \subsection{Example: SemanticsRule.SSeq.asl}
   In the program:
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SSeq.asl}
-  [let x = 3; let y = x + 1] evaluates [let x = 3] then [let y = x + 1].
+  \texttt{let x = 3; let y = x + 1} evaluates \texttt{let x = 3} then \texttt{let y = x + 1}.
 
   \subsection{Code}
   \VerbatimInput[firstline=\SSeqBegin, lastline=\SSeqEnd]{../Interpreter.ml}
 
+\begin{formal}
   \subsection{Formally: sequential case}
   The semantics of~\texttt{s1; s2} is the semantics of~\texttt{s2} applied to the results
   of the semantics of~\texttt{s1} if they do not perform an early return, in which
   case it is the semantics of~\texttt{s1}.
-  \begin{equation}
+  \begin{align}
     \interp{\texttt{s1; s2}} (\texttt{env}) \triangleq
       \left\{ (\texttt{v?}, \texttt{new\_env}) \st{}
       \begin{aligned}
@@ -2221,12 +2099,12 @@ Evaluation of the statement \texttt{s} under environment \texttt{env} is
       \end{aligned}
       \right\}
     \label{eq:sem-seq-sseq}
-  \end{equation}
+  \end{align}
 
   \subsection{Formally: concurrent case}
   The evaluation of two statements introduces an $\aslpo$ arrow between the two
 graphs produced by their interpretations:
-  \begin{equation}
+  \begin{align}
     \interp{\texttt{s1; s2}} (\texttt{env}) \triangleq
       \left\{ (\texttt{v?}, \texttt{new\_env}, S) \st{}
       \begin{aligned}
@@ -2244,9 +2122,10 @@ graphs produced by their interpretations:
       \end{aligned}
       \right\}
     \label{eq:sem-conc-sseq}
-  \end{equation}
+  \end{align}
+\end{formal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SCall \label{sec:SemanticsRule.SCall}}
 
@@ -2263,20 +2142,18 @@ graphs produced by their interpretations:
     \subsection{Example: SemanticsRule.SCall.asl}
     In the program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCall.asl}
-    [Zeros(3)] evaluates to ['000'].
+    \texttt{Zeros(3)} evaluates to \texttt{'000'}.
 
   \subsection{Code}
   \VerbatimInput[firstline=\SCallBegin, lastline=\SCallEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SCond \label{sec:SemanticsRule.SCond}}
 
@@ -2293,15 +2170,16 @@ graphs produced by their interpretations:
     \subsection{Example: SemanticsRule.SCond.asl}
     The program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond.asl}
-    prints "3".
+    prints ``\texttt{3}''.
 
   \subsection{Code}
   \VerbatimInput[firstline=\SCondBegin, lastline=\SCondEnd]{../Interpreter.ml}
 
+\begin{formal}
   \subsection{Formally: sequential case}
   The semantics of a conditional statement $\ife{e}{s_1}{s_2}$ chooses between
   the semantics of~$s_1$ or $s_2$ depending on the evaluation of $e$:
-  \begin{equation}
+  \begin{align}
     \interp{\begin{array}{l}
       \syntt{if}\ e\\
       \syntt{then}\ s_1\\
@@ -2322,12 +2200,12 @@ graphs produced by their interpretations:
       \end{aligned}
       \right\}
     \label{eq:sem-seq-scond}
-  \end{equation}
+  \end{align}
 
   \subsection{Formally: concurrent case}
   A conditional statement introduces control dependencies $\aslctrl$ between its
   condition and its body:
-  \begin{equation}
+  \begin{align}
     \interp{\begin{array}{l}
       \syntt{if}\ e\\
       \syntt{then}\ s_1\\
@@ -2349,9 +2227,10 @@ graphs produced by their interpretations:
       \end{aligned}
       \right\}
     \label{eq:sem-conc-scond}
-  \end{equation}
+  \end{align}
+\end{formal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SCase \label{sec:SemanticsRule.SCase}}
 
@@ -2367,19 +2246,18 @@ graphs produced by their interpretations:
     \subsection{Example: SemanticsRule.SCase.asl}
     The program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCase.asl} 
+    uses the second \texttt{when} clause because \texttt{3} is less than \texttt{42}.
 
   \subsection{Code}
   \VerbatimInput[firstline=\SCaseBegin, lastline=\SCaseEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SAssert \label{sec:SemanticsRule.SAssert}}
 
@@ -2411,15 +2289,13 @@ graphs produced by their interpretations:
   \subsection{Code}
   \VerbatimInput[firstline=\SAssertBegin, lastline=\SAssertEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SWhile \label{sec:SemanticsRule.SWhile}}
 
@@ -2435,20 +2311,18 @@ graphs produced by their interpretations:
     \subsection{Example: SemanticsRule.SWhile.asl}
     The program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SWhile.asl}
-    prints ``0123''.
+    prints ``\texttt{0123}''.
 
   \subsection{Code}
   \VerbatimInput[firstline=\SWhileBegin, lastline=\SWhileEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SRepeat \label{sec:SemanticsRule.SRepeat}}
 
@@ -2464,20 +2338,18 @@ graphs produced by their interpretations:
     \subsection{Example: SemanticsRule.SRepeat.asl}
     The program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SRepeat.asl}
-    prints ``0123''.
+    prints ``\texttt{0123}''.
 
   \subsection{Code}
   \VerbatimInput[firstline=\SRepeatBegin, lastline=\SRepeatEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SFor \label{sec:SemanticsRule.SFor}}
 
@@ -2493,20 +2365,18 @@ graphs produced by their interpretations:
     \subsection{Example: SemanticsRule.SFor.asl}
     The program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SFor.asl}
-    prints ``0123''.
+    prints ``\texttt{0123}''.
 
   \subsection{Code}
   \VerbatimInput[firstline=\SForBegin, lastline=\SForEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SThrowNone \label{sec:SemanticsRule.SThrowNone}}
 
@@ -2521,20 +2391,18 @@ graphs produced by their interpretations:
     \subsection{Example: SemanticsRule.SThrowNone.asl}
     The program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SThrowNone.asl} 
-    throws a \texttt{MyException} exception.
+    throws a ``\texttt{MyException}'' exception.
 
   \subsection{Code}
   \VerbatimInput[firstline=\SThrowNoneBegin, lastline=\SThrowNoneEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SThrowSomeTyped \label{sec:SemanticsRule.SThrowSomeTyped}}
 
@@ -2550,20 +2418,18 @@ graphs produced by their interpretations:
     \subsection{Example: SemanticsRule.SThrowSomeTyped.asl}
     The program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SThrowSomeTyped.asl}
-    throws a \texttt{MyException \{a: 3, b: 42\}} exception.
+    throws a ``\texttt{MyException \{a: 3, b: 42\}}'' exception.
 
   \subsection{Code}
   \VerbatimInput[firstline=\SThrowSomeTypedBegin, lastline=\SThrowSomeTypedEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.STry \label{sec:SemanticsRule.STry}}
 
@@ -2580,20 +2446,18 @@ graphs produced by their interpretations:
     \subsection{Example: SemanticsRule.STry.asl}
     The program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.STry.asl}
-    prints ``3''.
+    prints ``\texttt{3}''.
 
   \subsection{Code}
   \VerbatimInput[firstline=\STryBegin, lastline=\STryEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SDeclSome \label{sec:SemanticsRule.SDeclSome}}
 
@@ -2609,20 +2473,18 @@ graphs produced by their interpretations:
     \subsection{Example: SemanticsRule.SDeclSome.asl}
     The program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SDeclSome.asl}
-    [let x = 3;] binds [x] to [3] in the empty environment.
+    \texttt{let x = 3;} binds \texttt{x} to \texttt{3} in the empty environment.
 
   \subsection{Code}
   \VerbatimInput[firstline=\SDeclSomeBegin, lastline=\SDeclSomeEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.SDeclNone \label{sec:SemanticsRule.SDeclNone}}
 
@@ -2643,15 +2505,13 @@ graphs produced by their interpretations:
   \subsection{Code}
   \VerbatimInput[firstline=\SDeclNoneBegin, lastline=\SDeclNoneEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \chapter{Evaluation of Blocks \label{chap:eval_block}}
  
@@ -2667,23 +2527,26 @@ variable bindings of \texttt{env} with the updated values of
     \end{itemize}
  
     \subsection{Example: SemanticsRule.Block.asl}
-\VerbatimInput{\testdir/SemanticsRule.Block.asl}
-    The conditional statement \texttt{if TRUE then\ldots{} end;} defines a block structure. Thus, the scope of the declaration \texttt{let y = 2;} i s limited to its declaring block --- or, the binding for \texttt{y} no longer exists once the block is exited. As a consequence, the subsequent declaration \texttt{let y = 1} is valid.
-    By contrast, the assigment of the mutable variable~\texttt{x} persists after block end. However, observe that \texttt{x} is defined before the block and hence still exists after the block.
+    In the program:
+    \VerbatimInput{\testdir/SemanticsRule.Block.asl}
+    the conditional statement \texttt{if TRUE then\ldots{} end;} defines a
+block structure. Thus, the scope of the declaration \texttt{let y = 2;} is
+limited to its declaring block---or the binding for \texttt{y} no longer exists
+once the block is exited. As a consequence, the subsequent declaration
+\texttt{let y = 1} is valid.  By contrast, the assigment of the mutable
+variable~\texttt{x} persists after block end. However, observe that \texttt{x}
+is defined before the block and hence still exists after the block.
 
-    \subsection{Code}
-\VerbatimInput[firstline=\BlockBegin,lastline=\BlockEnd]{../Interpreter.ml}
+  \subsection{Code}
+    \VerbatimInput[firstline=\BlockBegin,lastline=\BlockEnd]{../Interpreter.ml}
 
-  \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
+\begin{emptyformal}
+    \subsection{Formally: sequential case}
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \chapter{Evaluation of Loops \label{chap:eval_loops}}
 
@@ -2715,20 +2578,18 @@ eventually leading to exiting the loop;
     \subsection{Example: SemanticsRule.Loop.asl}
     The program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.Loop.asl}
-    prints ``0123''.
+    prints ``\texttt{0123}''.
 
     \subsection{Code}
     \VerbatimInput[firstline=\LoopBegin, lastline=\LoopEnd]{../Interpreter.ml}
 
-  \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
+\begin{emptyformal}
+    \subsection{Formally: sequential case}
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.For \label{sec:SemanticsRule.For}}
 \texttt{eval\_for undet env index\_name v\_start dir v\_end body} evaluates
@@ -2759,20 +2620,18 @@ applies:
     \subsection{Example: SemanticsRule.For.asl}
     The program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.For.asl}
-    prints ``3''.
+    prints ``\texttt{3}''.
 
     \subsection{Code}
     \VerbatimInput[firstline=\ForBegin, lastline=\ForEnd]{../Interpreter.ml}
 
-  \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
+\begin{emptyformal}
+    \subsection{Formally: sequential case}
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \chapter{Evaluation of Catchers \label{chap:eval_catchers}}
 \texttt{eval\_catchers env catchers otherwise\_opt s\_m}, given the result
@@ -2814,20 +2673,18 @@ Formally, one of the following applies:
     \subsection{Example: SemanticsRule.Catch.asl}
     The program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.Catch.asl}
-    prints ``MyException''.
+    prints ``\texttt{MyException}''.
 
   \subsection{Code}
   \VerbatimInput[firstline=\CatchBegin, lastline=\CatchEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.CatchNamed \label{sec:SemanticsRule.CatchNamed}}
 
@@ -2860,20 +2717,18 @@ Formally, one of the following applies:
     \subsection{Example: SemanticsRule.CatchNamed.asl}
     The program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNamed.asl}
-    prints ``My exception with my message''.
+    prints ``\texttt{My exception with my message}''.
 
   \subsection{Code}
   \VerbatimInput[firstline=\CatchNamedBegin, lastline=\CatchNamedEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.CatchOtherwise \label{sec:SemanticsRule.CatchOtherwise}}
 
@@ -2900,20 +2755,18 @@ Formally, one of the following applies:
     \subsection{Example: SemanticsRule.CatchOtherwise.asl}
      The program:
      \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchOtherwise.asl}
-     prints ``Another exception''.
+     prints ``\texttt{Another exception}''.
 
   \subsection{Code}
   \VerbatimInput[firstline=\CatchOtherwiseBegin, lastline=\CatchOtherwiseEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.CatchNone \label{sec:SemanticsRule.CatchNone}}
 
@@ -2934,15 +2787,13 @@ Formally, one of the following applies:
   \subsection{Code}
   \VerbatimInput[firstline=\CatchNoneBegin, lastline=\CatchNoneEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.CatchNoThrow \label{sec:SemanticsRule.CatchNoThrow}}
 
@@ -2956,7 +2807,7 @@ Formally, one of the following applies:
     \subsection{Example: SemanticsRule.CatchNoThrow.asl}
     The program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNoThrow.asl}
-    prints ``No exception raised''.
+    prints ``\texttt{No exception raised}''.
 
   \subsection{Code}
   \VerbatimInput[firstline=\CatchNoThrowBegin, lastline=\CatchNoThrowEnd]{../Interpreter.ml}
@@ -2993,15 +2844,13 @@ One of the following applies:
   \subsection{Code}
   \VerbatimInput[firstline=\FUndefIdentBegin, lastline=\FUndefIdentEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.FPrimitive \label{sec:SemanticsRule.FPrimitive}}
 
@@ -3013,7 +2862,7 @@ One of the following applies:
   \item \texttt{vs} is the application of \texttt{body} on \texttt{actual\_args}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
   In the program:
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.FPrimitive.asl}
   \texttt{print ("Hello, world!");} calls the primitive \texttt{print} on the evaluation of \texttt{"Hello, world!"}.
@@ -3021,15 +2870,13 @@ One of the following applies:
   \subsection{Code}
   \VerbatimInput[firstline=\FPrimitiveBegin, lastline=\FPrimitiveEnd]{../Interpreter.ml}
 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
-  \begin{align}
-  \end{align} 
 
   \subsection{Formally: concurrent case}
-  \begin{align}
-  \end{align} 
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{SemanticsRule.FCall \label{sec:SemanticsRule.FCall}}
 
@@ -3061,6 +2908,7 @@ One of the following applies:
   \subsection{Code}
   \VerbatimInput[firstline=\FCallBegin, lastline=\FCallEnd]{../Interpreter.ml}
 
+\begin{formal}
   \subsection{Formally: sequential case}
   The evaluation of a n-ary subprogram evaluates the arguments in order then
   calls the subprogram:
@@ -3077,11 +2925,11 @@ One of the following applies:
   \end{align} 
 
   \subsection{Formally: concurrent case}
-  For $i$ ranging implicitely from 1 to $n$ included, a call to a subprogram $f$
+  For $i$ ranging implicitly from 1 to $n$ included, a call to a subprogram $f$
   is interpreted as the interpretation of the subprogram call (see to $f$ after
   evaluating every argument in order:
 
-  \begin{equation}
+  \begin{align}
     \interp{f (e_i)} (E_0) \triangleq
       \left\{ (v, E', S) \st{}
       \begin{aligned}
@@ -3092,9 +2940,62 @@ One of the following applies:
       \end{aligned}
       \right\}
     \label{eq:sem-conc-fcall}
-  \end{equation}
+  \end{align}
+\end{formal}
 
   \subsection{Comments}
   This aims to encompass LRM R\_DFWZ.
 
+\chapter{Evaluation of Programs}
+
+  \section{SemanticsRule.TopLevel \label{sec:SemanticsRule.TopLevel}}
+
+  \subsection{Prose}
+  The evaluation of a program \texttt{ast} is \texttt{res} or an error
+  and all of the following apply:
+  \begin{itemize}
+  \item \texttt{ast’} is \texttt{ast} modified to add the standard library;
+  \item \texttt{ast\_typed, static\_env} is the result of typing \texttt{ast’};
+  \item \texttt{genv} is the global environment built using \texttt{static\_env} and evaluating the global constants in \texttt{ast\_typed} following the Directed Acyclic Graph of their definitions;
+  \item \texttt{res} is the result of evaluating the function ``\texttt{main}, without any argument, in \texttt{genv};
+  \item One of the following applies:
+        \begin{itemize}
+	\item \texttt{res} is a value \texttt{v}, or
+	\item All of the following apply:
+              \begin{itemize}
+              \item \texttt{res} is an implicitly thrown exception;
+	      \item An error ``\texttt{Uncaught exception: implicitly thrown out of a try-catch}'' is raised;
+              \end{itemize}
+	\item All of the following apply:
+              \begin{itemize}
+              \item \texttt{res} is an exception \texttt{exn} with an associated type \texttt{ty};
+	      \item An error ``\texttt{Uncaught exception: \{ty\} \{exn\}}'' is raised.
+              \end{itemize}
+        \end{itemize}
+  \end{itemize}
+
+  \subsection{Example}
+
+  \subsection{Code}
+  \VerbatimInput[firstline=\TopLevelBegin, lastline=\TopLevelEnd]{../Interpreter.ml}
+
+\begin{emptyformal}
+  \subsection{Formally: sequential case}
+  
+  \subsection{Formally: concurrent case}
+\end{emptyformal}
+
+\isempty{\subsection{Comments}}
+
+\chapter{Side-effects}
+
+Side-effects can arise due to:
+\begin{itemize}
+\item Reads and Writes to global variables;
+\item Exceptions;
+\item Calls to primitives.
+\end{itemize}
+
+\bibliographystyle{plain}
+\bibliography{ASL}
 \end{document}

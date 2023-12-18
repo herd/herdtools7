@@ -162,11 +162,13 @@ and slice =
 
 (** Type descriptors.*)
 and type_desc =
+(* Begin Constrained *)
   | T_Int of int_constraints option
+  | T_Bits of bits_constraint * bitfield list
+(* End Constrained *)
   | T_Real
   | T_String
   | T_Bool
-  | T_Bits of bits_constraint * bitfield list
   | T_Enum of identifier list
   | T_Tuple of ty list
   | T_Array of expr * ty
