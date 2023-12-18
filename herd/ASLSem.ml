@@ -750,15 +750,22 @@ module Make (C : Config) = struct
           and shared = build `ASLv0 "shared_pseudocode.asl" in
           let shared =
             (*
-             * For Some reason, do not clash with
-             * stdlib definitions that will be loaded later.
+             * Remove from shared pseudocode the functions declared in stdlib because:
+             * 1. it avoids name clashes at type-checking time;
+             * 2. when debugging, we know what function is called;
+             * 3. stdlib functions usually out-perform their shared-pseudocode
+             *    counterparts when executed in herd.
              *)
             (List.filter
                AST.(
                  fun d ->
                    match d.desc with
                    | D_Func { name;_} ->
-                      not (Asllib.Builder.is_stdlib_name name)
+                      let is_stdlib = Asllib.Builder.is_stdlib_name name in
+                      let () =
+                        if false && is_stdlib then
+                          Printf.eprintf "Subprogram %s removed from shared\n%!" name in
+                      not is_stdlib
                    | _ -> true)
                shared [@warning "-40-42"])
           in
