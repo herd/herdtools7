@@ -3455,10 +3455,10 @@ new\_stmt)} and all of the following apply:
     This aims to encompass LRM Section 7.4.3 R\_SDJK.
 
 \chapter{Typing of Subprogram Calls}
-\texttt{annotate\_call loc en name args eqs call\_type} annotates the call to subprogram
-\texttt{name} with arguments \texttt{args} and parameters \texttt{eqs}. Formally, \texttt{annotate\_call loc
-en name args eqs call\_type} is \texttt{(name1, args, eqs2, ret\_ty1)} or an error is
-raised and one of the following applies:
+
+Annotating the call to subprogram \texttt{name} with arguments \texttt{args} and
+parameters \texttt{eqs} (\texttt{annotate\_call}) results in \texttt{(name1,
+args, eqs2, ret\_ty1)} or an error is raised and one of the following applies:
 \begin{itemize}
 \item TypingRule.FCallBadArity (see Section~\ref{sec:TypingRule.FCallBadArity}),
 \item TypingRule.FCallGetter (see Section~\ref{sec:TypingRule.FCallGetter}),
@@ -3468,8 +3468,11 @@ raised and one of the following applies:
 
 \section{TypingRule.FCallBadArity \label{sec:TypingRule.FCallBadArity}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose} 
+  Annotating the call to subprogram \texttt{name} with arguments \texttt{args}
+and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
+\texttt{(name1, args, eqs2, ret\_ty1)} or an error is raised and all of the
+following apply:
    \begin{itemize}
    \item \texttt{caller\_arg\_types, args1} is the result of annotating \texttt{args} in \texttt{env};
    \item \texttt{name} is bound in \texttt{env} to a subprogram with a unique name \texttt{name1}
@@ -3477,22 +3480,24 @@ raised and one of the following applies:
       \texttt{caller\_arg\_types} and whose return type is \texttt{ret\_ty};
    \item \texttt{eqs1} is the list made of both \texttt{eqs} and \texttt{extra\_nargs};
    \item the lists \texttt{callee\_arg\_types} and \texttt{args1} do not have the same length;
-   \item an error "Bad Arity" is raised.
+   \item an error ``\texttt{Bad Arity}'' is raised.
    \end{itemize}
 
-    \subsection{Examples}
-
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\FCallBadArityBegin, lastline=\FCallBadArityEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
+  \subsection{Comments}
 
- \section{TypingRule.FCallGetter \label{sec:TypingRule.FCallGetter}}
+\section{TypingRule.FCallGetter \label{sec:TypingRule.FCallGetter}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+  Annotating the call to subprogram \texttt{name} with arguments \texttt{args}
+and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
+\texttt{(name1, args, eqs2, ret\_ty1)} or an error is raised and all of the following apply:
    \begin{itemize}
    \item \texttt{caller\_arg\_types, arg1} is the result of annotating \texttt{args} in \texttt{env};
    \item \texttt{name} is bound in \texttt{env} to a subprogram with argument types
@@ -3503,19 +3508,22 @@ raised and one of the following applies:
    \item \texttt{ret\_ty1} is the result of renaming \texttt{ty} in \texttt{eqs2}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\FCallGetterBegin, lastline=\FCallGetterEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
+  \subsection{Comments}
 
 
 \section{TypingRule.FCallSetter \label{sec:TypingRule.FCallSetter}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+  Annotating the call to subprogram \texttt{name} with arguments \texttt{args}
+and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
+\texttt{(name1, args, eqs2, ret\_ty1)} or an error is raised and all of the following apply:
    \begin{itemize}
    \item \texttt{caller\_arg\_types, arg1} is the result of annotating \texttt{args} in \texttt{env};
    \item \texttt{name} is bound in \texttt{env} to a subprogram with a unique name \texttt{name1} whose argument types \texttt{callee\_arg\_types} type-clash \texttt{caller\_arg\_types} and whose return type is \texttt{ret\_ty};
@@ -3526,19 +3534,22 @@ raised and one of the following applies:
    \item \texttt{ret\_ty1} is None.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\FCallSetterBegin, lastline=\FCallSetterEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
+  \subsection{Comments}
 
 
 \section{TypingRule.FCallMismatch \label{sec:TypingRule.FCallMismatch}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+  Annotating the call to subprogram \texttt{name} with arguments \texttt{args}
+and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
+\texttt{(name1, args, eqs2, ret\_ty1)} or an error is raised and all of the following apply:
    \begin{itemize}
    \item \texttt{caller\_arg\_types, arg1} is the result of annotating \texttt{args} in \texttt{env};
    \item \texttt{extra\_nargs, name1, callee\_arg\_types, ret\_ty} is the result of trying to
@@ -3549,13 +3560,14 @@ raised and one of the following applies:
    \item an error "Mismatched Return Value" is raised.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\FCallMismatchBegin, lastline=\FCallMismatchEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
+  \subsection{Comments}
 
 
 \chapter{Typing of Functions}
@@ -3565,7 +3577,9 @@ raised and one of the following applies:
 \section{TypingRule.Func \label{sec:TypingRule.Func}}
 
   \subsection{Prose}
-  All of the following apply:
+  Annotating the call to subprogram \texttt{name} with arguments \texttt{args}
+and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
+\texttt{(name1, args, eqs2, ret\_ty1)} or an error is raised and all of the following apply:
  \begin{itemize}
  \item \texttt{env1} is \texttt{env} modified to have an empty local environment;
  \item \texttt{env2} is \texttt{env1} with every formal argument declared as immutable with its type;

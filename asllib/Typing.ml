@@ -884,10 +884,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     let eqs1 = List.rev_append eqs extra_nargs in
     let () =
+      (* Begin FCallBadArity *)
       if List.compare_lengths callee_arg_types args1 != 0 then
         fatal_from loc
         @@ Error.BadArity (name, List.length callee_arg_types, List.length args1)
         |: TypingRule.FCallBadArity
+      (* End *)
     in
     let eqs2 =
       let folder acc (x, ty) (t_e, e) =
@@ -930,12 +932,18 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     let ret_ty1 =
       match (call_type, ret_ty) with
+      (* Begin FCallGetter *)
       | (ST_Function | ST_Getter), Some ty ->
           Some (rename_ty_eqs eqs2 ty) |: TypingRule.FCallGetter
+      (* End *)
+      (* Begin FCallSetter *)
       | (ST_Setter | ST_Procedure), None -> None |: TypingRule.FCallSetter
+      (* End *)
+      (* Begin FCallMismatch *)
       | _ ->
           fatal_from loc @@ Error.MismatchedReturnValue name
           |: TypingRule.FCallMismatch
+      (* End *)
     in
     let () = if false then Format.eprintf "Annotated call to %S.@." name1 in
     (name1, args1, eqs2, ret_ty1)
