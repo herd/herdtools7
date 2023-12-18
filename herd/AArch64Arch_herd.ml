@@ -242,7 +242,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LD4 (rs,_,_,_) | I_LD4R (rs,_,_) | I_ST4 (rs,_,_,_)
       | I_LD4M (rs,_,_) | I_ST4M (rs,_,_) ->
           Some (simd_mem_access_size rs)
-      | I_LDRBH (v,_,_,_) | I_LDARBH (v,_,_,_) | I_LDRS (_,v,_,_)
+      | I_LDRBH (v,_,_,_) | I_LDARBH (v,_,_,_) | I_LDRS ((_,v),_,_,_)
       | I_STRBH (v,_,_,_) | I_STLRBH (v,_,_) | I_STXRBH (v,_,_,_,_)
       | I_CASBH (v,_,_,_,_) | I_SWPBH (v,_,_,_,_)
       | I_LDOPBH (_,v,_,_,_,_) | I_STOPBH (_,v,_,_,_) ->
@@ -296,13 +296,14 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_BL _ | I_BLR _ | I_RET _ | I_ERET | I_UDF _
         -> [] (* For -variant self only ? *)
       | I_LDR (_,r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
-      | I_LDRSW (r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
       | I_LDRBH (_,r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
+      | I_LDRSW (r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
+      | I_LDRS (_,r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
         -> [r1;r2;]
       | I_LDR (_,r,_,_)
       | I_LDRSW (r,_,_)
       | I_LDRBH (_,r,_,_)
-      | I_LDRS (_,_,r,_)
+      | I_LDRS (_,r,_,_)
       | I_LDUR (_,r,_,_)
       | I_LDAR (_,_,r,_) |I_LDARBH (_,_,r,_)
       | I_SWP (_,_,_,r,_) | I_SWPBH (_,_,_,r,_)
@@ -351,13 +352,12 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     let get_lx_sz = function
       | I_LDAR (var,(XX|AX),_,_)|I_LDXP (var,_,_,_,_) -> MachSize.Ld (tr_variant var)
       | I_LDARBH (bh,(XX|AX),_,_) -> MachSize.Ld (bh_to_sz bh)
-      | I_LDRS (var,_,_,_) -> MachSize.Ld (tr_variant var)
       | I_STXR _|I_STXRBH _ | I_STXP _ -> MachSize.St
       | I_LDAR (_, (AA|AQ), _, _)|I_LDARBH (_, (AA|AQ), _, _)
       | I_NOP|I_B _|I_BR _|I_BC _|I_CBZ _|I_CBNZ _
       | I_TBNZ _|I_TBZ _|I_BL _|I_BLR _|I_RET _|I_ERET
       | I_UBFM _ | I_SBFM _
-      | I_LDR _|I_LDRSW _|I_LDUR _|I_LD1 _
+      | I_LDR _|I_LDRSW _|I_LDRS _|I_LDUR _|I_LD1 _
       | I_LD1M _|I_LD1R _|I_LD2 _|I_LD2M _
       | I_LD2R _|I_LD3 _|I_LD3M _|I_LD3R _
       | I_LD4 _|I_LD4M _|I_LD4R _|I_ST1 _

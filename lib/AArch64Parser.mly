@@ -563,6 +563,10 @@ instr:
   { let (v,r)   = $2 and (ra,ext) = $4 in I_LDR (v,r,ra,ext) }
 | LDRSW xreg COMMA mem_ea
   { let r = $2 and (ra,ext) = $4 in I_LDRSW (r,ra,ext) }
+| LDRSB reg COMMA mem_ea
+  { let (v, s) = $2 and (ra,ext) = $4 in I_LDRS ((v,B),s,ra,ext) }
+| LDRSH reg COMMA mem_ea
+  { let (v, s) = $2 and (ra,ext) = $4 in I_LDRS ((v,H),s,ra,ext) }
 | LDUR reg COMMA LBRK cxreg k0_opt RBRK
   { let v,r = $2 in I_LDUR (v,r,$5,$6)}
 
@@ -599,10 +603,6 @@ instr:
   { let (ra,idx) = $4 in I_LDRBH (B,$2,ra,idx) }
 | LDRH wreg COMMA mem_ea
   { let ra,idx = $4 in I_LDRBH (H,$2,ra,idx) }
-| LDRSB reg COMMA LBRK cxreg RBRK
-  { let (v, s) = $2 in I_LDRS (v,B,s,$5) }
-| LDRSH reg COMMA LBRK cxreg RBRK
-  { let (v, s) = $2 in I_LDRS (v,H,s,$5) }
 | LDAR reg COMMA LBRK cxreg RBRK
   { let v,r = $2 in I_LDAR (v,AA,r,$5) }
 | LDARB wreg COMMA LBRK cxreg RBRK
