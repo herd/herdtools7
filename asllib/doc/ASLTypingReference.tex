@@ -162,8 +162,8 @@ A major benefit of employing an abstract syntax is that it allows abstracting aw
 \begin{array}{rcll}
 \textbf{node} & & \textbf{components} & \textbf{description} \\
 \hline
-\unop &=& \texttt{"!"} \;|\; \texttt{"-"} \;|\; \texttt{"NOT"} & \\
-\binop &=& \texttt{"\&\&"} \;|\; \texttt{"||"} \;|\; \texttt{"-->"} \;|\;  \texttt{"<->"} & \texttt{binop\_boolean} \\
+\unop &::=& \texttt{"!"} \;|\; \texttt{"-"} \;|\; \texttt{"NOT"} & \\
+\binop &::=& \texttt{"\&\&"} \;|\; \texttt{"||"} \;|\; \texttt{"-->"} \;|\;  \texttt{"<->"} & \texttt{binop\_boolean} \\
           &|& \texttt{"=="} \;|\; \texttt{"!="}  \;|\; \texttt{">"}  \;|\; \texttt{">="} \;|\; \texttt{"<"} \;|\; \texttt{"<="} & \texttt{binop\_comparison} \\
           &|& \texttt{"+"} \;|\; \texttt{"-"}  \;|\; \texttt{"OR"}  \;|\; \texttt{"XOR"} \;|\; \texttt{"AND"} & \texttt{binop\_add\_sub\_logic} \\
           &|& \texttt{"*"} \;|\; \texttt{"/"}  \;|\; \texttt{"DIV"}  \;|\; \texttt{"DIVRM"} \;|\; \texttt{"MOD"}  \;|\; \texttt{"<<"}  \;|\; \texttt{"\>\>"} &  \texttt{binop\_mul\_div\_shift} \\
@@ -184,7 +184,7 @@ A major benefit of employing an abstract syntax is that it allows abstracting aw
 \begin{array}{rcll}
 \textbf{node} & & \textbf{components} & \textbf{description} \\
 \hline
-\expr &=& \texttt{E\_Literal}(literal) & \\
+\expr &::=& \texttt{E\_Literal}(literal) & \\
 	&|& \texttt{E\_Var}(\texttt{\identifier}) & \\
 	&|& \texttt{E\_CTC}(\texttt{\expr, \ty}) & \textrm{checked type constraint}\\
 	&|& \texttt{E\_Binop}(\binop, \expr, \expr) & \\
@@ -207,7 +207,7 @@ A major benefit of employing an abstract syntax is that it allows abstracting aw
 \begin{array}{rcll}
 \textbf{node} & & \textbf{components} & \textbf{description} \\
 \hline
-\pattern &=& \texttt{Pattern\_All} & \\
+\pattern &::=& \texttt{Pattern\_All} & \\
 	&|& \texttt{E\_Var}(\texttt{\identifier}) & \\
   &|& \texttt{Pattern\_Any}(\pattern^{*}) & \\
   &|& \texttt{Pattern\_Geq}(\expr) & \\
@@ -220,14 +220,16 @@ A major benefit of employing an abstract syntax is that it allows abstracting aw
 \end{array}
 \]
 
+\newcommand\TBool[0]{\texttt{T\_Bool}}
+
 \[
 \begin{array}{rcll}
 \textbf{node} & & \textbf{components} & \textbf{description} \\
 \hline
-\ty &=& \texttt{T\_Int}(int\_constraints?)& \\
+\ty &::=& \texttt{T\_Int}(int\_constraints?)& \\
   &|& \texttt{T\_Real} & \\
   &|& \texttt{T\_String} & \\
-  &|& \texttt{T\_Bool} & \\
+  &|& \TBool & \\
   &|& \texttt{T\_Bits}(bits\_constraint, bitfield^{*}) & \\
   &|& \texttt{T\_Enum}(\identifier^{*})  & \\
   &|& \texttt{T\_Tuple}(\ty^{*})  & \\
@@ -239,6 +241,8 @@ A major benefit of employing an abstract syntax is that it allows abstracting aw
 \]
 
 \chapter{Type Algebra}
+
+\newcommand{\rulespace}{\;\;}
 
 \section{TypingRule.BuiltinSingularType \label{sec:TypingRule.BuiltinSingularType}}
 
@@ -263,7 +267,17 @@ The type \texttt{color} consists in two different constants \texttt{RED} and~\te
 
     \subsection{Code}
 
-    \subsection{Formally}
+    \subsection{Formally}    
+    \[
+      \begin{array}{rl}
+   & \texttt{is\_builtin\_singular}(\texttt{T\_Real}) \\
+   &\texttt{is\_builtin\_singular}(\texttt{T\_String}) \\
+   &\texttt{is\_builtin\_singular}(\TBool) \\
+   fl \in \textsf{bit\_field}^{*}  \vdash& \texttt{is\_builtin\_singular}(\texttt{T\_Bits}(fl)) \\
+   il \in \textsf{\identifier}^{*}  \vdash& \texttt{is\_builtin\_singular}(\texttt{T\_Enum}(il)) \\
+   c \in \textsf{int\_constraints}?  \vdash& \texttt{is\_builtin\_singular}(\texttt{T\_Int}(c)) \\
+      \end{array}
+    \]
 
     \subsection{Comments}
     This aims to encompass LRM Section 3.1 D\_PQCK and D\_NZWT.
@@ -301,6 +315,14 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Code}
 
     \subsection{Formally}
+    \[
+      \begin{array}{rl}
+   tl \in \ty^{*}  \vdash& \texttt{is\_builtin\_aggregate}(\texttt{T\_Tuple}(tl)) \\
+   t \in \ty  \vdash& \texttt{is\_builtin\_aggregate}(\texttt{T\_Array}(t)) \\
+   fl \in \Field^{*}  \vdash& \texttt{is\_builtin\_aggregate}(\texttt{T\_Record}(fl)) \\
+   fl \in \Field^{*}  \vdash& \texttt{is\_builtin\_aggregate}(\texttt{T\_Exception}(fl)) \\
+      \end{array}
+    \]
 
     \subsection{Comments}
     This aims to encompass LRM Section 3.1 D\_PQCK and D\_KNBD.
@@ -318,14 +340,13 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
 
     \subsection{Code}
 
-    \subsection{Formally}
-
-     \[
-     \begin{array}{l}
-     t \in \texttt{ty} \;\;\;\; \texttt{is\_builtin\_singular}(t) \vdash \texttt{is\_builtin}(t)\\
-     t \in \texttt{ty} \;\;\;\; \texttt{is\_builtin\_aggregate}(t) \vdash \texttt{is\_builtin}(t)\\
-     \end{array}
-     \]
+   \subsubsection{Formally}
+   \[
+   \begin{array}{rl}
+   t \in \ty \texttt{is\_builtin\_singular}(t) \vdash& \texttt{is\_builtin}(t)\\
+   t \in \ty \texttt{is\_builtin\_aggregate}(t) \vdash& \texttt{is\_builtin}(t)\\
+   \end{array}
+   \]
    
 \section{TypingRule.NamedType \label{sec:TypingRule.NamedType} } 
 
@@ -337,7 +358,11 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Code}
 
     \subsection{Formally}
-
+    \[
+      \begin{array}{rl}
+      i \in \identifier \vdash& \texttt{is\_named}(\texttt{T\_Named}(i)\\
+      \end{array}
+    \]
     \subsection{Comments}
     This aims to encompass LRM Section 7.1.1 D\_VMZX.
 
@@ -351,6 +376,11 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Code}
 
     \subsection{Formally}
+    \[
+      \begin{array}{rl}
+      t \in \ty \rulespace \neg\texttt{is\_named}(t) \vdash& \texttt{is\_anonymous}(t)\\
+      \end{array}
+    \]
 
     \subsection{Comments}
     This aims to encompass LRM Section 7.1.1 D\_VMZX.
@@ -374,6 +404,13 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Code}
 
     \subsection{Formally}
+    \[
+      \begin{array}{rl}
+      t \in \ty \rulespace \texttt{is\_builtin}(t) \vdash& \texttt{is\_singular}(t)\\
+      t \in \ty \rulespace \texttt{is\_named}(t) \rulespace \texttt{is\_builtin\_aggregate}(\texttt{t\_struct}(t)) \vdash& \texttt{is\_singular}(t)\\
+      \end{array}
+    \]      
+    TODO: define $\texttt{t\_struct}(t)$.
 
     \subsection{Comments}
     This aims to encompass LRM Section 3.1 R\_GVZK.
@@ -397,6 +434,12 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Code}
 
     \subsection{Formally}
+    \[
+      \begin{array}{rl}
+      t \in \ty \rulespace \texttt{is\_builtin\_aggregate}(t) \vdash& \texttt{is\_aggregate}(t)\\
+      t \in \ty \rulespace \texttt{is\_named}(t) \rulespace \texttt{is\_builtin\_aggregate}(\texttt{t\_struct}(t)) \vdash& \texttt{is\_aggregate}(t)\\
+      \end{array}
+    \]
 
     \subsection{Comments}
     This aims to encompass LRM Section 3.1 R\_GVZK.
@@ -580,6 +623,15 @@ may hold.
 
 \chapter{Type satisfaction and related notions}
 
+\newcommand\super[0]{\textit{super}}
+\newcommand\subtype[0]{\sqsubseteq}
+
+To model subtyping, we define the function 
+\[
+\super : \identifier \rightarrow \identifier \cup {\bot} \enspace,
+\]
+which maps an identifier to the name of its super-type or $\bot$ if it does not have one.
+
 \section{TypingRule.Subtype} 
 
 \subsection{Prose}
@@ -589,8 +641,15 @@ may hold.
 
   \subsection{Code}
 
-  \subsection{Formally}
-
+  We define the subtyping relation between two named types in a given environment as follows:
+  \[
+  \begin{array}{rl}
+  a, b \in \identifier & (G,L) \vdash \texttt{T\_Named(a)} \subtype \texttt{T\_Named(a)} \\  
+  a, b \in \identifier \rulespace G.\super(a) = b  & 
+  (G,L) \vdash \texttt{T\_Named(a)} \subtype \texttt{T\_Named(b)}
+  \end{array}
+  \]
+  
 \subsection{Comments}
   Since the subtype relation is a partial order, it is reflexive, viz, 
   every type is also a subtype of itself.
@@ -1264,8 +1323,13 @@ may hold.
   \subsection{Code}
     \VerbatimInput[firstline=\CheckUnopBegin, lastline=\CheckUnopEnd]{../Typing.ml}
 
-  \subsection{Formally}
-
+\subsection{Formally}
+  \[
+  \inferrule
+  {\textit{op} \in \texttt{binop\_boolean} \\ (G,L) \vdash e_1 : \TBool \\ (G,L) \vdash e_2 : \TBool}
+  {(G,L) \vdash \texttt{E\_Binop}(\textit{op}, e_1, e_2) : \TBool1}
+  \]
+  
 \subsection{Comments}
   This aims to encompass LRM Section 7.5.3 R\_BKNT, Section 7.5.5 R\_ZYWY, R\_BZKW,
   R\_KFYS, Section 7.5.6 R\_KXMR, Section 7.7 R\_SQXN, R\_MRHT.
