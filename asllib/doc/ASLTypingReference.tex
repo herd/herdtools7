@@ -2469,10 +2469,21 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
    \begin{itemize}
    \item \texttt{p} is the pattern which matches anything greater than or equal to an expression \texttt{e};
    \item \texttt{t\_e, e'} is the result of annotating \texttt{e} in \texttt{env}; 
-   \item \texttt{e'} is a compile-time constant;
-   \item \texttt{t} has the structure of an integer;
-   \item \texttt{t\_e} has the structure of an integer;
-   \item \texttt{new\_p} is the pattern which matches anything greater than or equal to \texttt{e'}.
+   \item \texttt{e'} is a compile-time constant expression;
+   \item One of the following applies:
+     \begin{itemize}
+     \item All of the following apply:
+           \begin{itemize}
+           \item both \texttt{t} and \texttt{t\_e} have the structure of an integer;
+           \item \texttt{new\_p} is the pattern which matches anything greater than or equal to \texttt{e'}.
+           \end{itemize}
+     \item All of the following apply:
+           \begin{itemize}
+           \item both \texttt{t} and \texttt{t\_e} have the structure of a real;
+           \item \texttt{new\_p} is the pattern which matches anything greater than or equal to \texttt{e'}.
+           \end{itemize} 
+     \item a ``\texttt{Conflict Types}'' error is raised.
+     \end{itemize}
    \end{itemize}
 
   \subsection{Examples}
@@ -2491,10 +2502,21 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
    \begin{itemize}
    \item \texttt{p} is the pattern which matches anything lesser than or equal to an expression \texttt{e};
    \item \texttt{t\_e, e'} is the result of annotating \texttt{e} in \texttt{env}; 
-   \item \texttt{e'} is a compile-time constant;
-   \item \texttt{t} has the structure of an integer;
-   \item \texttt{t\_e} has the structure of an integer;
-   \item \texttt{new\_p} is the pattern which matches anything lesser than or equal to \texttt{e'}.
+   \item \texttt{e'} is a compile-time constant expression;
+   \item One of the following applies:
+     \begin{itemize}
+     \item All of the following apply:
+           \begin{itemize}
+           \item both \texttt{t} and \texttt{t\_e} have the structure of an integer;
+           \item \texttt{new\_p} is the pattern which matches anything lesser than or equal to \texttt{e'}.
+           \end{itemize}
+     \item All of the following apply:
+           \begin{itemize}
+           \item both \texttt{t} and \texttt{t\_e} have the structure of a real;
+           \item \texttt{new\_p} is the pattern which matches anything lesser than or equal to \texttt{e'}.
+           \end{itemize}
+     \item a ``\texttt{Conflict Types}'' error is raised.
+     \end{itemize}
    \end{itemize}
 
   \subsection{Examples}
@@ -2534,12 +2556,23 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
       expressions \texttt{e1} and \texttt{e2};
    \item \texttt{t\_e1, e1'} is the result of annotating \texttt{e1} in \texttt{env};
    \item \texttt{t\_e2, e2'} is the result of annotating \texttt{e2} in \texttt{env};
-   \item \texttt{t} has the structure of an integer;
-   \item \texttt{t\_e1} has the structure of an integer;
-   \item \texttt{t\_e2} has the structure of an integer;
-   \item e1' and e2' are compile-time constants; 
-   \item \texttt{new\_p} is the pattern which matches anything within the range given by
+   \item e1' and e2' are compile-time constant expressions; 
+   \item One of the following applies:
+     \begin{itemize}
+     \item All of the following apply:
+           \begin{itemize}
+           \item both \texttt{t\_e1} and \texttt{t\_e2} have the structure of an integer;
+           \item \texttt{new\_p} is the pattern which matches anything within the range given by
       expressions \texttt{e1'} and \texttt{e2'}.
+           \end{itemize}
+     \item All of the following apply:
+           \begin{itemize}
+           \item both \texttt{t\_e1} and \texttt{t\_e2} have the structure of a real;
+           \item \texttt{new\_p} is the pattern which matches anything within the range given by
+      expressions \texttt{e1'} and \texttt{e2'}.
+           \end{itemize}
+     \item a ``\texttt{Conflict Types}'' error is raised.
+     \end{itemize}
    \end{itemize}
 
   \subsection{Examples}
@@ -2574,8 +2607,13 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
    \item \texttt{t} has the structure of a bitvector type;
    \item \texttt{n} is the length of mask \texttt{m};
    \item \texttt{t\_m} is the bitvector type of width \texttt{n};
-   \item \texttt{t} type-satisfies \texttt{t\_m};
-   \item \texttt{new\_p} is \texttt{p}.
+   \item One of the following applies:
+     \item All of the following apply:
+       \begin{itemize}
+       \item \texttt{t} type-satisfies \texttt{t\_m};
+       \item \texttt{new\_p} is \texttt{p}.
+       \end{itemize}
+     \item a ``\texttt{Typing Assumption Failed}'' error is raised.
    \end{itemize}
 
   \subsection{Examples}
@@ -2614,9 +2652,8 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
    Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches a tuple \texttt{li};
-   \item \texttt{t\_struct} is the type structure of \texttt{t};
-   \item \texttt{t\_struct} is a tuple \texttt{ts};
-   \item \texttt{ts} is a list of same size to the size of \texttt{li};  
+   \item \texttt{t} has the type structure of a tuple type \texttt{ts};
+   \item \texttt{ts} is a list of the same size as \texttt{li};  
    \item \texttt{new\_li} is the result of annotating \texttt{li} with \texttt{ts};
    \item \texttt{new\_p} is the pattern which matches the tuple \texttt{new\_li}.
    \end{itemize}
@@ -2637,7 +2674,7 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
    Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches a tuple \texttt{li};
-   \item \texttt{t\_struct} is the type structure of \texttt{t};
+   \item \texttt{t} has the type structure of a tuple type \texttt{ts};
    \item \texttt{t\_struct} is not a tuple type;
    \item an error ``\texttt{Conflicting Types}'' is raised. 
    \end{itemize}

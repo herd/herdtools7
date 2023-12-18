@@ -799,7 +799,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let t_e, e' = annotate_expr env e in
         let+ () = check_statically_evaluable env e' in
         let+ () =
-          both
+          both (* TODO: case where they are both real *)
             (check_structure_integer loc env t)
             (check_structure_integer loc env t_e)
         in
@@ -810,7 +810,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let t_e, e' = annotate_expr env e in
         let+ () = check_statically_evaluable env e' in
         let+ () =
-          both
+          both  (* TODO: case where they are both real *) 
             (check_structure_integer loc env t)
             (check_structure_integer loc env t_e)
         in
@@ -821,7 +821,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let t_e1, e1' = annotate_expr env e1
         and t_e2, e2' = annotate_expr env e2 in
         let+ () =
-          both
+          both (* TODO: case where they are both real *)
             (check_structure_integer loc env t)
             (both
                (check_structure_integer loc env t_e1)
