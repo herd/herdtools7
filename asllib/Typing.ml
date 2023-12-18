@@ -1149,7 +1149,6 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let ty' = Types.get_structure env ty in
         (ty, E_Unknown ty' |> here) |: TypingRule.EUnknown
     (* End *)
-    (* Begin ESlice *)
     | E_Slice (e', slices) -> (
         let reduced =
           match e'.desc with
@@ -1168,6 +1167,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             let t_e', e' = annotate_expr env e' in
             let struct_t_e' = Types.get_structure env t_e' in
             match struct_t_e'.desc with
+    (* Begin ESlice *)
             | T_Int _ | T_Bits _ ->
                 let w = slices_width env slices in
                 (* TODO: check that:
@@ -1178,6 +1178,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 ( T_Bits (BitWidth_SingleExpr w, []) |> here,
                   E_Slice (e', slices') |> here )
                 |: TypingRule.ESlice
+    (* End *)
+    (* Begin EGetArray *)
             | T_Array (size, ty') -> (
                 let wanted_t_index =
                   let t_int =
@@ -1199,9 +1201,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                       check_type_satisfies e env t_index' wanted_t_index
                     in
                     (ty', E_GetArray (e', e_index') |> here)
-                    |: TypingRule.EGetArray
-                | _ -> conflict e [ T_Int None; default_t_bits ] t_e')
-            | _ -> conflict e [ T_Int None; default_t_bits ] t_e'))
+                | _ -> conflict e [ T_Int None; default_t_bits ] t_e'
+                |: TypingRule.EGetArray )
+    (* End *)
+    (* Begin ESliceOrEGetArrayError *)
+            | _ -> conflict e [ T_Int None; default_t_bits ] t_e' |: TypingRule.ESliceOrEGetArrayError ))
     (* End *)
     | E_GetField (e1, field_name) -> (
         let t_e1, e2 = annotate_expr env e1 in
@@ -1304,9 +1308,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (T_Bool |> here, E_Pattern (e'', patterns') |> here)
         |: TypingRule.EPattern
     (* End *)
-    (* Begin EGetArray *)
     | E_GetArray _ -> assert false |: TypingRule.EGetArray
-    (* End *)
 
   let rec annotate_lexpr env le t_e =
     let () =

@@ -1339,7 +1339,7 @@ which maps an identifier to the name of its super-type or $\bot$ if it does not 
 \texttt{annotate\_expr} specifies how to annotate an expression \texttt{e} in
 an environment \texttt{env}.  Formally, the result of annotating the expression
 \texttt{e} in \texttt{env} is \texttt{t,new\_env} where \texttt{t} is a type and
-\texttt{new\_env} is an environment, and one of the following applies:
+\texttt{new\_env} is an environment, or an error, and one of the following applies:
 \begin{itemize}
 \item TypingRule.Lit (see Section~\ref{sec:TypingRule.Lit});
 \item TypingRule.ELocalVarConstant (see Section~\ref{sec:TypingRule.ELocalVarConstant})
@@ -1353,6 +1353,7 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 \item TypingRule.ESlice (see Section~\ref{sec:TypingRule.ESlice})
 \item TypingRule.ECall (see Section~\ref{sec:TypingRule.ECall})
 \item TypingRule.EGetArray (see Section~\ref{sec:TypingRule.EGetArray})
+\item TypingRule.ESliceOrEGetArrayError (see Section~\ref{sec:TypingRule.ESliceOrEGetArrayError})
 \item TypingRule.EStructuredNotStructured (see Section~\ref{sec:TypingRule.EStructuredNotStructured})
 \item TypingRule.EStructuredMissingField (see Section~\ref{sec:TypingRule.EStructuredMissingField})
 \item TypingRule.ERecord (see Section~\ref{sec:TypingRule.ERecord})
@@ -1629,15 +1630,22 @@ expression.
 
   \subsection{Prose}
   The result of annotating the expression \texttt{e} in \texttt{env} is
-\texttt{t,new\_env} and all of the following apply:
+\texttt{t,new\_env} or an error and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the slicing of expression \texttt{e'} by the slices \texttt{slices};
   \item \texttt{t\_e',e'} is the result of annotating the expression \texttt{e'} in \texttt{env};
   \item \texttt{t\_e'} has the structure of an array with index type \texttt{wanted\_t\_index} and element type \texttt{t};
   \item \texttt{slices} is a single expression \texttt{e\_index};
   \item \texttt{t\_index', e\_index'} is the result of annotating \texttt{e\_index} in \texttt{env};
-  \item \texttt{t\_index'} type-satisfies \texttt{wanted\_t\_index} as per Section~\ref{sec:TypingRule.TypeSatisfaction};
-  \item \texttt{new\_e} is an access to array \texttt{e'} at index \texttt{e\_index'}.
+  \item One of the following applies:
+    \begin{itemize}
+    \item All of the following apply:
+      \begin{itemize}
+      \item \texttt{t\_index'} type-satisfies \texttt{wanted\_t\_index} as per Section~\ref{sec:TypingRule.TypeSatisfaction};
+      \item \texttt{new\_e} is an access to array \texttt{e'} at index \texttt{e\_index'}.
+      \end{itemize}
+    \item an error ``\texttt{Typing Assumption Failed}''
+    \end{itemize}
   \end{itemize}
 
   \subsection{Examples}
@@ -1649,6 +1657,25 @@ expression.
 
   \subsection{Comments}
 
+\section{TypingRule.ESliceOrEGetArrayError \label{sec:TypingRule.ESliceOrEGetArrayError}}
+
+  \subsection{Prose}
+  The result of annotating the expression \texttt{e} in \texttt{env} is an error and all of the following apply:
+  \begin{itemize}
+  \item \texttt{e} denotes the slicing of expression \texttt{e'} by the slices \texttt{slices};
+  \item \texttt{t\_e',e'} is the result of annotating the expression \texttt{e'} in \texttt{env};
+  \item \texttt{t\_e'} does not have the structure of an integer or a bitvector;
+  \item an error ``\texttt{Conflicting Types}'' is raised.
+  \end{itemize}
+
+  \subsection{Examples}
+
+  \subsection{Code}
+    \VerbatimInput[firstline=\ESliceOrEGetArrayErrorBegin, lastline=\ESliceOrEGetArrayErrorEnd]{../Typing.ml}
+
+  \subsection{Formally}
+
+  \subsection{Comments}
 \section{TypingRule.EStructuredNotStructured \label{sec:TypingRule.EStructuredNotStructured}}
 
   \subsection{Prose}
