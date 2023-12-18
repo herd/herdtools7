@@ -78,10 +78,10 @@ github repository.
 \chapter{Preamble}
 
 \section{Abstract Syntax}
-An \emph{abstract syntax tree} (AST, for short) represents an ASL program via a labelled tree. 
+An \emph{abstract syntax tree} (AST, for short) represents an ASL program as a labelled tree. 
 
 \section{Environments}
-A \emph{type judgement} associates a node in an abstract syntax tree (which intuitively corresponds to an ASL construct) with a certain type. We also say that the node is \emph{annotated} with that type.
+A \emph{type judgement} associates a node in an abstract syntax tree (which intuitively corresponds to an ASL construct) with a certain type. We then say that the node is \emph{annotated} with that type.
 %
 A \emph{typing environment} (environment, for short) maps AST nodes to types.
 
@@ -135,34 +135,108 @@ Each rule is presented using the following template:
 \item Formal paragraphs which give formal definitions of the rule.
 \end{itemize}
 
-\chapter{Abstract Syntax}
-In order to type both ASLv0 and ASLv1, we map the concrete syntax of both versions into an abstract syntax, which is a form of labelled tree. The abstract syntax tree abstracts away many syntactic elements that are only needed to enable parsing.
+\chapter{ASL Abstract Syntax}
+An Abstract Syntax Tree (AST for short) is a kind of labelled tree. 
+A node in an AST is either a leaf, represented by its label, or an internal node of the form $L(n_1,\ldots,n_k)$ where $L$ is its label and $n_1,\ldots,n_k$ are its ordered children nodes, which we also refer to as \emph{components}.
+Components can be (possibly-empty) lists of nodes, shown as $n^{*}$, and optional nodes (lists of 0 or 1 elements), shown as $n?$.
 
-\newcommand\BNOT[0]{\texttt{"!"}}
-\newcommand\NEG[0]{\texttt{"-"}}
-\newcommand\NOT[0]{\texttt{"NOT"}}
+An abstract syntax is similar to a context-free grammar, but defined over ASTs. A terminal derives leaf nodes while non-terminal use alternatives to derive internal nodes.
 
-\newcommand\unop[0]{\textrm{unop}}
-\newcommand\binop[0]{\textrm{binop}}
-\newcommand\binopin[0]{\textrm{binop\_in}}
-\newcommand\binoppow[0]{\textrm{binop\_pow}}
+A major benefit of employing an abstract syntax is that it allows abstracting away syntactic details that are only important to enable correct parsing, such as punctuation, and succinctly representing lists and optional values. By defining an abstract syntax for ASL, we can uniformly represent programs in ASLv0 as well as ones in ASLv1 and define a single type system for them.
+
+\newcommand\id[0]{\texttt{id}}
 
 % AST-only nodes
-\newcommand\literal[0]{\texttt{literal}}
-\newcommand\expr[0]{\texttt{expr}}
+\newcommand\unop[0]{\textsf{unop}}
+\newcommand\binop[0]{\textsf{binop}}
+\newcommand\literal[0]{\textsf{literal}}
+\newcommand\expr[0]{\textsf{expr}}
+\newcommand\slice[0]{\textsf{slice}}
+\newcommand\ty[0]{\textsf{ty}}
+\newcommand\pattern[0]{\textsf{pattern}}
+\newcommand\Field[0]{\textsf{Field}}
 
-%The following node types directly correspond to their respective ASL grammar variables (non-terminals):  $\unop$, $\binop$, $\binopin$, $\binoppow$
-The following node types directly correspond to their respective ASL grammar variables (non-terminals):  $\unop$, $\binop$, $\binopin$, $\binoppow$
+\newcommand\identifier[0]{\texttt{<identifier>}}
 
 \[
-%\unop = \BNOT \;|\; \NEG \;|\; \NOT
-\begin{array}{rcl}
-\literal &=& \texttt{<int\_lit>} \;|\; \texttt{<boolean\_lit>} \;|\; \texttt{<real\_lit>} \;|\; \texttt{<bitvector\_lit>} \;|\; \texttt{<string\_lit>}\\
-\expr &=& \texttt{E\_Literal}(literal) \;|\; \texttt{E\_Var}(\texttt{<identifier>})
+\begin{array}{rcll}
+\textbf{node} & & \textbf{components} & \textbf{description} \\
+\hline
+\unop &=& \texttt{"!"} \;|\; \texttt{"-"} \;|\; \texttt{"NOT"} & \\
+\binop &=& \texttt{"\&\&"} \;|\; \texttt{"||"} \;|\; \texttt{"-->"} \;|\;  \texttt{"<->"} & \texttt{binop\_boolean} \\
+          &|& \texttt{"=="} \;|\; \texttt{"!="}  \;|\; \texttt{">"}  \;|\; \texttt{">="} \;|\; \texttt{"<"} \;|\; \texttt{"<="} & \texttt{binop\_comparison} \\
+          &|& \texttt{"+"} \;|\; \texttt{"-"}  \;|\; \texttt{"OR"}  \;|\; \texttt{"XOR"} \;|\; \texttt{"AND"} & \texttt{binop\_add\_sub\_logic} \\
+          &|& \texttt{"*"} \;|\; \texttt{"/"}  \;|\; \texttt{"DIV"}  \;|\; \texttt{"DIVRM"} \;|\; \texttt{"MOD"}  \;|\; \texttt{"<<"}  \;|\; \texttt{"\>\>"} &  \texttt{binop\_mul\_div\_shift} \\
+          &|& \texttt{"\^{}"} & \texttt{binop\_pow} \\
+	  &|& \texttt{"IN"} & \texttt{binop\_in} \\
+	  &|& \texttt{"EOR"} & \texttt{XOR}\text{ in v0}\\
+\literal &=& \texttt{<int\_lit>} & \\
+ &|&\texttt{<hex\_lit>} & \textbf{missing/int\_lit?}\\
+ &|&\texttt{<boolean\_lit>} & \\
+ &|& \texttt{<real\_lit>} & \\
+ &|& \texttt{<bitvector\_lit>} & \\
+ &|& \texttt{<bitmask\_lit>} & \textbf{merged with bitvector\_lit} \\
+ &|&\texttt{<string\_lit>} & \\
 \end{array}
 \]
 
-TODO: what about \texttt{hex\_lit}?
+\[
+\begin{array}{rcll}
+\textbf{node} & & \textbf{components} & \textbf{description} \\
+\hline
+\expr &=& \texttt{E\_Literal}(literal) & \\
+	&|& \texttt{E\_Var}(\texttt{\identifier}) & \\
+	&|& \texttt{E\_CTC}(\texttt{\expr, \ty}) & \textrm{checked type constraint}\\
+	&|& \texttt{E\_Binop}(\binop, \expr, \expr) & \\
+	&|& \texttt{E\_Unop}(\unop, \expr) & \\
+	&|& \texttt{E\_Call}(\identifier, \expr^{*}, (\identifier, \expr)^{*}) & \\
+	&|& \texttt{E\_Slice}(\expr, \slice^{*}) & \\
+	&|& \texttt{E\_Cond}(\expr, \expr, \expr) & \\
+	&|& \texttt{E\_GetArray}(\expr, \expr) & \\
+	&|& \texttt{E\_GetField}(\expr, \identifier) & \\
+	&|& \texttt{E\_GetFields}(\expr, \identifier^{*}) & \\
+	&|& \texttt{E\_Record}(\ty, (\identifier, \expr)^{*}) & \text{Exception construction}\\
+	&|& \texttt{E\_Concat}(\expr^{*}) & \\
+	&|& \texttt{E\_Tuple}(\expr^{*}) & \\
+	&|& \texttt{E\_Unknown}(\ty) & \\
+	&|& \texttt{E\_Pattern}(\expr, \pattern) & \\
+\end{array}
+\]
+
+\[
+\begin{array}{rcll}
+\textbf{node} & & \textbf{components} & \textbf{description} \\
+\hline
+\pattern &=& \texttt{Pattern\_All} & \\
+	&|& \texttt{E\_Var}(\texttt{\identifier}) & \\
+  &|& \texttt{Pattern\_Any}(\pattern^{*}) & \\
+  &|& \texttt{Pattern\_Geq}(\expr) & \\
+  &|& \texttt{Pattern\_Leq}(\expr) & \\
+  &|& \texttt{Pattern\_Mask}(\texttt{bitmask\_lit})& \\
+  &|& \texttt{Pattern\_Not}(\pattern)& \\
+  &|& \texttt{Pattern\_Range}(\expr, \expr)& \text{lower to upper, included}\\
+  &|& \texttt{Pattern\_Single}(\expr)& \\
+  &|& \texttt{Pattern\_Tuple}(\pattern^{*})& \\
+\end{array}
+\]
+
+\[
+\begin{array}{rcll}
+\textbf{node} & & \textbf{components} & \textbf{description} \\
+\hline
+\ty &=& \texttt{T\_Int}(int\_constraints?)& \\
+  &|& \texttt{T\_Real} & \\
+  &|& \texttt{T\_String} & \\
+  &|& \texttt{T\_Bool} & \\
+  &|& \texttt{T\_Bits}(bits\_constraint, bitfield^{*}) & \\
+  &|& \texttt{T\_Enum}(\identifier^{*})  & \\
+  &|& \texttt{T\_Tuple}(\ty^{*})  & \\
+  &|& \texttt{T\_Array}(\expr, \ty)  & \\
+  &|& \texttt{T\_Record}(\Field^{*})  & \\
+  &|& \texttt{T\_Exception}(\Field^{*})  & \\
+  &|& \texttt{T\_Named}(\identifier)  & \text{A type variable} \\
+\end{array}
+\]
 
 \chapter{Type Algebra}
 
