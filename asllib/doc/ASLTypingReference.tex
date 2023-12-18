@@ -77,17 +77,33 @@ github repository.
 
 \chapter{Preamble}
 
+\section{Abstract Syntax}
+An \emph{abstract syntax tree} (AST, for short) represents an ASL program via a labelled tree. 
+
 \section{Environments}
+A \emph{type judgement} associates a node in an abstract syntax tree (which intuitively corresponds to an ASL construct) with a certain type. We also say that the node is \emph{annotated} with that type.
+%
+A \emph{typing environment} (environment, for short) maps AST nodes to types.
+
+Defining the type annotation requires inferring various auxiliary attributes for AST nodes. We consider these auxiliary attributes as part of the environment as well. Technically, we partition the environment into two distinct components: the global environment --- pertaining to AST nodes appearing outside of a given sub-program, and the local environment --- pertaining to AST nodes appearing inside a given sub-program.
+
+\section{Type System}
+A \emph{typing rule} specifies a conjunction of conditions that must hold in order to annotate an AST node with a given type. These conditions typically inspect the label of node and the type annotations on the children of the node (in a given environment).
+
+Not all conditions are type judgements. Some conditions are expressed in terms of the auxiliary attributes alluded to above. We define these in the next chapter. 
+
+A \emph{typing system} is a set of typing rules. More than one rule can be associated with a given node label, but they are exclusive --- at most one rule holds in a given environment.
 
 \section{Annotation}
-Typing a program is typing its ``main'' subprogram.  Constructively, typing a
-program requires following its Abstract Syntax Tree and typing each of its
-components.
+Typing a program consists of annotating the root of its AST. This is typically done by traversing the AST bottom-up.
+To annotate a node, the typing algorithm finds a rule that matches the node --- that is a rule whose all conditions are satisfied. If one such rule is found, the node is annotated by the  result type specified by the rule, essentially adding the type judgement to the environment.
+If no such rule is found, it is considered a \emph{typing error} and the algorithm exists.
 
-The types of a program are given by applying a set of
-\texttt{annotate\_<object>} functions. Each \texttt{annotate\_<object>}
-function describes how to annotate a specific object, as follows.
-\begin{itemize}
+Sometimes it is to define \emph{error rules} --- rules that result in an error and provide extra information to help understand the reason for the error.
+
+We implement the process described above via a set of
+\texttt{annotate\_<label>} functions. Each \texttt{annotate\_<label>}
+function describes how to annotate an AST node, given its label, as follows:\begin{itemize}
 \item \texttt{annotate\_expr} annotates expressions;
 \item \texttt{annotate\_slices} annotates slices;
 \item \texttt{annotate\_pattern} annotates pattern;
@@ -104,8 +120,8 @@ This aims to encompass LRM 7.4.2. R\_VDPC.
 
 \section{Reading guide}
 
-The definition of each \texttt{annotation\_<object>} function is given by a number of
-rules, which follow the possible shapes the \texttt{object} can have. For 
+The definition of each \texttt{annotation\_<label>} function is given by a number of
+rules, which follow the possible shapes the \texttt{label} can have. For 
 example, an expression can be a literal, or a binary operator, amongst other
 things. Each of those has its own evaluation rule: TypingRule.Lit in
 Section~\ref{sec:TypingRule.Lit}, Typing.Binop in
