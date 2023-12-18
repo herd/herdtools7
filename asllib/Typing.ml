@@ -1275,25 +1275,32 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     let here x = add_pos_from le x in
     match le.desc with
+    (* Begin LEDiscard *)
     | LE_Discard -> le |: TypingRule.LEDiscard
+    (* End *)
     | LE_Var x ->
         (* TODO: Handle setting global var *)
         let+ () =
          fun () ->
           let ty =
+            (* Begin LELocalVar *)
             match IMap.find_opt x env.local.storage_types with
             | Some (ty, LDK_Var) -> ty |: TypingRule.LELocalVar
+            (* End *) 
             | Some _ -> fatal_from le @@ Error.AssignToImmutable x
             | None -> (
+                (* Begin LEGlobalVar *)
                 match IMap.find_opt x env.global.storage_types with
                 | Some (ty, _) ->
                     (* TODO: check that the keyword is a variable. *)
-                    ty
+                    ty |: TypingRule.LEGlobalVar
+                (* End *)
                 | None -> undefined_identifier le x)
           in
           check_can_assign_to le env ty t_e ()
         in
         le
+    (* Begin LEDestructuring *)
     | LE_Destructuring les ->
         (match t_e.desc with
         | T_Tuple sub_tys ->
@@ -1306,9 +1313,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               LE_Destructuring les' |> here
         | _ -> conflict le [ T_Tuple [] ] t_e)
         |: TypingRule.LEDestructuring
+    (* End *)
     | LE_Slice (le1, slices) -> (
         let t_le1, _ = expr_of_lexpr le1 |> annotate_expr env in
         let struct_t_le1 = Types.get_structure env t_le1 in
+        (* Begin LESlice *)
         match struct_t_le1.desc with
         | T_Bits _ ->
             let le2 = annotate_lexpr env le1 t_le1 in
@@ -1320,6 +1329,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             in
             let slices2 = best_effort slices (annotate_slices env) in
             LE_Slice (le2, slices2) |> here |: TypingRule.LESlice
+        (* End *)
+        (* Begin LESetArray *)
         | T_Array (size, t) -> (
             let le2 = annotate_lexpr env le1 t_le1 in
             let+ () = check_can_assign_to le2 env t t_e in
@@ -1342,6 +1353,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                   check_type_satisfies le2 env t_index' wanted_t_index
                 in
                 LE_SetArray (le2, e_index') |> here |: TypingRule.LESetArray
+            (* End *)
             | _ -> fatal_from le1 (Error.UnsupportedExpr (expr_of_lexpr le1)))
         | _ -> conflict le1 [ default_t_bits ] t_le1)
     | LE_SetField (le1, field) ->
@@ -1352,13 +1364,17 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
          | T_Exception fields | T_Record fields ->
              let t =
                match List.assoc_opt field fields with
+             (* Begin LESetBadRecordField *)
                | None ->
                    fatal_from le (Error.BadField (field, t_le1))
                    |: TypingRule.LESetBadRecordField
+             (* End *)
+             (* Begin LESetRecordField *)
                | Some t -> t
              in
              let+ () = check_can_assign_to le env t t_e in
              LE_SetField (le2, field) |> here |: TypingRule.LESetRecordField
+             (* End *)
          | T_Bits (_, bitfields) ->
              let bits slices bitfields =
                let w = slices_width env slices in
@@ -1366,18 +1382,26 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
              in
              let t, slices =
                match find_bitfield_opt field bitfields with
+               (* Begin LESetBadBitField *)
                | None ->
                    fatal_from le1 (Error.BadField (field, t_le1_struct))
                    |: TypingRule.LESetBadBitField
+               (* End *)
+               (* Begin LESetBitField *)
                | Some (BitField_Simple (_field, slices)) ->
                    (bits slices [], slices) |: TypingRule.LESetBitField
+               (* End *)
+               (* Begin LESetBitFieldNested *)
                | Some (BitField_Nested (_field, slices, bitfields')) ->
                    (bits slices bitfields', slices)
                    |: TypingRule.LESetBitFieldNested
+               (* End *)
+               (* Begin LESetBitFieldTyped *)
                | Some (BitField_Type (_field, slices, t)) ->
                    let t' = bits slices [] in
                    let+ () = check_type_satisfies le env t' t in
                    (t, slices) |: TypingRule.LESetBitFieldTyped
+               (* End *)
              in
              let+ () = check_can_assign_to le1 env t t_e in
              let le2 = LE_Slice (le1, slices) |> here in
@@ -1401,6 +1425,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let new_le = LE_Slice (le', list_concat_map one_field fields) |> here in
         annotate_lexpr env new_le t_e |: TypingRule.LESetFields
     | LE_SetArray _ -> assert false
+    (* Begin LE_Concat *)
     | LE_Concat (les, _) ->
         let e_eq = expr_of_lexpr le in
         let t_e_eq, _e_eq = annotate_expr env e_eq in
@@ -1433,6 +1458,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (* Here as the first check, we have _real_width == bv_length t_e *)
         let les = List.rev rev_les and widths = List.rev rev_widths in
         LE_Concat (les, Some widths) |> add_pos_from le |: TypingRule.LEConcat
+    (* End *)
 
   let can_be_initialized_with env s t =
     (* Rules:

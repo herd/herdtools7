@@ -1915,7 +1915,7 @@ applies:
 
 \section{TypingRule.LEDiscard \label{sec:TypingRule.LEDiscard}}
 
-   \subsection{Prose}
+  \subsection{Prose}
    Annotating~\texttt{le} in an environment~\texttt{env}, assuming
 \texttt{t\_e} to be the type of the corresponding right-hand-side
 (\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
@@ -1925,9 +1925,10 @@ all of the following apply:
    \item \texttt{new\_le} is \texttt{le}.
    \end{itemize}
 
-   \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LEDiscardBegin, lastline=\LEDiscardEnd]{../Typing.ml} 
 
   \subsection{Formally}
 
