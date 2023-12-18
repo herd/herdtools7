@@ -88,16 +88,16 @@ The types of a program are given by applying a set of
 \texttt{annotate\_<object>} functions. Each \texttt{annotate\_<object>}
 function describes how to annotate a specific object, as follows.
 \begin{itemize}
-\item  \texttt{annotate\_expr} annotates expressions;
-\item  \texttt{annotate\_slices} annotates slices;
-\item  \texttt{annotate\_pattern} annotates pattern;
-\item  \texttt{annotate\_local\_decl\_item} annotates local declarations;
-\item  \texttt{annotate\_lexpr} annotates left-hand sides of assignments;
-\item  \texttt{annotate\_stmt} annotates statements;
-\item  \texttt{annotate\_block} annotates blocks;
-\item  \texttt{annotate\_catcher} annotates catchers;
-\item  \texttt{annotate\_call} annotates functions calls;
-\item  \texttt{annotate\_func} annotates functions.
+\item \texttt{annotate\_expr} annotates expressions;
+\item \texttt{annotate\_slices} annotates slices;
+\item \texttt{annotate\_pattern} annotates pattern;
+\item \texttt{annotate\_local\_decl\_item} annotates local declarations;
+\item \texttt{annotate\_lexpr} annotates left-hand sides of assignments;
+\item \texttt{annotate\_stmt} annotates statements;
+\item \texttt{annotate\_block} annotates blocks;
+\item \texttt{annotate\_catcher} annotates catchers;
+\item \texttt{annotate\_call} annotates functions calls;
+\item \texttt{annotate\_func} annotates functions.
 \end{itemize}
 
 This aims to encompass LRM 7.4.2. R\_VDPC.
@@ -155,12 +155,12 @@ TODO: what about \texttt{hex\_lit}?
     \subsection{Prose}
     The \emph{builtin singular types} are:
     \begin{itemize}
-    \item  integer;
-    \item  real;
-    \item  string;
-    \item  boolean;
-    \item  bits;
-    \item  enumeration.
+    \item integer;
+    \item real;
+    \item string;
+    \item boolean;
+    \item bits;
+    \item enumeration.
     \end{itemize}
 
     \subsection{Example: TypingRule.BuiltinSingularTypes.asl}
@@ -270,12 +270,12 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Prose}
     A type \texttt{t} is singular if one of the following applies:
     \begin{itemize}
-    \item  \texttt{t} is a builtin singular type;
-    \item  All of the following apply:
+    \item \texttt{t} is a builtin singular type;
+    \item All of the following apply:
       \begin{itemize}
-      \item  \texttt{t} is a named type;
-      \item  \texttt{t\_struct} is the structure of \texttt{t};
-      \item  \texttt{t\_struct} is a builtin singular.
+      \item \texttt{t} is a named type;
+      \item \texttt{t\_struct} is the structure of \texttt{t};
+      \item \texttt{t\_struct} is a builtin singular.
       \end{itemize} 
     \end{itemize}
 
@@ -293,12 +293,12 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Prose}
     A type \texttt{t} is aggregate if one of the following applies:
     \begin{itemize}
-    \item  \texttt{t} is a builtin aggregate type;
-    \item  All of the following apply:
+    \item \texttt{t} is a builtin aggregate type;
+    \item All of the following apply:
       \begin{itemize}
-      \item  \texttt{t} is a named type;
-      \item  \texttt{t\_struct} is the structure of \texttt{t};
-      \item  \texttt{t\_struct} is a builtin aggregate. 
+      \item \texttt{t} is a named type;
+      \item \texttt{t\_struct} is the structure of \texttt{t};
+      \item \texttt{t\_struct} is a builtin aggregate. 
       \end{itemize}
     \end{itemize}
 
@@ -332,7 +332,7 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
       \item \texttt{t} is a record with fields \texttt{fields};
       \item there exists a non-primitive type in \texttt{fields};
       \end{itemize}
-    \item  All of the following apply:
+    \item All of the following apply:
       \begin{itemize}
       \item \texttt{t} is an exception with fields \texttt{fields};
       \item there exists a non-primitive type in \texttt{fields};
@@ -380,47 +380,47 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \texttt{ty} is a type and its structure is \texttt{t\_struct} and one of the following
     applies:
     \begin{itemize}
-    \item  All of the following apply:
+    \item All of the following apply:
       \begin{itemize}
-      \item  \texttt{ty} is a named type \texttt{x};
-      \item  One of the following applies:
+      \item \texttt{ty} is a named type \texttt{x};
+      \item One of the following applies:
         \begin{itemize}
-        \item  All of the following apply:
+        \item All of the following apply:
           \begin{itemize}
-          \item  \texttt{x} is not declared in the global environment; 
-          \item  an error "Undefined Identifier" is raised;
+          \item \texttt{x} is not declared in the global environment; 
+          \item an error "Undefined Identifier" is raised;
           \end{itemize}
-        \item  All of the following apply:
+        \item All of the following apply:
           \begin{itemize}
-          \item  \texttt{x} is declared in the global environment as some type \texttt{ty'};
-          \item  \texttt{t\_struct} is the structure of \texttt{ty'};
+          \item \texttt{x} is declared in the global environment as some type \texttt{ty'};
+          \item \texttt{t\_struct} is the structure of \texttt{ty'};
           \end{itemize}
        \end{itemize}
       \end{itemize}
-    \item  All of the following apply:
+    \item All of the following apply:
       \begin{itemize}
-      \item  \texttt{t} is a builtin singular type;
-      \item  \texttt{t\_struct} is \texttt{ty};
+      \item \texttt{t} is a builtin singular type;
+      \item \texttt{t\_struct} is \texttt{ty};
       \end{itemize}
-    \item  All of the following apply:
+    \item All of the following apply:
       \begin{itemize}
-      \item  \texttt{ty} is a tuple with \texttt{subtypes};
-      \item  \texttt{t\_struct} is a tuple with the structure of each element in \texttt{subtypes};
+      \item \texttt{ty} is a tuple with \texttt{subtypes};
+      \item \texttt{t\_struct} is a tuple with the structure of each element in \texttt{subtypes};
       \end{itemize}
-    \item  All of the following apply:
+    \item All of the following apply:
       \begin{itemize}
-      \item  \texttt{ty} is an array with \texttt{t};
-      \item  \texttt{t\_struct} is an array with the structure of \texttt{t};
+      \item \texttt{ty} is an array with \texttt{t};
+      \item \texttt{t\_struct} is an array with the structure of \texttt{t};
       \end{itemize}
-    \item  All of the following apply:
+    \item All of the following apply:
       \begin{itemize}
-      \item  \texttt{ty} is a record with \texttt{fields};
-      \item  \texttt{t\_struct} is a record with ;
+      \item \texttt{ty} is a record with \texttt{fields};
+      \item \texttt{t\_struct} is a record with ;
       \end{itemize}
-    \item  All of the following apply:
+    \item All of the following apply:
       \begin{itemize}
-      \item  \texttt{ty} is an exception with \texttt{fields};
-      \item  \texttt{t\_struct} is a record with ;
+      \item \texttt{ty} is an exception with \texttt{fields};
+      \item \texttt{t\_struct} is a record with ;
       \end{itemize}
     \end{itemize}
       
@@ -556,54 +556,54 @@ may hold.
 \subsection{Prose}
   \texttt{T} structural-subtype-satisfies \texttt{S} if one of the following applies:
   \begin{itemize}
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of an integer type;
     \item \texttt{T} has the structure of an integer type.
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of a real type;
     \item \texttt{T} has the structure of a real type.
     \end{itemize} 
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of a string type;
     \item \texttt{T} has the structure of a string type.
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of a boolean type;
     \item \texttt{T} has the structure of a boolean type.
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of an enumeration type; 
     \item \texttt{T} has the structure of an enumeration type;
     \item \texttt{S} and \texttt{T} have the same enumeration literals.
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of a bitvector type with determined width \texttt{w};
-    \item  One of the following applies:
+    \item One of the following applies:
       \begin{itemize}
       \item \texttt{T} has the structure of a bitvector type of determined width \texttt{w};
       \item \texttt{T} has the structure of a bitvector type of undetermined width.
       \end{itemize}
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of a bitvector type with undetermined width;
     \item \texttt{T} has the structure of a bitvector type. 
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of a bitvector type with bitfields \texttt{bitfields} and width \texttt{width};
     \item \texttt{T} has the structure of a bitvector type with width \texttt{width};
@@ -615,14 +615,14 @@ may hold.
       \end{itemize}
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of an array type with elements of type \texttt{E};
     \item \texttt{T} has the structure of an array type with elements of type \texttt{E};
     \item \texttt{T} has the same element indices as \texttt{S}.
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of a tuple type;
     \item \texttt{T} has the structure of a tuple type;
@@ -631,7 +631,7 @@ may hold.
       type-satisfies \texttt{e}.
     \end{itemize}  
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of a record type;
     \item \texttt{T} has the structure of a record type;
@@ -675,7 +675,7 @@ may hold.
       \item \texttt{S} has the structure of a bitvector type with undetermined width;
       \item \texttt{T} has the structure of a bitvector type with undetermined width;
       \end{itemize}
-   \item  the domain of \texttt{T} is a subset of the domain of \texttt{S}.
+   \item the domain of \texttt{T} is a subset of the domain of \texttt{S}.
   \end{itemize}
 
   \subsection{Examples}
@@ -693,8 +693,8 @@ may hold.
   \subsection{Prose}
     \texttt{T} subtype-satisfies \texttt{S} if all of the following apply:
     \begin{itemize}
-    \item  \texttt{T} structural-subtype-satisfies \texttt{S};
-    \item  \texttt{T} domain-subtype-satisfies \texttt{S}.
+    \item \texttt{T} structural-subtype-satisfies \texttt{S};
+    \item \texttt{T} domain-subtype-satisfies \texttt{S}.
     \end{itemize} 
 
   \subsection{Examples}
@@ -714,16 +714,16 @@ may hold.
 \texttt{T} type-satisfies \texttt{S} if one of the following applies:
  \begin{itemize}
  \item \texttt{T} is a subtype of \texttt{S};
- \item  All of the following apply:
+ \item All of the following apply:
     \begin{itemize}
     \item \texttt{T} subtype-satisfies \texttt{S};
-    \item  One of the following applies:
+    \item One of the following applies:
       \begin{itemize}
       \item \texttt{S} is an anonymous type;
       \item \texttt{T} is an anonymous type;
       \end{itemize}
     \end{itemize}
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{T} is an anonymous bitvector with no bitfields;
     \item \texttt{S} has the structure of a bitvector (with or without bitfields);
@@ -755,37 +755,57 @@ may hold.
 
   \subsection{Formally}
 
-\subsection{Comments}
+  \subsection{Comments}
   Since the subtype relation is a partial order, it is reflexive. Therefore
   every type \texttt{T} is a subtype of itself, and as a consequence, every type \texttt{T}
   type-satisfies itself.
   
   This aims to encompass LRM Section 7.3.2 R\_FMXK and I\_NLFD.
 
-\section{TypingRule.TypeClash}
+\section{TypingRule.CanAssignTo \label{sec:TypingRule.CanAssignTo}}
 
-\subsection{Prose}
-  \texttt{T} type-clashes with \texttt{S} if one of the following applies:
+  \subsubsection{Prose}
+  \texttt{S} can be assigned to \texttt{T} if and only if all of the following apply:
   \begin{itemize}
-  \item  \texttt{S} and \texttt{T} both have the structure of integers;
-  \item  \texttt{S} and \texttt{T} both have the structure of reals;
-  \item  \texttt{S} and \texttt{T} both have the structure of strings;
-  \item  \texttt{S} and \texttt{T} both have the structure of enumeration types with the same enumeration literals;
-  \item  \texttt{S} and \texttt{T} both have the structure of bitvectors;
-  \item  \texttt{S} and \texttt{T} both have the structure of arrays whose element types type-clash;
-  \item  \texttt{S} and \texttt{T} both have the structure of tuples of the same length whose
-    corresponding element types type-clash;
-  \item  \texttt{S} is a subtype of \texttt{T};
-  \item  \texttt{S} is a supertype of \texttt{T}.
-  \end{itemize}
-
-\subsection{Examples}
+  \item neither \texttt{S} nor \texttt{T} has the structure of the underconstrained integer type;
+  \item \texttt{T} type-satisfies \texttt{S}.
+  \end{itemize} 
+ 
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\CanAssignToBegin, lastline=\CanAssignToEnd]{../Typing.ml}
+
+  \subsection{Formally}
+  
+  \subsection{Comments}
+  This aims to encompass LRM R\_GNTS and R\_LXQZ.
+
+\section{TypingRule.TypeClash}
+
+  \subsection{Prose}
+  \texttt{T} type-clashes with \texttt{S} if one of the following applies:
+  \begin{itemize}
+  \item \texttt{S} and \texttt{T} both have the structure of integers;
+  \item \texttt{S} and \texttt{T} both have the structure of reals;
+  \item \texttt{S} and \texttt{T} both have the structure of strings;
+  \item \texttt{S} and \texttt{T} both have the structure of enumeration types with the same enumeration literals;
+  \item \texttt{S} and \texttt{T} both have the structure of bitvectors;
+  \item \texttt{S} and \texttt{T} both have the structure of arrays whose element types type-clash;
+  \item \texttt{S} and \texttt{T} both have the structure of tuples of the same length whose
+    corresponding element types type-clash;
+  \item \texttt{S} is a subtype of \texttt{T};
+  \item \texttt{S} is a supertype of \texttt{T}.
+  \end{itemize}
+
+  \subsection{Examples}
+
+  \subsection{Code}
+    \VerbatimInput[firstline=\TypeClashBegin, lastline=\TypeClashEnd]{../types.ml}
 
   \subsection{Formally}
 
-\subsection{Comments}
+  \subsection{Comments}
   Note that if \texttt{T} subtype-satisfies \texttt{S} then \texttt{T} and \texttt{S} type-clash, but not the other
   way around.
 
@@ -907,12 +927,12 @@ may hold.
         \item \texttt{ty} is \texttt{S}.
         \end{itemize}
 
-      \item  All of the following apply:
+      \item All of the following apply:
         \begin{itemize}
-        \item  S is an anonymous type;
-        \item  T is a named type;
-        \item  T has the structure of an unconstrained integer type;
-        \item  ty is T.
+        \item S is an anonymous type;
+        \item T is a named type;
+        \item T has the structure of an unconstrained integer type;
+        \item ty is T.
         \end{itemize}
 
       \item All of the following apply:
@@ -951,41 +971,41 @@ may hold.
   \texttt{t} is the result of checking compatibility of a unary operator \texttt{op} with
   type \texttt{t1} and one of the following applies:
   \begin{itemize}
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
-    \item  \texttt{op} is \texttt{BNOT};
-    \item  \texttt{t1} type-satisfies \texttt{boolean};
-    \item  \texttt{t} is \texttt{boolean};
+    \item \texttt{op} is \texttt{BNOT};
+    \item \texttt{t1} type-satisfies \texttt{boolean};
+    \item \texttt{t} is \texttt{boolean};
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
-    \item  \texttt{op} is \texttt{NEG};
-    \item  One of the following applies:
+    \item \texttt{op} is \texttt{NEG};
+    \item One of the following applies:
       \begin{itemize}
-      \item  \texttt{t1} type-satisfies \texttt{integer}; 
-      \item  \texttt{t1} type-satisfies \texttt{real};
+      \item \texttt{t1} type-satisfies \texttt{integer}; 
+      \item \texttt{t1} type-satisfies \texttt{real};
       \end{itemize}
-     \item  One of the following applies:
+     \item One of the following applies:
        \begin{itemize}
-       \item  All of the following apply:
+       \item All of the following apply:
          \begin{itemize}
-         \item  \texttt{t1} has the structure of an unconstrained integer;
-         \item  \texttt{t} is an unconstrained integer;
+         \item \texttt{t1} has the structure of an unconstrained integer;
+         \item \texttt{t} is an unconstrained integer;
          \end{itemize}
-       \item  All of the following apply:
+       \item All of the following apply:
          \begin{itemize}
-         \item  \texttt{t1} has the structure of a constrained integer;
-         \item  \texttt{t} is a constrained integer whose constraint is ;
+         \item \texttt{t1} has the structure of a constrained integer;
+         \item \texttt{t} is a constrained integer whose constraint is ;
          \end{itemize}
        \end{itemize}
     \end{itemize}  
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
-    \item  \texttt{op} is \texttt{NOT};
-    \item  \texttt{t1} has the structure of a bitvector;
-    \item  \texttt{t} is \texttt{t1}.
+    \item \texttt{op} is \texttt{NOT};
+    \item \texttt{t1} has the structure of a bitvector;
+    \item \texttt{t} is \texttt{t1}.
     \end{itemize}
   \end{itemize}
 
@@ -1007,157 +1027,157 @@ may hold.
   \texttt{t} is the result of checking compatibility of a binary operator \texttt{op} with
   types \texttt{t1} and \texttt{t2} and one of the following applies:
 \begin{itemize}
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
-    \item  \texttt{op} is \texttt{AND}, \texttt{OR}, \texttt{EQ} or \texttt{IMPL}; 
-    \item  \texttt{t1} type-satisfies \texttt{boolean};
-    \item  \texttt{t2} type-satisfies \texttt{boolean};
-    \item  \texttt{t} is \texttt{boolean}.
+    \item \texttt{op} is \texttt{AND}, \texttt{OR}, \texttt{EQ} or \texttt{IMPL}; 
+    \item \texttt{t1} type-satisfies \texttt{boolean};
+    \item \texttt{t2} type-satisfies \texttt{boolean};
+    \item \texttt{t} is \texttt{boolean}.
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
-    \item  \texttt{op} is \texttt{AND}, \texttt{OR}, or \texttt{EOR};
-    \item  \texttt{t1} has the structure of a bitvector;
-    \item  \texttt{t2} has the structure of a bitvector;
-    \item  \texttt{t1} and \texttt{t2} have the same bitvector width \texttt{w};
-    \item  \texttt{t} is the bitvector type of width \texttt{w}.
+    \item \texttt{op} is \texttt{AND}, \texttt{OR}, or \texttt{EOR};
+    \item \texttt{t1} has the structure of a bitvector;
+    \item \texttt{t2} has the structure of a bitvector;
+    \item \texttt{t1} and \texttt{t2} have the same bitvector width \texttt{w};
+    \item \texttt{t} is the bitvector type of width \texttt{w}.
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
-    \item  \texttt{op} is \texttt{PLUS} or \texttt{MINUS};
-    \item  \texttt{t1} has the structure of a bitvector;
-    \item  \texttt{t2} has the structure of a bitvector;
-    \item  \texttt{t1} and \texttt{t2} have the same bitvector width \texttt{w};
-    \item  \texttt{t2} type-satisfies \texttt{integer};
-    \item  \texttt{t} is the bitvector type of width \texttt{w}.
+    \item \texttt{op} is \texttt{PLUS} or \texttt{MINUS};
+    \item \texttt{t1} has the structure of a bitvector;
+    \item \texttt{t2} has the structure of a bitvector;
+    \item \texttt{t1} and \texttt{t2} have the same bitvector width \texttt{w};
+    \item \texttt{t2} type-satisfies \texttt{integer};
+    \item \texttt{t} is the bitvector type of width \texttt{w}.
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
-    \item  \texttt{op} is \texttt{EQ\_OP} or \texttt{NEQ};
-    \item  One of the following applies:
+    \item \texttt{op} is \texttt{EQ\_OP} or \texttt{NEQ};
+    \item One of the following applies:
       \begin{itemize}
-      \item  \texttt{t1} is equal to \texttt{t2};
-      \item  All of the following apply:
+      \item \texttt{t1} is equal to \texttt{t2};
+      \item All of the following apply:
         \begin{itemize}
-        \item  \texttt{t1} type-satisfies \texttt{integer};
-        \item  \texttt{t2} type-satisfies \texttt{integer}; 
+        \item \texttt{t1} type-satisfies \texttt{integer};
+        \item \texttt{t2} type-satisfies \texttt{integer}; 
         \end{itemize}
-      \item  All of the following apply:
+      \item All of the following apply:
         \begin{itemize}
-        \item  \texttt{t1} has the structure of a bitvector;
-        \item  \texttt{t2} has the structure of a bitvector;
-        \item  \texttt{t1} and \texttt{t2} have the same bitvector width;
+        \item \texttt{t1} has the structure of a bitvector;
+        \item \texttt{t2} has the structure of a bitvector;
+        \item \texttt{t1} and \texttt{t2} have the same bitvector width;
         \end{itemize}
-      \item  All of the following apply:
+      \item All of the following apply:
         \begin{itemize}
-        \item  \texttt{t1} type-satisfies \texttt{boolean};
-        \item  \texttt{t2} type-satisfies \texttt{boolean};
+        \item \texttt{t1} type-satisfies \texttt{boolean};
+        \item \texttt{t2} type-satisfies \texttt{boolean};
         \end{itemize}
-      \item  All of the following apply:
+      \item All of the following apply:
         \begin{itemize}
-        \item  \texttt{t1} enumerates local declarations \texttt{li1}; 
-        \item  \texttt{t2} enumerates local declarations \texttt{li2};
-        \item  \texttt{li1} equals \texttt{li2};
+        \item \texttt{t1} enumerates local declarations \texttt{li1}; 
+        \item \texttt{t2} enumerates local declarations \texttt{li2};
+        \item \texttt{li1} equals \texttt{li2};
         \end{itemize}
       \end{itemize}
-    \item  \texttt{t} is \texttt{boolean}.
+    \item \texttt{t} is \texttt{boolean}.
     \end{itemize}
    
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
-    \item  \texttt{op} is \texttt{LEQ}, \texttt{GEQ}, \texttt{GT} or \texttt{LT};
-    \item  One of the following applies:
+    \item \texttt{op} is \texttt{LEQ}, \texttt{GEQ}, \texttt{GT} or \texttt{LT};
+    \item One of the following applies:
       \begin{itemize}
-      \item  All of the following apply:
+      \item All of the following apply:
         \begin{itemize}
-        \item  \texttt{t1} type-satisfies \texttt{integer};
-        \item  \texttt{t2} type-satisfies \texttt{integer};
+        \item \texttt{t1} type-satisfies \texttt{integer};
+        \item \texttt{t2} type-satisfies \texttt{integer};
         \end{itemize}
-      \item  All of the following apply:
+      \item All of the following apply:
         \begin{itemize}
-        \item  \texttt{t1} type-satisfies \texttt{real};
-        \item  \texttt{t2} type-satisfies \texttt{real};
+        \item \texttt{t1} type-satisfies \texttt{real};
+        \item \texttt{t2} type-satisfies \texttt{real};
         \end{itemize}
       \end{itemize}
-    \item  \texttt{t} is boolean.
+    \item \texttt{t} is boolean.
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
-    \item  \texttt{op} is \texttt{MUL}, \texttt{DIV}, \texttt{DIVRM}, \texttt{MOD}, \texttt{SHL}, \texttt{SHR}, \texttt{POW}, \texttt{PLUS} or \texttt{MINUS};
-    \item  \texttt{struct1} is the structure of \texttt{t1};
-    \item  \texttt{struct2} is the structure of \texttt{t2};
-    \item  One of the following applies:
+    \item \texttt{op} is \texttt{MUL}, \texttt{DIV}, \texttt{DIVRM}, \texttt{MOD}, \texttt{SHL}, \texttt{SHR}, \texttt{POW}, \texttt{PLUS} or \texttt{MINUS};
+    \item \texttt{struct1} is the structure of \texttt{t1};
+    \item \texttt{struct2} is the structure of \texttt{t2};
+    \item One of the following applies:
       \begin{itemize}
-      \item  All of the following apply:
+      \item All of the following apply:
         \begin{itemize}
-        \item  \texttt{t1} has the structure of an unconstrained integer;
-        \item  \texttt{t2} has the structure of an integer;
-        \item  \texttt{t} is an unconstrained integer;
+        \item \texttt{t1} has the structure of an unconstrained integer;
+        \item \texttt{t2} has the structure of an integer;
+        \item \texttt{t} is an unconstrained integer;
         \end{itemize}
-      \item  All of the following apply:
+      \item All of the following apply:
         \begin{itemize}
-        \item  \texttt{t1} has the structure of an integer;
-        \item  \texttt{t2} has the structure of an unconstrained integer;
-        \item  \texttt{t} is an unconstrained integer;
+        \item \texttt{t1} has the structure of an integer;
+        \item \texttt{t2} has the structure of an unconstrained integer;
+        \item \texttt{t} is an unconstrained integer;
         \end{itemize}
-      \item  One of the following applies:
+      \item One of the following applies:
        \begin{itemize} 
-       \item  All of the following apply:
+       \item All of the following apply:
           \begin{itemize}
-          \item  \texttt{t1} has the structure of an under-constrained integer;
-          \item  \texttt{t2} has the structure of a constrained integer;
-          \item  \texttt{t} is an under-constrained integer;
+          \item \texttt{t1} has the structure of an under-constrained integer;
+          \item \texttt{t2} has the structure of a constrained integer;
+          \item \texttt{t} is an under-constrained integer;
           \end{itemize}
-        \item  All of the following apply:
+        \item All of the following apply:
           \begin{itemize}
-          \item  \texttt{t1} has the structure of a constrained integer;
-          \item  \texttt{t2} has the structure of an under-constrained integer;
-          \item  \texttt{t} is an under-constrained integer;
+          \item \texttt{t1} has the structure of a constrained integer;
+          \item \texttt{t2} has the structure of an under-constrained integer;
+          \item \texttt{t} is an under-constrained integer;
           \end{itemize}
        \end{itemize}
-      \item  One of the following applies:
+      \item One of the following applies:
          \begin{itemize}
-         \item  All of the following apply:
+         \item All of the following apply:
            \begin{itemize}
-           \item  \texttt{t1} has the structure of a well-constrained integer;
-           \item  \texttt{t2} has the structure of a well-constrained integer;
-	   \item  \texttt{t} is a constrained integer whose constraint is calculated by
+           \item \texttt{t1} has the structure of a well-constrained integer;
+           \item \texttt{t2} has the structure of a well-constrained integer;
+	   \item \texttt{t} is a constrained integer whose constraint is calculated by
 	     applying the operation to all possible value pairs;
            \end{itemize}
-         \item  All of the following apply:
+         \item All of the following apply:
            \begin{itemize}
-           \item  \texttt{t1} has the structure of a well-constrained integer;
-           \item  \texttt{t2} has the structure of an well-constrained integer;
-	   \item  \texttt{t} is a constrained integer whose constraint is calculated by
+           \item \texttt{t1} has the structure of a well-constrained integer;
+           \item \texttt{t2} has the structure of an well-constrained integer;
+	   \item \texttt{t} is a constrained integer whose constraint is calculated by
 	     applying the operation to all possible value pairs;
            \end{itemize}
          \end{itemize}
-      \item  All of the following apply:
+      \item All of the following apply:
         \begin{itemize}
-        \item  \texttt{t1} has the structure of \texttt{real};
-        \item  \texttt{t2} has the structure of \texttt{real};
-        \item  \texttt{op} is \texttt{PLUS}, \texttt{MINUS} or \texttt{MUL};
-        \item  \texttt{t} is \texttt{real};
+        \item \texttt{t1} has the structure of \texttt{real};
+        \item \texttt{t2} has the structure of \texttt{real};
+        \item \texttt{op} is \texttt{PLUS}, \texttt{MINUS} or \texttt{MUL};
+        \item \texttt{t} is \texttt{real};
         \end{itemize}
-     \item  All of the following apply:
+     \item All of the following apply:
        \begin{itemize}
-       \item  \texttt{t1} has the structure of \texttt{real};
-       \item  \texttt{t2} has the structure of \texttt{integer};
-       \item  \texttt{op} is \texttt{POW};
-       \item  \texttt{t} is \texttt{real};
+       \item \texttt{t1} has the structure of \texttt{real};
+       \item \texttt{t2} has the structure of \texttt{integer};
+       \item \texttt{op} is \texttt{POW};
+       \item \texttt{t} is \texttt{real};
        \end{itemize}
      \end{itemize}
    \end{itemize} 
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
-    \item  \texttt{op} is \texttt{RDIV};
-    \item  \texttt{t1} type-satisfies \texttt{real};
-    \item  \texttt{t} is \texttt{real}.
+    \item \texttt{op} is \texttt{RDIV};
+    \item \texttt{t1} type-satisfies \texttt{real};
+    \item \texttt{t} is \texttt{real}.
     \end{itemize}
 \end{itemize}
 
@@ -1321,9 +1341,9 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
   The result of annotating the expression \texttt{e} in \texttt{env} is
 \texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
-  \item  \texttt{e} is a variable \texttt{x};
-  \item  \texttt{x} is not bound in \texttt{env};
-  \item  an error "Undefined Identifier" is raised.
+  \item \texttt{e} is a variable \texttt{x};
+  \item \texttt{x} is not bound in \texttt{env};
+  \item an error "Undefined Identifier" is raised.
   \end{itemize}
 
   \subsection{Examples}
@@ -1340,11 +1360,11 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
   The result of annotating the expression \texttt{e} in \texttt{env} is
 \texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
-  \item  \texttt{e} denotes a binary operation \texttt{op} over two expressions \texttt{e1} and \texttt{e2};
-  \item  \texttt{t1,e1'} is the result of annotating \texttt{e1} in \texttt{env};
-  \item  \texttt{t2,e2'} is the result of annotating \texttt{e2} in \texttt{env};
-  \item  \texttt{t} is the result of checking compatibility of \texttt{op} with \texttt{t1} and \texttt{t2} as per Section~\ref{sec:TypingRule.CheckBinop};
-  \item  \texttt{new\_env} denotes \texttt{op} over \texttt{e1'} and \texttt{e2'}.
+  \item \texttt{e} denotes a binary operation \texttt{op} over two expressions \texttt{e1} and \texttt{e2};
+  \item \texttt{t1,e1'} is the result of annotating \texttt{e1} in \texttt{env};
+  \item \texttt{t2,e2'} is the result of annotating \texttt{e2} in \texttt{env};
+  \item \texttt{t} is the result of checking compatibility of \texttt{op} with \texttt{t1} and \texttt{t2} as per Section~\ref{sec:TypingRule.CheckBinop};
+  \item \texttt{new\_env} denotes \texttt{op} over \texttt{e1'} and \texttt{e2'}.
   \end{itemize}
 
   \subsection{Examples}
@@ -1362,10 +1382,10 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
   The result of annotating the expression \texttt{e} in \texttt{env} is
 \texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
-  \item  \texttt{e} denotes a unary operation \texttt{op} over an expression \texttt{e'};
-  \item  \texttt{t'',e''} is the result of annotating \texttt{e'} in \texttt{env};
-  \item  \texttt{t} is the result of checking compatibility of \texttt{op} with \texttt{t''} as per Section~\ref{sec:TypingRule.CheckUnop};
-  \item  \texttt{new\_env} denotes \texttt{op} over \texttt{e''}.
+  \item \texttt{e} denotes a unary operation \texttt{op} over an expression \texttt{e'};
+  \item \texttt{t'',e''} is the result of annotating \texttt{e'} in \texttt{env};
+  \item \texttt{t} is the result of checking compatibility of \texttt{op} with \texttt{t''} as per Section~\ref{sec:TypingRule.CheckUnop};
+  \item \texttt{new\_env} denotes \texttt{op} over \texttt{e''}.
   \end{itemize}
 
   \subsection{Examples}
@@ -1899,11 +1919,11 @@ applies:
 \item TypingRule.LEDiscard (see Section~\ref{sec:TypingRule.LEDiscard}),
 \item TypingRule.LELocalVar (see Section~\ref{sec:TypingRule.LELocalVar}),
 \item TypingRule.LEGlobalVar (see Section~\ref{sec:TypingRule.LEGlobalVar}),
-\item TypingRule.LETuple (see Section~\ref{sec:TypingRule.LETuple}),
+\item TypingRule.LEDestructuring (see Section~\ref{sec:TypingRule.LEDestructuring}),
 \item TypingRule.LESlice (see Section~\ref{sec:TypingRule.LESlice}),
 \item TypingRule.LESetArray (see Section~\ref{sec:TypingRule.LESetArray}),
 \item TypingRule.LESetBadRecordField (see Section~\ref{sec:TypingRule.LESetBadRecordField}),
-\item TypingRule.LESetRecordField (see Section~\ref{sec:TypingRule.LESetRecordField}),
+\item TypingRule.LESetStructuredField (see Section~\ref{sec:TypingRule.LESetStructuredField}),
 \item TypingRule.LESetBadBitField (see Section~\ref{sec:TypingRule.LESetBadBitField}),
 \item TypingRule.LESetBitField (see Section~\ref{sec:TypingRule.LESetBitField}),
 \item TypingRule.LESetBitFieldNested (see Section~\ref{sec:TypingRule.LESetBitFieldNested}),
@@ -1942,14 +1962,16 @@ all of the following apply:
 (\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
 all of the following apply:
    \begin{itemize}
-   \item \texttt{le} denotes a local variable \texttt{x} of type \texttt{ty};
+   \item \texttt{le} denotes a local variable \texttt{x};
    \item \texttt{x} is locally declared as a variable of type \texttt{ty} in \texttt{env};
+   \item \texttt{t\_e} can be assigned to \texttt{ty};
    \item \texttt{new\_le} is \texttt{le}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LELocalVarBegin, lastline=\LELocalVarEnd]{../Typing.ml} 
 
   \subsection{Formally}
 
@@ -1957,48 +1979,57 @@ all of the following apply:
 
 \section{TypingRule.LEGlobalVar \label{sec:TypingRule.LEGlobalVar}}
 
-    \subsection{Prose}
+  \subsection{Prose}
    Annotating~\texttt{le} in an environment~\texttt{env}, assuming
 \texttt{t\_e} to be the type of the corresponding right-hand-side
 (\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
 all of the following apply:
+   \begin{itemize}
+   \item \texttt{le} denotes a local variable \texttt{x};
+   \item \texttt{x} is globally declared as a variable of type \texttt{ty} in \texttt{env};
+   \item \texttt{t\_e} can be assigned to \texttt{ty};
+   \item \texttt{new\_le} is \texttt{le}.
+   \end{itemize}
  
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LEGlobalVarBegin, lastline=\LEGlobalVarEnd]{../Typing.ml} 
 
   \subsection{Formally}
 
   \subsection{Comments}
 
-\section{TypingRule.LETuple \label{sec:TypingRule.LETuple}}
+\section{TypingRule.LEDestructuring \label{sec:TypingRule.LEDestructuring}}
 
-    \subsection{Prose}
+  \subsection{Prose}
    Annotating~\texttt{le} in an environment~\texttt{env}, assuming
 \texttt{t\_e} to be the type of the corresponding right-hand-side
 (\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
 all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes a tuple \texttt{les};
-   \item \texttt{t\_e} denotes a tuple type \texttt{sub\_tys};
-   \item  One of the following applies:
+   \item \texttt{t\_e} has the structure of a tuple type \texttt{sub\_tys};
+   \item the elements of \texttt{sub\_tys} can be assigned to the type of the elements of \texttt{les};
+   \item One of the following applies:
      \begin{itemize}
-     \item  All of the following apply:
+     \item All of the following apply:
        \begin{itemize}
        \item \texttt{les} and \texttt{sub\_tys} have the same length;
        \item \texttt{new\_le} is the result of annotating \texttt{les} with \texttt{sub\_tys} in \texttt{env}
        \end{itemize}
-     \item  All of the following apply:
+     \item All of the following apply:
        \begin{itemize}
-       \item  \texttt{les} and \texttt{sub\_tys} do not have the same length;
-       \item  an error "Bad Arity Tuple Unpacking" is raised.
+       \item \texttt{les} and \texttt{sub\_tys} do not have the same length;
+       \item an error ``\texttt{Bad Arity LEDestructuring}'' is raised.
        \end{itemize}
      \end{itemize}
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LEDestructuringBegin, lastline=\LEDestructuringEnd]{../Typing.ml}
 
   \subsection{Formally}
 
@@ -2006,7 +2037,7 @@ all of the following apply:
 
 \section{TypingRule.LESlice \label{sec:TypingRule.LESlice}}
 
-    \subsection{Prose}
+  \subsection{Prose}
    Annotating~\texttt{le} in an environment~\texttt{env}, assuming
 \texttt{t\_e} to be the type of the corresponding right-hand-side
 (\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
@@ -2018,13 +2049,15 @@ all of the following apply:
    \item \texttt{le2} is the result of annotating \texttt{le1} in \texttt{env};
    \item \texttt{width} is the width of the slices \texttt{slices} in \texttt{env};
    \item \texttt{t} is the bitvector type of width \texttt{width};
+   \item \texttt{te} can be assigned to \texttt{t};
    \item \texttt{slices2} is the result of annotating \texttt{slices} in \texttt{env};
    \item \texttt{new\_le} is the slicing of \texttt{le2} by \texttt{slices2}.
    \end{itemize}
  
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LESliceBegin, lastline=\LESliceEnd]{../Typing.ml}
 
   \subsection{Formally}
 
@@ -2032,7 +2065,7 @@ all of the following apply:
 
 \section{TypingRule.LESetArray \label{sec:TypingRule.LESetArray}}
 
-    \subsection{Prose}
+  \subsection{Prose}
    Annotating~\texttt{le} in an environment~\texttt{env}, assuming
 \texttt{t\_e} to be the type of the corresponding right-hand-side
 (\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
@@ -2041,6 +2074,7 @@ all of the following apply:
    \item \texttt{le} denotes the slicing of a left-hand-side expression \texttt{le1} by the slices \texttt{slices};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
    \item \texttt{t\_le1} has the structure of an array type of size \texttt{size} and item type \texttt{t};
+   \item \texttt{te} can be assigned to \texttt{t};
    \item \texttt{le2} is the result of annotating \texttt{le1} in \texttt{env};
    \item One of the following applies:
      \begin{itemize}
@@ -2049,21 +2083,22 @@ all of the following apply:
      \end{itemize}
    \item \texttt{slices} is a single expression \texttt{e\_index};
    \item \texttt{t\_index', e\_index'} is the result of annotating \texttt{e\_index} in \texttt{env};
-   \item \texttt{t\_index'} type-satisfies \texttt{wanted\_t\_index};
+   \item \texttt{wanted\_t\_index} can be assigned to \texttt{t\_index'};
    \item \texttt{new\_le} is an access to array \texttt{le2} at index \texttt{e\_index'}.  
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LESetArrayBegin, lastline=\LESetArrayEnd]{../Typing.ml}
 
   \subsection{Formally}
 
   \subsection{Comments}
 
-\section{TypingRule.LESetBadRecordField \label{sec:TypingRule.LESetBadRecordField}}
+\section{TypingRule.LESetBadStructuredField \label{sec:TypingRule.LESetBadStructuredField}}
 
-    \subsection{Prose}
+  \subsection{Prose}
    Annotating~\texttt{le} in an environment~\texttt{env}, assuming
 \texttt{t\_e} to be the type of the corresponding right-hand-side
 (\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
@@ -2074,18 +2109,19 @@ all of the following apply:
    \item \texttt{le2} is the result of annotating \texttt{le1} in \texttt{env};
    \item \texttt{t\_le1} has the structure of an exception or a record type with fields \texttt{fields};
    \item \texttt{field} is not declared in \texttt{fields};
-   \item an error "Bad Field" is raised.
+   \item an error \texttt{``Bad Field''} is raised.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LESetBadStructuredFieldBegin, lastline=\LESetBadStructuredFieldEnd]{../Typing.ml}
 
   \subsection{Formally}
 
   \subsection{Comments}
 
-\section{TypingRule.LESetRecordField \label{sec:TypingRule.LESetRecordField}}
+\section{TypingRule.LESetStructuredField \label{sec:TypingRule.LESetStructuredField}}
 
     \subsection{Prose}
    Annotating~\texttt{le} in an environment~\texttt{env}, assuming
@@ -2098,13 +2134,14 @@ all of the following apply:
    \item \texttt{le2} is the result of annotating \texttt{le1} in \texttt{env};
    \item \texttt{t\_le1} has the structure of an exception or a record type with fields \texttt{fields};
    \item \texttt{field} is bound to type \texttt{t} in \texttt{fields};
-   \item \texttt{t\_e} type-satisfies \texttt{t}; 
+   \item \texttt{t} can be assigned to \texttt{t\_e}; 
    \item \texttt{new\_le} is the access to the field \texttt{field} in \texttt{le2}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LESetStructuredFieldBegin, lastline=\LESetStructuredFieldEnd]{../Typing.ml}
 
   \subsection{Formally}
 
@@ -2123,12 +2160,13 @@ all of the following apply:
    \item \texttt{le2} is the result of annotating \texttt{le1} in \texttt{env};
    \item \texttt{t\_le1} has the structure of a bitvector with bitfields \texttt{bitfields};
    \item \texttt{field} is not declared in \texttt{bitfields};
-   \item an error "Bad Field" is raised.  
+   \item an error ``\texttt{Bad Field}'' is raised.  
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LESetBadBitFieldBegin, lastline=\LESetBadBitFieldEnd]{../Typing.ml}
 
   \subsection{Formally}
 
@@ -2151,14 +2189,15 @@ all of the following apply:
       \texttt{bitfields};
    \item \texttt{w} is the width of \texttt{slices};
    \item \texttt{t} is the bitvector type of width \texttt{w};
-   \item \texttt{t\_e} type-satisfies \texttt{t};
+   \item \texttt{t} can be assigned to \texttt{t\_e};
    \item \texttt{le2} is the slicing of \texttt{le1} by \texttt{slices};
    \item \texttt{new\_le} is the result of annotating \texttt{le2} in \texttt{env}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LESetBitFieldBegin, lastline=\LESetBitFieldEnd]{../Typing.ml}
 
   \subsection{Formally}
 
@@ -2181,14 +2220,15 @@ all of the following apply:
    \item \texttt{w} is the width of \texttt{slices};
    \item \texttt{bitfields'} gives the bitfields corresponding to \texttt{field} in \texttt{bitfields};
    \item \texttt{t} is the bitvector type of width \texttt{w} and bitfields \texttt{bitfields'};
-   \item \texttt{t\_e} type-satisfies \texttt{t};
+   \item \texttt{t} can be assigned to \texttt{t\_e};
    \item \texttt{le2} is the slicing of \texttt{le1} by \texttt{slices};
    \item \texttt{new\_le} is the result of annotating \texttt{le2} in \texttt{env}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LESetBitFieldNestedBegin, lastline=\LESetBitFieldNestedEnd]{../Typing.ml}
 
   \subsection{Formally}
 
@@ -2212,15 +2252,16 @@ all of the following apply:
    \item \texttt{t'} is the bitvector type of width \texttt{w};
    \item \texttt{t} gives the type corresponding to the bitfield \texttt{field} in
       \texttt{bitfields};
-   \item \texttt{t'} type-satisfies \texttt{t};
-   \item \texttt{t\_e} type-satisfies \texttt{t};
+   \item \texttt{t} can be assigned to \texttt{t'};
+   \item \texttt{t} can be assigned to \texttt{t\_e};
    \item \texttt{le2} is the slicing of \texttt{le1} by \texttt{slices};
    \item \texttt{new\_le} is the result of annotating \texttt{le2} in \texttt{env}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LESetBitFieldTypedBegin, lastline=\LESetBitFieldTypedEnd]{../Typing.ml}
 
   \subsection{Formally}
 
@@ -2238,28 +2279,13 @@ all of the following apply:
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
    \item \texttt{le2} is the result of annotating \texttt{le1} in \texttt{env};
    \item \texttt{t\_le1} does not have the structure of a record, or an exception or a bitvector type;
-   \item an error "Conflicting Types" is raised.
+   \item an error ``\texttt{Conflicting Types}'' is raised.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
-
-  \subsection{Formally}
-
-  \subsection{Comments}
-
-\section{TypingRule.LESetFields \label{sec:TypingRule.LESetFields}}
-
-    \subsection{Prose}
-   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
-\texttt{t\_e} to be the type of the corresponding right-hand-side
-(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
-all of the following apply:
- 
-    \subsection{Examples}
-
-  \subsection{Code}
+    \VerbatimInput[firstline=\LESetBadFieldBegin, lastline=\LESetBadFieldEnd]{../Typing.ml}
 
   \subsection{Formally}
 
@@ -2273,9 +2299,10 @@ all of the following apply:
 (\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
 all of the following apply:
      
-    \subsection{Examples}
+  \subsection{Examples}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LEConcatBegin, lastline=\LEConcatEnd]{../Typing.ml}
 
   \subsection{Formally}
 

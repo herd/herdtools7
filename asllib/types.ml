@@ -549,6 +549,7 @@ and type_satisfies env t s =
 
 (* --------------------------------------------------------------------------*)
 
+(* Begin TypeClash *)
 let rec type_clashes env t s =
   (*
    Definition VPZZ:
@@ -580,6 +581,7 @@ let rec type_clashes env t s =
       List.compare_lengths li_s li_t = 0
       && List.for_all2 (type_clashes env) li_s li_t
   | _ -> false |: TypingRule.TypeClash
+(* End *)
 
 let subprogram_clashes env (f1 : 'a func) (f2 : 'b func) =
   (* Two subprograms clash if all of the following hold:

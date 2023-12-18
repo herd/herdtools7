@@ -682,7 +682,6 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         t1 |: TypingRule.CheckUnop
   (* End *)
 
-  let can_assign_to env s t =
     (* Rules:
        - GNTS: It is illegal for a storage element whose type has the structure
          of the under-constrained integer to be assigned a value whose type has
@@ -692,11 +691,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
          assigned or initialized with a value of type T if T type-satisfies S
     *)
     (* TODO: incomplete. *)
+  (* Begin CanAssignTo *)
+  let can_assign_to env s t =
     let s_struct = Types.get_structure env s
     and t_struct = Types.get_structure env t in
     match (s_struct.desc, t_struct.desc) with
     | T_Int (Some []), T_Int (Some []) -> false
-    | _ -> Types.type_satisfies env t s
+    | _ -> Types.type_satisfies env t s |: TypingRule.CanAssignTo
+  (* End *)
 
   let check_can_assign_to loc env s t () =
     if can_assign_to env s t then ()
@@ -1307,7 +1309,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             if List.compare_lengths sub_tys les != 0 then
               Error.fatal_from le
                 (Error.BadArity
-                   ("tuple unpacking", List.length sub_tys, List.length les))
+                   ("LEDestructuring", List.length sub_tys, List.length les))
             else
               let les' = List.map2 (annotate_lexpr env) les sub_tys in
               LE_Destructuring les' |> here
@@ -1364,16 +1366,16 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
          | T_Exception fields | T_Record fields ->
              let t =
                match List.assoc_opt field fields with
-             (* Begin LESetBadRecordField *)
+             (* Begin LESetBadStructuredField *)
                | None ->
                    fatal_from le (Error.BadField (field, t_le1))
-                   |: TypingRule.LESetBadRecordField
+                   |: TypingRule.LESetBadStructuredField
              (* End *)
-             (* Begin LESetRecordField *)
+             (* Begin LESetStructuredField *)
                | Some t -> t
              in
              let+ () = check_can_assign_to le env t t_e in
-             LE_SetField (le2, field) |> here |: TypingRule.LESetRecordField
+             LE_SetField (le2, field) |> here |: TypingRule.LESetStructuredField
              (* End *)
          | T_Bits (_, bitfields) ->
              let bits slices bitfields =
@@ -1406,8 +1408,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
              let+ () = check_can_assign_to le1 env t t_e in
              let le2 = LE_Slice (le1, slices) |> here in
              annotate_lexpr env le2 t_e
+         (* Begin LESetBadField *)
          | _ -> conflict le1 [ default_t_bits; T_Record []; T_Exception [] ] t_e)
-        |: TypingRule.LESetBadField
+         |: TypingRule.LESetBadField
+         (* End *)
     | LE_SetFields (le', fields) ->
         let t_le', _ = expr_of_lexpr le' |> annotate_expr env in
         let le' = annotate_lexpr env le' t_le' in
@@ -1425,7 +1429,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let new_le = LE_Slice (le', list_concat_map one_field fields) |> here in
         annotate_lexpr env new_le t_e |: TypingRule.LESetFields
     | LE_SetArray _ -> assert false
-    (* Begin LE_Concat *)
+    (* Begin LEConcat *)
     | LE_Concat (les, _) ->
         let e_eq = expr_of_lexpr le in
         let t_e_eq, _e_eq = annotate_expr env e_eq in
