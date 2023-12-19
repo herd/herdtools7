@@ -92,25 +92,45 @@ github repository.
 An \emph{abstract syntax tree} (AST, for short) represents an ASL program as a labelled tree. 
 
 \section{Environments}
-A \emph{type judgement} associates a node in an abstract syntax tree (which intuitively corresponds to an ASL construct) with a certain type. We then say that the node is \emph{annotated} with that type.
+A \emph{type judgement} associates a node in an abstract syntax tree (which
+intuitively corresponds to an ASL construct) with a certain type. We then say
+that the node is \emph{annotated} with that type.
 %
 A \emph{typing environment} (environment, for short) maps AST nodes to types.
 
-Defining the type annotation requires inferring various auxiliary attributes for AST nodes. We consider these auxiliary attributes as part of the environment as well. Technically, we partition the environment into two distinct components: the global environment---pertaining to AST nodes appearing outside of a given subprogram, and the local environment---pertaining to AST nodes appearing inside a given subprogram.
+Defining the type annotation requires inferring various auxiliary attributes
+for AST nodes. We consider these auxiliary attributes as part of the
+environment as well. Technically, we partition the environment into two
+distinct components: the global environment---pertaining to AST nodes appearing
+outside of a given subprogram, and the local environment---pertaining to AST
+nodes appearing inside a given subprogram.
 
 \section{Type System}
-A \emph{typing rule} specifies a conjunction of conditions that must hold in order to annotate an AST node with a given type. These conditions typically inspect the label of node and the type annotations on the children of the node (in a given environment).
+A \emph{typing rule} specifies a conjunction of conditions that must hold in
+order to annotate an AST node with a given type. These conditions typically
+inspect the label of node and the type annotations on the children of the node
+(in a given environment).
 
-Not all conditions are type judgements. Some conditions are expressed in terms of the auxiliary attributes alluded to above. We define these in the next chapter. 
+Not all conditions are type judgements. Some conditions are expressed in terms
+of the auxiliary attributes alluded to above. We define these in the next
+chapter. 
 
-A \emph{typing system} is a set of typing rules. More than one rule can be associated with a given node label, but they are exclusive---at most one rule holds in a given environment.
+A \emph{typing system} is a set of typing rules. More than one rule can be
+associated with a given node label, but they are exclusive---at most one rule
+holds in a given environment.
 
 \section{Annotation}
-Typing a program consists of annotating the root of its AST. This is typically done by traversing the AST bottom-up.
-To annotate a node, the typing algorithm finds a rule that matches the node---that is a rule whose all conditions are satisfied. If one such rule is found, the node is annotated by the  result type specified by the rule, essentially adding the type judgement to the environment.
-If no such rule is found, it is considered a \emph{typing error} and the algorithm exists.
+Typing a program consists of annotating the root of its AST. This is typically
+done by traversing the AST bottom-up.  To annotate a node, the typing algorithm
+finds a rule that matches the node---that is a rule whose conditions are
+satisfied. If one such rule is found, the node is annotated by the  result type
+specified by the rule, essentially adding the type judgement to the
+environment.  If no such rule is found, it is considered a \emph{typing error}
+and the algorithm exits.
 
-Sometimes it is to define \emph{error rules}---rules that result in an error and provide extra information to help understand the reason for the error.
+Sometimes it is to necessary to define \emph{error rules}---rules that result
+in an error and provide extra information to help understand the reason for the
+error.
 
 We implement the process described above via a set of
 \texttt{annotate\_<label>} functions. Each \texttt{annotate\_<label>}
@@ -277,6 +297,7 @@ Variables of  buitin types \texttt{integer}, \texttt{real}, \texttt{boolean}, \t
 The type \texttt{color} consists in two different constants \texttt{RED} and~\texttt{BLACK}.
 
     \subsection{Code}
+      \VerbatimInput[firstline=\BuiltinSingularBegin, lastline=\BuiltinSingularEnd]{../types.ml}
 
     \subsection{Formally}    
     \[
@@ -324,6 +345,7 @@ similarity with record types and that the empty field list \texttt{\{\}} can be
 omitted in type declarations, as it is the case for \texttt{Not\_found}.
 
     \subsection{Code}
+      \VerbatimInput[firstline=\BuiltinAggregateBegin, lastline=\BuiltinAggregateEnd]{../types.ml}
 
     \subsection{Formally}
     \[
@@ -350,15 +372,16 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Example}
 
     \subsection{Code}
+      \VerbatimInput[firstline=\BuiltinSingularOrAggregateBegin, lastline=\BuiltinSingularOrAggregateEnd]{../types.ml}
 
-   \subsubsection{Formally}
-   \[
-   \begin{array}{rl}
-   t \in \ty \texttt{is\_builtin\_singular}(t) \vdash& \texttt{is\_builtin}(t)\\
-   t \in \ty \texttt{is\_builtin\_aggregate}(t) \vdash& \texttt{is\_builtin}(t)\\
-   \end{array}
-   \]
-   
+    \subsubsection{Formally}
+	   \[
+	   \begin{array}{rl}
+	   t \in \ty \texttt{is\_builtin\_singular}(t) \vdash& \texttt{is\_builtin}(t)\\
+	   t \in \ty \texttt{is\_builtin\_aggregate}(t) \vdash& \texttt{is\_builtin}(t)\\
+	   \end{array}
+	   \]
+	   
 \section{TypingRule.NamedType \label{sec:TypingRule.NamedType} } 
 
     \subsection{Prose}
@@ -367,13 +390,15 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Example}
 
     \subsection{Code}
+      \VerbatimInput[firstline=\NamedBegin, lastline=\NamedEnd]{../types.ml}
 
     \subsection{Formally}
-    \[
-      \begin{array}{rl}
-      i \in \identifier \vdash& \texttt{is\_named}(\texttt{T\_Named}(i)\\
-      \end{array}
-    \]
+	    \[
+	      \begin{array}{rl}
+	      i \in \identifier \vdash& \texttt{is\_named}(\texttt{T\_Named}(i)\\
+	      \end{array}
+	    \]
+
     \subsection{Comments}
     This aims to encompass LRM Section 7.1.1 D\_VMZX.
 
@@ -385,13 +410,14 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Example}
 
     \subsection{Code}
+      \VerbatimInput[firstline=\AnonymousBegin, lastline=\AnonymousEnd]{../types.ml}
 
     \subsection{Formally}
-    \[
-      \begin{array}{rl}
-      t \in \ty \rulespace \neg\texttt{is\_named}(t) \vdash& \texttt{is\_anonymous}(t)\\
-      \end{array}
-    \]
+	    \[
+	      \begin{array}{rl}
+	      t \in \ty \rulespace \neg\texttt{is\_named}(t) \vdash& \texttt{is\_anonymous}(t)\\
+	      \end{array}
+	    \]
 
     \subsection{Comments}
     This aims to encompass LRM Section 7.1.1 D\_VMZX.
@@ -413,15 +439,17 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Example}
 
     \subsection{Code}
+      \VerbatimInput[firstline=\SingularBegin, lastline=\SingularEnd]{../types.ml}
 
     \subsection{Formally}
-    \[
-      \begin{array}{rl}
-      t \in \ty \rulespace \texttt{is\_builtin}(t) \vdash& \texttt{is\_singular}(t)\\
-      t \in \ty \rulespace \texttt{is\_named}(t) \rulespace \texttt{is\_builtin\_aggregate}(\texttt{t\_struct}(t)) \vdash& \texttt{is\_singular}(t)\\
-      \end{array}
-    \]      
-    TODO: define $\texttt{t\_struct}(t)$.
+	    \[
+	      \begin{array}{rl}
+	      t \in \ty \rulespace \texttt{is\_builtin}(t) \vdash& \texttt{is\_singular}(t)\\
+	      t \in \ty \rulespace \texttt{is\_named}(t) \rulespace \texttt{is\_builtin\_aggregate}(\texttt{t\_struct}(t)) \vdash& \texttt{is\_singular}(t)\\
+	      \end{array}
+	    \]      
+
+%    TODO: define $\texttt{t\_struct}(t)$.  see TypingRule.Structure?
 
     \subsection{Comments}
     This aims to encompass LRM Section 3.1 R\_GVZK.
@@ -443,14 +471,15 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Example}
 
     \subsection{Code}
+      \VerbatimInput[firstline=\AggregateBegin, lastline=\AggregateEnd]{../types.ml}
 
     \subsection{Formally}
-    \[
-      \begin{array}{rl}
-      t \in \ty \rulespace \texttt{is\_builtin\_aggregate}(t) \vdash& \texttt{is\_aggregate}(t)\\
-      t \in \ty \rulespace \texttt{is\_named}(t) \rulespace \texttt{is\_builtin\_aggregate}(\texttt{t\_struct}(t)) \vdash& \texttt{is\_aggregate}(t)\\
-      \end{array}
-    \]
+	    \[
+	      \begin{array}{rl}
+	      t \in \ty \rulespace \texttt{is\_builtin\_aggregate}(t) \vdash& \texttt{is\_aggregate}(t)\\
+	      t \in \ty \rulespace \texttt{is\_named}(t) \rulespace \texttt{is\_builtin\_aggregate}(\texttt{t\_struct}(t)) \vdash& \texttt{is\_aggregate}(t)\\
+	      \end{array}
+	    \]
 
     \subsection{Comments}
     This aims to encompass LRM Section 3.1 R\_GVZK.
@@ -486,6 +515,7 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Example}
 
     \subsection{Code}
+      \VerbatimInput[firstline=\NonPrimitiveBegin, lastline=\NonPrimitiveEnd]{../types.ml}
 
     \subsection{Formally}
 
@@ -500,6 +530,7 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Example}
 
     \subsection{Code}
+      \VerbatimInput[firstline=\PrimitiveBegin, lastline=\PrimitiveEnd]{../types.ml}
 
     \subsection{Formally}
 
@@ -581,6 +612,7 @@ whose structure is \texttt{integer}.
 \texttt{(integer, T1)} whose structure is \texttt{(integer, integer)}.
 
     \subsection{Code}
+      \VerbatimInput[firstline=\StructureBegin, lastline=\StructureEnd]{../types.ml}
 
     \subsection{Formally}
 

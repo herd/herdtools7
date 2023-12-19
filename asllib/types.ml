@@ -59,6 +59,7 @@ let get_structure (env : env) : ty -> ty =
       if false then Format.eprintf "@[Getting structure of %a.@]@." PP.pp_ty ty
     in
     let with_pos = add_pos_from ty in
+  (* Begin Structure *)
     match ty.desc with
     | T_Named x -> (
         match IMap.find_opt x env.global.declared_types with
@@ -69,6 +70,7 @@ let get_structure (env : env) : ty -> ty =
     | T_Array (e, t) -> T_Array (e, get t) |> with_pos
     | T_Record fields -> T_Record (get_fields fields) |> with_pos
     | T_Exception fields -> T_Exception (get_fields fields) |> with_pos |: TypingRule.Structure
+  (* End *)
   and get_fields fields =
     let one_field (name, t) = (name, get t) in
     let fields = List.map one_field fields in
@@ -87,10 +89,12 @@ let get_structure (env : env) : ty -> ty =
    • bit
    • enumeration
 *)
+(* Begin BuiltinSingular *)
 let is_builtin_singular ty =
   match ty.desc with
   | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ | T_Int _ -> true
   | _ -> false |: TypingRule.BuiltinSingularType
+(* End*)
 
 (* The builtin aggregate types are:
    • tuple
@@ -98,29 +102,44 @@ let is_builtin_singular ty =
    • record
    • exception
 *)
+(* Begin BuiltinAggregate *)
 let is_builtin_aggregate ty =
   match ty.desc with
   | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ -> true
   | _ -> false |: TypingRule.BuiltinAggregateType 
+(* End *)
 
-let is_builtin ty = is_builtin_singular ty || is_builtin_aggregate ty |: TypingRule.BuiltinSingularOrAggregate
+(* Begin BuiltinSingularOrAggregate *)
+let is_builtin ty = is_builtin_singular ty 
+                  || is_builtin_aggregate ty 
+  |: TypingRule.BuiltinSingularOrAggregate
+(* End *)
 
+(* Begin Named *)
 let is_named ty = match ty.desc with T_Named _ -> true | _ -> false |: TypingRule.NamedType
+(* End *)
 
+(* Begin Anonymous *)
 let is_anonymous ty = not (is_named ty) |: TypingRule.AnonymousType
+(* End *)
 
 (* A named type is singular if it has the structure of a singular type,
    otherwise it is aggregate. *)
-let is_singular env ty =
-  is_builtin_singular ty
-  || (is_named ty && get_structure env ty |> is_builtin_singular) |: TypingRule.SingularType
+(* Begin Singular *)
+let is_singular env ty = is_builtin_singular ty
+                       || (is_named ty && get_structure env ty |> is_builtin_singular) 
+  |: TypingRule.SingularType
+(* End *)
 
 (* A named type is singular if it has the structure of a singular type,
    otherwise it is aggregate. *)
-let is_aggregate env ty =
-  is_builtin_aggregate ty
-  || (is_named ty && get_structure env ty |> is_builtin_aggregate)
+(* Begin Aggregate *)
+let is_aggregate env ty = is_builtin_aggregate ty
+                        || (is_named ty && get_structure env ty |> is_builtin_aggregate)
+  |: TypingRule.AggregateType
+(* End *)
 
+(* Begin NonPrimitive *)
 let rec is_non_primitive ty =
   match ty.desc with
   | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ | T_Int _ -> false
@@ -129,8 +148,11 @@ let rec is_non_primitive ty =
   | T_Array (_, ty) -> is_non_primitive ty
   | T_Record fields | T_Exception fields ->
       List.exists (fun (_, ty) -> is_non_primitive ty) fields |: TypingRule.NonPrimitiveType
+(* End *)
 
+(* Begin Primitive *)
 let is_primitive ty = not (is_non_primitive ty) |: TypingRule.PrimitiveType
+(* End *)
 
 (* --------------------------------------------------------------------------*)
 
