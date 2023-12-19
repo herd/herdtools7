@@ -151,16 +151,22 @@ The type \texttt{color} consists in two different constants \texttt{RED} and~\te
 
 \begin{formal}
    \subsection{Formally}
-    \[
-      \begin{array}{rl}
-   & \texttt{is\_builtin\_singular}(\texttt{T\_Real}) \\
-   &\texttt{is\_builtin\_singular}(\texttt{T\_String}) \\
-   &\texttt{is\_builtin\_singular}(\TBool) \\
-   fl \in \textsf{bit\_field}^{*}  \vdash& \texttt{is\_builtin\_singular}(\texttt{T\_Bits}(fl)) \\
-   il \in \textsf{\identifier}^{*}  \vdash& \texttt{is\_builtin\_singular}(\texttt{T\_Enum}(il)) \\
-   c \in \textsf{int\_constraints}?  \vdash& \texttt{is\_builtin\_singular}(\texttt{T\_Int}(c)) \\
-      \end{array}
-    \]
+\newcommand\isbuiltinsingular[0]{\texttt{is\_builtin\_singular}}
+\[
+\begin{array}{c}
+\inferrule{}{\TReal : \isbuiltinsingular} \\ 
+\\
+\inferrule{}{\TString : \isbuiltinsingular} \\
+\\
+\inferrule{}{\TBool : \isbuiltinsingular} \\
+\\
+\inferrule{fl \in \textsf{bit\_field}^{*}}{\TBits(fl) : \isbuiltinsingular} \\
+\\
+\inferrule{il \in \textsf{\identifier}^{*}}{\TEnum(il) : \isbuiltinsingular}\\
+\\
+\inferrule{c \in \intconstraint^{*}}{\TInt(c) : \isbuiltinsingular} \\
+\end{array}
+\]
 \end{formal}
 
     \subsection{Comments}
@@ -201,14 +207,18 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
 
 \begin{formal}
     \subsection{Formally}
-    \[
-      \begin{array}{rl}
-   tl \in \ty^{*}  \vdash& \texttt{is\_builtin\_aggregate}(\texttt{T\_Tuple}(tl)) \\
-   t \in \ty  \vdash& \texttt{is\_builtin\_aggregate}(\texttt{T\_Array}(t)) \\
-   fl \in \Field^{*}  \vdash& \texttt{is\_builtin\_aggregate}(\texttt{T\_Record}(fl)) \\
-   fl \in \Field^{*}  \vdash& \texttt{is\_builtin\_aggregate}(\texttt{T\_Exception}(fl)) \\
-      \end{array}
-    \]
+\newcommand\isbuiltinaggregate[0]{\texttt{is\_builtin\_aggregate}}
+\[
+\begin{array}{c}
+\inferrule{tl \in \ty^{*}}{\TTuple(tl) : \isbuiltinaggregate} \\
+\\
+\inferrule{t \in \ty}{\TArray(t) : \isbuiltinaggregate} \\
+\\
+\inferrule{fl \in \Field^{*}}{\TRecord(fl) : \isbuiltinaggregate}\\
+\\
+\inferrule{fl \in \Field^{*}}{\TException(fl) : \isbuiltinaggregate}\\
+\end{array}
+\]
 \end{formal}
 
     \subsection{Comments}
@@ -230,12 +240,14 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
 
 \begin{formal}
       \subsection{Formally}
-	   \[
-	   \begin{array}{rl}
-	   t \in \ty \texttt{is\_builtin\_singular}(t) \vdash& \texttt{is\_builtin}(t)\\
-	   t \in \ty \texttt{is\_builtin\_aggregate}(t) \vdash& \texttt{is\_builtin}(t)\\
-	   \end{array}
-	   \]
+\newcommand\isbuiltin[0]{\texttt{is\_builtin}}
+\[
+\begin{array}{c}
+\inferrule{t \in \ty \\ t : \isbuiltinsingular}{t : \isbuiltin}\\
+\\
+\inferrule{t \in \ty \\ t : \isbuiltinaggregate}{t : \isbuiltin}\\
+\end{array}
+\]
 \end{formal}
 
 \isempty{\subsection{Comments}}
@@ -252,11 +264,12 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
 
 \begin{formal}
       \subsection{Formally}
-	    \[
-	      \begin{array}{rl}
-	      i \in \identifier \vdash& \texttt{is\_named}(\texttt{T\_Named}(i)\\
-	      \end{array}
-	    \]
+\newcommand\isnamed[0]{\texttt{is\_named}}
+\[
+\begin{array}{c}
+\inferrule{i \in \identifier}{\TNamed(i) : \isnamed}
+\end{array}
+\]
 \end{formal}
 
     \subsection{Comments}
@@ -274,11 +287,12 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
 
 \begin{formal}
       \subsection{Formally}
-	    \[
-	      \begin{array}{rl}
-	      t \in \ty \rulespace \neg\texttt{is\_named}(t) \vdash& \texttt{is\_anonymous}(t)\\
-	      \end{array}
-	    \]
+\newcommand\isanonymous[0]{\texttt{is\_anonymous}}
+\[
+\begin{array}{c}
+\inferrule{t \in \ty \\ \neg t : \isnamed}{t : \isanonymous}
+\end{array}
+\]
 \end{formal}
 
     \subsection{Comments}
@@ -305,14 +319,17 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
 
 \begin{formal}
       \subsection{Formally}
-	    \[
-	      \begin{array}{rl}
-	      t \in \ty \rulespace \texttt{is\_builtin}(t) \vdash& \texttt{is\_singular}(t)\\
-	      t \in \ty \rulespace \texttt{is\_named}(t) \rulespace \texttt{is\_builtin\_aggregate}(\texttt{t\_struct}(t)) \vdash& \texttt{is\_singular}(t)\\
-	      \end{array}
-	    \]      
+\newcommand\issingular[0]{\texttt{is\_singular}}
+\[
+\begin{array}{c}
+\inferrule{t \in \ty \\ t : \isbuiltin}{t : \issingular}\\
+\\
+\inferrule{t \in \ty \\ t : \isnamed \\ t : \isbuiltinaggregate \\
+E \vdash \tstruct(t) : \isbuiltinsingular}{
+E \vdash t : \issingular}
+\end{array}
+\]      
 
-%    TODO: define $\texttt{t\_struct}(t)$.  see TypingRule.Structure?
 \end{formal}
 
     \subsection{Comments}
@@ -339,12 +356,15 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
 
 \begin{formal}
       \subsection{Formally}
-	    \[
-	      \begin{array}{rl}
-	      t \in \ty \rulespace \texttt{is\_builtin\_aggregate}(t) \vdash& \texttt{is\_aggregate}(t)\\
-	      t \in \ty \rulespace \texttt{is\_named}(t) \rulespace \texttt{is\_builtin\_aggregate}(\texttt{t\_struct}(t)) \vdash& \texttt{is\_aggregate}(t)\\
-	      \end{array}
-	    \]
+      
+\newcommand\isaggregate[0]{\texttt{is\_aggregate}}
+\[
+\begin{array}{c}
+\inferrule{t \in \ty \\ t : \isbuiltinaggregate}{t : \isaggregate}\\
+\\
+\inferrule{t \in \ty \\ t : \isnamed \\ E \vdash \tstruct(t) : \isbuiltinaggregate}{E \vdash t : \isaggregate}
+\end{array}
+\]
 \end{formal}
 
     \subsection{Comments}
@@ -385,6 +405,17 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
 
 \begin{formal}
     \subsection{Formally}
+\newcommand\isnonprimitive[0]{\texttt{is\_non\_primitive}}
+\[
+\begin{array}{c}
+\inferrule{\id \in \identifier}{\TNamed(\id) : \isnonprimitive}\\ \\
+\inferrule{t_1,\ldots,t_k \in \ty \\ i\in 1..k \\ t_i : \isnonprimitive}{\TTuple(t_1,\ldots,t_k) : \isnonprimitive}\\ \\
+\inferrule{e \in \expr \\ t : \isnonprimitive}{\TArray(e, t) : \isnonprimitive}\\ \\
+\inferrule{(\id_1,t_1),\ldots,(\id_k,t_k) \in (\identifier, \ty) \\ i\in 1..k \\ t_i : \isnonprimitive}{\TRecord((\id_1,t_1),\ldots,(\id_k,t_k)) : \isnonprimitive}\\ \\
+\inferrule{(\id_1,t_1),\ldots,(\id_k,t_k) \in (\identifier, \ty) \\ i\in 1..k \\ t_i \isnonprimitive}{\TException((\id_1,t_1),\ldots,(\id_k,t_k)) : \isnonprimitive}\\ \\
+\end{array}
+\]
+
 
 \end{formal}
 
@@ -412,7 +443,7 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
 \section{TypingRule.Structure}
 
     \subsection{Prose}
-    \texttt{ty} is a type and its structure is \texttt{t\_struct} and one of the following
+    \texttt{ty} is a type and its structure is \tstruct\ and one of the following
     applies:
     \begin{itemize}
     \item All of the following apply:
