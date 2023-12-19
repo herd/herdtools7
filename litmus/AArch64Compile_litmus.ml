@@ -127,13 +127,13 @@ module Make(V:Constant.S)(C:Config) =
     let v2type = function
       | V32 -> word
       | V64 -> quad
-      | V128 -> int128
+      | V128 -> int32x4_t
 
     let add_type t rs = List.map (fun r -> r,t) rs
     let add_w = add_type word
     let add_q = add_type quad
     let add_p = add_type voidstar (* pointer *)
-    let add_128 = add_type int128
+    let add_128 = add_type int32x4_t
     let add_v v = v2type v |> add_type
 
     (* pretty prints barrel shifters *)
@@ -550,37 +550,37 @@ module Make(V:Constant.S)(C:Config) =
         memo = sprintf "%s %s,[^i0]" memo (print_vecreg v "o" 0);
         inputs = [r2];
         outputs = [r1];
-        reg_env = [(r1,int128);(r2,voidstar)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar)]}
     | K k,S_NOEXT ->
       { empty_ins with
         memo = sprintf "%s %s,[^i0,#%i]" memo (print_vecreg v "o" 0) k;
         inputs = [r2];
         outputs = [r1];
-        reg_env = [(r1,int128);(r2,voidstar)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar)]}
     | RV (V32,rk),S_NOEXT ->
       { empty_ins with
         memo = sprintf "%s %s,[^i0,^wi1]" memo (print_vecreg v "o" 0);
         inputs = [r2;rk;];
         outputs = [r1];
-        reg_env = [(r1,int128);(r2,voidstar);(rk,word)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar);(rk,word)]}
     | RV (V32,rk),s ->
       { empty_ins with
         memo = sprintf "%s %s,[^i0,^wi1,%s]" memo (print_vecreg v "o" 0) (pp_shifter s);
         inputs = [r2;rk;];
         outputs = [r1];
-        reg_env = [(r1,int128);(r2,voidstar);(rk,word)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar);(rk,word)]}
     | RV (V64,rk), S_NOEXT ->
       { empty_ins with
         memo = sprintf "%s %s,[^i0,^i1]" memo (print_vecreg v "o" 0);
         inputs = [r2;rk;];
         outputs = [r1];
-        reg_env = [(r1,int128);(r2,voidstar);(rk,quad)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar);(rk,quad)]}
     | RV (V64,rk), s ->
       { empty_ins with
         memo = sprintf "%s %s,[^i0,^i1,%s]" memo (print_vecreg v "o" 0) (pp_shifter s);
         inputs = [r2;rk;];
         outputs = [r1];
-        reg_env = [(r1,int128);(r2,voidstar);(rk,quad)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar);(rk,quad)]}
     | _ -> assert false
 
     let load_simd_p v r1 r2 k =
@@ -588,7 +588,7 @@ module Make(V:Constant.S)(C:Config) =
         memo = sprintf "ldr %s, [^i0],#%i" (print_vecreg v "o" 0) k;
         inputs = [r2];
         outputs = [r1];
-        reg_env = [(r1,int128);(r2,voidstar)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar)]}
 
     let load_simd_s memo rs i rA kr = match kr with
     | K 0 ->
@@ -698,37 +698,37 @@ module Make(V:Constant.S)(C:Config) =
         memo = sprintf "%s %s,[^i1]" memo (print_vecreg v "i" 0);
         inputs = [r1;r2];
         outputs = [];
-        reg_env = [(r1,int128);(r2,voidstar)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar)]}
     | K k,S_NOEXT ->
       { empty_ins with
         memo = sprintf "%s %s,[^i1,#%i]" memo (print_vecreg v "i" 0) k;
         inputs = [r1;r2];
         outputs = [];
-        reg_env = [(r1,int128);(r2,voidstar)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar)]}
     | RV (V32,rk),S_NOEXT ->
       { empty_ins with
         memo = sprintf "%s %s,[^i1,^wi2]" memo (print_vecreg v "i" 0);
         inputs = [r1;r2;rk];
         outputs = [];
-        reg_env = [(r1,int128);(r2,voidstar);(rk,word)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar);(rk,word)]}
     | RV (V32,rk),s ->
       { empty_ins with
         memo = sprintf "%s %s,[^i1,^wi2,%s]" memo (print_vecreg v "i" 0) (pp_shifter s);
         inputs = [r1;r2;rk];
         outputs = [];
-        reg_env = [(r1,int128);(r2,voidstar);(rk,word)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar);(rk,word)]}
     | RV (V64,rk),S_NOEXT ->
       { empty_ins with
         memo = sprintf "%s %s,[^i1,^i2]" memo (print_vecreg v "i" 0);
         inputs = [r1;r2;rk];
         outputs = [];
-        reg_env = [(r1,int128);(r2,voidstar);(rk,quad)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar);(rk,quad)]}
     | RV (V64,rk),s ->
       { empty_ins with
         memo = sprintf "%s %s,[^i1,^i2,%s]" memo (print_vecreg v "i" 0) (pp_shifter s);
         inputs = [r1;r2;rk];
         outputs = [];
-        reg_env = [(r1,int128);(r2,voidstar);(rk,quad)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar);(rk,quad)]}
     | _ -> assert false
 
     let store_simd_p v r1 r2 k1 =
@@ -736,7 +736,7 @@ module Make(V:Constant.S)(C:Config) =
         memo = sprintf "str %s, [^i1],%i" (print_vecreg v "i" 0) k1;
         inputs = [r1;r2];
         outputs = [];
-        reg_env = [(r1,int128);(r2,voidstar)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar)]}
 
     let store_simd_s memo rs i rA kr = match kr with
     | K 0 ->

@@ -31,7 +31,7 @@ val void : t
 val voidstar : t
 val word : t
 val quad : t
-val int128 : t
+val int32x4_t : t
 val pteval_t : t
 val pte : t
 val ins_t : t

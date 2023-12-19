@@ -413,6 +413,7 @@ module Make
           if have_timebase then O.f "#define DELTA_TB %s" delta
         end ;
         O.o "/* Includes */" ;
+        Insert.insert_when_exists O.o "intrinsics.h" ;
         O.o
           (if Cfg.stdio then "#include <stdio.h>"
           else "#include \"litmus_io.h\"") ;
