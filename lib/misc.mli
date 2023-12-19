@@ -63,6 +63,8 @@ val is_some : 'a option -> bool
 val as_some : 'a option -> 'a
 val proj_opt : 'a -> 'a option -> 'a
 val seq_opt : ('a -> 'b option) -> 'a option -> 'b option
+val opt_list_fold : ('a -> 'b option) -> 'a list -> 'b list option
+
 val app_opt : ('a -> 'b) -> 'a option -> 'b option
 val check_opt : ('a -> unit) -> 'a option -> unit
 val snd_opt : ('a * 'b) option -> 'b option
@@ -91,7 +93,9 @@ val char_uppercase : char -> char
 val lowercase : string -> string
 val uppercase : string -> string
 val capitalize : string -> string
-(* stip characters to form a valid c variable/type/enum name *)
+val uncapitalize : string -> string
+
+(* strip characters to form a valid c variable/type/enum name *)
 val to_c_name : string -> string
 
 (* Backward compatibility *)

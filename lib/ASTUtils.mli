@@ -14,5 +14,18 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+val is_var : AST.exp -> bool
+val as_var : AST.exp -> (TxtLoc.t * AST.var) option
+val as_vars : AST.exp list -> (TxtLoc.t * AST.var) list option
 
+(* Get location of an expression *)
+val exp2loc : AST.exp -> TxtLoc.t
+
+(* Pre-condition expression for miaou:
+ *   + Flatten associative operations
+ *   + Change [_] into "id"
+ *)
+val flatten : AST.exp -> AST.exp
+
+(* Get free variables *)
 val free_body : AST.var option list -> AST.exp -> AST.varset
