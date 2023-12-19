@@ -374,13 +374,15 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Code}
       \VerbatimInput[firstline=\BuiltinSingularOrAggregateBegin, lastline=\BuiltinSingularOrAggregateEnd]{../types.ml}
 
-    \subsubsection{Formally}
+    \subsection{Formally}
 	   \[
 	   \begin{array}{rl}
 	   t \in \ty \texttt{is\_builtin\_singular}(t) \vdash& \texttt{is\_builtin}(t)\\
 	   t \in \ty \texttt{is\_builtin\_aggregate}(t) \vdash& \texttt{is\_builtin}(t)\\
 	   \end{array}
 	   \]
+
+    \subsection{Comments}
 	   
 \section{TypingRule.NamedType \label{sec:TypingRule.NamedType} } 
 
@@ -622,13 +624,13 @@ whose structure is \texttt{integer}.
 
     This aims to encompass LRM Section 7.1.2 D\_FXQV.
 
-\section{Domain of Values for Types}
+\section{TypingRule.Domain}
 
-\subsection{Prose}
+  \subsection{Prose}
   The domain of a type is the set of values which storage elements of that type
 may hold. 
 
-\subsection{Examples}
+  \subsection{Examples}
   The domain of \texttt{integer} is the infinite set of all integers.
 
   The domain of \texttt{bits(1)} is the set \texttt{{‘1’, ‘0’}}.
@@ -638,6 +640,7 @@ may hold.
   The domain of \texttt{bits({2,16})} is the set containing all two bit and all sixteen bit values.
 
   \subsection{Code}
+      \VerbatimInput[firstline=\DomainBegin, lastline=\DomainEnd]{../types.ml}
 
   \subsection{Formally}
 
@@ -654,8 +657,8 @@ may hold.
 
   A constrained type with a non-empty constraint is well-constrained.
 
-\subsection{Examples}
-  Bitvector storage element’s widths are constrained integers.  
+  \subsection{Examples}
+    Bitvector storage element’s widths are constrained integers.  
 
   \subsection{Code}
 
@@ -3428,8 +3431,8 @@ environment \texttt{new\_env} and all of the following apply:
       \texttt{e1} and \texttt{e2} and a statement block \texttt{s'};
    \item \texttt{t1,e1'} is the result of annotating \texttt{e1} in \texttt{env};
    \item \texttt{t2,e2'} is the result of annotating \texttt{e2} in \texttt{env};
-   \item \texttt{t1} has the structure of an integer type;
-   \item \texttt{t2} has the structure of an integer type;
+   \item an error is raised: ``\texttt{ASL Typing Error : A subtype of integer was expected, t1 was provided}'' or \texttt{t1} has the structure of an integer type and all of the following apply:
+   \item an error is raised: ``\texttt{ASL Typing Error : A subtype of integer was expected, t2 was provided}'' or \texttt{t2} has the structure of an integer type and all of the following apply:
    \item One of the following applies:
      \begin{itemize}
        \item All of the following applies:
@@ -3491,8 +3494,8 @@ environment \texttt{new\_env} and all of the following apply:
            \item \texttt{ty} is the constrained integer type with constraint \texttt{cs};
          \end{itemize}
      \end{itemize}
-   \item \texttt{id} is not bound in \texttt{env};
-   \item \texttt{env'} is \texttt{env} is \texttt{env} modified so that \texttt{id} is locally declared of type \texttt{ty};
+   \item an error is raised ``\texttt{ASL Typing Error: cannot declare already declared element “id”.}'' or \texttt{id} is not bound in \texttt{env} and all of the following apply:
+   \item \texttt{env'} is \texttt{env} modified so that \texttt{id} is locally declared of type \texttt{ty};
    \item \texttt{s''} is the result of annotating \texttt{s'} in \texttt{env'};
    \item \texttt{new\_s} is a for statement with index \texttt{id}, direction \texttt{dir}, two expressions \texttt{e1'} and \texttt{e2'} and statement \texttt{s''};
    \item \texttt{new\_env} is \texttt{env}.

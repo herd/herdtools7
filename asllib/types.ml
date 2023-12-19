@@ -164,6 +164,7 @@ module Domain = struct
     they cannot get resolved, the domain is [AlmostTop]. *)
   type int_set = Finite of IntSet.t | AlmostTop | Top
 
+  (* Begin Domain *)
   type t =
     | D_Bool
     | D_String
@@ -171,6 +172,9 @@ module Domain = struct
     | D_Symbols of ISet.t  (** The domain of an enum is a set of symbols *)
     | D_Int of int_set
     | D_Bits of int_set  (** The domain of a bitvector is given by its width. *)
+  (* |: TypingRule.Domain *)
+  (* End *)
+
 
   let add_interval_to_intset acc bot top =
     if bot > top then acc
@@ -261,7 +265,7 @@ module Domain = struct
         | D_Bits is | D_Int is -> is
         | _ ->
             failwith
-              "An bit width cannot be constrained from a type that is neither \
+              "A bit width cannot be constrained from a type that is neither \
                a bitvector nor an integer.")
     | BitWidth_Constraints constraints ->
         int_set_of_int_constraints env constraints

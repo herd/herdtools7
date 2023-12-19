@@ -307,6 +307,7 @@ module TypingRule = struct
     | PrimitiveType
     | Structure
     | Canonical
+    | Domain 
     | Subtype
     | StructuralSubtypeSatisfaction
     | DomainSubtypeSatisfaction
@@ -438,6 +439,7 @@ module TypingRule = struct
     | NonPrimitiveType -> "NonPrimitiveType"
     | PrimitiveType -> "PrimitiveType"
     | Canonical -> "Canonical"
+    | Domain -> "Domain"
     | Structure -> "Structure"
     | Subtype -> "Subtype"
     | StructuralSubtypeSatisfaction -> "StructuralSubtypeSatisfaction"
@@ -573,6 +575,7 @@ module TypingRule = struct
       NonPrimitiveType;
       PrimitiveType;
       Canonical;
+      Domain;
       Structure;
       Subtype;
       DomainSubtypeSatisfaction;
