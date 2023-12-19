@@ -14,6 +14,7 @@
 \usepackage{fancyvrb}
 \input{ASLTypingLines}
 \input{ASLTypeSatisfactionLines}
+\input{ASLASTLines}
 
 \usepackage{enumitem}
 \renewlist{itemize}{itemize}{20}
@@ -158,7 +159,19 @@ function describes how to annotate an AST node, given its label, as follows:\beg
 
 This aims to encompass LRM 7.4.2. R\_VDPC.
 
-\section{Reading guide}
+\section{Side-effects}
+
+Side-effects can arise due to:
+\begin{itemize}
+\item Reads and Writes to global variables;
+\item Exceptions;
+\item Calls to primitives.
+\end{itemize}
+
+We aim to transliterate all the rules pertaining to side-effects in a separate 
+chapter in due course.
+
+\chapter{Reading guide}
 
 The definition of each \texttt{annotation\_<label>} function is given by a number of
 rules, which follow the possible shapes the \texttt{label} can have. For 
@@ -659,17 +672,19 @@ may hold.
 \section{Constrained Types}
 
 \subsection{Prose}
-  A constrained type is a type whose value is limited to a finite
-  set. 
+  A constrained type is a type whose definition depends on an expression, e.g. certain integers and bitvectors. 
 
   A type which is not constrained is unconstrained.
 
   A constrained type with a non-empty constraint is well-constrained.
 
+  An under-constrained integer type is an implicit type of a subprogram parameter.
+
   \subsection{Examples}
     Bitvector storage element’s widths are constrained integers.  
 
   \subsection{Code}
+    \VerbatimInput[firstline=\ConstrainedBegin, lastline=\ConstrainedEnd]{../AST.mli}
 
   \subsection{Formally}
 
@@ -959,7 +974,7 @@ which maps an identifier to the name of its super-type or $\bot$ if it does not 
   \subsubsection{Prose}
   \texttt{S} can be assigned to \texttt{T} if and only if all of the following apply:
   \begin{itemize}
-  \item neither \texttt{S} nor \texttt{T} has the structure of the underconstrained integer type;
+  \item neither \texttt{S} nor \texttt{T} has the structure of the under-constrained integer type;
   \item \texttt{T} type-satisfies \texttt{S}.
   \end{itemize} 
  

@@ -142,15 +142,6 @@ question mark implies that $v \neq \bot$.
 In particular, the over-writing of a variable in an environment depends on
 whether the variable is a global or local variable.
 
-\section{Side-effects}
-
-Side-effects can arise due to:
-\begin{itemize}
-\item Reads and Writes to global variables;
-\item Exceptions;
-\item Calls to primitives.
-\end{itemize}
-
 \section{Evaluation}
 
 Evaluating a program is evaluating its ``main'' subprogram.
@@ -184,7 +175,19 @@ environment, a subprogram name and its arguments, and returns a
 list of the return values of the subprogram (see Chapter~\ref{chap:eval_func}). 
 \end{itemize}
 
-\section{Reading guide}
+\section{Side-effects}
+
+Side-effects can arise due to:
+\begin{itemize}
+\item Reads and Writes to global variables;
+\item Exceptions;
+\item Calls to primitives.
+\end{itemize}
+
+We aim to transliterate all the rules pertaining to side-effects in a separate
+chapter in due course.
+
+\chapter{Reading guide}
 
 The definition of each \texttt{eval\_<object>} function is given by a number of
 rules, which follow the possible shapes the \texttt{object} can have. For
@@ -198,10 +201,14 @@ Each rule is presented using the following template:
 \item a Prose paragraph gives the rule in English, and corresponds as much as possible to the code of the reference implementation ASLRef given at \url{~/herdtools7/asllib};
 \item one or several Examples, which as much as possible are also given as regression tests in \url{~/herdtools7/asllib/tests/ASLSemanticsReference.t} 
 \item a Code paragraph which gives a verbatim of the corresponding implementation in the interpreter of ASLRef \url{~/herdtools7/asllib/Interpreter.ml};
-\item Formal paragraphs which give formal definitions of the rule: the
-sequential case essentially gives the same information as the Prose paragraph,
-whilst the concurrent case augments this information with a set of
-\texttt{herd7} execution graphs.
+\item a Formal paragraph for the sequential case, which gives a formal
+definition of the rule: the sequential case essentially gives the same
+information as the Prose paragraph;
+\item a Formal paragraph for the concurrent case: the concurrent case augments
+the information given by the sequential case with a set of \texttt{herd7}
+execution graphs. This enables building, for each AArch64 instruction, the
+Intrinsic dependencies used by the AArch64 memory model from this instruction's
+ASL code.
 \end{itemize}
 %
 Formally, the semantics of different language constructs are given by the functions
