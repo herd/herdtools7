@@ -14,6 +14,7 @@ jerd.byte
 jerd.js
 asllib/doc/ASLSemanticsLines.tex
 asllib/doc/ASLTypingLines.tex
+asllib/doc/ASLTypeSatisfactionLines.tex
 asllib/doc/*.aux
 asllib/doc/*.log
 asllib/doc/*.out

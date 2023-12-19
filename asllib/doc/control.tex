@@ -1,0 +1,21 @@
+%% Should be functional
+\ifempty
+\newcommand{\isempty}[1]{#1}
+\ifformal\includecomment{emptyformal}\else\excludecomment{emptyformal}\fi
+\else
+\newcommand{\isempty}[1]{}
+\excludecomment{emptyformal}
+\fi
+\ifformal
+\includecomment{formal}
+\else
+\excludecomment{formal}
+\fi
+%%%Safety net
+\iffalse
+\makeatletter
+\newcommand{\isempty}[1]{#1}
+\newenvironment{formal}{\endgroup}{\begingroup\def\@currenvir{formal}}
+\newenvironment{emptyformal}{\endgroup}{\begingroup\def\@currenvir{emptyformal}}
+\makeatother
+\fi

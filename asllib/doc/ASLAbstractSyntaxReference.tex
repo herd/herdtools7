@@ -1,0 +1,173 @@
+\documentclass{book}
+\input{ASLmacros}
+
+\author{Arm Architecture Technology Group}
+\title{ASL Typing Reference}
+\begin{document}
+\maketitle
+
+\tableofcontents{}
+
+\chapter{Copyright and Disclaimer}
+
+The material in this document is copyright Arm Ltd 2023, all rights reserved.
+
+This material covers both ASLv0 (viz, the existing ASL pseudocode language
+which appears in the Arm Architecture Reference Manual) and ASLv1, a new,
+experimental, and as yet unreleased version of ASL.
+
+This material is work in progress, more precisely at pre-Alpha quality as
+per Arm’s quality standards. In particular, this means that it would be
+premature to base any production tool development on this material.
+
+However, any feedback, question, query and feature request would be most
+welcome; those can be sent to Arm’s Architecture Formal Team Lead Jade
+Alglave \texttt{(jade.alglave@arm.com)} or by raising issues or PRs to the herdtools7
+github repository.
+
+\chapter{ASL Abstract Syntax}
+An Abstract Syntax Tree (AST for short) is a kind of labelled tree. 
+A node in an AST is either a leaf, represented by its label, or an internal node of the form $L(n_1,\ldots,n_k)$ where $L$ is its label and $n_1,\ldots,n_k$ are its ordered children nodes, which we also refer to as \emph{components}.
+Components can be (possibly-empty) lists of nodes, shown as $n^{*}$, and optional nodes (lists of 0 or 1 elements), shown as $n?$. Tuples are shown as $(n_1,\ldots,n_k)$.
+
+An abstract syntax is similar to a context-free grammar, but defined over ASTs. A terminal derives leaf nodes while non-terminal use alternatives to derive internal nodes.
+
+A major benefit of employing an abstract syntax is that it allows abstracting away syntactic details that are only important to enable correct parsing, such as punctuation, and succinctly representing lists and optional values. By defining an abstract syntax for ASL, we can uniformly represent programs in ASLv0 as well as ones in ASLv1 and define a single type system for them.
+
+\newcommand\ASTComment[1]{(*\ \textit{#1}\ *)}
+
+We define the abstract syntax of ASL below. We sometimes provide extra details to individual derivations by adding comments below them, in the form \ASTComment{this is a comment}.
+
+\[
+\begin{array}{rcll}
+\textbf{node} & & \textbf{components} \\
+\hline
+\unop &::=& \texttt{"!"} \;|\; \texttt{"-"} \;|\; \texttt{"NOT"} & \\
+\binop &::=& \texttt{"\&\&"} \;|\; \texttt{"||"} \;|\; \texttt{"-->"} \;|\;  \texttt{"<->"}  \\
+ & & \ASTComment{\texttt{binop\_boolean}}\\
+
+ &|& \texttt{"=="} \;|\; \texttt{"!="}  \;|\; \texttt{">"}  \;|\; \texttt{">="} \;|\; \texttt{"<"} \;|\; \texttt{"<="}   \\
+ & & \ASTComment{\texttt{binop\_comparison}}\\
+
+ &|& \texttt{"+"} \;|\; \texttt{"-"}  \;|\; \texttt{"OR"}  \;|\; \texttt{"XOR"} \;|\; \texttt{"EOR"} \;|\; \texttt{"AND"}   \\
+ & & \ASTComment{\texttt{binop\_add\_sub\_logic}}\\
+
+ &|& \texttt{"*"} \;|\; \texttt{"/"}  \;|\; \texttt{"DIV"}  \;|\; \texttt{"DIVRM"} \;|\; \texttt{"MOD"}  \;|\; \texttt{"<<"}  \;|\; \texttt{"\>\>"}    \\
+ & & \ASTComment{\texttt{binop\_mul\_div\_shift}}\\
+
+ &|& \texttt{"\^{}"}   \\
+ & & \ASTComment{\texttt{binop\_pow}}\\
+
+ &|& \texttt{"IN"}   \\
+ & & \ASTComment{\texttt{binop\_in}}\\
+
+\literal &=& \texttt{<int\_lit>}  \\
+ &|&\texttt{<hex\_lit>} \\
+ & & \ASTComment{merged into \texttt{<int\_lit>}?}\\
+ &|&\texttt{<boolean\_lit>}  \\
+ &|& \texttt{<real\_lit>}  \\
+ &|& \texttt{<bitmask\_lit>}   \\
+ & & \ASTComment{also represents \texttt{<bitvector\_lit>}}\\
+ &|&\texttt{<string\_lit>}
+\end{array}
+\]
+
+\[
+\begin{array}{rcll}
+\textbf{node} & & \textbf{components} \\
+\hline
+\expr &::=& \texttt{E\_Literal}(literal) \\
+	&|& \texttt{E\_Var}(\texttt{\identifier}) \\
+	&|& \texttt{E\_CTC}(\texttt{\expr, \ty}) \\
+    & & \ASTComment{A checked type constraint}\\
+	&|& \texttt{E\_Binop}(\binop, \expr, \expr) \\
+	&|& \texttt{E\_Unop}(\unop, \expr) \\
+	&|& \texttt{E\_Call}(\identifier, \expr^{*}, (\identifier, \expr)^{*}) \\
+	&|& \texttt{E\_Slice}(\expr, \slice^{*}) \\
+	&|& \texttt{E\_Cond}(\expr, \expr, \expr) \\
+	&|& \texttt{E\_GetArray}(\expr, \expr) \\
+	&|& \texttt{E\_GetField}(\expr, \identifier) \\
+	&|& \texttt{E\_GetFields}(\expr, \identifier^{*}) \\
+	&|& \texttt{E\_Record}(\ty, (\identifier, \expr)^{*})\\
+    & & \ASTComment{Exception construction}\\
+	&|& \texttt{E\_Concat}(\expr^{*}) \\
+	&|& \texttt{E\_Tuple}(\expr^{*}) \\
+	&|& \texttt{E\_Unknown}(\ty) \\
+	&|& \texttt{E\_Pattern}(\expr, \pattern)
+\end{array}
+\]
+
+\[
+\begin{array}{rcll}
+\textbf{node} & & \textbf{components} \\
+\hline
+\pattern &::=& \texttt{Pattern\_All} \\
+	&|& \texttt{E\_Var}(\texttt{\identifier}) \\
+  &|& \texttt{Pattern\_Any}(\pattern^{*}) \\
+  &|& \texttt{Pattern\_Geq}(\expr) \\
+  &|& \texttt{Pattern\_Leq}(\expr) \\
+  &|& \texttt{Pattern\_Mask}(\texttt{bitmask\_lit}) \\
+  &|& \texttt{Pattern\_Not}(\pattern) \\
+  &|& \texttt{Pattern\_Range}(\expr, \expr)\\
+  & & \ASTComment{Lower to upper, included.}\\
+  &|& \texttt{Pattern\_Single}(\expr) \\
+  &|& \texttt{Pattern\_Tuple}(\pattern^{*}) \\
+\end{array}
+\]
+
+\[
+\begin{array}{rcll}
+\textbf{node} & & \textbf{components} \\
+\hline
+\ty &::=& \texttt{T\_Int}(int\_constraints?) \\
+  &|& \TReal \\
+  &|& \TString \\
+  &|& \TBool \\
+  &|& \TBits(bits\_constraint, bitfield^{*}) \\
+  &|& \TEnum(\identifier^{*}) \\
+  &|& \TTuple(\ty^{*}) \\
+  &|& \TArray(\expr, \ty) \\
+  &|& \TRecord(\Field^{*}) \\
+  &|& \TException(\Field^{*}) \\
+  &|& \TNamed(\identifier)\\
+  & & \ASTComment{A type variable.}\\
+\end{array}
+\]
+
+\[
+\begin{array}{rcll}
+\textbf{node} & & \textbf{components} \\
+\hline
+\intconstraint &::=& \texttt{Constraint\_Exact}(\expr) \\
+  & & \ASTComment{A single value, given by a statically evaluable expression.}\\
+  &|& \texttt{Constraint\_Range}(\expr, \expr) \\
+  & & \ASTComment{An interval between two statically evaluable expression.}\\
+\end{array}
+\]
+
+\[
+\begin{array}{rcll}
+\textbf{node} & & \textbf{components} \\
+\hline
+\bitsconstraint &::=& \texttt{BitWidth\_SingleExpr}(\expr) \\
+  & & \ASTComment{Statically evaluable expression.}\\
+  &|& \texttt{BitWidth\_ConstrainedFormType}(\ty) \\
+  & & \ASTComment{Constrained by the domain of another type.}\\
+  &|& \texttt{BitWidth\_Constraints}(\intconstraint^{*}) \\
+  & & \ASTComment{Constrained directly by a constraint on its width.}\\
+\end{array}
+\]
+
+\[
+\begin{array}{rcll}
+\textbf{node} & & \textbf{components} \\
+\hline
+\bitfield &::=& \texttt{BitField\_Simple}(\identifier, \slice^{*}) \\
+  & & \ASTComment{A name and its corresponding slice.}\\
+  &|& \texttt{BitField\_Nested}(\identifier, \slice^{*}, \bitfield^{*}) \\
+  & & \ASTComment{A name, its corresponding slice and some nested bitfields.}\\
+  &|& \texttt{BitField\_Type}(\identifier, \slice^{*}, \ty) \\
+  & & \ASTComment{A name, its corresponding slice, and the type of the bitfield.}\\
+\end{array}
+\]
+\end{document}

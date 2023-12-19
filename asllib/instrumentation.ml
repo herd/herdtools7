@@ -39,6 +39,7 @@ module SemanticsRule = struct
     | ESlice
     | ECall
     | EGetArray
+    | ESliceOrEGetArrayError
     | ERecord
     | EGetBitField
     | EGetBitFields
@@ -111,6 +112,7 @@ module SemanticsRule = struct
     | CatchOtherwise
     | CatchNone
     | CatchNoThrow
+    | TopLevel 
 
   let to_string : t -> string = function
     | Lit -> "Lit"
@@ -133,6 +135,7 @@ module SemanticsRule = struct
     | EUndefIdent -> "EUndefIdent"
     | ECondSimple -> "ECondSimple"
     | EGetArray -> "EGetArray"
+    | ESliceOrEGetArrayError -> "ESliceOrEGetArrayError"
     | EUnknown -> "EUnknown"
     | EPattern -> "EPattern"
     | LEDiscard -> "LEDiscard"
@@ -200,6 +203,7 @@ module SemanticsRule = struct
     | CatchOtherwise -> "CatchOtherwise"
     | CatchNone -> "CatchNone"
     | CatchNoThrow -> "CatchNoThrow"
+    | TopLevel -> "TopLevel"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -223,6 +227,7 @@ module SemanticsRule = struct
       EUnknown;
       EPattern;
       EGetArray;
+      ESliceOrEGetArrayError;
       ECondSimple;
       EUndefIdent;
       EConcat;
@@ -304,11 +309,13 @@ module TypingRule = struct
     | PrimitiveType
     | Structure
     | Canonical
+    | Domain 
     | Subtype
     | StructuralSubtypeSatisfaction
     | DomainSubtypeSatisfaction
     | SubtypeSatisfaction
     | TypeSatisfaction
+    | CanAssignTo
     | TypeClash
     | LowestCommonAncestor
     | CheckUnop
@@ -328,6 +335,7 @@ module TypingRule = struct
     | ESlice
     | ECall
     | EGetArray
+    | ESliceOrEGetArrayError
     | ERecord
     | EStructuredMissingField
     | EStructuredNotStructured
@@ -352,8 +360,8 @@ module TypingRule = struct
     | LEDestructuring
     | LESlice
     | LESetArray
-    | LESetBadRecordField
-    | LESetRecordField
+    | LESetBadStructuredField
+    | LESetStructuredField
     | LESetBadBitField
     | LESetBitField
     | LESetBitFieldNested
@@ -420,7 +428,7 @@ module TypingRule = struct
     | For
     | CatcherNone
     | CatcherSome
-    | Func
+    | Subprogram
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -433,12 +441,14 @@ module TypingRule = struct
     | NonPrimitiveType -> "NonPrimitiveType"
     | PrimitiveType -> "PrimitiveType"
     | Canonical -> "Canonical"
+    | Domain -> "Domain"
     | Structure -> "Structure"
     | Subtype -> "Subtype"
     | StructuralSubtypeSatisfaction -> "StructuralSubtypeSatisfaction"
     | DomainSubtypeSatisfaction -> "DomainSubtypeSatisfaction"
     | SubtypeSatisfaction -> "SubtypeSatisfaction"
     | TypeSatisfaction -> "TypeSatisfaction"
+    | CanAssignTo -> "CanAssignTo"
     | TypeClash -> "TypeClash"
     | CheckUnop -> "CheckUnop"
     | CheckBinop -> "CheckBinop"
@@ -472,6 +482,7 @@ module TypingRule = struct
     | EUndefIdent -> "EUndefIdent"
     | ECondSimple -> "ECondSimple"
     | EGetArray -> "EGetArray"
+    | ESliceOrEGetArrayError -> "ESliceOrEGetArrayError"
     | EUnknown -> "EUnknown"
     | EPattern -> "EPattern"
     | LEDiscard -> "LEDiscard"
@@ -479,8 +490,8 @@ module TypingRule = struct
     | LEGlobalVar -> "LEGlobalVar"
     | LESlice -> "LESlice"
     | LESetArray -> "LESetArray"
-    | LESetBadRecordField -> "LESetBadRecordField" 
-    | LESetRecordField -> "LESetRecordField" 
+    | LESetBadStructuredField -> "LESetBadStructuredField" 
+    | LESetStructuredField -> "LESetStructuredField" 
     | LESetBadBitField -> "LESetBadBitField" 
     | LESetBitField -> "LESetBitField" 
     | LESetBitFieldNested -> "LESetBitFieldNested" 
@@ -550,7 +561,7 @@ module TypingRule = struct
     | For -> "For"
     | CatcherNone -> "CatcherNone"
     | CatcherSome -> "CatcherSome"
-    | Func -> "Func"
+    | Subprogram -> "Subprogram"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -566,12 +577,14 @@ module TypingRule = struct
       NonPrimitiveType;
       PrimitiveType;
       Canonical;
+      Domain;
       Structure;
       Subtype;
       DomainSubtypeSatisfaction;
       StructuralSubtypeSatisfaction;
       SubtypeSatisfaction;
       TypeSatisfaction;
+      CanAssignTo;
       TypeClash;
       CheckUnop;
       CheckBinop;
@@ -602,6 +615,7 @@ module TypingRule = struct
       EUnknown;
       EPattern;
       EGetArray;
+      ESliceOrEGetArrayError;
       ECondSimple;
       EUndefIdent;
       EConcatEmpty;
@@ -612,8 +626,8 @@ module TypingRule = struct
       LEGlobalVar;
       LESlice;
       LESetArray;
-      LESetBadRecordField;
-      LESetRecordField;
+      LESetBadStructuredField;
+      LESetStructuredField;
       LESetBadBitField;
       LESetBitField;
       LESetBitFieldNested;
@@ -661,7 +675,7 @@ module TypingRule = struct
       For;
       CatcherNone;
       CatcherSome;
-      Func;
+      Subprogram;
     ]
 
   let all_nb = List.length all

@@ -1,0 +1,95 @@
+\usepackage{amsmath}  % Classic math package
+\usepackage{amssymb}  % Classic math package 
+\usepackage{mathtools}  % Additional math package 
+\usepackage{graphicx}  % For figures
+\usepackage{caption}  % For figure captions
+\usepackage{subcaption}  % For subfigure captions
+\usepackage{url}  % Automatically escapes urls
+\usepackage{hyperref}  % Insert links inside pdfs
+\usepackage[inline]{enumitem}  % For inline lists
+\usepackage[export]{adjustbox}  % For centering too wide figures 
+\usepackage{mathpartir}  % For deduction rules and equations paragraphs
+\usepackage{comment}
+\usepackage{fancyvrb}
+\input{ifempty}
+\input{ifformal}
+\input{control}
+
+\usepackage{enumitem}
+\renewlist{itemize}{itemize}{20}
+\setlist[itemize,1]{label=\textbullet}
+\setlist[itemize,2]{label=\textasteriskcentered} 
+\setlist[itemize,3]{label=\textendash}
+\setlist[itemize,4]{label=$\triangleright$}
+\setlist[itemize,5]{label=+}
+\setlist[itemize,6]{label=\textbullet}
+\setlist[itemize,7]{label=\textasteriskcentered}
+\setlist[itemize,8]{label=\textendash}
+\setlist[itemize,9]{label=$\triangleright$}
+\setlist[itemize,10]{label=+}
+\setlist[itemize,11]{label=\textbullet}
+\setlist[itemize,12]{label=\textasteriskcentered}
+\setlist[itemize,13]{label=\textendash}
+\setlist[itemize,14]{label=\textendash}
+\setlist[itemize,15]{label=$\triangleright$}
+\setlist[itemize,16]{label=+}
+\setlist[itemize,17]{label=\textbullet}
+\setlist[itemize,18]{label=\textasteriskcentered}
+\setlist[itemize,19]{label=\textendash}
+\setlist[itemize,20]{label=\textendash}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Abstract Syntax macros
+% Non-terminal names
+\newcommand\unop[0]{\textsf{unop}}
+\newcommand\binop[0]{\textsf{binop}}
+\newcommand\literal[0]{\textsf{literal}}
+\newcommand\expr[0]{\textsf{expr}}
+\newcommand\slice[0]{\textsf{slice}}
+\newcommand\ty[0]{\textsf{ty}}
+\newcommand\pattern[0]{\textsf{pattern}}
+\newcommand\intconstraint[0]{\textsf{int\_constraint}}
+\newcommand\bitsconstraint[0]{\textsf{bits\_constraint}}
+\newcommand\bitfield[0]{\textsf{bitfield}}
+
+\newcommand\Field[0]{\textsf{field}}
+
+% Type names
+\newcommand\TInt[0]{\texttt{T\_Int}}
+\newcommand\TReal[0]{\texttt{T\_Real}}
+\newcommand\TString[0]{\texttt{T\_String}}
+\newcommand\TBool[0]{\texttt{T\_Bool}}
+\newcommand\TBits[0]{\texttt{T\_Bits}}
+\newcommand\TEnum[0]{\texttt{T\_Enum}}
+\newcommand\TTuple[0]{\texttt{T\_Tuple}}
+\newcommand\TArray[0]{\texttt{T\_Array}}
+\newcommand\TRecord[0]{\texttt{T\_Record}}
+\newcommand\TException[0]{\texttt{T\_Exception}}
+\newcommand\TNamed[0]{\texttt{T\_Named}}
+
+\newcommand\identifier[0]{\texttt{<identifier>}}
+
+\newcommand\id[0]{\texttt{id}}        
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand\ie{i.\,e.}
+\newcommand\eg{e.\,g.}
+\newcommand\synor{\ |\ }
+\newcommand\syntt[1]{\mathtt{#1}}
+\newcommand\ife[3]{\text{if}\ #1\ \text{then}\ #2\ \text{else}\ #3\ \text{end}}
+\newcommand\inenv[2]{\left\langle #1, #2 \right\rangle}
+\newcommand\env[1]{\left\langle #1 \right\rangle}
+\newcommand\reducesto{\ \to\ }
+\newcommand\llbracket{[|}
+\newcommand\rrbracket{|]}
+\newcommand\interp[1]{\left\llbracket #1 \right\rrbracket}
+\newcommand\st[0]{\ \middle|\ }
+\newcommand\field[1]{.\text{#1}}
+\newcommand\globals[0]{\field{globals}}
+\newcommand\locals[0]{\field{locals}}
+\newcommand\X[0]{\mathcal{X}}
+\newcommand\N[0]{\mathbb{N}}
+\newcommand\asldata[0]{\mathtt{asl\_data}}
+\newcommand\aslctrl[0]{\mathtt{asl\_ctrl}}
+\newcommand\aslpo[0]{\mathtt{asl\_po}}
+\DeclareMathOperator{\dom}{dom}

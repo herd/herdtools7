@@ -59,6 +59,7 @@ let get_structure (env : env) : ty -> ty =
       if false then Format.eprintf "@[Getting structure of %a.@]@." PP.pp_ty ty
     in
     let with_pos = add_pos_from ty in
+  (* Begin Structure *)
     match ty.desc with
     | T_Named x -> (
         match IMap.find_opt x env.global.declared_types with
@@ -69,6 +70,7 @@ let get_structure (env : env) : ty -> ty =
     | T_Array (e, t) -> T_Array (e, get t) |> with_pos
     | T_Record fields -> T_Record (get_fields fields) |> with_pos
     | T_Exception fields -> T_Exception (get_fields fields) |> with_pos |: TypingRule.Structure
+  (* End *)
   and get_fields fields =
     let one_field (name, t) = (name, get t) in
     let fields = List.map one_field fields in
@@ -78,49 +80,56 @@ let get_structure (env : env) : ty -> ty =
 
 (* --------------------------------------------------------------------------*)
 
-(* The builtin singular types are:
-   • integer
-   • real
-   • string
-   • boolean
-   • bits
-   • bit
-   • enumeration
-*)
+(* Begin BuiltinSingular *)
 let is_builtin_singular ty =
   match ty.desc with
   | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ | T_Int _ -> true
   | _ -> false |: TypingRule.BuiltinSingularType
+(* End *)
 
-(* The builtin aggregate types are:
-   • tuple
-   • array
-   • record
-   • exception
-*)
+(* Begin BuiltinAggregate *)
 let is_builtin_aggregate ty =
   match ty.desc with
   | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ -> true
-  | _ -> false |: TypingRule.BuiltinAggregateType 
+  | _ -> false 
+|: TypingRule.BuiltinAggregateType 
+(* End *)
 
-let is_builtin ty = is_builtin_singular ty || is_builtin_aggregate ty |: TypingRule.BuiltinSingularOrAggregate
+(* Begin BuiltinSingularOrAggregate *)
+let is_builtin ty = is_builtin_singular ty 
+                  || is_builtin_aggregate ty 
+  |: TypingRule.BuiltinSingularOrAggregate
+(* End *)
 
-let is_named ty = match ty.desc with T_Named _ -> true | _ -> false |: TypingRule.NamedType
+(* Begin Named *)
+let is_named ty = 
+  match ty.desc with 
+  | T_Named _ -> true 
+  | _ -> false 
+|: TypingRule.NamedType
+(* End *)
 
+(* Begin Anonymous *)
 let is_anonymous ty = not (is_named ty) |: TypingRule.AnonymousType
+(* End *)
 
 (* A named type is singular if it has the structure of a singular type,
    otherwise it is aggregate. *)
-let is_singular env ty =
-  is_builtin_singular ty
-  || (is_named ty && get_structure env ty |> is_builtin_singular) |: TypingRule.SingularType
+(* Begin Singular *)
+let is_singular env ty = is_builtin_singular ty
+  || (is_named ty && get_structure env ty |> is_builtin_singular) 
+|: TypingRule.SingularType
+(* End *)
 
 (* A named type is singular if it has the structure of a singular type,
    otherwise it is aggregate. *)
-let is_aggregate env ty =
-  is_builtin_aggregate ty
+(* Begin Aggregate *)
+let is_aggregate env ty = is_builtin_aggregate ty
   || (is_named ty && get_structure env ty |> is_builtin_aggregate)
+|: TypingRule.AggregateType
+(* End *)
 
+(* Begin NonPrimitive *)
 let rec is_non_primitive ty =
   match ty.desc with
   | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ | T_Int _ -> false
@@ -128,9 +137,13 @@ let rec is_non_primitive ty =
   | T_Tuple li -> List.exists is_non_primitive li
   | T_Array (_, ty) -> is_non_primitive ty
   | T_Record fields | T_Exception fields ->
-      List.exists (fun (_, ty) -> is_non_primitive ty) fields |: TypingRule.NonPrimitiveType
+      List.exists (fun (_, ty) -> is_non_primitive ty) fields 
+|: TypingRule.NonPrimitiveType
+(* End *)
 
+(* Begin Primitive *)
 let is_primitive ty = not (is_non_primitive ty) |: TypingRule.PrimitiveType
+(* End *)
 
 (* --------------------------------------------------------------------------*)
 
@@ -142,13 +155,19 @@ module Domain = struct
     they cannot get resolved, the domain is [AlmostTop]. *)
   type int_set = Finite of IntSet.t | AlmostTop | Top
 
+  (* Begin Domain *)
   type t =
     | D_Bool
     | D_String
     | D_Real
-    | D_Symbols of ISet.t  (** The domain of an enum is a set of symbols *)
+  (** The domain of an enum is a set of symbols *) 
+    | D_Symbols of ISet.t  
     | D_Int of int_set
-    | D_Bits of int_set  (** The domain of a bitvector is given by its width. *)
+  (** The domain of a bitvector is given by its width. *) 
+    | D_Bits of int_set  
+  (* |: TypingRule.Domain *)
+  (* End *)
+
 
   let add_interval_to_intset acc bot top =
     if bot > top then acc
@@ -239,7 +258,7 @@ module Domain = struct
         | D_Bits is | D_Int is -> is
         | _ ->
             failwith
-              "An bit width cannot be constrained from a type that is neither \
+              "A bit width cannot be constrained from a type that is neither \
                a bitvector nor an integer.")
     | BitWidth_Constraints constraints ->
         int_set_of_int_constraints env constraints
@@ -367,6 +386,7 @@ let _is_bits_width_constrained env ty = not (is_bits_width_fixed env ty)
 
 (* --------------------------------------------------------------------------*)
 
+(* Begin Subtype *)
 let rec subtypes_names env s1 s2 =
   if String.equal s1 s2 then true
   else
@@ -378,6 +398,7 @@ let subtypes env t1 t2 =
   match (t1.desc, t2.desc) with
   | T_Named s1, T_Named s2 -> subtypes_names env s1 s2
   | _ -> false |: TypingRule.Subtype
+(* End Subtype *)
 
 let rec bitfields_included env bfs1 bfs2 =
   let rec mem_bfs bfs2 bf1 =
@@ -549,6 +570,7 @@ and type_satisfies env t s =
 
 (* --------------------------------------------------------------------------*)
 
+(* Begin TypeClash *)
 let rec type_clashes env t s =
   (*
    Definition VPZZ:
@@ -580,6 +602,7 @@ let rec type_clashes env t s =
       List.compare_lengths li_s li_t = 0
       && List.for_all2 (type_clashes env) li_s li_t
   | _ -> false |: TypingRule.TypeClash
+(* End *)
 
 let subprogram_clashes env (f1 : 'a func) (f2 : 'b func) =
   (* Two subprograms clash if all of the following hold:

@@ -474,7 +474,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         | Some (_, GDK_Var) -> false
         | None -> undefined_identifier loc s)
 
-  let check_pure (env : env) e () =
+  let check_statically_evaluable (env : env) e () =
     let e = reduce_expr env e in
     let use_set = use_e ISet.empty e in
     if ISet.for_all (storage_is_pure e env) use_set then ()
@@ -682,7 +682,6 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         t1 |: TypingRule.CheckUnop
   (* End *)
 
-  let can_assign_to env s t =
     (* Rules:
        - GNTS: It is illegal for a storage element whose type has the structure
          of the under-constrained integer to be assigned a value whose type has
@@ -692,11 +691,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
          assigned or initialized with a value of type T if T type-satisfies S
     *)
     (* TODO: incomplete. *)
+  (* Begin CanAssignTo *)
+  let can_assign_to env s t =
     let s_struct = Types.get_structure env s
     and t_struct = Types.get_structure env t in
     match (s_struct.desc, t_struct.desc) with
     | T_Int (Some []), T_Int (Some []) -> false
-    | _ -> Types.type_satisfies env t s
+    | _ -> Types.type_satisfies env t s |: TypingRule.CanAssignTo
+  (* End *)
 
   let check_can_assign_to loc env s t () =
     if can_assign_to env s t then ()
@@ -719,43 +721,58 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
        TODO: check them
     *)
     let rec tr_one = function
-      | Slice_Length (offset, length) ->
-          let t_offset, offset' = annotate_expr env offset
-          and t_length, length' = annotate_expr env length in
-          let+ () = check_structure_integer offset' env t_offset in
-          let+ () = check_structure_integer length' env t_length in
-          let+ () = check_pure env length in
-          (* TODO: if offset is statically evaluable, check that it is less
-             than sliced expression width. *)
-          Slice_Length (offset', length') |: TypingRule.SliceLength
+      (* Begin SliceSingle *)
       | Slice_Single i ->
           (* LRM R_GXKG:
              The notation b[i] is syntactic sugar for b[i +: 1].
           *)
           tr_one (Slice_Length (i, !$1)) |: TypingRule.SliceSingle
+      (* End *)
+      (* Begin SliceLength *)
+      | Slice_Length (offset, length) ->
+          let t_offset, offset' = annotate_expr env offset
+          and t_length, length' = annotate_expr env length in
+          let+ () = check_structure_integer offset' env t_offset in
+          let+ () = check_structure_integer length' env t_length in
+          let+ () = check_statically_evaluable env length in
+          (* TODO: if offset is statically evaluable, check that it is less
+             than sliced expression width. *)
+          Slice_Length (offset', length') |: TypingRule.SliceLength
+      (* End *)
+      (* Begin SliceRange *)
       | Slice_Range (j, i) ->
           (* LRM R_GXKG:
              The notation b[j:i] is syntactic sugar for b[i +: j-i+1].
           *)
           let pre_length = binop MINUS j i |> binop PLUS !$1 in
           tr_one (Slice_Length (i, pre_length)) |: TypingRule.SliceRange
+      (* End *)
+      (* Begin SliceStar *)
       | Slice_Star (factor, pre_length) ->
           (* LRM R_GXQG:
              The notation b[i *: n] is syntactic sugar for b[i*n +: n]
           *)
           let pre_offset = binop MUL factor pre_length in
           tr_one (Slice_Length (pre_offset, pre_length)) |: TypingRule.SliceStar
+      (* End *)
     in
     List.map tr_one
 
   and annotate_pattern loc env t = function
+    (* Begin PAll *)
     | Pattern_All as p -> p |: TypingRule.PAll
+    (* End *)
+    (* Begin PAny *)
     | Pattern_Any li ->
         let new_li = List.map (annotate_pattern loc env t) li in
         Pattern_Any new_li |: TypingRule.PAny
+    (* End *)
+    (* Begin PNot *)
     | Pattern_Not q ->
         let new_q = annotate_pattern loc env t q in
         Pattern_Not new_q |: TypingRule.PNot
+    (* End *)
+    (* Begin PSingle *)
     | Pattern_Single e ->
         let t_e, e = annotate_expr env e in
         let+ () =
@@ -776,35 +793,43 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           | _ -> fatal_from loc (Error.BadTypesForBinop (EQ_OP, t, t_e))
         in
         Pattern_Single e |: TypingRule.PSingle
+    (* End *)
+    (* Begin PGeq *)
     | Pattern_Geq e ->
         let t_e, e' = annotate_expr env e in
-        let+ () = check_pure env e' in
+        let+ () = check_statically_evaluable env e' in
         let+ () =
-          both
+          both (* TODO: case where they are both real *)
             (check_structure_integer loc env t)
             (check_structure_integer loc env t_e)
         in
         Pattern_Geq e' |: TypingRule.PGeq
+    (* End *)
+    (* Begin PLeq *)
     | Pattern_Leq e ->
         let t_e, e' = annotate_expr env e in
-        let+ () = check_pure env e' in
+        let+ () = check_statically_evaluable env e' in
         let+ () =
-          both
+          both  (* TODO: case where they are both real *) 
             (check_structure_integer loc env t)
             (check_structure_integer loc env t_e)
         in
         Pattern_Leq e' |: TypingRule.PLeq
+    (* End *)
+    (* Begin PRange *)
     | Pattern_Range (e1, e2) ->
         let t_e1, e1' = annotate_expr env e1
         and t_e2, e2' = annotate_expr env e2 in
         let+ () =
-          both
+          both (* TODO: case where they are both real *)
             (check_structure_integer loc env t)
             (both
                (check_structure_integer loc env t_e1)
                (check_structure_integer loc env t_e2))
         in
         Pattern_Range (e1', e2') |: TypingRule.PRange
+    (* End *)
+    (* Begin PMask *)
     | Pattern_Mask m as p ->
         let+ () = check_structure_bits loc env t in
         let+ () =
@@ -813,18 +838,26 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           check_type_satisfies loc env t t_m
         in
         p |: TypingRule.PMask
+    (* End *)
     | Pattern_Tuple li -> (
         let t_struct = Types.get_structure env t in
         match t_struct.desc with
+        (* Begin PTupleBadArity *)
         | T_Tuple ts when List.compare_lengths li ts != 0 ->
             Error.fatal_from loc
               (Error.BadArity
                  ("pattern matching on tuples", List.length li, List.length ts))
             |: TypingRule.PTupleBadArity
+        (* End *)
+        (* Begin PTuple *)
         | T_Tuple ts ->
             let new_li = List.map2 (annotate_pattern loc env) ts li in
             Pattern_Tuple new_li |: TypingRule.PTuple
-        | _ -> conflict loc [ T_Tuple [] ] t |: TypingRule.PTupleConflict)
+        (* End *)
+        (* Begin PTupleConflict *)
+        | _ -> conflict loc [ T_Tuple [] ] t |: TypingRule.PTupleConflict
+        (* End *)
+    )
 
   and annotate_call loc env name args eqs call_type =
     let () =
@@ -851,10 +884,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     let eqs1 = List.rev_append eqs extra_nargs in
     let () =
+      (* Begin FCallBadArity *)
       if List.compare_lengths callee_arg_types args1 != 0 then
         fatal_from loc
         @@ Error.BadArity (name, List.length callee_arg_types, List.length args1)
         |: TypingRule.FCallBadArity
+      (* End *)
     in
     let eqs2 =
       let folder acc (x, ty) (t_e, e) =
@@ -897,12 +932,18 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     let ret_ty1 =
       match (call_type, ret_ty) with
+      (* Begin FCallGetter *)
       | (ST_Function | ST_Getter), Some ty ->
           Some (rename_ty_eqs eqs2 ty) |: TypingRule.FCallGetter
+      (* End *)
+      (* Begin FCallSetter *)
       | (ST_Setter | ST_Procedure), None -> None |: TypingRule.FCallSetter
+      (* End *)
+      (* Begin FCallMismatch *)
       | _ ->
           fatal_from loc @@ Error.MismatchedReturnValue name
           |: TypingRule.FCallMismatch
+      (* End *)
     in
     let () = if false then Format.eprintf "Annotated call to %S.@." name1 in
     (name1, args1, eqs2, ret_ty1)
@@ -1108,7 +1149,6 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let ty' = Types.get_structure env ty in
         (ty, E_Unknown ty' |> here) |: TypingRule.EUnknown
     (* End *)
-    (* Begin ESlice *)
     | E_Slice (e', slices) -> (
         let reduced =
           match e'.desc with
@@ -1127,6 +1167,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             let t_e', e' = annotate_expr env e' in
             let struct_t_e' = Types.get_structure env t_e' in
             match struct_t_e'.desc with
+    (* Begin ESlice *)
             | T_Int _ | T_Bits _ ->
                 let w = slices_width env slices in
                 (* TODO: check that:
@@ -1137,6 +1178,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 ( T_Bits (BitWidth_SingleExpr w, []) |> here,
                   E_Slice (e', slices') |> here )
                 |: TypingRule.ESlice
+    (* End *)
+    (* Begin EGetArray *)
             | T_Array (size, ty') -> (
                 let wanted_t_index =
                   let t_int =
@@ -1158,9 +1201,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                       check_type_satisfies e env t_index' wanted_t_index
                     in
                     (ty', E_GetArray (e', e_index') |> here)
-                    |: TypingRule.EGetArray
                 | _ -> conflict e [ T_Int None; default_t_bits ] t_e')
-            | _ -> conflict e [ T_Int None; default_t_bits ] t_e'))
+            | _ -> conflict e [ T_Int None; default_t_bits ] t_e' |: TypingRule.EGetArray))
     (* End *)
     | E_GetField (e1, field_name) -> (
         let t_e1, e2 = annotate_expr env e1 in
@@ -1263,9 +1305,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (T_Bool |> here, E_Pattern (e'', patterns') |> here)
         |: TypingRule.EPattern
     (* End *)
-    (* Begin EGetArray *)
     | E_GetArray _ -> assert false |: TypingRule.EGetArray
-    (* End *)
 
   let rec annotate_lexpr env le t_e =
     let () =
@@ -1275,40 +1315,49 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     let here x = add_pos_from le x in
     match le.desc with
+    (* Begin LEDiscard *)
     | LE_Discard -> le |: TypingRule.LEDiscard
+    (* End *)
     | LE_Var x ->
         (* TODO: Handle setting global var *)
         let+ () =
          fun () ->
           let ty =
+            (* Begin LELocalVar *)
             match IMap.find_opt x env.local.storage_types with
             | Some (ty, LDK_Var) -> ty |: TypingRule.LELocalVar
+            (* End *) 
             | Some _ -> fatal_from le @@ Error.AssignToImmutable x
             | None -> (
+                (* Begin LEGlobalVar *)
                 match IMap.find_opt x env.global.storage_types with
                 | Some (ty, _) ->
                     (* TODO: check that the keyword is a variable. *)
-                    ty
+                    ty |: TypingRule.LEGlobalVar
+                (* End *)
                 | None -> undefined_identifier le x)
           in
           check_can_assign_to le env ty t_e ()
         in
         le
+    (* Begin LEDestructuring *)
     | LE_Destructuring les ->
         (match t_e.desc with
         | T_Tuple sub_tys ->
             if List.compare_lengths sub_tys les != 0 then
               Error.fatal_from le
                 (Error.BadArity
-                   ("tuple unpacking", List.length sub_tys, List.length les))
+                   ("LEDestructuring", List.length sub_tys, List.length les))
             else
               let les' = List.map2 (annotate_lexpr env) les sub_tys in
               LE_Destructuring les' |> here
         | _ -> conflict le [ T_Tuple [] ] t_e)
         |: TypingRule.LEDestructuring
+    (* End *)
     | LE_Slice (le1, slices) -> (
         let t_le1, _ = expr_of_lexpr le1 |> annotate_expr env in
         let struct_t_le1 = Types.get_structure env t_le1 in
+        (* Begin LESlice *)
         match struct_t_le1.desc with
         | T_Bits _ ->
             let le2 = annotate_lexpr env le1 t_le1 in
@@ -1320,6 +1369,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             in
             let slices2 = best_effort slices (annotate_slices env) in
             LE_Slice (le2, slices2) |> here |: TypingRule.LESlice
+        (* End *)
+        (* Begin LESetArray *)
         | T_Array (size, t) -> (
             let le2 = annotate_lexpr env le1 t_le1 in
             let+ () = check_can_assign_to le2 env t t_e in
@@ -1342,6 +1393,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                   check_type_satisfies le2 env t_index' wanted_t_index
                 in
                 LE_SetArray (le2, e_index') |> here |: TypingRule.LESetArray
+            (* End *)
             | _ -> fatal_from le1 (Error.UnsupportedExpr (expr_of_lexpr le1)))
         | _ -> conflict le1 [ default_t_bits ] t_le1)
     | LE_SetField (le1, field) ->
@@ -1352,13 +1404,17 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
          | T_Exception fields | T_Record fields ->
              let t =
                match List.assoc_opt field fields with
+             (* Begin LESetBadStructuredField *)
                | None ->
                    fatal_from le (Error.BadField (field, t_le1))
-                   |: TypingRule.LESetBadRecordField
+                   |: TypingRule.LESetBadStructuredField
+             (* End *)
+             (* Begin LESetStructuredField *)
                | Some t -> t
              in
              let+ () = check_can_assign_to le env t t_e in
-             LE_SetField (le2, field) |> here |: TypingRule.LESetRecordField
+             LE_SetField (le2, field) |> here |: TypingRule.LESetStructuredField
+             (* End *)
          | T_Bits (_, bitfields) ->
              let bits slices bitfields =
                let w = slices_width env slices in
@@ -1366,24 +1422,34 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
              in
              let t, slices =
                match find_bitfield_opt field bitfields with
+               (* Begin LESetBadBitField *)
                | None ->
                    fatal_from le1 (Error.BadField (field, t_le1_struct))
                    |: TypingRule.LESetBadBitField
+               (* End *)
+               (* Begin LESetBitField *)
                | Some (BitField_Simple (_field, slices)) ->
                    (bits slices [], slices) |: TypingRule.LESetBitField
+               (* End *)
+               (* Begin LESetBitFieldNested *)
                | Some (BitField_Nested (_field, slices, bitfields')) ->
                    (bits slices bitfields', slices)
                    |: TypingRule.LESetBitFieldNested
+               (* End *)
+               (* Begin LESetBitFieldTyped *)
                | Some (BitField_Type (_field, slices, t)) ->
                    let t' = bits slices [] in
                    let+ () = check_type_satisfies le env t' t in
                    (t, slices) |: TypingRule.LESetBitFieldTyped
+               (* End *)
              in
              let+ () = check_can_assign_to le1 env t t_e in
              let le2 = LE_Slice (le1, slices) |> here in
              annotate_lexpr env le2 t_e
+         (* Begin LESetBadField *)
          | _ -> conflict le1 [ default_t_bits; T_Record []; T_Exception [] ] t_e)
-        |: TypingRule.LESetBadField
+         |: TypingRule.LESetBadField
+         (* End *)
     | LE_SetFields (le', fields) ->
         let t_le', _ = expr_of_lexpr le' |> annotate_expr env in
         let le' = annotate_lexpr env le' t_le' in
@@ -1401,6 +1467,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let new_le = LE_Slice (le', list_concat_map one_field fields) |> here in
         annotate_lexpr env new_le t_e |: TypingRule.LESetFields
     | LE_SetArray _ -> assert false
+    (* Begin LEConcat *)
     | LE_Concat (les, _) ->
         let e_eq = expr_of_lexpr le in
         let t_e_eq, _e_eq = annotate_expr env e_eq in
@@ -1433,6 +1500,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (* Here as the first check, we have _real_width == bv_length t_e *)
         let les = List.rev rev_les and widths = List.rev rev_widths in
         LE_Concat (les, Some widths) |> add_pos_from le |: TypingRule.LEConcat
+    (* End *)
 
   let can_be_initialized_with env s t =
     (* Rules:
@@ -1466,10 +1534,15 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
 
   let rec annotate_local_decl_item loc (env : env) ty ldk ldi =
     match ldi with
+    (* Begin LDDiscardNone *)
     | LDI_Discard None -> (env, ldi) |: TypingRule.LDDiscardNone
+    (* End *)
+    (* Begin LDDiscardSome *)
     | LDI_Discard (Some t) ->
         let+ () = check_can_be_initialized_with loc env t ty in
         (env, ldi) |: TypingRule.LDDiscardSome
+    (* End *)
+    (* Begin LDVar *)
     | LDI_Var (x, ty_opt) ->
         let t =
           best_effort ty @@ fun _ ->
@@ -1485,9 +1558,12 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let new_env = add_local x t ldk env in
         (new_env, LDI_Var (x, Some t)) |: TypingRule.LDVar
     | LDI_Tuple ([ ld ], None) ->
+      (* TODO: this is prohibited *)
         annotate_local_decl_item loc env ty ldk ld
         |: TypingRule.LDUninitialisedTypedTuple
-    | LDI_Tuple (ldis, None) ->
+    (* End *)
+    (* Begin LDTuple *)
+     | LDI_Tuple (ldis, None) ->
         let tys =
           match (Types.get_structure env ty).desc with
           | T_Tuple tys when List.compare_lengths tys ldis = 0 -> tys
@@ -1497,20 +1573,23 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                    ("tuple initialization", List.length tys, List.length ldis))
           | _ -> conflict loc [ T_Tuple [] ] ty
         in
-        let env, ldis' =
+        let new_env, new_ldi =
           List.fold_right2
             (fun ty' ldi' (env', les) ->
               let env', le = annotate_local_decl_item loc env' ty' ldk ldi' in
               (env', le :: les))
             tys ldis (env, [])
         in
-        (env, LDI_Tuple (ldis', None)) |: TypingRule.LDTuple
+        (new_env, LDI_Tuple (new_ldi, None)) |: TypingRule.LDTuple
+    (* End *)
+    (* Begin LDTypedTuple *)
     | LDI_Tuple (_ldis, Some _t) ->
         (* TODO *)
         assert false |: TypingRule.LDTypedTuple
+    (* End *)
 
   let rec annotate_local_decl_item_uninit loc (env : env) ldi =
-    (* Here implicitely ldk=LDK_Var *)
+    (* Here implicitly ldk=LDK_Var *)
     let here s = add_pos_from loc s in
     match ldi with
     | LDI_Discard _ -> (env, S_Pass |> here)
@@ -1566,13 +1645,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let new_s2, env2 = try_annotate_stmt env1 s2 in
         (S_Seq (new_s1, new_s2) |> here, env2) |: TypingRule.SSeq
     (* Begin SAssign *)
-    | S_Assign (le, e, ver) ->
+    | S_Assign (le, re, ver) ->
         (let () =
            if false then
              Format.eprintf "@[<3>Annotating assignment@ @[%a@]@]@." PP.pp_stmt
                s
          in
-         let t_e, e1 = annotate_expr env e in
+         let t_e, e1 = annotate_expr env re in
          let () =
            if false then Format.eprintf "@[Type: @[%a@]@]@." PP.pp_ty t_e
          in
@@ -1864,7 +1943,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | LE_Concat (_les, _) -> None
     | LE_SetArray _ -> assert false
 
-  let annotate_func loc (env : env) (f : 'p AST.func) : 'p AST.func =
+  (* Begin Subprogram *)
+  let annotate_subprogram loc (env : env) (f : 'p AST.func) : 'p AST.func =
     let () = if false then Format.eprintf "Annotating %s.@." f.name in
     (* Build typing local environment. *)
     let env1 = { env with local = empty_local_return_type f.return_type } in
@@ -1927,9 +2007,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       let _, name, _, _ = FunctionRenaming.try_find_name loc env5 f.name args in
       name
     in
-    { f with body = SB_ASL new_body; name } |: TypingRule.Func
+    { f with body = SB_ASL new_body; name } |: TypingRule.Subprogram
+  (* End *)
 
-  let try_annotate_func loc env f = best_effort f (annotate_func loc env)
+  let try_annotate_subprogram loc env f = best_effort f (annotate_subprogram loc env)
 
   let annotate_gsd env gsd =
     match gsd with
@@ -2180,7 +2261,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       let here = ASTUtils.add_pos_from_st d in
       match d.desc with
       | D_Func ({ body = SB_ASL _; _ } as f) ->
-          D_Func (try_annotate_func d env f) |> here
+          D_Func (try_annotate_subprogram d env f) |> here
       | D_Func ({ body = SB_Primitive _; _ } as f) ->
           D_Func (rename_primitive d env f) |> here
       | D_GlobalStorage gsd ->

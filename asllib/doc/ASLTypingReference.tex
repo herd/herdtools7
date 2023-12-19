@@ -1,61 +1,16 @@
 \documentclass{book}
-\usepackage{amsmath}  % Classic math package
-\usepackage{amssymb}  % Classic math package
-\usepackage{mathtools}  % Additional math package
-\usepackage{graphicx}  % For figures
-\usepackage{caption}  % For figure captions
-\usepackage{subcaption}  % For subfigure captions
-\usepackage{url}  % Automatically escapes urls
-\usepackage{hyperref}  % Insert links inside pdfs
-\usepackage[inline]{enumitem}  % For inline lists
-\usepackage[export]{adjustbox}  % For centering too wide figures
-\usepackage{mathpartir}  % For deduction rules and equations paragraphs
-\usepackage{comment}
-\usepackage{fancyvrb}
+\input{ASLmacros}
+
 \input{ASLTypingLines}
 \input{ASLTypeSatisfactionLines}
-
-\usepackage{enumitem}
-\renewlist{itemize}{itemize}{10}
-\setlist[itemize,1]{label=\textbullet}
-\setlist[itemize,2]{label=\textasteriskcentered}
-\setlist[itemize,3]{label=\textendash}
-\setlist[itemize,4]{label=$\triangleright$}
-\setlist[itemize,5]{label=+}
-\setlist[itemize,6]{label=\textbullet}
-\setlist[itemize,7]{label=$\ast$}
-\setlist[itemize,8]{label=\textendash}
-\setlist[itemize,9]{label=$\triangleright$}
-\setlist[itemize,10]{label=+}
-
-
-%Macros
-\newcommand\ie{i.\,e.}
-\newcommand\eg{e.\,g.}
-\newcommand\synor{\ |\ }
-\newcommand\syntt[1]{\mathtt{#1}}
-\newcommand\ife[3]{\text{if}\ #1\ \text{then}\ #2\ \text{else}\ #3\ \text{end}}
-\newcommand\inenv[2]{\left\langle #1, #2 \right\rangle}
-\newcommand\env[1]{\left\langle #1 \right\rangle}
-\newcommand\reducesto{\ \to\ }
-\newcommand\llbracket{[|}
-\newcommand\rrbracket{|]}
-\newcommand\interp[1]{\left\llbracket #1 \right\rrbracket}
-\newcommand\st[0]{\ \middle|\ }
-\newcommand\field[1]{.\text{#1}}
-\newcommand\globals[0]{\field{globals}}
-\newcommand\locals[0]{\field{locals}}
-\newcommand\X[0]{\mathcal{X}}
-\newcommand\N[0]{\mathbb{N}}
-\newcommand\asldata[0]{\mathtt{asl\_data}}
-\newcommand\aslctrl[0]{\mathtt{asl\_ctrl}}
-\newcommand\aslpo[0]{\mathtt{asl\_po}}
-\DeclareMathOperator{\dom}{dom}
+\input{ASLASTLines}
 \newcommand{\tests}{../tests/ASLTypingReference.t/}
+
 \author{Arm Architecture Technology Group}
 \title{ASL Typing Reference}
 \begin{document}
 \maketitle
+
 \tableofcontents{}
 
 \chapter{Copyright and Disclaimer}
@@ -77,35 +32,81 @@ github repository.
 
 \chapter{Preamble}
 
+\section{Abstract Syntax}
+An \emph{abstract syntax tree} (AST, for short) represents an ASL program as a labelled tree. 
+The ASL Abstract Syntax is given in~\cite{ASLAbstractSyntaxReference}.
+
 \section{Environments}
 
-\section{Annotation}
-Typing a program is typing its ``main'' subprogram.  Constructively, typing a
-program requires following its Abstract Syntax Tree and typing each of its
-components.
+An environment is what the typing operates over: a structure which amongst
+other things associates types to variables. Intuitively, the typing of a
+program makes an initial environment evolve, with new types as given by the
+variable declarations of the program. Environments map names to variables and
+subprograms.
 
-The types of a program are given by applying a set of
-\texttt{annotate\_<object>} functions. Each \texttt{annotate\_<object>}
-function describes how to annotate a specific object, as follows.
-\begin{itemize}
-\item  \texttt{annotate\_expr} annotates expressions;
-\item  \texttt{annotate\_slices} annotates slices;
-\item  \texttt{annotate\_pattern} annotates pattern;
-\item  \texttt{annotate\_local\_decl\_item} annotates local declarations;
-\item  \texttt{annotate\_lexpr} annotates left-hand sides of assignments;
-\item  \texttt{annotate\_stmt} annotates statements;
-\item  \texttt{annotate\_block} annotates blocks;
-\item  \texttt{annotate\_catcher} annotates catchers;
-\item  \texttt{annotate\_call} annotates functions calls;
-\item  \texttt{annotate\_func} annotates functions.
+More precisely, a \emph{typing environment} (environment, for short) maps AST
+nodes to types.
+
+A \emph{type judgement} associates a node in an abstract syntax tree (which
+intuitively corresponds to an ASL construct) with a certain type. We then say
+that the node is \emph{annotated} with that type.
+%
+
+Defining the type annotation requires inferring various auxiliary attributes
+for AST nodes. We consider these auxiliary attributes as part of the
+environment as well. Technically, we partition the environment into two
+distinct components: the global environment $G$---pertaining to AST nodes
+appearing outside of a given subprogram, and the local environment
+$L$---pertaining to AST nodes appearing inside a given subprogram.
+
+\section{Type System}
+A \emph{typing rule} specifies a conjunction of conditions that must hold in
+order to annotate an AST node with a given type. These conditions typically
+inspect the label of node and the type annotations on the children of the node
+(in a given environment).
+
+Not all conditions are type judgements. Some conditions are expressed in terms
+of the auxiliary attributes mentioned above. We define these in the next
+chapter. 
+
+A \emph{typing system} is a set of typing rules. More than one rule can be
+associated with a given node label, but they are exclusive---at most one rule
+holds in a given environment.
+
+\section{Annotation}
+Typing a program consists of annotating the root of its AST. This is typically
+done by traversing the AST bottom-up.  To annotate a node, the typing algorithm
+finds a rule that matches the node---that is a rule whose conditions are
+satisfied. If one such rule is found, the node is annotated by the  result type
+specified by the rule, essentially adding the type judgement to the
+environment.  If no such rule is found, it is considered a \emph{typing error}
+and the algorithm exits.
+
+Sometimes it is to necessary to define \emph{error rules}---rules that result
+in an error and provide extra information to help understand the reason for the
+error.
+
+We implement the process described above via a set of
+\texttt{annotate\_<label>} functions. Each \texttt{annotate\_<label>}
+function describes how to annotate an AST node, given its label, as follows:\begin{itemize}
+\item \texttt{annotate\_expr} annotates expressions;
+\item \texttt{annotate\_slices} annotates slices;
+\item \texttt{annotate\_pattern} annotates pattern;
+\item \texttt{annotate\_local\_decl\_item} annotates local declarations;
+\item \texttt{annotate\_lexpr} annotates left-hand sides of assignments;
+\item \texttt{annotate\_stmt} annotates statements;
+\item \texttt{annotate\_block} annotates blocks;
+\item \texttt{annotate\_catcher} annotates catchers;
+\item \texttt{annotate\_call} annotates functions calls;
+\item \texttt{annotate\_func} annotates functions.
 \end{itemize}
 
 This aims to encompass LRM 7.4.2. R\_VDPC.
 
-\section{Reading guide}
+\chapter{Reading guide}
 
-The definition of each \texttt{annotation\_<object>} function is given by a number of
-rules, which follow the possible shapes the \texttt{object} can have. For 
+The definition of each \texttt{annotation\_<label>} function is given by a number of
+rules, which follow the possible shapes the \texttt{label} can have. For 
 example, an expression can be a literal, or a binary operator, amongst other
 things. Each of those has its own evaluation rule: TypingRule.Lit in
 Section~\ref{sec:TypingRule.Lit}, Typing.Binop in
@@ -114,52 +115,26 @@ Section~\ref{sec:TypingRule.Binop} respectively.
 Each rule is presented using the following template:
 \begin{itemize}
 \item a Prose paragraph gives the rule in English, and corresponds as much as possible to the code of the reference implementation ASLRef given at \url{~/herdtools7/asllib};
-\item one or several Examples, which as much as possible are also given as regression tests in \url{~/herdtools7/asllib/tests/ASLTypingReference.t}
+\item one or several Example, which as much as possible are also given as regression tests in \url{~/herdtools7/asllib/tests/ASLTypingReference.t}
 \item a Code paragraph which gives a verbatim of the corresponding implementation in the type-checker of ASLRef \url{~/herdtools7/asllib/Typing.ml};
 \item Formal paragraphs which give formal definitions of the rule.
 \end{itemize}
 
-\chapter{Abstract Syntax}
-In order to type both ASLv0 and ASLv1, we map the concrete syntax of both versions into an abstract syntax, which is a form of labelled tree. The abstract syntax tree abstracts away many syntactic elements that are only needed to enable parsing.
-
-\newcommand\BNOT[0]{\texttt{"!"}}
-\newcommand\NEG[0]{\texttt{"-"}}
-\newcommand\NOT[0]{\texttt{"NOT"}}
-
-\newcommand\unop[0]{\textrm{unop}}
-\newcommand\binop[0]{\textrm{binop}}
-\newcommand\binopin[0]{\textrm{binop\_in}}
-\newcommand\binoppow[0]{\textrm{binop\_pow}}
-
-% AST-only nodes
-\newcommand\literal[0]{\texttt{literal}}
-\newcommand\expr[0]{\texttt{expr}}
-
-The following node types directly correspond to their respective ASL grammar variables (non-terminals):  $\unop$, $\binop$, $\binopin$, $\binoppow$
-
-\[
-%\unop = \BNOT \;|\; \NEG \;|\; \NOT
-\begin{array}{rcl}
-\literal &=& \texttt{<int\_lit>} \;|\; \texttt{<boolean\_lit>} \;|\; \texttt{<real\_lit>} \;|\; \texttt{<bitvector\_lit>} \;|\; \texttt{<string\_lit>}\\
-\expr &=& \texttt{E\_Literal}(literal) \;|\; \texttt{E\_Var}(\texttt{<identifier>})
-\end{array}
-\]
-
-TODO: what about \texttt{hex\_lit}?
-
 \chapter{Type Algebra}
+
+\newcommand{\rulespace}{\;\;}
 
 \section{TypingRule.BuiltinSingularType \label{sec:TypingRule.BuiltinSingularType}}
 
     \subsection{Prose}
     The \emph{builtin singular types} are:
     \begin{itemize}
-    \item  integer;
-    \item  real;
-    \item  string;
-    \item  boolean;
-    \item  bits;
-    \item  enumeration.
+    \item integer;
+    \item real;
+    \item string;
+    \item boolean;
+    \item bits;
+    \item enumeration.
     \end{itemize}
 
     \subsection{Example: TypingRule.BuiltinSingularTypes.asl}
@@ -171,8 +146,22 @@ Variables of  buitin types \texttt{integer}, \texttt{real}, \texttt{boolean}, \t
 The type \texttt{color} consists in two different constants \texttt{RED} and~\texttt{BLACK}.
 
     \subsection{Code}
+      \VerbatimInput[firstline=\BuiltinSingularBegin, lastline=\BuiltinSingularEnd]{../types.ml}
 
-    \subsection{Formally}
+
+\begin{formal}
+   \subsection{Formally}
+    \[
+      \begin{array}{rl}
+   & \texttt{is\_builtin\_singular}(\texttt{T\_Real}) \\
+   &\texttt{is\_builtin\_singular}(\texttt{T\_String}) \\
+   &\texttt{is\_builtin\_singular}(\TBool) \\
+   fl \in \textsf{bit\_field}^{*}  \vdash& \texttt{is\_builtin\_singular}(\texttt{T\_Bits}(fl)) \\
+   il \in \textsf{\identifier}^{*}  \vdash& \texttt{is\_builtin\_singular}(\texttt{T\_Enum}(il)) \\
+   c \in \textsf{int\_constraints}?  \vdash& \texttt{is\_builtin\_singular}(\texttt{T\_Int}(c)) \\
+      \end{array}
+    \]
+\end{formal}
 
     \subsection{Comments}
     This aims to encompass LRM Section 3.1 D\_PQCK and D\_NZWT.
@@ -208,8 +197,19 @@ similarity with record types and that the empty field list \texttt{\{\}} can be
 omitted in type declarations, as it is the case for \texttt{Not\_found}.
 
     \subsection{Code}
+      \VerbatimInput[firstline=\BuiltinAggregateBegin, lastline=\BuiltinAggregateEnd]{../types.ml}
 
+\begin{formal}
     \subsection{Formally}
+    \[
+      \begin{array}{rl}
+   tl \in \ty^{*}  \vdash& \texttt{is\_builtin\_aggregate}(\texttt{T\_Tuple}(tl)) \\
+   t \in \ty  \vdash& \texttt{is\_builtin\_aggregate}(\texttt{T\_Array}(t)) \\
+   fl \in \Field^{*}  \vdash& \texttt{is\_builtin\_aggregate}(\texttt{T\_Record}(fl)) \\
+   fl \in \Field^{*}  \vdash& \texttt{is\_builtin\_aggregate}(\texttt{T\_Exception}(fl)) \\
+      \end{array}
+    \]
+\end{formal}
 
     \subsection{Comments}
     This aims to encompass LRM Section 3.1 D\_PQCK and D\_KNBD.
@@ -226,16 +226,20 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Example}
 
     \subsection{Code}
+      \VerbatimInput[firstline=\BuiltinSingularOrAggregateBegin, lastline=\BuiltinSingularOrAggregateEnd]{../types.ml}
 
-    \subsection{Formally}
+\begin{formal}
+      \subsection{Formally}
+	   \[
+	   \begin{array}{rl}
+	   t \in \ty \texttt{is\_builtin\_singular}(t) \vdash& \texttt{is\_builtin}(t)\\
+	   t \in \ty \texttt{is\_builtin\_aggregate}(t) \vdash& \texttt{is\_builtin}(t)\\
+	   \end{array}
+	   \]
+\end{formal}
 
-     \[
-     \begin{array}{l}
-     t \in \texttt{ty} \;\;\;\; \texttt{is\_builtin\_singular}(t) \vdash \texttt{is\_builtin}(t)\\
-     t \in \texttt{ty} \;\;\;\; \texttt{is\_builtin\_aggregate}(t) \vdash \texttt{is\_builtin}(t)\\
-     \end{array}
-     \]
-   
+\isempty{\subsection{Comments}}
+	   
 \section{TypingRule.NamedType \label{sec:TypingRule.NamedType} } 
 
     \subsection{Prose}
@@ -244,8 +248,16 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Example}
 
     \subsection{Code}
+      \VerbatimInput[firstline=\NamedBegin, lastline=\NamedEnd]{../types.ml}
 
-    \subsection{Formally}
+\begin{formal}
+      \subsection{Formally}
+	    \[
+	      \begin{array}{rl}
+	      i \in \identifier \vdash& \texttt{is\_named}(\texttt{T\_Named}(i)\\
+	      \end{array}
+	    \]
+\end{formal}
 
     \subsection{Comments}
     This aims to encompass LRM Section 7.1.1 D\_VMZX.
@@ -258,8 +270,16 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Example}
 
     \subsection{Code}
+      \VerbatimInput[firstline=\AnonymousBegin, lastline=\AnonymousEnd]{../types.ml}
 
-    \subsection{Formally}
+\begin{formal}
+      \subsection{Formally}
+	    \[
+	      \begin{array}{rl}
+	      t \in \ty \rulespace \neg\texttt{is\_named}(t) \vdash& \texttt{is\_anonymous}(t)\\
+	      \end{array}
+	    \]
+\end{formal}
 
     \subsection{Comments}
     This aims to encompass LRM Section 7.1.1 D\_VMZX.
@@ -269,20 +289,31 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Prose}
     A type \texttt{t} is singular if one of the following applies:
     \begin{itemize}
-    \item  \texttt{t} is a builtin singular type;
-    \item  All of the following apply:
+    \item \texttt{t} is a builtin singular type;
+    \item All of the following apply:
       \begin{itemize}
-      \item  \texttt{t} is a named type;
-      \item  \texttt{t\_struct} is the structure of \texttt{t};
-      \item  \texttt{t\_struct} is a builtin singular.
+      \item \texttt{t} is a named type;
+      \item \texttt{t\_struct} is the structure of \texttt{t};
+      \item \texttt{t\_struct} is a builtin singular.
       \end{itemize} 
     \end{itemize}
 
     \subsection{Example}
 
     \subsection{Code}
+      \VerbatimInput[firstline=\SingularBegin, lastline=\SingularEnd]{../types.ml}
 
-    \subsection{Formally}
+\begin{formal}
+      \subsection{Formally}
+	    \[
+	      \begin{array}{rl}
+	      t \in \ty \rulespace \texttt{is\_builtin}(t) \vdash& \texttt{is\_singular}(t)\\
+	      t \in \ty \rulespace \texttt{is\_named}(t) \rulespace \texttt{is\_builtin\_aggregate}(\texttt{t\_struct}(t)) \vdash& \texttt{is\_singular}(t)\\
+	      \end{array}
+	    \]      
+
+%    TODO: define $\texttt{t\_struct}(t)$.  see TypingRule.Structure?
+\end{formal}
 
     \subsection{Comments}
     This aims to encompass LRM Section 3.1 R\_GVZK.
@@ -292,20 +323,29 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Prose}
     A type \texttt{t} is aggregate if one of the following applies:
     \begin{itemize}
-    \item  \texttt{t} is a builtin aggregate type;
-    \item  All of the following apply:
+    \item \texttt{t} is a builtin aggregate type;
+    \item All of the following apply:
       \begin{itemize}
-      \item  \texttt{t} is a named type;
-      \item  \texttt{t\_struct} is the structure of \texttt{t};
-      \item  \texttt{t\_struct} is a builtin aggregate. 
+      \item \texttt{t} is a named type;
+      \item \texttt{t\_struct} is the structure of \texttt{t};
+      \item \texttt{t\_struct} is a builtin aggregate. 
       \end{itemize}
     \end{itemize}
 
     \subsection{Example}
 
     \subsection{Code}
+      \VerbatimInput[firstline=\AggregateBegin, lastline=\AggregateEnd]{../types.ml}
 
-    \subsection{Formally}
+\begin{formal}
+      \subsection{Formally}
+	    \[
+	      \begin{array}{rl}
+	      t \in \ty \rulespace \texttt{is\_builtin\_aggregate}(t) \vdash& \texttt{is\_aggregate}(t)\\
+	      t \in \ty \rulespace \texttt{is\_named}(t) \rulespace \texttt{is\_builtin\_aggregate}(\texttt{t\_struct}(t)) \vdash& \texttt{is\_aggregate}(t)\\
+	      \end{array}
+	    \]
+\end{formal}
 
     \subsection{Comments}
     This aims to encompass LRM Section 3.1 R\_GVZK.
@@ -331,7 +371,7 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
       \item \texttt{t} is a record with fields \texttt{fields};
       \item there exists a non-primitive type in \texttt{fields};
       \end{itemize}
-    \item  All of the following apply:
+    \item All of the following apply:
       \begin{itemize}
       \item \texttt{t} is an exception with fields \texttt{fields};
       \item there exists a non-primitive type in \texttt{fields};
@@ -341,8 +381,12 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Example}
 
     \subsection{Code}
+      \VerbatimInput[firstline=\NonPrimitiveBegin, lastline=\NonPrimitiveEnd]{../types.ml}
 
+\begin{formal}
     \subsection{Formally}
+
+\end{formal}
 
     \subsection{Comments}
     This aims to encompass LRM Section 7.1.1 D\_GWXK.
@@ -355,23 +399,15 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Example}
 
     \subsection{Code}
+      \VerbatimInput[firstline=\PrimitiveBegin, lastline=\PrimitiveEnd]{../types.ml}
 
-    \subsection{Formally}
+\begin{formal}
+  \subsection{Formally}
+
+\end{formal}
 
     \subsection{Comments}
     This aims to encompass LRM Section 7.1.1 D\_GWXK.
-
-\section{TypingRule.Canonical}
-
-    \subsection{Prose}
-
-    \subsection{Example}
-
-    \subsection{Code}
-
-    \subsection{Formally}
-
-    \subsection{Comments}
 
 \section{TypingRule.Structure}
 
@@ -379,51 +415,51 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \texttt{ty} is a type and its structure is \texttt{t\_struct} and one of the following
     applies:
     \begin{itemize}
-    \item  All of the following apply:
+    \item All of the following apply:
       \begin{itemize}
-      \item  \texttt{ty} is a named type \texttt{x};
-      \item  One of the following applies:
+      \item \texttt{ty} is a named type \texttt{x};
+      \item One of the following applies:
         \begin{itemize}
-        \item  All of the following apply:
+        \item All of the following apply:
           \begin{itemize}
-          \item  \texttt{x} is not declared in the global environment; 
-          \item  an error "Undefined Identifier" is raised;
+          \item \texttt{x} is not declared in the global environment; 
+          \item an error ``\texttt{Undefined Identifier}'' is raised;
           \end{itemize}
-        \item  All of the following apply:
+        \item All of the following apply:
           \begin{itemize}
-          \item  \texttt{x} is declared in the global environment as some type \texttt{ty'};
-          \item  \texttt{t\_struct} is the structure of \texttt{ty'};
+          \item \texttt{x} is declared in the global environment as some type \texttt{ty'};
+          \item \texttt{t\_struct} is the structure of \texttt{ty'};
           \end{itemize}
        \end{itemize}
       \end{itemize}
-    \item  All of the following apply:
+    \item All of the following apply:
       \begin{itemize}
-      \item  \texttt{t} is a builtin singular type;
-      \item  \texttt{t\_struct} is \texttt{ty};
+      \item \texttt{t} is a builtin singular type;
+      \item \texttt{t\_struct} is \texttt{ty};
       \end{itemize}
-    \item  All of the following apply:
+    \item All of the following apply:
       \begin{itemize}
-      \item  \texttt{ty} is a tuple with \texttt{subtypes};
-      \item  \texttt{t\_struct} is a tuple with the structure of each element in \texttt{subtypes};
+      \item \texttt{ty} is a tuple with \texttt{subtypes};
+      \item \texttt{t\_struct} is a tuple with the structure of each element in \texttt{subtypes};
       \end{itemize}
-    \item  All of the following apply:
+    \item All of the following apply:
       \begin{itemize}
-      \item  \texttt{ty} is an array with \texttt{t};
-      \item  \texttt{t\_struct} is an array with the structure of \texttt{t};
+      \item \texttt{ty} is an array with \texttt{t};
+      \item \texttt{t\_struct} is an array with the structure of \texttt{t};
       \end{itemize}
-    \item  All of the following apply:
+    \item All of the following apply:
       \begin{itemize}
-      \item  \texttt{ty} is a record with \texttt{fields};
-      \item  \texttt{t\_struct} is a record with ;
+      \item \texttt{ty} is a record with \texttt{fields};
+      \item \texttt{t\_struct} is a record with ;
       \end{itemize}
-    \item  All of the following apply:
+    \item All of the following apply:
       \begin{itemize}
-      \item  \texttt{ty} is an exception with \texttt{fields};
-      \item  \texttt{t\_struct} is a record with ;
+      \item \texttt{ty} is an exception with \texttt{fields};
+      \item \texttt{t\_struct} is a record with ;
       \end{itemize}
     \end{itemize}
       
-    \subsection{Examples}
+    \subsection{Example}
     In this example:
     \texttt{type T1 of integer;} is the named type \texttt{T1}
 whose structure is \texttt{integer}.
@@ -448,22 +484,24 @@ whose structure is \texttt{integer}.
 \texttt{(integer, T1)} whose structure is \texttt{(integer, integer)}.
 
     \subsection{Code}
+      \VerbatimInput[firstline=\StructureBegin, lastline=\StructureEnd]{../types.ml}
 
-    \subsection{Formally}
-
+\begin{emptyformal}
+      \subsection{Formally}
+\end{emptyformal}
     \subsection{Comments}
     The structure of a type is the primitive type it is equivalent to such that
     it can hold the same values. 
 
     This aims to encompass LRM Section 7.1.2 D\_FXQV.
 
-\section{Domain of Values for Types}
+\section{TypingRule.Domain}
 
-\subsection{Prose}
+  \subsection{Prose}
   The domain of a type is the set of values which storage elements of that type
 may hold. 
 
-\subsection{Examples}
+  \subsection{Example}
   The domain of \texttt{integer} is the infinite set of all integers.
 
   The domain of \texttt{bits(1)} is the set \texttt{{‘1’, ‘0’}}.
@@ -473,8 +511,11 @@ may hold.
   The domain of \texttt{bits({2,16})} is the set containing all two bit and all sixteen bit values.
 
   \subsection{Code}
+      \VerbatimInput[firstline=\DomainBegin, lastline=\DomainEnd]{../types.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+      \subsection{Formally}
+\end{emptyformal}
 
   \subsection{Comments}
   This aims to encompass LRM Section 7.1.3 D\_BMGM.
@@ -482,37 +523,61 @@ may hold.
 \section{Constrained Types}
 
 \subsection{Prose}
-  A constrained type is a type whose value is limited to a finite
-  set. 
+  \begin{itemize}
+  \item A constrained type is a type whose definition depends on an expression, e.g. certain integers and bitvectors. 
+  \item A type which is not constrained is unconstrained.
+  \item A constrained type with a non-empty constraint is well-constrained.
+  \item An under-constrained integer type is an implicit type of a subprogram parameter.
+  \end{itemize}
 
-  A type which is not constrained is unconstrained.
-
-  A constrained type with a non-empty constraint is well-constrained.
-
-\subsection{Examples}
-  Bitvector storage element’s widths are constrained integers.  
+  \subsection{Example}
+    Bitvector storage element’s widths are constrained integers.  
 
   \subsection{Code}
+    \VerbatimInput[firstline=\ConstrainedBegin, lastline=\ConstrainedEnd]{../AST.mli}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
 \subsection{Comments}
-  This aims to encompass LRM Section 3.4.1 D\_ZTPP, R\_WJYH, R\_HJPN, R\_CZTX, R\_TPHR
+    This aims to encompass LRM Section 3.4.1 D\_ZTPP, R\_WJYH, R\_HJPN, R\_CZTX, R\_TPHR
 
-\chapter{Type satisfaction and related notions}
+\chapter{Type Satisfaction and Related Notions}
 
 \section{TypingRule.Subtype} 
 
-\subsection{Prose}
-  The subtype relation is a partial order.
+  \subsection{Prose}
+    The subtype relation is a partial order.
 
-\subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\SubtypeBegin, lastline=\SubtypeEnd]{../types.ml}
+  
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Formally}
+\newcommand\super[0]{\textit{super}}
+	  \newcommand\subtype[0]{\sqsubseteq}
 
-\subsection{Comments}
+	  To model subtyping, we define the function 
+	  \[
+	  \super : \identifier \rightarrow \identifier \cup {\bot} \enspace,
+	  \]
+	  which maps an identifier to the name of its super-type or $\bot$ if it does not have one.
+
+	  We define the subtyping relation between two named types in a given environment as follows:
+	  \[
+	  \begin{array}{rl}
+	  a, b \in \identifier & (G,L) \vdash \texttt{T\_Named(a)} \subtype \texttt{T\_Named(a)} \\  
+	  a, b \in \identifier \rulespace G.\super(a) = b  & 
+	  (G,L) \vdash \texttt{T\_Named(a)} \subtype \texttt{T\_Named(b)}
+	  \end{array}
+	  \]
+	  
+  \subsection{Comments}
   Since the subtype relation is a partial order, it is reflexive, viz, 
   every type is also a subtype of itself.
 
@@ -537,13 +602,15 @@ may hold.
   \subsection{Prose}
   \texttt{T} is a supertype of \texttt{S} if and only if \texttt{S} is a subtype of \texttt{T}.
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
 
+\begin{emptyformal}
   \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
   Since the subtype relation is a partial order, it is reflexive. Therefore the
   supertype relation also is reflexive, viz, every type is also a supertype of
   itself.
@@ -555,54 +622,54 @@ may hold.
 \subsection{Prose}
   \texttt{T} structural-subtype-satisfies \texttt{S} if one of the following applies:
   \begin{itemize}
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of an integer type;
     \item \texttt{T} has the structure of an integer type.
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of a real type;
     \item \texttt{T} has the structure of a real type.
     \end{itemize} 
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of a string type;
     \item \texttt{T} has the structure of a string type.
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of a boolean type;
     \item \texttt{T} has the structure of a boolean type.
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of an enumeration type; 
     \item \texttt{T} has the structure of an enumeration type;
     \item \texttt{S} and \texttt{T} have the same enumeration literals.
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of a bitvector type with determined width \texttt{w};
-    \item  One of the following applies:
+    \item One of the following applies:
       \begin{itemize}
       \item \texttt{T} has the structure of a bitvector type of determined width \texttt{w};
       \item \texttt{T} has the structure of a bitvector type of undetermined width.
       \end{itemize}
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of a bitvector type with undetermined width;
     \item \texttt{T} has the structure of a bitvector type. 
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of a bitvector type with bitfields \texttt{bitfields} and width \texttt{width};
     \item \texttt{T} has the structure of a bitvector type with width \texttt{width};
@@ -614,14 +681,14 @@ may hold.
       \end{itemize}
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of an array type with elements of type \texttt{E};
     \item \texttt{T} has the structure of an array type with elements of type \texttt{E};
     \item \texttt{T} has the same element indices as \texttt{S}.
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of a tuple type;
     \item \texttt{T} has the structure of a tuple type;
@@ -630,7 +697,7 @@ may hold.
       type-satisfies \texttt{e}.
     \end{itemize}  
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{S} has the structure of a record type;
     \item \texttt{T} has the structure of a record type;
@@ -647,12 +714,14 @@ may hold.
     \end{itemize}
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\StructuralSubtypeSatisfactionBegin, lastline=\StructuralSubtypeSatisfactionEnd]{../types.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
 \subsection{Comments}
   This aims to encompass LRM Section 7.3.1. D\_TRVR.
@@ -674,17 +743,19 @@ may hold.
       \item \texttt{S} has the structure of a bitvector type with undetermined width;
       \item \texttt{T} has the structure of a bitvector type with undetermined width;
       \end{itemize}
-   \item  the domain of \texttt{T} is a subset of the domain of \texttt{S}.
+   \item the domain of \texttt{T} is a subset of the domain of \texttt{S}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\DomainSubtypeSatisfactionBegin, lastline=\DomainSubtypeSatisfactionEnd]{../types.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
     This aims to encompass LRM Section 7.3.1. D\_TRVR.
 
 \section{TypingRule.SubtypeSatisfaction}
@@ -692,18 +763,20 @@ may hold.
   \subsection{Prose}
     \texttt{T} subtype-satisfies \texttt{S} if all of the following apply:
     \begin{itemize}
-    \item  \texttt{T} structural-subtype-satisfies \texttt{S};
-    \item  \texttt{T} domain-subtype-satisfies \texttt{S}.
+    \item \texttt{T} structural-subtype-satisfies \texttt{S};
+    \item \texttt{T} domain-subtype-satisfies \texttt{S}.
     \end{itemize} 
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\SubtypeSatisfactionBegin, lastline=\SubtypeSatisfactionEnd]{../types.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
     This aims to encompass LRM Section 7.3.1. D\_TRVR.
 
 \section{TypingRule.TypeSatisfaction \label{sec:TypingRule.TypeSatisfaction}}
@@ -713,16 +786,16 @@ may hold.
 \texttt{T} type-satisfies \texttt{S} if one of the following applies:
  \begin{itemize}
  \item \texttt{T} is a subtype of \texttt{S};
- \item  All of the following apply:
+ \item All of the following apply:
     \begin{itemize}
     \item \texttt{T} subtype-satisfies \texttt{S};
-    \item  One of the following applies:
+    \item One of the following applies:
       \begin{itemize}
       \item \texttt{S} is an anonymous type;
       \item \texttt{T} is an anonymous type;
       \end{itemize}
     \end{itemize}
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
     \item \texttt{T} is an anonymous bitvector with no bitfields;
     \item \texttt{S} has the structure of a bitvector (with or without bitfields);
@@ -752,7 +825,9 @@ may hold.
   \subsection{Code}
     \VerbatimInput[firstline=\TypeSatisfactionBegin, lastline=\TypeSatisfactionEnd]{../types.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
 \subsection{Comments}
   Since the subtype relation is a partial order, it is reflexive. Therefore
@@ -761,28 +836,52 @@ may hold.
   
   This aims to encompass LRM Section 7.3.2 R\_FMXK and I\_NLFD.
 
-\section{TypingRule.TypeClash}
+\section{TypingRule.CanAssignTo \label{sec:TypingRule.CanAssignTo}}
 
-\subsection{Prose}
-  \texttt{T} type-clashes with \texttt{S} if one of the following applies:
+  \subsubsection{Prose}
+  \texttt{S} can be assigned to \texttt{T} if and only if all of the following apply:
   \begin{itemize}
-  \item  \texttt{S} and \texttt{T} both have the structure of integers;
-  \item  \texttt{S} and \texttt{T} both have the structure of reals;
-  \item  \texttt{S} and \texttt{T} both have the structure of strings;
-  \item  \texttt{S} and \texttt{T} both have the structure of enumeration types with the same enumeration literals;
-  \item  \texttt{S} and \texttt{T} both have the structure of bitvectors;
-  \item  \texttt{S} and \texttt{T} both have the structure of arrays whose element types type-clash;
-  \item  \texttt{S} and \texttt{T} both have the structure of tuples of the same length whose
-    corresponding element types type-clash;
-  \item  \texttt{S} is a subtype of \texttt{T};
-  \item  \texttt{S} is a supertype of \texttt{T}.
-  \end{itemize}
-
-\subsection{Examples}
+  \item neither \texttt{S} nor \texttt{T} has the structure of the under-constrained integer type;
+  \item \texttt{T} type-satisfies \texttt{S}.
+  \end{itemize} 
+ 
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\CanAssignToBegin, lastline=\CanAssignToEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
+
+\subsection{Comments}
+  This aims to encompass LRM R\_GNTS and R\_LXQZ.
+
+\section{TypingRule.TypeClash}
+
+  \subsection{Prose}
+  \texttt{T} type-clashes with \texttt{S} if one of the following applies:
+  \begin{itemize}
+  \item \texttt{S} and \texttt{T} both have the structure of integers;
+  \item \texttt{S} and \texttt{T} both have the structure of reals;
+  \item \texttt{S} and \texttt{T} both have the structure of strings;
+  \item \texttt{S} and \texttt{T} both have the structure of enumeration types with the same enumeration literals;
+  \item \texttt{S} and \texttt{T} both have the structure of bitvectors;
+  \item \texttt{S} and \texttt{T} both have the structure of arrays whose element types type-clash;
+  \item \texttt{S} and \texttt{T} both have the structure of tuples of the same length whose
+    corresponding element types type-clash;
+  \item \texttt{S} is a subtype of \texttt{T};
+  \item \texttt{S} is a supertype of \texttt{T}.
+  \end{itemize}
+
+  \subsection{Example}
+
+  \subsection{Code}
+    \VerbatimInput[firstline=\TypeClashBegin, lastline=\TypeClashEnd]{../types.ml}
+
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
 \subsection{Comments}
   Note that if \texttt{T} subtype-satisfies \texttt{S} then \texttt{T} and \texttt{S} type-clash, but not the other
@@ -906,12 +1005,12 @@ may hold.
         \item \texttt{ty} is \texttt{S}.
         \end{itemize}
 
-      \item  All of the following apply:
+      \item All of the following apply:
         \begin{itemize}
-        \item  S is an anonymous type;
-        \item  T is a named type;
-        \item  T has the structure of an unconstrained integer type;
-        \item  ty is T.
+        \item S is an anonymous type;
+        \item T is a named type;
+        \item T has the structure of an unconstrained integer type;
+        \item ty is T.
         \end{itemize}
 
       \item All of the following apply:
@@ -931,14 +1030,16 @@ may hold.
   \item \texttt{ty} is undefined.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\LowestCommonAncestorBegin, lastline=\LowestCommonAncestorEnd]{../types.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
     This aims to encompass LRM Section 7.6.1. R\_YZHM.
 
 \section{TypingRule.CheckUnop \label{sec:TypingRule.CheckUnop}}
@@ -950,52 +1051,54 @@ may hold.
   \texttt{t} is the result of checking compatibility of a unary operator \texttt{op} with
   type \texttt{t1} and one of the following applies:
   \begin{itemize}
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
-    \item  \texttt{op} is \texttt{BNOT};
-    \item  \texttt{t1} type-satisfies \texttt{boolean};
-    \item  \texttt{t} is \texttt{boolean};
+    \item \texttt{op} is \texttt{BNOT};
+    \item \texttt{t1} type-satisfies \texttt{boolean};
+    \item \texttt{t} is \texttt{boolean};
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
-    \item  \texttt{op} is \texttt{NEG};
-    \item  One of the following applies:
+    \item \texttt{op} is \texttt{NEG};
+    \item One of the following applies:
       \begin{itemize}
-      \item  \texttt{t1} type-satisfies \texttt{integer}; 
-      \item  \texttt{t1} type-satisfies \texttt{real};
+      \item \texttt{t1} type-satisfies \texttt{integer}; 
+      \item \texttt{t1} type-satisfies \texttt{real};
       \end{itemize}
-     \item  One of the following applies:
+     \item One of the following applies:
        \begin{itemize}
-       \item  All of the following apply:
+       \item All of the following apply:
          \begin{itemize}
-         \item  \texttt{t1} has the structure of an unconstrained integer;
-         \item  \texttt{t} is an unconstrained integer;
+         \item \texttt{t1} has the structure of an unconstrained integer;
+         \item \texttt{t} is an unconstrained integer;
          \end{itemize}
-       \item  All of the following apply:
+       \item All of the following apply:
          \begin{itemize}
-         \item  \texttt{t1} has the structure of a constrained integer;
-         \item  \texttt{t} is a constrained integer whose constraint is ;
+         \item \texttt{t1} has the structure of a constrained integer;
+         \item \texttt{t} is a constrained integer whose constraint is ;
          \end{itemize}
        \end{itemize}
     \end{itemize}  
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
-    \item  \texttt{op} is \texttt{NOT};
-    \item  \texttt{t1} has the structure of a bitvector;
-    \item  \texttt{t} is \texttt{t1}.
+    \item \texttt{op} is \texttt{NOT};
+    \item \texttt{t1} has the structure of a bitvector;
+    \item \texttt{t} is \texttt{t1}.
     \end{itemize}
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\CheckUnopBegin, lastline=\CheckUnopEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.CheckBinop \label{sec:TypingRule.CheckBinop}}
 
@@ -1006,166 +1109,173 @@ may hold.
   \texttt{t} is the result of checking compatibility of a binary operator \texttt{op} with
   types \texttt{t1} and \texttt{t2} and one of the following applies:
 \begin{itemize}
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
-    \item  \texttt{op} is \texttt{AND}, \texttt{OR}, \texttt{EQ} or \texttt{IMPL}; 
-    \item  \texttt{t1} type-satisfies \texttt{boolean};
-    \item  \texttt{t2} type-satisfies \texttt{boolean};
-    \item  \texttt{t} is \texttt{boolean}.
+    \item \texttt{op} is \texttt{AND}, \texttt{OR}, \texttt{EQ} or \texttt{IMPL}; 
+    \item \texttt{t1} type-satisfies \texttt{boolean};
+    \item \texttt{t2} type-satisfies \texttt{boolean};
+    \item \texttt{t} is \texttt{boolean}.
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
-    \item  \texttt{op} is \texttt{AND}, \texttt{OR}, or \texttt{EOR};
-    \item  \texttt{t1} has the structure of a bitvector;
-    \item  \texttt{t2} has the structure of a bitvector;
-    \item  \texttt{t1} and \texttt{t2} have the same bitvector width \texttt{w};
-    \item  \texttt{t} is the bitvector type of width \texttt{w}.
+    \item \texttt{op} is \texttt{AND}, \texttt{OR}, or \texttt{EOR};
+    \item \texttt{t1} has the structure of a bitvector;
+    \item \texttt{t2} has the structure of a bitvector;
+    \item \texttt{t1} and \texttt{t2} have the same bitvector width \texttt{w};
+    \item \texttt{t} is the bitvector type of width \texttt{w}.
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
-    \item  \texttt{op} is \texttt{PLUS} or \texttt{MINUS};
-    \item  \texttt{t1} has the structure of a bitvector;
-    \item  \texttt{t2} has the structure of a bitvector;
-    \item  \texttt{t1} and \texttt{t2} have the same bitvector width \texttt{w};
-    \item  \texttt{t2} type-satisfies \texttt{integer};
-    \item  \texttt{t} is the bitvector type of width \texttt{w}.
+    \item \texttt{op} is \texttt{PLUS} or \texttt{MINUS};
+    \item \texttt{t1} has the structure of a bitvector;
+    \item \texttt{t2} has the structure of a bitvector;
+    \item \texttt{t1} and \texttt{t2} have the same bitvector width \texttt{w};
+    \item \texttt{t2} type-satisfies \texttt{integer};
+    \item \texttt{t} is the bitvector type of width \texttt{w}.
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
-    \item  \texttt{op} is \texttt{EQ\_OP} or \texttt{NEQ};
-    \item  One of the following applies:
+    \item \texttt{op} is \texttt{EQ\_OP} or \texttt{NEQ};
+    \item One of the following applies:
       \begin{itemize}
-      \item  \texttt{t1} is equal to \texttt{t2};
-      \item  All of the following apply:
+      \item \texttt{t1} is equal to \texttt{t2};
+      \item All of the following apply:
         \begin{itemize}
-        \item  \texttt{t1} type-satisfies \texttt{integer};
-        \item  \texttt{t2} type-satisfies \texttt{integer}; 
+        \item \texttt{t1} type-satisfies \texttt{integer};
+        \item \texttt{t2} type-satisfies \texttt{integer}; 
         \end{itemize}
-      \item  All of the following apply:
+      \item All of the following apply:
         \begin{itemize}
-        \item  \texttt{t1} has the structure of a bitvector;
-        \item  \texttt{t2} has the structure of a bitvector;
-        \item  \texttt{t1} and \texttt{t2} have the same bitvector width;
+        \item \texttt{t1} has the structure of a bitvector;
+        \item \texttt{t2} has the structure of a bitvector;
+        \item \texttt{t1} and \texttt{t2} have the same bitvector width;
         \end{itemize}
-      \item  All of the following apply:
+      \item All of the following apply:
         \begin{itemize}
-        \item  \texttt{t1} type-satisfies \texttt{boolean};
-        \item  \texttt{t2} type-satisfies \texttt{boolean};
+        \item \texttt{t1} type-satisfies \texttt{boolean};
+        \item \texttt{t2} type-satisfies \texttt{boolean};
         \end{itemize}
-      \item  All of the following apply:
+      \item All of the following apply:
         \begin{itemize}
-        \item  \texttt{t1} enumerates local declarations \texttt{li1}; 
-        \item  \texttt{t2} enumerates local declarations \texttt{li2};
-        \item  \texttt{li1} equals \texttt{li2};
+        \item \texttt{t1} enumerates local declarations \texttt{li1}; 
+        \item \texttt{t2} enumerates local declarations \texttt{li2};
+        \item \texttt{li1} equals \texttt{li2};
         \end{itemize}
       \end{itemize}
-    \item  \texttt{t} is \texttt{boolean}.
+    \item \texttt{t} is \texttt{boolean}.
     \end{itemize}
    
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
-    \item  \texttt{op} is \texttt{LEQ}, \texttt{GEQ}, \texttt{GT} or \texttt{LT};
-    \item  One of the following applies:
+    \item \texttt{op} is \texttt{LEQ}, \texttt{GEQ}, \texttt{GT} or \texttt{LT};
+    \item One of the following applies:
       \begin{itemize}
-      \item  All of the following apply:
+      \item All of the following apply:
         \begin{itemize}
-        \item  \texttt{t1} type-satisfies \texttt{integer};
-        \item  \texttt{t2} type-satisfies \texttt{integer};
+        \item \texttt{t1} type-satisfies \texttt{integer};
+        \item \texttt{t2} type-satisfies \texttt{integer};
         \end{itemize}
-      \item  All of the following apply:
+      \item All of the following apply:
         \begin{itemize}
-        \item  \texttt{t1} type-satisfies \texttt{real};
-        \item  \texttt{t2} type-satisfies \texttt{real};
+        \item \texttt{t1} type-satisfies \texttt{real};
+        \item \texttt{t2} type-satisfies \texttt{real};
         \end{itemize}
       \end{itemize}
-    \item  \texttt{t} is boolean.
+    \item \texttt{t} is boolean.
     \end{itemize}
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
-    \item  \texttt{op} is \texttt{MUL}, \texttt{DIV}, \texttt{DIVRM}, \texttt{MOD}, \texttt{SHL}, \texttt{SHR}, \texttt{POW}, \texttt{PLUS} or \texttt{MINUS};
-    \item  \texttt{struct1} is the structure of \texttt{t1};
-    \item  \texttt{struct2} is the structure of \texttt{t2};
-    \item  One of the following applies:
+    \item \texttt{op} is \texttt{MUL}, \texttt{DIV}, \texttt{DIVRM}, \texttt{MOD}, \texttt{SHL}, \texttt{SHR}, \texttt{POW}, \texttt{PLUS} or \texttt{MINUS};
+    \item \texttt{struct1} is the structure of \texttt{t1};
+    \item \texttt{struct2} is the structure of \texttt{t2};
+    \item One of the following applies:
       \begin{itemize}
-      \item  All of the following apply:
+      \item All of the following apply:
         \begin{itemize}
-        \item  \texttt{t1} has the structure of an unconstrained integer;
-        \item  \texttt{t2} has the structure of an integer;
-        \item  \texttt{t} is an unconstrained integer;
+        \item \texttt{t1} has the structure of an unconstrained integer;
+        \item \texttt{t2} has the structure of an integer;
+        \item \texttt{t} is an unconstrained integer;
         \end{itemize}
-      \item  All of the following apply:
+      \item All of the following apply:
         \begin{itemize}
-        \item  \texttt{t1} has the structure of an integer;
-        \item  \texttt{t2} has the structure of an unconstrained integer;
-        \item  \texttt{t} is an unconstrained integer;
+        \item \texttt{t1} has the structure of an integer;
+        \item \texttt{t2} has the structure of an unconstrained integer;
+        \item \texttt{t} is an unconstrained integer;
         \end{itemize}
-      \item  One of the following applies:
+      \item One of the following applies:
        \begin{itemize} 
-       \item  All of the following apply:
+       \item All of the following apply:
           \begin{itemize}
-          \item  \texttt{t1} has the structure of an under-constrained integer;
-          \item  \texttt{t2} has the structure of a constrained integer;
-          \item  \texttt{t} is an under-constrained integer;
+          \item \texttt{t1} has the structure of an under-constrained integer;
+          \item \texttt{t2} has the structure of a constrained integer;
+          \item \texttt{t} is an under-constrained integer;
           \end{itemize}
-        \item  All of the following apply:
+        \item All of the following apply:
           \begin{itemize}
-          \item  \texttt{t1} has the structure of a constrained integer;
-          \item  \texttt{t2} has the structure of an under-constrained integer;
-          \item  \texttt{t} is an under-constrained integer;
+          \item \texttt{t1} has the structure of a constrained integer;
+          \item \texttt{t2} has the structure of an under-constrained integer;
+          \item \texttt{t} is an under-constrained integer;
           \end{itemize}
        \end{itemize}
-      \item  One of the following applies:
+      \item One of the following applies:
          \begin{itemize}
-         \item  All of the following apply:
+         \item All of the following apply:
            \begin{itemize}
-           \item  \texttt{t1} has the structure of a well-constrained integer;
-           \item  \texttt{t2} has the structure of a well-constrained integer;
-	   \item  \texttt{t} is a constrained integer whose constraint is calculated by
+           \item \texttt{t1} has the structure of a well-constrained integer;
+           \item \texttt{t2} has the structure of a well-constrained integer;
+	   \item \texttt{t} is a constrained integer whose constraint is calculated by
 	     applying the operation to all possible value pairs;
            \end{itemize}
-         \item  All of the following apply:
+         \item All of the following apply:
            \begin{itemize}
-           \item  \texttt{t1} has the structure of a well-constrained integer;
-           \item  \texttt{t2} has the structure of an well-constrained integer;
-	   \item  \texttt{t} is a constrained integer whose constraint is calculated by
+           \item \texttt{t1} has the structure of a well-constrained integer;
+           \item \texttt{t2} has the structure of an well-constrained integer;
+	   \item \texttt{t} is a constrained integer whose constraint is calculated by
 	     applying the operation to all possible value pairs;
            \end{itemize}
          \end{itemize}
-      \item  All of the following apply:
+      \item All of the following apply:
         \begin{itemize}
-        \item  \texttt{t1} has the structure of \texttt{real};
-        \item  \texttt{t2} has the structure of \texttt{real};
-        \item  \texttt{op} is \texttt{PLUS}, \texttt{MINUS} or \texttt{MUL};
-        \item  \texttt{t} is \texttt{real};
+        \item \texttt{t1} has the structure of \texttt{real};
+        \item \texttt{t2} has the structure of \texttt{real};
+        \item \texttt{op} is \texttt{PLUS}, \texttt{MINUS} or \texttt{MUL};
+        \item \texttt{t} is \texttt{real};
         \end{itemize}
-     \item  All of the following apply:
+     \item All of the following apply:
        \begin{itemize}
-       \item  \texttt{t1} has the structure of \texttt{real};
-       \item  \texttt{t2} has the structure of \texttt{integer};
-       \item  \texttt{op} is \texttt{POW};
-       \item  \texttt{t} is \texttt{real};
+       \item \texttt{t1} has the structure of \texttt{real};
+       \item \texttt{t2} has the structure of \texttt{integer};
+       \item \texttt{op} is \texttt{POW};
+       \item \texttt{t} is \texttt{real};
        \end{itemize}
      \end{itemize}
    \end{itemize} 
 
-  \item  All of the following apply:
+  \item All of the following apply:
     \begin{itemize}
-    \item  \texttt{op} is \texttt{RDIV};
-    \item  \texttt{t1} type-satisfies \texttt{real};
-    \item  \texttt{t} is \texttt{real}.
+    \item \texttt{op} is \texttt{RDIV};
+    \item \texttt{t1} type-satisfies \texttt{real};
+    \item \texttt{t} is \texttt{real}.
     \end{itemize}
 \end{itemize}
 
-  \subsection{Examples} 
+  \subsection{Example} 
 
   \subsection{Code}
     \VerbatimInput[firstline=\CheckUnopBegin, lastline=\CheckUnopEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{formal}
+    \subsection{Formally}
+  \[
+  \inferrule
+  {\textit{op} \in \texttt{binop\_boolean} \\ (G,L) \vdash e_1 : \TBool \\ (G,L) \vdash e_2 : \TBool}
+  {(G,L) \vdash \texttt{E\_Binop}(\textit{op}, e_1, e_2) : \TBool1}
+  \]
+\end{formal}
 
 \subsection{Comments}
   This aims to encompass LRM Section 7.5.3 R\_BKNT, Section 7.5.5 R\_ZYWY, R\_BZKW,
@@ -1176,7 +1286,7 @@ may hold.
 \texttt{annotate\_expr} specifies how to annotate an expression \texttt{e} in
 an environment \texttt{env}.  Formally, the result of annotating the expression
 \texttt{e} in \texttt{env} is \texttt{t,new\_env} where \texttt{t} is a type and
-\texttt{new\_env} is an environment, and one of the following applies:
+\texttt{new\_env} is an environment, or an error, and one of the following applies:
 \begin{itemize}
 \item TypingRule.Lit (see Section~\ref{sec:TypingRule.Lit});
 \item TypingRule.ELocalVarConstant (see Section~\ref{sec:TypingRule.ELocalVarConstant})
@@ -1211,26 +1321,30 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 \section{TypingRule.Lit \label{sec:TypingRule.Lit}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} is a Literal \texttt{v};
   \item \texttt{t} is the type of \texttt{v};
   \item \texttt{new\_env} is \texttt{e}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
   \VerbatimInput[firstline=\LitBegin, lastline=\LitEnd]{../Typing.ml}  
  
+\begin{emptyformal}
   \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.ELocalVarConstant \label{sec:TypingRule.ELocalVarConstant}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:  
   \begin{itemize}
   \item \texttt{e} denotes a variable \texttt{x};
   \item \texttt{x} is bound to a local constant~\texttt{v} of type \texttt{ty} in the local environment given by \texttt{env};
@@ -1238,19 +1352,22 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
   \item \texttt{new\_env} is the Literal \texttt{v}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
   \VerbatimInput[firstline=\ELocalVarConstantBegin, lastline=\ELocalVarConstantEnd]{../Typing.ml}  
 
+\begin{emptyformal}
   \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.ELocalVar \label{sec:TypingRule.ELocalVar}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply: 
   \begin{itemize}
   \item \texttt{e} denotes a variable \texttt{x};
   \item \texttt{x} is not bound to a local constant; 
@@ -1259,19 +1376,22 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
   \item \texttt{new\_env} is \texttt{e}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
   \VerbatimInput[firstline=\ELocalVarBegin, lastline=\ELocalVarEnd]{../Typing.ml}  
 
+\begin{emptyformal}
   \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.EGlobalVarConstantVal \label{sec:TypingRule.EGlobalVarConstant}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply: 
   \begin{itemize}
   \item \texttt{e} denotes a variable \texttt{x};
   \item \texttt{x} is bound to a global constant~\texttt{v} of type \texttt{ty} in the global environment given by \texttt{env};
@@ -1279,19 +1399,22 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
   \item \texttt{new\_env} is the Literal \texttt{v}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
   \VerbatimInput[firstline=\EGlobalVarConstantBegin, lastline=\EGlobalVarConstantEnd]{../Typing.ml}
 
+\begin{emptyformal}
   \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.EGlobalVar \label{sec:TypingRule.EGlobalVar}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes a variable \texttt{x};
   \item \texttt{x} is not bound to a global constant;
@@ -1300,78 +1423,91 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
   \item \texttt{new\_env} is \texttt{e}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
   \VerbatimInput[firstline=\EGlobalVarBegin, lastline=\EGlobalVarEnd]{../Typing.ml}
 
+\begin{emptyformal}
   \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.EUndefIdent \label{sec:TypingRule.EUndefIdent}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
-  \item  \texttt{e} is a variable \texttt{x};
-  \item  \texttt{x} is not bound in \texttt{env};
-  \item  an error "Undefined Identifier" is raised.
+  \item \texttt{e} is a variable \texttt{x};
+  \item \texttt{x} is not bound in \texttt{env};
+  \item an error ``\texttt{Undefined Identifier}'' is raised.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+  \VerbatimInput[firstline=\EUndefIdentBegin, lastline=\EUndefIdentEnd]{../Typing.ml}
 
+\begin{emptyformal}
   \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.Binop \label{sec:TypingRule.Binop}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
-  \item  \texttt{e} denotes a binary operation \texttt{op} over two expressions \texttt{e1} and \texttt{e2};
-  \item  \texttt{t1,e1'} is the result of annotating \texttt{e1} in \texttt{env};
-  \item  \texttt{t2,e2'} is the result of annotating \texttt{e2} in \texttt{env};
-  \item  \texttt{t} is the result of checking compatibility of \texttt{op} with \texttt{t1} and \texttt{t2} as per Section~\ref{sec:TypingRule.CheckBinop};
-  \item  \texttt{new\_env} denotes \texttt{op} over \texttt{e1'} and \texttt{e2'}.
+  \item \texttt{e} denotes a binary operation \texttt{op} over two expressions \texttt{e1} and \texttt{e2};
+  \item \texttt{t1,e1'} is the result of annotating \texttt{e1} in \texttt{env};
+  \item \texttt{t2,e2'} is the result of annotating \texttt{e2} in \texttt{env};
+  \item \texttt{t} is the result of checking compatibility of \texttt{op} with \texttt{t1} and \texttt{t2} as per Section~\ref{sec:TypingRule.CheckBinop};
+  \item \texttt{new\_env} denotes \texttt{op} over \texttt{e1'} and \texttt{e2'}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\BinopBegin, lastline=\BinopEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.Unop \label{sec:TypingRule.Unop}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
-  \item  \texttt{e} denotes a unary operation \texttt{op} over an expression \texttt{e'};
-  \item  \texttt{t'',e''} is the result of annotating \texttt{e'} in \texttt{env};
-  \item  \texttt{t} is the result of checking compatibility of \texttt{op} with \texttt{t''} as per Section~\ref{sec:TypingRule.CheckUnop};
-  \item  \texttt{new\_env} denotes \texttt{op} over \texttt{e''}.
+  \item \texttt{e} denotes a unary operation \texttt{op} over an expression \texttt{e'};
+  \item \texttt{t'',e''} is the result of annotating \texttt{e'} in \texttt{env};
+  \item \texttt{t} is the result of checking compatibility of \texttt{op} with \texttt{t''} as per Section~\ref{sec:TypingRule.CheckUnop};
+  \item \texttt{new\_env} denotes \texttt{op} over \texttt{e''}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\UnopBegin, lastline=\UnopEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.ECond \label{sec:TypingRule.ECond}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes a conditional expression with condition \texttt{e\_cond} with two options \texttt{e\_true} and \texttt{e\_false};
   \item \texttt{t\_cond, e'\_cond} is the result of annotating \texttt{e\_cond} in \texttt{env};
@@ -1392,38 +1528,43 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
     \end{itemize}
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\ECondBegin, lastline=\ECondEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
   This aims to encompass LRM Section 7.6 R\_XZVT.
 
 \section{TypingRule.ESlice \label{sec:TypingRule.ESlice}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the slicing of expression \texttt{e'} by the slices \texttt{slices};
   \item \texttt{t\_e',e'} is the result of annotating the expression \texttt{e'} in \texttt{env};
-  \item \texttt{t\_e'} has the structure of an integer or a bitvector;
+  \item an error ``\texttt{Conflicting Types}'' is raised or \texttt{t\_e'} has the structure of an integer or a bitvector and all of the following apply:
   \item \texttt{w} is the width of \texttt{slices};
   \item \texttt{slices'} is the result of annotating \texttt{slices} in \texttt{env};
   \item \texttt{t} is the bitvector type of width \texttt{w};
   \item \texttt{new\_env} is the slicing of expression \texttt{e'} by the slices \texttt{slices'}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\ESliceBegin, lastline=\ESliceEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
     The width of \texttt{slices} might be a symbolic expression if one of the
 widths references a \texttt{let} identifier with a non-compile-time-constant initialiser
 expression.
@@ -1431,7 +1572,8 @@ expression.
 \section{TypingRule.ECall \label{sec:TypingRule.ECall}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes a call to a subprogram named \texttt{name} with arguments \texttt{args} and
     parameters \texttt{eqs};
@@ -1442,63 +1584,72 @@ expression.
     and parameters \texttt{eqs'}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\ECallBegin, lastline=\ECallEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.EGetArray \label{sec:TypingRule.EGetArray}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} or an error and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the slicing of expression \texttt{e'} by the slices \texttt{slices};
   \item \texttt{t\_e',e'} is the result of annotating the expression \texttt{e'} in \texttt{env};
   \item \texttt{t\_e'} has the structure of an array with index type \texttt{wanted\_t\_index} and element type \texttt{t};
-  \item \texttt{slices} is a single expression \texttt{e\_index};
+  \item an error ``Conflicting Types'' is raised or \texttt{slices} is a single expression \texttt{e\_index} and all of the following apply:
   \item \texttt{t\_index', e\_index'} is the result of annotating \texttt{e\_index} in \texttt{env};
-  \item \texttt{t\_index'} type-satisfies \texttt{wanted\_t\_index} as per Section~\ref{sec:TypingRule.TypeSatisfaction};
+  \item an error ``\texttt{Conflicting Types}'' or \texttt{t\_index'} type-satisfies \texttt{wanted\_t\_index} as per Section~\ref{sec:TypingRule.TypeSatisfaction} and all of the following apply:
   \item \texttt{new\_e} is an access to array \texttt{e'} at index \texttt{e\_index'}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\EGetArrayBegin, lastline=\EGetArrayEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.EStructuredNotStructured \label{sec:TypingRule.EStructuredNotStructured}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the record expression or an exception expression of type \texttt{ty} with fields \texttt{fields};
   \item \texttt{ty} is neither a record nor an exception type;
   \item an error ``\texttt{Conflicting Types}'' is raised.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\EStructuredNotStructuredBegin, lastline=\EStructuredNotStructuredEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
   This aims to encompass LRM Section 5.5 R\_WBCQ.
 
 \section{TypingRule.EStructuredMissingField \label{sec:TypingRule.EStructuredMissingField}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the record expression or an exception expression of type \texttt{ty} with fields \texttt{fields};
   \item \texttt{ty} is the name of a record or exception type with fields \texttt{field\_types};
@@ -1506,20 +1657,23 @@ expression.
   \item an error ``\texttt{Missing Field}'' is raised.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\EStructuredMissingFieldBegin, lastline=\EStructuredMissingFieldEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
   This aims to encompass LRM Section 5.5 R\_WBCQ.
 
 \section{TypingRule.ERecord \label{sec:TypingRule.ERecord}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the record expression of type \texttt{ty} with fields \texttt{fields};
   \item \texttt{ty} is the name of a record type with fields \texttt{field\_types};
@@ -1535,21 +1689,24 @@ expression.
   \item \texttt{new\_env} is the record expression of type \texttt{ty} with fields \texttt{fields'}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\ERecordBegin, lastline=\ERecordEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
   This aims to encompass LRM Section 5.5 R\_WBCQ.
 
  
 \section{TypingRule.EGetRecordField \label{sec:TypingRule.EGetRecordField}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the access of field \texttt{field\_name} on expression \texttt{e1};
   \item \texttt{t\_e1, e2} is the result of annotating \texttt{e1} in \texttt{env};
@@ -1560,19 +1717,22 @@ expression.
   \item \texttt{new\_env} is the access of field \texttt{field\_name} on expression \texttt{e2}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\EGetRecordFieldBegin, lastline=\EGetRecordFieldEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.EGetBadRecordField \label{sec:TypingRule.EGetBadRecordField}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the access of field \texttt{field\_name} on expression \texttt{e1};
   \item \texttt{t\_e1, e2} is the result of annotating \texttt{e1} in \texttt{env};
@@ -1583,19 +1743,22 @@ expression.
   \item an error ``\texttt{Bad Field}'' is raised.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\EGetBadRecordFieldBegin, lastline=\EGetBadRecordFieldEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.EGetBadBitField \label{sec:TypingRule.EGetBadBitField}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the access of field \texttt{field\_name} on expression \texttt{e1};
   \item \texttt{t\_e1} has the structure a bitvector type with bitfields \texttt{bitfields};
@@ -1604,19 +1767,22 @@ expression.
   \item an error ``\texttt{Bad Field}'' is raised.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\EGetBadBitFieldBegin, lastline=\EGetBadBitFieldEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.EGetBadField \label{sec:TypingRule.EGetBadField}}
 
  \subsection{Prose}
-   All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
    \begin{itemize}
    \item \texttt{e} denotes the access of field \texttt{field\_name} on expression \texttt{e1};
    \item \texttt{t\_e1, e2} is the result of annotating \texttt{e1} in \texttt{env};
@@ -1624,19 +1790,22 @@ expression.
    \item an error ``\texttt{Conflicting Types}'' is raised.
    \end{itemize}
 
- \subsection{Examples}
+ \subsection{Example}
 
  \subsection{Code}
     \VerbatimInput[firstline=\EGetBadFieldBegin, lastline=\EGetBadFieldEnd]{../Typing.ml}
 
- \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
- \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.EGetBitField \label{sec:TypingRule.EGetBitField}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the access of field \texttt{field\_name} on expression \texttt{e1};
   \item \texttt{t\_e1, e2} is the result of annotating \texttt{e1} in \texttt{env};
@@ -1649,19 +1818,22 @@ expression.
   \item \texttt{t,new\_env} is the result of annotating \texttt{e3}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\EGetBitFieldBegin, lastline=\EGetBitFieldEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.EGetBitFieldNested \label{sec:TypingRule.EGetBitFieldNested}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the access of field \texttt{field\_name} on expression \texttt{e1};
   \item \texttt{t\_e1, e2} is the result of annotating \texttt{e1} in \texttt{env};
@@ -1678,19 +1850,22 @@ expression.
   \item \texttt{new\_env} is \texttt{e4}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\EGetBitFieldNestedBegin, lastline=\EGetBitFieldNestedEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.EGetBitFieldTyped \label{sec:TypingRule.EGetBitFieldTyped}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes \texttt{e1, field\_name};
   \item \texttt{t\_e1, e2} is the result of annotating \texttt{e1} in \texttt{env};
@@ -1705,38 +1880,44 @@ expression.
   \item \texttt{new\_env} is \texttt{e3}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\EGetBitFieldTypedBegin, lastline=\EGetBitFieldTypedEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.EConcatEmpty \label{sec:TypingRule.EConcatEmpty}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the empty concatenation;
   \item \texttt{t} is \texttt{bits(0)};
   \item \texttt{new\_env} is \texttt{e}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\EConcatEmptyBegin, lastline=\EConcatEmptyEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.EConcat \label{sec:TypingRule.EConcat}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the concatenation of a non-empty list of expressions \texttt{li};
   \item \texttt{ts, es} is the result of annotating \texttt{li} in \texttt{env};
@@ -1746,14 +1927,16 @@ expression.
   \item \texttt{new\_env} is \texttt{es}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\EConcatBegin, lastline=\EConcatEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
   This aims to encompass LRM Section 7.8 R\_NYNK and R\_KCZS.
 
   The sum of the widths of the bitvector types~\texttt{ts} might be a symbolic
@@ -1764,7 +1947,8 @@ expression that is unresolvable to an integer. For example:
 \section{TypingRule.ETuple \label{sec:TypingRule.ETuple}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes a tuple \texttt{li};
   \item \texttt{ts, es} is the result of annotating in \texttt{env} each expression in \texttt{li};
@@ -1772,19 +1956,22 @@ expression that is unresolvable to an integer. For example:
   \item \texttt{new\_env} is \texttt{es}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\ETupleBegin, lastline=\ETupleEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.EUnknown \label{sec:TypingRule.EUnknown}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes an expression \texttt{UNKNOWN} of type \texttt{ty};
   \item \texttt{ty'} is the structure of \texttt{ty} in \texttt{env};
@@ -1792,19 +1979,22 @@ expression that is unresolvable to an integer. For example:
   \item \texttt{new\_env} is an expression \texttt{UNKNOWN} of type \texttt{ty'}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\EUnknownBegin, lastline=\EUnknownEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.EPattern \label{sec:TypingRule.EPattern}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes whether the expression \texttt{e'} matches \texttt{patterns};
   \item \texttt{t\_e', e''} is the result of annotating \texttt{e'} in \texttt{env};
@@ -1813,19 +2003,22 @@ expression that is unresolvable to an integer. For example:
   \item \texttt{new\_env} denotes whether the expression \texttt{e''} matches \texttt{patterns'}.
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\EPatternBegin, lastline=\EPatternEnd]{../Typing.ml}
         
-  \subsection{Formally}
-       
-  \subsection{Comments}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
+
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.CTC \label{sec:TypingRule.CTC}}
 
   \subsection{Prose}
-  All of the following apply:
+  The result of annotating the expression \texttt{e} in \texttt{env} is
+\texttt{t,new\_env} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes an expression \texttt{e'} and a type \texttt{t'};
   \item \texttt{t'',new\_env} is the result of annotating \texttt{e'} in \texttt{env};
@@ -1851,118 +2044,157 @@ expression that is unresolvable to an integer. For example:
    \end{itemize}
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
   \VerbatimInput[firstline=\CTCBegin, lastline=\CTCEnd]{../Typing.ml}   
 
+\begin{emptyformal}
   \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 
 \chapter{Typing of Left-Hand-Side Expressions}
-\texttt{annotate\_lexpr version env le t\_e} is \texttt{new\_le} and one of the following
+Annotating~\texttt{le} in an environment~\texttt{env}, assuming \texttt{t\_e}
+to be the type of the corresponding right-hand-side (\texttt{annotate\_lexpr
+version env le t\_e}), results in \texttt{new\_le} and one of the following
 applies:
 \begin{itemize}
 \item TypingRule.LEDiscard (see Section~\ref{sec:TypingRule.LEDiscard}),
 \item TypingRule.LELocalVar (see Section~\ref{sec:TypingRule.LELocalVar}),
 \item TypingRule.LEGlobalVar (see Section~\ref{sec:TypingRule.LEGlobalVar}),
-\item TypingRule.LETuple (see Section~\ref{sec:TypingRule.LETuple}),
+\item TypingRule.LEDestructuring (see Section~\ref{sec:TypingRule.LEDestructuring}),
 \item TypingRule.LESlice (see Section~\ref{sec:TypingRule.LESlice}),
 \item TypingRule.LESetArray (see Section~\ref{sec:TypingRule.LESetArray}),
-\item TypingRule.LESetBadRecordField (see Section~\ref{sec:TypingRule.LESetBadRecordField}),
-\item TypingRule.LESetRecordField (see Section~\ref{sec:TypingRule.LESetRecordField}),
+\item TypingRule.LESetBadStructuredField (see Section~\ref{sec:TypingRule.LESetBadStructuredField}),
+\item TypingRule.LESetStructuredField (see Section~\ref{sec:TypingRule.LESetStructuredField}),
 \item TypingRule.LESetBadBitField (see Section~\ref{sec:TypingRule.LESetBadBitField}),
 \item TypingRule.LESetBitField (see Section~\ref{sec:TypingRule.LESetBitField}),
 \item TypingRule.LESetBitFieldNested (see Section~\ref{sec:TypingRule.LESetBitFieldNested}),
 \item TypingRule.LESetBitFieldTyped (see Section~\ref{sec:TypingRule.LESetBitFieldTyped}),
 \item TypingRule.LESetBadField (see Section~\ref{sec:TypingRule.LESetBadField}),
-\item TypingRule.LESetFields (see Section~\ref{sec:TypingRule.LESetFields}),
 \item TypingRule.LEConcat (see Section~\ref{sec:TypingRule.LEConcat}).
 \end{itemize}
 
 \section{TypingRule.LEDiscard \label{sec:TypingRule.LEDiscard}}
 
-   \subsection{Prose}
-   All of the following apply:
+  \subsection{Prose}
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes an expression which can be discarded;
    \item \texttt{new\_le} is \texttt{le}.
    \end{itemize}
 
-   \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LEDiscardBegin, lastline=\LEDiscardEnd]{../Typing.ml} 
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.LELocalVar \label{sec:TypingRule.LELocalVar}}
 
    \subsection{Prose}
-   All of the following apply:
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
-   \item \texttt{le} denotes a local variable \texttt{x} of type \texttt{ty};
+   \item \texttt{le} denotes a local variable \texttt{x};
    \item \texttt{x} is locally declared as a variable of type \texttt{ty} in \texttt{env};
+   \item \texttt{t\_e} can be assigned to \texttt{ty};
    \item \texttt{new\_le} is \texttt{le}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LELocalVarBegin, lastline=\LELocalVarEnd]{../Typing.ml} 
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.LEGlobalVar \label{sec:TypingRule.LEGlobalVar}}
 
-    \subsection{Prose}
-
-    \subsection{Examples}
+  \subsection{Prose}
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
+   \begin{itemize}
+   \item \texttt{le} denotes a local variable \texttt{x};
+   \item \texttt{x} is globally declared as a variable of type \texttt{ty} in \texttt{env};
+   \item \texttt{t\_e} can be assigned to \texttt{ty};
+   \item \texttt{new\_le} is \texttt{le}.
+   \end{itemize}
+ 
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LEGlobalVarBegin, lastline=\LEGlobalVarEnd]{../Typing.ml} 
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
-\section{TypingRule.LETuple \label{sec:TypingRule.LETuple}}
+\section{TypingRule.LEDestructuring \label{sec:TypingRule.LEDestructuring}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes a tuple \texttt{les};
-   \item \texttt{t\_e} denotes a tuple type \texttt{sub\_tys};
-   \item  One of the following applies:
+   \item \texttt{t\_e} has the structure of a tuple type \texttt{sub\_tys};
+   \item the elements of \texttt{sub\_tys} can be assigned to the type of the elements of \texttt{les};
+   \item One of the following applies:
      \begin{itemize}
-     \item  All of the following apply:
+     \item All of the following apply:
        \begin{itemize}
        \item \texttt{les} and \texttt{sub\_tys} have the same length;
        \item \texttt{new\_le} is the result of annotating \texttt{les} with \texttt{sub\_tys} in \texttt{env}
        \end{itemize}
-     \item  All of the following apply:
+     \item All of the following apply:
        \begin{itemize}
-       \item  \texttt{les} and \texttt{sub\_tys} do not have the same length;
-       \item  an error "Bad Arity Tuple Unpacking" is raised.
+       \item \texttt{les} and \texttt{sub\_tys} do not have the same length;
+       \item an error ``\texttt{Bad Arity LEDestructuring}'' is raised.
        \end{itemize}
      \end{itemize}
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LEDestructuringBegin, lastline=\LEDestructuringEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.LESlice \label{sec:TypingRule.LESlice}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes the slicing of a left-hand-side expression \texttt{le1} by the slices \texttt{slices};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
@@ -1970,26 +2202,34 @@ applies:
    \item \texttt{le2} is the result of annotating \texttt{le1} in \texttt{env};
    \item \texttt{width} is the width of the slices \texttt{slices} in \texttt{env};
    \item \texttt{t} is the bitvector type of width \texttt{width};
+   \item \texttt{te} can be assigned to \texttt{t};
    \item \texttt{slices2} is the result of annotating \texttt{slices} in \texttt{env};
    \item \texttt{new\_le} is the slicing of \texttt{le2} by \texttt{slices2}.
    \end{itemize}
  
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LESliceBegin, lastline=\LESliceEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.LESetArray \label{sec:TypingRule.LESetArray}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes the slicing of a left-hand-side expression \texttt{le1} by the slices \texttt{slices};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
    \item \texttt{t\_le1} has the structure of an array type of size \texttt{size} and item type \texttt{t};
+   \item \texttt{te} can be assigned to \texttt{t};
    \item \texttt{le2} is the result of annotating \texttt{le1} in \texttt{env};
    \item One of the following applies:
      \begin{itemize}
@@ -1998,86 +2238,110 @@ applies:
      \end{itemize}
    \item \texttt{slices} is a single expression \texttt{e\_index};
    \item \texttt{t\_index', e\_index'} is the result of annotating \texttt{e\_index} in \texttt{env};
-   \item \texttt{t\_index'} type-satisfies \texttt{wanted\_t\_index};
+   \item \texttt{wanted\_t\_index} can be assigned to \texttt{t\_index'};
    \item \texttt{new\_le} is an access to array \texttt{le2} at index \texttt{e\_index'}.  
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LESetArrayBegin, lastline=\LESetArrayEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
-\section{TypingRule.LESetBadRecordField \label{sec:TypingRule.LESetBadRecordField}}
+\section{TypingRule.LESetBadStructuredField \label{sec:TypingRule.LESetBadStructuredField}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
    \item \texttt{le2} is the result of annotating \texttt{le1} in \texttt{env};
    \item \texttt{t\_le1} has the structure of an exception or a record type with fields \texttt{fields};
    \item \texttt{field} is not declared in \texttt{fields};
-   \item an error "Bad Field" is raised.
+   \item an error ``\texttt{Bad Field}'' is raised.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LESetBadStructuredFieldBegin, lastline=\LESetBadStructuredFieldEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
-\section{TypingRule.LESetRecordField \label{sec:TypingRule.LESetRecordField}}
+\section{TypingRule.LESetStructuredField \label{sec:TypingRule.LESetStructuredField}}
 
     \subsection{Prose}
-    All of the following apply:
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
    \item \texttt{le2} is the result of annotating \texttt{le1} in \texttt{env};
    \item \texttt{t\_le1} has the structure of an exception or a record type with fields \texttt{fields};
    \item \texttt{field} is bound to type \texttt{t} in \texttt{fields};
-   \item \texttt{t\_e} type-satisfies \texttt{t}; 
+   \item \texttt{t} can be assigned to \texttt{t\_e}; 
    \item \texttt{new\_le} is the access to the field \texttt{field} in \texttt{le2}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LESetStructuredFieldBegin, lastline=\LESetStructuredFieldEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.LESetBadBitField \label{sec:TypingRule.LESetBadBitField}}
 
     \subsection{Prose}
-    All of the following apply:
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
    \item \texttt{le2} is the result of annotating \texttt{le1} in \texttt{env};
    \item \texttt{t\_le1} has the structure of a bitvector with bitfields \texttt{bitfields};
    \item \texttt{field} is not declared in \texttt{bitfields};
-   \item an error "Bad Field" is raised.  
+   \item an error ``\texttt{Bad Field}'' is raised.  
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LESetBadBitFieldBegin, lastline=\LESetBadBitFieldEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.LESetBitField \label{sec:TypingRule.LESetBitField}}
 
     \subsection{Prose}
-    All of the following apply:
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
@@ -2088,23 +2352,29 @@ applies:
       \texttt{bitfields};
    \item \texttt{w} is the width of \texttt{slices};
    \item \texttt{t} is the bitvector type of width \texttt{w};
-   \item \texttt{t\_e} type-satisfies \texttt{t};
+   \item \texttt{t} can be assigned to \texttt{t\_e};
    \item \texttt{le2} is the slicing of \texttt{le1} by \texttt{slices};
    \item \texttt{new\_le} is the result of annotating \texttt{le2} in \texttt{env}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LESetBitFieldBegin, lastline=\LESetBitFieldEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.LESetBitFieldNested \label{sec:TypingRule.LESetBitFieldNested}}
 
     \subsection{Prose}
-    All of the following apply:
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
@@ -2115,23 +2385,29 @@ applies:
    \item \texttt{w} is the width of \texttt{slices};
    \item \texttt{bitfields'} gives the bitfields corresponding to \texttt{field} in \texttt{bitfields};
    \item \texttt{t} is the bitvector type of width \texttt{w} and bitfields \texttt{bitfields'};
-   \item \texttt{t\_e} type-satisfies \texttt{t};
+   \item \texttt{t} can be assigned to \texttt{t\_e};
    \item \texttt{le2} is the slicing of \texttt{le1} by \texttt{slices};
    \item \texttt{new\_le} is the result of annotating \texttt{le2} in \texttt{env}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LESetBitFieldNestedBegin, lastline=\LESetBitFieldNestedEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.LESetBitFieldTyped \label{sec:TypingRule.LESetBitFieldTyped}}
 
     \subsection{Prose}
-    All of the following apply:
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
@@ -2143,68 +2419,73 @@ applies:
    \item \texttt{t'} is the bitvector type of width \texttt{w};
    \item \texttt{t} gives the type corresponding to the bitfield \texttt{field} in
       \texttt{bitfields};
-   \item \texttt{t'} type-satisfies \texttt{t};
-   \item \texttt{t\_e} type-satisfies \texttt{t};
+   \item \texttt{t} can be assigned to \texttt{t'};
+   \item \texttt{t} can be assigned to \texttt{t\_e};
    \item \texttt{le2} is the slicing of \texttt{le1} by \texttt{slices};
    \item \texttt{new\_le} is the result of annotating \texttt{le2} in \texttt{env}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LESetBitFieldTypedBegin, lastline=\LESetBitFieldTypedEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.LESetBadField \label{sec:TypingRule.LESetBadField}}
 
     \subsection{Prose}
-    All of the following apply:
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes the access to the field named \texttt{field} in \texttt{le1};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
    \item \texttt{le2} is the result of annotating \texttt{le1} in \texttt{env};
    \item \texttt{t\_le1} does not have the structure of a record, or an exception or a bitvector type;
-   \item an error "Conflicting Types" is raised.
+   \item an error ``\texttt{Conflicting Types}'' is raised.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LESetBadFieldBegin, lastline=\LESetBadFieldEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
-
-\section{TypingRule.LESetFields \label{sec:TypingRule.LESetFields}}
-
-    \subsection{Prose}
-
-    \subsection{Examples}
-
-  \subsection{Code}
-
-  \subsection{Formally}
-
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.LEConcat \label{sec:TypingRule.LEConcat}}
-    \subsection{Prose}
-    
 
-    \subsection{Examples}
+    \subsection{Prose}
+   Annotating~\texttt{le} in an environment~\texttt{env}, assuming
+\texttt{t\_e} to be the type of the corresponding right-hand-side
+(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+all of the following apply:
+     
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LEConcatBegin, lastline=\LEConcatEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 
 \chapter{Typing of Slices}
-\texttt{annotate\_slices env slices} is the pair \texttt{(offset, length)} and one of the
-following applies:
+Annotating slices~\texttt{slices} in an environment~\texttt{env}
+(\texttt{annotate\_slices env slices}) results in the pair \texttt{(offset,
+length)} and one of the following applies:
 \begin{itemize}
 \item TypingRule.SliceSingle (see Section~\ref{sec:TypingRule.SliceSingle}),
 \item TypingRule.SliceLength (see Section~\ref{sec:TypingRule.SliceLength}),
@@ -2214,83 +2495,103 @@ following applies:
 
 \section{TypingRule.SliceSingle \label{sec:TypingRule.SliceSingle}}
 
-    \subsection{Prose}
-    All of the following apply: 
+  \subsection{Prose}
+   Annotating slices~\texttt{slices} in an environment~\texttt{env}
+(\texttt{annotate\_slices env slices}) results in the pair \texttt{(offset,
+length)} and all of the following apply: 
    \begin{itemize}
    \item \texttt{slices} gives an index \texttt{i};
    \item \texttt{(offset, length)} is the result of applying TypingRule.SliceLength to \texttt{i, i+:1}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\SliceSingleBegin, lastline=\SliceSingleEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-    \subsection{Comments}
+\subsection{Comments}
     R\_GXKG: The notation b\texttt{i} is syntactic sugar for b\texttt{i +: 1}.
 
 \section{TypingRule.SliceLength \label{sec:TypingRule.SliceLength}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating slices~\texttt{slices} in an environment~\texttt{env}
+(\texttt{annotate\_slices env slices}) results in the pair \texttt{(offset,
+length)} and all of the following apply:
    \begin{itemize}
    \item \texttt{slices} gives \texttt{offset} and \texttt{length}; 
    \item \texttt{t\_offset, offset'} is the result of annotating \texttt{offset} in \texttt{env};
    \item \texttt{t\_length, length'} is the result of annotating \texttt{length} in \texttt{env};
    \item \texttt{t\_offset} has the structure of an integer type;
    \item \texttt{t\_length} has the structure of an integer type;
-   \item \texttt{length} is pure.
+   \item \texttt{length} is statically evaluable.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\SliceLengthBegin, lastline=\SliceLengthEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.SliceRange \label{sec:TypingRule.SliceRange}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+      Annotating slices~\texttt{slices} in an environment~\texttt{env}
+(\texttt{annotate\_slices env slices}) results in the pair \texttt{(offset,
+length)} and all of the following apply:
    \begin{itemize}
    \item \texttt{slices} gives a range \texttt{(j, i)};
    \item \texttt{pre\_length} is \texttt{i +: j-i+1};
    \item \texttt{offset, length} is the result of applying TypingRule.SliceLength to \texttt{i,pre\_length}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\SliceRangeBegin, lastline=\SliceRangeEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-    \subsection{Comments}
+\subsection{Comments}
     R\_GXKG: The notation b\texttt{j:i} is syntactic sugar for b\texttt{i +: j-i+1}.
 
 \section{TypingRule.SliceStar \label{sec:TypingRule.SliceStar}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+      Annotating slices~\texttt{slices} in an environment~\texttt{env}
+(\texttt{annotate\_slices env slices}) results in the pair \texttt{(offset,
+length)} and all of the following apply:
    \begin{itemize}
    \item \texttt{slices} gives \texttt{(factor, pre\_length)};
    \item \texttt{pre\_offset} is \texttt{factor * pre\_length};
    \item \texttt{offset, length} is the result of applying TypingRule.SliceLength to \texttt{(pre\_offset, pre\_length)}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\SliceStarBegin, lastline=\SliceStarEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-    \subsection{Comments}
+\subsection{Comments}
     R\_GXQG: The notation b\texttt{i *: n} is syntactic sugar for b\texttt{i*n +: n}
 
 \chapter{Typing of Patterns}
-\texttt{annotate\_pattern loc env t p} is \texttt{new\_p} and one of the following applies:
+Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and one of the following applies:
 \begin{itemize}
 \item TypingRule.PAll (see Section~\ref{sec:TypingRule.PAll}),
 \item TypingRule.PAny (see Section~\ref{sec:TypingRule.PAny}),
@@ -2300,235 +2601,339 @@ following applies:
 \item TypingRule.PRange (see Section~\ref{sec:TypingRule.PRange}),
 \item TypingRule.PSingle (see Section~\ref{sec:TypingRule.PSingle}),
 \item TypingRule.PMask (see Section~\ref{sec:TypingRule.PMask}),
-\item TypingRule.PTupleBadArity (see Section~\ref{sec:TypingRule.P}),
+\item TypingRule.PTupleBadArity (see Section~\ref{sec:TypingRule.PTupleBadArity}),
 \item TypingRule.PTuple (see Section~\ref{sec:TypingRule.PTuple}),
 \item TypingRule.PTupleConflict (see Section~\ref{sec:TypingRule.PTupleConflict}),
 \end{itemize}
 
 \section{TypingRule.PAll \label{sec:TypingRule.PAll}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern matching everything;
    \item \texttt{new\_p} is \texttt{p}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PAllBegin, lastline=\PAllEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
- \section{TypingRule.PAny\label{sec:TypingRule.PAny}}
+\section{TypingRule.PAny\label{sec:TypingRule.PAny}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches anything in a list \texttt{li};
    \item \texttt{new\_li} is the result of mapping the result of annotating \texttt{p} in \texttt{env} onto \texttt{li};
    \item \texttt{new\_p} is the pattern which matches anything in \texttt{new\_li}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PAnyBegin, lastline=\PAnyEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-    \subsection{Comments}
-
-
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.PGeq \label{sec:TypingRule.PGeq}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches anything greater than or equal to an expression \texttt{e};
    \item \texttt{t\_e, e'} is the result of annotating \texttt{e} in \texttt{env}; 
-   \item \texttt{e'} is a compile-time constant;
-   \item \texttt{t} has the structure of an integer;
-   \item \texttt{t\_e} has the structure of an integer;
-   \item \texttt{new\_p} is the pattern which matches anything greater than or equal to \texttt{e'}.
+   \item \texttt{e'} is a compile-time constant expression;
+   \item One of the following applies:
+     \begin{itemize}
+     \item All of the following apply:
+           \begin{itemize}
+           \item both \texttt{t} and \texttt{t\_e} have the structure of an integer;
+           \item \texttt{new\_p} is the pattern which matches anything greater than or equal to \texttt{e'}.
+           \end{itemize}
+     \item All of the following apply:
+           \begin{itemize}
+           \item both \texttt{t} and \texttt{t\_e} have the structure of a real;
+           \item \texttt{new\_p} is the pattern which matches anything greater than or equal to \texttt{e'}.
+           \end{itemize} 
+     \item an error ``\texttt{Conflicting Types}'' is raised.
+     \end{itemize}
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PGeqBegin, lastline=\PGeqEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
  \section{TypingRule.PLeq \label{sec:TypingRule.PLeq}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches anything lesser than or equal to an expression \texttt{e};
    \item \texttt{t\_e, e'} is the result of annotating \texttt{e} in \texttt{env}; 
-   \item \texttt{e'} is a compile-time constant;
-   \item \texttt{t} has the structure of an integer;
-   \item \texttt{t\_e} has the structure of an integer;
-   \item \texttt{new\_p} is the pattern which matches anything lesser than or equal to \texttt{e'}.
+   \item \texttt{e'} is a compile-time constant expression;
+   \item One of the following applies:
+     \begin{itemize}
+     \item All of the following apply:
+           \begin{itemize}
+           \item both \texttt{t} and \texttt{t\_e} have the structure of an integer;
+           \item \texttt{new\_p} is the pattern which matches anything lesser than or equal to \texttt{e'}.
+           \end{itemize}
+     \item All of the following apply:
+           \begin{itemize}
+           \item both \texttt{t} and \texttt{t\_e} have the structure of a real;
+           \item \texttt{new\_p} is the pattern which matches anything lesser than or equal to \texttt{e'}.
+           \end{itemize}
+     \item an error ``\texttt{Conflicting Types}'' is raised.
+     \end{itemize}
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PLeqBegin, lastline=\PLeqEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
  
- \section{TypingRule.PNot \label{sec:TypingRule.PNot}}
+\section{TypingRule.PNot \label{sec:TypingRule.PNot}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches the negation of a pattern \texttt{q};
    \item \texttt{new\_q} is the result of annotating \texttt{q} in \texttt{env}; 
    \item \texttt{new\_p} is pattern which matches the negation of \texttt{new\_q}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PNotBegin, lastline=\PNotEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-    \subsection{Comments}
- \section{TypingRule.PRange \label{sec:TypingRule.PRange}}
+\isempty{\subsection{Comments}}
+ 
+\section{TypingRule.PRange \label{sec:TypingRule.PRange}}
 
     \subsection{Prose}
-    All of the following apply:
+   Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches anything within the range given by
       expressions \texttt{e1} and \texttt{e2};
    \item \texttt{t\_e1, e1'} is the result of annotating \texttt{e1} in \texttt{env};
    \item \texttt{t\_e2, e2'} is the result of annotating \texttt{e2} in \texttt{env};
-   \item \texttt{t} has the structure of an integer;
-   \item \texttt{t\_e1} has the structure of an integer;
-   \item \texttt{t\_e2} has the structure of an integer;
-   \item e1' and e2' are compile-time constants; 
-   \item \texttt{new\_p} is the pattern which matches anything within the range given by
+   \item e1' and e2' are compile-time constant expressions; 
+   \item One of the following applies:
+     \begin{itemize}
+     \item All of the following apply:
+           \begin{itemize}
+           \item both \texttt{t\_e1} and \texttt{t\_e2} have the structure of an integer;
+           \item \texttt{new\_p} is the pattern which matches anything within the range given by
       expressions \texttt{e1'} and \texttt{e2'}.
+           \end{itemize}
+     \item All of the following apply:
+           \begin{itemize}
+           \item both \texttt{t\_e1} and \texttt{t\_e2} have the structure of a real;
+           \item \texttt{new\_p} is the pattern which matches anything within the range given by
+      expressions \texttt{e1'} and \texttt{e2'}.
+           \end{itemize}
+     \item an error ``\texttt{Conflicting Types}'' is raised.
+     \end{itemize}
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PRangeBegin, lastline=\PRangeEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
  
 \section{TypingRule.PSingle \label{sec:TypingRule.PSingle}}
 
     \subsection{Prose}
+      Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
+      \begin{itemize}
+        \item \texttt{p} is the pattern that matches the expression \texttt{e};
+        \item \texttt{t\_e, e'} is the result of annotating the expression \texttt{e} in \texttt{env};
+        \item One of the following applies:
+          \begin{itemize}
+            \item All of the following apply:
+              \begin{itemize}
+                \item \texttt{t\_e} has the structure of the real type;
+                \item \texttt{t} has the structure of the real type;
+              \end{itemize}
+            \item All of the following apply:
+              \begin{itemize}
+                \item \texttt{t\_e} has the structure of the boolean type;
+                \item \texttt{t} has the structure of the boolean type;
+              \end{itemize}
+            \item All of the following apply:
+              \begin{itemize}
+                \item \texttt{t\_e} has the structure of an integer type;
+                \item \texttt{t} has the structure of an integer type;
+              \end{itemize}
+            \item All of the following apply:
+              \begin{itemize}
+                \item \texttt{t\_e} has the structure of a bitvector type;
+                \item \texttt{t} has the structure of a bitvector type;
+                \item the bitvector types \texttt{t\_e} and \texttt{t} have the same length;
+              \end{itemize}
+            \item All of the following apply:
+              \begin{itemize}
+                \item \texttt{t\_e} has the structure of an enumeration type;
+                \item \texttt{t} has the structure of an enumeration type;
+                \item the enumeration types \texttt{t\_e} and \texttt{t} have the same literals;
+              \end{itemize}
+          \end{itemize}
+        \item \texttt{new\_p} is \texttt{p};
+      \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PSingleBegin, lastline=\PSingleEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-    \subsection{Comments}
- \section{TypingRule.PMask \label{sec:TypingRule.PMask}}
+\isempty{\subsection{Comments}}
 
-    \subsection{Prose}
-    All of the following apply:
+\section{TypingRule.PMask \label{sec:TypingRule.PMask}}
+
+  \subsection{Prose}
+   Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches a mask \texttt{m};
    \item \texttt{t} has the structure of a bitvector type;
    \item \texttt{n} is the length of mask \texttt{m};
    \item \texttt{t\_m} is the bitvector type of width \texttt{n};
-   \item \texttt{t} type-satisfies \texttt{t\_m};
-   \item \texttt{new\_p} is \texttt{p}.
+   \item One of the following applies:
+     \item All of the following apply:
+       \begin{itemize}
+       \item \texttt{t} type-satisfies \texttt{t\_m};
+       \item \texttt{new\_p} is \texttt{p}.
+       \end{itemize}
+     \item an error ``\texttt{Conflicting Types}'' is raised.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PMaskBegin, lastline=\PMaskEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.PTupleBadArity \label{sec:TypingRule.PTupleBadArity}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches a tuple \texttt{li};
    \item \texttt{t} has the type structure of a tuple type \texttt{ts};
    \item \texttt{ts} is a list of different size to the size of \texttt{li};
-   \item an error "Bad Arity" is raised. 
+   \item an error ``\texttt{Bad Arity}'' is raised. 
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PTupleBadArityBegin, lastline=\PTupleBadArityEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 
- \section{TypingRule.PTuple \label{sec:TypingRule.PTuple}}
+\section{TypingRule.PTuple \label{sec:TypingRule.PTuple}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches a tuple \texttt{li};
-   \item \texttt{t\_struct} is the type structure of \texttt{t};
-   \item \texttt{t\_struct} is a tuple \texttt{ts};
-   \item \texttt{ts} is a list of same size to the size of \texttt{li};  
+   \item \texttt{t} has the type structure of a tuple type \texttt{ts};
+   \item \texttt{ts} is a list of the same size as \texttt{li};  
    \item \texttt{new\_li} is the result of annotating \texttt{li} with \texttt{ts};
    \item \texttt{new\_p} is the pattern which matches the tuple \texttt{new\_li}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PTupleBegin, lastline=\PTupleEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 
 \section{TypingRule.PTupleConflict \label{sec:TypingRule.PTupleConflict}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+   Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
    \begin{itemize}
    \item \texttt{p} is the pattern which matches a tuple \texttt{li};
-   \item \texttt{t\_struct} is the type structure of \texttt{t};
+   \item \texttt{t} has the type structure of a tuple type \texttt{ts};
    \item \texttt{t\_struct} is not a tuple type;
-   \item an error "Conflicting Types" is raised. 
+   \item an error ``\texttt{Conflicting Types}'' is raised. 
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\PTupleConflictBegin, lastline=\PTupleConflictEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-    \subsection{Comments}
-
-
+\isempty{\subsection{Comments}}
 
 \chapter{Typing of Local Declarations}
-\texttt{annotate\_local\_decl\_item loc env ty ldk ldi} is \texttt{new\_env, new\_ldi} and one
-of the following applies:
+Annotating a local declaration~\texttt{ldi}, given a type~\texttt{ty}, in an
+environment~\texttt{env} results in \texttt{new\_env, new\_ldi}
+(\texttt{annotate\_local\_decl\_item}) and one of the following applies:
 \begin{itemize}
 \item TypingRule.LDDiscardNone (see Section~\ref{sec:TypingRule.LDDiscardNone}),
 \item TypingRule.LDDiscardSome (see Section~\ref{sec:TypingRule.LDDiscardSome}),
 \item TypingRule.LDVar (see Section~\ref{sec:TypingRule.LDVar}),
-\item TypingRule.LDUninitialisedTypedTuple (see Section~\ref{sec:TypingRule.LDUninitialisedTypedTuple}),
 \item TypingRule.LDTuple (see Section~\ref{sec:TypingRule.LDTuple}).
 \end{itemize}
 
@@ -2536,30 +2941,37 @@ This aims to encompass LRM Section 7.4.2 R\_YSPM.
 
 \section{TypingRule.LDDiscardNone \label{sec:TypingRule.LDDiscardNone}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+    Annotating a local declaration~\texttt{ldi}, given a type~\texttt{ty}, in
+an environment~\texttt{env} results in \texttt{new\_env, new\_ldi} and all of
+the following apply:
    \begin{itemize}
    \item \texttt{ldi} is a local declaration which can be discarded;
-   \item no type is given;
+   \item \texttt{ldi} does not specify a type;
    \item \texttt{new\_env} is \texttt{env};
    \item \texttt{new\_ldi} is \texttt{ldi}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LDDiscardNoneBegin, lastline=\LDDiscardNoneEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.LDDiscardSome \label{sec:TypingRule.LDDiscardSome}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+    Annotating a local declaration~\texttt{ldi}, given a type~\texttt{ty}, in
+an environment~\texttt{env} results in \texttt{new\_env, new\_ldi} and all of
+the following apply:
    \begin{itemize}
    \item \texttt{ldi} is a local declaration which can be discarded;
-   \item a type \texttt{t} is given;
+   \item \texttt{ldi} specifies a type \texttt{t};
    \item One of the following applies:
      \begin{itemize}
      \item All of the following apply:
@@ -2571,23 +2983,28 @@ This aims to encompass LRM Section 7.4.2 R\_YSPM.
      \item All of the following apply:
        \begin{itemize}
        \item \texttt{t} cannot be initialised with \texttt{ty} in \texttt{env};
-       \item an error "Conflicting Types" is raised.
+       \item an error ``\texttt{Conflicting Types}'' is raised.
        \end{itemize}
      \end{itemize}
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LDDiscardSomeBegin, lastline=\LDDiscardSomeEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.LDVar \label{sec:TypingRule.LDVar}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+    Annotating a local declaration~\texttt{ldi}, given a type~\texttt{ty}, in
+an environment~\texttt{env} results in \texttt{new\_env, new\_ldi} and all of
+the following apply:
    \begin{itemize}
    \item \texttt{ldi} denotes a variable \texttt{x} with an optional type \texttt{ty\_opt};
    \item \texttt{x} is not declared in \texttt{env};
@@ -2608,58 +3025,47 @@ This aims to encompass LRM Section 7.4.2 R\_YSPM.
    \item \texttt{new\_ldi} is the declaration of variable \texttt{x} with type \texttt{t}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LDVarBegin, lastline=\LDVarEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
-
-\section{TypingRule.LDUninitialisedTypedTuple \label{sec:TypingRule.LDUninitialisedTypedTuple}}
-
-    \subsection{Prose}
-    All of the following apply:
-   \begin{itemize}
-   \item \texttt{ldi} denotes a singleton list \texttt{ld};
-   \item \texttt{new\_env, new\_ldi} is the result of annotating the local declaration \texttt{ld} with \texttt{ty} in \texttt{env}.
-   \end{itemize}
-
-    \subsection{Examples}
-
-  \subsection{Code}
-
-  \subsection{Formally}
-
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.LDTuple \label{sec:TypingRule.LDTuple}}
 
-    \subsection{Prose}
+  \subsection{Prose}
+    Annotating a local declaration~\texttt{ldi}, given a type~\texttt{ty}, in
+an environment~\texttt{env} results in \texttt{new\_env, new\_ldi} and all of
+the following apply:
+  \begin{itemize}
+  \item \texttt{ldi} denotes a list \texttt{ldis};
+  \item \texttt{ldi} does not specify a type;
+  \item \texttt{ty} has the structure of a tuple type of the same length as~\texttt{ldis};
+  \item \texttt{new\_env} is \texttt{env} modified so that each element in \texttt{ldis} is annotated with the corresponding type in \texttt{ty}; 
+  \item \texttt{new\_ldi} is \texttt{ldis} where each element is declared with
+the corresponding type in ~\texttt{ty}.
+  \end{itemize} 
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\LDTupleBegin, lastline=\LDTupleEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
-
-\section{TypingRule.LDTypedTuple \label{sec:TypingRule.LDTypedTuple}}
-
-    \subsection{Prose}
-
-    \subsection{Examples}
-
-  \subsection{Code}
-
-  \subsection{Formally}
-
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \chapter{Typing of Statements}
-\texttt{annotate\_stmt env s} is a statement \texttt{new\_s} and an environment \texttt{new\_env} and
-one of the following applies:
+Annotating a statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and one of the following applies:
 \begin{itemize}
 \item TypingRule.SPass (see Section~\ref{sec:TypingRule.SPass}),
 \item TypingRule.SAssign (see Section~\ref{sec:TypingRule.SAssign}),
@@ -2684,30 +3090,36 @@ one of the following applies:
 \section{TypingRule.SPass \label{sec:TypingRule.SPass}}
 
     \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
     \begin{itemize}
     \item \texttt{s} is a pass statement;
     \item \texttt{new\_s} is \texttt{s};
     \item \texttt{new\_env} is \texttt{env}.
     \end{itemize}
 
-    \subsection{Examples}
+    \subsection{Example}
 
     \subsection{Code}
     \VerbatimInput[firstline=\SPassBegin, lastline=\SPassEnd]{../Typing.ml}
 
+\begin{emptyformal}
     \subsection{Formally}
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.SAssign \label{sec:TypingRule.SAssign}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
    \item \texttt{s} is an assignment \texttt{le = re} under language version \texttt{ver};
-   \item \texttt{t\_e, e1} is the result of annotating \texttt{e} in \texttt{env};
-   \item \texttt{reduced} is the result of potential result of inlining a setter call in \texttt{le};
+   \item \texttt{t\_e, e1} is the result of annotating \texttt{re} in \texttt{env};
+   \item \texttt{reduced} is the result of inlining a setter call in \texttt{le};
    \item One of the following applies:
      \begin{itemize}
      \item All of the following apply:
@@ -2735,102 +3147,125 @@ one of the following applies:
            \end{itemize}
          \end{itemize} 
 
-       \item \texttt{le1} is the result of annotating \texttt{le} in \texttt{env1};
+       \item \texttt{le1} is the result of annotating \texttt{le} with \texttt{t\_e} in \texttt{env1};
        \item \texttt{new\_s} is the assignment \texttt{le1 = e1};
        \item \texttt{new\_env} is \texttt{env1}.
        \end{itemize}
     \end{itemize}
   \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
   \VerbatimInput[firstline=\SAssignBegin, lastline=\SAssignEnd]{../Typing.ml}
 
+\begin{emptyformal}
   \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.SReturnNone \label{sec:TypingRule.SReturnNone}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
-   \item \texttt{s} is a return statement with no value and no return type; 
-   \item \texttt{new\_s} is a return statement with no value;
-   \item the enclosing subprogram does not have a return type (it is either a setter
+   \item \texttt{s} is a \texttt{return} statement with no value and no return type; 
+   \item \texttt{new\_s} is a \texttt{return} statement with no value;
+   \item the enclosing subprogram does not have a \texttt{return} type (it is either a setter
       or a procedure);
    \item \texttt{new\_env} is \texttt{env}.
    \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\SReturnNoneBegin, lastline=\SReturnNoneEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
     This aims to encompass LRM Section 7.4.3 R\_FTPK.
 
 
 \section{TypingRule.SReturnOne \label{sec:TypingRule.SReturnOne}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
    \item One of the following applies:
      \begin{itemize}
      \item All of the following apply:
        \begin{itemize}
-       \item \texttt{s} is a return statement with some value;
+       \item \texttt{s} is a \texttt{return} statement with some value;
        \item the enclosing subprogram does not have a return type;
        \end{itemize}
      \item All of the following apply:
        \begin{itemize}
-       \item \texttt{s} is a return statement with no value;
-       \item the enclosing subprogram has a return type;
+       \item \texttt{s} is a \texttt{return} statement with no value;
+       \item the enclosing subprogram has a \texttt{return} type;
        \end{itemize}
      \end{itemize}
-   \item An error "Bad Return Statement" is raised.
+   \item an error ``\texttt{Bad Return Statement}'' is raised.
    \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\SReturnOneBegin, lastline=\SReturnOneEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
     This aims to encompass LRM Section 7.4.3 R\_FTPK.
     
 \section{TypingRule.SReturnSome \label{sec:TypingRule.SReturnSome}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
-   \item \texttt{s} is a return statement with some value \texttt{e};
+   \item \texttt{s} is a \texttt{return} statement with some value \texttt{e};
    \item the enclosing subprogram has a return type \texttt{t};
    \item \texttt{t\_e',e'} is the result of annotating \texttt{e} in \texttt{env};
-   \item \texttt{t\_e'} type-satisfies \texttt{t};
-   \item \texttt{new\_s} is a return statement with value \texttt{e'};
-   \item \texttt{new\_env} is \texttt{env}. 
+   \item One of the following applies:
+     \begin{itemize}
+     \item All of the following apply:
+       \begin{itemize}
+       \item \texttt{t\_e'} type-satisfies \texttt{t};
+       \item \texttt{new\_s} is a \texttt{return} statement with value \texttt{e'};
+       \item \texttt{new\_env} is \texttt{env}. 
+       \end{itemize}
+     \item an error ``\texttt{Conflicting Types}'' is raised.
+     \end{itemize}
    \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\SReturnSomeBegin, lastline=\SReturnSomeEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.SSeq \label{sec:TypingRule.SSeq}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
    \item \texttt{s} is a statement \texttt{s1; s2};
    \item \texttt{new\_s1, env1} is the result of annotating \texttt{s1} in \texttt{env};
@@ -2839,19 +3274,23 @@ one of the following applies:
    \item \texttt{new\_env} is \texttt{env2}.
    \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\SSeqBegin, lastline=\SSeqEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.SCall \label{sec:TypingRule.SCall}}
 
     \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
    \item \texttt{s} is a call to a subprogram named \texttt{name} with arguments \texttt{args} and parameters \texttt{eqs};
    \item \texttt{new\_name, new\_args, new\_eqs} is the result of annotating the call
@@ -2862,184 +3301,300 @@ one of the following applies:
    \item \texttt{new\_env} is \texttt{env}.
    \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\SCallBegin, lastline=\SCallEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.SCond \label{sec:TypingRule.SCond}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
    \item \texttt{s} is a condition \texttt{e} with two statements \texttt{s1} and \texttt{s2};
    \item \texttt{t\_cond, e\_cond} is the result of annotating \texttt{e} in \texttt{env};
-   \item \texttt{t\_cond} type-satisfies \texttt{t\_bool}; 
-   \item \texttt{s1'} is the result of annotating \texttt{s1} in \texttt{env};
-   \item \texttt{s2'} is the result of annotating \texttt{s2} in \texttt{env};
-   \item \texttt{new\_s} is the condition \texttt{e\_cond} with two statements \texttt{s1'} and \texttt{s2'};
-   \item \texttt{new\_env} is \texttt{env}.
+   \item One of the following applies:
+     \begin{itemize}
+     \item All of the following apply:
+       \begin{itemize}
+       \item \texttt{t\_cond} type-satisfies \texttt{t\_bool}; 
+       \item \texttt{s1'} is the result of annotating \texttt{s1} in \texttt{env};
+       \item \texttt{s2'} is the result of annotating \texttt{s2} in \texttt{env};
+       \item \texttt{new\_s} is the condition \texttt{e\_cond} with two statements \texttt{s1'} and \texttt{s2'};
+       \item \texttt{new\_env} is \texttt{env}.
+       \end{itemize}
+     \item an error ``\texttt{Conflicting Types}'' is raised.
+     \end{itemize}
    \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\SCondBegin, lastline=\SCondEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
     This aims to encompass LRM Section 7.4.3 R\_NBDJ.
 
 \section{TypingRule.SCase \label{sec:TypingRule.SCase}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
    \item \texttt{s} is a case statement with expression \texttt{e} and cases \texttt{cases};
    \item \texttt{t\_e, e1} is the result of annotating \texttt{e} in \texttt{env};
-   \item \texttt{cases1, env1} is the result of annotating each case in \texttt{cases};
+   \item \texttt{cases1, env1} is the result of annotating each case in \texttt{cases} given \texttt{t\_e};
    \item \texttt{new\_s} is a case statement with expression \texttt{e1} and cases \texttt{cases1};
    \item \texttt{new\_env} is \texttt{env1}.
    \end{itemize}
-    (* do we not check that \texttt{e} has the structure of a boolean? *)
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\SCaseBegin, lastline=\SCaseEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
     This aims to encompass LRM Section 7.4.3 R\_WGSY.
   
 \section{TypingRule.SAssert \label{sec:TypingRule.SAssert}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
    \item \texttt{s} is an assert statement with expression \texttt{e};
    \item \texttt{t\_e',e'} is the result of annotating \texttt{e} in \texttt{env};
-   \item \texttt{t\_e'} type-satisfies \texttt{t\_bool};  
-   \item \texttt{new\_s} is an assert statement with expression \texttt{e'};
-   \item \texttt{new\_env} is \texttt{env}.
+   \item One of the following applies:
+     \item All of the following apply:
+       \begin{itemize}
+       \item \texttt{t\_e'} type-satisfies \texttt{t\_bool};  
+       \item \texttt{new\_s} is an assert statement with expression \texttt{e'};
+       \item \texttt{new\_env} is \texttt{env}.
+       \end{itemize}
+     \item an error ``\texttt{Conflicting Types}'' is raised.
    \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\SAssertBegin, lastline=\SAssertEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
     This aims to encompass LRM Section 7.4.3 R\_JQYF
 
     
 \section{TypingRule.SWhile \label{sec:TypingRule.SWhile}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
-   \item \texttt{s} is a while statement with expression \texttt{e1} and statement \texttt{s1};
+   \item \texttt{s} is a \texttt{while} statement with expression \texttt{e1} and statement block \texttt{s1};
    \item \texttt{t, e2} is the result of annotating \texttt{e1} in \texttt{env};
-   \item \texttt{t} type-satisfies \texttt{t\_bool}; (* is this the same as \texttt{e1} having the structure of a boolean? *)
-   \item \texttt{s2} is the result of annotating \texttt{s1} in \texttt{env};
-   \item \texttt{new\_s} is a while statement with expression \texttt{e2} and statement \texttt{s2};
-   \item \texttt{new\_env} is \texttt{env}.
+   \item One of the following applies:
+     \item All of the following apply:
+       \begin{itemize}
+       \item \texttt{t} type-satisfies \texttt{t\_bool}; 
+       \item \texttt{s2} is the result of annotating \texttt{s1} in \texttt{env};
+       \item \texttt{new\_s} is a \texttt{while} statement with expression \texttt{e2} and statement block \texttt{s2};
+       \item \texttt{new\_env} is \texttt{env}.
+       \end{itemize}
+     \item an error ``\texttt{Conflicting Types}'' is raised.
    \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\SWhileBegin, lastline=\SWhileEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
     This aims to encompass LRM Section 7.4.3 R\_FTVN.
 
 \section{TypingRule.SRepeat \label{sec:TypingRule.SRepeat}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
-   \item \texttt{s} is a repeat statement with expression \texttt{e1} and statement \texttt{s1};
+   \item \texttt{s} is a \texttt{repeat} statement with expression \texttt{e1} and statement block \texttt{s1};
    \item \texttt{s2} is the result of annotating \texttt{s1} in \texttt{env};
    \item \texttt{t, e2} is the result of annotating \texttt{e1} in \texttt{env};
-   \item \texttt{t} type-satisfies \texttt{t\_bool}; (* is this the same as \texttt{e1} having the structure of a boolean? *)
-   \item \texttt{new\_s} is a repeat statement with expression \texttt{e2} and statement \texttt{s2};
-   \item \texttt{new\_env} is \texttt{env}.
+   \item One of the following applies:
+     \begin{itemize}
+     \item All of the following apply:
+       \begin{itemize}
+       \item \texttt{t} type-satisfies \texttt{t\_bool}; 
+       \item \texttt{new\_s} is a \texttt{repeat} statement with expression \texttt{e2} and statement block \texttt{s2};
+       \item \texttt{new\_env} is \texttt{env}.
+       \end{itemize}
+     \item an error ``\texttt{Conflicting Types}'' is raised.
+     \end{itemize}
    \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\SRepeatBegin, lastline=\SRepeatEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
     This aims to encompass LRM Section 7.4.3 R\_FTVN.
 
 \section{TypingRule.SFor \label{sec:TypingRule.SFor}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
-   \item \texttt{s} is a for statement with index \texttt{id}, direction \texttt{dir}, two expressions
-      \texttt{e1} and \texttt{e2} and a statement \texttt{s'};
+   \item \texttt{s} is a \texttt{for} statement with index \texttt{id}, direction \texttt{dir}, two expressions
+      \texttt{e1} and \texttt{e2} and a statement block \texttt{s'};
    \item \texttt{t1,e1'} is the result of annotating \texttt{e1} in \texttt{env};
    \item \texttt{t2,e2'} is the result of annotating \texttt{e2} in \texttt{env};
-   \item \texttt{t1} has the structure of an integer type;
-   \item \texttt{t2} has the structure of an integer type;
-   \item \texttt{ty} is ;
-   \item \texttt{s''} is the result of annotating \texttt{s'} in \texttt{env};
-   \item \texttt{new\_s} is a for statement with index \texttt{id}, direction \texttt{dir}, two expressions
-      \texttt{e1'} and \texttt{e2'} and statement \texttt{s''};
+   \item an error is raised: ``\texttt{ASL Typing Error : A subtype of integer was expected, t1 was provided}'' or \texttt{t1} has the structure of an integer type and all of the following apply:
+   \item an error is raised: ``\texttt{ASL Typing Error : A subtype of integer was expected, t2 was provided}'' or \texttt{t2} has the structure of an integer type and all of the following apply:
+   \item One of the following applies:
+     \begin{itemize}
+       \item All of the following applies:
+         \begin{itemize}
+           \item \texttt{t1} has the structure of an unconstrained integer type;
+           \item \texttt{ty} is the unconstrained integer type;
+         \end{itemize}
+       \item All of the following applies:
+         \begin{itemize}
+           \item \texttt{t2} has the structure of an unconstrained integer type;
+           \item \texttt{ty} is the unconstrained integer type;
+         \end{itemize}
+       \item All of the following applies:
+         \begin{itemize}
+           \item \texttt{t1} has the structure of a constrained integer type with constraint \texttt{cs1};
+           \item \texttt{t2} has the structure of a constrained integer type with constraint \texttt{cs2};
+           \item One of the following applies:
+             \begin{itemize}
+               \item All of the following applies:
+                 \begin{itemize}
+                   \item \texttt{dir} is \texttt{to};
+                   \item \texttt{bot\_cs} is \texttt{cs1};
+                   \item \texttt{top\_cs} is \texttt{cs2};
+                 \end{itemize}
+               \item All of the following applies:
+                 \begin{itemize}
+                   \item \texttt{dir} is \texttt{down to};
+                   \item \texttt{bot\_cs} is \texttt{cs2};
+                   \item \texttt{top\_cs} is \texttt{cs1};
+                 \end{itemize}
+             \end{itemize}
+           \item One of the following applies:
+             \begin{itemize}
+               \item All of the following applies:
+                 \begin{itemize}
+                   \item \texttt{bot\_cs} contains a an expression that is not evaluable at compile-time;
+                   \item \texttt{cs} is the empty constraint;
+                 \end{itemize}
+               \item All of the following apply:
+                 \begin{itemize}
+                   \item \texttt{top\_cs} contains a an expression that is not evaluable at compile-time;
+                   \item \texttt{cs} is the empty constraint;
+                 \end{itemize}
+               \item All of the following apply:
+                 \begin{itemize}
+                   \item \texttt{bot} is the minimum of the constraints \texttt{bot\_cs};
+                   \item \texttt{top} is the maximum of the constraints \texttt{top\_cs};
+                   \item \texttt{bot} is less or equal than \texttt{top};
+                   \item \texttt{cs} is the constraint \texttt{bot .. top};
+                 \end{itemize}
+               \item All of the following apply:
+                 \begin{itemize}
+                   \item \texttt{bot} is the minimum of the constraints \texttt{bot\_cs};
+                   \item \texttt{top} is the maximum of the constraints \texttt{top\_cs};
+                   \item \texttt{top} is strictly less than \texttt{bot}
+                   \item \texttt{cs} is \texttt{cs1};
+                 \end{itemize}
+             \end{itemize}
+           \item \texttt{ty} is the constrained integer type with constraint \texttt{cs};
+         \end{itemize}
+     \end{itemize}
+   \item an error is raised ``\texttt{ASL Typing Error: cannot declare already declared element “id”.}'' or \texttt{id} is not bound in \texttt{env} and all of the following apply:
+   \item \texttt{env'} is \texttt{env} modified so that \texttt{id} is locally declared of type \texttt{ty};
+   \item \texttt{s''} is the result of annotating \texttt{s'} in \texttt{env'};
+   \item \texttt{new\_s} is a for statement with index \texttt{id}, direction \texttt{dir}, two expressions \texttt{e1'} and \texttt{e2'} and statement \texttt{s''};
    \item \texttt{new\_env} is \texttt{env}.
    \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\SForBegin, lastline=\SForEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
     This aims to encompass LRM Section 7.4.3 R\_VTJW.
  
 
 \section{TypingRule.SThrowNone \label{sec:TypingRule.SThrowNone}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
    \item \texttt{s} is a throw statement with no expression;
    \item \texttt{new\_s} is \texttt{s};
    \item \texttt{new\_env} is \texttt{env}.
    \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\SThrowNoneBegin, lastline=\SThrowNoneEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
-
+\subsection{Comments}
+  Note that LRM R\_BRCJ is done in~\cite[SemanticsRule.TopLevel]{ASLSemanticsReference}.
 
 \section{TypingRule.SThrowSome \label{sec:TypingRule.SThrowSome}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
    \item \texttt{s} is a throw statement with expression \texttt{e};
    \item \texttt{t\_e,e'} is the result of annotating \texttt{e} in \texttt{env};
@@ -3048,21 +3603,25 @@ one of the following applies:
    \item \texttt{new\_env} is \texttt{env}.
    \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\SThrowSomeBegin, lastline=\SThrowSomeEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
     This aims to encompass LRM Section 7.4.3 R\_NXRC.
 
 
 \section{TypingRule.STry \label{sec:TypingRule.STry}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
    \item \texttt{s} is a try statement with statement \texttt{s'}, catchers \texttt{catchers} and block \texttt{otherwise};
    \item \texttt{s''} is the result of annotating \texttt{s'} in \texttt{env};
@@ -3072,74 +3631,87 @@ one of the following applies:
    \item \texttt{new\_env} is \texttt{env}.
    \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\STryBegin, lastline=\STryEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
     This aims to encompass LRM Section 7.4.3 R\_WVXS.
 
 \section{TypingRule.SDeclSome \label{sec:TypingRule.SDeclSome}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
-   \item \texttt{s} is a declaration with \texttt{ldk}, \texttt{ldi} and an expression \texttt{e};
+   \item \texttt{s} is a declaration with local identifiers \texttt{ldi} and an expression \texttt{e};
    \item \texttt{t\_e,e'} is the result of annotating \texttt{e} in \texttt{env};
    \item \texttt{env', ldi'} is the result of declaring the local identifiers of \texttt{ldi} in \texttt{env};
    \item \texttt{new\_s} is a declaration with \texttt{ldk}, \texttt{ldi'} and an expression \texttt{e'};
    \item \texttt{new\_env} is \texttt{env'}.
    \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\SDeclSomeBegin, lastline=\SDeclSomeEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.SDeclNone \label{sec:TypingRule.SDeclNone}}
 
   \subsection{Prose}
-    All of the following apply:
+Annotating statement~\texttt{s} in an environment~\texttt{env}
+(\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
+environment \texttt{new\_env} and all of the following apply:
    \begin{itemize}
-   \item \texttt{s} is a declaration statement with \texttt{ldk}, \texttt{ldi} and no initial expression;
+   \item \texttt{s} is a declaration statement with local identifiers \texttt{ldi} and no initial expression;
    \item \texttt{env', s'} is the result of annotating uninitialised local declarations \texttt{ldi} in \texttt{env};
    \item \texttt{new\_s} is \texttt{s'};
    \item \texttt{new\_env} is \texttt{env'}.
    \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\SDeclNoneBegin, lastline=\SDeclNoneEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 \chapter{Typing of Blocks}
 
 \section{TypingRule.Block \label{sec:TypingRule.Block}}
     
   \subsection{Prose}
-    \texttt{annotate\_block env return\_type s} is the result of annotating the
-    statement \texttt{s} in \texttt{env}.
+    Annotating a block \texttt{s} in an environment \texttt{env}, given a type
+\texttt{return\_type} (\texttt{annotate\_block env return\_type s}, is the
+result of annotating the statement \texttt{s} in \texttt{env}.
    
   \subsection{Example: TypingRule.Block0.asl}
-    \VerbatimInput{../tests/ASLTypingReference.t/TypingRule.Block0.asl}
+\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.Block0.asl}
 
   \subsection{Code}
     \VerbatimInput[firstline=\BlockBegin, lastline=\BlockEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
     A local identifier declared with var, let or constant is in scope
 from the point immediately after its declaration until the end of the
 immediately enclosing block.
@@ -3149,8 +3721,10 @@ an enclosing block.
  
 
 \chapter{Typing of Catchers}
-  \texttt{annotate\_catchers env return\_type (name\_opt, ty, stmt)} is \texttt{(name\_opt, ty,
-  new\_stmt)} and one of the following applies:
+Annotating catchers \texttt{(name\_opt, ty, stmt)} in an environment
+\texttt{env} given a type \texttt{return\_type} (\texttt{annotate\_catchers env
+return\_type (name\_opt, ty, stmt)}) results in \texttt{(name\_opt, ty,
+new\_stmt)} and one of the following applies:
 \begin{itemize}
 \item TypingRule.CatcherNone (see Section~\ref{sec:TypingRule.CatcherNone}),
 \item TypingRule.CatcherSome (see Section~\ref{sec:TypingRule.CatcherSome}).
@@ -3159,7 +3733,10 @@ an enclosing block.
 \section{TypingRule.CatcherNone \label{sec:TypingRule.CatcherNone}}
 
   \subsection{Prose}
-    All of the following apply:
+   Annotating catchers \texttt{(name\_opt, ty, stmt)} in an environment
+\texttt{env} given a type \texttt{return\_type} (\texttt{annotate\_catchers env
+return\_type (name\_opt, ty, stmt)}) results in \texttt{(name\_opt, ty,
+new\_stmt)} and all of the following apply:
    \begin{itemize}
    \item \texttt{ty} has the structure of an exception type;
    \item \texttt{name\_opt} gives no name;
@@ -3167,44 +3744,51 @@ an enclosing block.
    \item \texttt{new\_stmt} is the result of annotating \texttt{stmt} in \texttt{env'} with \texttt{return\_type}.
    \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
-
-  \subsection{Formally}
     \VerbatimInput[firstline=\CatcherNoneBegin, lastline=\CatcherNoneEnd]{../Typing.ml}
 
-  \subsection{Comments}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
+
+\subsection{Comments}
     This aims to encompass LRM Section 7.4.3 R\_SDJK.
 
 \section{TypingRule.CatcherSome \label{sec:TypingRule.CatcherSome}}
 
   \subsection{Prose}
-    All of the following apply:
+   Annotating catchers \texttt{(name\_opt, ty, stmt)} in an environment
+\texttt{env} given a type \texttt{return\_type} (\texttt{annotate\_catchers env
+return\_type (name\_opt, ty, stmt)}) results in \texttt{(name\_opt, ty,
+new\_stmt)} and all of the following apply:
    \begin{itemize}
    \item \texttt{ty} has the structure of an exception type;
    \item \texttt{name\_opt} gives a name \texttt{name};
    \item \texttt{name} is not already declared in \texttt{env};
-   \item \texttt{name} is annotated with \texttt{ty} in \texttt{env};
+   \item \texttt{name} has type \texttt{ty} in \texttt{env};
    \item \texttt{env'} is \texttt{env} modified to have \texttt{name} locally declared as immutable of type \texttt{ty};
    \item \texttt{new\_stmt} is the result of annotating \texttt{stmt} in \texttt{env'} with \texttt{return\_type}.
    \end{itemize}
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
     \VerbatimInput[firstline=\CatcherSomeBegin, lastline=\CatcherSomeEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-  \subsection{Comments}
+\subsection{Comments}
     This aims to encompass LRM Section 7.4.3 R\_SDJK.
 
-\chapter{Typing of Function Calls}
-\texttt{annotate\_call loc en name args eqs call\_type} annotates the call to subprogram
-\texttt{name} with arguments \texttt{args} and parameters \texttt{eqs}. Formally, \texttt{annotate\_call loc
-en name args eqs call\_type} is \texttt{(name1, args, eqs2, ret\_ty1)} or an error is
-raised and one of the following applies:
+\chapter{Typing of Subprogram Calls}
+
+Annotating the call to subprogram \texttt{name} with arguments \texttt{args} and
+parameters \texttt{eqs} (\texttt{annotate\_call}) results in \texttt{(name1,
+args, eqs2, ret\_ty1)} or an error is raised and one of the following applies:
 \begin{itemize}
 \item TypingRule.FCallBadArity (see Section~\ref{sec:TypingRule.FCallBadArity}),
 \item TypingRule.FCallGetter (see Section~\ref{sec:TypingRule.FCallGetter}),
@@ -3214,122 +3798,153 @@ raised and one of the following applies:
 
 \section{TypingRule.FCallBadArity \label{sec:TypingRule.FCallBadArity}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose} 
+  Annotating the call to subprogram \texttt{name} with arguments \texttt{args}
+and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
+\texttt{(name1, args, eqs2, ret\_ty1)} or an error is raised and all of the
+following apply:
    \begin{itemize}
-   \item \texttt{caller\_arg\_types, args1} is the result of annotating \texttt{args} in \texttt{env};
-   \item \texttt{name} is bound in \texttt{env} to a subprogram with a unique name \texttt{name1}
-      whose argument types \texttt{callee\_arg\_types} type-clash
-      \texttt{caller\_arg\_types} and whose return type is \texttt{ret\_ty};
-   \item \texttt{eqs1} is the list made of both \texttt{eqs} and \texttt{extra\_nargs};
-   \item the lists \texttt{callee\_arg\_types} and \texttt{args1} do not have the same length;
-   \item an error "Bad Arity" is raised.
+   \item \texttt{name} is bound in \texttt{env} to a function with argument types \texttt{callee\_arg\_types};
+   \item the lists \texttt{callee\_arg\_types} and \texttt{args} do not have the same length;
+   \item an error ``\texttt{Bad Arity}'' is raised.
    \end{itemize}
 
-    \subsection{Examples}
-
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\FCallBadArityBegin, lastline=\FCallBadArityEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
- \section{TypingRule.FCallGetter \label{sec:TypingRule.FCallGetter}}
+\section{TypingRule.FCallGetter \label{sec:TypingRule.FCallGetter}}
 
-    \subsection{Prose}
-    All of the following apply:
+  \subsection{Prose}
+  Annotating the call to subprogram \texttt{name} with arguments \texttt{args}
+and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
+\texttt{(name1, args, eqs2, ret\_ty1)} or an error is raised and all of the following apply:
    \begin{itemize}
    \item \texttt{caller\_arg\_types, arg1} is the result of annotating \texttt{args} in \texttt{env};
    \item \texttt{name} is bound in \texttt{env} to a subprogram with argument types
       \texttt{callee\_arg\_types};
-   \item \texttt{eqs2} is \texttt{eqs1} modified to add all the type equations from the
-      type-clash of \texttt{caller\_arg\_types} and \texttt{callee\_arg\_types};
-   \item \texttt{call\_type} is a either a subprogram or a getter type;
+   \item \texttt{eqs2} is \texttt{eqs1} appended with the equations deduced by
+     using the types of the actual arguments \texttt{caller\_arg\_types} to
+     defined parameters in \texttt{callee\_arg\_types};
+   \item \texttt{call\_type} is either a subprogram or a getter type;
    \item \texttt{ret\_ty1} is the result of renaming \texttt{ty} in \texttt{eqs2}.
    \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\FCallGetterBegin, lastline=\FCallGetterEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
 
 \section{TypingRule.FCallSetter \label{sec:TypingRule.FCallSetter}}
 
-    \subsection{Prose}
-    All of the following apply:
-   \begin{itemize}
-   \item \texttt{caller\_arg\_types, arg1} is the result of annotating \texttt{args} in \texttt{env};
-   \item \texttt{name} is bound in \texttt{env} to a subprogram with a unique name \texttt{name1} whose argument types \texttt{callee\_arg\_types} type-clash \texttt{caller\_arg\_types} and whose return type is \texttt{ret\_ty};
-   \item \texttt{eqs1} is the list made of both \texttt{eqs} and \texttt{extra\_nargs};
-   \item \texttt{eqs2} is ;
-   \item \texttt{call\_type} is a setter or procedure type;
-   \item \texttt{ret\_ty} is None;
-   \item \texttt{ret\_ty1} is None.
-   \end{itemize}
+  \subsection{Prose}
+  Annotating the call to subprogram \texttt{name} with arguments \texttt{args}
+  and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
+  \texttt{(name1, args, eqs2, ret\_ty1)} or an error is raised and all of the
+  following apply:
+  \begin{itemize}
+    \item \texttt{caller\_arg\_types, arg1} is the result of annotating
+      \texttt{args} in \texttt{env};
+    \item \texttt{name} is bound in \texttt{env} to a subprogram with a unique
+      name \texttt{name1} whose argument types \texttt{callee\_arg\_types}
+      type-clash \texttt{caller\_arg\_types} and whose return type is
+      \texttt{ret\_ty};
+    \item \texttt{eqs1} is the list made of both \texttt{eqs} and
+      \texttt{extra\_nargs};
+    \item \texttt{eqs2} is \texttt{eqs1} appended with the equations deduced by
+      using the types of the actual arguments \texttt{caller\_arg\_types} to
+      defined parameters in \texttt{callee\_arg\_types};
+    \item \texttt{call\_type} is a setter or procedure type;
+    \item \texttt{ret\_ty} is None;
+    \item \texttt{ret\_ty1} is None.
+  \end{itemize}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\FCallSetterBegin, lastline=\FCallSetterEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-    \subsection{Comments}
-
+\isempty{\subsection{Comments}}
 
 \section{TypingRule.FCallMismatch \label{sec:TypingRule.FCallMismatch}}
 
-    \subsection{Prose}
-    All of the following apply:
-   \begin{itemize}
-   \item \texttt{caller\_arg\_types, arg1} is the result of annotating \texttt{args} in \texttt{env};
-   \item \texttt{extra\_nargs, name1, callee\_arg\_types, ret\_ty} is the result of trying to
-      find the name \texttt{name} with \texttt{caller\_arg\_types} in \texttt{env};
-   \item \texttt{eqs1} is the list made of both \texttt{eqs} and \texttt{extra\_nargs};
-   \item \texttt{eqs2} is ;
-   \item \texttt{call\_type} is not a subprogram, getter, setter or procedure type;
-   \item an error "Mismatched Return Value" is raised.
-   \end{itemize}
+  \subsection{Prose}
 
-    \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\FCallMismatchBegin, lastline=\FCallMismatchEnd]{../Typing.ml}
 
   \subsection{Formally}
 
-    \subsection{Comments}
+  \subsection{Comments}
 
+\chapter{Typing of Subprograms}
+Annotating a subprogram \texttt{f} in an environment \texttt{env}
+(\texttt{annotate\_func}) results in \texttt{f}, \texttt{new\_body} and
+\texttt{name}.
 
-\chapter{Typing of Functions}
-\texttt{annotate\_func loc env f} annotates the subprogram named \texttt{f} and returns \texttt{f},
-\texttt{new\_body} and \texttt{name}.
-
-\section{TypingRule.Func \label{sec:TypingRule.Func}}
+\section{TypingRule.Subprogram \label{sec:TypingRule.Subprogram}}
 
   \subsection{Prose}
-  All of the following apply:
+Annotating a subprogram \texttt{f} in an environment \texttt{env}
+(\texttt{annotate\_func}) results in \texttt{f}, \texttt{new\_body} and all of
+the following apply:
  \begin{itemize}
- \item \texttt{env1} is \texttt{env} modified to have an empty local environment;
- \item \texttt{env2} is \texttt{env1} with every formal argument declared as immutable with its type;
- \item \texttt{env3} is \texttt{env2} modified to add explicit parameters;
- \item \texttt{env4} is \texttt{env3} modified to resolve dependently typed identifiers in the arguments;
- \item \texttt{env5} is \texttt{env4} modified to resolve dependently typed identifiers in the result type;
- \item \texttt{body} is the body given by \texttt{f};
- \item \texttt{new\_body} is the result of annotating \texttt{body} in \texttt{env5};
- \item \texttt{name} is the name \texttt{f} as found in \texttt{env5}.
+   \item \texttt{env1} is \texttt{env} modified to have an empty local
+     environment and a return type given by \texttt{f};
+   \item \texttt{env2} is \texttt{env1} with every formal argument given by
+     \texttt{f} declared as immutable with its type;
+   \item \texttt{env3} is \texttt{env2} modified to add explicit parameters
+     given by \texttt{f};
+   \item \texttt{env4} is \texttt{env3} modified to resolve dependently typed
+     identifiers in the arguments given by \texttt{f};
+   \item \texttt{env5} is \texttt{env4} modified to resolve dependently typed
+     identifiers in the result type given by \texttt{f};
+   \item \texttt{body} is the body given by \texttt{f};
+   \item \texttt{new\_body} is the result of annotating \texttt{body} in
+     \texttt{env5}.
  \end{itemize} 
 
-  \subsection{Examples}
+  \subsection{Example}
 
   \subsection{Code}
+    \VerbatimInput[firstline=\SubprogramBegin, lastline=\SubprogramEnd]{../Typing.ml}
 
-  \subsection{Formally}
+\begin{emptyformal}
+    \subsection{Formally}
+\end{emptyformal}
 
-    \subsection{Comments}
+\isempty{\subsection{Comments}}
 
+\chapter{Side-effects}
+
+Side-effects can arise due to:
+\begin{itemize}
+\item Reads and Writes to global variables;
+\item Exceptions;
+\item Calls to primitives.
+\end{itemize}
+
+\bibliographystyle{plain}
+\bibliography{ASL}
 
 \end{document}
