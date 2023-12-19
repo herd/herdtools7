@@ -3783,7 +3783,9 @@ and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
    \item \texttt{caller\_arg\_types, arg1} is the result of annotating \texttt{args} in \texttt{env};
    \item \texttt{name} is bound in \texttt{env} to a subprogram with argument types
       \texttt{callee\_arg\_types};
-   \item \texttt{eqs2} is \texttt{eqs1} modified to add all the type equations of \texttt{caller\_arg\_types} and \texttt{callee\_arg\_types};
+   \item \texttt{eqs2} is \texttt{eqs1} appended with the equations deduced by
+     using the types of the actual arguments \texttt{caller\_arg\_types} to
+     defined parameters in \texttt{callee\_arg\_types};
    \item \texttt{call\_type} is either a subprogram or a getter type;
    \item \texttt{ret\_ty1} is the result of renaming \texttt{ty} in \texttt{eqs2}.
    \end{itemize}
@@ -3802,17 +3804,25 @@ and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
 
   \subsection{Prose}
   Annotating the call to subprogram \texttt{name} with arguments \texttt{args}
-and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
-\texttt{(name1, args, eqs2, ret\_ty1)} or an error is raised and all of the following apply:
-   \begin{itemize}
-   \item \texttt{caller\_arg\_types, arg1} is the result of annotating \texttt{args} in \texttt{env};
-   \item \texttt{name} is bound in \texttt{env} to a subprogram with a unique name \texttt{name1} whose argument types \texttt{callee\_arg\_types} type-clash \texttt{caller\_arg\_types} and whose return type is \texttt{ret\_ty};
-   \item \texttt{eqs1} is the list made of both \texttt{eqs} and \texttt{extra\_nargs};
-   \item \texttt{eqs2} is ;
-   \item \texttt{call\_type} is a setter or procedure type;
-   \item \texttt{ret\_ty} is None;
-   \item \texttt{ret\_ty1} is None.
-   \end{itemize}
+  and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
+  \texttt{(name1, args, eqs2, ret\_ty1)} or an error is raised and all of the
+  following apply:
+  \begin{itemize}
+    \item \texttt{caller\_arg\_types, arg1} is the result of annotating
+      \texttt{args} in \texttt{env};
+    \item \texttt{name} is bound in \texttt{env} to a subprogram with a unique
+      name \texttt{name1} whose argument types \texttt{callee\_arg\_types}
+      type-clash \texttt{caller\_arg\_types} and whose return type is
+      \texttt{ret\_ty};
+    \item \texttt{eqs1} is the list made of both \texttt{eqs} and
+      \texttt{extra\_nargs};
+    \item \texttt{eqs2} is \texttt{eqs1} appended with the equations deduced by
+      using the types of the actual arguments \texttt{caller\_arg\_types} to
+      defined parameters in \texttt{callee\_arg\_types};
+    \item \texttt{call\_type} is a setter or procedure type;
+    \item \texttt{ret\_ty} is None;
+    \item \texttt{ret\_ty1} is None.
+  \end{itemize}
 
   \subsection{Examples}
 
@@ -3830,16 +3840,23 @@ Annotating a subprogram \texttt{f} in an environment \texttt{env} (\texttt{annot
 \section{TypingRule.Subprogram \label{sec:TypingRule.Subprogram}}
 
   \subsection{Prose}
-Annotating a subprogram \texttt{f} in an environment \texttt{env} (\texttt{annotate\_func}) results in \texttt{f},
-\texttt{new\_body} and all of the following apply:
+Annotating a subprogram \texttt{f} in an environment \texttt{env}
+(\texttt{annotate\_func}) results in \texttt{f}, \texttt{new\_body} and all of
+the following apply:
  \begin{itemize}
- \item \texttt{env1} is \texttt{env} modified to have an empty local environment;
- \item \texttt{env2} is \texttt{env1} with every formal argument declared as immutable with its type;
- \item \texttt{env3} is \texttt{env2} modified to add explicit parameters;
- \item \texttt{env4} is \texttt{env3} modified to resolve dependently typed identifiers in the arguments;
- \item \texttt{env5} is \texttt{env4} modified to resolve dependently typed identifiers in the result type;
- \item \texttt{body} is the body given by \texttt{f};
- \item \texttt{new\_body} is the result of annotating \texttt{body} in \texttt{env5}.
+   \item \texttt{env1} is \texttt{env} modified to have an empty local
+     environment and a return type given by \texttt{f};
+   \item \texttt{env2} is \texttt{env1} with every formal argument given by
+     \texttt{f} declared as immutable with its type;
+   \item \texttt{env3} is \texttt{env2} modified to add explicit parameters
+     given by \texttt{f};
+   \item \texttt{env4} is \texttt{env3} modified to resolve dependently typed
+     identifiers in the arguments given by \texttt{f};
+   \item \texttt{env5} is \texttt{env4} modified to resolve dependently typed
+     identifiers in the result type given by \texttt{f};
+   \item \texttt{body} is the body given by \texttt{f};
+   \item \texttt{new\_body} is the result of annotating \texttt{body} in
+     \texttt{env5}.
  \end{itemize} 
 
   \subsection{Examples}
