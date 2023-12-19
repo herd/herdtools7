@@ -43,10 +43,18 @@
  *)
 catdep (* This option tells that the cat file computes dependencies *)
 
+include "aarch64util.cat"
+
+(* Local write successor *)
+let lws = [M]; (po & same-loc); [W | MMU & FAULT]
+
+(* Local read successor *)
+let lrs = [W]; ((po & same-loc) & ~(intervening(W,(po & same-loc)))); [R]
+
 (* Dependency through registers and memory *)
 let rec dtrm =
-  rf-reg \ ([W & range(lxsx)];rf-reg)
-  | rfi
+  [~range(lxsx)]; rf-reg
+  | lrs 
   | iico_data
   | dtrm; dtrm
 
@@ -55,7 +63,7 @@ let ADDR = Rreg \ DATA
 let basic-dep =
    [Exp & R | Rreg]; dtrm?
 let data = (basic-dep; [DATA]; iico_data+; [W]) \ same-instance
-let addr = (basic-dep; [ADDR]; iico_data+; [M | TLBI | IC.IVAU | DC.CVAU]) \ same-instance
+let addr = [Exp & M]; (basic-dep; [ADDR]; iico_data+; [M | TLBI | IC.IVAU | DC.CVAU]) \ same-instance
 let ctrl = (basic-dep; [BCC]; po) \ same-instance
 
 (** Pick dependencies *)
@@ -67,6 +75,8 @@ let pick-addr-dep =
    pick-basic-dep; [ADDR]; iico_data+; [M]
 let pick-data-dep =
    pick-basic-dep; [DATA]; iico_data+; [W]
+let pick-addr-dep =
+   pick-basic-dep; [ADDR]; iico_data+; [M]
 let pick-ctrl-dep =
    pick-basic-dep; [BCC]; po
 let pick-dep =
@@ -79,7 +89,3 @@ let pick-dep =
 
 include "aarch64show.cat"
 
-let addr = [Exp]; (addr \ same-instance)
-let data = data \ same-instance
-let ctrl = ctrl \ same-instance
-let pick-dep = pick-dep \ same-instance
