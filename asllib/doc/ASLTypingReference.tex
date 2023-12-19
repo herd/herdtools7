@@ -2767,7 +2767,42 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
 \section{TypingRule.PSingle \label{sec:TypingRule.PSingle}}
 
     \subsection{Prose}
-Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
+      Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and all of the following apply:
+      \begin{itemize}
+        \item \texttt{p} is the pattern that matches the expression \texttt{e};
+        \item \texttt{t\_e, e'} is the result of annotating the expression \texttt{e} in \texttt{env};
+        \item One of the following applies:
+          \begin{itemize}
+            \item All of the following apply:
+              \begin{itemize}
+                \item \texttt{t\_e} has the structure of the real type;
+                \item \texttt{t} has the structure of the real type;
+              \end{itemize}
+            \item All of the following apply:
+              \begin{itemize}
+                \item \texttt{t\_e} has the structure of the boolean type;
+                \item \texttt{t} has the structure of the boolean type;
+              \end{itemize}
+            \item All of the following apply:
+              \begin{itemize}
+                \item \texttt{t\_e} has the structure of an integer type;
+                \item \texttt{t} has the structure of an integer type;
+              \end{itemize}
+            \item All of the following apply:
+              \begin{itemize}
+                \item \texttt{t\_e} has the structure of a bitvector type;
+                \item \texttt{t} has the structure of a bitvector type;
+                \item the bitvector types \texttt{t\_e} and \texttt{t} have the same length;
+              \end{itemize}
+            \item All of the following apply:
+              \begin{itemize}
+                \item \texttt{t\_e} has the structure of an enumeration type;
+                \item \texttt{t} has the structure of an enumeration type;
+                \item the enumeration types \texttt{t\_e} and \texttt{t} have the same literals;
+              \end{itemize}
+          \end{itemize}
+        \item \texttt{new\_p} is \texttt{p};
+      \end{itemize}
 
   \subsection{Examples}
 
@@ -3387,17 +3422,74 @@ environment \texttt{new\_env} and all of the following apply:
       \texttt{e1} and \texttt{e2} and a statement block \texttt{s'};
    \item \texttt{t1,e1'} is the result of annotating \texttt{e1} in \texttt{env};
    \item \texttt{t2,e2'} is the result of annotating \texttt{e2} in \texttt{env};
+   \item \texttt{t1} has the structure of an integer type;
+   \item \texttt{t2} has the structure of an integer type;
    \item One of the following applies:
-     \item All of the following apply:
-       \begin{itemize}
-       \item \texttt{t1} has the structure of an integer type;
-       \item \texttt{t2} has the structure of an integer type;
-       \item \texttt{ty} is ;
-       \item \texttt{s''} is the result of annotating \texttt{s'} in \texttt{env};
-       \item \texttt{new\_s} is a for statement with index \texttt{id}, direction \texttt{dir}, two expressions \texttt{e1'} and \texttt{e2'} and statement \texttt{s''};
-       \item \texttt{new\_env} is \texttt{env}.
-       \end{itemize}
-     \item an error ``\texttt{Typing Assumption Failed}'' is raised.
+     \begin{itemize}
+       \item All of the following applies:
+         \begin{itemize}
+           \item \texttt{t1} has the structure of an unconstrained integer type;
+           \item \texttt{ty} is the unconstrained integer type;
+         \end{itemize}
+       \item All of the following applies:
+         \begin{itemize}
+           \item \texttt{t2} has the structure of an unconstrained integer type;
+           \item \texttt{ty} is the unconstrained integer type;
+         \end{itemize}
+       \item All of the following applies:
+         \begin{itemize}
+           \item \texttt{t1} has the structure of a constrained integer type with constraint \texttt{cs1};
+           \item \texttt{t2} has the structure of a constrained integer type with constraint \texttt{cs2};
+           \item One of the following applies:
+             \begin{itemize}
+               \item All of the following applies:
+                 \begin{itemize}
+                   \item \texttt{dir} is \texttt{to};
+                   \item \texttt{bot\_cs} is \texttt{cs1};
+                   \item \texttt{top\_cs} is \texttt{cs2};
+                 \end{itemize}
+               \item All of the following applies:
+                 \begin{itemize}
+                   \item \texttt{dir} is \texttt{down to};
+                   \item \texttt{bot\_cs} is \texttt{cs2};
+                   \item \texttt{top\_cs} is \texttt{cs1};
+                 \end{itemize}
+             \end{itemize}
+           \item One of the following applies:
+             \begin{itemize}
+               \item All of the following applies:
+                 \begin{itemize}
+                   \item \texttt{bot\_cs} contains a an expression that is not evaluable at compile-time;
+                   \item \texttt{cs} is the empty constraint;
+                 \end{itemize}
+               \item All of the following apply:
+                 \begin{itemize}
+                   \item \texttt{top\_cs} contains a an expression that is not evaluable at compile-time;
+                   \item \texttt{cs} is the empty constraint;
+                 \end{itemize}
+               \item All of the following apply:
+                 \begin{itemize}
+                   \item \texttt{bot} is the minimum of the constraints \texttt{bot\_cs};
+                   \item \texttt{top} is the maximum of the constraints \texttt{top\_cs};
+                   \item \texttt{bot} is less or equal than \texttt{top};
+                   \item \texttt{cs} is the constraint \texttt{bot .. top};
+                 \end{itemize}
+               \item All of the following apply:
+                 \begin{itemize}
+                   \item \texttt{bot} is the minimum of the constraints \texttt{bot\_cs};
+                   \item \texttt{top} is the maximum of the constraints \texttt{top\_cs};
+                   \item \texttt{top} is strictly less than \texttt{bot}
+                   \item \texttt{cs} is \texttt{cs1};
+                 \end{itemize}
+             \end{itemize}
+           \item \texttt{ty} is the constrained integer type with constraint \texttt{cs};
+         \end{itemize}
+     \end{itemize}
+   \item \texttt{id} is not bound in \texttt{env};
+   \item \texttt{env'} is \texttt{env} is \texttt{env} modified so that \texttt{id} is locally declared of type \texttt{ty};
+   \item \texttt{s''} is the result of annotating \texttt{s'} in \texttt{env'};
+   \item \texttt{new\_s} is a for statement with index \texttt{id}, direction \texttt{dir}, two expressions \texttt{e1'} and \texttt{e2'} and statement \texttt{s''};
+   \item \texttt{new\_env} is \texttt{env}.
    \end{itemize}
 
   \subsection{Examples}
