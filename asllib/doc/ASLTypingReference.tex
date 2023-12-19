@@ -1594,7 +1594,7 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
   \begin{itemize}
   \item \texttt{e} denotes the slicing of expression \texttt{e'} by the slices \texttt{slices};
   \item \texttt{t\_e',e'} is the result of annotating the expression \texttt{e'} in \texttt{env};
-  \item \texttt{t\_e'} has the structure of an integer or a bitvector;
+  \item an error ``\texttt{Conflicting Types}'' is raised or \texttt{t\_e'} has the structure of an integer or a bitvector and all of the following apply:
   \item \texttt{w} is the width of \texttt{slices};
   \item \texttt{slices'} is the result of annotating \texttt{slices} in \texttt{env};
   \item \texttt{t} is the bitvector type of width \texttt{w};
