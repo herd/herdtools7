@@ -92,11 +92,20 @@ github repository.
 An \emph{abstract syntax tree} (AST, for short) represents an ASL program as a labelled tree. 
 
 \section{Environments}
+
+An environment is what the typing operates over: a structure which amongst
+other things associates types to variables. Intuitively, the typing of a
+program makes an initial environment evolve, with new types as given by the
+variable declarations of the program. Environments map names to variables and
+subprograms.
+
+More precisely, a \emph{typing environment} (environment, for short) maps AST
+nodes to types.
+
 A \emph{type judgement} associates a node in an abstract syntax tree (which
 intuitively corresponds to an ASL construct) with a certain type. We then say
 that the node is \emph{annotated} with that type.
 %
-A \emph{typing environment} (environment, for short) maps AST nodes to types.
 
 Defining the type annotation requires inferring various auxiliary attributes
 for AST nodes. We consider these auxiliary attributes as part of the
@@ -664,8 +673,8 @@ may hold.
 
   \subsection{Formally}
 
-\subsection{Comments}
-  This aims to encompass LRM Section 3.4.1 D\_ZTPP, R\_WJYH, R\_HJPN, R\_CZTX, R\_TPHR
+  \subsection{Comments}
+    This aims to encompass LRM Section 3.4.1 D\_ZTPP, R\_WJYH, R\_HJPN, R\_CZTX, R\_TPHR
 
 \chapter{Type satisfaction and related notions}
 
