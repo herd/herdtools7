@@ -1201,11 +1201,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                       check_type_satisfies e env t_index' wanted_t_index
                     in
                     (ty', E_GetArray (e', e_index') |> here)
-                | _ -> conflict e [ T_Int None; default_t_bits ] t_e'
-                |: TypingRule.EGetArray )
-    (* End *)
-    (* Begin ESliceOrEGetArrayError *)
-            | _ -> conflict e [ T_Int None; default_t_bits ] t_e' |: TypingRule.ESliceOrEGetArrayError ))
+                | _ -> conflict e [ T_Int None; default_t_bits ] t_e')
+            | _ -> conflict e [ T_Int None; default_t_bits ] t_e' |: TypingRule.EGetArray))
     (* End *)
     | E_GetField (e1, field_name) -> (
         let t_e1, e2 = annotate_expr env e1 in

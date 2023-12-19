@@ -520,7 +520,7 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
         \item All of the following apply:
           \begin{itemize}
           \item \texttt{x} is not declared in the global environment; 
-          \item an error "Undefined Identifier" is raised;
+          \item an error ``\texttt{Undefined Identifier}'' is raised;
           \end{itemize}
         \item All of the following apply:
           \begin{itemize}
@@ -1497,7 +1497,7 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
   \begin{itemize}
   \item \texttt{e} is a variable \texttt{x};
   \item \texttt{x} is not bound in \texttt{env};
-  \item an error "Undefined Identifier" is raised.
+  \item an error ``\texttt{Undefined Identifier}'' is raised.
   \end{itemize}
 
   \subsection{Examples}
@@ -1646,17 +1646,10 @@ expression.
   \item \texttt{e} denotes the slicing of expression \texttt{e'} by the slices \texttt{slices};
   \item \texttt{t\_e',e'} is the result of annotating the expression \texttt{e'} in \texttt{env};
   \item \texttt{t\_e'} has the structure of an array with index type \texttt{wanted\_t\_index} and element type \texttt{t};
-  \item \texttt{slices} is a single expression \texttt{e\_index};
+  \item an error ``Conflicting Types'' is raised or \texttt{slices} is a single expression \texttt{e\_index} and all of the following apply:
   \item \texttt{t\_index', e\_index'} is the result of annotating \texttt{e\_index} in \texttt{env};
-  \item One of the following applies:
-    \begin{itemize}
-    \item All of the following apply:
-      \begin{itemize}
-      \item \texttt{t\_index'} type-satisfies \texttt{wanted\_t\_index} as per Section~\ref{sec:TypingRule.TypeSatisfaction};
-      \item \texttt{new\_e} is an access to array \texttt{e'} at index \texttt{e\_index'}.
-      \end{itemize}
-    \item an error ``\texttt{Typing Assumption Failed}''
-    \end{itemize}
+  \item an error ``\texttt{Typing Assumption Failed}'' or \texttt{t\_index'} type-satisfies \texttt{wanted\_t\_index} as per Section~\ref{sec:TypingRule.TypeSatisfaction} and all of the following apply:
+  \item \texttt{new\_e} is an access to array \texttt{e'} at index \texttt{e\_index'}.
   \end{itemize}
 
   \subsection{Examples}
@@ -1668,25 +1661,6 @@ expression.
 
   \subsection{Comments}
 
-\section{TypingRule.ESliceOrEGetArrayError \label{sec:TypingRule.ESliceOrEGetArrayError}}
-
-  \subsection{Prose}
-  The result of annotating the expression \texttt{e} in \texttt{env} is an error and all of the following apply:
-  \begin{itemize}
-  \item \texttt{e} denotes the slicing of expression \texttt{e'} by the slices \texttt{slices};
-  \item \texttt{t\_e',e'} is the result of annotating the expression \texttt{e'} in \texttt{env};
-  \item \texttt{t\_e'} does not have the structure of an integer or a bitvector;
-  \item an error ``\texttt{Conflicting Types}'' is raised.
-  \end{itemize}
-
-  \subsection{Examples}
-
-  \subsection{Code}
-    \VerbatimInput[firstline=\ESliceOrEGetArrayErrorBegin, lastline=\ESliceOrEGetArrayErrorEnd]{../Typing.ml}
-
-  \subsection{Formally}
-
-  \subsection{Comments}
 \section{TypingRule.EStructuredNotStructured \label{sec:TypingRule.EStructuredNotStructured}}
 
   \subsection{Prose}
@@ -2289,7 +2263,7 @@ all of the following apply:
    \item \texttt{le2} is the result of annotating \texttt{le1} in \texttt{env};
    \item \texttt{t\_le1} has the structure of an exception or a record type with fields \texttt{fields};
    \item \texttt{field} is not declared in \texttt{fields};
-   \item an error \texttt{``Bad Field''} is raised.
+   \item an error ``\texttt{Bad Field}'' is raised.
    \end{itemize}
 
   \subsection{Examples}
@@ -2662,7 +2636,7 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
            \item both \texttt{t} and \texttt{t\_e} have the structure of a real;
            \item \texttt{new\_p} is the pattern which matches anything greater than or equal to \texttt{e'}.
            \end{itemize} 
-     \item a ``\texttt{Conflict Types}'' error is raised.
+     \item an error ``\texttt{Conflict Types}'' is raised.
      \end{itemize}
    \end{itemize}
 
@@ -2695,7 +2669,7 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
            \item both \texttt{t} and \texttt{t\_e} have the structure of a real;
            \item \texttt{new\_p} is the pattern which matches anything lesser than or equal to \texttt{e'}.
            \end{itemize}
-     \item a ``\texttt{Conflict Types}'' error is raised.
+     \item an error ``\texttt{Conflict Types}'' is raised.
      \end{itemize}
    \end{itemize}
 
@@ -2751,7 +2725,7 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
            \item \texttt{new\_p} is the pattern which matches anything within the range given by
       expressions \texttt{e1'} and \texttt{e2'}.
            \end{itemize}
-     \item a ``\texttt{Conflict Types}'' error is raised.
+     \item an error ``\texttt{Conflicting Types}'' is raised.
      \end{itemize}
    \end{itemize}
 
@@ -2828,7 +2802,7 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
        \item \texttt{t} type-satisfies \texttt{t\_m};
        \item \texttt{new\_p} is \texttt{p}.
        \end{itemize}
-     \item a ``\texttt{Typing Assumption Failed}'' error is raised.
+     \item an error ``\texttt{Typing Assumption Failed}'' is raised.
    \end{itemize}
 
   \subsection{Examples}
@@ -3176,7 +3150,7 @@ environment \texttt{new\_env} and all of the following apply:
        \item the enclosing subprogram has a \texttt{return} type;
        \end{itemize}
      \end{itemize}
-   \item An error ``\texttt{Bad Return Statement}'' is raised.
+   \item an error ``\texttt{Bad Return Statement}'' is raised.
    \end{itemize}
 
   \subsection{Examples}
