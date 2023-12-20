@@ -40,6 +40,9 @@ module type S = sig
 
   val to_transitive_rel : t -> Rel.t
   (** [to_transitive_rel t] is the InnerRel representation of t. *)
+
+  val to_implicitely_transitive_rel : t -> Rel.t
+  (** [to_implicitely_transitive_rel t] is a non-transitive representation of t. *)
 end
 
 module Make : functor (O : MySet.OrderedType) ->
