@@ -6,7 +6,7 @@ uint64_t x[2];
 }
 
  P0                      ;
- MOVI D0, #254           ;
+ MOVI D0, #65535         ;
  MOVI D1, #255           ;
  STP D0, D1, [X0]        ;
- exists (x[0]=254 /\ x[1]=255)
+ exists (x[0]=65535 /\ x[1]=255)

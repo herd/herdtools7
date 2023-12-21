@@ -1,0 +1,9 @@
+AArch64 V59
+(* Test DUP *)
+{
+}
+P0:              ;
+ MOV W1,#1       ;
+ DUP V0.4S,W1    ;
+
+forall 0:V0.4S={1,1,1,1}

@@ -23,7 +23,7 @@ module type I = sig
   val pp_reg : arch_reg -> string
   val reg_compare : arch_reg -> arch_reg -> int
   val reg_to_string  : arch_reg -> string
-  val internal_init : arch_reg -> (string * string) option
+  val internal_init : arch_reg -> string option -> (string * string) option
   val reg_class : arch_reg -> string
   val reg_class_stable : arch_reg -> string
   val comment : string

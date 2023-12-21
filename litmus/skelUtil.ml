@@ -168,6 +168,9 @@ module Make
            also dumping types used for alignment. *)
         val dump_vars_types : bool -> T.t -> unit
 
+       (* Dump (typedef) array register type *)
+        val dump_array_typedefs : T.t -> unit
+
         (* Dump definition of struct fields that point in code*)
         val define_label_fields : Label.Full.Set.t -> unit
 
@@ -572,6 +575,20 @@ module Make
           end else
             let module Insert =  ObjUtil.Insert(Cfg) in
             Insert.insert O.o "mbar.c"
+
+        let dump_array_typedefs test =
+          let iter_outs f proc = List.iter (f proc) in
+          let iter_all_outs f test =
+            List.iter
+              (fun (proc,(_,(outs,_))) -> iter_outs f proc outs)
+              test.T.code in
+          iter_all_outs
+            (fun _ (_,t) ->
+              match t with
+              | CType.Array (t',sz) ->
+                O.f "typedef %s %s[%i];" t' (CType.dump t) sz
+              | _ -> ())
+              test
 
         let dump_vars_types dump_align test =
           let _,env = build_env test in

@@ -1988,6 +1988,19 @@ module Make
         end >>=
         fun v -> write_reg_neon_sz sz r1 v ii
 
+      let addv var r1 r2 ii =
+        let open AArch64Base in
+        let nelem = neon_nelem r2 in
+        let sz = tr_simd_variant var in
+        let rec reduce n op =
+          match n with
+          | 0 -> op >>| read_reg_neon_elem false r2 0 ii >>= fun (v1,v2) -> M.add v1 v2
+          | _ ->
+             reduce (n-1) (op >>| read_reg_neon_elem false r2 n ii >>= fun (v1,v2) -> M.add v1 v2)
+        in
+        reduce (nelem-1) (M.add (V.intToV 0) (V.intToV 0)) >>=
+          fun v -> write_reg_neon_sz sz r1 v ii
+
 (******************************)
 (* Move constant instructions *)
 (******************************)
@@ -2148,6 +2161,28 @@ module Make
           let ops = neon_memops store_elem addr i rlist ii in
           List.fold_right (>>::) ops (M.unitT [()]) in
         let ops = List.map op (Misc.interval 0 (neon_nelem (List.hd rlist))) in
+        List.fold_right (>>::) ops (M.unitT [[()]])
+
+      let neon_memops_contigous memop addr step r ii =
+        let op idx =
+          let o = (idx + step) * neon_esize r / 8 in
+          M.add (V.intToV o) addr >>= fun addr -> memop idx r addr ii in
+        List.map op (Misc.interval 0 (neon_nelem r))
+
+      let load_m_contigous addr rlist ii =
+        let op i r =
+          let step = i*(neon_nelem r) in
+          let ops = neon_memops_contigous (load_elem MachSize.S128) addr step r ii in
+          reduce_ord ops in
+        let ops = List.mapi op rlist in
+        reduce_ord ops
+
+      let store_m_contigous addr rlist ii =
+        let op i r =
+          let step = i*(neon_nelem r) in
+          let ops = neon_memops_contigous store_elem addr step r ii in
+          List.fold_right (>>::) ops (M.unitT [()]) in
+        let ops = List.mapi op rlist in
         List.fold_right (>>::) ops (M.unitT [[()]])
 
       (* Data cache operations *)
@@ -2451,6 +2486,15 @@ module Make
             stxr (bh_to_sz bh) t rr rs rd ii
 
         (* Neon operations *)
+        | I_ADDV(var,r1,r2) ->
+            !(addv var r1 r2 ii)
+        | I_DUP(r1,var,r2) ->
+            !(let sz = tr_variant var  in
+              read_reg_ord_sz sz r2 ii >>=
+              fun v -> write_reg_neon_rep (neon_sz r1) r1 v ii)
+        | I_FMOV_TG(_,r1,_,r2) ->
+            !(read_reg_neon false r2 ii >>=
+              fun v -> write_reg r1 v ii)
         | I_MOV_VE(r1,i1,r2,i2) ->
             !(read_reg_neon_elem false r2 i2 ii >>=
               fun v -> write_reg_neon_elem MachSize.S128 r1 i1 v ii)
@@ -2502,7 +2546,10 @@ module Make
             !!!(read_reg_ord rA ii >>= fun addr ->
             (mem_ss (load_elem_rep MachSize.S128) addr rs ii >>|
             post_kr rA addr kr ii))
-        | I_LD1M([_] as rs,rA,kr)
+        | I_LD1M(rs,rA,kr) ->
+            !!(read_reg_ord rA ii >>= fun addr ->
+            (load_m_contigous addr rs ii >>|
+            post_kr rA addr kr ii))
         | I_LD2M(rs,rA,kr)
         | I_LD3M(rs,rA,kr)
         | I_LD4M(rs,rA,kr) ->
@@ -2519,7 +2566,10 @@ module Make
             !!!(read_reg_ord rA ii >>= fun addr ->
             (mem_ss (store_elem i) addr rs ii >>|
             post_kr rA addr kr ii))
-        | I_ST1M([_] as rs,rA,kr)
+        | I_ST1M(rs,rA,kr) ->
+            !!!!(read_reg_ord rA ii >>= fun addr ->
+            (store_m_contigous addr rs ii >>|
+            post_kr rA addr kr ii))
         | I_ST2M(rs,rA,kr)
         | I_ST3M(rs,rA,kr)
         | I_ST4M(rs,rA,kr) ->
@@ -2935,7 +2985,7 @@ module Make
            m_fault >>| set_elr_el1 ii >>! B.Fault Dir.R
 (*  Cannot handle *)
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
-        | (I_LD1M _|I_ST1M _|I_STG _|I_STZG _) as i ->
+        | (I_STG _|I_STZG _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
 
 (* Compute a safe set of instructions that can
