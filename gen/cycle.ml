@@ -839,7 +839,7 @@ let set_same_loc st n0 =
                       CoSet.set_cell has a case for pairs.
                       However increment of current value is by 2 *)
                    let cell = CoSt.get_cell st in
-                   assert (Array.length cell=2) ;
+                   assert (Array.length cell>=2) ;
                    let st = CoSt.next_co st Ord in (* Pre-increment *)
                    let st = set_write_val_ord st n in
                    do_set_write_val next_x_ok st pte_val ns
@@ -994,7 +994,8 @@ let do_set_read_v =
                set_read_pair_v n cell
             | VecReg a ->
                let v = E.SIMD.read a cell in
-               n.evt <- { n.evt with vecreg=v; }
+               let v = E.SIMD.reduce v in
+               n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord }
             | Tag|CapaTag|CapaSeal ->
                 n.evt <- { n.evt with v = CoSt.get_co st bank; }
             | Pte ->

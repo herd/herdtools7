@@ -60,17 +60,21 @@ module Mixed =
 let bellatom = false
 module SIMD = struct
 
-  type atom = N1|N2|N3|N4
+  type atom = Ne1|Ne2|Ne3|Ne4|Ne2i|Ne3i|Ne4i
 
-  let fold_neon f r = f N1 (f N2 (f N3 (f N4 r)))
+  let fold_neon f r = f Ne1 (f Ne2 (f Ne3 (f Ne4 (f Ne2i (f Ne3i (f Ne4i r))))))
 
   let nregs = function
-    | N1 -> 1
-    | N2 -> 2
-    | N3 -> 3
-    | N4 -> 4
+    | Ne1 -> 1
+    | Ne2 | Ne2i -> 2
+    | Ne3 | Ne3i -> 3
+    | Ne4 | Ne4i -> 4
 
-  let pp n = Printf.sprintf "N%i" (nregs n)
+  let pp_opt = function
+    | Ne2i | Ne3i | Ne4i -> "i"
+    | _ -> ""
+
+  let pp n = Printf.sprintf "Ne%i%s" (nregs n) (pp_opt n)
 
   let initial sz =
     let sz = if sz <= 0 then 1 else sz in
@@ -82,16 +86,21 @@ module SIMD = struct
     let v = Array.copy v in
     for k = 0 to sz-1 do
       for i=0 to 3 do
-       let j = k+i*sz in
+        let j = match n with
+          | Ne2i | Ne3i | Ne4i -> k+i*sz
+          | Ne1  | Ne2 | Ne3 | Ne4 -> i+k*4
+        in
        v.(j) <- start+k
       done
     done ;
     v
 
-
   let read n v =
     let sz = nregs n in
-    let access r k = sz*k + r in
+    let access r k = match n with
+      | Ne2i | Ne3i | Ne4i -> sz*k + r
+      | Ne1 | Ne2 | Ne3 | Ne4 -> 4*r + k
+    in
     let rec reg r k =
       if k >= 4 then []
       else v.(access r k)::reg r (k+1) in
@@ -100,6 +109,8 @@ module SIMD = struct
       else reg r 0::regs (r+1) in
     regs 0
 
+  let reduce vec =
+    List.fold_right (+) (List.flatten vec) 0
 end
 
 type atom_rw =  PP | PL | AP | AL
@@ -411,10 +422,10 @@ let applies_atom (a,_) d = match a,d with
    let neon_as_integers =
      let open SIMD in
      function
-     | N1 -> 4
-     | N2 -> 8
-     | N3 -> 12
-     | N4 -> 16
+     | Ne1 -> 4
+     | Ne2 | Ne2i -> 8
+     | Ne3 | Ne3i -> 12
+     | Ne4 | Ne4i -> 16
 
    let atom_to_bank = function
    | Tag,None -> Code.Tag

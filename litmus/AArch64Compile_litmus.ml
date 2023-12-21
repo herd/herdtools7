@@ -58,6 +58,8 @@ module Make(V:Constant.S)(C:Config) =
     | I_ST4 (rs,_,_,_) | I_ST4M (rs,_,_) ->
         A.RegSet.of_list rs
     | I_LD1 (r,_,_,_) -> A.RegSet.of_list [r]
+    | I_MOV_FG (r,_,_,_) -> A.RegSet.of_list [r]
+    | I_MOV_VE (r,_,_,_) -> A.RegSet.of_list [r]
     | _ ->  A.RegSet.empty
 
 (* Generic funs for zr *)
@@ -125,13 +127,13 @@ module Make(V:Constant.S)(C:Config) =
     let v2type = function
       | V32 -> word
       | V64 -> quad
-      | V128 -> int128
+      | V128 -> int32x4_t
 
     let add_type t rs = List.map (fun r -> r,t) rs
     let add_w = add_type word
     let add_q = add_type quad
     let add_p = add_type voidstar (* pointer *)
-    let add_128 = add_type int128
+    let add_128 = add_type int32x4_t
     let add_v v = v2type v |> add_type
 
     (* pretty prints barrel shifters *)
@@ -548,37 +550,37 @@ module Make(V:Constant.S)(C:Config) =
         memo = sprintf "%s %s,[^i0]" memo (print_vecreg v "o" 0);
         inputs = [r2];
         outputs = [r1];
-        reg_env = [(r1,int128);(r2,voidstar)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar)]}
     | K k,S_NOEXT ->
       { empty_ins with
         memo = sprintf "%s %s,[^i0,#%i]" memo (print_vecreg v "o" 0) k;
         inputs = [r2];
         outputs = [r1];
-        reg_env = [(r1,int128);(r2,voidstar)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar)]}
     | RV (V32,rk),S_NOEXT ->
       { empty_ins with
         memo = sprintf "%s %s,[^i0,^wi1]" memo (print_vecreg v "o" 0);
         inputs = [r2;rk;];
         outputs = [r1];
-        reg_env = [(r1,int128);(r2,voidstar);(rk,word)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar);(rk,word)]}
     | RV (V32,rk),s ->
       { empty_ins with
         memo = sprintf "%s %s,[^i0,^wi1,%s]" memo (print_vecreg v "o" 0) (pp_shifter s);
         inputs = [r2;rk;];
         outputs = [r1];
-        reg_env = [(r1,int128);(r2,voidstar);(rk,word)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar);(rk,word)]}
     | RV (V64,rk), S_NOEXT ->
       { empty_ins with
         memo = sprintf "%s %s,[^i0,^i1]" memo (print_vecreg v "o" 0);
         inputs = [r2;rk;];
         outputs = [r1];
-        reg_env = [(r1,int128);(r2,voidstar);(rk,quad)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar);(rk,quad)]}
     | RV (V64,rk), s ->
       { empty_ins with
         memo = sprintf "%s %s,[^i0,^i1,%s]" memo (print_vecreg v "o" 0) (pp_shifter s);
         inputs = [r2;rk;];
         outputs = [r1];
-        reg_env = [(r1,int128);(r2,voidstar);(rk,quad)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar);(rk,quad)]}
     | _ -> assert false
 
     let load_simd_p v r1 r2 k =
@@ -586,26 +588,26 @@ module Make(V:Constant.S)(C:Config) =
         memo = sprintf "ldr %s, [^i0],#%i" (print_vecreg v "o" 0) k;
         inputs = [r2];
         outputs = [r1];
-        reg_env = [(r1,int128);(r2,voidstar)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar)]}
 
     let load_simd_s memo rs i rA kr = match kr with
     | K 0 ->
         { empty_ins with
           memo = sprintf "%s {%s}[%i],[^i0]" memo (print_simd_list rs "i" 1) i;
-          inputs = rA::rs;
-          outputs = [];
+          inputs = rA::rs; (* rs is intentionally in 'inputs', see comment for reg_class_stable *)
+          outputs = rs;
           reg_env = (add_128 rs) @ [(rA,voidstar)]}
     | K k ->
         { empty_ins with
           memo = sprintf "%s {%s}[%i],[^i0],#%i" memo (print_simd_list rs "i" 1) i k;
-          inputs = rA::rs;
-          outputs = [];
+          inputs = rA::rs; (* rs is intentionally in 'inputs', see comment for reg_class_stable *)
+          outputs = rs;
           reg_env = (add_128 rs) @ [(rA,voidstar)]}
     | RV (V64,rB) ->
         { empty_ins with
           memo = sprintf "%s {%s}[%i],[^i0],^i1" memo (print_simd_list rs "i" 2) i;
-          inputs = [rA;rB;]@rs;
-          outputs = [];
+          inputs = [rA;rB;]@rs; (* rs is intentionally in 'inputs', see comment for reg_class_stable *)
+          outputs = rs;
           reg_env = (add_128 rs) @ [(rA,voidstar);(rB,quad)]}
     | _ -> Warn.fatal "Illegal form of %s instruction" memo
 
@@ -696,37 +698,37 @@ module Make(V:Constant.S)(C:Config) =
         memo = sprintf "%s %s,[^i1]" memo (print_vecreg v "i" 0);
         inputs = [r1;r2];
         outputs = [];
-        reg_env = [(r1,int128);(r2,voidstar)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar)]}
     | K k,S_NOEXT ->
       { empty_ins with
         memo = sprintf "%s %s,[^i1,#%i]" memo (print_vecreg v "i" 0) k;
         inputs = [r1;r2];
         outputs = [];
-        reg_env = [(r1,int128);(r2,voidstar)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar)]}
     | RV (V32,rk),S_NOEXT ->
       { empty_ins with
         memo = sprintf "%s %s,[^i1,^wi2]" memo (print_vecreg v "i" 0);
         inputs = [r1;r2;rk];
         outputs = [];
-        reg_env = [(r1,int128);(r2,voidstar);(rk,word)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar);(rk,word)]}
     | RV (V32,rk),s ->
       { empty_ins with
         memo = sprintf "%s %s,[^i1,^wi2,%s]" memo (print_vecreg v "i" 0) (pp_shifter s);
         inputs = [r1;r2;rk];
         outputs = [];
-        reg_env = [(r1,int128);(r2,voidstar);(rk,word)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar);(rk,word)]}
     | RV (V64,rk),S_NOEXT ->
       { empty_ins with
         memo = sprintf "%s %s,[^i1,^i2]" memo (print_vecreg v "i" 0);
         inputs = [r1;r2;rk];
         outputs = [];
-        reg_env = [(r1,int128);(r2,voidstar);(rk,quad)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar);(rk,quad)]}
     | RV (V64,rk),s ->
       { empty_ins with
         memo = sprintf "%s %s,[^i1,^i2,%s]" memo (print_vecreg v "i" 0) (pp_shifter s);
         inputs = [r1;r2;rk];
         outputs = [];
-        reg_env = [(r1,int128);(r2,voidstar);(rk,quad)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar);(rk,quad)]}
     | _ -> assert false
 
     let store_simd_p v r1 r2 k1 =
@@ -734,7 +736,7 @@ module Make(V:Constant.S)(C:Config) =
         memo = sprintf "str %s, [^i1],%i" (print_vecreg v "i" 0) k1;
         inputs = [r1;r2];
         outputs = [];
-        reg_env = [(r1,int128);(r2,voidstar)]}
+        reg_env = [(r1,int32x4_t);(r2,voidstar)]}
 
     let store_simd_s memo rs i rA kr = match kr with
     | K 0 ->
@@ -832,10 +834,43 @@ module Make(V:Constant.S)(C:Config) =
           reg_env = (add_128 [r1;r2;]) @ [(r3,voidstar)]}
     | _ -> assert false
 
+    let addv_simd v r1 r2 =
+      { empty_ins with
+        memo = sprintf "addv %s, %s" (print_vecreg v "o" 0) (print_simd_reg "i" 0 0 r2);
+        inputs = [r2];
+        outputs = [r1];
+        reg_env = (add_128 [r1;r2])}
+
+    let dup_simd_v r1 v r2 =
+      { empty_ins with
+        memo = sprintf "dup %s, %s"
+          (print_simd_reg "o" 0 0 r1)
+          (match v with | V32 -> "^wi0" | V64 -> "^i0" | V128 -> assert false);
+        inputs = [r2];
+        outputs = [r1];
+        reg_env = (add_128 [r1;]) @ ((
+          match v with
+          | V32 -> add_w
+          | V64 -> add_q
+          | V128 -> assert false) [r2;])}
+
+    let fmov_simd_tg v1 r1 v2 r2 =
+      { empty_ins with
+        memo = sprintf "fmov %s, %s"
+          (match v1 with | V32 -> "^wo0" | V64 -> "^o0" | V128 -> assert false)
+          (print_vecreg v2 "i" 0);
+        inputs = [r2];
+        outputs = [r1];
+        reg_env = ((match v1 with
+          | V32 -> add_w
+          | V64 -> add_q
+          | V128 -> assert false)
+        [r1;]) @ (add_128 [r2;])}
+
     let mov_simd_ve r1 i1 r2 i2 =
       { empty_ins with
-        memo = sprintf "mov %s[%i], %s[%i]" (print_simd_reg "o" 0 0 r1) i1 (print_simd_reg "i" 0 0 r2) i2;
-        inputs = [r2];
+        memo = sprintf "mov %s[%i], %s[%i]" (print_simd_reg "i" 0 0 r1) i1 (print_simd_reg "i" 0 1 r2) i2;
+        inputs = [r1;r2]; (* r1 is intentionally in 'inputs', see comment for reg_class_stable *)
         outputs = [r1];
         reg_env = (add_128 [r1;r2;]);}
 
@@ -873,8 +908,8 @@ module Make(V:Constant.S)(C:Config) =
           (print_simd_reg "i" 0 0 r1)
           i
           (match v with | V32 -> "^wi1" | V64 -> "^i1" | V128 -> assert false);
-        inputs = [r1;r2];
-        outputs = [];
+        inputs = [r1;r2]; (* r1 is intentionally in 'inputs', see comment for reg_class_stable *)
+        outputs = [r1];
         reg_env = (add_128 [r1;]) @ ((
           match v with
           | V32 -> add_w
@@ -1330,6 +1365,9 @@ module Make(V:Constant.S)(C:Config) =
     | I_LDUR_SIMD (v,r1,r2,None) -> load_simd "ldur" v r1 r2 (K 0) S_NOEXT::k
     | I_STUR_SIMD (v,r1,r2,Some(k1)) -> store_simd "stur" v r1 r2 (K k1) S_NOEXT::k
     | I_STUR_SIMD (v,r1,r2,None) -> store_simd "stur" v r1 r2 (K 0) S_NOEXT::k
+    | I_ADDV (v,r1,r2) -> addv_simd v r1 r2::k
+    | I_DUP (r1,v,r2) -> dup_simd_v r1 v r2::k
+    | I_FMOV_TG (v1,r1,v2,r2) -> fmov_simd_tg v1 r1 v2 r2::k
     | I_MOV_VE (r1,i1,r2,i2) -> mov_simd_ve r1 i1 r2 i2::k
     | I_MOV_V (r1,r2) -> mov_simd_v r1 r2::k
     | I_MOV_FG (r1,i,v,r2) -> mov_simd_fg r1 i v r2::k

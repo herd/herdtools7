@@ -67,6 +67,7 @@ let check_op3 op e =
 %token LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token LDRSB LDRSH
 %token LD1 LD1R LD2 LD2R LD3 LD3R LD4 LD4R ST1 ST2 ST3 ST4 STUR /* Neon load/store */
+%token ADDV DUP FMOV
 %token CMP MOV MOVZ MOVN MOVK MOVI ADR MVN
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH LDXP LDAXP
 %token STXR STXRB STXRH STLXR STLXRB STLXRH STXP STLXP
@@ -718,6 +719,23 @@ instr:
 | STUR scalar_regs COMMA LBRK xreg k0_opt RBRK
   { let v,r = $2 in
     I_STUR_SIMD (v, r, $5, $6) }
+| ADDV breg COMMA vreg
+  {  I_ADDV (VSIMD8, $2, $4) }
+| ADDV hreg COMMA vreg
+  {  I_ADDV (VSIMD16, $2, $4) }
+| ADDV sreg COMMA vreg
+  {  I_ADDV (VSIMD32, $2, $4) }
+| DUP vreg COMMA wxreg
+  { let v,r = $4 in
+    I_DUP ($2 , v, r) }
+| FMOV wreg COMMA hreg
+   { I_FMOV_TG (V32, $2, VSIMD16, $4) }
+| FMOV xreg COMMA hreg
+   { I_FMOV_TG (V64, $2, VSIMD16, $4) }
+| FMOV wreg COMMA sreg
+   { I_FMOV_TG (V32, $2, VSIMD32, $4) }
+| FMOV xreg COMMA dreg
+   { I_FMOV_TG (V64, $2, VSIMD64, $4) }
 | MOV vreg INDEX COMMA vreg INDEX
   { I_MOV_VE ($2, $3, $5, $6) }
 | MOV vreg INDEX COMMA wxreg

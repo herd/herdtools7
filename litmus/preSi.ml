@@ -195,6 +195,7 @@ module Make
           if have_timebase then O.f "#define DELTA_TB %s" delta
         end ;
         O.o "/* Includes */" ;
+        Insert.insert_when_exists O.o "intrinsics.h" ;
         if do_dynalloc then O.o "#define DYNALLOC 1" ;
         if do_stats then O.o "#define STATS 1" ;
         if Cfg.is_kvm then begin
@@ -761,6 +762,7 @@ module Make
         end ;
         O.o "" ;
         UD.dump_vars_types false test ;
+        UD.dump_array_typedefs test ;
         O.o "typedef struct {" ;
         let fields =
           A.RLocSet.fold
