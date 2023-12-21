@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2014-present Institut National de Recherche en Informatique et *)
+(* Copyright 2023-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,18 +14,24 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-val is_var : AST.exp -> bool
-val as_var : AST.exp -> (TxtLoc.t * AST.var) option
-val as_vars : AST.exp list -> (TxtLoc.t * AST.var) list option
+(** Utilities for command-line options *)
 
-(* Get location of an expression *)
-val exp2loc : AST.exp -> TxtLoc.t
+type 'a tfun = string -> ('a -> unit) -> string -> string * Arg.spec * string
+type 'a tref = string -> 'a ref -> string -> string * Arg.spec * string
 
-(* Pre-condition expression for miaou:
- *   + Flatten associative operations
- *   + Change [_] into "id"
- *)
-val flatten : AST.exp -> AST.exp
+val parse_bool : bool tref
+val parse_int : int tref
+val parse_int_opt : int option tref
 
-(* Get free variables *)
-val free_body : AST.var option list -> AST.exp -> AST.varset
+val parse_float : float tref
+val parse_float_opt : float option tref
+
+type pos = float * float
+val parse_pos : pos tref
+val parse_pos_opt : pos option tref
+
+val parse_string : string tref
+val parse_string_opt : string option tref
+
+val parse_stringsetfun : StringSet.t tfun
+val parse_stringset : StringSet.t tref

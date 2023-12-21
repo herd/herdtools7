@@ -41,6 +41,7 @@ type t =
   | DontCheckMixed
 (* Tags *)
   | MemTag
+  | MTE
   | TagPrecise of Precision.t (* Fault handling *)
   | TooFar
   | Morello
@@ -120,7 +121,7 @@ let parse s = match Misc.lowercase s with
 | "unaligned" -> Some Unaligned
 | "dontcheckmixed" -> Some DontCheckMixed
 | "notweakpredicated"|"notweakpred" -> Some NotWeakPredicated
-| "tagmem"|"memtag" -> Some MemTag
+| "tagmem"|"memtag"|"mte" -> Some MemTag
 | "toofar" -> Some TooFar
 | "morello" -> Some Morello
 | "neon" -> Some Neon
@@ -188,6 +189,7 @@ let pp = function
   | DontCheckMixed -> "DontCheckMixed"
   | NotWeakPredicated -> "NotWeakPredicated"
   | MemTag -> "memtag"
+  | MTE -> "memtag"
   | TagPrecise p -> Precision.pp p
   | TooFar -> "TooFar"
   | Morello -> "Morello"

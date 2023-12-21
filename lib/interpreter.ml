@@ -1410,6 +1410,10 @@ module Make
                 (fun (e1,e2) -> f1 e1 && f2 e2)
                 r in
             Rel r
+        | Op (loc,Inter,[e1;Op1 (_,Comp,e2)])
+        | Op (loc,Inter,[Op1 (_,Comp,e2);e1;])
+          ->
+           eval_diff env loc e1 e2
         | Op (loc,Inter,[e1;e2;]) -> (* Binary notation kept in parser *)
             let loc1,v1 = eval_loc env e1
             and loc2,v2 = eval_loc env e2 in
@@ -1443,47 +1447,7 @@ module Make
 
             end
         | Op (loc,Diff,[e1;e2;]) ->
-            let loc1,v1 = eval_loc env e1
-            and loc2,v2 = eval_loc env e2 in
-            begin match tag2set v1,tag2set v2 with
-            | (V.Tag _,_)|(_,V.Tag _) -> assert false
-            | Rel r1,Rel r2 -> Rel (E.EventRel.diff r1 r2)
-            | ClassRel r1,ClassRel r2 -> ClassRel (ClassRel.diff r1 r2)
-            | Set s1,Set s2 -> Set (E.EventSet.diff s1 s2)
-            | ValSet (t,s1),ValSet (_,s2) ->
-                set_op env loc t ValSet.diff s1 s2
-            | Unv,Rel r -> Rel (E.EventRel.diff (Lazy.force env.EV.ks.unv) r)
-            | Unv,Set s -> Set (E.EventSet.diff env.EV.ks.evts s)
-            | Unv,ValSet (TTag ts as t,s) ->
-                ValSet (t,ValSet.diff (tags_universe env.EV.env ts) s)
-            | Unv,ClassRel _ ->
-                error env.EV.silent
-                  loc1 "cannot build universe for element type %s"
-                  (pp_typ TClassRel)
-            | Unv,ValSet (t,_) ->
-                error env.EV.silent
-                  loc1 "cannot build universe for element type %s"
-                  (pp_typ t)
-            | Unv,V.Empty -> Unv
-            | (Rel _|ClassRel _|Set _|V.Empty|Unv|ValSet _),Unv
-            | V.Empty,(Rel _|ClassRel _|Set _|V.Empty|ValSet _) -> V.Empty
-            | (Rel _|ClassRel _|Set _|ValSet _),V.Empty -> v1
-            | (Event _|Pair _|Clo _|Proc _|Prim _|V.Tuple _),_ ->
-                error env.EV.silent loc1
-                  "difference on %s" (pp_typ (type_val v1))
-            | _,(Event _|Pair _|Clo _|Proc _|Prim _|V.Tuple _) ->
-                error env.EV.silent loc2
-                  "difference on %s" (pp_typ (type_val v2))
-            | ((Set _|ValSet _),(ClassRel _|Rel _))|((ClassRel _|Rel _),(Set _|ValSet _)) ->
-                error env.EV.silent
-                  loc "mixing set and relation in difference"
-            | (Set _,ValSet _)|(ValSet _,Set _) ->
-                error env.EV.silent
-                  loc "mixing event set and set in difference"
-            | (Rel _,ClassRel _)|(ClassRel _,Rel _) ->
-                error env.EV.silent
-                  loc "mixing event relation and class relation in difference"
-            end
+           eval_diff env loc e1 e2
         | Op (_,Cartesian,[e1;e2;]) ->
             let s1 = eval_events env e1
             and s2 = eval_events env e2 in
@@ -1671,6 +1635,48 @@ module Make
         | If (loc,cond,ifso,ifnot) ->
             if eval_cond loc env cond then eval env ifso
             else eval env ifnot
+
+      and eval_diff env loc e1 e2 =
+        let loc1,v1 = eval_loc env e1
+        and loc2,v2 = eval_loc env e2 in
+        match tag2set v1,tag2set v2 with
+        | (V.Tag _,_)|(_,V.Tag _) -> assert false
+        | Rel r1,Rel r2 -> Rel (E.EventRel.diff r1 r2)
+        | ClassRel r1,ClassRel r2 -> ClassRel (ClassRel.diff r1 r2)
+        | Set s1,Set s2 -> Set (E.EventSet.diff s1 s2)
+        | ValSet (t,s1),ValSet (_,s2) ->
+           set_op env loc t ValSet.diff s1 s2
+        | Unv,Rel r -> Rel (E.EventRel.diff (Lazy.force env.EV.ks.unv) r)
+        | Unv,Set s -> Set (E.EventSet.diff env.EV.ks.evts s)
+        | Unv,ValSet (TTag ts as t,s) ->
+           ValSet (t,ValSet.diff (tags_universe env.EV.env ts) s)
+        | Unv,ClassRel _ ->
+           error env.EV.silent
+             loc1 "cannot build universe for element type %s"
+             (pp_typ TClassRel)
+        | Unv,ValSet (t,_) ->
+           error env.EV.silent
+             loc1 "cannot build universe for element type %s"
+             (pp_typ t)
+        | Unv,V.Empty -> Unv
+        | (Rel _|ClassRel _|Set _|V.Empty|Unv|ValSet _),Unv
+          | V.Empty,(Rel _|ClassRel _|Set _|V.Empty|ValSet _) -> V.Empty
+        | (Rel _|ClassRel _|Set _|ValSet _),V.Empty -> v1
+        | (Event _|Pair _|Clo _|Proc _|Prim _|V.Tuple _),_ ->
+           error env.EV.silent loc1
+             "difference on %s" (pp_typ (type_val v1))
+        | _,(Event _|Pair _|Clo _|Proc _|Prim _|V.Tuple _) ->
+           error env.EV.silent loc2
+             "difference on %s" (pp_typ (type_val v2))
+        | ((Set _|ValSet _),(ClassRel _|Rel _))|((ClassRel _|Rel _),(Set _|ValSet _)) ->
+           error env.EV.silent
+             loc "mixing set and relation in difference"
+        | (Set _,ValSet _)|(ValSet _,Set _) ->
+           error env.EV.silent
+             loc "mixing event set and set in difference"
+        | (Rel _,ClassRel _)|(ClassRel _,Rel _) ->
+           error env.EV.silent
+             loc "mixing event relation and class relation in difference"
 
       and eval_cond loc env c = match c with
       | In (e1,e2) ->

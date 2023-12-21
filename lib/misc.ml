@@ -61,6 +61,18 @@ let is_some = Option.is_some
 let as_some = Option.get
 let proj_opt default = Option.value ~default
 let seq_opt f o = Option.bind o f
+
+let opt_list_fold =
+  let ( let* ) = Option.bind and return x = Some x in
+  fun f ->
+    let rec fold_rec = function
+      | [] -> return []
+      | x::xs ->
+         let* y = f x in
+         let* ys = fold_rec xs in
+         return (y::ys) in
+    fold_rec
+
 let app_opt = Option.map
 
 let app_opt2 ok no parse s = match parse s with
@@ -138,6 +150,7 @@ let char_uppercase = Char.uppercase_ascii
 let lowercase = String.lowercase_ascii
 let uppercase = String.uppercase_ascii
 let capitalize = String.capitalize_ascii
+let uncapitalize = String.uncapitalize_ascii
 
 let to_c_name =
   let tr c = match c with

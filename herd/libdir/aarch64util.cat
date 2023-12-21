@@ -89,11 +89,6 @@ let IC = IC.IALLUIS | IC.IALLU | IC.IVAU
 include "aarch64fences.cat"
 
 (*
- * Include aarch64deps.cat to define dependencies.
- *)
-include "aarch64deps.cat"
-
-(*
  * Include aarch64bbm.cat to define relations on Break-Before-Make semantics.
  *)
 include "aarch64bbm.cat"
@@ -111,8 +106,8 @@ procedure equal(r1, r2) =
   call included(r2, r1)
 end
 
-(* Intervening write *)
-let intervening-write(r) = r; [W]; r
+(* Intervening Effect *)
+let intervening(S,r) = r; [S]; r
 
 (* Properties of single-copy atomic accesses *)
 let sca-class = [M & Exp]; sm; [M & Exp]
@@ -123,13 +118,6 @@ let SPONTANEOUS = SPURIOUS
 let inv-scope = inv-domain
 let TTD = PTE
 let Tag = T
-
-(* Same-cache-line relation *)
-(* NOTE : currently assumes all locations are on different cache lines *)
-(*        also extends to IC without a location specified              *)
-let scl = loc
-  | (M | DC.CVAU | IC) * (IC.IALLU | IC.IALLUIS)
-  | (IC.IALLU | IC.IALLUIS) * (M | DC.CVAU | IC)
 
 (* Flag any occurrence of writes to two different locations that might be on
  * the same cache line. *)
@@ -143,3 +131,5 @@ flag ~empty (if "vmsa" && "ifetch" then _ else 0)
   as combining-vmsa-and-ifetch-is-not-supported
 flag ~empty (if "memtag" && "ifetch" then _ else 0)
   as combining-memtag-and-ifetch-is-not-supported
+
+include "aarch64loc.cat"

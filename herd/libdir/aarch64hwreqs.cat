@@ -44,35 +44,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *)
 
-include "aarch64util.cat"
+(* 
+ * Include aarch64deps.cat to define dependencies.
+ *)
+include "aarch64deps.cat"
 
 (* Tag-Check-intrinsically-before *)
-let tc-ib = [Imp & Tag & R]; iico_data; [B]; iico_ctrl; [(Exp & W) \ Tag | TagCheck & FAULT]
-
-(* Translation-intrinsically-before *)
-let tr-ib =
-  [Imp & TTD & R]; iico_data; [B]; iico_ctrl; [Exp & M | MMU & FAULT]
+let tc-ib = if "MTE" then [Imp & Tag & R]; iico_data; [B]; iico_ctrl; [((Exp & W) \ Tag) | TagCheck & FAULT] else 0
 
 (* Fetch-intrinsically-before *)
 let f-ib =
   [Imp & Instr & R]; iico_data; [B]; iico_ctrl; [_]
-
-(* Notions of Same Location - PA, VA, and including Fault Effects *)
-let TTD-same-oa =  same-oa(TTD*TTD)
-let same-loc = [M]; loc; [M]
-  | [MMU & Translation & FAULT]; same-low-order-bits
-  | same-low-order-bits; [MMU & Translation & FAULT]
-  | (tr-ib^-1; TTD-same-oa; tr-ib) & same-low-order-bits
-let po-loc = po & same-loc
-
-let va-loc = (tr-ib; same-low-order-bits; tr-ib^-1) & loc
-let po-va-loc = po & va-loc
-
-(* Local read successor *)
-let lrs = [W]; (po-loc \ intervening-write(po-loc)) ; [R]
-
-(* Local write successor *)
-let lws = [M]; po-loc; [W | MMU & FAULT]
 
 (* HW TTD Updates permitted only for the AF or DB *)
 let HU = Imp & TTD & W
@@ -98,11 +80,13 @@ let CSE-ob =
  | [Imp & Instr & R]; f-ib; [CSE]; po
 
 (* Dependency-ordered-before *)
-let dob = addr | data
+let dob = addr 
+        | data
         | ctrl; [W]
-        | addr; [Exp]; po; [CSE]; po; [R]
         | addr; [Exp]; po; [W]
-        | (addr | data); [Exp]; lrs
+        | addr; [Exp]; po; [CSE]; po; [R]
+        | addr; [Exp]; lrs
+        | data; [Exp]; lrs
 
 (* Pick-ordered-before *)
 let pob = [Exp]; pick-dep; [W]
@@ -120,11 +104,14 @@ let bob = po; [dmb.full]; po
         | [W]; po; [dmb.st]; po; [W | MMU & FAULT]
         | [range([A];amo;[L])]; po
         | [L]; po; [A]
-        | [A | Q]; (po | iico_order)
-        | (po | iico_order); [L]
+        | [A | Q]; po
+        | [A | Q]; iico_order
+        | po; [L]
+        | iico_order; [L]
 
 (* Locally-ordered-before *)
-let rec lob = lws; sca-class?
+let rec lob = lws
+            | lws; sca-class
             | dob
             | pob
             | aob
@@ -139,13 +126,14 @@ let rec local-hw-reqs =
   tc-ib
   | tr-ib
   | f-ib
-  | [Exp & M | Imp & Tag & R]; (lob | pick-lob); [Exp & M | Imp & Tag & R | (TagCheck | MMU) & FAULT]
+  | [Exp & M | Imp & Tag & R]; lob; [Exp & M | Imp & Tag & R | TagCheck & FAULT | MMU & FAULT]
+  | [Exp & M | Imp & Tag & R]; pick-lob; [Exp & M | Imp & Tag & R | TagCheck & FAULT | MMU & FAULT]
   | (if "ETS2" then [Exp & M]; po; [TLBUncacheable & FAULT]; tr-ib^-1; [Imp & TTD & R] else 0)
   | DSB-ob
   | CSE-ob
-  | [Imp & TTD & R]; po-loc; [W]
+  | [Imp & TTD & R]; (po & same-loc); [W]
   | [Imp & TTD & R]; rmw; [HU]
-  | [Exp & M]; po-loc; [TLBUncacheable & FAULT]
+  | [Exp & M]; (po & same-loc); [TLBUncacheable & FAULT]
   | [Exp & R]; addr; [TLBI | DC.CVAU | IC]
   | [Exp & R]; ctrl; [HU]
   | [Exp & R]; addr; [HU]
