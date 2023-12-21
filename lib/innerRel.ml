@@ -30,6 +30,8 @@ module type S =  sig
     val succs : elt0 -> map -> Elts.t
     val add : elt0 -> elt0 -> map -> map
     val subrel : map -> map -> bool
+    val exists_path : (elt0 * elt0) -> map -> bool
+
     val to_map : t -> map
     val of_map : map -> t
   end
@@ -48,7 +50,7 @@ module type S =  sig
 
 (* Are e1 and e2 related by the transitive closure of relation.
    Does not detect cycles *)
-  val mem_transitive : elt1 * elt2 -> t -> bool
+  val exists_path : elt1 * elt2 -> t -> bool
 
 (* Nodes reachable from node and set of nodes [argument included in result] *)
   val reachable : elt0 -> t -> Elts.t
@@ -190,7 +192,7 @@ and module Elts = MySet.Make(O) =
 
     exception Found
 
-    let is_reachable r e1 e2 =
+    let do_is_reachable succs r e1 e2 =
       let rec dfs e seen =
         if O.compare e e2 = 0 then raise Found
         else if Elts.mem e seen then seen
@@ -200,7 +202,9 @@ and module Elts = MySet.Make(O) =
       (* dfs e1 Elts.empty would yield reflexive-transitive closure *)
       Elts.fold dfs (succs r e1) (Elts.singleton e1)
 
-    let mem_transitive (e1, e2) r =
+    let is_reachable r e1 e2 = do_is_reachable succs r e1 e2
+
+    let exists_path (e1, e2) r =
       try ignore (is_reachable r e1 e2) ; false
       with Found -> true
 
@@ -278,10 +282,15 @@ and module Elts = MySet.Make(O) =
       type map = Elts.t ME.t
 
       let succs e m = try ME.find e m with Not_found -> Elts.empty
+      let op_succs m e = succs e m
 
       let add x y m = ME.add x (Elts.add y (succs x m)) m
 
       let adds x ys m = ME.add x (Elts.union ys (succs x m)) m
+
+      let exists_path (e1, e2) r =
+        try ignore (do_is_reachable op_succs r e1 e2) ; false
+        with Found -> true
 
       let to_map_ok p r =
         fold
@@ -357,6 +366,10 @@ and module Elts = MySet.Make(O) =
         with Cycle e -> Some (List.rev e)
 
       let fold = ME.fold
+
+(***************)
+(* Reachablity *)
+(***************)
 
       let reachable e e_succs m =
         let rec dfs e seen =
@@ -626,7 +639,7 @@ and module Elts = MySet.Make(O) =
 
     let remove_transitive_edge  r rel =
       let new_rel = remove r rel in
-      if mem_transitive r new_rel then new_rel
+      if exists_path r new_rel then new_rel
       else rel
 
     let remove_transitive_edges rel = fold remove_transitive_edge rel rel
@@ -651,7 +664,7 @@ and module Elts = MySet.Make(O) =
     let transitive3 r =
       let m = M.to_map r in
       append_map (append_map r m) m
-      
+
     let rec seq_rec rs = match rs with
     | []|[_] as rs -> rs
     | r1::r2::rs -> sequence r1 r2::seq_rec rs

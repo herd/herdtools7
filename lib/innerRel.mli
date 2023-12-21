@@ -32,6 +32,7 @@ module type S =  sig
     val succs : elt0 -> map -> Elts.t
     val add : elt0 -> elt0 -> map -> map
     val subrel : map -> map -> bool
+    val exists_path : (elt0 * elt0) -> map -> bool
     val to_map : t -> map
     val of_map : map -> t
   end
@@ -51,7 +52,7 @@ module type S =  sig
 
 (* Are e1 and e2 related by the transitive closure of relation.
    Does not detect cycles *)
-  val mem_transitive : elt1 * elt2 -> t -> bool
+  val exists_path : elt1 * elt2 -> t -> bool
 
 (* Nodes reachable from node and set of nodes [argument included in result] *)
   val reachable : elt0 -> t -> Elts.t

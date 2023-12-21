@@ -32,14 +32,15 @@ let asl_iico_ctrl = iico_ctrl
 let asl_iico_data = iico_data
 let asl_rf_reg = rf-reg
 let asl_rf = rf
+(* Warning, partial_po is _implicitely_ transitive *)
 let asl_po = partial_po
 
 (* Working relations *)
 
 let aarch64 = NASLLocal * NASLLocal
 
-let asl_fr_reg = ([Rreg] ; asl_po ; [Wreg]) & loc (* loc extended to registers *)
-let asl_fr = ([R] ; asl_po ; [W]) & loc
+let asl_fr_reg =  inter_transitive (asl_po,[Rreg];loc;[Wreg]) (* loc extended to registers *)
+let asl_fr = inter_transitive (asl_po,[R] ; loc ; [W])
 
 let asl_data = asl_iico_data | asl_rf_reg
 let asl_deps = asl_data (* | asl_iico_ctrl *)
