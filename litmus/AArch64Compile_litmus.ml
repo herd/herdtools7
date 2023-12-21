@@ -58,6 +58,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_ST4 (rs,_,_,_) | I_ST4M (rs,_,_) ->
         A.RegSet.of_list rs
     | I_LD1 (r,_,_,_) -> A.RegSet.of_list [r]
+    | I_MOV_FG (r,_,_,_) -> A.RegSet.of_list [r]
     | _ ->  A.RegSet.empty
 
 (* Generic funs for zr *)
@@ -873,8 +874,8 @@ module Make(V:Constant.S)(C:Config) =
           (print_simd_reg "i" 0 0 r1)
           i
           (match v with | V32 -> "^wi1" | V64 -> "^i1" | V128 -> assert false);
-        inputs = [r1;r2];
-        outputs = [];
+        inputs = [r1;r2]; (* r1 is intentionally in 'inputs', see comment for reg_class_stable *)
+        outputs = [r1];
         reg_env = (add_128 [r1;]) @ ((
           match v with
           | V32 -> add_w
