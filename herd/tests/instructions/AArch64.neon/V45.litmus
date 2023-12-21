@@ -6,10 +6,10 @@ uint64_t x[2];
 }
 
  P0                      ;
- MOVI D0, #254           ;
+ MOVI D0, #65535         ;
  MOVI D1, #255           ;
  STP D0, D1, [X0], #-8   ;
  LDR D2, [X0, #16]       ;
  STR D2, [X1]            ;
  ADD X0,X0,#8            ; (* For litmus *)
- forall (x={254,255} /\ y=255 /\ 0:X0=x)
+ forall (x={65535,255} /\ y=255 /\ 0:X0=x)

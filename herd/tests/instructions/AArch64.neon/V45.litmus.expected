@@ -1,10 +1,10 @@
 Test V45 Required
 States 1
-0:X0=x; x={254,255}; [y]=255;
+0:X0=x; x={65535,255}; [y]=255;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (x={254,255} /\ [y]=255 /\ 0:X0=x)
+Condition forall (x={65535,255} /\ [y]=255 /\ 0:X0=x)
 Observation V45 Always 1 0
-Hash=837bf2153568cedf6ffe756cdbdaf5f2
+Hash=d93cc6f6bf224b962648f506599b0e5f
 
