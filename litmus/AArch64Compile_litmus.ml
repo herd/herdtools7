@@ -59,6 +59,7 @@ module Make(V:Constant.S)(C:Config) =
         A.RegSet.of_list rs
     | I_LD1 (r,_,_,_) -> A.RegSet.of_list [r]
     | I_MOV_FG (r,_,_,_) -> A.RegSet.of_list [r]
+    | I_MOV_VE (r,_,_,_) -> A.RegSet.of_list [r]
     | _ ->  A.RegSet.empty
 
 (* Generic funs for zr *)
@@ -835,8 +836,8 @@ module Make(V:Constant.S)(C:Config) =
 
     let mov_simd_ve r1 i1 r2 i2 =
       { empty_ins with
-        memo = sprintf "mov %s[%i], %s[%i]" (print_simd_reg "o" 0 0 r1) i1 (print_simd_reg "i" 0 0 r2) i2;
-        inputs = [r2];
+        memo = sprintf "mov %s[%i], %s[%i]" (print_simd_reg "i" 0 0 r1) i1 (print_simd_reg "i" 0 1 r2) i2;
+        inputs = [r1;r2]; (* r1 is intentionally in 'inputs', see comment for reg_class_stable *)
         outputs = [r1];
         reg_env = (add_128 [r1;r2;]);}
 
