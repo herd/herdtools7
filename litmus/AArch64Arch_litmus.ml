@@ -60,6 +60,11 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
           | Vreg _ | SIMDreg _ -> "=&w"
           | _ -> "=&r"
         let reg_class_stable reg = match reg with
+          (* Certain Neon instructions do not affect the whole register, so we need to
+             guarantee that unaffected parts are initialized to zero which basically means
+             that we need to initialize whole register to zero. Several options have been
+             evaluated and it seems the only robust way to achieve that is using the
+             constraint "+" and the explicit initialization of the 'stable_*' variables *)
           | Vreg _ | SIMDreg _ -> "+w"
           | _ -> "=r"
         let comment = comment

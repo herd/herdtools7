@@ -592,20 +592,20 @@ module Make(V:Constant.S)(C:Config) =
     | K 0 ->
         { empty_ins with
           memo = sprintf "%s {%s}[%i],[^i0]" memo (print_simd_list rs "i" 1) i;
-          inputs = rA::rs;
-          outputs = [];
+          inputs = rA::rs; (* rs is intentionally in 'inputs', see comment for reg_class_stable *)
+          outputs = rs;
           reg_env = (add_128 rs) @ [(rA,voidstar)]}
     | K k ->
         { empty_ins with
           memo = sprintf "%s {%s}[%i],[^i0],#%i" memo (print_simd_list rs "i" 1) i k;
-          inputs = rA::rs;
-          outputs = [];
+          inputs = rA::rs; (* rs is intentionally in 'inputs', see comment for reg_class_stable *)
+          outputs = rs;
           reg_env = (add_128 rs) @ [(rA,voidstar)]}
     | RV (V64,rB) ->
         { empty_ins with
           memo = sprintf "%s {%s}[%i],[^i0],^i1" memo (print_simd_list rs "i" 2) i;
-          inputs = [rA;rB;]@rs;
-          outputs = [];
+          inputs = [rA;rB;]@rs; (* rs is intentionally in 'inputs', see comment for reg_class_stable *)
+          outputs = rs;
           reg_env = (add_128 rs) @ [(rA,voidstar);(rB,quad)]}
     | _ -> Warn.fatal "Illegal form of %s instruction" memo
 
