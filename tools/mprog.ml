@@ -27,6 +27,7 @@ module Top
          val ascommands : bool
          val texmacros : bool
          val hexa : bool
+         val compat : bool
          val outputdir : string option
          val mode : OutMode.t
          val transpose : bool
@@ -252,6 +253,7 @@ let args = ref []
 let verbose = ref 0
 let texmacros = ref false
 let hexa = ref false
+let compat = ref false
 let outputdir = ref None
 let mode = ref OutMode.LaTeX
 let transpose = ref false
@@ -263,6 +265,8 @@ let opts =
    (sprintf "<bool> use latex macros in output, default %b" !texmacros);
    "-hexa", Arg.Bool (fun b -> hexa := b),
    (sprintf "<bool> hexadecimal output, default %b" !hexa);
+   "-compat", Arg.Bool (fun b -> compat := b),
+   (sprintf "<bool> backward compatible output (used for hashes), default %b" !hexa);
    begin let module P = ParseTag.Make(OutMode) in
    P.parse "-mode" mode "output mode" end ;
    "-transpose", Arg.Bool (fun b -> transpose := b),
@@ -291,6 +295,7 @@ module X =
       let ascommands = false
       let texmacros = !texmacros
       let hexa = !hexa
+      let compat = !compat
       let outputdir = !outputdir
       let mode = !mode
       let transpose = !transpose

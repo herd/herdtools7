@@ -36,7 +36,7 @@ module type I = sig
 end
 
 
-module Make(I:I) :
+module Make(O:sig val compat : bool end)(I:I) :
 CoreDumper.S with
   type test =
          (I.state, (MiscParser.proc * I.A.pseudo list) list, I.prop, I.location,
@@ -47,9 +47,13 @@ CoreDumper.S with
   open Printf
   open I
 
+  let dump_instruction =
+    if O.compat then A.dump_instruction_hash
+    else A.dump_instruction
+
   let rec fmt_io io = match io with
   | A.Nop -> ""
-  | A.Instruction ins -> A.dump_instruction ins
+  | A.Instruction ins -> dump_instruction ins
   | A.Label (lbl,io) -> lbl ^ ": " ^ fmt_io io
   | A.Symbolic s -> "codevar:"^s
   | A.Macro (f,regs) ->

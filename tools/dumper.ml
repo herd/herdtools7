@@ -16,7 +16,7 @@
 
 module Make(A:Arch_tools.S) = struct
   include
-      SimpleDumper.Make
+      SimpleDumper.Make(struct let compat = false end)
       (struct
         module A = A
 
