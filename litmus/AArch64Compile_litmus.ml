@@ -304,58 +304,58 @@ module Make(V:Constant.S)(C:Config) =
       | V64 -> do_load "o0" quad memo
       | V128 -> assert false
 
-    let load_pair memo v rD1 rD2 rA kr md = match v,kr,md with
-    | V32,0,Idx ->
+    let load_pair memo v rD1 rD2 rA idx = match v,idx with
+    | V32,(0,Idx) ->
         { empty_ins with
           memo= sprintf "%s ^wo0,^wo1,[^i0]" memo;
           inputs=[rA];
           outputs=[rD1;rD2;];
           reg_env=[(rA,voidstar);(rD1,word);(rD2,word);]; }
-    | V32,k,Idx ->
+    | V32,(k,Idx) ->
         { empty_ins with
           memo= sprintf "%s ^wo0,^wo1,[^i0,#%i]" memo k;
           inputs=[rA];
           outputs=[rD1;rD2;];
           reg_env=[(rA,voidstar);(rD1,word);(rD2,word);];}
-    | V64,0,Idx ->
+    | V64,(0,Idx) ->
         { empty_ins with
           memo=memo ^ sprintf " ^o0,^o1,[^i0]";
           inputs=[rA];
           outputs=[rD1;rD2;];
           reg_env=[rA,voidstar;(rD1,quad);(rD2,quad);]; }
-    | V64,k,Idx ->
+    | V64,(k,Idx) ->
         { empty_ins with
           memo=memo ^ sprintf " ^o0,^o1,[^i0,#%i]" k;
           inputs=[rA];
           outputs=[rD1;rD2;];
           reg_env=[rA,voidstar; (rD1,quad);(rD2,quad);]; }
-    | V32,k,PostIdx ->
+    | V32,(k,PostIdx) ->
         { empty_ins with
           memo= sprintf "%s ^wo0,^wo1,[^i0],#%i" memo k;
           inputs=[rA];
           outputs=[rD1;rD2;rA;];
           reg_env=[(rA,voidstar);(rD1,word);(rD2,word);];}
-    | V64,k,PostIdx ->
+    | V64,(k,PostIdx) ->
         { empty_ins with
           memo=memo ^ sprintf " ^o0,^o1,[^i0],#%i" k;
           inputs=[rA];
           outputs=[rD1;rD2;rA];
           reg_env=[rA,voidstar; (rD1,quad);(rD2,quad);]; }
-    | V32,k,PreIdx ->
+    | V32,(k,PreIdx) ->
         { empty_ins with
           memo= sprintf "%s ^wo0,^wo1,[^i0,#%i]!" memo k;
           inputs=[rA];
           outputs=[rD1;rD2;rA;];
           reg_env=[(rA,voidstar);(rD1,word);(rD2,word);];}
-    | V64,k,PreIdx ->
+    | V64,(k,PreIdx) ->
         { empty_ins with
           memo=memo ^ sprintf " ^o0,^o1,[^i0,#%i]!" k;
           inputs=[rA];
           outputs=[rD1;rD2;rA];
           reg_env=[rA,voidstar; (rD1,quad);(rD2,quad);]; }
-    | V128,_,_ -> assert false
+    | V128,(_,_) -> assert false
 
-    let ldpsw rD1 rD2 rA kr md = load_pair "ldpsw" V64 rD1 rD2 rA kr md
+    let ldpsw rD1 rD2 rA idx = load_pair "ldpsw" V64 rD1 rD2 rA idx
 
     let loadx_pair memo v rD1 rD2 rA = match v with
       | V32 ->
@@ -374,56 +374,56 @@ module Make(V:Constant.S)(C:Config) =
 
     let stp_memo t = Misc.lowercase (stp_memo t)
 
-    let store_pair memo v rD1 rD2 rA kr md  = match v,kr,md with
-    | V32,0,Idx ->
+    let store_pair memo v rD1 rD2 rA idx  = match v,idx with
+    | V32,(0,Idx) ->
         { empty_ins with
           memo= sprintf "%s ^wi1,^wi2,[^i0]" memo;
           inputs=[rA;rD1;rD2;];
           outputs=[];
           reg_env=[(rA,voidstar);(rD1,word);(rD2,word);]; }
-    | V32,k,Idx ->
+    | V32,(k,Idx) ->
         { empty_ins with
           memo= sprintf "%s ^wi1,^wi2,[^i0,#%i]" memo k;
           inputs=[rA;rD1;rD2;];
           outputs=[];
           reg_env=[(rA,voidstar);(rD1,word);(rD2,word);];}
-    | V64,0,Idx ->
+    | V64,(0,Idx) ->
         { empty_ins with
           memo=memo ^ sprintf " ^i1,^i2,[^i0]";
           inputs=[rA;rD1;rD2;];
           outputs=[];
           reg_env=[rA,voidstar;(rD1,quad);(rD2,quad);]; }
-    | V64,k,Idx ->
+    | V64,(k,Idx) ->
         { empty_ins with
           memo=memo ^ sprintf " ^i1,^i2,[^i0,#%i]" k;
           inputs=[rA;rD1;rD2;];
           outputs=[];
           reg_env=[rA,voidstar; (rD1,quad);(rD2,quad);]; }
-    | V32,k,PostIdx ->
+    | V32,(k,PostIdx) ->
         { empty_ins with
           memo= sprintf "%s ^wi1,^wi2,[^i0],#%i" memo k;
           inputs=[rA;rD1;rD2;];
           outputs=[rA;];
           reg_env=[(rA,voidstar);(rD1,word);(rD2,word);];}
-    | V64,k,PostIdx ->
+    | V64,(k,PostIdx) ->
         { empty_ins with
           memo=memo ^ sprintf " ^i1,^i2,[^i0],#%i" k;
           inputs=[rA;rD1;rD2;];
           outputs=[rA;];
           reg_env=[rA,voidstar; (rD1,quad);(rD2,quad);]; }
-    | V32,k,PreIdx ->
+    | V32,(k,PreIdx) ->
         { empty_ins with
           memo= sprintf "%s ^wi1,^wi2,[^i0,#%i]!" memo k;
           inputs=[rA;rD1;rD2;];
           outputs=[rA;];
           reg_env=[(rA,voidstar);(rD1,word);(rD2,word);];}
-    | V64,k,PreIdx ->
+    | V64,(k,PreIdx) ->
         { empty_ins with
           memo=memo ^ sprintf " ^i1,^i2,[^i0,#%i]!" k;
           inputs=[rA;rD1;rD2;];
           outputs=[rA;];
           reg_env=[rA,voidstar; (rD1,quad);(rD2,quad);]; }
-    | V128,_,_ -> assert false
+    | V128,(_,_) -> assert false
 
     let storex_pair memo v rs rt1 rt2 rn =
       match v with
@@ -1264,14 +1264,14 @@ module Make(V:Constant.S)(C:Config) =
     | I_LDRSW (r1,r2,idx) -> load "ldrsw" V64 r1 r2 idx::k
     | I_LDUR (v,r1,r2,Some(k')) -> load "ldur" v r1 r2 (MemExt.k2idx k')::k
     | I_LDUR (v,r1,r2,None) -> load "ldur" v r1 r2 (MemExt.k2idx 0)::k
-    | I_LDP (t,v,r1,r2,r3,kr,md) ->
-        load_pair (ldp_memo t) v r1 r2 r3 kr md::k
-    | I_LDPSW (r1,r2,r3,kr,md) ->
-       ldpsw r1 r2 r3 kr md::k
+    | I_LDP (t,v,r1,r2,r3,idx) ->
+        load_pair (ldp_memo t) v r1 r2 r3 idx::k
+    | I_LDPSW (r1,r2,r3,idx) ->
+       ldpsw r1 r2 r3 idx::k
     | I_LDXP (v,t,r1,r2,r3) ->
        loadx_pair (Misc.lowercase (ldxp_memo t)) v r1 r2 r3::k
-    | I_STP (t,v,r1,r2,r3,kr,md) ->
-        store_pair (stp_memo t) v r1 r2 r3 kr md::k
+    | I_STP (t,v,r1,r2,r3,idx) ->
+        store_pair (stp_memo t) v r1 r2 r3 idx::k
     | I_STXP (v,t,r1,r2,r3,r4) ->
         storex_pair (Misc.lowercase (stxp_memo t)) v r1 r2 r3 r4::k
     | I_LDRBH (B,r1,r2,idx) -> load "ldrb" V32 r1 r2 idx::k

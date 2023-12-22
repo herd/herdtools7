@@ -1411,7 +1411,7 @@ module Make
             if kvm then M.upOneRW (is_this_reg rs) m
             else m
 
-          let ldp tnt sz rd1 rd2 rs k md ii =
+          let ldp tnt sz rd1 rd2 rs (k,md) ii =
             let an =
               let open AArch64 in
               let open Annot in
@@ -1554,7 +1554,7 @@ module Make
           if kvm then M.upOneRW (is_this_reg rd) m
           else m
 
-      let stp tnt sz rs1 rs2 rd k md ii =
+      let stp tnt sz rs1 rs2 rd (k,md) ii =
         let an =
           let open AArch64 in
           let open Annot in
@@ -2226,8 +2226,8 @@ module Make
         let do_stz =
           let sz = MachSize.S128 in
           let mop = do_write_mem sz Annot.N aexp in
-          let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii in
-          lift_memop rn Dir.W true false
+          let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii >>= loc_extract in
+          lift_memop rn Dir.W true false (* Unchecked *)
             (fun ac ma mv ->
                if Access.is_physical ac then begin
                  (* additional ctrl dep on address *)
@@ -2436,10 +2436,10 @@ module Make
         | I_STLRBH(bh,rs,rd) ->
             stlr (bh_to_sz bh) rs rd ii
 
-        | I_STZG(rt,rn,k) ->
+        | I_STZG(rt,rn,(k,Idx)) ->
             check_memtag "STZG" ;
             stzg rt rn k ii
-        | I_STG(rt,rn,k) ->
+        | I_STG(rt,rn,(k,Idx)) ->
             check_memtag "STG" ;
             stg rt rn k ii
         | I_LDG (rt,rn,k) ->
@@ -2886,12 +2886,12 @@ module Make
 (* Instruction-cache maintenance instruction *)
         | I_IC (op,rd) -> do_ic op rd ii
 (* Load/Store pairs *)
-        | I_LDP (tnt,v,r1,r2,r3,kr,md) ->
-            ldp tnt (tr_variant v) r1 r2 r3 kr md ii
-        | I_LDPSW (r1,r2,r3,kr,md) ->
-            ldpsw r1 r2 r3 kr md ii
-        | I_STP (tnt,v,r1,r2,r3,kr,md) ->
-            stp tnt (tr_variant v) r1 r2 r3 kr md ii
+        | I_LDP (tnt,v,r1,r2,r3,idx) ->
+            ldp tnt (tr_variant v) r1 r2 r3 idx ii
+        | I_LDPSW (r1,r2,r3,idx) ->
+            ldpsw r1 r2 r3 idx ii
+        | I_STP (tnt,v,r1,r2,r3,idx) ->
+            stp tnt (tr_variant v) r1 r2 r3 idx ii
         | I_LDXP (v,t,r1,r2,r3) ->
             ldxp (tr_variant v) t r1 r2 r3 ii
         | I_STXP (v,t,r1,r2,r3,r4) ->
@@ -2935,7 +2935,7 @@ module Make
            m_fault >>| set_elr_el1 ii >>! B.Fault Dir.R
 (*  Cannot handle *)
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
-        | (I_LD1M _|I_ST1M _) as i ->
+        | (I_LD1M _|I_ST1M _|I_STG _|I_STZG _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
 
 (* Compute a safe set of instructions that can

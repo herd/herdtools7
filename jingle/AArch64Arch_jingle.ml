@@ -55,18 +55,22 @@ include Arch.MakeArch(struct
       | _ -> None
   end
 
+  let match_mode m m' subs =
+    let open AArch64Base in
+    match m,m' with
+    | (Idx,Idx)
+      | (PreIdx,PreIdx)
+      | (PostIdx,PostIdx)
+      -> Some subs
+    | _,_ -> None
+
+  let match_idx (k,m) (k',m')  subs =
+    match_mode m m' subs >>> match_k k k'
+
   module MemExt = struct
 
     module E = AArch64Base.MemExt
 
-    let match_mode m m' subs =
-      let open AArch64Base in
-      match m,m' with
-      | (Idx,Idx)
-      | (PreIdx,PreIdx)
-      | (PostIdx,PostIdx)
-        -> Some subs
-      | _,_ -> None
 
     let match_rext e e' subs =
       let open E in
@@ -80,8 +84,8 @@ include Arch.MakeArch(struct
 
     let match_ext e e' subs =
       match e,e' with
-      | E.Imm(k,m),E.Imm(k',m') ->
-         match_mode m m' subs >>> match_k k k'
+      | E.Imm idx,E.Imm idx' ->
+         match_idx idx idx' subs
       | E.Reg (_,r,e,k),E.Reg (_,r',e',k')
         ->
          match_rext e e' subs
@@ -186,6 +190,22 @@ include Arch.MakeArch(struct
         MemExt.match_ext e e' subs >>>
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
 
+    | I_LDP (t,a,r1,r2,r3,idx),I_LDP (t',a',r1',r2',r3',idx')
+    | I_STP (t,a,r1,r2,r3,idx),I_STP (t',a',r1',r2',r3',idx')
+         when t=t' && a=a'
+      ->
+       match_idx idx idx' subs >>>
+       add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg (sr_name r3,r3')]
+    | I_LDPSW (r1,r2,r3,idx),I_LDPSW (r1',r2',r3',idx')
+      ->
+       match_idx idx idx' subs >>>
+       add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg (sr_name r3,r3')]
+    | I_STG (r1,r2,idx),I_STG (r1',r2',idx')
+    | I_STZG (r1,r2,idx),I_STZG (r1',r2',idx')
+      ->
+       match_idx idx idx' subs >>>
+       add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
+
     | I_ADDSUBEXT(_,op,r1,r2,(_,r3),ext),
       I_ADDSUBEXT(_,op',r1',r2',(_,r3'),ext')
          when op = op'
@@ -199,6 +219,7 @@ include Arch.MakeArch(struct
       ->
         OpExt.match_ext ext ext' subs >>>
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
+
     | _,_ -> None
 
   let expl_instr subs =
@@ -237,12 +258,14 @@ include Arch.MakeArch(struct
           | (e,Some k) ->  find_cst k >! fun k -> (e,Some k)
     end in
 
+    let conv_idx (k,m) =  find_cst k >! fun k -> k,m in
+
     let module MemExt = struct
       module E = AArch64Base.MemExt
 
       let expl = function
-        | E.Imm (k,m) ->
-           find_cst k >! fun k -> E.Imm (k,m)
+        | E.Imm idx ->
+           conv_idx idx >! fun idx -> E.Imm idx
         | E.Reg (v,r,e,k) ->
            find_cst k >> fun k -> conv_reg r >! fun r -> E.Reg (v,r,e,k)
 
@@ -406,26 +429,29 @@ include Arch.MakeArch(struct
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >! fun r2 ->
         I_LDUR(a,r1,r2,None)
-    | I_LDP(t,a,r1,r2,r3,k,md) ->
+    | I_LDP(t,a,r1,r2,r3,idx) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        conv_reg r3 >! fun r3 ->
-        I_LDP(t,a,r1,r2,r3,k,md)
-    | I_LDPSW(r1,r2,r3,k,md) ->
+        conv_reg r3 >> fun r3 ->
+        conv_idx idx >! fun idx ->
+        I_LDP (t,a,r1,r2,r3,idx)
+    | I_LDPSW(r1,r2,r3,idx) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        conv_reg r3 >! fun r3 ->
-        I_LDPSW(r1,r2,r3,k,md)
+        conv_reg r3 >> fun r3 ->
+        conv_idx idx >! fun idx ->
+        I_LDPSW(r1,r2,r3,idx)
     | I_LDXP(t,a,r1,r2,r3) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
         conv_reg r3 >! fun r3 ->
         I_LDXP(t,a,r1,r2,r3)
-    | I_STP(t,a,r1,r2,r3,k,md) ->
+    | I_STP(t,a,r1,r2,r3,idx) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        conv_reg r3 >! fun r3 ->
-        I_STP(t,a,r1,r2,r3,k,md)
+        conv_reg r3 >> fun r3 ->
+        conv_idx idx >! fun idx ->
+        I_STP(t,a,r1,r2,r3,idx)
     | I_STXP (a,b,r1,r2,r3,r4) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
@@ -522,16 +548,16 @@ include Arch.MakeArch(struct
         conv_reg r >! fun r -> I_TLBI (op,r)
     | I_MRS (r,sr) -> conv_reg r >! fun r -> I_MRS (r,sr)
     | I_MSR (sr,r) -> conv_reg r >! fun r -> I_MSR (sr,r)
-    | I_STG (r1,r2,k) ->
+    | I_STG (r1,r2,idx) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        find_cst k >! fun k ->
-        I_STG (r1,r2,k)
-    | I_STZG (r1,r2,k) ->
+        conv_idx idx >! fun idx ->
+        I_STG (r1,r2,idx)
+    | I_STZG (r1,r2,idx) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
-        find_cst k >! fun k ->
-        I_STZG (r1,r2,k)
+        conv_idx idx >! fun idx ->
+        I_STZG (r1,r2,idx)
     | I_LDG (r1,r2,k) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

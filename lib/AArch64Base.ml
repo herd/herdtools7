@@ -799,6 +799,8 @@ module Ext = struct (* Arguments of extended ADD and SUB operations *)
 end
 
 type idx_mode = Idx | PreIdx | PostIdx
+type 'k idx = 'k * idx_mode
+
 
 module MemExt = struct (* Extensions for memory accesses *)
 
@@ -823,7 +825,7 @@ module MemExt = struct (* Extensions for memory accesses *)
     | SXTX ->"SXTX"
 
   type 'k ext =
-    | Imm of 'k  * idx_mode
+    | Imm of 'k idx
     | Reg of variant * reg * rext * 'k
 
   let v2idx_reg v r =
@@ -1107,13 +1109,13 @@ type 'k kinstruction =
   | I_ADD_SIMD of reg * reg * reg
   | I_ADD_SIMD_S of reg * reg * reg
   (* More loads *)
-  | I_LDP of pair_opt * variant * reg * reg * reg * 'k * idx_mode
-  | I_LDPSW of reg * reg * reg * 'k * idx_mode
+  | I_LDP of pair_opt * variant * reg * reg * reg * 'k idx
+  | I_LDPSW of reg * reg * reg * 'k idx
   | I_LDAR of variant * ld_type * reg * reg
   | I_LDXP of variant * ldxp_type * reg * reg * reg
   (* Stores *)
   | I_STR of variant * reg * reg * 'k MemExt.ext
-  | I_STP of pair_opt * variant * reg * reg * reg * 'k * idx_mode
+  | I_STP of pair_opt * variant * reg * reg * reg * 'k idx
   | I_STLR of variant * reg * reg
   | I_STXR of variant * st_type * reg * reg * reg
   | I_STXP of variant * st_type * reg * reg * reg * reg
@@ -1182,8 +1184,8 @@ type 'k kinstruction =
 (* Write system register *)
   | I_MSR of sysreg * reg
 (* Memory Tagging *)
-  | I_STG of reg * reg * 'k
-  | I_STZG of reg * reg * 'k
+  | I_STG of reg * reg * 'k idx
+  | I_STZG of reg * reg * 'k idx
   | I_LDG of reg * reg * 'k
   | I_UDF of 'k
 
@@ -1294,8 +1296,6 @@ let do_pp_instruction m =
     sprintf "%s %s,%s,%s"
       memo (pp_vreg v r1) (pp_vreg v r2) (OpExt.pp_ext m v e) in
 
-let pp_k_nz k = if m.zerop k then "" else "," ^ m.pp_k k in
-
   let pp_kr showsxtw showzero kr = match kr with
   | K k when m.zerop k && not showzero -> ""
   | K k -> "," ^ m.pp_k k
@@ -1306,19 +1306,34 @@ let pp_k_nz k = if m.zerop k then "" else "," ^ m.pp_k k in
 
   let pp_ra r = if C.is_morello then pp_creg r else pp_xreg r in
 
+  let do_pp_idx from_pair ra (k,idx) =
+    match idx with
+    | Idx when  m.zerop k ->
+       sprintf "[%s]" (pp_ra ra)
+    | Idx ->
+       sprintf "[%s,%s]" (pp_xreg ra) (m.pp_k k)
+    | PostIdx ->
+       let pp =
+         if m.compat then begin
+             if from_pair then
+               sprintf " [%s]%s"
+             else
+               sprintf "[%s]%s"
+           end else
+           sprintf "[%s],%s" in
+       pp (pp_xreg ra) (m.pp_k k)
+    | PreIdx ->
+       sprintf "[%s,%s]!" (pp_xreg ra) (m.pp_k k) in
+
+  let pp_idx = do_pp_idx false in
+
+  let pp_mem_idx memo v rt ra idx =
+    Printf.sprintf "%s %s,%s" memo (pp_vreg v rt) (pp_idx ra idx) in
+
   let pp_addr ra =
     let open MemExt in
     function
-    | Imm (k,Idx) when  m.zerop k ->
-       sprintf "[%s]" (pp_ra ra)
-    | Imm (k,Idx) ->
-       sprintf "[%s,%s]" (pp_xreg ra) (m.pp_k k)
-    | Imm (k,PostIdx) ->
-       sprintf
-         (if m.compat then "[%s]%s" else "[%s],%s")
-         (pp_xreg ra) (m.pp_k k)
-    | Imm (k,PreIdx) ->
-       sprintf "[%s,%s]!" (pp_xreg ra) (m.pp_k k)
+    | Imm idx -> pp_idx ra idx
     | Reg (v,r,LSL,k) when m.zerop k ->
        sprintf "[%s,%s]" (pp_xreg ra) (pp_vreg v r)
     | Reg (v,r,(UXTW|SXTW|SXTX as ext),k) when m.zerop k->
@@ -1326,7 +1341,7 @@ let pp_k_nz k = if m.zerop k then "" else "," ^ m.pp_k k in
     | Reg (v,r,ext,k) ->
        sprintf "[%s,%s,%s %s]" (pp_xreg ra) (pp_vreg v r) (pp_sext ext) (m.pp_k k) in
 
-  let pp_mem_idx memo v rt ra idx =
+  let pp_mem_ext memo v rt ra idx =
     Printf.sprintf "%s %s,%s" memo (pp_vreg v rt) (pp_addr ra idx) in
 
   let pp_mem memo v rt ra kr =
@@ -1334,23 +1349,11 @@ let pp_k_nz k = if m.zerop k then "" else "," ^ m.pp_k k in
     pp_memo memo ^ " " ^ pp_vreg v rt ^
     ",[" ^ pp_addr ra ^ pp_kr true false kr ^ "]" in
 
-  let pp_ea_idx ra k md = match md with
-  | Idx ->
-      sprintf "[%s%s]" (pp_xreg ra) (pp_k_nz k)
-  | PostIdx ->
-      sprintf "%s[%s]%s"
-        (if m.compat then " " else "")
-        (pp_xreg ra)
-        (let ppk = m.pp_k k in
-        if m.compat then ppk else "," ^ ppk)
-  | PreIdx ->
-       sprintf "[%s%s]!" (pp_xreg ra) (pp_k_nz k) in
-
-  let pp_memp memo v r1 r2 ra k md =
+  let pp_memp memo v r1 r2 ra idx =
     pp_memo memo ^ " " ^
     pp_vreg v r1 ^ "," ^
     pp_vreg v r2 ^ "," ^
-    pp_ea_idx ra k md in
+    do_pp_idx true ra idx in
 
   let pp_smem memo v rt ra kr =
     pp_memo memo ^ " " ^ pp_vsimdreg v rt ^
@@ -1450,21 +1453,21 @@ let pp_k_nz k = if m.zerop k then "" else "," ^ m.pp_k k in
 
 (* Load and Store *)
   | I_LDR (v,r1,r2,idx) ->
-      pp_mem_idx "LDR" v r1 r2 idx
+      pp_mem_ext "LDR" v r1 r2 idx
   | I_LDRSW (r1,r2,idx) ->
-      pp_mem_idx "LDRSW" V64 r1 r2 idx
+      pp_mem_ext "LDRSW" V64 r1 r2 idx
   | I_LDRS ((v,bh),r1,r2,idx) ->
-     pp_mem_idx (ldrs_memo bh) v r1 r2 idx
+     pp_mem_ext (ldrs_memo bh) v r1 r2 idx
   | I_LDUR (_,r1,r2,None) ->
       sprintf "LDUR %s, [%s]" (pp_reg r1) (pp_reg r2)
   | I_LDUR (_,r1,r2,Some(k)) ->
       sprintf "LDUR %s, [%s, %s]" (pp_reg r1) (pp_reg r2) (m.pp_k k)
-  | I_LDP (t,v,r1,r2,r3,k,md) ->
-      pp_memp (ldp_memo t) v r1 r2 r3 k md
-  | I_LDPSW (r1,r2,r3,k,md) ->
-      pp_memp "LDPSW" V64 r1 r2 r3 k md
-  | I_STP (t,v,r1,r2,r3,k,md) ->
-      pp_memp (stp_memo t) v r1 r2 r3 k md
+  | I_LDP (t,v,r1,r2,r3,idx) ->
+      pp_memp (ldp_memo t) v r1 r2 r3 idx
+  | I_LDPSW (r1,r2,r3,idx) ->
+      pp_memp "LDPSW" V64 r1 r2 r3 idx
+  | I_STP (t,v,r1,r2,r3,idx) ->
+      pp_memp (stp_memo t) v r1 r2 r3 idx
   | I_LDAR (v,t,r1,r2) ->
       pp_mem (ldr_memo t) v r1 r2 m.k0
   | I_LDARBH (bh,t,r1,r2) ->
@@ -1472,7 +1475,7 @@ let pp_k_nz k = if m.zerop k then "" else "," ^ m.pp_k k in
   | I_LDXP (v,t,r1,r2,r3) ->
       pp_ldxp (ldxp_memo t) v r1 r2 r3
   | I_STR (v,r1,r2,idx) ->
-      pp_mem_idx "STR" v r1 r2 idx
+      pp_mem_ext "STR" v r1 r2 idx
   | I_STLR (v,r1,r2) ->
       pp_mem "STLR" v r1 r2 m.k0
   | I_STXR (v,t,r1,r2,r3) ->
@@ -1480,9 +1483,9 @@ let pp_k_nz k = if m.zerop k then "" else "," ^ m.pp_k k in
   | I_STXP (v,t,r1,r2,r3,r4) ->
      pp_stxp (stxp_memo t) v r1 r2 r3 r4
   | I_LDRBH (bh,r1,r2,idx) ->
-      pp_mem_idx ("LDR"^pp_bh bh) V32 r1 r2 idx
+      pp_mem_ext ("LDR"^pp_bh bh) V32 r1 r2 idx
   | I_STRBH (bh,r1,r2,idx) ->
-      pp_mem_idx ("STR"^pp_bh bh) V32 r1 r2 idx
+      pp_mem_ext ("STR"^pp_bh bh) V32 r1 r2 idx
   | I_STLRBH (bh,r1,r2) ->
       pp_mem ("STLR"^pp_bh bh) V32 r1 r2 m.k0
   | I_STXRBH (bh,t,r1,r2,r3) ->
@@ -1735,10 +1738,10 @@ let pp_k_nz k = if m.zerop k then "" else "," ^ m.pp_k k in
   | I_MSR (sr,r) ->
      sprintf "MSR %s,%s" (pp_sysreg sr) (pp_xreg r)
 (* Memory Tagging *)
-  | I_STG (rt,rn,k) ->
-      pp_mem "STG" V64 rt rn (K k)
-  | I_STZG (rt,rn,k) ->
-      pp_mem "STZG" V64 rt rn (K k)
+  | I_STG (rt,rn,idx) ->
+      pp_mem_idx  "STG" V64 rt rn idx
+  | I_STZG (rt,rn,idx) ->
+      pp_mem_idx "STZG" V64 rt rn idx
   | I_LDG (rt,rn,k) ->
       pp_mem "LDG" V64 rt rn (K k)
   | I_UDF k ->
@@ -1864,9 +1867,9 @@ let fold_regs (f_regs,f_sregs) =
   | I_EOR_SIMD (r1,r2,r3) | I_ADD_SIMD (r1,r2,r3) | I_ADD_SIMD_S (r1,r2,r3)
   | I_LDXP (_,_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
-  | I_LDP (_,_,r1,r2,r3,_,_)
-  | I_LDPSW (r1,r2,r3,_,_)
-  | I_STP (_,_,r1,r2,r3,_,_)
+  | I_LDP (_,_,r1,r2,r3,_)
+  | I_LDPSW (r1,r2,r3,_)
+  | I_STP (_,_,r1,r2,r3,_)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_CAS (_,_,r1,r2,r3)
   | I_CASBH (_,_,r1,r2,r3)
@@ -1943,12 +1946,12 @@ let map_regs f_reg f_symb =
      I_LDRBH (v,map_reg r1,map_reg r2,map_idx idx)
   | I_LDUR (v,r1,r2,k) ->
      I_LDUR (v,map_reg r1,map_reg r2,k)
-  | I_LDP (t,v,r1,r2,r3,k,md) ->
-     I_LDP (t,v,map_reg r1,map_reg r2,map_reg r3,k,md)
-  | I_LDPSW (r1,r2,r3,k,md) ->
-     I_LDPSW (map_reg r1,map_reg r2,map_reg r3,k,md)
-  | I_STP (t,v,r1,r2,r3,k,md) ->
-     I_STP (t,v,map_reg r1,map_reg r2,map_reg r3,k,md)
+  | I_LDP (t,v,r1,r2,r3,idx) ->
+     I_LDP (t,v,map_reg r1,map_reg r2,map_reg r3,idx)
+  | I_LDPSW (r1,r2,r3,idx) ->
+     I_LDPSW (map_reg r1,map_reg r2,map_reg r3,idx)
+  | I_STP (t,v,r1,r2,r3,idx) ->
+     I_STP (t,v,map_reg r1,map_reg r2,map_reg r3,idx)
   | I_LDAR (v,t,r1,r2) ->
      I_LDAR (v,t,map_reg r1,map_reg r2)
   | I_LDARBH (bh,t,r1,r2) ->
@@ -2412,14 +2415,17 @@ module PseudoI = struct
       type reg_arg = reg
 
       let k_tr = MetaConst.as_int
+
       let kr_tr = function
         | K i -> K (k_tr i)
         | RV _ as kr -> kr
 
-      let idx_tr idx =
+      let idx_tr (k,e) = k_tr k,e
+
+      let ext_tr idx =
         let open MemExt in
         match idx with
-        | Imm (k,e) -> Imm (k_tr k,e)
+        | Imm k -> Imm (idx_tr k)
         | Reg (v,r,ext,k) -> Reg (v,r,ext,k_tr k)
 
       let op_ext_tr e =
@@ -2480,20 +2486,21 @@ module PseudoI = struct
         | I_LDXP _| I_STXP _
         | I_MOPL _
             as keep -> keep
-        | I_LDR (v,r1,r2,idx) -> I_LDR (v,r1,r2,idx_tr idx)
-        | I_LDRSW (r1,r2,idx) -> I_LDRSW (r1,r2,idx_tr idx)
-        | I_LDRS (v,r1,r2,idx) -> I_LDRS (v,r1,r2,idx_tr idx)
+        | I_LDR (v,r1,r2,idx) -> I_LDR (v,r1,r2,ext_tr idx)
+        | I_LDRSW (r1,r2,idx) -> I_LDRSW (r1,r2,ext_tr idx)
+        | I_LDRS (v,r1,r2,idx) -> I_LDRS (v,r1,r2,ext_tr idx)
+
         | I_LDUR (v,r1,r2,None) -> I_LDUR (v,r1,r2,None)
         | I_LDUR (v,r1,r2,Some(k)) -> I_LDUR (v,r1,r2,Some(k_tr k))
-        | I_LDP (t,v,r1,r2,r3,k,md) -> I_LDP (t,v,r1,r2,r3,k_tr k,md)
-        | I_LDPSW (r1,r2,r3,k,md) -> I_LDPSW (r1,r2,r3,k_tr k,md)
-        | I_STP (t,v,r1,r2,r3,k,md) -> I_STP (t,v,r1,r2,r3,k_tr k,md)
-        | I_STR (v,r1,r2,idx) -> I_STR (v,r1,r2,idx_tr idx)
-        | I_STG (r1,r2,k) -> I_STG (r1,r2,k_tr k)
-        | I_STZG (r1,r2,k) -> I_STZG (r1,r2,k_tr k)
+        | I_LDP (t,v,r1,r2,r3,idx) -> I_LDP (t,v,r1,r2,r3,idx_tr idx)
+        | I_LDPSW (r1,r2,r3,idx) -> I_LDPSW (r1,r2,r3,idx_tr idx)
+        | I_STP (t,v,r1,r2,r3,idx) -> I_STP (t,v,r1,r2,r3,idx_tr idx)
+        | I_STR (v,r1,r2,idx) -> I_STR (v,r1,r2,ext_tr idx)
+        | I_STG (r1,r2,k) -> I_STG (r1,r2,idx_tr k)
+        | I_STZG (r1,r2,k) -> I_STZG (r1,r2,idx_tr k)
         | I_LDG (r1,r2,k) -> I_LDG (r1,r2,k_tr k)
-        | I_LDRBH (v,r1,r2,idx) -> I_LDRBH (v,r1,r2,idx_tr idx)
-        | I_STRBH (v,r1,r2,idx) -> I_STRBH (v,r1,r2,idx_tr idx)
+        | I_LDRBH (v,r1,r2,idx) -> I_LDRBH (v,r1,r2,ext_tr idx)
+        | I_STRBH (v,r1,r2,idx) -> I_STRBH (v,r1,r2,ext_tr idx)
         | I_SBFM (v,r1,r2,k1,k2) ->
             I_SBFM (v,r1,r2,k_tr k1, k_tr k2)
         | I_UBFM (v,r1,r2,k1,k2) ->
