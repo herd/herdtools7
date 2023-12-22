@@ -80,7 +80,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       and get_reg_list n st =
         let open SIMD in
         match n with
-        | Ne1 | NePa | NePaN | NeP ->
+        | Ne1 | NePa | NePaN | NeP | NeAcqPc | NeRel ->
            let r,st = next_vreg st in (r,[]),st
         | Ne2 | Ne2i -> call_rec Ne1 st
         | Ne3 | Ne3i -> call_rec Ne2 st
@@ -619,6 +619,25 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         r,init,pseudo csA@cs,st
     end
 
+    module LDAPUR = struct
+      let emit_load_reg st init rA =
+        let r,st = next_scalar_reg st in
+        let ldur = [I_LDAPUR_SIMD(A64.VSIMD32,r,rA,None)] in
+        let rX,st = next_reg st in
+        let fmov = [I_FMOV_TG(A64.V32,rX,A64.VSIMD32,r)] in
+        rX,init,lift_code (ldur@fmov),st
+
+      let emit_load st p init loc =
+        let rA,init,st = U.next_init st p init loc in
+        emit_load_reg st init rA
+
+      let emit_load_idx v st p init loc ridx =
+        let rA,init,st = U.next_init st p init loc in
+        let rA,csA,st = do_sum_addr v st rA ridx in
+        let r,init,cs,st = emit_load_reg st init rA in
+        r,init,pseudo csA@cs,st
+    end
+
     module LDG = struct
       let emit_load st p init x =
         let rA,st = next_reg st in
@@ -864,7 +883,33 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let adds = [add_simd r1 rB]in
         let stur = [I_STUR_SIMD(A64.VSIMD32,to_scalar r1,rA,None)] in
         init,lift_code(dup@movi@adds@stur),st
+    end
 
+    module STLUR = struct
+      let emit_store_reg st init rA v =
+        let r,st = next_vreg st in
+        let movi = [movi_reg r v] in
+        let stlur = [I_STLUR_SIMD(A64.VSIMD32,to_scalar r,rA,None)] in
+        init,lift_code(movi@stlur),st
+
+      let emit_store st p init loc v =
+        let rA,init,st = U.next_init st p init loc in
+        emit_store_reg st init rA v
+
+      let emit_store_idx vdep st p init loc ridx v =
+        let rA,init,st = U.next_init st p init loc in
+        let rA,csA,st = do_sum_addr vdep st rA ridx in
+        let init,cs,st = emit_store_reg st init rA v in
+        init,pseudo csA@cs,st
+
+      let emit_store_dep vdep st init rA v =
+        let rB,st = next_vreg st in
+        let dup = [I_DUP (rB,A64.V32,vdep)] in
+        let r1,st = next_vreg st in
+        let movi = [movi_reg r1 v] in
+        let adds = [add_simd r1 rB]in
+        let stlur = [I_STLUR_SIMD(A64.VSIMD32,to_scalar r1,rA,None)] in
+        init,lift_code(dup@movi@adds@stlur),st
     end
 
     module STG = struct
@@ -1304,6 +1349,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       r,init,cs@cs2,st
     | Code.VecReg n ->
        let emit_load = match n with
+         | SIMD.NeAcqPc -> LDAPUR.emit_load
          | SIMD.NeP -> LDUR.emit_load
          | SIMD.NePa  -> LDP.emit_load A64.TT
          | SIMD.NePaN -> LDP.emit_load A64.NT
@@ -1422,6 +1468,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,Some (CapaSeal,Some _) -> assert false
         | R,Some (Neon n, None) ->
            let emit_load = match n with
+             | SIMD.NeRel -> Warn.fatal "No laod release"
+             | SIMD.NeAcqPc -> LDAPUR.emit_load
              | SIMD.NeP -> LDUR.emit_load
              | SIMD.NePa  -> LDP.emit_load A64.TT
              | SIMD.NePaN -> LDP.emit_load A64.NT
@@ -1513,6 +1561,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Some (CapaSeal,Some _) -> assert false
         | W,Some (Neon n, None) ->
            let emit_store = match n with
+             | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
+             | SIMD.NeRel -> STLUR.emit_store
              | SIMD.NeP -> STUR.emit_store
              | SIMD.NePa  -> STP.emit_store A64.TT
              | SIMD.NePaN -> STP.emit_store A64.NT
@@ -1870,6 +1920,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | R,Some (CapaSeal,Some _) -> assert false
           | R,Some (Neon n,None) ->
               let emit_load_idx = match n with
+                | SIMD.NeRel -> Warn.fatal "No laod release"
+                | SIMD.NeAcqPc -> LDAPUR.emit_load_idx
                 | SIMD.NeP -> LDUR.emit_load_idx
                 | SIMD.NePa -> LDP.emit_load_idx A64.TT
                 | SIMD.NePaN -> LDP.emit_load_idx A64.NT
@@ -2007,6 +2059,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | W,Some (CapaSeal,Some _) -> assert false
           | W,Some (Neon n,None) ->
              let emit_store_idx = match n with
+               | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
+               | SIMD.NeRel -> STLUR.emit_store_idx
                | SIMD.NeP -> STUR.emit_store_idx
                | SIMD.NePa ->  STP.emit_store_idx A64.TT
                | SIMD.NePaN -> STP.emit_store_idx A64.NT
@@ -2207,6 +2261,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some (Neon n,None) ->
              let rA,init,st = U.next_init st p init loc in
              let emit_store_dep = match n with
+               | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
+               | SIMD.NeRel -> STLUR.emit_store_dep
                | SIMD.NeP -> STUR.emit_store_dep
                | SIMD.NePa ->  STP.emit_store_dep A64.TT
                | SIMD.NePaN -> STP.emit_store_dep A64.NT

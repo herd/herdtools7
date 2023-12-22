@@ -60,9 +60,10 @@ module Mixed =
 let bellatom = false
 module SIMD = struct
 
-  type atom = NeP|Ne1|Ne2|Ne3|Ne4|Ne2i|Ne3i|Ne4i|NePa|NePaN
+  type atom = NeP|NeAcqPc|NeRel|Ne1|Ne2|Ne3|Ne4|Ne2i|Ne3i|Ne4i|NePa|NePaN
 
   let fold_neon f r = r |>
+    f NeAcqPc |> f NeRel |>
     f NeP |>
     f NePa |> f NePaN |>
     f Ne1 |> f Ne2 |> f Ne3 |> f Ne4 |>
@@ -78,7 +79,7 @@ module SIMD = struct
   let nelements = function
     | Ne1|Ne2|Ne2i|Ne3|Ne3i|Ne4|Ne4i -> 4
     | NePa|NePaN -> 2
-    | NeP -> 1
+    | NeP | NeAcqPc | NeRel -> 1
 
   let pp_opt = function
     | Ne2i | Ne3i | Ne4i -> "i"
@@ -88,9 +89,11 @@ module SIMD = struct
     match n with
     | Ne1 | Ne2 | Ne3 | Ne4 | Ne2i | Ne3i | Ne4i ->
        Printf.sprintf "Ne%i%s" (nregs n) (pp_opt n)
-    | NePa -> Printf.sprintf "NePa"
-    | NePaN -> Printf.sprintf "NePaN"
-    | NeP -> Printf.sprintf "NeP"
+    | NePa -> "NePa"
+    | NePaN -> "NePaN"
+    | NeP -> "NeP"
+    | NeAcqPc -> "NeQ"
+    | NeRel -> "NeL"
 
   let initial sz =
     let sz = if sz <= 0 then 1 else sz in
@@ -105,7 +108,8 @@ module SIMD = struct
       for i=0 to el-1 do
         let j = match n with
           | Ne2i | Ne3i | Ne4i -> k+i*sz
-          | NeP | NePa | NePaN | Ne1 | Ne2 | Ne3 | Ne4 -> i+k*el
+          | NeP | NeAcqPc | NeRel | NePa | NePaN
+          | Ne1 | Ne2 | Ne3 | Ne4 -> i+k*el
         in
        v.(j) <- start+k
       done
@@ -117,7 +121,8 @@ module SIMD = struct
     let sz = nregs n in
     let access r k = match n with
       | Ne2i | Ne3i | Ne4i -> sz*k + r
-      | NeP | NePa | NePaN | Ne1 | Ne2 | Ne3 | Ne4 -> el*r + k
+      | NeP | NeAcqPc | NeRel | NePa | NePaN
+      | Ne1 | Ne2 | Ne3 | Ne4 -> el*r + k
     in
     let rec reg r k =
       if k >= el then []
@@ -187,6 +192,8 @@ let default_atom = Atomic PP,None
 let instr_atom = Some (Instr,None)
 
 let applies_atom (a,_) d = match a,d with
+| Neon SIMD.NeAcqPc,W
+| Neon SIMD.NeRel,R -> false
 | Acq _,R
 | AcqPc _,R
 | Rel _,W
@@ -447,7 +454,7 @@ let is_ifetch a = match a with
    let neon_as_integers =
      let open SIMD in
      function
-     | NeP -> 1
+     | NeP | NeAcqPc | NeRel -> 1
      | NePa | NePaN -> 2
      | Ne1 -> 4
      | Ne2 | Ne2i -> 8
