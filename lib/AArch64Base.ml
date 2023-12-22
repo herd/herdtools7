@@ -1578,13 +1578,13 @@ let do_pp_instruction m =
   | I_STR_P_SIMD (v,r1,r2,k) ->
       pp_smem_post "STR" v r1 r2 k
   | I_LDUR_SIMD (v,r1,r2,None) ->
-      sprintf "LDUR %s, [%s]" (pp_vsimdreg v r1) (pp_reg r2)
+      sprintf "LDUR %s,[%s]" (pp_vsimdreg v r1) (pp_reg r2)
   | I_LDUR_SIMD (v,r1,r2,Some(k)) ->
-      sprintf "LDUR %s, [%s, %s]" (pp_vsimdreg v r1) (pp_reg r2) (m.pp_k k)
+      sprintf "LDUR %s,[%s,%s]" (pp_vsimdreg v r1) (pp_reg r2) (m.pp_k k)
   | I_STUR_SIMD (v,r1,r2,None) ->
-      sprintf "STUR %s, [%s]" (pp_vsimdreg v r1) (pp_reg r2)
+      sprintf "STUR %s,[%s]" (pp_vsimdreg v r1) (pp_reg r2)
   | I_STUR_SIMD (v,r1,r2,Some(k)) ->
-      sprintf "STUR %s, [%s, %s]" (pp_vsimdreg v r1) (pp_reg r2) (m.pp_k k)
+      sprintf "STUR %s,[%s,%s]" (pp_vsimdreg v r1) (pp_reg r2) (m.pp_k k)
   | I_ADDV (v,r1,r2) ->
       sprintf "ADDV %s,%s" (pp_vsimdreg v r1) (pp_simd_vector_reg r2)
   | I_DUP (r1,v,r2) ->
