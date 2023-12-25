@@ -9,7 +9,7 @@
 
 (library
  (name asllib)
- (modules (:standard \ aslref bundler))
+ (modules (:standard \ aslref bundler dataflow))
  (public_name herdtools7.asllib)
  (private_modules Parser0 Gparser0 Lexer0 SimpleLexer0 RepeatableLexer)
  (modules_without_implementation Backend AST)
@@ -30,3 +30,9 @@
   (libraries asllib)
   (modules bundler))
 
+(executable
+  (public_name asldataflow)
+  (name dataflow)
+  (libraries asllib)
+  (flags (:standard -w -40-42))
+  (modules dataflow))

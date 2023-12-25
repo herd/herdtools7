@@ -231,10 +231,14 @@ val is_simple_expr : expr -> bool
 (** [is_simple_expr e] is true if [e] does not contain any call to any other
     subprogram. It has false negative. *)
 
+val find_decl_by_name : identifier -> 'p AST.t -> 'p AST.decl
+(** [find_decl_by_name "main" ast] is the function ["main"] in [ast]. *)
+
 (** {1 Def/use analysis} *)
 
 val use_e : ISet.t -> expr -> ISet.t
 val use_ty : ISet.t -> ty -> ISet.t
+val def_decl : 'p decl -> identifier
 
 val use_constant_decl : ISet.t -> 'a decl -> ISet.t
 (** [use_constant_decl d] is the set of other declared names required to have

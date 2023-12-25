@@ -328,8 +328,7 @@ let rec expr_equal eq e1 e2 =
   | E_Literal _, _ | _, E_Literal _ -> false
   | E_Tuple li1, E_Tuple li2 -> list_equal (expr_equal eq) li1 li2
   | E_Tuple _, _ | _, E_Tuple _ -> false
-  | E_CTC (e1, t1), E_CTC (e2, t2) ->
-      expr_equal eq e1 e2 && type_equal eq t1 t2
+  | E_CTC (e1, t1), E_CTC (e2, t2) -> expr_equal eq e1 e2 && type_equal eq t1 t2
   | E_CTC _, _ | _, E_CTC _ -> false
   | E_Unop (o1, e1), E_Unop (o2, e2) -> o1 = o2 && expr_equal eq e1 e2
   | E_Unop _, _ | _, E_Unop _ -> false
@@ -495,20 +494,18 @@ let slice_as_single = function
 
 let default_t_bits = T_Bits (BitWidth_Constraints [], [])
 
+let def_decl d =
+  match d.desc with
+  | D_Func { name; _ } | D_GlobalStorage { name; _ } | D_TypeDecl (name, _, _)
+    ->
+      name
+
 let patch ~src ~patches =
   (* Size considerations:
      - [src] is BIG.
      - [patches] is not that little. *)
-  let identifier_of_decl d =
-    match d.desc with
-    | D_Func { name; _ } | D_GlobalStorage { name; _ } | D_TypeDecl (name, _, _)
-      ->
-        name
-  in
-  let to_remove =
-    patches |> List.to_seq |> Seq.map identifier_of_decl |> ISet.of_seq
-  in
-  let filter d = not (ISet.mem (identifier_of_decl d) to_remove) in
+  let to_remove = patches |> List.to_seq |> Seq.map def_decl |> ISet.of_seq in
+  let filter d = not (ISet.mem (def_decl d) to_remove) in
   src |> List.filter filter |> List.rev_append patches
 
 let list_cross f li1 li2 =
@@ -663,3 +660,7 @@ let find_bitfield_opt name bitfields = List.find_opt (has_name name) bitfields
 let find_bitfields_slices_opt name bitfields =
   try List.find (has_name name) bitfields |> bitfield_get_slices |> Option.some
   with Not_found -> None
+
+let find_decl_by_name =
+  let has_name_decl name d = def_decl d |> String.equal name in
+  fun name ast -> List.find (has_name_decl name) ast
