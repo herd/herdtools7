@@ -94,7 +94,7 @@ Constrained-type satisfaction:
   [1]
 
   $ cat >type-sat.asl <<EOF
-  > func illegal_f5(N: integer, b: bits(N))
+  > func illegal_f5 {N} (b: bits(N))
   > begin
   >   // N is under-constrained integer
   >   var x: integer { 2, 4} = N;
@@ -104,7 +104,7 @@ Constrained-type satisfaction:
   $ aslref type-sat.asl
   File type-sat.asl, line 4, characters 2 to 29:
   ASL Typing error: a subtype of integer {2, 4} was expected,
-    provided integer {}.
+    provided integer {N}.
   [1]
 
   $ cat >type-sat.asl <<EOF
@@ -118,7 +118,7 @@ Constrained-type satisfaction:
   $ aslref type-sat.asl
   File type-sat.asl, line 4, characters 2 to 29:
   ASL Typing error: a subtype of integer {2, 4} was expected,
-    provided integer {}.
+    provided integer {N}.
   [1]
 
 Runtime checks:

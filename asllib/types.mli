@@ -39,8 +39,8 @@ val is_builtin_aggregate : ty -> bool
 
 (** Note that a builtin type is either builtin aggregate or builtin singular. *)
 
-val is_singular : env -> ty -> bool 
-val is_aggregate : env -> ty -> bool 
+val is_singular : env -> ty -> bool
+val is_aggregate : env -> ty -> bool
 
 (** Note that a type is either singular or aggregate. *)
 
@@ -74,6 +74,16 @@ val make_anonymous : env -> ty -> ty
 val get_structure : env -> ty -> ty
 (** The structure of a type is the primitive type that can hold the same
     values. *)
+
+val under_constrained_ty : identifier -> ty
+val to_well_constrained : ty -> ty
+(** Transform an under-constrained type into a well-constrained integer equal
+    to the parameter that have this type, and leave the other types (such as
+    well-constrained integers) as they are. *)
+
+val get_well_constrained_structure : env -> ty -> ty
+(** [get_well_constrained_structure env ty] quivalent to
+    [get_structure env ty |> to_well_constrained]. *)
 
 (** {2 Domains} *)
 

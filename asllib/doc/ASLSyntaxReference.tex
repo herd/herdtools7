@@ -59,7 +59,7 @@ Node types are defined recursively as follows:
 
 An abstract syntax consists of a set of derivation rules and a start non-terminal.
 
-\newcommand\ASTComment[1]{// \textit{#1}\ }
+\newcommand\ASTComment[1]{//\quad\textit{#1}\ }
 
 \section{ASL Derivation Rules}
 
@@ -160,15 +160,14 @@ We sometimes provide extra details to individual derivations by adding comments 
   &|& \slicelength(\expr, \expr) \\
   & & \ASTComment{\slicelength(\texttt{i, n}) denotes the slice starting at \texttt{i} of length \texttt{n}.}\\
   &|& \texttt{Slice\_Star}(\expr, \expr) \\
-  & & \ASTComment{\slicestar(\texttt{factor, length}) denotes the slice starting at \texttt{factor
-          * length}}\\
-  & & \ASTComment{of length n.}\\
+  & & \ASTComment{\slicestar(\texttt{factor, length}) denotes the slice starting at }\\
+  & & \ASTComment{\texttt{factor * length} of length n.}\\
 \end{array}
 \]
 
 \[
 \begin{array}{rcl}
-\ty &::=& \TInt(\intconstraint^*\,?) \\
+\ty &::=& \TInt(\intconstraints) \\
   &|& \TBits(\bitsconstraint, \bitfield^{*}) \\
   &|& \TReal \\
   &|& \TString \\
@@ -184,6 +183,23 @@ We sometimes provide extra details to individual derivations by adding comments 
   & & \ASTComment{A type variable.}\\
   & & \ASTComment{This is related to \identi{LDNP}}
 \end{array}
+\]
+
+\[
+  \begin{array}{rcl}
+    & & \ASTComment{Constraints that can be put on integer types.}  \\
+    \hline
+    \intconstraints & ::=
+      & \texttt{UnConstrained}                                      \\
+    & & \ASTComment{This integer type is unconstrained.}            \\
+    &|& \texttt{WellConstrained}(\intconstraint^{*})                \\
+    & & \ASTComment{Has some explicit constraints}                  \\
+    &|& \texttt{UnderConstrained}(\texttt{uid}, \identifier)        \\
+    & & \ASTComment{Implicitely constrained integer from function declaration.} \\
+    & & \ASTComment{Attributes are:} \\
+    & & \ASTComment{- a unique integer identifier and the variable} \\
+    & & \ASTComment{- the type was implicitely constructed from.} \\
+  \end{array}
 \]
 
 \[

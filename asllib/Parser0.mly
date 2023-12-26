@@ -273,12 +273,12 @@ let ty :=
   )
 
 let ty_non_tuple ==
-  | INTEGER;  { AST.T_Int None  }
-  | REAL;     { AST.T_Real      }
-  | BOOLEAN;  { AST.T_Bool      }
-  | ~=tident; < AST.T_Named     >
-  | BIT;      { t_bit           }
-  | BITS; e=pared(expr); { AST.(T_Bits (e, [])) }
+  | INTEGER;              { AST.(T_Int UnConstrained) }
+  | REAL;                 { AST.T_Real                }
+  | BOOLEAN;              { AST.T_Bool                }
+  | ~=tident;             < AST.T_Named               >
+  | BIT;                  { t_bit                     }
+  | BITS; e=pared(expr);  { AST.(T_Bits (e, []))      }
   (* | tident; pared(clist(expr)); <> *)
 
   | unimplemented_ty (

@@ -552,56 +552,90 @@ module Make (C : Config) = struct
     (* Helpers *)
     let build_primitive name args return_type body =
       let open AST in
-      let return_type, make_return_type = return_type in
-      let body = SB_Primitive (make_return_type body) in
-      let parameters =
-        let get_param t =
-          match t.desc with
-          | T_Bits ({ desc = E_Var x; _ }, _) -> Some (x, None)
-          | _ -> None
-        in
-        args |> List.filter_map get_param (* |> List.sort String.compare *)
-      and args =
-        List.mapi (fun i arg_ty -> ("arg_" ^ string_of_int i, arg_ty)) args
-      and subprogram_type =
-        match return_type with None -> ST_Procedure | _ -> ST_Function
+      let subprogram_type =
+        match returns with None -> ST_Procedure | _ -> ST_Function
+      and body = SB_Primitive
+      and return_type = returns in
+      ( { name; args; body; return_type; parameters; subprogram_type }
+        [@warning "-40-42"],
+        f )
+
+    (* The function [pX] is building primitives with arity X and no return value *)
+    (* The function [pXr] is building primitives with arity X and a return value *)
+
+    (** Build a primitive with arity 0 and no return value. *)
+    let p0 name ?parameters f =
+      let f = function
+        | [] -> f ()
+        | _ :: _ -> Warn.fatal "Arity error for function %s." name
       in
-      (D_Func { name; args; body; return_type; parameters; subprogram_type }
-      [@warning "-40-42"])
+      build_primitive ?parameters name f
 
-    let arity_zero name return_type f =
-      build_primitive name [] return_type @@ function
-      | [] -> f ()
-      | _ :: _ -> Warn.fatal "Arity error for function %s." name
+    (** Build a primitive with arity 0 and a return value. *)
+    let p0r name ~returns f =
+      let f = function
+        | [] -> return [ f () ]
+        | _ :: _ -> Warn.fatal "Arity error for function %s." name
+      in
+      build_primitive ?returns:(Some returns) name f
 
-    let arity_one name args return_type f =
-      build_primitive name args return_type @@ function
-      | [ x ] -> f x
-      | [] | _ :: _ :: _ -> Warn.fatal "Arity error for function %s." name
+    (** Build a primitive with arity 1 and no return value. *)
+    let p1 name arg ?parameters f =
+      let f = function
+        | [ v ] -> f v
+        | [] | _ :: _ -> Warn.fatal "Arity error for function %s." name
+      in
+      build_primitive ~args:[ arg ] ?parameters name f
 
-    let arity_two name args return_type f =
-      build_primitive name args return_type @@ function
-      | [ x; y ] -> f x y
-      | [] | [ _ ] | _ :: _ :: _ :: _ ->
-          Warn.fatal "Arity error for function %s." name
+    (** Build a primitive with arity 1 and a return value. *)
+    let p1r name arg ~returns ?parameters f =
+      let f = function
+        | [ v ] -> return [ f v ]
+        | [] | _ :: _ -> Warn.fatal "Arity error for function %s." name
+      in
+      build_primitive ?returns:(Some returns) ~args:[ arg ] ?parameters name f
 
-    let arity_three name args return_type f =
-      build_primitive name args return_type @@ function
-      | [ x; y; z; ] -> f x y z
-      | _ ->
-          Warn.fatal "Arity error for function %s." name
+    (** Build a primitive with arity 2 and no return value. *)
+    let p2 name arg1 arg2 ?parameters f =
+      let f = function
+        | [ v1; v2 ] -> f v1 v2
+        | _ -> Warn.fatal "Arity error for function %s." name
+      in
+      build_primitive ~args:[ arg1; arg2 ] ?parameters name f
 
-    let arity_four name args return_type f =
-      build_primitive name args return_type @@ function
-      | [ x; y; z; t; ] -> f x y z t
-      | _ ->
-          Warn.fatal "Arity error for function %s." name
+    (** Build a primitive with arity 2 and a return value. *)
+    let p2r name arg1 arg2 ~returns ?parameters f =
+      let f = function
+        | [ v1; v2 ] -> return [ f v1 v2 ]
+        | _ -> Warn.fatal "Arity error for function %s." name
+      in
+      build_primitive ?returns:(Some returns) ~args:[ arg1; arg2 ] ?parameters
+        name f
 
-    let return_one =
-      let make body args = return [ body args ] in
-      fun ty -> (Some ty, make)
+    (** Build a primitive with arity 3 and no return value. *)
+    let p3 name arg1 arg2 arg3 ?parameters f =
+      let f = function
+        | [ v1; v2; v3 ] -> f v1 v2 v3
+        | _ -> Warn.fatal "Arity error for function %s." name
+      in
+      build_primitive ~args:[ arg1; arg2; arg3 ] ?parameters name f
 
-    let return_zero = (None, Fun.id)
+    (** Build a primitive with arity 3 and a return value. *)
+    let p3r name arg1 arg2 arg3 ~returns ?parameters f =
+      let f = function
+        | [ v1; v2; v3 ] -> return [ f v1 v2 v3 ]
+        | _ -> Warn.fatal "Arity error for function %s." name
+      in
+      build_primitive ?returns:(Some returns) ~args:[ arg1; arg2; arg3 ]
+        ?parameters name f
+
+    (** Build a primitive with arity 4 and no return value. *)
+    let p4 name arg1 arg2 arg3 arg4 ?parameters f =
+      let f = function
+        | [ v1; v2; v3; v4 ] -> f v1 v2 v3 v4
+        | _ -> Warn.fatal "Arity error for function %s." name
+      in
+      build_primitive ~args:[ arg1; arg2; arg3; arg4 ] ?parameters name f
 
     (* Primitives *)
     let extra_funcs ii_env =

@@ -541,12 +541,24 @@ module Make (B : Backend.S) (C : Config) = struct
     let or' prev here = prev >>= B.binop BOR here in
     let rec in_values v ty =
       match (Types.get_structure (IEnv.to_static env) ty).desc with
-      | T_Real | T_Bool | T_Enum _ | T_String | T_Int None -> m_true
+      | T_Real | T_Bool | T_Enum _ | T_String | T_Int UnConstrained ->
+          m_true
+      | T_Int (UnderConstrained _) ->
+          (* This cannot happen, because:
+             1. Forgetting now about named types, or any kind of compound type,
+                you cannot ask: [expr as ty] if ty is the unconstrained integer
+                because there is no syntax for it.
+             2. You cannot construct a type that is an alias for the
+                underconstrained integer type.
+             3. You cannot put the underconstrained integer type in a compound
+                type.
+          *)
+          failwith "Cannot perform a CTC on the under-constrained type."
       | T_Bits (e, _) ->
           let* v' = eval_expr_sef env e
           and* v_length = B.bitvector_length v in
           B.binop EQ_OP v_length v'
-      | T_Int (Some constraints) ->
+      | T_Int (WellConstrained constraints) ->
           let fold prev = function
             | Constraint_Exact e ->
                 let* v' = eval_expr_sef env e in
@@ -1306,9 +1318,16 @@ module Make (B : Backend.S) (C : Config) = struct
         L_BitVector (Bitvector.zeros length) |> lit
     | T_Enum li ->
         IMap.find (List.hd li) env.global.static.constants_values |> lit
-    | T_Int None | T_Int (Some []) -> L_Int Z.zero |> lit
-    | T_Int (Some (Constraint_Exact e :: _))
-    | T_Int (Some (Constraint_Range (e, _) :: _)) ->
+    | T_Int UnConstrained -> L_Int Z.zero |> lit
+    | T_Int (UnderConstrained _) ->
+        failwith
+          "Cannot request the base value of a under-constrained integer."
+    | T_Int (WellConstrained []) ->
+        failwith
+          "A well constrained integer cannot have an empty list of \
+           constraints."
+    | T_Int (WellConstrained (Constraint_Exact e :: _))
+    | T_Int (WellConstrained (Constraint_Range (e, _) :: _)) ->
         eval_expr_sef env e
     | T_Named _ -> assert false
     | T_Real -> L_Real Q.zero |> lit

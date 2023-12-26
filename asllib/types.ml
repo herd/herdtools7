@@ -90,29 +90,30 @@ let rec get_structure (env : env) (ty : ty) : ty =
 
 (* Begin BuiltinSingular *)
 let is_builtin_singular ty =
-  match ty.desc with
+  (match ty.desc with
   | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ | T_Int _ -> true
-  | _ -> false |: TypingRule.BuiltinSingularType
+  | _ -> false)
+  |: TypingRule.BuiltinSingularType
 (* End *)
 
 (* Begin BuiltinAggregate *)
 let is_builtin_aggregate ty =
-  match ty.desc with
+  (match ty.desc with
   | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ -> true
-  | _ -> false |: TypingRule.BuiltinAggregateType
+  | _ -> false)
+  |: TypingRule.BuiltinAggregateType
 (* End *)
 
 (* Begin BuiltinSingularOrAggregate *)
 let is_builtin ty =
-  is_builtin_singular ty
-  || is_builtin_aggregate ty |: TypingRule.BuiltinSingularOrAggregate
+  (is_builtin_singular ty || is_builtin_aggregate ty)
+  |: TypingRule.BuiltinSingularOrAggregate
 (* End *)
 
 (* Begin Named *)
 let is_named ty =
-  match ty.desc with
-  | T_Named _ -> true
-  | _ -> false |: TypingRule.NamedType
+  (match ty.desc with T_Named _ -> true | _ -> false)
+  |: TypingRule.NamedType
 (* End *)
 
 (* Begin Anonymous *)
@@ -123,36 +124,54 @@ let is_anonymous ty = (not (is_named ty)) |: TypingRule.AnonymousType
    otherwise it is aggregate. *)
 (* Begin Singular *)
 let is_singular env ty =
-  is_builtin_singular ty
-  || (is_named ty && get_structure env ty |> is_builtin_singular)
-     |: TypingRule.SingularType
+  (is_builtin_singular ty
+  || (is_named ty && get_structure env ty |> is_builtin_singular))
+  |: TypingRule.SingularType
 (* End *)
 
 (* A named type is singular if it has the structure of a singular type,
    otherwise it is aggregate. *)
 (* Begin Aggregate *)
 let is_aggregate env ty =
-  is_builtin_aggregate ty
-  || (is_named ty && get_structure env ty |> is_builtin_aggregate)
-     |: TypingRule.AggregateType
+  (is_builtin_aggregate ty
+  || (is_named ty && get_structure env ty |> is_builtin_aggregate))
+  |: TypingRule.AggregateType
 (* End *)
 
 (* Begin NonPrimitive *)
 let rec is_non_primitive ty =
-  match ty.desc with
+  (match ty.desc with
   | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ | T_Int _ -> false
   | T_Named _ -> true
   | T_Tuple li -> List.exists is_non_primitive li
   | T_Array (_, ty) -> is_non_primitive ty
   | T_Record fields | T_Exception fields ->
-      List.exists (fun (_, ty) -> is_non_primitive ty) fields
-      |: TypingRule.NonPrimitiveType
+      List.exists (fun (_, ty) -> is_non_primitive ty) fields)
+  |: TypingRule.NonPrimitiveType
 (* End *)
 
 (* Begin Primitive *)
 let is_primitive ty =
   (not (is_non_primitive ty)) |: TypingRule.PrimitiveType
 (* End *)
+
+let under_constrained_constraints =
+  let next_uid = ref 0 in
+  fun var ->
+    let uid = !next_uid in
+    incr next_uid;
+    UnderConstrained (uid, var)
+
+let under_constrained_ty var =
+  T_Int (under_constrained_constraints var) |> add_dummy_pos
+
+let to_well_constrained ty =
+  match ty.desc with
+  | T_Int (UnderConstrained (_uid, var)) -> var_ var |> integer_exact
+  | _ -> ty
+
+let get_well_constrained_structure env ty =
+  get_structure env ty |> to_well_constrained
 
 (* --------------------------------------------------------------------------*)
 
@@ -168,11 +187,12 @@ module Domain = struct
   type t =
     | D_Bool
     | D_String
-    | D_Real  (** The domain of an enum is a set of symbols *)
+    | D_Real
     | D_Symbols of ISet.t
+        (** The domain of an enum is a set of symbols *)
     | D_Int of int_set
-        (** The domain of a bitvector is given by its width. *)
     | D_Bits of int_set
+        (** The domain of a bitvector is given by its width. *)
   (* |: TypingRule.Domain *)
   (* End *)
 
@@ -272,9 +292,10 @@ module Domain = struct
         with Not_found -> (
           try
             match (StaticEnv.type_of env x).desc with
-            | T_Int None -> Top
-            | T_Int (Some constraints) ->
+            | T_Int UnConstrained -> Top
+            | T_Int (WellConstrained constraints) ->
                 int_set_of_int_constraints env constraints
+            | T_Int (UnderConstrained _) -> AlmostTop
             | _ -> assert false
           with Not_found ->
             Error.fatal_unknown_pos (Error.UndefinedIdentifier x)))
@@ -305,8 +326,9 @@ module Domain = struct
     | T_String -> D_String
     | T_Real -> D_Real
     | T_Enum li -> D_Symbols (ISet.of_list li)
-    | T_Int None -> D_Int Top
-    | T_Int (Some constraints) ->
+    | T_Int UnConstrained -> D_Int Top
+    | T_Int (UnderConstrained _) -> D_Int AlmostTop
+    | T_Int (WellConstrained constraints) ->
         D_Int (int_set_of_int_constraints env constraints)
     | T_Bits (width, _) -> D_Bits (int_set_of_expr env width)
     | T_Array _ | T_Exception _ | T_Record _ | T_Tuple _ ->
@@ -427,9 +449,9 @@ let rec bitfields_included env bfs1 bfs2 =
 and structural_subtype_satisfies env t s =
   (* A type T subtype-satisfies type S if and only if all of the following
      conditions hold: *)
-  match ((make_anonymous env s).desc, (make_anonymous env t).desc) with
-  (* If S has the structure of an integer type then T must have the
-     structure of an integer type. *)
+  (match ((make_anonymous env s).desc, (make_anonymous env t).desc) with
+  (* If S has the structure of an integer type then T must have the structure
+     of an integer type. *)
   | T_Int _, T_Int _ -> true
   | T_Int _, _ -> false
   (* If S has the structure of a real type then T must have the
@@ -450,17 +472,17 @@ and structural_subtype_satisfies env t s =
   | T_Enum li_s, T_Enum li_t -> list_equal String.equal li_s li_t
   | T_Enum _, _ -> false
   (*
-    • If S has the structure of a bitvector type with determined width 
-      then either T must have the structure of a bitvector type of the 
-      same determined width or T must have the structure of a bitvector 
-      type with undetermined width.
-    • If S has the structure of a bitvector type with undetermined width 
-      then T must have the structure of a bitvector type.
-    • If S has the structure of a bitvector type which has bitfields then 
-      T must have the structure of a bitvector type of the same width and 
-      for every bitfield in S there must be a bitfield in T of the same name, 
-      width and offset, whose type type-satisfies the bitfield in S.
-  *)
+      • If S has the structure of a bitvector type with determined width then
+        either T must have the structure of a bitvector type of the same
+        determined width or T must have the structure of a bitvector type with
+        undetermined width.
+      • If S has the structure of a bitvector type with undetermined width then T
+        must have the structure of a bitvector type.
+      • If S has the structure of a bitvector type which has bitfields then T
+        must have the structure of a bitvector type of the same width and for
+        every bitfield in S there must be a bitfield in T of the same name, width
+        and offset, whose type type-satisfies the bitfield in S.
+    *)
   | T_Bits (w_s, bf_s), T_Bits (w_t, bf_t) -> (
       (* Interpreting the first two condition as just a condition on
          domains. *)
@@ -503,27 +525,26 @@ and structural_subtype_satisfies env t s =
         fields_s
   | T_Exception _, _ | T_Record _, _ ->
       false (* A structure cannot be a name *)
-  | T_Named _, _ ->
-      assert false |: TypingRule.StructuralSubtypeSatisfaction
+  | T_Named _, _ -> assert false)
+  |: TypingRule.StructuralSubtypeSatisfaction
 
 (* End *)
 (* Begin DomainSubtypeSatisfaction *)
 and domain_subtype_satisfies env t s =
-  let s_struct = get_structure env s in
-  match s_struct.desc with
-  | T_Named _ ->
-      (* Cannot happen *)
-      assert false
-      (* If S does not have the structure of an aggregate type or
-         bitvector type then the domain of T must be a subset of
-         the domain of S. *)
-  | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ -> true
-  | T_Real | T_String | T_Bool | T_Enum _ | T_Int _ ->
-      let d_s = Domain.of_type env s_struct
-      and d_t = get_structure env t |> Domain.of_type env in
-      Domain.is_subset d_t d_s
-  | T_Bits _ ->
-      ((*
+  (let s_struct = get_structure env s in
+   match s_struct.desc with
+   | T_Named _ ->
+       (* Cannot happen *)
+       assert false
+   (* If S does not have the structure of an aggregate type or bitvector type
+      then the domain of T must be a subset of the domain of S. *)
+   | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ -> true
+   | T_Real | T_String | T_Bool | T_Enum _ | T_Int _ ->
+       let d_s = Domain.of_type env s_struct
+       and d_t = get_structure env t |> Domain.of_type env in
+       Domain.is_subset d_t d_s
+   | T_Bits _ -> (
+       (*
         • If either S or T have the structure of a bitvector type with
           undetermined width then the domain of T must be a subset of the 
           domain of S.
@@ -542,8 +563,8 @@ and domain_subtype_satisfies env t s =
            Domain.get_width_singleton_opt t_domain )
        with
        | Some w_s, Some w_t -> Z.equal w_s w_t
-       | _ -> Domain.is_subset t_domain s_domain)
-      |: TypingRule.DomainSubtypeSatisfaction
+       | _ -> Domain.is_subset t_domain s_domain))
+  |: TypingRule.DomainSubtypeSatisfaction
 
 (* End *)
 (* Begin SubtypeSatisfaction *)
@@ -555,18 +576,18 @@ and subtype_satisfies env t s =
       Format.eprintf "%a subtypes %a ? struct: %B -- domain: %B@."
         PP.pp_ty t PP.pp_ty s b1 b2
   in
-  structural_subtype_satisfies env t s
-  && domain_subtype_satisfies env t s |: TypingRule.SubtypeSatisfaction
+  (structural_subtype_satisfies env t s
+  && domain_subtype_satisfies env t s)
+  |: TypingRule.SubtypeSatisfaction
 
 (* End *)
 (* Begin TypeSatisfaction *)
 and type_satisfies env t s =
-  (* Type T type-satisfies type S if and only if at least one of the
-     following conditions holds: *)
-  (* T is a subtype of S *)
-  subtypes env t s
-  (* T subtype-satisfies S and at least one of S or T is an anonymous
-     type *)
+  ((* Type T type-satisfies type S if and only if at least one of the following
+      conditions holds: *)
+   (* T is a subtype of S *)
+   subtypes env t s
+  (* T subtype-satisfies S and at least one of S or T is an anonymous type *)
   || ((is_anonymous t || is_anonymous s) && subtype_satisfies env t s)
   ||
   (* T is an anonymous bitvector with no bitfields and S has the
@@ -576,7 +597,8 @@ and type_satisfies env t s =
   match (t.desc, (get_structure env s).desc) with
   | T_Bits (width_t, []), T_Bits (width_s, _) ->
       bitwidth_equal env width_t width_s
-  | _ -> false |: TypingRule.TypeSatisfaction
+  | _ -> false)
+  |: TypingRule.TypeSatisfaction
 (* End *)
 
 (* --------------------------------------------------------------------------*)
@@ -598,7 +620,7 @@ let rec type_clashes env t s =
         corresponding element types type-clash
       • S is either a subtype or a supertype of T *)
   (* We will add a rule for boolean and boolean. *)
-  (subtypes env s t || subtypes env t s)
+  ((subtypes env s t || subtypes env t s)
   ||
   let s_struct = get_structure env s
   and t_struct = get_structure env t in
@@ -614,7 +636,8 @@ let rec type_clashes env t s =
   | T_Tuple li_s, T_Tuple li_t ->
       List.compare_lengths li_s li_t = 0
       && List.for_all2 (type_clashes env) li_s li_t
-  | _ -> false |: TypingRule.TypeClash
+  | _ -> false)
+  |: TypingRule.TypeClash
 (* End *)
 
 let subprogram_clashes env (f1 : 'a func) (f2 : 'b func) =
@@ -663,128 +686,124 @@ let find_named_lowest_common_supertype env x1 x2 =
 let rec lowest_common_ancestor env s t =
   (* The lowest common ancestor of types S and T is: *)
   (* • If S and T are the same type: S (or T). *)
-  if type_equal env s t then Some s
-  else
-    match (s.desc, t.desc) with
-    | T_Named name_s, T_Named name_t -> (
-        (* If S and T are both named types: the (unique) common supertype
-           of S and T that is a subtype of all other common supertypes of
-           S and T. *)
-        match find_named_lowest_common_supertype env name_s name_t with
-        | None -> None
-        | Some name -> Some (T_Named name |> add_dummy_pos))
-    | _ -> (
-        let struct_s = get_structure env s
-        and struct_t = get_structure env t in
-        match (struct_s.desc, struct_t.desc) with
-        | T_Array (l_s, t_s), T_Array (l_t, t_t)
-          when type_equal env t_s t_t && expr_equal env l_s l_t -> (
-            (* If S and T both have the structure of array types with
-               the same index type and the same element types:
+  (if type_equal env s t then Some s
+   else
+     match (s.desc, t.desc) with
+     | T_Named name_s, T_Named name_t -> (
+         (* If S and T are both named types: the (unique) common supertype of S
+            and T that is a subtype of all other common supertypes of S and T. *)
+         match find_named_lowest_common_supertype env name_s name_t with
+         | None -> None
+         | Some name -> Some (T_Named name |> add_dummy_pos))
+     | _ -> (
+         let struct_s = get_structure env s
+         and struct_t = get_structure env t in
+         match (struct_s.desc, struct_t.desc) with
+         | T_Array (l_s, t_s), T_Array (l_t, t_t)
+           when type_equal env t_s t_t && expr_equal env l_s l_t -> (
+             (* If S and T both have the structure of array types with the same
+                index type and the same element types:
+                 – If S is a named type and T is an anonymous type: S
+                 – If S is an anonymous type and T is a named type: T *)
+             match (s.desc, t.desc) with
+             | T_Named _, T_Named _ -> assert false
+             | T_Named _, _ -> Some s
+             | _, T_Named _ -> Some t
+             | _ -> assert false)
+         | T_Tuple li_s, T_Tuple li_t
+           when List.compare_lengths li_s li_t = 0
+                && List.for_all2 (type_satisfies env) li_s li_t
+                && List.for_all2 (type_satisfies env) li_t li_s -> (
+             (* If S and T both have the structure of tuple types with the same
+                number of elements and the types of elements of S type-satisfy the
+                types of the elements of T and vice-versa:
+                 – If S is a named type and T is an anonymous type: S
+                 – If S is an anonymous type and T is a named type: T
+                 – If S and T are both anonymous types: the tuple type with the
+                   type of each element the lowest common ancestor of the types of
+                   the corresponding elements of S and T. *)
+             match (s.desc, t.desc) with
+             | T_Named _, T_Named _ -> assert false
+             | T_Named _, _ -> Some s
+             | _, T_Named _ -> Some t
+             | _ ->
+                 let maybe_ancestors =
+                   List.map2 (lowest_common_ancestor env) li_s li_t
+                 in
+                 let ancestors =
+                   List.filter_map Fun.id maybe_ancestors
+                 in
+                 if List.compare_lengths ancestors li_s = 0 then
+                   Some (add_dummy_pos (T_Tuple ancestors))
+                 else None)
+         | T_Int (UnderConstrained _), _ ->
+             (* TODO: revisit? *)
+             (* If either S or T have the structure of an under-constrained
+                integer type: the under-constrained integer type. *)
+             Some s
+         | _, T_Int (UnderConstrained _) ->
+             (* TODO: revisit? *)
+             (* If either S or T have the structure of an under-constrained
+                integer type: the under-constrained integer type. *)
+             Some t
+         | T_Int (WellConstrained cs_s), T_Int (WellConstrained cs_t)
+           -> (
+             (* Implicit: cs_s and cs_t are non-empty, see patterns above. *)
+             (* If S and T both have the structure of well-constrained integer
+                types:
                 – If S is a named type and T is an anonymous type: S
-                – If S is an anonymous type and T is a named type: T *)
-            match (s.desc, t.desc) with
-            | T_Named _, T_Named _ -> assert false
-            | T_Named _, _ -> Some s
-            | _, T_Named _ -> Some t
-            | _ -> assert false)
-        | T_Tuple li_s, T_Tuple li_t
-          when List.compare_lengths li_s li_t = 0
-               && List.for_all2 (type_satisfies env) li_s li_t
-               && List.for_all2 (type_satisfies env) li_t li_s -> (
-            (* If S and T both have the structure of tuple types
-               with the same number of elements and the types of
-               elements of S type-satisfy the types of the elements
-               of T and vice-versa:
-                – If S is a named type and T is an anonymous type: S
-                – If S is an anonymous type and T is a named type: T
-                – If S and T are both anonymous types: the tuple type
-                  with the type of each element the lowest common
-                  ancestor of the types of the corresponding elements
-                  of S and T. *)
-            match (s.desc, t.desc) with
-            | T_Named _, T_Named _ -> assert false
-            | T_Named _, _ -> Some s
-            | _, T_Named _ -> Some t
-            | _ ->
-                let maybe_ancestors =
-                  List.map2 (lowest_common_ancestor env) li_s li_t
-                in
-                let ancestors = List.filter_map Fun.id maybe_ancestors in
-                if List.compare_lengths ancestors li_s = 0 then
-                  Some (add_dummy_pos (T_Tuple ancestors))
-                else None)
-        | T_Int (Some []), _ ->
-            (* TODO: revisit? *)
-            (* If either S or T have the structure of an
-               under-constrained integer type:
-               the under-constrained integer type. *)
-            Some s
-        | _, T_Int (Some []) ->
-            (* TODO: revisit? *)
-            (* If either S or T have the structure of an
-               under-constrained integer type:
-               the under-constrained integer type. *)
-            Some t
-        | T_Int (Some cs_s), T_Int (Some cs_t) -> (
-            (* Implicit: cs_s and cs_t are non-empty,
-               see patterns above. *)
-            (* If S and T both have the structure of
-               well-constrained integer types:
-               – If S is a named type and T is an anonymous type: S
-               – If T is an anonymous type and S is a named type: T
-               – If S and T are both anonymous types:
-                 the well-constrained integer type with domain
-                 the union of the domains of S and T.
-            *)
-            match (s.desc, t.desc) with
-            | T_Named _, T_Named _ -> assert false
-            | T_Named _, _ -> Some s
-            | _, T_Named _ -> Some t
-            | _ ->
-                (* TODO: simplify domains ?
-                   If domains use a form of diets,
-                   this could be more efficient. *)
-                Some (add_dummy_pos (T_Int (Some (cs_s @ cs_t)))))
-        | T_Int None, _ -> (
-            (* S has the structure of an unconstrained integer type. *)
-            (* TODO: revisit? *)
-            (* TODO: typo corrected here, on point 2 S and T have
-               been swapped. *)
-            (* If either S or T have the structure of an unconstrained
-               integer type:
-               – If S is a named type with the structure of an
-                 unconstrained integer type and
-                 T is an anonymous type: S
-               – If T is an anonymous type and S is a named type
-                 with the structure of an unconstrained integer type: T
-               – If S and T are both anonymous types: the unconstrained
-                 integer type. *)
-            match (s.desc, t.desc) with
-            | T_Named _, T_Named _ -> assert false
-            | T_Named _, _ -> Some s
-            | _, T_Named _ -> assert false
-            | _, _ -> Some (add_dummy_pos (T_Int None)))
-        | _, T_Int None -> (
-            (* T has the structure of an unconstrained integer type. *)
-            (* TODO: revisit? *)
-            (* TODO: typo corrected here, on point 2 S and T have
-               been swapped. *)
-            (* If either S or T have the structure of an unconstrained
-               integer type:
-               – If S is a named type with the structure of an
-                 unconstrained integer type and T is an anonymous
-                 type: S
-               – If T is an anonymous type and S is a named type
-                 with the structure of an unconstrained integer type: T
-               – If S and T are both anonymous types: the unconstrained
-                 integer type. *)
-            match (s.desc, t.desc) with
-            | T_Named _, T_Named _ -> assert false
-            | T_Named _, _ -> assert false
-            | _, T_Named _ -> Some t
-            | _, _ -> Some (add_dummy_pos (T_Int None)))
-        | _ -> None |: TypingRule.LowestCommonAncestor)
+                – If T is an anonymous type and S is a named type: T
+                – If S and T are both anonymous types: the well-constrained
+                  integer type with domain the union of the domains of S and T.
+             *)
+             match (s.desc, t.desc) with
+             | T_Named _, T_Named _ -> assert false
+             | T_Named _, _ -> Some s
+             | _, T_Named _ -> Some t
+             | _ ->
+                 (* TODO: simplify domains ? If domains use a form of diets,
+                    this could be more efficient. *)
+                 Some
+                   (add_dummy_pos
+                      (T_Int (WellConstrained (cs_s @ cs_t)))))
+         | T_Int UnConstrained, _ -> (
+             (* Here S has the structure of an unconstrained integer type. *)
+             (* TODO: revisit? *)
+             (* TODO: typo corrected here, on point 2 S and T have
+                been swapped. *)
+             (* If either S or T have the structure of an unconstrained integer
+                type:
+                – If S is a named type with the structure of an unconstrained
+                  integer type and T is an anonymous type: S
+                – If T is an anonymous type and S is a named type with the
+                  structure of an unconstrained integer type: T
+                – If S and T are both anonymous types: the unconstrained integer
+                  type. *)
+             match (s.desc, t.desc) with
+             | T_Named _, T_Named _ -> assert false
+             | T_Named _, _ -> Some s
+             | _, T_Named _ -> assert false
+             | _, _ -> Some (add_dummy_pos (T_Int UnConstrained)))
+         | _, T_Int UnConstrained -> (
+             (* Here T has the structure of an unconstrained integer type. *)
+             (* TODO: revisit? *)
+             (* TODO: typo corrected here, on point 2 S and T have
+                been swapped. *)
+             (* If either S or T have the structure of an unconstrained integer
+                type:
+                – If S is a named type with the structure of an unconstrained
+                  integer type and T is an anonymous type: S
+                – If T is an anonymous type and S is a named type with the
+                  structure of an unconstrained integer type: T
+                – If S and T are both anonymous types: the unconstrained integer
+                  type. *)
+             match (s.desc, t.desc) with
+             | T_Named _, T_Named _ -> assert false
+             | T_Named _, _ -> assert false
+             | _, T_Named _ -> Some t
+             | _, _ -> Some (add_dummy_pos (T_Int UnConstrained)))
+         | _ -> None))
+  |: TypingRule.LowestCommonAncestor
 (* End *)
 
 (* --------------------------------------------------------------------------*)
@@ -809,9 +828,19 @@ let rec base_value loc env t =
       E_Call ("Zeros", [ e ], []) |> add_pos_from t
   | T_Enum li ->
       IMap.find (List.hd li) env.global.constants_values |> lit
-  | T_Int None | T_Int (Some []) -> !$0
-  | T_Int (Some (Constraint_Exact e :: _))
-  | T_Int (Some (Constraint_Range (e, _) :: _)) ->
+  | T_Int UnConstrained -> !$0
+  | T_Int (UnderConstrained _) ->
+      (* This case cannot happen:
+         For example, if you have a variable declaration var foo: ty, ty cannot
+         be an underconstrained integer type, as there is no syntax for it.
+      *)
+      failwith
+        "Cannot get the base-value of an under-constrained integer."
+  | T_Int (WellConstrained []) ->
+      failwith
+        "Well Constrained integers cannot have an empty constraint."
+  | T_Int (WellConstrained (Constraint_Exact e :: _))
+  | T_Int (WellConstrained (Constraint_Range (e, _) :: _)) ->
       normalize env e
   | T_Named _ -> assert false
   | T_Real -> L_Real Q.zero |> lit

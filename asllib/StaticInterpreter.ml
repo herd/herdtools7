@@ -38,8 +38,7 @@ let value_as_int pos = function
       with Z.Overflow ->
         failwith "Cannot slice with an integer more than machine size.")
   | v ->
-      fatal_from pos
-        (Error.MismatchType (PP.literal_to_string v, [ T_Int None ]))
+      fatal_from pos (Error.MismatchType (PP.literal_to_string v, [ integer' ]))
 
 let is_positive z = Z.sign z != -1
 let is_strict_positive z = Z.sign z = 1
@@ -166,7 +165,7 @@ let rec static_eval (env : SEnv.env) : expr -> literal =
           | v ->
               fatal_from e
               @@ Error.MismatchType
-                   (PP.literal_to_string v, [ T_Int None; default_t_bits ])
+                   (PP.literal_to_string v, [ integer'; default_t_bits ])
         in
         L_BitVector (Bitvector.extract_slice bv positions)
     | E_Cond (e_cond, e1, e2) ->
@@ -186,7 +185,7 @@ let rec static_eval (env : SEnv.env) : expr -> literal =
 and slices_to_positions env =
   let check_positive e x =
     if x >= 0 then x
-    else fatal_from e @@ Error.MismatchType (string_of_int x, [ T_Int None ])
+    else fatal_from e @@ Error.MismatchType (string_of_int x, [ integer' ])
   in
   let eval_to_int e = static_eval env e |> value_as_int e |> check_positive e in
   let slice_to_positions =
@@ -354,7 +353,7 @@ module Normalize = struct
     | L_Int i -> poly_of_z i
     | v ->
         Error.fatal_unknown_pos
-          (Error.MismatchType (PP.literal_to_string v, [ T_Int None ]))
+          (Error.MismatchType (PP.literal_to_string v, [ integer' ]))
 
   let sign_not = function
     | NotNull -> Null
@@ -518,11 +517,11 @@ module Normalize = struct
           try
             let ty = StaticEnv.type_of env s in
             match ty.desc with
-            | T_Int (Some [ Constraint_Exact e ]) -> to_ir env e
+            | T_Int (WellConstrained [ Constraint_Exact e ]) -> to_ir env e
             | T_Int _ -> poly_of_var s |> always
             | _ ->
                 Error.fatal_unknown_pos
-                  (Error.ConflictingTypes ([ T_Int None ], ty))
+                  (Error.ConflictingTypes ([ integer' ], ty))
           with Not_found ->
             Error.fatal_unknown_pos (Error.UndefinedIdentifier s)))
     | E_Binop (PLUS, e1, e2) ->

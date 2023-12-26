@@ -159,9 +159,10 @@ and pp_slice_list f = pp_comma_list pp_slice f
 
 and pp_ty f t =
   match t.desc with
-  | T_Int None -> pp_print_string f "integer"
-  | T_Int (Some int_constraint) ->
-      fprintf f "@[integer {%a}@]" pp_int_constraints int_constraint
+  | T_Int UnConstrained -> pp_print_string f "integer"
+  | T_Int (WellConstrained cs) ->
+      fprintf f "@[integer {%a}@]" pp_int_constraints cs
+  | T_Int (UnderConstrained (_uid, var)) -> fprintf f "@[integer {%s}@]" var
   | T_Real -> pp_print_string f "real"
   | T_String -> pp_print_string f "string"
   | T_Bool -> pp_print_string f "boolean"
