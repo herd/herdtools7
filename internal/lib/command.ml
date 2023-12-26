@@ -87,7 +87,10 @@ let do_run must_succeed ?stdin:in_f ?stdout:out_f ?stderr:err_f bin args =
         let fd, i = in_pipe false in
         fd, (fun _ -> Unix.close fd ; f i), (fun _ -> close_in i)
   in
-
+  let () =
+    if false then
+      Printf.printf "Running %s %s\n%!"
+        bin (String.concat " " args) in
   let pid =
     Fun.protect
       ~finally:(fun _ -> close_in_pipe () ; close_out_pipe () ; close_err_pipe ())

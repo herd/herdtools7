@@ -75,6 +75,7 @@ test:: test.aarch64
 test.aarch64:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
+		-j $(J) \
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
 		-litmus-dir ./herd/tests/instructions/AArch64 \
@@ -210,6 +211,7 @@ test-pseudo-asl:
 test-aarch64-asl: asl-pseudocode
 	@echo
 	$(HERD_REGRESSION_TEST) \
+		-j $(J) \
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
 		-litmus-dir ./herd/tests/instructions/AArch64.ASL \
