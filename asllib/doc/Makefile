@@ -14,7 +14,7 @@ no-empty:
 
 CONTROL=ifempty.tex ifformal.tex control.tex
 
-ASLAbstractSyntaxReference.pdf: ASLAbstractSyntaxReference.tex
+ASLAbstractSyntaxReference.pdf: $(CONTROL) ASLASTLines.tex ASLAbstractSyntaxReference.tex
 	$(LATEX) -pdf ASLAbstractSyntaxReference.tex
 
 ASLSemanticsReference.pdf: $(CONTROL) ASLAbstractSyntaxReference.pdf ASLSemanticsReference.tex ASLSemanticsLines.tex
