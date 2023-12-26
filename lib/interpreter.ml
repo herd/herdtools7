@@ -1174,6 +1174,21 @@ module Make
     let oa_changes = check_two (fun w p -> not (U.same_oa w p))
     and at_least_one_writable = check_two U.writable2
 
+    (*
+     * The relation po is to interpreted as a transitive relation,
+     * this primitive is much more efficient when po+ is huge.
+     *)
+    let inter_transitive arg = match arg with
+      |  V.Tuple [V.Rel po; V.Rel loc; ] ->
+          let module ME = E.EventRel.M in
+          let m = ME.to_map  po in
+          let r =
+            E.EventRel.filter
+              (fun  p -> ME.exists_path p m)
+              loc in
+          V.Rel r
+      | _ -> arg_mismatch ()
+
     let add_primitives ks m =
       add_prims m
         [
@@ -1197,6 +1212,7 @@ module Make
          "domain",domain;
          "range",range;
          "fail",fail;
+         "inter_transitive", inter_transitive;
        ]
 
 

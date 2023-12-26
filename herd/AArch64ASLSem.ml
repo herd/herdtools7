@@ -971,12 +971,16 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 ASLE.EventRel.of_pred mem_evts mem_evts (fun e1 e2 ->
                     ASLE.same_location e1 e2 && ASLE.EventRel.mem (e1, e2) po)
               in
+              let partial_po =
+                ASLE.EventTransRel.to_implicitely_transitive_rel es.ASLE.partial_po in
+
               let conc =
                 {
                   ASLS.conc_zero with
                   ASLS.str = es;
                   ASLS.rfmap = rfm;
                   ASLS.po;
+                  ASLS.partial_po;
                   ASLS.pos;
                 }
               in

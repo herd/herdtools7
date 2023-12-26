@@ -113,11 +113,11 @@ module Make (C : Config) = struct
   end = struct
     module Mixed = M.Mixed (SZ)
 
-    let ( let* ) = M.( >>= )
-    let ( let*| ) = M.para_bind_output_right
+    let ( let* ) = M.asl_data
+    let ( let*| ) = M.asl_seq
     let ( and* ) = M.( >>| )
     let return = M.unitT
-    let ( >>= ) = M.( >>= )
+    let ( >>= ) = M.asl_data
     let ( >>! ) = M.( >>! )
 
     (**************************************************************************)
@@ -254,10 +254,10 @@ module Make (C : Config) = struct
     (**************************************************************************)
 
     let choice (m1 : V.v M.t) (m2 : 'b M.t) (m3 : 'b M.t) : 'b M.t =
-      M.bind_ctrl_seq_data m1 (function
+      M.asl_ctrl m1 (function
         | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) -> if b then m2 else m3
         | b ->
-            M.bind_ctrl_seq_data (to_int_signed b) (fun v -> M.choiceT v m2 m3))
+            M.asl_ctrl (to_int_signed b) (fun v -> M.choiceT v m2 m3))
 
     let binop =
       let open AST in

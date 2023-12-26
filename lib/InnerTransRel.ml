@@ -17,6 +17,7 @@ module type S = sig
   val union6 : t -> t -> t -> t -> t -> t -> t
   val unions : t list -> t
   val to_transitive_rel : t -> Rel.t
+  val to_implicitely_transitive_rel : t -> Rel.t
 end
 
 module Make (O : MySet.OrderedType) :
@@ -101,4 +102,6 @@ module Make (O : MySet.OrderedType) :
     | li -> unions2 [] li |> unions
 
   let to_transitive_rel t = Rel.transitive_closure t.rel
+
+  let to_implicitely_transitive_rel t = t.rel
 end
