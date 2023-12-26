@@ -158,14 +158,12 @@ and pp_pattern f = function
 
 and pp_ty =
   let pp_desc f = function
-    | T_Int constraint_opt ->
-        bprintf f "T_Int (%a)" (pp_option pp_int_constraint) constraint_opt
+    | T_Int cs -> bprintf f "T_Int (%a)" pp_int_constraints cs
     | T_Real -> addb f "T_Real"
     | T_String -> addb f "T_String"
     | T_Bool -> addb f "T_Bool"
     | T_Bits (bits_constraint, fields) ->
-        bprintf f "T_Bits (%a, %a)" pp_expr bits_constraint
-          pp_bitfields fields
+        bprintf f "T_Bits (%a, %a)" pp_expr bits_constraint pp_bitfields fields
     | T_Enum enum_type_desc ->
         addb f "T_Enum ";
         pp_list pp_string f enum_type_desc
@@ -195,13 +193,17 @@ and pp_bitfield f = function
 
 and pp_bitfields f bitfields = pp_list pp_bitfield f bitfields
 
-and pp_int_constraint f =
-  let pp_one f = function
-    | Constraint_Exact e -> bprintf f "Constraint_Exact (%a)" pp_expr e
-    | Constraint_Range (bot, top) ->
-        bprintf f "Constraint_Range (%a, %a)" pp_expr bot pp_expr top
-  in
-  pp_list pp_one f
+and pp_int_constraint f = function
+  | Constraint_Exact e -> bprintf f "Constraint_Exact (%a)" pp_expr e
+  | Constraint_Range (bot, top) ->
+      bprintf f "Constraint_Range (%a, %a)" pp_expr bot pp_expr top
+
+and pp_int_constraints f = function
+  | UnConstrained -> addb f "UnConstrained"
+  | WellConstrained cs ->
+      addb f "WellConstrained ";
+      pp_list pp_int_constraint f cs
+  | UnderConstrained i -> bprintf f "UnderConstrained %d" i
 
 let rec pp_lexpr =
   let pp_desc f = function

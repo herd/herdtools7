@@ -92,8 +92,23 @@ val map2_desc :
 val integer : ty
 (** The ASL unconstrained integer type. *)
 
-val underconstrained_integer : ty
-(** The ASL under-constrained integer type. *)
+val integer' : type_desc
+(** [integer], without the position annotation. *)
+
+val new_under_constrained_uid : unit -> AST.uid
+(** Returns a new, un-used [uid] for use in an under-cosntrained integer type. *)
+
+val under_constrained_of_uid : AST.uid -> ty
+(** Builds an under-constrained integer type from its [uid]. *)
+
+val new_under_constrained_integer : unit -> ty
+(** Returns a new, un-used [uid] for use in an under-cosntrained integer type. *)
+
+val integer_exact : expr -> ty
+(** [integer_exact e] is the integer type constrained to be equal to [e]. *)
+
+val integer_exact' : expr -> type_desc
+(** [integer_exact' e] is [integer_exact e] without the position annotation. *)
 
 val boolean : ty
 (** The ASL boolean type. *)
@@ -140,7 +155,7 @@ val is_global_ignored : identifier -> bool
 (** [is_global_ignored s] is true iff [s] has been created with [global_ignored ()]. *)
 
 val constraint_binop :
-  binop -> int_constraints -> int_constraints -> int_constraints
+  binop -> int_constraint list -> int_constraint list -> int_constraint list
 (** [constraint_binop PLUS cs1 cs2] is the set of constraints given by the
     element wise application of [PLUS]. *)
 

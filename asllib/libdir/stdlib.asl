@@ -121,7 +121,7 @@ func LowestSetBit{N}(x: bits(N)) => integer{0..N}
 begin
   for i = 0 to N-1 do
     if x[i] == '1' then
-      return i;
+      return i as integer{0..N};
     end
   end
   return N;
@@ -131,7 +131,7 @@ func HighestSetBit{N}(x: bits(N)) => integer{-1..N-1}
 begin
   for i = N-1 downto 0 do
     if x[i] == '1' then
-      return i;
+      return i as integer {-1..N-1};
     end
   end
   return -1;

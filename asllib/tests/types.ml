@@ -29,17 +29,15 @@ let builtin_examples () =
   (* Builtin singulars *)
   List.iter assert_is_builtin_singular
     [
-      T_Int None;
-      T_Int (Some [ Constraint_Exact !$3 ]);
+      integer';
+      integer_exact' !$3;
       T_Real;
       T_String;
       T_Bool;
       T_Enum [];
       T_Enum [ "Something"; "Something Else" ];
       T_Bits (!$0, []);
-      T_Bits
-        ( !$3,
-          [ BitField_Simple ("Something", [ Slice_Single !$0 ]) ] );
+      T_Bits (!$3, [ BitField_Simple ("Something", [ Slice_Single !$0 ]) ]);
     ];
 
   (* Builtin aggregate *)
@@ -48,9 +46,9 @@ let builtin_examples () =
       T_Tuple [];
       T_Tuple [ !!T_Real; !!T_String ];
       T_Record [];
-      T_Record [ ("a", !!T_Real); ("B", !!(T_Int None)) ];
+      T_Record [ ("a", !!T_Real); ("B", integer) ];
       T_Exception [];
-      T_Exception [ ("a", !!T_Real); ("B", !!(T_Int None)) ];
+      T_Exception [ ("a", !!T_Real); ("B", integer) ];
     ];
 
   (* Not builtin *)
@@ -103,15 +101,14 @@ let subtype_examples () =
 
   assert (not (subtype_satisfies empty_env bits_2_4 bits_4));
    *)
-
   let bits_btifields =
-    !!(T_Bits ( !$4, [ BitField_Simple ("a", [ Slice_Single !$3 ]) ] ))
+    !!(T_Bits (!$4, [ BitField_Simple ("a", [ Slice_Single !$3 ]) ]))
   in
 
   assert (domain_subtype_satisfies empty_env bits_btifields bits_btifields);
 
   let bits_n = !!(T_Bits (!%"N", [])) in
-  let bits_n_1 = !!(T_Bits ((binop MUL !%"N" !$1), [])) in
+  let bits_n_1 = !!(T_Bits (binop MUL !%"N" !$1, [])) in
 
   assert (domain_subtype_satisfies env_with_n bits_n bits_n_1);
   assert (structural_subtype_satisfies env_with_n bits_n bits_n_1);
@@ -140,8 +137,8 @@ let lca_examples () =
 
   assert (lowest_common_ancestor empty_env bits_4 bits_2 = None);
 
-  let integer_4 = !!(T_Int (Some [ Constraint_Exact !$4 ])) in
-  let integer_2 = !!(T_Int (Some [ Constraint_Exact !$2 ])) in
+  let integer_4 = integer_exact !$4 in
+  let integer_2 = integer_exact !$2 in
 
   let lca = lowest_common_ancestor empty_env integer_4 integer_2 in
   assert (Option.is_some lca);
@@ -158,8 +155,8 @@ let type_clashes () =
   let bits_2 = !!(T_Bits (!$2, [])) in
   let bits_m = !!(T_Bits (!%"M", [])) in
 
-  let integer_4 = !!(T_Int (Some [ Constraint_Exact !$4 ])) in
-  let integer_2 = !!(T_Int (Some [ Constraint_Exact !$2 ])) in
+  let integer_4 = integer_exact !$4 in
+  let integer_2 = integer_exact !$2 in
 
   assert (not (type_clashes empty_env bits_4 integer_4));
   assert (not (type_clashes empty_env integer bits_2));

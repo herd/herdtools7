@@ -33,6 +33,12 @@
 type position = Lexing.position
 type 'a annotated = { desc : 'a; pos_start : position; pos_end : position }
 
+type identifier = string
+(** Type of local identifiers in the AST. *)
+
+type uid = int
+(** Unique identifiers *)
+
 (* -------------------------------------------------------------------------
 
                                    Operations
@@ -73,9 +79,6 @@ type binop =
   | RDIV  (** Division for reals *)
   | SHL  (** Shift left for ints *)
   | SHR  (** Shift right for ints *)
-
-type identifier = string
-(** Type of local identifiers in the AST. *)
 
 (* -------------------------------------------------------------------------
 
@@ -162,10 +165,10 @@ and slice =
 
 (** Type descriptors.*)
 and type_desc =
-(* Begin Constrained *)
-  | T_Int of int_constraints option
+  (* Begin Constrained *)
+  | T_Int of int_constraints
   | T_Bits of expr * bitfield list
-(* End Constrained *)
+  (* End Constrained *)
   | T_Real
   | T_String
   | T_Bool
@@ -185,8 +188,15 @@ and int_constraint =
   | Constraint_Range of (expr * expr)
       (** In the range of these two statically evaluable values.*)
 
-and int_constraints = int_constraint list
-(** The int_constraints represent the union of the individual constraints.*)
+(** The int_constraints constraints the integer type to a certain subset.*)
+and int_constraints =
+  | UnConstrained  (** The normal, unconstrained, integer type. *)
+  | WellConstrained of int_constraint list
+      (** An integer type constrained from ASL syntax: it is the union of each
+          constraint in the list. *)
+  | UnderConstrained of uid
+      (** An under-constrained integer, the default type for parameters of
+          function at compile time. *)
 
 (** Represent static slices on a given bitvector type. *)
 and bitfield =
@@ -315,6 +325,5 @@ type 'p t = 'p decl list
 
    ------------------------------------------------------------------------- *)
 
-type scope =
-  | Scope_Local of identifier * int
-  | Scope_Global  (** A scope is an unique identifier of the calling site. *)
+(** A scope is an unique identifier of the calling site. *)
+type scope = Scope_Local of identifier * uid | Scope_Global

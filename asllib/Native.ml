@@ -114,7 +114,7 @@ module NativeBackend = struct
     | NV_Literal v1, NV_Literal v2 ->
         StaticInterpreter.binop_values dummy_annotated op v1 v2 |> nv_literal
     | NV_Literal _, v | v, _ ->
-        mismatch_type v [ T_Bool; T_Int None; T_Real; default_t_bits ]
+        mismatch_type v [ T_Bool; integer'; T_Real; default_t_bits ]
 
   let ternary = function
     | NV_Literal (L_Bool true) -> fun m_true _m_false -> m_true ()
@@ -125,7 +125,7 @@ module NativeBackend = struct
     match v with
     | NV_Literal v ->
         StaticInterpreter.unop_values dummy_annotated op v |> nv_literal
-    | _ -> mismatch_type v [ T_Bool; T_Int None; T_Real; default_t_bits ]
+    | _ -> mismatch_type v [ T_Bool; integer'; T_Real; default_t_bits ]
 
   let on_write_identifier x scope value =
     if _log then
@@ -176,7 +176,7 @@ module NativeBackend = struct
 
   let as_int = function
     | NV_Literal (L_Int i) -> Z.to_int i
-    | v -> mismatch_type v [ T_Int None ]
+    | v -> mismatch_type v [ integer' ]
 
   let bitvector_to_value bv = L_BitVector bv |> nv_literal |> return
   let int_max x y = if x >= y then x else y
@@ -200,7 +200,7 @@ module NativeBackend = struct
                 ( E_CTC
                     ( E_Var "-" |> add_dummy_pos,
                       T_Int
-                        (Some
+                        (WellConstrained
                            [
                              Constraint_Range
                                (expr_of_int 0, expr_of_int max_pos);
@@ -236,7 +236,7 @@ module NativePrimitives = struct
   let uint = function
     | [ NV_Literal (L_BitVector bv) ] ->
         L_Int (Bitvector.to_z_unsigned bv) |> nv_literal |> return_one
-    | [ v ] -> mismatch_type v [ T_Int None ]
+    | [ v ] -> mismatch_type v [ integer' ]
     | li -> Error.fatal_unknown_pos @@ Error.BadArity ("UInt", 1, List.length li)
 
   let sint = function
@@ -258,19 +258,19 @@ module NativePrimitives = struct
   let dec_str = function
     | [ NV_Literal (L_Int i) ] ->
         L_String (Z.to_string i) |> nv_literal |> return_one
-    | [ v ] -> mismatch_type v [ T_Int None ]
+    | [ v ] -> mismatch_type v [ integer' ]
     | li ->
         Error.fatal_unknown_pos @@ Error.BadArity ("DecStr", 1, List.length li)
 
   let hex_str = function
     | [ NV_Literal (L_Int i) ] ->
         L_String (Printf.sprintf "%a" Z.sprint i) |> nv_literal |> return_one
-    | [ v ] -> mismatch_type v [ T_Int None ]
+    | [ v ] -> mismatch_type v [ integer' ]
     | li ->
         Error.fatal_unknown_pos @@ Error.BadArity ("DecStr", 1, List.length li)
 
   let ascii_range = Constraint_Range (!$0, !$127)
-  let ascii_integer = T_Int (Some [ ascii_range ])
+  let ascii_integer = T_Int (WellConstrained [ ascii_range ])
 
   let ascii_str =
     let open! Z in
@@ -285,13 +285,13 @@ module NativePrimitives = struct
   let log2 = function
     | [ NV_Literal (L_Int i) ] when Z.gt i Z.zero ->
         [ L_Int (Z.log2 i |> Z.of_int) |> nv_literal ]
-    | [ v ] -> mismatch_type v [ T_Int None ]
+    | [ v ] -> mismatch_type v [ integer' ]
     | li -> Error.fatal_unknown_pos @@ Error.BadArity ("Log2", 1, List.length li)
 
   let int_to_real = function
     | [ NV_Literal (L_Int i) ] ->
         L_Real (Q.of_bigint i) |> nv_literal |> return_one
-    | [ v ] -> mismatch_type v [ T_Int None ]
+    | [ v ] -> mismatch_type v [ integer' ]
     | li -> Error.fatal_unknown_pos @@ Error.BadArity ("Real", 1, List.length li)
 
   let truncate q = Q.to_bigint q
@@ -445,7 +445,7 @@ module NativeInterpreter (C : Interpreter.Config) =
 
 let exit_value = function
   | NV_Literal (L_Int i) -> i |> Z.to_int
-  | v -> mismatch_type v [ T_Int None ]
+  | v -> mismatch_type v [ integer' ]
 
 let instrumentation_buffer = function
   | Some true ->

@@ -353,7 +353,7 @@ module Make (B : Backend.S) (C : Config) = struct
         | NotFound ->
             fatal_from e @@ Error.UndefinedIdentifier x
             |: SemanticsRule.EUndefIdent)
-        (* End *)
+    (* End *)
     (* Begin BinopAnd *)
     | E_Binop (BAND, e1, e2) ->
         (* if e1 then e2 else false *)
@@ -471,7 +471,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let** v, env' = eval_expr env e in
         let* v = eval_pattern env e v p in
         return_normal (v, env') |: SemanticsRule.EPattern
-    (* End *)
+  (* End *)
 
   (* Evaluation of Side-Effect-Free Expressions *)
   (* ------------------------------------------ *)
@@ -511,11 +511,12 @@ module Make (B : Backend.S) (C : Config) = struct
     let or' prev here = prev >>= B.binop BOR here in
     let rec in_values v ty =
       match (Types.get_structure (IEnv.to_static env) ty).desc with
-      | T_Real | T_Bool | T_Enum _ | T_String | T_Int None -> m_true
+      | T_Real | T_Bool | T_Enum _ | T_String | T_Int UnConstrained -> m_true
+      | T_Int (UnderConstrained _) -> fatal_from loc Error.TypeInferenceNeeded
       | T_Bits (e, _) ->
           let* v' = eval_expr_sef env e and* v_length = B.bitvector_length v in
           B.binop EQ_OP v_length v'
-      | T_Int (Some constraints) ->
+      | T_Int (WellConstrained constraints) ->
           let fold prev = function
             | Constraint_Exact e ->
                 let* v' = eval_expr_sef env e in
@@ -566,7 +567,7 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     choice (in_values v ty) true false
   (* End *)
- 
+
   (* Evaluation of Left-Hand-Side Expressions *)
   (* ---------------------------------------- *)
 
@@ -589,8 +590,8 @@ module Make (B : Backend.S) (C : Config) = struct
             return_normal env |: SemanticsRule.LEGlobalVar
         (* End *)
         | NotFound -> (
-          match ver with
-          (* Begin LEUndefIdentOne *)
+            match ver with
+            (* Begin LEUndefIdentOne *)
             | V1 ->
                 fatal_from le @@ Error.UndefinedIdentifier x
                 |: SemanticsRule.LEUndefIdentV1
@@ -679,7 +680,7 @@ module Make (B : Backend.S) (C : Config) = struct
           let*^ vbot, env_b = eval_expr env ebot in
           let*^ vlength, env_lb = eval_expr env_b elength in
           let* vbot = vbot and* vlength = vlength in
-          return_normal ((vbot, vlength), env_lb) |: SemanticsRule.SliceLength 
+          return_normal ((vbot, vlength), env_lb) |: SemanticsRule.SliceLength
       (* End *)
       (* Begin SliceRange *)
       | Slice_Range (etop, ebot) ->
@@ -687,7 +688,7 @@ module Make (B : Backend.S) (C : Config) = struct
           let*^ vbot, env_tb = eval_expr env_t ebot in
           let* vtop = vtop and* vbot = vbot in
           let* length = B.binop MINUS vtop vbot >>= B.binop PLUS one in
-          return_normal ((vbot, length), env_tb) |: SemanticsRule.SliceRange  
+          return_normal ((vbot, length), env_tb) |: SemanticsRule.SliceRange
       (* End *)
       (* Begin SliceStar *)
       | Slice_Star (efactor, elength) ->
@@ -695,7 +696,7 @@ module Make (B : Backend.S) (C : Config) = struct
           let*^ vlength, env_lf = eval_expr env_f elength in
           let* vfactor = vfactor and* vlength = vlength in
           let* vbot = B.binop MUL vfactor vlength in
-          return_normal ((vbot, vlength), env_lf) |: SemanticsRule.SliceStar 
+          return_normal ((vbot, vlength), env_lf) |: SemanticsRule.SliceStar
       (* End *)
     in
     fold_par_list eval_one env
@@ -784,7 +785,7 @@ module Make (B : Backend.S) (C : Config) = struct
           let**| env = envm in
           eval_local_decl s ldi' env (Some vm)
         in
-        List.fold_left2 folder (return_normal env) ldis liv 
+        List.fold_left2 folder (return_normal env) ldis liv
         |: SemanticsRule.LDTuple
     (* Begin LDTypedTuple *)
     | LDI_Tuple (_ldis, Some ty), None ->
@@ -798,7 +799,7 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         List.fold_left folder (return_normal env) ldis
         |: SemanticsRule.LDUninitialisedTuple
-    (* End *)
+  (* End *)
 
   (* Evaluation of Statements *)
   (* ------------------------ *)
@@ -918,7 +919,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let* () = B.on_write_identifier name scope v in
         return (Throwing (Some ((v, name, scope), t), new_env))
         |: SemanticsRule.SThrowSomeTyped
-    (* Begin SThrowSome *)  
+    (* Begin SThrowSome *)
     | S_Throw (Some (_e, None)) ->
         fatal_from s Error.TypeInferenceNeeded |: SemanticsRule.SThrowSome
     (* End *)
@@ -1054,7 +1055,7 @@ module Make (B : Backend.S) (C : Config) = struct
         match List.find_opt (catcher_matches v_ty) catchers with
         (* If any catcher matches the exception type: *)
         | Some catcher -> (
-          (* Begin Catch *)
+            (* Begin Catch *)
             match catcher with
             | None, _e_ty, s ->
                 eval_block env1 s
@@ -1172,7 +1173,7 @@ module Make (B : Backend.S) (C : Config) = struct
              in
              return_normal (vs, ret_genv))
         |: SemanticsRule.FCall
-     (* End *)
+  (* End *)
 
   (** [multi_assign env [le_1; ... ; le_n] [m_1; ... ; m_n]] is
       [env[le_1 --> m_1] ... [le_n --> m_n]]. *)
@@ -1209,9 +1210,14 @@ module Make (B : Backend.S) (C : Config) = struct
         L_BitVector (Bitvector.zeros length) |> lit
     | T_Enum li ->
         IMap.find (List.hd li) env.global.static.constants_values |> lit
-    | T_Int None | T_Int (Some []) -> L_Int Z.zero |> lit
-    | T_Int (Some (Constraint_Exact e :: _))
-    | T_Int (Some (Constraint_Range (e, _) :: _)) ->
+    | T_Int UnConstrained -> L_Int Z.zero |> lit
+    | T_Int (UnderConstrained _) ->
+        failwith "Cannot request the base value of a under-constrained integer."
+    | T_Int (WellConstrained []) ->
+        failwith
+          "A well constrained integer cannot have an empty list of constraints."
+    | T_Int (WellConstrained (Constraint_Exact e :: _))
+    | T_Int (WellConstrained (Constraint_Range (e, _) :: _)) ->
         eval_expr_sef env e
     | T_Named _ -> assert false
     | T_Real -> L_Real Q.zero |> lit
@@ -1243,7 +1249,7 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         List.init length (Fun.const v) |> B.create_vector
 
-(* Begin TopLevel *)
+  (* Begin TopLevel *)
   let run_typed_env env (ast : B.ast) (static_env : StaticEnv.env) : B.value m =
     let*| env = build_genv env eval_expr_sef base_value static_env ast in
     let*| res = eval_func env "main" dummy_annotated [] [] in
