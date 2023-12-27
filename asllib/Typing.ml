@@ -62,6 +62,17 @@ let reduce_constants env e =
         undefined_identifier e x
       else raise error)
 
+let reduce_constraint env = function
+  | Constraint_Exact e -> Constraint_Exact (reduce_expr env e)
+  | Constraint_Range (e1, e2) ->
+      Constraint_Range (reduce_expr env e1, reduce_expr env e2)
+
+let reduce_constraints env = function
+  | UnConstrained -> UnConstrained
+  | UnderConstrained uid -> UnderConstrained uid
+  | WellConstrained constraints ->
+      WellConstrained (List.map (reduce_constraint env) constraints)
+
 let sum = function [] -> !$0 | [ x ] -> x | h :: t -> List.fold_left plus h t
 
 let slices_width env =
@@ -130,11 +141,8 @@ let max_constraint env = function
 let min_max_constraints m_constraint m =
   let rec do_rec env = function
     | [] ->
-        let () =
-          if false then
-            Format.eprintf "MinMax constraint found no constraint.@."
-        in
-        raise ConstraintMinMaxTop (* for underconstraint bitvector types. *)
+        failwith
+          "A well-constrained integer cannot have an empty list of constraints."
     | [ c ] -> m_constraint env c
     | c :: cs ->
         let i = m_constraint env c and j = do_rec env cs in
@@ -398,25 +406,6 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                               Annotate AST
 
      -------------------------------------------------------------------------- *)
-
-  let under_constrained_integer_tbl : (uid, identifier) Hashtbl.t =
-    Hashtbl.create 16
-
-  let new_under_constrained_integer var =
-    let uid = ASTUtils.new_under_constrained_uid () in
-    Hashtbl.add under_constrained_integer_tbl uid var;
-    ASTUtils.under_constrained_of_uid uid
-
-  let get_parameter_of_under_constrained_type uid =
-    Hashtbl.find under_constrained_integer_tbl uid
-
-  let raise_under_constrained_to_well_constrained ty =
-    match ty.desc with
-    | T_Int (UnderConstrained uid) ->
-        let var = get_parameter_of_under_constrained_type uid in
-        E_Var var |> add_dummy_pos |> integer_exact' |> add_pos_from ty
-    | _ -> ty
-
   let check_type_satisfies' env t1 t2 () =
     let () =
       if false then
@@ -435,6 +424,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
 
   (** [check_type_satisfies t1 t2] if [t1 <: t2]. *)
   let check_type_satisfies loc env t1 t2 () =
+    let () =
+      if false then
+        Format.eprintf "@[<hv 2>Checking %a@ <: %a@]@." PP.pp_ty t1 PP.pp_ty t2
+    in
     if Types.type_satisfies env t1 t2 then () else conflict loc [ t1.desc ] t2
 
   (** [check_structure_boolean env t1] checks that [t1] has the structure of a boolean. *)
@@ -520,6 +513,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
 
   let constraints_is_non_negative = List.for_all constraint_is_non_negative
 
+  let constraint_binop env op cs1 cs2 =
+    constraint_binop op cs1 cs2 |> reduce_constraints env
+
   (* Begin CheckBinop *)
   let check_binop loc env op t1 t2 : ty =
     let () =
@@ -598,9 +594,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                "is" *)
             let struct1 = Types.get_structure env t1
             and struct2 = Types.get_structure env t2 in
-            let struct1' = raise_under_constrained_to_well_constrained struct1
+            let struct1' =
+              Types.UnderConstrainedInteger.to_well_constrained struct1
             and struct2' =
-              raise_under_constrained_to_well_constrained struct2
+              Types.UnderConstrainedInteger.to_well_constrained struct2
             in
             match (struct1'.desc, struct2'.desc) with
             | T_Int UnConstrained, T_Int _ | T_Int _, T_Int UnConstrained ->
@@ -611,8 +608,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 (* TODO: check that no other checks are necessary. *)
                 T_Int UnConstrained |> with_loc
             | T_Int (UnderConstrained _), _ | _, T_Int (UnderConstrained _) ->
-                assert false
-                (* We used raise_under_constrained_to_well_constrained before *)
+                assert false (* We used to_well_constrained before *)
             | T_Int (WellConstrained cs1), T_Int (WellConstrained cs2) ->
                 (* Rule KFYS: If both operands of an integer binary primitive
                    operation are well-constrained integers, then it shall
@@ -631,8 +627,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                       check_true' (constraints_is_non_negative cs2) ()
                   | _ -> ()
                 in
-                T_Int (WellConstrained (constraint_binop op cs1 cs2))
-                |> with_loc
+                T_Int (constraint_binop env op cs1 cs2) |> with_loc
             | T_Real, T_Real -> (
                 match op with
                 | PLUS | MINUS | MUL -> T_Real |> with_loc
@@ -662,12 +657,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             (check_type_satisfies loc env t1 t_int)
             (check_type_satisfies loc env t1 t_real)
         in
-        let t1' = raise_under_constrained_to_well_constrained t1 in
+        let t1' = Types.UnderConstrainedInteger.to_well_constrained t1 in
         match (Types.get_structure env t1').desc with
         | T_Int UnConstrained -> T_Int UnConstrained |> add_pos_from loc
         | T_Int (UnderConstrained _) ->
-            assert false
-            (* We used raise_under_constrained_to_well_constrained just before. *)
+            assert false (* We used to_well_constrained just before. *)
         | T_Int (WellConstrained cs) ->
             let neg e = E_Unop (NEG, e) |> add_pos_from e in
             let constraint_minus = function
@@ -1773,8 +1767,10 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let t1, e1' = annotate_expr env e1 and t2, e2' = annotate_expr env e2 in
         let struct1 = Types.get_structure env t1
         and struct2 = Types.get_structure env t2 in
-        let struct1' = raise_under_constrained_to_well_constrained struct1
-        and struct2' = raise_under_constrained_to_well_constrained struct2 in
+        let struct1' = Types.UnderConstrainedInteger.to_well_constrained struct1
+        and struct2' =
+          Types.UnderConstrainedInteger.to_well_constrained struct2
+        in
         let cs =
           match (struct1'.desc, struct2'.desc) with
           | T_Int UnConstrained, T_Int _ | T_Int _, T_Int UnConstrained ->
@@ -1957,7 +1953,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let ty =
           match ty_opt with
           | Some ty -> ty
-          | None -> new_under_constrained_integer x
+          | None -> Types.UnderConstrainedInteger.of_identifier x
         in
         let+ () = check_var_not_in_env loc env2 x in
         add_local x ty LDK_Let env2
@@ -1970,11 +1966,11 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       | T_Bits ({ desc = E_Var x; _ }, _) -> (
           match StaticEnv.type_of_opt env x with
           | Some { desc = T_Int UnConstrained; _ } ->
-              let ty = new_under_constrained_integer x in
+              let ty = Types.UnderConstrainedInteger.of_identifier x in
               add_local x ty LDK_Let env''
           | Some _ -> env''
           | None ->
-              let ty = new_under_constrained_integer x in
+              let ty = Types.UnderConstrainedInteger.of_identifier x in
               add_local x ty LDK_Let env'')
       | _ -> env''
     in

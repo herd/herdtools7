@@ -73,18 +73,6 @@ let add_pos_from_pos_of ((fname, lnum, cnum, enum), desc) =
     pos_end = { common with pos_cnum = enum };
   }
 
-let new_under_constrained_uid : unit -> AST.uid =
-  let next_uid = ref 0 in
-  fun () ->
-    let uid = !next_uid in
-    incr next_uid;
-    uid
-
-let under_constrained_of_uid uid = T_Int (UnderConstrained uid) |> add_dummy_pos
-
-let new_under_constrained_integer () =
-  new_under_constrained_uid () |> under_constrained_of_uid
-
 let list_equal equal li1 li2 =
   li1 == li2 || (List.compare_lengths li1 li2 = 0 && List.for_all2 equal li1 li2)
 
@@ -523,12 +511,24 @@ exception FailedConstraintOp
 
 let constraint_binop op =
   let do_op c1 c2 =
-    match (c1, c2) with
-    | Constraint_Exact e1, Constraint_Exact e2 ->
+    match (c1, c2, op) with
+    | Constraint_Exact e1, Constraint_Exact e2, _ ->
         Constraint_Exact (binop op e1 e2)
+    | Constraint_Exact e1, Constraint_Range (e21, e22), PLUS ->
+        Constraint_Range (binop op e1 e21, binop op e1 e22)
+    | Constraint_Exact e1, Constraint_Range (e21, e22), MINUS ->
+        Constraint_Range (binop op e1 e22, binop op e1 e21)
+    | Constraint_Range (e11, e12), Constraint_Exact e2, (PLUS | MINUS) ->
+        Constraint_Range (binop op e11 e2, binop op e12 e2)
+    | Constraint_Range (e11, e12), Constraint_Range (e21, e22), PLUS ->
+        Constraint_Range (binop op e11 e21, binop op e12 e22)
+    | Constraint_Range (e11, e12), Constraint_Range (e21, e22), MINUS ->
+        Constraint_Range (binop op e11 e22, binop op e12 e21)
     | _ -> raise_notrace FailedConstraintOp
   in
-  fun cs1 cs2 -> try list_cross do_op cs1 cs2 with FailedConstraintOp -> []
+  fun cs1 cs2 ->
+    try WellConstrained (list_cross do_op cs1 cs2)
+    with FailedConstraintOp -> UnConstrained
 
 let rec subst_expr substs e =
   (* WARNING: only subst runtime vars. *)

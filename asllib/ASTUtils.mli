@@ -95,15 +95,6 @@ val integer : ty
 val integer' : type_desc
 (** [integer], without the position annotation. *)
 
-val new_under_constrained_uid : unit -> AST.uid
-(** Returns a new, un-used [uid] for use in an under-cosntrained integer type. *)
-
-val under_constrained_of_uid : AST.uid -> ty
-(** Builds an under-constrained integer type from its [uid]. *)
-
-val new_under_constrained_integer : unit -> ty
-(** Returns a new, un-used [uid] for use in an under-cosntrained integer type. *)
-
 val integer_exact : expr -> ty
 (** [integer_exact e] is the integer type constrained to be equal to [e]. *)
 
@@ -155,7 +146,7 @@ val is_global_ignored : identifier -> bool
 (** [is_global_ignored s] is true iff [s] has been created with [global_ignored ()]. *)
 
 val constraint_binop :
-  binop -> int_constraint list -> int_constraint list -> int_constraint list
+  binop -> int_constraint list -> int_constraint list -> int_constraints
 (** [constraint_binop PLUS cs1 cs2] is the set of constraints given by the
     element wise application of [PLUS]. *)
 
@@ -208,6 +199,10 @@ val expr_equal : (expr -> expr -> bool) -> expr -> expr -> bool
 val literal_equal : literal -> literal -> bool
 val slice_equal : (expr -> expr -> bool) -> slice -> slice -> bool
 val slices_equal : (expr -> expr -> bool) -> slice list -> slice list -> bool
+
+val constraints_equal :
+  (expr -> expr -> bool) -> int_constraint list -> int_constraint list -> bool
+
 val type_equal : (expr -> expr -> bool) -> ty -> ty -> bool
 val bitfield_equal : (expr -> expr -> bool) -> bitfield -> bitfield -> bool
 val bitwidth_equal : (expr -> expr -> bool) -> expr -> expr -> bool

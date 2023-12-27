@@ -42,6 +42,7 @@ let type_equal = thing_equal type_equal
 let bitwidth_equal = thing_equal bitwidth_equal
 let slices_equal = thing_equal slices_equal
 let bitfield_equal = thing_equal bitfield_equal
+let constraints_equal = thing_equal constraints_equal
 
 (* --------------------------------------------------------------------------*)
 
@@ -149,15 +150,36 @@ let rec is_non_primitive ty =
 let is_primitive ty = (not (is_non_primitive ty)) |: TypingRule.PrimitiveType
 (* End *)
 
+module UnderConstrainedInteger = struct
+  let _tbl : (uid, identifier) Hashtbl.t = Hashtbl.create 16
+  let _next_uid : uid ref = ref 0
+  let of_uid uid = T_Int (UnderConstrained uid) |> add_dummy_pos
+
+  let of_identifier var =
+    let uid = !_next_uid in
+    incr _next_uid;
+    Hashtbl.add _tbl uid var;
+    of_uid uid
+
+  let to_identifier uid = Hashtbl.find _tbl uid
+
+  let to_well_constrained ty =
+    match ty.desc with
+    | T_Int (UnderConstrained uid) ->
+        E_Var (to_identifier uid)
+        |> add_dummy_pos |> integer_exact' |> add_pos_from ty
+    | _ -> ty
+end
+
 (* --------------------------------------------------------------------------*)
 
 module Domain = struct
   module IntSet = Diet.Z
 
-  (** Represents the domain of an integer expression. If there are no constraints,
-    then the expression has the [Top] domain, whereas when there are constraints but
-    they cannot get resolved, the domain is [AlmostTop]. *)
-  type int_set = Finite of IntSet.t | AlmostTop | Top
+  type syntax = AST.int_constraint list
+
+  (** Represents the domain of an integer expression. *)
+  type int_set = Finite of IntSet.t | Top | FromSyntax of syntax
 
   (* Begin Domain *)
   type t =
@@ -179,9 +201,9 @@ module Domain = struct
   let pp_int_set f =
     let open Format in
     function
-    | AlmostTop -> pp_print_string f "𝕫"
     | Top -> pp_print_string f "ℤ"
     | Finite set -> fprintf f "@[{@,%a}@]" IntSet.pp set
+    | FromSyntax slices -> PP.pp_int_constraints f slices
 
   let pp f =
     let open Format in
@@ -223,26 +245,52 @@ module Domain = struct
         let bot = eval env bot and top = eval env top in
         add_interval_to_intset acc bot top
 
+  let syntax_of_under_constraint_uid uid =
+    let x = UnderConstrainedInteger.to_identifier uid in
+    [ Constraint_Exact (E_Var x |> add_dummy_pos) ]
+
   let int_set_of_int_constraints env constraints =
     match constraints with
-    | [] -> AlmostTop
+    | [] ->
+        failwith
+          "A well-constrained integer cannot have an empty list of constraints."
     | _ -> (
         try
           Finite
             (List.fold_left
                (add_constraint_to_intset env)
                IntSet.empty constraints)
-        with StaticEvaluationTop -> AlmostTop)
+        with StaticEvaluationTop -> FromSyntax constraints)
 
-  let int_set_raise_interval_op op is1 is2 =
+  let int_set_to_int_constraints =
+    let interval_to_constraint interval =
+      let x = IntSet.Interval.x interval and y = IntSet.Interval.y interval in
+      let expr_of_z z = L_Int z |> literal in
+      Constraint_Range (expr_of_z x, expr_of_z y)
+    in
+    fun is ->
+      IntSet.fold
+        (fun interval acc -> interval_to_constraint interval :: acc)
+        is []
+
+  let rec int_set_raise_interval_op fop op is1 is2 =
     match (is1, is2) with
     | Top, _ | _, Top -> Top
-    | AlmostTop, _ | _, AlmostTop -> AlmostTop
     | Finite is1, Finite is2 ->
         Finite
           (IntSet.fold
-             (fun i1 -> IntSet.fold (fun i2 -> IntSet.add (op i1 i2)) is2)
+             (fun i1 -> IntSet.fold (fun i2 -> IntSet.add (fop i1 i2)) is2)
              is1 IntSet.empty)
+    | Finite is1, FromSyntax _ ->
+        let s1 = int_set_to_int_constraints is1 in
+        int_set_raise_interval_op fop op (FromSyntax s1) is2
+    | FromSyntax _, Finite is2 ->
+        let s2 = int_set_to_int_constraints is2 in
+        int_set_raise_interval_op fop op is1 (FromSyntax s2)
+    | FromSyntax s1, FromSyntax s2 -> (
+        match constraint_binop op s1 s2 with
+        | WellConstrained s2 -> FromSyntax s2
+        | _ -> Top)
 
   let monotone_interval_op op i1 i2 =
     let open IntSet.Interval in
@@ -252,39 +300,39 @@ module Domain = struct
     let open IntSet.Interval in
     make (op (x i1) (y i2)) (op (y i1) (x i2))
 
-  let int_set_of_value = function
-    | L_Int i -> Finite (IntSet.singleton i)
-    | _ -> assert false
+  let of_literal = function
+    | L_Int i -> D_Int (Finite (IntSet.singleton i))
+    | L_Bool _ -> D_Bool
+    | L_Real _ -> D_Real
+    | L_String _ -> D_String
+    | L_BitVector bv ->
+        D_Bits (Finite (Bitvector.length bv |> Z.of_int |> IntSet.singleton))
 
-  let rec int_set_of_expr env e =
+  let rec of_expr env e =
     match e.desc with
-    | E_Literal v -> int_set_of_value v
+    | E_Literal v -> of_literal v
     | E_Var x -> (
-        try StaticEnv.lookup_constants env x |> int_set_of_value
+        try StaticEnv.lookup_constants env x |> of_literal
         with Not_found -> (
           try
-            match (StaticEnv.type_of env x).desc with
-            | T_Int UnConstrained -> Top
-            | T_Int (WellConstrained constraints) ->
-                int_set_of_int_constraints env constraints
-            | T_Int (UnderConstrained _) -> AlmostTop
-            | _ -> assert false
+            let ty = StaticEnv.type_of env x in
+            of_type env ty
           with Not_found ->
             Error.fatal_unknown_pos (Error.UndefinedIdentifier x)))
     | E_Unop (NEG, e') ->
-        int_set_of_expr env (E_Binop (MINUS, !$0, e') |> add_pos_from e)
+        of_expr env (E_Binop (MINUS, !$0, e') |> add_pos_from e)
     | E_Unop _ -> assert false
     | E_Binop (op, e1, e2) ->
-        let is1 = int_set_of_expr env e1
-        and is2 = int_set_of_expr env e2
-        and op =
+        let is1 = match of_expr env e1 with D_Int is -> is | _ -> assert false
+        and is2 = match of_expr env e2 with D_Int is -> is | _ -> assert false
+        and fop =
           match op with
           | PLUS -> monotone_interval_op Z.add
           | MINUS -> anti_monotone_interval_op Z.sub
           | MUL -> monotone_interval_op Z.mul
           | _ -> assert false
         in
-        int_set_raise_interval_op op is1 is2
+        D_Int (int_set_raise_interval_op fop op is1 is2)
     | _ ->
         let () =
           Format.eprintf "@[<2>Cannot interpret as int set:@ @[%a@]@]@."
@@ -299,10 +347,12 @@ module Domain = struct
     | T_Real -> D_Real
     | T_Enum li -> D_Symbols (ISet.of_list li)
     | T_Int UnConstrained -> D_Int Top
-    | T_Int (UnderConstrained _uid) -> D_Int AlmostTop
+    | T_Int (UnderConstrained uid) ->
+        D_Int (FromSyntax (syntax_of_under_constraint_uid uid))
     | T_Int (WellConstrained constraints) ->
         D_Int (int_set_of_int_constraints env constraints)
-    | T_Bits (width, _) -> D_Bits (int_set_of_expr env width)
+    | T_Bits (width, _) -> (
+        match of_expr env width with D_Int is -> D_Bits is | _ -> assert false)
     | T_Array _ | T_Exception _ | T_Record _ | T_Tuple _ ->
         failwith "Unimplemented: domain of a non singular type."
     | T_Named _ ->
@@ -334,22 +384,23 @@ module Domain = struct
 
   let compare _d1 _d2 = assert false
 
-  let int_set_is_subset is1 is2 =
+  let int_set_is_subset env is1 is2 =
     match (is1, is2) with
     | _, Top -> true
     | Top, _ -> false
-    | _, AlmostTop -> true
-    | AlmostTop, _ -> false
     | Finite is1, Finite is2 -> IntSet.(is_empty (diff is1 is2))
+    | FromSyntax is1, FromSyntax is2 -> constraints_equal env is1 is2
+    | _ -> false
 
-  let is_subset d1 d2 =
+  let is_subset env d1 d2 =
     let () =
       if false then Format.eprintf "Is %a a subset of %a?@." pp d1 pp d2
     in
     match (d1, d2) with
     | D_Bool, D_Bool | D_String, D_String | D_Real, D_Real -> true
     | D_Symbols s1, D_Symbols s2 -> ISet.subset s1 s2
-    | D_Bits is1, D_Bits is2 | D_Int is1, D_Int is2 -> int_set_is_subset is1 is2
+    | D_Bits is1, D_Bits is2 | D_Int is1, D_Int is2 ->
+        int_set_is_subset env is1 is2
     | _ -> false
 
   let get_width_singleton_opt = function
@@ -358,7 +409,7 @@ module Domain = struct
           Some (IntSet.min_elt int_set |> IntSet.Interval.x)
         else None
     | D_Bits _ -> None
-    | _ -> failwith "Cannot get width from non-bits domain."
+    | _ -> None
 end
 
 (* --------------------------------------------------------------------------*)
@@ -500,16 +551,18 @@ and structural_subtype_satisfies env t s =
 and domain_subtype_satisfies env t s =
   (let s_struct = get_structure env s in
    match s_struct.desc with
-   | T_Named _ ->
-       (* Cannot happen *)
-       assert false
    (* If S does not have the structure of an aggregate type or bitvector type
       then the domain of T must be a subset of the domain of S. *)
    | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ -> true
    | T_Real | T_String | T_Bool | T_Enum _ | T_Int _ ->
        let d_s = Domain.of_type env s_struct
        and d_t = get_structure env t |> Domain.of_type env in
-       Domain.is_subset d_t d_s
+       let () =
+         if false then
+           Format.eprintf "domain_subtype_satisfies: %a included in %a?@."
+             Domain.pp d_t Domain.pp d_s
+       in
+       Domain.is_subset env d_t d_s
    | T_Bits _ -> (
        (*
         • If either S or T have the structure of a bitvector type with
@@ -530,7 +583,10 @@ and domain_subtype_satisfies env t s =
            Domain.get_width_singleton_opt t_domain )
        with
        | Some w_s, Some w_t -> Z.equal w_s w_t
-       | _ -> Domain.is_subset t_domain s_domain))
+       | _ -> Domain.is_subset env t_domain s_domain)
+   | T_Named _ ->
+       (* Cannot happen *)
+       assert false)
   |: TypingRule.DomainSubtypeSatisfaction
 
 (* End *)
