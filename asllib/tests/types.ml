@@ -169,6 +169,16 @@ let type_clashes () =
 
   ()
 
+let enum_example () =
+  let variants = [ "A"; "B"] in
+  let variants' = [ "A"; "B"] in
+  let t1 = !!(T_Enum variants) in
+  let t2 = !!(T_Enum variants') in
+
+  assert (subtype_satisfies empty_env t1 t2);
+
+  ()
+
 let () =
   exec_tests
     [
@@ -178,4 +188,5 @@ let () =
       ("types.lca_example", lca_examples);
       ("types.types_examples", type_examples);
       ("types.type_clashes", type_clashes);
+      ("types.enum_example", enum_example);
     ]

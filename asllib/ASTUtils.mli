@@ -146,7 +146,7 @@ val is_global_ignored : identifier -> bool
 (** [is_global_ignored s] is true iff [s] has been created with [global_ignored ()]. *)
 
 val constraint_binop :
-  binop -> int_constraint list -> int_constraint list -> int_constraint list
+  binop -> int_constraint list -> int_constraint list -> int_constraints
 (** [constraint_binop PLUS cs1 cs2] is the set of constraints given by the
     element wise application of [PLUS]. *)
 
@@ -199,6 +199,10 @@ val expr_equal : (expr -> expr -> bool) -> expr -> expr -> bool
 val literal_equal : literal -> literal -> bool
 val slice_equal : (expr -> expr -> bool) -> slice -> slice -> bool
 val slices_equal : (expr -> expr -> bool) -> slice list -> slice list -> bool
+
+val constraints_equal :
+  (expr -> expr -> bool) -> int_constraint list -> int_constraint list -> bool
+
 val type_equal : (expr -> expr -> bool) -> ty -> ty -> bool
 val bitfield_equal : (expr -> expr -> bool) -> bitfield -> bitfield -> bool
 val bitwidth_equal : (expr -> expr -> bool) -> expr -> expr -> bool

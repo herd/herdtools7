@@ -36,7 +36,6 @@
 \newcommand\domsubtypesat[0]{\texttt{domain\_subtype\_satisfies}}
 \newcommand\subtypesat[0]{\texttt{subtype\_satisfies}}
 \newcommand\typesat[0]{\texttt{type\_satisfies}}
-\newcommand\canassignto[0]{\;\texttt{can\_assign\_to}\;}
 \newcommand\typeclashes[0]{\;\texttt{type\_clashes}\;}
 \newcommand\lca[0]{\texttt{lowest\_common\_ancestor}}
 \newcommand\lcasat[0]{\models}
@@ -972,7 +971,6 @@ We first define the following relations over types (and operators):
   \item Domain Subtype Satisfaction~\ref{sec:TypingRule.DomainSubtypeSatisfaction}
   \item Subtype Satisfaction~\ref{sec:TypingRule.SubtypeSatisfaction}
   \item Type Satisfaction~\ref{sec:TypingRule.TypeSatisfaction}
-  \item Can Assign To~\ref{sec:TypingRule.CanAssignTo}
   \item Type Clash~\ref{sec:TypingRule.TypeClash}
   \item Lowest Common Ancestor~\ref{sec:TypingRule.LowestCommonAncestor}
   \item Checking adequacy of a unary operator for a type~\ref{sec:TypingRule.CheckUnop}
@@ -1362,36 +1360,6 @@ We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by
   
   This is related to \identr{FMXK} and \identi{NLFD}.
   
-\section{TypingRule.CanAssignTo \label{sec:TypingRule.CanAssignTo}}
-
-  \subsubsection{Prose}
-  \texttt{s} can be assigned to \texttt{t} if and only if all of the following apply:
-  \begin{itemize}
-  \item neither \texttt{s} nor \texttt{t} has the structure of the under-constrained integer type;
-  \item \texttt{t} type-satisfies \texttt{s}.
-  \end{itemize}
-
-  \subsection{Example}
-
-  \subsection{Code}
-    \VerbatimInput[firstline=\CanAssignToBegin, lastline=\CanAssignToEnd]{../Typing.ml}
-
-\begin{emptyformal}
-    \subsection{Formally}
-
-\begin{mathpar}
-\inferrule{
-  \tstruct(\tenv, \vs) \neq \underconstrainedinteger\\
-  \tstruct(\tenv, \vt) \neq \underconstrainedinteger\\
-  \typesat(\tenv, \vt, \vs)}
-{ \canassignto(\tenv, \vs, \vt) }
-\end{mathpar}
-\end{emptyformal}
-
-\subsection{Comments}
-  This is related to \identr{GNTS}, \identi{MMKF}, \identi{DGWJ}, \identi{KKCC}
-  and \identr{LXQZ}.
-
 \section{TypingRule.TypeClash\label{sec:TypingRule.TypeClash}}
 
   \subsection{Prose}
@@ -3281,7 +3249,7 @@ all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes a local variable \texttt{x};
    \item \texttt{x} is locally declared as a mutable variable of type \texttt{ty} in \texttt{env};
-   \item \texttt{t\_e} can be assigned to \texttt{ty};
+   \item \texttt{ty} type-satisfies \texttt{t\_e};
    \item \texttt{new\_le} is \texttt{le}.
    \end{itemize}
 
@@ -3296,7 +3264,7 @@ all of the following apply:
 \inferrule{
   \vle = \texttt{LE\_Var}(\id)\\
   L^\tenv.\storagetypes(\id) = (\tty, \texttt{LDK\_Var})\\
-  \canassignto(\tenv, \vte, \tty)\\
+  \typesat(\tenv, \vte, \tty)\\
   \newle = \vle
 }
 { \annotatelexpr{\tenv, \vle, \vte} = \newle }
@@ -3305,7 +3273,8 @@ all of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-  This is related to \identr{WDGQ}.
+  This is related to \identr{WDGQ}, \identr{GNTS}, \identi{MMKF},
+  \identi{DGWJ}, \identi{KKCC} and \identr{LXQZ}.
 
 \section{TypingRule.LEGlobalVar \label{sec:TypingRule.LEGlobalVar}}
 
@@ -3317,7 +3286,7 @@ all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes a global variable \texttt{x};
    \item \texttt{x} is globally declared as a variable of type \texttt{ty} in \texttt{env};
-   \item \texttt{t\_e} can be assigned to \texttt{ty};
+   \item \texttt{t\_e} type-satisfies \texttt{ty};
    \item \texttt{new\_le} is \texttt{le}.
    \end{itemize}
 
@@ -3332,7 +3301,7 @@ all of the following apply:
 \inferrule{
   \vle = \texttt{LE\_Var}(\id)\\
   G^\tenv.\storagetypes(\id) = (\vt', \Ignore)\\
-  \canassignto(\tenv, \vte, \vt')\\
+  \typesat(\tenv, \vt', \vte)\\
   \newle = \vle
 }
 { \annotatelexpr{\tenv, \vle, \vte} = \newle }
@@ -3352,7 +3321,7 @@ all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes a tuple \texttt{les};
    \item \texttt{t\_e} has the structure of a tuple type \texttt{sub\_tys};
-   \item the elements of \texttt{sub\_tys} can be assigned to the type of the elements of \texttt{les};
+   \item the elements of \texttt{sub\_tys} type-satisfies the type of the elements of \texttt{les};
    \item One of the following applies:
      \begin{itemize}
      \item All of the following apply:
@@ -3405,7 +3374,7 @@ all of the following apply:
    \item \texttt{le2} is the result of annotating \texttt{le1} in \texttt{env};
    \item \texttt{width} is the width of the slices \texttt{slices} in \texttt{env};
    \item \texttt{t} is the bitvector type of width \texttt{width};
-   \item \texttt{te} can be assigned to \texttt{t};
+   \item \texttt{te} type-satisfies \texttt{t};
    \item \texttt{slices2} is the result of annotating \texttt{slices} in \texttt{env};
    \item \texttt{new\_le} is the slicing of \texttt{le2} by \texttt{slices2}.
    \end{itemize}
@@ -3425,7 +3394,7 @@ all of the following apply:
   \annotatelexpr{\tenv, \vleone, \vtleone} = \vletwo\\
   \sliceswidth(\tenv, \slices) = \vwidth\\
   \vt = \TBits(\texttt{BitWidth\_SingleExpr}(\vwidth, \emptylist))\\
-  \canassignto(\tenv, \vte, \vt)\\
+  \typesat(\tenv, \vt, \vte)\\
   \texttt{slices2} = [\annotateslices(\tenv, \vs) \;|\; \vs \in \slices]\\
   \newle = \leslice(\vletwo, \texttt{slices2})
 }
@@ -3447,7 +3416,7 @@ all of the following apply:
    \item \texttt{le} denotes the slicing of a left-hand-side expression \texttt{le1} by the slices \texttt{slices};
    \item \texttt{t\_le1} is the type result of annotating the right-hand-side expression corresponding to \texttt{le1} in \texttt{env};
    \item \texttt{t\_le1} has the structure of an array type of size \texttt{size} and item type \texttt{t};
-   \item \texttt{te} can be assigned to \texttt{t};
+   \item \texttt{te} type-satisfies \texttt{t};
    \item \texttt{le2} is the result of annotating \texttt{le1} in \texttt{env};
   % ROMAN: The following is not what the code does so I replaced it with subsequent item.
   %  \item One of the following applies:
@@ -3458,7 +3427,7 @@ all of the following apply:
   \item the expression \texttt{size} can be annotated with the type \texttt{wanted\_t\_index};
   \item \texttt{slices} is a single expression \texttt{e\_index};
    \item \texttt{t\_index', e\_index'} is the result of annotating \texttt{e\_index} in \texttt{env};
-   \item \texttt{wanted\_t\_index} can be assigned to \texttt{t\_index'};
+   \item \texttt{wanted\_t\_index} type-satisfies \texttt{t\_index'};
    \item \texttt{new\_le} is an access to array \texttt{le2} at index \texttt{e\_index'}.
    \end{itemize}
 
@@ -3474,12 +3443,12 @@ all of the following apply:
   \vle = \leslice(\vleone, \slices)\\
   \annotateexpr{\tenv, \torexpr(\vleone)} = (\vtleone, \Ignore)\\
   \tstruct(\tenv, \vtleone) = \TArray(\size, \vt)\\
-  \canassignto(\tenv, \vte, \vt)\\
+  \typesat(\tenv, \vte, \vt)\\
   \annotatelexpr{\tenv, \vleone} = \vletwo\\
   \annotatearrayindex(\tenv, \size) = \wantedtindex\\
   \slices = [\slicesingle(\eindex)]\\
   \annotateexpr{\tenv, \eindex} = (\tindex', \eindex')\\
-  \canassignto(\tenv, \wantedtindex, \tindex')\\
+  \typesat(\tenv, \tindex', \wantedtindex)\\
   \newle = \texttt{LS\_SetArray}(\vletwo, \eindex')
 }
 {\annotatelexpr{\tenv, \vle, \vte} = \newle}
@@ -3528,7 +3497,7 @@ all of the following apply:
    \item \texttt{le2} is the result of annotating \texttt{le1} in \texttt{env};
    \item \texttt{t\_le1} has the structure of an exception or a record type with fields \texttt{fields};
    \item \texttt{field} is bound to type \texttt{t} in \texttt{fields};
-   \item \texttt{t} can be assigned to \texttt{t\_e};
+   \item \texttt{t} type-satisfies \texttt{t\_e};
    \item \texttt{new\_le} is the access to the field \texttt{field} in \texttt{le2}.
    \end{itemize}
 
@@ -3546,7 +3515,7 @@ all of the following apply:
   \annotatelexpr{\tenv, \vleone} = \vletwo\\
   L \in \{\TRecord, \TException\}\\
   \tstruct(\tenv, \vtleone) = L(\{\vfield:t, \ldots\})\\
-  \canassignto(\tenv, \vt, \vte)\\
+  \typesat(\tenv, \vte, \vt)\\
   \newle = \texttt{LE\_SetField}(\vletwo, \vfield)
 }
 {
@@ -3601,7 +3570,7 @@ all of the following apply:
       \texttt{bitfields};
    \item \texttt{w} is the width of \texttt{slices};
    \item \texttt{t} is the bitvector type of width \texttt{w};
-   \item \texttt{t} can be assigned to \texttt{t\_e};
+   \item \texttt{t} type-satisfies \texttt{t\_e};
    \item \texttt{le2} is the slicing of \texttt{le1} by \texttt{slices};
    \item \texttt{new\_le} is the result of annotating \texttt{le2} in \texttt{env}.
    \end{itemize}
@@ -3622,7 +3591,7 @@ all of the following apply:
     \texttt{BitField\_Simpled}(\vfield, \vslices) \in \bitfields\\
     \sliceswidth(\tenv, \vslices) = \vw\\
     \vt = \TBits(\texttt{BitWidth\_SingleExpr(\vw), \bitfields})\\
-    \canassignto(\tenv, \vt, \vte)\\
+    \typesat(\tenv, \vte, \vt)\\
     \vletwo = \texttt{LE\_Slice}(\vleone, \vslices)\\
     \newle = \annotatelexpr{\vletwo, \vslices}
   }
@@ -3651,7 +3620,7 @@ all of the following apply:
    \item \texttt{w} is the width of \texttt{slices};
    \item \texttt{bitfields'} gives the bitfields corresponding to \texttt{field} in \texttt{bitfields};
    \item \texttt{t} is the bitvector type of width \texttt{w} and bitfields \texttt{bitfields'};
-   \item \texttt{t} can be assigned to \texttt{t\_e};
+   \item \texttt{t} type-satisfies \texttt{t\_e};
    \item \texttt{le2} is the slicing of \texttt{le1} by \texttt{slices};
    \item \texttt{new\_le} is the result of annotating \texttt{le2} in \texttt{env}.
    \end{itemize}
@@ -3672,7 +3641,7 @@ all of the following apply:
     \texttt{BitField\_Nested}(\vfield, \vslices, \bitfields') \in \bitfields\\
     \sliceswidth(\tenv, \vslices) = \vw\\
     \vt = \TBits(\texttt{BitWidth\_SingleExpr(w), \bitfields'})\\
-    \canassignto(\tenv, \vt, \vte)\\
+    \typesat(\tenv, \vte, \vt)\\
     \vletwo = \texttt{LE\_Slice}(\vleone, \vslices)\\
     \newle = \annotatelexpr{\vletwo, \vslices}
   }
@@ -3702,8 +3671,8 @@ all of the following apply:
    \item \texttt{t'} is the bitvector type of width \texttt{w};
    \item \texttt{t} gives the type corresponding to the bitfield \texttt{field} in
       \texttt{bitfields};
-   \item \texttt{t} can be assigned to \texttt{t'};
-   \item \texttt{t} can be assigned to \texttt{t\_e};
+   \item \texttt{t} type-satisfies \texttt{t'};
+   \item \texttt{t} type-satisfies \texttt{t\_e};
    \item \texttt{le2} is the slicing of \texttt{le1} by \texttt{slices};
    \item \texttt{new\_le} is the result of annotating \texttt{le2} in \texttt{env}.
    \end{itemize}
@@ -3724,8 +3693,8 @@ all of the following apply:
     \texttt{BitField\_Type}(\vfield, \vslices, \vt) \in \bitfields\\
     \sliceswidth(\tenv, \vslices) = \vw\\
     \vt' = \TBits(\texttt{BitWidth\_SingleExpr(w), \emptylist})\\
-    \canassignto(\tenv, \vt, \vt')\\
-    \canassignto(\tenv, \vt, \vte)\\
+    \typesat(\tenv, \vt', \vt)\\
+    \typesat(\tenv, \vte, \vt)\\
     \vletwo = \texttt{LE\_Slice}(\vleone, \vslices)\\
     \newle = \annotatelexpr{\vletwo, \vslices}
   }

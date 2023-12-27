@@ -76,6 +76,8 @@ val get_structure : env -> ty -> ty
     values. *)
 
 val under_constrained_ty : identifier -> ty
+(** From a declared variable, builds an under-constrained integer. *)
+
 val to_well_constrained : ty -> ty
 (** Transform an under-constrained type into a well-constrained integer equal
     to the parameter that have this type, and leave the other types (such as

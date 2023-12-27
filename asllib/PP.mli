@@ -61,6 +61,9 @@ val pp_stmt : stmt printer
 val pp_slice_list : slice list printer
 (** Pretty-print a list of slices. *)
 
+val pp_int_constraints : int_constraint list printer
+(** Pretty-print a list of int constraints. *)
+
 val pp_t : 'p t printer
 (** Print an AST from printer for a literal *)
 

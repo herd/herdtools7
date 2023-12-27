@@ -315,7 +315,6 @@ module TypingRule = struct
     | DomainSubtypeSatisfaction
     | SubtypeSatisfaction
     | TypeSatisfaction
-    | CanAssignTo
     | TypeClash
     | LowestCommonAncestor
     | CheckUnop
@@ -452,7 +451,6 @@ module TypingRule = struct
     | DomainSubtypeSatisfaction -> "DomainSubtypeSatisfaction"
     | SubtypeSatisfaction -> "SubtypeSatisfaction"
     | TypeSatisfaction -> "TypeSatisfaction"
-    | CanAssignTo -> "CanAssignTo"
     | TypeClash -> "TypeClash"
     | CheckUnop -> "CheckUnop"
     | CheckBinop -> "CheckBinop"
@@ -592,7 +590,6 @@ module TypingRule = struct
       StructuralSubtypeSatisfaction;
       SubtypeSatisfaction;
       TypeSatisfaction;
-      CanAssignTo;
       TypeClash;
       CheckUnop;
       CheckBinop;

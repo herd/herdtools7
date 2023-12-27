@@ -64,6 +64,16 @@ let reduce_constants env e =
       then undefined_identifier e x
       else raise error)
 
+let reduce_constraint env = function
+  | Constraint_Exact e -> Constraint_Exact (reduce_expr env e)
+  | Constraint_Range (e1, e2) ->
+      Constraint_Range (reduce_expr env e1, reduce_expr env e2)
+
+let reduce_constraints env = function
+  | (UnConstrained | UnderConstrained _) as c -> c
+  | WellConstrained constraints ->
+      WellConstrained (List.map (reduce_constraint env) constraints)
+
 let sum = function
   | [] -> !$0
   | [ x ] -> x
@@ -137,12 +147,9 @@ let max_constraint env = function
 let min_max_constraints m_constraint m =
   let rec do_rec env = function
     | [] ->
-        let () =
-          if false then
-            Format.eprintf "MinMax constraint found no constraint.@."
-        in
-        raise
-          ConstraintMinMaxTop (* for underconstraint bitvector types. *)
+        failwith
+          "A well-constrained integer cannot have an empty list of \
+           constraints."
     | [ c ] -> m_constraint env c
     | c :: cs ->
         let i = m_constraint env c and j = do_rec env cs in
@@ -438,8 +445,13 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
 
   (** [check_type_satisfies t1 t2] if [t1 <: t2]. *)
   let check_type_satisfies loc env t1 t2 () =
+    let () =
+      if false then
+        Format.eprintf "@[<hv 2>Checking %a@ <: %a@]@." PP.pp_ty t1
+          PP.pp_ty t2
+    in
     if Types.type_satisfies env t1 t2 then ()
-    else conflict loc [ t1.desc ] t2
+    else conflict loc [ t2.desc ] t1
 
   (** [check_structure_boolean env t1] checks that [t1] has the structure of a boolean. *)
   let check_structure_boolean loc env t1 () =
@@ -529,6 +541,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
 
   let constraints_is_non_negative =
     List.for_all constraint_is_non_negative
+
+  let constraint_binop env op cs1 cs2 =
+    constraint_binop op cs1 cs2 |> reduce_constraints env
 
   (* Begin CheckBinop *)
   let check_binop loc env op t1 t2 : ty =
@@ -623,30 +638,30 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 T_Int UnConstrained |> with_loc
             | T_Int (UnderConstrained _), _
             | _, T_Int (UnderConstrained _) ->
-                assert false
-                (* We used raise_under_constrained_to_well_constrained before *)
+                assert false (* We used to_well_constrained before *)
             | T_Int (WellConstrained cs1), T_Int (WellConstrained cs2) ->
                 (* Rule KFYS: If both operands of an integer binary primitive
                    operation are well-constrained integers, then it shall
                    return a constrained integer whose constraint is calculated
                    by applying the operation to all possible value pairs. *)
-                let () =
+                let+ () =
                   match op with
                   | DIV ->
-                      (* TODO cs1 divides cs1 ?
-                         How is it expressable in
-                         term of constraints? *)
-                      check_true' (constraints_is_strict_positive cs2) ()
+                      (* TODO cs1 divides cs1 ? How is it expressable in term of constraints? *)
+                      check_true' (constraints_is_strict_positive cs2)
                   | DIVRM | MOD ->
                       (* assert cs2 strict-positive *)
-                      check_true' (constraints_is_strict_positive cs2) ()
+                      check_true' (constraints_is_strict_positive cs2)
                   | SHL | SHR ->
                       (* assert cs2 non-negative *)
-                      check_true' (constraints_is_non_negative cs2) ()
-                  | _ -> ()
+                      check_true' (constraints_is_non_negative cs2)
+                  | _ -> fun () -> ()
                 in
-                T_Int (WellConstrained (constraint_binop op cs1 cs2))
-                |> with_loc
+                let cs =
+                  best_effort UnConstrained (fun _ ->
+                      constraint_binop env op cs1 cs2)
+                in
+                T_Int cs |> with_loc
             | T_Real, T_Real -> (
                 match op with
                 | PLUS | MINUS | MUL -> T_Real |> with_loc
@@ -695,28 +710,6 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         let+ () = check_structure_bits loc env t1 in
         t1 |: TypingRule.CheckUnop
   (* End *)
-
-  (* Rules:
-     - GNTS: It is illegal for a storage element whose type has the structure
-       of the under-constrained integer to be assigned a value whose type has
-       the structure of the under-constrained integer.
-     - LXQZ: A storage element of type S, where S is any type that does not have the
-       structure of the under-constrained integer type, may only be
-       assigned or initialized with a value of type T if T type-satisfies S
-  *)
-  (* TODO: incomplete. *)
-  (* Begin CanAssignTo *)
-  let can_assign_to env s t =
-    Types.type_satisfies env t s |: TypingRule.CanAssignTo
-  (* End *)
-
-  let check_can_assign_to loc env s t () =
-    if can_assign_to env s t then ()
-    else
-      let () =
-        if false then Format.eprintf "%a <-- %a@." PP.pp_ty s PP.pp_ty t
-      in
-      fatal_from loc (Error.ConflictingTypes ([ s.desc ], t))
 
   let rec annotate_slices env =
     (* Rules:
@@ -937,7 +930,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
               Format.eprintf "Checking calling arg from %a to %a@."
                 PP.pp_ty caller_arg PP.pp_ty callee_arg
           in
-          let+ () = check_can_assign_to loc env callee_arg caller_arg in
+          let+ () = check_type_satisfies loc env caller_arg callee_arg in
           ())
         callee_arg_types caller_arg_types
     in
@@ -1387,7 +1380,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 (* End *)
                 | None -> undefined_identifier le x)
           in
-          check_can_assign_to le env ty t_e ()
+          check_type_satisfies le env t_e ty ()
         in
         le
     (* Begin LEDestructuring *)
@@ -1417,7 +1410,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
              fun () ->
               let width = slices_width env slices |> reduce_expr env in
               let t = T_Bits (width, []) |> here in
-              check_can_assign_to le env t t_e ()
+              check_type_satisfies le env t_e t ()
             in
             let slices2 = best_effort slices (annotate_slices env) in
             LE_Slice (le2, slices2) |> here |: TypingRule.LESlice
@@ -1425,7 +1418,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         (* Begin LESetArray *)
         | T_Array (size, t) -> (
             let le2 = annotate_lexpr env le1 t_le1 in
-            let+ () = check_can_assign_to le2 env t t_e in
+            let+ () = check_type_satisfies le2 env t_e t in
             let wanted_t_index =
               let t_int =
                 T_Int
@@ -1469,7 +1462,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                (* Begin LESetStructuredField *)
                | Some t -> t
              in
-             let+ () = check_can_assign_to le env t t_e in
+             let+ () = check_type_satisfies le env t_e t in
              LE_SetField (le2, field)
              |> here |: TypingRule.LESetStructuredField
              (* End *)
@@ -1500,7 +1493,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                    (t, slices) |: TypingRule.LESetBitFieldTyped
                (* End *)
              in
-             let+ () = check_can_assign_to le1 env t t_e in
+             let+ () = check_type_satisfies le1 env t_e t in
              let le2 = LE_Slice (le1, slices) |> here in
              annotate_lexpr env le2 t_e
          (* Begin LESetBadField *)
