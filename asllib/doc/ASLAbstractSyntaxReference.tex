@@ -168,7 +168,7 @@ We sometimes provide extra details to individual derivations by adding comments 
 
 \[
 \begin{array}{rcl}
-\expr &::=& \texttt{E\_Literal}(literal) \\
+\expr &::=& \texttt{E\_Literal}(\literal) \\
 	&|& \texttt{E\_Var}(\texttt{\identifier}) \\
 	&|& \texttt{E\_CTC}(\texttt{\expr, \ty}) \\
     & & \ASTComment{A checked type constraint}\\
@@ -225,8 +225,8 @@ We sometimes provide extra details to individual derivations by adding comments 
 
 \[
 \begin{array}{rcl}
-\ty &::=& \texttt{T\_Int}(int\_constraints?) \\
-  &|& \TBits(bits\_constraint, bitfield^{*}) \\
+\ty &::=& \TInt(\intconstraint^*\,?) \\
+  &|& \TBits(\bitsconstraint, \bitfield^{*}) \\
   &|& \TReal \\
   &|& \TString \\
   &|& \TBool \\
@@ -298,7 +298,7 @@ We sometimes provide extra details to individual derivations by adding comments 
   &|& \texttt{LE\_Slice}(\lexpr, \slice^*)\\
   &|& \texttt{LE\_SetArray}(\lexpr, \expr)\\
   &|& \texttt{LE\_SetField}(\lexpr, \identifier)\\
-  &|& \texttt{LE\_SetFields}(\lexpr, identifier^*)\\
+  &|& \texttt{LE\_SetFields}(\lexpr, \identifier^*)\\
   &|& \texttt{LE\_Destructuring}(\lexpr^*)\\
   &|& \texttt{LE\_Concat}(\lexpr^*, \texttt{<int\_lit>}^*?)\\
   & & \ASTComment{\texttt{LE\_Concat}$(les, \_)$ unpacks the various lexpr.}\\
