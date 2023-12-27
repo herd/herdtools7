@@ -2,7 +2,7 @@
 \input{ASLmacros}
 
 \author{Arm Architecture Technology Group}
-\title{ASL Typing Reference}
+\title{ASL Abstract Syntax Reference}
 \begin{document}
 \maketitle
 
@@ -85,24 +85,58 @@ welcome; those can be sent to Arm’s Architecture Formal Team Lead Jade Alglave
 \texttt{(jade.alglave@arm.com)} or by raising issues or PRs to the herdtools7
 github repository.
 
+\chapter{Preamble}
+An abstract syntax is a form of context-free grammar over structured trees. Compilers and interpreters typically start by parsing the text of a program and producing an abstract syntax tree (AST, for short), and then continue to operate over that tree.
+%
+The reason for this is that abstract syntax trees abstract away details that are irrelevant to the semantics of the program, such as punctuation and scoping syntax, which are mostly there to facilitate parsing.
+
+A major benefit of employing an abstract syntax for ASL is that it allows us to abstract both the grammar of ASLv0 and the grammar of ASLv1 into a single abstract syntax. This in turn, allows us to define a single type system and a single semantics for both language versions, with very few exceptions\footnote{Note the single appearance of $\version$ in the assignment derivation rule.}.
+
 \chapter{ASL Abstract Syntax}
-An Abstract Syntax Tree (AST for short) is a kind of labelled tree. 
-A node in an AST is either a leaf, represented by its label, or an internal node of the form $L(n_1,\ldots,n_k)$ where $L$ is its label and $n_1,\ldots,n_k$ are its ordered children nodes, which we also refer to as \emph{components}.
-Components can be (possibly-empty) lists of nodes, shown as $n^{*}$, and optional nodes (lists of 0 or 1 elements), shown as $n?$. Tuples are shown as $(n_1,\ldots,n_k)$.
 
-An abstract syntax is similar to a context-free grammar, but defined over ASTs. A terminal derives leaf nodes while non-terminal use alternatives to derive internal nodes.
+\section{ASL Abstract Syntax Trees}
 
-A major benefit of employing an abstract syntax is that it allows abstracting away syntactic details that are only important to enable correct parsing, such as punctuation, and succinctly representing lists and optional values. By defining an abstract syntax for ASL, we can uniformly represent programs in ASLv0 as well as ones in ASLv1 and define a single type system for them.
+In an ASL abstract syntax tree, a node is one the following data types:
+\begin{description}
+\item[Token Node.] A lexical token, denoted as in the lexical description of ASL;
+\item[Label Node.] A label
+\item[Unlabelled Tuple Node.] A tuple of children nodes, which we denote as $(n_1,\ldots,n_k)$;
+\item[Labelled Tuple Node.] A tuple associated with a label $L$, which we denote as $L(n_1,\ldots,n_k)$;
+\item[List Node.] A list of 0 or more children nodes, denoted as $[ ]$ when the list is empty and $[n_1,\ldots,n_k]$ for non-empty lists;
+\item[Optional.] An optional node stands for a list of 0 or 1 occurrences of a sub-node $n$. We denote an empty optional by $\langle\rangle$ and the non-empty optional by $\langle n \rangle$;
+\item[Record Node.] A record, denoted as $\{\text{name}_1 : n_1,\ldots,\text{name}_k : n_k\}$ where $\text{name}_i$, which associates names with corresponding nodes.
+\end{description}
+
+\section{ASL Abstract Syntax Grammar}
+
+An abstract syntax is defined in terms of derivation rules containing variables (also referred to as non-terminals).
+%
+A \emph{derivation rule} has the form $v ::= \textit{rhs}$ where $v$ is a non-terminal variable and \textit{rhs} is a \emph{node type}. We write $n$, $n_1,\ldots,n_k$ to denote node types.
+%
+Node types are defined recursively as follows:
+\begin{description}
+\item[Non-terminal.] A non-terminal variable;
+\item[Terminal.] A lexical token $t$ or a label $L$;
+\item[Unlabelled Tuple.] A tuple of node types, which we denote as $(n_1,\ldots,n_k)$;
+\item[Labelled Tuple.] A tuple associated with a label $L$, which we denote as $L(n_1,\ldots,n_k)$;
+\item[List.] A list node type, denoted as $n^{*}$;
+\item[Optional.] An optional node type, denoted as $n?$;
+\item[Record.] A record, denoted as $\{\text{name}_1 : n_1,\ldots,\text{name}_k : n_k\}$ where $\text{name}_i$, which associates names with corresponding node types.
+\end{description}
+
+An abstract syntax consists of a set of derivation rules and a start non-terminal.
 
 \newcommand\ASTComment[1]{(*\ \textit{#1}\ *)}
 
-We define the abstract syntax of ASL below. We sometimes provide extra details to individual derivations by adding comments below them, in the form \ASTComment{this is a comment}.
+\section{ASL Derivation Rules}
+
+The abstract syntax of ASL is given in terms of the derivation rules below and the start non-terminal $\program$.
+%
+We sometimes provide extra details to individual derivations by adding comments below them, in the form \ASTComment{this is a comment}.
 
 \[
-\begin{array}{rcll}
-\textbf{node} & & \textbf{components} \\
-\hline
-\unop &::=& \texttt{"!"} \;|\; \texttt{"-"} \;|\; \texttt{"NOT"} & \\
+\begin{array}{rcl}
+\unop &::=& \texttt{"!"} \;|\; \texttt{"-"} \;|\; \texttt{"NOT"} \\
 \binop &::=& \texttt{"\&\&"} \;|\; \texttt{"||"} \;|\; \texttt{"-->"} \;|\;  \texttt{"<->"}  \\
  & & \ASTComment{\texttt{binop\_boolean}}\\
 
@@ -133,9 +167,7 @@ We define the abstract syntax of ASL below. We sometimes provide extra details t
 \]
 
 \[
-\begin{array}{rcll}
-\textbf{node} & & \textbf{components} \\
-\hline
+\begin{array}{rcl}
 \expr &::=& \texttt{E\_Literal}(literal) \\
 	&|& \texttt{E\_Var}(\texttt{\identifier}) \\
 	&|& \texttt{E\_CTC}(\texttt{\expr, \ty}) \\
@@ -158,9 +190,7 @@ We define the abstract syntax of ASL below. We sometimes provide extra details t
 \]
 
 \[
-\begin{array}{rcll}
-\textbf{node} & & \textbf{components} \\
-\hline
+\begin{array}{rcl}
 \pattern &::=& \texttt{Pattern\_All} \\
 	&|& \texttt{E\_Var}(\texttt{\identifier}) \\
   &|& \texttt{Pattern\_Any}(\pattern^{*}) \\
@@ -176,10 +206,27 @@ We define the abstract syntax of ASL below. We sometimes provide extra details t
 \]
 
 \[
-\begin{array}{rcll}
-\textbf{node} & & \textbf{components} \\
-\hline
+\begin{array}{rcl}
+&&\ASTComment{Indexes an array or a bitvector.}\\
+&&\ASTComment{All positions mentioned below are inclusive}\\
+\slice &::=& \texttt{Slice\_Single} (\expr) \\
+  & & \ASTComment{[Slice\_Single i] is the slice of length [1] at position [i].}\\
+  &|& \texttt{Slice\_Range}(\expr, \expr) \\
+  & & \ASTComment{[Slice\_Range (j, i)] denotes the slice from [i] to [j - 1].}\\
+  &|& \texttt{Slice\_Length}(\expr, \expr) \\
+  & & \ASTComment{[Slice\_Length (i, n)] denotes the slice starting at [i] of length
+          [n].}\\
+  &|& \texttt{Slice\_Star}(\expr, \expr) \\
+  & & \ASTComment{[Slice\_Star (factor, length)] denotes the slice starting at [factor
+          * length]}\\
+  & & \ASTComment{[of length [n].}\\
+\end{array}
+\]
+
+\[
+\begin{array}{rcl}
 \ty &::=& \texttt{T\_Int}(int\_constraints?) \\
+  &|& \TBits(bits\_constraint, bitfield^{*}) \\
   &|& \TReal \\
   &|& \TString \\
   &|& \TBool \\
@@ -196,8 +243,8 @@ We define the abstract syntax of ASL below. We sometimes provide extra details t
 \]
 
 \[
-\begin{array}{rcll}
-\textbf{node} & & \textbf{components} \\
+\begin{array}{rcl}
+& & \ASTComment{A constraint on an integer part.}\\
 \hline
 \intconstraint &::=& \texttt{Constraint\_Exact}(\expr) \\
   & & \ASTComment{A single value, given by a statically evaluable expression.}\\
@@ -207,8 +254,21 @@ We define the abstract syntax of ASL below. We sometimes provide extra details t
 \]
 
 \[
-\begin{array}{rcll}
-\textbf{node} & & \textbf{components} \\
+\begin{array}{rcl}
+& & \ASTComment{Constraints on bitvector lengths.}\\
+\hline
+\bitsconstraint &::=& \texttt{BitWidth\_SingleExpr}(\expr) \\
+  & & \ASTComment{Statically evaluable expression.}\\
+  &|& \texttt{BitWidth\_ConstrainedFormType}(\ty) \\
+  & & \ASTComment{Constrained by the domain of another type.}\\
+  &|& \texttt{BitWidth\_Constraints}(\intconstraint^{*}) \\
+  & & \ASTComment{Constrained directly by a constraint on its width.}\\
+\end{array}
+\]
+
+\[
+\begin{array}{rcl}
+& & \ASTComment{Represent static slices on a given bitvector type.}\\
 \hline
 \bitfield &::=& \texttt{BitField\_Simple}(\identifier, \slice^{*}) \\
   & & \ASTComment{A name and its corresponding slice.}\\
@@ -218,4 +278,140 @@ We define the abstract syntax of ASL below. We sometimes provide extra details t
   & & \ASTComment{A name, its corresponding slice, and the type of the bitfield.}\\
 \end{array}
 \]
+
+\[
+\begin{array}{rcl}
+\Field &::=& (\identifier, \ty)\\
+  & & \ASTComment{A field of a record-like structure.}\\
+\typedidentifier &::=& (\identifier, \ty)\\
+  & & \ASTComment{An identifier declared with its type.}\\
+\end{array}
+\]
+
+\[
+\begin{array}{rcl}
+& & \ASTComment{Type of left-hand side of assignments.}\\
+\hline
+\lexpr &::=& \texttt{LE\_Discard}\\
+  & & \ASTComment{\texttt{"-"}}\\
+  &|& \texttt{LE\_Var}(\identifier)\\
+  &|& \texttt{LE\_Slice}(\lexpr, \slice^*)\\
+  &|& \texttt{LE\_SetArray}(\lexpr, \expr)\\
+  &|& \texttt{LE\_SetField}(\lexpr, \identifier)\\
+  &|& \texttt{LE\_SetFields}(\lexpr, identifier^*)\\
+  &|& \texttt{LE\_Destructuring}(\lexpr^*)\\
+  &|& \texttt{LE\_Concat}(\lexpr^*, \texttt{<int\_lit>}^*?)\\
+  & & \ASTComment{\texttt{LE\_Concat}$(les, \_)$ unpacks the various lexpr.}\\
+  & & \ASTComment{The second argument is a type annotation.}\\
+\end{array}
+\]
+
+\[
+\begin{array}{rcl}
+\localdeclkeyword &::=& \texttt{LDK\_Var} \;|\; \texttt{LDK\_Constant} \;|\; \texttt{LDK\_Let}\\
+\end{array}
+\]
+
+\[
+\begin{array}{rcl}
+\localdeclitem &::=& \texttt{LDI\_Var}(\identifier, \ty?)\\
+  &|& \texttt{LDI\_Discard}(\ty?)\\
+  &|& \texttt{LDI\_Tuple}(\localdeclitem^*, \ty?)\\
+\fordirection &::=& \texttt{Up} \;|\; \texttt{Down}\\
+\end{array}
+\]
+
+\[
+\begin{array}{rcl}
+\version &::=& \texttt{V0} \;|\; \texttt{V1}\\
+\end{array}
+\]
+
+\[
+\begin{array}{rcl}
+\stmt &::=& \texttt{S\_Pass}\\
+  &|& \texttt{S\_Seq}(\stmt, \stmt)\\
+  &|& \texttt{S\_Decl}(\localdeclkeyword, \localdeclitem, \expr?)\\
+  &|& \texttt{S\_Assign}(\lexpr, \expr, \version)\\
+  &|& \texttt{S\_Call}(\identifier, \expr^*, (\identifier, \expr)^*\\
+  &|& \texttt{S\_Return}(\expr?)\\
+  &|& \texttt{S\_Cond}(\expr, \stmt, \stmt)\\
+  &|& \texttt{S\_Case}(\expr, \casealt^*)\\
+  &|& \texttt{S\_Assert}(\expr)\\
+  &|& \texttt{S\_For}(\identifier, \expr, \fordirection, \expr, \stmt)\\
+  &|& \texttt{S\_While}(\expr, \stmt)\\
+  &|& \texttt{S\_Repeat}(\stmt, \expr)\\
+  &|& \texttt{S\_Throw}((\expr, \ty?)?\\
+  & & \ASTComment{The $\ty?$ is a type annotation added by the type-checker}\\
+  & & \ASTComment{to be matched later with the catch guards.}\\
+  & & \ASTComment{The outer option is to represent the implicit throw,}\\
+  & & \ASTComment{such as [throw;].}\\
+  &|& \texttt{S\_Try}(\stmt, \catcher^*, \stmt?)\\
+  & & \ASTComment{The optional stmt is for the otherwise guard.}\\
+  &|& \texttt{S\_Debug}(\expr)
+\end{array}
+\]
+
+\[
+\begin{array}{rcl}
+\casealt &::=& (\pattern, \stmt)\\
+\catcher &::=& (\identifier?, \ty, \stmt)\\
+  & & \ASTComment{The optional name of the matched exception,}\\
+  & & \ASTComment{the guard type and the statement}\\
+  & & \ASTComment{to be executed if the guard matches.}\\
+\end{array}
+\]
+
+\[
+\begin{array}{rcl}
+\subprogramtype &::=& \texttt{ST\_Procedure} \;|\; \texttt{ST\_Function} \;|\; \texttt{ST\_Getter} \;|\; \texttt{ST\_Setter}\\
+\subprogrambody &::=& \texttt{SB\_ASL}(\stmt)\\
+  &|& \texttt{SB\_Primitive}\\
+\end{array}
+\]
+
+\[
+\begin{array}{rrl}
+\func &::= \{& \\
+ & & \text{name} : \identifier, \\
+ & & \text{parameters} : (\identifier, \ty?)^*,\\
+ & & \text{args} : \typedidentifier^*,\\
+ & & \text{body} : \subprogrambody,\\
+ & & \text{return\_type} : \ty?,\\
+ & & \text{subprogram\_type} : \subprogramtype\\
+ & \} &
+\end{array}
+\]
+
+\[
+\begin{array}{rcl}
+\globaldeclkeyword &::=& \texttt{GDK\_Constant} \;|\; \texttt{GDK\_Config} \;|\; \texttt{GDK\_Let} \;|\; \texttt{GDK\_Var}\\
+  & & \ASTComment{Declaration keyword for global storage elements.}\\
+\end{array}
+\]
+
+\[
+\begin{array}{rrl}
+\globaldecl &::= \{& \\
+ & & \text{keyword} : \globaldeclkeyword, \\
+ & & \text{name} : \identifier,\\
+ & & \text{ty} : \ty?,\\
+ & & \text{initial\_value} : \expr?\\
+ & \} &
+\end{array}
+\]
+
+\[
+\begin{array}{rcl}
+\decl &::=& \texttt{D\_Func}(\func)\\
+  & & \texttt{D\_GlobalStorage}(\globaldecl)\\
+  & & \texttt{D\_TypeDecl}(\identifier, \ty, (\identifier, \Field^*)?)\\
+\program &::=& \decl^*\\
+\end{array}
+\]
+
+\textbf{ROMAN: Pragmas are missing.}
+
+\textbf{ROMAN: Consider removing \texttt{SB\_Primitive}.}
+
 \end{document}
