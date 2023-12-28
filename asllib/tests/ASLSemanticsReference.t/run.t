@@ -31,8 +31,8 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.EGetArray.asl
   $ aslref SemanticsRule.EGetArrayTooSmall.asl
   File SemanticsRule.EGetArrayTooSmall.asl, line 8, characters 2 to 10:
-  ASL Typing error: a subtype of integer {3} was expected,
-    provided integer {0..(3 - 1)}.
+  ASL Typing error: a subtype of integer {0..(3 - 1)} was expected,
+    provided integer {3}.
   [1]
   $ aslref SemanticsRule.ERecord.asl
   $ aslref SemanticsRule.EConcat.asl

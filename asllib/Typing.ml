@@ -428,7 +428,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       if false then
         Format.eprintf "@[<hv 2>Checking %a@ <: %a@]@." PP.pp_ty t1 PP.pp_ty t2
     in
-    if Types.type_satisfies env t1 t2 then () else conflict loc [ t1.desc ] t2
+    if Types.type_satisfies env t1 t2 then () else conflict loc [ t2.desc ] t1
 
   (** [check_structure_boolean env t1] checks that [t1] has the structure of a boolean. *)
   let check_structure_boolean loc env t1 () =

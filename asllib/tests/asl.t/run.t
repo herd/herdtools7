@@ -151,3 +151,35 @@ Runtime checks:
     value '0000' does not belong to type bits(size).
   [1]
 
+UnderConstrained integers:
+  $ aslref bad-underconstrained-call.asl
+  File bad-underconstrained-call.asl, line 9, characters 9 to 23:
+  ASL Typing error: a subtype of integer {0..(M - 1)} was expected,
+    provided an under-constrained integer.
+  [1]
+  $ aslref bad-underconstrained-call-02.asl
+  File bad-underconstrained-call-02.asl, line 8, characters 2 to 13:
+  ASL Typing error: a subtype of integer {M} was expected,
+    provided integer {3}.
+  [1]
+  $ aslref bad-underconstrained-call-03.asl
+  File bad-underconstrained-call-03.asl, line 8, characters 2 to 17:
+  ASL Typing error: a subtype of integer {M} was expected,
+    provided integer {(M + 1)}.
+  [1]
+  $ aslref bad-underconstrained-ctc.asl
+  File bad-underconstrained-ctc.asl, line 3, characters 12 to 13:
+  ASL Execution error: Mismatch type:
+    value 4 does not belong to type integer {(N - 1)}.
+  [1]
+  $ aslref bad-underconstrained-return.asl
+  File bad-underconstrained-return.asl, line 3, characters 2 to 15:
+  ASL Typing error: a subtype of integer {0..N} was expected,
+    provided integer {(N + 1)}.
+  [1]
+  $ aslref bad-underconstrained-return-02.asl
+  File bad-underconstrained-return-02.asl, line 3, characters 2 to 11:
+  ASL Typing error: a subtype of integer {0..N} was expected,
+    provided integer {5}.
+  [1]
+
