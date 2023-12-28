@@ -322,7 +322,7 @@ module Domain = struct
     | E_Unop (NEG, e') ->
         of_expr env (E_Binop (MINUS, !$0, e') |> add_pos_from e)
     | E_Unop _ -> assert false
-    | E_Binop (op, e1, e2) ->
+    | E_Binop (((PLUS | MINUS | MUL) as op), e1, e2) ->
         let is1 = match of_expr env e1 with D_Int is -> is | _ -> assert false
         and is2 = match of_expr env e2 with D_Int is -> is | _ -> assert false
         and fop =
@@ -335,10 +335,11 @@ module Domain = struct
         D_Int (int_set_raise_interval_op fop op is1 is2)
     | _ ->
         let () =
-          Format.eprintf "@[<2>Cannot interpret as int set:@ @[%a@]@]@."
-            PP.pp_expr e
+          if false then
+            Format.eprintf "@[<2>Cannot interpret as int set:@ @[%a@]@]@."
+              PP.pp_expr e
         in
-        assert false
+        raise StaticEvaluationTop
 
   and of_type env ty =
     match ty.desc with
@@ -352,7 +353,12 @@ module Domain = struct
     | T_Int (WellConstrained constraints) ->
         D_Int (int_set_of_int_constraints env constraints)
     | T_Bits (width, _) -> (
-        match of_expr env width with D_Int is -> D_Bits is | _ -> assert false)
+        try
+          match of_expr env width with
+          | D_Int is -> D_Bits is
+          | _ -> assert false
+        with StaticEvaluationTop ->
+          D_Bits (FromSyntax [ Constraint_Exact width ]))
     | T_Array _ | T_Exception _ | T_Record _ | T_Tuple _ ->
         failwith "Unimplemented: domain of a non singular type."
     | T_Named _ ->

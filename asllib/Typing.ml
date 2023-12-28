@@ -614,20 +614,24 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                    operation are well-constrained integers, then it shall
                    return a constrained integer whose constraint is calculated
                    by applying the operation to all possible value pairs. *)
-                let () =
+                let+ () =
                   match op with
                   | DIV ->
                       (* TODO cs1 divides cs1 ? How is it expressable in term of constraints? *)
-                      check_true' (constraints_is_strict_positive cs2) ()
+                      check_true' (constraints_is_strict_positive cs2)
                   | DIVRM | MOD ->
                       (* assert cs2 strict-positive *)
-                      check_true' (constraints_is_strict_positive cs2) ()
+                      check_true' (constraints_is_strict_positive cs2)
                   | SHL | SHR ->
                       (* assert cs2 non-negative *)
-                      check_true' (constraints_is_non_negative cs2) ()
-                  | _ -> ()
+                      check_true' (constraints_is_non_negative cs2)
+                  | _ -> fun () -> ()
                 in
-                T_Int (constraint_binop env op cs1 cs2) |> with_loc
+                let cs =
+                  best_effort UnConstrained (fun _ ->
+                      constraint_binop env op cs1 cs2)
+                in
+                T_Int cs |> with_loc
             | T_Real, T_Real -> (
                 match op with
                 | PLUS | MINUS | MUL -> T_Real |> with_loc
