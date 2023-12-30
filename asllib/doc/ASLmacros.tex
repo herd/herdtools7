@@ -38,6 +38,8 @@
 \setlist[itemize,19]{label=\textendash}
 \setlist[itemize,20]{label=\textendash}
 
+\newcommand\figref[1]{Figure~\ref{Fi:#1}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Abstract Syntax macros
 % Non-terminal names
@@ -67,10 +69,6 @@
 \newcommand\subprogramtype[0]{\textsf{sub\_program\_type}}
 \newcommand\subprogrambody[0]{\textsf{sub\_program\_body}}
 \newcommand\func[0]{\textsf{func}}
-
-
-
-
 \newcommand\Field[0]{\textsf{field}}
 
 % Type names
@@ -100,6 +98,7 @@
 
 \newcommand\ie{i.\,e.}
 \newcommand\eg{e.\,g.}
+\newcommand\error[0]{\textsf{error}}
 \newcommand\synor{\ |\ }
 \newcommand\syntt[1]{\mathtt{#1}}
 \newcommand\ife[3]{\text{if}\ #1\ \text{then}\ #2\ \text{else}\ #3\ \text{end}}
