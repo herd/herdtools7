@@ -2,7 +2,7 @@
     begin
       if UNKNOWN: boolean then
          let i = 3;
-         print (i);
+         print (DecStr (i));
       end
       let i = "Some text";
       print (i);

@@ -38,9 +38,9 @@ let _dbg = false
 module type S = sig
   module B : Backend.S
 
-  val run_env : (AST.identifier * B.value) list -> B.ast -> B.value B.m
-  val run : B.ast -> B.value B.m
-  val run_typed : B.ast -> StaticEnv.env -> B.value B.m
+  val run_env : (AST.identifier * B.value) list -> AST.t -> B.value B.m
+  val run : AST.t -> B.value B.m
+  val run_typed : AST.t -> StaticEnv.env -> B.value B.m
 end
 
 module type Config = sig
@@ -58,7 +58,6 @@ module Make (B : Backend.S) (C : Config) = struct
 
   module EnvConf = struct
     type v = B.value
-    type primitive = B.primitive
 
     let unroll = C.unroll
   end
@@ -227,7 +226,7 @@ module Make (B : Backend.S) (C : Config) = struct
   (** [build_genv static_env ast primitives] is the global environment before
       the start of the evaluation of [ast]. *)
   let build_genv env0 eval_expr base_value (static_env : StaticEnv.env)
-      (ast : B.primitive AST.t) =
+      (ast : AST.t) =
     let funcs = IMap.empty |> build_funcs ast in
     let () =
       if _dbg then
@@ -268,6 +267,21 @@ module Make (B : Backend.S) (C : Config) = struct
       | Throwing (v, g) -> Throwing (v, g) |> return |> Fun.const)
 
   let ( let*^ ) = bind_env
+
+  (* Primitives handling *)
+  (* ------------------- *)
+  let primitive_runtimes =
+    List.to_seq B.primitives
+    |> Seq.map
+         AST.(fun ({ name; subprogram_type = _; _ }, f) -> (name, f))
+    |> Hashtbl.of_seq
+
+  let primitive_decls =
+    List.map (fun (f, _) -> D_Func f |> add_dummy_pos) B.primitives
+
+  let () =
+    if false then
+      Format.eprintf "@[<v 2>Primitives:@ %a@]@." PP.pp_t primitive_decls
 
   (*****************************************************************************)
   (*                                                                           *)
@@ -1219,9 +1233,10 @@ module Make (B : Backend.S) (C : Config) = struct
         |: SemanticsRule.FUndefIdent
     (* End *)
     (* Begin FPrimitive *)
-    | Some (r, { body = SB_Primitive body; _ }) ->
+    | Some (r, { body = SB_Primitive; _ }) ->
         let scope = Scope_Local (name, !r) in
         let () = incr r in
+        let body = Hashtbl.find primitive_runtimes name in
         let* ms = body actual_args in
         let _, vsm =
           List.fold_right
@@ -1360,7 +1375,7 @@ module Make (B : Backend.S) (C : Config) = struct
         List.init length (Fun.const v) |> B.create_vector
 
   (* Begin TopLevel *)
-  let run_typed_env env (ast : B.ast) (static_env : StaticEnv.env) :
+  let run_typed_env env (ast : AST.t) (static_env : StaticEnv.env) :
       B.value m =
     let*| env = build_genv env eval_expr_sef base_value static_env ast in
     let*| res = eval_func env "main" dummy_annotated [] [] in
@@ -1379,8 +1394,9 @@ module Make (B : Backend.S) (C : Config) = struct
 
   let run_typed ast env = run_typed_env [] ast env
 
-  let run_env (env : (AST.identifier * B.value) list) (ast : B.ast) :
+  let run_env (env : (AST.identifier * B.value) list) (ast : AST.t) :
       B.value m =
+    let ast = List.rev_append primitive_decls ast in
     let ast = Builder.with_stdlib ast in
     let ast, static_env =
       Typing.type_check_ast C.type_checking_strictness ast

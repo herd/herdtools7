@@ -556,8 +556,8 @@ let rec subst_expr substs e =
   | E_Unknown _ -> e.desc
   | E_Unop (op, e) -> E_Unop (op, tr e)
 
-let dag_fold (def : 'p AST.decl -> identifier) (use : 'p AST.decl -> ISet.t)
-    (folder : 'p AST.decl -> 'a -> 'a) (ast : 'p AST.t) : 'a -> 'a =
+let dag_fold (def : AST.decl -> identifier) (use : AST.decl -> ISet.t)
+    (folder : AST.decl -> 'a -> 'a) (ast : AST.t) : 'a -> 'a =
   let def_use_map =
     List.fold_left
       (fun def_use_map d ->
@@ -600,35 +600,6 @@ let scope_compare s1 s2 =
   | Scope_Local (n1, i1), Scope_Local (n2, i2) ->
       let n = Int.compare i1 i2 in
       if n != 0 then n else String.compare n1 n2
-
-let no_primitive (ast : 'p t) : 'q t =
-  let one d =
-    let here = add_pos_from d in
-    match d.desc with
-    | D_GlobalStorage g -> D_GlobalStorage g |> here
-    | D_TypeDecl (a, b, c) -> D_TypeDecl (a, b, c) |> here
-    | D_Func { body = SB_Primitive _; _ } -> assert false
-    | D_Func
-        {
-          body = SB_ASL s;
-          args;
-          name;
-          return_type;
-          subprogram_type;
-          parameters;
-        } ->
-        D_Func
-          {
-            body = SB_ASL s;
-            args;
-            name;
-            return_type;
-            subprogram_type;
-            parameters;
-          }
-        |> here
-  in
-  List.map one ast
 
 let rec is_simple_expr e =
   match e.desc with
@@ -743,7 +714,7 @@ let rename_locals map_name ast =
     | LDI_Tuple (ldis, t) ->
         LDI_Tuple (List.map map_ldi ldis, Option.map map_t t)
   and map_body = function
-    | SB_Primitive _ as b -> b
+    | SB_Primitive as b -> b
     | SB_ASL s -> SB_ASL (map_s s)
   and map_func f =
     let map_args li = List.map (fun (name, t) -> (map_name name, map_t t)) li in

@@ -149,11 +149,11 @@ let make_ty_decl_subtype (x, s) =
 
 (* ------------------------------------------------------------------------- *)
 
-%type <unit AST.t> ast
+%type <AST.t> ast
 %start ast
 
 (* This start-point is for .opn files in arm-pseudocodes for instructions. *)
-%type <unit AST.t> opn
+%type <AST.t> opn
 %start opn
 
 (* Parse statements, as one *)

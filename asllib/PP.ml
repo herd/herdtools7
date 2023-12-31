@@ -363,7 +363,7 @@ let pp_decl f =
   in
   let pp_body f = function
     | SB_ASL s -> pp_stmt f s
-    | SB_Primitive _ -> fprintf f "pass;@ // primitive"
+    | SB_Primitive -> fprintf f "pass;@ // primitive"
   in
   fun d ->
     match d.desc with

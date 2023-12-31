@@ -130,8 +130,8 @@ type barrier = A64B.barrier
 let pp_barrier = A64B.pp_barrier
 let barrier_compare = A64B.barrier_compare
 
-type parsedInstruction = unit Asllib.AST.t
-type instruction = unit Asllib.AST.t
+type parsedInstruction = Asllib.AST.t
+type instruction = Asllib.AST.t
 
 let pp_instruction _ppmode ast = Asllib.PP.t_to_string ast
 let dump_instruction a = pp_instruction PPMode.Ascii a
@@ -143,7 +143,6 @@ let fold_addrs _ a _ = a
 let map_addrs _ i = i
 let norm_ins i = i
 let get_next _ = assert false
-
 let is_valid _ = true
 
 include Pseudo.Make (struct
@@ -197,8 +196,8 @@ let stmts_from_string s =
   let lexbuf = Lexing.from_string s in
   try Parser.stmts Lexer.token lexbuf
   with e ->
-    Warn.fatal
-      "Internal parsing of \"%s\" failed with %s" s (Printexc.to_string e)
+    Warn.fatal "Internal parsing of \"%s\" failed with %s" s
+      (Printexc.to_string e)
 
 module Instr = Instr.No (struct
   type instr = instruction

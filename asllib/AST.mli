@@ -295,13 +295,13 @@ type subprogram_type =
   | ST_Getter
   | ST_Setter
 
-type 'p subprogram_body = SB_ASL of stmt | SB_Primitive of 'p
+type subprogram_body = SB_ASL of stmt | SB_Primitive
 
-type 'p func = {
+type func = {
   name : identifier;
   parameters : (identifier * ty option) list;
   args : typed_identifier list;
-  body : 'p subprogram_body;
+  body : subprogram_body;
   return_type : ty option;
   subprogram_type : subprogram_type;
 }
@@ -324,14 +324,14 @@ type global_decl = {
 (** Global declaration type *)
 
 (** Declarations, ie. top level statement in a asl file. *)
-type 'p decl_desc =
-  | D_Func of 'p func
+type decl_desc =
+  | D_Func of func
   | D_GlobalStorage of global_decl
   | D_TypeDecl of identifier * ty * (identifier * field list) option
 
-type 'p decl = 'p decl_desc annotated
+type decl = decl_desc annotated
 
-type 'p t = 'p decl list
+type t = decl list
 (** Main AST type. *)
 
 (* -------------------------------------------------------------------------

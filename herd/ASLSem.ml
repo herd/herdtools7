@@ -76,6 +76,7 @@
  *)
 
 module AST = Asllib.AST
+module ASTUtils = Asllib.ASTUtils
 
 module type Config = sig
   include Sem.Config
@@ -153,8 +154,8 @@ module Make (C : Config) = struct
         | L_Bool b -> S_Bool b |> concrete
         | L_BitVector bv -> S_BitVector bv |> concrete
         | L_Real _f ->
-           Printf.eprintf "real: %s\n%!" (Q.to_string _f) ;
-           Warn.fatal "Cannot use reals yet."
+            Printf.eprintf "real: %s\n%!" (Q.to_string _f);
+            Warn.fatal "Cannot use reals yet."
         | L_String _f -> Warn.fatal "Cannot strings in herd yet."
       in
       fun v -> V.Val (tr v)
@@ -170,15 +171,14 @@ module Make (C : Config) = struct
     let v_as_record = function
       | V.Val (Constant.ConcreteRecord map) -> map
       | v ->
-         Warn.fatal
-           "Cannot concretise symbolic value %s as a record" (V.pp_v v)
+          Warn.fatal "Cannot concretise symbolic value %s as a record"
+            (V.pp_v v)
 
     let v_as_bool = function
       | Constant.Concrete (ASLScalar.S_Bool b) -> b
       | c ->
-         Warn.fatal
-           "Cannot concretise symbolic value %s as a boolean"
-           (V.pp_v (V.Val c))
+          Warn.fatal "Cannot concretise symbolic value %s as a boolean"
+            (V.pp_v (V.Val c))
 
     let datasize_to_machsize v =
       match v_as_int v with
@@ -189,10 +189,7 @@ module Make (C : Config) = struct
 
     let access_bool_field v f map =
       try StringMap.find f map |> v_as_bool
-      with Not_found ->
-        Warn.fatal
-          "Record %s has no %s field"
-          (V.pp_v v) f
+      with Not_found -> Warn.fatal "Record %s has no %s field" (V.pp_v v) f
 
     let accdesc_to_annot is_read accdesc =
       let open AArch64Annot in
@@ -202,17 +199,18 @@ module Make (C : Config) = struct
       and is_acquirepc = access_bool_field accdesc "acqpc" map
       and is_atomic = access_bool_field accdesc "atomicop" map
       and is_exclusive = access_bool_field accdesc "exclusive" map in
-      let is_ax x n =
-        if is_atomic || is_exclusive then x else n in
+      let is_ax x n = if is_atomic || is_exclusive then x else n in
       let an =
-        if not is_read && is_release then is_ax XL L
+        if (not is_read) && is_release then is_ax XL L
         else if is_read && is_acquiresc then is_ax XA A
         else if is_read && is_acquirepc then is_ax XQ Q
-        else is_ax X N in
+        else is_ax X N
+      in
       let () =
         if false && an <> N then
           Printf.eprintf "ASL -> AArch64 Memory annotation %s\n%!"
-            (AArch64Annot.pp an) in
+            (AArch64Annot.pp an)
+      in
       an
 
     let wrap_op1_symb_as_var op1 = function
@@ -229,8 +227,7 @@ module Make (C : Config) = struct
     (* Special monad interations                                              *)
     (**************************************************************************)
 
-    let create_barrier b ii =
-      M.mk_singleton_es (Act.Barrier b) ii >>! []
+    let create_barrier b ii = M.mk_singleton_es (Act.Barrier b) ii >>! []
 
     let resize_from_quad = function
       | MachSize.Quad -> return
@@ -256,8 +253,7 @@ module Make (C : Config) = struct
     let choice (m1 : V.v M.t) (m2 : 'b M.t) (m3 : 'b M.t) : 'b M.t =
       M.asl_ctrl m1 (function
         | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) -> if b then m2 else m3
-        | b ->
-            M.asl_ctrl (to_int_signed b) (fun v -> M.choiceT v m2 m3))
+        | b -> M.asl_ctrl (to_int_signed b) (fun v -> M.choiceT v m2 m3))
 
     let binop =
       let open AST in
@@ -294,10 +290,9 @@ module Make (C : Config) = struct
       | PLUS -> M.op Op.Add
       | SHL -> M.op Op.ShiftLeft
       | SHR -> M.op Op.ShiftRight
-      | POW | IMPL | RDIV as op->
-         Warn.fatal
-           "ASL operation %s not yet implement in ASLSem."
-           (Asllib.PP.binop_to_string op)
+      | (POW | IMPL | RDIV) as op ->
+          Warn.fatal "ASL operation %s not yet implement in ASLSem."
+            (Asllib.PP.binop_to_string op)
 
     let unop op =
       let open AST in
@@ -314,39 +309,32 @@ module Make (C : Config) = struct
             let* v1 = m1 () and* v2 = m2 () and* v = to_int_signed v in
             M.op3 Op.If v v1 v2
 
-(* Any access to PSTATE emits an access to NZCV.
- * Notice that the value is casted into an integer.
- *)
+    (* Any access to PSTATE emits an access to NZCV.
+     * Notice that the value is casted into an integer.
+     *)
     let is_pstate x scope =
-      match x,scope with
-      | "PSTATE",AST.Scope_Global -> true
-      | _ -> false
+      match (x, scope) with "PSTATE", AST.Scope_Global -> true | _ -> false
 
     let is_resaddr x scope =
-      match x,scope with
-      | "RESADDR",AST.Scope_Global -> true
-      | _ -> false
+      match (x, scope) with "RESADDR", AST.Scope_Global -> true | _ -> false
 
     let loc_of_scoped_id ii x scope =
       if is_pstate x scope then
         A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.NZCV)
       else if is_resaddr x scope then
         A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.ResAddr)
-      else
-        A.Location_reg (ii.A.proc, ASLBase.ASLLocalId (scope, x))
+      else A.Location_reg (ii.A.proc, ASLBase.ASLLocalId (scope, x))
 
-    let on_access_identifier  dir (ii,poi) x scope v =
+    let on_access_identifier dir (ii, poi) x scope v =
       let loc = loc_of_scoped_id ii x scope in
       let m v =
-        let action =
-          Act.Access (dir, loc, v, MachSize.Quad, aneutral) in
-        M.mk_singleton_es action (use_ii_with_poi ii poi) in
-      if is_pstate x scope then
-        M.op1 (Op.ArchOp1 ASLOp.ToIntU) v >>= m
-      else m v
+        let action = Act.Access (dir, loc, v, MachSize.Quad, aneutral) in
+        M.mk_singleton_es action (use_ii_with_poi ii poi)
+      in
+      if is_pstate x scope then M.op1 (Op.ArchOp1 ASLOp.ToIntU) v >>= m else m v
 
     let on_write_identifier = on_access_identifier Dir.W
-    and on_read_identifier =  on_access_identifier Dir.R
+    and on_read_identifier = on_access_identifier Dir.R
 
     let create_vector li =
       let li = List.map as_constant li in
@@ -368,9 +356,7 @@ module Make (C : Config) = struct
       | v -> return v
 
     let get_index i v = M.op1 (Op.ArchOp1 (ASLOp.GetIndex i)) v >>= unfreeze
-
-    let set_index i v vec =
-      M.op (Op.ArchOp (ASLOp.SetIndex i)) vec (freeze v)
+    let set_index i v vec = M.op (Op.ArchOp (ASLOp.SetIndex i)) vec (freeze v)
 
     let get_field name v =
       M.op1 (Op.ArchOp1 (ASLOp.GetField name)) v >>= unfreeze
@@ -412,7 +398,9 @@ module Make (C : Config) = struct
     (* Primitives and helpers                                                 *)
     (**************************************************************************)
 
-    let vbool b =  V.Val (Constant.Concrete (ASLScalar.S_Bool b))
+    type primitive_t = V.v M.t list -> V.v M.t list M.t
+
+    let vbool b = V.Val (Constant.Concrete (ASLScalar.S_Bool b))
 
     (*
      * Add equation, the effect will be silent
@@ -441,48 +429,39 @@ module Make (C : Config) = struct
      * an AArch64 barrier as argument.
      *)
 
-    let primitive_isb (ii,poi) () =
+    let primitive_isb (ii, poi) () =
       create_barrier AArch64Base.ISB (use_ii_with_poi ii poi)
 
     let dom_of =
       let open AArch64Base in
-      function
-      | 0 -> NSH
-      | 1 -> ISH
-      | 2 -> OSH
-      | 3 -> SY
-      | _ -> assert false
+      function 0 -> NSH | 1 -> ISH | 2 -> OSH | 3 -> SY | _ -> assert false
+
     and btyp_of =
       let open AArch64Base in
-      function
-      | 0 -> LD
-      | 1 -> ST
-      | 2 -> FULL
-      | _ -> assert false
+      function 0 -> LD | 1 -> ST | 2 -> FULL | _ -> assert false
 
-    let primitive_db constr (ii,poi) dom_m btyp_m =
+    let primitive_db constr (ii, poi) dom_m btyp_m =
       let* dom = dom_m and* btyp = btyp_m in
       let dom = v_as_int dom and btyp = v_as_int btyp in
       let dom = dom_of dom and btyp = btyp_of btyp in
-      create_barrier (constr (dom,btyp)) (use_ii_with_poi ii poi)
+      create_barrier (constr (dom, btyp)) (use_ii_with_poi ii poi)
 
-    let primitive_dmb =  primitive_db (fun (d,t) -> AArch64Base.DMB (d,t))
-    and primitive_dsb =  primitive_db (fun (d,t) -> AArch64Base.DSB (d,t))
-
+    let primitive_dmb = primitive_db (fun (d, t) -> AArch64Base.DMB (d, t))
+    and primitive_dsb = primitive_db (fun (d, t) -> AArch64Base.DSB (d, t))
 
     (*
      * Prinitives for read and write events.
      *)
 
     let virtual_to_loc_reg =
-      let tgprs = Array.of_list  AArch64Base.gprs in
+      let tgprs = Array.of_list AArch64Base.gprs in
       fun rv ii ->
         let i = v_as_int rv in
         if i >= Array.length tgprs || i < 0 then
-        Warn.fatal "Invalid register number: %d" i
-      else
-        let arch_reg = AArch64Base.Ireg (tgprs.(i)) in
-        A.Location_reg (ii.A.proc, ASLBase.ArchReg arch_reg)
+          Warn.fatal "Invalid register number: %d" i
+        else
+          let arch_reg = AArch64Base.Ireg tgprs.(i) in
+          A.Location_reg (ii.A.proc, ASLBase.ArchReg arch_reg)
 
     let read_register (ii, poi) r_m =
       let* rval = r_m in
@@ -508,21 +487,18 @@ module Make (C : Config) = struct
 
     let do_write_memory (ii, poi) addr_m datasize_m value_m an =
       let value_m = M.as_data_port value_m in
-      let* addr = addr_m and* datasize = datasize_m
-      and* value = value_m in
+      let* addr = addr_m and* datasize = datasize_m and* value = value_m in
       let sz = datasize_to_machsize datasize in
-      write_loc sz
-        (A.Location_global addr) value an (use_ii_with_poi ii poi)
+      write_loc sz (A.Location_global addr) value an (use_ii_with_poi ii poi)
       >>! []
 
-    let write_memory ii  addr_m datasize_m value_m =
-      do_write_memory
-        ii addr_m datasize_m value_m AArch64Annot.N
+    let write_memory ii addr_m datasize_m value_m =
+      do_write_memory ii addr_m datasize_m value_m AArch64Annot.N
 
     let write_memory_gen ii addr_m datasize_m value_m accdesc_m =
-         let* accdesc = accdesc_m in
-         do_write_memory ii
-           addr_m datasize_m value_m (accdesc_to_annot false accdesc)
+      let* accdesc = accdesc_m in
+      do_write_memory ii addr_m datasize_m value_m
+        (accdesc_to_annot false accdesc)
 
     let loc_sp ii = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.SP)
 
@@ -531,8 +507,8 @@ module Make (C : Config) = struct
 
     let write_sp (ii, poi) v_m =
       let* v = v_m >>= to_int_signed in
-      write_loc MachSize.Quad (loc_sp ii)
-        v aneutral (use_ii_with_poi ii poi) >>! []
+      write_loc MachSize.Quad (loc_sp ii) v aneutral (use_ii_with_poi ii poi)
+      >>! []
 
     let uint bv_m = bv_m >>= to_int_unsigned
     let sint bv_m = bv_m >>= to_int_signed
@@ -550,7 +526,8 @@ module Make (C : Config) = struct
     (**************************************************************************)
 
     (* Helpers *)
-    let build_primitive name args return_type body =
+    let build_primitive ?(args = []) ?returns ?(parameters = []) name f :
+        AST.func * primitive_t =
       let open AST in
       let subprogram_type =
         match returns with None -> ST_Procedure | _ -> ST_Function
@@ -641,7 +618,6 @@ module Make (C : Config) = struct
     let extra_funcs ii_env =
       let open AST in
       let with_pos = Asllib.ASTUtils.add_dummy_pos in
-      let here = Asllib.ASTUtils.add_pos_from_pos_of in
       let integer = Asllib.ASTUtils.integer in
       let boolean = Asllib.ASTUtils.boolean in
       let reg = integer in
@@ -649,66 +625,45 @@ module Make (C : Config) = struct
       let lit x = E_Literal (L_Int (Z.of_int x)) |> with_pos in
       let bv x = T_Bits (x, []) |> with_pos in
       let bv_var x = bv @@ var x in
-      let bv_arg1 = bv_var "arg_1" in
-      let bv_N = bv_var "N" in
       let bv_lit x = bv @@ lit x in
       let bv_64 = bv_lit 64 in
       let t_named x = T_Named x |> with_pos in
       [
-        arity_zero "primitive_isb" return_zero
-          (primitive_isb ii_env)
-        |> __POS_OF__ |> here;
-        arity_two "primitive_dmb" [integer; integer; ] return_zero
-          (primitive_dmb ii_env)
-        |> __POS_OF__ |> here;
-        arity_two "primitive_dsb" [integer; integer; ] return_zero
-          (primitive_dsb ii_env)
-        |> __POS_OF__ |> here;
-        arity_one "read_register" [ reg ] (return_one bv_64)
-          (read_register ii_env)
-        |> __POS_OF__ |> here;
-        arity_two "write_register" [ bv_64; reg ] return_zero
-          (write_register ii_env)
-        |> __POS_OF__ |> here;
-        arity_two "read_memory"
-          [ bv_64 ; integer ]
-          (return_one (bv_64))
-          (read_memory ii_env)
-        |> __POS_OF__ |> here;
-        arity_three "read_memory_gen"
-          [ bv_64 ; integer; t_named "AccessDescriptor"; ]
-          (return_one (bv_64))
-          (read_memory_gen ii_env)
-        |> __POS_OF__ |> here;
-        arity_three "write_memory" [ bv_64; integer; bv_arg1 ]
-          return_zero
-          (write_memory ii_env)
-        |> __POS_OF__ |> here;
-        arity_four
-          "write_memory_gen"
-          [ bv_64; integer; bv_arg1; t_named "AccessDescriptor"]
-          return_zero
-          (write_memory_gen ii_env)
-        |> __POS_OF__ |> here;
-        arity_zero "SP_EL0" (return_one bv_64) (read_sp ii_env)
-        |> __POS_OF__ |> here;
-        arity_one "SP_EL0" [ bv_64 ] return_zero (write_sp ii_env)
-        |> __POS_OF__ |> here;
-        arity_one "UInt" [ bv_N ] (return_one integer) uint
-        |> __POS_OF__ |> here;
-        arity_one "SInt" [ bv_N ] (return_one integer) sint
-        |> __POS_OF__ |> here;
-        arity_zero "ProcessorID" (return_one integer) (processor_id ii_env)
-        |> __POS_OF__ |> here;
-        arity_two "CanPredictFrom" [ bv_N; bv_N ] (return_one bv_N)
-          can_predict_from
-        |> __POS_OF__ |> here;
-        arity_zero "SomeBoolean" (return_one boolean)
-          somebool
-        |> __POS_OF__ |> here;
-        arity_one "CheckProp" [boolean] return_zero
-          checkprop
-        |> __POS_OF__ |> here;
+        p0 "primitive_isb" (primitive_isb ii_env);
+        p2 "primitive_dmb" ("d", integer) ("t", integer) (primitive_dmb ii_env);
+        p2 "primitive_dsb" ("d", integer) ("t", integer) (primitive_dsb ii_env);
+        p1r "read_register" ("reg", reg) ~returns:bv_64 (read_register ii_env);
+        p2 "write_register" ("data", bv_64) ("reg", reg) (write_register ii_env);
+        p2r "read_memory" ("addr", bv_64) ("size", integer) ~returns:bv_64
+          (read_memory ii_env);
+        p3r "read_memory_gen" ("addr", bv_64) ("size", integer)
+          ("accdesc", t_named "AccessDescriptor")
+          ~returns:bv_64 (read_memory_gen ii_env);
+        p3 "write_memory" ("addr", bv_64) ("size", integer)
+          ("data", bv_var "size")
+          (write_memory ii_env);
+        p4 "write_memory_gen" ("addr", bv_64) ("size", integer)
+          ("data", bv_var "size")
+          ("accdesc", t_named "AccessDescriptor")
+          (write_memory_gen ii_env);
+        p0r "SP_EL0" ~returns:bv_64 (read_sp ii_env);
+        p1 "SP_EL0" ("data", bv_64) (write_sp ii_env);
+        p1r "UInt"
+          ~parameters:[ ("N", None) ]
+          ("x", bv_var "N")
+          ~returns:integer uint;
+        p1r "SInt"
+          ~parameters:[ ("N", None) ]
+          ("x", bv_var "N")
+          ~returns:integer sint;
+        p0r "ProcessorID" ~returns:integer (processor_id ii_env);
+        p2r "CanPredictFrom"
+          ~parameters:[ ("N", None) ]
+          ("predicted", bv_var "N")
+          ("from", bv_var "N")
+          ~returns:(bv_var "N") can_predict_from;
+        p0r "SomeBoolean" ~returns:boolean somebool;
+        p1 "CheckProp" ("prop", boolean) checkprop;
       ]
 
     (**************************************************************************)
@@ -720,8 +675,7 @@ module Make (C : Config) = struct
       let module ASLBackend = struct
         type value = V.v
         type 'a m = 'a M.t
-        type primitive = value m list -> value m list m
-        type ast = primitive AST.t
+        type primitive = primitive_t
 
         let debug_value = V.pp_v
         let is_undetermined = function V.Var _ -> true | V.Val _ -> false
@@ -754,6 +708,7 @@ module Make (C : Config) = struct
         let concat_bitvectors = concat_bitvectors
         let bitvector_length = bitvector_length
         let v_unknown_of_type = v_unknown_of_type
+        let primitives = extra_funcs ii_env
       end in
       let module Config = struct
         let type_checking_strictness : Asllib.Typing.strictness =
@@ -768,19 +723,28 @@ module Make (C : Config) = struct
       end in
       let module ASLInterpreter = Asllib.Interpreter.Make (ASLBackend) (Config)
       in
-      let inst = Asllib.ASTUtils.no_primitive ii.A.inst in
       let ast =
-        let ( @! ) = List.rev_append in
-        if C.variant Variant.ASL_AArch64 then
+        if not (C.variant Variant.ASL_AArch64) then ii.A.inst
+        else
           let build ?ast_type version fname =
             Filename.concat "asl-pseudocode" fname
             |> C.libfind
             |> ASLBase.build_ast_from_file ?ast_type version
-            |> Asllib.ASTUtils.no_primitive
           in
           let patches = build `ASLv1 "patches.asl"
           and custom_implems = build `ASLv1 "implementations.asl"
           and shared = build `ASLv0 "shared_pseudocode.asl" in
+          let is_primitive =
+            let open AST in
+            let open ASTUtils in
+            let set =
+              List.fold_left
+                (fun [@warning "-42"] acc ({ name; body = _; _ }, _) ->
+                  ISet.add name acc)
+                ISet.empty ASLBackend.primitives
+            in
+            fun name -> ISet.mem name set
+          in
           let shared =
             (*
              * Remove from shared pseudocode the functions declared in stdlib because:
@@ -789,26 +753,30 @@ module Make (C : Config) = struct
              * 3. stdlib functions usually out-perform their shared-pseudocode
              *    counterparts when executed in herd.
              *)
-            (List.filter
-               AST.(
-                 fun d ->
-                   match d.desc with
-                   | D_Func { name;_} ->
-                      let is_stdlib = Asllib.Builder.is_stdlib_name name in
-                      let () =
-                        if false && is_stdlib then
-                          Printf.eprintf "Subprogram %s removed from shared\n%!" name in
-                      not is_stdlib
-                   | _ -> true)
-               shared [@warning "-40-42"])
+            let filter d =
+              let open AST in
+              match[@warning "-42"] d.desc with
+              | D_Func { name; body = _; _ } ->
+                  let should_remove =
+                    Asllib.Builder.is_stdlib_name name || is_primitive name
+                  in
+                  let () =
+                    if false && should_remove then
+                      Printf.eprintf "Subprogram %s removed from shared\n%!"
+                        name
+                  in
+                  not should_remove
+              | _ -> true
+            in
+            List.filter filter shared
           in
+          let ( @! ) = List.rev_append in
           let shared =
             Asllib.ASTUtils.patch
-              ~patches:(custom_implems @! patches @! extra_funcs ii_env)
+              ~patches:(custom_implems @! patches)
               ~src:shared
           in
-          inst @! shared
-        else inst @! extra_funcs ii_env
+          ii.A.inst @! shared
       in
       let () =
         if false then Format.eprintf "Completed AST: %a.@." Asllib.PP.pp_t ast
@@ -818,9 +786,11 @@ module Make (C : Config) = struct
           (fun loc v env ->
             let open ASLBase in
             match loc with
-            | A.Location_reg (_,ASLLocalId (AST.Scope_Global,name)) ->
-               (name,v)::env
-            | _ -> env) t.Test_herd.init_state [] in
+            | A.Location_reg (_, ASLLocalId (AST.Scope_Global, name)) ->
+                (name, v) :: env
+            | _ -> env)
+          t.Test_herd.init_state []
+      in
       let exec () = ASLInterpreter.run_env env ast in
       let* i =
         match Asllib.Error.intercept exec () with

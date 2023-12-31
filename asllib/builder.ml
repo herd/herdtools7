@@ -53,14 +53,13 @@ let from_lexbuf ast_type version (lexbuf : lexbuf) =
   match version with
   | `ASLv1 -> (
       let parse = select_type ~opn:Parser.opn ~ast:Parser.ast ast_type in
-      try parse Lexer.token lexbuf |> ASTUtils.no_primitive with
+      try parse Lexer.token lexbuf with
       | Parser.Error -> cannot_parse lexbuf
       | Lexer.LexerError -> unknown_symbol lexbuf)
   | `ASLv0 -> (
       let parse = select_type ~opn:Gparser0.opn ~ast:Gparser0.ast ast_type
       and lexer0 = Lexer0.token () in
-      try parse lexer0 lexbuf |> ASTUtils.no_primitive
-      with Parser0.Error -> cannot_parse lexbuf)
+      try parse lexer0 lexbuf with Parser0.Error -> cannot_parse lexbuf)
 
 let close_after chan f =
   try
@@ -172,29 +171,26 @@ let stdlib =
         let () = prerr_string stdlib_not_found_message in
         exit 1)
 
-let with_stdlib ast =
-  List.rev_append (Lazy.force stdlib |> ASTUtils.no_primitive) ast
+let with_stdlib ast = List.rev_append (Lazy.force stdlib) ast
 
 let extract_name k d =
   let open AST in
   match d.desc with
-  | D_Func {name;_}
-    -> name::k
+  | D_Func { name; _ } -> name :: k
   | D_TypeDecl _ ->
-     prerr_string  "Type declaration in stdlib.asl" ;
-     exit 1
+      prerr_string "Type declaration in stdlib.asl";
+      exit 1
   | D_GlobalStorage _ ->
-     prerr_string "Storage declaration in stdlib.asl" ;
-     exit 1
-
+      prerr_string "Storage declaration in stdlib.asl";
+      exit 1
 
 let is_stdlib_name =
-  let module StringSet = Set.Make(String) in
+  let open ASTUtils in
   let set =
     lazy
-      begin
-        let extract_names ds =
-          List.fold_left extract_name [] ds |> StringSet.of_list in
-        Lazy.force stdlib |> extract_names
-      end in
-  fun name -> StringSet.mem name (Lazy.force set)
+      (let extract_names ds =
+         List.fold_left extract_name [] ds |> ISet.of_list
+       in
+       Lazy.force stdlib |> extract_names)
+  in
+  fun name -> ISet.mem name (Lazy.force set)

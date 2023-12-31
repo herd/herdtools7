@@ -178,7 +178,7 @@ let () =
     if args.print_serialized then print_string (Serialize.t_to_string ast)
   in
 
-  let ast = List.rev_append Native.NativePrimitives.primitives ast in
+  let ast = List.rev_append Native.primitive_decls ast in
   let ast = Builder.with_stdlib ast in
 
   let () = if false then Format.eprintf "%a@." PP.pp_t ast in

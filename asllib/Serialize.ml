@@ -299,7 +299,7 @@ let pp_subprogram_type f st =
 
 let pp_body f = function
   | SB_ASL s -> bprintf f "SB_ASL (%a)" pp_stmt s
-  | SB_Primitive _ -> failwith "Cannot print a primitive."
+  | SB_Primitive -> addb f "SB_Primitive"
 
 let pp_decl f d =
   match d.desc with
