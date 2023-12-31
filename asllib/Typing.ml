@@ -1940,7 +1940,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     | LE_SetArray _ -> assert false
 
   (* Begin Subprogram *)
-  let annotate_subprogram loc (env : env) (f : 'p AST.func) : 'p AST.func =
+  let annotate_subprogram loc (env : env) (f : AST.func) : AST.func =
     let () = if false then Format.eprintf "Annotating %s.@." f.name in
     (* Build typing local environment. *)
     let env1 = { env with local = empty_local_return_type f.return_type } in
@@ -2000,7 +2000,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     *)
     (* Annotate body *)
     let body =
-      match f.body with SB_ASL body -> body | SB_Primitive _ -> assert false
+      match f.body with SB_ASL body -> body | SB_Primitive -> assert false
     in
     let new_body = try_annotate_block env5 body in
     (* Optionnally rename the function if needs be *)
@@ -2034,7 +2034,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   (*                                                                            *)
   (******************************************************************************)
 
-  let declare_one_func loc (func_sig : 'a func) env =
+  let declare_one_func loc (func_sig : func) env =
     let env, name' =
       best_effort (env, func_sig.name) @@ fun _ ->
       FunctionRenaming.add_new_func loc env func_sig.name func_sig.args
@@ -2050,7 +2050,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           (pp_print_list ~pp_sep:pp_print_space PP.pp_typed_identifier)
           func_sig.args
     in
-    add_subprogram name' (ast_func_to_func_sig func_sig) env
+    add_subprogram name' func_sig env
 
   let declare_const loc name t v env =
     if IMap.mem name env.global.storage_types then
@@ -2233,7 +2233,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     ASTUtils.dag_fold def use process_one_decl ast
 
-  let rename_primitive loc env (f : 'a AST.func) =
+  let rename_primitive loc env (f : AST.func) =
     let name =
       best_effort f.name @@ fun _ ->
       let _, name, _, _ =
@@ -2261,7 +2261,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
       match d.desc with
       | D_Func ({ body = SB_ASL _; _ } as f) ->
           D_Func (try_annotate_subprogram d env f) |> here
-      | D_Func ({ body = SB_Primitive _; _ } as f) ->
+      | D_Func ({ body = SB_Primitive; _ } as f) ->
           D_Func (rename_primitive d env f) |> here
       | D_GlobalStorage gsd ->
           D_GlobalStorage (try_annotate_gsd env gsd) |> here

@@ -25,13 +25,12 @@ open ASTUtils
 
 module type RunTimeConf = sig
   type v
-  type primitive
 
   val unroll : int
 end
 
 module RunTime (C : RunTimeConf) = struct
-  type func = int ref * C.primitive AST.func
+  type func = int ref * AST.func
 
   type global = {
     static : StaticEnv.global;

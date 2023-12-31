@@ -216,7 +216,7 @@ val expr_of_lexpr : lexpr -> expr
 val case_to_conds : stmt -> stmt
 val slice_as_single : slice -> expr
 
-val patch : src:'p AST.t -> patches:'p AST.t -> 'p AST.t
+val patch : src:AST.t -> patches:AST.t -> AST.t
 (** [patch ~src ~patches] replaces in [src] the global identifiers defined by [patches]. *)
 
 val subst_expr : (identifier * expr) list -> expr -> expr
@@ -230,11 +230,7 @@ val subst_expr : (identifier * expr) list -> expr -> expr
       [E_Slice (E_Var "x", [Slice_Single (E_Var "y")])]
 *)
 
-val no_primitive : 'p AST.t -> 'q AST.t
-(** [no_primitive parsed_ast] is [parsed_ast] if does not contains any
-    primitive. Otherwise, it fails with an assert false. *)
-
-val rename_locals : (identifier -> identifier) -> 'p AST.t -> 'p AST.t
+val rename_locals : (identifier -> identifier) -> AST.t -> AST.t
 (** [rename_locals f ast] is [ast] where all instances of variables [x] are
     replaced with [f x]. *)
 
@@ -247,18 +243,18 @@ val is_simple_expr : expr -> bool
 val use_e : ISet.t -> expr -> ISet.t
 val use_ty : ISet.t -> ty -> ISet.t
 
-val use_constant_decl : ISet.t -> 'a decl -> ISet.t
+val use_constant_decl : ISet.t -> decl -> ISet.t
 (** [use_constant_decl d] is the set of other declared names required to have
     in the environment to be able to type-check d. *)
 
-val used_identifiers : 'p decl list -> ISet.t
+val used_identifiers : decl list -> ISet.t
 val used_identifiers_stmt : stmt -> ISet.t
 
 val dag_fold :
-  ('p decl -> identifier) ->
-  ('p decl -> ISet.t) ->
-  ('p decl -> 'a -> 'a) ->
-  'p t ->
+  (decl -> identifier) ->
+  (decl -> ISet.t) ->
+  (decl -> 'a -> 'a) ->
+  t ->
   'a ->
   'a
 (** [dag_fold def use folder ast a] is [a |> f d_1 |> ... f d_n] where [d_i]

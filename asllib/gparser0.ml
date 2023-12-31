@@ -88,8 +88,8 @@ let list_first (f : 'a -> 'b result) : 'a list -> 'b result =
   | [] -> assert false
   | x :: t -> ( match f x with Ok res -> Ok res | Error e1 -> aux e1 t)
 
-let try_in_order (process : lexer_state -> token -> unit AST.t) lexer_state :
-    token list -> unit AST.t =
+let try_in_order (process : lexer_state -> token -> AST.t) lexer_state :
+    token list -> AST.t =
   let one_possibility tok =
     if _dbg then Format.eprintf "@[<hv 4>Trying %s :@ @[<hov>" (toks tok);
     try
@@ -107,7 +107,7 @@ let try_in_order (process : lexer_state -> token -> unit AST.t) lexer_state :
     | Error e -> Error.fatal e
 
 (** Main loop of the interpreter. Inspired by menhir documentation. *)
-let rec loop lexer_state (p1, p2) : 'a I.checkpoint -> unit AST.t = function
+let rec loop lexer_state (p1, p2) : 'a I.checkpoint -> AST.t = function
   | I.InputNeeded _ as cpt -> (
       let tok, p1, p2 = RL.get lexer_state in
       let () =
@@ -152,7 +152,7 @@ and continue cpt (p1, p2) lexer_state tok =
   loop lexer_state (p1, p2) @@ I.offer cpt (tok, p1, p2)
 
 (** Alternative entry-point for this module. This one take directly a repeatableLexer. *)
-let parse_repeatable parse lexer_state lexbuf : unit AST.t =
+let parse_repeatable parse lexer_state lexbuf : AST.t =
   if _dbg then Format.eprintf "@[<v 4>Starting parsing...@ @[<hov 4>";
   let first_checkpoint = parse lexbuf.lex_curr_p in
   let res =
@@ -175,7 +175,7 @@ let ast_chunk lexbuf =
 
 let as_chunks = true
 
-let ast (lexer : lexbuf -> token) (lexbuf : lexbuf) : unit AST.t =
+let ast (lexer : lexbuf -> token) (lexbuf : lexbuf) : AST.t =
   if as_chunks then
     let fname = lexbuf.Lexing.lex_curr_p.Lexing.pos_fname in
     let asts =
@@ -199,7 +199,7 @@ let ast (lexer : lexbuf -> token) (lexbuf : lexbuf) : unit AST.t =
     let lexer_state = RL.of_lexer_lexbuf is_eof lexer lexbuf in
     parse_repeatable Parser0.Incremental.ast lexer_state lexbuf
 
-let opn (lexer : lexbuf -> token) (lexbuf : lexbuf) : unit AST.t =
+let opn (lexer : lexbuf -> token) (lexbuf : lexbuf) : AST.t =
   let () =
     if _dbg then
       Format.eprintf "Starting parsing opn in file %s@."

@@ -12,8 +12,6 @@ ASL Typing Reference:
     provided (integer {1}, T2).
   [1]
   $ aslref TypingRule.Block0.asl
-  File TypingRule.Block0.asl, line 5, characters 9 to 19:
-  ASL Error: Arity error while calling 'print':
-    0 arguments expected and 1 provided
-  [1]
+  3
+  Some text
 //  $ aslref TypingRule.EConcatUnresolvableToInteger.asl

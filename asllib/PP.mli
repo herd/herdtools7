@@ -64,7 +64,7 @@ val pp_slice_list : slice list printer
 val pp_int_constraints : int_constraint list printer
 (** Pretty-print a list of int constraints. *)
 
-val pp_t : 'p t printer
+val pp_t : t printer
 (** Print an AST from printer for a literal *)
 
 val pp_version : [ `ASLv0 | `ASLv1 | `Any ] printer
@@ -87,6 +87,6 @@ val unop_to_string : unop -> string
 val ty_to_string : ty -> string
 (** Converts a type into a string. *)
 
-val t_to_string : 'p t -> string
+val t_to_string : t -> string
 (** [t_to_string v_to_string ast] is a string representing [ast] with literals
     printed with [v_to_string].*)

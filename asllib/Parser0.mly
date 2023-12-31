@@ -173,8 +173,8 @@
 %type <AST.stmt> simple_stmts
 %type <AST.stmt> simple_stmt_list
 %type <AST.stmt> stmts
-%type <unit AST.t> ast
-%type <unit AST.t> opn
+%type <AST.t> ast
+%type <AST.t> opn
 %start ast
 %start opn
 

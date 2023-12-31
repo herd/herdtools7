@@ -61,7 +61,6 @@ module NativeBackend = struct
   type 'a m = 'a
   type value = native_value
   type primitive = value m list -> value list m
-  type ast = primitive AST.t
   type scope = AST.identifier * int
 
   module ScopedIdentifiers = struct
@@ -226,219 +225,134 @@ module NativeBackend = struct
   let bitvector_length bv =
     let bv = as_bitvector bv in
     Bitvector.length bv |> v_of_int
+
+  module Primitives = struct
+    let return_one v = return [ return v ]
+
+    let uint = function
+      | [ NV_Literal (L_BitVector bv) ] ->
+          L_Int (Bitvector.to_z_unsigned bv) |> nv_literal |> return_one
+      | [ v ] -> mismatch_type v [ integer' ]
+      | li ->
+          Error.fatal_unknown_pos @@ Error.BadArity ("UInt", 1, List.length li)
+
+    let sint = function
+      | [ NV_Literal (L_BitVector bv) ] ->
+          L_Int (Bitvector.to_z_signed bv) |> nv_literal |> return_one
+      | [ v ] -> mismatch_type v [ default_t_bits ]
+      | li ->
+          Error.fatal_unknown_pos @@ Error.BadArity ("SInt", 1, List.length li)
+
+    let print =
+      let print_one = function
+        | NV_Literal (L_String s) -> print_string s
+        | v -> mismatch_type v [ T_String ]
+      in
+      fun li ->
+        List.iter print_one li;
+        Printf.printf "\n%!";
+        return []
+
+    let dec_str = function
+      | [ NV_Literal (L_Int i) ] ->
+          L_String (Z.to_string i) |> nv_literal |> return_one
+      | [ v ] -> mismatch_type v [ integer' ]
+      | li ->
+          Error.fatal_unknown_pos @@ Error.BadArity ("DecStr", 1, List.length li)
+
+    let hex_str = function
+      | [ NV_Literal (L_Int i) ] ->
+          L_String (Printf.sprintf "%a" Z.sprint i) |> nv_literal |> return_one
+      | [ v ] -> mismatch_type v [ integer' ]
+      | li ->
+          Error.fatal_unknown_pos @@ Error.BadArity ("DecStr", 1, List.length li)
+
+    let ascii_range = Constraint_Range (!$0, !$127)
+    let ascii_integer = T_Int (WellConstrained [ ascii_range ])
+
+    let ascii_str =
+      let open! Z in
+      function
+      | [ NV_Literal (L_Int i) ] when geq zero i && leq ~$127 i ->
+          L_String (char_of_int (Z.to_int i) |> String.make 1)
+          |> nv_literal |> return_one
+      | [ v ] -> mismatch_type v [ ascii_integer ]
+      | li ->
+          Error.fatal_unknown_pos @@ Error.BadArity ("DecStr", 1, List.length li)
+
+    let log2 = function
+      | [ NV_Literal (L_Int i) ] when Z.gt i Z.zero ->
+          [ L_Int (Z.log2 i |> Z.of_int) |> nv_literal ]
+      | [ v ] -> mismatch_type v [ integer' ]
+      | li ->
+          Error.fatal_unknown_pos @@ Error.BadArity ("Log2", 1, List.length li)
+
+    let int_to_real = function
+      | [ NV_Literal (L_Int i) ] ->
+          L_Real (Q.of_bigint i) |> nv_literal |> return_one
+      | [ v ] -> mismatch_type v [ integer' ]
+      | li ->
+          Error.fatal_unknown_pos @@ Error.BadArity ("Real", 1, List.length li)
+
+    let truncate q = Q.to_bigint q
+
+    let floor q =
+      if Q.sign q = -1 then
+        if Q.den q = Z.one then Q.num q else truncate q |> Z.pred
+      else truncate q
+
+    let ceiling q =
+      if Q.sign q = 1 then
+        if Q.den q = Z.one then Q.num q else truncate q |> Z.succ
+      else truncate q
+
+    let wrap_real_to_int name f = function
+      | [ NV_Literal (L_Real q) ] -> L_Int (f q) |> nv_literal |> return_one
+      | [ v ] -> mismatch_type v [ T_Real ]
+      | li -> Error.fatal_unknown_pos @@ Error.BadArity (name, 1, List.length li)
+
+    let round_down = wrap_real_to_int "RoundDown" floor
+    let round_up = wrap_real_to_int "RoundUp" ceiling
+    let round_towards_zero = wrap_real_to_int "RoundTowardsZero" truncate
+
+    let primitives =
+      let t_bits e = T_Bits (e, []) |> add_dummy_pos in
+      let e_var x = E_Var x |> add_dummy_pos in
+      let p ?(parameters = []) ~args ?returns name f =
+        let subprogram_type =
+          match returns with None -> ST_Procedure | _ -> ST_Function
+        in
+        let body = SB_Primitive and return_type = returns in
+        ({ name; parameters; args; body; return_type; subprogram_type }, f)
+      in
+      [
+        p
+          ~parameters:[ ("N", None) ]
+          ~args:[ ("x", t_bits (e_var "N")) ]
+          ~returns:integer "UInt" uint;
+        p
+          ~parameters:[ ("N", None) ]
+          ~args:[ ("x", t_bits (e_var "N")) ]
+          ~returns:integer "SInt" sint;
+        p ~args:[ ("x", integer) ] ~returns:string "DecStr" dec_str;
+        p ~args:[ ("x", integer) ] ~returns:string "HexStr" hex_str;
+        p ~args:[ ("x", integer) ] ~returns:string "AsciiStr" ascii_str;
+        p ~args:[ ("x", integer) ] ~returns:integer "Log2" log2;
+        p ~args:[ ("x", integer) ] ~returns:real "Real" int_to_real;
+        p ~args:[ ("x", real) ] ~returns:integer "RoundDown" round_down;
+        p ~args:[ ("x", real) ] ~returns:integer "RoundUp" round_up;
+        p
+          ~args:[ ("x", real) ]
+          ~returns:integer "RoundTowardsZero" round_towards_zero;
+        p ~args:[ ("x", string) ] "print" print;
+      ]
+  end
+
+  let primitives = Primitives.primitives
 end
 
-module NativePrimitives = struct
-  open NativeBackend
-
-  let return_one v = return [ return v ]
-
-  let uint = function
-    | [ NV_Literal (L_BitVector bv) ] ->
-        L_Int (Bitvector.to_z_unsigned bv) |> nv_literal |> return_one
-    | [ v ] -> mismatch_type v [ integer' ]
-    | li -> Error.fatal_unknown_pos @@ Error.BadArity ("UInt", 1, List.length li)
-
-  let sint = function
-    | [ NV_Literal (L_BitVector bv) ] ->
-        L_Int (Bitvector.to_z_signed bv) |> nv_literal |> return_one
-    | [ v ] -> mismatch_type v [ default_t_bits ]
-    | li -> Error.fatal_unknown_pos @@ Error.BadArity ("SInt", 1, List.length li)
-
-  let print =
-    let print_one = function
-      | NV_Literal (L_String s) -> print_string s
-      | v -> mismatch_type v [ T_String ]
-    in
-    fun li ->
-      List.iter print_one li;
-      Printf.printf "\n%!";
-      return []
-
-  let dec_str = function
-    | [ NV_Literal (L_Int i) ] ->
-        L_String (Z.to_string i) |> nv_literal |> return_one
-    | [ v ] -> mismatch_type v [ integer' ]
-    | li ->
-        Error.fatal_unknown_pos @@ Error.BadArity ("DecStr", 1, List.length li)
-
-  let hex_str = function
-    | [ NV_Literal (L_Int i) ] ->
-        L_String (Printf.sprintf "%a" Z.sprint i) |> nv_literal |> return_one
-    | [ v ] -> mismatch_type v [ integer' ]
-    | li ->
-        Error.fatal_unknown_pos @@ Error.BadArity ("DecStr", 1, List.length li)
-
-  let ascii_range = Constraint_Range (!$0, !$127)
-  let ascii_integer = T_Int (WellConstrained [ ascii_range ])
-
-  let ascii_str =
-    let open! Z in
-    function
-    | [ NV_Literal (L_Int i) ] when geq zero i && leq ~$127 i ->
-        L_String (char_of_int (Z.to_int i) |> String.make 1)
-        |> nv_literal |> return_one
-    | [ v ] -> mismatch_type v [ ascii_integer ]
-    | li ->
-        Error.fatal_unknown_pos @@ Error.BadArity ("DecStr", 1, List.length li)
-
-  let log2 = function
-    | [ NV_Literal (L_Int i) ] when Z.gt i Z.zero ->
-        [ L_Int (Z.log2 i |> Z.of_int) |> nv_literal ]
-    | [ v ] -> mismatch_type v [ integer' ]
-    | li -> Error.fatal_unknown_pos @@ Error.BadArity ("Log2", 1, List.length li)
-
-  let int_to_real = function
-    | [ NV_Literal (L_Int i) ] ->
-        L_Real (Q.of_bigint i) |> nv_literal |> return_one
-    | [ v ] -> mismatch_type v [ integer' ]
-    | li -> Error.fatal_unknown_pos @@ Error.BadArity ("Real", 1, List.length li)
-
-  let truncate q = Q.to_bigint q
-
-  let floor q =
-    if Q.sign q = -1 then
-      if Q.den q = Z.one then Q.num q else truncate q |> Z.pred
-    else truncate q
-
-  let ceiling q =
-    if Q.sign q = 1 then
-      if Q.den q = Z.one then Q.num q else truncate q |> Z.succ
-    else truncate q
-
-  let wrap_real_to_int name f = function
-    | [ NV_Literal (L_Real q) ] -> L_Int (f q) |> nv_literal |> return_one
-    | [ v ] -> mismatch_type v [ T_Real ]
-    | li -> Error.fatal_unknown_pos @@ Error.BadArity (name, 1, List.length li)
-
-  let round_down = wrap_real_to_int "RoundDown" floor
-  let round_up = wrap_real_to_int "RoundUp" ceiling
-  let round_towards_zero = wrap_real_to_int "RoundTowardsZero" truncate
-
-  let primitives =
-    let with_pos = add_dummy_pos in
-    let t_bits e = T_Bits (e, []) |> with_pos in
-    let e_var x = E_Var x |> with_pos in
-    let d_func_string i =
-      D_Func
-        {
-          name = "print";
-          parameters = [];
-          args = List.init i (fun j -> ("s" ^ string_of_int j, string));
-          body = SB_Primitive print;
-          return_type = None;
-          subprogram_type = ST_Procedure;
-        }
-    in
-    let here = ASTUtils.add_pos_from_pos_of in
-    [
-      D_Func
-        {
-          name = "UInt";
-          parameters = [ ("N", Some integer) ];
-          args = [ ("x", t_bits (e_var "N")) ];
-          body = SB_Primitive uint;
-          return_type = Some integer;
-          subprogram_type = ST_Function;
-        }
-      |> __POS_OF__ |> here;
-      D_Func
-        {
-          name = "SInt";
-          parameters = [ ("N", Some integer) ];
-          args = [ ("x", t_bits (e_var "N")) ];
-          body = SB_Primitive sint;
-          return_type = Some integer;
-          subprogram_type = ST_Function;
-        }
-      |> __POS_OF__ |> here;
-      D_Func
-        {
-          name = "DecStr";
-          parameters = [];
-          args = [ ("x", integer) ];
-          body = SB_Primitive dec_str;
-          return_type = Some string;
-          subprogram_type = ST_Function;
-        }
-      |> __POS_OF__ |> here;
-      D_Func
-        {
-          name = "HexStr";
-          parameters = [];
-          args = [ ("x", integer) ];
-          body = SB_Primitive hex_str;
-          return_type = Some string;
-          subprogram_type = ST_Function;
-        }
-      |> __POS_OF__ |> here;
-      D_Func
-        {
-          name = "AsciiStr";
-          parameters = [];
-          args = [ ("x", integer) ];
-          body = SB_Primitive ascii_str;
-          return_type = Some string;
-          subprogram_type = ST_Function;
-        }
-      |> __POS_OF__ |> here;
-      D_Func
-        {
-          name = "Log2";
-          parameters = [];
-          args = [ ("x", integer) ];
-          body = SB_Primitive log2;
-          return_type = Some integer;
-          subprogram_type = ST_Function;
-        }
-      |> __POS_OF__ |> here;
-      D_Func
-        {
-          name = "Real";
-          parameters = [];
-          args = [ ("x", integer) ];
-          body = SB_Primitive int_to_real;
-          return_type = Some real;
-          subprogram_type = ST_Function;
-        }
-      |> __POS_OF__ |> here;
-      D_Func
-        {
-          name = "RoundDown";
-          parameters = [];
-          args = [ ("x", real) ];
-          body = SB_Primitive round_down;
-          return_type = Some integer;
-          subprogram_type = ST_Function;
-        }
-      |> __POS_OF__ |> here;
-      D_Func
-        {
-          name = "RoundUp";
-          parameters = [];
-          args = [ ("x", real) ];
-          body = SB_Primitive round_up;
-          return_type = Some integer;
-          subprogram_type = ST_Function;
-        }
-      |> __POS_OF__ |> here;
-      D_Func
-        {
-          name = "RoundTowardsZero";
-          parameters = [];
-          args = [ ("x", real) ];
-          body = SB_Primitive round_towards_zero;
-          return_type = Some integer;
-          subprogram_type = ST_Function;
-        }
-      |> __POS_OF__ |> here;
-      d_func_string 0 |> __POS_OF__ |> here;
-      d_func_string 1 |> __POS_OF__ |> here;
-      d_func_string 2 |> __POS_OF__ |> here;
-      d_func_string 3 |> __POS_OF__ |> here;
-      d_func_string 4 |> __POS_OF__ |> here;
-    ]
-end
+let primitive_decls =
+  List.map (fun (f, _) -> D_Func f |> add_dummy_pos) NativeBackend.primitives
 
 module NativeInterpreter (C : Interpreter.Config) =
   Interpreter.Make (NativeBackend) (C)
@@ -467,8 +381,6 @@ let interprete strictness ?instrumentation ?static_env ast =
   let res =
     match static_env with
     | Some static_env -> I.run_typed ast static_env
-    | None ->
-        let ast = List.rev_append NativePrimitives.primitives ast in
-        I.run ast
+    | None -> I.run ast
   in
   (exit_value res, B.get ())

@@ -666,7 +666,7 @@ let rec type_clashes env t s =
   |: TypingRule.TypeClash
 (* End *)
 
-let subprogram_clashes env (f1 : 'a func) (f2 : 'b func) =
+let subprogram_clashes env (f1 : func) (f2 : func) =
   (* Two subprograms clash if all of the following hold:
       • they have the same name
       • they are the same kind of subprogram

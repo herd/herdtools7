@@ -30,16 +30,16 @@ type version = [ `ASLv0 | `ASLv1 ]
 type version_selector = [ `ASLv0 | `ASLv1 | `Any ]
 
 val from_file_result :
-  ?ast_type:ast_type -> version -> string -> 'p AST.t Error.result
+  ?ast_type:ast_type -> version -> string -> AST.t Error.result
 
-val from_file : ?ast_type:ast_type -> version -> string -> 'p AST.t
+val from_file : ?ast_type:ast_type -> version -> string -> AST.t
 
 val from_lexer_lexbuf :
-  ?ast_type:ast_type -> version -> 'a -> lexbuf -> 'p AST.t Error.result
+  ?ast_type:ast_type -> version -> 'a -> lexbuf -> AST.t Error.result
 
 val from_file_multi_version :
-  ?ast_type:ast_type -> version_selector -> string -> 'p AST.t Error.result
+  ?ast_type:ast_type -> version_selector -> string -> AST.t Error.result
 
-val stdlib : unit AST.t Lazy.t
-val with_stdlib : 'a AST.t -> 'a AST.t
+val stdlib : AST.t Lazy.t
+val with_stdlib : AST.t -> AST.t
 val is_stdlib_name : AST.identifier -> bool

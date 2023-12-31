@@ -128,7 +128,7 @@ val type_clashes : env -> ty -> ty -> bool
     per Definition VPZZ.
 *)
 
-val subprogram_clashes : env -> 'a func -> 'b func -> bool
+val subprogram_clashes : env -> func -> func -> bool
 (** Subprogram clashing relation.
 
     per Definition BTBR.
