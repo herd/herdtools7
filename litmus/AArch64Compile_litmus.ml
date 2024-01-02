@@ -292,7 +292,7 @@ module Make(V:Constant.S)(C:Config) =
          let i,fi = do_arg1i v rB 1 in
          { empty_ins with
            memo=
-             sprintf "%s ^%s,[^i0,%s,%s,#%d]"
+             sprintf "%s ^%s,[^i0,%s,%s #%d]"
                memo fd fi (pp_mem_sext se) k;
            inputs=[rA]@i;
            outputs=[rD];
@@ -1261,6 +1261,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_TBZ (v,r,k2,lbl) -> tbz tr_lab "tbz" v r k2 lbl::k
 (* Load and Store *)
     | I_LDR (v,r1,r2,idx) -> load "ldr" v r1 r2 idx::k
+    | I_LDRSW (r1,r2,idx) -> load "ldrsw" V64 r1 r2 idx::k
     | I_LDUR (v,r1,r2,Some(k')) -> load "ldur" v r1 r2 (MemExt.k2idx k')::k
     | I_LDUR (v,r1,r2,None) -> load "ldur" v r1 r2 (MemExt.k2idx 0)::k
     | I_LDP (t,v,r1,r2,r3,kr,md) ->
@@ -1275,8 +1276,8 @@ module Make(V:Constant.S)(C:Config) =
         storex_pair (Misc.lowercase (stxp_memo t)) v r1 r2 r3 r4::k
     | I_LDRBH (B,r1,r2,idx) -> load "ldrb" V32 r1 r2 idx::k
     | I_LDRBH (H,r1,r2,idx) -> load "ldrh" V32 r1 r2 idx::k
-    | I_LDRS (var,B,r1,r2) -> load "ldrsb" var r1 r2 MemExt.zero::k
-    | I_LDRS (var,H,r1,r2) -> load "ldrsh" var r1 r2 MemExt.zero::k
+    | I_LDRS ((var,bh),r1,r2,idx) ->
+       load (ldrs_memo bh |> Misc.lowercase)  var r1 r2 idx::k
     | I_LDAR (v,t,r1,r2) -> load (ldr_memo t) v r1 r2 MemExt.zero::k
     | I_LDARBH (bh,t,r1,r2) -> load (ldrbh_memo bh t) V32 r1 r2 MemExt.zero::k
     | I_STR (v,r1,r2,idx) -> store "str" v r1 r2 idx::k

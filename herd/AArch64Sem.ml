@@ -89,12 +89,21 @@ module Make
       let (>>!) = M.(>>!)
       let (>>::) = M.(>>::)
 
+      let sxt_op sz =  M.op1 (Op.Sxt sz)
+      and uxt_op sz =
+        match sz with
+        | MachSize.Quad when not morello  -> M.unitT
+        | _ ->
+           M.op1 (Op.Mask sz)
+      let sxtw_op = sxt_op MachSize.Word
+      and uxtw_op = uxt_op MachSize.Word
+
       let mask32 ty m =
         let open AArch64Base in
         match ty with
-        | V32 -> fun v -> M.op1 (Op.Mask MachSize.Word) v >>= m
+        | V32 -> fun v -> uxtw_op v >>= m
         | V64 when not morello -> m
-        | V64 -> fun v -> M.op1 (Op.Mask MachSize.Quad) v >>= m
+        | V64 -> fun v -> uxt_op MachSize.Quad v >>= m
         | V128 -> m
 
       let is_zero v = M.op Op.Eq v V.zero
@@ -160,7 +169,7 @@ module Make
       | MachSize.S128 -> read_reg_morello is_data r ii
       | MachSize.Quad when not morello || not is_data -> read_reg is_data r ii
       | MachSize.Quad|MachSize.Word|MachSize.Short|MachSize.Byte ->
-          read_reg is_data r ii >>= fun v -> M.op1 (Op.Mask sz) v
+          read_reg is_data r ii >>= uxt_op sz
 
       let read_reg_ord = read_reg_sz quad false
       let read_reg_ord_sz sz = read_reg_sz sz false
@@ -215,7 +224,7 @@ module Make
         | AArch64Base.Vreg(vr',_) -> (AArch64Base.SIMDreg vr')
         | _ -> assert false in
           (* Clear unused register bits (zero extend) *)
-          M.op1 (Op.Mask sz) v >>= fun v ->
+          uxt_op sz v >>= fun v ->
           let location = A.Location_reg (ii.A.proc,vr) in
           M.write_loc (mk_write MachSize.S128 Annot.N aexp Access.REG v) location ii
 
@@ -242,17 +251,19 @@ module Make
             M.op1 (op sz) v >>= fun v -> write_reg r v ii
 
       let write_reg_sz = do_write_reg_sz (fun sz -> Op.Mask sz)
-      and write_reg_sz_sxt = do_write_reg_sz (fun sz -> Op.Sxt sz)
+
+      let write_reg_op op sz r v ii =
+        match r with
+        | AArch64.ZR -> M.unitT ()
+        | _ ->
+           match sz with
+           | MachSize.S128 -> write_reg_morello r v ii
+           | MachSize.Quad|MachSize.Word|MachSize.Short|MachSize.Byte ->
+              op v >>= fun v -> write_reg r v ii
 
       let write_reg_sz_non_mixed =
         if mixed then fun _sz -> write_reg
         else write_reg_sz
-
-      and write_reg_sz_non_mixed_sxt =
-        if mixed then
-          fun sz r v ii ->
-          M.op1 (Op.Sxt sz) v >>= fun v -> write_reg r v ii
-        else write_reg_sz_sxt
 
 (* Emit commit event *)
       let commit_bcc ii = M.mk_singleton_es (Act.Commit (Act.Bcc,None)) ii
@@ -745,15 +756,12 @@ module Make
         else m a
 
 (* Save value read in register rd *)
-      let do_read_mem sz an anexp ac rd a ii =
+      let do_read_mem_op op sz an anexp ac rd a ii =
         do_read_mem_ret sz an anexp ac a ii
-        >>= fun v -> write_reg_sz_non_mixed sz rd v ii
+        >>= fun v -> write_reg_op op sz rd v ii
         >>= fun () -> B.nextT
 
-      and do_read_mem_sxt sz an anexp ac rd a ii =
-        do_read_mem_ret sz an anexp ac a ii
-        >>= fun v -> write_reg_sz_non_mixed_sxt sz rd v ii
-        >>= fun () -> B.nextT
+      let do_read_mem sz  = do_read_mem_op (M.op1 (Op.Mask sz)) sz
 
       let read_mem_acquire sz = do_read_mem sz Annot.A
       let read_mem_acquire_pc sz = do_read_mem sz Annot.Q
@@ -771,11 +779,11 @@ module Make
       (* Post-Indexed load immediate.
          Note: a (effective address) can be physical address,
          while postindex must apply to virtual address. *)
-      let read_mem_postindexed a_virt sz an anexp ac rd rs k a ii =
+      let read_mem_postindexed a_virt op sz an anexp ac rd rs k a ii =
         let m a =
           begin
             (M.add a_virt (V.intToV k) >>= fun b -> write_reg rs b ii)
-            >>| do_read_mem sz an anexp ac rd a ii
+            >>| do_read_mem_op op sz an anexp ac rd a ii
           end >>= fun ((),r) -> M.unitT r in
         if morello then
           M.op1 Op.CapaStrip a >>= m
@@ -1224,11 +1232,7 @@ module Make
         | 0 -> M.unitT
         | _ -> M.op1 op
 
-      let sxt_op sz =  M.op1 (Op.Sxt sz)
-      and uxt_op sz =  M.op1 (Op.Mask sz)
-      let sxtw_op = sxt_op MachSize.Word
-      and uxtw_op = uxt_op MachSize.Word
-      and lsl_op k = do_shift (Op.LeftShift k) k
+      let  lsl_op k = do_shift (Op.LeftShift k) k
       and lsr_op sz k v =
         uxt_op sz v >>= do_shift (Op.LogicalRightShift k) k
       and asr_op sz k v =
@@ -1330,10 +1334,11 @@ module Make
         write_reg rA new_addr ii
 
 (* Ordinary loads *)
-      let ldr sz rd rs e ii =
+      let ldr0 op sz rd rs e ii =
         let open AArch64Base in
         let open MemExt in
-        let mop ac a = do_read_mem sz Annot.N aexp ac rd a ii in
+        let mop ac a =
+          do_read_mem_op op sz Annot.N aexp ac rd a ii in
         match e with
         | Imm (k,Idx) ->
            do_ldr rs sz Annot.N mop (get_ea_idx rs k ii) ii
@@ -1347,13 +1352,31 @@ module Make
             * of the "read memory" monad, which thus departs
             * from the ordinary `do_read_mem`.
             *)
-           M.delay_kont "ldr_p"
+           M.delay_kont "ldr_postindex"
              (read_reg_ord rs ii)
              (fun a_virt ma ->
                do_ldr rs sz Annot.N
                  (fun ac a ->
-                   read_mem_postindexed a_virt sz Annot.N aexp ac rd rs k a ii)
+                   read_mem_postindexed
+                     a_virt op sz Annot.N aexp ac rd rs k a ii)
                  ma ii)
+
+      let ldr sz = ldr0 (uxt_op sz) sz
+      and ldrsw rd rs e ii =
+        let sz = MachSize.Word in
+        ldr0 (sxt_op sz) sz rd rs e ii
+      and ldrs sz var =
+        (*
+         * Load signed - sign extends to either 32 or 64 bit value
+         * load either 8 or 16 bit value (sz),
+         * then sign extend based on register size (var)
+         *)
+        let op = match var with
+          | MachSize.Quad -> sxt_op sz
+          | MachSize.Word ->
+             fun v -> sxt_op sz v >>=  uxt_op MachSize.Word
+          | _ -> assert false in
+        ldr0 op sz
 
       module LoadPair
           (Read:
@@ -1429,7 +1452,7 @@ module Make
         let module LDPSW =
           LoadPair
             (struct
-              let read_mem = do_read_mem_sxt
+              let read_mem = do_read_mem_op sxtw_op
             end) in
         LDPSW.ldp AArch64.Pa MachSize.Word
 
@@ -1562,18 +1585,7 @@ module Make
         | AArch64.PreIdx ->
             stp_wback sz an rs1 rs2 rd k false ii
 
-      (* Load signed - sign extends to either 32 or 64 bit value*)
-      let ldrs sz var rd rs kr s ii =
-        (* load either 8 or 16 bit value (sz),
-        then sign extend based on register size (var) *)
-        do_ldr rs sz Annot.N
-          (fun ac a -> do_read_mem_ret sz Annot.N aexp ac a ii
-            >>= M.op1 (Op.Sxt sz)
-            >>= fun v2 -> write_reg_sz_non_mixed
-              (AArch64.tr_variant var) rd v2 ii)
-          (get_ea rs kr s ii) ii
-
-      and stlr sz rs rd ii =
+      let stlr sz rs rd ii =
         do_str rd (do_write_mem sz Annot.L aexp) sz Annot.L
           (read_reg_ord rd ii) (read_reg_data sz rs ii) ii
 
@@ -2396,12 +2408,14 @@ module Make
         | I_LDR(var,rd,rs,e) ->
             let sz = tr_variant var in
             ldr sz rd rs e ii
+        | I_LDRSW(rd,rs,e) ->
+            ldrsw rd rs e ii
         | I_LDRBH (bh, rd, rs, e) ->
             let sz = bh_to_sz bh in
             ldr sz rd rs e ii
-        | I_LDRS (v, bh, rd, rs) ->
+        | I_LDRS ((v, bh), rd, rs, e) ->
             let sz = bh_to_sz bh in
-            ldrs sz v rd rs (AArch64.K 0) S_NOEXT ii
+            ldrs sz (tr_variant v) rd rs e ii
         | I_LDUR(var,rd,rs,k) ->
             let sz = tr_variant var in
             let k = match k with Some k -> k | None -> 0 in

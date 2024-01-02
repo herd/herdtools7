@@ -1011,6 +1011,8 @@ let pp_bh = function
   | B -> "B"
   | H -> "H"
 
+let ldrs_memo bh = "LDRS" ^ pp_bh bh
+
 let bh_to_sz = function
   | B -> MachSize.Byte
   | H -> MachSize.Short
@@ -1061,6 +1063,7 @@ type 'k kinstruction =
   | I_ERET
 (* Load and Store *)
   | I_LDR of variant * reg * reg * 'k MemExt.ext
+  | I_LDRSW of reg * reg * 'k MemExt.ext
   | I_LDUR of variant * reg * reg * 'k option
 (* Neon Extension Load and Store*)
   | I_LD1 of reg * int * reg * 'k kr
@@ -1133,7 +1136,7 @@ type 'k kinstruction =
   | I_UNSEAL of reg * reg * reg
 (* Idem for bytes and half words *)
   | I_LDRBH of bh * reg * reg * 'k MemExt.ext
-  | I_LDRS of variant * bh * reg * reg
+  | I_LDRS of (variant * bh) * reg * reg * 'k MemExt.ext
   | I_LDARBH of bh * ld_type * reg * reg
   | I_STRBH of bh * reg * reg * 'k MemExt.ext
   | I_STLRBH of bh * reg * reg
@@ -1448,6 +1451,10 @@ let pp_k_nz k = if m.zerop k then "" else "," ^ m.pp_k k in
 (* Load and Store *)
   | I_LDR (v,r1,r2,idx) ->
       pp_mem_idx "LDR" v r1 r2 idx
+  | I_LDRSW (r1,r2,idx) ->
+      pp_mem_idx "LDRSW" V64 r1 r2 idx
+  | I_LDRS ((v,bh),r1,r2,idx) ->
+     pp_mem_idx (ldrs_memo bh) v r1 r2 idx
   | I_LDUR (_,r1,r2,None) ->
       sprintf "LDUR %s, [%s]" (pp_reg r1) (pp_reg r2)
   | I_LDUR (_,r1,r2,Some(k)) ->
@@ -1464,8 +1471,6 @@ let pp_k_nz k = if m.zerop k then "" else "," ^ m.pp_k k in
       pp_mem (ldrbh_memo bh t)  V32 r1 r2 m.k0
   | I_LDXP (v,t,r1,r2,r3) ->
       pp_ldxp (ldxp_memo t) v r1 r2 r3
-  | I_LDRS (v,bh,r1,r2) ->
-      sprintf "%s %s,[%s]" ("LDRS"^pp_bh bh) (pp_vreg v r1) (pp_xreg r2)
   | I_STR (v,r1,r2,idx) ->
       pp_mem_idx "STR" v r1 r2 idx
   | I_STLR (v,r1,r2) ->
@@ -1813,7 +1818,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_MOV (_,r1,kr)
     -> fold_reg r1 (fold_kr kr c)
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
-  | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2) | I_LDRS (_,_,r1,r2)
+  | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
   | I_SBFM (_,r1,r2,_,_) | I_UBFM (_,r1,r2,_,_)
   | I_STOP (_,_,_,r1,r2) | I_STOPBH (_,_,_,r1,r2)
   | I_RBIT (_,r1,r2) | I_ABS (_,r1,r2)
@@ -1834,7 +1839,8 @@ let fold_regs (f_regs,f_sregs) =
     -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
   | I_OP3 (_,_,r1,r2,e)
     -> fold_reg r1 (fold_reg r2 (fold_op_ext e c))
-  | I_LDR (_,r1,r2,idx) | I_STR (_,r1,r2,idx)
+  | I_LDR (_,r1,r2,idx) | I_LDRSW (r1,r2,idx)
+  | I_LDRS (_,r1,r2,idx) | I_STR (_,r1,r2,idx)
   | I_LDRBH (_,r1,r2,idx) | I_STRBH (_,r1,r2,idx)
     -> fold_reg r1 (fold_reg r2 (fold_idx idx c))
   | I_LD1M (rs,r2,kr)
@@ -1929,6 +1935,10 @@ let map_regs f_reg f_symb =
 (* Load and Store *)
   | I_LDR (v,r1,r2,idx) ->
      I_LDR (v,map_reg r1,map_reg r2,map_idx idx)
+  | I_LDRSW (r1,r2,idx) ->
+     I_LDRSW (map_reg r1,map_reg r2,map_idx idx)
+  | I_LDRS (v,r1,r2,idx) ->
+     I_LDRS (v,map_reg r1,map_reg r2,map_idx idx)
   | I_LDRBH (v,r1,r2,idx) ->
      I_LDRBH (v,map_reg r1,map_reg r2,map_idx idx)
   | I_LDUR (v,r1,r2,k) ->
@@ -1945,8 +1955,6 @@ let map_regs f_reg f_symb =
      I_LDARBH (bh,t,map_reg r1,map_reg r2)
   | I_LDXP (v,t,r1,r2,r3) ->
      I_LDXP (v,t,map_reg r1,map_reg r2,map_reg r3)
-  | I_LDRS (v,bh,r1,r2) ->
-     I_LDRS (v,bh,map_reg r1,map_reg r2)
   | I_STR (v,r1,r2,idx) ->
       I_STR (v,map_reg r1,map_reg r2,map_idx idx)
   | I_STRBH (v,r1,r2,idx) ->
@@ -2183,6 +2191,8 @@ let get_next =
   | I_BLR _|I_BR _|I_RET _ |I_ERET -> [Label.Any]
   | I_NOP
   | I_LDR _
+  | I_LDRSW _
+  | I_LDRS _
   | I_LDUR _
   | I_LDP _
   | I_LDPSW _
@@ -2190,7 +2200,6 @@ let get_next =
   | I_STR _
   | I_LDAR _
   | I_LDARBH _
-  | I_LDRS _
   | I_STLR _
   | I_STLRBH _
   | I_STXR _
@@ -2439,7 +2448,6 @@ module PseudoI = struct
         | I_ERET
         | I_LDAR _
         | I_LDARBH _
-        | I_LDRS _
         | I_STLR _
         | I_STLRBH _
         | I_STXR _
@@ -2473,6 +2481,8 @@ module PseudoI = struct
         | I_MOPL _
             as keep -> keep
         | I_LDR (v,r1,r2,idx) -> I_LDR (v,r1,r2,idx_tr idx)
+        | I_LDRSW (r1,r2,idx) -> I_LDRSW (r1,r2,idx_tr idx)
+        | I_LDRS (v,r1,r2,idx) -> I_LDRS (v,r1,r2,idx_tr idx)
         | I_LDUR (v,r1,r2,None) -> I_LDUR (v,r1,r2,None)
         | I_LDUR (v,r1,r2,Some(k)) -> I_LDUR (v,r1,r2,Some(k_tr k))
         | I_LDP (t,v,r1,r2,r3,k,md) -> I_LDP (t,v,r1,r2,r3,k_tr k,md)
@@ -2559,7 +2569,7 @@ module PseudoI = struct
       | _ -> assert false
 
       let get_naccesses ins = match ins with
-        | I_LDR _ | I_LDAR _ | I_LDARBH _ | I_LDUR _ | I_LDRS _
+        | I_LDR _ | I_LDRSW _ | I_LDAR _ | I_LDARBH _ | I_LDUR _ | I_LDRS _
         | I_STR _ | I_STLR _ | I_STLRBH _ | I_STXR _
         | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
         | I_STG _ | I_LDG _

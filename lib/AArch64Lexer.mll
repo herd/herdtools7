@@ -81,6 +81,7 @@ match name with
 | "tbz" | "TBZ" -> TBZ
 (* Memory *)
 | "ldr"|"LDR" -> LDR
+| "ldrsw"|"LDRSW" -> LDRSW
 | "ldur"|"LDUR" -> LDUR
 | "ldp"|"LDP" -> LDP
 | "ldpsw"|"LDPSW" -> LDPSW
