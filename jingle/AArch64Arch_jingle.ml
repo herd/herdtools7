@@ -446,6 +446,12 @@ include Arch.MakeArch(struct
         conv_reg r3 >> fun r3 ->
         Ext.expl e >! fun e ->
         I_ADDSUBEXT (v1,op,r1,r2,(v3,r3),e)
+    | I_MOPL (sop,r1,r2,r3,r4) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >> fun r3 ->
+        conv_reg r4 >! fun r4 ->
+        I_MOPL (sop,r1,r2,r3,r4)
     | I_OP3 (a,b,r1,r2,e) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

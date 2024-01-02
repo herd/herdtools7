@@ -2796,7 +2796,25 @@ module Make
              read_reg_ord_sz (tr_variant v3) r3 ii
              >>= ext_sext e ko in
            mop3 inst v op r1 (m2 >>| m3) ii
-      (* Barrier *)
+        | I_MOPL ((s,op),rd,rn,rm,ra) ->
+           let ext =
+             match s with
+             | MOPLExt.Signed -> sxtw_op
+             | MOPLExt.Unsigned -> M.unitT
+           and op =
+               match op with
+               | MOPLExt.ADD -> Op.Add
+               | MOPLExt.SUB -> Op.Sub in
+           begin
+             (read_reg_ord_sz MachSize.Word rn ii >>= ext)
+             >>| (read_reg_ord_sz MachSize.Word rm ii >>= ext)
+             >>| read_reg_ord_sz MachSize.Quad ra ii
+           end >>= fun ((vn,vm),va) ->
+           M.op Op.Mul vn vm
+           >>= M.op op va
+           >>= fun v -> write_reg_dest rd v ii
+           >>= nextSet rd
+        (* Barrier *)
         | I_FENCE b ->
             !(create_barrier b ii)
               (* Conditional selection *)

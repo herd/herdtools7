@@ -85,6 +85,8 @@ let mk_instrp instr v r1 r2 ra ko kb =
 %token <AArch64Base.gc> GC
 %token TOK_ADD TOK_ADDS TOK_SUB TOK_SUBS
 %token TOK_NEG TOK_NEGS
+%token <AArch64Base.MOPLExt.sop> MOPLZ
+%token <AArch64Base.MOPLExt.sop> MOPL
 %token CSEL CSINC CSINV CSNEG CSET CSETM CINC
 %token TOK_DMB TOK_DSB TOK_ISB
 %token TOK_SY TOK_ST TOK_LD
@@ -1225,6 +1227,12 @@ instr:
   { I_ADDSUBEXT (V64,$1,$2,$4,$6,$8) }
 | tok_add_sub_ext wreg COMMA wreg COMMA wreg COMMA add_sub_ext
   { I_ADDSUBEXT (V32, $1, $2, $4, (V32, $6), $8) }
+
+(* Multiplication, special forms *)
+| MOPLZ xreg COMMA wreg COMMA wreg
+    { I_MOPL ($1,$2,$4,$6,ZR) }
+| MOPL xreg COMMA wreg COMMA wreg COMMA xreg
+    { I_MOPL ($1,$2,$4,$6,$8) }
 
 (* Aliases of SUB *)
 | CMP wreg COMMA op_ext_w
