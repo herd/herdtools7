@@ -18,3 +18,4 @@
 
 type special
 let specials = []
+let specials2 = []
