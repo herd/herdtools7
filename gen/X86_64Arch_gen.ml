@@ -255,5 +255,6 @@ module Make
             let free_registers = allowed_for_symb
             type special = xmm
             let specials = xmms
+            let specials2 = []
           end)
     end
