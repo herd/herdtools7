@@ -1,0 +1,10 @@
+Test L097 Required
+States 1
+0:X4=2396871060321271296;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X4=2396871060321271296)
+Observation L097 Always 1 0
+Hash=46001174e70c8ea3c01326bf03d1c1b8
+

@@ -117,6 +117,7 @@ type 'aop op1 =
   | Rbit of MachSize.sz
   | Inv
   | Abs
+  | RevBytes of MachSize.sz * MachSize.sz
   | TagLoc       (* Get tag memory location from location *)
   | CapaTagLoc
   | TagExtract   (* Extract tag from tagged location *)
@@ -149,6 +150,8 @@ let pp_op1 hexa pp_aop o = match o with
 | Mask sz  -> sprintf "mask%02i" (MachSize.nbits sz)
 | Sxt sz -> sprintf "sxt%02i" (MachSize.nbits sz)
 | Rbit sz -> sprintf "rbit%02i" (MachSize.nbits sz)
+| RevBytes (csz,sz) ->
+   sprintf "rev-%02i-%02i" (MachSize.nbits csz) (MachSize.nbits sz)
 | TagLoc ->  "tagloc"
 | CapaTagLoc -> "capatagloc"
 | TagExtract -> "tagextract"

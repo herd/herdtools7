@@ -2761,7 +2761,13 @@ module Make
            >>= M.op1 Op.Abs
            >>=fun v -> write_reg_dest rd v ii
            >>= nextSet rd
-        | I_OP3(v,op,rd,rn,e) ->
+        | I_REV (rv,rd,rs) ->
+           let sz = variant_of_rev rv |> tr_variant in
+           read_reg_ord_sz sz rs ii
+           >>= M.op1 (Op.RevBytes (container_size rv,sz))
+           >>= fun v -> write_reg_dest rd v ii
+           >>= nextSet rd
+           | I_OP3(v,op,rd,rn,e) ->
            let margs =
              let sz = tr_variant v in
              let mn = read_reg_ord_sz sz rn ii in

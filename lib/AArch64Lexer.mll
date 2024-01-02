@@ -334,11 +334,15 @@ match name with
 | "movn"|"MOVN" -> MOVN
 | "movk"|"MOVK" -> MOVK
 | "adr"|"ADR" -> ADR
+| "rev16"|"REV16" -> REV16
+| "rev32"|"REV32" -> REV32
+| "rev64"|"REV64" -> REV64
+| "rev"|"REV" -> REV
 | "rbit"|"RBIT" -> RBIT
 | "abs"|"ABS" -> ABS
 | "cmp"|"CMP" -> CMP
 | "tst"|"TST" -> TST
-(* Three argument opcodes factorized *)
+(* Those operations are factorized *)
 | "eor"|"EOR" -> OP A.EOR
 | "eon"|"EON" -> OP A.EOR
 | "orr"|"ORR" -> OP A.ORR
