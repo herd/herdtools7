@@ -163,6 +163,8 @@ let slices_to_positions as_int =
 let fold_named_list folder acc list =
   List.fold_left (fun acc (_, v) -> folder acc v) acc list
 
+let fold_option folder acc = function Some o -> folder acc o | None -> acc
+
 let rec use_e acc e =
   match e.desc with
   | E_Literal _ -> acc
@@ -178,10 +180,10 @@ let rec use_e acc e =
   | E_Cond (e1, e2, e3) -> use_e (use_e (use_e acc e1) e3) e2
   | E_GetField (e, _) -> use_e acc e
   | E_GetFields (e, _) -> use_e acc e
-  | E_Record (_ty, li) -> use_fields acc li
+  | E_Record (ty, li) -> use_fields (use_ty acc ty) li
   | E_Concat es -> use_es acc es
   | E_Tuple es -> use_es acc es
-  | E_Unknown _ -> acc
+  | E_Unknown ty -> use_ty acc ty
   | E_Pattern (e, _p) -> use_e acc e
 
 and use_es acc es = List.fold_left use_e acc es
@@ -236,8 +238,7 @@ let rec use_s acc s =
   | S_Case (e, cases) -> List.fold_left use_case (use_e acc e) cases
   | S_For (_, e1, _, e2, s) -> use_s (use_e (use_e acc e1) e2) s
   | S_While (e, s) | S_Repeat (s, e) -> use_s (use_e acc e) s
-  | S_Decl (_, _, Some e) -> use_e acc e
-  | S_Decl (_, _, None) -> acc
+  | S_Decl (_ldk, ldi, e) -> fold_option use_e (use_ldi acc ldi) e
   | S_Throw (Some (e, _)) -> use_e acc e
   | S_Throw None -> acc
   | S_Try (s, catchers, None) -> use_catchers (use_s acc s) catchers
@@ -247,14 +248,36 @@ let rec use_s acc s =
 
 and use_case acc { desc = _p, stmt; _ } = use_s acc stmt
 and use_le acc _le = acc
-and use_catcher acc (_name, _ty, s) = use_s acc s
+and use_catcher acc (_name, ty, s) = use_s (use_ty acc ty) s
 and use_catchers acc = List.fold_left use_catcher acc
+
+and use_ldi acc = function
+  | LDI_Discard ty | LDI_Var (_, ty) -> fold_option use_ty acc ty
+  | LDI_Tuple (ldis, ty) ->
+      let acc = fold_option use_ty acc ty in
+      List.fold_left use_ldi acc ldis
 
 and use_decl acc d =
   match d.desc with
-  | D_Func { body = SB_ASL s; _ } -> use_s acc s
-  | D_GlobalStorage { initial_value = Some e; _ } -> use_e acc e
-  | _ -> acc
+  | D_Func
+      { body; name = _; parameters; args; return_type; subprogram_type = _ }
+    -> (
+      let acc = fold_named_list use_ty acc args in
+      let acc = fold_named_list (fold_option use_ty) acc parameters in
+      let acc = fold_option use_ty acc return_type in
+      match body with SB_ASL s -> use_s acc s | SB_Primitive -> acc)
+  | D_GlobalStorage { initial_value; keyword = _; name = _; ty } ->
+      let acc = fold_option use_ty acc ty in
+      fold_option use_e acc initial_value
+  | D_TypeDecl (_name, ty, subtypes) ->
+      let acc =
+        match subtypes with
+        | None -> acc
+        | Some (x, fields) ->
+            let acc = ISet.add x acc in
+            fold_named_list use_ty acc fields
+      in
+      use_ty acc ty
 
 let use_constant_decl acc d =
   match d.desc with
@@ -274,6 +297,12 @@ let use_constant_decl acc d =
 
 let used_identifiers ast = List.fold_left use_decl ISet.empty ast
 let used_identifiers_stmt = use_s ISet.empty
+
+let def_decl d =
+  match d.desc with
+  | D_Func { name; _ } | D_GlobalStorage { name; _ } | D_TypeDecl (name, _, _)
+    ->
+      name
 
 let canonical_fields li =
   let compare (x, _) (y, _) = String.compare x y in

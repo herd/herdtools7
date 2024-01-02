@@ -169,7 +169,7 @@ end
 module Annotate (C : ANNOTATE_CONFIG) = struct
   exception TypingAssumptionFailed
 
-  let strictness_string =
+  let _strictness_string =
     match C.check with
     | `TypeCheck -> "type-checking-strict"
     | `Warn -> "type-checking-warn"
@@ -2004,12 +2004,14 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     let new_body = try_annotate_block env5 body in
     (* Optionnally rename the function if needs be *)
+    (*
     let name =
       let args = List.map snd f.args in
       let _, name, _, _ = FunctionRenaming.try_find_name loc env5 f.name args in
       name
     in
-    { f with body = SB_ASL new_body; name } |: TypingRule.Subprogram
+    *)
+    { f with body = SB_ASL new_body } |: TypingRule.Subprogram
   (* End *)
 
   let try_annotate_subprogram loc env f =
@@ -2216,58 +2218,29 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
              "Global storage declaration should have an initial value or a \
               type.")
 
-  let build_global ast =
-    let def d =
-      match d.desc with
-      | D_Func { name; _ }
-      | D_GlobalStorage { name; _ }
-      | D_TypeDecl (name, _, _) ->
-          name
-    in
-    let use d = ASTUtils.use_constant_decl ISet.empty d in
-    let process_one_decl d =
-      match d.desc with
-      | D_Func func_sig -> declare_one_func d func_sig
-      | D_GlobalStorage gsd -> declare_global_storage d gsd
-      | D_TypeDecl (x, ty, s) -> declare_type d x ty s
-    in
-    ASTUtils.dag_fold def use process_one_decl ast
-
-  let rename_primitive loc env (f : AST.func) =
-    let name =
-      best_effort f.name @@ fun _ ->
-      let _, name, _, _ =
-        FunctionRenaming.find_name loc env f.name (List.map snd f.args)
-      in
-      name
-    in
-    { f with name }
-
   (******************************************************************************)
   (*                                                                            *)
   (*                                Entry point                                 *)
   (*                                                                            *)
   (******************************************************************************)
 
+  let type_check_decl d env =
+    match d.desc with
+    | D_Func f ->
+        let f' =
+          match f.body with
+          | SB_Primitive -> f
+          | SB_ASL _ -> try_annotate_subprogram d env f
+        in
+        declare_one_func d f' env
+    | D_GlobalStorage gsd ->
+        let gsd' = try_annotate_gsd env gsd in
+        declare_global_storage d gsd' env
+    | D_TypeDecl (x, ty, s) -> declare_type d x ty s env
+
   let type_check_ast ast env =
-    let env = build_global ast env in
-    let () =
-      if false then
-        Format.eprintf "@[<v>Typing with %s in env:@ %a@]@." strictness_string
-          StaticEnv.pp_env env
-    in
-    let annotate d =
-      let here = ASTUtils.add_pos_from_st d in
-      match d.desc with
-      | D_Func ({ body = SB_ASL _; _ } as f) ->
-          D_Func (try_annotate_subprogram d env f) |> here
-      | D_Func ({ body = SB_Primitive; _ } as f) ->
-          D_Func (rename_primitive d env f) |> here
-      | D_GlobalStorage gsd ->
-          D_GlobalStorage (try_annotate_gsd env gsd) |> here
-      | _ -> d
-    in
-    (List.map annotate ast, env)
+    let use d = use_decl ISet.empty d in
+    dag_fold def_decl use type_check_decl ast env
 end
 
 module TypeCheck = Annotate (struct

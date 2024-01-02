@@ -28,7 +28,6 @@ type args = {
   opn : string option;
   print_ast : bool;
   print_serialized : bool;
-  print_typed : bool;
   show_rules : bool;
   version : [ `ASLv0 | `ASLv1 ];
   strictness : Typing.strictness;
@@ -113,7 +112,6 @@ let parse_args () =
       opn = (match !opn with "" -> None | s -> Some s);
       print_ast = !print_ast;
       print_serialized = !print_serialized;
-      print_typed = !print_typed;
       version = !asl_version;
       strictness;
       show_rules = !show_rules;
@@ -183,21 +181,16 @@ let () =
 
   let () = if false then Format.eprintf "%a@." PP.pp_t ast in
 
-  let typed_ast, static_env =
+  let static_env =
     or_exit @@ fun () ->
     Typing.type_check_ast args.strictness ast StaticEnv.empty
-  in
-
-  let () =
-    if args.print_typed then
-      Format.printf "@[<v 2>Typed AST:@ %a@]@." PP.pp_t typed_ast
   in
 
   let exit_code, used_rules =
     if args.exec then
       let instrumentation = if args.show_rules then true else false in
       or_exit @@ fun () ->
-      Native.interprete ~instrumentation ~static_env args.strictness typed_ast
+      Native.interprete ~instrumentation ~static_env args.strictness ast
     else (0, [])
   in
 

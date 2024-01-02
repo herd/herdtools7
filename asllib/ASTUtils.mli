@@ -242,6 +242,7 @@ val is_simple_expr : expr -> bool
 
 val use_e : ISet.t -> expr -> ISet.t
 val use_ty : ISet.t -> ty -> ISet.t
+val use_decl : ISet.t -> decl -> ISet.t
 
 val use_constant_decl : ISet.t -> decl -> ISet.t
 (** [use_constant_decl d] is the set of other declared names required to have
@@ -249,6 +250,9 @@ val use_constant_decl : ISet.t -> decl -> ISet.t
 
 val used_identifiers : decl list -> ISet.t
 val used_identifiers_stmt : stmt -> ISet.t
+
+val def_decl : decl -> identifier
+(** [def_decl d] is the name of the global identifier declared by [d]. *)
 
 val dag_fold :
   (decl -> identifier) ->

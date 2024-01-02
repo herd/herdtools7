@@ -170,13 +170,8 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (** [build_funcs] initialize the unique calling reference for each function
       and builds the subprogram sub-env. *)
-  let build_funcs ast (funcs : IEnv.func IMap.t) =
-    List.to_seq ast
-    |> Seq.filter_map (fun d ->
-           match d.desc with
-           | D_Func func -> Some (func.name, (ref 0, func))
-           | _ -> None)
-    |> Fun.flip IMap.add_seq funcs
+  let build_funcs (env : StaticEnv.env) =
+    IMap.map (fun (f, _pureness) -> (ref 0, f)) env.StaticEnv.global.subprograms
 
   (* Global env *)
   (* ---------- *)
@@ -184,13 +179,6 @@ module Make (B : Backend.S) (C : Config) = struct
   let build_global_storage env0 eval_expr base_value =
     let names =
       List.fold_left (fun k (name, _) -> ISet.add name k) ISet.empty env0
-    in
-    let def d =
-      match d.desc with
-      | D_Func { name; _ }
-      | D_GlobalStorage { name; _ }
-      | D_TypeDecl (name, _, _) ->
-          name
     in
     let use d = use_constant_decl ISet.empty d in
     let process_one_decl d =
@@ -214,13 +202,13 @@ module Make (B : Backend.S) (C : Config) = struct
               IEnv.declare_global name v env |> return
       | _ -> Fun.id
     in
-    dag_fold def use process_one_decl
+    dag_fold def_decl use process_one_decl
 
   (** [build_genv static_env ast primitives] is the global environment before
       the start of the evaluation of [ast]. *)
   let build_genv env0 eval_expr base_value (static_env : StaticEnv.env)
       (ast : AST.t) =
-    let funcs = IMap.empty |> build_funcs ast in
+    let funcs = build_funcs static_env in
     let () =
       if _dbg then
         Format.eprintf "@[<v 2>Executing in env:@ %a@.]" StaticEnv.pp_global
@@ -1285,7 +1273,7 @@ module Make (B : Backend.S) (C : Config) = struct
       =
     let ast = List.rev_append primitive_decls ast in
     let ast = Builder.with_stdlib ast in
-    let ast, static_env =
+    let static_env =
       Typing.type_check_ast C.type_checking_strictness ast StaticEnv.empty
     in
     let () =

@@ -30,9 +30,8 @@ val infer_value : AST.literal -> AST.type_desc
 type strictness = [ `Silence | `Warn | `TypeCheck ]
 (** Possible strictness of type-checking. *)
 
-val type_check_ast :
-  strictness -> AST.t -> StaticEnv.env -> AST.t * StaticEnv.env
-(** Typechecks the AST, and returns an AST with type inference holes filled.
+val type_check_ast : strictness -> AST.t -> StaticEnv.env -> StaticEnv.env
+(** Typechecks the AST, and returns a typing environment with the correct typed declared.
 
     @raise Error.ASLException if the AST does not type-checks.
 *)
