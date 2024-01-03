@@ -47,7 +47,7 @@ dune-clean:
 	dune clean
 
 versions: Version.ml
-	@ dune build -j $(J) --workspace dune-workspace.versions @default
+	@ dune build -j $(J) --workspace dune-workspace.versions
 
 
 # Dependencies.
