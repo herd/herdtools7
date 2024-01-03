@@ -376,7 +376,7 @@ end
 
 module DefaultDumper(A:ArchBase.S) = struct
   type pseudo = A.pseudo
-  include SimpleDumper.Make
+  include SimpleDumper.Make(struct let compat = false end)
       (struct
         module A = A
 
