@@ -26,6 +26,7 @@ module type Config = sig
   val word : Word.t
   val line : int
   val noccs : int
+  val affinity : Affinity.t
   val logicalprocs : int list option
   val smt : int
   val nsockets : int
@@ -74,6 +75,11 @@ module Make
         (struct
           let sysarch = Cfg.sysarch
         end)
+(* MacOS has no affinity control *)
+    let do_affinity =
+      match Cfg.affinity with
+      | Affinity.No -> false
+      | _ -> true
 
 (* Handle instruction as data *)
     let has_instruction_ptr = Insert.exists "instruction.h"
@@ -173,12 +179,12 @@ module Make
 (***************)
 (* File header *)
 (***************)
+      module DP = DumpParams.Make(Cfg)
 
       let dump_header test =
         O.o "/* Parameters */" ;
         O.o "#define OUT 1" ;
-        let module D = DumpParams.Make(Cfg) in
-        D.dump O.o ;
+        DP.dump O.o ;
         let n = T.get_nprocs test in
         O.f "#define N %i" n ;
         let nvars = List.length test.T.globals in
@@ -224,8 +230,19 @@ module Make
           O.o "#include \"litmus_rand.h\"" ;
           O.o "#include \"utils.h\"" ;
           if Cfg.c11 then O.o "#include <stdatomic.h>";
-          if true then begin (* Affinity always used *)
-            O.o "#include \"affinity.h\""
+          if do_affinity then begin (* Affinity always used *)
+            O.o "#include \"affinity.h\"" ;
+            begin match Cfg.logicalprocs with
+            | Some procs ->
+               let len = List.length procs in
+               if len < DP.avail then
+                 Warn.user_error
+                   "Cannot run, %d available processors and mapping of size %d"
+                  DP.avail len ;
+               O.f "static int logical_procs[] = {%s};"
+                 (LexSplit.pp_ints procs)
+            | None -> ()
+            end
           end
         end ;
         if not do_inlined then O.o "#include \"topology.h\"" ;
@@ -274,8 +291,10 @@ module Make
 (* Memory barrier *)
       let dump_mbar_def () =
         O.o "" ;
+(*
         O.o "/* Full memory barrier */" ;
         UD.dump_mbar_def () ;
+*)
         let dump_find_ins =
           do_self
           || CfgLoc.need_prelude
@@ -594,10 +613,7 @@ module Make
               let verbose = Cfg.verbose
               let file_name = doc.Name.file
               let nthreads = n
-              let avail = match Cfg.avail with
-              | None -> 0
-              | Some a -> a
-
+              let avail = DP.avail
               let smt = Cfg.smt
               let nsockets = Cfg.nsockets
               let smtmode = Cfg.smtmode
@@ -2032,14 +2048,19 @@ module Make
              O.oi "exceptions_init_test(&vector_table);"
           end ;
         end ;
-        if not Cfg.is_kvm then begin
+        if do_affinity then begin
+          let id =
+            match Cfg.logicalprocs with
+            | Some _ ->
+               "logical_procs[id]"
+            | None -> "id" in
           O.oi
             (if Cfg.force_affinity then
               sprintf
-                "force_one_affinity(id,AVAIL,g->verbose,\"%s\");"
-                tname
+                "force_one_affinity(%s,AVAIL,g->verbose,\"%s\");"
+                id tname
             else
-              "write_one_affinity(id);")
+              sprintf "write_one_affinity(%s);" id)
         end ;
         O.oi "choose(id,g);" ;
         if Cfg.is_kvm then begin
