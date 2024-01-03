@@ -258,7 +258,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let do_str v r1 r2 = I_STR (v,r1,r2,MemExt.Imm (0,Idx))
     let str = do_str vloc
-    let stg r1 r2 = I_STG (r1,r2,0)
+    let stg r1 r2 = I_STG (r1,r2,(0,Idx))
     let stct r1 r2 = I_STCT(r1,r2)
     let do_stlr v r1 r2 = I_STLR (v,r1,r2)
     let stlr = do_stlr vloc
@@ -417,9 +417,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let ldar_mixed_idx = do_ldar_mixed_idx vloc
 
-    let do_ldp opt r1 r2 rA = I_LDP (opt,vloc,r1,r2,rA,0,Idx)
+    let do_ldp opt r1 r2 rA = I_LDP (opt,vloc,r1,r2,rA,(0,Idx))
     and do_ldxp opt r1 r2 rA = I_LDXP (vloc,opt,r1,r2,rA)
-    let do_stp opt r1 r2 rA = I_STP (opt,vloc,r1,r2,rA,0,Idx)
+    let do_stp opt r1 r2 rA = I_STP (opt,vloc,r1,r2,rA,(0,Idx))
     and do_stxp opt r r1 r2 rA = I_STXP (vloc,opt,r,r1,r2,rA)
 
 (*********)

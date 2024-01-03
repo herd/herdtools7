@@ -219,13 +219,14 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     let mem_access_size = function
       | I_LDPSW _ | I_LDRSW _ -> Some MachSize.Word
-      | I_LDR (v,_,_,_) | I_LDP (_,v,_,_,_,_,_) | I_LDXP (v,_,_,_,_)
+      | I_LDR (v,_,_,_) | I_LDP (_,v,_,_,_,_) | I_LDXP (v,_,_,_,_)
       | I_LDUR (v,_,_,_)
       | I_STR (v,_,_,_) | I_STLR (v,_,_) | I_STXR (v,_,_,_,_)
-      | I_STP (_,v,_,_,_,_,_) | I_STXP (v,_,_,_,_,_)
+      | I_STP (_,v,_,_,_,_) | I_STXP (v,_,_,_,_,_)
       | I_CAS (v,_,_,_,_) | I_CASP (v,_,_,_,_,_,_) | I_SWP (v,_,_,_,_)
       | I_LDOP (_,v,_,_,_,_) | I_STOP (_,v,_,_,_) ->
           Some (tr_variant v)
+      | I_STZG _ -> Some (tr_variant V128)
       | I_LDR_SIMD (v,_,_,_,_) | I_LDR_P_SIMD (v,_,_,_)
       | I_LDP_SIMD (_,v,_,_,_,_) | I_LDP_P_SIMD (_,v,_,_,_,_)
       | I_STR_SIMD (v,_,_,_,_) | I_STR_P_SIMD (v,_,_,_)
@@ -255,7 +256,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_ADR (_, _)|I_RBIT (_, _, _)|I_ABS _|I_REV _|I_FENCE _
       | I_SBFM (_,_,_,_,_) | I_UBFM (_,_,_,_,_)
       | I_CSEL (_, _, _, _, _, _)|I_IC (_, _)|I_DC (_, _)|I_MRS (_, _)|I_MSR (_, _)
-      | I_STG _ | I_STZG _ | I_LDG _
+      | I_STG _ | I_LDG _
       | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _
       | I_CLRTAG _|I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SEAL _
       | I_STCT _|I_UNSEAL _
@@ -273,15 +274,17 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     let opt_env = true
 
     let killed_idx r = function
-      | Idx -> Misc.identity
-      | PostIdx|PreIdx -> fun k -> r::k
+      | (_,Idx) -> Misc.identity
+      | (_,(PostIdx|PreIdx)) -> fun k -> r::k
 
     let killed i =
       match i with
-      | I_LDP (_,_,r1,r2,ra,_,idx) |I_LDPSW (r1,r2,ra,_,idx) ->
-          killed_idx ra idx [r1; r2;]
-      | I_STP (_,_,_,_,ra,_,idx) ->
-          killed_idx ra idx []
+      | I_LDP (_,_,r1,r2,ra,idx) |I_LDPSW (r1,r2,ra,idx)
+        ->
+         killed_idx ra idx [r1; r2;]
+      | I_STG (_,r,idx)|I_STZG (_,r,idx)
+      | I_STP (_,_,_,_,r,idx) ->
+          killed_idx r idx []
       | I_STR (_,_,r,MemExt.Imm (_,(PreIdx|PostIdx)))
       | I_STRBH (_,_,r,MemExt.Imm (_,(PreIdx|PostIdx)))
         -> [r;]
@@ -344,7 +347,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
       | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _
       | I_LDCT _|I_SC _|I_SEAL _|I_STCT _
-      | I_UNSEAL _|I_STG _|I_STZG _|I_LDG _
+      | I_UNSEAL _|I_LDG _
       | I_CASP _
         ->
          all_regs (* safe approximation *)

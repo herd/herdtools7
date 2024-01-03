@@ -23,16 +23,6 @@ let check_op3 op e =
   |(BIC|BICS),OpExt.Imm _ -> raise Parsing.Parse_error
   | _ -> ()
 
-type 'k k0_bang = Nada | Bang | Konst of 'k
-
-let mk_instrp instr v r1 r2 ra ko kb =
-  match (ko, kb) with
-    | None, Nada -> instr v r1 r2 ra MetaConst.zero Idx
-    | Some s, Nada -> instr v r1 r2 ra s Idx
-    | None, Konst p -> instr v r1 r2 ra p PostIdx
-    | Some s,Bang -> instr v r1 r2 ra s PreIdx
-    | None,Bang -> instr v r1 r2 ra MetaConst.zero PreIdx
-    | _,_ -> raise Parsing.Parse_error
 %}
 
 %token EOF
@@ -270,11 +260,6 @@ k0_opt:
 | { None }
 | COMMA k { Some $2}
 
-k0_bang:
-| { Nada }
-| COMMA k { Konst $2}
-| BANG { Bang }
-
 k0:
 | { MetaConst.zero }
 | COMMA k=k { k }
@@ -377,15 +362,22 @@ mem_sext:
 | TOK_SXTW { MemExt.SXTW }
 | TOK_SXTX { MemExt.SXTX }
 
-mem_ea:
+mem_idx:
 | LBRK cxreg RBRK
-    { $2,MemExt.Imm (MetaConst.zero,Idx)  }
+    { $2,(MetaConst.zero,Idx)  }
 | LBRK cxreg COMMA k RBRK
-    { $2,MemExt.Imm ($4,Idx) }
+    { $2,($4,Idx) }
 | LBRK cxreg RBRK COMMA k
-    { $2,MemExt.Imm ($5,PostIdx) }
+    { $2,($5,PostIdx) }
 | LBRK cxreg COMMA k RBRK BANG
-    { $2,MemExt.Imm ($4,PreIdx) }
+    { $2,($4,PreIdx) }
+
+mem_ea:
+| mem_idx
+    {
+      let r,idx = $1 in
+      r,MemExt.Imm idx
+    }
 | LBRK cxreg COMMA wxreg RBRK
     {
       let open MemExt in
@@ -417,19 +409,19 @@ zeroopt:
 
 ldp_instr:
 | LDP
-  { (fun v r1 r2 r3 k md -> I_LDP (Pa,v,r1,r2,r3,k,md)) }
+  { (fun v r1 r2 (r3,idx) -> I_LDP (Pa,v,r1,r2,r3,idx)) }
 | LDNP
-  { (fun v r1 r2 r3 k md -> I_LDP (PaN,v,r1,r2,r3,k,md)) }
+  { (fun v r1 r2 (r3,idx) -> I_LDP (PaN,v,r1,r2,r3,idx)) }
 | LDIAPP
   {
-   (fun v r1 r2 r3 k md ->
-     match v,md,k with
-     | (_,Idx,MetaConst.Int 0)
-     | (V32,PostIdx,MetaConst.Int (8))
-     | (V64,PreIdx,MetaConst.Int (16))
+   (fun v r1 r2 (r3,idx) ->
+     match v,idx with
+     | (_,(MetaConst.Int 0,Idx))
+     | (V32,(MetaConst.Int 8,PostIdx))
+     | (V64,(MetaConst.Int 16,PostIdx))
           ->
-            I_LDP (PaI,v,r1,r2,r3,k,md)
-      | _,_,_ -> raise Parsing.Parse_error)
+            I_LDP (PaI,v,r1,r2,r3,idx)
+      | _,_ -> raise Parsing.Parse_error)
   }
 
 ldp_simd_instr:
@@ -453,19 +445,19 @@ ldp_simd_instr:
 
 stp_instr:
 | STP
-  { (fun v r1 r2 r3 k md -> I_STP (Pa,v,r1,r2,r3,k,md)) }
+  { (fun v r1 r2 (r3,idx) -> I_STP (Pa,v,r1,r2,r3,idx)) }
 | STNP
-  { (fun v r1 r2 r3 k md -> I_STP (PaN,v,r1,r2,r3,k,md)) }
+  { (fun v r1 r2 (r3,idx) -> I_STP (PaN,v,r1,r2,r3,idx)) }
 | STILP
     {
-     (fun v r1 r2 r3 k md ->
-      match v,md,k with
-      | (_,Idx,MetaConst.Int 0)
-      | (V32,PreIdx,MetaConst.Int (-8))
-      | (V64,PreIdx,MetaConst.Int (-16))
+     (fun v r1 r2 (r3,idx) ->
+      match v,idx with
+      | (_,(MetaConst.Int 0,Idx))
+      | (V32,(MetaConst.Int (-8),PreIdx))
+      | (V64,(MetaConst.Int (-16),PreIdx))
           ->
-            I_STP (PaI,v,r1,r2,r3,k,md)
-      | _,_,_ -> raise Parsing.Parse_error)
+            I_STP (PaI,v,r1,r2,r3,idx)
+      | _, _ -> raise Parsing.Parse_error)
     }
 
 stp_simd_instr:
@@ -570,19 +562,19 @@ instr:
 | LDUR reg COMMA LBRK cxreg k0_opt RBRK
   { let v,r = $2 in I_LDUR (v,r,$5,$6)}
 
-| instr=ldp_instr r1=wreg COMMA r2=wreg COMMA LBRK ra=cxreg ko=k0_opt RBRK kb=k0_bang
-  { mk_instrp instr V32 r1 r2 ra ko kb }
-| instr=ldp_instr r1=xreg COMMA r2=xreg COMMA LBRK ra=cxreg ko=k0_opt RBRK kb=k0_bang
-  { mk_instrp instr V64 r1 r2 ra ko kb }
-| instr=stp_instr r1=wreg COMMA r2=wreg COMMA LBRK ra=cxreg ko=k0_opt RBRK kb=k0_bang
-  { mk_instrp instr V32 r1 r2 ra ko kb }
-| instr=stp_instr r1=xreg COMMA r2=xreg COMMA LBRK ra=cxreg ko=k0_opt RBRK kb=k0_bang
-  { mk_instrp instr V64 r1 r2 ra ko kb }
-| LDPSW  r1=xreg COMMA r2=xreg COMMA LBRK ra=cxreg ko=k0_opt RBRK kb=k0_bang
-  {
-   let instr _v r1 r2 ra k md = I_LDPSW (r1,r2,ra,k,md) in
-   mk_instrp instr V64 r1 r2 ra ko kb
-  }
+| instr=ldp_instr r1=wreg COMMA r2=wreg COMMA ea=mem_idx
+  { instr V32 r1 r2 ea }
+| instr=ldp_instr r1=xreg COMMA r2=xreg COMMA ea=mem_idx
+  { instr V64 r1 r2 ea }
+| instr=stp_instr r1=wreg COMMA r2=wreg COMMA ea=mem_idx
+  { instr V32 r1 r2 ea }
+| instr=stp_instr r1=xreg COMMA r2=xreg COMMA ea=mem_idx
+  { instr V64 r1 r2 ea }
+| LDPSW  r1=xreg COMMA r2=xreg COMMA  ea=mem_idx
+    {
+      let ra,idx = ea in
+      I_LDPSW (r1,r2,ra,idx)
+    }
 | LDXP wreg COMMA wreg COMMA LBRK cxreg RBRK
   { I_LDXP (V32,XP,$2,$4,$7) }
 | LDXP xreg COMMA xreg COMMA LBRK cxreg RBRK
@@ -853,10 +845,16 @@ instr:
 | SWPALH wreg COMMA wreg COMMA  LBRK cxreg zeroopt RBRK
   { I_SWPBH (H,RMW_AL,$2,$4,$7) }
 /* Memory Tagging */
-| STG xreg COMMA LBRK xreg k0 RBRK
-   { I_STG ($2,$5,$6) }
-| STZG xreg COMMA LBRK xreg k0 RBRK
-   { I_STZG ($2,$5,$6) }
+| STG xreg COMMA mem_idx
+    {
+      let r,idx = $4 in
+      I_STG ($2,r,idx)
+    }
+| STZG xreg COMMA mem_idx
+    {
+      let r,idx = $4 in
+      I_STZG ($2,r,idx)
+    }
 | LDG xreg COMMA LBRK xreg k0 RBRK
    { I_LDG ($2,$5,$6) }
 
