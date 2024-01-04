@@ -727,6 +727,7 @@ module Make
 (*************)
       let dump_global_type = SkelUtil.dump_global_type
       let dump_vars_types = UD.dump_vars_types
+      let dump_array_typedefs = UD.dump_array_typedefs
       let tag_malloc s = sprintf "malloc_%s" s
       let tag_mem s = sprintf "mem_%s" s
 
@@ -2387,15 +2388,6 @@ module Make
         O.o "}" ;
         O.o "" ;
         ()
-
-      let dump_array_typedefs test =
-        iter_all_outs
-          (fun _ (_,t) ->
-            match t with
-            | CType.Array (t',sz) ->
-              O.f "typedef %s %s[%i];" t' (CType.dump t) sz
-            | _ -> ())
-          test
 
       let dump_def_ctx env test =
         O.o "/**********************/" ;

@@ -761,6 +761,7 @@ module Make
         end ;
         O.o "" ;
         UD.dump_vars_types false test ;
+        UD.dump_array_typedefs test ;
         O.o "typedef struct {" ;
         let fields =
           A.RLocSet.fold
