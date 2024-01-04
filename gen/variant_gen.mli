@@ -42,6 +42,8 @@ type t =
   | Neon
 (* SVE AArch64 extension *)
   | SVE
+(* SME AArch64 extension *)
+  | SME
 (* Constrained Unpredictable, ie generate tests thar may exhibit
    such behaviours. Typically LDXR / STXR of different size or address. *)
   | ConstrainedUnpredictable

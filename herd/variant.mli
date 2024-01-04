@@ -46,6 +46,8 @@ type t =
   | Neon
   | SVE (* Specify SVE *)
   | SVELength of int (* vector size in bits, must be multiple of 128 *)
+  | SME
+  | SMELength of int (* vector size in bits, must be multiple of 128 *)
 (* Branch speculation+ cat computation of dependencies *)
   | Deps
   | Instances (* Compute dependencies on instruction instances *)
@@ -120,5 +122,8 @@ val get_switch : Archs.t -> t -> (t -> bool) -> bool
 
 val set_mte_precision : Precision.t ref -> t -> bool
 val set_fault_handling : Fault.Handling.t ref -> t -> bool
+
 val set_sve_length : int ref -> t -> t option
+val set_sme_length : int ref -> t -> t option
 val check_tag : t -> t list
+

@@ -40,6 +40,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
       (try Misc.lowercase (List.assoc pr pvrs) with Not_found -> assert false)
   | Zreg (zr, _) ->
       (try Misc.lowercase (List.assoc zr vvrs) with Not_found -> assert false) (*Intentionally 'vvrs' instead of 'zvrs'*)
+  | ZAreg _ -> "za"
   | _ ->
       try Misc.lowercase (Hashtbl.find tab r) with Not_found -> assert false
 

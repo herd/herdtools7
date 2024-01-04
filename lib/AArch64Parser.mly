@@ -46,10 +46,19 @@ let check_op3 op e =
 %token <AArch64Base.reg> ARCH_SREG
 %token <AArch64Base.reg> ARCH_DREG
 %token <AArch64Base.reg> ARCH_QREG
-%token <AArch64Base.reg> ARCH_ZREG
+%token <AArch64Base.reg> ARCH_ZBREG
+%token <AArch64Base.reg> ARCH_ZHREG
+%token <AArch64Base.reg> ARCH_ZSREG
+%token <AArch64Base.reg> ARCH_ZDREG
+%token <AArch64Base.reg> ARCH_ZQREG
 %token <AArch64Base.reg> ARCH_PREG
 %token <AArch64Base.reg> ARCH_PMREG_Z
 %token <AArch64Base.reg> ARCH_PMREG_M
+%token <AArch64Base.reg> ARCH_ZABREG
+%token <AArch64Base.reg> ARCH_ZAHREG
+%token <AArch64Base.reg> ARCH_ZASREG
+%token <AArch64Base.reg> ARCH_ZADREG
+%token <AArch64Base.reg> ARCH_ZAQREG
 %token <int> INDEX
 %token <int> NUM
 %token <string> NAME
@@ -113,10 +122,12 @@ let check_op3 op e =
 %token TOK_VL1 TOK_VL2 TOK_VL3 TOK_VL4 TOK_VL5 TOK_VL6 TOK_VL7 TOK_VL8
 %token TOK_VL16 TOK_VL32 TOK_VL64 TOK_VL128 TOK_VL256
 %token MOVPRFX
-%token LD1B LD1H LD1W LD1D LD2B LD2H LD2W LD2D LD3B LD3H LD3W LD3D LD4B LD4H LD4W LD4D
-%token ST1B ST1H ST1W ST1D ST2B ST2H ST2W ST2D ST3B ST3H ST3W ST3D ST4B ST4H ST4W ST4D
+%token LD1B LD1H LD1W LD1D LD1Q LD2B LD2H LD2W LD2D LD3B LD3H LD3W LD3D LD4B LD4H LD4W LD4D
+%token ST1B ST1H ST1W ST1D ST1Q ST2B ST2H ST2W ST2D ST3B ST3H ST3W ST3D ST4B ST4H ST4W ST4D
 %token RDVL ADDVL
 %token <AArch64Base.cnt_inc_op_variant> CNT_INC_SVE
+%token <AArch64Base.adda_op_variant> ADDA
+%token SMSTART SMSTOP TOK_SM TOK_ZA MOVA
 /*
 /*
 %token LDUMAX LDUMAXA LDUMAXL LDUMAXAL LDUMAXH LDUMAXAH LDUMAXLH LDUMAXALH
@@ -282,8 +293,27 @@ pmreg:
 | ARCH_PMREG_M { $1 }
 
 
+zbreg:
+| ARCH_ZBREG { $1 }
+
+zhreg:
+| ARCH_ZHREG { $1 }
+
+zsreg:
+| ARCH_ZSREG { $1 }
+
+zdreg:
+| ARCH_ZDREG { $1 }
+
+zqreg:
+| ARCH_ZQREG { $1 }
+
 zreg:
-| ARCH_ZREG { $1 }
+| ARCH_ZBREG { $1 }
+| ARCH_ZHREG { $1 }
+| ARCH_ZSREG { $1 }
+| ARCH_ZDREG { $1 }
+| ARCH_ZQREG { $1 }
 
 zregs1:
 | LCRL zreg RCRL { [$2] }
@@ -319,6 +349,114 @@ pattern_not_empty:
 pattern:
 | { ALL }
 | COMMA pattern_not_empty { $2 }
+
+zabreg:
+| ARCH_ZABREG
+  { match $1 with
+    | ZAreg (tile,_,_) when tile <= 0
+      -> $1
+    | _ -> assert false }
+
+zahreg:
+| ARCH_ZAHREG
+  { match $1 with
+    | ZAreg (tile,_,_) when tile <= 1
+      -> $1
+    | _ -> assert false }
+
+zasreg:
+| ARCH_ZASREG
+  { match $1 with
+    | ZAreg (tile,_,_) when tile <= 3
+      -> $1
+    | _ -> assert false }
+
+zadreg:
+| ARCH_ZADREG
+  { match $1 with
+    | ZAreg (tile,_,_) when tile <= 7
+      -> $1
+    | _ -> assert false }
+
+zaqreg:
+| ARCH_ZAQREG
+  { match $1 with
+    | ZAreg (tile,_,_) when tile <= 15
+      -> $1
+    | _ -> assert false }
+
+slice :
+| LBRK wreg COMMA NUM RBRK
+  { if ( $4 >= 0) then
+      ($2,$4)
+    else
+      assert false}
+
+zab_slice:
+| zabreg slice
+  { let (index,offset) = $2 in
+    if (offset <= 15) then
+      match $1 with
+      | ZAreg (_,Some _,_)
+        -> ($1,(index,MetaConst.Int offset))
+      | _ -> assert false
+    else
+      assert false
+  }
+
+zah_slice:
+| zahreg slice
+  { let (index,offset) = $2 in
+    if (offset <= 7) then
+      match $1 with
+      | ZAreg (_,Some _,_)
+        -> ($1,(index,MetaConst.Int offset))
+      | _ -> assert false
+    else
+      assert false
+  }
+
+zas_slice:
+| zasreg slice
+  { let (index,offset) = $2 in
+    if (offset <= 3) then
+      match $1 with
+      | ZAreg (_,Some _,_)
+        -> ($1,(index,MetaConst.Int offset))
+      | _ -> assert false
+    else
+      assert false
+  }
+
+zad_slice:
+| zadreg slice
+  { let (index,offset) = $2 in
+    if (offset <= 1) then
+      match $1 with
+      | ZAreg (_,Some _,_)
+        -> ($1,(index,MetaConst.Int offset))
+      | _ -> assert false
+    else
+      assert false
+  }
+
+zaq_slice:
+| zaqreg slice
+  { let (index,offset) = $2 in
+    if (offset <= 0) then
+      match $1 with
+      | ZAreg (_,Some _,_)
+        -> ($1,(index,MetaConst.Int offset))
+      | _ -> assert false
+    else
+      assert false
+  }
+
+smopt:
+| { None }
+| TOK_SM { Some (SM) }
+| TOK_ZA { Some (ZA) }
+
 k:
 | NUM  { MetaConst.Int $1 }
 | META { MetaConst.Meta $1 }
@@ -1216,6 +1354,166 @@ instr:
   { I_NEG_SV ($2,$4,$6) }
 | MOVPRFX zreg COMMA pmreg COMMA zreg
   { I_MOVPRFX ($2,$4,$6) }
+/* Scalable Matrix Extention */
+| SMSTART smopt
+  { I_SMSTART $2}
+| SMSTOP smopt
+  { I_SMSTOP $2 }
+| LD1B LCRL zab_slice RCRL COMMA pmreg_z COMMA mem_ea
+  { let open MemExt in
+    let (zareg,(index, offset)) = $3 in
+    let (ra,ext) = $8 in
+    match ext with
+    | Imm (MetaConst.Int 0,Idx)
+    | Reg (V64,_,LSL,MetaConst.Int 0)
+      -> I_LD1SPT (VSIMD8,zareg,index,offset,$6,ra,ext)
+    | _ ->  assert false
+  }
+| LD1H LCRL zah_slice RCRL COMMA pmreg_z COMMA mem_ea
+  { let open MemExt in
+    let (zareg,(index, offset)) = $3 in
+    let (ra,ext) = $8 in
+    match ext with
+    | Imm (MetaConst.Int 0,Idx)
+    | Reg (V64,_,LSL,MetaConst.Int 1)
+      -> I_LD1SPT (VSIMD16,zareg,index,offset,$6,ra,ext)
+    | _ -> assert false
+  }
+| LD1W LCRL zas_slice RCRL COMMA pmreg_z COMMA mem_ea
+  { let open MemExt in
+    let (zareg,(index, offset)) = $3 in
+    let (ra,ext) = $8 in
+    match ext with
+    | Imm (MetaConst.Int 0,Idx)
+    | Reg (V64,_,LSL,MetaConst.Int 2)
+      -> I_LD1SPT (VSIMD32,zareg,index,offset,$6,ra,ext)
+    | _ -> assert false
+  }
+| LD1D LCRL zad_slice RCRL COMMA pmreg_z COMMA mem_ea
+  { let open MemExt in
+    let (zareg,(index, offset)) = $3 in
+    let (ra,ext) = $8 in
+    match ext with
+    | Imm (MetaConst.Int 0,Idx)
+    | Reg (V64,_,LSL,MetaConst.Int 3)
+      -> I_LD1SPT (VSIMD64,zareg,index,offset,$6,ra,ext)
+    | _ -> assert false
+  }
+| LD1Q LCRL zaq_slice RCRL COMMA pmreg_z COMMA mem_ea
+  { let open MemExt in
+    let (zareg,(index, offset)) = $3 in
+    let (ra,ext) = $8 in
+    match ext with
+    | Imm (MetaConst.Int 0,Idx)
+    | Reg (V64,_,LSL,MetaConst.Int 4)
+      -> I_LD1SPT (VSIMD128,zareg,index,offset,$6,ra,ext)
+    | _ -> assert false
+  }
+| ST1B LCRL zab_slice RCRL COMMA preg COMMA mem_ea
+  { let open MemExt in
+    let (zareg,(index, offset)) = $3 in
+    let (ra,ext) = $8 in
+    match ext with
+    | Imm (MetaConst.Int 0,Idx)
+    | Reg (V64,_,LSL,MetaConst.Int 0)
+      -> I_ST1SPT (VSIMD8,zareg,index,offset,$6,ra,ext)
+    | _ ->  assert false
+  }
+| ST1H LCRL zah_slice RCRL COMMA preg COMMA mem_ea
+  { let open MemExt in
+    let (zareg,(index, offset)) = $3 in
+    let (ra,ext) = $8 in
+    match ext with
+    | Imm (MetaConst.Int 0,Idx)
+    | Reg (V64,_,LSL,MetaConst.Int 1)
+      -> I_ST1SPT (VSIMD16,zareg,index,offset,$6,ra,ext)
+    | _ -> assert false
+  }
+| ST1W LCRL zas_slice RCRL COMMA preg COMMA mem_ea
+  { let open MemExt in
+    let (zareg,(index, offset)) = $3 in
+    let (ra,ext) = $8 in
+    match ext with
+    | Imm (MetaConst.Int 0,Idx)
+    | Reg (V64,_,LSL,MetaConst.Int 2)
+      -> I_ST1SPT (VSIMD32,zareg,index,offset,$6,ra,ext)
+    | _ -> assert false
+  }
+| ST1D LCRL zad_slice RCRL COMMA preg COMMA mem_ea
+  { let open MemExt in
+    let (zareg,(index, offset)) = $3 in
+    let (ra,ext) = $8 in
+    match ext with
+    | Imm (MetaConst.Int 0,Idx)
+    | Reg (V64,_,LSL,MetaConst.Int 3)
+      -> I_ST1SPT (VSIMD64,zareg,index,offset,$6,ra,ext)
+    | _ -> assert false
+  }
+| ST1Q LCRL zaq_slice RCRL COMMA preg COMMA mem_ea
+  { let open MemExt in
+    let (zareg,(index, offset)) = $3 in
+    let (ra,ext) = $8 in
+    match ext with
+    | Imm (MetaConst.Int 0,Idx)
+    | Reg (V64,_,LSL,MetaConst.Int 4)
+      -> I_ST1SPT (VSIMD128,zareg,index,offset,$6,ra,ext)
+    | _ -> assert false
+  }
+| MOVA zab_slice COMMA pmreg COMMA zbreg
+  {
+    let (zareg,(index, offset)) = $2 in
+    I_MOVA_VT (zareg,index,offset,$4,$6)
+  }
+| MOVA zah_slice COMMA pmreg COMMA zhreg
+  {
+    let (zareg,(index, offset)) = $2 in
+    I_MOVA_VT (zareg,index,offset,$4,$6)
+  }
+| MOVA zas_slice COMMA pmreg COMMA zsreg
+  {
+    let (zareg,(index, offset)) = $2 in
+    I_MOVA_VT (zareg,index,offset,$4,$6)
+  }
+| MOVA zad_slice COMMA pmreg COMMA zdreg
+  {
+    let (zareg,(index, offset)) = $2 in
+    I_MOVA_VT (zareg,index,offset,$4,$6)
+  }
+| MOVA zaq_slice COMMA pmreg COMMA zqreg
+  {
+    let (zareg,(index, offset)) = $2 in
+    I_MOVA_VT (zareg,index,offset,$4,$6)
+  }
+| MOVA zbreg COMMA pmreg COMMA zab_slice
+  {
+    let (zareg,(index, offset)) = $6 in
+    I_MOVA_TV ($2,$4,zareg,index,offset)
+  }
+| MOVA zhreg COMMA pmreg COMMA zah_slice
+  {
+    let (zareg,(index, offset)) = $6 in
+    I_MOVA_TV ($2,$4,zareg,index,offset)
+  }
+| MOVA zsreg COMMA pmreg COMMA zas_slice
+  {
+    let (zareg,(index, offset)) = $6 in
+    I_MOVA_TV ($2,$4,zareg,index,offset)
+  }
+| MOVA zdreg COMMA pmreg COMMA zad_slice
+  {
+    let (zareg,(index, offset)) = $6 in
+    I_MOVA_TV ($2,$4,zareg,index,offset)
+  }
+| MOVA zqreg COMMA pmreg COMMA zaq_slice
+  {
+    let (zareg,(index, offset)) = $6 in
+    I_MOVA_TV ($2,$4,zareg,index,offset)
+  }
+| ADDA zasreg COMMA pmreg COMMA pmreg COMMA zsreg
+  { match $2 with
+    | ZAreg (_,None,_)
+      -> I_ADDA ($1,$2,$4,$6,$8)
+    | _ -> assert false; }
     /* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK cxreg zeroopt RBRK
   { I_CAS (V32,RMW_P,$2,$4,$7) }

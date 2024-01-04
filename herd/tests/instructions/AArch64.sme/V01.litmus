@@ -1,0 +1,15 @@
+AArch64 V01
+{}
+P0                 ;
+MOV Z0.S,#1        ;
+SMSTART SM         ; (* That would zero-out Z* and P* registers *)
+PTRUE P0.S,VL4     ;
+UADDV D0,P0,Z0.S   ;
+FMOV W0,S0         ;
+MOV Z1.S,#2        ;
+PTRUE P1.S,VL4     ;
+UADDV D1,P1,Z1.S   ;
+FMOV W1,S1         ;
+SMSTOP SM          ; (* That would zero-out Z* and P* registers *)
+
+forall 0:V0.4S={0,0,0,0} /\ 0:V1.4S={0,0,0,0} /\ 0:X0=0 /\ 0:X1=8

@@ -11,3 +11,6 @@
 #ifdef __ARM_FEATURE_SVE
 #include <arm_sve.h>
 #endif /* __ARM_FEATURE_SVE */
+#ifdef __ARM_FEATURE_SME
+#include <arm_sme.h>
+#endif

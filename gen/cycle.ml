@@ -137,6 +137,7 @@ module Make (O:Config) (E:Edge.S) :
   let do_kvm = Variant_gen.is_kvm O.variant
   let do_neon = O.variant Variant_gen.Neon
   let do_sve = O.variant Variant_gen.SVE
+  let do_sme = O.variant Variant_gen.SME
 
   type fence = E.fence
   type edge = E.edge
@@ -209,7 +210,7 @@ module Make (O:Config) (E:Edge.S) :
     else fun _ -> ""
 
   let debug_vector =
-    if do_neon || do_sve then
+    if do_neon || do_sve || do_sme then
       let pp_one = Code.add_vector O.hexa in
       fun e ->
       sprintf " (vecreg={%s})"

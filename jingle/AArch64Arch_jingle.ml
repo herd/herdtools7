@@ -673,5 +673,8 @@ include Arch.MakeArch(struct
     | I_MOV_SV _ | I_PTRUE _
     | I_INDEX_SI _ | I_INDEX_IS _  | I_INDEX_SS _ | I_INDEX_II _
     | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
-        -> Warn.fatal "SVE instructions are not implemented yet"
+    -> Warn.fatal "SVE instructions are not implemented yet"
+    | I_SMSTART _ | I_SMSTOP _ | I_LD1SPT _ | I_ST1SPT _
+    | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
+    -> Warn.fatal "SME instructions are not implemented yet"
 end)

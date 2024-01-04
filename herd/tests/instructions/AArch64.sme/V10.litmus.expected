@@ -1,0 +1,11 @@
+Test V10 Required
+States 1
+out1={1,2,3,4}; out2={1,2,3,4}; out3={1,2,3,4}; out4={1,2,3,4};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Matrix-Extensions-is-work-in-progress
+Condition forall (out1={1,2,3,4} /\ out2={1,2,3,4} /\ out3={1,2,3,4} /\ out4={1,2,3,4})
+Observation V10 Always 1 0
+Hash=1cb750fb394b15b71a64fda3b2a736c5
+

@@ -56,6 +56,7 @@ module type SArg = sig
   val set_fault_handling :  Fault.Handling.t ref -> t -> bool
   val set_mte_precision : Precision.t ref -> t -> bool
   val set_sve_length : int ref -> t -> t option
+  val set_sme_length : int ref -> t -> t option
   val check_tag : t -> t list
 end
 
@@ -63,6 +64,7 @@ module type RefsArg = sig
   val fault_handling : Fault.Handling.t ref
   val mte_precision : Precision.t ref
   val sve_vector_length : int ref
+  val sme_vector_length : int ref
 end
 
 module MakeOptS :

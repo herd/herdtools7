@@ -50,6 +50,7 @@ module Refs = struct
   let fault_handling = ref Fault.Handling.default
   let mte_precision = ref Precision.default
   let sve_vector_length = ref 128
+  let sme_vector_length = ref 128
 end
 
 module OptS = ParseTag.MakeOptS(Variant)(Refs)

@@ -155,6 +155,7 @@ match name with
 | "ld1h" | "LD1H" -> LD1H
 | "ld1w" | "LD1W" -> LD1W
 | "ld1d" | "LD1D" -> LD1D
+| "ld1Q" | "LD1Q" -> LD1Q
 | "ld2b" | "LD2B" -> LD2B
 | "ld2h" | "LD2H" -> LD2H
 | "ld2w" | "LD2W" -> LD2W
@@ -171,6 +172,7 @@ match name with
 | "st1h" | "ST1H" -> ST1H
 | "st1w" | "ST1W" -> ST1W
 | "st1d" | "ST1D" -> ST1D
+| "st1q" | "ST1Q" -> ST1Q
 | "st2b" | "ST2B" -> ST2B
 | "st2h" | "ST2H" -> ST2H
 | "st2w" | "ST2W" -> ST2W
@@ -215,6 +217,14 @@ match name with
 | "mul3" | "MUL3" -> TOK_MUL3
 | "all" | "ALL" -> TOK_ALL
 | "movprfx" | "MOVPRFX" -> MOVPRFX
+(* Scalabel Matrix Extension *)
+| "addva" | "ADDVA" -> ADDA (AArch64Base.Vertical)
+| "addha" | "ADDHA" -> ADDA (AArch64Base.Horizontal)
+| "mova" | "MOVA" -> MOVA
+| "smstart" | "SMSTART" -> SMSTART
+| "smstop" | "SMSTOP" -> SMSTOP
+| "sm" | "SM" -> TOK_SM
+| "za" | "ZA" -> TOK_ZA
 (* Compare and swap *)
 | "cas"|"CAS" -> CAS
 | "casa"|"CASA" -> CASA
@@ -648,22 +658,42 @@ match name with
                         end
                     | None ->
                         begin match A.parse_zreg name with
-                        | Some r -> ARCH_ZREG r
+                        | Some r ->
+                            begin match r with
+                            | A.Zreg(_,8) -> ARCH_ZBREG r
+                            | A.Zreg(_,16) -> ARCH_ZHREG r
+                            | A.Zreg(_,32) -> ARCH_ZSREG r
+                            | A.Zreg(_,64) -> ARCH_ZDREG r
+                            | A.Zreg(_,128) -> ARCH_ZQREG r
+                            | _ -> assert false
+                            end
                         | None ->
                             begin match A.parse_pmreg name with
                             | Some r ->
                                 begin match r with
                                 | A.PMreg (_,A.Zero) -> ARCH_PMREG_Z r
                                 | A.PMreg (_,A.Merge) -> ARCH_PMREG_M r
-				| _ -> assert false
+                                | _ -> assert false
                                 end
                             | None ->
                                 begin match A.parse_preg name with
                                 | Some r -> ARCH_PREG r
                                 | None ->
-                                    begin match A.parse_sysreg name with
-                                    | Some r -> SYSREG r
-                                    | None -> NAME name
+                                    begin match A.parse_zareg name with
+                                    | Some r ->
+                                        begin match r with
+                                        | A.ZAreg(_,_,8) -> ARCH_ZABREG r
+                                        | A.ZAreg(_,_,16) -> ARCH_ZAHREG r
+                                        | A.ZAreg(_,_,32) -> ARCH_ZASREG r
+                                        | A.ZAreg(_,_,64) -> ARCH_ZADREG r
+                                        | A.ZAreg(_,_,128) -> ARCH_ZAQREG r
+                                        | _ -> assert false
+                                        end
+                                    | None ->
+                                        begin match A.parse_sysreg name with
+                                        | Some r -> SYSREG r
+                                        | None -> NAME name
+                                        end
                                     end
                                 end
                             end

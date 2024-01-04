@@ -24,11 +24,13 @@ module Make : functor
       val mte_precision : Precision.t
       val fault_handling : Fault.Handling.t
       val sve_vector_length : int
+      val sme_vector_length : int
     end) ->
       sig
         type t = Var.Opt.t
         val mte_precision : Precision.t
         val fault_handling : Fault.Handling.t
         val sve_vector_length : int
+        val sme_vector_length : int
         val variant : t -> bool
       end

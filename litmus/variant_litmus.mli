@@ -22,6 +22,7 @@ type t =
   | Vmsa  (* Checked *)
   | Telechat (* Telechat idiosyncrasies *)
   | SVE (* Do nothing *)
+  | SME (* Do nothing *)
 
 val tags : string list
 val parse : string -> t option
@@ -31,5 +32,7 @@ val compare : t -> t -> int
 
 val set_fault_handling : Fault.Handling.t ref -> t -> bool
 val set_mte_precision : Precision.t ref -> t -> bool
+
 val set_sve_length : int ref -> t -> t option
+val set_sme_length : int ref -> t -> t option
 val check_tag : t -> t list

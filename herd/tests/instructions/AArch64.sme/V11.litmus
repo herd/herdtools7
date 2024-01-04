@@ -1,0 +1,23 @@
+AArch64 V11
+{
+uint64_t out1[2];
+uint64_t out2[2];
+
+0:X0=out1;
+0:X1=out2;
+
+}
+P0                            ;
+SMSTART                       ;
+INDEX Z0.D,#1,#1              ;
+PTRUE P0.D,VL2                ;
+PTRUE P1.D,VL1                ;
+ADDHA ZA0.S,P1/M,P0/M,Z0.S    ;
+MOV W12,WZR                   ;
+MOVA Z1.D,P0/M,ZA0H.D[W12,0]  ;
+MOVA Z2.D,P0/M,ZA0H.D[W12,1]  ;
+ST1D {Z1.D},P0,[X0]           ;
+ST1D {Z2.D},P0,[X1]           ;
+SMSTOP                        ;
+
+forall out1={1,2} /\ out2={0,0}

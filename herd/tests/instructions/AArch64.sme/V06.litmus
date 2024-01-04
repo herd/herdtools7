@@ -1,0 +1,17 @@
+AArch64 V06
+{
+  uint32_t x[4];
+  uint32_t y[4];
+  0:X0=x; 0:X1=y;
+}
+P0 ;
+SMSTART                      ;
+INDEX Z0.S,#1,#1             ;
+PTRUE P0.S                   ;
+ADDHA ZA0.S,P0/M,P0/M,Z0.S   ;
+PTRUE P1.S,VL4               ;
+ST1W {ZA0H.S[W12,0]},P1,[X0] ;
+ST1W {ZA0V.S[W12,0]},P1,[X1] ;
+SMSTOP                       ;
+
+forall x={1,2,3,4} /\ y={1,1,1,1}

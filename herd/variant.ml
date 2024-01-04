@@ -48,6 +48,8 @@ type t =
   | Neon
   | SVE (* Specify SVE *)
   | SVELength of int (* vector size in bits, must be multiple of 128 *)
+  | SME
+  | SMELength of int (* vector size in bits, must be multiple of 128 *)
 (* Branch speculation+ cat computation of dependencies *)
   | Deps
   | Instances (* Compute dependencies on instruction instances *)
@@ -136,6 +138,7 @@ let parse s = match Misc.lowercase s with
 | "morello" -> Some Morello
 | "neon" -> Some Neon
 | "sve" -> Some SVE
+| "sme" -> Some SME
 | "deps" -> Some Deps
 | "instances"|"instance" -> Some Instances
 | "kvm"
@@ -191,11 +194,19 @@ let parse s = match Misc.lowercase s with
       Some (T n)
     | _ -> None
   else None)
-  >>= fun s ->
+  >>= (fun s ->
   if String.length s > 4  && String.sub s 0 4 = "sve:" then
     try
       Some
         (SVELength
+           (int_of_string @@ String.sub s 4 (String.length s-4)))
+    with _ -> None
+  else None)
+  >>= fun s ->
+  if String.length s > 4  && String.sub s 0 4 = "sme:" then
+    try
+      Some
+        (SMELength
            (int_of_string @@ String.sub s 4 (String.length s-4)))
     with _ -> None
   else None
@@ -224,6 +235,8 @@ let pp = function
   | Neon -> "Neon"
   | SVE -> "sve"
   | SVELength k -> Printf.sprintf "sve:%d" k
+  | SME -> "sme"
+  | SMELength k -> Printf.sprintf "sme:%d" k
   | Deps -> "Deps"
   | Instances -> "Instances"
   | VMSA -> "vmsa"
@@ -290,17 +303,24 @@ let set_mte_precision r = function
   | MTEPrecision p -> r := p; true
   | _ -> false
 
+let check_vector_length memo n =
+  let () =
+  if n < 128 || n > 2048 || n mod 128 <> 0 then
+    Warn.fatal
+      "Constant %d is not a valid %s vector length (multiple of 128 between 128 and 2048)" n memo in
+  n
+
 let set_sve_length r = function
   | SVELength n ->
-    let n =
-      let () =
-        if n < 128 || n > 2048 || n mod 128 <> 0 then
-          Warn.fatal
-            "Constant %d is not a valid SVE vector length (multiple of 128 between 128 and 2048)" n in
-      n in
-    r := n ; Some SVE
+      let n = check_vector_length "SVE" n in
+      r := n ; Some SVE
   | _ -> None
 
+let set_sme_length r = function
+  | SMELength n ->
+      let n = check_vector_length "SME" n in
+      r := n ; Some SME
+  | _ -> None
 
 let check_tag = function
 | ASLExperimental -> [ASL;ASLExperimental;]

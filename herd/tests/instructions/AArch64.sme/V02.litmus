@@ -1,0 +1,15 @@
+AArch64 V02
+{
+  uint32_t x[4];
+  0:X0=x;
+}
+P0 ;
+SMSTART                      ;
+INDEX Z0.S,#1,#1             ;
+PTRUE P0.S,VL4               ;
+MOV W12,WZR                  ;
+MOVA ZA0H.S[W12,0],P0/M,Z0.S ;
+ST1W {ZA0H.S[W12,0]},P0,[X0] ;
+SMSTOP                       ;
+
+forall x={1,2,3,4}

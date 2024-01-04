@@ -1,0 +1,11 @@
+Test V11 Required
+States 1
+out1={1,2}; out2={0,0};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Matrix-Extensions-is-work-in-progress
+Condition forall (out1={1,2} /\ out2={0,0})
+Observation V11 Always 1 0
+Hash=dba8211d428abd43000d886a161202b4
+
