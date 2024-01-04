@@ -36,6 +36,7 @@ let do_fullkvm = C.variant Variant_gen.FullKVM
 let do_kvm = do_fullkvm || C.variant Variant_gen.KVM
 let do_neon = C.variant Variant_gen.Neon
 let do_sve = C.variant Variant_gen.SVE
+let do_sme = C.variant Variant_gen.SME
 let do_mixed = Variant_gen.is_mixed  C.variant
 let do_cu = C.variant Variant_gen.ConstrainedUnpredictable
 
@@ -61,7 +62,9 @@ module Mixed =
 let bellatom = false
 module SIMD = struct
 
-  type atom = SvV|Sv1|Sv2i|Sv3i|Sv4i|NeP|NeAcqPc|NeRel|Ne1|Ne2|Ne3|Ne4|Ne2i|Ne3i|Ne4i|NePa|NePaN
+  type atom = SmV|SmH
+             |SvV|Sv1|Sv2i|Sv3i|Sv4i
+             |NeP|NeAcqPc|NeRel|Ne1|Ne2|Ne3|Ne4|Ne2i|Ne3i|Ne4i|NePa|NePaN
 
   let fold_neon f r = r |>
     f NeAcqPc |> f NeRel |>
@@ -74,7 +77,11 @@ module SIMD = struct
     f SvV  |> f Sv1 |>
     f Sv2i |> f Sv3i |> f Sv4i
 
+  let fold_sme f r = r |>
+    f SmV  |> f SmH
+
   let nregs = function
+    | SmV | SmH
     | SvV | Sv1 | Ne1 -> 1
     | Sv2i | Ne2 | Ne2i -> 2
     | Sv3i | Ne3 | Ne3i -> 3
@@ -82,6 +89,7 @@ module SIMD = struct
     | _ -> 1
 
   let nelements = function
+    | SmV|SmH
     | SvV|Sv1|Sv2i|Sv3i|Sv4i
     | Ne1|Ne2|Ne2i|Ne3|Ne3i|Ne4|Ne4i -> 4
     | NePa|NePaN -> 2
@@ -98,6 +106,8 @@ module SIMD = struct
        Printf.sprintf "Ne%i%s" (nregs n) (pp_opt n)
     | Sv1 | Sv2i | Sv3i | Sv4i ->
        Printf.sprintf "Sv%i%s" (nregs n) (pp_opt n)
+    | SmV -> "SmV"
+    | SmH-> "SmH"
     | SvV -> "SvV"
     | NePa -> "NePa"
     | NePaN -> "NePaN"
@@ -117,10 +127,10 @@ module SIMD = struct
     for k = 0 to sz-1 do
       for i=0 to el-1 do
         let j = match n with
-          | Sv2i | Sv3i | Sv4i | Ne2i | Ne3i | Ne4i -> k+i*sz
+          | SmV |Sv2i | Sv3i | Sv4i | Ne2i | Ne3i | Ne4i -> k+i*sz
           | NeP | NeAcqPc | NeRel | NePa | NePaN
           | Ne1 | Ne2 | Ne3 | Ne4
-          | SvV | Sv1 -> i+k*el
+          | SmH | SvV | Sv1 -> i+k*el
         in
        v.(j) <- start+k
       done
@@ -131,10 +141,10 @@ module SIMD = struct
     let el = nelements n in
     let sz = nregs n in
     let access r k = match n with
-      | Sv2i | Sv3i | Sv4i | Ne2i | Ne3i | Ne4i -> sz*k + r
+      | SmV | Sv2i | Sv3i | Sv4i | Ne2i | Ne3i | Ne4i -> sz*k + r
       | NeP | NeAcqPc | NeRel | NePa | NePaN
       | Ne1 | Ne2 | Ne3 | Ne4
-      | SvV | Sv1 -> el*r + k
+      | SmH | SvV | Sv1 -> el*r + k
     in
     let rec reg r k =
       if k >= el then []
@@ -353,6 +363,12 @@ let is_ifetch a = match a with
      else
        fun _ r -> r
 
+   let fold_sme =
+     if do_sme then
+       fun f -> SIMD.fold_sme (fun n -> f (Neon n))
+     else
+       fun _ r -> r
+
       let fold_pair f r =
         if do_mixed then r
         else
@@ -376,6 +392,7 @@ let is_ifetch a = match a with
      let r = fold_tag f r in
      let r = fold_neon f r in
      let r = fold_sve f r in
+     let r = fold_sme f r in
      let r = fold_pair f r in
      let r = fold_acc_opt None f r in
      let r =
@@ -475,6 +492,7 @@ let is_ifetch a = match a with
      function
      | NeP | NeAcqPc | NeRel -> 1
      | NePa | NePaN -> 2
+     | SmV | SmH
      | SvV | Sv1  | Ne1 -> 4
      | Sv2i | Ne2 | Ne2i -> 8
      | Sv3i | Ne3 | Ne3i -> 12
@@ -884,8 +902,11 @@ include
       let free_registers = allowed_for_symb
 
       type special = reg
+      type special2 = reg
+      type special3 = int * reg
       let specials = vregs
       let specials2 = pregs
+      let specials3 = zaslices
     end)
 
 end

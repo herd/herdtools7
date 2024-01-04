@@ -190,6 +190,7 @@ let run_herd bell cat litmus cfg =
     let fault_handling = !Refs.fault_handling
     let mte_precision = !Refs.mte_precision
     let sve_vector_length = !Refs.sve_vector_length
+    let sme_vector_length = !Refs.sme_vector_length
     let dumpallfaults = !dumpallfaults
     let byte = !byte
     let endian = !endian

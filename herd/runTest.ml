@@ -33,6 +33,7 @@ module type Config = sig
   val dumpallfaults : bool
   val byte : MachSize.Tag.t
   val sve_vector_length : int
+  val sme_vector_length : int
 end
 
 type runfun =

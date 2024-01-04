@@ -1,0 +1,11 @@
+Test V05 Required
+States 1
+x={1,2,3,4};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Matrix-Extensions-is-work-in-progress
+Condition forall (x={1,2,3,4})
+Observation V05 Always 1 0
+Hash=0cf19d9833300d409985c4f4c607de19
+

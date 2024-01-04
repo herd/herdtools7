@@ -1,0 +1,26 @@
+AArch64 V16
+{
+uint16_t out1[3];
+uint16_t out2[3];
+
+0:X0=out1;
+0:X1=out2;
+
+}
+P0                           ;
+SMSTART                      ;
+INDEX Z2.H,#3,#3             ;
+INDEX Z3.H,#4,#4             ;
+INDEX Z4.H,#5,#5             ;
+PTRUE P0.H,VL3               ;
+MOV W12,WZR                  ;
+MOVA ZA0V.H[W12,2],P0/M,Z2.H ;
+MOVA ZA0V.H[W12,3],P0/M,Z3.H ;
+ADDHA ZA0.S,P0/M,P0/M,Z4.S   ;
+MOVA Z7.H,P0/M,ZA0V.H[W12,2] ;
+MOVA Z8.H,P0/M,ZA0V.H[W12,3] ;
+ST1H {Z7.H},P0,[X0]          ;
+ST1H {Z8.H},P0,[X1]          ;
+SMSTOP                       ;
+
+forall out1={18,6,24} /\ out2={24,8,32}

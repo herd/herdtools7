@@ -1,0 +1,38 @@
+AArch64 T
+{
+uint32_t out1[4];
+uint32_t out2[4];
+uint32_t out3[4];
+uint32_t out4[4];
+
+0:X0=out1;
+0:X1=out2;
+0:X2=out3;
+0:X3=out4;
+
+}
+P0                            ;
+SMSTART                       ;
+INDEX Z0.S,#1,#1             ;
+INDEX Z1.S,#2,#2             ;
+INDEX Z2.S,#3,#3             ;
+INDEX Z3.S,#4,#4             ;
+INDEX Z4.S,#5,#5             ;
+PTRUE P0.S,VL4               ;
+MOV W12,WZR                  ;
+MOVA ZA0H.S[W12,0],P0/M,Z0.S ;
+MOVA ZA0H.S[W12,1],P0/M,Z1.S ;
+MOVA ZA0H.S[W12,2],P0/M,Z2.S ;
+MOVA ZA0H.S[W12,3],P0/M,Z3.S ;
+ADDVA ZA0.S,P0/M,P0/M,Z4.S   ;
+MOVA Z5.S,P0/M,ZA0H.S[W12,0] ;
+MOVA Z6.S,P0/M,ZA0H.S[W12,1] ;
+MOVA Z7.S,P0/M,ZA0H.S[W12,2] ;
+MOVA Z8.S,P0/M,ZA0H.S[W12,3] ;
+ST1W {Z5.S},P0,[X0]           ;
+ST1W {Z6.S},P0,[X1]           ;
+ST1W {Z7.S},P0,[X2]           ;
+ST1W {Z8.S},P0,[X3]           ;
+SMSTOP                        ;
+
+forall out1={6,7,8,9} /\ out2={12,14,16,18} /\ out3={18,21,24,27} /\ out4={24,28,32,36}

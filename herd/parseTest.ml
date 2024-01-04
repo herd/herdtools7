@@ -46,12 +46,14 @@ module Top (TopConf:RunTest.Config) = struct
             let mte_precision = TopConf.mte_precision
             let fault_handling = TopConf.fault_handling
             let sve_vector_length = TopConf.sve_vector_length
+            let sme_vector_length = TopConf.sme_vector_length
           end)
       (* Override *)
       include TopConf
       let fault_handling = TestConf.fault_handling
       let mte_precision = TestConf.mte_precision
       let sve_vector_length = TestConf.sve_vector_length
+      let sme_vector_length = TestConf.sme_vector_length
       let variant = TestConf.variant
     end in
     if Conf.check_name tname then begin

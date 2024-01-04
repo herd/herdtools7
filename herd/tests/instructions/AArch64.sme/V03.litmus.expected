@@ -1,0 +1,11 @@
+Test V03 Required
+States 1
+0:X1=10;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Matrix-Extensions-is-work-in-progress
+Condition forall (0:X1=10)
+Observation V03 Always 1 0
+Hash=3735f297bb64925ffd8f875869f0d2b1
+

@@ -17,5 +17,9 @@
 (* Nothing special *)
 
 type special
+type special2
+type special3
+
 let specials = []
 let specials2 = []
+let specials3 = []

@@ -1,0 +1,11 @@
+Test V20 Required
+States 1
+out1={101,102,103,104}; out2={201,202,203,204};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Matrix-Extensions-is-work-in-progress
+Condition forall (out1={101,102,103,104} /\ out2={201,202,203,204})
+Observation V20 Always 1 0
+Hash=bb6eb56aaad338240d1de3408688030b
+

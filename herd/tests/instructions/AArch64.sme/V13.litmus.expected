@@ -1,0 +1,11 @@
+Test V13 Required
+States 1
+out1={6,12,18,24}; out2={7,14,21,28}; out3={8,16,24,32}; out4={9,18,27,36};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Matrix-Extensions-is-work-in-progress
+Condition forall (out1={6,12,18,24} /\ out2={7,14,21,28} /\ out3={8,16,24,32} /\ out4={9,18,27,36})
+Observation V13 Always 1 0
+Hash=48dd54a0560b53ac51afd1495d1c6531
+

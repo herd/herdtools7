@@ -40,6 +40,8 @@ type t =
   | Neon
 (* Scalable Vector extension (AArch64) *)
   | SVE
+(* Scalable Matrix extension (AArch64) *)
+  | SME
 (* Constrained Unpredictable *)
   | ConstrainedUnpredictable
 
@@ -66,6 +68,7 @@ let parse tag = match Misc.lowercase tag with
 | "nofault" -> Some NoFault
 | "neon" -> Some Neon
 | "sve" -> Some SVE
+| "sme" -> Some SME
 | "constrainedunpredictable"|"cu" -> Some ConstrainedUnpredictable
 | _ -> None
 
@@ -85,6 +88,7 @@ let pp = function
   | NoFault -> "NoFault"
   | Neon -> "Neon"
   | SVE -> "sve"
+  | SME -> "sme"
   | ConstrainedUnpredictable -> "ConstrainedUnpredictable"
 
 let is_mixed v = v Mixed || v FullMixed

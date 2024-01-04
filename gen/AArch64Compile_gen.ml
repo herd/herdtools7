@@ -47,7 +47,20 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let nop = "NOP"
 
 (* Utilities *)
-    let next_reg x = A64.alloc_reg x
+    (* Reserve SME's slice index register *)
+    let x12 = Ireg R12
+
+    let next_reg x =
+      if do_sme then
+        begin
+          let r,x = A64.alloc_reg x in
+          match r with
+          | Ireg R12 -> A64.alloc_reg x
+          | _ -> r,x
+        end
+      else
+        A64.alloc_reg x
+
     let next_reg2 x =
       let r1,x = next_reg x in
       let r2,x = next_reg x in
@@ -79,6 +92,19 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | Preg (r,_) -> PMreg(r,m)
     | PMreg (r,_) -> PMreg(r,m)
     | _ -> assert false
+
+    let with_direction dir r = match r with
+    | ZAreg (tile,_,size) -> ZAreg (tile,Some dir,size)
+    | _ -> assert false
+
+    let next_zaslice n st =
+      let dir = match n with
+                | SIMD.SmV -> Vertical
+                | SIMD.SmH -> Horizontal
+                | _ -> assert false
+      in
+      let (i,r),st = A64.alloc_special3 st in
+    with_direction dir r,i,st
 
     let pattern = function
     | 1 -> VL1
@@ -768,6 +794,45 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         r,init,pseudo csI@cs,st
     end
 
+    module LD1T = struct
+
+      let emit_load_reg n st init rA idx =
+        let smstart = [I_SMSTART (None)] in
+        let pred,st = next_preg st in
+        let nelem = SIMD.nelements n in
+        let ptrue = [I_PTRUE (pred,pattern nelem)] in
+        let movx12 = [I_MOV (V32,x12,RV (V32,ZR))] in
+        let tile,slice,st = next_zaslice n st in
+        let load = [I_LD1SPT (VSIMD32,tile,x12,slice,with_mode Zero pred,rA,idx)] in
+        let r,st = next_zreg st in
+        let mova = [I_MOVA_TV (r,with_mode Merge pred,tile,x12,slice)] in
+        let acc,st = next_vreg st in
+        let reduce = [I_UADDV (VSIMD64,to_scalar acc,pred,r)] in
+        let rX,st = next_reg st in
+        let fmov = [I_FMOV_TG(V32,rX,VSIMD32,to_scalar acc)] in
+        let smstop = [I_SMSTOP (None)] in
+        rX,init,lift_code (smstart@ptrue@movx12@load@mova@reduce@fmov@smstop),st
+
+        let emit_load n st p init loc =
+          let open MemExt in
+          let idx = Imm(0,Idx) in
+          let rA,init,st = U.next_init st p init loc in
+          emit_load_reg n st init rA idx
+
+        let emit_load_idx n v st p init loc ridx =
+          let open MemExt in
+          let rA,init,st = U.next_init st p init loc in
+          let rI,csI,st = match v with
+          | V32 ->
+            let r,st = next_reg st in
+            r,[sxtw r ridx],st
+          | _ -> ridx,[],st
+          in
+          let idx = Reg(V64,rI,LSL,2) in
+          let r,init,cs,st = emit_load_reg n st init rA idx in
+          r,init,pseudo csI@cs,st
+    end
+
     module LDG = struct
       let emit_load st p init x =
         let rA,st = next_reg st in
@@ -1132,6 +1197,62 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let setup = dup_sv@mov_sv@add_sv@ptrue in
         let store = [I_ST1SP (VSIMD32,[r],pred,rA,ZReg(rI,UXTW,2))] in
         init,lift_code (index@setup@store),st
+    end
+
+    module ST1T = struct
+      let emit_store_reg n st init rA v idx=
+        let smstart = [I_SMSTART (None)] in
+        let pred,st = next_preg st in
+        let nelem = SIMD.nelements n in
+        let ptrue = [I_PTRUE (pred,pattern nelem)] in
+        let movx12 = [I_MOV (V32,x12,RV (V32,ZR))] in
+        let r,st = next_zreg st in
+        let mov_sv = [I_MOV_SV (r,v,S_NOEXT)] in
+        let tile,slice,st = next_zaslice n st in
+        let mova = [I_MOVA_VT (tile,x12,slice,with_mode Merge pred,r)] in
+        let setup = mov_sv@ptrue@movx12@mova in
+        let store = [I_ST1SPT (VSIMD32,tile,x12,slice,pred,rA,idx)] in
+        let smstop = [I_SMSTOP (None)] in
+        init,lift_code (smstart@setup@store@smstop),st
+
+      let emit_store n st p init loc v =
+        let open MemExt in
+        let idx = Imm(0,Idx) in
+        let rA,init,st = U.next_init st p init loc in
+        emit_store_reg n st init rA v idx
+
+      let emit_store_idx n vdep st p init loc ridx v =
+        let open MemExt in
+        let rA,init,st = U.next_init st p init loc in
+        let rI,csI,st = match vdep with
+        | V32 ->
+          let r,st = next_reg st in
+          r,[sxtw r ridx],st
+        | _ -> ridx,[],st
+        in
+        let idx = Reg(V64,rI,LSL,2) in
+        let init,cs,st = emit_store_reg n st init rA v idx in
+        init,pseudo csI@cs,st
+
+      let emit_store_dep n vdep st init rA v =
+        let open MemExt in
+        let idx = Imm(0,Idx) in
+        let smstart = [I_SMSTART (None)] in
+        let rB,st = next_zreg st in
+        let dup_sv = [I_DUP_SV (rB,V32,vdep)] in
+        let r,st = next_zreg st in
+        let mov_sv = [I_MOV_SV (r,v,S_NOEXT)] in
+        let add_sv = [I_ADD_SV (r,r,rB)] in
+        let tile,slice,st = next_zaslice n st in
+        let pred,st = next_preg st in
+        let nelem = SIMD.nelements n in
+        let ptrue = [I_PTRUE (pred,pattern nelem)] in
+        let movx12 = [I_MOV (V32,x12,RV (V32,ZR))] in
+        let mova = [I_MOVA_VT (tile,x12,slice,with_mode Merge pred,r)] in
+        let setup = dup_sv@mov_sv@add_sv@ptrue@movx12@mova in
+        let store = [I_ST1SPT (VSIMD32,tile,x12,slice,pred,rA,idx)] in
+        let smstop = [I_SMSTOP (None)] in
+        init,lift_code (smstart@setup@store@smstop),st
     end
 
     module STG = struct
@@ -1577,6 +1698,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
          | SIMD.NePaN -> LDP.emit_load A64.NT
          | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i-> LDNW.emit_load n
          | SIMD.SvV -> LD1G.emit_load n
+         | SIMD.SmV | SIMD.SmH -> LD1T.emit_load n
          | _ -> LDN.emit_load n
        in
        emit_load
@@ -1699,6 +1821,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              | SIMD.NePaN -> LDP.emit_load A64.NT
              | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i -> LDNW.emit_load n
              | SIMD.SvV -> LD1G.emit_load n
+             | SIMD.SmV | SIMD.SmH -> LD1T.emit_load n
              | _ -> LDN.emit_load n
            in
            let r,init,cs,st = emit_load st p init loc in
@@ -1794,6 +1917,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              | SIMD.NePaN -> STP.emit_store A64.NT
              | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i-> STNW.emit_store n
              | SIMD.SvV -> ST1S.emit_store n
+             | SIMD.SmV | SIMD.SmH -> ST1T.emit_store n
              | _ -> STN.emit_store n
            in
            let init,cs,st = emit_store st p init loc e.C.v in
@@ -2155,6 +2279,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 | SIMD.NePaN -> LDP.emit_load_idx A64.NT
                 | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i -> LDNW.emit_load_idx n
                 | SIMD.SvV -> LD1G.emit_load_idx n
+                | SIMD.SmV | SIMD.SmH -> LD1T.emit_load_idx n
                 | _ -> LDN.emit_load_idx n
               in
               let rB,init,cs,st = emit_load_idx vdep st p init loc r2 in
@@ -2296,6 +2421,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                | SIMD.NePaN -> STP.emit_store_idx A64.NT
                | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i -> STNW.emit_store_idx n
                | SIMD.SvV -> ST1S.emit_store_idx n
+               | SIMD.SmV | SIMD.SmH -> ST1T.emit_store_idx n
                | _ -> STN.emit_store_idx n
              in
              let init,cs,st = emit_store_idx vdep st p init loc r2 e.C.v in
@@ -2500,6 +2626,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                | SIMD.NePaN -> STP.emit_store_dep A64.NT
                | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i -> STNW.emit_store_dep n
                | SIMD.SvV -> ST1S.emit_store_dep n
+               | SIMD.SmV | SIMD.SmH -> ST1T.emit_store_dep n
                | _ -> STN.emit_store_dep n
              in
              let init,cs,st = emit_store_dep r2 st init rA e.C.v in

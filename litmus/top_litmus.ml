@@ -410,6 +410,7 @@ end = struct
               let mte_precision = OT.mte_precision
               let fault_handling = OT.fault_handling
               let sve_vector_length = 0
+              let sme_vector_length = 0
             end) in
         (* Then call appropriate compiler, depending upon arch *)
         let opt = OT.mkopt (Option.get_default arch) in
