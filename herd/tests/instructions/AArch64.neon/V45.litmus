@@ -2,6 +2,7 @@ AArch64 V45
 (* Tests STP - store pair, post-indexed *)
 {
 uint64_t x[2];
+uint64_t y;
 0:X0=x; 0:X1=y;
 }
 
