@@ -1119,6 +1119,7 @@ type 'k kinstruction =
   | I_LDUR_SIMD of simd_variant * reg * reg * 'k option
   | I_LDAPUR_SIMD of simd_variant * reg * reg * 'k option
   | I_STUR_SIMD of simd_variant * reg * reg * 'k option
+  | I_STLUR_SIMD of simd_variant * reg * reg * 'k option
   | I_ADDV of simd_variant * reg * reg
   | I_DUP of reg * variant * reg
   | I_FMOV_TG of variant * reg * simd_variant * reg
@@ -1590,6 +1591,10 @@ let do_pp_instruction m =
       sprintf "STUR %s,[%s]" (pp_vsimdreg v r1) (pp_reg r2)
   | I_STUR_SIMD (v,r1,r2,Some(k)) ->
       sprintf "STUR %s,[%s,%s]" (pp_vsimdreg v r1) (pp_reg r2) (m.pp_k k)
+  | I_STLUR_SIMD (v,r1,r2,None) ->
+      sprintf "STLUR %s,[%s]" (pp_vsimdreg v r1) (pp_reg r2)
+  | I_STLUR_SIMD (v,r1,r2,Some(k)) ->
+      sprintf "STLUR %s,[%s,%s]" (pp_vsimdreg v r1) (pp_reg r2) (m.pp_k k)
   | I_ADDV (v,r1,r2) ->
       sprintf "ADDV %s,%s" (pp_vsimdreg v r1) (pp_simd_vector_reg r2)
   | I_DUP (r1,v,r2) ->
@@ -1879,7 +1884,8 @@ let fold_regs (f_regs,f_sregs) =
   | I_FMOV_TG (_,r1,_,r2)
   | I_DUP (r1,_,r2)
   | I_ADDV (_,r1,r2)
-  | I_LDUR_SIMD (_,r1,r2,_) | I_LDAPUR_SIMD (_,r1,r2,_) | I_STUR_SIMD (_,r1,r2,_)
+  | I_LDUR_SIMD (_,r1,r2,_) | I_LDAPUR_SIMD (_,r1,r2,_)
+  | I_STUR_SIMD (_,r1,r2,_) | I_STLUR_SIMD (_,r1,r2,_)
   | I_LDG (r1,r2,_) | I_STZG (r1,r2,_)
   | I_STZ2G (r1,r2,_) | I_STG (r1,r2,_)
   | I_ALIGND (r1,r2,_) | I_ALIGNU (r1,r2,_)
@@ -2085,6 +2091,8 @@ let map_regs f_reg f_symb =
       I_LDAPUR_SIMD (v,map_reg r1, map_reg r2,k)
   | I_STUR_SIMD (v,r1,r2,k) ->
       I_STUR_SIMD (v,map_reg r1, map_reg r2,k)
+  | I_STLUR_SIMD (v,r1,r2,k) ->
+      I_STLUR_SIMD (v,map_reg r1, map_reg r2,k)
   | I_ADDV (v,r1,r2) ->
       I_ADDV (v,map_reg r1,map_reg r2)
   | I_DUP (r1,v,r2) ->
@@ -2317,7 +2325,8 @@ let get_next =
   | I_STP_P_SIMD _ | I_STP_SIMD _
   | I_LDR_SIMD _ | I_LDR_P_SIMD _
   | I_STR_SIMD _ | I_STR_P_SIMD _
-  | I_LDUR_SIMD _ | I_LDAPUR_SIMD _ | I_STUR_SIMD _
+  | I_LDUR_SIMD _ | I_LDAPUR_SIMD _
+  | I_STUR_SIMD _ | I_STLUR_SIMD _
   | I_ADDV _ | I_DUP _ | I_FMOV_TG _
   | I_MOV_VE _ | I_MOV_V _ | I_MOV_TG _ | I_MOV_FG _
   | I_MOV_S _
@@ -2622,6 +2631,8 @@ module PseudoI = struct
         | I_LDAPUR_SIMD (v,r1,r2,Some(k)) -> I_LDAPUR_SIMD (v,r1,r2,Some(k_tr k))
         | I_STUR_SIMD (v,r1,r2,None) -> I_STUR_SIMD (v,r1,r2,None)
         | I_STUR_SIMD (v,r1,r2,Some(k)) -> I_STUR_SIMD (v,r1,r2,Some(k_tr k))
+        | I_STLUR_SIMD (v,r1,r2,None) -> I_STLUR_SIMD (v,r1,r2,None)
+        | I_STLUR_SIMD (v,r1,r2,Some(k)) -> I_STLUR_SIMD (v,r1,r2,Some(k_tr k))
         | I_MOVI_V (r,k,s) -> I_MOVI_V (r,k_tr k,ap_shift k_tr s)
         | I_MOVI_S (v,r,k) -> I_MOVI_S (v,r,k_tr k)
         | I_EOR_SIMD (r1,r2,r3) -> I_EOR_SIMD (r1,r2,r3)
@@ -2656,7 +2667,8 @@ module PseudoI = struct
         | I_LDR_SIMD _ | I_STR_SIMD _
         | I_LD1 _ | I_LD1R _
         | I_ST1 _
-        | I_LDUR_SIMD _ | I_LDAPUR_SIMD _ | I_STUR_SIMD _
+        | I_LDUR_SIMD _ | I_LDAPUR_SIMD _
+        | I_STUR_SIMD _ | I_STLUR_SIMD _
         | I_TLBI (_,_)
           -> 1
         | I_LDP _|I_LDPSW _|I_STP _|I_LDXP _|I_STXP _

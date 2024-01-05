@@ -98,7 +98,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_RET _
     | I_SBFM _| I_SC _| I_SEAL _| I_ST1 _| I_ST1M _| I_ST2 _| I_ST2M _| I_ST3 _
     | I_ST3M _| I_ST4 _| I_ST4M _| I_STCT _| I_STG _| I_STLR _| I_STLRBH _| I_STOP _
-    | I_STOPBH _| I_STP _| I_STP_P_SIMD _| I_STP_SIMD _| I_STR _
+    | I_STOPBH _| I_STP _| I_STP_P_SIMD _| I_STP_SIMD _| I_STR _ | I_STLUR_SIMD _
     | I_STR_P_SIMD _| I_STR_SIMD _| I_STRBH _| I_STUR_SIMD _| I_STXP _| I_STXR _
     | I_STXRBH _| I_STZG _| I_STZ2G _
     | I_SWP _| I_SWPBH _| I_SXTW _| I_TLBI _| I_UBFM _
@@ -234,7 +234,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_STR_SIMD (v,_,_,_,_) | I_STR_P_SIMD (v,_,_,_)
       | I_STP_SIMD (_,v,_,_,_,_) | I_STP_P_SIMD (_,v,_,_,_,_)
       | I_LDUR_SIMD (v,_,_,_) | I_STUR_SIMD (v,_,_,_)
-      | I_LDAPUR_SIMD (v,_,_,_)  ->
+      | I_LDAPUR_SIMD (v,_,_,_) | I_STLUR_SIMD (v,_,_,_) ->
           Some (tr_simd_variant v)
       | I_LD1 (rs,_,_,_) | I_LD1R (rs,_,_) | I_ST1 (rs,_,_,_)
       | I_LD1M (rs,_,_) | I_ST1M (rs,_,_)
@@ -345,7 +345,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDP_SIMD _|I_STP_SIMD _
       | I_LDR_SIMD _|I_LDR_P_SIMD _
       | I_STR_SIMD _|I_STR_P_SIMD _
-      | I_LDUR_SIMD _|I_LDAPUR_SIMD _|I_STUR_SIMD _|I_MOV_VE _
+      | I_LDUR_SIMD _|I_LDAPUR_SIMD _|I_STUR_SIMD _|I_STLUR_SIMD _
+      | I_MOV_VE _
       | I_MOV_V _|I_MOV_TG _|I_MOV_FG _
       | I_MOV_S _|I_MOVI_V _|I_MOVI_S _
       | I_EOR_SIMD _|I_ADD_SIMD _|I_ADD_SIMD_S _
@@ -376,7 +377,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDP_SIMD _|I_STP_SIMD _
       | I_LDR_SIMD _|I_LDR_P_SIMD _
       | I_STR_SIMD _|I_STR_P_SIMD _
-      | I_LDUR_SIMD _|I_LDAPUR_SIMD _|I_STUR_SIMD _|I_MOV_VE _
+      | I_LDUR_SIMD _|I_LDAPUR_SIMD _|I_STUR_SIMD _|I_STLUR_SIMD _
+      | I_MOV_VE _
       | I_MOV_V _|I_MOV_TG _|I_MOV_FG _
       | I_MOV_S _|I_MOVI_V _|I_MOVI_S _
       | I_ADDV _| I_DUP _ | I_FMOV_TG _

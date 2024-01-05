@@ -1899,6 +1899,7 @@ module Make
           do_write_mem sz an aexp Access.VIR addr v ii >>= B.next1T
 
       let simd_str = do_simd_str Annot.N
+      let simd_stlr = do_simd_str Annot.L
 
       let simd_str_p sz rs rd k ii =
         read_reg_ord rs ii >>|
@@ -2640,6 +2641,10 @@ module Make
             let access_size = tr_simd_variant var and
             k = K (match k with Some k -> k | None -> 0) in
             simd_str access_size rA r1 k S_NOEXT ii
+        | I_STLUR_SIMD(var,r1,rA,k) ->
+            let access_size = tr_simd_variant var and
+            k = K (match k with Some k -> k | None -> 0) in
+            simd_stlr access_size rA r1 k S_NOEXT ii
         | I_LDP_SIMD(tnt,var,r1,r2,r3,k) ->
             get_ea_idx r3 k ii >>= fun addr ->
             simd_ldp tnt var addr r1 r2 ii
