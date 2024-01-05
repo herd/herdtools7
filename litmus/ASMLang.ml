@@ -29,7 +29,7 @@ module type I = sig
 (* Forbidden registers *)
   val forbidden_regs :  arch_reg list
 (* Initial value of internal registers *)
-  val internal_init : arch_reg -> (string * string) option
+  val internal_init : arch_reg -> string option -> (string * string) option
 (* gcc assembly template register class *)
   val reg_class : arch_reg -> string
   val reg_class_stable : arch_reg -> string
@@ -149,12 +149,12 @@ module RegMap = A.RegMap)
             | _ -> dump_v v in
 
           if RegSet.mem reg in_outputs then begin
-            match A.internal_init reg with
+            match A.internal_init reg (Some(dump_v v)) with
             | None ->
                sprintf "\"%s\" (%s)" (tag_reg_def reg)
                  (dump_v_typed v)
             | Some (s,_) -> sprintf "\"%s\" (%s)" (tag_reg_def reg) s
-          end else match A.internal_init reg with
+          end else match A.internal_init reg (Some(dump_v v)) with
           | None ->
               sprintf "%s \"%s\" (%s)"
                 (tag_reg_def reg)
@@ -162,7 +162,6 @@ module RegMap = A.RegMap)
                 (dump_v_typed v)
           | Some (s,_) ->
               sprintf "%s \"%s\" (%s)" (tag_reg_def reg) (strip_equal (A.reg_class reg)) s in
-
         (* Input from state *)
         let ins =
           List.map
@@ -336,8 +335,8 @@ module RegMap = A.RegMap)
               with Not_found -> Compile.base in
             match ty with
             | CType.Array _ when A.arch = `AArch64 ->
-              fprintf chan "%sint128_t out_%s = %s;\n" indent
-                (dump_stable_reg reg) (dump_stable_reg reg);
+              fprintf chan "%s%s out_%s = %s;\n" indent
+                (CType.dump CType.int32x4_t) (dump_stable_reg reg) (dump_stable_reg reg);
               fprintf chan "%smemcpy(%s, &out_%s, sizeof(%s));\n" indent
                 (compile_out_reg proc reg) (dump_stable_reg reg) (CType.dump ty)
             | _ ->
@@ -355,44 +354,35 @@ module RegMap = A.RegMap)
         let reg_env = Tmpl.get_reg_env A.error A.warn t in
         RegSet.iter
           (fun reg ->
-            let ty = match A.internal_init reg with
+            let ty = match A.internal_init reg None with
             | Some (_,ty) -> ty
-            | None ->
-              let t = (RegMap.safe_find CType.word reg reg_env) in
-              match t with
-              | CType.Array _ when A.arch = `AArch64 -> "int128_t"
-              | _ -> CType.dump t in
+            | None -> CType.dump (RegMap.safe_find CType.word reg reg_env) in
             fprintf chan "%s%s %s;\n"
               indent ty (dump_trashed_reg reg))
           trashed ;
         List.iter
           (fun reg ->
-            let ty =
-              try RegMap.find reg env
-              with Not_found -> Compile.base in
-            match ty with
-            | CType.Array _ when A.arch = `AArch64 ->
-              fprintf chan "%sregister int128_t %s asm(\"%s\")%s;\n"
-                indent (dump_stable_reg reg)
-                (A.reg_to_string reg)
-                (match init_val reg t with
-                | None -> ""
-                | Some v -> sprintf " = %s" (compile_val v))
-            | _ ->
-              fprintf chan "%sregister %s %s asm(\"%s\")%s;\n"
-                indent (CType.dump ty) (dump_stable_reg reg)
-                (A.reg_to_string reg)
-                (match init_val reg t with
-                | None -> ""
-                | Some v ->
+            let ty = match A.internal_init reg None with
+            | Some (_,ty) -> ty
+            | None -> CType.dump (RegMap.safe_find Compile.base reg reg_env) in
+            let init = match init_val reg t with
+            | None -> ""
+            | Some v ->
+                begin
+                  match A.internal_init reg (Some(compile_val v)) with
+                  | Some (init,_) -> sprintf " = %s" init
+                  | None ->
                     begin
                       match v with
                       | Constant.Symbolic _ ->
-                          sprintf " = (%s)%s"
-                            (CType.dump ty) (compile_val v)
+                          sprintf " = (%s)%s" ty (compile_val v)
                       | _ ->
                           sprintf " = %s" (compile_val v)
-                    end))
+                    end
+                end in
+            fprintf chan "%sregister %s %s asm(\"%s\")%s;\n"
+              indent ty (dump_stable_reg reg)
+                (A.reg_to_string reg) init)
           t.Tmpl.stable ;
 
         if O.cautious then begin

@@ -22,6 +22,7 @@ module type SIMD = sig
     val initial : int -> int array
     val step : atom -> int -> int array -> int array
     val read : atom -> int array -> int list list
+    val reduce: int list list -> int
 end
 
 module type S = sig

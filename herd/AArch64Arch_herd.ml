@@ -92,8 +92,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_LD4R _| I_LDAR _| I_LDARBH _| I_LDCT _| I_LDG _| I_LDOP _| I_LDOPBH _
     | I_LDP _| I_LDP_P_SIMD _| I_LDP_SIMD _| I_LDPSW _| I_LDR _
     | I_LDRSW _ | I_LDR_P_SIMD _
-    | I_LDR_SIMD _| I_LDRBH _| I_LDRS _| I_LDUR _| I_LDUR_SIMD _| I_LDXP _| I_MOV _
-    | I_MOV_FG _| I_MOV_S _| I_MOV_TG _| I_MOV_V _| I_MOV_VE _| I_MOVI_S _
+    | I_LDR_SIMD _| I_LDRBH _| I_LDRS _| I_LDUR _| I_LDUR_SIMD _| I_LDXP _| I_MOV _ | I_FMOV_TG _
+    | I_ADDV _| I_DUP _ | I_MOV_FG _| I_MOV_S _| I_MOV_TG _| I_MOV_V _| I_MOV_VE _| I_MOVI_S _
     | I_MOVI_V _| I_MOVK _| I_MOVZ _| I_MOVN _| I_MRS _| I_MSR _| I_OP3 _| I_RBIT _
     | I_RET _
     | I_SBFM _| I_SC _| I_SEAL _| I_ST1 _| I_ST1M _| I_ST2 _| I_ST2M _| I_ST3 _
@@ -263,7 +263,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_SC _
       | I_TLBI (_,_)
       | I_MOV_V _ | I_MOV_VE _ | I_MOV_S _ | I_MOV_TG _ | I_MOV_FG _
-      | I_MOVI_S _ | I_MOVI_V _
+      | I_MOVI_S _ | I_MOVI_V _ | I_ADDV _ | I_DUP _ |  I_FMOV_TG _
       | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
       | I_UDF _ | I_ADDSUBEXT _ | I_MOPL _
           -> None
@@ -325,6 +325,9 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_UBFM (_,r,_,_,_) | I_SBFM (_,r,_,_,_)
       | I_ADDSUBEXT (_,_,r,_,_,_)
       | I_MOPL (_,r,_,_,_)
+      | I_ADDV (_,r,_)
+      | I_DUP (r,_,_)
+      | I_FMOV_TG (_,r,_,_)
         -> [r]
       | I_MSR (sr,_)
         -> [(SysReg sr)]
@@ -373,6 +376,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDUR_SIMD _|I_STUR_SIMD _|I_MOV_VE _
       | I_MOV_V _|I_MOV_TG _|I_MOV_FG _
       | I_MOV_S _|I_MOVI_V _|I_MOVI_S _
+      | I_ADDV _| I_DUP _ | I_FMOV_TG _
       | I_EOR_SIMD _|I_ADD_SIMD _|I_ADD_SIMD_S _
       | I_LDP _|I_LDPSW _|I_STP _
       | I_STR _|I_STLR _|I_ALIGND _|I_ALIGNU _
