@@ -78,65 +78,98 @@ let symbolic_data_eq s1 s2 =
   && Int64.equal s1.cap s2.cap
   && Misc.int_eq s1.offset s2.offset
 
-type syskind = PTE|PTE2|TLB|TAG
+type syskind = PTE|PTE2|TLB
+type tagkind = PHY|VIR
 
 type symbol =
   | Virtual of symbolic_data
-  | Physical of string * int                  (* symbol, index *)
-  | System of (syskind * string)              (* System memory *)
+  | Physical of string * int                (* symbol, index *)
+  | TagAddr of tagkind * string * int
+  | System of syskind * string              (* System memory *)
 
 let get_index = function
   | Virtual s -> Some s.offset
-  | Physical (_,o) -> Some o
-  | System (PTE, _ | PTE2, _ |TAG, _) -> Some 0
+  | Physical (_,o)|TagAddr (_,_,o) -> Some o
+  | System ((PTE|PTE2), _) -> Some 0
   | System (TLB, _) -> None
+
+let pp_physical s = sprintf "PA(%s)" s
 
 let pp_index base o = match o with
 | 0 -> base
 | i -> sprintf "%s+%i" base i
 
+let pp_tagaddr t s o =
+  let s =
+    match t with
+    | PHY -> pp_physical s
+    | VIR -> s in
+  sprintf "tag(%s)" (pp_index s o)
+
 let pp_symbol_old = function
   | Virtual s -> pp_index (pp_symbolic_data s) s.offset
   | Physical (s,o) -> pp_index (Misc.add_physical s) o
+  | TagAddr (t,s,o) -> pp_tagaddr t s o
   | System (TLB,s) -> Misc.add_tlb s
   | System (PTE,s) -> Misc.add_pte s
   | System (PTE2,s) -> Misc.add_pte (Misc.add_pte s)
-  | System (TAG,s) -> sprintf "tag(%s)" s
+
 
 let pp_symbol = function
   | Virtual s -> pp_index (pp_symbolic_data s) s.offset
-  | Physical (s,o) -> pp_index (sprintf "PA(%s)" s) o
+  | Physical (s,o) -> pp_index (pp_physical s) o
+  | TagAddr (t,s,o) -> pp_tagaddr t s o
   | System (TLB,s) -> sprintf "TLB(%s)" s
   | System (PTE,s) -> sprintf "PTE(%s)" s
   | System (PTE2,s) -> sprintf "PTE(PTE(%s))" s
-  | System (TAG,s) -> sprintf "tag(%s)" s
+
+
+let compare_id_offset s1 o1 s2 o2 =
+  match String.compare s1 s2 with
+  | 0 -> Misc.int_compare o1 o2
+  | r -> r
 
 let compare_symbol sym1 sym2 = match sym1,sym2 with
 | Virtual s1,Virtual s2 -> compare_symbolic_data s1 s2
-| Physical (s1,o1),Physical (s2,o2) ->
-    begin match String.compare s1 s2 with
-    | 0 -> Misc.int_compare o1 o2
-    | r -> r
-    end
+| (Physical (s1,o1),Physical (s2,o2))
+  ->
+   compare_id_offset s1 o1 s2 o2
+| (TagAddr (t1,s1,o1),TagAddr(t2,s2,o2))
+  ->
+   begin
+     match Misc.polymorphic_compare t1 t2 with
+     | 0 -> compare_id_offset s1 o1 s2 o2
+     | r -> r
+   end
 | System (t1,s1),System (t2,s2) ->
     begin match compare t1 t2 with
     | 0 -> String.compare s1 s2
     | r -> r
     end
-| (Virtual _,(Physical _|System _ ))
-| (Physical _,System _) -> -1
-| ((Physical _|System _),Virtual _)
-| (System _,Physical _) -> 1
+| (Virtual _,(Physical _|TagAddr _|System _ ))
+| (Physical _,(TagAddr _|System _))
+| (TagAddr _,System _)
+  -> -1
+| ((Physical _|TagAddr _|System _),Virtual _)
+| ((TagAddr _|System _),Physical _)
+| (System _,TagAddr _)
+  -> 1
+
+let id_offset_eq s1 o1 s2 o2 =
+  Misc.string_eq s1 s2 && Misc.int_eq o1 o2
 
 let symbol_eq s1 s2 = match s1,s2 with
   | Virtual s1,Virtual s2 -> symbolic_data_eq s1 s2
-  | Physical (s1,o1),Physical (s2,o2) ->
-      Misc.string_eq s1 s2 && Misc.int_eq o1 o2
+  | (Physical (s1,o1),Physical (s2,o2)) ->
+     id_offset_eq s1 o1 s2 o2
+  | (TagAddr (t1,s1,o1),TagAddr (t2,s2,o2))  ->
+     t1=t2 && id_offset_eq s1 o1 s2 o2
   | System (k1,s1),System (k2,s2) ->
       k1=k2 && Misc.string_eq s1 s2
-  | (Virtual _,(Physical _|System _))
-  | (Physical _,(Virtual _|System _))
-  | (System _,(Virtual _|Physical _))
+  | (Virtual _,(Physical _|TagAddr _|System _))
+  | (Physical _,(Virtual _|TagAddr _|System _))
+  | (System _,(Virtual _|TagAddr _|Physical _))
+  | (TagAddr _,(Virtual _|System _|Physical _))
     -> false
 
 let as_address = function
@@ -307,7 +340,7 @@ let do_mk_virtual s = Virtual { default_symbolic_data with name=s; }
 let do_mk_sym sym = match Misc.tr_pte sym with
 | Some s -> System (PTE,s)
 | None -> match Misc.tr_atag sym with
-  | Some s -> System (TAG,s)
+  | Some s -> TagAddr (VIR,s,0)
   | None -> match Misc.tr_physical sym with
     | Some s -> Physical (s,0)
     | None -> do_mk_virtual sym
@@ -378,7 +411,9 @@ let as_label = function
 
 let is_non_mixed_symbol = function
   | Virtual {offset=idx;_}
-  | Physical (_,idx) -> idx=0
+  | Physical (_,idx)
+  | TagAddr (_,_,idx)
+    -> idx=0
   | System _ -> true
 
 let default_tag = Tag "green"

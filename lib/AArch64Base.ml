@@ -1198,6 +1198,7 @@ type 'k kinstruction =
 (* Memory Tagging *)
   | I_STG of reg * reg * 'k idx
   | I_STZG of reg * reg * 'k idx
+  | I_STZ2G of reg * reg * 'k idx
   | I_LDG of reg * reg * 'k
   | I_UDF of 'k
 
@@ -1760,6 +1761,8 @@ let do_pp_instruction m =
       pp_mem_idx  "STG" V64 rt rn idx
   | I_STZG (rt,rn,idx) ->
       pp_mem_idx "STZG" V64 rt rn idx
+  | I_STZ2G (rt,rn,idx) ->
+      pp_mem_idx "STZ2G" V64 rt rn idx
   | I_LDG (rt,rn,k) ->
       pp_mem "LDG" V64 rt rn (K k)
   | I_UDF k ->
@@ -1853,7 +1856,8 @@ let fold_regs (f_regs,f_sregs) =
   | I_DUP (r1,_,r2)
   | I_ADDV (_,r1,r2)
   | I_LDUR_SIMD (_,r1,r2,_) | I_STUR_SIMD (_,r1,r2,_)
-  | I_LDG (r1,r2,_) | I_STZG (r1,r2,_) | I_STG (r1,r2,_)
+  | I_LDG (r1,r2,_) | I_STZG (r1,r2,_)
+  | I_STZ2G (r1,r2,_) | I_STG (r1,r2,_)
   | I_ALIGND (r1,r2,_) | I_ALIGNU (r1,r2,_)
     -> fold_reg r1 (fold_reg r2 c)
   | I_MRS (r,sr) | I_MSR (sr,r) -> fold_reg (SysReg sr) (fold_reg r c)
@@ -2192,6 +2196,8 @@ let map_regs f_reg f_symb =
       I_STG (map_reg r1,map_reg r2,k)
   | I_STZG (r1,r2,k) ->
       I_STZG (map_reg r1,map_reg r2,k)
+  | I_STZ2G (r1,r2,k) ->
+      I_STZ2G (map_reg r1,map_reg r2,k)
   | I_LDG (r1,r2,k) ->
       I_LDG (map_reg r1,map_reg r2, k)
 
@@ -2265,7 +2271,7 @@ let get_next =
   | I_DC _
   | I_TLBI _
   | I_MRS _ | I_MSR _
-  | I_STG _| I_STZG _|I_LDG _
+  | I_STG _|I_STZG _|I_STZ2G _|I_LDG _
   | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
   | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|I_SEAL _|I_STCT _
   | I_UNSEAL _
@@ -2527,6 +2533,7 @@ module PseudoI = struct
         | I_STR (v,r1,r2,idx) -> I_STR (v,r1,r2,ext_tr idx)
         | I_STG (r1,r2,k) -> I_STG (r1,r2,idx_tr k)
         | I_STZG (r1,r2,k) -> I_STZG (r1,r2,idx_tr k)
+        | I_STZ2G (r1,r2,k) -> I_STZ2G (r1,r2,idx_tr k)
         | I_LDG (r1,r2,k) -> I_LDG (r1,r2,k_tr k)
         | I_LDRBH (v,r1,r2,idx) -> I_LDRBH (v,r1,r2,ext_tr idx)
         | I_STRBH (v,r1,r2,idx) -> I_STRBH (v,r1,r2,ext_tr idx)
@@ -2634,7 +2641,7 @@ module PseudoI = struct
           -> 3
         | I_LDCT _ | I_STCT _
         | I_LD4 _ | I_LD4R _
-        | I_ST4 _
+        | I_ST4 _ | I_STZ2G _
           -> 4
         | I_NOP
         | I_B _ | I_BR _

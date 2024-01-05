@@ -40,6 +40,10 @@ module Make
     let do_cu = C.variant Variant.ConstrainedUnpredictable
     let self = C.variant Variant.Ifetch
 
+    let check_mixed ins =
+      if not mixed then
+        Warn.user_error "%s without -variant mixed" ins
+
     let check_memtag ins =
       if not memtag then
         Warn.user_error "%s without -variant memtag" ins
@@ -2243,35 +2247,59 @@ module Make
              lift_memop rn Dir.R false false (fun ac ma _mv -> do_ldg ac ma)
                (to_perms "w" MachSize.S128) ma mzero Annot.N ii)
 
-      let stg rt rn k ii =
+      type double = Once|Twice
+
+      let stg d rt rn k ii =
         let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii
         and mv = read_reg_data MachSize.Quad rt ii >>= tag_extract in
         let do_stg ac ma mv =
-          let _do_stg a v = M.op1 Op.TagLoc a >>=
-            fun a -> do_write_tag a v ii >>=
-            fun () -> B.nextT in
+          let __do_stg a v =
+            M.op1 Op.TagLoc a >>= fun a -> do_write_tag a v ii in
+          let _do_stg =
+            match d with
+            | Once ->
+               fun a v -> __do_stg a v >>! B.nextT
+            | Twice ->
+               fun a v ->
+                 begin
+                   __do_stg a v >>|
+                     (M.op1 (Op.AddK MachSize.granule_nbytes) a
+                      >>= fun a ->  __do_stg a v)
+                 end >>! B.nextT in
           if Access.is_physical ac then
             M.bind_ctrldata_data ma mv _do_stg
           else
             (ma >>| mv) >>= fun (a,v) -> _do_stg a v in
         lift_memop rn Dir.W true false (fun ac ma mv -> do_stg ac ma mv)
-          (to_perms "w" MachSize.S128) ma mv Annot.N ii
+          (to_perms "w" MachSize.granule) ma mv Annot.N ii
 
-      let stzg rt rn k ii =
-        let do_stz =
-          let sz = MachSize.S128 in
-          let mop = do_write_mem sz Annot.N aexp in
-          let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii >>= loc_extract in
-          lift_memop rn Dir.W true false (* Unchecked *)
-            (fun ac ma mv ->
-               if Access.is_physical ac then begin
-                 (* additional ctrl dep on address *)
-                 M.bind_ctrldata_data ma mv
-                   (fun a v -> mop ac a v ii)
-               end else
-                 (ma >>| mv) >>= fun (a,v) -> mop ac a v ii)
-            (to_perms "w" sz) ma mzero Annot.N ii in
-        let do_stg = stg rt rn k ii in
+      let stz d rn k ii =
+        let sz = MachSize.granule in
+        let mop =
+          match d with
+          | Once ->
+             do_write_mem sz Annot.N aexp
+          | Twice ->
+             fun ac a v ii ->
+               let mop1 = do_write_mem sz Annot.N aexp  ac a v ii
+               and mop2 =
+                 M.op1 (Op.AddK MachSize.granule_nbytes) a
+                 >>= fun a -> do_write_mem sz Annot.N aexp  ac a v ii in
+               (mop1 >>| mop2) >>! () in
+        let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii >>= loc_extract in
+        lift_memop rn Dir.W true false (* Unchecked *)
+          (fun ac ma mv ->
+            if Access.is_physical ac then begin
+                (* additional ctrl dep on address *)
+                M.bind_ctrldata_data ma mv
+                  (fun a v -> mop ac a v ii)
+              end else
+              (ma >>| mv) >>= fun (a,v) -> mop ac a v ii)
+          (to_perms "w" sz) ma mzero Annot.N ii
+
+      let do_stzg d rt rn k ii =
+        let do_stz = stz d rn k ii in
+        let do_stg = stg d rt rn k ii in
         if kvm then
           (* The two operations include their own translations, if
              there is a fault, it has to be ordered after any other
@@ -2301,6 +2329,9 @@ module Make
                  | _ -> Warn.fatal "Unexpected return value do_stz"))
         else
           do_stg >>| do_stz >>= M.ignore >>= B.next1T
+
+      let stzg = do_stzg Once
+      and stz2g = do_stzg Twice
 
 (*********************)
 (* Instruction fetch *)
@@ -2474,9 +2505,14 @@ module Make
         | I_STZG(rt,rn,(k,Idx)) ->
             check_memtag "STZG" ;
             stzg rt rn k ii
+        | I_STZ2G(rt,rn,(k,Idx)) ->
+            check_memtag "STZ2G" ;
+            check_mixed "STZ2G" ;
+            stz2g rt rn k ii
+
         | I_STG(rt,rn,(k,Idx)) ->
             check_memtag "STG" ;
-            stg rt rn k ii
+            stg Once rt rn k ii
         | I_LDG (rt,rn,k) ->
             check_memtag "LDG" ;
             ldg rt rn k ii
@@ -2985,7 +3021,7 @@ module Make
            m_fault >>| set_elr_el1 ii >>! B.Fault Dir.R
 (*  Cannot handle *)
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
-        | (I_STG _|I_STZG _) as i ->
+        | (I_STG _|I_STZG _|I_STZ2G _) as i ->
             Warn.fatal "illegal instruction: %s" (AArch64.dump_instruction i)
 
 (* Compute a safe set of instructions that can

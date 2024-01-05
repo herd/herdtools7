@@ -24,8 +24,20 @@ open ConstrGen
 let mk_sym_tag s t =
   Symbolic (Virtual {default_symbolic_data with name=s;tag=Some t;})
 
-let mk_sym_tagloc s =
-  Symbolic (System (TAG, s))
+let do_mk_sym_tagloc s o =
+  if
+    o < 0 ||
+    o mod MachSize.granule_nbytes <> 0
+  then raise Parsing.Parse_error ;
+  Symbolic (TagAddr (VIR,s,o))
+
+let mk_sym_tagloc s o =
+  let o =
+    try int_of_string o
+    with Invalid_argument _ -> raise Parsing.Parse_error in
+  do_mk_sym_tagloc s o
+
+let mk_sym_tagloc_zero s = do_mk_sym_tagloc s 0
 
 let mk_sym_morello p s t =
   let p_int = Misc.string_as_int64 p in
@@ -63,7 +75,7 @@ let mk_lab p s = Label (p,s)
 %token TRUE FALSE
 %token EQUAL NOTEQUAL EQUALEQUAL
 %token FINAL FORALL EXISTS OBSERVED TOKAND NOT AND OR IMPLIES WITH FILTER
-%token LOCATIONS FAULT STAR
+%token LOCATIONS FAULT STAR PLUS
 %token LBRK RBRK LPAR RPAR LCURLY RCURLY SEMI COLON AMPER COMMA
 %token ATOMIC
 %token ATOMICINIT
@@ -113,7 +125,8 @@ location_global:
 | TOK_PTE LPAR TOK_PTE LPAR NAME RPAR RPAR { Constant.mk_sym_pte2 $5 }
 | TOK_PA LPAR NAME RPAR { Constant.mk_sym_pa $3 }
 | NAME COLON NAME { mk_sym_tag $1 $3 }
-| TOK_TAG LPAR NAME RPAR { mk_sym_tagloc $3 }
+| TOK_TAG LPAR id=NAME RPAR { mk_sym_tagloc_zero id }
+| TOK_TAG LPAR id=NAME PLUS o=NUM RPAR { mk_sym_tagloc id o }
 (* TODO: have MTE and Morello tags be usable at the same time? *)
 | NUM COLON NAME COLON NUM {mk_sym_morello $1 $3 $5}
 | NAME COLON NUM { mk_sym_morello "0" $1 $3 }

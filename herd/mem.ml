@@ -1975,8 +1975,8 @@ let match_reg_events es =
        let a = Misc.as_some (E.global_loc_of e) in
        if not (U.is_aligned (S.type_env test) (S.size_env test) e) then begin
          if dbg then eprintf "UNALIGNED: %s\n" (E.pp_action e);
-         Warn.user_error "Unaligned or out-of-bound access: %s"
-           (A.V.pp_v a)
+         Warn.user_error "Unaligned or out-of-bound access: %s, %d bytes"
+           (A.V.pp_v a) (E.get_mem_size e |> MachSize.nbytes)
        end
 
 (* Check alignement in the mixed-size case.

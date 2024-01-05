@@ -96,12 +96,12 @@ end = struct
   let access_of_constant cst =
     let open Constant in
     match cst with
-    | Symbolic (Virtual _) -> VIR
-    | Symbolic (Physical _) -> PHY
+    | Symbolic (Virtual _) -> Access.VIR
+    | Symbolic (Physical _) -> Access.PHY
+    | Symbolic (TagAddr _) -> Access.TAG
     | Symbolic (System ((PTE|PTE2),_)) -> Access.PTE
     | Symbolic (System (TLB,_)) -> Access.TLB
-    | Symbolic (System (TAG,_)) -> Access.TAG
-    | Label _ -> VIR
+    | Label _ -> Access.VIR
     | Tag _
     | ConcreteVector _|Concrete _|ConcreteRecord _
     | PteVal _|Instruction _|Frozen _ as v
@@ -125,14 +125,14 @@ end = struct
     function
     | A.Location_reg _ -> REG
     | A.Location_global (V.Val (Symbolic (Virtual _))|V.Var _)
-      -> VIR
+      -> Access.VIR
     | A.Location_global (V.Val (Symbolic ((System ((PTE|PTE2),_))))) as loc
         ->
           if kvm then Access.PTE
           else Warn.fatal "PTE %s while -variant kvm is not active"
                  (A.pp_location loc)
     | A.Location_global (V.Val (Label(_,_)))
-      -> VIR
+      -> Access.VIR
     | A.Location_global v ->
         Warn.fatal
           "access_of_location_std on non-standard symbol '%s'"

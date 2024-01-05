@@ -294,7 +294,8 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
       match sym with
       | Virtual sd -> is_non_mixed_symbol_virtual test sd
       | Physical (s,o) -> is_non_mixed_offset test s o
-      | System ((PTE|PTE2|TLB|TAG),_)  -> true
+      | TagAddr _
+      | System ((PTE|PTE2|TLB),_)  -> true
 
 (* Exported labels:
  *  1. Labels from init environments

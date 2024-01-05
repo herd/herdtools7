@@ -52,6 +52,7 @@ module type S = sig
 
 (* Fold over instructions in code *)
   val fold_pseudo_code : ('a -> 'b -> 'a ) -> 'a -> 'b kpseudo list -> 'a
+  val exists_pseudo_code : ('ins -> bool) -> 'ins kpseudo list -> bool
 
 (* Fold/Map over labels *)
   val fold_labels : ('a -> Label.t -> 'a) -> 'a -> pseudo -> 'a
@@ -156,6 +157,7 @@ struct
   let pseudo_iter f ins = pseudo_fold (fun () ins -> f ins) () ins
 
   let fold_pseudo_code f = List.fold_left (pseudo_fold f)
+  let exists_pseudo_code p = List.exists (pseudo_exists p)
 
 (* Fold/Map over labels *)
 

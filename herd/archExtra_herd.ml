@@ -465,23 +465,19 @@ module Make(C:Config) (I:I) : S with module I = I
         let same_sym_fault sym1 sym2 = match sym1,sym2 with
 (* Both ids allowed in fault, compare *)
           |(Virtual {name=s1;_},Virtual {name=s2;_})
-          | (System (PTE,s1),System (PTE,s2))
-          | (System (TAG,s1),System (TAG,s2))
+          |(System (PTE,s1),System (PTE,s2))
            -> Misc.string_eq s1 s2
-(* One id allowed, the other on forbidden, do not match *)
-          | (Virtual _,(System ((PTE|TAG|TLB|PTE2),_)|Physical _))
-          | ((Physical _|System ((PTE|TAG|TLB|PTE2),_)),Virtual _)
-          | (System (PTE,_),System ((TAG|TLB|PTE2),_))
-          | (System ((TAG|TLB|PTE2),_),System (PTE,_))
-          | (System ((TLB|PTE2),_),System (TAG,_))
-          | (System (TAG,_),System ((TLB|PTE2),_))
-          | (Physical _,System ((TAG|PTE),_))
-          | (System ((TAG|PTE),_),Physical _)
+(* One id allowed, the other on forbidden, does not match *)
+          | (Virtual _,(System ((PTE|TLB|PTE2),_)|Physical _|TagAddr _))
+          | ((TagAddr _|Physical _|System ((PTE|TLB|PTE2),_)),Virtual _)
+          | (System (PTE,_),System ((TLB|PTE2),_))
+          | (System ((TLB|PTE2),_),System (PTE,_))
+          | ((Physical _|TagAddr _),System (PTE,_))
+          | (System (PTE,_),(TagAddr _|Physical _))
             -> false
 (* Both forbidden, failure *)
-          | (Physical _|System (TLB,_)),(Physical _|System ((TLB|PTE2),_))
-          | ((System ((PTE2),_)),System (TLB,_))
-          | (System (PTE2,_),(Physical _|System (PTE2,_)))
+          | (TagAddr _|Physical _|System ((TLB|PTE2),_)),
+            (TagAddr _|Physical _|System ((TLB|PTE2),_))
             ->
               Warn.fatal
                 "Illegal id (%s or %s) in fault"
@@ -716,7 +712,7 @@ module Make(C:Config) (I:I) : S with module I = I
             -> assert false
           | Location_global (I.V.Val (Symbolic (System (PTE,s)))) ->
               I.V.Val (PteVal (I.V.Cst.PteVal.default s))
-          | Location_global (I.V.Val (Symbolic (System (TAG,_)))) ->
+          | Location_global (I.V.Val (Symbolic (TagAddr _))) ->
               I.V.Val default_tag
           | Location_global
               (I.V.Val
@@ -1026,10 +1022,15 @@ module Make(C:Config) (I:I) : S with module I = I
                     let ts = get_of_val st (I.V.op1 Op.CapaTagLoc a) in
                     I.V.op Op.CapaSetTag v ts
                   else v
+              | Location_global (I.V.Val (Symbolic (TagAddr _))) ->
+                 get_in_state loc st
               | _ ->
-(* No mixed variant combination other than morello implemented *)
-                  assert (not (is_global loc)) ;
-                  get_in_state loc st
+                 (* No mixed variant combination other than mte and morello *)
+                 if is_global loc then begin
+                   Warn.user_error "Cannot handle %s in mixed-size mode"
+                     (pp_location loc)
+                 end ;
+                 get_in_state loc st
 
 
         let look_in_state =

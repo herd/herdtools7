@@ -123,7 +123,7 @@ let check_op3 op e =
 %token <AArch64Base.sysreg> SYSREG
 %token MRS MSR TST RBIT ABS
 %token REV16 REV32 REV REV64
-%token STG STZG LDG
+%token STG STZG STZ2G LDG
 %token ALIGND ALIGNU BUILD CHKEQ CHKSLD CHKTGD CLRTAG CPY CPYTYPE CPYVALUE CSEAL
 %token LDCT SEAL STCT UNSEAL
 %type <MiscParser.proc list * (AArch64Base.parsedPseudo) list list * MiscParser.extra_data> main
@@ -872,6 +872,11 @@ instr:
     {
       let r,idx = $4 in
       I_STZG ($2,r,idx)
+    }
+| STZ2G xreg COMMA mem_idx
+    {
+      let r,idx = $4 in
+      I_STZ2G ($2,r,idx)
     }
 | LDG xreg COMMA LBRK xreg k0 RBRK
    { I_LDG ($2,$5,$6) }
