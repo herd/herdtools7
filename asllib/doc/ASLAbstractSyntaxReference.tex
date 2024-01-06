@@ -66,7 +66,7 @@ Node types are defined recursively as follows:
 
 An abstract syntax consists of a set of derivation rules and a start non-terminal.
 
-\newcommand\ASTComment[1]{(*\ \textit{#1}\ *)}
+\newcommand\ASTComment[1]{// \textit{#1}\ }
 
 \section{ASL Derivation Rules}
 
@@ -95,14 +95,16 @@ We sometimes provide extra details to individual derivations by adding comments 
  &|& \texttt{"IN"}   \\
  & & \ASTComment{\texttt{binop\_in}}\\
 
-\literal &=& \texttt{<int\_lit>}  \\
- &|&\texttt{<hex\_lit>} \\
- & & \ASTComment{merged into \texttt{<int\_lit>}?}\\
- &|&\texttt{<boolean\_lit>}  \\
- &|& \texttt{<real\_lit>}  \\
- &|& \texttt{<bitmask\_lit>}   \\
- & & \ASTComment{also represents \texttt{<bitvector\_lit>}}\\
- &|&\texttt{<string\_lit>}
+\literal &=& \lint($n$) \\
+ & & \ASTComment{$n \in \Z$}\\
+ &|& \lbool(b) \\
+ & & \ASTComment{$b \in \{\True, \False\}$}\\
+ &|& \lreal(q)  \\
+ & & \ASTComment{$q \in \Q$}\\
+ &|& \lbitvector($B$)   \\
+ & & \ASTComment{$B \in \{0, 1, ?\}^*$}\\
+ &|& \lstring(S)\\
+ & & \ASTComment{$S \in \{C \;|\; \texttt{"$C$"} \in \texttt{<string\_lit>}\} $}\\
 \end{array}
 \]
 
@@ -121,7 +123,7 @@ We sometimes provide extra details to individual derivations by adding comments 
 	&|& \texttt{E\_GetField}(\expr, \identifier) \\
 	&|& \texttt{E\_GetFields}(\expr, \identifier^{*}) \\
 	&|& \texttt{E\_Record}(\ty, (\identifier, \expr)^{*})\\
-    & & \ASTComment{Exception construction}\\
+    & & \ASTComment{Both record construction and exception construction}\\
 	&|& \texttt{E\_Concat}(\expr^{*}) \\
 	&|& \texttt{E\_Tuple}(\expr^{*}) \\
 	&|& \texttt{E\_Unknown}(\ty) \\
@@ -149,6 +151,7 @@ We sometimes provide extra details to individual derivations by adding comments 
 \begin{array}{rcl}
 &&\ASTComment{Indexes an array or a bitvector.}\\
 &&\ASTComment{All positions mentioned below are inclusive}\\
+\hline
 \slice &::=& \texttt{Slice\_Single} (\expr) \\
   & & \ASTComment{[Slice\_Single i] is the slice of length [1] at position [i].}\\
   &|& \texttt{Slice\_Range}(\expr, \expr) \\
