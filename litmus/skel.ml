@@ -358,14 +358,14 @@ module Make
       | Indirect -> sprintf "_a->%s[_i]"
 
 (* Right value, all cases *)
-      let rec dump_a_v = function
-        | Concrete i ->  A.V.Scalar.pp  Cfg.hexa i
+      let rec do_dump_a_v hexa = function
+        | Concrete i ->  A.V.Scalar.pp  hexa i
         | Symbolic (Virtual {name=s;tag=None; offset=0;_}) ->
             dump_a_addr s
         | ConcreteVector vs ->
            let pps =
              List.map
-               (fun v -> sprintf "%s," (dump_a_v v))
+               (fun v -> sprintf "%s," (do_dump_a_v hexa v))
                vs in
            sprintf "{%s}" (String.concat "" pps)
         | Symbolic _|Tag _|PteVal _|Frozen _|ConcreteRecord _ -> assert false
@@ -373,6 +373,9 @@ module Make
             Warn.user_error
               "Labels cannot be used as initial values of memory locations"
         | Instruction i -> A.GetInstr.instr_name i
+
+      let dump_a_v = do_dump_a_v Cfg.hexa
+      and dump_a_v_dec = do_dump_a_v false
 
 (* Dump left & right values when context is available *)
 
@@ -1190,10 +1193,10 @@ module Make
             | (Indirect,Pointer _) ->
                 let load = U.do_load t (wrap addr) in
                 sprintf "%s != %s"
-                  load (dump_a_v v)
+                  load (dump_a_v_dec v)
             | Indirect,_ ->
                 let load = U.do_load t (wrap addr) in
-                sprintf "%s != %s" load (A.Out.dump_v v)
+                sprintf "%s != %s" load (dump_a_v_dec v)
             | (Direct,Array _) ->
                 let load = U.do_load t (wrap addr) in
                 sprintf "%s != %s"
@@ -1201,7 +1204,7 @@ module Make
             | (Direct,_) ->
                 let load = U.do_load t (wrap addr) in
                 sprintf "%s != %s"
-                  load (dump_a_v v) in
+                  load (dump_a_v_dec v) in
           List.iter
             (fun (s,t as x) -> match t with
             | Base "mtx_t" -> ()
