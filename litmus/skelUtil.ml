@@ -884,6 +884,13 @@ module Make
               O.oi "emit_millions(tsc_millions(total));" ;
               O.oi "puts(\"\\n\");"
           end ;
+          begin match Cfg.mode with
+          | Mode.PreSi|Mode.Kvm ->
+             O.oi "if (!g->hash_ok) {" ;
+             EPF.fii "Warning: some hash table was full, some outcomes were not collected\n" [] ;
+             O.oi "}" ;
+          | Mode.Std -> ()
+          end ;
           if Cfg.exit_cond then O.oi "return cond;" ;
           O.o "}" ;
           O.o "" ;
