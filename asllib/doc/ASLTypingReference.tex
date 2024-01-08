@@ -208,7 +208,9 @@ This is related to \identd{JRXM}, \identi{ZTMQ}, \identd{HBCP}, \identi{SMMH},
 \identi{DFML}, \identr{WMFV}.
 
 \section{Annotation}
-\TODOComment{ come back to this section.}
+\begin{comment}
+The formalism doesn't actually use the annotate functions. Come back to this later.
+\end{comment}
 
 Typing a program consists of annotating the root of its AST. This is typically
 done by traversing the AST bottom-up.  To annotate a node, the typing algorithm
@@ -276,7 +278,9 @@ Each rule is presented using the following template:
 \chapter{Basic Type Attributes}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\TODOComment{ROMAN: define expression equality $\equiv_e$ and type equality $\equiv_t$.}
+\begin{comment}
+ROMAN: define expression equality $\equiv_e$ and type equality $\equiv_t$.
+\end{comment}
 
 We define the \emph{type label} of a type node $t \in \ty$ to be the label associated by the AST with the node.
 %$\typelabel : \ty \rightarrow \{\TInt, \TReal, \TString, \TBool, \TBits, \TEnum, \TRecord, \TException, \TNamed\}$
@@ -697,15 +701,20 @@ whose structure is \texttt{integer}.
       
 Let $\sortbyid([(\id_1,t_1),\ldots,(\id_k,t_k)]) = [(\id_1',t_1'),\ldots,(\id_k',t_k')]$ be the input list sorted according to the identifier component (lexicographically).
 
+\begin{comment}
+ROMAN: I think it makes sence to sort the enum identifiers to obtain a more canonical representation of structures, which allows comparing structures for equality.
+\end{comment}
+
 \[
 \begin{array}{c}
 \inferrule{x \in \identifier \\ \staticglob{E} \entails x : t \\ E \entails \tstruct(t)=t'}{E \entails \tstruct(\TNamed(x)) = t'}\\
 \\
+\begin{comment}
 \RuleComment{ROMAN: How would we know to assign an integer the structure}\\
 \RuleComment{of the under-constrained integer type vs. unconstrained integer type?}\\
+\end{comment}
 \inferrule{t \in \ty \\ \typelabel(t) \in \{\TInt, \TReal, \TString, \TBool, \TBits\}}{E \entails \tstruct(t) = t}\\
 \\
-\RuleComment{\TODOComment{ I think it makes sence to sort the enum identifiers.}}\\
 \inferrule{l \in \identifier^*}{E \entails \tstruct(\TEnum(l)) = \TEnum(\sortids(l))}\\
 \\
 \inferrule{[t_1,\ldots,t_k] \in \ty^* \\ E \entails \tstruct(t_1)=t_1' \ldots E \entails \tstruct(t_k)=t_k'}{E \entails \tstruct(\TTuple([t_1,\ldots,t_k])) =  \TTuple([t_1',\ldots,t_k'])}\\
@@ -730,9 +739,15 @@ Let $\sortbyid([(\id_1,t_1),\ldots,(\id_k,t_k)]) = [(\id_1',t_1'),\ldots,(\id_k'
   The domain of a type is the set of values which storage elements of that type
 may hold.
 
-\TODOComment{ explain where this is used. For example, for static evaluation of expressions.}
+\begin{comment}
+ROMAN: explain where this is used. For example, for static evaluation of expressions.}
+\end{comment}
 
-\TODOComment{ I think that 3.4.2 and 7.1.3 contradict each other when it comes to under-constrained integers. If the domain of the under-constrained integer is a proper superset of every well-constrained integer, it follows that this domain is a superset of Z. Therefore, it cannot be a proper subset of Z - the domain of the unconstrained integer. Furthermore, just having the under-constrained integer with all the distinctions in the rules, is very confusing to any potential ASL developer.}
+\begin{comment}
+ROMAN: move the following into the issues file.
+
+I think that 3.4.2 and 7.1.3 contradict each other when it comes to under-constrained integers. If the domain of the under-constrained integer is a proper superset of every well-constrained integer, it follows that this domain is a superset of Z. Therefore, it cannot be a proper subset of Z - the domain of the unconstrained integer. Furthermore, just having the under-constrained integer with all the distinctions in the rules, is very confusing to any potential ASL developer.
+\end{comment}
 
   \subsection{Example}
   The domain of \texttt{integer} is the infinite set of all integers.
@@ -774,12 +789,17 @@ The function $\staticeval$ evaluates an integer constraint to a finite set of in
 The notation $b_1\cdot\ldots\cdot b_k$ stands for the $k$-sequence of values $b_1,\ldots,b_k$.
 
 The notation $E \entails k \models c$ means that the integer $k$ satisfies the constraint $c$ in the environment $E$. 
-\TODOComment{ consider simplifying/elaborating on this.}
+
+\begin{comment}
+ROMAN: consider simplifying/elaborating on this.
+\end{comment}
 \end{emptyformal}
 
-\TODOComment{ Shouldn't we define the domain of tuples, records, arrays, etc. ?}
+\begin{comment}
+ROMAN: Shouldn't we define the domain of tuples, records, arrays, etc. ?
 
-\TODOComment{ Should we formalize static evaluation of constraints?}
+ROMAN: Should we formalize static evaluation of constraints?
+\end{comment}
 
   \subsection{Comments}
   This is related to \identd{BMGM}, \identr{PHRL}, \identr{PZNR},
@@ -819,7 +839,9 @@ The notation $E \entails k \models c$ means that the integer $k$ satisfies the c
 \end{array}
 \]     
     
-    \TODOComment{ROMAN: see note about doma}
+\begin{comment}
+ROMAN: see note about domains.
+\end{comment}
 \end{emptyformal}
 
 \subsection{Comments}
@@ -829,7 +851,9 @@ The notation $E \entails k \models c$ means that the integer $k$ satisfies the c
 \chapter{Type Satisfaction and Related Notions}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\TODOComment{ROMAN: it is not obvious to me why sometimes we check for type satisfaction and other times we check the structure of a type.}
+\begin{comment}
+It is not obvious to me why sometimes we check for type satisfaction and other times we check the structure of a type.
+\end{comment}
 
 \section{TypingRule.Subtype}
 
@@ -851,7 +875,10 @@ The notation $E \entails k \models c$ means that the integer $k$ satisfies the c
         \item \texttt{t1'} is a subtype of \texttt{t2} in \texttt{env}.
       \end{itemize}
   \end{itemize}
-    The subtype relation is a partial order over named types. \TODOComment{ROMAN: I think the syntax allows subtyping anonymous types as well. Perhaps we should fix the syntax?}
+The subtype relation is a partial order over named types.
+\begin{comment}
+ROMAN: I think the syntax allows subtyping anonymous types as well. Perhaps we should fix the syntax?
+\end{comment}
 
   \subsection{Example}
 In the following example \texttt{subInt} is a subtype of itself and of \texttt{superInt}:
@@ -879,7 +906,10 @@ We define the subtyping relation between two named types in a given environment 
 \\
 \inferrule{E \entails t_1 \subtype t_2 \\ E \entails t_2 \subtype t_3}{E \entails t_1 \subtype t_3}\\
 \\
-\RuleComment{\TODOComment{ consider adding the following rule.}}\\
+\begin{comment}
+\RuleComment{ROMAN: consider adding the following rule.}
+\\
+\end{comment}
 \inferrule{s\neq t \in \ty \\ E \entails s \subtype t \\ E \entails t \subtype s}{E \entails \error(\texttt{"subtype cycle exists!"})}
 \end{array}
 \]
@@ -903,13 +933,18 @@ We define the subtyping relation between two named types in a given environment 
   \end{itemize}
 
   This is related to \identr{NXRX}, \identi{KGKS}, \identi{MTML}, \identi{JVRM}, \identi{CHMP}.
+\begin{comment}  
+ROMAN: w.r.t. JVRM, I don't see how, in the code.
+\end{comment}
 
 \section{TypingRule.Supertype}
 
   \subsection{Prose}
   \texttt{T} is a supertype of \texttt{S} if and only if \texttt{S} is a subtype of \texttt{T}.
   
-\TODOComment{ This rule doesn't exist in the code. Also, it is redundant, since it just applies to the same arguments in reverse order. I recommend removing this section.}
+\begin{comment}
+ROMAN: This rule doesn't exist in the code. Also, it is redundant, since it just applies to the same arguments in reverse order. I recommend removing this section.
+\end{comment}
 
   \subsection{Example}
 
@@ -1028,7 +1063,9 @@ We define the following relation between two types as an intermediate step to de
   \subsection{Example}
 
   \subsection{Code}
-\TODOComment{Why does the code use anonimization instead of getting the structure of types?}
+\begin{comment}
+ROMAN: Why does the code use anonimization instead of getting the structure of types?
+\end{comment}
 
     \VerbatimInput[firstline=\StructuralSubtypeSatisfactionBegin, lastline=\StructuralSubtypeSatisfactionEnd]{../types.ml}
 
@@ -1047,9 +1084,11 @@ We write $E \entails s \structsubtypesat t$ to denote that type $s$ structural-s
 \inferrule{s,t, \in \ty \\ c_s \in \bitsconstraint \\ l_t \in \bitfield^* \\
 E \entails \tstruct(s)=\TBits(c_s, []) \\ E \entails \tstruct(t)=\TBits(c_t, l_t)}{E \entails s \structsubtypesat t} \\
 \\
-\RuleComment{\TODOComment{ define bitwidth equality $E \entails c_s \equiv_b c_t$}}\\
-\RuleComment{\TODOComment{ define bitfield list subsumption $E \entails l_s \subseteq_{\ty} l_t$.}}\\
-\RuleComment{\TODOComment{ It isn't obvious how these two rules match the prose.}}\\
+\begin{comment}
+\RuleComment{ROMAN: define bitwidth equality $E \entails c_s \equiv_b c_t$}\\
+\RuleComment{ROMAN: define bitfield list subsumption $E \entails l_s \subseteq_{\ty} l_t$.}\\
+\RuleComment{ROMAN: It isn't obvious how these two rules match the prose.}\\
+\end{comment}
 \inferrule{s,t, \in \ty \\ c_s \in \bitsconstraint \\ l_s,l_t \in \bitfield^* \\
 E \entails \tstruct(s)=\TBits(c_s, l_s) \\ E \entails \tstruct(t)=\TBits(c_t, l_t)\\
 E \entails c_s \equiv_b c_t \\ E \entails l_s \subseteq_{\ty} l_t}{E \entails s \structsubtypesat t}\\
@@ -1060,7 +1099,9 @@ E \entails c_s \equiv_b c_t \\ E \entails l_s \subseteq_{\ty} l_t}{E \entails s 
 \RuleComment{Type satisfaction is defined later in this chapter.}\\
 \inferrule{s, t, t_{1..k},s_{1..k} \in \ty \\ E \entails \tstruct(s)=\TTuple(s_1,\ldots,s_k) \\ E \entails \tstruct(t)=\TTuple(t_1,\ldots,t_k) \\ E \entails s_1 \models t_1,\ldots,E \entails s_k \models t_k}{E \entails s \structsubtypesat t}\\
 \\
-\RuleComment{\TODOComment{ROMAN: Why do we use type equivalence rather than type satisfaction?}}\\
+\begin{comment}
+\RuleComment{ROMAN: Why do we use type equivalence rather than type satisfaction?}\\
+\end{comment}
 \inferrule{
   i_{1..k}, j_{1..n} \in \identifier \\ 
   t_{1..k}, s_{1..n} \in \ty \\
@@ -1109,12 +1150,16 @@ E \entails c_s \equiv_b c_t \\ E \entails l_s \subseteq_{\ty} l_t}{E \entails s 
     \subsection{Formally}
 We write $E \entails T \domsubtypesat S$ to denote that type $T$ domain-subtype-satisfies type $S$ in the environment $E$.
 
-\TODOComment{ why don't we directly define rules for inferring whether a bitvector type has determined/undetermined width and just use that as a premise? Same for constrained/fixed width.}
+\begin{comment}
+ROMAN: why don't we directly define rules for inferring whether a bitvector type has determined/undetermined width and just use that as a premise? Same for constrained/fixed width.
+\end{comment}
 
 \[
 \begin{array}{c}
-\RuleComment{\TODOComment{ I model the following rule based on the code.}}\\
-\RuleComment{\TODOComment{ However, I don't understand why they are independent of $t$.}}\\
+\begin{comment}
+\RuleComment{ROMAN: I model the following rule based on the code.}\\
+\RuleComment{However, I don't understand why they are independent of $t$.}\\
+\end{comment}
 \inferrule{E \entails \tstruct(S)=S' \\ \typelabel(S') \in \{\TTuple, \TArray, \TRecord, \TException\} }{E \entails T \domsubtypesat S} \\
 \\
 \inferrule{E \entails \tstruct(T)=T' \\
@@ -1225,14 +1270,20 @@ We denote that type $T$ type-satisfies type $S$ in an environment $E$ by $E \ent
 \end{array}
 \]
 
-\TODOComment{ define the evaluation of bitwidth length, which is used above.}
+\begin{comment}
+ROMAN: define the evaluation of bitwidth length, which is used above.
+\end{comment}
 
 \end{emptyformal}
 
 \subsection{Comments}
   Since the subtype relation is a partial order, it is reflexive. Therefore
   every type \texttt{T} is a subtype of itself, and as a consequence, every type \texttt{T}
-  type-satisfies itself. \TODOComment{ROMAN: I disagree --- we defined subtyping to hold *only* on named types.}
+<<<<<<< HEAD
+  type-satisfies itself. 
+\begin{comment}  
+ROMAN: I disagree --- we defined subtyping to hold *only* on named types.
+\end{comment}
 
   This is related to \identr{FMXK} and \identi{NLFD}.
 
@@ -1330,10 +1381,15 @@ We denote that type $T$ type-satisfies type $S$ in an environment $E$ by $E \ent
 \section{TypingRule.LowestCommonAncestor \label{sec:TypingRule.LowestCommonAncestor}}
 
 \subsection{Prose}
-  Annotating a given conditional expression, requires finding a single type that matches both the true sub-expression and the false sub-expression. This requires the notion of a \emph{lowest common ancestor} of two types. \TODOComment{Perhaps we should move this to the next chapter, right before typing ECond?}
+  Annotating a given conditional expression, requires finding a single type that matches both the true sub-expression and the false sub-expression. This requires the notion of a \emph{lowest common ancestor} of two types. 
+\begin{comment}  
+ROMAN: Perhaps we should move this to the next chapter, right before typing ECond?
+\end{comment}
   Since we do not impose a canonical representation of types (e.g., \texttt{Integer {1, 2}} is equivalence to \texttt{integer {1..2}}), the lowest common ancestor is not unique. We write $E \entails A \lcasat \lca(B, C)$ to denote that the type $A$ is a type that satisfies the requirements for lowest common ancestor of types $B$ and $C$ in the context of the environment $E$.
 
-\TODOComment{ROMAN: intuitively, \texttt{if b then e1 else e2} should be equivalent to \texttt{var res : T; if b then res=e1; else res=e2;}. However, in the second form, we would find the least common type T using the type satisfaction (or can-be-assigned-to) relation and I'm not sure the definition of \lca\ matches that. If it does, we can simplify it a lot.}
+\begin{comment}
+ROMAN: intuitively, \texttt{if b then e1 else e2} should be equivalent to \texttt{var res : T; if b then res=e1; else res=e2;}. However, in the second form, we would find the least common type T using the type satisfaction (or can-be-assigned-to) relation and I'm not sure the definition of \lca\ matches that. If it does, we can simplify it a lot.
+\end{comment}
 
   The lowest common ancestor of types \texttt{S} and \texttt{T} is \texttt{ty} and one of the following applies:
   \begin{itemize}
@@ -1478,7 +1534,9 @@ We denote that type $T$ type-satisfies type $S$ in an environment $E$ by $E \ent
 \begin{emptyformal}
     \subsection{Formally}
 
-\TODOComment{Roman: consider defining an ancestor relation and then having the \lca\ be naturally defined as the least common ancestor.}
+\begin{comment}
+Roman: consider defining an ancestor relation and then having the \lca\ be naturally defined as the least common ancestor.
+\end{comment}
 
 \newcommand\Supers{\textsf{Supers}}
 \[
@@ -1522,8 +1580,10 @@ We denote that type $T$ type-satisfies type $S$ in an environment $E$ by $E \ent
 
 \[
 \begin{array}{c}
-\RuleComment{\TODOComment{ROMAN: Why do we use type/expression equivalence for arrays}}\\
-\RuleComment{\TODOComment{and type satisfiaction for tuples?}}\\
+\begin{comment}
+\RuleComment{ROMAN: Why do we use type/expression equivalence for arrays}\\
+\RuleComment{and type satisfiaction for tuples?}\\
+\end{comment}
 \inferrule{E \entails \tstruct(T) = \TTuple(t_1,\ldots,t_k) \\
   E \entails \tstruct(S) = \TTuple(s_1,\ldots,s_k) \\
   E \entails s_1 \typesat t_1 \ldots E \entails s_k \typesat t_k \\
@@ -1542,7 +1602,9 @@ We denote that type $T$ type-satisfies type $S$ in an environment $E$ by $E \ent
 }
 {E \entails S \lcasat \lca(T, S)}\\
 \\
-\RuleComment{\TODOComment{ROMAN: Why do we element-wise \lca\ here but not before?}}\\
+\begin{comment}
+\RuleComment{ROMAN: Why do we element-wise \lca\ here but not before?}\\
+\end{comment}
 \inferrule{E \entails \tstruct(T) = \TTuple(t_1,\ldots,t_k) \\
   E \entails \tstruct(S) = \TTuple(s_1,\ldots,s_k) \\
   E \entails s_1 \typesat t_1 \ldots E \entails s_k \typesat t_k \\
@@ -1658,9 +1720,13 @@ We denote that type $T$ type-satisfies type $S$ in an environment $E$ by $E \ent
   Determining the result type of applying a unary operator when the type of its operand is known.
   Similarly, we determine the negation of integer constraints.
 
-\TODOComment{ROMAN: I separated the real case.}
+\begin{comment}
+ROMAN: I separated the real case.
+\end{comment}
 
-%\TODOComment{ROMAN: it seems to me that we are losing the information of named types. For example, \texttt{type b subtypes boolean = TRUE; boolean c = b;} would not type, but \texttt{type b subtypes boolean = TRUE; boolean c = !b;} would (checkop.asl).}
+\begin{comment}
+ROMAN: it seems to me that we are losing the information of named types. For example, \texttt{type b subtypes boolean = TRUE; boolean c = b;} would not type, but \texttt{type b subtypes boolean = TRUE; boolean c = !b;} would (checkop.asl).
+\end{comment}
 
 \subsection{Prose}
   \texttt{t} is the result of checking compatibility of a unary operator \texttt{op} with
@@ -1758,7 +1824,9 @@ We denote that type $T$ type-satisfies type $S$ in an environment $E$ by $E \ent
 E \entails (\texttt{"-"}, c_1) : d_1 \ldots E \entails (\texttt{"-"}, c_k) : d_k
 }{E \entails \CheckUnop(\texttt{"-"}, T) : \TInt(\langle [d_1,\ldots,d_k] \rangle)}\\
 \\
-\TODOComment{ROMAN: why don't we check that the type satisfies a bitvector type?}\\
+\begin{comment}
+ROMAN: why don't we check that the type satisfies a bitvector type?\\
+\end{comment}
 \inferrule{E \entails \typelabel(\tstruct(T)) : \TBits}{E \entails \CheckUnop(\texttt{"NOT"}, T) : T}\\
 \end{array}
 \]
@@ -1879,7 +1947,10 @@ E \entails (\texttt{"-"}, c_1) : d_1 \ldots E \entails (\texttt{"-"}, c_k) : d_k
         \item \texttt{t2} has the structure of an unconstrained integer;
         \item \texttt{t} is an unconstrained integer;
         \end{itemize}
-      \item One of the following applies: \TODOComment{ROMAN: I think the next two cases are subsumed by the case of two under/well-constrained integers.}
+      \item One of the following applies: 
+\begin{comment}    
+ROMAN: I think the next two cases are subsumed by the case of two under/well-constrained integers.
+\end{comment}
        \begin{itemize} 
        \item All of the following apply:
           \begin{itemize}
@@ -1943,7 +2014,9 @@ E \entails (\texttt{"-"}, c_1) : d_1 \ldots E \entails (\texttt{"-"}, c_k) : d_k
 }
 {E \entails \CheckBinop(\texttt{op}, T_1, T_2) : \TBool}\\
 \\
-\TODOComment{ROMAN: I think our lexical analyzes misses XOR.}\\
+\begin{comment}
+ROMAN: I think our lexical analyzes misses XOR.\\
+\end{comment}
 \inferrule{
   \texttt{op} \in  \{\texttt{"AND"}, \texttt{"OR"}, \texttt{"EOR"}, \texttt{"XOR"}\}\\
   E \entails \tstruct(T_1) = \TBits(w_1, \Ignore) \\
@@ -1971,7 +2044,9 @@ E \entails (\texttt{"-"}, c_1) : d_1 \ldots E \entails (\texttt{"-"}, c_k) : d_k
 
 \[
 \begin{array}{c}
-\TODOComment{ROMAN: I think this captures the case of enums.}\\
+\begin{comment}
+ROMAN: I think this captures the case of enums.\\
+\end{comment}
 \inferrule{\texttt{op} \in  \{\texttt{"="}, \texttt{"!="}\}}
 {E \entails \CheckBinop(\texttt{op}, T, T) : \TBool}\\
 \\
@@ -2009,8 +2084,8 @@ E \entails (\texttt{"-"}, c_1) : d_1 \ldots E \entails (\texttt{"-"}, c_k) : d_k
 {E \entails \CheckBinop(\texttt{op}, T_1, T_2) : \TReal}
 \end{array}
 \]
-
-\TODOComment{ROMAN: define \instantiate, which accepts a list of integer constraints and returns a set of integers.}
+\begin{comment}ROMAN: define \instantiate, which accepts a list of integer constraints and returns a set of integers.
+\end{comment}
 
 \[
 \begin{array}{c}
@@ -2078,7 +2153,9 @@ E \entails (\texttt{"-"}, c_1) : d_1 \ldots E \entails (\texttt{"-"}, c_k) : d_k
 an environment \texttt{env}.  Formally, the result of annotating the expression
 \texttt{e} in \texttt{env} is \texttt{t,new\_env} where \texttt{t} is a type and
 \texttt{new\_env} is an environment, or an error, and one of the following applies:
-\TODOComment{ROMAN: the environment here is actually an expression. We should probably explain why we returned a transformed expression.}
+\begin{comment}
+ROMAN: the environment here is actually an expression. We should probably explain why we returned a transformed expression.
+\end{comment}
 \begin{itemize}
 \item TypingRule.Lit (see Section~\ref{sec:TypingRule.Lit});
 \item TypingRule.ELocalVarConstant (see Section~\ref{sec:TypingRule.ELocalVarConstant})
@@ -2231,7 +2308,9 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 
 \isempty{\subsection{Comments}}
 
-\TODOComment{ROMAN: we seem to be missing TypinRule.EGlobalVarConstantNoVal}
+\begin{comment}
+ROMAN: we seem to be missing TypinRule.EGlobalVarConstantNoVal.
+\end{comment}
 
 \section{TypingRule.EGlobalVar \label{sec:TypingRule.EGlobalVar}}
 
@@ -2254,7 +2333,9 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 \begin{emptyformal}
   \subsection{Formally}
   
-\TODOComment{ROMAN: This rule is problematic since it uses a negative premise. Using negative premises requires specific rule ordering strategies, which we probably don't want. Also, I don't understand the rationale for this rule.}
+\begin{comment}
+ROMAN: This rule is problematic since it uses a negative premise. Using negative premises requires specific rule ordering strategies, which we probably don't want. Also, I don't understand the rationale for this rule.
+\end{comment}
 \[
 \inferrule{
   G.\constantsvalues \not\entails x : V\\
@@ -2285,7 +2366,9 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 
 \begin{emptyformal}
   \subsection{Formally}
-\TODOComment{ROMAN: I don't think we need this, since errors are implicit when typing fails.}
+\begin{comment}
+ROMAN: I don't think we need this, since errors are implicit when typing fails.
+\end{comment}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2420,9 +2503,13 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 
 \begin{emptyformal}
     \subsection{Formally}
-\TODOComment{ROMAN: define $\textsf{width}$.}
-\TODOComment{ROMAN: define $s_1',\ldots,s_k'$.}
-\TODOComment{ROMAN: I think that the language is too powerful when it comes to determining bitvector/slices lengths, which requires proving that expressions are equivalent.}    
+\begin{comment}
+ROMAN: define $\textsf{width}$.
+
+ROMAN: define $s_1',\ldots,s_k'$.
+
+ROMAN: I think that the language is too powerful when it comes to determining bitvector/slices lengths, which requires proving that expressions are equivalent.
+\end{comment}
     
 \[
 \inferrule{

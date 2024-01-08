@@ -14,7 +14,10 @@ no-formal:
 no-empty:
 	$(MAKE) $(MFLAGS) NOEMPTY=1 all
 
-CONTROL=ifempty.tex ifformal.tex control.tex
+comment:
+	$(MAKE) $(MFLAGS) COMMENT=1 all
+
+CONTROL=ifempty.tex ifformal.tex control.tex ifcomment.tex
 
 ASLSyntaxReference.pdf: $(CONTROL) ASLASTLines.tex ASLSyntaxReference.tex
 	$(LATEX) -pdf ASLSyntaxReference.tex
@@ -58,10 +61,18 @@ ifempty.tex: force
 	@echo "\\\\newif\\ifempty\\\\emptytrue" >$@
 endif
 
+ifdef COMMENT
+ifcomment.tex: force
+	@echo "\\\\newif\\ifcomment\\\\commenttrue" >$@
+else
+ifcomment.tex: force
+	@echo "\\\\newif\\ifcomment\\\\commentfalse" >$@
+endif
+
 clean:
 	/bin/rm -f $(PDFS)
 	/bin/rm -f ASLSemanticsLines.tex ASLTypingLines.tex ASLTypeSatisfactionLines.tex ASLASTLines.tex
 	/bin/rm -f *.aux *.log *.fls *.log *.toc *.fdb_latexmk *~
-	/bin/rm -f ifformal.tex ifempty.tex
+	/bin/rm -f ifformal.tex ifempty.tex ifcomment.tex
 	/bin/rm -f comment.cut
 	/bin/rm -f *.blg *.bbl *.out
