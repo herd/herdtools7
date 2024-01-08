@@ -6,6 +6,47 @@
 \input{ASLASTLines}
 \newcommand{\tests}{../tests/ASLTypingReference.t/}
 
+\newcommand\typelabel[0]{\textsf{tlabel}} % Move to ASLMacros.tex
+
+\newcommand\Ignore[0]{\texttt{\_}}
+
+\newcommand\RuleComment[1]{\textit{(#1)}}
+\newcommand\isbuiltinsingular[0]{\texttt{is\_builtin\_singular}}
+\newcommand\isbuiltinaggregate[0]{\texttt{is\_builtin\_aggregate}}
+\newcommand\isbuiltin[0]{\texttt{is\_builtin}}
+\newcommand\isnamed[0]{\texttt{is\_named}}
+\newcommand\isanonymous[0]{\texttt{is\_anonymous}}
+\newcommand\issingular[0]{\texttt{is\_singular}}
+\newcommand\isaggregate[0]{\texttt{is\_aggregate}}
+\newcommand\isnonprimitive[0]{\texttt{is\_non\_primitive}}
+\newcommand\isprimitive[0]{\texttt{is\_primitive}}
+
+\newcommand\isunconstrainedinteger[0]{\textsf{unconstrained-int}}
+\newcommand\isunderconstrainedinteger[0]{\textsf{under-constrained-int}}
+\newcommand\iswellconstrainedinteger[0]{\textsf{well-constrained-int}}
+\newcommand\unconstrainedinteger[0]{\TInt(\langle\rangle)}
+
+\newcommand\staticeval[0]{\textit{static-eval}}
+
+\newcommand\sortbyid[0]{\textit{sort-by-id}}
+\newcommand\sortids[0]{\textit{sort-ids}}
+
+\newcommand\super[0]{\textit{super}}
+\newcommand\subtype[0]{<:}
+\newcommand\structsubtypesat[0]{\models_{<:\textit{struct}}}
+\newcommand\domsubtypesat[0]{\models_{<:\textit{dom}}}
+\newcommand\subtypesat[0]{\models_{<:}}
+\newcommand\typesat[0]{\models}
+\newcommand\canbeassignedto[0]{\;\textsf{can-be-assigned-to}\;}
+\newcommand\typeclashes[0]{\;\textsf{type-clashes}\;}
+\newcommand\lca[0]{\textsf{lca}}
+\newcommand\lcasat[0]{\models}
+\newcommand\typeequiv[0]{\equiv_t}
+\newcommand\exprequiv[0]{\equiv_e}
+\newcommand\instantiate[0]{\textsf{instantiate}}
+
+\newcommand\eliteral[1]{\textsf{E\_Literal}(#1)}
+
 \author{Arm Architecture Technology Group}
 \title{ASL Typing Reference \\ 
        DDI 0622}
@@ -95,53 +136,80 @@ welcome; those can be sent to Arm’s Architecture Formal Team Lead Jade
 Alglave \texttt{(jade.alglave@arm.com)} or by raising issues or PRs to the herdtools7
 github repository.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Preamble}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The purpose of this document is to describe, in a definitive way, which ASL programs are considered \emph{valid}. Validity is defined in terms of a \emph{type system}~\cite{TypeSystemsLucaCardelli}. That is, a set of \emph{type rules}.
 
 \section{Abstract Syntax}
-An \emph{abstract syntax tree} (AST, for short) represents an ASL program as a labelled tree.
-The ASL Abstract Syntax is given in~\cite{ASLAbstractSyntaxReference}.
+An \emph{abstract syntax tree} (AST, for short) represents an ASL program as a labelled structured tree. 
+%
+The ASL type system is defined over the ASL abstract syntax, which is given in~\cite{ASLAbstractSyntaxReference}.
 
 \section{Environments}
 
-An environment is what the typing operates over: a structure which amongst
-other things associates types to variables. Intuitively, the typing of a
+An \emph{environment} is what the type rules operate over: a structure, which among
+other things, associates types to variables. Intuitively, the typing of a
 program makes an initial environment evolve, with new types as given by the
-variable declarations of the program. Environments map names to variables and
-subprograms.
+variable declarations of the program.
 
-More precisely, a \emph{typing environment} (environment, for short) maps AST
-nodes to types.
+Environments $E \in \mathbb{E}$ are formally defined below (referring to non-terminals in the abstract syntax):
+\[
+\begin{array}{rcl}
+\mathbb{E} 	&=& \mathbb{G} \times \mathbb{L}\\
+\mathbb{G} 	&=& \declaredtypes \times \constantsvalues \times \storagetypes\\
+  			& & \times\ \subtypes \times \subprograms \times \subprogramrenamings\\
+\mathbb{L} 	&=& \constantsvalues \times \storagetypes \times \returntype\\
+\hline
+\declaredtypes	 &=& \identifier \partialto \ty\\
+\constantsvalues &=& \identifier \partialto \literal\\
+\storagetypes    &=& \identifier \partialto \ty \times \localdeclkeyword\\
+\subtypes		 &=& \identifier \partialto \identifier\\
+\subprograms	 &=& \identifier \partialto \func\\
+\subprogramrenamings	 &=& \identifier \rightarrow 2^\func\\
+\returntype      &=& \{\langle\rangle, \langle \ty \rangle\}
+\end{array}
+\]
+
+Technically, an environment $E=(G^E, L^E)$ consists of two
+distinct components: the global environment $G^E$---pertaining to AST nodes
+appearing outside of a given subprogram, and the local environment
+$L^E$---pertaining to AST nodes appearing inside a given subprogram.
+%
+We will drop the superscripts when they are obvious from the context.
+%
+The global environment and local environment consist of various maps. We will use the notation $G.m$ and $L.m$ to access the $m$ component of a given environment.
+
 
 A \emph{type judgement} associates a node in an abstract syntax tree (which
-intuitively corresponds to an ASL construct) with a certain type. We then say
-that the node is \emph{annotated} with that type.
+intuitively corresponds to an ASL construct) with a \emph{sentence}. That is, a statement that holds true.
 %
-
-Defining the type annotation requires inferring various auxiliary attributes
-for AST nodes. We consider these auxiliary attributes as part of the
-environment as well. Technically, we partition the environment into two
-distinct components: the global environment $G$---pertaining to AST nodes
-appearing outside of a given subprogram, and the local environment
-$L$---pertaining to AST nodes appearing inside a given subprogram.
+We use the notation $\entails n : S$ to mean that the sentence $S$ holds for the AST node $n$, independent of any environment and $E \entails n : S$ to mean that $S$ holds for $n$ in the context of the environment $E$.
+%
+We also use more general types of judgements---ones that essentially define a function over AST nodes (e.g., the \emph{structure} of a type node) and predicates over pairs of nodes (e.g., when one type \emph{satisfies} another type).
 
 \section{Type System}
-A \emph{typing rule} specifies a conjunction of conditions that must hold in
-order to annotate an AST node with a given type. These conditions typically
-inspect the label of node and the type annotations on the children of the node
-(in a given environment).
+A \emph{type rule} has the form $\inferrule{P_1 \\ .. \\ P_k}{S}$. We refer to $P_1,\ldots,P_k$ as the \emph{premises} of the rule and to the sentence $S$ as its \emph{conclusion}. When the set of premises is empty, we may omit them entirely.
+%
+We sometimes precede rules by comments like so:
+\[
+\begin{array}{c}
+\RuleComment{comment}\\
+\inferrule{P_1 \\ .. \\ P_k}{S} \enspace.
+\end{array} 
+\]
 
-Not all conditions are type judgements. Some conditions are expressed in terms
-of the auxiliary attributes mentioned above. We define these in the next
-chapter.
+A rule is considered to hold when all of the premises are determined to hold, with any  free variables occurring in the rule implicitly interpreted as universally quantified. We can then conclude that $S$ holds.
 
-A \emph{typing system} is a set of typing rules. More than one rule can be
-associated with a given node label, but they are exclusive---at most one rule
-holds in a given environment.
+The premises typically inspect the label of an AST node and the information associated with the children of the node in a given environment.
 
 This is related to \identd{JRXM}, \identi{ZTMQ}, \identd{HBCP}, \identi{SMMH},
 \identi{DFML}, \identr{WMFV}.
 
 \section{Annotation}
+\TODOComment{ come back to this section.}
+
 Typing a program consists of annotating the root of its AST. This is typically
 done by traversing the AST bottom-up.  To annotate a node, the typing algorithm
 finds a rule that matches the node---that is a rule whose conditions are
@@ -171,7 +239,23 @@ function describes how to annotate an AST node, given its label, as follows:\beg
 
 This is related to \identr{VDPC}.
 
+\section{Mathematical Notations}
+
+We use the notation $a..b$ as a shorthand for $a,\ldots,b$ and $x_{a..b}$ as a shorthand for $x_a,\ldots,x_b$.
+
+We define list comprehensions $[f(a) \;|\; a \in A]$ where $A$ is a possibly-empty list as $[]$ if $A$ is empty and $[f(a_1) \ldots f(a_n)]$ if $A=a_1 \ldots a_n$.
+
+We write $\Ignore$ for a fresh universally quantified variable which is not used in the rule. That is, a variable whose name is irrelevant for understanding the rule and can thus be omitted.
+
+Our rules will often include evaluating mathematical expressions in the context of a given environment. Instead of evaluating each sub-expression separately and then applying standard mathematical operators (e.g., less than, subset, etc.), we will use the abbreviated expressions $E \entails e_1 \;\textit{op}\; e_2$ for
+\[
+\inferrule{}{E \entails e_1=v_1 \\ E \entails e_2=v_2 \\ v_1 \;\textit{op}\; v_2}
+\]
+where $e_1$ and $e_2$ are expressions, $v_1$ and $v_2$ are their corresponding values in the environment $E$ and $\textit{op}$ is a mathematical operator.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Reading guide}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 The definition of each \texttt{annotation\_<label>} function is given by a number of
 rules, which follow the possible shapes the \texttt{label} can have. For
@@ -188,9 +272,20 @@ Each rule is presented using the following template:
 \item Formal paragraphs which give formal definitions of the rule.
 \end{itemize}
 
-\chapter{Type Algebra}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Basic Type Attributes}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\newcommand{\rulespace}{\;\;}
+\TODOComment{ROMAN: define expression equality $\equiv_e$ and type equality $\equiv_t$.}
+
+We define the \emph{type label} of a type node $t \in \ty$ to be the label associated by the AST with the node.
+%$\typelabel : \ty \rightarrow \{\TInt, \TReal, \TString, \TBool, \TBits, \TEnum, \TRecord, \TException, \TNamed\}$
+%\[
+%\typelabel(t) = \left\{ \begin{array}{ll}
+%\TInt & \text{if }t=\TInt(c), c \in \intconstraint^*?\\
+%\TBits & \text{if }t=\TBits(c, l), c\in\bitsconstraint, l \in \bitfield^*\\
+%\end{array}\right.
+%\]
 
 \section{TypingRule.BuiltinSingularType \label{sec:TypingRule.BuiltinSingularType}}
 
@@ -207,32 +302,20 @@ Each rule is presented using the following template:
 
     \subsection{Example: TypingRule.BuiltinSingularTypes.asl}
 \VerbatimInput[firstline=3,lastline=8]{\tests/TypingRule.BuiltinSingularTypes.asl}
-Variables of  buitin types \texttt{integer}, \texttt{real}, \texttt{boolean}, \texttt{bits(4)} and \texttt{bits(2)} are defined.
+Variables of buitin singular types \texttt{integer}, \texttt{real}, \texttt{boolean}, \texttt{bits(4)} and \texttt{bits(2)} are defined.
 
     \subsection{Example: TypingRule.EnumerationType.asl}
 \VerbatimInput{\tests/TypingRule.EnumerationType.asl}
-The type \texttt{color} consists in two different constants \texttt{RED} and~\texttt{BLACK}.
+The (builtin singular) type \texttt{color} consists in two different constants \texttt{RED} and~\texttt{BLACK}.
 
     \subsection{Code}
       \VerbatimInput[firstline=\BuiltinSingularBegin, lastline=\BuiltinSingularEnd]{../types.ml}
 
-
 \begin{formal}
    \subsection{Formally}
-\newcommand\isbuiltinsingular[0]{\texttt{is\_builtin\_singular}}
 \[
 \begin{array}{c}
-\inferrule{}{\TReal : \isbuiltinsingular} \\ 
-\\
-\inferrule{}{\TString : \isbuiltinsingular} \\
-\\
-\inferrule{}{\TBool : \isbuiltinsingular} \\
-\\
-\inferrule{fl \in \textsf{bit\_field}^{*}}{\TBits(fl) : \isbuiltinsingular} \\
-\\
-\inferrule{il \in \textsf{\identifier}^{*}}{\TEnum(il) : \isbuiltinsingular}\\
-\\
-\inferrule{c \in \intconstraint^{*}}{\TInt(c) : \isbuiltinsingular} \\
+\inferrule{\typelabel(T) \in \{\TReal, \TString, \TBool, \TBits, \TEnum, \TInt\} }{\entails T : \isbuiltinsingular} \\ 
 \end{array}
 \]
 \end{formal}
@@ -260,13 +343,13 @@ Arrays are indexed either by integers from 0 to (array size minus $1$) as specif
 declaration, as illustrated by the type \texttt{T}, or by the elements of an
 enumeration type, as illustrated by type~\texttt{pointCoord}.
 
-The type~\texttt{pointRecord} is defined as a record type with  three fields
+The (builtin aggregate) type~\texttt{pointRecord} is defined as a record type with three fields
 \texttt{x}, \texttt{y} and~\texttt{z}.
 
     \subsection{Example: TypingRule.BuiltinExceptionType.asl}
     \VerbatimInput{\tests/TypingRule.BuiltinExceptionType.asl}
-    Two exception types are defined: exceptions \texttt{Not\_found} carry no
-values, while exceptions \texttt{Error}  carry a messsage. Notice the
+    Two (builtin aggregate) exception types are defined: exceptions \texttt{Not\_found} carry no
+values, while exceptions \texttt{Error}  carry a message. Notice the
 similarity with record types and that the empty field list \texttt{\{\}} can be
 omitted in type declarations, as it is the case for \texttt{Not\_found}.
 
@@ -275,16 +358,10 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
 
 \begin{formal}
     \subsection{Formally}
-\newcommand\isbuiltinaggregate[0]{\texttt{is\_builtin\_aggregate}}
 \[
 \begin{array}{c}
-\inferrule{tl \in \ty^{*}}{\TTuple(tl) : \isbuiltinaggregate} \\
-\\
-\inferrule{t \in \ty}{\TArray(t) : \isbuiltinaggregate} \\
-\\
-\inferrule{fl \in \Field^{*}}{\TRecord(fl) : \isbuiltinaggregate}\\
-\\
-\inferrule{fl \in \Field^{*}}{\TException(fl) : \isbuiltinaggregate}\\
+\inferrule{\typelabel(T) \in \{\TTuple, \TArray, \TRecord, \TException\}}
+{\entails T : \isbuiltinaggregate} \\
 \end{array}
 \]
 \end{formal}
@@ -297,23 +374,23 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Prose}
     \texttt{t} is a builtin type and one of the following applies:
     \begin{itemize}
-    \item \texttt{t} is singular;
-    \item \texttt{t} is aggregate.
+    \item \texttt{T} is singular;
+    \item \texttt{T} is builtin aggregate.
     \end{itemize}
 
     \subsection{Example}
+In the example \texttt{type ticks of integer;} the type \texttt{integer} is a builtin type but the named type \texttt{ticks} is not.
 
     \subsection{Code}
       \VerbatimInput[firstline=\BuiltinSingularOrAggregateBegin, lastline=\BuiltinSingularOrAggregateEnd]{../types.ml}
 
 \begin{formal}
       \subsection{Formally}
-\newcommand\isbuiltin[0]{\texttt{is\_builtin}}
 \[
 \begin{array}{c}
-\inferrule{t \in \ty \\ t : \isbuiltinsingular}{t : \isbuiltin}\\
+\inferrule{T : \isbuiltinsingular}{\entails T : \isbuiltin}\\
 \\
-\inferrule{t \in \ty \\ t : \isbuiltinaggregate}{t : \isbuiltin}\\
+\inferrule{T : \isbuiltinaggregate}{\entails T : \isbuiltin}\\
 \end{array}
 \]
 \end{formal}
@@ -326,16 +403,16 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     A named type is a type which is declared using the \texttt{type} syntax.
 
     \subsection{Example}
+    The type \texttt{ticks} in the previous example is a named type.
 
     \subsection{Code}
       \VerbatimInput[firstline=\NamedBegin, lastline=\NamedEnd]{../types.ml}
 
 \begin{formal}
       \subsection{Formally}
-\newcommand\isnamed[0]{\texttt{is\_named}}
 \[
 \begin{array}{c}
-\inferrule{i \in \identifier}{\TNamed(i) : \isnamed}
+\inferrule{\typelabel(T) = \TNamed}{\entails T : \isnamed}
 \end{array}
 \]
 \end{formal}
@@ -349,16 +426,16 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     An anonymous type is a type which is not declared using the type syntax.
 
     \subsection{Example}
+    The tuple type \texttt{(integer, integer)} is an anonymous type.
 
     \subsection{Code}
       \VerbatimInput[firstline=\AnonymousBegin, lastline=\AnonymousEnd]{../types.ml}
 
 \begin{formal}
       \subsection{Formally}
-\newcommand\isanonymous[0]{\texttt{is\_anonymous}}
 \[
 \begin{array}{c}
-\inferrule{t \in \ty \\ \neg t : \isnamed}{t : \isanonymous}
+\inferrule{\typelabel(T) \neq \TNamed}{\entails T : \isanonymous}
 \end{array}
 \]
 \end{formal}
@@ -375,26 +452,32 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \item All of the following apply:
       \begin{itemize}
       \item \texttt{t} is a named type;
-      \item \texttt{t\_struct} is the structure of \texttt{t};
-      \item \texttt{t\_struct} is a builtin singular.
-      \end{itemize}
+      \item \texttt{t\_struct} is the structure of \texttt{t} (defined later in this chapter);
+      \item \texttt{t\_struct} is a builtin singular type.
+      \end{itemize} 
     \end{itemize}
 
     \subsection{Example}
+In the following example, the types \texttt{A}, \texttt{B}, and \texttt{C} are all singular types:
+\begin{verbatim}
+type A of integer;
+type B of A;
+type C of B;
+\end{verbatim}
 
     \subsection{Code}
       \VerbatimInput[firstline=\SingularBegin, lastline=\SingularEnd]{../types.ml}
 
 \begin{formal}
       \subsection{Formally}
-\newcommand\issingular[0]{\texttt{is\_singular}}
 \[
 \begin{array}{c}
-\inferrule{t \in \ty \\ t : \isbuiltin}{t : \issingular}\\
+\inferrule{\entails t : \isbuiltin}{\entails  t : \issingular}\\
 \\
-\inferrule{t \in \ty \\ t : \isnamed \\ t : \isbuiltinaggregate \\
-E \vdash \tstruct(t) : \isbuiltinsingular}{
-E \vdash t : \issingular}
+\RuleComment{The structure of a type is defined later in this chapter.}\\
+\inferrule{\entails t : \isnamed \\ t : \isbuiltinaggregate \\
+E \entails \tstruct(t) : \isbuiltinsingular}{
+E \entails t : \issingular}
 \end{array}
 \]      
 
@@ -418,6 +501,12 @@ E \vdash t : \issingular}
     \end{itemize}
 
     \subsection{Example}
+In the following example, the types \texttt{A}, \texttt{B}, and \texttt{C} are all aggregate types:
+\begin{verbatim}
+type A of (integer, integer);
+type B of A;
+type C of B;
+\end{verbatim}
 
     \subsection{Code}
       \VerbatimInput[firstline=\AggregateBegin, lastline=\AggregateEnd]{../types.ml}
@@ -425,12 +514,11 @@ E \vdash t : \issingular}
 \begin{formal}
       \subsection{Formally}
       
-\newcommand\isaggregate[0]{\texttt{is\_aggregate}}
 \[
 \begin{array}{c}
-\inferrule{t \in \ty \\ t : \isbuiltinaggregate}{t : \isaggregate}\\
+\inferrule{\entails t : \isbuiltinaggregate}{\entails t : \isaggregate}\\
 \\
-\inferrule{t \in \ty \\ t : \isnamed \\ E \vdash \tstruct(t) : \isbuiltinaggregate}{E \vdash t : \isaggregate}
+\inferrule{\entails t : \isnamed \\ E \vdash \tstruct(t) : \isbuiltinaggregate}{E \entails t : \isaggregate}
 \end{array}
 \]
 \end{formal}
@@ -467,20 +555,26 @@ E \vdash t : \issingular}
     \end{itemize}
 
     \subsection{Example}
+    
+The following types are non-primitive:
+\begin{itemize}
+\item \texttt{type A of integer} (\texttt{A} is non-primitive), 
+\item \texttt{(integer, A)}
+\item \texttt{array[6] of A} 
+\item \texttt{record { a : A }}
+\end{itemize}
 
     \subsection{Code}
       \VerbatimInput[firstline=\NonPrimitiveBegin, lastline=\NonPrimitiveEnd]{../types.ml}
 
 \begin{formal}
     \subsection{Formally}
-\newcommand\isnonprimitive[0]{\texttt{is\_non\_primitive}}
 \[
 \begin{array}{c}
-\inferrule{\id \in \identifier}{\TNamed(\id) : \isnonprimitive}\\ \\
-\inferrule{t_1,\ldots,t_k \in \ty \\ i\in 1..k \\ t_i : \isnonprimitive}{\TTuple(t_1,\ldots,t_k) : \isnonprimitive}\\ \\
-\inferrule{e \in \expr \\ t : \isnonprimitive}{\TArray(e, t) : \isnonprimitive}\\ \\
-\inferrule{(\id_1,t_1),\ldots,(\id_k,t_k) \in (\identifier, \ty) \\ i\in 1..k \\ t_i : \isnonprimitive}{\TRecord((\id_1,t_1),\ldots,(\id_k,t_k)) : \isnonprimitive}\\ \\
-\inferrule{(\id_1,t_1),\ldots,(\id_k,t_k) \in (\identifier, \ty) \\ i\in 1..k \\ t_i \isnonprimitive}{\TException((\id_1,t_1),\ldots,(\id_k,t_k)) : \isnonprimitive}\\ \\
+\inferrule{}{\entails \TNamed(\Ignore) : \isnonprimitive}\\ \\
+\inferrule{t_1,\ldots,t_k \in \ty \\ \entails \exists i\in 1..k.\ t_i : \isnonprimitive}{\entails \TTuple(t_1,\ldots,t_k) : \isnonprimitive}\\ \\
+\inferrule{\entails t : \isnonprimitive}{\entails \TArray(\Ignore, t) : \isnonprimitive}\\ \\
+\inferrule{(\id_1,t_1),\ldots,(\id_k,t_k) \in \Field \\ \entails \exists i\in 1..k.\ t_i :  \isnonprimitive \\ L \in \{\TRecord, \TException\}}{\entails L((\id_1,t_1),\ldots,(\id_k,t_k)) : \isnonprimitive}
 \end{array}
 \]
 
@@ -496,13 +590,24 @@ E \vdash t : \issingular}
     A type \texttt{t} is primitive if it is not non-primitive.
 
     \subsection{Example}
+The following types are primitive:
+\begin{itemize}
+\item \texttt{integer}
+\item \texttt{(integer, integer)}
+\item \texttt{array[5] of integer}
+\item \texttt{record {ticks : integer}}
+\end{itemize}
 
     \subsection{Code}
       \VerbatimInput[firstline=\PrimitiveBegin, lastline=\PrimitiveEnd]{../types.ml}
 
 \begin{formal}
   \subsection{Formally}
-
+\[
+\begin{array}{c}
+\inferrule{\not\entails t : \isnonprimitive}{\entails t : \isprimitive}
+\end{array}
+\]
 \end{formal}
 
     \subsection{Comments}
@@ -550,19 +655,13 @@ E \vdash t : \issingular}
       \end{itemize}
     \item All of the following apply:
       \begin{itemize}
-        \item \texttt{ty} is a record type with fields \texttt{fields};
-        \item \texttt{fields} associates a name $x$ to a type $t_x$;
-        \item \texttt{fields'} associates to each name $x$ of \texttt{fields}
-          to the structure of $t_x$;
-        \item \texttt{t\_struct} is a record type with fields \texttt{fields'}.
+      \item \texttt{ty} is a record with \texttt{fields};
+      \item \texttt{t\_struct} is a record with its fields sorted by their names and associated with the structure of their corresponding types;
       \end{itemize}
     \item All of the following apply:
       \begin{itemize}
-        \item \texttt{ty} is an exception type with fields \texttt{fields};
-        \item \texttt{fields} associates a name $x$ to a type $t_x$;
-        \item \texttt{fields'} associates to each name $x$ of \texttt{fields}
-          to the structure of $t_x$;
-        \item \texttt{t\_struct} is an exception type with fields \texttt{fields'}.
+      \item \texttt{ty} is an exception with \texttt{fields};
+      \item \texttt{t\_struct} is a record with with its fields sorted by their names and associated with the structure of their corresponding types;
       \end{itemize}
     \end{itemize}
 
@@ -595,6 +694,29 @@ whose structure is \texttt{integer}.
 
 \begin{emptyformal}
       \subsection{Formally}
+      
+Let $\sortbyid([(\id_1,t_1),\ldots,(\id_k,t_k)]) = [(\id_1',t_1'),\ldots,(\id_k',t_k')]$ be the input list sorted according to the identifier component (lexicographically).
+
+\[
+\begin{array}{c}
+\inferrule{x \in \identifier \\ \staticglob{E} \entails x : t \\ E \entails \tstruct(t)=t'}{E \entails \tstruct(\TNamed(x)) = t'}\\
+\\
+\RuleComment{ROMAN: How would we know to assign an integer the structure}\\
+\RuleComment{of the under-constrained integer type vs. unconstrained integer type?}\\
+\inferrule{t \in \ty \\ \typelabel(t) \in \{\TInt, \TReal, \TString, \TBool, \TBits\}}{E \entails \tstruct(t) = t}\\
+\\
+\RuleComment{\TODOComment{ I think it makes sence to sort the enum identifiers.}}\\
+\inferrule{l \in \identifier^*}{E \entails \tstruct(\TEnum(l)) = \TEnum(\sortids(l))}\\
+\\
+\inferrule{[t_1,\ldots,t_k] \in \ty^* \\ E \entails \tstruct(t_1)=t_1' \ldots E \entails \tstruct(t_k)=t_k'}{E \entails \tstruct(\TTuple([t_1,\ldots,t_k])) =  \TTuple([t_1',\ldots,t_k'])}\\
+\\
+\inferrule{e \in \expr \\ t \in \ty \\ E \entails \tstruct(t)=t'}{E \entails \tstruct(\TArray(e, t)) = \TArray(e, t')}\\
+\\
+\inferrule{(\id_1,t_1),\ldots,(\id_k,t_k) \in \Field^* \\ L \in \{\TRecord, \TException\} \\
+ E \entails \tstruct(t_1)=t_1' \ldots E \entails \tstruct(t_k)=t_k'}{E \entails \tstruct(L([(\id_1,t_1),\ldots,(\id_k,t_k)])) = \\ L(\sortbyid([(\id_1,t_1'),\ldots,(\id_k,t_k')]))}
+\end{array}
+\]    
+      
 \end{emptyformal}
     \subsection{Comments}
     The structure of a type is the primitive type it is equivalent to such that
@@ -608,6 +730,10 @@ whose structure is \texttt{integer}.
   The domain of a type is the set of values which storage elements of that type
 may hold.
 
+\TODOComment{ explain where this is used. For example, for static evaluation of expressions.}
+
+\TODOComment{ I think that 3.4.2 and 7.1.3 contradict each other when it comes to under-constrained integers. If the domain of the under-constrained integer is a proper superset of every well-constrained integer, it follows that this domain is a superset of Z. Therefore, it cannot be a proper subset of Z - the domain of the unconstrained integer. Furthermore, just having the under-constrained integer with all the distinctions in the rules, is very confusing to any potential ASL developer.}
+
   \subsection{Example}
   The domain of \texttt{integer} is the infinite set of all integers.
 
@@ -615,12 +741,45 @@ may hold.
 
   The domain of \texttt{integer {2,16}} is the set containing the integers \texttt{2} and \texttt{16}.
 
+  The domain of \texttt{bits({2,16})} is the set containing all 2-bit and all 16-bit binary sequences.
+
   \subsection{Code}
       \VerbatimInput[firstline=\DomainBegin, lastline=\DomainEnd]{../types.ml}
 
 \begin{emptyformal}
       \subsection{Formally}
+      
+\[
+\begin{array}{c}
+\inferrule{}{ E \entails \dom(\TBool) = \{\texttt{FALSE}, \texttt{TRUE}\} }\\
+\\
+\inferrule{}{ E \entails \dom(\TString) = \{ s\ \;|\; \texttt{"}s\texttt{"} \in \texttt{<string\_lit>} \} }\\
+\\
+\inferrule{}{ E \entails \dom(\TReal) = \Q }\\
+\\
+\RuleComment{The domain of the unconstrained integer.}\\
+\inferrule{}{ E \entails \dom(\unconstrainedinteger) = \Z }\\
+\\
+\RuleComment{The domain of constrained integers.}\\
+\inferrule{}{ E \entails \dom(\TInt(\langle [c_1,\ldots,c_k] \rangle)) = \bigcup_{i=1}^k \staticeval(E, c_i)}\\
+\\
+\inferrule{}{ E \entails \dom(\TEnum([\id_1,\ldots,\id_k])) = \{\id_1,\ldots,\id_k\}}\\
+\\
+\inferrule{}{ E \entails \dom(\TBits(c, \textit{bfl})) = \{ b_1\cdot\ldots\cdot b_k \;|\; b_1,\ldots,b_k \in \{0,1\}, \;\;\; E \entails k \models c   \} }\\
+\end{array}
+\]
+
+The function $\staticeval$ evaluates an integer constraint to a finite set of integers (an interval) in a given environment.
+
+The notation $b_1\cdot\ldots\cdot b_k$ stands for the $k$-sequence of values $b_1,\ldots,b_k$.
+
+The notation $E \entails k \models c$ means that the integer $k$ satisfies the constraint $c$ in the environment $E$. 
+\TODOComment{ consider simplifying/elaborating on this.}
 \end{emptyformal}
+
+\TODOComment{ Shouldn't we define the domain of tuples, records, arrays, etc. ?}
+
+\TODOComment{ Should we formalize static evaluation of constraints?}
 
   \subsection{Comments}
   This is related to \identd{BMGM}, \identr{PHRL}, \identr{PZNR},
@@ -646,12 +805,31 @@ may hold.
 
 \begin{emptyformal}
     \subsection{Formally}
+
+\[
+\begin{array}{c}
+\inferrule{}{E \entails \unconstrainedinteger : \isunconstrainedinteger}\\
+\\
+\inferrule{}{E \entails \TInt(\langle [] \rangle) : \isunderconstrainedinteger}\\
+\\
+\RuleComment{This is not entirely correct, since the constraints may be}\\
+\RuleComment{malformed, or include under-constrained integers.}\\
+\RuleComment{But this is what I go with, for now.}\\
+\inferrule{}{E \entails \TInt(\langle [c_1,\ldots,c_k]\rangle) : \iswellconstrainedinteger}
+\end{array}
+\]     
+    
+    \TODOComment{ROMAN: see note about doma}
 \end{emptyformal}
 
 \subsection{Comments}
     This is related to \identd{ZTPP}, \identr{WJYH}, \identr{HJPN}, \identr{CZTX}, \identr{TPHR}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Type Satisfaction and Related Notions}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\TODOComment{ROMAN: it is not obvious to me why sometimes we check for type satisfaction and other times we check the structure of a type.}
 
 \section{TypingRule.Subtype}
 
@@ -673,10 +851,15 @@ may hold.
         \item \texttt{t1'} is a subtype of \texttt{t2} in \texttt{env}.
       \end{itemize}
   \end{itemize}
-  The subtype relation is a partial order.
+    The subtype relation is a partial order over named types. \TODOComment{ROMAN: I think the syntax allows subtyping anonymous types as well. Perhaps we should fix the syntax?}
 
   \subsection{Example}
-
+In the following example \texttt{subInt} is a subtype of itself and of \texttt{superInt}:
+\begin{verbatim}
+type superInt of integer;
+type subInt of integer subtypes superInt;
+\end{verbatim}
+ 
   \subsection{Code}
     \VerbatimInput[firstline=\SubtypeBegin, lastline=\SubtypeEnd]{../types.ml}
 
@@ -684,27 +867,26 @@ may hold.
     \subsection{Formally}
 \end{emptyformal}
 
-\newcommand\super[0]{\textit{super}}
-	  \newcommand\subtype[0]{\sqsubseteq}
+To model subtyping, the global environment contains the partial function $\subtypes$, which maps a type name to the name of its super-type, if it has one.
 
-	  To model subtyping, we define the function
-	  \[
-	  \super : \identifier \rightarrow \identifier \cup {\bot} \enspace,
-	  \]
-	  which maps an identifier to the name of its super-type or $\bot$ if it does not have one.
-
-	  We define the subtyping relation between two named types in a given environment as follows:
-	  \[
-	  \begin{array}{rl}
-	  a, b \in \identifier & (G,L) \vdash \texttt{T\_Named(a)} \subtype \texttt{T\_Named(a)} \\
-	  a, b \in \identifier \rulespace G.\super(a) = b  &
-	  (G,L) \vdash \texttt{T\_Named(a)} \subtype \texttt{T\_Named(b)}
-	  \end{array}
-	  \]
-
+We define the subtyping relation between two named types in a given environment as follows:
+\[
+\begin{array}{c}
+\inferrule{a \in \identifier}{E \entails \TNamed(a) \subtype \TNamed(a)} \\
+\\
+\inferrule{G.\subtypes \entails a : b }
+{(G,L) \entails \TNamed(a) \subtype \TNamed(b)}\\
+\\
+\inferrule{E \entails t_1 \subtype t_2 \\ E \entails t_2 \subtype t_3}{E \entails t_1 \subtype t_3}\\
+\\
+\RuleComment{\TODOComment{ consider adding the following rule.}}\\
+\inferrule{s\neq t \in \ty \\ E \entails s \subtype t \\ E \entails t \subtype s}{E \entails \error(\texttt{"subtype cycle exists!"})}
+\end{array}
+\]
+	  
   \subsection{Comments}
-  Since the subtype relation is a partial order, it is reflexive, viz,
-  every type is also a subtype of itself.
+  Since the subtype relation is a partial order, it is reflexive, viz, 
+  every type is also a subtype of itself. 
 
   Since the subtype relation is a partial order, it is transitive, viz, if A is
   a subtype of B and B is a subtype of C then A is a subtype of C.
@@ -726,6 +908,8 @@ may hold.
 
   \subsection{Prose}
   \texttt{T} is a supertype of \texttt{S} if and only if \texttt{S} is a subtype of \texttt{T}.
+  
+\TODOComment{ This rule doesn't exist in the code. Also, it is redundant, since it just applies to the same arguments in reverse order. I recommend removing this section.}
 
   \subsection{Example}
 
@@ -745,6 +929,8 @@ may hold.
 \section{TypingRule.StructuralSubtypeSatisfaction}
 
 \subsection{Prose}
+We define the following relation between two types as an intermediate step to defining the type satisfaction relation, later in this chapter.
+
   \texttt{T} structural-subtype-satisfies \texttt{S} if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
@@ -842,10 +1028,51 @@ may hold.
   \subsection{Example}
 
   \subsection{Code}
+\TODOComment{Why does the code use anonimization instead of getting the structure of types?}
+
     \VerbatimInput[firstline=\StructuralSubtypeSatisfactionBegin, lastline=\StructuralSubtypeSatisfactionEnd]{../types.ml}
 
 \begin{emptyformal}
     \subsection{Formally}
+    
+We write $E \entails s \structsubtypesat t$ to denote that type $s$ structural-subtype-satisfies type $t$ in the environment $E$.
+    
+\[
+\begin{array}{c}
+\inferrule{s, t \in \ty \\ c_s,c_t \in \intconstraint^*? \\ E \entails  \tstruct(s)=\TInt(c_s) \\ E \entails \tstruct(t)=\TInt(c_t) }{E \entails s \structsubtypesat t} \\
+\\
+\RuleComment{The following rule covers \TInt, \TReal, \TString, \TBool, and \TEnum.}\\
+\inferrule{E \entails \tstruct(s)=s' \\ E \entails \tstruct(t)=s'}{E \entails s \structsubtypesat t} \\
+\\
+\inferrule{s,t, \in \ty \\ c_s \in \bitsconstraint \\ l_t \in \bitfield^* \\
+E \entails \tstruct(s)=\TBits(c_s, []) \\ E \entails \tstruct(t)=\TBits(c_t, l_t)}{E \entails s \structsubtypesat t} \\
+\\
+\RuleComment{\TODOComment{ define bitwidth equality $E \entails c_s \equiv_b c_t$}}\\
+\RuleComment{\TODOComment{ define bitfield list subsumption $E \entails l_s \subseteq_{\ty} l_t$.}}\\
+\RuleComment{\TODOComment{ It isn't obvious how these two rules match the prose.}}\\
+\inferrule{s,t, \in \ty \\ c_s \in \bitsconstraint \\ l_s,l_t \in \bitfield^* \\
+E \entails \tstruct(s)=\TBits(c_s, l_s) \\ E \entails \tstruct(t)=\TBits(c_t, l_t)\\
+E \entails c_s \equiv_b c_t \\ E \entails l_s \subseteq_{\ty} l_t}{E \entails s \structsubtypesat t}\\
+\\
+\inferrule{l_s,l_t \in \expr \\ e_s,e_t \in \ty \\ E \entails \tstruct(s)=\TArray(l_s,e_s) \\ E \entails \tstruct(s)=\TArray(l_t,e_t) \\ E \entails l_s \exprequiv l_t \\ E \entails e_s \typeequiv e_t}{E \entails s \structsubtypesat t}\\
+\\
+\RuleComment{$E \entails s \models t$ means that type $s$ type-satisfies type $t$ in environment $E$.}\\
+\RuleComment{Type satisfaction is defined later in this chapter.}\\
+\inferrule{s, t, t_{1..k},s_{1..k} \in \ty \\ E \entails \tstruct(s)=\TTuple(s_1,\ldots,s_k) \\ E \entails \tstruct(t)=\TTuple(t_1,\ldots,t_k) \\ E \entails s_1 \models t_1,\ldots,E \entails s_k \models t_k}{E \entails s \structsubtypesat t}\\
+\\
+\RuleComment{\TODOComment{ROMAN: Why do we use type equivalence rather than type satisfaction?}}\\
+\inferrule{
+  i_{1..k}, j_{1..n} \in \identifier \\ 
+  t_{1..k}, s_{1..n} \in \ty \\
+  L \in \{\TRecord, \TException\}\\
+  E \entails \tstruct(s)=L((i_1,s_1),\ldots,(i_k,s_k)) \\ 
+  E \entails \tstruct(t)=L((j_1,t_1),\ldots,(j_n,t_n)) \\ 
+  f : 1..k \rightarrow_{\textsf{one-to-one}} 1..n \\ 
+  i_1 = j_{f(1)},\ldots,i_k = j_{f(k)} \\ 
+  s_1 \equiv_t t_{f(1)},\ldots,s_k \equiv_t t_{f(k)}
+}{E \entails s \structsubtypesat t}\\
+\end{array}
+\]
 \end{emptyformal}
 
 \subsection{Comments}
@@ -863,12 +1090,14 @@ may hold.
     \end{itemize}
 
   \item All of the following apply:
+  \begin{itemize}
     \item One of the following applies:
       \begin{itemize}
       \item \texttt{S} has the structure of a bitvector type with undetermined width;
       \item \texttt{T} has the structure of a bitvector type with undetermined width;
       \end{itemize}
    \item the domain of \texttt{T} is a subset of the domain of \texttt{S}.
+   \end{itemize}
   \end{itemize}
 
   \subsection{Example}
@@ -878,6 +1107,30 @@ may hold.
 
 \begin{emptyformal}
     \subsection{Formally}
+We write $E \entails T \domsubtypesat S$ to denote that type $T$ domain-subtype-satisfies type $S$ in the environment $E$.
+
+\TODOComment{ why don't we directly define rules for inferring whether a bitvector type has determined/undetermined width and just use that as a premise? Same for constrained/fixed width.}
+
+\[
+\begin{array}{c}
+\RuleComment{\TODOComment{ I model the following rule based on the code.}}\\
+\RuleComment{\TODOComment{ However, I don't understand why they are independent of $t$.}}\\
+\inferrule{E \entails \tstruct(S)=S' \\ \typelabel(S') \in \{\TTuple, \TArray, \TRecord, \TException\} }{E \entails T \domsubtypesat S} \\
+\\
+\inferrule{E \entails \tstruct(T)=T' \\
+  E \entails   \tstruct(S)=S'  \\
+  \typelabel(S') \in \{\TReal, \TString, \TBool, \TEnum, \TInt\} \\
+  E \entails \dom(T') \subseteq \dom(S')
+  }{E \entails T \domsubtypesat S} \\
+\\
+\inferrule{\typelabel(T) = \typelabel(S) = \TBits \\
+  n \in \Z \\ E \entails \dom(T) = \dom(S) = \{n\} }
+{E \entails T \domsubtypesat S}\\
+\\
+\inferrule{\typelabel(T) = \typelabel(T) = \TBits \\
+  E \entails \dom(T) \subseteq \dom(S) \subset \Z }{E \entails T \domsubtypesat S}
+\end{array}
+\]
 \end{emptyformal}
 
 \subsection{Comments}
@@ -899,6 +1152,13 @@ may hold.
 
 \begin{emptyformal}
     \subsection{Formally}
+We denote that type $T$ subtype-satisfies type $S$ in an environment $E$ by $E \entails T \subtypesat S$.
+\[
+\begin{array}{c}
+\inferrule{E \entails T \structsubtypesat S \\ E \entails T \domsubtypesat S}
+{E \entails T \subtypesat S}
+\end{array}
+\]
 \end{emptyformal}
 
 \subsection{Comments}
@@ -952,12 +1212,27 @@ may hold.
 
 \begin{emptyformal}
     \subsection{Formally}
+We denote that type $T$ type-satisfies type $S$ in an environment $E$ by $E \entails T \typesat S$.
+\[
+\begin{array}{c}
+\inferrule{E \entails T \subtype S }{E \entails T \typesat S}\\
+\\
+\inferrule{\entails T : \isanonymous \\ E \entails T \subtypesat S}{E \entails T \typesat S}\\
+\\
+\inferrule{\entails S : \isanonymous \\ E \entails T \subtypesat S}{E \entails T \typesat S}\\
+\\
+\inferrule{w_t,w_s \in \bitsconstraint \\ E \entails \tstruct(T)=\TBits(w_t, []) \\ E \entails \tstruct(S)=\TBits(w_s, \Ignore) \\ E \entails \llbracket w_s \rrbracket = \llbracket w_t \rrbracket}{E \entails T \typesat S}\\
+\end{array}
+\]
+
+\TODOComment{ define the evaluation of bitwidth length, which is used above.}
+
 \end{emptyformal}
 
 \subsection{Comments}
   Since the subtype relation is a partial order, it is reflexive. Therefore
   every type \texttt{T} is a subtype of itself, and as a consequence, every type \texttt{T}
-  type-satisfies itself.
+  type-satisfies itself. \TODOComment{ROMAN: I disagree --- we defined subtyping to hold *only* on named types.}
 
   This is related to \identr{FMXK} and \identi{NLFD}.
 
@@ -977,6 +1252,14 @@ may hold.
 
 \begin{emptyformal}
     \subsection{Formally}
+
+\[
+\inferrule{
+  E \entails \tstruct(S) \neq \TInt(\langle[]\rangle)\\
+  E \entails \tstruct(T) \neq \TInt(\langle[]\rangle)\\
+  E \entails T \typesat S}
+{E \entails S \canbeassignedto T}
+\]
 \end{emptyformal}
 
 \subsection{Comments}
@@ -993,6 +1276,7 @@ may hold.
   \item \texttt{S} and \texttt{T} both have the structure of strings;
   \item \texttt{S} and \texttt{T} both have the structure of enumeration types with the same enumeration literals;
   \item \texttt{S} and \texttt{T} both have the structure of bitvectors;
+  \item \texttt{S} and \texttt{T} both have the structure of booleans;
   \item \texttt{S} and \texttt{T} both have the structure of arrays whose element types type-clash;
   \item \texttt{S} and \texttt{T} both have the structure of tuples of the same length whose
     corresponding element types type-clash;
@@ -1007,6 +1291,31 @@ may hold.
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+\begin{array}{c}
+\inferrule{
+  E \entails \tstruct(T) = T' \\ 
+  E \entails \tstruct(S) = S' \\
+  \typelabel(T')=\typelabel(S') \in \{\TInt, \TReal, \TString, \TBits, \TEnum\}
+}{E \entails T \typeclashes S}\\
+\\
+\inferrule{
+  E \entails \tstruct(T) = \TArray(\Ignore, T') \\ 
+  E \entails \tstruct(S) = \TArray(\Ignore, S') \\
+  E \entails T' \typeclashes S'
+}{E \entails T \typeclashes S}\\
+\\
+\inferrule{
+  E \entails \tstruct(T) = \TTuple(T_{1..k}) \\ 
+  E \entails \tstruct(S) = \TTuple(S_{1..k}) \\
+  E \entails T_1 \typeclashes S_1 \\ \ldots \\ E \entails T_k \typeclashes S_k
+}{E \entails T \typeclashes S}\\
+\\
+\inferrule{E \entails S \subtype T}{E \entails T \typeclashes S}\\
+\\
+\inferrule{E \entails T \subtype S}{E \entails T \typeclashes S}\\
+\end{array}
+\]
 \end{emptyformal}
 
 \subsection{Comments}
@@ -1021,6 +1330,11 @@ may hold.
 \section{TypingRule.LowestCommonAncestor \label{sec:TypingRule.LowestCommonAncestor}}
 
 \subsection{Prose}
+  Annotating a given conditional expression, requires finding a single type that matches both the true sub-expression and the false sub-expression. This requires the notion of a \emph{lowest common ancestor} of two types. \TODOComment{Perhaps we should move this to the next chapter, right before typing ECond?}
+  Since we do not impose a canonical representation of types (e.g., \texttt{Integer {1, 2}} is equivalence to \texttt{integer {1..2}}), the lowest common ancestor is not unique. We write $E \entails A \lcasat \lca(B, C)$ to denote that the type $A$ is a type that satisfies the requirements for lowest common ancestor of types $B$ and $C$ in the context of the environment $E$.
+
+\TODOComment{ROMAN: intuitively, \texttt{if b then e1 else e2} should be equivalent to \texttt{var res : T; if b then res=e1; else res=e2;}. However, in the second form, we would find the least common type T using the type satisfaction (or can-be-assigned-to) relation and I'm not sure the definition of \lca\ matches that. If it does, we can simplify it a lot.}
+
   The lowest common ancestor of types \texttt{S} and \texttt{T} is \texttt{ty} and one of the following applies:
   \begin{itemize}
   \item All of the following apply:
@@ -1163,6 +1477,176 @@ may hold.
 
 \begin{emptyformal}
     \subsection{Formally}
+
+\TODOComment{Roman: consider defining an ancestor relation and then having the \lca\ be naturally defined as the least common ancestor.}
+
+\newcommand\Supers{\textsf{Supers}}
+\[
+\inferrule{}{E \entails T \lcasat \lca(T, T)}
+\]
+
+\[
+\begin{array}{c}
+\RuleComment{The least common subtype, if one exists.}\\
+\inferrule{
+  \typelabel(T)=\typelabel(S)=\TNamed \\
+  \Supers_S = \{S' \;|\; E \entails S \subtype S'\}\\
+  \Supers_T = \{T' \;|\; E \entails T \subtype T'\}\\
+  \Supers_S \cap \Supers_T \neq \emptyset
+}
+{E \entails \min_{\subtype} (\Supers_S \cap \Supers_T) \lcasat \lca(T, S)}
+\end{array}
+\]
+
+\[
+\begin{array}{c}
+\inferrule{E \entails \tstruct(T) = \TArray(l_t, t_T) \\
+  E \entails \tstruct(S) = \TArray(l_S, t_S) \\
+  E \entails l_T \typeequiv l_S \\
+  E \entails t_T \exprequiv t_S \\
+  \typelabel(t_T) = \TNamed \\
+  \entails S : \isanonymous
+}
+{E \entails \lca(T, S) = T}\\
+\\
+\inferrule{E \entails \tstruct(T) = \TArray(l_t, t_T) \\
+  E \entails \tstruct(S) = \TArray(l_S, t_S) \\
+  E \entails l_T \typeequiv l_S \\
+  E \entails t_T \exprequiv t_S \\
+  \typelabel(s_T) = \TNamed \\
+  \entails T : \isanonymous
+}
+{E \entails S \lcasat \lca(T, S)}
+\end{array}
+\]
+
+\[
+\begin{array}{c}
+\RuleComment{\TODOComment{ROMAN: Why do we use type/expression equivalence for arrays}}\\
+\RuleComment{\TODOComment{and type satisfiaction for tuples?}}\\
+\inferrule{E \entails \tstruct(T) = \TTuple(t_1,\ldots,t_k) \\
+  E \entails \tstruct(S) = \TTuple(s_1,\ldots,s_k) \\
+  E \entails s_1 \typesat t_1 \ldots E \entails s_k \typesat t_k \\
+  E \entails t_1 \typesat s_1 \ldots E \entails t_k \typesat s_k \\
+  \typelabel(T) = \TNamed \\
+  \entails S : \isanonymous
+}
+{E \entails T \lcasat \lca(T, S)}\\
+\\
+\inferrule{E \entails \tstruct(T) = \TTuple(t_1,\ldots,t_k) \\
+  E \entails \tstruct(S) = \TTuple(s_1,\ldots,s_k) \\
+  E \entails s_1 \typesat t_1 \ldots E \entails s_k \typesat t_k \\
+  E \entails t_1 \typesat s_1 \ldots E \entails t_k \typesat s_k \\
+  \typelabel(S) = \TNamed \\
+  \entails T : \isanonymous
+}
+{E \entails S \lcasat \lca(T, S)}\\
+\\
+\RuleComment{\TODOComment{ROMAN: Why do we element-wise \lca\ here but not before?}}\\
+\inferrule{E \entails \tstruct(T) = \TTuple(t_1,\ldots,t_k) \\
+  E \entails \tstruct(S) = \TTuple(s_1,\ldots,s_k) \\
+  E \entails s_1 \typesat t_1 \ldots E \entails s_k \typesat t_k \\
+  E \entails t_1 \typesat s_1 \ldots E \entails t_k \typesat s_k \\
+  \entails T : \isanonymous\\
+  \entails T : \isanonymous\\
+  E \entails \lca(t_1, s_1)=z_1 \ldots \lca(t_k, s_k)=z_k
+}
+{E \entails \TTuple(z_1,\ldots,z_k) \lcasat \lca(T, S)}\\
+\end{array}
+\]
+
+\[
+\begin{array}{c}
+\RuleComment{Rules for well-constrained integers}\\
+\inferrule{
+  E \entails \tstruct(T) : \iswellconstrainedinteger \\
+  E \entails \tstruct(S) : \iswellconstrainedinteger \\
+  \typelabel(T) = \TNamed\\
+  \entails S : \isanonymous
+}
+{E \entails T \lcasat \lca(T, S)}\\
+\\
+\inferrule{
+  E \entails \tstruct(T) : \iswellconstrainedinteger \\
+  E \entails \tstruct(S) : \iswellconstrainedinteger \\
+  \typelabel(S) = \TNamed\\
+  \entails T : \isanonymous
+}
+{E \entails S \lcasat \lca(T, S)}\\
+\\
+\inferrule{
+  E \entails \tstruct(T) : \iswellconstrainedinteger \\
+  E \entails \tstruct(S) : \iswellconstrainedinteger \\
+  \typelabel(S) = \TNamed\\
+  \entails T : \isanonymous
+}
+{E \entails S \lcasat \lca(T, S)}\\
+\\
+\inferrule{
+  E \entails \tstruct(T) : \iswellconstrainedinteger \\
+  E \entails \tstruct(S) : \iswellconstrainedinteger \\
+  \entails T : \isanonymous\\
+  \entails S : \isanonymous\\
+  \typelabel(Z) = \TInt \\
+  E \entails \dom(Z) = \dom(T) \cup \dom(S) 
+}
+{E \entails Z \lcasat \lca(T, S)}\\
+\end{array}
+\]
+
+\[
+\begin{array}{c}
+\RuleComment{Rules for unconstrained integers}\\
+\inferrule{
+  E \entails \typelabel(S) : \TNamed \\
+  E \entails \tstruct(S) : \isunconstrainedinteger \\
+  E \entails \typelabel(\tstruct(T)) : \TInt \\
+  E \entails T : \isanonymous
+}
+{E \entails S \lcasat \lca(T, S)}\\
+\\
+\inferrule{
+  E \entails \typelabel(T) : \TNamed \\
+  E \entails \tstruct(T) : \isunconstrainedinteger \\
+  E \entails \typelabel(\tstruct(S)) : \TInt \\  
+  E \entails S : \isanonymous
+}
+{E \entails T \lcasat \lca(T, S)}\\
+\\
+\inferrule{
+  E \entails S : \isanonymous \\
+  E \entails T : \isanonymous \\
+  E \entails \typelabel(\tstruct(T)) : \TInt \\  
+  E \entails \tstruct(S) : \isunconstrainedinteger \\
+}
+{E \entails \unconstrainedinteger \lcasat \lca(T, S)}\\
+\\
+\inferrule{
+  E \entails S : \isanonymous \\
+  E \entails T : \isanonymous \\
+  E \entails \typelabel(\tstruct(S)) : \TInt \\  
+  E \entails \tstruct(T) : \isunconstrainedinteger \\
+}
+{E \entails \unconstrainedinteger \lcasat \lca(T, S)}\\
+\end{array}
+\]
+
+\[
+\begin{array}{c}
+\RuleComment{Rules for under-constrained integers}\\
+\inferrule{
+  E \entails \tstruct(T) : \isunderconstrainedinteger \\
+  E \entails \typelabel(\tstruct(S)) : \TInt \\  
+}
+{E \entails \TInt(\langle []\rangle) \lcasat \lca(T, S)}\\
+\\
+\inferrule{
+  E \entails \tstruct(S) : \isunderconstrainedinteger \\
+  E \entails \typelabel(\tstruct(T)) : \TInt \\  
+}
+{E \entails \TInt(\langle []\rangle) \lcasat \lca(T, S)}\\
+\end{array}
+\]
 \end{emptyformal}
 
 \subsection{Comments}
@@ -1171,7 +1655,12 @@ may hold.
 \section{TypingRule.CheckUnop \label{sec:TypingRule.CheckUnop}}
 
 \subsection{Goal}
-  Checking compatibility of an unary operator with the type of its argument.
+  Determining the result type of applying a unary operator when the type of its operand is known.
+  Similarly, we determine the negation of integer constraints.
+
+\TODOComment{ROMAN: I separated the real case.}
+
+%\TODOComment{ROMAN: it seems to me that we are losing the information of named types. For example, \texttt{type b subtypes boolean = TRUE; boolean c = b;} would not type, but \texttt{type b subtypes boolean = TRUE; boolean c = !b;} would (checkop.asl).}
 
 \subsection{Prose}
   \texttt{t} is the result of checking compatibility of a unary operator \texttt{op} with
@@ -1179,9 +1668,39 @@ may hold.
   \begin{itemize}
   \item All of the following apply:
     \begin{itemize}
-    \item \texttt{op} is \texttt{BNOT};
-    \item \texttt{t1} type-satisfies \texttt{boolean};
-    \item \texttt{t} is \texttt{boolean};
+      \item \texttt{op} is \texttt{BNOT};
+      \item \texttt{t1} type-satisfies \texttt{boolean};
+      \item \texttt{t} is \texttt{boolean};
+    \end{itemize}
+
+  \item All of the following apply:
+  \begin{itemize}
+    \item \texttt{op} is \texttt{NEG};
+    \item \texttt{t1} type-satisfies \texttt{real};
+    \item \texttt{t} is \texttt{real};
+  \end{itemize}
+
+  \item All of the following apply:
+    \begin{itemize}
+    \item \texttt{op} is \texttt{NEG};
+    \item One of the following applies:
+      \begin{itemize}
+      \item \texttt{t1} type-satisfies \texttt{integer};
+      \item \texttt{t1} type-satisfies \texttt{real};
+      \end{itemize}
+     \item One of the following applies:
+       \begin{itemize}
+       \item All of the following apply:
+         \begin{itemize}
+         \item \texttt{t1} has the structure of an unconstrained integer;
+         \item \texttt{t} is an unconstrained integer;
+         \end{itemize}
+       \item All of the following apply:
+         \begin{itemize}
+         \item \texttt{t1} has the structure of a constrained integer;
+         \item \texttt{t} is a constrained integer whose constraint is ;
+         \end{itemize}
+       \end{itemize}
     \end{itemize}
 
   \item All of the following apply:
@@ -1222,6 +1741,27 @@ may hold.
 
 \begin{emptyformal}
     \subsection{Formally}
+    
+\[
+\begin{array}{c}
+\inferrule{E \entails T \typesat \TBool}{E \entails \CheckUnop(\texttt{"!"}, T) : \TBool}\\
+\\
+\inferrule{E \entails T \typesat \TReal}{E \entails \CheckUnop(\texttt{"-"}, T) : \TReal}\\
+\\
+\inferrule{E \entails T \typesat \unconstrainedinteger}{E \entails \CheckUnop(\texttt{"-"}, T) : \unconstrainedinteger}\\
+\\
+\inferrule{}{E \entails \CheckUnop(\texttt{"-"}, \texttt{Constraint\_Exact}(e)) : \texttt{Constraint\_Exact}(\texttt{E\_Unop}(\texttt{"-"}, e))}\\
+\\
+\inferrule{}{E \entails \CheckUnop(\texttt{"-"}, \texttt{Constraint\_Range}(e_1,e_2)) :\\\ {\;\;\;\;\;\;\;\;\;\;\;\;\;} \\ \texttt{Constraint\_Range}(\texttt{E\_Unop}(\texttt{"-"}, e_2),\texttt{E\_Unop}(\texttt{"-"}, e_1)))}\\
+\\
+\inferrule{E \entails T \typesat \TInt(\langle [c_1,\ldots,c_k] \rangle) \\
+E \entails (\texttt{"-"}, c_1) : d_1 \ldots E \entails (\texttt{"-"}, c_k) : d_k
+}{E \entails \CheckUnop(\texttt{"-"}, T) : \TInt(\langle [d_1,\ldots,d_k] \rangle)}\\
+\\
+\TODOComment{ROMAN: why don't we check that the type satisfies a bitvector type?}\\
+\inferrule{E \entails \typelabel(\tstruct(T)) : \TBits}{E \entails \CheckUnop(\texttt{"NOT"}, T) : T}\\
+\end{array}
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -1229,8 +1769,8 @@ may hold.
 \section{TypingRule.CheckBinop \label{sec:TypingRule.CheckBinop}}
 
 \subsection{Goal}
-  Checking compatibility of a binary operator with the types of its arguments.
-
+  Determine the result type of a binary operator, give the types of its operands.
+  
 \subsection{Prose}
   \texttt{t} is the result of checking compatibility of a binary operator \texttt{op} with
   types \texttt{t1} and \texttt{t2} and one of the following applies:
@@ -1255,10 +1795,17 @@ may hold.
   \item All of the following apply:
     \begin{itemize}
     \item \texttt{op} is \texttt{PLUS} or \texttt{MINUS};
-    \item \texttt{t1} has the structure of a bitvector;
-    \item \texttt{t2} has the structure of a bitvector;
-    \item \texttt{t1} and \texttt{t2} have the same bitvector width \texttt{w};
-    \item \texttt{t2} type-satisfies \texttt{integer};
+    \item \texttt{t1} has the structure of a bitvector of width \texttt{w};
+    \item One of the following applies:
+      \begin{itemize}
+	    \item All of the following apply:
+          \begin{itemize}
+		    \item \texttt{t2} has the structure of a bitvector;
+    		\item \texttt{t1} and \texttt{t2} have the same bitvector width \texttt{w};
+    		\item \texttt{t} is the bitvector type of width \texttt{w}.
+          \end{itemize}    
+    	\item \texttt{t2} type-satisfies \texttt{integer};
+      \end{itemize}    
     \item \texttt{t} is the bitvector type of width \texttt{w}.
     \end{itemize}
 
@@ -1332,8 +1879,8 @@ may hold.
         \item \texttt{t2} has the structure of an unconstrained integer;
         \item \texttt{t} is an unconstrained integer;
         \end{itemize}
-      \item One of the following applies:
-       \begin{itemize}
+      \item One of the following applies: \TODOComment{ROMAN: I think the next two cases are subsumed by the case of two under/well-constrained integers.}
+       \begin{itemize} 
        \item All of the following apply:
           \begin{itemize}
           \item \texttt{t1} has the structure of an under-constrained integer;
@@ -1347,23 +1894,13 @@ may hold.
           \item \texttt{t} is an under-constrained integer;
           \end{itemize}
        \end{itemize}
-      \item One of the following applies:
-         \begin{itemize}
          \item All of the following apply:
            \begin{itemize}
            \item \texttt{t1} has the structure of a well-constrained integer;
            \item \texttt{t2} has the structure of a well-constrained integer;
-	   \item \texttt{t} is a constrained integer whose constraint is calculated by
-	     applying the operation to all possible value pairs;
+	       \item \texttt{t} is a constrained integer whose constraint is calculated by
+	       applying the operation to all possible value pairs;
            \end{itemize}
-         \item All of the following apply:
-           \begin{itemize}
-           \item \texttt{t1} has the structure of a well-constrained integer;
-           \item \texttt{t2} has the structure of an well-constrained integer;
-	   \item \texttt{t} is a constrained integer whose constraint is calculated by
-	     applying the operation to all possible value pairs;
-           \end{itemize}
-         \end{itemize}
       \item All of the following apply:
         \begin{itemize}
         \item \texttt{t1} has the structure of \texttt{real};
@@ -1385,6 +1922,7 @@ may hold.
     \begin{itemize}
     \item \texttt{op} is \texttt{RDIV};
     \item \texttt{t1} type-satisfies \texttt{real};
+    \item \texttt{t2} type-satisfies \texttt{real};
     \item \texttt{t} is \texttt{real}.
     \end{itemize}
 \end{itemize}
@@ -1396,11 +1934,134 @@ may hold.
 
 \begin{formal}
     \subsection{Formally}
-  \[
-  \inferrule
-  {\textit{op} \in \texttt{binop\_boolean} \\ (G,L) \vdash e_1 : \TBool \\ (G,L) \vdash e_2 : \TBool}
-  {(G,L) \vdash \texttt{E\_Binop}(\textit{op}, e_1, e_2) : \TBool1}
-  \]
+\[
+\begin{array}{c}
+\inferrule{
+  \texttt{op} \in  \{\texttt{"\&\&"}, \texttt{"||"}, \texttt{"-->"}, \texttt{"<->"}\}\\
+  E \entails T_1 \typesat \TBool \\ 
+  E \entails T_2 \typesat \TBool
+}
+{E \entails \CheckBinop(\texttt{op}, T_1, T_2) : \TBool}\\
+\\
+\TODOComment{ROMAN: I think our lexical analyzes misses XOR.}\\
+\inferrule{
+  \texttt{op} \in  \{\texttt{"AND"}, \texttt{"OR"}, \texttt{"EOR"}, \texttt{"XOR"}\}\\
+  E \entails \tstruct(T_1) = \TBits(w_1, \Ignore) \\
+  E \entails \tstruct(T_2) = \TBits(w2, \Ignore) \\
+  E \entails w_1 \equiv_b w_2
+}
+{E \entails \CheckBinop(\texttt{op}, T_1, T_2) : \TBits(w_1, [])}\\
+\\
+\inferrule{
+  \texttt{op} \in  \{\texttt{"+"}, \texttt{"-"}\}\\
+  E \entails \tstruct(T_1) = \TBits(w_1, \Ignore) \\
+  E \entails \tstruct(T_2) = \TBits(w_2, \Ignore) \\
+  E \entails w_1 \equiv_b w_2
+}
+{E \entails \CheckBinop(\texttt{op}, T_1, T_2) : \TBits(w_1, [])}\\
+\\
+\inferrule{
+  \texttt{op} \in  \{\texttt{"+"}, \texttt{"-"}\}\\
+  E \entails \tstruct(T_1) = \TBits(w_1, \Ignore) \\
+  E \entails T_2 \typesat \unconstrainedinteger
+}
+{E \entails \CheckBinop(\texttt{op}, T_1, T_2) : \TBits(w_1, [])}
+\end{array}
+\]
+
+\[
+\begin{array}{c}
+\TODOComment{ROMAN: I think this captures the case of enums.}\\
+\inferrule{\texttt{op} \in  \{\texttt{"="}, \texttt{"!="}\}}
+{E \entails \CheckBinop(\texttt{op}, T, T) : \TBool}\\
+\\
+\inferrule{
+  \texttt{op} \in  \{\texttt{"="}, \texttt{"!="}\}\\
+  E \entails T_1 \typesat \unconstrainedinteger\\
+  E \entails T_2 \typesat \unconstrainedinteger
+}
+{E \entails \CheckBinop(\texttt{op}, T_1, T_2) : \TBool}\\
+\\
+\inferrule{
+  \texttt{op} \in  \{\texttt{"="}, \texttt{"!="}\}\\
+  E \entails \tstruct(T_1)=\TBits(w_1, \Ignore)\\
+  E \entails \tstruct(T_1)=\TBits(w_1, \Ignore))\\
+  E \entails w_1 \equiv_b w_2\\
+}
+{E \entails \CheckBinop(\texttt{op}, T_1, T_2) : \TBool}
+\end{array}
+\]
+
+\[
+\begin{array}{c}
+\inferrule{
+  \texttt{op} \in  \{\texttt{"<"}, \texttt{"<="}, \texttt{">"}, \texttt{">="}\}\\
+  E \entails T_1 \typesat \unconstrainedinteger\\
+  E \entails T_2 \typesat \unconstrainedinteger
+}
+{E \entails \CheckBinop(\texttt{op}, T_1, T_2) : \unconstrainedinteger}\\
+\\
+\inferrule{
+  \texttt{op} \in  \{\texttt{"<"}, \texttt{"<="}, \texttt{">"}, \texttt{">="}\}\\
+  E \entails T_1 \typesat \TReal\\
+  E \entails T_2 \typesat \TReal
+}
+{E \entails \CheckBinop(\texttt{op}, T_1, T_2) : \TReal}
+\end{array}
+\]
+
+\TODOComment{ROMAN: define \instantiate, which accepts a list of integer constraints and returns a set of integers.}
+
+\[
+\begin{array}{c}
+\inferrule{
+  \texttt{op} \in  \{\texttt{"*"}, \texttt{"DIV"}, \texttt{"DIVRM"}, \texttt{"MOD"}, \texttt{"<<"},  \texttt{">>"}, \texttt{"\^{}"}, \texttt{"+"}, \texttt{"-"}\}\\
+  E \entails \tstruct(T_1) = \unconstrainedinteger\\
+  E \entails \typelabel(\tstruct(T_2)) = \TInt
+}
+{E \entails \CheckBinop(\texttt{op}, T_1, T_2) : \unconstrainedinteger}\\
+\\
+\inferrule{
+  \texttt{op} \in  \{\texttt{"*"}, \texttt{"DIV"}, \texttt{"DIVRM"}, \texttt{"MOD"}, \texttt{"<<"},  \texttt{">>"}, \texttt{"\^{}"}, \texttt{"+"}, \texttt{"-"}\}\\
+  E \entails \typelabel(\tstruct(T_1)) = \TInt\\
+  E \entails \tstruct(T_2) = \unconstrainedinteger
+}
+{E \entails \CheckBinop(\texttt{op}, T_1, T_2) : \unconstrainedinteger}\\
+\\
+\RuleComment{$\llbracket \texttt{op} \rrbracket$ is the implementation of one}\\
+\RuleComment{of the operators below to a pair of integers.}\\
+\inferrule{
+  \texttt{op} \in  \{\texttt{"*"}, \texttt{"DIV"}, \texttt{"DIVRM"}, \texttt{"MOD"}, \texttt{"<<"},  \texttt{">>"}, \texttt{"\^{}"}, \texttt{"+"}, \texttt{"-"}\}\\
+  E \entails \tstruct(T_1) = \TInt(\langle l_1 \rangle) \\
+  E \entails \tstruct(T_2) = \TInt(\langle l_2 \rangle)\\
+  l_1,l_2 \in \intconstraint^*\\
+  E \entails N_1 = \instantiate(l_1)\\
+  E \entails N_2 = \instantiate(l_2)\\
+  \dom{T} = \{ \llbracket \texttt{op} \rrbracket (n_1,n_2) \;|\;  (n_1,n_2)\in N_1 \times N_2 \}
+}
+{E \entails \CheckBinop(\texttt{op}, T_1, T_2) : T}\\
+\\
+\inferrule{
+  \texttt{op} \in  \{\texttt{"+"}, \texttt{"-"}, \texttt{"*"}\}\\
+  E \entails \tstruct(T_1) = \TReal\\
+  E \entails \tstruct(T_2) = \TReal
+}
+{E \entails \CheckBinop(\texttt{op}, T_1, T_2) : \TReal}\\
+\\
+\inferrule{
+  E \entails \tstruct(T_1) = \TReal\\
+  E \entails \typelabel(\tstruct(T_2)) = \TInt
+}
+{E \entails \CheckBinop(\texttt{"\^{}"}, T_1, T_2) : \TReal}\\
+\\
+\inferrule{
+  E \entails T_1 \typesat \TReal\\
+  E \entails T_2 \typesat \TReal\\
+}
+{E \entails \CheckBinop(\texttt{"RDIV"}, T_1, T_2) : \TReal}\\
+\end{array}
+\]
+
 \end{formal}
 
 \subsection{Comments}
@@ -1409,12 +2070,15 @@ may hold.
   \identr{TTGQ}, \identi{YHML}, \identi{YHRP}, \identi{VMZF}, \identi{YXSY},
   \identi{LGHJ}, \identi{RXLG}.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Expressions}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \texttt{annotate\_expr} specifies how to annotate an expression \texttt{e} in
 an environment \texttt{env}.  Formally, the result of annotating the expression
 \texttt{e} in \texttt{env} is \texttt{t,new\_env} where \texttt{t} is a type and
 \texttt{new\_env} is an environment, or an error, and one of the following applies:
+\TODOComment{ROMAN: the environment here is actually an expression. We should probably explain why we returned a transformed expression.}
 \begin{itemize}
 \item TypingRule.Lit (see Section~\ref{sec:TypingRule.Lit});
 \item TypingRule.ELocalVarConstant (see Section~\ref{sec:TypingRule.ELocalVarConstant})
@@ -1464,6 +2128,21 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 
 \begin{emptyformal}
   \subsection{Formally}
+  
+\[
+\begin{array}{c}
+\inferrule{e = \eliteral{\lint(n)}}{E \entails e : (\TInt(\langle[\texttt{Constraint\_Exact(\eliteral{\lint(n)})}]\rangle), e)}\\
+\\
+\inferrule{e = \eliteral{\lbool(\Ignore)}}{E \entails e : (\TBool, e)}\\
+\\
+\inferrule{e = \eliteral{\lreal(\Ignore)}}{E \entails e : (\TReal, e)}\\
+\\
+\inferrule{e = \eliteral{\lstring(\Ignore)}}{E \entails e : (\TString, e)}\\
+\\
+\inferrule{e = \eliteral{\lbitvector(b_1 \ldots b_n)}}
+{E \entails e : (\TBits(\texttt{Bitwidth\_SingleExpr}(\eliteral{\lint(n)}), []), e)}\\
+\end{array}
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -1511,6 +2190,13 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 
 \begin{emptyformal}
   \subsection{Formally}
+\[
+\inferrule{
+  L.\constantsvalues \entails x : V\\
+  L.\storagetypes \entails x : (T, \texttt{LDK\_Constant})
+  }
+{(G,L) \entails \evar(x) : (T, \eliteral{V})}
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -1534,9 +2220,18 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 
 \begin{emptyformal}
   \subsection{Formally}
+\[
+\inferrule{
+  G.\constantsvalues \entails x : V\\
+  G.\storagetypes \entails x : (T, \texttt{GDK\_Constant})
+  }
+{(G,L) \entails \evar(x) : (T, \eliteral{V})}
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
+
+\TODOComment{ROMAN: we seem to be missing TypinRule.EGlobalVarConstantNoVal}
 
 \section{TypingRule.EGlobalVar \label{sec:TypingRule.EGlobalVar}}
 
@@ -1558,6 +2253,16 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 
 \begin{emptyformal}
   \subsection{Formally}
+  
+\TODOComment{ROMAN: This rule is problematic since it uses a negative premise. Using negative premises requires specific rule ordering strategies, which we probably don't want. Also, I don't understand the rationale for this rule.}
+\[
+\inferrule{
+  G.\constantsvalues \not\entails x : V\\
+  G.\storagetypes \entails x : (T, \texttt{GDK\_Constant})
+  }
+{(G,L) \entails \evar(x) : (T, \evar(x))}
+\]
+
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -1580,6 +2285,7 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 
 \begin{emptyformal}
   \subsection{Formally}
+\TODOComment{ROMAN: I don't think we need this, since errors are implicit when typing fails.}
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -1604,6 +2310,14 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+\inferrule{
+  E \entails e_1 : (T_1, e_1')\\
+  E \entails e_2 : (T_2, e_2') \\
+  E \entails \CheckBinop(\op, T_1, T_2) : T
+  }
+{E \entails \texttt{E\_Binop}(\op, e_1, e_2) : (T, \texttt{E\_Binop}(op, e_1', e_2'))}
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -1627,6 +2341,13 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+\inferrule{
+  E \entails e : (T, e')\\
+  E \entails \CheckUnop(\op, T) : T'
+  }
+{E \entails \texttt{E\_Unop}(\op, e) : (T, \texttt{E\_Unop}(op, e'))}
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -1663,6 +2384,15 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+\inferrule{
+  E \entails e_c : (T_c, e_c')\\
+  E \entails e_t : (T_t, e_t')\\
+  E \entails e_f : (T_f, e_f')\\
+  E \entails T \lcasat \lca(T_t, T_f)
+  }
+{E \entails \texttt{E\_Cond}(e_c, e_t, e_f) : (T, \texttt{E\_Cond}(e_c', e_t', e_f'))}
+\]
 \end{emptyformal}
 
 \subsection{Comments}
@@ -1690,6 +2420,18 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 
 \begin{emptyformal}
     \subsection{Formally}
+\TODOComment{ROMAN: define $\textsf{width}$.}
+\TODOComment{ROMAN: define $s_1',\ldots,s_k'$.}
+\TODOComment{ROMAN: I think that the language is too powerful when it comes to determining bitvector/slices lengths, which requires proving that expressions are equivalent.}    
+    
+\[
+\inferrule{
+  E \entails e : (T, e')\\
+  E \entails \textsf{width}(s_1,\ldots,s_k) = w
+  }
+{E \entails \texttt{E\_Slice}(e, [s_1,\ldots,s_k]) : \\\ (\TBits(\texttt{BitWidth\_SingleExpr}(w), []), \texttt{E\_Slice}(e', [s_1',\ldots,s_k'])}
+\]
+
 \end{emptyformal}
 
 \subsection{Comments}
@@ -1721,6 +2463,13 @@ an environment \texttt{env}.  Formally, the result of annotating the expression
 
 \begin{emptyformal}
     \subsection{Formally}
+%\[
+%\inferrule{
+%  E \entails e : (T, e')\\
+%  }
+%{E \entails \texttt{E\_Call}(\textit{name}, [p_1,\ldots,p_k], [a_1,\ldots,a_n]) : \\\ 
+%(, \texttt{E\_Call}(\textit{name}', [p_1',\ldots,p_k'], [a_1',\ldots,a_n']))}
+%\]
 \end{emptyformal}
 
 \subsection{Comments}
@@ -2192,7 +2941,10 @@ expression that is unresolvable to an integer. For example:
   \identr{GYJZ}, \identi{SZVF}, \identr{PZZJ}, \identr{YCPX}, \identi{ZLBW},
   \identi{TCST}, \identi{CGRH}, \identi{YJBB}.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Left-Hand-Side Expressions}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 Annotating~\texttt{le} in an environment~\texttt{env}, assuming \texttt{t\_e}
 to be the type of the corresponding right-hand-side (\texttt{annotate\_lexpr
 version env le t\_e}), results in \texttt{new\_le} and one of the following
@@ -2619,8 +3371,10 @@ all of the following apply:
 
 \isempty{\subsection{Comments}}
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Slices}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 Annotating slices~\texttt{slices} in an environment~\texttt{env}
 (\texttt{annotate\_slices env slices}) results in the pair \texttt{(offset,
 length)} and one of the following applies:
@@ -2728,7 +3482,10 @@ length)} and all of the following apply:
 \subsection{Comments}
     \identr{GXQG}: The notation b\texttt{i *: n} is syntactic sugar for b\texttt{i*n +: n}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Patterns}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \texttt{t} (\texttt{annotate\_pattern}) results in a pattern \texttt{new\_p} and one of the following applies:
 \begin{itemize}
 \item TypingRule.PAll (see Section~\ref{sec:TypingRule.PAll}),
@@ -3065,7 +3822,10 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
 
 \isempty{\subsection{Comments}}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Local Declarations}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 Annotating a local declaration~\texttt{ldi}, given a type~\texttt{ty}, in an
 environment~\texttt{env} results in \texttt{new\_env, new\_ldi}
 (\texttt{annotate\_local\_decl\_item}) and one of the following applies:
@@ -3202,7 +3962,10 @@ the corresponding type in ~\texttt{ty}.
 
 \isempty{\subsection{Comments}}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Statements}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 Annotating a statement~\texttt{s} in an environment~\texttt{env}
 (\texttt{annotate\_stmt env s}) results in a statement \texttt{new\_s} and an
 environment \texttt{new\_env} and one of the following applies:
@@ -3835,7 +4598,9 @@ environment \texttt{new\_env} and all of the following apply:
 
 \isempty{\subsection{Comments}}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Blocks}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{TypingRule.Block \label{sec:TypingRule.Block}}
 
@@ -3864,7 +4629,10 @@ an enclosing block.
 
     This is related to \identr{JBXQ}.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Catchers}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 Annotating catchers \texttt{(name\_opt, ty, stmt)} in an environment
 \texttt{env} given a type \texttt{return\_type} (\texttt{annotate\_catchers env
 return\_type (name\_opt, ty, stmt)}) results in \texttt{(name\_opt, ty,
@@ -3928,7 +4696,9 @@ new\_stmt)} and all of the following apply:
 \subsection{Comments}
     This is related to \identr{SDJK}, \identr{WVXS}, \identi{FCGK}.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Subprogram Calls}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Annotating the call to subprogram \texttt{name} with arguments \texttt{args},
 parameters \texttt{eqs}, and call type \texttt{call\_type} (\texttt{annotate\_call}) results in \texttt{(name1,
@@ -4065,7 +4835,10 @@ following apply:
 
   \subsection{Comments}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Subprograms}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 Annotating a subprogram \texttt{f} in an environment \texttt{env}
 (\texttt{annotate\_func}) results in \texttt{f}, \texttt{new\_body} and
 \texttt{name}.
@@ -4106,7 +4879,9 @@ This is related to \identi{GHGK}, \identr{HWTV}, \identr{SCHV}, \identr{VDPC},
 \identr{TJKQ}, \identi{LFJZ}, \identi{BZVB}, \identi{RQQB}.
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Side-effects}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Side-effects can arise due to:
 \begin{itemize}

@@ -11,7 +11,7 @@
 \usepackage{mathpartir}  % For deduction rules and equations paragraphs
 \usepackage{comment}
 \usepackage{fancyvrb}
-\usepackage{stmaryrd} % for \llbracket and \rrbracket
+%\usepackage{stmaryrd} % for \llbracket and \rrbracket
 \input{ifempty}
 \input{ifformal}
 \input{control}
@@ -39,7 +39,7 @@
 \setlist[itemize,19]{label=\textendash}
 \setlist[itemize,20]{label=\textendash}
 
-\newcommand\figref[1]{Figure~\ref{Fi:#1}}
+\newcommand\TODOComment[1]{\textbf{#1}} % Move to ASLMacros.tex
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Abstract Syntax macros
@@ -73,6 +73,9 @@
 \newcommand\func[0]{\textsf{func}}
 \newcommand\Field[0]{\textsf{field}}
 
+% Expression labels
+\newcommand\evar[0]{\textsf{E\_Var}}
+
 % Literal labels
 \newcommand\lint[0]{\textsf{L\_Int}}
 \newcommand\lbool[0]{\textsf{L\_Bool}}
@@ -96,16 +99,29 @@
 \newcommand\TException[0]{\texttt{T\_Exception}}
 \newcommand\TNamed[0]{\texttt{T\_Named}}
 
-\newcommand\identifier[0]{\texttt{<identifier>}}
+\newcommand\identifier[0]{\textsf{identifier}}
 
-\newcommand\id[0]{\texttt{id}}        
+\newcommand\id[0]{\texttt{id}}
+\newcommand\op[0]{\texttt{op}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Typing macros
-\newcommand\staticglob[1]{#1.glob}
+\newcommand\staticloc[1]{#1.\textsf{local}}
+\newcommand\constantsvalues[0]{\textsf{constants\_values}}
+\newcommand\storagetypes[0]{\textsf{storage\_types}}
+\newcommand\returntype[0]{\textsf{return\_type}}
+\newcommand\declaredtypes[0]{\textsf{declared\_types}}
+\newcommand\subtypes[0]{\textsf{subtypes}}
+\newcommand\subprograms[0]{\textsf{subprograms}}
+\newcommand\subprogramrenamings[0]{\textsf{subprogram\_renamings}}
+\newcommand\staticglob[1]{#1.\textsf{global}}
+
 \newcommand\entails[0]{\vdash}
 \newcommand\tstruct[0]{\texttt{t\_struct}}
+
+\newcommand\CheckUnop[0]{\textsf{CheckUnop}}
+\newcommand\CheckBinop[0]{\textsf{CheckBinop}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newcommand\ie{i.\,e.}
@@ -117,8 +133,8 @@
 \newcommand\inenv[2]{\left\langle #1, #2 \right\rangle}
 \newcommand\env[1]{\left\langle #1 \right\rangle}
 \newcommand\reducesto{\ \to\ }
-%\newcommand\llbracket{[|}
-%\newcommand\rrbracket{|]}
+\newcommand\llbracket{[|}
+\newcommand\rrbracket{|]}
 \newcommand\interp[1]{\left\llbracket #1 \right\rrbracket}
 \newcommand\st[0]{\ \middle|\ }
 \newcommand\field[1]{.\text{#1}}
