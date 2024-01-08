@@ -174,8 +174,10 @@ and pp_ty f t =
         (pp_comma_list pp_print_string)
         enum_ty
   | T_Tuple ty_list -> fprintf f "@[(%a)@]" (pp_comma_list pp_ty) ty_list
-  | T_Array (e, elt_type) ->
+  | T_Array (ArrayLength_Expr e, elt_type) ->
       fprintf f "@[array [%a] of %a@]" pp_expr e pp_ty elt_type
+  | T_Array (ArrayLength_Enum (s, _), elt_type) ->
+      fprintf f "@[array [%s] of %a@]" s pp_ty elt_type
   | T_Record record_ty ->
       fprintf f "@[<hv 2>record {@ %a@;<1 -2>}@]" pp_fields record_ty
   | T_Exception record_ty ->

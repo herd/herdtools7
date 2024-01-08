@@ -36,7 +36,7 @@ Type-checking errors:
 Bad types:
   $ aslref overlapping-slices.asl
   File overlapping-slices.asl, line 1, character 0 to line 4, character 2:
-  ASL Typing error: overlapping slices 10:0, 3+:2.
+  ASL Typing error: overlapping slices 0+:11, 3+:2.
   [1]
 
 Global ignored:
@@ -110,7 +110,7 @@ Constrained-type satisfaction:
   [1]
 
   $ cat >type-sat.asl <<EOF
-  > func invokeMe_2(N: integer, b: bits(N))
+  > func invokeMe_2 {N} (b: bits(N))
   > begin
   >   // N is under-constrained integer
   >   var x: integer { 2, 4} = N;
@@ -189,3 +189,7 @@ UnderConstrained integers:
 
   $ aslref named-types-in-slices.asl
   File named-types-in-slices.asl, line 13, characters 2 to 11: x -> '11111111'
+
+Arrays indexed by enumerations
+  $ aslref enum-array.asl
+  [0, 0, 0]

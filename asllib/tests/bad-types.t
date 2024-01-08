@@ -25,7 +25,7 @@ Overlapping slices
 
   $ aslref bad-types.asl
   File bad-types.asl, line 1, character 0 to line 4, character 2:
-  ASL Typing error: overlapping slices 10:0, 3+:2.
+  ASL Typing error: overlapping slices 0+:11, 3+:2.
   [1]
 
 Bad slices
@@ -38,7 +38,7 @@ Bad slices
 
   $ aslref bad-types.asl
   File bad-types.asl, line 1, character 0 to line 4, character 2:
-  ASL Typing error: Cannot extract from bitvector of length 12 slices 14:12.
+  ASL Typing error: Cannot extract from bitvector of length 12 slices 12+:3.
   [1]
 
   $ cat >bad-types.asl <<EOF
@@ -65,7 +65,7 @@ Bad slices
 
   $ aslref bad-types.asl
   File bad-types.asl, line 1, character 0 to line 7, character 2:
-  ASL Typing error: Cannot extract from bitvector of length 3 slices 10:8.
+  ASL Typing error: Cannot extract from bitvector of length 3 slices 8+:3.
   [1]
 
 

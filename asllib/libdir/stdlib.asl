@@ -157,7 +157,7 @@ begin
   return x == Ones(N);
 end
 
-func SignExtend(x::bits(M), N::integer) => bits(N)
+func SignExtend {M} (x::bits(M), N::integer) => bits(N)
 begin
   return [Replicate(x[M-1], N - M), x];
 end
