@@ -1,5 +1,6 @@
 BENTO=../../_build/default/tools/bento.exe
 LATEX=pdflatex
+BIBTEX=bibtex
 
 all: ASLAbstractSyntaxReference.pdf ASLSemanticsReference.pdf ASLTypingReference.pdf
 
@@ -19,12 +20,20 @@ CONTROL=ifempty.tex ifformal.tex control.tex ifcomment.tex
 
 ASLAbstractSyntaxReference.pdf: $(CONTROL) ASLASTLines.tex ASLAbstractSyntaxReference.tex
 	$(LATEX) -pdf ASLAbstractSyntaxReference.tex
+	$(BIBTEX) ASLAbstractSyntaxReference
+	$(LATEX) -pdf ASLAbstractSyntaxReference.tex
+	$(LATEX) -pdf ASLAbstractSyntaxReference.tex
 
 ASLSemanticsReference.pdf: $(CONTROL) ASLAbstractSyntaxReference.pdf ASLSemanticsReference.tex ASLSemanticsLines.tex
 	$(LATEX) -pdf ASLSemanticsReference.tex
+	$(BIBTEX) ASLSemanticsReference
+	$(LATEX) -pdf ASLSemanticsReference.tex
+	$(LATEX) -pdf ASLSemanticsReference.tex
 
 ASLTypingReference.pdf: $(CONTROL) ASLAbstractSyntaxReference.pdf ASLTypingReference.tex ASLASTLines.tex ASLTypingLines.tex ASLTypeSatisfactionLines.tex
-
+	$(LATEX) -pdf ASLTypingReference.tex
+	$(BIBTEX) ASLTypingReference
+	$(LATEX) -pdf ASLTypingReference.tex
 	$(LATEX) -pdf ASLTypingReference.tex
 
 ASLSemanticsLines.tex: ../Interpreter.ml
