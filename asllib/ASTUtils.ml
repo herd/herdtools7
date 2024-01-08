@@ -203,7 +203,8 @@ and use_ty acc t =
   | T_Int (WellConstrained cs) -> use_constraints acc cs
   | T_Tuple li -> List.fold_left use_ty acc li
   | T_Record fields | T_Exception fields -> fold_named_list use_ty acc fields
-  | T_Array (e, t') -> use_ty (use_e acc e) t'
+  | T_Array (ArrayLength_Expr e, t') -> use_ty (use_e acc e) t'
+  | T_Array (ArrayLength_Enum (s, _), t') -> use_ty (ISet.add s acc) t'
   | T_Bits (e, bit_fields) -> use_bitfields (use_e acc e) bit_fields
 
 and use_bitfields acc bitfields = List.fold_left use_bitfield acc bitfields
@@ -381,6 +382,14 @@ and constraint_equal eq c1 c2 =
 and constraints_equal eq cs1 cs2 =
   cs1 == cs2 || list_equal (constraint_equal eq) cs1 cs2
 
+and array_length_equal eq l1 l2 =
+  match (l1, l2) with
+  | ArrayLength_Expr e1, ArrayLength_Expr e2 -> expr_equal eq e1 e2
+  | ArrayLength_Enum (s1, _), ArrayLength_Enum (s2, _) -> String.equal s1 s2
+  | ArrayLength_Enum (_, _), ArrayLength_Expr _
+  | ArrayLength_Expr _, ArrayLength_Enum (_, _) ->
+      false
+
 and type_equal eq t1 t2 =
   t1.desc == t2.desc
   ||
@@ -397,7 +406,7 @@ and type_equal eq t1 t2 =
   | T_Bits (w1, bf1), T_Bits (w2, bf2) ->
       bitwidth_equal eq w1 w2 && bitfields_equal eq bf1 bf2
   | T_Array (l1, t1), T_Array (l2, t2) ->
-      expr_equal eq l1 l2 && type_equal eq t1 t2
+      array_length_equal eq l1 l2 && type_equal eq t1 t2
   | T_Named s1, T_Named s2 -> String.equal s1 s2
   | T_Enum li1, T_Enum li2 ->
       (* TODO: order of fields? *) list_equal String.equal li1 li2

@@ -517,8 +517,17 @@ and structural_subtype_satisfies env t s =
   (* If S has the structure of an array type with elements of type E then
      T must have the structure of an array type with elements of type E,
      and T must have the same element indices as S. *)
-  | T_Array (length_s, ty_s), T_Array (length_t, ty_t) ->
-      expr_equal env length_s length_t && type_equal env ty_s ty_t
+  | T_Array (length_s, ty_s), T_Array (length_t, ty_t) -> (
+      type_equal env ty_s ty_t
+      &&
+      match (length_s, length_t) with
+      | ArrayLength_Expr length_s, ArrayLength_Expr length_t ->
+          expr_equal env length_s length_t
+      | ArrayLength_Enum (name_s, _), ArrayLength_Enum (name_t, _) ->
+          String.equal name_s name_t
+      | ArrayLength_Enum (_, _), ArrayLength_Expr _
+      | ArrayLength_Expr _, ArrayLength_Enum (_, _) ->
+          false)
   | T_Array _, _ -> false
   (* If S has the structure of a tuple type then T must have the
      structure of a tuple type with same number of elements as S,
@@ -722,8 +731,7 @@ let rec lowest_common_ancestor env s t =
          let struct_s = get_structure env s
          and struct_t = get_structure env t in
          match (struct_s.desc, struct_t.desc) with
-         | T_Array (l_s, t_s), T_Array (l_t, t_t)
-           when type_equal env t_s t_t && expr_equal env l_s l_t -> (
+         | T_Array _, T_Array _ when type_equal env struct_s struct_t -> (
              (* If S and T both have the structure of array types with the same
                 index type and the same element types:
                  – If S is a named type and T is an anonymous type: S

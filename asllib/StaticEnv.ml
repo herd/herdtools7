@@ -174,6 +174,9 @@ let add_global_storage x ty gdk env =
   }
 
 let add_type x ty env =
+  let () =
+    if false then Format.eprintf "Adding type %s as %a.@." x PP.pp_ty ty
+  in
   {
     env with
     global =

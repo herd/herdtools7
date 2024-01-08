@@ -170,8 +170,8 @@ and pp_ty =
     | T_Tuple li ->
         addb f "T_Tuple ";
         pp_list pp_ty f li
-    | T_Array (e, elt_type) ->
-        bprintf f "T_Array (%a, %a)" pp_expr e pp_ty elt_type
+    | T_Array (length, elt_type) ->
+        bprintf f "T_Array (%a, %a)" pp_array_length length pp_ty elt_type
     | T_Record li ->
         addb f "T_Record ";
         pp_id_assoc pp_ty f li
@@ -181,6 +181,10 @@ and pp_ty =
     | T_Named identifier -> bprintf f "T_Named %S" identifier
   in
   fun f s -> pp_annotated pp_desc f s
+
+and pp_array_length f = function
+  | ArrayLength_Expr e -> bprintf f "ArrayLength_Expr (%a)" pp_expr e
+  | ArrayLength_Enum (s, i) -> bprintf f "ArrayLength_Enum (%S, %i)" s i
 
 and pp_bitfield f = function
   | BitField_Simple (name, slices) ->

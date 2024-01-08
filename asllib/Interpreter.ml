@@ -594,23 +594,26 @@ module Make (B : Backend.S) (C : Config) = struct
               let* v' = B.get_index i v in
               let* here = in_values v' ty' in
               and' prev here
-            and i = i + 1 in
-            (i, m)
+            in
+            (i + 1, m)
           in
           List.fold_left fold (0, m_true) tys |> snd
-      | T_Array (e, ty') ->
-          let* v = eval_expr_sef env e in
-          let n =
-            match B.v_to_int v with
-            | Some i -> i
-            | None -> fatal_from loc @@ Error.UnsupportedExpr e
+      | T_Array (index, ty') ->
+          let* length =
+            match index with
+            | ArrayLength_Enum (_, i) -> return i
+            | ArrayLength_Expr e -> (
+                let* v_length = eval_expr_sef env e in
+                match B.v_to_int v_length with
+                | Some i -> return i
+                | None -> fatal_from loc @@ Error.UnsupportedExpr e)
           in
           let rec loop i prev =
-            if i = n then prev
+            if i >= length then prev
             else
               let* v' = B.get_index i v in
               let* here = in_values v' ty' in
-              loop (succ i) (and' prev here)
+              loop (i + 1) (and' prev here)
           in
           loop 0 m_true
       | T_Named _ -> assert false
@@ -1340,21 +1343,18 @@ module Make (B : Backend.S) (C : Config) = struct
           (Error.NotYetImplemented "Base value of string types.")
     | T_Tuple li ->
         List.map (base_value env) li |> sync_list >>= B.create_vector
-    | T_Array (e_length, ty) ->
+    | T_Array (length, ty) ->
         let* v = base_value env ty in
-        let* length =
-          match e_length.desc with
-          | E_Var x when IMap.mem x env.global.static.declared_types ->
-              IMap.find x env.global.static.constants_values
-              |> B.v_of_literal |> return
-          | _ -> eval_expr_sef env e_length
+        let* i_length =
+          match length with
+          | ArrayLength_Enum (_, i) -> return i
+          | ArrayLength_Expr e -> (
+              let* length = eval_expr_sef env e in
+              match B.v_to_int length with
+              | None -> Error.fatal_from t (Error.UnsupportedExpr e)
+              | Some i -> return i)
         in
-        let length =
-          match B.v_to_int length with
-          | None -> Error.fatal_from t (Error.UnsupportedExpr e_length)
-          | Some i -> i
-        in
-        List.init length (Fun.const v) |> B.create_vector
+        List.init i_length (Fun.const v) |> B.create_vector
 
   (* Begin TopLevel *)
   let run_typed_env env (ast : AST.t) (static_env : StaticEnv.env) : B.value m =
