@@ -171,7 +171,7 @@ module Make (B : Backend.S) (C : Config) = struct
   (** [build_funcs] initialize the unique calling reference for each function
       and builds the subprogram sub-env. *)
   let build_funcs (env : StaticEnv.env) =
-    IMap.map (fun (f, _pureness) -> (ref 0, f)) env.StaticEnv.global.subprograms
+    IMap.map (fun f -> (ref 0, f)) env.StaticEnv.global.subprograms
 
   (* Global env *)
   (* ---------- *)

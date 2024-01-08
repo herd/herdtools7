@@ -108,7 +108,7 @@ Constrained-type satisfaction:
   [1]
 
   $ cat >type-sat.asl <<EOF
-  > func invokeMe_2(N: integer, b: bits(N))
+  > func invokeMe_2 {N} (b: bits(N))
   > begin
   >   // N is under-constrained integer
   >   var x: integer { 2, 4} = N;
