@@ -174,7 +174,7 @@ We sometimes provide extra details to individual derivations by adding comments 
  &|& \lreal(q)  \\
  & & \ASTComment{$q \in \Q$}\\
  &|& \lbitvector($B$)   \\
- & & \ASTComment{$B \in \{0, 1, ?\}^*$}\\
+ & & \ASTComment{$B \in \{0, 1, x\}^*$}\\
  &|& \lstring(S)\\
  & & \ASTComment{$S \in \{C \;|\; \texttt{"$C$"} \in \texttt{<string\_lit>}\} $}\\
 \end{array}
@@ -218,6 +218,8 @@ We sometimes provide extra details to individual derivations by adding comments 
   &|& \texttt{Pattern\_Tuple}(\pattern^{*}) \\
 \end{array}
 \]
+
+\TODOComment{ROMAN: since all forms of slice are syntactic sugar for the \texttt{+:} range slice, why do we need the AST to have all other forms of slices?}
 
 \[
 \begin{array}{rcl}
