@@ -174,7 +174,7 @@ and type_desc =
   | T_Bool
   | T_Enum of identifier list
   | T_Tuple of ty list
-  | T_Array of expr * ty
+  | T_Array of array_index * ty
   | T_Record of field list
   | T_Exception of field list
   | T_Named of identifier  (** A type variable. *)
@@ -207,6 +207,13 @@ and bitfield =
       (** A name, its corresponding slice and some nested bitfields. *)
   | BitField_Type of identifier * slice list * ty
       (** A name, its corresponding slice and the type of the bitfield. *)
+
+(** The type of indexes for an array. *)
+and array_index =
+  | ArrayLength_Expr of expr
+      (** An integer expression giving the length of the array. *)
+  | ArrayLength_Enum of identifier * int
+      (** An enumeration name and its length. *)
 
 and field = identifier * ty
 (** A field of a record-like structure. *)

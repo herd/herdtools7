@@ -13,6 +13,9 @@
   [1]
 
   $ aslref recursive-type.asl
+  File recursive-type.asl, line 1, characters 0 to 35:
+  ASL Error: Undefined identifier: 'tree'
+  [1]
 
   $ aslref double-recursive-types.asl
   File double-recursive-types.asl, line 2, characters 0 to 29:
