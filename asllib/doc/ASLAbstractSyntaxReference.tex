@@ -207,8 +207,6 @@ We sometimes provide extra details to individual derivations by adding comments 
 \end{array}
 \]
 
-\TODOComment{ROMAN: since all forms of slice are syntactic sugar for the \texttt{+:} range slice, why do we need the AST to have all other forms of slices?}
-
 \[
 \begin{array}{rcl}
 &&\ASTComment{Indexes an array or a bitvector.}\\
@@ -415,8 +413,27 @@ We sometimes provide extra details to individual derivations by adding comments 
 \end{array}
 \]
 
-\textbf{ROMAN: Pragmas are missing.}
-
-\textbf{ROMAN: Consider removing \texttt{SB\_Primitive}.}
+%\textbf{ROMAN: Pragmas are missing.}
+%
+%\textbf{ROMAN: Consider removing \texttt{SB\_Primitive}.}
+%
+%\chapter{ASL Core}
+%
+%ASL contains constructs that make it convenient to express functionality, but are not necessarily needed, in the sense that they can be expressed in alternative ways. To simplify the definition of the type system and semantics, we therefore define a subset of the abstract syntax, which we dub \emph{ASL core}. We transform abstract syntax tree in ASL to ASL core, essentially considering the original constructs as syntactic sugar.
+%
+%We now explain the simplifying transformations of ASL abstract syntax trees to ASL core abstract syntax tree.
+%
+%\section{Patterns}
+%
+%\begin{comment}
+%ROMAN: since all forms of slice are syntactic sugar for the \texttt{+:} range slice, why do we need the AST to have all other forms of slices?
+%\end{comment}
+%
+%
+%\subsection{\texttt{IN} operator}
+%
+%\begin{verbatim}
+%func bits_match{N}(x: bits(N), definite_mask: bits(N), any_mask: bits(N));
+%\end{verbatim}
 
 \end{document}
