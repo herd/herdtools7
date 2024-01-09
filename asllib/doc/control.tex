@@ -2,14 +2,21 @@
 \ifempty
 \newcommand{\isempty}[1]{#1}
 \ifformal\includecomment{emptyformal}\else\excludecomment{emptyformal}\fi
+\iftodo\includecomment{emptytodo}\else\excludecomment{emptytodo}\fi
 \else
 \newcommand{\isempty}[1]{}
 \excludecomment{emptyformal}
+\excludecomment{emptytodo}
 \fi
 \ifformal
 \includecomment{formal}
 \else
 \excludecomment{formal}
+\fi
+\iftodo
+\includecomment{todo}
+\else
+\excludecomment{todo}
 \fi
 %%%Safety net
 \iffalse
@@ -17,5 +24,6 @@
 \newcommand{\isempty}[1]{#1}
 \newenvironment{formal}{\endgroup}{\begingroup\def\@currenvir{formal}}
 \newenvironment{emptyformal}{\endgroup}{\begingroup\def\@currenvir{emptyformal}}
+\newenvironment{emptytodo}{\endgroup}{\begingroup\def\@currenvir{emptytodo}}
 \makeatother
 \fi
