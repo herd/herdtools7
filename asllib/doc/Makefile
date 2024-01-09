@@ -28,9 +28,6 @@ ASLSyntaxReference.pdf: $(CONTROL) ASLASTLines.tex ASLSyntaxReference.tex
 
 ASLSemanticsReference.pdf: $(CONTROL) ASLSyntaxReference.pdf ASLSemanticsReference.tex ASLSemanticsLines.tex
 	$(LATEX) -pdf ASLSemanticsReference.tex
-	$(BIBTEX) ASLSemanticsReference
-	$(LATEX) -pdf ASLSemanticsReference.tex
-	$(LATEX) -pdf ASLSemanticsReference.tex
 
 ASLTypingReference.pdf: $(CONTROL) ASLSyntaxReference.pdf ASLTypingReference.tex ASLASTLines.tex ASLTypingLines.tex ASLTypeSatisfactionLines.tex
 	$(LATEX) -pdf ASLTypingReference.tex
