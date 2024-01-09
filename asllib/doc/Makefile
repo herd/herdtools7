@@ -13,10 +13,10 @@ no-formal:
 no-empty:
 	$(MAKE) $(MFLAGS) NOEMPTY=1 all
 
-comment:
-	$(MAKE) $(MFLAGS) COMMENT=1 all
+todo:
+	$(MAKE) $(MFLAGS) TODO=1 all
 
-CONTROL=ifempty.tex ifformal.tex control.tex ifcomment.tex
+CONTROL=ifempty.tex ifformal.tex control.tex iftodo.tex
 
 ASLAbstractSyntaxReference.pdf: $(CONTROL) ASLASTLines.tex ASLAbstractSyntaxReference.tex
 	$(LATEX) -pdf ASLAbstractSyntaxReference.tex
@@ -60,18 +60,18 @@ ifempty.tex: force
 	@echo "\\\\newif\\ifempty\\\\emptytrue" >$@
 endif
 
-ifdef COMMENT
-ifcomment.tex: force
-	@echo "\\\\newif\\ifcomment\\\\commenttrue" >$@
+ifdef TODO
+iftodo.tex: force
+	@echo "\\\\newif\\iftodo\\\\todotrue" >$@
 else
-ifcomment.tex: force
-	@echo "\\\\newif\\ifcomment\\\\commentfalse" >$@
+iftodo.tex: force
+	@echo "\\\\newif\\iftodo\\\\todofalse" >$@
 endif
 
 clean:
 	/bin/rm -f ASLSemanticsReference.pdf ASLSemanticsLines.tex ASLAbstractSyntaxReference.pdf
 	/bin/rm -f ASLTypingReference.pdf ASLTypingLines.tex ASLTypeSatisfactionLines.tex ASLASTLines.tex
 	/bin/rm -f *.aux *.log *.fls *.log *.toc *.fdb_latexmk *~
-	/bin/rm -f ifformal.tex ifempty.tex ifcomment.tex
+	/bin/rm -f ifformal.tex ifempty.tex iftodo.tex
 	/bin/rm -f comment.cut
 	/bin/rm -f *.blg *.bbl *.out
