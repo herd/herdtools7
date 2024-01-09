@@ -86,6 +86,7 @@ module Make
       let sysarch = Cfg.sysarch
       let c11 = false
       let variant _ = false (* No variant (yet ?) *)
+      let ascall = true
     end
 
     module U = SkelUtil.Make(UCfg)(P)(A)(T)

@@ -70,12 +70,16 @@ module RegMap = A.RegMap)
       module RegMap = Tmpl.RegMap
 
       let dump_clobbers chan clobs t =
+        let clobs =
+          clobs@List.map A.reg_to_string (t.Tmpl.all_clobbers@A.forbidden_regs)
+          |> StringSet.of_list
+        and stable =
+          List.map  A.reg_to_string t.Tmpl.stable |> StringSet.of_list in
+        let clobs = StringSet.diff clobs stable |> StringSet.elements in
         fprintf chan ":%s\n"
           (String.concat ","
              (List.map (fun s -> sprintf "\"%s\"" s)
-                ("cc"::"memory"::clobs@
-                 List.map A.reg_to_string
-                   (t.Tmpl.all_clobbers@A.forbidden_regs))))
+                ("cc"::"memory"::clobs)))
 
       let copy_name s = sprintf "_tmp_%s" s
 
