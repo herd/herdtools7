@@ -133,7 +133,7 @@ let print_interesting interesting_things =
   let print_one fmt (t, name, used) =
     fprintf fmt "@[<hov 2>%s at %S:@ %a@]" (t_to_s t) name ISet.pp_print used
   in
-  printf "@[<v 2>Interesting stuff:@ %a@]@."
+  printf "@[<v 2>ASLDataflow found:@ %a@]@."
     (pp_print_list ~pp_sep:pp_print_space print_one)
     interesting_things
 
