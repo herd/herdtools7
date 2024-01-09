@@ -20,9 +20,6 @@ CONTROL=ifempty.tex ifformal.tex control.tex ifcomment.tex
 
 ASLAbstractSyntaxReference.pdf: $(CONTROL) ASLASTLines.tex ASLAbstractSyntaxReference.tex
 	$(LATEX) -pdf ASLAbstractSyntaxReference.tex
-	$(BIBTEX) ASLAbstractSyntaxReference
-	$(LATEX) -pdf ASLAbstractSyntaxReference.tex
-	$(LATEX) -pdf ASLAbstractSyntaxReference.tex
 
 ASLSemanticsReference.pdf: $(CONTROL) ASLAbstractSyntaxReference.pdf ASLSemanticsReference.tex ASLSemanticsLines.tex
 	$(LATEX) -pdf ASLSemanticsReference.tex
