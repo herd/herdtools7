@@ -742,6 +742,12 @@ may hold.
 ROMAN: explain where this is used. For example, for static evaluation of expressions.}
 \end{emptytodo}
 
+\begin{emptytodo}
+ROMAN: move the following into the issues file.
+
+I think that 3.4.2 and 7.1.3 contradict each other when it comes to under-constrained integers. If the domain of the under-constrained integer is a proper superset of every well-constrained integer, it follows that this domain is a superset of Z. Therefore, it cannot be a proper subset of Z - the domain of the unconstrained integer. Furthermore, just having the under-constrained integer with all the distinctions in the rules, is very confusing to any potential ASL developer.
+\end{emptytodo}
+
   \subsection{Example}
   The domain of \texttt{integer} is the infinite set of all integers.
 
@@ -866,6 +872,9 @@ It is not obvious to me why sometimes we check for type satisfaction and other t
       \end{itemize}
   \end{itemize}
 The subtype relation is a partial order over named types.
+\begin{emptytodo}
+ROMAN: I think the syntax allows subtyping anonymous types as well. Perhaps we should fix the syntax?
+\end{emptytodo}
 
   \subsection{Example}
 In the following example \texttt{subInt} is a subtype of itself and of \texttt{superInt}:
@@ -1708,6 +1717,10 @@ Roman: consider defining an ancestor relation and then having the \lca\ be natur
 
 \begin{emptytodo}
 ROMAN: I separated the real case.
+\end{emptytodo}
+
+\begin{emptytodo}
+ROMAN: it seems to me that we are losing the information of named types. For example, \texttt{type b subtypes boolean = TRUE; boolean c = b;} would not type, but \texttt{type b subtypes boolean = TRUE; boolean c = !b;} would (checkop.asl).
 \end{emptytodo}
 
 \subsection{Prose}
