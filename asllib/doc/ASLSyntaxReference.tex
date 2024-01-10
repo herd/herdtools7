@@ -422,31 +422,110 @@ We sometimes provide extra details to individual derivations by adding comments 
 \decl &::=& \texttt{D\_Func}(\func)\\
   & & \texttt{D\_GlobalStorage}(\globaldecl)\\
   & & \texttt{D\_TypeDecl}(\identifier, \ty, (\identifier, \Field^*)?)\\
+  & & \ASTComment{The last component is for \texttt{with} fields.}\\
 \program &::=& \decl^*\\
 \end{array}
 \]
 
-%\textbf{ROMAN: Pragmas are missing.}
+\begin{comment}
+\textbf{ROMAN: Pragmas are missing.}
+\end{comment}
+
+\chapter{ASL Core}
+
+ASL contains constructs that make it convenient to express functionality, but are not necessarily needed, in the sense that they can be expressed in alternative ways. To simplify the definition of the type system and semantics, we therefore define a subset of the abstract syntax, which we dub \emph{ASL core}. We transform abstract syntax tree in ASL to ASL core, essentially considering the original constructs as syntactic sugar.
+
+We now explain the simplifying transformations of ASL abstract syntax trees to ASL core abstract syntax tree.
+
+\section{Getters}
+Getters are simplified into simple functions. 
+
+A getter declaration \texttt{getter $A$($p_1,\ldots,p_k$)[$a_1,\ldots,a_n$] => $T$ $B$} 
+is transformed into the function declaration 
+\texttt{func Getter\_$A$($p_1,\ldots,p_k$)($a_1,\ldots,a_n$) => $T$ $B$}.
+
+A no-arg getter \texttt{getter $A$($p_1,\ldots,p_k$) => $T$ $B$}
+is transformed into the function declaration 
+\texttt{func NoArgGetter\_$A$($p_1,\ldots,p_k$)() => $T$ $B$}.
+
+Subprogram invocations examine the symbol table to match the right function name.
+An invocation $A[e_1,\ldots,e_n]$ is transformed into \texttt{Getter\_$A(e_1,\ldots,e_n)$} and 
+an invocation $A$ is transformed into \texttt{NoArgGetter\_$A()$}.
+
+\section{Setters}
+Setters are also simplified into functions.
+
+A setter declaration \texttt{setter $A$($p_1,\ldots,p_k$)[$a_1,\ldots,a_n$] = $\id$ : $T$ $B$} 
+is transformed into the function declaration 
+\texttt{func Setter\_$A$($p_1,\ldots,p_k$)($a_1,\ldots,a_n, \id$:$T$) $B$}.
+
+A no-arg setter declaration \texttt{setter $A$($p_1,\ldots,p_k$) = $\id$ : $T$ $B$} 
+is transformed into the function declaration 
+\texttt{func NoArgSetter\_$A$($p_1,\ldots,p_k$)($\id$:$T$) $B$}.
+
+Subprogram invocations examine the symbol table to match the right function name.
+An invocation $A[e_1,\ldots,e_n] = e$ is transformed into \texttt{Setter\_$A(e_1,\ldots,e_n, e)$} and 
+an invocation $A = e$ is transformed into \texttt{NoArgSetter\_$A(e)$}.
+
+\section{Case Statements}
+We simplify case statements into a compound conditional statement where each case alternative is represented by a sub-conditional. Also, we precede the case statement with an assignment of the test expression into a temporary variable.
+
+\section{Patterns}
+
+\section{Slices}
+
+We simplify an expression \texttt{$e_1$+:$e_2$} into an expression \texttt{$e_1$:($e_1$+$e_2$-1)}.
 %
-%\textbf{ROMAN: Consider removing \texttt{SB\_Primitive}.}
-%
-%\chapter{ASL Core}
-%
-%ASL contains constructs that make it convenient to express functionality, but are not necessarily needed, in the sense that they can be expressed in alternative ways. To simplify the definition of the type system and semantics, we therefore define a subset of the abstract syntax, which we dub \emph{ASL core}. We transform abstract syntax tree in ASL to ASL core, essentially considering the original constructs as syntactic sugar.
-%
-%We now explain the simplifying transformations of ASL abstract syntax trees to ASL core abstract syntax tree.
-%
-%\section{Patterns}
-%
-%\begin{comment}
-%ROMAN: since all forms of slice are syntactic sugar for the \texttt{+:} range slice, why do we need the AST to have all other forms of slices?
-%\end{comment}
-%
-%
-%\subsection{\texttt{IN} operator}
-%
-%\begin{verbatim}
-%func bits_match{N}(x: bits(N), definite_mask: bits(N), any_mask: bits(N));
-%\end{verbatim}
+We simplify an expression \texttt{$e_1$*:$e_2$} into an expression \texttt{($e_1$*$e_2$):($e_1$*$e_2$+$e_2$-1)}.
+
+This leaves us with only one kind of range expression $a:b$.
+
+One problem with this is that we now evaluate expressions twice. We can resolve this by introducing a new type of expression --- \texttt{let x = e in}.
+
+
+\subsection{\texttt{IN} operator}
+
+\subsection{Matching Bitmasks}
+
+We first introduce the new built-in function:
+\begin{verbatim}
+// Tests whether bits is equal to definite_mask 
+// on all indices where x_mask is 0.
+func match_bitmask{N}(x: bits(N), 
+                      definite_mask: bits(N),
+                      x_mask: bits(N)) => boolean
+begin
+  for i = 1 to N do
+  	if !x_mask[i] && definite_mask[i] != x[i] then
+  		return FALSE;
+  end
+  return TRUE;
+end
+\end{verbatim}
+
+We transform an expression \texttt{$e$ IN $m$} where $m$ is a bitmask literal into the function call \texttt{match\_bitmask($e$, $m_d$, $m_x$} where $m_d$ is $m$ where every appearance of \texttt{x} is substituted with \texttt{0} and $m_x$ is $m$ where every appearance of \texttt{x} is substituted with \texttt{1} and every appearance of \texttt{1} is substituted with \texttt{0}.
+
+\section{For Statements}
+We transform for statements into assign-loop statements.
+
+\section{Discard Assignments}
+We replace a left-hand side discard assignment \texttt{- = $e$} with an assignment \texttt{DiscardV$n$ = $E$} assignment where $n$ is a fresh integer.
+
+%\section{Tuples}
+%We simplify tuples into records.
+%--> That won't work, since tuples and records have different definitions of subtype-satisfaction.
+
+\section{Constrained Bitvector Declarations}
+
+Declarations of the form \texttt{bits(-: $t$)} are transformed by substituting $t$ for its declaration.
+
+\section{Bit Fields}
+We can map every bitfield to a corresponding integer and then substitute the constant indexes into the bit field names.
+
+\section{Constants and Configurations}
+
+Once the program configuration is loaded, each configuration variable is replaced with a corresponding \texttt{let} variable, initialized with the value given by the program configuration.
+
+The values of constant declarations (both global and local) are substituted wherever their names are used.
 
 \end{document}
