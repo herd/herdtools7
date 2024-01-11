@@ -1237,7 +1237,8 @@ of the following apply:
   \subsection{Example: SemanticsRule.SliceSingle.asl}
   In the program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceSingle.asl}
-  \texttt{2} evaluates to \texttt{(2, 1)}.
+  the slice \texttt{[2]} evaluates to \texttt{(2, 1)}, i.\,e.\ the slice of
+  length 1 starting at index 2.
 
   \subsection{Code}
   \VerbatimInput[firstline=\SliceSingleBegin, lastline=\SliceSingleEnd]{../Interpreter.ml}
@@ -2170,7 +2171,7 @@ graphs produced by their interpretations:
     \subsection{Example: SemanticsRule.SCond.asl}
     The program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond.asl}
-    prints ``\texttt{3}''.
+    does not raise any Assertion Error.
 
   \subsection{Code}
   \VerbatimInput[firstline=\SCondBegin, lastline=\SCondEnd]{../Interpreter.ml}
@@ -2446,7 +2447,7 @@ graphs produced by their interpretations:
     \subsection{Example: SemanticsRule.STry.asl}
     The program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.STry.asl}
-    prints ``\texttt{3}''.
+    does not raise any Assertion error, and the program terminates with the exit code 0.
 
   \subsection{Code}
   \VerbatimInput[firstline=\STryBegin, lastline=\STryEnd]{../Interpreter.ml}
@@ -2550,6 +2551,16 @@ is defined before the block and hence still exists after the block.
 
 \chapter{Evaluation of Loops \label{chap:eval_loops}}
 
+The evaluation of loop is a common part of the evaluation of multiple loop
+statements.
+%
+For example, the semantic rule \emph{Loop} is used by the semantic rule
+\emph{SWhile} at Section~\ref{sec:SemanticsRule.SWhile} and the semantic rule
+\emph{SRepeat} at Section~\ref{sec:SemanticsRule.SRepeat}.
+%
+The semantic rule \emph{For} is only used by the semantic rule \emph{SFor} at
+Section~\ref{sec:SemanticsRule.SFor}.
+
 \section{SemanticsRule.Loop \label{sec:SemanticsRule.Loop}}
 \texttt{eval\_loop is\_while env e\_cond body} evaluates \texttt{body} in
 \texttt{env}: this is either an interruption \texttt{Returning vs}, a
@@ -2578,7 +2589,8 @@ eventually leading to exiting the loop;
     \subsection{Example: SemanticsRule.Loop.asl}
     The program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.Loop.asl}
-    prints ``\texttt{0123}''.
+    does not raise any Assertion Error and the program terminates with exit
+    code 0.
 
     \subsection{Code}
     \VerbatimInput[firstline=\LoopBegin, lastline=\LoopEnd]{../Interpreter.ml}
@@ -2620,7 +2632,7 @@ applies:
     \subsection{Example: SemanticsRule.For.asl}
     The program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.For.asl}
-    prints ``\texttt{3}''.
+    does not raise any assertion error, and the program terminates with exit-code 0.
 
     \subsection{Code}
     \VerbatimInput[firstline=\ForBegin, lastline=\ForEnd]{../Interpreter.ml}
