@@ -580,7 +580,7 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     choice (in_values v ty) true false
   (* End *)
- 
+
   (* Evaluation of Left-Hand-Side Expressions *)
   (* ---------------------------------------- *)
 
@@ -603,8 +603,8 @@ module Make (B : Backend.S) (C : Config) = struct
             return_normal env |: SemanticsRule.LEGlobalVar
         (* End *)
         | NotFound -> (
-          match ver with
-          (* Begin LEUndefIdentOne *)
+            match ver with
+            (* Begin LEUndefIdentOne *)
             | V1 ->
                 fatal_from le @@ Error.UndefinedIdentifier x
                 |: SemanticsRule.LEUndefIdentV1
@@ -685,31 +685,31 @@ module Make (B : Backend.S) (C : Config) = struct
     let eval_one env = function
       (* Begin SliceSingle *)
       | Slice_Single e ->
-          let** v, new_env = eval_expr env e in
-          return_normal ((v, one), new_env) |: SemanticsRule.SliceSingle
+          let** start, new_env = eval_expr env e in
+          return_normal ((start, one), new_env) |: SemanticsRule.SliceSingle
       (* End *)
       (* Begin SliceLength *)
-      | Slice_Length (ebot, elength) ->
-          let*^ vbot, env_b = eval_expr env ebot in
-          let*^ vlength, env_lb = eval_expr env_b elength in
-          let* vbot = vbot and* vlength = vlength in
-          return_normal ((vbot, vlength), env_lb) |: SemanticsRule.SliceLength 
+      | Slice_Length (e_start, e_length) ->
+          let*^ start, env1 = eval_expr env e_start in
+          let*^ length, new_env = eval_expr env1 e_length in
+          let* start = start and* length = length in
+          return_normal ((start, length), new_env) |: SemanticsRule.SliceLength
       (* End *)
       (* Begin SliceRange *)
-      | Slice_Range (etop, ebot) ->
-          let*^ vtop, env_t = eval_expr env etop in
-          let*^ vbot, env_tb = eval_expr env_t ebot in
-          let* vtop = vtop and* vbot = vbot in
-          let* length = B.binop MINUS vtop vbot >>= B.binop PLUS one in
-          return_normal ((vbot, length), env_tb) |: SemanticsRule.SliceRange  
+      | Slice_Range (e_top, e_start) ->
+          let*^ v_top, env1 = eval_expr env e_top in
+          let*^ start, new_env = eval_expr env1 e_start in
+          let* v_top = v_top and* start = start in
+          let* length = B.binop MINUS v_top start >>= B.binop PLUS one in
+          return_normal ((start, length), new_env) |: SemanticsRule.SliceRange
       (* End *)
       (* Begin SliceStar *)
-      | Slice_Star (efactor, elength) ->
-          let*^ vfactor, env_f = eval_expr env efactor in
-          let*^ vlength, env_lf = eval_expr env_f elength in
-          let* vfactor = vfactor and* vlength = vlength in
-          let* vbot = B.binop MUL vfactor vlength in
-          return_normal ((vbot, vlength), env_lf) |: SemanticsRule.SliceStar 
+      | Slice_Star (e_factor, e_length) ->
+          let*^ v_factor, env1 = eval_expr env e_factor in
+          let*^ length, new_env = eval_expr env1 e_length in
+          let* v_factor = v_factor and* length = length in
+          let* start = B.binop MUL v_factor length in
+          return_normal ((start, length), new_env) |: SemanticsRule.SliceStar
       (* End *)
     in
     fold_par_list eval_one env
@@ -801,7 +801,7 @@ module Make (B : Backend.S) (C : Config) = struct
           let**| env = envm in
           eval_local_decl s ldi' env (Some vm)
         in
-        List.fold_left2 folder (return_normal env) ldis liv 
+        List.fold_left2 folder (return_normal env) ldis liv
         |: SemanticsRule.LDTuple
     (* Begin LDTypedTuple *)
     | LDI_Tuple (_ldis, Some ty), None ->
@@ -935,7 +935,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let* () = B.on_write_identifier name scope v in
         return (Throwing (Some ((v, name, scope), t), new_env))
         |: SemanticsRule.SThrowSomeTyped
-    (* Begin SThrowSome *)  
+    (* Begin SThrowSome *)
     | S_Throw (Some (_e, None)) ->
         fatal_from s Error.TypeInferenceNeeded |: SemanticsRule.SThrowSome
     (* End *)
@@ -1071,7 +1071,7 @@ module Make (B : Backend.S) (C : Config) = struct
         match List.find_opt (catcher_matches v_ty) catchers with
         (* If any catcher matches the exception type: *)
         | Some catcher -> (
-          (* Begin Catch *)
+            (* Begin Catch *)
             match catcher with
             | None, _e_ty, s ->
                 eval_block env1 s
@@ -1268,7 +1268,7 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         List.init length (Fun.const v) |> B.create_vector
 
-(* Begin TopLevel *)
+  (* Begin TopLevel *)
   let run_typed_env env (ast : B.ast) (static_env : StaticEnv.env) : B.value m =
     let*| env = build_genv env eval_expr_sef base_value static_env ast in
     let*| res = eval_func env "main" dummy_annotated [] [] in

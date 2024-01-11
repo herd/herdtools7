@@ -40,17 +40,17 @@ An environment is what the semantics operates over: a structure
 which amongst other things associates values to variables.
 Intuitively, the evaluation of a program makes an initial
 environment evolve, with new values as given by the operations
-of the program. Environments map names to variables and subprograms. 
+of the program. Environments map names to variables and subprograms.
 
 \section{Variables}
 Variables have two different possible scopes: global to the whole program which
 come with an initial value and cannot be declared inside a subprogram, or local
 to a subprogram. Global variables are initialised at the start of the evaluation
-of the program.  
+of the program.
 
 \section{Functions}
 Functions are declared statically: they are declared before the start of the
-program and are not values, thus a subprogram call uses directly a function name. 
+program and are not values, thus a subprogram call uses directly a function name.
 
 Formally, an environment $E \in \mathcal{E}$ is a pair of a binding from global
 variable names to their value, and a binding from local variable names to their
@@ -127,7 +127,7 @@ of the statement (see Chapter~\ref{chap:eval_stmt});
 \item \texttt{eval\_catchers} evaluates catchers (see Chapter~\ref{chap:eval_catchers});
 \item \texttt{eval\_func} evaluates subprograms: it takes an
 environment, a subprogram name and its arguments, and returns a
-list of the return values of the subprogram (see Chapter~\ref{chap:eval_func}). 
+list of the return values of the subprogram (see Chapter~\ref{chap:eval_func}).
 \end{itemize}
 
 \chapter{Reading guide}
@@ -142,7 +142,7 @@ Section~\ref{sec:SemanticsRule.Binop} respectively.
 Each rule is presented using the following template:
 \begin{itemize}
 \item a Prose paragraph gives the rule in English, and corresponds as much as possible to the code of the reference implementation ASLRef given at \url{~/herdtools7/asllib};
-\item one or several Example, which as much as possible are also given as regression tests in \url{~/herdtools7/asllib/tests/ASLSemanticsReference.t} 
+\item one or several Example, which as much as possible are also given as regression tests in \url{~/herdtools7/asllib/tests/ASLSemanticsReference.t}
 \item a Code paragraph which gives a verbatim of the corresponding implementation in the interpreter of ASLRef \url{~/herdtools7/asllib/Interpreter.ml};
 \item a Formal paragraph for the sequential case, which gives a formal
 definition of the rule: the sequential case essentially gives the same
@@ -175,7 +175,7 @@ quantified. For example the two following definitions are equivalent:
 \chapter{Evaluation of Expressions \label{chap:eval_expr}}
 
 \texttt{eval\_expr} specifies how to evaluate an expression \texttt{e} in an
-environment \texttt{env}. 
+environment \texttt{env}.
 
 Evaluation of the expression \texttt{e} under an environment \texttt{env} is
 either a value \texttt{v} together with a potentially updated
@@ -227,7 +227,7 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
 \begin{formal}
   \subsection{Formally: sequential case}
   The evaluation of a literal value \texttt{v} associates any environment
-\texttt{env} to itself coupled with \texttt{v}: 
+\texttt{env} to itself coupled with \texttt{v}:
 
 \begin{align}
   \interp{\texttt{v}}(\texttt{env}) & \triangleq \left\{ (\texttt{v}, \texttt{env}) \right\}
@@ -267,17 +267,17 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
 \begin{formal}
   \subsection{Formally: sequential case}
   The evaluation of a variable \texttt{x} in an environment \texttt{env} that maps \texttt{x} to \texttt{v}
-  is the tuple $(\texttt{v},\texttt{env})$: 
+  is the tuple $(\texttt{v},\texttt{env})$:
   \begin{align}
   \interp{\texttt{x}}(\texttt{env}) & \triangleq \left\{ (\texttt{env}[\texttt{x}], \texttt{env})) \right\}
   \label{eq:sem-seq-var}
-  \end{align} 
- 
+  \end{align}
+
   \subsection{Formally: concurrent case}
   \begin{align}
   \interp{x}(\texttt{env}) & \triangleq \left\{ (\texttt{env}[\texttt{x}], \texttt{env}, \texttt{R(x)}) \right\}
   \label{eq:sem-conc-var}
-  \end{align} 
+  \end{align}
 \end{formal}
 
   \subsection{Comments}
@@ -305,7 +305,7 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
 
 %  \subsection{Example: SemanticsRuleEGlobalVarError.asl}
 %    The program:
-%    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EGlobalVarError.asl} 
+%    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EGlobalVarError.asl}
 %    raises a type error because \texttt{x} is already declared locally in
 %    \texttt{stdlib.asl}.
 
@@ -317,13 +317,13 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
   \begin{align}
   \interp{\texttt{x}}(\texttt{env}) & \triangleq \left\{ (\texttt{env}[\texttt{x}], \texttt{env})) \right\}
   \label{eq:sem-seq-var}
-  \end{align} 
- 
+  \end{align}
+
   \subsection{Formally: concurrent case}
   \begin{align}
   \interp{\texttt{x}}(\texttt{env}) & \triangleq \left\{ (\texttt{env}[\texttt{x}], \texttt{env}, \texttt{R(x)}) \right\}
   \label{eq:sem-conc-var}
-  \end{align} 
+  \end{align}
 \end{formal}
 
 \isempty{\subsection{Comments}}
@@ -340,14 +340,14 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
 
   \subsection{Example: SemanticsRule.EUndefIdent.asl}
     The program:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EUndefIdent.asl} 
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EUndefIdent.asl}
     raises an \texttt{Undefined Identifier} error: the variable \texttt{y} is
     undefined in the environment where $\mathtt{x}$ is bound to $\mathtt{42}$.
 
   \subsection{Code}
   \VerbatimInput[firstline=\EUndefIdentBegin, lastline=\EUndefIdentEnd]{../Interpreter.ml}
 
-\begin{emptyformal} 
+\begin{emptyformal}
   \subsection{Formally: sequential case}
 
   \subsection{Formally: concurrent case}
@@ -390,7 +390,7 @@ e1 then e2 else false} (see Section~\ref{sec:SemanticsRule.ECond}).
   \texttt{(res,new\_env)} and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes a disjunction over two expressions \texttt{e1} and \texttt{e2};
-  \item \texttt{(res,new\_env)} is the result of the evaluation of \texttt{if 
+  \item \texttt{(res,new\_env)} is the result of the evaluation of \texttt{if
 e1 then true else e2} (see Section~\ref{sec:SemanticsRule.ECond}).
   \end{itemize}
 
@@ -471,7 +471,7 @@ Evaluation of the expression \texttt{e} under environment \texttt{env} is \textt
 
 \begin{formal}
   \subsection{Formally: sequential case}
-  
+
   \begin{align}
   \interp{\texttt{e1} + \texttt{e2}} (\texttt{env}) & \triangleq
     \left\{ (v, \texttt{new\_env}) \st{}
@@ -484,7 +484,7 @@ Evaluation of the expression \texttt{e} under environment \texttt{env} is \textt
     \end{aligned}
     \right\}
   \label{eq:sem-seq-plus}
-  \end{align} 
+  \end{align}
 
   \subsection{Formally: concurrent case}
   For the ordering constraints, the different arguments of a n-ary subprogram
@@ -501,7 +501,7 @@ are considered computed in parallel:
     \end{aligned}
     \right\}
   \label{eq:sem-conc-plus}
-  \end{align} 
+  \end{align}
 \end{formal}
 
 \subsection{Comments}
@@ -580,7 +580,7 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
 
   \subsection{Example: SemanticsRule.ESlice.asl}
     In the program:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ESlice.asl}    
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ESlice.asl}
     the expression \texttt{'11110000'[5:2]} evaluates to the value \texttt{'1100'}.
 
   \subsection{Code}
@@ -655,7 +655,7 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
 
   \subsection{Example: SemanticsRule.EGetArrayTooSmall.asl}
     The program:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EGetArrayTooSmall.asl} 
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EGetArrayTooSmall.asl}
     raises a typing error since we are trying to access index \texttt{3} of an array
     which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
 
@@ -686,7 +686,7 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
 
   \subsection{Example: SemanticsRule.ERecord.asl}
     In the program:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ERecord.asl} 
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ERecord.asl}
     the expression \texttt{MyRecordType { a=3, b=42 }} evaluates to the value \texttt{{a:
 3, b: 42}}.
 
@@ -832,10 +832,10 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
 \begin{formal}
   \subsection{Formally: sequential case}
 
-  \begin{align}  
+  \begin{align}
   \interp{\syntt{unknown:}\ t} (E) & \triangleq \left\{ (v, E) \st{} v \in{} D(t) \right\}
-  \label{eq:sem-seq-unknown}  
-  \end{align}  
+  \label{eq:sem-seq-unknown}
+  \end{align}
 
   \subsection{Formally: concurrent case}
 
@@ -899,14 +899,14 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
               \item \texttt{b} is \texttt{true};
               \item \texttt{res} is \texttt{v};
               \item \texttt{new\_env} is \texttt{new\_env}
-              \end{itemize} 
+              \end{itemize}
         \item All of the following apply:
               \begin{itemize}
               \item \texttt{b} is \texttt{false};
-              \item a type error is raised. 
-              \end{itemize} 
-        \end{itemize}   
-  \end{itemize} 
+              \item a type error is raised.
+              \end{itemize}
+        \end{itemize}
+  \end{itemize}
 
   \subsection{Example: SemanticsRule.CTCValue.asl}
   \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CTCValue.asl}
@@ -920,7 +920,7 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
 
 \begin{emptyformal}
   \subsection{Formally: sequential case}
-  
+
   \subsection{Formally: concurrent case}
 \end{emptyformal}
 
@@ -1208,12 +1208,12 @@ of the following apply:
 \isempty{\subsection{Comments}}
 
 \chapter{Evaluation of Slices \label{chap:eval_slices}}
-\texttt{eval\_slices env slices} is the list of pair \texttt{(i\_n, l\_n)} that
+\texttt{eval\_slices env slices} is the list of pair \texttt{(start\_n, length\_n)} that
 corresponds to the start (included) and the length of each slice in
 \texttt{slices}.
 
 Evaluation of the slice \texttt{s} under environment \texttt{env} is
-\texttt{(res,new\_env)}, or an error, and one of the following applies:
+\texttt{((start, length), new\_env)}, or an error, and one of the following applies:
 \begin{itemize}
 \item SemanticsRule.SliceSingle (see Section~\ref{sec:SemanticsRule.SliceSingle}),
 \item SemanticsRule.SliceLength (see Section~\ref{sec:SemanticsRule.SliceLength}),
@@ -1224,14 +1224,15 @@ Evaluation of the slice \texttt{s} under environment \texttt{env} is
 \section{SemanticsRule.SliceSingle \label{sec:SemanticsRule.SliceSingle}}
 
   \subsection{Prose}
-  The result of evaluation is \texttt{(res, new\_env)} and all
+  The result of evaluation is \texttt{((start, length), new\_env)} and all
 of the following apply:
   \begin{itemize}
-  \item \texttt{e} is an expression;
-  \item \texttt{v} is the result of evaluation of the expression~\texttt{e} in the environment \texttt{env};
-  \item \texttt{new\_env} is the environment \texttt{env} modified after evaluation of the expression~\texttt{e};
-  \item \texttt{res} is \texttt{(v, one)};
-  \item \texttt{new\_env} is \texttt{new\_env}.
+    \item \texttt{s} is the single expression \texttt{e};
+    \item \texttt{start} is the result of evaluation of the expression~\texttt{e}
+      in the environment \texttt{env};
+    \item \texttt{new\_env} is the environment \texttt{env} modified after
+      evaluation of the expression~\texttt{e};
+    \item \texttt{length} is the integer value 1.
   \end{itemize}
 
   \subsection{Example: SemanticsRule.SliceSingle.asl}
@@ -1254,15 +1255,18 @@ of the following apply:
 \section{SemanticsRule.SliceLength \label{sec:SemanticsRule.SliceLength}}
 
   \subsection{Prose}
-  The result of evaluation is \texttt{(res, new\_env)} and all of the following
+  The result of evaluation is \texttt{((start, length), new\_env)} and all of the following
 apply:
   \begin{itemize}
-  \item \texttt{ebot} and \texttt{elength} are two expressions;
-  \item \texttt{vbot} is the result of evaluation of the expression~\texttt{ebot} in the environment \texttt{env}; 
-  \item \texttt{env\_b} is the environment \texttt{env} modified after evaluation of the expression~\texttt{ebot}; 
-  \item \texttt{env\_lb} is the environment \texttt{env\_b} modified after evaluation of the expression~\texttt{elength};
-  \item \texttt{res} is \texttt{(vbot, length)};
-  \item \texttt{new\_env} is \texttt{env\_lb}.
+    \item \texttt{s} is the slice which starts at expression~\texttt{e\_start} with length~\texttt{e\_length};
+    \item \texttt{start} is the result of evaluation of the
+      expression~\texttt{e\_start} in the environment \texttt{env};
+    \item \texttt{env\_1} is the environment \texttt{env} modified after
+      evaluation of the expression~\texttt{e\_start};
+    \item \texttt{length} is the result of evaluation of the
+      expression~\texttt{e\_length} in the environment \texttt{env\_1};
+    \item \texttt{new\_env} is the environment \texttt{env\_1} modified after
+      evaluation of the expression~\texttt{e\_length}.
   \end{itemize}
 
   \subsection{Example: SemanticsRule.SliceLength.asl}
@@ -1284,16 +1288,19 @@ apply:
 \section{SemanticsRule.SliceRange \label{sec:SemanticsRule.SliceRange}}
 
   \subsection{Prose}
-  The result of evaluation is \texttt{(res, new\_env)} and all of the following apply:
+  The result of evaluation is \texttt{((start, length), new\_env)} and all of the following apply:
   \begin{itemize}
-  \item \texttt{etop} and \texttt{ebot} are two expressions;
-  \item \texttt{vtop} is the result of evaluation of the expression~\texttt{etop} in the environment \texttt{env}; 
-  \item \texttt{env\_t} is the environment \texttt{env} modified after evaluation of the expression~\texttt{etop}; 
-  \item \texttt{vbot} is the result of evaluation of the expression~\texttt{ebot} in the environment \texttt{env\_t}; 
-  \item \texttt{env\_bt} is the environment \texttt{env\_t} modified after evaluation of the expression~\texttt{ebot}; 
-  \item \texttt{length} is \texttt{(vtop - vbot) + 1};
-  \item \texttt{res} is \texttt{(vbot, length)};
-  \item \texttt{new\_env} is \texttt{env\_tb}.
+    \item \texttt{s} is the slice range between the
+      expressions~\texttt{e\_start} and~\texttt{e\_top};
+    \item \texttt{v\_top} is the result of evaluation of the
+      expression~\texttt{e\_top} in the environment \texttt{env};
+    \item \texttt{env\_1} is the environment \texttt{env} modified after
+      evaluation of the expression~\texttt{e\_top};
+    \item \texttt{start} is the result of evaluation of the
+      expression~\texttt{e\_start} in the environment \texttt{env\_1};
+    \item \texttt{new\_env} is the environment \texttt{env\_1} modified after
+      evaluation of the expression~\texttt{e\_start};
+    \item \texttt{length} is the integer value \texttt{(vtop - start) + 1};
   \end{itemize}
 
   \subsection{Example: SemanticsRule.SliceRange.asl}
@@ -1315,16 +1322,22 @@ apply:
 \section{SemanticsRule.SliceStar \label{sec:SemanticsRule.SliceStar}}
 
   \subsection{Prose}
-  The result of evaluation is \texttt{(res, new\_env)} and all of the following
+  The result of evaluation is \texttt{((start, length), new\_env)} and all of the following
 apply:
   \begin{itemize}
-  \item \texttt{efactor} and \texttt{elength} are two expressions;
-  \item \texttt{vfactor} is the result of evaluation of the expression~\texttt{efactor} in the environment \texttt{env}; 
-  \item \texttt{env\_f} is the environment \texttt{env} modified after evaluation of the expression~\texttt{efactor}; 
-  \item \texttt{env\_lf} is the environment \texttt{env\_f} modified after evaluation of the expression~\texttt{elength};
-  \item \texttt{vbot} is \texttt{vfactor} $\times$ \texttt{vlength};
-  \item \texttt{res} is \texttt{(vbot, length)};
-  \item \texttt{new\_env} is \texttt{env\_lf}.
+    \item \texttt{s} is the slice with factor given by the
+      expression~\texttt{e\_factor} and length given by the
+      expression~\texttt{e\_length};
+    \item \texttt{v\_factor} is the result of evaluation of the
+      expression~\texttt{e\_factor} in the environment \texttt{env};
+    \item \texttt{env\_1} is the environment \texttt{env} modified after
+      evaluation of the expression~\texttt{e\_factor};
+    \item \texttt{length} is the result of evaluation of the
+      expression~\texttt{e\_length} in the environment \texttt{env\_1};
+    \item \texttt{new\_env} is the environment \texttt{env\_1} modified after
+      evaluation of the expression~\texttt{e\_length};
+    \item \texttt{start} is the integer value
+      $\texttt{v\_factor} \times \texttt{length}$.
   \end{itemize}
 
 
@@ -1367,7 +1380,7 @@ following applies:
   \subsection{Prose}
   Evaluation of the pattern \texttt{p} under environment \texttt{env} with
   respect to value \texttt{v} is \texttt{b} and all of the following apply:
-  \begin{itemize}  
+  \begin{itemize}
   \item \texttt{p} is the pattern which matches everything;
   \item \texttt{b} is the boolean value \texttt{true}.
   \end{itemize}
@@ -1480,7 +1493,7 @@ following applies:
       \item \texttt{b'} is the result of the evaluation of the pattern \texttt{p'} under environment \texttt{env} with respect to the value \texttt{v};
       \item \texttt{b} is the boolean negation of \texttt{b'}.
     \end{itemize}
- 
+
     \subsection{Example: SemanticsRule.PNotTRUE.asl}
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PNotTRUE.asl}
 
@@ -1824,26 +1837,26 @@ environment \texttt{env} is either a \texttt{Throwing}, an interruption
 \texttt{Returning vs} or a new environment \texttt{new\_env}. Formally, one of
 the following applies:
 \begin{itemize}
-\item SemanticsRule.SPass (see Section~\ref{sec:SemanticsRule.SPass}), 
-\item SemanticsRule.SAssign (see Section~\ref{sec:SemanticsRule.SAssign}), 
-\item SemanticsRule.SAssignCall (see Section~\ref{sec:SemanticsRule.SAssignCall}), 
-\item SemanticsRule.SAssignTuple (see Section~\ref{sec:SemanticsRule.SAssignTuple}), 
-\item SemanticsRule.SReturnNone (see Section~\ref{sec:SemanticsRule.SReturnNone}), 
-\item SemanticsRule.SReturnOne (see Section~\ref{sec:SemanticsRule.SReturnOne}), 
-\item SemanticsRule.SReturnSome (see Section~\ref{sec:SemanticsRule.SReturnSome}), 
-\item SemanticsRule.SSeq (see Section~\ref{sec:SemanticsRule.SSeq}), 
-\item SemanticsRule.SCall (see Section~\ref{sec:SemanticsRule.SCall}), 
-\item SemanticsRule.SCond (see Section~\ref{sec:SemanticsRule.SCond}), 
-\item SemanticsRule.SCase (see Section~\ref{sec:SemanticsRule.SCase}), 
-\item SemanticsRule.SAssert (see Section~\ref{sec:SemanticsRule.SAssert}), 
-\item SemanticsRule.SWhile (see Section~\ref{sec:SemanticsRule.SWhile}), 
-\item SemanticsRule.SRepeat (see Section~\ref{sec:SemanticsRule.SRepeat}), 
-\item SemanticsRule.SFor (see Section~\ref{sec:SemanticsRule.SFor}), 
-\item SemanticsRule.SThrowNone (see Section~\ref{sec:SemanticsRule.SThrowNone}), 
-\item SemanticsRule.SThrowSomeTyped (see Section~\ref{sec:SemanticsRule.SThrowSomeTyped}), 
-\item SemanticsRule.STry (see Section~\ref{sec:SemanticsRule.STry}), 
-\item SemanticsRule.SDeclSome (see Section~\ref{sec:SemanticsRule.SDeclSome}), 
-\item SemanticsRule.SDeclNone (see Section~\ref{sec:SemanticsRule.SDeclNone}). 
+\item SemanticsRule.SPass (see Section~\ref{sec:SemanticsRule.SPass}),
+\item SemanticsRule.SAssign (see Section~\ref{sec:SemanticsRule.SAssign}),
+\item SemanticsRule.SAssignCall (see Section~\ref{sec:SemanticsRule.SAssignCall}),
+\item SemanticsRule.SAssignTuple (see Section~\ref{sec:SemanticsRule.SAssignTuple}),
+\item SemanticsRule.SReturnNone (see Section~\ref{sec:SemanticsRule.SReturnNone}),
+\item SemanticsRule.SReturnOne (see Section~\ref{sec:SemanticsRule.SReturnOne}),
+\item SemanticsRule.SReturnSome (see Section~\ref{sec:SemanticsRule.SReturnSome}),
+\item SemanticsRule.SSeq (see Section~\ref{sec:SemanticsRule.SSeq}),
+\item SemanticsRule.SCall (see Section~\ref{sec:SemanticsRule.SCall}),
+\item SemanticsRule.SCond (see Section~\ref{sec:SemanticsRule.SCond}),
+\item SemanticsRule.SCase (see Section~\ref{sec:SemanticsRule.SCase}),
+\item SemanticsRule.SAssert (see Section~\ref{sec:SemanticsRule.SAssert}),
+\item SemanticsRule.SWhile (see Section~\ref{sec:SemanticsRule.SWhile}),
+\item SemanticsRule.SRepeat (see Section~\ref{sec:SemanticsRule.SRepeat}),
+\item SemanticsRule.SFor (see Section~\ref{sec:SemanticsRule.SFor}),
+\item SemanticsRule.SThrowNone (see Section~\ref{sec:SemanticsRule.SThrowNone}),
+\item SemanticsRule.SThrowSomeTyped (see Section~\ref{sec:SemanticsRule.SThrowSomeTyped}),
+\item SemanticsRule.STry (see Section~\ref{sec:SemanticsRule.STry}),
+\item SemanticsRule.SDeclSome (see Section~\ref{sec:SemanticsRule.SDeclSome}),
+\item SemanticsRule.SDeclNone (see Section~\ref{sec:SemanticsRule.SDeclNone}).
 \end{itemize}
 
 \section{SemanticsRule.SPass \label{sec:SemanticsRule.SPass}}
@@ -1869,13 +1882,13 @@ the following applies:
   \begin{align}
   \interp{\syntt{pass}} (\texttt{env}) & \triangleq \{ (\bot, \texttt{env}) \}
   \label{eq:sem-seq-spass}
-\end{align} 
+\end{align}
 
   \subsection{Formally: concurrent case}
   \begin{align}
   \interp{\syntt{pass}} (\texttt{env}) & \triangleq \{ (\bot, \texttt{env}, \varnothing) \}
   \label{eq:sem-conc-spass}
-  \end{align} 
+  \end{align}
 \end{formal}
 
 \isempty{\subsection{Comments}}
@@ -1927,7 +1940,7 @@ the following applies:
   Evaluation of the statement \texttt{s} under environment \texttt{env} is
 \texttt{new\_env} and all of the following apply:
   \begin{itemize}
-  \item \texttt{s} gives a left-hand-side tuple expression \texttt{les} and a subprogram call \texttt{(name, args, named\_args)}; 
+  \item \texttt{s} gives a left-hand-side tuple expression \texttt{les} and a subprogram call \texttt{(name, args, named\_args)};
   \item \texttt{vs} is the list of values resulting from the evaluation of the subprogram call;
   \item \texttt{env'} is the environment resulting from modifying \texttt{env} after the evaluation of the subprogram call;
   \item \texttt{new\_env} is the result of modifying \texttt{env'} after assigning each values in \texttt{vs} to the elements of the tuple \texttt{les}.
@@ -1954,7 +1967,7 @@ the following applies:
   Evaluation of the statement \texttt{s} under environment \texttt{env} is
 \texttt{new\_env} and all of the following apply:
   \begin{itemize}
-  \item \texttt{s} gives a left-hand-side tuple expression \texttt{les} and a tuple expression \texttt{exprs}; 
+  \item \texttt{s} gives a left-hand-side tuple expression \texttt{les} and a tuple expression \texttt{exprs};
   \item \texttt{vs} is the list of values resulting from the evaluation of \texttt{exprs};
   \item \texttt{env'} is the environment resulting from modifying \texttt{env} after the evaluation of \texttt{exprs};
   \item \texttt{new\_env} is the result of modifying \texttt{env'} after assigning each values in \texttt{vs} to the elements of the tuple \texttt{les}.
@@ -1988,7 +2001,7 @@ Evaluation of the statement \texttt{s} under environment \texttt{env} is
 
     \subsection{Example: SReturnNoneReturn.asl}
     The program:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnNone.asl} 
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnNone.asl}
     exits the current procedure.
 
   \subsection{Code}
@@ -2056,13 +2069,13 @@ Evaluation of the statement \texttt{s} under environment \texttt{env} is
   \begin{align}
   \interp{\syntt{return}\ e} (E) & \triangleq \interp{e} (E)
   \label{eq:sem-seq-sreturn}
-  \end{align} 
+  \end{align}
 
   \subsection{Formally: concurrent case}
   \begin{align}
   \interp{\syntt{return}\ e} (E) & \triangleq \interp{e} (E)
   \label{eq:sem-conc-sreturn}
-  \end{align} 
+  \end{align}
 \end{formal}
 
 \isempty{\subsection{Comments}}
@@ -2194,7 +2207,7 @@ graphs produced by their interpretations:
       \syntt{else}\ s_2\ \syntt{end}
     \end{array}} (E) \triangleq
     % \interp{\ife{e}{s_1}{s_2}} (E) & \triangleq
-      \left\{ (v?, E'') \st{} \ 
+      \left\{ (v?, E'') \st{} \
       \begin{aligned}
         & (b, E') \in \interp{e} (E)
         \\ \text{and}\ &
@@ -2219,7 +2232,7 @@ graphs produced by their interpretations:
       \syntt{then}\ s_1\\
       \syntt{else}\ s_2\ \syntt{end}
     \end{array}} (E) \triangleq
-      \left\{ (v, E'', S'') \st{} \ 
+      \left\{ (v, E'', S'') \st{} \
       \begin{aligned}
         & (b, E', S) \in \interp{e} (E)
         \\ \text{and}\ &
@@ -2253,7 +2266,7 @@ graphs produced by their interpretations:
 
     \subsection{Example: SemanticsRule.SCase.asl}
     The program:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCase.asl} 
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCase.asl}
     uses the second \texttt{when} clause because \texttt{3} is less than \texttt{42}.
 
   \subsection{Code}
@@ -2367,7 +2380,7 @@ graphs produced by their interpretations:
     \begin{itemize}
     \item \texttt{s} is a \texttt{for} statement;
     \item \texttt{s} gives \texttt{(id,e1,dir,e2,s)};
-    \item \texttt{new\_env} is \texttt{env} modified after evaluation of the \texttt{for} loop \texttt{(id,e1,dir,e2,s)} as per Section~\ref{sec:SemanticsRule.For}. 
+    \item \texttt{new\_env} is \texttt{env} modified after evaluation of the \texttt{for} loop \texttt{(id,e1,dir,e2,s)} as per Section~\ref{sec:SemanticsRule.For}.
     \end{itemize}
 
     \subsection{Example: SemanticsRule.SFor.asl}
@@ -2398,7 +2411,7 @@ graphs produced by their interpretations:
 
     \subsection{Example: SemanticsRule.SThrowNone.asl}
     The program:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SThrowNone.asl} 
+    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SThrowNone.asl}
     throws a ``\texttt{MyException}'' exception.
 
   \subsection{Code}
@@ -2502,7 +2515,7 @@ graphs produced by their interpretations:
     \begin{itemize}
     \item \texttt{s} is a declaration \texttt{(ldi, None)};
     \item \texttt{new\_env} is \texttt{env} modified after evaluation of the local declaration
-      \texttt{ldi env None} as per Chapter~\ref{chap:eval_local_decl}. 
+      \texttt{ldi env None} as per Chapter~\ref{chap:eval_local_decl}.
     \end{itemize}
 
     \subsection{Example: SemanticsRule.SDeclNone.asl}
@@ -2522,7 +2535,7 @@ graphs produced by their interpretations:
 \isempty{\subsection{Comments}}
 
 \chapter{Evaluation of Blocks \label{chap:eval_block}}
- 
+
 \section{SemanticsRule.Block \label{sec:SemanticsRule.Block}}
 
     \subsection{Prose}
@@ -2533,7 +2546,7 @@ graphs produced by their interpretations:
 variable bindings of \texttt{env} with the updated values of
 \texttt{block\_env'}.
     \end{itemize}
- 
+
     \subsection{Example: SemanticsRule.Block.asl}
     In the program:
     \VerbatimInput{\testdir/SemanticsRule.Block.asl}
@@ -2580,7 +2593,7 @@ determined by \texttt{is\_while} and one of the following applies:
     \item All of the following apply:
       \begin{itemize}
       \item \texttt{cond\_m} evaluates to \texttt{false};
-      \item \texttt{new\_env} is \texttt{env}---the loop is exited. 
+      \item \texttt{new\_env} is \texttt{env}---the loop is exited.
       \end{itemize}
     \item All of the following apply:
       \begin{itemize}
@@ -2941,7 +2954,7 @@ One of the following applies:
     \end{aligned}
     \right\}
   \label{eq:sem-seq-fcall}
-  \end{align} 
+  \end{align}
 
   \subsection{Formally: concurrent case}
   For $i$ ranging implicitly from 1 to $n$ included, a call to a subprogram $f$
@@ -3000,7 +3013,7 @@ One of the following applies:
 
 \begin{emptyformal}
   \subsection{Formally: sequential case}
-  
+
   \subsection{Formally: concurrent case}
 \end{emptyformal}
 
