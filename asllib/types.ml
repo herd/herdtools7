@@ -391,9 +391,10 @@ let rec subtypes_names env s1 s2 =
     | Some s1' -> subtypes_names env s1' s2
 
 let subtypes env t1 t2 =
-  match (t1.desc, t2.desc) with
+  (match (t1.desc, t2.desc) with
   | T_Named s1, T_Named s2 -> subtypes_names env s1 s2
-  | _ -> false |: TypingRule.Subtype
+  | _ -> false)
+  |: TypingRule.Subtype
 (* End Subtype *)
 
 let rec bitfields_included env bfs1 bfs2 =

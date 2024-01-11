@@ -556,7 +556,24 @@ may hold.
 \section{TypingRule.Subtype}
 
   \subsection{Prose}
-    The subtype relation is a partial order.
+  A type \texttt{t1} subtypes a type \texttt{t2} in the environment
+  \texttt{env} if and only if one of the following applies:
+  \begin{itemize}
+    \item All of the following apply:
+      \begin{itemize}
+        \item \texttt{t1} is a named type;
+        \item \texttt{t2} is a named type;
+        \item \texttt{t1} and \texttt{t2} are the same type.
+      \end{itemize}
+    \item All of the following apply:
+      \begin{itemize}
+        \item \texttt{t1} is a named type;
+        \item \texttt{t2} is a named type;
+        \item \texttt{t1} is declared as a subtype of \texttt{t1'} in \texttt{env};
+        \item \texttt{t1'} is a subtype of \texttt{t2} in \texttt{env}.
+      \end{itemize}
+  \end{itemize}
+  The subtype relation is a partial order.
 
   \subsection{Example}
 
@@ -3899,9 +3916,8 @@ following apply:
   Annotating the call to subprogram \texttt{name} with call type \texttt{call\_type} (\texttt{annotate\_call}) results in an error and
   one of the following apply:
   \begin{itemize}
-    \item All of the following apply:
-      \begin{itemize}
-        \item \texttt{call\_type} is a function or a getter;
+    \item All of the following apply: \begin{itemize} \item \texttt{call\_type}
+          is a function or a getter;
         \item \texttt{name} is bound in \texttt{env} a subprogram without a return-type;
         \item A ``Mismatched return value'' error is raised.
       \end{itemize}
