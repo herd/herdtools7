@@ -3794,8 +3794,8 @@ new\_stmt)} and all of the following apply:
 
 \chapter{Typing of Subprogram Calls}
 
-Annotating the call to subprogram \texttt{name} with arguments \texttt{args} and
-parameters \texttt{eqs} (\texttt{annotate\_call}) results in \texttt{(name1,
+Annotating the call to subprogram \texttt{name} with arguments \texttt{args},
+parameters \texttt{eqs}, and call type \texttt{call\_type} (\texttt{annotate\_call}) results in \texttt{(name1,
 args, eqs2, ret\_ty1)} or an error is raised and one of the following applies:
 \begin{itemize}
 \item TypingRule.FCallBadArity (see Section~\ref{sec:TypingRule.FCallBadArity}),
@@ -3831,9 +3831,10 @@ following apply:
 \section{TypingRule.FCallGetter \label{sec:TypingRule.FCallGetter}}
 
   \subsection{Prose}
-  Annotating the call to subprogram \texttt{name} with arguments \texttt{args}
-and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
-\texttt{(name1, args, eqs2, ret\_ty1)} or an error is raised and all of the following apply:
+  Annotating the call to subprogram \texttt{name} with arguments \texttt{args},
+  parameters \texttt{eqs}, and call-type \texttt{call\_type}
+  (\texttt{annotate\_call}) results in \texttt{(name1, args, eqs2, ret\_ty1)}
+  or an error is raised and all of the following apply:
    \begin{itemize}
    \item \texttt{caller\_arg\_types, arg1} is the result of annotating \texttt{args} in \texttt{env};
    \item \texttt{name} is bound in \texttt{env} to a subprogram with argument types
@@ -3841,7 +3842,7 @@ and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
    \item \texttt{eqs2} is \texttt{eqs1} appended with the equations deduced by
      using the types of the actual arguments \texttt{caller\_arg\_types} to
      defined parameters in \texttt{callee\_arg\_types};
-   \item \texttt{call\_type} is either a subprogram or a getter type;
+   \item \texttt{call\_type} is either a function or a getter type;
    \item \texttt{ret\_ty1} is the result of renaming \texttt{ty} in \texttt{eqs2}.
    \end{itemize}
 
@@ -3860,10 +3861,10 @@ and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
 \section{TypingRule.FCallSetter \label{sec:TypingRule.FCallSetter}}
 
   \subsection{Prose}
-  Annotating the call to subprogram \texttt{name} with arguments \texttt{args}
-  and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
-  \texttt{(name1, args, eqs2, ret\_ty1)} or an error is raised and all of the
-  following apply:
+  Annotating the call to subprogram \texttt{name} with arguments \texttt{args},
+  parameters \texttt{eqs}, and call-type \texttt{call\_type}
+  (\texttt{annotate\_call}) results in \texttt{(name1, args, eqs2, ret\_ty1)}
+  or an error is raised and all of the following apply:
   \begin{itemize}
     \item \texttt{caller\_arg\_types, arg1} is the result of annotating
       \texttt{args} in \texttt{env};
@@ -3895,6 +3896,22 @@ and parameters \texttt{eqs} (\texttt{annotate\_call}) results in
 \section{TypingRule.FCallMismatch \label{sec:TypingRule.FCallMismatch}}
 
   \subsection{Prose}
+  Annotating the call to subprogram \texttt{name} with call type \texttt{call\_type} (\texttt{annotate\_call}) results in an error and
+  one of the following apply:
+  \begin{itemize}
+    \item All of the following apply:
+      \begin{itemize}
+        \item \texttt{call\_type} is a function or a getter;
+        \item \texttt{name} is bound in \texttt{env} a subprogram without a return-type;
+        \item A ``Mismatched return value'' error is raised.
+      \end{itemize}
+    \item All of the following apply:
+      \begin{itemize}
+        \item \texttt{call\_type} is a procedure or a setter;
+        \item \texttt{name} is bound in \texttt{env} a subprogram with a return type;
+        \item A ``Mismatched return value'' error is raised.
+      \end{itemize}
+  \end{itemize}
 
   \subsection{Example}
 
