@@ -186,6 +186,7 @@ let () =
       let lowercase = !Config.lowercase
       let stdout = if !Config.cycleonly then true else !Config.stdout
       let cycleonly = !Config.cycleonly
+      let metadata = !Config.metadata
 (* Specific *)
       let varatom = !Config.varatom
       let same_loc =
