@@ -37,6 +37,7 @@ module type Config = sig
   val hexa : bool
   val variant : Variant_gen.t -> bool
   val cycleonly: bool
+  val metadata : bool
 end
 
 module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
@@ -932,11 +933,13 @@ let fmt_cols =
 
   let dump_test_channel_full chan t =
     fprintf chan "%s %s\n" (Archs.pp A.arch) t.name ;
-    if t.com <>  "" then fprintf chan "\"%s\"\n" t.com ;
-    List.iter
-      (fun (k,v) -> fprintf chan "%s=%s\n" k v)
-      t.info ;
-    Hint.dump O.hout t.name t.info ;
+    if O.metadata then begin
+      if t.com <>  "" then fprintf chan "\"%s\"\n" t.com ;
+      List.iter
+        (fun (k,v) -> fprintf chan "%s=%s\n" k v)
+        t.info ;
+      Hint.dump O.hout t.name t.info
+    end ;
     dump_init chan t.init t.env ;
     dump_code chan t.prog ;
     begin match t.scopes with
