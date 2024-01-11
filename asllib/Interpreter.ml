@@ -318,6 +318,13 @@ module Make (B : Backend.S) (C : Config) = struct
     let* () = B.on_read_identifier name scope v in
     return v
 
+  let big_op default op =
+    let folder m_acc m =
+      let* acc = m_acc and* v = m in
+      op acc v
+    in
+    function [] -> default | x :: li -> List.fold_left folder x li
+
   (* Evaluation of Expressions *)
   (* ------------------------- *)
 
@@ -714,55 +721,58 @@ module Make (B : Backend.S) (C : Config) = struct
   and eval_pattern env pos v : pattern -> B.value m =
     let true_ = B.v_of_literal (L_Bool true) |> return in
     let false_ = B.v_of_literal (L_Bool false) |> return in
+    let disjunction = big_op false_ (B.binop BOR)
+    and conjunction = big_op true_ (B.binop BAND) in
     function
     (* Begin PAll *)
     | Pattern_All -> true_ |: SemanticsRule.PAll
     (* Begin PAny *)
-    | Pattern_Any li ->
-        let folder acc p =
-          let* acc = acc and* b = eval_pattern env pos v p in
-          B.binop BOR acc b
-        in
-        List.fold_left folder false_ li |: SemanticsRule.PAny
+    | Pattern_Any ps ->
+        let bs = List.map (eval_pattern env pos v) ps in
+        disjunction bs |: SemanticsRule.PAny
     (* Begin PGeq *)
     | Pattern_Geq e ->
-        eval_expr_sef env e >>= B.binop GEQ v |: SemanticsRule.PGeq
+        let* v' = eval_expr_sef env e in
+        B.binop GEQ v v' |: SemanticsRule.PGeq
     (* Begin PLeq *)
     | Pattern_Leq e ->
-        eval_expr_sef env e >>= B.binop LEQ v |: SemanticsRule.PLeq
+        let* v' = eval_expr_sef env e in
+        B.binop LEQ v v' |: SemanticsRule.PLeq
     (* Begin PNot *)
     | Pattern_Not p' ->
-        eval_pattern env pos v p' >>= B.unop BNOT |: SemanticsRule.PNot
+        let* b' = eval_pattern env pos v p' in
+        B.unop BNOT b' |: SemanticsRule.PNot
     (* Begin PRange *)
     | Pattern_Range (e1, e2) ->
-        let* b1 = eval_expr_sef env e1 >>= B.binop GEQ v
-        and* b2 = eval_expr_sef env e2 >>= B.binop LEQ v in
+        let* b1 =
+          let* v1 = eval_expr_sef env e1 in
+          B.binop GEQ v v1
+        and* b2 =
+          let* v2 = eval_expr_sef env e2 in
+          B.binop LEQ v v2
+        in
         B.binop BAND b1 b2 |: SemanticsRule.PRange
     (* Begin PSingle *)
     | Pattern_Single e ->
-        eval_expr_sef env e >>= B.binop EQ_OP v |: SemanticsRule.PSingle
+        let* v' = eval_expr_sef env e in
+        B.binop EQ_OP v v' |: SemanticsRule.PSingle
     (* Begin PMask *)
     | Pattern_Mask m ->
-        let bv bv = L_BitVector bv in
-        let set = Bitvector.mask_set m |> bv |> B.v_of_literal
-        and unset = Bitvector.mask_unset m |> bv |> B.v_of_literal
-        and specified = Bitvector.mask_specified m |> bv |> B.v_of_literal in
-        let* set = B.binop AND set v
-        and* unset = B.unop NOT v >>= B.binop AND unset in
-        B.binop OR set unset >>= B.binop EQ_OP specified |: SemanticsRule.PMask
+        let bv bv = L_BitVector bv |> B.v_of_literal in
+        let m_set = Bitvector.mask_set m |> bv
+        and m_unset = Bitvector.mask_unset m |> bv
+        and m_specified = Bitvector.mask_specified m |> bv in
+        let* nv = B.unop NOT v in
+        let* v_set = B.binop AND m_set v
+        and* v_unset = B.binop AND m_unset nv in
+        let* v_set_or_unset = B.binop OR v_set v_unset in
+        B.binop EQ_OP v_set_or_unset m_specified |: SemanticsRule.PMask
     (* Begin PTuple *)
-    | Pattern_Tuple li_patterns ->
-        let folderi i acc p =
-          let* acc = acc
-          and* b =
-            let* v' = B.get_index i v in
-            eval_pattern env pos v' p
-          in
-          B.binop BAND acc b
-        in
-        let folder (acc, i) p = (folderi i acc p, succ i) in
-        List.fold_left folder (true_, 0) li_patterns
-        |> fst |: SemanticsRule.PTuple
+    | Pattern_Tuple ps ->
+        let n = List.length ps in
+        let* vs = List.init n (fun i -> B.get_index i v) |> sync_list in
+        let bs = List.map2 (eval_pattern env pos) vs ps in
+        conjunction bs |: SemanticsRule.PTuple
     (* End *)
   (* Evaluation of Local Declarations *)
   (* -------------------------------- *)

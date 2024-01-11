@@ -1347,8 +1347,9 @@ apply:
 \chapter{Evaluation of Patterns \label{chap:eval_pattern}}
 \texttt{eval\_pattern env pos v p} determines if \texttt{v} matches the pattern \texttt{p}.
 
-Evaluation of the pattern \texttt{p} under environment \texttt{env} is
-\texttt{(res,new\_env)}, or an error, and one of the following applies:
+Evaluation of the pattern \texttt{p} under environment \texttt{env} with
+respect to value \texttt{v} is \texttt{b}, or an error, and one of the
+following applies:
 \begin{itemize}
 \item SemanticsRule.PAll (see Section~\ref{sec:SemanticsRule.PAll})
 \item SemanticsRule.PAny (see Section~\ref{sec:SemanticsRule.PAny})
@@ -1364,13 +1365,11 @@ Evaluation of the pattern \texttt{p} under environment \texttt{env} is
 \section{SemanticsRule.PAll \label{sec:SemanticsRule.PAll}}
 
   \subsection{Prose}
-  Evaluation of the pattern \texttt{p} under environment \texttt{env} is
-  \texttt{(res,new\_env)} and all of the following apply:
+  Evaluation of the pattern \texttt{p} under environment \texttt{env} with
+  respect to value \texttt{v} is \texttt{b} and all of the following apply:
   \begin{itemize}  
   \item \texttt{p} is the pattern which matches everything;
-  \item \texttt{res} is a value \texttt{v};
-  \item \texttt{v} is \texttt{true};
-  \item \texttt{new\_env} is \texttt{env}.
+  \item \texttt{b} is the boolean value \texttt{true}.
   \end{itemize}
 
   \subsection{Example: SemanticsRule.PAll.asl}
@@ -1390,15 +1389,12 @@ Evaluation of the pattern \texttt{p} under environment \texttt{env} is
 \section{SemanticsRule.PAny \label{sec:SemanticsRule.PAny}}
 
     \subsection{Prose}
-  Evaluation of the pattern \texttt{p} under environment \texttt{env} is
-  \texttt{(res,new\_env)} and all of the following apply:
+  Evaluation of the pattern \texttt{p} under environment \texttt{env} with
+  respect to value \texttt{v} is \texttt{b} and all of the following apply:
     \begin{itemize}
-    \item \texttt{p} is a list of patterns \texttt{li\_patterns};
-    \item \texttt{res} is a value \texttt{v};
-    \item \texttt{v} is a record of values \texttt{li\_values};
-    \item at least one value in \texttt{li\_values} matches the corresponding
-pattern in \texttt{li\_patterns} in \texttt{env};
-    \item \texttt{new\_env} is \texttt{env}.
+      \item \texttt{p} is a list of patterns \texttt{ps};
+      \item \texttt{bs} is the list resulting of the evaluation of the patterns in \texttt{ps} under environment \texttt{env} with respect to value \texttt{v};
+      \item \texttt{b} is the disjunction of the values in \texttt{bs}.
     \end{itemize}
 
     \subsection{Example: SemanticsRule.PAnyTRUE.asl}
@@ -1421,13 +1417,12 @@ pattern in \texttt{li\_patterns} in \texttt{env};
 \section{SemanticsRule.PGeq \label{sec:SemanticsRule.PGeq}}
 
     \subsection{Prose}
-   Evaluation of the pattern \texttt{p} under environment \texttt{env} is
-  \texttt{(res,new\_env)} and all of the following apply:
+    Evaluation of the pattern \texttt{p} under environment \texttt{env} with
+    respect to value \texttt{v} is \texttt{b} and all of the following apply:
     \begin{itemize}
-    \item \texttt{p} is a side-effect-free expression \texttt{e};
-    \item \texttt{res} is a value \texttt{v};
-    \item \texttt{v} is greater than or equal to the evaluation of \texttt{e} in \texttt{env};
-    \item \texttt{new\_env} is \texttt{env}.
+      \item \texttt{p} is the condition being greater or equal than the side-effect-free expression \texttt{e};
+      \item \texttt{v'} is the side-effect-free evaluation of \texttt{e} in \texttt{env};
+      \item \texttt{b} is the boolean value of whether \texttt{v} is greater or equal to \texttt{v'}.
     \end{itemize}
 
     \subsection{Example: SemanticsRule.PGeqTRUE.asl}
@@ -1450,13 +1445,12 @@ pattern in \texttt{li\_patterns} in \texttt{env};
 \section{SemanticsRule.PLeq \label{sec:SemanticsRule.PLeq}}
 
     \subsection{Prose}
-   Evaluation of the pattern \texttt{p} under environment \texttt{env} is
-  \texttt{(res,new\_env)} and all of the following apply:
+    Evaluation of the pattern \texttt{p} under environment \texttt{env} with
+    respect to value \texttt{v} is \texttt{b} and all of the following apply:
     \begin{itemize}
-    \item \texttt{p} is a side-effect-free expression \texttt{e};
-    \item \texttt{res} is a value \texttt{v};
-    \item \texttt{v} is less than or equal to the evaluation of \texttt{e} in \texttt{env};
-    \item \texttt{new\_env} is \texttt{env}.
+      \item \texttt{p} is the condition being less or equal than the side-effect-free expression \texttt{e};
+      \item \texttt{v'} is the side-effect-free evaluation of \texttt{e} in \texttt{env};
+      \item \texttt{b} is the boolean value of whether \texttt{v} is less or equal to \texttt{v'}.
     \end{itemize}
 
     \subsection{Example: SemanticsRule.PLeqTRUE.asl}
@@ -1479,14 +1473,12 @@ pattern in \texttt{li\_patterns} in \texttt{env};
 \section{SemanticsRule.PNot \label{sec:SemanticsRule.PNot}}
 
     \subsection{Prose}
-   Evaluation of the pattern \texttt{p} under environment \texttt{env} is
-  \texttt{(res,new\_env)} and all of the following apply:
+    Evaluation of the pattern \texttt{p} under environment \texttt{env} with
+    respect to value \texttt{v} is \texttt{b} and all of the following apply:
     \begin{itemize}
-    \item \texttt{p} is a list of patterns \texttt{li\_patterns};
-    \item \texttt{res} is a value \texttt{v};
-    \item \texttt{v} is a record of values \texttt{li\_values};
-    \item each value in \texttt{li\_values} does not match the corresponding pattern in \texttt{li\_patterns} in \texttt{env};
-    \item \texttt{new\_env} is \texttt{env}.
+      \item \texttt{p} is the negation of the pattern \texttt{p'};
+      \item \texttt{b'} is the result of the evaluation of the pattern \texttt{p'} under environment \texttt{env} with respect to the value \texttt{v};
+      \item \texttt{b} is the boolean negation of \texttt{b'}.
     \end{itemize}
  
     \subsection{Example: SemanticsRule.PNotTRUE.asl}
@@ -1509,14 +1501,15 @@ pattern in \texttt{li\_patterns} in \texttt{env};
 \section{SemanticsRule.PRange \label{sec:SemanticsRule.PRange}}
 
     \subsection{Prose}
-   Evaluation of the pattern \texttt{p} under environment \texttt{env} is
-  \texttt{(res,new\_env)} and all of the following apply:
+  Evaluation of the pattern \texttt{p} under environment \texttt{env} with
+  respect to value \texttt{v} is \texttt{b} and all of the following apply:
     \begin{itemize}
-    \item \texttt{p} is two side-effect-free expressions \texttt{e1} and \texttt{e2};
-    \item \texttt{res} is a value \texttt{v};
-    \item \texttt{v} is greater than or equal to \texttt{e1} in \texttt{env};
-    \item \texttt{v} is lesser than or equal to \texttt{e2} in \texttt{env};
-    \item \texttt{new\_env} is \texttt{env}.
+      \item \texttt{p} is the condition of being between two side-effect-free expressions \texttt{e1} and \texttt{e2};
+      \item \texttt{v1} is the side-effect-free evaluation of \texttt{e1} in \texttt{env};
+      \item \texttt{v2} is the side-effect-free evaluation of \texttt{e2} in \texttt{env};
+      \item \texttt{b1} is the boolean value of whether \texttt{v} is greater or equal to \texttt{v1}.
+      \item \texttt{b2} is the boolean value of whether \texttt{v} is less or equal to \texttt{v2}.
+      \item \texttt{b} is the boolean conjunction of \texttt{b1} and \texttt{b2}.
     \end{itemize}
 
     \subsection{Example: SemanticsRule.PRangeTRUE.asl}
@@ -1539,13 +1532,12 @@ pattern in \texttt{li\_patterns} in \texttt{env};
 \section{SemanticsRule.PSingle \label{sec:SemanticsRule.PSingle}}
 
     \subsection{Prose}
-   Evaluation of the pattern \texttt{p} under environment \texttt{env} is
-  \texttt{(res,new\_env)} and all of the following apply:
+  Evaluation of the pattern \texttt{p} under environment \texttt{env} with
+  respect to value \texttt{v} is \texttt{b} and all of the following apply:
     \begin{itemize}
-    \item \texttt{p} is a side-effect-free expression \texttt{e};
-    \item \texttt{res} is a value \texttt{v};
-    \item \texttt{v} is the result of the evaluation of \texttt{e} in \texttt{env};
-    \item \texttt{new\_env} is \texttt{env}.
+      \item \texttt{p} is the condition of being equal to the side-effect-free expression \texttt{e};
+      \item \texttt{v'} is the side-effect-free evaluation of \texttt{e} in environment \texttt{env}.
+      \item \texttt{b} is the boolean value of whether \texttt{v} is equal to \texttt{v'}
     \end{itemize}
 
     \subsection{Example: SemanticsRule.PSingleTRUE.asl}
@@ -1568,13 +1560,25 @@ pattern in \texttt{li\_patterns} in \texttt{env};
 \section{SemanticsRule.PMask \label{sec:SemanticsRule.PMask}}
 
     \subsection{Prose}
-   Evaluation of the pattern \texttt{p} under environment \texttt{env} is
-  \texttt{(res,new\_env)} and all of the following apply:
+    Evaluation of the pattern \texttt{p} under environment \texttt{env} with
+    respect to value \texttt{v} is \texttt{b} and all of the following apply:
     \begin{itemize}
-    \item \texttt{p} is a mask \texttt{m};
-    \item \texttt{res} is a value \texttt{v};
-    \item \texttt{v} is a bitvector that matches the mask \texttt{m};
-    \item \texttt{new\_env} is \texttt{env}.
+      \item \texttt{p} is a mask \texttt{m};
+      \item \texttt{m\_set} is the bitvector value with bit set where \texttt{m}
+        requires bit set;
+      \item \texttt{m\_unset} is the bitvector value with bit set where
+        \texttt{m} requires bit unset;
+      \item \texttt{m\_specified} is the bitvector value with bit set where
+        \texttt{m} requires bit set or unset;
+      \item \texttt{nv} is the bitwise negation of \texttt{v};
+      \item \texttt{v\_set} is the bitwise conjunction of \texttt{m\_set} and
+        \texttt{v};
+      \item \texttt{v\_unset} is the bitwise conjunction of \texttt{m\_unset} and
+        \texttt{nv};
+      \item \texttt{v\_set\_or\_unset} is the bitwise disjunction of
+        \texttt{v\_set} and \texttt{v\_unset};
+      \item \texttt{b} is the boolean value of the bitwise equality of
+        \texttt{v\_set\_or\_unset} and \texttt{m\_specified}.
     \end{itemize}
 
     \subsection{Example: SemanticsRule.PMaskTRUE.asl}
@@ -1597,13 +1601,16 @@ pattern in \texttt{li\_patterns} in \texttt{env};
 \section{SemanticsRule.PTuple \label{sec:SemanticsRule.PTuple}}
 
     \subsection{Prose}
-   Evaluation of the pattern \texttt{p} under environment \texttt{env} is
-  \texttt{(res,new\_env)} and all of the following apply: 
+    Evaluation of the pattern \texttt{p} under environment \texttt{env} with
+    respect to value \texttt{v} is \texttt{b} and all of the following apply:
     \begin{itemize}
-    \item \texttt{p} gives a list of patterns \texttt{li};
-    \item \texttt{res} is a value \texttt{v};
-    \item each element in \texttt{v} matches the corresponding pattern in the list \texttt{li} in \texttt{env};
-    \item \texttt{new\_env} is \texttt{env}.
+      \item \texttt{p} gives a list of patterns \texttt{ps} of length $n$;
+      \item \texttt{v} gives a tuple of values \texttt{vs} of length $n$;
+      \item for all $1 \leq i \leq n$, $\texttt{b}_i$ is the evaluation result
+        of $\texttt{p}_i$ with respect to the value $\texttt{v}_i$ in
+        environment \texttt{env};
+      \item \texttt{bs} is the list of all $\texttt{b}_i$ for $1 \leq i \leq n$;
+      \item \texttt{b} is the conjunction of the boolean values of \texttt{bs}.
     \end{itemize}
 
     \subsection{Example: SemanticsRule.PTupleTRUE.asl}
