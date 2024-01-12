@@ -759,14 +759,14 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin PMask *)
     | Pattern_Mask m ->
         let bv bv = L_BitVector bv |> B.v_of_literal in
-        let m_set = Bitvector.mask_set m |> bv
-        and m_unset = Bitvector.mask_unset m |> bv
-        and m_specified = Bitvector.mask_specified m |> bv in
+        let m_set = Bitvector.mask_set m
+        and m_unset = Bitvector.mask_unset m in
+        let m_specified = Bitvector.logor m_set m_unset in
         let* nv = B.unop NOT v in
-        let* v_set = B.binop AND m_set v
-        and* v_unset = B.binop AND m_unset nv in
+        let* v_set = B.binop AND (bv m_set) v
+        and* v_unset = B.binop AND (bv m_unset) nv in
         let* v_set_or_unset = B.binop OR v_set v_unset in
-        B.binop EQ_OP v_set_or_unset m_specified |: SemanticsRule.PMask
+        B.binop EQ_OP v_set_or_unset (bv m_specified) |: SemanticsRule.PMask
     (* Begin PTuple *)
     | Pattern_Tuple ps ->
         let n = List.length ps in

@@ -1381,8 +1381,9 @@ following applies:
   Evaluation of the pattern \texttt{p} under environment \texttt{env} with
   respect to value \texttt{v} is \texttt{b} and all of the following apply:
   \begin{itemize}
-  \item \texttt{p} is the pattern which matches everything;
-  \item \texttt{b} is the boolean value \texttt{true}.
+    \item \texttt{p} is the pattern which matches everything, and therefore
+      matches \texttt{v};
+    \item \texttt{b} is the boolean value \texttt{true}.
   \end{itemize}
 
   \subsection{Example: SemanticsRule.PAll.asl}
@@ -1433,9 +1434,12 @@ following applies:
     Evaluation of the pattern \texttt{p} under environment \texttt{env} with
     respect to value \texttt{v} is \texttt{b} and all of the following apply:
     \begin{itemize}
-      \item \texttt{p} is the condition being greater or equal than the side-effect-free expression \texttt{e};
-      \item \texttt{v'} is the side-effect-free evaluation of \texttt{e} in \texttt{env};
-      \item \texttt{b} is the boolean value of whether \texttt{v} is greater or equal to \texttt{v'}.
+      \item \texttt{p} is the condition corresponding to being greater or equal
+        than the side-effect-free expression \texttt{e};
+      \item \texttt{v'} is the side-effect-free evaluation of \texttt{e} in
+        \texttt{env};
+      \item \texttt{b} is the boolean value corresponding to whether \texttt{v}
+        is greater or equal to \texttt{v'}.
     \end{itemize}
 
     \subsection{Example: SemanticsRule.PGeqTRUE.asl}
@@ -1461,9 +1465,12 @@ following applies:
     Evaluation of the pattern \texttt{p} under environment \texttt{env} with
     respect to value \texttt{v} is \texttt{b} and all of the following apply:
     \begin{itemize}
-      \item \texttt{p} is the condition being less or equal than the side-effect-free expression \texttt{e};
-      \item \texttt{v'} is the side-effect-free evaluation of \texttt{e} in \texttt{env};
-      \item \texttt{b} is the boolean value of whether \texttt{v} is less or equal to \texttt{v'}.
+      \item \texttt{p} is the condition corresponding to being less or equal
+        than the side-effect-free expression \texttt{e};
+      \item \texttt{v'} is the side-effect-free evaluation of \texttt{e} in
+        \texttt{env};
+      \item \texttt{b} is the boolean value corresponding to whether \texttt{v}
+        is less or equal to \texttt{v'}.
     \end{itemize}
 
     \subsection{Example: SemanticsRule.PLeqTRUE.asl}
@@ -1490,7 +1497,9 @@ following applies:
     respect to value \texttt{v} is \texttt{b} and all of the following apply:
     \begin{itemize}
       \item \texttt{p} is the negation of the pattern \texttt{p'};
-      \item \texttt{b'} is the result of the evaluation of the pattern \texttt{p'} under environment \texttt{env} with respect to the value \texttt{v};
+      \item \texttt{b'} is the result of the evaluation of the pattern
+        \texttt{p'} under environment \texttt{env} with respect to the value
+        \texttt{v};
       \item \texttt{b} is the boolean negation of \texttt{b'}.
     \end{itemize}
 
@@ -1517,12 +1526,19 @@ following applies:
   Evaluation of the pattern \texttt{p} under environment \texttt{env} with
   respect to value \texttt{v} is \texttt{b} and all of the following apply:
     \begin{itemize}
-      \item \texttt{p} is the condition of being between two side-effect-free expressions \texttt{e1} and \texttt{e2};
-      \item \texttt{v1} is the side-effect-free evaluation of \texttt{e1} in \texttt{env};
-      \item \texttt{v2} is the side-effect-free evaluation of \texttt{e2} in \texttt{env};
-      \item \texttt{b1} is the boolean value of whether \texttt{v} is greater or equal to \texttt{v1}.
-      \item \texttt{b2} is the boolean value of whether \texttt{v} is less or equal to \texttt{v2}.
-      \item \texttt{b} is the boolean conjunction of \texttt{b1} and \texttt{b2}.
+      \item \texttt{p} is the condition corresponding to being greater or equal
+        to \texttt{e1}, and lesser or equal to \texttt{e2};
+      \item \texttt{e1} and \texttt{e2} are side-effect-free expressions;
+      \item \texttt{v1} is the side-effect-free evaluation of \texttt{e1} in
+        \texttt{env};
+      \item \texttt{v2} is the side-effect-free evaluation of \texttt{e2} in
+        \texttt{env};
+      \item \texttt{b1} is the boolean value corresponding to whether
+        \texttt{v} is greater or equal to \texttt{v1}.
+      \item \texttt{b2} is the boolean value corresponding to whether
+        \texttt{v} is less or equal to \texttt{v2}.
+      \item \texttt{b} is the boolean conjunction of \texttt{b1} and
+        \texttt{b2}.
     \end{itemize}
 
     \subsection{Example: SemanticsRule.PRangeTRUE.asl}
@@ -1548,9 +1564,12 @@ following applies:
   Evaluation of the pattern \texttt{p} under environment \texttt{env} with
   respect to value \texttt{v} is \texttt{b} and all of the following apply:
     \begin{itemize}
-      \item \texttt{p} is the condition of being equal to the side-effect-free expression \texttt{e};
-      \item \texttt{v'} is the side-effect-free evaluation of \texttt{e} in environment \texttt{env}.
-      \item \texttt{b} is the boolean value of whether \texttt{v} is equal to \texttt{v'}
+      \item \texttt{p} is the condition corresponding to being equal to the
+        side-effect-free expression \texttt{e};
+      \item \texttt{v'} is the side-effect-free evaluation of \texttt{e} in
+        environment \texttt{env};
+      \item \texttt{b} is the boolean value corresponding to whether \texttt{v}
+        is equal to \texttt{v'}.
     \end{itemize}
 
     \subsection{Example: SemanticsRule.PSingleTRUE.asl}
@@ -1576,13 +1595,15 @@ following applies:
     Evaluation of the pattern \texttt{p} under environment \texttt{env} with
     respect to value \texttt{v} is \texttt{b} and all of the following apply:
     \begin{itemize}
-      \item \texttt{p} is a mask \texttt{m};
-      \item \texttt{m\_set} is the bitvector value with bit set where \texttt{m}
-        requires bit set;
-      \item \texttt{m\_unset} is the bitvector value with bit set where
-        \texttt{m} requires bit unset;
-      \item \texttt{m\_specified} is the bitvector value with bit set where
-        \texttt{m} requires bit set or unset;
+      \item \texttt{p} is a mask \texttt{m} of length $n$ (with spaces removed);
+      \item \texttt{m\_set} is the bitvector value of length $n$ with bit set
+        at index $i$ if the mask requires a bit set at index $i$, i.\,e.\
+        $\texttt{m}[i] = '1'$;
+      \item \texttt{m\_unset} is the bitvector value of length $n$ with bit set
+        at index $i$ if the mask requires a bit unset at index $i$, i.\,e.\
+        $\texttt{m}[i] = '0'$;
+      \item \texttt{m\_specified} is the bitwise disjunction of \texttt{m\_set}
+        and \texttt{m\_unset};
       \item \texttt{nv} is the bitwise negation of \texttt{v};
       \item \texttt{v\_set} is the bitwise conjunction of \texttt{m\_set} and
         \texttt{v};
