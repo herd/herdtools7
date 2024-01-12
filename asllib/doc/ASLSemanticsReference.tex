@@ -6,7 +6,8 @@
 \newcommand{\testdir}{../tests/ASLSemanticsReference.t}
 
 \author{Arm Architecture Technology Group}
-\title{ASL Semantics Reference}
+\title{ASL Semantics Reference \\
+       DDI 0621}
 \begin{document}
 \maketitle
 
@@ -441,7 +442,7 @@ e1 then e2 else false} (see Section~\ref{sec:SemanticsRule.ECond}).
 \end{emptyformal}
 
   \subsection{Comments}
-  This aims to encompass \identr{BKNT}, and \identi{QRXP}.
+  This is related to \identr{BKNT}, \identr{XKGC} and \identi{QRXP}.
 
 \section{SemanticsRule.BinopOr \label{sec:SemanticsRule.BinopOr}}
   \subsection{Prose}
@@ -467,7 +468,7 @@ e1 then true else e2} (see Section~\ref{sec:SemanticsRule.ECond}).
 \end{emptyformal}
 
   \subsection{Comments}
-  This aims to encompass \identr{BKNT}, and \identi{QRXP}.
+  This is related to \identr{BKNT}, \identr{XKGC} and \identi{QRXP}.
 
 \section{SemanticsRule.BinopImpl \label{sec:SemanticsRule.BinopImpl}}
 
@@ -491,7 +492,7 @@ the expression \texttt{(0 == 1) --> (1 == 0)} evaluates to the value \texttt{TRU
 \end{emptyformal}
 
 \subsection{Comments}
-  This aims to encompass \identr{BKNT}, and \identi{QRXP}.
+  This is related to \identr{BKNT}, and \identi{QRXP}.
 
 \section{SemanticsRule.Binop \label{sec:SemanticsRule.Binop}}
 
@@ -562,7 +563,7 @@ are considered computed in parallel:
 \end{formal}
 
 \subsection{Comments}
-  This aims to encompass \identr{BKNT}.
+  This is related to \identr{BKNT}.
 
 \section{SemanticsRule.Unop \label{sec:SemanticsRule.Unop}}
 
@@ -622,7 +623,7 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
 \end{emptyformal}
 
   \subsection{Comments}
-  This aims to encompass \identr{YCDB}.
+  This is related to \identr{YCDB}.
 
 \section{SemanticsRule.ESlice \label{sec:SemanticsRule.ESlice}}
 
@@ -815,7 +816,8 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \subsection{Formally: concurrent case}
 \end{emptyformal}
 
-\isempty{\subsection{Comments}}
+\subsection{Comments}
+  This is related to \identr{BRCM}.
 
 \section{SemanticsRule.ETuple \label{sec:SemanticsRule.ETuple}}
 
@@ -903,7 +905,7 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
 \end{formal}
 
 \subsection{Comments}
-  This aims to encompass \identr{WLCH}.
+  This is related to \identr{WLCH}.
 
 \section{SemanticsRule.EPattern \label{sec:SemanticsRule.EPattern}}
 
@@ -981,8 +983,8 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
   \subsection{Formally: concurrent case}
 \end{emptyformal}
 
-\isempty{\subsection{Comments}}
-
+\subsection{Comments}
+  This is related to \identr{WZVX}, \identi{VQLX}, \identr{YCPX}, \identi{TCST}, \identi{CGRH}.
 
 \chapter{Evaluation of Left-Hand-Side Expressions \label{chap:eval_lexpr}}
 
@@ -1168,7 +1170,8 @@ of the following apply:
   \subsection{Formally: concurrent case}
 \end{emptyformal}
 
-\isempty{\subsection{Comments}}
+\subsection{Comments}
+  This is related to \identr{WHRS}.
 
 \section{SemanticsRule.LESetArray \label{sec:SemanticsRule.LESetArray}}
 
@@ -1201,7 +1204,9 @@ of the following apply:
   \subsection{Formally: concurrent case}
 \end{emptyformal}
 
-\isempty{\subsection{Comments}}
+\subsection{Comments}
+  This is related to \identr{WHRS}.
+
 
 \section{SemanticsRule.LESetField \label{sec:SemanticsRule.LESetField}}
 
@@ -1234,7 +1239,9 @@ of the following apply:
   \subsection{Formally: concurrent case}
 \end{emptyformal}
 
-\isempty{\subsection{Comments}}
+\subsection{Comments}
+  This is related to \identr{WHRS}.
+
 
 \section{SemanticsRule.LEDestructuring \label{sec:SemanticsRule.LEDestructuring}}
 
@@ -3054,7 +3061,7 @@ One of the following applies:
 \end{formal}
 
   \subsection{Comments}
-  This aims to encompass \identr{DFWZ}.
+  This is related to \identr{DFWZ}.
 
 \chapter{Evaluation of Programs}
 

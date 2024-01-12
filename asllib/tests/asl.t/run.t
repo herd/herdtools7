@@ -151,3 +151,5 @@ Runtime checks:
     value '0000' does not belong to type bits(size).
   [1]
 
+  $ aslref under-constrained-used.asl
+
