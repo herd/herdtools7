@@ -1,8 +1,8 @@
 func main () => integer
 begin
 
-  let x = ['11110000'[5:2]];
-  assert x == '1100';
+  let x = ['11110000'[6:3]];
+  assert x == '1110';
 
   return 0;
 end 
