@@ -1,0 +1,9 @@
+AArch64 V19
+{}
+P0                     ;
+MOV Z0.S,#1            ;
+MOV W0,#2              ;
+WHILELT P0.S, WZR,W0   ;
+MOVPRFX Z1.S,P0/Z,Z0.S ;
+
+forall 0:V1.4S={1,1,0,0}

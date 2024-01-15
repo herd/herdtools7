@@ -1,0 +1,10 @@
+AArch64 V21
+{}
+P0                     ;
+MOV Z0.S,#-1           ;
+MOV Z1.S,#2            ;
+MOV W0,#3              ;
+WHILELT P0.S,WZR,W0    ;
+NEG Z1.S,P0/M,Z0.S     ;
+
+forall 0:V1.4S={1,1,1,2}

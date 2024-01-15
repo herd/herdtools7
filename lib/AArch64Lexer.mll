@@ -186,6 +186,7 @@ match name with
 | "index" | "INDEX" -> TOK_INDEX
 | "mul" | "MUL" -> TOK_MUL
 | "vl" | "VL" -> TOK_VL
+| "movprfx" | "MOVPRFX" -> MOVPRFX
 (* Compare and swap *)
 | "cas"|"CAS" -> CAS
 | "casa"|"CASA" -> CASA

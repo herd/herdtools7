@@ -108,7 +108,7 @@ let check_op3 op e =
 %token <AArch64Base.bh * AArch64Base.atomic_op * AArch64Base.w_type> STOPBH
 %token UDF
 /* Scalable Vector Extention  */
-%token WHILELT WHILELE WHILELO WHILELS UADDV TOK_INDEX TOK_MUL TOK_VL
+%token WHILELT WHILELE WHILELO WHILELS UADDV TOK_INDEX TOK_MUL TOK_VL MOVPRFX
 %token LD1B LD1H LD1W LD1D LD2B LD2H LD2W LD2D LD3B LD3H LD3W LD3D LD4B LD4H LD4W LD4D
 %token ST1B ST1H ST1W ST1D ST2B ST2H ST2W ST2D ST3B ST3H ST3W ST3D ST4B ST4H ST4W ST4D
 /*
@@ -1175,6 +1175,10 @@ instr:
     | _ -> assert false }
 | TOK_INDEX zreg COMMA k COMMA k
   { I_INDEX_II ($2,$4,$6) }
+| TOK_NEG zreg COMMA pmreg_m COMMA zreg
+  { I_NEG_SV ($2,$4,$6) }
+| MOVPRFX zreg COMMA pmreg COMMA zreg
+  { I_MOVPRFX ($2,$4,$6) }
     /* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK cxreg zeroopt RBRK
   { I_CAS (V32,RMW_P,$2,$4,$7) }

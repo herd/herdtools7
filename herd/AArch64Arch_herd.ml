@@ -110,7 +110,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
     | I_MOV_SV _
     | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
-    | I_DUP_SV _ | I_ADD_SV _
+    | I_DUP_SV _ | I_ADD_SV _ | I_NEG_SV _ | I_MOVPRFX _
       -> true
 
     let is_cmodx_restricted_value =
@@ -294,7 +294,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_UDF _ | I_ADDSUBEXT _ | I_MOPL _
       | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
       | I_UADDV _
-      | I_MOV_SV _ | I_DUP_SV _ | I_ADD_SV _
+      | I_MOV_SV _ | I_DUP_SV _ | I_ADD_SV _ | I_NEG_SV _ | I_MOVPRFX _
       | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
           -> None
 
@@ -363,7 +363,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_WHILELT (r,_,_,_) | I_WHILELE (r,_,_,_) | I_WHILELO (r,_,_,_) | I_WHILELS (r,_,_,_)
       | I_UADDV (_,r,_,_)
       | I_MOV_SV (r,_,_)
-      | I_DUP_SV (r,_,_) | I_ADD_SV (r,_,_)
+      | I_DUP_SV (r,_,_) | I_ADD_SV (r,_,_) | I_NEG_SV (r,_,_) | I_MOVPRFX (r,_,_)
       | I_INDEX_SI (r,_,_,_) | I_INDEX_IS (r,_,_,_) | I_INDEX_SS (r,_,_,_) | I_INDEX_II (r,_,_)
         -> [r]
       | I_MSR (sr,_)
@@ -439,7 +439,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_UADDV _
       | I_LD1SP _ | I_LD2SP _ | I_LD3SP _ | I_LD4SP _
       | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
-      | I_ADD_SV _
+      | I_ADD_SV _ | I_NEG_SV _ | I_MOVPRFX _
       | I_MOV_SV _ | I_DUP_SV _
       | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
         -> MachSize.No

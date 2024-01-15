@@ -1450,6 +1450,10 @@ type 'k kinstruction =
   | I_DUP_SV of reg * variant * reg
   (* ADD <Zd>.<T>, <Zn>.<T>, <Zm>.<T> *)
   | I_ADD_SV of reg * reg * reg
+  (* NEG <Zd>.<T>, <Pg>/M, <Zn>.<T> *)
+  | I_NEG_SV of reg * reg * reg
+  (* MOVPRFX <Zd>.<T>, <Pg>/<ZM>, <Zn>.<T> *)
+  | I_MOVPRFX of reg * reg * reg
   (* INDEX <Zd>.<T>, <R><n>, #<imm> *)
   | I_INDEX_SI of reg * variant * reg * 'k
   (* INDEX <Zd>.<T>, #<imm>, <R><m> *)
@@ -1952,6 +1956,10 @@ let do_pp_instruction m =
       sprintf "DUP %s,%s" (pp_zreg r1) (pp_vreg v r2)
   | I_ADD_SV (r1,r2,r3) ->
       sprintf "ADD %s,%s,%s" (pp_zreg r1) (pp_zreg r2) (pp_zreg r3)
+  | I_NEG_SV (r1,r2,r3) ->
+    sprintf "NEG %s,%s,%s" (pp_zreg r1) (pp_preg r2) (pp_zreg r3)
+  | I_MOVPRFX (r1,r2,r3) ->
+    sprintf "MOVPRFX %s,%s,%s" (pp_zreg r1) (pp_preg r2) (pp_zreg r3)
   | I_INDEX_SI (r1,v,r2,k) ->
       sprintf "INDEX %s,%s,%s" (pp_zreg r1) (pp_vreg v r2) (m.pp_k k)
   | I_INDEX_IS (r1,v,k,r2) ->
@@ -2283,7 +2291,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDXP (_,_,r1,r2,r3)
   | I_WHILELT (r1,_,r2,r3) | I_WHILELE (r1,_,r2,r3) | I_WHILELO (r1,_,r2,r3) | I_WHILELS (r1,_,r2,r3)
   | I_INDEX_SS(r1,_,r2,r3)
-  | I_UADDV (_,r1,r2,r3) | I_ADD_SV (r1,r2,r3)
+  | I_UADDV (_,r1,r2,r3) | I_ADD_SV (r1,r2,r3) | I_NEG_SV (r1,r2,r3) | I_MOVPRFX (r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_LDP (_,_,r1,r2,r3,_)
   | I_LDPSW (r1,r2,r3,_)
@@ -2517,6 +2525,10 @@ let map_regs f_reg f_symb =
       I_DUP_SV (map_reg r1,v,map_reg r2)
   | I_ADD_SV (r1,r2,r3) ->
       I_ADD_SV (map_reg r1,map_reg r2,map_reg r3)
+  | I_NEG_SV (r1,r2,r3) ->
+      I_NEG_SV (map_reg r1,map_reg r2,map_reg r3)
+  | I_MOVPRFX (r1,r2,r3) ->
+      I_MOVPRFX (map_reg r1,map_reg r2,map_reg r3)
   | I_INDEX_SI (r1,v,r2,k) ->
       I_INDEX_SI (map_reg r1,v,map_reg r2,k)
   | I_INDEX_IS (r1,v,k,r2) ->
@@ -2743,7 +2755,7 @@ let get_next =
   | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
   | I_LD1SP _ | I_LD2SP _ | I_LD3SP _ | I_LD4SP _
   | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
-  | I_MOV_SV _ | I_ADD_SV _
+  | I_MOV_SV _ | I_ADD_SV _ | I_NEG_SV _ | I_MOVPRFX _
     -> [Label.Next;]
 
 (* Check instruction validity, beyond parsing *)
@@ -2979,7 +2991,7 @@ module PseudoI = struct
         | I_MOPL _
         | I_WHILELT _ | I_WHILELE _ | I_WHILELO _| I_WHILELS _
         | I_UADDV _ | I_DUP_SV _
-        | I_ADD_SV _ | I_INDEX_SS _
+        | I_ADD_SV _ | I_INDEX_SS _ | I_NEG_SV _ | I_MOVPRFX _
             as keep -> keep
         | I_LDR (v,r1,r2,idx) -> I_LDR (v,r1,r2,ext_tr idx)
         | I_LDRSW (r1,r2,idx) -> I_LDRSW (r1,r2,ext_tr idx)
@@ -3149,7 +3161,7 @@ module PseudoI = struct
         | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
         | I_UDF _
         | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
-        | I_ADD_SV _ | I_UADDV _ | I_DUP_SV _
+        | I_ADD_SV _ | I_UADDV _ | I_DUP_SV _| I_NEG_SV _ | I_MOVPRFX _
         | I_INDEX_SI _ | I_INDEX_IS _  | I_INDEX_SS _ | I_INDEX_II _
         | I_MOV_SV _
           -> 0
