@@ -1,0 +1,11 @@
+AArch64 V20
+{}
+P0                     ;
+MOV Z0.S,#1            ;
+MOV Z1.S,#2            ;
+MOV Z2.S,#-1           ;
+PTRUE P0.S,VL3         ;
+MOVPRFX Z1.S,P0/M,Z0.S ;
+NEG Z1.S,P0/M,Z2.S     ;
+
+forall 0:V1.4S={1,1,1,2}

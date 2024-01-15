@@ -2203,6 +2203,70 @@ module Make
               let sz = AArch64Base.tr_simd_variant var in
               write_reg_neon_sz sz r1 v ii
 
+      let movprfx dst pg src ii =
+        let nelem = predicate_nelem src in
+        let psize = predicate_psize src in
+        let esize = scalable_esize dst in
+        let orig = match pg with
+        | AArch64Base.PMreg (_,AArch64Base.Zero)
+          -> mzero
+        | AArch64Base.PMreg (_,AArch64Base.Merge)
+          -> read_reg_scalable false dst ii
+        | _ -> assert false
+        in
+        orig >>|
+        read_reg_predicate false pg ii >>= fun (orig,pred) ->
+          get_predicate_any pred psize nelem >>= fun any ->
+            M.choiceT
+            any
+            (read_reg_scalable false src ii >>= fun src ->
+              let copy orig cur_val idx =
+                get_predicate_last pred psize idx >>= fun last ->
+                  M.choiceT
+                  last
+                  (scalable_getlane cur_val idx esize)
+                  (scalable_getlane orig idx esize)
+                  >>= fun v ->
+                    scalable_setlane cur_val idx esize v
+              in
+              let rec reduce orig n op =
+                match n with
+                | 0 -> op >>= fun old_val -> copy orig old_val n
+                | _ -> reduce orig (n-1) (op >>= fun old_val -> copy orig old_val n)
+              in
+              reduce orig (nelem-1) (M.unitT src))
+            (M.unitT orig) >>= fun v ->
+              write_reg_scalable dst v ii
+
+      let neg dst pg src ii =
+        let nelem = predicate_nelem src in
+        let psize = predicate_psize src in
+        let esize = scalable_esize dst in
+        read_reg_scalable false dst ii >>|
+        read_reg_predicate false pg ii >>= fun (orig,pred) ->
+          get_predicate_any pred psize nelem >>= fun any ->
+            M.choiceT
+            any
+            (read_reg_scalable false src ii >>= fun src ->
+              let negate orig cur_val idx =
+                get_predicate_last pred psize idx >>= fun last ->
+                M.choiceT
+                last
+                (scalable_getlane cur_val idx esize >>= fun v ->
+                  M.op Op.Sub V.zero v)
+                (scalable_getlane orig idx esize)
+                >>= fun v ->
+                  scalable_setlane cur_val idx esize v
+              in
+              let rec reduce orig n op =
+              match n with
+              | 0 -> op >>= fun old_val -> negate orig old_val n
+              | _ -> reduce orig (n-1) (op >>= fun old_val -> negate orig old_val n)
+              in
+              reduce orig (nelem-1) (M.unitT src))
+            (M.unitT orig) >>= fun v ->
+              write_reg_scalable dst v ii
+
       let while_op compare unsigned p var r1 r2 ii =
         let psize = predicate_psize p in
         let nelem = predicate_nelem p in
@@ -3222,6 +3286,12 @@ module Make
         | I_UADDV(var,v,p,z) ->
           check_sve inst;
           !(uaddv var v p z ii)
+        | I_MOVPRFX(r1,pg,r2) ->
+          check_sve inst;
+          !(movprfx r1 pg r2 ii)
+        | I_NEG_SV(r1,pg,r2) ->
+          check_sve inst;
+          !(neg r1 pg r2 ii)
         | I_MOV_SV(r,k,shift) ->
           check_sve inst;
           !(mov_sv r k shift ii)

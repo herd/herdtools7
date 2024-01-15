@@ -112,6 +112,7 @@ let check_op3 op e =
 %token TOK_ALL TOK_POW2 TOK_MUL3 TOK_MUL4
 %token TOK_VL1 TOK_VL2 TOK_VL3 TOK_VL4 TOK_VL5 TOK_VL6 TOK_VL7 TOK_VL8
 %token TOK_VL16 TOK_VL32 TOK_VL64 TOK_VL128 TOK_VL256
+%token MOVPRFX
 %token LD1B LD1H LD1W LD1D LD2B LD2H LD2W LD2D LD3B LD3H LD3W LD3D LD4B LD4H LD4W LD4D
 %token ST1B ST1H ST1W ST1D ST2B ST2H ST2W ST2D ST3B ST3H ST3W ST3D ST4B ST4H ST4W ST4D
 /*
@@ -1199,6 +1200,10 @@ instr:
   { I_INDEX_II ($2,$4,$6) }
 | PTRUE preg_sz pattern
   { I_PTRUE ($2,$3) }
+| TOK_NEG zreg COMMA pmreg_m COMMA zreg
+  { I_NEG_SV ($2,$4,$6) }
+| MOVPRFX zreg COMMA pmreg COMMA zreg
+  { I_MOVPRFX ($2,$4,$6) }
     /* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK cxreg zeroopt RBRK
   { I_CAS (V32,RMW_P,$2,$4,$7) }

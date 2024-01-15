@@ -204,6 +204,7 @@ match name with
 | "mul4" | "MUL4" -> TOK_MUL4
 | "mul3" | "MUL3" -> TOK_MUL3
 | "all" | "ALL" -> TOK_ALL
+| "movprfx" | "MOVPRFX" -> MOVPRFX
 (* Compare and swap *)
 | "cas"|"CAS" -> CAS
 | "casa"|"CASA" -> CASA

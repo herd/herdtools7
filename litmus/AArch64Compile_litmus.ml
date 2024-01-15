@@ -73,6 +73,9 @@ module Make(V:Constant.S)(C:Config) =
     | I_DUP_SV (r,_,_)
     | I_MOV_SV (r,_,_)
     | I_INDEX_SI (r,_,_,_) | I_INDEX_IS (r,_,_,_) | I_INDEX_SS (r,_,_,_) | I_INDEX_II (r,_,_)
+    (* Accept P/M register so assume partial update of register *)
+    | I_NEG_SV (r,_,_)
+    | I_MOVPRFX (r,_,_)
     -> A.RegSet.of_list [r]
     | _ ->  A.RegSet.empty
 
@@ -1235,6 +1238,20 @@ module Make(V:Constant.S)(C:Config) =
         outputs = [pred];
         reg_env = (add_svbool_t [pred;])}
 
+    let neg_sv r1 pg r3 =
+      { empty_ins with
+        memo = sprintf "neg %s,%s,%s" (print_zreg "o" 0 0 r1) (print_preg "i" 0 1 pg) (print_zreg "i" 0 2 r3);
+        inputs = [r1;pg;r3]; (* r1 is intentionally in 'inputs', see comment for reg_class_stable *)
+        outputs = [r1];
+        reg_env = (add_svint32_t [r1;r3;])@(add_svbool_t [pg;])}
+
+    let movprfx r1 pg r3 =
+      { empty_ins with
+        memo = sprintf "movprfx %s,%s,%s" (print_zreg "o" 0 0 r1) (print_preg "i" 0 1 pg) (print_zreg "i" 0 2 r3);
+        inputs = [r1;pg;r3]; (* r1 is intentionally in 'inputs', see comment for reg_class_stable *)
+        outputs = [r1];
+        reg_env = (add_svint32_t [r1;r3;])@(add_svbool_t [pg;])}
+
 (* Compare and swap *)
 
     let cas_memo rmw = Misc.lowercase (cas_memo rmw)
@@ -1671,6 +1688,8 @@ module Make(V:Constant.S)(C:Config) =
     | I_INDEX_SS (r1,v,r2,r3) -> index_ss r1 v r2 r3::k
     | I_INDEX_II (r1,k1,k2) -> index_ii r1 k1 k2::k
     | I_PTRUE (pred,pat) -> ptrue pred pat::k
+    | I_NEG_SV (r1,r2,r3) -> neg_sv r1 r2 r3::k
+    | I_MOVPRFX (r1,r2,r3) -> movprfx r1 r2 r3::k
 (* Arithmetic *)
     | I_MOV (v,r,K i) ->  mov_const v r i::k
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k
