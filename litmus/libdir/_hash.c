@@ -132,9 +132,9 @@ static uint32_t hash_log (log_t *key) {
 }
 
 #ifdef STATS
-static void hash_add(hash_t *t,log_t *key, param_t *v,count_t c,int ok) {
+static int hash_add(hash_t *t,log_t *key, param_t *v,count_t c,int ok) {
 #else
-static void hash_add(hash_t *t,log_t *key, count_t c,int ok) {
+static int hash_add(hash_t *t,log_t *key, count_t c,int ok) {
 #endif
   uint32_t h = hash_log(key) ;
   h = h % HASHSZ ;
@@ -148,31 +148,29 @@ static void hash_add(hash_t *t,log_t *key, count_t c,int ok) {
       p->c = c ;
       p->ok = ok ;
       t->nhash++ ;
-      return ;
+      return 1 ;
     } else if (eq_log(key,&p->key)) {
       p->c += c ;
-      return ;
+      return 1;
     }
     h++ ;
     h %= HASHSZ ;
   }
-#ifdef NOSTDIO
-  emit_string(stderr,"Hash table is full\n") ;
-#else
-  fprintf(stderr,"Hash table is full\n") ;
-#endif
-  exit(2) ;
+  return 0;
 }
 
-static void hash_adds(hash_t *t, hash_t *f) {
+static int hash_adds(hash_t *t, hash_t *f) {
+  int r = 1;
   for (int k = 0 ; k < HASHSZ ; k++) {
     entry_t *p = f->t+k ;
     if (p->c > 0) {
 #ifdef STATS
-      hash_add(t,&p->key,&p->p,p->c,p->ok) ;
+      int rloc = hash_add(t,&p->key,&p->p,p->c,p->ok) ;
 #else
-      hash_add(t,&p->key,p->c,p->ok) ;
+      int rloc = hash_add(t,&p->key,p->c,p->ok) ;
 #endif
+      r = r && rloc;
     }
   }
+  return r;
 }

@@ -98,6 +98,7 @@ typedef struct global_t {
   /* All instance contexts */
   ctx_t ctx[NEXE] ; /* All test instance contexts */
   hash_t hash ;     /* Sum of outcomes */
+  int hash_ok;
 #ifdef STATS
   /* statistics */
   stats_t stats ;
@@ -129,6 +130,7 @@ static void init_global(global_t *g) {
     instance_init(&g->ctx[k],k,m) ;
     m += NVARS*LINESZ ;
   }
+  g->hash_ok = 1;
 }
 
 static void free_global(global_t *g) {

@@ -1745,8 +1745,9 @@ module Make
               Indent.indent3 in
           O.ox id "int _cond = final_ok(final_cond(_log));" ;
           (* recorded outcome *)
-          O.fx id "hash_add(&_ctx->t,_log%s,1,_cond);"
+          O.fx id "int _added = hash_add(&_ctx->t,_log%s,1,_cond);"
             (if do_stats then ",_p" else "") ;
+          O.ox id "if (!_added && _g->hash_ok) _g->hash_ok = 0; // Avoid writing too much." ;
           (* Result and stats *)
           O.ox id "if (_cond) {" ;
           let nid = Indent.tab id in
