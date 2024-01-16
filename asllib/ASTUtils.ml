@@ -60,6 +60,7 @@ let add_pos_from_st pos desc =
 let add_pos_from pos desc = { pos with desc }
 let with_pos_from pos { desc; _ } = add_pos_from pos desc
 let map_desc f thing = f thing |> add_pos_from thing
+let map_desc_st' thing f = f thing.desc |> add_pos_from thing
 
 let add_pos_from_pos_of ((fname, lnum, cnum, enum), desc) =
   let open Lexing in
@@ -198,14 +199,7 @@ and use_ty acc t =
   | T_Tuple li -> List.fold_left use_ty acc li
   | T_Record fields | T_Exception fields -> fold_named_list use_ty acc fields
   | T_Array (e, t') -> use_ty (use_e acc e) t'
-  | T_Bits (bit_constraint, bit_fields) ->
-      let acc =
-        match bit_constraint with
-        | BitWidth_SingleExpr e -> use_e acc e
-        | BitWidth_ConstrainedFormType t' -> use_ty acc t'
-        | BitWidth_Constraints cs -> use_constraints acc cs
-      in
-      use_bitfields acc bit_fields
+  | T_Bits (e, bit_fields) -> use_bitfields (use_e acc e) bit_fields
 
 and use_bitfields acc bitfields = List.fold_left use_bitfield acc bitfields
 
@@ -386,16 +380,7 @@ and type_equal eq t1 t2 =
   | T_Tuple ts1, T_Tuple ts2 -> list_equal (type_equal eq) ts1 ts2
   | _ -> false
 
-and bitwidth_equal eq w1 w2 =
-  w1 == w2
-  ||
-  match (w1, w2) with
-  | BitWidth_Constraints c1, BitWidth_Constraints c2 ->
-      constraints_equal eq c1 c2
-  | BitWidth_ConstrainedFormType t1, BitWidth_ConstrainedFormType t2 ->
-      type_equal eq t1 t2
-  | BitWidth_SingleExpr e1, BitWidth_SingleExpr e2 -> expr_equal eq e1 e2
-  | _ -> false
+and bitwidth_equal eq w1 w2 = expr_equal eq w1 w2
 
 and bitfields_equal eq bf1 bf2 =
   bf1 == bf2 || (list_equal (bitfield_equal eq)) bf1 bf2
@@ -493,7 +478,7 @@ let slice_as_single = function
   | Slice_Single e -> e
   | _ -> raise @@ Invalid_argument "slice_as_single"
 
-let default_t_bits = T_Bits (BitWidth_Constraints [], [])
+let default_t_bits = T_Bits (E_Var "-" |> add_dummy_pos, [])
 
 let patch ~src ~patches =
   (* Size considerations:
@@ -663,3 +648,94 @@ let find_bitfield_opt name bitfields = List.find_opt (has_name name) bitfields
 let find_bitfields_slices_opt name bitfields =
   try List.find (has_name name) bitfields |> bitfield_get_slices |> Option.some
   with Not_found -> None
+
+let rename_locals map_name ast =
+  let map_names li = List.map (fun (name, x) -> (map_name name, x)) li in
+  let rec map_e e =
+    map_desc_st' e @@ function
+    | E_Literal _ | E_Unknown _ -> e.desc
+    | E_Var x -> E_Var (map_name x)
+    | E_CTC (e', t) -> E_CTC (map_e e', map_t t)
+    | E_Binop (op, e1, e2) -> E_Binop (op, map_e e1, map_e e2)
+    | E_Unop (op, e') -> E_Unop (op, map_e e')
+    | E_Call (name, args, nargs) -> E_Call (name, map_es args, map_names nargs)
+    | E_Slice (e', slices) -> E_Slice (map_e e', map_slices slices)
+    | E_Cond (e1, e2, e3) -> E_Cond (map_e e1, map_e e2, map_e e3)
+    | E_GetArray (e1, e2) -> E_GetArray (map_e e1, map_e e2)
+    | E_GetField (e', f) -> E_GetField (map_e e', f)
+    | E_GetFields (e', li) -> E_GetFields (map_e e', li)
+    | E_Record (t, li) -> E_Record (t, List.map (fun (f, e) -> (f, map_e e)) li)
+    | E_Concat li -> E_Concat (map_es li)
+    | E_Tuple li -> E_Tuple (map_es li)
+    | E_Pattern (_, _) -> failwith "Not yet implemented: offuscate patterns"
+  and map_es li = List.map map_e li
+  and map_slices slices = List.map map_slice slices
+  and map_slice = function
+    | Slice_Length (e1, e2) -> Slice_Length (map_e e1, map_e e2)
+    | Slice_Single e -> Slice_Single (map_e e)
+    | Slice_Range (e1, e2) -> Slice_Range (map_e e1, map_e e2)
+    | Slice_Star (e1, e2) -> Slice_Star (map_e e1, map_e e2)
+  and map_t t =
+    map_desc_st' t @@ function
+    | T_Real | T_String | T_Bool | T_Enum _ | T_Named _ | T_Int None -> t.desc
+    | T_Int (Some cs) -> T_Int (Some (map_cs cs))
+    | T_Bits (e, bitfields) -> T_Bits (map_e e, bitfields)
+    | T_Tuple li -> T_Tuple (List.map map_t li)
+    | T_Array (_, _) -> failwith "Not yet implemented: offuscate array types"
+    | T_Record li -> T_Record (List.map (fun (f, t) -> (f, map_t t)) li)
+    | T_Exception li -> T_Exception (List.map (fun (f, t) -> (f, map_t t)) li)
+  and map_cs cs = List.map map_c cs
+  and map_c = function
+    | Constraint_Exact e -> Constraint_Exact (map_e e)
+    | Constraint_Range (e1, e2) -> Constraint_Range (map_e e1, map_e e2)
+  and map_s s =
+    map_desc_st' s @@ function
+    | S_Pass -> s.desc
+    | S_Seq (s1, s2) -> S_Seq (map_s s1, map_s s2)
+    | S_Decl (ldk, ldi, e) -> S_Decl (ldk, map_ldi ldi, Option.map map_e e)
+    | S_Assign (le, e, v) -> S_Assign (map_le le, map_e e, v)
+    | S_Call (name, args, nargs) -> S_Call (name, map_es args, map_names nargs)
+    | S_Return e -> S_Return (Option.map map_e e)
+    | S_Cond (e, s1, s2) -> S_Cond (map_e e, map_s s1, map_s s2)
+    | S_Case (_, _) -> failwith "Not yet implemented: offuscate cases"
+    | S_Assert e -> S_Assert (map_e e)
+    | S_For (x, e1, d, e2, s) ->
+        S_For (map_name x, map_e e1, d, map_e e2, map_s s)
+    | S_While (e, s) -> S_While (map_e e, map_s s)
+    | S_Repeat (s, e) -> S_Repeat (map_s s, map_e e)
+    | S_Throw (Some (e, t)) -> S_Throw (Some (map_e e, Option.map map_t t))
+    | S_Throw None -> s.desc
+    | S_Try (_, _, _) -> failwith "Not yet implemented: offscate try"
+    | S_Debug e -> S_Debug (map_e e)
+  and map_le le =
+    map_desc_st' le @@ function
+    | LE_Discard -> le.desc
+    | LE_Concat (les, t) -> LE_Concat (List.map map_le les, t)
+    | LE_Var x -> LE_Var (map_name x)
+    | LE_Slice (le, slices) -> LE_Slice (map_le le, map_slices slices)
+    | LE_SetArray (le, i) -> LE_SetArray (map_le le, map_e i)
+    | LE_SetField (le, f) -> LE_SetField (map_le le, f)
+    | LE_SetFields (le, f) -> LE_SetFields (map_le le, f)
+    | LE_Destructuring les -> LE_Destructuring (List.map map_le les)
+  and map_ldi = function
+    | LDI_Discard t -> LDI_Discard (Option.map map_t t)
+    | LDI_Var (x, t) -> LDI_Var (map_name x, Option.map map_t t)
+    | LDI_Tuple (ldis, t) ->
+        LDI_Tuple (List.map map_ldi ldis, Option.map map_t t)
+  and map_body = function
+    | SB_Primitive _ as b -> b
+    | SB_ASL s -> SB_ASL (map_s s)
+  and map_func f =
+    let map_args li = List.map (fun (name, t) -> (map_name name, map_t t)) li in
+    let map_nargs li = List.map (fun (name, t) -> (map_name name, Option.map map_t t)) li in
+    {
+      f with
+      parameters = map_nargs f.parameters;
+      args = map_args f.args;
+      body = map_body f.body;
+      return_type = Option.map map_t f.return_type;
+    }
+  and map_decl d =
+    map_desc_st' d @@ function D_Func f -> D_Func (map_func f) | d -> d
+  in
+  List.map map_decl ast

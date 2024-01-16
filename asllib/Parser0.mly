@@ -42,9 +42,7 @@
 
   let t_bit =
     let open AST in
-    T_Bits (
-      BitWidth_SingleExpr (E_Literal (L_Int Z.one) |> ASTUtils.add_dummy_pos),
-      [])
+    T_Bits ( E_Literal (L_Int Z.one) |> ASTUtils.add_dummy_pos, [])
 %}
 
 %token <string> IDENTIFIER STRING_LIT
@@ -225,7 +223,7 @@ let decl ==
 let annotated(x) == desc = x; { AST.{ desc; pos_start=$symbolstartpos; pos_end=$endpos }}
 
 let unimplemented_decl(x) == x; { None }
-let unimplemented_ty(x) == x; { AST.(T_Bits (BitWidth_SingleExpr (ASTUtils.expr_of_int 0), [])) }
+let unimplemented_ty(x) == x; { AST.(T_Bits (ASTUtils.expr_of_int 0, [])) }
 
 
 let type_decl ==
@@ -280,7 +278,7 @@ let ty_non_tuple ==
   | BOOLEAN;  { AST.T_Bool      }
   | ~=tident; < AST.T_Named     >
   | BIT;      { t_bit           }
-  | BITS; e=pared(expr); { AST.(T_Bits (BitWidth_SingleExpr e, [])) }
+  | BITS; e=pared(expr); { AST.(T_Bits (e, [])) }
   (* | tident; pared(clist(expr)); <> *)
 
   | unimplemented_ty (

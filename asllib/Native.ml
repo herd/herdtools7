@@ -197,8 +197,16 @@ module NativeBackend = struct
           mismatch_type bv
             [
               T_Bits
-                ( BitWidth_Constraints
-                    [ Constraint_Range (expr_of_int 0, expr_of_int max_pos) ],
+                ( E_CTC
+                    ( E_Var "-" |> add_dummy_pos,
+                      T_Int
+                        (Some
+                           [
+                             Constraint_Range
+                               (expr_of_int 0, expr_of_int max_pos);
+                           ])
+                      |> add_dummy_pos )
+                  |> add_dummy_pos,
                   [] );
             ]
     in
@@ -309,7 +317,7 @@ module NativePrimitives = struct
 
   let primitives =
     let with_pos = add_dummy_pos in
-    let t_bits e = T_Bits (BitWidth_SingleExpr e, []) |> with_pos in
+    let t_bits e = T_Bits (e, []) |> with_pos in
     let e_var x = E_Var x |> with_pos in
     let d_func_string i =
       D_Func

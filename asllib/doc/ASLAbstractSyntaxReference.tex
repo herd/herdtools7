@@ -123,7 +123,8 @@ We define the abstract syntax of ASL below. We sometimes provide extra details t
   &|& \TReal \\
   &|& \TString \\
   &|& \TBool \\
-  &|& \TBits(bits\_constraint, bitfield^{*}) \\
+  &|& \TBits(\expr, bitfield^{*}) \\
+  & & \ASTComment{\expr\ is a statically evaluable expression denoting the length of the bit-vector.}\\
   &|& \TEnum(\identifier^{*}) \\
   &|& \TTuple(\ty^{*}) \\
   &|& \TArray(\expr, \ty) \\
@@ -142,19 +143,6 @@ We define the abstract syntax of ASL below. We sometimes provide extra details t
   & & \ASTComment{A single value, given by a statically evaluable expression.}\\
   &|& \texttt{Constraint\_Range}(\expr, \expr) \\
   & & \ASTComment{An interval between two statically evaluable expression.}\\
-\end{array}
-\]
-
-\[
-\begin{array}{rcll}
-\textbf{node} & & \textbf{components} \\
-\hline
-\bitsconstraint &::=& \texttt{BitWidth\_SingleExpr}(\expr) \\
-  & & \ASTComment{Statically evaluable expression.}\\
-  &|& \texttt{BitWidth\_ConstrainedFormType}(\ty) \\
-  & & \ASTComment{Constrained by the domain of another type.}\\
-  &|& \texttt{BitWidth\_Constraints}(\intconstraint^{*}) \\
-  & & \ASTComment{Constrained directly by a constraint on its width.}\\
 \end{array}
 \]
 

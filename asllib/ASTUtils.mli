@@ -195,10 +195,7 @@ val slice_equal : (expr -> expr -> bool) -> slice -> slice -> bool
 val slices_equal : (expr -> expr -> bool) -> slice list -> slice list -> bool
 val type_equal : (expr -> expr -> bool) -> ty -> ty -> bool
 val bitfield_equal : (expr -> expr -> bool) -> bitfield -> bitfield -> bool
-
-val bitwidth_equal :
-  (expr -> expr -> bool) -> bits_constraint -> bits_constraint -> bool
-
+val bitwidth_equal : (expr -> expr -> bool) -> expr -> expr -> bool
 val scope_equal : scope -> scope -> bool
 val scope_compare : scope -> scope -> int
 
@@ -226,6 +223,10 @@ val subst_expr : (identifier * expr) list -> expr -> expr
 val no_primitive : 'p AST.t -> 'q AST.t
 (** [no_primitive parsed_ast] is [parsed_ast] if does not contains any
     primitive. Otherwise, it fails with an assert false. *)
+
+val rename_locals : (identifier -> identifier) -> 'p AST.t -> 'p AST.t
+(** [rename_locals f ast] is [ast] where all instances of variables [x] are
+    replaced with [f x]. *)
 
 val is_simple_expr : expr -> bool
 (** [is_simple_expr e] is true if [e] does not contain any call to any other
