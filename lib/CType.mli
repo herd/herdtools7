@@ -29,6 +29,8 @@ type t =
 
 val void : t
 val voidstar : t
+val byte : t
+val half : t
 val word : t
 val quad : t
 val int32x4_t : t
