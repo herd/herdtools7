@@ -7,10 +7,11 @@
 \newcommand{\tests}{../tests/ASLTypingReference.t/}
 
 \newcommand\typelabel[0]{\textsf{tlabel}} % Move to ASLMacros.tex
+\newcommand\exprlabel[0]{\textsf{elabel}} % Move to ASLMacros.tex
 
 \newcommand\Ignore[0]{\texttt{\_}}
 
-\newcommand\RuleComment[1]{\textit{(#1)}}
+\newcommand\RuleComment[1]{// \textit{#1}}
 \newcommand\isbuiltinsingular[0]{\texttt{is\_builtin\_singular}}
 \newcommand\isbuiltinaggregate[0]{\texttt{is\_builtin\_aggregate}}
 \newcommand\isbuiltin[0]{\texttt{is\_builtin}}
@@ -27,7 +28,7 @@
 \newcommand\unconstrainedinteger[0]{\TInt(\langle\rangle)}
 
 \newcommand\staticeval[0]{\textit{static-eval}}
-\newcommand\staticallyevaluable[0]{\textit{statically-evaluable}}
+\newcommand\isstaticallyevaluable[0]{\textsf{statically-evaluable}}
 
 \newcommand\sortbyid[0]{\textit{sort-by-id}}
 \newcommand\sortids[0]{\textit{sort-ids}}
@@ -45,9 +46,69 @@
 \newcommand\typeequiv[0]{\equiv_t}
 \newcommand\exprequiv[0]{\equiv_e}
 \newcommand\instantiate[0]{\textsf{instantiate}}
+\newcommand\canbeinitializedwith[0]{\;\textsf{can-be-initialized-with}\;}
 
 \newcommand\eliteral[1]{\textsf{E\_Literal}(#1)}
 \newcommand\name[0]{\text{name}}
+\newcommand\newname[0]{\text{new\_name}}
+
+\newcommand\annotateexpr[1]{\textsf{annotate\_expr}(#1)}
+\newcommand\annotatelexpr[1]{\textsf{annotate\_lexpr}(#1)}
+\newcommand\annotatearrayindex[0]{\textsf{annotate\_array\_index}}
+\newcommand\annotateslice[0]{\textsf{annotate\_slice}}
+\newcommand\annotatelocaldeclitem[1]{\texttt{annotate\_local\_decl\_item}(#1)}
+\newcommand\annotatestmt[1]{\texttt{annotate\_stmt}(#1)}
+\newcommand\annotateblock[1]{\texttt{annotate\_block}(#1)}
+\newcommand\inlinesetter[1]{\texttt{setter\_should\_reduce\_to\_call\_s}(#1)}
+\newcommand\annotatecall[1]{\texttt{annotate\_call}(#1)}
+
+\newcommand\tenv[0]{\texttt{env}}
+\newcommand\newenv[0]{\texttt{new\_env}}
+\newcommand\envone[0]{\texttt{env1}}
+\newcommand\envtwo[0]{\texttt{env2}}
+
+\newcommand\vt[0]{\texttt{t}}
+\newcommand\vte[0]{\texttt{t\_e}}
+\newcommand\ve[0]{\texttt{e}}
+\newcommand\veone[0]{\texttt{e1}}
+\newcommand\vetwo[0]{\texttt{e2}}
+\newcommand\vleone[0]{\texttt{le1}}
+\newcommand\vletwo[0]{\texttt{le2}}
+\newcommand\vtleone[0]{\texttt{t\_le1}}
+\newcommand\vle[0]{\texttt{le}}
+\newcommand\vre[0]{\texttt{re}}
+\newcommand\vs[0]{\texttt{s}}
+\newcommand\vsone[0]{\texttt{s1}}
+\newcommand\vstwo[0]{\texttt{s2}}
+\newcommand\vtone[0]{\texttt{t1}}
+\newcommand\vttwo[0]{\texttt{t2}}
+\newcommand\vwidth[0]{\texttt{width}}
+\newcommand\size[0]{\texttt{size}}
+\newcommand\vfield[0]{\texttt{field}}
+\newcommand\bitfields[0]{\texttt{bitfields}}
+\newcommand\vslices[0]{\texttt{slices}}
+\newcommand\newle[0]{\texttt{new\_le}}
+\newcommand\ldi[0]{\texttt{ldi}}
+\newcommand\ldk[0]{\texttt{ldk}}
+\newcommand\tty[0]{\texttt{ty}}
+\newcommand\tyopt[0]{\texttt{ty\_opt}}
+\newcommand\ldis[0]{\texttt{ldis}}
+\newcommand\newldi[0]{\texttt{new\_ldi}}
+\newcommand\news[0]{\texttt{new\_s}}
+\newcommand\newsone[0]{\texttt{new\_s1}}
+\newcommand\newstwo[0]{\texttt{new\_s2}}
+\newcommand\torexpr[0]{\textsf{rexpr}}
+\newcommand\vargs[0]{\texttt{args}}
+\newcommand\newargs[0]{\texttt{new\_args}}
+\newcommand\eqs[0]{\texttt{eqs}}
+\newcommand\neweqs[0]{\texttt{new\_eqs}}
+\newcommand\reduced[0]{\texttt{reduced}}
+\newcommand\tcond[0]{\texttt{tcond}}
+\newcommand\econd[0]{\texttt{econd}}
+\newcommand\dir[0]{\texttt{dir}}
+
+\newcommand\leslice[0]{\texttt{LE\_Slice}} % Move to ASLMacros.tex
+\newcommand\slicesingle[0]{\texttt{Slice\_Single}} % Move to ASLMacros.tex
 
 \author{Arm Architecture Technology Group}
 \title{ASL Typing Reference}
@@ -255,6 +316,14 @@ Our rules will often include evaluating mathematical expressions in the context 
 \]
 where $e_1$ and $e_2$ are expressions, $v_1$ and $v_2$ are their corresponding values in the environment $E$ and $\textit{op}$ is a mathematical operator.
 
+When matching abstract syntax records nodes such as $\{f_1:t_2,\ldots,f_k:t_k\}$ in rules, we sometimes only care about a subset of the fields $f_{1..k}$.
+In such cases, we would write $\{f_{i_1}:t_{i_m},\ldots,f_{i_m}:t_{i_m},\ldots\}$ to indicate that $\ldots$ represents other fields that are irrelevant for the rule.
+
+For a partial function $f$, we write $f(x) = \bot$ to denote that $x$ is not in the domain of $f$.
+
+\newcommand\Elit[1]{\texttt{E}(#1)}
+We will use the shorthand $\Elit{n}$ for the expression denoting the literal integer value $n$: $\texttt{E\_Literal}(\texttt{L\_Int}(n))$.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Reading guide}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -306,11 +375,11 @@ We define the \emph{type label} of a type node $t \in \ty$ to be the label assoc
 
     \subsection{Example: TypingRule.BuiltinSingularTypes.asl}
 \VerbatimInput[firstline=3,lastline=8]{\tests/TypingRule.BuiltinSingularTypes.asl}
-Variables of buitin singular types \texttt{integer}, \texttt{real}, \texttt{boolean}, \texttt{bits(4)} and \texttt{bits(2)} are defined.
+Variables of builtin singular types \texttt{integer}, \texttt{real}, \texttt{boolean}, \texttt{bits(4)}, and \texttt{bits(2)} are defined.
 
     \subsection{Example: TypingRule.EnumerationType.asl}
 \VerbatimInput{\tests/TypingRule.EnumerationType.asl}
-The (builtin singular) type \texttt{color} consists in two different constants \texttt{RED} and~\texttt{BLACK}.
+The (builtin singular) type \texttt{color} consists in two different constants \texttt{RED}, and~\texttt{BLACK}.
 
     \subsection{Code}
       \VerbatimInput[firstline=\BuiltinSingularBegin, lastline=\BuiltinSingularEnd]{../types.ml}
@@ -319,7 +388,7 @@ The (builtin singular) type \texttt{color} consists in two different constants \
    \subsection{Formally}
 \[
 \begin{array}{c}
-\inferrule{\typelabel(T) \in \{\TReal, \TString, \TBool, \TBits, \TEnum, \TInt\} }{\entails T : \isbuiltinsingular} \\ 
+\inferrule{\typelabel(\vt) \in \{\TReal, \TString, \TBool, \TBits, \TEnum, \TInt\} }{\entails \vt : \isbuiltinsingular} \\ 
 \end{array}
 \]
 \end{formal}
@@ -364,8 +433,8 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
     \subsection{Formally}
 \[
 \begin{array}{c}
-\inferrule{\typelabel(T) \in \{\TTuple, \TArray, \TRecord, \TException\}}
-{\entails T : \isbuiltinaggregate} \\
+\inferrule{\typelabel(\vt) \in \{\TTuple, \TArray, \TRecord, \TException\}}
+{\entails \vt : \isbuiltinaggregate} \\
 \end{array}
 \]
 \end{formal}
@@ -376,10 +445,10 @@ omitted in type declarations, as it is the case for \texttt{Not\_found}.
 \section{TypingRule.BuiltinSingularOrAggregate \label{sec:TypingRule.BuiltinSingularOrAggregate}}
 
     \subsection{Prose}
-    \texttt{t} is a builtin type and one of the following applies:
+    $\vt$ is a builtin type and one of the following applies:
     \begin{itemize}
-    \item \texttt{T} is singular;
-    \item \texttt{T} is builtin aggregate.
+    \item $\vt$ is singular;
+    \item $\vt$ is builtin aggregate.
     \end{itemize}
 
     \subsection{Example}
@@ -392,9 +461,9 @@ In the example \texttt{type ticks of integer;} the type \texttt{integer} is a bu
       \subsection{Formally}
 \[
 \begin{array}{c}
-\inferrule{T : \isbuiltinsingular}{\entails T : \isbuiltin}\\
+\inferrule{\vt : \isbuiltinsingular}{\entails \vt : \isbuiltin}\\
 \\
-\inferrule{T : \isbuiltinaggregate}{\entails T : \isbuiltin}\\
+\inferrule{\vt : \isbuiltinaggregate}{\entails \vt : \isbuiltin}\\
 \end{array}
 \]
 \end{formal}
@@ -404,7 +473,7 @@ In the example \texttt{type ticks of integer;} the type \texttt{integer} is a bu
 \section{TypingRule.NamedType \label{sec:TypingRule.NamedType} }
 
     \subsection{Prose}
-    A named type is a type which is declared using the \texttt{type} syntax.
+    A named type is a type that is declared by using the \texttt{type of} syntax.
 
     \subsection{Example}
     The type \texttt{ticks} in the previous example is a named type.
@@ -416,7 +485,7 @@ In the example \texttt{type ticks of integer;} the type \texttt{integer} is a bu
       \subsection{Formally}
 \[
 \begin{array}{c}
-\inferrule{\typelabel(T) = \TNamed}{\entails T : \isnamed}
+\inferrule{\typelabel(\vt) = \TNamed}{\entails \vt : \isnamed}
 \end{array}
 \]
 \end{formal}
@@ -439,7 +508,7 @@ In the example \texttt{type ticks of integer;} the type \texttt{integer} is a bu
       \subsection{Formally}
 \[
 \begin{array}{c}
-\inferrule{\typelabel(T) \neq \TNamed}{\entails T : \isanonymous}
+\inferrule{\typelabel(\vt) \neq \TNamed}{\entails \vt : \isanonymous}
 \end{array}
 \]
 \end{formal}
@@ -449,15 +518,16 @@ In the example \texttt{type ticks of integer;} the type \texttt{integer} is a bu
 
 \section{TypingRule.SingularType}
 
+The partial function $\tstruct : \ty \partialto \ty$ \emph{structure} is defined later in this chapter.
+
     \subsection{Prose}
-    A type \texttt{t} is singular if one of the following applies:
+    A type $\vt$ is singular if one of the following applies:
     \begin{itemize}
-    \item \texttt{t} is a builtin singular type;
+    \item $\vt$ is a builtin singular type;
     \item All of the following apply:
       \begin{itemize}
-      \item \texttt{t} is a named type;
-      \item \texttt{t\_struct} is the structure of \texttt{t} (defined later in this chapter);
-      \item \texttt{t\_struct} is a builtin singular type.
+      \item $\vt$ is a named type;
+      \item the structure of $\vt$ is a builtin singular type.
       \end{itemize} 
     \end{itemize}
 
@@ -476,11 +546,9 @@ type C of B;
       \subsection{Formally}
 \[
 \begin{array}{c}
-\inferrule{\entails t : \isbuiltin}{\entails  t : \issingular}\\
+\inferrule{\entails \vt : \isbuiltin}{\entails \vt : \issingular}\\
 \\
-\RuleComment{The structure of a type is defined later in this chapter.}\\
-\inferrule{\entails t : \isnamed \\ t : \isbuiltinaggregate \\
-E \entails \tstruct(t) : \isbuiltinsingular}{
+\inferrule{\entails \vt : \isnamed \\ E \entails \tstruct(\vt) : \isbuiltinsingular}{
 E \entails t : \issingular}
 \end{array}
 \]      
@@ -493,9 +561,9 @@ E \entails t : \issingular}
 \section{TypingRule.AggregateType}
 
     \subsection{Prose}
-    A type \texttt{t} is aggregate if one of the following applies:
+    A type $\vt$ is aggregate if one of the following applies:
     \begin{itemize}
-    \item \texttt{t} is a builtin aggregate type;
+    \item $\vt$ is a builtin aggregate type;
     \item All of the following apply:
       \begin{itemize}
       \item \texttt{t} is a named type;
@@ -520,9 +588,9 @@ type C of B;
       
 \[
 \begin{array}{c}
-\inferrule{\entails t : \isbuiltinaggregate}{\entails t : \isaggregate}\\
+\inferrule{\entails \vt : \isbuiltinaggregate}{\entails \vt : \isaggregate}\\
 \\
-\inferrule{\entails t : \isnamed \\ E \vdash \tstruct(t) : \isbuiltinaggregate}{E \entails t : \isaggregate}
+\inferrule{\entails \vt : \isnamed \\ E \vdash \tstruct(\vt) : \isbuiltinaggregate}{E \entails \vt : \isaggregate}
 \end{array}
 \]
 \end{formal}
@@ -530,30 +598,32 @@ type C of B;
     \subsection{Comments}
     This aims to encompass LRM Section 3.1 R\_GVZK.
 
+\newcommand\vtp[0]{\texttt{t}'}
+
 \section{TypingRule.NonPrimitiveType}
 
     \subsection{Prose}
-    A type \texttt{t} is non-primitive if one of the following applies:
+    A type $\vt$ is non-primitive if one of the following applies:
     \begin{itemize}
-    \item \texttt{t} is a named type;
+    \item $\vt$ is a named type;
     \item All of the following apply:
       \begin{itemize}
-      \item \texttt{t} is a tuple \texttt{li};
+      \item $\vt$ is a tuple type \texttt{li};
       \item there exists a non-primitive type in \texttt{li};
       \end{itemize}
     \item All of the following apply:
       \begin{itemize}
-      \item \texttt{t} is an array of type \texttt{ty}
-      \item \texttt{ty} is non-primitive;
+      \item $\vt$ is an array of type $\vtp$
+      \item $\vtp$ is non-primitive; 
       \end{itemize}
     \item All of the following apply:
       \begin{itemize}
-      \item \texttt{t} is a record with fields \texttt{fields};
+      \item $\vt$ is a record with fields \texttt{fields};
       \item there exists a non-primitive type in \texttt{fields};
       \end{itemize}
     \item All of the following apply:
       \begin{itemize}
-      \item \texttt{t} is an exception with fields \texttt{fields};
+      \item $\vt$ is an exception with fields \texttt{fields};
       \item there exists a non-primitive type in \texttt{fields};
       \end{itemize}
     \end{itemize}
@@ -576,9 +646,9 @@ The following types are non-primitive:
 \[
 \begin{array}{c}
 \inferrule{}{\entails \TNamed(\Ignore) : \isnonprimitive}\\ \\
-\inferrule{t_1,\ldots,t_k \in \ty \\ \entails \exists i\in 1..k.\ t_i : \isnonprimitive}{\entails \TTuple(t_1,\ldots,t_k) : \isnonprimitive}\\ \\
-\inferrule{\entails t : \isnonprimitive}{\entails \TArray(\Ignore, t) : \isnonprimitive}\\ \\
-\inferrule{(\id_1,t_1),\ldots,(\id_k,t_k) \in \Field \\ \entails \exists i\in 1..k.\ t_i :  \isnonprimitive \\ L \in \{\TRecord, \TException\}}{\entails L((\id_1,t_1),\ldots,(\id_k,t_k)) : \isnonprimitive}
+\inferrule{t_{1..k} \in \ty \\ \entails \exists i\in 1..k.\ t_i : \isnonprimitive}{\entails \TTuple([t_{1..k}]) : \isnonprimitive}\\ \\
+\inferrule{\entails \vtp : \isnonprimitive}{\entails \TArray(\Ignore, \vtp) : \isnonprimitive}\\ \\
+\inferrule{(\id_1,t_1),\ldots,(\id_k,t_k) \in \Field \\ \entails \exists i\in 1..k.\ t_i :  \isnonprimitive \\ L \in \{\TRecord, \TException\}}{\entails L([(\id_1,t_1),\ldots,(\id_k,t_k)]) : \isnonprimitive}
 \end{array}
 \]
 
@@ -707,17 +777,13 @@ ROMAN: I think it makes sence to sort the enum identifiers to obtain a more cano
 
 \[
 \begin{array}{c}
-\inferrule{x \in \identifier \\ \staticglob{E} \entails x : t \\ E \entails \tstruct(t)=t'}{E \entails \tstruct(\TNamed(x)) = t'}\\
+\inferrule{x \in \identifier \\ E^G \entails x : t \\ E \entails \tstruct(t)=t'}{E \entails \tstruct(\TNamed(x)) = t'}\\
 \\
-\todocomment{
-\RuleComment{ROMAN: How would we know to assign an integer the structure}\\
-\RuleComment{of the under-constrained integer type vs. unconstrained integer type?}\\
-}
 \inferrule{t \in \ty \\ \typelabel(t) \in \{\TInt, \TReal, \TString, \TBool, \TBits\}}{E \entails \tstruct(t) = t}\\
 \\
 \inferrule{l \in \identifier^*}{E \entails \tstruct(\TEnum(l)) = \TEnum(\sortids(l))}\\
 \\
-\inferrule{[t_1,\ldots,t_k] \in \ty^* \\ E \entails \tstruct(t_1)=t_1' \ldots E \entails \tstruct(t_k)=t_k'}{E \entails \tstruct(\TTuple([t_1,\ldots,t_k])) =  \TTuple([t_1',\ldots,t_k'])}\\
+\inferrule{[t_{1..k}] \in \ty^* \\ E \entails \tstruct(t_1)=t_1' \ldots E \entails \tstruct(t_k)=t_k'}{E \entails \tstruct(\TTuple([t_{1..k}])) =  \TTuple([t'_{1..k}])}\\
 \\
 \inferrule{e \in \expr \\ t \in \ty \\ E \entails \tstruct(t)=t'}{E \entails \tstruct(\TArray(e, t)) = \TArray(e, t')}\\
 \\
@@ -1072,7 +1138,7 @@ We write $E \entails s \structsubtypesat t$ to denote that type $s$ structural-s
     
 \[
 \begin{array}{c}
-\inferrule{s, t \in \ty \\ c_s,c_t \in \intconstraint^*? \\ E \entails  \tstruct(s)=\TInt(c_s) \\ E \entails \tstruct(t)=\TInt(c_t) }{E \entails s \structsubtypesat t} \\
+\inferrule{E \entails  \tstruct(s)=\TInt(\Ignore) \\ E \entails \tstruct(t)=\TInt(\Ignore) }{E \entails s \structsubtypesat t} \\
 \\
 \RuleComment{The following rule covers \TInt, \TReal, \TString, \TBool, and \TEnum.}\\
 \inferrule{E \entails \tstruct(s)=s' \\ E \entails \tstruct(t)=s'}{E \entails s \structsubtypesat t} \\
@@ -1654,17 +1720,17 @@ Roman: consider defining an ancestor relation and then having the \lca\ be natur
 \begin{array}{c}
 \RuleComment{Rules for unconstrained integers}\\
 \inferrule{
-  E \entails \typelabel(S) : \TNamed \\
-  E \entails \tstruct(S) : \isunconstrainedinteger \\
-  E \entails \typelabel(\tstruct(T)) : \TInt \\
+  E \entails \typelabel(S) = \TNamed \\
+  E \entails \tstruct(S) = \isunconstrainedinteger \\
+  E \entails \typelabel(\tstruct(T)) = \TInt \\
   E \entails T : \isanonymous
 }
 {E \entails S \lcasat \lca(T, S)}\\
 \\
 \inferrule{
-  E \entails \typelabel(T) : \TNamed \\
-  E \entails \tstruct(T) : \isunconstrainedinteger \\
-  E \entails \typelabel(\tstruct(S)) : \TInt \\  
+  E \entails \typelabel(T) = \TNamed \\
+  E \entails \tstruct(T) = \isunconstrainedinteger \\
+  E \entails \typelabel(\tstruct(S)) = \TInt \\  
   E \entails S : \isanonymous
 }
 {E \entails T \lcasat \lca(T, S)}\\
@@ -2099,8 +2165,8 @@ ROMAN: I think this captures the case of enums.\\
 \RuleComment{of the operators below to a pair of integers.}\\
 \inferrule{
   \texttt{op} \in  \{\texttt{"*"}, \texttt{"DIV"}, \texttt{"DIVRM"}, \texttt{"MOD"}, \texttt{"<<"},  \texttt{">>"}, \texttt{"\^{}"}, \texttt{"+"}, \texttt{"-"}\}\\
-  E \entails \tstruct(T_1) = \TInt(\langle l_1 \rangle) \\
-  E \entails \tstruct(T_2) = \TInt(\langle l_2 \rangle)\\
+  E \entails \tstruct(T_1) = \TInt(\langle [l_1] \rangle) \\
+  E \entails \tstruct(T_2) = \TInt(\langle [l_2] \rangle)\\
   l_1,l_2 \in \intconstraint^*\\
   E \entails N_1 = \instantiate(l_1)\\
   E \entails N_2 = \instantiate(l_2)\\
@@ -2139,13 +2205,10 @@ ROMAN: I think this captures the case of enums.\\
 \chapter{Typing of Expressions}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\texttt{annotate\_expr} specifies how to annotate an expression \texttt{e} in
-an environment \texttt{env}.  Formally, the result of annotating the expression
-\texttt{e} in \texttt{env} is \texttt{t,new\_env} where \texttt{t} is a type and
-\texttt{new\_env} is an environment, or an error, and one of the following applies:
-\todocomment{
-ROMAN: the environment here is actually an expression. We should probably explain why we returned a transformed expression.
-}
+\textsf{annotate\_expr} specifies how to annotate an expression \texttt{e} in
+an environment \texttt{E}.  Formally, the result of annotating the expression
+\texttt{e} in \texttt{E} is either the pair \texttt{t, new\_expr}, where \texttt{t} is a type and
+\texttt{new\_expr} is a rewritten expression, or an error, and one of the following applies:
 \begin{itemize}
 \item TypingRule.Lit (see Section~\ref{sec:TypingRule.Lit});
 \item TypingRule.ELocalVarConstant (see Section~\ref{sec:TypingRule.ELocalVarConstant})
@@ -2181,11 +2244,11 @@ ROMAN: the environment here is actually an expression. We should probably explai
 
   \subsection{Prose}
   The result of annotating the expression \texttt{e} in \texttt{env} is
-\texttt{t,new\_env} and all of the following apply:
+\texttt{t,new\_expr} and all of the following apply:
   \begin{itemize}
-  \item \texttt{e} is a Literal \texttt{v};
-  \item \texttt{t} is the type of \texttt{v};
-  \item \texttt{new\_env} is \texttt{e}.
+  \item \texttt{e} is a literal \texttt{v};
+  \item \texttt{t} is the type of \texttt{v} determined by the syntactic label of \texttt{v};
+  \item \texttt{new\_expr} is \texttt{e}.
   \end{itemize}
 
   \subsection{Example}
@@ -2198,16 +2261,16 @@ ROMAN: the environment here is actually an expression. We should probably explai
   
 \[
 \begin{array}{c}
-\inferrule{e = \eliteral{\lint(n)}}{E \entails e : (\TInt(\langle[\texttt{Constraint\_Exact(\eliteral{\lint(n)})}]\rangle), e)}\\
+\inferrule{e = \eliteral{\lint(n)}}{E \entails \annotateexpr{e}: (\TInt(\langle[\texttt{Constraint\_Exact}(\eliteral{\lint(n)})]\rangle), e)}\\
 \\
-\inferrule{e = \eliteral{\lbool(\Ignore)}}{E \entails e : (\TBool, e)}\\
+\inferrule{e = \eliteral{\lbool(\Ignore)}}{E \entails \annotateexpr{e}: (\TBool, e)}\\
 \\
-\inferrule{e = \eliteral{\lreal(\Ignore)}}{E \entails e : (\TReal, e)}\\
+\inferrule{e = \eliteral{\lreal(\Ignore)}}{E \entails \annotateexpr{e} : (\TReal, e)}\\
 \\
-\inferrule{e = \eliteral{\lstring(\Ignore)}}{E \entails e : (\TString, e)}\\
+\inferrule{e = \eliteral{\lstring(\Ignore)}}{E \entails \annotateexpr{e} : (\TString, e)}\\
 \\
-\inferrule{e = \eliteral{\lbitvector(b_1 \ldots b_n)}}
-{E \entails e : (\TBits(\texttt{Bitwidth\_SingleExpr}(\eliteral{\lint(n)}), []), e)}\\
+\inferrule{e = \eliteral{\lbitvector(b_{1..n})}}
+{E \entails \annotateexpr{e} : (\TBits(\texttt{Bitwidth\_SingleExpr}(\eliteral{\lint(n)}), []), e)}\\
 \end{array}
 \]
 \end{emptyformal}
@@ -2507,27 +2570,15 @@ ROMAN: I don't think we need this, since errors are implicit when typing fails.
 \todocomment{
 ROMAN: define $\textsf{width}$ as a bit constraint that is equivalent to the sum of widths of a given list of bit constraints.}
 
+The rule below makes use of slice annotation (\annotateslice), which is defined in Chapter~\ref{ch:typingslices}.
 \[
-\begin{array}{c}
-\RuleComment{Annotating slices of the form \texttt{$a$+:$b$}.}\\
-\RuleComment{Other slices kinds are syntactic sugar and we skip their treatment here.}\\
-\inferrule{
-E \entails e_o : (T_o, e_o')\\
-E \entails e_l : (T_l, e_l')\\
-E \entails \typelabel(\tstruct(T_o)) = \TInt\\
-E \entails \typelabel(\tstruct(T_l)) = \TInt\\
-E \entails \staticallyevaluable(e_l)
-}
-{E \entails \texttt{Slice\_Length}(e_o, e_l) : \texttt{Slice\_Length}(e_o', e_l')}\\
-\\
 \inferrule{
   E \entails e : (T, e')\\
   E \entails \typelabel(\tstruct(T)) \in \{\TInt, \TBits\}\\
   E \entails \textsf{width}(s_{1..k}) = w\\
-  E \entails s_1 : (\Ignore, s_1')
+  E \entails \annotateslice(s_1) = (\Ignore, s'_1) \ldots \annotateslice(s_k) = (\Ignore, s'_k)
   }
-{E \entails \texttt{E\_Slice}(e, [s_{1..k}]) : \\\ (\TBits(\texttt{BitWidth\_SingleExpr}(w), []), \texttt{E\_Slice}(e', [s'_{1..k}])}
-\end{array}
+{E \entails \annotateexpr{\texttt{E\_Slice}(e, [s_{1..k}])} = \\\ (\TBits(\texttt{BitWidth\_SingleExpr}(w), []), \texttt{E\_Slice}(e', [s'_{1..k}])}
 \]
 \end{emptyformal}
 
@@ -2565,10 +2616,10 @@ In the code name' is just name.
 \todocomment{ROMAN: I don't understand what the code is doing.}
 \[
 \inferrule{
-  E \entails a_1 : (T_1,a_1') \ldots a_n : (T_n,a_n')\\
-  E^G.\subprograms \entails \name : \{ \text{args}: [(n_1,T_1),\ldots,(n_n,T_n)], \text{return\_type}: T_r, \ldots\}\\
+  E \entails \annotateexpr{a_1} = (T_1,a_1') \ldots \annotateexpr{a_n} = (T_n,a_n')\\
+  E^G \entails \subprograms(\name) = \{ \text{args}: [(n_1,T_1),\ldots,(n_n,T_n)], \text{return\_type}: T_r, \ldots\}\\
   }
-{E \entails \texttt{E\_Call}(\textit{name}, [a_{1..n}], [p_{1..k}]) : 
+{E \entails \annotateexpr{\texttt{E\_Call}(\textit{name}, [a_{1..n}], [p_{1..k}])} = 
 (T_r', \texttt{E\_Call}(\textit{name}, [a'_{1..n}], [p'_{1..k}]))}
 \]
 \end{emptyformal}
@@ -2582,12 +2633,13 @@ In the code name' is just name.
 \texttt{t,new\_env} or an error and all of the following apply:
   \begin{itemize}
   \item \texttt{e} denotes the slicing of expression \texttt{e'} by the slices \texttt{slices};
-  \item \texttt{t\_e',e'} is the result of annotating the expression \texttt{e'} in \texttt{env};
-  \item \texttt{t\_e'} has the structure of an array with index type \texttt{wanted\_t\_index} and element type \texttt{t};
+  \item \texttt{t\_e',e''} is the result of annotating the expression \texttt{e'} in \texttt{env};
+  \item \texttt{t\_e'} has the structure of an array with index \texttt{size} and element type \texttt{ty}';
+  \item the expression \texttt{size} can be annotated with the type \texttt{wanted\_t\_index};
   \item an error ``Conflicting Types'' is raised or \texttt{slices} is a single expression \texttt{e\_index} and all of the following apply:
   \item \texttt{t\_index', e\_index'} is the result of annotating \texttt{e\_index} in \texttt{env};
   \item an error ``\texttt{Conflicting Types}'' or \texttt{t\_index'} type-satisfies \texttt{wanted\_t\_index} as per Section~\ref{sec:TypingRule.TypeSatisfaction} and all of the following apply:
-  \item \texttt{new\_e} is an access to array \texttt{e'} at index \texttt{e\_index'}.
+  \item \texttt{new\_e} is an access to array \texttt{e''} at index \texttt{e\_index'}.
   \end{itemize}
 
   \subsection{Example}
@@ -2598,9 +2650,47 @@ In the code name' is just name.
 \begin{emptyformal}
     \subsection{Formally}
 \todocomment{ROMAN: I don't understand the code. How come it doesn't match an \texttt{E\_GetArray}?}
+
+\todocomment{ROMAN: the code is shadowing $e'$ with $e'$. This makes code confusing and also hard to match with consistent names in the rule.}
+
+\newcommand\eindex[0]{\texttt{e\_index}}
+\newcommand\wantedtindex[0]{\texttt{wanted\_t\_index}}
+
+\todocomment{ROMAN: define a strategy over rules where global type declarations are annotated first.}
+
+We first define helper rules to annotate the index of an array expression:
 \[
-\inferrule{}{E \entails \texttt{E\_GetArray}()}
+\begin{array}{c}
+\inferrule{E^G \entails \declaredtypes(n) : t}
+{E \entails \annotatearrayindex(\evar(n)) = t}\\
+\\
+\inferrule{E^G \entails \declaredtypes(n) = \bot\\
+l_f = \Elit{0} \\
+l_t = \texttt{E\_Binop}(\texttt{"-"}, \evar(n), \Elit{1})
+}
+{E \entails \annotatearrayindex(\evar(n)) = \TInt(\langle[\texttt{Constraint\_Range}(l_f, l_t)]\rangle)}\\
+\\
+\inferrule{\exprlabel(e) \neq \texttt{E\_Var} \\
+l_f = \Elit{0} \\
+l_t = \texttt{E\_Binop}(\texttt{"-"}, e, \Elit{1})
+}
+{E \entails \annotatearrayindex(e) = \TInt(\langle[\texttt{Constraint\_Range}(l_f, l_t)]\rangle)}
+\end{array}
 \]
+
+\newcommand\tindex[0]{\texttt{t\_index}}
+And now define the rule to annotate the array access expression:
+\[
+\inferrule{
+  E \entails \annotateexpr{\texttt{e}} = (\texttt{t\_e}', \texttt{e}'')\\
+  E \entails \tstruct(\texttt{t\_e}') = \TArray(\texttt{size}, \texttt{ty}')\\
+  E \entails \annotatearrayindex(\texttt{size}) = \texttt{wanted\_t\_index}\\
+  E \entails \annotateexpr{\eindex} = (\texttt{t\_{index}}', \texttt{e\_{index}}')\\
+  E \entails \texttt{t\_{index}}' \typesat \texttt{wanted\_t\_index}\\
+  }
+{E \entails \annotateexpr{\texttt{E\_Slice}(\texttt{e}', [\slicesingle(\eindex)])} =\\\
+ (\texttt{ty}', \texttt{E\_GetArray}(\texttt{e}'', \texttt{e\_{index}}')}
+ \]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -2689,10 +2779,10 @@ In the code name' is just name.
 E \entails T : \isnamed\\
 E \entails \tstruct(T) = L((f_1,T_1),\ldots,(f_k,T_k))\\
 L \in \{\TRecord, \TException\}\\
-E \entails e_1 : (T_1',e_1') \ldots e_k : (T_k',e_k')\\
+E \entails \annotateexpr{e_1} = (T_1',e_1') \ldots \annotateexpr{e_k} = (T_k',e_k')\\
 E \entails T_1' \typesat T_1 \ldots T_k' \typesat T_k
 }
-{E \entails L(T, [(f_1,e_1),\ldots,(f_k,e_k)]) : (T, L(T, [(f_1,e_1'),\ldots,(f_k,e_k')]))}
+{E \entails \annotateexpr{L(T, [(f_1,e_1),\ldots,(f_k,e_k)])} = (T, L(T, [(f_1,e_1'),\ldots,(f_k,e_k')]))}
 \end{array}
 \]
 \end{emptyformal}
@@ -2726,12 +2816,12 @@ E \entails T_1' \typesat T_1 \ldots T_k' \typesat T_k
 \todocomment{ROMAN: why does the code use anonimization instead of getting the structure?}
 \[
 \inferrule{
-E \entails e : (T, e')\\
+E \entails \annotateexpr{e} = (T, e')\\
 E \entails \tstruct(T) = L((f_1,T_1),\ldots,(f_k,T_k))\\
 L \in \{\TRecord, \TException\}\\
 i \in 1..k
 }
-{E \entails \texttt{E\_GetField}(e, f_i) : (T_i, \texttt{E\_GetField}(e', f_i))}
+{E \entails \annotateexpr{\texttt{E\_GetField}(e, f_i)} = (T_i, \texttt{E\_GetField}(e', f_i))}
 \]
 \end{emptyformal}
 
@@ -2839,13 +2929,13 @@ i \in 1..k
     \subsection{Formally}
 \[
 \inferrule{
-E \entails e : (T, e')\\
+E \entails \annotateexpr{e} = (T, e')\\
 E \entails \tstruct(T) = \TBits(\Ignore, [f_1,\ldots,f_k])\\
 i \in 1..k\\
 f_i = \texttt{BitField\_Simple}(f_i', [s_{1..n}])\\
-E \entails \texttt{E\_Slice}(e, [s_{1..n}]) : (T, e'')
+E \entails \annotateexpr{\texttt{E\_Slice}(e, [s_{1..n}])} = (T, e'')
 }
-{E \entails \texttt{E\_GetField}(e, f_i) : (T, e''))}
+{E \entails \annotateexpr{\texttt{E\_GetField}(e, f_i)} = (T, e''))}
 \]
 \end{emptyformal}
 
@@ -2910,14 +3000,14 @@ E \entails \texttt{E\_Slice}(e, [s_{1..n}]) : (T, e'')
     \subsection{Formally}
 \[
 \inferrule{
-E \entails e : (T, e')\\
+E \entails \annotateexpr{e} = (T, e')\\
 E \entails \tstruct(T) = \TBits(\Ignore, [f_1,\ldots,f_k])\\
 i \in 1..k\\
 f_i = \texttt{BitField\_Type}(f_i', [s_{1..n}], T_f)\\
-E \entails \texttt{E\_Slice}(e, [s_{1..n}]) : (T, e'')\\
+E \entails \annotateexpr{\texttt{E\_Slice}(e, [s_{1..n}])} = (T, e'')\\
 E \entails T \typesat T_f
 }
-{E \entails \texttt{E\_GetField}(e, f_i) : (T_f, e''))}
+{E \entails \annotateexpr{\texttt{E\_GetField}(e, f_i)} = (T_f, e''))}
 \]
 \end{emptyformal}
 
@@ -2944,7 +3034,7 @@ E \entails T \typesat T_f
 \[
 \inferrule{e = \texttt{E\_Concat}([], o)}
 {
-E \entails  e : (\TBits(\texttt{BitWidth\_SingleExpr(\eliteral{0}}, [])), e)
+E \entails  \annotateexpr{e} = (\TBits(\texttt{BitWidth\_SingleExpr(\Elit{0}}, [])), e)
 }
 \]
 \end{emptyformal}
@@ -2976,12 +3066,12 @@ E \entails  e : (\TBits(\texttt{BitWidth\_SingleExpr(\eliteral{0}}, [])), e)
 \[
 \inferrule{
 k \geq 1\\
-E \entails e_1 : (T_1,e'_1) \ldots e_1 : (T_k,e'_k)\\
+E \entails \annotateexpr{e_1} = (T_1,e'_1) \ldots \annotateexpr{e_1} = (T_k,e'_k)\\
 E \entails \tstruct(T_1) = \TBits(c_1, \Ignore) \ldots \tstruct(T_k) = \TBits(c_k, \Ignore)\\
 E \entails \textsf{width}(c_{1..k}) = w
 }
 {
-E \entails  \texttt{E\_Concat}([e_{1..k}], \Ignore) : (\TBits(w, [])), 
+E \entails  \annotateexpr{\texttt{E\_Concat}([e_{1..k}], \Ignore)} = (\TBits(w, [])), 
 \texttt{E\_Concat}([e'_{1..k}], \langle\rangle))
 }
 \]
@@ -3015,9 +3105,9 @@ expression that is unresolvable to an integer. For example:
 \begin{emptyformal}
     \subsection{Formally}
 \[
-\inferrule{E \entails e_1 : (T_1, e_1') \ldots e_k : (T_k, e_k')}
+\inferrule{E \entails \annotateexpr{e_1} = (T_1, e_1') \ldots \annotateexpr{e_k} = (T_k, e_k')}
 {
-E \entails  \texttt{E\_Tuple}([e_{1..k}]) : (\TTuple(T_{1..k}), \texttt{E\_Tuple}([e'_{1..k}]))
+E \entails \annotateexpr{\texttt{E\_Tuple}([e_{1..k}])} = (\TTuple(T_{1..k}), \texttt{E\_Tuple}([e'_{1..k}]))
 }
 \]
 \end{emptyformal}
@@ -3044,7 +3134,7 @@ E \entails  \texttt{E\_Tuple}([e_{1..k}]) : (\TTuple(T_{1..k}), \texttt{E\_Tuple
 \begin{emptyformal}
     \subsection{Formally}
 \[
-\inferrule{}{E \entails \texttt{E\_Unkown}(T) : (T, \texttt{E\_Unkown}(\tstruct(T)))}
+\inferrule{}{E \entails \annotateexpr{\texttt{E\_Unkown}(T)} = (T, \texttt{E\_Unkown}(\tstruct(T)))}
 \]
 \end{emptyformal}
 
@@ -3115,12 +3205,12 @@ E \entails  \texttt{E\_Tuple}([e_{1..k}]) : (\TTuple(T_{1..k}), \texttt{E\_Tuple
   \subsection{Formally}
 \[
 \inferrule{
-E \entails e : (T', e')\\
+E \entails \annotateexpr{e} = (T', e')\\
 E \entails T' \domsubtypesat T\\
 E \entails T' \structsubtypesat T\\
 }
 {
-E \entails \texttt{E\_CTC}(e, T) : (T, \texttt{E\_CTC}(e, T))
+E \entails \annotateexpr{\texttt{E\_CTC}(e, T)} = (T, \texttt{E\_CTC}(e, T))
 }
 \]
 \end{emptyformal}
@@ -3131,9 +3221,9 @@ E \entails \texttt{E\_CTC}(e, T) : (T, \texttt{E\_CTC}(e, T))
 \chapter{Typing of Left-Hand-Side Expressions}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Annotating~\texttt{le} in an environment~\texttt{env}, assuming \texttt{t\_e}
+Annotating a left-hand side expression~\texttt{le} in an environment~\texttt{env}, assuming \texttt{t\_e}
 to be the type of the corresponding right-hand-side (\texttt{annotate\_lexpr
-version env le t\_e}), results in \texttt{new\_le} and one of the following
+env le t\_e}), results in a rewritten expression \texttt{new\_le} and one of the following
 applies:
 \begin{itemize}
 \item TypingRule.LEDiscard (see Section~\ref{sec:TypingRule.LEDiscard}),
@@ -3152,12 +3242,30 @@ applies:
 \item TypingRule.LEConcat (see Section~\ref{sec:TypingRule.LEConcat}).
 \end{itemize}
 
+Some of the rules for left-hand side expressions re-use the annotation rules for right-hand side expressions.
+This is achieved by treating left-hand side expressions as corresponding right-hand side expressions,
+as defined by the recursive function $\torexpr : \lexpr \rightarrow \expr$:
+\[
+\begin{array}{lcl}
+  \textbf{Left hand side expression} & & \textbf{Right hand side expression}\\
+  \hline
+  \torexpr(\texttt{LE\_Var}(x)) &=& \texttt{E\_Var}(x)\\
+  \torexpr(\leslice(\vle, \vargs)) &=& \texttt{E\_Slice}(\torexpr(\vle), \vargs)\\
+  \torexpr(\texttt{LE\_SetArray}(\vle, e)) &=& \texttt{E\_GetArray}(\torexpr(\vle), e)\\
+  \torexpr(\texttt{LE\_SetField}(\vle, x)) &=& \texttt{E\_GetField}(\torexpr(\vle), x)\\
+  \torexpr(\texttt{LE\_SetFields}(\vle, x)) &=& \texttt{E\_GetFields}(\torexpr(\vle), x)\\
+  \torexpr(\texttt{LE\_Discard}) &=& \texttt{E\_Var "-"}\\
+  \torexpr(\texttt{LE\_Destructuring}([\vle_{1..k}])) &=& \texttt{E\_Tuple}([\torexpr(\vle_1),\ldots,\torexpr(\vle_k)])\\
+  \torexpr(\texttt{LE\_Concat}([\vle_{1..k}], \Ignore)) &=& \texttt{E\_Concat}([\torexpr(\vle_1),\ldots,\torexpr(\vle_k)])\\
+\end{array}
+\]
+
 \section{TypingRule.LEDiscard \label{sec:TypingRule.LEDiscard}}
 
   \subsection{Prose}
    Annotating~\texttt{le} in an environment~\texttt{env}, assuming
 \texttt{t\_e} to be the type of the corresponding right-hand-side
-(\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
+(\texttt{annotate\_lexpr version env le t\_e}) \todocomment{ROMAN: why do we need version here?}, results in \texttt{new\_le} and
 all of the following apply:
    \begin{itemize}
    \item \texttt{le} denotes an expression which can be discarded;
@@ -3171,6 +3279,9 @@ all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+\inferrule{}{ E \entails \annotatelexpr{\texttt{LE\_Discard}, T} = \texttt{LE\_Discard} }
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -3196,6 +3307,14 @@ all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+\inferrule{
+E^L \entails \storagetypes(\id) = (T', \texttt{LDK\_Var})\\
+E \entails T \canbeassignedto T'
+}
+{ E \entails \annotatelexpr{\texttt{LE\_Var}(\id), T} = \texttt{LE\_Var}(\id) }
+\]
+
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -3208,7 +3327,7 @@ all of the following apply:
 (\texttt{annotate\_lexpr version env le t\_e}), results in \texttt{new\_le} and
 all of the following apply:
    \begin{itemize}
-   \item \texttt{le} denotes a local variable \texttt{x};
+   \item \texttt{le} denotes a global variable \texttt{x};
    \item \texttt{x} is globally declared as a variable of type \texttt{ty} in \texttt{env};
    \item \texttt{t\_e} can be assigned to \texttt{ty};
    \item \texttt{new\_le} is \texttt{le}.
@@ -3221,6 +3340,13 @@ all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+\inferrule{
+E^G \entails \storagetypes(\id) = (T', \Ignore)\\
+E \entails T \canbeassignedto T'
+}
+{ E \entails \annotatelexpr{\texttt{LE\_Var}(\id), T} = \texttt{LE\_Var}(\id) }
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -3258,6 +3384,12 @@ all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+\inferrule{
+E \entails \annotateexpr{e_1,T_1} = e'_1 \ldots E \entails \annotateexpr{e_k,T_k} = e'_k
+}
+{ E \entails \annotatelexpr{\texttt{LE\_Destructuring}([e_{1..k}]), \TTuple(T_{1..k})} =\\\ \texttt{LE\_Destructuring}([e'_{1..k}]) }
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -3288,6 +3420,19 @@ all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+\inferrule{
+  E \entails \annotateexpr{\torexpr(\vleone)} = (\vtleone, \Ignore)\\
+  E \entails \typelabel(\tstruct(\vtleone)) = \TBits\\
+  E \entails \annotatelexpr{\vleone, \vtleone} = \vletwo\\
+  E \entails \textsf{width}(s_{1..k}) = \vwidth\\
+  E \entails \vte \canbeassignedto \TBits(\texttt{BitWidth\_SingleExpr}(\vwidth, []))\\
+  E \entails \annotateslice(s_1) = s'_1 \ldots \annotateslice(s_k) = s'_k
+}
+{ E \entails \annotatelexpr{\leslice(\vleone, [s_{1..k}]), \vte} = 
+\leslice(\vletwo, [s'_{1..k}])
+}
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -3305,12 +3450,14 @@ all of the following apply:
    \item \texttt{t\_le1} has the structure of an array type of size \texttt{size} and item type \texttt{t};
    \item \texttt{te} can be assigned to \texttt{t};
    \item \texttt{le2} is the result of annotating \texttt{le1} in \texttt{env};
-   \item One of the following applies:
-     \begin{itemize}
-     \item \texttt{wanted\_t\_index} is an enumeration type of name \texttt{size};
-     \item \texttt{wanted\_t\_index} is the type \texttt{integer {0..size-1}};
-     \end{itemize}
-   \item \texttt{slices} is a single expression \texttt{e\_index};
+  % ROMAN: The following is not what the code does so I replaced it with subsequent item.
+  %  \item One of the following applies:
+  %    \begin{itemize}
+  %    \item \texttt{wanted\_t\_index} is an enumeration type of name \texttt{size};
+  %    \item \texttt{wanted\_t\_index} is the type \texttt{integer {0..size-1}};
+  %    \end{itemize}
+  \item the expression \texttt{size} can be annotated with the type \texttt{wanted\_t\_index};
+  \item \texttt{slices} is a single expression \texttt{e\_index};
    \item \texttt{t\_index', e\_index'} is the result of annotating \texttt{e\_index} in \texttt{env};
    \item \texttt{wanted\_t\_index} can be assigned to \texttt{t\_index'};
    \item \texttt{new\_le} is an access to array \texttt{le2} at index \texttt{e\_index'}.
@@ -3323,6 +3470,18 @@ all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+\inferrule{
+  E \entails \annotateexpr{\torexpr(\vleone)} = (\vtleone, \Ignore)\\
+  E \entails \tstruct(\vtleone) = \TArray(\size, t)\\
+  E \entails \vte \canbeassignedto t\\
+  E \entails \annotatelexpr{\vleone} = \vletwo\\
+  E \entails \annotatearrayindex(\texttt{size}) = \wantedtindex\\
+  E \entails \annotateexpr{\eindex} = (\tindex', \eindex')\\
+  E \entails \typesat \wantedtindex \canbeassignedto \tindex'\\
+}
+{E \entails \annotatelexpr{\leslice(\vleone, [\slicesingle(\eindex)]), \vte} = \texttt{LS\_SetArray}(\vletwo, \eindex')}
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -3378,6 +3537,18 @@ all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+\inferrule{
+  E \entails \annotateexpr{\torexpr(\vleone)} = (\vtleone, \Ignore)\\
+  E \entails \annotatelexpr{\vleone} = \vletwo\\
+  L \in \{\TRecord, \TException\}\\
+  E \entails \tstruct(\vtleone) = L(\{\vfield:t, \ldots\})\\
+  E \entails t \canbeassignedto \vte
+}
+{
+  E \entails \annotatelexpr{\texttt{LE\_SetField}(\vleone, \vfield)} = \texttt{LE\_SetField}(\vletwo, \vfield)
+}
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -3438,6 +3609,22 @@ all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+  \inferrule{
+    E \entails \annotateexpr{\torexpr(\vleone)} = (\vtleone, \Ignore)\\
+    E \entails \annotatelexpr{\vleone} = \vletwo\\
+    E \entails \tstruct(\vtleone) = \TBits(\Ignore, \bitfields)\\
+    \bitfields = [\ldots, \texttt{BitField\_Simpled}(\vfield, \vslices),\ldots]\\
+    E \entails \textsf{width}(\vslices) = w\\
+    \vt = \TBits(\texttt{BitWidth\_SingleExpr(w), \bitfields})\\
+    E \entails t \canbeassignedto \vte\\
+    \vletwo = \texttt{LE\_Slice}(\vleone, \vslices)\\
+    \newle = \annotatelexpr{\vletwo, \vslices}
+  }
+  {
+    E \entails \annotatelexpr{\texttt{LE\_SetField}(\vleone, \vfield)} = \newle
+  }
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -3471,6 +3658,22 @@ all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+  \inferrule{
+    E \entails \annotateexpr{\torexpr(\vleone)} = (\vtleone, \Ignore)\\
+    E \entails \annotatelexpr{\vleone} = \vletwo\\
+    E \entails \tstruct(\vtleone) = \TBits(\Ignore, \bitfields)\\
+    \bitfields = [\ldots, \texttt{BitField\_Nested}(\vfield, \vslices, \bitfields'),\ldots]\\
+    E \entails \textsf{width}(\vslices) = w\\
+    \vt = \TBits(\texttt{BitWidth\_SingleExpr(w), \bitfields'})\\
+    E \entails \vt \canbeassignedto \vte\\
+    \vletwo = \texttt{LE\_Slice}(\vleone, \vslices)\\
+    \newle = \annotatelexpr{\vletwo, \vslices}
+  }
+  {
+    E \entails \annotatelexpr{\texttt{LE\_SetField}(\vleone, \vfield)} = \newle
+  }
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -3506,6 +3709,23 @@ all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+  \inferrule{
+    E \entails \annotateexpr{\torexpr(\vleone)} = (\vtleone, \Ignore)\\
+    E \entails \annotatelexpr{\vleone} = \vletwo\\
+    E \entails \tstruct(\vtleone) = \TBits(\Ignore, \bitfields)\\
+    \bitfields = [\ldots, \texttt{BitField\_Type}(\vfield, \vslices, \vt),\ldots]\\
+    E \entails \textsf{width}(\vslices) = w\\
+    \vt' = \TBits(\texttt{BitWidth\_SingleExpr(w), []})\\
+    E \entails \vt \canbeassignedto \vt'\\
+    E \entails \vt \canbeassignedto \vte\\
+    \vletwo = \texttt{LE\_Slice}(\vleone, \vslices)\\
+    \newle = \annotatelexpr{\vletwo, \vslices}
+  }
+  {
+    E \entails \annotatelexpr{\texttt{LE\_SetField}(\vleone, \vfield)} = \newle
+  }
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -3551,17 +3771,17 @@ all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Typing of Slices}
+\chapter{Typing of Slices \label{ch:typingslices}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Annotating slices~\texttt{slices} in an environment~\texttt{env}
-(\texttt{annotate\_slices env slices}) results in the pair \texttt{(offset,
-length)} and one of the following applies:
+Annotating a slice~\texttt{slice} in an environment~\texttt{env}
+(\texttt{annotate\_slice env slice}) results in the slicing of the pair \texttt{(offset,length)} and one of the following applies:
 \begin{itemize}
 \item TypingRule.SliceSingle (see Section~\ref{sec:TypingRule.SliceSingle}),
 \item TypingRule.SliceLength (see Section~\ref{sec:TypingRule.SliceLength}),
@@ -3572,11 +3792,11 @@ length)} and one of the following applies:
 \section{TypingRule.SliceSingle \label{sec:TypingRule.SliceSingle}}
 
   \subsection{Prose}
-   Annotating slices~\texttt{slices} in an environment~\texttt{env}
-(\texttt{annotate\_slices env slices}) results in the pair \texttt{(offset,
-length)} and all of the following apply:
+   Annotating a slice~\texttt{slice} in an environment~\texttt{env}
+(\texttt{annotate\_slice env slice}) results in the pair \texttt{(offset,
+length)} and all of the following apply: 
    \begin{itemize}
-   \item \texttt{slices} gives an index \texttt{i};
+   \item \texttt{slice} gives an index \texttt{i};
    \item \texttt{(offset, length)} is the result of applying TypingRule.SliceLength to \texttt{i, i+:1}.
    \end{itemize}
 
@@ -3590,16 +3810,16 @@ length)} and all of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-    R\_GXKG: The notation b\texttt{i} is syntactic sugar for b\texttt{i +: 1}.
+    R\_GXKG: The notation \texttt{b[i]} is syntactic sugar for \texttt{b[i +: 1]}.
 
 \section{TypingRule.SliceLength \label{sec:TypingRule.SliceLength}}
 
   \subsection{Prose}
-   Annotating slices~\texttt{slices} in an environment~\texttt{env}
-(\texttt{annotate\_slices env slices}) results in the pair \texttt{(offset,
+   Annotating a slice~\texttt{slice} in an environment~\texttt{env}
+(\texttt{annotate\_slice env slice}) results in the pair \texttt{(offset,
 length)} and all of the following apply:
    \begin{itemize}
-   \item \texttt{slices} gives \texttt{offset} and \texttt{length};
+   \item \texttt{slice} gives \texttt{offset} and \texttt{length}; 
    \item \texttt{t\_offset, offset'} is the result of annotating \texttt{offset} in \texttt{env};
    \item \texttt{t\_length, length'} is the result of annotating \texttt{length} in \texttt{env};
    \item \texttt{t\_offset} has the structure of an integer type;
@@ -3614,6 +3834,22 @@ length)} and all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\newcommand\eoffset[0]{\texttt{offset}}
+\newcommand\elength[0]{\texttt{length}}
+\newcommand\toffset[0]{\texttt{t\_offset}}
+\newcommand\tlength[0]{\texttt{t\_length}}
+\[
+\inferrule{
+E \entails \annotateexpr{\eoffset} = (\toffset, \eoffset')\\
+E \entails \annotateexpr{\elength} = (\tlength, \elength')\\
+E \entails \tstruct(\toffset) = \TInt(\Ignore)\\
+E \entails \tstruct(\tlength) = \TInt(\Ignore)\\
+E \entails \elength : \isstaticallyevaluable
+}
+{
+E \entails \annotateslice(\texttt{Slice\_Length}(\eoffset, \elength)) = \texttt{Slice\_Length}(\eoffset, \elength')
+}
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -3621,11 +3857,11 @@ length)} and all of the following apply:
 \section{TypingRule.SliceRange \label{sec:TypingRule.SliceRange}}
 
   \subsection{Prose}
-      Annotating slices~\texttt{slices} in an environment~\texttt{env}
-(\texttt{annotate\_slices env slices}) results in the pair \texttt{(offset,
+      Annotating a slice~\texttt{slice} in an environment~\texttt{env}
+(\texttt{annotate\_slice env slice}) results in the pair \texttt{(offset,
 length)} and all of the following apply:
    \begin{itemize}
-   \item \texttt{slices} gives a range \texttt{(j, i)};
+   \item \texttt{slice} gives a range \texttt{(j, i)};
    \item \texttt{pre\_length} is \texttt{i +: j-i+1};
    \item \texttt{offset, length} is the result of applying TypingRule.SliceLength to \texttt{i,pre\_length}.
    \end{itemize}
@@ -3640,16 +3876,16 @@ length)} and all of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-    R\_GXKG: The notation b\texttt{j:i} is syntactic sugar for b\texttt{i +: j-i+1}.
+    R\_GXKG: The notation \texttt{b[j:i]} is syntactic sugar for \texttt{b[i +: j-i+1]}.
 
 \section{TypingRule.SliceStar \label{sec:TypingRule.SliceStar}}
 
   \subsection{Prose}
-      Annotating slices~\texttt{slices} in an environment~\texttt{env}
-(\texttt{annotate\_slices env slices}) results in the pair \texttt{(offset,
+      Annotating a slice~\texttt{slice} in an environment~\texttt{env}
+(\texttt{annotate\_slice env slice}) results in the pair \texttt{(offset,
 length)} and all of the following apply:
    \begin{itemize}
-   \item \texttt{slices} gives \texttt{(factor, pre\_length)};
+   \item \texttt{slice} gives \texttt{(factor, pre\_length)};
    \item \texttt{pre\_offset} is \texttt{factor * pre\_length};
    \item \texttt{offset, length} is the result of applying TypingRule.SliceLength to \texttt{(pre\_offset, pre\_length)}.
    \end{itemize}
@@ -3664,7 +3900,7 @@ length)} and all of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-    R\_GXQG: The notation b\texttt{i *: n} is syntactic sugar for b\texttt{i*n +: n}
+    R\_GXQG: The notation \texttt{b[i *: n]} is syntactic sugar for \texttt{b[i*n +: n]}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Patterns}
@@ -4009,9 +4245,8 @@ Annotating a pattern \texttt{t} in an environment~\texttt{env} given a type \tex
 \chapter{Typing of Local Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Annotating a local declaration~\texttt{ldi}, given a type~\texttt{ty}, in an
-environment~\texttt{env} results in \texttt{new\_env, new\_ldi}
-(\texttt{annotate\_local\_decl\_item}) and one of the following applies:
+Annotating a local declaration~\texttt{ldi} with a local declaration keyword \texttt{ldk}, given a type~\texttt{ty}, in an
+environment~\texttt{env} (\annotatelocaldeclitem{\ldk, \ldi, \tty}) results in \texttt{new\_env, new\_ldi} and one of the following applies:
 \begin{itemize}
 \item TypingRule.LDDiscardNone (see Section~\ref{sec:TypingRule.LDDiscardNone}),
 \item TypingRule.LDDiscardSome (see Section~\ref{sec:TypingRule.LDDiscardSome}),
@@ -4024,7 +4259,7 @@ This aims to encompass LRM Section 7.4.2 R\_YSPM.
 \section{TypingRule.LDDiscardNone \label{sec:TypingRule.LDDiscardNone}}
 
   \subsection{Prose}
-    Annotating a local declaration~\texttt{ldi}, given a type~\texttt{ty}, in
+    Annotating a local declaration~\texttt{ldi} with a local declaration keyword \texttt{ldk}, given a type~\texttt{ty}, in
 an environment~\texttt{env} results in \texttt{new\_env, new\_ldi} and all of
 the following apply:
    \begin{itemize}
@@ -4041,6 +4276,12 @@ the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+  \inferrule{
+    \ldi = \texttt{LDI\_Discard}(\langle\rangle)\\
+  }
+  {\tenv \entails \annotatelocaldeclitem{\ldi, \ldk, \tty} = (\tenv, \ldi)}
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -4048,7 +4289,7 @@ the following apply:
 \section{TypingRule.LDDiscardSome \label{sec:TypingRule.LDDiscardSome}}
 
   \subsection{Prose}
-    Annotating a local declaration~\texttt{ldi}, given a type~\texttt{ty}, in
+    Annotating a local declaration~\texttt{ldi} with a local declaration keyword \texttt{ldk}, given a type~\texttt{ty}, in
 an environment~\texttt{env} results in \texttt{new\_env, new\_ldi} and all of
 the following apply:
    \begin{itemize}
@@ -4077,6 +4318,31 @@ the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+We first define the help relation \canbeinitializedwith\ as follows:
+\[
+\begin{array}{c}
+\inferrule{
+  \tenv \entails \tstruct(s) \neq \TInt(\langle[]\rangle)\\
+  \tenv \entails t \typesat s
+}
+{\tenv \entails s \canbeinitializedwith t}\\
+\\
+\inferrule{
+  \tenv \entails \tstruct(s) : \isunconstrainedinteger\\
+  ...
+}
+{\tenv \entails s \canbeinitializedwith t}\\
+\end{array}
+\]
+
+And now use it to define the annotation of the local declaration:
+\[
+  \inferrule{
+    \ldi = \texttt{LDI\_Discard}(\langle\vt\rangle)\\
+    \tenv \entails t \canbeinitializedwith \tty
+  }
+  {\tenv \entails \annotatelocaldeclitem{\ldi, \ldk, \tty} = (\tenv, \ldi)}
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -4084,7 +4350,7 @@ the following apply:
 \section{TypingRule.LDVar \label{sec:TypingRule.LDVar}}
 
   \subsection{Prose}
-    Annotating a local declaration~\texttt{ldi}, given a type~\texttt{ty}, in
+    Annotating a local declaration~\texttt{ldi} with a local declaration keyword \texttt{ldk}, given a type~\texttt{ty}, in
 an environment~\texttt{env} results in \texttt{new\_env, new\_ldi} and all of
 the following apply:
    \begin{itemize}
@@ -4114,6 +4380,31 @@ the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+\begin{array}{c}
+  \inferrule{
+    \ldi = \texttt{LDI\_Var}(x, \tyopt)\\
+    \tenv^L \entails \storagetypes(x) = \bot\\
+    \tyopt = \langle\rangle\\
+    \vt = \tty\\
+    \newenv = (\tenv^G, \tenv^L[\storagetypes \mapsto \tenv^L[x \mapsto (\vt, \ldk)]])
+  }
+  {
+    \tenv \entails \annotatelocaldeclitem{\ldi, \ldk, \tty} = (\newenv, \texttt{LDI\_Var}(x, \langle\vt\rangle))
+  }\\
+\\
+\inferrule{
+  \ldi = \texttt{LDI\_Var}(x, \tyopt)\\
+  \tenv^L \entails \storagetypes(x) = \bot\\
+  \tyopt = \langle\vt\rangle\\
+  \tenv \entails \vt \canbeinitializedwith \tty\\
+  \newenv = (\tenv^G, \tenv^L[\storagetypes \mapsto \tenv^L[x \mapsto (\vt, \ldk)]])
+}
+{
+  \tenv \entails \annotatelocaldeclitem{\ldi, \ldk, \tty} = (\newenv, \texttt{LDI\_Var}(x, \langle\vt\rangle))
+}
+\end{array}
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -4121,7 +4412,7 @@ the following apply:
 \section{TypingRule.LDTuple \label{sec:TypingRule.LDTuple}}
 
   \subsection{Prose}
-    Annotating a local declaration~\texttt{ldi}, given a type~\texttt{ty}, in
+    Annotating a local declaration~\texttt{ldi} with a local declaration keyword \texttt{ldk}, given a type~\texttt{ty}, in
 an environment~\texttt{env} results in \texttt{new\_env, new\_ldi} and all of
 the following apply:
   \begin{itemize}
@@ -4140,6 +4431,22 @@ the corresponding type in ~\texttt{ty}.
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+\inferrule{
+  \ldi = \texttt{LDI\_Tuple}(\ldis, \langle\rangle)\\
+  \ldis = [\ldi_{1..k}]\\
+  \tenv \entails \tstruct(\tty) = \TTuple([t_{1..k}])\\
+  \newenv_0 = \tenv\\
+  \newenv_0 \entails \annotatelocaldeclitem{\ldi_1, \ldk, t_1} = (\newenv_1, \ldi_1)\\
+  \ldots\\
+  \newenv_{k-1} \entails \annotatelocaldeclitem{\ldi_{k-1}, \ldk, t_{k-1}} = (\newenv_k, \ldi_k)\\
+  \newenv = \newenv_k\\
+  \newldi = [\ldi_{1..k}]
+}
+{
+  \tenv \entails \annotatelocaldeclitem{\ldi, \ldk, \tty} = (\newenv, \texttt{LDI\_Tuple}(\newldi, \langle\rangle))
+}
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -4191,6 +4498,9 @@ environment \texttt{new\_env} and all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+  \inferrule{}{\tenv \entails \annotatestmt{\texttt{S\_Pass}} = (\texttt{S\_Pass},\tenv)}
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -4246,6 +4556,48 @@ environment \texttt{new\_env} and all of the following apply:
 
 \begin{emptyformal}
   \subsection{Formally}
+\[
+\begin{array}{c}
+  \inferrule{
+    \vs = \texttt{S\_Assign}(\vle, \vre)\\
+    \tenv \entails \annotateexpr{\vre} = (\vte, \veone)\\
+    \tenv \entails \inlinesetter{\vle, \veone} = \reduced = \langle \vs \rangle\\
+    \news = \vs\\
+    \newenv = \tenv
+  }
+  {
+    \tenv \entails \annotatestmt{\vs} = (\news,\newenv)
+  }\\
+\\
+\inferrule{
+  \vs = \texttt{S\_Assign}(\vle, \vre)\\
+  \tenv \entails \annotateexpr{\vre} = (\vte, \veone)\\
+  \tenv \entails \inlinesetter{\vle, \veone} = \reduced = \langle \rangle\\
+  \version = \texttt{ASLv1}\\
+  \envone = \tenv\\
+  \envone \entails \annotatelexpr{\vle, \vte} = \vleone\\
+  \news = \texttt{S\_Assign}(\vleone, \veone)
+  \newenv = \envone
+}
+{
+  \tenv \entails \annotatestmt{\vs} = (\news,\newenv)
+}\\
+\\
+\inferrule{
+  \vs = \texttt{S\_Assign}(\vle, \vre)\\
+  \tenv \entails \annotateexpr{\vre} = (\vte, \veone)\\
+  \tenv \entails \inlinesetter{\vle, \veone} = \reduced = \langle \rangle\\
+  \version = \texttt{ASLv0}\\
+  \envone = \tenv'\\
+  \envone \entails \annotatelexpr{\vle, \vte} = \vleone\\
+  \news = \texttt{S\_Assign}(\vleone, \veone)
+  \newenv = \envone
+}
+{
+  \tenv \entails \annotatestmt{\vs} = (\news,\newenv)
+}
+\end{array}
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -4271,6 +4623,13 @@ environment \texttt{new\_env} and all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+\inferrule{
+  \tenv^L : \returntype = \langle\rangle\\
+  \newenv = \tenv
+}
+{\tenv \entails \annotatestmt{\texttt{S\_Return}(\langle\rangle)} = (\texttt{S\_Return}(\langle\rangle), \newenv)}
+\]
 \end{emptyformal}
 
 \subsection{Comments}
@@ -4306,7 +4665,7 @@ environment \texttt{new\_env} and all of the following apply:
     \VerbatimInput[firstline=\SReturnOneBegin, lastline=\SReturnOneEnd]{../Typing.ml}
 
 \begin{emptyformal}
-    \subsection{Formally}
+    \subsection{Formally}      
 \end{emptyformal}
 
 \subsection{Comments}
@@ -4341,6 +4700,16 @@ environment \texttt{new\_env} and all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+  \inferrule{
+    \tenv^L : \returntype = \langle \vt \rangle\\
+    \tenv \entails \annotateexpr{\ve} = (\vte', \ve')\\
+    \tenv \entails \vte' \typesat \vt\\
+    \news = \texttt{S\_Return}(\langle \ve' \rangle)\\
+    \newenv = \tenv
+  }
+  {\tenv \entails \annotatestmt{\texttt{S\_Return}(\langle \ve \rangle)} = (\news, \newenv)}
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -4366,6 +4735,17 @@ environment \texttt{new\_env} and all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+\inferrule{
+  \tenv \entails \annotatestmt{\vs1} = (\newsone, \envone)\\
+  \envone \entails \annotatestmt{\vs2} = (\newstwo, \envtwo)\\
+  \news = \texttt{S\_Seq}(\newsone, \newstwo)\\
+  \newenv = \envtwo
+}
+{
+  \tenv \entails \annotatestmt{\texttt{S\_Seq}(\vsone, \vstwo)} = (\news, \newenv)
+}
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -4393,6 +4773,15 @@ environment \texttt{new\_env} and all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+  \inferrule{
+    \tenv \entails \annotatecall{\name, \vargs, \eqs} = (\newname, \newargs, \neweqs)\\
+    \news = \texttt{S\_Call}(\newname, \newargs, \neweqs)
+  }
+  {
+    \tenv \entails \annotatestmt{\texttt{S\_Call}(\name, \vargs, \eqs)} = (\news, \tenv)
+  }
+\]
 \end{emptyformal}
 
 \isempty{\subsection{Comments}}
@@ -4427,6 +4816,19 @@ environment \texttt{new\_env} and all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+  \inferrule{
+    \tenv \entails \annotateexpr{\ve} = (\tcond, \econd)\\
+    \tenv \tcond \typesat \TBool\\
+    \tenv \entails \annotatestmt{\vsone} = (\vsone', \Ignore)\\
+    \tenv \entails \annotatestmt{\vstwo} = (\vstwo', \Ignore)\\
+    \news = \texttt{S\_Cond}(\econd, \vsone', \vstwo')\\
+    \newenv = \tenv
+  }
+  {
+    \tenv \entails \annotatestmt{\texttt{S\_Cond}(\ve, \vsone, \vstwo)} = (\news, \newenv)
+  }
+\]
 \end{emptyformal}
 
 \subsection{Comments}
@@ -4484,6 +4886,17 @@ environment \texttt{new\_env} and all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+  \inferrule{
+    \tenv \entails \annotateexpr{\ve} = (\vte', \ve')\\
+    \tenv \entails \vte' \typesat \TBool\\
+    \news = \texttt{S\_Assert}(\ve')\\
+    \newenv = \tenv
+  }
+  {
+    \tenv \entails \annotatestmt{\texttt{S\_Assert}(\ve)} = (\news, \newenv)
+  }
+\]
 \end{emptyformal}
 
 \subsection{Comments}
@@ -4517,6 +4930,18 @@ environment \texttt{new\_env} and all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+  \inferrule{
+    \tenv \entails \annotateexpr{\veone} = (\vt, \vetwo)\\
+    \tenv \entails \vte \typesat \TBool\\
+    \tenv \entails \annotateblock{\vsone} = \vstwo\\
+    \news = \texttt{S\_While}(\vetwo, \vstwo)\\
+    \newenv = \tenv
+  }
+  {
+    \tenv \entails \annotatestmt{\texttt{S\_While}(\veone, \vsone)} = (\news, \newenv)
+  }
+\]
 \end{emptyformal}
 
 \subsection{Comments}
@@ -4551,6 +4976,18 @@ environment \texttt{new\_env} and all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+\[
+  \inferrule{
+    \tenv \entails \annotateexpr{\veone} = (\vt, \vetwo)\\
+    \tenv \entails \vte \typesat \TBool\\
+    \tenv \entails \annotateblock{\vsone} = \vstwo\\
+    \news = \texttt{S\_Repeat}(\vetwo, \vstwo)\\
+    \newenv = \tenv
+  }
+  {
+    \tenv \entails \annotatestmt{\texttt{S\_Repeat}(\veone, \vsone)} = (\news, \newenv)
+  }
+\]
 \end{emptyformal}
 
 \subsection{Comments}
@@ -4644,6 +5081,19 @@ environment \texttt{new\_env} and all of the following apply:
 
 \begin{emptyformal}
     \subsection{Formally}
+% \[
+%   \inferrule{
+%     \tenv \entails \annotateexpr{\veone} = (\vtone, \veone')\\
+%     \tenv \entails \annotateexpr{\vetwo} = (\vttwo, \vetwo')\\
+%     \tenv \entails \tstruct(\vtone) = \TInt(\Ignore)\\
+%     \tenv \entails \tstruct(\vttwo) = \TInt(\Ignore)\\
+%     \news = \texttt{S\_For}(..., ...)\\
+%     \newenv = \tenv
+%   }
+%   {
+%     \tenv \entails \annotatestmt{\texttt{S\_For}(\id, \dir, \veone, \vetwo, \vs')} = (\news, \newenv)
+%   }
+% \]
 \end{emptyformal}
 
 \subsection{Comments}
