@@ -1,8 +1,8 @@
 open Asllib
 open ASTUtils
 open AST
-open Test_helpers.Helpers
-open Test_helpers.Helpers.Infix
+open! Helpers
+open Infix
 open Asllib.Types
 
 let empty_env = StaticEnv.empty
