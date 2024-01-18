@@ -189,3 +189,46 @@ UnderConstrained integers:
 
   $ aslref named-types-in-slices.asl
   File named-types-in-slices.asl, line 13, characters 2 to 11: x -> '11111111'
+
+Required tests:
+  $ aslref anonymous-types-example-success.asl
+  $ aslref array-with-enums.asl
+  $ aslref array.asl
+  $ aslref -0 assign-v0.asl
+  $ aslref assign1.asl
+  $ aslref big-ints.asl
+  $ aslref bitfields.asl
+  $ aslref bitvectors.asl
+  $ aslref case.asl
+  $ aslref concat01.asl
+  $ aslref concat02.asl
+  $ aslref concat03.asl
+  $ aslref constrained-integer-types-example.asl
+  $ aslref constrained-types-example.asl
+  $ aslref division.asl
+  $ aslref exceptions.asl
+  $ aslref func1.asl
+  $ aslref func2.asl
+  $ aslref func3.asl
+  $ aslref func4.asl
+  $ aslref func5.asl
+  $ aslref func6.asl
+  $ aslref func7.asl
+  $ aslref global_vars.asl
+  $ aslref lexpr-concat.asl
+  $ aslref masks.asl
+  $ aslref more-assignments-examples.asl
+  $ aslref more-invocation-examples.asl
+  $ aslref named-types-example.asl
+  $ aslref nested-bitfields.asl
+  $ aslref operator_precedence.asl
+  $ aslref pass.asl
+  $ aslref patterns.asl
+  $ aslref records-2.asl
+  $ aslref records.asl
+  $ aslref static.asl
+  $ aslref stdlib.asl
+  $ aslref subtypes-example.asl
+  $ aslref subtypes-with.asl
+  $ aslref tuples.asl
+  $ aslref -0 typing-assign-v0.asl
