@@ -320,9 +320,8 @@ let () =
       let targetos = !targetos
       let platform = "_linux"
       let affinity = match !mode with
-      | Mode.Std -> !affinity
-      | Mode.PreSi -> Affinity.Scan
-      | Mode.Kvm -> Affinity.No
+      | Mode.Std|Mode.PreSi -> !affinity
+      | Mode.Kvm -> Affinity.No (* No effinity ever in kvm mode *)
       let logicalprocs = !logicalprocs
       let linkopt = !linkopt
       let barrier = !barrier

@@ -653,6 +653,7 @@ module Make
         | true ->  O.o "#define CACHE_FLUSH 1" ;
         | false -> ()
         end ;
+        O.o "#define CACHE_TOUCH_STORE 1" ;
         Insert.insert O.o "cache.c"
 
       let do_dump_cache_def = match Cfg.preload with

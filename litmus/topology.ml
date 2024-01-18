@@ -53,6 +53,17 @@ let () =
 
   let smt = set_ifnone 1 smt
   let nsockets = set_ifnone 1 nsockets
+
+  let smt,nsockets =
+    if smt*nsockets  > avail then
+      avail,1
+    else smt,nsockets
+
+  let () =
+    if avail mod smt != 0 || (avail/smt) mod nsockets != 0 then
+      Warn.user_error
+        "Non compliant topology: avail=%d, smt=%d, nsockets=%d\n"                      avail smt nsockets
+
   let ncores = avail / smt
   let cores_in_sock = ncores / nsockets
   let ninst =  avail / nthreads
