@@ -1,6 +1,5 @@
 BENTO=../../_build/default/tools/bento.exe
-LATEX=pdflatex
-BIBTEX=bibtex
+LATEX=latexmk
 
 PDFS=ASLSyntaxReference.pdf ASLSemanticsReference.pdf ASLTypingReference.pdf ASLRefProgress.pdf
 
@@ -30,9 +29,6 @@ ASLSemanticsReference.pdf: $(CONTROL) ASLSyntaxReference.pdf ASLSemanticsReferen
 	$(LATEX) -pdf ASLSemanticsReference.tex
 
 ASLTypingReference.pdf: $(CONTROL) ASLSyntaxReference.pdf ASLTypingReference.tex ASLASTLines.tex ASLTypingLines.tex ASLTypeSatisfactionLines.tex
-	$(LATEX) -pdf ASLTypingReference.tex
-	$(BIBTEX) ASLTypingReference
-	$(LATEX) -pdf ASLTypingReference.tex
 	$(LATEX) -pdf ASLTypingReference.tex
 
 ASLRefProgress.pdf: ASLRefProgress.tex
@@ -82,4 +78,4 @@ clean:
 	/bin/rm -f *.aux *.log *.fls *.log *.toc *.fdb_latexmk *~
 	/bin/rm -f ifformal.tex ifempty.tex iftodo.tex
 	/bin/rm -f comment.cut
-	/bin/rm -f *.blg *.bbl *.out
+	/bin/rm -f *.blg *.bbl *.out *.dvi *.synctex.gz
