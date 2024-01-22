@@ -17,3 +17,4 @@ ASL Typing Reference:
     0 arguments expected and 1 provided
   [1]
 //  $ aslref TypingRule.EConcatUnresolvableToInteger.asl
+  $ aslref TypingRule.CheckBinOp.asl
