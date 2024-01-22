@@ -51,7 +51,7 @@ let tr_name s = match s with
 | "elsif"         -> ELSIF
 | "end"           -> END
 | "enumeration"   -> ENUMERATION
-| "EOR"           -> EOR
+| "EOR" | "XOR"   -> EOR
 | "exception"     -> EXCEPTION
 | "FALSE"         -> BOOL_LIT false
 | "for"           -> FOR
