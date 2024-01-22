@@ -94,8 +94,9 @@ module Make
 
     let do_label_init = Misc.consp CfgLoc.all_labels
 
-    let do_ascall = Cfg.ascall || Cfg.is_kvm || do_label_init ||
-                      Cfg.variant Variant_litmus.Self
+    let do_ascall =
+      Cfg.ascall || Cfg.is_kvm || do_label_init || CfgLoc.need_prelude
+      || Cfg.variant Variant_litmus.Self
 
     let do_precise = Precision.is_fatal Cfg.precision
 
@@ -160,6 +161,7 @@ module Make
         let sysarch = Cfg.sysarch
         let c11 = Cfg.c11
         let variant = Cfg.variant
+        let ascall = do_ascall
       end
 
       module U = SkelUtil.Make(UCfg)(P)(A)(T)
@@ -734,7 +736,8 @@ module Make
               if Cfg.hexa then "0x%" ^ fmt else "%" ^ fmt)
           locs env
 
-      let some_vars test = Misc.consp test.T.globals || some_labels test
+      let some_test_vars test = Misc.consp test.T.globals
+      let some_vars test = some_test_vars test || some_labels test
 
       let dump_outcomes env test =
         let rlocs = U.get_displayed_locs test
@@ -1811,7 +1814,7 @@ module Make
         O.oi "sense_t *_b = &_ctx->b;" ;
         O.oi "log_t *_log = &_ctx->out;" ;
         if some_ptr then O.oi "log_ptr_t *_log_ptr = &_ctx->out_ptr;" ;
-        if some_vars test then begin
+        if some_test_vars test then begin
           O.oi "vars_t *_vars = &_ctx->v;"
         end ;
         begin match test.T.globals with

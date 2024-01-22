@@ -105,11 +105,11 @@ module Make
 (* Options *)
       let do_self = Cfg.variant Variant_litmus.Self
       let do_label_init = not (Label.Full.Set.is_empty CfgLoc.label_init)
+
       let do_ascall =
         (* Self-modifing code or label constants in init section
            implies `-ascall true` mode *)
-        Cfg.ascall || do_self || do_label_init
-
+        Cfg.ascall || do_self || do_label_init || CfgLoc.need_prelude
       open Speedcheck
       let do_vp = Cfg.verbose_prelude
       let driver = Cfg.driver
@@ -278,6 +278,7 @@ module Make
         let sysarch = Cfg.sysarch
         let c11 = Cfg.c11
         let variant = Cfg.variant
+        let ascall = do_ascall
       end
 
       module U = SkelUtil.Make(UCfg)(P)(A)(T)
