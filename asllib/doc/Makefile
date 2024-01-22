@@ -1,5 +1,5 @@
 BENTO=../../_build/default/tools/bento.exe
-LATEX=latexmk
+LATEX=pdflatex
 
 all: ASLAbstractSyntaxReference.pdf ASLSemanticsReference.pdf ASLTypingReference.pdf
 

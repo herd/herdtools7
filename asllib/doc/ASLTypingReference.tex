@@ -1794,22 +1794,14 @@ ROMAN: it seems to me that we are losing the information of named types. For exa
   \begin{itemize}
   \item All of the following apply:
     \begin{itemize}
-      \item \texttt{op} is \texttt{BNOT};
-      \item \texttt{t1} type-satisfies \texttt{boolean};
-      \item \texttt{t} is \texttt{boolean};
+    \item \texttt{op} is \texttt{BNOT};
+    \item \texttt{t1} type-satisfies \texttt{boolean};
+    \item \texttt{t} is \texttt{boolean};
     \end{itemize}
-
-  \item All of the following apply:
-  \begin{itemize}
-    \item \texttt{op} is \texttt{NEG};
-    \item \texttt{t1} type-satisfies \texttt{real};
-    \item \texttt{t} is \texttt{real};
-  \end{itemize}
 
   \item All of the following apply:
     \begin{itemize}
     \item \texttt{op} is \texttt{NEG};
-<<<<<<< HEAD
     \item One of the following applies:
       \begin{itemize}
       \item \texttt{t1} type-satisfies \texttt{integer};
@@ -1831,32 +1823,13 @@ ROMAN: it seems to me that we are losing the information of named types. For exa
     \end{itemize}
 
   \item All of the following apply:
-    \item All of the following apply:
     \begin{itemize}
-      \item \texttt{t1} type-satisfies \texttt{integer}; 
-      \item One of the following applies:
-        \begin{itemize}
-          \item All of the following apply:
-           \begin{itemize}
-             \item \texttt{t1} has the structure of an unconstrained integer;
-             \item \texttt{t} is an unconstrained integer;
-           \end{itemize}
-           \item All of the following apply:
-           \begin{itemize}
-             \item \texttt{t1} has the structure of a constrained integer;
-             \item \texttt{t} is a constrained integer whose constraints are the element-wise negation of each of the constraints of \texttt{t1};
-           \end{itemize}
-        \end{itemize}
-    \end{itemize}  
-  \end{itemize}
-
-    \item All of the following apply:
-    \begin{itemize}
-      \item \texttt{op} is \texttt{NOT};
-      \item \texttt{t1} has the structure of a bitvector;
-      \item \texttt{t} is \texttt{t1}.
+    \item \texttt{op} is \texttt{NOT};
+    \item \texttt{t1} has the structure of a bitvector;
+    \item \texttt{t} is \texttt{t1}.
     \end{itemize}
   \end{itemize}
+
 
   \subsection{Example}
 
