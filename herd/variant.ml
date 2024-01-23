@@ -41,7 +41,6 @@ type t =
   | DontCheckMixed
 (* Tags *)
   | MemTag
-  | MTE
   | TagPrecise of Precision.t (* Fault handling *)
   | TooFar
   | Morello
@@ -189,7 +188,6 @@ let pp = function
   | DontCheckMixed -> "DontCheckMixed"
   | NotWeakPredicated -> "NotWeakPredicated"
   | MemTag -> "memtag"
-  | MTE -> "memtag"
   | TagPrecise p -> Precision.pp p
   | TooFar -> "TooFar"
   | Morello -> "Morello"
