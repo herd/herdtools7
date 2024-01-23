@@ -31,7 +31,12 @@
 (** {2 Utils} *)
 
 type position = Lexing.position
-type 'a annotated = { desc : 'a; pos_start : position; pos_end : position }
+
+type 'a annotated = {
+  desc : 'a;
+  pos_start : position;
+  pos_end : position;
+}
 
 (* -------------------------------------------------------------------------
 
@@ -162,10 +167,10 @@ and slice =
 
 (** Type descriptors.*)
 and type_desc =
-(* Begin Constrained *)
+  (* Begin Constrained *)
   | T_Int of int_constraints option
   | T_Bits of expr * bitfield list
-(* End Constrained *)
+  (* End Constrained *)
   | T_Real
   | T_String
   | T_Bool
@@ -273,7 +278,12 @@ and catcher = identifier option * ty * stmt
 
 (** {2 Top-level declarations} *)
 
-type subprogram_type = ST_Procedure | ST_Function | ST_Getter | ST_Setter
+type subprogram_type =
+  | ST_Procedure
+  | ST_Function
+  | ST_Getter
+  | ST_Setter
+
 type 'p subprogram_body = SB_ASL of stmt | SB_Primitive of 'p
 
 type 'p func = {
@@ -288,7 +298,11 @@ type 'p func = {
     functions, procedures and primitives. *)
 
 (** Declaration keyword for global storage elements. *)
-type global_decl_keyword = GDK_Constant | GDK_Config | GDK_Let | GDK_Var
+type global_decl_keyword =
+  | GDK_Constant
+  | GDK_Config
+  | GDK_Let
+  | GDK_Var
 
 type global_decl = {
   keyword : global_decl_keyword;
@@ -317,4 +331,5 @@ type 'p t = 'p decl list
 
 type scope =
   | Scope_Local of identifier * int
-  | Scope_Global  (** A scope is an unique identifier of the calling site. *)
+  | Scope_Global
+      (** A scope is an unique identifier of the calling site. *)
