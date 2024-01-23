@@ -157,86 +157,9 @@
 
 \tableofcontents{}
 
-\chapter{Non-Confidential Proprietary Notice}
- 
-This document is protected by copyright and other related rights and the
-practice or implementation of the information contained in this document may be
-protected by one or more patents or pending patent applications. No part of
-this document may be reproduced in any form by any means without the express
-prior written permission of Arm. No license, express or implied, by estoppel or
-otherwise to any intellectual property rights is granted by this document
-unless specifically stated.
-               
-Your access to the information in this document is conditional upon your
-acceptance that you will not use or permit others to use the information for
-the purposes of determining whether implementations infringe any third party
-patents.
- 
-THIS DOCUMENT IS PROVIDED “AS IS”. ARM PROVIDES NO REPRESENTATIONS AND NO
-WARRANTIES, EXPRESS, IMPLIED OR STATUTORY, INCLUDING, WITHOUT LIMITATION, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY, SATISFACTORY QUALITY, NON-INFRINGEMENT
-OR FITNESS FOR A PARTICULAR PURPOSE WITH RESPECT TO THE DOCUMENT. For the
-avoidance of doubt, Arm makes no representation with respect to, and has
-undertaken no analysis to identify or understand the scope and content of, any
-patents, copyrights, trade secrets, trademarks, or other rights. 
- 
-This document may include technical inaccuracies or typographical errors.
- 
-TO THE EXTENT NOT PROHIBITED BY LAW, IN NO EVENT WILL ARM BE LIABLE FOR ANY
-DAMAGES, INCLUDING WITHOUT LIMITATION ANY DIRECT, INDIRECT, SPECIAL,
-INCIDENTAL, PUNITIVE, OR CONSEQUENTIAL DAMAGES, HOWEVER CAUSED AND REGARDLESS
-OF THE THEORY OF LIABILITY, ARISING OUT OF ANY USE OF THIS DOCUMENT, EVEN IF
-ARM HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
- 
-This document consists solely of commercial items. You shall be responsible for
-ensuring that any use, duplication or disclosure of this document complies
-fully with any relevant export laws and regulations to assure that this
-document or any portion thereof is not exported, directly or indirectly, in
-violation of such export laws. Use of the word “partner” in reference to Arm’s
-customers is not intended to create or refer to any partnership relationship
-with any other company. Arm may make changes to this document at any time and
-without notice.
- 
-This document may be translated into other languages for convenience, and you
-agree that if there is any conflict between the English version of this
-document and any translation, the terms of the English version of this document
-shall prevail.
- 
-The Arm corporate logo and words marked with ® or ™ are registered trademarks
-or trademarks of Arm Limited (or its affiliates) in the US and/or elsewhere.
-All rights reserved.  Other brands and names mentioned in this document may be
-the trademarks of their respective owners. Please follow Arm’s trademark usage
-guidelines at \url{https://www.arm.com/company/policies/trademarks.}
+\include{notice.tex}
 
-Copyright © [2023,2024] Arm Limited (or its affiliates). All rights reserved. 
- 
-Arm Limited. Company 02557590 registered in England.  110 Fulbourn Road,
-Cambridge, England CB1 9NJ.  (LES-PRE-20349)
-
-
-\chapter{Disclaimer}
-
-This document is part of the ASLRef material. 
-%It is a snapshot of:
-%\url{https://github.com/herd/herdtools7/commit/6dd15fe7833fea24eb94933486d0858038f0c2e8}
-
-This material covers both ASLv0 (viz, the existing ASL pseudocode language
-which appears in the Arm Architecture Reference Manual) and ASLv1, a new,
-experimental, and as yet unreleased version of ASL.
-
-The development version of ASLRef can be found here \url{~/herdtools7/asllib}.
-
-A list of open items being worked on can be found here
-\url{~/herdtools7/asllib/doc/ASLRefProgress.tex}.
-
-This material is work in progress, more precisely at Alpha quality as
-per Arm’s quality standards. In particular, this means that it would be
-premature to base any production tool development on this material.
-
-However, any feedback, question, query and feature request would be most
-welcome; those can be sent to Arm’s Architecture Formal Team Lead Jade
-Alglave \texttt{(jade.alglave@arm.com)} or by raising issues or PRs to the herdtools7
-github repository.
+\include{disclaimer.tex}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Preamble}
@@ -864,9 +787,10 @@ type T3 of (integer, T2);
 
 The underlying types of \texttt{integer}, \texttt{T1}, and \texttt{T2} is \texttt{integer}.
 
-the underlying type of \texttt{(integer, T2)} and \texttt{T3} is \texttt{(integer, T2)}.
-Notice how the underlying type does not replace \texttt{T2} with its own underlying type,
-in contrast to the structure of \texttt{T2}, which is \texttt{(integer, integer)}.
+The underlying type of \texttt{(integer, T2)} and \texttt{T3} is
+\texttt{(integer, T2)}.  Notice how the underlying type does not replace
+\texttt{T2} with its own underlying type, in contrast to the structure of
+\texttt{T2}, which is \texttt{(integer, integer)}.
 
 \subsection{Code}
   \VerbatimInput[firstline=\AnonymizeBegin, lastline=\AnonymizeEnd]{../types.ml}
@@ -885,8 +809,9 @@ in contrast to the structure of \texttt{T2}, which is \texttt{(integer, integer)
 \end{mathpar} 
 \end{emptyformal}
 \subsection{Comments}
-This is a helper function, which we use to inspect the type that is akin to the structure of the input type,
-but without losing the names of named types that may appear internally.
+This is a helper function, which we use to inspect the type that is akin to the
+structure of the input type, but without losing the names of named types that
+may appear internally.
 
 \section{TypingRule.Domain}
 
@@ -1054,7 +979,7 @@ We define the subtyping relation between two named types in a given environment 
 \section{TypingRule.Supertype}
 
   \subsection{Prose}
-  \texttt{T} is a supertype of \texttt{S} if and only if \texttt{S} is a subtype of \texttt{T}.
+  \texttt{t} is a supertype of \texttt{s} if and only if \texttt{s} is a subtype of \texttt{t}.
   
 \todocomment{
 ROMAN: This rule doesn't exist in the code. Also, it is redundant, since it just applies to the same arguments in reverse order. I recommend removing this section.
@@ -1123,8 +1048,8 @@ ROMAN: This rule doesn't exist in the code. Also, it is redundant, since it just
 
   \item All of the following apply:
     \begin{itemize}
-    \item \texttt{S} has the structure of a bitvector type with undetermined width;
-    \item \texttt{T} has the structure of a bitvector type.
+    \item \texttt{s} has the underlying type of a bitvector type with undetermined width;
+    \item \texttt{t} has the underlying type of a bitvector type.
     \end{itemize}
 
   \item All of the following apply:
@@ -1581,10 +1506,10 @@ We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by
 
       \item All of the following apply:
         \begin{itemize}
-        \item S is an anonymous type;
-        \item T is a named type;
-        \item T has the structure of an unconstrained integer type;
-        \item ty is T.
+        \item \texttt{s} is an anonymous type;
+        \item \texttt{t} is a named type;
+        \item \texttt{t} has the structure of an unconstrained integer type;
+        \item \texttt{ty} is \texttt{t}.
         \end{itemize}
 
       \item All of the following apply:
