@@ -23,7 +23,7 @@ HERD                          = _build/install/default/bin/herd7
 HERD_REGRESSION_TEST          = _build/default/internal/herd_regression_test.exe
 HERD_DIYCROSS_REGRESSION_TEST = _build/default/internal/herd_diycross_regression_test.exe
 HERD_CATALOGUE_REGRESSION_TEST = _build/default/internal/herd_catalogue_regression_test.exe
-
+BENTO                         = _build/default/tools/bento.exe
 
 all: build
 
@@ -33,6 +33,9 @@ Version.ml:
 
 build: Version.ml | check-deps
 	dune build -j $(J) --profile $(DUNE_PROFILE)
+
+$(BENTO): | check-deps
+	dune build -j $(J) --profile $(DUNE_PROFILE) $@
 
 install:
 	sh ./dune-install.sh $(PREFIX)
@@ -567,5 +570,5 @@ herd/libdir/asl-pseudocode/shared_pseudocode.asl:
 clean-asl-pseudocode:
 	@ $(MAKE) -C $(@D)/herd/libdir/asl-pseudocode clean
 
-asldoc:
-	@ $(MAKE) -C $(@D)/asllib/doc all
+asldoc: $(BENTO)
+	@ $(MAKE) $(MFLAGS) -C $(@D)/asllib/doc all

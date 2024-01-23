@@ -1,6 +1,8 @@
 ifempty.tex
 ifformal.tex
+iftodo.tex
 comment.cut
 ASLASTLines.tex
 *.bbl
 *.blg
+*.dvi

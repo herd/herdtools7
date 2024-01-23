@@ -11,9 +11,13 @@
 \usepackage{mathpartir}  % For deduction rules and equations paragraphs
 \usepackage{comment}
 \usepackage{fancyvrb}
+%\usepackage{stmaryrd} % for \llbracket and \rrbracket
 \input{ifempty}
 \input{ifformal}
+\input{iftodo}
 \input{control}
+
+\fvset{fontsize=\small}
 
 \usepackage{enumitem}
 \renewlist{itemize}{itemize}{20}
@@ -40,21 +44,58 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Abstract Syntax macros
+
+\newcommand\emptylist[0]{[\ ]}
+
 % Non-terminal names
 \newcommand\unop[0]{\textsf{unop}}
 \newcommand\binop[0]{\textsf{binop}}
 \newcommand\literal[0]{\textsf{literal}}
 \newcommand\expr[0]{\textsf{expr}}
+\newcommand\lexpr[0]{\textsf{lexpr}}
 \newcommand\slice[0]{\textsf{slice}}
+\newcommand\leslice[0]{\texttt{LE\_Slice}}
+\newcommand\slicesingle[0]{\texttt{Slice\_Single}}
+\newcommand\slicelength[0]{\texttt{Slice\_Length}}
+\newcommand\slicerange[0]{\texttt{Slice\_Range}}
+\newcommand\slicestar[0]{\texttt{Slice\_Star}}
+
 \newcommand\ty[0]{\textsf{ty}}
 \newcommand\pattern[0]{\textsf{pattern}}
 \newcommand\intconstraint[0]{\textsf{int\_constraint}}
 \newcommand\bitsconstraint[0]{\textsf{bits\_constraint}}
 \newcommand\bitfield[0]{\textsf{bitfield}}
-
+\newcommand\version[0]{\textsf{version}}
+\newcommand\program[0]{\textsf{program}}
+\newcommand\typedidentifier[0]{\textsf{typed\_identifier}}
+\newcommand\localdeclkeyword[0]{\textsf{local\_decl\_keyword}}
+\newcommand\globaldeclkeyword[0]{\textsf{global\_decl\_keyword}}
+\newcommand\localdeclitem[0]{\textsf{local\_decl\_item}}
+\newcommand\globaldecl[0]{\textsf{global\_decl}}
+\newcommand\fordirection[0]{\textsf{for\_direction}}
+\newcommand\stmt[0]{\textsf{stmt}}
+\newcommand\decl[0]{\textsf{decl}}
+\newcommand\casealt[0]{\textsf{case\_alt}}
+\newcommand\catcher[0]{\textsf{catcher}}
+\newcommand\subprogramtype[0]{\textsf{sub\_program\_type}}
+\newcommand\subprogrambody[0]{\textsf{sub\_program\_body}}
+\newcommand\func[0]{\textsf{func}}
 \newcommand\Field[0]{\textsf{field}}
 
-% Type names
+% Expression labels
+\newcommand\evar[0]{\textsf{E\_Var}}
+
+% Literal labels
+\newcommand\lint[0]{\textsf{L\_Int}}
+\newcommand\lbool[0]{\textsf{L\_Bool}}
+\newcommand\lreal[0]{\textsf{L\_Real}}
+\newcommand\lbitvector[0]{\textsf{L\_Bitvector}}
+\newcommand\lstring[0]{\textsf{L\_String}}
+
+\newcommand\True[0]{\textsf{True}}
+\newcommand\False[0]{\textsf{False}}
+
+% Type labels
 \newcommand\TInt[0]{\texttt{T\_Int}}
 \newcommand\TReal[0]{\texttt{T\_Real}}
 \newcommand\TString[0]{\texttt{T\_String}}
@@ -67,13 +108,32 @@
 \newcommand\TException[0]{\texttt{T\_Exception}}
 \newcommand\TNamed[0]{\texttt{T\_Named}}
 
-\newcommand\identifier[0]{\texttt{<identifier>}}
+\newcommand\identifier[0]{\textsf{identifier}}
 
-\newcommand\id[0]{\texttt{id}}        
+\newcommand\id[0]{\texttt{id}}
+\newcommand\op[0]{\texttt{op}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Typing macros
+\newcommand\staticloc[1]{#1.\textsf{local}}
+\newcommand\constantsvalues[0]{\textsf{constants\_values}}
+\newcommand\storagetypes[0]{\textsf{storage\_types}}
+\newcommand\returntype[0]{\textsf{return\_type}}
+\newcommand\declaredtypes[0]{\textsf{declared\_types}}
+\newcommand\subtypes[0]{\textsf{subtypes}}
+\newcommand\subprograms[0]{\textsf{subprograms}}
+\newcommand\subprogramrenamings[0]{\textsf{subprogram\_renamings}}
+\newcommand\staticglob[1]{#1.\textsf{global}}
+
+\newcommand\entails[0]{\vdash}
+\newcommand\tstruct[0]{\texttt{get\_structure}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newcommand\ie{i.\,e.}
 \newcommand\eg{e.\,g.}
+\newcommand\error[0]{\textsf{error}}
 \newcommand\synor{\ |\ }
 \newcommand\syntt[1]{\mathtt{#1}}
 \newcommand\ife[3]{\text{if}\ #1\ \text{then}\ #2\ \text{else}\ #3\ \text{end}}
@@ -89,10 +149,15 @@
 \newcommand\locals[0]{\field{locals}}
 \newcommand\X[0]{\mathcal{X}}
 \newcommand\N[0]{\mathbb{N}}
+\newcommand\Q[0]{\mathbb{Q}}
+\newcommand\Z[0]{\mathbb{Z}}
 \newcommand\asldata[0]{\mathtt{asl\_data}}
 \newcommand\aslctrl[0]{\mathtt{asl\_ctrl}}
 \newcommand\aslpo[0]{\mathtt{asl\_po}}
 \DeclareMathOperator{\dom}{dom}
+\newcommand\partialto[0]{\rightharpoonup}
+\newcommand\evalexpr[0]{\texttt{eval\_expr}}
+\newcommand\evalconstraint[0]{\texttt{eval\_constraint}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Ident info
@@ -102,4 +167,3 @@
 \newcommand\identr[1]{\ident{R}{#1}}
 \newcommand\identd[1]{\ident{D}{#1}}
 \newcommand\identg[1]{\ident{G}{#1}}
-

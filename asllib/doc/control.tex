@@ -11,6 +11,11 @@
 \else
 \excludecomment{formal}
 \fi
+\iftodo
+\newcommand\todocomment[1]{[#1]}
+\else
+\newcommand\todocomment[1]{}
+\fi
 %%%Safety net
 \iffalse
 \makeatletter

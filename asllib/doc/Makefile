@@ -1,5 +1,6 @@
 BENTO=../../_build/default/tools/bento.exe
 LATEX=pdflatex
+BIBTEX=bibtex
 
 PDFS=ASLSyntaxReference.pdf ASLSemanticsReference.pdf ASLTypingReference.pdf ASLRefProgress.pdf
 
@@ -14,19 +15,35 @@ no-formal:
 no-empty:
 	$(MAKE) $(MFLAGS) NOEMPTY=1 all
 
-CONTROL=ifempty.tex ifformal.tex control.tex
+todo:
+	$(MAKE) $(MFLAGS) TODO=1 all
 
-ASLSyntaxReference.pdf: $(CONTROL) ASLASTLines.tex ASLSyntaxReference.tex
-	$(LATEX) -pdf ASLSyntaxReference.tex
+CONTROLS=ifempty.tex ifformal.tex iftodo.tex
 
-ASLSemanticsReference.pdf: $(CONTROL) ASLSyntaxReference.pdf ASLSemanticsReference.tex ASLSemanticsLines.tex
-	$(LATEX) -pdf ASLSemanticsReference.tex
+.PHONY: control
+control: control.tex $(CONTROLS)
 
-ASLTypingReference.pdf: $(CONTROL) ASLSyntaxReference.pdf ASLTypingReference.tex ASLASTLines.tex ASLTypingLines.tex ASLTypeSatisfactionLines.tex
-	$(LATEX) -pdf ASLTypingReference.tex
+ASLSyntaxReference.pdf: control ASLASTLines.tex ASLSyntaxReference.tex
+	$(LATEX) ASLSyntaxReference.tex
+	$(LATEX) ASLSyntaxReference.tex
+	$(LATEX) ASLSyntaxReference.tex
+
+ASLSemanticsReference.pdf: control ASLSyntaxReference.pdf ASLSemanticsReference.tex ASLSemanticsLines.tex
+	$(LATEX) ASLSemanticsReference.tex
+	$(LATEX) ASLSemanticsReference.tex
+	$(LATEX) ASLSemanticsReference.tex
+
+ASLTypingReference.pdf: control ASLSyntaxReference.pdf ASLTypingReference.tex ASLASTLines.tex ASLTypingLines.tex ASLTypeSatisfactionLines.tex
+	$(LATEX) ASLTypingReference.tex
+	$(BIBTEX) ASLTypingReference
+	$(LATEX) ASLTypingReference.tex
+	$(BIBTEX) ASLTypingReference
+	$(LATEX) ASLTypingReference.tex
 
 ASLRefProgress.pdf: ASLRefProgress.tex
-	$(LATEX) -pdf $<
+	$(LATEX) $<
+	$(LATEX) $<
+	$(LATEX) $<
 
 ASLSemanticsLines.tex: ../Interpreter.ml
 	$(BENTO) $< > $@
@@ -58,10 +75,18 @@ ifempty.tex: force
 	@echo "\\\\newif\\ifempty\\\\emptytrue" >$@
 endif
 
+ifdef TODO
+iftodo.tex: force
+	@echo "\\\\newif\\iftodo\\\\todotrue" >$@
+else
+iftodo.tex: force
+	@echo "\\\\newif\\iftodo\\\\todofalse" >$@
+endif
+
 clean:
 	/bin/rm -f $(PDFS)
 	/bin/rm -f ASLSemanticsLines.tex ASLTypingLines.tex ASLTypeSatisfactionLines.tex ASLASTLines.tex
 	/bin/rm -f *.aux *.log *.fls *.log *.toc *.fdb_latexmk *~
-	/bin/rm -f ifformal.tex ifempty.tex
+	/bin/rm -f $(CONTROLS)
 	/bin/rm -f comment.cut
 	/bin/rm -f *.blg *.bbl *.out
