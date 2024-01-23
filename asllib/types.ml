@@ -46,13 +46,15 @@ let assoc_map map li = List.map (fun (x, y) -> (x, map y)) li
 
 (* --------------------------------------------------------------------------*)
 
+(* Begin Anonimize *)
 let rec make_anonymous (env : env) (ty : ty) : ty =
   match ty.desc with
   | T_Named x -> (
       match IMap.find_opt x env.global.declared_types with
-      | Some ty -> make_anonymous env ty
+      | Some ty' -> make_anonymous env ty'
       | None -> undefined_identifier ty x)
   | _ -> ty
+(* End *)
 
 (* TODO: rethink to have physical equality when structural equality? *)
 (* TODO: memoize? *)

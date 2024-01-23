@@ -1,5 +1,6 @@
 BENTO=../../_build/default/tools/bento.exe
-LATEX=latexmk
+LATEX=pdflatex
+BIBTEX=bibtex
 
 PDFS=ASLSyntaxReference.pdf ASLSemanticsReference.pdf ASLTypingReference.pdf ASLRefProgress.pdf
 
@@ -17,22 +18,32 @@ no-empty:
 todo:
 	$(MAKE) $(MFLAGS) TODO=1 all
 
-CONTROL=ifempty.tex ifformal.tex control.tex iftodo.tex
+CONTROLS=ifempty.tex ifformal.tex iftodo.tex
 
-ASLSyntaxReference.pdf: $(CONTROL) ASLASTLines.tex ASLSyntaxReference.tex
-	$(LATEX) -pdf ASLSyntaxReference.tex
-	$(BIBTEX) ASLSyntaxReference
-	$(LATEX) -pdf ASLSyntaxReference.tex
-	$(LATEX) -pdf ASLSyntaxReference.tex
+.PHONY: control
+control: control.tex $(CONTROLS)
 
-ASLSemanticsReference.pdf: $(CONTROL) ASLSyntaxReference.pdf ASLSemanticsReference.tex ASLSemanticsLines.tex
-	$(LATEX) -pdf ASLSemanticsReference.tex
+ASLSyntaxReference.pdf: control ASLASTLines.tex ASLSyntaxReference.tex
+	$(LATEX) ASLSyntaxReference.tex
+	$(LATEX) ASLSyntaxReference.tex
+	$(LATEX) ASLSyntaxReference.tex
 
-ASLTypingReference.pdf: $(CONTROL) ASLSyntaxReference.pdf ASLTypingReference.tex ASLASTLines.tex ASLTypingLines.tex ASLTypeSatisfactionLines.tex
-	$(LATEX) -pdf ASLTypingReference.tex
+ASLSemanticsReference.pdf: control ASLSyntaxReference.pdf ASLSemanticsReference.tex ASLSemanticsLines.tex
+	$(LATEX) ASLSemanticsReference.tex
+	$(LATEX) ASLSemanticsReference.tex
+	$(LATEX) ASLSemanticsReference.tex
+
+ASLTypingReference.pdf: control ASLSyntaxReference.pdf ASLTypingReference.tex ASLASTLines.tex ASLTypingLines.tex ASLTypeSatisfactionLines.tex
+	$(LATEX) ASLTypingReference.tex
+	$(BIBTEX) ASLTypingReference
+	$(LATEX) ASLTypingReference.tex
+	$(BIBTEX) ASLTypingReference
+	$(LATEX) ASLTypingReference.tex
 
 ASLRefProgress.pdf: ASLRefProgress.tex
-	$(LATEX) -pdf $<
+	$(LATEX) $<
+	$(LATEX) $<
+	$(LATEX) $<
 
 ASLSemanticsLines.tex: ../Interpreter.ml
 	$(BENTO) $< > $@
@@ -76,6 +87,6 @@ clean:
 	/bin/rm -f $(PDFS)
 	/bin/rm -f ASLSemanticsLines.tex ASLTypingLines.tex ASLTypeSatisfactionLines.tex ASLASTLines.tex
 	/bin/rm -f *.aux *.log *.fls *.log *.toc *.fdb_latexmk *~
-	/bin/rm -f ifformal.tex ifempty.tex iftodo.tex
+	/bin/rm -f $(CONTROLS)
 	/bin/rm -f comment.cut
-	/bin/rm -f *.blg *.bbl *.out *.dvi *.synctex.gz
+	/bin/rm -f *.blg *.bbl *.out

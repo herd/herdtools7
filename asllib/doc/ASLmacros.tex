@@ -43,6 +43,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Abstract Syntax macros
 
+\newcommand\emptylist[0]{[\ ]}
+
 % Non-terminal names
 \newcommand\unop[0]{\textsf{unop}}
 \newcommand\binop[0]{\textsf{binop}}
@@ -50,6 +52,12 @@
 \newcommand\expr[0]{\textsf{expr}}
 \newcommand\lexpr[0]{\textsf{lexpr}}
 \newcommand\slice[0]{\textsf{slice}}
+\newcommand\leslice[0]{\texttt{LE\_Slice}}
+\newcommand\slicesingle[0]{\texttt{Slice\_Single}}
+\newcommand\slicelength[0]{\texttt{Slice\_Length}}
+\newcommand\slicerange[0]{\texttt{Slice\_Range}}
+\newcommand\slicestar[0]{\texttt{Slice\_Star}}
+
 \newcommand\ty[0]{\textsf{ty}}
 \newcommand\pattern[0]{\textsf{pattern}}
 \newcommand\intconstraint[0]{\textsf{int\_constraint}}
@@ -117,10 +125,8 @@
 \newcommand\staticglob[1]{#1.\textsf{global}}
 
 \newcommand\entails[0]{\vdash}
-\newcommand\tstruct[0]{\texttt{t\_struct}}
+\newcommand\tstruct[0]{\texttt{get\_structure}}
 
-\newcommand\CheckUnop[0]{\textsf{CheckUnop}}
-\newcommand\CheckBinop[0]{\textsf{CheckBinop}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newcommand\ie{i.\,e.}
@@ -148,6 +154,8 @@
 \newcommand\aslpo[0]{\mathtt{asl\_po}}
 \DeclareMathOperator{\dom}{dom}
 \newcommand\partialto[0]{\rightharpoonup}
+\newcommand\evalexpr[0]{\texttt{eval\_expr}}
+\newcommand\evalconstraint[0]{\texttt{eval\_constraint}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Ident info
