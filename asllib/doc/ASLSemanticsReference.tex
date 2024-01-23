@@ -364,7 +364,7 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
   \subsection{Example: SemanticsRuleEGlobalVar.asl}
     In the program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EGlobalVar.asl}
-    the evaluation of \texttt{global\_x} within \texttt{assert global\_x == 3;}
+    the evaluation of~\texttt{global\_x} within~\texttt{assert global\_x == 3;}
     uses SemanticsRule.EGlobalVar.
 
 %  \subsection{Example: SemanticsRuleEGlobalVarError.asl}
@@ -558,7 +558,7 @@ are considered computed in parallel:
       \\ \text{and}\ &
       (\texttt{v1}, \texttt{env'}, S_1) \in{} \interp{\texttt{e1}} (\texttt{env})
       \\ \text{and}\ &
-      (\texttt{v2}, \texttt{new\_env}, S_2) \in{} <\interp{\texttt{e2}} (\texttt{env'})
+      (\texttt{v2}, \texttt{new\_env}, S_2) \in{} \interp{\texttt{e2}} (\texttt{env'})
     \end{aligned}
     \right\}
   \label{eq:sem-conc-plus}

@@ -46,7 +46,7 @@ let assoc_map map li = List.map (fun (x, y) -> (x, map y)) li
 
 (* --------------------------------------------------------------------------*)
 
-(* Begin Anonimize *)
+(* Begin Anonymize *)
 let rec make_anonymous (env : env) (ty : ty) : ty =
   match ty.desc with
   | T_Named x -> (
