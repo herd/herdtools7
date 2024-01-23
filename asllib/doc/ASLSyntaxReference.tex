@@ -105,8 +105,9 @@ In an ASL abstract syntax tree, a node is one the following data types:
 \item[Token Node.] A lexical token, denoted as in the lexical description of ASL;
 \item[Label Node.] A label
 \item[Unlabelled Tuple Node.] A tuple of children nodes, denoted as $(n_1,\ldots,n_k)$;
-\item[Labelled Tuple Node.] A tuple associated with a label $L$, denoted as $L(n_1,\ldots,n_k)$;
-\item[List Node.] A list of 0 or more children nodes, denoted as $\emptylist$ when the list is empty and $[n_1,\ldots,n_k]$ for non-empty lists;
+\item[Labelled Tuple Node.] A tuple labelled~$L$, denoted as~$L(n_1,\ldots,n_k)$;
+\item[List Node.] A list of~$0$ or more children nodes, denoted as~$\emptylist$
+when the list is empty and~$[n_1,\ldots,n_k]$ for non-empty lists;
 \item[Optional.] An optional node stands for a list of 0 or 1 occurrences of a sub-node $n$. We denote an empty optional by $\langle\rangle$ and the non-empty optional by $\langle n \rangle$;
 \item[Record Node.] A record node, denoted as $\{\text{name}_1 : n_1,\ldots,\text{name}_k : n_k\}$, where $\text{name}_1 \ldots \text{name}_k$ are names, which associates names with corresponding nodes.
 \end{description}
@@ -123,12 +124,14 @@ Node types are defined recursively as follows:
 \begin{description}
 \item[Non-terminal.] A non-terminal variable;
 \item[Terminal.] A lexical token $t$ or a label $L$;
-\item[Unlabelled Tuple.] A tuple of node types, which we denote as $(n_1,\ldots,n_k)$;
-\item[Labelled Tuple.] A tuple associated with a label $L$, which we denote as $L(n_1,\ldots,n_k)$;
+\item[Unlabelled Tuple.] A tuple of node types, denoted as~$(n_1,\ldots,n_k)$;
+\item[Labelled Tuple.] A tuple labelled~$L$, denoted as~$L(n_1,\ldots,n_k)$;
 \item[List.] A list node type, denoted as $n^{*}$;
 \item[Optional.] An optional node type, denoted as $n?$;
 \item[Record.] A record, denoted as $\{\text{name}_1 : n_1,\ldots,\text{name}_k : n_k\}$ where $\text{name}_i$, which associates names with corresponding node types.
 \end{description}
+
+\newpage
 
 An abstract syntax consists of a set of derivation rules and a start non-terminal.
 
