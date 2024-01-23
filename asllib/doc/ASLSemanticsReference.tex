@@ -290,7 +290,7 @@ environment \texttt{new\_env}, or an error, and one of the following applies:
     In the program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EGlobalVar.asl}
     the evaluation of~\texttt{global\_x} within~\texttt{assert global\_x == 3;}
-    uses SemanticsRule.EGlobalVar.
+    uses the rule SemanticsRule.EGlobalVar.
 
 %  \subsection{Example: SemanticsRuleEGlobalVarError.asl}
 %    The program:
@@ -442,13 +442,13 @@ Evaluation of the expression \texttt{e} under environment \texttt{env} is \textt
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EBinopPlusAssert.asl}
     the expression \texttt{3 + 2} evaluates to the value \texttt{5}.
 
-  \subsection{Example: SemanticsRule.EDIVBackendDefinedError.asl}
+  \subsection{Example: \\ SemanticsRule.EDIVBackendDefinedError.asl}
     In the program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EBinopDIVBackendDefinedError.asl}
     \begin{itemize}
     \item in ASLv0, the expression \texttt{3 DIV 0} raises a backend-defined
       error, e.g.
-      \texttt{ASL Execution error: Illegal application of operator DIV for values 3 and 0.}
+      \texttt{ASL Execution error: Illegal application of operator DIV for \\ values 3 and 0.}
     \item in ASLv1, the expression \texttt{3 DIV 0} raises a type error.
     \end{itemize}
 
@@ -534,7 +534,7 @@ are considered computed in parallel:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ECondFalse.asl}
     the expression \texttt{if FALSE then Return42() else 3} evaluates to the value \texttt{3}.
 
-  \subsection{Example: SemanticsRule.ECondUNKNOWN3or42.asl}
+  \subsection{Example: \\ SemanticsRule.ECondUNKNOWN3or42.asl}
     In the program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.ECondUNKNOWN3or42.asl}
 the expression \texttt{if UNKNOWN: boolean then 3 else Return42()} will
@@ -806,7 +806,7 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EUnknownInteger3.asl}
     the expression \texttt{[UNKNOWN : integer]} evaluates to an integer value.
 
-  \subsection{Example: SemanticsRule.EUnknownIntegerRange3-42-3.asl}
+  \subsection{Example: \\ SemanticsRule.EUnknownIntegerRange3-42-3.asl}
 
     In the program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.EUnknownIntegerRange3-42-3.asl}
@@ -2473,8 +2473,9 @@ graphs produced by their interpretations:
     \begin{itemize}
     \item \texttt{s} is a \texttt{try} statement \texttt{[(s', catchers, otherwise\_opt)};
     \item \texttt{s\_m} is the evaluation of the block \texttt{s'} under \texttt{env};
-    \item \texttt{new\_env} is \texttt{env} modified after evaluation of the catchers \texttt{(catchers
-      otherwise\_opt s\_m)} as per Chapter~\ref{chap:eval_catchers}.
+    \item \texttt{new\_env} is \texttt{env} modified after evaluation of the
+catchers \\ \texttt{(catchers otherwise\_opt s\_m)} as per
+Chapter~\ref{chap:eval_catchers}.  
     \end{itemize}
 
     \subsection{Example: SemanticsRule.STry.asl}
@@ -2860,7 +2861,7 @@ Formally, one of the following applies:
     \subsection{Comments}
 
 \chapter{Evaluation of Functions \label{chap:eval_func}}
-\texttt{eval\_func genv name pos actual\_args params} evaluates the subprogram
+\texttt{eval\_func genv name pos actual\_args params} evaluates the subprogram \\
 named \texttt{name} in the global environment \texttt{genv}, with
 \texttt{actual\_args} the list of actual arguments, and \texttt{params} the
 list of arguments deduced by type equality. This is a new global environment
