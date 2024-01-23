@@ -1,0 +1,15 @@
+AArch64 L03
+(* Non-mixed test: STZG store zero in x,
+   neglecting overflow, to change? *)
+Variant=mte,sync
+{
+int x=1;
+0:X1=x:green;
+0:X2=x:red;
+}
+ P0             ;
+ MOV W0,#2      ;
+ STZG  X2,[X1]  ;
+ LDR W0,[X2]    ;
+forall 0:X0=0
+

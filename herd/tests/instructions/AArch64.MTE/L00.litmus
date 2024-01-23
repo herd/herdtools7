@@ -1,0 +1,14 @@
+AArch64 L00
+Variant=mixed,mte,sync
+{
+int x[6]={1,2,3,4,5,6};
+0:X1=x;
+0:X2=x:red;
+}
+ P0              ;
+ STZG  X2,[X1]   ;
+ MOV W0,#7       ;
+ STR W0,[X2]     ;
+ STR W0,[X1,#20] ; 
+forall x={7,0,0,0,5,7}
+

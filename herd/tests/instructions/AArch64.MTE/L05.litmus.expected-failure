@@ -1,0 +1,1 @@
+Warning: File "./herd/tests/instructions/AArch64.MTE/L05.litmus": Array location and STZG instruction without -variant mixed (User error)

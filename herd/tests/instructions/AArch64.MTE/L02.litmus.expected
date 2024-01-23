@@ -1,0 +1,10 @@
+Test L02 Required
+States 1
+x={9,0,0,0,0,0,0,9};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x={9,0,0,0,0,0,0,9})
+Observation L02 Always 1 0
+Hash=ac1c69c0bcf4aad96545b4f61a6e329b
+
