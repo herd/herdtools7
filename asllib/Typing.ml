@@ -1018,7 +1018,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                       (ty, E_Literal v |> here)
                       |: TypingRule.EGlobalVarConstantVal
               (* End *)
-                  | None -> (ty, e) |: TypingRule.EGlobalVarConstantNoVal)
+              (* Begin EGlobalVarConstantNoVal *)
+              | None -> (ty, e) |: TypingRule.EGlobalVarConstantNoVal)
+              (* End *)
               (* Begin EGlobalVar *)
               | ty, _ -> (ty, e) |: TypingRule.EGlobalVar
               (* End *)
@@ -1164,7 +1166,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
             let ty = match ty with Some ty -> ty | None -> assert false in
             (ty, E_Call (name, args, eqs) |> here)
         | None -> (
-            let t_e', e' = annotate_expr env e' in
+            let t_e', e'' = annotate_expr env e' in
             let struct_t_e' = Types.get_structure env t_e' in
             match struct_t_e'.desc with
     (* Begin ESlice *)
@@ -1176,7 +1178,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                 *)
                 let slices' = best_effort slices (annotate_slices env) in
                 ( T_Bits (BitWidth_SingleExpr w, []) |> here,
-                  E_Slice (e', slices') |> here )
+                  E_Slice (e'', slices') |> here )
                 |: TypingRule.ESlice
     (* End *)
     (* Begin EGetArray *)
@@ -1200,7 +1202,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
                     let+ () =
                       check_type_satisfies e env t_index' wanted_t_index
                     in
-                    (ty', E_GetArray (e', e_index') |> here)
+                    (ty', E_GetArray (e'', e_index') |> here)
                 | _ -> conflict e [ T_Int None; default_t_bits ] t_e')
             | _ -> conflict e [ T_Int None; default_t_bits ] t_e' |: TypingRule.EGetArray))
     (* End *)

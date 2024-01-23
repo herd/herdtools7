@@ -43,13 +43,15 @@ let bitfield_equal = thing_equal bitfield_equal
 
 (* --------------------------------------------------------------------------*)
 
+(* Begin Anonimize *)
 let rec make_anonymous (env : env) (ty : ty) : ty =
   match ty.desc with
   | T_Named x -> (
       match IMap.find_opt x env.global.declared_types with
-      | Some ty -> make_anonymous env ty
+      | Some ty' -> make_anonymous env ty'
       | None -> undefined_identifier ty x)
   | _ -> ty
+(* End *)
 
 let get_structure (env : env) : ty -> ty =
   (* TODO: rethink to have physical equality when structural equality? *)
