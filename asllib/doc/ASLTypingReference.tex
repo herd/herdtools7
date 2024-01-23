@@ -1,6 +1,5 @@
 \documentclass{book}
 \input{ASLmacros}
-
 \input{ASLTypingLines}
 \input{ASLTypeSatisfactionLines}
 \input{ASLASTLines}
@@ -343,12 +342,17 @@ Each rule is presented using the following template:
     \end{itemize}
 
     \subsection{Example: TypingRule.BuiltinSingularTypes.asl}
+
+In this example:
 \VerbatimInput[firstline=3,lastline=8]{\tests/TypingRule.BuiltinSingularTypes.asl}
-Variables of builtin singular types \texttt{integer}, \texttt{real}, \texttt{boolean}, \texttt{bits(4)}, and \texttt{bits(2)} are defined.
+
+Variables of builtin singular types \texttt{integer}, \texttt{real},
+\texttt{boolean}, \texttt{bits(4)}, \\ and~\texttt{bits(2)} are defined.
 
     \subsection{Example: TypingRule.EnumerationType.asl}
 \VerbatimInput{\tests/TypingRule.EnumerationType.asl}
-The (builtin singular) type \texttt{color} consists in two different constants \texttt{RED}, and~\texttt{BLACK}.
+The builtin singular type \texttt{color} consists in two constants
+\texttt{RED}, and~\texttt{BLACK}.
 
     \subsection{Code}
       \VerbatimInput[firstline=\BuiltinSingularBegin, lastline=\BuiltinSingularEnd]{../types.ml}
@@ -941,8 +945,9 @@ type subInt of integer subtypes superInt;
     \subsection{Formally}
 \end{emptyformal}
 
-To model subtyping, the global environment contains the partial function $\subtypes$,
-which maps a type name to the name of its supertype, if it has one.
+To model subtyping, the global environment contains the partial function \\
+$\subtypes$, which maps a type name to the name of its supertype, if it has
+one.
 
 We define the subtyping relation between two named types in a given environment as follows:
 \begin{mathpar}
@@ -1105,7 +1110,7 @@ ROMAN: This rule doesn't exist in the code. Also, it is redundant, since it just
 \begin{emptyformal}
     \subsection{Formally}
     
-We write $\structsubtypesat(\tenv, \vs, \vt)$ to denote that type $\vs$ structurally-subtype-satisfies type $\vt$ in the environment $\tenv$.
+We write $\structsubtypesat(\tenv, \vs, \vt)$ to denote that type $\vs$ \\ structurally-subtype-satisfies type $\vt$ in the environment $\tenv$.
     
 \begin{mathpar}
 \inferrule{\makeanonymous(\tenv, \vs)=\TInt(\Ignore) \\ \makeanonymous(\tenv, \vt)=\TInt(\Ignore) }{\structsubtypesat(\tenv, \vs, \vt)}
@@ -1176,7 +1181,7 @@ We write $\structsubtypesat(\tenv, \vs, \vt)$ to denote that type $\vs$ structur
 \begin{emptyformal}
     \subsection{Formally}
 We denote that \texttt{t} domain-subtype-satisfies \texttt{s} in environment
-\tenv\ by $\domsubtypesat(\tenv, \vt, \vs)$.
+\tenv\ by \\ $\domsubtypesat(\tenv, \vt, \vs)$.
 
 \begin{mathpar}
 \inferrule{\tstruct(\tenv, \vs)=\vs' \\ \astlabel(\vs') \in \{\TTuple, \TArray, \TRecord, \TException\} }{\domsubtypesat(\tenv, \vt, \vs)}
@@ -1274,7 +1279,7 @@ We denote that type $\vt$ subtype-satisfies type $\vs$ in an environment $\tenv$
 
 \begin{emptyformal}
     \subsection{Formally}
-We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by $\typesat(\tenv, \vt, \vs)$.
+We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by \\ $\typesat(\tenv, \vt, \vs)$.
 \begin{mathpar}
 \inferrule{\subtypes(\tenv, \vt, \vs)}{\typesat(\tenv, \vt, \vs)}
 \and
@@ -1979,7 +1984,7 @@ i=1..k: \CheckUnop(\texttt{"-"}, c_i) : d_i}{\CheckUnop(\tenv, \texttt{"-"}, \vt
   \subsection{Example}
 
   \subsection{Code}
-    \VerbatimInput[firstline=\CheckUnopBegin, lastline=\CheckUnopEnd]{../Typing.ml}
+    \VerbatimInput[firstline=\CheckBinopBegin, lastline=\CheckBinopEnd]{../Typing.ml}
 
 \begin{formal}
     \subsection{Formally}
@@ -2814,7 +2819,7 @@ L \in \{\TRecord, \TException\}\\
   \item the underlying type of \texttt{t\_e1} is a bitvector type with bitfields \texttt{bitfields};
   \item \texttt{field\_name} is declared in \texttt{bitfields};
   \item \texttt{slices} gives the slices corresponding to the bitfield \texttt{field\_name}
-    in \texttt{bitfields};
+    in \\ \texttt{bitfields};
   \item \texttt{e3} denotes the slicing of the expression \texttt{e2} by the slices \texttt{slices};
   \item \texttt{t,new\_e} is the result of annotating \texttt{e3}.
   \end{itemize}
@@ -2850,7 +2855,7 @@ L \in \{\TRecord, \TException\}\\
   \item \texttt{t\_e1, e2} is the result of annotating \texttt{e1} in \texttt{env};
   \item \texttt{t\_e1} has the structure of a bitvector type with bitfields \texttt{bitfields};
   \item \texttt{field\_name} is declared in \texttt{bitfields};
-  \item \texttt{slices} gives the slices corresponding to the bitfield \texttt{field\_name} in
+  \item \texttt{slices} gives the slices corresponding to the bitfield \texttt{field\_name} in \\
     \texttt{bitfields};
   \item \texttt{e3} denotes the slicing of the expression \texttt{e2} by the slices \texttt{slices};
   \item \texttt{t4, e4} is the result of annotating \texttt{e3} in \texttt{env};
@@ -2881,7 +2886,7 @@ L \in \{\TRecord, \TException\}\\
   \item \texttt{t\_e1, e2} is the result of annotating \texttt{e1} in \texttt{env};
   \item \texttt{t\_e1} has the underlying type of a bitvector with bitfields \texttt{bitfields};
   \item \texttt{field\_name} is declared in \texttt{bitfields};
-  \item \texttt{slices} gives the slices corresponding to the bitfield \texttt{field\_name} in
+  \item \texttt{slices} gives the slices corresponding to the bitfield \texttt{field\_name} in \\
     \texttt{bitfields};
   \item \texttt{t} is the type associated with \texttt{field\_name} in \texttt{bitfields};
   \item \texttt{t\_e3,e3} is the result of annotating \texttt{e2,slices} in \texttt{env};
@@ -3806,7 +3811,7 @@ length)} and all of the following apply:
    \begin{itemize}
    \item \texttt{slice} gives a range \texttt{(j, i)};
    \item \texttt{pre\_length} is \texttt{i +: j-i+1};
-   \item \texttt{offset, length} is the result of applying TypingRule.SliceLength to \texttt{i,pre\_length}.
+   \item \texttt{offset, length} is the result of applying the rule TypingRule.SliceLength to \texttt{i,pre\_length}.
    \end{itemize}
 
   \subsection{Example}
@@ -3830,7 +3835,7 @@ length)} and all of the following apply:
    \begin{itemize}
    \item \texttt{slice} gives \texttt{(factor, pre\_length)};
    \item \texttt{pre\_offset} is \texttt{factor * pre\_length};
-   \item \texttt{offset, length} is the result of applying TypingRule.SliceLength to \texttt{(pre\_offset, pre\_length)}.
+   \item \texttt{offset, length} is the result of applying the rule TypingRule.SliceLength to \texttt{(pre\_offset, pre\_length)}.
    \end{itemize}
 
   \subsection{Example}
@@ -5000,7 +5005,7 @@ environment \texttt{new\_env} and all of the following apply:
            \item \texttt{ty} is the constrained integer type with constraint \texttt{cs};
          \end{itemize}
      \end{itemize}
-   \item an error is raised ``\texttt{ASL Typing Error: cannot declare already declared element “id”.}'' or \texttt{id} is not bound in \texttt{env} and all of the following apply:
+   \item an error is raised ``\texttt{ASL Typing Error: cannot declare already \\ declared element "id".}'' or \texttt{id} is not bound in \texttt{env} and all of the following apply:
    \item \texttt{env'} is \texttt{env} modified so that \texttt{id} is locally declared of type \texttt{ty};
    \item \texttt{s''} is the result of annotating \texttt{s'} in \texttt{env'};
    \item \texttt{new\_s} is a for statement with index \texttt{id}, direction \texttt{dir}, two expressions \texttt{e1'} and \texttt{e2'} and statement \texttt{s''};
@@ -5229,7 +5234,7 @@ environment \texttt{new\_env} and all of the following apply:
 
   \subsection{Prose}
     Annotating a block \texttt{s} in an environment \texttt{env}, given a type
-\texttt{return\_type} (\texttt{annotate\_block env return\_type s}), is the
+\texttt{return\_type} \\ (\texttt{annotate\_block env return\_type s}), is the
 result of annotating the statement \texttt{s} in \texttt{env}.
 
   \subsection{Example: TypingRule.Block0.asl}
@@ -5405,10 +5410,10 @@ following apply:
    \begin{itemize}
    \item \texttt{caller\_arg\_types, arg1} is the result of annotating \texttt{args} in \texttt{env};
    \item \texttt{name} is bound in \texttt{env} to a subprogram with argument types
-      \texttt{callee\_arg\_types};
+      \\ \texttt{callee\_arg\_types};
    \item \texttt{eqs2} is \texttt{eqs1} appended with the equations deduced by
      using the types of the actual arguments \texttt{caller\_arg\_types} to
-     defined parameters in \texttt{callee\_arg\_types};
+     defined parameters in \\ \texttt{callee\_arg\_types};
    \item \texttt{call\_type} is either a function or a getter type;
    \item \texttt{ret\_ty1} is the result of renaming \texttt{ty} in \texttt{eqs2}.
    \end{itemize}
@@ -5447,7 +5452,7 @@ following apply:
       \texttt{extra\_nargs};
     \item \texttt{eqs2} is \texttt{eqs1} appended with the equations deduced by
       using the types of the actual arguments \texttt{caller\_arg\_types} to
-      defined parameters in \texttt{callee\_arg\_types};
+      defined parameters in \\ \texttt{callee\_arg\_types};
     \item \texttt{call\_type} is a setter or procedure type;
     \item \texttt{ret\_ty} is None;
     \item \texttt{ret\_ty1} is None.
@@ -5471,7 +5476,7 @@ following apply:
 \section{TypingRule.FCallMismatch \label{sec:TypingRule.FCallMismatch}}
 
   \subsection{Prose}
-  Annotating the call to subprogram \texttt{name} with call type \texttt{call\_type} (\texttt{annotate\_call}) results in an error and
+  Annotating the call to subprogram \texttt{name} with call type \texttt{call\_type} \\ (\texttt{annotate\_call}) results in an error and
   one of the following apply:
   \begin{itemize}
     \item All of the following apply: \begin{itemize} \item \texttt{call\_type}

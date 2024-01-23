@@ -1,6 +1,9 @@
-type T1 of integer;          // the named type `T1` whose structure is integer
-type T2 of integer;          // the named type `T2` whose structure is integer
-type pairT of (integer, T1); // the named type `pairT` whose structure is (integer, integer)
+type T1 of integer;          
+  // the named type `T1` whose structure is integer
+type T2 of integer;          
+  // the named type `T2` whose structure is integer
+type pairT of (integer, T1); 
+  // the named type `pairT` whose structure is (integer, integer)
 
 func main() => integer
 begin
