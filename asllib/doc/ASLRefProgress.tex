@@ -1,0 +1,328 @@
+\documentclass{book}
+\input{ASLmacros}
+
+\author{Arm Architecture Technology Group}
+\title{ASL Reference Progress \\
+       DDI 0623}
+\begin{document}
+\maketitle
+
+\tableofcontents{}
+
+\chapter{Non-Confidential Proprietary Notice}
+
+This document is protected by copyright and other related rights and the
+practice or implementation of the information contained in this document may be
+protected by one or more patents or pending patent applications. No part of
+this document may be reproduced in any form by any means without the express
+prior written permission of Arm. No license, express or implied, by estoppel or
+otherwise to any intellectual property rights is granted by this document
+unless specifically stated.
+               
+Your access to the information in this document is conditional upon your
+acceptance that you will not use or permit others to use the information for
+the purposes of determining whether implementations infringe any third party
+patents.
+ 
+THIS DOCUMENT IS PROVIDED “AS IS”. ARM PROVIDES NO REPRESENTATIONS AND NO
+WARRANTIES, EXPRESS, IMPLIED OR STATUTORY, INCLUDING, WITHOUT LIMITATION, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY, SATISFACTORY QUALITY, NON-INFRINGEMENT
+OR FITNESS FOR A PARTICULAR PURPOSE WITH RESPECT TO THE DOCUMENT. For the
+avoidance of doubt, Arm makes no representation with respect to, and has
+undertaken no analysis to identify or understand the scope and content of, any
+patents, copyrights, trade secrets, trademarks, or other rights. 
+ 
+This document may include technical inaccuracies or typographical errors.
+ 
+TO THE EXTENT NOT PROHIBITED BY LAW, IN NO EVENT WILL ARM BE LIABLE FOR ANY
+DAMAGES, INCLUDING WITHOUT LIMITATION ANY DIRECT, INDIRECT, SPECIAL,
+INCIDENTAL, PUNITIVE, OR CONSEQUENTIAL DAMAGES, HOWEVER CAUSED AND REGARDLESS
+OF THE THEORY OF LIABILITY, ARISING OUT OF ANY USE OF THIS DOCUMENT, EVEN IF
+ARM HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ 
+This document consists solely of commercial items. You shall be responsible for
+ensuring that any use, duplication or disclosure of this document complies
+fully with any relevant export laws and regulations to assure that this
+document or any portion thereof is not exported, directly or indirectly, in
+violation of such export laws. Use of the word “partner” in reference to Arm’s
+customers is not intended to create or refer to any partnership relationship
+with any other company. Arm may make changes to this document at any time and
+without notice.
+ 
+This document may be translated into other languages for convenience, and you
+agree that if there is any conflict between the English version of this
+document and any translation, the terms of the English version of this document
+shall prevail.
+ 
+The Arm corporate logo and words marked with ® or ™ are registered trademarks
+or trademarks of Arm Limited (or its affiliates) in the US and/or elsewhere.
+All rights reserved.  Other brands and names mentioned in this document may be
+the trademarks of their respective owners. Please follow Arm’s trademark usage
+guidelines at https://www.arm.com/company/policies/trademarks. 
+ 
+Copyright © [2023,2024] Arm Limited (or its affiliates). All rights reserved. 
+ 
+Arm Limited. Company 02557590 registered in England.  110 Fulbourn Road,
+Cambridge, England CB1 9NJ.  (LES-PRE-20349)
+
+The material in this document is copyright Arm Ltd 2023, all rights reserved.
+
+This material covers both ASLv0 (viz, the existing ASL pseudocode language
+which appears in the Arm Architecture Reference Manual) and ASLv1, a new,
+experimental, and as yet unreleased version of ASL.
+
+This material is work in progress, more precisely at pre-Alpha quality as
+per Arm’s quality standards. In particular, this means that it would be
+premature to base any production tool development on this material.
+
+However, any feedback, question, query and feature request would be most
+welcome; those can be sent to Arm’s Architecture Formal Team Lead Jade
+Alglave \texttt{(jade.alglave@arm.com)} or by raising issues or PRs to the herdtools7
+github repository.
+
+\chapter{Disclaimer}
+
+This document is part of the ASLRef material. This material covers both ASLv0
+(viz, the existing ASL pseudocode language which appears in the Arm
+Architecture Reference Manual) and ASLv1, a new, experimental, and as yet
+unreleased version of ASL.\@
+
+The development version of ASLRef can be found here \url{~/herdtools7/asllib}.
+
+A list of open items being worked on can be found here
+\url{~/herdtools7/asllib/doc/ASLRefProgress.tex}.
+
+This material is work in progress, more precisely at Alpha quality as
+per Arm’s quality standards. In particular, this means that it would be
+premature to base any production tool development on this material.
+
+However, any feedback, question, query and feature request would be most
+welcome; those can be sent to Arm’s Architecture Formal Team Lead Jade Alglave
+\texttt{(jade.alglave@arm.com)} or by raising issues or PRs to the herdtools7
+github repository.
+
+
+% ------------------------------------------------------------------------------
+\chapter{Not implemented in ASLRef}
+% ------------------------------------------------------------------------------
+
+This chapter describes what is not yet present in the executable version of ASLRef.
+
+% ------------------------------------------------------------------------------
+\section{Syntax}
+
+\subsection{Constrained bitvectors}
+
+Constrained bitvectors are not yet implemented in ASLRef.
+
+For example, the following function is not understood by ASLRef:
+\begin{Verbatim}
+func foo(x: bits({3, 5})) => integer
+begin
+  return Len(x) * 2;
+end
+\end{Verbatim}
+%
+Here the length of the formal argument \Verb|x| needs to be declared as a
+parameter, for example as follows:
+\begin{Verbatim}
+func foo {N: integer {3, 5}} (x: bits(N)) => integer
+begin
+  return Len(x) * 2;
+end
+\end{Verbatim}
+%
+This also applies to bitvectors constrained by a type.
+
+This is related to \identr{FHYZ}, \identr{VBMX}, \identr{XVWK}, \identr{PMQB},
+\identr{VCZX}, \identi{TZVJ}, \identi{GLWM}, \identi{MTWL}, \identr{QYZD},
+\identi{NFBN}, \identr{LJBG}, \identi{YBHF}, \identr{FZSD}.
+
+\subsection{Guards}
+
+Guards are used on \texttt{case} and \texttt{catch} statements, to restrict
+matching on the evaluation of a boolean expression.
+%
+They are not yet implemented in ASLRef.
+
+This relates to \identr{WGSY}.
+
+% ------------------------------------------------------------------------------
+\section{Typing}
+
+Note that as it stands, the type system of ASL is not sound.
+Our proposal can be found at: 
+\url{https://github.com/herd/herdtools7/pull/747}
+
+This is related to \identi{JSKW}.
+
+\subsection{Immutability of expressions in constraint ranges}
+
+The constraints of an integer type should be \emph{constrained},
+\emph{statically evaluable expressions}, i.\,e.\ the variables used by
+expressions describing an integer constraint should be immutable and of a
+constrained type, and those expressions should be side-effect-free.
+
+Furthermore, those constraints should not include Checked Type Conversions.
+
+This also applies to bitvector widths.
+
+This is related to \identr{BSMK}, \identr{LSNP}, \identr{GHRP}, \identr{LVTH},
+\identi{ZLZC}, \identr{RHTN}, \identr{XNBN}, \identi{GQYG}.
+
+\subsection{Sound domains for under-constrained integers}
+
+Under-constrained integers have for the moment the same domain.
+%
+This makes the type-system unsound, as one can assign one under-constrained
+integer to another.
+%
+
+This is related to \identi{JSKW}.
+
+\subsection{Statically evaluable programs}%
+\label{sec:nyi:statically-evaluable-subprograms}
+
+Side effects analysis has not been implemented yet.
+%
+This makes detection of statically evaluable subprograms impossible.
+
+Furthermore, non-execution time subprograms, expressions, and types have not
+been implemented.
+
+This is related to \identi{LZCX}, \identi{NXJR}, \identr{CSFT}, \identi{HYBT},
+\identd{CCTY}, \identi{LYKD}, \identi{ZPWM}, \identd{KCKX}, \identi{NTYZ},
+\identi{MSZT}, \identd{QNHM}, \identi{XYKC}, \identd{ZPMF}, \identi{XSDY},
+\identd{XRBT}, \identi{WVGG}, \identd{JLJD}, \identi{KKDY}, \identd{MTQJ},
+\identi{YBGL}, \identi{YMRT}, \identi{QJTN}, \identi{GFZT}.
+
+\subsection{Precise implementation of parameters type-checking}
+
+The code handling parameter type-checking at a function declaration is not
+safe: some checks are missing.
+
+Furthermore, the handling of formal arguments that should be considered as
+parameters is also not finished.
+
+This is related to \identi{BLVP}, \identr{RKBV}, \identi{TQGH}.
+
+\subsection{Restriction on use of under-constrained types}
+
+\subsubsection{As storage types}
+Restrictions on use of under-constrained types as storage element types are not
+implemented.
+
+This is related to \identr{ZCVD}.
+
+\subsubsection{As expression with a constrained type}
+
+Restriction on the use of under-constrained parameters as left-hand-side of a
+Checked Typed Conversion is not implemented in ASLRef.
+%
+For example, the following will not raise a type-error:
+\VerbatimInput[firstline=3,lastline=8]{../tests/asl.t/under-constrained-used.asl}
+
+This is related to \identi{TBHH}, \identr{ZDKC}.
+
+% ------------------------------------------------------------------------------
+\section{Semantics}
+
+\subsection{Real exponentiation}
+
+The exponentiation operation \texttt{exp\_real} has not been implemented.
+%
+Note: this would construct non-rational numbers which are not supported by
+ASLRef, e.\,g.\ $2^\frac{1}{2} = \sqrt{2}$.
+
+This is related to \identr{BNCY}.
+
+
+% ------------------------------------------------------------------------------
+\chapter{Not transliterated in ASL reference documents}
+% ------------------------------------------------------------------------------
+
+% ------------------------------------------------------------------------------
+\section{Typing}
+
+\subsection{Domains}
+
+The transliteration of the notion of domains will be made more complete in the
+future.
+
+\subsection{Global storage declarations}
+
+Global storage declarations are not transliterated.
+
+This is related to \identr{FWQM}.
+
+\subsection{Statically evaluable expressions}
+
+The part of statically evaluable expressions that has been implemented in
+ASLRef (see Section~\ref{sec:nyi:statically-evaluable-subprograms}) has not
+been transliterated.
+
+Equivalence of statically evaluable expressions has been implemented in a
+restricted setting (see
+Section~\ref{sec:nyi:statically-evaluable-subprograms}).
+%
+Mainly, expressions that reduce to polynomials can be checked for equivalence.
+%
+This has not been transliterated either.
+
+This is related to \identr{PKXK}, \identd{YYDW}, \identd{CWVH}, \identd{HLQC},
+and \identi{LHLR}, \identr{RFQP}, \identr{VNKT}.
+
+\subsection{Polymorphism}
+
+Polymorphism in ASL is the ability to have multiple subprograms with the same
+name that do not have the same signature.
+
+Although polymorphism is implemented in ASLRef, it has not yet been
+transliterated.
+
+This is related to \identd{BTBR}, \identi{FSFQ}, \identi{FCTB}, \identi{PFGQ},
+\identr{PGFC}, \identi{BTMT}.
+
+\subsection{Calls to setters and getters}
+
+The replacement of implicit calls to getters and setters (written for example as
+slices) to explicit calls to subprograms has not been transliterated.
+%
+In terms of abstract syntax, this corresponds to the translation between a
+\texttt{E\_Slice} and a \texttt{E\_Call}.
+
+This is related to \identi{YYQX}, \identi{LJLW}, \identi{MFBC}.
+
+\subsection{Type inference from literals}
+
+Finding the type of a literal value, or a compile-time constant expression, is
+not yet transliterated.
+
+This is related to \identr{ZJKY} and \identi{RYRP}.
+
+% ------------------------------------------------------------------------------
+\section{Semantics}
+
+\subsection{Base values of types}
+
+Finding the base value of a type is not transliterated.
+
+This is related to \identr{NJDZ}, \identr{CFTD}, \identr{QGGH}, \identi{WVQZ},
+\identr{GYCG}, \identr{WKCY}, \identr{LCCN}, \identr{CPCK}, \identr{ZVPT},
+\identi{QFZH}, \identr{ZGVR}, \identi{PGSS}, \identr{QWSQ}, \identr{HMRK},
+\identr{MBRM}, \identr{SVJB}.
+
+\subsection{Operations}
+
+Operations are not transliterated from ASLRef.
+
+This is related to \identr{NCWM}, \identr{VGZF}, \identr{THSV}, \identr{CRQJ},
+\identr{ZTJN}, \identr{SVMM}, \identr{WWTV}, \identr{GHXR}, \identi{NBCT}.
+
+\subsection{Standard library and primitives}
+
+The standard library is not transliterated.
+
+This is related to \identr{RXYN}.
+
+\end{document}

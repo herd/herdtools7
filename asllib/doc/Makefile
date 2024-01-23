@@ -1,7 +1,9 @@
 BENTO=../../_build/default/tools/bento.exe
 LATEX=pdflatex
 
-all: ASLAbstractSyntaxReference.pdf ASLSemanticsReference.pdf ASLTypingReference.pdf
+PDFS=ASLSyntaxReference.pdf ASLSemanticsReference.pdf ASLTypingReference.pdf ASLRefProgress.pdf
+
+all: $(PDFS)
 
 short:
 	$(MAKE) $(MFLAGS) NOEMPTY=1 NOFORMAL=1 all
@@ -14,15 +16,17 @@ no-empty:
 
 CONTROL=ifempty.tex ifformal.tex control.tex
 
-ASLAbstractSyntaxReference.pdf: $(CONTROL) ASLASTLines.tex ASLAbstractSyntaxReference.tex
-	$(LATEX) -pdf ASLAbstractSyntaxReference.tex
+ASLSyntaxReference.pdf: $(CONTROL) ASLASTLines.tex ASLSyntaxReference.tex
+	$(LATEX) -pdf ASLSyntaxReference.tex
 
-ASLSemanticsReference.pdf: $(CONTROL) ASLAbstractSyntaxReference.pdf ASLSemanticsReference.tex ASLSemanticsLines.tex
+ASLSemanticsReference.pdf: $(CONTROL) ASLSyntaxReference.pdf ASLSemanticsReference.tex ASLSemanticsLines.tex
 	$(LATEX) -pdf ASLSemanticsReference.tex
 
-ASLTypingReference.pdf: $(CONTROL) ASLAbstractSyntaxReference.pdf ASLTypingReference.tex ASLASTLines.tex ASLTypingLines.tex ASLTypeSatisfactionLines.tex
-
+ASLTypingReference.pdf: $(CONTROL) ASLSyntaxReference.pdf ASLTypingReference.tex ASLASTLines.tex ASLTypingLines.tex ASLTypeSatisfactionLines.tex
 	$(LATEX) -pdf ASLTypingReference.tex
+
+ASLRefProgress.pdf: ASLRefProgress.tex
+	$(LATEX) -pdf $<
 
 ASLSemanticsLines.tex: ../Interpreter.ml
 	$(BENTO) $< > $@
@@ -55,8 +59,8 @@ ifempty.tex: force
 endif
 
 clean:
-	/bin/rm -f ASLSemanticsReference.pdf ASLSemanticsLines.tex ASLAbstractSyntaxReference.pdf
-	/bin/rm -f ASLTypingReference.pdf ASLTypingLines.tex ASLTypeSatisfactionLines.tex ASLASTLines.tex
+	/bin/rm -f $(PDFS)
+	/bin/rm -f ASLSemanticsLines.tex ASLTypingLines.tex ASLTypeSatisfactionLines.tex ASLASTLines.tex
 	/bin/rm -f *.aux *.log *.fls *.log *.toc *.fdb_latexmk *~
 	/bin/rm -f ifformal.tex ifempty.tex
 	/bin/rm -f comment.cut

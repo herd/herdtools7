@@ -2,7 +2,8 @@
 \input{ASLmacros}
 
 \author{Arm Architecture Technology Group}
-\title{ASL Typing Reference}
+\title{ASL Syntax Reference \\
+       DDI 0620}
 \begin{document}
 \maketitle
 
@@ -118,9 +119,6 @@ We define the abstract syntax of ASL below. We sometimes provide extra details t
  &|& \texttt{"\^{}"}   \\
  & & \ASTComment{\texttt{binop\_pow}}\\
 
- &|& \texttt{"IN"}   \\
- & & \ASTComment{\texttt{binop\_in}}\\
-
 \literal &=& \texttt{<int\_lit>}  \\
  &|&\texttt{<hex\_lit>} \\
  & & \ASTComment{merged into \texttt{<int\_lit>}?}\\
@@ -192,6 +190,7 @@ We define the abstract syntax of ASL below. We sometimes provide extra details t
   &|& \TException(\Field^{*}) \\
   &|& \TNamed(\identifier)\\
   & & \ASTComment{A type variable.}\\
+  & & \ASTComment{This is related to \identi{LDNP}}
 \end{array}
 \]
 

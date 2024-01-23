@@ -566,3 +566,6 @@ herd/libdir/asl-pseudocode/shared_pseudocode.asl:
 
 clean-asl-pseudocode:
 	@ $(MAKE) -C $(@D)/herd/libdir/asl-pseudocode clean
+
+asldoc:
+	@ $(MAKE) -C $(@D)/asllib/doc all
