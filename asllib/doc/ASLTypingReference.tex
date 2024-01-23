@@ -1001,7 +1001,6 @@ We first define the following relations over types (and operators):
   \subsection{Prose}
 The \emph{subtype} relation is a partial order over \underline{named types}.
 The \emph{supertype} is the symmetric relation. That is, \tty\ is a  of \tsy\ if and only if \tsy\ is a subtype of \tty.
->>>>>>> 0a32a813 (* types.ml: undo shaddowing of variable to enable writing a formal)
 
   \subsection{Example}
 In the following example \texttt{subInt} is a subtype of itself and of \texttt{superInt}:
@@ -1089,8 +1088,8 @@ ROMAN: This rule doesn't exist in the code. Also, it is redundant, since it just
 
   \item All of the following apply:
     \begin{itemize}
-    \item \texttt{S} has the structure of a real type;
-    \item \texttt{T} has the structure of a real type.
+    \item \texttt{s} has the underlying type of an integer type;
+    \item \texttt{t} has the underlying type of an integer type.
     \end{itemize}
 
   \item All of the following apply:
@@ -1107,9 +1106,9 @@ ROMAN: This rule doesn't exist in the code. Also, it is redundant, since it just
 
   \item All of the following apply:
     \begin{itemize}
-    \item \texttt{S} has the structure of an enumeration type;
-    \item \texttt{T} has the structure of an enumeration type;
-    \item \texttt{S} and \texttt{T} have the same enumeration literals.
+    \item \texttt{s} has the underlying type of an enumeration type;
+    \item \texttt{t} has the underlying type of an enumeration type;
+    \item \texttt{s} and \texttt{t} have the same enumeration literals.
    \end{itemize}
 
   \item All of the following apply:
@@ -1251,7 +1250,8 @@ We write $\structsubtypesat(\tenv, \vs, \vt)$ to denote that type $\vs$ structur
 
 \begin{emptyformal}
     \subsection{Formally}
-We denote that \texttt{t} domain-subtype-satisfies \texttt{s} in environment \tenv\ by $\domsubtypesat(\tenv, \vt, \vs)$.
+We denote that \texttt{t} domain-subtype-satisfies \texttt{s} in environment
+\tenv\ by $\domsubtypesat(\tenv, \vt, \vs)$.
 
 \begin{mathpar}
 \inferrule{\tstruct(\tenv, \vs)=\vs' \\ \astlabel(\vs') \in \{\TTuple, \TArray, \TRecord, \TException\} }{\domsubtypesat(\tenv, \vt, \vs)}
@@ -3828,7 +3828,7 @@ length)} and all of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-    \identr{GXKG}: The notation b\texttt{i} is syntactic sugar for b\texttt{i +: 1}.
+    \identr{GXKG}: The notation \texttt{b[i]} is syntactic sugar for \texttt{b[i +: 1]}.
 
 \section{TypingRule.SliceLength \label{sec:TypingRule.SliceLength}}
 
@@ -3894,7 +3894,7 @@ length)} and all of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-    \identr{GXKG}: The notation b\texttt{j:i} is syntactic sugar for b\texttt{i +: j-i+1}.
+    \identr{GXKG}: The notation \texttt{b[j:i]} is syntactic sugar for \texttt{b[i +: j-i+1]}.
 
 \section{TypingRule.SliceStar \label{sec:TypingRule.SliceStar}}
 
@@ -3918,7 +3918,7 @@ length)} and all of the following apply:
 \end{emptyformal}
 
 \subsection{Comments}
-    \identr{GXQG}: The notation b\texttt{i *: n} is syntactic sugar for b\texttt{i*n +: n}
+    \identr{GXQG}: The notation \texttt{b[i *: n]} is syntactic sugar for \texttt{b[i*n +: n]}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Typing of Patterns}

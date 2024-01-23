@@ -104,12 +104,14 @@ In an ASL abstract syntax tree, a node is one the following data types:
 \begin{description}
 \item[Token Node.] A lexical token, denoted as in the lexical description of ASL;
 \item[Label Node.] A label
-\item[Unlabelled Tuple Node.] A tuple of children nodes, which we denote as $(n_1,\ldots,n_k)$;
-\item[Labelled Tuple Node.] A tuple associated with a label $L$, which we denote as $L(n_1,\ldots,n_k)$;
+\item[Unlabelled Tuple Node.] A tuple of children nodes, denoted as $(n_1,\ldots,n_k)$;
+\item[Labelled Tuple Node.] A tuple associated with a label $L$, denoted as $L(n_1,\ldots,n_k)$;
 \item[List Node.] A list of 0 or more children nodes, denoted as $\emptylist$ when the list is empty and $[n_1,\ldots,n_k]$ for non-empty lists;
 \item[Optional.] An optional node stands for a list of 0 or 1 occurrences of a sub-node $n$. We denote an empty optional by $\langle\rangle$ and the non-empty optional by $\langle n \rangle$;
 \item[Record Node.] A record node, denoted as $\{\text{name}_1 : n_1,\ldots,\text{name}_k : n_k\}$, where $\text{name}_1 \ldots \text{name}_k$ are names, which associates names with corresponding nodes.
 \end{description}
+
+\newpage
 
 \section{ASL Abstract Syntax Grammar}
 
