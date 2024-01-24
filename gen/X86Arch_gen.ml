@@ -27,11 +27,12 @@ module SIMD = NoSIMD
 type atom = Atomic
 
 let default_atom = Atomic
+let instr_atom = None
 
 let applies_atom a d = match a,d with
 | Atomic,W -> true
 | _,_ -> false
-
+let is_ifetch _ = false
 let compare_atom = compare
 
 include MachMixed.No
@@ -123,6 +124,7 @@ include
         | Symbolic_reg _ -> true
         | _ -> false
       let pp_reg = pp_reg
+      let pp_i _ = assert false
       let free_registers = allowed_for_symb
       include NoSpecial
     end)

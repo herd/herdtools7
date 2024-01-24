@@ -47,12 +47,14 @@ module Make
       type atom = atom_acc * MachMixed.t option
 
       let default_atom = Atomic,None
+      let instr_atom = None
 
       let applies_atom a d = match a,d with
       | ((Atomic,_),Code.W)
       | (((Plain|NonTemporal),_),(Code.W|Code.R)) -> true
       | ((Atomic,_),Code.R)
       | (_,Code.J)-> false
+    let is_ifetch _ = false
 
       let compare_atom = compare
 
@@ -249,6 +251,7 @@ module Make
               | Symbolic_reg _ -> true
               | _ -> false
             let pp_reg = pp_reg
+            let pp_i _ = assert false
             let free_registers = allowed_for_symb
             type special = xmm
             let specials = xmms

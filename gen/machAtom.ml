@@ -33,12 +33,14 @@ module Make(C:Config) = struct
   type atom = hidden_atom
 
   let default_atom = Atomic
+  let instr_atom = None
 
   open Code
 
   let applies_atom a d = match a,d with
   | Reserve,W -> false
   | _,_ -> true
+  let is_ifetch _ = false
 
   let pp_plain = Code.plain
   let pp_as_a = None

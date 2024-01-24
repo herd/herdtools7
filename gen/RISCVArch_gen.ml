@@ -51,6 +51,7 @@ module Make
    type atom = MO of mo | Atomic of mo * mo | Mixed of MachMixed.t
 
    let default_atom = Atomic (Rlx,Rlx)
+   let instr_atom = None
 
    let applies_atom a d = match a with
    | MO mo ->
@@ -62,7 +63,7 @@ module Make
        | Sc,_ -> assert false
        end
    | Atomic _|Mixed _ -> true
-
+   let is_ifetch _ = false
    let pp_plain = "P"
 
    let pp_as_a = None
@@ -225,6 +226,7 @@ include
         | _ -> false
 
       let pp_reg = pp_reg
+      let pp_i _ = assert false
 
       let free_registers = allowed_for_symb
       include NoSpecial
