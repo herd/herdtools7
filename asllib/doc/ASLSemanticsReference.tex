@@ -1668,7 +1668,6 @@ error and one of the following applies:
 \item SemanticsRule.LDTypedVar (see Section~\ref{sec:SemanticsRule.LDTypedVar},
 \item SemanticsRule.LDTuple (see Section~\ref{sec:SemanticsRule.LDTuple},
 \item SemanticsRule.LDTypedTuple (see Section~\ref{sec:SemanticsRule.LDTypedTuple},
-\item SemanticsRule.LDUninitialisedTuple (see Section~\ref{sec:SemanticsRule.LDUninitialisedTuple}.
 \end{itemize}
 
 \section{SemanticsRule.LDDiscard \label{sec:SemanticsRule.LDDiscard}}
@@ -1774,8 +1773,9 @@ Evaluation of the local variables \texttt{ldi} under the environment
     \subsection{Example: SemanticsRule.LDTuple.asl}
     In the program:
     \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDTuple.asl}
-    \texttt{var (x,y,z) = (1,2,3);} binds \texttt{x} (resp. \texttt{y}, \texttt{z}) to the evaluation of
-    \texttt{1} (resp. \texttt{2}, \texttt{3}) in \texttt{env}.
+    \texttt{var (x,y,z) = (1,2,3);} binds \texttt{x} to the evaluation of
+\texttt{1}, \texttt{y} to the evaluation of \texttt{2}, and \texttt{z} to the
+evaluation of \texttt{3}) in \texttt{env}.
 
   \subsection{Code}
   \VerbatimInput[firstline=\LDTupleBegin, lastline=\LDTupleEnd]{../Interpreter.ml}
@@ -1807,33 +1807,6 @@ Evaluation of the local variables \texttt{ldi} under the environment
 
   \subsection{Code}
   \VerbatimInput[firstline=\LDTypedTupleBegin, lastline=\LDTypedTupleEnd]{../Interpreter.ml}
-
-\begin{emptyformal}
-  \subsection{Formally: sequential case}
-
-  \subsection{Formally: concurrent case}
-\end{emptyformal}
-
-\isempty{\subsection{Comments}}
-
-\section{SemanticsRule.LDUninitialisedTuple \label{sec:SemanticsRule.LDUninitialisedTuple}}
-
-    \subsection{Prose}
-Evaluation of the local variables \texttt{ldi} under the environment
-\texttt{env} is \texttt{new\_env} and all of the following apply:
-    \begin{itemize}
-    \item \texttt{ldi} gives a list of local variables \texttt{ldis};
-    \item \texttt{new\_env} is \texttt{env} modified to declare each element of \texttt{ldis}.
-    \end{itemize}
-
-    \subsection{Example: SemanticsRule.LDUninitalisedTuple.asl}
-    In the program:
-    \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDUninitialisedTuple.asl}
-   \texttt{var (x : integer, y : boolean);} binds \texttt{x} to the base value of \texttt{integer}
-    and \texttt{y} to the base value of \texttt{boolean}.
-
-  \subsection{Code}
-  \VerbatimInput[firstline=\LDUninitialisedTupleBegin, lastline=\LDUninitialisedTupleEnd]{../Interpreter.ml}
 
 \begin{emptyformal}
   \subsection{Formally: sequential case}
