@@ -240,12 +240,18 @@ module Make(V:Constant.S)(C:Config) =
         memo; inputs=[r;]; outputs=[];
         branch=add_next b ; }
 
-(* Load and Store *)
 
+(* Lowercase mnemonics *)
     let ldr_memo t = Misc.lowercase (ldr_memo t)
     let ldrbh_memo bh t = Misc.lowercase (ldrbh_memo bh t)
     let str_memo t = Misc.lowercase (str_memo t)
     let strbh_memo bh t = Misc.lowercase (strbh_memo bh t)
+    let stp_memo t = Misc.lowercase (stp_memo t)
+    let ldp_memo t = Misc.lowercase (ldp_memo t)
+    let ldxp_memo t = Misc.lowercase (ldxp_memo t)
+    let stxp_memo t = Misc.lowercase (stxp_memo t)
+    let ldrs_memo bh = Misc.lowercase (ldrs_memo bh)
+(* Load and Store *)
 
     let pp_mem_sext se = MemExt.pp_sext se |> Misc.lowercase
 
@@ -373,8 +379,6 @@ module Make(V:Constant.S)(C:Config) =
            outputs=[rD1;rD2;];
            reg_env=[(rA,voidstar);(rD1,quad);(rD2,quad);]; }
       | V128 -> assert false
-
-    let stp_memo t = Misc.lowercase (stp_memo t)
 
     let store_pair memo v rD1 rD2 rA idx  = match v,idx with
     | V32,(0,Idx) ->
@@ -1304,15 +1308,15 @@ module Make(V:Constant.S)(C:Config) =
     | I_LDPSW (r1,r2,r3,idx) ->
        ldpsw r1 r2 r3 idx::k
     | I_LDXP (v,t,r1,r2,r3) ->
-       loadx_pair (Misc.lowercase (ldxp_memo t)) v r1 r2 r3::k
+       loadx_pair (ldxp_memo t) v r1 r2 r3::k
     | I_STP (t,v,r1,r2,r3,idx) ->
         store_pair (stp_memo t) v r1 r2 r3 idx::k
     | I_STXP (v,t,r1,r2,r3,r4) ->
-        storex_pair (Misc.lowercase (stxp_memo t)) v r1 r2 r3 r4::k
+        storex_pair (stxp_memo t) v r1 r2 r3 r4::k
     | I_LDRBH (B,r1,r2,idx) -> load "ldrb" V32 r1 r2 idx::k
     | I_LDRBH (H,r1,r2,idx) -> load "ldrh" V32 r1 r2 idx::k
     | I_LDRS ((var,bh),r1,r2,idx) ->
-       load (ldrs_memo bh |> Misc.lowercase)  var r1 r2 idx::k
+       load (ldrs_memo bh)  var r1 r2 idx::k
     | I_LDAR (v,t,r1,r2) -> load (ldr_memo t) v r1 r2 MemExt.zero::k
     | I_LDARBH (bh,t,r1,r2) -> load (ldrbh_memo bh t) V32 r1 r2 MemExt.zero::k
     | I_STR (v,r1,r2,idx) -> store "str" v r1 r2 idx::k
