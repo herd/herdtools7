@@ -429,6 +429,10 @@ module TypingRule = struct
     | CatcherNone
     | CatcherSome
     | Subprogram
+    | DeclareOneFunc
+    | DeclareGlobalStorage
+    | DeclareTypeDecl
+    | Specification
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -562,6 +566,10 @@ module TypingRule = struct
     | CatcherNone -> "CatcherNone"
     | CatcherSome -> "CatcherSome"
     | Subprogram -> "Subprogram"
+    | DeclareOneFunc -> "DeclareOneFunc"
+    | DeclareGlobalStorage -> "DeclareGlobalStorage"
+    | DeclareTypeDecl -> "DeclareTypeDecl"
+    | Specification -> "Specification"
 
   let pp f r = to_string r |> Format.pp_print_string f
 

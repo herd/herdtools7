@@ -2123,6 +2123,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   (*                                                                            *)
   (******************************************************************************)
 
+  (* Begin DeclareOneFunc *)
   let declare_one_func loc (func_sig : 'a func) env =
     let env, name' =
       best_effort (env, func_sig.name) @@ fun _ ->
@@ -2141,7 +2142,8 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           (pp_print_list ~pp_sep:pp_print_space PP.pp_typed_identifier)
           func_sig.args
     in
-    add_subprogram name' (ast_func_to_func_sig func_sig) env
+    add_subprogram name' (ast_func_to_func_sig func_sig) env |: TypingRule.DeclareOneFunc
+(* End *)
 
   let declare_const loc name t v env =
     if IMap.mem name env.global.storage_types then
@@ -2223,6 +2225,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
         ()
     | _ -> ()
 
+  (* Begin DeclareType *)
   let declare_type loc name ty s env =
     let () =
       if false then
@@ -2273,7 +2276,9 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     let () = if false then Format.eprintf "Declared %s.@." name in
     res
+  (* End *)
 
+  (* Begin DeclareGlobalStorage *)
   let declare_global_storage loc gsd env =
     let () = if false then Format.eprintf "Declaring %s@." gsd.name in
     best_effort env @@ fun _ ->
@@ -2321,6 +2326,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
           (Error.NotYetImplemented
              "Global storage declaration should have an initial value \
               or a type.")
+    (* End *)
 
   let build_global ast =
     let def d =
@@ -2355,6 +2361,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
   (*                                                                            *)
   (******************************************************************************)
 
+  (* Begin Specification *)
   let type_check_ast ast env =
     let env = build_global ast env in
     let () =
@@ -2375,6 +2382,7 @@ module Annotate (C : ANNOTATE_CONFIG) = struct
     in
     (List.map annotate ast, env)
 end
+(* End *)
 
 module TypeCheck = Annotate (struct
   let check = `TypeCheck

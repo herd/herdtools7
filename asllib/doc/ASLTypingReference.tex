@@ -177,6 +177,11 @@ An \emph{environment} is what the type rules operate over: a structure, which am
 other things, associates types to variables. Intuitively, the typing of a
 program makes an initial environment evolve, with new types as given by the
 variable declarations of the program.
+%
+Technically, an environment $\tenv=(G^\tenv, L^\tenv)$ consists of two
+distinct components: the global environment $G^\tenv$---pertaining to AST nodes
+appearing outside of a given subprogram, and the local environment
+$L^\tenv$---pertaining to AST nodes appearing inside a given subprogram.
 
 Environments $\tenv \in \mathbb{E}$ are formally defined below (referring to symbols defined in the abstract syntax):
 \[
@@ -192,18 +197,15 @@ Environments $\tenv \in \mathbb{E}$ are formally defined below (referring to sym
 \subtypes		            &=& \identifier \partialto \identifier\\
 \subprograms	          &=& \identifier \partialto \func\\
 \subprogramrenamings	  &=& \identifier \rightarrow 2^\func\\
-\returntype             &=& \{\langle\rangle, \langle \ty \rangle\}
+\returntype             &=& \langle \ty \rangle
 \end{array}
 \]
 
-Technically, an environment $\tenv=(G^\tenv, L^\tenv)$ consists of two
-distinct components: the global environment $G^\tenv$---pertaining to AST nodes
-appearing outside of a given subprogram, and the local environment
-$L^\tenv$---pertaining to AST nodes appearing inside a given subprogram.
-%
-We will drop the superscripts when they are obvious from the context.
-%
-The global environment and local environment consist of various maps. We will use the notation $G.m$ and $L.m$ to access the $m$ component of a given environment.
+The global environment and local environment consist of various components. 
+We use the notation $G^\tenv.m$ and $L^\tenv.m$ to access the $m$ component of a given environment.
+
+To update a function component $f$ (e.g., $\declaredtypes$) of an environment $E$ (either local or global)
+with a new mapping $x \mapsto v$, we use the notation $E.f[x \mapsto v]$ to stand for $E[f \mapsto E.f[x \mapsto v]]$.
 
 \section{Type System}
 A \emph{type rule} has the form $\inferrule{P_1 \\ .. \\ P_k}{S}$. 
@@ -4317,7 +4319,7 @@ the following apply:
     L^\tenv.\storagetypes(\vx) = \bot\\
     \tyopt = \langle\rangle\\
     \vt = \tty\\
-    \newenv = (G^\tenv, L^\tenv[\storagetypes \mapsto L^\tenv[\vx \mapsto (\vt, \ldk)]])
+    \newenv = (G^\tenv, L^\tenv.\storagetypes[\vx \mapsto (\vt, \ldk)])
   }
   {
     \annotatelocaldeclitem{\tenv, \ldi, \ldk, \tty} = (\newenv, \texttt{LDI\_Var}(\vx, \langle\vt\rangle))
@@ -4328,7 +4330,7 @@ the following apply:
   L^\tenv.\storagetypes(\vx) = \bot\\
   \tyopt = \langle\vt\rangle\\
   \canbeinitializedwith(\tenv, \vt, \tty)\\
-  \newenv = (G^\tenv, L^\tenv[\storagetypes \mapsto L^\tenv[x \mapsto (\vt, \ldk)]])
+  \newenv = (G^\tenv, L^\tenv.\storagetypes[x \mapsto (\vt, \ldk)])
 }
 {
   \annotatelocaldeclitem{\tenv, \ldi, \ldk, \tty} = (\newenv, \texttt{LDI\_Var}(\vx, \langle\vt\rangle))
@@ -5350,7 +5352,7 @@ new\_stmt)} and all of the following apply:
     \astlabel(\tstruct(\tty)) = \TException\\
     \texttt{name\_opt} = \langle\name\rangle\\
     \checkvarnotinenv{\tenv, \name}\\
-    \tenv' = (G^\tenv, L^\tenv[\storagetypes \mapsto L^\tenv[\name \mapsto (\tty, \texttt{LDK\_Let})]])\\
+    \tenv' = (G^\tenv, L^\tenv.\storagetypes[\name \mapsto (\tty, \texttt{LDK\_Let})])\\
     \texttt{new\_stmt'} = \annotateblock{\tenv', \texttt{stmt}}
   }
   {
@@ -5568,7 +5570,166 @@ the following apply:
 This is related to \identi{GHGK}, \identr{HWTV}, \identr{SCHV}, \identr{VDPC},
 \identr{TJKQ}, \identi{LFJZ}, \identi{BZVB}, \identi{RQQB}.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Typing of Global Declarations}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Annotating a global declaration \texttt{d} in an environment \texttt{env} results in 
+a new environment \texttt{env'}, which contains the declared element, and one of the following applies:
+\begin{itemize}
+  \item TypingRule.DeclareOneFunc (see Section~\ref{sec:TypingRule.DeclareOneFunc}).
+  \item TypingRule.DeclareGlobalStorage (see Section~\ref{sec:TypingRule.DeclareGlobalStorage}).
+  \item TypingRule.DeclareType (see Section~\ref{sec:TypingRule.DeclareType}).
+\end{itemize}
+
+\section{TypingRule.DeclareOneFunc \label{sec:TypingRule.DeclareOneFunc}}
+\subsection{Prose}
+Annotating a subprogram declaration \texttt{func\_sig} in a given environment \texttt{env} results
+in \texttt{new\_env} and all of the following applies:
+\begin{itemize}
+  \item \texttt{name} is the identifier associated with the subprogram declaration;
+  \item \texttt{env} does not contain another subprogram declaration for \texttt{name} that clashes with \texttt{func\_sig};
+  \item \texttt{new\_env} is \texttt{env} where 
+  \texttt{func\_sig} has been added to the set of subprograms declared with \texttt{name} (\subprogramrenamings)
+  and \texttt{name} is associated with \texttt{func\_sig}.
+\end{itemize}
+
+\subsection{Example}
+\subsection{Code}
+\VerbatimInput[firstline=\DeclareOneFuncBegin, lastline=\DeclareOneFuncEnd]{../Typing.ml}
+\begin{emptyformal}
+  \subsection{Formally}
+
+\newcommand\funcsig[0]{\texttt{func\_sig}}
+\newcommand\subprogramtypeclash[0]{\texttt{subprogram\_type\_clash}}
+\newcommand\hassubprogramtypeclash[0]{\texttt{subprogram\_type\_clash}}
+\newcommand\subprogramclash[0]{\texttt{subprogram\_clash}}
+\newcommand\argsclash[0]{\texttt{args\_clash}}
+
+We define the helper rules \hassubprogramtypeclash, \argsclash, and subprogramclash\ to determined whether
+two subprogram clash in terms of their subprogram types and their lists of argument types,
+and then use them to annotate a subprogram declaration.
+
+\begin{mathpar}
+\inferrule{}{\hassubprogramtypeclash(\tenv, \texttt{ST\_Function}, \Ignore)}
+\and
+\inferrule{}{\hassubprogramtypeclash(\tenv, \Ignore, \texttt{ST\_Function})}
+\and
+\inferrule{}{\hassubprogramtypeclash(\tenv, \texttt{ST\_Procedure}, \Ignore)}
+\and
+\inferrule{}{\hassubprogramtypeclash(\tenv, \Ignore, \texttt{ST\_Procedure})}
+\and
+\inferrule{}{\hassubprogramtypeclash(\tenv, \texttt{ST\_Getter}, \texttt{ST\_Getter})}
+\and
+\inferrule{}{\hassubprogramtypeclash(\tenv, \texttt{ST\_Setter}, \texttt{ST\_Setter})}
+\and
+\inferrule{
+  \texttt{t\_args1} = [i=1..k: (\Ignore, \vt_i)]\\
+  \texttt{s\_args1} = [i=1..k: (\Ignore, \vs_i)]\\
+  j \in 1..k\\
+  \typeclashes(\tenv, \vt_j, \vs_j)
+}
+{\argsclash(\tenv, \texttt{t\_args}, \texttt{s\_args})}
+\and
+\inferrule{
+  \argsclash(\texttt{f}.\subprogramtype, \texttt{g}.\subprogramtype)\\
+  \argsclash(\texttt{f}.\vargs, \texttt{g}.\vargs)\\
+}
+{ \subprogramclash(\texttt{f}, \texttt{g}) }
+\and
+\inferrule{
+  \name = \funcsig.\name\\
+  \texttt{same\_named} = G^\tenv.\subprogramrenamings(\name)\\
+  \texttt{fo} \in \texttt{same\_named}: \neg\subprogramclash(\tenv, \funcsig, \texttt{fo})\\
+  G' = G^\tenv.\subprogramrenamings[\name \mapsto \texttt{same\_named} \cup \{\funcsig\}]\\
+  G'' = G'.\subprograms[\name \mapsto \funcsig]\\
+  \texttt{new\_env} = (G'', L^\tenv)
+}
+{
+  \texttt{annotate\_decl}(\tenv, \texttt{func\_sig}) = G''
+}
+\end{mathpar}
+\end{emptyformal}
+\subsection{Comments}
+
+This relates to \identr{PGFC}.
+
+\section{TypingRule.DeclareGlobalStorage \label{sec:TypingRule.DeclareGlobalStorage}}
+\subsection{Prose}
+Annotating a global storage declaration \texttt{d} in a given environment \texttt{env} results
+in \texttt{new\_env} and one of the following applies:
+\begin{itemize}
+  \item All of the following apply:
+  \begin{itemize}
+    \item \texttt{d} declares a global constant named \name, with initial value \texttt{e}, and without a type annotation.
+    \item \texttt{v} is the literal computed in \tenv\ by evaluating \texttt{e}.
+    \item \texttt{t} is the type inferred for \texttt{v}
+    \item \texttt{new\_env} is \tenv\ extended with a declaration of the constant \name, with initial value \texttt{v} and type \texttt{t}.
+  \end{itemize}
+
+  \item All of the following apply:
+  \begin{itemize}
+    \item \texttt{d} declares a global constant named \name, with initial value \texttt{e}, and type annotation \texttt{ty}.
+    \item \texttt{v} is the literal computed in \tenv\ by evaluating \texttt{e}.
+    \item \texttt{t} is the type inferred for \texttt{v}.
+    \item \texttt{t} type-satisfies \texttt{ty} in \tenv.
+    \item \texttt{new\_env} is \tenv\ extended with a declaration of the constant \name, with initial value \texttt{v} and type \texttt{ty}.
+  \end{itemize}
+
+  \item All of the following apply:
+  \begin{itemize}
+    \item \texttt{d} declares a global constant or global let with no initial.
+    \item An exception ``Constants or let-bindings have to be initialized.'' is raised.
+  \end{itemize}
+
+  \item All of the following apply:
+  \begin{itemize}
+    \item \texttt{d} declares a global variable or config named \name, with no initial value, and type annotation \texttt{ty}.
+    \item \texttt{name} is not yet declared in the environment.
+    \item \texttt{v} is the literal computed in \tenv\ by evaluating \texttt{e}.
+    \item \texttt{t} is the type inferred for \texttt{v}.
+    \item \texttt{t} type-satisfies \texttt{ty} in \tenv.
+    \item \texttt{new\_env} is \tenv\ extended with a declaration of the constant \name, with initial value \texttt{v} and type \texttt{ty}.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Example}
+\subsection{Code}
+\VerbatimInput[firstline=\DeclareGlobalStorageBegin, lastline=\DeclareGlobalStorageEnd]{../Typing.ml}
+\begin{emptyformal}
+  \subsection{Formally}
+\end{emptyformal}
+\subsection{Comments}
+
+\section{TypingRule.DeclareType \label{sec:TypingRule.DeclareType}}
+\subsection{Prose}
+Annotating a type named \texttt{name} with a type specification \texttt{ty} 
+and optional extra fields \texttt{s} in a given environment \texttt{env} results
+in \texttt{env'} and all of the following applies:
+
+\subsection{Example}
+\subsection{Code}
+\VerbatimInput[firstline=\DeclareTypeBegin, lastline=\DeclareTypeEnd]{../Typing.ml}
+\begin{emptyformal}
+  \subsection{Formally}
+\end{emptyformal}
+\subsection{Comments}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Typing of Specifications}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{TypingRule.Specification \label{sec:TypingRule.Specification}}
+\subsection{Prose}
+\subsection{Example}
+\subsection{Code}
+\VerbatimInput[firstline=\SpecificationBegin, lastline=\SpecificationEnd]{../Typing.ml}
+\begin{emptyformal}
+  \subsection{Formally}
+\end{emptyformal}
+\subsection{Comments}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bibliographystyle{plain}
 \bibliography{ASL}
 
