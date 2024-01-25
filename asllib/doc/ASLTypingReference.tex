@@ -839,37 +839,40 @@ may appear internally.
 
 \begin{emptyformal}
       \subsection{Formally}
+\newcommand\runtimeenv[0]{E}
 Notice that for the types of arrays, constrained integers, and constrained bitvectors, depend on statically evaluable expressions.
-Therefore, their domains take as an input a runtime environment $\tenv$ and evaluate the expressions and constraints needed to establish
-concrete values (e.g., the length of an array).
+Further, underconstrained integers are parameters that also take their value during runtime.
+Therefore, domains depend on a runtime environment $E$ that assigns values to global storage elements (more specifically, config variables)
+and subprogram parameters. 
+We denote by $\llbracket \runtimeenv \rrbracket N$ the integer value given to the underconstrained parameter $N$ in the environment $\runtimeenv$.
 
-Underconstrained integers are parameterized. Therefore, their domain requires supplying an integer value for the respective parameter.
-We use the notation $\emptylist_N$ to name the parameter, since it is not part of the current abstract syntax.
+Since currently the abstract syntax does not specify the parameter name of an underconstrained integer,
+we use the notation $\emptylist_N$ to name the parameter.
 
 \begin{mathpar}
-\inferrule{}{ \dom(\tenv, \TBool) = \{\texttt{FALSE}, \texttt{TRUE}\} }
+\inferrule{}{ \dom(\runtimeenv, \TBool) = \{\texttt{FALSE}, \texttt{TRUE}\} }
 \and
-\inferrule{}{ \dom(\tenv, \TString) = \{ s\ \;|\; \texttt{"}s\texttt{"} \in \texttt{<string\_lit>} \} }
+\inferrule{}{ \dom(\runtimeenv, \TString) = \{ s\ \;|\; \texttt{"}s\texttt{"} \in \texttt{<string\_lit>} \} }
 \and
-\inferrule{}{ \dom(\tenv, \TReal) = \Q }
+\inferrule{}{ \dom(\runtimeenv, \TReal) = \Q }
 \and
-\inferrule[Domain of Unconstrained integer]{}{\dom(\tenv, \unconstrainedinteger) = \Z }
+\inferrule[Domain of Unconstrained integer]{}{\dom(\runtimeenv, \unconstrainedinteger) = \Z }
 \and
-\inferrule[Domain of a Well-constrained integer]{}{ \dom(\tenv, \TInt(\langle [c_{1..k}] \rangle)) = \bigcup_{i=1}^k \evalconstraint(E, c_i)}
+\inferrule[Domain of a Well-constrained integer]{}{ \runtimeenv(\tenv, \TInt(\langle [c_{1..k}] \rangle)) = \bigcup_{i=1}^k \evalconstraint(\runtimeenv, c_i)}
 \and
-\inferrule[Domain of Underconstrained integer]{}{\dom(\tenv, \TInt(\langle \emptylist_N \rangle) = \lambda N.\ \{N\} }
+\inferrule[Domain of Underconstrained integer]{}{\dom(\runtimeenv, \TInt(\langle \emptylist_N \rangle) = \{ \llbracket\runtimeenv\rrbracket N \} }
 \and
-\inferrule{}{ \dom(\tenv, \TEnum([\id_{1..k}])) = \{\id_{1..k}\}}
+\inferrule{}{ \dom(\runtimeenv, \TEnum([\id_{1..k}])) = \{\id_{1..k}\}}
 \and
-\inferrule{}{ \dom(\tenv, \TBits(c, \textit{bfl})) = \\ \lambda E.\ \{ b_1\cdot\ldots\cdot b_k \;|\; b_1,\ldots,b_k \in \{0,1\}, \;\;\; k \in \evalconstraint(E, c) \} }
+\inferrule{}{ \dom(\runtimeenv, \TBits(c, \textit{bfl})) = \\ \{ b_1\cdot\ldots\cdot b_k \;|\; b_1,\ldots,b_k \in \{0,1\}, \;\;\; k \in \evalconstraint(E, c) \} }
 \and
-\inferrule{}{ \dom(\tenv, \TTuple([\tty_{1..k}])) = \dom(\tenv,\tty_1) \times \ldots \times \dom(\tenv,\tty_k) }
+\inferrule{}{ \dom(\runtimeenv, \TTuple([\tty_{1..k}])) = \dom(\runtimeenv,\tty_1) \times \ldots \times \dom(\runtimeenv,\tty_k) }
 \and
-\inferrule{}{ \dom(\tenv, \TArray(\ve, \tty)) = \\ \lambda E.\ \{ v_1\cdot\ldots\cdot v_k\;|\; k = \evalexpr(E, \ve)\; v_{1..k} \in \dom(\tenv, \tty)  \} }
+\inferrule{}{ \dom(\runtimeenv, \TArray(\ve, \tty)) = \\ \{ v_1\cdot\ldots\cdot v_k\;|\; k = \evalexpr(E, \ve), \; v_{1..k} \in \dom(\runtimeenv, \tty)  \} }
 \and
-\inferrule{L \in \{\TRecord, \TException\}}{ \dom(\tenv, L(\{f_1:\tty_1,\ldots,f_k:\tty_k\})) = \\ \lambda f\in\identifier.\ \dom(\tenv, \{f_1\mapsto\tty_1,\ldots,f_k\mapsto\tty_k\}(f))}
+\inferrule{L \in \{\TRecord, \TException\}}{ \dom(\runtimeenv, L(\{f_1:\tty_1,\ldots,f_k:\tty_k\})) = \\ \lambda f\in\identifier.\ \dom(\runtimeenv, [f_1\mapsto\tty_1,\ldots,f_k\mapsto\tty_k](f))}
 \and
-\inferrule{G^\tenv.\declaredtypes(\id)=\tty}{\dom(\tenv, \TNamed(\id)) = \dom(\tty)}
+\inferrule{G^\tenv.\declaredtypes(\id)=\tty}{\dom(\runtimeenv, \TNamed(\id)) = \dom(\runtimeenv, \tty)}
 \end{mathpar}
 \end{emptyformal}
 
