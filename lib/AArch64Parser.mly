@@ -260,25 +260,10 @@ kr:
 | xreg { RV (V64,$1) }
 | wreg  { RV (V32,$1) }
 
-kr_shift_address:
-| k                { K $1, S_NOEXT }
-| xreg             { (RV (V64,$1)),  S_NOEXT }
-| wreg COMMA shift { (RV (V32, $1)), $3 }
-| xreg COMMA shift { (RV (V64, $1)), $3 }
-
-(* For address argument only *)
-kr0:
-| { K (MetaConst.zero), S_NOEXT }
-| COMMA kr_shift_address { $2 }
-
 kx0_no_shift:
 | { K (MetaConst.zero) }
 | COMMA k { K $2 }
 | COMMA xreg { RV (V64,$2) }
-
-k0_no_shift:
-| { K (MetaConst.zero) }
-| COMMA k { K $2 }
 
 %inline op_ext_shift:
 | TOK_LSL k { OpExt.LSL $2 }
@@ -417,22 +402,9 @@ ldp_instr:
 
 ldp_simd_instr:
 | LDP
-  { ( fun v r1 r2 r3 k0 k0' ->
-      match k0',k0 with
-      | Some post,None ->
-          I_LDP_P_SIMD (TT,v,r1,r2,r3,post)
-      | None,Some k -> I_LDP_SIMD (TT,v,r1,r2,r3,k)
-      | None,None -> I_LDP_SIMD (TT,v,r1,r2,r3,MetaConst.zero)
-      | _,_ -> assert false
-    )}
+  { ( fun v r1 r2 (r3,idx) -> I_LDP_SIMD (TT,v,r1,r2,r3,idx)) }
 | LDNP
-  { ( fun v r1 r2 r3 k0 k0' ->
-      match k0', k0 with
-      | None,Some k -> I_LDP_SIMD (NT,v,r1,r2,r3,k)
-      | None,None -> I_LDP_SIMD (NT,v,r1,r2,r3,MetaConst.zero)
-      | _,_-> assert false
-
-    )}
+  { ( fun v r1 r2 (r3,idx) -> I_LDP_SIMD (NT,v,r1,r2,r3,idx)) }
 
 stp_instr:
 | STP
@@ -453,19 +425,9 @@ stp_instr:
 
 stp_simd_instr:
 | STP
-  { ( fun v r1 r2 r3 k0 k0' ->
-      match k0',k0 with
-      | Some post, K k when k = MetaConst.zero ->
-          I_STP_P_SIMD (TT,v,r1,r2,r3,post)
-      | None, K k -> I_STP_SIMD (TT,v,r1,r2,r3,k)
-      | _,_ -> assert false
-    )}
+  { ( fun v r1 r2 (r3,idx) -> I_STP_SIMD (TT,v,r1,r2,r3,idx)) }
 | STNP
-  { ( fun v r1 r2 r3 k0 k0' ->
-      match k0',k0 with
-      | None,K k -> I_STP_SIMD (NT,v,r1,r2,r3,k)
-      | _,_ -> assert false
-    )}
+  { ( fun v r1 r2 (r3,idx) -> I_STP_SIMD (NT,v,r1,r2,r3,idx)) }
 
 cond:
 | TOK_EQ { EQ }
@@ -692,44 +654,32 @@ instr:
    { I_ST4 ($2, $3, $6, $8) }
 | ST4 vregs4 COMMA LBRK xreg RBRK kx0_no_shift
    { I_ST4M ($2, $5, $7) }
-| ldp_simd_instr sreg COMMA sreg COMMA LBRK xreg k0_opt RBRK k0_opt
-  { $1 VSIMD32 $2 $4 $7 $8 $10 }
-| ldp_simd_instr dreg COMMA dreg COMMA LBRK xreg k0_opt RBRK k0_opt
-  { $1 VSIMD64 $2 $4 $7 $8 $10 }
-| ldp_simd_instr qreg COMMA qreg COMMA LBRK xreg k0_opt RBRK k0_opt
-  { $1 VSIMD128 $2 $4 $7 $8 $10 }
-| stp_simd_instr sreg COMMA sreg COMMA LBRK xreg k0_no_shift RBRK k0_opt
-  { $1 VSIMD32 $2 $4 $7 $8 $10 }
-| stp_simd_instr dreg COMMA dreg COMMA LBRK xreg k0_no_shift RBRK k0_opt
-  { $1 VSIMD64 $2 $4 $7 $8 $10 }
-| stp_simd_instr qreg COMMA qreg COMMA LBRK xreg k0_no_shift RBRK k0_opt
-  { $1 VSIMD128 $2 $4 $7 $8 $10 }
-| LDR scalar_regs COMMA LBRK xreg kr0 RBRK k0_opt
-  { let v,r    = $2 in
-    let kr, os = $6 in
-    match $8 with
-    | Some post when kr = K MetaConst.zero ->
-      I_LDR_P_SIMD (v,r,$5,post)
-    | _ ->
-      I_LDR_SIMD (v,r,$5,kr,os) }
-| LDUR scalar_regs COMMA LBRK xreg k0_opt RBRK
+| ldp_simd_instr sreg COMMA sreg COMMA mem_idx
+  { $1 VSIMD32 $2 $4 $6 }
+| ldp_simd_instr dreg COMMA dreg COMMA mem_idx
+  { $1 VSIMD64 $2 $4 $6 }
+| ldp_simd_instr qreg COMMA qreg COMMA mem_idx
+  { $1 VSIMD128 $2 $4 $6 }
+| stp_simd_instr sreg COMMA sreg COMMA mem_idx
+  { $1 VSIMD32 $2 $4 $6 }
+| stp_simd_instr dreg COMMA dreg COMMA mem_idx
+  { $1 VSIMD64 $2 $4 $6 }
+| stp_simd_instr qreg COMMA qreg COMMA mem_idx
+  { $1 VSIMD128 $2 $4 $6 }
+| LDR scalar_regs COMMA mem_ea
+  { let (v,r)   = $2 and (ra,ext) = $4 in I_LDR_SIMD (v,r,ra,ext) }
+| LDUR scalar_regs COMMA LBRK xreg k0 RBRK
   { let v,r = $2 in
     I_LDUR_SIMD (v, r, $5, $6) }
-| LDAPUR scalar_regs COMMA LBRK xreg k0_opt RBRK
+| LDAPUR scalar_regs COMMA LBRK xreg k0 RBRK
   { let v,r = $2 in
     I_LDAPUR_SIMD (v, r, $5, $6) }
-| STR scalar_regs COMMA LBRK xreg kr0 RBRK k0_opt
-  { let v,r    = $2 in
-    let kr, os = $6 in
-    match $8 with
-    | Some post when kr = K MetaConst.zero ->
-      I_STR_P_SIMD (v,r,$5,post)
-    | _ ->
-      I_STR_SIMD (v,r,$5,kr,os) }
-| STUR scalar_regs COMMA LBRK xreg k0_opt RBRK
+| STR scalar_regs COMMA mem_ea
+  { let (v,r)   = $2 and (ra,ext) = $4 in I_STR_SIMD (v,r,ra,ext) }
+| STUR scalar_regs COMMA LBRK xreg k0 RBRK
   { let v,r = $2 in
     I_STUR_SIMD (v, r, $5, $6) }
-| STLUR scalar_regs COMMA LBRK xreg k0_opt RBRK
+| STLUR scalar_regs COMMA LBRK xreg k0 RBRK
   { let v,r = $2 in
     I_STLUR_SIMD (v, r, $5, $6) }
 | ADDV breg COMMA vreg

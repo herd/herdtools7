@@ -1903,9 +1903,9 @@ module Make
       let simd_ldr = do_simd_ldr  Annot.N
       let simd_ldar = do_simd_ldr  Annot.Q
 
-      let do_simd_str an sz rs rd kr s ii =
-        get_ea rs kr s ii >>|
-        read_reg_neon true rd ii >>= fun (addr, v) ->
+      let do_simd_str an sz ma rd ii =
+        ma >>|
+        read_reg_neon true rd ii >>= fun (addr,v) ->
         if sz == MachSize.S128 then
           do_write_mem_2_ops sz an aexp Access.VIR addr v ii >>= B.next2T
         else
@@ -1914,9 +1914,9 @@ module Make
       let simd_str = do_simd_str Annot.N
       let simd_stlr = do_simd_str Annot.L
 
-      let simd_str_p sz rs rd k ii =
-        read_reg_ord rs ii >>|
-        read_reg_neon true rd ii >>= fun (addr, v) ->
+      let simd_str_p sz ma rd rs k ii =
+        ma >>|
+        read_reg_neon true rd ii >>= fun (addr,v) ->
         if sz == MachSize.S128 then
           (* 128-bit Neon LDR/STR and friends are split into two 64-bit
            * single-copy atomic accesses. *)
@@ -2638,57 +2638,85 @@ module Make
             !!!!(read_reg_ord rA ii >>= fun addr ->
             (store_m addr rs ii >>|
             post_kr rA addr kr ii))
-
-        | I_LDR_SIMD(var,r1,rA,kr,s) ->
+        | I_LDR_SIMD(var,r1,rA,MemExt.Reg(v,kr,sext,s)) ->
             let access_size = tr_simd_variant var in
-            get_ea rA kr s ii >>= fun addr ->
+            get_ea_reg rA v kr sext s ii >>= fun addr ->
             simd_ldr access_size addr r1 ii >>= B.next1T
-        | I_LDR_P_SIMD(var,r1,rA,k) ->
+        | I_LDR_SIMD(var,r1,rA,MemExt.Imm (k,Idx)) ->
+            let access_size = tr_simd_variant var in
+            get_ea_idx rA k ii >>= fun addr ->
+            simd_ldr access_size addr r1 ii >>= B.next1T
+        | I_LDR_SIMD(var,r1,rA,MemExt.Imm (k,PreIdx)) ->
+            let access_size = tr_simd_variant var in
+            get_ea_preindexed rA k ii >>= fun addr ->
+            simd_ldr access_size addr r1 ii >>= B.next1T
+        | I_LDR_SIMD(var,r1,rA,MemExt.Imm (k,PostIdx)) ->
             let access_size = tr_simd_variant var in
             read_reg_ord rA ii >>= fun addr ->
             simd_ldr access_size addr r1 ii >>|
             post_kr rA addr (K k) ii >>= B.next2T
         | I_LDUR_SIMD(var,r1,rA,k) ->
-            let access_size = tr_simd_variant var and
-            k = K (match k with Some k -> k | None -> 0) in
-            (get_ea rA k S_NOEXT ii >>= fun addr ->
-            simd_ldr access_size addr r1 ii) >>= B.next1T
+            let access_size = tr_simd_variant var in
+            get_ea rA (K k) S_NOEXT ii >>= fun addr ->
+            simd_ldr access_size addr r1 ii >>= B.next1T
         | I_LDAPUR_SIMD(var,r1,rA,k) ->
-            let access_size = tr_simd_variant var and
-            k = K (match k with Some k -> k | None -> 0) in
-            (get_ea rA k S_NOEXT ii >>= fun addr ->
-            simd_ldar access_size addr r1 ii) >>= B.next1T
-        | I_STR_SIMD(var,r1,rA,kr,s) ->
             let access_size = tr_simd_variant var in
-            simd_str access_size rA r1 kr s ii
-        | I_STR_P_SIMD(var,r1,rA,k) ->
+            get_ea rA (K k) S_NOEXT ii >>= fun addr ->
+            simd_ldar access_size addr r1 ii >>= B.next1T
+        | I_STR_SIMD(var,r1,rA,MemExt.Reg (v,kr,sext,s)) ->
             let access_size = tr_simd_variant var in
-            simd_str_p access_size rA r1 (K k) ii
+            let ma = get_ea_reg rA v kr sext s ii in
+            simd_str access_size ma r1 ii
+        | I_STR_SIMD(var,r1,rA,MemExt.Imm (k,Idx)) ->
+            let access_size = tr_simd_variant var in
+            let ma = get_ea_idx rA k ii in
+            simd_str access_size ma r1 ii
+        | I_STR_SIMD(var,r1,rA,MemExt.Imm (k,PreIdx)) ->
+            let access_size = tr_simd_variant var in
+            let ma = get_ea_preindexed rA k ii in
+            simd_str access_size ma r1 ii
+        | I_STR_SIMD(var,r1,rA,MemExt.Imm (k,PostIdx)) ->
+            let access_size = tr_simd_variant var in
+            let ma = read_reg_ord rA ii in
+            simd_str_p access_size ma r1 rA (K k) ii
         | I_STUR_SIMD(var,r1,rA,k) ->
-            let access_size = tr_simd_variant var and
-            k = K (match k with Some k -> k | None -> 0) in
-            simd_str access_size rA r1 k S_NOEXT ii
+            let access_size = tr_simd_variant var in
+            let ma = get_ea_idx rA k ii in
+            simd_str access_size ma r1 ii
         | I_STLUR_SIMD(var,r1,rA,k) ->
-            let access_size = tr_simd_variant var and
-            k = K (match k with Some k -> k | None -> 0) in
-            simd_stlr access_size rA r1 k S_NOEXT ii
-        | I_LDP_SIMD(tnt,var,r1,r2,r3,k) ->
-            get_ea_idx r3 k ii >>= fun addr ->
-            simd_ldp tnt var addr r1 r2 ii
-        | I_LDP_P_SIMD(tnt,var,r1,r2,r3,k) ->
-            read_reg_ord r3 ii >>= fun addr ->
-            (simd_ldp tnt var addr r1 r2 ii >>|
-            post_kr r3 addr (K k) ii) >>=
-            fun (b,()) -> M.unitT b
-        | I_STP_SIMD(tnt,var,r1,r2,r3,k) ->
-            get_ea_idx r3 k ii >>= fun addr ->
-            simd_stp tnt var addr r1 r2 ii
-        | I_STP_P_SIMD(tnt,var,r1,r2,r3,k) ->
-            read_reg_ord r3 ii >>= fun addr ->
-            simd_stp tnt var addr r1 r2 ii >>|
-            post_kr r3 addr (K k) ii >>=
-            fun (b,()) -> M.unitT b
-
+            let access_size = tr_simd_variant var in
+            let ma = get_ea_idx rA k ii in
+            simd_stlr access_size ma r1 ii
+        | I_LDP_SIMD(tnt,var,r1,r2,r3,idx) ->
+          begin
+            match idx with
+            | k,Idx ->
+                get_ea_idx r3 k ii >>= fun addr ->
+                  simd_ldp tnt var addr r1 r2 ii
+            | k,PreIdx ->
+                get_ea_preindexed r3 k ii >>= fun addr ->
+                  simd_ldp tnt var addr r1 r2 ii
+            | k,PostIdx ->
+                read_reg_ord r3 ii >>= fun addr ->
+                  (simd_ldp tnt var addr r1 r2 ii >>|
+                  post_kr r3 addr (K k) ii) >>=
+                  fun (b,()) -> M.unitT b
+          end
+        | I_STP_SIMD(tnt,var,r1,r2,r3,idx) ->
+          begin
+            match idx with
+            | k,Idx ->
+                get_ea_idx r3 k ii >>= fun addr ->
+                  simd_stp tnt var addr r1 r2 ii
+            | k,PreIdx ->
+                get_ea_preindexed r3 k ii >>= fun addr ->
+                  simd_stp tnt var addr r1 r2 ii
+            | k,PostIdx ->
+                read_reg_ord r3 ii >>= fun addr ->
+                  (simd_stp tnt var addr r1 r2 ii >>|
+                    post_kr r3 addr (K k) ii) >>=
+                  fun (b,()) -> M.unitT b
+          end
         (* Morello instructions *)
         | I_ALIGND(rd,rn,k) ->
             check_morello inst ;

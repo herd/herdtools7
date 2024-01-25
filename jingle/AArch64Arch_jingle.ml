@@ -659,10 +659,9 @@ include Arch.MakeArch(struct
     | I_ST2 _ | I_ST2M _
     | I_ST3 _ | I_ST3M _
     | I_ST4 _ | I_ST4M _
-    | I_LDP_SIMD _ | I_LDP_P_SIMD _
-    | I_STP_SIMD _ | I_STP_P_SIMD _
-    | I_LDR_SIMD _ | I_LDR_P_SIMD _
-    | I_STR_SIMD _ | I_STR_P_SIMD _
+    | I_LDP_SIMD _
+    | I_STP_SIMD _
+    | I_LDR_SIMD _ | I_STR_SIMD _
     | I_LDUR_SIMD _ | I_LDAPUR_SIMD _
     | I_STUR_SIMD _ | I_STLUR_SIMD _
     | I_ADDV _ | I_DUP _ | I_FMOV_TG _
