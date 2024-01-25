@@ -1,0 +1,10 @@
+AArch64 V66
+(* Tests LDAPUR/STLUR single structure with 32 bit lanes *)
+{
+int x=1; int y;
+0:X0=x; 0:X1=y;
+}
+ P0             ;
+ LDAPUR S0,[X0] ;
+ STLUR S0,[X1]  ;
+forall(y=1)

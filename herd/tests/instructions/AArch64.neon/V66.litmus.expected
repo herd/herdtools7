@@ -1,0 +1,10 @@
+Test V66 Required
+States 1
+[y]=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([y]=1)
+Observation V66 Always 1 0
+Hash=5d98d6e849d5a50e323705f8e6866979
+
