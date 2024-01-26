@@ -5,6 +5,8 @@
 \input{ASLASTLines}
 \newcommand{\tests}{../tests/ASLTypingReference.t/}
 
+\newcommand\dynamicdomain[0]{\textsf{dyn-dom}}
+
 \newcommand\astlabel[0]{\textsf{label}}
 \newcommand\Ignore[0]{\texttt{\_}}
 
@@ -33,7 +35,6 @@
 \newcommand\makeanonymous[0]{\texttt{make\_anonymous}}
 \newcommand\structsubtypesat[0]{\texttt{structural\_subtype\_satisfies}}
 \newcommand\domsubtypesat[0]{\texttt{domain\_subtype\_satisfies}}
-\newcommand\domainissubset[0]{\texttt{domain\_is\_subset}}
 \newcommand\subtypesat[0]{\texttt{subtype\_satisfies}}
 \newcommand\typesat[0]{\texttt{type\_satisfies}}
 \newcommand\canassignto[0]{\;\texttt{can\_assign\_to}\;}
@@ -824,8 +825,33 @@ may appear internally.
 \section{TypingRule.Domain}
 
   \subsection{Prose}
-  The domain of a type in a given environment is the set of values which storage elements of that type may hold.
-  This is used to establish \emph{type satisfaction}~\ref{sec:TypingRule.TypeSatisfaction}.
+  The \emph{dynamic domain} of a type is the set of values which storage elements of that type may hold 
+  \underline{in a given runtime environment}.
+  %
+  The \emph{static domain} of a type is the set of values which storage elements of that type may hold
+  \underline{across all possible runtime environments}.
+  %
+  The reason that for the distinction between the two types of domains is that the sets of values
+  considered for the types of arrays, constrained integers,
+  and constrained bitvectors, depend on statically evaluable expressions. In turn, statically evaluable expressions
+  depend on the values of configuration variables whose values are only determined during runtime. 
+  Similarly, the set of values of an underconstrained integer is only known once the corresponding parameter
+  is assigned a value during runtime.
+
+  When the dynamic domain of a type equals the static domain of a type, we will simply refer to both
+  types of domains as the \emph{domain} of that type.
+
+  \paragraph{Subsumption Testing.}
+  One of the conditions for determining whether an assignment is type-correct is whether the dynamic domain of the
+  right hand side type is contained in the dynamic domain of the left hand side type~\ref{sec:TypingRule.DomainSubtypeSatisfaction},
+  for any given runtime environment.
+  %
+  Since this condition requires complex reasoning, we approximate by employing a conservative symbolic reasoning procedure,
+  which we refer to as a \emph{subsumption test}.
+  If the subsumption test returns a positive answer, it means that the containment between the runtime domains holds across all
+  runtime environment.
+  Otherwise, the subsumption test returns a ``don't know'' answer, which is interpreted by the type checker pessimistically,
+  effectively assuming that there might be a counterexample.
 
   \subsection{Example}
   The domain of \texttt{integer} is the infinite set of all integers.
@@ -835,17 +861,18 @@ may appear internally.
   The domain of \texttt{integer {2,16}} is the set containing the integers \texttt{2} and \texttt{16}.
 
   THe domain of \texttt{enumeration \{GREEN, ORANGE, RED\}} is the set containing the identifiers
-  \texttt{GREEN}, \texttt{ORANGE}, and \texttt{RED} and so is the domain 
+  \texttt{GREEN}, \texttt{ORANGE}, and \texttt{RED} and so is the runtime domain 
   of \texttt{type TrafficLights of enumeration \{GREEN, ORANGE, RED\}}.
 
-  The domain of \texttt{bits({2,16})} is the set containing all 2-bit and all 16-bit binary sequences.
+  The static domain of \texttt{bits({2,16})} is the set containing all 2-bit and all 16-bit binary sequences.
 
   The domain of \texttt{(integer, integer)} is the set containing all pairs of integers.
 
   The domain of \texttt{record \{a: integer;  b: boolean\}} contains all functions that map \texttt{a} to an integer and \texttt{b} to a Boolean value.
 
-  The domain of a subprogram parameter \texttt{N: integer} is the (singleton) set containing the value $c$,
-  which is assigned to \texttt{N} during runtime.
+  The dynamic domain of a subprogram parameter \texttt{N: integer} is the (singleton) set containing the value $c$,
+  which is assigned to \texttt{N} by a given runtime environment. The static domaini of a subprogram parameter \texttt{N: integer}
+  is the infiinite set of all integers.
 
   \subsection{Code}
       \VerbatimInput[firstline=\DomainBegin, lastline=\DomainEnd]{../types.ml}
@@ -854,18 +881,26 @@ may appear internally.
       \subsection{Formally}
       \newcommand\runtimeenv[0]{E}
 
-      The domain assigned to a given type is the set of values that it can take during runtime, expressed in mathematical form
-(functions can be viewed as sets of pairs).
-%
-Since the types of arrays, constrained integers, and constrained bitvectors, depend on statically evaluable expressions.
-Further, underconstrained integers are parameters that also take their value during runtime.
-Therefore, domains depend on a runtime environment $E$ that assigns values to global storage elements (more specifically, config variables)
-and subprogram parameters. 
+      \newcommand\subsumes[0]{\texttt{subsumes}}
+      \newcommand\reasoner[0]{\texttt{reasoner}}
 
-      The formal definition below is used as a reference for checking whether the domain of one type is a subset of the domain of
-      another type, for all possible runtime environments.
-      Later, in Section~\ref{sec:TypingRule.DomainSubtypeSatisfaction}, we consider how to constructively and conservatively check 
-      this subsumption property.
+      We denote a runtime environment that assigns values to global storage elements (more specifically, config variables)
+      and subprogram parameters by $E$.
+      We denote by $\tenv$ the static environment, which assigs identifiers to types.
+      We denote the runtime domain of a type $\vt$ in the environments $\tenv$ and $E$ by $\dynamicdomain(\tenv, E, \vt)$.
+      
+      For two types $\vt$ and $\vs$, a symbolic reasoning engine \reasoner\ and a static environment \tenv,
+      we write $\subsumes(\reasoner, \tenv, \vt, \vs)$ to mean that the symbolic reasoning
+      engine \reasoner\ has returned a positive answer. That is, the following holds:
+      \[
+        \begin{array}{l}
+        \subsumes(\reasoner, \tenv, \vt, \vs) \Rightarrow \\
+       \forall E\in\mathbb{E}.\ \dynamicdomain(\tenv, E, \vt) \supseteq \dynamicdomain(\tenv, E, \vs) \enspace.
+        \end{array}
+      \]
+      In this case, we say that \vt\ \emph{subsumes} \vs.
+
+      In this document, we leave the symbolic reasoning engine unspecified. We will define it more precisely in a future version.
 
 We denote by $\llbracket \runtimeenv \rrbracket N$ the integer value given to the underconstrained parameter $N$ in the environment $\runtimeenv$.
 %
@@ -873,29 +908,29 @@ Since currently the abstract syntax does not specify the parameter name of an un
 we use the notation $\emptylist_N$ to name the parameter.
 
 \begin{mathpar}
-\inferrule{}{ \dom(\runtimeenv, \TBool) = \{\texttt{FALSE}, \texttt{TRUE}\} }
+\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TBool) = \{\texttt{FALSE}, \texttt{TRUE}\} }
 \and
-\inferrule{}{ \dom(\runtimeenv, \TString) = \{ s\ \;|\; \texttt{"}s\texttt{"} \in \texttt{<string\_lit>} \} }
+\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TString) = \{ s\ \;|\; \texttt{"}s\texttt{"} \in \texttt{<string\_lit>} \} }
 \and
-\inferrule{}{ \dom(\runtimeenv, \TReal) = \Q }
+\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TReal) = \Q }
 \and
-\inferrule[Domain of Unconstrained integer]{}{\dom(\runtimeenv, \unconstrainedinteger) = \Z }
+\inferrule[Domain of Unconstrained integer]{}{\dynamicdomain(\tenv, \runtimeenv, \unconstrainedinteger) = \Z }
 \and
 \inferrule[Domain of a Well-constrained integer]{}{ \runtimeenv(\tenv, \TInt(\langle [c_{1..k}] \rangle)) = \bigcup_{i=1}^k \evalconstraint(\runtimeenv, c_i)}
 \and
-\inferrule[Domain of Underconstrained integer]{}{\dom(\runtimeenv, \TInt(\langle \emptylist_N \rangle) = \{ \llbracket\runtimeenv\rrbracket N \} }
+\inferrule[Domain of Underconstrained integer]{}{\dynamicdomain(\tenv, \runtimeenv, \TInt(\langle \emptylist_N \rangle) = \{ \llbracket\runtimeenv\rrbracket N \} }
 \and
-\inferrule{}{ \dom(\runtimeenv, \TEnum([\id_{1..k}])) = \{\id_{1..k}\}}
+\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TEnum([\id_{1..k}])) = \{\id_{1..k}\}}
 \and
-\inferrule{}{ \dom(\runtimeenv, \TBits(c, \textit{bfl})) = \\ \{ b_1\cdot\ldots\cdot b_k \;|\; b_1,\ldots,b_k \in \{0,1\}, \;\;\; k \in \evalconstraint(E, c) \} }
+\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TBits(c, \textit{bfl})) = \\ \{ b_1\cdot\ldots\cdot b_k \;|\; b_1,\ldots,b_k \in \{0,1\}, \;\;\; k \in \evalconstraint(E, c) \} }
 \and
-\inferrule{}{ \dom(\runtimeenv, \TTuple([\tty_{1..k}])) = \dom(\runtimeenv,\tty_1) \times \ldots \times \dom(\runtimeenv,\tty_k) }
+\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TTuple([\tty_{1..k}])) = \dynamicdomain(\tenv, \runtimeenv,\tty_1) \times \ldots \times \dynamicdomain(\tenv, \runtimeenv,\tty_k) }
 \and
-\inferrule{}{ \dom(\runtimeenv, \TArray(\ve, \tty)) = \\ \{ v_1\cdot\ldots\cdot v_k\;|\; k = \evalexpr(E, \ve), \; v_{1..k} \in \dom(\runtimeenv, \tty)  \} }
+\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TArray(\ve, \tty)) = \\ \{ v_1\cdot\ldots\cdot v_k\;|\; k = \evalexpr(E, \ve), \; v_{1..k} \in \dynamicdomain(\tenv, \runtimeenv, \tty)  \} }
 \and
-\inferrule{L \in \{\TRecord, \TException\}}{ \dom(\runtimeenv, L(\{f_1:\tty_1,\ldots,f_k:\tty_k\})) = \\ \lambda f\in\identifier.\ \dom(\runtimeenv, [f_1\mapsto\tty_1,\ldots,f_k\mapsto\tty_k](f))}
+\inferrule{L \in \{\TRecord, \TException\}}{ \dynamicdomain(\tenv, \runtimeenv, L(\{f_1:\tty_1,\ldots,f_k:\tty_k\})) = \\ \lambda f\in\identifier.\ \dynamicdomain(\tenv, \runtimeenv, [f_1\mapsto\tty_1,\ldots,f_k\mapsto\tty_k](f))}
 \and
-\inferrule{G^\tenv.\declaredtypes(\id)=\tty}{\dom(\runtimeenv, \TNamed(\id)) = \dom(\runtimeenv, \tty)}
+\inferrule{G^\tenv.\declaredtypes(\id)=\tty}{\dynamicdomain(\tenv, \runtimeenv, \TNamed(\id)) = \dynamicdomain(\tenv, \runtimeenv, \tty)}
 \end{mathpar}
 \end{emptyformal}
 
@@ -1187,7 +1222,7 @@ We write $\structsubtypesat(\tenv, \vs, \vt)$ to denote that type $\vs$ \\ struc
  \item All of the following apply:
     \begin{itemize}
     \item \texttt{s} does not have the structure of an aggregate type or bitvector type;
-    \item the domain of \texttt{t} is a subset of the domain of \texttt{s}.
+    \item the domain of \texttt{t} is subsumed by the domain of \texttt{s}.
     \end{itemize}
 
   \item All of the following apply:
@@ -1197,7 +1232,7 @@ We write $\structsubtypesat(\tenv, \vs, \vt)$ to denote that type $\vs$ \\ struc
       \item \texttt{s} has the structure of a bitvector type with undetermined width;
       \item \texttt{t} has the structure of a bitvector type with undetermined width;
       \end{itemize}
-   \item the domain of \texttt{t} is a subset of the domain of \texttt{s}.
+   \item the domain of \texttt{t} is subsumed by the domain of \texttt{s}.
    \end{itemize}
   \end{itemize}
 
@@ -1217,15 +1252,16 @@ We denote that \texttt{t} domain-subtype-satisfies \texttt{s} in environment
 \inferrule{\tstruct(\tenv, \vt)=\vt' \\
 \tstruct(\tenv, \vs)=\vs'  \\
   \astlabel(\vs') \in \{\TReal, \TString, \TBool, \TEnum, \TInt\} \\
-  \domainissubset(\tenv, \vt', \vs')
+  \subsumes(\reasoner, \tenv, \vs', \vt')\\
   }{\domsubtypesat(\tenv, \vt, \vs)}
 \and
 \inferrule{\astlabel(\vt) = \astlabel(\vs) = \TBits \\
-  n \in \Z \\ \dom(\tenv, \vt) = \dom(\tenv, \vs) = \{n\} }
+  n \in \Z \\ \dynamicdomain(\tenv, \vt) = \dynamicdomain(\tenv, \vs) = \{n\} }
 {\domsubtypesat(\tenv, \vt, \vs)}
 \and
 \inferrule{\astlabel(\vt) = \astlabel(\vt) = \TBits \\
-\domainissubset(\tenv, \vt, \vs) }{\domsubtypesat(\tenv, \vt, \vs)}
+\subsumes(\reasoner, \tenv, \vs, \vt) }
+{\domsubtypesat(\tenv, \vt, \vs)}
 \end{mathpar}
 \end{emptyformal}
 
