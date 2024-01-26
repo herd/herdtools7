@@ -834,20 +834,41 @@ may appear internally.
 
   The domain of \texttt{integer {2,16}} is the set containing the integers \texttt{2} and \texttt{16}.
 
+  THe domain of \texttt{enumeration \{GREEN, ORANGE, RED\}} is the set containing the identifiers
+  \texttt{GREEN}, \texttt{ORANGE}, and \texttt{RED} and so is the domain 
+  of \texttt{type TrafficLights of enumeration \{GREEN, ORANGE, RED\}}.
+
   The domain of \texttt{bits({2,16})} is the set containing all 2-bit and all 16-bit binary sequences.
+
+  The domain of \texttt{(integer, integer)} is the set containing all pairs of integers.
+
+  The domain of \texttt{record \{a: integer;  b: boolean\}} contains all functions that map \texttt{a} to an integer and \texttt{b} to a Boolean value.
+
+  The domain of a subprogram parameter \texttt{N: integer} is the (singleton) set containing the value $c$,
+  which is assigned to \texttt{N} during runtime.
 
   \subsection{Code}
       \VerbatimInput[firstline=\DomainBegin, lastline=\DomainEnd]{../types.ml}
 
 \begin{emptyformal}
       \subsection{Formally}
-\newcommand\runtimeenv[0]{E}
-Notice that for the types of arrays, constrained integers, and constrained bitvectors, depend on statically evaluable expressions.
+      \newcommand\runtimeenv[0]{E}
+
+      The domain assigned to a given type is the set of values that it can take during runtime, expressed in mathematical form
+(functions can be viewed as sets of pairs).
+%
+Since the types of arrays, constrained integers, and constrained bitvectors, depend on statically evaluable expressions.
 Further, underconstrained integers are parameters that also take their value during runtime.
 Therefore, domains depend on a runtime environment $E$ that assigns values to global storage elements (more specifically, config variables)
 and subprogram parameters. 
-We denote by $\llbracket \runtimeenv \rrbracket N$ the integer value given to the underconstrained parameter $N$ in the environment $\runtimeenv$.
 
+      The formal definition below is used as a reference for checking whether the domain of one type is a subset of the domain of
+      another type, for all possible runtime environments.
+      Later, in Section~\ref{sec:TypingRule.DomainSubtypeSatisfaction}, we consider how to constructively and conservatively check 
+      this subsumption property.
+
+We denote by $\llbracket \runtimeenv \rrbracket N$ the integer value given to the underconstrained parameter $N$ in the environment $\runtimeenv$.
+%
 Since currently the abstract syntax does not specify the parameter name of an underconstrained integer,
 we use the notation $\emptylist_N$ to name the parameter.
 
