@@ -831,12 +831,9 @@ may appear internally.
   The \emph{static domain} of a type is the set of values which storage elements of that type may hold
   \underline{across all possible runtime environments}.
   %
-  The reason that for the distinction between the two types of domains is that the sets of values
-  considered for the types of arrays, constrained integers,
-  and constrained bitvectors, depend on statically evaluable expressions. In turn, statically evaluable expressions
-  depend on the values of configuration variables whose values are only determined during runtime. 
-  Similarly, the set of values of an underconstrained integer is only known once the corresponding parameter
-  is assigned a value during runtime.
+  The reason that for this distinction is that the sets of values
+  considered for bitevector types, array types, constrained integers, and constrained bitvectors, 
+  can be parameterized by configuration variables and subprogram parameters whose values are only determined during runtime. 
 
   When the dynamic domain of a type equals the static domain of a type, we will simply refer to both
   types of domains as the \emph{domain} of that type.
@@ -846,7 +843,8 @@ may appear internally.
   right hand side type is contained in the dynamic domain of the left hand side type~\ref{sec:TypingRule.DomainSubtypeSatisfaction},
   for any given runtime environment.
   %
-  Since this condition requires complex reasoning, we approximate by employing a conservative symbolic reasoning procedure,
+  This requires symbolic reasoning over the constraints associated with the types.
+  We approximate this symbolic reasoning by employing a conservative symbolic reasoning procedure,
   which we refer to as a \emph{subsumption test}.
   If the subsumption test returns a positive answer, it means that the containment between the runtime domains holds across all
   runtime environment.
@@ -871,7 +869,7 @@ may appear internally.
   The domain of \texttt{record \{a: integer;  b: boolean\}} contains all functions that map \texttt{a} to an integer and \texttt{b} to a Boolean value.
 
   The dynamic domain of a subprogram parameter \texttt{N: integer} is the (singleton) set containing the value $c$,
-  which is assigned to \texttt{N} by a given runtime environment. The static domaini of a subprogram parameter \texttt{N: integer}
+  which is assigned to \texttt{N} by a given runtime environment. The static domain of that parameter
   is the infiinite set of all integers.
 
   \subsection{Code}
@@ -885,8 +883,8 @@ may appear internally.
       \newcommand\reasoner[0]{\texttt{reasoner}}
 
       We denote a runtime environment that assigns values to global storage elements (more specifically, config variables)
-      and subprogram parameters by $E$.
-      We denote by $\tenv$ the static environment, which assigs identifiers to types.
+      and subprogram parameters by $E \in \mathbb{R}$.
+      We denote by $\tenv \in mathbb{E}$ a static environment, which assigns identifiers to types.
       We denote the runtime domain of a type $\vt$ in the environments $\tenv$ and $E$ by $\dynamicdomain(\tenv, E, \vt)$.
       
       For two types $\vt$ and $\vs$, a symbolic reasoning engine \reasoner\ and a static environment \tenv,
@@ -895,12 +893,12 @@ may appear internally.
       \[
         \begin{array}{l}
         \subsumes(\reasoner, \tenv, \vt, \vs) \Rightarrow \\
-       \forall E\in\mathbb{E}.\ \dynamicdomain(\tenv, E, \vt) \supseteq \dynamicdomain(\tenv, E, \vs) \enspace.
+       \forall E\in\mathbb{R}.\ \dynamicdomain(\tenv, E, \vt) \supseteq \dynamicdomain(\tenv, E, \vs) \enspace.
         \end{array}
       \]
       In this case, we say that \vt\ \emph{subsumes} \vs.
 
-      In this document, we leave the symbolic reasoning engine unspecified. We will define it more precisely in a future version.
+      In this document, we leave the symbolic reasoning engine unspecified. We will define it in detail in a future version.
 
 We denote by $\llbracket \runtimeenv \rrbracket N$ the integer value given to the underconstrained parameter $N$ in the environment $\runtimeenv$.
 %
@@ -916,15 +914,15 @@ we use the notation $\emptylist_N$ to name the parameter.
 \and
 \inferrule[Domain of Unconstrained integer]{}{\dynamicdomain(\tenv, \runtimeenv, \unconstrainedinteger) = \Z }
 \and
-\inferrule[Domain of a Well-constrained integer]{}{ \runtimeenv(\tenv, \TInt(\langle [c_{1..k}] \rangle)) = \bigcup_{i=1}^k \evalconstraint(\runtimeenv, c_i)}
+\inferrule[Domain of a Well-constrained integer]{}{ \runtimeenv(\tenv, \TInt(\langle [c_{1..k}] \rangle)) = \bigcup_{i=1}^k \evalconstraint(\tenv, \runtimeenv, c_i)}
 \and
 \inferrule[Domain of Underconstrained integer]{}{\dynamicdomain(\tenv, \runtimeenv, \TInt(\langle \emptylist_N \rangle) = \{ \llbracket\runtimeenv\rrbracket N \} }
 \and
 \inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TEnum([\id_{1..k}])) = \{\id_{1..k}\}}
 \and
-\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TBits(c, \textit{bfl})) = \\ \{ b_1\cdot\ldots\cdot b_k \;|\; b_1,\ldots,b_k \in \{0,1\}, \;\;\; k \in \evalconstraint(E, c) \} }
+\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TBits(c, \textit{bfl})) = \\ \{ b_1\cdot\ldots\cdot b_k \;|\; b_1,\ldots,b_k \in \{0,1\}, \;\;\; k \in \evalconstraint(\tenv, E, c) \} }
 \and
-\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TTuple([\tty_{1..k}])) = \dynamicdomain(\tenv, \runtimeenv,\tty_1) \times \ldots \times \dynamicdomain(\tenv, \runtimeenv,\tty_k) }
+\inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TTuple([\tty_{1..k}])) = \bigtimes_{i=1}^k \dynamicdomain(\tenv, \runtimeenv,\tty_i) }
 \and
 \inferrule{}{ \dynamicdomain(\tenv, \runtimeenv, \TArray(\ve, \tty)) = \\ \{ v_1\cdot\ldots\cdot v_k\;|\; k = \evalexpr(E, \ve), \; v_{1..k} \in \dynamicdomain(\tenv, \runtimeenv, \tty)  \} }
 \and
