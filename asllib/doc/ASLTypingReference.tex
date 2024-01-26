@@ -1552,8 +1552,8 @@ We denote that type $\vt$ type-satisfies type $\vs$ in an environment $\tenv$ by
         \begin{itemize}
         \item \texttt{s} is an anonymous type;
         \item \texttt{t} is an anonymous type;
-	\item \texttt{ty} is the well-constrained integer type whose domain is the union of the
-	  domains of \texttt{s} and \texttt{t}.      
+	\item \texttt{ty} is the well-constrained integer type whose runtime domain is the union of the
+	  runtime domains of \texttt{s} and \texttt{t}, for every runtime environment.
         \end{itemize}
       \end{itemize}
     \end{itemize}
@@ -3164,7 +3164,7 @@ expression that is unresolvable to an integer. For example:
       \item \texttt{t''} is a structural subtype of \texttt{t'} in \texttt{env};
       \item \texttt{t''} is not a domain subtype of \texttt{t'} in \texttt{env};
       \item an execution-time check that the expression evaluates to a value in the
-        domain of the required type is required.
+        runtime domain of the required type is required.
       \item \texttt{new\_e} is the expression denoting a Checked Type
         Conversion of \texttt{new\_e'} in the type \texttt{t'}.
      \end{itemize}
