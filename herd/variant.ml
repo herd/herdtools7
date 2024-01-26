@@ -94,6 +94,10 @@ type t =
 (* Telechat variant - implements unconditional branches as exit, and any other optional quirks*)
   | Telechat
   | NV2
+(* Old solver, replaced by substitution following toplogical sort *)
+  | OldSolver
+  (* Accept cyclic equation sets as being solvable *)
+  | OOTA
 
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
@@ -103,7 +107,8 @@ let tags =
    ["toofar"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
     "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"; "asl"; "strict";
-    "warn"; "S128"; "ASLType+Warn";    "ASLType+Silence"; "ASLType+Check";]
+    "warn"; "S128"; "ASLType+Warn";    "ASLType+Silence"; "ASLType+Check";
+    "telechat"; "OldSolver"; "oota";]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -157,6 +162,8 @@ let parse s = match Misc.lowercase s with
 | "warn" -> Some Warn
 | "telechat" -> Some Telechat
 | "nv2" | "NV2" -> Some NV2
+| "oldsolver" -> Some OldSolver
+| "oota" -> Some OOTA
 | s ->
    begin
      match Precision.parse s with
@@ -226,6 +233,8 @@ let pp = function
   | ASLType `TypeCheck -> "ASLType+Check"
   | Telechat -> "telechat"
   | NV2 -> "NV2"
+  | OldSolver -> "OldSolver"
+  | OOTA -> "oota"
 
 let compare = compare
 let equal v1 v2 = compare v1 v2 = 0

@@ -93,6 +93,7 @@ module Make
       let (>>!) = M.(>>!)
       let (>>::) = M.(>>::)
 
+
       let sxt_op sz =  M.op1 (Op.Sxt sz)
       and uxt_op sz =
         match sz with
@@ -252,9 +253,9 @@ module Make
         | MachSize.S128 -> write_reg_morello r v ii
         | MachSize.Quad when not morello -> write_reg r v ii
         | MachSize.Quad|MachSize.Word|MachSize.Short|MachSize.Byte ->
-            M.op1 (op sz) v >>= fun v -> write_reg r v ii
+           op sz v >>= fun v -> write_reg r v ii
 
-      let write_reg_sz = do_write_reg_sz (fun sz -> Op.Mask sz)
+      let write_reg_sz = do_write_reg_sz uxt_op
 
       let write_reg_op op sz r v ii =
         match r with
@@ -765,7 +766,7 @@ module Make
         >>= fun v -> write_reg_op op sz rd v ii
         >>= fun () -> B.nextT
 
-      let do_read_mem sz  = do_read_mem_op (M.op1 (Op.Mask sz)) sz
+      let do_read_mem sz  = do_read_mem_op (uxt_op sz) sz
 
       let read_mem_acquire sz = do_read_mem sz Annot.A
       let read_mem_acquire_pc sz = do_read_mem sz Annot.Q

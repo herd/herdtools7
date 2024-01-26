@@ -395,7 +395,8 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
         (fun ess iico ->
           let r = S.unions (iico::order_one_proc ess)
           and es = E.EventSet.unions ess in
-          E.EventRel.topo es r)
+          try E.EventRel.topo es r
+          with E.EventRel.Cyclic -> assert false)
         by_proc_and_poi iicos in
     let max =
       List.fold_left
